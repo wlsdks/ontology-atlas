@@ -23,27 +23,28 @@ import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match
 export interface GlobalSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** ontology 노드 — 첫 검색 source (vault frontmatter / 빌드타임 dogfood 통합). */
+  /** Ontology nodes — the first search source (vault frontmatter plus build-time dogfood, unified). */
   nodes: readonly KnowledgeGraphNode[];
-  /** ontology 노드 선택 콜백. */
+  /** Ontology node selection callback. */
   onSelectNode: (node: KnowledgeGraphNode) => void;
   /**
-   * projects — 옵션. ⌘K 한 번에 ontology/프로젝트 통합 검색.
-   * `onSelectProject` 와 함께 와야 함.
+   * projects — optional. One ⌘K searches ontology and projects together. Must arrive
+   * alongside `onSelectProject`.
    */
   projects?: readonly Project[];
   onSelectProject?: (project: Project) => void;
 }
 
 /**
- * 글로벌 검색 (cmdk 기반).
+ * Global search (cmdk based).
  *
- * 우리 자체 매처 (`matchOntologyNodes`, `matchProjects`) 로 score / 정렬
- * → cmdk 는 `shouldFilter={false}` 로 표시·키보드 nav 만 담당. 한·영 혼합 매치 의도.
+ * Our own matchers (`matchOntologyNodes`, `matchProjects`) do the scoring and
+ * sorting, and cmdk handles display and keyboard nav only (`shouldFilter={false}`) —
+ * deliberately, so mixed Korean/English matching stays ours.
  *
- * Source 두 개 (ontology + projects) 를 별도 그룹으로 노출. cmdk Item value 는
- * `<source>:<id>` 로 prefix 충돌 회피. 빈 query 일 때는 두 source 모두 sample 표시
- * (ontology = lastApprovedAt desc / projects = updatedAt desc).
+ * The two sources (ontology plus projects) are exposed as separate groups. cmdk item
+ * values are prefixed `<source>:<id>` to avoid collisions. With an empty query both
+ * sources show a sample (ontology by lastApprovedAt desc, projects by updatedAt desc).
  */
 export function GlobalSearch({
   open,
@@ -57,9 +58,10 @@ export function GlobalSearch({
   const kindLabel = useOntologyKindLabel();
   const reducedMotion = useReducedMotion();
   const inputRef = useRef<HTMLInputElement | null>(null);
-  // rank18 — 트리거로 포커스 복귀. Radix Dialog/FocusScope 가 기본으로도
-  // 복귀시키지만(내부 activeElement 캡처), 어떤 트리거 경로(버튼 클릭 ·
-  // ⌘K 단축키)로 열렸든 명시적으로 보장하기 위해 자체 ref 로도 캡처한다.
+  // rank18 — return focus to the trigger. Radix Dialog/FocusScope restores it by
+  // default (capturing the internal activeElement), but this captures it in our own
+  // ref as well, to guarantee it explicitly whichever trigger path opened it (button
+  // click or ⌘K shortcut).
   const previousFocusRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (open) {
@@ -69,8 +71,8 @@ export function GlobalSearch({
     }
   }, [open]);
   const [query, setQuery] = useState("");
-  // kind / project filter chip 으로 ontology 결과 좁히기. set 으로
-  // 다중 선택 (toggle) 모델. 닫을 때 query 와 함께 초기화.
+  // Narrow the ontology results with kind and project filter chips. A set-based
+  // multi-select (toggle) model, cleared along with the query on close.
   const [selectedKinds, setSelectedKinds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -112,9 +114,10 @@ export function GlobalSearch({
   const isEmptyQuery = query.trim() === "";
   const ontologySize = nodes.length;
   const projectSize = projects?.length ?? 0;
-  // M-6 — project 카드는 ontology 의 kind:project 노드와 같은 실체다.
-  // 그대로 더하면 정본 census(295)보다 1 큰 "296 색인"이 나온다 (P0c 지도
-  // 이중 가산과 동종). 노드로 이미 세어진 project 는 빼고 합산한다.
+  // M-6 — a project card is the same entity as ontology's kind:project node. Adding
+  // them straight gives "296 indexed", one more than the canonical inventory (295) —
+  // the same species as the P0c map double-count. Projects already counted as nodes
+  // are subtracted before summing.
   const projectNodeCount = useMemo(
     () => nodes.filter((node) => node.kind === "project").length,
     [nodes],
@@ -123,13 +126,14 @@ export function GlobalSearch({
   const totalMatches = ontologyResults.length + projectResults.length;
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 
-  // workspace project chip row 의 source — projects prop 이 있으면 그대로
-  // (slug + name), 없으면 nodes 에서 발견된 distinct projectIds 만으로 fallback
-  // (slug 만 표시) — projects prop 이 흐를 때와 nodes 만 흐를 때 양쪽 호환.
+  // The source for the workspace project chip row — the projects prop when present
+  // (slug plus name), otherwise a fallback built from the distinct projectIds found
+  // in nodes (slug only), so it works both when the projects prop flows and when only
+  // nodes do.
   //
-  // \`@tanstack/react-virtual\` horizontal virtualizer 로 큰 vault 에서도
-  // viewport 안 chip 만 렌더 (~10-15 개). ontology 빈도 가중 정렬은 유지 —
-  // 첫 화면에 가장 관련 있는 chip 이 먼저 보이도록.
+  // A `@tanstack/react-virtual` horizontal virtualizer renders only the chips in the
+  // viewport (~10–15) even in a large vault. The ontology-frequency weighting is kept
+  // so the most relevant chips appear first on the initial screen.
   const projectChipSource = useMemo<Array<{ slug: string; label: string }>>(() => {
     const ontologyFreq = new Map<string, number>();
     for (const node of nodes) {
@@ -154,9 +158,9 @@ export function GlobalSearch({
       .map((slug) => ({ slug, label: slug }));
   }, [projects, nodes]);
 
-  // horizontal virtualizer — chip 너비는 한국어 라벨이라 가변. estimateSize 는
-  // 평균값 (10~16 자 chip 의 padding 포함 ~110 px). measureElement 가 실제
-  // 크기를 보정. overscan 4 는 좌우 스크롤 시 끊김 회피.
+  // Horizontal virtualizer — chip widths vary because the labels are Korean.
+  // estimateSize is an average (~110px including padding for a 10–16 character chip),
+  // and measureElement corrects the real size. overscan 4 avoids stutter on horizontal scroll.
   const projectScrollRef = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual owns imperative measurement functions; this component does not pass the virtualizer through memoized children.
   const projectVirtualizer = useVirtualizer({
@@ -174,17 +178,17 @@ export function GlobalSearch({
     setSelectedProjectIds(new Set());
   };
 
-  // cmdk 의 내장 Command.Dialog 는 Radix Dialog 를 wrapping 하지만 Title /
-  // Description 노드를 제공하지 않아 Radix 가 console error 를 띄움. 직접
-  // Radix Dialog 를 wrapping 해서 VisuallyHidden Title/Description 을 박는다.
+  // cmdk's built-in Command.Dialog wraps Radix Dialog but supplies no Title or
+  // Description node, so Radix logs a console error. Radix Dialog is wrapped directly
+  // here so a VisuallyHidden Title/Description can be planted.
   return (
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        // Esc · 스크림 클릭 · 닫기 버튼이 모두 같은 자리로 수렴한다 — 푸터가
-        // 약속하는 "ESC 닫기" 한 번에 창이 닫히고 입력·필터가 함께 비워진다.
-        // (예전엔 Esc 경로만 query 는 비우고 kind/project 필터는 남겨, 다시
-        // 열었을 때 이유 없이 좁혀진 결과를 보여줬다.)
+        // Esc, a scrim click and the close button all converge here — the footer's
+        // promise of "ESC 닫기" closes the window in one press and clears the input
+        // and filters with it. (The Esc path used to clear only the query and leave
+        // the kind/project filters, so reopening showed inexplicably narrowed results.)
         if (!next) {
           closeAndClear();
           return;
@@ -202,48 +206,49 @@ export function GlobalSearch({
         />
         <Dialog.Content
           aria-label={t('dialogAriaLabel')}
-          // Radix 는 형제 노드에 `aria-hidden` 을 거는 방식이라 `aria-modal` 을
-          // 스스로 붙이지 않는다. 그런데 이 앱의 전역 Esc 규율은 "지금 모달이
-          // 떠 있는가"를 `[role="dialog"][aria-modal="true"]` 로 판정한다
-          // (첫 실행 카드의 캡처 핸들러 · 자동 투어 발화 가드 등). 선언이
-          // 없으니 저 판정들이 이 검색창을 못 보고, 첫 Esc 를 첫 실행 카드가
-          // 가로채 preventDefault 해버려 **첫 타에 아무 일도 일어나지
-          // 않았다**(2026-07-26 실측: Esc 1회에 입력값도 그대로, 다이얼로그도
-          // 그대로 — 두 번째에야 닫힘). 앱의 다른 모달들(SearchPalette ·
-          // 공방 진입 선택 · 문서함 팔레트 …)은 전부 이 속성을 명시하고 있고,
-          // 이 검색창만 빠져 있었다. 스크림 + 포커스 트랩 + 바깥 클릭 닫기를
-          // 갖춘 진짜 모달이므로 선언이 사실과도 맞는다.
+          // Radix sets `aria-hidden` on sibling nodes rather than adding `aria-modal`
+          // itself. But this app's global Esc discipline decides "is a modal open"
+          // with `[role="dialog"][aria-modal="true"]` (the first-run card's capture
+          // handler, the auto-tour firing guard, and so on). With no declaration those
+          // checks could not see this search window, and the first-run card intercepted
+          // the first Esc with preventDefault, so **the first press did nothing**
+          // (measured 2026-07-26: one Esc left both the input and the dialog
+          // untouched; only the second closed it). Every other modal in the app
+          // (SearchPalette, the studio entry chooser, the docs palette …) declares this
+          // attribute and only this search window was missing it. It has a scrim, a
+          // focus trap and outside-click-to-close, so the declaration is also true.
           aria-modal="true"
           data-overlay-spring="true"
           data-global-search-responsive-contract="mobile-sheet-md-floating"
           data-global-search-floating-width-token="--topology-search-sheet-floating-width"
           data-global-search-radius-token="--radius-sheet"
           data-global-search-mobile-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
-          // 애니메이션 클래스는 Dialog.Content 자신에 건다 — Radix Presence
-          // 는 자신이 렌더한 노드(target === node)의 animationend 만 듣고
-          // 자식 노드에서 버블된 이벤트는 무시하므로, 자식(Command)에 걸면
-          // 퇴장 애니메이션이 끝나기 전에 언마운트돼버린다.
+          // The animation classes go on Dialog.Content itself — Radix Presence listens
+          // only for animationend on the node it rendered (target === node) and ignores
+          // events bubbling from children, so putting them on a child (Command)
+          // unmounts before the exit animation finishes.
           className={cn(
             "fixed inset-0 z-50 flex items-stretch justify-center md:items-start md:px-4 md:pt-[12vh]",
             reducedMotion ? "overlay-fade-only" : "overlay-spring-surface",
           )}
-          // rank18 — 열릴 때 첫 입력(검색창)에 포커스. Radix 기본 동작(첫
-          // focusable 엘리먼트)과 결과는 같지만, preventScroll 을 명시적으로
-          // 보장하기 위해 직접 지정한다.
+          // rank18 — focus the first input (the search box) on open. The result matches
+          // Radix's default (the first focusable element), but it is specified directly
+          // to guarantee preventScroll explicitly.
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             inputRef.current?.focus({ preventScroll: true });
           }}
-          // 바깥 클릭 = 닫기 (커맨드 팔레트의 사실상 표준: Linear · VS Code ·
-          // Raycast · Spotlight). Radix 의 `onPointerDownOutside` 는 여기서
-          // 발화하지 않는다 — 이 `Dialog.Content` 자체가 `fixed inset-0` 로
-          // 화면 전체를 덮는 flex 래퍼라서, 스크림처럼 보이는 영역이 실은
-          // Content **내부**이고 Radix 에게는 "바깥" 이 존재하지 않는다
-          // (소유자 실보고 2026-07-25: "바깥 클릭하면 닫혀야하는데 안닫힘").
-          // 그래서 래퍼 자신이 눌린 대상일 때만 닫는다 — 패널(Command)은 이미
-          // stopPropagation 하므로 내부 클릭은 여기 도달하지 않는다.
-          // `onPointerDown` 은 설정 시트(`AppSettingsMenu`)의 기존 스크림 계약과
-          // 같은 문법이면서 마우스·터치·펜을 함께 덮는다.
+          // An outside click closes (the de facto standard for command palettes:
+          // Linear · VS Code · Raycast · Spotlight). Radix's `onPointerDownOutside`
+          // does not fire here — this `Dialog.Content` is itself a `fixed inset-0` flex
+          // wrapper covering the whole screen, so what looks like a scrim is actually
+          // **inside** Content and no "outside" exists as far as Radix is concerned
+          // (owner report 2026-07-25: "바깥 클릭하면 닫혀야하는데 안닫힘" — clicking
+          // outside should close it and doesn't). So it closes only when the wrapper
+          // itself is the pressed target; the panel (Command) already stopPropagations,
+          // so inside clicks never reach here. `onPointerDown` matches the settings
+          // sheet's (`AppSettingsMenu`) existing scrim contract while covering mouse,
+          // touch and pen together.
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) closeAndClear();
           }}
@@ -289,9 +294,9 @@ export function GlobalSearch({
           </button>
         </div>
 
-        {/* kind / project chip filter row — ontology 결과 좁히기 전용
-            (documents / projects 결과는 영향 없음). 기본 펼침이라 사용자가
-            "어떻게 좁힐 수 있는지" 한눈에 인지. 다중 선택 toggle. */}
+        {/* kind / project chip filter row — narrows the ontology results only
+            (documents and projects results are unaffected). Expanded by default so
+            the user can see at a glance how they can narrow. Multi-select toggle. */}
         <div
           className="flex flex-col gap-1 border-b border-[color:var(--color-border-soft)] px-3 py-2"
           aria-label={t('filterAriaLabel')}
@@ -347,9 +352,9 @@ export function GlobalSearch({
               >
                 {t('projectLabel', { count: projectChipSource.length })}
               </span>
-              {/* @tanstack/react-virtual horizontal virtualizer — 1,979
-                  project 같은 큰 워크스페이스 에서도 viewport 안 chip 만 렌더
-                  (~10-15 개). overflow-x-auto + relative + abs 자식 패턴. */}
+              {/* @tanstack/react-virtual horizontal virtualizer — renders only the
+                  chips in the viewport (~10–15) even in a workspace of 1,979 projects.
+                  The overflow-x-auto + relative + absolute-child pattern. */}
               <div
                 ref={projectScrollRef}
                 className="relative flex-1 overflow-x-auto"
@@ -423,11 +428,11 @@ export function GlobalSearch({
                 </span>
               }
             >
-              {/* R10 후 vault 가 유일 모드 — node.evidenceCount 가 영구
-                  undefined 이라 'Evidence N' chip 도 cycle 16 의
-                  구 상세 패널 정리와 같은 정책으로 제거(현행 FullDetailA1). 같은 정보가
-                  필요해지면 cycle 6 의 ontology→docs 점프 chip 이 더
-                  풍부하게 보여 줌. */}
+              {/* After R10 the vault is the only mode — node.evidenceCount is
+                  permanently undefined, so the 'Evidence N' chip was removed under the
+                  same policy as cycle 16's cleanup of the old detail panel (now
+                  FullDetailA1). If the same information is ever needed, cycle 6's
+                  ontology→docs jump chip shows it more richly. */}
               {ontologyResults.map(({ node }) => {
                 // N12 (persona-ux-2026-07 report) — element titles that are
                 // literal file paths ("mcp/src/ontology-engine.mjs") read as
@@ -435,9 +440,9 @@ export function GlobalSearch({
                 // capability/domain titles in the same list. Demote to mono +
                 // quaternary tone instead of hiding the row — the path is
                 // still the row's only identifying label.
-                // 지도·INDEX 가 그리는 이름과 같은 이름으로 결과를 부른다.
-                // 결과 행만 원문 title 을 보이면, 방금 화면에서 읽은 이름으로
-                // 찾아 놓고도 "이게 그 노드가 맞나" 를 다시 대조해야 한다.
+                // Results are named with the same name the map and INDEX draw. With
+                // only the result rows showing the raw title, a user who searched by
+                // the name just read on screen has to re-check "is this that node".
                 const label = node.display ?? node.title;
                 const pathLike = node.kind === "element" && isPathLikeTitle(label);
                 return (

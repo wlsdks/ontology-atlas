@@ -1,15 +1,16 @@
 // `ontology-atlas snapshot [vault] [--dry-run] [--push] [--message "..."] [--json]`
 //
-// Atlas Git 슬라이스 1 (50번째 CLI 명령) — vault 를 git 커밋으로 스냅샷한다.
-// git 이 이미 vault 의 진실원이지만 비개발자/데스크톱 사용자에게는 버전
-// 기록/백업 수단이 없고, 개발자에게도 온톨로지 변경이 코드 커밋에 섞여
-// 히스토리에서 안 보인다. 이 명령은 vault 범위만 골라 **의미 단위 커밋
-// 메시지**(kind별 추가/수정/삭제 카운트 + 대표 슬러그)로 커밋해 git
-// 히스토리를 온톨로지 저널로 만든다.
+// Snapshots the vault as a git commit. Git is already the vault's source of truth,
+// but a non-developer or desktop user has no version history or backup route, and
+// even for a developer an ontology change buried in a code commit is invisible in
+// the history. This command commits the vault scope alone with a **meaning-level
+// commit message** (per-kind added/modified/deleted counts plus representative
+// slugs), turning the git history into an ontology journal.
 //
-// 신뢰 헌장: 기본값 = 로컬 커밋만 (전송 0). `--push` 를 명시할 때만 사용자의
-// 기존 원격/브랜치로 push — upstream 이 없으면 자동으로 `-u` 를 설정하지
-// 않고 안내만 한다. 로그인/토큰 취급 0 — 사용자 git 설정을 그대로 쓴다.
+// Trust charter: the default is a local commit only (zero transmission). Only an
+// explicit `--push` pushes to the user's existing remote and branch — with no
+// upstream it never sets `-u` automatically, it explains instead. No login or
+// token handling: the user's own git configuration is used as-is.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { resolveVaultRoot, VaultRootError } from '../lib/resolve-vault.mjs';
@@ -76,7 +77,7 @@ export async function runSnapshot(args) {
 
   const pathspec = vaultPathspec(repoRoot, vaultRoot);
 
-  // 패리티 모드 — 각기 커밋 흐름을 short-circuit 한다 (읽기 전용 / opt-in 전송).
+  // Parity modes — each short-circuits the commit flow (read-only, or opt-in transmission).
   if (parsed.history !== null) {
     return emitHistory({ json: parsed.json, vaultRoot, repoRoot, pathspec, limit: parsed.history });
   }
@@ -122,8 +123,9 @@ export async function runSnapshot(args) {
   }
 
   const untrackedPaths = rows.filter((r) => r.index === '?' && r.worktree === '?').map((r) => r.path);
-  // HIGH-1: commit throw (pre-commit 훅 거부 · gpg 서명 실패 · merge/rebase 진행
-  // 중) 를 raw 스택트레이스로 터뜨리지 않고 한 줄 원인 + 다음 행동으로 변환.
+  // Turns a commit throw (a pre-commit hook refusing, a gpg signing failure, a
+  // merge or rebase in progress) into one line of cause plus the next action,
+  // rather than a raw stack trace.
   try {
     addPaths({ repoRoot, paths: untrackedPaths });
     commitPathspec({ repoRoot, pathspec, message: fullMessage });
@@ -146,8 +148,8 @@ export async function runSnapshot(args) {
       };
       exitCode = 1;
     } else {
-      // HIGH-1: push throw (원격이 앞섬 · 인증 실패 등) 도 우아하게. 커밋은
-      // 이미 로컬에 있으므로 안내만 하고 exit 1 (스택트레이스 없이).
+      // A push throw (remote ahead, auth failure, …) degrades gracefully too. The
+      // commit is already local, so this explains and exits 1 with no stack trace.
       try {
         pushCurrentBranch({ repoRoot });
         const remoteName = upstream.split('/')[0];
@@ -218,8 +220,9 @@ function emitNoChanges(json, vaultRoot) {
   return 0;
 }
 
-// HIGH-1: git 실패(commit throw / push throw)를 raw 스택트레이스 대신 한 줄
-// 원인 + 다음 행동으로. stderr 로 안내, stdout(사람 텍스트) 오염 금지.
+// Turns a git failure (commit throw, push throw) into one line of cause plus the
+// next action instead of a raw stack trace. Written to stderr so the human-readable
+// stdout is never polluted.
 function emitGitError(err, { operation, json, vaultRoot }) {
   const info = classifyGitError(err, { operation });
   if (json) {
@@ -247,7 +250,7 @@ function emitGitError(err, { operation, json, vaultRoot }) {
   return 1;
 }
 
-// `snapshot --history [N]` — vault 경로에 닿은 최근 커밋 N개 (옵시디언 Git 패리티).
+// `snapshot --history [N]` — the last N commits touching the vault path (Obsidian Git parity).
 function emitHistory({ json, vaultRoot, repoRoot, pathspec, limit }) {
   const commits = getVaultLog({ repoRoot, pathspec, limit });
   if (json) {
@@ -283,7 +286,7 @@ function emitHistory({ json, vaultRoot, repoRoot, pathspec, limit }) {
   return 0;
 }
 
-// `snapshot --diff` — 아직 커밋 안 된 vault 범위 변경 미리보기 (파일 목록 + diff).
+// `snapshot --diff` — preview of uncommitted changes in the vault scope (file list + diff).
 function emitDiff({ json, vaultRoot, repoRoot, pathspec }) {
   const rows = getPorcelainStatus({ repoRoot, pathspec });
   if (rows === null) {
@@ -333,8 +336,9 @@ function emitDiff({ json, vaultRoot, repoRoot, pathspec }) {
   return 0;
 }
 
-// `snapshot --pull` — upstream 에서 git pull (opt-in). 충돌/비-fast-forward/원격
-// 없음을 크래시 없이 안내. 신뢰 헌장: 전송은 명시 opt-in.
+// `snapshot --pull` — git pull from upstream (opt-in). Conflicts, non-fast-forward,
+// and a missing remote are explained without a crash. Trust charter: transmission
+// is always explicit opt-in.
 function runPull({ json, vaultRoot, repoRoot }) {
   const upstream = getUpstreamRef({ repoRoot });
   if (!upstream) {
@@ -417,7 +421,7 @@ function render({ json, dryRun, vaultRoot, repoRoot, subject, autoSummary, messa
     const mark = STATUS_MARK[change.status] ?? '?';
     const color = STATUS_COLOR[change.status] ?? COLORS.dim;
     const kindLabel = change.kind ? `${KIND_COLORS[change.kind] ?? COLORS.dim}${change.kind}${COLORS.reset} ` : '';
-    // LOW-5: rename 은 "이전 → 현재" 로 보여 히스토리 가독성을 높인다.
+    // A rename shows as "before → after", which reads far better in the history.
     const pathDisplay = change.renamedFrom ? `${change.renamedFrom} → ${change.path}` : change.path;
     process.stdout.write(`  ${color}${mark}${COLORS.reset}  ${kindLabel}${pathDisplay}\n`);
   }
@@ -440,7 +444,7 @@ function render({ json, dryRun, vaultRoot, repoRoot, subject, autoSummary, messa
     if (push.pushed) {
       process.stdout.write(`\n${COLORS.green}ok${COLORS.reset}    원격으로 전송됨: ${COLORS.bold}${push.remoteUrl}${COLORS.reset}\n`);
     } else {
-      // 전송 실패는 안내(에러)이므로 stderr 로 — stdout(커밋 성공 요약) 오염 금지.
+      // A transmission failure is guidance (an error), so it goes to stderr — never polluting the stdout commit summary.
       let out = `\n${COLORS.red}error${COLORS.reset}  ${push.message}\n`;
       if (push.note) out += `${COLORS.dim}  ${push.note}${COLORS.reset}\n`;
       if (push.guidance) out += `  ${COLORS.cyan}${push.guidance}${COLORS.reset}\n`;
@@ -463,7 +467,7 @@ function parseArgs(args) {
     else if (a === '--diff') flags.diff = true;
     else if (a === '--pull') flags.pull = true;
     else if (a === '--history') {
-      // 선택적 정수 인자: 다음 토큰이 양의 정수면 소비, 아니면 기본값.
+      // Optional integer argument: consumed when the next token is a positive integer, else the default.
       const next = args[i + 1];
       if (next !== undefined && /^[1-9]\d*$/.test(next)) {
         flags.history = parseBoundedPositiveIntegerFlag('--history', next, { max: 1000 });
@@ -481,7 +485,7 @@ function parseArgs(args) {
   for (const value of Object.values(flags)) {
     if (value instanceof Error) return { error: value.message };
   }
-  // 패리티 모드(history/diff/pull)는 상호 배타 — 조합은 혼란만 준다.
+  // The parity modes (history/diff/pull) are mutually exclusive — combining them only confuses.
   const modeCount = (flags.history !== null ? 1 : 0) + (flags.diff ? 1 : 0) + (flags.pull ? 1 : 0);
   if (modeCount > 1) {
     return { error: 'pass only one of --history / --diff / --pull at a time' };

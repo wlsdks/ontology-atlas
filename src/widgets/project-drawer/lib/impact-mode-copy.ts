@@ -7,16 +7,15 @@ export interface ImpactModeCopyKeys {
 }
 
 /**
- * design-council B6 rank16 — ProjectDrawer 의 4개 임팩트 모드 필이 각기
- * 다른 그래프 연산(none=강조 없음 · upstream=의존 폐쇄집합 · downstream=
- * 피의존 폐쇄집합 · network=양방향 폐쇄집합, `resolveProjectImpactInsight`)
- * 을 트리거하는데 도움말은 항상 같은 한 줄이었다 — 정직성 결함. 라벨/도움말
- * i18n 키 쌍을 여기 한 곳에 선언해 ProjectDrawer 렌더와 테스트가 같은
- * 목록을 참조하게 한다(drift 방지).
+ * design-council B6 rank16 — ProjectDrawer's 4 impact-mode pills each trigger a
+ * different graph operation (none = no emphasis · upstream = the dependency closure ·
+ * downstream = the dependent closure · network = the bidirectional closure, see
+ * `resolveProjectImpactInsight`), while the help text was always the same single line —
+ * an honesty defect. The label/help i18n key pairs are declared here in one place so
+ * the ProjectDrawer render and the tests reference the same list (preventing drift).
  *
- * 방향 어휘는 rank13(FullDetailA1 reach direction 토글)과 통일한다:
- * upstream(의존) = "이 항목에 필요한 대상", downstream(영향) =
- * "이 항목을 필요로 하는 대상".
+ * The direction vocabulary is unified with rank13 (FullDetailA1's reach direction
+ * toggle): upstream = "what this item needs", downstream = "what needs this item".
  */
 export const IMPACT_MODE_COPY_KEYS: ImpactModeCopyKeys[] = [
   { mode: "none", labelKey: "impactModeNone", helpKey: "impactHelpNone" },

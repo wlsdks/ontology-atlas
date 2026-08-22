@@ -3,8 +3,8 @@ import { buildPhraseMatcher } from '@/shared/lib/highlight-match';
 import type { DocsBodyIndex } from './body-index';
 import { readDisplayLocales } from '@/shared/lib/locale-display-name';
 
-/** 본문 히트 스니펫 — 매치 앞뒤 {@link BODY_SNIPPET_CONTEXT}자 문맥 + 스니펫
- *  내부 하이라이트 범위. */
+/** A body hit snippet — {@link BODY_SNIPPET_CONTEXT} characters of context on each
+ *  side of the match, plus the highlight range within the snippet. */
 export interface DocsBodySnippet {
   text: string;
   hit: { start: number; end: number };
@@ -13,21 +13,21 @@ export interface DocsBodySnippet {
 export interface DocsSearchMatch {
   doc: VaultDoc;
   score: number;
-  /** title 에서 match 된 범위 (첫 매치만). */
+  /** The range matched in title (first match only). */
   titleHit: { start: number; end: number } | null;
-  /** excerpt 에서 match 된 범위. */
+  /** The range matched in excerpt. */
   excerptHit: { start: number; end: number } | null;
-  /** 본문 첫 매치의 ±60자 스니펫. bodyIndex 미제공/미매치면 null. */
+  /** A ±60-character snippet around the body's first match. null without a bodyIndex or a match. */
   bodyHit: DocsBodySnippet | null;
 }
 
-/** 스니펫 문맥 반경 (매치 앞/뒤 각각). */
+/** Snippet context radius (before and after the match). */
 const BODY_SNIPPET_CONTEXT = 60;
 
 /**
- * 본문 매치의 ±context 자 창을 잘라 한 줄 스니펫으로. 개행/탭은 길이 보존
- * 치환(공백)으로 눌러 하이라이트 오프셋이 어긋나지 않게 한다. 잘린 쪽엔
- * 생략부호를 붙이고 hit 범위를 그만큼 shift.
+ * Cut a ±context window around a body match into a one-line snippet. Newlines and
+ * tabs are replaced by spaces of the same length so highlight offsets stay aligned.
+ * Clipped sides get an ellipsis and the hit range shifts accordingly.
  */
 export function extractBodySnippet(
   body: string,
@@ -50,44 +50,50 @@ export function extractBodySnippet(
 }
 
 /**
- * 본문 티어 점수 — 어떤 메타데이터 히트(최저: excerpt 말단 매치 = 2점)보다도
- * 항상 낮도록 (1, 2) 구간에 가둔다. 본문끼리는 매치가 앞쪽일수록 근소 우위.
- * 이 티어는 흩어진 멀티 토큰 AND 매치(구절이 실제로 안 이어짐)에 쓴다.
+ * The body tier's score — clamped into (1, 2) so it is always below any metadata
+ * hit (the lowest being an excerpt match at the tail, 2 points). Among bodies, an
+ * earlier match wins by a hair. This tier applies to scattered multi-token AND
+ * matches, where the phrase is not actually contiguous.
  */
 function bodyTierScore(idx: number): number {
   return 1 + Math.max(0, 0.9 - idx / 10000);
 }
 
 /**
- * 본문 "정확 구절" 부스트 점수 — 랭킹 신뢰 회복(P1 검수 #2): 흩어진 토큰
- * AND 매치보다는 훨씬 위지만, 제목 히트 최저값(20, `bodyTierScore` 위
- * `titleIdx` 클램프 참고)은 절대 못 이기도록 (10, 16] 구간에 가둔다.
- * idx 0(문서 맨 앞 정확 구절)이 최댓값, 뒤로 갈수록 10에 점근.
+ * The body "exact phrase" boost — restoring ranking trust (P1 review #2). Far above
+ * a scattered token AND match, but clamped into (10, 16] so it can never beat the
+ * title hit's minimum (20; see the `titleIdx` clamp above `bodyTierScore`). idx 0
+ * (an exact phrase at the very start of the document) takes the maximum, and it
+ * approaches 10 further in.
  */
 function bodyPhraseScore(idx: number): number {
   return 10 + Math.max(0, 6 - idx / 10000);
 }
 
 /**
- * 단순한 client-side 전문 검색. 한 단어 / 공백 기준 AND 쿼리 지원.
- * score 규칙 (티어 순):
- *  - title 매치: 100점 - 매치 시작 인덱스 (앞쪽일수록 높음, 최저 20)
- *  - slug 매치: 25점
- *  - excerpt 매치: 20점 - min(매치 시작, 18) (최저 2)
- *  - tag 매치: 15점씩
- *  - body 매치(흩어진 토큰): 1점대 (최하위 티어 — 어떤 메타데이터 히트도
- *    본문 히트에 밀리지 않는다. 본문끼리는 앞쪽 매치가 근소 우위)
- *  - body 매치(정확 구절, 멀티 토큰 쿼리가 본문에 연속으로 존재): 10~16점
- *    (P1 검수 #2 — 흩어진 토큰 매치보다 신뢰도가 높으므로 상위지만, 여전히
- *    제목 최저점(20)은 못 이긴다)
- * 멀티 토큰은 모든 토큰이 title|excerpt|slug|tags|body 중 하나라도 매치해야
- * 포함(구절로 안 이어져도 OK — AND 자격 요건). bodyIndex (사전 소문자
- * 정규화, `body-index.ts`) 를 넘기면 본문 티어가 활성화된다 — 305 docs
- * 기준 선형 스캔 실측 ~0.1–0.2ms/키라 debounce·역색인 불필요. 정확-구절
- * 탐지는 `buildPhraseMatcher` (공용, `shared/lib/highlight-match.ts`) 를
- * 재사용해 뷰어의 하이라이트 매칭과 동일한 공백-유연 규칙(줄바꿈도 공백
- * 취급)을 쓴다 — 검색이 "매치됐다"고 본 위치가 뷰어에서도 실제로
- * mark+스크롤 가능해야 하기 때문(랭킹과 착지의 일관성).
+ * A simple client-side full-text search, supporting single-word and
+ * whitespace-separated AND queries.
+ *
+ * Scoring rules, by tier:
+ *  - title match: 100 − the match start index (earlier scores higher; minimum 20)
+ *  - slug match: 25
+ *  - excerpt match: 20 − min(match start, 18) (minimum 2)
+ *  - tag match: 15 each
+ *  - body match (scattered tokens): around 1 — the lowest tier, so no metadata hit
+ *    ever loses to a body hit. Among bodies, an earlier match wins by a hair.
+ *  - body match (exact phrase — a multi-token query present contiguously in the
+ *    body): 10–16 (P1 review #2 — more trustworthy than a scattered token match, so
+ *    it ranks higher, but still cannot beat the title minimum of 20)
+ *
+ * For multi-token queries, every token must match at least one of
+ * title|excerpt|slug|tags|body to be included (they need not form a phrase — that
+ * is the AND requirement). Passing bodyIndex (pre-lowercased, `body-index.ts`)
+ * activates the body tier — a linear scan over 305 docs measures ~0.1–0.2ms/key, so
+ * neither debouncing nor an inverted index is needed. Exact-phrase detection reuses
+ * `buildPhraseMatcher` (shared, `shared/lib/highlight-match.ts`), so it uses the
+ * same whitespace-flexible rule (newlines count as spaces) as the viewer's
+ * highlight matching — what search calls a match must actually be markable and
+ * scrollable in the viewer (consistency between ranking and landing).
  */
 export function searchDocs(
   query: string,
@@ -105,14 +111,15 @@ export function searchDocs(
     const excerptLc = doc.excerpt.toLowerCase();
     const slugLc = doc.slug.toLowerCase();
     const tagLc = doc.tags.map((t) => t.toLowerCase());
-    // 목록이 그리는 이름(`display_ko` / `display_en`)으로도 찾혀야 한다 —
-    // 사용자가 입력하는 문자열은 대개 방금 화면에서 읽은 이름이다. 범위를
-    // 넓히기만 하므로 원문 title 로 찾던 사용자는 그대로다.
+    // It must also be findable by the name the list draws (`display_ko` /
+    // `display_en`) — what a user types is usually the name they just read on
+    // screen. This only widens the scope, so anyone searching by the raw title is
+    // unaffected.
     const displayLc = Object.values(readDisplayLocales(doc.frontmatter) ?? {}).map((v) =>
       v.toLowerCase(),
     );
     const body = bodyIndex?.get(doc.slug);
-    // 각 토큰이 어디든 매치하는지 AND 로 확인 (본문 포함)
+    // Check with AND that each token matches somewhere (body included).
     const allMatch = tokens.every(
       (tok) =>
         titleLc.includes(tok) ||
@@ -123,14 +130,15 @@ export function searchDocs(
         (body !== undefined && body.lower.includes(tok)),
     );
     if (!allMatch) continue;
-    // score 는 full query 기준으로 산출 (여러 토큰이면 joined 기준)
+    // The score is computed against the full query (the joined form for multiple tokens).
     const needle = tokens[0];
     const titleIdx = titleLc.indexOf(needle);
     const excerptIdx = excerptLc.indexOf(needle);
 
-    // 본문 매치 위치 — 멀티 토큰 쿼리면 먼저 정확 구절(공백-유연, 줄바꿈도
-    // 공백 취급)을 찾는다. 있으면 그 위치/길이로 부스트 티어를 쓰고, 없으면
-    // (토큰이 흩어져 있으면) 기존처럼 첫 토큰 위치로 최하위 티어에 둔다.
+    // The body match position — for a multi-token query, first look for an exact
+    // phrase (whitespace-flexible, newlines counting as spaces). If found, its
+    // position and length drive the boost tier; if not (tokens scattered), fall back
+    // to the first token's position in the lowest tier, as before.
     let bodyIdx = -1;
     let bodyMatchLength = needle.length;
     let bodyPhraseMatched = false;

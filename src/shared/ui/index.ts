@@ -1,7 +1,8 @@
 export { Button, buttonVariants, type ButtonProps } from './button';
 /**
- * 조건부로 나타나는 표면은 **이걸로 감싼다** — 등장·퇴장이 기본으로 딸려 온다.
- * 전수: 그런 표면 20개 중 10개가 하드컷이었고, 그 10개가 전부 인라인 패널이었다.
+ * Wrap any conditionally appearing surface in `Surface` — enter and exit motion
+ * come with it. Inventory: 10 of 20 such surfaces were hard cuts, and all 10
+ * were inline panels.
  */
 export { Surface, type SurfaceMotion, type SurfaceProps } from './surface';
 export { Dialog, type DialogProps } from './dialog';
@@ -10,12 +11,13 @@ export { Checkbox, type CheckboxProps } from './checkbox';
 export { badgeClass, type BadgeShape, type BadgeClassOptions } from './badge-class';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './segmented-control';
 /**
- * `<Button>` 은 **표준 버튼 하나**만 덮는다 — 전수 419개 중 그 모양은 1개였다.
- * 나머지 여섯 모양(칩 · 링크형 · 행 · 아이콘 · pill · 카드)은 이쪽이다.
- */
-/**
- * 컨트롤 컴포넌트 — `controlClass` 위에 **행동**을 얹는 층.
- * 값은 아래 함수가, `type="button"`·접근 이름 강제·버튼 시맨틱은 이쪽이 진다.
+ * Control components — the layer that adds **behaviour** on top of
+ * `controlClass`. The function below owns the values; this owns `type="button"`,
+ * the required accessible name, and button semantics.
+ *
+ * `<Button>` covers **only the standard button**: 1 of the 419 inventoried
+ * controls had that shape. The other six (chip, link-like, row, icon, pill,
+ * card) are here.
  */
 export { Chip, IconButton, RowButton, type IconButtonProps } from './controls';
 export {
@@ -26,12 +28,13 @@ export {
   type ControlTone,
 } from './control-class';
 /*
- * `Card` · `Badge` · `DetailCard` 는 2026-08-03 에 **삭제했다.**
+ * `Card`, `Badge` and `DetailCard` were **deleted on 2026-08-03.**
  *
- * 2026-04-30 에 만들어져 3개월 넘게 프로덕션 사용처가 0이었고, 이유를 열어 보니
- * `CardTitle` 이 `text-lg` — **이 저장소 타입 램프에 없는 스텝** — 를 쓰고 있었다.
- * 자기가 인코딩해야 할 시스템을 스스로 위반하는 프리미티브였으니 아무도 안 쓴 게
- * 당연하다. 실패한 것은 컴포넌트가 아니라 **게이트 없는 컴포넌트**다.
+ * Created 2026-04-30, they had 0 production consumers for over three months.
+ * Opening them showed why: `CardTitle` used `text-lg`, **a step absent from this
+ * repo's type ramp**. A primitive violating the system it is meant to encode is
+ * one nobody adopts. What failed was not components but **components without a
+ * gate**.
  */
 export { LiveAnnouncer } from './live-announcer';
 export { InfoHint } from './info-hint';
@@ -41,10 +44,11 @@ export { EvidenceOnlyBadge, type EvidenceOnlyBadgeProps } from './evidence-only-
 export { Select, type SelectOption, type SelectProps } from './select';
 export { InlineEditable } from './inline-editable';
 /*
- * (`ChipListEditor` · `LinkListEditor` 의 export 는 2026-08-03 에 지웠다 —
- * 프로덕션 소비처가 0인 채로 `shared/ui` 의 공개 표면에 서 있었고, 이 저장소가
- * 같은 실패를 겪은 `Card`/`Badge`/`DetailCard` 와 증상까지 같았다. 배경과
- * 반증 조건: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」.)
+ * The `ChipListEditor` and `LinkListEditor` exports were removed on 2026-08-03:
+ * they stood on the public surface of `shared/ui` with 0 production consumers,
+ * with the same symptoms as the `Card`/`Badge`/`DetailCard` failure above.
+ * Background and falsifier: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」
+ * (two dead primitives).
  */
 export { Tooltip, TooltipProvider, TooltipContent } from './tooltip';
 export { StaggeredFadeIn } from './staggered-fade-in';

@@ -13,22 +13,23 @@ import {
 } from './panel-width';
 
 /**
- * 폭은 사용자가 정하고, **지도의 몫은 우리가 지킨다.**
+ * The user decides the width, and **we protect the map's share.**
  *
- * 이 파일이 못 박는 것은 「끌 수 있다」가 아니라 「끌어도 지도가 안 죽는다」다 —
- * 전자는 화면을 열면 보이고, 후자는 넓은 화면에서 한참 끌어 본 사람만 만난다.
+ * What this file pins is not "it can be dragged" but "dragging cannot kill the
+ * map" — the first is visible the moment the screen opens, the second is met only
+ * by someone who drags a long way on a wide screen.
  */
 describe('대화 패널 폭 — 사용자가 끌되 지도는 지킨다', () => {
   it('넓은 화면에서는 상한이 지도의 몫으로 정해진다', () => {
-    // 1512 − 64(레일) − 480(지도) = 968
+    // 1512 − 64 (rail) − 480 (map) = 968
     expect(maxChatWidth(1512)).toBe(1512 - RAIL_WIDTH - MAP_MIN_WIDTH);
     expect(clampChatWidth(2000, 1512)).toBe(968);
   });
 
   it('좁은 화면에서는 하한이 이긴다 — 읽히지 않는 패널을 만들지 않는다', () => {
     /*
-     * 800 − 64 − 480 = 256 으로 하한(320)보다 작다. 계산을 그대로 따르면
-     * 패널이 세로 글씨가 되므로, 그때는 지도가 조금 좁아지는 쪽을 고른다.
+     * 800 − 64 − 480 = 256, below the lower bound of 320. Following the arithmetic
+     * would turn the panel into vertical text, so a slightly narrower map wins.
      */
     expect(maxChatWidth(800)).toBe(CHAT_WIDTH_MIN);
     expect(clampChatWidth(600, 800)).toBe(CHAT_WIDTH_MIN);

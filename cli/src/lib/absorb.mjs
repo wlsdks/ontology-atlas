@@ -1,6 +1,7 @@
-// Slice 0 — the "absorption tool" (단일 스파인). See
-// docs/plans/PRODUCT-PLAN-2026-07.md §4 (타겟 — "CLAUDE.md는 대체가 아니라 흡수"),
-// §7 (신뢰 아키텍처 — 인젝션 Tier 1), §9 (로드맵 — Slice 0).
+// The "absorption tool" (단일 스파인 — one spine). See
+// docs/plans/PRODUCT-PLAN-2026-07.md §4 (타겟 — "CLAUDE.md는 대체가 아니라 흡수":
+// the target, absorbing CLAUDE.md rather than replacing it), §7 (신뢰 아키텍처 —
+// 인젝션 Tier 1: trust architecture, injection Tier 1), §9 (로드맵 — the roadmap).
 //
 // Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes
 // without dual maintenance: rule/policy/decision sections become
@@ -182,13 +183,13 @@ export function classifySection({ heading, body }) {
   };
 }
 
-// ── injection Tier 1 (PRODUCT-PLAN-2026-07.md §7) ──────────────────────
+// ── Injection Tier 1 (PRODUCT-PLAN-2026-07.md §7) ──────────────────────
 //
-// vault body = untrusted data. Conservative, named patterns only — normal
-// policy prose (including plenty of Korean/English imperative language, e.g.
+// A vault body is untrusted data. Conservative, named patterns only — ordinary
+// policy prose (which carries plenty of imperative Korean and English, e.g.
 // "절대 하지 말 것", "never use --no-verify") must NOT be flagged. Only
-// direct-address instruction-hijack phrasing and executable shell/SQL
-// fragments count as suspect.
+// direct-address instruction-hijack phrasing and executable shell/SQL fragments
+// count as suspect.
 
 const INJECTION_PATTERNS = [
   {

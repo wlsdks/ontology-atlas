@@ -20,33 +20,37 @@ import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 /**
- * **한 문장으로 끝나는 할 일을 그 자리에서 끝내는 섹션** (비개발자 쓰기의 첫 칸).
+ * **The section where a to-do that ends in one sentence is finished on the spot** — the first
+ * slot of non-developer writing.
  *
- * 왜 공방 딥링크로 충분하지 않은가: 한 문장 적는 일에 화면 전환이 끼면 완결률이
- * 죽는다. 공방은 관계 조립(여러 소켓)의 표면으로 남고, 여기는 **한 필드 쓰기
- * 전용**이다 — 새 라우트 0 · 새 모달 0 · 기존 행의 disclosure 확장.
+ * Why a deeplink to another surface is not enough: putting a screen transition in the way of
+ * writing one sentence kills the completion rate. The other surface stays the place for
+ * assembling relations (many sockets); this is **for writing one field** — zero new routes,
+ * zero new modals, a disclosure expansion of an existing row.
  *
- * 지키는 계약:
- * - **바꿀 파일을 먼저 밝힌다.** 저장 버튼 위에 고칠 `.md` 경로와 어느 키에
- *   무엇이 적히는지가 문장으로 있다(#688 동의 문법의 축약형 — 변경이 1파일·1필드
- *   로 좁으므로 전면 다이얼로그는 과잉이다).
- * - **취소하면 0개 변경.** 취소·Esc 는 파일을 만지지 않는다. 적은 내용이 있으면
- *   한 번 더 눌러야 닫히므로(2단), 실수로 사라지지 않는다.
- * - **동시수정은 조용히 덮지 않는다.** 저장은 `expected_mtime` 을 들고 가고,
- *   그 사이 사람이나 에이전트가 같은 파일을 고쳤으면 저장이 거부되며 다시
- *   읽어온다 — 그 다음 저장은 새 기준 위에서 이루어진다.
- * - **누른 프레임에 잠긴다.** 두 번 눌러 두 번 쓰는 경로가 없다.
- * - **모션은 목록 행 펼침 문법 하나만 쓴다**(`.ai-row-disclosure`,
- *   `app/globals.css`) — 아래로만 자라고, 나가는 길이 들어온 길과 같다.
+ * The contracts it keeps:
+ * - **State the file to change first.** Above the save button, a sentence names the `.md` path
+ *   being edited and what will be written under which key (an abbreviated form of the consent
+ *   grammar — the change is narrow enough, one file and one field, that a full dialog is excessive).
+ * - **Cancel changes zero files.** Cancel and Esc never touch the file. With text entered it
+ *   takes a second press to close (two-step), so nothing is lost by accident.
+ * - **A concurrent edit is never silently overwritten.** The save carries `expected_mtime`, and
+ *   if a person or an agent edited the same file in between the save is refused and the file is
+ *   re-read — the next save then works from the new baseline.
+ * - **It locks on the frame it is pressed.** There is no path where two presses write twice.
+ * - **Motion uses only the list-row expansion grammar** (`.ai-row-disclosure`,
+ *   `app/globals.css`) — it grows downward only, and the way out matches the way in.
  */
 
 /**
- * 이 섹션 인디고 칩들의 **잉크** — 값 층(`controlClass`)이 일부러 안 내는 층.
+ * The **ink** for this section's indigo chips — the layer the value layer (`controlClass`)
+ * deliberately does not emit.
  *
- * 램프의 `tone` 은 **글자색만** 낸다(`control-class.ts`). 테두리·배경 틴트와
- * 호버는 아직 램프에 없으므로 소비처가 갖는다. 같은 문자열이 세 자리에 흩어져
- * 있었고, 손으로 세 번 쓰면 언젠가 한 벌이 갈린다 — 상수로 묶어 그 갈림을
- * 없앤다. 값은 **한 글자도 새로 만들지 않았다**(기존 `--color-indigo-line-*`).
+ * The ramp's `tone` emits **the text colour only** (`control-class.ts`). Border and background
+ * tints and hover are not in the ramp yet, so the consumer owns them. The same string was
+ * scattered across three sites, and writing it by hand three times eventually splits one of
+ * them — binding it to a constant removes that. **Not one value is new** (the existing
+ * `--color-indigo-line-*`).
  */
 const ACCENT_CHIP_IDLE =
   "border-[color:var(--color-indigo-line-a22)] hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]";
@@ -59,7 +63,7 @@ export interface MeaningGapLabels extends QueueRowActionLabels {
   sectionTitle: string;
   hint: string;
   openMap: string;
-  /** 인라인 입력 열기/닫기. */
+  /** Opens and closes the inline input. */
   writeHere: string;
   writeHereClose: string;
   definitionPlaceholder: string;
@@ -75,7 +79,7 @@ export interface MeaningGapLabels extends QueueRowActionLabels {
   conflict: string;
   needsText: string;
   needsDomain: string;
-  /** 읽기 전용 세션에서 이 섹션 아래에 붙는 한 줄. */
+  /** One line appended below this section in a read-only session. */
   readOnlyHint: string;
 }
 
@@ -88,13 +92,13 @@ type RowPhase =
 
 interface RowUiState {
   value: string;
-  /** 취소가 "적은 내용이 사라진다" 를 알린 상태(2단 확정). */
+  /** Whether cancel has announced "what you typed will be lost" (the two-step confirm). */
   cancelArmed: boolean;
   phase: RowPhase;
 }
 
 const EMPTY_UI: RowUiState = { value: "", cancelArmed: false, phase: { kind: "editing" } };
-/** 저장 확인 줄이 화면에 머무는 시간 — 그 뒤 행은 큐에서 빠진다. */
+/** How long the save confirmation line stays on screen — after that the row drops out of the queue. */
 const SAVED_ROW_LINGER_MS = 2200;
 
 export interface MeaningGapSectionProps {
@@ -102,22 +106,22 @@ export interface MeaningGapSectionProps {
   rows: MeaningGapRow[];
   totalCount: number;
   abilities: QueueRowAbilities;
-  /** 소속 미정 행에서 고를 후보. 정의 없음 행에서는 쓰이지 않는다. */
+  /** Candidates to choose from on an unassigned-parent row. Unused on an undefined-meaning row. */
   domainChoices?: DomainChoice[];
   mapHref: (nodeId: string) => string;
   sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
   /**
-   * S7 이음새 — 이 행을 지도의 에이전트에게 넘기는 주소. 데스크톱 앱에만
-   * 있는 표면이라 없으면 항목이 나타나지 않는다(열리지 않을 문을 그리지
-   * 않는다). `gap` 을 받는 이유: 문장의 **종류**만 나르고 문장 자체는
-   * 도착지의 첫 마디 생성기가 짓는다.
+   * The address that hands this row to the map's agent. That surface exists only in the desktop
+   * app, so with none supplied the item does not appear (a door that will not open is not drawn).
+   * It takes `gap` because it carries only the **kind** of sentence — the sentence itself is
+   * composed by the destination's opening-line generator.
    */
   askAgentHref?: (nodeId: string, gap: MeaningGapKind) => string | null;
   /**
-   * 실제 쓰기 — 볼트 프론트매터 한 필드. 호출부가 `updateFrontmatter` 로
-   * 연결하고 `expectedMtime` 을 함께 넘긴다. 성공하면 resolve, 충돌이면
-   * `VaultConflictError` 를 throw 한다.
+   * The actual write — one vault frontmatter field. The caller wires it to `updateFrontmatter`
+   * and passes `expectedMtime` along. It resolves on success and throws `VaultConflictError` on
+   * a conflict.
    */
   onWrite: (row: MeaningGapRow, value: string) => Promise<void>;
   moreCount: (count: number) => string;
@@ -141,20 +145,21 @@ export function MeaningGapSection({
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [uiById, setUiById] = useState<ReadonlyMap<string, RowUiState>>(new Map());
   /**
-   * 손대고 있는 행의 스냅샷 — 그 행이 큐 데이터에서 빠져도 계속 그린다.
+   * A snapshot of the row being worked on — it keeps being drawn even after it drops out of the
+   * queue data.
    *
-   * 두 가지를 같은 장치로 해결한다: ① 저장 성공 직후 공백이 메워져 행이
-   * 데이터에서 사라지는데, 확인 줄은 잠깐 남아야 "저장했는데 아무 일도
-   * 없었다" 로 읽히지 않는다 — 시간이 지나 사라지는 것이 곧 "큐에서 빠졌다"
-   * 의 얼굴이다. ② 저장 전에 볼트가 다시 읽히거나 남이 같은 파일을 고쳐
-   * 행 목록이 흔들려도 **적던 문장은 사라지지 않는다.**
+   * One device solves two things: ① right after a successful save the gap is filled and the row
+   * disappears from the data, but the confirmation line must linger or it reads as "I saved and
+   * nothing happened" — the row fading out over time is the face of "it left the queue"; ② if
+   * the vault is re-read before the save, or someone else edits the same file and the row list
+   * shifts, **the sentence being typed is not lost.**
    */
   const [pinnedRows, setPinnedRows] = useState<readonly MeaningGapRow[]>([]);
   const pin = useCallback((row: MeaningGapRow) => {
     setPinnedRows((prev) => (prev.some((r) => r.id === row.id) ? prev : [...prev, row]));
   }, []);
-  // 누른 프레임에 잠근다 — setState 는 다음 렌더까지 반영되지 않으므로
-  // 중복 저장 가드는 반드시 동기 저장소여야 한다.
+  // Lock on the frame it is pressed — `setState` is not reflected until the next render, so the
+  // duplicate-save guard must be a synchronous store.
   const savingIdsRef = useRef<Set<string>>(new Set());
 
   const patchUi = useCallback((id: string, next: Partial<RowUiState>) => {
@@ -202,10 +207,10 @@ export function MeaningGapSection({
   );
 
   const liveIds = new Set(rows.map((row) => row.id));
-  // 붙잡아 둔 행은 **원래 자리에** 그린다. 뒤에 이어 붙이면 방금 손댄 행이
-  // 형제 아래로 내려앉아, 내가 누른 행이 어디로 갔는지 눈으로 다시 찾아야
-  // 한다(치수 규칙성). `buildMeaningGapRows` 와 같은 이름순으로 다시 세우면
-  // 자리가 그대로 복원된다.
+  // A pinned row is drawn **in its original position**. Appending it to the end drops the row
+  // just touched below its siblings, so the row you pressed has to be found again by eye
+  // (dimensional regularity). Re-sorting by the same name order as `buildMeaningGapRows` restores
+  // the position exactly.
   const visibleRows = [...rows, ...pinnedRows.filter((row) => !liveIds.has(row.id))].sort(
     (a, b) => a.title.localeCompare(b.title),
   );
@@ -245,8 +250,8 @@ export function MeaningGapSection({
           builderHref={builderHref}
           askAgentHref={askAgentHref}
           onOpen={() => {
-            // 펼치는 순간 붙잡는다 — 그 뒤 볼트가 다시 읽혀도 적던 칸이
-            // 화면에서 없어지지 않는다.
+            // Pin on expansion — the field being typed into does not vanish from the screen even
+            // if the vault is re-read afterwards.
             pin(row);
             setOpenRowId(row.id);
           }}
@@ -300,10 +305,10 @@ function MeaningGapRowView({
   sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
   /**
-   * S7 이음새 — 이 행을 지도의 에이전트에게 넘기는 주소. 데스크톱 앱에만
-   * 있는 표면이라 없으면 항목이 나타나지 않는다(열리지 않을 문을 그리지
-   * 않는다). `gap` 을 받는 이유: 문장의 **종류**만 나르고 문장 자체는
-   * 도착지의 첫 마디 생성기가 짓는다.
+   * The address that hands this row to the map's agent. That surface exists only in the desktop
+   * app, so with none supplied the item does not appear (a door that will not open is not drawn).
+   * It takes `gap` because it carries only the **kind** of sentence — the sentence itself is
+   * composed by the destination's opening-line generator.
    */
   askAgentHref?: (nodeId: string, gap: MeaningGapKind) => string | null;
   onOpen: () => void;
@@ -316,17 +321,17 @@ function MeaningGapRowView({
   const saving = ui.phase.kind === "saving";
 
   /*
-   * 도메인 칩 — **배타 단일선택**이다(단일 값이고 재클릭으로 해제되지 않는다).
-   * 종전엔 형제에 `aria-pressed` 를 나란히 걸어 배타성이 접근성 트리에 안
-   * 실렸다. 초기값이 빈 문자열이라 처음엔 아무것도 안 눌려 있는데, 그건
-   * **미선택 라디오그룹**의 정당한 모양이고 훅이 그 경우 첫 항목을 탭 스톱으로
-   * 삼는다(APG).
+   * The domain chips are **an exclusive single selection** (one value, and re-clicking does not
+   * clear it). They used to put `aria-pressed` on each sibling, which never expressed exclusivity
+   * in the accessibility tree. The initial value is an empty string so nothing is pressed at
+   * first, and that is the legitimate shape of an **unselected radiogroup** — the hook makes the
+   * first item the tab stop in that case (APG).
    *
-   * ⚠️ 그릇은 자리에 남는다 — 「체계」석 판정은 이 자리를 `variant='chips'`
-   * 이주 대상으로 봤지만, 재 보니 **값 층에 칩 hover 가 없다**(전수: `controlClass`
-   * 호출 312곳이 hover 를 손으로 쓰고 그중 칩이 88). 이주하면 비활성 칩의
-   * hover 피드백이 사라져 「눌리는 것처럼 안 보이는」 회귀가 된다. hover 를
-   * 값 층이 질지는 별도 라운드의 판정이다.
+   * ⚠️ The container stays as it is. The design-system seat treated this site as a `variant='chips'`
+   * migration candidate, but measurement showed **the value layer has no chip hover** (census:
+   * 312 `controlClass` call sites write hover by hand, 88 of them chips). Migrating would remove
+   * the hover feedback on an inactive chip — a regression into "it does not look pressable".
+   * Whether the value layer should own hover is a separate round's decision.
    */
   const domainGroup = useRovingRadioGroup({
     value: ui.value,
@@ -334,9 +339,9 @@ function MeaningGapRowView({
     onChange: (value) => onPatch({ value, cancelArmed: false }),
     busy: saving,
   });
-  // 저장 확인 중에도 영역은 열려 있어야 한다 — 폼이 사라지고 확인 줄이
-  // 들어오는 것이 같은 하나의 높이 전이를 지나야 "이 행이 고쳐진 행이 됐다"
-  // 로 읽힌다(툭 접히면 그냥 다른 화면이다).
+  // The area must stay open through the save confirmation — the form leaving and the confirmation
+  // line arriving have to pass through one and the same height transition to read as "this row
+  // became a fixed row" (a sudden collapse is just a different screen).
   const detailOpen = open || saved;
   const { mounted, boxRef, contentRef } = useRowDisclosure(detailOpen);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -347,7 +352,7 @@ function MeaningGapRowView({
 
   const dirty = ui.value.trim().length > 0;
   const requestClose = () => {
-    // 적은 내용이 있으면 한 번 더 물어본다 — 되돌릴 길이 화면에 있어야 한다.
+    // With text entered it asks once more — the way back must be on screen.
     if (dirty && !ui.cancelArmed) {
       onPatch({ cancelArmed: true });
       return;
@@ -367,34 +372,34 @@ function MeaningGapRowView({
       data-testid="do-next-meaning-gap-row"
       className="min-w-0 border-b border-[color:var(--color-divider)] last:border-b-0"
       onKeyDown={(event) => {
-        // Esc 2단 — 펼쳐져 있으면 이 행이 먹고(입력 취소), 접혀 있으면
-        // 위로 흘려보낸다(탭/팔레트가 받는다).
+        // Two-step Esc — when expanded this row consumes it (cancelling the input); when collapsed
+        // it passes upward (the tab or the palette receives it).
         if (event.key !== "Escape" || !open) return;
         event.stopPropagation();
         requestClose();
       }}
     >
-      {/* 헤더 밴드는 큐의 다른 섹션 행과 **같은 껍데기**(py-2.5 + 같은 열 순서)
-          다. 이 섹션만 다른 높이를 쓰면 한 목록 안에서 리듬이 끊긴다. */}
+      {/* The header band uses the **same shell** as the queue's other section rows (py-2.5 and the
+          same column order). A different height here alone breaks the rhythm within one list. */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 py-2.5">
         <TopologyV2KindGlyph kind={row.nodeKind} size={13} />
         <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-secondary)]">
           {row.title}
         </span>
         <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
-          {/* 저장이 끝난 행에는 열고 닫을 것이 없다 — 확인 줄이 상태를
-              말하고, 곧 큐에서 빠진다. 남겨 두면 「접기」가 무엇을 접는지
-              가리키지 못한다. */}
+          {/* A row whose save has finished has nothing to open or close — the confirmation line
+              states the state and it will shortly leave the queue. Leaving the control would give
+              "collapse" nothing to point at. */}
           {abilities.canWriteVault && !saved ? (
             <button
               type="button"
               data-testid="meaning-gap-write-toggle"
               aria-expanded={open}
               onClick={() => (open ? requestClose() : onOpen())}
-              /* 이 칩은 **열림 여부와 무관하게 강조**다 — 선택(`active`)이 아니라
-                 disclosure 라서 램프의 눌림 잉크가 아니라 `tone: 'accentOnTint'` 를
-                 쓴다. 높이는 램프 기본이 곧 32px 이라 따로 고정하지 않는다
-                 (2026-08-03 수렴 이전에는 `fixedHeight` 축이 필요했다). */
+              /* This chip is **emphasized regardless of whether it is open** — it is a disclosure
+                 rather than a selection (`active`), so it uses `tone: 'accentOnTint'` rather than
+                 the ramp's pressed ink. The height is not pinned because the ramp default is
+                 already 32px (before the 2026-08-03 convergence a `fixedHeight` axis was needed). */
               className={controlClass({
                 shape: "chip",
                 size: "md",
@@ -435,8 +440,8 @@ function MeaningGapRowView({
         className="ai-row-disclosure"
         data-state={detailOpen ? "open" : "closed"}
         data-testid="meaning-gap-disclosure"
-        // 접히는 동안에도 DOM 에 남으므로, 보이지 않는 입력칸이 탭 순서와
-        // 스크린 리더에 남지 않게 즉시 비활성화한다.
+        // It stays in the DOM while collapsing, so the invisible input is disabled immediately and
+        // never remains in the tab order or for a screen reader.
         inert={!detailOpen}
       >
         {mounted ? (
@@ -481,8 +486,8 @@ function MeaningGapRowView({
                           onSave(ui.value.trim());
                         }
                       }}
-                      // 한 문장에 1,300px 짜리 줄을 주면 읽는 눈이 화면을
-                      // 가로지른다 — 측정선(measure)을 문장 길이에 맞춘다.
+                      // Giving one sentence a 1,300px line makes the reading eye cross the screen —
+                      // the measure is fitted to the sentence length.
                       className={fieldClass({ size: "md", className: "w-full max-w-2xl" })}
                     />
                   ) : (
@@ -499,10 +504,10 @@ function MeaningGapRowView({
                               {...domainGroup.itemProps(index)}
                               type="button"
                               data-testid="meaning-gap-domain-chip"
-                              /* 여기는 **선택**이다(`aria-pressed` 와 짝) —
-                                 그래서 잉크를 손으로 쓰지 않고 램프의 `active`
-                                 를 쓴다. 눌림은 이 앱 전역에서 한 벌이어야
-                                 하고, 그 한 벌을 소유하는 곳이 값 층이다. */
+                              /* This one is **a selection** (paired with `aria-pressed`), so the
+                                 ink is not written by hand but taken from the ramp's `active`.
+                                 Pressed state must be one set app-wide, and the value layer owns
+                                 that set. */
                               className={controlClass({
                                 shape: "chip",
                                 size: "md",
@@ -520,7 +525,7 @@ function MeaningGapRowView({
                     </fieldset>
                   )}
 
-                  {/* 바꿀 파일을 먼저 밝힌다 — 누르기 전에 무엇이 어디에 적히는지. */}
+                  {/* State the file to change first — what will be written where, before pressing. */}
                   <p
                     data-testid="meaning-gap-confirm"
                     className="text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -534,8 +539,8 @@ function MeaningGapRowView({
                       data-testid="meaning-gap-save"
                       onClick={() => onSave(ui.value.trim())}
                       disabled={!canSave}
-                      /* 비활성 어포던스도 램프가 가져간다 — 손으로 쓴
-                         `disabled:opacity-50` 은 커서도 호버도 안 껐다. */
+                      /* The disabled affordance is taken from the ramp too — a hand-written
+                         `disabled:opacity-50` turned off neither the cursor nor the hover. */
                       className={controlClass({
                         shape: "chip",
                         size: "md",

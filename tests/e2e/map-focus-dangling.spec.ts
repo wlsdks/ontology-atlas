@@ -3,34 +3,37 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * **지도는 어떤 딥링크로 들어와도 읽을 수 있어야 한다** (2026-08-17 소유자 보고).
+ * **The map must be readable however you deep-link into it** (owner report,
+ * 2026-08-17).
  *
- * ## 무엇이 있었나
+ * ## What happened
  *
- * 문서함에서 프로젝트 문서의 「지도에서 열기」를 누르면 지도의 **모든 노드가
- * 사라진 것처럼** 보였다. 소유자: *"이건 또 뭐지?"* · *"로딩속도도 느리고"*.
+ * Clicking "open in map" on a project document in the docs view made **every node on
+ * the map look like it had vanished**. Owner: *"이건 또 뭐지?"* · *"로딩속도도 느리고"*
+ * (what is this now? and it loads slowly too).
  *
- * 흐린 것이 아니라 **전부 흐리게 처리된 것**이었다. 그 버튼이 만드는 주소는
- * `?p=<프로젝트 슬러그>`(예: `project`)인데 지도의 노드 이름은 `종류:슬러그`
- * (`project:project`)다 — 프로젝트 슬러그는 접두사가 없고 노드 이름은 있어서
- * 둘은 **구조적으로 절대 안 맞는다**. 지도는 「하나를 골랐다」고 판단하면 고른
- * 것과 그 이웃만 남기고 나머지를 가라앉히는데, 맞는 노드가 하나도 없으니
- * **전부가 「나머지」** 가 됐다.
+ * Nothing had vanished — **everything had been dimmed**. That button produces
+ * `?p=<project slug>` (e.g. `project`), while map node names are `kind:slug`
+ * (`project:project`) — a project slug has no prefix and a node name does, so the two
+ * can **never match, structurally**. When the map concludes something is selected it
+ * keeps that node and its neighbours and sinks the rest; with no node matching,
+ * **everything became "the rest".**
  *
- * 실측(문서 7개 볼트, 배경 `#0a0a0d`): 화면에서 가장 밝은 노드가 배경 대비
- * **1.40:1**. UI 도형의 최저 기준선은 3:1 이다. 125개짜리 샘플 볼트에서는
- * 휘도 60을 넘는 픽셀이 **0개**였다.
+ * Measured (a 7-document vault, background `#0a0a0d`): the brightest node on screen
+ * was **1.40:1** against the background. The floor for UI shapes is 3:1. On the
+ * 125-node sample vault, **zero** pixels exceeded luminance 60.
  *
- * ## 이 검사가 왜 픽셀을 세나
+ * ## Why this check counts pixels
  *
- * 이 결함은 **lint 도 타입도 계약 검사도 못 본다** — 쓰인 값은 전부 정당한
- * 토큰(`--topology-v2-node-stroke-dim`)이고, 틀린 것은 「누구에게 그 토큰을
- * 발랐는가」다. 게다가 지도는 캔버스라 DOM 이 없어서 셀렉터로 물을 것이 없다.
- * 그래서 남는 수단은 **그려진 픽셀을 직접 세는 것**뿐이다.
+ * **Lint, types, and contract tests are all blind to this defect** — every value used
+ * is a legitimate token (`--topology-v2-node-stroke-dim`), and what is wrong is
+ * *which nodes* it was applied to. The map is a canvas with no DOM, so there is
+ * nothing for a selector to ask. The remaining instrument is **counting the painted
+ * pixels directly.**
  *
- * 판정은 「밝은 픽셀이 몇 개」가 아니라 **「읽을 수 있는 픽셀이 하나라도 있나」**
- * 다 — 노드 수·배치·줌은 볼트마다 다르지만, *무엇을 그리든 사람이 볼 수 있어야
- * 한다*는 것은 어느 볼트에서나 참이다.
+ * The verdict is not "how many bright pixels" but **"is there any readable pixel at
+ * all"** — node count, layout, and zoom differ per vault, but *whatever is drawn must
+ * be visible to a person* holds for every vault.
  */
 
 const VAULT = {
@@ -39,13 +42,13 @@ const VAULT = {
   "capabilities/example-capability.md": `---\nuid: 33333333-3333-4333-8333-333333333333\nslug: capabilities/example-capability\nkind: capability\ntitle: Example capability\ndomain: domains/example-domain\n---\n\n# Example capability\n`,
 };
 
-/** 배경보다 확실히 밝은 픽셀 수 — 노드 윤곽·라벨이 여기에 잡힌다. */
+/** Pixels clearly brighter than the background — node outlines and labels land here. */
 async function readablePixelCount(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     /*
-     * ⚠️ 캔버스가 **둘일 수 있다** — 표면이 바뀌는 동안 나가는 것과 들어오는
-     * 것이 함께 있다(`use-presence`). 첫 번째를 집으면 나가는 쪽(이미 비어
-     * 가는 화면)을 재게 되므로, **가장 밝은 쪽**을 고른다.
+     * ⚠️ There can be **two canvases** — during a surface change the outgoing and
+     * incoming ones coexist (`use-presence`). Taking the first measures the outgoing one
+     * (a screen already emptying), so **the brightest one** is chosen.
      */
     const canvases = [
       ...document.querySelectorAll<HTMLCanvasElement>('[data-testid="topology-map-v2-canvas"]'),
@@ -56,10 +59,10 @@ async function readablePixelCount(page: import("@playwright/test").Page) {
     if (!ctx) return -1;
     const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
     let readable = 0;
-    // 4픽셀마다 표본 — 전수는 느리고, 노드 윤곽은 몇 픽셀 두께라 충분히 잡힌다.
+    // Sample every 4 pixels — a full scan is slow, and node outlines are several pixels thick so they are still caught.
     for (let i = 0; i < data.length; i += 4 * 4) {
       const luminance = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-      // 배경은 #0a0a0d(휘도 ≈ 10). 60이면 배경 대비 3:1 을 확실히 넘는다.
+      // The background is #0a0a0d (luminance ≈ 10). 60 clears 3:1 against it comfortably.
       if (luminance > 60) readable += 1;
     }
     return readable;
@@ -78,7 +81,7 @@ async function openVault(page: import("@playwright/test").Page, query: string) {
     await page.goto(`/ko/topology/?e2e=1&guides=off&${query}`, { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("topology-map-v2-canvas").first()).toBeVisible({ timeout: 30_000 });
   }
-  // 배치가 그려질 때까지 — 값으로 판정한다(고정 대기는 기계 속도를 탄다).
+  // Until the layout has been drawn — decided by value (a fixed wait rides machine speed).
   await expect
     .poll(() => readablePixelCount(page), { timeout: 30_000, message: "지도가 아무것도 안 그렸다" })
     .toBeGreaterThan(-1);
@@ -87,15 +90,15 @@ async function openVault(page: import("@playwright/test").Page, query: string) {
 test("문서함이 보내는 프로젝트 딥링크로 들어와도 지도가 읽힌다", async ({ page }) => {
   test.setTimeout(120_000);
 
-  // 기준선 — 파라미터 없이 열었을 때 얼마나 밝은가.
+  // Baseline — how bright it is when opened with no parameters.
   await openVault(page, "");
   const plain = await expect
     .poll(() => readablePixelCount(page), { timeout: 30_000 })
     .toBeGreaterThan(0)
     .then(() => readablePixelCount(page));
 
-  // 문제의 경로 — 프로젝트 문서의 「지도에서 열기」가 실제로 만드는 주소다
-  // (`topology-href.ts`: kind: project → `/topology/?p=<슬러그>`).
+  // The failing path — the address "open in map" on a project document actually
+  // produces (`topology-href.ts`: kind: project → `/topology/?p=<slug>`).
   await page.goto("/ko/topology/?e2e=1&guides=off&p=project", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("topology-map-v2-canvas").first()).toBeVisible({ timeout: 30_000 });
   await expect
@@ -108,8 +111,8 @@ test("문서함이 보내는 프로젝트 딥링크로 들어와도 지도가 �
     .toBeGreaterThan(0);
 
   const viaProjectLink = await readablePixelCount(page);
-  // 기준선의 절반은 나와야 한다 — 「한 픽셀이라도 있으면 통과」로 두면
-  // 라벨 하나만 남고 노드가 전부 가라앉은 상태도 초록이 된다.
+  // Must reach half the baseline — "one pixel is enough to pass" would go green on a
+  // state where only a label survives and every node has sunk.
   expect(
     viaProjectLink,
     `프로젝트 딥링크(${viaProjectLink})가 파라미터 없는 화면(${plain})보다 크게 어둡다`,
@@ -123,10 +126,11 @@ test("지도에 없는 노드를 가리키는 딥링크는 아무것도 안 고�
   const plain = await readablePixelCount(page);
 
   /*
-   * 안전망 그 자체를 잰다. 위 시험은 **원인 하나**(프로젝트 슬러그↔노드 이름
-   * 불일치)를 막지만, 「없는 노드를 골랐다」가 「전부 흐리게」로 번역되는 규칙이
-   * 남아 있는 한 다른 경로에서 같은 사고가 난다. 그래서 아예 존재할 수 없는
-   * 이름으로도 지도가 읽히는지 본다.
+   * Measures the safety net itself. The test above blocks **one cause** (project slug
+   * vs node name mismatch), but as long as the rule that translates "selected a node
+   * that does not exist" into "dim everything" survives, the same accident happens by
+   * another path. So this checks the map stays readable even for a name that could not
+   * possibly exist.
    */
   await page.goto("/ko/topology/?e2e=1&guides=off&p=element:this-node-does-not-exist", {
     waitUntil: "domcontentloaded",

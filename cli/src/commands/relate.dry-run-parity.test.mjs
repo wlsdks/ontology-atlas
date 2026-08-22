@@ -1,20 +1,18 @@
-// `--dry-run` 은 진짜 명령이 하는 것과 같은 답을 내야 한다.
+// `--dry-run` must give the same answer the real command gives.
 //
-// ## 왜 (2026-08-16 실측)
-//
-// 같은 인자로 두 번 불렀더니 답이 정반대였다:
+// **Why** (measured 2026-08-16): the same arguments called twice gave opposite answers:
 //
 //   relate … --dry-run   → `dry-run would write …` · `safe_to_add` · exit 0
 //   relate …             → `error  why is required …`             · exit 1
 //
-// 미리보기의 쓸모는 **진짜로 하기 전에 결과를 아는 것** 하나뿐이다. 그것이
-// 거절될 일을 「쓰겠다」고 말하면 미리보기가 아니라 틀린 예보다 — 특히 이
-// 명령을 부르는 쪽이 사람이 아니라 에이전트일 때, 미리보기가 초록이면
-// 그다음에 진짜로 부른다.
+// A preview's only use is **knowing the outcome before doing it for real**. Saying
+// «will write» about something that will be refused is not a preview, it is a
+// wrong forecast — above all when the caller is an agent rather than a person,
+// because a green preview is followed by the real call.
 //
-// 원인은 거절 규칙이 **쓰는 함수 안에** 있었다는 것이다. dry-run 은 그
-// 함수를 아예 안 부르므로 규칙을 지나칠 수밖에 없었다. 그래서 규칙을 순수
-// 함수로 꺼내 **두 길이 같은 것을 부르게** 했다.
+// The cause was that the refusal rule lived **inside the writing function**. A dry
+// run never calls it, so it could not help but skip the rule. The rule was
+// extracted as a pure function so **both paths call the same thing**.
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';

@@ -14,14 +14,14 @@ import type { DomainCompositionRow } from "../model/domain-composition";
 export interface DomainCompositionRowsLabels {
   capabilityUnit: string;
   elementUnit: string;
-  /** 막대를 읽는 법 — 묶음에 한 줄. */
+  /** How to read the bar — one line per group. */
   legendCaption: string;
-  /** 히어로 칩 합과 행 합이 다른 이유. 같은 각주 문단 안에 이어 붙인다. */
+  /** Why the hero chip sum differs from the row sum. Appended inside the same footnote paragraph. */
   overlapNote: string;
-  /** 막대가 `aria-hidden` 이므로 수치는 여기 실린다. */
+  /** The bar is `aria-hidden`, so the figures ride here. */
   rowToggleAria: (row: DomainCompositionRow) => string;
   mapLinkLabel: string;
-  /** 역량 링크의 접근 이름 — 눈에는 제목만 보이므로 목적지를 여기서 말한다. */
+  /** The capability link's accessible name — only the title is visible, so the destination is stated here. */
   capabilityLinkAria: (title: string) => string;
   capabilitiesEmpty: string;
 }
@@ -32,42 +32,40 @@ interface Props {
 }
 
 /**
- * 구성 탭 — 도메인 **행** 목록. 카드 격자(`DomainCompositionGrid`)를 은퇴시키고
- * 그 자리를 받았다 (2026-08-12, 소유자 선택 B안).
+ * The composition tab's list of domain **rows**. It replaced the card grid
+ * (`DomainCompositionGrid`), which was retired (2026-08-12, owner chose option B).
  *
- * ## 카드가 진 이유는 취향이 아니라 두 결함이었다
+ * **The cards lost on two defects, not on taste.**
  *
- * ① **「역량 N개 더」는 갈 곳이 없는 수였다.** 카드는 상위 2개만 그리고 나머지를
- * 발줄로 셌는데, 그 N 개를 보려면 지도로 떠나야 했다 — 화면 안에서 펼칠 수도,
- * 누를 수도 없는 수. 게다가 「상위 2」의 기준(연결 많은 순)은 어디에도 적혀
- * 있지 않았으니, 읽는 사람에게는 그냥 두 개가 뽑혀 나온 것이었다.
- * ② **같은 수치를 세 가지 그림으로** 말했다(히어로 칩 · 방사 지도 · 카드).
+ * ① **"N more capabilities" was a number with nowhere to go.** A card drew the top 2 and counted the
+ * rest in a footer line, and seeing those N meant leaving for the map — a number that could neither be
+ * expanded nor pressed on this screen. And the criterion for "top 2" (most connected) was written
+ * nowhere, so to a reader two items had simply been picked out.
+ * ② **The same figures were told three ways** (hero chips, the radial map, the cards).
  *
- * 행은 둘을 한 번에 지운다: 목록은 **그 자리에서** 전부 펼쳐지고(발줄 없음),
- * 그림은 앱이 이미 쓰는 하나의 문법(`DomainCapacityBar`)으로 수렴한다.
+ * Rows erase both at once: the list expands **in place**, in full (no footer line), and the picture
+ * converges onto the one grammar the app already uses (`DomainCapacityBar`).
  *
- * ## 위젯은 표현 전용, 배치와 상호작용은 여기가 소유한다
+ * **The widget is presentation only; layout and interaction are owned here.** Same rule as
+ * `insights-domain-row-link` (the insights composition tab) — the bar component is shared with the
+ * `/projects` cards, so putting a control inside it would make that one nested-interactive. The
+ * wrapper adds the hit area, hover, focus ring, and touch floor, and does not move the row's layout by
+ * one pixel (`block` / `w-auto` / `py-0`).
  *
- * `insights-domain-row-link`(분석 구성 탭)와 **같은 규율**이다 — 막대 부품은
- * `/projects` 카드와 공유되므로 부품 안에 컨트롤을 넣으면 그쪽이 중첩
- * 인터랙티브가 된다. 그래서 감싸는 쪽이 히트 영역·호버·초점 링·손가락 바닥을
- * 더하고, 행의 배치는 한 픽셀도 건드리지 않는다(`block`/`w-auto`/`py-0`).
- *
- * ## 지도로 가는 문 — 접힌 행에는 0, 펼친 안에는 이름이 곧 문이다
- *
- * 행마다 지도 칩을 달면 아홉 개짜리 잉크 열이 하나 더 생기고, 접힌 행이 두
- * 개의 목적지를 갖는다(무엇이 주인공인지 사라진다). 접힌 행의 일은 하나 —
- * 「무엇이 들어 있나」를 펼치는 것 — 이다. 펼친 안에서는 **역량 이름 자체가 그
- * 노드의 지도 딥링크**이고(2026-08-13 — 이름 7개가 막다른 텍스트였던 실측이
- * 근거다: B안이 지운 「갈 곳 없는 수」와 같은 결함이 이름에 남아 있었다), 도메인
- * 단위 문은 목록 끝의 칩 하나다. 새 잉크 열은 없다 — 링크는 이미 있던 제목
- * 글자이고, 눌린다는 사실은 호버 면과 커서가 말한다. 프로젝트 전체를 지도에서
- * 여는 길은 히어로의 주 버튼이 이미 갖고 있다.
+ * **The door to the map: zero on a collapsed row, and inside an expanded one the name is the door.**
+ * A map chip per row would add a ninth column of ink and give a collapsed row two destinations (losing
+ * which one is primary). A collapsed row has one job — expanding "what is inside". Inside the expanded
+ * row **the capability name itself is that node's map deeplink** (2026-08-13 — the evidence is the
+ * measurement where seven names were dead-end text: the same defect option B removed, the "number with
+ * nowhere to go", had survived in the names), and the domain-level door is a single chip at the end of
+ * the list. No new column of ink — the link is the title text that was already there, and the border
+ * and cursor say it is pressable. Opening the whole project on the map is already the hero's primary
+ * button.
  */
 export function DomainCompositionRows({ domains, labels }: Props) {
   return (
     <div className="flex flex-col">
-      {/* 막대 두 조각의 열쇠는 묶음에 한 줄 — 행마다 반복하면 소음이다. */}
+      {/* The key to the bar's two segments appears once per group — repeating it per row is noise. */}
       <DomainCapacityLegend
         labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
         className="mb-1.5"
@@ -78,9 +76,9 @@ export function DomainCompositionRows({ domains, labels }: Props) {
         ))}
       </ul>
       {/*
-        각주는 **한 문단**이다. 막대를 읽는 법과 「히어로 칩 합 ≠ 행 합」은 둘 다
-        이 목록을 읽는 데 필요한 같은 종류의 주석이라, 문단을 둘로 쪼개면 조용한
-        회색 블록이 둘로 늘어나 목록의 마지막 행과 경쟁한다.
+        The footnote is **one paragraph**. How to read the bar and "the hero chip sum ≠ the row sum" are
+        the same kind of annotation needed to read this list, so splitting them into two paragraphs
+        doubles the quiet grey block competing with the list's last row.
       */}
       <p
         data-testid="project-detail-domain-overlap-note"
@@ -100,9 +98,9 @@ function DomainRow({
   labels: DomainCompositionRowsLabels;
 }) {
   const [open, setOpen] = useState(false);
-  // 펼침은 하드컷이 아니다 — 높이 전이(`--motion-base`)와 내용 크로스페이드
-  // (`--motion-fast`)를 앱 공통 문법에서 그대로 받는다. reduced-motion 등가
-  // 규칙도 이미 그 클래스에 등록돼 있다(`app/globals.css`).
+  // Expansion is not a hard cut — the height transition (`--motion-base`) and the content crossfade
+  // (`--motion-fast`) come from the app's shared grammar. The reduced-motion equivalent rule is already
+  // registered on that class (`app/globals.css`).
   const { mounted, boxRef, contentRef } = useRowDisclosure(open);
   const panelId = `project-detail-domain-panel-${domain.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
@@ -116,13 +114,13 @@ function DomainRow({
         data-testid="project-detail-domain-row-toggle"
         onClick={() => setOpen((value) => !value)}
         /*
-          폭을 **명시**한다 — 분석 탭의 선례(`insights-domain-row-link`)는 `<a>`
-          라 `w-auto` 로도 칸을 채우지만, **`<button>` 은 폼 컨트롤이라
-          `width:auto` 가 shrink-to-fit 이다.** 그대로 베끼면 눌리는 면이 460px
-          인데 아래 구분선은 944px 까지 그려져, 행의 오른쪽 절반이 「선은 있는데
-          눌리지 않는」 띠가 된다(실측). `100% + 0.75rem` 은 좌우로 6px 씩 나간
-          호버 면(`-mx-1.5 px-1.5`)을 되찾는 몫이고, 세로 인셋만 0 으로 되돌려
-          아홉 행의 42px 리듬을 지킨다.
+          The width is **explicit**. The precedent in the insights tab (`insights-domain-row-link`) is an
+          `<a>`, which fills the cell with `w-auto`, but **a `<button>` is a form control, so `width:auto`
+          is shrink-to-fit.** Copying it verbatim gave a 460px pressable face under a divider drawn to
+          944px, turning the row's right half into a strip that "has a line but does not press"
+          (measured). `100% + 0.75rem` reclaims the 6px the hover face extends on each side
+          (`-mx-1.5 px-1.5`), and only the vertical inset returns to 0 to preserve the nine rows' 42px
+          rhythm.
         */
         className={controlClass({
           shape: "row",
@@ -138,12 +136,11 @@ function DomainRow({
           />
         </span>
         {/*
-          **접힌 행은 자기가 열린다는 것을 말해야 한다.** 이 개편이 지운
-          「역량 N개 더」는 적어도 글자로 보였는데, 그 자리를 받은 행이 아무
-          표식도 없으면 아홉 줄이 읽기 전용 목록으로 보인다(커서와 호버는
-          마우스를 올린 다음에야 말한다). 열림 상태를 나타내는 셰브런은 헌장이
-          장식 화살표 금지의 예외로 명시한 것이고, 지도 INDEX 트리 행이 이미
-          같은 문법(90도 회전 + `--motion-fast`)을 쓴다.
+          **A collapsed row has to say it opens.** The "N more capabilities" this rework removed was at
+          least visible as text; a row taking its place with no marker makes nine lines look like a
+          read-only list (cursor and hover only speak after the mouse arrives). A chevron indicating an
+          expanded state is the charter's explicit exception to the decorative-arrow ban, and the map's
+          INDEX tree rows already use the same grammar (90-degree rotation plus `--motion-fast`).
         */}
         <ChevronRight
           size={ICON_SIZE.sm}
@@ -158,15 +155,15 @@ function DomainRow({
         className="ai-row-disclosure"
         data-state={open ? "open" : "closed"}
         data-testid="project-detail-domain-disclosure"
-        // 접히는 동안에도 DOM 에 남으므로, 보이지 않는 링크가 탭 순서와
-        // 스크린리더에 남지 않게 즉시 비활성화한다.
+        // It stays in the DOM while collapsing, so links that are not visible are disabled immediately
+        // and kept out of the tab order and the screen reader.
         inert={!open}
       >
         {mounted ? (
           <div ref={contentRef} className="ai-row-disclosure-body pb-2.5">
-            {/* 자식은 부모 제목 아래로 들여쓴다(글리프 15 + 갭 8 = 23px 이
-                제목의 시작 자리다) — 안 들여쓰면 펼친 목록이 도메인 행과 같은
-                단에 서서 「도메인이 여덟 개 더 생긴 것」처럼 읽힌다. */}
+            {/* Children are indented under the parent title (glyph 15 + gap 8 = 23px is where the title
+                starts) — without the indent an expanded list stands at the same step as the domain rows
+                and reads as "eight more domains appeared". */}
             {domain.capabilities.length > 0 ? (
               <ul className="flex flex-col pl-[23px]">
                 {domain.capabilities.map((capability) => (
@@ -178,9 +175,9 @@ function DomainRow({
                       className={controlClass({
                         shape: "row",
                         size: "sm",
-                        // 높이를 내용에 맡기지 않는다 — 목록 안에서도 리듬이 같아야
-                        // 「몇 개인가」가 길이로 읽힌다(치수 규칙성). 행 높이는
-                        // li 가 갖고, 링크가 그 안을 가득 채워 히트 면이 된다.
+                        // The height is not left to the content — the rhythm must be the same inside the
+                        // list too, so "how many" reads as length (dimensional regularity). The row height
+                        // belongs to the li, and the link fills it to become the hit area.
                         className:
                           "-mx-1.5 h-full w-[calc(100%+0.75rem)] gap-1.5 px-1.5 py-0 text-body text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
                       })}

@@ -6,16 +6,16 @@ import type { StageGraph } from '../lib/stage-graph';
 import { cn } from '@/shared/lib/cn';
 
 /**
- * 히어로 오브젝트 — 활자의 맞은편 기둥.
+ * The hero object — the column opposite the type.
  *
- * 그리는 것은 목업이 아니라 **아래 증거 절 지도·캡션과 같은 그래프**다
- * (`useStageGraph` 한 훅). 첫 3초 규칙: 활자가 150ms 에 먼저 오고, 이 무대는
- * 450ms 부터 층이 조립된다(`.gateway-hero-stage` 의 CSS 지연 + 엔진의
- * 계층별 조립 지연).
+ * What it draws is not a mockup but **the same graph as the evidence section's map and caption**
+ * (one hook, `useStageGraph`). The first-three-seconds rule: the type arrives first at 150ms, and
+ * this stage assembles its layers from 450ms (the CSS delay on `.gateway-hero-stage` plus the
+ * engine's per-layer assembly delay).
  *
- * `aria-hidden` — 장식이 아니라 **중복**이라서다: 여기 그려지는 사실(개념 수 ·
- * 관계 수 · 구조)은 증거 절의 캡션과 계기 스트립이 텍스트로 이미 나른다.
- * 스크린리더에 같은 그래프를 두 번 읽힐 이유가 없다.
+ * `aria-hidden` — because it is **duplicate**, not decoration: the facts drawn here (concept count,
+ * relation count, structure) are already carried as text by the evidence caption and the instrument
+ * strip. There is no reason to read the same graph to a screen reader twice.
  */
 export function HeroObject({ graph }: { graph: StageGraph }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -32,18 +32,18 @@ export function HeroObject({ graph }: { graph: StageGraph }) {
         .map((edge) => ({ a: edge.source, b: edge.target, y: edge.kind })),
     };
 
-    // `fitPx: 420` — 기본 620 은 정방형 무대의 값이다. 낮춘 무대(1/0.62)에서
-    // 기본값을 쓰면 잉크가 min(W,H)/620 로 줄어 오브젝트가 기둥의 66%만 쓰는
-    // 장식이 된다(실측 1728: 잉크 347×311 / 상자 528×433). 420 은 «원하는
-    // 크기»까지다(455 였다가 꼭짓점 평면을 104 로 조이면서 봉투가 짧아진 만큼
-    // 내렸다 — 그대로면 fitPx 가 먼저 걸려 클램프가 준 배율 여유를 못 쓴다).
-    // 잘리지 않음은 엔진의 잉크 봉투 클램프가 보장한다(2026-08-18 소유자
-    // 지적: 돔 하단이 계기 괘선에 잘렸다. 엔진이 요 한 바퀴의 투영 bbox 를
-    // 재서 세로 중심을 봉투 중심에 놓고, 넘치는 배율은 여백 4% 를 남기고
-    // 줄인다 — `hero-object-engine.ts` 봉투 독블록).
+    // `fitPx: 420` — the default 620 is the value for a square stage. Using it on this shorter
+    // stage (1/0.62) shrinks the ink to min(W,H)/620 and the object becomes decoration using 66% of
+    // the column (measured at 1728: ink 347×311 in a 528×433 box). 420 is the «size we want» (it was
+    // 455 and came down as the apex plane tightened to 104 and the envelope shortened — left alone,
+    // `fitPx` would bind first and waste the headroom the clamp gives).
+    // Not being clipped is guaranteed by the engine's ink-envelope clamp (owner report 2026-08-18:
+    // the dome's bottom was clipped by the instrument rule. The engine measures the projected bbox
+    // over a full revolution of yaw, puts the vertical centre at the envelope's centre, and reduces
+    // an overflowing scale leaving 4% margin — see the envelope doc-block in `hero-object-engine.ts`).
     const handle = mountHeroObject(canvas, data, { inkScale: 0.97, fitPx: 420 });
-    // rAF 콜백이라 effect 본문의 동기 setState 가 아니다 — 무대는 엔진이 실제로
-    // 붙은 다음 프레임에 밝아진다(canvas 컨텍스트가 없는 환경에서는 계속 0).
+    // Inside a rAF callback, so this is not a synchronous setState in the effect body — the stage
+    // brightens on the frame after the engine actually attaches (staying at 0 where there is no canvas context).
     let raf = 0;
     if (handle) raf = requestAnimationFrame(() => setMounted(true));
     return () => {

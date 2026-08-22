@@ -32,17 +32,17 @@ const NOW = new Date("2026-04-20T00:00:00Z");
 describe("detectStaleProjects", () => {
   it("지정한 일수 초과 미수정 프로젝트만 반환한다", () => {
     const projects: Project[] = [
-      // 25일 전 — threshold 30 미만이므로 제외
+      // 25 days ago — under the 30-day threshold, so excluded
       makeProject({
         slug: "fresh",
         updatedAt: new Date("2026-03-26T00:00:00Z"),
       }),
-      // 60일 전 — 포함
+      // 60 days ago — included
       makeProject({
         slug: "stale-60",
         updatedAt: new Date("2026-02-19T00:00:00Z"),
       }),
-      // 100일 전 — 포함
+      // 100 days ago — included
       makeProject({
         slug: "stale-100",
         updatedAt: new Date("2026-01-10T00:00:00Z"),
@@ -76,7 +76,7 @@ describe("detectStaleProjects", () => {
 
   it("threshold 경계 정확: threshold 와 정확히 일치하면 stale 아님", () => {
     const projects: Project[] = [
-      // 정확히 30일 전 — NOT stale (> 30 만 stale)
+      // Exactly 30 days ago — NOT stale (strictly greater than 30 only)
       makeProject({
         slug: "exact-30",
         updatedAt: new Date("2026-03-21T00:00:00Z"),
@@ -101,7 +101,7 @@ describe("detectStaleProjects", () => {
       limit: 2,
     });
     expect(stale).toHaveLength(2);
-    // 가장 오래된 2개 (s0, s1) 이 앞에 와야
+    // The two oldest (s0, s1) must come first
     expect(stale[0].slug).toBe("s0");
     expect(stale[1].slug).toBe("s1");
   });

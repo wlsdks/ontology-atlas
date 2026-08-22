@@ -44,12 +44,12 @@ import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
  *
  *   - mcp/src/schema.mjs (AI agent surface — `add_concept`)
  *   - cli/src/lib/schema.mjs (developer CLI — `node $ATLAS/cli/src/index.mjs add`)
- *   - src/shared/lib/validate-vault-document.ts 의 KIND_EXPECTED_EXTRAS
+ *   - KIND_EXPECTED_EXTRAS in src/shared/lib/validate-vault-document.ts
  *     (web/UI advisory)
  *
- * 양 schema 가 같은 frontmatter 모양을 만들고 같은 missing-field 결정을
- * 내려야 한다. 한 쪽 drift 시 이 test 가 즉시 fail. UI 측 dict 도 같은
- * requiredExtras 들고 있는지 cross-check.
+ * Both schemas must produce the same frontmatter shape and the same missing-field
+ * decision; drift on either side fails this test immediately. The UI dictionary is
+ * cross-checked for the same requiredExtras.
  */
 
 describe("vault kind schema contract — mcp & cli agree", () => {
@@ -149,7 +149,7 @@ describe("vault kind schema contract — mcp & cli agree", () => {
   });
 
   describe("flatSlugIssue — 슬러그는 평평한 식별자다 (2026-08-01 판정)", () => {
-    // 두 패키지가 같은 판정을 내려야 add_concept 과 CLI add 가 같은 문이 된다.
+    // The two packages must agree, or `add_concept` and the CLI's `add` become different doors.
     for (const c of FLAT_SLUG_CASES) {
       it(`${c.name} (mcp)`, () => {
         const issue = flatSlugMcp(c.kind, c.slug);
@@ -168,8 +168,8 @@ describe("vault kind schema contract — mcp & cli agree", () => {
   });
 
   describe("UI KIND_EXPECTED_EXTRAS aligns with mcp/cli requiredExtras", () => {
-    // UI dict 가 mcp 의 missing-fields 결정과 같은 결과를 내야 한다.
-    // capability/element 둘 다 ['domain'] 을 expected 로 둔다.
+    // The UI dictionary must produce the same missing-fields decision as mcp.
+    // Both capability and element expect ['domain'].
     it("capability requires domain", () => {
       expect(KIND_EXPECTED_EXTRAS.capability).toEqual(["domain"]);
       expect(missingMcp("capability", { slug: "x", kind: "capability", title: "X" })).toEqual([
@@ -190,8 +190,9 @@ describe("vault kind schema contract — mcp & cli agree", () => {
   });
 });
 
-// 어권별 표시 이름 (소유자 지시 2026-07-24) — MCP(agent)와 CLI(개발자)가
-// 같은 정규화를 해야 vault 에 같은 키가 남는다. 한쪽만 고치면 여기서 깨진다.
+// Per-locale display names (owner instruction, 2026-07-24) — MCP (agents) and the
+// CLI (developers) must normalise identically or the vault ends up with different
+// keys. Fixing only one side breaks here.
 describe("display_<locale> 정규화 2-way contract", () => {
   const cases = [
     { ko: "결제", en: "Payments" },
@@ -217,12 +218,14 @@ describe("display_<locale> 정규화 2-way contract", () => {
 });
 
 /**
- * 노드 자격 게이트의 「값 정본」 (2026-07-31 카운슬 — `docs/DECISIONS.md`).
+ * The **value authority** for the node qualification gate (2026-07-31 council —
+ * `docs/DECISIONS.md`).
  *
- * 규격은 값 · 로직 · 텍스트 셋으로 쪼개져 있고 여기가 값 쪽 게이트다. 로직은
- * `mcp/src/vault.mjs` 의 `commitDoc`, 텍스트는 `mcp/src/construction-rules.mjs`
- * 가 갖는다. 두 패키지는 cross-import 가 0건이라 상수도 리터럴 사본으로만
- * 존재할 수 있고, 사본이 둘인데 게이트가 없으면 어긋나는 쪽이 기본값이다.
+ * The spec is split three ways — values, logic, text — and this is the value gate.
+ * The logic lives in `commitDoc` (`mcp/src/vault.mjs`) and the text in
+ * `mcp/src/construction-rules.mjs`. The two packages share 0 cross-imports, so even
+ * constants can only exist as literal copies, and two copies with no gate means
+ * drift is the default.
  */
 describe("노드 자격 게이트 상수 — mcp & cli 값 정본이 같다", () => {
   it("두 패키지가 같은 임계값을 들고 있다", () => {
@@ -230,29 +233,31 @@ describe("노드 자격 게이트 상수 — mcp & cli 값 정본이 같다", ()
   });
 
   it("잠긴 값들", () => {
-    // 미해소 참조는 한 건부터 말한다 — 해소되지 않는 항목은 '작은 자식'이
-    // 아니라 다른 범주(evidence)라서, 봐줄 수 있는 개수라는 게 없다.
+    // Unresolved references are reported from the first one — an unresolved item is not
+    // a "small child" but a different category (evidence), so there is no tolerable count.
     expect(gateMcp.NOTICE_THRESHOLD).toBe(1);
-    // 문턱 돌파 1회 + 배수만. 매 쓰기마다 반복하면 읽는 쪽이 채널을 거른다.
+    // Fires once at the threshold and then only at multiples. Repeating on every write
+    // makes the reader filter the channel out.
     expect(gateMcp.NOTICE_REPEAT_MULTIPLE).toBe(10);
     expect(gateMcp.BULK_PROVENANCE_SIBLING_TRIGGER).toBe(5);
     expect(gateMcp.REFERENCE_SAMPLE_LIMIT).toBe(5);
   });
 
-  // 2026-07-31 정정 레코드 — 근거(po-evidence)의 문헌·실측 조사에서 승격된
-  // 「연구된 시작 범위」. 하드 캡이 아니라 트리거이며, 볼트가 자기 p90 을 낼 만큼
-  // 자라면 그 순간부터 이 값은 물러난다.
+  // Correction record 2026-07-31 — the researched starting range, promoted from
+  // po-evidence's literature and measurement review. It is a trigger, not a hard cap,
+  // and it steps aside once a vault has grown enough to produce its own p90.
   it("부트스트랩 트리거는 8/6 이고 project→domain 은 없다", () => {
     expect(gateMcp.BOOTSTRAP_FANOUT_TRIGGER).toEqual({
       domain_to_capability: 8,
       capability_to_element: 6,
     });
-    // 표본이 무의미해서 일부러 비운 자리다. 값이 생겼다면 근거 없이 지어낸 것이다.
+    // Deliberately empty because the sample is meaningless. A value appearing here was invented without evidence.
     expect(gateMcp.BOOTSTRAP_FANOUT_TRIGGER).not.toHaveProperty("project_to_domain");
     expect(gateMcp.MIN_PARENTS_FOR_LIVE_PERCENTILE).toBe(10);
-    // 전부 해소된 넓은 부모(schema.org CreativeWork 형)를 건드리지 않게 하는 문턱.
-    // 이게 없으면 밀집 경고가 정당한 대팬아웃마다 울고, 우는 채널은 걸러진다 —
-    // 그것이 팬아웃 상한이 옆문으로 돌아오는 경로다.
+    // The threshold that keeps fully-resolved broad parents (schema.org CreativeWork
+    // shape) untouched. Without it the density warning fires on every legitimate large
+    // fan-out, and a channel that cries is filtered out — which is how a fan-out cap
+    // returns through the side door.
     expect(gateMcp.DENSE_PARENT_RESOLUTION_FLOOR).toBe(0.7);
   });
 
@@ -261,9 +266,9 @@ describe("노드 자격 게이트 상수 — mcp & cli 값 정본이 같다", ()
   });
 
   it("어떤 값도 자식 수 상한이 아니다 — 상한은 카운슬이 모든 형태로 기각했다", () => {
-    // 이 테스트가 지키는 것은 숫자가 아니라 *뜻* 이다. 「N 미만으로 유지」류의
-    // 이름이 이 블록에 생기면 그건 팬아웃 상한이 이름만 바꿔 돌아온 것이고,
-    // 모델은 빈 버킷 두 개로 그 지표를 통과시킨다.
+    // What this test protects is the *meaning*, not the number. A name of the "keep it
+    // under N" kind appearing in this block is the fan-out cap returning under a new
+    // name, and a model will satisfy that metric with two empty buckets.
     for (const key of Object.keys(gateMcp)) {
       expect(key).not.toMatch(/MAX|LIMIT_PER|CAP|CHILDREN/i);
     }
@@ -271,17 +276,19 @@ describe("노드 자격 게이트 상수 — mcp & cli 값 정본이 같다", ()
 });
 
 /**
- * 구축 규격 텍스트의 3-way — mcp 정본 ↔ 앱 안 채팅 프롬프트.
+ * Three-way check on the construction-rules text — the mcp authority against the
+ * in-app chat prompt.
  *
- * 이 파일이 이미 하는 일과 같은 종류라 여기 산다: `src/` 와 `mcp/` 는 별도
- * 패키지라 cross-import 가 물리적으로 불가능하고, 그래서 스키마가 그랬듯
- * 텍스트도 리터럴 사본으로만 존재할 수 있다.
+ * It lives here because it is the same kind of work this file already does: `src/`
+ * and `mcp/` are separate packages, so cross-imports are physically impossible and,
+ * like the schema, the text can only exist as literal copies.
  *
- * 사본이 둘인데 게이트가 없으면 어긋나는 쪽이 기본값이다 — 그리고 이건 가정이
- * 아니라 이 파일에서 실제로 일어난 일이다. `system-prompt.ts` 의 헤더가
- * *"schema.mjs 와 원자적으로 움직여야 한다"* 고 적어 놓고 강제 장치가 없어서
- * kind 위계가 조용히 갈라져 있었다(project 소유 범위 · `vault-readme` 경고
- * 누락, 2026-07-31 실측). 주석은 계약이 아니다. 테스트가 계약이다.
+ * Two copies with no gate means drift is the default — and here that is not a
+ * hypothesis but what actually happened in this file. `system-prompt.ts`'s header
+ * said *"must move atomically with schema.mjs"* with nothing enforcing it, and the
+ * kind hierarchy had quietly diverged (project's ownership scope, and a missing
+ * `vault-readme` warning — measured 2026-07-31). A comment is not a contract; a test
+ * is.
  */
 describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프트", () => {
   it("절차 전문이 바이트 그대로 실려 있다", () => {
@@ -293,17 +300,17 @@ describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프�
   });
 
   it("차분의 핵심 — 도구를 부르기 전에 사람에게 먼저 말한다", () => {
-    // MCP 는 구조화된 warnings 를 프로그램에 돌려주지만 채팅은 사람에게 말한다.
-    // 이 문장이 빠지면 앱이 사용자 온톨로지를 조용히 재구성하고 사용자가 안 볼
-    // 곳에만 기록하게 된다.
+    // MCP returns structured warnings to a program; chat speaks to a person. Without
+    // this sentence the app quietly restructures the user's ontology and records it
+    // only where the user will not look.
     expect(CHAT_RULES_DELTA_EN).toContain("say so in the conversation first");
     expect(PRODUCT_DISCIPLINE).toContain("say so in the conversation first");
   });
 
   it("meta-model 경계가 바이트 그대로 실려 있고 authorable/reserved를 구분한다", () => {
     expect(PRODUCT_DISCIPLINE).toContain(META_MODEL_RULES_EN);
-    // project 의 소유 범위는 스키마가 정한다. 프롬프트가 「domains 만」이라고
-    // 말하면 에이전트는 capability/element 직속을 제안하지 않는다.
+    // The schema decides project's ownership scope. A prompt saying "domains only"
+    // stops the agent proposing a capability or element directly under it.
     expect(VAULT_KIND_SCHEMA.project.arrayDefaults).toEqual([
       "domains",
       "capabilities",
@@ -317,8 +324,8 @@ describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프�
       "document",
     ]);
     expect(PRODUCT_DISCIPLINE).toContain("Atlas has five authorable kinds");
-    // `vault-readme` 는 자동 생성 전용이라 어떤 에이전트도 제안하면 안 된다.
-    // MCP 안내문에는 이 경고가 있었고 채팅 프롬프트에는 없었다.
+    // `vault-readme` is generated-only and no agent may propose it. The MCP guidance
+    // carried this warning; the chat prompt did not.
     expect(KNOWN_VAULT_KINDS).toContain("vault-readme");
     expect(PRODUCT_DISCIPLINE).toContain("`vault-readme` is a reserved reader kind");
   });

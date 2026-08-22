@@ -4,15 +4,15 @@ import { copyText } from "./copy-text";
 export type CopyFeedbackState = "idle" | "copied" | "failed";
 
 /**
- * 클립보드 복사 + 일시적 상태 피드백(idle → copied/failed → idle) 공용 훅.
+ * Clipboard copy plus transient state feedback (idle → copied/failed → idle).
  *
- * 16+ 곳에서 같은 로직(useState copyState · resetTimer ref · unmount cleanup ·
- * copyText 후 setTimeout 으로 idle 복귀)을 손으로 반복하던 것을 한 곳으로.
- * 스타일은 각 사이트가 그대로 유지하고, 상태 로직만 이 훅으로 공유한다.
+ * Consolidates logic that was hand-repeated at 16+ call sites: a `copyState` useState, a
+ * reset-timer ref, unmount cleanup, and a setTimeout back to idle after `copyText`. Each site
+ * keeps its own styling and shares only the state machine.
  *
- * @param resetMs copied/failed 표시 후 idle 로 돌아가기까지 ms (기본 1500).
- * @returns state 와 copy(text) — copy 는 성공 여부 boolean 도 반환해 toast 등
- *   추가 피드백을 호출자가 붙일 수 있다.
+ * @param resetMs how long copied/failed shows before returning to idle (default 1500).
+ * @returns the state and `copy(text)`; `copy` also returns a success boolean so callers can
+ *   add their own feedback, such as a toast.
  */
 export function useCopyFeedback(resetMs = 1500): {
   state: CopyFeedbackState;

@@ -52,9 +52,9 @@ describe('RootEntryPage', () => {
   });
 
   /**
-   * 2026-07-30 — 「root-first-open」 뒤집기 구현. 이 테스트는 **뒤집힌 쪽**을
-   * 잠근다: 아직 아무 폴더도 안 연 웹 방문자에게 `/` 는 지도가 아니라 얼굴이다.
-   * 지도는 `/topology` 가 갖는다.
+   * 2026-07-30 — the implementation reversing "root-first-open". This test locks **the reversed side**:
+   * for a web visitor who has not opened any folder, `/` is the face, not the map. The map belongs to
+   * `/topology`.
    */
   it('보여줄 볼트가 없는 웹 방문자에게 루트는 얼굴이다 — 지도가 아니라', () => {
     render(<RootEntryPage />);
@@ -65,9 +65,9 @@ describe('RootEntryPage', () => {
   });
 
   /**
-   * **뒤집기의 나머지 절반은 그대로다.** 볼트를 연 사람은 방문자가 아니라
-   * 작업자라, 루트가 그 사람에게 홍보를 보여주면 안 된다. 이 분기가 무너지면
-   * 설치·자기 볼트를 가진 사람이 매번 다운로드 안내를 본다.
+   * **The other half of the reversal stands.** Someone who has opened a vault is a worker rather than a
+   * visitor, so the root must not show them promotion. If this branch collapses, anyone with the app
+   * installed or with their own vault sees the download guidance every time.
    */
   it('볼트를 연 웹 사용자에게는 루트가 그대로 지도다', () => {
     mocks.vaultState = {
@@ -83,8 +83,8 @@ describe('RootEntryPage', () => {
   });
 
   /**
-   * 설치된 앱은 자기를 이미 설치한 사람에게 "다운로드하세요" 를 보여주면 안 된다 —
-   * root-first-open 의 이 절반은 뒤집히지 않았다.
+   * The installed app must not tell someone who already installed it to "download" — this half of
+   * root-first-open was not reversed.
    */
   it('설치된 앱의 루트에는 얼굴이 뜨지 않는다', () => {
     mocks.isDesktopShell = true;

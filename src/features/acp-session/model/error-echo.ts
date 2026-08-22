@@ -1,12 +1,12 @@
 /**
- * 실패 하나를 화면이 **두 번** 말하는 것을 막는다.
+ * Stops the screen stating one failure **twice**.
  *
- * ## 실물에서 본 것 (2026-08-17, 설치된 앱)
+ * ## What was seen on the real thing (2026-08-17, installed app)
  *
- * claude 로그인이 만료된 상태로 한 마디 보냈더니 대화 칸이 이렇게 됐다:
+ * Sending one message with an expired claude login made the conversation pane look like this:
  *
  * ```
- * [나]  내 프로젝트 노드와 예시 영역 노드가 …
+ * [me]  내 프로젝트 노드와 예시 영역 노드가 …
  *       Failed to authenticate: OAuth session expired and could not be refreshed
  *       ┌─────────────────────────────────────────┐
  *       │ 로그인이 풀렸어요                        │
@@ -15,38 +15,37 @@
  *       └─────────────────────────────────────────┘
  * ```
  *
- * 같은 실패가 두 번 있고, **영문 원문이 먼저 읽힌다.** 아래 카드가 그 말을
- * 사람의 말로 옮기고 다음에 할 일까지 대는데, 위 줄이 그 앞에 서서 "이건 내가
- * 읽을 것이 아니구나" 를 먼저 심는다. 이 저장소가 이미 겪고 고친 실패와 같다
- * (`AcpChatPanel.tsx`: *"어댑터가 준 것을 그대로 붙였다 … 소유자: 이렇게
- * 보여주면 사용자가 어떻게 알겠어"*) — 그때는 카드를 고쳤고, 어댑터가 **메시지로도**
- * 같은 말을 보낸다는 것은 못 봤다.
+ * The same failure twice, and **the English original reads first.** The card below translates it
+ * into human words and even supplies the next step, but the line above it plants "this is not for me
+ * to read" first. It is the same failure this repository has already met and fixed
+ * (`AcpChatPanel.tsx`: *"it pasted what the adapter gave, verbatim … owner: how is a user supposed
+ * to understand this?"*) — the card was fixed then, and it was missed that the adapter sends the
+ * same thing **as a message too**.
  *
- * ## 왜 「에이전트 말 숨기기」가 아닌가
+ * ## Why not "hide what the agent said"
  *
- * 에이전트가 한 말을 화면이 지우는 것은 위험하다. 그래서 지우는 조건을 최대한
- * 좁힌다: **이미 화면에 떠 있는 오류 원문 안에 통째로 들어 있는 마지막 한 줄**
- * 뿐이다. 실측한 두 문자열이 정확히 그 관계다 —
+ * Erasing something the agent said is dangerous, so the erase condition is kept as narrow as
+ * possible: **only the last single line that is wholly contained in the error text already on
+ * screen.** The two measured strings stand in exactly that relation —
  *
- * - 메시지: `Failed to authenticate: OAuth session expired and could not be refreshed`
- * - 오류  : `{"code":-32603,"message":"Internal error: Failed to authenticate: OAuth
- *            session expired and could not be refreshed","data":{…}}`
+ * - message: `Failed to authenticate: OAuth session expired and could not be refreshed`
+ * - error:   `{"code":-32603,"message":"Internal error: Failed to authenticate: OAuth
+ *              session expired and could not be refreshed","data":{…}}`
  *
- * 에이전트의 **진짜 답변**이 RPC 오류 문자열의 부분 문자열이 되는 일은 없다.
- * 그래도 짧은 우연(에이전트가 `Error` 한 마디)까지는 막아야 하므로 길이 바닥을
- * 둔다.
+ * An agent's **real answer** never becomes a substring of an RPC error string. A short coincidence
+ * (the agent saying just `Error`) still has to be prevented, hence a length floor.
  */
 
 /**
- * 이보다 짧은 말은 지우지 않는다. 실측한 가장 짧은 실패 문장이
- * `Failed to authenticate`(22자)이고, 그 절반 아래로는 우연히 포함될 수 있는
- * 평범한 한 마디(`Error`, `Done`, `ok`)의 영역이다.
+ * Anything shorter than this is not erased. The shortest measured failure sentence is
+ * `Failed to authenticate` (22 characters), and below half of that is the territory of ordinary
+ * one-word replies that could be contained by coincidence (`Error`, `Done`, `ok`).
  */
 const MIN_ECHO_LENGTH = 16;
 
 const normalize = (value: string): string => value.replace(/\s+/gu, ' ').trim();
 
-/** 이 말이 지금 화면에 떠 있는 오류의 되풀이인가. */
+/** Is this message a repeat of the error currently on screen? */
 export function isErrorEcho(text: unknown, error: unknown): boolean {
   if (typeof text !== 'string' || typeof error !== 'string') return false;
   const message = normalize(text);
@@ -55,8 +54,8 @@ export function isErrorEcho(text: unknown, error: unknown): boolean {
 }
 
 /**
- * 화면에 그릴 사건 목록. **마지막 한 줄만** 본다 — 대화 도중에 지나간 옛 오류와
- * 같은 말을 에이전트가 나중에 다시 했다면 그건 되풀이가 아니라 그때의 말이다.
+ * The event list the screen will draw. It looks at **the last line only** — if the agent later
+ * repeats something an old error said mid-conversation, that is its own statement, not an echo.
  */
 export function withoutErrorEcho<T extends { kind: string; text?: string }>(
   events: readonly T[],

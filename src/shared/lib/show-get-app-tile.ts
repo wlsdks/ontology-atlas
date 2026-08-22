@@ -1,27 +1,27 @@
 /**
- * 「앱 받기」 타일을 그릴지 — **웹에서만, 그리고 마운트 뒤에만**.
+ * Whether to render the "get the app" tile — **on the web only, and only after
+ * mount**.
  *
- * ## 왜 크롬에 하나인가
+ * **Why one place in the chrome.** Owner request: *"웹에서는 다양한곳에 앱
+ * 다운로드를 유도하는 버튼을 놔주면 좋을듯? 잘보이게"* (put buttons in several
+ * places on the web that lead to the app download, clearly visible). Planting a
+ * separate banner on every surface is noise rather than guidance, and it is the
+ * kind of change this repo's design gates call "an additive-only pass fails".
  *
- * 소유자 요청: *"웹에서는 다양한곳에 앱 다운로드를 유도하는 버튼을 놔주면
- * 좋을듯? 잘보이게"*. 표면마다 배너를 따로 심으면 그건 유도가 아니라 소음이고,
- * 이 저장소의 디자인 게이트가 "더하기만 하는 패스는 실패" 라고 부르는 종류다.
+ * So it lives **in the chrome**: the rail's utility tier on desktop, and the
+ * fifth slot of the bottom tab bar below `lg`. Both are the same position on
+ * every destination, so one element per width already satisfies "several places".
+ * The user learns the grammar once and finds it in the same spot everywhere.
  *
- * 그래서 **크롬에 둔다** — 데스크톱은 레일 유틸리티 티어, `<lg` 는 하단
- * 탭바의 다섯 번째 자리. 둘 다 모든 목적지에서 같은 자리라, 각 폭에서 한
- * 원소가 "다양한 곳" 을 이미 만족한다. 사용자는 문법을 한 번 배우고 어디서든
- * 같은 자리에서 찾는다.
+ * **Why it lives in `shared/lib`**: its consumers are two widgets
+ * (`app-nav-rail`, `bottom-tab-bar`). Importing sideways between widgets breaks
+ * the FSD direction, so a shared decision moves one layer down.
  *
- * **`shared/lib` 에 사는 이유**: 소비처가 두 위젯(`app-nav-rail` ·
- * `bottom-tab-bar`)이다. 위젯끼리 가로로 import 하면 FSD 방향을 어기므로
- * 공통 판정은 한 단계 아래로 내린다.
- *
- * ## 왜 마운트 뒤인가
- *
- * `isTauriVaultRuntime()` 은 `window` 를 본다. 정적 프리렌더 시점에는 창이
- * 없어 항상 "웹" 으로 판정되므로, 그 HTML 을 앱이 싣고 하이드레이션에서
- * 타일을 걷으면 **앱 사용자에게 한 프레임 깜빡임**이 된다. 앱에서 잘못된
- * 상태를 보여줬다 고치는 것보다, 웹에서 한 프레임 늦게 나타나는 편이 낫다.
+ * **Why after mount.** `isTauriVaultRuntime()` reads `window`. During static
+ * prerender there is no window, so it always decides "web" — and if the app loads
+ * that HTML and hydration then removes the tile, **app users see a one-frame
+ * flicker**. Appearing one frame late on the web is better than showing app users
+ * a wrong state and correcting it.
  */
 export function shouldShowGetAppTile({
   mounted,

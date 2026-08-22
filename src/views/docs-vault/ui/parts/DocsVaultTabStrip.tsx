@@ -18,30 +18,31 @@ export interface DocsVaultTabStripProps {
 }
 
 /**
- * 헤더 zone-c 의 열린 문서 탭 스트립 — docs-chrome-round 슬라이스 B.
+ * The open-document tab strip in the header's zone-c.
  *
- * 문서 워킹셋(URL `?slug=` 이 활성 진실원, 이 스트립은 열린 목록만 소유)을
- * 나타낸다 — 상위 뷰 전환 탭이 아니라는 것을 구조로 증명하기 위해
- * `view==='doc'` 일 때만 호출부가 렌더한다(`folder-topology` 에선 비움).
+ * It represents the document working set (the URL `?slug=` is the active source of truth;
+ * this strip owns only the open list). To prove structurally that it is not a top-level view
+ * switcher, the call site renders it only when `view==='doc'`.
  *
- * "한 끗": 활성 탭 배경이 `--color-canvas`(본문과 동일)로 헤더의 1px
- * baseline 을 완전히 덮고, 그 위에 자체 2px 인디고 언더라인을 그린다 —
- * 헤더 쪽 baseline 은 `DocsVaultPage` 가 절대배치 1px 라인(z-0)으로 그리고
- * 이 스트립은 그보다 위(z-10)에서 h-full 로 렌더되므로 활성 탭 칼럼에서는
- * baseline 이 전혀 보이지 않는다(이중선 금지).
+ * The detail that makes it read right: the active tab's background is `--color-canvas` (the
+ * same as the body), fully covering the header's 1px baseline, and it draws its own 2px indigo
+ * underline on top. `DocsVaultPage` draws that baseline as an absolutely positioned 1px line
+ * (z-0) and this strip renders above it (z-10) at full height, so the baseline is invisible in
+ * the active tab's column — no double line.
  *
- * 표면(활성 canvas / 비활성 hover)은 **탭 칼럼 전체**인 wrapper 가 소유한다.
- * 라벨 버튼에만 배경을 주면 닫기 버튼 폭(20px)+여백(6px) 만큼 헤더 panel 색이
- * 남아 활성 탭 오른쪽에 노치가 생기고, 전폭으로 그려지는 2px 언더라인이 그
- * 26px 만큼 배경 밖으로 튀어나온다(승인 시안 frame1 은 × 까지 canvas).
+ * The surface (active canvas, inactive hover) is owned by the wrapper spanning **the whole tab
+ * column**. Giving the background to the label button alone leaves the header panel colour
+ * showing for the close button's width (20px) plus its gap (6px), which notches the right side
+ * of the active tab and makes the full-width 2px underline protrude past the background by
+ * those 26px.
  *
- * a11y: `role="tablist"/"tab"` 을 쓰지 않는다. 이 스트립은 같은 화면의
- * `tabpanel` 을 토글하는 WAI-ARIA tab 위젯이 아니라 **문서 내비게이션**이다
- * (활성 진실원 = URL `?slug=`). role 만 빌려 쓰면 AT 가 "탭 n/N" 과 화살표키
- * 이동을 약속하지만 roving tabindex·`aria-controls`·`tabpanel` 이 없어 아무
- * 일도 일어나지 않는다. 정직한 계약은 `nav` + `aria-current="page"` 이며,
- * "탭 = 워킹셋이지 상위 모드가 아니다" 라는 소유자 계약도 AT 쪽에서 함께
- * 지켜진다(role=tab 은 모드 전환으로 announce 된다).
+ * a11y: `role="tablist"`/`"tab"` is deliberately not used. This strip is **document
+ * navigation**, not a WAI-ARIA tab widget toggling a `tabpanel` on the same screen (the active
+ * source of truth is the URL `?slug=`). Borrowing the role alone makes AT promise "tab n of N"
+ * and arrow-key movement while roving tabindex, `aria-controls`, and `tabpanel` are all
+ * missing, so nothing happens. The honest contract is `nav` + `aria-current="page"`, which also
+ * keeps the owner's "a tab is a working set, not a top-level mode" contract on the AT side
+ * (role=tab is announced as a mode switch).
  */
 export function DocsVaultTabStrip({
   tabs,
@@ -53,9 +54,9 @@ export function DocsVaultTabStrip({
   const activeTabRef = useRef<HTMLButtonElement | null>(null);
   const stripRef = useRef<HTMLElement | null>(null);
   const pendingKeyboardCloseRef = useRef<string | null>(null);
-  // 열린 문서 워킹셋이 스트립 폭을 넘칠 때, 숨은 탭이 있는 쪽에만 엣지
-  // 페이드를 켠다 — 넘침 어포던스 0(조용한 은닉) 결함 정정. mask 알파만
-  // 쓰므로 색/glow/모션 0, reduced-motion 무관.
+  // When the open-document working set overflows the strip, an edge fade is enabled only on
+  // the side with hidden tabs — correcting a defect of zero overflow affordance (silent
+  // hiding). It uses mask alpha only: no colour, no glow, no motion, unaffected by reduced-motion.
   const [edgeOverflow, setEdgeOverflow] = useState({ left: false, right: false });
 
   const recomputeEdges = useCallback(() => {
@@ -86,25 +87,25 @@ export function DocsVaultTabStrip({
   }, [recomputeEdges, tabs.length]);
 
   useEffect(() => {
-    // JS 스크롤 애니메이션은 globals.css 의 reduced-motion base layer 가
-    // 끌 수 없다(CSS transition 이 아니라 behavior 인자) — 여기서 직접 존중.
+    // A JS scroll animation cannot be switched off by the reduced-motion base layer in
+    // globals.css (it is a behavior argument, not a CSS transition) — so it is respected here.
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    // 검수 Pass B 결함 2 (2026-07-23) — scrollIntoView(inline:"nearest") 는
-    // 탭 추가로 스트립 폭이 같은 프레임에 변하면 활성 탭을 절반만 노출한 채
-    // 멈출 수 있다(EN 1440 실측: 말줄임 없이 글리프가 스트립 경계에서 잘리고
-    // × 도 안 보임 — flaky). 레이아웃 확정 후(rAF) scrollLeft 를 직접 계산해
-    // 활성 탭 전체가 항상 뷰포트 안에 오도록 결정론화한다. 탭 개수도 의존성에
-    // 포함 — 새 탭이 열려 폭이 변한 프레임에도 재보정된다.
+    // Review defect (2026-07-23) — `scrollIntoView(inline:"nearest")` can stop with the active
+    // tab only half exposed when adding a tab changes the strip width in the same frame
+    // (measured at EN 1440: the glyph was cut at the strip boundary with no ellipsis and the ×
+    // was invisible — flaky). After layout settles (rAF) `scrollLeft` is computed directly so
+    // the whole active tab is always inside the viewport, deterministically. The tab count is a
+    // dependency too, so it re-corrects on the frame where a new tab changed the width.
     const frame = requestAnimationFrame(() => {
       const el = activeTabRef.current;
       const strip = el?.closest("nav");
       if (!el || !strip) return;
-      const cell = el.parentElement ?? el; // 탭 칼럼(wrapper) 기준 — 닫기 버튼 포함 전폭.
-      // Guardian 교정 — offsetLeft 의 offsetParent 는 nav 가 아니라 상위
-      // header(relative) 라 zone-l 폭만큼 인플레이트된다. rect 차이로
-      // 스크롤러 콘텐츠 좌표를 직접 계산해 중간 탭 활성화에서도 정확히 맞춘다.
+      const cell = el.parentElement ?? el; // the tab column (wrapper) — full width, close button included
+      // `offsetLeft`'s offsetParent is not the nav but the enclosing header (relative), so it is
+      // inflated by zone-l's width. The scroller's content coordinate is computed from rect
+      // differences instead, which is exact even when activating a tab in the middle.
       const cellRect = cell.getBoundingClientRect();
       const stripRect = strip.getBoundingClientRect();
       const left = cellRect.left - stripRect.left + strip.scrollLeft;
@@ -131,7 +132,7 @@ export function DocsVaultTabStrip({
 
   if (tabs.length === 0) return null;
 
-  // 숨은 콘텐츠가 있는 엣지에만 투명 페이드. 양쪽/한쪽/없음 4상태.
+  // A transparent fade only on the edge that has hidden content. Four states: both, either, neither.
   const fade = "var(--docs-tab-edge-fade)";
   const maskImage = edgeOverflow.left && edgeOverflow.right
     ? `linear-gradient(to right, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
@@ -181,8 +182,8 @@ export function DocsVaultTabStrip({
               aria-current={active ? "page" : undefined}
               title={tab.title}
               onClick={() => onActivate(tab.slug)}
-              // 가운데 버튼으로 닫기 — 에디터 탭의 보편 관용(계약 §③-3).
-              // auxclick 이 기본 붙여넣기/자동스크롤로 새지 않게 막는다.
+              // Middle-click closes — the universal idiom of editor tabs. `auxclick` is blocked
+              // so it does not leak into paste or autoscroll.
               onAuxClick={(event) => {
                 if (event.button !== 1) return;
                 event.preventDefault();
@@ -207,10 +208,10 @@ export function DocsVaultTabStrip({
               label={t("tabs.closeAria", { title: tab.title })}
               onClick={(event) => {
                 event.stopPropagation();
-                // 키보드 activation(click.detail=0)으로 ×를 누르면 해당 버튼은
-                // 즉시 DOM에서 사라진다. 새 활성 탭 렌더 뒤 그 탭 라벨로
-                // 포커스를 넘겨 문서 워킹셋의 현재 위치를 보존한다. 포인터
-                // 클릭은 브라우저의 자연 포커스 정책을 그대로 둔다.
+                // Closing × via keyboard activation (click.detail=0) removes that button from the
+                // DOM immediately. Focus moves to the new active tab's label once it renders, so
+                // the current position in the document working set is preserved. A pointer click
+                // is left to the browser's natural focus policy.
                 if (event.detail === 0) {
                   pendingKeyboardCloseRef.current = tab.slug;
                 }

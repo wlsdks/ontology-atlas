@@ -6,36 +6,35 @@ import { bodyPoints } from "@/widgets/topology-map-v2/render/node-shapes";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 
 /**
- * kind → 실루엣 매핑이 두 렌더 게이트웨이(캔버스 · DOM)에서 같은지 검증한다.
+ * Verifies the kind → silhouette mapping is identical across both render facades
+ * (canvas and DOM).
  *
- * ## 왜 계약 테스트인가
+ * **Why a contract test.** The "node spec" section of `docs/DESIGN-SYSTEM.md`
+ * records "project=hex · domain=square · capability=circle · element=square +
+ * via-hole" as a **hard invariant**, and two facades — `render/node-shapes.ts`
+ * (canvas) and `shared/ui/topology-v2-kind-glyph.tsx` (DOM) — each keep that rule
+ * independently. But each file's own unit test (`node-shapes.test.ts`,
+ * `topology-v2-kind-glyph.test.tsx`) checks consistency **within its own file
+ * only**, so a kind mapping changed on one side is invisible to the other's test.
+ * lint sees AST selectors within one file, so it cannot catch this divergence in
+ * principle (the classification rule in .claude/rules/design.md: if the verdict
+ * needs a value from another file, it is a contract test).
  *
- * `docs/DESIGN-SYSTEM.md` "노드 규격" 절은 "project=hex · domain=사각 ·
- * capability=원 · element=사각+via-hole" 을 **불변 규칙(하드)** 이라 적고,
- * 두 게이트웨이 — `render/node-shapes.ts`(캔버스) 와
- * `shared/ui/topology-v2-kind-glyph.tsx`(DOM) — 가 그 규칙을 "각자" 지킨다.
- * 그런데 각 파일의 자체 단위 테스트(`node-shapes.test.ts`,
- * `topology-v2-kind-glyph.test.tsx`)는 **자기 파일 안에서만** 일관성을
- * 본다 — 한쪽이 kind 매핑을 바꿔도 다른 쪽 테스트는 그 사실을 모른다.
- * lint 는 한 파일의 AST 셀렉터만 보므로 이 어긋남을 원리적으로 못 잡는다
- * (`.claude/rules/design.md` "규격은 lint 로 강제된다" 절의 분류 기준 —
- * 판정에 다른 파일의 값이 필요하면 계약 테스트).
+ * Why `.test.ts` (using `createElement` rather than JSX): the vitest `include` glob
+ * for `tests/contract/**` matches `.test.ts` and not `.tsx` (`vitest.config.ts`) —
+ * rather than widening a shared glob for this one file, JSX is avoided and the
+ * existing contracts stay untouched.
  *
- * `.test.ts`(JSX 없이 `createElement`) 인 이유: `tests/contract/**` 의
- * vitest `include` 글롭이 `.test.ts` 만 잡고 `.tsx` 를 안 잡는다
- * (`vitest.config.ts`) — 이 한 파일 때문에 공유 글롭을 넓히는 대신 JSX 를
- * 피해 기존 계약을 그대로 둔다.
- *
- * 켜기 전 실측(2026-08-01): 이 파일을 만들기 전에는 두 게이트웨이의 매핑
- * 일치를 붙드는 테스트가 0개였다 — 우연히 일치하고 있었을 뿐, 계약이
- * 아니었다.
+ * Inventory before switching it on (2026-08-01): before this file there were zero
+ * tests holding the two facades' mappings together — they agreed by coincidence,
+ * not by contract.
  */
 
 type ShapeFamily = "hex6" | "rect4" | "circle";
 
 const KINDS = ["project", "domain", "capability", "element"] as const;
 
-/** 캔버스 게이트웨이 — `bodyPoints` 의 반환 형태로 실루엣 분류. */
+/** Canvas facade — classify the silhouette by the return shape of `bodyPoints`. */
 function canvasShapeFamily(kind: (typeof KINDS)[number]): ShapeFamily {
   const points = bodyPoints(kind, 0, 0, 10);
   if (points === null) return "circle";
@@ -44,7 +43,7 @@ function canvasShapeFamily(kind: (typeof KINDS)[number]): ShapeFamily {
   throw new Error(`unexpected point count ${points.length} for kind=${kind}`);
 }
 
-/** DOM 게이트웨이 — 렌더된 실루엣 SVG 태그로 분류 (element 는 <rect> 바디 + via-hole <circle>). */
+/** DOM facade — classify by the rendered silhouette's SVG tag (element is a <rect> body + a via-hole <circle>). */
 function domShapeFamily(kind: (typeof KINDS)[number]): ShapeFamily {
   const { container, unmount } = render(createElement(TopologyV2KindGlyph, { kind }));
   const svg = container.querySelector("svg")!;

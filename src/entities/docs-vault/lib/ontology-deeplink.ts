@@ -2,16 +2,16 @@ import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import type { VaultDoc } from "../model/types";
 
 /**
- * frontmatter.kind 가 있는 문서는 deriveOntologyFromVault 가 동일 vault 의
- * ontology 그래프에 노드로 등재한다. 노드 ID 규칙은
- * \`${kind}:${doc.slug.split('/').pop()}\` — 본 helper 는 그 규칙을 깨지
- * 않도록 한 곳에서 관리해 docs viewer 등 다른 surface 가 ontology view
- * 로 deeplink 를 만들 수 있게 한다. URL 빌더는
- * buildOntologyNodeHref 로 위임 — encoding/key 정책 단일화 (cycle 39).
+ * A document with `frontmatter.kind` is registered by `deriveOntologyFromVault` as a
+ * node in the same vault's ontology graph, with the node id rule
+ * `` `${kind}:${doc.slug.split('/').pop()}` ``. This helper owns that rule in one
+ * place so other surfaces (the docs viewer, for one) can deeplink into the ontology
+ * view without restating it. URL construction is delegated to `buildOntologyNodeHref`
+ * so encoding and query keys stay single-sourced.
  *
- * kind 가 비어있거나 slug 가 비어있으면 null. 코너 케이스 (`fm.slug` 가
- * filename 과 다른 경우) 에는 ontology 측에서 노드 매칭 실패해도 페이지는
- * graceful 로드되므로 호출자는 별도 가드 불필요.
+ * Returns null when kind or slug is empty. In the corner case where `fm.slug` differs
+ * from the filename the ontology side may fail to match the node, but the page still
+ * loads gracefully, so callers need no extra guard.
  */
 export function buildOntologyDeeplinkForDoc(doc: VaultDoc): string | null {
   const rawKind = doc.frontmatter?.kind;

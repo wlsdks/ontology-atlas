@@ -21,31 +21,30 @@ import {
 } from '../lib/manual-connect';
 
 /**
- * **웹에서 그 자리에서 끝나는 연결.**
+ * **Connecting from the web, finished in place.**
  *
- * 종전 이 자리에는 「이 화면에서는 연결할 수 없어요」 카드 하나와, 사람을 긴
- * 문서 한가운데로 떨구는 링크가 있었다. 두 가지가 틀렸다 — 문장은 사실이
- * 아니었고(웹 사용자도 연결된다, 자동 설정만 못 한다), 대안은 시트를 잃게
- * 만들었다.
+ * This slot used to hold one card saying "you cannot connect from this screen" plus a link dropping
+ * the reader into the middle of a long document. Both were wrong — the sentence was untrue (a web
+ * user can connect; only automatic configuration is impossible) and the alternative made them lose
+ * the sheet.
  *
- * 여기서는 사용자가 경로 두 개를 알려 주면 **실행 가능한 설정을 그 자리에서**
- * 만든다. 왜 그것이 정당한지, 무엇을 잡고 무엇을 못 잡는지는
- * `lib/manual-connect.ts` 머리말에 있다.
+ * Here the user supplies two paths and **a runnable config is built on the spot**. Why that is
+ * legitimate, and what is and is not validated, is in the `lib/manual-connect.ts` preamble.
  *
- * 화면 쪽 계약 넷:
+ * Four contracts on the screen side:
  *
- * 1. **채우기 전에도 무엇을 해야 하는지 보인다.** 자리표시자가 든 진짜 설정이
- *    먼저 그려진다 — 빈 화면에 입력칸만 두지 않는다.
- * 2. **덜 채운 것은 복사되지 않는다.** 붙지 않는 설정을 손에 쥐어 주는 것은
- *    도움이 아니라 함정이다.
- * 3. **모양만 본다고 말한다.** 브라우저는 그 폴더가 실재하는지 확인할 수 없다.
- *    "확인했다"고 말하는 순간 이 화면도 거짓말을 시작한다.
- * 4. **경로는 화면 밖으로 나가지 않는다.** 전송 0 · 저장 0 — 순수 함수와
- *    로컬 상태뿐이다.
+ * 1. **What to do is visible before anything is filled in.** A real config with placeholders is
+ *    drawn first — not an empty screen with input boxes.
+ * 2. **A partially filled config is not copyable.** Handing someone a config that will not connect
+ *    is a trap, not help.
+ * 3. **It says it checks shape only.** A browser cannot confirm the folder exists, and the moment it
+ *    claims to have, this screen starts lying too.
+ * 4. **Paths never leave the screen.** Nothing transmitted, nothing stored — pure functions and
+ *    local state only.
  */
 
 export interface WebManualConnectPanelProps {
-  /** 시트/설정 패널이 서로 다른 testid 접두사를 쓰지 않도록 한 곳에서 정한다. */
+  /** Decided in one place so the sheet and the settings panel do not use different testid prefixes. */
   testIdPrefix?: string;
 }
 
@@ -103,8 +102,9 @@ function PathField({
 }
 
 /**
- * 복사 칩의 **호버.** 값 층은 호버 색을 일부러 안 낸다(호버 빈도가 모션 예산을
- * 깎으므로 소비처가 정한다). 이 파일의 세 자리가 같은 문자열이라 한 벌로 둔다.
+ * The copy chip's **hover**. The value layer deliberately emits no hover colour (hover frequency
+ * eats the motion budget, so the consumer decides). The three slots in this file share the string,
+ * so it is kept as one.
  */
 const COPY_CHIP_SKIN =
   'font-[var(--font-weight-signature)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]';
@@ -168,9 +168,9 @@ export function WebManualConnectPanel({
   const checkout = useMemo(() => normalizeManualPath(checkoutRaw), [checkoutRaw]);
   const ready = vault.ok && checkout.ok && pathConfirmed;
 
-  // 아직 안 채운 칸은 **자리표시자가 든 진짜 설정**으로 그린다. `<…>` 를 쓰지
-  // 않는 이유: next-intl 이 꺾쇠를 리치텍스트 태그로 파싱해 화면에서 통째로
-  // 사라진다(`shared/config/cli-invocation.ts` 에 기록된 실측).
+  // A field not yet filled is drawn as **a real config carrying a placeholder**. `<…>` is not used:
+  // next-intl parses angle brackets as rich-text tags and the whole thing disappears from the screen
+  // (measured, recorded in `shared/config/cli-invocation.ts`).
   const input = {
     vaultAbsolute: vault.ok ? vault.value : t('manualVaultPlaceholderPath'),
     checkoutAbsolute: checkout.ok ? checkout.value : t('manualCheckoutPlaceholderPath'),
@@ -218,7 +218,7 @@ export function WebManualConnectPanel({
           issueMessage={issueMessage(checkout)}
           testId={`${testIdPrefix}-checkout-input`}
         />
-        {/* 체크아웃이 아직 없는 사람 — 여기서 막히면 위 칸을 영원히 못 채운다. */}
+        {/* For someone with no checkout yet — stuck here, they can never fill the field above. */}
         <button
           type="button"
           data-testid={`${testIdPrefix}-clone`}
@@ -241,7 +241,7 @@ export function WebManualConnectPanel({
         </button>
       </div>
 
-      {/* 브라우저가 확인한 것과 확인하지 못한 것을 가르는 한 줄. */}
+      {/* The one line separating what the browser confirmed from what it could not. */}
       <p
         data-testid={`${testIdPrefix}-shape-only`}
         className="text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -256,7 +256,7 @@ export function WebManualConnectPanel({
         label={<span>{t('manualPathConfirmation')}</span>}
       />
 
-      {/* 도구 고르기 — 설정 파일 위치가 도구마다 다르다. 전역 스코프 패널과 같은 구조. */}
+      {/* Tool selection — the config file location differs per tool. Same structure as the global scope panel. */}
       <div className="flex flex-col gap-2">
         <div
           role="tablist"
@@ -321,8 +321,8 @@ export function WebManualConnectPanel({
                 ? t('copyFailed')
                 : t('manualCopyConfig')}
           </button>
-          {/* 저장 다음에 할 일이 없으면 사용자는 붙었는지 모른 채로 기다린다.
-              설치 앱의 단계 ②(재시작)가 웹에서는 그려지지 않으므로 여기서 말한다. */}
+          {/* With nothing to do after saving, the user waits without knowing whether it connected.
+              The installed app's step ② (restart) is not drawn on the web, so it is said here. */}
           <p
             data-testid={ready ? `${testIdPrefix}-restart` : `${testIdPrefix}-not-ready`}
             className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -332,7 +332,7 @@ export function WebManualConnectPanel({
         </div>
       </div>
 
-      {/* 파일을 손으로 만들기 싫은 사람 — 같은 결과를 CLI 한 줄로. */}
+      {/* For someone who does not want to create files by hand — the same result in one CLI line. */}
       <div className="flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-3">
         <CommandRow
           label={t('manualCliLabel')}

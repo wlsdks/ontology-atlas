@@ -17,9 +17,9 @@ const RULES = [
     matches: [/^scripts\/build-docs-vault\.(?:mjs|test\.mjs)$/],
   },
   {
-    // 이 그물이 실제로 잡는 사고는 「문서를 옮기거나 볼트를 재생성했는데
-    // 그것을 인용하던 산문이 남았다」이고, 그건 markdown 을 건드린 PR 에서만
-    // 생긴다 — 그래서 추천의 트리거도 markdown 이다.
+    // The accident this net actually catches is "a document moved or the vault was
+    // regenerated but the prose citing it stayed", which only happens in a PR that
+    // touched markdown — so markdown is also the trigger for the suggestion.
     command: 'pnpm docs:links',
     reason: 'markdown moved or edited — cited paths and links may have gone stale',
     matches: [/\.md$/],
@@ -100,12 +100,14 @@ const RULES = [
     ],
   },
   {
-    // 데스크톱 성능 하드 예산은 종전에 `desktop:release-preflight` 에서만
-    // 돌았고, 그 사이 번들 볼트 데이터가 자라 두 예산이 조용히 넘었다
-    // (2026-08-19 릴리스 준비에서 1.71MiB/1.50 · 8.42MiB/8.00 발견). 예산을
-    // 움직이는 경로 — 번들 데이터 JSON, 그것을 만드는 생성기, 정적 import
-    // 지점, 예산 검사 자체 — 가 바뀌면 여기서 실측을 추천한다. 빌드 없이
-    // 상시로 도는 절반은 `tests/contract/bundled-vault-budget.contract.test.ts`.
+    // The hard desktop performance budgets used to run only in
+    // `desktop:release-preflight`, and in the meantime the bundled vault data grew
+    // until both budgets were silently exceeded (found during 2026-08-19 release prep:
+    // 1.71MiB against 1.50, 8.42MiB against 8.00). When a path that moves the budget
+    // changes — the bundled data JSON, the generator that produces it, the static
+    // import site, or the budget check itself — the measurement is suggested here. The
+    // half that runs constantly without a build is
+    // `tests/contract/bundled-vault-budget.contract.test.ts`.
     command: 'pnpm build && pnpm desktop:perf',
     reason: 'bundled vault data or the desktop performance budget surface changed — re-measure the static budgets',
     matches: [
@@ -185,12 +187,12 @@ const RULES = [
     reason:
       'cross-package parser/schema contract, or a UI file the design-system and a11y contracts scan from disk',
     matches: [
-      // 2026-08-04 — 새 `.tsx` 뷰와 새 라우트에 이 advisor 가 tsc·i18n 말고는
-      // 아무것도 안 권했다. 그런데 `tests/contract/` 의 여러 게이트는 **파일
-      // 시스템을 직접 읽는다** — 램프 커버리지, 이름 유틸리티 래칫, 컨트롤
-      // 채택 래칫, 금지 클래스, 인라인 hex, 표면 모션, 라벨 장식, 그리고
-      // 라우트를 분류하는 `audited-route-coverage`. 새로 만든 UI 파일은
-      // 그것들의 입력이지 남의 일이 아니다.
+      // 2026-08-04 — for a new `.tsx` view and a new route this advisor suggested
+      // nothing beyond tsc and i18n. But several gates in `tests/contract/` **read the
+      // file system directly**: ramp coverage, the named-utility ratchet, the control
+      // adoption ratchet, forbidden classes, inline hex, surface motion, label
+      // decoration, and `audited-route-coverage`, which classifies routes. A newly
+      // created UI file is their input, not somebody else's business.
       /^(?:src|app)\/.*\.tsx$/,
       /^tests\/contract\//,
       /^tests\/fixtures\/(?:frontmatter|frontmatter-writer|validate-vault|vault-schema)-cases\.mjs$/,
@@ -303,11 +305,11 @@ const RULES = [
   },
   {
     /*
-     * **CI 가 무엇을 돌릴지 정하는 스크립트인데 추천 매핑이 없었다** (2026-08-08).
-     * `pnpm checks:changed -- scripts/classify-change.mjs` 가 «no focused
-     * mapping» 을 돌려줬다 — 이 저장소에서 결과가 가장 큰 스크립트가 정작
-     * 자기 시험을 가리키는 줄을 못 갖고 있었다. 실제로 이 파일의 판정 결함
-     * 하나가 main 에서 전체 Playwright 를 통째로 생략시켰다.
+     * **The script that decides what CI runs had no suggestion mapping of its own**
+     * (2026-08-08). `pnpm checks:changed -- scripts/classify-change.mjs` returned "no
+     * focused mapping" — the highest-consequence script in this repository had no line
+     * pointing at its own tests. One classification defect in that file actually made
+     * main skip the entire Playwright suite.
      */
     command: 'pnpm exec node --test scripts/classify-change.test.mjs',
     reason: 'the CI change classifier decides what CI runs at all',
@@ -315,8 +317,9 @@ const RULES = [
   },
   {
     /*
-     * 스킬 무결성 계기 — 제품 기능이 아니라 발견 도구지만, 판정 로직이 순수
-     * 함수라 시험이 붙어 있다. 도구가 못 가리키는 검사는 존재하지 않는 검사다.
+     * The skill-integrity instrument. It is a discovery tool rather than a product
+     * feature, but its verdict logic is a pure function and has tests. A check the tool
+     * cannot point at is a check that does not exist.
      */
     command: 'pnpm test:skills:audit',
     reason: 'Claude skill integrity instrument changed',
@@ -339,17 +342,18 @@ const RULES = [
   },
   {
     /*
-     * ⚠️ **문서함을 고치면 문서함을 운전하는 e2e 를 같이 돌린다** (2026-08-08).
+     * ⚠️ **Editing the docs surface runs the e2e that drives it** (2026-08-08).
      *
-     * 이 매핑이 없어서 실제 사고가 났다. #987 이 문서함 헤더의 「샘플|로컬」
-     * 라디오를 볼트 칩 메뉴로 옮겼는데, `docs-deeplink.spec.ts` 가 그 라디오를
-     * 클릭한다. 추천 도구가 그 스펙을 **한 번도 가리키지 않아** 로컬에서
-     * 안 돌렸고, CI 는 빨간 채로 **여섯 PR 이 더 머지됐다**(2분 타임아웃 ×
-     * 재시도 3회 × 두 시험).
+     * Missing this mapping caused a real incident. #987 moved the docs header's
+     * 「샘플|로컬」 (sample | local) radio into the vault chip menu, and
+     * `docs-deeplink.spec.ts` clicks that radio. The advisor **never once pointed at
+     * that spec**, so it was not run locally, and CI stayed red while **six more PRs
+     * merged** (2-minute timeout × 3 retries × two tests).
      *
-     * `.claude/rules/testing.md` 가 정확히 이것을 경고한다 — *"화면을 삭제하면
-     * 같은 PR 에서 e2e spec 도 같이 훑어 지운다"*. 사람의 기억에 맡긴 그 훑기를
-     * 도구가 대신하게 한다: **도구가 못 가리키는 검사는 존재하지 않는 검사다.**
+     * `.claude/rules/testing.md` warns about exactly this — *"화면을 삭제하면 같은
+     * PR 에서 e2e spec 도 같이 훑어 지운다"* (delete a screen and sweep its e2e specs
+     * in the same PR). That sweep was left to human memory; the tool does it instead:
+     * **a check the tool cannot point at is a check that does not exist.**
      */
     command:
       'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
@@ -360,9 +364,10 @@ const RULES = [
     ],
   },
   {
-    // 표면 분리(2026-07-27) 이후 웹은 앱을 따라가지 않으므로, 능력 브리지를
-    // 건드린 사람은 앱만 확인하고 지나가기 쉽다. 웹이 무인 표면이라 그 통과가
-    // 그대로 부패가 된다 — 브리지를 만지면 웹 스모크를 같이 권한다.
+    // Since the surface split (2026-07-27) the web does not follow the app, so anyone
+    // touching a capability bridge easily checks only the app and moves on. The web is
+    // an unattended surface, so that pass becomes decay — touching a bridge also
+    // suggests the web smoke test.
     command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
     reason: 'desktop capability bridge or local-vault entry changed — the web surface is unattended',
     matches: [
@@ -427,20 +432,20 @@ const RULES = [
     command: 'pnpm exec tsc --noEmit',
     reason: 'TypeScript or Next.js static export config changed',
     /*
-     * ⚠️ **테스트 파일을 빼면 안 된다** (2026-08-21 정정).
+     * ⚠️ **Do not exclude test files** (corrected 2026-08-21).
      *
-     * 종전에는 `src/**` 의 `.test.`/`.spec.` 를 부정 전방탐색으로 빼고
-     * `tests/**` 는 아예 안 봤다. 「테스트는 제품 타입에 영향이 없다」는 전제였을
-     * 텐데, **`tsconfig.json` 의 `include` 는 `**\/*.ts` 전부**라 CI 의
-     * `tsc --noEmit` 은 그것들을 검사한다. 그리고 **vitest 는 타입을 안 본다** —
-     * 즉 테스트만 고친 사람은 로컬에서 타입 오류를 만날 방법이 아예 없었고,
-     * `Types · Lint · Docs` 잡에서야 처음 빨개졌다.
+     * This used to exclude `.test.`/`.spec.` under `src/**` with a negative lookahead
+     * and never looked at `tests/**` at all, presumably on the premise that tests do
+     * not affect product types. But **`tsconfig.json`'s `include` is all of
+     * `**\/*.ts`**, so CI's `tsc --noEmit` checks them — and **vitest does not check
+     * types**. Anyone who edited only tests therefore had no way to meet a type error
+     * locally, and it first went red in the `Types · Lint · Docs` job.
      *
-     * 실제로 그렇게 터졌다(2026-08-21 `#1180`): 계약 시험에 가짜 `spawn` 스텁을
-     * 넣었는데 `SpawnSyncReturns` 와 안 맞았다. 단위 시험 25개는 전부 초록이었다.
+     * It broke exactly that way (2026-08-21, `#1180`): a fake `spawn` stub added to a
+     * contract test did not match `SpawnSyncReturns`. All 25 unit tests were green.
      *
-     * 이 저장소가 게이트에 대해 정해 둔 것 그대로다: **검사가 보는 범위와
-     * 추천기가 보는 범위가 다르면, 그 차이만큼이 CI 에서야 터진다.**
+     * This is what the repository already decided about gates: **wherever the check's
+     * reach differs from the advisor's reach, that difference surfaces only in CI.**
      */
     matches: [
       /^app\/.*\.(?:ts|tsx)$/,
@@ -452,13 +457,14 @@ const RULES = [
     ],
   },
   {
-    // 2026-08-08 — 카운슬이 「앱 전용」이라 거짓 주장하던 문구를 고쳤는데,
-    // advisor 는 `test:i18n:messages`(카탈로그 정합)만 권했다. 실제로 그
-    // 문구를 못박고 있던 게이트는 **`check-desktop-readiness`** 였고, 그것은
-    // CI 에서야 빨개졌다 — 로컬 검증을 도구가 시키는 대로 다 돌렸는데도.
+    // 2026-08-08 — a council fixed copy that falsely claimed a feature was app-only,
+    // and the advisor suggested only `test:i18n:messages` (catalogue consistency). The
+    // gate actually pinning that copy was **`check-desktop-readiness`**, and it went
+    // red only in CI — even though local verification ran everything the tool asked
+    // for.
     //
-    // 문구 카탈로그는 정합 검사만의 입력이 아니다. 「이 화면이 무엇을 할 수
-    // 있다고 말하나」를 읽는 게이트들의 입력이기도 하다.
+    // A message catalogue is not only the input of the consistency check. It is also
+    // the input of the gates that read "what does this screen claim it can do".
     command: 'pnpm test:desktop:check',
     reason: 'message copy changed — the desktop routing gate reads these strings for capability claims',
     matches: [/^messages\/[^/]+\.json$/],
@@ -478,30 +484,31 @@ const RULES = [
     matches: [/^eslint\.config\.mjs$/],
   },
   {
-    // 2026-08-04 — 라우트를 새로 놓은 사람에게 이 advisor 는 tsc 만 권했다.
-    // 라우트는 세 게이트의 입력이다: 원장(`decisions:check`), 접근성 분류
-    // (`audited-route-coverage` → `pnpm test:contracts`), 그리고 실제 측정
-    // (두 래칫). 셋째가 여기 없으면 새 화면의 대비 미달이 **아무 목록에도
-    // 없는 채로** 통과한다 — 2026-08-03 에 404 두 장이 그렇게 AA 4.42:1 을
-    // 들고 있었다.
+    // 2026-08-04 — for someone adding a route this advisor suggested only tsc. A route
+    // is the input of three gates: the decision ledger (`decisions:check`), the
+    // accessibility classification (`audited-route-coverage` → `pnpm test:contracts`),
+    // and the actual measurement (the two ratchets). Without the third, a new screen's
+    // contrast shortfall passes **while appearing on no list at all** — on 2026-08-03
+    // two 404 pages were carrying AA 4.42:1 that way.
     command:
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
     reason: 'a route was added or changed — it must be classified into the a11y/contrast ratchets',
     matches: [/^app\/(?:.+\/)?(?:page|not-found|error|global-error)\.tsx$/],
   },
   {
-    // 2026-08-08 — 관문의 판을 고친 사람에게 이 advisor 는 **그 판의 격자
-    // 검사를 권하지 않았다.** 실제로 그 사이로 회귀가 지나갔다: 푸터에 줄
-    // 하나를 넣자 여덟 폭 전부에서 `download-gateway-grid` 가 빨개졌는데,
-    // 로컬에서는 아무도 그 스펙을 안 돌렸고 CI 에서야 나왔다.
+    // 2026-08-08 — for someone editing the gateway's layout this advisor **did not
+    // suggest that layout's grid check**, and a regression went through the gap:
+    // adding one line to the footer turned `download-gateway-grid` red at all eight
+    // widths, nobody ran that spec locally, and it surfaced only in CI.
     //
-    // 이 저장소의 규율은 «손으로 쓴 목록 대신 도구를 가리켜라» 인데, 그러면
-    // **도구가 못 가리키는 검사는 존재하지 않는 검사**가 된다. 스펙 이름에
-    // `download-gateway` 가 그대로 들어 있어도 경로↔검사 연결이 없으면
-    // 소용없다.
+    // This repository's discipline is "point at the tool instead of a hand-written
+    // list", which makes **a check the tool cannot point at a check that does not
+    // exist**. Even with `download-gateway` right there in the spec name, it is
+    // useless without a path↔check link.
     //
-    // 원점(`PAGE_COLUMN`/`PAGE_GUTTER`)까지 넣는 이유: 그 값이 곧 격자가
-    // 재는 기준선이라, 그것을 고치면 판을 안 건드려도 여덟 폭이 함께 움직인다.
+    // The origin values (`PAGE_COLUMN`/`PAGE_GUTTER`) are included because they are the
+    // baseline the grid measures against — editing them moves all eight widths without
+    // touching the layout.
     command: 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts',
     reason: 'the gateway plate or its frame changed — six elements must still share one origin',
     matches: [
@@ -669,23 +676,23 @@ const RULES = [
   },
   {
     /*
-     * ⚠️ **읽을거리를 게이트로 쓰지 않는다** (2026-08-21 실측으로 정정).
+     * ⚠️ **Do not use a readout as a gate** (corrected by measurement, 2026-08-21).
      *
-     * 여기 있던 것은 `pnpm dogfood:status` 였다. 그런데 그 명령은 **그래프가
-     * 덜 여물었을 때도 1** 로 끝난다 — 자식 중 `health` 가 「이 프로젝트의
-     * competency 답이 아직 안 채워졌다」로 `needs_attention` 을 내고, 그 출력
-     * 자신이 ***"Nothing is broken"*** 이라고 적는다.
+     * What used to be here was `pnpm dogfood:status`. That command exits **1 even when
+     * the graph is merely immature** — its `health` child reports `needs_attention` for
+     * "this project's competency answers are not filled in yet", while the output
+     * itself says ***"Nothing is broken"***.
      *
-     * 실측: **main 에서도 1** 이다. 그래서 볼트를 고친 모든 푸시가 **아무
-     * 관계 없는 이유로** 막혔다(이 규칙이 pre-push 훅에 걸리면서 실제로 막혔다).
-     * 그리고 그 상태를 푸는 일(`finalize_project_meaning`)은 도구 자신이
-     * **사람 승인 없이 하지 말라**고 못박은 것이라, 에이전트가 조용히 지나갈
-     * 수도 없다.
+     * Measured: **it is 1 on main too.** So every push that edited the vault was
+     * blocked **for an unrelated reason** (this rule is wired into the pre-push hook,
+     * and it really did block). Clearing that state (`finalize_project_meaning`) is
+     * something the tool itself pins as **not to be done without human approval**, so an
+     * agent cannot quietly step past it either.
      *
-     * 대신 **깨진 것만 말하는 검사**를 건다: `vault:validate` 는 frontmatter
-     * 무결성과 그래프 참조를 재고 실제로 깨졌을 때만 실패한다(CI 도 이것을
-     * 쓴다). `dogfood:status` 는 사람이 손으로 읽는 읽을거리로 남는다 —
-     * 없애는 게 아니라 **게이트 자리에서 빼는 것**이다.
+     * Instead the gate is **a check that only speaks when something is broken**:
+     * `vault:validate` measures frontmatter integrity and graph references and fails
+     * only when they are actually broken (CI uses it too). `dogfood:status` remains a
+     * readout for a person — it is not removed, it is **taken out of the gate slot**.
      */
     command: 'pnpm vault:validate',
     reason: 'dogfood ontology or MCP/CLI dogfood surface changed',
@@ -693,15 +700,16 @@ const RULES = [
   },
   {
     /*
-     * **볼트 마크다운은 화면에 그려진다.** `/docs` 가 이 폴더를 그대로 렌더하고,
-     * `samples/storefront` 와 `docs/guide` 도 마찬가지다. 그래서 여기 쓰는 글은
-     * 코드가 아니라 **제품 문구**이고, 문구 게이트(작대기 금지)의 사정거리 안이다.
+     * **Vault markdown is drawn on screen.** `/docs` renders this folder as is, and so
+     * do `samples/storefront` and `docs/guide`. So the prose written here is **product
+     * copy**, not code, and it is within reach of the copy gate (no em dashes).
      *
-     * ⚠️ 이 규칙이 없어서 실제로 뚫렸다 (2026-08-21): 볼트 노드 두 개를 쓰면서
-     * 산문에 작대기를 넣었는데 `vault:validate` 는 frontmatter 무결성만 보므로
-     * 통과했고, pre-push 훅도 통과시켰다. **CI 의 Unit·Contract 가 7분을 돌고
-     * 나서야** 빨개졌다. 무결성 검사와 문구 검사는 **다른 것을 재는 검사**라
-     * 하나가 다른 하나를 대신하지 못한다.
+     * ⚠️ Without this rule it was actually breached (2026-08-21): two vault nodes were
+     * written with em dashes in the prose, `vault:validate` only looks at frontmatter
+     * integrity so it passed, and the pre-push hook passed it too. It went red only
+     * **after CI's Unit · Contract job had run for 7 minutes**. The integrity check and
+     * the copy check **measure different things**, so neither substitutes for the
+     * other.
      */
     command: 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     reason: 'rendered doc markdown changed (vault, guide, sample)',
@@ -891,16 +899,18 @@ function directVitestTestSuggestions(paths) {
 }
 
 /**
- * 바뀐 `src/**` · `app/**` 소스에 **ESLint 를 직접** 건다.
+ * Runs **ESLint directly** on changed `src/**` and `app/**` sources.
  *
- * 이 저장소에서 디자인 시스템 규격(타입·반경·행간·모션·그림자 램프, 금지
- * 그라디언트, accent×틴트 페어링, FSD 경계)은 문서가 아니라 `no-restricted-syntax`
- * 가 강제한다. 그런데 2026-08-04 실사용 시험에서 이 advisor 는 새 `.tsx` 뷰에
- * tsc·contracts·i18n 만 권하고 **lint 를 한 번도 권하지 않았다** — 규격을 지고
- * 있는 게이트가 추천 목록에 없었다.
+ * In this repository the design-system spec (type, radius, leading, motion, and
+ * shadow ramps; forbidden gradients; accent×tint pairing; FSD boundaries) is
+ * enforced by `no-restricted-syntax`, not by a document. Yet in the 2026-08-04
+ * field trial this advisor suggested only tsc, contracts, and i18n for a new `.tsx`
+ * view and **never once suggested lint** — the gate carrying the spec was absent
+ * from the list.
  *
- * `pnpm lint` 전체가 아니라 **바뀐 파일만** 건다. 전체는 escalation 이고,
- * 여기서 필요한 것은 "방금 쓴 화면이 규격 안에 있나" 라는 즉답이다.
+ * It runs on **the changed files only**, not the whole `pnpm lint`. The full run is
+ * an escalation; what is needed here is an immediate answer to "is the screen I
+ * just wrote inside the spec".
  */
 function directLintSuggestions(paths) {
   const lintable = paths.filter((path) => /^(?:src|app)\/.+\.(?:ts|tsx)$/.test(path));

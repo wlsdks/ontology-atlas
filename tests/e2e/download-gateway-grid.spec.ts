@@ -2,92 +2,101 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **관문의 그리드는 한 벌이다** — 폭이 독립 변수라 lint 도 jsdom 도 못 잰다.
+ * **The gateway's grid is one grid** — width is the independent variable, so
+ * neither lint nor jsdom can measure it.
  *
- * ## 이 게이트가 막는 회귀
+ * **The regression this gate blocks.** Measured 2026-07-29: `/download` is designed
+ * to pin the plate to **the left of the stage**, but the wrapper around it used the
+ * same `mx-auto max-w-[var(--page-max)]` as the body. So the plate's x became a
+ * function of viewport width:
  *
- * 2026-07-29 실측: `/download` 는 판을 무대 **왼쪽에 붙이는** 설계인데, 판을
- * 감싼 래퍼가 본문과 같은 `mx-auto max-w-[var(--page-max)]` 를 쓰고 있었다.
- * 그래서 판의 x 가 뷰포트 폭의 함수가 됐다:
- *
- * | 폭 | 판 오른끝 | 카메라가 예약한 인셋 | 어긋남 |
+ * | Width | Plate right edge | Inset the camera reserved | Divergence |
  * |---|---|---|---|
- * | 1512 | 520 | 544 | 0 (여기서만 맞았다) |
+ * | 1512 | 520 | 544 | 0 (correct only here) |
  * | 1920 | 640 | 544 | **+96** |
  * | 2560 | 960 | 544 | **+416** |
  *
- * 카메라는 토큰이 말한 544 만 피하므로, 넓은 화면일수록 그래프가 판 뒤로
- * 파고든다. **한 폭에서 눈으로 맞춰 놓으면 나머지 폭에서 조용히 틀리는**
- * 종류라 사람 검수를 통과한다.
+ * The camera avoids only the 544 the token declares, so the wider the screen the
+ * further the graph burrows behind the plate. It is the kind of defect that
+ * **looks right at one width and is silently wrong at every other**, so it passes
+ * human review.
  *
- * 게다가 바닥 절은 `--page-col-utility` 로 한 번 더 중앙정렬돼 있어서, 같은
- * 페이지 안에 정렬 기준이 **둘**이었다(1920 에서 판 x=160 · 바닥 x=480).
+ * On top of that the footer section was centred again by `--page-col-utility`, so
+ * one page had **two** alignment origins (at 1920: plate x=160, footer x=480).
  *
- * ## 그리고 같은 날 밤: 좌우 비대칭 (원점 승격)
+ * **And that same night: left/right asymmetry (promoting the origin).** After
+ * fixing the above, the column still stopped at `--page-max` (1600) and all the
+ * spare width piled up **on the right**. Measured:
  *
- * 위 사고를 고친 뒤에도 컬럼은 `--page-max`(1600) 에서 멈췄고, 남는 폭이 전부
- * **오른쪽에** 쌓였다. 실측:
- *
- * | 폭 | 왼쪽 | 오른쪽 | 비 |
+ * | Width | Left | Right | Ratio |
  * |---|---|---|---|
  * | 1512 | 40 | 40 | 1.0 |
  * | 1728 | 64 | 64 | 1.0 |
  * | 1920 | 64 | **256** | 4.0 |
  * | 2560 | 96 | **864** | 9.0 |
  *
- * 비대칭은 **1728 부터** 시작한다 — 그 아래는 컬럼이 화면을 다 써서 저절로
- * 대칭이었다. 그래서 정렬 원점을 `max(홈통, (vw − page-max)/2)` 로 승격시키고,
- * 여섯 원소와 카메라 예약폭이 **그 하나**를 소비하게 했다.
+ * Asymmetry starts **at 1728** — below that the column fills the screen and is
+ * symmetric by itself. So the alignment origin was promoted to
+ * `max(gutter, (vw − page-max)/2)`, and the six elements plus the camera's
+ * reserved width all consume **that one value**.
  *
- * ## 무엇을 재나 (2026-08-19 개정 — 설치 절 삭제)
+ * **What is measured (revised 2026-08-19, after the install section was deleted).**
  *
- * 1. GNB 로고 · 헤드라인 · **지도 절** · 캡션 · 푸터의 x 가 **전부 같다**
- *    (다섯 원소).
- * 2. **좌우 여백이 같다** — `밴드.left === vw − 밴드.right`.
- * 3. **상단 바의 우측 그룹 오른끝 === vw − 원점** (소유자의 "공백이 길고" 지적).
- * 4. **리사이즈 뒤에도 전부 유지된다.**
- * 5. **두 주소가 같은 것을 보여준다** — `/` 와 `/download` 둘 다 시연 절을 낸다.
- * 6. 320px 에서 가로 오버플로 0 (ko/en 둘 다).
- * 7. **무대 폭이 토큰을 따른다** (2026-08-19 넓은 폭 개정) — 시연 무대의
- *    렌더 폭이 `--gateway-stage-max` 의 계산값과 같고, 컬럼 안에서 가운데
- *    서며, 에이전트 장면이 같은 폭을 입는다. 리사이즈 시험이 무대 폭이
- *    실제로 폭을 따라 **움직였는지**까지 잰다 — 소유자의 2560 스크린샷에서
- *    무대가 뷰포트의 30%로 고정돼 화면이 비어 보이던 그 결함의 재발 감시다.
+ * 1. The x of the GNB logo, headline, **map section**, caption, and footer are
+ *    **all identical** (five elements).
+ * 2. **Left and right margins are equal** — `band.left === vw − band.right`.
+ * 3. **The top bar's right group ends at `vw − origin`** (the owner's "the gap is
+ *    long" report).
+ * 4. **All of it survives a resize.**
+ * 5. **Both addresses show the same thing** — `/` and `/download` both render the
+ *    demo section.
+ * 6. Zero horizontal overflow at 320px (both ko and en).
+ * 7. **Stage width follows the token** (wide-width revision 2026-08-19) — the demo
+ *    stage's rendered width equals the computed value of `--gateway-stage-max`, it
+ *    is centred within the column, and the agent scene takes the same width. The
+ *    resize test also measures whether the stage width **actually moved** with the
+ *    viewport — watching for a recurrence of the defect in the owner's 2560
+ *    screenshot, where the stage was pinned at 30% of the viewport and the screen
+ *    looked empty.
  *
- * ## [삭제 2026-08-19] 판·설치 3단을 주어로 쓰던 단언 넷
+ * **[Deleted 2026-08-19] four assertions whose subject was the plate or the
+ * three-step install.** The owner removed the install section entirely (*"맨 마지막
+ * 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"* — this last one can probably go; it
+ * is all at the top anyway). Removed with it:
  *
- * 소유자가 설치 절을 통째로 걷어냈다(*"맨 마지막 이거는 없어도 될듯? 어차피
- * 맨 위에 다 있어서"*). 함께 지운 것:
+ * - The **plate** and the **install strip** from the seven elements (subject gone)
+ * - **Plate/map non-overlap** — with both sections gone there is nothing to overlap
+ * - **The plate does not exceed its width token (`--gateway-plate-width`)**
+ * - **The three-step install does not wrap**, **controls inside the plate do not
+ *   break out of it**, and **the plate's controls honour their declared margins**
+ *   (zero crushed margin)
  *
- * - 일곱 원소 중 **판**과 **설치 띠** (주어 소멸)
- * - **판↔지도 비겹침** — 두 절이 다 없어졌으므로 겹칠 것이 없다
- * - **판이 폭 토큰(`--gateway-plate-width`)을 안 넘는다**
- * - **설치 3단이 접히지 않는다** · **판 안 컨트롤이 판을 안 뚫는다** ·
- *   **판의 컨트롤이 선언한 여백을 지킨다**(눌린 여백 0)
+ * Only "both addresses show the same thing" was kept, with a new vessel — that is a
+ * property of **address unification** rather than of the three-step install, and
+ * its subject (`demo-stage`) is still alive.
  *
- * 그중 「두 주소가 같은 것을 보여준다」만은 그릇을 갈아 끼워 남긴다 — 그건
- * 설치 3단의 성질이 아니라 **주소 통일**의 성질이고, 주어(`demo-stage`)가
- * 그대로 살아 있다.
- *
- * ⚠️ **그릇과 내용물을 헷갈리면 게이트가 두 방향으로 틀린다.** 그릇만 지키면
- * 정당한 설계 변경에 빨개지고, 그릇을 지우면 내용물까지 같이 사라진다.
- * 시험이 무엇을 지키는지 문장으로 못 쓰면 그건 아직 property 가 아니다.
+ * ⚠️ **Confusing the vessel with the content makes a gate wrong in both
+ * directions.** Guarding only the vessel turns it red on a legitimate design
+ * change; deleting the vessel takes the content with it. If you cannot write in a
+ * sentence what a test guards, it is not yet a property.
  */
 
 /**
- * ⚠️ **원점 값을 여기 베끼지 않는다** (2026-07-29 「체계」 처방).
+ * ⚠️ **Do not copy the origin value here** (prescription from the 체계
+ * (design-systems) seat, 2026-07-29).
  *
- * 예전엔 `width >= 768 ? 40 : 24` 였다. 그러면 이 파일이 **두 번째 진실원**이
- * 된다 — 시험이 검증하는 것이 "렌더된 x 가 토큰이 말하는 값과 같은가" 가
- * 아니라 "렌더된 x 가 내가 여기 베껴 둔 숫자와 같은가" 가 되고, 토큰을
- * 바꾸면 시험이 **제품이 아니라 자기 복사본을 지키느라** 빨개진다.
+ * It used to be `width >= 768 ? 40 : 24`. That makes this file **a second source of
+ * truth** — the test then verifies "does the rendered x equal the number I copied
+ * here" rather than "does the rendered x equal what the token says", and changing
+ * the token turns the test red **defending its own copy instead of the product**.
  *
- * 이제 `--gateway-origin` 을 라이브로 읽는다(`@property <length>` 등록이라
- * 계산값이 `160px` 로 굳는다). 폭 목록만 여기 있고, 그 폭에서 나와야 할 수는
- * 전부 브라우저가 계산한 것을 읽는다.
+ * Now `--gateway-origin` is read live (registered as `@property <length>`, so the
+ * computed value settles as `160px`). Only the width list lives here; every number
+ * expected at those widths is read from what the browser computed.
  *
- * `<md` 구간은 이 토큰이 아니라 `max(1.5rem, safe-area)` 가 지배하므로 아래
- * x 시험의 폭 목록에 넣지 않는다 — 320px 시험은 x 가 아니라 **넘침**을 잰다.
+ * The `<md` band is governed by `max(1.5rem, safe-area)` rather than this token, so
+ * it is not in the x-test width list — the 320px test measures **overflow**, not
+ * x.
  */
 const WIDTHS = [
   { width: 1512, height: 982 },
@@ -95,15 +104,16 @@ const WIDTHS = [
   { width: 1920, height: 1080 },
   { width: 2560, height: 1440 },
   { width: 1440, height: 900 },
-  // 홈통 스텝 경계(≥1536) — 홈통이 원점을 이기는 마지막 구간이 여기다.
+  // The gutter step boundary (≥1536) — the last band where the gutter beats the origin.
   { width: 1536, height: 960 },
-  // 대칭이 깨지기 시작하던 문턱. 1728 에서는 원점 = 홈통 = 64 로 두 규칙이
-  // 정확히 만난다 — 승격이 기존 구간을 안 건드렸다는 증인.
+  // The threshold where symmetry used to break. At 1728 origin = gutter = 64 and the
+  // two rules meet exactly — the witness that the promotion left existing bands
+  // untouched.
   { width: 1728, height: 1080 },
   { width: 2400, height: 1350 },
 ];
 
-/** 두 주소가 같은 것을 보여주는지 재는 폭 — 14인치 실창과 풀스크린, 그 위. */
+/** Widths for measuring that both addresses show the same thing — a real 14-inch window, fullscreen, and above. */
 const UNIFIED_ROUTE_VIEWPORTS = [
   { width: 1512, height: 982 },
   { width: 1512, height: 850 },
@@ -114,18 +124,20 @@ const UNIFIED_ROUTE_VIEWPORTS = [
 async function measure(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     /**
-     * ⚠️ **그려진 것만 잰다** (2026-08-08 카운슬 실측에서 걸림).
+     * ⚠️ **Measure only what is laid out** (caught by council measurement,
+     * 2026-08-08).
      *
-     * 종전엔 `querySelector` 로 **첫 일치**를 재서, 그 자리가 `display:none`
-     * 이면 `x=0 · w=0` 을 정답인 양 돌려줬다. 실제로 그 일이 났다 —
-     * 2026-08-07 에 푸터 맨 앞으로 들어온 `GatewayReadingLinks` 는
-     * `sm:hidden` 이라 `≥sm` 에서 안 그려지는데, 그것이 `main footer > div`
-     * 의 첫 일치가 되면서 **여덟 폭 전부**가 *"footer 이 원점(200) 밖에
-     * 있다 — 0"* 으로 빨개졌다. 레이아웃은 멀쩡했고 계기가 틀렸다.
+     * This used to measure the **first match** from `querySelector`, so when that place
+     * was `display:none` it returned `x=0, w=0` as if correct. It really happened:
+     * `GatewayReadingLinks`, added to the front of the footer on 2026-08-07, is
+     * `sm:hidden` and is not rendered at `≥sm`, yet it became the first match for
+     * `main footer > div` and **all eight widths** went red with *"footer is outside
+     * the origin (200) — 0"*. The layout was fine and the instrument was wrong.
      *
-     * 「보이나」가 아니라 **「배치됐나」**로 가른다(`getClientRects()`):
-     * 투명도나 화면 밖으로 밀린 것은 여전히 그리드의 일원이지만,
-     * `display:none` 은 그 폭의 그리드에 참여하지 않는다.
+     * The discriminator is not "is it visible" but **"is it laid out"**
+     * (`getClientRects()`): something transparent or pushed off screen is still part of
+     * the grid, while `display:none` does not participate in that width's grid at
+     * all.
      */
     const laidOut = (sel: string) =>
       [...document.querySelectorAll(sel)].find((el) => el.getClientRects().length > 0) ?? null;
@@ -148,22 +160,24 @@ async function measure(page: import("@playwright/test").Page) {
       xs: {
         gnb: bx('[data-testid="download-gnb"] a'),
         headline: bx("h1"),
-        // 리메이크(2026-08-18): 지도 절도 같은 원점에 선다.
+        // Remake (2026-08-18): the map section stands at the same origin.
         map: bx('[data-testid="download-stage-map-frame"]'),
         caption: bx('[data-testid="download-portrait-caption"] span'),
         footer: bx("main footer > div"),
       },
-      // 밴드(=원점 안쪽 컬럼)의 오른끝 — 좌우 대칭은 이 수와 `vw` 로만 잰다.
-      // ⚠️ 자(ruler)는 **컬럼 전폭을 실제로 채우는 원소**여야 한다. 계기
-      // 스트립(gateway-facts)은 히어로의 바닥 괘선이라 컬럼 전폭이 정의이고,
-      // 게시/미게시 어느 분기에서도 그려진다. (구 자였던 설치 3단은
-      // 2026-08-19 에 페이지에서 사라졌다.)
+      // The right edge of the band (the column inside the origin) — symmetry is measured
+      // from this number and `vw` alone.
+      // ⚠️ The ruler must be **an element that really fills the column's full width**.
+      // The facts strip (gateway-facts) is the hero's bottom rule, so full column width
+      // is its definition, and it renders on both the published and unpublished
+      // branches. (The previous ruler, the three-step install, left the page on
+      // 2026-08-19.)
       bandRight: right('[data-testid="gateway-facts"]'),
       /**
-       * 무대 폭 (2026-08-19 넓은 폭 개정). 값을 베끼지 않는 규율은 원점과
-       * 같다 — `--gateway-stage-max` 는 clamp(rem, vw, rem)라 브라우저가
-       * `max-width` 계산값을 px 로 굳혀 준다. 시험은 그 계산값과 렌더된
-       * rect 가 같은지만 잰다(공식 자체의 불변식은
+       * Stage width (wide-width revision 2026-08-19). The no-copying rule is the same as
+       * for the origin — `--gateway-stage-max` is clamp(rem, vw, rem), so the browser
+       * settles the computed `max-width` in px. The test only checks that computed value
+       * against the rendered rect (the formula's own invariants live in
        * `tests/contract/gateway-stage-width.contract.test.ts`).
        */
       stage: (() => {
@@ -181,26 +195,28 @@ async function measure(page: import("@playwright/test").Page) {
           agentW: agent ? Math.round(agent.getBoundingClientRect().width) : null,
         };
       })(),
-      // 상단 바 우측 그룹의 오른끝. 소유자의 "공백이 길고 왜이러지?" 게이트.
+      // The right edge of the top bar's right group — the gate for the owner's "why is the gap so long?".
       gnbActionsRight: right('[data-testid="download-gnb-actions"]'),
       /**
-       * ⚠️ **대칭의 기준자는 `innerWidth` 가 아니라 `clientWidth` 다.**
+       * ⚠️ **The ruler for symmetry is `clientWidth`, not `innerWidth`.**
        *
-       * `getBoundingClientRect` 는 레이아웃 뷰포트(세로 스크롤바를 뺀 폭)
-       * 기준인데 CSS `100vw` 는 스크롤바를 **포함**한다. 스크롤바가 있는 창에서
-       * `innerWidth` 로 재면 오른쪽이 스크롤바 폭만큼 더 넓게 나와서, 레이아웃은
-       * 완벽히 대칭인데 시험만 빨개진다(실측 델타 = 스크롤바 폭 그 자체).
+       * `getBoundingClientRect` is relative to the layout viewport (width minus the
+       * vertical scrollbar), while CSS `100vw` **includes** the scrollbar. In a window
+       * with a scrollbar, measuring with `innerWidth` makes the right side wider by the
+       * scrollbar width, so a perfectly symmetric layout turns the test red (the measured
+       * delta is exactly the scrollbar width).
        *
-       * 컬럼이 남는 폭을 채우므로 두 구간 모두에서 `clientWidth − 밴드.right`
-       * 는 정확히 원점이다 — 좁은 구간이든(컬럼이 화면을 다 씀) 넓은 구간이든
-       * (컬럼이 `--page-max − 스크롤바` 에서 멈춤).
+       * Because the column fills the remaining width, `clientWidth − band.right` is
+       * exactly the origin in both bands — narrow (the column fills the screen) and wide
+       * (the column stops at `--page-max − scrollbar`).
        */
       layoutWidth: document.documentElement.clientWidth,
       scrollbar: window.innerWidth - document.documentElement.clientWidth,
-      // 관문 그리드의 값 — `app/globals.css` 의 `:root`. 시험은 값을
-      // 베끼지 않고 읽어서 파생이 실제로 돌았는지 확인한다. `--gateway-origin`
-      // 은 `@property <length>` 등록이라 계산값이 `160px` 로 굳는다 —
-      // `parseFloat` 가 화면이 실제로 쓰는 x 와 같은 수를 준다.
+      // The gateway grid's value, from `:root` in `app/globals.css`. The test reads
+      // rather than copies it, confirming the derivation actually ran.
+      // `--gateway-origin` is registered as `@property <length>`, so its computed value
+      // settles as `160px` and `parseFloat` yields the same number the screen uses for
+      // x.
       originToken: Number.parseFloat(
         getComputedStyle(document.documentElement).getPropertyValue("--gateway-origin").trim(),
       ),
@@ -211,11 +227,11 @@ async function measure(page: import("@playwright/test").Page) {
 }
 
 /**
- * 한 폭에서 **그리드가 한 벌인가**를 통째로 판정한다.
+ * Judges **whether the grid is one grid** at a given width, in full.
  *
- * 리사이즈 시험이 같은 함수를 다시 부른다 — 두 시험이 각자 단언을 베끼면
- * 한쪽만 갱신되는 날이 오고, 그때 조용히 약해지는 쪽은 언제나 덜 읽히는
- * 쪽(리사이즈)이다.
+ * The resize test calls the same function again — if the two tests each copied the
+ * assertions, a day comes when only one is updated, and the side that quietly
+ * weakens is always the less-read one (resize).
  */
 function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   const origin = m.originToken;
@@ -227,11 +243,13 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   }
 
   /**
-   * **좌우가 같은가** (2026-07-29 소유자 지적: *"좌우가 같아야함"*).
+   * **Are left and right equal** (owner report 2026-07-29: *"좌우가 같아야함"* —
+   * left and right must match).
    *
-   * 왼쪽만 재면 통과하던 결함이다 — 원점이 고정값이던 시절 1920 에서 좌 64 ·
-   * 우 256 이었고, 여섯 원소는 전부 x=64 로 **한 벌이었다**. 정렬 원칙을
-   * 지키면서도 화면은 한쪽으로 쏠릴 수 있으니, 대칭은 따로 단언해야 한다.
+   * This is the defect that passed while only the left was measured: when the origin
+   * was a fixed value, 1920 gave left 64 and right 256 while all six elements
+   * **shared** x=64. The alignment principle can be honoured while the screen still
+   * leans one way, so symmetry needs its own assertion.
    */
   expect(m.bandRight, `${label}: 밴드 오른끝을 못 읽었다`).not.toBeNull();
   expect(
@@ -240,8 +258,9 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   ).toBe(origin);
 
   /**
-   * **상단 바도 같은 프레임 안이다** (소유자: *"공백이 길고 왜이러지?"*).
-   * 우측 그룹이 컬럼 오른끝에서 멈추므로, 원점이 자라면 이 끝도 따라온다.
+   * **The top bar is inside the same frame** (owner: *"공백이 길고 왜이러지?"* — the
+   * gap is long, why is that?). The right group stops at the column's right edge, so
+   * this edge follows when the origin grows.
    */
   expect(m.gnbActionsRight, `${label}: GNB 우측 그룹을 못 읽었다`).not.toBeNull();
   expect(m.gnbActionsRight, `${label}: 상단 바 우측이 화면 끝과 안 맞는다`).toBe(
@@ -251,12 +270,14 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   expect(m.overflowX, `${label}: 가로 오버플로`).toBe(0);
 
   /**
-   * **무대가 토큰을 따른다** (2026-08-19 넓은 폭 개정 — 소유자의 2560
-   * 스크린샷: 무대가 768px 고정이라 뷰포트의 30%로 떠서 화면이 비어 보였다).
+   * **The stage follows the token** (wide-width revision 2026-08-19 — the owner's
+   * 2560 screenshot: the stage was pinned at 768px, floating at 30% of the viewport
+   * and leaving the screen looking empty).
    *
-   * 렌더 폭 = 토큰 계산값(컬럼이 더 좁으면 컬럼) · 컬럼 안 가운데 · 에이전트
-   * 장면과 같은 폭. 값은 브라우저가 계산한 것을 읽는다 — 여기 숫자를 베끼면
-   * 이 파일이 두 번째 진실원이 된다(맨 위 규율).
+   * Rendered width = the token's computed value (or the column, if narrower);
+   * centred within the column; the same width as the agent scene. Values are read
+   * from what the browser computed — copying numbers here would make this file a
+   * second source of truth (the rule at the top).
    */
   expect(m.stage, `${label}: 무대를 못 읽었다`).not.toBeNull();
   const stage = m.stage!;
@@ -286,11 +307,12 @@ test.describe("관문 다운로드의 그리드", () => {
       await page.setViewportSize(viewport);
       await seedFirstRunSeen(page);
       /**
-       * `networkidle` 이 아니라 `load` + 명시적 요소 대기다 (2026-08-19 실측).
-       * 큰 뷰포트(2560×1440)에서는 시연 절이 첫 화면에 걸려 영상이 자동재생을
-       * 시작하고, 스트리밍이 이어지는 동안 `networkidle` 은 **정의상 오지
-       * 않는다** — 수정 전 빌드에서도 같은 타임아웃이 재현됐다. 시험이 재는
-       * 것은 그리드이고, 그리드는 facts 스트립이 보이면 이미 굳어 있다.
+       * `load` plus an explicit element wait, not `networkidle` (measured 2026-08-19).
+       * At large viewports (2560×1440) the demo section falls within the first screen and
+       * the video starts autoplaying, and while that streams `networkidle` **by
+       * definition never arrives** — the same timeout reproduced on pre-fix builds. What
+       * this test measures is the grid, and the grid is already settled once the facts
+       * strip is visible.
        */
       await page.goto("/ko/download/", { waitUntil: "load" });
       await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
@@ -300,32 +322,34 @@ test.describe("관문 다운로드의 그리드", () => {
   }
 
   /**
-   * **리사이즈 뒤에도 한 벌인가** (2026-07-29 평결의 재발 경로 감시).
+   * **Is it still one grid after a resize** (watching the recurrence path of the
+   * 2026-07-29 verdict).
    *
-   * [개정 2026-08-18] 구 판본의 고유 표적 — JS 파생 카메라 예약폭의 낡음 —
-   * 은 리메이크로 파생 자체가 은퇴하며 사라졌다. 남는 property 는 「CSS 원점
-   * 공식이 실제로 리사이즈를 따라간다」와 「다섯 원소가 어느 폭에서도 한
-   * 벌이다」이고, `assertGrid` 를 각 폭에서 다시 부르는 것이 그 전부다.
-   * 두 방향으로 잰다: 넓히기(원점이 자란다)와 좁히기(홈통으로 되돌아간다).
+   * [Revised 2026-08-18] The old version's unique target — a stale JS-derived camera
+   * reservation width — disappeared when the remake retired that derivation. The
+   * remaining properties are "the CSS origin formula really follows a resize" and
+   * "the five elements share one grid at every width", and calling `assertGrid` again
+   * at each width is all of it. Both directions are measured: widening (the origin
+   * grows) and narrowing (it returns to the gutter).
    */
   test("리사이즈하면 다섯 원소가 새 원점을 따라간다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
-    // `load` + 요소 대기 — `networkidle` 은 자동재생 시연의 스트리밍 때문에
-    // 큰 뷰포트에서 정의상 오지 않는다 (위 그리드 시험의 주석).
+    // `load` plus an element wait — `networkidle` by definition never arrives at large
+    // viewports because of the autoplaying demo's streaming (see the grid test above).
     await page.goto("/ko/download/", { waitUntil: "load" });
     await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
 
     const mounted = await measure(page);
     assertGrid(mounted, "1440 (마운트)");
 
-    // 폭 목록이 원점·무대 폭을 한 번이라도 실제로 움직였는지 — 아래 참조.
+    // Whether the width list actually moved the origin and the stage width at least once — see below.
     let sawOriginChange = false;
     let sawStageChange = false;
 
     for (const width of [2560, 1920, 1440]) {
       await page.setViewportSize({ width, height: 900 });
-      // 파생은 rAF 로 코얼레싱된다 — 두 프레임을 기다린 뒤 잰다.
+      // The derivation is coalesced through rAF — wait two frames before measuring.
       await page.evaluate(
         () =>
           new Promise<void>((resolve) =>
@@ -334,9 +358,9 @@ test.describe("관문 다운로드의 그리드", () => {
       );
       const m = await measure(page);
       assertGrid(m, `${width} (리사이즈)`);
-      // 폭 목록이 원점을 실제로 움직였는지 표시만 남긴다 — 원점 값 자체는
-      // 베끼지 않는다(맨 위 규율). 원점이 한 번도 안 움직이는 목록이면 이
-      // 시험은 «리사이즈 추종»에 대해 아무것도 안 재면서 초록이 된다.
+      // Only record whether the width list moved the origin — the origin value itself
+      // is never copied (the rule at the top). With a list that never moves the origin,
+      // this test goes green while measuring nothing about following a resize.
       if (m.originToken !== mounted.originToken) {
         sawOriginChange = true;
       }
@@ -345,15 +369,17 @@ test.describe("관문 다운로드의 그리드", () => {
       }
     }
 
-    // 위 조건부가 **조용히 무의미해지는** 것을 막는다. 홈통이 더 커져서 폭
-    // 목록 전체가 원점을 못 움직이게 되면 이 시험은 아무것도 안 재면서 초록이
-    // 된다 — 그건 통과가 아니라 시야 상실이다. 그때는 폭 목록을 넓혀라.
+    // Stops the conditionals above from **quietly becoming meaningless**. If the
+    // gutter grows so that no width in the list moves the origin, this test goes green
+    // while measuring nothing — that is loss of view, not a pass. Widen the width list
+    // when it happens.
     expect(
       sawOriginChange,
       "폭 목록이 원점을 한 번도 바꾸지 못했다 — 이 시험은 지금 아무것도 지키지 않는다",
     ).toBe(true);
-    // 무대 폭도 같은 공회전 방지 — 넓은 폭에서 무대가 768px 고정으로 되돌아가면
-    // (2026-08-19 소유자의 2560 스크린샷 결함) 여기서 빨개진다.
+    // The same idling guard for stage width — if the stage reverts to a fixed 768px at
+    // wide viewports (the defect in the owner's 2560 screenshot, 2026-08-19), this
+    // turns red.
     expect(
       sawStageChange,
       "폭 목록이 무대 폭을 한 번도 바꾸지 못했다 — 넓은 폭 비례 성장이 죽었다",
@@ -361,14 +387,16 @@ test.describe("관문 다운로드의 그리드", () => {
   });
 
   /**
-   * **두 주소가 같은 것을 보여준다** (2026-08-01 소유자 확정).
+   * **Both addresses show the same thing** (owner decision 2026-08-01).
    *
-   * 종전엔 `showDemo` 한 줄이 주소로 갈랐고 아무 시험도 그 갈림을 몰랐다.
+   * A single `showDemo` line used to branch on the address, and no test knew about
+   * that branch.
    *
-   * [그릇 교체 2026-08-19] 이 단언은 원래 「설치 3단이 접히지 않는다」 시험의
-   * 공회전 방지 장치로 그 안에 얹혀 있었다. 설치 3단이 삭제되면서 바깥 시험은
-   * 사라졌지만 이 property 는 3단의 성질이 아니라 **주소 통일**의 성질이라,
-   * 자기 시험으로 독립시킨다.
+   * [Vessel replaced 2026-08-19] This assertion originally rode inside the "the
+   * three-step install does not wrap" test as its idling guard. Deleting the
+   * three-step install removed the outer test, but this property belongs to
+   * **address unification** rather than to those three steps, so it becomes its own
+   * test.
    */
   for (const viewport of UNIFIED_ROUTE_VIEWPORTS) {
     for (const route of ["/ko/", "/ko/download/"]) {
@@ -377,8 +405,9 @@ test.describe("관문 다운로드의 그리드", () => {
       }) => {
         await page.setViewportSize(viewport);
         await seedFirstRunSeen(page);
-        // `load` — 자동재생 시연 스트리밍 때문에 `networkidle` 은 큰 뷰포트에서
-        // 오지 않는다. 이 시험의 대기는 어차피 아래 `toBeVisible` 이 진다.
+        // `load` — `networkidle` never arrives at large viewports because of the
+        // autoplaying demo's streaming. This test's waiting is carried by the
+        // `toBeVisible` below anyway.
         await page.goto(route, { waitUntil: "load" });
 
         const demo = page.getByTestId("demo-stage");
@@ -388,7 +417,7 @@ test.describe("관문 다운로드의 그리드", () => {
           `${route} 에 시연 절이 없다 — 두 주소는 같은 것을 보여줘야 한다`,
         ).toBeVisible({ timeout: 15_000 });
 
-        // 스크롤로도 못 닿거나 조상이 잘라 놓았으면 그건 없는 것과 같다.
+        // Unreachable even by scrolling, or clipped by an ancestor, is the same as absent.
         const cut = await page.evaluate(() => {
           const el = document.querySelector('[data-testid="demo-stage"]')!;
           const rect = el.getBoundingClientRect();
@@ -411,13 +440,14 @@ test.describe("관문 다운로드의 그리드", () => {
   }
 
   /**
-   * **320px 에서 가로로 넘치지 않는다** (ko/en 둘 다).
+   * **No horizontal overflow at 320px** (both ko and en).
    *
-   * [그릇 교체 2026-08-19] 종전 시험의 주어는 다운로드 판이었다. 판은
-   * 삭제됐지만 이 폭에서 진짜로 막던 것 — 라벨이 길어 컨트롤이 화면을 뚫고,
-   * 무대가 `overflow-hidden` 이라 스크롤바도 안 생긴 채 그냥 잘리는 것 — 은
-   * 페이지 전체의 성질이라 문서 단위로 잰다. `WIDTHS` 목록은 1440 이상만
-   * 보므로 이 폭은 여기서만 측정된다.
+   * [Vessel replaced 2026-08-19] The old test's subject was the download plate. The
+   * plate is gone, but what it really blocked at this width — a long label pushing a
+   * control past the screen, and the stage being `overflow-hidden` so it is simply
+   * clipped with no scrollbar to show for it — is a property of the whole page, so it
+   * is measured at document level. The `WIDTHS` list only covers 1440 and above, so
+   * this width is measured here alone.
    */
   for (const locale of ["ko", "en"]) {
     test(`320px ${locale} — 가로 오버플로 0`, async ({ page }) => {
@@ -449,8 +479,8 @@ test.describe("관문 다운로드의 그리드", () => {
         };
       });
 
-      // `buttonVariants` 는 `whitespace-nowrap` 이라 라벨이 길면 버튼이
-      // 컨테이너를 뚫는다 — 실측(320, en): 주 CTA 가 22px 넘쳤다.
+      // `buttonVariants` is `whitespace-nowrap`, so a long label pushes the button out
+      // of its container — measured at 320 in en: the primary CTA overflowed by 22px.
       expect(worst.overflow, `화면을 넘는 원소: ${worst.culprit}`).toBeLessThanOrEqual(0);
       expect(worst.documentOverflow, "문서가 가로로 넘친다").toBeLessThanOrEqual(0);
     });

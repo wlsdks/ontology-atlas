@@ -102,7 +102,7 @@ describe("parseUnifiedDiff", () => {
       "skip",
       "context",
     ]);
-    // 첫 헝크 앞에는 생략 표시가 없다 — 파일 처음부터라는 뜻이다.
+    // No elision marker before the first hunk means the diff starts at the top of the file.
     expect(first!.lines[0]!.kind).not.toBe("skip");
   });
 
@@ -118,15 +118,16 @@ describe("parseUnifiedDiff", () => {
   });
 
   it("`+++`/`---` 를 늘고 준 줄로 세지 않는다 — 헤더가 줄 판정보다 먼저다", () => {
-    // 회귀 차단: 헤더 필터가 `+`/`-` 판정 **뒤로** 밀리면 파일 경로 두 줄이
-    // "늘어난 줄 1 · 줄어든 줄 1" 로 집계돼 모든 파일의 증감이 +1 −1 씩 부푼다.
+    // Regression guard: if the header filter runs **after** the `+`/`-` test, the two file
+    // path lines count as one added and one removed line, inflating every file's totals by
+    // +1 / −1.
     const [file] = parseUnifiedDiff(DIFF);
     expect(file!.lines.some((l) => l.text.includes("docs/a.md"))).toBe(false);
   });
 
   it("헝크 머리(@@)가 없는 짧은 diff 도 읽는다", () => {
-    // 일부 도구/테스트 픽스처는 `diff --git` 다음에 바로 `+줄` 을 준다.
-    // 헤더 필터가 명시적이므로 헝크 게이트 없이도 안전하다.
+    // Some tools and fixtures emit a `+` line directly after `diff --git`. The header filter is
+    // explicit, so this is safe even without a hunk check.
     const files = parseUnifiedDiff("diff --git a/docs/x.md b/docs/x.md\n+new line\n");
     expect(files).toHaveLength(1);
     expect(files[0]!.lines).toEqual([{ kind: "added", text: "new line" }]);

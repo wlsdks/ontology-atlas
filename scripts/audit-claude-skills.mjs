@@ -1,74 +1,86 @@
 #!/usr/bin/env node
 /**
- * **설치된 Claude Agent Skills 뭉치를 훑어 무결성을 잰다** — 발견 도구다.
+ * **Sweeps the installed Claude Agent Skills and measures their integrity** — a
+ * discovery tool.
  *
- * ## 왜 이 저장소에 있나 (2026-08-09)
+ * ## Why it lives in this repository (2026-08-09)
  *
- * 소유자 질문: *"스킬도 다 md 로 만드니까 스킬 그 자체를 graph 화 시킬 수는
- * 없나? 스킬도 연계하는 구조로?"* — 그 방향에 실체가 있는지 **재 보려고**
- * 만들었다. 제품 기능이 아니고, 화면도 없고, 공개 CLI 명령도 아니다
- * (그건 PO 카운슬 필수 소집 사안이다).
+ * Owner: *"스킬도 다 md 로 만드니까 스킬 그 자체를 graph 화 시킬 수는 없나?
+ * 스킬도 연계하는 구조로?"*
+ * (skills are all markdown too, so could the skills themselves be turned into a
+ * graph, with the skills linked to each other?)
+ * This was built to **measure** whether there is anything real in that direction.
+ * It is not a product feature, has no screen, and is not a public CLI command
+ * (that would require convening the PO council).
  *
- * ## 스킬이 어떻게 발동하나 (이 도구가 무엇을 재는지의 전제)
+ * ## How a skill is triggered (the premise for what this measures)
  *
- * 스킬은 `SKILL.md` 하나를 담은 폴더이고, 세션 시작에는 frontmatter 의
- * `name` + `description` 만 실린다(스킬당 50~100 토큰). 관련돼 보이면 본문을
- * 읽고, 본문이 다른 파일을 가리키면 그때 그것만 읽는다 — 3단 점진적 공개.
- * 그래서 **발동을 정하는 것은 `description` 한 줄**이고, 본문의 가리킴이
- * 실재하지 않으면 3단째가 조용히 비어 버린다.
+ * A skill is a folder containing one `SKILL.md`. At session start only the
+ * frontmatter's `name` and `description` are loaded (50–100 tokens per skill). If
+ * it looks relevant the body is read, and if the body points at another file, only
+ * that file is read then — three-stage progressive disclosure. So **one
+ * `description` line decides triggering**, and if the body's pointers do not
+ * resolve the third stage silently comes back empty.
  *
- * 공개 문서: platform.claude.com/docs/en/agents-and-tools/agent-skills/overview
+ * Public documentation:
+ * platform.claude.com/docs/en/agents-and-tools/agent-skills/overview
  *
- * ## 이 도구가 재는 셋 — 그리고 왜 그 셋인가
+ * ## The three things measured, and why those three
  *
- * ① **이름 충돌** — 같은 이름이 여러 벌 설치되면 무엇이 이기는지 비결정적이다.
- *    설명까지 서로 다르면 «발동 조건이 다른 것들이 같은 이름으로 경쟁»한다.
- * ② **트리거 겹침** — 이름이 달라도 설명이 같은 낱말을 공유하면 하나가 다른
- *    하나를 가린다. 공개 처방은 「영역을 좁히고 `Do not use for X` 를 적어라」인데,
- *    그건 사람이 손으로 관리해야 한다는 뜻이다.
- * ③ **자기 폴더 참조의 무결성** — 스킬이 «내 폴더의 이 파일을 읽어라» 라고
- *    가리킨 것이 실재하는가.
+ * ① **Name collisions** — with several installs under one name, which one wins is
+ *    non-deterministic. When the descriptions differ too, things with different
+ *    trigger conditions compete under the same name.
+ * ② **Trigger overlap** — even with distinct names, descriptions sharing words let
+ *    one skill mask another. The published prescription is to narrow the scope and
+ *    write `Do not use for X`, which means a human has to maintain it.
+ * ③ **Integrity of self-folder references** — does the file a skill points at
+ *    inside its own folder actually exist?
  *
- * ## ⚠️ 무엇을 세는지가 이 도구의 전부다 — 두 번 틀렸다
+ * ## ⚠️ What gets counted is the whole tool — and it was wrong twice
  *
- * **첫 번째 오분류: 참조를 한 덩어리로 셌다.** 없는 파일을 가리키는 참조가
- * 700건이었는데 666건은 «프로젝트에 이런 파일이 있으면 읽어라» 식 **조건부**라
- * 결함이 아니었다. 갈라야 숫자가 행동 가능해진다.
+ * **First misclassification: references counted as one lump.** 700 references
+ * pointed at non-existent files, but 666 of them were **conditional** ("read this
+ * file if the project has one") and not defects. The number only becomes actionable
+ * once they are separated.
  *
- * **두 번째 오분류(더 컸다): 로드되지 않는 파일을 셌다.** 첫 판은
- * `~/.claude/plugins` 를 통째로 훑어 **207개**를 보고했다. 그 안에는
- * ⓐ `cache/` — 버전 고정 다운로드 스냅샷(같은 플러그인의 5.1.0 **과** 6.2.0,
- * 커밋 해시별 사본) ⓑ `marketplaces/` — **설치하지 않은 것까지** 담은 카탈로그
- * 클론이 섞여 있다. 정본은 `~/.claude/plugins/installed_plugins.json` 이고
- * 플러그인당 `installPath` 를 **하나만** 지목한다.
+ * **Second misclassification (the larger one): counting files that are never
+ * loaded.** The first version swept all of `~/.claude/plugins` and reported
+ * **207**. That tree mixes in ⓐ `cache/` — version-pinned download snapshots (the
+ * same plugin at 5.1.0 **and** 6.2.0, one copy per commit hash) and ⓑ
+ * `marketplaces/` — catalogue clones that include things **never installed**. The
+ * authority is `~/.claude/plugins/installed_plugins.json`, which names exactly
+ * **one** `installPath` per plugin.
  *
- * 좁혀서 다시 세니 숫자가 이렇게 바뀌었다(2026-08-09 실측):
+ * Narrowing and recounting changed the numbers (measured 2026-08-09):
  *
- * | | 디스크 전체 | **실제 로드** |
+ * | | Whole disk | **Actually loaded** |
  * |---|---|---|
- * | 스킬 | 209 | **60** |
- * | 이름 충돌 | 38개 이름 | **2개** (`frontend-design` · `skill-creator`) |
- * | 강한 트리거 겹침 | 41쌍 | **1쌍** |
- * | 자기 폴더 참조 없음 | 37 | **0** (7건 전부 저장소 루트에 실재하는 오탐이었다) |
+ * | Skills | 209 | **60** |
+ * | Name collisions | 38 names | **2** (`frontend-design` · `skill-creator`) |
+ * | Strong trigger overlap | 41 pairs | **1 pair** |
+ * | Missing self-folder references | 37 | **0** (all 7 were false positives that really exist at the repository root) |
  *
- * 즉 «`frontend-design` 8벌이 경쟁한다» 는 첫 보고는 **틀렸다** — 여덟 중
- * 여섯은 안 쓰이는 스냅샷과 카탈로그였고, 설명 차이는 한 플러그인의 **버전 간
- * 드리프트**였다. 다운로드 캐시의 정상 모습이다.
+ * So the first report's "8 copies of `frontend-design` are competing" was **wrong**
+ * — six of the eight were unused snapshots and catalogues, and the description
+ * differences were **version drift within one plugin**. That is what a download
+ * cache normally looks like.
  *
- * **그래서 기본은 로드되는 것만 센다.** 디스크 전체를 보려면 `--all` 을 준다 —
- * 그때는 출력이 스스로 «로드되지 않는 것을 포함한다» 고 말한다.
+ * **So the default counts only what is loaded.** `--all` sweeps the whole disk, and
+ * in that mode the output says of itself that it includes things that are not
+ * loaded.
  */
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-/** 스킬이 자기 폴더에 싣는다고 약속하는 하위 폴더 — 여기 가리킴은 실재해야 한다. */
+/** Subfolders a skill promises to carry in its own folder — pointers into these must resolve. */
 const BUNDLED_PREFIX = /^(\.\/)?(references|scripts|assets|templates|examples)\//;
 
 /**
- * 설명에서 빼는 낱말. 트리거 겹침을 재려면 «어느 스킬에나 나오는 말»을 빼야
- * 한다 — 안 빼면 모든 쌍이 겹쳐 보이고 순위가 뜻을 잃는다.
+ * Words removed from descriptions. Measuring trigger overlap requires dropping the
+ * words that appear in every skill — otherwise every pair looks overlapping and the
+ * ranking means nothing.
  */
 const STOP = new Set(
   (
@@ -92,7 +104,7 @@ export function distinctiveTerms(description) {
   ];
 }
 
-/** `SKILL.md` 의 frontmatter 에서 발동을 정하는 두 값만 뽑는다. */
+/** Extracts only the two frontmatter values that decide triggering. */
 export function parseSkill(raw) {
   const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) return null;
@@ -104,20 +116,21 @@ export function parseSkill(raw) {
       key = kv[1];
       frontmatter[key] = kv[2].trim();
     } else if (key && /^\s+\S/.test(line)) {
-      // YAML 접힌 줄(`|-` 뒤 여러 줄) — 설명이 길면 흔하다.
+      // YAML folded lines (several lines after `|-`) — common for long descriptions.
       frontmatter[key] += ` ${line.trim()}`;
     }
   }
   return { name: frontmatter.name ?? null, description: frontmatter.description ?? '', body: match[2] };
 }
 
-/** 본문이 가리키는 파일 참조를 뽑아 «자기 폴더» 와 «조건부» 로 가른다. */
+/** Extracts the body's file references and splits them into self-folder and conditional. */
 export function classifyReferences(body) {
   const bundled = new Set();
   const conditional = new Set();
-  // 세 번째 갈래는 `classifyReferences` 가 아니라 실재 확인 단계에서 갈린다 —
-  // 같은 `scripts/x.mjs` 가 스킬 폴더 기준일 수도, 저장소 루트 기준일 수도
-  // 있어서 문자열만으로는 못 가른다(아래 `auditSkills` 의 repoRoot 확인).
+  // The third category is decided at the existence check, not in
+  // `classifyReferences` — the same `scripts/x.mjs` may be relative to the skill
+  // folder or to the repository root, and the string alone cannot tell them apart
+  // (see the repoRoot check in `auditSkills` below).
   for (const hit of body.matchAll(
     /(?:^|[\s(`'"])([A-Za-z0-9_./-]+\.(?:md|py|js|mjs|ts|sh|json|csv|txt))/g,
   )) {
@@ -144,7 +157,7 @@ export function findSkillFiles(root) {
     }
   };
   walk(root);
-  // 마켓플레이스가 싣는 빈 템플릿은 설치된 스킬이 아니다.
+  // Empty templates carried by a marketplace are not installed skills.
   return out.filter((file) => !/\/template\//.test(file));
 }
 
@@ -160,7 +173,7 @@ export function auditSkills(skills, { exists = fs.existsSync, repoRoot = process
     .map(([name, copies]) => ({
       name,
       copies: copies.length,
-      // 설명까지 다르면 «발동 조건이 다른 것들이 같은 이름으로 경쟁» 한다.
+      // Differing descriptions mean things with different trigger conditions compete under one name.
       descriptionsDiffer: new Set(copies.map((c) => c.description)).size > 1,
       files: copies.map((c) => c.file),
     }))
@@ -171,7 +184,7 @@ export function auditSkills(skills, { exists = fs.existsSync, repoRoot = process
     for (let j = i + 1; j < skills.length; j += 1) {
       const a = skills[i];
       const b = skills[j];
-      if (a.name === b.name) continue; // 이름 충돌은 위에서 따로 센다
+      if (a.name === b.name) continue; // Name collisions are counted separately above
       const termsB = new Set(b.terms);
       const shared = a.terms.filter((term) => termsB.has(term));
       if (shared.length < 3) continue;
@@ -193,12 +206,13 @@ export function auditSkills(skills, { exists = fs.existsSync, repoRoot = process
       bundledTotal += 1;
       if (exists(path.resolve(dir, ref))) continue;
       /*
-       * ⚠️ **저장소 루트에서 한 번 더 찾아본다** (2026-08-09 정정).
-       * `scripts/…` 로 시작하는 참조는 스킬이 자기 폴더에 싣는 것일 수도 있고
-       * **그 스킬을 쓰는 저장소의 스크립트**일 수도 있다 — 문자열만으로는 못
-       * 가른다. 이 확인을 안 넣었을 때 우리 스킬 7건이 전부 「깨진 참조」로
-       * 보고됐는데, 일곱 다 저장소 루트에 실재했다(`scripts/measure-contrast.mjs`
-       * 등). 계기가 멀쩡한 것을 결함이라 부른 것이다.
+       * ⚠️ **Look again at the repository root** (corrected 2026-08-09). A reference
+       * beginning `scripts/…` may be something the skill carries in its own folder, or
+       * **a script in the repository that uses the skill** — the string alone cannot
+       * tell. Without this check, all 7 of our skills were reported as broken
+       * references, and all 7 really existed at the repository root
+       * (`scripts/measure-contrast.mjs` among them). The instrument was calling healthy
+       * things defects.
        */
       if (exists(path.resolve(repoRoot, ref))) {
         repoRelative += 1;
@@ -225,9 +239,9 @@ export function auditSkills(skills, { exists = fs.existsSync, repoRoot = process
 }
 
 /**
- * **실제로 로드되는 플러그인 뿌리** — `installed_plugins.json` 이 정본이다.
- * 플러그인당 `installPath` 를 하나만 지목하므로, 그것만 훑으면 다운로드
- * 스냅샷과 카탈로그 클론이 자동으로 빠진다.
+ * **The plugin roots that actually load** — `installed_plugins.json` is the
+ * authority. It names one `installPath` per plugin, so sweeping only those drops
+ * download snapshots and catalogue clones automatically.
  */
 export function installedPluginRoots(home, readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8'))) {
   try {
@@ -240,8 +254,8 @@ export function installedPluginRoots(home, readJson = (p) => JSON.parse(fs.readF
     }
     return [...new Set(out)];
   } catch {
-    // 정본이 없으면 플러그인 스킬은 세지 않는다 — 부풀린 숫자를 내는 것보다
-    // 「못 셌다」가 낫다. `--all` 을 주면 디스크 전체를 본다.
+    // Without the authority file, plugin skills are not counted — reporting "could
+    // not count" beats reporting an inflated number. `--all` sweeps the whole disk.
     return [];
   }
 }

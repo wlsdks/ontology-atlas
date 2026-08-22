@@ -15,7 +15,7 @@ describe('InlineEditable — readonly', () => {
     );
     const span = container.firstElementChild as HTMLElement;
     fireEvent.click(span);
-    // input/textarea 가 나타나지 않아야 함
+    // No input/textarea should appear.
     expect(container.querySelector('input')).toBeNull();
     expect(container.querySelector('textarea')).toBeNull();
   });
@@ -79,7 +79,7 @@ describe('InlineEditable — editable', () => {
     fireEvent.change(input, { target: { value: '취소될 값' } });
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(onSave).not.toHaveBeenCalled();
-    // edit 모드 종료 → input 사라짐
+    // Leaving edit mode removes the input.
     expect(container.querySelector('input')).toBeNull();
   });
 
@@ -118,7 +118,7 @@ describe('InlineEditable — multiline behavior', () => {
     const ta = container.querySelector('textarea') as HTMLTextAreaElement;
     fireEvent.change(ta, { target: { value: '한 줄\n두 줄' } });
     fireEvent.keyDown(ta, { key: 'Enter' });
-    // multiline 은 Cmd/Ctrl+Enter 만 commit
+    // In multiline, only Cmd/Ctrl+Enter commits.
     expect(onSave).not.toHaveBeenCalled();
   });
 

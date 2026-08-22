@@ -5,11 +5,10 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
 
-// UX 부대 [P-7] — /projects 최근 활동 행이 지도 딥링크를 갖는지 확인하는
-// 전용 회귀 테스트. ProjectSelectorPage.test.tsx 의 공유 mock 노드 id 는
-// (kind:folder/slug 형태) 실제 nodeId 계산 규약(kind:tailSlug)과 우연히
-// 불일치해 해당 파일에서는 항상 nodeId=null 경로만 검증된다. 이 파일은
-// 독립된 mock 세트로 실제 매칭(nodeId 존재) 경로를 검증한다.
+// A dedicated regression test for whether a `/projects` recent-activity row carries a map deeplink.
+// The shared mock node ids in `ProjectSelectorPage.test.tsx` (of the form kind:folder/slug) happen not to
+// match the real nodeId convention (kind:tailSlug), so that file only ever exercises the nodeId=null
+// path. This file uses an independent mock set to exercise the real matching path (nodeId present).
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
     <a href={href} {...props}>

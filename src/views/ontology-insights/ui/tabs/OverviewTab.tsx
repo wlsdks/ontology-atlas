@@ -13,9 +13,9 @@ export interface OverviewTabLabels extends InsightsHeroCensusLabels {
   kindCensusTitle: string;
   domainCapacityTitle: string;
   noDomains: string;
-  /** 빈 상태의 둘째 줄 — 도메인이 무엇이고 만들면 무엇을 얻는지. */
+  /** The empty state's second line — what a domain is and what creating one gets you. */
   noDomainsBody: string;
-  /** 빈 상태에서 내미는 다음 한 걸음 — 경계 탭과 같은 문법(설명만 있고 갈 곳이 없으면 빈 방이다). */
+  /** The next step offered in the empty state — the same grammar as the boundaries tab (an explanation with nowhere to go is an empty room). */
   noDomainsAction: string;
   kindGlyphCaption: string;
   domainCapacityCaption: string;
@@ -24,17 +24,17 @@ export interface OverviewTabLabels extends InsightsHeroCensusLabels {
 }
 
 /**
- * 도메인 행 → 지도 딥링크. 「연결」 탭의 `ConnectionsTabHubLink` 와 **같은
- * 모양**이다 — 두 탭의 행이 같은 일(그 개념을 지도에서 연다)을 하므로 계약도
- * 하나여야 한다.
+ * Domain row → map deeplink. It has **the same shape** as `ConnectionsTabHubLink` on the
+ * "connections" tab — rows on both tabs do the same job (open that concept on the map), so the
+ * contract must be one.
  */
 export interface OverviewTabDomainLink {
-  /** `buildOntologyNodeHref` — 출처 마커(`via=insights:composition`)까지 실린다. */
+  /** `buildOntologyNodeHref` — the origin marker (`via=insights:composition`) rides along too. */
   href: (nodeId: string) => string;
   /**
-   * 막대는 `aria-hidden` 이므로 **행의 수치가 링크 이름에 실려야 한다**
-   * (「연결」 탭 `impactRowAriaLabel` 과 같은 규율). 그래서 title 만이 아니라
-   * 행 전체를 넘긴다.
+   * The bar is `aria-hidden`, so **the row's figures must be carried in the link name** (the same
+   * discipline as `impactRowAriaLabel` on the "connections" tab). Hence the whole row is passed,
+   * not just the title.
    */
   ariaLabel: (row: DomainCapacityRow) => string;
 }
@@ -43,30 +43,30 @@ export interface OverviewTabProps {
   totalNodes: number;
   totalEdges: number;
   health: CensusHealthSummary;
-  /** 수리 큐와 같은 판정에서 온 「따로 떨어진 무리」 수. */
+  /** The number of separated groups, from the same verdict as the repair queue. */
   islandCount: number;
   kindRows: Array<{ kind: string; count: number }>;
   domainRows: DomainCapacityRow[];
   edgeTypeSummary: Array<{ key: string; label: string; count: number }>;
   kindLabel: (kind: string) => string;
-  /** 필수다 — 링크 없는 행이 조용히 돌아오는 길을 남기지 않는다. */
+  /** Required — no row is left quietly without a way back. */
   domainLink: OverviewTabDomainLink;
   labels: OverviewTabLabels;
 }
 
 /**
- * 탭1 개요 — insights-final.html frame 1. 히어로 계기(개념/관계/건강) +
- * kind 분포(색 스택 바 + 글리프+대형 미터) + 도메인 용량(capability/element
- * 2 세그먼트 스택 미터). RATIO-SYSTEM §2: 섹션 갭 28px, 카드 갭 20px, 카드는
- * `flex:1` 로 세로를 채운다(빈 밴드 금지).
+ * Tab 1, overview — the hero instruments (concepts/relations/health), the kind distribution (a
+ * coloured stacked bar plus glyph and large meters), and domain capacity (a two-segment
+ * capability/element stacked meter). Section gap 28px, card gap 20px, and cards fill the height
+ * with `flex:1` (no empty bands).
  *
- * **kind 팔레트는 왼쪽 「종류」 카드에만 남는다.** 상단 스택 스트립의 조각에는
- * 라벨이 없어서, 조각과 아래 행을 잇는 채널이 색뿐이고 5종을 인디고 하나로
- * 가를 수도 없다 — 색이 정체를 나르는 **유일한** 채널인 자리다. 반대로
- * 오른쪽 「도메인 용량」의 2세그먼트 막대는 순서·단위어·옆 숫자가 정체를 이미
- * 나르므로 앱 공통 막대 문법(무채색 + 인디고 하나 + 1px 심)으로 내려왔다
- * (`DomainCapacityBar`, 2026-07-26). 판별 기준은
- * `docs/DESIGN-SYSTEM.md` "Three ambers, three rules".
+ * **The kind palette survives only in the left "kinds" card.** The pieces of the top stacked strip
+ * have no labels, so colour is the only channel linking a piece to the row below it, and five
+ * kinds cannot be separated by a single indigo — this is a place where colour is the **only**
+ * channel carrying identity. Conversely the two-segment bar in "domain capacity" on the right
+ * already carries identity through order, unit words, and the adjacent number, so it moved down to
+ * the app's shared bar grammar (neutral + one indigo + a 1px seam) (`DomainCapacityBar`,
+ * 2026-07-26). The distinguishing rule is `docs/DESIGN-SYSTEM.md` "Three ambers, three rules".
  */
 export function OverviewTab({
   totalNodes,
@@ -146,11 +146,12 @@ export function OverviewTab({
           <CardHead label={labels.domainCapacityTitle} count={domainRows.length} />
           {domainRows.length === 0 ? (
             /*
-             * **「구성」 탭에서 누를 수 있는 것이 0개였다** (2026-08-12 census —
-             * 다섯 탭 중 유일). 특히 이 빈 상태가 가장 흔한 첫 화면이다: 갓 만든
-             * 볼트는 도메인이 없다. 「없습니다」만 말하고 만들 길을 안 내밀면
-             * 이 저장소가 이름 붙여 둔 「다음 단계가 없음」이다. 경계 탭의 빈
-             * 상태(`domain-coupling-empty-action`)와 같은 문법을 쓴다.
+             * **The "composition" tab had zero pressable controls** (census 2026-08-12 — the only
+             * one of the five tabs). This empty state in particular is the most common first
+             * screen: a freshly created vault has no domains. Saying only "there are none" without
+             * offering a way to create one is what this repository named "no next step". It uses
+             * the same grammar as the boundaries tab's empty state
+             * (`domain-coupling-empty-action`).
              */
             <div className="mt-3.5 flex flex-1 flex-col items-start">
               <p className="text-body text-[color:var(--color-text-tertiary)]">{labels.noDomains}</p>
@@ -167,27 +168,26 @@ export function OverviewTab({
             </div>
           ) : (
             <div className="mt-3.5 flex min-h-0 flex-1 flex-col">
-              {/* 막대 두 조각의 열쇠는 카드에 한 줄만 — 행마다 반복하면 소음이다. */}
+              {/* The key to the bar's two pieces appears once per card — repeating it per row is noise. */}
               <DomainCapacityLegend
                 labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
               />
               <div className="mt-2.5 flex flex-1 flex-col justify-evenly gap-1">
                 {/*
-                 * **행이 지도로 가는 문이다** (2026-08-12 census: 이 탭에 누를 수
-                 * 있는 것이 0개였다). 링크는 **소비처가 두른다** — 막대 부품은
-                 * `/projects` 카드와 공유되고 그 카드는 이미 전체가 눌리는
-                 * 표면이라, 부품 안에 링크를 넣으면 그쪽이 중첩 인터랙티브가
-                 * 된다(2026-08-09 원장 「두 화면이 같이 바뀐다」). 그래서 부품은
-                 * 표현 전용으로 남는다.
+                 * **The row is the door to the map** (census 2026-08-12: this tab had zero
+                 * pressable controls). **The consumer wraps the link** — the bar component is
+                 * shared with the `/projects` cards, where the whole card is already a pressable
+                 * surface, so putting a link inside the component would make that one nested
+                 * interactive.
                  *
-                 * 감싼 링크가 더하는 것은 **히트 영역 · 호버 · 초점 링 · 손가락
-                 * 바닥**뿐이고, 행의 배치는 한 픽셀도 건드리지 않는다:
-                 * `block`/`w-auto` 로 값 층의 flex 행 배치를 비우고(안쪽 막대가
-                 * 자기 배치를 이미 갖는다), `py-0` 로 세로 인셋을 0 으로 되돌려
-                 * **행 높이를 그대로 둔다**(치수 규칙성 — 여섯 행이 같은 높이여야
-                 * 경계 자리를 나란히 비교할 수 있다). 좌우는 허브 행과 같은
-                 * `-mx-1.5 px-1.5` — 호버 면만 카드 인셋 밖으로 6px 나가고
-                 * 글자·막대의 축은 캡션·열쇠와 계속 한 줄에 선다.
+                 * What the wrapping link adds is only **hit area, hover, focus ring, and a finger
+                 * floor**; it does not move the row's layout by one pixel: `block`/`w-auto` empty
+                 * out the value layer's flex row layout (the bar inside already has its own), and
+                 * `py-0` returns the vertical inset to zero so **the row height is unchanged**
+                 * (dimensional regularity — six rows must share one height for boundary positions
+                 * to be compared side by side). Horizontally it matches the hub rows'
+                 * `-mx-1.5 px-1.5`, so only the hover surface extends 6px past the card inset while
+                 * the text and bar axes stay in line with the caption and the key.
                  */}
                 {domainRows.map((row) => (
                   <Link
@@ -210,9 +210,10 @@ export function OverviewTab({
               </div>
             </div>
           )}
-          {/* 이 캡션은 **막대를 읽는 법**이다("왼쪽이 역량, 오른쪽이 요소…").
-              빈 상태에서는 그 막대가 화면에 없는데도 그대로 떠 있었다 — 없는
-              그림을 설명하는 글은 정보가 아니라 소음이다. 행이 있을 때만 단다. */}
+          {/* This caption is **how to read the bar** ("capability on the left, element on the
+              right…"). In the empty state that bar is not on screen, yet the caption remained —
+              prose explaining a picture that is not there is noise, not information. It is attached
+              only when there are rows. */}
           {domainRows.length > 0 ? (
             <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
               {labels.domainCapacityCaption}

@@ -1,4 +1,4 @@
-// 화면 문맥 블록의 계약: 없는 것은 말하지 않는다 · 매 왕복에 실리므로 상한이 있다.
+// The screen context block's contract: it never states what is absent, and it is capped because it rides every round trip.
 import { describe, expect, it } from 'vitest';
 
 import {

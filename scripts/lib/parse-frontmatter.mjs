@@ -1,14 +1,13 @@
-// 가벼운 frontmatter 파서 — `---\n...\n---\n` 블록만 지원.
-// gray-matter 의존 없이도 다음 형태 모두 인식:
+// Lightweight frontmatter parser — supports only the `---\n...\n---\n` block.
+// Recognises all of the following without a gray-matter dependency:
 //   key: value                          (scalar)
 //   key: [a, b]                         (inline list)
 //   key: { x: 1, y: 2 }                 (inline object)
 //   key:\n  - item1\n  - item2          (block list)
 //   key:\n  child: 1\n  other: 2        (block object)
 //
-// src/shared/lib/parse-frontmatter.ts 와 동일 동작. 두 진입점 (빌드 스크립트
-// vs 런타임) 의 parser drift 를 줄이기 위해 ESM 모듈로 단일화. 향후 #3 task
-// 에서 ts 측도 이 모듈을 단일 진실원으로 흡수.
+// Behaves identically to src/shared/lib/parse-frontmatter.ts. Unified as an ESM
+// module so the build script and the runtime cannot drift apart.
 
 const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
@@ -26,20 +25,23 @@ function assignParsedKey(target, key, value, diagnostics, line) {
 }
 
 export function parseFrontmatter(input) {
-  // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
+  // Newline and encoding normalisation — **on the read path only** (measured
+  // 2026-07-28).
   //
-  // CRLF: 줄을 `\n` 으로 쪼개면 각 줄 끝에 `\r` 이 남는데, 블록 리스트
-  // 정규식의 `.` 는 `\r` 을 안 먹고 `$` 는 문자열 끝만 본다 → 매치 실패 →
-  // 리스트가 빈 배열. 스칼라는 `.trim()` 이 구제해서 살아남으므로, 증상이
-  // **"노드는 보이는데 관계만 전부 사라진다"** 는 형태로 나타난다. 경고 0.
+  // CRLF: splitting on `\n` leaves a `\r` at the end of every line, and the block
+  // list regex's `.` does not match `\r` while `$` only matches end-of-string →
+  // no match → the list comes back empty. Scalars survive because `.trim()` rescues
+  // them, so the symptom appears as **"the nodes are there but every relation
+  // vanished"**, with 0 warnings.
   //
-  // BOM: `raw.startsWith('---')` 가 `\uFEFF---` 에서 false → frontmatter 블록
-  // 전체가 본문으로 넘어가고 `kind:` 가 사라진다. 즉 **그 문서가 그래프에서
-  // 노드 자체로 사라진다**.
+  // BOM: `raw.startsWith('---')` is false for `\uFEFF---` → the whole frontmatter
+  // block falls through into the body and `kind:` disappears, so **the document
+  // vanishes from the graph as a node entirely**.
   //
-  // 둘 다 `surfaces.md` 가 명시 지원한다고 적은 인구(Windows Chromium)의
-  // 기본 편집기가 만드는 것이다. 4-way 계약 테스트는 네 파서의 *일치*만
-  // 보장하는데 **넷이 똑같이 틀려서** 통과하고 있었다.
+  // Both are produced by the default editor of a population `surfaces.md` records as
+  // explicitly supported (Windows Chromium). The 4-way contract test only guarantees
+  // the four parsers *agree*, and it was passing because **all four were wrong in the
+  // same way.**
   const raw = input.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
   if (!raw.startsWith("---")) return { frontmatter: {}, body: raw };
   const end = raw.indexOf("\n---", 3);
@@ -72,8 +74,9 @@ export function parseFrontmatter(input) {
     const key = line.slice(0, idx).trim();
     const value = line.slice(idx + 1).trim();
     if (!key) continue;
-    // **블록 스칼라를 값 판정보다 먼저 본다.** `definition: |` 의 값은 빈
-    // 문자열이 아니라 `"|"` 라, 빈 값 분기 안에 두면 절대 도달하지 않는다.
+    // **Check for a block scalar before judging the value.** The value of
+    // `definition: |` is `"|"`, not an empty string, so putting this inside the
+    // empty-value branch would make it unreachable.
     const scalarIndicator = /^[|>][-+]?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
@@ -163,25 +166,25 @@ function parseScalar(value) {
 
 function unquote(value) {
   const trimmed = value.trim();
-  // 감싼 따옴표를 벗길 때만 **언이스케이프도 함께** 한다. serializer 가
-  // `"` 를 이스케이프해 쓰는데 여기서 되돌리지 않으면, 저장할 때마다
-  // 백슬래시가 한 겹씩 더 붙는다(실측 3회 왕복: 1개 → 2개 → 4개).
-  // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
+  // Unescape **only** when stripping wrapping quotes. The serializer writes `"`
+  // escaped, and not reversing it here adds a backslash layer on every save
+  // (measured over 3 round trips: 1 → 2 → 4). An unquoted value is literal text
+  // rather than escape syntax, so it is left alone.
   const quote = trimmed.length >= 2 ? trimmed[0] : "";
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
     const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
-    // 큰따옴표의 `\n`/`\t`는 serializer가 접은 줄바꿈·탭이다.
-    // 작은따옴표는 YAML 규칙대로 이스케이프 없는 원문으로 둔다.
+    // Inside double quotes, `\n`/`\t` are newlines and tabs the serializer folded.
+    // Single quotes stay literal with no escapes, per YAML.
     return quote === '"' ? inner.replace(/\\n/g, "\n").replace(/\\t/g, "\t") : inner;
   }
   return value.replace(/^["']|["']$/g, "");
 }
 
-// 따옴표를 아는 구분자 분리 (2026-07-28 실측 수정).
+// Quote-aware separator splitting (fix measured 2026-07-28).
 //
-// 종전에는 인라인 리스트/객체를 무조건 콤마로 쪼갰다. 값 안의 콤마에서
-// 쪼개져 `labels: { ko: "지도, 검색" }` 의 뒷조각이 조용히 사라졌다.
-// 따옴표 안의 구분자는 데이터이지 구분자가 아니다.
+// This used to split inline lists and objects on every comma, so a comma inside a
+// value split it and the tail of `labels: { ko: "지도, 검색" }` silently vanished.
+// A separator inside quotes is data, not a separator.
 function splitTopLevel(input, separator) {
   const parts = [];
   let current = "";
@@ -215,13 +218,14 @@ function splitTopLevel(input, separator) {
 }
 
 /**
- * 블록 스칼라(`|`, `>` 와 그 chomping 변형)를 값으로 삼킨다.
+ * Consumes a block scalar (`|`, `>`, and their chomping variants) as the value.
  *
- * **왜 필요한가 (2026-07-29 도그푸딩 실측).** 이걸 모르면 지시자가 값으로
- * 저장되고(`definition: "|"`), 이어지는 들여쓴 본문 줄들이 최상위 루프로
- * 흘러간다. 그 루프는 키를 `.trim()` 하므로 들여쓰기가 지워지고, 설명문 안의
- * `kind: element` 같은 한 줄이 **그 노드의 종류를 덮어썼다.** 문서가 자기
- * 설명으로 자기 타입을 바꾸는 것이다. 경고는 0이었다.
+ * **Why it is needed (measured while dogfooding, 2026-07-29).** Without it the
+ * indicator is stored as the value (`definition: "|"`) and the indented body lines
+ * that follow spill into the top-level loop. That loop `.trim()`s keys, erasing the
+ * indentation, so a line such as `kind: element` inside a description
+ * **overwrote that node's kind** — a document changing its own type through its own
+ * description, with 0 warnings.
  */
 function readBlockScalar(lines, start, indicator) {
   const fold = indicator.startsWith('>');
@@ -246,7 +250,7 @@ function readBlockScalar(lines, start, indicator) {
   while (collected.length > 0 && collected[collected.length - 1] === '') collected.pop();
   let text;
   if (fold) {
-    // 접힌 스칼라: 빈 줄은 줄바꿈, 이어지는 줄은 공백 하나로 합친다.
+    // Folded scalar: a blank line becomes a newline, consecutive lines join with one space.
     text = collected
       .reduce((acc, cur) => {
         if (cur === '') return acc.concat('');

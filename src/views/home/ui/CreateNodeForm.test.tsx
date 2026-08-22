@@ -63,8 +63,8 @@ describe("CreateNodeForm", () => {
       />,
     );
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "  Token Issue  " } });
-    // #8 — 자유 입력이 아니라 캐노니컬 Select: 기존 도메인을 이름으로 고르고
-    // 값은 slug(auth)가 전달된다.
+    // Not a free-text field: the user picks an existing domain by name and the
+    // slug is what gets passed on.
     fireEvent.click(screen.getByTestId("create-node-domain"));
     fireEvent.click(screen.getByRole("option", { name: "인증" }));
     expect(screen.getByTestId("create-node-submit")).not.toBeDisabled();
@@ -88,7 +88,8 @@ describe("CreateNodeForm", () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} />);
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "Auth" } });
-    // 캐노니컬 Select — 네이티브 change 대신 트리거 열고 옵션 클릭.
+    // The canonical Select needs the trigger opened and an option clicked, not a
+    // native change event.
     fireEvent.click(screen.getByTestId("create-node-kind"));
     fireEvent.click(screen.getByRole("option", { name: "도메인" }));
     fireEvent.click(screen.getByTestId("create-node-submit"));
@@ -156,8 +157,9 @@ describe("CreateNodeForm", () => {
   });
 });
 
-// 어권별 이름 (소유자 지시 2026-07-24) — localeNames 를 주면 두 번째 칸이
-// 생기고, 다른 언어만 채운 채로는 저장이 막히며 이유가 그 자리에 뜬다.
+// Per-locale names (owner instruction, 2026-07-24): passing localeNames adds a
+// second field, and filling only the other language blocks the save and says why
+// in place.
 describe("CreateNodeForm — 어권별 이름", () => {
   const localeNames = { primaryLocale: "ko", secondaryLocale: "en" };
 

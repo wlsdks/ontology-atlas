@@ -3,39 +3,63 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * `text-<스텝>` / `leading-<스텝>` 이 **실제로 정의된 토큰**을 가리키는지 검사한다.
+ * Blank out comments before scanning, preserving line numbers so reported
+ * locations stay right.
  *
- * ## 왜 이 테스트가 존재하나
+ * **Why (measured 2026-08-22).** This gate looks for class-like literals in the
+ * source. A comment is not a class literal — nothing in a comment ever renders —
+ * but the scan read the raw file, so prose could trip it. Translating the
+ * repository's comments to English made that live: `text-width` written inside a
+ * sentence in `DomainCapacityBar.tsx` was reported as an undefined `text-*` ramp
+ * step, and token names mentioned in prose were counted as ink/fill pairings.
  *
- * 2026-07-27 실측: 공방 중심 카드의 노드 이름이 `text-large` 를 부르고 있었는데
- * `--text-large` 는 어디에도 없었다. Tailwind 는 정의되지 않은 스텝에 대해
- * **아무 클래스도 만들지 않는다** — 그래서 그 자리는 루트 16px 을 상속해
- * 렌더됐고, 화면의 주인공(노드 이름)이 위성 카드 이름(12.5px)과 1.28배밖에
- * 안 벌어져 있었다. `.claude/rules/design.md` 의 잠금 계약대로 **루트 16px
- * 상속은 램프 미적용 결함**이다.
+ * Korean prose rarely contains hyphenated Latin compounds, which is why the hole
+ * stayed closed for as long as the comments were Korean.
+ */
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+}
+
+
+/**
+ * Checks that `text-<step>` / `leading-<step>` point at **tokens that are actually
+ * defined**.
  *
- * 이 결함은 **어떤 게이트도 잡지 못했다.** 없는 토큰을 부르는 클래스는 문법상
- * 정상 문자열이라 tsc·eslint·단위 테스트를 전부 통과한다. 존재하지 않는 것은
- * 리터럴도 남기지 않으므로 `type-ramp-coverage` 의 하드코딩 래칫도 못 본다.
- * 같은 파일에서 같은 사고가 이미 한 번 있었다는 것이 결정적이다 — `text-callout`
- * (역시 미등록 스텝)은 #618 에서 손으로 발견돼 고쳐졌는데, 두 자리 남은
- * `text-large` 는 그 검수를 통과해 살아남았다. 사람 눈은 이 계열을 놓친다.
+ * ## Why this test exists
  *
- * ## 왜 ESLint 가 아니라 계약 테스트인가
+ * Measured 2026-07-27: the node name on the studio's centre card called
+ * `text-large`, and `--text-large` did not exist anywhere. Tailwind **emits no class
+ * at all** for an undefined step, so that place inherited the root 16px, and the
+ * screen's protagonist (the node name) ended up only 1.28× larger than a satellite
+ * card's name (12.5px). Under the lock contract in `.claude/rules/design.md`,
+ * **inheriting the root 16px is a ramp-not-applied defect**.
  *
- * 판정에 **`app/globals.css` 의 토큰 목록**이 필요하다. `no-restricted-syntax`
- * 는 AST 셀렉터 매칭이라 다른 파일의 토큰 정의를 참조할 수 없다 — 스텝 이름을
- * 룰에 복제하면 그 복제본이 램프와 조용히 드리프트해서, 게이트가 지키려는
- * 사각지대를 게이트가 만든다. 그래서 원본(globals.css)을 **읽어서** 판정한다.
+ * **No gate caught it.** A class naming a non-existent token is a syntactically
+ * valid string, so it passes tsc, eslint, and the unit tests. Something that does
+ * not exist leaves no literal either, so `type-ramp-coverage`'s hard-coded ratchet
+ * cannot see it. What settles it is that the same accident had already happened once
+ * in the same file: `text-callout` (also an unregistered step) was found by hand and
+ * fixed in #618, while the two remaining `text-large` survived that review. Human
+ * eyes miss this family.
+ *
+ * ## Why a contract test and not ESLint
+ *
+ * The judgement needs **the token list in `app/globals.css`**.
+ * `no-restricted-syntax` matches AST selectors and cannot reference another file's
+ * token definitions — duplicating step names into the rule lets that copy drift
+ * silently from the ramp, so the gate creates the very blind spot it exists to
+ * guard. So the source (globals.css) is **read** and used for the judgement.
  */
 
-/** 주석 줄. 결함 이력을 한국어로 적을 때 옛 스텝 이름을 인용할 수 있어야 한다. */
+/** Comment lines. A defect history must be able to cite an old step name. */
 const COMMENT_LINE = /^\s*(?:\/\/|\/\*|\*|\{\/\*)/;
 
 /**
- * Tailwind v4 기본 스케일 — `@theme` 에 `--text-*: initial` 리셋이 없으므로
- * 램프와 **공존**한다. 램프 밖이라는 부채는 `type-ramp-coverage` 래칫이 별도로
- * 다루고, 이 테스트는 "정의됐는지" 만 본다.
+ * Tailwind v4's default scale — with no `--text-*: initial` reset in `@theme` it
+ * **coexists** with the ramp. Being off the ramp is debt handled separately by the
+ * `type-ramp-coverage` ratchet; this test asks only whether the step is defined.
  */
 const TAILWIND_FONT_SIZE = new Set([
   "xs",
@@ -55,7 +79,7 @@ const TAILWIND_FONT_SIZE = new Set([
 
 const TAILWIND_LINE_HEIGHT = new Set(["none", "tight", "snug", "normal", "relaxed", "loose"]);
 
-/** 크기가 아닌 `text-*` 유틸리티 — 정렬 · 줄바꿈 · 넘침 · 기본 색 키워드. */
+/** Non-size `text-*` utilities — alignment, wrapping, overflow, and default colour keywords. */
 const TEXT_NON_SIZE = new Set([
   "left",
   "center",
@@ -92,7 +116,7 @@ function collectSourceFiles(dir: string, out: string[]): void {
   }
 }
 
-/** `app/globals.css` 의 `--text-*` / `--leading-*` 선언을 스텝 이름으로 읽는다. */
+/** Reads the `--text-*` / `--leading-*` declarations in `app/globals.css` as step names. */
 export function readRampSteps(css: string): { text: Set<string>; leading: Set<string> } {
   const text = new Set<string>();
   const leading = new Set<string>();
@@ -103,11 +127,12 @@ export function readRampSteps(css: string): { text: Set<string>; leading: Set<st
 }
 
 /**
- * 소스 한 줄에서 램프 스텝 참조를 뽑는다.
+ * Extracts ramp step references from one source line.
  *
- * 제외 대상 — ① 주석 줄(결함 이력 인용) ② `[text-shadow:…]` 처럼 대괄호 안의
- * **임의 속성**(`[` 선행) ③ `text-align: left` 같은 raw CSS 문자열(`:` 후행)
- * ④ `--color-text-primary` 처럼 토큰 이름의 일부(`-` 선행).
+ * Excluded: ① comment lines (citing defect history) ② **arbitrary properties**
+ * inside brackets such as `[text-shadow:…]` (preceded by `[`) ③ raw CSS strings such
+ * as `text-align: left` (followed by `:`) ④ fragments of a token name such as
+ * `--color-text-primary` (preceded by `-`).
  */
 export function extractRampRefs(line: string): Array<{ kind: "text" | "leading"; step: string }> {
   if (COMMENT_LINE.test(line)) return [];
@@ -131,7 +156,7 @@ function isDefined(
       ramp.text.has(ref.step) || TAILWIND_FONT_SIZE.has(ref.step) || TEXT_NON_SIZE.has(ref.step)
     );
   }
-  // `leading-4` 처럼 숫자 스텝은 Tailwind 의 spacing 기반 line-height 다.
+  // Numeric steps such as `leading-4` are Tailwind's spacing-based line heights.
   if (/^\d+(\.\d+)?$/.test(ref.step)) return true;
   return ramp.leading.has(ref.step) || TAILWIND_LINE_HEIGHT.has(ref.step);
 }
@@ -144,7 +169,7 @@ function scan(): string[] {
   const bad: string[] = [];
   for (const file of files) {
     const path = relative(process.cwd(), file);
-    const lines = readFileSync(file, "utf8").split("\n");
+    const lines = stripComments(readFileSync(file, "utf8")).split("\n");
     lines.forEach((line, i) => {
       for (const ref of extractRampRefs(line)) {
         if (isDefined(ref, ramp)) continue;
@@ -171,7 +196,7 @@ describe("타입/행간 램프 — 존재하지 않는 스텝 차단", () => {
 
   it("램프를 실제로 읽는다 — 스캔이 비면 통과가 아니라 결함이다", () => {
     const ramp = readRampSteps(readFileSync(join(process.cwd(), "app/globals.css"), "utf8"));
-    // 7단 램프 + 행간 9단이 최소선. 램프 파싱이 깨지면 위 테스트가 영원히 통과한다.
+    // The floor is a 7-step ramp plus 9 line-height steps. If ramp parsing breaks, the test above passes forever.
     expect(ramp.text.size).toBeGreaterThanOrEqual(7);
     expect(ramp.leading.size).toBeGreaterThanOrEqual(9);
     expect(ramp.text.has("display")).toBe(true);
@@ -183,22 +208,22 @@ describe("타입/행간 램프 — 존재하지 않는 스텝 차단", () => {
     const check = (line: string) =>
       extractRampRefs(line).filter((r) => !isDefined(r, ramp)).length;
 
-    // ① 실제 결함형 — 미등록 스텝 2종.
+    // ① The real defect shape — two unregistered steps.
     expect(check('className="text-large font-semibold leading-oversized"')).toBe(2);
-    // ② 정상형 — 램프 스텝 · Tailwind 기본 스케일 · 숫자 행간 · 임의값.
+    // ② Healthy shapes — ramp steps, Tailwind's default scale, numeric line heights, arbitrary values.
     expect(
       check(
         'className="text-display leading-display-tight text-sm leading-4 leading-relaxed text-[13px] leading-[1.4]"',
       ),
     ).toBe(0);
-    // ③ 오검출 금지형 — 토큰 이름 조각 · 임의 속성 · raw CSS · 정렬/줄바꿈.
+    // ③ Must not be flagged — token name fragments, arbitrary properties, raw CSS, alignment/wrapping.
     expect(
       check(
         'className="text-[color:var(--color-text-primary)] [text-shadow:var(--x)] text-center text-nowrap"',
       ),
     ).toBe(0);
     expect(check("[data-x] a { text-align: left; text-decoration: underline; }")).toBe(0);
-    // ④ 주석은 결함 이력을 인용할 수 있다 — 렌더되지 않으므로 판정 대상이 아니다.
+    // ④ Comments may cite defect history — nothing renders, so they are out of scope.
     expect(check("        // 예전엔 text-callout 이었다 (미등록 스텝 → 루트 16px)")).toBe(0);
   });
 });

@@ -62,7 +62,6 @@ import {
   findSimilarNodeByTitle,
   type SimilarNodeMatch,
 } from '@/shared/lib/similar-node-title';
-// 추출된 page-local helpers.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
 import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
@@ -119,16 +118,16 @@ const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();
 const readServerDesktopRuntime = () => false;
 
-/** slug "capabilities/foo" → { dir: "capabilities/", name: "foo" }. 루트
- *  slug 는 dir "". ehead 의 mono 파일명 렌더 전용 pure helper. */
+/** slug "capabilities/foo" → { dir: "capabilities/", name: "foo" }; a root slug
+ *  gets dir "". Pure helper for rendering the mono filename in the editor head. */
 function splitVaultSlugPath(slug: string): { dir: string; name: string } {
   const parts = slug.split('/');
   const name = parts.pop() ?? slug;
   return { dir: parts.length > 0 ? `${parts.join('/')}/` : '', name };
 }
 
-// view 파싱 / persistence helpers — 다른 도메인의 view 와 collision 회피용
-// `DocsVault*` 네임스페이스. 본 파일 안에선 짧은 별칭으로 alias.
+// View parsing and persistence helpers live in a `DocsVault*` namespace so they do
+// not collide with another domain's view; aliased short inside this file.
 import { DocMetaBar } from "./parts/DocMetaBar";
 import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
 import {
@@ -200,7 +199,7 @@ function DocsVaultContent() {
   const querySample =
     searchParams?.get('sample') === 'dogfood' ? 'dogfood' : null;
   const queryDogfood = searchParams?.get('dogfood') ?? null;
-  // 목록 순서 — URL 이 진실원. 모르는 값은 에러가 아니라 기본값이다.
+  // List order — the URL is the source of truth. An unknown value is not an error, it is the default.
   const queryTreeSort = parseDocsTreeSort(searchParams?.get('sort'));
   const queryTreeGroup = parseDocsTreeGroup(searchParams?.get('group'));
   const insightsReturnTab = parseInsightsReturnMarker(
@@ -210,8 +209,8 @@ function DocsVaultContent() {
     ? searchParams?.get('review') ?? null
     : null;
   const projectsListHref = '/projects/';
-  // UX 감사 (2026-07): '/' 는 하드 내비게이션 시 vault 복원 전이라 관문으로
-  // 떨어지는 막다른 길이었다 — 크럼은 항상 지도 허브로 직행.
+  // UX audit (2026-07): on a hard navigation `/` falls through to the gateway because
+  // the vault has not been restored yet, so the crumb always goes straight to the map.
   const workspaceHref = insightsReturnTab
     ? buildOntologyInsightsReturnHref(insightsReturnTab, insightsReviewId)
     : '/topology';
@@ -232,19 +231,18 @@ function DocsVaultContent() {
     [],
   );
   const [selectedSlug, setSelectedSlug] = useState<string | null>(querySlug);
-  // 통합 팔레트 하나로 3 단축키 수렴. openWith 가 truthy 이면 open,
-  // 값은 초기 쿼리 (`>` 명령, `#` 태그, `` 기본).
-  // R12 #26 step — palette state 는 usePaletteState hook 에서 캡슐화.
+  // One unified palette serves all three shortcuts. A truthy `openWith` opens it, and
+  // the value is the initial query (`>` command, `#` tag, `` default).
   const { paletteQuery, setPaletteQuery, paletteOpen } = usePaletteState();
   const [view, setView] = useState<DocsVaultView>(queryView);
-  // B2 병합 — 문서함 헤더의 vault 도구 드롭다운(VaultToolsMenu)이 설정 메뉴로
-  // 이관되면서 이 latch 는 더 이상 보이는 메뉴를 열지 않는다. 다른 transient
-  // surface 들이 여전히 setAdvancedOpen(false) 로 "다른 팝오버 닫기" 계약을
-  // poke 하므로 setter 만 유지한다(hook effect 는 open=false 라 무동작). AI agent
-  // 도구는 이제 AppSettingsMenu 의 vault / mcpAgents 탭이 소유한다.
+  // The vault tools dropdown moved into the settings menu, so this latch no longer opens
+  // a visible menu. Other transient surfaces still poke `setAdvancedOpen(false)` as the
+  // "close the other popovers" contract, so the setter is kept (the hook effect is a
+  // no-op while open=false). Agent tooling now belongs to AppSettingsMenu's vault /
+  // mcpAgents tabs.
   const { setOpen: setAdvancedOpen } = useAdvancedMenu();
-  // VaultChip 팝오버(경로·폴더수·local badge·vault 바꾸기) — gear 메뉴와 같은
-  // outside-click/Escape 계약을 재사용(useAdvancedMenu 두 번째 소비처).
+  // The VaultChip popover (path, folder count, local badge, switch vault) reuses the gear
+  // menu's outside-click/Escape contract — the second consumer of `useAdvancedMenu`.
   const {
     open: vaultChipOpen,
     setOpen: setVaultChipOpen,
@@ -255,30 +253,30 @@ function DocsVaultContent() {
     undefined,
   );
   const [editing, setEditing] = useState(false);
-  // Toss D1 정리(2026-07) — 샘플 진입 안내 노트를 사용자가 실제 문서를
-  // 골라(handleSelect) 스스로 닫았는지. `shouldShowSampleWelcomeNote` 가
-  // 이 값과 source/딥링크 여부를 합쳐 최종 표시를 판정한다.
+  // Whether the user dismissed the sample welcome note themselves by picking a real
+  // document (`handleSelect`). `shouldShowSampleWelcomeNote` combines this with the
+  // source and whether a deeplink was used to decide the final visibility.
   const [sampleWelcomeDismissed, setSampleWelcomeDismissed] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [docCollection, setDocCollection] =
     useState<DocsVaultCollection>('guides');
   const [treeSort, setTreeSort] = useState<DocsTreeSort>(queryTreeSort);
   const [treeGroup, setTreeGroup] = useState<DocsTreeGroup>(queryTreeGroup);
-  // ?intent=local — landing CTA "내 마크다운 폴더 열기" 의 진입 query.
-  // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
-  // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
+  // `?intent=local` is the entry query of the landing CTA "open my markdown folder".
+  // Pinning the initial source to 'local' puts the picker in the right sidebar from the
+  // first frame — it used to be buried four steps deep.
   const [source, setSource] = useState<Source>(querySource ?? 'server');
   const [staticSampleOverride, setStaticSampleOverride] = useState<
     'dogfood' | null
   >(querySample);
-  // SSR의 안전한 기본값(server)에서 시작한 뒤 저장된 source를 읽는 동안에는
-  // 기본 README를 선택하지 않는다. 로컬 딥링크로 앱을 다시 열 때 server
-  // manifest가 먼저 렌더되어 직전 문서를 덮어쓰는 레이스를 막는다.
+  // Starting from the safe SSR default (server), do not select the default README while
+  // the stored source is still being read. This blocks the race where reopening the app
+  // on a local deeplink renders the server manifest first and overwrites the last document.
   const [sourcePreferenceHydrated, setSourcePreferenceHydrated] =
     useState(false);
-  // #15 설정 위치 통일 — 지도·인사이트·프로젝트와 동일하게 lg+ 는 나브레일
-  // 하단 rail-tile 톱니가 설정을 연다. <lg 는 헤더의 chrome-tile 이 담당
-  // (레일이 숨는 폭). 둘 다 uncontrolled.
+  // At lg+ the gear at the bottom of the nav rail opens settings, matching the map,
+  // insights, and projects. Below lg the header's chrome tile takes over (the rail is
+  // hidden at that width). Both uncontrolled.
   const navRailSettingsSlot = useMemo(
     () => (
       <AppSettingsMenu
@@ -294,9 +292,9 @@ function DocsVaultContent() {
     readDesktopRuntime,
     readServerDesktopRuntime,
   );
-  // ?intent=local 진입 시: source 'local' + advanced panel 펼침. SSR 시점엔
-  // searchParams 가 stale 일 수 있어 mount 후 직접 window.location 에서 read.
-  // landing 의 '내 마크다운 폴더 열기' CTA 가 dead-end 안 되도록.
+  // On `?intent=local`: set source to 'local' and expand the advanced panel. `searchParams`
+  // can be stale at SSR time, so this reads `window.location` directly after mount — the
+  // landing CTA must not dead-end.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (querySource) return;
@@ -309,13 +307,13 @@ function DocsVaultContent() {
         setAdvancedOpen(false);
       });
     }
-    // mount 1회만 — 사용자가 직접 닫은 후 reload 시 다시 안 열리게.
-    // setAdvancedOpen 은 useAdvancedMenu 의 useCallback wrap 결과라 ref-stable
-    // 이지만 ESLint 가 destructured method 의 stability 추적 못 해 명시.
+    // Mount only, so it does not reopen on reload after the user closed it. `setAdvancedOpen`
+    // is ref-stable (a `useCallback` from `useAdvancedMenu`) but ESLint cannot track the
+    // stability of a destructured method, so it is listed explicitly.
   }, [isDesktopRuntime, querySource, setAdvancedOpen]);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
-  // 문서 목록 aside 접힘 — design-prescription.md ③-4: 접힘은 width 0(레일
-  // 삭제), localStorage persist(작업공간 취향, 세션·새로고침 넘어 유지).
+  // Collapsing the document-list aside means width 0 (the rail is removed, not slimmed),
+  // persisted to localStorage because it is a workspace preference that outlives a reload.
   const [docListCollapsed, setDocListCollapsedState] = useState(false);
   useEffect(() => {
     scheduleStateSync(() => setDocListCollapsedState(readStoredListCollapsed()));
@@ -329,8 +327,9 @@ function DocsVaultContent() {
   }, []);
   const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
-  // IDB 핸들 복원 **시도가 종결됐는가** — status 와 달리 「아직 모른다」와
-  // 「없는 게 확정이다」를 가른다. 관문 소스 판정(C5)의 유일한 출발 신호.
+  // Whether the IDB handle restore **has finished being attempted** — unlike status, this
+  // separates "not known yet" from "confirmed absent". The only start signal for the
+  // landing source decision.
   const localVaultRestoreAttempted = localVault.restoreAttempted;
   const openLocalVault = localVault.open;
   const openRecentLocalVault = localVault.openRecent;
@@ -359,8 +358,8 @@ function DocsVaultContent() {
   });
 
   useEffect(() => {
-    // 경로가 설정 안 된 빌드(공개 배포)에서는 아무 일도 하지 않는다 —
-    // 없는 경로를 여는 시늉보다 조용한 편이 정직하다.
+    // A build with no configured path (the public release) does nothing — staying quiet is
+    // more honest than pretending to open a path that does not exist.
     if (
       hasDogfoodVaultPath() &&
       shouldSwitchToDogfoodVault({
@@ -384,9 +383,8 @@ function DocsVaultContent() {
     source,
   ]);
 
-  // R11 #16 step 5 — pinned/recent persistence 는 useDocsVaultPersistence hook
-  // 에서 캡슐화. setter 들은 view 의 다양한 mutation 사이트 (delete/new-doc 등)
-  // 가 직접 호출하므로 외부 노출.
+  // Pinned/recent persistence is encapsulated in `useDocsVaultPersistence`. The setters are
+  // exposed because the view's mutation sites (delete, new document) call them directly.
   const {
     recentKey,
     recentSlugs,
@@ -397,12 +395,9 @@ function DocsVaultContent() {
     togglePin: handleTogglePin,
   } = useDocsVaultPersistence({ source, localVault });
 
-  // R11 #14 — vault frontmatter validation 요약. local 모드일 때만 manifest
-  // docs 의 parsed frontmatter 를 보고 missing-kind / empty-kind / unknown-kind
-  // 검출. error 0 / warning 0 이면 picker 가 chip 안 그림.
-  // R11 #16 step 4 — replaceUrlState 는 src/views/docs-vault/lib/url-state.ts
-  // 의 module-level 순수 함수로 추출. useCallback wrap 제거 + 호출 사이트
-  // 의 deps 에서도 빠짐 (module reference 는 자동 stable).
+  // `replaceUrlState` is a module-level pure function in
+  // `src/views/docs-vault/lib/url-state.ts`, so it needs no `useCallback` wrapper and drops
+  // out of every call site's deps (a module reference is stable by construction).
   const replaceUrlState = replaceDocsVaultUrlState;
 
   const handleViewChange = useCallback(
@@ -440,9 +435,8 @@ function DocsVaultContent() {
       });
       return;
     }
-    // ?intent=local 은 설치 앱 안에서만 local source 로 해석한다. hosted
-    // browser 에서는 웹을 홍보/다운로드 surface 로 유지하고 로컬 vault 작업을
-    // 열지 않는다.
+    // `?intent=local` means the local source only inside the installed app. A hosted
+    // browser keeps the web as a promo/download surface and does not open local vault work.
     if (typeof window !== 'undefined') {
       const intent = new URLSearchParams(window.location.search).get('intent');
       if (shouldHonorLocalIntent(intent, isDesktopRuntime)) {
@@ -456,29 +450,29 @@ function DocsVaultContent() {
     });
   }, [isDesktopRuntime, querySource]);
 
-  // C5 — when a local vault is live, landing on 문서함 must NOT silently flip to
-  // the Sample (`server`) source just because that was the last stored
-  // preference. Users read that flip as "내 데이터가 사라졌다". The local vault
-  // restores asynchronously from IndexedDB, so we watch for it and, ONCE per
-  // mount (before any manual source switch), prefer `local`. Not persisted, so
-  // we don't overwrite an intentional stored preference on disk.
+  // When a local vault is live, landing on the docs surface must NOT silently flip to the
+  // Sample (`server`) source just because that was the last stored preference. Users read
+  // that flip as "my data is gone". The local vault restores asynchronously from IndexedDB,
+  // so we watch for it and, ONCE per mount (before any manual source switch), prefer
+  // `local`. Not persisted, so an intentional stored preference on disk is not overwritten.
   //
-  // ⚠️ **관문 판정은 복원 시도가 끝나는 순간 단 한 번으로 종결된다** (2026-08-08).
-  // 종전엔 「한 번 쏘면 소진」인 원샷 ref 였는데, 그 설계에는 두 구멍이 있었다:
+  // ⚠️ **The landing decision is settled exactly once, the moment the restore attempt
+  // finishes** (2026-08-08). It used to be a one-shot ref, and that design had two holes:
   //
-  // ① 저장 취향이 로컬인 부팅에서는 쏠 일이 없어 ref 가 장전된 채 남았고, 그
-  //    장전된 한 발이 **사용자의 첫 「샘플」 전환을 그 자리에서 로컬로
-  //    되튕겼다**(실기기: 클릭 후 300ms·1800ms 모두 로컬 — 첫 전환이 조용히
-  //    무시됨). 관문 가드가 사용자의 선택을 잡아먹은 것이다.
-  // ② 판정 시점이 열려 있어서, 아래 스코프 정리·「없는 문서」 판정·기본 선택이
-  //    「관문 전환이 아직 올 수 있는가」를 알 방법이 없었다 — 그래서 부팅의
-  //    샘플 창이 「정착」으로 관측됐다(그 결과는 스코프 정리 effect 주석 참조).
+  // ① On a boot whose stored preference was already local there was nothing to fire, so the
+  //    ref stayed loaded — and that loaded shot **bounced the user's first switch to
+  //    "sample" straight back to local** (measured on device: local at both 300 ms and
+  //    1800 ms after the click; the first switch was silently ignored). The landing guard
+  //    was eating the user's choice.
+  // ② With the decision point left open, the scope cleanup, the "document not found"
+  //    verdict, and the default selection below had no way to know whether a landing switch
+  //    was still coming — so the sample window during boot was observed as "settled" (see
+  //    the scope-cleanup effect's comment for what that caused).
   //
-  // `restoreAttempted` 는 IDB 복원 시도가 **종결된 뒤에만** 참이 되므로
-  // (use-local-vault: load 완료 후 set), 이 시점의 status 는 최종값이고 판정은
-  // 한 번으로 충분하다. ref 가 아니라 **상태**인 이유: ref 는 판정이 「전환
-  // 없음」으로 끝났을 때 재렌더를 만들지 않아, 이 값에 기대는 아래 소비자들이
-  // 영영 깨어나지 못한다.
+  // `restoreAttempted` becomes true only **after** the IDB restore attempt concludes
+  // (use-local-vault sets it once load completes), so the status at this point is final and
+  // one decision is enough. It is **state, not a ref**, because a ref produces no re-render
+  // when the decision ends in "no switch", leaving every consumer below asleep forever.
   const [landingSourceResolved, setLandingSourceResolved] = useState(false);
   useEffect(() => {
     if (landingSourceResolved) return;
@@ -496,25 +490,25 @@ function DocsVaultContent() {
     source,
   ]);
   /**
-   * **볼트 스코프가 정착했는가** — 부팅이 끝나 「지금 보이는 볼트」가 사용자의
-   * 의도와 일치한다고 말할 수 있는 최초 시점 이후인가. 세 소비자가 같은 술어를
-   * 쓴다: 스코프 전환 정리 · 「없는 문서」 배너 · 기본 문서 선택. 셋 중 하나라도
-   * 이보다 이른 시점에 판정하면 부팅의 샘플 창을 실재로 오인한다(2026-08-08 —
-   * 세 소비자가 각자 다른 술어를 쓰다 딥링크가 걷혔다).
+   * **Has the vault scope settled** — are we past the first moment boot can claim that "the
+   * vault on screen" matches the user's intent? Three consumers share this one predicate:
+   * scope-switch cleanup, the "document not found" banner, and default document selection.
+   * Any of the three deciding earlier mistakes the boot-time sample window for reality
+   * (2026-08-08 — three consumers using three different predicates lost a deeplink).
    */
   const vaultScopeSettled =
     sourcePreferenceHydrated &&
     landingSourceResolved &&
     (source === 'server' || localVaultStatus === 'loaded');
 
-  // 문서함 점검 중앙 모달 — design-prescription.md ③-5: 로드마다 모달이 뜨면
-  // modality 위반이므로 open 상태는 persist 하지 않고 항상 닫힌 채 시작한다.
-  // 토글 자체는 순수 컴포넌트 state 로 세션 내에서만 유지.
+  // The docs check modal must not persist its open state: a modal appearing on every load
+  // violates modality, so it always starts closed. The toggle is plain component state and
+  // lives only for the session.
   const [contractOpen, setContractOpen] = useState(false);
   const openContract = useCallback(() => {
-    // transient 단일 규칙 — 모달을 열면 다른 L2 팝오버(gear·VaultChip·⌘K)
-    // 를 닫는다. 문서정보 인스펙터는 사용자가 열어 둔 영속 패널이라 예외
-    // (클릭=안전 — implementation-contract.md §4 "모달 계약").
+    // The single-transient rule — opening a modal closes the other L2 popovers (gear,
+    // VaultChip, ⌘K). The document-info inspector is exempt because it is a persistent panel
+    // the user opened.
     setAdvancedOpen(false);
     setVaultChipOpen(false);
     setPaletteQuery(null);
@@ -522,18 +516,17 @@ function DocsVaultContent() {
   }, [setAdvancedOpen, setVaultChipOpen, setPaletteQuery]);
   const closeContract = useCallback(() => setContractOpen(false), []);
 
-  // URL 복사 feedback — 최근에 복사된 slug 를 잠깐 기억하고 2초 뒤 reset.
   /**
-   * 복사 확인은 **토스트가 진다** (2026-07-28).
+   * Copy confirmation is **owned by the toast** (2026-07-28).
    *
-   * 종전에는 문서 정보 인스펙터의 체크 아이콘이 유일한 피드백이었다. 그
-   * 패널을 걷어내면서 ⌘K 팔레트의 「링크 복사」가 **아무 반응 없는 명령**이
-   * 될 뻔했다 — 표면을 지울 때 그 표면에만 살던 피드백이 함께 사라지는 것이
-   * 축소의 가장 흔한 사고다.
+   * The check icon in the document-info inspector used to be the only feedback. Removing
+   * that panel nearly turned ⌘K's "copy link" into a command with **no response at all** —
+   * feedback that lived only on a deleted surface disappearing with it is the most common
+   * accident of a reduction.
    *
-   * 이 화면이 이미 쓰는 토스트 문법(`handleCopyAgentVerifyPrompt`)을 그대로
-   * 따른다 — 실패도 말한다. 클립보드 권한은 조용히 거절될 수 있고, 그때
-   * 침묵하면 사용자는 복사됐다고 믿는다.
+   * It follows the toast grammar this screen already uses (`handleCopyAgentVerifyPrompt`),
+   * including on failure: clipboard permission can be refused silently, and staying quiet
+   * then leaves the user believing the copy succeeded.
    */
   const handleCopyUrl = useCallback(
     async (slug: string) => {
@@ -556,9 +549,9 @@ function DocsVaultContent() {
   );
   const handleCopyAgentVerifyPrompt = useCallback(async () => {
     /*
-     * 경로를 아는 빌더를 쓴다. 종전 상수는 폴더를 `.` 로 박아 둬서, 에이전트를
-     * **다른 작업 폴더에서 열면 그 `.` 이 남의 폴더를 가리켰다** — 사실과
-     * 분리된 복사는 복사가 아니라 오답이다.
+     * Use the builder that knows the path. The old constant pinned the folder to `.`, so
+     * opening the agent **in a different working folder made that `.` point at someone
+     * else's folder** — a copy detached from the fact is not a copy, it is a wrong answer.
      */
     const copied = await copyText(
       buildOntologyStarterAgentVerifyPrompt(
@@ -570,24 +563,24 @@ function DocsVaultContent() {
       copied ? 'success' : 'error',
     );
     /*
-     * ⚠️ `localVault.handle` 이 의존성에 있어야 한다 (2026-08-06 `exhaustive-deps`
-     * 감사). 이 콜백은 **볼트의 절대 경로**를 프롬프트에 박아 복사한다 — 빠지면
-     * 폴더를 갈아탄 뒤에도 **옛 볼트 경로**를 복사한다. `DocsVaultEditor` 의
-     * `vaultScope` 누락과 같은 부류(닫힌 값이 사용자에게 나가는 자리)다.
+     * ⚠️ `localVault.handle` must stay in the deps (`exhaustive-deps` audit, 2026-08-06).
+     * This callback copies a prompt with the **vault's absolute path** baked in; without the
+     * dep it keeps copying the **old vault path** after switching folders. Same class as the
+     * missing `vaultScope` on `DocsVaultEditor`: a stale closed-over value going out to the user.
      */
   }, [localVault.handle, t, toast]);
 
-  // 스크롤 스파이 — 본문 스크롤 따라 outline 의 active heading 추적.
+  // Scroll spy — tracks the outline's active heading as the body scrolls.
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
     useDocsVaultScrollSpy(selectedSlug, source);
-  // 맨 위로 버튼 표시 임계 + 클릭 동작 — 같은 스크롤 컨테이너를 구독하지만
-  // 관심사가 달라 스크롤스파이와 분리된 훅.
+  // Back-to-top threshold and click behaviour. Subscribes to the same scroll container as the
+  // scroll spy but is a separate hook because the concern differs.
   const backToTop = useBackToTop(articleScrollRef, selectedSlug);
 
-  // Hosted browser 에서는 local vault 작업을 열지 않는다. 기존 브라우저
-  // 세션이 local source 를 저장해 둔 경우에도 promo/read-only surface 로 복귀.
+  // A hosted browser does not open local vault work, even when an earlier browser session
+  // stored the local source — it returns to the promo/read-only surface.
   useEffect(() => {
-    // P1b — FSA 미지원일 때만 server 로 복귀 (웹 세션 local 은 이제 유효).
+  // Fall back to server only when FSA is unsupported; a local web session is valid now.
     if (source === 'local' && localVaultStatus === 'unsupported') {
       scheduleStateSync(() => {
         setSource('server');
@@ -611,19 +604,20 @@ function DocsVaultContent() {
     setSource(next);
     setStaticSampleOverride(null);
     storeSource(next);
-    // 소스 전환 시 선택 해제 — 동일 slug 가 다른 볼트에 있을 가능성 적음.
+  // Clear the selection when the source changes — the same slug rarely exists in both vaults.
     setSelectedSlug(null);
     setActiveTag(null);
-    // 샘플 모드로 (재)진입할 때마다 안내 노트를 다시 보여준다 — 이전 세션에서
-    // 닫았더라도 "샘플 vs 내 vault" 전환은 방향 감각을 다시 짚어줄 가치가 있다.
+  // Show the welcome note again on every (re-)entry into sample mode. Even if it was
+  // dismissed in an earlier session, switching between sample and one's own vault is worth
+  // re-orienting.
     if (next === 'server') setSampleWelcomeDismissed(false);
     replaceUrlState(
       next === 'server'
         ? { slug: null, view, intent: null, source: null, sample: null }
         : { slug: null, view, source: null, sample: null },
     );
-    // Local 로 전환 시 Obsidian 스타일 welcome 화면에서 직접 선택하게 한다.
-    // native picker 는 사용자가 "폴더 열기" 를 눌렀을 때만 열린다.
+  // Switching to local lets the user choose from the Obsidian-style welcome screen. The
+  // native picker opens only when they press "open folder".
     if (next === 'local' && isDesktopRuntime && localVault.status !== 'loaded') {
       localIntentAutoOpenRef.current = true;
       setAdvancedOpen(false);
@@ -654,10 +648,10 @@ function DocsVaultContent() {
   });
 
 
-  // 현재 활성 매니페스트 — source 에 따라 분기. 로컬은 loaded 이전엔 null.
-  // static 폴백은 사용자가 고른 샘플(도그푸드 / 예시 쇼핑몰)을 따른다 —
-  // 번들 매니페스트를 직접 읽으면 "예시 비즈니스 보기" 선택이 문서함에서만
-  // 조용히 무시돼 지도와 다른 볼트를 보여주게 된다.
+  // The active manifest, branching on source; local is null until loaded. The static
+  // fallback follows the sample the user chose (dogfood or the example storefront) —
+  // reading the bundled manifest directly would make "view the example business" silently
+  // ignored in the docs surface, showing a different vault from the map.
   const preferredStaticVault = useStaticVaultSource();
   const staticVault = staticSampleOverride
     ? resolveStaticVaultSource(staticSampleOverride)
@@ -668,11 +662,11 @@ function DocsVaultContent() {
       : staticVault.manifest;
 
   /*
-   * 번들 볼트의 headings — 매니페스트에서 떼어 별도 청크로 분리됐다(263KB 가
-   * `/docs` 만 쓰는데 모든 라우트의 공통 청크에 실려 있었다,
-   * `entities/docs-vault/lib/static-headings.ts`). static 모드에서만 필요할 때
-   * 동적 import 하고, 로컬 모드 매니페스트는 headings 를 인라인으로 갖고 있다.
-   * 짝 규율: 지금 그리는 매니페스트와 같은 볼트(source)의 맵만 싣는다.
+   * Headings for the bundled vault were split out of the manifest into their own chunk:
+   * 263 KB used only by `/docs` was riding in every route's shared chunk
+   * (`entities/docs-vault/lib/static-headings.ts`). Static mode imports it dynamically when
+   * needed; a local manifest carries headings inline.
+   * Pairing rule: only load the map for the same vault (source) currently being drawn.
    */
   const [staticHeadingsBundle, setStaticHeadingsBundle] = useState<{
     source: string;
@@ -686,13 +680,14 @@ function DocsVaultContent() {
         if (!cancelled) setStaticHeadingsBundle({ source: staticVault.source, map });
       })
       .catch(() => {
-        // 목차는 부가 정보다 — 로드 실패로 문서함 자체를 막지 않는다.
+        // The outline is supplementary — a load failure must not block the docs surface itself.
       });
     return () => {
       cancelled = true;
     };
   }, [isLocalSourceLoaded, staticVault.source]);
-  // 샘플이 바뀌는 순간 낡은 맵을 쓰지 않도록 source 가 일치할 때만 소비한다.
+  // Consume the map only while the source matches, so a stale map is never used the moment
+  // the sample changes.
   const staticHeadings =
     staticHeadingsBundle && staticHeadingsBundle.source === staticVault.source
       ? staticHeadingsBundle.map
@@ -702,11 +697,11 @@ function DocsVaultContent() {
     [manifest],
   );
 
-  // Viewer content resolver — 로컬은 파일 핸들로 읽기, 서버는 기본 fetch.
-  // R+ 사용자 보고: `?intent=local` 진입 시 source='local' 강제 set 후
-  // vault 미선택 (handles 0) 단계에서 viewer 가 fh 없는 slug 를 요청해
-  // "no file handle for 'FEATURES'" 에러 노출. handles 가 empty 면 server
-  // fetch fallback — 사용자가 picker 클릭 전까지 demo content 노출.
+  // Viewer content resolver — local reads through file handles, server uses a plain fetch.
+  // Reported by a user: entering via `?intent=local` forces source='local', and while no
+  // vault is chosen (zero handles) the viewer asked for a slug with no handle and surfaced
+  // "no file handle for 'FEATURES'". With no handles it falls back to a server fetch, so
+  // demo content shows until the user clicks the picker.
   const getDocContent = useMemo<
     ((slug: string) => Promise<string>) | undefined
   >(() => {
@@ -721,7 +716,7 @@ function DocsVaultContent() {
     };
   }, [source, localVault.fileHandles]);
 
-  // 로컬 볼트 이미지 resolver — 상대 경로 → blob URL. 서버 볼트엔 undefined.
+  // Local vault image resolver — relative path → blob URL. Undefined for the server vault.
   const resolveImage = useMemo<
     ((path: string) => Promise<string | null>) | undefined
   >(() => {
@@ -735,12 +730,12 @@ function DocsVaultContent() {
     };
   }, [source, localVault.imageHandles]);
 
-  // 편집은 로컬 볼트일 때만 (vault handle 이 있어야 disk 에 patch 가능).
+  // Editing requires a local vault: patching to disk needs a vault handle.
   const canEditCurrent = isLocalSourceLoaded;
   const editResolver = useMemo<
     ((slug: string) => Promise<string>) | undefined
   >(() => {
-    // 편집용 resolver — 뷰어 resolver 와 동일하지만 명시적 분리.
+  // The edit resolver is identical to the viewer's, kept separate deliberately.
     if (!canEditCurrent) return undefined;
     const handles = localVault.fileHandles;
     return async (slug: string) => {
@@ -750,7 +745,7 @@ function DocsVaultContent() {
       return file.text();
     };
   }, [canEditCurrent, localVault.fileHandles]);
-  // 편집 종료 조건 — 뷰어로 돌아가거나 source 바뀔 때.
+  // Leave edit mode when returning to the viewer or when the source changes.
   useEffect(() => {
     if (!canEditCurrent) scheduleStateSync(() => setEditing(false));
   }, [canEditCurrent]);
@@ -770,9 +765,10 @@ function DocsVaultContent() {
     if (!ok) return;
     try {
       await localVault.deleteDoc(slug);
-      // 삭제 성공 — selection/주소/pinned/recent 정리. 주소를 안 걷어내면
-      // 매니페스트 갱신 순간 「요청한 문서가 없다」 판정이 방금 지운 주소를
-      // 잡아 거짓 경고가 뜬다(2026-08-13 걷기 실측 — 이름 변경과 같은 병).
+      // Delete succeeded — clean up selection, address, pinned, and recent. Leaving the
+      // address in place makes the "requested document is missing" verdict catch the slug
+      // that was just deleted the moment the manifest updates, raising a false warning
+      // (measured in a 2026-08-13 walkthrough — the same illness as rename).
       appTouchedSlugsRef.current = new Set([slug]);
       setSelectedSlug(null);
       replaceUrlState({ slug: null });
@@ -781,9 +777,10 @@ function DocsVaultContent() {
       setPinnedSlugs((list) => {
         const next = list.filter((s) => s !== slug);
         if (next.length !== list.length) {
-          // 실제 제거된 경우에만 localStorage 동기화 — 갱신 함수는 렌더 중에
-          // 실행될 수 있으므로(스튜디오 임시저장 사고, 2026-08-13) 쓰기는
-          // 마이크로태스크로 렌더 밖에 내보낸다. 멱등 쓰기라 이중 호출 무해.
+          // Sync localStorage only when something was actually removed. An updater function
+          // can run during render (the 2026-08-13 draft-save incident), so the write is
+          // pushed out of render into a microtask. The write is idempotent, so a double call
+          // is harmless.
           queueMicrotask(() => {
             try {
               window.localStorage.setItem(
@@ -805,7 +802,7 @@ function DocsVaultContent() {
   }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs, t]);
 
   const handleScaffoldOntologyStarter = useCallback(async () => {
-    // #73 — 화면 언어로 만든 볼트는 그 언어로 읽히게 한다.
+      // A vault created from a screen in one language should read in that language.
     const result = await localVault.scaffoldOntology(locale);
     setSelectedSlug('README');
     setRecentSlugs(pushRecentDoc(recentKey, 'README'));
@@ -813,8 +810,9 @@ function DocsVaultContent() {
     setView('doc');
     setAdvancedOpen(false);
     toast.show(
-      // #70 — 개념 수와 설정 파일 수를 **따로** 말한다. 예전엔 둘을 합친
-      // `created` 라 "시작 문서 8개" 인데 실제 온톨로지 개념은 5개였다.
+      // State the concept count and the config-file count **separately**. They used to be
+      // summed into one `created`, so the toast said "8 starter documents" while the real
+      // ontology concept count was 5.
       t('dialog.ontologyStarterDone', {
         concepts: result.markdownCreated,
         configs: result.agentConfigCreated,
@@ -846,7 +844,7 @@ function DocsVaultContent() {
       window.alert(t('dialog.noHeadings'));
       return;
     }
-    // TOC markdown — h2 는 * indent 없음, h3 는 2-space indent.
+      // TOC markdown — h2 has no indent, h3 gets two spaces.
     const tocLines = headings.map((h) => {
       const indent = h.depth === 3 ? '  ' : '';
       return `${indent}- [${h.text}](#${h.slug})`;
@@ -866,20 +864,19 @@ function DocsVaultContent() {
     try {
       const file = await fh.getFile();
       const raw = await file.text();
-      // frontmatter 끝 찾기
       let insertAfter = 0;
       if (raw.startsWith('---')) {
         const end = raw.indexOf('\n---', 3);
         if (end !== -1) insertAfter = end + 4;
         while (raw[insertAfter] === '\n') insertAfter += 1;
       }
-      // 기존 toc 블록이 있으면 제거
+      // Remove an existing toc block, if any.
       const stripped = raw.replace(
         /<!-- toc:start -->[\s\S]*?<!-- toc:end -->\n?/,
         '',
       );
-      // stripped 에서 insertAfter 재계산 (지워진 만큼 보정 필요하지만, 보통
-      // toc 가 맨 앞이라 그대로 써도 안전)
+      // `insertAfter` is not recomputed against `stripped`. It would need adjusting by the
+      // removed length, but the toc is normally at the very top so this stays safe.
       const head = stripped.slice(0, insertAfter);
       const body = stripped.slice(insertAfter);
       const next = `${head}${tocBlock}\n\n${body}`;
@@ -933,17 +930,17 @@ function DocsVaultContent() {
       await localVault.renameDoc(selectedSlug, nextSlug, {
         rewriteBacklinks: true,
       });
-      // selection + 주소 + 활성 기억 + recent/pinned 마이그레이트.
-      // 주소를 안 옮기면 매니페스트 갱신 순간 「URL 이 요청한 문서가 없다」
-      // 판정이 옛 주소를 잡아 거짓 경고가 뜬다(2026-08-13 걷기 실측). 새
-      // 이름은 매니페스트에 나타날 때까지 「아직 모름」으로 지연 판정한다.
+      // Migrate selection, address, active memory, and recent/pinned. Leaving the address
+      // behind makes the "the URL requests a missing document" verdict catch the old address
+      // the moment the manifest updates, raising a false warning (walkthrough 2026-08-13).
+      // The new name is deferred as "not known yet" until it appears in the manifest.
       const prev = selectedSlug;
       appTouchedSlugsRef.current = new Set([prev, nextSlug]);
       setSelectedSlug(nextSlug);
       replaceUrlState({ slug: nextSlug });
       setRecentSlugs((list) => {
         const mapped = list.map((s) => (s === prev ? nextSlug : s));
-        // 갱신 함수 안 직접 쓰기 금지 — 위 삭제 경로와 같은 이유(2026-08-13).
+      // No direct writes inside an updater function — same reason as the delete path above.
         queueMicrotask(() => {
           try {
             window.localStorage.setItem(
@@ -977,25 +974,25 @@ function DocsVaultContent() {
     }
   }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setPinnedSlugs, setRecentSlugs, t]);
 
-  // P5c — "새 문서" 는 kind 선택이 먼저 온다(도메인/역량/요소/문서). generic
-  // `title:` 템플릿을 없애 "이 vault 의 문서는 노드다" 를 생성 순간에 강제
-  // (.qa-scratch/docs-identity-2026-07/verdict.md 더하기③). kind 클릭 →
-  // 제목 prompt → buildNewNodeDoc 이 kind 별 폴더 + normalized frontmatter 로
-  // 직렬화 — 빌더/토폴로지 새 노드 생성과 동일 함수(entities/docs-vault).
+  // "New document" asks for the kind first (domain / capability / element / document). There
+  // is no generic `title:` template, which forces "a document in this vault is a node" at the
+  // moment of creation. Clicking a kind prompts for a title, and `buildNewNodeDoc` serializes
+  // it into the kind's folder with normalized frontmatter — the same function the map uses
+  // to create a node (entities/docs-vault).
   const [newDocKindDialogOpen, setNewDocKindDialogOpen] = useState(false);
   const handleOpenNewDocDialog = useCallback(() => {
     if (!canEditCurrent) return;
-    // transient 단일 규칙 — 이 모달을 열면 다른 L2 팝오버(gear 드롭다운·
-    // VaultChip·⌘K)를 닫는다(openContract 와 같은 계약).
+  // The single-transient rule — opening this modal closes the other L2 popovers (gear
+  // dropdown, VaultChip, ⌘K). Same contract as `openContract`.
     setAdvancedOpen(false);
     setVaultChipOpen(false);
     setPaletteQuery(null);
     setNewDocKindDialogOpen(true);
   }, [canEditCurrent, setAdvancedOpen, setVaultChipOpen, setPaletteQuery]);
-  // design-council B2 rank4 — GUI 근접 중복 감지. slug 완전 충돌(위 renameAlreadyExists,
-  // 손댐 없음)과는 별개의 더 이른 신호 — "제목이 비슷한 kind-일치 노드가 이미
-  // 있어요"를 실제 생성 전에 비차단으로 보여준다. 생성 로직 자체는
-  // commitCreateDoc 으로 뽑아 "그래도 새로 만들기" 경로와 공유.
+  // Near-duplicate detection in the GUI. A separate, earlier signal from an outright slug
+  // collision (`renameAlreadyExists` above, untouched): it shows "a node of the same kind
+  // with a similar title already exists" before creating, without blocking. The creation
+  // logic is factored into `commitCreateDoc` and shared with the "create anyway" path.
   const [pendingSimilarDoc, setPendingSimilarDoc] = useState<{
     slug: string;
     markdown: string;
@@ -1005,7 +1002,7 @@ function DocsVaultContent() {
     async (slug: string, markdown: string) => {
       try {
         await localVault.createDoc(slug, markdown);
-        // 방금 만든 문서를 자동 선택 + 편집 모드 진입
+        // Select the newly created document and enter edit mode.
         setSelectedSlug(slug);
         setRecentSlugs(pushRecentDoc(recentKey, slug));
         setEditing(true);
@@ -1043,7 +1040,7 @@ function DocsVaultContent() {
       }));
       const match = findSimilarNodeByTitle(title, kind, candidates);
       if (match) {
-        // 비차단 — 생성을 막지 않는다, 선택지만 보여준다(human-sovereign).
+        // Non-blocking — creation is not prevented, only a choice is offered (human-sovereign).
         setPendingSimilarDoc({ slug, markdown, match });
         return;
       }
@@ -1066,8 +1063,8 @@ function DocsVaultContent() {
     void commitCreateDoc(slug, markdown);
   }, [pendingSimilarDoc, commitCreateDoc]);
 
-  // 마운트 1 회 — 초기 URL 값이 없을 때 localStorage 선호값으로 보강.
-  // useRef 로 '실행 여부' 를 가두고 dep 는 컴포넌트 stable 값들만 명시.
+  // Once on mount — backfill from the localStorage preference when the initial URL carries
+  // no value. A ref gates whether it ran, and the deps list only component-stable values.
   const initialPrefsAppliedRef = useRef(false);
   useEffect(() => {
     if (initialPrefsAppliedRef.current) return;
@@ -1077,10 +1074,10 @@ function DocsVaultContent() {
     });
   }, [searchParams, queryView]);
 
-  // URL ↔ state 동기화: URL 쿼리가 변할 때만 local state 로 흘려보낸다.
-  // 반대 방향 (state → URL) 은 user 인터랙션에서 router.push 로 이미 처리.
-  // usePrevious 로 직전 URL 값과 비교해 "URL 이 변했을 때" 만 액션 실행.
-  // dep array 에 모든 reactive 값 (current+prev URL, 그리고 비교 대상 state) 포함.
+  // URL → state sync: local state follows only when the URL query changes. The other
+  // direction (state → URL) is already handled by `router.push` on user interaction.
+  // `usePrevious` compares against the previous URL value so the action fires only when the
+  // URL actually changed.
   const normalizedQuerySlug = useMemo(
     () => resolveDocsVaultSlugAlias(querySlug, manifest.docs),
     [manifest.docs, querySlug],
@@ -1102,7 +1099,7 @@ function DocsVaultContent() {
       scheduleStateSync(() => setView(queryView));
     }
   }, [prevQueryView, queryView, view]);
-  // 뒤로가기·공유 링크·에이전트가 넘긴 URL 로 순서가 바뀌면 화면이 따라간다.
+  // The screen follows when order changes via back, a shared link, or a URL from an agent.
   const prevQueryTreeSort = usePrevious(queryTreeSort);
   useEffect(() => {
     if (prevQueryTreeSort !== queryTreeSort && queryTreeSort !== treeSort) {
@@ -1125,10 +1122,11 @@ function DocsVaultContent() {
     () => new Set(manifest.docs.map((d) => d.slug)),
     [manifest],
   );
-  // frontmatter 참조는 맨슬러그(ai-agent-partner)로 쓰지만 doc.slug 는 경로형
-  // (ontology/domains/ai-agent-partner)이다. 맨슬러그·frontmatter.slug·경로
-  // 꼬리 세 표기를 실제 네비게이션 slug 로 해소한다(경로형 우선, frontmatter
-  // 맨슬러그가 꼬리보다 authoritative). 미해소 참조는 링크로 만들지 않는다.
+  // Frontmatter references use the bare slug (`ai-agent-partner`) while `doc.slug` is
+  // path-shaped (`ontology/domains/ai-agent-partner`). All three spellings — bare slug,
+  // frontmatter `slug`, and path tail — resolve to the real navigation slug (path form
+  // first; a frontmatter bare slug is more authoritative than a tail). An unresolved
+  // reference is not rendered as a link.
   const refSlugResolver = useMemo(() => {
     const map = new Map<string, string>();
     for (const d of manifest.docs) map.set(d.slug, d.slug);
@@ -1143,10 +1141,10 @@ function DocsVaultContent() {
     }
     return map;
   }, [manifest]);
-  // 열린 문서 탭 워킹셋 — docs-chrome-round 슬라이스 B. sourceKey 는
-  // useDocsVaultPersistence 의 recentKey 를 그대로 재사용해 vault 별 분리
-  // 규약을 새로 만들지 않는다('server' | `local:<handle.name>`). 활성
-  // 진실원은 여전히 selectedSlug/URL — 이 훅은 열린 목록만 소유한다.
+  // The open-document tab working set. `sourceKey` reuses `useDocsVaultPersistence`'s
+  // `recentKey` rather than inventing a second per-vault convention
+  // ('server' | `local:<handle.name>`). The active source of truth is still
+  // selectedSlug / the URL; this hook owns only the list of open documents.
   const {
     tabs: openDocTabs,
     hydrated: openDocTabsHydrated,
@@ -1155,9 +1153,10 @@ function DocsVaultContent() {
     openTab: openDocTab,
     closeTab: closeDocTabInWorkingSet,
   } = useOpenDocTabs({ sourceKey: recentKey, validSlugs: vaultSlugs });
-  // URL 딥링크가 없으면 vault별 탭 저장소의 마지막 활성 문서를 한 번 복원한다.
-  // sourceKey 전환 직후 기본 README가 먼저 열려 lastActivatedAt을 덮어쓰지
-  // 않도록 hydration과 복원 대상을 모두 확인한 뒤 selectedSlug를 옮긴다.
+  // With no URL deeplink, restore the last active document from the per-vault tab store,
+  // once. Both hydration and the restore target are checked before moving `selectedSlug`, so
+  // the default README does not open first right after a sourceKey switch and overwrite
+  // `lastActivatedAt`.
   const [restoredDocTabsSourceKey, setRestoredDocTabsSourceKey] =
     useState<string | null>(null);
   const pendingRestoredActiveSlug =
@@ -1185,9 +1184,9 @@ function DocsVaultContent() {
     restoredActiveSlug,
     restoredDocTabsSourceKey,
   ]);
-  // 문서 선택 부수효과로 탭을 연다 — sidebar/검색/딥링크 등
-  // selectedSlug 를 바꾸는 모든 경로가 여기 한 곳으로 수렴해 각 호출부를
-  // 개별 계측할 필요가 없다(handleSelect 자체도 결국 selectedSlug 를 바꾼다).
+  // Opening a tab is a side effect of document selection, so every path that changes
+  // `selectedSlug` (sidebar, search, deeplink) converges here and no call site needs its own
+  // instrumentation.
   useEffect(() => {
     if (!openDocTabsHydrated) return;
     if (
@@ -1210,42 +1209,40 @@ function DocsVaultContent() {
   ]);
   const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
   /**
-   * URL 이 요청한 문서가 **이 문서함에 없다** — 한 번만 말하고 사라진다.
+   * **The URL requests a document this vault does not have** — said once, then gone.
    *
-   * ## 왜 파생값이 아니라 상태인가 (2026-08-01 수리)
+   * It was derived from `normalizedQuerySlug` at first, and it **reappeared every visit**;
+   * the owner caught it in the app (*"문서함에 이건 왜나오지?"* — why does this keep showing
+   * up in the docs surface?). The cause was not the banner but **the URL lying persistently**:
+   * the unresolved slug stayed in the address, so the same verdict became true again on every
+   * entry. And nobody had requested that slug — it was residue from a time when a different
+   * vault was open, stuck to the address.
    *
-   * 처음엔 `normalizedQuerySlug` 에서 바로 파생했다. 그랬더니 **볼 때마다
-   * 다시 떴다** — 소유자가 앱에서 잡았다(*"문서함에 이건 왜나오지?"*). 원인은
-   * 배너가 아니라 **URL 이 계속 거짓말한 것**이다: 못 찾은 슬러그가 주소에
-   * 그대로 남아 있어서, 문서함에 들어올 때마다 같은 판정이 다시 참이 됐다.
-   * 게다가 그 슬러그를 요청한 사람은 아무도 없었다 — 다른 볼트를 보던 시절의
-   * 잔재가 주소에 눌어붙어 있었을 뿐이다.
+   * So both are fixed together:
    *
-   * 그래서 둘을 같이 고친다:
+   * 1. **Correct the address to the document actually opened** (the default-selection effect
+   *    below). It used to deliberately leave the URL alone whenever `?slug=` was present, and
+   *    that courtesy was exactly the lifespan of the lie.
+   * 2. **The banner captures that moment as state.** Once the address is corrected the derived
+   *    condition is immediately false, so a derived value would vanish before anyone read it.
    *
-   * 1. **주소를 실제 연 문서로 바로잡는다**(아래 기본 선택 effect). 종전엔
-   *    `?slug=` 가 있으면 URL 을 일부러 안 고쳤는데, 그 배려가 곧 거짓말의
-   *    수명이었다.
-   * 2. **배너는 그 순간을 붙잡아 상태로 들고 있는다.** 주소가 고쳐지면 파생
-   *    조건은 즉시 거짓이 되므로, 파생값이면 사람이 읽기도 전에 사라진다.
-   *
-   * 결과: 진짜 깨진 딥링크·핸드오프 링크에는 **한 번** 뜨고, 낡은 주소로는
-   * 다시 뜨지 않는다. 사용자가 문서를 직접 고르면 닫힌다.
+   * Result: a genuinely broken deeplink or handoff link shows it **once**, a stale address
+   * never does, and picking a document dismisses it.
    */
   const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
   /**
-   * **앱이 방금 손댄 주소는 「없음」이 아니다** (2026-08-13 걷기 실측 2건).
+   * **An address the app itself just touched is not "missing"** (two walkthrough measurements,
+   * 2026-08-13).
    *
-   * 이름 변경·삭제 뒤 판정에 걸리는 주소들: ① 은퇴한 옛 주소 — 트리 클릭은
-   * 라우터 내비라 `useSearchParams` 가 옛 `?slug=` 를 물고 있고,
-   * `replaceUrlState` 의 `history.replaceState` 는 그 훅에 보이지 않는다.
-   * 매니페스트가 갱신되어 그 이름이 사라지는 순간 「요청한 문서가 없다」가
-   * 걸려 **방금 성공한 이름 변경/삭제에 실패 경고가 붙었다**(둘 다 0.5초
-   * 만에 「못 찾았어요」 — 삭제는 확인 대화상자까지 거친 행위다). ② 이름
-   * 변경의 새 주소 — 매니페스트는 다음 폴링까지 옛 판이라 그 공백에서 새
-   * 이름도 「없다」로 보인다. 전부 밖에서 온 요청이 아니라 앱 자신의
-   * 행위이므로 판정 대상이 아니다. 사용자가 다른 문서로 가면(질의가 그
-   * 집합 밖으로 바뀌면) 가드를 걷는다.
+   * Two addresses hit the verdict after a rename or delete: ① the retired old address — a tree
+   * click is a router navigation, so `useSearchParams` still holds the old `?slug=` and
+   * `replaceUrlState`'s `history.replaceState` is invisible to that hook. The moment the
+   * manifest updates and the name disappears, "the requested document is missing" fires and
+   * **attaches a failure warning to a rename or delete that just succeeded** (both within
+   * 0.5 s; a delete has already passed a confirmation dialog). ② the new address of a rename —
+   * the manifest is a poll behind, and in that gap the new name also looks missing. Neither is
+   * an outside request; both are the app's own action, so neither is subject to the verdict.
+   * The guard lifts as soon as the user navigates elsewhere (the query leaves that set).
    */
   const appTouchedSlugsRef = useRef<ReadonlySet<string>>(new Set());
   useEffect(() => {
@@ -1257,76 +1254,75 @@ function DocsVaultContent() {
       return;
     }
     if (docsBySlug.has(normalizedQuerySlug)) {
-      // 문서가 나타났으면 잡아 둔 판정을 걷는다 — 부팅 중 샘플 창에서 내렸던
-      // 「없다」가 로컬 볼트 도착으로 거짓이 된 경우다(2026-08-08).
+      // The document appeared — drop the captured verdict. This is the case where a "missing"
+      // decided during the boot-time sample window became false once the local vault arrived
+      // (2026-08-08).
       setMissingQuerySlug((prev) => (prev === normalizedQuerySlug ? null : prev));
       return;
     }
-    // 볼트가 아직 안 실린 동안(`docsBySlug` 가 빈 동안)과 부팅이 아직 어느
-    // 볼트를 보여줄지 못 정한 동안(`vaultScopeSettled` 전)은 "없다" 가 아니라
-    // "아직 모른다" 다 — 그 구간에서 말하면 깜빡임이거나, 더 나쁘게는 로컬
-    // 볼트에 실재하는 문서를 샘플 매니페스트 기준으로 "없다" 고 선고하는
-    // 오판이 된다(2026-08-08 실기기 — 그 선고가 딥링크를 걷어냈다).
+    // While the vault has not loaded (`docsBySlug` empty) and while boot has not decided which
+    // vault to show (before `vaultScopeSettled`), the answer is "not known yet", not "missing".
+    // Speaking in that window is a flicker at best and, worse, sentences a document that really
+    // exists in the local vault as missing against the sample manifest (measured on device
+    // 2026-08-08 — that sentence removed a deeplink).
     if (!vaultScopeSettled) return;
     setMissingQuerySlug((prev) => prev ?? normalizedQuerySlug);
   }, [normalizedQuerySlug, docsBySlug, vaultScopeSettled]);
 
   /**
-   * **볼트가 바뀌면 볼트 전용 주소 상태를 걷어낸다** — 이게 근본 수리다.
+   * **When the vault changes, clear the vault-scoped address state** — this is the root fix.
    *
-   * `?slug=` 는 **한 볼트 안에서만 뜻이 있는 이름**인데 주소는 볼트를 모른다.
-   * 그래서 사용자가 폴더를 바꾸거나 샘플↔내 볼트를 오가면 그 이름은 의미를
-   * 잃는데, 아무도 걷어내지 않아 주소에 눌어붙었다. 그 다음부터 문서함은
-   * 들어올 때마다 "요청한 문서가 없다" 를 다시 판정했고 — 정작 **그것을 요청한
-   * 사람은 아무도 없었다.**
+   * `?slug=` is **a name that only means something inside one vault**, and the address does not
+   * know about vaults. So when the user switches folders or moves between the sample and their
+   * own vault, that name loses its meaning while nobody clears it and it sticks to the address.
+   * From then on the docs surface re-decided "the requested document is missing" on every entry
+   * — while **nobody had requested it.**
    *
-   * 배너를 조건부로 만드는 것은 증상 치료다(그 판정이 계속 참인 채로 남는다).
-   * 이름이 의미를 잃는 **그 순간에 지우는 것**이 원인 치료다. 그러면:
+   * Making the banner conditional treats the symptom (the verdict stays true). Deleting the name
+   * **at the moment it loses meaning** treats the cause. Then:
    *
-   * - 낡은 슬러그가 볼트 경계를 넘어 살아남지 못한다 → 소음이 구조적으로 0
-   * - 배너는 제 일만 한다 — **밖에서 온 링크**(딥링크·에이전트 핸드오프·북마크)가
-   *   진짜로 깨졌을 때 한 번
-   * - 주소가 열려 있지 않은 문서를 가리키지 않는다
+   * - a stale slug cannot survive a vault boundary → the noise is structurally zero
+   * - the banner does its one job — **a link from outside** (a deeplink, an agent handoff, a
+   *   bookmark) that is genuinely broken, once
+   * - the address never points at a document that is not open
    *
-   * 첫 마운트는 건너뛴다 — 그때의 `?slug=` 는 잔재가 아니라 **누군가 준 것**이다.
-   */
-  /**
-   * ⚠️ **`recentKey` 는 이 판정의 범위가 아니다.** 그 키는 저장 namespace 용이라
-   * 샘플 둘(도그푸드 · 예시 쇼핑몰)을 `'server'` 하나로 뭉뚱그린다. 그대로 쓰면
-   * **샘플↔샘플 전환이 범위 변화로 안 잡혀서**, 고치려던 그 소음이 그 축에만
-   * 그대로 남는다(2026-08-01 사냥에서 지적됐고 재현됐다).
+   * The first mount is skipped: that `?slug=` is not residue, it is **something someone gave us**.
    *
-   * 그렇다고 `recentKey` 자체를 넓히지는 않는다 — 그건 핀·최근·열린 탭의 저장
-   * 자리를 옮기는 일이라, 고치는 대신 사용자의 기존 목록을 고아로 만든다.
-   * 정리 판정에만 정확한 범위를 쓴다.
+   * ⚠️ **`recentKey` is not the right scope for this verdict.** That key is a storage namespace
+   * and collapses both samples (dogfood, example storefront) into a single `'server'`. Using it
+   * would make **a sample↔sample switch invisible as a scope change**, leaving the very noise
+   * this fixes alive on that one axis (raised and reproduced 2026-08-01).
+   *
+   * Widening `recentKey` itself is not the answer either — that moves where pins, recents, and
+   * open tabs are stored and orphans the user's existing lists instead of fixing anything. Only
+   * the cleanup verdict uses the precise scope.
    */
   const vaultScope = source === 'local' ? recentKey : `sample:${staticVault.source}`;
   /**
-   * ⚠️ **정착(settle) 전의 스코프 변화는 볼트 전환이 아니라 부팅이다** (2026-08-08).
+   * ⚠️ **A scope change before settling is boot, not a vault switch** (2026-08-08).
    *
-   * 이 정리는 「사용자가 볼트를 바꾼 순간」에만 돌아야 하는데, 콜드 로드에서
-   * 저장된 소스 취향이 hydration 되며 `sample:… → local:…` 로 넘어가는 것도
-   * 스코프 변화로 잡혔다. 그래서 **방금 누군가 준 `?slug=` 딥링크가 부팅
-   * 도중에 잔재로 오인되어 지워졌고**, 그 뒤 탭 복원이 「URL 없음」을 보고
-   * 마지막에 본 문서를 앉히며 주소까지 덮었다 — 요청한 문서 대신 남의 마지막
-   * 화면이 열리는, 에이전트 핸드오프 링크의 급소다(2026-08-08 실사용 검수:
-   * `?slug=domains/typed-api` 요청 → `capabilities/temporal-graph` 로 덮임).
+   * This cleanup must run only when *the user* switches vault, but on a cold load the stored
+   * source preference hydrating from `sample:…` to `local:…` also registered as a scope change.
+   * So **a `?slug=` deeplink someone had just handed over was mistaken for residue mid-boot and
+   * deleted**, after which tab restore saw "no URL", seated the last-viewed document, and
+   * overwrote the address — the requested document replaced by someone else's last screen, which
+   * is the jugular of an agent handoff link (live review 2026-08-08:
+   * `?slug=domains/typed-api` requested → overwritten with `capabilities/temporal-graph`).
    *
-   * 바로 위 주석이 스스로 *"첫 마운트의 `?slug=` 는 잔재가 아니라 누군가 준
-   * 것"* 이라 적어 뒀는데, 그 보호가 첫 실행(run)에만 걸리고 **부팅 중
-   * hydration 전환**에는 안 닿았던 것이다. 그래서 기준선을 「첫 실행」이 아니라
-   * **「정착된 첫 스코프」**로 옮긴다 — 정착 후의 스코프 변화만이 진짜 볼트
-   * 전환이다.
+   * The comment directly above already said *"the first mount's `?slug=` is not residue, it is
+   * something someone gave us"*, but that protection applied only to the first run and never
+   * reached **the hydration switch during boot**. So the baseline moved from "the first run" to
+   * **"the first settled scope"** — only a scope change after settling is a real vault switch.
    *
-   * **2026-08-08 2차 검수 — 그 「정착」의 정의가 틀려서 같은 사고가 남아
-   * 있었다.** 첫 수리의 술어는 `source === 'server'` 를 즉시 정착으로 쳤는데,
-   * 저장 취향이 샘플인 부팅에서는 로컬 볼트 복원이 끝나는 순간 관문 자동
-   * 전환(C5)이 소스를 뒤집는다 — 즉 그 「서버 정착」은 몇백 ms 짜리 가짜였고,
-   * 뒤집히는 순간이 다시 「볼트 전환」으로 읽혀 딥링크가 걷혔다. 지금의
-   * `vaultScopeSettled`(위에서 정의)는 **관문 판정 종결**(`landingSourceResolved`)
-   * 을 포함하므로 그 창이 정착으로 관측되지 않는다. e2e:
-   * `docs-deeplink.spec.ts` 「샘플을 먼저 쓰던 프로필…」이 replaceState 전수
-   * 기록으로 「딥링크를 잃은 호출 0건」까지 잰다.
+   * **Second review, 2026-08-08 — the definition of "settled" was wrong and the same accident
+   * survived.** The first fix's predicate treated `source === 'server'` as settled immediately,
+   * but on a boot whose stored preference is the sample, the landing auto-switch flips the source
+   * the instant the local vault restore finishes — so that "server settled" was a false one
+   * lasting a few hundred milliseconds, and the flip read as a "vault switch" that again removed
+   * the deeplink. Today's `vaultScopeSettled` (defined above) includes
+   * `landingSourceResolved`, so that window is never observed as settled. e2e:
+   * `docs-deeplink.spec.ts` measures a full record of `replaceState` calls down to "zero calls
+   * that lost the deeplink".
    */
   const vaultScopeRef = useRef<string | null>(null);
   useEffect(() => {
@@ -1337,21 +1333,20 @@ function DocsVaultContent() {
     setMissingQuerySlug(null);
     replaceUrlState({ slug: null });
   }, [vaultScope, vaultScopeSettled, replaceUrlState]);
-  // 트리·탭·검색·지도가 한 문서를 같은 이름으로 부른다. 파일 경로는 바로
-  // 아랫줄 caption 이 계속 보여주므로 파일 정체성은 잃지 않는다.
+  // The tree, tabs, search, and map call one document by the same name. The file path stays
+  // visible in the caption directly below, so file identity is not lost.
   const selectedDocDisplayTitle = selectedDoc
     ? resolveLocaleDisplayName(selectedDoc.frontmatter, locale, selectedDoc.title)
     : "";
-  // 이 문서를 지도에서 열 **주소가 있는가**. null 이면 그래프에 자리가 없는
-  // 문서이고, 그때는 「지도에서 열기」를 렌더하지 않는다(죽은 CTA 0).
-  // 같은 판정을 `DocMetaBar` 도 쓴다 — 두 자리가 서로 다른 말을 하지 않게
-  // 판정 함수를 공유한다.
+  // Does this document **have an address on the map**? Null means it has no place in the graph,
+  // and then "open on the map" is not rendered (zero dead CTAs). `DocMetaBar` uses the same
+  // verdict — the function is shared so the two places cannot say different things.
   const mapDeeplinkForSelectedDoc = selectedDoc
     ? buildTopologyDeeplinkForDoc(selectedDoc) ?? buildOntologyDeeplinkForDoc(selectedDoc)
     : null;
-  // P5b — frontmatter 판정 액션의 domain select 후보. vault 의 `kind: domain`
-  // 문서만 — capability/element 를 잘못된 domain 에 지정했을 때 raw YAML
-  // 손편집 없이 그 자리에서 고치는 게 목적(verdict 더하기①).
+  // Domain candidates for the frontmatter verdict action: only the vault's `kind: domain`
+  // documents. The point is fixing a capability or element assigned to the wrong domain right
+  // there, without hand-editing raw YAML.
   const domainOptions = useMemo(
     () =>
       manifest.docs
@@ -1369,10 +1364,9 @@ function DocsVaultContent() {
     async (patch: DocFrontmatterPatch) => {
       if (!selectedDoc) return;
       try {
-        // DocFrontmatterPatch 는 kind/domain/title 만 갖는 좁은 shape —
-        // updateFrontmatter 의 index-signature 파라미터와 구조적으로 호환
-        // (모든 값이 string | null) 되지만 TS 는 index signature 부재를
-        // 별도로 요구해 cast 필요.
+        // `DocFrontmatterPatch` is a narrow shape of kind/domain/title. It is structurally
+        // compatible with `updateFrontmatter`'s index-signature parameter (every value is
+        // `string | null`), but TS separately requires the index signature, hence the cast.
         await localVault.updateFrontmatter(
           selectedDoc.slug,
           patch as Record<string, string | null>,
@@ -1387,9 +1381,9 @@ function DocsVaultContent() {
     },
     [selectedDoc, localVault, toast, t],
   );
-  // 클라이언트 사이드 동적 타이틀 — 정적 export metadata 는 slug 단위로 미리
-  // 빌드할 수 없으므로(vault 는 사용자 로컬 폴더) 선택된 문서 타이틀을 여기서
-  // 반영. layout.tsx 의 서버 템플릿(`%s · siteName`)과 동일한 구성.
+  // Client-side dynamic title. Static export metadata cannot be pre-built per slug (the vault
+  // is the user's local folder), so the selected document's title is applied here, composed the
+  // same way as layout.tsx's server template (`%s · siteName`).
   useDocumentTitle(
     selectedDoc ? `${selectedDocDisplayTitle} · ${siteT('siteName')}` : null,
   );
@@ -1421,9 +1415,9 @@ function DocsVaultContent() {
     () => new Set(collectionDocs.map((doc) => doc.slug)),
     [collectionDocs],
   );
-  // 팔레트 본문 전문 검색 인덱스 — 본문 소스는 viewer 와 동일 (로컬:
-  // FileSystemFileHandle lazy read, static: 번들 content.json + fetch).
-  // mtime 키 캐시라 폴링 diff 재빌드 후엔 변경 문서만 재독한다.
+  // Full-text body index for the palette. The body source is the same as the viewer's (local:
+  // lazy read through a FileSystemFileHandle; static: the bundled content.json plus a fetch).
+  // The cache is keyed by mtime, so after a polling diff rebuild only changed documents are re-read.
   const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } =
     useDocsBodyIndex({ docs: collectionDocs, getDocContent });
   const collectionCounts = useMemo<Record<DocsVaultCollection, number>>(
@@ -1443,12 +1437,12 @@ function DocsVaultContent() {
     [collectionDocSlugs, recentSlugs],
   );
 
-  // 첫 화면이 **자기가 가진 것을 보여준다** (2026-07-28 실측 결함 — 볼트 필은
-  // "문서 31개" 라 말하는데 목록은 0건이었다). 컬렉션 기본값은 문서가 오기
-  // 전에 정해지므로, 문서가 처음 도착한 프레임에서 한 번만 재해석한다.
+  // The first screen **shows what it actually has** (measured defect 2026-07-28 — the vault pill
+  // said "31 documents" while the list showed zero). The collection default is decided before the
+  // documents arrive, so it is reinterpreted once, on the frame the documents first land.
   //
-  // **한 번만**인 것이 계약이다 — 매번 돌면 사용자가 일부러 고른 0건 컬렉션을
-  // 화면이 되돌려 버린다(칩이 건수를 보여주므로 그 클릭은 의도적이다).
+  // **Once** is the contract — running it repeatedly would undo a zero-count collection the user
+  // deliberately chose (the chips show counts, so that click is intentional).
   const initialCollectionResolvedRef = useRef(false);
   useEffect(() => {
     if (initialCollectionResolvedRef.current) return;
@@ -1462,8 +1456,8 @@ function DocsVaultContent() {
 
   useEffect(() => {
     if (!selectedDoc) return;
-    // '전체 문서' 뷰에서는 문서를 골라도 컬렉션을 좁히지 않는다 — 전체를
-    // 보겠다는 사용자 의도를 문서 선택이 되돌리면 안 된다.
+    // In the "all documents" view, picking a document does not narrow the collection — a
+    // document selection must not undo the user's intent to see everything.
     if (docCollection === 'all') return;
     const nextCollection = resolveDocsVaultCollection(selectedDoc);
     if (nextCollection !== docCollection) {
@@ -1531,20 +1525,20 @@ function DocsVaultContent() {
       shouldDeferDocsVaultDefaultSelection({
         normalizedQuerySlug,
         selectedSlug,
-        // 부팅이 어느 볼트를 보여줄지 정하기 전(관문 판정 미종결)에는 기본
-        // 선택도 미룬다 — 샘플 창에서 고른 기본값이 곧 도착할 로컬 볼트의
-        // 딥링크를 덮는다(2026-08-08). 세 소비자가 같은 술어를 쓴다.
+        // Before boot decides which vault to show (the landing decision has not concluded),
+        // default selection waits too — a default chosen in the sample window overwrites the
+        // deeplink of the local vault about to arrive (2026-08-08). All three consumers share
+        // one predicate.
         selectionReady: vaultScopeSettled,
       })
     ) {
       return;
     }
 
-    // 첫 진입 default — `docs/README.md` 가 vault 에 없는 경우가 default
-    // (`AGENTS.md` 자체가 canonical 가이드). 그래서 ARCHITECTURE 가 fallback
-    // 으로 잡혀왔는데, 처음 들어온 사용자에게 *지금 쓸 수 있는 기능 목록*
-    // (FEATURES) 이 ARCHITECTURE 보다 첫인상 가치가 크다. AGENTS.md 가
-    // "features users can use right now, see docs/FEATURES.md" 로 직접 지목.
+    // First-entry default. `docs/README.md` is usually absent from a vault (`AGENTS.md` is the
+    // canonical guide), which is why ARCHITECTURE used to be the fallback — but for a first-time
+    // visitor a list of *what they can do right now* (FEATURES) is worth more than ARCHITECTURE,
+    // and AGENTS.md itself points at "features users can use right now, see docs/FEATURES.md".
     const candidates = [
       ...collectionPinnedSlugs,
       ...collectionRecentSlugs,
@@ -1562,12 +1556,12 @@ function DocsVaultContent() {
     scheduleStateSync(() => {
       setSelectedSlug(nextSlug);
       /**
-       * **주소는 열려 있는 문서를 가리킨다** (2026-08-01 수리).
+       * **The address points at the document that is open** (fix, 2026-08-01).
        *
-       * 종전엔 `?slug=` 가 있으면 URL 을 일부러 안 고쳤다. 요청을 보존하려는
-       * 배려였는데, 요청한 문서를 열지 **못한** 경우에는 그 배려가 곧
-       * **거짓말의 수명**이었다 — 화면은 A 를 열어 놓고 주소는 계속 B 를
-       * 가리킨다. 그 주소를 복사해 공유하면 받는 사람도 같은 자리로 온다.
+       * The URL used to be left alone whenever `?slug=` was present. That was meant to preserve
+       * the request, but when the requested document could **not** be opened the courtesy was
+       * exactly **the lifespan of a lie** — the screen shows A while the address keeps naming B.
+       * Copying and sharing that address sends the recipient to the same place.
        */
       replaceUrlState({ slug: nextSlug });
     });
@@ -1580,17 +1574,16 @@ function DocsVaultContent() {
       setHighlightQuery(query);
       setRecentSlugs(pushRecentDoc(recentKey, slug));
       replaceUrlState({ slug });
-      // 사용자가 직접 문서를 골랐으면 샘플 진입 안내 노트를 다시 밀어붙이지
-      // 않는다(기본 선택 effect 는 이 함수를 거치지 않아 영향받지 않음).
+      // Once the user picks a document themselves, stop pushing the sample welcome note. (The
+      // default-selection effect does not go through this function and is unaffected.)
       setSampleWelcomeDismissed(true);
     },
     [recentKey, rememberActiveSlug, replaceUrlState, setRecentSlugs],
   );
 
-  // 탭 × 닫기 — implementation-contract.md §3 "close 규칙": 활성 탭을 닫으면
-  // 인접 탭(왼쪽 우선, 없으면 오른쪽)으로 이동. 마지막 남은 탭을 닫으면 목록
-  // 첫 문서 또는 README 로 폴백(기존 default-selection 후보 우선순위와
-  // 동형 — README 를 첫 문서보다 우선한다).
+  // Tab close rule: closing the active tab moves to an adjacent one (left first, otherwise
+  // right). Closing the last tab falls back to the first document in the list or README —
+  // isomorphic to the default-selection priority, which also prefers README over the first document.
   const handleCloseDocTab = useCallback(
     (slug: string) => {
       const nextActiveSlug = closeDocTabInWorkingSet(slug, selectedSlug);
@@ -1646,8 +1639,8 @@ function DocsVaultContent() {
     ? (manifest.backlinksDetail?.[selectedSlug] ?? [])
     : [];
   const outlineHeadings = useMemo(() => {
-    // 번들 매니페스트의 headings 는 비어 있다(별도 청크로 분리) — 그때는
-    // 지연 로드한 같은 볼트의 맵에서 찾는다. 로컬 매니페스트는 인라인 그대로.
+    // The bundled manifest's headings are empty (split into a separate chunk); in that case
+    // they come from the lazily loaded map for the same vault. A local manifest has them inline.
     const docHeadings =
       selectedDoc && selectedDoc.headings.length > 0
         ? selectedDoc.headings
@@ -1670,11 +1663,11 @@ function DocsVaultContent() {
       };
     });
   }, [selectedDoc, staticHeadings]);
-  // 긴 문서(heading ≥ 임계)에서만 좌측 빈 띠에 상시 목차 레일 — 짧은 문서에서는
-  // 노이즈가 되므로 표시하지 않는다 (po-pass.md §4 상태 계약).
+  // The always-on outline rail in the left margin appears only for long documents (headings at or
+  // above the threshold) — on short documents it is noise.
   const showOutlineRail = shouldShowOutlineRail(outlineHeadings.length);
-  // 목차 클릭 시 스크롤 점프 — 레일(DocReadingOutlineRail)과 인스펙터
-  // (DocsVaultDocOutlinePanel) 양쪽이 같은 동작을 공유하므로 한 곳에서 정의.
+  // Scroll jump on outline click. The rail and the inspector panel share the same behaviour, so
+  // it is defined in one place.
   const handleHeadingNavigate = useCallback(
     (slug: string) => {
       document
@@ -1692,8 +1685,8 @@ function DocsVaultContent() {
     [setActiveHeadingSlug],
   );
 
-  // 전체 명령 목록 — ⌘⇧P 팔레트용. selection/source/editing 등에 따라
-  // visible 동적 계산.
+  // The full command list for the ⌘⇧P palette. Visibility is computed dynamically from selection,
+  // source, editing state, and so on.
   const commands = useMemo<VaultCommand[]>(() => {
     const selectedDocExists = selectedSlug !== null;
     return [
@@ -1859,8 +1852,8 @@ function DocsVaultContent() {
     t,
   ]);
 
-  // 좌측 사이드바 내부 내용 — aside 와 mobile drawer 양쪽에서 재사용.
-  // onSelect 는 caller 가 mobile drawer 닫기와 wrapping.
+  // The left sidebar's inner content, reused by both the aside and the mobile drawer. The caller
+  // wraps `onSelect` with closing the mobile drawer.
   const handleSelectFromSidebar = useCallback(
     (slug: string) => {
       handleSelect(slug);
@@ -1868,13 +1861,14 @@ function DocsVaultContent() {
     },
     [handleSelect],
   );
-  // "에이전트 파일" 그룹 — 전체 manifest 기준(컬렉션 필터와 무관). vault 가
-  // repo 루트를 포함할 때만 non-null (hook 내부 게이트), 읽기 전용 감지.
+  // The "agent files" group is computed from the whole manifest, independent of the collection
+  // filter. Non-null only when the vault includes the repository root (gated inside the hook);
+  // detection is read-only.
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
   /**
-   * 스킬 사본 일치 — **절대 경로가 있을 때만.** `localVaultRootPath` 는 웹에서
-   * 핸들 이름으로 대체되므로 그걸 쓰면 웹에서 존재하지 않는 경로로 브리지를
-   * 부르게 된다. 여기서는 진짜 절대 경로만 받는다.
+   * Skill-copy parity — **only when there is an absolute path.** On the web `localVaultRootPath`
+   * falls back to the handle name, and using that would call the bridge with a path that does not
+   * exist there. This accepts a real absolute path only.
    */
   const skillParityRoot =
     isDesktopRuntime && localVault.handle
@@ -1889,7 +1883,7 @@ function DocsVaultContent() {
       void navigator.clipboard
         .writeText(text)
         .then(() => toast.show(tSkillParity("copied"), "success"))
-        // 침묵은 성공처럼 읽힌다 — 실패도 말한다(#759 에서 배운 것).
+        // Silence reads as success — report the failure too.
         .catch(() => toast.show(tSkillParity("copyFailed"), "error"));
     },
     [toast, tSkillParity, skillParityRoot],
@@ -1917,13 +1911,13 @@ function DocsVaultContent() {
       onCollectionChange={handleCollectionChange}
       onTogglePin={handleTogglePin}
       onTagSelect={setActiveTag}
-      // 막힌 어포던스를 **살아 있는 길**로 바꾼다 (2026-07-28 소유자 제보:
-      // "새 문서 작성은 왜 없지?"). 종전에는 읽기 전용 샘플에서 `+` 가
-      // 40% 불투명도로 비활성이고 이유는 **호버해야만** 나왔다 — 정보는
-      // 있었지만 도달하지 않았고, 화면은 "그 기능이 없다" 로 읽혔다.
+      // Turn a blocked affordance into **a live path** (owner report 2026-07-28: "why is there no
+      // 'create document'?"). In the read-only sample the `+` used to be disabled at 40% opacity
+      // with the reason available **only on hover** — the information existed but never arrived,
+      // and the screen read as "that feature does not exist".
       //
-      // 헌장의 강등 문법은 "왜 안 되는지 + **어디로 가면 되는지**" 다.
-      // 그래서 이제 누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다.
+      // The charter's degradation grammar is "why it is unavailable **and where to go**", so
+      // pressing it now goes to what makes it possible: open my folder.
       onCreateNewDoc={canEditCurrent ? handleOpenNewDocDialog : handleVaultPillSwap}
       canCreateNewDoc={canEditCurrent}
       sort={treeSort}
@@ -1934,12 +1928,10 @@ function DocsVaultContent() {
     />
   );
 
-  // docs-vault-final skin — engraved vault census pill (crumbs row + phead).
-  // [D-2] path: 실제로 로컬 폴더(데스크톱 dogfood 자동 로드 포함)가 열려
-  // 있을 때만 진짜 경로를 보여준다. isLocalSourceLoaded 가 false 인 순수
-  // static/server 샘플(빌드타임 매니페스트)에서는 DOGFOOD_VAULT_PATH 가
-  // 빌드 머신의 개발자 절대 경로라 사용자에게 노출하면 오해 + 경로 누출.
-  // 이 경우 "내장 샘플" 라벨로 대체 — local 모드에서만 실 경로 표시.
+  // Show the real path only when a local folder is genuinely open (including the desktop dogfood
+  // auto-load). In a pure static/server sample (the build-time manifest) `isLocalSourceLoaded` is
+  // false and `DOGFOOD_VAULT_PATH` is the build machine's developer absolute path — showing it
+  // would be both misleading and a path leak. That case renders the "bundled sample" label instead.
   const vaultPillPath =
     isLocalSourceLoaded && localVaultRootPath
       ? localVaultRootPath
@@ -1949,95 +1941,91 @@ function DocsVaultContent() {
   const vaultTopLevelFolderCount = manifest.tree.children?.filter(
     (child) => child.type === 'dir',
   ).length ?? 0;
-  // B2 병합 — vault pill 의 "vault 바꾸기"는 고빈도 swap 만 남긴다(읽기/쓰기
-  // 흐름의 일부). 예전엔 vault 도구 드롭다운을 열었지만, 이제 로컬은 네이티브
-  // 폴더 재선택(openLocalVault)을, 데스크톱의 샘플→로컬 전환은 source 전환을
-  // 직접 호출한다. 최근 vault·닫기·새로고침·권한 복구 등 나머지 관리 동작은
-  // 설정 메뉴(AppSettingsMenu)의 vault 탭으로 이동했다.
+  // The vault pill's "switch vault" keeps only the high-frequency swap, which is part of the
+  // read/write flow. It used to open the vault tools dropdown; now local calls the native folder
+  // re-pick (`openLocalVault`) and the desktop sample→local switch calls the source switch
+  // directly. Recent vaults, close, refresh, and permission recovery moved to the settings menu's
+  // vault tab.
 
   return (
     <div className="flex h-full w-full">
-      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
+      {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
       <div className="topology-ui-scale relative flex h-full min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
-      {/* 76px 크롬 그리드 (docs-chrome-round design-prescription.md ③-1) —
-          브레드크럼 32px + 헤더 3존 44px = 76px, 토폴로지의
-          --topology-index-top 클리어런스와 같은 발상(고정 그리드라야 뷰 전환
-          시 콘텐츠 시작선이 흔들리지 않는다). lg+ 에서 헤더가 h-11 고정 단일
-          행으로 그리드를 채운다 — <lg 는 기존 2행 wrap + 모바일 drawer 를
-          그대로 유지(90px 폭 뷰포트에서 단일 행이 가로 스크롤을 만들기
-          때문 — local-vault-picker.spec.ts 의 zero-overflow 계약). */}
+      {/* The 76px chrome grid — breadcrumb 32px + a three-zone 44px header. Same idea as the
+          topology's `--topology-index-top` clearance: only a fixed grid keeps the content start
+          line from shifting between views. At lg+ the header fills the grid as a single h-11 row;
+          below lg the two-row wrap plus the mobile drawer stay, because a single row causes
+          horizontal scrolling at a 390px viewport (the zero-overflow contract in
+          local-vault-picker.spec.ts). */}
       <div data-chrome-grid="44" className="flex-none">
-      {/* #97 — 브레드크럼 행("워크스페이스 / 문서함") 삭제. 좌측 내비 레일이
-          이미 "문서함" 을 하이라이트해 "여기가 어디" 를 답하고, "지도로" 복귀도
-          레일의 map 목적지(→ /topology)가 소유하므로 이 행의 뒤로가기 링크는
-          중복 내비였다. 세로 공간(32px)을 회수하고, 레일이 못 하는 유일한
-          기능 — insights 리뷰에서 넘어온 문맥 복귀 — 만 헤더 zone-l 로 이관한다
-          (아래 insightsReturnTab 백 칩). "문서함" 정체성은 sr-only h1 로 유지. */}
-      {/* 헤더 3존 [zone-l identity] [zone-c 탭 예약, 슬라이스 B] [zone-r
-          tools] — implementation-contract.md §1. macOS 다운로드 버튼은
-          여기서 완전히 삭제(읽기 전용 샘플 배너 1곳 + /download 만 소유,
-          design-prescription.md ②). "문서함" h1 은 sr-only 로만 유지
-          (내비 레일 + 브레드크럼과의 3중 라벨 해소). */}
-      {/* 태블릿 최상단 세로 압축 (소유자 실보고 2026-07-23) — 단일 행 전환을
-          lg → md 로 내린다. 768 실측: zone-l(~230px) + zone-r(~343px) = 573px
-          로 한 행(728px)에 여유 있게 들어가는데도 2행 wrap(총 ~90px)이었다.
-          <md 는 기존 2행 wrap 유지(zero-overflow 계약). */}
-      {/* `isolate` + `z-10` 은 **한 짝이다** (2026-08-17 소유자 지적: 폴더
-          드롭다운이 *"투명하게 이상하게"* 보였다).
+      {/* The breadcrumb row was removed. The left nav rail already highlights "docs", answering
+          "where am I", and the rail's map destination (→ /topology) owns the way back, so this
+          row's back link was duplicate navigation. That recovers 32px of vertical space; the one
+          thing the rail cannot do — returning to the insights review the user came from — moved
+          into the header's zone-l (the insightsReturnTab chip below). The "docs" identity is kept
+          as an sr-only h1. */}
+      {/* Header three zones: [zone-l identity] [zone-c tabs] [zone-r tools]. The macOS download
+          button was removed here entirely — it is owned by the read-only sample banner and
+          /download alone. */}
+      {/* Tablet vertical compression (owner report 2026-07-23) — the single-row switch moved from
+          lg down to md. Measured at 768: zone-l (~230px) + zone-r (~343px) = 573px fits
+          comfortably in one 728px row, yet it was wrapping to two rows (~90px total). Below md the
+          two-row wrap stays (zero-overflow contract). */}
+      {/* `isolate` and `z-10` are **a pair** (owner report 2026-08-17: the folder dropdown looked
+          *"transparent, somehow wrong"*).
 
-          `isolate` 는 탭 스트립의 지역 쌓임을 여기 가둔다. 그런데 그 순간
-          헤더 안의 팝오버·드롭다운도 같이 갇힌다 — 폴더 메뉴의 `z-50` 이
-          헤더 **안에서만** 유효해지고, 헤더 자신은 층이 없어서(auto) DOM 상
-          뒤에 오는 본문 읽기 칸이 헤더 전체를 덮었다. 읽기 칸은 배경이
-          투명이라 **글자만 메뉴 위에 겹쳐** 보였고, 그래서 메뉴가 반투명한
-          것처럼 읽혔다(실측: 메뉴 x128~416 위로 읽기 칸 x344~ 가 그려짐).
+          `isolate` confines the tab strip's local stacking here — but that also confines the
+          header's popovers and dropdowns. The folder menu's `z-50` became valid **only inside the
+          header**, and the header itself had no layer (auto), so the reading pane that comes after
+          it in the DOM covered the whole header. The reading pane has a transparent background, so
+          **only its text drew over the menu**, which read as a translucent menu (measured: the
+          reading pane at x344+ drew over the menu at x128–416).
 
-          `z-10` 이면 충분하다 — 이겨야 할 상대가 `auto` 인 형제 하나뿐이고,
-          20 미만이라 전역 사다리(막 25 · 대화상자 60 …)를 건드리지 않는다.
-          게이트: `tests/e2e/docs-vault-chip-menu-stacking.spec.ts`. */}
+          `z-10` is enough — the only opponent is one sibling at `auto`, and staying under 20 leaves
+          the global ladder (bars at 25, dialogs at 60) untouched.
+          Gate: `tests/e2e/docs-vault-chip-menu-stacking.spec.ts`. */}
       <header className="relative isolate z-10 flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:h-11 md:min-h-0 md:flex-nowrap md:gap-2 md:px-4 md:py-0">
         <h1 className="sr-only">{t('header.title')}</h1>
-        {/* 헤더 baseline — 탭 스트립의 "한 끗"(design-prescription.md §10.2
-            ⑥): 활성 탭 아래에서만 이 1px 라인이 2px 인디고 언더라인으로
-            치환돼야 하므로 header 자체의 border-b 대신 절대배치 라인으로
-            분리했다. 음수 z-index(header 의 `isolate` 로 스코프)라 일반
-            흐름 콘텐츠(zone-l/zone-c/zone-r) 가 항상 이 라인 위에 그려진다
-            — 활성 탭의 불투명 --color-canvas 배경이 자연스럽게 이 라인을
-            덮고, 그 위에 자체 2px bar 를 그리므로 이중선이 생기지 않는다. */}
+        {/* The header baseline. Under the active tab this 1px line must be replaced by a 2px indigo
+            underline, so it is an absolutely positioned line rather than the header's own
+            `border-b`. Its negative z-index is scoped by the header's `isolate`, so normal-flow
+            content (zone-l/zone-c/zone-r) always draws above it — the active tab's opaque
+            `--color-canvas` background covers the line naturally and draws its own 2px bar on top,
+            so no double line appears. */}
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-px bg-[color:var(--color-border-soft)]"
         />
-        {/* zone-l — 목록 토글 + VaultChip.
-            폭 계약: 목록이 펼쳐져 있으면 zone-l 오른쪽 끝이 **문서 pane 의
-            왼쪽 모서리**와 정확히 맞물린다 → 탭 스트립이 자기가 여는 문서
-            pane 위에 정렬된다(VS Code/옵시디언의 탭=pane 규칙). 계산:
-            list-width − header padding(1rem) − zone gap(0.5rem). 이전에는
-            내용(≈197px)보다 큰 max-w-300 캡까지 flex-1 로 늘어나 탭이 pane
-            모서리보다 50px 오른쪽에서 시작했다(소유자 신고).
-            목록이 접히면 정렬할 pane 경계가 없으므로 내용 폭으로 되돌린다. */}
+        {/* zone-l — the list toggle and the VaultChip.
+            Width contract: while the list is expanded, zone-l's right edge lines up exactly with
+            **the document pane's left edge**, so the tab strip is aligned over the pane it opens
+            (the tab=pane rule of VS Code and Obsidian). The calculation is
+            list-width − header padding (1rem) − zone gap (0.5rem). It used to stretch with flex-1
+            to a max-w-300 cap larger than its content (≈197px), starting the tabs 50px right of the
+            pane edge (owner report). With the list collapsed there is no pane edge to align to, so
+            it returns to content width. */}
         <div
           data-docs-header-zone="identity"
           className={cn(
-            // md 단일 행 전환(태블릿 최상단 세로 압축) — w-full 강제는 <md 2행
-            // wrap 시절의 잔재라 md 부터 내용 폭으로. 상주 목록 pane 정렬
-            // 계약(lg:w-[calc...])은 pane 이 lg+ 전용이므로 그대로 lg 에서만.
+            // The md single-row switch: forcing `w-full` is residue from the sub-md two-row wrap, so
+            // from md it uses content width. The list-pane alignment contract (`lg:w-[calc...]`)
+            // stays at lg only, since the pane is lg+ exclusive.
             "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:w-auto md:flex-nowrap md:gap-3",
             docListCollapsed
               ? "lg:w-auto"
               : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
           )}
         >
-          {/* #97 — 삭제된 브레드크럼에서 유일하게 살릴 기능: insights 리뷰에서
-              넘어온 문맥 복귀. 레일의 map 목적지가 커버 못 하는 경로라 헤더로
-              이관한다. 일반 진입(비-insights)에서는 렌더하지 않는다 — 지도
-              복귀는 좌측 레일이 소유. */}
+          {/* The one thing worth keeping from the removed breadcrumb: returning to the insights
+              review the user came from. The rail's map destination does not cover that path, so it
+              moved to the header. Not rendered on a normal (non-insights) entry — the rail owns
+              going back to the map. */}
           {insightsReturnTab ? (
             <Link
               href={workspaceHref}
               aria-label={t('header.backToReviewAriaLabel')}
-              // 이 Link 는 바로 아래 「트리 열기」 칩과 나란히 선다. `<button>` 이
-              // 아니라 래칫에는 안 잡히지만, 한쪽만 정규화하면 둘의 높이가 갈린다.
+              // This Link stands beside the "open tree" chip. It is not a `<button>` so the ratchet
+              // does not see it, but normalizing only one of them makes their heights diverge.
               className={controlClass({
                 shape: 'chip',
                 size: 'lg',
@@ -2067,8 +2055,9 @@ function DocsVaultContent() {
             onClick={toggleDocListCollapsed}
             className="hidden lg:inline-flex"
           />
-          {/* 칩은 **고른 소스**를 말한다 — 폴더 미선택 로컬을 샘플로 그리면
-              화면이 "내 폴더에 31개가 있다" 고 거짓말한다(`lib/vault-chip-identity`). */}
+          {/* The chip states **the chosen source**. Drawing a local vault with no folder chosen as
+              the sample would make the screen claim "there are 31 documents in my folder"
+              (`lib/vault-chip-identity`). */}
           <DocsVaultVaultChip
             label={
               vaultChipIdentity.kind === 'local'
@@ -2111,10 +2100,10 @@ function DocsVaultContent() {
             t={t}
           />
         </div>
-        {/* zone-c — 열린 문서 탭 스트립(슬라이스 B). `view==='doc'` 일 때만
-            렌더(현재 유일한 view). 탭이 0개면 EmptyState 없이 그냥 빈 채로
-            둔다(지시 ④ "플레이스홀더 금지"). `self-stretch` 로 헤더 전체
-            높이를 채워야 활성 탭 배경이 baseline 을 완전히 덮는다. */}
+        {/* zone-c — the open-document tab strip, rendered only when `view==='doc'` (currently the
+            only view). With zero tabs it simply stays empty, with no EmptyState (no placeholders).
+            `self-stretch` fills the header height so the active tab's background fully covers the
+            baseline. */}
         <div
           data-docs-header-zone="tabs"
           className="hidden min-w-0 flex-1 self-stretch lg:flex"
@@ -2129,25 +2118,26 @@ function DocsVaultContent() {
             />
           ) : null}
         </div>
-        {/* zone-r — 소스 pill → ⌘K → 점검 → 문서정보 → gear(local). 순서
-            고정, 숨김/겹침 금지(implementation-contract.md §10.2 ①).
-            검수 Pass A′ 결함 (2026-07-23) — 구 `lg:max-w-[340px]` 캡은 EN
-            라벨(Sample/Local/SETTINGS)이 340px 를 넘으면 justify-end 정렬이
-            내용물을 캡 왼쪽 밖으로 흘려 탭 스트립을 덮었다(1440 실측 28px).
-            캡을 제거해 자연 폭을 갖게 하면 zone-c(flex-1 min-w-0 스크롤
-            스트립)가 그만큼 줄어들 뿐 겹침이 구조적으로 불가능해진다. */}
-        {/* md 단일 행 전환 — w-full 을 md 부터 풀고 ml-auto 로 우측 정렬
-            (zone-c 탭 스트립은 lg+ 전용 flex-1 이라 md 구간엔 자연 공백이
-            없다). lg 에선 zone-c 가 여백을 소유하므로 ml-auto 는 no-op. */}
+        {/* zone-r — source pill → ⌘K → check → document info → gear (local). Fixed order; nothing
+            hidden and nothing overlapping.
+            Defect found in review 2026-07-23: the old `lg:max-w-[340px]` cap made EN labels
+            (Sample/Local/SETTINGS) exceeding 340px spill left of the cap under justify-end and
+            cover the tab strip (28px measured at 1440). Removing the cap gives it natural width;
+            zone-c (a `flex-1 min-w-0` scrolling strip) simply shrinks, making overlap structurally
+            impossible. */}
+        {/* The md single-row switch — `w-full` is released from md and `ml-auto` right-aligns
+            (zone-c's tab strip is lg+ only, so there is no natural gap in the md band). At lg
+            zone-c owns the gap and `ml-auto` is a no-op. */}
         <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 md:ml-auto md:w-auto md:flex-nowrap">
-          {/* ⚠️ **소스 라디오와 점검 타일이 여기 있었다** (2026-08-08 제거, 2안).
-              오른쪽 끝의 「샘플 | 로컬」은 왼쪽 볼트 칩이 이미 말하고 있는 것을
-              한 번 더 말했고(같은 사실, 두 곳), 바꾸는 길도 둘이었다 — 칩 메뉴와
-              이 라디오. 소유자가 이 무리를 「헷갈린다」로 지목했다: 화면 전체의
-              데이터 출처를 바꾸는 스위치 옆에 검색과 클립보드가 성격 구분 없이
-              붙어 있었다.
-              표시·전환·점검은 전부 볼트 칩 하나로 모았다(새 표면 0). 여기 남는
-              것은 ⌘K 하나 — 그리고 레일이 숨는 `<lg` 에서만 설정 타일. */}
+          {/* ⚠️ **The source radio and the check tile used to be here** (removed 2026-08-08).
+              The "Sample | Local" control at the right edge repeated what the vault chip on the left
+              already said (one fact, two places), and there were two ways to change it — the chip
+              menu and this radio. The owner named this cluster as confusing: a switch that changes
+              the whole screen's data source sat beside search and clipboard with no distinction of
+              kind.
+              Display, switching, and checking all consolidated into the vault chip (zero new
+              surfaces). What remains here is ⌘K — plus the settings tile only below `lg`, where the
+              rail is hidden. */}
           <DocsHeaderTile
             icon={<Search size={ICON_SIZE.lg} aria-hidden />}
             title={t('header.paletteTooltip')}
@@ -2158,13 +2148,13 @@ function DocsVaultContent() {
               setPaletteQuery('');
             }}
           />
-          {/* B2 병합 — 문서함 헤더의 vault 도구 드롭다운(VaultToolsMenu)은 설정
-              메뉴로 흡수됐다. AI agent 설정·수리·복사 패킷·검증 게이트는 이제
-              AppSettingsMenu 의 vault / mcpAgents 탭이 소유한다. 헤더에는 그
-              집으로 가는 설정 게어만 남긴다(신규 표면·신규 탭 0). 로컬 vault
-              관리(picker)도 설정 vault 탭에서 열린다 — vault pill 은 고빈도
-              swap 만 담당. #15 — lg+ 는 나브레일 하단 톱니가 담당하고, 레일이
-              숨는 <lg 에서만 chrome-tile 로 노출한다. */}
+          {/* The docs header's vault tools dropdown was absorbed into the settings menu. Agent
+              configuration, repair, the copy packet, and the verification gate now belong to
+              AppSettingsMenu's vault / mcpAgents tabs. Only the gear that leads there stays in the
+              header (zero new surfaces, zero new tabs). Local vault management (the picker) also
+              opens from the settings vault tab; the vault pill handles only the high-frequency swap.
+              At lg+ the nav rail's gear owns this, so the chrome tile appears only below lg where
+              the rail is hidden. */}
           <div className="lg:hidden">
             <AppSettingsMenu
               mode={source === 'local' ? 'local' : 'static'}
@@ -2192,10 +2182,10 @@ function DocsVaultContent() {
         t={t}
       />
 
-      {/* Round 9 cut — local source 인데 vault 가 error / permission-needed
-          상태일 때 명시 banner. 이전엔 silent 으로 server 매니페스트 (샘플
-          docs) 가 표시돼 사용자가 자기 vault 가 죽었음을 모름. picker 토글로
-          바로 fix 가능 (헤더 우측 gear). */}
+      {/* An explicit banner when the source is local but the vault is in error or
+          permission-needed. It used to fail silently: the server manifest (sample docs) was shown
+          and the user never learned their vault was dead. Fixable directly from the picker (the
+          gear at the header's right). */}
       {source === 'local' &&
       (localVault.status === 'error' ||
         localVault.status === 'permission-needed') ? (
@@ -2206,8 +2196,8 @@ function DocsVaultContent() {
           <span className="flex-1">
             {localVault.status === 'permission-needed'
               ? t('vaultStatus.permissionNeededBanner')
-              : // 거절은 실패와 다르다 — 원인 문자열을 그대로 흘리면 사용자가
-                // `vault-root-rejected:filesystem-root` 를 읽게 된다.
+              : // A rejection is not a failure — leaking the cause string would show the user
+                // `vault-root-rejected:filesystem-root`.
                 localVault.errorCode === 'root-rejected'
                 ? t('vaultStatus.rootRejectedBanner')
                 : t('vaultStatus.errorBanner', {
@@ -2233,22 +2223,21 @@ function DocsVaultContent() {
       ) : null}
 
       {/*
-       * **요청한 문서가 이 문서함에 없으면 말한다** (2026-08-01 실측 수리).
+       * **Say so when the requested document is not in this vault** (measured fix, 2026-08-01).
        *
-       * `?slug=` 가 안 풀리면 기본 선택 로직이 README/FEATURES 중 하나를 골라
-       * 그냥 그린다. 그런데 URL 은 요청 슬러그를 그대로 달고 있고(위 기본 선택
-       * effect 는 `normalizedQuerySlug` 가 있으면 URL 을 안 고친다), 화면 어디에도
-       * 못 찾았다는 말이 없다.
+       * When `?slug=` does not resolve, the default-selection logic picks README or FEATURES and
+       * simply draws it. Meanwhile the URL still carries the requested slug (the default-selection
+       * effect used to leave the URL alone whenever `normalizedQuerySlug` existed), and nothing on
+       * screen says it was not found.
        *
-       * 실측된 결과: [에이전트 연결] 시트의 문서 링크를 누른 사람이 데모 쇼핑몰의
-       * **「회원 탈퇴」** 문서 앞에 놓였다. 그 링크 자체도 고쳤지만(볼트를 지정하지
-       * 않은 주소였다), **조용한 대체는 그 링크 하나의 문제가 아니다** — 볼트를
-       * 바꾸거나 문서를 지운 뒤의 모든 딥링크·북마크·에이전트 핸드오프가 같은
-       * 길로 온다.
+       * Measured outcome: someone following a document link from the [connect an agent] sheet
+       * landed in front of the demo storefront's **"delete my account"** document. That link was
+       * fixed too (its address named no vault), but **a silent substitution is not one link's
+       * problem** — every deeplink, bookmark, and agent handoff after a vault change or a deleted
+       * document arrives the same way.
        *
-       * 이 저장소가 이미 한 번 배운 것과 같은 병이다: 바로 위 배너가
-       * *"이전엔 silent 으로 … 사용자가 자기 vault 가 죽었음을 모름"* 이라고
-       * 적어 둔 그 병.
+       * The same illness this repository already learned once: the banner directly above records
+       * *"it used to fail silently … the user never learned their vault was dead"*.
        */}
       {missingQuerySlug ? (
         <div
@@ -2276,16 +2265,16 @@ function DocsVaultContent() {
           status={localVault.status}
           recentVaults={localVault.recentVaults}
           onOpen={() => void openLocalVault()}
-          // 브라우저가 원리적으로 못 하는 일은 **액션을 그리지 않는다**.
-          // 이 카드는 `createTauriVaultHandle` 로 저장소의 절대 경로를 여는데
-          // 웹에는 그 런타임이 없다. 종전에는 웹에서도 그려졌고, 누르면
-          // `Tauri vault runtime is not available.` 예외만 던진 뒤 **화면이
-          // 글자 하나 안 바뀌었다**(2026-07-28 실측: 클릭 전후 본문 길이 동일).
-          // 죽은 CTA 이고 `surfaces.md` 가 이름으로 금지한 것이다.
+          // **Do not draw an action for something the browser cannot do in principle.**
+          // This card opens the repository's absolute path with `createTauriVaultHandle`, and the
+          // web has no such runtime. It used to render on the web too, where pressing it threw
+          // `Tauri vault runtime is not available.` and **nothing on screen changed** (measured
+          // 2026-07-28: identical body length before and after the click). That is a dead CTA, which
+          // `.claude/rules/surfaces.md` forbids by name.
           //
-          // 강등 카드를 새로 짓지 않는 이유: 이 카드 옆에 웹에서 되는 길
-          // (폴더 열기 · 샘플 보기)이 나란히 있다. 못 하는 일을 설명하는
-          // 것보다 되는 일을 남기는 것이 낫다(웹 BYOK 와 같은 선례).
+          // No degraded card is built in its place because the paths that *do* work on the web
+          // (open a folder, view the sample) sit right beside this one. Leaving what works is
+          // better than explaining what does not.
           onOpenDogfoodPath={isDesktopRuntime ? handleOpenDogfoodVault : undefined}
           onOpenRecent={(record) => void localVault.openRecent(record)}
           onOpenSample={() => handleSourceChange('server')}
@@ -2297,9 +2286,9 @@ function DocsVaultContent() {
           <div className="flex min-h-0 flex-1">
         {/* Source tree drawer — tree navigation is intentionally opt-in so the
             document/work surface stays primary on desktop and mobile. */}
-        {/* 화면 전체를 덮는 서랍이라 **밝기 전용** 문법을 쓴다(`motion="overlay"`)
-            — 큰 표면에 이동/스케일을 걸면 화면 자체가 흔들린 것으로 읽힌다.
-            스크림과 서랍이 한 표면으로 같이 들어오고 같이 나간다. */}
+        {/* It covers the whole screen, so it uses the **opacity-only** grammar (`motion="overlay"`):
+            movement or scale on a surface this large reads as the screen itself shaking. The scrim
+            and the drawer enter and leave as one surface. */}
         <Surface
           open={sourceTreeOpen}
           motion="overlay"
@@ -2329,23 +2318,21 @@ function DocsVaultContent() {
             </aside>
         </Surface>
 
-        {/* Persistent left pane — --docs-list-width(280px) machined 파일
-            트리 (docs-vault-final 2-pane spec). lg+ 에서 항상 보임; 그 아래
-            폭에서는 위 drawer 로 대체 (menu 버튼이 lg:hidden). 접힘 =
-            width 0(34px slim rail 삭제, design-prescription.md ③-4) — 재열기
-            발견성은 zone-l 의 PanelLeft 타일(active 상태) + 탭 + ⌘K 3중
-            담보이므로 접힘 힌트 레일이 따로 필요 없다. */}
+        {/* Persistent left pane — the `--docs-list-width` (280px) file tree. Always visible at lg+;
+            below that the drawer above replaces it (the menu button is `lg:hidden`). Collapsed
+            means width 0 — no 34px slim rail — because re-open discoverability is already covered
+            three ways: zone-l's PanelLeft tile (in its active state), the tabs, and ⌘K. */}
         <aside
-          // 목적지 안내(문서함 2장짜리)가 "왼쪽이 내 폴더 목록" 을 가리킬 때
-          // 쓰는 앵커. 접혀 있으면(width 0) 앵커 해석이 실패해 안내가 한 장으로
-          // 접힌다 — 없는 곳을 가리키지 않는다.
+          // The anchor the two-step docs tour points at for "your folder list is on the left". While
+          // collapsed (width 0) the anchor fails to resolve and the tour folds to one step — it does
+          // not point at somewhere that is not there.
           data-testid="docs-vault-doc-list"
           aria-label={t('mobileDrawer.title')}
           aria-hidden={docListCollapsed}
-          // aria-hidden 만으로는 width 0 뒤에 숨은 검색 input·트리 버튼이
-          // 여전히 Tab 순서에 남는다(보이지 않는 곳으로 포커스가 사라지는
-          // WCAG 결함 + aria-hidden 내부 포커스 모순). inert 로 포커스·포인터
-          // 를 함께 차단한다 (React 19 boolean inert).
+          // `aria-hidden` alone leaves the search input and tree buttons hidden behind width 0 still
+          // in the Tab order (focus disappearing somewhere invisible — a WCAG defect, and a
+          // contradiction with focus inside `aria-hidden`). `inert` blocks focus and pointer together
+          // (React 19 boolean inert).
           inert={docListCollapsed}
           style={{ width: docListCollapsed ? 0 : 'var(--docs-list-width)' }}
           className={`hidden flex-none flex-col overflow-hidden bg-[color:var(--color-panel)] transition-[width] duration-[var(--motion-base)] ease-[var(--motion-ease)] lg:flex ${
@@ -2355,20 +2342,20 @@ function DocsVaultContent() {
           {sidebarBody}
         </aside>
 
-        {/* 본문 + 우측 사이드 */}
+        {/* Body plus the right side. */}
         <main
           id="main"
       tabIndex={-1}
           className="flex min-w-0 flex-1 flex-col overflow-hidden"
           /**
-           * 설치 앱 실측용 마커 — `dot 디렉터리를 실제로 읽었는가`.
+           * A marker for measuring the installed app: **were the dot directories actually read?**
            *
-           * 이 판정은 **데스크톱 능력**이라 브라우저 증명이 증명이 아니다
-           * (`surfaces.md`). 그런데 판정을 보여 주는 자리는 「문서함 점검」 모달
-           * 안이라 닫혀 있으면 DOM 에 없다 — 그래서 상시 존재하는 이 원소가
-           * 요약을 싣는다. `-` 는 "이 표면에 그 능력이 없음"(웹)이고,
-           * `0/0` 은 "능력은 있는데 스킬 트리가 없는 볼트"다. 둘은 다른 사실이라
-           * 같은 값으로 뭉개지 않는다.
+           * That verdict is a **desktop capability**, so proving it in a browser proves nothing
+           * (`.claude/rules/surfaces.md`). But the place that shows the verdict is inside the docs
+           * check modal, which is absent from the DOM while closed — so this always-present element
+           * carries the summary. `-` means "this surface does not have that capability" (the web),
+           * and `0/0` means "the capability exists but this vault has no skill tree". They are
+           * different facts and are not collapsed into one value.
            */
           data-skill-parity={
             skillParity ? `${skillParity.rows.length}/${skillParity.disagreeing}` : "-"
@@ -2376,10 +2363,9 @@ function DocsVaultContent() {
         >
           {selectedDoc ? (
             <div className="flex min-h-0 flex-1 flex-col">
-              {/* 샘플 진입 안내 — Toss D1 정리(2026-07): 딥링크 없이 샘플
-                  모드로 착지하면 이 노트가 (개발 문서 본문보다 먼저) 이
-                  문서함이 무엇이고 어떻게 쓰는지 평문으로 짚어준다. 사용자가
-                  실제 문서를 고르면(handleSelect) 사라진다. */}
+              {/* The sample entry note: landing in sample mode with no deeplink, this explains in
+                  plain language what this docs surface is and how to use it, ahead of the document
+                  body. It disappears once the user picks a real document (`handleSelect`). */}
               {!editing && showSampleWelcomeNote ? (
                 <SampleWelcomeNote
                   canOpenLocalVault={!localSourceDisabled}
@@ -2387,13 +2373,11 @@ function DocsVaultContent() {
                   onDismiss={() => setSampleWelcomeDismissed(true)}
                 />
               ) : null}
-              {/* ehead — 표시명(title) + preview/edit seg + sync status
-                  (docs-vault-final spec §우 에디터/프리뷰 헤더). Toss D2
-                  정리(2026-07) — 이전엔 `dir/file.md` 내부 파일명만 mono 로
-                  보여 비개발자에게 "README.md" 같은 raw 파일명이 1차
-                  레이블이었다. title 을 1행 주 레이블로 올리고, 파일 경로는
-                  2행 caption(secondary)으로 낮춘다 — 트리(`DocsVaultTree`)의
-                  `title ?? name` 우선순위와 같은 계약을 여기도 일관 적용. */}
+              {/* Editor head — display title + preview/edit segment + sync status. It used to show
+                  only the inner filename of `dir/file.md` in mono, making a raw filename like
+                  "README.md" the primary label for a non-developer. The title is now the primary
+                  single-line label and the file path drops to a secondary caption — the same
+                  `title ?? name` priority the tree (`DocsVaultTree`) uses. */}
               <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-[color:var(--color-border-soft)] px-4 py-2">
                 <div className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -2404,11 +2388,10 @@ function DocsVaultContent() {
                     {splitVaultSlugPath(selectedDoc.slug).name}.md
                   </span>
                 </div>
-                {/* #4 샘플 안내 — 읽기 전용인 이유 + 켜는 법. 종전엔 제목 위의
-                    자기 띠(53px)였다. 말하는 사실이 **볼트** 의 것이라 문서마다
-                    반복될 이유가 없고, 샘플 볼트에서는 이 줄의 오른쪽이 비어
-                    있으므로 세로 픽셀 0으로 같은 말을 한다 (po-pass.md §1-3 의
-                    판단은 그대로 — 지우지 않고 자리만 옮겼다). */}
+                {/* The sample notice — why it is read-only and how to switch. It used to be its own
+                    53px band above the title. The fact it states belongs to the **vault**, so there
+                    is no reason to repeat it per document, and in a sample vault the right side of
+                    this row is empty — so it says the same thing at zero vertical cost. */}
                 {!editing && !isLocalSourceLoaded ? (
                   <SampleNotice
                     canOpenLocalVault={!localSourceDisabled}
@@ -2443,13 +2426,12 @@ function DocsVaultContent() {
                     </Chip>
                   </div>
                 ) : null}
-                {/* 점은 **라벨의 불릿**이지 그 자체로 상태가 아니다
-                    (2026-08-04). 종전엔 점만 항상 그려지고 문구는 로컬
-                    볼트일 때만 붙어서, 샘플/서버 모드에서는 아무 뜻도 없는
-                    인디고 점 하나가 떠 있었다 — 정보를 안 나르는 채색이다.
-                    ⚠️ 이 줄은 **볼트 원본**이 로컬인지만 말한다. 이 문서가
-                    지도에 있는지와는 무관하고, 그 판정은 `DocMetaBar` 가
-                    한다. */}
+                {/* The dot is **the label's bullet**, not a state in itself (2026-08-04). It used to
+                    be drawn unconditionally while the text appeared only for a local vault, so in
+                    sample/server mode a meaningless indigo dot floated there — colour carrying no
+                    information.
+                    ⚠️ This line says only whether the **vault source** is local. It is unrelated to
+                    whether this document is on the map, which is `DocMetaBar`'s verdict. */}
                 {isLocalSourceLoaded ? (
                   <span className="flex-none font-mono text-label text-[color:var(--color-text-quaternary)]">
                     <span
@@ -2462,16 +2444,15 @@ function DocsVaultContent() {
               </div>
 
               <div className="flex min-h-0 flex-1">
-                {/* relative 래퍼 — #1 목차 레일(빈 띠 절대 위치)과 #2 맨
-                    위로(스크롤 컨테이너 밖에 얹혀 스크롤과 무관하게 같은
-                    화면 위치 유지) 둘 다 이 래퍼를 기준으로 위치한다. 본문
-                    max-w-760 은 아래 overflow-auto 컨테이너 안에서 그대로
-                    mx-auto — 레일 때문에 줄지 않는다. */}
+                {/* The `relative` wrapper is the positioning reference for both the outline rail
+                    (absolutely positioned in the empty margin) and back-to-top (laid over, outside
+                    the scroll container, so it keeps the same screen position regardless of scroll).
+                    The body's max-w-760 still centres inside the overflow-auto container below and
+                    is not narrowed by the rail. */}
                 <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-                  {/* 목차는 이 레일 하나가 소유한다. 종전에는 문서 정보
-                      인스펙터가 같은 목차를 한 벌 더 들고 있어서, 열리면 레일을
-                      demote 하는 규칙이 필요했다 — 2026-07-28 에 그 패널을
-                      걷어내면서 이중 노출 자체가 사라졌다. */}
+                  {/* This rail is the sole owner of the outline. The document-info inspector used to
+                      hold a second copy, which required a rule demoting the rail whenever it opened —
+                      removing that panel on 2026-07-28 removed the double exposure itself. */}
                   {!editing && showOutlineRail ? (
                     <DocReadingOutlineRail
                       headings={outlineHeadings}
@@ -2481,10 +2462,10 @@ function DocsVaultContent() {
                   ) : null}
                   <div
                     ref={articleScrollRef}
-                    // <lg 스크롤 끝 예약고 — 이 컨테이너 하단이 고정 탭바 뒤로
-                    // 17px 파고들어(768/834/600 실측 공통) 마지막 줄이 스크롤
-                    // 끝에서 가려졌다. 탭바 예약고 + 12px 를 스크롤 콘텐츠
-                    // 안쪽 패딩으로 확보 (겹침 소탕 2026-07-23).
+                    // Scroll-end reserve below lg — this container's bottom cut 17px behind the fixed
+                    // tab bar (measured identically at 768/834/600), hiding the last line at the end
+                    // of the scroll. The tab bar reserve plus 12px is taken as inner padding of the
+                    // scroll content.
                     className="min-h-0 flex-1 overflow-auto max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]"
                   >
                     {editing && canEditCurrent && editResolver ? (
@@ -2494,9 +2475,9 @@ function DocsVaultContent() {
                         doc={selectedDoc}
                         getDocContent={editResolver}
                         onSave={(slug, content, expectedMtime) =>
-                          // conflict 를 swallow 하지 않고 re-throw — 그래야 에디터가
-                          // 버퍼를 dirty 로 유지해 다음 poll 의 clobber 를 막는다.
-                          // (구버전은 여기서 return 으로 삼켜 phantom-clean → 데이터 손실)
+                          // Re-throw the conflict rather than swallowing it, so the editor keeps the
+                          // buffer dirty and blocks the next poll from clobbering it. (An older
+                          // version returned here, producing a phantom-clean state and data loss.)
                           persistEditorSave(
                             localVault.saveDoc,
                             { slug, content, expectedMtime },
@@ -2508,15 +2489,14 @@ function DocsVaultContent() {
                       />
                     ) : (
                       <>
-                        {/* 게이트가 여기서 사라진 이유 (2026-08-04): 종전엔
-                            `kind` 가 비어 있으면 블록 자체를 안 그렸는데,
-                            kind 없음/빔이 **노드가 지도에서 사라지는 가장 흔한
-                            두 경로**라 설명이 가장 필요한 두 경우에만 화면이
-                            침묵했다. 판정은 이제 컴포넌트가 갖는다 — 안내
-                            문서에는 여전히 아무것도 안 그리고(validator 가
-                            ontology 의도 없는 문서에는 이슈를 내지 않는다),
-                            노드가 되려다 실패한 문서에는 축약 진단을 그린다.
-                            판정이 한 곳에 있어야 둘이 어긋나지 않는다. */}
+                        {/* Why the gate disappeared here (2026-08-04): the block used not to render at
+                            all when `kind` was missing, but a missing or empty kind is **the two most
+                            common ways a node vanishes from the map** — so the screen went silent in
+                            exactly the two cases that most needed explaining. The verdict now belongs
+                            to the component: it still draws nothing for guide documents (the validator
+                            raises no issue for a document with no ontology intent) and draws a short
+                            diagnosis for a document that tried to be a node and failed. One place for
+                            the verdict is what keeps the two from disagreeing. */}
                         <DocFrontmatterBlock
                             key={selectedDoc.slug}
                             doc={selectedDoc}
@@ -2525,12 +2505,10 @@ function DocsVaultContent() {
                             onPatch={handlePatchDocFrontmatter}
                             onNavigate={handleSelect}
                             resolveRef={(token) => refSlugResolver.get(token) ?? null}
-                            // rank7 (design-council B5) — 마지막 편집 주체/
-                            // 충돌 배지의 실데이터 출처. 둘 다 로컬 vault
-                            // 싱글턴(`LocalVaultProvider`)이 실제로 관측한
-                            // 값만 — 서버/샘플 볼트에선 heartbeat/자기쓰기
-                            // 기록이 없으므로 컴포넌트가 알아서 아무것도
-                            // 렌더하지 않는다.
+                            // The real data behind the last-editor and conflict badges. Both use only
+                            // what the local vault singleton (`LocalVaultProvider`) actually observed —
+                            // in a server or sample vault there is no heartbeat or self-write record,
+                            // so the component renders nothing on its own.
                             agentActivityStatus={localVault.agentActivityStatus}
                             selfEditTimestamps={localVault.selfEditTimestamps}
                           />
@@ -2563,35 +2541,33 @@ function DocsVaultContent() {
                     />
                   ) : null}
                 </div>
-                {/* 우측 사이드: heading outline + 공유 + 파일 관리. 기본은 닫아
-                    본문을 우선하고, 필요할 때만 헤더의 인스펙터 버튼으로 연다.
-                    backlinks 는 여기 없음 — pane 하단 스트립이 단일 소스. */}
+                {/* Right side: heading outline, share, and file management. Closed by default so the
+                    body comes first; opened from the header's inspector button when needed. Backlinks
+                    are not here — the strip at the bottom of the pane is the single source. */}
               </div>
 
-              {/* 하단 backlinks 스트립 — pane 전체 폭에 앵커, 항상 보임
-                  (docs-vault-final spec §하단 백링크 스트립). persona QA
-                  (fix/persona-findings ③): "항상 보임" 스펙과 달리
-                  backlinksDetail.length > 0 조건으로 실제 역참조가 없는
-                  문서에서는 스트립 자체가 사라져 기능 발견성이 없었다 —
-                  역참조 0 개도 빈 상태 문구로 보여 "여긴 아직 없다" 를
-                  알 수 있게 한다. */}
+              {/* The backlinks strip at the bottom, anchored to the full pane width and always
+                  visible. Persona QA found it was gated on `backlinksDetail.length > 0` against that
+                  spec, so on a document with no backlinks the strip vanished entirely and the feature
+                  was undiscoverable — zero backlinks now shows an empty-state line so the user can
+                  tell "there are none yet". */}
               {!editing ? (
                 /*
-                 * **예약고는 이 바에도 걸린다** (2026-08-01 실측 수리).
+                 * **The reserve applies to this bar too** (measured fix, 2026-08-01).
                  *
-                 * 종전엔 위 스크롤러(`articleScrollRef`)에만 걸려 있었다. 그런데
-                 * 이 바는 그 스크롤러의 **형제 `flex-none`** 이라 스크롤러 안쪽
-                 * 패딩이 구조적으로 닿지 않는다. 캐스케이드에 진 게 아니라
-                 * **예약이 잘못된 상자에 걸려 있었다.**
+                 * It used to be applied only to the scroller above (`articleScrollRef`). But this bar
+                 * is that scroller's **`flex-none` sibling**, so the scroller's inner padding
+                 * structurally cannot reach it. It did not lose a cascade — **the reserve was applied
+                 * to the wrong box.**
                  *
-                 * 결과는 가림을 넘어 **입력 탈취**였다 — 375·390·600·640·700·
-                 * 768·834·900·1023(탭바가 있는 `<lg` 전 구간)에서
-                 * `elementFromPoint(중심)` 이 `bottom-tab-get-app` 을 돌려주고,
-                 * 실제로 누르면 `/download/` 로 갔다. 문서를 지도에서 열려던
-                 * 사람이 다운로드 페이지에 도착한다.
+                 * The result was beyond occlusion: it was **input theft**. At 375, 390, 600, 640, 700,
+                 * 768, 834, 900, and 1023 (the whole sub-lg band where the tab bar exists),
+                 * `elementFromPoint(centre)` returned `bottom-tab-get-app`, and pressing it really did
+                 * go to `/download/`. Someone trying to open a document on the map arrived at the
+                 * download page instead.
                  *
-                 * `max-lg:` 대신 **base + `lg:` 오버라이드**로 쓴다 — 어느 쪽이
-                 * 이기는지가 클래스 순서에 달리지 않게.
+                 * Written as base + an `lg:` override rather than `max-lg:`, so which one wins does not
+                 * depend on class order.
                  */
                 <div className="flex flex-none items-center gap-2 border-t border-[color:var(--color-border-soft)] px-4 pt-2.5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)] lg:pb-2.5">
                   {backlinksDetail.length > 0 ? (
@@ -2606,18 +2582,16 @@ function DocsVaultContent() {
                       {t('backlinksStrip.empty')}
                     </p>
                   )}
-                  {/* 직접 간다 — `/ontology/?node=` 는 지도로 가는 **얇은
-                      리다이렉트**(구 허브는 은퇴했다)라 한 홉이 낭비된다.
-                      `?p=` 포커스 링크가 같은 곳에 바로 도착한다.
+                  {/* Go there directly — `/ontology/?node=` is a **thin redirect** to the map (the old
+                      hub is retired), so it wastes a hop. The `?p=` focus link arrives at the same place.
 
-                      **`?? '/topology/'` 폴백은 죽은 CTA 였다** (2026-08-04 실측).
-                      그래프에 노드가 없는 문서에서 두 빌더가 모두 null 이면 이
-                      링크가 `/ko/topology/` 로 렌더됐다 — 누르면 지도가 열리되
-                      **아무것도 안 잡힌다**. 「지도에서 열기」라고 써 있는데 열
-                      대상이 없는 것은 강등이 아니라 함정이고, 죽은 CTA 0 은 이
-                      저장소의 계약이다(`.claude/rules/surfaces.md`). 주소를 못
-                      만들면 렌더하지 않는다 — 그 문서가 왜 지도에 없는지는 위
-                      진단 블록이 이미 말한다. */}
+                      **The `?? '/topology/'` fallback was a dead CTA** (measured 2026-08-04). For a
+                      document with no node in the graph both builders returned null and this link
+                      rendered as `/ko/topology/` — pressing it opened the map with **nothing selected**.
+                      A control labelled "open on the map" with nothing to open is not a degradation but
+                      a trap, and zero dead CTAs is this repository's contract
+                      (`.claude/rules/surfaces.md`). With no address to build, nothing is rendered — the
+                      diagnosis block above already says why that document is not on the map. */}
                   {mapDeeplinkForSelectedDoc ? (
                     <Link
                       href={mapDeeplinkForSelectedDoc}
@@ -2679,17 +2653,17 @@ function DocsVaultContent() {
         ) : null}
       </AnimatePresence>
 
-      {/* 모달 골격(등장·퇴장 presence 포함)은 Dialog 프리미티브가 소유한다 —
-          호출부는 open 만 넘긴다 (2026-08-15 체계석 비준). */}
+      {/* The modal skeleton, including enter/exit presence, belongs to the Dialog primitive — the
+          call site passes only `open`. */}
       <NewDocKindDialog
         open={newDocKindDialogOpen}
         onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
         onClose={() => setNewDocKindDialogOpen(false)}
       />
 
-      {/* design-council B2 rank4 — 비차단 근접 중복 경고. 화면을 덮지 않는
-          하단 고정 칩(scrim/backdrop 없음) — 뒤 콘텐츠 상호작용을 막지
-          않는다. autoFocus 없음 — 어떤 입력 포커스도 훔치지 않는다. */}
+      {/* Non-blocking near-duplicate warning. A bottom-anchored chip that does not cover the screen
+          (no scrim, no backdrop), so interaction with the content behind it is not blocked. No
+          autoFocus — it steals focus from no input. */}
       <AnimatePresence>
         {pendingSimilarDoc ? (
           <div
@@ -2714,12 +2688,12 @@ function DocsVaultContent() {
 }
 
 export function DocsVaultPage() {
-  // local-first 핵심 (`.claude/rules/local-first.md` §1) — vault picker 진입은
-  // 인증 게이트 없음. 사용자 로컬 디스크가 진실원.
+  // Local-first core (`.claude/rules/local-first.md` §1) — reaching the vault picker passes through
+  // no auth gate. The user's local disk is the source of truth.
   return (
-    // 이 안쪽 경계가 라우트 경계보다 가까워서, 프리렌더된 HTML 에 실제로
-    // 구워지는 것은 여기 fallback 이다 — null 이면 배포된 문서함은 레일만
-    // 남은 검은 화면으로 시작한다(감사 D1 과 같은 뿌리).
+    // This inner boundary is closer than the route boundary, so what actually gets baked into the
+    // prerendered HTML is this fallback — null would make the deployed docs surface start as a black
+    // screen with only the rail.
     <Suspense fallback={<RouteLoadingFallback />}>
       <DocsVaultContent />
     </Suspense>

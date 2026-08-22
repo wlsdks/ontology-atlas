@@ -1,11 +1,12 @@
 // R11 #27 — vault validator contract fixture. src/shared/lib/validate-vault-
-// document.ts (런타임 + UI) 와 mcp/src/validate.mjs (AI agent) 가 같은
-// raw 입력에 대해 같은 issue codes set 반환 보장. 한 쪽 추가/변경 시 contract
-// test 가 즉시 차단.
+// Guarantees document.ts (runtime + UI) and mcp/src/validate.mjs (the AI agent
+// surface) return the same issue-code set for the same raw input. Adding or changing a
+// code on either side is blocked immediately by the contract test.
 //
 // fixture shape:
 //   { name, input, expectedCodes: string[], expectedOk: boolean }
-// expectedCodes 는 *severity 무관 set 비교* — 각 구현이 같은 set 을 반환하면 OK.
+// expectedCodes is a *severity-independent set comparison* — each implementation
+// returning the same set is a pass.
 
 export const VALIDATE_CASES = [
   {
@@ -21,8 +22,8 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
-    // R14 — capability/element 는 domain 없으면 missing-expected-field warning.
-    // domain 까지 채운 경우가 'clean' baseline.
+    // R14 — a capability or element with no domain produces a missing-expected-field
+    // warning. Filling in the domain too is the 'clean' baseline.
     name: 'canonical kind = capability — clean (with domain)',
     input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abd\nkind: capability\ntitle: Cap\ndomain: domains/auth\n---\n',
     expectedCodes: [],
@@ -119,18 +120,19 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
-    // 감사 2026-07-25 — `broader`(is_a / SKOS, 공방과 함께 도입)가 MCP 검증기
-    // 에만 있고 scripts/웹/CLI 3곳의 `GRAPH_ARRAY_KEYS` 에서 빠져 있었다. 그
-    // 리스트는 `non-canonical-graph-array` 와 `dangling-graph-reference` 를
-    // **동시에** 구동하므로, 누락은 곧 "에이전트가 `broader:` 에 오타 슬러그를
-    // 써도 CI 는 green" 을 뜻했다(웹 derive 는 미해석 ref 를 새 노드로 민팅 —
-    // `derive-ontology-from-vault.ts` 의 팬텀 사고와 같은 부류).
+    // Audit 2026-07-25 — `broader` (is_a / SKOS) existed only in the MCP validator and
+    // was missing from `GRAPH_ARRAY_KEYS` in all three of scripts, web, and CLI. That list
+    // drives **both** `non-canonical-graph-array` and `dangling-graph-reference`, so the
+    // omission meant "an agent can write a typo'd slug in `broader:` and CI stays green"
+    // (the web deriver mints unresolved refs as new nodes — the same class as the phantom
+    // accident in `derive-ontology-from-vault.ts`).
     //
-    // 이 fixture 가 그 drift 를 3-way 로 고정한다: 다시 한 쪽만 키를 추가하면
-    // 즉시 빨개진다.
+    // This fixture pins that drift three ways: adding the key on one side alone turns red
+    // immediately.
     name: 'broader 배열도 canonical 검사를 받는다 (검증기 3-way drift 차단)',
-    // `kind: project` — capability 로 쓰면 `missing-expected-field`(domain 없음)가
-    // 함께 붙어 이 fixture 가 검사하려는 계약이 흐려진다. 옆 fixture 와 동일 조건.
+    // `kind: project` — using capability here would also attach `missing-expected-field`
+    // (no domain) and blur the contract this fixture checks. Same condition as the
+    // adjacent fixture.
     input: '---\nuid: 11890f3e-7b5d-4c0a-8f14-123456789abd\nkind: project\ntitle: Foo\nbroader: [z, a, z]\n---\n',
     expectedCodes: ['non-canonical-graph-array'],
     expectedOk: true,

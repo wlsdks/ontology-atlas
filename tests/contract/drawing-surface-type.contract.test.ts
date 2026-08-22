@@ -6,32 +6,31 @@ import { describe, expect, it } from 'vitest';
 import { FONT_WEIGHT } from '../../src/shared/ui/font-weight';
 
 /**
- * **그리기 표면의 타입 값** — 캔버스 `ctx.font` 와 인라인 SVG 속성.
+ * **Type values on drawing surfaces** — canvas `ctx.font` and inline SVG attributes.
  *
- * ## 왜 이 게이트가 없으면 안 되나 (2026-08-05 실측)
+ * **Why this gate is required (measured 2026-08-05).** After closing the weight axis
+ * everywhere in the DOM (#942, #947) and confirming "0 off-ramp" by on-screen
+ * measurement, **two layers were still off the ramp**:
  *
- * 무게 축을 DOM 에서 전부 닫고(#942 · #947), 화면 실측으로 「램프 밖 0」을
- * 확인한 뒤에도 **두 층이 램프 밖에 남아 있었다**:
- *
- * | 층 | 무엇 | 왜 아무도 못 봤나 |
+ * | Layer | What | Why nobody saw it |
  * |---|---|---|
- * | 캔버스 | `ctx.font = \`600 …\`` 4곳 | `.ts` 안에서 숫자를 **템플릿 문자열**에 끼운다 — lint 셀렉터(className)도 램프 래칫(`.tsx` 유틸리티)도 사정거리 밖 |
- * | 인라인 SVG | `fontSize={10}` · `fontWeight={600}` | **JSX 속성**이라 클래스 문자열이 없다 |
+ * | canvas | `ctx.font = \`600 …\`` in 4 places | numbers interpolated into a **template string** inside `.ts` — out of range for both the lint selector (className) and the ramp ratchet (`.tsx` utilities) |
+ * | inline SVG | `fontSize={10}` · `fontWeight={600}` | **JSX attributes**, so there is no class string |
  *
- * 그리고 DOM 스윕도 못 잡는다 — 캔버스는 DOM 에 글자를 안 남기고, SVG 는
- * 라우트 하나(`/ko/project/storefront/`)에서만 그려져서 열어 보기 전에는
- * 존재조차 안 보인다.
+ * A DOM sweep cannot catch them either — canvas leaves no text in the DOM, and the
+ * SVG renders on exactly one route (`/ko/project/storefront/`), so its existence is
+ * invisible until that route is opened.
  *
- * **같은 층 안에서 이미 갈라져 있었다**: `footprint-glyph.ts` 는 `650`(램프
- * 위)을 쓰고 나머지 넷은 `600`(밖)이었다.
+ * **They had already diverged within one layer**: `footprint-glyph.ts` used `650`
+ * (on the ramp) while the other four used `600` (off it).
  *
- * ## 무엇을 강제하나
+ * **What it enforces:**
  *
- * 1. CSS ↔ JS 거울 일치 (`--font-weight-*` ↔ `FONT_WEIGHT`).
- * 2. 캔버스 `ctx.font` 에 **무게 리터럴 금지** — `FONT_WEIGHT` 를 참조한다.
- * 3. 인라인 SVG 에 `fontSize`/`fontWeight` **속성 금지** — `className` 으로
- *    주면 SVG `<text>` 에도 CSS 가 그대로 먹고, 그 순간 기존 lint·래칫의
- *    사정거리 안으로 들어온다.
+ * 1. CSS ↔ JS mirror agreement (`--font-weight-*` ↔ `FONT_WEIGHT`).
+ * 2. **No weight literal** in a canvas `ctx.font` — reference `FONT_WEIGHT`.
+ * 3. **No `fontSize`/`fontWeight` attributes** on inline SVG — passing them via
+ *    `className` makes CSS apply to SVG `<text>` too, which puts them inside the
+ *    range of the existing lint rules and ratchets.
  */
 
 const ROOT = process.cwd();
@@ -43,7 +42,7 @@ function cssWeight(name: string): number {
   return Number(m[1]);
 }
 
-/** 주석은 값이 아니다 — 이 라운드에서 세 번 밟은 함정(양방향 모두). */
+/** A comment is not a value — the trap hit three times in this round, in both directions. */
 function stripComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
@@ -57,11 +56,11 @@ interface Scan {
 export function scanSource(rel: string, raw: string, acc: Scan): void {
   const src = stripComments(raw);
   acc.files += 1;
-  // `ctx.font = \`600 …\`` — 무게가 리터럴 숫자로 시작하는 canvas font 문자열
+  // `ctx.font = \`600 …\`` — a canvas font string starting with a literal weight
   for (const m of src.matchAll(/\.font\s*=\s*`(\d+)\s/g)) {
     acc.canvasFontLiteral.push(`${rel}  ctx.font = \`${m[1]} …\``);
   }
-  // JSX 속성으로 준 타입 값
+  // Type values passed as JSX attributes
   for (const m of src.matchAll(/\bfont(Size|Weight)=\{?["']?([\d.]+)/g)) {
     acc.svgTypeAttr.push(`${rel}  font${m[1]}={${m[2]}}`);
   }
@@ -125,14 +124,14 @@ describe('그리기 표면의 타입 값 — 캔버스 · 인라인 SVG', () => 
       scanSource('probe.ts', body, acc);
       return acc;
     };
-    // 위반
+    // Violation
     expect(probe('ctx.font = `600 12px mono`;').canvasFontLiteral).toHaveLength(1);
     expect(probe('<text fontSize={10} />').svgTypeAttr).toHaveLength(1);
     expect(probe('<text fontWeight={600} />').svgTypeAttr).toHaveLength(1);
-    // 정상 — 거울 참조 · 클래스
+    // Clean — mirror reference, class
     expect(probe('ctx.font = `${FONT_WEIGHT.strong} 12px mono`;').canvasFontLiteral).toEqual([]);
     expect(probe('<text className="text-caption font-[var(--font-weight-strong)]" />').svgTypeAttr).toEqual([]);
-    // 주석 속 인용은 값이 아니다
+    // A quotation inside a comment is not a value
     expect(probe('// ctx.font = `600 12px mono` 는 금지다\nconst a = 1;').canvasFontLiteral).toEqual([]);
     expect(probe('/* <text fontSize={10} /> 처럼 쓰지 마라 */\nconst a = 1;').svgTypeAttr).toEqual([]);
   });

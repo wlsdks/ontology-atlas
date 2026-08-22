@@ -3,14 +3,13 @@ import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph/lib/
 import type { VaultHealthResult } from "@/entities/knowledge-graph/lib/vault-health";
 
 /**
- * Adapts the CLI-parity `computeVaultHealth` verdict into the insights repair
- * queue's shape (C1). The vault-health lib speaks in full vault slugs
- * (`capabilities/invoice`); the queue links use graph node ids
- * (`capability:invoice`), so we match a target slug to a node by its tail.
+ * Adapts the CLI-parity `computeVaultHealth` verdict into the shape of the insights repair queue.
+ * The vault-health lib speaks in full vault slugs (`capabilities/invoice`) while the queue links use
+ * graph node ids (`capability:invoice`), so a target slug is matched to a node by its tail.
  *
- * These two signals (disconnected islands · missing domain containment) are the
- * ones `node $ATLAS/cli/src/index.mjs health` flips to `needs_attention` on — surfacing them
- * is what stops the app from falsely claiming "수리할 것 없음".
+ * These two signals (disconnected islands · missing domain containment) are the ones
+ * `node $ATLAS/cli/src/index.mjs health` flips to `needs_attention` on — surfacing them is what
+ * stops the app from falsely claiming there is nothing to repair.
  */
 export interface VaultHealthRepair {
   islandCount: number;

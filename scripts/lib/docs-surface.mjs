@@ -1,14 +1,17 @@
-// 문서 검사의 단일 판별 기준: **기계가 만들 수 있는 것만 검사한다.**
+// The single test for a documentation check: **only check what a machine can
+// generate.**
 //
-// 여기 있는 것은 전부 코드(=MCP 도구 레지스트리 · CLI 커맨드 레지스트리)에서
-// 유도된다. 사람이 판단해서 쓴 문장은 이 모듈이 알지 못하고, 알 필요도 없다.
-// `scripts/build-docs-surface.mjs` 가 이 함수들로 `docs/.generated/mcp-surface.json`
-// 을 만들고, 같은 함수로 재생성해 diff 한다.
+// Everything here derives from code (the MCP tool registry and the CLI command
+// registry). Sentences a person wrote are unknown to this module, and need to
+// stay that way. `scripts/build-docs-surface.mjs` builds
+// `docs/.generated/mcp-surface.json` with these functions and re-generates with
+// the same ones to diff.
 
 /**
- * tools/list 응답(또는 그 모양의 배열)을 결정적인 공개 표면 레코드로 정규화한다.
- * 정렬을 여기서 하는 이유: 레지스트리 안 순서가 바뀌어도 diff 가 나지 않아야
- * "표면이 바뀌었다" 는 신호가 순서 흔들림에 묻히지 않는다.
+ * Normalises a tools/list response (or an array of that shape) into a
+ * deterministic public-surface record. Sorting happens here so that reordering
+ * inside the registry produces no diff — otherwise the "the surface changed"
+ * signal drowns in order churn.
  */
 export function normalizeMcpTools(tools) {
   return tools
@@ -37,7 +40,7 @@ export function normalizeMcpTools(tools) {
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
-/** 공개 계약의 **수** — 의도적으로 바꿀 때만 바뀌므로 생성물에 남긴다. */
+/** **Counts** of the public contract — they change only deliberately, so they are kept in the generated file. */
 export function mcpSurfaceCounts(tools) {
   const read = tools.filter((tool) => tool.mode === 'read').length;
   return { toolCount: tools.length, readToolCount: read, writeToolCount: tools.length - read };
@@ -55,23 +58,25 @@ export function buildSurface({ tools, cliCommands }) {
   };
 }
 
-/** 커밋되는 생성물은 바이트 동일해야 한다 — 개행 하나까지 여기서 고정한다. */
+/** The committed artefact must be byte-identical — even the trailing newline is fixed here. */
 export function serializeSurface(surface) {
   return `${JSON.stringify(surface, null, 2)}\n`;
 }
 
 /**
- * 문서가 표면을 **덮는지** 본다. 도구/커맨드 이름은 코드에서 나왔으므로
- * 이것도 코드-대조다 — 산문을 검사하지 않고 "등록된 이름이 문서에 나오는가"
- * 만 본다. 새 도구를 등록하고 문서를 안 쓰면 여기서 걸린다.
+ * Checks that the documentation **covers** the surface. Tool and command names
+ * come from code, so this is also code-vs-code: it does not inspect prose, only
+ * whether every registered name appears in the document. Registering a new tool
+ * without documenting it is caught here.
  */
 export function namesMissingFromDoc(names, markdown) {
   return names.filter((name) => !markdown.includes(name));
 }
 
 /**
- * CLI 커맨드는 `export` 같은 흔한 단어가 섞여 있어 단순 포함 검사가 통과해
- * 버린다. README 의 커맨드 표가 쓰는 형태(`ontology-atlas <command>`)로 본다.
+ * CLI commands include ordinary words like `export`, so a plain substring check
+ * passes spuriously. Match the form the README's command table uses
+ * (`ontology-atlas <command>`) instead.
  */
 export function cliCommandsMissingFromDoc(commands, markdown) {
   return commands.filter((command) => !markdown.includes(`ontology-atlas ${command}`));

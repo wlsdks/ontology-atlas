@@ -1,8 +1,8 @@
-// 실행기의 단 하나의 불변식: **모델의 write 호출은 디스크에 닿지 않는다.**
+// The executor's one invariant: **a model's write call never reaches the disk.**
 //
-// 이 파일은 그것을 두 층으로 잠근다:
-// ① 타입 수준 — 실행기가 받는 포트에 쓰기 메서드가 없다는 것을 컴파일로 증명.
-// ② 행동 수준 — write 도구를 흘려도 fs mock 호출이 0회.
+// This file locks it in two layers:
+// ① type level — proving at compile time that the port the executor receives has no write method.
+// ② behaviour level — passing a write tool through calls the fs mock zero times.
 import { describe, expect, it, vi } from 'vitest';
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
@@ -88,8 +88,8 @@ function call(name: string, args: unknown = {}): NormalizedToolCall {
 
 describe('tool-executor — 쓰기 무접촉', () => {
   it('포트 타입에는 쓰기 메서드가 없다 (구조적 증명)', () => {
-    // 이 배열이 포트의 전부다. 여기 쓰기 이름이 들어오면 실행기가 디스크에
-    // 닿을 수 있게 되고, 그 순간 "동의 없는 쓰기 0" 이 규율로 강등된다.
+    // This array is the whole port. A write name entering here lets the executor reach
+    // the disk, and at that moment "zero writes without consent" is demoted to a discipline.
     const port = makePort();
     expect(Object.keys(port).sort()).toEqual(['docs', 'edges', 'nodes', 'readDocText']);
     for (const key of Object.keys(port)) {
@@ -110,7 +110,7 @@ describe('tool-executor — 쓰기 무접촉', () => {
       const result = await execute(call(name, { slug: 'capabilities/payment' }));
       expect(result.outcome).toBe('blocked-write');
       expect(result.writeIntent?.name).toBe(name);
-      // 화면 행이 "썼다" 고 말하면 안 된다.
+    // The screen's row must not say "wrote".
       expect(result.summary).toContain('아직 쓰지 않음');
     }
     expect(fsSpy).not.toHaveBeenCalled();
@@ -176,8 +176,8 @@ describe('tool-executor — 읽기', () => {
   });
 
   it('이름만 불린 개념은 "없음" 이 아니라 문서 신설 안내로 돌아온다', async () => {
-    // #691 계보 — 지도가 보여준 개념을 물었더니 "없음" 이 돌아오면 사람과
-    // 에이전트가 같은 온톨로지를 본다는 약속이 깨진다.
+    // Answering "not found" for a concept the map showed breaks the promise that a
+    // person and an agent see the same ontology.
     const execute = createToolExecutor(makePort());
     const result = await execute(call('get_concept', { slug: 'src/lib/ghost.ts' }));
     const payload = JSON.parse(result.content) as Record<string, unknown>;
@@ -194,7 +194,7 @@ describe('tool-executor — 읽기', () => {
   });
 
   it('list_kinds 는 문서 수와 이름만 불린 수를 같이 말한다', async () => {
-    // 필드 이름은 MCP `list_kinds` 와 같다 (계약 테스트가 대조).
+    // The field names match MCP's `list_kinds` (a contract test compares them).
     const execute = createToolExecutor(makePort());
     const payload = JSON.parse((await execute(call('list_kinds'))).content) as Record<
       string,
@@ -230,9 +230,9 @@ describe('tool-executor — 읽기', () => {
   });
 
   it('find_backlinks 는 지도 엣지가 아니라 frontmatter 원문에서 센다', async () => {
-    // 지도는 관계 타입의 부분집합만 엣지로 그린다(`describes` 는 안 그린다).
-    // 백링크를 엣지에서 세면 터미널의 에이전트가 보는 관계를 화면 안
-    // 에이전트만 못 보게 된다.
+    // The map draws only a subset of relation types as edges (`describes` is not drawn).
+    // Counting backlinks from edges would leave the in-app agent unable to see relations
+    // an agent in the terminal can.
     const execute = createToolExecutor(
       makePort({
         docs: [
@@ -264,7 +264,7 @@ describe('tool-executor — 읽기', () => {
   });
 
   it('결과가 상한을 넘으면 잘라내고 좁히라고 알린다', async () => {
-    // 통째로 실리면 사용자 비용(BYOK 요금)이 조용히 커진다.
+    // Carrying it whole would quietly grow the user's cost (BYOK billing).
     const many = Array.from({ length: 400 }, (_, index) => ({
       slug: `capabilities/c${index}`,
       path: `capabilities/c${index}.md`,

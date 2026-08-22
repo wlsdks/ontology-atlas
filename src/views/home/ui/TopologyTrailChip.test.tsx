@@ -89,7 +89,7 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     const rows = screen.getAllByTestId("topology-trail-row");
-    // 모델 순서(오래된 → 최근)를 렌더에서만 뒤집는다.
+    // The model order (oldest → newest) is reversed in the render only.
     expect(rows.map((r) => r.textContent)).toEqual(["El Y", "Cap X", "Core"]);
   });
 
@@ -111,14 +111,14 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
   it("현재 위치는 인디고 점으로 표시(kind 글리프 아님)", () => {
     renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
-    // 방문 3개 중 현재(element:y) 하나만 인디고 점.
+    // Of the three visits only the current one gets the indigo dot.
     expect(screen.getAllByTestId("topology-trail-current-dot")).toHaveLength(1);
   });
 
   it("행 클릭 → 그 노드 포커스", () => {
     const props = renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
-    // 최신순이므로 첫 행 = 가장 최근 방문.
+    // Newest-first, so the top row is the most recent visit.
     fireEvent.click(screen.getAllByTestId("topology-trail-row")[0]);
     expect(props.onFocusEntry).toHaveBeenCalledWith("element:y");
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -174,7 +174,7 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
       renderChip({ onHoverEntry });
       fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
       const rows = screen.getAllByTestId("topology-trail-row");
-      // 최신순이라 2번째 행 = "1걸음 전".
+      // Newest-first, so the second row is one step back.
       fireEvent.mouseEnter(rows[1].parentElement as HTMLElement);
       expect(onHoverEntry).toHaveBeenLastCalledWith("capability:x");
       fireEvent.mouseLeave(rows[1].parentElement as HTMLElement);
@@ -303,7 +303,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     );
     expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
     expect(screen.queryByTestId("topology-trail-past-clear-all")).toBeNull();
-    // 상한 고지는 빈 상태에서도 계약을 유지한다.
+    // The cap notice holds its contract even in the empty state.
     expect(screen.getByTestId("topology-trail-chip-popover")).toHaveTextContent("최근 10개까지");
   });
 
@@ -312,7 +312,8 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     openPast();
     fireEvent.click(screen.getAllByTestId("topology-trail-past-replay")[1]);
     expect(props.onReplayPastWalk).toHaveBeenCalledWith("w2");
-    // 방금 편 길은 1층에 있다 — 다시 펴 놓고 2층에 남으면 결과가 안 보인다.
+    // The replayed trail lives on level 1 — staying on level 2 after replaying
+    // would hide the result.
     expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
     expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
   });
@@ -342,7 +343,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     const row = screen.getByTestId("topology-trail-past-row");
     expect(row).toHaveAttribute("data-replayable", "false");
     expect(screen.queryByTestId("topology-trail-past-replay")).toBeNull();
-    // 남은 컨트롤은 ✕ 하나뿐.
+    // Only the ✕ is left.
     expect(row.querySelectorAll("button")).toHaveLength(1);
     expect(props.onReplayPastWalk).not.toHaveBeenCalled();
   });
@@ -358,7 +359,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(onHoverEntry).toHaveBeenLastCalledWith("element:y");
     fireEvent.click(screen.getByTestId("topology-trail-past-link"));
     expect(onHoverEntry).toHaveBeenLastCalledWith(null);
-    // 층을 옮겨도 팝오버는 열려 있으므로 렌즈는 계속 on.
+    // Switching levels keeps the popover open, so the lens stays on.
     expect(onLensChange).toHaveBeenLastCalledWith(true);
     fireEvent.click(screen.getByTestId("topology-trail-past-back"));
     expect(onHoverEntry).toHaveBeenLastCalledWith(null);

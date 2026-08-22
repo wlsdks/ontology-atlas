@@ -1,12 +1,14 @@
 #!/usr/bin/env node
-// 깨진 링크 검사 — 이 저장소에 없던 그물.
+// Broken-link check.
 //
-// 오픈소스가 실제로 CI 에 거는 문서 검사는 둘뿐이다: 싸고 넓은 그물(린트 ·
-// 포매팅 · **깨진 링크**)과 좁고 정확한 창(생성 후 diff). 우리에겐 후자가
-// `scripts/build-docs-surface.mjs` 로 생겼고, 전자의 깨진-링크 몫이 이것이다.
+// Open-source projects put exactly two kinds of doc check in CI: a cheap wide net
+// (lint, formatting, **broken links**) and a narrow precise one (regenerate and
+// diff). We already have the latter in `scripts/build-docs-surface.mjs`; this is
+// the broken-link half of the former.
 //
-// 외부 URL 은 기본에서 제외한다 — 네트워크에 의존하는 검사는 남의 서버가
-// 죽었을 때 우리 게이트가 빨개진다. `--external` 로 따로 돌릴 수 있다.
+// External URLs are excluded by default — a network-dependent check turns our
+// gate red when somebody else's server is down. Run them separately with
+// `--external`.
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -23,7 +25,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-// 생성물 사본(`public/docs-vault`)과 빌드 출력은 원본을 고치면 따라온다.
+// Generated copies (`public/docs-vault`) and build output follow the source.
 const SKIP_DIRS = new Set([
   'node_modules',
   '.git',
@@ -37,20 +39,20 @@ const SKIP_DIRS = new Set([
   'src-tauri',
   'public',
   /**
-   * **워크트리는 남의 체크아웃이다** (2026-08-01).
+   * **A worktree is somebody else's checkout** (2026-08-01).
    *
-   * `.claude` 는 `KEEP_DOT_DIRS` 라 안으로 걸어 들어가는데, 이 저장소는
-   * `.claude/worktrees/<브랜치>` 에 워크트리를 **상시** 둔다(`CLAUDE.md` 가
-   * 그렇게 쓰라고 적어 뒀다). 그 안에는 저장소 전체 사본이 들어 있으므로
-   * 검사가 문서를 두 번 세고, 그 사본의 인용을 **이쪽 저장소 루트 기준으로**
-   * 풀어서 실재하는 경로를 "깨졌다" 고 보고했다.
+   * `.claude` is in `KEEP_DOT_DIRS` so the walk descends into it, and this
+   * repository **always** keeps worktrees at `.claude/worktrees/<branch>`
+   * (`CLAUDE.md` says to work that way). Each contains a full copy of the
+   * repository, so the check counted every document twice and resolved that copy's
+   * citations **against this repository's root**, reporting real paths as broken.
    *
-   * 결과는 오늘 두 번 본 것과 같은 부류다 — **코드가 아니라 게이트가 틀린 채로
-   * 빨개진다.** 워크트리를 하나라도 두면 `docs:links` 가 통째로 못 쓰게 되고,
-   * 그러면 사람은 게이트를 끄거나 무시하는 법을 배운다.
+   * The result is the familiar failure: **the gate, not the code, is wrong and
+   * red.** With even one worktree present `docs:links` becomes unusable, and then
+   * people learn to switch the gate off or ignore it.
    *
-   * 이름 기준이라 어디에 있든 `worktrees/` 는 건너뛴다 — 워크트리 안의 문서는
-   * 그 브랜치가 자기 CI 에서 검사한다.
+   * The match is by name, so `worktrees/` is skipped wherever it appears — documents
+   * inside a worktree are checked by that branch's own CI.
    */
   'worktrees',
 ]);
@@ -100,13 +102,13 @@ function exists(target) {
 }
 
 /**
- * 루트 절대 링크(`/guide/cli`)는 파일 경로가 아니라 **문서함의 슬러그**다 —
- * `/docs` 가 `docs/**.md` 를 슬러그로 렌더한다. 그래서 `docs/<slug>.md` 를
- * 먼저 보고, 그다음에야 저장소 경로로 본다.
+ * A root-absolute link (`/guide/cli`) is a **docs slug**, not a file path —
+ * `/docs` renders `docs/**.md` by slug. So `docs/<slug>.md` is tried first and
+ * only then the repository path.
  */
 export function resolveLinkTarget(fromFile, target, root = ROOT) {
   const withoutAnchor = target.split('#')[0];
-  if (!withoutAnchor) return null; // 같은 문서 안 앵커
+  if (!withoutAnchor) return null; // An anchor within the same document
   let decoded;
   try {
     decoded = decodeURIComponent(withoutAnchor);
@@ -143,8 +145,9 @@ export function checkFile(file, { root = ROOT } = {}) {
 
   if (!isHistoricalDoc(relative)) {
     for (const ref of collectProseDocRefs(markdown)) {
-      // 유령 디렉터리 인용은 실재 여부를 묻지 않는다 — 작업자의 컴퓨터에만 있는
-      // 자리라, exists() 로 판정하면 로컬만 초록인 게이트가 된다.
+      // Phantom-directory citations are not tested for existence — those paths exist
+      // only on the author's machine, so an exists() check would make a gate that is
+      // green locally and red everywhere else.
       if (ref.ghost) {
         problems.push({ file: relative, line: ref.line, target: ref.target, kind: 'cited path (저장소에 없는 자리)' });
         continue;

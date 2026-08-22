@@ -1,21 +1,20 @@
-// 처방 id 에는 **빠짐없이** 할 수 있는 말이 붙어 있어야 한다.
+// **Every** remedy id must carry a sentence the reader can act on.
 //
-// ## 왜 (2026-08-17, 내가 만든 구멍)
-//
-// 2026-08-17 (23) 에서 「진단만 주고 처방을 안 준다」를 고쳤는데, **그때 내가
-// 본 상태만** 표에 넣었다. 한 칸 더 올라가자마자 이렇게 나왔다:
+// Why (2026-08-17, a hole of my own making): 2026-08-17 (23) fixed "gives a
+// diagnosis but no remedy" — and put **only the states I had seen** into the
+// table. One rung up, this came out:
 //
 //   … needs_evidence (competency_question_incomplete).
 //   Next: resolve_competency_question.
 //
-// 다시 id 다. 그리고 반대 방향으로도 새고 있었다 — 표에 `repair_source_receipt`
-// 라는 **존재하지 않는 id** 가 들어 있었다(내가 지어낸 것). 죽은 칸은 안 걸리고
-// 살아 있는 척한다.
+// An id again. And it leaked the other way too: the table held
+// `repair_source_receipt`, an id that **does not exist** (I invented it). A dead
+// row is never caught and pretends to be alive.
 //
-// > **자기가 마주친 경우만 채운 표는 구멍이 있는 표다.**
+// > **A table filled in only from the cases you happened to hit is a table with holes.**
 //
-// 그래서 짝을 기계가 맞춘다: 소스가 낼 수 있는 처방 전부에 문장이 있고,
-// 문장 전부가 실재하는 처방을 가리킨다.
+// So the pairing is machine-checked: every remedy the source can emit has a
+// sentence, and every sentence names a remedy that exists.
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -26,11 +25,11 @@ import { test } from 'node:test';
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * 처방을 만들어 내는 모듈들.
+ * The modules that produce remedies.
  *
- * 두 파일이 **같은 목록을 각각 선언**하고 있고(`ACTION_IDS` ·
- * `SOURCE_ACTION_IDS`), 평가기는 그것과 별개로 즉석에서 낸다. 그래서 한 곳만
- * 읽으면 못 본다 — 전부 훑고 합집합을 쓴다.
+ * Two files **each declare the same list** (`ACTION_IDS`, `SOURCE_ACTION_IDS`) and
+ * the evaluator emits its own on the fly, so reading one place misses some. Scan
+ * all of them and take the union.
  */
 const REMEDY_SOURCES = [
   'meaning-assessment.mjs',
@@ -42,20 +41,20 @@ const REMEDY_SOURCES = [
   'project-source-mint.mjs',
 ];
 
-/** 소스에서 「이 처방을 낸다」고 적힌 자리를 전부 긁는다. */
+/** Scrapes every place in the source that says "emit this remedy". */
 function remedyIdsInSource() {
   const found = new Set();
   for (const file of REMEDY_SOURCES) {
     const text = readFileSync(join(HERE, file), 'utf8');
-    // `{ id: 'x' }` · `{ id: 'x', target: … }` — 뒤에 무엇이 오든 받는다.
+    // `{ id: 'x' }` and `{ id: 'x', target: … }` — accept whatever follows.
     for (const m of text.matchAll(/\{\s*id:\s*['"]([a-z_]+)['"]\s*[,}]/g)) found.add(m[1]);
-    // 삼항으로 갈리는 자리: `{ id: cond ? 'a' : 'b' }`
+    // Ternary branches: `{ id: cond ? 'a' : 'b' }`
     for (const m of text.matchAll(/\{\s*id:\s*[^}]*\?\s*['"]([a-z_]+)['"]\s*:\s*['"]([a-z_]+)['"]/g)) {
       found.add(m[1]);
       found.add(m[2]);
     }
-    // 선언된 목록도 정본이다 — 2026-08-17 부터 한 곳
-    // (`project-source-vocabulary.mjs`)에서만 선언한다.
+    // A declared list is authoritative too — since 2026-08-17 it is declared in
+    // one place only (`project-source-vocabulary.mjs`).
     for (const block of text.matchAll(/ACTION_IDS = Object\.freeze\(\s*new Set\(\[([^\]]*)\]|(?:SOURCE_)?ACTION_IDS = new Set\(\[([^\]]*)\]/g)) {
       for (const m of (block[1] ?? block[2] ?? '').matchAll(/'([a-z_]+)'/g)) found.add(m[1]);
     }
@@ -63,7 +62,7 @@ function remedyIdsInSource() {
   return found;
 }
 
-/** 표에 적힌 열쇠들. `index.js` 를 실행하지 않고 글자로 읽는다(서버가 뜨면 안 된다). */
+/** The keys written in the table. Read as text rather than by running `index.js` (the server must not start). */
 function hintKeys() {
   const text = readFileSync(join(HERE, 'index.js'), 'utf8');
   const start = text.indexOf('const MEANING_NEXT_ACTION_HINTS = Object.freeze({');
@@ -74,8 +73,8 @@ function hintKeys() {
 }
 
 /**
- * 처방이 아닌 것들 — 이 파일들의 `{ id: … }` 는 **간극**(무엇이 잘못됐나)에도
- * 쓰인다. 간극에는 문장이 필요 없다(메시지가 이미 그 이름을 그대로 적는다).
+ * The ones that are not remedies — `{ id: … }` in these files also marks a **gap**
+ * (what is wrong). A gap needs no sentence: the message already states its name.
  */
 const GAP_IDS = new Set([
   'assessment_input_invalid',
@@ -95,7 +94,7 @@ const GAP_IDS = new Set([
   'evidence',
   'impact',
   'scope',
-  // 소스 쪽 간극들 — 「무엇이 잘못됐나」이지 「무엇을 하라」가 아니다.
+  // Gaps on the source side — "what is wrong", not "what to do".
   'source_role_evidence_missing',
   'source_inventory_truncated',
   'declared_source_path_missing',
@@ -134,9 +133,10 @@ test('문장이 실제로 뭔가를 말한다 — 짧은 껍데기는 id 와 다
   const text = readFileSync(join(HERE, 'index.js'), 'utf8');
   const start = text.indexOf('const MEANING_NEXT_ACTION_HINTS = Object.freeze({');
   const block = text.slice(start, text.indexOf('});', start));
-  // ⚠️ 첫 따옴표 덩어리만 재면 안 된다 — 값은 여러 줄로 이어 붙고, 게다가
-  // 이스케이프된 따옴표(`project\'s`)에서 잘린다. 실제로 그렇게 재서 멀쩡한
-  // 문장을 「너무 짧다」로 잡았다. **열쇠에서 다음 열쇠까지**를 통째로 본다.
+  // ⚠️ Do not measure only the first quoted chunk — values are joined across
+  // several lines, and it also cuts at an escaped quote (`project\'s`). Measuring
+  // that way flagged a perfectly good sentence as "too short". Take **the whole
+  // span from one key to the next**.
   const lines = block.split('\n');
   const keyAt = lines
     .map((line, i) => (/^ {2}[a-z_]+:/.test(line) ? i : -1))
@@ -147,7 +147,7 @@ test('문장이 실제로 뭔가를 말한다 — 짧은 껍데기는 id 와 다
     const to = n + 1 < keyAt.length ? keyAt[n + 1] : lines.length;
     const key = /^ {2}([a-z_]+):/.exec(lines[from])[1];
     const value = lines.slice(from, to).join(' ').slice(key.length + 3);
-    // 주석 줄은 값이 아니다.
+    // A comment line is not a value.
     const prose = value.replace(/\/\/[^\n]*/g, '').replace(/[^A-Za-z0-9 .,`'()/-]/g, ' ');
     assert.ok(
       prose.trim().length > 40,

@@ -19,17 +19,19 @@ interface Props {
   onNavigate: (slug: string) => void;
   hideHeading?: boolean;
   /**
-   * 'list' (기본) — 옵시디언식 세로 리스트, 항목별 컨텍스트 expand/collapse.
-   * 'strip' — pane 하단 앵커 스트립 (docs-vault-final spec). 가로 chip,
-   * 클릭 시 바로 navigate (컨텍스트 expand 없음 — 한눈에 훑는 용도).
+   * 'list' (default) — an Obsidian-style vertical list where each item expands and
+   * collapses its context.
+   * 'strip' — an anchor strip at the pane's bottom (docs-vault-final spec).
+   * Horizontal chips that navigate on click, with no context expansion — for
+   * scanning at a glance.
    */
   layout?: 'list' | 'strip';
 }
 
 /**
- * 역참조 패널 — 이 문서를 참조한 다른 문서들을 문서별로 묶어서 보여준다.
- * 각 항목은 토글해서 해당 문서 내 링크 주변 컨텍스트 (120자) 를 볼 수 있다.
- * 옵시디언의 "Linked mentions" 와 같은 경험.
+ * The backlinks panel — other documents that reference this one, grouped by
+ * document. Each item toggles to show 120 characters of context around the link in
+ * that document. The same experience as Obsidian's "Linked mentions".
  */
 export function DocsVaultBacklinks({
   entries,
@@ -150,9 +152,9 @@ function BacklinkItem({
   );
 }
 
-// 빌드 스크립트가 **[linkText]** 로 감싼 부분을 인디고 강조 span 으로 치환.
-// 나머지는 전부 escape 해서 xss 방어. "context" 는 이미 raw 마크다운 이라
-// 일부 기호 (* ` >) 가 남아있을 수 있지만 textContent 로만 렌더한다.
+// Replace what the build script wrapped in **[linkText]** with an indigo emphasis
+// span, escaping everything else against XSS. "context" is still raw markdown, so a
+// few symbols (* ` >) may remain, but it is rendered through textContent only.
 function formatContext(raw: string): string {
   const escaped = raw
     .replace(/&/g, '&amp;')

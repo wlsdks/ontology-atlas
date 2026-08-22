@@ -47,12 +47,13 @@ test("installed app verification reuses the LaunchServices app content gate", ()
 });
 
 /**
- * v1.0.0 draft 가 설치 검증을 통과하고도 사용자에게 "손상되었습니다" 로 보였던
- * 회귀의 게이트.
+ * The gate for the regression where the v1.0.0 draft passed install verification
+ * and still showed users "is damaged".
  *
- * 검증이 앱을 **실행**은 했지만 복사본에 quarantine 이 없어 Gatekeeper 평가가
- * 아예 일어나지 않았다. 서명 구조가 깨진 번들도 조용히 실행됐다. 이 두 케이스는
- * 실제 `codesign` 을 부르므로 macOS 에서만 의미가 있다.
+ * The verification did **launch** the app, but the copy had no quarantine attribute
+ * so no Gatekeeper evaluation happened at all, and a bundle with a broken signature
+ * structure ran quietly. These two cases invoke the real `codesign`, so they only
+ * mean anything on macOS.
  */
 const darwin = process.platform === "darwin";
 
@@ -66,7 +67,7 @@ function makeBundle(dir, { sign }) {
 <key>CFBundleIdentifier</key><string>dev.jinan.probe</string>
 </dict></plist>
 `);
-  // 실제 Mach-O 가 있어야 codesign 이 번들로 취급한다.
+  // codesign only treats it as a bundle when a real Mach-O is present.
   execFileSync("cp", ["/bin/echo", join(app, "Contents", "MacOS", "probe")]);
   if (sign) execFileSync("codesign", ["--force", "--deep", "--sign", "-", app]);
   return app;
@@ -85,10 +86,10 @@ test("bundle signature gate rejects a bundle whose signature is structurally bro
   const dir = mkdtempSync(join(tmpdir(), "oa-sig-bad-"));
   try {
     const app = makeBundle(dir, { sign: true });
-    // Tauri 가 낸 번들의 실제 형태를 재현한다: 바이너리는 서명돼 있는데
-    // 번들의 _CodeSignature 가 없다.
+    // Reproduces the real shape of a Tauri-emitted bundle: the binary is signed but
+    // the bundle has no _CodeSignature.
     rmSync(join(app, "Contents", "_CodeSignature"), { recursive: true, force: true });
-    // 사전 조건 확인 — 이 상태가 정말 codesign 에게 거절당하는지 먼저 본다.
+    // Precondition — check that this state really is rejected by codesign.
     const probe = spawnSync("codesign", ["--verify", "--deep", "--strict", app], { encoding: "utf8" });
     assert.notEqual(probe.status, 0, "fixture is supposed to be a broken bundle");
 

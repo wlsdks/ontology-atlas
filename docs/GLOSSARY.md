@@ -73,9 +73,9 @@ These are the words that were drifting. The **Use** column is binding.
 |---|---|---|---|
 | **gate** | check, guard, checker, validator | An automated check that **fails the build** on a violation | "Quality gate" is established (SonarQube, GitLab). "Check" is too weak — a gate blocks |
 | **guard clause** | gate | An early return in code (`if (!x) return`) | Standard refactoring vocabulary (Fowler). English already separates these two; keep it that way |
-| **ramp** | scale, ladder, step list | A fixed list of allowed design values — type sizes, radii, elevations | "Color ramp" and "elevation ramp" are established design-system usage. We avoid "scale" because that word is taken — next row |
+| **ramp** | scale, ladder, step list | A fixed list of allowed design values — type sizes, radii, elevations | "Color ramp" and "elevation ramp" are established usage, and GitLab's design system says "type ramp". ⚠️ **"type scale" is the more common industry term** (GOV.UK, NSW) — we deviate on purpose, because `camera.scale` already owns "scale" in this codebase and a comment near map code would read ambiguously |
 | **zoom**, **zoom factor** | scale (in prose) | Camera magnification on the map | The identifier `camera.scale` cannot change, but prose must say "zoom" so it never reads as a value ramp |
-| **ratchet** | — | A check that lets a count fall but never rise | Established for debt paydown in large codebases |
+| **ratchet** | — | A check that lets a count fall but never rise | Established term with exactly this meaning — a recorded baseline of violations that CI allows to shrink but never grow |
 | **probe** | — | A defect inserted on purpose to prove a gate turns red | `.claude/skills/gate-probe/SKILL.md` |
 | **inventory** | census | The full count of existing violations, taken **before** switching a rule on | "Census" reads as demography to English speakers; engineers say "inventory" |
 | **doc-block** | — | The block comment above a file or export | Standard |
@@ -171,6 +171,29 @@ Approved by the owner, 2026-08-22.
 > Delete the comment. If the next person could now repeat the mistake it
 > prevented, keep it.
 
+### How much to cut
+
+A doc-block should not be longer than the code it documents — **unless it carries
+measurements, an owner decision, or a rejected alternative.** Those earn any
+length. Narrative does not.
+
+Measured 2026-08-22, before this pass: 1,248 files carried 37,230 lines of Korean
+comment out of 57,666 comment lines total. `src/shared/ui/control-class.ts` was
+**55% comment**; `use-topology-loop.ts` carried 1,381 comment lines.
+
+What to compress, in order:
+
+1. **Section headings in short files.** Three `##` headings above a 40-line file
+   is scaffolding for an essay nobody is reading. Fold them into one bold lead.
+2. **Connective narrative** — "그래서 … 그런데 … 그러니" chains that walk the
+   reader to a conclusion the next sentence states outright.
+3. **Restatement.** The same point made once in the summary and again in the body.
+4. **Dead history** — a rationale for a rule that no longer exists, a fact about a
+   deleted file. Delete, do not translate.
+
+What never shrinks: numbers, dates, owner quotes, "why not the obvious approach",
+and the reason a gate is shaped the way it is.
+
 ### Long rationale moves into a document
 
 When a doc-block outgrows the code it sits on, move the prose into a markdown
@@ -192,8 +215,18 @@ Two rules keep this safe:
 
 ### Quotes stay in Korean
 
-Owner quotes are evidence, and translating them loses what makes them evidence.
-Keep the Korean and add a short English gloss:
+Three kinds of Korean survive translation, all for the same reason: the Korean
+**is** the thing being pointed at, so replacing it breaks the pointer.
+
+1. **Owner quotes** — evidence. Translating loses what makes it evidence.
+2. **Korean doc section titles in `「 」`** — those headings are still Korean, so
+   an English rendering no longer matches the heading it cites.
+3. **On-screen strings quoted as evidence.** Measured 2026-08-22: a pass rendered
+   `「이 폴더 맞나요?」` and `「코드 위치」` into English inside comments. Both are
+   live strings in `messages/ko.json`, so anyone grepping the screen text to find
+   the code behind it would no longer hit those comments. Restored.
+
+In every case: keep the Korean, add a short English gloss.
 
 ```ts
 // Owner, 2026-08-18: "처음 로딩될때 … 너무 아래임.. 딱 중앙이었음해"

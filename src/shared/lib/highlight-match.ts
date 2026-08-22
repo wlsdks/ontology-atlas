@@ -1,23 +1,22 @@
 /**
- * 검색어 매치 하이라이트용 — 텍스트를 매치/비매치 세그먼트로 분절한다.
- * 순수 데이터 변환(JSX 없음)이라 단위 테스트가 쉽고, 렌더 측은 세그먼트를
- * `<mark>` 등으로 그리기만 하면 된다.
+ * Splits text into matched / unmatched segments for search highlighting. Pure data, no
+ * JSX, so it unit-tests easily and the renderer only has to wrap segments in `<mark>`.
  *
- * - 대소문자 무시, 모든 occurrence 매치.
- * - query 가 비었거나(trim 후) 매치가 없으면 전체를 단일 비매치 세그먼트로.
- * - 정규식 특수문자는 이스케이프해 리터럴처럼 안전하게 매칭한다.
- * - 멀티 토큰(공백 포함) 쿼리는 토큰 사이 공백을 "임의 개수의 공백류
- *   문자(스페이스/개행/탭)"로 유연하게 매치한다 — 문서 본문은 ~80자에서
- *   줄바꿈되므로(AGENTS.md 컨벤션), 사용자가 타이핑한 구절이 소스에서는
- *   줄바꿈을 사이에 두고 있을 수 있다. 리터럴 substring 매칭만 쓰면 이
- *   경우 0건이 나 하이라이트/스크롤이 무산된다(P1 검수 착지 결함).
- * - 구절 전체가 어디에도 연속으로 없으면(스캐터드 AND 매치) 개별 토큰
- *   OR 매치로 폴백한다 — `widgets/docs-vault/lib/search.ts` 의 `searchDocs`
- *   는 멀티 토큰 쿼리를 "각 토큰이 문서 어딘가에 있으면 히트"로 인정하고
- *   구절이 안 이어지면 `bodyTierScore`(최하위 티어)로만 채점할 뿐, 구절
- *   존재를 요구하지 않는다. 하이라이트가 구절 전체 매치만 인정하면
- *   "검색은 히트라는데 뷰어엔 mark 가 0개"인 착지 결함이 난다(최종 라이브
- *   스윕 P2 — "관계 타입" 검색 → CLI Developer Entry 본문 매치 클릭 재현).
+ * - Case-insensitive; every occurrence matches.
+ * - An empty query (after trim), or no match, yields the whole text as one unmatched
+ *   segment.
+ * - Regex metacharacters are escaped so tokens match literally.
+ * - **Whitespace between tokens matches any run of whitespace** (spaces, newlines, tabs).
+ *   Document bodies wrap at ~80 columns, so a phrase the user typed on one line may be
+ *   split across a newline in the source. Literal substring matching finds zero matches
+ *   there, and both the highlight and the scroll-to fail.
+ * - **A scattered phrase falls back to per-token OR matching.** `searchDocs` in
+ *   `widgets/docs-vault/lib/search.ts` counts a multi-token query as a hit when each token
+ *   appears anywhere in the document — a non-contiguous phrase just scores at
+ *   `bodyTierScore`, the lowest tier; the phrase is never required. If highlighting only
+ *   accepted a contiguous phrase, search would report a hit while the viewer showed zero
+ *   marks. Reproduced live by searching "관계 타입" and opening the CLI Developer Entry
+ *   body match.
  */
 export interface HighlightSegment {
   text: string;
@@ -29,14 +28,14 @@ function escapeRegExpToken(token: string): string {
 }
 
 /**
- * 쿼리를 공백-유연 정규식으로 컴파일한다. 토큰 사이 공백은 `\s+` 로 이어
- * 붙여 원문의 임의 공백류(스페이스/개행/탭 연속)와 매치한다. 각 토큰
- * 자체는 이스케이프된 리터럴이라 특수문자 안전성은 그대로 유지.
- * 쿼리가 비어 있으면 null.
+ * Compiles the query into a whitespace-tolerant regex: tokens are joined with `\s+` so any
+ * run of whitespace in the source matches. Each token is an escaped literal, so
+ * metacharacters stay safe. Returns null for an empty query.
  *
- * 랭킹(`search.ts` bodyPhraseScore/bodyTierScore 분기)이 이 함수로 "구절이
- * 실제로 이어지는지"를 판정하므로, 동작을 바꾸면 랭킹 계약도 함께 바뀐다 —
- * 스캐터드-토큰 폴백은 여기가 아니라 `splitHighlightSegments` 전용으로 둔다.
+ * Ranking (`search.ts`'s bodyPhraseScore / bodyTierScore split) uses this function to
+ * decide whether the phrase is actually contiguous, so changing its behaviour changes the
+ * ranking contract too. That is why the scattered-token fallback lives in
+ * `splitHighlightSegments` and not here.
  */
 export function buildPhraseMatcher(
   query: string,
@@ -49,11 +48,11 @@ export function buildPhraseMatcher(
 }
 
 /**
- * 멀티 토큰 쿼리의 스캐터드 AND 매치(구절이 어디에도 연속으로 없음) 전용
- * 폴백 matcher — 각 토큰을 리터럴 alternation 으로 묶어 OR 매치한다. 짧은
- * 토큰이 긴 토큰의 부분 문자열일 때 짧은 쪽이 먼저 먹어 긴 쪽을 가리지
- * 않도록 길이 내림차순으로 정렬한다. 단일 토큰(길이 1)이거나 토큰이 없으면
- * null — 그 경우는 `buildPhraseMatcher` 결과와 동일해 폴백 의미가 없다.
+ * Fallback matcher for a multi-token query whose phrase is nowhere contiguous: the tokens
+ * become a literal alternation matched with OR. Sorted longest-first so a short token that
+ * is a substring of a longer one cannot consume it first. Returns null for fewer than two
+ * tokens, where the result would equal `buildPhraseMatcher` and the fallback would be
+ * pointless.
  */
 function buildScatteredTokenMatcher(
   tokens: string[],
@@ -64,8 +63,8 @@ function buildScatteredTokenMatcher(
   return new RegExp(escaped.join('|'), flags);
 }
 
-/** 주어진 정규식으로 text 를 매치/비매치 세그먼트로 분절. 매치가 하나도
- *  없으면 null(폴백 판단은 호출부 책임). */
+/** Splits text with the given regex. Returns null when nothing matched — deciding whether
+ *  to fall back is the caller's job. */
 function scanSegments(text: string, re: RegExp): HighlightSegment[] | null {
   const segments: HighlightSegment[] = [];
   let cursor = 0;
@@ -79,8 +78,8 @@ function scanSegments(text: string, re: RegExp): HighlightSegment[] | null {
     }
     segments.push({ text: match[0], match: true });
     cursor = match.index + match[0].length;
-    // 이론상 토큰이 모두 non-empty 라 zero-length 매치는 없지만, 방어적으로
-    // 무한루프를 막는다.
+    // Tokens are all non-empty, so a zero-length match should be impossible; guard the
+    // infinite loop anyway.
     if (match[0].length === 0) re.lastIndex += 1;
   }
   if (!matchedAny) return null;
@@ -100,8 +99,8 @@ export function splitHighlightSegments(
   const phraseSegments = scanSegments(text, re);
   if (phraseSegments) return phraseSegments;
 
-  // 구절 전체 매치가 없으면 스캐터드 토큰 폴백 — search.ts 의 AND 매치
-  // 계약과 하이라이트를 일치시켜 착지(mark + scrollIntoView)를 보장한다.
+  // No contiguous phrase: fall back to scattered tokens, so highlighting agrees with
+  // search.ts's AND-match contract and the mark + scrollIntoView still land.
   const tokens = query.trim().split(/\s+/).filter(Boolean);
   const tokenRe = buildScatteredTokenMatcher(tokens);
   if (!tokenRe) return [{ text, match: false }];

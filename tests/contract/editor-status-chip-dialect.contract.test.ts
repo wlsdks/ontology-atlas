@@ -2,57 +2,56 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * 편집기 상단 줄의 **상태 칩 셋은 한 규격이다** (2026-08-08 실측).
+ * The editor's top row: **the status chips share one spec** (measured
+ * 2026-08-08).
  *
- * ## 무엇이 있었나
+ * **What was there.** Measuring the fonts of the chips standing side by side in
+ * `/ko/docs` edit mode (1440×900, local vault) found two specs mixed into one
+ * row:
  *
- * `/ko/docs` 편집 모드 상단 줄(1440×900, 로컬 볼트)에서 나란히 선 칩 셋의
- * 폰트를 실측했더니 한 줄 안에 두 규격이 섞여 있었다:
- *
- * | 칩 | 실측 |
+ * | Chip | Measured |
  * |---|---|
- * | 저장 상태 — 「변경 없음 · 디스크와 같음」 | **9.5px** |
- * | 「자동 백업 · 최종 저장」 | 11px |
- * | 「검증 · 되돌리기」 | 11px |
+ * | Save state — "변경 없음 · 디스크와 같음" | **9.5px** |
+ * | "자동 백업 · 최종 저장" | 11px |
+ * | "검증 · 되돌리기" | 11px |
  *
- * 부모 줄 자체가 `text-label`(11px) 인데 첫 칩만 `text-caption` 으로 한 단
- * 내려가 있었다. 2026-08-02 설정 시트에서 잡은 결함과 **같은 유형이고 원인도
- * 같다** — 아무도 "이 칩만 작게" 라고 정한 적이 없다. 값이 우연히 갈린 것이
- * 계속 남아 있었을 뿐이다.
+ * The parent row is `text-label` (11px), yet the first chip alone dropped a step
+ * to `text-caption`. **Same type and same cause** as the defect caught in the
+ * settings sheet on 2026-08-02 — nobody ever decided "this chip should be
+ * smaller"; a value happened to diverge and stayed.
  *
- * ## 이 게이트가 잠그는 성질
+ * **What this gate locks.** *Chips of the same kind standing in the same row use
+ * the same type step.* This row's spec is `text-label` (11px). By the ramp's own
+ * definition `text-caption` (9.5px) is the step for "micro labels, legends,
+ * timestamps" (`app/globals.css`), and the only thing in this row that qualifies
+ * is **the eyebrow** (`editorEyebrow` — "편집 · <slug>"). So this test does not
+ * ban `text-caption` outright but **permits it at the eyebrow only** — an outright
+ * ban blocks legitimate use, and unlimited permission returns to the state that
+ * created the defect.
  *
- * *같은 줄에 나란히 서는 같은 종류의 칩은 같은 타입 스텝을 쓴다.* 이 줄의
- * 규격은 `text-label`(11px) 이다. `text-caption`(9.5px) 은 램프 정의상
- * "마이크로 라벨·범례·타임스탬프" 의 단이고(`app/globals.css`), 이 줄에서
- * 그 자격이 있는 것은 **아이브로우 하나**(`editorEyebrow` — 「편집 · <slug>」)
- * 뿐이다. 그래서 이 시험은 `text-caption` 전면 금지가 아니라 **아이브로우
- * 한 곳만 허용**으로 잠근다 — 전면 금지는 정당한 쓰임까지 막고, 무제한
- * 허용은 애초에 이 결함을 만든 상태로 돌아간다.
+ * **Why lint cannot do this.** `text-caption` is a legitimate ramp step, so a
+ * value lint has nothing to catch. The violation is "was it used *here*", and
+ * deciding that requires knowing **what the other chips in the same file use** —
+ * beyond the reach of an AST selector that sees one node.
  *
- * ## lint 가 못 하는 이유
- *
- * `text-caption` 자체는 램프의 정당한 칸이라 값 lint 로는 잡을 것이 없다.
- * 위반은 "이 자리에 쓰였는가" 이고, 그 판정에는 **같은 파일 안 다른 칩들이
- * 무엇을 쓰는지**가 필요하다 — 한 노드만 보는 AST 셀렉터의 사정거리 밖이다.
- *
- * ## 사정거리 — 왜 파일 전체가 아니라 «칩» 인가
- *
- * 첫 판에서는 이 파일의 `text-caption` 을 전부 세었는데, 걸린 셋이 전부
- * **정당한 쓰임**이었다: 위키링크 자동완성 팝오버의 아이브로우 · 행마다 붙는
- * 슬러그 경로 · 바닥 힌트. 셋 다 램프 정의가 말하는 "마이크로 라벨·경로"다.
- * 그대로 뒀으면 멀쩡한 코드를 고치게 했을 것이다(`design-audit` 이 경고하는
- * 그 실패). 지키려는 성질은 «이 파일에 9.5px 이 없다» 가 아니라 «한 줄에
- * 나란히 선 칩끼리 규격이 갈리지 않는다» 이므로, 대상을 **칩 모양**
- * (`rounded-micro` + `tracking-caps-*` 를 함께 쓰는 상태 표시)으로 좁힌다.
+ * **Reach — why «chips» rather than the whole file.** The first version counted
+ * every `text-caption` in this file, and all three hits were **legitimate**: the
+ * wikilink autocomplete popover's eyebrow, the per-row slug path, and the footer
+ * hint. All three are the "micro label / path" the ramp definition describes.
+ * Left that way it would have made someone edit correct code (the failure
+ * `design-audit` warns about). The property being protected is not "this file
+ * contains no 9.5px" but "chips standing together in a row do not diverge in
+ * spec", so the target is narrowed to **the chip shape** — status indicators
+ * using `rounded-micro` together with `tracking-caps-*`.
  */
 
 const EDITOR = "src/widgets/docs-vault/ui/DocsVaultEditor.tsx";
 
 /**
- * 주석을 뺀 소스. 이 게이트가 세는 것은 **화면에 나가는 클래스**이지 그것을
- * 설명하는 문장이 아니다 — 안 빼면 규격을 문서화한 주석 자체가 위반으로
- * 잡혀서, 규격을 적을수록 게이트가 빨개지는 뒤집힌 유인이 생긴다.
+ * Source with comments removed. This gate counts **classes that reach the
+ * screen**, not sentences describing them — without stripping, a comment
+ * documenting the spec is itself caught as a violation, creating the inverted
+ * incentive that writing down the spec turns the gate red.
  */
 function sourceWithoutComments(): string {
   return readFileSync(EDITOR, "utf8")
@@ -61,7 +60,7 @@ function sourceWithoutComments(): string {
     .replace(/^\s*\/\/.*$/gm, "");
 }
 
-/** 상태 칩의 서명 — 이 둘을 함께 쓰는 클래스 문자열이 이 줄의 칩이다. */
+/** The status chip's signature — a class string using both of these is a chip in this row. */
 function statusChipClassStrings(source: string): string[] {
   return source
     .split("\n")
@@ -72,7 +71,7 @@ function statusChipClassStrings(source: string): string[] {
 describe("편집기 상단 줄 — 상태 칩의 타입 방언은 하나다", () => {
   it("상태 칩 어디에도 `text-caption`(9.5px) 이 없다", () => {
     const chips = statusChipClassStrings(sourceWithoutComments());
-    // 공회전 차단 — 칩을 하나도 못 찾으면 아래 «위반 0» 은 아무 뜻이 없다.
+    // Idling guard — if no chip is found, the "0 violations" below means nothing.
     expect(
       chips.length,
       "상태 칩을 하나도 못 찾았다 — 서명(rounded-micro + tracking-caps)이 낡았다",
@@ -89,7 +88,7 @@ describe("편집기 상단 줄 — 상태 칩의 타입 방언은 하나다", ()
 
   it("상태 칩 셋이 실제로 같은 스텝을 쓴다", () => {
     const source = sourceWithoutComments();
-    // 세 칩 각각을 자기 i18n 키로 찾아, 그 칩을 여는 span 의 클래스를 본다.
+    // Find each chip by its own i18n key and read the class on the span that opens it.
     const chipKeys = ["saveContractAriaLabel", "saveWorkflowAriaLabel"] as const;
     for (const key of chipKeys) {
       const idx = source.indexOf(key);
@@ -98,7 +97,7 @@ describe("편집기 상단 줄 — 상태 칩의 타입 방언은 하나다", ()
       const chip = source.slice(openTag, idx);
       expect(chip, `${key} 칩이 text-label 을 잃었다`).toContain("text-label");
     }
-    // 저장 상태 칩은 톤 분기 셋을 갖는다 — 셋 다 같은 스텝이어야 한다.
+    // The save-state chip has three tone branches — all three must use the same step.
     const toneBranches = source
       .split("\n")
       .filter((l) => l.includes("rounded-micro") && l.includes("tracking-caps-10"));
@@ -115,30 +114,35 @@ describe("편집기 상단 줄 — 상태 칩의 타입 방언은 하나다", ()
 });
 
 /**
- * 「미리보기」가 한 화면에 둘이던 것도 같은 검수에서 나왔다 (2026-08-08).
+ * Two "미리보기" (preview) labels on one screen came out of the same review
+ * (2026-08-08).
  *
- * 문서 헤더의 「미리보기 | 편집」 탭(= 이 문서를 읽을까 고칠까)과, 편집기 안의
- * split view 토글(= 고치면서 결과를 옆에 볼까)이 **세로로 52px 떨어져 같은
- * 라벨**이었다. 둘 다 정당한 기능이지만 이름이 같으면 사용자는 같은 것의
- * 중복으로 읽는다. 뒤의 것을 「나란히 보기」로 바꿨다.
+ * The document header's 「미리보기 | 편집」 tab (read this or edit it) and the
+ * editor's split-view toggle (see the result beside what I am editing) carried
+ * **the same label 52px apart vertically**. Both are legitimate features, but
+ * identical names read as a duplicate of one thing. The latter became
+ * 「나란히 보기」 (side by side).
  */
 /**
- * **이 파일 전체에서 `text-caption` 은 아이브로우 한 곳뿐이다** (2026-08-08 확장).
+ * **In this whole file, `text-caption` appears at the eyebrow only** (widened
+ * 2026-08-08).
  *
- * 위 시험은 «칩» 만 봤다(`rounded-micro` + `tracking-caps` 서명). 그 좁은
- * 사정거리가 같은 날 두 번 뚫렸다 — `@` 멘션 메뉴를 만들며 헤더 힌트 줄에
- * `text-caption` 을 넣었고, 칩이 아니므로 게이트가 침묵했다. **같은 결함을
- * 같은 파일에서 하루에 세 번 만든 것**이고, 그 반복이 「범위를 넓혀라」는
- * 신호다.
+ * The test above looked at «chips» alone (the `rounded-micro` + `tracking-caps`
+ * signature). That narrow reach was breached twice in one day — building the `@`
+ * mention menu put `text-caption` on the header hint row, and the gate stayed
+ * silent because it was not a chip. **The same defect was created three times in
+ * the same file in one day**, and that repetition is the signal to widen the
+ * scope.
  *
- * 넓힐 수 있게 된 근거: 종전에 이 규칙을 파일 전체로 걸지 못한 이유는 위키링크
- * 팝오버가 슬러그·바닥 힌트를 caption 으로 쓰고 있었기 때문인데, 그 팝오버가
- * `@` 멘션으로 바뀌며 전부 `text-label` 로 올라갔다. 지금 남은 정당한 caption
- * 은 **아이브로우 하나**다 — 램프 정의가 말하는 «마이크로 라벨» 그 자체.
+ * What made widening possible: the rule could not previously cover the whole file
+ * because the wikilink popover used caption for its slug and footer hints, and
+ * when that popover became the `@` mention menu they all moved up to
+ * `text-label`. The only legitimate caption left is **the eyebrow** — precisely
+ * the "micro label" the ramp definition describes.
  *
- * 그래서 판정을 뒤집는다: 칩만 금지가 아니라 **아이브로우만 허용**. 새 자리에
- * caption 이 필요하다고 판단되면 그때 이 목록을 늘리며 이유를 적는다 —
- * 조용히 늘어나는 것을 막는 것이 이 게이트의 일이다.
+ * So the verdict inverts: not "banned on chips" but **"permitted at the eyebrow
+ * only"**. If a new place genuinely needs caption, this list grows with the
+ * reason written down — stopping it growing quietly is this gate's job.
  */
 describe("편집기의 9.5px 은 아이브로우 한 곳뿐이다", () => {
   it("`text-caption` 을 쓰는 자리가 아이브로우 외에 없다", () => {
@@ -148,14 +152,14 @@ describe("편집기의 9.5px 은 아이브로우 한 곳뿐이다", () => {
       .map((line, index) => ({ line: line.trim(), no: index + 1 }))
       .filter(({ line }) => line.includes("text-caption"));
 
-    // 공회전 차단 — 아이브로우 자체가 사라지면 이 시험은 «위반 0» 을 영원히
-    // 보고한다. 최소 한 곳은 있어야 한다.
+    // Idling guard — if the eyebrow itself disappears, this test reports "0
+    // violations" forever. At least one occurrence must exist.
     expect(
       captionLines.length,
       "text-caption 이 한 곳도 없다 — 아이브로우가 사라졌거나 게이트가 낡았다",
     ).toBeGreaterThanOrEqual(1);
 
-    // 아이브로우는 자기 i18n 키를 바로 다음 줄에서 렌더한다 — 그 신호로 가른다.
+    // The eyebrow renders its own i18n key on the very next line — that is the signal used to separate it.
     const offenders = captionLines.filter(
       ({ no }) => !lines.slice(no - 1, no + 2).join(" ").includes("editorEyebrow"),
     );

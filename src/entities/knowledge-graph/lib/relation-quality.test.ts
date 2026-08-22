@@ -64,9 +64,9 @@ describe("summarizeAgentReadiness", () => {
     ).toEqual({ ready: 0, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 });
   });
 
-  // 이 셋이 ① 결함의 단위 게이트다: 검사 오류가 준비도에 **들어간다**는 것,
-  // 관계 쪽 `review` 는 **그대로 남는다**는 것(지도는 관계만 세므로), 그리고
-  // 오류가 0 이면 위험 값도 0 이라는 것(항상-빨강이 아님).
+  // These three are the unit gate for the readiness defect: that validation errors DO
+  // count toward blocked, that the relation-only `review` count stays as it was (the map
+  // counts relations only), and that zero errors gives zero risk — not permanently red.
   it("folds check errors into blocked without touching the relation-only review count", () => {
     expect(
       summarizeAgentReadiness({ strong: 6, supported: 0, weak: 0, review: 0 }, 5),

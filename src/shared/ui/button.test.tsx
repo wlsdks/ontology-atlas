@@ -13,7 +13,7 @@ describe('Button', () => {
   it('default variant=primary uses indigo-brand background', () => {
     render(<Button>x</Button>);
     const btn = screen.getByRole('button');
-    // 헌장 §11 — primary CTA 는 단일 인디고 brand 색만 사용
+    // Charter §11 — a primary CTA uses the single indigo brand colour only.
     expect(btn.className).toContain('color-indigo-brand');
   });
 
@@ -27,7 +27,7 @@ describe('Button', () => {
   it('variant=outline has subtle border + alpha bg', () => {
     render(<Button variant="outline">x</Button>);
     const btn = screen.getByRole('button');
-    // 헌장 §11 — outline 은 무채색 alpha 만
+    // Charter §11 — outline uses neutral alpha only.
     expect(btn.className).toContain('var(--color-overlay-3)');
     expect(btn.className).toContain('var(--color-overlay-1)');
   });
@@ -68,7 +68,7 @@ describe('Button', () => {
   it('motion-reduce variant disables transition + transform', () => {
     render(<Button>m</Button>);
     const btn = screen.getByRole('button');
-    // 헌장 §11 + a11y — prefers-reduced-motion 사용자 보호
+    // Charter §11 plus accessibility — protects prefers-reduced-motion users.
     expect(btn.className).toContain('motion-reduce:transition-none');
     expect(btn.className).toContain('motion-reduce:transform-none');
   });
@@ -81,7 +81,7 @@ describe('Button', () => {
   });
 
   it('exports buttonVariants for use as Link className', () => {
-    // Link/anchor 가 Button 모양 따라할 때 buttonVariants 함수 직접 호출.
+    // A link/anchor imitating a Button calls buttonVariants directly.
     const cls = buttonVariants({ variant: 'outline', size: 'sm' });
     expect(typeof cls).toBe('string');
     expect(cls).toContain('h-8');

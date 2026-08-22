@@ -31,16 +31,17 @@ import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 import { controlClass } from "@/shared/ui/control-class";
 
 /**
- * 「접어 둔 나머지」를 여는 **조용한 토글**의 완성 클래스.
+ * The finished class for the **quiet toggle** that opens "the rest, folded away".
  *
- * 이 탭에 두 자리(중복 나머지 · 수리 큐 나머지)가 있고, 같은 문법이
- * 「연결」 탭 영향 랭킹과 「신선도」 탭 근거 계층에도 있다 — 같은 종류의
- * 절단은 같게 보여야 하므로 값이 갈리면 안 된다. 모양·크기·색은 램프가
- * 내고(`row`/`sm`/`default` = 28px · text-label · 3차), 여기 남는 것은
- * 램프가 일부러 안 내는 **호버 잉크**와 이 자리의 **음수 마진**뿐이다.
+ * There are two of them in this tab (remaining duplicates, remaining repair queue), and
+ * the same grammar appears in the "connections" tab's impact ranking and the "freshness"
+ * tab's evidence layer — the same kind of truncation must look the same, so the values
+ * must not diverge. Shape, size, and colour come from the ramp (`row`/`sm`/`default` =
+ * 28px · text-label · tertiary); what remains here is the **hover ink** the ramp
+ * deliberately omits and this slot's **negative margin**.
  *
- * `-mx-2` 는 램프 인셋(`px-2`)과 짝이다 — 글자 x 좌표를 형제 행들과
- * 맞춘 채 히트 영역만 좌우로 넓힌다.
+ * `-mx-2` pairs with the ramp's inset (`px-2`) — it widens only the hit area sideways
+ * while keeping the text's x position aligned with the sibling rows.
  */
 const QUIET_REST_TOGGLE = controlClass({ hoverInk: 'strong', hoverSurface: 'lift',
   shape: "row",
@@ -49,13 +50,13 @@ const QUIET_REST_TOGGLE = controlClass({ hoverInk: 'strong', hoverSurface: 'lift
 });
 
 /**
- * 준비도 미터에서 **0 이 아닌 세그먼트가 가질 수 있는 최소 폭**(px).
+ * The **minimum width (px) a non-zero segment may have** in the readiness meter.
  *
- * 왜 필요한가: 세그먼트는 `flexGrow` 로만 나뉘는데, 그러면 「오류 1 · 준비
- * 200」 같은 비율에서 위험 세그먼트가 1px 미만이 되어 **0 과 구별되지 않는다**.
- * 계기가 «위험 없음»과 «위험이 아주 작음»을 같은 그림으로 그리면, 그건 계기가
- * 아니라 장식이다. 4px 은 2px 높이 막대에서 눈에 잡히는 가장 작은 조각이고,
- * 값이 0 일 때는 적용하지 않는다 — 0 은 정말로 없어야 한다.
+ * Segments are divided by `flexGrow` alone, so at a ratio like "1 error · 200 ready" the
+ * risk segment falls below 1px and becomes **indistinguishable from zero**. An instrument
+ * that draws «no risk» and «very little risk» as the same picture is decoration, not an
+ * instrument. 4px is the smallest piece visible in a 2px-tall bar, and it is not applied
+ * when the value is 0 — zero really must be absent.
  */
 const READINESS_MIN_SEGMENT_PX = 4;
 
@@ -67,28 +68,31 @@ function meterSegmentStyle(value: number, hasData: boolean) {
 }
 
 /**
- * 탭1 "할 일" (S5, 전략 verdict B 채택) — 인사이트의 기본 탭. "무엇이
- * 있나"(재고)가 아니라 "그래서 뭘 해야 하나"에 답한다:
+ * Tab 1, "to do" — the insights default tab. It answers "so what should I do?" rather
+ * than "what is here?" (inventory):
  *
- * 1. Agent readiness 계기 + 수리 큐 요약 — 관계 탭에서 이관 (행동 요소가
- *    재고 탭에 묻혀 있던 것이 "인사이트 부족" 체감의 원인).
- * 2. 행동 큐 — 방치된 허브(연결도×방치일) · 고아 · 승격 후보. 각 행에
- *    [지도에서 보기 · 빌더 열기 · 에이전트에게(행별 MCP 핸드오프 복사)].
+ * 1. The agent-readiness meter plus a repair-queue summary, moved here from the relations
+ *    tab — burying the actionable element inside an inventory tab was the cause of the
+ *    "not enough insight" feeling.
+ * 2. The action queue — neglected hubs (degree × days idle), orphans, promotion
+ *    candidates. Each row offers [view on the map · open the builder · hand to an agent
+ *    (copies a per-row MCP handoff)].
  *
- * 자동화 계약: 정밀 순위(maintenance_plan)는 client 재구현하지 않는다 —
- * 사람은 여기서 고르고, 실행은 행별 핸드오프로 에이전트에게 넘긴다.
+ * Automation contract: the precise ranking (`maintenance_plan`) is never reimplemented on
+ * the client — a person chooses here and execution is handed to an agent through the
+ * per-row handoff.
  */
 
 export interface DoNextTabLabels extends QueueRowActionLabels {
   agentReadinessTitle: string;
-  /** 준비도 밴드 제목 아래 평문 한 줄 — 전문용어(ready/preflight/review) 를 비전문가에게 풀어준다. 큐 힌트와 같은 슬롯 패턴. */
+  /** One plain-language line under the readiness band title, unpacking the jargon (ready/preflight/review) for a non-specialist. Same slot pattern as the queue hint. */
   agentReadinessHint?: string;
   agentReadinessReady: string;
   agentReadinessPreflight: string;
   agentReadinessReview: string;
-  /** 셋째 수치의 이름 — 「검토 필요」가 아니라 「막힘」. 관계와 문서를 함께 센다. */
+  /** The name of the third figure — "blocked", not "needs review". It counts relations and documents together. */
   agentReadinessBlocked: string;
-  /** 막힌 것의 내역 한 줄. 두 단위(관계·문서)를 합쳤으므로 반드시 함께 말한다. */
+  /** One line breaking down what is blocked. Two units are summed, so they must always be stated together. */
   agentReadinessBlockedBreakdown: (documents: number, relations: number) => string;
   repairQueueTitle: string;
   repairQueueStale: string;
@@ -112,31 +116,31 @@ export interface DoNextTabLabels extends QueueRowActionLabels {
   sectionPromotion: string;
   sectionCycle: string;
   sectionDuplicate: string;
-  /** 중복 섹션의 평문 한 줄 — "왜 지금 손봐야 하나". */
+  /** One plain-language line for the duplicates section — "why fix this now". */
   hintDuplicate: string;
-  /** 두 이름이 얼마나 겹치는지 ("겹침 79%"). */
+  /** How much the two names overlap ("79% overlap"). */
   duplicateMetric: (percent: number) => string;
-  /** 접힌 나머지 쌍을 여는 조용한 토글. */
+  /** The quiet toggle that opens the folded remaining pairs. */
   duplicateRestShow: (count: number) => string;
   duplicateRestHide: string;
-  /** 펼쳐도 남는 절단을 정직하게 말한다 — 「연결」 탭과 같은 문법. */
+  /** States honestly the truncation that remains even when expanded — same grammar as the "connections" tab. */
   duplicateTruncated: (shown: number, total: number) => string;
-  /** 각 큐 섹션 헤더 아래 평문 한 줄 — "이게 왜 할 일인가"를 비전문가도 알게. */
+  /** One plain-language line under each queue section header, so a non-specialist knows why it is a to-do. */
   hintNeglectedHub: string;
   hintOrphan: string;
   hintPromotion: string;
-  /** promotion 행 근거 수치 ("참조 {count}개"). */
+  /** The evidence figure on a promotion row ("{count} references"). */
   promotionMetric: (count: number) => string;
-  /** 경로가 maxPathNodes 로 잘렸을 때 노드 생략 표기. */
+  /** How omitted nodes are marked when a path is truncated at `maxPathNodes`. */
   cycleMoreNodes: (count: number) => string;
   neglectedHubMetric: (degree: number, agoDays: number) => string;
   cycleMetric: (length: number) => string;
   openMap: string;
   emptyQueue: string;
   /**
-   * 「내 몫 / 넘길 몫」 묶음 머리 — 같은 데이터를 사람의 언어 순서로 세운다.
-   * 쓰기 가능한 세션과 읽기 전용 세션이 서로 다른 문장을 쓴다(전자는 "지금
-   * 바로", 후자는 "무엇을 하면 고칠 수 있는지").
+   * The "mine / to hand off" group headings — the same data ordered in human language.
+   * A writable session and a read-only session use different sentences (the former "right
+   * now", the latter "what would make this fixable").
    */
   groupMeaningTitle: string;
   groupMeaningTitleReadOnly: string;
@@ -148,29 +152,31 @@ export interface DoNextTabLabels extends QueueRowActionLabels {
   digestTitle: string;
   digestToday: (count: number) => string;
   digestApproveHint: string;
-  /** P4-② — why 행 앞에 붙는 prefix ("Why · "). */
+  /** Prefix before the why row ("Why · "). */
   digestWhyPrefix: string;
-  /** 상단 우선 검토 밴드 제목. */
+  /** Title of the top priority-review band. */
   touchUpBandTitle: string;
-  /** 완료 카운트가 아니라 현재 절단한 우선 검토 큐의 규모다. */
+  /** Not a completion count — the size of the currently truncated priority review queue. */
   touchUpPriorityCount: (count: number) => string;
-  /** 시작과 완료를 혼동하지 않도록 명시하는 실제 작업 순서. */
+  /** The real order of work, stated so starting is not confused with finishing. */
   touchUpFlowHint: string;
   reviewChecking: (title: string | null) => string;
   reviewActive: (title: string | null) => string;
   reviewCleared: (title: string | null) => string;
   reviewUnverified: (title: string | null) => string;
   /**
-   * 근거 계층 배지 — 「연결」 탭 랭킹·허브와 **같은 i18n 키**에서 온다.
-   * 같은 사실을 표면마다 다른 말로 부르면 사용자는 두 사실로 읽는다.
+   * The evidence-layer badge — it comes from the **same i18n key** as the "connections"
+   * tab's ranking and hubs. Calling one fact by different names per surface makes a user
+   * read it as two facts.
    */
   evidenceBadge: string;
   evidenceBadgeHint: string;
 }
 
 /**
- * ③ 오늘의 손질 밴드 한 행. `pickTodaysTouchUps` 결과에 표시용 why 문구를
- * 입혀 상위에서 내려준다(순수 함수는 reason 만, 표면은 문구를 안다).
+ * One row of the "today's touch-ups" band. The result of `pickTodaysTouchUps` is given a
+ * display `why` string by the caller (the pure function knows only the reason; the surface
+ * knows the copy).
  */
 export interface DoNextTouchUp {
   id: string;
@@ -178,7 +184,7 @@ export interface DoNextTouchUp {
   nodeId: string;
   title: string;
   nodeKind: string;
-  /** "왜 뽑혔나" 한 줄 — 기존 파생값으로 조립된 표시 문구. */
+  /** One line of "why was this picked" — display copy assembled from existing derived values. */
   why: string;
   handoffPayload: string;
 }
@@ -188,12 +194,13 @@ export interface DoNextTabAgentReadiness {
   preflight: number;
   review: number;
   /**
-   * 지금 에이전트가 **못 쓰는 것**의 합 — 근거 없는 관계(`review`) + 검사
-   * 오류가 난 문서. 미터의 위험 세그먼트와 셋째 수치가 읽는 값이다.
-   * `review` 만 읽던 시절엔 오류 5건짜리 폴더가 「0 검토 필요」였다.
+   * The total of what an agent **cannot use right now** — unevidenced relations (`review`)
+   * plus documents that failed validation. This is what the meter's risk segment and the
+   * third figure read. While it read only `review`, a folder with five errors reported
+   * "0 needs review".
    */
   blocked: number;
-  /** `blocked` 중 검사 오류 몫. 합계 옆에 내역을 말하기 위한 값. */
+  /** The validation-error share of `blocked` — the value that lets the breakdown be stated beside the total. */
   blockedDocuments: number;
 }
 
@@ -206,7 +213,7 @@ export interface DoNextTabHealthQueue {
   islandCount: number;
   missingContainmentCount: number;
   actionTarget: OntologyHealthActionTarget | null;
-  /** CLI-parity 수리 대상 전체. 첫 행만 상시 노출하고 나머지는 같은 카드에서 펼친다. */
+  /** Every CLI-parity repair target. Only the first row is always visible; the rest expand in the same card. */
   actionTargets: readonly OntologyHealthActionTarget[];
   builderHref: (slug: string) => string;
   ontologyHref: (slug: string) => string;
@@ -214,34 +221,36 @@ export interface DoNextTabHealthQueue {
 
 export interface DoNextTabProps {
   /**
-   * 읽기 전용(예시 폴더)일 때 묶음 머리에 놓는 «폴더 여는 길».
+   * The «way to open a folder» placed in the group heading when the session is read-only
+   * (the example folder).
    *
-   * **왜 부품을 직접 안 부르나** — 이 컴포넌트는 문구를 전부 `labels` 로 받는
-   * 순수 표시다(그래서 단위 시험이 provider 없이 렌더한다). 컨텍스트를 읽는
-   * 부품을 안에서 부르면 그 설계가 깨지고, 실제로 시험 5개가 «provider 를
-   * 못 찾았다»로 터졌다. 길은 페이지가 넣어 준다.
+   * **Why the component is not called directly here**: this component is pure display and
+   * receives all its copy through `labels` (which is why its unit tests render without a
+   * provider). Calling a context-reading component inside would break that design — and it
+   * really did, with five tests failing on «provider not found». The page supplies the path.
    */
   openVaultAction?: ReactNode;
   queue: DoNextQueue;
   /**
-   * ③ 오늘의 손질 — 기존 큐/사이클에서 절단한 상위 3건. 빈 배열이면 밴드를
-   * 렌더하지 않는다(콜드스타트 가드는 `pickTodaysTouchUps` 가 이미 적용). 기본
-   * `[]` 라 밴드 없이도 동작한다.
+   * Today's touch-ups — the top three truncated from the existing queue and cycles. An
+   * empty array renders no band (the cold-start guard is already applied by
+   * `pickTodaysTouchUps`). Defaults to `[]`, so it works with no band at all.
    */
   touchUps?: DoNextTouchUp[];
-  /** 의존 사이클(depends_on 방향 그래프의 순환). 사이클이 있을 때만 렌더. */
+  /** Dependency cycles (loops in the directed `depends_on` graph). Rendered only when cycles exist. */
   cycles: DependencyCyclesResult;
   /**
-   * 중복 의심 쌍 — 표시 상한까지 자른 목록. 빈 배열이면 섹션을 렌더하지 않는다.
-   * 유사도는 MCP `similar_nodes` 와 같은 계산이라 화면과 에이전트가 같은 쌍을
-   * 지목한다(`tests/contract/duplicate-pairs.contract.test.ts`).
+   * Suspected duplicate pairs, truncated to the display limit. An empty array renders no
+   * section. The similarity is the same computation as MCP `similar_nodes`, so the screen
+   * and the agent name the same pairs
+   * (`tests/contract/duplicate-pairs.contract.test.ts`).
    */
   duplicates?: DuplicatePairRow[];
-  /** 접힌 나머지 중복 쌍 — 배지가 말한 규모에 실제로 닿게 하는 계층. */
+  /** The folded remaining duplicate pairs — the layer that makes the scale the badge states actually reachable. */
   duplicateRest?: DuplicatePairRow[];
-  /** 임계값을 넘은 전체 쌍 수 — 절단 전 규모. */
+  /** Total pairs above the threshold — the pre-truncation scale. */
   duplicateTotal?: number;
-  /** 쌍별 인계 — `merge_concepts` dry-run 부터 시작하는 문장. */
+  /** The per-pair handoff — a sentence starting from a `merge_concepts` dry run. */
   duplicateHandoff?: (row: DuplicatePairRow) => string;
   agentReadiness: DoNextTabAgentReadiness;
   healthQueue: DoNextTabHealthQueue;
@@ -249,35 +258,36 @@ export interface DoNextTabProps {
   sourceHref: (nodeId: string, reviewId?: string) => string | null;
   builderHref: (nodeId: string, reviewId?: string) => string;
   /**
-   * S7 이음새 — 의미 공백 행을 지도의 에이전트에게 넘기는 주소. 에이전트
-   * 패널이 없는 환경에서는 주어지지 않고, 그때는 항목도 나타나지 않는다.
+   * The address that hands a meaning-gap row to the map's agent. It is not supplied where
+   * there is no agent panel, and the item then does not appear at all.
    */
   askAgentHref?: (nodeId: string, gap: MeaningGapKind) => string | null;
   reviewState?: DoNextReviewState | null;
   onReviewStart?: (candidate: { id: string; title: string }) => void;
-  /** 사이클 경로 노드 id → 표시 제목. */
+  /** Cycle path node id → display title. */
   nodeTitle: (nodeId: string) => string;
-  /** 사이클별 에이전트 핸드오프 페이로드(복사용). */
+  /** The per-cycle agent handoff payload, for copying. */
   cycleHandoff: (cycle: DependencyCycle) => string;
   /**
-   * B3 — 로컬 감사 로그 다이제스트 (`.ontology-atlas/activity.jsonl` tail).
-   * null 이면 카드 자체를 렌더하지 않는다 (static/dogfood 모드 — 로그 없음).
-   * 자동화 계약: 에이전트가 실행, 사람은 git diff 로 승인 — 이 카드는
-   * "한 일"의 보고이지 조작 화면이 아니다.
+   * A digest of the local audit log (`.ontology-atlas/activity.jsonl` tail). Null renders
+   * no card at all (static/dogfood mode has no log).
+   * Automation contract: the agent executes and the person approves through a git diff —
+   * this card reports what was done and is not a control surface.
    */
   activityDigest: {
     todayCount: number;
     latest: ReadonlyArray<{ at: string; summary: string; agent: string | null; why?: string | null }>;
   } | null;
   /**
-   * 이 세션이 지금 할 수 있는 일 — 묶음 순서와 행동 라벨의 유일한 입력.
-   * 역할이 아니라 능력이다(`session-abilities.ts`). 기본값은 아무것도 못 하는
-   * 쪽이라, 넘기지 않는 호출부(테스트 등)에서 폼이 저절로 열리지 않는다.
+   * What this session can do right now — the only input to the group order and the action
+   * labels. It is a capability, not a role (`session-abilities.ts`). The default is the
+   * can-do-nothing side, so a call site that omits it (a test, say) never opens a form by
+   * itself.
    */
   abilities?: QueueRowAbilities;
   /**
-   * 「한 문장으로 끝나는 일」 — 정의 없음 · 소속 미정. 볼트 문서 사실이 있어야
-   * 계산되므로 optional 이다(넘기지 않으면 섹션 자체가 없다).
+   * Work that ends in one sentence — undefined meaning, unassigned parent. It is computed
+   * only when vault document facts exist, hence optional (omitted means no section at all).
    */
   meaningGaps?: {
     definitionRows: MeaningGapRow[];
@@ -292,21 +302,22 @@ export interface DoNextTabProps {
 }
 
 /**
- * 묶음 머리 — 「내 몫 먼저」의 얼굴. 섹션 헤더(질문)보다 한 단 위의 잉크로
- * 그려 세 단(카드 → 묶음 → 섹션)이 아니라 두 단으로 읽히게 한다: 큐 카드의
- * 제목은 이제 이 머리들이 대신하므로 따로 그리지 않는다(같은 자리에 "지금"
- * 이 두 번 나오지 않게).
- */
-/**
- * 묶음 머리 — 제목 · 개수 · 한 줄 힌트, 그리고 **그 힌트가 시킨 일을 하는 길**.
+ * The group heading — the face of "mine first". It is drawn one ink step above the section
+ * header (the question) so the page reads as two levels rather than three (card → group →
+ * section): the queue card's own title is now carried by these headings and is not drawn
+ * separately, so "now" never appears twice in the same place.
  *
- * `action` 은 읽기 전용(예시 폴더) 상태에서만 들어온다. 그때 이 머리가 하는
- * 말이 *"내 폴더를 열면 이 일들은 여기서 바로 끝낼 수 있어요"* 인데, 2026-08-07
- * 실측에서 이 화면 컨트롤 25개 중 폴더를 여는 것이 **0개**였다 — 화면이 시킨
- * 일을 그 화면에서 못 하는 **막다른 CTA** 다.
+ * It holds the title, the count, a one-line hint, and **the path that does what the hint
+ * asks for**.
  *
- * 길은 **묶음마다가 아니라 화면에 하나**다. 행마다 붙이면 같은 처방이 일곱 번
- * 반복되고, 이 저장소의 규율은 *"처방은 한 곳에만 산다"* 이다.
+ * `action` arrives only in the read-only (example folder) state. There the heading says
+ * *"open your own folder and you can finish these right here"*, yet measured 2026-08-07,
+ * **zero** of this screen's 25 controls opened a folder — a **dead-end CTA**, a screen
+ * telling you to do something you cannot do on it.
+ *
+ * The path appears **once per screen, not once per group**. Attaching it per row repeats
+ * one prescription seven times, and this repository's rule is *"a prescription lives in
+ * exactly one place"*.
  */
 function WorkGroupHeading({
   title,
@@ -341,10 +352,12 @@ function WorkGroupHeading({
 }
 
 /**
- * ③ 오늘의 손질 밴드 — 할 일 탭 상단. 기존 큐/사이클에서 절단된 3건을 "왜
- * 뽑혔나" 한 줄과 함께 보여주고, 주 액션(지도) + 케밥으로 행동을 좁힌다.
- * 지도 열기나 핸드오프 복사를 완료로 가장하지 않는다. 이 밴드는 우선순위를
- * 설명하고 실제 작업 순서만 연결하며, 완료의 진실원은 vault diff/검증이다.
+ * Today's touch-ups band, at the top of the to-do tab. It shows the three items truncated
+ * from the existing queue and cycles with a one-line "why it was picked", and narrows the
+ * actions to a primary one (the map) plus a kebab.
+ * Opening the map or copying a handoff is never treated as completion. This band explains
+ * priority and links only the real order of work; the source of truth for completion is the
+ * vault diff and validation.
  */
 function TouchUpBand({
   items,
@@ -469,7 +482,7 @@ function QueueSection({
   labels,
 }: {
   title: string;
-  /** 헤더 아래 평문 한 줄 — "왜 할 일인가"를 비전문가도 알게. */
+  /** One plain-language line under the header, so a non-specialist knows why it is a to-do. */
   hint?: string;
   rows: DoNextRow[];
   totalCount: number;
@@ -510,8 +523,8 @@ function QueueSection({
             data-testid="do-next-row"
             tabIndex={-1}
             aria-current={active ? "step" : undefined}
-            // 모바일(≤sm): 액션 3종이 한 줄에 안 들어가므로 타이틀 아래로
-            // wrap (390px overflow-sweep 회귀 — 페이지 가로 스크롤 금지 계약).
+            // On mobile (≤sm) the three actions do not fit on one line, so they wrap below the
+            // title (the 390px overflow sweep — no horizontal page scroll).
             className={`flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a42)] last:border-b-0 ${
               active
                 ? "bg-[color:var(--color-indigo-a06)] ring-1 ring-inset ring-[color:var(--color-indigo-a22)]"
@@ -519,9 +532,9 @@ function QueueSection({
             }`}
           >
             <TopologyV2KindGlyph kind={row.nodeKind} size={13} />
-            {/* 이름과 배지를 한 묶음으로 묶는다 — 이름만 줄어들고 배지는
-                제자리를 지켜야 좁은 폭에서 배지가 다음 줄로 떨어져 행 높이를
-                흔드는 일이 없다(치수 규칙성). */}
+            {/* Name and badge are bound as one group — only the name shrinks while the badge
+                holds its place, so at narrow widths the badge never drops to the next line and
+                disturbs the row height (dimensional regularity). */}
             <span className="flex min-w-0 flex-1 items-center gap-2">
               <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
                 {row.title}
@@ -571,17 +584,18 @@ function QueueSection({
 }
 
 /**
- * 「비슷한 이름 — 같은 걸까요?」 — 중복은 자라는 폴더의 1번 고장이고, 고치는
- * 값이 가장 싼 할 일이다(문서 둘을 하나로 접으면 끝). 그래서 큐 카드의 첫
- * 섹션으로 둔다.
+ * "Similar names — are these the same thing?" Duplicates are the number-one failure of a
+ * growing folder and the cheapest to-do to fix (fold two documents into one and it is done),
+ * so this is the queue card's first section.
  *
- * 행은 한 줄로 눌러 앉혔다 — 이 탭은 이미 뷰포트 1.2배라, 새 섹션이 다른
- * 할 일을 화면 밖으로 밀어내면 "지금 뭘 손보나"에 답하는 탭이 아니게 된다.
- * 판단에 필요한 사실(두 이름 · 겹치는 낱말 · 겹침 비율)은 한 줄 안에 다 있고,
- * 합칠지 말지는 사람이 정한다 — 화면은 미리보기(dry-run)까지만 넘긴다.
+ * Rows are compressed to a single line — this tab is already 1.2× the viewport, and a new
+ * section that pushes other to-dos off screen stops it being the tab that answers "what
+ * should I fix now?". Everything needed to decide (the two names, the shared words, the
+ * overlap ratio) fits in one line, and whether to merge is the person's call — the screen
+ * only hands over as far as a dry run.
  *
- * 한 쌍도 없으면 섹션을 아예 그리지 않는다. "중복 0건" 성공 카드는 잉크만
- * 쓰고 아무 결정도 돕지 않는다.
+ * With no pairs at all the section is not drawn. A "0 duplicates" success card spends ink
+ * and helps no decision.
  */
 function DuplicateSection({
   rows,
@@ -633,9 +647,9 @@ function DuplicateSection({
         </p>
       </div>
       {rows.map(row)}
-      {/* 나머지는 숨기지 않는다 — 접어 두고, 접었다는 사실과 규모를 말한다.
-          같은 페이지의 「근거 계층」이 쓰는 조용한 토글 + 「상위 N / 전체 M」
-          문법 그대로다: 같은 종류의 절단은 같게 보여야 한다. */}
+      {/* The rest is not hidden — it is folded, and both the fact of folding and the scale are
+          stated. The same quiet toggle and "top N / M total" grammar as the evidence layer on
+          this page: the same kind of truncation must look the same. */}
       {restRows.length > 0 ? (
         <button
           type="button"
@@ -655,10 +669,10 @@ function DuplicateSection({
         </button>
       ) : null}
       {restOpen && restRows.length > 0 ? (
-        // 높이를 못 박고 그 안에서 스크롤한다 — 펼친 계층이 내용 길이만큼
-        // 자라면 이 탭의 스크롤 계약(뷰포트 1.3배)이 볼트 크기에 따라 깨진다.
-        // 자리를 고정하면 나머지 쌍 **전부**에 닿으면서도 탭 높이는 설계값으로
-        // 남는다(치수 규칙성).
+        // The height is pinned and scrolling happens inside it. If the expanded layer grew with
+        // its content, this tab's scroll contract (1.3× viewport) would break as a function of
+        // vault size. Fixing the space reaches **every** remaining pair while leaving the tab
+        // height at its designed value (dimensional regularity).
         <div className="insights-disclosure-in flex max-h-52 flex-col overflow-y-auto">
           {restRows.map(row)}
         </div>
@@ -672,7 +686,7 @@ function DuplicateSection({
   );
 }
 
-/** 중복 의심 한 행 — 접힌 계층과 펼친 계층이 같은 해부구조를 쓴다. */
+/** One suspected-duplicate row — the folded and expanded layers share this anatomy. */
 function DuplicateRow({
   pair,
   mapHref,
@@ -709,17 +723,17 @@ function DuplicateRow({
         <Link
           href={mapHref(pair.keepId)}
           /*
-           * ⚠️ **같은 행의 같은 무게 액션은 같은 높이다** (2026-08-08 실측).
+           * ⚠️ **Actions of equal weight in the same row are the same height** (measured 2026-08-08).
            *
-           * 여기만 `min-h-7 px-2 text-label` 을 손으로 덧대고 있어서 **30px**
-           * 로 렌더됐다 — 바로 옆 `HandoffCopyButton`(32)과 2px 어긋난다.
-           * 30 은 칩 램프(24/32/32)에 없는 값이고, `min-h-7`(28)은 자연
-           * 높이가 이미 30이라 한 번도 적용된 적이 없다.
+           * Only this one hand-added `min-h-7 px-2 text-label`, so it rendered at **30px** — 2px
+           * off the `HandoffCopyButton` (32) right beside it. 30 is not a value in the chip ramp
+           * (24/32/32), and `min-h-7` (28) had never once applied because the natural height was
+           * already 30.
            *
-           * 사연은 형제 쪽 주석이 이미 적어 뒀다: 2026-08-03 에 칩 램프가
-           * 32 로 수렴하며 30/32 를 고르던 `compact` 프롭을 지웠는데, **이
-           * 링크만 그 수렴을 안 따라왔다.** 손으로 덧댄 값은 램프가 움직일 때
-           * 같이 안 움직인다 — 그래서 값 층의 단을 쓴다.
+           * The sibling's comment already records the history: on 2026-08-03 the chip ramp
+           * converged on 32 and the `compact` prop that chose between 30 and 32 was deleted — but
+           * **this link alone did not follow that convergence.** A hand-added value does not move
+           * when the ramp moves, which is why the value layer's step is used instead.
            */
           className={controlClass({
             shape: "chip",
@@ -738,10 +752,10 @@ function DuplicateRow({
 }
 
 /**
- * 의존 사이클 섹션 (전략 verdict B 후보 ④) — "구조적으로 위험한 순환이
- * 생겼나?". 각 행은 depends_on 방향 경로를 "A → B → C → A" 로 닫아 보여주고,
- * [지도](첫 노드 딥링크) + [에이전트에게](사이클 핸드오프 복사)를 준다.
- * 사이클이 하나도 없으면 렌더하지 않는다.
+ * The dependency-cycle section — "has a structurally dangerous loop appeared?". Each row
+ * closes the directed `depends_on` path as "A → B → C → A" and offers [map] (a deeplink to
+ * the first node) plus [hand to an agent] (copies the cycle handoff).
+ * Nothing is rendered when there are no cycles.
  */
 function CycleSection({
   cycles,
@@ -927,11 +941,12 @@ export function DoNextTab({
         : [];
   const primaryRepairTarget = repairTargets[0] ?? null;
   const remainingRepairTargets = repairTargets.slice(1);
-  // ③↔큐 중복 제거 — "오늘의 손질" 밴드는 큐/사이클 상위에서 절단해 오므로
-  // 큐 섹션 첫 행과 100% 겹친다(같은 방치 허브/고아/승격 후보). 밴드에 이미
-  // 올라온 exact row id 를 큐 행에서 걸러 같은 항목이 위아래로 두 번 보이지 않게
-  // 한다. 섹션 헤더 totalCount(queue.counts.*)와 "외 N개" 라인은 그대로 두어
-  // 전체 규모는 보존한다(구조 필터일 뿐, 색/토큰 변경 없음).
+  // Deduplicate the band against the queue: "today's touch-ups" is truncated from the top of
+  // the queue and cycles, so it overlaps the queue sections' first rows 100% (the same
+  // neglected hubs, orphans, and promotion candidates). Exact row ids already on the band are
+  // filtered out of the queue rows so one item never appears twice, above and below. The
+  // section header's `totalCount` (`queue.counts.*`) and the "N more" line are left alone, so
+  // the overall scale is preserved.
   const bandIds = new Set(touchUps.map((item) => item.id));
   const neglectedRows = queue.rows.filter(
     (row) => row.rowKind === "neglected-hub" && !bandIds.has(row.id),
@@ -953,17 +968,17 @@ export function DoNextTab({
     totalCycles: Math.max(0, cycles.totalCycles - removedVisibleCycleCount),
   };
   const hasCycles = visibleCycles.cycles.length > 0;
-  // #63 — "지금은 손볼 것이 없어요 — 그래프가 건강합니다" 는 CLI-parity 신호
-  // (분리된 섬 · 누락된 연결)까지 0일 때만 나온다. 예전엔 do-next 행만 보고
-  // 단정해서, 바로 아래 수리 큐가 `누락된 연결 1` 을 보여주는 화면에서도
-  // "건강합니다" 라고 말했다 (opus5 검수 실측 모순).
+  // "Nothing to fix right now — the graph is healthy" appears only when the CLI-parity signals
+  // (disconnected islands, missing containment) are zero as well. It used to judge from the
+  // do-next rows alone and so claimed "healthy" even on a screen where the repair queue right
+  // below showed `missing containment 1` (a contradiction found in review).
   const hasClipParityIssues =
     healthQueue.islandCount > 0 || healthQueue.missingContainmentCount > 0;
-  // 중복 의심 쌍도 손볼 일이다 — 그 쌍이 남아 있는데 "손볼 것이 없어요" 라고
-  // 말하면 바로 아래 섹션과 모순된다(#63 단일 판정과 같은 규율).
+  // Suspected duplicate pairs are work too — claiming "nothing to fix" while such a pair
+  // remains contradicts the section directly below (the same single-verdict discipline).
   const hasDuplicates = duplicates.length > 0;
-  // 의미 공백(정의 없음 · 소속 미정)도 손볼 일이다 — 아래 섹션이 그 행을
-  // 보여주는데 "손볼 것이 없어요" 라고 말하면 같은 카드가 자기모순에 빠진다.
+  // Meaning gaps (undefined meaning, unassigned parent) are work too — claiming "nothing to
+  // fix" while the section below shows those rows makes one card contradict itself.
   const meaningGapTotal =
     (meaningGaps?.counts.missingDefinition ?? 0) + (meaningGaps?.counts.missingDomain ?? 0);
   const queueEmpty =
@@ -973,7 +988,7 @@ export function DoNextTab({
     !hasDuplicates &&
     meaningGapTotal === 0;
 
-  // 묶음 규모 — 섹션 헤더가 이미 찍는 총계(절단 전)를 그대로 더한다.
+  // Group scale — simply the sum of the pre-truncation totals each section header already prints.
   const groupCounts = sumQueueGroupCounts([
     { section: "missing-definition", total: meaningGaps?.counts.missingDefinition ?? 0 },
     { section: "missing-domain", total: meaningGaps?.counts.missingDomain ?? 0 },
@@ -1092,8 +1107,8 @@ export function DoNextTab({
       />
     </>
   );
-  // 묶음 머리는 그 묶음에 **보이는 행이 있을 때만** 그린다 — 빈 머리는
-  // "여기 뭔가 있어야 하는데 없다" 로 읽힌다.
+  // A group heading is drawn **only when that group has visible rows** — an empty heading reads
+  // as "something should be here and is missing".
   const meaningVisible =
     (meaningGaps?.definitionRows.length ?? 0) > 0 ||
     (meaningGaps?.domainRows.length ?? 0) > 0 ||
@@ -1156,10 +1171,10 @@ export function DoNextTab({
         />
       ) : null}
       <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
-      {/* 상태 밴드 — 에이전트 준비도 + 수리 큐를 상단 풀폭 2열 요약으로.
-          이전엔 큐 옆 세로 카드(self-start)라 큐가 길면 우측 아래로 거대한
-          빈 여백이 생겼다(Guardian 관찰). 상단 밴드로 올려 여백을 없애고
-          "전체 상태 → 지금 할 일" 순으로 읽히게 한다. */}
+      {/* The status band — agent readiness plus the repair queue as a full-width two-column
+          summary at the top. It used to be a vertical card beside the queue (`self-start`), so a
+          long queue left an enormous empty area below it on the right. Moving it to a top band
+          removes that space and makes the page read as "overall status → what to do now". */}
       <section
         aria-label={labels.agentReadinessTitle}
         className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
@@ -1202,10 +1217,10 @@ export function DoNextTab({
                     {labels.agentReadinessPreflight}
                   </span>
                 </span>
-                {/* 셋째 수치가 「검토 필요」에서 「막힘」이 된 이유는
-                    `DoNextTabAgentReadiness.blocked` 주석에. 0 이 아니면
-                    무채색으로 낮추지 않는다 — 막힌 것이 있는데 흐리게 쓰면
-                    미터가 말하는 위험과 숫자의 무게가 어긋난다. */}
+                {/* Why the third figure went from "needs review" to "blocked" is in the
+                    `DoNextTabAgentReadiness.blocked` comment. It is not muted to neutral when
+                    non-zero — writing it faintly while something is blocked puts the number's
+                    weight at odds with the risk the meter reports. */}
                 <span
                   className={
                     agentReadiness.blocked === 0
@@ -1223,8 +1238,8 @@ export function DoNextTab({
             {agentReadiness.blocked > 0 ? (
               <p
                 data-testid="insights-agent-readiness-breakdown"
-                // `leading-*` 을 안 쓴다 — `text-label` 이 자기 행간을 싣는다
-                // (램프 companion 결합). 옆 줄을 복사하면 off-ramp 래칫이 오른다.
+                // No `leading-*` — `text-label` carries its own line height (the ramp's companion
+                // pairing). Copying the neighbouring line would raise the off-ramp ratchet.
                 className="mt-1 text-body text-[color:var(--color-text-tertiary)]"
               >
                 {labels.agentReadinessBlockedBreakdown(
@@ -1234,23 +1249,22 @@ export function DoNextTab({
               </p>
             ) : labels.agentReadinessHint ? (
               /*
-               * `break-keep` — **한국어는 단어 중간에서 끊기면 읽다가 걸린다** (2026-08-12 실측).
+               * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
                *
-               * 이 문단이 두 줄로 접히면서 「…으로 나 / 는 거예요」로 끊겼다(계기: 글자마다
-               * Range 를 재서 줄이 바뀐 자리의 앞뒤 글자를 본다 — 둘 다 한글이고 공백이
-               * 없으면 단어 중간이다). 원인은 `word-break: normal` 이고, 이 저장소는 이미
-               * 다른 자리에서 `break-keep` 을 쓰고 있었다.
+               * Folding to two lines, this paragraph broke as 「…으로 나 / 는 거예요」. Instrument: a
+               * `Range` per character reveals the characters on either side of the line break —
+               * both Korean with no space means mid-word. The cause is `word-break: normal`, and
+               * this repository already used `break-keep` elsewhere.
                */
               <p className="mt-1 break-keep text-body leading-body text-[color:var(--color-text-quaternary)]">
                 {labels.agentReadinessHint}
               </p>
             ) : null}
-            {/* **0 이 아닌 값이 0px 로 렌더되면 안 된다.** flexGrow 만으로는
-                390px 폭에서 「오류 1 / 준비 200」이 3px 가 되어 소멸한다 —
-                즉 미터가 «위험 없음»과 «위험이 있지만 작음»을 같은 그림으로
-                그린다. 그래서 0 이 아닌 세그먼트에는 최소 폭을 준다. 값은
-                spacing 이라 램프 강제 대상이 아니고(디자인 규칙 "spacing 은
-                강제하지 않는다"), 상수 하나가 단일 출처다. */}
+            {/* **A non-zero value must never render as 0px.** With `flexGrow` alone, "1 error /
+                200 ready" becomes 3px at a 390px width and vanishes — the meter then draws «no
+                risk» and «risk present but small» as the same picture. So a non-zero segment gets
+                a minimum width. The value is spacing, which is deliberately not ramp-enforced
+                ("spacing is not enforced"), and one constant is its single source. */}
             <div
               data-testid="insights-agent-readiness-meter"
               className="mt-2 flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)]"
@@ -1289,9 +1303,9 @@ export function DoNextTab({
               <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {labels.repairQueueTitle}
               </InsightsSectionTitle>
-              {/* `min-w-0` — 옆의 「에이전트 준비도」 카드가 이미 쓰던 규칙을
-                  맞춘다. 이게 없으면 칩 묶음이 자기 콘텐츠 폭을 고집해 제목
-                  칸을 눌렀고, 834px 에서 「수리 큐」가 두 줄로 접혔다. */}
+              {/* `min-w-0` matches the rule the "agent readiness" card beside it already used.
+                  Without it the chip group insisted on its content width and squeezed the title
+                  column, folding "repair queue" onto two lines at 834px. */}
               <span className="ml-auto flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                 <span
                   className={
@@ -1440,15 +1454,15 @@ export function DoNextTab({
 
       <section
         aria-label={labels.queueTitle}
-        // 섹션 간 갭 16px 는 행 피치(~53px)보다 약해 다음 섹션 헤딩이 위
-        // 목록에 붙어 읽혔다(게슈탈트 근접성 역전) — 24px 로 섹션 경계를
-        // 행 간격 위로 올린다.
+        // A 16px gap between sections is weaker than the row pitch (~53px), so the next section
+        // heading read as attached to the list above it (an inversion of gestalt proximity) —
+        // 24px lifts the section boundary above the row spacing.
         className="flex min-h-0 min-w-0 flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        {/* 큐 카드의 제목은 묶음 머리가 대신한다 — 「지금 하면 좋은 일」 바로
-            아래에 「지금 바로 고칠 수 있어요」가 오면 같은 말이 두 번이고,
-            그 28px 은 이 탭의 스크롤 예산에서 나온다. 비어 있을 때만 카드가
-            스스로 이름을 말한다(랜드마크 이름은 aria-label 이 계속 지킨다). */}
+        {/* The queue card's title is carried by the group headings — putting "you can fix these
+            right now" directly under "worth doing now" says the same thing twice, and those 28px
+            come out of this tab's scroll budget. The card names itself only when empty (the
+            landmark name is still held by `aria-label`). */}
         {queueEmpty ? (
           <>
             <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
@@ -1457,9 +1471,9 @@ export function DoNextTab({
             <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
           </>
         ) : (
-          // 묶음 순서는 세션 능력에서 나온다. `key` 가 순서를 담으므로
-          // 렌더마다가 아니라 **능력이 바뀔 때만** 크로스페이드가 돈다 —
-          // 행이 이유 없이 튀지 않는다.
+          // The group order comes from the session's abilities. The `key` carries that order, so
+          // the crossfade runs **only when the abilities change** rather than on every render —
+          // rows never jump without reason.
           <div
             key={queueGroupOrderKey(abilities)}
             data-testid="do-next-groups"

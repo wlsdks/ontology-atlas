@@ -430,8 +430,8 @@ describe('compileOntology', () => {
     );
     assert.equal(result.nodeCount, 4);
     assert.equal(typeof result.graphHash, 'string');
-    // 각 노드가 slug + tail alias → 4 node 중 3 개가 path-style (tail 분리) →
-    // 1 + 2*3 = 7
+    // Each node contributes slug + tail alias → 3 of 4 nodes are path-style (tail
+    // split off) → 1 + 2*3 = 7
     assert.equal(result.aliasCount, 7);
     assert.deepEqual(result.byKind, {
       capability: 2,
@@ -560,7 +560,7 @@ describe('compileOntology', () => {
     assert.equal(result.edgesPagination.offset, 1);
     assert.equal(result.edgesPagination.hasMore, true);
     assert.equal(result.edgesPagination.nextOffset, 3);
-    // nodes 그대로 (별도 pagination 안 적용)
+    // nodes unchanged (no separate pagination applied)
     assert.equal(result.nodes.length, 5);
     assert.equal(result.nodesPagination, undefined);
   });

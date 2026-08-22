@@ -1,30 +1,30 @@
-// R16 (b3) — analyze_repo_structure
+// analyze_repo_structure — the *deterministic* tool an agent (Claude Code, Codex,
+// Cursor) calls after the user says "analyse this codebase". Zero side effects: it
+// never changes the vault, it only proposes candidates for the agent to show the
+// user, who then calls `add_concept` explicitly.
 //
-// AI agent (Claude Code, Codex, Cursor) 가 사용자 한 줄 "이 codebase 분석해줘"
-// 후 호출할 *deterministic* 도구. side effect 0 — vault 변경 안 함, 후보만
-// 제안. agent 가 사용자에게 보여주고 *명시 add_concept* 호출.
+// That is what preserves the single source of truth: results are returned, never
+// written to frontmatter, so the only way into the vault is user review plus an
+// explicit add — and drift stays at zero.
 //
-// 단일 source of truth 보존:
-//   - 결과는 return only. vault frontmatter 직접 안 건드림.
-//   - 사용자 검토 + 명시 add 로만 vault 진입 → drift 0.
-//
-// 감지 패턴 (generic — 80% codebase cover. 더 정교한 framework 별 detect 는
-// 후속 도구 — infer_imports / extract_domains_from_readme 등):
+// Detection patterns are generic, covering roughly 80% of codebases; finer
+// framework-specific detection belongs to the follow-up tools (infer_imports,
+// extract_domains_from_readme):
 //   - package.json `name` → project slug + title
-//   - README.md 첫 H1 → project title (package.json 없으면 fallback)
-//   - README.md H2 sections → domain 후보
-//   - src/ (또는 root) 깊이 1 폴더 → capability 후보 (단 dotfile / 일반 무시
-//     폴더 제외)
-//   - 각 capability 폴더의 main file (index.ts/js/mjs/tsx) → element 후보
+//   - README.md first H1 → project title (fallback when package.json is absent)
+//   - README.md H2 sections → domain candidates
+//   - depth-1 folders under src/ (or root) → capability candidates (dotfiles and
+//     the usual ignored folders excluded)
+//   - the main file of each capability folder (index.ts/js/mjs/tsx) → element candidate
 //
-// 결과 shape:
+// Result shape:
 //   {
 //     rootPath, framework: 'fsd' | 'next' | 'generic',
 //     project?: { slug, title, definition, evidence, includes, excludes, confidence, uncertainty },
 //     domains: [{ slug, title, evidence: { source, line? } }],
 //     capabilities: [{ slug, title, evidence: { source } }],
 //     elements: [{ slug, title, path, evidence: { source } }],
-//       — slug 는 평평한 role 이름 (경로는 path/evidence 로만; 2026-08-01 판정)
+//       — the slug is a flat role name; location lives only in path/evidence (2026-08-01 decision)
 //     meaningGate: {
 //       policy: 'business-first',
 //       sourceStructureRole: 'implementation-evidence',
@@ -64,9 +64,10 @@ import { discoverDeclaredWorkspacePackages, inferImports } from './infer-imports
 import { collectRustFeatureConfigurationEvidence } from './rust-feature-evidence.mjs';
 
 /**
- * FSD 모드가 **실제로 훑는** 폴더. 판정 목록과 스캔 목록이 같아야 한다 —
- * 갈라지면 "이 저장소는 FSD 다" 라고 부르면서 아무것도 안 읽는 상태가 생긴다
- * (2026-07-28 실측: `src/shared/` 하나로 그 상태에 빠졌다).
+ * The folders FSD mode **actually scans**. The detection list and the scan list
+ * must be the same — when they diverge you get a state that calls a repository
+ * "FSD" and then reads nothing (measured 2026-07-28: a lone `src/shared/` produced
+ * exactly that).
  */
 const FSD_SCAN_ROOTS = ['features', 'entities', 'widgets', 'views'];
 
@@ -366,9 +367,9 @@ const ELEMENT_ENTRY_FILES = [
 ];
 
 /**
- * 한 codebase 의 root 를 walk + README 분석 → ontology node 후보 list.
+ * Walks a codebase root and analyses its README into a list of ontology node candidates.
  *
- * @param {string} rootPath — 분석할 디렉토리 (보통 cwd 또는 user-provided).
+ * @param {string} rootPath — the directory to analyse (usually cwd, or user-provided).
  * @param {{ maxDepth?: number, ignore?: string[], precomputedPythonImports?: object|null }} options
  * @returns analysis result
  */
@@ -397,7 +398,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const configurationEvidence = collectRustFeatureConfigurationEvidence(rootPath);
   const domainForName = (name) => matchDomainSlug(name, domains);
 
-  // SOURCE_FOLDERS 중 첫 번째 존재하는 것을 src dir 로
+  // The first existing entry in SOURCE_FOLDERS becomes the src dir
   let srcDir = null;
   for (const cand of SOURCE_FOLDERS) {
     const p = join(rootPath, cand);
@@ -418,21 +419,22 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     skipped,
   });
 
-  // framework heuristic — *features/* 만 있어도 fsd 로 (ontology-atlas 자체
-  // 같이 lean FSD).
+  // Framework heuristic — `features/` alone is enough for fsd (lean FSD, as in
+  // ontology-atlas itself).
   //
-  // **판정은 훑을 수 있는 폴더로만 한다** (2026-07-28 도그푸딩 실측 수정).
-  // 종전 marker 목록에는 `shared` 가 있었는데, 그 이름은 아무 TS/Node
-  // 프로젝트에나 흔하다. `src/shared/` 하나만 있어도 fsd 로 판정됐고, 그러면
-  // 아래 FSD 경로가 `features/entities/widgets/views` 만 훑으므로 그중 아무것도
-  // 없는 저장소는 **capabilities 0 · elements 0** 을 조용히 반환했다 — 응답
-  // 어디에도 "framework 판정 때문에 0" 이라는 말이 없이. 같은 호출 안의
-  // `inferImports` 는 같은 저장소에서 기능 폴더를 정확히 뽑아내므로, 두 도구가
-  // 같은 저장소를 두고 서로 다른 말을 하고 있었다.
+  // **Detect only on folders that can be scanned** (fix measured while dogfooding,
+  // 2026-07-28). The old marker list included `shared`, a name common to any
+  // TS/Node project. A lone `src/shared/` was enough to detect fsd, and the FSD
+  // path below scans only `features/entities/widgets/views` — so a repository with
+  // none of those silently returned **0 capabilities and 0 elements**, with
+  // nothing anywhere in the response saying "zero because of the framework
+  // verdict". `inferImports` in the same call extracted the feature folders of
+  // that same repository correctly, so two tools were saying different things
+  // about one repository.
   //
-  // 규율: **판정이 읽을 것을 바꾸지 못하면 그 판정을 하지 않는다.** fsd 로
-  // 부르는 유일한 결과가 "훑을 폴더가 없다" 면 그 이름은 억제 말고는 하는
-  // 일이 없다.
+  // The rule: **if a verdict cannot change what gets read, do not make it.** When
+  // the only consequence of calling something fsd is "there is nothing to scan",
+  // that name does nothing but suppress.
   let framework = 'generic';
   if (srcDir) {
     const subs = readdirSync(srcDir).filter((s) =>
@@ -476,17 +478,18 @@ export function analyzeRepoStructure(rootPath, options = {}) {
         });
       }
     }
-    // FSD pattern — features/ 가 capability 의 main 영역
+    // FSD pattern — features/ is the main area for capabilities
     const fsdRoots = framework === 'fsd' ? FSD_SCAN_ROOTS : null;
 
     if (fsdRoots) {
-      // 슬러그는 평평한 식별자다 (2026-08-01 판정 — docs/DECISIONS.md).
-      // 종전에는 `elements/${relative(rootPath, subPath)}` 를 제안해 규격
-      // 문맥 없는 에이전트가 경로형 슬러그 43개를 **그대로** 볼트에 실었다
-      // — 이 생성기가 재생성 볼트 결함의 1차 유도원이었다. 이제 이름(role)은
-      // 슬러그에, 위치는 `path` 에 싣고, basename 이 레이어를 넘어 겹치면
-      // (`entities/docs-vault` vs `views/docs-vault`) 레이어 단수형 접미로
-      // 결정론적으로 갈라 tail 충돌을 생성 시점에 없앤다.
+      // A slug is a flat identifier (2026-08-01 decision — docs/DECISIONS.md).
+      // This used to propose `elements/${relative(rootPath, subPath)}`, and an
+      // agent with no spec context landed all 43 path-shaped slugs in the vault
+      // **verbatim** — this generator was the primary cause of the regenerated
+      // vault's defects. Now the role name goes in the slug and the location in
+      // `path`; when basenames collide across layers (`entities/docs-vault` vs
+      // `views/docs-vault`) they are split deterministically by a singular layer
+      // suffix, removing tail collisions at generation time.
       const elementCandidates = [];
       for (const r of fsdRoots) {
         const dir = join(srcDir, r);
@@ -532,7 +535,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
         });
       }
     } else if (!nativeImplementationEvidence.isNativeProject) {
-      // generic — src/ 의 깊이 1 폴더 만
+      // generic — depth-1 folders under src/ only
       let directLibraryElementCount = 0;
       let directLibraryLimitRecorded = false;
       let directImplementationElementCount = 0;
@@ -630,7 +633,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
             : {}),
           evidence: { source: relative(rootPath, subPath) },
         });
-        // index 파일이 있으면 element 추가 — 슬러그는 role 이름, 위치는 path 로.
+        // An index file adds an element — role name in the slug, location in path.
         for (const entry of ELEMENT_ENTRY_FILES) {
           const ep = join(subPath, entry);
           if (existsSync(ep)) {
@@ -4526,19 +4529,21 @@ function consumeRustQuoted(text, start) {
 }
 
 /**
- * 최상위 독립 패키지 (root 바로 아래 `package.json` 을 가진 디렉토리) 를
- * 요소 후보로 제안한다 — `mcp/`, `cli/` 같은 sibling 패키지.
+ * Proposes top-level standalone packages (a directory with its own `package.json`
+ * directly under root) as element candidates — sibling packages such as `mcp/`
+ * and `cli/`.
  *
- * 왜 (2026-08-01 실측): 이 함수가 없던 동안 analyze 는 `src/` FSD 레이어와
- * `apps/`·`packages/` 워크스페이스만 걸었고, **도구의 시야가 곧 볼트의
- * 사정거리가 됐다** — 규격 문맥 없는 에이전트가 이 제안만으로 도그푸드
- * 볼트를 재생성하자 이 저장소의 에이전트 표면(MCP 서버 `mcp/`, CLI `cli/`)
- * 이 통째로 지도에서 빠졌다. path: 43개 전부가 `src/` 였다. 제안 도구의
- * 누락은 침묵으로 전파되므로, 사정거리는 코드로 고친다 (문구만 고치면
- * 다음 사람이 같은 볼트를 만든다).
+ * Why (measured 2026-08-01): without this function, analyze caught only the `src/`
+ * FSD layers and `apps/`/`packages/` workspaces, and **the tool's field of view
+ * became the vault's reach**. When an agent with no spec context regenerated the
+ * dogfood vault from these proposals alone, this repository's entire agent surface
+ * (the MCP server `mcp/`, the CLI `cli/`) fell off the map: all 43 `path:` values
+ * were under `src/`. An omission in a proposal tool propagates as silence, so the
+ * reach is fixed in code — fixing only the wording lets the next person build the
+ * same vault.
  *
- * `package.json` 이 판별자다 — `scripts/`·`tests/`·`docs/` 처럼 독립 패키지
- * 가 아닌 최상위 폴더는 제안하지 않는다 (덮는 것이 목적이 아니다).
+ * `package.json` is the discriminator: top-level folders that are not standalone
+ * packages (`scripts/`, `tests/`, `docs/`) are not proposed. Coverage is not the goal.
  */
 function detectRootPackages(rootPath, { ignore, domainForName, existingElements }) {
   const out = [];
@@ -4561,7 +4566,7 @@ function detectRootPackages(rootPath, { ignore, domainForName, existingElements 
     }
     if (!isDir) continue;
     if (!existsSync(join(memberPath, 'package.json'))) continue;
-    // 슬러그는 평평하게 — 이미 잡힌 이름과 겹치면 -package 접미로 가른다.
+    // Flat slugs — a collision with an already-taken name is split by a -package suffix.
     const flatName = claimed.has(`elements/${entry}`) ? `${entry}-package` : entry;
     const slug = `elements/${flatName}`;
     claimed.add(slug);
@@ -4892,8 +4897,8 @@ function detectWorkspaceElements(
       if (!statSync(memberPath).isDirectory()) continue;
       if (!existsSync(join(memberPath, 'package.json'))) continue;
       const source = relative(rootPath, memberPath);
-      // 슬러그는 평평하게 — workspace 멤버 이름이 곧 role 이름. apps/foo 와
-      // packages/foo 가 겹치면 폴더 접두로 갈라 tail 충돌을 피한다.
+      // Flat slugs — the workspace member name is the role name. When apps/foo and
+      // packages/foo collide, the folder prefix splits them and avoids a tail collision.
       const flatName = elements.some((el) => el.slug === `elements/${entry}`)
         ? `${folder}-${entry}`
         : entry;

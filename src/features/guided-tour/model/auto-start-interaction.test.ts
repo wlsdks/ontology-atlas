@@ -2,14 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { watchGuidedTourAutoStartCancel } from "./auto-start-interaction";
 
 /**
- * F6 회귀 — 자동 투어는 화면이 정착할 때까지 기다리느라 2~6초 뒤에 발화할 수
- * 있는데, 그 사이 사용자가 스스로 노드를 클릭해 상세 패널을 열면 1/7 카드가
- * 그 위로 끼어들었다. 대기 중 첫 실질 상호작용이면 발화를 취소한다.
+ * Regression — the automatic tour waits for the screen to settle and can fire two to
+ * six seconds later, and in that window a user who clicked a node and opened the
+ * detail panel had a 1/7 card cut in over it. The first substantive interaction while
+ * waiting cancels the firing.
  */
 describe("watchGuidedTourAutoStartCancel", () => {
   beforeEach(() => {
-    // jsdom 의 document.hasFocus() 는 기본 false — 가드가 그것만으로 막지
-    // 않도록 "앞에 떠 있는 탭" 을 흉내낸다(auto-start-guard.test 와 같은 관례).
+    // jsdom's `document.hasFocus()` defaults to false — imitate a foreground tab so the
+    // guard does not block on that alone (the same idiom as auto-start-guard.test).
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
   });
 
@@ -44,7 +45,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     window.dispatchEvent(new Event("pointerdown"));
     expect(onCancel).not.toHaveBeenCalled();
 
-    // 시트가 닫힌 뒤에도 감시는 살아 있다 — 그 다음 상호작용부터 취소.
+    // The watch stays alive after the sheet closes — the next interaction cancels.
     modal.remove();
     window.dispatchEvent(new Event("pointerdown"));
     expect(onCancel).toHaveBeenCalledTimes(1);

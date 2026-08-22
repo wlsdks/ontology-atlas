@@ -5,9 +5,9 @@ import { CLI_COMMAND_COUNT } from '../../../cli/src/lib/cli-commands.mjs';
 
 const ROOT = path.resolve(__dirname, '../../..');
 
-// `docs/archive/PUBLISH-NPM.md` 는 npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27) 로
-// `docs/archive/` 로 옮겨졌다. 아카이브는 당시 사실을 그대로 보존하는 기록이라
-// 현행 surface 드리프트 게이트의 대상이 아니다.
+// `docs/archive/PUBLISH-NPM.md` moved to `docs/archive/` when the npm publishing
+// plan was retired (docs/DECISIONS.md 2026-07-27). Archived documents preserve
+// what was true at the time, so they are out of scope for current-surface gates.
 const CURRENT_SURFACE_DOCS = [
   'README.md',
   'docs/FEATURES.md',
@@ -18,12 +18,7 @@ const CURRENT_SURFACE_DOCS = [
   'docs/launch/DEMO-GIF-STORYBOARD.md',
 ] as const;
 
-/**
- * 데모 링크가 지도를 약속하면서 사이트 루트로 보내는지 보는 문서 목록.
- *
- * 종전 이름은 `DOGFOOD_COUNT_DOCS` 였고 「노드 수를 적는 문서」 목록이기도
- * 했다. 그 두 번째 용도가 사라져(아래 결정) 이름을 남은 용도로 고쳤다.
- */
+/** Documents checked for demo links that promise the map but point at the site root. */
 const DEMO_LINK_DOCS = [
   'README.md',
   'docs/launch/HN-POST.md',
@@ -31,9 +26,10 @@ const DEMO_LINK_DOCS = [
 ] as const;
 
 /**
- * MCP inventory의 정본은 live `tools/list`다. 특정 옛 숫자를 금지어로 모으거나
- * 현재 숫자를 모든 launch 문서에 복사하면 다음 registry 변경 때 둘 다 썩는다.
- * 아래 게이트는 수 자체를 동결하지 말라는 구조적 규칙만 지킨다.
+ * The source of truth for the MCP inventory is the live `tools/list`. Collecting
+ * old numbers as banned strings, or copying today's number into every launch
+ * document, rots on the next registry change either way — so these gates enforce
+ * only the structural rule: do not freeze a count.
  */
 const STALE_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
   {
@@ -58,26 +54,26 @@ describe('current-surface launch docs', () => {
     expect(findings).toEqual([]);
   });
 
-  // [삭제됨 2026-08-01, 소유자 지시] 「문서가 노드 수를 말한다면 그 수는 볼트와
-  // 같다」 게이트.
+  // [removed 2026-08-01, owner instruction] The gate requiring "if a document
+  // states a node count, it matches the vault".
   //
-  // 이 게이트의 마지막 판(2026-07-31)은 이미 **요구를 걷고 거짓말 금지만**
-  // 남긴 상태였고, 그것만 보면 유지 비용이 0 처럼 보인다. 그런데 비용은
-  // 게이트가 아니라 **다음 사람의 습관**에 있었다: 세는 장치가 살아 있는 한
-  // 문서에 수를 적는 것이 «지원되는 관습» 으로 읽히고, 적힌 수는 볼트가
-  // 자라는 순간 CI 를 빨갛게 만든다. 볼트를 규격대로 재생성하자 그 청구서가
-  // 한꺼번에 도착했다.
+  // Its last revision (2026-07-31) had already dropped the requirement and kept
+  // only the no-lying half, which looks like zero maintenance cost. The cost was
+  // not in the gate but in **the next person's habit**: while the counting
+  // machinery lives, writing counts into documents reads as a supported
+  // convention, and every written count turns CI red the moment the vault grows.
+  // Regenerating the vault to spec delivered that whole bill at once.
   //
-  // 그래서 규율을 한 줄로 바꿨다 — **CI 는 볼트 노드 수를 세지 않는다.**
-  // 수를 말해야 하는 자리는 문서가 아니라 명령(`node cli/src/index.mjs
-  // overview`)이다. 잃은 것은 정직하게 적는다: 이제 산문에 낡은 노드 수를
-  // 적어도 CI 는 침묵한다. 되살릴 조건은 `docs/DECISIONS.md` 의 반증 조건
-  // (틀린 수가 사용자에게 노출된 사례가 관측되면)이다.
+  // So the rule is now one line — **CI does not count vault nodes.** The place
+  // that states a number is the command (`node cli/src/index.mjs overview`), not
+  // a document. What was lost, stated honestly: stale node counts in prose now
+  // pass in silence. The condition for reviving it is the falsifier in
+  // `docs/DECISIONS.md` — an observed case of a wrong count reaching a user.
   //
-  // **화면에 렌더되는 카피는 여전히 별개다** — 그건 사용자에게 하는 주장이라
-  // 런타임에 같은 출처에서 계산되어야 하고, `DownloadPage.test.tsx` 의
-  // 「캡션 == 그래프」 단언이 그 자리를 지킨다(그 단언은 손으로 맞출 숫자가
-  // 없어 썩지 않는다).
+  // **Copy rendered on screen is still separate**: that is a claim made to the
+  // user, so it must be computed at runtime from the same source, and the
+  // "caption == graph" assertion in `DownloadPage.test.tsx` holds that position
+  // (it cannot rot, because it has no hand-maintained number).
 
   it('does not freeze MCP tool counts or read/write splits in current launch prose', async () => {
     const findings: string[] = [];
@@ -94,44 +90,50 @@ describe('current-surface launch docs', () => {
     expect(findings).toEqual([]);
   });
 
-  // [삭제됨 2026-07-31] README 가 kind 별 내역(capabilities 38 · elements 49 …)을
-  // 적고 있으라는 게이트. 위와 같은 이유 — 여섯 개 숫자를 손으로 동기화시키는
-  // 장치였고, 노드 하나만 추가돼도 무관한 PR 이 README 수정을 요구받았다.
-  // README 는 이제 `node cli/src/index.mjs overview` 를 부른다.
+  // [removed 2026-07-31] The gate requiring the README to carry a per-kind
+  // breakdown (capabilities 38 · elements 49 …). Same reason as above: it forced
+  // six numbers to be synchronised by hand, so adding a single node made an
+  // unrelated PR edit the README. The README now names
+  // `node cli/src/index.mjs overview` instead.
 
   it('keeps the packaged agent workflow aligned with current CLI, MCP, and dogfood facts', async () => {
     const workflow = await readFile(path.join(ROOT, 'docs/AGENT-GRAPH-WORKFLOW.md'), 'utf8');
 
-    // CLI 명령 수는 help와 같은 registry에서 검증한다. MCP inventory는 runtime
-    // tools/list가 정본이므로 산문 count 대신 discovery와 live proof를 요구한다.
+    // The CLI command count is verified against the same registry help uses. For
+    // the MCP inventory the runtime tools/list is the source of truth, so this
+    // requires discovery and live proof rather than a count written in prose.
     expect(workflow).toContain(`${CLI_COMMAND_COUNT} commands`);
     expect(workflow).toContain('tools/list');
     expect(workflow).toContain('mcp-verify');
-    // **볼트 노드 수는 여기서 요구하지 않는다.** 노드는 아무나 추가하는데 이
-    // 문서는 아무도 안 고친다 — 요구하면 문서가 그 말을 듣고, 그 다음 노드
-    // 하나에 낡는다. 실제로 그렇게 됐다: 이 게이트가 강제한 「98 nodes」 옆에
-    // 그래프 해시·엣지 수·파일 수까지 옛 볼트의 측정 기록이 통째로 얼어붙어
-    // 있었다(2026-08-01, 볼트 재생성으로 드러남). 지금 그 자리는 **명령을 적은
-    // 절차서**이고, 수는 그 명령을 돌린 사람이 자기 화면에서 본다.
+    // **No vault node count is required here.** Anyone adds nodes and nobody
+    // edits this document, so requiring one makes the document comply and then
+    // go stale on the very next node. That happened: next to the "98 nodes" this
+    // gate enforced, the graph hash, edge count and file count of an old vault
+    // were all frozen in place too (surfaced 2026-08-01 by regenerating the
+    // vault). That section is now a procedure naming the command, and whoever
+    // runs it reads the numbers off their own screen.
   });
 
   /**
-   * **"설치 없이 지도를 본다" 고 말하는 링크는 지도 주소를 가리켜야 한다.**
+   * **A link that says "see the map with no install" must point at the map.**
    *
-   * 2026-07-30 에 사이트 루트가 지도에서 **다운로드 얼굴**로 바뀌었다(원장:
-   * 「root-first-open」 뒤집기 구현). 그 순간 런치 자산과 README 의 「Hosted demo
-   * — no install」 링크 세 개가 전부 **설치를 권하는 화면으로 되돌아오는 고리**가
-   * 됐다. 앱 안에서는 `map-destination-route.contract` 가 같은 부패를 막지만,
-   * 그 게이트는 소스 코드만 본다 — 산문 속 절대 URL 은 시야 밖이었다.
+   * On 2026-07-30 the site root changed from the map to the **gateway face**
+   * (ledger: the implementation that overturned "root-first-open"). At that
+   * moment all three "Hosted demo — no install" links in the launch assets and
+   * the README became **loops back to a screen recommending installation**.
+   * Inside the app `map-destination-route.contract` blocks the same decay, but
+   * that gate only reads source code — absolute URLs in prose were outside its
+   * field of view.
    *
-   * 판정은 라벨과 목적지를 함께 본다. 사이트 루트를 **가리키는 것 자체**는 결함이
-   * 아니다(배포 문서·첫 페이지 언급은 그대로 루트가 맞다). 결함은 *"데모"* 나
-   * *"설치 없이"* 라고 말해 놓고 루트로 보내는 줄이다.
+   * The verdict weighs label and destination together. Pointing at the site root
+   * is **not itself a defect** (release docs and mentions of the first page
+   * correctly point at the root); the defect is a line that says *"demo"* or
+   * *"no install"* and sends the reader to the root.
    */
   it('demo links promise the map, so they point at the map', async () => {
     const SITE = 'https://wlsdks.github.io/ontology-atlas/';
     const PROMISE = /demo|데모|no install|설치 없이|지도를 본|see the graph/i;
-    /** 로케일 경로 없이 사이트 루트에서 끝나는 URL. */
+    /** A URL that ends at the site root with no locale segment. */
     const bareRoot = (text: string) =>
       new RegExp(`${SITE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z]{2}/)`).test(text);
     const findings: string[] = [];
@@ -140,10 +142,11 @@ describe('current-surface launch docs', () => {
       const text = await readFile(path.join(ROOT, relPath), 'utf8');
 
       /**
-       * **마크다운 링크는 라벨로 판정한다.** 사이트 루트를 가리키는 것 자체는
-       * 결함이 아니다 — README 는 *"첫 페이지(`/`)는 다운로드 얼굴이다"* 라고
-       * 정확히 설명하면서 루트를 가리키고, 그건 참인 문장이다. 결함은 라벨이
-       * **지도/데모를 약속**하면서 루트로 보내는 것이다.
+       * **Markdown links are judged by their label.** Pointing at the site root
+       * is not a defect in itself — the README points there while accurately
+       * explaining that the first page (`/`) is the gateway face, and that
+       * sentence is true. The defect is a label that **promises the map or a
+       * demo** and sends the reader to the root.
        */
       for (const [, label, url] of text.matchAll(/\[([^\]]*)\]\(([^)]+)\)/g)) {
         if (bareRoot(url) && PROMISE.test(label)) {
@@ -152,9 +155,10 @@ describe('current-surface launch docs', () => {
       }
 
       /**
-       * 맨 URL 은 라벨이 없으므로 **앞줄**이 라벨 역할을 한다. 런치 포스트는
-       * 「… no install:」 다음 줄에 URL 만 놓는 형식이라, 줄 단위로만 보면 이
-       * 게이트가 조용히 통과한다 — 실제로 첫 판이 그렇게 통과했다.
+       * A bare URL has no label, so **the preceding line** acts as one. Launch
+       * posts put the URL alone on the line after "… no install:", so a
+       * line-by-line check passes in silence — the first revision of this gate
+       * did exactly that.
        */
       const lines = text.split(/\r?\n/);
       for (const [i, line] of lines.entries()) {

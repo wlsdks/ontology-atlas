@@ -408,21 +408,22 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
 }
 
 /**
- * 「MCP 가 없을 때 이걸 쓰세요」 줄의 **실행 가능한** 앞머리.
+ * The **runnable** prefix of the "use this when MCP is unavailable" line.
  *
- * ## 왜 기본값이 절대 경로인가 (2026-08-17 실측)
+ * **Why the default is an absolute path** (measured 2026-08-17): this slot used
+ * to hold a bare `ontology-atlas`. **No global command by that name exists**
+ * (registry publishing was abandoned — decision ledger, 2026-07-27), so pasting
+ * it yields `command not found` — at the exact moment MCP is missing and this
+ * line matters most.
  *
- * 종전에는 이 자리에 `ontology-atlas` 를 그대로 적었다. **그 이름의 전역
- * 명령은 없다**(레지스트리 발행 폐기, 2026-07-27 원장) — 붙여넣으면
- * `command not found` 다. 정작 MCP 가 없어서 이 줄이 가장 필요한 순간에.
+ * The same defect was fixed once in the graph-DB pack on 2026-07-29 (a comment in
+ * `cli/src/commands/agent-brief.mjs`), but **this producer was not fixed**: one
+ * repository held two places telling the same lie and only one was corrected.
  *
- * 같은 결함이 2026-07-29 에 그래프 DB 팩에서 한 번 고쳐졌는데
- * (`cli/src/commands/agent-brief.mjs` 주석), **이 생산자는 안 고쳐졌다.**
- * 한 저장소에 같은 거짓말을 하는 자리가 둘이었고 하나만 고쳐졌다.
- *
- * 부르는 쪽이 자기 진입점을 알면 그것을 준다(CLI 는 `cliInvocation()`).
- * 아무도 안 주면 이 파일의 위치에서 저장소의 CLI 진입점을 되짚는다 — 짐작이
- * 아니라 **이 패키지가 사는 자리**에서 나오는 값이다.
+ * A caller that knows its own entry point supplies it (the CLI passes
+ * `cliInvocation()`). With nothing supplied, the repository's CLI entry point is
+ * derived from this file's location — not a guess, but a value that falls out of
+ * **where this package lives**.
  */
 function defaultCliInvocation() {
   try {
@@ -430,11 +431,11 @@ function defaultCliInvocation() {
     return `node ${/[\s"'$`\\]/.test(entry) ? `'${entry.replace(/'/g, "'\\''")}'` : entry}`;
   } catch {
     /*
-     * 이 모듈이 파일이 아닌 자리에서 불릴 수 있다(브라우저 번들 · 시험
-     * 하네스 — 거기서는 `import.meta.url` 이 `file:` 이 아니라 위 변환이
-     * 던진다). **그때도 실행 가능한 모양으로 떨어진다**: 저장소 안에서라면
-     * 이 상대 경로가 그대로 돈다. `cli/src/lib/self-invocation.mjs` 가
-     * 진입점을 모를 때 쓰는 값과 같다.
+     * This module can be called from somewhere that is not a file (a browser
+     * bundle, a test harness — there `import.meta.url` is not `file:` and the
+     * conversion above throws). **It still lands on something runnable**: inside
+     * the repository this relative path works as-is. Same value
+     * `cli/src/lib/self-invocation.mjs` uses when it cannot determine the entry point.
      */
     return 'node cli/src/index.mjs';
   }
@@ -490,13 +491,15 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   /**
-   * 문서가 없어 노드가 되지 못한 참조 → 그 이름을 적어 둔 문서들.
+   * References that never became nodes for lack of a document → the documents
+   * that named them.
    *
-   * 컴파일된 그래프의 노드는 문서 하나당 하나다. 그런데 웹 지도는 관계 키에서
-   * 이름만 불린 개념까지 그린다(도그푸드 289 중 193). 사용자가 지도에서 그
-   * 이름을 베껴 CLI/MCP 로 물으면 종전에는 "그런 노드 없음" 으로 끝났다 —
-   * 볼트가 그 이름을 적어 두었는데도. 노드를 새로 만들지는 않는다(census 는
-   * 그대로다). "누가 어떤 키로 이 이름을 적었는가" 를 답에 실어 줄 뿐이다.
+   * The compiled graph holds one node per document, but the web map also draws
+   * concepts named only in a relation key (193 of the dogfood vault's 289).
+   * Copying such a name off the map into the CLI or MCP used to end in "no such
+   * node" — although the vault had written that name down. No node is created
+   * (the inventory is unchanged); the answer simply carries "who wrote this name,
+   * under which key".
    */
   const referencedOnlyByRef = new Map();
   for (const edge of edges) {
@@ -528,12 +531,12 @@ export function createOntologyEngine(artifact, options = {}) {
         `${fieldName} "${candidate}" is ambiguous. Use a canonical slug: ${ambiguous.join(', ')}`,
       );
     }
-    // 오타/폴더 누락 slug 는 여기서 죽는다 — 근접 후보를 같은 에러에 실어
-    // relate/relation-check/MCP 쿼리 전부에서 did-you-mean 이 뜨게 한다.
+    // A typo or a missing-folder slug dies here — near-miss candidates ride the
+    // same error so relate, relation-check, and MCP queries all show did-you-mean.
     const referencedBy = referencedOnlyByRef.get(candidate) ?? [];
     if (referencedBy.length > 0) {
-      // 오타가 아니다 — 볼트가 아는 이름인데 아직 자기 문서가 없다. 근접
-      // 후보를 들이밀면 사용자를 엉뚱한 노드로 보낸다.
+      // Not a typo — the vault knows this name, it simply has no document of its
+      // own yet. Offering near-miss candidates would send the user to the wrong node.
       const cited = referencedBy.map((hit) => `${hit.slug} (via ${hit.via})`).join(', ');
       const err = new Error(
         `${fieldName} "${candidate}" is referenced by the vault but has no document of its own, so it is not a compiled node. Referenced by: ${cited}. Create it with add_concept({slug:"${candidate}"}) to make it queryable.`,
@@ -546,11 +549,11 @@ export function createOntologyEngine(artifact, options = {}) {
     throw new Error(`${fieldName} "${candidate}" does not resolve to a compiled ontology node.${hint}`);
   }
 
-  // R+ (과제 ⑧ — Ask-to-Grow) — node_profile 전용 wrapper. resolve() 는 이미
-  // 위에서 near-slug 후보를 계산해 에러 문자열에 박아 넣지만, growthHint 는
-  // agent 가 파싱 없이 바로 쓸 수 있는 구조화 필드다. "not required" /
-  // "ambiguous" 실패는 진짜 "슬러그 없음"이 아니라 다른 종류의 입력 오류라
-  // growthHint 를 붙이지 않는다 — 오직 "does not resolve" 케이스만.
+  // node_profile-specific wrapper. `resolve()` above already computes near-slug
+  // candidates and embeds them in the error string, but growthHint is a structured
+  // field an agent can use without parsing. "not required" and "ambiguous"
+  // failures are a different kind of input error rather than a genuinely missing
+  // slug, so they carry no growthHint — only the "does not resolve" case does.
   function resolveWithGrowthHint(input, fieldName = 'slug') {
     try {
       return resolve(input, fieldName);
@@ -646,7 +649,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const queue = [{ slug: from, hops: [from], edges: [] }];
     const visited = new Set([from]);
 
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
     let head = 0;
     while (head < queue.length) {
       const current = queue[head++];
@@ -1144,7 +1147,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const collectedEdges = [];
     const queue = [discovered.get(start)];
 
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
     let head = 0;
     while (head < queue.length && discovered.size < limit + 2) {
       const current = queue[head++];
@@ -1311,7 +1314,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const collectedEdges = [];
     const queue = [{ slug: center, distance: 0 }];
 
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
     let head = 0;
     while (head < queue.length && discovered.size < limit + 2) {
       const current = queue[head++];
@@ -1358,7 +1361,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const collectedEdges = [];
     const queue = [{ slug: center, distance: 0 }];
 
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
     let head = 0;
     while (head < queue.length && discovered.size < limit + 2) {
       const current = queue[head++];
@@ -1449,7 +1452,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const queue = [{ slug: seed, distance: 0 }];
     let limited = false;
 
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
     let head = 0;
     while (head < queue.length && discovered.size < limit + 1) {
       const current = queue[head++];
@@ -1550,10 +1553,11 @@ export function createOntologyEngine(artifact, options = {}) {
       resolvedEdges: edges.filter((edge) => edge.resolved).length,
       externalEdges: edges.filter((edge) => edge.external).length,
       unresolvedEdges: edges.filter((edge) => !edge.resolved && !edge.external).length,
-      // 문서 없이 이름만 적힌 개념의 수 — 웹 지도/인사이트는 이것들도
-      // 개념으로 세므로(화면 총계 = nodes + referencedOnly), 이 수를 같이
-      // 내야 두 입구의 총계 차이가 설명된다. 노드는 아니다: 아래 byKind ·
-      // 중심성 · health 는 여전히 문서가 있는 개념만 센다.
+      // Count of concepts named without a document. The web map and insights
+      // count these as concepts too (screen total = nodes + referencedOnly), so
+      // reporting it here is what explains the gap between the two entrances.
+      // They are not nodes: byKind, centrality, and health below still count only
+      // concepts that have a document.
       referencedOnly: referencedOnlyByRef.size,
       aliases: Array.isArray(artifact?.aliases) ? artifact.aliases.length : 0,
       ambiguousAliases: Array.isArray(artifact?.ambiguousAliases)
@@ -2186,7 +2190,7 @@ export function createOntologyEngine(artifact, options = {}) {
       const slugs = [];
       visited.add(node.slug);
 
-      // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+      // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
       let head = 0;
       while (head < queue.length) {
         const current = queue[head++];
@@ -2519,7 +2523,7 @@ export function createOntologyEngine(artifact, options = {}) {
     for (const rootSlug of projectRoots) {
       included.add(rootSlug);
       const queue = [rootSlug];
-      // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+      // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
       let head = 0;
       while (head < queue.length) {
         const current = queue[head++];
@@ -2572,7 +2576,7 @@ export function createOntologyEngine(artifact, options = {}) {
   function collectContainmentScope(rootSlug) {
     const included = new Set([rootSlug]);
     const queue = [rootSlug];
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
     let head = 0;
     while (head < queue.length) {
       const current = queue[head++];
@@ -2595,7 +2599,7 @@ export function createOntologyEngine(artifact, options = {}) {
     }
     const visited = new Set([slug]);
     const queue = [slug];
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
     let head = 0;
     while (head < queue.length) {
       const current = queue[head++];
@@ -2646,9 +2650,10 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function externalElementCandidates(limit) {
-    // `.ontology-atlasignore` 패턴에 매치되는 ref 는 *의도된 외부 코드* 로 간주, materialize
-    // 추천에서 skip. ignored 카운트는 응답에 같이 노출 (투명성 — 사용자가 "왜
-    // 외부 ref 가 적게 보이지?" 묻지 않도록).
+    // A ref matching an `.ontology-atlasignore` pattern counts as *intentional
+    // external code* and is skipped in the materialize recommendation. The ignored
+    // count is exposed in the response so nobody has to ask why fewer external
+    // refs appear than expected.
     const allExternal = edges.filter(
       (edge) => edge.external && edge.via === 'elements',
     );
@@ -2916,7 +2921,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const queue = [{ slug: center, distance: 0 }];
     let limited = false;
 
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
     let head = 0;
     while (head < queue.length) {
       const current = queue[head++];
@@ -2951,16 +2956,17 @@ export function createOntologyEngine(artifact, options = {}) {
     const searchBudget = normalizeSearchBudget(options.searchBudget);
     const cycleMap = new Map();
     const sortedNodes = [...nodes].sort((a, b) => a.slug.localeCompare(b.slug));
-    // 이 DFS 는 경로 열거라 지수다. 종전의 유일한 조기 종료는 `cycleMap.size >
-    // limit` — **사이클이 발견될 때만** 작동했다. 그래서 사이클이 없는
-    // 그래프, 즉 사용자가 "건강한지 확인하려고" 이걸 부르는 바로 그 경우가
-    // 경로 공간 전체를 소진한다(실측: 60노드 · 444엣지 · 사이클 0 → 10.9초.
-    // MCP 는 단일 스레드 stdio 라 그 시간 동안 에이전트 표면 전체가 멈춘다).
+    // This DFS enumerates paths, so it is exponential. The only early exit used to
+    // be `cycleMap.size > limit`, which fires **only when a cycle is found**. So a
+    // graph with no cycles — exactly the case where a user calls this "to check it
+    // is healthy" — exhausts the entire path space (measured: 60 nodes, 444 edges,
+    // 0 cycles → 10.9s; MCP is single-threaded stdio, so the whole agent surface
+    // is frozen for that long).
     //
-    // `allPaths` 가 같은 폭발 특성에 대해 이미 예산 + `truncatedByBudget` +
-    // evidence 계약을 갖고 있다. 그 문법을 그대로 이식한다 — 두 번째 기제를
-    // 만들지 않는다. **조용한 절단은 이 저장소가 금지한 것**이라, 예산에
-    // 걸리면 `exhaustive: false` 로 말한다.
+    // `allPaths` already carries a budget, `truncatedByBudget`, and an evidence
+    // contract for the same explosion. That grammar is transplanted rather than a
+    // second mechanism invented. **Silent truncation is forbidden in this
+    // repository**, so hitting the budget reports `exhaustive: false`.
     let expandedStates = 0;
     let truncatedByBudget = false;
 
@@ -2983,8 +2989,8 @@ export function createOntologyEngine(artifact, options = {}) {
       exhaustive: !truncatedByBudget,
       truncatedByBudget,
       totalCycles: rows.length,
-      // 예산에 걸렸으면 "0개" 는 "없다" 가 아니라 "못 다 봤다" 다. 이 필드가
-      // 없으면 사이클 0 을 사이클 없음으로 읽는다.
+      // Once the budget is hit, "0" means "not fully examined", not "none".
+      // Without this field, zero cycles reads as acyclic.
       totalCyclesExact: !truncatedByBudget,
       limited: rows.length > limit || truncatedByBudget,
       cycles: rows.slice(0, limit),
@@ -3019,18 +3025,18 @@ export function createOntologyEngine(artifact, options = {}) {
 
       for (const edge of outgoing.get(current) || []) {
         if (!edge.resolved || !typeAllowed(edge.via, typeSet)) continue;
-        // **자기 자신을 가리키는 엣지도 순환이다** (2026-07-29 실측).
+        // **An edge pointing at itself is a cycle too** (measured 2026-07-29).
         //
-        // `path.length > 1` 게이트는 길이 1 순환(self-loop)을 통째로 배제했다.
-        // 그래서 `cycles` 는 `totalCycles: 0` 에 `exhaustive: true` 까지 붙여
-        // *"zero means acyclic within maxDepth"* 라고 단언하는데, 같은 그래프
-        // 에서 `topological_order` 는 `acyclic: false` 를 냈고 `health` 는
-        // 그 둘을 **한 응답 안에** 나란히 실었다(`dependencyCycles: 0` +
+        // The `path.length > 1` gate excluded length-1 cycles (self-loops)
+        // entirely. So `cycles` returned `totalCycles: 0` with `exhaustive: true`
+        // attached, asserting *"zero means acyclic within maxDepth"*, while on the
+        // same graph `topological_order` returned `acyclic: false` — and `health`
+        // carried both **in one response** (`dependencyCycles: 0` alongside
         // `dependencyOrderAcyclic: false`).
         //
-        // `add_relation` 은 self-edge 를 정상으로 받으므로 만들기도 쉽다.
-        // 길이 2 순환은 잡히고 길이 1 만 빠지던 것이라, 사용자 입장에서는
-        // "왜 이것만 안 잡히지" 를 알 방법이 없었다.
+        // `add_relation` accepts a self-edge as normal, so they are easy to make.
+        // Length-2 cycles were caught and only length-1 slipped through, leaving
+        // the user no way to work out why just this one was missed.
         if (edge.to === start && (path.length > 1 || edge.to === current)) {
           const cycle = normalizeCycle(path, [...edgePath, edge]);
           if (!cycleMap.has(cycle.key) && cycleMap.size <= limit) {
@@ -3217,7 +3223,7 @@ export function createOntologyEngine(artifact, options = {}) {
    *    entry apart from a mistyped slug — but `danglingReferenceCandidates()`
    *    above already reports them from the same post-write vault. Emitting both
    *    would put the same fact in one payload twice, and a channel that repeats
-   *    itself gets filtered. 합집합 금지.
+   *    itself gets filtered. No union.
    * 2. **No `proposedAction`.** Every row here is a review action. The 92 exist
    *    because the one prescription on offer was "create the node", and an agent
    *    that follows a scaffold literally answers 92 unresolved strings by
@@ -3392,9 +3398,10 @@ export function createOntologyEngine(artifact, options = {}) {
       });
     }
 
-    // 갓 쓴 노드는 두 경로가 동시에 잡는다 — 쓰기 게이트가 한 번, 볼트 전수
-    // 스캔이 또 한 번. 같은 노드에 같은 질문을 두 줄로 적으면 큐가 자기 소음을
-    // 만든다. 전수 스캔이 이미 말한 것은 여기서 뺀다.
+    // A freshly written node is caught by two paths at once — the write gate, then
+    // the full vault scan. Writing the same question about the same node on two
+    // rows makes the queue generate its own noise, so whatever the full scan
+    // already said is dropped here.
     const capabilitiesWithoutEvidenceSlugs = new Set(capabilitiesWithoutEvidence.slugs ?? []);
     for (const action of nodeEligibilityActions()) {
       if (
@@ -4149,11 +4156,12 @@ export function createOntologyEngine(artifact, options = {}) {
     const issueCount = Array.isArray(artifact?.issues) ? artifact.issues.length : 0;
     const graph = overviewResult.graph;
     const checks = [
-      // 셀 것이 있는가를 먼저 묻는다. 이게 없으면 아래 검사들의 `pass` 는
-      // 아무것도 증명하지 않는다 — 노드가 0개면 순환도 0, 안 풀린 엣지도 0,
-      // 끊긴 덩어리도 0 이라 **전부 통과하고 「정상」이 나온다**(2026-08-16
-      // 실측: 볼트가 아닌 폴더가 healthy · exit 0). 폴더를 잘못 짚은 사람이
-      // 그 사실을 알아챌 유일한 자리가 여기다.
+      // Ask first whether there is anything to count. Without this, the `pass` of
+      // the checks below proves nothing — with zero nodes there are zero cycles,
+      // zero unresolved edges, and zero disconnected components, so **everything
+      // passes and it reports healthy** (measured 2026-08-16: a folder that was
+      // not a vault came back healthy with exit 0). This is the only place a person
+      // who pointed at the wrong folder can find that out.
       healthCheck({
         id: 'vault_present',
         status: graph.nodes === 0 ? 'fail' : 'pass',
@@ -5319,12 +5327,13 @@ function topHubs(nodes, limit) {
 }
 
 /**
- * dangling ref (`ref`) 가 실은 기존 vault 노드를 가리키려던 typo/누락-prefix
- * 인지 검사 — persona-2026-07 QA 로그의 실제 버그 (`domain: checkout` 인데
- * `domains/checkout` 가 이미 존재) 를 잡기 위한 최소 구현. tail(마지막 segment)
- * 정확 일치를 최우선으로, 없으면 tail prefix 일치를 본다. 후보가 둘 이상이면
- * (모호) null — 잘못된 단정 fix 를 제안하지 않는다. mcp/src/vault.mjs 의
- * suggestSimilarSlugs 와 같은 tiering 아이디어를 in-memory nodes 에 맞춰 재사용.
+ * Checks whether a dangling ref was meant as a typo or a missing prefix for an
+ * existing vault node — the minimum implementation for the real bug in the
+ * persona-2026-07 QA log (`domain: checkout` while `domains/checkout` already
+ * existed). Exact tail (last segment) match first, then tail prefix. Two or more
+ * candidates (ambiguous) return null: never propose a confidently wrong fix.
+ * Reuses the tiering idea from `suggestSimilarSlugs` in `mcp/src/vault.mjs`,
+ * adapted to in-memory nodes.
  */
 function findNearMatchSlug(ref, nodes) {
   const raw = String(ref || '').trim();

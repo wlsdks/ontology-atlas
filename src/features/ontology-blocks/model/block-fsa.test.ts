@@ -6,7 +6,7 @@ import {
   type BlockDirEntryLike,
 } from './block-fsa';
 
-/** 메모리 fake — FSA DirectoryHandle 의 구조적 최소 표면만 구현. */
+/** An in-memory fake implementing only the structural minimum of an FSA DirectoryHandle. */
 interface FakeDir {
   kind: 'directory';
   name: string;

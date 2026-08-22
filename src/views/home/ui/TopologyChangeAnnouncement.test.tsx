@@ -54,22 +54,15 @@ describe("TopologyChangeAnnouncement", () => {
 });
 
 /**
- * 토스트는 상단 크롬 **아래**에 선다 (2026-08-02, 소유자 실보고).
+ * The toast sits **below** the top chrome row (owner report, 2026-08-02).
  *
- * 종전 `top-4` 는 크롬 필(y 32–68)과 세로 20px 겹쳤고 둘 다 가운데 정렬이라
- * 가로로는 완전히 포개졌다. **이건 jsdom 에서 rect 로 못 잡는다** — 레이아웃이
- * 없기 때문이다. 그래서 잠그는 것은 픽셀이 아니라 **파생 관계**다: 이 자리가
- * 크롬 타일 높이에서 파생돼야 하고, 크롬 띠와 같은 상수를 쓰면 안 된다.
+ * The former `top-4` overlapped the chrome pills (y 32–68) by 20px vertically,
+ * and since both are centred, completely horizontally. **jsdom has no layout, so
+ * no rect can catch this.** What is locked here is therefore not a pixel but the
+ * **derivation**: the position must come from the chrome tile height, and must
+ * not reuse the chrome row's own constant.
  */
 describe("토스트 자리 — 상단 크롬과 겹치지 않는다", () => {
-  /**
-   * 종전 `top-4` 는 크롬 필(y 32–68)과 세로 20px 겹쳤고, 둘 다 `left-1/2`
-   * 가운데 정렬이라 가로로는 완전히 포개졌다(2026-08-02 소유자 실보고).
-   *
-   * **jsdom 은 레이아웃이 없어 rect 로 못 잡는다.** 그래서 잠그는 것은 픽셀이
-   * 아니라 **파생 관계**다: 이 자리는 크롬 타일 높이에서 나와야 하고, 크롬 띠와
-   * 같은 고정 상수를 쓰면 안 된다.
-   */
   it("크롬 띠 아래로 파생된 top 을 쓴다 — 고정 top-4 가 아니다", () => {
     const { rerender } = render(
       <TopologyChangeAnnouncement touchedCount={0} message={(n) => `${n}개`} />,

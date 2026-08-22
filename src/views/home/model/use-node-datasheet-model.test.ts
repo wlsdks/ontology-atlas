@@ -5,10 +5,11 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import { useNodeDatasheetModel } from "./use-node-datasheet-model";
 
 /**
- * D7 회귀 가드 — 자기 `.md` 가 없는 개념(다른 문서의 관계 키에서 이름만
- * 불린 노드)의 팝오버 `문서` 버튼이 **그 개념을 인용한 남의 문서**를 열던
- * 결함. 사용자는 방금 연 개념의 글을 읽는다고 믿는데 다른 개념의 글이
- * 열리고, 비활성도 아니고 안내도 없었다.
+ * Regression guard: for a concept with no `.md` of its own — one merely named
+ * in another document's relation key — the popover's document button opened
+ * **somebody else's document citing it**. The user believed they were reading
+ * about the concept they just opened, another concept's write-up appeared, and
+ * the button was neither disabled nor explained.
  */
 
 const stamp = new Date(0);
@@ -74,8 +75,8 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
   });
 
   it("자기 문서가 없는 노드는 남의 문서 href 를 '문서' 링크로 내지 않는다", () => {
-    // QA 실측 재현: 이 요소 노드는 `frontmatter-to-ontology` 역량 문서가
-    // 근거로 인용했을 뿐, 자기 `.md` 가 없다.
+    // Reproduces the QA finding: this element node is only cited as evidence by
+    // the `frontmatter-to-ontology` capability document and has no `.md` of its own.
     const citedBy = "ontology/capabilities/frontmatter-to-ontology";
     const selected = node("element:derive-ontology-from-vault", [citedBy], {
       hasOwnDocument: false,
@@ -83,18 +84,18 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     const model = renderModel(selected, [selected]);
 
     expect(model.v2DatasheetModel?.documentHref).toBeNull();
-    // 정보는 없애지 않는다 — 목적지를 말하는 라벨로 쓰는 표면(컨텍스트 메뉴 ·
-    // 전체 상세)이 쓸 수 있게 별도 필드로 남는다.
+    // The information is not discarded: it stays in a separate field for the
+    // surfaces that label the destination (context menu, full detail).
     expect(model.v2DatasheetModel?.mentionDocumentHref).toBe(
       `/docs/?slug=${encodeURIComponent(citedBy)}`,
     );
-    // 근거 행은 그대로 남는다(팝오버가 이미 그 문서를 이름까지 붙여 보여준다).
+    // The evidence row remains — the popover already shows that document by name.
     expect(model.v2DatasheetModel?.evidence.total).toBe(1);
   });
 
-  // 스코프 정정 (2026-07-26) — 부모(속한 곳)를 세지 않으면 부모만 있는 노드의
-  // 팝오버가 "이어진 곳 0", 핸드오프가 "연결 0" 이 된다. 모델이 그 버킷을
-  // 끝까지 실어 나르는지 잠근다.
+  // Scope correction (2026-07-26): without counting the parent bucket, a node
+  // that has only a parent showed "0 connections" in both the popover and the
+  // handoff. This locks that the model carries that bucket all the way through.
   it("부모만 있는 노드도 속한 곳을 세고 핸드오프에 싣는다", () => {
     const parent = node("capability:frontmatter-to-ontology", [], { kind: "capability" });
     const selected = node("element:derive-ontology-from-vault", []);

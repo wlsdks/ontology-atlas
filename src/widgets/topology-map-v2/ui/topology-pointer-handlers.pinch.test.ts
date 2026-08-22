@@ -2,11 +2,12 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 /**
- * rank4 터치 핀치줌 (반응형 감사, 2026-07-23) — 두 터치 포인터의 거리 비율이
- * 카메라 TARGET 스케일을 구동하고(휠과 같은 target-compound 계약), 중점 이동이
- * 두-손가락 팬으로 떨어지는지, 그리고 두 번째 손가락이 닿는 순간 단일 손가락
- * 제스처가 클릭 커밋 없이 취소되는지 검증한다. 토큰은 카메라 수학에 필요한
- * 필드만 스텁.
+ * rank4 touch pinch zoom (responsive audit, 2026-07-23) — verifies that the distance
+ * ratio of two touch pointers drives the camera TARGET scale (the same
+ * target-compound contract as the wheel), that midpoint movement falls out as a
+ * two-finger pan, and that the instant a second finger lands the single-finger
+ * gesture is cancelled without committing a click. Only the token fields the camera
+ * maths needs are stubbed.
  */
 vi.mock("./topology-read-tokens", () => ({
   readTopologyV2TokensOrNull: vi.fn(() => ({
@@ -49,7 +50,7 @@ function buildRefs(overrides: Partial<PointerHandlerRefs> = {}): PointerHandlerR
     dragAffectedSetRef: ref(null),
     dragStartPosRef: ref(null),
     overviewScaleRef: ref(1),
-    // rank4 — 핀치는 opt-in: 훅 소유 refs 를 넘겨야 활성.
+    // rank4 — pinch is opt-in: it activates only when the hook-owned refs are passed.
     activeTouchesRef: ref(new Map<number, { x: number; y: number }>()),
     pinchRef: ref<{ dist: number; midX: number; midY: number } | null>(null),
     ...overrides,
@@ -66,8 +67,8 @@ function touchEvent(pointerId: number, x: number, y: number): ReactPointerEvent<
     currentTarget: {
       setPointerCapture: vi.fn(),
       getBoundingClientRect: () => ({ left: 0, top: 0 }),
-      // 실제 캔버스엔 항상 있는 것 — 커서 어포던스 배정(2026-07-28)이 호버
-      // 블록 밖으로 나오면서 이 경로도 지나간다.
+      // Always present on a real canvas — the cursor affordance assignment
+      // (2026-07-28) moved outside the hover block, so this path is taken too.
       style: {} as CSSStyleDeclaration,
     },
   } as unknown as ReactPointerEvent<HTMLCanvasElement>;
@@ -83,8 +84,8 @@ function mouseEvent(x: number, y: number): ReactPointerEvent<HTMLCanvasElement> 
     currentTarget: {
       setPointerCapture: vi.fn(),
       getBoundingClientRect: () => ({ left: 0, top: 0 }),
-      // 실제 캔버스엔 항상 있는 것 — 커서 어포던스 배정(2026-07-28)이 호버
-      // 블록 밖으로 나오면서 이 경로도 지나간다.
+      // Always present on a real canvas — the cursor affordance assignment
+      // (2026-07-28) moved outside the hover block, so this path is taken too.
       style: {} as CSSStyleDeclaration,
     },
   } as unknown as ReactPointerEvent<HTMLCanvasElement>;
@@ -97,17 +98,17 @@ describe("createTopologyPointerHandlers — 터치 핀치줌 (rank4)", () => {
 
     h.handlePointerDown(touchEvent(1, 300, 300));
     h.handlePointerDown(touchEvent(2, 500, 300));
-    // 핀치 진입: dist 200, mid (400, 300) = 뷰포트 정중앙.
+    // Entering the pinch: dist 200, mid (400, 300) = dead centre of the viewport.
     expect(refs.pinchRef!.current).not.toBeNull();
 
-    // B 를 오른쪽으로 100px — dist 300 (factor 1.5), mid (450, 300).
+    // Move B 100px right — dist 300 (factor 1.5), mid (450, 300).
     h.handlePointerMove(touchEvent(2, 600, 300));
 
     expect(refs.cameraTargetRef.current.tscale).toBeCloseTo(1.5, 5);
     // worldAtPrevMid = (400-400)/1 + 0 = 0 → after tx = 0 - (450-400)/1.5.
     expect(refs.cameraTargetRef.current.tx).toBeCloseTo(-50 / 1.5, 3);
     expect(refs.cameraTargetRef.current.ty).toBeCloseTo(0, 5);
-    // 휠과 같은 인터랙티브 스프링으로 전환.
+    // Switches to the same interactive spring as the wheel.
     expect(refs.cameraAngularFreqRef.current).toBe(10);
   });
 
@@ -118,7 +119,7 @@ describe("createTopologyPointerHandlers — 터치 핀치줌 (rank4)", () => {
 
     h.handlePointerDown(touchEvent(1, 300, 300));
     h.handlePointerDown(touchEvent(2, 500, 300));
-    // 핀치 진입 시 기계는 cancel 로 idle — 두 손가락을 얹는 행위는 선택이 아니다.
+    // The machine cancels to idle on entering a pinch — putting two fingers down is not a selection.
     expect(refs.pointerMachineRef.current.phase).toBe("idle");
 
     h.handlePointerUp(touchEvent(2, 500, 300));
@@ -150,7 +151,7 @@ describe("createTopologyPointerHandlers — 터치 핀치줌 (rank4)", () => {
     expect(refs.pinchRef!.current).toBeNull();
     expect(refs.activeTouchesRef!.current.size).toBe(1);
 
-    // 핀치 종료 후의 이동은 카메라를 건드리지 않는다(기계 idle + 핀치 null).
+    // Movement after the pinch ends does not touch the camera (machine idle plus pinch null).
     const before = { ...refs.cameraTargetRef.current };
     h.handlePointerMove(touchEvent(2, 550, 300));
     expect(refs.cameraTargetRef.current).toEqual(before);

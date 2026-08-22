@@ -1,8 +1,8 @@
 // `ontology-atlas path <from> <to> [vault]`
 // Shortest path between two slugs (BFS, undirected). Thin wrapper over MCP
-// find_path — same authority as a coding AI agent. find_path 의 `edges[]`
-// (relation type per hop) 도 함께 사용자에게 노출해, 두 노드가 *왜* 연결됐는지
-// 한 줄로 본다.
+// find_path — same authority as a coding AI agent. find_path's `edges[]` (the
+// relation type per hop) is exposed to the user as well, so *why* two nodes are
+// connected reads in one line.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

@@ -4,38 +4,41 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **`<b>` · `<strong>` 은 무게를 명시한다** — 안 적으면 브라우저 기본 **700** 이고,
- * 700 은 이 저장소의 무게 램프(510 · 560 · 650) 밖이다.
+ * **`<b>` and `<strong>` must state a weight** — otherwise the browser default is
+ * **700**, and 700 is outside this repository's weight ramp (510 · 560 · 650).
  *
- * ## 왜 이 게이트가 없으면 안 되나 (2026-08-05 실측)
+ * ## Why this gate is required (measured 2026-08-05)
  *
- * 무게 축을 닫고(#942) 이름 스텝을 전부 램프로 옮긴 **뒤에도**, 빌드된 화면에는
- * 700 이 그려지고 있었다. `/ko/projects/` 에서 **7개**가 잡혔고 전수는 **8곳**이다.
+ * **Even after** the weight axis was closed (#942) and every named step moved onto
+ * the ramp, built screens were still painting 700. `/ko/projects/` alone showed
+ * **7**, and the exhaustive count is **8 places**.
  *
- * 이 결함이 특별한 이유는 **코드에 아무 값도 안 남는다**는 것이다. `<b>` 에
- * 무게 클래스를 안 쓰면 lint 셀렉터가 볼 문자열이 없고, 램프 밖 값을 세는 어떤
- * 소스 스캔에도 안 걸린다. 커서 어포던스 게이트(`cursor-affordance.spec.ts`)가
- * 「중앙 규칙이 사라진 것은 렌더 결과를 재야 안다」고 적어 둔 것과 같은 층이고,
- * 실제로 이것도 **정적 export 를 브라우저에서 재다가** 잡혔다.
+ * What makes this defect special is that **no value is left in the code**. Without
+ * a weight class on `<b>` there is no string for a lint selector to see, and no
+ * source scan that counts off-ramp values can catch it. It is the same layer the
+ * cursor-affordance gate (`cursor-affordance.spec.ts`) describes when it says a
+ * missing central rule can only be seen by measuring the render — and this one was
+ * likewise caught **by measuring the static export in a browser**.
  *
- * 그리고 이미 **같은 파일 안에서 갈라져 있었다** — `TopologyV2DetailPanel` 의
- * 음각 숫자 `<b>` 8개 중 4개는 `strong`(650)을 명시했고 4개는 안 했다. 같은
- * 역할의 형제가 650 과 700 으로 갈린 것을 아무도 못 봤다.
+ * It had already **split within a single file**: of the 8 engraved-numeral `<b>`
+ * elements in `TopologyV2DetailPanel`, 4 stated `strong` (650) and 4 did not.
+ * Siblings in the same role diverged at 650 and 700 and nobody saw it.
  *
- * ## 왜 「700 금지」가 아니라 「명시 요구」인가
+ * ## Why "must state" rather than "700 forbidden"
  *
- * 700 이라고 적은 곳을 막는 것은 이미 `typographyAxisSelectors` 가 한다
- * (`font-bold` 이름 스텝 금지). 여기서 막는 것은 **아무것도 안 적은 것**이라,
- * 판정 기준이 «어떤 값인가» 가 아니라 «값이 있는가» 다.
+ * Blocking places that write 700 is already `typographyAxisSelectors`'s job (the
+ * `font-bold` named step is forbidden). What is blocked here is **writing nothing
+ * at all**, so the predicate asks whether a value exists, not which value it is.
  *
- * `font-normal`(400)도 통과다 — 「강조를 끈다」는 명시적 선언이고, 실제로
- * `<b>` 를 본문 무게로 되돌리는 데 쓰인다(`ConceptEgoCard` · `CommitDetail`).
+ * `font-normal` (400) passes too — it is an explicit declaration that emphasis is
+ * off, and it is genuinely used to return a `<b>` to body weight
+ * (`ConceptEgoCard`, `CommitDetail`).
  */
 
 const ROOT = process.cwd();
 const WEIGHT_DECL = /font-\[var\(--font-weight-[a-z]+\)\]|font-(?:normal|medium|semibold|bold|light|black)(?![-\w])/;
 
-/** 여는 태그를 중괄호 깊이로 끊는다 — 다행 태그와 콜백 중괄호를 넘긴다. */
+/** Terminates an opening tag by brace depth — steps over multi-line tags and callback braces. */
 function openingTag(src: string, from: number): string {
   let depth = 0;
   let quote: string | null = null;
@@ -52,19 +55,20 @@ function openingTag(src: string, from: number): string {
 }
 
 /**
- * **주석을 걷어낸다.** 안 걷으면 이 파일이 스스로 못 박은 함정에 빠진다 — 위
- * 독블록이 `<b>` 를 인용하고 있어서, 첫 구현은 자기 주석 2건을 위반으로 셌다.
- * (`unused-token-ratchet` 이 토큰의 주석 언급을 「쓰인다」로 오판하는 것과 같은
- * 병이고, 그건 2026-08-05 감사가 별건으로 등재했다.)
+ * **Strips comments.** Without this the file falls into the trap it documents — the
+ * doc-block above quotes `<b>`, and the first implementation counted 2 of its own
+ * comments as violations. (The same disease as `unused-token-ratchet` mistaking a
+ * token mentioned in a comment for a token in use, registered separately by the
+ * 2026-08-05 audit.)
  */
 function stripComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
 export interface BoldScan {
-  /** 스캔한 `<b>`/`<strong>` 총수 — 공회전 방지의 분모. */
+  /** Total `<b>`/`<strong>` scanned — the denominator of the idling guard. */
   total: number;
-  /** 무게 선언이 없는 자리. */
+  /** Places with no weight declaration. */
   implicit: string[];
 }
 
@@ -74,7 +78,7 @@ export function scanSource(rel: string, raw: string, acc: BoldScan): void {
     const tag = openingTag(src, m.index ?? 0);
     acc.total += 1;
     let effective = tag;
-    // `className={numeralClass}` 처럼 이름으로 참조하면 그 상수까지 한 단계 편다.
+    // When referenced by name, e.g. `className={numeralClass}`, expand that constant one level.
     const ref = /className=\{`?\$?\{?([A-Za-z_][A-Za-z0-9_]*)\}?/.exec(tag);
     if (ref && !/font-/.test(tag)) {
       const decl = new RegExp(`(?:const|let)\\s+${ref[1]}\\s*=\\s*([\\s\\S]{0,600}?);`, 'm').exec(src);
@@ -128,23 +132,23 @@ describe('<b>/<strong> 은 무게를 명시한다', () => {
       return acc;
     };
 
-    // 위반 — 무게 선언 없음
+    // Violation — no weight declared
     expect(probe('<b className="tabular-nums">1</b>').implicit).toEqual(['probe.tsx:1']);
     expect(probe('<strong>x</strong>').implicit).toEqual(['probe.tsx:1']);
 
-    // 정상 — 토큰 무게 · 명시적 해제
+    // Legitimate — token weight, and explicit removal
     expect(probe('<b className="font-[var(--font-weight-strong)]">1</b>').implicit).toEqual([]);
     expect(probe('<b className="font-normal tabular-nums">1</b>').implicit).toEqual([]);
 
-    // 정상 — 상수를 이름으로 참조해도 그 상수를 편다
+    // Legitimate — referencing a constant by name still expands that constant
     const viaConst = probe(
       'const numeralClass = "font-mono font-[var(--font-weight-strong)] text-x";\n<b className={numeralClass}>1</b>',
     );
     expect(viaConst.implicit, '상수 참조를 못 펴면 진짜 위반과 구별되지 않는다').toEqual([]);
-    // …그리고 그 상수에 무게가 없으면 여전히 잡는다
+    // …and if that constant carries no weight it is still caught
     expect(probe('const c = "font-mono text-x";\n<b className={c}>1</b>').implicit).toEqual(['probe.tsx:2']);
 
-    // 주석 속 `<b>` 는 세지 않는다 — 이 파일 자신의 독블록이 첫 구현을 오탐시켰다
+    // A `<b>` inside a comment is not counted — this file's own doc-block produced a false positive in the first implementation
     expect(probe('// `<b>` 는 안 적으면 700 이다\nconst a = 1;').total).toBe(0);
     expect(probe('/* <strong>x</strong> */\nconst a = 1;').total).toBe(0);
   });

@@ -1,15 +1,14 @@
 #!/usr/bin/env node
-// Docs Vault 빌드타임 매니페스트 생성기.
-// docs/**/*.md 를 스캔해서:
-//  1. public/docs-vault/{slug}.md 로 raw 복사
-//  2. src/entities/docs-vault/data/manifest.json 생성 — tree, docs, backlinks, tags
-//     (headings 는 번들 크기 때문에 manifest.headings.json 으로 분리 — `/docs` 만
-//     동적 import 한다)
-//  3. src/entities/docs-vault/data/content.json 생성 — desktop/static export fallback
-//  4. src/entities/docs-vault/data/gateway-content.json 생성 — gateway의 동기 guide/* fallback
-//  5. src/entities/docs-vault/data/gateway-changelog.json 생성 — /changelog 의
-//     동기 미리보기 (최근 절 + 접힌 절 수)
-// static export 빌드 중 'next build' 직전에 실행. 런타임 의존성 없음.
+// Docs vault build-time manifest generator. Scans docs/**/*.md and emits:
+//  1. raw copies at public/docs-vault/{slug}.md
+//  2. src/entities/docs-vault/data/manifest.json — tree, docs, backlinks, tags
+//     (headings are split into manifest.headings.json for bundle size — only
+//     `/docs` imports them dynamically)
+//  3. src/entities/docs-vault/data/content.json — desktop/static-export fallback
+//  4. src/entities/docs-vault/data/gateway-content.json — the gateway's synchronous guide/* fallback
+//  5. src/entities/docs-vault/data/gateway-changelog.json — /changelog's
+//     synchronous preview (recent sections + how many were folded)
+// Runs just before `next build` during the static export. No runtime dependencies.
 
 import { readFile, writeFile, mkdir, readdir, stat, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -38,16 +37,18 @@ const CONTENT_OUT = path.join(
   'data',
   'content.json',
 );
-// Gateway 는 client surface 에서 첫 페인트 전에 본문을 동기적으로 필요로 한다.
-// 전체 content.json 을 그 경로에 끌어들이지 않도록 guide/* 만 별도 작은 map 으로
-// 만든다. 나머지 문서는 public/docs-vault raw asset 으로 읽는다.
+// The gateway needs body text synchronously before first paint on the client
+// surface. To keep the whole of content.json out of that path, only guide/* goes
+// into this small map; every other document is read as a raw asset from
+// public/docs-vault.
 //
-// CHANGELOG 는 2026-08-19 부터 이 map 에 **전문으로 들어가지 않는다** — 파일이
-// 634KB 까지 자라 모든 라우트의 공통 청크를 데스크톱 성능 예산(최대 청크
-// 1.5MiB) 밖으로 밀어냈다. 관문 `/changelog` 가 첫 페인트에 동기로 필요로
-// 하는 것은 최근 절 몇 개 + 「몇 개를 접었는가」뿐이므로, 그만큼만
-// gateway-changelog.json 으로 잘라 담는다. `/docs` 의 CHANGELOG 전문은 다른
-// 문서와 똑같이 public/docs-vault/CHANGELOG.md 를 비동기로 읽는다.
+// Since 2026-08-19 the CHANGELOG is **not included in full** — the file had grown
+// to 634KB and pushed the chunk shared by every route past the desktop
+// performance budget (max chunk 1.5MiB). All the gateway's `/changelog` needs
+// synchronously at first paint is a few recent sections plus how many were
+// folded, so only that much is cut into gateway-changelog.json. `/docs` reads the
+// full CHANGELOG asynchronously from public/docs-vault/CHANGELOG.md like any
+// other document.
 const GATEWAY_CONTENT_OUT = path.join(
   ROOT,
   'src',
@@ -64,16 +65,18 @@ const GATEWAY_CHANGELOG_OUT = path.join(
   'data',
   'gateway-changelog.json',
 );
-// 번들에 담는 CHANGELOG 절 수. 관문 화면의 표시 상한(`app/[locale]/changelog/
-// page.tsx` 의 RECENT_SECTIONS = 12)보다 **커야 한다** — 화면은 여기서 받은
-// 것을 자기 상한으로 한 번 더 자르고, 두 절단의 접힌 수를 더해 정확한 총
-// 접힌 수를 말한다. 화면 상한을 이 값 위로 올리면 그만큼은 안 보인다.
+// How many CHANGELOG sections go into the bundle. It **must exceed** the screen's
+// display limit (RECENT_SECTIONS = 12 in `app/[locale]/changelog/page.tsx`) — the
+// screen trims what it receives once more against its own limit and adds the two
+// fold counts to report the exact total. Raising the screen's limit above this
+// value makes the excess invisible.
 export const GATEWAY_CHANGELOG_KEEP_SECTIONS = 16;
-// 매니페스트의 headings 는 `/docs` 화면(목차 레일·삽입)만 쓰는데 263KB 로
-// 모든 라우트의 공통 청크에 실렸다. 번들 매니페스트에서는 비우고 slug →
-// headings 맵을 별도 파일로 내, `/docs` 가 필요할 때 동적 import 한다.
-// 로컬 모드(사용자 vault)는 매니페스트를 디스크에서 만들므로 headings 가
-// 그대로 인라인이다 — 이 분리는 번들 볼트에만 적용된다.
+// The manifest's headings are used only by the `/docs` screen (the table-of-
+// contents rail and inserts), yet 263KB of them rode in the chunk shared by every
+// route. They are emptied in the bundled manifest and emitted as a separate
+// slug → headings map that `/docs` imports dynamically when needed.
+// Local mode (the user's vault) builds its manifest from disk, so headings stay
+// inline there — this split applies to the bundled vault only.
 const MANIFEST_HEADINGS_OUT = path.join(
   ROOT,
   'src',
@@ -90,13 +93,13 @@ const STOREFRONT_HEADINGS_OUT = path.join(
   'data',
   'sample-storefront.headings.json',
 );
-// P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자체 설명)
-// 대신 즉시 알아볼 수 있는 예시 비즈니스("온라인 쇼핑몰")를 볼 수 있게
-// `samples/storefront/` 를 별도 매니페스트/콘텐츠 쌍으로 빌드한다. dogfood
-// 출력(manifest.json/content.json/public/docs-vault)은 절대 건드리지 않는다 —
-// `docs-vault:check` 가 그대로 통과해야 한다. public raw 복사와 dogfood
-// census 모듈은 storefront 에는 만들지 않는다(스코프 최소화 — 소비처가
-// 아직 JSON import 뿐).
+// Recognisable sample vault (2026-07): `samples/storefront/` is built as its own
+// manifest/content pair so a non-developer sees an example business ("online
+// storefront") instead of the dogfood vault, which describes this tool itself.
+// The dogfood output (manifest.json / content.json / public/docs-vault) is never
+// touched — `docs-vault:check` must keep passing unchanged. No public raw copies
+// and no census module are produced for storefront: its only consumer so far is a
+// JSON import.
 const SAMPLES_STOREFRONT_DIR = path.join(ROOT, 'samples', 'storefront');
 const STOREFRONT_MANIFEST_OUT = path.join(
   ROOT,
@@ -114,13 +117,11 @@ const STOREFRONT_CONTENT_OUT = path.join(
   'data',
   'sample-storefront.content.json',
 );
-// /download 소개 섹션의 evidence 미니어처(VaultInstrument)가 소비하는
-// dogfood vault census. manifest.json(400KB)을 그 번들에 싣지 않기 위해
-// 작은 상수 모듈로 분리 생성. root-first-open R+ 이전엔 `/` 의 LandingPage
-// 가 이 미니어처를 그렸다 — LandingPage 제거 후 소개 콘텐츠와 함께
-// `/download` 로 이관.
+// The dogfood vault census consumed by the evidence miniature (VaultInstrument)
+// in `/download`'s intro section. Emitted as a small constants module so that
+// manifest.json (400KB) never enters that bundle.
 
-/** 얕은(depth 제한) 클론인가. git 이 없거나 저장소가 아니면 false. */
+/** Is this a shallow (depth-limited) clone? False when git is absent or this is not a repository. */
 export function isShallowRepository(rootDir) {
   try {
     return (
@@ -135,30 +136,32 @@ export function isShallowRepository(rootDir) {
 }
 
 /**
- * 문서별 "마지막으로 바뀐 날" — 그 파일을 마지막으로 만진 커밋의 **날짜**
- * (`%cs`, 커밋이 기록한 자기 타임존 기준 YYYY-MM-DD).
+ * Per-document "last changed" — the **date** of the commit that last touched the
+ * file (`%cs`, YYYY-MM-DD in the commit's own timezone).
  *
- * 왜 시각이 아니라 날짜인가: 이 값은 커밋에 **같이 담기는** 생성물 안에
- * 들어가는데, 그 커밋의 시각은 생성 시점에 알 수 없다. GitHub squash-merge
- * 는 PR 브랜치 커밋을 버리고 새 커밋을 만들어 시각을 다시 찍고, rebase /
- * amend 도 같은 일을 한다. 그래서 시각 정밀도로 기록하면 기준선은 **태어날
- * 때부터 어긋난다** — main 의 커밋 25개를 실측했을 때 문서 1~32건이 항상
- * 틀려 있었고(24/25 커밋), 그 어긋남을 나중에 누가 재생성하면 자기가 고치지
- * 않은 줄이 diff 에 올라와 리베이스 충돌과 유령 diff 가 됐다.
+ * **Date, not timestamp**, because this value goes into generated output that is
+ * committed **alongside** that commit, whose timestamp is unknowable at generation
+ * time. GitHub squash-merge discards the PR branch's commits and stamps a new
+ * time; rebase and amend do the same. Recorded at timestamp precision the baseline
+ * is therefore **wrong from birth** — across 25 commits on main, 1–32 documents
+ * were always wrong (24 of 25 commits), and when someone later regenerated it,
+ * lines they had not touched appeared in the diff, producing rebase conflicts and
+ * phantom diffs.
  *
- * 날짜 정밀도로 내리면 병합이 시각을 다시 찍어도 **같은 날**이라 값이 그대로다
- * (같은 날 두 PR 이 같은 문자열을 쓰므로 git 이 자동 병합한다). 소비처는 전부
- * 일 단위 이상이다 — "N일 전" 사다리, 최근 7일 렌즈, 주별 히트맵, 정렬.
+ * At date precision a merge restamping the time still lands on the **same day**, so
+ * the value is unchanged (two PRs on the same day write the same string and git
+ * auto-merges). Every consumer works at day granularity or coarser: the "N days
+ * ago" ramp, the last-7-days lens, the weekly heatmap, and sorting.
  */
 function gitLastCommitDays(rootDir, scopeDir) {
   const days = new Map();
   const dirty = new Set();
   try {
     const scope = path.relative(rootDir, scopeDir).replace(/\\/g, '/') || '.';
-    // 얕은 클론 경고 — depth 1 체크아웃에서는 유일한 커밋이 부모 없는 root 로
-    // 취급돼 `--name-only` 가 **전체 트리**를 그 한 커밋에 귀속시킨다. 그러면
-    // 문서 전부가 같은 날짜를 받아 신선도 렌즈가 통째로 평평해진다(실측:
-    // 247 경로 → 서로 다른 날짜 1개). CI 는 `fetch-depth: 0` 이어야 한다.
+    // Shallow-clone warning — in a depth-1 checkout the single commit is treated as
+    // a parentless root, so `--name-only` attributes the **entire tree** to it. Every
+    // document then gets the same date and the freshness lens goes completely flat
+    // (measured: 247 paths → 1 distinct date). CI must use `fetch-depth: 0`.
     if (isShallowRepository(rootDir)) {
       console.warn(
         '[docs-vault] ⚠️ 얕은 git 클론이다 — 문서 날짜가 전부 같아진다. 전체 히스토리로 체크아웃할 것 (CI: fetch-depth: 0).',
@@ -189,18 +192,19 @@ function gitLastCommitDays(rootDir, scopeDir) {
       if (file) dirty.add(file);
     }
   } catch {
-    // git 미설치/비저장소(배포 tarball 등) — mtime 날짜로 폴백.
+    // No git, or not a repository (a release tarball) — fall back to the mtime date.
   }
   return { days, dirty };
 }
 
 /**
- * 로컬 타임존 기준 `YYYY-MM-DD`. `%cs` 가 커밋 자기 타임존의 날짜를 주므로
- * mtime 쪽도 같은 관례(로컬)로 맞춘다 — UTC 로 자르면 KST 오전에 편집한
- * 파일이 "어제" 로 기록돼, 그 편집을 담는 커밋의 `%cs`("오늘")와 어긋난다.
- * mtime 경로는 dirty/untracked 문서에만 쓰이므로 결과가 머신 타임존에
- * 의존하는 범위도 그 작성자의 워킹트리로 한정된다(체크아웃 상태에는 dirty
- * 문서가 없어 CI·새 워크트리는 타임존 무관).
+ * `YYYY-MM-DD` in the local timezone. `%cs` gives the date in the commit's own
+ * timezone, so the mtime path follows the same convention — truncating in UTC
+ * would record a file edited on a KST morning as "yesterday", disagreeing with the
+ * `%cs` ("today") of the commit that carries the edit. The mtime path is used only
+ * for dirty or untracked documents, so the machine-timezone dependence is confined
+ * to that author's working tree (a clean checkout has no dirty documents, so CI and
+ * fresh worktrees are timezone-independent).
  */
 export function localDayStamp(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -241,8 +245,8 @@ async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
-    // superpowers/ 는 AI 에이전트 내부 계획·스펙 문서함 (docs/superpowers/plans·specs).
-    // 사용자 docs vault 콘텐츠가 아니므로 빌드 스캔에서 제외 — content.json 오염 방지.
+    // superpowers/ holds internal agent plans and specs (docs/superpowers/plans·specs).
+    // Not user docs-vault content, so it is excluded to keep content.json clean.
     if (entry.isDirectory() && entry.name === 'superpowers') continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -255,8 +259,9 @@ async function walk(dir) {
   return out;
 }
 
-// parser 는 scripts/lib/parse-frontmatter.mjs 의 단일 진실원에서 import.
-// (R11 — 빌드 스크립트 / validator CLI / 런타임 파서 drift 방지)
+// The parser is imported from the single source of truth in
+// scripts/lib/parse-frontmatter.mjs, so the build script, the validator CLI, and
+// the runtime parser cannot drift apart.
 
 function slugFromPath(full, baseDir = DOCS_DIR) {
   const rel = path.relative(baseDir, full).replace(/\\/g, '/');
@@ -319,16 +324,17 @@ function buildExcerpt(body) {
   return stripped.slice(0, 320);
 }
 
-// 위키링크 target 을 문서가 속한 vault 기준으로 정규화 — mirror of
-// src/shared/lib/parse-frontmatter.ts#resolveWikilinkTargetSlug (동일 로직
-// 두 곳에 물리적으로 중복돼 있음 — parser 3-way contract 처럼 별도 계약
-// 테스트는 아직 없지만, 여기 고치면 저기도 같이 고쳐야 drift 안 남).
-// docs/ontology/ 는 이 프로젝트가 dogfood 하는 중첩 MCP vault — 그 안의
-// 위키링크는 MCP 툴/사람이 쓰는 `capabilities/x` 같은 ontology-vault-루트
-// 기준 slug 를 그대로 쓰지만, `/docs` 통합 트리에서 실제 slug 는
-// `ontology/` 접두사가 붙어 접두사 보정 없이는 backlinksDetail 키가
-// 어긋나 실제 역참조가 있어도 조회에서 누락된다 (persona QA
-// fix/persona-findings ③).
+// Normalises a wikilink target against the vault the document belongs to.
+// Mirrors src/shared/lib/parse-frontmatter.ts#resolveWikilinkTargetSlug — the
+// same logic is physically duplicated in both places, and unlike the parser's
+// 3-way contract there is no contract test yet, so a fix here must be applied
+// there too or they drift.
+//
+// docs/ontology/ is the nested MCP vault this project dogfoods. Wikilinks inside
+// it use slugs relative to the ontology vault root (`capabilities/x`) as MCP
+// tools and people write them, but in the merged `/docs` tree the real slug
+// carries an `ontology/` prefix. Without that correction the backlinksDetail keys
+// diverge and real backlinks go missing from lookups.
 export function resolveWikilinkTargetSlug(targetSlug, fromSlug) {
   if (fromSlug.startsWith('ontology/') && !targetSlug.startsWith('ontology/')) {
     return `ontology/${targetSlug}`;
@@ -336,8 +342,9 @@ export function resolveWikilinkTargetSlug(targetSlug, fromSlug) {
   return targetSlug;
 }
 
-// 링크 추출 — 상대 경로 md 참조 + 옵시디언 wikilinks. 외부 URL·이미지·
-// 앵커 only 는 무시. 각 링크마다 targetSlug + 주변 context (120자) 반환.
+// Extracts links — relative md references plus Obsidian wikilinks. External URLs,
+// images, and anchor-only links are ignored. Returns a targetSlug plus 120
+// characters of surrounding context per link.
 export function extractOutLinksWithContext(body, fromSlug) {
   const slugs = new Set();
   const contexts = [];
@@ -367,8 +374,8 @@ export function extractOutLinksWithContext(body, fromSlug) {
     contexts.push({ target: targetSlug, context, linkText });
   }
   // Wikilinks [[slug]] / [[slug|text]] / [[slug#anchor]] — vault root slug
-  // (중첩된 ontology/ vault 안에서는 그 vault 의 루트 기준 — 위
-  // resolveWikilinkTargetSlug 참고).
+  // (inside the nested ontology/ vault these are relative to that vault's root —
+  // see resolveWikilinkTargetSlug above).
   const wre = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
   while ((m = wre.exec(body))) {
     const targetSpec = m[1].trim();
@@ -420,7 +427,7 @@ function insertIntoTree(root, slug, title) {
 function sortTree(node) {
   if (!node.children) return;
   node.children.sort((a, b) => {
-    // 디렉터리 먼저, 그 다음 파일. 그 안에서는 name 알파벳/한글 순.
+    // Directories first, then files; within each group sorted by name.
     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
     return a.name.localeCompare(b.name, 'ko');
   });
@@ -431,11 +438,11 @@ async function ensureDir(dir) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 }
 
-// 매니페스트 스탬프 = 소스 문서 중 가장 최근 `updatedAt` **날짜**. 빌드 벽시계는
-// 절대 쓰지 않는다 — 벽시계를 쓰면 재생성마다 파일 3번째 줄이 바뀌어 동시에
-// 열린 PR 두 개가 **항상** 여기서 충돌한다(오늘 리베이스 충돌의 고정 지분).
-// 날짜 정밀도라서 같은 날 재생성한 두 브랜치는 같은 문자열을 써 자동 병합된다.
-// 날짜 있는 문서가 없으면 고정 폴백.
+// The manifest stamp is the most recent `updatedAt` **date** among source
+// documents. Never the build wall clock: a wall clock changes the file's third
+// line on every regeneration, so two open PRs **always** conflict here. At date
+// precision two branches regenerating on the same day write the same string and
+// git auto-merges. Fixed fallback when no document carries a date.
 const STABLE_GENERATED_AT_FALLBACK = '1970-01-01';
 export function deterministicGeneratedAt(docs) {
   const days = (docs ?? [])
@@ -446,12 +453,13 @@ export function deterministicGeneratedAt(docs) {
 }
 
 /**
- * `## ` 절 단위로 앞에서 `limit` 개만 남긴다 — **`src/views/gateway-doc/lib/
- * vault-doc.ts` 의 `trimToRecentSections` 와 같은 의미론이어야 한다.** 화면이
- * 번들된 미리보기를 자기 상한으로 한 번 더 자르므로, 두 구현의 절 경계가
- * 어긋나면 「접힌 절 수」가 거짓말이 된다. 그 동일성은
- * `tests/contract/gateway-changelog-preview.contract.test.ts` 가 실제
- * CHANGELOG 로 실증한다 (parse-frontmatter 3-way 계약과 같은 패턴).
+ * Keeps the first `limit` `## ` sections. **This must have the same semantics as
+ * `trimToRecentSections` in `src/views/gateway-doc/lib/vault-doc.ts`**: the screen
+ * trims the bundled preview once more against its own limit, so if the two
+ * implementations disagree on section boundaries the reported fold count is a lie.
+ * `tests/contract/gateway-changelog-preview.contract.test.ts` proves the two agree
+ * against the real CHANGELOG (the same pattern as the parse-frontmatter 3-way
+ * contract).
  */
 export function trimToRecentSections(markdown, limit) {
   const lines = markdown.split('\n');
@@ -473,9 +481,10 @@ export function trimToRecentSections(markdown, limit) {
 }
 
 /**
- * 번들 매니페스트에서 headings 를 떼어낸다 — 매니페스트의 docs 는
- * `headings: []` 가 되고, 떼어낸 것은 slug → headings 맵으로 돌아온다
- * (빈 배열은 맵에 넣지 않는다 — 바이트만 쓰고 정보가 없다).
+ * Splits headings out of the bundled manifest: the manifest's docs get
+ * `headings: []` and the removed headings come back as a slug → headings map.
+ * Empty arrays are omitted from the map — they cost bytes and carry no
+ * information.
  */
 export function splitManifestHeadings(manifest) {
   const headingsBySlug = {};
@@ -519,8 +528,8 @@ export function comparableDoc(doc) {
   };
 }
 
-// Dogfood census 모듈 소스 — deterministic (timestamp 없음). vault 내용이
-// 실제로 바뀔 때만 diff 가 난다. 음각 숫자 = 실데이터 계약의 산출물.
+// Source of the dogfood census module — deterministic, with no timestamp, so it
+// only diffs when the vault content actually changes.
 
 async function assertOutputsCurrent({
   manifest,
@@ -613,16 +622,17 @@ async function assertOutputsCurrent({
 }
 
 /**
- * 한 vault 디렉터리(docs/ 또는 samples/storefront/)를 스캔해서
- * manifest/content/publicFiles 를 조립하는 공용 코어. dogfood(docs/) 빌드가
- * 원래 갖고 있던 로직 그대로 — 새 샘플 vault(storefront)를 추가하며
- * dogfood 출력에 바이트 단위 회귀가 없도록 분리만 했다(동작 변경 없음).
- * `publicOutDir` 가 주어지면 `!check` 일 때 raw md 를 그 아래로 복사한다
- * (storefront 는 아직 공개 raw 사본이 필요한 소비처가 없어 `null`).
+ * Shared core that scans one vault directory (docs/ or samples/storefront/) and
+ * assembles manifest / content / publicFiles. This is the dogfood (docs/) build's
+ * original logic, extracted unchanged when the storefront sample vault was added
+ * so the dogfood output could not regress by a single byte.
  *
- * export 인 이유: 결정성 계약 테스트가 임시 git 저장소를 `rootDir`/`dir` 로
- * 넘겨 "커밋 시각을 같은 날 안에서 바꿔 써도 산출물 바이트가 같다" 를
- * 실증한다 (`check: true` 로 부르면 아무것도 쓰지 않는다).
+ * When `publicOutDir` is given and `check` is false, raw md is copied beneath it
+ * (storefront passes `null` — nothing consumes public raw copies for it yet).
+ *
+ * Exported because the determinism contract test passes a temporary git
+ * repository as `rootDir`/`dir` to prove that rewriting commit times within the
+ * same day produces byte-identical output (`check: true` writes nothing).
  */
 export async function scanVaultDir(
   dir,
@@ -633,7 +643,7 @@ export async function scanVaultDir(
   const docs = [];
   const publicFiles = [];
   const content = {};
-  // backlinksDetail 만 유지 — 단순 backlinks (deprecated) 는 manifest 에서 제거.
+  // Only backlinksDetail is kept; the plain deprecated backlinks list is gone.
   const backlinksDetailMap = new Map(); // slug -> Array<{ fromSlug, context, linkText }>
   const tagsMap = new Map(); // tag -> Set<slug>
 
@@ -685,23 +695,24 @@ export async function scanVaultDir(
       headings,
       excerpt: buildExcerpt(body),
       wordCount: body.split(/\s+/).filter(Boolean).length,
-      // 커밋 날짜 우선 — 워킹트리에서 고치는 중(dirty)이거나 아직 추적되지
-      // 않은 문서만 mtime 날짜. 둘 다 "날짜" 라서 편집한 날과 그 편집이
-      // 병합되는 날이 같은 한 값이 흔들리지 않는다.
+      // Commit date wins; the mtime date is used only for documents that are dirty in
+      // the working tree or still untracked. Both are dates, so the value is stable as
+      // long as the edit and its merge land on the same day.
       updatedAt: committedDay ?? localDayStamp(st.mtime) ?? STABLE_GENERATED_AT_FALLBACK,
       linksOut,
     };
-    // 이전 manifest 값을 되살리는 안정화 장치는 제거했다 — 생성물이 자기
-    // 직전 생성물에 의존하면 "같은 입력 → 같은 바이트" 가 성립하지 않는다
-    // (기준선이 유실되거나 다른 순서로 재생성되면 값이 갈린다). 날짜 정밀도가
-    // 그 장치가 막으려던 mtime 널뜀을 이미 흡수한다.
+    // The stabiliser that carried values over from the previous manifest was
+    // removed: when generated output depends on its own previous output, "same input
+    // → same bytes" no longer holds (losing the baseline or regenerating in a
+    // different order splits the value). Date precision already absorbs the mtime
+    // jitter that stabiliser existed to hide.
     docs.push(nextDoc);
 
     publicFiles.push({ relativePath: `${slug}.md`, raw });
     content[slug] = raw;
 
     if (!check && publicOutDir) {
-      // raw md 를 public/docs-vault 아래 slug 로 복사. 경로의 서브디렉토리까지 생성.
+      // Copy raw md under public/docs-vault by slug, creating subdirectories as needed.
       const outPath = path.join(publicOutDir, `${slug}.md`);
       await ensureDir(path.dirname(outPath));
       await writeFile(outPath, raw, 'utf8');
@@ -779,8 +790,8 @@ export async function scanVaultDir(
 
   const backlinksDetail = {};
   for (const [slug, list] of backlinksDetailMap) {
-    // fromSlug 로 그룹 후 첫 컨텍스트만 유지 (한 문서에서 여러 번 인용해도
-    // 한 줄만 보여줌). fromSlug 알파벳 순 정렬.
+    // Group by fromSlug and keep only the first context, so a document citing the
+    // target several times still shows one line. Sorted by fromSlug.
     const byFrom = new Map();
     for (const entry of list) {
       if (!byFrom.has(entry.fromSlug)) byFrom.set(entry.fromSlug, entry);
@@ -796,10 +807,10 @@ export async function scanVaultDir(
 
   const manifest = {
     version: '2026-04-23',
-    // 스탬프는 소스 문서 중 가장 최근 변경 **날짜** 다 — 빌드 벽시계도, 직전
-    // 생성물도 참조하지 않는다. 그래서 같은 소스는 어느 머신에서 몇 번을
-    // 재생성해도 같은 바이트가 나오고, 같은 날 갈라진 두 브랜치는 이 줄에서
-    // 충돌하지 않는다.
+    // The stamp is the most recent change **date** among source documents — never
+    // the build wall clock and never the previous output. So the same source
+    // regenerates to the same bytes on any machine any number of times, and two
+    // branches that diverged on the same day do not conflict on this line.
     generatedAt: deterministicGeneratedAt(docs),
     docs,
     backlinksDetail,
@@ -807,8 +818,8 @@ export async function scanVaultDir(
     tree,
   };
 
-  // CHANGELOG 는 전문 대신 gateway-changelog.json 미리보기로 나간다 — 파일
-  // 상단의 GATEWAY_CHANGELOG_OUT 주석 참조.
+  // The CHANGELOG ships as the gateway-changelog.json preview rather than in full —
+  // see the GATEWAY_CHANGELOG_OUT comment at the top of this file.
   const gatewayContent = Object.fromEntries(
     Object.entries(content).filter(([slug]) => slug.startsWith('guide/')),
   );
@@ -823,7 +834,7 @@ async function buildDocsVault({ check = false } = {}) {
   }
 
   if (!check) {
-    // public/docs-vault 를 먼저 비움 — 삭제된 문서가 stale 로 남지 않게
+    // Empty public/docs-vault first so deleted documents cannot linger
     if (existsSync(PUBLIC_OUT)) {
       await rm(PUBLIC_OUT, { recursive: true, force: true });
     }
@@ -837,8 +848,8 @@ async function buildDocsVault({ check = false } = {}) {
     check,
   });
   const { content, gatewayContent, publicFiles } = scanned;
-  // 번들 매니페스트는 headings 를 별도 파일로 떼고 나간다 — 상단
-  // MANIFEST_HEADINGS_OUT 주석 참조.
+  // The bundled manifest ships with headings split into a separate file — see the
+  // MANIFEST_HEADINGS_OUT comment at the top of this file.
   const { manifest, headingsBySlug } = splitManifestHeadings(scanned.manifest);
   const { docs, backlinksDetail, tags } = manifest;
   const changelogRaw = content['CHANGELOG'];
@@ -877,10 +888,10 @@ async function buildDocsVault({ check = false } = {}) {
 }
 
 /**
- * 샘플 storefront vault (`samples/storefront/`) 빌드 — dogfood 와 별도
- * manifest/content 쌍만 만든다. public raw 사본·census 모듈·PUBLIC_OUT 초기화
- * 없음(아직 필요한 소비처가 없어 스코프를 최소화했다 — 필요해지면 이 함수
- * 안에서만 확장).
+ * Builds the storefront sample vault (`samples/storefront/`) — only its own
+ * manifest/content pair, separate from dogfood. No public raw copies, no census
+ * module, no PUBLIC_OUT reset: nothing consumes them yet, and when something does
+ * the extension stays inside this function.
  */
 async function buildStorefrontSample({ check = false } = {}) {
   if (!existsSync(SAMPLES_STOREFRONT_DIR)) {

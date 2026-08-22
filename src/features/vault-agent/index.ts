@@ -1,9 +1,9 @@
 /**
- * 볼트 에이전트 — 화면 문맥을 가진, 볼트 한정 도구 루프.
+ * The vault agent — a vault-scoped tool loop with screen context.
  *
- * 이 배럴이 내보내는 것에 **쓰기 함수는 없다.** 쓰기는 동의 카드 핸들러가
- * 부르는 `proposal-applier` 하나뿐이고, 그것도 위젯이 주입한 쓰기 포트를
- * 통해서만 디스크에 닿는다.
+ * **This barrel exports no write function.** The only write is `proposal-applier`,
+ * called by the consent card's handler, and even that reaches the disk only through a
+ * write port injected by the widget.
  */
 export { runTurn, startTurn } from './model/agent-loop';
 export type { AgentLoopDeps, StartTurnInput, TurnRunResult } from './model/agent-loop';

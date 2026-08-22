@@ -39,9 +39,9 @@ export function isMacosReleasePublished(): boolean {
 }
 
 /**
- * 릴리스 시점. 레퍼런스 다운로드 페이지가 버전 옆에 거의 항상 함께 두는 사실이다
- * (예: Zed 는 버전과 날짜를 한 줄에 둔다) — 버전 문자열만으로는 "이게 지난주
- * 빌드인지 재작년 빌드인지" 를 알 수 없기 때문이다.
+ * The release date. Reference download pages nearly always put it beside the version (Zed, for
+ * instance, puts version and date on one line) — a version string alone cannot tell you whether this
+ * is last week's build or the year before last's.
  */
 export function macosPublishedDate(): Date | null {
   if (!MACOS_RELEASE.publishedAt) return null;

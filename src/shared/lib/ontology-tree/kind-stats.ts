@@ -1,19 +1,18 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 /**
- * "사용자 관심 단위" 의 ontology 노드 kind — Strip / Dashboard / Project
- * overview 등 stat surface 에서 공통으로 카운트하는 kind 집합.
+ * The node kinds a user actually thinks in — the set every stat surface counts.
  *
- * 제외:
- *  - `project` — 메타 라벨. 트리의 최상위지만 사용자가 "내 ontology 가 N 개"
- *    라고 셀 때 카운트하지 않는다.
- *  - `document` — 근거 노드. describes 관계로 개념과 연결되며 사용자가
- *    개념·역량·요소 단위로 인식하는 통계에는 들어가지 않는다.
+ * Excluded:
+ *  - `project` — a meta label. It is the root of the tree, but nobody counts it when saying
+ *    "my ontology has N of these".
+ *  - `document` — an evidence node, linked to concepts through `describes`. It does not
+ *    belong in statistics the user reads as domains, capabilities and elements.
  *
- * 포함:
- *  - `domain` / `capability` / `element` — 진짜 의미 단위.
- *  - `unknown` — stub placeholder. 사용자가 "검수 대기" 상태로 인식해야 하므로
- *    분포에 표시하되 amber 톤으로 강조 (UI 측 책임).
+ * Included:
+ *  - `domain` / `capability` / `element` — the real units of meaning.
+ *  - `unknown` — a stub placeholder. It appears in the distribution because the user needs to
+ *    see it as awaiting review, highlighted in the amber tone (the UI's job).
  */
 export const MEANINGFUL_ONTOLOGY_KINDS = [
   "domain",
@@ -37,8 +36,8 @@ export interface OntologyKindStats {
 }
 
 /**
- * stat surface 들이 공통으로 쓰는 kind 분포. 입력 순서와 무관하게 결과의
- * `byKind` 는 `MEANINGFUL_ONTOLOGY_KINDS` 순서로 0 포함 dense map.
+ * The kind distribution every stat surface shares. Regardless of input order, `byKind` is a
+ * dense map in `MEANINGFUL_ONTOLOGY_KINDS` order, zeros included.
  */
 export function buildMeaningfulOntologyStats(
   nodes: readonly KnowledgeGraphNode[],

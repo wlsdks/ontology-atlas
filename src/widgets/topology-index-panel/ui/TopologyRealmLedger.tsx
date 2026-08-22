@@ -26,55 +26,55 @@ import {
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import { fieldClass } from '@/shared/ui/control-class';
 
-/** 결계 관계 한 줄 — 이미 i18n 라벨까지 조립된 표시용 행(HomePage 가 만든다). */
+/** One boundary relation row — display-ready, with i18n labels already assembled (HomePage builds it). */
 export interface RealmBoundaryRow {
   edgeId: string;
   fromTitle: string;
   toTitle: string;
-  /** 관계 타입의 평문 라벨(예: "의존") — HomePage 의 relationVocabulary 로 조립. */
+/** The relation type's plain label (e.g. "depends on") — assembled by HomePage's relationVocabulary. */
   relationLabel: string;
   outsideId: string;
   jumpRealmId: string;
 }
 
 export interface TopologyRealmLedgerLabels {
-  /** 상단 eyebrow — "영역". */
+  /** The top eyebrow — 「영역」 (realm). */
   label: string;
-  /** 영역 census 조각 라벨. */
+  /** Labels for the realm census fragments. */
   elementsShort: string;
   capabilitiesShort: string;
   depthShort: string;
-  /** 영역 트리 검색 placeholder. */
+  /** Placeholder for the realm tree's search field. */
   searchPlaceholder: string;
-  /** "영역 해제" 텍스트 버튼. */
+  /** The 「영역 해제」 (leave realm) text button. */
   exit: string;
   exitAria: string;
-  /** 트리가 비었을 때(검색 결과 0 등) 한 줄 문구. */
+  /** The one-line message when the tree is empty (zero search results and the like). */
   emptyHint: string;
-  /** "바깥과 닿은 관계 N"(HomePage 가 count 포맷) — 기본 접힘 요약 한 줄. */
+  /** "N relations touching the outside" (HomePage formats the count) — the collapsed-by-default summary line. */
   boundaryHeading: string;
   boundaryToggleAria: string;
-  /** "이 영역으로 이동" 행 호버 액션. */
+  /** The 「이 영역으로 이동」 (go to this realm) hover action on a row. */
   boundaryJump: string;
   boundaryJumpAria: string;
-  /** 영역이 완전히 고립됐을 때 한 줄 문구. */
+  /** The one-line message when a realm is completely isolated. */
   boundaryEmpty: string;
-  // TopologyIndexTreeRow 로 넘길 트리 행 라벨.
+  // Tree row labels forwarded to TopologyIndexTreeRow.
   freshTitle: string;
   domainCountTitle: string;
 }
 
 export interface TopologyRealmLedgerProps {
-  /** 영역 루트 노드 — 헤더 글리프/제목. */
+  /** The realm's root node — the header glyph and title. */
   rootKind: string;
   rootTitle: string;
-  /** 영역 census 조각(요소/역량/깊이). HomePage 가 파생. */
+  /** Realm census fragments (elements, capabilities, depth). Derived by HomePage. */
   census: { elementCount: number; capabilityCount: number; depth: number };
-  /** 영역 서브트리 — 루트의 자식들이 트리 최상위 행이 된다. */
+  /** The realm subtree — the root's children become the tree's top-level rows. */
   subtree: OntologyTreeNode;
-  /** 경계 엣지 표시 행(상위 몇 개). */
+  /** The boundary edge rows to display (the top few). */
   boundaryRows: RealmBoundaryRow[];
-  /** 경계 엣지 총수(행 슬라이스와 무관한 전체). */
+  /** The total boundary edge count (the whole set, independent of the row slice). */
   boundaryTotal: number;
   selectedId: string | null;
   changedSlugs: ReadonlySet<string>;
@@ -88,21 +88,26 @@ export interface TopologyRealmLedgerProps {
 }
 
 /**
- * 영역 대장(Realm Ledger) — 영역 전개(`?realm=slug`) 중 좌측 패널이 전역 INDEX
- * 대신 **이 노드의 세계만** 보여주는 변신 표면(S7, fable 설계 + 소유자 절제
- * 지시). 전역 첫 실행 카드·전역 census·전역 트리·전역 푸터는 전부 숨고, 정확히
- * 세 덩어리만 남는다:
+ * The realm ledger — while a realm is expanded (`?realm=slug`), the left panel
+ * transforms to show **only this node's world** instead of the global INDEX (fable's
+ * design plus the owner's instruction to keep it restrained). The global first-run
+ * card, global census, global tree and global footer all hide, and exactly three
+ * blocks remain:
  *
- *   1. 헤더 — 루트 글리프 + 제목 + census 한 줄 + 조용한 "영역 해제" 텍스트.
- *   2. 영역 트리 — 루트 서브트리만(검색 포함).
- *   3. 결계 관계 — 기본 접힘 요약 한 줄("바깥과 닿은 관계 N"), 펼쳐야 리스트.
+ *   1. Header — root glyph, title, a one-line census, and a quiet 「영역 해제」 (leave
+ *      realm) text button.
+ *   2. Realm tree — the root subtree only, search included.
+ *   3. Boundary relations — a collapsed-by-default summary line ("N relations
+ *      touching the outside"); the list appears only when expanded.
  *
- * 절제 계약(소유자 반려 기준): 박스 안 박스 없음(섹션 구분은 caps eyebrow +
- * 여백 + 헤어라인 divider 하나), 뱃지/칩 수프 없음(census 한 줄 텍스트, 점프는
- * 행 호버에만 드러나는 조용한 액션), 빈 상태는 문구 한 줄. 전역
- * `TopologyIndexPanel` 과 같은 `--topology-v2-panel-*` / `--topology-index-*`
- * 토큰·같은 aside 셸·같은 `TopologyIndexTreeRow` 를 재사용한다 — 콘텐츠만 영역
- * 스코프로 좁힌 자매 패널.
+ * The restraint contract (the owner's rejection criteria): no box inside a box
+ * (sections are separated by a caps eyebrow, whitespace and one hairline divider),
+ * no badge or chip soup (the census is one line of text, and the jump is a quiet
+ * action revealed only on row hover), and an empty state is one line of copy. It
+ * reuses the global `TopologyIndexPanel`'s `--topology-v2-panel-*` /
+ * `--topology-index-*` tokens, the same aside shell and the same
+ * `TopologyIndexTreeRow` — a sister panel with only its content narrowed to the
+ * realm's scope.
  */
 export function TopologyRealmLedger({
   rootKind,
@@ -122,12 +127,12 @@ export function TopologyRealmLedger({
   className,
 }: TopologyRealmLedgerProps) {
   const [query, setQuery] = useState("");
-  // 영역 트리 최상위 = 루트의 직속 자식들(루트 자신은 헤더가 이미 이름).
+  // The realm tree's top level is the root's direct children (the header already names the root itself).
   const childRoots = subtree.children;
   const [openIds, setOpenIds] = useState<Set<string>>(
     () => new Set(childRoots.map((child) => child.node.id)),
   );
-  // 결계 관계는 기본 접힘 — 기본 화면은 헤더+트리 두 덩어리만 보이는 정갈함.
+  // Boundary relations are collapsed by default — the default screen stays tidy with just the header and tree.
   const [boundaryOpen, setBoundaryOpen] = useState(false);
   const trimmedQuery = query.trim();
   const isFiltering = trimmedQuery.length > 0;
@@ -147,7 +152,7 @@ export function TopologyRealmLedger({
   };
   const isOpen = (nodeId: string) => isFiltering || openIds.has(nodeId);
 
-  // H3 P0 — INDEX 트리와 같은 로빙 tabindex 계약(같은 위젯·같은 tree 패턴).
+  // The same roving tabindex contract as the INDEX tree (same widget, same tree pattern).
   const treeRef = useRef<HTMLElement>(null);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const orderedRowIds = useMemo(
@@ -187,17 +192,17 @@ export function TopologyRealmLedger({
       className={`flex h-full flex-col rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-3 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
-      {/* ── 1. 헤더 ── caps eyebrow + 제목 + census 한 줄 + 조용한 해제. */}
+      {/* ── 1. Header ── caps eyebrow + title + one-line census + a quiet leave action. */}
       <header className="mb-3 shrink-0 px-0.5">
         <div className="mb-1 flex items-center justify-between gap-2">
           <span className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--topology-v2-panel-text-tertiary)]">
             {labels.label}
           </span>
-          {/* 온톨로지 블록 Slice A — "이 영역을 블록으로 내보내기". 자립
-              모듈(FirstRunStarterModule 계약): vault 상태·라벨을 스스로
-              읽어 이 위젯의 prop 표면을 늘리지 않고, 로컬 vault 미로드
-              (정적 샘플)면 스스로 null 렌더. exit 텍스트 버튼과 같은 조용한
-              액션 문법으로 그 옆에 선다. */}
+          {/* "Export this realm as a block". A self-contained module (the
+              FirstRunStarterModule contract): it reads vault state and labels itself
+              rather than widening this widget's prop surface, and renders null on its
+              own when the local vault is not loaded (the static sample). It stands
+              beside the exit text button in the same quiet action grammar. */}
           <RealmBlockExportAction rootTitle={rootTitle} census={census} subtree={subtree} />
           <button
             type="button"
@@ -235,7 +240,7 @@ export function TopologyRealmLedger({
         </p>
       </header>
 
-      {/* 영역 스코프 검색 — 트리 섹션에 속한 필터(별도 카드 아님). */}
+      {/* Realm-scoped search — a filter belonging to the tree section, not a separate card. */}
       <div className="relative mb-2 shrink-0">
         <Search
           size={ICON_SIZE.sm}
@@ -261,7 +266,7 @@ export function TopologyRealmLedger({
         />
       </div>
 
-      {/* ── 2. 영역 트리 ── 루트 서브트리만, 깊이 들여쓰기. */}
+      {/* ── 2. Realm tree ── the root subtree only, indented by depth. */}
       <nav
         ref={treeRef}
         role="tree"
@@ -300,7 +305,7 @@ export function TopologyRealmLedger({
         )}
       </nav>
 
-      {/* ── 3. 결계 관계 ── 헤어라인 하나로 구분, 기본 접힘 요약 한 줄. */}
+      {/* ── 3. Boundary relations ── separated by one hairline, a collapsed-by-default summary line. */}
       <div
         data-testid="topology-realm-boundary"
         className="mt-2.5 shrink-0 border-t border-[color:var(--topology-v2-panel-divider)] pt-2"
@@ -348,7 +353,7 @@ export function TopologyRealmLedger({
                         ({row.relationLabel})
                       </span>
                     </span>
-                    {/* 조용한 액션 — 행 호버/포커스 시에만 드러난다(상시 버튼 나열 금지). */}
+                    {/* A quiet action — revealed only on row hover or focus (no permanently listed buttons). */}
                     <button
                       type="button"
                       onClick={() => onJumpRealm(row.jumpRealmId)}

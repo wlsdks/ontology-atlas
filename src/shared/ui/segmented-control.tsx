@@ -7,65 +7,71 @@ import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { controlClass, type ControlSize } from "./control-class";
 
 /**
- * SegmentedControl — 보더 상자 안 **배타 단일선택** (2026-08-15 체계석 비준 +
- * 상호작용석 공동 서명).
+ * SegmentedControl — **exclusive single selection** inside a bordered box
+ * (ratified 2026-08-15 by the design-systems seat, co-signed by interaction).
  *
- * ## 창립 census — 5곳 손 재구현의 드리프트
+ * **Founding inventory — the drift across 5 hand-rolled copies.** Three ARIA
+ * dialects (aria-pressed 2 · radiogroup 3, and **0 roving implementations**: the
+ * role promised arrow-key movement and nothing happened), 3 container insets,
+ * 3 backgrounds, and 2 languages for expressing selection (the hand-rolled
+ * combination measured 1.17:1 ink contrast — an optical illusion, not a state).
+ * Two of the copies lived in the feature layer purely because FSD kept them out
+ * of the widget, which is what justified promoting this.
  *
- * ARIA 3종(aria-pressed 2 · radiogroup 3 — 그리고 **roving 구현 0곳**: role 이
- * 화살표 이동을 약속만 하고 아무 일도 안 일어났다) · 컨테이너 인셋 3종 ·
- * 바탕 3종 · 선택 표현 2언어(손 조합은 잉크 대비 1.17:1 — 상태가 아니라
- * 착시). feature 층 둘은 위젯 감금(FSD) 때문에 재발명한 것 — 그것이 승격의
- * 근거다.
+ * **Grammar — a two-way on/off is still a radiogroup.** Each segment's label
+ * names **the value**, not the setting ("dev/general", "EN/KO", "on/off"), and
+ * putting `aria-pressed` on siblings does not put exclusivity into the
+ * accessibility tree. A radio group gives set membership, position and
+ * exclusivity at once (APG radio group). **`aria-pressed` cannot be expressed by
+ * this primitive** — that grammar is correct only for a single toggle whose name
+ * does not change (spotlight, preview), which is not a consumer of this
+ * component.
  *
- * ## 문법 — 2택 on/off 도 radiogroup 이다
+ * **Keyboard — now owned by the hook** (second round, 2026-08-15). Roving
+ * tabindex, →↓/←↑ wrapping plus selection-follows-focus, Space, no Home/End, no
+ * Escape handling — **the one implementation is
+ * `shared/lib/use-roving-radio-group`** and this file wears it. Why they are
+ * separate: the founding round missed further hand-rolled radiogroups (final
+ * population 18 groups, roving 0, 100%), and some of them — grid tiles, for
+ * instance — have a **genuinely different container**, so they cannot converge
+ * on one component and wear the hook directly instead. This file survives to
+ * **apply the two majority containers automatically**: hand out only the hook
+ * and every site wires it up itself, which is the path that produced today's
+ * roving 0 (as the Dialog ledger put it).
  *
- * 각 세그먼트의 라벨은 설정 이름이 아니라 **값의 이름**이고(「개발/일반」·
- * 「EN/KO」·「켬/끔」), 형제에 aria-pressed 를 나란히 걸면 접근성 트리에
- * 배타성이 실리지 않는다. 라디오는 집합·위치·배타성을 한 번에 준다(APG
- * radio group). **aria-pressed 는 이 프리미티브에서 표현 불가능하다** — 이름이
- * 안 바뀌는 단일 토글(스포트라이트·미리보기)만 그 문법이 옳고, 그건 이
- * 부품의 소비자가 아니다.
+ * **Two canonical containers (`variant`)**
  *
- * ## 키보드 — 이제 훅이 진다 (2026-08-15 2차 라운드)
- *
- * roving tabindex · →↓/←↑ 순환 + selection follows focus · Space ·
- * Home/End 없음 · Escape 미처리 — **구현은 `shared/lib/use-roving-radio-group`
- * 하나**이고 이 파일은 그것을 입는다. 갈라놓은 이유: 창립 라운드가 훑지 않은
- * 손 radiogroup 이 더 있었고(최종 모집단 18그룹 · roving 0 · 100%), 그중
- * 격자 타일처럼 **그릇이 진짜로 다른** 자리가 있어 한 컴포넌트로 수렴하지
- * 않는다. 그런 자리는 훅을 직접 입는다. 이 파일이 남는 이유는 다수파 그릇
- * 둘을 **자동으로 입혀 주기 위해서**다 — 훅만 주면 자리마다 각자 배선하고,
- * 그게 오늘 roving 0 이 된 경로다(Dialog 원장의 그 문장).
- *
- * ## 그릇 캐노니컬 둘 (`variant`)
- *
- * | | 컨테이너 | 아이템 | 실측 |
+ * | | Container | Item | Measured |
  * |---|---|---|---:|
- * | `well`(기본) | `inline-flex gap-px … p-px` | `shape:'segment'` | 4그룹 |
- * | `chips` | `flex flex-wrap items-center gap-1.5` | `shape:'chip'` | **10/12 가 이미 이 문법** |
+ * | `well` (default) | `inline-flex gap-px … p-px` | `shape:'segment'` | 4 groups |
+ * | `chips` | `flex flex-wrap items-center gap-1.5` | `shape:'chip'` | **10/12 already used this grammar** |
  *
- * `chips` 는 새 값이 아니라 **실측 다수파의 등재**다(바이트 동일 9 + no-op
- * 추가만 붙은 1). 그리고 `Choice` 의 손 오버라이드 `h-8 px-3 text-body` 는
- * `chip lg`(`min-h-8 px-3 py-1 text-body`)와 **기하 동등**이라 이주가 픽셀
- * 0이다 — 움직이는 것은 선택 표현 색뿐이고, 그건 창립 전수가 「2언어」라고
- * 적었지만 실제로는 **3언어**로 살아 있었다(Choice 손 조합 · TopologyIndexPanel
- * 제3언어 · 램프 active).
+ * `chips` is not a new value but **the registration of a measured majority** (9
+ * byte-identical, 1 that only gained a no-op). And `Choice`'s hand-written
+ * override `h-8 px-3 text-body` is **geometrically equal** to `chip lg`
+ * (`min-h-8 px-3 py-1 text-body`), so that migration moves 0 pixels — the only
+ * thing that moves is the selection colour, and the founding inventory recorded
+ * "2 languages" there while **3** were actually alive (Choice's hand-rolled
+ * combination, TopologyIndexPanel's third language, and the ramp's `active`).
  *
- * ## 컨테이너 캐노니컬 — 인셋은 다수결이 아니라 램프가 정했다
+ * **Canonical container — the inset was decided by the ramp, not by majority.**
+ * Only `p-px + gap-px` leaves the container's natural height (28/36) inside the
+ * height vocabulary over items of 24/32: `p-0.5` gives 30/38 and `p-1` gives
+ * 34/42, all values already condemned as outside the vocabulary. The background
+ * is `--color-overlay-1` (an alpha, so it stays parent+2% over any surface, the
+ * same family as `fieldClass` boxed). Soft border and chip radius were 5/5
+ * unanimous.
  *
- * `p-px + gap-px` 만 아이템 24/32 위에서 컨테이너 자연높이(28/36)가 높이
- * 어휘에 선다(p-0.5 → 30/38, p-1 → 34/42 — 전부 어휘 밖으로 이미 사형된
- * 값들). 바탕은 `--color-overlay-1`(α — 어느 표면 위에서도 부모+2% 유지,
- * fieldClass boxed 동족). 보더 soft · 반경 chip 은 5/5 만장일치.
+ * `busy` sets `aria-busy` on the group and makes re-selection a no-op —
+ * **never disable the group**, because that removes the only tab stop and drops
+ * keyboard users back to the top of the document.
  *
- * busy 는 그룹 `aria-busy` + 재선택 no-op 이다 — **그룹 disabled 금지**(유일한
- * 탭 스톱이 사라져 키보드 사용자가 문서 처음으로 떨어진다).
- *
- * ⚠️ **overlay-1 우물은 border-soft 와 짝으로만 성립한다** (위계석 승인 전제,
- * 2026-08-15): 우물 면 자체는 주변 대비 ≈1.16:1 로 사실상 안 보이고 — 그것이
- * 올바른 배역이다(컨트롤 우물이 보이면 조연이 조명을 받는다) — 경계는 보더가,
- * 상태는 active 틴트가 진다. 보더를 지우면 우물이 화면에서 소실된다.
+ * ⚠️ **The overlay-1 well only works paired with border-soft** (the premise of
+ * the hierarchy seat's approval, 2026-08-15): the well surface itself measures
+ * ≈1.16:1 against its surroundings and is effectively invisible, which is the
+ * correct casting (a visible control well puts the spotlight on a supporting
+ * role). The border carries the boundary and the `active` tint carries the
+ * state — remove the border and the well disappears from the screen.
  */
 
 type SegmentedName =
@@ -75,12 +81,13 @@ type SegmentedName =
 export interface SegmentedOption<T extends string | number | boolean> {
   value: T;
   label: ReactNode;
-  /** 보이는 라벨이 약어(EN·KO)일 때 낭독용 전체 이름. */
+  /** Full name for screen readers when the visible label is an abbreviation (EN, KO). */
   ariaLabel?: string;
   /**
-   * 마우스 툴팁 — 네이티브 속성 통과. 실측 소비처 2(FirstRunStarter ·
-   * ProjectDrawer)라 열었다. **per-option `className` 은 열지 않는다** —
-   * 「자리잡기 전용」 prop 계약이 규격 반입 통로가 된다(체계석 명시).
+   * Mouse tooltip, passed straight to the native attribute. Opened because 2
+   * measured consumers need it (FirstRunStarter, ProjectDrawer). **A per-option
+   * `className` stays closed** — a "placement only" prop contract becomes the
+   * import route for spec values (stated by the design-systems seat).
    */
   title?: string;
   testId?: string;
@@ -90,24 +97,25 @@ export type SegmentedControlProps<T extends string | number | boolean> = Segment
   value: T;
   options: ReadonlyArray<SegmentedOption<T>>;
   onChange: (next: T) => void;
-  /** 값 층 크기 단 — 기본 lg(32px, coarse 44 승격). */
+  /** Value-layer size step; defaults to lg (32px, promoted to 44 under coarse pointers). */
   size?: Extract<ControlSize, "md" | "lg">;
   /**
-   * 그릇 — 실측 다수파 둘. 기본은 `well`(붙은 우물, 4그룹).
-   * `chips` 는 떨어진 칩 줄(`flex flex-wrap items-center gap-1.5`)이고,
-   * 바이트 동일 9그룹 + no-op 추가 1 = 10/12 가 이미 그 문법이었다.
+   * Container — the two measured majorities. Defaults to `well` (a joined well,
+   * 4 groups). `chips` is a row of detached chips
+   * (`flex flex-wrap items-center gap-1.5`): 9 byte-identical groups plus 1 that
+   * only gained a no-op, so 10 of 12 already used that grammar.
    */
   variant?: "well" | "chips";
   /**
-   * 항목이 폭을 균등하게 나눠 갖는다. 실측 소비처 3(BlockImport ·
-   * FirstRunStarter · StudioMaterialize) — 2옵션에서 `grid-cols-2` 와
-   * 수학적으로 같은 폭이다.
+   * Items divide the width equally. 3 measured consumers (BlockImport,
+   * FirstRunStarter, StudioMaterialize) — with two options the widths are
+   * mathematically identical to `grid-cols-2`.
    */
   fill?: boolean;
-  /** 전환 진행 중 — 재선택만 잠그고 초점은 산다. 그룹 disabled 를 걸지 않는다. */
+  /** A transition is in flight — locks re-selection only; focus stays alive. Never disables the group. */
   busy?: boolean;
   testId?: string;
-  /** 자리잡기 전용 — 규격은 여기 넣지 않는다. */
+  /** Placement only — spec values do not go here. */
   className?: string;
 };
 
@@ -125,9 +133,10 @@ export function SegmentedControl<T extends string | number | boolean>({
   className,
 }: SegmentedControlProps<T>) {
   /*
-   * 행동은 이 파일이 구현하지 않는다 — `useRovingRadioGroup` 하나다. 이 파일이
-   * 남는 이유는 **그릇을 자동으로 입혀 주기 위해서**이고, 그게 없으면 12곳이
-   * 각자 배선한다(Dialog 원장 2026-08-15: "없던 것은 자동으로 입혀 주는 자리다").
+   * Behaviour is not implemented here — `useRovingRadioGroup` is the one
+   * implementation. This file exists to **apply the container automatically**;
+   * without it all 12 sites wire it themselves (Dialog ledger, 2026-08-15: what
+   * was missing is the place that applies it for you).
    */
   const group = useRovingRadioGroup<T>({
     value,

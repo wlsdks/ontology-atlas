@@ -55,8 +55,8 @@ describe("render/grid draw() — background variant routing (#20)", () => {
   });
 
   /**
-   * 움직이는 배경 셋은 **격자를 그리면 안 된다** — 둘이 겹치면 잉크 상한을
-   * 합산으로 넘고, 그 초과는 값 하나만 봐서는 어느 룰에도 안 걸린다.
+   * An animated background must **never also draw the grid** — the two together
+   * exceed the ink ceiling in sum, and no single-value rule can catch that.
    */
   it.each(["web"] as const)(
     "%s hands the frame to the animated layer and never paints the grid",
@@ -70,8 +70,9 @@ describe("render/grid draw() — background variant routing (#20)", () => {
   );
 
   /**
-   * 엔진이 아직 안 만들어진 첫 프레임(설정 변경 직후) — 콜백이 null 이면
-   * 격자로 폴백해야 한다. 아무것도 안 그리면 그 프레임이 **검은 화면**이 된다.
+   * On the first frame after a settings change the engine does not exist yet. A
+   * null callback must fall back to the grid; drawing nothing makes that frame a
+   * **black screen**.
    */
   it("falls back to the grid when the animated layer is not ready yet", () => {
     const { ctx, fillStyles } = makeRecordingCtx();

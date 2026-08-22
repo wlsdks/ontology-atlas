@@ -2,16 +2,15 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * 위험 경로 — LocalVaultProvider 의 "single source of truth" 계약.
+ * Risk path — `LocalVaultProvider`'s "single source of truth" contract.
  *
- * Round 8 이전 실제 버그: `useLocalVault()` 를 8곳에서 각자 직접 호출하면
- * 한 페이지 mount 에 훅 인스턴스가 2~3개 동시 존재 → 같은 IDB 키를 N 번
- * rehydrate, 같은 vault 를 N 번 전체 FS walk. Provider 가 이를 막는 유일한
- * 장치이므로, "여러 consumer 가 있어도 내부 훅은 정확히 한 번만 mount 된다"
- * 는 이 계층의 구조적 안전 계약이다. 또한 provider 밖에서 호출 시 silent
- * fallback(예: stub 빈 상태) 을 절대 허용하지 않는다 — vault 가 SSoT 인
- * 앱에서 조용한 stub 은 "쓰기가 아무 데도 안 갔는데 성공한 것처럼 보이는"
- * 위험한 오작동보다야 즉시 throw 가 안전하다.
+ * A real bug before this provider existed: calling `useLocalVault()` directly from eight places left
+ * two or three hook instances alive per page mount, rehydrating the same IDB key N times and running a
+ * full FS walk over the same vault N times. The provider is the only thing preventing that, so "the
+ * inner hook mounts exactly once no matter how many consumers there are" is this layer's structural
+ * safety contract. It also never permits a silent fallback (an empty stub state) when called outside
+ * the provider — in an app where the vault is the source of truth, an immediate throw is safer than a
+ * quiet stub that makes "the write went nowhere" look like success.
  */
 
 const internalMocks = vi.hoisted(() => ({
@@ -26,8 +25,8 @@ vi.mock('./use-local-vault', async (importOriginal) => {
   };
 });
 
-// VaultDiffToaster / TauriVaultWatchBridge 도 Provider 가 함께 mount 한다.
-// 이 테스트의 관심사는 아니므로 headless no-op 으로 대체해 노이즈를 줄인다.
+// The provider also mounts VaultDiffToaster and TauriVaultWatchBridge. They are not this test's
+// concern, so they are replaced with headless no-ops to cut the noise.
 vi.mock('./VaultDiffToaster', () => ({ VaultDiffToaster: () => null }));
 vi.mock('./TauriVaultWatchBridge', () => ({ TauriVaultWatchBridge: () => null }));
 
@@ -75,7 +74,7 @@ afterEach(() => {
 
 describe('LocalVaultProvider / useLocalVault', () => {
   it('Provider 밖에서 useLocalVault() 를 호출하면 silent fallback 없이 즉시 throw 한다', () => {
-    // 콘솔 에러 노이즈 억제 (React 가 render 에러를 로깅) — 실패 검증에는 영향 없음.
+    // Suppress console error noise (React logs render errors) — it does not affect the assertion.
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => render(<Consumer testId="lone" />)).toThrow(
       /useLocalVault must be called inside <LocalVaultProvider>/,

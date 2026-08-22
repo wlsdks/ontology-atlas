@@ -17,24 +17,27 @@ const ALLOWED_FLAGS = ['--vault', '--kind', '--auto-prefix', '--raw-slug', '--no
 
 
 /**
- * R14 — `ontology-atlas import <path...> [--vault X] [--kind K] [--raw-slug]
+ * `ontology-atlas import <path...> [--vault X] [--kind K] [--raw-slug]
  * [--rename] [--dry-run]`
  *
- * 외부 markdown 파일을 vault 안으로 정착. AI agent (`add_concept`) 와 사용자
- * (`add`) 가 같은 schema 로 만들어진 .md 만 디스크에 남기는 약속의 마지막
- * 조각 — 외부에서 받은 양식도 같은 schema 로 normalize 후 vault 안에 고정.
+ * Lands external markdown inside the vault. This is the last piece of the promise
+ * that an agent (`add_concept`) and a user (`add`) leave only `.md` built from the
+ * same schema on disk: a document received from elsewhere is normalised to that
+ * same schema before it is fixed in the vault.
  *
- * 처리 흐름 (파일 1개 기준):
- *   1. raw 읽기 → parseFrontmatter
- *   2. kind 결정: input.kind → --kind → skip (kind 없으면 import 불가)
- *   3. slug 결정: input.slug → 파일 basename (확장자 제외)
- *      --auto-prefix 면 folderForKind(kind) prepend (이미 prefix 들면 두 번 X)
- *   4. title: input.title → body 의 첫 H1 → slug
- *   5. frontmatter 정규화: buildFrontmatter — schema 의 arrayDefaults 적용,
- *      input 의 다른 키 (depends_on / relates / status / 사용자 정의 …) 보존
- *   6. 충돌: vault 에 같은 slug 면 skip + warn, 또는 --rename 시 -2/-3/...
- *   7. body: input body 보존, 비어 있으면 schema 의 starter
- *   8. writeDoc — dry-run 시 디스크 변경 0
+ * Flow, per file:
+ *   1. read raw → parseFrontmatter
+ *   2. kind: input.kind → --kind → skip (no kind means it cannot be imported)
+ *   3. slug: input.slug → file basename (extension dropped)
+ *      with --auto-prefix, folderForKind(kind) is prepended (never twice)
+ *   4. title: input.title → the body's first H1 → slug
+ *   5. frontmatter normalisation: buildFrontmatter applies the schema's
+ *      arrayDefaults and preserves the input's other keys (depends_on, relates,
+ *      status, user-defined, …)
+ *   6. conflict: an existing slug in the vault skips with a warning, or with
+ *      --rename becomes -2/-3/…
+ *   7. body: the input body, or the schema's starter when it is empty
+ *   8. writeDoc — a dry run changes nothing on disk
  */
 export async function runImport(args) {
   const opts = parseArgs(args);
@@ -63,8 +66,8 @@ export async function runImport(args) {
     return 1;
   }
 
-  // 같은 batch 안에서 두 입력이 같은 slug 로 충돌하지 않도록 누적 추적.
-  // disk 의 기존 slug + 이번 배치에서 이미 import 한 slug 둘 다 본다.
+  // Tracked cumulatively so two inputs in one batch cannot collide on a slug: both
+  // the existing slugs on disk and the ones already imported in this batch count.
   const claimedSlugs = new Set();
   const claimedUids = new Map();
   const summary = { imported: 0, skipped: 0, conflicts: 0, kindless: 0 };
@@ -82,7 +85,7 @@ export async function runImport(args) {
           `${COLORS.green}${result.status === 'would-import' ? 'plan' : 'ok  '}${COLORS.reset}  ${relative(process.cwd(), src)}\n` +
             `${COLORS.dim}      → ${result.kind} · ${result.slug}${COLORS.reset}\n`,
         );
-        // P2-① — 실제로 디스크에 정착한 것만 감사 로그에 (dry-run=would-import 제외).
+        // Only what actually landed on disk is logged (a dry run's would-import is not).
         if (result.status === 'imported') {
           await recordCliWrite(vaultPath, {
             tool: 'cli:import',
@@ -120,11 +123,11 @@ export async function runImport(args) {
       ` (${summary.kindless} kindless · ${summary.conflicts} conflicts · ${summary.skipped} errors)\n`,
   );
 
-  // exit code: 실제 import (또는 dry-run plan) 이 0 건이면 1 — 사용자가
-  // import 의도였는데 아무것도 안 일어난 상황은 명시적 실패로 본다.
-  // 부분 성공 (일부 imported + 일부 conflict/kindless) 은 0 으로 — 사용자가
-  // CI 에서 "최소 하나라도" 같은 게이트를 만들기 쉽게.
-  void firstError; // future-proof: 첫 에러 메시지를 후속 PR 의 --strict mode 에 활용
+  // Exit code: 1 when zero files were imported (or planned, in a dry run) —
+  // intending an import and having nothing happen is an explicit failure. Partial
+  // success (some imported, some conflicting or kindless) exits 0, so a CI gate of
+  // the "at least one" shape is easy to write.
+  void firstError; // kept for a future --strict mode that surfaces the first error message
   if (summary.imported === 0) return 1;
   return 0;
 }
@@ -165,7 +168,7 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
       ? `${folder}${baseSlug}`
       : baseSlug;
 
-  // 충돌 (디스크 + 같은 배치 내) — --rename 이면 -2, -3 ... 으로 회피.
+  // Conflict, on disk or within this batch — --rename sidesteps it as -2, -3, ….
   if (slugTaken(vaultPath, candidateSlug, claimedSlugs)) {
     if (opts.rename) {
       candidateSlug = nextFreeSlug(vaultPath, candidateSlug, claimedSlugs);
@@ -179,10 +182,10 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
       ? inputFm.title.trim()
       : extractFirstH1(inputBody) || baseSlug;
 
-  // schema 정규화 — input 의 다른 키 (depends_on / relates / 사용자 정의)
-  // 도 함께 보존. slug/kind/title 은 우리 결정값으로 덮어씌움.
-  // buildFrontmatter 의 ...extras 가 이미 input 의 모든 키를 받으니
-  // 명시적으로 새 값을 마지막에 spread.
+  // Schema normalisation, preserving the input's other keys (depends_on, relates,
+  // user-defined). slug/kind/title are overwritten with our decided values:
+  // buildFrontmatter's ...extras already takes every input key, so the new values
+  // are spread last.
   let fm;
   try {
     fm = buildFrontmatter({
@@ -232,8 +235,8 @@ function slugTaken(vaultPath, slug, claimedSlugs) {
     const path = slugToPath(vaultPath, slug);
     return existsSync(path);
   } catch {
-    // slug 가 vault 바깥을 가리키면 slugToPath 가 throw — 이건 conflict 가
-    // 아니라 invalid slug. 호출자가 error 로 처리할 수 있게 true 로 막음.
+  // A slug pointing outside the vault makes slugToPath throw — that is an invalid
+  // slug, not a conflict. Returning true blocks it so the caller raises an error.
     return true;
   }
 }
@@ -243,8 +246,8 @@ function nextFreeSlug(vaultPath, baseSlug, claimedSlugs) {
     const candidate = `${baseSlug}-${n}`;
     if (!slugTaken(vaultPath, candidate, claimedSlugs)) return candidate;
   }
-  // 999 collision 까지 가면 사용자 환경이 비정상 — base 그대로 return 해
-  // 호출자가 final writeDoc 실패에서 명확한 에러 받게.
+  // Reaching 999 collisions means the user's environment is abnormal; return the
+  // base unchanged so the caller gets a clear error from the final writeDoc.
   return baseSlug;
 }
 
@@ -260,9 +263,9 @@ function extractFirstH1(body) {
 }
 
 /**
- * input 경로 (파일 또는 디렉토리) 들에서 .md 들을 모은다. 디렉토리면
- * 재귀 walk. dotfile 디렉토리 (.git, node_modules) 는 skip — 사용자가
- * 의도적으로 그 안의 .md 까지 import 하기엔 너무 위험.
+ * Collects `.md` files from the input paths (files or directories), walking
+ * directories recursively. Dotfile directories (.git, node_modules) are skipped —
+ * importing the `.md` inside them is too dangerous to assume was intended.
  */
 function collectMarkdownFiles(paths) {
   const out = new Set();
@@ -299,8 +302,8 @@ function walkMarkdown(dir, out) {
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
   const positional = [];
-  // R15 — autoPrefix default on. starter 와 일관된 layout (kind→folder).
-  // 명시 opt-out: --raw-slug (or --no-auto-prefix).
+  // autoPrefix defaults on, for a layout consistent with the starter (kind→folder).
+  // Explicit opt-out: --raw-slug (or --no-auto-prefix).
   const flags = {
     vault: null,
     kind: null,
@@ -366,5 +369,5 @@ function printImportUsage(stream = process.stderr) {
   );
 }
 
-// ESLint dead-code 차단 (sep 은 future-proof — 로깅 path 정규화용). 명시적 use.
+// Explicit use so ESLint does not flag it as dead code (sep is future-proofing for log path normalisation).
 void sep;

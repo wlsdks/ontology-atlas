@@ -6,17 +6,17 @@ import { parseFrontmatter as parseScripts } from "../../scripts/lib/parse-frontm
 import { parseFrontmatter as parseCli } from "../../cli/src/lib/parse-frontmatter.mjs";
 
 /**
- * 4-way contract — vault frontmatter parser 가 4 곳에 산다:
- *   - src/shared/lib (런타임 ts)
- *   - mcp/src (별도 npm 패키지 — AI agent surface)
- *   - scripts/lib (빌드 + CLI 스크립트)
- *   - cli/src/lib (별도 npm 패키지 — developer CLI)
+ * 4-way contract — the vault frontmatter parser lives in four places:
+ *   - src/shared/lib (runtime TS)
+ *   - mcp/src (separate package — the AI agent surface)
+ *   - scripts/lib (build and CLI scripts)
+ *   - cli/src/lib (separate package — the developer CLI)
  *
- * 각 패키지가 별도 publish 의도라 물리적 단일 모듈로 묶을 수 없으므로,
- * 같은 fixture 매트릭스를 다섯이 모두 통과하도록 강제하는 게 effective
- * 단일화. 한 쪽 구현이 drift 하면 이 test 가 즉시 fail.
+ * Each package ships separately and cannot be folded into one physical module, so
+ * forcing all of them through the same fixture matrix is what unifies them in effect.
+ * If one implementation drifts, this test fails immediately.
  *
- * (R15 — VSCode plugin 제거 후 5-way → 4-way 로 회복.)
+ * (Back to 4-way from 5-way after the VSCode plugin was removed.)
  */
 
 const PARSERS = {

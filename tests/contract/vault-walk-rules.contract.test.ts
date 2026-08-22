@@ -14,21 +14,23 @@ const tsSource = readFileSync(
 );
 
 /**
- * **두 walker 가 같은 규칙을 써야 한다.**
+ * **The two walkers must use the same rules.**
  *
- * 2026-07-31 에 `vault_fingerprint`(Rust) 를 추가하면서 볼트를 훑는 곳이 둘이
- * 됐다 — TS 의 `walk()`(웹 · 실제 빌드)와 Rust 의 `walk_vault_stamps`(앱의 지문).
- * 둘이 같은 파일 집합을 세지 않으면 **지문이 달라지고**, 그 결함은 이렇게 나온다:
+ * Adding `vault_fingerprint` (Rust) on 2026-07-31 made two places walk the vault: TS's
+ * `walk()` (web and the real build) and Rust's `walk_vault_stamps` (the app's
+ * fingerprint). If they do not count the same file set **the fingerprint differs**, and
+ * the defect appears as:
  *
- * - Rust 가 더 많이 세면 → 바뀐 게 없는데 앱이 **매번 전체 재빌드**
- * - Rust 가 덜 세면 → 파일이 바뀌었는데 **안 알아챈다**
+ * - Rust counting more → nothing changed, yet the app **rebuilds everything every time**
+ * - Rust counting fewer → a file changed and **it goes unnoticed**
  *
- * 둘 다 조용하다. 화면에 에러가 안 뜨고, 타입도 lint 도 통과한다. 그래서 여기서
- * 두 소스의 **규칙 상수**를 직접 맞대어 본다 — 한쪽만 고치면 여기서 먼저 터진다.
+ * Both are quiet: no error on screen, and types and lint pass. So the **rule constants**
+ * of the two sources are compared directly here — editing only one breaks this first.
  *
- * ⚠️ 이 게이트는 상수의 **일치**만 본다. 순회 로직 자체가 갈라지는 것은 못 잡는다.
- * 그건 설치 앱에서 같은 볼트로 두 지문을 비교해야 알 수 있고, 그 검증은 데스크톱
- * 실측의 몫이다(`surfaces.md`).
+ * ⚠️ This gate only checks that the constants **match**. It cannot catch the walk
+ * logic itself diverging — that requires comparing both fingerprints over the same
+ * vault in the installed app, which belongs to desktop measurement
+ * (`.claude/rules/surfaces.md`).
  */
 describe('볼트 walk 규칙 — TS 와 Rust 가 같아야 한다', () => {
   it('깊이 상한이 같다', () => {
@@ -52,13 +54,13 @@ describe('볼트 walk 규칙 — TS 와 Rust 가 같아야 한다', () => {
   });
 
   /**
-   * 이미지 확장자는 TS 가 정규식, Rust 가 목록이라 문자열 비교가 안 된다.
-   * 그래서 **같은 집합인지**를 각자에서 뽑아 비교한다.
+   * Image extensions are a regex in TS and a list in Rust, so the strings cannot be
+   * compared. Each side's **set** is extracted and compared instead.
    */
   it('이미지 확장자 집합이 같다', () => {
     const tsMatch = /IMAGE_EXT = \/\\\.\(([^)]+)\)\$\/i/.exec(tsSource);
     expect(tsMatch, 'TS 쪽 IMAGE_EXT 를 못 읽었다 — 정규식 모양이 바뀌었나').toBeTruthy();
-    // `png|jpe?g|gif|…` → 확장자 집합. `jpe?g` 는 jpg·jpeg 둘 다다.
+    // `png|jpe?g|gif|…` → the extension set. `jpe?g` covers both jpg and jpeg.
     const tsExts = new Set(
       tsMatch![1]!.split('|').flatMap((token) => (token === 'jpe?g' ? ['jpg', 'jpeg'] : [token])),
     );

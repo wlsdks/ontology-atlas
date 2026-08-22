@@ -1,29 +1,28 @@
 /**
- * 「계속 허용」이 **무엇을 허용하는가** — 어댑터가 선언한 그대로.
+ * **What "always allow" actually allows** — exactly as the adapter declared it.
  *
- * ## 왜 (2026-08-17)
+ * ## Why (2026-08-17)
  *
- * 권한 카드의 셋째 버튼이 *"위 경로가 있는 폴더 전체를 이번 대화 내내 허용"*
- * 이라고 **단정**하고 있었다. 그런데 그 범위를 정하는 것은 우리가 아니라
- * 어댑터다. 어댑터는 `_meta.permission.changes[].targets[]` 로 그것을 말해
- * 주고, 실측에서 그 값은 **폴더가 아니라 도구**였다:
+ * The permission card's third button **asserted** *"allow the entire folder containing the path above
+ * for this whole conversation"*. But the adapter, not us, decides that scope. The adapter states it
+ * through `_meta.permission.changes[].targets[]`, and measured, that value was **a tool, not a folder**:
  *
  * ```
  * { type: 'tool', toolName: 'mcp__atlas-vault__add_concept' }
  * ```
  *
- * 폴더를 허용한다고 적어 놓고 실제로는 도구를 허용하면, 사용자는 **자기가 준
- * 적 없는 권한을 준 줄 알거나 그 반대로 안다.** 이 제품에서 가장 값비싼
- * 결정에서 화면이 틀린 말을 하는 것이다.
+ * Writing "allow the folder" while actually allowing a tool leaves the user believing **they granted
+ * a permission they never gave, or the reverse.** That is the screen lying at this product's most
+ * expensive decision.
  *
- * ## 규율
+ * ## The rule
  *
- * **어댑터가 선언한 것만 말한다.** 경로에서 폴더를 우리가 계산해 적지 않는다 —
- * 그건 어댑터의 규칙을 짐작하는 것이고, 짐작이 틀리면 카드가 거짓말을 한다.
- * 아무것도 안 주면 아무것도 단정하지 않는다.
+ * **State only what the adapter declared.** The folder is not computed from the path and written down
+ * by us — that would be guessing at the adapter's rules, and a wrong guess makes the card lie. Given
+ * nothing, it asserts nothing.
  *
- * 종류가 섞여 있어도 「모른다」다. 한 문장으로 정직하게 적을 수 없는 것을
- * 억지로 한 문장으로 만들면, 그 문장이 둘 중 하나에 대해 틀린다.
+ * Mixed types is also "unknown". Forcing something that cannot be stated honestly in one sentence into
+ * one sentence makes that sentence wrong about one of the two.
  */
 
 export type PermissionScope =
@@ -38,9 +37,9 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 /**
- * @param options `session/request_permission` 의 `options` 배열 그대로.
- *   **「계속 허용」 선택지의 `_meta` 만 본다** — 다른 선택지의 것을 읽으면
- *   누르지도 않은 버튼의 범위를 설명하게 된다.
+ * @param options The `options` array of `session/request_permission`, verbatim.
+ *   **Only the `_meta` of the "always allow" option is read** — reading another option's would
+ *   describe the scope of a button that was not pressed.
  */
 export function permissionScope(options: readonly unknown[]): PermissionScope {
   if (!Array.isArray(options)) return UNKNOWN;
@@ -64,8 +63,8 @@ export function permissionScope(options: readonly unknown[]): PermissionScope {
       } else if (t.type === 'directory' && typeof t.path === 'string' && t.path.trim()) {
         directories.push(t.path);
       } else {
-        // 모르는 종류를 조용히 버리면, 카드가 「도구 하나만 허용」이라고 하는
-        // 동안 그 옆에서 다른 것이 같이 허용된다.
+        // Silently discarding an unknown type lets something else be allowed alongside while the card
+        // says "only this one tool".
         sawUnknownType = true;
       }
     }

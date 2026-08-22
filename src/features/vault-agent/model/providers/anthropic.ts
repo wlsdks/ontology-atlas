@@ -8,16 +8,16 @@ import type {
 import { PROVIDER_DEFAULT_MODELS, readVendorErrorMessage } from '../provider-adapter';
 
 /**
- * Anthropic Messages 어댑터.
+ * The Anthropic Messages adapter.
  *
- * 주의할 점 하나: assistant 턴을 되돌려 보낼 때 **응답의 `content` 배열을
- * 그대로** 싣는다. 텍스트만 뽑아 재조립하면 thinking 블록이 사라져 다음
- * 왕복이 거절된다 — 원문 보존이 계약이다.
+ * One thing to watch: when sending an assistant turn back, carry **the response's
+ * `content` array verbatim**. Extracting the text and reassembling drops the thinking
+ * blocks and the next round trip is rejected — preserving the original is the contract.
  */
 
 /**
- * 출력 상한. 이 모델은 사고가 기본으로 켜져 있어 `max_tokens` 가
- * 사고 + 답변을 함께 덮는다 — 빠듯하면 답이 중간에 잘린다.
+ * The output cap. This model has thinking on by default, so `max_tokens` covers
+ * thinking plus the answer together — set too tight, the answer is cut off mid-way.
  */
 const MAX_TOKENS = 8_192;
 
@@ -102,11 +102,11 @@ export const anthropicAdapter: ProviderAdapter = {
     const toolCalls: NormalizedToolCall[] = blocks
       .filter((block) => block.type === 'tool_use' && typeof block.name === 'string')
       .map((block, index) => ({
-        // 벤더가 id 를 빠뜨릴 이유는 없지만, 없으면 결과를 되돌려 보낼 자리가
-        // 사라진다 — 합성해서 왕복이 끊기지 않게 한다.
+        // There is no reason for the vendor to omit an id, but without one there is
+        // nowhere to send the result back to — synthesize one so the round trip is not broken.
         id: typeof block.id === 'string' && block.id ? block.id : `a${index}`,
         name: block.name as string,
-        // Anthropic 은 이미 객체로 준다 — 파싱 실패 경로가 없다.
+        // Anthropic already gives an object — there is no parse-failure path.
         args: block.input ?? {},
         argsInvalid: false,
       }));

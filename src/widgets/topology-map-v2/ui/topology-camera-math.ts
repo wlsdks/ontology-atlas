@@ -25,17 +25,19 @@ interface Point {
 }
 
 /**
- * 깊이 항(depth term) — `worldToScreen` 의 선택 인자.
+ * The depth term — an optional argument to `worldToScreen`.
  *
- * `z` 는 노드가 레이아웃 평면 뒤로 물러난 거리(월드 단위), `focal` 은 약한
- * 원근(weak perspective)의 초점 거리다: `s = focal / (focal + z)`. `lift` 는
- * 층 분리(고정 틸트를 상수 평면 간격으로 부호화한 것, 월드 단위) — 깊은 층이
- * 화면 아래로 내려앉는다. (2026-08-18 z-lift 시안의 잔류 API — 현행 3D 돔은
- * `model/dome-view.ts` 의 오프셋 경로를 쓰고 이 항은 쓰지 않지만, 생략 시
- * 바이트 동일 계약과 함께 `dome-view.test.ts` 가 그대로 잠근다.)
+ * `z` is how far a node has receded behind the layout plane (world units) and
+ * `focal` is the focal length of the weak perspective: `s = focal / (focal + z)`.
+ * `lift` is layer separation — a fixed tilt encoded as a constant plane spacing
+ * (world units) — so deeper layers settle lower on screen. (A leftover API from
+ * the 2026-08-18 z-lift mockup: the current 3D dome uses the offset path in
+ * `model/dome-view.ts` and does not use this term, but `dome-view.test.ts` pins it
+ * along with the byte-identical contract for when it is omitted.)
  *
- * **생략하면(기본 경로) 출력이 종전과 바이트 동일하다** — 기존 두 줄 식을
- * 그대로 타며, `topology-camera-math.test.ts` 가 이 불변을 계약으로 잠근다.
+ * **Omitted (the default path), the output is byte-identical to before** — it
+ * takes the original two-line formula, and `topology-camera-math.test.ts` pins
+ * that invariant as a contract.
  */
 export interface DepthTerm {
   z: number;
@@ -103,17 +105,19 @@ export function hitTestWorld(
    */
   renderOffsetForNode?: (node: WorldNode) => Point,
   /**
-   * 3D 보기 — 드로우가 노드 반지름에 곱한 원근 배율(`DomeNodeFrame.s`)을
-   * 히트 디스크에도 곱한다. 생략 시 1(종전 2D 동작 그대로).
+   * 3D view — multiply the hit disc by the same perspective factor
+   * (`DomeNodeFrame.s`) the draw multiplied the node radius by. Omitted means 1
+   * (the previous 2D behaviour unchanged).
    */
   radiusScaleForNode?: (node: WorldNode) => number,
   /**
-   * 3D 보기 — 노드의 정규화 깊이(0 가까움 → 1 멂, `DomeNodeFrame.u`). 주면
-   * 디스크가 겹칠 때 **가까운 노드가 이긴다**: 돔에서는 앞 링과 뒤 링이 화면
-   * 에서 자주 겹치는데, 종전의 «중심까지 거리» 단독 판정은 커서 밑의 크고
-   * 밝은 앞 노드 대신 안개 속 먼 노드를 잡아 줬다 — 그걸 끌면 화면에서는
-   * «클릭해도 제대로 안 움직이는» 것으로 읽힌다(2026-08-18 소유자 실보고).
-   * 거리는 같은 깊이끼리의 타이브레이크로 남는다. 생략 시 종전 그대로.
+   * 3D view — the node's normalised depth (0 near → 1 far, `DomeNodeFrame.u`).
+   * Given, **the nearer node wins** when discs overlap: in the dome the front and
+   * back rings overlap on screen constantly, and the old «distance to centre»
+   * decision alone handed back the far node in the fog instead of the large bright
+   * near node under the cursor — dragging that reads on screen as «clicking does
+   * not move the right thing» (owner report, 2026-08-18). Distance remains the
+   * tiebreak among equal depths. Omitted keeps the previous behaviour.
    */
   depthForNode?: (node: WorldNode) => number,
 ): string | null {
@@ -133,7 +137,7 @@ export function hitTestWorld(
     const effRadius =
       radiusForKind(node.kind, tokens) * node.magnitudeScale * (radiusScaleForNode ? radiusScaleForNode(node) : 1) * camera.scale.value + 5;
     const distance = Math.hypot(screenX - screen.x, screenY - screen.y);
-    // 양의 비교로 거른다 — NaN 좌표(모킹·미투영)는 `<=` 를 통과하지 못한다.
+    // Compare positively — a NaN coordinate (mocked or unprojected) cannot pass `<=`.
     if (!(distance <= effRadius)) continue;
     const depth = depthForNode ? depthForNode(node) : 0;
     if (depth < bestDepth - 1e-6 || (Math.abs(depth - bestDepth) <= 1e-6 && distance < bestDistance)) {
@@ -183,16 +187,20 @@ interface SafeInsets {
 }
 
 /**
- * **패널을 뺀 자리 가운데에 무엇을 둘 카메라인가** — 이 식이 사는 단 하나의 곳.
+ * **Which camera puts something at the centre of the space left by the panels** —
+ * the single place this formula lives.
  *
- * `worldToScreen` 은 화면의 **날 가운데**를 기준으로 그리므로, 보이는 영역의
- * 가운데에 두려면 카메라를 좌우 인셋 차의 절반만큼 되민다. **배율로 나누는 것**이
- * 요점이다 — 같은 화면 오프셋이 배율이 클수록 더 짧은 월드 거리다.
+ * `worldToScreen` draws against the screen's **raw centre**, so landing something
+ * at the centre of the visible area means pushing the camera back by half the
+ * difference between the left and right insets. **Dividing by the zoom factor** is
+ * the point — the same screen offset is a shorter world distance the further in
+ * you are zoomed.
  *
- * ⚠️ 이 식은 한때 **네 곳**에 각각 적혀 있었다(개요 · 팬 목줄 · 그리고 하루 동안은
- * 호출부의 「자유 영역」 시프트까지). 그중 초점 다이브만 이 식을 **아예 안 갖고
- * 있어서**, 노드를 고르면 그것을 설명하는 패널 뒤로 들어갈 수 있었다. 사본이
- * 여럿이면 빠진 사본이 생기는 쪽이 기본값이다 — 그래서 한 곳으로 모았다.
+ * ⚠️ This formula was once written out in **four** places (the overview, the pan
+ * leash, and for one day the caller's 「자유 영역」 (free-area) shift as well). Of
+ * those, the focus dive **did not have it at all**, so choosing a node could put it
+ * behind the panel that explains it. With several copies, the one that goes missing
+ * is the default — so they were gathered into one.
  */
 export function centerForInsets(
   cx: number,
@@ -208,18 +216,20 @@ export function centerForInsets(
 }
 
 /**
- * 검수 Pass B 결함 1 (2026-07-23) — 오버뷰 핏은 노드 지오메트리 bounds 만
- * safe 영역에 맞춰, 최하단 스파인 노드의 라벨 anchor(= 노드 아래
- * `radius + LABEL_OFFSET`, frame-draw:794 — 컬은 폰트 높이가 아니라 anchor
- * 만 본다)가 라벨 safe-rect 컬 라인 바로 밖으로 밀려 1440×900 기본 뷰에서만
- * 조용히 사라졌다 (1920 은 가로 제약 핏이라 세로 여유가 남아 미발현). 핏
- * 계산에서만 하단 인셋에 여유를 예약한다 — 라벨 컬 rect 와 카메라 이동
- * 가능 영역은 불변.
+ * Review pass B defect 1 (2026-07-23) — the overview fit matched only the nodes'
+ * geometry bounds into the safe area, so the bottom-most spine node's label anchor
+ * (= `radius + LABEL_OFFSET` below the node, frame-draw:794 — the cull looks at the
+ * anchor, not the font height) was pushed just outside the label safe-rect's cull
+ * line and vanished silently, but only in the 1440×900 default view (1920 is a
+ * width-constrained fit, so vertical slack remained and it never surfaced).
+ * Allowance is reserved on the bottom inset **in the fit calculation only** — the
+ * label cull rect and the camera's movable area are unchanged.
  *
- * 값은 `render/labels.ts` 의 `LABEL_OFFSET` 에서 파생 — max LABEL_OFFSET
- * (현재 project 20) + 슬랙 4. 리터럴 24 를 따로 유지하면 LABEL_OFFSET 이
- * 바뀔 때 이 예약분이 조용히 드리프트할 수 있어 (Guardian follow-up),
- * 상수 대신 매 프레임 파생시켜 항상 동기화 상태를 보장한다.
+ * The value derives from `LABEL_OFFSET` in `render/labels.ts` — max LABEL_OFFSET
+ * (currently project 20) plus 4 slack. Keeping a literal 24 alongside would let
+ * this reservation drift silently whenever LABEL_OFFSET changes (Guardian
+ * follow-up), so it is derived per frame rather than held as a constant, which
+ * guarantees it stays in sync.
  */
 const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = Math.max(...Object.values(LABEL_OFFSET)) + 4;
 
@@ -228,8 +238,8 @@ function readSafeInsets(tokens: SafeInsetTokens): SafeInsets {
     left: tokens.safeInsetLeft ?? 0,
     right: tokens.safeInsetRight ?? 0,
     top: tokens.safeInsetTop ?? 0,
-    // 인셋 미지정(= 크롬 없는 순수 핏 테스트 계약)은 종전과 동일하게 0 —
-    // 라벨 여유는 실제 하단 크롬 인셋이 존재할 때만 얹는다.
+    // No insets specified (= the pure fit test contract, with no chrome) stays 0 as
+    // before — the label allowance is added only when a real bottom chrome inset exists.
     bottom:
       tokens.safeInsetBottom == null
         ? 0
@@ -274,12 +284,13 @@ export function computeOverviewFitScale(
 }
 
 /**
- * PANEL-AWARE overview fit (Design Guardian 카메라 반려): the fit used to center
- * on the full viewport, so the left third of the graph hid behind the ReaderLens
- * panel. Now the scale is computed against the VISIBLE area (viewport minus the
- * safe insets), and the camera center is shifted so the graph's own center lands
- * at the visible-area center rather than the raw screen center. With zero insets
- * this reduces exactly to the previous behavior (`topology-camera-math.test.ts`).
+ * PANEL-AWARE overview fit (the Design Guardian's camera rejection): the fit used
+ * to center on the full viewport, so the left third of the graph hid behind the
+ * ReaderLens panel. Now the zoom is computed against the VISIBLE area (viewport
+ * minus the safe insets), and the camera center is shifted so the graph's own
+ * center lands at the visible-area center rather than the raw screen center. With
+ * zero insets this reduces exactly to the previous behavior
+ * (`topology-camera-math.test.ts`).
  */
 export function computeOverviewCameraTarget(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
@@ -300,26 +311,27 @@ export function computeOverviewCameraTarget(
 }
 
 /**
- * 초점이 없을 때의 팬 봉투 — **목줄(leash)이 있으면 핏 주변, 없으면 종전대로
- * 월드 bbox + 여유**.
+ * The pan envelope with no focus — **around the fit when a leash is set, otherwise
+ * the world bbox plus slack, as before**.
  *
- * ## 왜 목줄이 필요했나 (2026-07-29 관문 실측)
+ * ## Why the leash was needed (gateway measurement, 2026-07-29)
  *
- * `/download` 무대의 지도는 관문의 유일한 판매 논증인데, 왼쪽으로 한 번 세게
- * 끌면 그래프가 예약 컬럼 뒤로 통째로 밀려 **무대가 비어 버렸다**(0..520 밴드의
- * 잉크 +12.6%, 12초 뒤에도 그대로 — 감쇠 0). 워크벤치라면 「지도 맞추기」로
- * 되돌리지만 관문에는 그 크롬이 없다. **되돌릴 길이 없는 화면에서 되돌릴 수
- * 없는 조작을 허용한 것**이 결함이다.
+ * The map on the `/download` stage is the gateway's only sales argument, and one
+ * hard drag to the left pushed the whole graph behind the reserved column so **the
+ * stage went empty** (ink in the 0..520 band +12.6%, unchanged 12 seconds later —
+ * zero damping). On the workbench 「지도 맞추기」 (fit the map) brings it back, but
+ * the gateway has no such chrome. **Allowing an irreversible gesture on a screen
+ * with no way back** is the defect.
  *
- * 종전 봉투(월드 bbox ± 320)는 그래프가 클수록 넓어져서, 어떤 값으로도 "예약
- * 컬럼 밖" 을 보장하지 못한다. 목줄은 대신 **핏 자체를 기준점**으로 잡는다 —
- * 핏은 이미 safe inset 을 반영하므로(위 `computeOverviewCameraTarget`),
- * 목줄 반경만큼이 곧 화면에서의 이동 한계가 되고 볼트 크기와 무관해진다.
- * 초점 팬 클램프(`cameraFocusPanMargin`)가 쓰는 것과 **같은 모양**이라 새
- * 기제를 만들지 않는다.
+ * The old envelope (world bbox ± 320) widens with the graph, so no value could ever
+ * guarantee "outside the reserved column". The leash takes **the fit itself as its
+ * reference point** instead — the fit already reflects the safe insets (see
+ * `computeOverviewCameraTarget` above), so the leash radius becomes the movement
+ * limit on screen and stops depending on vault size. It is **the same shape** the
+ * focus pan clamp (`cameraFocusPanMargin`) uses, so no new mechanism is invented.
  *
- * `leash <= 0` 이면 종전 동작 그대로 — 워크벤치는 토큰 기본값 0 으로 1픽셀도
- * 안 바뀐다.
+ * With `leash <= 0` the behaviour is unchanged — the workbench's token default of 0
+ * leaves it not one pixel different.
  */
 export function computeUnfocusedPanBounds(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
@@ -394,8 +406,9 @@ export function computeEffectiveCameraScaleMin(
  * Camera target for the current focus state — the full-graph overview fit
  * when `focusedSlug` is `null`, or the clicked node + its 1-hop ego bbox
  * (`--topology-v2-focus-bbox-margin`) otherwise (`docs/TOPOLOGY-V2-DESIGN.md`
- * §3.2 "카메라가 노드+1-hop 이웃 bbox 로 스프링 다이브"). `null` only if
- * `focusedSlug` doesn't resolve to a known node.
+ * §3.2 「카메라가 노드+1-hop 이웃 bbox 로 스프링 다이브」 — the camera spring-dives
+ * to the node plus its 1-hop neighbour bbox). `null` only if `focusedSlug`
+ * doesn't resolve to a known node.
  *
  * Dive-framing fix (owner symptom: "clicking a node dives TOO deep —
  * over-zoomed, cluttered, labels colliding; pleasant view only after zooming
@@ -410,8 +423,8 @@ export function computeEffectiveCameraScaleMin(
  * The dive target is now simply `clamp(fitScale(egoBounds × marginRatio),
  * overviewEntryScale, effectiveMax)`: fit the WHOLE ego set (padded by
  * `--topology-v2-focus-bbox-margin`, a multiplicative ratio ~1.15 so the
- * padding scales with cluster size instead of a fixed px pad), floored at the
- * overview's OWN entry scale (a "dive" never zooms OUT past the overview
+ * padding grows with cluster size instead of a fixed px pad), floored at the
+ * overview's OWN entry zoom (a "dive" never zooms OUT past the overview
  * itself), capped at the ratio-based effective max (the degenerate tiny-ego
  * case, where the raw fit would zoom in far past readable).
  */
@@ -424,9 +437,10 @@ export function computeFocusCameraTarget(
   /** `overviewScale × overviewEntryRatio` at the current viewport — the zoom-ratio's "1.0" anchor (`model/tier-visibility.ts#computeZoomRatio`). */
   overviewEntryScale: number,
   /**
-   * S8 결함 4 — 영역 전개 중이면 그 영역 멤버 Set. ego bbox 를 이 안으로 제한해
-   * 결계 밖 fling 이웃이 bbox 를 부풀려 카메라가 화면 밖으로 날아가는 것을 막는다.
-   * 생략/null 이면 전역 ego(기존 계약 불변).
+   * S8 defect 4 — while a realm is expanded, that realm's member set. Restricting
+   * the ego bbox to it stops a fling neighbour outside the warding circle from
+   * inflating the bbox and throwing the camera off screen. Omitted or null means
+   * the global ego (the existing contract unchanged).
    */
   restrictIds?: ReadonlySet<string> | null,
 ): CameraTarget | null {
@@ -447,47 +461,54 @@ export function computeFocusCameraTarget(
   const w = Math.max(1, (egoBounds.maxX - egoBounds.minX) * marginRatio);
   const h = Math.max(1, (egoBounds.maxY - egoBounds.minY) * marginRatio);
   /*
-   * **안전 인셋을 개요 경로와 같은 방식으로 쓴다** (2026-08-10 소유자 확정:
-   * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*).
+   * **Use the safe insets the same way the overview path does** (owner call,
+   * 2026-08-10: *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"* — it must not be
+   * covered; centre it in the space left by the panel).
    *
-   * ⚠️ 종전에 이 함수는 인셋을 **전혀** 쓰지 않았다 — `tx: centerX` 를 그대로 돌려주고
-   * 배율도 전체 뷰포트로 맞췄다. 그래서 노드를 고르면 그 노드가 **그것을 설명하는
-   * 패널 뒤로** 들어갈 수 있었다. 실측(1512×982): 팝오버가 열리면 오른쪽 384px 이
-   * 가려지는데 목표는 여전히 화면 가운데였다.
+   * ⚠️ This function used to use the insets **not at all** — it returned
+   * `tx: centerX` verbatim and fitted the zoom against the whole viewport. So
+   * choosing a node could put it **behind the panel that explains it**. Measured
+   * (1512×982): opening the popover covers 384px on the right while the target was
+   * still the screen's centre.
    *
-   * 개요 경로(`computeOverviewCameraTarget`)는 **이미** 같은 문제를 인셋으로 풀고
-   * 있었다. 그래서 처방은 새 보정 체계를 만드는 것이 아니라 이 함수를 그 기구에
-   * 맞추는 것이다 — 하루 전 나는 반대로 했고(호출부에 둘째 시프트를 얹었다) 그것이
-   * 188px 어긋남과 64px 과보정을 만들었다.
+   * The overview path (`computeOverviewCameraTarget`) was **already** solving the
+   * same problem with insets, so the prescription is not a new correction system
+   * but bringing this function onto that mechanism — a day earlier I did the
+   * opposite (stacking a second shift at the call site), and that produced a 188px
+   * misalignment and a 64px over-correction.
    */
   const insets = readSafeInsets(tokens);
   const effW = Math.max(1, viewportWidth - insets.left - insets.right);
   const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
   const fitScale = Math.min(effW / w, effH / h);
   const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-  // 소유자 실보고 (2026-07-24) — 이웃이 숨은 상태(스포트라이트 등)에선 ego
-  // bbox 가 작아 fit 이 현미경 줌으로 치솟는다. 선택 프레이밍의 줌인은
-  // overviewEntryScale × focusMaxZoomRatio 를 상한으로 — ego 멤버는 tier
-  // 면제라 이 배율에서도 전부 보이고, 줌아웃 방향 fit 은 제한하지 않는다.
+  // Owner report (2026-07-24) — with neighbours hidden (spotlight and the like) the
+  // ego bbox is small and the fit shoots up into a microscope zoom. Zooming in for
+  // selection framing is capped at overviewEntryScale × focusMaxZoomRatio — ego
+  // members are tier-exempt so they are all visible even at that zoom, and fitting
+  // in the zoom-out direction is not limited.
   const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(overviewEntryScale, fitScale));
 
   /*
-   * 인셋만큼 목표를 되민다 — 개요 경로와 **같은 식**이다(`(left - right) / (2 × scale)`).
-   * 배율로 나누는 이유: 같은 화면 오프셋이 배율이 클수록 더 짧은 월드 거리다.
+   * Push the target back by the insets — **the same formula** as the overview path
+   * (`(left - right) / (2 × scale)`). Divide by the zoom factor because the same
+   * screen offset is a shorter world distance the further in you are zoomed.
    */
   return { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
 }
 
 /**
- * 3D 돔 선택 리프레임의 카메라 목표 — `computeFocusCameraTarget` 의 ego-fit
- * 분기와 **같은 계약**(`focusBboxMargin` 곱셈 패딩 · 같은 safe-inset 문법 ·
- * 같은 줌인 상한)인데 입력이 다르다: bbox 는 2D ego 가 아니라 **목표 자세로
- * 투영한 돔 ego bbox**(`model/dome-view.ts#domeEgoWorldBounds`)이고, 줌아웃
- * 바닥은 2D 의 `overviewEntryScale` 이 아니라 **돔 핏 배율**(`scaleFloor`)이다
- * — 돔의 투영 bbox 가 2D 스파인보다 넓어 핏 배율이 2D 바닥 아래에 살기
- * 때문이다(`DomeRuntime.fitScale` JSDoc). 인셋을 여기서 다시 읽는 이유는
- * `readSafeInsets` 의 라벨 여유 규칙을 호출부마다 재구현하지 않기 위해서다.
+ * The camera target for a 3D dome selection reframe — **the same contract** as the
+ * ego-fit branch of `computeFocusCameraTarget` (`focusBboxMargin` multiplicative
+ * padding, the same safe-inset grammar, the same zoom-in ceiling), with different
+ * inputs: the bbox is not the 2D ego but the **dome ego bbox projected at the
+ * target pose** (`model/dome-view.ts#domeEgoWorldBounds`), and the zoom-out floor
+ * is not 2D's `overviewEntryScale` but the **dome fit zoom** (`scaleFloor`) —
+ * because the dome's projected bbox is wider than the 2D spine, so its fit zoom
+ * lives below the 2D floor (see the `DomeRuntime.fitScale` JSDoc). The insets are
+ * re-read here so `readSafeInsets`'s label-allowance rule is not reimplemented at
+ * every call site.
  */
 export function computeDomeFocusCameraTarget(
   egoBounds: { minX: number; minY: number; maxX: number; maxY: number },
@@ -496,7 +517,7 @@ export function computeDomeFocusCameraTarget(
   viewportHeight: number,
   overviewEntryScale: number,
   scaleFloor: number | null,
-  /** 목표 자세에서 선택 노드가 투영되는 월드 점 — 초점 팬 리쉬의 앵커와 동일. */
+  /** The world point the selected node projects to at the target pose — the same anchor as the focus pan leash. */
   focusAnchor?: { x: number; y: number } | null,
 ): CameraTarget {
   const marginRatio = tokens.focusBboxMargin;
@@ -512,11 +533,12 @@ export function computeDomeFocusCameraTarget(
   const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(scaleFloor ?? 0, fitScale));
   const target = { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
-  // 초점 팬 리쉬(`cameraFocusPanMargin`)의 봉투 **안**에 목표를 둔다 — 돔의
-  // ego 이웃은 대상 주위가 아니라 위 티어에 비대칭으로 투영되므로 bbox 중심이
-  // 리쉬 밖일 수 있고, 그러면 트윈이 도착한 뒤 탄성 클램프가 카메라를 다시
-  // 끌어 «도착 후 미끄러짐»이 보인다(실측 38 유닛). 목표가 봉투 안이면 도착
-  // = 정지다.
+  // Keep the target **inside** the focus pan leash's envelope
+  // (`cameraFocusPanMargin`) — the dome's ego neighbours project asymmetrically onto
+  // the tiers above rather than around the subject, so the bbox centre can fall
+  // outside the leash; the elastic clamp then pulls the camera back after the tween
+  // arrives and «sliding after landing» becomes visible (measured 38 units). A target
+  // inside the envelope makes arrival mean a stop.
   if (focusAnchor && tokens.cameraFocusPanMargin > 0) {
     const m = tokens.cameraFocusPanMargin;
     target.tx = Math.min(focusAnchor.x + m, Math.max(focusAnchor.x - m, target.tx));
@@ -526,11 +548,13 @@ export function computeDomeFocusCameraTarget(
 }
 
 /**
- * S2 파트 5B — 펼친 클러스터 디스크(부모 + 직속 자식 부챗살)로의 카메라 다이브
- * 타깃. `computeFocusCameraTarget` 의 ego-fit 분기와 같은 계약(마진 비율 패딩 +
- * `[overviewEntryScale, effectiveMax]` clamp) — 대상만 ego 이웃이 아니라 contains
- * 자식 디스크다. 칩을 펼치면 이 타깃으로 스프링 다이브해 자식이 tier 알파로
- * 자연히 리빌된다. `parentId` 미해결/자식 없음이면 `null`(카메라 미이동).
+ * S2 part 5B — the camera dive target for an expanded cluster disc (the parent plus
+ * its direct children's fan). The same contract as the ego-fit branch of
+ * `computeFocusCameraTarget` (margin-ratio padding plus an
+ * `[overviewEntryScale, effectiveMax]` clamp), with contains children as the subject
+ * instead of ego neighbours. Expanding a chip spring-dives to this target so the
+ * children reveal naturally through tier alpha. `null` when `parentId` does not
+ * resolve or has no children (the camera does not move).
  */
 export function computeClusterFitTarget(
   world: TopologyWorld,
@@ -540,9 +564,10 @@ export function computeClusterFitTarget(
   parentId: string,
   overviewEntryScale: number,
   /**
-   * 고팬아웃 배치-공개(2026-07) — 프레이밍에 포함할 노드 화이트리스트(부모 +
-   * 이번 배치 자식). 주어지면 디스크 bbox 를 이 집합의 노드로만 좁혀 "소수를
-   * 크게" 담는다(전량 자식으로 멀리 빼지 않음). null/생략 = 디스크 전체(회귀 0).
+   * High-fanout batch reveal (2026-07) — the whitelist of nodes to include in the
+   * framing (the parent plus this batch's children). Given, the disc bbox narrows to
+   * just this set so it holds "a few, large" rather than pulling far out to take
+   * every child. null or omitted means the whole disc (zero regression).
    */
   restrictIds?: ReadonlySet<string> | null,
 ): CameraTarget | null {
@@ -555,29 +580,31 @@ export function computeClusterFitTarget(
   const h = Math.max(1, (disc.maxY - disc.minY) * marginRatio);
   const fitScale = Math.min(viewportWidth / w, viewportHeight / h);
   const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-  // 소유자 실보고 (2026-07-24) — 이웃이 숨은 상태(스포트라이트 등)에선 ego
-  // bbox 가 작아 fit 이 현미경 줌으로 치솟는다. 선택 프레이밍의 줌인은
-  // overviewEntryScale × focusMaxZoomRatio 를 상한으로 — ego 멤버는 tier
-  // 면제라 이 배율에서도 전부 보이고, 줌아웃 방향 fit 은 제한하지 않는다.
+  // Owner report (2026-07-24) — with neighbours hidden (spotlight and the like) the
+  // ego bbox is small and the fit shoots up into a microscope zoom. Zooming in for
+  // selection framing is capped at overviewEntryScale × focusMaxZoomRatio — ego
+  // members are tier-exempt so they are all visible even at that zoom, and fitting
+  // in the zoom-out direction is not limited.
   const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(overviewEntryScale, fitScale));
   return { tx: centerX, ty: centerY, tscale: scale };
 }
 
 /**
- * 카메라가 모든 노드를 화면 밖으로 밀어냈는가 (#71).
+ * Has the camera pushed every node off screen (#71)?
  *
- * 왜 필요한가: 창을 다른 모니터로 옮기거나 크게 리사이즈하면 뷰포트와 DPR 이
- * 함께 바뀌는데, 카메라는 그대로다. 그 조합에서 노드가 전부 뷰포트 밖으로
- * 나가면 사용자에게는 **빈 지도**로 보인다 — '지도 전체 맞추기' 를 눌러야만
- * 돌아온다(codex 감사 P1 실보고).
+ * Why it is needed: moving the window to another monitor, or resizing it heavily,
+ * changes the viewport and DPR together while the camera stays put. In that
+ * combination, with every node outside the viewport, the user sees **an empty map**
+ * — only pressing 「지도 전체 맞추기」 (fit the whole map) brings it back (codex
+ * audit P1 report).
  *
- * 안전망의 규율:
- * - **매 resize 마다 강제 전체 맞추기는 하지 않는다.** 사용자가 잡아둔 줌·위치는
- *   의도이고, 그걸 지우는 건 다른 종류의 결함이다.
- * - 오직 "화면 안에 노드가 하나도 없다" 는 명백한 상태에서만 보정한다.
- * - 여유(margin)를 둬 가장자리에 살짝 걸친 노드는 '보인다' 로 센다 — 경계에서
- *   깜빡이며 카메라가 튀는 것을 막는다.
+ * The safety net's discipline:
+ * - **It does not force a full fit on every resize.** The zoom and position the
+ *   user set are intent, and erasing them is a different kind of defect.
+ * - It corrects only in the unambiguous state "not one node is on screen".
+ * - A margin counts a node barely clipping the edge as 'visible' — which stops the
+ *   camera flickering and jumping at the boundary.
  */
 export function hasAnyNodeOnScreen(
   camera: CameraAxes,
@@ -586,8 +613,8 @@ export function hasAnyNodeOnScreen(
   nodes: ReadonlyArray<{ x: number; y: number }>,
   marginPx = 24,
 ): boolean {
-  if (nodes.length === 0) return true; // 노드가 없으면 '사라진' 것도 아니다.
-  if (viewportWidth <= 0 || viewportHeight <= 0) return true; // 아직 레이아웃 전.
+  if (nodes.length === 0) return true; // With no nodes, nothing has 'disappeared' either.
+  if (viewportWidth <= 0 || viewportHeight <= 0) return true; // Before layout.
   for (const node of nodes) {
     const p = worldToScreen(camera, viewportWidth, viewportHeight, node.x, node.y);
     if (

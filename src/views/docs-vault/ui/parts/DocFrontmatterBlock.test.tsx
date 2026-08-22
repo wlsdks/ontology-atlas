@@ -17,9 +17,9 @@ const doc: VaultDoc = {
     slug: "capabilities/cli-developer-entry",
     title: "CLI Developer Entry",
     domain: "developer-experience",
-    // uid 가 여기 있어야 이 픽스처가 정말로 «깨끗»하다 (2026-08-04). 종전엔
-    // uid 가 없었는데도 「깨끗한 frontmatter」 라고 불렸다 — 화면이 오류를
-    // 걸러 내고 있었으니 테스트도 그 거짓을 그대로 물려받았던 것이다.
+    // The uid has to be here for this fixture to really be «clean» (2026-08-04). It used to be
+    // absent while still being called "clean frontmatter" — the screen was filtering errors out,
+    // so the test inherited the same falsehood.
     uid: "0f0e5f1a-6c53-4a1b-9c2f-2f0f7b6a1d34",
     status: "active",
     depends_on: ["mcp-server"],
@@ -54,18 +54,19 @@ describe("DocFrontmatterBlock", () => {
   });
 
   /**
-   * **문서마다 반복되는 「가르치는 줄」은 상주하지 않는다** (2026-08-08, 소유자
-   * 지적 — *"문서 볼 때 상단이 조금 이상한데.. 보기좋게 구성할순없나?"*).
+   * **A teaching line repeated on every document does not live there permanently** (2026-08-08,
+   * owner report — *"문서 볼 때 상단이 조금 이상한데.. 보기좋게 구성할순없나?"*, the top looks a
+   * bit odd when reading a document; can it be laid out better?).
    *
-   * 「규격 예시 보기」는 문서마다 달라지지 않는 설명이다. 그런데 접힌 상태에서도
-   * 자기 줄을 갖고 있어서, 읽으러 온 사람의 화면에서 본문을 25px 씩 아래로
-   * 밀었다 — 배포 샘플 볼트의 **112개 문서 전부**에서.
+   * "See a spec example" is an explanation that does not vary per document. Yet it had its own row
+   * even while collapsed, pushing the body down 25px on the screen of someone who came to read —
+   * on **all 112 documents** of the shipped sample vault.
    *
-   * 필요한 순간은 「이 속성이 무엇을 받나」를 알고 싶을 때이고, 그건 이 속성
-   * 블록을 여는 순간이다. 그래서 그 안으로 옮겼다.
+   * The moment it is wanted is when you want to know «what does this property accept», and that is
+   * the moment this properties block is opened. So it moved inside.
    *
-   * ⚠️ 이 시험이 없으면 되돌아간다 — 앞선 단위 시험들은 `getByTestId` 로 DOM
-   * 존재만 보므로 토글이 details **밖**에 있어도 전부 초록이었다(실측).
+   * ⚠️ Without this test it comes back — the earlier unit tests only check DOM presence with
+   * `getByTestId`, so they were all green even with the toggle **outside** the details (measured).
    */
   it("규격 예시 토글은 접힌 속성 블록 안에 있다 — 읽는 화면에 상주하지 않는다", () => {
     renderBlock();
@@ -73,7 +74,7 @@ describe("DocFrontmatterBlock", () => {
     expect(details).not.toHaveAttribute("open");
 
     const toggle = screen.queryByTestId("doc-frontmatter-example-toggle");
-    // 예시가 없는 kind 면 이 시험은 공회전한다 — 그 경우를 먼저 배제한다.
+    // With a kind that has no example this test spins idly — exclude that case first.
     expect(toggle, "이 fixture 에 규격 예시가 없다 — 시험이 헛돈다").not.toBeNull();
     expect(
       toggle?.closest("details:not([open])"),
@@ -89,14 +90,13 @@ describe("DocFrontmatterBlock", () => {
     const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
     expect(details).toHaveAttribute("open");
     /*
-     * **자리로 잡는다 — 문장으로 잡지 않는다** (2026-08-22).
+     * **Located by position, not by sentence** (2026-08-22).
      *
-     * 종전에는 `/frontmatter 가 곧 그래프/` 라는 그 시절 문구를 정규식으로
-     * 찾고 있었다. 이 시험이 증명하려는 것은 「펼치면 안내줄이 보인다」이지
-     * 「안내줄이 이 문장이다」가 아닌데, 문구를 못박아 두면 말을 더 쉽게
-     * 고치는 순간 내용이 맞는데도 빨개진다 — `documentation.md` 가
-     * *"사람이 판단해서 쓴 문장은 검사하지 않는다"* 로 이미 금지한 모양이고,
-     * 실제로 용어집 정리(`docs/GLOSSARY.md`)에서 이 시험이 걸렸다.
+     * It used to search by regex for that era's wording. What this test proves is «expanding shows
+     * the note», not «the note is this sentence», and pinning the wording turns it red — while the
+     * content is still correct — the moment the copy is made clearer. That shape is already
+     * forbidden by `.claude/rules/documentation.md` (*"do not check sentences a human wrote"*),
+     * and this test really did break during the glossary cleanup (`docs/GLOSSARY.md`).
      */
     const note = screen.getByTestId("doc-frontmatter-note");
     expect(note).toBeVisible();
@@ -120,8 +120,8 @@ describe("DocFrontmatterBlock", () => {
 
   it("linkifies resolvable reference slugs and navigates on click, leaving unresolved ones plain", () => {
     const onNavigate = vi.fn();
-    // domain(developer-experience)·depends_on(mcp-server) 은 vault 에 있고,
-    // ghost-ref 는 없다고 가정.
+    // domain (developer-experience) and depends_on (mcp-server) exist in the vault;
+    // ghost-ref does not.
     const resolveRef = (token: string) =>
       token === "developer-experience"
         ? "domains/developer-experience"
@@ -147,7 +147,7 @@ describe("DocFrontmatterBlock", () => {
     fireEvent.click(screen.getByTestId("doc-frontmatter-ref-mcp-server"));
     expect(onNavigate).toHaveBeenCalledWith("capabilities/mcp-server");
 
-    // 미해소 참조는 버튼이 되지 않는다.
+    // An unresolved reference does not become a button.
     expect(screen.queryByTestId("doc-frontmatter-ref-ghost-ref")).not.toBeInTheDocument();
     expect(screen.getByText("ghost-ref")).toBeInTheDocument();
   });
@@ -212,8 +212,8 @@ describe("DocFrontmatterBlock", () => {
     expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
   });
 
-  // ② 결함의 단위 게이트 — 오류를 감추고 경고만 보여 주던 필터가 돌아오면
-  // 여기서 터진다.
+  // The unit gate for the defect — it turns red if the filter that hid errors and showed only
+  // warnings comes back.
   it("surfaces validator ERRORS beside the file, not only warnings", () => {
     const noUidDoc: VaultDoc = {
       ...doc,
@@ -229,8 +229,8 @@ describe("DocFrontmatterBlock", () => {
     expect(within(rows[0]).getByText(/uid/)).toBeInTheDocument();
   });
 
-  // ③ 결함의 단위 게이트 — kind 가 없으면 축약 진단이 뜨고, ontology 의도가
-  // 없는 안내 문서에는 여전히 아무것도 안 뜬다(소음 0).
+  // The unit gate for the defect — with no kind a compact diagnostic appears, and a plain guide
+  // document with no ontology intent still shows nothing (zero noise).
   it("renders a compact diagnostic for a kind-less node candidate, and nothing for a plain doc", () => {
     const kindless: VaultDoc = {
       ...doc,
@@ -286,8 +286,8 @@ describe("DocFrontmatterBlock", () => {
     expect(within(example).getByText(/domain: example-domain/)).toBeInTheDocument();
   });
 
-  // C10 — the 공방 CREATE writer stores meaning in a `definition:` frontmatter
-  // key that isn't in GRAPH_KEYS, so it used to be invisible in the read view.
+  // The CREATE writer stores meaning in a `definition:` frontmatter key that is not in GRAPH_KEYS,
+  // so it used to be invisible in the read view.
   it("surfaces the definition frontmatter as an always-visible read-mode lede", () => {
     const docWithDefinition: VaultDoc = {
       ...doc,
@@ -327,11 +327,10 @@ describe("DocFrontmatterBlock", () => {
   });
 });
 
-// R+ "코드 위치" (code location) — frontmatter `elements: [...]` is the vault's
-// ONLY real code evidence, but it wasn't in `GRAPH_KEYS` above (not a
-// single-line key:value fact) so it was invisible even when expanded. This
-// adds a dedicated, distinguishable section: raw code paths (plain
-// monospace) rather than the clickable `REFERENCE_KEYS` ref-token pattern.
+// Code location — frontmatter `elements: [...]` is the vault's ONLY real code evidence, but it was
+// not in `GRAPH_KEYS` above (not a single-line key:value fact), so it was invisible even when
+// expanded. This adds a dedicated, distinguishable section: raw code paths in plain monospace,
+// rather than the clickable `REFERENCE_KEYS` ref-token pattern.
 describe("DocFrontmatterBlock — 코드 위치 (code location) section", () => {
   const docWithElements: VaultDoc = {
     ...doc,

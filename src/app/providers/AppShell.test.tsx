@@ -4,12 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import { AppShell } from "./AppShell";
 
 /**
- * #65 — 레일 하단 유틸 티어(활동 · 기록 · 설정)는 **모든 화면에서 같다.**
+ * The rail's bottom utility tier (activity, git, settings) is **the same on every screen.**
  *
- * 예전엔 페이지가 `useNavRailSettingsSlot` 으로 손수 등록해야 했고, 공방이
- * 그걸 빠뜨려 그 화면만 아이콘 1개였다 (지도 3 · 문서함/인사이트/프로젝트 2 ·
- * 공방 1, opus5 검수 2026-07-25 실측). 셸이 기본을 소유하도록 바꿨으므로,
- * 슬롯을 아무도 주입하지 않아도 세 타일이 서 있어야 한다.
+ * Pages used to register it by hand via `useNavRailSettingsSlot`, and one page forgot,
+ * leaving that screen with a single icon (measured 2026-07-25: map 3, docs/insights/projects 2,
+ * that page 1). The shell now owns the default, so all three tiles must stand even when
+ * nobody injects a slot.
  */
 
 vi.mock("next-intl", () => ({
@@ -18,7 +18,7 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("@/features/docs-vault-local", () => ({
-  // 번들 MCP 서버는 설치 앱에서만 보인다 — jsdom 은 웹 세션과 같은 자리다.
+  // The bundled MCP server is visible only in the installed app — jsdom is the same as a web session.
   useAgentServer: () => ({
     kind: "unavailable",
     launch: null,
@@ -51,10 +51,10 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
     );
 
     const tier = screen.getByTestId("app-nav-rail-utility-tier");
-    // 지키는 사실은 "셸이 기본 슬롯을 공급한다" 이지 자식 **개수**가 아니다.
-    // 종전에는 `children.length === 2` 로 셌는데, 그건 티어에 웹 전용 원소가
-    // 하나 붙는 것만으로 깨지는 대리 지표였다(2026-07-28 「앱 받기」 추가).
-    // 개수 대신 **구성원**을 본다.
+    // The fact under test is "the shell supplies the default slots", not the **number**
+    // of children. It used to count `children.length === 2`, a proxy that broke the
+    // moment one web-only element joined the tier (the "get the app" addition, 2026-07-28).
+    // Check the **members**, not the count.
     expect(screen.getByTestId("app-nav-rail-agent-status")).toBeInTheDocument();
     expect(tier).toContainElement(screen.getByTestId("app-nav-rail-agent-status"));
     expect(tier.querySelector("details"), "설정 트리거가 없다").not.toBeNull();
@@ -67,18 +67,18 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
       </AppShell>,
     );
 
-    // 구 유틸 타일은 흡수됐다. 입구가 둘이면 #65 계열 혼란이 재발한다.
-    // (목적지 항목 자체가 뜨는지는 `AppNavRail.test.tsx` 가 본다 — 이 파일의
-    //  `@/i18n/navigation` 목이 `Link` 를 children-only 로 렌더해 testid 가
-    //  사라지므로 여기서 단언하면 거짓 실패가 난다.)
+    // The old utility tile was absorbed; two entrances reproduce the same confusion.
+    // (Whether the destination entry itself appears is checked by `AppNavRail.test.tsx` —
+    //  this file's `@/i18n/navigation` mock renders `Link` children-only, so the testid
+    //  disappears and asserting it here would fail falsely.)
     expect(screen.queryByTestId("app-nav-rail-git-tile")).not.toBeInTheDocument();
   });
 });
 
 describe("셸 칼럼 — 뷰포트 소유 계약", () => {
   it("셸이 뷰포트 높이를 잡고 본문만 스크롤한다", () => {
-    // 페이지가 `--app-viewport-h` 를 기억해야 하는 구조는 #65 와 같은 drift 다.
-    // 셸이 `h-dvh overflow-hidden` 을 소유하면 페이지는 `h-full` 만 쓰면 된다.
+    // Structure a page has to remember — such as `--app-viewport-h` — is exactly what
+    // drifts. With the shell owning `h-dvh overflow-hidden`, a page needs only `h-full`.
     const { container } = render(
       <AppShell>
         <div>page</div>
@@ -90,24 +90,24 @@ describe("셸 칼럼 — 뷰포트 소유 계약", () => {
   });
 
   it("본문 슬롯이 자식을 압축하지 않는다 — 스크롤 끝 여백 계약", () => {
-    // 슬롯은 스크롤 컨테이너다. 페이지 루트가 슬롯을 채우려고 쓰는
-    // `min-h-full` 은 flex 아이템의 자동 최소 크기를 덮어쓰므로, 압축을 막지
-    // 않으면 내용이 길어질 때 페이지 박스가 뷰포트 높이로 줄고 하단 예약고가
-    // 줄어든 박스 바닥에 갇힌다 (1512×950 실측: 다운로드 여백 0px · 768 에서
-    // 프로젝트 상세 마지막 줄이 탭바 뒤로 17px).
-    // jsdom 은 레이아웃을 하지 않아 픽셀은 못 본다 — 여기서는 처방이 제자리에
-    // 있는지만 고정하고, 실제 여백은 `tests/e2e/scroll-end-gap.spec.ts` 가 잰다.
+    // The slot is a scroll container. The `min-h-full` a page root uses to fill it
+    // overrides the flex item's automatic minimum size, so without blocking compression
+    // the page box shrinks to viewport height as content grows and the bottom reserve is
+    // trapped at the floor of the shrunken box (measured 1512×950: download gap 0px; at
+    // 768 the last line of project detail sat 17px behind the tab bar).
+    // jsdom does no layout, so pixels are invisible here — this pins only that the
+    // prescription is in place, and `tests/e2e/scroll-end-gap.spec.ts` measures the real gap.
     const { container } = render(
       <AppShell>
         <div>page</div>
       </AppShell>,
     );
     /*
-     * ⚠️ **이름으로 지목한다** (2026-08-20 정정). 종전에는
-     * `.overflow-y-auto` 첫 번째를 집었는데, 레일이 여덟 목적지가 되며 스크롤을
-     * 갖게 되자 그 선택자가 **레일의 `<nav>`** 를 집어 이 검사가 엉뚱한 원소를
-     * 재기 시작했다. 클래스는 여러 원소가 공유할 수 있으므로 「그 클래스를 가진
-     * 첫 번째」는 계약이 될 수 없다.
+     * ⚠️ **Target it by name** (corrected 2026-08-20). This used to grab the first
+     * `.overflow-y-auto`, and when the rail became eight destinations and gained scroll,
+     * that selector grabbed **the rail's `<nav>`** and this check started measuring the
+     * wrong element. A class can be shared by several elements, so "the first one with
+     * that class" cannot be a contract.
      */
     const slot = container.querySelector('[data-testid="app-shell-body-slot"]');
     expect(slot, "본문 스크롤 슬롯이 있어야 한다").not.toBeNull();
@@ -121,8 +121,9 @@ describe("셸 칼럼 — 뷰포트 소유 계약", () => {
   });
 
   it("앱 내장 터미널 손잡이가 없다 — 2026-07-26 제거", () => {
-    // 회귀 차단: 에이전트를 돌리는 사람은 자기 터미널을 쓴다는 결정으로
-    // 하단 도크를 걷어냈다. 손잡이가 되살아나면 그 결정이 조용히 뒤집힌 것이다.
+    // Regression guard: the bottom dock was removed on the decision that anyone running
+    // an agent uses their own terminal. A handle reappearing means that decision was
+    // quietly reversed.
     render(
       <AppShell>
         <div>page</div>

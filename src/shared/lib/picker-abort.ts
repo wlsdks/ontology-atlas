@@ -1,25 +1,29 @@
 /**
- * 파일/폴더 선택창을 **취소한 것은 실패가 아니다**.
+ * **Cancelling a file/folder picker is not a failure.**
  *
- * 진입 검수 E-1b: 폴더 선택을 그냥 취소했는데 카드 안에 danger red 로
- * 「user aborted」(브라우저 원문 문자열)가 떴다. 취소는 사용자가 의도한 정상
- * 종료라 오류 표면을 만들 이유가 없다 — 선택창을 띄우기 직전 상태로 조용히
- * 돌아가야 한다.
+ * Found in the entry review: simply cancelling the folder picker put
+ * "user aborted" — the browser's own string — in danger red inside the card.
+ * Cancelling is the user's intended, normal exit, so there is no reason to raise
+ * an error surface; it should return quietly to the state just before the picker
+ * opened.
  *
- * 호출자가 `err instanceof DOMException && err.name === 'AbortError'` 로
- * 직접 판정하면 두 가지 자리에서 새는데, 둘 다 실제로 존재한다:
+ * Letting each caller decide with
+ * `err instanceof DOMException && err.name === 'AbortError'` leaks in two places,
+ * both of which occur in practice:
  *
- * 1. **다른 realm 의 DOMException** — iframe·워커·확장이 던진 예외는
- *    `instanceof` 가 false 다(생성자가 다른 realm 소속).
- * 2. **DOMException 이 아닌 취소** — Tauri 커맨드는 `Err(String)` 을 문자열로
- *    reject 하고, 폴리필은 평범한 `Error` 를 던진다.
+ * 1. **A DOMException from another realm** — exceptions thrown by an iframe,
+ *    worker or extension fail `instanceof`, because their constructor belongs to
+ *    a different realm.
+ * 2. **Cancellations that are not DOMExceptions** — Tauri commands reject
+ *    `Err(String)` as a plain string, and polyfills throw an ordinary `Error`.
  *
- * 그래서 판정 기준을 "생성자"에서 **"이름/문구"** 로 내린다. 취소를 오류로
- * 잘못 분류하는 쪽이 오류를 취소로 잘못 분류하는 쪽보다 사용자에게 비싸다 —
- * 전자는 정상 조작에 빨간 경고를 띄우고, 후자는 조용히 원 상태로 돌아간다.
+ * So the test drops from "the constructor" to **the name and the message**.
+ * Misclassifying a cancellation as an error costs the user more than the
+ * reverse: the first puts a red warning on a normal action, while the second
+ * quietly returns to the previous state.
  */
 const ABORT_NAME = 'AbortError';
-/** 브라우저 원문 문구 — 이름이 소실된 경로(문자열 reject)를 위한 2차 판정. */
+/** The browser's own wording — the fallback test for paths that lose the name (a string reject). */
 const ABORT_MESSAGE = /\buser\s+aborted\b/i;
 
 export function isPickerAbort(err: unknown): boolean {

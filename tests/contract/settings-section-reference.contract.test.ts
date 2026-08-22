@@ -7,36 +7,36 @@ import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
 
 /**
- * 「설정의 X 칸으로 가세요」라고 적었으면 **그 칸이 실제로 있어야 한다.**
+ * If a string says "go to the X section of settings", **that section must exist.**
  *
- * ## 왜 (2026-08-17 실측)
+ * **Why** (measured 2026-08-17). The settings sheet had nine section names at the
+ * time — two of them became 「Agents」 and 「MCP 연결」 by owner instruction on
+ * 2026-08-19 — 화면 · 지도 배경 · 확장 · 발자국 · 알림 · 작업 공간 ·
+ * **앱에서 대화** · **터미널에서 연결** · API Key. Two pieces of guidance named
+ * sections that did not exist:
  *
- * 설정 시트의 칸 이름은 아홉이다(당시 이름 — 두 칸은 2026-08-19 소유자
- * 지시로 「Agents」·「MCP 연결」이 됐다) — 화면 · 지도 배경 · 확장 · 발자국 ·
- * 알림 · 작업 공간 · **앱에서 대화** · **터미널에서 연결** · API Key. 그런데
- * 두 안내가 없는 이름을 대고 있었다:
- *
- * | 어디 | 뭐라고 했나 | 실제 이름 |
+ * | Where | What it said | The real name |
  * |---|---|---|
- * | 실행기 강등 카드 | 「**MCP**」 칸에서 | 터미널에서 연결 |
- * | 대화 실행 실패 안내 | 설정의 **Agents** 칸에서 | 앱에서 대화 |
+ * | Runtimes degradation card | in the 「**MCP**」 section | 터미널에서 연결 |
+ * | Chat launch-failure notice | in settings' **Agents** section | 앱에서 대화 |
  *
- * 읽은 사람은 없는 탭을 찾다가 포기한다. 이 저장소가 이미 적어 둔 말과 같은
- * 갈래다 — *"갈 곳이 없는 줄은 등재된 적이 없는 것과 같다."*
+ * Whoever reads it hunts for a tab that is not there and gives up. Same species as
+ * what this repository already wrote down: *"a row with no destination is the same
+ * as never having been registered."*
  *
- * ## 왜 문장을 못박지 않고 이렇게 재나
+ * **Why measure this instead of pinning the sentence.** The defect first surfaced in
+ * the web smoke test, and that check was pinning **the whole wording**
+ * (`alsoHere: /내 에이전트 연결/`). So a wording change turned it red, and that red
+ * could not distinguish "the wording is stale" from "it points nowhere" — exactly the
+ * shape `.claude/rules/documentation.md` forbids: *do not pin a sentence a human
+ * wrote; check only what a machine can generate.*
  *
- * 이 결함을 처음 드러낸 것은 웹 스모크였는데, 그 검사는 **문구를 통째로**
- * 못박고 있었다(`alsoHere: /내 에이전트 연결/`). 그래서 문구가 바뀌자 빨간불이
- * 됐고, 그 빨간불이 「문구가 낡았다」인지 「가리키는 곳이 없다」인지 구별되지
- * 않았다. `documentation.md` 가 금지하는 바로 그 모양이다 — *"사람이 쓴 문장을
- * 못박지 마라. 기계가 만들어 낼 수 있는 것만 검사하라."*
- *
- * 그래서 문장 대신 **관계**를 잰다: 「…」 안의 이름이 `section.*` 값 중 하나인가.
- * 문구는 얼마든지 고쳐도 되고 번역해도 되며, 없는 칸을 가리킬 때만 터진다.
+ * So this measures a **relation** instead of a sentence: is the name inside 「…」 one
+ * of the `section.*` values? The wording may be edited or translated freely, and this
+ * breaks only when it points at a section that does not exist.
  */
 
-/** 「X」 칸 · “X” section · 섹션 「X」 — 「그 칸으로 가라」는 말의 모양들. */
+/** 「X」 칸 · “X” section · 섹션 「X」 — the shapes a "go to that section" instruction takes. */
 const SECTION_REFERENCE_PATTERNS = [
   /[「“]([^」”]+)[」”]\s*(?:칸|section)/gu,
   /(?:섹션|section)\s*[「“]([^」”]+)[」”]/gu,
@@ -45,15 +45,16 @@ const SECTION_REFERENCE_PATTERNS = [
 type Bundle = Record<string, unknown>;
 
 /**
- * **가리킬 수 있는 자리는 두 표에 산다** (2026-08-21, 원장 90).
+ * **The places that can be pointed at live in two tables** (2026-08-21, ledger 90).
  *
- * 실행기와 MCP 연결이 시트를 떠나 「에이전트」 목적지가 됐다. 그래서 안내가
- * 가리키는 곳이 시트 칸일 수도, **목적지의 절**일 수도 있다. 한쪽 표만 보면
- * 멀쩡한 안내를 결함이라고 말하게 된다.
+ * Runtimes and MCP connect left the sheet and became the 「에이전트」 destination, so
+ * guidance may point at a sheet section **or at a section of that destination**.
+ * Looking at only one table reports perfectly good guidance as a defect.
  *
- * 표를 늘리면 검사가 헐거워지는 것 아닌가 — 아니다. **둘 다 화면에 실재하는
- * 이름의 집합**이고, 이 검사가 막는 것은 「없는 이름을 대는 것」이지 「어느
- * 표에 있는가」가 아니다. 대신 아래에 **표마다 공회전 바닥**을 따로 둔다.
+ * Does adding a table loosen the check? No. **Both are sets of names that really
+ * exist on screen**, and what this check blocks is naming something that does not
+ * exist, not which table it is in. To compensate, each table gets **its own idling
+ * floor** below.
  */
 function sheetSectionNames(bundle: Bundle): Set<string> {
   const nav = (bundle.nav as Bundle | undefined)?.settingsMenu as Bundle | undefined;
@@ -61,7 +62,7 @@ function sheetSectionNames(bundle: Bundle): Set<string> {
   return new Set(Object.values(section ?? {}));
 }
 
-/** 「에이전트」 목적지가 화면에 그리는 절 제목들. */
+/** The section headings the 「에이전트」 destination renders on screen. */
 function destinationSectionNames(bundle: Bundle): Set<string> {
   const agents = bundle.agents as Record<string, string> | undefined;
   return new Set(
@@ -102,14 +103,14 @@ describe.each([
   const refs = sectionReferences(bundle);
 
   it('설정 칸 이름 목록이 비어 있지 않다', () => {
-    // 이게 비면 아래 검사는 전부 통과하면서 아무것도 안 재게 된다.
+    // If this is empty, every check below passes while measuring nothing.
     expect(names.size).toBeGreaterThan(5);
   });
 
   /*
-   * **표마다 바닥을 따로 둔다.** 합쳐서만 세면 한쪽이 통째로 사라져도 다른
-   * 쪽 숫자에 가려 안 보인다 — 이 저장소가 게이트에 대해 반복해서 겪은
-   * 「합계가 구멍을 덮는」 모양이다.
+   * **Each table gets its own floor.** Counting only the union hides one table
+   * disappearing entirely behind the other's number — the "a total covers the hole"
+   * shape this repository has repeatedly hit with gates.
    */
   it('두 표가 각각 비어 있지 않다 — 합계가 한쪽의 소실을 덮지 않는다', () => {
     expect(sheetSectionNames(bundle).size, '시트 칸 이름이 0개다').toBeGreaterThan(5);
@@ -120,13 +121,14 @@ describe.each([
   });
 
   /*
-   * ⚠️ **이 검사가 두 번째로 중요하다.** 「가리키는 안내」가 0건이면 본 검사는
-   * 빈 배열을 돌며 늘 초록이다. 오늘 2건(실행기 강등 카드 · 대화 실행 실패
-   * 안내)이 실측이고, 안내를 지웠으면 이 줄을 같이 내리면 된다.
+   * ⚠️ **The second most important check here.** With zero pieces of pointing
+   * guidance the main check iterates an empty array and is always green. Today's
+   * measurement is 2 (the runtimes degradation card and the chat launch-failure
+   * notice); if guidance is deleted, lower this line with it.
    */
   it('가리키는 안내가 실제로 있다 — 없으면 본 검사가 헛돈다', () => {
-    // 2026-08-21: 실행기 강등 카드 한 줄이 목적지의 절을 가리킨다. 안내를
-    // 지웠으면 이 줄을 같이 내린다.
+    // 2026-08-21: one line, the runtimes degradation card, points at a destination
+    // section. If that guidance is deleted, lower this line with it.
     expect(refs.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -147,13 +149,16 @@ describe('두 언어가 같은 자리를 가리킨다', () => {
 });
 
 /*
- * ## 이름이 실재해도 칸이 안 그려지면 같은 결함이다 (2026-08-19)
+ * A name that exists but whose section is not rendered is the same defect
+ * (2026-08-19).
  *
- * 위 검사는 「…」 속 이름을 `section.*` **값**과 대조한다. 그런데 값은 남았는데
- * 그 키가 `SETTINGS_GROUPS` 에서 빠지면 — 칸을 메뉴에서 내리고 번역 키를
- * 지우는 걸 잊으면 — 위 검사는 초록인 채로 안내가 **안 그려지는 칸**을
- * 가리킨다. 그래서 문장을 못박지 않고 양쪽에서 **뽑아 대조**한다:
- * messages 의 `section.*` 키 집합 == 메뉴가 실제로 그리는 items 집합.
+ * The check above compares the name inside 「…」 against `section.*` **values**. But
+ * if the value survives while its key drops out of `SETTINGS_GROUPS` — removing the
+ * section from the menu and forgetting to delete the translation key — the check
+ * above stays green while the guidance points at **a section that is never
+ * rendered**. So instead of pinning a sentence, both sides are **extracted and
+ * compared**: the set of `section.*` keys in messages == the set of items the menu
+ * actually renders.
  */
 describe('section.* 키는 전부 실제로 그려지는 칸이다', () => {
   const source = readFileSync(

@@ -1,52 +1,54 @@
 /**
- * "영역 전개" 전환 상태기계 + 모션 수학 (S4, fable 설계).
+ * Realm transition — state machine plus motion math.
  *
- * 순수 모듈 — DOM/canvas/타이머 지식 없음. `ui/use-topology-loop.ts` 가 이
- * 리듀서로 phase 를 굴리고, 매 프레임 아래 evaluate 함수들로 노드 좌표·결계
- * 드로잉 진행·시차 팩터를 계산해 월드에 적용한다.
+ * Pure: no DOM, canvas, or timer knowledge. `ui/use-topology-loop.ts` drives the
+ * phase through this reducer and, every frame, calls the evaluate functions
+ * below for node positions, warding-draw progress, and the parallax factor, then
+ * applies them to the world.
  *
- * 전환 안무 (600ms 상한, `prefers-reduced-motion` 은 즉시 전환):
- * - 영역 **안** 노드: 구좌표→신좌표 FLIP 보간 (ease-out ~300ms).
- * - 영역 **밖** 노드: 중심 기준 방사+접선 곡선 궤적으로 가속 이탈 (ease-in
- *   ~240ms) — "중력 재편" 느낌으로 화면 밖으로 밀려난 뒤 언마운트.
- * - 결계 링: stroke dash 자기 드로잉 ~200ms.
- * - 배경 도트 그리드: 전환 순간에만 중심 방사 시차 낙하 (rise→settle, 600ms
- *   후 정지). 지속 애니메이션 아님.
+ * Inside nodes FLIP to their new positions; outside nodes leave along an
+ * accelerating radial-plus-tangential curve — gravity re-forming — and unmount
+ * off screen; the warding ring draws itself with a stroke dash; the background
+ * dot grid falls once, at the moment of transition, and stops. Nothing here is a
+ * continuous animation, and `prefers-reduced-motion` switches instantly instead.
  *
- * 상수는 토큰이 아니라 문서화된 모듈 상수다 — `model/camera-easing.ts` 의
- * min/max duration 과 같은 "아직 토큰 없음" 선례. 값은 감(타이밍)을 지배하지
- * 테마 표면을 지배하지 않는다.
+ * These constants are documented module constants rather than tokens, following
+ * the same "no token yet" precedent as the min/max durations in
+ * `model/camera-easing.ts`: they govern feel (timing), not theme surface.
  */
 
 /**
- * 전환 총 상한(ms). 처음 600ms 설계는 이탈/FLIP/결계가 동시에 몰려 5fps
- * 녹화에서 중간 프레임이 0장 — "컷 전환" 으로 읽혔다 (소유자 실보고 +
- * 프레임 검수). 페이즈를 시간축으로 분리해 각 동작이 읽히게 늘렸다:
- * 이탈(0–420) → FLIP(깊이별 240/380/520 지연부터 각 660, 최심 1180 정착) →
- * 결계 드로잉(700–1000). S5 에서 깊이 계층 순차 조립을 넣어 봉투를
- * 1000→1180 으로 늘렸다 — 가장 깊은 element 링(depth3+, 지연 520)이 660ms
- * FLIP 을 마치는 시점이다.
+ * Total transition envelope (ms).
+ *
+ * The original 600 ms design ran fling, FLIP, and warding all at once and a
+ * 5 fps recording caught **zero** intermediate frames — it read as a hard cut
+ * (owner report, confirmed by frame review). The phases were separated along the
+ * time axis so each motion is legible: fling 0–420 → FLIP (per-depth delays of
+ * 240/380/520, each lasting 660, deepest settling at 1180) → warding draw
+ * 700–1000. Depth-sequenced assembly then pushed the envelope from 1000 to 1180,
+ * which is when the deepest element ring (depth 3+, delay 520) finishes its
+ * 660 ms FLIP.
  */
 export const REALM_ENVELOPE_MS = 1180;
-/** 영역 안 노드 FLIP duration(ms) — ease-out. 깊이와 무관하게 동일. */
+/** FLIP duration (ms) for nodes inside the realm — ease-out, the same at every depth. */
 export const REALM_INSIDE_FLIP_MS = 660;
 /**
- * depth1(도메인 링) FLIP 시작 지연(ms) — 밖 세계가 먼저 비워지는 걸 보여준 뒤
- * 재배치. 루트(depth0)·도메인(depth1)이 먼저 앉는다. 더 깊은 링은
- * `realmInsideFlipDelayFor` 로 계단식 지연.
+ * FLIP start delay (ms) for depth 1, the domain ring — the outside world is seen
+ * to empty first, then the re-layout begins. Root (depth 0) and domains (depth 1)
+ * land first; deeper rings step later via `realmInsideFlipDelayFor`.
  */
 export const REALM_INSIDE_FLIP_DELAY_MS = 240;
 /**
- * 깊이 계단 지연 폭(ms, S5) — depth2 는 +1 스텝, depth3+ 는 +2 스텝. 루트에서
- * 바깥 링으로 "층이 순차로 조립되는" 공감각을 만든다(각 링의 FLIP duration 은
- * 660 유지, 시작점만 밀린다).
+ * Per-depth delay step (ms): depth 2 is +1 step, depth 3+ is +2. Layers then read
+ * as assembling outward from the root. Each ring keeps the 660 ms FLIP duration;
+ * only the start point moves.
  */
 export const REALM_INSIDE_FLIP_DELAY_STEP_MS = 140;
 
 /**
- * 멤버 깊이 → 그 링의 FLIP 시작 지연(ms). 루트/도메인(depth≤1)은 기본 지연,
- * capability(depth2)는 +1 스텝, element(depth3+)는 +2 스텝에서 멈춘다(그
- * 이상 깊이는 element 링을 공유하므로 같은 지연). 순수·결정론.
+ * Member depth → that ring's FLIP start delay (ms). Root and domain (depth ≤ 1)
+ * take the base delay, capability (depth 2) +1 step, element (depth 3+) stops at
+ * +2 — anything deeper shares the element ring and so shares its delay. Pure.
  */
 export function realmInsideFlipDelayFor(depth: number): number {
   if (depth <= 1) return REALM_INSIDE_FLIP_DELAY_MS;
@@ -55,20 +57,22 @@ export function realmInsideFlipDelayFor(depth: number): number {
 }
 
 /**
- * 영역 active 중 멤버 깊이 → 알파 배수(S5 깊이 선명도). depth1 1.0 · depth2 0.98 ·
- * depth3+ 0.96 — 틴트/블러 없이 알파만으로 "가까운 층이 더 또렷"한 깊이 신호.
- * 호버·ego 멤버는 호출부에서 1.0 으로 복귀시킨다. 순수·결정론.
+ * Member depth → alpha multiplier while a realm is active: depth 1 → 1.0,
+ * depth 2 → 0.98, depth 3+ → 0.96. Alpha alone carries "the nearer layer is
+ * crisper", with no tint or blur. Hovered and ego members are restored to 1.0 by
+ * the caller. Pure.
  *
- * ## 왜 0.92/0.84 에서 올렸나 (도해석 실측, 2026-08-18)
- *
- * 이 배수는 노드 stroke 잉크에 **합성**된다. 가장 어두운 깊이 잉크
- * `--topology-v2-ink-depth-leaf`(#60606d, 캔버스 위 3.19:1)에 0.84 를 곱하면
- * 합성 대비가 **2.58:1** — WCAG 1.4.11 비텍스트 3:1 바닥 아래다. leaf 잉크가
- * 3:1 을 유지하는 최소 알파가 0.955 이므로, 램프를 그 위(0.96)로 올리고
- * 잉크 램프(leaf < mid < top 서열)는 그대로 둔다 — 잉크를 밝혀서 풀면
- * 램프 전체가 top(3.93) 밑 0.1 폭에 뭉개져 깊이 축 자체가 사라진다.
- * 게이트: `tests/contract/topology-ink-contrast.contract.test.ts` 의 합성 바닥
- * 검사. 깊이 신호의 나머지는 배율 램프(아래)와 층 위치가 나른다.
+ * **Why these were raised from 0.92/0.84** (infoviz measurement, 2026-08-18).
+ * The multiplier **composites** onto the node's stroke ink. The darkest depth
+ * ink, `--topology-v2-ink-depth-leaf` (#60606d, 3.19:1 on the canvas), times
+ * 0.84 gives a composited contrast of **2.58:1** — below the WCAG 1.4.11
+ * non-text floor of 3:1. The lowest alpha that keeps leaf ink at 3:1 is 0.955,
+ * so the multipliers move above it (0.96) and the ink ramp keeps its order
+ * (leaf < mid < top). Brightening the ink instead would squash the whole ramp
+ * into a 0.1 band below top (3.93) and erase the depth axis itself. Gate: the
+ * composited-floor check in `tests/contract/topology-ink-contrast.contract.test.ts`.
+ * The rest of the depth signal is carried by the scale multipliers below and by
+ * layer position.
  */
 export function realmDepthClarityAlpha(depth: number): number {
   if (depth <= 1) return 1;
@@ -77,66 +81,66 @@ export function realmDepthClarityAlpha(depth: number): number {
 }
 
 /**
- * 영역 active 중 멤버 깊이 → 스케일 배수(S5 깊이 선명도). depth1 1.0 · depth2 0.97 ·
- * depth3+ 0.94 — 깊은 층을 아주 살짝 작게 그려 원근을 보탠다(알파와 대칭). 순수.
+ * Member depth → size multiplier while a realm is active: depth 1 → 1.0,
+ * depth 2 → 0.97, depth 3+ → 0.94. Drawing deeper layers very slightly smaller
+ * adds perspective, mirroring the alpha multipliers. Pure.
  */
 export function realmDepthClarityScale(depth: number): number {
   if (depth <= 1) return 1;
   if (depth === 2) return 0.97;
   return 0.94;
 }
-/** 영역 밖 노드 이탈 fling duration(ms) — ease-in 가속. */
+/** Fling duration (ms) for nodes leaving the realm — ease-in acceleration. */
 export const REALM_OUTSIDE_FLING_MS = 420;
-/** 결계 링 자기 드로잉 duration(ms). */
+/** Warding-ring self-drawing duration (ms). */
 export const REALM_WARDING_DRAW_MS = 300;
-/** 결계 드로잉 시작 지연(ms) — 세계가 대략 자리잡은 뒤 봉인. */
+/** Warding-draw start delay (ms) — the seal is drawn once the world has roughly settled. */
 export const REALM_WARDING_DRAW_DELAY_MS = 700;
-/** 도트 그리드 시차 낙하 rise→settle duration(ms). */
+/** Dot-grid parallax fall, rise→settle duration (ms). */
 export const REALM_DUST_SETTLE_MS = 1000;
 
-/** 이탈 노드가 중심에서 추가로 밀려나는 거리(월드 유닛) — 화면 밖으로 확실히 보내는 양. */
+/** Extra distance (world units) a leaving node is pushed from the centre — enough to clear the screen. */
 export const REALM_FLING_REACH = 4200;
-/** 이탈 궤적의 접선 컬(라디안) — 곧게 날아가지 않고 살짝 휘어 "재편" 느낌. */
+/** Tangential curl (radians) of the fling path — it bends slightly instead of flying straight, which reads as re-forming. */
 export const REALM_FLING_CURL = 0.5;
 
 /**
- * === 퇴장(exiting) 안무 상수 (S6, fable 설계) ===
+ * Exit choreography constants.
  *
- * 입장은 3페이즈 안무(이탈→깊이 순차 조립→결계)인데 초기 퇴장은 전 노드 홈
- * 스프링 + 카메라 fit 뿐이라 "닫히는 사건"이 없었다(비대칭). S6 은 입장의
- * **역재생**으로 퇴장을 다시 짠다 — 총 봉투 ~800ms:
- * - 0–250ms: 결계 링이 역방향으로 지워지고(draw 1→0), 영역 세계가 깊이 역순
- *   (깊은 층 먼저)으로 원위치 역FLIP 시작.
- * - 150–650ms: 밖 세계 노드들이 fling 위치에서 역중력으로 귀환(reach 1→0,
- *   ease-out 감속 착지) — 입장 fling 의 결정론 역재생.
- * - 카메라: overview fit 을 750ms 트윈으로 안무와 동기(입장 860ms 패턴).
- * 값은 문서화된 모듈 상수 — 입장 상수와 같은 선례(타이밍 지배, 테마 미지배).
+ * Entry is a three-phase piece (fling → depth-sequenced assembly → warding), but
+ * the first exit was only a home spring on every node plus a camera fit, so there
+ * was no closing *event* — an asymmetry. Exit is therefore the **reverse
+ * playback** of entry: the warding erases while the inside world reverse-FLIPs
+ * home deepest-layer-first, then outside nodes return under reverse gravity, with
+ * the camera's overview fit tweening in sync (750 ms, following entry's 860 ms
+ * pattern). Documented module constants, on the entry constants' precedent.
  */
 export const REALM_EXIT_ENVELOPE_MS = 800;
-/** 결계 링 역방향 지우기 duration(ms) — draw progress 1→0. */
+/** Warding-ring reverse-erase duration (ms) — draw progress 1→0. */
 export const REALM_EXIT_WARDING_ERASE_MS = 250;
-/** 안 노드 역FLIP duration(ms) — ease-out, 깊이와 무관하게 동일(시작만 계단). */
+/** Reverse-FLIP duration (ms) for inside nodes — ease-out, identical at every depth; only the start is stepped. */
 export const REALM_EXIT_FLIP_MS = 420;
 /**
- * 역FLIP 깊이 계단 지연 폭(ms) — 입장의 정방향 계단(얕은 층 먼저)을 뒤집어
- * **깊은 층이 먼저** 떠난다. depth3+ → 0 스텝(가장 먼저), depth2 → +1, depth≤1
- * → +2(가장 늦게). 최대 지연 240 + FLIP 420 = 660 < 봉투 800.
+ * Reverse-FLIP per-depth delay step (ms). Entry steps shallow-first, so exit
+ * inverts it and **the deepest layer leaves first**: depth 3+ → 0 steps, depth 2
+ * → +1, depth ≤ 1 → +2 (last to go). Worst case 240 + 420 FLIP = 660, inside the
+ * 800 ms envelope.
  */
 export const REALM_EXIT_FLIP_DELAY_STEP_MS = 120;
-/** 밖 노드 역중력 귀환 duration(ms) — reach 1→0 ease-out 감속 착지. */
+/** Reverse-gravity return duration (ms) for outside nodes — reach 1→0, decelerating into the landing. */
 export const REALM_EXIT_OUTSIDE_RETURN_MS = 500;
-/** 밖 노드 귀환 시작 지연(ms) — 결계가 지워지고 안 세계가 먼저 접히기 시작한 뒤. */
+/** Return start delay (ms) — after the warding has erased and the inside world has begun folding. */
 export const REALM_EXIT_OUTSIDE_RETURN_DELAY_MS = 150;
 
 export type RealmPhase = "idle" | "entering" | "active" | "exiting";
 
 export interface RealmTransitionState {
   phase: RealmPhase;
-  /** 현재/직전 영역 루트 id (idle 이면 null). */
+  /** Current or most recent realm root id (null while idle). */
   rootId: string | null;
-  /** 현재 전환 시작 시각(performance.now 호환). idle/active 는 의미 없음. */
+  /** Transition start time (`performance.now` clock). Meaningless while idle or active. */
   startMs: number;
-  /** 이번 전환 duration(ms). reduced-motion 이면 0(즉시). */
+  /** Duration of this transition (ms); 0 under reduced motion, i.e. instant. */
   durationMs: number;
 }
 
@@ -153,10 +157,10 @@ export type RealmTransitionEvent =
   | { type: "tick"; now: number };
 
 /**
- * 전환 리듀서 — 순수. `enter` 는 어떤 상태에서도 새 루트로 재진입(전환 시작).
- * `exit` 는 영역이 있을 때만 이탈 전환을 연다. `tick` 은 duration 경과 시
- * entering→active / exiting→idle 로 정착시킨다. reduced-motion 은 duration 0
- * 이라 다음 tick(또는 즉시)에 정착한다.
+ * Pure reducer. `enter` re-enters on a new root from any state; `exit` opens the
+ * leaving transition only when a realm exists; `tick` settles entering→active and
+ * exiting→idle once the duration has elapsed. Under reduced motion the duration
+ * is 0, so it settles on the next tick.
  */
 export function realmTransitionReducer(
   state: RealmTransitionState,
@@ -176,8 +180,8 @@ export function realmTransitionReducer(
         phase: "exiting",
         rootId: state.rootId,
         startMs: event.now,
-        // S6 — 퇴장 역재생 봉투(입장 역정신). 이전엔 FLIP 660 뿐이라 밖 노드
-        // 역중력 귀환/결계 지우기를 담을 시간이 없었다.
+        // The reverse-playback envelope. It was previously just the 660 ms FLIP,
+        // which left no room for the outside nodes' return or the warding erase.
         durationMs: event.reducedMotion ? 0 : REALM_EXIT_ENVELOPE_MS,
       };
     case "tick": {
@@ -192,16 +196,16 @@ export function realmTransitionReducer(
   }
 }
 
-/** 영역 활성(전환 중 포함) — 이때만 서브트리만 그리고 결계를 두른다. */
+/** Realm engaged, transitions included — only then is the subtree drawn alone and wrapped in a warding ring. */
 export function isRealmEngaged(phase: RealmPhase): boolean {
   return phase !== "idle";
 }
 
-/** 바깥 노드를 하드 컬해도 되는 시점 — 이탈 fling 이 끝난 뒤(active/exiting-후반). */
+/** When outside nodes may be hard-culled: once the fling has finished. */
 export function isRealmOutsideCulled(state: RealmTransitionState, now: number): boolean {
   if (state.phase === "active") return true;
   if (state.phase === "idle" || state.phase === "exiting") return false;
-  // entering — fling 이 끝났으면 컬 (envelope 보다 짧다).
+  // Entering: cull once the fling is done — it is shorter than the envelope.
   return now - state.startMs >= REALM_OUTSIDE_FLING_MS;
 }
 
@@ -209,13 +213,13 @@ function clamp01(t: number): number {
   return t <= 0 ? 0 : t >= 1 ? 1 : t;
 }
 
-/** ease-out cubic — 빠르게 출발해 부드럽게 정착 (FLIP 안착). */
+/** ease-out cubic — leaves fast, settles softly (the FLIP landing). */
 export function easeOutCubic(t: number): number {
   const c = clamp01(t);
   return 1 - Math.pow(1 - c, 3);
 }
 
-/** ease-in cubic — 천천히 출발해 가속 (중력 이탈). */
+/** ease-in cubic — leaves slowly, accelerates (the gravity fling). */
 export function easeInCubic(t: number): number {
   const c = clamp01(t);
   return c * c * c;
@@ -227,8 +231,9 @@ export interface Point {
 }
 
 /**
- * 영역 안 노드의 이번 프레임 좌표 — 구좌표(from)에서 신좌표(to)로 FLIP.
- * `duration<=0`(reduced-motion) 이면 즉시 to. elapsed>=duration 이면 정확히 to.
+ * This frame's position for a node inside the realm: FLIP from `from` to `to`.
+ * `duration <= 0` (reduced motion) lands on `to` immediately, and any
+ * `elapsed >= duration` gives exactly `to`.
  */
 export function realmInsidePosition(
   from: Point,
@@ -242,9 +247,11 @@ export function realmInsidePosition(
 }
 
 /**
- * 영역 밖 노드의 이번 프레임 좌표 — 중심에서 바깥으로 방사 가속 + 접선 컬.
- * `from` 이 중심과 일치하면 `fallbackAngle` 방향으로 이탈한다(결정론). elapsed
- * 가 진행할수록(ease-in) 반경이 `REALM_FLING_REACH` 만큼 늘고 방향이 컬만큼 휜다.
+ * This frame's position for a node outside the realm: radial acceleration away
+ * from the centre plus a tangential curl. A node sitting exactly on the centre
+ * leaves along `fallbackAngle`, which keeps it deterministic. As `elapsed`
+ * advances (ease-in) the radius grows by `REALM_FLING_REACH` and the direction
+ * bends by the curl.
  */
 export function realmOutsidePosition(
   from: Point,
@@ -263,7 +270,7 @@ export function realmOutsidePosition(
   const baseAngle = dist > 1e-6 ? Math.atan2(dy, dx) : fallbackAngle;
 
   if (duration <= 0) {
-    // reduced-motion: 즉시 화면 밖으로.
+    // Reduced motion: straight off screen.
     const r = dist + reach;
     return { x: center.x + Math.cos(baseAngle) * r, y: center.y + Math.sin(baseAngle) * r };
   }
@@ -274,10 +281,11 @@ export function realmOutsidePosition(
 }
 
 /**
- * 퇴장 역FLIP 시작 지연(ms) — 입장 `realmInsideFlipDelayFor`(얕은 층 먼저)의
- * 역순. **깊은 층이 먼저** 원위치로 떠난다: depth3+ → 0(가장 먼저), depth2 →
- * +1 스텝, depth≤1(루트/도메인) → +2 스텝(가장 늦게, 마지막까지 남는 척추).
- * 순수·결정론. 최대 지연 240 + FLIP 420 = 660 < 봉투 800.
+ * Exit reverse-FLIP start delay (ms) — the inverse of entry's
+ * `realmInsideFlipDelayFor`, which goes shallow-first. Here **the deepest layer
+ * leaves first**: depth 3+ → 0 (first), depth 2 → +1 step, depth ≤ 1 (root and
+ * domains) → +2 steps, the spine that stays longest. Worst case 240 + 420 FLIP
+ * = 660, inside the 800 ms envelope. Pure.
  */
 export function realmExitFlipDelayFor(depth: number): number {
   if (depth <= 1) return REALM_EXIT_FLIP_DELAY_STEP_MS * 2;
@@ -286,9 +294,10 @@ export function realmExitFlipDelayFor(depth: number): number {
 }
 
 /**
- * 결계 링 역방향 지우기 진행 1→0 — 입장 `realmWardingDrawProgress`(0→1)의
- * 역재생. elapsed 0 → 1(가득 찬 링), duration 후 → 0(지워짐). 같은 드로잉
- * 렌더러에 먹이면 호가 끝에서부터 되감겨 사라진다. 순수·결정론.
+ * Warding-ring erase progress, 1→0 — the reverse of entry's
+ * `realmWardingDrawProgress` (0→1). At elapsed 0 the ring is full; after
+ * `duration` it is gone. Fed to the same drawing renderer, the arc rewinds from
+ * its end. Pure.
  */
 export function realmWardingEraseProgress(
   elapsed: number,
@@ -299,10 +308,11 @@ export function realmWardingEraseProgress(
 }
 
 /**
- * 밖 노드 역중력 귀환의 reach 팩터 1→0 — 입장 fling(`easeInCubic` 로 0→1
- * 가속)의 **역재생**. `easeInCubic(1 - t)` 이므로 elapsed 0 에서 1(완전 이탈),
- * duration 에서 0(홈). 정방향이 끝에서 빨랐으니 역재생은 처음이 빠르고 착지에서
- * 감속한다("ease-out 감속 착지"). 순수·결정론.
+ * Reach factor 1→0 for an outside node returning under reverse gravity — the
+ * **reverse playback** of the entry fling (`easeInCubic` accelerating 0→1).
+ * Being `easeInCubic(1 - t)`, elapsed 0 gives 1 (fully flung) and `duration`
+ * gives 0 (home). The forward curve was fastest at its end, so the reverse is
+ * fastest at its start and decelerates into the landing. Pure.
  */
 export function realmOutsideReturnReach(
   elapsed: number,
@@ -313,16 +323,16 @@ export function realmOutsideReturnReach(
 }
 
 /**
- * 밖 노드 역중력 귀환 중 알파(0..1) — 모션 감사 처방 B (S7, fable 설계).
- * 순수 위상→알파 사상: `1 - realmOutsideReturnReach(elapsed, duration)`.
- * `realmOutsideReturnReach` 는 완전 이탈=1 → 홈=0 로 줄어드는 reach 팩터라,
- * 그 보수(complement)는 완전 이탈=0(안 보임) → 홈=1(풀 알파)로 늘어나는
- * "materialize" 알파다. 입장 fling 의 감산적(subtractive, 멀어질수록
- * 사라짐) 우아함과 대칭인 가산적(additive, 가까워질수록 나타남) 우아함 —
- * 이전엔 밖 노드가 하드 컬 상태에서 alpha 오버라이드 없이 위치만
- * 되감겨, 뷰포트 컬(`isEdgeCulled`)에 걸리는 순간 풀 알파로 한 프레임에
- * 팝인했다(온셋 ink 급증, 소유자 모션 감사). 새 easing/토큰 0 — 기존
- * `realmOutsideReturnReach` 램프를 그대로 재사용. 순수·결정론.
+ * Alpha (0..1) for an outside node during its reverse-gravity return: the pure
+ * phase→alpha mapping `1 - realmOutsideReturnReach(elapsed, duration)`.
+ *
+ * Since the reach factor shrinks from 1 (fully flung) to 0 (home), its
+ * complement grows from 0 (invisible) to 1 (full alpha) — a materialize alpha,
+ * the additive mirror of the entry fling's subtractive fade. Without it, an
+ * outside node rewound its position only, so the frame it stopped being culled
+ * (`isEdgeCulled`) it popped in at full alpha in one frame — a spike of ink at
+ * onset, caught in the owner's motion audit. No new easing and no new tokens:
+ * it reuses the existing `realmOutsideReturnReach` curve. Pure.
  */
 export function realmOutsideReturnAlpha(
   elapsed: number,
@@ -332,10 +342,11 @@ export function realmOutsideReturnAlpha(
 }
 
 /**
- * 밖 노드의 이번 프레임 귀환 좌표 — `realmOutsidePosition`(fling)의 역재생.
- * `from` 은 노드의 **원래(홈) 좌표**(입장 시 fling 출발점). reach 팩터가 1→0 로
- * 줄며 반경·컬이 되감겨 정확히 `from` 으로 착지한다(입장 궤적 완전 역전 — 튐
- * 없음). `duration<=0`(reduced-motion) 이면 즉시 홈.
+ * This frame's return position for an outside node — the reverse playback of
+ * `realmOutsidePosition`. `from` is the node's **home** position, which was the
+ * fling's starting point on entry. As the reach factor falls 1→0 the radius and
+ * curl rewind and it lands exactly on `from`, fully reversing the entry path with
+ * no overshoot. `duration <= 0` (reduced motion) goes home immediately.
  */
 export function realmOutsideReturnPosition(
   from: Point,
@@ -361,7 +372,7 @@ export function realmOutsideReturnPosition(
   return { x: center.x + Math.cos(angle) * r, y: center.y + Math.sin(angle) * r };
 }
 
-/** 결계 링 자기 드로잉 진행 0..1 (stroke dash offset 구동). */
+/** Warding-ring self-drawing progress, 0..1 — drives the stroke-dash offset. */
 export function realmWardingDrawProgress(
   elapsed: number,
   duration: number = REALM_WARDING_DRAW_MS,
@@ -371,9 +382,11 @@ export function realmWardingDrawProgress(
 }
 
 /**
- * 도트 그리드 시차 낙하 팩터 0..1 — rise→settle 반주기(사인). 시작 0, 중간 최대,
- * `REALM_DUST_SETTLE_MS` 후 0 으로 정지(지속 애니메이션 금지). 호출부가 이 팩터에
- * 레이어 깊이·최대 이동량(화면 3% 이내)을 곱해 방사 오프셋을 만든다.
+ * Dot-grid parallax factor, 0..1 — a half sine period, rise then settle: 0 at the
+ * start, peak in the middle, and back to 0 after `REALM_DUST_SETTLE_MS`, because
+ * this must never become a continuous animation. The caller multiplies it by
+ * layer depth and a maximum travel (within 3% of the screen) to get the radial
+ * offset.
  */
 export function realmDustParallaxFactor(
   elapsed: number,

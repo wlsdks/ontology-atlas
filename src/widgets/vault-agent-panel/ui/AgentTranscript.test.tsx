@@ -1,4 +1,4 @@
-// 대화 본문의 세 계약: 진행 표시는 실제 사건만 · 근거 판정은 두 갈래 · 칩은 지도로.
+// The body's three contracts: progress shows only real events · grounding has two branches · chips lead to the map.
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -66,7 +66,7 @@ function renderTranscript(t: AgentTurn, elapsedSeconds: number | null = null) {
 
 describe('AgentTranscript', () => {
   it('사용자 말풍선에 화면 문맥이 그대로 에코된다', () => {
-    // 에이전트가 본 것이 항상 화면에 남는다 — 어긋남이 보이는 것이 수정 신호.
+    // What the agent saw always stays on screen — the mismatch being visible is the signal to correct.
     renderTranscript(turn());
     expect(screen.getByTestId('agent-screen-context-echo')).toHaveTextContent(
       '화면: 결제 처리 을(를) 보는 중',
@@ -99,8 +99,8 @@ describe('AgentTranscript', () => {
   });
 
   it('진행 중에는 대기 점과 함께 텍스트가 항상 같이 있다', () => {
-    // reduced-motion 에서 점의 맥동이 멈춰도 정보는 줄지 않아야 한다 —
-    // 모션이 나르던 "아직 일하는 중" 을 텍스트가 그대로 나른다.
+    // Even with the dot's pulse stopped under reduced-motion, the information must not
+    // shrink — the text carries the "still working" the motion was carrying.
     renderTranscript(turn({ status: 'running' }), 2);
     expect(screen.getByTestId('agent-pending-dot')).toBeInTheDocument();
     expect(screen.getByTestId('agent-pending')).toHaveTextContent('생각 중');
@@ -129,9 +129,10 @@ describe('AgentTranscript', () => {
   });
 
   /**
-   * 2026-08-02 회귀 차단 — 실측 턴에서 도구를 4번 부르고 1,336자를 읽어
-   * 화면에 「읽음: capabilities/checkout 635자」까지 찍어 놓고, 네 줄 아래에서
-   * 「읽은 근거 없이 답했어요」가 떴다. 화면이 자기 화면을 부정한 것이다.
+   * Regression guard, 2026-08-02 — in a measured turn the agent called tools 4 times
+   * and read 1,336 characters, printing 「읽음: capabilities/checkout 635자」 on screen,
+   * and four rows below it said 「읽은 근거 없이 답했어요」 (answered with no grounding
+   * read). The screen was contradicting its own screen.
    */
   it('읽었는데 표기만 없는 답은 강등하지 않고 읽은 목록으로 보정한다', () => {
     const { onFocusNode } = renderTranscript(
@@ -154,19 +155,20 @@ describe('AgentTranscript', () => {
       'capabilities/checkout',
       'capabilities/refund',
     ]);
-    // 보정 칩도 인용 칩과 **같은 경로**를 탄다 — 같은 동작이 다르게 보이면 결함.
+    // A correction chip takes **the same path** as a citation chip — the same action looking different is a defect.
     fireEvent.click(chips[0]);
     expect(onFocusNode).toHaveBeenCalledWith('capabilities/checkout');
-    // 컨트롤은 붙이지 않는다: 이건 고칠 문제가 아니라 정확한 자기 서술이다.
+    // No control is attached: this is not a problem to fix but an accurate self-description.
     expect(screen.queryByTestId('agent-retry')).not.toBeInTheDocument();
   });
 
   /**
-   * 2026-08-02 합집합 정정 — 처음 구현은 강등 문장 + `no-tool-call` 알림 줄 +
-   * 칩 제목으로 **한 턴에 경고를 셋** 세웠다(상호작용석의 칩 처방과 작업대석의
-   * 알림 처방을 둘 다 실은 결과). 셋이 되는 순간 그 경고들은 벽지가 된다 —
-   * 이 파일이 이미 2026-07-27 에 배운 것과 같은 실패다. 알림은 칩 제목이
-   * 흡수하고, **타입 코드는 데이터에 그대로 남는다.**
+   * Union correction, 2026-08-02 — the first implementation stood **three warnings in
+   * one turn**: the demotion sentence, the `no-tool-call` notice row, and the chip
+   * title (the result of carrying both the interaction seat's chip prescription and
+   * the workbench seat's notice prescription). At three, those warnings become
+   * wallpaper — the same failure this file already learned on 2026-07-27. The notice
+   * is absorbed by the chip title, and **the type code stays in the data**.
    */
   const noToolCallTurn = () =>
     turn({
@@ -193,7 +195,7 @@ describe('AgentTranscript', () => {
 
   it('경고 줄은 한 턴에 둘까지다 — 알림은 칩 제목이 흡수한다', () => {
     const fixture = noToolCallTurn();
-    // 데이터에는 남는다: 흡수는 렌더의 일이지 사실을 지우는 것이 아니다.
+    // It remains in the data: absorption is the render's business, not erasing a fact.
     expect(
       fixture.events.filter((event) => event.kind === 'notice' && event.code === 'no-tool-call'),
     ).toHaveLength(1);
@@ -211,8 +213,8 @@ describe('AgentTranscript', () => {
   });
 
   it('흡수할 칩이 안 서면 알림은 그대로 남는다 — 사실이 사라지지 않는다', () => {
-    // 원 질문이 없는 턴(칩이 앉힐 문장이 없다). 흡수는 흡수하는 쪽이 실제로
-    // 있을 때만 성립한다.
+    // A turn with no original question (no sentence for the chip to seat). Absorption
+    // only holds when the absorbing side actually exists.
     renderTranscript(
       turn({
         roundsUsed: 1,
@@ -234,9 +236,10 @@ describe('AgentTranscript', () => {
   });
 
   it('강등 판정은 턴의 결론에만 붙는다 — 중간 서술은 주장이 아니다', () => {
-    // 구 렌더는 도구를 부르기 전 "먼저 읽어볼게요" 같은 서술에도 같은 경고를
-    // 붙여 한 턴에 3회 반복됐다(2026-07-27 실측). 반복되는 최고 경고는 벽지가
-    // 된다 — 경고가 값을 하려면 그 턴의 **결론**에만 서야 한다.
+    // The old render attached the same warning to remarks before a tool was called,
+    // such as "let me read first", repeating it 3 times in one turn (measured
+    // 2026-07-27). A repeated top warning becomes wallpaper — for a warning to be worth
+    // anything it has to stand only on that turn's **conclusion**.
     renderTranscript(
       turn({
         events: [
@@ -272,8 +275,8 @@ describe('AgentTranscript', () => {
   });
 
   it('멎은 턴에는 되돌아갈 길이 있다 — 누르면 같은 말이 입력칸에 앉는다', () => {
-    // 이유만 말하고 길을 안 주면 그 자리가 막다른 골목이다. 전송이 아니라
-    // 프리필이라 이 슬라이스의 "보내기 전에는 아무것도 나가지 않는다" 는 그대로.
+    // Stating a reason without giving a route makes that position a dead end. It is a
+    // prefill rather than a send, so this slice's "nothing goes out before you send" holds.
     const { onPrefill } = renderTranscript(
       turn({
         status: 'failed',
@@ -283,7 +286,7 @@ describe('AgentTranscript', () => {
         ],
       }),
     );
-    // 멎은 이유는 그 턴에서 가장 중요한 사실이라 조용한 마이크로 라벨이 아니다.
+    // The reason it stopped is the most important fact in that turn, so it is not a quiet micro label.
     expect(screen.getByTestId('agent-notice')).toHaveAttribute(
       'data-notice-weight',
       'blocking',
@@ -323,7 +326,7 @@ describe('AgentTranscript', () => {
   });
 
   it('읽은 적 없는 이름은 칩이 되지 않는다', () => {
-    // 칩으로 그리면 누르는 순간 빈 곳으로 데려간다.
+    // Drawn as a chip, pressing it would take you somewhere empty.
     renderTranscript(
       turn({
         events: [
@@ -341,13 +344,13 @@ describe('AgentTranscript', () => {
 
   it('푸터는 답이 없어도 자리를 지킨다 (치수 규칙성)', () => {
     renderTranscript(turn({ auditCount: 0, status: 'sending' }));
-    // 답이 와도 위 내용이 밀리지 않도록 상시 1행 예약.
+    // One row is always reserved so an arriving answer does not push the content above it.
     expect(screen.getByTestId('agent-turn-footer')).toBeInTheDocument();
   });
 
   it('다음 한 걸음은 칩 하나로 붙고, 눌러도 전송하지 않는다', () => {
-    // 추가 호출 0 — 이 문장은 같은 턴의 응답에서 이미 왔다. 칩은 프리필이라
-    // 살아 있는 제안을 하나 더 만들지도 않는다.
+    // Zero extra calls — this sentence already arrived in the same turn's response. The
+    // chip is a prefill, so it does not create a second live proposal either.
     const { onPrefill } = renderTranscript(
       turn({
         events: [

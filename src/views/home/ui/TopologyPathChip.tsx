@@ -12,7 +12,7 @@ export interface TopologyPathChipProps {
   label: string;
   /** Only rendered once both endpoints resolve — the one agent-facing copy
    *  action that replaced the old path panel's CLI/MCP 2-button split and its
-   *  5-button proof-check row (분석 패널 완전 소멸 2단계 §b). */
+   *  5-button proof-check row. */
   resolved: boolean;
   copyPacketLabel: string;
   copyPacketCopied: boolean;
@@ -24,10 +24,10 @@ export interface TopologyPathChipProps {
 }
 
 /**
- * Top-center "chrome grammar" status chip for path mode — replaces the old
+ * Top-centre "chrome grammar" status chip for path mode — replaces the old
  * left-slot path panel (route card + MCP/CLI chips + collapsed proof
- * disclosure). Mounted next to `SearchHint` (same "상단 중앙 툴바" row), not
- * in the INDEX/analysis-rail left slot — path no longer reclaims that slot
+ * disclosure). Mounted next to `SearchHint` in the same top-centre row, not in
+ * the INDEX/analysis-rail left slot: path no longer reclaims that slot
  * (`slot-ownership.ts`). Canvas path highlighting is untouched — this chip is
  * chrome only, no map-rendering logic.
  */

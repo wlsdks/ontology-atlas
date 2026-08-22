@@ -18,7 +18,7 @@ interface Props {
 type Mode = 'write' | 'preview';
 
 /**
- * 마크다운 입력 필드. Write/Preview 탭 토글로 실시간 렌더링 확인.
+ * A markdown input field, with a Write/Preview tab toggle for checking the rendering live.
  */
 export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Props) {
   const t = useTranslations('settings.markdown');
@@ -54,7 +54,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
         <div
           className={cn(
             'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]',
-            // 간단한 마크다운 스타일
+            // Basic markdown styling.
             '[&>h1]:mt-3 [&>h1]:mb-2 [&>h1]:text-display [&>h1]:font-[var(--font-weight-signature)] [&>h1]:text-[color:var(--color-text-primary)]',
             '[&>h2]:mt-3 [&>h2]:mb-1.5 [&>h2]:text-title [&>h2]:font-[var(--font-weight-signature)] [&>h2]:text-[color:var(--color-text-primary)]',
             '[&>h3]:mt-2 [&>h3]:mb-1 [&>h3]:text-body-lg [&>h3]:font-[var(--font-weight-signature)] [&>h3]:text-[color:var(--color-text-primary)]',
@@ -92,12 +92,12 @@ function TabButton({
       type="button"
       onClick={onClick}
       /*
-       * 보더 없는 인셋 세그먼트다. `text-[10px]` 은 램프에 없는 스텝이라
-       * **짝인 행간이 없어 상속 1.5(15px)로 떨어져 있었다** — 램프 밖 크기의
-       * 조용한 실패 모드 그 자체다(`design.md` "크기 스텝이 자기 행간을
-       * 싣는다"). `text-label`(11px/16px)로 올리면 짝이 붙는다.
-       * 눌림 표현도 램프의 다수(a16 + 1차 잉크)로 맞춘다 — 발자국 프리셋에서
-       * 이미 같은 방언 정규화를 했다.
+       * A borderless inset segment. `text-[10px]` is not a step on the ramp, so **it had no
+       * paired line-height and fell to an inherited 1.5 (15px)** — the quiet failure mode of
+       * an off-ramp size (see `.claude/rules/design.md`, "a size step carries its own
+       * line-height"). Raising it to `text-label` (11px/16px) attaches the pair.
+       * The pressed treatment is aligned to the ramp's majority (a16 plus primary ink) —
+       * the same dialect normalization already done for the footprint presets.
        */
       className={controlClass({
         shape: 'segment',

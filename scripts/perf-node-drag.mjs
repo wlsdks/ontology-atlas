@@ -1,41 +1,46 @@
 /**
- * 노드 드래그 프레임 비용 측정 — 2026-07-31 렉 사고의 재현 하네스.
+ * Node-drag frame cost measurement — the reproduction harness for the 2026-07-31
+ * lag incident.
  *
- * ## 왜 이 파일이 필요한가
+ * **Why this file exists.** That incident saw **five failed reproductions**, all
+ * for the same reason: a synthetic pointer event
+ * (`dispatchEvent(new PointerEvent(...))`) has `isTrusted: false`, so
+ * `setPointerCapture` is refused, the node-grab path breaks midway, and the
+ * gesture **falls through to a background pan.** A pan never wakes the physics
+ * simulation, so it was always fast — and "it isn't slow here" was reported five
+ * times. It ended only when the owner looked at the screen and said *"너는 노드가
+ * 아니라 그냥 배경을 드래그하던데?"* (you were dragging the background, not a
+ * node).
  *
- * 이 사고에서 **다섯 번 재현에 실패했다.** 전부 같은 이유였다: 합성 포인터
- * 이벤트(`dispatchEvent(new PointerEvent(...))`)는 `isTrusted: false` 라
- * `setPointerCapture` 가 거부되고, 노드 잡기 경로가 중간에 끊겨 **배경 팬으로
- * 흘러간다.** 팬은 물리 시뮬을 깨우지 않으므로 언제나 빨랐고, 그래서 "안 느린데요"
- * 를 다섯 번 보고했다. 소유자가 화면을 보고 *"너는 노드가 아니라 그냥 배경을
- * 드래그하던데?"* 라고 짚어준 뒤에야 끝났다.
+ * > **The code path is only real if the input is real.** So this harness uses the
+ * > CDP mouse (`page.mouse`) exclusively and never manufactures events inside the
+ * > page.
  *
- * > **입력이 진짜여야 코드 경로도 진짜다.** 그래서 이 하네스는 CDP 마우스
- * > (`page.mouse`)만 쓴다. 페이지 안에서 이벤트를 만들지 않는다.
+ * **What is measured.** `work` = the time the app's rAF callback spent
+ * **synchronously**. Not the frame gap: the gap is contaminated by display
+ * refresh rate and harness round trips, whereas callback time is our code's
+ * share. The incident's signal was exactly here (3000 nodes 139.9ms vs 31 nodes
+ * 0.9ms).
  *
- * ## 무엇을 재는가
- *
- * `work` = 앱의 rAF 콜백이 **동기적으로** 쓴 시간. 프레임 간격(`gap`)이 아니다 —
- * 간격은 디스플레이 주사율과 하네스 왕복에 오염되지만, 콜백 시간은 우리 코드의
- * 몫이다. 이 사고의 신호가 정확히 여기 있었다(3000노드 139.9ms vs 31노드 0.9ms).
- *
- * ## 쓰는 법
+ * Usage:
  *
  *   node scripts/perf-node-drag.mjs [baseUrl]
  *
- * 기본 `http://localhost:4173`. 정적 빌드(`pnpm build` + 정적 서버)가 떠 있어야 한다.
+ * Defaults to `http://localhost:4173`; a static build (`pnpm build` + a static
+ * server) must be running.
  */
 
 import { chromium } from "@playwright/test";
 import { rmSync } from "node:fs";
 
 const BASE = process.argv[2] ?? "http://localhost:4173";
-// 실행마다 **새 프로필**. 고정 경로를 쓰면 앞 실행의 크롬이 아직 물고 있을 때
-// `rmSync` 가 그 발밑을 빼서 창이 스스로 닫히고, 증상이 "Target page has been
-// closed" 로 나와 측정 실패처럼 보인다(실제로 두 번 그랬다).
+// **A fresh profile per run.** With a fixed path, `rmSync` pulls the rug from
+// under a Chrome still holding it from the previous run; the window closes
+// itself and the symptom reads as "Target page has been closed", which looks
+// like a measurement failure (it happened twice).
 const PROFILE = `/tmp/atlas-perf-${process.pid}`;
 
-/** 재는 볼트 규모 — 작은 쪽이 «노드 수에 비례하는가» 의 대조군이다. */
+/** Vault sizes measured — the small one is the control for "does cost scale with node count". */
 const CASES = [
   { q: "synth=3000&t=freeze", label: "노드 3000" },
   { q: "synth=31&t=freeze", label: "노드 31 (대조)" },
@@ -52,12 +57,14 @@ const stat = (xs) => {
 };
 
 /**
- * 끌 수 있는 노드를 **앱에게 물어본다.** (`?e2e=1` 이 켜는 `window.__atlasMap`)
+ * **Asks the app** which nodes are draggable (`window.__atlasMap`, enabled by
+ * `?e2e=1`).
  *
- * 종전엔 캔버스를 훑어 커서가 `pointer` 인 지점을 찾았다. 그건 **호버 히트**일
- * 뿐 **잡히는지**가 아니다 — 잡기는 `sim.hasNode()` 를 통과해야 하고, 실패하면
- * 조용히 배경 팬이 된다. 그래서 여섯 번을 배경만 밀었다. 이제는 `draggable` 을
- * 앱이 직접 말해 주므로 그 실패가 원리적으로 불가능하다.
+ * This used to sweep the canvas for a point where the cursor became `pointer`.
+ * That is a **hover hit**, not **grabbability** — grabbing must also pass
+ * `sim.hasNode()`, and failing it silently becomes a background pan. That is how
+ * six runs pushed only the background. Now the app states `draggable` directly,
+ * which makes that failure impossible in principle.
  */
 async function pickDraggable(page) {
   return page.evaluate(() => {
@@ -68,7 +75,7 @@ async function pickDraggable(page) {
       .nodes()
       .filter((n) => n.draggable && !n.hidden && n.x > 80 && n.y > 80 && n.x < vw - 80 && n.y < vh - 80);
     if (cands.length === 0) return { error: "끌 수 있는 노드가 화면 안에 없다" };
-    // 이웃이 많을수록 시뮬 부하가 크다 — 가장 나쁜 경우를 재려면 도메인 급을 고른다.
+    // More neighbours means more simulation load — pick a domain-tier node to measure the worst case.
     const rank = { project: 0, domain: 1, capability: 2, element: 3 };
     cands.sort((a, b) => (rank[a.kind] ?? 9) - (rank[b.kind] ?? 9));
     const n = cands[0];
@@ -76,7 +83,7 @@ async function pickDraggable(page) {
   });
 }
 
-/** 노드를 끌고, **정말 노드를 끌었는지 확인한 뒤** 콜백 시간을 돌려준다. */
+/** Drags a node and returns callback times **after confirming a node was really dragged**. */
 async function dragNode(page, box, target, moves) {
   await page.evaluate(() => {
     window.__work = [];
@@ -98,16 +105,17 @@ async function dragNode(page, box, target, moves) {
   const sy = box.y + target.y;
   await page.mouse.move(sx, sy);
   await page.mouse.down();
-  await page.mouse.move(sx + 12, sy + 8); // 히스테리시스를 넘겨 잡기를 확정시킨다
-  // ★ 사후 확인 — 배경을 밀고 있으면 여기서 «pan» 이 나온다. 그러면 그 측정은 버린다.
+  await page.mouse.move(sx + 12, sy + 8); // Cross the hysteresis threshold to commit the grab
+  // Post-check — pushing the background reports «pan» here, and that measurement is discarded.
   const grabbed = await page.evaluate(() => window.__atlasMap?.interaction());
 
-  // **사람이 끄는 속도로.** `mouse.move` 한 번은 CDP 왕복이라 ~24ms 가 든다 —
-  // 45번을 낱개로 부르면 «드래그» 가 아니라 슬로모션이 되고, 그 느림이 앱의
-  // 느림처럼 보인다(소유자 실보고: "드래그가 너무 심각하게 느리던데").
-  // `steps` 는 **한 왕복 안에서** 보간된 이동을 여러 번 쏘므로 왕복 비용이
-  // 그만큼 나뉘고, 실제 포인터 스트림에 가까워진다.
-  const LEG = 6; // 궤적을 몇 개의 구간으로 나눌까
+  // **At human drag speed.** One `mouse.move` is a CDP round trip costing ~24ms,
+  // so 45 separate calls produce slow motion rather than a drag, and that slowness
+  // reads as the app being slow (owner report: "드래그가 너무 심각하게 느리던데" —
+  // the drag is seriously slow). `steps` fires several interpolated moves **within
+  // one round trip**, dividing the round-trip cost and coming closer to a real
+  // pointer stream.
+  const LEG = 6; // How many segments the trajectory is split into
   const perLeg = Math.max(2, Math.round(moves / LEG));
   for (let leg = 0; leg < LEG; leg += 1) {
     const t = (leg + 1) / LEG;
@@ -122,22 +130,23 @@ async function dragNode(page, box, target, moves) {
   return { work, backing, grabbed };
 }
 
-// **프로필은 띄우기 «전에» 지운다.** 뒤에 지우면 실행 중인 브라우저의 발밑을
-// 빼는 셈이라 창이 스스로 닫히고, 그 증상이 "Target page has been closed" 로
-// 나와 측정 실패처럼 보인다(실제로 한 번 그랬다).
+// **Delete the profile before launching, not after.** Deleting afterwards pulls
+// the rug from under the running browser; the window closes itself and the
+// symptom reads as "Target page has been closed", which looks like a measurement
+// failure (it happened once).
 const ctx = await chromium.launchPersistentContext(PROFILE, {
-  headless: false, // 표시 파이프라인이 있어야 실기기와 같은 경로를 탄다
+  headless: false, // A real display pipeline is needed to take the same path as a real device
   viewport: null,
   args: ["--start-maximized", "--force-device-scale-factor=2"],
 });
 
-// 화면 계기도 켠 채로 돈다 — 하네스 숫자와 화면 숫자가 같은 것을 말하는지
-// 사람이 눈으로 대조할 수 있어야 한다.
+// The on-screen meter runs too, so a person can visually confirm that the
+// harness numbers and the on-screen numbers say the same thing.
 await ctx.addInitScript(() => {
   try {
     localStorage.setItem("atlas.appearance.frameMeter", "on");
   } catch {
-    // 프라이빗 모드 등 — 계기가 없을 뿐 측정은 그대로 된다.
+    // Private mode and similar — only the meter is missing; the measurement still runs.
   }
 });
 
@@ -154,8 +163,9 @@ for (const { q, label } of CASES) {
     rows.push({ label, error: target.error });
     continue;
   }
-  // ★ 진짜 마우스. 합성 이벤트는 isTrusted:false 라 setPointerCapture 가 거부되고
-  //   노드 잡기가 끊겨 팬으로 흘러간다 — 이 하네스가 존재하는 이유의 절반이다.
+  // A real mouse. Synthetic events are isTrusted:false, so setPointerCapture is
+  // refused, the node grab breaks, and the gesture falls through to a pan — half
+  // the reason this harness exists.
   const r = await dragNode(page, box, target, 45);
   rows.push({ label, ...r, target });
 }
@@ -174,9 +184,10 @@ for (const r of rows) {
     `  ${r.label.padEnd(16)} ${ok ? "노드 잡음 ✓" : `❌ ${r.grabbed?.kind} (배경을 밀었다 — 이 수치는 무효)`}` +
       `  [${r.target.kind} ${r.target.label}]`,
   );
-  // **p95 를 대표값으로 읽는다.** 드래그를 사람 속도로 끌면 표본에 유휴 프레임이
-  // 섞여 중앙값이 0.2ms 로 내려간다 — 앱이 빨라진 게 아니라 «끄는 동안» 이
-  // 표본에서 소수가 된 것이다. 비용은 끄는 프레임에만 나므로 꼬리를 봐야 한다.
+  // **Read p95 as the representative value.** Dragging at human speed mixes idle
+  // frames into the sample and drags the median down to 0.2ms — the app did not get
+  // faster, the actual dragging just became a minority of the sample. The cost
+  // occurs only on dragging frames, so the tail is what to look at.
   console.log(
     `  ${"".padEnd(16)} p95 ${String(r.work.p95).padStart(6)} · 최악 ${String(r.work.max).padStart(6)} ` +
       `(중앙 ${r.work.med} — 유휴 프레임 포함이라 참고용) · 백킹 ${r.backing?.width}x${r.backing?.height}\n`,

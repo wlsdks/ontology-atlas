@@ -8,28 +8,32 @@ import { stripLocalePrefix } from '@/shared/lib/nav-destination';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 읽을거리 둘(`/guide` · `/changelog`)로 가는 길 — **크롬이 접는 폭에서만.**
+ * The route to the two reading pages (`/guide` · `/changelog`) — **only at the widths
+ * where the chrome collapses them.**
  *
- * ## 왜 생겼나 (2026-08-07 실측)
+ * ## Why it exists (measured 2026-08-07)
  *
- * `GatewayNav` 는 이 둘을 `<sm` 에서 접는다. 그 판단 자체는 옳다 — 좁은 폭의
- * 첫 화면은 헤드라인과 받기 버튼의 것이다. 문제는 **접힌 뒤에 갈 곳이 없었다**
- * 는 것이다. 코드 주석은 *"스크롤하면 푸터에서 다시 만난다"* 고 적어 뒀는데,
- * 관문 푸터는 라이선스·스택 문자열뿐이고 **어느 폭에서도 링크가 0개**였다.
- * 가이드·변경 내역 라우트에는 푸터 자체가 없다.
+ * `GatewayNav` collapses these two below `sm`. That judgement is right — a narrow
+ * first screen belongs to the headline and the download button. The problem was that
+ * **after collapsing there was nowhere to go.** The code comment said *"they are met
+ * again in the footer on scroll"*, but the gateway footer holds only the licence and
+ * stack strings and has **zero links at any width**. The guide and changelog routes
+ * have no footer at all.
  *
- * 실측(정적 export · 390×844): 관문에서 보이는 가이드 링크 **0개** · 변경 내역
- * **0개**, 그것을 여는 메뉴도 **0개**. 둘 다 DOM 에는 있고 그려지지만 않는다 —
- * 화면에 없는 것과 같고, 이 저장소의 이름으로는 **막다른 CTA** 의 이웃이다.
+ * Measured (static export · 390×844): **0** visible guide links on the gateway, **0**
+ * changelog links, and **0** menus that open them. Both are in the DOM and simply not
+ * drawn — the same as not being on screen, and by this repository's name, a neighbour
+ * of the **dead-end CTA**.
  *
- * ## 왜 `sm:hidden` 인가
+ * ## Why `sm:hidden`
  *
- * 그 위에서는 크롬이 이미 낸다. 같은 일을 하는 링크를 크롬과 판에 둘 다 두면
- * 둘 중 하나가 죽은 약속이 된다 — `GatewayNav` 머리말이 「지도로 돌아가기」를
- * 지울 때 쓴 것과 같은 판단이고, 여기서도 그대로 따른다.
+ * Above that width the chrome already provides them. Putting the same link in both
+ * the chrome and the page makes one of the two a dead promise — the same judgement
+ * `GatewayNav`'s preamble used when dropping 「지도로 돌아가기」, followed here too.
  *
- * 지금 보고 있는 쪽은 링크로 두되 `aria-current` 를 단다. 빼 버리면 폭에 따라
- * 줄에 든 항목 수가 달라져서, 「하나뿐인가 둘인가」를 매번 다시 읽어야 한다.
+ * The page currently being viewed stays a link but carries `aria-current`. Removing it
+ * would change how many items are in the row depending on width, forcing the reader to
+ * re-read 「is it one or two」 every time.
  */
 export function GatewayReadingLinks({ className }: { className?: string }) {
   const t = useTranslations('gatewayNav');

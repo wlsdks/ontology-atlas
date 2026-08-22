@@ -53,8 +53,8 @@ function containsEdge(source: string, target: string): TopologyV2Edge {
 }
 
 /**
- * 픽스처: project p ⊃ domain d(⊃ cap c ⊃ el e) + 형제 domain d2(⊃ el x).
- * 영역 루트 = d 이면 멤버 {d, c, e}, 밖 = {p, d2, x}.
+ * Fixture: project p ⊃ domain d (⊃ cap c ⊃ el e) + sibling domain d2 (⊃ el x).
+ * With the realm root at d, the members are {d, c, e} and the outside is {p, d2, x}.
  */
 function buildFixtureWorld() {
   const nodes: TopologyV2Node[] = [
@@ -82,21 +82,21 @@ describe("buildRealmRuntimeData", () => {
     expect(data).not.toBeNull();
     expect([...data!.memberIds].sort()).toEqual(["c", "d", "e"]);
     expect([...data!.outsideIds].sort()).toEqual(["d2", "p", "x"]);
-    // 루트는 재배치 원점.
+    // The root is the re-layout origin.
     expect(data!.insideTargets.get("d")).toEqual({ x: 0, y: 0 });
-    // fling 중력 중심 = 루트의 원래 위치.
+    // The fling's gravity centre = the root's original position.
     expect(data!.flingCenter).toEqual({ x: world.nodeById.get("d")!.homeX, y: world.nodeById.get("d")!.homeY });
-    // 결계는 원점 중심 + 양수 반경.
+    // The warding circle is centred on the origin with a positive radius.
     expect(data!.wardingCenter).toEqual({ x: 0, y: 0 });
     expect(data!.wardingRadius).toBeGreaterThan(0);
   });
 
   it("exposes depthById for every member (root=0) — S5 깊이 연출 런타임 데이터", () => {
     const data = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
-    // 모든 멤버가 깊이를 갖고, 루트는 0.
+    // Every member has a depth, and the root's is 0.
     expect(new Set(data.depthById.keys())).toEqual(new Set(data.memberIds));
     expect(data.depthById.get("d")).toBe(0);
-    // 비루트 멤버는 루트보다 깊다.
+    // A non-root member is deeper than the root.
     for (const id of data.memberIds) {
       if (id !== "d") expect(data.depthById.get(id)!).toBeGreaterThan(0);
     }
@@ -113,7 +113,7 @@ describe("buildRealmRuntimeData", () => {
     expect(buildRealmRuntimeData(buildFixtureWorld(), "missing", tokens)).toBeNull();
   });
 
-  // S8 결함 2 — entryCamera 는 빌드 시 null(카메라 미상). 진입 effect 가 채운다.
+  // S8 defect 2 — entryCamera is null at build time (the camera is unknown). The entry effect fills it.
   it("entryCamera 는 빌드 직후 null 이다 (진입 effect 가 카메라 값으로 채움)", () => {
     const data = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
     expect(data.entryCamera).toBeNull();
@@ -121,7 +121,7 @@ describe("buildRealmRuntimeData", () => {
 
   it("realmCameraTarget centers on the content bbox (결계가 아니라 콘텐츠가 주인공) and clamps scale", () => {
     const data = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
-    // S9 결함 1/2 — realmCameraTarget 은 이제 bounds 를 직접 받는다(가시-멤버 기준).
+  // S9 defects 1/2 — realmCameraTarget now takes bounds directly (on the visible-member basis).
     const target = realmCameraTarget(data.bounds, tokens, 1000, 800);
     expect(target.tx).toBeCloseTo((data.bounds.minX + data.bounds.maxX) / 2, 4);
     expect(target.ty).toBeCloseTo((data.bounds.minY + data.bounds.maxY) / 2, 4);
@@ -131,10 +131,10 @@ describe("buildRealmRuntimeData", () => {
 });
 
 /**
- * 슬라이스 A — 영역(realm) 링이 서브트리 최대 깊이에서 파생되는지. 얕은
- * 서브트리(capability 루트 + element 자식 2개, maxDepth=1)는 250 전역
- * 스파인 링이 아니라 130(`realmFillRadius1`)으로 당겨야 "빈 annulus" 가
- * 없다(소유자 실보고 2026-07-23).
+ * Slice A — whether the realm ring derives from the subtree's maximum depth. A
+ * shallow subtree (a capability root with 2 element children, maxDepth = 1) has to be
+ * pulled in to 130 (`realmFillRadius1`) rather than the global spine ring of 250, or
+ * an empty annulus is left (owner report, 2026-07-23).
  */
 describe("buildRealmRuntimeData — depth-derived realm ring fill (Slice A)", () => {
   function buildShallowCapabilityWorld() {
@@ -161,8 +161,8 @@ describe("buildRealmRuntimeData — depth-derived realm ring fill (Slice A)", ()
   it("tightens the warding radius for the shallow realm (no longer stretched to the 250-ring scale)", () => {
     const world = buildShallowCapabilityWorld();
     const shallow = buildRealmRuntimeData(world, "c", tokens)!;
-    // 자식이 ~130 반경에 앉으므로 결계도 그 근방이어야 한다 — 250 스파인 기준이면
-    // 훨씬 커야 할 값(> 250)보다 뚜렷이 작다.
+    // The children sit at a radius of ~130, so the warding circle should be near that
+    // — distinctly smaller than what a 250 spine basis would require (> 250).
     expect(shallow.wardingRadius).toBeLessThan(tokens.layoutRingDomain);
   });
 
@@ -196,9 +196,10 @@ describe("buildRealmRuntimeData — depth-derived realm ring fill (Slice A)", ()
 });
 
 /**
- * S9 결함 2 — 밀도 게이트로 접히는 자식(>12 자식 부모의 phyllotaxis 디스크)이
- * 결계 반경·카메라 bbox 를 부풀리지 않는지. 루트 d ⊃ cap c ⊃ (threshold+8) element.
- * cap c 가 접히면 그 element 자식들은 안 보이므로 결계에서 빠져야 한다.
+ * S9 defect 2 — whether children the density gate collapses (the phyllotaxis disc
+ * under a parent with >12 children) inflate the warding radius and camera bbox. Root
+ * d ⊃ cap c ⊃ (threshold + 8) elements. When cap c collapses its element children are
+ * invisible, so they have to drop out of the warding circle.
  */
 describe("buildRealmRuntimeData — 가시 멤버 기준 결계/프레이밍 (S9 결함 2)", () => {
   function buildDenseWorld() {
@@ -217,12 +218,12 @@ describe("buildRealmRuntimeData — 가시 멤버 기준 결계/프레이밍 (S9
 
   it("접힌 자식은 결계 반경을 부풀리지 않는다 (펼침 vs 접힘 반경 비교)", () => {
     const { world } = buildDenseWorld();
-    // c 접힘(기본): 루트 d 만 펼침 → c 의 element 자식 전부 clustered.
+    // c collapsed (the default): only root d is expanded → every element child of c is clustered.
     const collapsed = buildRealmRuntimeData(world, "d", tokens, new Set(["d"]))!;
-    // c 펼침: element 자식이 보이므로 결계가 그만큼 커진다.
+    // c expanded: the element children are visible, so the warding circle grows to match.
     const expanded = buildRealmRuntimeData(world, "d", tokens, new Set(["d", "c"]))!;
     expect(collapsed.wardingRadius).toBeLessThan(expanded.wardingRadius);
-    // bbox 도 같은 방향으로 — 접힘이 더 좁다.
+    // The bbox moves the same way — collapsed is narrower.
     const wCollapsed = collapsed.bounds.maxX - collapsed.bounds.minX;
     const wExpanded = expanded.bounds.maxX - expanded.bounds.minX;
     expect(wCollapsed).toBeLessThan(wExpanded);

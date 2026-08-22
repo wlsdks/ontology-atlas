@@ -7,16 +7,16 @@ import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-v
 import { useLocalVault } from "./LocalVaultProvider";
 
 /**
- * live-tauri (JS 측) — 데스크톱(Tauri)에서 vault 가 로드되면 Rust 파일워처를
- * 켜고(start_vault_watch) `vault-changed` 이벤트를 listen 해 즉시 refresh.
+ * The JS side of the live desktop watch — once a vault loads under Tauri, it starts the Rust file
+ * watcher (`start_vault_watch`) and listens for `vault-changed` to refresh immediately.
  *
- * 그러면 5초 폴링 대기 없이 OS 이벤트로 *즉시* 반영 — 에이전트가 디스크에
- * 쓰는 순간 화면이 따라온다(Obsidian 급). 웹/브라우저(isTauriVaultRuntime
- * false)에선 no-op — 기존 5초 폴링 fallback 이 그대로 커버. 헤드리스(렌더 없음),
- * LocalVaultProvider 안에 VaultDiffToaster 와 나란히 마운트.
+ * That means the OS event lands *at once* rather than waiting out the 5s poll — the screen follows
+ * the moment an agent writes to disk. On the web (`isTauriVaultRuntime` false) it is a no-op, where
+ * the existing 5s polling fallback already covers it. Headless (renders nothing), mounted inside
+ * LocalVaultProvider alongside VaultDiffToaster.
  *
- * (status, rootPath) 당 1회만 구독 — refresh 는 ref 로 최신값 호출해 매 reload
- * 마다 재구독하지 않는다.
+ * It subscribes once per (status, rootPath) — `refresh` is called through a ref so it does not
+ * resubscribe on every reload.
  */
 export function TauriVaultWatchBridge() {
   const { status, handle, refresh } = useLocalVault();
@@ -39,7 +39,7 @@ export function TauriVaultWatchBridge() {
         if (cancelled) un();
         else unlisten = un;
       } catch {
-        /* Tauri 미가용/권한 실패 — 폴링 fallback 이 커버 */
+        /* Tauri unavailable or permission failure — the polling fallback covers it. */
       }
     })();
     return () => {

@@ -133,11 +133,13 @@ class TauriFileHandle {
 }
 
 /**
- * 볼트 지문 — **경로와 mtime 만** 네이티브에서 한 번에 받는다.
+ * The vault fingerprint — **paths and mtimes only**, fetched from the native side in
+ * one call.
  *
- * 웹에는 없다(FSA 에 이런 일괄 API 가 없다). `isTauri()` 가 아니면 `null` 을
- * 돌려주고 호출부가 기존 경로로 떨어진다 — `surfaces.md` 의 브리지 관례
- * (`getInvoke()` → 아니면 `null` → 화면 정직 강등) 그대로다.
+ * The web has no equivalent (File System Access has no such batch API). Outside
+ * `isTauri()` this returns `null` and the caller falls back to the existing path,
+ * following the bridge convention in `.claude/rules/surfaces.md`: `getInvoke()`, else
+ * `null`, else honest degradation on screen.
  */
 export async function nativeVaultFingerprint(
   rootPath: string,
@@ -147,7 +149,7 @@ export async function nativeVaultFingerprint(
   return invoke('vault_fingerprint', { rootPath });
 }
 
-/** 선택한 폴더를 canonical Git worktree 또는 bounded folder source로 판별한다. */
+/** Classifies the chosen folder as a canonical Git worktree or a bounded folder source. */
 export async function inspectTauriProjectSource(
   rootPath: string,
 ): Promise<ProjectSourceInspection | null> {
@@ -289,15 +291,15 @@ export function createTauriVaultHandle(rootPath: string): FileSystemDirectoryHan
 }
 
 /**
- * Rust `pick_vault_directory` 가 「이 자리는 볼트 루트로 받을 수 없다」고 거절할 때
- * 쓰는 접두사. 사유 코드는 `filesystem-root` · `home-directory` · `system-directory`.
+ * Prefix Rust's `pick_vault_directory` uses when it refuses a location as a vault
+ * root. Reason codes: `filesystem-root`, `home-directory`, `system-directory`.
  *
- * 문장이 아니라 **코드**로 넘기는 이유: 사람이 읽는 문구를 Rust 안에서 만들면
- * 번역이 거기 갇힌다. 화면이 코드를 보고 자기 언어로 고른다.
+ * A **code** rather than a sentence: composing human-readable copy inside Rust traps
+ * the translation there. The screen reads the code and picks its own language.
  */
 export const VAULT_ROOT_REJECTED_PREFIX = 'vault-root-rejected:';
 
-/** 이 오류가 「받을 수 없는 자리」 거절이면 사유 코드를, 아니면 null 을 준다. */
+/** Returns the reason code when this error is a rejected-location refusal, else null. */
 export function vaultRootRejectionReason(error: unknown): string | null {
   const text =
     typeof error === 'string'
@@ -349,10 +351,11 @@ export async function openTauriVaultInFinder(rootPath: string): Promise<void> {
 }
 
 /**
- * "그냥 시작하기" (데스크톱 first-run) 전용 — `~/Documents/Ontology Atlas`
- * 컨테이너 폴더를 없으면 만들고 절대 경로를 돌려준다. JS 는 fs 플러그인 없이
- * Documents 경로를 알 수 없어 Rust 커맨드가 유일한 근거. non-Tauri 런타임에서는
- * null — 호출자가 "데스크톱 전용" 가드를 이미 통과했어야 한다.
+ * For the desktop first-run "just start" path: creates the `~/Documents/Ontology
+ * Atlas` container folder if absent and returns its absolute path. JS cannot learn
+ * the Documents path without an fs plugin, so the Rust command is the only source.
+ * Returns null outside a Tauri runtime — the caller must already have passed a
+ * desktop-only guard.
  */
 export async function ensureDefaultVaultParentDir(): Promise<string | null> {
   const invoke = getInvoke();
@@ -361,12 +364,13 @@ export async function ensureDefaultVaultParentDir(): Promise<string | null> {
 }
 
 /**
- * rootPath 아래 임의 상대 경로의 항목을 나열한다 (파일 + 디렉터리).
+ * Lists the entries (files and directories) at any relative path under `rootPath`.
  *
- * `listTauriDirectoryNames` 와 달리 **파일을 버리지 않고 깊이도 자유**다.
- * manifest walker 가 dot 디렉터리를 걸러 `.claude/skills` 같은 트리를 영영 못
- * 보므로, 그런 트리를 따로 읽어야 하는 곳이 쓴다. 없는 경로는 Rust 가 에러를
- * 내므로 호출부가 잡는다 — 대부분의 볼트에 `.claude/` 는 없고 그건 결함이 아니다.
+ * Unlike `listTauriDirectoryNames` it **keeps files and works at any depth**. The
+ * manifest walker filters out dot directories and therefore never sees trees such as
+ * `.claude/skills`, so anything that must read one uses this. A missing path makes
+ * Rust throw and the caller catches it — most vaults have no `.claude/`, and that is
+ * not a defect.
  */
 export async function listTauriVaultEntries(
   rootPath: string,
@@ -377,7 +381,7 @@ export async function listTauriVaultEntries(
   return invoke<TauriVaultEntry[]>('list_vault_directory', { rootPath, relativePath });
 }
 
-/** rootPath 아래 상대 경로의 텍스트 파일을 읽는다. 다리가 없으면 `null`. */
+/** Reads a text file at a relative path under `rootPath`; `null` when the bridge is absent. */
 export async function readTauriVaultText(
   rootPath: string,
   relativePath: string,
@@ -388,7 +392,7 @@ export async function readTauriVaultText(
   return file.text;
 }
 
-/** rootPath 바로 아래 하위 디렉터리 이름만 나열 (파일은 제외). */
+/** Lists only the names of directories directly under `rootPath`, excluding files. */
 export async function listTauriDirectoryNames(rootPath: string): Promise<string[]> {
   const invoke = getInvoke();
   if (!invoke) return [];
@@ -399,7 +403,7 @@ export async function listTauriDirectoryNames(rootPath: string): Promise<string[
   return entries.filter((entry) => entry.kind === 'directory').map((entry) => entry.name);
 }
 
-/** rootPath 아래 name 디렉터리를 없으면 생성 (있으면 no-op). */
+/** Creates the `name` directory under `rootPath` if absent; a no-op when it exists. */
 export async function ensureTauriChildDirectory(rootPath: string, name: string): Promise<void> {
   const invoke = getInvoke();
   if (!invoke) {

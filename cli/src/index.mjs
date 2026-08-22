@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // ontology-atlas CLI — vault scaffold + setup helper.
 //
-// `ontology-atlas init [folder]` → 폴더에 frontmatter 기반 ontology vault
-// 시드 + MCP 등록 안내. 비어 있는 폴더면 그대로, 없으면 생성. 기존 파일은
-// 안 건드리고 (충돌 시 skip + 알림).
+// `ontology-atlas init [folder]` seeds a frontmatter-based ontology vault in the
+// folder and prints the MCP registration guide. An empty folder is used as-is, a
+// missing one is created, and existing files are left alone (a collision skips
+// with a notice).
 //
-// 이 CLI 는 npm 으로 배포하지 않는다 (docs/DECISIONS.md 2026-07-27) — 소스
-// 체크아웃에서 `node cli/src/index.mjs <명령>` 으로 부른다. 아래 도움말이
-// 명령을 `ontology-atlas <명령>` 으로 적는 것은 표 폭을 지키기 위한 축약이고,
-// 실행 형태는 도움말 첫 단락이 말한다.
+// This CLI is not published to npm (docs/DECISIONS.md 2026-07-27) — it runs from a
+// source checkout as `node cli/src/index.mjs <command>`. The help below writes
+// commands as `ontology-atlas <command>` to keep the table narrow; the help's
+// first paragraph states the real invocation.
 
 import { COLORS } from './lib/colors.mjs';
 import { cliInvocation } from './lib/self-invocation.mjs';
@@ -40,20 +41,22 @@ import {
   writeTextAtomically,
 } from './lib/agent-config.mjs';
 
-// 화면에 찍는 **실행용** 명령의 접두사. 이 파일이 안내하는 명령은 붙여 넣으면
-// 실제로 돌아야 한다 — 자세한 규율은 `lib/self-invocation.mjs`.
+// Prefix for the **runnable** commands printed on screen. Anything this file shows
+// must actually run when pasted — the full discipline is in `lib/self-invocation.mjs`.
 const CLI = cliInvocation();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_ROOT = resolve(__dirname, '..', 'templates', 'vault');
 
 /**
- * 스타터 본문 로케일 (#73). 파일 세트와 frontmatter(slug/kind/title/display_*)는
- * 로케일 간 **동일**하고 산문 본문만 다르다 — 그래서 어떤 로케일로 만들었든
- * 같은 그래프가 나오고, 검색의 단일 진실원인 canonical `title` 도 그대로다.
+ * Starter body locale. The file set and the frontmatter
+ * (slug/kind/title/display_*) are **identical** across locales and only the prose
+ * body differs, so whichever locale created it yields the same graph and the
+ * canonical `title` — search's single source of truth — is unchanged.
  *
- * 웹 작업대는 UI 언어를 알지만 CLI 는 모르므로 명시 플래그로 받는다.
- * 기본값은 종전과 같은 영어 — 기존 사용자의 `init` 결과가 바뀌지 않는다.
+ * The web workbench knows the UI language; the CLI does not, so it takes an
+ * explicit flag. The default stays English, so an existing user's `init` result
+ * does not change.
  */
 const TEMPLATE_ROOTS = {
   en: TEMPLATE_ROOT,
@@ -250,7 +253,7 @@ function parseInitArgs(args) {
   }
   const positional = [];
   let quickStart = false;
-  // #73 — 스타터 본문 언어. 파일 세트와 frontmatter 는 동일하고 산문만 다르다.
+  // Starter body language. The file set and frontmatter are identical; only the prose differs.
   let locale = 'en';
   for (const arg of args) {
     if (arg === '--quick-start') {
@@ -307,9 +310,9 @@ function resolveMcpServerCommand() {
     }
   }
 
-  // npm 발행 계획은 폐기됐다 (docs/DECISIONS.md 2026-07-27) — `npx` 폴백은
-  // 100% 실패하는 명령을 설정 파일에 심는 일이었다. 대신 설치된 앱이
-  // 번들로 싣고 다니는 바이너리를 찾는다.
+  // The npm publication plan was abandoned (docs/DECISIONS.md 2026-07-27) — an
+  // `npx` fallback would plant a command that fails 100% of the time into a config
+  // file. Look for the binary the installed app carries in its bundle instead.
   if (isFile(BUNDLED_MCP_BINARY)) {
     return { command: BUNDLED_MCP_BINARY, args: [] };
   }
@@ -323,8 +326,8 @@ function resolveMcpServerCommand() {
 }
 
 /**
- * 앱 번들이 싣고 다니는 MCP 서버. macOS 앱을 설치했다면 이게 있고, 사용자는
- * node 도 소스 체크아웃도 없이 붙을 수 있다.
+ * The MCP server carried inside the app bundle. Installing the macOS app is what
+ * provides it, and the user connects with no node and no source checkout.
  */
 const BUNDLED_MCP_BINARY =
   '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
@@ -552,8 +555,8 @@ async function runInit(targetArg, opts = {}) {
     serverCommand.command,
     ...serverCommand.args,
   ].map(shellQuote).join(' ');
-  // CLI 자기 호출은 이미 실행 가능한 형태라 다시 따옴표로 감싸지 않는다 —
-  // 감싸면 `node /path` 전체가 한 토큰이 되어 실행이 깨진다.
+  // A CLI self-invocation is already in runnable form, so it is not re-quoted —
+  // quoting would turn the whole `node /path` into one token and break execution.
   const analyzeCommand = [CLI, ...['analyze', '.', '--vault', cwdVaultArg].map(shellQuote)]
     .join(' ');
   const bootstrapCommand = [
@@ -674,9 +677,9 @@ ${COLORS.dim}Do not treat the agent connection or ontology bootstrap as ready un
         `${foundGuides.length > 1 ? 'them' : 'it'} into the vault (never automatic: your call):\n`,
     );
     for (const guide of foundGuides) {
-      // 붙여넣어 실행하라고 청록색으로 찍는 줄 — `cliInvocation()` 을 통과해야
-      // 한다(`self-invocation.mjs` 의 규율). 바로 아래 「Next」 줄은 이미 CLI 를
-      // 쓰고 있었는데 이 줄만 죽은 이름이었다.
+      // Printed in cyan to be pasted and run, so it must pass through
+      // `cliInvocation()` (the discipline in `self-invocation.mjs`). The «Next»
+      // line just below already used the CLI; only this line carried a dead name.
       const absorbCommand = [
         CLI,
         ...['absorb', guide, '--vault', cwdVaultArg].map(shellQuote),

@@ -24,12 +24,12 @@ const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
 
 export interface DocsVaultAuditModalProps {
   /**
-   * 스킬 사본 일치 — **데스크톱에서 절대 경로를 알 때만** non-null.
-   * `null` 이면 이 행을 아예 그리지 않는다: 절반만 참인 행을 그리지 않는 것이
-   * 이 모달의 기존 관례다(`useAgentFilesModel` 게이트와 같은 문법).
+   * Skill-copy parity — non-null **only on desktop, when the absolute path is known**.
+   * `null` means the row is not drawn at all: not drawing a half-true row is this modal's
+   * existing convention (the same grammar as the `useAgentFilesModel` gate).
    */
   skillParity?: SkillParityModel | null;
-  /** 어긋난 줄을 에이전트에게 넘길 문장으로 복사 — 호출부가 문자열을 짓는다. */
+  /** Copies the diverged rows as a sentence to hand an agent — the caller composes the string. */
   onCopySkillParityHandoff?: (rows: SkillParityRow[]) => void;
   open: boolean;
   manifest: VaultManifest;
@@ -43,14 +43,14 @@ export interface DocsVaultAuditModalProps {
 }
 
 /**
- * 문서함 점검 = 중앙 모달 (docs-chrome-round design-prescription.md ③-5,
- * implementation-contract.md §4). 기존 absolute 밴드(`DocsVaultSourceContractBar`,
- * 불균등 3-카드 그리드)를 대체 — 세로 3행 스택 + hairline 구분 + scrim +
- * focus trap. proof marker(`SOURCE_VAULT_RUNTIME_REPLAY_MARKERS`) 와
- * `그래프 점검 복사` 게이트는 문자 그대로 보존(에이전트 핸드오프 계약).
+ * The docs check is a centre modal, replacing the old absolute band
+ * (`DocsVaultSourceContractBar` with its uneven three-card grid): a vertical three-row stack
+ * with hairline dividers, a scrim, and a focus trap. The proof markers
+ * (`SOURCE_VAULT_RUNTIME_REPLAY_MARKERS`) and the graph-check copy gate are preserved
+ * literally — they are the agent handoff contract.
  *
- * open 상태는 persist 하지 않는다 — 페이지 로드마다 모달이 뜨면 modality
- * 위반이므로 항상 닫힌 채 시작(호출부가 `contractOpen` 을 순수 state 로 관리).
+ * The open state is not persisted — a modal appearing on every page load violates modality, so
+ * it always starts closed (the caller holds `contractOpen` as plain state).
  */
 export function DocsVaultAuditModal({
   skillParity = null,
@@ -71,7 +71,7 @@ export function DocsVaultAuditModal({
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // Esc 로 닫기.
+    // Close on Esc.
   useEffect(() => {
     if (!open) return;
     const handler = (event: KeyboardEvent) => {
@@ -81,8 +81,8 @@ export function DocsVaultAuditModal({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Focus trap — 열리면 다이얼로그 내부 첫 focusable 로 이동, Tab 이 바깥으로
-  // 빠져나가지 않게 순환. 닫히면 트리거(점검 타일)로 focus 복원.
+  // Focus trap — on open, focus moves to the first focusable inside the dialog and Tab cycles
+  // rather than escaping. On close, focus is restored to the trigger (the check tile).
   useEffect(() => {
     if (!open) return;
     previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -119,8 +119,8 @@ export function DocsVaultAuditModal({
     };
   }, [open]);
 
-  // 이 모달은 framer 인라인이라 전역 reduced-motion kill 레이어의 사정거리
-  // 밖이다. 여기서 직접 분기한다.
+  // This modal is inline framer, outside the reach of the global reduced-motion kill layer, so
+  // it branches here directly.
   const reducedMotion = useReducedMotion();
 
   const sourceLabel = isLocalSourceLoaded
@@ -133,9 +133,9 @@ export function DocsVaultAuditModal({
       icon: HardDrive,
       label: t("sourceContract.filesLabel"),
       value: sourceLabel,
-      // **침묵하는 절단은 "전부 봤다" 로 읽힌다.** 순회가 상한에 걸렸거나
-      // 캐시 디렉터리를 건너뛰었으면, 사용자가 문서 수를 읽는 **그 자리**에서
-      // 함께 말한다 — 다른 화면에 적어 두면 이 숫자를 믿는 사람은 못 본다.
+      // **Silent truncation reads as "we saw everything".** If the walk hit a limit or skipped a
+      // cache directory, it is said **right where** the user reads the document count — written
+      // on another screen, whoever trusts this number never sees it.
       body: [
         t("sourceContract.filesBody"),
         manifest.walkTruncated ? t("sourceContract.filesTruncated") : "",
@@ -182,19 +182,20 @@ export function DocsVaultAuditModal({
   ] as const;
 
   /**
-   * 4행 — 스킬 사본. **왜 사이드바가 아니라 여기인가:** 자리는 빈도가 정한다.
-   * 이 사실을 보는 때는 `agent-setup` 직후와 스킬을 고친 직후 — 하루 몇 번이
-   * 아니라 한 달 몇 번이다. 사이드바는 매일 문서를 고르는 상시 항해 표면이고,
-   * 상시 자리는 상시 질문의 것이다.
+   * Row 4 — skill copies. **Why here and not the sidebar:** frequency decides placement. This
+   * fact is looked at right after `agent-setup` and right after editing a skill — a few times a
+   * month, not a few times a day. The sidebar is the permanent navigation surface for choosing a
+   * document daily, and a permanent slot belongs to a permanent question.
    *
-   * 실측이 그 판단을 굳혔다(디자인 카운슬 「위계」, 2026-07-29): 1512×900 에서
-   * 사이드바에 스킬 목록을 얹으면 트리 위 크롬이 **856px 중 519px(61%)** 가
-   * 되어 문서함의 주인공인 볼트 트리가 접힘선 아래로 밀린다. 390px 에서는
-   * 사이드바가 서랍이라 아예 보이지도 않는다 — 반면 이 모달의 트리거는 그
-   * 폭에서도 상단 크롬에 살아 있다.
+   * Measurement settled it (design council, hierarchy seat, 2026-07-29): at 1512×900, putting the
+   * skill list in the sidebar makes the chrome above the tree **519px of 856px (61%)**, pushing
+   * the vault tree — the docs surface's protagonist — below the fold. At 390px the sidebar is a
+   * drawer and is not visible at all, whereas this modal's trigger is still in the top chrome at
+   * that width.
    *
-   * 그리고 이 모달은 **이미 이 일의 문법을 갖고 있다** — 라벨·칩·값·한 문장·
-   * 우측 복사 액션. 새 크롬을 만들 게 아니라 있는 워크플로 한 줄을 더하는 자리다.
+   * And this modal **already has the grammar for the job** — label, chip, value, one sentence, a
+   * copy action on the right. This is a place to add one row to an existing workflow rather than
+   * build new chrome.
    */
   const skillParityRows = skillParity?.rows ?? [];
   const disagreeing = skillParityRows.filter((row) => row.verdict !== "agreed");
@@ -212,7 +213,7 @@ export function DocsVaultAuditModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          // 나가는 것은 들어오는 것보다 빠르다 — 실측에서 입·퇴장이 등속이었다.
+          // Leaving is faster than entering — measured, the two were the same speed.
           transition={reducedMotion ? MOTION.fast : MOTION.base}
           className="fixed inset-0 z-50 flex justify-center px-4"
           style={{ paddingTop: "max(96px, 18vh)" }}
@@ -220,11 +221,11 @@ export function DocsVaultAuditModal({
             if (event.target === event.currentTarget) onClose();
           }}
         >
-          {/* 스크림은 **클릭을 받지 않는다.** 받으면 바깥 클릭 판정
-              (`event.target === event.currentTarget`)이 영원히 거짓이 되어 —
-              실제 타깃이 이 자식이므로 — 바깥 클릭 닫기가 죽은 어포던스가 된다
-              (2026-07-29 실측: 모달이 안 닫혔다). 시각만 담당하고 사건은 부모가
-              받는다. */}
+          {/* The scrim **does not receive clicks.** If it did, the outside-click test
+              (`event.target === event.currentTarget`) would be false forever — the real target
+              being this child — making outside-click-to-close a dead affordance (measured
+              2026-07-29: the modal did not close). It handles the visuals only; the parent
+              receives the event. */}
           <div
             className="pointer-events-none fixed inset-0 -z-10 bg-[color:var(--docs-scrim)]"
             aria-hidden
@@ -349,8 +350,8 @@ export function DocsVaultAuditModal({
                       {tSkillParity("chip")}
                     </span>
                   </div>
-                  {/* 값이 이 행의 주목 승자다 — 다른 행의 값과 같은 단을 쓰되
-                      **0 상태는 소리치지 않는다**: 전부 일치하면 중립색이다. */}
+                  {/* The value is this row's attention winner — the same step as other rows'
+                      values, but **the zero state does not shout**: all-agreed is neutral. */}
                   <p
                     data-testid="docs-audit-skill-parity-value"
                     className="mt-0.5 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
@@ -365,20 +366,19 @@ export function DocsVaultAuditModal({
                   <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
                     {tSkillParity("body")}
                   </p>
-                  {/* **모든 객체가 받는 마크는 0비트다** — 일치한 것은 이름을
-                      쓰지 않는다. 어긋난 것만 이름으로 나온다. */}
+                  {/* **A mark every object receives carries zero bits** — what agrees is not
+                      named. Only what diverges appears by name. */}
                   {disagreeing.length > 0 ? (
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {disagreeing.map((row) => (
                         <span key={row.name}
                           data-testid={`docs-audit-skill-parity-${row.name}`}
                           data-verdict={row.verdict}
-                          // `--color-amber-source-*` 는 **경고 램프**다 —
-                          // globals.css 가 `amber-source(244,183,49 ==
-                          // --color-status-warning)` 라고 명시한다. 격리 토큰은
-                          // 이름이 다른 `--color-amber-docs-*` 쪽이다.
-                          // (카운슬 「위계」가 둘을 혼동해 교체를 처방했고,
-                          // 「체계」가 바로잡았다. 게이트도 없는 토큰을 잡았다.)
+                          // `--color-amber-source-*` is the **warning ramp** — globals.css states
+                          // `amber-source(244,183,49 == --color-status-warning)`. The quarantined
+                          // token is the differently named `--color-amber-docs-*`.
+                          // (The hierarchy seat confused the two and prescribed a swap; the
+                          // design-system seat corrected it, catching a token with no gate.)
                           className={badgeClass({ shape: "micro", className: "border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] font-mono text-[color:var(--color-amber-source-a90)]" })}
                         >
                           {row.name}

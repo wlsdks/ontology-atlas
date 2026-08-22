@@ -16,8 +16,8 @@ describe('vaultScopeKey', () => {
     expect(vaultScopeKey({ isLocalLoaded: true, handleName: 'my-vault' })).toBe('local:my-vault');
   });
 
-  // 로드 중(handle 은 있는데 아직 manifest 가 없는) 순간에 로컬 키를 쓰면
-  // 빈 목록을 그 볼트의 진실로 굳혀버린다 — 로드 완료 전엔 번들 범위 유지.
+  // Using the local key mid-load (a handle exists but the manifest does not yet)
+  // would freeze an empty list as that vault's truth — stay in bundled scope until loaded.
   it('폴더 이름이 아직 없으면 번들 범위로 떨어진다', () => {
     expect(vaultScopeKey({ isLocalLoaded: true, handleName: null })).toBe('server');
   });
@@ -36,10 +36,10 @@ describe('vaultIdentityScope — 동일성 판정용 정확한 범위', () => {
   });
 
   /**
-   * **이 시험이 이 파일에서 가장 중요하다.** `vaultScopeKey` 는 샘플 둘을
-   * `'server'` 하나로 뭉뚱그리므로, 그 값을 "볼트가 바뀌었나" 판정에 쓰면
-   * 샘플↔샘플 전환이 **변화로 안 잡힌다**. 정리 로직이 그 축에서만 조용히
-   * 죽는 결함이라, 두 값이 실제로 갈리는지를 여기서 못 박는다.
+   * **The most important test in this file.** `vaultScopeKey` collapses both samples
+   * into a single `'server'`, so using it to decide "did the vault change?" makes a
+   * sample↔sample switch **invisible as a change**. That defect kills cleanup logic
+   * silently on that one axis, so this pins that the two values really do differ.
    */
   it('샘플 둘은 서로 다른 범위다 — `vaultScopeKey` 가 뭉뚱그리는 바로 그 축', () => {
     const dogfood = vaultIdentityScope({ isLocalLoaded: false, sampleSource: 'dogfood' });
@@ -49,8 +49,8 @@ describe('vaultIdentityScope — 동일성 판정용 정확한 범위', () => {
     expect(storefront).toBe('sample:storefront');
     expect(dogfood).not.toBe(storefront);
 
-    // 같은 두 상태를 저장 namespace 키로 보면 구별되지 않는다 — 그래서 이
-    // 함수가 따로 존재한다.
+    // The same two states are indistinguishable under the storage namespace key —
+    // which is why this second function exists.
     expect(vaultScopeKey({ isLocalLoaded: false, handleName: null })).toBe(
       vaultScopeKey({ isLocalLoaded: false, handleName: null }),
     );

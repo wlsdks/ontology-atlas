@@ -13,29 +13,33 @@ import {
 } from "@/views/ontology-insights/lib/duplicate-pairs";
 
 /**
- * 파생 노드(다른 문서의 관계 키에서 이름만 불린 개념)와 문서 노드의 구분 계약.
+ * The contract separating derived nodes (concepts named only in another document's
+ * relation keys) from document nodes.
  *
- * 배경(2026-07-26 실측): dogfood 샘플은 294 개념 중 96 개만 자기 `.md` 를
- * 가졌고 나머지 198 개는 파생 노드였다. 그런데 지도의 첫 문장은 "모든 것이
- * 진짜 문서예요" 였고, 팝오버의 `문서` 버튼은 파생 노드에서 *그 노드를 인용한
- * 남의 문서* 를 열었다.
+ * Background (measured 2026-07-26): of the dogfood sample's 294 concepts only 96 had
+ * their own `.md`, and the other 198 were derived. Yet the map's opening sentence
+ * said "everything here is a real document", and the popover's `문서` (document)
+ * button on a derived node opened *somebody else's document that cited it*.
  *
- * ⚠️ 수술 (2026-08-01): 이 계약은 한때 dogfood 샘플에 파생 노드가 **실재해야**
- * (`derived.length > 0`) 통과했다 — 결함(미해석 참조)을 요구하는 게이트는
- * 결함을 보존한다. 규격을 지킨 볼트는 파생 노드 0 이 정상이다. 그래서 지금은
- * **조건부**다: 파생 노드가 존재하면 그것을 문서 노드라 부르지 않는다(거짓말
- * 차단은 유지). 파생 경로 자체는 dogfood 의 결함이 아니라 **합성 표본**(ghost
- * 문서 1장을 얹은 매니페스트)으로 항상 검증한다 — `launch-docs-current` 의
- * demoNote 수술("숫자를 말하면 참이어야 하지만 말할 의무는 없다")과 같은 꼴.
+ * ⚠️ Surgery (2026-08-01): this contract once required derived nodes to **exist** in
+ * the dogfood sample (`derived.length > 0`) to pass — a gate that requires a defect
+ * (an unresolved reference) preserves the defect. In a vault that keeps the spec,
+ * zero derived nodes is correct. So it is now **conditional**: if derived nodes
+ * exist, they are not called document nodes (the lie is still blocked). The derived
+ * path itself is always verified against a **synthetic sample** (a manifest with one
+ * ghost document added) rather than a dogfood defect — the same shape as the
+ * `launch-docs-current` demoNote surgery ("if you state a number it must be true, but
+ * you are not obliged to state one").
  *
- * 두 수를 상수로 못 박지 않는 이유: `docs/ontology/` 는 dogfood 라 매니페스트
- * 가 자주 재생성된다 — 고정 숫자는 볼트를 고칠 때마다 CI 를 깨뜨리는 소음이지
- * 게이트가 아니다. 대신 **드리프트할 수 없는 항등식**을 건다:
- * 자기 문서 보유 노드 수 == derive 가 세는 `sourceConceptCount`.
- * `hasOwnDocument` 가 파생 노드에서 잘못 true 가 되면 이 등식이 즉시 깨진다.
+ * Why neither count is pinned as a constant: `docs/ontology/` is dogfooded, so the
+ * manifest is regenerated often — a fixed number is noise that breaks CI on every
+ * vault edit, not a gate. Instead an **identity that cannot drift** is asserted: the
+ * number of nodes with their own document == the `sourceConceptCount` derive
+ * reports. If `hasOwnDocument` wrongly returns true for a derived node, that equation
+ * breaks immediately.
  */
 
-/** dogfood 매니페스트에 미해석 참조 1건을 가진 ghost 문서를 얹는다. */
+/** Adds a ghost document with one unresolved reference to the dogfood manifest. */
 function withGhostDoc(manifest: VaultManifest): VaultManifest {
   const ghost: VaultDoc = {
     slug: "ontology/capabilities/ghost-parent",
@@ -64,9 +68,9 @@ describe("파생 노드와 문서 노드의 구분 (번들 샘플)", () => {
     const own = derivation.nodes.filter((n) => n.hasOwnDocument);
     const derived = derivation.nodes.filter((n) => !n.hasOwnDocument);
 
-    // 항등식 — 자기 문서 노드는 frontmatter `kind:` 를 가진 문서와 정확히 1:1.
+    // The identity — nodes with their own document map exactly 1:1 onto documents carrying a frontmatter `kind:`.
     expect(own).toHaveLength(derivation.sourceConceptCount);
-    // 파생 노드 수는 요구하지 않는다 — 깨끗한 볼트는 0 이 정답이다.
+    // No derived-node count is required — 0 is correct for a clean vault.
     expect(own.length + derived.length).toBe(derivation.nodes.length);
   });
 
@@ -85,8 +89,8 @@ describe("파생 노드와 문서 노드의 구분 (번들 샘플)", () => {
   });
 
   it("파생 노드의 sourceSlug 는 남의 문서라 자기 문서로 승격되지 않는다", () => {
-    // 합성 표본으로 돌린다 — 깨끗한 dogfood 에서는 파생 노드가 0 이라 이
-    // 루프가 공회전하고, 공회전하는 게이트는 아무것도 지키지 않는다.
+    // Runs against the synthetic sample — a clean dogfood vault has 0 derived nodes, so
+    // this loop would idle, and an idling gate guards nothing.
     const derivation = deriveOntologyFromVault(
       withGhostDoc(resolveStaticVaultSource("dogfood").manifest),
     );
@@ -101,17 +105,17 @@ describe("파생 노드와 문서 노드의 구분 (번들 샘플)", () => {
         hasOwnDocument: stub.hasOwnDocument,
       });
       expect(resolved.ownSlug).toBeNull();
-      // 그 slug 는 실제로 *다른 노드의* 문서다 — 링크는 살아 있되 라벨이
-      // "이 노드의 문서" 라고 말하면 거짓이 되는 이유.
+      // That slug really is *another node's* document — the link works, but a label
+      // saying "this node's document" would be a lie.
       expect(ownSlugs.has(stub.sourceSlug)).toBe(true);
     }
   });
 
   /**
-   * "자기 문서를 가졌는가" 의 정의는 **하나**여야 한다. 중복 의심 카드는
-   * 한때 "id 꼬리 == 문서 slug 꼬리" 로 따로 추정했고, 그 추정은 프로젝트
-   * 노드를 놓쳤다(프로젝트 id 는 frontmatter `slug:` 로 만들어진다). 지금은
-   * 두 표면 모두 `resolveNodeDocument` 하나만 본다.
+   * "Does it have its own document" must have **one** definition. The duplicate-suspect
+   * card once guessed separately with "id tail == document slug tail", and that guess
+   * missed project nodes (a project id is built from the frontmatter `slug:`). Both
+   * surfaces now consult only `resolveNodeDocument`.
    */
   it("중복 의심 후보 집합 == 자기 문서 보유 노드 집합", () => {
     const insight = derivationToInsight(
@@ -126,15 +130,15 @@ describe("파생 노드와 문서 노드의 구분 (번들 샘플)", () => {
     expect([...candidates.keys()].sort()).toEqual(
       documented.map((n) => n.id).sort(),
     );
-    // 파생 노드가 후보에 섞이면 합치기 제안이 엉뚱한 파일을 가리킨다.
+    // A derived node mixed into the candidates makes the merge suggestion point at the wrong file.
     expect(
       [...candidates.keys()].some(
         (id) => insight.nodes.find((n) => n.id === id)?.hasOwnDocument === false,
       ),
     ).toBe(false);
-    // [수술 2026-08-01] 종전의 `suspectCount === 11` 고정 숫자는 삭제 —
-    // dogfood 를 고칠 때마다 깨지는 소음이었고, 정의 통합 회귀는 위의 집합
-    // 동일성이 이미 잡는다. 여기서는 자료형 계약만 남긴다.
+    // The old fixed `suspectCount === 11` was deleted (2026-08-01) — it was noise that
+    // broke on every dogfood edit, and the set identity above already catches a
+    // regression in the unified definition. Only the shape contract remains here.
     expect(buildDuplicatePairs(insight.nodes, insight.edges, 3).suspectCount)
       .toBeGreaterThanOrEqual(0);
   });

@@ -7,26 +7,21 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { controlClass, fieldClass } from "@/shared/ui/control-class";
 
 /**
- * S1.1.1a — 단일 frontmatter 필드(예: domain)의 인라인 편집 primitive.
- *
- * 토폴로지를 온톨로지의 1차 *편집* surface 로 만드는 흐름에서, drawer 의 한
- * 필드를 읽기 ↔ 편집 ↔ 저장/취소로 전환한다. 라벨은 prop 으로 주입(drawer 와
- * 같은 패턴) → useTranslations 무관, 순수 컴포넌트라 단위 test 용이.
- *
- * 디자인 헌장 준수: 무채색 + 단일 인디고. glow/neon/scale-hover 없음 —
- * transition-colors 만. value 빈 문자열 → `empty` 라벨 표시.
+ * Inline edit primitive for one frontmatter field (domain, for example), turning
+ * a drawer row between read, edit, and save/cancel. Labels arrive as props, the
+ * same pattern the drawer uses, so this stays independent of `useTranslations`.
  */
 export interface InlineFieldEditLabels {
-  /** 필드 이름 (예: "도메인"). */
+  /** The field's name, e.g. "domain". */
   field: string;
-  /** 읽기 모드 편집 진입 버튼 aria. */
+  /** aria for the button that enters edit mode. */
   edit: string;
   save: string;
   cancel: string;
   placeholder: string;
-  /** value 가 빈 문자열일 때 읽기 모드 표시. */
+  /** Shown in read mode when the value is an empty string. */
   empty: string;
-  /** 저장 중 표시. */
+  /** Shown while saving. */
   saving: string;
 }
 

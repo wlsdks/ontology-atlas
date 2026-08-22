@@ -26,7 +26,7 @@ import { transientSurface } from "@/shared/ui/transient-surface";
 export interface SelectOption {
   value: string;
   label: string;
-  /** 옵션 보조 설명 — 옵션 행 두 번째 줄로 표시. */
+  /** Secondary text, rendered as the option row's second line. */
   description?: string;
 }
 
@@ -34,59 +34,60 @@ export interface SelectProps {
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
-  /** 선택 값이 없을 때(빈 문자열) 트리거에 보일 안내 문구. */
+  /** Shown on the trigger while `value` is the empty string. */
   placeholder?: string;
-  /** 접근성 이름 — 폼 라벨을 시각적으로 붙이지 않는 자리에 필수. */
+  /** Accessible name. Required wherever no visible form label is attached. */
   ariaLabel?: string;
   ariaLabelledby?: string;
   disabled?: boolean;
-  /** 트리거 높이. 기본 `lg`(40px, `--control-h-lg`). 밀도 높은 폼은 `md`(32px). */
+  /** Trigger height. Default `lg` (40px, `--control-h-lg`); dense forms use `md` (32px). */
   size?: "md" | "lg";
   className?: string;
   id?: string;
   "data-testid"?: string;
 }
 
-/** 트리거와 목록 사이 — 구 `top-[calc(100%+4px)]` 와 같은 값. */
+/** Gap between the trigger and the list. */
 const ANCHOR_GAP = 4;
-/** 뷰포트 가장자리에 남기는 여백 — 목록이 창에 닿아 잘리지 않게. */
+/** Margin kept from the viewport edge so the list is never clipped by the window. */
 const VIEWPORT_PAD = 8;
 /**
- * 어느 쪽으로 열지 정할 때 «자리가 넉넉하다» 로 치는 높이.
+ * The height that counts as "enough room" when choosing which way to open.
  *
- * 뒤집기 판정에만 쓰고 **높이 상한으로는 쓰지 않는다** — 상한은
- * `select-growth.ts` 의 두 규칙(행 상한 · 자리 상한)이 정한다. 구 구현은 이
- * 값 하나가 상한까지 겸했고, 그래서 "몇 개까지 다 보이나" 에 아무 답도
- * 없었다.
+ * Used for the flip decision only, **never as a height cap** — the caps belong to
+ * the two rules in `select-growth.ts` (row cap, space cap). The old
+ * implementation let this one value serve as the cap as well, which left "how
+ * many options are fully visible" unanswered.
  */
 const PREFERRED_SPACE = 264;
 
 type Anchor = {
   left: number;
   width: number;
-  /** 아래로 열 때의 상단 좌표(고정 좌표계). 위로 열면 `null`. */
+  /** Top coordinate (fixed positioning) when opening downwards; `null` when flipped up. */
   top: number | null;
-  /** 위로 열 때의 하단 좌표(고정 좌표계). 아래로 열면 `null`. */
+  /** Bottom coordinate (fixed positioning) when opening upwards; `null` when opening down. */
   bottom: number | null;
-  /** 이 방향으로 뷰포트에 실제로 남은 공간 — 자리 상한의 재료. */
+  /** Room actually left in the viewport in this direction — the space cap's input. */
   availableHeight: number;
   placement: "below" | "above";
 };
 
 /**
- * 트리거의 화면 좌표에서 목록의 자리를 정한다 — **아래에 자리가 없으면 위로
- * 뒤집고, 남은 공간을 그대로 보고한다.**
+ * Places the list from the trigger's viewport rect — **flips above when there is
+ * no room below, and reports the remaining space as it is.**
  *
- * 높이를 여기서 정하지 않는 이유: 몇 행까지 담기는지는 렌더된 행 높이를 봐야
- * 알 수 있고(설명 줄이 붙는 행은 더 높다), 그 판정은 순수 함수가 갖는다.
+ * Height is deliberately not decided here: how many rows fit depends on rendered
+ * row heights (a row with a description line is taller), and that call belongs to
+ * a pure function.
  */
 function measureAnchor(trigger: HTMLElement): Anchor {
   const rect = trigger.getBoundingClientRect();
   const viewportHeight = window.innerHeight || 0;
   const spaceBelow = viewportHeight - rect.bottom - ANCHOR_GAP - VIEWPORT_PAD;
   const spaceAbove = rect.top - ANCHOR_GAP - VIEWPORT_PAD;
-  // 아래가 넉넉하지 않고 위가 더 넓을 때만 뒤집는다 — 아래로 여는 것이
-  // 기본값이고, 뒤집기는 그것이 실패할 때의 보정이다.
+  // Flip only when below is tight and above is roomier: opening downwards is the
+  // default, and flipping is the correction for when that fails.
   const flip = spaceBelow < PREFERRED_SPACE && spaceAbove > spaceBelow;
   return {
     left: rect.left,
@@ -98,7 +99,7 @@ function measureAnchor(trigger: HTMLElement): Anchor {
   };
 }
 
-/** 렌더된 목록에서 자람의 재료를 걷는다 — 행 높이는 재는 것이지 가정하는 것이 아니다. */
+/** Collects the growth inputs from the rendered list — row heights are measured, never assumed. */
 function readGrowth(list: HTMLUListElement, availableHeight: number): ListboxGrowth | null {
   const style = window.getComputedStyle(list);
   const px = (value: string) => Number.parseFloat(value) || 0;
@@ -111,34 +112,34 @@ function readGrowth(list: HTMLUListElement, availableHeight: number): ListboxGro
 }
 
 /**
- * 캐노니컬 다크 Select / Listbox. 네이티브 `<select>` 는 macOS 에서 회색
- * 시스템 드롭다운(파란 하이라이트)을 띄워 다크 앱과 이질적이라, 앱 전역
- * 셀렉트를 이 컴포넌트로 대체한다(디자인 전면 정비 #4). 트리거(40px,
- * `--control-h-lg`) + 포털 앵커드 팝오버 listbox(elevated 서피스 · 인디고
- * 하이라이트 · 선택 체크). 키보드 내비(↑↓/Enter/Esc/Home/End/타입어헤드),
- * role=listbox / aria-activedescendant, 바깥 클릭·Esc 로 닫힘.
+ * The canonical dark Select / Listbox. A native `<select>` raises the grey macOS
+ * system dropdown with its blue highlight, which reads as foreign inside a dark
+ * app, so every select in the app is this component instead: a trigger (40px,
+ * `--control-h-lg`) plus a portalled anchored listbox popover (elevated surface,
+ * indigo highlight, selected check). Keyboard nav (↑↓/Enter/Esc/Home/End/
+ * typeahead), role=listbox / aria-activedescendant, closes on outside click and Esc.
  *
- * ## 목록은 왜 포털인가 (2026-08-02 설치 앱 실측)
+ * **Why the list is portalled** (measured 2026-08-02 in the installed app). The
+ * old implementation used `position: absolute`, so an ancestor's `overflow:
+ * hidden` clipped the list outright. In Settings → AI connection → model, **1** of
+ * the 7 models the runner offered was still on screen (39px visible of 264px =
+ * 14.8%), and three ArrowDown presses moved the view by 0px — the list itself had
+ * nothing to scroll (all 7 rows fit inside 264px); the clipping came from
+ * `.ai-row-disclosure`, two levels up.
  *
- * 구 구현은 `position: absolute` 라 **조상의 `overflow: hidden` 이 그대로
- * 목록을 잘랐다.** 설정 시트 → AI 연결 → 모델 칸에서 러너가 준 모델 7개 중
- * 화면에 남은 것은 **1개**였고(보이는 높이 39px / 264px = 14.8%), 그 상태에서
- * ArrowDown 을 세 번 눌러도 화면은 1px 도 움직이지 않았다 — 목록 자신은
- * 스크롤할 필요가 없고(7개가 264px 안에 다 들어간다), 자르고 있는 것은 두 단계
- * 위의 `.ai-row-disclosure` 였기 때문이다.
+ * That makes it unreachable functionality and an accessibility violation, not a
+ * cosmetic complaint: `aria-activedescendant` walks all 7 while only 1 is visible,
+ * so what a keyboard user hears and what they see are different worlds (Nielsen
+ * #1, visibility of system status).
  *
- * 그래서 이건 미관이 아니라 **기능 도달 불가 + 접근성 위반**이다:
- * `aria-activedescendant` 는 7개를 정상적으로 훑는데 화면에는 1개만 보인다 —
- * 키보드 사용자가 듣는 세상과 눈으로 보는 세상이 다르다(Nielsen ① 시스템
- * 상태 가시성).
+ * `.ai-row-disclosure`'s `overflow: hidden` exists to make its height transition
+ * work, so removing it breaks that transition. The ancestor cannot be fixed, which
+ * leaves escaping the ancestor as the only remedy.
  *
- * `.ai-row-disclosure` 의 `overflow: hidden` 은 **높이 전이용으로 설계된 것**
- * 이라 풀면 그 전이가 깨진다. 조상을 고칠 수 없으므로 목록이 조상 밖으로
- * 나가는 것이 유일한 해다.
- *
- * 헌장 준수: 무채색 + 단일 인디고, 토큰만, glow/scale 없음. 모션은 opacity +
- * scale-y(origin: 열리는 방향)만 — 등장 `--motion-fast`, 퇴장은 그 2/3
- * (`.select-listbox` 규칙, `prefers-reduced-motion` 동등물 있음).
+ * Charter compliance: neutrals plus a single indigo, tokens only, no glow or
+ * scale. Motion is opacity plus scale-y (origin: the direction it opens) only —
+ * `--motion-fast` in, two thirds of that out (the `.select-listbox` rules, with a
+ * `prefers-reduced-motion` equivalent).
  */
 export function Select({
   value,
@@ -159,17 +160,18 @@ export function Select({
   const optionDomId = (index: number) => `${baseId}-opt-${index}`;
 
   const [open, setOpen] = useState(false);
-  // 키보드 하이라이트(활성) 인덱스. 열릴 때 선택 값(없으면 0)으로 초기화.
+  // Keyboard highlight index, initialised on open to the selected option (or 0).
   const [activeIndex, setActiveIndex] = useState(0);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [growth, setGrowth] = useState<ListboxGrowth | null>(null);
-  // 어포던스는 **가려졌을 때만** 켠다 — 열자마자는 아래만 가려져 있다.
+  // Edge affordances turn on **only when something is genuinely hidden**; right
+  // after opening that is the bottom edge alone.
   const [edges, setEdges] = useState<{ top: boolean; bottom: boolean }>({
     top: false,
     bottom: false,
   });
-  // 퇴장 창을 앱 공통 게이트에서 받는다 — 목록만의 상태 기계를 새로 만들지
-  // 않는다(퇴장 창은 이 앱에 하나여야 한다, `use-presence.ts`).
+  // The exit window comes from the shared hook rather than a state machine owned
+  // by this list — there is exactly one exit window in this app (`use-presence.ts`).
   const { mounted, exiting } = usePanelPresence(open);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -183,8 +185,8 @@ export function Select({
   const openList = useCallback(() => {
     if (disabled) return;
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
-    // 자리는 **여는 그 순간** 잰다 — 마운트 뒤 effect 에서 재면 한 프레임을
-    // (0,0) 에서 그린 뒤 튄다.
+    // Measure at the moment of opening: measuring in a post-mount effect draws one
+    // frame at (0,0) and then jumps.
     if (triggerRef.current) setAnchor(measureAnchor(triggerRef.current));
     setOpen(true);
   }, [disabled, selectedIndex]);
@@ -207,9 +209,9 @@ export function Select({
     [options, onChange, closeList],
   );
 
-  // 바깥 클릭 → 닫기 (포커스는 옮기지 않음 — 클릭 지점이 이미 새 포커스).
-  // 목록이 포털이라 `rootRef` 만 보면 **목록 자신이 바깥으로 판정**된다 —
-  // 옵션을 누르는 순간 pointerdown 이 먼저 닫아 클릭이 사라진다.
+  // Outside click closes, without moving focus — the click target is already the
+  // new focus. The list is portalled, so checking `rootRef` alone would judge the
+  // list itself as outside: pointerdown would close first and swallow the click.
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
@@ -222,8 +224,8 @@ export function Select({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
-  // 열려 있는 동안 트리거가 움직이면(시트 스크롤·창 리사이즈) 목록도 따라간다.
-  // 포털은 조상의 스크롤을 상속하지 않으므로 이 구독이 없으면 목록만 남는다.
+  // Follow the trigger while open (sheet scroll, window resize). A portal does not
+  // inherit ancestor scrolling, so without this the list is left behind.
   useEffect(() => {
     if (!open) return;
     const reanchor = () => {
@@ -237,15 +239,16 @@ export function Select({
     };
   }, [open]);
 
-  // 옵션 수가 바뀌면 목록 높이가 바뀐다 — 뒤집기 판정을 다시 한다.
+  // A changed option count changes the list height, so the flip decision is remade.
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;
     setAnchor(measureAnchor(triggerRef.current));
   }, [open, options.length]);
 
   /**
-   * 렌더된 행을 재서 상한을 확정한다 — **행 높이는 가정하지 않고 잰다.**
-   * 페인트 전에 도므로 잘못된 높이가 한 프레임도 보이지 않는다.
+   * Measures the rendered rows to settle the cap — **row heights are measured, not
+   * assumed.** It runs before paint, so a wrong height is never visible for even
+   * one frame.
    */
   useLayoutEffect(() => {
     if (!mounted || !anchor) return;
@@ -265,8 +268,9 @@ export function Select({
       );
     };
     remeasure();
-    // 행은 나중에도 자란다 — 늦게 온 웹폰트가 대표적이다. 한 번만 재고 끝내면
-    // 그 뒤의 성장은 조용히 스크롤로 흘러가고, 어포던스가 거짓으로 켜진다.
+    // Rows still grow after this — a late web font is the usual cause. Measuring
+    // once would let that growth turn silently into scroll and switch the edge
+    // affordance on falsely.
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(remeasure);
     observer.observe(list);
@@ -274,7 +278,8 @@ export function Select({
     return () => observer.disconnect();
   }, [mounted, anchor, options]);
 
-  // 열릴 때는 맨 위이므로 위는 안 가려져 있다 — 「더 있다」 는 아래가 나른다.
+  // On open the list sits at the top, so nothing is hidden above; "there is more"
+  // is carried by the bottom edge.
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!open || !list || !growth) {
@@ -296,7 +301,7 @@ export function Select({
     return () => list.removeEventListener("scroll", read);
   }, [open, growth, activeIndex]);
 
-  // 활성 옵션이 뷰 밖이면 스크롤로 따라가게.
+  // Keep the active option in view.
   useEffect(() => {
     if (!open) return;
     const el = listRef.current?.querySelector<HTMLElement>(`#${CSS.escape(optionDomId(activeIndex))}`);
@@ -381,9 +386,10 @@ export function Select({
   };
 
   /**
-   * 가려진 쪽에만 페이드 마스크. **상한에 닿고 실제로 가려졌을 때만** —
-   * 없는 넘침을 광고하지 않는다(컴포저와 같은 문법). 마스크는 색을 더하지
-   * 않으므로 채색 시스템이 늘지 않는다.
+   * A fade mask on the covered side only, **and only once the cap is reached and
+   * something is genuinely hidden** — an overflow that does not exist is never
+   * advertised (same grammar as the composer). The mask adds no colour, so the
+   * palette does not grow.
    */
   const edgeMask = (() => {
     const fade = "var(--leading-body)";
@@ -399,31 +405,34 @@ export function Select({
     ? {
         left: anchor.left,
         /*
-         * **목록이 자기 항목보다 좁아지지 않는다** (2026-08-16 소유자 실보고).
+         * **The list never gets narrower than its own items** (owner report,
+         * 2026-08-16).
          *
-         * 종전엔 `width: anchor.width` 로 트리거 폭에 못 박았다. 좁은 자리에
-         * 놓인 셀렉트에서는 그 폭이 곧 목록 폭이 되어 **고를 것들이 잘렸다** —
-         * 실물에서 `Read Only` 가 `Rea…`, `Agent` 가 `Ag…` 로 나왔다. 고를 수
-         * 없는 목록은 목록이 아니다.
+         * This used to be `width: anchor.width`, pinned to the trigger. For a
+         * select in a narrow slot that width became the list width and **the
+         * choices were truncated** — in the shipped app `Read Only` rendered as
+         * `Rea…` and `Agent` as `Ag…`. A list you cannot choose from is not a list.
          *
-         * 트리거 폭은 이제 **바닥**이고(그보다 좁아지지 않는다) 내용이 더 넓으면
-         * 그만큼 자란다. 넓은 자리의 셀렉트는 종전과 똑같다 — 이 값은 늘리기만
-         * 하고 줄이지 않는다.
+         * The trigger width is now a **floor**: the list never goes below it, and
+         * grows past it when the content is wider. Selects in wide slots are
+         * unchanged — this value only ever grows, never shrinks.
          *
-         * 상한을 두는 이유: 항목 하나가 유난히 길면 목록이 창을 가로지른다.
-         * 화면 가장자리 여백(`VIEWPORT_PAD`)을 남긴다.
+         * The cap exists because one unusually long item would otherwise stretch
+         * the list across the window; `VIEWPORT_PAD` keeps the screen-edge margin.
          */
         minWidth: anchor.width,
         maxWidth: `calc(100vw - ${VIEWPORT_PAD * 2}px)`,
-        // 상한 둘 중 작은 쪽. 행을 아직 못 쟀으면(첫 레이아웃) 자리 상한만 쓴다.
+        // The smaller of the two caps; before rows are measured (first layout) only
+        // the space cap applies.
         maxHeight: growth ? growth.height : anchor.availableHeight,
         ...(anchor.top !== null ? { top: anchor.top } : {}),
         ...(anchor.bottom !== null ? { bottom: anchor.bottom } : {}),
-        // 상한에 안 닿았으면 스크롤 어포던스 자체가 없다 — 다 보이는데
-        // 스크롤바가 있으면 「더 있다」 가 거짓말이 된다.
+        // No cap reached means no scroll affordance at all: a scrollbar over a
+        // fully visible list would be lying about "there is more".
         overflowY: growth?.overflowing === false ? "hidden" : "auto",
         ...(edgeMask ? { maskImage: edgeMask, WebkitMaskImage: edgeMask } : {}),
-        // 목록은 트리거에서 자라난다 — 위로 열면 아래쪽이 그 자리다.
+        // The list grows out of the trigger; opening upwards puts that origin at
+        // the bottom.
         transformOrigin: anchor.placement === "above" ? "bottom" : "top",
       }
     : undefined;
@@ -436,14 +445,15 @@ export function Select({
         role="listbox"
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledby}
-        // 퇴장 프레임은 접근성 트리와 탭 순서에서 즉시 빠진다 — 모션의 대가를
-        // 접근성으로 치르지 않는다(`.ai-row-disclosure` 와 같은 계약).
+        // Exiting frames leave the accessibility tree and tab order immediately —
+        // motion is not paid for with accessibility (same contract as
+        // `.ai-row-disclosure`).
         aria-hidden={exiting || undefined}
         inert={exiting || undefined}
         data-state={exiting ? "closed" : "open"}
         data-placement={anchor.placement}
-        // 상한 판정을 DOM 에 남긴다 — 설치 앱 검증기와 사람이 «왜 여기서
-        // 멈췄나» 를 원인 이름으로 읽는다.
+        // The cap decision is left in the DOM so the installed-app verifier and a
+        // human can read "why did it stop here" as a named cause.
         data-capped-by={growth?.cappedBy}
         data-overflowing={growth ? String(growth.overflowing) : undefined}
         data-testid={dataTestid ? `${dataTestid}-listbox` : undefined}
@@ -479,8 +489,9 @@ export function Select({
               </span>
               <span className="min-w-0 flex-1">
                 {/*
-                  항목 이름은 **자르지 않는다.** 목록이 이제 내용만큼 자라므로
-                  자를 이유가 없고, 자르면 고를 수 없는 목록이 된다.
+                  Item labels are **never truncated.** The list now grows to its
+                  content, so there is nothing to truncate for — and truncating
+                  produces a list you cannot choose from.
                 */}
                 <span className="block whitespace-nowrap">{option.label}</span>
                 {option.description ? (
@@ -515,8 +526,9 @@ export function Select({
         onKeyDown={onKeyDown}
         className={cn(
           "flex w-full items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-left text-body text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
-          // 비활성 한 세트는 값 층에서 — 손으로 적으면 커서·흐림만 남고
-          // 호버 무력화가 빠진다(실제로 빠져 있던 자리다).
+          // The disabled set comes from the value layer. Hand-written versions keep
+          // the cursor and the dim but drop the hover suppression — this call site
+          // had exactly that gap.
           CONTROL_DISABLED_CLASS,
           size === "md" ? "h-[var(--control-h-md)]" : "h-[var(--control-h-lg)]",
         )}
@@ -529,9 +541,9 @@ export function Select({
         >
           {selected ? selected.label : placeholder ?? ""}
         </span>
-        {/* 셰브런은 목록과 **같은 사건**이다 — 목록이 80ms 에 사라지는데 이것만
-            120ms 를 쓰면 한 입력이 두 사건으로 읽힌다. 시간은 `.select-chevron`
-            이 목록 퇴장과 같은 값으로 소유한다. */}
+        {/* The chevron is the **same event** as the list: if the list leaves in 80ms
+            and this one takes 120ms, a single input reads as two events. The timing
+            lives in `.select-chevron`, at the same value as the list's exit. */}
         <ChevronDown
           aria-hidden
           className="select-chevron size-4 flex-none text-[color:var(--color-text-quaternary)] data-[open=true]:rotate-180"

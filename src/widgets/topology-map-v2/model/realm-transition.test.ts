@@ -183,8 +183,8 @@ describe("realmDepthClarity (S5 깊이 선명도)", () => {
   it("알파는 깊을수록 낮고 depth≤1 은 1.0", () => {
     expect(realmDepthClarityAlpha(0)).toBe(1);
     expect(realmDepthClarityAlpha(1)).toBe(1);
-    // 0.92/0.84 에서 0.98/0.96 으로 (2026-08-18) — 0.84 는 leaf 잉크와 합성해
-    // 2.58:1 로 WCAG 1.4.11 바닥(3:1) 아래였다. 최소 안전 알파 0.955 위로.
+    // Raised from 0.92/0.84 on 2026-08-18: 0.84 composited with the leaf ink
+    // gave 2.58:1, under the WCAG 1.4.11 floor of 3:1. Safe minimum is 0.955.
     expect(realmDepthClarityAlpha(2)).toBeCloseTo(0.98);
     expect(realmDepthClarityAlpha(3)).toBeCloseTo(0.96);
     expect(realmDepthClarityAlpha(7)).toBe(realmDepthClarityAlpha(3));
@@ -219,7 +219,7 @@ describe("realmExitFlipDelayFor (S6 퇴장 깊이 역순 — 깊은 층 먼저)"
   it("입장 지연과 방향이 반대다(깊이 증가 시 단조 감소)", () => {
     expect(realmExitFlipDelayFor(3)).toBeLessThan(realmExitFlipDelayFor(2));
     expect(realmExitFlipDelayFor(2)).toBeLessThan(realmExitFlipDelayFor(1));
-    // 입장은 반대로 깊을수록 늦다.
+    // Entry runs the other way: the deeper the layer, the later it starts.
     expect(realmInsideFlipDelayFor(1)).toBeLessThan(realmInsideFlipDelayFor(3));
   });
 });
@@ -286,7 +286,7 @@ describe("realmOutsideReturnPosition (S6 fling 역재생)", () => {
   it("elapsed 0 은 fling 끝점과 일치, duration 은 정확히 홈으로 착지(튐 없음)", () => {
     const from = { x: 120, y: -40 };
     const center = { x: 0, y: 0 };
-    // 입장 fling 이 끝난 위치(fling duration 에서 e=1) 재현.
+    // Reproduce where the entry fling ended (e = 1 at the fling duration).
     const flungEnd = realmOutsidePosition(from, center, REALM_OUTSIDE_FLING_MS);
     const start = realmOutsideReturnPosition(from, center, 0);
     expect(start.x).toBeCloseTo(flungEnd.x, 3);

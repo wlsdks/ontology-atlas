@@ -1,38 +1,43 @@
 /**
- * LLM 호출 감사 로그(`.ontology-atlas/llm-audit.jsonl`) 파서 — **읽기 전용**.
+ * Parser for the LLM call audit log (`.ontology-atlas/llm-audit.jsonl`) —
+ * **read-only**.
  *
- * 쓰기는 키를 쥔 Rust(`src-tauri/src/llm_audit.rs`)가 소유한다. 웹이 쓰지 않는
- * 이유는 `activity.jsonl` 과 같다: 기록의 주인이 전송의 주인과 같아야
- * "기록 없는 전송" 이 구조적으로 불가능해진다.
+ * Writing is owned by the Rust side that holds the key
+ * (`src-tauri/src/llm_audit.rs`). The web does not write for the same reason as
+ * `activity.jsonl`: when whoever owns the record is whoever owns the
+ * transmission, "a transmission with no record" becomes structurally impossible.
  *
- * 한 줄 스키마 v1:
+ * Line schema v1:
  * `{"v":1,"at","provider","host","model","purpose","question","scope":{"nodes","promptChars","vaultChars"},"payloadSha256","outcome","httpStatus","responseChars","durationMs"}`
  *
- * - `host` 는 **나중에 더해진 필드**이고 그래서 `v` 는 1 그대로다. 이 필드가
- *   없는 옛 줄은 사용자 디스크에 이미 앉아 있으므로 `null` 로 읽는다 — 목적지를
- *   모른다는 사실을 그대로 말할 뿐, provider 이름으로 추측해 채우지 않는다.
- *   기록을 소급해 고치지 않는 것이 헌장 ⑤ 이고, 파서가 부재를 감당하는 것이
- *   그 약속의 코드 쪽 얼굴이다.
- * - 전송 **직전에** 결과 필드 없이 예약된 줄이 먼저 디스크에 앉는다. 응답 전에
- *   프로세스가 죽으면 그 줄이 그대로 남으므로, 결과 필드가 없는 줄은
- *   `outcome: 'unknown'` 으로 읽는다 — 없는 사실을 성공/실패로 지어내지 않는다.
- * - 깨진 줄은 건너뛴다(파서가 죽어 전체를 못 보여주는 것이 더 나쁘다).
- * - 응답 본문은 애초에 기록되지 않는다(길이만) — 대화 저장소가 아니다.
+ * - `host` was **added later**, which is why `v` is still 1. Older lines without
+ *   it already sit on user disks, so they read as `null` — stating plainly that
+ *   the destination is unknown rather than guessing it from the provider name.
+ *   Charter clause ⑤ is that records are never rewritten after the fact, and a
+ *   parser absorbing the absence is that promise's code-side face.
+ * - A reserved line is written to disk **just before** transmission, without the
+ *   outcome fields. If the process dies before the response that line stays, so a
+ *   line with no outcome fields reads as `outcome: 'unknown'` — a missing fact is
+ *   not invented as a success or a failure.
+ * - Broken lines are skipped (a parser dying and showing nothing is worse).
+ * - Response bodies are never recorded, only their length — this is not a
+ *   conversation store.
  *
- * writer(Rust) ↔ reader(여기) drift 는 공유 픽스처
- * `tests/fixtures/llm-audit-log.sample.jsonl` 을 양쪽이 보는 계약 테스트가 잡는다.
+ * Drift between the Rust writer and this reader is caught by a contract test
+ * that runs both against the shared fixture
+ * `tests/fixtures/llm-audit-log.sample.jsonl`.
  */
 
 export type LlmAuditOutcome = 'ok' | 'denied' | 'error' | 'unknown';
 
 export interface LlmAuditScope {
-  /** 발췌를 보낸 노드 slug 들. 연결 확인은 빈 배열. */
+  /** Slugs of the nodes whose excerpts were sent; empty for a connection check. */
   nodes: string[];
   promptChars: number;
   vaultChars: number;
 }
 
-/** 한 왕복에 실려나간 도구 호출 — 이름과 대상만. 인자 전문은 기록되지 않는다. */
+/** Tool calls carried by one round trip — name and target only; full arguments are never recorded. */
 export interface LlmAuditToolRef {
   name: string;
   target: string;
@@ -43,24 +48,25 @@ export interface LlmAuditEntry {
   at: string;
   provider: string;
   /**
-   * 요청이 실제로 향한 호스트. `host` 가 없던 시절의 줄은 `null` — 없는 사실을
-   * provider 이름으로 지어내지 않는다.
+   * The host the request actually went to. Lines from before `host` existed read
+   * as `null` — a missing fact is not invented from the provider name.
    */
   host: string | null;
   model: string | null;
-  /** `'verify' | 'agent'` — 앞으로 값이 늘어도 파서는 그대로 통과시킨다. */
+  /** `'verify' | 'agent'` — the parser passes future values through unchanged. */
   purpose: string;
-  /** 사용자 본인의 말. 연결 확인은 null. */
+  /** The user's own words; `null` for a connection check. */
   question: string | null;
   scope: LlmAuditScope;
   /**
-   * 이 왕복에 실린 도구 호출들. 필드가 **없는** 줄은 `null` — 빈 배열("도구를
-   * 0개 썼다")과 다른 뜻이다. 연결 확인 줄에는 애초에 이 필드가 없다.
+   * Tool calls carried by this round trip. A line **without** the field reads as
+   * `null`, which means something different from an empty array ("used 0 tools").
+   * Connection-check lines never carry this field.
    */
   tools: LlmAuditToolRef[] | null;
   payloadSha256: string;
   outcome: LlmAuditOutcome;
-  /** 아직 모를 수 있는 값들은 0 이 아니라 null — 0 은 사실 주장이다. */
+  /** Values that may still be unknown are `null`, not 0 — 0 would assert a fact. */
   httpStatus: number | null;
   responseChars: number | null;
   durationMs: number | null;
@@ -134,8 +140,9 @@ export function parseLlmAuditLog(
 export const LLM_AUDIT_LOG_RELATIVE_PATH = '.ontology-atlas/llm-audit.jsonl';
 
 /**
- * 볼트 폴더에서 감사 로그 tail 을 읽는다. 파일이 없으면 빈 배열 — 없다는 것
- * 자체가 "아직 아무것도 보내지 않았다" 는 사실이므로 오류가 아니다.
+ * Reads the tail of the audit log from the vault folder. A missing file returns
+ * an empty array: its absence is itself the fact "nothing has been sent yet", so
+ * it is not an error.
  */
 export async function readLlmAuditLog(
   handle: FileSystemDirectoryHandle,

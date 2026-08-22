@@ -34,22 +34,23 @@ describe("frontmatter writer contract — MCP and CLI agree", () => {
 });
 
 /**
- * **왕복이 닫힌다** — `parse(build(x)) === x`.
+ * **The round trip closes** — `parse(build(x)) === x`.
  *
- * 이 계약이 없어서 두 결함이 살아 있었다(2026-07-28 실측):
+ * Two defects lived because this contract did not exist (measured 2026-07-28):
  *
- * 1. serializer 는 `"` 를 이스케이프하는데 파서는 언이스케이프를 안 했다.
- *    `patch_concept` 가 프론트매터를 재직렬화할 때마다 백슬래시가 **배가**됐다
- *    (3회 왕복: 1개 → 2개 → 4개). 저장 반복이 곧 오염 증식이다.
- * 2. 인라인 리스트/객체를 무조건 콤마로 쪼개서 값 안의 콤마가 데이터를 잘랐다
- *    (`labels: { ko: "지도, 검색" }` → `"지도"`).
+ * 1. The serializer escaped `"` while the parser did not unescape. Every time
+ *    `patch_concept` re-serialised frontmatter the backslashes **doubled** (three
+ *    round trips: 1 → 2 → 4). Repeated saving was corruption growth.
+ * 2. Inline lists and objects were split on commas unconditionally, so a comma
+ *    inside a value truncated the data (`labels: { ko: "지도, 검색" }` → `"지도"`).
  *
- * 왜 기존 매트릭스가 못 잡았나: 파서 계약은 **입력 → 파스 결과**만 보고,
- * 작성 계약은 **입력 → 문자열**만 봤다. 둘을 이어 붙인 "쓰고 다시 읽으면
- * 같은가" 는 어느 쪽 사정거리에도 없었다.
+ * Why the existing matrix missed them: the parser contract watched only
+ * **input → parse result**, and the writer contract only **input → string**. Joining
+ * them — "does writing and reading back give the same thing" — was in neither's
+ * range.
  *
- * 세 번 도는 이유: 한 번은 통과하면서 **누적**되는 종류가 있기 때문이다.
- * 위 1번이 정확히 그랬다.
+ * Why three round trips: some defects pass on the first pass while **accumulating**.
+ * Defect 1 above did exactly that.
  */
 const ROUND_TRIP_CASES: Array<{ name: string; frontmatter: Record<string, unknown> }> = [
   { name: "따옴표 든 값 — 이스케이프가 누적되지 않는다", frontmatter: { kind: "capability", title: 'say "hello"' } },
@@ -68,7 +69,7 @@ describe("왕복 계약 — 쓰고 다시 읽으면 같다 (누적 오염 차단
         ["cli", buildCliMarkdown, parseCliFrontmatter],
       ] as const) {
         let current = c.frontmatter;
-        // 세 번 — 한 번은 통과하면서 누적되는 종류를 잡는다.
+        // Three passes — catches the kind that passes once while accumulating.
         for (let round = 1; round <= 3; round += 1) {
           const markdown = build({ frontmatter: current, body: "본문" });
           current = parse(markdown).frontmatter as Record<string, unknown>;

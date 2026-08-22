@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// R12 #38 — AI agent dogfood 시뮬. 사용자 .mcp.json 등록 후 시나리오와
-// 같은 흐름으로 mcp server 에 read tool + first-contact graph diagnosis 호출.
-// *진짜 AI agent 입장* 에서
-// 받는 정보 quality 측정.
+// AI-agent dogfood simulation: calls the MCP server's read tools and the
+// first-contact graph diagnosis in the same order a user follows after
+// registering .mcp.json, measuring the quality of what a real agent gets back.
 //
-// write 안 함 (dogfood vault 보존). destructive tools are dry-run only. list_kinds / list_concepts / project probe / get_concepts /
+// Never writes (the dogfood vault must survive); destructive tools are dry-run
+// only. list_kinds / list_concepts / project probe / get_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
 // tools/list schema contract / strict unknown-tool, unknown-argument, invalid-enum, and invalid-filter rejection / validate_vault / compile_ontology(summary + indexed full artifact) /
 // query_ontology overview / query_plan / neighbors / path / all_paths / pattern_walk / project_scope / centrality / communities / similar_nodes / explain_relation / reachability / impact / blast_radius / subgraph / schema / facets / match_nodes / match_edges / node_profile / lineage / containment_tree / cycles / topological_order / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health / health tuned.

@@ -18,9 +18,10 @@ describe("DomainCapacityBar", () => {
   });
 
   it("두 세그먼트는 앱 공통 막대 문법 — 主 계열 인디고 + 무채, kind tone 아님", () => {
-    // kind tone(앰버/유칼립투스)은 트랙 위에서 서로 1.14:1 이라 밝기로는 구분이
-    // 안 되고 hue 로만 갈렸는데, 그 hue 쌍이 적록 색약이 가장 못 가르는 축이다.
-    // 정체는 순서·단위어·숫자가 이미 나르므로 색을 강등했다.
+    // The kind tones (amber/eucalyptus) measure 1.14:1 against each other on the
+    // track, so they never separated by brightness — only by hue, and that hue pair
+    // is the axis red-green colour blindness separates worst. Identity is already
+    // carried by order, unit words and numbers, so colour was demoted.
     render(
       <DomainCapacityBar
         row={{ id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 1, total: 4 }}
@@ -29,19 +30,20 @@ describe("DomainCapacityBar", () => {
     );
     const cap = screen.getByTestId("domain-capacity-bar-capability");
     const el = screen.getByTestId("domain-capacity-bar-element");
-    // 분모는 **이 행의 합**(3+1=4)이다 — 목록 최댓값이 아니라. 트랙은 늘 꽉 찬다.
+    // The denominator is **this row's own sum** (3+1=4), not the list's maximum. The track is always full.
     expect(cap.style.width).toBe("75%");
     expect(el.style.width).toBe("25%");
     expect(cap.className).toContain("bg-[color:var(--color-indigo-brand)]");
     expect(el.className).toContain("bg-[color:var(--color-text-quaternary)]");
-    // 인라인 배경색(하드코딩 rgba)으로 돌아가지 않는다 — 토큰 경유만.
+    // No going back to inline background colours (hardcoded rgba) — tokens only.
     expect(cap.style.backgroundColor).toBe("");
     expect(el.style.backgroundColor).toBe("");
   });
 
   it("두 값이 모두 있으면 1px 심이 경계를 진다 — 색이 아니라 구조가 가른다", () => {
-    // 인디고와 무채는 서로 1.12:1 이라 인접 경계가 색으로는 안 보인다. 심은
-    // 색맹·흑백에서도 "값 두 개짜리 막대"임을 보증하는 색-무관 구분자다.
+    // Indigo and neutral measure 1.12:1 against each other, so an adjacent boundary is
+    // invisible by colour alone. The seam is a colour-independent separator that
+    // guarantees "a bar of two values" even in colour blindness or greyscale.
     render(
       <DomainCapacityBar
         row={{ id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 1, total: 4 }}
@@ -63,7 +65,7 @@ describe("DomainCapacityBar", () => {
     const track = screen.getByTestId("domain-capacity-bar-track");
     expect(track.children).toHaveLength(1);
     expect(screen.queryByTestId("domain-capacity-bar-capability")).toBeNull();
-    // 한쪽이 0이면 통짜 한 색이 되고, 그것이 이 막대가 가장 크게 말하는 상태다.
+    // With one side at 0 it becomes a single solid colour, and that is the state this bar says loudest.
     expect(screen.getByTestId("domain-capacity-bar-element").style.width).toBe("100%");
   });
 
@@ -75,7 +77,7 @@ describe("DomainCapacityBar", () => {
       />,
     );
     expect(screen.getByTestId("domain-capacity-bar-track")).toHaveAttribute("aria-hidden");
-    // 사실 자체는 텍스트로 남아 있어야 한다.
+    // The fact itself has to remain as text.
     expect(screen.getByText("Capability 3 · Element 5")).toBeInTheDocument();
   });
 
@@ -90,10 +92,11 @@ describe("DomainCapacityBar", () => {
   });
 
   it("꼬리 열 폭이 내용과 무관하게 같다 — 여섯 행이 한 축을 공유해야 한다 (E1)", () => {
-    // `역량 4 · 요소 110` 과 `역량 2 · 요소 5` 는 글자 폭이 다르다. 그 차이가
-    // 옆의 `flex-1` 트랙 길이로 새면 축이 행마다 갈리고(실측 929.8/935.5/941.2px)
-    // 값이 작은 도메인이 더 긴 막대 축을 받는다. jsdom 은 레이아웃을 계산하지
-    // 않으므로 폭을 정하는 **계약(고정 폭 클래스)** 을 단언한다.
+    // `역량 4 · 요소 110` and `역량 2 · 요소 5` have different text widths. If that
+    // difference leaks into the length of the `flex-1` track beside it, the axis
+    // diverges row by row (measured 929.8/935.5/941.2px) and a domain with smaller
+    // values gets a longer bar axis. jsdom does not compute layout, so what is
+    // asserted is **the contract that sets the width** (the fixed-width class).
     const tailOf = (row: { capabilityCount: number; elementCount: number; total: number }) => {
       const { unmount } = render(
         <DomainCapacityBar
@@ -136,7 +139,7 @@ describe("DomainCapacityLegend", () => {
     expect(dots).toHaveLength(2);
     expect(dots[0].className).toContain("bg-[color:var(--color-indigo-brand)]");
     expect(dots[1].className).toContain("bg-[color:var(--color-text-quaternary)]");
-    // 8px 점 — h-2 w-2 (타입/치수 램프 안, 임의 px 없음).
+    // An 8px dot — h-2 w-2 (inside the type and dimension ramps, no arbitrary px).
     expect(dots[0].className).toContain("h-2");
     expect(dots[0].className).toContain("w-2");
   });
@@ -148,14 +151,17 @@ describe("DomainCapacityLegend", () => {
 });
 
 /**
- * **길이는 크기를 말하지 않는다** (2026-08-09, 소유자 선택 「막대가 구성을 말하게」).
+ * **Length does not state size** (2026-08-09, the owner chose 「막대가 구성을
+ * 말하게」 — let the bar state composition).
  *
- * 예전에는 분모가 목록의 최댓값이라 길이가 크기였다. 그런데 그 답은 바로 옆
- * 숫자가 이미 하고 있었고, 실측에서 채움 비율이 100/94/88/82/76/65/53/47% 로
- * 위쪽 절반에 몰려 있었다 — 길이 차이로 새로 배우는 것이 거의 없었다.
+ * The denominator used to be the list's maximum, so length was size. But the number
+ * right beside it was already answering that, and measured, the fill ratios were
+ * 100/94/88/82/76/65/53/47% — clustered in the top half, so the differences in length
+ * taught almost nothing new.
  *
- * 이 시험이 잠그는 성질: *두 행의 합이 달라도 트랙은 똑같이 꽉 차고, 다른 것은
- * 경계의 자리뿐이다.* 이게 깨지면 막대가 조용히 예전 뜻으로 돌아간다.
+ * The property this test pins: *however different two rows' sums are, the track fills
+ * identically and the only thing that differs is where the boundary sits.* Break that
+ * and the bar quietly reverts to its old meaning.
  */
 describe("막대가 말하는 것 — 크기가 아니라 구성", () => {
   it("합이 3배 차이 나도 트랙은 똑같이 꽉 찬다", () => {

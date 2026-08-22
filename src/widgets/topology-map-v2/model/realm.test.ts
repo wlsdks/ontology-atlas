@@ -18,11 +18,11 @@ const RINGS: LayoutRings = { domain: 250, capability: 145, element: 90 };
 const RADII: LayoutRadii = { project: 25, domain: 17, capability: 11, element: 7 };
 
 /**
- * childrenByParent 픽스처: capability `c` 루트, 그 아래 element e1/e2,
- * e1 아래 손자 g1. 형제 도메인 d2 는 서브트리 밖.
+ * childrenByParent fixture: capability `c` as root with elements e1/e2 beneath
+ * it and grandchild g1 under e1. Sibling domain d2 is outside the subtree.
  *   c ─ e1 ─ g1
  *     └ e2
- *   d2 (밖)
+ *   d2 (outside)
  */
 function fixtureChildren(): Map<string, string[]> {
   return new Map<string, string[]>([
@@ -162,7 +162,7 @@ describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보�
     expect(layout.get("c")).toEqual({ id: "c", x: 0, y: 0 });
     const e1 = layout.get("e1")!;
     const e2 = layout.get("e2")!;
-    // TAU 등분(위/아래 덤벨)의 −90° 강체 회전: (0,−R)→(−R,0), (0,R)→(R,0).
+    // −90° rigid rotation of the even TAU split (a vertical dumbbell): (0,−R)→(−R,0), (0,R)→(R,0).
     expect(e1.x).toBeLessThan(0);
     expect(Math.abs(e1.y)).toBeLessThan(1e-9);
     expect(e2.x).toBeGreaterThan(0);
@@ -184,7 +184,7 @@ describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보�
     ]);
     const sub = extractRealmSubtree("c", children);
     const rotated = computeRealmLayout(sub, RINGS, RADII);
-    // 동일 입력을 직접 concentric 에 태운 미회전 기준과 좌표 단위로 대조한다.
+    // Compare coordinate by coordinate against the unrotated baseline from the same input.
     const rawInput = [...sub.depthById.keys()].map((id) => ({
       id,
       kind: realmLayoutKind(sub.depthById.get(id) ?? 0),
@@ -203,7 +203,7 @@ describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보�
     const sub = extractRealmSubtree("c", new Map([["c", ["a", "b", "d"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const a = layout.get("a")!;
-    // TAU 등분 시작각 −90°: 첫 자식은 위쪽(x≈0, y<0).
+    // The even TAU split starts at −90°, so the first child sits on top (x≈0, y<0).
     expect(Math.abs(a.x)).toBeLessThan(1e-9);
     expect(a.y).toBeLessThan(0);
   });
@@ -241,7 +241,7 @@ describe("computeVisibleWardingRadius (S9 결함 2)", () => {
 
   it("가시 집합이 줄면(접힘) 반경이 줄어든다", () => {
     const full = computeVisibleWardingRadius([100, 400, 900]);
-    const folded = computeVisibleWardingRadius([100, 400]); // 900 짜리(접힌 자식) 제외
+    const folded = computeVisibleWardingRadius([100, 400]); // the folded child at 900 is excluded
     expect(folded).toBeLessThan(full);
   });
 

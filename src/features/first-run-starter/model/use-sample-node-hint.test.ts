@@ -36,15 +36,16 @@ describe('useSampleNodeHint', () => {
     );
     expect(result.current.visible).toBe(true);
 
-    // 첫 노드 클릭 → 선택 발생. 표시는 즉시 꺼지고(`!hasSelection`), 영구
-    // 기록은 microtask 로 defer 되므로 flush 후 확인한다.
+    // The first node click creates a selection. Display switches off immediately
+    // (`!hasSelection`), while the permanent record is deferred to a microtask, so it is
+    // checked after a flush.
     rerender({ hasSelection: true });
     expect(result.current.visible).toBe(false);
     await waitFor(() => {
       expect(window.localStorage.getItem(SAMPLE_NODE_HINT_DISMISSED_KEY)).toBe('1');
     });
 
-    // 선택을 해제해도(노드 닫기) 힌트는 다시 뜨지 않는다 — 영구 소멸.
+    // Clearing the selection (closing the node) does not bring the hint back — it is permanently retired.
     rerender({ hasSelection: false });
     expect(result.current.visible).toBe(false);
   });

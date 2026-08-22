@@ -2,14 +2,17 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **걸어온 길 왕복** (2026-08-13 걷기에서 승격 — 이 여정을 재는 게이트가 0개였다).
+ * **The trail round trip** (promoted from the 2026-08-13 walkthrough — zero gates
+ * measured this journey).
  *
- * 지도의 방문 자취는 소유자가 직접 고른 기능(발자국 번호·자취 팝오버)인데,
- * 「쌓인다 → 목록이 맞다 → 뒤로 점프한다 → 지운다」를 이어 재는 검사가 없었다.
- * 키보드 걷기 스펙은 방향키 이동만 보고 자취 UI 는 안 본다.
+ * The map's visit trail is a feature the owner chose personally (footprint numbers,
+ * the trail popover), yet no check measured "it accumulates → the list is right →
+ * jumping back works → clearing works" end to end. The keyboard walk spec covers
+ * arrow-key movement only and never looks at the trail UI.
  *
- * 세 걸음을 팝오버 행 이동으로 쌓는다(같은 노드 재클릭은 문서 열기로 빠지는
- * 별도 계약이라 쓰지 않는다 — 첫 시도가 그렇게 문서함으로 이탈했다, 실측).
+ * Three steps are accumulated by moving through popover rows (re-clicking the same
+ * node is a separate contract that opens the document, so it is not used — the first
+ * attempt exited to the docs view that way, measured).
  */
 test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워진다", async ({ page }) => {
   test.setTimeout(120_000);
@@ -24,7 +27,7 @@ test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워
       () => (window as unknown as { __atlasMap: { selection: () => { nodeId: string | null } } }).__atlasMap.selection().nodeId,
     );
 
-  // 1걸음 — 주문 도메인 클릭 (캔버스 좌표)
+  // Step 1 — click the orders domain (canvas coordinates)
   const t = await page.evaluate(() => {
     const m = (window as unknown as { __atlasMap?: { nodes: () => Array<{ hidden: boolean; label: string; x: number; y: number }> } }).__atlasMap;
     const box = document.querySelector('[data-testid="topology-map-v2-canvas"]')?.getBoundingClientRect();
@@ -37,7 +40,7 @@ test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워
     .poll(selection, { timeout: 15_000, message: "domain:order 로 안 걸어갔다" })
     .toBe("domain:order");
 
-  // 2·3걸음 — 팝오버 행으로 이동
+  // Steps 2 and 3 — move via popover rows
   await page.getByText("장바구니", { exact: true }).first().click();
   await expect
     .poll(selection, { timeout: 15_000, message: "capability:cart 로 안 걸어갔다" })
@@ -47,23 +50,23 @@ test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워
     .poll(selection, { timeout: 15_000, message: "capability:checkout 로 안 걸어갔다" })
     .toBe("capability:checkout");
 
-  // 칩이 세 걸음을 센다
+  // The chip counts three steps
   const chip = page.getByText(/걸어온 길 · 3/);
   await expect(chip, "자취 칩이 걸음 수를 안 센다").toBeVisible();
   await chip.click();
   await page.waitForTimeout(700);
 
-  // 목록 — 지금 여기 + 1걸음 전 + 2걸음 전
+  // The list — here now, one step back, two steps back
   await expect(page.getByText("지금 여기")).toBeVisible();
   await expect(page.getByText("1걸음 전")).toBeVisible();
   await expect(page.getByText("2걸음 전")).toBeVisible();
 
-  // 뒤로 점프 — 2걸음 전(주문) 행을 누르면 선택이 돌아간다
+  // Jump back — pressing the two-steps-back (orders) row returns the selection
   await page.getByText("주문", { exact: true }).last().click();
   await page.waitForTimeout(900);
   expect(await selection(), "자취 행이 그 노드로 데려가지 않았다").toBe("domain:order");
 
-  // 지우기 — 칩이 사라진다
+  // Clear — the chip disappears
   await page.getByText(/걸어온 길 · \d/).click();
   await page.waitForTimeout(500);
   await page.getByText("지우기", { exact: true }).click();

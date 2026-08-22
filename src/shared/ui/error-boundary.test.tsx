@@ -36,7 +36,7 @@ describe('ErrorBoundary', () => {
   });
 
   it('children render 가 throw 하면 fallback 렌더', () => {
-    // suppress JSDOM 의 React error logging — 의도적 throw 라 출력 깨끗하게.
+    // Suppress JSDOM's React error logging — the throw is deliberate, so keep the output clean.
     const original = console.error;
     console.error = () => {};
     try {

@@ -69,7 +69,7 @@ describe("isEdgeCulled", () => {
   });
 });
 
-/** B2 잔여 — 관통 엣지(끝점 0개 가시)만 참, 끝점 하나라도 보이면 거짓. */
+/** True only for edges that cross the viewport with neither endpoint visible. */
 describe("isPassthroughEdge", () => {
   it("両끝점 화면 밖 + 곡선 관통 = 강등 대상", () => {
     expect(isPassthroughEdge({ x: -400, y: 400 }, { x: W + 400, y: 400 }, 24, W, H)).toBe(true);

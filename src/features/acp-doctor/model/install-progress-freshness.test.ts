@@ -6,12 +6,12 @@ import {
 } from './acp-doctor';
 
 /**
- * **마지막 상태를 들고 있는 것과, 그것을 언제까지 보여 주는 것은 다른 질문이다.**
+ * **Holding the last state and deciding how long to show it are different questions.**
  *
- * Rust 가 실행기별 마지막 설치 결과를 보관하는 이유는 「닫아 둔 사이에 지나간
- * 완료」를 놓치지 않기 위해서다. 그런데 창을 안 두면 **어제 끝난 설치가 오늘
- * 설정을 열 때 「설치했어요」로 뜬다** — 방금 한 일이 아닌 것을 방금 한 것처럼
- * 말하는 셈이고, 이 저장소가 로딩·진행 표면 전반에서 금지해 온 모양이다.
+ * Rust keeps the last install result per runtime so that "a completion that went past while closed"
+ * is not missed. But with no window, **an install that finished yesterday appears as "installed" when
+ * settings are opened today** — stating something that is not what was just done as if it were, the
+ * shape this repository has forbidden across every loading and progress surface.
  */
 describe('들고 있던 설치 상태의 신선도', () => {
   const now = 1_787_000_000_000;
@@ -31,8 +31,8 @@ describe('들고 있던 설치 상태의 신선도', () => {
   });
 
   it('시계가 뒤로 가도 낡음으로 오해하지 않는다', () => {
-    // 시간대 변경·수동 조정으로 경과가 음수가 될 수 있다. 그때 「낡았다」로
-    // 판정하면 방금 끝난 설치가 사라진다.
+    // A timezone change or manual adjustment can make the elapsed time negative. Judging that "stale"
+    // would make an install that just finished disappear.
     expect(isInstallProgressFresh({ at: now + 60_000 }, now)).toBe(true);
   });
 

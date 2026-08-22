@@ -1,5 +1,5 @@
-// Fixture vaults for the vault-health contract test (C1 — 인사이트↔CLI 건강도
-// 불일치). Each case is a set of vault docs ({slug, frontmatter}) fed through
+// Fixture vaults for the vault-health contract test (insights vs CLI health
+// disagreement). Each case is a set of vault docs ({slug, frontmatter}) fed through
 // BOTH the MCP engine health() and the src `computeVaultHealth` mirror; the
 // contract asserts identical status + per-check counts. Single source of truth.
 //
@@ -10,11 +10,11 @@
 
 export const VAULT_HEALTH_CASES = [
   {
-    // 평범한 마크다운(디자인 문서 · 백로그 · 릴리스 노트)은 온톨로지 노드가
-    // **아니다** — `kind:` 가 없다. MCP 컴파일러는 그것을 노드로 세지 않는데
-    // 웹 사본은 세고 있었고, 그래서 우리 자신의 문서함(163개 중 83개가 평범한
-    // 마크다운)에 대해 화면이 「고칠 곳 83군데」라고 말했다. CLI 는 같은 볼트를
-    // 「정상」이라고 답한다 (2026-08-17 실측).
+    // Ordinary markdown (design documents, backlogs, release notes) is **not** an
+    // ontology node — it has no `kind:`. The MCP compiler does not count those as nodes
+    // while the web copy did, so for our own docs folder (83 of 163 files being ordinary
+    // markdown) the screen reported "83 places to fix" while the CLI called the same
+    // vault healthy (measured 2026-08-17).
     name: 'plain markdown without kind: is not a node',
     docs: [
       { slug: 'domains/auth', frontmatter: { kind: 'domain', title: 'Auth', capabilities: ['capabilities/login'] } },
@@ -24,9 +24,9 @@ export const VAULT_HEALTH_CASES = [
     ],
   },
   {
-    // 볼트가 아닌 폴더를 검사하면 둘 다 「정상」이라고 답했다 (2026-08-16 실측:
-    // `health <빈 폴더>` → healthy). 나머지 검사가 전부 셀 것이 없어 통과했기
-    // 때문이다 — 빈 집합 위에서 헛도는 검사는 검사가 아니다.
+    // Checking a folder that is not a vault made both report healthy (measured
+    // 2026-08-16: `health <empty folder>` → healthy), because every other check passed
+    // with nothing to count — a check idling on an empty set is not a check.
     name: 'empty folder is not a healthy vault',
     docs: [],
   },
@@ -87,7 +87,7 @@ export const VAULT_HEALTH_CASES = [
         frontmatter: { kind: 'capability', title: '답변', domain: 'domains/문의-처리' },
       },
       // bare-slug form — must resolve to the same domain (no missing containment
-      // because the domain back-links this one too? no — domain only lists 답변)
+      // because the domain back-links this one too? no — the domain lists only 답변)
       {
         slug: 'capabilities/문의-접수',
         frontmatter: { kind: 'capability', title: '문의 접수', domain: '문의-처리' },
@@ -148,9 +148,10 @@ export const VAULT_HEALTH_CASES = [
     ],
   },
   {
-    // opus5 검수 — 사이클 열거 가지치기(역방향 도달성)가 결과를 바꾸지 않는지
-    // 강하게 잡는 케이스: 길이 4 순환 + 그와 두 노드를 공유하는 길이 3 순환 +
-    // 아무 데도 못 돌아오는 긴 사슬(가지치기가 잘라야 하는 죽은 경로).
+    // A strong case for checking that pruning in cycle enumeration (reverse
+    // reachability) does not change the result: a length-4 cycle, a length-3 cycle
+    // sharing two nodes with it, and a long chain that returns nowhere (the dead path
+    // pruning must cut).
     name: 'overlapping cycles + dead chain → engine and app agree on the count',
     docs: [
       {
@@ -173,9 +174,9 @@ export const VAULT_HEALTH_CASES = [
       { slug: 'capabilities/a', frontmatter: { kind: 'capability', title: 'A', domain: 'domains/core', depends_on: ['capabilities/b'] } },
       { slug: 'capabilities/b', frontmatter: { kind: 'capability', title: 'B', domain: 'domains/core', depends_on: ['capabilities/c'] } },
       { slug: 'capabilities/c', frontmatter: { kind: 'capability', title: 'C', domain: 'domains/core', depends_on: ['capabilities/d', 'capabilities/a'] } },
-      // c → a 는 3-cycle (a → b → c → a) 도 만든다 — 두 순환이 노드를 공유.
+      // c → a also forms a 3-cycle (a → b → c → a) — the two cycles share nodes.
       { slug: 'capabilities/d', frontmatter: { kind: 'capability', title: 'D', domain: 'domains/core', depends_on: ['capabilities/a'] } },
-      // 죽은 사슬: e → f → g (돌아오는 간선 없음)
+      // Dead chain: e → f → g (no edge back)
       { slug: 'capabilities/e', frontmatter: { kind: 'capability', title: 'E', domain: 'domains/core', depends_on: ['capabilities/f'] } },
       { slug: 'capabilities/f', frontmatter: { kind: 'capability', title: 'F', domain: 'domains/core', depends_on: ['capabilities/g'] } },
       { slug: 'capabilities/g', frontmatter: { kind: 'capability', title: 'G', domain: 'domains/core' } },

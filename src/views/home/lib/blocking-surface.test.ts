@@ -11,9 +11,9 @@ describe("shouldSuppressGlobalShortcuts", () => {
     expect(shouldSuppressGlobalShortcuts({ createNodeOpen: true, tourOpen: false })).toBe(true);
   });
 
-  // opus5 검수 실측 회귀: 투어가 열린 채 `?` 를 누르면 단축키 모달이 투어 카드
-  // 위에 겹쳐 떴다 — role="dialog" 두 개 동시 개방. 투어도 자체 blocker/포커스
-  // 트랩을 가진 블로킹 표면이므로 같은 규칙을 받는다.
+  // Measured regression: pressing `?` during the tour stacked the shortcut modal
+  // over the tour card — two live role="dialog" surfaces. The tour is a blocking
+  // surface with its own blocker and focus trap, so it takes the same rule.
   it("가이드 투어가 열려 있어도 단축키를 삼킨다 — 두 오버레이 동시 개방 차단", () => {
     expect(shouldSuppressGlobalShortcuts({ createNodeOpen: false, tourOpen: true })).toBe(true);
   });

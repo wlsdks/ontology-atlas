@@ -4,26 +4,28 @@ import { useEffect, useState } from 'react';
 import { controlClass } from '@/shared/ui';
 
 /**
- * 경계 카드 — "여기서 못 하는 일" 을 정직하게 말하고, 할 수 있는 곳으로
- * 넘겨준다.
+ * The boundary card — it states honestly 「what cannot be done here」 and hands over
+ * to where it can.
  *
- * 이 패널의 에이전트는 문서 폴더만 본다. 코드가 답을 정하는 질문(이 개념이 실제
- * 구현과 맞나 · 이 경로가 아직 있나)은 **사용자 자신의 터미널**에서 여는 AI
- * 가 낫다 — 세션이 이어지고, 탭이 있고, 자기 설정이 그대로다. 그래서 카드가
- * 주는 것은 그 자리로 가는 두 줄이다: 볼트로 이동하는 `cd` 와, 붙여넣으면
- * 바로 일이 시작되는 문장.
+ * This panel's agent sees only the docs folder. Questions the code decides (does
+ * this concept match the real implementation, does this path still exist) are
+ * better answered by the AI **in the user's own terminal** — the session continues,
+ * there are tabs, and their own configuration is intact. So what the card gives is
+ * the two lines that get you there: the `cd` into the vault, and a sentence that
+ * starts the work the moment it is pasted.
  *
- * 앱이 창을 내주지 않아도 되돌아오는 절반은 이미 있다 — 밖에서 고친 결과는
- * 볼트 워처가 지도에 그린다.
+ * Even without the app providing a window, half of the return trip already exists —
+ * the vault watcher draws whatever was changed outside onto the map.
  *
- * 지고 있는 싸움을 이기려 하지 않고 넘기는 것이 이 표면의 경계다.
+ * Handing over rather than trying to win a losing fight is this surface's boundary.
  *
- * ## 경계 문장이 왜 여기로 들어왔나
+ * ## Why the boundary sentence moved here
  *
- * "코드까지 봐야 하는 일은 터미널의 AI 가 낫다" 는 문장은 대화 내내 입력칸
- * 아래 상주하며 두 줄을 먹었는데, 그 문장이 쓸모 있는 순간은 **넘길 때**
- * 하나뿐이다. 그래서 이제 그 자리로 내려왔다 — 넘기는 이유와 넘기는 방법이
- * 한 자리에 있어야 문장이 안내가 된다.
+ * The sentence "work that needs the code too is better in the terminal AI" used to
+ * sit permanently below the composer, eating two lines through the whole
+ * conversation, while the only moment it is useful is **when handing over**. So it
+ * moved down to that position — the reason for handing over and the way to hand
+ * over have to be in one place for the sentence to be guidance.
  */
 export function AgentHandoffPacket({
   vaultPath,
@@ -33,7 +35,7 @@ export function AgentHandoffPacket({
   vaultPath: string;
   focusedSlug: string | null;
   labels: {
-    /** 왜 넘기는가 — 이 표면의 경계. */
+    /** Why hand over — this surface's boundary. */
     boundary: string;
     note: string;
     copy: string;
@@ -41,15 +43,16 @@ export function AgentHandoffPacket({
   };
 }) {
   const [copied, setCopied] = useState(false);
-  // 확인 문구는 **방금** 복사했다는 뜻이라야 한다. 한 번 눌러 영구히 "복사됨"
-  // 으로 남으면 나중에 본 사람에게 거짓이 된다 — 눌렀을 때만 잠깐 참이다.
+  // The confirmation has to mean it was copied **just now**. Pressing once and
+  // leaving "copied" there permanently makes it a lie to whoever looks later — it is
+  // true only briefly, right after the press.
   useEffect(() => {
     if (!copied) return;
     const timer = window.setTimeout(() => setCopied(false), 1600);
     return () => window.clearTimeout(timer);
   }, [copied]);
-  // 개념 이름은 화면이 부르는 이름 그대로 — 붙여넣는 즉시 볼트에서 풀려야
-  // 한다. (호출부가 `resolveNodeAgentTarget` 결과를 넘긴다.)
+  // The concept name is exactly what the screen calls it — it has to resolve in the
+  // vault the moment it is pasted. (The caller passes the `resolveNodeAgentTarget` result.)
   const packet = [
     `cd ${vaultPath}`,
     '',

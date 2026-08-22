@@ -1,39 +1,39 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 /**
- * 개인화 환경설정 (Phase 5, `docs/plans/DESIGN-OVERHAUL-2026-07-25.md` #20/#21) —
- * 지도 캔버스 배경 3종과 노드 아이콘 세트 2종을 로컬에 저장하고, 모든 표면이
- * 같은 값을 실시간으로 읽는 단일 진실원.
+ * Appearance preferences (`docs/plans/DESIGN-OVERHAUL-2026-07-25.md` #20/#21) —
+ * the single source of truth for map canvas background and node glyph set, read
+ * live by every surface.
  *
- * 왜 별도 스토어인가: 값이 지도 캔버스(비-React 렌더러)와 DOM 글리프
- * (INDEX·공방·팝오버 등 여러 위젯)에서 동시에 읽혀야 하고, 설정에서 바꾸면
- * 두 표면이 함께 즉시 바뀌어야 한다("한 표면만 안 바뀌면 결함", fable). Context
- * 프로바이더를 앱 전역에 두르는 대신, localStorage 를 진실원으로 두고
- * `useSyncExternalStore` 구독 + 커스텀 이벤트로 라이브 갱신한다 —
- * `docs-vault-local` / `audiencePlain` 선례와 같은 로컬-퍼스트 지속 문법.
+ * **Why a store rather than a Context provider.** These values are read from the
+ * map canvas (a non-React renderer) *and* from DOM glyphs in several widgets at
+ * the same time, and a change in settings has to reach both instantly — fable:
+ * "한 표면만 안 바뀌면 결함" (if only one surface updates, that is a defect). So
+ * localStorage is the source of truth and `useSyncExternalStore` + a custom event
+ * deliver the live update, the same local-first persistence idiom as
+ * `docs-vault-local` / `audiencePlain`.
  *
- * 지속은 localStorage 뿐(백엔드 0). SSR/정적 export 프리렌더에서는 기본값을
- * 반환해 hydration 불일치를 피한다(`getServerSnapshot`).
+ * SSR / static-export prerender returns the defaults (`getServerSnapshot`) so
+ * hydration cannot mismatch.
  */
 
 /**
- * 지도 바닥 4종 — 도트(정적 기본) + 움직이는 셋.
+ * Map canvas backgrounds.
  *
- * ## 셋만 남은 이유 (카운슬 2026-07-29 + 소유자 확정)
+ * **Why only three survived** (council 2026-07-29, owner confirmed). Eleven
+ * candidates were rejected, and the measurement said the cause was the *shape*
+ * of the ink, not its amount: every rejected background was lines or closed
+ * figures — the same visual grammar as nodes and edges — so it competed with the
+ * graph for the eye. Dots survived precisely because they do not pretend to be
+ * data. Continuous particles were also rejected: 78% of the pixels that changed
+ * per frame carried no information.
  *
- * 후보 열한 개가 전량 기각된 뒤 실측으로 원인이 나왔다: 잉크 **양**이 아니라
- * **형태**였다. 기각된 것들은 전부 선이거나 닫힌 도형 — 노드·관계선과 같은
- * 문법이라 "누가 주인공인가"를 다퉜다. 도트가 살아남은 이유는 정확히 **데이터인
- * 척을 안 해서**다. 그리고 상시 입자는 프레임당 바뀌는 픽셀의 78%가 정보를
- * 나르지 않았다.
+ * - `dot` — static blueprint grid. Says only that a coordinate system exists.
+ * - `web` — proximity constellation. The one moving background kept (owner call).
+ * - `depth` — the same dots in three layers, reacting to the camera **only**.
+ *   Zero autonomous motion, so idle burn is structurally impossible.
  *
- * - `dot` — 정적 청사진 격자. 좌표계가 있다는 것만 말한다.
- * - `web` — 근접 성좌. 유일하게 살아남은 움직이는 배경(소유자 확정).
- * - `depth` — 깊이 도트. 같은 도트를 세 층으로 두고 **카메라에만** 반응한다.
- *   자율 운동이 0이라 유휴 연소가 구조적으로 불가능하다.
- *
- * 폐기: `constellation`(정적 성좌) · `contour`(등고선) · `flow`(흐름장) ·
- * `gravity`(중력장).
+ * Retired: `constellation`, `contour`, `flow`, `gravity`.
  */
 export type CanvasBackground = "dot" | "web" | "depth";
 export type GlyphSet = "geometric" | "line";
@@ -42,15 +42,15 @@ export const CANVAS_BACKGROUNDS: readonly CanvasBackground[] = ["dot", "web", "d
 export const GLYPH_SETS: readonly GlyphSet[] = ["geometric", "line"];
 
 /**
- * 폐기된 값 → 계승자. 저장된 설정을 조용히 기본값으로 떨어뜨리면 **사용자가 고른
- * 것이 소리 없이 사라진다** — 성좌를 고른 사람은 성좌 계열(근접 성좌)로, 등고선을
- * 고른 사람은 남은 정적 배경(도트)으로 데려간다.
+ * Retired value → successor. Falling back to the default would silently discard
+ * what the user picked, so each retired background maps to its nearest survivor:
+ * constellation-like choices go to `web`, static ones to `dot`.
  */
 const RETIRED_CANVAS_BACKGROUNDS: Readonly<Record<string, CanvasBackground>> = {
   constellation: "web",
   contour: "dot",
-  // 2026-07-29 카운슬 + 소유자 확정 — 흐름장·중력장 폐기. 둘 다 움직임을 고른
-  // 사람이므로 살아남은 움직이는 배경(근접 성좌)으로 데려간다.
+  // Retired by the 2026-07-29 council; both were chosen for their motion, so
+  // they map to the surviving moving background.
   flow: "web",
   gravity: "web",
 };
@@ -63,7 +63,7 @@ const GLYPH_SET_KEY = "ontology-atlas:glyph-set:v1";
 const FOOTPRINT_KEY = "ontology-atlas:footprint:v1";
 const EXPAND_KEY = "ontology-atlas:expand:v1";
 
-/** 설정 변경 시 같은 탭의 구독자에게 알리는 커스텀 이벤트(cross-tab 은 `storage`). */
+/** Same-tab notification; cross-tab arrives through the `storage` event. */
 const PREFERENCE_EVENT = "ontology-atlas:appearance-preference-change";
 
 function isCanvasBackground(value: string | null): value is CanvasBackground {
@@ -74,7 +74,7 @@ function isGlyphSet(value: string | null): value is GlyphSet {
   return value !== null && (GLYPH_SETS as readonly string[]).includes(value);
 }
 
-/** 저장값 → 살아 있는 값. 폐기된 값은 계승자로, 모르는 값은 기본값으로. 순수 함수. */
+/** Stored value → live value: retired ones to their successor, unknown ones to the default. */
 export function resolveCanvasBackground(saved: string | null): CanvasBackground {
   if (isCanvasBackground(saved)) return saved;
   if (saved !== null && saved in RETIRED_CANVAS_BACKGROUNDS) return RETIRED_CANVAS_BACKGROUNDS[saved];
@@ -110,7 +110,7 @@ export function writeCanvasBackground(value: CanvasBackground): void {
   try {
     window.localStorage.setItem(CANVAS_BACKGROUND_KEY, value);
   } catch {
-    // localStorage 불가(프라이빗 모드 등) — 세션 내 이벤트만으로도 라이브 갱신은 된다.
+    // Blocked storage (private mode) is not an error: the event still updates this session.
   }
   notifyPreferenceChange();
 }
@@ -120,12 +120,12 @@ export function writeGlyphSet(value: GlyphSet): void {
   try {
     window.localStorage.setItem(GLYPH_SET_KEY, value);
   } catch {
-    // 위와 동일 — 저장 실패해도 이벤트로 현재 세션은 갱신된다.
+    // Storage blocked; the event still updates this session.
   }
   notifyPreferenceChange();
 }
 
-/** 같은 탭 커스텀 이벤트 + cross-tab `storage` 이벤트 둘 다 구독. */
+/** Same-tab custom event plus the cross-tab `storage` event. */
 function subscribe(onChange: () => void): () => void {
   if (typeof window === "undefined") return () => undefined;
   window.addEventListener(PREFERENCE_EVENT, onChange);
@@ -148,33 +148,30 @@ export function useGlyphSet(): GlyphSet {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── 악센트 ──────────────────────────────────────────────────────────────── */
+/* ── Accent ─────────────────────────────────────────────────────────────── */
 
 /**
- * 앱의 유일한 채색. 기본은 **인디고**(`#5e6ad2`)이고, **잉걸**(ember,
- * `#c14a24`)을 옵트인으로 고를 수 있다.
+ * The app's only chromatic colour: indigo (`#5e6ad2`) by default, ember
+ * (`#c14a24`) opt-in.
  *
- * 2026-08-18 오전에 기본을 잉걸로 바꿨다가 같은 날 소유자가 되돌렸다. 되돌릴 때
- * 기본값 상수만 뒤집지 않고 `globals.css` 의 두 팔레트 값을 통째로 맞바꿔
- * 인디고를 `:root` 로 올렸다 — 토큰 이름이 `--color-indigo-*` 라 기본 팔레트에
- * 구리색이 앉아 있으면 이름이 값에 대해 거짓말을 하고, 그 거짓말은 게이트가
- * 못 잡는다. 근거는 그 파일 맨 끝 블록의 독주석.
+ * 2026-08-18: the default was switched to ember in the morning and the owner
+ * reverted it the same day. The revert swapped the two palette bodies in
+ * `globals.css` so indigo sits on `:root`, rather than only flipping the default
+ * constant here — the tokens are named `--color-indigo-*`, so a copper value in
+ * the base palette would make the names lie about their values, and no gate
+ * catches that kind of lie.
  *
- * ## 왜 «둘 중 하나» 이고 컬러피커가 아닌가
+ * **Why exactly two, and not a colour picker.** The charter's "one accent" rule
+ * is about contrast, not taste: both values were measured to clear AA for white
+ * text on the filled control and for ink on all three dark surfaces. An arbitrary
+ * colour throws that guarantee away, so the choice is between two verified sets.
  *
- * 헌장이 *"채색은 인디고 하나"* 라고 못박은 이유는 취향이 아니라 **대비**다 —
- * 두 값 다 채움 위 흰 글자가 AA 를 넘고, 다크 3표면 위 잉크가 전부 AA 를 넘는
- * 것을 실측으로 확인한 팔레트다. 임의의 색을 고르게 하면 그 보증이 사라진다.
- * 그래서 고를 수 있는 것은 **검증된 두 벌**뿐이다.
+ * **What this preference cannot change.** App icon, favicon and og images are
+ * baked at build time (`scripts/build-brand-assets.mjs`), so the colour in the
+ * Dock is fixed to whichever was chosen then — the settings screen says so.
  *
- * ## 이 설정이 못 바꾸는 것
- *
- * 앱 아이콘 · 파비콘 · og 이미지는 **구운 그림**이라 런타임에 못 바꾼다
- * (`scripts/build-brand-assets.mjs` 가 정본). Dock 에 뜨는 색은 빌드 시점에
- * 고른 하나로 고정이다 — 설정 화면이 그 사실을 말한다.
- *
- * 적용은 `:root` 의 `data-accent` 속성 한 곳이고, CSS 가 그것으로 토큰 52개를
- * 갈아끼운다(`app/globals.css` 맨 끝 블록).
+ * Applied at one place, the `data-accent` attribute on `:root`, from which CSS
+ * swaps 52 tokens (last block of `app/globals.css`).
  */
 export type Accent = "indigo" | "ember";
 
@@ -184,7 +181,7 @@ export const DEFAULT_ACCENT: Accent = "indigo";
 
 const ACCENT_KEY = "ontology-atlas:accent:v1";
 
-/** `:root` 에 실리는 속성 이름 — CSS 의 `:root[data-accent="ember"]` 와 짝이다. */
+/** Paired with the CSS selector `:root[data-accent="ember"]`. */
 export const ACCENT_ATTRIBUTE = "data-accent";
 
 function isAccent(value: string | null): value is Accent {
@@ -202,9 +199,9 @@ export function readAccent(): Accent {
 }
 
 /**
- * `:root` 에 속성을 반영한다. 기본값일 때는 속성을 **지운다** — 남겨 두면
- * 「기본값인데 속성이 있는 상태」와 「명시적으로 고른 상태」가 DOM 에서 구별되지
- * 않아, 나중에 기본값을 바꿀 때 옛 기본값이 속성으로 굳어 버린다.
+ * The default **removes** the attribute rather than writing it. Leaving it would
+ * make "on the default" and "explicitly chose this" indistinguishable in the DOM,
+ * so a later change of default would find the old default frozen into markup.
  */
 export function applyAccentAttribute(value: Accent): void {
   if (typeof document === "undefined") return;
@@ -218,7 +215,7 @@ export function writeAccent(value: Accent): void {
   try {
     window.localStorage.setItem(ACCENT_KEY, value);
   } catch {
-    // 위와 동일 — 저장이 막혀도 이벤트와 속성 반영으로 현재 세션은 갱신된다.
+    // Storage blocked; the event still updates this session.
   }
   applyAccentAttribute(value);
   notifyPreferenceChange();
@@ -230,24 +227,23 @@ export function useAccent(): Accent {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── 프레임 계기 ─────────────────────────────────────────────────────────── */
+/* ── Frame meter ────────────────────────────────────────────────────────── */
 
 /**
- * 지도 위에 프레임 계기를 띄울까.
+ * Whether the frame meter is drawn over the map.
  *
- * ## 왜 설정에 있고 기본이 꺼짐인가
+ * **Off by default** because it is a diagnostic, not product chrome: permanent
+ * numbers over the map are noise to someone who came to read the graph, and the
+ * attention budget belongs to the map. It lives opt-in in settings, next to the
+ * footprint controls.
  *
- * 이건 **진단 도구**지 제품 크롬이 아니다. 지도를 읽으러 온 사람에게 숫자가
- * 상시로 떠 있으면 그건 정보가 아니라 소음이고, 이 앱의 주목 예산은 지도가
- * 가져야 한다. 그래서 발자국과 같은 자리(설정 →「지도」)에 옵트인으로 둔다.
- *
- * ## 왜 만드는가 — 「내 환경에선 안 느린데요」를 끝내려고
- *
- * 2026-07-31 소유자가 노드 드래그 렉을 보고했는데 재현 환경(Playwright
- * Chromium)에서는 프레임 작업이 2.1ms 였다. 녹화 영상의 프레임 타임스탬프로는
- * 150ms 정지가 실재했다 — **같은 코드가 환경에 따라 다르게 아팠다.** 그때
- * 필요한 것은 개발자의 재현이 아니라 **아픈 그 자리에서 나오는 숫자**다.
- * 화면에 숫자가 없으면 성능 논의는 매번 «느낌 vs 다른 사람의 벤치마크» 가 된다.
+ * **Why it exists at all** — to end "it isn't slow on my machine". On 2026-07-31
+ * the owner reported node-drag lag while the reproduction environment (Playwright
+ * Chromium) measured 2.1 ms of frame work; frame timestamps from a screen
+ * recording showed real 150 ms stalls. The same code hurt differently per
+ * environment, so what was needed was a number from the machine that hurts, not a
+ * developer's repro. Without an on-screen number every performance discussion is
+ * one person's feeling against someone else's benchmark.
  */
 const FRAME_METER_KEY = "atlas.appearance.frameMeter";
 
@@ -267,7 +263,7 @@ export function writeFrameMeter(value: boolean): void {
   try {
     window.localStorage.setItem(FRAME_METER_KEY, value ? "on" : "off");
   } catch {
-    // 위와 동일 — 저장이 막혀도 이벤트로 현재 세션은 갱신된다.
+    // Storage blocked; the event still updates this session.
   }
   notifyPreferenceChange();
 }
@@ -278,21 +274,23 @@ export function useFrameMeter(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── 3D 보기 (지도 뷰 모드) ──────────────────────────────────────────────── */
+/* ── 3D view (map view mode) ────────────────────────────────────────────── */
 
 /**
- * 지도를 kind 동심 링의 돔으로 볼까 — 소유자 요청(2026-08-18, "실제 우리
- * 지도에서 3D 형태로" + "돔이면서 확대도 되고 요리조리 움직이면서")로 생긴
- * 옵트인 뷰 모드. 지도는 2D(기본)와 3D 딱 두 가지 뷰만 가지며, 토글은 지도
- * 상단 툴바의 「3D」 칩 한 곳이다(설정 시트에 중복 스위치를 두지 않는다).
+ * Whether the map is drawn as a dome of concentric `kind` rings.
  *
- * ## 왜 기본이 꺼짐인가 — 취향이 아니라 실측이다
+ * Owner request, 2026-08-18: "실제 우리 지도에서 3D 형태로" + "돔이면서 확대도
+ * 되고 요리조리 움직이면서" (put our actual map into a 3D dome that still zooms
+ * and can be moved around freely). The map has exactly two views, 2D (default)
+ * and 3D, toggled from one place — the "3D" chip in the map toolbar. No duplicate
+ * switch in the settings sheet.
  *
- * 같은 데이터를 돔으로 돌리면 엣지 교차가 크게 뛴다(히어로 실측 58.0 →
- * 190.7, 3.29× — 교차 최소화가 그래프 이해도의 지배 요인, Purchase 1997).
- * 그래서 기본 지도는 읽기 좋은 평면을 지키고, 돔은 구조를 형태로 보고 싶은
- * 사람이 켠다. 구현과 실측 비용:
- * `src/widgets/topology-map-v2/model/dome-view.ts` · `docs/DECISIONS.md`.
+ * **Off by default on a measurement, not a preference.** The same data in the
+ * dome raises edge crossings sharply: 58.0 → 190.7 on the hero graph, 3.29×.
+ * Crossing count dominates graph readability (Purchase 1997), so the default map
+ * stays planar and the dome is for people who want to see structure as shape.
+ * Geometry and cost: `src/widgets/topology-map-v2/model/dome-view.ts`,
+ * `docs/DECISIONS.md`.
  */
 const VIEW_3D_KEY = "atlas.appearance.view3d";
 
@@ -312,31 +310,29 @@ export function useView3d(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── 배치 기준 (지도 3D) ─────────────────────────────────────────────────── */
+/* ── Arrangement (3D map) ───────────────────────────────────────────────── */
 
 /**
- * 3D 돔의 **방위**를 무엇이 정하나 — 「소유」인가 「결합」인가.
+ * What decides a node's **bearing** on the 3D dome. This is a question, not a
+ * style, so the settings copy is written as two questions:
  *
- * 이것은 스타일이 아니라 **질문**이다. 그래서 설정 문구도 두 질문으로 쓴다:
+ * - `ownership` (default) — *who contains what.* Bearing comes from the
+ *   containment parent, children spread inside the parent's sector, so ownership
+ *   is readable as shape.
+ * - `coupling` — *what attaches to what.* Every relation contributes to the
+ *   bearing (with per-ring angular relaxation), which exposes `depends_on`
+ *   clusters that containment was hiding within a tier.
  *
- * - `ownership`(기본) — *누가 무엇을 담는가.* 방위가 containment 부모에게서
- *   온다. 자식이 부모 부채꼴 안에 퍼지므로 소유 구조가 형태로 읽힌다.
- * - `coupling` — *무엇이 무엇에 붙는가.* 방위를 **모든 관계**가 정한다(링별
- *   각도 완화). containment 가 가려 놓은 `depends_on` 뭉침이 같은 층 안에서
- *   드러난다.
+ * **Not a free 3D force cloud.** Releasing the tier (height) would discard the
+ * typed fact that height carries and leave only a pretty cloud. Only the bearing
+ * changes here; height is invariant across arrangements. Geometry, determinism,
+ * and the rejected families: the `DomeArrangement` doc-block in
+ * `src/widgets/topology-map-v2/model/dome-view.ts`, and `docs/DECISIONS.md`.
  *
- * ## 왜 「자유 3D 힘 구름」이 아닌가
- *
- * 티어(높이)를 풀면 높이가 나르던 타입 사실이 사라지고 남는 것은 예쁜 구름이다.
- * 여기서 바꾸는 것은 **방위 하나뿐**이고 높이는 어느 배치에서도 불변이다.
- * 기하·결정론·기각한 계열들의 근거: `topology-map-v2/model/dome-view.ts` 의
- * `DomeArrangement` 독블록 · `docs/DECISIONS.md`.
- *
- * ## 왜 설정 시트인가 (3D 칩과 다르게)
- *
- * 3D 켬/끔은 **지금 보는 것**을 바꾸므로 지도 위 툴바에 산다. 배치 기준은
- * 한 번 정해 두고 잘 안 바꾸는 성향이라 설정에 둔다 — 그리고 툴바에 칩을
- * 더하면 이 저장소가 반려해 둔 «모드 증식»이 크롬에서 시작된다.
+ * **Why this lives in settings while the 3D toggle lives in the toolbar.** 3D
+ * on/off changes what you are looking at right now; arrangement is set once and
+ * rarely revisited. Adding another toolbar chip is also how the mode
+ * proliferation this repo has rejected starts.
  */
 export type MapArrangement = "ownership" | "coupling";
 
@@ -365,7 +361,7 @@ export function writeMapArrangement(value: MapArrangement): void {
   try {
     window.localStorage.setItem(MAP_ARRANGEMENT_KEY, value);
   } catch {
-    // localStorage 불가(프라이빗 모드 등) — 세션 내 이벤트만으로도 라이브 갱신은 된다.
+    // Storage blocked; the event still updates this session.
   }
   notifyPreferenceChange();
 }
@@ -376,20 +372,17 @@ export function useMapArrangement(): MapArrangement {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── 에이전트 활동 (작업 중 표시 · 알림) ──────────────────────────────────── */
+/* ── Agent activity (working indicator, notifications) ──────────────────── */
 
 /**
- * 「작업 중 표시」와 「알림」.
+ * **On by default**, unlike the frame meter, and for the opposite reason. The
+ * frame meter is a diagnostic; this is a fact — something is changing your folder
+ * right now. Hiding that behind an opt-in means whoever never turned it on sees
+ * nothing while an agent edits their vault. So the default is on and the setting
+ * exists to turn it *off*.
  *
- * ## 왜 기본이 **켜짐**인가 — 프레임 계기와 이유가 다르다
- *
- * 프레임 계기는 **진단 도구**라 기본이 꺼짐이다(지도를 읽으러 온 사람에게
- * 숫자는 소음이다). 이건 진단이 아니라 **사실**이다 — *"내 폴더에서 지금 일이
- * 벌어지고 있다"*. 그 사실을 옵트인 뒤에 숨기면, 켠 적 없는 사람은 자기
- * 폴더가 남에게 고쳐지는 동안 아무것도 못 본다. 그래서 기본은 켜짐이고,
- * 설정은 **끄는** 쪽으로만 쓰인다.
- *
- * 대신 값을 크게 잡지 않는다: 표시는 조용한 상태 칩 하나, 알림은 작업 단위뿐.
+ * The cost is kept small in exchange: one quiet status chip, and notifications
+ * only at task granularity.
  */
 const AGENT_STATUS_KEY = "atlas.agentActivity.status";
 const AGENT_NOTIFICATIONS_KEY = "atlas.agentActivity.notifications";
@@ -398,7 +391,7 @@ const AGENT_NOTIFICATION_KINDS_KEY = "atlas.agentActivity.kinds";
 export const DEFAULT_AGENT_ACTIVITY_STATUS = true;
 export const DEFAULT_AGENT_NOTIFICATIONS = true;
 
-/** off 를 명시적으로 저장한다 — 「키가 없음」과 「껐음」을 구별하기 위해. */
+/** Writes "off" explicitly so "never set" and "turned off" stay distinguishable. */
 function readOnOff(key: string, fallback: boolean): boolean {
   if (typeof window === "undefined") return fallback;
   try {
@@ -416,7 +409,7 @@ function writeOnOff(key: string, value: boolean): void {
   try {
     window.localStorage.setItem(key, value ? "on" : "off");
   } catch {
-    // 위와 동일 — 저장이 막혀도 이벤트로 현재 세션은 갱신된다.
+    // Storage blocked; the event still updates this session.
   }
   notifyPreferenceChange();
 }
@@ -450,9 +443,9 @@ export function useAgentNotificationsEnabled(): boolean {
 }
 
 /**
- * 어떤 갈래를 받을지. **저장하는 것은 「끈 갈래」다** — 켠 갈래를 저장하면
- * 나중에 갈래가 하나 늘었을 때 기존 사용자에게만 조용히 꺼진 채로 나온다.
- * 끈 것만 적으면 새 갈래는 모두에게 켜진 채로 도착한다(기본은 전부 켜짐).
+ * Stores the **muted** kinds, not the enabled ones. Storing the enabled set would
+ * make any newly added kind arrive silently off for existing users only; storing
+ * mutes means a new kind arrives on for everyone (the default is all on).
  */
 const EMPTY_MUTED: ReadonlySet<string> = new Set();
 
@@ -475,14 +468,14 @@ export function writeMutedAgentNotificationKinds(kinds: ReadonlySet<string>): vo
   try {
     window.localStorage.setItem(AGENT_NOTIFICATION_KINDS_KEY, JSON.stringify([...kinds].sort()));
   } catch {
-    // 위와 동일.
+    // Storage blocked; the event still updates this session.
   }
   notifyPreferenceChange();
 }
 
 /**
- * `useSyncExternalStore` 는 스냅샷을 `Object.is` 로 비교하므로 매번 새 Set 을
- * 돌려주면 무한 렌더가 된다 — 발자국과 같은 캐시 문법.
+ * `useSyncExternalStore` compares snapshots with `Object.is`, so returning a
+ * fresh Set on every call loops forever. Cache it against the raw stored string.
  */
 let mutedCacheKey: string | null = null;
 let mutedCacheValue: ReadonlySet<string> = EMPTY_MUTED;
@@ -507,80 +500,76 @@ export function useMutedAgentNotificationKinds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── 발자국 (걸어온 길) ──────────────────────────────────────────────────── */
+/* ── Footprints (the path walked) ───────────────────────────────────────── */
 
 /**
- * 발자국을 어디에 놓는가.
- *
- * - `right` — 진행 방향 기준 **오른쪽 한 줄**. 선을 가리지 않고 "지나갔다"만 말한다.
- * - `both` — 선을 가운데 두고 **좌우 번갈아**. 걷는 사람의 보행에 가장 가깝다.
+ * - `right` — a single line to the right of travel. Says "someone passed here"
+ *   without covering the edge.
+ * - `both` — alternating either side of the edge, closest to a real gait.
  */
 export type FootprintPlacement = "right" | "both";
 
 /**
- * 발자국 색 2택 — 자유 컬러피커가 아니다.
- *
- * 이 지도에서 노랑은 **이미 뜻이 있다**("여기가 중심" — 허브 앰버 `#d4b478`).
- * 발자국을 같은 비트로 칠하면 "이건 중심이다"와 "여기 걸었다"가 한 색이 된다.
- * 그래서 노랑은 쓰되 **같은 계열의 다른 값**(`--color-footprint-trail`)으로 가른다.
+ * Two tones, not a colour picker. Yellow already means something on this map —
+ * hub amber `#d4b478` says "this is a centre" — so painting footprints with the
+ * same bit would collapse "this is central" and "someone walked here" into one
+ * colour. Yellow is still used, but at a different value in the same family
+ * (`--color-footprint-trail`).
  */
 export type FootprintTone = "amber" | "indigo";
 
 /**
- * 선 위 자국의 밀도 — 숫자 슬라이더가 아니다.
- *
- * 개수는 선 길이를 균등 분할한 **장식**인데, 숫자로 노출하면 "이 길을 4번
- * 지났다"는 **데이터**로 읽힌다. 화면이 하지 않은 약속을 컨트롤이 대신 하는
- * 셈이라, 2단(성기게/촘촘히)으로만 연다.
+ * Density, not a numeric slider. The count is decoration — an even division of
+ * edge length — but exposed as a number it reads as data ("this path was walked
+ * 4 times"), a promise the screen never made. Two steps only.
  */
 export type FootprintEdgeDensity = "sparse" | "dense";
 
-/** 밀도 2단 → 선 하나에 찍히는 자국 수. */
+/** Density step → marks stamped along one edge. */
 export const FOOTPRINT_EDGE_COUNT: Readonly<Record<FootprintEdgeDensity, number>> = {
   sparse: 2,
   dense: 5,
 };
 
 /**
- * 선 위 자국의 크기 배율 — **설정이 아니라 상수**다. 자유롭게 열면 자국 크기와
- * 곱해져 간선 자국이 가장 작은 노드(지름 34px)보다 커지는 상태가 만들어진다.
+ * A constant, deliberately not a preference: opened up it multiplies with the
+ * mark size and lets an edge footprint grow larger than the smallest node (34px
+ * diameter).
  */
 export const FOOTPRINT_EDGE_SCALE = 0.9;
 
 /**
- * 발자국 표현 설정 — 소유자가 직접 만지는 값들(2026-07-29 지시).
+ * Footprint appearance — the values the owner tunes directly (2026-07-29).
  *
- * **모양은 설정이 아니다.** 신발 자국(양발)로 고정한다 — 모양까지 고르게 하면
- * 사용자마다 다른 그림을 보게 되고, 그러면 "이 표시가 무슨 뜻인가"를 화면이 더
- * 이상 말할 수 없다. 고를 수 있는 것은 **같은 뜻을 얼마나 세게 말하느냐**뿐이다.
+ * **Shape is not a preference.** It is fixed to a two-foot shoe print: letting
+ * users pick the shape means everyone sees a different picture, and the screen
+ * can then no longer say what the mark means. What is adjustable is only how
+ * loudly the same meaning is said.
  *
- * 소유자가 부른 11값은 8개로 줄었다(카운슬 2026-07-29). 줄인 셋은 전부
- * "값은 있는데 결정이 없던" 것들이다 — 선 자국 크기(고정), 선에서 띄우는 거리
- * (노드와 한 문장으로 통합), 선 자국 수(밀도 2단으로 대체).
+ * The owner named 11 values; the 2026-07-29 council cut them to 8. All three
+ * removed were values with no decision behind them — edge mark size (now fixed),
+ * edge offset (folded into the node's `gap`, because it is one sentence to the
+ * user), and edge mark count (replaced by the two-step density).
  *
- * 이름은 전부 값이 아니라 **보이는 것**으로 짓는다("알파" 대신 "진하기") —
- * 설정 화면은 코드 리뷰가 아니다.
+ * Field names describe what is seen, not the value behind it ("진하기" rather
+ * than "alpha") — a settings screen is not a code review.
  */
 export interface FootprintPreference {
-  /** 자국 크기(px) — 한 발의 긴 축 길이. */
+  /** Long-axis length of one foot, in px. */
   size: number;
-  /** 채움 방식 — 끄면 윤곽선(라인아트). */
+  /** Off draws the outline only. */
   filled: boolean;
-  /** 테두리 굵기(px). **윤곽선일 때만 화면에 영향이 있다**(채움이면 죽은 값). */
+  /** Stroke width in px. **Only visible when unfilled** — a dead value otherwise. */
   strokeWidth: number;
-  /** 노드·선에서 자국을 띄우는 거리(px). 둘이 한 값인 이유는 사용자에게 한 문장이라서다. */
+  /** Offset from node *and* edge, in px. One value because it is one sentence to the user. */
   gap: number;
-  /** 진하기 0..1. */
   opacity: number;
-  /** 색 2택. */
   tone: FootprintTone;
-  /** 번짐(px) — 0 이 기본. 헌장 예외 1건(정적 헤일로)이라 상한이 낮다. */
+  /** Bloom in px; 0 by default. The cap is low because this is the charter's one
+   *  glow exception (a static halo). */
   bloom: number;
-  /** 선 위에도 자국을 남길지. */
   onEdges: boolean;
-  /** 선 위 자국 밀도. */
   edgeDensity: FootprintEdgeDensity;
-  /** 선 기준 놓는 자리. */
   placement: FootprintPlacement;
 }
 
@@ -598,12 +587,13 @@ export const DEFAULT_FOOTPRINT: FootprintPreference = {
 };
 
 /**
- * 각 값의 허용 범위 — 슬라이더 min/max 와 저장값 clamp 의 단일 출처.
+ * Single source for both the slider bounds and the clamp on stored values.
  *
- * 하한이 넉넉하지 않다: `size` 6px 에서는 신발 자국의 앞꿈치/뒤꿈치가 뭉개져
- * **모양이라는 채널이 죽고**, `opacity` 0.1 은 캔버스 위 유효 대비가 3:1 에
- * 한참 못 미친다(도해 실측). 사용자가 고를 수 있는 범위는 **여전히 읽히는
- * 범위**여야 한다 — 안 보이게 만들 자유는 설정이 아니라 결함이다.
+ * The lower bounds are deliberately not generous. At `size` 6px the toe and heel
+ * of the print merge and shape stops being a channel at all; at `opacity` 0.1 the
+ * effective contrast over the canvas falls far short of 3:1 (infoviz
+ * measurement). What a user can pick has to stay within what is still readable —
+ * the freedom to make it invisible is a defect, not a preference.
  */
 export const FOOTPRINT_RANGES = {
   size: { min: 9, max: 26, step: 1 },
@@ -614,8 +604,9 @@ export const FOOTPRINT_RANGES = {
 } as const satisfies Record<string, { min: number; max: number; step: number }>;
 
 /**
- * 프리셋 3 — 첫 화면에 보이는 것. 11개(지금 8개) 슬라이더를 첫 화면에 쏟으면
- * 고르려는 사람이 아니라 컨트롤이 주목을 가져간다. 세부는 「직접 맞추기」 뒤에 있다.
+ * What the settings screen shows first. Spilling all 8 sliders on open gives the
+ * attention to the controls rather than to the choice; the rest sits behind
+ * 「직접 맞추기」 (the manual-tuning disclosure).
  */
 export const FOOTPRINT_PRESETS = {
   subtle: { size: 10, opacity: 0.5, bloom: 0, edgeDensity: "sparse" },
@@ -628,9 +619,10 @@ export type FootprintPresetName = keyof typeof FOOTPRINT_PRESETS;
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
 /**
- * 저장된 JSON → 유효한 설정. 범위 밖 값은 잘라 넣고, 없는 키는 기본값으로 채운다.
- * 순수 함수(테스트 대상) — 손으로 편집된 localStorage 나 구버전 값이 렌더러에
- * `NaN` 을 흘리면 발자국이 통째로 사라지는데, 그 실패는 조용하다.
+ * Stored JSON → a valid preference: out-of-range numbers clamped, missing keys
+ * defaulted. Kept pure and tested because a hand-edited localStorage or an older
+ * shape can otherwise leak `NaN` into the renderer, and the footprints then
+ * vanish entirely with no error.
  */
 export function resolveFootprint(raw: unknown): FootprintPreference {
   if (typeof raw !== "object" || raw === null) return DEFAULT_FOOTPRINT;
@@ -657,7 +649,7 @@ export function resolveFootprint(raw: unknown): FootprintPreference {
   };
 }
 
-/** 프리셋을 현재 설정 위에 얹는다 — 프리셋이 정하지 않은 값(색·배치 등)은 보존한다. */
+/** Layers a preset over the current preference, keeping what the preset does not set. */
 export function applyFootprintPreset(
   current: FootprintPreference,
   preset: FootprintPresetName,
@@ -680,15 +672,15 @@ export function writeFootprint(value: FootprintPreference): void {
   try {
     window.localStorage.setItem(FOOTPRINT_KEY, JSON.stringify(resolveFootprint(value)));
   } catch {
-    // 위와 동일 — 저장 실패해도 이벤트로 현재 세션은 갱신된다.
+    // Storage blocked; the event still updates this session.
   }
   notifyPreferenceChange();
 }
 
 /**
- * 훅은 **매 호출 새 객체를 만들면 안 된다** — `useSyncExternalStore` 는 스냅샷을
- * `Object.is` 로 비교하므로 새 객체를 돌려주면 매 렌더 재구독 → 무한 렌더가 된다.
- * 그래서 파싱 결과를 저장 문자열로 캐시한다.
+ * The hook must not build a new object per call: `useSyncExternalStore` compares
+ * snapshots with `Object.is`, so a fresh object re-subscribes every render and
+ * loops. Cache the parse against the raw stored string.
  */
 let footprintCacheKey: string | null = null;
 let footprintCacheValue: FootprintPreference = DEFAULT_FOOTPRINT;
@@ -713,36 +705,39 @@ export function useFootprint(): FootprintPreference {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── 확장 (접힌 묶음을 펼치는 방식) ───────────────────────────────────────── */
+/* ── Expansion (how a collapsed group opens) ────────────────────────────── */
 
 /**
- * 펼치기 표시 — 접힌 묶음을 **어디에** 놓고 **무엇으로** 여는가.
+ * Where the "expand" control sits and what it looks like. The three options come
+ * from a mockup built to measure them side by side, and moved into the product
+ * unchanged.
  *
- * 시안(`.qa-scratch/proto-expand.html`)이 셋을 나란히 재려고 만든 계측 도구였고,
- * 그 셋을 그대로 제품 설정으로 옮겼다. 각 항목의 설명은 시안의 말을 그대로 쓴다.
- *
- * - `pill` — 노드에서 떨어진 빈 자리에 뜨고 점선으로 이어진다. 셋 중 유일하게
- *   자리를 «찾아야» 해서, 빈 곳이 없어지면 멀어진다.
- * - `bar` — 고른 노드 바로 위에 글자 버튼이 뜬다. 안 고르면 아무것도 없고, 몇
- *   개가 열릴지 숫자로 말한다.
- * - `badge` — 노드 오른쪽 위 어깨에 붙은 작은 원. 노드를 따라다니므로 자리를
- *   찾을 일이 없고, 무엇을 할지는 호버로 말한다.
+ * - `pill` — floats in empty space away from the node, joined by a dotted line.
+ *   The only one that has to *find* a spot, so it drifts further as space fills.
+ * - `bar` — a text button directly above the selected node. Nothing is shown
+ *   unless a node is selected, and it states how many will open.
+ * - `badge` — a small circle on the node's top-right shoulder. It tracks the
+ *   node, so it never hunts for space; what it does is revealed on hover.
  */
 export type ExpandAffordance = "pill" | "bar" | "badge";
 
 /**
- * 확장 구조 — 펼친 자식을 어떻게 놓나.
+ * How expanded children are laid out.
  *
- * `disc` 를 뺀 셋은 시안의 3안이고, `disc` 는 **종전의 배치**다(황금각 phyllotaxis
- * 나선 — `model/layout.ts#placePhyllotaxisDisk`). 기본값은 **부챗살**이다(소유자
- * 결정 2026-08-02). `disc` 는 그래서 더 중요해졌다 — 종전 화면으로 되돌릴 수
- * 있는 유일한 값이고, 부챗살의 반증 조건이 관측되면 그리로 돌아간다. **삭제
- * 금지**(`docs/DECISIONS.md`).
+ * All but `disc` come from the mockup's three candidates; `disc` is the previous
+ * production layout (golden-angle phyllotaxis spiral,
+ * `placePhyllotaxisDisk` in the map's `model/layout.ts`). The default is `fan`
+ * (owner decision 2026-08-02), which makes `disc` more important, not less: it is
+ * the only way back to the previous screen if the fan's falsifier is observed.
+ * **Do not delete it** (`docs/DECISIONS.md`).
  *
- * - `disc` — 나선 원반. 개수가 늘어도 면적이 √로만 자란다(유계).
- * - `fan` — 바깥쪽으로 부채꼴. 층이 쌓이며 넓어져 형제 도메인과 부딪힐 수 있다.
- * - `ring` — 부모를 감싸는 고리. 사방을 쓰니 같은 개수를 더 좁은 면적에 담는다.
- * - `column` — 바깥으로 줄 세우기. 이름이 옆으로 나란해 읽기가 가장 쉽다. 대신 길어진다.
+ * - `disc` — spiral disc. Area grows only as √n, so it stays bounded.
+ * - `fan` — sector fanning outward. Widens as rows stack and can collide with
+ *   sibling domains.
+ * - `ring` — a ring around the parent. Uses every direction, so the same count
+ *   fits in less area.
+ * - `column` — a line running outward. Labels sit side by side, the easiest to
+ *   read, at the cost of length.
  */
 export type ExpandStructure = "disc" | "fan" | "ring" | "column";
 
@@ -750,38 +745,34 @@ export const EXPAND_AFFORDANCES: readonly ExpandAffordance[] = ["pill", "bar", "
 export const EXPAND_STRUCTURES: readonly ExpandStructure[] = ["disc", "fan", "ring", "column"];
 
 /**
- * 확장 설정.
- *
- * **세 숫자는 이미 코드 안에 상수로 있던 값이다** — 시안이 그것들을 슬라이더로
- * 뽑아 놓고 재 본 것이다. 그래서 이 파일이 그 셋의 단일 출처가 되고, 지도 쪽
- * 상수(`EGO_NEIGHBOR_LIMIT` · `DISC_LABEL_TOP_K` · `MAX_EXPANDED_PARENTS`)가
- * 여기 기본값을 **가져다 쓴다**. 반대로 두면 같은 값이 두 곳에 적혀 드리프트가
- * 시작된다(Carbon).
+ * The three numbers already existed as constants in the map code; the mockup only
+ * pulled them out as sliders to measure them. So this file owns them and the map
+ * constants (`EGO_NEIGHBOR_LIMIT`, `DISC_LABEL_TOP_K`, `MAX_EXPANDED_PARENTS`)
+ * read these defaults. The other direction writes the same value in two places,
+ * which is where drift starts.
  */
 export interface ExpandPreference {
-  /** 펼치기 표시. */
   affordance: ExpandAffordance;
-  /** 펼친 자식의 배치. */
   structure: ExpandStructure;
-  /** 한 번에 여는 개수. 나머지는 「N개 펼치기」를 다시 누른다. */
+  /** How many open at once; the rest need another press. */
   batchSize: number;
-  /** 이름을 시도할 개수 — 한 부모당. «몇 개가 붙나» 가 아니라 «몇 개까지 시도하나» 다. */
+  /** Labels *attempted* per parent — not how many end up placed. */
   labelAttempts: number;
-  /** 동시에 펼쳐 둘 부모 개수. 넘으면 가장 오래 펼쳐 둔 것이 닫힌다(LRU). */
+  /** Parents kept expanded at once; past this the least recently opened closes. */
   maxOpenParents: number;
 }
 
 /**
- * 기본값.
+ * ⚠️ Two of these deliberately change what is on screen today: `affordance: "bar"`
+ * (owner, 2026-08-01: *"기본값은 '머리 위 막대' 어때?"* — make the overhead bar
+ * the default) and `structure: "fan"` (owner, 2026-08-02). The three numbers are
+ * the previous constants unchanged.
  *
- * ⚠️ **둘이 오늘 화면을 의도적으로 바꾼다** — `affordance: "bar"`(소유자 결정
- * 2026-08-01, *"기본값은 '머리 위 막대' 어때?"*)와 `structure: "fan"`(소유자
- * 결정 2026-08-02). 나머지 세 숫자는 종전 상수 그대로다.
- *
- * 부챗살을 기본으로 올리기 전에 **겹침을 실측했다**: 부모 셋 펼침(48자식,
- * 1512×982)에서 마크 겹침이 26쌍이었고, 호 간격을 26 → 34 로 올리고 마지막
- * 층을 가운데 정렬하니 **0쌍**이 됐다(이름 있는 마크 비율 31% → 34%, 나선의
- * 27% 보다 높다). 값과 반증 조건은 `docs/DECISIONS.md` 2026-08-02.
+ * Overlap was measured before promoting the fan: three parents expanded (48
+ * children, 1512×982) gave 26 overlapping mark pairs; raising arc spacing from 26
+ * to 34 and centring the last row brought it to **0**, with labelled marks rising
+ * 31% → 34% — above the spiral's 27%. Values and falsifier: `docs/DECISIONS.md`,
+ * 2026-08-02.
  */
 export const DEFAULT_EXPAND: ExpandPreference = {
   affordance: "bar",
@@ -792,9 +783,9 @@ export const DEFAULT_EXPAND: ExpandPreference = {
 };
 
 /**
- * 슬라이더 상·하한 — **시안의 값을 그대로** 옮겼다(임의로 좁히지 않는다).
- * 시안이 27조합을 실측하며 고른 범위라, 여기서 줄이면 그 실측이 닿지 않은
- * 화면만 제품에 남는다.
+ * The mockup's bounds, carried over unchanged. It picked them while measuring 27
+ * combinations, so narrowing them here would leave the product showing only
+ * screens that measurement never covered.
  */
 export const EXPAND_RANGES = {
   batchSize: { min: 4, max: 24, step: 1 },
@@ -803,10 +794,9 @@ export const EXPAND_RANGES = {
 } as const satisfies Record<string, { min: number; max: number; step: number }>;
 
 /**
- * 저장된 JSON → 유효한 설정. 범위 밖 숫자는 잘라 넣고, 모르는 값·없는 키는
- * 기본값으로 채운다. 순수 함수 — 손으로 편집된 localStorage 가 렌더러에 `NaN`
- * 을 흘리면 지도의 확장이 통째로 죽는데, 그 실패는 조용하다(발자국이 이미
- * 배운 교훈).
+ * Stored JSON → a valid preference, same contract as `resolveFootprint`: a
+ * hand-edited localStorage leaking `NaN` into the renderer kills expansion on the
+ * map entirely, and it fails silently.
  */
 export function resolveExpand(raw: unknown): ExpandPreference {
   if (typeof raw !== "object" || raw === null) return DEFAULT_EXPAND;
@@ -844,12 +834,12 @@ export function writeExpand(value: ExpandPreference): void {
   try {
     window.localStorage.setItem(EXPAND_KEY, JSON.stringify(resolveExpand(value)));
   } catch {
-    // 위와 동일 — 저장 실패해도 이벤트로 현재 세션은 갱신된다.
+    // Storage blocked; the event still updates this session.
   }
   notifyPreferenceChange();
 }
 
-/** 발자국과 같은 캐시 문법 — `useSyncExternalStore` 가 스냅샷을 `Object.is` 로 본다. */
+/** Same caching reason as the footprint snapshot: `Object.is` on snapshots. */
 let expandCacheKey: string | null = null;
 let expandCacheValue: ExpandPreference = DEFAULT_EXPAND;
 

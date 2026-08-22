@@ -1,6 +1,5 @@
-// R+ — commit preflight (`ontology-atlas preflight`) 의 git staged 파일
-// 목록 헬퍼. 순수 wrapper — `run` 을 주입 가능하게 해서 실제 git 프로세스
-// 없이도 단위 test 가능.
+// Staged-file list helper for the commit preflight (`ontology-atlas preflight`).
+// A pure wrapper: `run` is injectable so unit tests need no git process.
 
 import { execFileSync } from 'node:child_process';
 
@@ -9,11 +8,12 @@ function defaultRun(args, cwd) {
 }
 
 /**
- * Git staged 파일 목록 (repo-relative, `/` 구분자). `--diff-filter=ACMR` —
- * added/copied/modified/renamed 파일만 (deleted 파일은 이미 사라진 코드라
- * vault path 매칭 대상에서 제외).
+ * Staged files (repository-relative, `/` separated). `--diff-filter=ACMR` keeps
+ * added/copied/modified/renamed only — a deleted file is code that is already
+ * gone, so it is not a vault-path match candidate.
  *
- * git repo 가 아니거나 명령 실패 시 `null` — 호출자가 조용히 skip 하도록.
+ * `null` outside a git repository or when the command fails, so the caller can
+ * skip silently.
  *
  * @param {object} [options]
  * @param {string} [options.cwd]

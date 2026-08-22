@@ -57,9 +57,9 @@ describe('focused check suggestions', () => {
       'pnpm test:docs-vault',
       'pnpm test:vault:validate',
       'pnpm test:vault:audit',
-      // 생성기는 번들 볼트 데이터의 모양을 정하므로 데스크톱 정적 예산
-      // 실측도 함께 권한다 (2026-08-19 — 예산이 릴리스에서만 재져 조용히
-      // 넘었던 사고의 재발 방지).
+      // The generator decides the shape of the bundled vault data, so the desktop static
+      // budget measurement is suggested with it (2026-08-19 — preventing a repeat of the
+      // budgets being measured only at release time and silently exceeded).
       'pnpm build && pnpm desktop:perf',
       'pnpm test:vault:migrate',
       'pnpm vault:migrate --list',
@@ -575,11 +575,12 @@ describe('focused check suggestions', () => {
       'pnpm test:desktop:bridge',
       'pnpm desktop:check',
       'pnpm test:contracts',
-      // 이 세트에 `src/views/docs-vault/**` 가 들어 있으므로 문서함 e2e 도 온다.
+      // This set includes `src/views/docs-vault/**`, so the docs e2e comes with it.
       'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts ' +
         'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
-      // 표면 분리(2026-07-27) 이후 데스크톱 변경은 웹을 대신 확인해 주지
-      // 않는다 — 웹은 무인 표면이라 같은 세트에서 스모크를 함께 권한다.
+      // Since the surface split (2026-07-27) a desktop change does not verify the web on
+      // its behalf — the web is unattended, so the smoke test is suggested in the same
+      // set.
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
       'pnpm exec tsc --noEmit',
     ]);
@@ -640,11 +641,11 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  // 2026-08-04 실사용 시험이 잰 그 상황 — 새 뷰 파일 하나 + 새 라우트 하나에
-  // 이 advisor 는 `pnpm exec tsc --noEmit` **하나만** 권했다. 디자인 규격을
-  // 지고 있는 lint 도, 라우트를 분류하는 contracts 도, 실제로 재는 두 래칫도
-  // 목록에 없었다. `AGENTS.md` 가 "검사를 열거하지 말고 이 명령을 가리켜라"
-  // 라고 못박고 있으므로 이 누락은 하중을 진다.
+  // The situation the 2026-08-04 field trial measured — for one new view file plus
+  // one new route this advisor suggested **only** `pnpm exec tsc --noEmit`. The lint
+  // that carries the design spec, the contracts that classify routes, and the two
+  // ratchets that actually measure were all absent. `AGENTS.md` pins "point at this
+  // command instead of enumerating the checks", so this omission carries weight.
   it('suggests the design and a11y gates for a brand-new view and route', () => {
     const result = suggestFocusedChecks([
       'src/views/brand-new-surface/ui/BrandNewPage.tsx',
@@ -674,8 +675,9 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm exec eslint src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
       'pnpm exec tsc --noEmit',
-      // 2026-08-08 추가 — 문구 카탈로그는 정합 검사만의 입력이 아니다.
-      // 「이 화면이 무엇을 할 수 있다고 말하나」를 읽는 게이트의 입력이기도 하다.
+      // Added 2026-08-08 — a message catalogue is not only the consistency check's
+      // input. It is also the input of the gates that read "what does this screen claim
+      // it can do".
       'pnpm test:desktop:check',
       'pnpm test:i18n:messages',
     ]);
@@ -740,9 +742,9 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run src/shared/lib/cn.test.ts',
       'pnpm exec vitest run src/widgets/docs-vault/ui/DocsVaultEditor.test.tsx',
       'pnpm test:contracts',
-      // 문서함 위젯을 만졌으므로 그 화면을 운전하는 e2e 도 함께 추천된다
-      // (2026-08-08 매핑 추가 — #987 이 헤더 컨트롤을 옮겼는데 이 추천이 없어
-      // `docs-deeplink` 가 CI 에서 여섯 PR 동안 빨간 채로 있었다).
+      // Touching the docs widget also suggests the e2e that drives that screen (mapping
+      // added 2026-08-08 — #987 moved a header control, this suggestion was missing, and
+      // `docs-deeplink` stayed red in CI across six PRs).
       'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts ' +
         'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
       'pnpm exec tsc --noEmit',
@@ -772,12 +774,12 @@ describe('focused check suggestions', () => {
     ]);
 
     /*
-     * ⚠️ `tsc` 가 뒤에 붙는다 (2026-08-21 추가). e2e 스펙도 TypeScript 이고
-     * `tsconfig.json` 의 `include` 는 `**\/*.ts` 전부라, CI 의 `tsc --noEmit`
-     * 이 이 파일들을 실제로 검사한다. 종전에는 추천기만 그것을 몰라서, 스펙을
-     * 고친 사람은 타입 오류를 CI 에서야 만났다(`#1180`).
+     * ⚠️ `tsc` is appended (added 2026-08-21). e2e specs are TypeScript too and
+     * `tsconfig.json`'s `include` is all of `**\/*.ts`, so CI's `tsc --noEmit` really
+     * does check these files. Only the advisor did not know that, so anyone editing a
+     * spec met type errors first in CI (`#1180`).
      *
-     * 순서는 그대로다 — 직접 스펙이 먼저다.
+     * The order is unchanged — the direct spec comes first.
      */
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
@@ -1040,10 +1042,10 @@ describe('focused check suggestions', () => {
   });
 
   it('관문의 판·크롬·원점을 고치면 그 격자 검사를 권한다', () => {
-    // 2026-08-08 회귀: 푸터에 줄 하나를 넣자 여덟 폭 전부에서
-    // `download-gateway-grid` 가 빨개졌는데, advisor 가 그 스펙을 한 번도
-    // 안 권해서 CI 에서야 나왔다. 「도구를 가리켜라」가 규율이면 도구가
-    // 못 가리키는 검사는 존재하지 않는 검사다.
+    // 2026-08-08 regression: adding one line to the footer turned
+    // `download-gateway-grid` red at all eight widths, but the advisor never suggested
+    // that spec so it surfaced only in CI. If "point at the tool" is the discipline,
+    // then a check the tool cannot point at is a check that does not exist.
     const grid = 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts';
     for (const path of [
       'src/views/download/ui/DownloadPage.tsx',
@@ -1056,7 +1058,7 @@ describe('focused check suggestions', () => {
         `${path} 를 고쳤는데 관문 격자 검사를 안 권한다`,
       );
     }
-    // 공회전 차단 — 아무 경로에나 붙으면 규칙이 아니라 소음이다.
+    // Idling guard — a rule that attaches to any path is noise, not a rule.
     assert.ok(
       !suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']).commands.some((s) => s.command === grid),
       '관문과 무관한 화면에도 격자 검사를 권한다 — 규칙이 너무 넓다',
@@ -1064,15 +1066,16 @@ describe('focused check suggestions', () => {
   });
 
   it('문구 카탈로그를 고치면 능력 주장을 읽는 게이트도 권한다', () => {
-    // 2026-08-08: 「앱 전용」 거짓 주장을 고쳤는데 advisor 가 카탈로그 정합만
-    // 권해서, 그 문구를 못박고 있던 데스크톱 게이트가 CI 에서야 빨개졌다.
+    // 2026-08-08: a false "app-only" claim was fixed, the advisor suggested only
+    // catalogue consistency, and the desktop gate pinning that copy went red first in
+    // CI.
     const commands = suggestFocusedChecks(['messages/ko.json']).commands.map((s) => s.command);
     assert.ok(commands.includes('pnpm test:i18n:messages'), '카탈로그 정합 검사를 안 권한다');
     assert.ok(
       commands.includes('pnpm test:desktop:check'),
       '문구를 고쳤는데 능력 주장을 읽는 게이트를 안 권한다',
     );
-    // 공회전 차단 — 아무 경로에나 붙으면 규칙이 아니라 소음이다.
+    // Idling guard — a rule that attaches to any path is noise, not a rule.
     assert.ok(
       !suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']).commands.some(
         (s) => s.command === 'pnpm test:desktop:check',
@@ -1082,15 +1085,15 @@ describe('focused check suggestions', () => {
   });
 
   /**
-   * **타입 검사의 사정거리는 `tsconfig` 가 정한다 — 추천기가 아니라.**
+   * **`tsconfig` decides the reach of type checking — not the advisor.**
    *
-   * 2026-08-21 `#1180` 에서 터졌다: 계약 시험 파일만 고쳤는데 CI 의
-   * `Types · Lint · Docs` 가 타입 오류로 빨개졌다. 로컬에서는 만날 방법이
-   * 없었다 — 추천기가 테스트 파일에 `tsc` 를 안 권했고, **vitest 는 타입을 안
-   * 본다.** 그런데 `tsconfig.json` 의 `include` 는 `**\/*.ts` 전부다.
+   * It broke on 2026-08-21 (`#1180`): only a contract test file was edited, and CI's
+   * `Types · Lint · Docs` went red with a type error. There was no way to meet it
+   * locally — the advisor did not suggest `tsc` for test files, and **vitest does not
+   * check types**. Yet `tsconfig.json`'s `include` is all of `**\/*.ts`.
    *
-   * 검사가 보는 범위와 추천기가 보는 범위가 다르면, **그 차이만큼이 CI 에서야
-   * 터진다.**
+   * Wherever the check's reach differs from the advisor's reach, **that difference
+   * surfaces only in CI.**
    */
   it('타입 검사를 tsconfig 가 보는 곳 전부에 권한다 — 테스트 파일도 포함', () => {
     const typecheck = (path) =>
@@ -1098,11 +1101,11 @@ describe('focused check suggestions', () => {
         (s) => s.command === 'pnpm exec tsc --noEmit',
       );
 
-    // 종전에 빠져 있던 둘 — 이것이 이 시험의 존재 이유다.
+    // The two that used to be missing — this is why this test exists.
     assert.ok(typecheck('tests/contract/release-preflight.contract.test.ts'), 'tests/**');
     assert.ok(typecheck('src/shared/lib/cn.test.ts'), 'src 의 테스트 파일');
 
-    // 종전에도 되던 것이 그대로 되는지 — 좁히면서 넓힌 게 아님을 확인한다.
+    // What already worked still works — confirming the reach was widened without narrowing.
     assert.ok(typecheck('src/shared/lib/cn.ts'), 'src 의 제품 코드');
     assert.ok(typecheck('app/[locale]/agents/page.tsx'), 'app/**');
     assert.ok(typecheck('tsconfig.json'), 'tsconfig 자신');
@@ -1118,15 +1121,16 @@ describe('focused check suggestions', () => {
   });
 
   /**
-   * **읽을거리를 게이트로 쓰지 않는다** (2026-08-21).
+   * **Do not use a readout as a gate** (2026-08-21).
    *
-   * `dogfood:status` 는 그래프가 덜 여물었을 때도 1 로 끝난다 — main 에서도
-   * 그렇다. 그 출력 자신이 *"Nothing is broken"* 이라고 적는다. 그것을 푸시
-   * 게이트에 걸면 볼트를 고친 모든 푸시가 아무 관계 없는 이유로 막힌다.
+   * `dogfood:status` exits 1 even when the graph is merely immature — including on
+   * main — while its own output says *"Nothing is broken"*. Wiring that into a push
+   * gate blocks every vault-editing push for an unrelated reason.
    */
   it('화면에 그려지는 마크다운에는 문구 게이트도 권한다', () => {
-    // 무결성 검사와 문구 검사는 **다른 것을 잰다**. 2026-08-21 에 볼트 산문의
-    // 작대기가 `vault:validate` 를 통과하고 CI 에서야 잡혔다.
+    // The integrity check and the copy check **measure different things**. On
+    // 2026-08-21 an em dash in vault prose passed `vault:validate` and was caught only
+    // in CI.
     const prose = 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts';
     for (const path of [
       'docs/ontology/elements/agents-destination.md',
@@ -1137,7 +1141,7 @@ describe('focused check suggestions', () => {
       const commands = suggestFocusedChecks([path]).commands.map((row) => row.command);
       assert.ok(commands.includes(prose), `${path} 에 문구 게이트를 안 권한다`);
     }
-    // 볼트의 마크다운 아닌 파일까지 끌어들이지 않는다.
+    // Does not drag in the vault's non-markdown files.
     const other = suggestFocusedChecks(['src/views/agents/ui/AgentsPage.tsx']).commands.map(
       (row) => row.command,
     );
@@ -1150,8 +1154,8 @@ describe('focused check suggestions', () => {
     );
     assert.ok(commands.includes('pnpm vault:validate'), '무결성 검사를 안 권한다');
     assert.ok(
-      // `test:dogfood:status`(그 스크립트의 단위 시험)는 정당한 게이트다 —
-      // 재는 것이 「그래프가 여물었나」가 아니라 「그 스크립트가 맞게 도나」다.
+      // `test:dogfood:status` (that script's unit tests) is a legitimate gate — it
+      // measures whether the script runs correctly, not whether the graph is mature.
       !commands.includes('pnpm dogfood:status'),
       '준비도 읽을거리를 게이트로 권한다 — 그것은 덜 여물어도 1 이다',
     );

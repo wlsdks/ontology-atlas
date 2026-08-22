@@ -1,5 +1,5 @@
-// redirectBacklinks helper smoke test — rename / merge 의 핵심 동작.
-// node --test 또는 `npm run test` 로 실행.
+// redirectBacklinks smoke test — the core operation behind rename and merge.
+// Run with `node --test` or `npm run test`.
 
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from "node:fs";
@@ -164,7 +164,7 @@ test("inline string key 도 redirect (e.g. domain)", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-// P6 게이트 ① — 객체 맵 값의 키 rename (relation_notes 대비).
+// Renaming the key of an object map value (as used by relation_notes).
 test("객체 맵 키 rename — why 노트가 고아가 되지 않는다", () => {
   const root = makeVault();
   writeMd(
@@ -273,11 +273,12 @@ test("findBacklinks 는 ambiguous tail 을 exact target backlink 로 오인하�
 });
 
 test("path: 증거 문자열은 참조가 아니다 — tail-suffix 절이 건드리지 않는다", () => {
-  // 실측 회귀 (2026-08-01, 도그푸드 볼트 평탄화): `elements/src/widgets/
-  // docs-vault` → `elements/docs-vault-widget` rename 이 **다른 노드의**
-  // `path: src/entities/docs-vault` 를 `…/docs-vault-widget` 으로 고쳐
-  // 존재하지 않는 파일을 가리키게 했다. 참조 슬롯(domain + graph arrays)만
-  // 다시 쓰고 증거 슬롯(path 등 임의 문자열 키)은 보존해야 한다.
+  // Measured regression (2026-08-01, while flattening the dogfood vault): the
+  // rename `elements/src/widgets/docs-vault` → `elements/docs-vault-widget`
+  // rewrote **another node's** `path: src/entities/docs-vault` to
+  // `…/docs-vault-widget`, pointing it at a file that does not exist. Only
+  // reference slots (domain plus the graph arrays) may be rewritten; evidence
+  // slots (`path` and other arbitrary string keys) must be preserved.
   const root = makeVault();
   writeMd(root, "elements/docs-vault", "---\nkind: element\ntitle: DV\n---\n");
   writeMd(
@@ -295,9 +296,9 @@ test("path: 증거 문자열은 참조가 아니다 — tail-suffix 절이 건�
     dryRun: false,
   });
 
-  // 참조는 따라간다.
+  // References follow.
   assert.match(readMd(root, "capabilities/cap"), /elements\/docs-vault-widget/);
-  // 증거는 남는다.
+  // Evidence stays.
   assert.match(readMd(root, "elements/other"), /path: src\/entities\/docs-vault\n/);
   rmSync(root, { recursive: true, force: true });
 });

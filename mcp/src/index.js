@@ -2,38 +2,44 @@
 /**
  * ontology-atlas-mcp — local ontology read/write server.
  *
- * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
+ * Lets an AI agent (Claude Code, Cursor, Codex, …) read and write the vault's
+ * ontology.
  *
- * 현재 도구 표면의 정본은 아래 TOOLS registry를 annotation으로 보강하고
- * read-only mode로 거른 TOOLS_FOR_LIST다. initialize 안내와 tools/list가 모두
- * 같은 배열에서 파생되므로 이 머리말에 count나 이름 목록을 다시 복사하지 않는다.
+ * The authority on the current tool surface is `TOOLS_FOR_LIST` below — the
+ * `TOOLS` registry enriched with annotations and filtered by read-only mode.
+ * Both the `initialize` instructions and `tools/list` derive from that one
+ * array, so no count or name list is copied into this header.
  *
- * 환경 변수:
- *   OATLAS_VAULT=/abs/path/to/vault       — vault root 디렉토리. 미지정 시 cwd.
- *   OATLAS_REPO_ROOT=/abs/path/to/repo    — repository root. 미지정 시 vault의 Git top-level, 없으면 cwd.
+ * Environment:
+ *   OATLAS_VAULT=/abs/path/to/vault     — vault root. Defaults to cwd.
+ *   OATLAS_REPO_ROOT=/abs/path/to/repo  — repository root. Defaults to the
+ *                                         vault's git top-level, else cwd.
  *
- * 사용:
+ * Run:
  *   $ node /absolute/path/to/ontology-atlas/mcp/src/index.js
- *   또는 앱에 번들된 서버를 .mcp.json 에 등록 (README 참고).
+ *   or register the server bundled in the app in `.mcp.json` (see README).
  */
 
 /**
  * MCP TypeScript SDK **v2** (`@modelcontextprotocol/server`).
  *
- * v1 의 단일 패키지 `@modelcontextprotocol/sdk` 는 2026-07-27 에 `core` /
- * `server` / `node` 로 쪼개졌고, v2 가 정식 안정 라인이다(v1 은 최소 6개월
- * 버그·보안 수정만 받는 `v1.x` 브랜치로 내려갔다).
+ * v1's single `@modelcontextprotocol/sdk` package was split into `core` /
+ * `server` / `node` on 2026-07-27, and v2 is the stable line (v1 dropped to a
+ * `v1.x` branch that receives bug and security fixes only, for at least six
+ * months).
  *
- * ⚠️ **와이어 프로토콜은 아직 안 올라간다.** 사양 `2026-07-28` 은 나왔지만
- * v2 의 `SUPPORTED_PROTOCOL_VERSIONS` 는 v1 과 **같다**(실측:
+ * ⚠️ **The wire protocol does not move yet.** Spec `2026-07-28` shipped, but
+ * v2's `SUPPORTED_PROTOCOL_VERSIONS` is identical to v1's (measured:
  * `["2025-11-25","2025-06-18","2025-03-26","2024-11-05","2024-10-07"]`,
- * `LATEST = 2025-11-25`). 새 사양의 `server/discover`·무상태 방식은 타입
- * 정의에만 잡혀 있고 협상 상수에는 없다. 이 이관의 값은 **지금 얻는 기능**이
- * 아니라 **그것이 실릴 그릇으로 옮겨 두는 것**이다.
+ * `LATEST = 2025-11-25`). The new spec's `server/discover` and stateless mode
+ * exist in the type definitions only, not in the negotiation constants. The
+ * value of this migration is not a capability gained now — it is sitting in the
+ * vessel that will carry one.
  *
- * **구 클라이언트 호환은 실측으로 확인했다** — v2 서버에 구식 `initialize`
- * (`protocolVersion: "2024-11-05"`)를 보내면 그 버전으로 협상하고
- * `tools/list`·`tools/call` 이 정상 응답한다. Claude Code·Codex 는 안 끊긴다.
+ * **Old-client compatibility was verified by measurement**: sending this v2
+ * server an old-style `initialize` (`protocolVersion: "2024-11-05"`) negotiates
+ * that version, and `tools/list` / `tools/call` answer normally. Claude Code and
+ * Codex do not break.
  */
 import { Server } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
@@ -213,14 +219,15 @@ const REPO_ROOT = resolve(
   process.cwd(),
 );
 /**
- * **이 저장소 루트가 이 볼트의 것이라고 말할 근거가 있는가.**
+ * **Is there evidence that this repo root belongs to this vault?**
  *
- * 없으면 `REPO_ROOT` 는 추측이다 — 볼트가 git 저장소 안에 있지도 않고 아무도
- * 알려주지 않았을 때 남는 것은 "서버 프로세스가 서 있던 디렉터리" 뿐이고,
- * 그것이 그 볼트가 서술하는 코드일 이유는 없다. 이 플래그가 없던 동안
- * `health` 는 남의 볼트의 코드 경로를 *우리* 저장소에 대고 대조하고
- * `warn:13` 을 냈다 — 같은 볼트에 `validate` 는 clean 이었다 (2026-08-01 실측).
- * 근거 없는 대조는 숫자를 내는 대신 **안 봤다고 말한다**.
+ * Without it, `REPO_ROOT` is a guess. When the vault is not inside a git
+ * repository and nobody said otherwise, all that remains is "the directory the
+ * server process happened to start in", which has no reason to be the code the
+ * vault describes. While this flag did not exist, `health` compared another
+ * vault's code paths against *our* repository and reported `warn:13` — on the
+ * same vault `validate` was clean (measured 2026-08-01). An ungrounded
+ * comparison must say it did not look, not produce a number.
  */
 const REPO_ROOT_IS_GROUNDED = Boolean(
   process.env.OATLAS_REPO_ROOT || VAULT_GIT_ROOT,
@@ -231,7 +238,7 @@ const REPO_RESOLUTION = process.env.OATLAS_REPO_ROOT
   : DISCOVERED_REPO_ROOT
     ? 'git.rev-parse'
     : 'process.cwd';
-// SERVER_VERSION 은 컴파일 가능하도록 상수로 임베드돼 있다 (server-version.mjs 참고).
+// SERVER_VERSION is embedded as a constant so the server stays compilable (see server-version.mjs).
 const COMPILED_ONTOLOGY_CACHE = createCompiledOntologyCache({
   loadDocs: () => loadVaultDocs(VAULT_ROOT),
   compile: (docs, options) => compileOntology(docs, options),
@@ -254,10 +261,10 @@ const BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA = Object.freeze({
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 
 /**
- * 어권별 표시 이름 입력 스키마 (소유자 지시 2026-07-24). `title` 은 검색·
- * 매칭·파일 정체성의 단일 진실원이라 로케일별로 바꾸지 않는다 — 렌더
- * 표면(지도 라벨/INDEX/팝오버)만 화면 언어에 맞는 `display_<locale>` 을
- * 읽는다. 한쪽만 채우면 응답에 advisory warning 이 붙는다.
+ * Per-locale display-name input schema (owner decision, 2026-07-24). `title` is
+ * the single source of truth for search, matching, and file identity, so it
+ * never varies by locale — only render surfaces (map labels, INDEX, popovers)
+ * read `display_<locale>`. Filling one side only attaches an advisory warning.
  */
 const LOCALE_LABELS_SCHEMA = Object.freeze({
   type: 'object',
@@ -1455,24 +1462,26 @@ const OUTGOING_EDGE_OUTPUT_SCHEMA = Object.freeze({
   required: ['to', 'via'],
   additionalProperties: false,
 });
-// R+ (과제 ⑧ — Ask-to-Grow) — read tool 이 빈/미해결 결과를 만났을 때만 붙는
-// 성장 신호. 성공 응답에는 절대 등장하지 않는다. `mcp/src/growth-hint.mjs`
-// 가 실제 vault 데이터(census, 근접 slug/title)로만 채운다.
+// Growth signal, attached only when a read tool hits an empty or unresolved
+// result — never on a success response. `mcp/src/growth-hint.mjs` fills it from
+// real vault data only (inventory, near-miss slugs and titles).
 /**
- * 본문 전달 방식. `'excerpt'` 는 첫 prose 단락(<=800자), `'full'` 은 markdown
- * 본문 전체다. 기본이 `'excerpt'` 인 이유는 페이로드이고, `'full'` 이 존재하는
- * 이유는 **구축 규격이 근거를 본문에 적으라고 시키기 때문**이다 — 쓰라고 해
- * 놓고 읽을 길을 안 주면 그 절반은 없는 것과 같다.
+ * How the body is delivered. `'excerpt'` is the first prose paragraph (<=800
+ * chars), `'full'` is the whole markdown body. The default is `'excerpt'`
+ * because of payload size; `'full'` exists because **the construction rules
+ * require the evidence to be written in the body** — telling authors to write
+ * it and then giving no way to read it makes half of that rule fictional.
  */
 const BODY_DELIVERY_MODES = Object.freeze(['excerpt', 'full']);
-/** `get_concepts({ body: 'full' })` 한 호출의 행 상한. 발췌 모드는 그대로 50. */
+/** Row cap for one `get_concepts({ body: 'full' })` call. Excerpt mode stays 50. */
 
 /**
- * 본문을 얼마나 실었는지 — 그리고 **무엇을 안 실었는지**.
+ * How much body was delivered — and **what was left out**.
  *
- * 응답에 항상 붙는다. 잘리지 않았으면 `truncated: false` 로 그것을 보증하고,
- * 잘렸으면 남은 글자 수와 나머지를 받는 호출을 같이 준다. 조용히 자르는 것이
- * 결함이었다 (2026-08-01 인수인계 시험).
+ * Always present in the response. When nothing was cut, `truncated: false`
+ * guarantees that; when it was, the remaining character count comes with the
+ * call that fetches the rest. Cutting silently was the defect (handover trial,
+ * 2026-08-01).
  */
 const BODY_INFO_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
@@ -2314,9 +2323,9 @@ const GIT_HISTORY_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
 });
 
-// import-time throw 면 stdio transport 가 붙기 전 stack trace 가 stderr 로
-// 새고 클라이언트 (Claude Code 등) 에선 silent crash 로 보인다. 친절한 한
-// 줄 메시지 + non-zero exit 로 server log 에 명확히 노출.
+// A throw at import time leaks a stack trace to stderr before the stdio
+// transport attaches, which clients (Claude Code and friends) see as a silent
+// crash. A one-line message plus a non-zero exit surfaces it in the server log.
 try {
   ensureVaultRoot(VAULT_ROOT);
 } catch (err) {
@@ -2328,12 +2337,12 @@ try {
   process.exit(1);
 }
 
-// MCP `instructions` field — initialize 응답에 포함되어 연결된 AI agent
-// (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. tool
-// description 만으로는 (1) 호출 순서, (2) kind 계층의 의미, (3) write 도구의
-// dry-run/confirm 패턴, (4) mtime 충돌 게이트, (5) R16/R17 bootstrap workflow,
-// (6) error message 가 다음 tool 을 직접 가리킨다는 사실 — agent UX 가
-// 매번 시행착오로 학습되는 문제를 단번에 해소.
+// MCP `instructions` field — carried in the `initialize` response, so every
+// connected agent sees it at system-prompt level. Tool descriptions alone never
+// convey call order, what the kind hierarchy means, the dry-run/confirm pattern
+// of the write tools, the mtime conflict gate, the bootstrap workflow, or the
+// fact that an error message names the next tool to call. Without this, agents
+// relearn all of it by trial and error on every session.
 const TOOL_INVENTORY_PLACEHOLDER = '__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__';
 const SERVER_INSTRUCTIONS_TEMPLATE = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
@@ -2432,7 +2441,7 @@ When code introduces a new capability / element / domain, mirror it in the vault
 
 ${CONSTRUCTION_RULES_EN}`;
 
-// ── 도구 정의 ─────────────────────────────────────────────────────────────
+// ── Tool definitions ──────────────────────────────────────────────────────
 
 const TOOLS = [
   {
@@ -2716,8 +2725,8 @@ const TOOLS = [
           items: VAULT_WARNING_OUTPUT_SCHEMA,
         },
       },
-      // `excerpt` 는 더 이상 필수가 아니다 — `body: "full"` 이면 본문이 `body`
-      // 로 오고 발췌는 아예 실리지 않는다 (같은 글 두 번 보내지 않기).
+      // `excerpt` is no longer required: with `body: "full"` the body arrives in
+      // `body` and no excerpt is sent at all (never ship the same text twice).
       required: ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
       additionalProperties: false,
     },
@@ -3235,9 +3244,10 @@ const TOOLS = [
           ...ADD_RELATION_TYPE_SCHEMA,
           description: 'Relation type.',
         },
-        // P6 — 라운드 머지에서 스키마 블록만 증발했던 회귀 복원 (핸들러는
-        // why 를 이미 받는다). strict-args 가 스키마에서 allowlist 를 파생
-        // 하므로 여기 없으면 why 가 unknown_argument 로 거부된다.
+        // Restores a regression where only the schema block vanished in a merge
+        // (the handler already accepted `why`). strict-args derives its argument
+        // allowlist from the schema, so without this `why` is rejected as
+        // `unknown_argument`.
         why: {
           type: 'string',
           maxLength: 300,
@@ -6192,16 +6202,16 @@ const server = new Server(
   },
 );
 
-// v2 는 스키마 객체가 아니라 **메서드 문자열**을 받는다. 구 판본이
-// `ListToolsRequestSchema` 를 넘기면 v2 는 "not a spec request method" 로
-// 던진다 — 조용히 무시되지 않고 기동에서 바로 터지므로 안전한 종류의 변경이다.
+// v2 takes a **method string**, not a schema object. Passing the old
+// `ListToolsRequestSchema` makes v2 throw "not a spec request method" — it fails
+// loudly at startup rather than being silently ignored, so this is a safe shape.
 server.setRequestHandler('tools/list', async () => ({ tools: TOOLS_FOR_LIST }));
 
 
-// ── B3 활동 로그 — 쓰기 성공 시 로컬 감사 로그 1줄 (best-effort) ─────────
-// 스키마·처방: mcp/src/activity-log.mjs + .qa-scratch/.../b3-investigation.
-// dry-run(변경 없음)·invalid-only 배치는 기록하지 않는다 — 감사 로그는
-// "일어난 일"만. append 실패는 쓰기 결과에 영향 없음.
+// ── Activity log — one local audit line per successful write (best-effort) ──
+// Schema and rationale: mcp/src/activity-log.mjs. Dry runs (no change) and
+// invalid-only batches are not recorded — the audit log carries what happened,
+// nothing else. A failed append never affects the write result.
 function summarizeWrite(name, args, result) {
   switch (name) {
     case 'add_concept':
@@ -6221,22 +6231,22 @@ function summarizeWrite(name, args, result) {
       const okRows = rows.filter((row) => row?.ok).length;
       if (okRows === 0) return null;
       /*
-       * ⚠️ **이유를 버리지 않는다** (2026-08-16 지킴이 자리 적발).
+       * ⚠️ **Do not drop the reason** (caught by the steward seat, 2026-08-16).
        *
-       * 배치 행에도 `why` 가 있고 `depends_on` 은 런타임이 그것을 **필수로**
-       * 요구한다. 그런데 이 분기가 `{ target, summary }` 만 돌려주는 바람에,
-       * 이유가 frontmatter 에는 들어가고 활동 기록에서만 사라졌다.
+       * Batch rows carry `why` too, and the runtime *requires* it for
+       * `depends_on`. This branch returned only `{ target, summary }`, so the
+       * reason reached the frontmatter but disappeared from the activity record.
        *
-       * 그 결과가 실제로 관측됐다: 살아있는 볼트의 활동 15줄 전부 `why: null`
-       * 이었고, 그중 둘이 바로 이 경로였다. 그 상태로 「기록에 이유가 없다」를
-       * 근거 삼아 다른 결론을 낼 뻔했다.
+       * The consequence was observed: all 15 activity lines in a live vault read
+       * `why: null`, two of them from exactly this path — and "the record has no
+       * reasons" nearly became evidence for an unrelated conclusion.
        *
-       * 행마다 이유가 다를 수 있으므로 **성공한 행의 이유만** 모아 잇는다.
-       * 같은 이유가 반복되면 한 번만 적는다 — 열 행이 같은 이유일 때 그것을
-       * 열 번 적으면 읽을 수 없는 줄이 된다.
+       * Rows can carry different reasons, so collect **only the reasons of rows
+       * that succeeded**. Repeats collapse to one entry: ten rows sharing a
+       * reason would otherwise print it ten times and become unreadable.
        */
-      // ⚠️ 걸러 낸 **뒤에** 번호를 매기면 원본 행과 짝이 어긋난다. 원본 순서를
-      // 유지한 채 성공한 행에서만 이유를 꺼낸다.
+      // ⚠️ Numbering **after** filtering desynchronises rows from the input.
+      // Keep the original order and read the reason only off successful rows.
       const reasons = [
         ...new Set(
           rows
@@ -6287,20 +6297,20 @@ function logWrite(name, args, result) {
           target: summarized.target,
           summary: summarized.summary,
           why: summarized.why ?? null,
-          // 하트비트(의도적 등록) > 연결 인사의 clientInfo.name(자동) > null.
-          // 등록 없이 붙은 claude-code/codex 의 활동도 이제 이름이 남는다 —
-          // 실시간 에이전트 표시(2026-08-13 소유자 문의)의 1번 조각.
+          // Heartbeat (deliberate registration) > the connect greeting's
+          // clientInfo.name (automatic) > null. Claude Code and Codex sessions
+          // that connect without registering now leave a name behind too.
           agent: resolveAgentName(VAULT_ROOT, server.getClientVersion?.()),
         }),
       );
     }
   } catch {
-    /* 감사 로그는 부수 — 쓰기 결과를 해치지 않는다 */
+    /* The audit log is a side effect — it must never damage the write result */
   }
   return result;
 }
 
-// ── 도구 핸들러 ───────────────────────────────────────────────────────────
+// ── Tool handlers ─────────────────────────────────────────────────────────
 
 server.setRequestHandler('tools/call', async (request) => {
   const { name } = request.params;
@@ -6417,9 +6427,9 @@ function ok(result) {
 function error(err) {
   const message = err instanceof Error ? err.message : String(err);
   const details = structuredErrorDetails(message);
-  // R+ (과제 ⑧ — Ask-to-Grow) — get_concept / node_profile 같은 slug 미해결
-  // 경로가 Error 인스턴스에 실어 둔 growthHint 를 여기서 한 곳에 모아
-  // structuredContent 로 얹는다. 성공 응답에는 절대 나타나지 않는다.
+  // Slug-unresolved paths (`get_concept`, `node_profile`) attach a growthHint to
+  // the Error instance; this is the one place that collects them and lifts them
+  // into `structuredContent`. Never present on a success response.
   const growthHint = err && typeof err === 'object' ? err.growthHint : undefined;
   const repairFields = err && typeof err === 'object' && err.repairFields
     ? err.repairFields
@@ -6629,7 +6639,7 @@ function classifyErrorCode(err, message) {
   return 'tool_error';
 }
 
-// ── 도구 구현 ─────────────────────────────────────────────────────────────
+// ── Tool implementations ──────────────────────────────────────────────────
 
 function normalizeToolArguments(args, toolName) {
   if (args === undefined) return {};
@@ -6725,15 +6735,16 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   const docs = loadVaultDocs(VAULT_ROOT);
 
-  // R11 #23 — vault-wide validation 카운트. raw 모두 검증해 silent corruption
-  // 가시화. AI agent 가 vault 상태를 한 번에 인지 가능 (UI banner #14 의 짝).
+  // Vault-wide validation counts. Every raw doc is validated so silent
+  // corruption becomes visible, and an agent sees the vault's state in one call.
   let errorCount = 0;
   let warningCount = 0;
   /*
-   * ⚠️ **집계 전에 좁힌다** (2026-08-11). 이 숫자가 `list_concepts.vaultWarnings` 이고,
-   * `mcp-verify` 는 그 값이 0이 아니면 실패한다. 갓 만든 볼트가 정확히 그것 때문에
-   * 「연결 실패」로 보고됐다 — 걸린 경고는 「부모가 없다」였는데 프로젝트가 이미 그
-   * 노드를 담고 있었다. 세기 전에 슬러그별로 모아야 포함을 볼 수 있다.
+   * ⚠️ **Narrow before aggregating** (2026-08-11). This number is
+   * `list_concepts.vaultWarnings`, and `mcp-verify` fails when it is non-zero. A
+   * freshly created vault was reported as "connection failed" for exactly that
+   * reason: the warning was "no parent" while the project already contained the
+   * node. Grouping by slug before counting is what makes containment visible.
    */
   const issuesBySlugForCount = new Map();
   for (const doc of docs) {
@@ -6752,18 +6763,19 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
     }
   }
 
-  // R+ — `since` (ms) 가 number 면 mtime > since 만 통과. AI agent 의 incremental
-  // sync 시나리오: 이전 list 응답에서 최대 mtime 을 캡처 → 다음 호출에 since 로
-  // 패스 → vault 의 *바뀐 것만* 전송. 같은 mtime 은 strict 으로 제외 (max 를
-  // 재전송해도 double-fetch 안 됨).
+  // When `since` (ms) is a number, only docs with mtime > since pass. Agents use
+  // it for incremental sync: capture the maximum mtime from a previous list
+  // response, pass it as `since`, receive only what changed. Equal mtimes are
+  // excluded strictly, so resending the max never double-fetches.
   const sinceMs = typeof since === 'number' && Number.isFinite(since) ? since : null;
   const filtered = docs.filter((doc) => {
     const docKind = doc.frontmatter.kind;
     if (kind && docKind !== kind) return false;
-    if (!docKind) return false; // frontmatter `kind:` 가 있어야 ontology 노드.
-    // domain 필터 — frontmatter `domain:` 매칭. "auth 도메인 모든 capability"
-    // 처럼 흔한 query 를 query_concepts DSL 없이 한 호출로. 모든 kind 에 일관
-    // 적용 — 매칭 없으면 자연스럽게 빈 결과.
+    if (!docKind) return false; // A frontmatter `kind:` is what makes it an ontology node.
+    // Domain filter — matches frontmatter `domain:`. Answers the common query
+    // ("every capability in the auth domain") in one call without the
+    // query_concepts DSL. Applied uniformly across kinds; no match simply yields
+    // an empty result.
     if (domain && doc.frontmatter.domain !== domain) return false;
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
@@ -6776,9 +6788,9 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   const page = filtered.slice(offset, offset + limit);
   const summaryTruncatedSlugs = [];
   const nodes = page.map((doc) => {
-    // R+ — opt-in summary. agent 가 list 한 호출로 "각 노드 무슨 내용인가?"
-    // 파악 가능. 200자 cap 으로 페이로드 부풀림 방지 (find_evidence 와 동일).
-    // 호출자가 summary:true 명시 안 하면 비활성 (기존 동작 보존).
+    // Opt-in summary, so one list call answers "what is each node about?".
+    // Capped at 200 chars to keep the payload from ballooning (same cap as
+    // find_evidence). Off unless the caller passes summary:true.
     let summaryFields = {};
     if (summary === true) {
       const delivery = describeBodyDelivery(doc.body, { maxLen: 200 });
@@ -6796,9 +6808,9 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
       domain: doc.frontmatter.domain,
       capabilities: doc.frontmatter.capabilities,
       elements: doc.frontmatter.elements,
-      // R+ — per-node mtime (ms). agent 가 list 응답만으로 "어느 노드가 최근에
-      // 변경됐나" 파악 가능. get_concept 의 mtime field 와 일관 — 같은 의미.
-      // sort 가능 + 외부 변경 감지에도 활용.
+      // Per-node mtime (ms), so a list response alone answers "which nodes
+      // changed recently". Same meaning as get_concept's mtime field: sortable,
+      // and usable for external-change detection.
       mtime: doc.mtime,
       ...summaryFields,
     };
@@ -6817,9 +6829,10 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
       hasMore: offset + nodes.length < filtered.length,
       nextOffset: offset + nodes.length < filtered.length ? offset + nodes.length : null,
     },
-    // 잘린 요약은 **행에 표시하고 목록에 한 번만 안내한다** — 행마다 안내문을
-    // 붙이면 페이로드만 늘고, 아무 데도 안 붙이면 무엇이 남았는지 몰라 다시
-    // 요청할 수가 없다.
+    // A truncated summary is **marked on the row and explained once for the
+    // list**. Repeating the notice per row only grows the payload; omitting it
+    // entirely leaves the caller unable to tell what is missing, so it cannot
+    // ask again.
     summaryHint:
       summaryTruncatedSlugs.length > 0
         ? `${summaryTruncatedSlugs.length} row(s) carry a partial summary (summaryTruncated: true). Read those bodies in full with get_concepts({ slugs: [...], body: "full" }).`
@@ -6831,20 +6844,21 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   };
 }
 
-// R+ (과제 ⑧ — Ask-to-Grow) — "Doc not found" 텍스트는 그대로 두고
-// (get_concepts 배치/verify 계약이 정확한 문자열에 기대고 있다), growthHint
-// 만 Error 인스턴스에 실어 error() 가 structuredContent 로 얹는다.
+// The "Doc not found" text stays exactly as it is (the get_concepts batch and the
+// verify contract depend on the literal string); only growthHint rides on the
+// Error instance, and error() lifts it into structuredContent.
 function docNotFoundError(slug, docs) {
   const err = new Error(`Doc not found: ${slug}`);
   const candidateSlugs = suggestSimilarSlugs(VAULT_ROOT, slug);
-  // 볼트가 이 이름을 관계 키에 적어 두었는지 먼저 본다 — 화면(지도·인사이트)이
-  // 개념으로 세는 노드의 대부분은 문서가 없는 "참조로만 있는 개념" 이라, 그냥
-  // "없다" 로 답하면 사용자가 화면에서 베낀 이름이 매번 막다른 길이 된다.
+  // Check first whether the vault names this in a relation key: most of what the
+  // screens (map, insights) count as concepts are reference-only concepts with no
+  // document, so a flat "not found" turns every name a user copies off the screen
+  // into a dead end.
   let referencedBy = [];
   try {
     referencedBy = findGraphReferences(docs ?? loadVaultDocs(VAULT_ROOT), slug);
   } catch {
-    // 볼트를 못 읽는 상황에서까지 오류 경로를 실패시키지 않는다.
+    // Never fail the error path just because the vault could not be read.
     referencedBy = [];
   }
   err.repairFields = {
@@ -6902,29 +6916,29 @@ function getConcept({ slug, uid, body }, context = {}) {
   try {
     doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalSlug));
   } catch (err) {
-    // ENOENT 등 fs 오류는 사용자 친화 메시지로 surface — 절대 경로 leak 회피
-    // (Panel E audit 2026-05-02 finding).
+    // Surface fs errors (ENOENT and friends) as a user-friendly message so
+    // absolute paths do not leak.
     if (err && (err.code === 'ENOENT' || /no such file/i.test(err.message))) {
       if (hasUid) throw uidNotFoundError(uid);
       throw docNotFoundError(slug);
     }
     throw err;
   }
-  // R11 #23 — 이 doc 의 frontmatter corruption 검출. AI agent 가 응답에서
-  // warnings 보고 사용자에게 안내 / vault:validate 권장 가능.
+  // Detects frontmatter corruption in this doc, so an agent can report the
+  // warnings and recommend vault:validate.
   const validation = doc.raw ? validateVaultDocument(doc.raw) : null;
   const warnings = validation ? [...validation.issues] : [];
   /*
-   * ⚠️ **그래프 밖 문서라면 그렇다고 말한다** (2026-08-08 실측).
+   * ⚠️ **Say so when the document is outside the graph** (measured 2026-08-08).
    *
-   * 볼트는 평범한 마크다운 폴더라 회의록·메모·초안이 노드와 같이 산다 —
-   * 설계다. 그런데 이 도구는 이름이 `get_concept` 이라, 응답 자체가 «이건
-   * 개념이다» 라고 말하는 셈이다. 종전엔 frontmatter 가 통째로 없는 메모에
-   * **경고가 하나도 안 붙었다**(`kind:` 만 없는 문서에는 `missing-kind` 가
-   * 붙는데). 제일 흔한 경우에 신호가 제일 없었던 것이다.
+   * A vault is an ordinary markdown folder, so meeting notes, memos, and drafts
+   * live alongside nodes by design. But this tool is named `get_concept`, so the
+   * response itself asserts "this is a concept". Previously a memo with no
+   * frontmatter at all carried **no warning whatsoever** (while a doc missing only
+   * `kind:` got `missing-kind`) — the most common case had the least signal.
    *
-   * 거절하지 않는다 — 사람의 메모를 읽는 것은 정당하고, 막으면 로컬-퍼스트
-   * 약속을 깬다. 대신 **무엇을 주고 있는지** 말한다.
+   * Do not reject it: reading a person's notes is legitimate, and blocking it
+   * would break the local-first promise. Say what is being handed over instead.
    */
   const isNode =
     typeof doc.frontmatter?.kind === 'string' && doc.frontmatter.kind.trim() !== '';
@@ -6946,10 +6960,10 @@ function getConcept({ slug, uid, body }, context = {}) {
     to: ref,
     via: key,
   }));
-  // 잘림을 **말한다.** 발췌 모드에서도 원본 길이와 안 준 글자 수를 실어야
-  // 호출자가 "더 있는데 못 봤다" 를 알고 다시 부를 수 있다 — 종전에는 조용히
-  // 잘려서, 볼트만 넘겨받은 에이전트가 "있을 수 있는데 확인 못 했다" 로 답을
-  // 끝냈다.
+  // **Say that it was truncated.** Even excerpt mode must carry the original
+  // length and the number of characters withheld, so the caller knows there is
+  // more and can ask again. It used to cut silently, and an agent handed only the
+  // vault answered "it might exist but I could not confirm".
   const delivery = describeBodyDelivery(doc.body, {
     mode: bodyMode,
     hint:
@@ -6962,8 +6976,9 @@ function getConcept({ slug, uid, body }, context = {}) {
     slug: doc.slug,
     isNode,
     frontmatter: doc.frontmatter,
-    // `full` 에서는 `excerpt` 를 빼고 `body` 만 싣는다 — 같은 글을 두 번
-    // 보내면 "전부 달라" 고 명시한 호출자에게 최대 800자를 중복 과금하는 셈이다.
+    // `full` drops `excerpt` and ships `body` alone — sending the same text twice
+    // bills a caller who explicitly asked for everything for up to 800 duplicate
+    // characters.
     ...(bodyMode === 'full'
       ? { body: delivery.text }
       : { excerpt: delivery.text }),
@@ -6979,19 +6994,19 @@ function getConcept({ slug, uid, body }, context = {}) {
       describes: doc.frontmatter.describes || [],
     },
     outgoingEdges,
-    // R11 #8 — read-modify-write 흐름에서 caller (AI agent) 가 후속
-    // patch_concept / delete_concept 의 expected_mtime 으로 그대로 넘겨
-    // 외부 변경 감지 가능. ms 단위 fs mtime.
+    // In a read-modify-write flow the caller passes this straight through as the
+    // `expected_mtime` of a later patch_concept / delete_concept, which is what
+    // makes external-change detection work. Filesystem mtime, in ms.
     mtime: doc.mtime,
     warnings: warnings.length > 0 ? warnings : undefined,
   };
 }
 
-// R+ — get_concept 의 batch 변종. 입력 slugs[] 순서를 보존하고 missing slug 는
-// 배치를 abort 하지 않고 { ok: false, error } 행으로 surface — agent 가
-// partial result 받아 핸들링 (예: list_concepts 결과를 재검증 없이 그대로
-// 사용하다 stale slug 한두 개 있어도 배치 전체가 죽지 않음). 50 cap 은
-// payload 폭주 방지 (vault 가 더 큰 경우 청크 분할).
+// Batch variant of get_concept. Input `slugs[]` order is preserved, and a missing
+// slug surfaces as an `{ ok: false, error }` row instead of aborting the batch, so
+// an agent gets a partial result (reusing a list_concepts result without
+// revalidating does not kill the whole batch over one or two stale slugs). The cap
+// of 50 keeps the payload bounded; larger vaults chunk the call.
 function getConceptsBatch({ slugs, uids, body }) {
   const hasSlugs = slugs !== undefined;
   const hasUids = uids !== undefined;
@@ -7012,8 +7027,8 @@ function getConceptsBatch({ slugs, uids, body }) {
       `Too many ${selectorName}: ${selectors.length}. Max 50 per call — split into multiple get_concepts batches.`
     );
   }
-  // 전체 본문은 행당 페이로드가 두 자릿수 배로 커진다. 50행 × 전체 본문은 한
-  // 응답으로 보낼 것이 아니라 **나눠 부를 것**이라, 상한을 낮추고 그렇게 말한다.
+  // Full bodies grow the per-row payload by an order of magnitude. 50 rows × full
+  // body is not one response — it is several calls, so the cap drops and says so.
   if (bodyMode === 'full' && selectors.length > GET_CONCEPTS_FULL_BODY_MAX) {
     throw new Error(
       `Too many ${selectorName} for body:"full": ${selectors.length}. Max ${GET_CONCEPTS_FULL_BODY_MAX} per call — split into multiple get_concepts batches, or drop body:"full" to read ${selectors.length} excerpts at once.`
@@ -7035,7 +7050,7 @@ function getConceptsBatch({ slugs, uids, body }) {
         ? err.repairFields
         : {};
       const growthHint = err && typeof err === 'object' ? err.growthHint : undefined;
-      // Doc not found 같은 친화 메시지를 그대로 surface — 절대 경로 leak 방지.
+      // Surface the friendly message ("Doc not found") as-is; no absolute path leak.
       return {
         ...(hasUids ? { uid: selector } : { slug: selector }),
         ok: false,
@@ -7068,15 +7083,15 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
       body: doc.body,
     });
     if (score <= 0) continue;
-    // 매치의 발췌도 잘린다 — 그리고 find_evidence 는 *본문 안*을 매치할 수
-    // 있으므로, 잘렸다는 사실을 말하지 않으면 "찾았다는 그 문장"이 응답에
-    // 없는 채로 끝난다. 잘렸을 때만 두 필드를 붙인다 (깨끗한 행은 그대로).
+    // Match excerpts get truncated too — and find_evidence can match *inside* the
+    // body, so without saying it was cut, the very sentence that matched can be
+    // absent from the response. The two fields appear only when truncated.
     const evidenceDelivery = describeBodyDelivery(doc.body, { maxLen: 200 });
-    // ⚠️ **노드인지 아닌지를 행이 직접 말한다** (2026-08-08).
-    // 볼트에는 노드가 아닌 마크다운(회의록·메모·초안)이 정상적으로 섞여
-    // 산다. 종전엔 그 사실이 «`kind` 키가 없음» 으로만 표현됐는데, 없는
-    // 키는 JSON 에서 사라지므로 읽는 쪽에는 **아무 신호도 아니다**. 그래서
-    // 에이전트가 메모를 노드로 읽고 인용했다.
+    // ⚠️ **The row states whether it is a node** (2026-08-08).
+    // Markdown that is not a node (meeting notes, memos, drafts) legitimately
+    // lives in a vault. That used to be expressed only as «the `kind` key is
+    // absent», and an absent key disappears from JSON — which is **no signal at
+    // all** to the reader. Agents were reading memos as nodes and citing them.
     const isNode = typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
     if (nodesOnly && !isNode) continue;
     matches.push({
@@ -7085,16 +7100,16 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
       kind: doc.frontmatter.kind,
       isNode,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-      // R+ — list_concepts / find_backlinks / find_orphans / query_concepts
-      // 와 동일 shape. read tool 5종 응답 일관성 — agent 가 어느 read tool
-      // 결과든 같은 sort/filter 로직 재사용.
+      // Same shape as list_concepts / find_backlinks / find_orphans /
+      // query_concepts, so an agent reuses one sort/filter path across every
+      // read tool.
       domain: doc.frontmatter.domain,
       mtime: doc.mtime,
       matchedIn,
       score,
-      // R+ — 매치된 doc 의 prose 한 줄 요약 (max 200 chars). agent 가 매치를
-      // 받자마자 "이 doc 이 무슨 내용인가?" 추가 get_concept 없이 파악.
-      // get_concept 의 800자 helper 와 같은 prose-aware 추출 + 더 짧은 cap.
+      // One-line prose summary of the matched doc (max 200 chars) so an agent
+      // knows what a match is about without a follow-up get_concept. Same
+      // prose-aware extraction as get_concept's 800-char helper, shorter cap.
       excerpt: evidenceDelivery.text,
       ...(evidenceDelivery.info.truncated
         ? {
@@ -7105,15 +7120,17 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
     });
   }
   /*
-   * Best match first: score desc → **노드 먼저** → slug asc.
+   * Best match first: score desc → **nodes before non-nodes** → slug asc.
    *
-   * 가운데 칸이 2026-08-08 에 들어갔다. 본문 매치는 전부 같은 점수(0.3)라,
-   * 그것만으로 정렬하면 남는 기준이 슬러그 알파벳뿐이었다 — 잡문 3,000장
-   * 볼트에서 상위 5개가 전부 메모였고 진짜 노드는 하나도 안 나왔다(실측).
+   * The middle key was added 2026-08-08. Body matches all score identically
+   * (0.3), so sorting on score alone left slug alphabetisation as the only
+   * tiebreak — in a vault of 3,000 loose documents the top five were all memos
+   * and not one real node appeared (measured).
    *
-   * 점수를 이기지는 않는다. 제목이 정확히 맞는 메모(0.75+)는 여전히 본문만
-   * 스친 노드(0.3)보다 위다 — 사람의 메모가 진짜 근거일 때가 있고, 그걸
-   * 감추는 것은 이 제품의 약속을 깨는 일이다. 바꾼 것은 **동점의 처리**뿐이다.
+   * It never beats score. A memo whose title matches exactly (0.75+) still ranks
+   * above a node grazed in the body (0.3) — a person's memo is sometimes the real
+   * evidence, and hiding it would break this product's promise. Only the handling
+   * of ties changed.
    */
   matches.sort(
     (a, b) =>
@@ -7123,8 +7140,9 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
   );
   const limited = typeof limit === 'number' ? matches.slice(0, limit) : matches;
   const result = { query: title, matches: limited };
-  // 잡문이 섞여 나갔으면 그 사실과 좁히는 길을 같이 말한다 — 결과를 조용히
-  // 거르지 않는 대신, 읽는 쪽이 스스로 판단할 재료를 준다.
+  // When loose documents came back in the results, say so and give the way to
+  // narrow it — rather than filtering silently, hand the reader what they need to
+  // judge for themselves.
   const nonNodeCount = limited.filter((m) => !m.isNode).length;
   if (nonNodeCount > 0) {
     result.nonNodeHint =
@@ -7139,8 +7157,8 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
       .map((s) => `"${s}"`)
       .join(', ')}${truncatedSlugs.length > 3 ? ', …' : ''}], body: "full" }).`;
   }
-  // R+ (과제 ⑧ — Ask-to-Grow) — 0 hits 는 답 못한 질문. substring 매치는
-  // 이미 실패했으니 (score<=0 전부) 토큰 overlap 만으로 근접 타이틀을 찾는다.
+  // Zero hits is an unanswered question. Substring matching already failed (every
+  // score <= 0), so near-miss titles are found by token overlap alone.
   if (matches.length === 0) {
     const candidates = docs.map((doc) => ({
       slug: doc.slug,
@@ -7284,10 +7302,10 @@ function requireValidFrontmatterPatch(frontmatter) {
     if (value === null || value === undefined) continue;
     requireNonBlankString(value, `frontmatter.${key}`);
   }
-  // 패치는 저작이 아니다 (2026-07-31 원장). `created_by` 는 쓰기 시점에
-  // 경로가 증명한 사실이라 나중에 다시 쓸 수 없다 — 쓸 수 있으면 에이전트가
-  // 자기 노드를 `human` 으로 바꿀 수 있고, 그 순간 이 필드는 사실이 아니라
-  // 주장이 된다. 기존 값은 patch 를 통과하며 그대로 보존된다.
+  // A patch is not authorship (decision ledger, 2026-07-31). `created_by` is a
+  // fact the call path proved at write time, so it cannot be rewritten later — if
+  // it could, an agent could relabel its own node `human`, and the field would
+  // stop being a fact and become a claim. Existing values survive a patch intact.
   if (Object.prototype.hasOwnProperty.call(frontmatter, CREATED_BY_KEY)) {
     throw new Error(
       `frontmatter.${CREATED_BY_KEY} cannot be patched — authorship is stamped once, at write time, by the path that proves it. ` +
@@ -7297,13 +7315,14 @@ function requireValidFrontmatterPatch(frontmatter) {
 }
 
 /**
- * 저작 출처 스탬프 — 이 서버를 통과한 쓰기의 행위자는 **에이전트다**. 그것은
- * 호출 경로 자체가 증명하므로 위조할 수 없고, 그래서 여기서만 찍는다.
+ * Authorship stamp — a write that came through this server was made by **an
+ * agent**. The call path itself proves that, so it cannot be forged, and this is
+ * the only place it is stamped.
  *
- * 이름은 활동 로그(`activity.jsonl`)가 이미 쓰고 있는 그 신원 —
- * `.ontology-atlas/agent-activity.json` 의 하트비트 — 을 **그대로** 재사용한다.
- * 새 신원 체계를 만들지 않는다. 하트비트가 없으면 이름만 모르는 것이지
- * 사람이 쓴 것은 아니므로 `agent:unknown` 이다(2026-07-31 원장).
+ * The name reuses the identity the activity log (`activity.jsonl`) already
+ * writes: the heartbeat in `.ontology-atlas/agent-activity.json`. No second
+ * identity scheme. With no heartbeat only the name is unknown — a human still did
+ * not write it — so it is `agent:unknown` (decision ledger, 2026-07-31).
  */
 function agentProvenance() {
   return agentCreatedBy(readHeartbeatAgent(VAULT_ROOT));
@@ -7320,21 +7339,22 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   if (body !== undefined && typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
-  // 공백-only title 도 silent pollution 위험. UI 의 isUntitledTitle 가
-  // 같은 게이트를 한다 — MCP 도 parity 유지.
+  // A whitespace-only title is silent pollution too. The UI's isUntitledTitle
+  // applies the same gate; MCP keeps parity.
   if (!isValidVaultTitle(title)) {
     throw new Error('title must be a non-empty string.');
   }
   if (!ADD_CONCEPT_KINDS.has(kind)) {
     throw new Error(formatAllowedValueError('kind', kind, [...ADD_CONCEPT_KINDS]));
   }
-  // R14 — schema 가 kind 별 양식 (project: domains/capabilities/elements 빈
-  // 배열, capability: elements 빈 배열, …) 을 채워 호출자가 부분 정보만 줘도
-  // 일관된 frontmatter 가 디스크에 남도록. CLI add 와 같은 schema 모듈을
-  // 공유 (contract test 가 drift 차단).
-  // 어권별 표시 이름 (소유자 지시 2026-07-24) — `labels: { ko, en }` 를
-  // `display_<locale>` 로 정규화해 같은 노드가 한국어/영어 화면에서 각각
-  // 읽히게 한다. title 은 그대로(검색/매칭/파일 정체성의 단일 진실원).
+  // The schema fills the per-kind shape (project: empty domains/capabilities/
+  // elements arrays, capability: empty elements array, …) so partial input still
+  // leaves consistent frontmatter on disk. The CLI `add` shares this schema
+  // module and a contract test blocks drift.
+  // Per-locale display names (owner decision, 2026-07-24) — `labels: { ko, en }`
+  // is normalised to `display_<locale>` so one node reads correctly on Korean and
+  // English screens. `title` is untouched: it stays the single source of truth for
+  // search, matching, and file identity.
   const localeLabels = normalizeLocaleLabels(labels);
   const fm = buildFrontmatter({
     slug,
@@ -7345,13 +7365,14 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     elements,
     path,
     ...localeLabels,
-    // 저작 출처 — 이 호출이 MCP 를 통과했다는 사실이 곧 「에이전트가 썼다」다.
+    // Authorship — passing through MCP is itself the proof that an agent wrote it.
     [CREATED_BY_KEY]: agentProvenance(),
   });
-  // 성장하는 vault 의 #1 실패 모드(중복 노드) 안전망 — write *전* 기존 노드를
-  // 훑어 같은 title 이 있으면 advisory 경고. write 를 막지 않는다. batch
-  // (includePostWriteMaintenance === false, /ontology-bootstrap 처럼 사용자가
-  // 후보를 이미 검수한 흐름)에서는 per-node full vault load 비용을 피하려 skip.
+  // Safety net for the #1 failure mode of a growing vault (duplicate nodes):
+  // before the write, scan existing nodes and warn (advisory only) on a title
+  // collision. It never blocks the write. Batches skip it — in flows where the
+  // user already reviewed the candidates (/ontology-bootstrap) a per-node full
+  // vault load is not worth its cost.
   const duplicateWarning =
     options.includePostWriteMaintenance === false
       ? null
@@ -7360,12 +7381,13 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     frontmatter: fm,
     body: body === undefined ? defaultBody(kind, title) : body,
   });
-  // schema 의 requiredExtras 누락 검사 → 응답에 advisory 로 포함.
-  // throw 하지 않음 — agent 흐름 자연스럽게, 사용자가 후속 patch_concept 로
-  // 보완 가능. (capability/element 의 domain 누락 등이 흔한 케이스)
+  // Missing `requiredExtras` from the schema become advisories in the response
+  // rather than a throw, so the agent's flow continues and the user can fill the
+  // gap with a follow-up patch_concept (a capability or element missing its
+  // domain is the common case).
   const missing = missingExpectedFields(kind, fm);
-  // 한쪽 어권만 채우고 넘어가는 실수 방지 — 사용자가 자기 화면 언어로만
-  // 보다가 다른 언어 사용자에게는 원문 title 이 그대로 보이는 상황을 막는다.
+  // Guards the mistake of filling one locale and moving on: the author only ever
+  // sees their own screen language, while other-locale users get the raw title.
   const localeCodes = localeLabelCodes(localeLabels);
   const partialLocaleWarning =
     localeCodes.length === 1
@@ -7388,11 +7410,11 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   };
 }
 
-// R+ — add_concept 의 batch 변종. /ontology-bootstrap 흐름이 5~15 노드를
-// 단번에 land 할 때 K round-trip → 1. 입력 순서 보존. 각 row 는 독립적으로
-// 처리되어 한 row 의 실패 (existing slug / invalid kind / missing required)
-// 가 나머지를 abort 하지 않음 — 그 row 만 ok:false 로 surface. atomic
-// rollback 없음 (필요하면 single add_concept 직렬 호출).
+// Batch variant of add_concept. Turns K round trips into one when a
+// /ontology-bootstrap flow lands 5–15 nodes at once. Input order is preserved and
+// each row is independent, so one row failing (existing slug, invalid kind,
+// missing required field) does not abort the rest — that row alone surfaces as
+// ok:false. There is no atomic rollback; use serial add_concept calls if you need one.
 function addConceptsBatch({ concepts }) {
   if (!Array.isArray(concepts)) {
     throw new Error('concepts must be an array of concept specs');
@@ -7405,12 +7427,12 @@ function addConceptsBatch({ concepts }) {
       `Too many concepts: ${concepts.length}. Max 50 per call — split into multiple add_concepts batches.`
     );
   }
-  // 입력 내 중복 slug 사전 감지 — 두번째 row 가 "이미 존재" 로 fail 하는
-  // 혼동을 줄임. 같은 slug 의 첫 row 만 land 시도, 후속 동일 slug 는 input
-  // 단계에서 ok:false.
+  // Detect duplicate slugs within the input up front, so the second row does not
+  // fail with the confusing "already exists". Only the first row for a slug is
+  // attempted; later rows with the same slug fail at the input stage.
   const seenInBatch = new Map();
-  // 이 batch 안에서 이미 land 한 행들({slug, frontmatter}) — 같은 title 의
-  // 후속 행을 near-duplicate 로 잡는 in-memory 비교 대상(vault load 0).
+  // Rows already landed in this batch ({slug, frontmatter}) — the in-memory
+  // comparison target that catches a later row as a near-duplicate (zero vault loads).
   const landed = [];
   const results = concepts.map((spec, index) => {
     let slug = '';
@@ -7426,7 +7448,7 @@ function addConceptsBatch({ concepts }) {
         'elements',
         'path',
         'body',
-        // 어권별 표시 이름 — single add_concept 와 같은 계약(2026-07-24).
+        // Per-locale display names — same contract as single add_concept (2026-07-24).
         'labels',
       ]);
       if (slug && seenInBatch.has(slug)) {
@@ -7444,10 +7466,10 @@ function addConceptsBatch({ concepts }) {
       }
       if (slug) seenInBatch.set(slug, index);
       const result = addConcept(spec, { includePostWriteMaintenance: false });
-      // 같은 batch 안에서 이미 land 한 노드와 정규화 title 이 같으면 advisory
-      // 경고(막지 않음 — 합당할 수도 있으니). bootstrap 의 #1 실패 모드(같은
-      // 개념을 두 노드로 쪼갬)를 vault load 없이 in-batch 비교로 차단. single
-      // add_concept 의 vs-existing dup 검사(iter R+)와 같은 helper 재사용.
+      // When a node already landed in this batch has the same normalised title,
+      // warn (advisory — it may be legitimate). This blocks bootstrap's #1 failure
+      // mode (splitting one concept into two nodes) by in-batch comparison, with no
+      // vault load, reusing the same helper as single add_concept's dup check.
       if (result.ok) {
         const dupWarning = detectDuplicateTitle(spec.title, result.slug ?? slug, landed);
         if (dupWarning) result.warnings = [...(result.warnings ?? []), dupWarning];
@@ -7601,10 +7623,10 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   }
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);
-  // vault 에 실재하는 slug 인지 양쪽 검증. 누락 시 frontmatter array 에
-  // dangling reference 가 silently 추가되는 걸 차단 (AI agent 가 typo /
-  // hallucinated slug 보낼 때 깔끔한 에러로 노출). direct slug 뿐 아니라
-  // read/path 와 같은 tail/frontmatter slug alias 도 canonical slug 로 저장.
+  // Both endpoints are verified to exist in the vault. Without this a dangling
+  // reference is silently appended to a frontmatter array when an agent sends a
+  // typo or a hallucinated slug; now it surfaces as a clean error. Beyond direct
+  // slugs, tail and frontmatter slug aliases are stored as the canonical slug.
   if (!canonicalFrom) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', from, {
       createHint: true,
@@ -7616,15 +7638,16 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
     }));
   }
   /*
-   * ⚠️ **관계의 양 끝은 노드여야 한다** (2026-08-08 실측).
+   * ⚠️ **Both ends of a relation must be nodes** (measured 2026-08-08).
    *
-   * 위의 존재 검사는 «그 이름의 .md 파일이 있나» 를 묻는다. 그래서 존재하지
-   * 않는 슬러그는 제대로 거절하면서 **일기 메모는 통과**했다 — 볼트에는
-   * 노드가 아닌 마크다운이 정상적으로 섞여 살기 때문이다(그건 설계다).
+   * The existence check above asks «is there a .md by that name». So it rejected
+   * nonexistent slugs correctly but **let a diary memo through** — markdown that
+   * is not a node lives in a vault legitimately, by design.
    *
-   * 그 결과가 그래프에 적히는 dangling reference 다. 사후에 잡히긴 하지만
-   * (compile · maintenance 큐) 그건 쓰고 나서의 이야기이고, 그 사이 그래프는
-   * 컴파일러가 버릴 관계를 이고 있다. 쓰기 문이 먼저 말하는 편이 싸다.
+   * The result is a dangling reference written into the graph. It is caught
+   * afterwards (compile, maintenance queue), but only after the write, and in
+   * between the graph carries a relation the compiler will discard. The write
+   * gate saying it first is cheaper.
    */
   assertGraphNodeEndpoint(canonicalFrom, 'Source');
   assertGraphNodeEndpoint(canonicalTo, 'Target');
@@ -7664,8 +7687,9 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
     );
   }
   const next = normalizeRelationRefs([...existing, canonicalTo]);
-  // P6 — 관계 + 근거(why)를 한 번의 frontmatter 쓰기로 (원자 쓰기 게이트 ③:
-  // 둘이 따로 쓰이면 중간 실패 시 근거 없는 관계/관계 없는 근거가 남는다).
+  // Relation plus rationale (`why`) in a single frontmatter write: written
+  // separately, a failure between them leaves a relation with no reason or a
+  // reason with no relation.
   const patch = { [key]: next };
   if (typeof why === 'string' && why.trim()) {
     const notes = { ...(doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? doc.frontmatter.relation_notes : {}) };
@@ -7821,12 +7845,12 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
 }
 
 /**
- * 관계 **쓰기**의 끝점이 그래프 노드인지 본다.
+ * Checks that the endpoints of a relation **write** are graph nodes.
  *
- * 읽기 도구(`get_concept` · `find_neighbors`)는 노드가 아닌 문서도 정당하게
- * 다루므로 `resolveExistingVaultSlug` 자체는 넓게 둔다 — 좁히는 것은 쓰기
- * 경로뿐이다. 거절할 때는 이 저장소의 강등 문법을 따른다: **왜 안 되는지 +
- * 어디로 가면 되는지.**
+ * The read tools (`get_concept`, `find_neighbors`) legitimately handle documents
+ * that are not nodes, so `resolveExistingVaultSlug` itself stays permissive —
+ * only the write path narrows. A rejection follows this repository's refusal
+ * grammar: **why it cannot happen, and where to go instead.**
  */
 function assertGraphNodeEndpoint(canonicalSlug, role) {
   const doc = loadVaultDocs(VAULT_ROOT).find((d) => d.slug === canonicalSlug);
@@ -7891,12 +7915,12 @@ function resolveExistingVaultUid(uid, docs = null) {
   return mergedMatches[0]?.slug ?? null;
 }
 
-// R+ — add_relation 의 batch 변종. 이미 의미 검토와 승인을 마친 relation을
-// 한 호출에 land. 각 row 는
-// addRelation 으로 직렬 호출 — 같은 from 슬러그가 여러 row 에 등장해도
-// readDoc 이 매번 디스크를 다시 읽어 누락 없이 누적 됨 (단, expected_mtime
-// 을 같이 넘기면 첫 row 후 stale 이라 fail — tool description 에 명시).
-// 입력 순서 보존, partial result, atomic rollback 없음.
+// Batch variant of add_relation, for landing relations whose meaning was already
+// reviewed and approved. Rows are dispatched serially through addRelation, so the
+// same `from` slug can appear in several rows and readDoc re-reads from disk each
+// time, accumulating without loss (but passing expected_mtime alongside makes
+// every row after the first stale and fail — the tool description says so). Input
+// order preserved, partial results, no atomic rollback.
 function addRelationsBatch({ relations }) {
   if (!Array.isArray(relations)) {
     throw new Error('relations must be an array of relation specs');
@@ -7959,10 +7983,10 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
   if (body !== undefined && typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
-  // title 을 포함한 patch 라면 비-빈 문자열 강제. UI 의 renameVaultDoc 은
-  // blank reject 하는데 MCP 가 무방비면 AI agent 실수로 vault 에 untitled
-  // 노드가 생겨 ontology drift. null 은 키 삭제 의도라 별도 — title 자체
-  // 삭제는 frontmatter 깨짐이라 막는다.
+  // A patch that includes `title` forces a non-empty string. The UI's
+  // renameVaultDoc rejects blanks; leaving MCP open lets an agent's slip create an
+  // untitled node and drift the ontology. `null` is separate — it means "delete
+  // the key" — and deleting `title` itself breaks the frontmatter.
   if (frontmatter !== undefined && Object.prototype.hasOwnProperty.call(frontmatter, 'title')) {
     const t = frontmatter.title;
     if (t === null) {
@@ -7982,9 +8006,10 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
     slug,
     filePath,
     changed: true,
-    // 손으로 쓴 노드(=`uid:` 없이 에디터에서 만든 것)를 이 쓰기가 살렸다면
-    // 그 사실을 말한다. 신원이 생기는 것은 사람이 알아야 하는 사건이고,
-    // 조용히 지나가면 다음에 같은 일이 왜 필요했는지 아무도 모른다.
+    // If this write gave identity to a hand-authored node (one created in an
+    // editor with no `uid:`), say so. Identity appearing is an event a person
+    // should know about; passing over it silently leaves nobody able to explain
+    // why it was needed next time.
     ...(mintedUid
       ? {
           mintedUid,
@@ -8122,10 +8147,10 @@ function findPathTool({ from, to, maxHops }) {
   requireOptionalNonNegativeInteger(maxHops, 'maxHops', { max: 20 });
   const result = findPath(VAULT_ROOT, from, to, maxHops ?? 5);
   if (!result) {
-    // R+ (과제 ⑧ — Ask-to-Grow) — 답 못한 질문을 그냥 버리지 않는다. 두
-    // endpoint 가 vault 에 실제로 있는지 먼저 확인해 "endpoint 자체가 없음"
-    // (add_concept 제안) 과 "둘 다 있지만 경로가 없음" (add_relation 제안)
-    // 을 구분한다.
+    // A zero-path answer is an unanswered question. Check first whether both
+    // endpoints actually exist in the vault, so "the endpoint itself is missing"
+    // (suggest add_concept) is distinguished from "both exist but no path"
+    // (suggest add_relation).
     const docs = loadVaultDocs(VAULT_ROOT);
     const fromExists = Boolean(resolveGraphRef(from, docs).slug);
     const toExists = Boolean(resolveGraphRef(to, docs).slug);
@@ -8194,8 +8219,8 @@ function queryConceptsTool({ filter, limit }) {
         domain: doc.frontmatter.domain,
         capabilities: doc.frontmatter.capabilities,
         elements: doc.frontmatter.elements,
-        // R+ — list_concepts / find_backlinks / find_orphans 와 동일 shape.
-        // agent 가 query 결과에서 staleness sort/filter 가능, 후속 호출 없이.
+        // Same shape as list_concepts / find_backlinks / find_orphans, so an agent
+        // can sort or filter query results by staleness with no follow-up call.
         mtime: doc.mtime,
       });
     }
@@ -8207,8 +8232,9 @@ function queryConceptsTool({ filter, limit }) {
     matches,
     limited: total > matches.length,
   };
-  // R+ (과제 ⑧ — Ask-to-Grow) — 0 rows 는 답 못한 질문. 실제 vault census
-  // (byKind/byDomain) 로 필터가 존재하지 않는 kind/domain 을 겨눴는지 확인.
+  // Zero rows is an unanswered question. Check the real vault inventory
+  // (byKind/byDomain) for whether the filter aimed at a kind or domain that does
+  // not exist.
   if (total === 0) {
     const byKind = {};
     const byDomain = {};
@@ -8245,8 +8271,8 @@ function compileOntologyTool({
     edgesLimit: typeof edgesLimit === 'number' ? edgesLimit : undefined,
     edgesOffset: typeof edgesOffset === 'number' ? edgesOffset : undefined,
   });
-  // summary mode — artifact 자체가 카운트/aggregate. wrapper 의 추가 summary
-  // stats 불필요 (carter 가 중복됨). 그대로 반환.
+  // Summary mode — the artifact is itself the count/aggregate, so the wrapper's
+  // extra summary stats would duplicate it. Returned as-is.
   if (summary === true) return artifact;
   return {
     ...artifact,
@@ -8295,15 +8321,15 @@ function queryOntologyTool(args = {}) {
       ? attachMeaningReadiness(validatedResult, artifact, args)
       : validatedResult;
   /*
-   * **수는 세어서 낸다** (2026-08-17 실측).
+   * **Count it, do not maintain it** (measured 2026-08-17).
    *
-   * 검사를 덧붙이는 곳이 둘인데(`attachVaultValidation` · `attachProjectMeaning`)
-   * 앞엣것만 `healthChecks` 를 손으로 +1 하고 뒤엣것은 안 했다. 그래서 한
-   * 응답 안에서 「7 health checks」라고 말하면서 8개를 싣고 있었다.
+   * Two places attach checks (`attachVaultValidation`, `attachProjectMeaning`) and
+   * only the first hand-incremented `healthChecks`. So one response said
+   * "7 health checks" while carrying 8.
    *
-   * 붙이는 자리마다 손으로 맞추라고 하면 다음에 붙이는 사람이 또 빠뜨린다 —
-   * 그러니 **마지막에 한 번 세어서** 낸다. 그러면 이 갈래가 통째로 사라진다.
-   * 게이트: `cli/src/lib/brief-self-consistency.test.mjs`.
+   * Asking every attachment site to keep a counter in step means the next person
+   * forgets again — so count once, at the end, and the whole class disappears.
+   * Gate: `cli/src/lib/brief-self-consistency.test.mjs`.
    */
   const result = Array.isArray(attached.health?.checks) && attached.readiness
     ? { ...attached, readiness: { ...attached.readiness, healthChecks: attached.health.checks.length } }
@@ -8324,16 +8350,17 @@ function queryOntologyTool(args = {}) {
 }
 
 /**
- * 처방 id 를 **할 수 있는 말**로 옮긴다.
+ * Translates a remedy id into **something the reader can act on**.
  *
- * 종전에는 `assessment_input_invalid` 같은 코드 하나만 나갔다. 그 문장을 읽는
- * 쪽은 사람이거나 에이전트인데, 둘 다 코드만으로는 아무것도 못 한다. 특히
- * `init` 직후의 볼트가 이 자리에서 「invalid」 를 받아서, 아무 잘못도 안 한
- * 사람이 자기가 뭘 깨뜨린 줄 알게 됐다.
+ * A bare code like `assessment_input_invalid` used to be the whole message. The
+ * reader is a person or an agent, and neither can do anything with a code alone.
+ * A vault straight out of `init` in particular received "invalid" here, so
+ * someone who had done nothing wrong concluded they had broken something.
  */
 const MEANING_NEXT_ACTION_HINTS = Object.freeze({
-  // 「절이 없다」고 단정하지 않는다 — 절은 있는데 아직 확정만 안 한 볼트가
-  // 있고(이 저장소가 그렇다), 그런 볼트에 「추가하라」고 하면 틀린 안내다.
+  // Never assert "the section is missing" — a vault can have the section and
+  // simply not have finalised it (this repository is one), and telling that user
+  // to "add it" is wrong guidance.
   author_competency_answers:
     'This project\'s five competency answers have not been finalized yet. '
     + 'Nothing is broken. Fill in the `## Competency answers` section of the '
@@ -8391,8 +8418,8 @@ function meaningReadinessCheck(artifact) {
         projectSlug,
         status: context.meaningAssessment?.status ?? 'invalid',
         topGap: context.meaningAssessment?.topGap?.id ?? 'assessment_input_invalid',
-        // 처방은 이미 계산돼 있었는데 여기서 버려지고 있었다 (2026-08-17).
-        // 그래서 이 검사를 읽는 사람도 에이전트도 오류 코드 하나만 받았다.
+        // The remedy was already computed and was being discarded here
+        // (2026-08-17), so the reader — person or agent — got only an error code.
         nextAction: context.meaningAssessment?.nextAction?.id ?? 'repair_assessment_input',
       };
     } catch {
@@ -8419,8 +8446,8 @@ function meaningReadinessCheck(artifact) {
   return {
     status: 'warn',
     count: unresolved.length,
-    // 진단만 주고 처방을 안 주면 읽는 쪽은 무엇을 할지 모른다 — 특히 이
-    // 문장을 읽는 쪽이 사람이 아니라 에이전트일 때(`workspace-brief`).
+    // A diagnosis without a remedy leaves the reader with nothing to do — above
+    // all when the reader is an agent rather than a person (`workspace-brief`).
     message:
       `${unresolved.length} project meaning assessment(s) require review; `
       + `first ${first.projectSlug}: ${first.status} (${first.topGap}). `
@@ -8963,10 +8990,10 @@ function attachVaultValidation(result, args = {}) {
   const errorCount = validation.summary.errorFiles;
   const frontmatterWarnings = validation.summary.warningFiles;
   const warningCount = frontmatterWarnings + driftCount;
-  // **이 검사가 무엇을 봤는지 문장이 말한다.** 종전엔 두 종류의 경고를 한
-  // 숫자로 합쳐 "validator or source-path warning(s)" 라고만 했다. 그래서
-  // `validate` 가 clean 이라고 답한 볼트에 `health` 가 warn:13 을 붙였을 때,
-  // 사용자가 그 13이 frontmatter 인지 코드 경로인지 알 길이 없었다.
+  // **The sentence states what this check looked at.** It used to merge two kinds
+  // of warning into one number and say only "validator or source-path warning(s)".
+  // So when `health` reported warn:13 on a vault that `validate` called clean, the
+  // user had no way to tell whether those 13 were frontmatter or code paths.
   const scopeTail = pathsChecked
     ? ` (frontmatter/graph refs ${frontmatterWarnings}, source paths ${driftCount}; repoRoot ${validation.pathDrift?.repoRoot ?? 'unknown'})`
     : ' (frontmatter/graph refs only — source paths were NOT checked; pass repoRoot / OATLAS_REPO_ROOT to include them)';
@@ -9226,10 +9253,10 @@ function compactMaintenanceNodes(nodesValue) {
   return undefined;
 }
 
-// R+ — cycle 46: validate_vault tool. agent 가 vault 전체 health 를 한
-// 호출에 받음. CLI `ontology-atlas validate --json` 와 같은 shape.
-// per-doc \`warnings\` (get_concept) + vault aggregate (\`vaultWarnings\` in
-// list_concepts) 의 빠진 중간 — 둘 다 합친 detailed report.
+// validate_vault — one call gives an agent the whole vault's health, in the same
+// shape as CLI `ontology-atlas validate --json`. It fills the gap between per-doc
+// `warnings` (get_concept) and the vault aggregate (`vaultWarnings` in
+// list_concepts): a detailed report combining both.
 function validateVaultTool({ repoRoot } = {}) {
   requireOptionalNonBlankString(repoRoot, 'repoRoot');
   const docs = loadVaultDocs(VAULT_ROOT);
@@ -9244,8 +9271,8 @@ function validateVaultTool({ repoRoot } = {}) {
     docIssues.set(slug, issues);
   }
   /*
-   * 부모가 이미 있는 노드에 「부모가 없다」고 말하지 않는다 (2026-08-11).
-   * 파일 하나만 보는 검사로는 알 수 없고, 여기는 볼트 전체를 갖고 있다.
+   * Never tell a node that already has a parent that it has none (2026-08-11).
+   * A single-file check cannot know; this one holds the whole vault.
    */
   suppressParentedExpectedFieldIssues(docIssues, docs);
   const problems = [];
@@ -9302,10 +9329,10 @@ function validateVaultTool({ repoRoot } = {}) {
   // agent already runs validate_vault for at first-contact. The agent fixes via
   // patch_concept (correct the path) or by removing the stale entry.
   const driftRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
-  // 근거 없는 저장소 루트에 대고는 **재지 않는다.** 재면 그 볼트와 아무 상관
-  // 없는 디렉터리에 없는 파일이 전부 "drift" 로 잡혀, 멀쩡한 볼트가
-  // `needs_attention` 이 된다. 안 본 것은 0이 아니라 *안 봤다* 이므로
-  // `checked: false` 로 말하고 어떻게 보게 하는지까지 적는다.
+  // **Do not measure against an ungrounded repo root.** Measuring would flag every
+  // file missing from a directory unrelated to the vault as "drift", turning a
+  // healthy vault into `needs_attention`. Not looking is not zero — it is *not
+  // looked at* — so it reports `checked: false` and how to make it look.
   const driftGrounded = Boolean(repoRoot) || REPO_ROOT_IS_GROUNDED;
   if (!driftGrounded) {
     return {
@@ -9388,8 +9415,9 @@ function findDanglingGraphReferenceIssues(docs) {
   }
   const resolveRef = (rawRef) => {
     if (typeof rawRef !== 'string') return null;
-    // 참조도 NFC 로 맞춘다 — 슬러그는 `pathToSlug` 가 이미 NFC 다. 한쪽만
-    // 정규화하면 글자가 같은데 안 맞는 상태가 그대로 남는다.
+    // Normalise references to NFC as well — slugs are already NFC via
+    // `pathToSlug`. Normalising one side only leaves characters that look
+    // identical but do not match.
     const ref = rawRef.normalize('NFC');
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
@@ -9419,14 +9447,14 @@ function findDanglingGraphReferenceIssues(docs) {
 }
 
 /**
- * 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
+ * Two documents claiming the same canonical slug (measured 2026-07-29).
  *
- * **파일 단위 검사로는 원리적으로 못 잡는다** — 한 파일만 보면 정상이다.
- * `patch_concept` 이 `frontmatter.slug` 를 다른 노드가 이미 쓰는 값으로
- * 덮어써도 막지 않아서(add_concept 은 막고 rename_concept 은 overwrite 를
- * 요구하는데 이 경로만 열려 있었다) 생기고, 그러면 그 이름을 가리키는 모든
- * 관계가 어느 쪽을 뜻하는지 정할 수 없다. 컴파일러는 `ambiguous-alias` 로
- * 보는데 `validate_vault` 는 조용히 clean 을 반환했다.
+ * **A per-file check cannot catch this in principle** — either file alone looks
+ * fine. It arises because `patch_concept` did not stop `frontmatter.slug` being
+ * overwritten with a value another node already uses (add_concept blocks it and
+ * rename_concept demands `overwrite`; only this path was open). Once it happens,
+ * no relation naming that slug can be resolved to one side. The compiler saw
+ * `ambiguous-alias` while `validate_vault` quietly returned clean.
  */
 function findDuplicateSlugIssues(docs) {
   const byDeclared = new Map();
@@ -9499,8 +9527,8 @@ function groupDanglingIssuesBySlug(docs) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }
-  // 중복 slug 도 같은 볼트 전수 패스에 태운다 — 둘 다 "한 파일만 보면 정상"인
-  // 종류라 이 자리가 유일하게 볼 수 있는 곳이다.
+  // Duplicate slugs ride the same whole-vault pass: both are the kind of defect
+  // that looks fine one file at a time, so this is the only place that can see them.
   for (const { slug, issue } of findDuplicateSlugIssues(docs)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
@@ -9523,34 +9551,34 @@ function isPathLikeGraphRef(ref) {
   );
 }
 
-// R16 (b3) — analyze_repo_structure thin wrapper. side effect 0 — vault
-// frontmatter 절대 안 건드림. reviewPlan + independent qualification 뒤 반환된
-// exact writePlan만 별도 batch writer의 진실 진입점이다.
+// Thin wrapper over analyze_repo_structure. Zero side effects — it never touches
+// vault frontmatter. Only the exact writePlan returned after reviewPlan plus
+// independent qualification is a truth entry point for the batch writer.
 /**
- * 훑을 수 있는 자리인가 — **볼트나 그 저장소 안이어야 한다.**
+ * Is this a place we may scan — **it must be inside the vault or its repository.**
  *
- * ## 왜 (2026-08-16 검수, 실측으로 확인)
- *
- * `analyze_repo_structure` · `infer_imports` · `index_project` · `validate_vault`
- * 는 `rootPath`(또는 `repoRoot`)를 받아 `resolve()` 만 하고 **아무 경계도 안
- * 봤다.** 그래서 이런 호출이 그대로 성공했다:
+ * **Why** (review 2026-08-16, confirmed by measurement): `analyze_repo_structure`,
+ * `infer_imports`, `index_project`, and `validate_vault` took a `rootPath` (or
+ * `repoRoot`), called `resolve()` on it, and **checked no boundary at all**. So
+ * this call succeeded as written:
  *
  * ```
- * analyze_repo_structure {"rootPath":"/etc"}  → ok, 디렉터리 구조를 돌려줌
+ * analyze_repo_structure {"rootPath":"/etc"}  → ok, returns the directory structure
  * ```
  *
- * 게다가 이 넷은 **읽기 도구**라 `OATLAS_READ_ONLY` 가 안 막는다. 그 모드의
- * 설명은 「등록한 사람이 볼트 주인이 아닐 때 권한다」인데, 쓰기는 못 해도
- * **디스크 전체를 훑을 수는 있는** 상태였다.
+ * Worse, all four are **read tools**, so `OATLAS_READ_ONLY` does not stop them.
+ * That mode is recommended when whoever registered the server is not the vault's
+ * owner — and it left them unable to write but **able to scan the entire disk**.
  *
- * 이건 이 제품이 사용자에게 한 약속과 정면으로 부딪힌다:
- * *"사용자 디스크에 있는 비밀번호·인증 키 같은 파일은 절대 자동으로 훑지
- * 않는다"* (`local-first.md`), *"사용자 디스크를 자동으로 훑지 않는다"*
- * (신뢰 헌장). 프롬프트 한 줄로 유도되는 도구 호출이 그 약속을 깬다.
+ * This collides head-on with what the product promises its users: *"files on the
+ * user's disk such as passwords or credentials are never scanned automatically"*
+ * (`.claude/rules/local-first.md`), *"we do not scan the user's disk
+ * automatically"* (the trust charter). A tool call steered by one line of prompt
+ * would break that promise.
  *
- * 그래서 **볼트 아니면 그 볼트의 저장소** 안만 허용한다. 심볼릭 링크로
- * 빠져나가는 길을 막으려고 비교 전에 실제 경로로 편다 — `absorb_document` 가
- * 이미 쓰는 문법 그대로다.
+ * So only the vault, or that vault's repository, is allowed. Real paths are
+ * resolved before comparison to close the symlink escape — the same grammar
+ * `absorb_document` already uses.
  */
 function assertScanRootAllowed(target, argName = 'rootPath') {
   const canonical = existsSync(target) ? realpathSync(target) : resolve(target);
@@ -9601,8 +9629,8 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualif
   });
 }
 
-// R17 — infer_imports thin wrapper. side effect 0. 결과 moduleEdges 는
-// exact source evidence가 붙은 rationale-review 후보다.
+// Thin wrapper over infer_imports. Zero side effects. The resulting moduleEdges
+// are rationale-review candidates carrying exact source evidence.
 function buildImportStaleEdgeFollowUp(result) {
   const count = Array.isArray(result?.reconciliation?.inVaultNotInCode)
     ? result.reconciliation.inVaultNotInCode.length
@@ -9748,10 +9776,11 @@ function inferImportsTool({
     try {
       const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), { includeIndexes: true });
       const nodeSlugs = new Set((artifact.nodes ?? []).map((n) => n.slug).filter(Boolean));
-      // 각 노드가 자기 구현을 어디라고 적어 뒀는지 — **판정을 미룰지**
-      // 결정하는 데 쓴다. 스캐너가 못 읽는 언어(Rust 등)로 구현된 관계를
-      // 「코드에 없음」으로 부르면 에이전트가 맞는 관계를 지운다
-      // (2026-08-17, 이 저장소 자신에서 실측: 3개 중 3개가 그 경우였다).
+      // Where each node says its implementation lives — used to decide **whether
+      // to defer judgement**. Calling a relation implemented in a language the
+      // scanner cannot read (Rust and friends) "absent from the code" makes an
+      // agent delete a correct relation (measured on this repository itself,
+      // 2026-08-17: 3 of 3 were that case).
       const pathBySlug = Object.create(null);
       for (const node of artifact.nodes ?? []) {
         if (node?.slug && typeof node.path === 'string') pathBySlug[node.slug] = node.path;
@@ -9781,9 +9810,9 @@ function inferImportsTool({
       }
       if (r.inVaultNotInCode.length > 0) {
         parts.push(
-          // 「오래됐다」고 단정하지 않는다. import 는 **한 종류의 근거**일 뿐이고,
-          // 의존은 프로세스를 띄우는 것일 수도 설정이 가리키는 것일 수도 있다 —
-          // 이 저장소 자신의 세 엣지가 전부 그런 경우였다(2026-08-17).
+          // Never assert "stale". An import is **one kind of evidence**, and a
+          // dependency may be a spawned process or a config pointer instead — all
+          // three of this repository's own edges were that case (2026-08-17).
           `${r.inVaultNotInCode.length} vault depends_on edge(s) have no matching code import. An import is only one kind of evidence: a dependency can be a process spawn, a config reference, or a runtime contract. Read the code before treating any of these as stale`,
         );
       }
@@ -10206,24 +10235,24 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     throw new Error('oldSlug and newSlug are identical.');
   }
   /*
-   * ⚠️ **대소문자만 다른 이름은 여기서 막는다** (2026-08-16 검수 — 실제로
-   * 문서가 사라지는 것을 재현했다).
+   * ⚠️ **Names differing only in case are stopped here** (review 2026-08-16 — the
+   * document actually disappearing was reproduced).
    *
-   * 위 검사는 문자열 비교라 `Auth` 와 `auth` 를 다른 것으로 본다. 그런데
-   * macOS·Windows 의 파일 시스템은 그 둘을 **같은 파일**로 보므로, 새 이름으로
-   * 쓰고 옛 이름을 지우면 방금 쓴 그것이 지워졌다 — 그리고 이 도구는
-   * `ok: true, moved: true` 를 돌려줬다. 실측:
+   * The check above is a string comparison, so it treats `Auth` and `auth` as
+   * different. macOS and Windows filesystems treat them as the **same file**, so
+   * writing the new name and deleting the old one deleted what had just been
+   * written — and this tool returned `ok: true, moved: true`. Measured:
    *
    * ```
    * rename_concept{oldSlug:"Auth", newSlug:"auth", confirm:true, overwrite:true}
    *   → ok:true, moved:true, backlinkUpdates:{totalUpdated:1}
-   *   → 디스크에서 Auth.md 도 auth.md 도 없어짐. 참조는 매달린 채 남음
+   *   → neither Auth.md nor auth.md left on disk; references left dangling
    * ```
    *
-   * 쓰기 층에도 막는 장치를 뒀지만(`applyAllOrNothing` 의 같은-파일 판정),
-   * 그것만 있으면 결과가 **반만 된 이름 바꾸기**가 된다: 참조는 새 이름을
-   * 가리키는데 디스크의 파일 이름은 그대로다. 반쯤 된 것을 성공이라고 말하지
-   * 않는다 — 여기서 못 한다고 분명히 말하고, 할 수 있는 길을 알려 준다.
+   * The write layer guards it too (`applyAllOrNothing`'s same-file detection), but
+   * that alone yields a **half-finished rename**: references point at the new name
+   * while the filename on disk does not change. Half-finished is not success — say
+   * plainly that it cannot be done here, and name the path that works.
    */
   if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
     throw new Error(
@@ -10248,20 +10277,21 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   const targetDoc = overwrite && targetExists ? readDoc(VAULT_ROOT, targetPath) : null;
 
-  // 슬러그 평면성 — rename 은 writeDoc 을 거치지 않고 직접 쓰므로 여기서도
-  // 같은 게이트를 잰다 (경로형 정체성이 rename 으로 되살아나는 문 봉쇄).
+  // Slug flatness — rename writes directly rather than through writeDoc, so the
+  // same gate is applied here (closing the door on path-shaped identity returning
+  // through rename).
   const renameSlugIssue = flatSlugIssue(sourceDoc.frontmatter?.kind, newSlug);
   if (renameSlugIssue) throw new Error(renameSlugIssue);
 
-  // R11 closeout — source mtime conflict guard. read 직후 expected 와 비교.
+  // Source mtime conflict guard — compare against `expected` right after the read.
   if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) {
     throw new VaultConflictError(oldSlug, expected_mtime, sourceDoc.mtime);
   }
 
   // Step 1 — dry-run preview of every backlink rewrite.
-  // overwrite 대상은 곧 source 문서로 완전히 교체된다. 그 낡은 대상 문서의
-  // backlink rewrite 를 계획에 넣으면 source 를 쓴 직후 다시 낡은 target 이
-  // 덮어써지는 순서 역전이 생긴다.
+  // An overwrite target is about to be replaced wholesale by the source document.
+  // Planning backlink rewrites for that stale target inverts the order: right
+  // after the source is written, the stale target overwrites it again.
   const replacedSlugs = overwrite ? [newSlug] : [];
   const preview = redirectBacklinks(VAULT_ROOT, oldSlug, newSlug, {
     dryRun: true,
@@ -10285,17 +10315,18 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   }
 
   /**
-   * Step 2 — **세 단계를 한 계획으로 묶어 전부-아니면-전무로 적용한다.**
+   * Step 2 — **three steps bound into one plan, applied all-or-nothing.**
    *
-   * 종전엔 순서대로 즉시 썼다: 새 파일 생성 → 백링크 재작성 → 옛 파일 삭제.
-   * 주석은 *"partial failure doesn't lose data"* 라고 적었고 그건 사실이었지만
-   * (데이터는 안 잃는다), **그래프는 분열됐다** — 2026-08-01 실측: 참조 셋 중
-   * 하나가 읽기 전용이면 제목이 같은 노드 둘이 남고 참조가 두 이름으로 갈렸다.
-   * 그리고 그 볼트에 `validate` 와 `health` 가 둘 다 clean 이라고 답했다.
-   * 도구 설명이 약속한 "one atomic graph-level operation" 이 거짓이었다.
+   * It used to write each step immediately in order: create the new file, rewrite
+   * backlinks, delete the old file. The comment claimed *"partial failure doesn't
+   * lose data"*, which was true (no data is lost) — but **the graph split**.
+   * Measured 2026-08-01: with one of three references read-only, two nodes with
+   * the same title remained and the references forked across both names. And
+   * `validate` and `health` both called that vault clean. The tool description's
+   * promise of "one atomic graph-level operation" was false.
    *
-   * 이제 계획만 세우고(`deferWrite`) 마지막에 한 번 적용한다. 실패하면
-   * 되돌린다 — 프로세스가 살아 있는 한 볼트는 시작 상태다.
+   * Now only the plan is built (`deferWrite`) and applied once at the end. On
+   * failure it rolls back — as long as the process lives, the vault is as it started.
    */
   const nextFrontmatter = { ...sourceDoc.frontmatter };
   if (typeof nextFrontmatter.slug === 'string') {
@@ -10316,8 +10347,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
         : { expectedAbsent: true }),
     },
     ...result.plan,
-    // 삭제는 마지막이다 — 계획 안에서도 순서는 유지된다. 되돌리기는 역순이라
-    // 옛 파일이 먼저 복원되고 새 파일이 지워진다.
+    // Deletion is last, and the plan preserves that order. Rollback runs in
+    // reverse, so the old file is restored before the new one is removed.
     ...(sourcePath !== targetPath
       ? [{
           op: 'delete',
@@ -10378,7 +10409,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) throw new VaultConflictError(canonicalOld, expected_mtime, sourceDoc.mtime);
   const oldKind = sourceDoc.frontmatter.kind;
-  // 슬러그 평면성 — reclassify 도 직접 쓰는 문이라 새 (kind, slug) 쌍을 잰다.
+  // Slug flatness — reclassify writes directly too, so the new (kind, slug) pair is measured.
   const reclassifySlugIssue = flatSlugIssue(newKind, canonicalNew);
   if (reclassifySlugIssue) throw new Error(reclassifySlugIssue);
   const title = sourceDoc.frontmatter.title || canonicalNew.split('/').pop();
@@ -10414,8 +10445,9 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   const nextFrontmatter = { ...sourceDoc.frontmatter, slug: canonicalNew, kind: newKind };
   if (domain === null || !['capability', 'element'].includes(newKind)) delete nextFrontmatter.domain;
   else if (domain !== undefined) nextFrontmatter.domain = domain;
-  // rename 과 같은 이유로 한 계획이다 — 이 도구도 파일 생성 · 백링크 재작성 ·
-  // 옛 파일 삭제 셋을 하고, 중간에 멈추면 kind 가 갈린 반쪽 볼트가 남았다.
+  // One plan, for the same reason as rename: this tool also creates a file,
+  // rewrites backlinks, and deletes the old file, and stopping midway left a
+  // half-vault with a forked kind.
   const appliedBacklinks = canonicalNew === canonicalOld
     ? backlinkUpdates
     : redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: false, deferWrite: true });
@@ -10502,9 +10534,10 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
     };
   }
 
-  // 재작성 + 삭제를 한 계획으로. 종전엔 재작성이 파일마다 즉시 쓰고 삭제가
-  // 따로였다 — 중간에 한 파일이 안 써지면 참조 일부만 새 이름을 가리키고
-  // `fromSlug` 는 살아남았다(그리고 검사 둘 다 clean 이라고 답했다).
+  // Rewrite plus delete in one plan. Rewrites used to be written per file
+  // immediately with the delete separate — if one file failed to write, only some
+  // references pointed at the new name and `fromSlug` survived (and both checks
+  // reported clean).
   const result = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, {
     dryRun: false,
     deferWrite: true,
@@ -10657,7 +10690,7 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
       title: section.targetTitle,
       role: 'policy',
       source: relative(VAULT_ROOT, abs),
-      // 흡수도 이 서버를 통과한 쓰기다 — 같은 스탬프, 같은 신원 출처.
+      // Absorption is a write through this server too — same stamp, same identity source.
       [CREATED_BY_KEY]: agentProvenance(),
     });
     const body = `# ${section.targetTitle}\n\n${section.body}\n`;
@@ -10694,9 +10727,9 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   requireOptionalBoolean(confirm, 'confirm');
   requireOptionalBoolean(force, 'force');
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
-  // 존재 검사 — dry-run 이 \"삭제 가능\" 이라고 거짓 안내 안 하도록.
-  // (실제 삭제 단계의 deleteDoc 도 다시 throw 하지만, dry-run path 는
-  // deleteDoc 까지 가지 않으므로 별도 확인.)
+  // Existence check, so a dry run never falsely reports "deletable". (deleteDoc
+  // throws again at the real delete step, but the dry-run path never reaches
+  // deleteDoc, hence the separate check.)
   const filePath = slugToPath(VAULT_ROOT, slug);
   if (!existsSync(filePath)) {
     throw new Error(missingSlugMessage('Doc not found', slug));
@@ -10772,7 +10805,7 @@ function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
   return lines.join(' ');
 }
 
-// ── 부팅 ──────────────────────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

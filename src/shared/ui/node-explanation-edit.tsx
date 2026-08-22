@@ -7,18 +7,19 @@ import { fieldClass } from '@/shared/ui/control-class';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * S4.1a — 노드 "설명"(prose 본문) 읽기↔편집↔저장 primitive (multiline).
+ * Read ↔ edit ↔ save primitive for a node's explanation, i.e. its prose body
+ * (multiline).
  *
- * ontology-first: 노드의 본문이 곧 그 노드의 설명. 토폴로지 전체 상세
- * (`full-detail-a1` widget)에서 바로 설명을 보충(사람/AI agent)한다. 저장은
- * 호출자(S4.1b)가 `replaceVaultBody` + `saveDoc` 로 frontmatter 보존하며
- * 본문만 교체. 라벨 prop 주입 → 순수 컴포넌트. `shared/ui` 로 승격(R+
- * full-detail A1) — FSD 가 widget→view import 를 금지해 이 컴포넌트를 쓰는
- * `full-detail-a1` widget 이 원래 위치(`views/home/ui`)에서 직접 가져올 수
- * 없었다.
+ * Ontology-first: a node's body *is* its explanation, and a person or an AI agent
+ * fills it in directly from the topology full-detail widget. Saving belongs to the
+ * caller, which uses `replaceVaultBody` + `saveDoc` to replace the body while
+ * preserving the frontmatter. Labels are injected as props, keeping this component
+ * pure. It lives in `shared/ui` because FSD forbids a widget importing from a view,
+ * so the `full-detail-a1` widget could not reach its original home in
+ * `views/home/ui`.
  *
- * 디자인 헌장 준수: 무채색 + 단일 인디고, glow/scale 없음. Cmd/Ctrl+Enter 저장,
- * Esc 취소(textarea 라 Enter 는 줄바꿈).
+ * Charter compliance: neutrals plus a single indigo, no glow or scale. Cmd/Ctrl+Enter
+ * saves and Esc cancels (this is a textarea, so Enter inserts a newline).
  */
 export interface NodeExplanationEditLabels {
   heading: string;

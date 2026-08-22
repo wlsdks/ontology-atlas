@@ -1,26 +1,26 @@
 import type { OntologyEgoSubgraph } from "./types";
 
 export interface EgoLayoutPoint {
-  /** node 식별자 — center 는 ego.centerId, neighbor 는 OntologyEgoNeighbor.neighborId. */
+  /** Node identifier: `ego.centerId` for the centre, `OntologyEgoNeighbor.neighborId` for a neighbour. */
   id: string;
   x: number;
   y: number;
 }
 
 export interface EgoLayoutNeighborPoint extends EgoLayoutPoint {
-  /** 원본 OntologyEgoNeighbor.direction. arrow 방향 결정에 사용. */
+  /** The original `OntologyEgoNeighbor.direction`; decides which way the arrow points. */
   direction: "outgoing" | "incoming";
-  /** center 로부터의 거리 — 1 = inner ring, 2 = outer ring. */
+  /** Distance from the centre: 1 = inner ring, 2 = outer ring. */
   hop: 1 | 2;
 }
 
 export interface EgoLayoutEdge {
-  /** 원본 OntologyEgoNeighbor.edge.id — 같은 source/target 의 다른 edge 구분. */
+  /** The original `OntologyEgoNeighbor.edge.id`, separating distinct edges between the same pair. */
   edgeId: string;
   from: { x: number; y: number };
   to: { x: number; y: number };
   direction: "outgoing" | "incoming";
-  /** edge 가 어느 hop 의 이웃을 잇는지 — UI 가 색·두께 분기. */
+  /** Which hop's neighbour this edge joins; the UI branches colour and width on it. */
   hop: 1 | 2;
 }
 
@@ -33,23 +33,26 @@ export interface EgoLayoutResult {
 }
 
 /**
- * ego subgraph 의 동심 radial layout — 1-hop inner ring, 2-hop outer ring.
+ * Concentric radial layout for an ego subgraph — 1-hop inner ring, 2-hop outer ring.
  *
- * 정책:
- * - 1-hop 만 있으면 기존 1-hop radial 동작과 동일 (회귀 호환). hops=1 호출
- *   결과에서 outer ring 은 자연스럽게 비어 있어 무관.
- * - hop=1 의 inner ring 반지름 = `outerRadius * innerRadiusRatio` (기본 0.55).
- * - hop=2 의 outer ring 반지름 = `outerRadius` (= inferred 또는 options.radius).
- * - 두 ring 모두 12시 시작 시계 방향 균등 배치 (각 ring 안에서 입력 순서).
- * - hop=2 edge 는 viaNeighborId (1-hop pivot) 위치 → far (2-hop) 위치 — center
- *   와 직접 잇지 않는다 (실제 그래프 구조 보존). pivot 노드를 못 찾으면
- *   center 에서 잇는 fallback (실제로는 build-ego 가 잘 만들어 거의 안 발생).
+ * Policy:
+ * - With only 1-hop neighbours the result matches the previous single-ring radial
+ *   behaviour: an `hops=1` call simply leaves the outer ring empty.
+ * - Inner ring radius = `outerRadius * innerRadiusRatio` (default 0.55).
+ * - Outer ring radius = `outerRadius` (inferred, or `options.radius`).
+ * - Both rings are spaced evenly clockwise from 12 o'clock, in input order within
+ *   the ring.
+ * - A hop=2 edge runs from the `viaNeighborId` pivot (a 1-hop node) to the far
+ *   2-hop node rather than from the centre, preserving the real graph structure.
+ *   When the pivot cannot be found it falls back to the centre — build-ego makes
+ *   this practically unreachable.
  *
- * 1-hop 그래프는 보통 < 12 노드라 force layout 없이 radial 만으로 충분. 2-hop
- * 추가 시 노드가 더 많아져도 inner/outer 분리로 라벨 충돌 mitigation.
+ * A 1-hop graph is usually under 12 nodes, so radial placement suffices without a
+ * force layout; separating inner and outer rings mitigates label collisions as the
+ * 2-hop set grows.
  *
- * radius 기본 = `min(width, height) / 2 - padding (28px)` — 라벨이 viewBox
- * 안에 들어가도록 안전 마진.
+ * Default radius is `min(width, height) / 2 - padding (28px)`, the safety margin that
+ * keeps labels inside the viewBox.
  */
 export function buildRadialEgoLayout(
   ego: OntologyEgoSubgraph,
@@ -70,18 +73,18 @@ export function buildRadialEgoLayout(
     return { width, height, center, neighbors: [], edges: [] };
   }
 
-  // hop 별로 분리해 균등 배치 — 같은 ring 안에서는 입력 순서 (build-ego 가
-  // hop=1 outgoing → hop=1 incoming → hop=2 순으로 정렬해 줌).
+  // Split by hop and space each ring evenly; within a ring the order is the input
+  // order (build-ego sorts hop=1 outgoing → hop=1 incoming → hop=2).
   const hop1 = ego.neighbors.filter((n) => n.hop === 1);
   const hop2 = ego.neighbors.filter((n) => n.hop === 2);
 
-  // 1-hop 만 있을 때는 기존 동작 호환 — inner = outer (단일 ring). 2-hop 이
-  // 있을 때만 inner 축소해 동심원 분리.
+  // With no 2-hop neighbours, inner = outer, i.e. a single ring, matching the
+  // previous behaviour. The inner ring only shrinks once there is an outer one.
   const innerRadius = hop2.length === 0
     ? outerRadius
     : outerRadius * innerRadiusRatio;
 
-  const startAngle = -Math.PI / 2; // 12시 기준 (sin/cos 표준에 −90° 회전)
+  const startAngle = -Math.PI / 2; // 12 o'clock: standard sin/cos rotated −90°
 
   const positionByNeighborId = new Map<string, EgoLayoutNeighborPoint>();
   const neighbors: EgoLayoutNeighborPoint[] = [];
@@ -103,8 +106,8 @@ export function buildRadialEgoLayout(
         y: cy + Math.sin(theta) * radius,
       };
       neighbors.push(point);
-      // 같은 neighborId 가 두 번 나오면 (양방향 edge) 첫 위치만 보존 — edge 가
-      // 두 번 그려져도 같은 좌표를 공유.
+      // A neighborId appearing twice (a bidirectional edge) keeps its first
+      // position, so both edges share the same coordinates.
       if (!positionByNeighborId.has(n.neighborId)) {
         positionByNeighborId.set(n.neighborId, point);
       }
@@ -117,13 +120,13 @@ export function buildRadialEgoLayout(
   const edges: EgoLayoutEdge[] = ego.neighbors.map((n, i) => {
     const point = neighbors[i]!;
     if (n.hop === 2) {
-      // hop=2: pivot (1-hop 노드) 위치 → far (2-hop) 위치.
+      // hop=2 runs pivot (the 1-hop node) → far (the 2-hop node).
       const pivot = n.viaNeighborId
         ? positionByNeighborId.get(n.viaNeighborId)
         : undefined;
       const fromXY = pivot
         ? { x: pivot.x, y: pivot.y }
-        : { x: cx, y: cy }; // fallback — 실제로는 거의 안 발생.
+        : { x: cx, y: cy }; // Fallback; practically unreachable.
       return n.direction === "outgoing"
         ? {
             edgeId: n.edge.id,
@@ -140,7 +143,7 @@ export function buildRadialEgoLayout(
             hop: 2,
           };
     }
-    // hop=1: center ↔ neighbor.
+    // hop=1 runs centre ↔ neighbour.
     return {
       edgeId: n.edge.id,
       from:

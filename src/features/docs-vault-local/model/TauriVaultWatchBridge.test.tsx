@@ -2,11 +2,12 @@ import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * 위험 경로 — TauriVaultWatchBridge 의 "Rust 파일워처 이벤트 → poll 트리거"
- * 매핑. 데스크톱(Tauri)에서 에이전트가 디스크에 쓰는 순간 화면이 즉시
- * 따라오게 하는 유일한 경로이자, 잘못 배선되면 OS 이벤트가 와도 화면이
- * 갱신되지 않거나(구식 데이터로 편집 계속 → 다음 저장이 conflict), 반대로
- * 리스너가 중복 등록돼 refresh 가 여러 번 겹쳐 도는 회귀를 만들 수 있다.
+ * Risk path — TauriVaultWatchBridge's mapping from a Rust file-watcher event to a poll trigger.
+ *
+ * On desktop it is the only path making the screen follow the instant an agent writes to disk. Wired
+ * wrongly it either leaves the screen stale when an OS event arrives (editing on stale data until the
+ * next save conflicts) or, in the other direction, registers duplicate listeners so several refreshes
+ * overlap.
  */
 
 const tauriMocks = vi.hoisted(() => ({
@@ -135,8 +136,8 @@ describe('TauriVaultWatchBridge', () => {
     const { rerender } = render(<TauriVaultWatchBridge />);
     await waitFor(() => expect(tauriMocks.listen).toHaveBeenCalledTimes(1));
 
-    // refresh 함수 참조만 바뀌고 status/handle 은 그대로인 재렌더 — 흔히
-    // 매 load() 뒤 발생. 재구독(listen 재호출) 이 일어나면 안 된다.
+    // A re-render where only the `refresh` function reference changes while status and handle stay —
+    // common after every load(). It must not resubscribe (call listen again).
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
@@ -144,7 +145,7 @@ describe('TauriVaultWatchBridge', () => {
     });
     rerender(<TauriVaultWatchBridge />);
 
-    expect(tauriMocks.listen).toHaveBeenCalledTimes(1); // 재구독 없음
+    expect(tauriMocks.listen).toHaveBeenCalledTimes(1); // no resubscribe
 
     act(() => {
       capturedHandler?.();

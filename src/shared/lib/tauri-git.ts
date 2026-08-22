@@ -1,28 +1,35 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
- * Atlas Git — Tauri IPC 브리지 (`src-tauri/src/git.rs` 의 5 command 타입드 래퍼).
+ * Atlas Git — the Tauri IPC bridge: typed wrappers over the commands in
+ * `src-tauri/src/git.rs`, which is the source of truth for the contract.
  *
- * 계약 (Rust 코드가 진실원):
- * - `git_status(vault_path)`   → `GitStatusResult`   — repo 밖이면 initialized:false (에러 아님)
- * - `git_snapshot(vault_path, message?, push?)` → `GitSnapshotResult` — 변경 0 이면 committed:false/reason:"no-changes"
- * - `git_history(vault_path, limit?)` → `GitCommitInfo[]` — 커밋 0개면 빈 배열
- * - `git_diff(vault_path)`     → `GitDiffResult`
- * - `git_pull(vault_path)`     → `GitPullResult`
- * - `git_fetch(vault_path)`    → `GitFetchResult` — 받아만 온다(작업 트리 불변)
+ * - `git_status(vault_path)` → `GitStatusResult` — outside a repo it returns
+ *   `initialized: false`, not an error
+ * - `git_snapshot(vault_path, message?, push?)` → `GitSnapshotResult` — with no
+ *   changes, `committed: false` / `reason: "no-changes"`
+ * - `git_history(vault_path, limit?)` → `GitCommitInfo[]` — empty array when
+ *   there are no commits
+ * - `git_diff(vault_path)` → `GitDiffResult`
+ * - `git_pull(vault_path)` → `GitPullResult`
+ * - `git_fetch(vault_path)` → `GitFetchResult` — fetch only, working tree untouched
  *
- * 신뢰 헌장 (git.rs 상단 불변식 — UI 도 지켜야 한다):
- * 1. 기본 로컬 커밋만 — push/pull 은 명시 opt-in 호출로만.
- * 2. git 미초기화 시 자동 `git init` 금지 — status 로만 알린다.
- * 3. 자동 실행/자동 백업 강제 금지 — 모든 호출은 사용자의 명시 클릭 뒤에만.
+ * **Trust-charter invariants** (stated at the top of `git.rs`; the UI must hold
+ * them too):
+ * 1. Local commits only by default — push/pull happen only through an explicit
+ *    opt-in call.
+ * 2. Never run `git init` automatically when git is uninitialised — report it
+ *    through status instead.
+ * 3. No automatic runs and no forced auto-backup — every call must follow an
+ *    explicit user click.
  *
- * 웹(브라우저 vault) 강등 계약: Tauri 런타임이 아니면 `isGitBridgeAvailable()`
- * 이 false, 모든 래퍼는 invoke 없이 `null` 을 돌려준다 — 호출부가 정직하게
- * 세션 changeset 요약 + CLI 명령 안내로 강등한다.
+ * Web degradation contract: outside the Tauri runtime `isGitBridgeAvailable()`
+ * is false and every wrapper returns `null` without invoking, so callers degrade
+ * honestly to a session changeset summary plus the equivalent CLI command.
  *
- * 예상 실패(레포 아님·훅 거부·충돌 등)는 Rust 가 `Result<_, String>` 의 Err
- * 로 돌려주므로 invoke 는 **string** 으로 reject 한다 — `gitErrorMessage` 로
- * 사용자 한 줄을 뽑는다.
+ * Expected failures (not a repo, a hook refusing, a conflict) come back as the
+ * `Err` arm of Rust's `Result<_, String>`, so invoke rejects with a **string** —
+ * `gitErrorMessage` turns it into one user-facing line.
  */
 
 type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -55,27 +62,28 @@ export interface GitSnapshotCounts {
 
 /** Rust `GitStatusResult`. */
 export interface GitStatusResult {
-  /** vault 가 git repo 안인가 — 버튼 활성화 판단의 1차 신호. */
+  /** Is the vault inside a git repo — the first signal for enabling buttons. */
   initialized: boolean;
   repoRoot: string | null;
   branch: string | null;
-  /** upstream ref (예: origin/main) — null 이면 push 불가 안내. */
+  /** Upstream ref (e.g. origin/main); `null` means push is unavailable. */
   upstream: string | null;
-  /** vault 범위의 미커밋 변경 수 — dirty 점의 진실원. */
+  /** Uncommitted changes within the vault — the source of truth for the dirty dot. */
   changedCount: number;
   /**
-   * upstream 과의 갈라짐 — `[ahead, behind]`. upstream 이 없으면 둘 다 `null`.
+   * Divergence from upstream, `[ahead, behind]`; both `null` with no upstream.
    *
-   * **마지막 fetch 시점 기준**이다. 갱신하려면 `gitFetch()` 를 불러야 한다 —
-   * git 이 원래 그렇고, 그래서 화면에 Fetch 가 따로 있다.
+   * **Measured as of the last fetch.** Refreshing it requires calling
+   * `gitFetch()` — that is how git works, which is why Fetch is its own control
+   * on screen.
    */
   ahead: number | null;
   behind: number | null;
-  /** vault 밖에 이미 staged 된 경로 (스냅샷이 건드리지 않음 — 정보용). */
+  /** Already-staged paths outside the vault; the snapshot leaves them alone (informational). */
   stagedOutsideVault: string[];
 }
 
-/** Rust `PushOutcome` — push 실패는 크래시가 아니라 안내(커밋은 이미 로컬). */
+/** Rust `PushOutcome` — a failed push is guidance, not a crash: the commit is already local. */
 export interface GitPushOutcome {
   pushed: boolean;
   remoteUrl: string | null;
@@ -86,7 +94,7 @@ export interface GitPushOutcome {
 /** Rust `GitSnapshotResult`. */
 export interface GitSnapshotResult {
   committed: boolean;
-  /** "no-changes" | null(커밋됨). */
+  /** `"no-changes"`, or `null` when a commit was made. */
   reason: string | null;
   commitHash: string | null;
   subject: string | null;
@@ -94,7 +102,7 @@ export interface GitSnapshotResult {
   counts: GitSnapshotCounts;
   files: GitChangeEntry[];
   stagedOutsideVault: string[];
-  /** push opt-in 시에만 채워짐. */
+  /** Populated only when push was opted into. */
   push: GitPushOutcome | null;
 }
 
@@ -106,21 +114,21 @@ export interface GitCommitInfo {
   relativeTime: string;
   isoTime: string;
   /**
-   * 이 걸음이 건드린 vault 파일 — `kind`/`slug` 가 실려 있다.
+   * The vault files this step touched, carrying `kind` and `slug`.
    *
-   * 이게 없던 동안 이력은 **커밋 제목 문자열**일 뿐이라, 화면이 「이 걸음이
-   * 어떤 개념을 바꿨나」를 물어볼 방법이 아예 없었다. `kind` 는 지금 디스크의
-   * 파일에서 읽으므로 지워진 파일에서는 `null` 이다.
+   * Without this, history was nothing but **commit subject strings**, so the UI
+   * had no way at all to ask which concept a step changed. `kind` is read from
+   * the file on disk right now, so it is `null` for deleted files.
    */
   files: GitChangeEntry[];
 }
 
-/** Rust `GitFetchResult` — 받아만 오고 작업 트리는 안 건드린다. */
+/** Rust `GitFetchResult` — fetch only; the working tree is not touched. */
 export interface GitFetchResult {
   ok: boolean;
-  /** upstream ref. 없으면 빈 문자열 + `ok:false`. */
+  /** Upstream ref; empty string plus `ok: false` when there is none. */
   upstream: string;
-  /** fetch **직후** 다시 잰 갈라짐. */
+  /** Divergence re-measured **immediately after** the fetch. */
   ahead: number | null;
   behind: number | null;
   summary: string;
@@ -130,7 +138,7 @@ export interface GitFetchResult {
 export interface GitDiffResult {
   count: number;
   files: GitChangeEntry[];
-  /** 추적 파일의 텍스트 diff — untracked 신규 파일은 files 목록으로만. */
+  /** Text diff of tracked files; untracked new files appear only in `files`. */
   diff: string;
 }
 
@@ -143,40 +151,40 @@ export interface GitPullResult {
 
 /** Rust `GitInitResult`. */
 export interface GitInitResult {
-  /** 이번 호출로 기록이 시작됐나. 이미 저장소였으면 false. */
+  /** Did this call start tracking? False if it was already a repo. */
   initialized: boolean;
-  /** `'already'`(이미 저장소) | null(방금 시작). */
+  /** `'already'` when it was already a repo, `null` when it was just started. */
   reason: string | null;
   repoRoot: string;
   branch: string | null;
-  /** 시작 직후 "아직 남기지 않은 변경" 수. */
+  /** Count of not-yet-recorded changes right after starting. */
   changedCount: number;
 }
 
 /** Rust `GitSetRemoteResult`. */
 export interface GitSetRemoteResult {
   ok: boolean;
-  /** 항상 `'origin'`. */
+  /** Always `'origin'`. */
   remote: string;
   url: string;
-  /** 기존 주소를 교체했으면 이전 주소. */
+  /** The previous URL, when this call replaced an existing one. */
   replaced: string | null;
 }
 
-/** Rust `GitProbe` — 이 컴퓨터에 git 이 있는가. */
+/** Rust `GitProbe` — does this machine have git. */
 export interface GitProbeResult {
   installed: boolean;
-  /** `git --version` 원문 — 사용자에게 사실을 그대로 보여준다. */
+  /** Raw `git --version` output — shown to the user verbatim. */
   version: string | null;
   platform: 'macos' | 'windows' | 'linux';
 }
 
 /**
- * git 설치 여부 확인 — **읽기 전용**. 아무것도 설치하지 않는다.
+ * Check whether git is installed — **read-only**, installs nothing.
  *
- * 왜 필요한가: 지금까지 미설치는 일반 에러 문자열로만 드러나서 화면이 "설치가
- * 문제인지 폴더가 문제인지" 구분할 수 없었다. 타입화된 신호가 있어야 플랫폼에
- * 맞는 설치 안내를 고를 수 있다.
+ * Why it exists: a missing git used to surface only as a generic error string,
+ * so the UI could not tell "git is missing" from "the folder is wrong". A typed
+ * signal is what lets it pick the right platform-specific install guidance.
  */
 export async function gitProbe(): Promise<GitProbeResult | null> {
   const invoke = getInvoke();
@@ -184,18 +192,19 @@ export async function gitProbe(): Promise<GitProbeResult | null> {
   return invoke<GitProbeResult>('git_probe');
 }
 
-/** Tauri git IPC 가용 여부 — false 면 웹 강등 경로. */
+/** Whether the Tauri git IPC is available; false takes the web degradation path. */
 export function isGitBridgeAvailable(): boolean {
   return getInvoke() !== null;
 }
 
 /**
- * 이 폴더의 기록 시작(`git init`) — **사용자가 화면에서 직접 누를 때만**.
+ * Start tracking this folder (`git init`) — **only when the user presses it**.
  *
- * 자동 호출 금지. 헌장이 금지하는 것은 *자동* 실행이고 사용자 클릭은 그 범주가
- * 아니지만(2026-07-25 소유자 결정), 그 경계는 호출부가 지켜야 한다. Rust 쪽은
- * init 만 하고 add/commit/push 로 연쇄하지 않는다 — 시작 직후 상태는 "아직
- * 남기지 않은 변경 N건" 이다.
+ * Never call automatically. What the charter forbids is *automatic* execution,
+ * and a user click is not in that category (owner decision, 2026-07-25) — but
+ * that boundary is the caller's to hold. The Rust side only inits; it never
+ * chains into add/commit/push, so the state right after starting is "N changes
+ * not yet recorded".
  */
 export async function gitInit(vaultPath: string): Promise<GitInitResult | null> {
   const invoke = getInvoke();
@@ -204,9 +213,10 @@ export async function gitInit(vaultPath: string): Promise<GitInitResult | null> 
 }
 
 /**
- * 보낼 곳(`origin`) 설정 — **사용자가 입력한 주소만** 넘긴다. 주소를 제안·추측·
- * 자동탐지하지 말 것. 이 호출은 주소만 등록하고 **보내지 않는다** — 전송은
- * `gitSnapshot({ push: true })` 로 사용자가 따로 눌러야 한다.
+ * Set the destination (`origin`) — pass **only a URL the user typed**. Never
+ * suggest, guess, or auto-detect one. This call registers the URL and **sends
+ * nothing**; transmitting requires the user to press again through
+ * `gitSnapshot({ push: true })`.
  */
 export async function gitSetRemote(
   vaultPath: string,
@@ -217,7 +227,7 @@ export async function gitSetRemote(
   return invoke<GitSetRemoteResult>('git_set_remote', { vaultPath, url });
 }
 
-/** vault 의 git 상태 요약. 브리지 없으면 null (웹 강등). */
+/** Git status summary for the vault; `null` without the bridge (web degradation). */
 export async function gitStatus(vaultPath: string): Promise<GitStatusResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
@@ -225,8 +235,9 @@ export async function gitStatus(vaultPath: string): Promise<GitStatusResult | nu
 }
 
 /**
- * vault 범위만 add + commit 하는 의미 단위 스냅샷 — **사용자의 명시 클릭
- * 뒤에만 호출할 것** (자동 실행 금지). `push` 는 opt-in(기본 false).
+ * A meaningful snapshot that adds and commits the vault scope only — **call it
+ * only after an explicit user click** (never automatically). `push` is opt-in
+ * and defaults to false.
  */
 export async function gitSnapshot(
   vaultPath: string,
@@ -241,7 +252,7 @@ export async function gitSnapshot(
   });
 }
 
-/** vault 경로에 닿은 최근 커밋 요약. 브리지 없으면 null. */
+/** Recent commits that touched the vault path; `null` without the bridge. */
 export async function gitHistory(
   vaultPath: string,
   limit = 10,
@@ -251,7 +262,7 @@ export async function gitHistory(
   return invoke<GitCommitInfo[]>('git_history', { vaultPath, limit });
 }
 
-/** 아직 커밋 안 된 vault 범위 변경의 파일 목록 + 텍스트 diff. */
+/** File list plus text diff for uncommitted changes within the vault. */
 export async function gitDiff(vaultPath: string): Promise<GitDiffResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
@@ -259,10 +270,10 @@ export async function gitDiff(vaultPath: string): Promise<GitDiffResult | null> 
 }
 
 /**
- * 한 커밋이 실제로 쓴 것 — 그 걸음의 vault 범위 patch.
+ * What one commit actually wrote — the vault-scoped patch for that step.
  *
- * `gitDiff` 와 별도인 이유는 Rust 쪽 주석과 같다: 저쪽은 아직 이름이 안 붙은
- * 작업 트리, 이쪽은 이미 이름이 붙은 한 걸음이다.
+ * Separate from `gitDiff` for the reason the Rust comment gives: that one is the
+ * working tree, which has no name yet; this one is a step that already has one.
  */
 export async function gitCommitDiff(
   vaultPath: string,
@@ -273,7 +284,7 @@ export async function gitCommitDiff(
   return invoke<GitDiffResult>('git_commit_diff', { vaultPath, hash });
 }
 
-/** upstream 에서 pull — opt-in 전송, **명시 클릭 뒤에만**. */
+/** Pull from upstream — opt-in network use, **only after an explicit click**. */
 export async function gitPull(vaultPath: string): Promise<GitPullResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
@@ -281,11 +292,13 @@ export async function gitPull(vaultPath: string): Promise<GitPullResult | null> 
 }
 
 /**
- * 원격의 최신 상태를 **받아만 온다** — 작업 트리는 안 건드린다.
+ * **Fetch only** — brings the remote's latest state without touching the working
+ * tree.
  *
- * 네트워크를 타는 셋(`gitSnapshot(push)` · `gitPull` · 이것) 중 유일하게
- * 로컬 파일을 하나도 바꾸지 않는 것이라, 「지금 원격이 어떤지 알고 싶다」에
- * 대한 가장 싼 답이다. 그래도 **명시 클릭 뒤에만** 돈다 — 자동 호출 금지.
+ * Of the three calls that use the network (`gitSnapshot(push)`, `gitPull`, this
+ * one) it is the only one that changes no local file, which makes it the
+ * cheapest answer to "what does the remote look like right now". It still runs
+ * **only after an explicit click** — never call it automatically.
  */
 export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null> {
   const invoke = getInvoke();
@@ -294,8 +307,9 @@ export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null
 }
 
 /**
- * invoke reject 페이로드 → 사용자 한 줄. Rust 는 `Err(String)` 이라 보통
- * string 그대로 오지만, 브리지/직렬화 오류 대비 Error/unknown 도 수용.
+ * Turns an invoke rejection payload into one user-facing line. Rust returns
+ * `Err(String)`, so it is usually a plain string, but Error/unknown are accepted
+ * too in case the bridge or serialisation fails.
  */
 export function gitErrorMessage(err: unknown): string {
   if (typeof err === 'string') return err;

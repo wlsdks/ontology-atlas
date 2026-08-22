@@ -32,7 +32,7 @@ beforeEach(() => {
 
 describe('설치된 모델 목록', () => {
   it('OpenAI 호환 목록에서 이름만 꺼낸다', () => {
-    // 2026-08-01 소유자 기계 실측 응답의 모양 그대로.
+    // The exact response shape measured on the owner's machine, 2026-08-01.
     const body = JSON.stringify({
       object: 'list',
       data: [
@@ -44,9 +44,9 @@ describe('설치된 모델 목록', () => {
   });
 
   it('임베딩 전용 모델을 이름으로 추측해 지우지 않는다', () => {
-    // 호환 목록에는 그 사실이 없다. 지우면 화면이 사용자의 러너에 있는 것을
-    // 없는 것처럼 말한다 — 못 쓰는 모델을 고르면 러너가 준 오류를 그대로
-    // 옮기는 쪽이 정직하다.
+    // The OpenAI-compatible list does not carry that fact. Dropping them would make
+    // the screen deny something the user's runner actually has; if an unusable model
+    // is picked, relaying the runner's own error is the honest answer.
     const body = JSON.stringify({
       data: [{ id: 'nomic-embed-text:latest' }, { id: 'qwen3:8b' }],
     });
@@ -54,9 +54,10 @@ describe('설치된 모델 목록', () => {
   });
 
   it('임베딩 전용 모델은 1번이 되지 못한다 (알파벳 → 쓸모)', () => {
-    // 2026-08-01 소유자 기계 실측: 7개 중 4개가 임베딩 전용이었고, 알파벳
-    // 정렬이 `embeddinggemma:latest` 를 1번에 올려 그것이 실제로 선택돼
-    // 「연결됨」으로 저장됐다 — 첫 질문에서 실패할 상태가 성공으로 표시됐다.
+    // Measured on the owner's machine 2026-08-01: 4 of 7 models were embedding-only,
+    // and alphabetical order put `embeddinggemma:latest` first, so it was selected
+    // and saved as "connected" — a state that would fail on the first question was
+    // reported as success.
     const body = JSON.stringify({
       data: [
         { id: 'qwen3:8b' },
@@ -69,9 +70,9 @@ describe('설치된 모델 목록', () => {
       ],
     });
     const models = parseOpenAiModelList(body);
-    // 앞 세 자리는 대화 가능한 것들이고, 그 안에서는 종전과 같은 알파벳 순서.
+    // The first three are the chat-capable ones, alphabetical among themselves as before.
     expect(models.slice(0, 3)).toEqual(['gemma3:12b', 'llama3.2:3b', 'qwen3:8b']);
-    // 임베딩 넷은 뒤로 밀리되 **사라지지 않는다** — 라벨링은 은닉이 아니다.
+    // The four embedding models move down but **do not disappear** — ranking is not hiding.
     expect(models.slice(3)).toEqual([
       'all-minilm:latest',
       'bge-m3:latest',
@@ -143,8 +144,8 @@ describe('임베딩 전용 판정', () => {
 
 describe('실패 이유는 서로 구별된다', () => {
   it('상태 코드가 없으면 러너가 꺼져 있거나 포트가 다른 것이다', () => {
-    // 화면이 "확인하지 못했어요" 한 문장으로 뭉개면 사용자는 러너를 켜야
-    // 하는지 주소를 고쳐야 하는지 알 수 없다.
+    // Collapsing this into "we couldn't check" leaves the user unable to tell
+    // whether to start the runner or fix the address.
     const verdict = readLocalVerdict(
       verifyResult({ httpStatus: null, message: '그 주소에서 응답이 없어요' }),
     );
@@ -175,8 +176,8 @@ describe('실패 이유는 서로 구별된다', () => {
 
 describe('설정 보관', () => {
   it('주소만 있고 모델이 없으면 아직 쓸 수 있는 상태가 아니다', () => {
-    // 그대로 보내면 첫 왕복이 "model is required" 로 죽고, 사용자는 자기가
-    // 뭘 빠뜨렸는지 모른다.
+    // Sent as is, the first round trip dies with "model is required" and the user
+    // has no idea what they left out.
     expect(isLocalEndpointReady({ baseUrl: 'http://localhost:11434', model: '' })).toBe(false);
     expect(isLocalEndpointReady({ baseUrl: '', model: 'qwen3:8b' })).toBe(false);
     expect(isLocalEndpointReady({ baseUrl: 'http://localhost:11434', model: 'qwen3:8b' })).toBe(

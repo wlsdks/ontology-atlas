@@ -58,16 +58,17 @@ export function TopologyChangeAnnouncement({
   return (
     <div
       /*
-       * 상단 크롬 **아래**에 선다 (2026-08-02, 소유자 지적: *"이거보면 화면
-       * 작아졌을때 … 겹쳐져서 나오지?"*).
+       * Sits **below** the top chrome row. Owner, 2026-08-02: *"이거보면 화면
+       * 작아졌을때 … 겹쳐져서 나오지?"* (on a smaller screen these overlap).
        *
-       * 종전 `top-4`(16px)는 상단 크롬 띠와 **같은 자리**였다 — 실측: 크롬 필
-       * (「자동 정렬」·「검색」)이 y 32–68 에 있고 둘 다 `left-1/2` 로 가운데
-       * 정렬이라, 높이 36px 인 이 토스트가 y 16–52 에 떠서 세로로 20px 겹쳤다.
-       * 가로는 둘 다 중앙이므로 완전히 포개진다.
+       * The former `top-4` (16px) put it in the **same place** as the chrome row.
+       * Measured: the chrome pills sit at y 32–68 and both are centred with
+       * `left-1/2`, so this 36px toast at y 16–52 overlapped them by 20px
+       * vertically and completely horizontally.
        *
-       * 값은 크롬 띠에서 파생한다 — 크롬 top(2rem) + 타일 높이 + 8px 여백.
-       * 숫자를 새로 정하면 크롬 치수가 바뀔 때 이 겹침이 조용히 돌아온다.
+       * The value is derived from the chrome row — chrome top (2rem) + tile height
+       * + 8px gap. Picking a fresh number brings the overlap back silently the
+       * next time a chrome dimension changes.
        */
       className="pointer-events-none absolute left-1/2 top-[calc(2rem+var(--chrome-tile-size)+0.5rem)] z-20 -translate-x-1/2"
       data-testid="topology-change-announcement"

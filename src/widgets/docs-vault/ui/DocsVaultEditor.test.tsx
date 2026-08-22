@@ -5,8 +5,8 @@ import koMessages from '../../../../messages/ko.json';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { DocsVaultEditor } from './DocsVaultEditor';
 
-// next-intl provider 로 감싼 render — useTranslations 가 throw 하지 않게.
-// 기존 한국어 카피 assert 는 ko 로컬 메시지로 그대로 작동.
+// Render wrapped in the next-intl provider so useTranslations does not throw. The
+// existing Korean copy assertions keep working against the ko messages.
 function render(ui: React.ReactElement) {
   return rtlRender(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -30,9 +30,9 @@ const doc: VaultDoc = {
 };
 
 /**
- * 초안 키에는 **볼트 범위가 들어간다** (2026-08-01). 슬러그만이던 시절엔 다른
- * 폴더의 같은 이름 파일이 서로의 초안을 덮었고, 두 파일이 바이트가 같으면
- * 저장이 남의 파일을 덮어썼다.
+ * A draft key **includes the vault scope** (2026-08-01). While it was slug-only,
+ * files of the same name in different folders overwrote each other's drafts, and if
+ * the two files were byte-identical a save overwrote the other file.
  */
 const VAULT_SCOPE = 'test-vault';
 const draftKey = `ontology-atlas:docs-vault-editor-draft:${VAULT_SCOPE}:${doc.slug}`;
@@ -282,8 +282,9 @@ describe('DocsVaultEditor', () => {
     expect(screen.queryByDisplayValue('DISK VERSION')).not.toBeInTheDocument();
   });
 
-  // 신원 가드(uid 지움·바꿈, merged_uids 편집)에 막힌 저장도 충돌과 같은
-  // 문법으로 번역된다 — 종전에는 영어 개발자 문장이 KO 화면에 그대로 떴다.
+  // A save blocked by the identity guard (clearing or changing uid, editing
+  // merged_uids) is translated with the same grammar as a conflict — previously an
+  // English developer sentence appeared verbatim on a Korean screen.
   it('surfaces a localized message when the save is rejected by the uid identity guard', async () => {
     const guard = Object.assign(
       new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.'),
@@ -347,15 +348,15 @@ describe('DocsVaultEditor', () => {
   });
 
   /*
-   * **오래 걸리는 로딩은 여전히 알린다.**
+   * **A slow load is still announced.**
    *
-   * 2026-08-08 에 스켈레톤을 `SKELETON_DELAY_MS`(150ms) 뒤로 미뤘다 — 문서를
-   * 바꿀 때 3줄 바가 한 프레임만 깜빡이던 결함 때문이다(실측 8.2~15.9ms).
-   * 그래서 이 시험도 **창을 넘긴 뒤** 재야 한다.
+   * On 2026-08-08 the skeleton was deferred behind `SKELETON_DELAY_MS` (150ms),
+   * because switching documents flashed the three-bar skeleton for a single frame
+   * (measured 8.2–15.9ms). So this test also has to measure **past that window**.
    *
-   * ⚠️ 이 시험을 지우지 않는 이유: 지연은 「빠르면 안 보인다」를 위한 것이고,
-   * 「느리면 알린다」는 성질은 그대로 살아 있어야 한다. 지우면 다음 사람이
-   * 스켈레톤을 통째로 없애도 아무것도 안 터진다.
+   * ⚠️ Why this test is not deleted: the delay exists for "invisible when fast",
+   * and the property "announced when slow" has to stay alive. Delete it and the next
+   * person can remove the skeleton entirely with nothing breaking.
    */
   it('오래 걸리는 로딩은 role=status 로 announce 된다 (a11y)', async () => {
     let resolve!: (v: string) => void;
@@ -367,25 +368,26 @@ describe('DocsVaultEditor', () => {
         onClose={vi.fn()}
       />,
     );
-    // 창이 지나기 전에는 아무것도 알리지 않는다 — 기다릴 것이 없을 수 있다.
+    // Nothing is announced before the window passes — there may be nothing to wait for.
     expect(screen.queryByRole('status')).toBeNull();
     const status = await screen.findByRole('status', {}, { timeout: 2_000 });
     expect(status).toHaveAttribute('aria-label', '파일 불러오는 중…');
-    // 마무리: resolve 해서 dangling promise 정리.
+    // Cleanup: resolve to clear the dangling promise.
     resolve('done');
     await screen.findByDisplayValue('done');
   });
 
   /**
-   * **다른 볼트의 초안이 이 볼트의 편집기로 새지 않는다** (2026-08-01 신설).
+   * **Another vault's draft does not leak into this vault's editor** (added
+   * 2026-08-01).
    *
-   * 종전 키는 슬러그만이었다(`…:README`). 그래서 폴더 A 의 `README.md` 를 열면
-   * 폴더 B 의 본문이 「임시저장됨 · 최종 저장 필요」 딱지를 달고 나타났다 —
-   * 사용자가 쓴 적 없는 글이 사용자의 미저장 변경으로 제시된 것이다.
+   * The old key was slug-only (`…:README`). So opening folder A's `README.md`
+   * showed folder B's body carrying a 「임시저장됨 · 최종 저장 필요」 tag — prose the
+   * user never wrote, presented as the user's unsaved changes.
    *
-   * 그리고 두 파일이 그 시점에 **바이트가 같으면** 충돌 분기도 mtime 가드도
-   * 통과해서, 저장이 A 의 초안을 **B 의 파일 위에** 썼다. 이 시험이 잠그는 것은
-   * 미관이 아니라 그 데이터 손실 경로다.
+   * And if the two files were **byte-identical** at that moment, both the conflict
+   * branch and the mtime guard passed, so a save wrote A's draft **over B's file**.
+   * What this test pins is not cosmetics but that data-loss path.
    */
   it('다른 볼트의 초안을 읽지 않는다 — 키에 볼트가 들어간다', async () => {
     window.localStorage.setItem(
@@ -414,16 +416,16 @@ describe('DocsVaultEditor', () => {
   });
 
   /**
-   * **편집기를 연 채 볼트를 갈아탄다** — 2026-08-06 `exhaustive-deps` 감사가 낸
-   * 결함 후보 중 유일하게 **데이터에 닿는** 것.
+   * **Switching vaults with the editor open** — the only candidate defect from the
+   * 2026-08-06 `exhaustive-deps` audit that **touches data**.
    *
-   * `vaultScope` 는 초안 localStorage 키를 만드는 값인데, 초안을 쓰고 지우는
-   * 네 훅이 그것을 **의존성에 안 담고 있었다**. 그러면 스코프가 바뀌어도 훅이
-   * 다시 만들어지지 않아, 닫힌 값(옛 스코프)으로 **남의 볼트 키에** 쓰거나
-   * 지운다.
+   * `vaultScope` is what builds the draft's localStorage key, and the four hooks
+   * that write and clear drafts were **not holding it in their dependencies**. Then
+   * a scope change does not rebuild the hook, and the closed-over value (the old
+   * scope) writes to or clears **another vault's key**.
    *
-   * 이 검사는 그 결함을 **동작으로** 재현한다 — 의존성을 빼면 초안이 새 스코프
-   * 키에 안 생긴다.
+   * This check reproduces that defect **through behaviour** — remove the dependency
+   * and the draft does not appear under the new scope's key.
    */
   it('디바운스 중에 볼트를 갈아타면 초안이 **새 스코프**로 간다 — 옛 볼트로 새지 않는다', async () => {
     const OTHER = 'other-vault';
@@ -444,14 +446,15 @@ describe('DocsVaultEditor', () => {
     window.localStorage.clear();
 
     /*
-     * ⚠️ **순서가 이 검사의 전부다.** 타이핑이 초안 쓰기 effect 를 돌려 250ms
-     * 디바운스 타이머를 건다. 그 **다음에** 볼트만 갈아타면 —
-     * `content`·`dirty`·`doc.slug` 는 그대로라 — `vaultScope` 가 의존성에 없는
-     * 한 effect 가 **다시 안 돌고**, 걸려 있던 타이머가 **옛 스코프 키**로 쓴다.
+     * ⚠️ **The order is the whole of this check.** Typing runs the draft-write effect
+     * and arms a 250ms debounce timer. Switching only the vault **after that** leaves
+     * `content`, `dirty` and `doc.slug` unchanged, so unless `vaultScope` is in the
+     * dependencies the effect **does not re-run** and the armed timer writes to **the
+     * old scope's key**.
      *
-     * 처음엔 순서를 반대로 썼다가 결함을 못 재현했다: 갈아탄 **뒤에** 타이핑하면
-     * `content` 가 바뀌어 effect 가 새 클로저로 다시 돌아 버려서, 빠진 의존성이
-     * 가려진다.
+     * Written in the reverse order at first, the defect did not reproduce: typing
+     * **after** the switch changes `content`, so the effect re-runs with a fresh
+     * closure and the missing dependency is masked.
      */
     fireEvent.change(area, { target: { value: '# 고친 것' } });
 

@@ -10,9 +10,7 @@ import {
   indigoRgba,
 } from "./indigo-tokens";
 
-/**
- * indigo-tokens 단일 진실원 — 헌장 §11 의 "단일 인디고" 약속과 정합.
- */
+/** indigo-tokens is the single source of truth, matching the charter §11 "one indigo" promise. */
 describe("indigo-tokens", () => {
   it("hex 6 variant 가 정의되고 모두 7자 hex 형식", () => {
     const all = [

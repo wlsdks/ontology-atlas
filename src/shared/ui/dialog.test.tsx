@@ -5,14 +5,19 @@ import { describe, expect, it } from "vitest";
 import { Dialog } from "./dialog";
 
 /**
- * Dialog — 모달성 계약 테스트.
+ * Dialog — the modality contract test.
  *
- * 「체계」석 비준(2026-08-15, docs/DECISIONS.md)의 강제 장치다: 이 프리미티브가
- * 존재하는 이유는 `role="dialog"` 26곳이 스크림 토큰 5갈래 · 폭 8종 · 트랩 실재
- * 8/20 으로 각자 조립하고 있었기 때문이고, 여기서 단언하는 것이 그 계약의
- * 전부다 — 모달성(트랩·Esc·복귀·스크롤락·aria-modal)과 캐노니컬 토큰(z ·
- * 스크림 · 폭 공식). 클래스 문자열 단언은 「사람이 쓴 문장」이 아니라 **토큰
- * 참조**라 계약의 대상이다(documentation.md 의 금지와 다른 층).
+ * This is the enforcement for the design-systems seat's ratification
+ * (2026-08-15, `docs/DECISIONS.md`). The primitive exists because 26
+ * `role="dialog"` sites were each assembling modality themselves — 5 different
+ * scrim tokens, 8 widths, a focus trap actually present in 8 of 20 — and what is
+ * asserted here is the whole of that contract: modality (trap, Escape, focus
+ * return, scroll lock, `aria-modal`) and the canonical tokens (z, scrim, width
+ * formula).
+ *
+ * Asserting on class strings is legitimate here because they are **token
+ * references**, not prose a human wrote — a different layer from what
+ * `.claude/rules/documentation.md` forbids.
  */
 
 function Harness({ size, onCloseSpy }: { size?: "sm" | "md"; onCloseSpy?: () => void }) {
@@ -61,7 +66,7 @@ describe("Dialog — 모달성 계약", () => {
     const dialog = openDialog();
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     expect(dialog.getAttribute("aria-label")).toBe("시험 대화상자");
-    // 포털 — 하니스 트리가 아니라 body 직속 계보에 산다.
+    // Portalled — it lives under body, not in the harness tree.
     expect(dialog.closest("[data-testid='opener']")).toBeNull();
     expect(document.body.contains(dialog)).toBe(true);
   });

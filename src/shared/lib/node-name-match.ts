@@ -1,42 +1,45 @@
 /**
- * 노드 이름 매칭의 단일 규칙 — 검색 표면이 여러 개라도 "화면에 보이는 이름을
- * 그대로 입력하면 찾힌다" 는 계약은 하나여야 한다.
+ * The one rule for matching node names — however many search surfaces exist, the
+ * contract "type the name you see on screen and it is found" must be single.
  *
- * 왜 필요했나: 지도·INDEX·팝오버·공방은 어권별 표시 이름(frontmatter
- * `display_ko:` / `display_en:`)을 그리는데, 전역 검색은 canonical `title` 만
- * 인덱싱했다. 그래서 한국어 화면에서 "온톨로지 코어" 를 눈으로 읽고 그대로
- * 검색하면 0건이고, 사용자가 본 적 없는 원문 "Ontology Core" 를 알아야만
- * 찾혔다. 공방 피커는 표시 이름을 봤으므로 두 검색 표면이 서로 다르게
- * 행동하기까지 했다.
+ * **Why it was needed:** the map, INDEX, popovers and the studio all draw
+ * locale-specific display names (frontmatter `display_ko:` / `display_en:`)
+ * while global search indexed only the canonical `title`. So reading
+ * "온톨로지 코어" on a Korean screen and searching for it returned 0 results;
+ * only the original "Ontology Core", which the user had never seen, worked. The
+ * studio picker did look at display names, so the two search surfaces even
+ * behaved differently.
  *
- * 계약(AGENTS.md): `title` 은 검색/매칭의 단일 진실원이다. 표시 이름은 그
- * 진실원을 **대체하지 않고 더한다** — 매칭 범위를 넓히기만 하므로 원문으로
- * 찾던 사용자는 그대로 찾을 수 있다. 볼트가 쓰는 로케일을 전부 넣는 이유는
- * 한국어 화면에서 영어 이름으로도, 그 반대로도 찾혀야 하기 때문이다.
+ * The contract (`AGENTS.md`): `title` is the single source of truth for search
+ * and matching. Display names **add to it rather than replace it** — they only
+ * widen the match, so anyone searching by the original still finds it. Every
+ * locale the vault uses is included because an English name must be findable on
+ * a Korean screen and vice versa.
  *
- * 정규화: NFC → 소문자 → 앞뒤 공백 제거 → 연속 공백 1칸. 한글은 자소
- * 분리(NFD)로 들어오는 입력이 있어 NFC 정규화가 필요하다(로컬 vault 파일명 ·
- * macOS 클립보드).
+ * Normalisation: NFC → lowercase → trim → collapse runs of whitespace. NFC
+ * matters because Hangul can arrive decomposed (NFD) from local vault filenames
+ * and the macOS clipboard.
  */
 
-/** 매칭 전 정규화 — 질의와 건초더미 양쪽에 같은 함수를 쓴다. */
+/** Pre-match normalisation — the same function runs over the query and the haystack. */
 export function normalizeForMatch(value: string): string {
   return value.normalize("NFC").toLowerCase().trim().replace(/\s+/g, " ");
 }
 
-/** 이름을 가진 노드의 최소 shape — 그래프 노드도 피커 후보도 만족한다. */
+/** The minimum shape of a named node — satisfied by graph nodes and picker candidates alike. */
 export interface NodeNameSource {
-  /** frontmatter 의 canonical title — 검색/매칭의 단일 진실원. */
+  /** The canonical title from frontmatter — the single source of truth for search and matching. */
   title: string;
-  /** 현재 로케일로 해석된 표시 이름(있으면). */
+  /** The display name resolved for the current locale, if any. */
   display?: string;
-  /** `display_<locale>` 원본 전체 — 화면 언어와 무관하게 모두 검색 대상. */
+  /** Every raw `display_<locale>` — all searchable regardless of screen language. */
   displayLocales?: Readonly<Record<string, string>>;
 }
 
 /**
- * 이 노드를 가리키는 이름 전부 — canonical title + 표시 이름(현재 로케일 +
- * 모든 어권). 중복/빈 값 제거, canonical title 이 항상 첫 항목.
+ * Every name that refers to this node — the canonical title plus display names
+ * (current locale and all locales). Duplicates and empties removed; the
+ * canonical title is always first.
  */
 export function nodeNameCandidates(node: NodeNameSource): string[] {
   const out: string[] = [];
@@ -56,17 +59,17 @@ export function nodeNameCandidates(node: NodeNameSource): string[] {
   return out;
 }
 
-/** 이름 중 하나라도 질의와 정확히 같은가 (정규화된 질의를 받는다). */
+/** Does any name equal the query exactly (takes an already-normalised query). */
 export function nameEquals(node: NodeNameSource, normalizedQuery: string): boolean {
   return nodeNameCandidates(node).some((name) => normalizeForMatch(name) === normalizedQuery);
 }
 
-/** 이름 중 하나라도 질의로 시작하는가 (정규화된 질의를 받는다). */
+/** Does any name start with the query (takes an already-normalised query). */
 export function nameStartsWith(node: NodeNameSource, normalizedQuery: string): boolean {
   return nodeNameCandidates(node).some((name) => normalizeForMatch(name).startsWith(normalizedQuery));
 }
 
-/** 이름 중 하나라도 질의를 포함하는가 (정규화된 질의를 받는다). */
+/** Does any name contain the query (takes an already-normalised query). */
 export function nameIncludes(node: NodeNameSource, normalizedQuery: string): boolean {
   return nodeNameCandidates(node).some((name) => normalizeForMatch(name).includes(normalizedQuery));
 }

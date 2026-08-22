@@ -1,39 +1,39 @@
 #!/usr/bin/env node
 /**
- * 서명한 `.app` 으로 업데이터 아카이브를 **다시 만들고 다시 서명한다.**
+ * **Rebuilds and re-signs** the updater archive from the signed `.app`.
  *
- * ## 왜 이 단계가 있나
- *
- * `tauri build` 는 `.app` 과 `.app.tar.gz`(+`.sig`)를 **한 번에** 낸다. 그런데
- * 이 저장소는 코드서명을 그 뒤에 따로 한다(`desktop:sign` / `desktop:sign:adhoc`).
- * 즉 아카이브가 담고 있는 것은 **서명 전의 앱**이다. 실측(2026-07-28, 깨끗한
- * 체크아웃):
+ * **Why this step exists.** `tauri build` emits the `.app` and the `.app.tar.gz`
+ * (plus `.sig`) **together**, but this repository code-signs separately afterwards
+ * (`desktop:sign` / `desktop:sign:adhoc`). So the archive contains **the unsigned
+ * app**. Measured on a clean checkout, 2026-07-28:
  *
  *   tar xzf "Ontology Atlas.app.tar.gz"
  *   codesign --verify --deep --strict "Ontology Atlas.app"
  *     → code has no resources but signature indicates they must be present
  *
- * 그 문장은 이 저장소가 이미 한 번 싸운 상태다. Tauri 번들은 바이너리만
- * linker-signed 이고 `Contents/_CodeSignature` 가 없어서, macOS 가 이걸
- * **"확인되지 않은 개발자"가 아니라 "손상되었습니다"** 로 판정한다. 앞의
- * 대화상자에는 "확인 없이 열기" 가 있고 뒤에는 **없다** (#717 에서 미서명
- * 릴리스에 ad-hoc 서명을 넣은 이유가 정확히 이것이다).
+ * That message is a state this repository has already fought once. A Tauri bundle
+ * has only the binary linker-signed and no `Contents/_CodeSignature`, so macOS
+ * judges it **"is damaged" rather than "unidentified developer"**. The former dialog
+ * offers "open anyway"; the latter **does not** (which is exactly why #717 added
+ * ad-hoc signing to unsigned releases).
  *
- * 그래서 지금 갈림길은 이렇다:
+ * So the fork in the road is:
  *
- *   DMG 로 받은 사용자  → 서명된 앱 (정상)
- *   앱 안에서 갱신한 사용자 → 손상된 앱 (설치 불가 / 실행 불가)
+ *   users who downloaded the DMG   → a signed app (fine)
+ *   users who updated in-app        → a damaged app (cannot install or launch)
  *
- * 갱신 경로만 조용히 깨진다. 릴리스는 초록으로 끝나고, DMG 검사도 전부
- * 통과하고, 아무도 모른다 — **처음 갱신을 받는 사람**이 알게 된다.
+ * Only the update path breaks, and silently: the release finishes green, every DMG
+ * check passes, and nobody knows — until **the first person to receive an update**
+ * finds out.
  *
- * 이 스크립트는 서명 **뒤에** 끼어들어 아카이브를 서명된 앱으로 다시 만들고
- * minisign 으로 다시 서명한다. Tauri 와 같은 레이아웃(`<앱>.app/` 이 루트)을
- * 쓰고, macOS tar 의 AppleDouble(`._*`) 동봉을 끈다 — Tauri 의 tar 도 확장
- * 속성을 담지 않으므로 그쪽에 맞춘다.
+ * This script runs **after** signing, rebuilds the archive from the signed app, and
+ * re-signs it with minisign. It uses Tauri's layout (`<app>.app/` at the root) and
+ * disables macOS tar's AppleDouble (`._*`) companions, matching Tauri's tar, which
+ * also carries no extended attributes.
  *
- * fail-closed: 다시 담기 **전에** `.app` 의 서명 구조를 확인한다. 깨진 서명을
- * 다시 포장하면 이 단계는 아무것도 고치지 않은 채 초록을 준다.
+ * Fail-closed: the `.app`'s signature structure is verified **before** repacking.
+ * Repacking a broken signature would make this step hand out a green result while
+ * fixing nothing.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -97,8 +97,9 @@ if (!fs.existsSync(appPath)) {
   fail(`missing app bundle at ${appPath}; run pnpm desktop:build:app first.`);
 }
 
-// 서명 뒤에 불려야 의미가 있다. 깨진 서명을 다시 포장하면 갱신 경로는 그대로
-// 깨진 채 이 단계만 초록이 된다 — 그게 이 스크립트가 막으려던 바로 그 결함이다.
+// This only means anything when called after signing. Repacking a broken signature
+// leaves the update path broken while this step alone turns green — the exact defect
+// this script exists to prevent.
 const verified = spawnSync("codesign", ["--verify", "--deep", "--strict", "--verbose=2", appPath], {
   encoding: "utf8",
 });
@@ -120,8 +121,8 @@ if (!(process.env.TAURI_SIGNING_PRIVATE_KEY ?? "").trim()) {
 fs.rmSync(archivePath, { force: true });
 fs.rmSync(signaturePath, { force: true });
 
-// `-C` 로 들어가서 `<앱>.app` 만 담는다 — Tauri 가 내는 레이아웃과 같다.
-// COPYFILE_DISABLE=1 은 macOS tar 가 확장 속성을 `._*` 로 끼워 넣는 것을 끈다.
+// `-C` into the directory and archive only `<app>.app` — the layout Tauri emits.
+// COPYFILE_DISABLE=1 stops macOS tar inserting extended attributes as `._*`.
 run("tar", ["-czf", archivePath, "-C", macosDir, appBundleName], {
   env: { ...process.env, COPYFILE_DISABLE: "1" },
 });

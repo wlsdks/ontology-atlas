@@ -14,34 +14,34 @@ import { controlClass } from '@/shared/ui/control-class';
 export interface DomainCouplingCardLabels {
   title: string;
   /**
-   * 카드 머리 숫자의 단위 — 나란한 두 카드가 같은 자리에 55(교차 관계)와
-   * 6(도메인)을 놓으면, 단위어 없이는 55 를 도메인 수로 읽는다.
+   * The unit of the card heading's number. When two cards side by side put 55 (cross
+   * relations) and 6 (domains) in the same slot, 55 reads as a domain count without a unit word.
    */
   countUnit: string;
   boundaryCountUnit: string;
   emptyTitle: string;
   emptyDescription: string;
-  /** 빈 상태에서 내미는 다음 한 걸음 — 설명만 있고 갈 곳이 없으면 빈 방이다. */
+  /** The next step offered in the empty state — an explanation with nowhere to go is an empty room. */
   emptyAction: string;
   emptyActionHref: string;
   boundaryTitle: string;
   boundarySelfLabel: string;
   boundaryCrossLabel: string;
   boundaryCaption: string;
-  /** 격자 아래 한 줄 — 색과 대각선을 읽는 법. */
+  /** One line under the grid — how to read the colour and the diagonal. */
   gridCaption: string;
-  /** 아무 칸도 안 눌렀을 때 상세 슬롯이 말하는 것. */
+  /** What the detail slot says when no cell is selected. */
   gridSelectHint: string;
-  /** 도메인이 상한을 넘었을 때 — "상위 6 / 전체 9 도메인". */
+  /** When domains exceed the limit — "top 6 / 9 domains total". */
   gridTruncated: (shown: number, total: number) => string;
-  /** 격자 밖 도메인이 걸린 교차 관계 수 — 조용히 줄이지 않기 위한 각주. */
+  /** Cross relations involving domains outside the grid — a footnote, so nothing is quietly reduced. */
   gridHiddenCross: (count: number) => string;
   gridCellAria: (from: string, to: string, count: number) => string;
   gridSelfAria: (domain: string, count: number) => string;
 }
 
 export interface DomainCouplingCardLink {
-  /** 예시 edge 양 끝 노드 클릭 → 지도 노드 포커스 딥링크 (다른 탭 행과 같은 계약). */
+  /** Clicking either end node of an example edge deeplinks to that node on the map (the same contract as rows in other tabs). */
   href: (nodeId: string) => string;
   ariaLabel: (title: string) => string;
 }
@@ -49,11 +49,11 @@ export interface DomainCouplingCardLink {
 export interface DomainCouplingCardProps {
   domainCount: number;
   crossDomainEdgeCount: number;
-  /** 격자 칸을 눌렀을 때 펼칠 실제 연결 — 칸 → 쌍 조회표. */
+  /** The actual connections a grid cell expands to — the cell → pair lookup table. */
   pairs: DomainCouplingPairRow[];
   grid: DomainCouplingGrid;
   boundaries: DomainCouplingBoundaryRow[];
-  /** 연결이 있는 도메인 전체 수 — 목록이 상한에서 잘렸으면 각주로 밝힌다. */
+  /** Total domains that have connections — stated in a footnote when the list is truncated at the limit. */
   boundaryTotalCount: number;
   isColdStart: boolean;
   edgeTypeLabel: (type: string) => string;
@@ -62,24 +62,26 @@ export interface DomainCouplingCardProps {
 }
 
 /**
- * "도메인 결합" — `computeDomainCouplingMatrix` (shared/lib, 이미 MCP
- * `domain_matrix` 가 쓰는 계산) 의 UI 소비자. 계산은 그대로 쓰고 형태만 바꾼다.
+ * "Domain coupling" — the UI consumer of `computeDomainCouplingMatrix` (shared/lib, already
+ * used by MCP `domain_matrix`). The computation is reused as is; only the shape changes.
  *
- * 좌: 도메인×도메인 **히트그리드**. 쌍을 세로 리스트로 세우면 22행이 되고,
- * 그 목록은 "엮인 쌍"만 말할 뿐 "안 엮인 조합"은 아예 안 보여준다 — 경계가
- * 어디서 끊겼는지가 이 카드의 질문인데도. 격자는 빈 칸도 사실로 보여주고,
- * 22행이 한 화면 안 6×6 으로 접힌다. 채도는 인디고 한 계열의 값 차이뿐이고
- * (새 hue 0), 색만으로 말하지 않도록 칸 안에 숫자를 남긴다. 대각선(같은 도메인
- * 안쪽 연결)은 교차가 아니므로 무채색이다.
- * 우: 도메인별 self/cross 비율("경계 압력") — 같은 matrix 의 `domains[]` 산술.
- * 막대가 그리는 값은 **교차 비중** 하나다. 한때 총량(`self+cross`)을 그리고
- * 총량으로 세웠는데, 캡션은 "교차 비중이 높을수록 경계가 새고 있다" 를 읽으라고
- * 했다 — 실측(2026-07-26 도그푸드) 결과 두 순위가 거의 역방향이라, 막대만 훑은
- * 사람은 가장 심한 도메인을 가장 안전한 것으로 읽었다. 캡션이 약속이고 그림이
- * 캡션을 따른다. 총량은 같은 행의 숫자(`안쪽 N · 교차 M`)가 그대로 말한다.
+ * Left: a domain × domain **heat grid**. Standing the pairs up as a vertical list gives 22
+ * rows, and such a list states only "pairs that are entangled" while never showing
+ * "combinations that are not" — even though where the boundary broke is this card's question.
+ * A grid shows empty cells as facts too, and folds 22 rows into a 6×6 that fits one screen.
+ * Saturation is value variation within a single indigo (zero new hues), and a number stays in
+ * each cell so colour is not the only channel. The diagonal (connections inside one domain) is
+ * not a crossing, so it is neutral.
+ * Right: the self/cross ratio per domain ("boundary pressure") — arithmetic over the same
+ * matrix's `domains[]`. The bar draws exactly one value: **the cross share**. It once drew the
+ * total (`self+cross`) and sorted by the total, while the caption told readers "a higher cross
+ * share means the boundary is leaking" — measured 2026-07-26 against the dogfood vault, those
+ * two orderings were nearly inverse, so anyone skimming the bars read the worst domain as the
+ * safest. The caption is the promise and the picture follows it. The total is stated verbatim
+ * by the numbers on the same row (`inside N · cross M`).
  *
- * 콜드스타트 — 도메인 2개 미만이거나 교차 edge 가 0건이면 빈/오해 소지 있는
- * 격자 대신 명시적 empty-state 한 장만 그린다.
+ * Cold start — with fewer than two domains or zero cross edges, one explicit empty state is
+ * drawn instead of an empty or misleading grid.
  */
 export function DomainCouplingCard({
   domainCount,
@@ -103,11 +105,12 @@ export function DomainCouplingCard({
   if (isColdStart) {
     return (
       /*
-       * **빈 상태는 무대다** (2026-08-12 실측). 높이 사슬을 잇기 전 이 카드는
-       * 폭 1368 × 높이 118 로 위에 붙어 있었고 아래로 614px 이 죽은 공백이었다 —
-       * 스킬 빈 화면과 같은 병(잉크 3개가 벽까지 퍼진 띠 + 아래 구멍). 같은
-       * 처방을 쓴다: 칸은 무대 폭(`PAGE_COLUMN_STAGE`, 조립대 입구·스킬 빈
-       * 상태와 같은 640)으로 모으고, 남은 높이는 이 래퍼가 소유해 가운데 세운다.
+       * **An empty state is a stage** (measured 2026-08-12). Before the height chain was joined,
+       * this card sat at the top at 1368 wide × 118 tall with 614px of dead space below it — the
+       * same illness as the empty skills screen (a band of three inks spread to the walls, with a
+       * hole beneath). The same prescription applies: the content is gathered to the stage width
+       * (`PAGE_COLUMN_STAGE`, the same 640 as the assembly entrance and the skills empty state),
+       * and the remaining height is owned by this wrapper, which centres it.
        */
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
       <section
@@ -130,14 +133,16 @@ export function DomainCouplingCard({
   }
 
   return (
-    // 폭 배분을 뒤집었다. 격자는 최대 6×6 이라 필요한 폭이 34rem 안에서
-    // 정해지고(이름 14rem + 칸 6×2.75rem + 간격 + 카드 패딩), 경계 압력 막대는
-    // 폭이 늘수록 비중 차이가 잘 읽힌다. 넓은 쪽을 격자에 주면 격자 오른쪽이
-    // 비고(2026-07-26 실측: 카드 폭의 45%) 막대는 짧아진다.
+    // The width split is inverted. The grid is at most 6×6, so the width it needs is determined
+    // within 34rem (name 14rem + 6 × 2.75rem cells + gaps + card padding), while the boundary
+    // pressure bars read their share differences better the wider they get. Giving the wider side
+    // to the grid empties the grid's right edge (measured 2026-07-26: 45% of the card width) and
+    // shortens the bars.
     //
-    // `auto` 가 아니라 고정 34rem 인 이유: `auto` 트랙은 남는 공간을 흡수하고
-    // 그 상한이 max-content 라 **카드 아래 캡션 한 문장의 길이**가 카드 폭을
-    // 정해 버린다(실측 746px). 치수는 설계 결정이지 문장 길이의 부산물이 아니다.
+    // Why a fixed 34rem rather than `auto`: an `auto` track absorbs the leftover space and its
+    // ceiling is max-content, so **the length of one caption sentence below the card** ends up
+    // deciding the card width (measured 746px). Dimensions are a design decision, not a byproduct
+    // of sentence length.
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
       <section
         aria-label={labels.title}
@@ -151,11 +156,11 @@ export function DomainCouplingCard({
           hasPair={(key) => pairByKey.has(key)}
           labels={labels}
         />
-        {/* 상세는 선택이 없어도 자리를 예약한다 — 칸을 누를 때마다 카드 높이가
-            뛰면 방금 비교하던 격자가 눈 밑에서 움직인다.
-            빈 상태의 안내문은 예약된 자리 **가운데**에 둔다. 위쪽에 붙여 두면
-            아래로 58px 이 남아(2026-07-26 실측) 예약된 슬롯이 아니라 두 캡션
-            사이의 죽은 틈으로 읽혔다. */}
+        {/* The detail area reserves its space even with nothing selected — if the card height
+            jumped on every cell click, the grid being compared would move under the eye.
+            The empty state's guidance sits **centred** in that reserved space. Pinned to the top
+            it left 58px below (measured 2026-07-26) and read as a dead gap between two captions
+            rather than a reserved slot. */}
         <div
           data-testid="domain-coupling-selection"
           className="mt-2.5 flex min-h-[76px] flex-col justify-center border-t border-[color:var(--color-divider)] pt-2.5"
@@ -182,9 +187,9 @@ export function DomainCouplingCard({
         <CardHead label={labels.boundaryTitle} unit={labels.boundaryCountUnit} count={domainCount} />
         <div className="mt-3 flex flex-1 flex-col justify-evenly gap-2.5">
           {boundaries.map((row) => {
-            // 막대 = 교차 비중 그 자체(0~100%). 최대값 정규화를 쓰지 않는 이유는
-            // 비중이 이미 0~100 척도라서다 — 목록 안 최대값으로 다시 나누면
-            // "100% 짜리 막대"가 실제 100% 가 아닌 자리에도 생긴다.
+            // The bar is the cross share itself (0–100%). No max-value normalization, because the
+            // share is already on a 0–100 scale — dividing again by the list's maximum would
+            // produce a "100% bar" somewhere that is not actually 100%.
             const crossPct = Math.round(row.crossRatio * 100);
             const width = crossPct > 0 ? Math.max(2, crossPct) : 0;
             return (
@@ -221,8 +226,9 @@ export function DomainCouplingCard({
 }
 
 /**
- * 칸의 채도 — 인디고 알파 4단. 색은 훑기용(어디가 시끄러운가), 정확한 수는
- * 칸 안 숫자가 말한다. 색만으로 말하면 대비를 못 읽는 사람에게 카드가 사라진다.
+ * A cell's saturation — four indigo alpha steps. Colour is for skimming (where is it noisy?);
+ * the exact number is stated by the digit inside the cell. Speaking in colour alone makes the
+ * card disappear for someone who cannot read the contrast.
  */
 function crossCellTone(count: number, maxCross: number): string | undefined {
   if (count <= 0) return undefined;
@@ -234,18 +240,18 @@ function crossCellTone(count: number, maxCross: number): string | undefined {
 }
 
 /**
- * 대각선 칸(같은 도메인 안 연결)의 농도 — **무채색** 3단, 자기 최대값 기준.
+ * The density of a diagonal cell (connections inside one domain) — **neutral**, three steps,
+ * scaled to its own maximum.
  *
- * 한때 값과 무관하게 `--color-overlay-2` 한 값이었다. 그래서 격자에서 가장 큰
- * 두 수(도그푸드 14·10)가 가장 옅은 칸이었고, 캡션의 「칸이 진할수록 …
- * 많아요」가 대각선에서 거짓이 됐다(2026-07-26 실측). 값에 반응하게 고쳐
- * 캡션을 두 채널 모두에서 참으로 만든다.
+ * It was once a single `--color-overlay-2` regardless of value. So the two largest numbers in
+ * the grid (dogfood: 14 and 10) were the palest cells, and the caption's "the darker the cell,
+ * the more …" became false along the diagonal (measured 2026-07-26). Making it respond to the
+ * value makes the caption true on both channels.
  *
- * 램프 상한을 `--color-overlay-3`(0.10)에서 멈추는 이유는 대비다. 한 단 더
- * (`--color-border-strong` 0.14) 올리면 그 배경 위 `text-secondary` 가
- * 6.51:1 로는 남지만 칸 테두리(divider)가 배경에 먹혀 격자선이 사라진다.
- * 0.02/0.06/0.10 세 단은 secondary 텍스트로 9.21 / 8.36 / 7.43:1 이라
- * AA(4.5:1) 를 넉넉히 넘는다.
+ * The ramp stops at `--color-overlay-3` (0.10) for contrast. One step further
+ * (`--color-border-strong`, 0.14) still leaves `text-secondary` at 6.51:1 on that background,
+ * but the cell border (divider) is swallowed by it and the grid lines disappear. The three
+ * steps 0.02/0.06/0.10 give secondary text 9.21 / 8.36 / 7.43:1, comfortably above AA (4.5:1).
  */
 function selfCellTone(count: number, maxSelf: number): string | undefined {
   if (count <= 0) return undefined;
@@ -268,17 +274,17 @@ function CouplingGrid({
   hasPair: (key: string) => boolean;
   labels: DomainCouplingCardLabels;
 }) {
-  // 열 머리는 번호로 둔다 — 도메인 이름 6개를 세로로 눕히면 고개를 돌려야
-  // 읽히고, 이름은 바로 옆 행 머리에 같은 번호와 함께 이미 있다.
+  // Column headers are numbers — six domain names laid on their side require turning your head
+  // to read, and the name is already beside the row header with the same number.
   //
-  // 이름 칸은 14rem 상한이다. `1fr` 로 두면 카드 폭을 다 먹어 이름과 칸 사이가
-  // 수백 px 벌어지고, 한 행을 읽는 데 눈이 화면을 가로지른다.
+  // The name column is capped at 14rem. Left as `1fr` it eats the whole card width, putting
+  // hundreds of px between the name and the cells so reading one row drags the eye across the screen.
   //
-  // 칸 크기는 두 단(`--coupling-cell`)이다. 좁은 화면은 28px 로 유지해 가로
-  // 넘침을 막고, lg 이상에서는 44px 로 키워 카드가 격자로 채워지게 한다 —
-  // 실측(2026-07-26)에서 404×197 격자가 735px 카드 안에 앉아 오른쪽 45%가
-  // 비었고, 그 빈칸이 화면을 미완성으로 읽히게 했다. 늘린 건 여백이 아니라
-  // 데이터 잉크(숫자가 11px→12.5px 램프 한 단 위로 올라간다)다.
+  // The cell size has two steps (`--coupling-cell`). Narrow screens stay at 28px to prevent
+  // horizontal overflow, and from lg it grows to 44px so the card is filled by the grid —
+  // measured 2026-07-26, a 404×197 grid sat inside a 735px card leaving 45% of the right side
+  // empty, and that gap made the screen read as unfinished. What grew is data ink, not
+  // whitespace (the digits move up one ramp step, 11px → 12.5px).
   const template = `minmax(0,14rem) repeat(${grid.domains.length}, var(--coupling-cell))`;
 
   return (
@@ -289,8 +295,8 @@ function CouplingGrid({
       className="mt-2.5 flex w-fit max-w-full flex-col gap-0.5 [--coupling-cell:1.75rem] lg:[--coupling-cell:2.75rem]"
     >
       <div role="row" className="grid items-center gap-0.5" style={{ gridTemplateColumns: template }}>
-        {/* 이름 칸 위의 빈 머리. `sr-only` 는 absolute 라 격자 흐름에서 빠져
-            열이 통째로 한 칸씩 밀린다 — 자리를 차지하는 빈 칸으로 둔다. */}
+        {/* The empty header above the name column. `sr-only` is absolute and drops out of the grid
+            flow, shifting every column by one — so this is an empty cell that occupies space. */}
         <span role="columnheader" aria-label={labels.title} />
         {grid.domains.map((domain, index) => (
           <span
@@ -331,16 +337,17 @@ function CouplingGrid({
             const tone = isDiagonal
               ? selfCellTone(count, grid.maxSelf)
               : crossCellTone(count, grid.maxCross);
-            // 파선 테두리 = "이 칸은 다른 척도" 를 색이 아닌 채널로 말한다
-            // (헌장: 카테고리 구분은 색이 아닌 보더 스타일). 값이 0인 대각선도
-            // 파선이라 「교차 없음」 빈칸과 「안쪽 연결 없음」 빈칸이 구별된다.
-            // ⚠️ **폭을 반드시 명시한다.** 클릭 가능한 칸은 `shape: 'icon'` 을 쓰는데
-            // 그 모양은 **하드 치수**(`w-7` = 28px)를 낸다 — 높이는 아래 `h-` 가
-            // 덮지만 폭은 덮는 것이 없어서 28로 남았다. 클릭 가능 여부는 데이터가
-            // 정하므로(값>0 이고 짝이 있을 때만), 같은 격자 안에서 44×44 와 28×44
-            // 가 섞였다: 실측 36칸 중 **17칸 정사각 · 19칸 직사각**(2026-08-09).
-            // 격자는 칸이 같은 크기라는 약속이고, 그게 깨지면 읽는 사람은 크기를
-            // 데이터로 읽는다.
+            // A dashed border says "this cell is a different scale" through a channel other than
+            // colour (the charter: category distinctions use border style, not colour). A diagonal
+            // cell with value 0 is dashed too, so «no crossing» and «no internal connection» stay
+            // distinguishable.
+            // ⚠️ **The width must be stated explicitly.** A clickable cell uses `shape: 'icon'`,
+            // and that shape emits **hard dimensions** (`w-7` = 28px) — the height is overridden by
+            // the `h-` below, but nothing overrode the width, so it stayed 28. Clickability is
+            // decided by the data (only when the value > 0 and a pair exists), so one grid mixed
+            // 44×44 and 28×44: measured 2026-08-09, **17 square cells and 19 rectangular** out of 36.
+            // A grid is a promise that cells are the same size, and once broken the reader reads
+            // size as data.
             const shared = `flex h-[var(--coupling-cell)] w-[var(--coupling-cell)] items-center justify-center rounded-micro border font-mono text-body tabular-nums ${
               isDiagonal
                 ? "border-dashed border-[color:var(--color-border-strong)]"
@@ -352,8 +359,8 @@ function CouplingGrid({
                   key={key}
                   role="gridcell"
                   aria-label={label}
-                  // 숫자를 실은 칸은 어느 배경에서도 AA 를 넘겨야 한다 —
-                  // quaternary 는 대각선 최고 농도에서 3.97:1 로 미달했다.
+                  // A cell carrying a number must exceed AA on any background — quaternary fell
+                  // short at 3.97:1 against the darkest diagonal.
                   className={`${shared} ${
                     count > 0
                       ? "text-[color:var(--color-text-secondary)]"
@@ -378,11 +385,11 @@ function CouplingGrid({
                 className={controlClass({
                   shape: "icon",
                   /*
-                   * ⚠️ **잉크를 반드시 명시한다.** 이 셀은 `style` 로 색 있는
-                   * 배경(`tone`)을 지므로 값 층의 기본 잉크(3차)로 떨어지면
-                   * 대비가 **2.43:1** 까지 내려간다 — 옮기면서 한 번 떨어뜨렸고
-                   * `a11y-vault-backed` 래칫이 잡았다(2026-08-06). 이 자리는
-                   * 「어느 바탕 위인가」가 잉크를 정하는 자리다.
+                   * ⚠️ **The ink must be stated explicitly.** This cell carries a coloured
+                   * background through `style` (`tone`), so falling back to the value layer's
+                   * default ink (tertiary) drops the contrast to **2.43:1** — it was dropped once
+                   * during a move and the `a11y-vault-backed` ratchet caught it (2026-08-06). Here,
+                   * «which background it sits on» decides the ink.
                    */
                   className: `${shared} text-[color:var(--color-text-primary)] hover:border-[color:var(--color-indigo-a46)] ${
                     isSelected ? "ring-1 ring-inset ring-[color:var(--color-indigo-accent)]" : ""
@@ -431,22 +438,23 @@ function SelectedPairDetail({
           </span>
         ))}
       </div>
-      {/* 세로 간격 10px(`gap-2.5`) — WCAG 2.5.8(AA) 의 spacing 예외를 위한 값이다.
-          이 줄의 링크는 `text-label`(11px/16px) 이라 자연 높이가 16px 이고,
-          24px 본칙에 미달한다. 예외를 타려면 **지름 24 원이 이웃 타깃과 안 만나야**
-          하므로 중심 간 거리가 24px 이상이어야 하는데, `gap-1`(4px) 에서는
-          16+4 = **20.0px** 였다(실측 2026-08-04, 1512×900 정적 export).
-          10px 이면 26.0px 이 되어 예외를 넘긴다.
+      {/* A 10px vertical gap (`gap-2.5`) is the value required by the WCAG 2.5.8 (AA) spacing
+          exception. The links on this row are `text-label` (11px/16px) with a natural height of
+          16px, below the 24px main rule. Qualifying for the exception requires **a 24px-diameter
+          circle that does not meet a neighbouring target**, so centre-to-centre distance must be
+          at least 24px — with `gap-1` (4px) it was 16 + 4 = **20.0px** (measured 2026-08-04,
+          1512×900 static export). At 10px it becomes 26.0px and clears the exception.
 
-          높이를 24px 로 올리는 갈래(본칙 충족)를 쓰지 않은 이유 둘: ① 행 높이가
-          바뀌면 이 카드가 예약해 둔 상세 슬롯이 클릭마다 24px 씩 더 뛴다(간격만
-          늘리면 12px). ② 링크의 높이 바닥은 값 층(`control-class`)에서 따로
-          재설계 중이라, 여기서 한 자리만 먼저 정하면 두 규격이 갈린다.
+          Two reasons the other branch (raising the height to 24px to satisfy the main rule) was
+          not taken: ① a changed row height makes the detail slot this card reserves jump by 24px
+          per click (widening the gap alone costs 12px); ② the link height floor is being
+          redesigned separately in the value layer (`control-class`), and settling one site here
+          first would split the spec in two.
 
-          ⚠️ `.touch-hit-expand` 로 히트만 넓히는 우회는 **금지**다. 행 피치
-          26px 에 44px 확장은 이웃과 18px 겹치고, DOM 순서상 뒤 행이 앞 행의
-          탭을 훔친다 — 「작아서 못 누름」이 「눌렀는데 다른 게 열림」이 된다.
-          게이트: `tests/e2e/dense-row-target-size.spec.ts`. */}
+          ⚠️ Widening only the hit area with `.touch-hit-expand` is **forbidden**. At a 26px row
+          pitch a 44px expansion overlaps neighbours by 18px, and in DOM order a later row steals
+          the earlier row's tap — "too small to press" becomes "pressed it and something else
+          opened". Gate: `tests/e2e/dense-row-target-size.spec.ts`. */}
       <div className="flex flex-col gap-2.5">
         {pair.examples.map((example) => (
           <div

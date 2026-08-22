@@ -3,39 +3,39 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **관문은 내려놓으면 잠든다** (2026-08-19, 실측 결함).
+ * **The gateway sleeps when you put it down** (2026-08-19, measured defect).
  *
- * ## 무엇이 있었나
+ * **What happened.** The gateway (`/`, `/download`) burned 55–68 ms per second
+ * forever, even 40 s after the last input — the exact opposite of the same app's map
+ * screen, which sleeps completely 32 s after input stops (0 busy frames, 1.7 ms/s).
+ * There were three rAF loops (the electric field, the hero dome, and the evidence
+ * section's map engine — 900 callbacks in a 5 s window = 60 Hz × 3), and the two
+ * owned by the gateway had no ambient-sleep wiring at all (`ambient-sleep.ts` —
+ * "alive in your hand, asleep when you put it down"). This is the gateway's instance
+ * of the accident `idle-gate.ts`'s doc-block warns about: forgetting to register new
+ * motion with the gate.
  *
- * 관문(`/` · `/download`)은 무입력 40초 뒤에도 초당 55~68ms 를 영구히 태웠다 —
- * 같은 앱의 지도 화면이 무입력 32초 뒤 0 busy 프레임(1.7ms/s)으로 완전히
- * 잠드는 것과 정반대다. rAF 루프가 셋이었고(전류장 · 히어로 돔 · 증거 절 지도
- * 엔진, 5초 창 콜백 900회 = 60Hz × 3) 그중 관문 소유의 둘에는 앰비언트 휴면
- * (`ambient-sleep.ts` — "손 안에서는 살아 있고, 내려놓으면 잠든다")이 아예
- * 배선돼 있지 않았다. `idle-gate.ts` 독블록이 경고한 「새 모션을 게이트에
- * 등록하는 것을 잊는」 사고의 관문판이다.
+ * The fix: merge the gateway's own two loops into `gateway-frame-loop.ts` and let
+ * that driver put them to sleep on the same constants as the map (30 s delay, 2 s
+ * ramp).
  *
- * 처방: 관문 소유의 두 루프를 `gateway-frame-loop.ts` 하나로 합치고, 그
- * 드라이버가 지도와 같은 상수(딜레이 30s · 램프 2s)로 재운다.
+ * **What is measured.** The same discipline as `map-hover-release.spec.ts` — measure
+ * the **effect**, not the cause (which flag is open): the per-second time rAF
+ * callbacks spent *synchronously*. Whichever consumer loses its sleep (the electric
+ * field, the dome, or a third canvas added later), it shows up identically as frame
+ * cost, so this check also catches copies of the defect.
  *
- * ## 무엇을 재나
+ * Three assertions: ① it really works while awake (proof the instrument is not
+ * idling — "a check that has never once turned red is the same as no check") ② after
+ * 30 s of no input plus the 2 s ramp, frame cost reaches the floor ③ one input
+ * revives it from the next frame.
  *
- * `map-hover-release.spec.ts` 와 같은 규율 — 원인(어느 플래그가 열려 있나)이
- * 아니라 **결과**를 잰다: rAF 콜백이 «동기적으로» 쓴 초당 시간. 휴면이 어느
- * 소비처에서 빠지든(전류장이든 돔이든, 새로 생길 세 번째 캔버스든) 프레임
- * 비용으로 똑같이 드러나므로, 이 검사는 결함의 사본에도 걸린다.
- *
- * 세 단언: ① 깨어 있는 동안 실제로 일한다(측정기가 헛돌지 않는다는 증명 —
- * 「한 번도 빨간불이 된 적 없는 검사는 없는 것과 같다」) ② 무입력
- * 30s+램프 2s 가 지나면 프레임 비용이 바닥에 닿는다 ③ 입력 하나에 다음
- * 프레임부터 되살아난다.
- *
- * 실측 여유 (headless, 1440×900): 깨어 있음 55~78 ms/s · 잠듦 1.5~2.2 ms/s ·
- * 결함 재주입(휴면 계수 상시 1) 시 40초 시점 55+ ms/s. 임계 10 은 두 상태
- * 사이 한 자리도 안 겹치게 놓인다.
+ * Measured margins (headless, 1440×900): awake 55–78 ms/s · asleep 1.5–2.2 ms/s ·
+ * with the defect reinjected (sleep factor pinned to 1) 55+ ms/s at the 40 s mark.
+ * The threshold of 10 sits with no overlap at all between the two states.
  */
 test("관문은 무입력이 이어지면 프레임 일을 그만두고, 입력 하나에 되살아난다", async ({ page }) => {
-  // 딜레이 30s + 램프 2s + 측정 창 — 기본 60s 타임아웃으로는 모자란다.
+  // 30 s delay + 2 s ramp + measurement window — the default 60 s timeout is not enough.
   test.setTimeout(120_000);
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
@@ -54,7 +54,7 @@ test("관문은 무입력이 이어지면 프레임 일을 그만두고, 입력 
   });
   await page.goto("/ko/download/", { waitUntil: "networkidle" });
 
-  /** 최근 `ms` 동안 rAF 콜백이 쓴 초당 시간 + 일한(≥0.4ms) 프레임 수. */
+  /** Per-second time rAF callbacks spent over the last `ms`, plus the number of busy (≥0.4 ms) frames. */
   const idleCost = (ms: number) =>
     page.evaluate((windowMs) => {
       const w = window as unknown as { __frameWork?: { w: number; t: number }[] };
@@ -67,27 +67,29 @@ test("관문은 무입력이 이어지면 프레임 일을 그만두고, 입력 
       };
     }, ms);
 
-  // 무입력 상태를 만든다 — 구석으로 한 번 옮기고 손을 뗀다. 이 이동이
-  // 마지막 입력이므로 휴면 시계는 여기서 출발한다.
+  // Create the no-input state: move to a corner once and stop. That move is the last
+  // input, so the sleep clock starts here.
   await page.mouse.move(4, 4);
 
-  // ① 깨어 있는 동안 전류장·돔이 실제로 일한다 — 이 바닥이 없으면 아래
-  //    잠듦 판정은 «아무것도 안 그리는 페이지»에서도 초록이라 헛돈다.
+  // ① While awake, the electric field and dome really work. Without this floor the
+  //    sleep assertion below would also be green on a page that draws nothing.
   await page.waitForTimeout(6_000);
   const awake = await idleCost(4_000);
   expect(awake.frames).toBeGreaterThan(20);
   expect(awake.busyFrames, "깨어 있는 관문에 일한 프레임이 없다 — 측정기가 헛돈다").toBeGreaterThan(20);
 
-  // ② 딜레이(30s) + 램프(2s)가 지나면 잠든다. 총 38.5초 시점에서 마지막
-  //    4초(전부 휴면 구간)를 잰다. 실측: 정상 1.5~2.2 · 결함 55+ ms/s.
+  // ② After the delay (30 s) plus ramp (2 s) it sleeps. At the 38.5 s mark, measure
+  //    the last 4 s (entirely inside the sleeping window). Measured: healthy
+  //    1.5–2.2 ms/s, defective 55+ ms/s.
   await page.waitForTimeout(32_500);
   const asleep = await idleCost(4_000);
-  // 프레임이 아예 안 왔으면(탭 백그라운드 등) 이 측정은 무효다.
+  // If no frames arrived at all (a backgrounded tab, say), the measurement is void.
   expect(asleep.frames).toBeGreaterThan(20);
   expect(asleep.cpuMsPerSec).toBeLessThan(10);
 
-  // ③ 입력 하나(마우스 이동)에 다음 프레임부터 되살아난다 — 잠듦이 「꺼짐」이
-  //    아니라는 절대 조건. 실측: 1.5초 창에 일한 프레임 31.
+  // ③ One input (a mouse move) revives it from the next frame — the absolute
+  //    condition that sleeping is not the same as switched off. Measured: 31 busy
+  //    frames in a 1.5 s window.
   await page.mouse.move(700, 450, { steps: 10 });
   await page.waitForTimeout(1_500);
   const woken = await idleCost(1_500);

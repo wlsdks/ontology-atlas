@@ -41,7 +41,7 @@ test('FSD repo — features/ → capabilities, entities/widgets/views → implem
       [...r.capabilities.map((c) => c.slug)].sort(),
       ['capabilities/auth', 'capabilities/billing'],
     );
-    // 슬러그는 평평한 role 이름 — 위치는 path/evidence 가 나른다 (2026-08-01 판정).
+    // Slugs are flat role names — location is carried by path/evidence (decided 2026-08-01).
     assert.deepEqual(
       [...r.elements.map((e) => e.slug)].sort(),
       ['elements/header', 'elements/home', 'elements/user'],
@@ -74,7 +74,7 @@ test('Generic repo — src/ depth-1 folders → capabilities', () => {
       r.capabilities.map((c) => c.slug).sort(),
       ['capabilities/api', 'capabilities/db'],
     );
-    // index.ts → element — 슬러그는 평평하게, 파일 위치는 path 로.
+    // index.ts → element — slug stays flat, the file location goes in `path`.
     const apiEl = r.elements.find((e) => e.slug === 'elements/api-entry');
     assert.ok(apiEl, 'api index.ts → element 후보');
     assert.equal(apiEl.path, 'src/api/index.ts');
@@ -2376,7 +2376,7 @@ test('pnpm workspace — operational README sections stay out of domains and wor
     const r = analyzeRepoStructure(root);
     assert.equal(r.framework, 'generic');
     assert.deepEqual(r.domains, []);
-    // workspace 멤버 이름이 곧 슬러그 — 위치는 path/evidence 로 (2026-08-01 판정).
+    // A workspace member's name is the slug — location goes in path/evidence (decided 2026-08-01).
     assert.deepEqual(
       r.elements.map((element) => element.slug),
       [
@@ -2528,19 +2528,20 @@ test('workspace semantic evidence rejects package files that resolve outside the
 });
 
 test('최상위 독립 패키지(mcp/·cli/ 류)가 요소 후보로 잡힌다 — package.json 이 판별자', () => {
-  // 2026-08-01 실측: analyze 가 src/ FSD 레이어만 걸어 이 저장소의 에이전트
-  // 표면(mcp/, cli/)이 재생성 볼트에서 통째로 빠졌다. 도구의 시야가 곧
-  // 볼트의 사정거리가 되므로, 사정거리 회귀는 여기서 잡는다.
+  // Measured 2026-08-01: analyze walked only the src/ FSD layers, so this
+  // repository's agent surfaces (mcp/, cli/) were missing entirely from a
+  // regenerated vault. The tool's field of view is the vault's reach, so a reach
+  // regression is caught here.
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'host-app' }));
     writeFileSync(join(r, 'README.md'), '# Host\n\n## Serving\n');
     mkdirSync(join(r, 'src/features/serve'), { recursive: true });
-    // 독립 패키지 둘 — 제안돼야 한다.
+    // Two independent packages — these must be proposed.
     mkdirSync(join(r, 'mcp'), { recursive: true });
     writeFileSync(join(r, 'mcp', 'package.json'), '{"name":"host-mcp"}\n');
     mkdirSync(join(r, 'cli'), { recursive: true });
     writeFileSync(join(r, 'cli', 'package.json'), '{"name":"host-cli"}\n');
-    // package.json 없는 최상위 폴더 — 제안되면 안 된다 (덮는 것이 목적이 아니다).
+    // A top-level folder with no package.json — must not be proposed (blanket coverage is not the goal).
     mkdirSync(join(r, 'scripts'), { recursive: true });
     writeFileSync(join(r, 'scripts', 'run.mjs'), '');
     mkdirSync(join(r, 'tests'), { recursive: true });
@@ -2556,7 +2557,7 @@ test('최상위 독립 패키지(mcp/·cli/ 류)가 요소 후보로 잡힌다 �
       r.elements.some((e) => e.slug.includes('scripts') || e.slug.includes('tests')),
       false,
     );
-    // containment spine 에도 실린다.
+    // Carried on the containment spine as well.
     assert.ok(r.suggestedRelations.some((rel) => rel.to === 'elements/mcp'));
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4313,27 +4314,29 @@ test('invalid analyze options are rejected instead of coerced', () => {
 });
 
 /**
- * `shared/` 하나 때문에 아무것도 못 찾던 결함 (2026-07-28 도그푸딩 실측).
+ * The defect where one `shared/` folder made it find nothing (measured while
+ * dogfooding, 2026-07-28).
  *
- * `fsdMarkers` 에 `shared` 가 들어 있어서, **아무 TS/Node 프로젝트에나 흔한**
- * `src/shared/` 폴더 하나만 있어도 framework 가 `fsd` 로 판정됐다. 그런데
- * FSD 모드가 실제로 훑는 폴더는 `features/entities/widgets/views` 뿐이라,
- * 그중 아무것도 없으면 **capabilities 0 · elements 0** 을 조용히 반환한다.
- * 응답 어디에도 "framework 판정 때문에 0 이다" 라는 말이 없다.
+ * `fsdMarkers` contained `shared`, so a single `src/shared/` folder — **common in
+ * any TS or Node project** — was enough to classify the framework as `fsd`. But
+ * FSD mode only walks `features/entities/widgets/views`, so with none of those
+ * present it silently returned **0 capabilities and 0 elements**, and nothing in
+ * the response said the zero came from the framework verdict.
  *
- * 같은 호출 안의 `inferImports` 는 같은 저장소에서 auth·tasks·db·notifications
- * 를 정확히 뽑아낸다 — **두 도구가 같은 저장소를 두고 서로 다른 말을 한다.**
+ * `inferImports` in the same call extracted auth, tasks, db, and notifications
+ * correctly from the same repository — **two tools saying different things about
+ * one repository.**
  *
- * 규율로 승격: **판정이 읽을 것을 바꾸지 못하면 그 판정을 하지 않는다.**
- * FSD 로 부르는 유일한 결과가 "훑을 폴더가 없다" 라면 그 이름은 억제 말고는
- * 하는 일이 없다.
+ * Promoted to a rule: **do not make a classification that cannot change what gets
+ * read.** If the only consequence of calling something FSD is "there are no
+ * folders to walk", the name does nothing but suppress.
  */
 test('src/shared 하나로 FSD 라 부르지 않는다 — 훑을 폴더가 없으면 일반 경로로 간다', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'taskflow', description: 'x' }));
     writeFileSync(join(r, 'README.md'), '# Taskflow\n');
-    // 실제 도그푸딩 픽스처의 모양 — 기능 폴더가 src/ 바로 아래에 있고,
-    // 흔한 이름의 shared/ 가 하나 섞여 있다.
+    // The shape of the real dogfooding fixture — feature folders sit directly
+    // under src/, with one commonly named shared/ mixed in.
     mkdirSync(join(r, 'src/auth'), { recursive: true });
     mkdirSync(join(r, 'src/tasks'), { recursive: true });
     mkdirSync(join(r, 'src/notifications'), { recursive: true });
@@ -4352,7 +4355,7 @@ test('src/shared 하나로 FSD 라 부르지 않는다 — 훑을 폴더가 없�
   }
 });
 
-// 진짜 FSD 는 계속 FSD 여야 한다 — 고치면서 반대편을 깨뜨리지 않았는지.
+// Real FSD must stay FSD — check the fix did not break the other side.
 test('훑을 폴더가 하나라도 있으면 여전히 FSD 다 (lean FSD 포함)', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'lean', description: 'x' }));

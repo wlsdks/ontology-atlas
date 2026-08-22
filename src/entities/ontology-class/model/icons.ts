@@ -11,11 +11,11 @@ import {
 /**
  * ontology kind → lucide icon.
  *
- * kind 별 *직관적 metaphor* 를 시각으로 노출. 색은 단일 인디고 + 무채색
- * 헌장 유지 — icon 은 `currentColor` 로 받아 호출자가 색을 결정. 매핑은
- * *모양* 만 정의.
+ * Gives each kind an intuitive visual metaphor. The charter's single-indigo palette
+ * is preserved: the icon takes `currentColor`, so the caller decides the colour and
+ * this map defines *shape* only.
  *
- * unknown / stub 또는 legacy / 알 수 없는 kind 는 fallback HelpCircle.
+ * unknown, stub, and legacy kinds fall back to HelpCircle.
  */
 const KIND_ICON: Record<string, LucideIcon> = {
   project: Folder,
@@ -27,7 +27,7 @@ const KIND_ICON: Record<string, LucideIcon> = {
 };
 
 /**
- * kind 의 대표 lucide 아이콘 컴포넌트. 미지정/legacy kind 는 HelpCircle.
+ * The representative lucide icon for a kind. Unknown and legacy kinds get HelpCircle.
  */
 export function getOntologyKindIcon(kind: string): LucideIcon {
   return KIND_ICON[kind] ?? HelpCircle;

@@ -170,16 +170,17 @@ describe("stepCamera", () => {
 
 
     /**
-     * **주사율이 달라도 같은 시간에 같은 만큼 돌아온다** (2026-07-28).
+     * **The same amount comes back in the same time at any refresh rate** (2026-07-28).
      *
-     * 종전 러버밴드는 프레임당 14% 당기고 속도를 15% 흘렸다 — 60Hz 를 전제한
-     * 값이라 120Hz(ProMotion)에서는 같은 시간에 두 배 당겨져 뻣뻣하고, 30fps
-     * 로 떨어지면 절반만 당겨져 늘어진다. 발산은 아니고 **감각**의 문제지만,
-     * 이 엔진의 다른 모든 시각 램프는 이미 `1-exp(-dt/τ)` 형이라 여기만
-     * 프레임 종속이었다.
+     * The old rubber band pulled 14% per frame and bled 15% of the velocity — values
+     * that assume 60Hz, so at 120Hz (ProMotion) it pulls twice as much in the same
+     * time and feels stiff, while dropping to 30fps pulls half as much and feels
+     * slack. Not divergence but a matter of **feel** — yet every other visual ramp in
+     * this engine is already of the form `1-exp(-dt/τ)`, leaving only this one
+     * frame-dependent.
      *
-     * 판정은 "프레임 몇 개"가 아니라 **경과 시간**으로 한다 — 그게 바로 옛
-     * 구현이 못 지키던 축이다.
+     * The assertion is made on **elapsed time**, not "how many frames" — that is
+     * precisely the axis the old implementation could not hold.
      */
     it("복귀가 주사율이 아니라 시간을 따른다 — 60Hz 와 120Hz 가 같은 곳에 도착한다", () => {
       const elapsedSeconds = 0.2;
@@ -206,8 +207,9 @@ describe("stepCamera", () => {
       const at120 = run(1 / 120);
       const at30 = run(1 / 30);
 
-      // 적분 오차만큼의 차이는 남지만, 종전 구현에서는 **배수**로 갈렸다
-      // (120Hz 가 60Hz 의 두 배 프레임을 도니 그만큼 더 당겨졌다).
+      // A difference the size of the integration error remains, but the old
+      // implementation diverged by a **multiple** (120Hz ran twice the frames of
+      // 60Hz and pulled that much more).
       expect(at120).toBeCloseTo(at60, 0);
       expect(at30).toBeCloseTo(at60, 0);
     });

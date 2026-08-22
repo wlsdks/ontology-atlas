@@ -1,7 +1,6 @@
 /**
- * 공개 상세 페이지의 canonical 경로(`/project/{slug}/`)를 반환한다.
- * slug 에 URL-safe 하지 않은 문자가 섞이면 404 로 갈 수 있으므로
- * encodeURIComponent 로 path segment 를 감싼다.
+ * The canonical path of a public detail page (`/project/{slug}/`). A slug with
+ * URL-unsafe characters would 404, so the path segment is encodeURIComponent'd.
  */
 export function getProjectDetailHref(slug: string): string {
   return `/project/${encodeURIComponent(slug)}/`;
@@ -41,8 +40,8 @@ function getProjectFallbackHref(
 }
 
 /**
- * 정적 export에서도 빌드 시점에 알 수 없는 로컬 vault slug를 열 수 있는
- * 앱 내부 상세 경로. 공개 canonical은 getProjectDetailHref를 계속 사용한다.
+ * The in-app detail path, which can open a local vault slug that static export
+ * cannot know at build time. The public canonical still uses `getProjectDetailHref`.
  */
 export function getProjectRuntimeDetailHref(slug: string): string {
   return getProjectFallbackHref(slug);
@@ -77,8 +76,8 @@ export function getProjectEditHref(
 }
 
 /**
- * query 기반 runtime 경로와 과거 CDN rewrite pathname을 같은 화면 상태로
- * 정규화한다. 해석할 수 없으면 caller가 프로젝트 목록으로 복귀한다.
+ * Normalizes the query-based runtime path and the older CDN rewrite pathname into the
+ * same screen state. When it cannot be resolved, the caller returns to the project list.
  */
 export function resolveProjectFallbackRoute(
   pathname: string,

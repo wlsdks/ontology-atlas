@@ -12,16 +12,16 @@ import {
 } from '@/shared/ui/control-class';
 
 /**
- * `controlClass` 의 계약.
+ * The contract for `controlClass`.
  *
- * ## 이 파일이 없으면 이 함수는 값어치가 없다
+ * **Without this file the function is worthless.** Moving hand-written classNames
+ * behind a function only gathers the off-ramp values into one place; they are
+ * still off-ramp values. The single reason this function beats writing them by
+ * hand is that **every value it emits is forced onto a ramp**, and this file is
+ * that enforcement.
  *
- * 손 className 을 함수 뒤로 옮기기만 하면 **이탈값이 한 파일에 모였을 뿐** 여전히
- * 이탈값이다. 이 함수가 손으로 쓰는 것보다 나은 유일한 이유는 **여기서 나오는
- * 모든 값이 램프 위에 있음이 강제된다**는 것이고, 그 강제가 이 파일이다.
- *
- * 실측 근거: 2026-08-03 design-system 감사가 찾은 300+ 이탈값은 전부 «컴포넌트가
- * 없어서 손으로 쓴» 자리에서 나왔다.
+ * Evidence: the 300+ off-ramp values found by the 2026-08-03 design-system audit
+ * all came from places written by hand because no component existed.
  */
 
 const SHAPES: ControlShape[] = ['chip', 'icon', 'row', 'pill', 'card', 'link', 'tile', 'segment'];
@@ -41,23 +41,24 @@ const TONES: ControlTone[] = [
 const SCOPES = ['app', 'panel'] as const;
 
 /**
- * 값 층이 **읽어도 되는 토큰 네임스페이스**.
+ * The token namespaces the value layer **may read**.
  *
- * 하나뿐이었다가 둘이 됐다. 늘린 이유는 취향이 아니라 실측이다 — 아래
- * 「두 무채 램프는 실제로 다르다」가 두 램프의 값이 갈린다는 것을 `globals.css`
- * 에서 직접 읽어 단언한다. 그 시험이 초록인 한 이 목록은 정당하고, 값이 같아지면
- * 그 시험이 빨개져 **이 목록을 줄이라고 말한다**.
+ * It went from one to two, and the reason is measurement rather than taste: the
+ * test below reads `globals.css` directly and asserts that the two neutral ramps
+ * really do carry different values. While that test is green this list is
+ * justified; if the values converge the test turns red and **tells you to shrink
+ * this list**.
  */
 const TOKEN_NAMESPACES = ['--color-', '--topology-v2-panel-text-'];
 
-/** `app/globals.css` 의 radius 램프 4단. 여기 없는 반경은 이탈이다. */
+/** The 4 steps of the radius ramp in `app/globals.css`. Any radius not here is off-ramp. */
 const RADIUS_STEPS = ['micro', 'chip', 'card', 'panel'];
 
 const all = (fn: (s: ControlShape, z: ControlSize, t: ControlTone, a: boolean) => void) => {
   for (const s of SHAPES) for (const z of SIZES) for (const t of TONES) for (const a of [true, false]) fn(s, z, t, a);
 };
 
-/** 위와 같은 전수에 `scope` 축을 더한 것. 새 축이 램프 밖으로 새지 않는지 볼 때 쓴다. */
+/** The same exhaustive sweep plus the `scope` axis — used to check that a new axis does not leak off the ramp. */
 const allScoped = (fn: (cls: string, label: string) => void) => {
   for (const s of SHAPES)
     for (const z of SIZES)
@@ -76,7 +77,7 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
     const offenders: string[] = [];
     all((shape, size, tone, active) => {
       for (const c of controlClass({ shape, size, tone, active }).split(' ')) {
-        // `text-[color:var(--color-…)]` 는 색이라 정당하다. 금지는 **치수**의 arbitrary 다.
+        // `text-[color:var(--color-…)]` is a colour and legitimate. What is banned is arbitrary **dimensions**.
         if (/^(text|rounded|leading)-\[(?!color:)/.test(c) || /^(min-h|min-w|h|w|p[xy]?|gap)-\[/.test(c)) {
           offenders.push(`${shape}/${size}/${tone}/${active}: ${c}`);
         }
@@ -86,14 +87,16 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
   });
 
   it('폰트 크기는 등록된 타입 램프 스텝만 쓴다', () => {
-    // 미정의 스텝은 **리터럴을 안 남긴다** — Tailwind 가 클래스를 아예 안 만들고
-    // 루트 16px 로 렌더될 뿐이라 하드코딩 검사의 시야 밖이다(2026-07-27 실측).
+    // An undefined step **leaves no literal behind** — Tailwind simply does not emit
+    // the class and it renders at the root 16px, which puts it outside the
+    // hardcoded-value check's field of view (measured 2026-07-27).
     const offenders: string[] = [];
     all((shape, size, tone, active) => {
       for (const c of controlClass({ shape, size, tone, active }).split(' ')) {
         const m = /^text-([a-z-]+)$/.exec(c);
-        // `text-` 는 크기 · 정렬 · 색 세 축이 이름을 공유한다. 크기 축만 본다 —
-        // 안 가르면 `text-left` 가 「램프에 없는 스텝」으로 잡혀 게이트가 거짓말을 한다.
+        // `text-` is shared by three axes: size, alignment, and colour. Only the size
+        // axis is checked — without that split, `text-left` is caught as "a step not on
+        // the ramp" and the gate lies.
         const ALIGNMENT = ['left', 'center', 'right', 'justify', 'start', 'end'];
         if (m && !ALIGNMENT.includes(m[1]) && !TYPE_RAMP_STEPS.includes(m[1] as never)) {
           offenders.push(`${shape}/${size}: ${c}`);
@@ -120,7 +123,7 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
       const cls = controlClass({ shape, size, tone, active });
       for (const c of cls.split(' ')) {
         if (/#[0-9a-f]{3,8}\b/i.test(c) || /rgba?\(/.test(c)) offenders.push(`${shape}: ${c}`);
-        // 색 유틸리티는 반드시 등재된 토큰 네임스페이스를 통과해야 한다.
+        // Colour utilities must go through a registered token namespace.
         if (/^(text|bg|border)-\[/.test(c) && !TOKEN_NAMESPACES.some((ns) => c.includes(`var(${ns}`))) {
           offenders.push(`${shape}: ${c}`);
         }
@@ -130,7 +133,7 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
   });
 
   it('두 번째 채색 시스템을 만들지 않는다 — 인디고 외 hue 0', () => {
-    // 헌장: 무채색 + 단일 인디고. 눌림 상태를 새 색으로 표현하는 것이 가장 흔한 이탈이다.
+    // The charter: neutrals + a single indigo. Expressing a pressed state with a new colour is the most common escape.
     const tokens = new Set<string>();
     all((shape, size, tone, active) => {
       for (const m of controlClass({ shape, size, tone, active }).matchAll(/var\(--color-([a-z0-9-]+)\)/g)) {
@@ -138,9 +141,10 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
       }
     });
     /*
-     * 헌장은 무채색 + 단일 인디고 **+ 신호 3종**(warning · error · success)이다.
-     * 신호는 「연결됨 / 실패 / 경고」 같은 상태에만 쓰고 장식으로 확장하지 않는다.
-     * 그 셋 밖의 hue 가 나오면 두 번째 채색 시스템이다.
+     * The charter is neutrals + a single indigo **+ 3 signal colours** (warning,
+     * error, success). Signals are for states like connected / failed / warning and
+     * are never extended into decoration. Any hue outside those three is a second
+     * colour system.
      */
     const SIGNAL = /^(status-warning|status-success|danger-text|success-text)/;
     const hued = [...tokens].filter(
@@ -154,7 +158,7 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
 
 describe('controlClass — 모양이 실제로 서로 다르다', () => {
   it('여섯 모양이 서로 구별되는 문자열을 낸다', () => {
-    // 같은 값을 내는 두 모양이 있으면 그건 분류가 아니라 이름이 둘인 것이다.
+    // Two shapes emitting the same value are not a classification — they are one thing with two names.
     const seen = new Map<string, ControlShape>();
     for (const shape of SHAPES) {
       const cls = controlClass({ shape });
@@ -166,17 +170,18 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
 
   it('칩·필의 `md`·`lg` 는 사다리 위에 선다 — `sm` 만 24px 바닥에 남는다', () => {
     /*
-     * ## 뒤집힌 단언 (2026-08-03 소유자 결정 · `docs/DECISIONS.md`)
+     * **An inverted assertion** (owner decision 2026-08-03 · `docs/DECISIONS.md`).
      *
-     * 여기 있던 단언은 **「기본값은 패딩이 높이를 정한다」**
-     * (`expect(controlClass({ shape: 'chip' })).not.toMatch(/\bh-\d/)`) 였다.
-     * 그 규칙이 만든 값이 칩 24/30/34 · 필 20/22/30 이고, **30 · 34 · 22 · 20
-     * 은 이 앱의 높이 어휘에 없는 값**이다. 그 값이 계약(32)과 부딪히자 값을
-     * 고치는 대신 예외 축(`fixedHeight`)이 붙었다 — 축은 증상이었다.
+     * The assertion here used to be **"by default, padding decides the height"**
+     * (`expect(controlClass({ shape: 'chip' })).not.toMatch(/\bh-\d/)`). That rule
+     * produced chip 24/30/34 and pill 20/22/30, and **30 · 34 · 22 · 20 are not in
+     * this app's height vocabulary**. When those values collided with the contract
+     * (32), an exception axis (`fixedHeight`) was bolted on instead of fixing the
+     * values — the axis was a symptom.
      *
-     * 그래서 규칙을 뒤집는다: **높이는 사다리가 정하고, 패딩은 그 안에서
-     * 결정된다.** `md`·`lg` 는 `--control-h-md`(32px)에 서고, `sm` 만 WCAG
-     * 2.5.8 최소 타깃 24px 에 남는다.
+     * So the rule is inverted: **the ladder decides the height and padding follows
+     * inside it.** `md` and `lg` stand on `--control-h-md` (32px); only `sm` stays at
+     * the WCAG 2.5.8 minimum target of 24px.
      */
     for (const shape of ['chip', 'pill'] as const) {
       for (const size of ['md', 'lg'] as const) {
@@ -190,7 +195,7 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
         `${shape}/sm 이 32px 로 올라갔다 — 24px 바닥이 사라지면 밀도가 통째로 바뀐다`,
       ).not.toContain('min-h-8');
     }
-    // 하드 높이는 쓰지 않는다 — 줄바꿈한 칩을 잘라 내용을 숨긴다.
+    // No hard height — it would clip a wrapped chip and hide content.
     for (const shape of ['chip', 'pill'] as const) {
       for (const size of SIZES) {
         expect(
@@ -212,8 +217,9 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
   });
 
   it('세로 타일은 아이콘 위·글자 아래다 — 가로 모양들과 축이 다르다', () => {
-    // 2026-08-03 정규화가 찾은 구멍: 모양 여섯이 전부 가로라 세로 액션 타일 5개가
-    // 시스템 밖에 있었다. 전수에서 「모양」을 셀 때 축을 하나만 봤다.
+    // A hole the 2026-08-03 normalisation found: all six shapes were horizontal, so
+    // 5 vertical action tiles sat outside the system. The inventory had counted
+    // "shape" along one axis only.
     const cls = controlClass({ shape: 'tile' });
     expect(cls).toContain('flex-col');
     expect(cls).toContain('text-center');
@@ -221,13 +227,14 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
 
   it('link 의 바닥은 24(2.5.8 AA)다 — 44(2.5.5/HIG)를 fine 포인터 전면에 싣지 않는다', () => {
     /*
-     * 2026-08-04 바닥 재설정(원장 「link 바닥 24」). 종전 값 층은 WCAG
-     * 2.5.8(AA, 24×24)을 인용하면서 2.5.5(AAA)/HIG 의 44(`min-h-11`)를
-     * 실었다 — 44 는 `--touch-target-min` 이고 터치 계약(design.md)이
-     * «coarse 단일 출처»로 못박은 값이라, fine 전면 44 는 저장소 자신의 계약
-     * 위반이었다. 그 바닥이 만든 탈출구(`inline` 축)는 오설정 4건을 어떤
-     * 정적 검사도 못 본 채 지나가게 했다. coarse 의 44 는 높이가 아니라
-     * `.touch-hit-expand`(레이아웃 이동 0)가 낸다.
+     * Floor reset, 2026-08-04 (ledger 「link 바닥 24」 — the link floor of 24). The
+     * value layer used to cite WCAG 2.5.8 (AA, 24×24) while loading 2.5.5 (AAA) /
+     * HIG's 44 (`min-h-11`). 44 is `--touch-target-min`, which the touch contract
+     * (design.md) pins as the single source for coarse pointers, so 44 across the
+     * board on fine pointers violated the repository's own contract. The escape hatch
+     * that floor created (the `inline` axis) let 4 misconfigurations through without
+     * any static check seeing them. The coarse 44 is emitted by `.touch-hit-expand`
+     * (zero layout shift), not by the height.
      */
     for (const size of SIZES) {
       const cls = controlClass({ shape: 'link', size });
@@ -238,9 +245,10 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
 
   it('홀로 선 글자 컨트롤은 손가락에 잡힌다 — 기본값이 안전한 쪽이다', () => {
     /*
-     * `link` 는 보더도 배경도 없어 시각적으로는 글자 그대로여야 하지만, 히트
-     * 영역까지 글자 크기면 24 → 16px 로 내려가 WCAG 2.5.8(24×24) 아래가 된다.
-     * 실제로 설정 시트 컨트롤 3개가 이 이유로 시스템 밖에 남았다.
+     * `link` has no border and no background, so visually it must be exactly the
+     * text — but if the hit area is also text-sized it drops from 24 to 16px, below
+     * WCAG 2.5.8 (24×24). Three settings-sheet controls stayed outside the system for
+     * exactly this reason.
      */
     for (const size of SIZES) {
       expect(controlClass({ shape: 'link', size }), `link/${size} 에 최소 높이가 없다`).toMatch(
@@ -250,7 +258,7 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
   });
 
   it('모든 모양이 반경을 갖는다 — 안 주면 호버 배경이 각진다', () => {
-    // `row` 가 처음에 반경 없이 나가 정규화된 목록 행의 호버가 각지게 됐다.
+    // `row` originally shipped without a radius, which made hover on normalised list rows square-cornered.
     for (const shape of SHAPES) {
       expect(controlClass({ shape }), `${shape} 에 반경이 없다`).toMatch(/rounded-/);
     }
@@ -272,19 +280,21 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
   });
 
   it('className 은 덧붙고, 램프 값을 이기지 않는다', () => {
-    // `cn()` 이 tailwind-merge 라 같은 축의 클래스는 뒤가 이긴다. 자리잡기만 넘기라는
-    // 규율이 문서에만 있으면 안 지켜지므로, 최소한 «덧붙는다»는 계약은 못박는다.
+    // `cn()` is tailwind-merge, so on the same axis the later class wins. The
+    // discipline "pass placement only" is not kept if it lives only in a document, so
+    // at minimum the "it appends" contract is pinned here.
     expect(controlClass({ shape: 'chip', className: 'absolute right-2' })).toContain('absolute');
   });
 });
 
 /**
- * 값 층의 구멍을 메운 축들 — **원장이 반복해서 센 것만** 들어왔다.
+ * Axes that filled holes in the value layer — **only those the ledger counted
+ * repeatedly** were admitted.
  *
- * 여기 있는 시험은 전부 「이 축이 실재하는 이유」를 잠근다. 축은 공짜가 아니다:
- * 하나 늘 때마다 다음 사람이 고를 것이 늘고, 근거 없이 늘어난 축은 그 자체로
- * 두 번째 시스템이 된다. 그래서 각 축마다 **근거가 사라지면 빨개지는** 시험을
- * 하나씩 둔다.
+ * Every test here locks down the reason its axis exists. An axis is not free:
+ * each one adds something for the next person to choose between, and an axis
+ * added without evidence becomes a second system by itself. So each axis carries
+ * one test that **turns red when its evidence disappears**.
  */
 describe('controlClass — 여덟째 모양과 세 축', () => {
   const GLOBALS = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
@@ -293,14 +303,15 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('여덟째 모양은 보더가 없고 인셋이 있다 — 그 사이가 비어 있어서 생겼다', () => {
     /*
-     * `chip`/`pill`/`card`/`tile` 은 보더가 필수라 이미 보더를 두른 상자 안에서
-     * 「상자 속 상자」가 되고, `link` 는 인셋이 0이라 세그먼트의 히트 영역이
-     * 사라진다. 그 둘 다 아니어야 이 모양이 존재할 이유가 있다.
+     * `chip`/`pill`/`card`/`tile` require a border, so inside an already-bordered box
+     * they become a box in a box; `link` has zero inset, so a segment's hit area
+     * disappears. This shape exists only because it is neither.
      */
     for (const size of SIZES) {
       const cls = controlClass({ shape: 'segment', size });
-      // ⚠️ 변형 접두(`disabled:hover:border-inherit`)를 걸러야 한다 — 안 거르면 이
-      // 시험이 **모든 모양에 대해** 빨개진다. 첫 실행이 실제로 그랬다.
+      // ⚠️ Variant prefixes (`disabled:hover:border-inherit`) must be filtered out —
+      // without that this test turns red **for every shape**. The first run did exactly
+      // that.
       const base = cls.split(' ').filter((c) => !c.includes(':') || c.startsWith('border-[color:'));
       expect(base.join(' '), `segment/${size} 에 보더가 붙었다 — 상자 속 상자가 된다`).not.toMatch(
         /(^| )border(-|$| )/,
@@ -311,10 +322,11 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('세그먼트 반경은 `--chrome-radius-inner` 와 같은 값이다 — 별칭이라 픽셀이 안 바뀐다', () => {
     /*
-     * 소비처 다섯이 `rounded-[var(--chrome-radius-inner)]` 를 쓰고 있었다. 옮겨도
-     * 되는 근거는 그 토큰이 `--radius-chip` 의 **별칭**이라는 사실 하나뿐이므로,
-     * 그 사실을 CSS 에서 직접 읽어 잠근다. 누가 `--chrome-radius-inner` 를 7px
-     * 로 갈라 놓으면 이 시험이 빨개지고, 그때는 옮긴 다섯 자리가 1px 틀어진다.
+     * Five consumers were using `rounded-[var(--chrome-radius-inner)]`. The only
+     * evidence that moving them is safe is that the token is an **alias** for
+     * `--radius-chip`, so that fact is read straight from the CSS and locked. If
+     * someone splits `--chrome-radius-inner` off to 7px this test turns red — and on
+     * that day the five moved places would be 1px off.
      */
     expect(
       cssVar('--chrome-radius-inner'),
@@ -325,15 +337,16 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('두 무채 램프는 실제로 값이 다르다 — 같아지면 `scope` 축은 폐기 대상이다', () => {
     /*
-     * `scope` 축이 존재하는 **유일한** 근거다. 두 램프가 같은 값이 되는 날
-     * 이 축은 아무것도 안 하면서 고를 것만 늘리는 축이 되므로, 그날 이 시험이
-     * 빨개져 지우라고 말해야 한다.
+     * The **only** evidence that the `scope` axis should exist. The day the two ramps
+     * carry the same values, the axis does nothing while still adding a choice, so
+     * this test must turn red and say to delete it.
      */
     /*
-     * 2026-08-03 까지는 넷이었다. 전역 quaternary 상향(#787c84 → #82828a,
-     * docs/DECISIONS.md)으로 quaternary 가 두 램프에서 **같은 값으로 수렴**했고,
-     * 이 시험이 설계대로 빨개져 그 단의 panel 컴파운드를 지웠다 — 그래서 축이
-     * 재매핑하는 단은 이제 셋이고, 셋 각각이 근거(값이 실제로 다름)를 가진다.
+     * It was four until 2026-08-03. Raising the global quaternary (#787c84 →
+     * #82828a, docs/DECISIONS.md) made quaternary **converge to the same value** in
+     * both ramps; this test turned red as designed and that step's panel compound was
+     * deleted. So the axis now remaps three steps, and each of the three has its own
+     * evidence that the values really differ.
      */
     const DIVERGING_STEPS = ['primary', 'secondary', 'tertiary'] as const;
     const pairs: Array<[string, string]> = [];
@@ -344,13 +357,13 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
       expect(panel, `--topology-v2-panel-text-${step} 를 못 읽었다`).toBeTruthy();
       pairs.push([app as string, panel as string]);
     }
-    // 공회전 차단 — 3단을 다 못 읽었으면 아래 단언은 빈 집합을 통과한다.
+    // Idling guard — if all three steps were not read, the assertion below passes on an empty set.
     expect(pairs.length, '두 램프의 단을 하나도 못 짝지었다').toBe(3);
     /*
-     * ⚠️ 처음엔 「하나라도 다르면 통과」였고, `/gate-probe` 가 그게 **게이트가
-     * 아님**을 잡았다: 재매핑 단 중 하나를 같은 값으로 되돌려도 초록이었다.
-     * 축이 재매핑하는 단은 **전부** 각자 근거가 있어야 한다 — 한 단이 수렴하면
-     * 그 단의 컴파운드는 아무것도 안 하면서 자리만 차지한다.
+     * ⚠️ This started as "pass if any one differs", and `/gate-probe` caught that
+     * it was **not a gate**: reverting one of the remapped steps to the same value
+     * still went green. **Every** step the axis remaps must carry its own evidence —
+     * when one step converges, its compound occupies space while doing nothing.
      */
     const same = pairs
       .map(([a, b], i) => (a === b ? `${DIVERGING_STEPS[i]}: ${a}` : null))
@@ -365,16 +378,17 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('quaternary 는 수렴 상태로 고정한다 — 다시 갈라지면 panel 컴파운드를 되살려야 한다', () => {
     /*
-     * 위 시험의 대칭이다. 2026-08-03 에 quaternary 가 두 램프에서 `#82828a` 로
-     * 수렴해 panel 컴파운드를 지웠다(값이 두 곳에 적혀 있으나 **이 고정이
-     * 드리프트를 기계적으로 잡는다** — 별칭 var() 로 합치지 않은 이유는
-     * `prefers-contrast: more` 가 전역 quaternary 만 #8f95a0 로 올리는데, 별칭이면
-     * 그 순간 패널 사다리에서 quaternary 가 tertiary(#868690) **위로 역전**되기
-     * 때문이다. 실측 근거: docs/DECISIONS.md 2026-08-03 quaternary 항목).
+     * The mirror of the test above. On 2026-08-03 quaternary converged to `#82828a`
+     * in both ramps and the panel compound was deleted. The value is now written in
+     * two places, but **this pin catches the drift mechanically** — the reason they
+     * were not merged behind an alias var() is that `prefers-contrast: more` raises
+     * only the global quaternary to #8f95a0, and under an alias quaternary would at
+     * that moment **invert above** tertiary (#868690) in the panel ladder. Evidence:
+     * docs/DECISIONS.md, 2026-08-03 quaternary entry.
      *
-     * 이 시험 없이는 두 실패가 조용하다: ① 한쪽 값만 움직여 다시 갈라졌는데
-     * 재매핑 없이 패널 위 muted 가 틀린 잉크를 낸다. ② 컴파운드를 근거 없이
-     * 되살린다. 둘 다 여기서 빨개진다.
+     * Without this test two failures are silent: ① only one value moves, they diverge
+     * again, and with no remap `muted` on a panel emits the wrong ink; ② the compound
+     * is resurrected without evidence. Both turn red here.
      */
     const app = cssVar('--color-text-quaternary');
     const panel = cssVar('--topology-v2-panel-text-quaternary');
@@ -385,7 +399,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
       `quaternary 가 두 램프에서 다시 갈라졌다(전역 ${app} · 패널 ${panel}) — ` +
         `panel 위 muted 잉크가 근거를 잃었다. \`scope: 'panel', tone: 'muted'\` 컴파운드를 되살리고 이 고정을 갱신하라.`,
     ).toBe(app);
-    // 컴파운드가 실제로 없다 — muted 는 scope 와 무관하게 전역 토큰 하나를 낸다.
+    // The compound really is absent — `muted` emits one global token regardless of scope.
     const onPanel = controlClass({ shape: 'chip', size: 'md', tone: 'muted', scope: 'panel' });
     expect(
       onPanel.includes('--topology-v2-panel-text-quaternary'),
@@ -396,9 +410,9 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('`scope: panel` 은 잉크만 바꾼다 — 바탕·보더로 새면 두 번째 채색 시스템이다', () => {
     /*
-     * 이 축을 여는 대가는 「두 번째 램프를 값 층이 인정한다」는 것뿐이어야 한다.
-     * 패널 네임스페이스가 `bg-`/`border-` 로도 나가기 시작하면 그때는 진짜로
-     * 두 벌의 채색 시스템이 되고, 헌장 위반이다.
+     * The price of opening this axis must be only "the value layer acknowledges a
+     * second ramp". If the panel namespace also starts emitting through `bg-` and
+     * `border-`, that really is two colour systems and violates the charter.
      */
     const offenders: string[] = [];
     allScoped((cls, label) => {
@@ -420,10 +434,11 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
   });
 
   it('`scope` 가 실제로 무언가를 바꾼다 — 값이 갈리는 무채 단은 패널에서 다른 잉크다', () => {
-    // 위 시험이 「안 바뀐다」만 보므로, 이 시험이 없으면 축을 통째로 no-op 으로
-    // 만들어도 둘 다 초록이다. `muted` 는 여기 없다 — 2026-08-03 quaternary
-    // 수렴으로 재매핑이 삭제됐고, 그 상태는 위 「quaternary 는 수렴 상태로
-    // 고정한다」가 반대 방향으로 잡는다.
+    // The test above only checks "nothing changes", so without this one the axis
+    // could be turned into a complete no-op and both would stay green. `muted` is not
+    // here — its remap was deleted by the 2026-08-03 quaternary convergence, and that
+    // state is caught from the other direction by the test pinning quaternary as
+    // converged.
     for (const tone of ['default', 'secondary', 'strong'] as const) {
       expect(
         controlClass({ shape: 'chip', tone, scope: 'panel' }),
@@ -434,8 +449,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('`truncate` 는 display 를 flex 밖으로 뺀다 — 안 그러면 `…` 가 안 그려진다', () => {
     /*
-     * 실측: 같은 텍스트·같은 폭에서 `inline-block` 은 `…`, `inline-flex` 는
-     * 하드 클립. `truncate` 유틸리티만 얹는 것으로는 못 고친다.
+     * Measured: at the same text and width, `inline-block` gives `…` while
+     * `inline-flex` hard-clips. Adding the `truncate` utility alone does not fix it.
      */
     for (const shape of SHAPES) {
       const cls = controlClass({ shape, truncate: true });
@@ -443,15 +458,15 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
       expect(cls, `${shape}/truncate 가 여전히 flex 다 — 말줄임이 하드 클립된다`).not.toMatch(
         /(^| )(inline-)?flex( |$)/,
       );
-      // 끄면 오늘 그대로다.
+      // Turning it off leaves today's behaviour unchanged.
       expect(controlClass({ shape, truncate: false })).toBe(controlClass({ shape }));
     }
   });
 
   it('채움 톤은 바탕과 잉크를 한 쌍으로 내고 보더를 지운다', () => {
     /*
-     * 잉크만 내면 소비처가 `bg-…` 를 계속 손으로 쓴다 = 모양을 className 으로
-     * 넘기는 것 = 층이 있으나 마나. 그래서 쌍으로 낸다.
+     * Emitting ink alone leaves consumers hand-writing `bg-…`, which passes shape
+     * through `className` and neutralises the layer. So they are emitted as a pair.
      */
     for (const shape of SHAPES) {
       const cls = controlClass({ shape, tone: 'onAccent' });
@@ -463,20 +478,23 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
         /border-\[color:/,
       );
     }
-    // 전경 토큰은 실재해야 한다. 없으면 브라우저가 색을 통째로 무시하고 상속색이
-    // 나오는데, 그건 화면에서 「조금 어두운 글자」로 보일 뿐 아무도 못 짚는다.
+    // The foreground token must exist. If it does not, the browser ignores the colour
+    // entirely and the inherited colour shows through — which reads on screen as
+    // "slightly darker text" and nobody can point at it.
     expect(cssVar('--color-text-on-accent'), '`--color-text-on-accent` 가 globals.css 에 없다').toBeTruthy();
   });
 
   it('`min-h-8` 은 `--control-h-md` 와 같은 값이다 — 사다리 토큰이 움직이면 여기가 먼저 빨개진다', () => {
     /*
-     * **이 시험이 이 정리의 핵심 게이트다.** 값 층은 Tailwind 스텝(`min-h-8`)을
-     * 내고 토큰(`--control-h-md`)은 CSS 에 산다. 둘이 같은 값이라는 것은 아무
-     * 코드도 강제하지 않으므로, 여기서 **CSS 를 직접 읽어** 잠근다.
+     * **This is the central gate of the whole arrangement.** The value layer emits a
+     * Tailwind step (`min-h-8`) while the token (`--control-h-md`) lives in CSS.
+     * Nothing in code forces the two to be the same value, so it is locked here by
+     * **reading the CSS directly**.
      *
-     * 값을 손으로 등재하지 않는다 — Tailwind spacing 은 1 = 4px 이므로 스텝에
-     * 4를 곱해 토큰의 px 와 맞춘다. 누가 `--control-h-md` 를 33px 로 옮기면
-     * 램프의 32px 은 그날부터 사다리 밖인데, 그 사실을 말해 주는 것이 이 줄이다.
+     * The value is not registered by hand — Tailwind spacing is 1 = 4px, so the step
+     * is multiplied by 4 and compared against the token's px. If someone moves
+     * `--control-h-md` to 33px, the ramp's 32px is off the ladder from that day, and
+     * this line is what says so.
      */
     const px = Number(/^(\d+)px$/.exec(cssVar('--control-h-md') ?? '')?.[1]);
     expect(px, '`--control-h-md` 를 px 로 못 읽었다').toBeGreaterThan(0);
@@ -494,39 +512,45 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
         checked += 1;
       }
     }
-    // 공회전 차단 — 조합을 하나도 안 돌고 통과하는 게이트는 게이트가 아니다.
+    // Idling guard — a gate that passes without running a single combination is not a gate.
     expect(checked, '사다리에 선 조합을 하나도 못 쟀다').toBe(4);
   });
 
   it('가로 한 줄 모양 전 조합이 명시 높이를 선언하고, 그 값은 높이 어휘 안이다', () => {
     /*
-     * ## #884 의 남은 절반 (2026-08-03 2차 전수 · 체계석)
+     * **The other half of #884** (second exhaustive count, 2026-08-03 · 체계 seat).
      *
-     * 사다리 복원이 칩·필에서 멈춰 있었다. 2차 전수가 찾은 것:
+     * The ladder restoration had stopped at chips and pills. What the second count
+     * found:
      *
-     * | 조합 | 값 | 소비처 |
+     * | Combination | Value | Consumers |
      * |---|---:|---:|
-     * | segment/sm | 22px — WCAG 2.5.8(24×24) 바닥 미달 | 0 |
-     * | row/lg | 42px — 높이 어휘 밖 | 0 |
-     * | card/sm | 30px — 어휘 밖 | 15 |
-     * | card/md | 34px — 크롬 잠금 단(`--docs-header-tile-size`)의 우연 점유 | 5 |
+     * | segment/sm | 22px — below the WCAG 2.5.8 (24×24) floor | 0 |
+     * | row/lg | 42px — outside the height vocabulary | 0 |
+     * | card/sm | 30px — outside the vocabulary | 15 |
+     * | card/md | 34px — coincidentally occupying a chrome-locked step (`--docs-header-tile-size`) | 5 |
      *
-     * 넷 다 「패딩이 높이를 정한」 부산물이다. 조합을 하나씩 단언하면 다음
-     * 모양이 또 빠지므로, 판정을 **부류 전체의 게이트**로 올린다: 가로 한 줄
-     * 모양(chip·pill·segment·row·card)은 전 조합이 명시 `min-h-*` 를,
-     * 정사각(icon)은 `h-*` 를 선언하고, 그 픽셀값은 높이 어휘 안이어야 한다.
+     * All four are by-products of "padding decides the height". Asserting one
+     * combination at a time would let the next shape slip out again, so the verdict is
+     * raised to **a gate over the whole family**: every combination of the
+     * single-row horizontal shapes (chip · pill · segment · row · card) must declare
+     * an explicit `min-h-*`, the square shape (icon) an `h-*`, and the pixel value
+     * must be inside the height vocabulary.
      *
-     * 어휘는 손으로 적지 않는다 — `--control-h-{sm,md,lg}` ·
-     * `--chrome-tile-size` · `--touch-target-min` 을 CSS 에서 읽고 WCAG 바닥
-     * 24 를 더해 파생한다. 토큰이 움직이면 여기가 같이 빨개진다.
+     * The vocabulary is not written by hand — it is derived by reading
+     * `--control-h-{sm,md,lg}`, `--chrome-tile-size`, and `--touch-target-min` from
+     * the CSS and adding the WCAG floor of 24. If a token moves, this turns red with
+     * it.
      *
-     * (위 표의 card/md 가 점유했던 34 는 당시 `--docs-header-tile-size` 라는
-     * 별도 토큰이었다. 그 토큰은 2026-08-03 에 삭제됐고 문서함 헤더 타일은
-     * `--chrome-tile-size`(36)에 섰다 — 34 는 이제 어느 토큰의 값도 아니라
-     * 그냥 어휘 밖이다. 원장: 2026-08-03 「타일 치수는 하나다」.)
+     * (The 34 that card/md occupied in the table above was then a separate token,
+     * `--docs-header-tile-size`. That token was deleted on 2026-08-03 and the docs
+     * header tile moved onto `--chrome-tile-size` (36) — 34 is now no token's value at
+     * all, simply outside the vocabulary. Ledger: 2026-08-03 「타일 치수는 하나다」
+     * (there is one tile dimension).)
      *
-     * `link`(바닥 24 — 위 「link 의 바닥은 24」 시험)와 `tile`(세로 2축 —
-     * 내용이 높이를 정한다)은 이 게이트의 대상이 아니다 — 각자 위의 시험이 잠근다.
+     * `link` (floor 24 — see the test above) and `tile` (two vertical axes, content
+     * decides the height) are not covered by this gate; each is locked by its own test
+     * above.
      */
     const WCAG_TARGET_FLOOR_PX = 24;
     const tokenPx = (name: string): number => {
@@ -542,7 +566,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
       tokenPx('--control-h-lg'),
       tokenPx('--touch-target-min'),
     ]);
-    // 토큰이 서로 수렴해 어휘가 쪼그라들면 파생 자체가 신호를 잃는다.
+    // If the tokens converge and the vocabulary shrinks, the derivation itself loses its signal.
     expect([...vocabulary].sort((a, b) => a - b), '높이 어휘가 6단이 아니다').toEqual([24, 28, 32, 36, 40, 44]);
 
     const offenders: string[] = [];
@@ -574,21 +598,23 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
       }
     }
     expect(offenders, `사다리 밖 조합:\n${offenders.join('\n')}`).toEqual([]);
-    // 공회전 차단 — 5모양×4 + icon 4 = 24 조합을 실제로 다 쟀는가.
+    // Idling guard — were all 5 shapes × 4 sizes + icon 4 = 24 combinations actually measured?
     expect(checked, '어휘 판정을 전 조합에 돌리지 못했다').toBe(5 * SIZES.length + SIZES.length);
   });
 
   it('마이크로 티어는 칩에서만 실재한다 — 다른 모양의 `xs` 는 `sm` 의 별칭이다', () => {
     /*
-     * ## 왜 별칭인가 (2026-08-03 체계석)
+     * **Why an alias** (2026-08-03, 체계 seat).
      *
-     * 「sm 아래 한 칸이 없다」는 래칫 원장에 세 라운드 연속 기록된 구멍이고,
-     * 실측 소비처(마이크로 명령 태그 · px-1.5 py-0.5 · 9px mono · 반경 4px)는
-     * **칩꼴**이었다. cva 크기 축은 모양 간 공유 타입이라 단을 더하면 여덟
-     * 모양 전부가 그 단을 받는데, 칩 밖의 `xs` 에 소비처가 없다 — 소비처 0인
-     * 값을 발명하는 대신 `sm` 별칭으로 둔다(#884 가 남긴 `true`=`md` 별칭과
-     * 같은 문법). 칩 밖에서 마이크로 티어 소비처가 실측되면 그때 별칭을 풀고
-     * 값을 세운다 — 이 시험이 그 순간을 명시적 결정으로 만든다.
+     * "There is no step below sm" is a hole the ratchet ledger recorded three rounds
+     * running, and the measured consumers (micro command tags · px-1.5 py-0.5 · 9px
+     * mono · radius 4px) were all **chip-shaped**. The cva size axis is a type shared
+     * across shapes, so adding a step gives it to all eight shapes — and outside chips
+     * there is no consumer for `xs`. Rather than invent a value with zero consumers it
+     * stays an alias for `sm` (the same idiom as the `true`=`md` alias #884 left
+     * behind). When a micro-tier consumer is measured outside chips, the alias is
+     * unwound and a real value is defined; this test makes that moment an explicit
+     * decision.
      */
     for (const shape of SHAPES.filter((sh) => sh !== 'chip')) {
       expect(
@@ -596,16 +622,16 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
         `${shape}/xs 가 sm 과 갈라졌다 — 소비처 전수와 함께 별칭을 푼 결정인가?`,
       ).toBe(controlClass({ shape, size: 'sm' }));
     }
-    // 칩에서는 실재한다 — 별칭이면 이 단은 고를 것만 늘리는 축이다.
+    // It is real for chips — as a pure alias this step would only add a choice.
     expect(controlClass({ shape: 'chip', size: 'xs' })).not.toBe(controlClass({ shape: 'chip', size: 'sm' }));
   });
 
   it('칩 마이크로 티어 — 반경은 micro, 높이는 그대로 24 바닥이다', () => {
     /*
-     * 마이크로 티어가 여는 것은 **인셋·타입·반경**이지 높이가 아니다.
-     * 24(WCAG 2.5.8) 아래 단을 만들지 않는 것이 사다리의 첫 규율이다.
-     * 반경 4px 는 발명이 아니라 전수다 — 등재 시점에 `rounded-sm`(59) +
-     * 무접미 `rounded`(37) = 96곳이 이미 4px 위에 있었다.
+     * The micro tier opens **inset, type, and radius** — not height. Never creating a
+     * step below 24 (WCAG 2.5.8) is the ladder's first discipline. The 4px radius is
+     * not an invention but an inventory: at registration time `rounded-sm` (59) plus
+     * suffix-less `rounded` (37) = 96 places were already on 4px.
      */
     const cls = controlClass({ shape: 'chip', size: 'xs' });
     expect(cls).toContain('rounded-micro');
@@ -616,9 +642,9 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('어느 조합도 반경 클래스를 정확히 하나 낸다 — 둘이면 CSS 소스 순서가 승자다', () => {
     /*
-     * 칩 반경이 base 에서 크기 컴파운드로 옮겨진 대가를 잠근다. cn 의 radius
-     * 그룹 병합(`RADIUS_RAMP_STEPS`)이 있어도, 출력에 반경이 0개거나 2개인
-     * 조합이 생기면 그건 컴파운드 누락/중복이다.
+     * Locks the cost of moving the chip radius from the base into a size compound.
+     * Even with cn's radius group merge (`RADIUS_RAMP_STEPS`), a combination that
+     * emits zero or two radii means a missing or duplicated compound.
      */
     let counted = 0;
     all((shape, size, tone, active) => {
@@ -633,11 +659,11 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('칩·필의 기본 보더는 앱 다수(border-soft)다 — 옮길 때마다 진해지던 문을 닫는다', () => {
     /*
-     * 등재 시점 전수: 칩 반경 원소의 손 보더 **border-soft/chrome-border 74
-     * 대 divider 18**(4:1). 램프 기본이 소수파(0.08)면 정규화가 곧 «조용히
-     * 한 단 진해짐»이 된다 — 다수를 먼저 세는 규칙 0 의 값 층 버전이다.
-     * card/tile 은 처음부터 border-soft — 이제 보더 있는 네 모양이 같은 기본
-     * 위에 선다.
+     * Inventory at registration: hand-written borders on chip-radius elements were
+     * **border-soft/chrome-border 74 vs divider 18** (4:1). If the ramp default is the
+     * minority (0.08), normalising silently darkens everything by one step — the value
+     * layer's version of rule 0, count the majority first. card/tile were border-soft
+     * from the start, so all four bordered shapes now stand on the same default.
      */
     for (const shape of ['chip', 'pill', 'card', 'tile'] as const) {
       expect(
@@ -650,13 +676,14 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('신호 톤의 잉크는 글자 역할 토큰이다 — success 가 신호색이면 소비처가 램프 밖에 남는다', () => {
     /*
-     * 2026-08-03 정정의 잠금. danger(`--color-danger-text`)와 success
-     * (`--color-success-text-a94`)는 글자 역할이다 — 신호색(#32b97d 등)은
-     * 점·보더의 것이지 문장 속 잉크가 아니다. success 가 신호 토큰이던 동안
-     * 이 톤의 실소비처는 0이었다.
-     * warning 은 아직 신호 토큰(`--color-status-warning`)이다 — 유일 소비처가
-     * 그 값 위에서 옳고, 앰버 글자 관용구(amber-source-a90)와의 수렴은 전수와
-     * 함께 별도 판정으로 남겼다. 수렴이 결정되면 이 시험도 같이 고쳐라.
+     * Locks the 2026-08-03 correction. danger (`--color-danger-text`) and success
+     * (`--color-success-text-a94`) are text roles — a signal colour (#32b97d and the
+     * like) belongs to dots and borders, not to ink inside a sentence. While success
+     * was a signal token this tone had 0 real consumers.
+     * warning is still a signal token (`--color-status-warning`): its single consumer
+     * is correct on that value, and convergence with the amber text idiom
+     * (amber-source-a90) was left as a separate verdict together with an inventory. If
+     * that convergence is decided, fix this test with it.
      */
     expect(controlClass({ shape: 'chip', tone: 'success' })).toContain('--color-success-text-a94');
     expect(controlClass({ shape: 'chip', tone: 'danger' })).toContain('--color-danger-text');
@@ -676,8 +703,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('새 축 셋의 기본값은 오늘 출력과 바이트 동일하다 — 축을 더한 것이 회귀가 아니게', () => {
     /*
-     * 244개가 이미 이 값들을 쓰고 있다. 기본값이 한 글자라도 움직이면 그
-     * 전부가 조용히 바뀐다 — 이 시험이 그 문을 잠근다.
+     * 244 places already use these values. If the defaults move by one character all
+     * of them change silently — this test locks that door.
      */
     for (const shape of SHAPES) {
       for (const size of SIZES) {
@@ -715,7 +742,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
         if (r && !RADIUS_STEPS.includes(r[1]) && r[1] !== 'full') offenders.push(`${label}: ${c}`);
       }
     });
-    // 공회전 차단 — 조합이 실제로 만들어졌는지.
+    // Idling guard — were the combinations actually built?
     expect(counted, '축 조합을 하나도 안 돌렸다').toBeGreaterThan(1000);
     expect(offenders, `축을 켰더니 램프 밖으로 샜다:\n${offenders.slice(0, 20).join('\n')}`).toEqual([]);
   });
@@ -725,24 +752,30 @@ describe('계기가 스스로를 설명한다', () => {
   const SOURCE = readFileSync(join(process.cwd(), 'src/shared/ui/control-class.ts'), 'utf8');
 
   it('여섯 모양이 어디서 왔는지 실측으로 적어 둔다', () => {
-    // 다음 사람이 «일곱째 모양» 을 감으로 추가하는 것을 막는 것은 코드가 아니라
-    // 이 숫자다 — 분류에 없는 모양이 나왔다는 것은 전수를 다시 세라는 신호다.
+    // What stops the next person adding a "seventh shape" on instinct is this number,
+    // not the code — a shape outside the classification is the signal to re-run the
+    // inventory.
     expect(SOURCE).toContain('419');
-    expect(SOURCE).toMatch(/전수 분류/);
   });
 
   it('값 층과 행동 층을 가르는 이유를 실측으로 적어 둔다', () => {
     /*
-     * 여기 있는 것은 「컴포넌트 금지」가 아니라 **왜 값이 함수인가**다. 첫 판단은
-     * 「컴포넌트는 여기서 안 먹힌다」였고 틀렸다 — 사용처 0이던 셋은 게으름의
-     * 증거가 아니라 **게이트 없이 태어나 램프를 위반한** 프리미티브였다
-     * (`CardTitle` 이 램프에 없는 `text-lg`). 그 정정이 사라지면 다음 사람이
-     * 같은 오판을 물려받는다.
+     * This is not "components are banned" but **why the values are a function**. The
+     * first judgement — "components do not work here" — was wrong: the three with zero
+     * usage were not evidence of laziness but primitives **born without a gate that
+     * violated the ramp** (`CardTitle` used `text-lg`, which is not on the ramp). If
+     * that correction disappears the next person inherits the same misjudgement.
+     */
+    /*
+     * ⚠️ **Only derivable anchors are pinned** (2026-08-22). A Korean phrase used to
+     * be matched here as well. `documentation.md` forbids pinning a sentence a human
+     * wrote, and the English comment pass showed why: the correction survived word
+     * for word while the pinned characters did not, so the gate went red over a
+     * rewording that changed nothing. `text-lg` is the off-ramp value that caused the
+     * misjudgement, and the two product names are citations — both survive any
+     * rewrite of the prose around them.
      */
     expect(SOURCE).toContain('text-lg');
-    expect(SOURCE, '게이트 없는 컴포넌트가 실패했다는 정정이 남아 있어야 한다').toMatch(
-      /게이트 없는 컴포넌트/,
-    );
     expect(SOURCE, '업계 표준이 컴포넌트라는 사실도 함께 적어야 균형이 잡힌다').toMatch(
       /Carbon|shadcn/,
     );
@@ -750,15 +783,17 @@ describe('계기가 스스로를 설명한다', () => {
 });
 
 /**
- * **호버 축 셋** (2026-08-15 (11)).
+ * **Three hover axes** (2026-08-15, ledger entry 11).
  *
- * 이 파일이 오래 「호버는 소비처의 몫」이라고 적어 온 규율이 낳은 실측:
- * hover 선언 **752개 / 자리 511 / 파일 129**, 같은 역할에 서로 다른 잉크 셋.
- * 규율이 아니라 **결원**이었고, `DISABLED`(2026-08-03) → `FOCUS`(08-05) 에
- * 이은 세 번째 같은 발견이다.
+ * What this file's long-standing rule that "hover is the consumer's job" actually
+ * produced, measured: **752 hover declarations across 511 places in 129 files**,
+ * with different ink sets for the same role. It was not a discipline but a
+ * **vacancy** — the third such finding after `DISABLED` (2026-08-03) and `FOCUS`
+ * (08-05).
  *
- * lint 로는 못 잠근다 — 판정 대상이 **cva 가 조합해 내는 결과 문자열**이라
- * 코드에는 `hoverInk: 'strong'` 같은 키만 있고 값은 실행할 때 합쳐진다.
+ * lint cannot lock this: the thing being judged is **the result string cva
+ * composes**, so the code holds only keys like `hoverInk: 'strong'` and the values
+ * are joined at run time.
  */
 describe('호버 축 — 값 층이 내는 결과 문자열', () => {
   const hovers = (s: string) => s.split(' ').filter((c) => c.startsWith('hover:'));
@@ -771,9 +806,10 @@ describe('호버 축 — 값 층이 내는 결과 문자열', () => {
 
   it('기본값은 아무것도 안 낸다 — 전부 옵트인이다', () => {
     /*
-     * 기본으로 켜면 지금 호버가 아예 없는 자리들이 조용히 달라진다(보더만
-     * 세어도 30곳). 그건 축 신설이 아니라 전역 시각 변경이라 이 축의 일이
-     * 아니다 — 이 단언이 그 판단을 못박는다.
+     * Turning it on by default would silently change places that have no hover at all
+     * today (30 places counting borders alone). That is a global visual change rather
+     * than adding an axis, so it is not this axis's job — this assertion pins that
+     * judgement.
      */
     for (const shape of ['chip', 'pill', 'row', 'icon', 'segment', 'card', 'tile', 'link'] as const) {
       expect(hovers(controlClass({ shape })), `${shape} 기본값이 호버를 낸다`).toEqual([]);
@@ -796,7 +832,7 @@ describe('호버 축 — 값 층이 내는 결과 문자열', () => {
   });
 
   it('면은 행과 부품이 다른 단을 쓴다 — rest 가 다르기 때문이다', () => {
-    // 행은 rest 가 투명하므로 첫 단, 부품은 이미 한 단 올라서 있으므로 다음 단.
+    // Rows rest transparent so they take the first step; parts already sit one step up so they take the next.
     expect(controlClass({ shape: 'row', hoverSurface: 'lift' })).toContain(
       'hover:bg-[color:var(--color-overlay-1)]',
     );
@@ -812,9 +848,9 @@ describe('호버 축 — 값 층이 내는 결과 문자열', () => {
 
   it('골라진 것은 호버를 안 받는다 — 「곧」과 「지금」이 같은 말을 하면 안 된다', () => {
     /*
-     * 실측(2026-08-15 (10)): 그렇게 겹친 자리에서 선택 보더가 호버에 덮여
-     * 2.09 → 1.48 로 **약해지고** 있었다. 그 가드를 소비처가 매번 쓰던 것을
-     * 이 키가 구조로 흡수한다.
+     * Measured (2026-08-15, ledger entry 10): where they overlapped, hover covered the
+     * selection border and **weakened** it from 2.09 to 1.48. Consumers were writing
+     * that guard by hand every time; this key absorbs it structurally.
      */
     for (const v of [
       { hoverInk: 'strong' },
@@ -857,13 +893,14 @@ describe('호버 축 — 값 층이 내는 결과 문자열', () => {
   it('축이 조용히 늘지 않는다 — 선택지는 실측 다수파만', () => {
     const SOURCE = readFileSync(join(process.cwd(), 'src/shared/ui/control-class.ts'), 'utf8');
     /*
-     * 선택지를 소스에서 못박는다 — 늘리려면 이 줄을 고쳐야 하고, 그 diff 가
-     * 「어느 실측이 이 선택지를 요구했나」를 요구한다(배지 tone 축 판례).
+     * Pins the options in source — adding one requires editing this line, and that
+     * diff demands an answer to "which measurement required this option" (the badge
+     * tone axis set the precedent).
      */
     expect(SOURCE).toContain("hoverInk: { none: '', strong: '', secondary: '' },");
     expect(SOURCE).toContain("hoverSurface: { none: '', lift: '' },");
     expect(SOURCE).toContain("hoverBorder: { none: '', strong: '' },");
-    // 합쳐서 넷 — 셋이 아니라 넷인 이유는 잉크만 두 단이기 때문이다.
+    // Four in total — four rather than three because ink alone has two steps.
     const options = ['strong', 'secondary', 'lift', 'strong'];
     expect(options).toHaveLength(4);
   });

@@ -68,7 +68,7 @@ describe("useBackToTop", () => {
     });
     expect(result.current.visible).toBe(true);
 
-    // 리셋은 microtask 로 미뤄진다(scheduleStateSync) — flush 후 검증.
+    // The reset is deferred to a microtask (scheduleStateSync) — verify after the flush.
     await act(async () => {
       rerender({ key: "doc-b" });
       await Promise.resolve();

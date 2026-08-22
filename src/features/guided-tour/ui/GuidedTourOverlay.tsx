@@ -11,40 +11,44 @@ import {
 } from "../model/resolve-anchor-rect";
 import { GuidedTourCard } from "./GuidedTourCard";
 
-/** 4단계 funnel 구멍의 프로브 대비 여유 — 시각 노드와의 순간 오차 흡수. */
+/** Slack between step 4's funnel hole and the probe — absorbs momentary error against the visual node. */
 const TOUR_HOLE_PADDING = 16;
 
 export interface GuidedTourOverlayProps {
   tour: UseGuidedTourResult;
   /**
-   * 캔버스 노드 앵커(2·4단계) 측정 프로브 — `TopologyMapV2` 가 매 프레임
-   * `worldToScreen` transform 을 써넣는 같은 div(HomePage 가 만들어 양쪽에
-   * 내려준다, realm "전개" 버튼 선례와 동형). 프로브 자체는 페인트가 없다 —
-   * 스크림/컷아웃 원은 이 오버레이가 z-70 에서 그린다(2026-07-23 Guardian
-   * 정정: 위젯 내부 z-40 스크림은 상단 툴바 등 바깥 크롬을 못 덮어 testid
-   * 단계와 감광이 어긋났다).
+   * The measurement probe for canvas node anchors (steps 2 and 4) — the same div
+   * `TopologyMapV2` writes its per-frame `worldToScreen` transform into (HomePage
+   * creates it and passes it to both). The probe itself paints nothing: the scrim
+   * and cutout circle are drawn by this overlay at z-70 (2026-07-23 correction —
+   * a z-40 scrim inside the widget could not cover outer chrome such as the top
+   * toolbar, so the testid steps and the dimming disagreed).
    */
   canvasAnchorRef?: RefObject<HTMLDivElement | null>;
-  /** 키보드 사용자가 4단계의 캔버스 노드 클릭을 카드 안 버튼으로 수행한다. */
+  /** Lets a keyboard user perform step 4's canvas node click from a button in the card. */
   onActivateAnchor?: () => void;
   /**
-   * 막힌 자리를 눌렀을 때의 응답. 주면 전면 blocker 클릭이 이 함수를 부른다.
+   * The response to pressing a blocked spot. When supplied, a click on the
+   * full-screen blocker calls this.
    *
-   * 왜 필요했나(2026-07-27 감사 D3): 문서함 첫 방문 안내가 떠 있는 동안 다른
-   * 내비를 누르면 **아무 반응 없이 클릭이 삼켜졌다**(4초 넘게 확인). 커서도
-   * 토스트도 흔들림도 없으니 사용자는 "막혔다" 가 아니라 "고장났다" 로 읽고
-   * 그냥 닫아버린다. Esc 는 이미 닫히지만, 마우스로 온 사람에게는 없는 문
-   * 이었다 — 스크림 클릭은 화면을 덮는 표면의 표준 퇴장 경로다.
+   * Why it was needed (audit 2026-07-27): while the docs surface's first-visit
+   * guide was open, pressing any other navigation **swallowed the click with no
+   * response at all** (confirmed over four seconds). With no cursor change, no
+   * toast, and no shake, a user reads that as "broken" rather than "blocked" and
+   * simply closes it. Esc already closed it, but someone arriving with a mouse
+   * had no door — clicking the scrim is the standard exit for a surface that
+   * covers the screen.
    */
   onBlockedInteraction?: () => void;
 }
 
 /**
- * 스크림 + 컷아웃 + blocker + 카드 + 진행 점을 그리는 오버레이. 모든 단계의
- * 스크림/컷아웃이 같은 z-70 레이어에서 그려져 감광이 균일하다. 인터랙티브
- * (4단계)는 전면 통과가 아니라 **컷아웃 구멍만 통과하는 4-스트립 blocker**
- * (funnel) — 스포트라이트된 노드 외의 크롬(투어 타일 재진입, 검색, 툴바)은
- * 클릭이 막힌다(stacked-transient-UI 금지 계약).
+ * Draws the scrim, cutout, blocker, card, and progress dots. Every step's scrim
+ * and cutout are drawn in the same z-70 layer, so the dimming is uniform. The
+ * interactive step (4) is not fully click-through but a **four-strip blocker
+ * around the cutout** (a funnel) — chrome other than the spotlit node (the tour
+ * tile, search, the toolbar) stays blocked, satisfying the ban on stacked
+ * transient UI.
  */
 export function GuidedTourOverlay({
   tour,
@@ -71,8 +75,9 @@ export function GuidedTourOverlay({
     return () => window.removeEventListener("resize", onResize);
   }, [open]);
 
-  // testid 앵커 — 정적(레이아웃 안정화 후 고정) rect. 단계 전환/리사이즈에만
-  // 재계산 — 컷아웃 이동은 CSS `transition`(180ms) 이 담당(spec §5).
+  // testid anchors use a static rect, fixed once layout settles. Recomputed only
+  // on step change and resize — moving the cutout is handled by a CSS
+  // `transition` (180ms).
   const [testidRect, setTestidRect] = useState<AnchorBox | null>(null);
   useEffect(() => {
     if (!open || !step || step.anchor?.type !== "testid") {
@@ -82,8 +87,8 @@ export function GuidedTourOverlay({
     const anchorValue = step.anchor.value;
     const recompute = () => setTestidRect(resolveAnchorRect(anchorValue));
     recompute();
-    // 마운트 직후 1프레임 뒤 재확인 — 방금 열린 패널(예: 데이터시트)의
-    // 슬라이드인 레이아웃이 첫 tick 에 아직 최종 크기가 아닐 수 있다.
+    // Re-check one frame after mount — a panel that just opened (the datasheet,
+    // say) may not be at its final size on the first tick because of the slide-in.
     const raf = window.requestAnimationFrame(recompute);
     window.addEventListener("resize", recompute);
     return () => {
@@ -92,8 +97,9 @@ export function GuidedTourOverlay({
     };
   }, [open, step]);
 
-  // 캔버스 노드 앵커 — 매 프레임 추종(카메라 스프링 리듬 상속, CSS 전환 없음).
-  // 프로브가 아직 투영 전(0-크기)이면 null — 전체 스크림 폴백.
+  // Canvas node anchors follow every frame (inheriting the camera spring's
+  // rhythm, no CSS transition). While the probe is still unprojected (zero-size)
+  // this is null and the full scrim is the fallback.
   const [canvasRect, setCanvasRect] = useState<AnchorBox | null>(null);
 
   useEffect(() => {
@@ -101,7 +107,7 @@ export function GuidedTourOverlay({
       setCanvasRect(null);
       return undefined;
     }
-    // 캔버스 노드 앵커는 지도 전용 — 목적지 안내는 프로브를 넘기지 않는다.
+    // Canvas node anchors are map-only — destination guides pass no probe.
     if (!canvasAnchorRef) return undefined;
     let raf = 0;
     const tick = () => {
@@ -125,15 +131,15 @@ export function GuidedTourOverlay({
   const anchorRect =
     step.anchor?.type === "testid" ? testidRect : step.anchor?.type === "canvas-node" ? canvasRect : null;
   const cardWidth = Math.min(360, viewport.width - 32);
-  // 실제 카드 높이는 콘텐츠에 따라 auto — 배치 계산은 근사 높이로 충분(카드
-  // 자체는 `top`/`left` 고정 후 내용에 맞춰 자란다, 클램프가 여유 마진을 둠).
-  // 상수는 1440x900 실측(2026-07-24 투어 다듬기 패스, Playwright
-  // `guided-tour.spec.ts` 로 8단계 전부의 렌더된 카드 높이를 측정) 기준 —
-  // 실제 높이보다 살짝 크게 잡아야 안전한 방향이다(작게 잡으면 "below"
-  // 배치가 카드 실제 하단을 뷰포트 가장자리 밖으로 밀 수 있다). 이전 상수는
-  // try-click 이 실측(183.5px)보다 36.5px 나 과대추정(220px, 반대 방향이라
-  // 안전하긴 했지만 여백이 불필요하게 컸다)이었고 recent 는 반대로
-  // 11.5px 과소추정(240px vs 실측 251.5px)이었다.
+  // The card's real height is auto from its content; layout only needs an
+  // approximation (the card is pinned by `top`/`left` and grows to fit, with the
+  // clamp leaving slack). The constants come from measurements at 1440×900
+  // (2026-07-24 tour polish pass, rendered card heights for all eight steps via
+  // Playwright `guided-tour.spec.ts`) — erring slightly large is the safe
+  // direction, since erring small can push a "below" placement's real bottom off
+  // the viewport. The previous constants overestimated try-click by 36.5px
+  // (220px vs a measured 183.5px — safe but with needlessly large slack) and
+  // underestimated recent by 11.5px (240px vs a measured 251.5px).
   const cardHeight = step.id === "recent" ? 255 : step.interactive ? 195 : 205;
   const placement = computeCardPlacement({
     targetRect: anchorRect,
@@ -144,11 +150,12 @@ export function GuidedTourOverlay({
   });
 
   const isInteractive = Boolean(step.interactive);
-  // 인터랙티브(4단계) 클릭 funnel — 컷아웃 원의 bbox 만 캔버스로 통과.
-  // 구멍은 프로브 rect 보다 사방 16px 넓게 뚫는다 — 카메라 스프링 진행 중
-  // 스트립(React state, 1프레임 지연)과 그려진 노드 사이의 순간 오차를
-  // 흡수해 "밝은 노드를 눌렀는데 안 먹는" 정지를 막는다 (2026-07-24 라이브
-  // 관측 하드닝, `guided-tour.spec.ts` "probe center" 회귀).
+  // The interactive (step 4) click funnel — only the cutout circle's bbox passes
+  // through to the canvas. The hole is opened 16px wider on every side than the
+  // probe rect, absorbing the momentary error between the strips (React state,
+  // one frame behind) and the drawn node while the camera spring is running, so
+  // "I pressed the bright node and nothing happened" cannot occur (hardened from
+  // live observation 2026-07-24; the "probe center" regression in `guided-tour.spec.ts`).
   const interactiveHole =
     isInteractive && anchorRect
       ? {
@@ -161,13 +168,14 @@ export function GuidedTourOverlay({
 
   return (
     <div ref={overlayRef} data-testid="guided-tour-overlay" data-tour-step={step.id}>
-      {/* blocker — 비인터랙티브 단계는 전면 차단(스크림이 곧 dim 증거,
-          modal-without-modality 금지 규칙 충족). 인터랙티브(4단계)는 전면
-          통과가 아니라 컷아웃 bbox 4방향 스트립 차단 — 스포트라이트된 노드만
-          클릭 가능, 나머지 크롬(투어 타일 재진입/검색/"?"/툴바)은 막는다
-          (2026-07-23 Guardian 정정 — 전면 pointer-events-none 은 투어 위로
-          다른 transient 표면을 쌓을 수 있었다). 구멍이 아직 해석 전이면 전면
-          차단 유지(1프레임 폴백). */}
+      {/* The blocker — non-interactive steps block everything (the scrim is the
+          evidence of dimming, satisfying the modal-without-modality rule). The
+          interactive step (4) is not fully click-through but blocks with four
+          strips around the cutout bbox: only the spotlit node is clickable while
+          the rest of the chrome (tour tile re-entry, search, "?", toolbar) is
+          blocked (2026-07-23 correction — a fully `pointer-events-none` overlay
+          allowed other transient surfaces to stack on top of the tour). While the
+          hole is still unresolved, full blocking stays (a one-frame fallback). */}
       {interactiveHole ? (
         <>
           <div
@@ -218,10 +226,11 @@ export function GuidedTourOverlay({
           className={cn(
             "pointer-events-none fixed z-[var(--z-tour)] border",
             step.anchor.type === "canvas-node"
-              ? // 캔버스 노드 원 — 매 프레임 worldToScreen 추종이 곧 모션이라
-                // CSS 전환 없음(카메라 스프링과 싸우지 않는다, spec §5).
-                // 보이는 링은 엔진이 캔버스에 직접 그린다(2026-07-24 정합
-                // 개선) — 여기는 감광 구멍만 남기고 보더는 투명.
+              ? // The canvas node circle — its motion *is* following worldToScreen
+                // every frame, so there is no CSS transition (it must not fight
+                // the camera spring). The visible ring is drawn by the engine
+                // directly on the canvas, so this leaves only the dimming hole
+                // with a transparent border.
                 "rounded-full border-transparent"
               : "rounded-[var(--chrome-radius)] border-[color:var(--color-border-strong)] transition-[top,left,width,height] duration-[var(--topology-tour-transition-ms)] ease-out motion-reduce:transition-none",
           )}
@@ -239,15 +248,16 @@ export function GuidedTourOverlay({
                   width: anchorRect.width + 16,
                   height: anchorRect.height + 16,
                 }),
-            // 스크림 페인트 — 9999px 스프레드로 컷아웃 바깥 전체를 어둡게
-            // 채운다. blur 0, 색 발광 없음 — design.md 가 금지하는
-            // glow/neon `0 0 ...` 링과는 다른 기법이다(그건 blur>0 의 발광
-            // 하이라이트, 이건 blur=0 의 불투명 마스크).
+            // The scrim paint — a 9999px spread fills everything outside the
+            // cutout with darkness. Zero blur, no colour emission: this is a
+            // different technique from the glow/neon `0 0 …` ring
+            // `.claude/rules/design.md` forbids (that is a luminous highlight with
+            // blur > 0; this is an opaque mask with blur = 0).
             boxShadow: "0 0 0 9999px var(--topology-tour-scrim-surface)",
           }}
         />
       ) : (
-        // 레이아웃 안정화 전 — 깜빡이는 반쪽 컷아웃 대신 전체 스크림.
+        // Before layout settles — a full scrim rather than a flickering half cutout.
         <div
           data-testid="guided-tour-scrim"
           className="fixed inset-0 z-[var(--z-tour)]"
@@ -255,13 +265,13 @@ export function GuidedTourOverlay({
         />
       )}
 
-      {/* 단계 전환 모션 (2026-07-24 프레임 감사) — 카드는 `transition-opacity`
-          만 있어 단계가 바뀌면 top/left 가 **순간이동**했다(30fps 영상에서
-          1프레임 점프). 위치 보간(transition)은 캔버스 노드 단계가 매 프레임
-          rect 를 추종하는 구조와 충돌하므로(카메라 스프링을 뒤따라 끌린다),
-          `key` 로 단계마다 remount 시켜 **기존 패널 크로스페이드 키프레임**을
-          재사용한다 — 새 카피가 그 자리에서 떠오르듯 나타나고, 추종 정확도는
-          그대로다. */}
+      {/* Step-transition motion (frame audit 2026-07-24) — the card had only
+          `transition-opacity`, so on a step change its top/left **teleported** (a
+          one-frame jump in 30fps footage). Interpolating the position conflicts
+          with the canvas-node steps following the rect every frame (it would drag
+          behind the camera spring), so the card is remounted per step via `key`
+          and **reuses the existing panel cross-fade keyframes** — the new copy
+          rises into place while tracking accuracy is unchanged. */}
       <GuidedTourCard
         key={step.id}
         tour={tour}

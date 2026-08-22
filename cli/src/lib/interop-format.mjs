@@ -112,20 +112,21 @@ function normalizeGraph(graph) {
     if (!from || !to || !via) continue;
     // Snapshot only the resolved graph — never mint phantom endpoints.
     if (!nodeBySlug.has(from) || !nodeBySlug.has(to)) continue;
-    // ⚠️ 합성 키의 구분자로 **NUL 을 쓰지 않는다** (2026-08-08). 슬러그에 없는
-    // 글자라는 이유로 NUL(U+0000)을 구분자로 쓰면 그 파일은 git 에게 **바이너리**가 되어
-    // ① PR 에서 diff 가 안 보이고 ② grep/ripgrep 이 파일을 통째로 건너뛴다.
-    // 실제로 이 저장소 5개 파일이 그 상태였고, 검수 중 grep 이 조용히 0건을
-    // 답하는 사고가 났다. `JSON.stringify` 는 인쇄 가능하면서도 애매함이 없다.
+    // ⚠️ **Never use NUL as a composite-key separator** (2026-08-08). Choosing
+    // NUL (U+0000) because it cannot appear in a slug makes the file **binary** to
+    // git, so ① its diff is invisible in a PR and ② grep/ripgrep skip the file
+    // entirely. Five files in this repository were in that state, and a review lost
+    // time to grep silently answering "0 matches". `JSON.stringify` is printable
+    // and still unambiguous.
     const key = JSON.stringify([from, via, to]);
     if (seenEdge.has(key)) continue;
     seenEdge.add(key);
     edges.push({ from, to, via });
   }
-  // 필드 순서대로 비교한다 — NUL 로 이어 붙인 문자열을 비교하던 것과 **같은
-  // 순서**다(NUL 은 모든 글자보다 작으므로 앞 필드가 먼저 갈린다). 이어 붙인
-  // 문자열에 localeCompare 를 걸면 구분자가 무시되는 콜레이션도 있어서, 오히려
-  // 이쪽이 의도한 「필드 우선순위」를 정확히 말한다.
+  // Compare field by field — **the same order** as comparing NUL-joined strings
+  // (NUL sorts below every character, so earlier fields decide first). Running
+  // localeCompare over a joined string is worse: some collations ignore the
+  // separator entirely. Comparing fields states the intended precedence exactly.
   edges.sort(
     (a, b) =>
       a.from.localeCompare(b.from) ||

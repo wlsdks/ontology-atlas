@@ -54,7 +54,7 @@ describe("validateVaultDocument", () => {
   });
 
   it("frontmatter 블록은 있는데 key 가 0 추출되면 parse-zero-keys warning", () => {
-    // 키 라인이 모두 leading-colon 등으로 무효
+    // Every key line is invalid (leading colon, comment).
     const raw = `---\n: bad\n# comment\n---\n`;
     const r = validateVaultDocument(raw);
     expect(r.ok).toBe(true);
@@ -62,8 +62,9 @@ describe("validateVaultDocument", () => {
   });
 
   it("trim 된 kind 가 canonical 이면 ok (capability + domain)", () => {
-    // R14 — capability/element 는 domain 누락 시 missing-expected-field
-    // warning. canonical kind 인식 자체를 보는 케이스라 domain 까지 박아 clean.
+    // capability/element warn with `missing-expected-field` when `domain` is
+    // absent; this case is about recognising the kind, so `domain` is supplied
+    // to keep the result clean.
     const raw = `---\nuid: ${VALID_UID}\nkind:    capability   \ndomain: domains/auth\n---\n`;
     const r = validateVaultDocument(raw);
     expect(r.ok).toBe(true);
@@ -71,8 +72,8 @@ describe("validateVaultDocument", () => {
   });
 
   it("6 종 모두 인식 (project / domain / capability / element / document / vault-readme)", () => {
-    // capability/element 는 domain 까지 박아야 clean — R14 schema 가 부모
-    // 누락에 advisory warn.
+    // capability/element need `domain` to come back clean — the schema warns
+    // advisorily on a missing parent.
     const cases: Array<{ kind: string; extra?: string }> = [
       { kind: "project" },
       { kind: "domain" },
@@ -110,8 +111,8 @@ describe("validateVaultDocument", () => {
   });
 
   it("error 와 warning 이 동시에 있으면 ok=false (error 우선)", () => {
-    // unclosed → 즉시 return 이라 동시 케이스를 다른 형태로 만든다:
-    // empty-kind (error) 만 있는 케이스가 ok=false 인지만 확인.
+    // `unclosed` returns immediately, so the concurrent case is built
+    // differently: check only that an `empty-kind` error alone gives ok=false.
     const raw = `---\nkind:\n---\n`;
     const r = validateVaultDocument(raw);
     expect(r.ok).toBe(false);

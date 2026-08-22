@@ -1,7 +1,8 @@
-// 벤더 3사가 하나의 모양으로 접히는지 — 픽스처 기반 정규화 계약.
+// Whether the three vendors fold into one shape — a fixture-based normalization contract.
 //
-// 벤더가 형식을 바꾸면 여기서 먼저 깨진다. 어댑터만 고치고 픽스처를 두면
-// "우리 코드가 상상한 벤더" 를 테스트하게 되므로, 둘은 같이 갱신한다.
+// When a vendor changes its format this breaks first. Fixing only the adapter and
+// leaving the fixture would test "the vendor our code imagined", so the two are
+// updated together.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -66,7 +67,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
         expect(result.stop).toBe('tool');
         expect(result.toolCalls[0].name).toBe('get_concept');
         expect(result.toolCalls[0].args).toEqual({ slug: 'capabilities/payment' });
-        // id 가 비면 결과를 되돌려 보낼 자리가 사라진다 — 없으면 합성한다.
+    // An empty id leaves nowhere to send the result back to — synthesize one when absent.
         expect(result.toolCalls[0].id).toBeTruthy();
       });
 
@@ -81,12 +82,12 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
         const parsed = JSON.parse(body) as Record<string, unknown>;
         expect(JSON.stringify(parsed)).toContain('get_concept');
         expect(JSON.stringify(parsed)).toContain('이 노드에 빠진 관계 이어줘');
-        // 화면 문맥은 매 턴 자동 주입된다 — 모델이 부를 필요가 없다.
+    // Screen context is injected automatically every turn — the model need not call for it.
         expect(JSON.stringify(parsed)).toContain('screen_context');
       });
 
       it('assistant 턴 원문을 그대로 되돌려 싣는다', () => {
-        // 재조립하면 Anthropic 의 thinking 블록이 사라져 다음 왕복이 거절된다.
+    // Reassembling drops Anthropic's thinking blocks and the next round trip is rejected.
         const first = adapter.parseResponse(fixture(`${provider}-tool`));
         const body = adapter.buildBody(
           assembly({
@@ -112,7 +113,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
   }
 
   it('OpenAI 의 깨진 arguments 는 실행 전에 걸린다', () => {
-    // 이 벤더만 arguments 가 문자열이라 모델이 잘린 JSON 을 뱉을 수 있다.
+    // Only this vendor has arguments as a string, so the model can emit truncated JSON.
     const result = PROVIDER_ADAPTERS.openai.parseResponse(fixture('openai-tool'));
     expect(result.toolCalls[1].name).toBe('find_backlinks');
     expect(result.toolCalls[1].argsInvalid).toBe(true);
@@ -124,11 +125,11 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
   });
 
   it('Gemini 스키마에서 지원하지 않는 키는 떨어져 나간다', () => {
-    // 모르는 키가 하나라도 남으면 요청 전체가 400 이 된다.
+    // One remaining unknown key makes the whole request a 400.
     const body = PROVIDER_ADAPTERS.gemini.buildBody(assembly());
     expect(body).not.toContain('additionalProperties');
     expect(body).not.toContain('"minimum"');
-    // 인자가 없는 도구는 parameters 자체가 빠진다.
+    // A tool with no arguments omits `parameters` entirely.
     const parsed = JSON.parse(body) as {
       tools: Array<{ functionDeclarations: Array<{ name: string; parameters?: unknown }> }>;
     };
@@ -137,15 +138,17 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
   });
 
   it('벤더 기본 모델은 셋 다 정해져 있다', () => {
-    // 키 등록이 3사로 출하됐는데 대화가 2사면 화면이 자기를 반박한다.
+    // Shipping key registration for three vendors while the conversation supports two
+    // makes the screen contradict itself.
     for (const provider of ['anthropic', 'openai', 'gemini'] as const) {
       expect(PROVIDER_ADAPTERS[provider].defaultModel).toBeTruthy();
     }
   });
 
   it('주소 갈래는 로컬 사고를 끄고 세 번 읽은 뒤 답을 강제한다', () => {
-    // 첫 왕복은 시스템 규율상 반드시 읽기 도구를 골라야 한다. Ollama 실물에서
-    // generic required 는 무시될 수 있어 전체 지도는 list_concepts 로 이름을 고정한다.
+    // System discipline requires the first round trip to choose a read tool. A generic
+    // `required` can be ignored by real Ollama, so the whole-map case pins the name to
+    // list_concepts.
     const firstTurn = assembly({ model: 'qwen3:8b' });
     const firstLocal = JSON.parse(
       PROVIDER_ADAPTERS.local.buildBody(firstTurn),
@@ -602,9 +605,9 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
   });
 
   it('주소 갈래에는 기본 모델이 없다 — 그 컴퓨터만 아는 사실이라서', () => {
-    // 아무 이름이나 기본값으로 박아 두면 첫 왕복이 "model not found" 로 죽고,
-    // 그 이유가 화면 어디에도 없다. 사용자가 목록에서 고를 때까지 이 갈래는
-    // 켜지지 않는다(`isLocalEndpointReady`).
+    // Pinning any name as a default kills the first round trip with "model not found",
+    // with the reason nowhere on screen. This branch does not turn on until the user
+    // picks from the list (`isLocalEndpointReady`).
     expect(PROVIDER_ADAPTERS.local.defaultModel).toBe('');
   });
 
@@ -650,7 +653,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
   it('쓰기 도구도 목록에는 실린다 — 막는 곳은 실행기다', () => {
     expect(findAgentTool('patch_concept')?.effect).toBe('write');
     expect(findAgentTool('get_concept')?.effect).toBe('read');
-    // 볼트 밖 소스 스캔 도구는 애초에 주지 않는다.
+    // Source-scanning tools outside the vault are never given in the first place.
     expect(findAgentTool('analyze_repo_structure')).toBeUndefined();
     expect(findAgentTool('index_project')).toBeUndefined();
     expect(findAgentTool('delete_concept')).toBeUndefined();

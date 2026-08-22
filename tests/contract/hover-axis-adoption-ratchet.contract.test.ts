@@ -6,60 +6,64 @@ import { describe, expect, it } from "vitest";
 import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
 
 /**
- * **호버 축 채택 래칫** — 손으로 쓴 호버가 늘지 못한다 (2026-08-15 (11)).
+ * **Hover axis adoption ratchet** — hand-written hovers can never grow
+ * (2026-08-15, ledger 11).
  *
- * ## 왜 이 래칫이 축과 같은 PR 에서 태어나는가
+ * **Why this ratchet is born in the same PR as the axis.** This repository's
+ * post-mortems are unambiguous: `Card`, `Badge`, and `DetailCard` all died with
+ * **zero consumers**, and the cause of death was not the component but **a
+ * component without a gate**. Everything alive today (Dialog, Checkbox,
+ * SegmentedControl, badgeClass) shipped **migration and ratchet in the same
+ * round**. An axis is no different — build the axis without the gate and the next
+ * person simply hand-writes it.
  *
- * 이 저장소의 부검 기록은 분명하다: `Card`/`Badge`/`DetailCard` 셋은 **소비처
- * 0** 으로 죽었고, 사인은 컴포넌트가 아니라 **게이트 없는 컴포넌트**였다.
- * 오늘 살아 있는 것들(Dialog · Checkbox · SegmentedControl · badgeClass)은
- * 전부 **이주와 래칫을 같은 라운드에** 지고 났다. 축도 같다 — 축만 만들고
- * 게이트를 안 걸면 다음 사람은 그냥 손으로 쓴다.
+ * **What is counted.** Hand-written hover declarations (`hover:text-`,
+ * `hover:bg-`, `hover:border-`) **inside a `controlClass({ … })` call block**.
+ * Outside a call (native elements, hoisted constants) is **not this ratchet's
+ * jurisdiction** — those places never went through the value layer at all, so the
+ * debt is not "did not use the axis" but "this control is outside the value
+ * layer", which belongs to `control-adoption-ratchet`.
  *
- * ## 무엇을 세나
+ * **The unit is a declaration, not a file.** Ledger entry 9 of 2026-08-15 learned
+ * that from a probe: counting per file left a file with two of them green after
+ * reverting one. **A ratchet whose unit is coarser than the defect's misses that
+ * much.**
  *
- * `controlClass({ … })` **호출 블록 안**의 손 호버 선언
- * (`hover:text-` · `hover:bg-` · `hover:border-`). 호출 밖(네이티브 원소 ·
- * 호이스트 상수)은 **이 래칫의 관할이 아니다** — 그 자리는 애초에 값 층을
- * 안 거치므로 「축을 안 썼다」가 아니라 「컨트롤이 값 층 밖에 있다」는 다른
- * 부채이고, `control-adoption-ratchet` 의 계보다.
- *
- * ## 단위는 파일이 아니라 **선언**이다
- *
- * 2026-08-15 (9) 가 그것을 프로브로 배웠다 — 파일 단위로 세면 한 파일에 둘이
- * 있을 때 하나를 되돌려도 초록이었다. **래칫의 단위가 결함의 단위보다 굵으면
- * 그만큼 못 본다.**
- *
- * ## 오늘 값이 큰 이유 — 축이 덮지 않는 자리가 다수다
- *
- * 축은 실측 다수파만 갖는다(잉크 2단 · 면 1 · 보더 1). 남은 387은 대부분
- * ⓐ 인디고 계열 호버(값 층이 일부러 안 가진 축 — 틴트 단은 위계 판정) ⓑ
- * 조건부/`active` 자리(가드 판정이 자리마다 필요) ⓒ 축의 값과 다른 단.
- * **이 수가 0이 되는 것이 목표가 아니다** — 늘지 않는 것이 목표이고, 줄면
- * 바닥을 내린다.
+ * **Why today's number is large — most places the axis does not cover.** The axis
+ * carries only the measured majority (2 ink steps, 1 surface, 1 border). Of the
+ * remaining 387, most are ⓐ indigo-family hovers (an axis the value layer
+ * deliberately lacks — tint steps are a hierarchy call), ⓑ conditional or `active`
+ * places (each needing its own guard decision), and ⓒ steps whose value differs
+ * from the axis. **Reaching 0 is not the goal** — not growing is, and when it
+ * falls the floor comes down.
  */
 
 const ROOT = process.cwd();
 
 /**
- * 오늘 실측. 늘면 빨개진다. 줄면 아래 「내려라」가 빨개진다.
+ * Today's measurement. Growth turns this red; a drop turns the "lower it" test
+ * below red.
  *
- * 387 → 386 (2026-08-17): 알림 종이 손으로 쓴 `controlClass({shape:'segment'})`
- * 버튼에서 `IconButton` 프리미티브로 옮겨 가면서 손 호버 선언 하나가 빠졌다.
+ * 387 → 386 (2026-08-17): the notification bell moved from a hand-written
+ * `controlClass({shape:'segment'})` button to the `IconButton` primitive, dropping
+ * one hand hover declaration.
  *
- * 381 → 376 (2026-08-21): 연결 시트가 은퇴했다(원장 90). 붙이는 일이 목적지가
- * 되면서 그 위젯이 통째로 사라졌고, 그 안의 손 호버 다섯도 같이 갔다. 고친 게
- * 아니라 **없어진 것**이라 이 줄에 그대로 적는다 — 다음 사람이 「누가 축으로
- * 옮겼나」를 찾다 헛수고하지 않게.
+ * 381 → 376 (2026-08-21): the connect sheet was retired (ledger 90). With
+ * attaching becoming the destination, that widget disappeared entirely and its
+ * five hand hovers went with it. Nothing was fixed — the places **ceased to
+ * exist** — and that is recorded here so the next person does not go looking for
+ * who migrated them to the axis.
  *
- * 383 → 381 (2026-08-21): 설정 시트의 LNB 행 호버가 상수 하나로 모였다. 이정표
- * 행이 생기며 같은 문자열이 두 벌이 될 뻔했는데, 값 층의 `hoverSurface: 'lift'`
- * 는 행에 `overlay-1` 을 줘서 이 시트의 형제 행들(`overlay-2`)과 어긋난다 —
- * 축으로 옮기는 대신 **사본을 없앴다**. 늘지 않은 게 아니라 줄었다.
+ * 383 → 381 (2026-08-21): the settings sheet's LNB row hovers converged into one
+ * constant. Adding the milestone row nearly duplicated the same string, and the
+ * value layer's `hoverSurface: 'lift'` gives the row `overlay-1`, which disagrees
+ * with this sheet's sibling rows (`overlay-2`) — so instead of moving to the axis,
+ * **the copy was removed**. Not "did not grow" but genuinely fell.
  *
- * 386 → 383 (2026-08-19): 관문의 설치 절이 통째로 삭제되면서 그 안의 손 호버
- * 선언 셋이 함께 갔다(`docs/DECISIONS.md` (83)). 축 채택이 는 것이 아니라
- * **자리가 없어진** 것이므로 이 감소는 공로가 아니다 — 그래도 바닥은 내린다.
+ * 386 → 383 (2026-08-19): deleting the gateway's install section took its three
+ * hand hover declarations with it (`docs/DECISIONS.md` 83). Axis adoption did not
+ * rise; **the places disappeared**, so this decrease earns no credit — but the
+ * floor still comes down.
  */
 const CEILING = 328;
 
@@ -76,7 +80,7 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-/** `controlClass({ … })` 를 중괄호 깊이로 끊는다 — `=>` 에서 잘리지 않게. */
+/** Terminates `controlClass({ … })` by brace depth, so it is not cut short at a `=>`. */
 function callBlocks(src: string): string[] {
   const out: string[] = [];
   for (const m of src.matchAll(/controlClass\(\{/g)) {
@@ -136,9 +140,10 @@ describe("호버 축 채택 래칫", () => {
   it("탐지기가 공회전하지 않는다 — 호출을 실제로 끊고 축 소비처가 실재한다", () => {
     expect(census.callsSeen, "controlClass 호출을 못 끊었다 — 파서가 죽었다").toBeGreaterThan(200);
     /*
-     * **축에 소비처가 있어야 한다.** 이 저장소가 세 부품을 소비처 0 으로
-     * 죽인 뒤 세운 규율이다 — 「소비처 0 선택지는 규격이 아니라 오정보」.
-     * 이 단언이 0 이 되는 날은 축이 죽은 날이다.
+     * **The axis must have consumers.** The discipline this repository adopted after
+     * killing three components with zero consumers: an option with no consumer is
+     * misinformation, not a spec. The day this assertion reaches 0 is the day the axis
+     * died.
      */
     expect(census.axisUsers, "호버 축을 쓰는 호출이 없다 — 축이 소비처 0 이다").toBeGreaterThan(20);
   });

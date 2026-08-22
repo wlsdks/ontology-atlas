@@ -23,7 +23,7 @@ describe("resolveSessionAbilities", () => {
         reloadingSameVault: true,
       }).canWriteVault,
     ).toBe(true);
-    // 다른 폴더로 바꾸는 중은 해당 없음 — 그때는 정말 쓸 대상이 없다.
+    // Switching to a different folder does not qualify — there really is nothing to write to then.
     expect(
       resolveSessionAbilities({
         dataSourceMode: "local",

@@ -4,10 +4,10 @@ import { analyzeAgentFiles } from './agent-files';
 import { buildSkillParityModel } from './skill-parity';
 
 /**
- * 이 테스트는 **가짜 분석 객체를 짓지 않는다.** 진짜 `analyzeAgentFiles` 에
- * 파일을 먹여 접기까지 통째로 돈다 — 접는 함수가 분석의 실제 출력 모양과
- * 어긋나면 그 순간 터져야 하기 때문이다. 손으로 만든 픽스처는 그 어긋남을
- * 영원히 숨긴다.
+ * These tests **do not build a fake analysis object.** They feed real files through the real
+ * `analyzeAgentFiles` and run all the way through the fold — so the folding function breaks the
+ * moment it diverges from the analysis's actual output shape. A hand-built fixture would hide that
+ * divergence forever.
  */
 function analyze(files: Array<{ path: string; content: string }>) {
   return analyzeAgentFiles({
@@ -38,8 +38,8 @@ describe('buildSkillParityModel', () => {
   });
 
   /**
-   * 실측된 결함의 모양 그대로 — `.claude` 사본에만 어제 배운 규율이 있고
-   * Codex 는 그것 없이 판정한다.
+   * The exact shape of the measured defect — a discipline learned yesterday exists only in the
+   * `.claude` copy, and Codex judges without it.
    */
   it('names the diverged file, not just the skill', () => {
     const model = buildSkillParityModel(
@@ -57,11 +57,10 @@ describe('buildSkillParityModel', () => {
   });
 
   /**
-   * **한쪽 트리만 있으면 일치 질문이 성립하지 않는다.** `.agents/skills` 가
-   * 아예 없다는 것은 "Codex 를 설정하지 않았다" 는 뜻이지 사본이 갈렸다는 뜻이
-   * 아니다. 스킬마다 한 줄씩 그리면 **사실 하나가 열한 줄**이 되어, 아무 일도
-   * 없는 볼트가 문제투성이로 보인다. CLI 도 이 경우를 `not-applicable` 로
-   * 답하고, 계약 테스트가 그 어긋남을 잡았다.
+   * **With only one tree present, the parity question does not arise.** `.agents/skills` being
+   * absent means "Codex was never set up", not that copies diverged. Drawing a row per skill turns
+   * **one fact into eleven rows**, making a vault where nothing is wrong look full of problems. The
+   * CLI answers this case `not-applicable` too, and a contract test caught the mismatch.
    */
   it('says nothing when only one tree exists — that is setup, not drift', () => {
     const model = buildSkillParityModel(
@@ -89,8 +88,8 @@ describe('buildSkillParityModel', () => {
   });
 
   /**
-   * 스킬 폴더는 양쪽에 있는데 **안의 파일 하나가** 한쪽에만 있는 경우.
-   * 폴더만 보고 판정하면 이걸 `agreed` 로 놓친다.
+   * The skill folder exists on both sides but **one file inside it** is one-sided. Judging by
+   * folder alone would miss this as `agreed`.
    */
   it('flags a per-file gap inside a skill that exists on both sides', () => {
     const model = buildSkillParityModel(

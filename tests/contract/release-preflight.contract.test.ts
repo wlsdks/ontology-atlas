@@ -27,14 +27,15 @@ import {
 import { RELEASE_ARTIFACT_STEPS } from "../../scripts/build-macos-release-artifact.mjs";
 
 /**
- * `v1.0.0-rc.2` 는 네 번 찍혔고 네 번 다 **바로 다음 칸**에서 멈췄다. 공통점은
- * 하나다: 이 단계들은 릴리스 워크플로 밖 어디에도 걸려 있지 않아서, **태그를
- * 찍어야만 처음 밟힌다.** 로컬에서는 전부 통과한다 — 사람 머신에는 이미 다
- * 있기 때문이다.
+ * `v1.0.0-rc.2` was tagged four times and stopped **at the very next step** all
+ * four times. They have one thing in common: these steps are wired nowhere outside
+ * the release workflow, so **they are first exercised only by tagging.** Locally
+ * they all pass, because a person's machine already has everything.
  *
- * 형제 파일 `release-sidecar-order.contract.test.ts` 가 사이드카의 **순서**를
- * 잠갔다면, 이 파일은 그 뒤 구간 — 의존 재현성, 업데이터 아카이브의 서명
- * 상태, 그리고 "리허설이 워크플로를 빠짐없이 덮는가" — 를 잠근다.
+ * Where the sibling file `release-sidecar-order.contract.test.ts` locks the
+ * sidecar's **order**, this file locks the stretch after it — dependency
+ * reproducibility, the updater archive's signing state, and whether the rehearsal
+ * covers the workflow without gaps.
  */
 
 const root = process.cwd();
@@ -46,10 +47,10 @@ const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
 
 describe("번들 MCP 의존은 재현 가능해야 한다", () => {
   /**
-   * `mcp/` 의 `package-lock.json` 은 **npm 것**이고 pnpm 은 읽지 않는다.
-   * 락파일 없이 `pnpm --dir mcp install` 을 돌리면 러너가 매 릴리스마다
-   * 레지스트리에서 새로 푼다 — 커밋 하나 없이 사이드카의 의존 트리가 바뀌고,
-   * 그 바이너리가 그대로 앱에 실린다.
+   * `mcp/`'s `package-lock.json` is **npm's** and pnpm does not read it. Without a
+   * lockfile, `pnpm --dir mcp install` makes the runner resolve fresh from the
+   * registry on every release — the sidecar's dependency tree changes with no commit,
+   * and that binary ships in the app.
    */
   it("워크플로가 mcp 의존을 얼려서 깐다", () => {
     expect(workflow).toContain("pnpm --dir mcp install --frozen-lockfile");
@@ -58,26 +59,28 @@ describe("번들 MCP 의존은 재현 가능해야 한다", () => {
   it("얼릴 대상인 pnpm 락파일이 저장소에 있다", () => {
     const lockfile = readFileSync(join(root, "mcp/pnpm-lock.yaml"), "utf8");
     expect(lockfile).toContain("lockfileVersion");
-    // 2026-07-29: v1 단일 패키지 → v2 분할 패키지로 이관. 앱 사이드카가 실제로
-    // 컴파일해 넣는 것이 이 이름이므로, 락파일이 그것을 얼리고 있는지 본다.
+    // 2026-07-29: migrated from the v1 single package to the v2 split packages. This
+    // is the name the app sidecar actually compiles in, so this checks the lockfile
+    // freezes it.
     expect(lockfile).toContain("@modelcontextprotocol/server");
   });
 
   /**
-   * npm 은 최상위 `overrides` 를, pnpm 은 `pnpm.overrides` 를 읽는다. 한쪽만
-   * 적으면 npm 소비자와 릴리스 러너가 **다른 트리**를 받는다 — 실측
-   * (2026-07-28): `overrides` 만 있던 동안 npm 은 `@hono/node-server@2.0.11`
-   * (#543 이 신뢰 경계 강화로 고정한 값)을, `pnpm --dir mcp install` 은
-   * `1.19.17` 을 깔았다. 앱에 실리는 사이드카는 후자로 컴파일된다.
+   * npm reads the top-level `overrides`, pnpm reads `pnpm.overrides`. Writing only
+   * one makes npm consumers and the release runner receive **different trees** —
+   * measured 2026-07-28: while only `overrides` existed, npm installed
+   * `@hono/node-server@2.0.11` (the value #543 pinned to harden the trust boundary)
+   * while `pnpm --dir mcp install` installed `1.19.17`. The sidecar that ships in the
+   * app is compiled with the latter.
    *
-   * ⚠️ **2026-07-29 현재 override 는 0개다** — v2 SDK 로 옮기면서 그 핀이
-   * 겨누던 `@hono/node-server` 가 의존 트리에서 사라졌다(v2 의 의존은
-   * `core`·`server`·`zod` 셋뿐). 아무도 안 쓰는 핀은 규격이 아니라 오정보라
-   * 지웠다.
+   * ⚠️ **As of 2026-07-29 there are 0 overrides** — moving to the v2 SDK removed
+   * `@hono/node-server`, the pin's target, from the dependency tree (v2 depends only
+   * on `core`, `server`, and `zod`). A pin nobody uses is misinformation rather than a
+   * spec, so it was deleted.
    *
-   * 그래서 아래 두 시험은 지금 **빈 집합끼리 비교**한다. 무의미해 보이지만
-   * 그대로 둔다 — override 가 다시 생기는 순간 스스로 무장한다. 지우면 그때
-   * 아무도 안 본다.
+   * The two tests below therefore **compare two empty sets** today. That looks
+   * pointless but stays — the moment an override reappears they arm themselves.
+   * Deleted, nobody would be watching then.
    */
   it("npm 과 pnpm 이 같은 override 를 본다", () => {
     const mcpPkg = JSON.parse(readFileSync(join(root, "mcp/package.json"), "utf8")) as {
@@ -102,16 +105,17 @@ describe("번들 MCP 의존은 재현 가능해야 한다", () => {
 
 describe("업데이터 아카이브는 서명된 앱을 담아야 한다", () => {
   /**
-   * `tauri build` 는 `.app.tar.gz` 를 `.app` 과 **함께** 낸다. 그런데 이
-   * 저장소는 코드서명을 그 뒤에 따로 한다. 그래서 아카이브가 담는 것은 서명
-   * 전의 앱이고, 갱신받은 사용자만 "손상되었습니다" 를 만난다 — DMG 로 받은
-   * 사용자는 멀쩡하므로 아무 검사에도 안 걸린다.
+   * `tauri build` emits `.app.tar.gz` **together with** the `.app`, but this
+   * repository code-signs separately afterwards. So the archive contains the unsigned
+   * app, and only users who receive the update meet "is damaged" — users who
+   * downloaded the DMG are fine, so no check catches it.
    *
-   * 실측(2026-07-28, 깨끗한 체크아웃):
-   *   재포장 전  code has no resources but signature indicates they must be present
-   *   재포장 후  valid on disk
+   * Measured 2026-07-28 on a clean checkout:
+   *   before repacking  code has no resources but signature indicates they must be present
+   *   after repacking   valid on disk
    *
-   * 그래서 자리가 하나다 — **앱 서명 바로 뒤, DMG 패키징 앞.**
+   * So there is exactly one correct slot — **immediately after app signing, before DMG
+   * packaging.**
    */
   const pipelines = [
     [
@@ -190,16 +194,18 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
   });
 
   /*
-   * ⚠️ **이 시험은 한때 무작위로 빨갰다** (2026-08-21, `#1178` 에서 관측).
+   * ⚠️ **This test used to go red at random** (observed 2026-08-21 in `#1178`).
    *
-   * `--list` 는 도구 넷을 실제로 불러 본다(그게 「이 기계에서 무엇이 안 되나」의
-   * 답이다). 그런데 상한이 없어서, 러너에서 rustup 심을 거치는 `cargo`/`rustc`
-   * 첫 호출이 느릴 때 **9.75초**가 걸렸다 — vitest 기본 상한 5초를 넘겨 계약이
-   * 터졌다(이 기계에서는 0.18초라 로컬에서는 절대 안 보인다).
+   * `--list` really invokes all four tools, since that is the answer to "what does not
+   * work on this machine". With no timeout, a slow first call to `cargo`/`rustc`
+   * through the rustup shim on a runner took **9.75 seconds**, exceeding vitest's
+   * default 5-second limit and breaking the contract (0.18s on this machine, so it is
+   * never visible locally).
    *
-   * 고친 곳은 둘이다: 스크립트가 도구마다 상한을 두고(`PROBE_TIMEOUT_MS`),
-   * 여기서는 **재는 것이 「빠른가」가 아니라 「무엇을 출력하나」임을 명시**한다.
-   * 기본 상한에 기대면 이 계약은 다시 기계 속도에 매인 게이트가 된다.
+   * Two fixes: the script now applies a per-tool timeout (`PROBE_TIMEOUT_MS`), and
+   * here it is **made explicit that what is measured is what it prints, not how
+   * fast**. Relying on the default limit makes this contract a gate tied to machine
+   * speed again.
    */
   it("태그 없이 목록을 보면 admission이 검증됐다고 가장하지 않고 명시적으로 SKIP 한다", { timeout: 60_000 }, () => {
     const rehearsal = spawnSync(process.execPath, ["scripts/release-rehearsal.mjs", "--list"], {
@@ -231,23 +237,23 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
   });
 
   it("build-macos 잡의 단계를 실제로 읽어 온다", () => {
-    // 파서가 조용히 0개를 돌려주면 리허설은 아무것도 안 하고 초록이 된다.
+    // If the parser silently returns 0 steps, the rehearsal does nothing and goes green.
     expect(steps.length).toBeGreaterThan(10);
     expect(steps.map((step) => step.name)).toContain("Build bundled MCP sidecar");
     expect(steps.map((step) => step.name)).toContain("Stage release assets");
   });
 
   /**
-   * 이것이 이 파일의 핵심 계약이다. 워크플로에 새 단계가 들어오면 리허설은
-   * 그것을 **돌리거나, 대신할 것을 대거나, 왜 못 도는지 적어야** 한다. 셋 다
-   * 아니면 그 단계는 다시 "태그를 찍어야만 처음 밟히는 칸" 이 되고, 우리는
-   * 5차 왕복을 시작하게 된다.
+   * This is the file's central contract. When a new step enters the workflow, the
+   * rehearsal must **run it, offer a substitute, or record why it cannot run**.
+   * Without one of the three, that step becomes another "square first stepped on by
+   * tagging" and we start a fifth round trip.
    */
   it("모든 단계가 실행·대체·명시적 생략 중 하나로 분류된다", () => {
     const skips = REHEARSAL_SKIPS as Record<string, string | undefined>;
     const substitutes = REHEARSAL_SUBSTITUTES as Record<string, unknown>;
     const unclassified = [...admissionSteps, ...steps].filter((step: { name: string; uses: string | null }) => {
-      if (step.uses) return false; // GitHub Action — 러너 전용
+      if (step.uses) return false; // GitHub Action — runner-only
       if (skips[step.name] || substitutes[step.name]) return false;
       return localCommandFor(step) === null;
     });
@@ -266,7 +272,7 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
   });
 
   it("리허설이 사이드카를 첫 cargo 호출보다 먼저 굽는다", () => {
-    // 워크플로의 순서 계약(형제 파일)이 리허설에도 그대로 옮겨졌는지 본다.
+    // Checks the workflow's order contract (the sibling file) carried over to the rehearsal intact.
     const names = steps.map((step) => step.name);
     expect(names.indexOf("Build bundled MCP sidecar")).toBeLessThan(
       names.indexOf("Native vault bridge tests"),
@@ -328,10 +334,11 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
 
 describe("다운로드 스모크 문구는 살아 있는 카탈로그에서 온다", () => {
   /**
-   * #730 이 다운로드 화면을 다시 만들면서 문장을 걷어냈는데, `desktop:smoke`
-   * 는 **어제의 문장**을 요구한 채 남았고 그 단위 테스트는 상수가 자기
-   * 리터럴과 같은지만 봤다. 249개 테스트가 초록인 채로, 결함은 태그를 찍은
-   * 뒤의 릴리스 빌드에서만 드러났다(`desktop:release-artifact` 의 두 번째 단계).
+   * #730 rebuilt the download screen and removed a sentence, but `desktop:smoke` was
+   * left demanding **yesterday's sentence**, and its unit test only checked that the
+   * constant equalled its own literal. With 249 tests green, the defect surfaced only
+   * in the release build after tagging (the second step of
+   * `desktop:release-artifact`).
    */
   it("스모크 계약에 하드코딩된 다운로드 문장이 없다", () => {
     const smoke = readFileSync(join(root, "scripts/desktop-smoke.mjs"), "utf8");
@@ -349,10 +356,11 @@ describe("다운로드 스모크 문구는 살아 있는 카탈로그에서 온�
 });
 
 /**
- * **도구 확인은 셋을 말한다 — `ok` · 없음 · 「확인 못 함」.**
+ * **A tool check says one of three things — `ok`, missing, or "could not check".**
  *
- * 「모른다」를 「없다」로 접으면 다음 사람이 멀쩡한 도구를 설치하러 간다. 그리고
- * 상한이 없으면 이 확인이 시험 전체를 기계 속도에 묶는다(위 주석의 사고).
+ * Folding "unknown" into "missing" sends the next person off to install a tool that
+ * is already fine. And without a timeout this check ties the whole test to machine
+ * speed (the incident described above).
  */
 describe("릴리스 리허설의 도구 확인", () => {
   it("답한 도구는 버전을 그대로 돌려준다", () => {
@@ -370,8 +378,9 @@ describe("릴리스 리허설의 도구 확인", () => {
   });
 
   it("상한에 걸리면 `unknown` 이다 — 없다고 말하지 않는다", () => {
-    // Node 는 상한에 걸린 자식을 신호로 죽인다. 그것을 「없음」으로 접는 것이
-    // 이 저장소가 로딩·진행 표면 전반에서 금지해 온 「모르는 것을 아는 척」이다.
+    // Node kills a timed-out child with a signal. Folding that into "missing" is the
+    // "pretending to know what you do not" that this repository forbids across all
+    // loading and progress surfaces.
     expect(probeTool("x", [], { spawn: () => ({ status: null, signal: "SIGTERM" }) }).state).toBe(
       "unknown",
     );

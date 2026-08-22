@@ -34,6 +34,31 @@
  * - **Deleted files named as history.** "we removed `docs/GUIDE.md`" is a record,
  *   not rot. Same carve-out `doc-links.mjs` makes.
  * - **Placeholders** — anything containing `<`, `{`, `*`, or `...`.
+ *
+ * ## Why bare filenames are not scanned
+ *
+ * A citation must carry a repo-relative path. `design.md` on its own is below
+ * this gate's pattern and therefore unchecked — `docs/GLOSSARY.md` §6 asks
+ * authors to write `.claude/rules/design.md` instead, and a 2026-08-22 pass
+ * upgraded the ones that mattered.
+ *
+ * Widening the pattern to bare names was measured and **rejected**. Inventory of
+ * the 302 bare `.md` mentions in comments at the time:
+ *
+ *   146  resolve to exactly one file   → real pointers, already fine
+ *   130  match several files           → `AGENTS.md`, `SKILL.md`, `README.md`;
+ *                                        only context disambiguates them
+ *    29  match nothing in the repo     → and **none of them is a pointer**:
+ *                                        `baz.md`, `oldSlug.md`, `path.md`,
+ *                                        `document.md` are example filenames
+ *                                        inside a sentence; `po-pass.md`,
+ *                                        `design-prescription.md` name vault
+ *                                        and skill concepts
+ *
+ * So the wide version would report 29 false positives and zero real defects.
+ * `.claude/rules/design-gates.md` states the rule this follows: count the
+ * violations before switching a rule on, and if the count is noise rather than
+ * defects, the rule buries the signal it was meant to raise.
  */
 
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";

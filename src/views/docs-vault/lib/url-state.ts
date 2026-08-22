@@ -1,18 +1,17 @@
 'use client';
 
 /**
- * R11 #16 step 4 — DocsVaultPage 의 URL state replace 추출.
+ * The URL state replacement for `DocsVaultPage`.
  *
- * `?slug=`, `?view=`, `?intent=` query params 만 다룸. window.history.replaceState 로
- * url 갱신 + `app:urlchange` event dispatch (caller 들이 그것 listen 해서
- * state 동기화). doc 이 default view 라 view='doc' 일 땐 query param 제거.
+ * It handles only the `?slug=`, `?view=`, and `?intent=` query params: updates the URL through
+ * `window.history.replaceState` and dispatches an `app:urlchange` event that callers listen to in
+ * order to sync state. `doc` is the default view, so the param is removed when view is 'doc'.
  *
- * 모듈-level 순수 함수 — useCallback 으로 wrap 할 필요 0 (자동 stable).
- * 호출 사이트 (handleViewChange, handleSourceChange, openDocBySlug, etc) 의
- * useCallback deps 에서 *제거 가능* — module reference 는 영원히 같음.
+ * A module-level pure function — no `useCallback` wrapper is needed (it is stable by
+ * construction), and it can be left out of the `useCallback` deps of every call site.
  *
- * 목록 순서(`?sort=` · `?group=`) 도 같은 계약을 탄다 — 정렬을 숨은 상태로
- * 두면 공유 링크와 에이전트 핸드오프에서 "무슨 순서로 보던 중" 이 빠진다.
+ * The list order (`?sort=` · `?group=`) rides the same contract — leaving the order as hidden state
+ * would drop "which order was I looking at" from shared links and agent handoffs.
  */
 
 import {
@@ -22,7 +21,7 @@ import {
   type DocsTreeSort,
 } from '@/widgets/docs-vault/lib/tree-order';
 
-// P5a — folder-topology 제거. 'doc' 만 남지만 caller 계약(`view?:`) 은 유지.
+// folder-topology was removed. Only 'doc' remains, but the caller contract (`view?:`) is kept.
 export type DocsVaultView = 'doc';
 
 export function replaceDocsVaultUrlState(next: {
@@ -59,8 +58,8 @@ export function replaceDocsVaultUrlState(next: {
     if (next.intent === 'local') url.searchParams.set('intent', 'local');
     else url.searchParams.delete('intent');
   }
-  // 목록 순서 — 기본값이면 파라미터를 지운다. "기본값은 URL 에 쓰지 않는다"
-  // 판단은 tree-order.ts 의 serializer 한 곳에만 둔다.
+  // List order — the parameter is dropped when it is the default. The judgement "a default is not
+  // written into the URL" lives in one place, the serializer in tree-order.ts.
   if ('sort' in next && next.sort) {
     const value = serializeDocsTreeSort(next.sort);
     if (value) url.searchParams.set('sort', value);

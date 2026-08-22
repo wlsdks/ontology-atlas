@@ -76,14 +76,12 @@ function resolveRefToDocSlug(
   return byTail ?? null;
 }
 
-// FileSystemDirectoryHandle 을 재귀 순회해 .md 파일만 수집. 파일 핸들 맵을
-// 같이 반환해 뷰어가 slug → 파일 content 를 읽을 수 있게 한다. Next.js
-// 정적 타입에 FSAccess API 타입이 이미 lib.dom.d.ts 로 들어와 있어서 외부
-// 의존 없이 써도 OK.
+// Walks a FileSystemDirectoryHandle recursively, collecting `.md` files. The
+// file-handle map comes back with it so the viewer can read slug → content.
 
 interface WalkEntry {
   handle: FileSystemFileHandle;
-  /** 최상위 핸들을 기준으로 한 상대 경로. 예: 'specs/hello.md' */
+  /** Path relative to the top-level handle — e.g. 'specs/hello.md'. */
   relativePath: string;
   kind: 'md' | 'image';
 }
@@ -91,46 +89,47 @@ interface WalkEntry {
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
 
 /**
- * 순회의 경계 — **볼트는 문서 폴더지 임의의 디렉터리가 아니다.**
+ * The walk's boundary — **a vault is a document folder, not an arbitrary directory.**
  *
- * 2026-07-29 실측: 설치 앱에서 볼트로 **저장소 루트**를 고르면 WebView 가
- * 죽었다("This page couldn't load"). 순회가 무제한이라 `src-tauri/target`
- * 까지 내려가 디렉터리 984개 · 마크다운 965개(9.4MB)를 IPC 로 실어 나른다 —
- * 정상 볼트(23 · 97)의 16배다.
+ * Measured 2026-07-29: picking the **repository root** as the vault killed the
+ * WebView in the installed app ("This page couldn't load"). With no bound the
+ * walk descended into `src-tauri/target` and carried 984 directories / 965
+ * markdown files (9.4 MB) across IPC — 16× a normal vault (23 / 97).
  *
- * 이게 아픈 이유는 **스킬 사본 판정처럼 볼트가 저장소 루트여야 의미 있는
- * 기능이 있고, 그 조합이 정확히 그 사용자의 첫 시도**라는 점이다.
+ * This hurts precisely because some features (the skill-copy check, for one) are
+ * only meaningful when the vault *is* the repo root — so that combination is
+ * exactly what a first-time user tries.
  */
 
 /**
- * 이름만으로 확실한 것. `node_modules` 안에 사용자의 온톨로지가 있을 확률은
- * 0이고, 이름이 겹칠 일도 없다. **목록을 늘리지 않는다** — `build`·`dist`·
- * `out` 같은 이름은 문서 폴더에도 정당하게 존재할 수 있어서, 이름으로 자르면
- * 남의 문서를 조용히 버린다.
+ * Names that are certain. The odds of a user's ontology living inside
+ * `node_modules` are zero and the name never collides. **Do not extend this
+ * list** — `build`, `dist`, `out` are legitimate names inside a document folder,
+ * so pruning by name would silently drop someone's documents.
  */
 const PRUNE_BY_NAME = new Set(['node_modules']);
 
 /**
- * 캐시 디렉터리의 **공개 규약** — 디렉터리가 스스로 "나는 캐시다" 라고 선언한다
- * (bford.info/cachedir, Cargo·Bazel 등이 따른다). 이름 목록과 달리 관리할
- * 것이 없고 오탐이 원리적으로 없다: 사용자가 자기 문서 폴더에 이 파일을 넣을
- * 이유가 없다.
+ * The public convention for cache directories: the directory declares itself
+ * (bford.info/cachedir, followed by Cargo, Bazel, and others). Unlike a name
+ * list there is nothing to maintain and no false positive is possible — a user
+ * has no reason to put this file in their document folder.
  */
 const CACHE_DIR_TAG = 'CACHEDIR.TAG';
 
-/** 정상 볼트의 20배 남짓. 넘으면 자르고 **자른 사실을 말한다**. */
+/** Roughly 20× a normal vault. Past this the walk truncates and **says so**. */
 export const VAULT_WALK_MAX_ENTRIES = 4000;
-/** 문서 폴더의 현실적 상한. 넘는 깊이는 대개 남의 트리에 들어간 것이다. */
+/** A realistic ceiling for a document folder. Deeper usually means someone else's tree. */
 export const VAULT_WALK_MAX_DEPTH = 12;
 
 export interface WalkResult {
   entries: WalkEntry[];
   /**
-   * 상한에 걸려 **일부만 봤는가.** 침묵하는 절단은 "전부 봤다" 로 읽히므로
-   * 호출부까지 올려 보낸다 — 이 저장소가 게이트에서 반복해 배운 규율이다.
+   * Whether a limit was hit and the walk saw **only part** of the tree. Silent
+   * truncation reads as "we saw everything", so it is reported to the caller.
    */
   truncated: boolean;
-  /** 캐시/의존성으로 판정해 통째로 건너뛴 디렉터리의 상대 경로. */
+  /** Relative paths of directories skipped whole as cache or dependencies. */
   prunedDirs: string[];
 }
 
@@ -146,9 +145,9 @@ async function walkInto(
     return;
   }
 
-  // 목록을 **먼저 모은다.** 캐시 표식은 이 목록 안에 이미 들어 있으므로
-  // `getFileHandle` 로 따로 물어볼 이유가 없다 — 그렇게 하면 디렉터리마다
-  // IPC 왕복이 하나씩 늘고, 그건 지금 고치고 있는 비용과 같은 종류다.
+  // Collect the listing **first**. The cache tag is already in it, so asking for
+  // it with `getFileHandle` would add one IPC round trip per directory — the same
+  // class of cost this walk exists to avoid.
   const children: Array<[string, FileSystemHandle]> = [];
   for await (const entry of root.entries()) children.push(entry);
 
@@ -233,11 +232,12 @@ function sortTree(node: VaultTreeNode) {
 export interface LocalVaultBuild {
   manifest: VaultManifest;
   fileHandles: Map<string, FileSystemFileHandle>;
-  /** 이미지 등 asset 파일. key 는 vault root 기준 상대 경로 (예: 'img/foo.png'). */
+  /** Asset files such as images, keyed by path relative to the vault root ('img/foo.png'). */
   imageHandles: Map<string, FileSystemFileHandle>;
   /**
-   * 빌드 시점의 디렉터리 fingerprint — `${path}@${mtime}` 들을 정렬·join 한 문자열.
-   * 이후 `computeLocalVaultFingerprint(root)` 결과와 비교해 변동 없으면 재빌드 skip 가능.
+   * Directory fingerprint at build time — `${path}@${mtime}` entries sorted and
+   * joined. Compare against a later `computeLocalVaultFingerprint(root)` to skip
+   * a rebuild when nothing changed.
    */
   fingerprint: string;
 }
@@ -252,16 +252,14 @@ function fingerprintFromEntries(
 }
 
 /**
- * 디렉터리를 walk 하며 *content 를 읽지 않고* 파일 mtime 만 모아 fingerprint
- * 만든다. 같은 fingerprint = 마지막 빌드 후 .md / 이미지 변경 없음. 호출자
- * (예: focus auto-refresh) 가 이를 비교해 불필요한 전체 재빌드를 회피.
- */
-/**
- * 지문과 **그 지문을 만든 스탬프**를 함께 준다.
+ * Walks the directory collecting only file mtimes — *never reading content* —
+ * and folds them into a fingerprint. An unchanged fingerprint means no `.md` or
+ * image changed since the last build.
  *
- * `computeLocalVaultFingerprint` 만 있던 동안, 호출자는 「바뀌었나」를 알고
- * 나면 그 근거를 버렸다. 그래서 증분 재빌드가 같은 볼트를 **한 번 더** 걸었다.
- * 여기서 둘을 같이 돌려주면 걷기는 변경당 한 번이면 된다.
+ * This variant returns the fingerprint **and the stamps that produced it**.
+ * While only `computeLocalVaultFingerprint` existed, a caller learned "something
+ * changed" and then threw away the evidence, so an incremental rebuild walked
+ * the same vault a **second** time. Returning both means one walk per change.
  */
 export async function computeLocalVaultFingerprintWithStamps(
   root: FileSystemDirectoryHandle,
@@ -285,18 +283,17 @@ export async function computeLocalVaultFingerprint(
   root: FileSystemDirectoryHandle,
 ): Promise<string> {
   /*
-   * **앱에서는 네이티브 한 번으로 끝낸다** (2026-07-31).
+   * **In the app this is one native call** (2026-07-31).
    *
-   * 아래 웹 경로는 파일마다 `getFile()` 을 부르는데, Tauri 에서 그건
-   * `read_vault_text_file` IPC 왕복이고 그 명령은 **본문 전체 + mtime** 을
-   * 돌려준다. 쓰이는 것은 숫자 하나인데 볼트 전체가 다리를 건넜다 — 이
-   * 저장소 자신을 볼트로 열면 `docs/` 가 261 파일 · 17.7MB 이고, 이 함수는
-   * 창에 포커스가 돌아올 때마다 돈다.
+   * The web path below calls `getFile()` per file; under Tauri that is a
+   * `read_vault_text_file` IPC round trip, and that command returns **the full
+   * body plus the mtime**. One number is used and the whole vault crosses the
+   * bridge — opening this repository as a vault makes `docs/` 261 files / 17.7 MB,
+   * and this function runs every time the window regains focus.
    *
-   * `vault_fingerprint` 는 Rust 가 훑어 **경로와 mtime 만** 한 번에 준다.
-   * 웹에는 이런 일괄 API 가 없어 `null` 이 오고, 그러면 아래 경로로 떨어진다 —
-   * `surfaces.md` 의 브리지 관례(없으면 `null`, 화면/동작은 정직하게 강등)
-   * 그대로다.
+   * `vault_fingerprint` has Rust walk it once and return **paths and mtimes only**.
+   * The web has no such batch API, so it returns `null` and falls through below —
+   * the bridge convention from `.claude/rules/surfaces.md` (absent → `null`, degrade honestly).
    */
   const nativeRoot = (root as { rootPath?: unknown }).rootPath;
   if (typeof nativeRoot === 'string' && nativeRoot) {
@@ -318,22 +315,23 @@ export async function computeLocalVaultFingerprint(
 }
 
 /**
- * 빌드 한 단위 — md 문서 1개(+ 역참조 재구성에 필요한 link context) 또는 이미지.
- * `handle` + `lastModified` 를 들고 있어 증분 재빌드가 mtime 이 같은(=내용 동일)
- * 파일의 본문 재독을 건너뛰고 직전 결과를 그대로 재사용할 수 있다.
+ * One unit of a build: a markdown document (plus the link context backlink
+ * reconstruction needs) or an image. It carries `handle` + `lastModified` so an
+ * incremental rebuild can skip re-reading a file whose mtime is unchanged and
+ * reuse the previous result.
  */
 export interface BuiltVaultEntry {
   relativePath: string;
   lastModified: number;
   handle: FileSystemFileHandle;
   kind: 'md' | 'image';
-  /** md 전용 — 집계된 VaultDoc. */
+  /** Markdown only — the aggregated VaultDoc. */
   doc?: VaultDoc;
-  /** md 전용 — backlinksDetail 재구성용 out-link context. */
+  /** Markdown only — out-link context, for rebuilding backlinksDetail. */
   linkContexts?: LinkContext[];
 }
 
-/** 단일 .md 파일의 raw 본문 → BuiltVaultEntry. 순수 변환(I/O 없음). */
+/** One `.md` file's raw body → BuiltVaultEntry. Pure; no I/O. */
 function buildMdEntry(
   entry: WalkEntry,
   raw: string,
@@ -390,9 +388,9 @@ function buildMdEntry(
 }
 
 /**
- * BuiltVaultEntry[] → 완성된 LocalVaultBuild. 정렬·트리·역참조·태그·fingerprint
- * 집계는 전부 in-memory (저렴 — derive 와 같은 차수). 전체 빌드와 증분 빌드가
- * **이 함수 하나를** 공유하므로 두 경로의 결과가 구조적으로 동일하다(중복 0).
+ * BuiltVaultEntry[] → a finished LocalVaultBuild. Sorting, tree, backlinks, tags,
+ * and fingerprint are all in memory. Full and incremental builds share **this one
+ * function**, so the two paths cannot structurally disagree.
  */
 function aggregateBuild(
   entries: BuiltVaultEntry[],
@@ -419,8 +417,8 @@ function aggregateBuild(
     if (!doc) continue;
     fileHandles.set(doc.slug, entry.handle);
 
-    // 단순 backlinks (deprecated) 는 더 이상 manifest 에 포함하지 않는다.
-    // backlinksDetail 만 유지 — 컨텍스트와 함께.
+    // Plain `backlinks` (deprecated) is no longer put in the manifest; only
+    // `backlinksDetail`, which carries context.
     for (const ctx of entry.linkContexts ?? []) {
       if (!backlinksDetailMap.has(ctx.target)) {
         backlinksDetailMap.set(ctx.target, []);
@@ -491,8 +489,9 @@ function aggregateBuild(
   const manifest: VaultManifest = {
     version: '2026-04-23',
     generatedAt: new Date().toISOString(),
-    // 상한에 걸리지 않았으면 필드 자체를 두지 않는다 — `false`/`[]` 를 늘 실으면
-    // 매니페스트를 비교하는 코드(증분 빌드 · 스냅샷)에 의미 없는 차이가 생긴다.
+    // Omit the field entirely when no limit was hit — always emitting `false`/`[]`
+    // would create meaningless differences for code that compares manifests
+    // (incremental build, snapshots).
     ...(walkInfo?.truncated ? { walkTruncated: true } : {}),
     ...(walkInfo?.prunedDirs.length ? { prunedDirs: walkInfo.prunedDirs } : {}),
     docs,
@@ -508,10 +507,10 @@ function aggregateBuild(
   };
 }
 
-/** 디렉터리를 walk 하며 모든 .md 본문을 읽어 BuiltVaultEntry[] 로. (전체 I/O) */
+/** Walks the directory reading every `.md` body into BuiltVaultEntry[]. Full I/O. */
 async function collectEntries(
   root: FileSystemDirectoryHandle,
-  /** 순회의 경계 사실을 매니페스트까지 실어 나르는 자리 — 침묵하지 않기 위해. */
+  /** Carries the walk's boundary facts through to the manifest, so it stays visible. */
   walkInfo?: { truncated: boolean; prunedDirs: string[] },
 ): Promise<BuiltVaultEntry[]> {
   const walked = await walkVault(root);
@@ -539,8 +538,8 @@ async function collectEntries(
 }
 
 /**
- * 전체 빌드 + 재사용 가능한 entries 를 함께 반환. 호출자(use-local-vault `load`)는
- * entries 를 ref 에 보관했다가 다음 변경 시 증분 재빌드에 넘긴다.
+ * Full build plus the reusable entries. The caller (use-local-vault `load`) keeps
+ * the entries in a ref and hands them to the next incremental rebuild.
  */
 export async function buildLocalManifestWithEntries(
   root: FileSystemDirectoryHandle,
@@ -551,8 +550,9 @@ export async function buildLocalManifestWithEntries(
 }
 
 /**
- * 선택한 로컬 디렉터리에서 마크다운 매니페스트를 빌드. scripts/build-docs-
- * vault.mjs 와 동일한 VaultManifest shape — 공용 뷰어·트리·그래프 그대로.
+ * Builds a markdown manifest from a chosen local directory, in the same
+ * VaultManifest shape as `scripts/build-docs-vault.mjs`, so the viewer, tree,
+ * and graph work unchanged.
  */
 export async function buildLocalManifest(
   root: FileSystemDirectoryHandle,
@@ -563,48 +563,48 @@ export async function buildLocalManifest(
 }
 
 /**
- * 증분 재빌드 — 직전 빌드의 `previous` entries 를 재사용한다. walk 후 각 파일의
- * mtime 만 확인(본문 미독)하고, (relativePath, mtime, kind) 가 직전과 같으면 그
- * entry(doc + link context)를 그대로 재사용 — **본문 재독·재파싱 skip**. 변경/추가
- * 파일만 본문을 다시 읽고, 삭제 파일은 자연히 빠진다. 결과 manifest 는 전체
- * `buildLocalManifest` 와 동치(generatedAt 제외) — `incremental.test.ts` 가
- * add/change/remove/no-op/rename 으로 보증.
+ * Incremental rebuild — reuses the `previous` entries. After walking, only each
+ * file's mtime is checked (no body read); when (relativePath, mtime, kind) match
+ * the previous run, that entry's doc and link context are reused verbatim. Only
+ * changed or added files are re-read; deleted ones simply fall out. The result is
+ * equivalent to a full `buildLocalManifest` except for `generatedAt` —
+ * `incremental.test.ts` proves that across add/change/remove/no-op/rename.
  *
- * 가정: 같은 (relativePath, mtime) ⇒ 같은 내용. `computeLocalVaultFingerprint`
- * 기반 skip 로직이 이미 쓰는 가정과 동일.
+ * Assumption: the same (relativePath, mtime) implies the same content — the same
+ * assumption the `computeLocalVaultFingerprint` skip already relies on.
  */
 export async function rebuildLocalManifestIncremental(
   root: FileSystemDirectoryHandle,
   previous: BuiltVaultEntry[],
   /**
-   * 이미 받아 둔 네이티브 스탬프(경로→mtime). `refresh()` 는 「바뀌었나」를
-   * 판정하려고 방금 같은 걸 걷었으므로, 그걸 넘겨받아 **두 번 걷지 않는다.**
-   * 안 넘기면 여기서 직접 한 번 받는다.
+   * Native stamps (path → mtime) already fetched. `refresh()` just walked for
+   * exactly this to decide whether anything changed, so passing them in
+   * **avoids walking twice**. Omitted, this fetches them itself.
    */
   providedStamps?: Map<string, number> | null,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
   const files = await walk(root);
   const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
   /*
-   * **mtime 을 알아내려고 본문을 다리 너머로 끌어오지 않는다** (2026-08-09 실측).
+   * **Do not drag file bodies across the bridge just to learn an mtime** (measured 2026-08-09).
    *
-   * 이 함수는 「바뀐 파일만 다시 읽는다」가 존재 이유인데, 정작 *무엇이
-   * 바뀌었는지* 알아내려고 **파일마다 `getFile()`** 을 불렀다. Tauri 에서 그건
-   * `read_vault_text_file` IPC 왕복이고 그 명령은 본문 전체를 함께 돌려준다 —
-   * 위 `computeLocalVaultFingerprint` 주석이 이미 같은 낭비를 지적하며
-   * *"쓰이는 것은 숫자 하나인데 볼트 전체가 다리를 건넜다"* 고 적어 둔 그것이다.
-   * 그래서 본문 재파싱은 아꼈지만 **전송과 왕복은 하나도 아끼지 못했다.**
+   * This function exists to re-read only changed files, yet it called `getFile()`
+   * per file to find out *what* changed. Under Tauri that is a
+   * `read_vault_text_file` round trip returning the whole body — the same waste
+   * the `computeLocalVaultFingerprint` comment above already names. So body
+   * re-parsing was saved while transfer and round trips were not.
    *
-   * 설치된 앱 실측: 파일을 하나 고쳤을 때 지도가 따라오기까지
-   * **71파일 볼트 2.0초 / 5파일 볼트 0.7초** — 파일 수에 비례했다(건당 ≈20ms,
-   * IPC 왕복과 일치). 정작 같은 71파일을 디스크에서 읽는 비용은 **1.8ms** 다.
+   * Measured in the installed app, editing one file until the map caught up:
+   * **2.0 s for a 71-file vault, 0.7 s for a 5-file vault** — linear in file count
+   * (≈20 ms each, matching an IPC round trip). Reading those same 71 files from
+   * disk costs **1.8 ms**.
    *
-   * 고치는 방법은 새 네이티브 명령이 아니다 — 경로와 mtime 만 한 번에 주는
-   * `vault_fingerprint` 가 **이미 있고 300줄 위에서 쓰고 있다.** 그것으로 먼저
-   * 판정하고, mtime 이 다른 파일에만 `getFile()` 을 부른다.
+   * The fix is not a new native command: `vault_fingerprint` already returns paths
+   * and mtimes in one call and is used 300 lines above. Decide with it first, then
+   * call `getFile()` only where the mtime differs.
    *
-   * 웹에는 그 일괄 API 가 없어 `null` 이 오고 지금까지의 경로로 떨어진다 —
-   * `surfaces.md` 의 브리지 관례(없으면 `null`, 조용히 강등) 그대로다.
+   * The web has no batch API, so it gets `null` and falls through to the previous
+   * path — the bridge convention from `.claude/rules/surfaces.md`.
    */
   let nativeStamps: Map<string, number> | null = providedStamps ?? null;
   if (!nativeStamps) {
@@ -618,15 +618,15 @@ export async function rebuildLocalManifestIncremental(
           );
         }
       } catch {
-        /* 네이티브 실패 → 아래 파일별 경로로 폴백(동작은 종전과 동일) */
+        /* Native failed → fall back to the per-file path below (behaviour unchanged). */
       }
     }
   }
   const entries: BuiltVaultEntry[] = [];
   for (const entry of files) {
-    // 네이티브가 이 경로의 mtime 을 알고 그것이 직전과 같으면 **파일을 아예
-    // 열지 않는다.** 모르는 경로(방금 생겼거나 목록이 어긋남)는 아래로 흘려
-    // 보내 종전과 같이 처리한다 — 「모르면 읽는다」가 안전한 쪽이다.
+    // If native knows this path's mtime and it is unchanged, **the file is never
+    // opened**. An unknown path (just created, or listings disagreeing) falls
+    // through and is handled as before — "read it when unsure" is the safe side.
     const nativeMtime = nativeStamps?.get(entry.relativePath);
     if (nativeMtime !== undefined) {
       const prevNative = prevByPath.get(entry.relativePath);
@@ -646,7 +646,7 @@ export async function rebuildLocalManifestIncremental(
       prev.kind === entry.kind &&
       prev.lastModified === file.lastModified
     ) {
-      // 변경 없음 — 본문 재독 없이 직전 결과 재사용(handle 만 새 walk 것으로).
+      // Unchanged — reuse the previous result without re-reading; take the fresh handle.
       entries.push({ ...prev, handle: entry.handle });
       continue;
     }

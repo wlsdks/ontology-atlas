@@ -57,7 +57,7 @@ export interface TopologyAnalysisSummary {
 /**
  * Re-exported under this file's historical name — the picking rule itself
  * now lives at `entities/knowledge-graph/lib/ontology-health-signals.ts` so
- * `/ontology/insights`' 할 일 탭 "수리 큐" section can reuse the SAME
+ * the repair queue on `/ontology/insights` can reuse the SAME
  * function without a cross-view import
  * (`views/home` → `views/ontology-insights` would violate FSD's "avoid
  * same-layer cross-import" guidance). Both surfaces' "next repair target"
@@ -336,8 +336,8 @@ export function formatTopologyRelationProvenanceSummary(
 
 /** Re-exports the entities-level classifier under this file's historical
  *  name — `entities/knowledge-graph/lib/relation-quality.ts` is the single
- *  source of truth (shared with `views/ontology-insights`' 할 일 탭 agent
- *  readiness gauge). */
+ *  source of truth, shared with the agent-readiness gauge in
+ *  `views/ontology-insights`. */
 export function classifyTopologyRelationQuality(
   edge: Pick<KnowledgeGraphEdge, "type" | "evidenceIds" | "lastApprovedBy">,
 ): keyof TopologyRelationQualityBreakdown {
@@ -451,12 +451,13 @@ export function formatTopologyPathMcpCheck(from: string, to: string): string {
 }
 
 /**
- * 경로 칩(`TopologyPathChip`)의 "N홉" 숫자 — 두 노드 사이 최단 hop 수(undirected
- * BFS, `direction: "both"`). 관계엔 방향이 있어도 "경로가 있다/몇 단계냐"는
- * 사용자 질문 자체가 방향 무관이라 `explain_relation` MCP 오퍼레이션과 같은
- * `direction: "undirected"` 관례를 따른다. depth/limit 을 노드 수만큼 열어
- * 그래프 전체에서 실제 최단 거리를 찾는다(부분 BFS 로 놓치지 않음).
- * 같은 노드를 고르면 0, 도달 불가면 null.
+ * The hop count on the path chip: shortest hops between two nodes over an
+ * undirected BFS. Relations have direction, but "is there a path, and how many
+ * steps" is a direction-agnostic question, so this follows the same
+ * `direction: "undirected"` convention as the `explain_relation` MCP operation.
+ * depth and limit are opened to the node count so the true shortest distance is
+ * found across the whole graph rather than missed by a partial BFS. 0 for the
+ * same node, null when unreachable.
  */
 export function computeTopologyPathHopCount(
   sourceId: string,
@@ -493,12 +494,11 @@ export interface TopologyPathAgentPacketLabels {
 }
 
 /**
- * 경로 칩의 "경로 패킷 복사" 1버튼 — 예전 path 패널의 CLI/MCP 2버튼 분기 +
- * relation-preflight/explain_relation/all_paths 5종 복사 버튼을 에이전트용
- * `find_path` MCP 호출 1종으로 압축했다(분석 패널 완전 소멸 2단계 §b,
- * "2버튼 분기 제거 — 에이전트용 1종만"). 필요하면 에이전트가 이 결과를 보고
- * 스스로 relation_check/explain_relation 을 이어서 호출할 수 있다 — 매
- * 클릭마다 5개 버튼을 미리 깔아둘 필요는 없다.
+ * The path chip's single copy button. The old path panel offered a CLI/MCP
+ * split plus five copy buttons (relation-preflight, explain_relation,
+ * all_paths); this compresses all of it into one agent-facing `find_path` call.
+ * An agent that needs more can chain `relation_check`/`explain_relation` from
+ * this result itself, so there is no reason to lay out five buttons per click.
  */
 export function formatTopologyPathAgentPacket({
   sourceSlug,
@@ -549,9 +549,8 @@ export function getTopologyHealthNextAction(
 }
 
 /**
- * INDEX 패널 하단 "인계" 메뉴의 "재분석 지시" 항목이 복사하는 agent 프롬프트
- * (W3 분석 보기 은퇴 — 이전엔 `TopologyAnalysisBar` overview 모드 안의 접힌
- * 보조 액션이었다). 입력 없는 고정 텍스트라 view 상태에 의존하지 않는다.
+ * The agent prompt copied by the reanalysis item in the INDEX panel's handoff
+ * menu. Fixed text with no input, so it does not depend on view state.
  */
 export function formatOntologyReanalysisAgentCommand(): string {
   return [

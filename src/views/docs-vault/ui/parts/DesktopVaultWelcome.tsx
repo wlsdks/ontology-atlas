@@ -85,12 +85,13 @@ export function DesktopVaultWelcome({
   return (
     <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
       {/*
-        `my-auto` — 남는 공간이 있을 때만 세로 가운데로 온다 (2026-07-28 소유자
-        실사용 제보: "화면 상단에 이렇게 나오면 이상하지? 중앙에 예쁘게").
+        `my-auto` — it only centres vertically when there is spare room (owner report from
+        real use, 2026-07-28: *"화면 상단에 이렇게 나오면 이상하지? 중앙에 예쁘게"* — it looks
+        wrong pinned to the top of the screen; centre it nicely).
 
-        `items-center` 류가 아니라 auto margin 을 쓰는 이유: 내용이 뷰포트보다
-        길어지면 auto margin 은 **0 이 되어** 위에서부터 스크롤된다. 가운데
-        정렬로 고정하면 짧은 화면에서 위가 잘려 스크롤로도 못 닿는다.
+        Why an auto margin rather than something like `items-center`: once the content is
+        taller than the viewport an auto margin becomes **0** and it scrolls from the top.
+        Fixed centring would clip the top on a short screen, out of reach even by scrolling.
       */}
       <div className="mx-auto my-auto grid w-full max-w-6xl content-start gap-8 px-5 py-8 md:px-8 md:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-12">
         <div className="grid min-w-0 gap-7">
@@ -98,11 +99,11 @@ export function DesktopVaultWelcome({
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {t("desktopWelcome.eyebrow")}
             </p>
-            {/* 34px 은 이제 램프 스텝이다 (`--text-hero-lg`, 2026-07-29 승격) —
-                구 `md:text-[34px]` + eslint-disable 예외는 소비처가 둘이 되면서
-                이름을 얻었다. 행간은 `leading-hero-lg`(38px) 명시 짝이라 두 크기
-                모두를 덮는다 — 2026-08-05 에 `leading-tight`(비율 1.25)에서
-                램프 스텝으로 옮겼고 hero(30px)에서 +0.5px 다. */}
+            {/* 34px is a ramp step now (`--text-hero-lg`, promoted 2026-07-29) — the old
+                `md:text-[34px]` plus its eslint-disable earned a name once it had two
+                consumers. The line height is the explicit pair `leading-hero-lg` (38px),
+                covering both sizes — moved from `leading-tight` (a ratio of 1.25) to the ramp
+                step on 2026-08-05, which is +0.5px at hero (30px). */}
             <h2 className="max-w-2xl text-hero font-[var(--font-weight-strong)] leading-hero-lg text-[color:var(--color-text-primary)] md:text-hero-lg">
               {showDogfoodHint
                 ? t("desktopWelcome.dogfoodTitle")

@@ -1,25 +1,24 @@
-// 소스 영수증이 쓸 수 있는 **낱말** — 간극(무엇이 잘못됐나)과 처방(무엇을
-// 하라)의 목록.
+// The **vocabulary** a source receipt may use: the gaps (what is wrong) and the
+// actions (what to do).
 //
-// ## 왜 따로 뺐나 (2026-08-17)
-//
-// 같은 목록이 `project-source-receipt.mjs` 와 `project-meaning-inventory.mjs`
-// 에 **바이트 단위로 똑같이** 두 벌 있었고, 둘 다 게이트로 쓰였다:
+// Why it was split out (2026-08-17): the same list existed **byte for byte**
+// in both `project-source-receipt.mjs` and `project-meaning-inventory.mjs`, and
+// both were used as gates:
 //
 //   project-source-receipt.mjs:76      `!ACTION_IDS.has(value.id)`        → null
-//   project-meaning-inventory.mjs:112  `!SOURCE_ACTION_IDS.has(...)`      → 거절
+//   project-meaning-inventory.mjs:112  `!SOURCE_ACTION_IDS.has(...)`      → rejected
 //
-// 그래서 처방을 하나 더할 때 한쪽만 고치면, 영수증은 그것을 통과시키는데
-// 인벤토리는 조용히 거절한다. 그 어긋남은 에러가 아니라 **아무 일도 안
-// 일어나는 것**으로 나타나서, 알아채는 데 오래 걸린다.
+// So adding one action and editing only one copy left the receipt accepting it
+// while the inventory quietly rejected it. That mismatch surfaces not as an error
+// but as **nothing happening at all**, which takes a long time to notice.
 //
-// 이 저장소가 오늘 하루에만 같은 모양을 다섯 번 고쳤다(쓰기 경로 · 설정 병합 ·
-// 검증기 · 건강 계산 · 처방 표). **사본이 둘인데 게이트가 없으면 어긋나는
-// 쪽이 기본값이다.**
+// This repository fixed the same shape five times in a single day (write path,
+// config merge, validator, health calculation, remedy table). **When there are two
+// copies and no gate, drifting apart is the default.**
 //
-// 게이트: `project-source-vocabulary.test.mjs`.
+// Gate: `project-source-vocabulary.test.mjs`.
 
-/** 무엇이 잘못됐나. 메시지가 이 이름을 그대로 적으므로 문장은 필요 없다. */
+/** What is wrong. Messages print these names verbatim, so no prose is needed. */
 export const PROJECT_SOURCE_GAP_IDS = Object.freeze(
   new Set([
     'source_unbound',
@@ -35,9 +34,9 @@ export const PROJECT_SOURCE_GAP_IDS = Object.freeze(
 );
 
 /**
- * 무엇을 하라. **여기 이름을 더하면 사람이 읽을 문장도 같이 더해야 한다** —
- * `index.js` 의 `MEANING_NEXT_ACTION_HINTS` 이고, 빠지면
- * `meaning-hint-coverage.test.mjs` 가 막는다.
+ * What to do. **Adding a name here requires adding the human-readable sentence
+ * too** — `MEANING_NEXT_ACTION_HINTS` in `index.js`. Omitting it is blocked by
+ * `meaning-hint-coverage.test.mjs`.
  */
 export const PROJECT_SOURCE_ACTION_IDS = Object.freeze(
   new Set([

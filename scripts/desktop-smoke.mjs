@@ -13,13 +13,14 @@ export const DESKTOP_SMOKE_ROUTES = [
 ];
 export const DESKTOP_SMOKE_ROOT_ENTRY = "index.html";
 /**
- * 번들에 볼트가 실렸는지 보는 두 표본.
+ * Two samples proving the vault made it into the bundle.
  *
- * [개정 2026-08-01] 두 번째 항목은 `ontology/capabilities/desktop-app-distribution.md`
- * 였는데, 볼트를 규격 기준으로 다시 지으면서 그 파일이 사라졌다. 이 검사의
- * 목적은 「특정 개념이 있는가」가 아니라 「**볼트 디렉터리가 통째로 번들에
- * 복사됐는가**」이므로, 표본은 **어떤 볼트에도 있는 파일**이어야 한다.
- * `ontology/README.md` 는 `kind: vault-readme` 로 생성기가 항상 만든다.
+ * [Revised 2026-08-01] The second entry used to be
+ * `ontology/capabilities/desktop-app-distribution.md`, and rebuilding the vault to
+ * spec removed that file. This check asks whether **the whole vault directory was
+ * copied into the bundle**, not whether a particular concept exists, so the samples
+ * must be **files present in any vault**. `ontology/README.md` is always produced by
+ * the generator as `kind: vault-readme`.
  */
 export const DESKTOP_SMOKE_DOCS = [
   "docs-vault/DESKTOP-MACOS.md",
@@ -51,31 +52,32 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
  * surface. Client workbenches are covered by route-specific component markers
  * below instead of brittle historical prose.
  *
- * 문구를 **여기 적어 두지 않는다 — 메시지 카탈로그에서 읽는다.**
+ * **The copy is not written here — it is read from the message catalogue.**
  *
- * 예전에는 네 문장을 이 파일에 그대로 박아 뒀다. 그러다 #730 이 다운로드
- * 화면을 다시 만들면서 그 문장들을 걷어냈고, 이 게이트는 **어제의 문장**을
- * 요구한 채로 남았다. `scripts/desktop-smoke.test.mjs` 는 상수가 자기
- * 리터럴과 같은지만 봤으므로 249개 테스트가 전부 초록인 채였고, 결함은
- * `pnpm build` 뒤에 `desktop:smoke` 를 실제로 돌리는 곳 —
- * 즉 **태그를 찍은 뒤의 릴리스 빌드** — 에서만 드러났다.
- * (`desktop:check` 가 같은 이유로 v1.0.0-rc.2 1차 시도를 막았다. #743.)
+ * Four sentences used to be pinned into this file verbatim. When #730 rebuilt the
+ * download screen those sentences went away, and this gate was left demanding
+ * **yesterday's copy**. `scripts/desktop-smoke.test.mjs` only checked the constant
+ * against its own literal, so all 249 tests stayed green and the defect surfaced
+ * only where `desktop:smoke` actually runs after `pnpm build` — **the release build
+ * after the tag was cut**. (`desktop:check` blocked the first attempt at
+ * v1.0.0-rc.2 for the same reason, #743.)
  *
- * 키만 못박으면 그 종류의 부패가 불가능해진다. 문구가 바뀌면 카탈로그와 함께
- * 바뀌고, 키가 사라지면 아래 `resolveRouteText` 가 즉시 멈춘다. 게이트가
- * 지켜야 하는 것은 "어제의 문장" 이 아니라 **"오늘의 화면이 실제로 정적
- * 출력에 들어갔는가"** 다.
+ * Pinning keys alone makes that kind of decay impossible: copy changes together
+ * with the catalogue, and a deleted key stops `resolveRouteText` below immediately.
+ * What the gate must protect is not yesterday's sentence but **whether today's
+ * screen actually landed in the static output.**
  */
 export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
-  // `download.title` 은 2026-07-29 관문 재설계에서 사라졌다 — 히어로가
-  // `eyebrow` + `stageTitle` 두 줄로 갈렸고, 후자는 줄바꿈을 품어 렌더 텍스트와
-  // 원문이 다르므로 키로 고르지 않는다(위 독블록의 ICU 규칙과 같은 이유).
-  // `eyebrow` 는 한 줄이고 플랫폼과 제품 성격을 함께 말해서 이 자리에 맞다.
+  // `download.title` disappeared in the 2026-07-29 gateway redesign — the hero split
+  // into `eyebrow` + `stageTitle`, and the latter contains a line break so its
+  // rendered text differs from the source (the same reason as the ICU rule in the
+  // doc-block above). `eyebrow` is one line and names both the platform and the
+  // product's character, which suits this slot.
   //
-  // 2026-08-19: 종전 키 셋 중 둘은 설치 절이 삭제되며 화면에서 사라졌고,
-  // 나머지 하나는 **미게시 분기에서만** 렌더됐다 — 셋 다 게시된 빌드의 정적
-  // HTML 에서 못 찾는 문자열이다. 어느 릴리스 상태에서도 항상 렌더되는 세 절
-  // 제목으로 바꾼다.
+  // 2026-08-19: of the previous key set, two disappeared from the screen when the
+  // install section was deleted, and the third rendered **only on the unpublished
+  // branch** — all three are strings a published build's static HTML cannot contain.
+  // Replaced with three section titles that render in every release state.
   "/download": [
     "download.eyebrow",
     "download.demoTitle",
@@ -91,10 +93,10 @@ function messageAtPath(messages, dottedKey) {
 }
 
 /**
- * 카탈로그를 읽어 `"<locale>:<route>"` → 기대 문구 배열로 편다.
+ * Reads the catalogue and expands it into `"<locale>:<route>"` → expected copy.
  *
- * ICU 플레이스홀더(`{tag}`)가 든 문구는 렌더 결과가 원문과 다르므로 키로
- * 고르지 않는다 — 고르면 여기서 멈춘다.
+ * Copy containing an ICU placeholder (`{tag}`) renders differently from its source,
+ * so such keys must not be chosen — choosing one stops here.
  */
 export function resolveRouteText({
   root = process.cwd(),
@@ -135,12 +137,12 @@ export function resolveRouteText({
  * of a retired browse, builder, or query-cockpit chunk.
  */
 export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
-  // 마커는 "이 라우트가 오늘 무엇인가" 를 말해야지, 어제 무엇이었는지를 말하면
-  // 안 된다. (은퇴한 마커 이름을 여기 적지 않는다: 계약 테스트가 이 파일을
-  // 문자열로 읽으므로, 설명으로 적어도 "아직 남아 있다" 로 잡힌다 — 문자열
-  // 게이트는 자기 문서까지 읽는다.) 2026-08-19 에 설치 절이 통째로 사라지면서
-  // 신뢰 섹션 마커도 함께 은퇴했고, 오늘 이 라우트를 이루는 세 절 — 히어로의
-  // 받기 · 시연 · 에이전트 — 을 마커로 세운다.
+  // A marker must say what this route is today, not what it used to be. (Retired
+  // marker names are not written here: the contract test reads this file as text, so
+  // naming one even in prose is caught as "still present" — a text gate reads its own
+  // documentation too.) When the install section disappeared on 2026-08-19 the trust
+  // section's marker retired with it, and the markers are now the three sections that
+  // make up this route today: the hero's download, the demo, and the agent.
   "/download": [
     "gateway-hero-cta",
     "gateway-demo-section",

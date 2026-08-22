@@ -1,25 +1,27 @@
 import type { SVGProps } from 'react';
 
 /**
- * X(구 트위터) 마크 — **플랫폼 지시자**이지 우리 브랜드가 아니다.
+ * The X (formerly Twitter) mark — **a platform pointer**, not our brand.
  *
- * 판정 근거는 `github-mark.tsx` 와 같다: `lucide-react` 는 브랜드 아이콘을
- * 전부 뺐고, 이 마크는 우리 것의 이름이 아니라 **링크의 목적지**이며, 우리는
- * 그 플랫폼의 레이아웃·색·서체를 하나도 가져오지 않는다. 가져온 것은 목적지의
- * 이름표 하나다. 그 파일의 헌장 판정 두 문단이 이 파일에도 그대로 적용된다.
+ * The reasoning is the same as `github-mark.tsx`: `lucide-react` dropped all
+ * brand icons; this mark is not the name of something of ours but **the
+ * destination of a link**; and we take none of that platform's layout, colour or
+ * typography, only the destination's name tag. Both charter paragraphs in that
+ * file apply here unchanged.
  *
- * 색은 `currentColor` 단색 — 마크가 자기 색을 들고 오면 그것이 **세 번째 채색
- * 시스템**이 된다(`design.md` 금지).
+ * Colour is a single `currentColor` — a mark arriving with its own colour would
+ * be a **third colour system** (`.claude/rules/design.md` forbids it).
  *
- * 크기 기본 14 는 GitHub 마크와 같은 자리에 서기 위해서다. 이 글리프는 16
- * 뷰박스 안에서 가장자리까지 쓰는 편이라 옆의 Octicon 과 광학 무게가 맞는다.
+ * The default size of 14 exists so it stands level with the GitHub mark: this
+ * glyph also uses its 16 viewBox out to the edges, so it carries the same
+ * optical weight as the Octicon beside it.
  */
 const X_MARK_16 =
   'M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.6.75Zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633Z';
 
 export interface XMarkProps
   extends Omit<SVGProps<SVGSVGElement>, 'width' | 'height' | 'viewBox' | 'children'> {
-  /** 렌더 크기(px), 정사각형. 기본 14 — GitHub 마크와 같은 광학 무게. */
+  /** Rendered size in px, square. Default 14 — the same optical weight as the GitHub mark. */
   size?: number;
 }
 

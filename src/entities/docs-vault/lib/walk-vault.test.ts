@@ -7,14 +7,14 @@ import {
 } from './build-local-manifest';
 
 /**
- * 볼트 순회의 **경계** — 2026-07-29 실측 회귀.
+ * The vault walk's **boundary** — regression measured 2026-07-29.
  *
- * 설치 앱에서 볼트로 저장소 루트를 고르면 WebView 가 죽었다. 순회가 무제한이라
- * `src-tauri/target` 까지 내려가 디렉터리 984개 · 마크다운 965개(9.4MB)를 IPC 로
- * 실어 날랐다 — 정상 볼트(23 · 97)의 16배다.
+ * Choosing the repository root as the vault killed the WebView in the installed app.
+ * With no bound the walk descended into `src-tauri/target` and carried 984
+ * directories / 965 markdown files (9.4 MB) across IPC — 16× a normal vault (23 / 97).
  *
- * **ms 가 아니라 횟수로 잠근다.** 성능 예산은 기계마다 달라 플레이크가 되지만
- * "캐시 디렉터리는 한 번도 안 들어간다" 는 어느 기계에서나 참이다.
+ * **Locked by count, not milliseconds.** A performance budget varies by machine and
+ * becomes a flake; "a cache directory is never entered" is true everywhere.
  */
 
 type Entry = readonly [string, FakeFile | FakeDir];
@@ -26,7 +26,7 @@ class FakeFile {
 
 class FakeDir {
   readonly kind = 'directory' as const;
-  /** 이 디렉터리 안으로 실제로 들어갔는가 — 프룬 증명의 핵심. */
+  /** Did the walk actually descend into this directory — the proof that pruning works. */
   visited = false;
   constructor(
     readonly name: string,
@@ -68,16 +68,16 @@ describe('walkVault — 경계', () => {
   });
 
   /**
-   * `CACHEDIR.TAG` 는 캐시 디렉터리의 **공개 규약**이다 — 디렉터리가 스스로
-   * "나는 캐시다" 라고 선언한다(Cargo 가 `target/` 에 쓴다). 이름 목록과 달리
-   * 관리할 것이 없고 오탐이 원리적으로 없다.
+   * `CACHEDIR.TAG` is the **public convention** for cache directories: the directory
+   * declares itself (Cargo writes one into `target/`). Unlike a name list there is
+   * nothing to maintain and no false positive is possible.
    */
   it('never descends into a directory that declares itself a cache', async () => {
     const target = dir('target', [file('CACHEDIR.TAG'), file('vendored.md')]);
     const result = await run(dir('repo', [file('README.md'), target]));
 
-    // 표식은 **그 디렉터리의 목록 안에** 있으므로 한 번은 목록을 받는다 —
-    // 그러나 그 안의 어떤 항목도 수집되지 않고 하위로도 내려가지 않는다.
+    // The tag lives **inside that directory's listing**, so the listing is fetched once —
+    // but nothing in it is collected and nothing below it is entered.
     expect(result.entries.map((e) => e.relativePath)).toEqual(['README.md']);
     expect(result.prunedDirs).toEqual(['target']);
   });
@@ -91,9 +91,9 @@ describe('walkVault — 경계', () => {
   });
 
   /**
-   * 이름으로 자르는 목록을 **늘리지 않는다.** `build`·`dist`·`out` 같은 이름은
-   * 문서 폴더에도 정당하게 존재할 수 있고, 이름으로 자르면 남의 문서를 조용히
-   * 버린다 — 크래시를 고치려다 데이터를 잃는 쪽이 더 나쁘다.
+   * **Do not extend the prune-by-name list.** `build`, `dist`, `out` are legitimate
+   * names inside a document folder, and pruning by name silently drops someone's
+   * documents — losing data to fix a crash is the worse trade.
    */
   it('keeps ordinary folders whose names merely look like build output', async () => {
     const build = dir('build', [file('process.md')]);
@@ -109,7 +109,7 @@ describe('walkVault — 경계', () => {
     const result = await run(dir('vault', many));
 
     expect(result.entries.length).toBeLessThanOrEqual(VAULT_WALK_MAX_ENTRIES);
-    // **침묵하는 절단은 "전부 봤다" 로 읽힌다.**
+    // **Silent truncation reads as "we saw everything".**
     expect(result.truncated).toBe(true);
   });
 

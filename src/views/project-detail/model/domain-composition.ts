@@ -2,32 +2,31 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import { computeDegreeCentrality, computeDomainCensusRows } from "@/shared/lib/ontology-tree";
 
 /**
- * 프로젝트 상세 "도메인 구성" 한 **행** 분량 데이터.
+ * One **row** of data for the project detail's "domain composition".
  *
- * `capabilities` 는 이 도메인에 (직접이든 nested 든) 속한 capability **전부**를
- * degree(연결도) 내림차순으로 담는다 — 순서가 삽입 순서가 아니라 "그래프에서
- * 가장 많이 참조/연결된 것이 먼저" 라는 뜻이 되도록.
+ * `capabilities` holds **every** capability belonging to this domain (directly or nested), ordered by
+ * degree descending — so the order means "what the graph references and connects most comes first"
+ * rather than insertion order.
  *
- * ## 왜 상위 2개 + 「N개 더」가 아니라 전부인가 (2026-08-12, B안)
- *
- * 종전 카드는 상위 2개만 그리고 나머지를 「역량 N개 더」라는 발줄로 셌다. 그
- * 줄은 **갈 곳이 없는 수**였다 — 누를 수도, 펼칠 수도 없어서 그 N 개를 보려면
- * 지도로 떠나야 했다. 행이 그 자리에서 펼쳐지면 목록이 전부 보이므로 그 발줄
- * 자체가 사라지고, 「상위 2」라는 기준(연결 많은 순 — 화면에는 적혀 있지도
- * 않았다)을 사용자에게 설명할 필요도 없어진다.
+ * **Why all of them rather than the top 2 plus "N more"** (2026-08-12, option B). The old card drew the
+ * top 2 and counted the rest in a footer line reading "N more capabilities". That line was **a number
+ * with nowhere to go** — it could be neither pressed nor expanded, so seeing those N meant leaving for
+ * the map. A row that expands in place shows the whole list, so the footer line disappears and there is
+ * no longer any need to explain the "top 2" criterion (most connected — which was never written on
+ * screen anyway).
  */
 export interface DomainCompositionRow {
-  /** ontology 노드 id (예: `domain:views`) — topology focus deep-link 에 그대로 사용. */
+  /** The ontology node id (e.g. `domain:views`) — used verbatim in a topology focus deep-link. */
   id: string;
   title: string;
   capabilityCount: number;
   elementCount: number;
   total: number;
   /**
-   * degree 내림차순 · 동률은 제목 오름차순. 표시용 짧은 제목(`display`) 우선.
-   * `id` 는 그래프 노드 id (예: `capability:pay`) — 이름이 지도 딥링크가 되는 데
-   * 쓴다(2026-08-13: 제목만 나르던 시절 펼친 목록이 막다른 텍스트였다 — B안이
-   * 지운 「갈 곳 없는 수」와 같은 결함이 이름에 남아 있었다).
+   * Degree descending, ties by title ascending. The short display title (`display`) wins.
+   * `id` is the graph node id (e.g. `capability:pay`) — used to make the name a map deeplink
+   * (2026-08-13: while only titles were carried, the expanded list was dead-end text — the same
+   * "number with nowhere to go" defect option B removed, surviving in the names).
    */
   capabilities: { id: string; title: string }[];
 }
@@ -38,10 +37,10 @@ export interface ProjectDomainComposition {
 }
 
 /**
- * 프로젝트에 속한 domain 노드들의 구성 행. P-1 (UX 라운드): 카운트가
- * `nearestDomainId`(노드당 도메인 1개 배정 롤업)라 지도 INDEX·인사이트·
- * /projects 의 단일 진실원 BFS(`computeDomainCensusRows`)와 4면 불일치했다
- * — 이제 같은 BFS 를 쓰고, 이 모듈은 역량 랭킹(degree)과 행 shape 만 소유한다.
+ * Composition rows for the domain nodes belonging to a project. The counts used to come from
+ * `nearestDomainId` (a one-domain-per-node rollup) and disagreed with the single-source BFS
+ * (`computeDomainCensusRows`) used by the map INDEX, insights, and `/projects` on four surfaces — it now
+ * uses the same BFS, and this module owns only the capability ranking (degree) and the row shape.
  */
 export function buildProjectDomainComposition(
   nodes: readonly KnowledgeGraphNode[],
@@ -76,7 +75,7 @@ export function buildProjectDomainComposition(
         capabilityCount: row.capabilityCount,
         elementCount: row.elementCount,
         total: row.total,
-        // 과제 ⑩ — 역량 이름도 표시용 짧은 제목.
+        // The capability name uses the short display title too.
         capabilities: capabilities.map((cap) => ({ id: cap.id, title: cap.display ?? cap.title })),
       };
     });

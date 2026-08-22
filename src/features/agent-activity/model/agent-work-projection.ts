@@ -17,7 +17,7 @@ export interface AgentWorkProjection {
   updatedAt: number | null;
 }
 
-/** 인앱 ACP가 이미 관측한 현재 상태. sidecar 폴링보다 먼저 도착하는 세션 메모리다. */
+/** The current state the in-app ACP already observed. Session memory that arrives before sidecar polling. */
 export interface AgentLiveWorkInput {
   rawAgentName: string | null;
   phase: Exclude<AgentActivityState, 'complete'>;

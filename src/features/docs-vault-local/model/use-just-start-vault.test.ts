@@ -72,7 +72,7 @@ describe('useJustStartVault', () => {
     await waitFor(() => {
       expect(vault.scaffoldOntology).toHaveBeenCalledTimes(1);
     });
-    // 흐름 점검 2026-07-26 D2 — "그냥 시작하기" 도 화면 언어의 스타터를 만든다.
+    // Walkthrough 2026-07-26 — "just start" also creates the starter in the screen's language.
     expect(vault.scaffoldOntology).toHaveBeenCalledWith('ko');
     expect(result.current.createdPath).toBe('~/Documents/Ontology Atlas/my-ontology');
   });

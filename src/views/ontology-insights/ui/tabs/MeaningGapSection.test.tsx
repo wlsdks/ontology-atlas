@@ -84,7 +84,7 @@ describe("MeaningGapSection", () => {
     expect(onWrite).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId("meaning-gap-write-toggle"));
-    // 무엇이 어디에 적히는지 누르기 전에 화면에 있다.
+    // What will be written where is on screen before pressing.
     expect(screen.getByTestId("meaning-gap-confirm")).toHaveTextContent("Write one sentence");
     fireEvent.change(screen.getByTestId("meaning-gap-definition-input"), {
       target: { value: "결제 요청을 승인/거절로 판정한다." },
@@ -156,7 +156,7 @@ describe("MeaningGapSection", () => {
       </div>,
     );
     const gapRow = within(container).getByTestId("do-next-meaning-gap-row");
-    // 접힌 상태 — 상위(탭/팔레트)가 받는다.
+    // Collapsed — the parent (tab or palette) receives it.
     fireEvent.keyDown(gapRow, { key: "Escape" });
     expect(onOuterEscape).toHaveBeenCalledTimes(1);
 

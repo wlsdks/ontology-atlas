@@ -4,34 +4,33 @@ import test from 'node:test';
 import { parentedSlugs, suppressParentedExpectedFieldIssues } from './validate.mjs';
 
 /**
- * **부모가 이미 있는 노드에 「부모가 없다」고 경고하지 않는다** (2026-08-11).
+ * **Never warn that a node has no parent when it already has one** (2026-08-11).
  *
- * ## 어디서 나왔나 — 북극성 여정을 실제로 걸어서
+ * Where it came from — walking the north-star journey for real: a vault freshly
+ * made with `init --quick-start` **failed its own gates.** There was one warning
+ * (`missing-expected-field: domain`) and that one turned three things red:
+ * `health` exit 1, `mcp-verify` exit 1 (`vaultWarnings present`), `agent-brief`
+ * exit 1 (`needs_shape 45/100`). To a person that reads as *"what did I do
+ * wrong"*, and **to an agent it is a connection-failure signal** — while the
+ * server and all 35 tools were in fact fine.
  *
- * `init --quick-start` 로 갓 만든 볼트가 **자기 게이트를 통과하지 못했다.** 경고는
- * 하나뿐인데(`missing-expected-field: domain`) 그 하나가 셋을 빨갛게 만들었다:
- * `health` exit 1 · `mcp-verify` exit 1(`vaultWarnings present`) · `agent-brief`
- * exit 1(`needs_shape 45/100`). 사람에게는 *"내가 뭘 잘못했나"* 이고, **에이전트에게는
- * 연결 실패 신호**다 — 실제로는 서버도 도구 35개도 정상이었다.
+ * The cause is that the gate **looks at one file at a time**. The warning's own
+ * wording is *"a parent can be found in the tree"*, and that vault's project node
+ * already held both via `contains: [capabilities/catalog, capabilities/checkout]`.
+ * **It said there was no parent when the parent was already there.**
  *
- * 원인은 게이트가 **파일 하나만 보기 때문**이다. 그 경고의 문구 자체가
- * *"트리에서 부모를 찾을 수 있습니다"* 인데, 그 볼트의 프로젝트 노드는 이미
- * `contains: [capabilities/catalog, capabilities/checkout]` 로 그 둘을 담고 있었다.
- * **부모가 이미 있는데 부모가 없다고 말한 것이다.**
+ * Why no domain was invented: the analyzer derives domains **from README headings
+ * only**. Fabricating a domain for a repository with no heading is something this
+ * product forbids itself — the analyzer's own wording is *"source folder is
+ * implementation evidence, not proof of a shared capability meaning"* and *"README
+ * heading is a concept clue, not proof of a shared business boundary"*. Instead of
+ * inventing a boundary that does not exist, **acknowledge the parent that does.**
  *
- * ## 왜 도메인을 지어내지 않았나
+ * Same direction as this repository's contract: *"Project containment is
+ * implicit"* — `projectIds` is derived by BFS over containment.
  *
- * 분석기는 도메인을 **README 제목에서만** 얻는다. 제목이 없는 저장소에서 도메인을
- * 만들어 붙이는 것은 이 제품이 스스로 금한 일이다 — 분석기 자신의 문구가
- * *"source folder is implementation evidence, not proof of a shared capability
- * meaning"* 이고 *"README heading is a concept clue, not proof of a shared business
- * boundary"* 다. 없는 경계를 지어내는 대신, **이미 있는 부모를 인정한다.**
- *
- * 이 저장소의 계약과도 같은 방향이다: *"Project containment is implicit"* —
- * `projectIds` 는 포함을 따라 BFS 로 유도된다.
- *
- * ⚠️ **경고를 없애는 것이 아니라 좁히는 것이다.** 아무도 안 담은 역량에는 그대로
- * 남는다 — 그때는 진짜로 부모가 없다.
+ * ⚠️ **This narrows the warning, it does not remove it.** A capability nobody
+ * contains still gets it — there the parent really is missing.
  */
 
 const doc = (slug, frontmatter) => ({ slug, frontmatter });
@@ -110,7 +109,7 @@ test('suppress · 다른 코드의 경고는 건드리지 않는다', () => {
 });
 
 test('suppress · domain 이 아닌 expected 필드 경고는 포함으로 지워지지 않는다', () => {
-  // 포함이 세워 주는 것은 **부모**뿐이다. 다른 기대 필드는 그 논리가 닿지 않는다.
+  // Containment establishes **the parent** and nothing else. The other expected fields are out of its reach.
   const docs = [doc('shop', { kind: 'project', contains: ['capabilities/checkout'] }), doc('capabilities/checkout', { kind: 'capability' })];
   const issuesBySlug = new Map([
     [

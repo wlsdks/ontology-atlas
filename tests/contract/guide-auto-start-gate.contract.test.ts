@@ -4,48 +4,54 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 「화면 안내 자동 표시」 스위치의 **사정거리**를 잠근다.
+ * Locks the **reach** of the "show screen guides automatically" switch.
  *
- * 안내는 **일곱 번** 뜬다 — 폴더 유도 시트 하나(`vault-guide-auto-open`) ·
- * 지도 투어 하나(`HomePage`) · 목적지 다섯(한 컴포넌트 `DestinationGuide` 가
- * 맡는다). 소유자가 성가셔한 이유가 정확히 그것이라(개별로는 한 번씩인데 합이
- * 매번), **한 곳만 게이트하면 스위치가 반만 듣는다**.
+ * Guides appear **seven times**: one folder-prompt sheet
+ * (`vault-guide-auto-open`), one map tour (`HomePage`), and five destinations
+ * (handled by a single component, `DestinationGuide`). That sum is exactly what
+ * the owner found annoying — each fires once, but together they fire every time —
+ * so **gating one place leaves the switch half-deaf**.
  *
- * 2026-08-07 워크스루가 그 합을 실제로 걸어서 확인했다: 첫 방문에서 폴더 시트를
- * 「다음에」로 닫으면 **같은 화면에서** 투어가 이어받고, 목적지로 가면 또 뜬다.
- * (그 이어받기 자체는 `vault-guide-auto-open.ts` 가 의도로 적어 둔 순서다 —
- * 여기서 판정하지 않는다. 이 계약은 «스위치가 그 일곱을 다 덮는가» 만 본다.)
+ * A walkthrough on 2026-08-07 confirmed the sum by actually walking it: dismissing
+ * the folder sheet with "later" on a first visit hands straight over to the tour
+ * **on the same screen**, and going to a destination raises another. (That handover
+ * is itself the deliberate order recorded in `vault-guide-auto-open.ts` and is not
+ * judged here. This contract asks only whether the switch covers all seven.)
  *
- * 왜 소스를 읽는가: `DestinationGuide` 쪽은 렌더 테스트가 실제 발화를 막는지
- * 확인하지만, 지도 쪽 자동 시작은 `HomePage`(1만 줄 규모, 볼트·카메라·레이아웃이
- * 모두 살아 있어야 도달)의 effect 안에 있어 같은 방식으로 못 밟는다. 실제로
- * 프로브로 확인했다 — 지도 게이트를 지워도 가이드 렌더 테스트 91개가 전부
- * 통과한다. 그 사각지대를 덮는 것이 이 테스트의 유일한 일이다.
+ * Why read the source: on the `DestinationGuide` side a render test can confirm
+ * the switch suppresses firing, but the map's auto-start lives inside an effect in
+ * `HomePage` (about ten thousand lines, reachable only with vault, camera, and
+ * layout all alive) and cannot be exercised the same way. A probe confirmed it:
+ * deleting the map gate leaves all 91 guide render tests passing. Covering that
+ * blind spot is this test's only job.
  */
 
 const ROOT = process.cwd();
 const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf8");
 
-/** 자동 시작을 소유한 파일 = 스위치를 읽어야 하는 파일. 목록이 곧 사정거리다. */
+/** Files that own an auto-start = files that must read the switch. This list is the reach. */
 const AUTO_START_SITES = [
   "src/views/home/ui/HomePage.tsx",
   "src/features/guided-tour/ui/DestinationGuide.tsx",
   /**
-   * 폴더 유도 시트 — **세 번째 지점인데 등재돼 있지 않았다** (2026-08-07).
+   * The folder-prompt sheet — **the third site, and it was not registered**
+   * (2026-08-07).
    *
-   * 이 파일이야말로 2026-08-02 에 «스위치가 반만 듣던» 사고가 난 자리다(소유자:
-   * *"계속나와서 불편하네 테스트할때"* — 설정에서 안내를 껐는데 폴더 없는 첫
-   * 화면에서는 시트가 그대로 떴다). 그때 `readGuideAutoStart()` 를 읽게 고쳤지만
-   * **이 목록에는 안 들어왔다.** 즉 누가 그 한 줄을 지워도 게이트는 초록이고
-   * 같은 불만이 그대로 돌아온다.
+   * This is the very file where the "switch is half-deaf" incident happened on
+   * 2026-08-02 (owner: *"계속나와서 불편하네 테스트할때"* — it keeps appearing,
+   * which is inconvenient while testing: guides were turned off in settings, yet the
+   * sheet still appeared on the first screen with no folder). It was fixed then to
+   * read `readGuideAutoStart()`, but **it never entered this list** — so deleting
+   * that one line leaves the gate green and brings the same complaint straight back.
    *
-   * 워크스루로 찾았다 — 첫 방문에서 폴더 시트 → 지도 투어 → 목적지 안내를
-   * 연달아 만나고, 그 셋 중 하나만 스위치 밖이었다.
+   * Found by walkthrough: a first visit meets the folder sheet, then the map tour,
+   * then a destination guide in succession, and only one of the three was outside
+   * the switch.
    */
   "src/features/first-run-starter/model/vault-guide-auto-open.ts",
 ] as const;
 
-/** 스위치를 **정의**하는 곳. 소비처가 아니므로 위 목록에 들어가지 않는다. */
+/** Where the switch is **defined**. Not a consumer, so it is not in the list above. */
 const SWITCH_DEFINITION = "src/shared/lib/guide-auto-start.ts";
 
 describe("화면 안내 자동 표시 — 스위치가 모든 발화 지점을 덮는다", () => {
@@ -56,20 +62,22 @@ describe("화면 안내 자동 표시 — 스위치가 모든 발화 지점을 �
   });
 
   /**
-   * 새 자동 시작 지점이 생기면 위 목록도 같이 늘어야 한다.
+   * A new auto-start site must extend the list above.
    *
-   * ⚠️ **종전 검사는 새 지점을 원리적으로 발견할 수 없었다** (2026-08-07).
-   * `AUTO_START_SITES.filter(...)` — 즉 **등재 목록 자신을** 걸러서 그 길이와
-   * 비교했다. 목록 밖에 있는 파일은 애초에 후보에 들어오지 않으므로, 무엇을
-   * 새로 만들어도 이 단언은 늘 통과한다. 실제로 그 사각에서 세 번째 지점
-   * (`vault-guide-auto-open.ts`)이 등재되지 않은 채 살아 있었다.
+   * ⚠️ **The previous check could not discover a new site in principle**
+   * (2026-08-07). It ran `AUTO_START_SITES.filter(...)` — filtering **the registry
+   * itself** and comparing against its own length. A file outside the list was never
+   * a candidate, so the assertion passed no matter what was added. In that blind
+   * spot the third site (`vault-guide-auto-open.ts`) really did live unregistered.
    *
-   * 게다가 판별 기준이 `watchGuidedTourAutoStartCancel`(투어 전용 기제)이라,
-   * 그 기제를 안 쓰는 자동 열기는 기준 자체에 안 걸린다.
+   * Worse, the discriminator was `watchGuidedTourAutoStartCancel` (a tour-only
+   * mechanism), so any auto-open not using that mechanism failed the criterion
+   * itself.
    *
-   * 그래서 **트리를 직접 훑어** 스위치를 읽는 파일 전부를 찾고 목록과 대조한다.
-   * 「목록이 곧 사정거리」인데 그 목록이 손으로 관리되면 사정거리도 손으로
-   * 줄어든다 — 이 저장소가 아이콘 래칫에서 이미 낸 값이다.
+   * So the tree is **walked directly** to find every file reading the switch, and
+   * the result is compared against the list. "The list is the reach" — and a
+   * hand-maintained list means the reach shrinks by hand too, a price this
+   * repository already paid on the icon ratchet.
    */
   it("등록되지 않은 자동 시작 지점이 없다", () => {
     const found: string[] = [];
@@ -81,13 +89,13 @@ describe("화면 안내 자동 표시 — 스위치가 모든 발화 지점을 �
           continue;
         }
         if (!/\.(ts|tsx)$/.test(entry.name) || /\.(test|spec)\.tsx?$/.test(entry.name)) continue;
-        if (child === SWITCH_DEFINITION) continue; // 정의는 소비처가 아니다
+        if (child === SWITCH_DEFINITION) continue; // The definition is not a consumer
         if (read(child).includes("readGuideAutoStart()")) found.push(child);
       }
     };
     walk("src");
 
-    // 공회전 차단 — 스캐너가 0개를 찾고 «어긋난 것 없음» 으로 통과하면 안 된다.
+    // Idling guard — the scanner must not find 0 files and pass as "nothing diverged".
     expect(found.length, "스위치를 읽는 파일을 하나도 못 찾았다 — 스캔이 깨졌다").toBeGreaterThan(1);
 
     const registered = new Set<string>(AUTO_START_SITES);
@@ -107,8 +115,9 @@ describe("화면 안내 자동 표시 — 스위치가 모든 발화 지점을 �
   });
 
   /**
-   * 끄는 것은 **삭제가 아니다.** 부르는 길(설정 › 다시 보기 · 지도 나침반)은
-   * 스위치와 무관하게 살아 있어야 한다 — 소유자: *"아니면 클릭했을때나"*.
+   * Turning it off is **not deletion.** The ways to summon a guide (Settings ›
+   * replay, the map compass) must stay alive regardless of the switch — owner:
+   * *"아니면 클릭했을때나"* (or else only when clicked).
    */
   it("부르는 길은 스위치 뒤에 숨지 않는다", () => {
     const settings = read("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");

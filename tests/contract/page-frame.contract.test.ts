@@ -6,37 +6,41 @@ import { describe, expect, it } from "vitest";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW, PAGE_FRAME_FORM, PAGE_TOP_PAD } from "@/shared/ui/page-frame";
 
 /**
- * **페이지 틀은 한 곳에서 정의된다.**
+ * **The page frame is defined in one place.**
  *
- * ## 무엇이 났나 (2026-08-09, 소유자 지적)
+ * **What happened** (2026-08-09, owner):
  *
  * > *"인사이트, 프로젝트, 스킬 모두 상단 공백이 동일해야하는데 … 디자인 시스템
  * > 있는거 아녔나? 왜 다 다르지?"*
+ * > (insights, projects, and skills should all have the same top spacing — isn't
+ * > there a design system? why are they all different?)
  *
- * 실측: 제목까지 **32 / 48 / 20px**. 그리고 어긋난 축이 상단만이 아니었다 —
- * 좌우 인셋(40/40/32)과 최대 폭(1600/1600/**1400**)까지 셋이 달랐고, 같은 1600 이
- * CSS 토큰(`--page-max`)과 JS 상수(`PAGE_MAX_WIDTH`) **두 곳에** 적혀 있었다.
+ * Measured: **32 / 48 / 20px** to the title. And the top was not the only axis out
+ * of step — the horizontal insets (40/40/32) and max widths
+ * (1600/1600/**1400**) differed across the three as well, and the same 1600 was
+ * written in **two places**, a CSS token (`--page-max`) and a JS constant
+ * (`PAGE_MAX_WIDTH`).
  *
- * ## 왜 e2e 만으로는 부족한가
+ * **Why e2e alone is not enough.** `page-frame.spec.ts` measures **whether the three
+ * agree with each other**, so it catches one screen leaving the frame (probe: setting
+ * skills back to 20px turns it red) but **passes when the shared value is changed
+ * wholesale, because the three still agree** (probe: 48→32 stays green).
  *
- * `page-frame.spec.ts` 는 **셋이 서로 같은지**를 실측한다. 그래서 한 화면이 틀을
- * 벗어나면 잡지만(프로브 확인: 스킬만 20px 로 되돌리니 빨강), **공유 값을 통째로
- * 바꾸면 셋이 여전히 같으므로 통과한다**(프로브 확인: 48→32 로 바꿔도 초록).
- *
- * 그 구멍을 여기서 막는다 — 규격 문자열 자체를 장부로 못박는다. 값은 자유롭게
- * 바꿀 수 있고 대신 **이 파일도 같이 고쳐야 해서 그 판단이 diff 에 남는다**
- * (지도 패널 잉크 장부가 쓰는 방식과 같다).
+ * That hole is closed here by pinning the spec strings themselves as a ledger. The
+ * values can change freely, but **this file must change with them, so the judgement
+ * lands in the diff** (the same method the map panel ink ledger uses).
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 
-/** 이 틀을 입는 화면 — 「셸 스크롤 슬롯의 `mx-auto` 문서 컬럼 + `h1` 이 첫 내용」. */
+/** Screens wearing this frame — an `mx-auto` document column in the shell's scroll slot with an `h1` as the first content. */
 /**
- * 폼·편집 컬럼을 쓰는 화면 (2026-08-11) — 목록형과 **상단 여백이 같고 폭만 좁다**.
+ * Screens using the form/edit column (2026-08-11) — **the same top spacing as the
+ * list screens, only narrower**.
  */
 const FORM_MEMBERS = ["src/views/project-editor/ui/ProjectEditorPage.tsx"] as const;
 
-/** 가로 인셋을 자기가 소유해야 하는(safe-area) 화면 — 상단 여백만 규격을 쓴다. */
+/** Screens that must own their horizontal inset (safe-area) — only the top spacing follows the spec. */
 const TOP_PAD_MEMBERS = ["src/views/project-detail/ui/ProjectDetailPage.tsx"] as const;
 
 const MEMBERS = [
@@ -63,11 +67,12 @@ describe("페이지 틀 규격", () => {
   });
 
   /**
-   * **제목의 y 는 오른쪽 컨트롤에 밀리면 안 된다.**
+   * **The title's y must not be pushed around by the controls on the right.**
    *
-   * 처음 규격은 헤더 전체가 `items-end` 였다. 그러면 그 줄에서 가장 큰 것이
-   * 제목의 y 를 정한다 — 실측 1280px: 프로젝트 56(버튼 36) / 인사이트 48(버튼 없음)
-   * / 스킬 52(버튼 32). 같은 틀을 입혔는데 셋이 달랐던 진짜 이유가 그것이었다.
+   * The first spec made the whole header `items-end`, which lets the tallest thing on
+   * the row decide the title's y — measured at 1280px: projects 56 (button 36),
+   * insights 48 (no button), skills 52 (button 32). That was the real reason the three
+   * differed while wearing the same frame.
    */
   it("헤더는 위를 맞추고, 바닥선 정렬은 제목 블록 안으로 내린다", () => {
     expect(PAGE_HEADER_ROW).toContain("items-start");
@@ -86,17 +91,18 @@ describe("페이지 틀 규격", () => {
   });
 
   /**
-   * 지역 폭 상수가 다시 생기는 것을 막는다 — 이 결함의 시작이 그것이었다
-   * (`PAGE_MAX_WIDTH = 1600` 이 `--page-max` 와 나란히 살아 있었다).
+   * Stops a local width constant reappearing — that is how this defect started
+   * (`PAGE_MAX_WIDTH = 1600` living alongside `--page-max`).
    */
   it("멤버 안에 폭을 다시 정하는 값이 없다", () => {
     for (const member of MEMBERS) {
       const source = read(member);
       expect(source, `${member} 에 지역 폭 상수가 있다`).not.toMatch(/PAGE_MAX_WIDTH/);
-      // ⚠️ `max-w-[720px]` 같은 **글 폭**은 정당하다 — 프로젝트 설명 문단이 그렇다.
-      // 막으려는 것은 **페이지 컬럼을 손으로 다시 만드는 것**이므로, `mx-auto` 와
-      // 리터럴 최대 폭이 **같은 클래스 문자열에** 있을 때만 잡는다. 넓게 잡으면
-      // 멀쩡한 글 폭이 걸리고, 그러면 다음 사람은 게이트 쪽을 지운다.
+      // ⚠️ A **measure width** such as `max-w-[720px]` is legitimate — the project
+      // description paragraph uses one. What is blocked is **rebuilding the page column by
+      // hand**, so it is caught only when `mx-auto` and a literal max width appear **in the
+      // same class string**. Cast wider and legitimate measure widths get caught, and then
+      // the next person deletes the gate instead.
       const columnLike = [...source.matchAll(/className=\{?["`][^"`]*["`]/g)]
         .map((hit) => hit[0])
         .filter((chunk) => chunk.includes("mx-auto") && /max-w-\[\d+px\]/.test(chunk));
@@ -107,10 +113,11 @@ describe("페이지 틀 규격", () => {
 
 describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => {
   /**
-   * ⚠️ **이 성질이 이 확장의 전부다.** 폼 화면에 1600 을 씌우는 것은 답이 아니었다
-   * (입력 줄이 늘어나면 읽기도 채우기도 나빠진다). 그래서 폭은 갈라 두고 **상단
-   * 여백만 같게** 묶는다 — 라우트를 오가며 제목이 세로로 뛰는 것이 애초에 이 규격을
-   * 만든 이유이고, 폭이 다르다고 제목 높이가 달라질 이유는 없다.
+   * ⚠️ **This property is the whole of this extension.** Forcing 1600 onto form
+   * screens was not the answer (longer input lines are worse to read and to fill in).
+   * So the widths stay separate and only **the top spacing is bound together** — titles
+   * jumping vertically when moving between routes is why this spec exists at all, and a
+   * different width is no reason for a different title height.
    */
   it("세 상수의 상단 여백이 같다 — 폭이 달라도 제목 y 는 같다", () => {
     const topPad = (spec: string) => spec.match(/\bpt-\S+|\bmd:pt-\S+/g)?.sort().join(" ") ?? "";
@@ -141,9 +148,10 @@ describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => 
 
 describe("읽기 컬럼은 문서함이 소유한다 (2026-08-11 판정)", () => {
   /**
-   * 이 시험이 잠그는 것은 **폭의 값이 아니라 그 값의 성격**이다: 문서함 본문은 읽기
-   * 폭(이름 있는 관례값)이어야 하고, 손으로 적은 px 여서는 안 된다. 값을 바꾸는 것은
-   * 디자인 판정이니 막지 않는다 — 막는 것은 **규격 밖으로 새는 것**이다.
+   * What this test locks is **the character of the width, not its value**: the docs
+   * body must be a measure width (a named conventional value), not a hand-written px.
+   * Changing the value is a design decision and is not blocked — what is blocked is
+   * **leaking outside the spec**.
    */
   const DOCS_PAGE = "src/views/docs-vault/ui/DocsVaultPage.tsx";
 
@@ -162,6 +170,8 @@ describe("읽기 컬럼은 문서함이 소유한다 (2026-08-11 판정)", () =>
   it("판정이 규격 파일에 적혀 있다 — 다음 감사가 다시 논쟁하지 않게", () => {
     const spec = read("src/shared/ui/page-frame.ts");
     expect(spec, "읽기 컬럼 판정이 규격에 없다").toContain("max-w-3xl");
-    expect(spec, "왜 문서함이 제외인지가 규격에 없다").toMatch(/문서함/);
+    // Who owns each column is the durable half of the record — the table names the
+    // two frame constants and hands the reading column to docs itself.
+    expect(spec, "컬럼 소유자 표가 규격에 없다").toContain("PAGE_FRAME_FORM");
   });
 });

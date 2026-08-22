@@ -4,17 +4,17 @@ import { LocaleRedirect } from './locale-redirect';
 import { ROUTE_MEMORY_KEY } from './route-memory';
 
 /**
- * 디자인 시스템 가드 — 루트 locale redirect 의 색은 모두 CSS 토큰을 거쳐야
- * 한다 (hardcoded hex 금지, .claude/rules/design.md).
+ * Design-system gate — every colour in the root locale redirect must go through a
+ * CSS token; hardcoded hex is forbidden (`.claude/rules/design.md`).
  */
 describe('LocaleRedirect — 디자인 토큰 가드', () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
     window.localStorage.clear();
-    // mount useEffect 가 window.location.replace 를 호출 — jsdom navigation
-    // not-implemented 에러를 피하려고 location 을 통째로 stub (replace 는
-    // non-configurable 이라 spyOn 불가).
+    // The mount effect calls window.location.replace, so location is stubbed
+    // wholesale to avoid jsdom's navigation not-implemented error (replace is
+    // non-configurable, so spyOn will not work).
     Object.defineProperty(window, 'location', {
       configurable: true,
       writable: true,
@@ -36,7 +36,7 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
   it('인라인 스타일에 raw hex 색이 없다', () => {
     const { container } = render(<LocaleRedirect />);
     const html = container.innerHTML;
-    // #rrggbb / #rgb 형태의 색 리터럴이 인라인 style 에 남아있지 않아야 한다.
+    // No #rrggbb / #rgb colour literal may survive in an inline style.
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 
@@ -49,16 +49,17 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
   });
 
   /**
-   * **뒤집힌 계약 (2026-07-30).** 종전에는 같은 locale 의 마지막 작업 surface 로
-   * 복원했다. 지금은 **언어만 판정**한다.
+   * **An inverted contract (2026-07-30).** This used to restore the last surface
+   * worked on within the same locale; it now decides **the language only**.
    *
-   * 이 테스트가 뒤집힌 이유는 코드가 아니라 `/` 의 일이 바뀐 것이다 — 이 주소는
-   * 이제 관문(홍보 겸 다운로드 얼굴)이고, 관문은 **누가 오든 같은 얼굴**이어야
-   * 한다. 복원이 남아 있으면 소유자조차 자기 첫인상을 볼 수 없다(실제로 그 값을
-   * 치렀다: 설계대로 도는 코드를 결함으로 보고하게 됐다).
+   * The test flipped because the job of `/` changed, not because the code did:
+   * that address is now the gateway, and a gateway must show **the same face to
+   * everyone**. With restoration in place even the owner could not see their own
+   * first impression — a cost actually paid, when code working as designed was
+   * reported as a defect.
    *
-   * 옛 계약을 지우지 않고 **뒤집어 남긴다** — 다음 사람이 "복원이 편하겠다"고
-   * 생각했을 때 왜 없는지 여기서 읽는다.
+   * The old contract is kept **inverted rather than deleted**, so the next person
+   * who thinks "restoring would be convenient" reads here why it is gone.
    */
   it('마지막 작업 surface 를 기억해도 관문으로 보낸다', () => {
     window.localStorage.setItem('ontology-atlas:locale', 'en');

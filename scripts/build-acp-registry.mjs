@@ -1,25 +1,22 @@
 #!/usr/bin/env node
 /**
- * ACP 레지스트리 스냅샷 — 빌드 시점에 한 번 받아서 저장소에 커밋한다.
+ * ACP registry snapshot — fetched once at build time and committed to the repo.
  *
- * ## 왜 런타임에 안 받나
+ * **Why not fetch at runtime.** It would break trust-charter promises ① ("works
+ * without the internet") and ② ("nothing leaves unless the user turns it on") at
+ * the same time: hitting a CDN on every app launch is traffic the user never
+ * enabled, and on a plane the list would simply be empty. So the list is
+ * **committed as a file**; it only changes when a person runs this script, and
+ * what changed is visible in the git diff.
  *
- * 신뢰 헌장 ①("인터넷 없이 돌아간다")과 ②("무엇을 보내든 사용자가 켠다")를 함께
- * 건드리기 때문이다. 앱을 켤 때마다 CDN 에 붙으면 그건 사용자가 켠 적 없는
- * 통신이고, 비행기 안에서는 목록이 비어 버린다.
+ * **What is kept and what is dropped.** Kept: what is needed to launch (how to
+ * run it) and what the screen must say (name, one-line description, where to go,
+ * licence). Dropped: icon URLs (the app does not fetch external images — same
+ * reason) and the author list (no screen uses it).
  *
- * 그래서 목록은 **파일로 커밋한다.** 갱신은 이 스크립트를 사람이 돌릴 때만
- * 일어나고, 무엇이 바뀌었는지는 git diff 에 그대로 남는다.
- *
- * ## 무엇을 남기고 무엇을 버리나
- *
- * 남기는 것: 띄우는 데 필요한 것(실행 방법)과 화면이 말해야 하는 것(이름 ·
- * 한 줄 설명 · 갈 곳 · 라이선스). 버리는 것: 아이콘 URL(외부 이미지를 앱이
- * 받으러 가지 않는다 — 같은 이유다), 저자 목록(화면이 안 쓴다).
- *
- * 사용법:
- *   node scripts/build-acp-registry.mjs           # 받아서 갱신
- *   node scripts/build-acp-registry.mjs --check   # 커밋된 것과 다르면 실패
+ * Usage:
+ *   node scripts/build-acp-registry.mjs           # fetch and update
+ *   node scripts/build-acp-registry.mjs --check   # fail if it differs from the committed snapshot
  */
 
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -29,39 +26,45 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'src-tauri', 'src', 'acp-registry.json');
 /**
- * 아이콘도 **빌드 때 받아 번들한다.** 목록을 파일로 커밋하는 것과 같은 이유다 —
- * 앱이 켜질 때마다 CDN 에서 이미지를 받아오면 그건 사용자가 켠 적 없는 통신이고,
- * 비행기 안에서는 목록이 회색 네모가 된다.
+ * Icons are **fetched and bundled at build time** too, for the same reason the
+ * list is committed as a file: fetching images from a CDN on every launch is
+ * traffic the user never enabled, and on a plane the list becomes grey squares.
  *
- * 남의 로고를 쓰는 것과 남의 디자인을 베끼는 것은 다르다. 이건 「이게 그 도구다」
- * 를 말하는 식별 표시이고, 레지스트리가 클라이언트 UI 를 위해 공개한 자산이다.
+ * Using another vendor's logo is not the same as copying their design. This is
+ * an identification mark saying "this is that tool", and the registry publishes
+ * it specifically for client UIs.
  */
 const ICON_DIR = join(ROOT, 'public', 'acp-icons');
 const SOURCE = 'https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json';
 
 /**
- * 브랜드 색의 출처. 레지스트리 아이콘은 **전부 `currentColor` 단색**이라
- * (등록 규칙이 색 박은 SVG 를 거부한다) 색은 여기서 따로 가져온다.
+ * Where brand colours come from. Every registry icon is **monochrome
+ * `currentColor`** (the registration rules reject SVGs with baked-in colour), so
+ * the colour is sourced separately here.
  *
- * simple-icons 의 경로 데이터는 CC0-1.0 이고, 우리가 쓰는 것은 그중 **색 값
- * 하나**뿐이다 — 그림은 레지스트리가 준 그 벤더 자신의 마크를 그대로 쓴다.
- * 색 값 자체는 저작 대상이 아니지만, 어디서 왔는지는 적어 둔다.
+ * simple-icons path data is CC0-1.0, and all we take from it is **one colour
+ * value** — the artwork stays the vendor's own mark as supplied by the registry.
+ * A colour value is not itself copyrightable, but the provenance is recorded.
  */
 const BRAND_SOURCE = 'https://cdn.jsdelivr.net/npm/simple-icons@latest/data/simple-icons.json';
 
 /**
- * 실행기 → simple-icons 항목 제목. **사람이 하나씩 확인한 짝만 둔다.**
+ * Launcher id → simple-icons entry title. **Only pairs a person has verified
+ * one by one.**
  *
- * ⚠️ 이름으로 자동으로 짝지으면 **엉뚱한 브랜드 색**이 붙는다. 실측 두 건:
- * `amp-acp`(Sourcegraph Amp)가 구글 AMP 의 파랑(#005AF0)에, `pi-acp` 가
- * 라즈베리파이의 검정에 걸렸다. 색이 없는 것보다 **틀린 색이 나쁘다** — 없으면
- * 화면이 무채색으로 떨어지지만, 틀리면 남의 브랜드를 잘못 표시하는 것이다.
+ * ⚠️ Matching by name automatically attaches **the wrong brand colour**. Two
+ * measured cases: `amp-acp` (Sourcegraph Amp) matched Google AMP's blue
+ * (#005AF0), and `pi-acp` matched Raspberry Pi's black. **A wrong colour is worse
+ * than no colour** — with none the screen falls back to neutral, with a wrong one
+ * we misrepresent someone else's brand.
  *
- * 그래서 자동 매칭을 쓰지 않는다. 여기 없는 실행기는 무채색으로 그린다.
+ * So there is no automatic matching. A launcher absent from this table is drawn
+ * neutral.
  *
- * OpenAI(Codex)는 **일부러 비어 있다** — 벤더 요청으로 simple-icons v16 에서
- * 빠졌다. 마크 자체는 ACP 레지스트리가 클라이언트 UI 용으로 공개한 것을 쓰고,
- * 색은 넣지 않는다. Buzz 도 같은 이유로 OpenAI 마크를 번들하지 않는다.
+ * OpenAI (Codex) is **deliberately absent** — it was removed from simple-icons
+ * v16 at the vendor's request. The mark itself comes from what the ACP registry
+ * publishes for client UIs; no colour is added. Buzz does not bundle the OpenAI
+ * mark for the same reason.
  */
 const BRAND_MARK = {
   'claude-acp': 'Claude Code',
@@ -78,45 +81,47 @@ const BRAND_MARK = {
 };
 
 /**
- * 우리가 **실제로 재 본** 실행기.
+ * Launchers we have **actually tested**.
  *
- * 나머지도 목록에 넣고 띄울 수 있게 하되, 이 둘만 「검증됨」으로 표시한다 —
- * 화면이 안 해 본 것을 해 본 것처럼 말하지 않기 위해서다. 값은 실측 근거가
- * 있을 때만 늘린다(결정 원장 2026-08-16).
+ * The rest stay listed and launchable, but only these two are marked "verified",
+ * so the screen never claims we tried something we did not. This set grows only
+ * with measured evidence (decision ledger 2026-08-16).
  */
 const VERIFIED = new Set(['claude-acp', 'codex-acp']);
 
 /**
- * 화면에 쓸 이름 — 레지스트리 이름이 사람들이 부르는 이름과 다를 때만 적는다.
+ * Display-name overrides — only for launchers whose registry name differs from
+ * what people actually call them.
  *
- * ## 지금 비어 있고, 비어 있어야 한다 (2026-08-16)
- *
- * 한때 `'claude-acp': 'Claude Code'` 가 있었다. 근거는 *"레지스트리의 `Claude
- * Agent` 는 정확하지만 아무도 그렇게 안 부른다"* 였고, 그건 **명시적으로 허용되지
- * 않은 이름**이다:
+ * **Empty today, and it must stay empty** (2026-08-16). It once held
+ * `'claude-acp': 'Claude Code'`, on the grounds that *the registry's `Claude
+ * Agent` is accurate but nobody calls it that*. That name is **explicitly not
+ * permitted**:
  *
  * > **Not permitted:** "Claude Code" or "Claude Code Agent"
  * > **Allowed:** "Claude Agent", preferred for **dropdown menus**
- * > — Anthropic, Claude Agent SDK 문서 「Branding guidelines」
+ * > — Anthropic, Claude Agent SDK docs, "Branding guidelines"
  * >   (https://code.claude.com/docs/en/agent-sdk/overview)
  *
- * 이 목록이 정확히 그 「dropdown menu」이고, 레지스트리가 이미 허용된 이름을
- * 쓰고 있었다. 우리가 그걸 덮어써서 규칙을 깼던 것이다.
+ * This list is exactly such a dropdown menu, and the registry was already using
+ * the allowed name. Overriding it is what broke the rule.
  *
- * ⚠️ **이건 「Claude Code」라는 말을 저장소에서 다 지우라는 뜻이 아니다.**
- * 사용자가 **자기 컴퓨터에 따로 설치한 그 제품**을 가리키는 문장(MCP 연결 안내의
- * 「Claude Code 에 연결」 등)은 그 제품의 실제 이름을 부르는 것이라 그대로 둔다 —
- * 거기서 이름을 바꾸면 안내가 틀린 안내가 된다. 금지되는 것은 **우리 제품이
- * 내놓는 에이전트에 그 이름을 붙이는 것**이다.
+ * ⚠️ **This does not mean erasing the words "Claude Code" from the repository.**
+ * Sentences referring to **the product the user installed separately on their own
+ * machine** (for example "connect to Claude Code" in the MCP setup guidance) name
+ * that product correctly and stay as they are — renaming there would make the
+ * guidance wrong. What is forbidden is **attaching that name to an agent our
+ * product ships**.
  */
 const DISPLAY_NAME = {};
 
 /**
- * 그 어댑터가 감싸는 **진짜 CLI** 의 실행 파일 이름. 레지스트리에는 없는
- * 정보라 여기서 짝지어 준다 — 이걸 알아야 「도구가 없다」와 「Node 가 없다」를
- * 갈라서 말할 수 있고, 그 둘은 사용자가 할 일이 다르다.
+ * The executable name of the **real CLI** each adapter wraps. The registry does
+ * not carry this, so it is paired here — it is what lets the screen distinguish
+ * "the tool is missing" from "Node is missing", and those need different actions
+ * from the user.
  *
- * 모르는 것은 비워 둔다. 짐작해서 넣으면 화면이 없는 이유를 지어내게 된다.
+ * Unknown ones are left out. Guessing makes the screen invent a reason.
  */
 const UNDERLYING_CLI = {
   'claude-acp': 'claude',
@@ -142,8 +147,9 @@ function pickLaunch(distribution) {
     };
   }
   if (distribution?.binary) {
-    // 플랫폼별 항목에서 실행 파일 이름과 인자만 가져온다. 아카이브 URL 은
-    // 남기지 않는다 — 앱은 남의 바이너리를 대신 받아 실행하지 않는다.
+    // Take only the executable name and args from the per-platform entry. Archive
+    // URLs are not kept — the app does not download and run someone else's binary
+    // on the user's behalf.
     const anyPlatform = Object.values(distribution.binary)[0];
     if (!anyPlatform?.cmd) return null;
     return {
@@ -160,8 +166,9 @@ function pickLaunch(distribution) {
 }
 
 /**
- * 확인해 둔 짝의 브랜드 색을 받아 온다. 짝은 있는데 상대가 사라졌으면
- * **조용히 넘기지 않고 알린다** — 그 줄은 사람이 다시 확인해야 한다.
+ * Fetches brand colours for the verified pairs. If a pair exists but its
+ * counterpart has disappeared upstream this **fails loudly rather than skipping**
+ * — that row needs a person to re-verify it.
  */
 async function fetchBrandInk() {
   const res = await fetch(BRAND_SOURCE, { headers: { accept: 'application/json' } });
@@ -189,7 +196,7 @@ function normalize(raw, brandInk = {}) {
   const agents = [];
   for (const agent of raw.agents ?? []) {
     const launch = pickLaunch(agent.distribution);
-    if (!launch) continue; // 띄울 방법이 없으면 목록에 둘 이유가 없다.
+    if (!launch) continue; // No way to launch it means no reason to list it.
     agents.push({
       id: agent.id,
       name: DISPLAY_NAME[agent.id] ?? agent.name,
@@ -198,14 +205,14 @@ function normalize(raw, brandInk = {}) {
       license: agent.license ?? null,
       verified: VERIFIED.has(agent.id),
       icon: agent.icon ? `/acp-icons/${agent.id}.svg` : null,
-      // 확인해 둔 짝이 없으면 `null` — 화면이 무채색으로 그린다.
+      // `null` when there is no verified pair — the screen draws it neutral.
       brandInk: brandInk[agent.id] ?? null,
       cli: UNDERLYING_CLI[agent.id] ?? null,
       launch,
     });
   }
   agents.sort((a, b) => {
-    // 재 본 것이 앞. 그다음은 이름순 — 화면이 순서를 다시 정하지 않아도 되게.
+    // Tested ones first, then by name, so no screen has to re-sort.
     if (a.verified !== b.verified) return a.verified ? -1 : 1;
     return a.name.localeCompare(b.name, 'en');
   });
@@ -213,20 +220,20 @@ function normalize(raw, brandInk = {}) {
     source: SOURCE,
     registryVersion: raw.version ?? null,
     agents,
-    // 아이콘을 받으려면 원본의 절대 URL 이 필요하다. 저장하지는 않는다.
+    // Fetching icons needs the upstream absolute URLs. They are not persisted.
     __raw: (raw.agents ?? []).filter((a) => agents.some((n) => n.id === a.id)),
   };
 }
 
-/** 아이콘 하나를 받아 저장한다. 실패하면 그 항목만 아이콘 없이 간다. */
+/** Fetches and stores one icon. On failure that entry alone goes without one. */
 async function fetchIcon(agent) {
   if (!agent.icon) return false;
   try {
     const res = await fetch(agent.icon);
     if (!res.ok) return false;
     const svg = await res.text();
-    // SVG 안의 스크립트·외부 참조를 받지 않는다. 앱 안에서 그리는 이미지가
-    // 바깥으로 나가거나 코드를 실행할 이유가 없다.
+    // Reject scripts and external references inside the SVG. An image drawn inside
+    // the app has no reason to reach outward or execute code.
     if (/<script|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg)) return false;
     writeFileSync(join(ICON_DIR, `${agent.id}.svg`), svg);
     return true;
@@ -245,9 +252,9 @@ async function main() {
   const rawJson = await response.json();
 
   if (check) {
-    // 아이콘과 브랜드 색은 받지 않는다 — 검사 모드는 **목록이 최신인가**만 본다.
-    // 커밋된 스냅샷의 값을 그대로 얹어 비교해야 「아이콘 하나가 실패했다」가
-    // 목록 불일치로 둔갑하지 않는다.
+    // Icons and brand colours are not fetched — check mode asks only whether **the
+    // list is current**. Overlaying the committed snapshot's values before comparing
+    // is what stops "one icon fetch failed" from masquerading as a list mismatch.
     const normalized = normalize(rawJson);
     const committed = JSON.parse(readFileSync(OUT, 'utf8'));
     const byId = new Map(committed.agents.map((a) => [a.id, a]));
@@ -268,9 +275,9 @@ async function main() {
 
   const normalized = normalize(rawJson, await fetchBrandInk());
   /*
-   * 폴더를 통째로 지우지 않는다 — 여기에는 아이콘 말고 **출처 기록**
-   * (`CREDITS.md`)도 산다. 통째로 지우면 남의 마크를 어디서 받아 왔는지가
-   * 갱신할 때마다 사라진다. 지우는 것은 우리가 만든 것(`*.svg`)뿐이다.
+   * Do not wipe the folder — it also holds the **provenance record**
+   * (`CREDITS.md`), not just icons. Wiping it would erase where each vendor's mark
+   * came from on every refresh. Only what we generated (`*.svg`) is removed.
    */
   mkdirSync(ICON_DIR, { recursive: true });
   for (const name of readdirSync(ICON_DIR)) {

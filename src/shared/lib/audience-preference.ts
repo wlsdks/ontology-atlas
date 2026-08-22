@@ -1,15 +1,18 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 /**
- * 비개발(plain) 관객 모드 — 개발자 크롬(기록 · Atlas Git 등)을 숨긴다.
+ * Plain (non-developer) audience mode — hides developer chrome such as the
+ * history and Atlas Git surfaces.
  *
- * 원래 `HomePage` 안에 지역 상태로만 있었다. 레일 하단 유틸 티어를 셸로 올리면서
- * (#65) 셸도 같은 값을 읽어야 해서 공용 스토어로 승격했다 — 두 곳이 각자
- * localStorage 를 읽으면 설정에서 바꿨을 때 한쪽만 갱신되는 고전적 drift 가 난다.
+ * It used to be local state inside `HomePage`. Once the rail's bottom utility
+ * tier moved up into the shell, the shell had to read the same value, so it was
+ * promoted to a shared store — two places each reading localStorage produce the
+ * classic drift where changing it in settings updates only one of them.
  *
- * `appearance-preferences` 와 같은 로컬-퍼스트 지속 문법: localStorage 가 진실원,
- * `useSyncExternalStore` 구독 + 커스텀 이벤트로 같은 탭 라이브 갱신. SSR/정적
- * export 프리렌더에서는 false 를 반환해 hydration 불일치를 피한다.
+ * Same local-first persistence grammar as `appearance-preferences`: localStorage
+ * is the source of truth, with a `useSyncExternalStore` subscription plus a
+ * custom event for live updates within the same tab. SSR and static-export
+ * prerender return false to avoid a hydration mismatch.
  */
 
 const AUDIENCE_PLAIN_KEY = "demo:audience-plain:v1";
@@ -47,7 +50,7 @@ function getServerSnapshot(): boolean {
   return false;
 }
 
-/** 현재 plain 모드 값 + setter. 어느 표면에서 바꿔도 모든 구독자가 함께 바뀐다. */
+/** The current plain-mode value plus its setter. Changing it on any screen updates every subscriber. */
 export function useAudiencePlain(): [boolean, (next: boolean) => void] {
   const value = useSyncExternalStore(subscribe, readAudiencePlain, getServerSnapshot);
   const set = useCallback((next: boolean) => writeAudiencePlain(next), []);

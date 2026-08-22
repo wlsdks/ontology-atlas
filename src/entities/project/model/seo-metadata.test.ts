@@ -7,22 +7,22 @@ import {
   type VaultManifest,
 } from "@/entities/docs-vault";
 
-// #74 — 예전엔 `SEO_PROJECTS`(제거된 기능을 사실처럼 서술한 데모 15건)를
-// 돌았다. 실제로 빌드되는 라우트는 `generateStaticParams` 가 vault 에서
-// 파생하는 것들이므로 같은 진실원을 본다 — 그래야 이 가드가 실제 산출물을
-// 검사한다.
+// This used to iterate `SEO_PROJECTS`, 15 demo entries describing removed features
+// as fact. The routes actually built are the ones `generateStaticParams` derives
+// from the vault, so this reads the same source — otherwise the guard is not
+// checking the real output.
 const SEO_PROJECTS = deriveProjectsFromVault(staticVaultManifestRaw as VaultManifest);
 
-// T-14. 공개 상세 SEO metadata 정합성 회귀 가드.
+// SEO metadata consistency for public detail pages.
 //
-// out/project/{slug}/index.html 마다 아래가 모두 채워져 있어야 한다.
-//   - <title> 이 프로젝트 name 으로 시작 (project.name + " · Demo" 관습)
+// Every out/project/{slug}/index.html must have all of:
+//   - <title> starting with the project name (the "name · Demo" convention)
 //   - og:title == project.name
-//   - og:description == project.description (seed 기준)
-//   - canonical, og:url 모두 https://host/project/{slug}/ 로 끝남
+//   - og:description == project.description (from the seed)
+//   - canonical and og:url both ending in https://host/project/{slug}/
 //
-// 하나라도 어긋나면 SEO · LinkedIn · Twitter 카드가 엉뚱한 값을 뿌린다.
-// out/ 없으면 조용히 skip, 있으면 엄격 검증.
+// Any mismatch makes SEO, LinkedIn, and Twitter cards publish the wrong values.
+// Skips silently when out/ is absent; strict when it exists.
 
 function pickContent(html: string, pattern: RegExp): string | null {
   const m = html.match(pattern);
@@ -49,7 +49,7 @@ describe("공개 상세 SEO metadata", () => {
     for (const project of SEO_PROJECTS) {
       const html = await loadHtml(project.slug, outDir);
       if (html === null) {
-        // seed 는 있는데 built HTML 이 없으면 T-13 회귀. 해당 test 가 잡으므로 여기선 skip.
+        // A seed with no built HTML is a separate regression that its own test catches.
         continue;
       }
 

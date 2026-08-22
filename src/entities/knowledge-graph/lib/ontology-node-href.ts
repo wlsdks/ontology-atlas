@@ -2,19 +2,17 @@ import type { KnowledgeGraphNode } from "../model";
 import { translateOntologyDeeplinkToTopologyParam } from "./translate-ontology-deeplink";
 
 /**
- * Ontology view 의 노드 deeplink 빌더 — `/ontology/?node=<encoded-id>`.
+ * Builds the ontology view's node deeplink — `/ontology/?node=<encoded-id>`.
  *
- * 호출자: NodeDetailPanel "노드 링크 복사" / OntologyInsightsPage 의 카드
- * 링크 / GlobalSearch 결과 / ProjectDrawer 의 'open in ontology' / docs
- * viewer 의 kind chip 등 7+ surface. 한 곳에서 정의해 형식이 흩어지지
- * 않게 한다 — `?node=` query key 와 encodeURIComponent 가짜의 일관성을
- * OntologyRedirectPage 의 딥링크 번역(translateOntologyDeeplinkToTopologyParam)과 깨지지 않게 보장.
+ * Seven-plus surfaces call this (node detail "copy node link", insights cards,
+ * global search results, the project drawer, the docs viewer's kind chip).
+ * Defining it once keeps the `?node=` key and the encoding consistent with
+ * `translateOntologyDeeplinkToTopologyParam`, which the redirect page uses.
  *
- * `options.via` — 출처 마커 (`?via=insights:<tab>`). 인사이트 페이지가 지도
- * 딥링크에 자기 탭을 새겨 두면, 지도(`/topology`, HomePage)가 그 마커를 읽어
- * "인사이트로 돌아가기" 복귀 칩을 렌더한다. OntologyRedirectPage 가 이 키를
- * `/topology` 로 그대로 전달한다 — 마커 문법의 진실원은 아래
- * build/parseInsightsReturnMarker 한 쌍.
+ * `options.via` is the origin marker (`?via=insights:<tab>`). When the insights
+ * page stamps its own tab onto a map deeplink, the map reads it back and renders
+ * a "return to insights" chip. The marker grammar's single source is the
+ * build/parseInsightsReturnMarker pair below.
  */
 export function buildOntologyNodeHref(
   nodeId: string,
@@ -32,34 +30,35 @@ export function buildOntologyNodeHref(
       `${ONTOLOGY_DEEPLINK_REVIEW_KEY}=${encodeURIComponent(options.reviewId)}`,
     );
   }
-  // S7 이음새 — 큐 행에서 「에이전트에게 말로 시키기」로 건너올 때 실려 오는
-  // **의도의 종류**다. 문장 자체를 URL 에 싣지 않는 이유: 문장은 도착지에서
-  // 첫 마디 생성기가 화면 언어로 짓는다. 종류만 나르면 두 입구가 같은 함수를
-  // 지나므로 갈라질 자리가 없고, 주소에 사람이 읽을 문장이 남지도 않는다.
+  // The **kind of intent** carried over when a queue row says "ask the agent".
+  // The sentence itself is deliberately not in the URL: the destination's opening-line
+  // generator writes it in the screen's language. Carrying only the kind means both
+  // entry points pass through the same function, and no human sentence ends up in an address.
   if (options?.ask) {
     params.push(`${ONTOLOGY_DEEPLINK_ASK_KEY}=${encodeURIComponent(options.ask)}`);
   }
   return params.length > 0 ? `${base}&${params.join("&")}` : base;
 }
 
-/** 딥링크 출처 마커의 query key — insights → redirect → topology 3-hop 공유. */
+/** Query key for the deeplink origin marker — shared across insights → redirect → topology. */
 export const ONTOLOGY_DEEPLINK_VIA_KEY = "via";
-/** 인사이트 `할 일`의 정확한 검토 행 id — 유효한 via 마커와 함께만 소비한다. */
+/** The exact insights "to do" review row id — consumed only alongside a valid `via` marker. */
 export const ONTOLOGY_DEEPLINK_REVIEW_KEY = "review";
-/** 에이전트에게 건넬 첫 마디의 **종류** — 도착 즉시 소비하고 주소에서 지운다. */
+/** The **kind** of opening line to hand the agent — consumed on arrival and stripped from the address. */
 export const ONTOLOGY_DEEPLINK_ASK_KEY = "ask";
 
 const INSIGHTS_RETURN_MARKER_PATTERN = /^insights:([a-z][a-z0-9-]*)$/;
 
-/** `via=insights:<tab>` 마커 직렬화 — 인사이트 페이지(생산자) 전용. */
+/** Serializes the `via=insights:<tab>` marker. Producer side (the insights page) only. */
 export function buildInsightsReturnMarker(tab: string): string {
   return `insights:${tab}`;
 }
 
 /**
- * `via` raw 값 → 인사이트 탭 slug. 마커 문법(`insights:<slug>`)이 아니면
- * null — 지도는 칩을 렌더하지 않고 마커를 무시한다. 탭 slug 자체의 유효성은
- * 도착지(`parseInsightsTab`)가 검증한다(모르는 탭 → 기본 탭 fallback).
+ * Raw `via` value → insights tab slug. Anything that is not the `insights:<slug>`
+ * grammar returns null, and the map then renders no chip. Validity of the slug
+ * itself is checked at the destination (`parseInsightsTab`), which falls back to
+ * the default tab.
  */
 export function parseInsightsReturnMarker(
   raw: string | null | undefined,
@@ -69,7 +68,7 @@ export function parseInsightsReturnMarker(
   return match ? match[1] : null;
 }
 
-/** 복귀 칩 클릭이 향하는 곳 — 원래 보던 인사이트 탭과 검토 행. */
+/** Where the return chip goes — the insights tab and review row the user came from. */
 export function buildOntologyInsightsReturnHref(
   tab: string,
   reviewId?: string | null,
@@ -100,14 +99,14 @@ export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): strin
 }
 
 /**
- * 지도 contextual editor 딥링크 발신자 — URL 계약의 공통 id 문법인
- * canonical `<kind>:<slug>` 를 `?p=`에 싣고 `workbench=edit`를 연다.
+ * Sender for the map's contextual-editor deeplink: puts the canonical
+ * `<kind>:<slug>` id in `?p=` and opens `workbench=edit`.
  *
- * `translateOntologyDeeplinkToTopologyParam` 로 정규화하는 이유: 입력이 이미
- * canonical(`capability:foo`)이면 그대로, 복수-슬래시(`capabilities/foo`)면
- * `capability:foo` 로 승격, bare/evidence-path 는 통과 — 지도의
- * `n.id === requestedNode` 매칭이 두 문법 모두에서 성립하도록 한 문법으로
- * 수렴한다(지도 `?p=`·온톨로지 리다이렉트와 같은 정규화기 재사용).
+ * Normalizing through `translateOntologyDeeplinkToTopologyParam` converges both
+ * grammars onto one: already-canonical (`capability:foo`) passes through, a
+ * folder form (`capabilities/foo`) is promoted to `capability:foo`, and bare or
+ * evidence-path ids pass through — so the map's `n.id === requestedNode` match
+ * holds either way. Same normalizer as the map's `?p=` and the ontology redirect.
  */
 export function buildTopologyMeaningEditorNodeHref(
   nodeId: string,
@@ -131,8 +130,9 @@ export function buildTopologyMeaningEditorNodeHref(
 }
 
 /**
- * 지도 contextual editor가 다루는 네 관계. URL, 미리보기, frontmatter 쓰기가
- * 이 entity 레이어의 한 어휘를 공유하므로 서로 다른 표면이 병렬 정의하지 않는다.
+ * The four relations the map's contextual editor can write. URL, preview, and
+ * frontmatter writing share this one vocabulary at the entity layer so separate
+ * surfaces never define it in parallel.
  */
 export type MeaningEditRelation = "isA" | "dependsOn" | "contains" | "relates";
 const MEANING_EDIT_RELATIONS: readonly MeaningEditRelation[] = [
@@ -143,10 +143,11 @@ const MEANING_EDIT_RELATIONS: readonly MeaningEditRelation[] = [
 ];
 
 /**
- * 지도 엣지의 relationType(derive-ontology edge `type`)을 편집 가능한 관계로
- * 매핑한다. 네 타입 밖의 값(`describes`, `belongs_to`, 도메인 멤버십 등)은
- * null → "지도에서 고치기" 액션을 노출하지 않는다(dead
- * affordance 금지). `dependencies`/`relates` 등 프론트매터 키 별칭도 관용적으로 흡수.
+ * Maps a map edge's relationType (the derive-ontology edge `type`) onto an
+ * editable relation. Anything outside the four (`describes`, `belongs_to`,
+ * domain membership) returns null, so no "edit on the map" affordance is shown —
+ * a dead affordance is worse than none. Frontmatter key aliases such as
+ * `dependencies` / `relates` are absorbed here too.
  */
 export function meaningEditRelationForEdgeType(
   edgeType: string,
@@ -169,18 +170,18 @@ export function meaningEditRelationForEdgeType(
   }
 }
 
-/** 딥링크 편집 타깃의 query key — `edit=<relation>:<targetId>`. */
+/** Query key for a deeplink's edit target — `edit=<relation>:<targetId>`. */
 export const ONTOLOGY_MEANING_EDIT_KEY = "edit";
 
 /**
- * 엣지 A→B 가 정말 `from` 노드의 프론트매터에서 authored 됐는가 —
- * `declaredBySlug`(선언 doc slug = edge.evidenceIds[0])가 `from` 노드의 source
- * slug(node.evidenceIds[0])와 일치하는가. 네 bearing 관계는 canonical edge
- * 방향의 `from` 이 저자다. 유일한 예외는 자식의 `domain:` 에서 역파생된
- * `contains` 엣지(저자 = `to` = 자식)로, 이건 `contains:` bearing 으로 편집할
- * 수 없으니 액션을 노출하면 안 된다 — 이 함수가 그 경우를 걸러낸다. 두 slug
- * 모두 `ontology/` prefix 를 벗겨 비교(도그푸드 `ontology/…` 와 로컬 vault
- * `…` 형식이 일치하도록).
+ * Is edge A→B really authored in the `from` node's frontmatter — i.e. does
+ * `declaredBySlug` (the declaring doc, `edge.evidenceIds[0]`) equal the `from`
+ * node's source slug (`node.evidenceIds[0]`)? For all four bearing relations the
+ * `from` of the canonical direction is the author. The one exception is a
+ * `contains` edge derived backwards from a child's `domain:` key, where the author
+ * is the `to` node; that cannot be edited as a `contains` bearing, so the action
+ * must not appear. This function filters that case out. Both slugs are compared
+ * with any `ontology/` prefix stripped, so the dogfood vault and a local vault match.
  */
 export function edgeAuthoredByFromNode(
   declaredBySlug: string | null | undefined,
@@ -193,12 +194,13 @@ export function edgeAuthoredByFromNode(
 }
 
 /**
- * 지도 엣지 딥링크 발신자. Focal(`?p=`)은 관계를 authored 한 노드,
- * `edit=<relation>:<targetId>` 은 같은 지도 안 편집기에 관계와 타깃을 전달한다.
- * 두 id 는 노드 변형과 동일하게 canonical `<kind>:<slug>` 로 정규화한다.
+ * Sender for a map edge deeplink. The focal (`?p=`) is the node that authored the
+ * relation; `edit=<relation>:<targetId>` hands the relation and target to the
+ * editor on the same map. Both ids are normalized to canonical `<kind>:<slug>`
+ * exactly as in the node variant.
  *
- * `edit` 값은 target id 안의 `kind:slug` 콜론과 구분되도록 relation 뒤 첫
- * 콜론으로만 나뉜다(소비자 `parseOntologyMeaningEditParam` 가 첫 콜론 split).
+ * The `edit` value splits on the **first** colon only, so the target's own
+ * `kind:slug` colon survives (`parseOntologyMeaningEditParam` splits the same way).
  */
 export function buildTopologyMeaningEditorEdgeHref(
   fromId: string,
@@ -217,9 +219,9 @@ export function buildTopologyMeaningCreateHref(): string {
 }
 
 /**
- * `edit=<relation>:<targetId>` 파싱. target 자신의 `kind:slug`
- * 콜론을 보존하도록 **첫 콜론**으로만 나눈다. 값이 없거나(null) 형식이
- * 어긋나거나 relation 이 네 편집 타입 밖이면 null이다.
+ * Parses `edit=<relation>:<targetId>`, splitting on the **first** colon so the
+ * target's own `kind:slug` colon is preserved. Returns null when the value is
+ * absent, malformed, or names a relation outside the four editable types.
  */
 export function parseOntologyMeaningEditParam(
   raw: string | null | undefined,

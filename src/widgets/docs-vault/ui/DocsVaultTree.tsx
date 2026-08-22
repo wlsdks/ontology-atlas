@@ -26,25 +26,25 @@ interface Props {
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
   query?: string;
-  /** 같은 묶음 안의 순서. 기본 이름순. 계약은 `lib/tree-order.ts`. */
+  /** Order within a group. Name order by default. The contract is `lib/tree-order.ts`. */
   sort?: DocsTreeSort;
-  /** 폴더와 문서 중 무엇을 먼저 그릴지. 기본 폴더 먼저. */
+  /** Which to draw first, folders or documents. Folders first by default. */
   group?: DocsTreeGroup;
-  /** 활성 태그 필터. null 이면 태그 필터 해제. */
+  /** The active tag filter. null clears it. */
   activeTag?: string | null;
-  /** 활성 태그가 매치하는 slug 집합. activeTag 가 있을 때만 사용. */
+  /** The slugs the active tag matches. Used only while activeTag is set. */
   activeTagSlugs?: Set<string>;
-  /** 현재 문서 범위에 포함되는 slug 집합. 없으면 전체 tree 를 렌더한다. */
+  /** The slugs within the current document scope. Without it, the whole tree renders. */
   visibleDocSlugs?: Set<string>;
   /**
-   * slug → VaultDoc 조회. frontmatter.kind 로 machined kind glyph (project
-   * hex · domain chip · capability circle · element via-pad) 를 고른다.
-   * 없으면 일반 FileText 아이콘으로 fallback (기존 동작 그대로).
+   * slug → VaultDoc lookup. `frontmatter.kind` selects the machined kind glyph
+   * (project hex · domain chip · capability circle · element via-pad); without it,
+   * fall back to the generic FileText icon (the previous behaviour).
    */
   docsBySlug?: Map<string, VaultDoc>;
 }
 
-/** 디렉터리 노드 아래 실제 문서(leaf) 개수 — 음각 count 로 노출. */
+/** How many actual documents (leaves) sit under a directory node — shown as an engraved count. */
 function countDocs(node: VaultTreeNode): number {
   if (node.type === 'doc') return node.slug ? 1 : 0;
   return (node.children ?? []).reduce((sum, child) => sum + countDocs(child), 0);
@@ -136,8 +136,8 @@ function TreeNode({
   order: DocsTreeOrder;
 }) {
   const locale = useLocale();
-  // 태그/검색 필터 활성 시에는 매치 경로를 자동으로 펼침 — 걸러진 문서가
-  // 접힌 폴더 안에 숨어 있으면 source list 의 역할을 못 한다.
+  // With a tag or search filter active, matching paths auto-expand — a filtered
+  // document hidden inside a collapsed folder defeats the source list's purpose.
   const [open, setOpen] = useState(() =>
     containsSelectedSlug(node, selectedSlug, visibleDocSlugs),
   );
@@ -163,9 +163,9 @@ function TreeNode({
           />
         ) : null}
         <DocKindGlyph slug={node.slug} docsBySlug={docsBySlug} />
-        {/* 목록·검색·지도가 한 문서를 같은 이름으로 부른다 — 트리만
-            canonical title 을 그리면 사이드바와 팝오버가 서로 다른 이름을
-            말한다. */}
+        {/* The list, search and map call one document by the same name — if only the
+            tree drew the canonical title, the sidebar and the popover would state
+            different names. */}
         <span className="min-w-0 flex-1 truncate">
           {resolveLocaleDisplayName(
             docsBySlug?.get(node.slug)?.frontmatter,
@@ -227,7 +227,8 @@ function TreeNode({
 }
 
 /**
- * Source Vault tree. 디렉터리는 접기/펼치기, source record 는 클릭 시 onSelect.
+ * The source vault tree. Directories collapse and expand; a source record calls
+ * onSelect on click.
  */
 export function DocsVaultTree({
   tree,
@@ -245,8 +246,8 @@ export function DocsVaultTree({
   const children = useMemo(() => tree.children ?? [], [tree]);
   const tagSlugs = activeTag ? activeTagSlugs : undefined;
   const normalizedQuery = query?.trim().toLowerCase() ?? '';
-  // 수정 시각은 트리가 아니라 매니페스트에 있다. 이름순일 땐 아예 계산하지
-  // 않는다 — 쓰지 않을 인덱스를 158개 문서마다 만들 이유가 없다.
+  // Modification times live in the manifest, not the tree. In name order they are not
+  // computed at all — there is no reason to build an unused index across 158 documents.
   const order = useMemo<DocsTreeOrder>(
     () => ({
       sort,

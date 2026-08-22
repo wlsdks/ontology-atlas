@@ -1,15 +1,14 @@
-// 소스 영수증의 낱말은 **한 곳에서만** 선언한다.
+// The source-receipt vocabulary is declared in **one place only**.
 //
-// ## 왜 (2026-08-17)
+// Why (2026-08-17): four identical lists lived byte-for-byte in both
+// `project-source-receipt.mjs` and `project-meaning-inventory.mjs`, and both were
+// used as gates. Adding one remedy to only one of them made the receipt accept it
+// while the inventory silently rejected it — a divergence that shows up not as an
+// error but as **nothing happening**.
 //
-// 같은 목록 넷이 `project-source-receipt.mjs` 와
-// `project-meaning-inventory.mjs` 에 바이트 단위로 똑같이 두 벌 있었고, 둘 다
-// 게이트로 쓰였다. 그래서 처방을 하나 더할 때 한쪽만 고치면 영수증은 통과
-// 시키는데 인벤토리는 조용히 거절한다 — 에러가 아니라 **아무 일도 안 일어나는
-// 것**으로 나타나는 종류의 어긋남이다.
-//
-// 합쳐 놓기만 하면 다음 사람이 다시 가른다. **사본이 둘인데 게이트가 없으면
-// 어긋나는 쪽이 기본값이다** — 이 저장소가 오늘만 다섯 번 확인한 것이다.
+// Merging them alone is not enough; the next person splits them again. **Two
+// copies with no gate means drifting apart is the default** — something this
+// repository confirmed five times in one day.
 
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -26,8 +25,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const OWNER = 'project-source-vocabulary.mjs';
 
 test('스캐너가 두 표기를 다 본다 — 「공집합이 아니다」와 「전집합을 본다」는 다르다', () => {
-  // 합성이 아니라 **실제 파일**로 확인한다. 프로브가 결함과 같은 가정
-  // (작은따옴표)으로 쓰여 있으면 그 결함을 증명할 수 없다.
+  // Verified against the **real files**, not a synthetic fixture. A probe written
+  // on the same assumption as the defect (single quotes) cannot prove the defect.
   const text = readFileSync(join(HERE, 'meaning-assessment.mjs'), 'utf8');
   const single = [...text.matchAll(/'[a-z_]{6,}'/g)].length;
   const double = [...text.matchAll(/"[a-z_]{6,}"/g)].length;
@@ -52,19 +51,20 @@ test('이 목록을 다시 선언하는 파일이 없다', () => {
   for (const file of readdirSync(HERE)) {
     if (!file.endsWith('.mjs') || file === OWNER || file.endsWith('.test.mjs')) continue;
     const text = readFileSync(join(HERE, file), 'utf8');
-    // 이 낱말들을 **자기 파일 안에서 새 Set 으로** 묶는 자리를 찾는다.
+    // Find where these words are bound into a new Set **inside their own file**.
     for (const block of text.matchAll(/new Set\(\[([^\]]*)\]/g)) {
-      // ⚠️ **표기가 둘이다** (2026-08-17 실측). 처음에는 작은따옴표만 봤고,
-      // 그래서 큰따옴표를 쓰는 `meaning-assessment.mjs` 의 **세 번째 사본**을
-      // 통째로 못 봤다 — 게이트가 있는데 아무것도 안 막고 있었다.
-      // 이 저장소가 이미 적어 둔 함정이다(`design-gates.md`: 아이콘 스캐너가
-      // 작은따옴표만 봐서 파일의 73%를 못 봤다). 같은 데서 두 번 넘어졌다.
+      // ⚠️ **There are two spellings** (measured 2026-08-17). At first only single
+      // quotes were scanned, which missed the **third copy** in
+      // `meaning-assessment.mjs` entirely — a gate that existed and blocked
+      // nothing. This repository had already written the trap down
+      // (`design-gates.md`: an icon scanner saw only single quotes and missed 73%
+      // of the files). Tripped over the same thing twice.
       const names = [...block[1].matchAll(/['"]([a-z_]+)['"]/g)].map((m) => m[1]);
       if (names.length < 3) continue;
       const overlap = names.filter(
         (n) => PROJECT_SOURCE_ACTION_IDS.has(n) || PROJECT_SOURCE_GAP_IDS.has(n),
       );
-      // 절반 넘게 겹치면 그건 이 목록의 사본이다(우연히 몇 개 겹치는 것과 다르다).
+      // More than half overlapping means it is a copy of this list (as opposed to a few coincidental hits).
       if (overlap.length >= Math.ceil(names.length / 2)) {
         offenders.push(`${file}: ${overlap.slice(0, 4).join(', ')}…`);
       }

@@ -1,53 +1,53 @@
 /**
- * 콘텐츠 아이콘 크기 램프의 **JS 거울** — `app/globals.css` 의 `--icon-*` 를
- * 그대로 복사한다.
+ * The **JS mirror** of the content-icon size ramp — a verbatim copy of
+ * `--icon-*` in `app/globals.css`.
  *
- * ## 왜 복사인가
+ * **Why a copy.** A lucide icon's size arrives as a JSX numeric prop
+ * (`size={N}`), and a numeric prop cannot read a CSS `var()`. So the values have
+ * to be transcribed, and a transcribed value always drifts without a gate — the
+ * same structure as the MOTION mirror in `src/shared/motion/index.ts`, with the
+ * same shape of gate: `tests/contract/icon-size-ramp.contract.test.ts` parses the
+ * CSS, compares it against these values, and fails when off-ramp literals grow.
  *
- * lucide 아이콘의 크기는 JSX 숫자 prop(`size={N}`)으로 들어가고, 숫자 prop 은
- * CSS `var()` 를 읽지 못한다. 그래서 값을 옮겨 적을 수밖에 없고, 옮겨 적은
- * 값은 게이트가 없으면 반드시 드리프트한다 — `src/shared/motion/index.ts`
- * 의 MOTION 거울과 같은 구조이고, 게이트도 같은 형태다:
- * `tests/contract/icon-size-ramp.contract.test.ts` 가 CSS 를 파싱해 이 값과
- * 대조하고, 램프 밖 리터럴이 늘면 실패한다.
+ * **What was wrong** (design-systems seat inventory, 2026-08-04). 167 content
+ * icon call sites were spread across **9 px values** (10, 11, 12, 13, 14, 15, 16,
+ * 17, plus an unspecified 24). That is drift, not role differentiation: two files
+ * mixed four values within one surface (the workspace palette at 10/11/12/14 and
+ * the dependency picker at 10/11/12/13), and a hands-on tester copying a sibling
+ * component wrote *"아무것도 나에게 다른 값을 알려주지 않았다"* (nothing told me a
+ * different value existed). The consumption channel is a numeric prop rather than
+ * a className, which put it outside the range of the value lint.
  *
- * ## 무엇이 잘못돼 있었나 (2026-08-04 체계석 전수)
+ * **How to choose — by the type sitting next to it, not by size.**
  *
- * 콘텐츠 아이콘 167 콜사이트가 px 값 **9종**(10·11·12·13·14·15·16·17 +
- * 무지정 24)으로 갈라져 있었다. 역할 분화가 아니라 드리프트다 — 같은 표면
- * 안에서 4값이 섞인 파일이 둘(문서함 팔레트 10/11/12/14 · 의존 피커
- * 10/11/12/13)이고, 실사용 시험자는 형제 컴포넌트를 베끼며 *"아무것도 나에게
- * 다른 값을 알려주지 않았다"* 고 적었다. 소비 채널이 className 이 아니라
- * 숫자 prop 이라 값 lint 의 사정거리 밖이었다.
+ * - `sm` (12) — next to `text-label` (11) or `text-body` (12.5). The app default
+ *   and the measured mode (77 sites).
+ * - `md` (14) — next to `text-body-lg` (14).
+ * - `lg` (16) — next to `text-title` (16), or a standalone icon.
  *
- * ## 고르는 법 — 크기가 아니라 옆에 앉는 타입으로
+ * Chrome and rail icons are not covered by this ramp; their own surface contracts
+ * own them (`--topology-chrome-icon-size`, `--chrome-icon`,
+ * `--app-nav-rail-icon-size`). Neither is the `data-kind-glyph` kind marker —
+ * that is a typed data mark, owned by `docs/DESIGN-SYSTEM.md` 「노드 규격」 (the
+ * node spec).
  *
- * - `sm`(12) — `text-label`(11)/`text-body`(12.5) 옆. 이 앱의 기본값(실측 최빈 77곳).
- * - `md`(14) — `text-body-lg`(14) 옆.
- * - `lg`(16) — `text-title`(16) 옆 · 홀로 서는 아이콘.
+ * **2026-08-05: nobody was using this constant.** The paragraph above stated
+ * that transcribed values always drift without a gate, and a gate was attached —
+ * yet **production consumers were 0**. 216 sites hand-wrote the numbers `12`,
+ * `14` and `16`, and the values merely happened to agree; in that state this file
+ * guaranteed nothing, and changing a value here would not have moved the screen.
  *
- * 크롬·레일 아이콘은 이 램프의 대상이 아니다 — 각자의 표면 계약
- * (`--topology-chrome-icon-size` · `--chrome-icon` · `--app-nav-rail-icon-size`)
- * 이 소유한다. `data-kind-glyph` 종류 표식도 아니다 — 그건 타입 있는 데이터
- * 마크라 `docs/DESIGN-SYSTEM.md` 「노드 규격」이 소유한다.
- *
- * ## 2026-08-05: 이 상수는 **아무도 안 쓰고 있었다**
- *
- * 위 문단이 «옮겨 적은 값은 게이트가 없으면 반드시 드리프트한다» 고 적어 두고
- * 게이트까지 붙였는데, 정작 **프로덕션 소비처가 0이었다.** 216곳이 숫자
- * `12`/`14`/`16` 을 손으로 적었고 값이 우연히 맞았을 뿐이다 — 그 상태에서 이
- * 파일이 보장하는 것은 아무것도 없다. 값을 여기서 바꿔도 화면은 안 따라온다.
- *
- * **아무도 안 쓰는 토큰은 규격이 아니라 틀린 정보다**(design.md). 그래서 이
- * 라운드에서 lucide 크기 prop 전량을 이 상수 참조로 옮겼다 — 지금 소비처는
- * **313곳**이고, 이제 이 파일이 실제로 램프다.
+ * **A token nobody uses is not a spec, it is wrong information**
+ * (`.claude/rules/design.md`). So that round moved every lucide size prop onto
+ * this constant — consumers are now **313 sites**, and this file is actually the
+ * ramp.
  */
 export const ICON_SIZE = {
-  /** label/body 옆 — 기본. `--icon-sm`. */
+  /** Next to label/body — the default. `--icon-sm`. */
   sm: 12,
-  /** body-lg 옆. `--icon-md`. */
+  /** Next to body-lg. `--icon-md`. */
   md: 14,
-  /** title 옆 · 독립. `--icon-lg`. */
+  /** Next to title, or standalone. `--icon-lg`. */
   lg: 16,
 } as const;
 

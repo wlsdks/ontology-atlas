@@ -4,24 +4,29 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { AgentSetupStep } from './AgentSetupStep';
 
 /**
- * 흐름 안 접기의 모션 문법 계약 (2026-08-04, 소유자 설치 앱 실측).
+ * The motion-grammar contract for in-flow collapsing (2026-08-04, owner's
+ * installed-app measurement).
  *
- * ## 무엇을 고정하나
+ * ## What it pins
  *
- * 첫 판은 이 본문을 `Surface`(chrome 문법 — 스케일+페이드, 퇴장 창 동안
- * 레이아웃 점유)로 감쌌고, 소유자가 설치 앱에서 결함을 잡았다: *"버벅이면서
- * 이상하게 열리는데?"*. 프레임 실측 — 1→3단계 전환에서 아래 형제가 **+254px
- * 1프레임 → 140ms 뒤 −352px 1프레임**, 전환 프레임 0장. 값 lint 는 원리적으로
- * 못 잡는 층이다(duration·easing 전부 토큰이었다). 그래서 문법 선택 자체를
- * 계약으로 고정한다: **흐름 안 접기는 목록 행 펼침 문법(`.ai-row-disclosure`)
- * 이고, 떠 있는 표면의 문법(스케일 키프레임 계열)을 입으면 결함이다.**
+ * The first version wrapped this body in `Surface` (chrome grammar — scale plus
+ * fade, holding layout through the exit window), and the owner caught the defect in
+ * the installed app: *"버벅이면서 이상하게 열리는데?"* (it stutters and opens
+ * strangely). Frame measurement: on the step 1 → 3 transition, the siblings below
+ * moved **+254px in one frame, then −352px in one frame 140ms later**, with zero
+ * transition frames. This is a layer value lint cannot catch in principle (duration
+ * and easing were all tokens). So the choice of grammar itself is pinned as a
+ * contract: **in-flow collapsing is the list-row disclosure grammar
+ * (`.ai-row-disclosure`), and wearing a floating surface's grammar (the scale
+ * keyframe family) is a defect.**
  *
- * ## 프로브 규율 (`/gate-probe`)
+ * ## Probe discipline (`/gate-probe`)
  *
- * - 되돌리면 빨개진다: 본문을 다시 `topology-chrome-in`(Surface chrome 등장
- *   클래스) 계열로 감싸면 ③ 이 잡는다. 문법을 아예 벗기면 ① 이 잡는다.
- * - 빈 집합 위에서 안 논다: ① 이 상자·내용의 **실재**를 먼저 단언하고
- *   ② 가 내용이 실제로 마운트/언마운트되는 것을 시간축까지 확인한다.
+ * - Reverting turns it red: re-wrapping the body in the `topology-chrome-in`
+ *   (Surface chrome entry class) family is caught by ③. Stripping the grammar
+ *   entirely is caught by ①.
+ * - It does not idle on an empty set: ① first asserts the box and content **exist**,
+ *   and ② confirms the content really mounts and unmounts, over time.
  */
 describe('AgentSetupStep — 흐름 안 접기 문법 계약', () => {
   beforeEach(() => {
@@ -56,7 +61,7 @@ describe('AgentSetupStep — 흐름 안 접기 문법 계약', () => {
     const body = container.querySelector('.ai-row-disclosure-body');
     expect(body, '내용이 전이 본문 밖에 있다 — 높이 실측이 못 따라간다').not.toBeNull();
     expect(body!.textContent).toContain('쓰는 도구의 버튼을 누르면');
-    // aria-controls 대상은 접힘 중에도 실재해야 한다 — 상자가 id 를 진다.
+    // The aria-controls target must exist even mid-collapse — the box carries the id.
     expect(
       screen.getByTestId('probe-step-toggle').getAttribute('aria-controls'),
     ).toBe('probe-step-body');
@@ -81,7 +86,7 @@ describe('AgentSetupStep — 흐름 안 접기 문법 계약', () => {
     );
     const box = container.querySelector('.ai-row-disclosure')!;
     expect(box.getAttribute('data-state')).toBe('closed');
-    // 퇴장 창 — 내용이 즉시 사라지면 나가는 길이 없는 것이다.
+    // The exit window — content vanishing instantly means there is no way out.
     expect(container.querySelector('.ai-row-disclosure-body')).not.toBeNull();
     expect(box.hasAttribute('inert'), '접힌 본문이 탭 순서에 남는다').toBe(true);
     act(() => {
@@ -119,13 +124,14 @@ describe('AgentSetupStep — 흐름 안 접기 문법 계약', () => {
   });
 
   /**
-   * ⑤ 위계 — **펼친 행은 흐린 잉크를 받지 않는다.**
+   * ⑤ Hierarchy — **an expanded row does not get dim ink.**
    *
-   * 되돌리면 여기가 빨개진다: `tone={state === 'todo' ? 'muted' : 'strong'}` 로
-   * 되돌리면 아직 안 온 단계를 펼쳤을 때 그 제목이 `quaternary` 로 떨어진다.
-   * 설치 앱 실측(2026-08-04, 1512×900): 3단계를 펼친 화면에서 펼친 행 제목
-   * rgb(130,130,137) < 접힌 1단계 제목 rgb(247,248,248) — 읽고 있는 줄이 가장
-   * 흐렸다.
+   * Reverting turns this red: going back to
+   * `tone={state === 'todo' ? 'muted' : 'strong'}` drops the title to `quaternary`
+   * whenever an unreached step is expanded. Installed-app measurement (2026-08-04,
+   * 1512×900): with step 3 expanded, the expanded row's title was
+   * rgb(130,130,137) against the collapsed step 1 title at rgb(247,248,248) — the
+   * line being read was the dimmest on screen.
    */
   const renderTodoStep = (open: boolean) =>
     render(

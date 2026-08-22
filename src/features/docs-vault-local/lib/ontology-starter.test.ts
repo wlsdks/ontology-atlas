@@ -117,9 +117,9 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("OATLAS_VAULT");
   });
 
-  // npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27). 붙여넣으면 실패하는
-  // 명령을 스타터가 다시 심지 못하게 잠근다 — 가짜 절대 경로 자리표시자와
-  // `npx` 안내가 이 파일에서 12건 살아 있었다.
+  // The npm publishing plan was dropped (docs/DECISIONS.md 2026-07-27). This locks the starter
+  // against planting a command that fails when pasted — a fake absolute-path placeholder and `npx`
+  // guidance had survived here in 12 places.
   it("starter README 에 실행 불가능한 명령이 없다", () => {
     for (const locale of ["en", "ko"] as const) {
       const readme = starterFilesForLocale(locale).find(
@@ -164,9 +164,9 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain('"operation": "cycles"');
     expect(readme).toContain('"operation": "growth_plan"');
     expect(readme).toContain('"operation": "maintenance_plan"');
-    // npm 발행이 폐기돼 (docs/DECISIONS.md 2026-07-27) 맨 CLI 이름은 PATH 에
-    // 오를 길이 없다 — 구 "If the CLI is installed" 는 도달 불가 조건절이었다.
-    // 살아있는 두 경로 중 터미널 쪽인 소스 체크아웃 호출로 안내한다.
+    // With npm publishing dropped (docs/DECISIONS.md 2026-07-27) the bare CLI name has no way onto
+    // PATH — the old "If the CLI is installed" was an unreachable conditional. It points at the
+    // terminal-side survivor of the two live paths: invocation from a source checkout.
     expect(readme).toContain("From an Ontology Atlas source checkout");
     expect(readme).toContain("export ATLAS=<path to your ontology-atlas source checkout>");
     expect(readme).toContain("node $ATLAS/cli/src/index.mjs validate .");
@@ -182,8 +182,8 @@ describe("ONTOLOGY_STARTER_FILES", () => {
 });
 
 describe("buildMcpConfigJson", () => {
-  // 실행 방법을 모르는 표면(웹)의 기본값은 소스 체크아웃 자리표시자다.
-  // npm 발행 계획이 폐기돼 `npx` 는 어느 경로에도 없다 (docs/DECISIONS.md 2026-07-27).
+  // The default for a surface that does not know the launch method (the web) is the source-checkout
+  // placeholder. With npm publishing dropped, `npx` is on no path (docs/DECISIONS.md 2026-07-27).
   it("MCP server 'ontology-atlas' 항목과 OATLAS_VAULT env placeholder 포함", () => {
     const json = buildMcpConfigJson("my-vault");
     const parsed = JSON.parse(json);

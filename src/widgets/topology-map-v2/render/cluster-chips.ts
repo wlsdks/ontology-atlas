@@ -1,43 +1,39 @@
 /**
- * 밀도 게이트 슬라이스 (fable 설계) — 클러스터 칩의 순수 Canvas 2D 드로우.
- * 접힌 부모의 자식들을 대신하는 "칩"(rounded-rect pill + mono composite
- * `＋N` + 디스클로저 caret)을 그린다. 색은 무채색 surface + 인디고 1계열만
- * (`docs/DESIGN-SYSTEM.md` 단일 인디고 헌장) — 새 hue/글로우 없음.
+ * Cluster chips — pure Canvas 2D drawing of the "chip" that stands in for a
+ * collapsed parent's children. Neutral surface plus the single indigo only
+ * (`docs/DESIGN-SYSTEM.md` single-indigo charter) — no new hue, no glow.
  *
- * 그룹 A 리디자인 (소유자 실보고 "＋63 이 먼지처럼 읽힌다 / 무슨 의미인지
- * 모르겠다"):
- * ① 대비 ~1.1:1 로 먼지처럼 읽히던 겹친-노드 글리프 스택을 폐기하고, 선행
- *    존에 단일 composite `＋N`(`＋`=인디고, 숫자=중립 numeralFace mono
- *    tabular)으로 "접힌 묶음 N개"가 또렷한 한 덩어리로 읽히게 한다.
- * ② rest 는 조용한 중립 pill(border=nodeStrokeDomain) — 진짜 노드 선택
- *    인디고와 경쟁하지 않는다. hover 에서만 surface/border/ink 가 인디고로
- *    깨어난다(색만 보간, ~150ms; transform/scale/글로우 금지). 카운트 뒤
- *    소형 caret `›`(hover `⌄`)로 "열기 N" 어포던스.
- * ③ 부모→칩 tether 는 depends 점선과 질감을 달리하고(dash [3,3],
- *    strokeStyle edgeContains) 부모 끝점에 2px 인디고 dot 을 찍어 소속을 잇되
- *    '엣지 수프'에 섞이지 않게 한다.
- *    펼침 라벨은 부모 우상단 `−N` 코너 배지로 대칭 유지.
+ * Owner report: "＋63 이 먼지처럼 읽힌다 / 무슨 의미인지 모르겠다" (the ＋63 reads
+ * like dust; I can't tell what it means). The stacked node-glyph rendering it
+ * describes measured ~1.1:1 contrast. Three consequences:
+ * ① A single composite `＋N` in the leading zone (`＋` indigo, numeral neutral
+ *    numeralFace mono tabular) so "N collapsed" reads as one mark.
+ * ② Rest is a quiet neutral pill that never competes with the indigo of a real
+ *    node selection; only hover wakes it to indigo (colour interpolation only,
+ *    ~150ms — no transform, no zoom step, no glow).
+ * ③ The parent→chip tether is textured unlike the depends dashes and pins a 2px
+ *    indigo dot at the parent end, so membership reads without joining the
+ *    'edge soup'.
  *
- * 히트테스트(`ui/topology-pointer-handlers.ts`)와 드로우가 **같은 사각형**을
- * 써야 클릭 좌표가 어긋나지 않으므로, 사각형 계산은 이 파일의
- * `clusterChipRect` 하나가 진실원이다(ctx 불필요 — 폰트 폭을 결정론적으로
- * 근사). label 문자열도 `clusterChipLabel`, 줌 스케일도 `clusterChipScale`
- * 하나로 통일해 히트/드로우가 절대 어긋나지 않는다.
+ * Hit-testing (`ui/topology-pointer-handlers.ts`) and drawing must use the
+ * **same rectangle** or clicks land off target, so `clusterChipRect` is the
+ * single source (no ctx needed — font width is approximated deterministically),
+ * as are `clusterChipLabel` and `clusterChipScale`.
  */
 
 import type { ExpandAffordance } from "@/shared/lib/appearance-preferences";
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { lerpColorHex } from "./grid";
 
-/** 칩 기준 높이(px, 스크린 스페이스 — `clusterChipScale` 로 줌 스케일을 곱한다). */
+/** Chip base height (px, screen space — multiplied by `clusterChipScale`). */
 export const CLUSTER_CHIP_HEIGHT = 28;
-/** mono 폰트 기준 크기(px). */
+/** Mono font base size (px). */
 const CHIP_FONT_SIZE = 13;
-/** mono 글자당 근사 폭(px) — 히트/드로우 폭 일치용 결정론 상수. */
+/** Approximate mono advance width (px) — deterministic so hit and draw agree. */
 const CHIP_CHAR_WIDTH = 7.8;
-/** composite `＋N` 앞의 선행 존 폭(px) — pill 을 조이고 `＋`를 앉힌다. */
+/** Leading zone before the composite `＋N` (px) — tightens the pill, seats the `＋`. */
 const CHIP_GLYPH_WIDTH = 14;
-/** 텍스트 좌우 패딩. */
+/** Horizontal text padding. */
 const CHIP_PAD_X = 9;
 
 export interface ClusterChipRect {
@@ -48,68 +44,70 @@ export interface ClusterChipRect {
 }
 
 /**
- * 칩 줌 스케일 — 카메라 스케일을 따르되(존재감·줌 추종) 판독을 위해 좁은
- * 밴드로 clamp 한다. 히트/드로우가 **같은** 함수를 써 사각형이 어긋나지 않는다.
+ * Chip zoom factor — follows the camera but clamps to a narrow band so the chip
+ * stays legible. Hit and draw call the **same** function, so the rectangles agree.
  */
 export function clusterChipScale(cameraScale: number): number {
   if (!Number.isFinite(cameraScale)) return 1;
   return Math.min(1.5, Math.max(0.85, cameraScale));
 }
 
-/** 접힘=`+N`, 펼침=`− N`(숫자 유지 — 접기 어포던스이되 의미 보존). */
+/** Collapsed = `+N`, expanded = `− N` — the count stays, so the meaning survives. */
 export function clusterChipLabel(count: number, expanded: boolean): string {
   return expanded ? `− ${count}` : `+${count}`;
 }
 
 /**
- * S10 결함 2 — 배지 라벨. 접힘 pill 의 `+N` 과 대칭인 컴팩트 형태(공백 없음).
- * 배지는 부모 노드에 부착돼 좁으므로 pill 라벨보다 조인다.
+ * Badge label — the compact counterpart of the pill's `+N` (no space). The badge
+ * is docked to the parent node and therefore tighter than the pill label.
  *
- * `expanded` 인자는 「어깨 배지」 어포던스(2026-08-01)가 붙으며 생겼다 — 그
- * 어포던스에서는 배지가 **접힘 상태에도** 있으므로 `+N` 을 말해야 한다.
- * 기본값 `true` 라 종전 호출부(펼침 배지)는 한 글자도 안 바뀐다.
+ * `expanded` arrived with the shoulder-badge affordance (2026-08-01), where the
+ * badge is present **while collapsed too** and must say `+N`. It defaults to
+ * `true`, so the earlier callers (expanded badge) are unchanged.
  */
 export function clusterBadgeLabel(count: number, expanded: boolean = true): string {
   return expanded ? `−${count}` : `+${count}`;
 }
 
-/* ── 머리 위 막대 (「고른 노드 바로 위」 어포던스) ─────────────────────────── */
+/* ── Overhead bar (the "directly above the selected node" affordance) ─────── */
 
 /**
- * 막대 기준 높이(px, 스크린 스페이스). 알약(28)보다 낮고 배지(18)보다 높다 —
- * 노드에 도킹된 물건이라 알약만큼 클 필요가 없고, 글자를 읽혀야 해서 배지만큼
- * 작을 수는 없다.
+ * Bar base height (px, screen space). Lower than the pill (28) and taller than
+ * the badge (18): docked to a node it need not be pill-sized, but it carries
+ * words so it cannot shrink to badge size.
  */
 export const CLUSTER_BAR_HEIGHT = 24;
-/** 막대를 부모 노드 반지름 **위로** 띄우는 여유(스크린 px, 스케일 불변). */
+/** Clearance lifting the bar **above** the parent's radius (screen px, zoom-invariant). */
 const BAR_NODE_LIFT = 12;
-/** 막대 폰트 기준 크기(px). */
+/** Bar font base size (px). */
 const BAR_FONT_SIZE = 12;
 /**
- * 막대 글자의 폰트 — **본문 계열이다, mono 가 아니다.**
+ * The bar's font — **the body stack, not mono.**
  *
- * 막대가 나르는 것은 수가 아니라 **문장**(「모두 펼치기」)이라 tabular 정렬이
- * 필요 없고, 무엇보다 mono 스택에는 한글이 없어 폴백이 일어난다 — 그러면
- * 폭이 스택 해석에 따라 달라져 아래 추정기가 무엇을 추정하는지 알 수 없게
- * 된다. 지도 라벨(`render/labels.ts`)이 이미 쓰는 스택을 그대로 쓴다.
+ * The bar carries a sentence (「모두 펼치기」 — "Expand all"), not a number, so
+ * it needs no tabular alignment. More importantly the mono stack has no Hangul
+ * and falls back, which makes the advance width depend on how the stack
+ * resolves and leaves the estimator below measuring something unknowable. This
+ * is the stack the map labels (`render/labels.ts`) already use.
  */
 const BAR_FONT_FAMILY = "-apple-system, 'SF Pro Text', sans-serif";
-/** 막대 텍스트 좌우 패딩(px). */
+/** Horizontal text padding of the bar (px). */
 const BAR_PAD_X = 10;
 
 /**
- * 이 글자가 **두 셀 폭**인가 — 한글 · 한자 · 가나 · 전각.
+ * Is this glyph **two cells wide** — Hangul, Han, kana, fullwidth.
  *
- * 라틴 기준의 `length × 상수` 는 한글에서 폭을 40% 가까이 과소평가한다
- * (실측 600 12px: 한글 음절 10.38px vs 라틴 소문자 ≈7px). 과소평가한 폭으로
- * 판을 그리면 글자가 판 밖으로 삐져나오고, 그건 히트 사각형 밖이라 **보이는데
- * 안 눌리는 글자**가 된다.
+ * A Latin-calibrated `length × constant` underestimates Hangul width by nearly
+ * 40% (measured at weight 600, 12px: Hangul syllable 10.38px vs Latin lowercase
+ * ≈7px). Drawing the plate from an underestimate pushes glyphs outside it, and
+ * outside the plate is outside the hit rectangle — **text you can see but
+ * cannot click**.
  */
 function isWideGlyph(codePoint: number): boolean {
   return (
-    (codePoint >= 0x1100 && codePoint <= 0x11ff) || // 한글 자모
-    (codePoint >= 0x2e80 && codePoint <= 0xa4cf) || // CJK 부수 ~ 한자 ~ 가나 ~ 호환 자모
-    (codePoint >= 0xac00 && codePoint <= 0xd7a3) || // 한글 음절
+    (codePoint >= 0x1100 && codePoint <= 0x11ff) || // Hangul jamo
+    (codePoint >= 0x2e80 && codePoint <= 0xa4cf) || // CJK radicals ~ Han ~ kana ~ compatibility jamo
+    (codePoint >= 0xac00 && codePoint <= 0xd7a3) || // Hangul syllables
     (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
     (codePoint >= 0xfe30 && codePoint <= 0xfe4f) ||
     (codePoint >= 0xff00 && codePoint <= 0xff60) ||
@@ -118,17 +116,20 @@ function isWideGlyph(codePoint: number): boolean {
 }
 
 /**
- * `ctx` 없이 재는 **결정론적** 텍스트 폭 — 막대 사각형의 단일 출처.
+ * **Deterministic** text width measured without `ctx` — the single source for
+ * the bar rectangle.
  *
- * 왜 `ctx.measureText` 가 아닌가: 사각형을 만드는 자리
- * (`clusterBarRect`)에는 캔버스가 없다(히트테스트·라벨 예약도 같은 함수를
- * 부른다). 폭을 재는 곳이 둘이면 draw 와 hit 이 어긋나고, 이 파일은 그 결함을
- * 이미 두 번 겪었다. 그래서 **여기가 유일한 자**이고 `drawClusterBar` 는
- * 재지 않고 이 사각형 한가운데에 글자를 놓기만 한다.
+ * Why not `ctx.measureText`: the place that builds the rectangle
+ * (`clusterBarRect`) has no canvas — hit-testing and label reservation call the
+ * same function. Two rulers means draw and hit diverge, and this file has hit
+ * that defect twice already. So **this is the only ruler**, and `drawClusterBar`
+ * measures nothing: it just centres the text in this rectangle.
  *
- * 계수는 헤드리스 Chromium 실측(600 12px, 위 스택)에 안전 여유를 더한 값이라
- * **항상 실제보다 넓다** — 좁으면 글자가 판을 뚫고, 넓으면 여백이 조금 늘 뿐이다.
- * 실측/추정: 「모두 펼치기」 55.2/59.0 · 「접기」 20.8/22.1 · `Collapse` 50.0/57.4.
+ * The coefficients are headless-Chromium measurements (weight 600, 12px, the
+ * stack above) plus safety margin, so they are **always wider than reality** —
+ * too narrow punches glyphs through the plate, too wide only adds a little
+ * padding. Measured/estimated: 「모두 펼치기」 (Expand all) 55.2/59.0 · 「접기」
+ * (Collapse) 20.8/22.1 · `Collapse` 50.0/57.4.
  */
 export function estimateCanvasTextWidth(text: string, fontSize: number): number {
   let cells = 0;
@@ -144,23 +145,22 @@ export function estimateCanvasTextWidth(text: string, fontSize: number): number 
 }
 
 /**
- * 막대가 말하는 **문장** — 어권별 문구는 호출부가 번역해 넘긴다.
- *
- * 캔버스에 i18n 문자열을 그리는 것은 이 엔진의 새 능력이 아니다 — 결계 캡션
- * (`wardingRing.caption`)이 이미 같은 경로로 번역문을 받아 그린다.
+ * The **sentence** the bar says — the caller translates it and passes it in.
+ * Drawing i18n strings on the canvas is not a new capability: the warding
+ * caption (`wardingRing.caption`) already receives translated text the same way.
  */
 export interface ClusterBarLabels {
-  /** 이 한 번으로 남은 것을 **전부** 여는 경우. 숫자가 없다 — 아래 주석 참고. */
+  /** One press opens **everything** left. Carries no number — see `clusterBarLabel`. */
   expandAll: string;
-  /** 이 한 번에 열릴 개수. `{count}` 자리표시자를 포함한다. */
+  /** How many this press opens. Contains a `{count}` placeholder. */
   expandCount: string;
-  /** 펼쳐진 것을 접는다. */
+  /** Collapse what is expanded. */
   collapse: string;
 }
 
 /**
- * 호출부가 문구를 안 넘겼을 때의 최후 폴백. 화면에 보이면 배선이 끊긴 것이라
- * 계약 테스트가 그 배선을 따로 잡는다.
+ * Last-resort fallback when the caller passes no labels. Seeing it on screen
+ * means the wiring is broken; a contract test guards that wiring separately.
  */
 export const FALLBACK_CLUSTER_BAR_LABELS: ClusterBarLabels = {
   expandAll: "Expand all",
@@ -169,18 +169,18 @@ export const FALLBACK_CLUSTER_BAR_LABELS: ClusterBarLabels = {
 };
 
 /**
- * 막대의 라벨 — draw · 히트 · 라벨 예약 **셋이 부르는 하나**.
+ * The bar's label — **one function for draw, hit-test, and label reservation**.
  *
- * ## 왜 「N개 펼치기」가 아니라 「모두 펼치기」인가 (2026-08-02 소유자 실보고)
+ * **Why 「모두 펼치기」 (Expand all) and not 「N개 펼치기」 (Expand N)** — owner
+ * report, 2026-08-02. The bar used to read `+17` while the node right below it
+ * was engraved `17`: **the same number said twice, and never a verb.** The
+ * engraving answers "how many are here" (the total), the bar answers "what
+ * happens if I press" (how many this press opens) — different facts, but in the
+ * common case where one press opens everything the two numbers coincide.
  *
- * 종전 막대는 `+17` 이었고, 그 바로 밑 노드에는 `17` 이 각인돼 있었다 —
- * **같은 수를 두 번 말하고 동사는 한 번도 안 했다.** 각인은 「여기 몇 개가
- * 있나」(전체)이고 막대는 「누르면 무슨 일이 나나」(이번에 열릴 개수)라 서로
- * 다른 사실인데, 한 번에 다 열리는 흔한 경우에는 두 수가 같아져 중복이 된다.
- *
- * 그래서 **수는 그 수가 정보일 때만 말한다**: 이번 누름이 남은 것을 전부 열면
- * 「모두 펼치기」(수 없음 — 각인이 이미 말했다), 일부만 열면 「N개 펼치기」.
- * Tufte 의 data-ink 규율을 문구에 적용한 것이다.
+ * So **the number is spoken only when it is information**: if this press opens
+ * everything left, "Expand all" (no number — the engraving already said it); if
+ * only some, "Expand N". Tufte's data-ink discipline applied to wording.
  */
 export function clusterBarLabel(input: {
   expanded: boolean;
@@ -197,26 +197,29 @@ export function clusterBarLabel(input: {
 }
 
 /**
- * 「머리 위 막대」의 사각형 — **부모 머리 바로 위. 언제나.**
+ * The overhead bar's rectangle — **directly above the parent's head. Always.**
  *
- * 알약은 빈 자리를 «찾아» 앉는다. 그 탐색이 잘 되면 안 겹치지만, 밀집에서는
- * 부모에서 멀어져 화면이 **누구의 버튼인지**를 더 이상 말하지 않는다(시안 실측).
- * 막대는 탐색을 아예 없앤다 — 매번 같은 자리에 있으면 눈이 찾지 않는다.
+ * The pill *searches* for a free spot. When the search succeeds nothing
+ * overlaps, but in dense regions it drifts away from its parent and the screen
+ * stops saying **whose button this is**. The bar removes the search: something
+ * always in the same place is something the eye never hunts for.
  *
- * draw/hit/occupancy 공용 진실원. 셋이 이 함수 하나를 부르므로 클릭 좌표가
- * 어긋날 수 없다(알약·배지가 이미 쓰는 규약).
+ * Single source for draw, hit-test, and occupancy — all three call this one
+ * function, so click coordinates cannot drift (the convention the pill and
+ * badge already follow).
  *
- * ## 판이 노드보다 넓어도 되는가 — 된다, 이 판만 (2026-08-02 재판정)
- *
- * 직전 판정은 «컨트롤이 데이터보다 크면 잉크 역전» 이라 판을 노드 지름(48)
- * 안(41.6)으로 조였다. 그 판정의 전제는 판이 **수 하나**만 말한다는 것이었고,
- * 그때는 옳았다 — 아무것도 더 말하지 않는 판이 넓은 것은 순수한 낭비다.
- * 이제 판은 **동사가 든 문장**을 말한다. data-ink 는 절대 크기가 아니라
- * 정보당 잉크의 규율이므로, 문장을 담느라 넓어지는 것은 역전이 아니다.
- * 그리고 이 판은 **고른 노드에만** 있다 — 사용자가 방금 부른 주인공이라
- * 자리를 차지하는 쪽이 맞다(시안 `actionBarRect` 가 적어 둔 그 결론).
- * 여전히 금지인 것은 **빈 폭**이다: 알약의 선행 글리프 존(14px)처럼 그리는
- * 것이 없는 폭은 다시 들어오지 않는다(아래 폭 식에 그 존이 없다).
+ * **May the plate be wider than the node — yes, this plate only** (2026-08-02,
+ * reversing an earlier call). The earlier call read "a control larger than its
+ * data is an ink inversion" and squeezed the plate inside the node diameter
+ * (41.6 within 48). Its premise was that the plate says **one number**, and that
+ * was right at the time: a plate saying nothing more has no business being wide.
+ * The plate now says a **sentence with a verb in it**, and data-ink is a
+ * discipline about ink per unit of information rather than absolute size, so
+ * widening to hold a sentence is not an inversion. This plate also exists **only
+ * on the selected node**, the thing the user just summoned, so taking space is
+ * correct. What stays forbidden is **empty width**: a zone that draws nothing,
+ * like the pill's 14px leading glyph zone, does not come back (the width formula
+ * below has no such zone).
  */
 export function clusterBarRect(
   parentScreenX: number,
@@ -227,7 +230,7 @@ export function clusterBarRect(
 ): ClusterChipRect {
   const w = (estimateCanvasTextWidth(label, BAR_FONT_SIZE) + BAR_PAD_X * 2) * scale;
   const h = CLUSTER_BAR_HEIGHT * scale;
-  // 판의 **밑변**이 노드 머리에서 `BAR_NODE_LIFT` 만큼 떠 있다.
+  // The plate's **bottom edge** floats `BAR_NODE_LIFT` above the node's head.
   const bottom = parentScreenY - nodeScreenRadius - BAR_NODE_LIFT;
   return { x: parentScreenX - w / 2, y: bottom - h, w, h };
 }
@@ -239,18 +242,19 @@ export interface ClusterBarDrawInput {
   count: number;
   expanded: boolean;
   hovered: boolean;
-  /** 한 번 누르면 열리는 개수 — 라벨이 「모두」와 「N개」를 가르는 기준. */
+  /** How many one press opens — decides "all" vs "N" in the label. */
   batchSize: number;
   labels?: ClusterBarLabels;
   scale?: number;
 }
 
 /**
- * 막대 하나를 그린다 — 불투명 판 + **동사가 든 글자 버튼**.
+ * Draw one bar — an opaque plate plus a **text button with a verb in it**.
  *
- * **판이 불투명한 것이 요점이다.** 이 컨트롤은 노드 위에 겹치라고 만든 것이라
- * (자리를 안 찾으므로), 반투명하면 뒤의 선·숫자가 글자 사이로 새어 나온다.
- * 가려진 것은 접으면 돌아오지만 못 누르는 버튼은 돌아오지 않는다.
+ * **The plate being opaque is the point.** This control is meant to overlap
+ * nodes (it does not search for a spot), and anything translucent lets edges and
+ * numerals bleed between the letters. What it covers comes back on collapse; a
+ * button you cannot read does not.
  */
 export function drawClusterBar(
   ctx: CanvasRenderingContext2D,
@@ -267,8 +271,8 @@ export function drawClusterBar(
     scale,
   );
 
-  // 판 — radius 는 알약(완전 pill)보다 조인 모서리로, 「자리를 찾는 물건」과
-  // 「도킹된 물건」이 실루엣으로 갈리게 한다.
+  // Plate — a tighter radius than the fully-round pill, so "searches for a spot"
+  // and "docked to a node" are told apart by silhouette.
   roundedRectPath(ctx, rect.x, rect.y, rect.w, rect.h, 7 * scale);
   ctx.fillStyle = input.hovered ? colors.hoverSurface : colors.surface;
   ctx.fill();
@@ -276,8 +280,8 @@ export function drawClusterBar(
   ctx.strokeStyle = input.hovered ? colors.hoverBorder : colors.border;
   ctx.stroke();
 
-  // 글자는 **재지 않고** 판 한가운데에 놓는다 — 폭의 자는 `clusterBarRect`
-  // 하나뿐이고, 여기서 다시 재면 그 순간 자가 둘이 된다.
+  // Text is centred in the plate **without measuring** — `clusterBarRect` is the
+  // only ruler, and measuring again here would make it two.
   ctx.font = `${FONT_WEIGHT.strong} ${BAR_FONT_SIZE * scale}px ${BAR_FONT_FAMILY}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -287,44 +291,47 @@ export function drawClusterBar(
   ctx.textBaseline = "alphabetic";
 }
 
-/* ── 어느 형태를 그리나 — draw · hit · 라벨 예약의 공용 판정 ──────────────── */
+/* ── Which form to draw — one decision shared by draw, hit, reservation ───── */
 
-/** 한 부모의 확장 컨트롤이 이 프레임에 어떤 형태로 존재하는가. */
+/** What form a parent's expand control takes this frame. */
 export type ClusterControlForm = "pill" | "bar" | "badge" | "none";
 
 export interface ClusterControlInput {
-  /** 설정 「확장 → 펼치기 표시」. */
+  /** The 「확장 → 펼치기 표시」 (expand → reveal control) setting. */
   affordance: ExpandAffordance;
-  /** 이 부모가 지금 펼쳐져 있나. */
+  /** Is this parent currently expanded. */
   expanded: boolean;
   /**
-   * 이 부모가 **고른 노드**인가. `bar` 어포던스는 이때만 존재한다 — 시안:
-   * *"안 고르면 아무것도 없고"*. 접힌 부모의 개수는 노드 자신이 이미 새기고
-   * 있으므로, 컨트롤까지 상시로 띄우면 같은 사실이 화면에 두 번 있다.
+   * Is this parent the **selected node**. The `bar` affordance exists only then
+   * — owner: *"안 고르면 아무것도 없고"* (nothing at all until you select one).
+   * A collapsed parent's count is already engraved on the node itself, so a
+   * permanently visible control would put the same fact on screen twice.
    */
   focused: boolean;
   /**
-   * 이 칩이 **노드에 붙을 수 있는가** — 부모 노드의 화면 좌표를 아는가.
+   * Can this chip **dock to a node** — do we know the parent's screen position.
    *
-   * 아는 게 정상이지만 하나가 구조적으로 모른다: 배치 공개의 `+N 더보기` 칩은
-   * 부모 id 가 합성 문자열(`clusterMoreChipId`)이라 그래프에 그 노드가 없다.
-   * 그래서 도킹 형태(막대·배지)를 고르면 이 칩은 **그려지지도 눌리지도
-   * 않았다** — 2026-08-02 실측, 기본 어포던스가 막대가 된 #826 이후 배치
-   * 공개가 통째로 닿을 수 없는 기능이 돼 있었다. 못 붙는 것은 사라지는 게
-   * 아니라 **안 붙는 형태(알약)로 남는다**. 생략 시 `true`(도킹 가능).
+   * Normally yes, but one case structurally cannot: the batch-reveal `+N more`
+   * chip has a synthetic parent id (`clusterMoreChipId`) that is not a node in
+   * the graph. So under a docked form (bar or badge) that chip was **neither
+   * drawn nor clickable** — measured 2026-08-02; batch reveal had been an
+   * entirely unreachable feature since #826 made the bar the default affordance.
+   * What cannot dock does not disappear: it **stays in the non-docking form
+   * (pill)**. Omitted means `true` (dockable).
    */
   dockable?: boolean;
 }
 
 /**
- * 어포던스 + 상태 → 이 프레임에 그릴 형태. **draw · 히트테스트 · 라벨 예약이
- * 전부 이 함수 하나를 본다** — 셋이 갈라지면 「보이는데 안 눌리는 버튼」이나
- * 「빈 자리를 피하는 라벨」이 생긴다(칩이 이미 두 번 겪은 결함).
+ * Affordance + state → the form to draw this frame. **Draw, hit-testing, and
+ * label reservation all read this one function** — when the three diverge you
+ * get a button you can see but not press, or a label dodging an empty spot
+ * (defects the chip has already shipped twice).
  *
- * - `pill` — 종전 그대로. 접힘=떠다니는 알약, 펼침=어깨 배지.
- * - `badge` — 접힘·펼침 **둘 다** 어깨 배지. 노드를 따라다니므로 자리를 찾을
- *   일이 없다.
- * - `bar` — 고른 노드 **바로 위**. 안 고르면 없다.
+ * - `pill` — collapsed = floating pill, expanded = shoulder badge.
+ * - `badge` — shoulder badge in **both** states; it rides the node, so there is
+ *   never a spot to search for.
+ * - `bar` — **directly above** the selected node, absent when nothing is selected.
  */
 export function clusterControlForm(input: ClusterControlInput): ClusterControlForm {
   if (input.affordance === "bar") {
@@ -335,48 +342,53 @@ export function clusterControlForm(input: ClusterControlInput): ClusterControlFo
   return input.expanded ? "badge" : "pill";
 }
 
-/** 펼침 배지 기준 높이(px, 스크린 스페이스) — 접힘 pill(28)보다 작은 미니 배지. */
+/** Badge base height (px, screen space) — a mini badge, smaller than the pill (28). */
 export const CLUSTER_BADGE_HEIGHT = 18;
-/** 배지 mono 폰트 기준 크기(px). */
+/** Badge mono font base size (px). */
 const BADGE_FONT_SIZE = 11;
-/** 배지 mono 글자당 근사 폭(px) — 히트/드로우 폭 일치용 결정론 상수. */
+/** Approximate badge mono advance width (px) — deterministic so hit and draw agree. */
 const BADGE_CHAR_WIDTH = 6.6;
-/** 배지 텍스트 좌우 패딩(px). */
+/** Horizontal badge text padding (px). */
 const BADGE_PAD_X = 6;
 /**
- * 배지를 부모 노드 반지름 **바깥**으로 띄우는 여유(스크린 px, 스케일 불변).
- * 펼침 파선 오라 링(frame-draw `EXPANDED_AURA_RING_OFFSET=6`)보다 넉넉히 커
- * 배지가 오라·노드 어디와도 겹치지 않는다.
+ * Clearance pushing the badge **outside** the parent's radius (screen px,
+ * zoom-invariant). Comfortably larger than the expanded dashed aura ring
+ * (frame-draw `EXPANDED_AURA_RING_OFFSET=6`), so the badge never touches the
+ * aura or the node.
  */
 const BADGE_NODE_CLEARANCE = 10;
 
-/* ── 한 노드의 컨트롤은 서로 다른 방위를 쓴다 (2026-08-02 실측 처방) ────────
+/* ── One node's controls use different bearings (measured 2026-08-02) ────────
  *
- * 고른 노드에는 컨트롤이 둘 붙는다: 이 파일의 확장 컨트롤과, DOM 으로 떠 있는
- * 궤도 「이것만 보기」 버튼(`use-topology-loop.ts`). 둘 다 노드 둘레에 앵커되는데
- * **같은 방위(우상단 45°)를 쓰고 있었다.** 결과는 겹침이 아니라 **차단**이었다 —
- * 실측(1512×982, 샘플 볼트 「마케팅」, 어깨 배지):
+ * A selected node carries two controls: this file's expand control, and the DOM
+ * orbit button 「이것만 보기」 (focus on this alone, `use-topology-loop.ts`).
+ * Both anchor around the node, and both **used the same bearing (upper-right,
+ * 45°)**. The result was not overlap but **occlusion** — measured at 1512×982,
+ * sample vault 「마케팅」 (marketing), shoulder badge:
  *
- * - 배지 33.6×19 의 **80%(513px²)** 가 28×28 궤도 버튼 밑에 들어갔고,
- * - `document.elementFromPoint(배지 중심)` 이 궤도 버튼의 `<circle>` 을 돌려줬다
- *   (= 배지는 **한 번도 눌리지 않는다**. 클릭해도 `?open=` 이 안 바뀐다),
- * - 화면에 삐져나온 것은 `+17` 의 끝 글자 하나라 **「7」로 읽혔다**(거짓 수).
- * - 기본값인 「머리 위 막대」도 무사하지 않았다: 판의 우하단 모서리 16.5×4.8px
- *   (80px², 판 면적의 5%)가 같은 버튼에 물렸다.
+ * - **80% (513px²)** of the 33.6×19 badge sat under the 28×28 orbit button,
+ * - `document.elementFromPoint(badge centre)` returned the orbit button's
+ *   `<circle>` (= the badge is **never clickable**; clicking never changes
+ *   `?open=`),
+ * - the only part sticking out was the last glyph of `+17`, so it **read as
+ *   "7"** — a false number.
+ * - The default overhead bar was not safe either: the plate's lower-right corner
+ *   16.5×4.8px (80px², 5% of the plate) was caught under the same button.
  *
- * 그래서 방위를 갈랐다 — **막대=북 · 배지=북서 · 궤도 버튼=동**. 크기와 무관하게
- * 성립하는 규칙이라(아래 계약 테스트가 반지름 7~40 전수로 잡는다) 노드가 커지든
- * 작아지든 다시 겹치지 않는다. 값을 하나 키워 «이번 화면에서만» 떼어 놓는 미봉과
- * 다른 점이 그것이다.
+ * So the bearings were split — **bar = north · badge = northwest · orbit button
+ * = east**. The rule holds independent of size (the contract test below sweeps
+ * radii 7–40), so overlap cannot return when nodes grow or shrink. That is what
+ * separates it from bumping one value until "this screen" happens to be clear.
  */
-/** 궤도 버튼(`이것만 보기`)을 노드 반지름 바깥으로 띄우는 거리(스크린 px). */
+/** Distance pushing the orbit button outside the node radius (screen px). */
 export const ORBIT_BUTTON_CLEARANCE = 14;
-/** 궤도 버튼의 지름(px) — DOM 쪽 `h-7 w-7` 과 같은 값. 계약 테스트가 이걸로 잰다. */
+/** Orbit button diameter (px) — the DOM side's `h-7 w-7`. The contract test measures from this. */
 export const ORBIT_BUTTON_SIZE = 28;
 
 /**
- * 궤도 버튼이 이 프레임에 차지하는 사각형 — DOM 배치(`use-topology-loop.ts`)와
- * **같은 식**을 쓰는 단일 출처. 두 곳에 적으면 한쪽만 움직여 다시 겹친다.
+ * The rectangle the orbit button occupies this frame — single source sharing the
+ * **same formula** as the DOM placement (`use-topology-loop.ts`). Written twice,
+ * one side moves alone and the overlap returns.
  */
 export function orbitButtonRect(
   parentScreenX: number,
@@ -393,12 +405,13 @@ export function orbitButtonRect(
 }
 
 /**
- * S10 결함 2 (소유자 실보고: 펼침 `−N` 알약이 파선/라벨과 겹침) — 떠다니는
- * 알약을 폐기하고 펼침 배지를 부모 노드 **우상단 모서리**(스크린: x+ 오른쪽,
- * y- 위)에 노드 반지름 + 여유만큼 대각(45°)으로 밀어 세운다. 노드에 부착돼
- * 카메라를 함께 타므로 겹침 원천이 차단된다. draw/hit 공용 진실원 — 둘 다 이
- * 함수로 같은 사각형을 얻어 클릭 좌표가 어긋나지 않는다. `nodeScreenRadius` 는
- * 부모 노드의 base 스크린 반지름(`radiusForKind × magnitudeScale × cameraScale`).
+ * Owner report: the expanded `−N` pill collided with dashes and labels. The
+ * floating pill was dropped, and the expanded badge is pushed out diagonally
+ * (45°) by the node radius plus clearance, on the shoulder bearing named above.
+ * Attached to the node it rides the camera, which removes the overlap at its
+ * source. Single source for draw and hit — both take the same rectangle from
+ * here so click coordinates cannot drift. `nodeScreenRadius` is the parent's
+ * base screen radius (`radiusForKind × magnitudeScale × cameraScale`).
  */
 export function clusterBadgeRect(
   parentScreenX: number,
@@ -412,26 +425,27 @@ export function clusterBadgeRect(
   const h = CLUSTER_BADGE_HEIGHT * scale;
   const diag = Math.SQRT1_2; // cos(45°) = sin(45°)
   const reach = nodeScreenRadius + BADGE_NODE_CLEARANCE + h / 2;
-  // **왼쪽** 어깨다 — 오른쪽은 궤도 버튼의 방위다(위 「서로 다른 방위」 절).
-  // 그리고 **오른쪽 끝이 노드 중심을 넘지 않는다**: 작은 노드(반지름 7) + 넓은
-  // 라벨(`+240`) + 줌 1.5 에서 배지가 중심을 1.4px 넘어 궤도 버튼에 다시 닿았다
-  // (계약 테스트가 잡은 잔여 케이스). 넘칠 때는 왼쪽으로 더 나간다 — 방위는
-  // 지키고 폭만 왼쪽으로 자란다.
+  // The **left** shoulder — the right is the orbit button's bearing (see the
+  // bearings note above). And **the right edge never passes the node centre**:
+  // with a small node (radius 7), a wide label (`+240`) and zoom 1.5 the badge
+  // crossed the centre by 1.4px and touched the orbit button again (the residual
+  // case the contract test caught). When it would overflow it moves further
+  // left — the bearing holds and only the width grows leftwards.
   const cx = Math.min(parentScreenX - reach * diag, parentScreenX - w / 2);
   const cy = parentScreenY - reach * diag;
   return { x: cx - w / 2, y: cy - h / 2, w, h };
 }
 
 /**
- * 배지가 **앉는 자리**의 중심. `clusterBadgeRect` 의 cx/cy 와 같은 식이되
- * 라벨 폭에 안 기대므로, 라벨을 모르는 자리(알약의 이동 목적지)에서도 쓴다.
+ * Centre of the seat the badge **sits in**. Same formula as `clusterBadgeRect`'s
+ * cx/cy but independent of label width, so it also works where the label is
+ * unknown (the pill's travel destination).
  *
- * 왜 필요한가 — 접힘 알약은 anchor 에, 펼침 배지는 부모 우상단에 있고 그 둘은
- * **51~147px 떨어져 있다**(실측). 지금은 그 간극을 알파 크로스페이드로만
- * 건너서, 하나의 표시가 자리를 옮긴 게 아니라 **여기서 사라지고 저기서
- * 나타난다.** 눈이 따라갈 선이 없으면 사용자는 둘을 같은 것으로 안 읽는다.
- * 알약이 이 좌표로 **걸어가면서** 사라지면 크로스페이드가 간극 위가 아니라
- * 도착점에서 일어난다.
+ * Why it is needed: the collapsed pill and the expanded badge are **51–147px
+ * apart** (measured), and an alpha crossfade across that gap reads as one mark
+ * vanishing here and another appearing there rather than as one mark moving.
+ * Walking the pill to this point while it fades puts the crossfade at the
+ * destination instead of over the gap.
  */
 export function clusterBadgeCenter(
   parentScreenX: number,
@@ -445,15 +459,12 @@ export function clusterBadgeCenter(
 }
 
 /**
- * 접힘 알약이 이 프레임에 그려질 자리 — anchor 에서 배지 자리로 `revealT`
- * 만큼 이동한 점.
+ * Where the collapsed pill is drawn this frame — the anchor moved toward the
+ * badge seat by `revealT`. Both directions work out, because `revealT` runs 0→1
+ * on expand and 1→0 on collapse: either way it is one mark travelling home.
  *
- * 방향이 양쪽 다 맞는다: 펼칠 때 `revealT` 는 0→1 이라 알약이 anchor 를 떠나
- * 배지 자리에 도착하며 사라지고, 접을 때는 1→0 이라 배지 자리에서 출발해
- * anchor 로 돌아오며 나타난다. 어느 쪽이든 **집으로 가는 하나의 표시**다.
- *
- * 부모 좌표가 없으면(디그레이드) 이동하지 않는다 — 목적지를 모르는데 움직이면
- * 그건 이동이 아니라 표류다.
+ * Without parent coordinates (degraded) it does not move — moving without
+ * knowing the destination is drift, not travel.
  */
 export function clusterChipTravelPoint(input: {
   screenX: number;
@@ -490,24 +501,26 @@ export function clusterChipTravelPoint(input: {
 export interface ClusterBadgeDrawInput {
   parentScreenX: number;
   parentScreenY: number;
-  /** 부모 노드 base 스크린 반지름(`radiusForKind × magnitudeScale × cameraScale`). */
+  /** Parent's base screen radius (`radiusForKind × magnitudeScale × cameraScale`). */
   nodeScreenRadius: number;
   count: number;
   hovered: boolean;
   /**
-   * 펼침 상태인가 — 라벨의 부호를 정한다(`−N` / `+N`). 「어깨 배지」 어포던스가
-   * 붙으며 생겼다: 그 어포던스에서는 배지가 접힘 상태에도 있다. 생략 시 `true`
-   * (펼침 배지 = 종전 유일한 쓰임)라 기존 호출부는 안 바뀐다.
+   * Expanded — decides the label's sign (`−N` / `+N`). Arrived with the
+   * shoulder-badge affordance, where the badge is present while collapsed too.
+   * Defaults to `true` (expanded badge, the only earlier use) so existing
+   * callers are unchanged.
    */
   expanded?: boolean;
-  /** 줌 스케일(`clusterChipScale`). 기본 1. */
+  /** Zoom factor (`clusterChipScale`). Defaults to 1. */
   scale?: number;
 }
 
 /**
- * 펼침 배지 한 개를 그린다 — 부모 노드 우상단 모서리에 부착된 미니 `−N`.
- * 겹친-글리프 스택·커넥터 없음(펼치면 자식이 실제로 보이고 배지는 접기
- * 어포던스일 뿐). 호출부가 `ctx.globalAlpha` 를 부모 티어 알파로 세팅한다.
+ * Draw one expanded badge — a mini `−N` docked on the parent's shoulder. No
+ * stacked glyphs and no connector: once expanded the children are actually
+ * visible and the badge is only a collapse affordance. The caller has already
+ * set `ctx.globalAlpha` to the parent's tier alpha.
  */
 export function drawClusterBadge(
   ctx: CanvasRenderingContext2D,
@@ -525,8 +538,8 @@ export function drawClusterBadge(
   ctx.strokeStyle = colors.border;
   ctx.stroke();
 
-  // 배지 숫자도 중립 numeralFace — 포커스 중에도 포커스 노드가 attention
-  // winner 를 유지하도록 indigoBright 를 쓰지 않는다.
+  // The badge numeral is neutral numeralFace too — no indigoBright, so the
+  // focused node stays the attention winner even while focused.
   ctx.fillStyle = colors.numeralInk;
   ctx.font = `${FONT_WEIGHT.strong} ${BADGE_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.textAlign = "center";
@@ -537,8 +550,9 @@ export function drawClusterBadge(
 }
 
 /**
- * anchor(스크린 좌표, 칩 중심)에서 칩 사각형을 유도한다 — 드로우/히트 공용.
- * 폭 = (겹친 글리프 + 텍스트(문자수×근사폭) + 좌우 패딩) × scale. scale 기본 1.
+ * Derive the chip rectangle from its anchor (screen coordinates, chip centre) —
+ * shared by draw and hit. Width = (leading glyph zone + text (chars × approx
+ * width) + horizontal padding) × scale. `scale` defaults to 1.
  */
 export function clusterChipRect(
   screenX: number,
@@ -553,16 +567,19 @@ export function clusterChipRect(
 }
 
 /**
- * S11 결함 (소유자 실보고 "노드 사이에 +31 이 겹쳐지는것도 보기싫은데") — 칩은
- * 노드 라벨보다 **먼저** 그려지는데(`topology-frame-draw.ts`) 라벨 배치기
- * (`greedyPlaceLabels`)가 칩의 존재를 몰라 라벨이 칩 위에 그대로 덮어 그려졌다.
- * 라벨 배치기에 칩을 **예약 점유자**로 넘기려면 "이번 프레임에 칩이 실제로
- * 차지하는 사각형" 이 필요하다.
+ * Owner report: "노드 사이에 +31 이 겹쳐지는것도 보기싫은데" (the +31 overlapping
+ * between nodes looks bad too). Chips are drawn **before** node labels
+ * (`topology-frame-draw.ts`), and the label placer (`greedyPlaceLabels`) did not
+ * know chips existed, so labels were painted straight over them. Handing the
+ * placer a chip as a **reserved occupant** needs "the rectangle the chip
+ * actually occupies this frame".
  *
- * `drawClusterChip` 과 **같은 분기**를 타는 것이 이 함수의 계약이다 — reveal 램프로
- * 사라지는 중이면 null(안 보이는 칩이 라벨을 밀어내면 유령 여백이 생긴다), 펼침이면
- * 부모 우상단 배지, 접힘이면 pill. 분기가 갈라지면 라벨이 빈 곳을 피하거나 칩 위에
- * 다시 겹치므로 draw 와 이 함수는 반드시 함께 수정한다(`cluster-chips.test.ts` 가드).
+ * This function's contract is to take the **same branches** as
+ * `drawClusterChip` — null while fading out on the reveal ramp (an invisible
+ * chip pushing labels away leaves a ghost gap), the shoulder badge when
+ * expanded, the pill when collapsed. Divergent branches make labels dodge empty
+ * space or overlap chips again, so draw and this function are always edited
+ * together (`cluster-chips.test.ts` guards it).
  */
 export function clusterChipOccupancyRect(input: ClusterChipDrawInput): ClusterChipRect | null {
   const scale = input.scale ?? 1;
@@ -577,7 +594,7 @@ export function clusterChipOccupancyRect(input: ClusterChipDrawInput): ClusterCh
     dockable: dockedNow,
   });
   if (form === "none") return null;
-  // drawClusterChip 의 formAlpha 와 동일식 — 램프로 사라지는 형태는 점유하지 않는다.
+  // Same formula as drawClusterChip's formAlpha — a form ramping out occupies nothing.
   const formAlpha =
     input.revealT === undefined
       ? 1
@@ -600,9 +617,11 @@ export function clusterChipOccupancyRect(input: ClusterChipDrawInput): ClusterCh
   }
 
   if (form === "badge") {
-    // 「뜬 알약」 어포던스의 펼침 배지는 도킹 폴백이 **없다**(회귀 0 계약) —
-    // 못 붙으면 종전대로 아무것도 없다. 폴백은 `badge`/`bar` 어포던스에만
-    // 있고, 그쪽은 위 `clusterControlForm` 이 이미 `pill` 로 바꿔 여기 안 온다.
+    // The floating-pill affordance's expanded badge has **no** docking fallback
+    // (zero-regression contract) — if it cannot dock, nothing is drawn, as
+    // before. The fallback belongs to the `badge`/`bar` affordances, and there
+    // `clusterControlForm` above already turned it into `pill`, so it never
+    // reaches here.
     if (!dockedNow) return null;
     return clusterBadgeRect(
       input.parentScreenX as number,
@@ -613,41 +632,42 @@ export function clusterChipOccupancyRect(input: ClusterChipDrawInput): ClusterCh
     );
   }
 
-  // 점유도 이동을 따라간다 — 알약이 걸어가는데 자리만 anchor 에 남으면 라벨
-  // 회피가 **빈 자리를 피하고 실제 잉크는 안 피한다.**
+  // Occupancy follows the travel too — if the pill walks while its reservation
+  // stays at the anchor, label avoidance **dodges empty space and not the ink.**
   const travel = clusterChipTravelPoint(input);
   return clusterChipRect(travel.x, travel.y, clusterChipLabel(input.count, false), scale);
 }
 
 export interface ClusterChipColors {
-  /** rest pill surface(무채색 dim). */
+  /** Rest pill surface (neutral dim). */
   surface: string;
-  /** rest 얇은 보더(중립 nodeStrokeDomain) — 노드 선택 인디고와 경쟁 안 함. */
+  /** Rest hairline border (neutral nodeStrokeDomain) — never competes with selection indigo. */
   border: string;
-  /** composite `＋` 글리프 rest 잉크(인디고). */
+  /** Rest ink of the composite `＋` glyph (indigo). */
   plusInk: string;
-  /** 카운트 숫자 + 펼침 배지 rest 잉크(중립 numeralFace, mono tabular). */
+  /** Rest ink of the count and the expanded badge (neutral numeralFace, mono tabular). */
   numeralInk: string;
   /**
-   * 막대 글자 rest 잉크 — 없으면 `numeralInk`.
+   * Rest ink of the bar's text — falls back to `numeralInk`.
    *
-   * 왜 갈라 뒀나: 알약·배지는 **상시 크롬**이라 램프 맨 아래 잉크가 맞지만
-   * (크롬은 콘텐츠보다 어둡다), 막대는 사용자가 노드를 골라야 나타나는
-   * **부른 컨트롤**이다. 같은 잉크를 쓰면 방금 부른 버튼의 글자가 배경 노드의
-   * 테두리보다 어두워 읽히지 않는다.
+   * Why it is separate: the pill and badge are **permanent chrome**, so the
+   * bottom of the ink ramp is right for them (chrome sits below content). The
+   * bar is a **summoned control** that appears only once the user selects a
+   * node. With the same ink, the text of the button they just summoned would be
+   * darker than the outline of a background node, and unreadable.
    */
   barInk?: string;
-  /** 부모→칩 tether stroke(edgeContains — depends 잉크와 명도대 어긋냄). */
+  /** Parent→chip tether stroke (edgeContains — offset in lightness from the depends ink). */
   tether: string;
-  /** hover pill surface(nodeFillCapability). */
+  /** Hover pill surface (nodeFillCapability). */
   hoverSurface: string;
-  /** hover 보더(인디고). */
+  /** Hover border (indigo). */
   hoverBorder: string;
-  /** hover 시 `＋`/숫자 잉크(indigoBright). */
+  /** Hover ink for `＋` and the numeral (indigoBright). */
   hoverInk: string;
 }
 
-/** 수동 rounded-rect 경로 (jsdom 등 `ctx.roundRect` 미구현 환경 방어). */
+/** Manual rounded-rect path — `ctx.roundRect` is missing in jsdom and similar. */
 function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
   const radius = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -664,52 +684,53 @@ function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w:
 }
 
 export interface ClusterChipDrawInput {
-  /** 칩 중심 스크린 좌표. */
+  /** Chip centre, screen coordinates. */
   screenX: number;
   screenY: number;
   count: number;
   expanded: boolean;
   hovered: boolean;
   /**
-   * hover 이징 진행도 0..1(색만 보간). 프레임 루프가 `now` 로 ~150ms 램프를
-   * 만들어 넘긴다. prefers-reduced-motion 이면 hovered?1:0 으로 즉시 스냅.
-   * 미지정이면 `hovered` 로 폴백(0/1).
+   * Hover easing progress 0..1 (colour interpolation only). The frame loop
+   * builds a ~150ms ramp from `now`. Under prefers-reduced-motion it snaps to
+   * hovered ? 1 : 0. Omitted, it falls back to `hovered` (0/1).
    */
   hoverT?: number;
   /**
-   * rank7 — 펼침/접힘 reveal 램프 0..1(펼치면 1, 접히면 0 수렴, 루프가 넘김).
-   * 현재 표시되는 칩 형태(펼침=badge / 접힘=pill)의 알파를 이 값으로 페이드인해
-   * "툭 전환"을 없앤다: badge 알파 = revealT, pill 알파 = 1−revealT. 미지정이면
-   * 알파 1(하위호환 — 하드 표시). 색만/알파만 — 위치 이동 없음.
+   * Expand/collapse reveal ramp 0..1, supplied by the loop. It fades the alpha of
+   * whichever form is on screen (badge = revealT, pill = 1−revealT) so the swap
+   * is not an abrupt cut. Omitted means alpha 1 — backward compatible hard swap.
    */
   revealT?: number;
-  /** 줌 스케일(카메라 스케일에서 `clusterChipScale` 로 유도). 기본 1. */
+  /** Zoom factor (derived from the camera by `clusterChipScale`). Defaults to 1. */
   scale?: number;
-  /** 부모 노드 스크린 좌표 — 있으면 부모→칩 짧은 점선 커넥터를 그린다. */
+  /** Parent screen coordinates — when present, a short dashed parent→chip connector is drawn. */
   parentScreenX?: number;
   parentScreenY?: number;
   /**
-   * S10 결함 2 — 부모 노드 base 스크린 반지름. 펼침(`expanded`)일 때 부모
-   * 우상단 배지 위치 계산에 필요. 부모 좌표 + 이 값이 모두 있으면 떠다니는
-   * 알약 대신 `drawClusterBadge` 로 위임한다.
+   * Parent's base screen radius, needed to place the shoulder badge while
+   * `expanded`. With the parent coordinates and this value present, the draw
+   * delegates to `drawClusterBadge` instead of the floating pill.
    */
   nodeScreenRadius?: number;
   /**
-   * 설정 「확장 → 펼치기 표시」. 생략 시 `"pill"` — 종전 동작과 한 픽셀도
-   * 다르지 않다(이 파일의 회귀 0 계약).
+   * The 「확장 → 펼치기 표시」 (expand → reveal control) setting. Omitted means
+   * `"pill"` — not one pixel differs from the earlier behaviour (this file's
+   * zero-regression contract).
    */
   affordance?: ExpandAffordance;
-  /** 이 부모가 고른 노드인가 — `"bar"` 어포던스의 존재 조건. 생략 시 false. */
+  /** Is this parent the selected node — the `"bar"` affordance's precondition. Defaults to false. */
   focused?: boolean;
-  /** 설정 「한 번에 여는 개수」 — 막대 문구가 「모두」와 「N개」를 가르는 기준. */
+  /** The 「한 번에 여는 개수」 (how many one press opens) setting — decides "all" vs "N". */
   batchSize?: number;
-  /** 막대 문구(번역문). 호출부가 넘긴다 — 렌더러는 문자열을 만들지 않는다. */
+  /** Bar wording (translated). The caller passes it; the renderer builds no strings. */
   barLabels?: ClusterBarLabels;
 }
 
 /**
- * 칩 한 개를 그린다. 호출부(`topology-frame-draw.ts`)가 `ctx.globalAlpha` 를
- * 부모 티어 알파로 이미 세팅한다 — 이 함수는 알파를 만지지 않는다.
+ * Draw one chip. The caller (`topology-frame-draw.ts`) has already set
+ * `ctx.globalAlpha` to the parent's tier alpha; this function only multiplies
+ * into that base and restores it before returning.
  */
 export function drawClusterChip(
   ctx: CanvasRenderingContext2D,
@@ -728,8 +749,8 @@ export function drawClusterChip(
     focused: input.focused ?? false,
     dockable: docked,
   });
-  // 「고른 노드 바로 위」 어포던스에서 안 고른 부모는 컨트롤이 **없다**(시안
-  // 계약). 점유(`clusterChipOccupancyRect`)도 같은 판정으로 null 을 낸다.
+  // Under the overhead-bar affordance an unselected parent has **no** control.
+  // Occupancy (`clusterChipOccupancyRect`) returns null from the same decision.
   if (form === "none") return;
 
   if (form === "bar") {
@@ -751,8 +772,8 @@ export function drawClusterChip(
     return;
   }
 
-  // 「어깨 배지」 어포던스는 접힘·펼침 **둘 다** 배지다 — 알약이 없으므로
-  // 크로스페이드할 짝도 없다(형태가 안 바뀌고 부호만 `+`↔`−` 로 바뀐다).
+  // The shoulder-badge affordance is a badge in **both** states — with no pill
+  // there is nothing to crossfade with; only the sign flips `+`↔`−`.
   if (form === "badge" && affordance === "badge") {
     drawClusterBadge(
       ctx,
@@ -770,17 +791,18 @@ export function drawClusterChip(
     return;
   }
 
-  // rank7 — 현재 형태(펼침=badge / 접힘=pill)의 알파를 reveal 램프로 페이드인.
-  // 미지정이면 1(하위호환). 호출부가 세팅한 baseAlpha(부모 티어 알파)에 곱한다.
+  // Fade the current form's alpha in on the reveal ramp; omitted means 1
+  // (backward compatible). Multiplied into the baseAlpha the caller set.
   //
-  // ⚠️ **램프 중에는 두 형태를 함께 그린다.** 종전에는 `expanded` 로 갈라 한
-  // 형태만 그렸고, 그래서 **어느 방향에서도 크로스페이드가 없었다** — 펼치면
-  // 알약이 1프레임에 사라지고 배지가 자기 램프를 혼자 탔다(프레임 실측
-  // 2026-07-31: 알약 마지막 프레임 α=1.000 → 다음 프레임 부재, 중간 프레임 0개).
+  // ⚠️ **Both forms are drawn while the ramp runs.** Branching on `expanded` and
+  // drawing only one form meant **there was no crossfade in either direction** —
+  // expanding, the pill vanished in one frame and the badge rode its ramp alone
+  // (frame measurement 2026-07-31: pill's last frame α=1.000 → absent the next
+  // frame, zero frames in between).
   //
-  // 더 나쁜 것은 그 갈래가 **이동 코드보다 앞에** 있었다는 점이다. 펼침은
-  // 첫 프레임부터 `expanded=true` 라 `clusterChipTravelPoint` 에 **한 번도
-  // 도달하지 못했다** — 이동을 넣어 놓고 펼침에서는 실행조차 안 됐다.
+  // Worse, that branch sat **before the travel code**. Expanding is
+  // `expanded=true` from the first frame, so `clusterChipTravelPoint` was
+  // **never reached** — the travel existed but never ran on expand.
   const baseAlpha = ctx.globalAlpha;
   const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
   const badgeAlpha =
@@ -789,9 +811,10 @@ export function drawClusterChip(
     input.revealT === undefined ? (input.expanded ? 0 : 1) : clamp01(1 - input.revealT);
   if (badgeAlpha < 0.01 && pillAlpha < 0.01) return;
 
-  // S10 결함 2 — 펼침 형태는 떠다니는 알약이 아니라 부모 노드 우상단 배지다
-  // (파선 오라/라벨 겹침 원천 차단). 부모 좌표 + 노드 반지름이 있어야 배지를
-  // 앉힐 수 있다 — 없으면(디그레이드) 그리지 않는다.
+  // The expanded form is the shoulder badge, not a floating pill — that is what
+  // removes the dashed-aura and label overlap at its source. Seating the badge
+  // needs the parent coordinates and the node radius; without them (degraded)
+  // nothing is drawn.
   if (
     badgeAlpha >= 0.01 &&
     input.parentScreenX !== undefined &&
@@ -814,23 +837,25 @@ export function drawClusterChip(
   }
 
   if (pillAlpha < 0.01) {
-    ctx.globalAlpha = baseAlpha; // rank7 — reveal 알파 복원.
+    ctx.globalAlpha = baseAlpha; // restore the reveal alpha.
     return;
   }
   ctx.globalAlpha = baseAlpha * pillAlpha;
 
-  // 나가는(또는 들어오는) 알약은 **언제나 접힘 형태**다 — `+N`. `input.expanded`
-  // 를 라벨에 그대로 넘기면 펼침 램프 중의 알약이 `− N` 으로 읽혀, 사라지는
-  // 것과 나타나는 것이 같은 글자를 말하게 된다.
+  // The departing (or arriving) pill is **always the collapsed form** — `+N`.
+  // Passing `input.expanded` straight to the label would make the pill read
+  // `− N` during an expand ramp, so what leaves and what arrives would say the
+  // same thing.
   const label = clusterChipLabel(input.count, false);
-  // 알약은 사라지는 동안 배지 자리로 **걸어간다**(`clusterChipTravelPoint` 의
-  // 주석 참고). 정착 상태(revealT 0 또는 미지정)에서는 anchor 그대로라 종전
-  // 좌표와 한 픽셀도 다르지 않다.
+  // While fading, the pill **walks** to the badge seat (see
+  // `clusterChipTravelPoint`). At rest (revealT 0 or omitted) it stays on the
+  // anchor, not one pixel from the earlier coordinates.
   const travel = clusterChipTravelPoint(input);
   const rect = clusterChipRect(travel.x, travel.y, label, scale);
 
-  // hover 이징 — 색만 보간(transition-colors 성격). rest(조용한 중립) →
-  // hover(인디고로 깨어남). transform/scale/글로우 없음. hex 토큰 간 RGB lerp.
+  // Hover easing — colour interpolation only (transition-colors in character),
+  // quiet neutral at rest waking to indigo on hover. No transform, no zoom step,
+  // no glow. RGB lerp between hex tokens.
   const t = input.hoverT ?? (input.hovered ? 1 : 0);
   const mix = (rest: string, hover: string): string =>
     t <= 0 ? rest : t >= 1 ? hover : lerpColorHex(rest, hover, t);
@@ -839,10 +864,11 @@ export function drawClusterChip(
   const plusColor = mix(colors.plusInk, colors.hoverInk);
   const numColor = mix(colors.numeralInk, colors.hoverInk);
 
-  // 부모→칩 tether — depends 점선과 질감을 달리해(dash [3,3], strokeStyle
-  // edgeContains 로 의존 잉크와 명도대 어긋냄) '엣지 수프'에 안 섞이게. 부모
-  // 끝점에 2px 인디고 dot 으로 소속을 못 박는다. pill 을 나중에 채워 tether 의
-  // pill 안쪽 구간은 자연히 가려진다.
+  // Parent→chip tether — a different texture from the depends dashes (dash
+  // [3,3]; strokeStyle edgeContains offsets it in lightness from the depends
+  // ink) so it does not join the 'edge soup'. A 2px indigo dot at the parent end
+  // pins the membership. The pill is filled afterwards, so the tether's segment
+  // inside the pill is naturally covered.
   if (input.parentScreenX !== undefined && input.parentScreenY !== undefined) {
     ctx.save();
     ctx.setLineDash([3 * scale, 3 * scale]);
@@ -853,7 +879,7 @@ export function drawClusterChip(
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.setLineDash([]);
-    // 부모 끝점 앵커 dot — tether 시작점을 못 박아 소속을 읽히게.
+    // Anchor dot at the parent end — pins where the tether starts.
     ctx.beginPath();
     ctx.arc(input.parentScreenX, input.parentScreenY, 2 * scale, 0, Math.PI * 2);
     ctx.fillStyle = colors.plusInk;
@@ -869,9 +895,10 @@ export function drawClusterChip(
   ctx.strokeStyle = border;
   ctx.stroke();
 
-  // composite `＋N` + 디스클로저 caret — pill 중앙에 한 덩어리로. `＋`는 인디고,
-  // 숫자는 중립 numeralFace(mono tabular), caret 은 border 잉크로 "열기 N"
-  // 어포던스만. 히트박스는 위 rect 가 진실원이므로 텍스트는 자유롭게 중앙정렬.
+  // Composite `＋N` plus disclosure caret — one cluster centred in the pill.
+  // `＋` indigo, numeral neutral numeralFace (mono tabular), caret in the border
+  // ink carrying only the "open N" affordance. The hit box comes from the rect
+  // above, so the text is free to centre itself.
   ctx.font = `${FONT_WEIGHT.strong} ${CHIP_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
@@ -893,5 +920,5 @@ export function drawClusterChip(
   ctx.fillText(caret, tx, ty);
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";
-  ctx.globalAlpha = baseAlpha; // rank7 — reveal formAlpha 복원.
+  ctx.globalAlpha = baseAlpha; // restore the reveal formAlpha.
 }

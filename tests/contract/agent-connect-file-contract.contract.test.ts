@@ -8,36 +8,36 @@ import {
 } from '@/features/docs-vault-local/lib/agent-clients';
 
 /**
- * 「연결」 버튼의 **파일 계약** — 누른 도구의 파일만 쓴다.
+ * The connect button's **file contract** — it writes only the file of the tool that
+ * was clicked.
  *
- * ## 무엇이 틀렸었나
+ * **What was wrong.** Until 2026-07-30 one click on "Connect to Claude Code" wrote
+ * three files: `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`, because
+ * the Rust planner emitted the **entire** allowlist as `targets` and the caller
+ * iterated all of them.
  *
- * 2026-07-30 까지 「Connect to Claude Code」 한 번이 세 파일을 썼다: `.mcp.json` ·
- * `.mcp.json.example` · `.codex/config.toml`. Rust 플래너가 허용 목록 **전체**를
- * `targets` 로 내고 호출부가 그것을 전부 순회했기 때문이다.
+ * It was found while filming a demo, when "`.mcp.json` ready" and "Codex config
+ * ready" appeared on screen **at the same time**. Two things break together:
  *
- * 시연 촬영 중 화면에 「.mcp.json ready」와 「Codex config ready」가 **동시에** 떠서
- * 발견됐다. 두 가지가 동시에 깨진다:
+ * 1. **The label lies.** A category this repository already gates against — "back to
+ *    the map" pointing at `/` (`map-destination-route.contract`), decorative trailing
+ *    arrows on labels, dead npm commands.
+ * 2. **A file for a tool the user does not use shows up in their git diff**, directly
+ *    contradicting this product's claim that *every change is a readable diff*.
  *
- * 1. **라벨이 거짓말한다.** 이 저장소가 이미 게이트로 막는 부류다 —
- *    「지도로 돌아가기」가 `/` 를 가리킨 것(`map-destination-route.contract`),
- *    라벨 끝 장식 화살표, 죽은 npm 명령.
- * 2. **안 쓰는 도구의 파일이 사용자 git diff 에 뜬다.** *"모든 변경이 읽을 수 있는
- *    diff"* 라는 이 제품의 주장에 정면으로 반한다.
+ * **Why a contract test.** The verdict requires **comparing lists across two
+ * languages** — TS is the UI's source of truth and Rust is the security boundary.
+ * `no-restricted-syntax` sees one file's AST and cannot express this.
  *
- * ## 왜 계약 테스트인가
- *
- * 판정에 **두 언어의 목록을 맞대야** 한다 — TS 는 UI 의 진실원이고 Rust 는 보안
- * 경계다. `no-restricted-syntax` 는 한 파일의 AST 만 보므로 표현할 수 없다.
- *
- * 두 목록이 어긋나는 방향이 둘이고 **증상이 다르다**: TS 에만 있으면 버튼은 있는데
- * 쓰기가 거절되고(사용자에게 "허용되지 않은 파일" 오류), Rust 에만 있으면 아무도
- * 못 쓰는 경로가 보안 목록에 남는다(감사할 때 왜 있는지 모른다).
+ * The two lists can diverge in two directions with **different symptoms**: present
+ * only in TS, the button exists but the write is refused (the user sees a
+ * "file not allowed" error); present only in Rust, a path nobody can write stays in
+ * the security list (and an auditor cannot tell why it is there).
  */
 
 const ROOT = join(import.meta.dirname, '../..');
 
-/** Rust 의 보안 allowlist 를 소스에서 읽는다 — 값을 여기 복제하면 그 복제가 드리프트한다. */
+/** Reads Rust's security allowlist from source — duplicating the values here would create a copy that drifts. */
 function rustAllowedFiles(): string[] {
   const source = readFileSync(join(ROOT, 'src-tauri/src/agent_setup.rs'), 'utf8');
   const block = source.match(/const ALLOWED_CONFIG_FILES: \[&str; \d+\] = \[([\s\S]*?)\];/);
@@ -56,9 +56,10 @@ describe('에이전트 연결 — 파일 계약', () => {
   });
 
   /**
-   * 역방향은 **같지 않아도 된다.** `.mcp.json.example` 은 어느 도구의 연결 버튼도
-   * 쓰지 않지만(팀원용 절대경로 템플릿이라 청중이 다르다) 다른 경로가 쓴다.
-   * 그래서 "Rust 에만 있는 것"은 결함이 아니고, **이유가 문서에 있어야** 결함이 아니다.
+   * The reverse direction **need not match.** No tool's connect button writes
+   * `.mcp.json.example` (it is an absolute-path template for teammates, a different
+   * audience), but another path does. So "present only in Rust" is not a defect —
+   * provided **the reason is documented**.
    */
   it('Rust 에만 있는 파일은 그 이유가 소스에 적혀 있다', () => {
     const declared = new Set(allAgentConfigFiles());
@@ -67,11 +68,11 @@ describe('에이전트 연결 — 파일 계약', () => {
     for (const file of rustOnly) {
       expect(source, `${file} 이 도구 목록에 없는데 왜 허용되는지가 안 적혀 있다`).toContain(file);
     }
-    // 오늘의 예외는 하나다. 늘어나면 각각 이유가 필요하다.
+    // There is one exception today. If the count grows, each needs its own reason.
     expect(rustOnly).toEqual(['.mcp.json.example']);
   });
 
-  /** **버튼 하나 = 파일 하나.** 둘을 쓰는 도구가 생기면 그건 설계 판단이지 사고가 아니다. */
+  /** **One button, one file.** A tool that writes two would be a design decision, not an accident. */
   it.each(AGENT_CLIENTS.map((client) => [client.id, client.files] as const))(
     '%s 는 파일을 정확히 선언한다',
     (id, files) => {
@@ -80,7 +81,7 @@ describe('에이전트 연결 — 파일 계약', () => {
     },
   );
 
-  /** 한 도구의 파일을 다른 도구가 쓰면 라벨이 다시 거짓이 된다. */
+  /** If one tool writes another tool's file, the label is a lie again. */
   it('도구끼리 파일을 공유하지 않는다', () => {
     const seen = new Map<string, string>();
     for (const client of AGENT_CLIENTS) {
@@ -93,10 +94,11 @@ describe('에이전트 연결 — 파일 계약', () => {
   });
 
   /**
-   * 목록은 조사로 정했다(2026-07-30). **VS Code 가 없는 것이 계약이다** — 지원
-   * 못 해서가 아니라 `.vscode/mcp.json` 의 키가 `mcpServers` 가 아니라 `servers`
-   * 라서 라이터를 하나 더 요구하는데 겹침 대비 비싸기 때문이다. 되살리려면 그
-   * 라이터를 함께 만들어야 하고, 이 검사가 그 사실을 기억한다.
+   * The list was decided by research (2026-07-30). **VS Code's absence is the
+   * contract** — not because it cannot be supported, but because `.vscode/mcp.json`
+   * keys its entries under `servers` rather than `mcpServers`, which needs a second
+   * writer, expensive relative to the overlap. Reviving it means building that writer
+   * too, and this check remembers that.
    */
   it('지원 목록이 조사 결론과 같다', () => {
     expect(AGENT_CLIENTS.map((client) => client.id)).toEqual([
@@ -109,13 +111,14 @@ describe('에이전트 연결 — 파일 계약', () => {
       join(ROOT, 'src/features/docs-vault-local/lib/agent-clients.ts'),
       'utf8',
     );
-    // 뺀 것과 기각한 것의 이유가 코드에 남아 있어야 다음 사람이 다시 묻지 않는다.
+    // The reasons for what was excluded and what was rejected must stay in the code so
+    // the next person does not ask again.
     for (const note of ['servers', 'openclaw', 'opencode']) {
       expect(source, `${note} 에 대한 판단이 안 적혀 있다`).toContain(note);
     }
   });
 
-  /** 도구마다 그 도구의 공식 문서를 가리켜야 한다 — "왜 이 파일이 생기나" 를 우리 말이 아니라 그쪽 말로. */
+  /** Each tool must point at its own official docs — "why this file appears" in their words, not ours. */
   it('각 도구가 공식 문서 URL 을 든다', () => {
     for (const client of AGENT_CLIENTS) {
       expect(client.docsUrl, `${client.id} 의 문서 URL 이 https 가 아니다`).toMatch(/^https:\/\//);
@@ -123,14 +126,16 @@ describe('에이전트 연결 — 파일 계약', () => {
   });
 
   /**
-   * **미리보기와 쓰기가 같은 목록을 봐야 한다.**
+   * **Preview and write must look at the same list.**
    *
-   * 이 결함은 **두 번 반쪽으로** 나타났다. 처음엔 쓰기가 전부 순회했고, 그것을
-   * 고친 뒤에도 **미리보기가 전부 그렸다** — 화면이 5개를 약속하고 1개를 쓰는
-   * 상태로, 「See what will be written」이라는 이름 자체가 거짓이었다.
+   * This defect appeared **twice, each time as half of itself**. First the write
+   * iterated everything; after that was fixed, **the preview still drew everything** —
+   * the screen promising 5 files while 1 was written, which made the name
+   * "See what will be written" itself a lie.
    *
-   * 그래서 게이트가 **두 자리가 같은 필터를 쓰는지**를 소스에서 본다. 같은 함수를
-   * 두 번 부르는 것이 계약이고, 한쪽만 부르면 그 순간 화면과 디스크가 갈라진다.
+   * So the gate checks in source that **both places use the same filter**. Calling the
+   * same function twice is the contract; calling it in only one place splits screen
+   * from disk at that moment.
    */
   it('미리보기와 쓰기가 같은 필터를 쓴다', () => {
     const source = readFileSync(
@@ -142,7 +147,7 @@ describe('에이전트 연결 — 파일 계약', () => {
       uses.length,
       '`filesForClient(clientId)` 가 두 번(미리보기·쓰기) 쓰이지 않는다 — 한쪽이 전부를 본다',
     ).toBeGreaterThanOrEqual(2);
-    // 필터 없는 전체 순회가 남아 있으면 그쪽이 진실이 된다.
+    // If an unfiltered full iteration survives anywhere, that becomes the truth.
     expect(source).not.toMatch(/plan\.targets\.map\(/);
   });
 });

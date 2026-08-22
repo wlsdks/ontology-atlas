@@ -1,6 +1,6 @@
 // `ontology-atlas overview [vault]`
-// Vault 의 first-contact dashboard — counts + relation distribution + 허브 노드.
-// MCP `query_ontology({operation: 'overview'})` thin wrapper.
+// The vault's first-contact dashboard — counts, relation distribution, hub nodes.
+// Thin wrapper over MCP `query_ontology({operation: 'overview'})`.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -58,7 +58,7 @@ function renderOverview(result, hubsLimit) {
   const byRelation = result?.byRelation ?? {};
   const hubs = Array.isArray(result?.hubs) ? result.hubs : [];
 
-  // Header — 그래프 한 줄 요약.
+  // Header — the graph in one line.
   const nodes = graph.nodes ?? 0;
   const edges = graph.edges ?? 0;
   const resolved = graph.resolvedEdges ?? 0;
@@ -69,18 +69,19 @@ function renderOverview(result, hubsLimit) {
     `${COLORS.bold}vault overview${COLORS.reset}` +
       ` ${COLORS.dim}· ${nodes} 노드 · ${edges} 관계 (resolved ${resolved} · external ${external}${unresolved ? ` · unresolved ${unresolved}` : ''})${COLORS.reset}\n`,
   );
-  // 화면(지도·인사이트)은 문서 없이 이름만 적힌 개념까지 세므로 총계가 더
-  // 크다. 그 차이를 여기서 밝히지 않으면 두 입구가 같은 볼트에 다른 수를
-  // 답하는데 어느 쪽도 이유를 말하지 않는 상태가 된다.
+  // The screens (map, insights) count concepts named without a document too, so
+  // their total is larger. Leaving that unexplained here would give two entrances
+  // different numbers for one vault with neither saying why.
   if (referencedOnly > 0) {
     process.stdout.write(
       `${COLORS.dim}  문서 있는 개념 ${nodes} + 이름만 적힌 개념 ${referencedOnly} = 지도가 세는 ${nodes + referencedOnly}${COLORS.reset}\n`,
     );
   }
-  // 관계 수도 같은 이유로 스코프를 밝힌다 (2026-07-27 실측: 웹 448 vs 여기 542).
-  // 여기는 frontmatter 에 **적힌 참조 하나당 한 관계**를 센다 — 도메인이
-  // `capabilities:` 로, 역량이 `domain:` 으로 같은 담기 관계를 양쪽에서 적으면
-  // 2로 센다. 지도·인사이트는 같은 사실을 서로 다른 관계 하나로 접어 센다.
+  // The relation count states its scope for the same reason (measured 2026-07-27:
+  // web 448 vs here 542). Here, **one relation per reference written in the
+  // frontmatter** is counted — a domain writing `capabilities:` and a capability
+  // writing `domain:` for the same containment counts as 2. The map and insights
+  // fold that one fact into a single relation.
   if (edges > 0) {
     process.stdout.write(
       `${COLORS.dim}  관계 ${edges} 는 적힌 참조 기준: 양쪽 문서가 같은 관계를 적으면 2로 셉니다 (지도는 접어서 1)${COLORS.reset}\n`,
@@ -88,7 +89,7 @@ function renderOverview(result, hubsLimit) {
   }
   process.stdout.write('\n');
 
-  // Kind 분포 — kind 별 count + 색깔 bar.
+  // Kind distribution — count per kind plus a coloured bar.
   if (Object.keys(byKind).length > 0) {
     process.stdout.write(`${COLORS.dim}KIND 분포${COLORS.reset}\n`);
     const total = Object.values(byKind).reduce((sum, n) => sum + n, 0) || 1;
@@ -103,7 +104,7 @@ function renderOverview(result, hubsLimit) {
     process.stdout.write('\n');
   }
 
-  // 관계 종류 분포.
+  // Relation type distribution.
   if (Object.keys(byRelation).length > 0) {
     process.stdout.write(`${COLORS.dim}관계 종류 분포${COLORS.reset}\n`);
     const total = Object.values(byRelation).reduce((sum, n) => sum + n, 0) || 1;
@@ -117,7 +118,7 @@ function renderOverview(result, hubsLimit) {
     process.stdout.write('\n');
   }
 
-  // 도메인 분포 (있을 때만).
+  // Domain distribution (only when present).
   if (Object.keys(byDomain).length > 0) {
     process.stdout.write(`${COLORS.dim}도메인 분포${COLORS.reset}\n`);
     for (const [dom, count] of sortByCount(byDomain)) {
@@ -128,7 +129,7 @@ function renderOverview(result, hubsLimit) {
     process.stdout.write('\n');
   }
 
-  // 허브 노드 — degree 상위. document / vault-readme 제외.
+  // Hub nodes — highest degree, excluding document / vault-readme.
   if (hubs.length > 0) {
     const cap = Math.min(hubs.length, hubsLimit);
     process.stdout.write(`${COLORS.dim}허브 노드${COLORS.reset} ${COLORS.dim}(degree 상위 ${cap}, document/project 제외)${COLORS.reset}\n`);

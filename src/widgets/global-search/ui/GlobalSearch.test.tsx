@@ -7,8 +7,8 @@ import type { Project } from "@/entities/project";
 import enMessages from "../../../../messages/en.json";
 import { GlobalSearch } from "./GlobalSearch";
 
-// cmdk (Command) + @tanstack/react-virtual 의 project chip row 가
-// ResizeObserver 를 요구 — jsdom 엔 없어 최소 stub 필요.
+// cmdk (Command) plus @tanstack/react-virtual's project chip row require
+// ResizeObserver, which jsdom lacks — a minimal stub is needed.
 beforeAll(() => {
   class ResizeObserverStub {
     observe() {}
@@ -17,7 +17,7 @@ beforeAll(() => {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test-only jsdom polyfill
   (globalThis as any).ResizeObserver = ResizeObserverStub;
-  // cmdk 가 활성 항목을 스크롤시키는 데 사용 — jsdom 엔 미구현.
+// Used by cmdk to scroll the active item into view — unimplemented in jsdom.
   window.HTMLElement.prototype.scrollIntoView = () => {};
 });
 
@@ -61,9 +61,9 @@ function project(input: Partial<Project> & { slug: string; name: string }): Proj
   } as Project;
 }
 
-/** cmdk 옵션은 `data-value="ontology:<id>"` 로 마킹 — 매치 하이라이트(<mark>)가
- * title 텍스트를 여러 element 로 쪼개 getByText 매칭이 깨지므로, RTL 텍스트
- * 매칭 대신 이 안정적인 data 속성으로 옵션을 찾는다. */
+/** cmdk options are marked `data-value="ontology:<id>"`. Match highlighting (<mark>)
+ *  splits the title text across several elements and breaks getByText matching, so
+ *  options are found by this stable data attribute rather than by RTL text matching. */
 function findOntologyOption(nodeId: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(
     `[cmdk-item][data-value="ontology:${nodeId}"]`,
@@ -71,15 +71,16 @@ function findOntologyOption(nodeId: string): HTMLElement | null {
 }
 
 /**
- * persona-P1 회귀 방지 — "MCP Server" 를 찾고, 골라서 지도를 벗어나지 않는
- * 흐름의 근본이 되는 두 계약을 이 컴포넌트 레벨에서 고정한다:
+ * persona-P1 regression guard — the two contracts underlying the flow of finding
+ * "MCP Server" and choosing it without leaving the map, pinned at component level:
  *
- * 1. onSelectNode 콜백 — HomePage 는 이 콜백을 handleSelect(node.id) 로
- *    override 해서 지도 위에 머문다. 콜백 자체가 올바른 node 로 불리는지가
- *    그 override 가 의미를 가지는 전제조건.
- * 2. kind 필터 칩 — 예전 헤더 검색(SearchPalette)의 ALL/HUB/NODE 칩은
- *    ontology 노드를 전혀 다루지 않는 축이라 체감상 no-op 이었다. 이
- *    통합 팔레트(GlobalSearch)의 kind 칩이 실제로 결과를 좁히는지 고정.
+ * 1. The onSelectNode callback — HomePage overrides it with handleSelect(node.id) to
+ *    stay on the map. That the callback is called with the right node is the
+ *    precondition for the override to mean anything.
+ * 2. The kind filter chips — the old header search (SearchPalette)'s ALL/HUB/NODE
+ *    chips were on an axis that never touched ontology nodes, so they felt like a
+ *    no-op. This pins that the unified palette's (GlobalSearch) kind chips really do
+ *    narrow the results.
  */
 describe("GlobalSearch", () => {
   const nodes: KnowledgeGraphNode[] = [
@@ -148,14 +149,14 @@ describe("GlobalSearch", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Global search" }), {
       target: { value: "mcp" },
     });
-    // 필터 없이는 capability 2건 + element 1건 모두 노출.
+    // Without a filter, all 2 capabilities and 1 element are visible.
     expect(findOntologyOption("capability:mcp-server")).not.toBeNull();
     expect(findOntologyOption("capability:mcp-conflict-guard")).not.toBeNull();
     expect(findOntologyOption("element:mcp-index")).not.toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Element" }));
 
-    // ELEMENT 칩 활성화 후 — capability 결과는 사라지고 element 만 남는다.
+    // After activating the ELEMENT chip, the capability results disappear and only the element remains.
     expect(findOntologyOption("capability:mcp-server")).toBeNull();
     expect(findOntologyOption("capability:mcp-conflict-guard")).toBeNull();
     expect(findOntologyOption("element:mcp-index")).not.toBeNull();
@@ -185,10 +186,10 @@ describe("GlobalSearch", () => {
   });
 
   /**
-   * rank2/18 (설계협의회 batch B1) — 오버레이 a11y 백본. Radix Dialog 가
-   * ESC/트리거 포커스복귀를 기본 제공하지만, GlobalSearch 는 controlled
-   * (open/onOpenChange 외부 관리) 라 이 컴포넌트 레벨에서 실제로 동작하는지
-   * 고정해야 한다.
+   * rank2/18 (design council batch B1) — the overlay a11y backbone. Radix Dialog
+   * provides ESC and trigger focus return by default, but GlobalSearch is controlled
+   * (open/onOpenChange managed externally), so this has to be pinned as actually
+   * working at component level.
    */
   function Harness() {
     const [open, setOpen] = useState(false);
@@ -223,15 +224,16 @@ describe("GlobalSearch", () => {
   });
 
   /**
-   * Esc 계약 (2026-07-26 실측 회귀) — 푸터가 "ESC 닫기"라고 약속하므로 **첫**
-   * Esc 한 번에 닫히고 입력·필터가 비워진다.
+   * The Esc contract (measured regression, 2026-07-26) — the footer promises
+   * "ESC 닫기", so **the first** Esc closes it and clears the input and filters.
    *
-   * 실제 결함은 이랬다: Radix 는 형제에 `aria-hidden` 을 거는 방식이라
-   * `aria-modal` 을 붙이지 않는데, 이 앱의 전역 Esc 규율(첫 실행 카드의
-   * window-capture 핸들러 · 자동 투어 발화 가드)은 "지금 모달이 떠 있는가"를
-   * `[role="dialog"][aria-modal="true"]` 로 판정한다. 선언이 없으니 그 핸들러가
-   * 검색창을 못 보고 Esc 를 preventDefault 로 가로채, 첫 타에 다이얼로그도
-   * 입력값도 그대로였다(두 번째에야 닫힘). 아래 두 테스트가 그 두 축을 잠근다.
+   * The real defect: Radix sets `aria-hidden` on siblings rather than adding
+   * `aria-modal`, while this app's global Esc discipline (the first-run card's
+   * window-capture handler, the auto-tour firing guard) decides "is a modal open"
+   * with `[role="dialog"][aria-modal="true"]`. With no declaration those handlers
+   * could not see the search window and intercepted Esc with preventDefault, so the
+   * first press left both the dialog and the input untouched (only the second
+   * closed it). The two tests below pin both axes.
    */
   it("열려 있으면 aria-modal 로 모달임을 선언한다 (전역 Esc 규율의 판정 근거)", () => {
     render(
@@ -251,8 +253,8 @@ describe("GlobalSearch", () => {
   });
 
   it("첫 Esc 한 번에 닫히고 입력값이 비워진다 — 모달에 양보하는 전역 캡처 핸들러가 있어도", () => {
-    // 첫 실행 카드(`use-first-run-starter`)의 실제 계약을 그대로 흉내낸다:
-    // window capture + preventDefault, 단 모달이 떠 있으면 양보.
+    // Imitates the first-run card's (`use-first-run-starter`) real contract exactly:
+    // window capture plus preventDefault, yielding while a modal is open.
     const guardFired = vi.fn();
     const guard = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -277,7 +279,7 @@ describe("GlobalSearch", () => {
       expect(guardFired).not.toHaveBeenCalled();
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-      // 다시 열면 이전 입력이 남아 있지 않다.
+      // Reopening does not carry the previous input.
       fireEvent.click(screen.getByRole("button", { name: "open trigger" }));
       expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("");
     } finally {
@@ -313,15 +315,17 @@ describe("GlobalSearch", () => {
   });
 });
 
-// 소유자 실보고 (2026-07-25): "검색 버튼 눌렀을때 ... 바깥 클릭하면 닫혀야하는데
-// 안닫힘! 대부분 x 누르거나 바깥누르면 닫히지 않나?" — 맞다. 커맨드 팔레트의
-// 사실상 표준(Linear · VS Code · Raycast · Spotlight)이고, 이 앱의 다른 오버레이
-// (설정 시트 · 문서함 드로어 · 발자취 패널)는 이미 스크림 클릭으로 닫힌다.
-// 검색 팔레트만 어긋나 있었다.
+// Owner report (2026-07-25): "검색 버튼 눌렀을때 ... 바깥 클릭하면 닫혀야하는데
+// 안닫힘! 대부분 x 누르거나 바깥누르면 닫히지 않나?" (clicking outside should close
+// it and doesn't — don't most close on x or an outside click?). Right — that is the
+// de facto standard for command palettes (Linear · VS Code · Raycast · Spotlight),
+// and this app's other overlays (the settings sheet, the docs drawer, the trail
+// panel) already close on a scrim click. Only the search palette was out of step.
 //
-// 왜 안 닫혔나: `Dialog.Content` 자체가 `fixed inset-0` 로 화면 전체를 덮는 flex
-// 래퍼라서, 스크림처럼 보이는 영역이 실은 Content **내부**다. Radix 의
-// `onPointerDownOutside` 에게는 "바깥" 이 존재하지 않았다.
+// Why it did not close: `Dialog.Content` itself is a `fixed inset-0` flex wrapper
+// covering the whole screen, so the area that looks like a scrim is actually
+// **inside** Content. As far as Radix's `onPointerDownOutside` was concerned, no
+// "outside" existed.
 describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
   const nodes: KnowledgeGraphNode[] = [
     node({ id: "capability:mcp-server", title: "MCP Server", kind: "capability" }),

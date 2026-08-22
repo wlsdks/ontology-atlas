@@ -10,24 +10,24 @@ import {
 } from '@/views/download/model/demo-clips';
 
 /**
- * 시연 클립의 **선언과 실물이 같은가**.
+ * Does the demo clip's **declaration match the real file**?
  *
- * `demo-clips.ts` 는 자기 주석에 *"초 단위 길이(실측). 촬영 후 게이트가
- * 대조한다"* 라고 적어 두었는데 **그 게이트가 없었다**(2026-08-20 발견).
- * 그래서 2026-08-19 에 88.83초짜리로 갈아 끼운 뒤에도 `seconds` 가 종전
- * 촬영본 값에 머물러 있어도 아무도 몰랐을 것이다. 숫자가 조용히 썩는 자리를
- * 주석으로 막아 둔 셈이라, 이 파일이 그 주석을 사실로 만든다.
+ * `demo-clips.ts` says in its own comment *"length in seconds (measured); a gate
+ * compares it after filming"* — and **that gate did not exist** (found 2026-08-20).
+ * So after the 2026-08-19 swap to an 88.83 s recording, nobody would have noticed
+ * `seconds` still holding the previous take's value. A place where a number rots
+ * quietly was blocked with a comment; this file makes that comment true.
  *
- * 길이는 **MP4 의 `mvhd` 박스에서 직접 읽는다** — ffprobe 를 부르면 CI 러너에
- * ffmpeg 이 있어야 하고, 없으면 검사가 조용히 건너뛰어진다(그게 바로 이
- * 저장소가 「한 번도 빨개진 적 없는 게이트」로 릴리스를 잃은 방식이다).
- * `mvhd` 는 규격이 고정돼 있어 40줄로 읽힌다.
+ * The length is **read directly from the MP4's `mvhd` box** — calling ffprobe would
+ * require ffmpeg on the CI runner, and without it the check would silently skip
+ * (exactly how this repository lost a release to a gate that had never once gone
+ * red). `mvhd` has a fixed layout and reads in 40 lines.
  */
 
 const DEMO_DIR = join(process.cwd(), 'public', 'demo');
 const LOCALES = ['ko', 'en'] as const;
 
-/** MP4 `mvhd` 박스에서 초 단위 길이를 읽는다. 못 읽으면 null 이 아니라 throw. */
+/** Reads the length in seconds from an MP4 `mvhd` box. Throws rather than returning null when unreadable. */
 function readMp4Seconds(path: string): number {
   const buf = readFileSync(path);
   const marker = buf.indexOf('mvhd');
@@ -65,15 +65,15 @@ describe('시연 클립 — 선언과 자산', () => {
             `${clip.basename}.${locale}-poster.png`,
           ]) {
             const stat = statSync(join(DEMO_DIR, name));
-            // 10KB 는 «파일은 있는데 반쯤 올라간 것»을 거르는 하한이다.
+            // 10KB is the floor that filters out "the file exists but only half uploaded".
             expect(stat.size, `${name} 가 너무 작다`).toBeGreaterThan(10_000);
           }
         });
 
         it(`${locale}: MP4 실측 길이가 선언한 seconds 와 같다`, () => {
           const measured = readMp4Seconds(join(DEMO_DIR, `${clip.basename}.${locale}.mp4`));
-          // 반올림 한 칸까지만 허용한다. 그보다 벌어지면 촬영본을 갈아 끼우고
-          // 숫자를 안 고친 것이다.
+          // Only one rounding step of slack is allowed. A wider gap means the recording was
+          // swapped and the number was not updated.
           expect(Math.abs(measured - clip.seconds)).toBeLessThan(1);
         });
       }

@@ -8,15 +8,16 @@ import {
 } from "./shell-slot-context";
 
 /**
- * 과제 ⑪ — LNB 컨텍스트 이월. `useNavRailContextHrefs` 는
- * `useNavRailSettingsSlot`과 같은 역방향(리프 페이지 → 레일) Context 계약을
- * 공유한다: 등록하면 레일이 그 값을 읽고, 언마운트되면 자동으로 비워
- * 다른 페이지가 남은 컨텍스트를 물려받지 않는다.
+ * Carrying LNB context forward. `useNavRailContextHrefs` shares the same reverse
+ * Context contract (leaf page → rail) as `useNavRailSettingsSlot`: registering makes
+ * the rail read that value, and unmounting clears it automatically so another page
+ * does not inherit leftover context.
  *
- * `useMemo`로 `hrefs` 를 안정화한다 — `HomePage`의 실제 사용과 동일한 계약
- * (호출부가 참조를 안정화)이다. 매 렌더 새 객체 리터럴을 넘기면 effect
- * 재실행 → context 값 변경 → 리렌더 → 새 객체 … 무한 루프가 되므로, 이 안정화
- * 자체가 `useNavRailContextHrefs`/`useNavRailSettingsSlot` 계약의 일부다.
+ * `hrefs` is stabilised with `useMemo` — the same contract as `HomePage`'s real usage
+ * (the caller stabilises the reference). Passing a fresh object literal every render
+ * would loop endlessly: effect re-runs → context value changes → re-render → a new
+ * object … so that stabilisation is itself part of the
+ * `useNavRailContextHrefs`/`useNavRailSettingsSlot` contract.
  */
 function Registrar({ docsHref }: { docsHref?: string }) {
   const hrefs = useMemo(() => (docsHref ? { docs: docsHref } : null), [docsHref]);
@@ -52,9 +53,9 @@ describe("NavRailShellProvider contextHrefs", () => {
   });
 
   it("clears the contextHrefs when the registering page unmounts, without unmounting the rail itself", () => {
-    // 레일(RailValueProbe)은 layout 에 상주하고, 페이지(Registrar)만
-    // 라우트 이동으로 unmount 되는 실제 계약을 재현 — `showRegistrar=false`
-    // 는 "다른 라우트로 이동" 시뮬레이션.
+    // Reproduces the real contract, where the rail (RailValueProbe) lives in the layout
+    // and only the page (Registrar) unmounts on a route change — `showRegistrar=false`
+    // simulates "navigated to another route".
     function Tree({ showRegistrar }: { showRegistrar: boolean }): ReactNode {
       return (
         <NavRailShellProvider>

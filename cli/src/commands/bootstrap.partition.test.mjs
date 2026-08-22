@@ -4,13 +4,13 @@ import { describe, it } from 'node:test';
 import { partitionReadmeOnlyDomains } from './bootstrap.mjs';
 
 /**
- * README 전용 도메인 보류 — 판별 함수의 계약.
+ * Withholding README-only domains — the contract of the discriminating function.
  *
- * 2026-08-08 실사용 검수: README 제목 11개가 전부 도메인으로 착지해 관계
- * 1종짜리 별 그래프가 됐다(attunegraph). 손으로 기운 금지어 체는 구조적으로
- * 지므로(새 README 마다 목록이 모르는 제목을 만든다), 체 대신 **확증**으로
- * 가른다 — 코드 evidence 거나, 코드에서 나온 후보가 부모로 지목한 도메인만
- * 자동으로 심는다.
+ * Field review 2026-08-08: all 11 README headings landed as domains, producing a
+ * star graph with a single relation type (attunegraph). A hand-sewn stopword sieve
+ * loses structurally — every new README invents a heading the list does not know —
+ * so **corroboration** decides instead: only a domain with code evidence, or one
+ * named as a parent by a code-derived candidate, is planted automatically.
  */
 describe('partitionReadmeOnlyDomains', () => {
   const d = (slug, source) => ({ slug, title: slug, evidence: { source } });

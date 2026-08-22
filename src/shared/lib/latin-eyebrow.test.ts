@@ -10,8 +10,9 @@ describe('latinEyebrowClass — 라틴 전용 장식은 한글에 얹지 않는�
   });
 
   it('한국어 로케일은 mono·uppercase·wide tracking 전부 걷는다', () => {
-    // 한글에는 대문자화가 없어 자간만 벌어지고, mono 는 한글이 폴백돼
-    // 공백만 등폭으로 남는다 — 「첫 실행」이 「첫  실행」으로 읽힌 원인.
+    // Hangul has no capitalisation, so only the tracking widens; and under mono
+    // Hangul falls back, leaving only the spaces monospaced — the reason
+    // 「첫 실행」 read as 「첫  실행」.
     expect(latinEyebrowClass('ko', 'tracking-[0.2em]')).toBe('');
     expect(latinEyebrowClass('ko-KR')).toBe('');
   });
@@ -19,8 +20,9 @@ describe('latinEyebrowClass — 라틴 전용 장식은 한글에 얹지 않는�
   it('스크립트 판정은 지역 서브태그를 무시한다', () => {
     expect(isLatinScriptLocale('en-GB')).toBe(true);
     expect(isLatinScriptLocale('KO')).toBe(false);
-    // 등록되지 않은 로케일은 보수적으로 비-라틴 취급 — 장식을 잘못 얹는 쪽이
-    // 빠뜨리는 쪽보다 비싸다(읽기가 깨진다).
+    // An unregistered locale is conservatively treated as non-Latin: applying
+    // the decoration wrongly costs more than omitting it, because it breaks
+    // legibility.
     expect(isLatinScriptLocale('ja')).toBe(false);
   });
 });

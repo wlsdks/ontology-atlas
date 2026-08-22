@@ -5,13 +5,15 @@ import { fieldClass } from "./control-class";
 import { Input, Textarea } from "./input";
 
 /**
- * Input/Textarea — 행동 계약 (2026-08-15 「체계」석 비준).
+ * Input/Textarea — the behaviour contract (ratified by the design-systems seat,
+ * 2026-08-15).
  *
- * 이 컴포넌트의 존재 이유는 스타일이 아니라(값 층 드리프트 0) **배선**이다:
- * ① 접근 이름 강제 ② error/hint → aria-invalid + aria-describedby 자동 배선.
- * 그래서 계약도 그 둘과 「값 층과 바이트 동일」 하나다 — 값이 두 곳에 적히면
- * 어긋나기 시작하므로, 스타일 단언은 fieldClass 호출 결과와의 **동일성**으로만
- * 한다.
+ * These components exist for **wiring**, not styling (the value layer has zero
+ * drift): ① they require an accessible name, ② they wire error/hint through to
+ * `aria-invalid` and `aria-describedby` automatically. So the contract is those
+ * two plus one more — byte-identical to the value layer. A value written in two
+ * places starts diverging, so every style assertion here is only an **equality**
+ * against the result of calling `fieldClass`.
  */
 
 describe("Input — 행동 계약", () => {

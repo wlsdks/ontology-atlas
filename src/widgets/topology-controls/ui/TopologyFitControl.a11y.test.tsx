@@ -14,9 +14,10 @@ function render(ui: React.ReactElement) {
 }
 
 /**
- * TopologyFitControl — 철거 후 남은 유일한 타일(Fit). 죽은 조절 패널을
- * 걷어낸 뒤에도 (1) Fit 버튼 접근명/클릭 콜백 (2) 우측 레일 위치 토큰 계약
- * (3) 키보드 focus 링(WCAG 2.4.7) 회귀를 막는다.
+ * TopologyFitControl — the only tile left after the demolition (Fit). Even with the
+ * dead control panel removed, this guards regressions in (1) the Fit button's
+ * accessible name and click callback, (2) the right rail's position token contract,
+ * and (3) the keyboard focus ring (WCAG 2.4.7).
  */
 describe('TopologyFitControl — Fit 타일', () => {
   it('Fit 버튼이 접근명을 가지고 클릭 시 onFitView 를 호출한다', () => {

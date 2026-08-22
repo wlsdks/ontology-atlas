@@ -1,4 +1,4 @@
-// 동의 계약: **취소하면 파일 0개 변경. 충돌해도 파일 0개 변경.**
+// The consent contract: **cancel means zero files changed. A conflict means zero files changed.**
 import { describe, expect, it, vi } from 'vitest';
 
 import { applyProposal, summarizeChangeVolume, type VaultWritePort } from './proposal-applier';
@@ -65,7 +65,7 @@ describe('proposal-applier', () => {
   });
 
   it('제안한 뒤 사람이 같은 파일을 고쳤으면 파일 0개 변경으로 멈춘다', async () => {
-    // 조용히 덮어쓰면 사람이 방금 쓴 문장이 흔적 없이 사라진다.
+    // Overwriting quietly makes a sentence a person just wrote disappear without a trace.
     const port = makePort({ currentMtime: vi.fn(() => 999) });
     const result = await applyProposal(proposal(), port, { snapshotLabel: 'x' });
     expect(result).toEqual({
@@ -78,7 +78,7 @@ describe('proposal-applier', () => {
   });
 
   it('여러 변경 중 하나라도 충돌하면 아무것도 쓰지 않는다', async () => {
-    // 반쯤 적용된 상태는 되돌리기 가장 어려운 상태다.
+    // A half-applied state is the hardest state to undo.
     const port = makePort({
       currentMtime: vi.fn((slug: string) => (slug.includes('refund') ? 999 : 100)),
     });

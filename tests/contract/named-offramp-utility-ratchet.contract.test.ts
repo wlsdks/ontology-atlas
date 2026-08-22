@@ -4,73 +4,82 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 이름 있는 Tailwind 기본 스텝 래칫 — **게이트가 없다고 주석이 자백하던 자리**.
+ * Named Tailwind default-step ratchet — **the place where a comment confessed
+ * there was no gate.**
  *
- * ## 왜 이 파일이 존재하나 (2026-08-03 규칙 감사 → 체계석)
+ * ## Why this file exists (2026-08-03 rules audit → 체계 seat)
  *
- * `eslint.config.mjs` 는 오래 "래칫(`type-ramp-coverage`)이 이름 있는 스텝을
- * 붙든다" 고 적어 왔는데 **거짓이었다** — 그 래칫의 `ARBITRARY_SIZE` 는 대괄호
- * arbitrary 패턴만 세고, 이름 유틸리티(`rounded-2xl` · `text-xl` …)는 한 건도
- * 세지 않는다. 게다가 그 래칫은 eslint 가 덮는 디렉토리를 통째로 건너뛰는데
- * `rounded-2xl` 19건 중 18건이 그 안이었다 — lint 도 래칫도 안 보는 자리.
- * 증거는 수 자체다: 주석이 12건이라 적은 뒤 20건으로 자랐고 아무것도 빨개지지
- * 않았다.
+ * `eslint.config.mjs` had long claimed that the `type-ramp-coverage` ratchet holds
+ * named steps. **That was false** — that ratchet's `ARBITRARY_SIZE` counts only
+ * bracketed arbitrary patterns and never counts a named utility (`rounded-2xl`,
+ * `text-xl`, …). On top of that it skips the directories eslint covers entirely,
+ * and 18 of the 19 `rounded-2xl` uses were inside them — seen by neither lint nor
+ * ratchet. The count is its own evidence: the comment recorded 12, it grew to 20,
+ * and nothing turned red.
  *
- * ## 왜 lint 확장이 아니라 래칫인가
+ * ## Why a ratchet and not a lint extension
  *
- * `text-lg` 류 11건은 lint 커버 디렉토리 안에 있어 셀렉터를 켜면 즉시 CI 가
- * 빨개진다. 치환은 픽셀을 움직이므로(`text-xl` 20px 은 램프 어느 스텝도 아니다)
- * 자리마다 디자인 판정이 필요하고, 그 판정을 기다리는 동안 **자라지 못하게
- * 붙드는 일**은 래칫의 몫이다. `rounded-sm`(59) + 무접미 `rounded`(37)는 같은
- * 날 `--radius-micro`(4px) 등재 + 전량 기계 치환으로 **0이 됐고** eslint
- * 셀렉터가 마저 막는다 — 여기서는 재유입 차단(기준선 0)만 맡는다.
+ * The 11 `text-lg`-family uses sit inside lint-covered directories, so switching
+ * the selector on turns CI red immediately. Substitution moves pixels (`text-xl`
+ * at 20px is not any ramp step), so each place needs a design verdict, and holding
+ * the count **from growing** while those verdicts are pending is a ratchet's job.
+ * `rounded-sm` (59) and suffix-less `rounded` (37) reached **0** the same day by
+ * registering `--radius-micro` (4px) and substituting mechanically throughout, and
+ * an eslint selector holds them now — here they are only kept from returning
+ * (baseline 0).
  *
- * 이 래칫은 `type-ramp-coverage` 와 달리 **eslint 커버 디렉토리를 건너뛰지
- * 않는다** — 이름 유틸리티는 그 룰의 사정거리 밖이라 커버/미커버 구분이 없다.
+ * Unlike `type-ramp-coverage`, this ratchet **does not skip eslint-covered
+ * directories**: named utilities are outside that rule's range, so the covered /
+ * uncovered distinction does not apply.
  */
 
 /**
- * 패밀리별 기준선 — **내려가기만 한다.**
+ * Per-family baselines — **they only go down.**
  *
- * 0 인 패밀리는 "없음"이 아니라 "재유입 차단"이다.
+ * A family at 0 does not mean "none exist"; it means re-entry is blocked.
  *
- * ## 2026-08-04: 마지막 24건을 자리마다 판정해 전부 램프로 들였다
+ * ## 2026-08-04: the last 24 were judged per place and all brought onto the ramp
  *
- * 남아 있던 것은 값이 없어서가 아니라 **자리마다 디자인 판정이 필요해서**였다.
- * 빌드된 화면에서 재고 나서야 무엇을 고를지가 정해졌다:
+ * What remained had not stalled for lack of a value but because **each place
+ * needed a design verdict**. The choice only became clear after measuring the
+ * built screen:
  *
- * - **`rounded-2xl`(16px) 16건 → 전부 `rounded-panel`(12px).** 실측 근거는
- *   드로어 한 칸 안의 반경 센서스였다 — 399px 폭 한 열에 20 / 18 / 16 / 12 /
- *   9 / 6 **여섯 종**이 동시에 살아 있었고, 그중 `completeness`/`freshness`
- *   짝만 이미 `rounded-panel` 이라 **같은 줄의 형제가 어긋나 있었다**. 16 을
- *   12 로 내리면 시트 단(문서화된 예외 18·20)과 콘텐츠 단(12)이 갈리고,
- *   16/18/20 이 세 가지 일을 하면서 거의 같아 보이던 평평함이 사라진다.
- *   `card`(9)가 아니라 `panel`(12)인 이유: 이 상자들은 폭 365~399px 의 절
- *   컨테이너이고, 이미 그 자리를 고른 형제 둘과 `TopologyEmptyState` 의
- *   덮어쓰기(`rounded-[var(--radius-panel)]`)가 같은 답을 냈다.
- * - **`text-xl`(20px) 2건** — 드로어 아이콘 타일의 이모지는 `text-display`(23)
- *   로. 44px 타일에서 20px 는 채움률 54.5% 였고 램프 이웃은 16(36%)과
- *   23(52%)뿐이라 광학적으로 가까운 쪽을 골랐다. 마크다운 미리보기 `h1` 도
- *   같은 스텝 — 행간 짝이 28px 로 종전과 같아 줄 높이가 안 움직인다.
- * - **`text-lg`(18) 1건 · `text-base`(16) 1건** — 마크다운 미리보기의 h2/h3.
- *   본문이 `text-body-lg`(14)라 **머리말이 쓸 수 있는 램프 스텝은 16 과 23
- *   둘뿐**이다(그 아래는 본문보다 작아져 위계가 뒤집힌다). 그래서 사다리는
- *   display 23 / title 16 / body-lg 14(굵게)로 확정.
- * - **`text-2xl`+`text-3xl` 각 1건** — 편집기 h1 의 `text-2xl md:text-3xl` 을
- *   `text-display md:text-hero` 로. 24→23 은 1px, 30→30 은 0px 이고, 대신
- *   두 크기가 **행간 짝을 얻는다**(32→28 · 36→34).
+ * - **`rounded-2xl` (16px), 16 uses → all `rounded-panel` (12px).** The evidence
+ *   was a radius inventory inside one drawer column: **six** radii — 20 / 18 / 16 /
+ *   12 / 9 / 6 — were alive simultaneously in a single 399px-wide column, and only
+ *   the `completeness`/`freshness` pair was already `rounded-panel`, so **siblings
+ *   on the same row disagreed**. Dropping 16 to 12 separates the sheet tier
+ *   (documented exceptions 18 and 20) from the content tier (12) and removes the
+ *   flatness of 16/18/20 doing three different jobs while looking almost identical.
+ *   `panel` (12) rather than `card` (9) because these boxes are section containers
+ *   365–399px wide, and the two siblings that had already chosen, plus
+ *   `TopologyEmptyState`'s override (`rounded-[var(--radius-panel)]`), gave the
+ *   same answer.
+ * - **`text-xl` (20px), 2 uses** — the drawer icon tile's emoji goes to
+ *   `text-display` (23). On a 44px tile, 20px fills 54.5%, and the ramp neighbours
+ *   are only 16 (36%) and 23 (52%), so the optically closer one won. The markdown
+ *   preview's `h1` takes the same step — its line-height partner is 28px, the same
+ *   as before, so line height does not move.
+ * - **`text-lg` (18), 1 use · `text-base` (16), 1 use** — the markdown preview's
+ *   h2/h3. The body is `text-body-lg` (14), so **the only ramp steps a heading can
+ *   use are 16 and 23** (anything lower is smaller than the body and inverts the
+ *   hierarchy). The ladder is therefore display 23 / title 16 / body-lg 14 (bold).
+ * - **`text-2xl` and `text-3xl`, 1 use each** — the editor h1's
+ *   `text-2xl md:text-3xl` becomes `text-display md:text-hero`. 24→23 is 1px and
+ *   30→30 is 0px, and in exchange both sizes **gain a line-height partner**
+ *   (32→28 · 36→34).
  *
- * **`text-lg` 의 1 도 2026-08-05 에 0 이 됐다 — 그건 부채가 아니라 탐지기
- * 결함이었다.** 그 1 은 `controls.tsx` 의 **산문 주석**이었고(렌더되는 값이
- * 아니다), 종전 주석은 그것을 *"내릴 수 없는 바닥"* 이라고 적어 뒀다. 바닥이
- * 아니라 **스캐너가 주석을 값으로 세고 있던 것**이다. `stripComments` 를 넣어
- * 걷어내니 0 이 됐다.
+ * **`text-lg`'s remaining 1 also reached 0 on 2026-08-05 — and it was a detector
+ * defect, not debt.** That 1 was **prose in a comment** in `controls.tsx`, not a
+ * rendered value, and the old comment described it as *"a floor that cannot be
+ * lowered"*. It was not a floor: **the scanner was counting comments as values.**
+ * Adding `stripComments` took it to 0.
  */
 const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number]> = [
   ['rounded (무접미, 4px)', /(?<![-\w])rounded(?![-\w])/g, 0],
   ['rounded-xs', /(?<![-\w])rounded-xs(?![-\w])/g, 0],
   ['rounded-sm', /(?<![-\w])rounded-sm(?![-\w])/g, 0],
-  // 19 → 16 → 0. 16 → 0 은 2026-08-04 per-site 판정(위 주석) — 전부 panel(12).
+  // 19 → 16 → 0. The 16 → 0 step is the 2026-08-04 per-place verdict above — all panel (12).
   ['rounded-2xl', /(?<![-\w])rounded-2xl(?![-\w])/g, 0],
   ['rounded-3xl', /(?<![-\w])rounded-3xl(?![-\w])/g, 0],
   ['text-xs', /(?<![-\w])text-xs(?![-\w])/g, 0],
@@ -82,51 +91,59 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
   ['text-3xl', /(?<![-\w])text-3xl(?![-\w])/g, 0],
   ['text-4xl', /(?<![-\w])text-4xl(?![-\w])/g, 0],
   /*
-   * ## 2026-08-04: 행간 패밀리 — 세 램프 중 마지막 무게이트 구멍을 닫는다
+   * ## 2026-08-04: the line-height family — closing the last ungated hole of the three ramps
    *
-   * 타입·반경은 이 래칫 + eslint 이름 스텝 셀렉터가 붙드는데 **행간만 아무
-   * 게이트가 없었다** — eslint 는 `leading-[N]`(대괄호)만 보고, 이름 유틸리티
-   * (`leading-relaxed` 71 · `leading-snug` 17 …)는 어떤 룰도 안 거쳤다.
-   * `text-sm`/`rounded-md` 268건이 램프를 통째로 우회하던 것과 같은 모양이다.
+   * Type and radius are held by this ratchet plus eslint's named-step selectors, but
+   * **line height had no gate at all** — eslint sees only bracketed `leading-[N]`,
+   * and named utilities (`leading-relaxed` 71 · `leading-snug` 17 …) passed through
+   * no rule whatsoever. The same shape as the 268 `text-sm`/`rounded-md` uses
+   * bypassing the ramp entirely.
    *
-   * 켜기 전 전수(이 스캐너와 동일 조건, 2026-08-04): relaxed 71 · 숫자꼴 103 ·
-   * snug 17 · none 9 · tight 8 · normal 0 · loose 0 = **208곳 / 40여 파일**.
-   * 한 PR 로 못 치우는 규모다 — 값 층 정본이 「행간은 크기의 짝」이라 못박아서
-   * 치환이 기계적이지 않다: `leading-relaxed`(×1.625)를 짝 스텝으로 옮기면
-   * 픽셀이 움직이고(실측 22.75→22 등), `leading-4/5/6`(16/20/24px)은 픽셀
-   * 동일 치환이 가능하지만 **어느 크기와 짝인지**는 자리마다 봐야 한다.
-   * 그래서 shadow-\[ 전례(켜자마자 144→548 소음)를 따르지 않고 래칫으로
-   * 붙들고 단계를 나눈다 — 재유입은 오늘부터 0, 상환은 per-site 판정 라운드로.
-   * 치환 목적지는 `--leading-*` 램프(caption…hero-lg · display-tight · prose)다.
+   * Inventory before switching it on (same conditions as this scanner, 2026-08-04):
+   * relaxed 71 · numeric 103 · snug 17 · none 9 · tight 8 · normal 0 · loose 0 =
+   * **208 places across some 40 files**. Too many for one PR — the value layer's
+   * authority pins "line height is the partner of size", so substitution is not
+   * mechanical: moving `leading-relaxed` (×1.625) to a partner step moves pixels
+   * (measured 22.75→22 among others), and while `leading-4/5/6` (16/20/24px) can be
+   * substituted pixel-identically, **which size they partner** has to be inspected
+   * per place. So rather than repeating the `shadow-[` precedent (144→548 warnings
+   * the moment it was switched on), a ratchet holds it and the work is staged:
+   * re-entry is 0 from today, repayment goes to a per-place verdict round. The
+   * substitution targets are the `--leading-*` ramp (caption…hero-lg ·
+   * display-tight · prose).
    */
   /*
-   * ## 비율 계열도 2026-08-05 에 0 이 됐다 — 그리고 그 전에 **분석이 틀렸었다**
+   * ## The ratio family also reached 0 on 2026-08-05 — and before that **the analysis was wrong**
    *
-   * 처음 이 계열을 재고서 «위험하니 남긴다» 고 적었다. 근거는 두 숫자였다:
-   * `relaxed + text-label` 31곳이 **−1.88px**(좁아짐)이고 `leading-none` 배지가
-   * **+4.50px**(상자 터짐). 둘 다 **틀린 계산**이었다.
+   * The first measurement of this family concluded "too risky, leave it", on the
+   * strength of two numbers: 31 places of `relaxed + text-label` would lose
+   * **−1.88px** (tightening) and the `leading-none` badge would gain **+4.50px**
+   * (bursting its box). **Both calculations were wrong.**
    *
-   * 원인: 후보를 **px 스텝 8개하고만** 비교했다. 이 램프에는 **비율 스텝도 둘**
-   * 있다 — `--leading-display-tight`(1.06) · `--leading-prose`(1.7). 그 둘을
-   * 후보에 넣자 답이 바뀐다:
+   * The cause: candidates were compared against **the 8 px steps only**. This ramp
+   * also has **two ratio steps** — `--leading-display-tight` (1.06) and
+   * `--leading-prose` (1.7). Adding them to the candidate set changes the answer:
    *
-   * | 현재 | 옆 타입 | px 스텝만 봤을 때 | 전체 램프로 봤을 때 | 건수 |
+   * | Current | Adjacent type | With px steps only | With the whole ramp | Uses |
    * |---|---|---|---|---|
    * | relaxed | label(11)    | label — **−1.88** | **prose — +0.82** | 31 |
    * | none    | caption(9.5) | caption — **+4.50** | **display-tight — +0.57** | 6 |
-   * | relaxed | caption(9.5) | label — +0.56 | 같음 | 22 |
-   * | snug    | label(11)    | label — +0.88 | 같음 | 14 |
+   * | relaxed | caption(9.5) | label — +0.56 | same | 22 |
+   * | snug    | label(11)    | label — +0.88 | same | 14 |
    *
-   * **98곳 중 95곳이 1px 이하, 2px 초과는 0곳.** 「좁아진다」도 「터진다」도
-   * 없었다 — 램프의 절반만 보고 내린 판정이었다.
+   * **95 of 98 places move 1px or less, and none move more than 2px.** Neither the
+   * tightening nor the bursting existed — the verdict had been reached after looking
+   * at half the ramp.
    *
-   * 교훈: **후보 집합을 좁게 잡으면 이동량이 실제보다 크게 나오고, 그 숫자가
-   * 「하지 말자」의 근거가 된다.** 램프에 단위가 섞여 있으면(px + 비율) 둘 다
-   * 후보에 넣고 재야 한다. 이 라운드에서 아이콘 타이를 «인접 두 스텝» 창으로
-   * 제한한 것과 같은 종류의 교정이다.
+   * Lesson: **a narrow candidate set makes the movement look larger than it is, and
+   * that number becomes the argument for not doing it.** When a ramp mixes units
+   * (px and ratios), both must be in the candidate set when measuring. The same kind
+   * of correction as limiting icon ties to an "adjacent two steps" window in this
+   * round.
    *
-   * 실측 결과: 12개 라우트에서 문서 높이 변화 0 · `data-testid` 마크 364개 중
-   * 2px 이상 이동 13개(최대 4px) · 5px 이상 0 · 가로 넘침 증가 0.
+   * Measured afterwards: across 12 routes, 0 change in document height · of 364
+   * `data-testid` marks, 13 moved 2px or more (max 4px) · 0 moved 5px or more · 0
+   * increase in horizontal overflow.
    */
   ['leading-none', /(?<![-\w])leading-none(?![-\w])/g, 0],
   ['leading-tight', /(?<![-\w])leading-tight(?![-\w])/g, 0],
@@ -134,30 +151,33 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
   ['leading-normal', /(?<![-\w])leading-normal(?![-\w])/g, 0],
   ['leading-relaxed', /(?<![-\w])leading-relaxed(?![-\w])/g, 0],
   ['leading-loose', /(?<![-\w])leading-loose(?![-\w])/g, 0],
-  // 숫자꼴(leading-4/5/6/7 …)은 px 고정이라 램프 스텝과 값이 겹치지만
-  // (16/20/24/28 = label/body/title/display) 짝 판정 없는 이름이다.
-  // 103 → 86: 「내 에이전트 연결」 재구성(2026-08-04)이 이 한 파일에서 17건을
-  // 갚았다. 갚는 법은 치환이 아니라 **삭제**였다 — 크기 스텝이 자기 행간을
-  // 이미 싣고 있어서(companion 결합) `text-label leading-4` 의 뒤 절반은
-  // 램프가 내는 값을 손으로 다시 적은 것이었다.
+  // The numeric forms (leading-4/5/6/7 …) are fixed px, so their values coincide
+  // with ramp steps (16/20/24/28 = label/body/title/display), but they are names
+  // with no partner decision behind them.
+  // 103 → 86: restructuring "내 에이전트 연결" (connect my agent) on 2026-08-04
+  // repaid 17 in that one file. The repayment was **deletion**, not substitution —
+  // the size step already carries its own line height (the companion pairing), so
+  // the second half of `text-label leading-4` was re-stating by hand what the ramp
+  // already emits.
   /*
-   * ## 2026-08-05: 숫자 계열 86 → 0 (픽셀 이동 0)
+   * ## 2026-08-05: the numeric family went 86 → 0 with 0 pixel movement
    *
-   * Tailwind 의 `leading-<n>` 은 `n × 4px` 이고, 이 저장소의 행간 램프에 **같은
-   * px 이 이미 이름으로 있었다**:
+   * Tailwind's `leading-<n>` is `n × 4px`, and this repository's line-height ramp
+   * **already had the same px values under names**:
    *
    *   leading-4 (16px) → leading-label · leading-5 (20px) → leading-body
    *   leading-6 (24px) → leading-title · leading-7 (28px) → leading-display
    *
-   * 그래서 86곳 전부가 **바이트가 아니라 픽셀이 동일한** 치환이었다. 위 절이
-   * 「치환이 기계적이지 않다」고 적어 둔 것은 **비율 계열**(relaxed 1.625 ·
-   * snug 1.375 …)에 대한 판단이고, 숫자 계열에는 해당하지 않았다 — 두 부류를
-   * 한 문장으로 묶은 것이 그때의 과잉 일반화다.
+   * So all 86 substitutions were **pixel-identical, though not byte-identical**. The
+   * section above saying "substitution is not mechanical" was a judgement about the
+   * **ratio family** (relaxed 1.625 · snug 1.375 …) and did not apply to the numeric
+   * family — binding the two categories into one sentence was an over-generalisation.
    *
-   * 짝 실측: 30곳은 `text-X + leading-X` 로 램프의 기본 짝과 일치했고, 52곳은
-   * 의도된 오버라이드였다(예: `text-caption`(9.5) 옆의 16px — 한글 본문에서
-   * 기본 14px 보다 느슨하게 준 자리). 오버라이드도 픽셀은 그대로이고, 달라진
-   * 것은 **익명의 20px 이 「body 행간」이라는 이름을 얻은 것**뿐이다.
+   * Partner measurement: 30 places were `text-X + leading-X`, matching the ramp's
+   * default pairing, and 52 were deliberate overrides (for example 16px beside
+   * `text-caption` (9.5) — looser than the default 14px for Korean body text). The
+   * overrides keep their pixels too; the only change is that **an anonymous 20px
+   * gained the name "body line height"**.
    */
   ['leading-<number>', /(?<![-\w])leading-\d+(?![-\w])/g, 0],
 ];
@@ -173,10 +193,11 @@ function collect(dir: string, out: string[]): void {
       continue;
     }
     /*
-     * `.tsx` 만 — `.ts` 를 넣으면 주석·산문 속 영어 단어("rounded", 그리고
-     * 값 층 주석이 실측 근거로 적어 둔 `text-lg`)가 위반으로 잡힌다(초판
-     * 실측: .ts 포함 시 무접미 rounded 오탐 13건, 전부 주석/산문). 클래스
-     * 문자열은 컴포넌트 파일에 산다 — 실위반 전수도 전부 .tsx 였다.
+     * `.tsx` only. Including `.ts` catches English words in comments and prose as
+     * violations ("rounded", and the `text-lg` the value layer's comment cites as
+     * evidence) — measured on the first version: 13 false positives for suffix-less
+     * rounded, all in comments or prose. Class strings live in component files, and
+     * every real violation in the inventory was in a `.tsx`.
      */
     if (!name.endsWith('.tsx')) continue;
     if (name.includes('.test.') || name.includes('.spec.')) continue;
@@ -185,17 +206,19 @@ function collect(dir: string, out: string[]): void {
 }
 
 /**
- * **주석을 값으로 세지 않는다** (2026-08-05).
+ * **Do not count comments as values** (2026-08-05).
  *
- * 이 래칫은 소스를 **문자열로** 훑으므로, 「왜 이 값을 쓰면 안 되나」를 설명하는
- * 주석이 그 값을 이름으로 부르는 순간 위반으로 잡혔다. 종전에는 그것을 기준선
- * 으로 우회했다 — `text-lg: 1` 의 «남은 1 은 산문 주석이고 내릴 수 없는 바닥»
- * 이 바로 그 자백이다. **내릴 수 없는 바닥이 아니라 탐지기의 결함이었다.**
+ * This ratchet scans source **as text**, so a comment explaining why a value must
+ * not be used was caught as a violation the moment it named that value. That used
+ * to be worked around through the baseline — `text-lg: 1` with its note that "the
+ * remaining 1 is prose in a comment and is a floor that cannot be lowered" was the
+ * confession. **It was not a floor; it was a defect in the detector.**
  *
- * 같은 병을 이 라운드에서 세 번 만났다: `unused-token-ratchet` 이 토큰의 주석
- * 언급을 「쓰인다」로 오판(과소 계상) · `implicit-bold-weight` 첫 구현이 자기
- * 독블록의 `<b>` 를 위반으로 계상(과대) · 그리고 여기. **소스를 문자열로 훑는
- * 게이트는 주석을 걷어냈는지 양방향으로 확인해야 한다.**
+ * The same disease appeared three times in this round: `unused-token-ratchet`
+ * reading a comment mention of a token as "used" (under-reporting) ·
+ * `implicit-bold-weight`'s first implementation counting the `<b>` in its own
+ * doc-block as a violation (over-reporting) · and here. **A gate that scans source
+ * as text must verify in both directions that it stripped comments.**
  */
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');

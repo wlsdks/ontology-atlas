@@ -63,9 +63,9 @@ describe("pickTodaysTouchUps (③ 오늘의 손질 절단)", () => {
     const queue = queueOf([neglected("n1", 12, 40), neglected("n2", 8, 33), promotion("p1"), orphan("o1")]);
     const picked = pickTodaysTouchUps(queue, cycles, resolvers);
     expect(picked.map((p) => p.source)).toEqual(["cycle", "neglected-hub", "neglected-hub"]);
-    // 사이클 행은 첫 노드로 딥링크하고 title/handoff 를 resolver 로 채운다.
+    // A cycle row deeplinks to its first node and fills title and handoff through the resolvers.
     expect(picked[0]).toMatchObject({ nodeId: "capability:a", title: "CAPABILITY:A", handoffPayload: "cycle handoff capability:a capability:b" });
-    // 고아는 밴드 대상이 아니다.
+    // Orphans are not band material.
     expect(picked.some((p) => p.source === "promotion")).toBe(false);
   });
 
@@ -93,7 +93,7 @@ describe("pickTodaysTouchUps (③ 오늘의 손질 절단)", () => {
   it("콜드스타트 가드 — 3건을 못 채우면 빈 배열(빈 밴드 방지)", () => {
     const queue = queueOf([neglected("n1", 12, 40), orphan("o1"), orphan("o2")]);
     const picked = pickTodaysTouchUps(queue, noCycles, resolvers);
-    // 방치 1 + 승격 0 = 1건 < 3 → 미표시 (고아는 밴드에서 제외).
+    // 1 neglected + 0 promotion = 1 item < 3 → not shown (orphans are excluded from the band).
     expect(picked).toEqual([]);
   });
 

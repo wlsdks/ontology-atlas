@@ -1,23 +1,25 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 /**
- * "지금 뷰포트가 이 폭보다 좁은가" 를 React 값으로 노출하는 훅.
+ * Exposes "is the viewport currently narrower than this width" as a React value.
  *
- * 왜 CSS 만으로 안 되나: 폭이 안 되는 표면을 **숨기는** 것과 **안 만드는**
- * 것은 다르다. `display:none` 으로 가린 표면도 마운트되어 효과·포커스·측정을
- * 계속 돌리고, 화면이 "여긴 못 온다" 고 말하는 동안 그 밑에서 살아 있는 것이
- * 정직하지 않다. 강등은 대체지, 은폐가 아니다.
+ * **Why CSS alone is not enough**: *hiding* a surface that does not fit is not the
+ * same as *not building* it. A surface hidden with `display:none` is still
+ * mounted, still running effects, focus and measurement — living on underneath
+ * while the screen says "you cannot come here". Degradation is a substitute, not
+ * concealment.
  *
- * 왜 `useState` + `useEffect` 가 아닌가: matchMedia 는 React 밖의 저장소라
- * 구독의 정석이 `useSyncExternalStore` 다. effect 안에서 setState 로 초기값을
- * 따라잡는 형태는 cascading render 를 만들고(`react-hooks/set-state-in-effect`)
- * 첫 프레임이 항상 틀린 값으로 그려진다. 서버 스냅샷을 따로 주면 정적 export
- * 의 prerender 와 hydration 이 갈라지지도 않는다 — 서버는 "넓다"로 그리고,
- * 하이드레이션 직후 실제 폭으로 한 번에 정착한다.
+ * **Why not `useState` + `useEffect`**: matchMedia is a store outside React, so
+ * `useSyncExternalStore` is the correct subscription. Catching up to the initial
+ * value with a setState inside an effect causes a cascading render
+ * (`react-hooks/set-state-in-effect`) and always paints the first frame with the
+ * wrong value. A separate server snapshot also keeps static export's prerender and
+ * hydration from diverging: the server renders "wide" and hydration settles on the
+ * real width in one step.
  *
- * `minWidthPx` 는 Tailwind 브레이크포인트와 **같은 수**를 넣는다 (`lg` =
- * 1024). 경계도 CSS 와 동일하게 "min-width 미만" — 1023.98px 로 질의해 소수
- * 픽셀 배율에서도 `lg:` 유틸리티와 어긋나지 않게 한다.
+ * `minWidthPx` takes the **same number** as the Tailwind breakpoint (`lg` = 1024).
+ * The boundary matches CSS too — "below min-width" — by querying 1023.98px so it
+ * cannot disagree with the `lg:` utilities at fractional pixel ratios.
  */
 export function useViewportBelow(minWidthPx: number): boolean {
   const query = useMemo(() => {
@@ -35,12 +37,12 @@ export function useViewportBelow(minWidthPx: number): boolean {
   );
 
   const getSnapshot = useCallback(() => query?.matches ?? false, [query]);
-  // 서버/prerender 에는 폭이 없다 — "넓다" 가 안전값이다(강등은 실제 폭을 확인한
-  // 뒤에만 한다).
+  // The server and prerender have no width; "wide" is the safe answer, because
+  // degradation happens only after the real width has been observed.
   const getServerSnapshot = useCallback(() => false, []);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/** Tailwind `lg` 브레이크포인트 — 데스크톱 레일(`lg:flex`) 이 서는 최소 폭. */
+/** The Tailwind `lg` breakpoint — the narrowest width at which the desktop rail (`lg:flex`) stands. */
 export const LG_BREAKPOINT_PX = 1024;

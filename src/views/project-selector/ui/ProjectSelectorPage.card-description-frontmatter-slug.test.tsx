@@ -5,11 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
 
-// 회귀 가드(2026-07-26) — `VaultDoc.slug` 는 파일 경로(`ontology/project`),
-// `Project.slug` 는 frontmatter `slug:`(`ontology-atlas`)다. 카드가 두 값을
-// 직접 비교하면 frontmatter 로 slug 를 명시한 프로젝트의 문서를 못 찾아
-// "설명이 아직 없는 프로젝트입니다" 로 거짓말한다 — 정작 상세 화면엔 같은
-// 설명이 멀쩡히 있었다. 실제 도그푸드 매니페스트와 같은 shape 로 고정한다.
+// Regression guard (2026-07-26) — `VaultDoc.slug` is the file path (`ontology/project`) while
+// `Project.slug` is the frontmatter `slug:` (`ontology-atlas`). A card comparing the two directly fails
+// to find the document of any project that declared its slug in frontmatter and lies with "this project
+// has no description yet" — while the detail screen showed that same description perfectly. Pinned to
+// the same shape as the real dogfood manifest.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
     <a href={href} {...props}>

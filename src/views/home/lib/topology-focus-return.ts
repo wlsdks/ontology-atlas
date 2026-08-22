@@ -7,11 +7,12 @@ function focusIfPossible(element: HTMLElement | null): boolean {
 }
 
 /**
- * 노드 datasheet가 닫힌 뒤 키보드 탐색 맥락을 복원한다.
+ * Restores the keyboard navigation context after the node datasheet closes.
  *
- * 선택 행이 현재 INDEX 필터 안에 보이면 그 행이 최우선이다. 연결 노드로
- * 이동해 행이 필터 밖이 됐으면 검색창으로, canvas 선택 때문에 INDEX가
- * 접혀 있으면 다시 펼칠 수 있는 INDEX 탭으로 강등한다.
+ * The selected row wins when it is still visible under the current INDEX filter.
+ * If following a connection pushed the row out of the filter, focus falls to the
+ * search field; if a canvas selection collapsed INDEX, it falls further to the
+ * INDEX tab, which can reopen it.
  */
 export function restoreTopologyFocusAfterDatasheetClose(
   selectedNodeId: string | null,

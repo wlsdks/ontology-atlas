@@ -6,11 +6,11 @@ import { resolveAuthoredDescription } from "./authored-description";
 export interface RecentActivityRow {
   slug: string;
   kind: string;
-  /** 지도 포커스 딥링크 대상 graph node id (`${kind}:${tailSlug}`) — 조회
-   *  실패(dangling doc) 시 null, 그때는 UI 가 행을 링크 없이 렌더한다. */
+  /** The graph node id for the map focus deeplink (`${kind}:${tailSlug}`) — null when the lookup fails
+   *  (a dangling doc), in which case the UI renders the row without a link. */
   nodeId: string | null;
-  /** 사람이 읽는 제목 — 화면 언어의 표시 이름(`node.display`) 우선, 없으면
-   *  canonical title, 그것도 없으면 tail slug. */
+  /** The human-readable title — the screen-language display name (`node.display`) first, then the
+   *  canonical title, then the tail slug. */
   title: string;
   domainTitle: string | null;
   what: string;
@@ -58,24 +58,24 @@ export function buildRecentActivityRows(
     const updatedAt = new Date(doc.updatedAt);
     if (Number.isNaN(updatedAt.getTime())) continue;
 
-    // Node id 는 file tail slug 로 형성된다 (deriveDocNode 참고) — doc.slug 는
-    // vault-relative 전체 경로("ontology/capabilities/x")라 tail 없이 그대로
-    // 조회하면 항상 miss 해서 domainTitle 이 늘 fallback 이었다 (mockup 감사 회귀).
+    // A node id is formed from the file's tail slug (see `deriveDocNode`) — `doc.slug` is the full
+    // vault-relative path ("ontology/capabilities/x"), so looking it up without taking the tail always
+    // missed and `domainTitle` was permanently at its fallback.
     const tailSlug = doc.slug.split("/").pop() || doc.slug;
     const nodeId = `${kind}:${tailSlug}`;
     const node = nodeById.get(nodeId);
     const domainId = node ? nearestDomainId(node, parentOf, nodeById) : null;
     const domainNode = domainId ? nodeById.get(domainId) : undefined;
     const domainTitle = domainNode ? (domainNode.display ?? domainNode.title) : null;
-    // 카드 본문과 **같은 규칙**을 같은 함수로 쓴다 — 사람이 `description:` 으로
-    // 쓴 것만. `node.summary` 도 폴백에서 빼는 이유는 그 값 자체가 `doc.excerpt`
-    // 로 떨어지기 때문이다(`derive-ontology-from-vault.ts`) — summary 를 남기면
-    // 발췌가 한 칸 우회해서 다시 들어온다. 없으면 행은 제목·종류·도메인·날짜만
-    // 말한다. 빈 자리가 잘못된 문장보다 낫다.
+    // Uses **the same rule** as the card body through the same function — only what a person wrote as
+    // `description:`. `node.summary` is excluded from the fallback because that value itself falls back
+    // to `doc.excerpt` (`derive-ontology-from-vault.ts`) — keeping summary lets the excerpt back in via
+    // one detour. With nothing, the row states only title, kind, domain, and date. An empty slot beats a
+    // wrong sentence.
     const what = resolveAuthoredDescription(doc) ?? "";
-    // 지도·팝오버와 같은 이름을 쓴다 — `display` 는 이미 화면 언어로 해석된
-    // 값(`derivationToInsight`)이라, 여기만 canonical title 을 쓰면 한국어
-    // 화면에 긴 영어 원제가, 영어 화면에 한국어 원제가 그대로 흘렀다.
+    // Uses the same name as the map and the popover — `display` is already resolved to the screen
+    // language (`derivationToInsight`), so using the canonical title only here leaked long English
+    // originals onto Korean screens and Korean originals onto English ones.
     const title = node?.display || node?.title || tailSlug;
 
     rows.push({

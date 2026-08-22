@@ -51,7 +51,7 @@ interface Props {
   initialProject?: Project;
   initialCategoryId?: string;
   initialStatusId?: string;
-  /** 의존성 피커용 전체 프로젝트 목록. */
+  /** Every project, for the dependency picker. */
   allProjects: Project[];
   onSubmit: (
     input: ProjectInput,
@@ -61,25 +61,25 @@ interface Props {
   onDelete?: () => Promise<void>;
   onDirtyChange?: (dirty: boolean) => void;
   /**
-   * [P-3] true 면 vault 가 로드되지 않은 데모/샘플 모드 — 폼 상단에 ko
-   * 안내 배너를 보여주고 모든 제출 버튼을 사전 비활성화한다. 끝까지
-   * 채운 뒤에야 영어 raw 에러를 보여주던 이전 흐름(정적 데모 모드에서
-   * "Cannot mutate projects…") 대신, 진입 시점에 바로 알려준다.
+   * True in demo/sample mode, where no vault is loaded: a banner appears at the top
+   * of the form and every submit button is disabled up front. The earlier flow let
+   * someone fill the whole form and only then showed a raw English error
+   * ("Cannot mutate projects…"); this says so on arrival instead.
    */
   writeDisabled?: boolean;
   /**
-   * 쓰기 잠금 배너의 «어디로 가면 되는지». 뷰가 넣어 준다 — 폴더를 여는
-   * 부품은 다른 feature 에 살고, feature→feature import 는 FSD 가 막는다.
+   * The «where to go instead» control for the write-locked banner. The view injects
+   * it — the folder-opening component lives in another feature, and FSD forbids
+   * feature→feature imports.
    */
   openVaultAction?: ReactNode;
 }
 
-// emptyValues는 ProjectForm 내부에서 첫 카테고리/상태 ID로 동적 생성.
 
-// [P-4] zod 스키마(schema.ts)는 useTranslations 훅에 접근할 수 없어 실제
-// 영문 문구 대신 "validation.<key>" i18n 키(또는 링크 줄 전용
-// "validation.linkLine:<index>:<code>" 포맷)만 issue.message 로 돌려준다.
-// 여기서 settings.projectForm 네임스페이스 t() 로 최종 번역한다.
+// The zod schema (schema.ts) has no access to the `useTranslations` hook, so it
+// returns `validation.<key>` i18n keys as `issue.message` (or the link-line format
+// `validation.linkLine:<index>:<code>`) rather than real English text. The final
+// translation happens here, in the `settings.projectForm` namespace.
 function resolveValidationMessage(
   t: ReturnType<typeof useTranslations>,
   message: string,
@@ -102,9 +102,10 @@ const FORM_SECTION_IDS = [
 ] as const;
 
 /**
- * 만들기 화면에서 **첫 화면에 보이는** 필수 칸. 나머지는 전부 "더 채우기"
- * 안으로 접힌다 (저장 뒤 편집 화면에서 채워도 되는 것들이다).
- * 검증 에러가 이 집합 밖의 필드를 가리키면 접힌 자리를 먼저 펼친다.
+ * The required fields **visible on the first screen** of the create flow. Everything
+ * else folds into "add more" (those can be filled later, from the edit screen after
+ * saving). When a validation error points at a field outside this set, the collapsed
+ * section is expanded first.
  */
 const CREATE_ESSENTIAL_FIELDS = new Set<keyof ProjectFormValues>([
   "name",
@@ -157,9 +158,9 @@ function buildInitialValues({
         );
     return {
       ...values,
-      // Duplicate/create는 새 문서라 보이는 taxonomy default를 사용한다.
-      // Edit는 원본에 없던 typed fact를 만들지 않도록 form-only preserve 값을
-      // 유지하고, 사용자가 직접 고를 때만 실제 id로 바뀐다.
+      // Duplicate and create are new documents, so they use the visible taxonomy
+      // default. Edit keeps a form-only preserve value so it never invents a typed
+      // fact the original lacked, switching to a real id only when the user picks one.
       category:
         mode === "create"
           ? initialProject.category ?? initialCategoryId ?? categoryId
@@ -207,7 +208,7 @@ export function ProjectForm({
   openVaultAction,
 }: Props) {
   const t = useTranslations("settings.projectForm");
-  // 신선도 등급 → 사람 말. 모델은 등급만 돌려주고 문구는 화면이 고른다.
+  // The freshness model returns a grade only; the screen chooses the words.
   const tFreshness = useTranslations("projectFreshness");
   const { categories, statuses, getCategory, getStatus, categoryLabel, statusLabel } =
     useTaxonomy();
@@ -260,12 +261,12 @@ export function ProjectForm({
   const [savedValues, setSavedValues] = useState<ProjectFormValues>(initialValues);
   const [values, setValues] = useState<ProjectFormValues>(initialValues);
 
-  // RHF formState.isDirty 를 dirty tracking 의 단일 진실원으로 사용.
-  // 외부 useState (\`values\`) 가 source of truth 를 쥐고 setValue 헬퍼가
-  // 매 호출 RHF setValue 도 함께 호출 — RHF 는 dirty / submit 상태만 보강.
+  // RHF's `formState.isDirty` is the single source of truth for dirty tracking. The
+  // external `values` state holds the source of truth and the setValue helper calls
+  // RHF's `setValue` on every call — RHF only supplements dirty and submit state.
   //
-  // resolver 의 input/output 타입 inference 가 zod default([]) 등으로 차이가
-  // 나 RHF Resolver 시그니처와 맞지 않음 — \`as never\` cast 로 회피.
+  // The resolver's inferred input/output types differ (zod `default([])` and the
+  // like) and do not match RHF's Resolver signature, hence the `as never` cast.
   const rhfMethods = useForm<ProjectFormValues>({
     defaultValues: initialValues,
     resolver: zodResolver(projectFormSchema) as never,
@@ -274,8 +275,8 @@ export function ProjectForm({
   const rhfReset = rhfMethods.reset;
   const rhfSetValue = rhfMethods.setValue;
   const categoryOptions = useMemo(() => {
-    // 라벨은 taxonomy provider 가 화면 언어에 맞춰 고른다 — 여기서
-    // `category.label`(한국어)을 직접 읽으면 영문 화면에 한국어가 샌다.
+    // The taxonomy provider picks labels for the screen's language — reading
+    // `category.label` (Korean) directly here leaks Korean onto the English screen.
     const options = categories.map((category) => ({
       value: category.id,
       label: categoryLabel(category.id),
@@ -326,11 +327,11 @@ export function ProjectForm({
     return options;
   }, [getStatus, statusLabel, statuses, t, values.status]);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === "edit");
-  // 만들기 화면 전용 — 문서 주소(slug)는 이름에서 자동으로 만들어지므로
-  // 기본은 캡션 한 줄이고, 직접 정하고 싶은 사람만 입력 칸을 연다.
+  // Create only: the document address (slug) is generated from the name, so it is a
+  // caption by default and only someone who wants to set it opens the input.
   const [slugFieldOpen, setSlugFieldOpen] = useState(false);
-  // 만들기 화면 전용 — 필수 4칸 밖의 모든 항목은 접어 둔다. 저장한 뒤
-  // 편집 화면에서 채워도 되는 것들이라 첫 화면의 높이를 먹을 이유가 없다.
+  // Create only: everything outside the four required fields stays folded. Those can
+  // be filled later from the edit screen, so they have no claim on the first screen's height.
   const [createExtrasOpen, setCreateExtrasOpen] = useState(false);
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProjectFormValues, string>>
@@ -376,8 +377,9 @@ export function ProjectForm({
       )
       .map((project) => project.slug);
   }, [allProjects, initialProject]);
-  // 설명/상세에서 언급된 다른 프로젝트를 dependency 후보로 제안.
-  // cycle 을 유발하는 후보는 invalidDependencySlugs 로 이미 잡히므로 제안에서 제외.
+  // Suggest other projects mentioned in the description or detail as dependency
+  // candidates. Candidates that would create a cycle are already caught by
+  // `invalidDependencySlugs` and are excluded from the suggestions.
   const dependencySuggestions = useMemo(() => {
     const invalidSet = new Set(invalidDependencySlugs);
     return computeSuggestedDependencies(
@@ -397,9 +399,9 @@ export function ProjectForm({
     values.detail,
     values.slug,
   ]);
-  // dirty 신호 = RHF formState.isDirty 또는 savedValues baseline 비교.
-  // RHF 의 isDirty 는 nested array 등에서 약간의 false-negative 가능 →
-  // savedValues 직접 비교를 OR 신호로 같이 사용.
+  // The dirty signal is RHF's `formState.isDirty` OR a comparison against the
+  // `savedValues` baseline. RHF's `isDirty` has occasional false negatives on nested
+  // arrays, so the direct comparison is OR'd in.
   const isDirty =
     rhfIsDirty || JSON.stringify(values) !== JSON.stringify(savedValues);
 
@@ -407,11 +409,11 @@ export function ProjectForm({
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
 
-  // B-23 — dirty 상태에서 브라우저 닫기 / 새로고침 / 다른 link 이동 시 confirm
-  // dialog 노출. 브라우저는 returnValue 가 빈 문자열이어도 generic 확인 메시지
-  // 표시 (Chrome / Firefox / Safari). 메시지 자체는 브라우저 보안 정책상 커스텀
-  // 불가. 실제 페이지 이동 (Next.js Link) 은 별도 router event 가드 필요 —
-  // 본 fire 는 외부 이탈 (탭 닫기 / 새로고침) 만 커버.
+  // Shows the browser's confirm dialog when closing, reloading, or following a link
+  // while dirty. Browsers display a generic message even with an empty `returnValue`
+  // (Chrome, Firefox, Safari); the message itself cannot be customized for security
+  // reasons. Actual in-app navigation (a Next.js Link) needs a separate router-event
+  // guard — this only covers leaving the page entirely.
   useEffect(() => {
     if (!isDirty) return;
     const handler = (event: BeforeUnloadEvent) => {
@@ -448,12 +450,12 @@ export function ProjectForm({
   ) => {
     setSaveNotice(null);
     setValues((prev) => ({ ...prev, [key]: v }));
-    // RHF 도 동시 setValue (\`shouldDirty: true\`) — formState.isDirty 가
-    // baseline 과 정확히 일치하도록.
+    // RHF's `setValue` fires alongside (`shouldDirty: true`) so `formState.isDirty`
+    // matches the baseline exactly.
     //
-    // ProjectFormValues[K] 의 optional undefined 가 RHF Path-typed setValue
-    // 시그니처와 mismatch — \`as never\` cast 한 줄. Path<T> 가 string 의
-    // 부분집합이라 keyof T 와 호환 안 함 (RHF 7.x 의 정상 동작).
+    // The optional `undefined` in `ProjectFormValues[K]` mismatches RHF's Path-typed
+    // `setValue` signature, hence the one-line `as never` cast: `Path<T>` is a subset
+    // of `string` and is not compatible with `keyof T` (normal RHF 7.x behaviour).
     rhfSetValue(
       key as Parameters<typeof rhfSetValue>[0],
       v as never,
@@ -462,8 +464,8 @@ export function ProjectForm({
   };
 
   const focusField = (field: keyof ProjectFormValues) => {
-    // 접힌 자리에 있는 필드로 포커스를 보내려면 먼저 펼쳐야 한다 — 접힌 채로
-    // 에러만 배너에 뜨면 "고치라는데 그 칸이 어디에도 없는" 막다른 길이 된다.
+    // A field inside a collapsed section must be expanded before focus moves to it —
+    // an error in the banner while its field is nowhere on screen is a dead end.
     if (mode === "create") {
       if (field === "slug") setSlugFieldOpen(true);
       else if (!CREATE_ESSENTIAL_FIELDS.has(field)) setCreateExtrasOpen(true);
@@ -474,8 +476,8 @@ export function ProjectForm({
       const target = document.getElementById(fieldId);
       if (target instanceof HTMLElement) {
         target.focus();
-        // jsdom 은 scrollIntoView 를 구현하지 않는다 — 포커스 이동이 본론이고
-        // 스크롤은 보조라 없으면 조용히 건너뛴다.
+    // jsdom does not implement `scrollIntoView`. Focus is the point and scrolling is
+    // secondary, so its absence is skipped silently.
         target.scrollIntoView?.({ behavior: "smooth", block: "center" });
       }
     });
@@ -489,7 +491,6 @@ export function ProjectForm({
     rhfSetValue("slug", nextSlug, { shouldDirty: true, shouldValidate: false });
   };
 
-  // 라이브 프리뷰용 Project 객체 — 폼 값에서 유도.
   const previewProject = useMemo<Project>(
     () => ({
       slug: values.slug,
@@ -651,11 +652,12 @@ export function ProjectForm({
 
     setSubmitting(true);
     try {
-      // 슬롯 배치 겹침 방지용 최신 프로젝트 목록. allProjects 가 mode-aware
-      // hook (useProjects) 의 출력이라 vault / 빌드타임 dogfood 진실원과 sync.
+      // The current project list, used to avoid overlapping placement slots.
+      // `allProjects` comes from the mode-aware `useProjects` hook, so it is in sync
+      // with either the vault or the build-time dogfood source of truth.
       const latestProjects = allProjects;
-      // 신규 생성 또는 사용자가 category를 실제로 바꾼 경우에만 위치를
-      // 계산한다. Edit가 원본의 category/position 부재를 조용히 채우지 않는다.
+      // Position is computed only on create, or when the user actually changed the
+      // category. Edit must not silently fill in a category or position the original lacked.
       const initialPos = initialProject?.position;
       const resolvedCategoryId = preservesMissingCategory
         ? undefined
@@ -677,7 +679,7 @@ export function ProjectForm({
       const input = formValuesToProjectInput(parsed.data, position);
       await onSubmit(input, { behavior: submitBehavior });
       setSavedValues(parsed.data);
-      // RHF baseline 도 reset → isDirty=false 로 즉시 복원.
+      // Reset RHF's baseline too, so `isDirty` returns to false immediately.
       rhfReset(parsed.data);
       if (submitBehavior === "stay") {
         setSaveNotice(
@@ -783,10 +785,10 @@ export function ProjectForm({
     ? t("preview.summaryDirty", { score: completenessInsight.score, count: changePreviewItems.length })
     : t("preview.summaryClean", { score: completenessInsight.score });
 
-  // ── 필드 조각 ──────────────────────────────────────────────────────────
-  // 만들기/편집 두 화면이 **같은 필드 정의**를 공유한다. 조각을 한 번만
-  // 정의하고 화면별로 배치만 다르게 한다 — 필드를 두 벌 적으면 한쪽만
-  // 고쳐지는 drift 가 곧바로 시작된다.
+  // ── Field fragments ────────────────────────────────────────────────────
+  // The create and edit screens share **one set of field definitions**; each fragment
+  // is defined once and only the arrangement differs. Writing the fields twice starts
+  // the drift where only one copy gets fixed.
 
   const slugField = (
     <FieldRow label={t("fields.slug")} error={errors.slug} fieldId={PROJECT_FIELD_IDS.slug}>
@@ -1109,26 +1111,27 @@ export function ProjectForm({
   );
 
   /*
-   * ⚠️ **막다른 CTA 였다** (2026-08-06 「위계」석 지적, 실측으로 확인).
+   * ⚠️ **This was a dead-end CTA** (raised by the hierarchy seat 2026-08-06, confirmed
+   * by measurement).
    *
-   * 이 배너는 화면에서 **가장 눈에 띄는 것**(유일한 난색)인데 *"폴더를 열어야
-   * 한다"* 고만 말했고, **이 화면 어디에도 폴더를 여는 버튼이 없었다** — 전수
-   * 측정에서 「폴더/열기」를 여는 컨트롤 **0개**.
+   * This banner is **the most prominent thing on screen** (the only warm colour) and
+   * said only *"you need to open a folder"*, while **nothing on this screen opened
+   * one** — a full sweep found **zero** controls that open a folder.
    *
-   * 헌장의 강등 문법은 «왜 안 되는지 **+ 어디로 가면 되는지**» 다
-   * (`.claude/rules/surfaces.md`). 문서함이 같은 문제를 이미 그렇게 풀었다 —
-   * *"누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다."*
+   * The charter's degradation grammar is «why it is unavailable **and where to go**»
+   * (`.claude/rules/surfaces.md`). The docs surface had already solved the same
+   * problem that way: *"pressing it goes to what makes it possible — open my folder."*
    *
-   * ⚠️ **그때의 갈 곳 `/` 는 웹에서 자기도 막다른 길이었다** (2026-08-07 실측).
-   * 눌러서 따라가 보니 `/ko/` 에 착지하고 그 화면의 폴더 여는 컨트롤은
-   * **0개** — 볼트를 안 고른 웹 방문자에게 `/` 는 **관문**(내려받기 화면)이기
-   * 때문이다(`isGatewaySurface()`, 2026-07-30). 설치된 앱에서는 `/` 가 지도라
-   * 맞았고, 그래서 앱에서만 확인하면 안 보인다. 종전 게이트도 «URL 이
-   * 바뀌었나»까지만 봤지 «거기서 폴더를 열 수 있나»는 안 봤다.
+   * ⚠️ **The destination `/` was itself a dead end on the web** (measured 2026-08-07).
+   * Following it landed on `/ko/`, where the number of folder-opening controls is
+   * **zero** — for a web visitor with no vault, `/` is the **gateway** (the download
+   * screen) (`isGatewaySurface()`, 2026-07-30). In the installed app `/` is the map,
+   * so it was correct there, and checking only in the app hides this. The old gate
+   * likewise checked only «did the URL change», never «can you open a folder there».
    *
-   * 그래서 갈 곳을 고치는 대신 **그 자리에서 열게** 한다. 컨트롤은 뷰가
-   * 넣어 준다(`openVaultAction`) — 폴더를 여는 부품은 `docs-vault-local`
-   * feature 에 있고 feature→feature import 는 FSD 가 막는다.
+   * So rather than fixing the destination, it opens **in place**. The control is
+   * injected by the view (`openVaultAction`) — the folder-opening component lives in
+   * the `docs-vault-local` feature, and FSD forbids feature→feature imports.
    */
   const writeDisabledBanner = writeDisabled ? (
     <div
@@ -1147,23 +1150,24 @@ export function ProjectForm({
   ) : null;
 
   /**
-   * 저장이 거절됐을 때 **그 이유가 눌린 사람 눈에 들어오는가.**
+   * When a save is rejected, **is the reason visible to the person who pressed it?**
    *
-   * 2026-08-07 실측(390×844): 편집 화면에서 저장을 누르니 거절 알림이
-   * top 802 · bottom 872 에 떴다 — 뷰포트가 844 라 **위아래로 잘린 채** 하단
-   * 탭바 뒤에 걸렸다. 누른 사람 화면에서는 아무 일도 안 일어난 것과 같다.
-   * 1512 에서는 멀쩡히 보였다(628–676). 폼이 길수록, 화면이 짧을수록 어긋난다.
+   * Measured 2026-08-07 (390×844): pressing save on the edit screen put the rejection
+   * notice at top 802 · bottom 872 — with a viewport of 844 it was **clipped at both
+   * ends** and caught behind the bottom tab bar. From the presser's point of view
+   * nothing happened. At 1512 it was perfectly visible (628–676). The longer the form
+   * and the shorter the screen, the worse the mismatch.
    *
-   * 검증 오류는 `focusField` 가 이미 그 칸으로 데려가지만, 저장 실패처럼
-   * **칸이 없는 오류**는 데려갈 곳이 이 배너뿐이다.
+   * `focusField` already takes validation errors to their field, but an error with
+   * **no field** — a failed save — has nowhere to go except this banner.
    */
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!globalError) return;
     const node = errorBannerRef.current;
     if (!node) return;
-    // jsdom 은 scrollIntoView 를 구현하지 않는다 — 포커스가 본론이고 스크롤은
-    // 보조라 없으면 조용히 건너뛴다(`focusField` 와 같은 규율).
+    // jsdom does not implement `scrollIntoView`. Focus is the point and scrolling is
+    // secondary, so its absence is skipped silently (same discipline as `focusField`).
     node.scrollIntoView?.({ behavior: "smooth", block: "center" });
     node.focus();
   }, [globalError]);
@@ -1205,9 +1209,9 @@ export function ProjectForm({
   const returnSubmitLabel =
     mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn");
 
-  // 액션 줄 — **폼 뒤**에 온다. 예전에는 같은 3개 버튼이 폼 맨 위에도 있어서
-  // 만들기 화면에서는 입력 칸을 하나도 보기 전에 "생성하고 계속 보기" 를
-  // 누를 수 있었다 (누를 수 있는데 누를 게 없는 상태).
+  // The action row comes **after the form**. The same three buttons used to sit at the
+  // top as well, so on the create screen you could press "create and keep viewing"
+  // before seeing a single input.
   const actionRow = (
     <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[color:var(--color-overlay-2)] pt-6">
       <Button
@@ -1231,15 +1235,17 @@ export function ProjectForm({
       >
         {returnSubmitLabel}
       </Button>
-      {/* 채워진 주 CTA 는 **화면당 하나**다 (2026-08-08 위계 판정).
-          편집 화면에는 위쪽 sticky 띠에 같은 행동·같은 라벨·같은 142×40 의 저장이
-          이미 있었고, 실측으로 채워진 인디고 면이 둘이었다(원장 2026-08-08 (3) ①).
-          sticky 는 스크롤 어디서나 보이므로 주 CTA 를 상단이 지고, 읽기 흐름 끝의
-          이 저장은 같은 행동의 되풀이라 보조 톤으로 내려온다 — 기능도 라벨도
-          그대로다. 만들기 화면에는 sticky 띠가 없어(위 주석) 여기가 유일한 주
-          CTA 이므로 `primary` 를 유지한다: 조건이 없으면 만들기 화면이 채워진
-          CTA 0개가 되어 반대 방향의 위계 결함이 된다. 새 variant 는 만들지 않고
-          `Button` 의 기존 `outline` 을 쓴다. */}
+      {/* There is **one** filled primary CTA per screen (hierarchy verdict 2026-08-08).
+          The edit screen already had a save in the sticky band above — same action,
+          same label, same 142×40 — and measurement found two filled indigo surfaces
+          (ledger 2026-08-08 (3) ①). The sticky band is visible at any scroll position,
+          so it carries the primary CTA, and this save at the end of the reading flow is
+          a repeat of the same action and drops to a secondary tone — the function and
+          the label are unchanged. The create screen has no sticky band (see the comment
+          above), so this is its only primary CTA and keeps `primary`: without the
+          condition the create screen would have zero filled CTAs, a hierarchy defect in
+          the opposite direction. No new variant is introduced; this uses `Button`'s
+          existing `outline`. */}
       <Button
         data-testid="project-save"
         type="submit"
@@ -1255,10 +1261,10 @@ export function ProjectForm({
     </div>
   );
 
-  // ── 만들기 화면 폼 ─────────────────────────────────────────────────────
-  // 필수 4칸(이름 · 카테고리 · 상태 · 짧은 설명)만 펼쳐 두고, 나머지는 전부
-  // "더 채우기" 안으로 접는다. 문서 주소(slug)는 이름에서 자동 생성되므로
-  // 칸이 아니라 이름 밑의 캡션 한 줄로 내려간다.
+  // ── Create screen form ─────────────────────────────────────────────────
+  // Only the four required fields (name, category, status, short description) are
+  // expanded; everything else folds into "add more". The document address (slug) is
+  // generated from the name, so it is a caption under the name rather than a field.
   const createForm = (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {writeDisabledBanner}
@@ -1270,9 +1276,10 @@ export function ProjectForm({
           {slugFieldOpen ? (
             slugField
           ) : (
-            /* 캡션은 한 줄로 고정한다 (치수 규칙성). 긴 이름에서 나온 긴
-               주소가 줄을 늘리면 그 카드 높이가 글자 수로 정해진다 — 값은
-               잘리고 전체 값은 "직접 정하기" 를 열면 입력 칸에서 보인다. */
+            /* The caption is pinned to one line (dimensional regularity). Letting a
+               long address from a long name grow the line would make that card's height
+               depend on character count — the value is clipped, and the full value is
+               visible in the input once "set it myself" is opened. */
             <div className="flex items-baseline gap-2 overflow-hidden">
               <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
                 {t("fields.slugAutoLabel")}
@@ -1287,9 +1294,10 @@ export function ProjectForm({
                 type="button"
                 data-testid="project-slug-disclosure"
                 onClick={() => setSlugFieldOpen(true)}
-                /* 캡션 행 속 컨트롤 — 바닥 24(`min-h-6`)까지만 싣는다. 행이
-                   16→24 로 서지만 44 를 실으면 캡션 행이 카드가 된다. 아래
-                   폼 필드와의 여유가 12px 미만이라 touch-hit-expand 미부착. */
+                /* A control inside a caption row — carried only up to a floor of 24
+                   (`min-h-6`). The row rises 16→24, but carrying 44 would turn the
+                   caption row into a card. There is under 12px of clearance to the form
+                   field below, so touch-hit-expand is not attached. */
                 className={controlClass({
                   shape: "link",
                   tone: "accent",
@@ -1328,19 +1336,20 @@ export function ProjectForm({
     </form>
   );
 
-  // ── 편집 화면 폼 ───────────────────────────────────────────────────────
-  // 편집은 "이미 있는 걸 보강하기" 라 요구가 다르다 — 모든 항목이 펼쳐진
-  // 채로 보이고, 긴 폼을 스크롤하는 동안 저장이 따라오도록 상단 저장 줄이
-  // sticky 로 붙는다. 구조는 재구성 전과 동일(회귀 금지).
+  // ── Edit screen form ───────────────────────────────────────────────────
+  // Editing is "filling out something that already exists", so the demands differ:
+  // every item is visible expanded, and the save row sticks to the top so it follows
+  // you while scrolling a long form.
   const editForm = (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {writeDisabledBanner}
 
-      {/* 드롭을 사다리로 올렸다 (2026-08-06). 이 띠는 **진짜 떠 있다**(sticky +
-          z-10, 스크롤하는 폼 위를 지난다) — 그래서 드롭을 걷는 게 아니라
-          손으로 쓴 `0 18px 36px var(--color-shadow-a22)` 를 사다리의 최하 부유
-          단으로 바꾼다. y 는 18 로 같고 번짐 36→40, 진하기 a22→a35 로 짙어진다:
-          떠 있는 것일수록 더 짙고 넓게 — 광원 가정이 사다리와 하나가 된다. */}
+      {/* The drop shadow was raised onto the ladder (2026-08-06). This band **really
+          floats** (sticky + z-10, passing over the scrolling form), so rather than
+          removing the drop, the hand-written `0 18px 36px var(--color-shadow-a22)`
+          becomes the ladder's lowest floating step. y stays 18 while the blur goes
+          36→40 and the density a22→a35: the more it floats, the darker and wider — so
+          the light-source assumption becomes one with the ladder. */}
       <div className="sticky top-4 z-10 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-2),var(--shadow-elevation-1)]">
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
@@ -1427,8 +1436,9 @@ export function ProjectForm({
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                // pill/lg — 자연높이 32 는 종전(py-1.5)과 같고, 보더는 램프 기본
-                // border-soft(0.06)로 다수 정합(구 divider 0.08 — 2026-08-03 선례).
+                // pill/lg — the natural height of 32 matches the previous `py-1.5`, and
+                // the border uses the ramp default `border-soft` (0.06) to match the
+                // majority (the old `divider` was 0.08).
                 className={controlClass({
                   shape: "pill",
                   size: "lg",
@@ -1497,8 +1507,8 @@ export function ProjectForm({
         expandLabel={t("sections.expandLabel")}
       >
         {dependenciesField}
-        {/* Screenshot uploader 없음 — local-first 흐름은 markdown 안
-            이미지 인라인 또는 vault 내부 image asset 으로 처리. */}
+        {/* No screenshot uploader — the local-first flow handles images inline in
+            markdown or as an image asset inside the vault. */}
       </FormSection>
 
       <FormSection
@@ -1558,32 +1568,34 @@ export function ProjectForm({
 
   return (
     /*
-     * 왼쪽 입력 · 오른쪽 라이브 미리보기. **왼쪽은 남는 만큼 갖는다.**
+     * Inputs on the left, live preview on the right. **The left takes whatever is left.**
      *
-     * ⚠️ **종전 `lg:grid-cols-[640px_260px]` 는 자기 틀보다 넓었다** (2026-08-20
-     * 릴리스 검수 실측). 이 폼이 사는 틀은 `PAGE_FRAME_FORM`(max-w 960 + px-10)
-     * 이라 내용 상자가 **880px** 인데, 트랙 합이 640 + 32(gap-8) + 260 = **932px**
-     * 였다. 즉 어느 화면 폭에서든 오른쪽 열이 제 컨테이너 밖으로 **52px** 나가
-     * 있었고(1512 에서도 그렇다), 뷰포트가 ~1092px 밑으로 내려가면 그때부터
-     * 화면에서 잘려 나갔다.
+     * ⚠️ **The old `lg:grid-cols-[640px_260px]` was wider than its own frame** (measured
+     * during the 2026-08-20 release review). This form sits in `PAGE_FRAME_FORM`
+     * (max-w 960 + px-10), giving a content box of **880px**, while the tracks summed to
+     * 640 + 32 (gap-8) + 260 = **932px**. So at every viewport width the right column
+     * hung **52px** outside its container (at 1512 too), and below a viewport of ~1092px
+     * it started being clipped off screen.
      *
-     * 인용돼 있던 근거는 둘 다 그 값을 뒷받침하지 않았다: `RATIO-SYSTEM.md` 와
-     * `--page-col-form` 토큰은 **존재하지 않고**, 살아 있는
-     * `docs/prototypes/project-forms-final.html` 의 640 은
-     * `.formcol { width: 640px; margin: 0 auto }` — **사이드바가 없는 단일 중앙
-     * 컬럼**이다(그 파일에 `260` 은 0회 나온다). 단일 컬럼용 폭을 없던 열과
-     * 나란히 세운 것이라, 지켜야 할 비율이 아니라 유래를 잃은 리터럴이었다.
-     * 형제 토큰 `--page-col-utility` 도 같은 이유로 2026-07-29 카운슬이 지웠다.
+     * Neither cited justification supported that value: `RATIO-SYSTEM.md` and the
+     * `--page-col-form` token **do not exist**, and the 640 in the live
+     * `docs/prototypes/project-forms-final.html` is
+     * `.formcol { width: 640px; margin: 0 auto }` — **a single centred column with no
+     * sidebar** (`260` appears zero times in that file). A single-column width had been
+     * stood next to a column that never existed, making it a literal that had lost its
+     * origin rather than a ratio to preserve. The sibling token `--page-col-utility` was
+     * deleted by the 2026-07-29 council for the same reason.
      *
-     * 그래서 고정 폭은 **미리보기 쪽만** 남긴다(그건 자기 내용이 정하는 폭이다).
-     * 입력 열은 남는 폭을 갖고, 틀이 바뀌어도 따라간다. `minmax(0,…)` 인 이유는
-     * `1fr` 만 쓰면 안의 긴 내용이 트랙을 다시 밀어내기 때문이다.
-     * 게이트: `tests/contract/page-grid-fits-frame.contract.test.ts`.
+     * So the fixed width stays **only on the preview** (its width is decided by its own
+     * content). The input column takes the remaining width and follows the frame if it
+     * changes. `minmax(0,…)` rather than `1fr` because `1fr` alone lets long content
+     * inside push the track back out.
+     * Gate: `tests/contract/page-grid-fits-frame.contract.test.ts`.
      */
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
       {mode === "create" ? createForm : editForm}
 
-      {/* 모바일에서는 폼 입력을 먼저 보이게 하고, 데스크톱에서만 우측 보조 패널로 유지한다. */}
+      {/* On mobile the form inputs come first; the side panel stays on the right only on desktop. */}
       <aside className="order-none">
         <div className="lg:sticky lg:top-10">
           <button
@@ -1609,10 +1621,10 @@ export function ProjectForm({
             />
           </button>
           <div className={cn("hidden lg:block", mobilePreviewOpen && "block")}>
-            {/* 편집 화면에서만 "무엇이 바뀌는지" 를 문장으로 덧댄다. 만들기
-                화면은 저장된 이전 상태가 없어서 그 문장이 항상 같은 말을
-                반복했고, "왼쪽 입력이 여기 반영됩니다" 는 정작 그 왼쪽 입력이
-                화면 밖에 있을 때 쓰던 변명이었다. 지금은 마주 보므로 뺀다. */}
+            {/* The sentence about "what is changing" is added on the edit screen only.
+                The create screen has no saved previous state, so it always repeated the
+                same thing, and "your input on the left is reflected here" was an excuse
+                from when that input was off screen. They face each other now, so it goes. */}
             {(mode === "edit" || saveNotice) && (
               <div className="mb-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
                 <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
@@ -1644,15 +1656,15 @@ export function ProjectForm({
               {t("preview.cardEyebrow")}
             </p>
             {/*
-              **카드가 상자 안의 상자가 되지 않게 한다** (2026-08-17).
+              **Do not let the card become a box inside a box** (2026-08-17).
 
-              미리보기의 일은 *"지도에서 이렇게 보인다"* 를 보여 주는 것인데,
-              그 카드를 다시 테두리 있는 액자에 넣으면 지도에 없는 테두리가
-              하나 더 붙은 모습을 보여 주게 된다 — 미리보기가 실물과 달라진다.
+              The preview's job is to show *"this is how it looks on the map"*, and
+              putting that card inside another bordered frame shows a border the map
+              does not have — the preview stops matching the real thing.
 
-              액자를 걷고 **지도와 같은 바탕**만 깐다. 카드 자신이 이미 테두리와
-              반경을 갖고 있어서 경계는 그것으로 충분하다. 여백도 6 → 5 로
-              줄인다(액자가 없으니 안쪽 여백이 그만큼 커 보인다).
+              The frame is removed and only **the map's background** is laid down. The
+              card already has its own border and radius, which is boundary enough. The
+              padding drops 6 → 5 as well (without the frame, the inner padding reads larger).
             */}
             <div className="flex items-start justify-center rounded-panel bg-[color:var(--color-canvas)] py-4">
               <ProjectCard
@@ -1719,23 +1731,26 @@ export function ProjectForm({
 }
 
 /**
- * 만들기 화면의 "더 채우기" 자리. 필수 4칸 밖의 모든 항목이 여기 접혀 있고,
- * 펼치는 건 사용자다. 닫힌 높이를 고정하지 않는 대신 캡션 한 줄이 늘 같은
- * 자리에서 "저장한 뒤에 채워도 된다" 를 말한다 — 이 화면의 유일한 안내다.
+ * The create screen's "add more" section. Every item outside the four required fields
+ * folds in here, and the user is the one who expands it. Rather than fixing the closed
+ * height, one caption always says in the same place that these can be filled after
+ * saving — the only guidance on this screen.
  *
- * ## 상자를 씌우지 않는다 (2026-08-17 소유자 지적)
+ * ## No box around it (owner, 2026-08-17)
  *
- * *"조금 ai디자인같고 허접한데"*. 재 보니 값은 이미 시스템대로였다 — 이 화면의
- * 반경 이탈 0건 · 글자 크기 이탈 0건. 어긋난 것은 **위계**였다.
+ * Owner: *"조금 ai디자인같고 허접한데"* (it looks a bit AI-designed and cheap).
+ * Measurement found the values already followed the system — zero radius deviations and
+ * zero font-size deviations on this screen. What was wrong was the **hierarchy**.
  *
- * 종전에는 접힌 줄 하나를 `rounded-panel border bg-panel` 섹션이 감쌌다.
- * 실측(1512×900): 그 상자가 **92px 를 차지하는데 담은 것은 제목 한 줄과 캡션
- * 한 줄**뿐이었고, 화면의 바깥 상자 넷 중 하나였다. 이 저장소가 「떠 있는 상자
- * 수프」라고 이름 붙여 금지한 모양이다.
+ * A `rounded-panel border bg-panel` section used to wrap the single collapsed row.
+ * Measured (1512×900): that box occupied **92px to hold one title line and one caption
+ * line**, and it was one of four outer boxes on the screen — the shape this repository
+ * named "floating box soup" and forbade.
  *
- * 테두리는 «여기부터 다른 것» 을 뜻하는데 접힌 상태에는 안에 다른 것이 없다.
- * 그래서 경계는 머리카락선 하나로 충분하고, 펼쳤을 때 비로소 내용이 자기
- * 무게로 구분된다. 크롬을 줄이면 남은 상자(폼)가 주인공이라는 것이 저절로 선다.
+ * A border means «something different starts here», and in the collapsed state there is
+ * nothing different inside. So a single hairline is boundary enough, and only on expand
+ * does the content distinguish itself by its own weight. With less chrome, the remaining
+ * box (the form) stands as the subject on its own.
  */
 function CreateExtras({
   open,
@@ -1795,7 +1810,7 @@ function CreateExtras({
   );
 }
 
-/** "더 채우기" 안의 소그룹 — 각인 라벨 + 헤어라인, 접기 버튼 없음. */
+/** A subgroup inside "add more" — engraved label plus a hairline, no collapse control. */
 function ExtrasGroup({
   label,
   children,

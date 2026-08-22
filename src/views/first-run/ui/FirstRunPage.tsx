@@ -11,38 +11,36 @@ import { useToast } from "@/shared/ui/toast";
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 설치 앱 (데스크톱 셸) 첫 실행 — vault 미선택 상태의 `/`.
+ * First run of the installed app (the desktop shell) — `/` with no vault chosen.
  *
- * 정체성 결함 교정: 설치된 앱이 자기 자신을 다운로드하라는 마케팅 관문을
- * 보여주던 것을, Obsidian 계열 도구처럼 "폴더 선택 → 바로 작업" 진입으로
- * 바꾼다. 웹 `/` 는 root-first-open(2026-07) 이후 지도(HomePage) 자체가
- * 첫 화면이라 이 페이지와 다른 문제를 푼다 — 분기는 RootEntryPage 의
- * isDesktopShell() 하나.
+ * An identity fix: the installed app used to show a marketing gateway telling you to download the app
+ * you are already running. This is the Obsidian-style "choose a folder → start working" entry instead.
+ * The web `/` has had the map (HomePage) as its first screen since root-first-open (2026-07) and solves
+ * a different problem — the branch is the single `isDesktopShell()` in `RootEntryPage`.
  *
- * 네 액션 모두 기존 흐름 재사용 (새 파이프라인 0):
- * - 볼트 폴더 열기 → useLocalVault().open() (Tauri picker / FSA picker)
- * - 새 볼트 만들기 → 같은 open() 뒤, 빈 폴더면 기존 scaffoldOntology()
- *   (`/docs` OntologyStarterCta 와 동일 액션) 로 starter 시드 작성
- * - **그냥 시작하기** (Tauri 런타임 한정, R+ "정직판" 데스크톱 자동 vault) →
- *   폴더 픽커 없이 `~/Documents/Ontology Atlas/<name>` 아래 실제 디스크 폴더를
- *   만들고 곧장 연결 (`useJustStartVault`). 실디스크라 MCP/Claude Code 같은
- *   에이전트가 그대로 접근 가능 — OPFS 를 쓰지 않는 게 이 설계의 핵심.
- *   dev 빌드에서 `?shell=desktop` 오버라이드로 이 페이지를 브라우저에서 열어볼
- *   수도 있으므로(`isDesktopShell()`), 이 카드는 실제 Tauri invoke 브리지
- *   (`isTauriVaultRuntime()`) 가 있을 때만 렌더 — 없으면 항목 자체 미표시.
- * - 데모 볼트 둘러보기 → `/docs/` 의 내장 dogfood 매니페스트 (vault 미선택
- *   fallback — 정적 빌드에 이미 포함)
+ * All four actions reuse existing flows (zero new pipelines):
+ * - Open a vault folder → `useLocalVault().open()` (the Tauri or FSA picker)
+ * - Create a new vault → the same `open()`, then, if the folder is empty, the existing
+ *   `scaffoldOntology()` (the same action as `/docs`'s `OntologyStarterCta`) seeds the starter
+ * - **Just start** (Tauri runtime only) → with no folder picker, creates a real on-disk folder under
+ *   `~/Documents/Ontology Atlas/<name>` and connects to it directly (`useJustStartVault`). Because it
+ *   is a real disk path, agents such as MCP or Claude Code can reach it — not using OPFS is the core of
+ *   this design. A dev build can open this page in a browser via the `?shell=desktop` override
+ *   (`isDesktopShell()`), so this card renders only when the real Tauri invoke bridge
+ *   (`isTauriVaultRuntime()`) exists — otherwise the item is not shown at all.
+ * - Browse the demo vault → the bundled dogfood manifest at `/docs/` (the no-vault fallback, already
+ *   part of the static build)
  *
- * 디자인: DESIGN-SYSTEM v2 machined 언어 — `--color-panel` 표면 + 1px
- * border-soft 카드, 음각 mono trust line (`--engraved-numeral-*`, 실제 사실만),
- * 단일 인디고, 마케팅 산문/다운로드 CTA/스크린샷 0.
+ * Design: the machined language of DESIGN-SYSTEM v2 — `--color-panel` surfaces with 1px border-soft
+ * cards, an engraved mono trust line (`--engraved-numeral-*`, real facts only), a single indigo, and
+ * zero marketing prose, download CTAs, or screenshots.
  */
 export function FirstRunPage() {
   const t = useTranslations("firstRun");
   const toast = useToast();
   const vault = useLocalVault();
-  // 두 생성 경로 모두 화면 언어의 스타터를 만든다 — 같은 행동이 진입 경로에
-  // 따라 다른 언어의 볼트를 만들면 안 된다(흐름 점검 2026-07-26 D2).
+  // Both creation paths produce a starter in the screen's language — the same action must not produce a
+  // vault in a different language depending on the entry path (walkthrough 2026-07-26).
   const locale = useLocale();
   const { handleCreate, scaffolding, actionError, setActionError } =
     useVaultCreateFlow(vault, locale);
@@ -54,11 +52,10 @@ export function FirstRunPage() {
     createdPath,
     clearCreatedPath,
   } = useJustStartVault(vault, locale);
-  // dev 빌드의 `?shell=desktop` 오버라이드로 이 페이지를 일반 브라우저에서 열어
-  // 볼 수 있다(`isDesktopShell()`) — 그런 경우 실제 Tauri invoke 브리지는 없으니
-  // "그냥 시작하기" 는 렌더하지 않는다. 이 페이지 자체가 이미 클라이언트 전용
-  // 마운트(RootEntryPage 의 clientReady 게이트) 뒤에만 렌더되므로 SSR/hydration
-  // mismatch 걱정 없이 바로 호출해도 된다.
+  // A dev build can open this page in an ordinary browser through the `?shell=desktop` override
+  // (`isDesktopShell()`), and in that case there is no real Tauri invoke bridge, so "just start" is not
+  // rendered. This page itself only renders behind a client-only mount (`RootEntryPage`'s `clientReady`
+  // gate), so calling this directly carries no SSR/hydration mismatch risk.
   const showJustStart = isTauriVaultRuntime();
 
   const busy =
@@ -84,15 +81,15 @@ export function FirstRunPage() {
       : actionError !== null
         ? actionError || t("errorFallback")
         : vault.status === "error"
-          ? // 「받을 수 없는 자리」는 실패가 아니라 거절이다. 여기에 「다시 시도해
-            // 주세요」를 띄우면 몇 번을 눌러도 같은 결과라서 화면이 거짓말을 한다.
+          ? // A "cannot be a vault root" case is a rejection, not a failure. Showing "please try again"
+            // here would make the screen lie, since every retry gives the same result.
             vault.errorCode === "root-rejected"
             ? t("errorRootRejected")
             : /*
-               * ⚠️ 「폴더가 사라짐」도 **다시 시도해서 될 일이 아니다** (2026-08-16
-               * 검수). 종전에는 이 갈래가 `errorMessage` 로 떨어졌는데 그 값은
-               * 원문을 안 흘리려고 비워 둔 값이라, 결국 「다시 시도해 주세요」가
-               * 떴다 — 몇 번을 눌러도 같은 결과다.
+               * ⚠️ "the folder is gone" is **also not something a retry fixes** (review
+               * 2026-08-16). This branch used to fall through to `errorMessage`, but that
+               * value is deliberately blank so the raw cause is not leaked — so what
+               * actually showed was "please try again", with the same result every press.
                */
               vault.errorCode === "path-missing"
               ? t("errorPathMissing")

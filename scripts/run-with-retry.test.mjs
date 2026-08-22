@@ -15,8 +15,9 @@ const workspace = mkdtempSync(join(tmpdir(), 'run-with-retry-'));
 after(() => rmSync(workspace, { recursive: true, force: true }));
 
 /**
- * 시도할 때마다 카운터 파일에 한 줄씩 적고, 지정한 시도 번호부터 성공하는
- * 가짜 명령. 「몇 번 돌았나」를 밖에서 셀 수 있어야 재시도를 증명할 수 있다.
+ * A fake command that appends a line to a counter file on each attempt and starts
+ * succeeding at the given attempt number. Proving a retry requires counting the runs
+ * from outside.
  */
 function fakeCommand({ name, succeedFromAttempt = Infinity, hangMs = 0 }) {
   const counter = join(workspace, `${name}.count`);
@@ -28,7 +29,7 @@ function fakeCommand({ name, succeedFromAttempt = Infinity, hangMs = 0 }) {
 appendFileSync(${JSON.stringify(counter)}, 'x');
 const attempt = readFileSync(${JSON.stringify(counter)}, 'utf8').length;
 if (${hangMs} > 0) {
-  // 끝나지 않는 명령. 타임아웃이 실제로 죽이는지 보려고 일부러 오래 잔다.
+  // A command that never finishes — it sleeps deliberately to show the timeout really kills it.
   setTimeout(() => process.exit(0), ${hangMs});
 } else {
   process.exit(attempt >= ${succeedFromAttempt} ? 0 : 7);
@@ -84,14 +85,14 @@ test('--best-effort 면 다 실패해도 0으로 끝나되, 조용히 넘어가�
 
   assert.equal(result.code, 0);
   assert.equal(fake.attempts(), 2);
-  // 경고가 없으면 「성공」과 구별되지 않는다 — 그게 이 저장소가 게이트에 대해
-  // 반복해서 겪은 실패 모양이다.
+  // Without a warning this is indistinguishable from success — the failure shape this
+  // repository has repeatedly hit with gates.
   assert.match(result.stdout, /::warning title=/);
 });
 
 test('멈춘 명령은 타임아웃에 죽고, 그 자리가 재시도로 이어진다', async () => {
-  // 시도마다 60초씩 자려는 명령. 타임아웃이 안 걸리면 이 테스트가 60초 넘게 걸려
-  // 그 자체로 실패한다 — 「죽였다」를 시간으로도 증명한다.
+  // A command that wants to sleep 60 s per attempt. Without the timeout this test takes
+  // over 60 s and fails on its own — proving "it was killed" by wall clock too.
   const fake = fakeCommand({ name: 'hang', hangMs: 60_000 });
   const started = Date.now();
   const result = await run(['--attempts=2', '--timeout-ms=700', '--backoff-ms=1', '--', ...fake.argv]);

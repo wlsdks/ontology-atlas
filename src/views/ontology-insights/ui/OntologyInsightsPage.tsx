@@ -87,54 +87,60 @@ const EMPTY_NODES: KnowledgeGraphNode[] = [];
 const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
 const HUB_DISPLAY_LIMIT = 6;
 /**
- * 영향 랭킹 표시 행 수 — 스크롤 계약(탭 ≤ 뷰포트 1.3배) 안에서 읽히는 상한.
+ * How many impact-ranking rows to show — the ceiling that still reads inside the
+ * scroll contract (a tab is at most 1.3× the viewport).
  *
- * 12 인 이유는 이 카드가 나란한 두 카드를 합친 폭을 쓰기 때문이다. 6행을 두 배
- * 폭에 늘이면 이름(좌)과 막대(우) 사이가 1,100px 벌어져 한 행을 읽는 데 눈이
- * 화면을 가로지른다. 폭을 두 칸으로 접으면 행의 측정선(measure)이 옆 허브 카드와
- * 같아지고, 남는 자리는 빈 공간이 아니라 다음 6개 순위가 채운다 — 넓은 칸은
- * 데이터로 벌어야지 여백으로 벌지 않는다.
+ * 12 because this card spans the combined width of the two cards beside it. Six
+ * rows stretched across double width puts 1,100px between the name (left) and the
+ * bar (right), so reading one row drags the eye across the screen. Folding the
+ * width into two columns gives a row the same measure as the neighbouring hub
+ * card, and the space left over is filled by the next six ranks rather than by
+ * blank area — a wide column is earned with data, not with whitespace.
  */
 const IMPACT_DISPLAY_LIMIT = 12;
 /**
- * 중복 의심 표시 행 수. 상한을 넘는 쌍은 화면이 아니라 인계 payload 가
- * 담당한다 — 섹션 머리의 총계는 절단 전 규모를 그대로 말한다.
+ * How many suspected-duplicate rows to show. Pairs beyond the limit are carried by
+ * the handoff payload rather than the screen — the section heading's total states
+ * the pre-truncation scale verbatim.
  *
- * 3행인 이유는 실측이다(1512×862, 도그푸드 294개념): 5행이면 「할 일」 탭이
- * 1,309px 로 스크롤 계약(뷰포트 1.3배 = 1,120px)을 189px 넘겼다. 다른 섹션을
- * 유형당 3행으로 함께 줄이고 이 카드를 3행으로 두면 1,1xx 로 들어온다 —
- * "중복이 있다"는 사실과 가장 의심스러운 3쌍을 보여주는 데는 충분하고,
- * 나머지는 `similar_nodes` 가 답한다.
+ * Three rows is measured (1512×862, dogfood vault, 294 concepts): with five rows
+ * the "to do" tab reached 1,309px, exceeding the scroll contract (1.3× viewport =
+ * 1,120px) by 189px. Cutting every section to three rows per type brings the tab
+ * back into the 1,1xx range — enough to say "there are duplicates" and show the
+ * three most suspicious pairs, with the rest answered by `similar_nodes`.
  */
 const DUPLICATE_DISPLAY_LIMIT = 3;
 /**
- * 접힌 계층에 실을 나머지 중복 쌍 수.
+ * How many remaining duplicate pairs the collapsed disclosure layer carries.
  *
- * 왜 필요한가 (2026-07-27 실측) — 배지는 「비슷한 이름 10」이라 말하는데 화면엔
- * 3행뿐이었고 더 보기도 없었다. 나머지 7건은 이 화면에서 **발견될 방법 자체가
- * 없었다**. 총계만 크게 적고 나머지를 조용히 숨기면 배지 자체를 못 믿게 된다.
+ * Measured 2026-07-27: the badge said "similar names 10" while the screen showed
+ * three rows with no "show more". The other seven had **no way to be discovered**
+ * on this screen. Printing a large total while quietly hiding the rest makes the
+ * badge itself untrustworthy.
  *
- * 상한이 24 로 넉넉한 이유: 펼친 계층은 **높이가 고정된 스크롤 상자**라 행이
- * 몇이든 탭 높이가 자라지 않는다(실측 1512×950, 도그푸드: 접힘 982px · 펼침
- * 1,190px, 둘 다 스크롤 계약 안). 화면에 보일 자리를 행 수로 사지 않으므로
- * 여기서 아낄 이유가 없고, 24 를 넘는 규모는 화면으로 훑을 일이 아니라 캡션이
- * 밝히는 대로 에이전트 핸드오프가 맡는다.
+ * The limit is a generous 24 because the expanded layer is **a fixed-height scroll
+ * box** — the tab height does not grow with the row count (measured 1512×950,
+ * dogfood: collapsed 982px, expanded 1,190px, both inside the scroll contract).
+ * Screen space is not bought with rows here, so there is nothing to save; scale
+ * beyond 24 is not something to skim on screen and is handed to the agent, as the
+ * caption states.
  */
 const DUPLICATE_DISCLOSURE_LIMIT = 24;
 const RECENT_UPDATES_LIMIT = 8;
 /**
- * 「최근 갱신」의 근거 계층에 펼쳐 보일 행 수.
+ * How many rows the "recently updated" evidence layer expands to.
  *
- * 3인 이유는 실측이다(1512×950, 도그푸드). 영향 랭킹은 같은 계층을 4행 두지만
- * 그 카드는 두 칸 격자라 4행이 두 줄로 접힌다. 이 목록은 한 칸이라 4행이면
- * 펼친 「신선도」 탭이 en 1,102px 로 스크롤 계약(1,120px)까지 18px 만 남긴다 —
- * 번역이 한 줄 길어지면 넘긴다. 3행이면 1,0xx 로 여유가 돌아온다. 규모는 토글
- * 라벨과 절단 문구가 그대로 말하고, 여기서 필요한 것은 "무엇이 강등됐는지"의
- * 표본이다.
+ * Three is measured (1512×950, dogfood). Impact ranking puts four rows in the same
+ * layer, but that card is a two-column grid so four rows fold into two lines. This
+ * list is a single column, and at four rows the expanded "freshness" tab reaches
+ * 1,102px in `en` — 18px short of the scroll contract (1,120px), so one longer
+ * translation overflows it. Three rows returns to the 1,0xx range. The scale is
+ * already stated by the toggle label and the truncation copy; what is needed here
+ * is a sample of *what got demoted*.
  */
 const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
 
-/** 탭이 답하는 질문을 에이전트의 실행 계획으로 그대로 옮긴 것. */
+/** Each tab's question, transposed into an execution plan for the agent. */
 const HANDOFF_PAYLOAD: Record<InsightsTab, string> = {
   "do-next": 'query_ontology({operation:"maintenance_plan"}) → 항목별 실행 → query_ontology({operation:"health"}) 로 재확인',
   composition: 'list_kinds({}) → query_ontology({operation:"overview"}) → 빈 정의는 validate_vault({}) 의 warnings 로 확인',
@@ -151,10 +157,11 @@ interface InsightsBadgeInput {
 }
 
 /**
- * 탭 배지가 세는 대상 — 반복되는 슬롯이라 **다섯 자리 모두 같은 단위**여야
- * 한다. 신선도만 창 길이("12주")를 넣던 자리는 비운다: 길이는 개수가 아니고,
- * 그 창이 몇 주인지는 탭 안 「최근 12주 · 문서 갱신일」이 이미 말한다. 자리를
- * 비우는 것과 다른 단위를 채우는 것은 다르다 — 후자만 슬롯의 뜻을 깨뜨린다.
+ * What a tab badge counts. This is a repeating slot, so **all five must use the
+ * same unit**. Freshness used to put a window length ("12 weeks") here; that slot
+ * is now left empty, because a length is not a count and the tab body already says
+ * how many weeks its window is. Leaving a slot empty and filling it with a
+ * different unit are not the same thing — only the latter breaks the slot's meaning.
  */
 const INSIGHTS_TAB_BADGE: Record<
   InsightsTab,
@@ -168,16 +175,18 @@ const INSIGHTS_TAB_BADGE: Record<
 };
 
 /**
- * `/ontology/insights` — 그래프 인사이트 정비 보드. 하단에 agent handoff 1행.
+ * `/ontology/insights` — the graph maintenance board, with one agent-handoff row
+ * at the bottom.
  *
- * 탭은 **질문 하나에 탭 하나**다: 할 일(지금 뭘 손보나) · 구성(뭐가 얼마나
- * 있나) · 연결(뭐가 중심인가) · 경계(도메인 사이가 얼마나 엮였나) · 신선도
- * (어디가 움직였나). 구 `구조` 탭은 앞의 세 질문을 한 방에 쌓아 뷰포트의
- * 2.2배로 자랐다 — 한 질문에 답하려고 무관한 두 화면을 지나쳐야 했다.
+ * **One question per tab**: to do (what needs work now) · composition (what exists,
+ * how much) · connections (what is central) · boundaries (how entangled the domains
+ * are) · freshness (what moved). The former `structure` tab stacked the first three
+ * questions into one column and grew to 2.2× the viewport — answering one question
+ * meant scrolling past two unrelated screens.
  *
- * 모든 숫자는 이 페이지가 이미 쓰던 데이터 소스(`useOntologyInsight`,
- * `shared/lib/ontology-tree`)에서 유도 — census 공식(총 노드/엣지/도메인 수)은
- * 토폴로지 크롬과 동일하다.
+ * Every number derives from the data sources this page already used
+ * (`useOntologyInsight`, `shared/lib/ontology-tree`); the census formula (total
+ * nodes, edges, domains) is identical to the topology chrome's.
  */
 export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
@@ -206,18 +215,18 @@ export function OntologyInsightsPage() {
     return () => window.removeEventListener("popstate", syncTabFromHistory);
   }, []);
 
-  // #15 설정 위치 통일 — 인사이트만 우상단 헤더 필 설정이었던 것을 다른
-  // 표면(지도)과 같은 LNB 하단 톱니로 옮겼다(아래 `useNavRailSettingsSlot`).
-  // AppSettingsMenu 는 자체적으로 ⌘K 를 받으면 시트를 닫으므로(line 331,
-  // "one overlay owns one Escape"), 검색 팔레트(모달·스크림)와 설정이 겹쳐
-  // 뜨는 경로가 없다 — 구 controlled 대칭 상호배제 상태는 필요 없어졌다.
+  // Settings moved from a top-right header pill to the same nav-rail gear the map
+  // uses (see `useNavRailSettingsSlot` below). `AppSettingsMenu` closes its own
+  // sheet on ⌘K ("one overlay owns one Escape"), so the search palette (a modal
+  // with a scrim) and settings can never be open at once — the old controlled
+  // mutual-exclusion state is unnecessary.
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   useGlobalSearchHotkey(searchPaletteOpen, setSearchPaletteOpen);
 
-  // 지도 딥링크에 출처 마커(`via=insights:<tab>`)를 새긴다 — 지도(HomePage)가
-  // 이 마커로 "인사이트로 돌아가기" 복귀 칩을 렌더하고, 클릭 시 이 탭으로
-  // 돌아온다. 이 페이지의 모든 지도행 링크(허브/의존/신선도 행, 할 일 큐,
-  // 수리 큐)가 같은 빌더를 지나므로 한 곳에서 스탬프.
+  // Stamp the origin marker (`via=insights:<tab>`) onto map deeplinks. The map
+  // (HomePage) reads it to render a "back to insights" chip that returns to this
+  // tab. Every map-bound link on this page (hub, dependency, and freshness rows,
+  // the to-do queue, the repair queue) goes through this one builder.
   const mapNodeHref = useCallback(
     (nodeId: string, exactReviewId?: string) =>
       buildOntologyNodeHref(nodeId, {
@@ -232,10 +241,10 @@ export function OntologyInsightsPage() {
   const vault = useLocalVault();
   const dataSourceMode = useDataSourceMode();
 
-  // #15 설정 위치 통일 — 지도(HomePage)와 동일하게 lg+ 는 나브레일 하단
-  // rail-tile 톱니로 설정을 연다. <lg 는 아래 상단 유틸 레인의 chrome-tile
-  // (레일이 숨는 폭)이 담당. 둘 다 uncontrolled 라 보이는 트리거만 클릭돼
-  // 이중 포털이 나지 않는다.
+  // At lg+ the nav rail's bottom gear opens settings, matching the map. Below lg
+  // the chrome tile in the top utility lane takes over (the width where the rail is
+  // hidden). Both uncontrolled, so only the visible trigger is clickable and no
+  // double portal appears.
   const navRailSettingsSlot = useMemo(
     () => <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />,
     [dataSourceMode],
@@ -245,7 +254,7 @@ export function OntologyInsightsPage() {
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const edges = insight?.edges ?? EMPTY_EDGES;
   const totalNodes = nodes.length;
-  /** 탭 본문이 그려지는가 — 빈 상태로 갈리면 배지도 숫자를 말하지 않는다. */
+  /** Is the tab body drawn at all? If it falls through to an empty state, the badge must not state a number either. */
   const hasConcepts = (insight?.nodes.length ?? 0) > 0;
   const totalEdges = edges.length;
 
@@ -265,10 +274,11 @@ export function OntologyInsightsPage() {
 
   const edgeTypeDist = useMemo(() => computeEdgeTypeDistribution(edges), [edges]);
   const edgeTypeRows = useMemo(() => buildEdgeTypeRows(edgeTypeDist), [edgeTypeDist]);
-  // 준비도는 관계 품질 **과 검사 오류**를 함께 본다. 종전엔 엣지만 세서, 오류
-  // 5건짜리 폴더에서도 미터가 100% 인디고였다(위험 세그먼트 실측 0px) — 화면에서
-  // 색으로 말하는 유일한 요소가 정확히 반대로 말하고 있었다. 오류 난 문서는
-  // 노드가 되지 못하거나 정체성이 겹쳐 에이전트가 못 쓴다.
+  // Readiness counts relation quality **and validation errors** together. Counting
+  // only edges made the meter 100% indigo even in a folder with five errors (the
+  // risk segment measured 0px) — the single element on screen that speaks in colour
+  // was saying exactly the opposite. A document that fails validation either never
+  // becomes a node or collides on identity, so an agent cannot use it.
   const vaultValidation = useVaultValidationSummary();
   const agentReadiness = useMemo(() => {
     const counts = { strong: 0, supported: 0, weak: 0, review: 0 };
@@ -281,17 +291,16 @@ export function OntologyInsightsPage() {
     () => edgeTypeRows.slice(0, 4).map((r) => ({ key: r.type, label: edgeTypeLabel(r.type), count: r.count })),
     [edgeTypeRows, edgeTypeLabel],
   );
-  // 수리 큐 — 분석 패널 완전 소멸 2단계 §c 로 지도 좌측 레일의 health 모드에서
-  // 이관. 지도의 health 칩과 같은 entities 레벨 함수(buildOntologyHealthSignals
-  // / buildOntologyHealthActionTarget) 를 재사용 — 이 페이지가 이미 쓰던
-  // `nodes`/`edges`(useOntologyInsight) 만으로 계산되는 온톨로지 그래프 레벨
-  // 신호만 다룬다(`/projects` 카드의 project-레벨 stale/orphan 탐지는 범위 밖 —
-  // 그건 project 엔티티 전용 렌즈라 이 페이지의 온톨로지 그래프 데이터와는
-  // 다른 소스다).
+  // The repair queue, moved here from the map's left-rail health mode. It reuses the
+  // same entities-level functions as the map's health chip
+  // (`buildOntologyHealthSignals` / `buildOntologyHealthActionTarget`) and handles
+  // only ontology-graph-level signals computed from the `nodes`/`edges` this page
+  // already holds. The project-level stale/orphan detection behind the `/projects`
+  // cards is out of scope — that is a project-entity lens reading a different source.
   const healthSignals = useMemo(() => buildOntologyHealthSignals(nodes, edges), [nodes, edges]);
-  // C1 — CLI-parity health verdict (disconnected islands · missing domain
-  // containment) read from the raw frontmatter, so the repair queue agrees with
-  // `node $ATLAS/cli/src/index.mjs health` instead of falsely claiming "수리할 것 없음".
+  // CLI-parity health verdict (disconnected islands · missing domain containment)
+  // read from the raw frontmatter, so the repair queue agrees with
+  // `node $ATLAS/cli/src/index.mjs health` instead of falsely claiming there is nothing to repair.
   const vaultHealth = useVaultHealth();
   const healthRepair = useMemo(
     () => buildVaultHealthRepair(vaultHealth, nodes),
@@ -314,9 +323,9 @@ export function OntologyInsightsPage() {
     [healthSignals, healthRepair, mapNodeHref],
   );
 
-  // 랭크 #12 (14-lens audit) — computeDomainCouplingMatrix 는 이미 존재하고
-  // 단위 테스트도 있었지만 어떤 UI 소비자도 없었다(CLI/MCP 왕복으로만 확인
-  // 가능). 구조 탭에 "도메인 결합" 카드로 처음 표면화.
+  // `computeDomainCouplingMatrix` existed with unit tests but had no UI consumer —
+  // it could only be inspected through a CLI/MCP round trip. This card is its first
+  // surface.
   const domainCoupling = useMemo(() => buildDomainCouplingSummary(nodes, edges), [nodes, edges]);
 
   const hubRanking = useMemo(() => rankAllByDegree(nodes, edges), [nodes, edges]);
@@ -324,7 +333,7 @@ export function OntologyInsightsPage() {
     () =>
       hubRanking.slice(0, HUB_DISPLAY_LIMIT).map(({ node, degree }) => ({
         id: node.id,
-        // 과제 ⑩ — 허브 랭킹 표시용 짧은 제목.
+        // The short display title, for the hub ranking.
         title: node.display ?? node.title,
         kind: node.kind,
         degree,
@@ -333,16 +342,18 @@ export function OntologyInsightsPage() {
     [hubRanking],
   );
 
-  // 영향 랭킹 — "이걸 바꾸면 어디까지 다시 봐야 하나". 계산은 지도 드로어·
-  // 변경점 diff 와 같은 `computeOntologyDependents`(= MCP blast_radius 의미론)
-  // 를 그대로 부른다. 전 노드 BFS 라 nodes/edges 가 바뀔 때만 다시 돈다.
+  // Impact ranking — "if I change this, how far do I have to re-read?". It calls the
+  // same `computeOntologyDependents` (the semantics of MCP `blast_radius`) as the map
+  // drawer and the change diff. It is a full-node BFS, so it re-runs only when
+  // nodes/edges change.
   const impact = useMemo(
     () => buildImpactRanking(nodes, edges, IMPACT_DISPLAY_LIMIT),
     [nodes, edges],
   );
 
-  // 중복 의심 쌍 — 이름/소속/이웃이 얼마나 겹치는지. MCP `similar_nodes` 를
-  // 그대로 옮긴 미러라 화면이 지목하는 쌍과 에이전트가 답하는 쌍이 같다.
+  // Suspected duplicate pairs — how much the names, parents, and neighbours overlap.
+  // A faithful mirror of MCP `similar_nodes`, so the pairs the screen names are the
+  // pairs the agent answers with.
   const duplicates = useMemo(
     () =>
       buildDuplicatePairs(
@@ -369,8 +380,8 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex],
   );
 
-  // B3 — 활동 다이제스트: 로컬 vault 의 감사 로그 tail (static 모드 null).
-  // 기준 시각은 마운트 스냅샷 — 렌더 중 Date.now 금지 (저장소 purity 관례).
+  // The activity digest reads the local vault's audit log tail (null in static mode).
+  // The reference time is a mount snapshot — no `Date.now` during render.
   const [digestNowMs] = useState(() => Date.now());
   const activityDigest = useMemo(() => {
     const log = vault.agentActivityLog ?? [];
@@ -379,28 +390,30 @@ export function OntologyInsightsPage() {
       at: entry.at,
       summary: entry.summary,
       agent: entry.agent,
-      // P4-② (2026-07-21 리텐션 라운드) — add_relation 의 --why 는 이미
-      // activity.jsonl 에 저장되지만 어떤 UI 표면에도 안 나왔다("근거를
-      // 쓰게 해놓고 읽을 곳이 없음"). digest 카드가 요약 옆에 truncate 로
-      // 함께 보여준다.
+  // `add_relation`'s `--why` was already stored in activity.jsonl but appeared on no
+  // UI surface at all — users were asked to write a rationale with nowhere to read it.
+  // The digest card shows it truncated beside the summary.
       why: entry.why,
     }));
     return { todayCount: countRecentEntries(log, digestNowMs), latest };
   }, [vault.agentActivityLog, digestNowMs]);
 
-  // S5 — "할 일" 큐: 이미 로드된 파생(healthSignals·degree·freshness)의 조합.
+  // The "to do" queue is a combination of already-loaded derivations (health signals,
+  // degree, freshness).
   //
-  // 유형당 3행 — 큐 카드에 유형이 하나 늘 때마다(중복 의심이 그랬다) 카드가
-  // 뷰포트를 밀어내지 않도록 정한 상한이다. 각 섹션은 상위 3행 + 총계 + "외
-  // N개"를 그대로 말하므로 규모는 안 줄고, 전체 목록은 화면이 아니라 인계
-  // payload 가 담당한다(탭 ≤ 뷰포트 1.3배 계약).
+  // Three rows per type is the ceiling that stops the card pushing the viewport out
+  // each time a type is added (suspected duplicates did exactly that). Each section
+  // still states its top three rows, the total, and "N more", so the scale is not
+  // lost; the full list is carried by the handoff payload rather than the screen
+  // (the tab ≤ 1.3× viewport contract).
   const doNextQueue = useMemo(
     () => buildDoNextQueue(nodes, edges, docFreshnessIndex, { perKindLimit: 3 }),
     [nodes, edges, docFreshnessIndex],
   );
 
-  // 이 세션이 지금 할 수 있는 일 — 「내 몫 먼저」 배치와 행동 라벨의 유일한
-  // 입력. 역할·계정을 만들지 않고 앱이 이미 아는 사실만 쓴다.
+  // What this session can actually do right now — the only input to the "mine first"
+  // ordering and to the action labels. It invents no roles or accounts and uses only
+  // facts the app already knows.
   const abilities = useMemo(
     () =>
       resolveSessionAbilities({
@@ -417,8 +430,9 @@ export function OntologyInsightsPage() {
     ],
   );
 
-  // 「한 문장으로 끝나는 일」 — 볼트 문서의 프론트매터 사실에서만 나온다
-  // (그래프 파생이 아니라 원문). 문서가 없는 파생 개념은 여기 오지 않는다.
+  // Work that ends in one sentence comes only from frontmatter facts in vault
+  // documents (the source text, not a graph derivation). A derived concept with no
+  // document never appears here.
   const conceptFacts = useVaultConceptFacts();
   const meaningGapResult = useMemo(
     () => buildMeaningGapRows(nodes, conceptFacts, { perKindLimit: 3 }),
@@ -427,13 +441,14 @@ export function OntologyInsightsPage() {
   const domainChoices = useMemo(() => buildDomainChoices(nodes), [nodes]);
 
   /**
-   * 인라인 저장 — 프론트매터 **한 필드**. 쓸 파일은 행이 들고 온 `ownSlug`
-   * (`resolveNodeDocument` 가 정한 값)뿐이고, 여기서 경로를 다시 추정하지
-   * 않는다 — 추정하면 남의 문서에 쓰는 사고(#688)가 다시 열린다.
+   * Inline save of **one frontmatter field**. The file to write is only the `ownSlug`
+   * the row carried in (decided by `resolveNodeDocument`); the path is never
+   * re-inferred here — inferring it reopens the accident of writing into someone
+   * else's document.
    *
-   * `expectedMtime` 을 함께 넘겨 그 사이 사람/에이전트가 같은 파일을 고쳤으면
-   * 저장이 거부되게 한다(조용한 덮어쓰기 금지). 거부는 행 안에서 알리고,
-   * 새로 읽어와 다음 저장이 최신 기준 위에서 되게 한다.
+   * `expectedMtime` is passed along so the save is refused if a person or an agent
+   * edited the same file in between (no silent overwrite). A refusal is reported
+   * inside the row, and the file is re-read so the next save works from current state.
    */
   const writeMeaningGap = useCallback(
     async (row: MeaningGapRow, value: string) => {
@@ -446,8 +461,8 @@ export function OntologyInsightsPage() {
           row.mtime === null ? {} : { expectedMtime: row.mtime },
         );
       } catch (error) {
-        // 충돌이면 최신 상태를 다시 읽어 둔다 — 다음 저장이 낡은 기준으로
-        // 또 막히지 않게. 에러는 그대로 올려 행이 정직하게 말하게 한다.
+        // On a conflict, re-read the current state so the next save is not blocked
+        // again by a stale baseline. The error is rethrown so the row can say so honestly.
         if (error instanceof Error && error.name === "VaultConflictError") {
           await vault.refresh();
         }
@@ -457,12 +472,12 @@ export function OntologyInsightsPage() {
     [vault],
   );
 
-  // 의존 사이클(전략 verdict B 후보 ④) — depends_on 방향 그래프의 순환. 이미
-  // 로드된 nodes/edges 에서 client 계산(MCP `cycles` 파생과 같은 의미).
+  // Dependency cycles — loops in the directed `depends_on` graph, computed on the
+  // client from the already-loaded nodes/edges (the same semantics as MCP `cycles`).
   const dependencyCycles = useMemo(() => findDependencyCycles(nodes, edges), [nodes, edges]);
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const cycleNodeTitle = (nodeId: string): string => nodeById.get(nodeId)?.title ?? nodeId;
-  // graph id → vault slug(evidenceIds[0]) — MCP 핸드오프는 vault slug 를 쓴다.
+  // graph id → vault slug (evidenceIds[0]) — an MCP handoff uses the vault slug.
   const cycleMcpRef = (nodeId: string): string =>
     nodeById.get(nodeId)?.evidenceIds[0] ?? nodeId.split(":").pop() ?? nodeId;
   const sourceHref = (nodeId: string, exactReviewId?: string): string | null => {
@@ -476,15 +491,16 @@ export function OntologyInsightsPage() {
       : null;
   };
   /**
-   * S7 이음새 — 이 행을 지도의 에이전트에게 넘기는 주소. **문장이 아니라
-   * 의도의 종류**만 싣는다: 도착지(지도)가 첫 마디 생성기로 화면 언어의
-   * 문장을 짓고, 그래야 빈 대화의 칩과 여기서 건너간 프리필이 한 문장을
-   * 쓴다. 주소는 여느 지도행 링크와 같은 빌더를 지나 복귀 마커도 그대로
-   * 갖는다 — 갔다가 돌아올 길이 끊기지 않는다.
+   * The address that hands this row to the map's agent. It carries **the kind of
+   * intent, not a sentence**: the destination (the map) composes the sentence in the
+   * screen's language with its opening-line generator, so the chips in an empty
+   * conversation and a prefill arriving from here write one sentence. The address goes
+   * through the same builder as every other map-bound link and keeps the return
+   * marker, so the way back is never cut.
    */
   const askAgentHref = (nodeId: string, gap: MeaningGapKind): string | null =>
-    // 에이전트 표면은 데스크톱 앱에만 있다 — 브라우저에서는 이 항목을 내지
-    // 않는다. 갔는데 아무 일도 없는 링크는 안내가 아니라 배신이다.
+    // The agent surface exists only in the desktop app; this item is not emitted in a
+    // browser. A link that goes somewhere and does nothing is a betrayal, not guidance.
     isLlmChatBridgeAvailable()
       ? buildOntologyNodeHref(nodeId, {
           via: buildInsightsReturnMarker("do-next"),
@@ -505,10 +521,11 @@ export function OntologyInsightsPage() {
   };
 
   const setTab = (next: string) => {
-    // 같은 문서의 query view만 바뀐다. Next router navigation은 WebView에서
-    // 포커스를 document root로 옮기므로 native history 통합으로 URL state만
-    // 갱신한다. 화면 state와 URL을 같은 이벤트에서 맞추므로 TabBar의 roving
-    // focus를 끊지 않고, 재진입·공유 링크는 URL을 다시 초기 진실원으로 읽는다.
+    // Only the query view of the same document changes. A Next router navigation moves
+    // focus to the document root in the WebView, so the URL state is updated through
+    // native history integration instead. Screen state and URL are aligned in the same
+    // event, which keeps the TabBar's roving focus intact, and a re-entry or shared link
+    // reads the URL back as the initial source of truth.
     const nextTab = next as InsightsTab;
     captureInsightsHeight();
     setTabState(nextTab);
@@ -576,14 +593,15 @@ export function OntologyInsightsPage() {
     [],
   );
 
-  // ③ 오늘의 손질 — 순수 함수가 우선순위/절단/콜드스타트 가드를 처리하고,
-  // 표면 문구(why)만 여기서 입힌다. 절단 결과가 3건일 때만 채워진다.
+  // Today's touch-ups: a pure function handles priority, truncation, and the
+  // cold-start guard, and only the surface copy (`why`) is applied here. It is filled
+  // only when truncation leaves exactly three items.
   const touchUpWhy = (item: TouchUpItem): string => {
     switch (item.reason.kind) {
       case "neglected-hub":
-        // 「이유 ·」 뒤에는 문장이 와야 한다. 예전엔 수리 큐 칩과 같은
-        // 지표 문구("연결 8 · 50일째 그대로")를 그대로 써서, 왜 이 항목이
-        // 뽑혔는지는 숫자를 읽는 사람만 알 수 있었다.
+        // What follows "reason ·" must be a sentence. It used to reuse the repair
+        // queue's metric copy ("8 connections · unchanged for 50 days"), so only
+        // someone reading the numbers could tell why this item was picked.
         return t("doNext.touchUpWhyNeglectedHub", {
           degree: item.reason.degree,
           days: item.reason.agoDays,
@@ -591,19 +609,18 @@ export function OntologyInsightsPage() {
       case "cycle":
         return t("doNext.touchUpWhyCycle", { length: item.reason.length });
       case "promotion":
-        // 참조 수를 그대로 말한다 — 「여러 곳」은 세 행이 같은 문구를 반복하게
-        // 만들었고, 수는 큐 행이 이미 나르고 있었다.
+        // State the reference count verbatim — "several places" made three rows repeat
+        // one phrase, and the number was already carried by the queue row.
         return t("doNext.touchUpWhyPromotion", { count: item.reason.fanIn });
     }
   };
-  // #63 — 이 화면의 단일 판정. 탭 배지 · 빈 상태 문구 · 건강 주장이 모두
-  // 여기서 나와야 같은 데이터에 서로 다른 말을 하지 않는다.
   /**
-   * 「할 일」 큐 섹션별 총계 — **이 화면의 단일 출처.**
+   * Per-section totals for the "to do" queue — **the single source on this screen.**
    *
-   * 판정(탭 배지)과 묶음 배지가 여기서 갈라져 나간다. 종전에는 둘이 각자
-   * 목록을 갖고 있었고, 중복 쌍이 판정 쪽에만 빠져서 같은 화면에 탭 「할 일 7」
-   * 과 묶음 「8」이 함께 떴다(2026-08-07 실측, 샘플 볼트).
+   * Both the verdict (the tab badge) and the group badges branch from here. They used
+   * to keep separate lists, and duplicate pairs were missing from the verdict side, so
+   * one screen showed the tab reading "to do 7" beside a group badge reading "8"
+   * (measured 2026-08-07, sample vault).
    */
   const queueSectionTotals = useMemo<Record<QueueSectionKey, number>>(
     () => ({
@@ -623,8 +640,8 @@ export function OntologyInsightsPage() {
     ],
   );
 
-  // #63 — 이 화면의 단일 판정. 탭 배지 · 빈 상태 문구 · 건강 주장이 모두
-  // 여기서 나와야 같은 데이터에 서로 다른 말을 하지 않는다.
+  // The single verdict for this screen. The tab badge, the empty-state copy, and the
+  // health claim must all come from here, or they say different things about one dataset.
   const insightsVerdict = useMemo(
     () =>
       buildInsightsVerdict({
@@ -809,8 +826,9 @@ export function OntologyInsightsPage() {
     groupCodeTitle: t("doNext.groupCodeTitle"),
     groupCodeHint: t("doNext.groupCodeHint"),
   };
-  // 인라인 쓰기 섹션의 문구 — 행동 라벨(케밥·인계)은 큐와 **같은 키**를 쓴다.
-  // 같은 행동을 표면마다 다른 말로 부르면 사용자는 두 기능으로 읽는다.
+  // Copy for the inline write sections — the action labels (kebab, handoff) use the
+  // **same keys** as the queue. Calling one action by different names per surface makes
+  // a user read it as two features.
   const meaningGapCommon = {
     openSource: doNextLabels.openSource,
     openBuilder: doNextLabels.openBuilder,
@@ -875,9 +893,10 @@ export function OntologyInsightsPage() {
     staleCountLabel: t("staleCountLabel"),
     trendTitle: t("trendTitle"),
     trendCaption: t("trendCaption", { weeks: FRESHNESS_WINDOW_WEEKS }),
-    // 근거 계층의 토글·배지 문구는 「연결」 탭과 **같은 문자열**을 쓴다 —
-    // 같은 계층을 탭마다 다르게 부르면 배우는 사람이 다른 것이라고 읽는다.
-    // 캡션만 탭별로 다르다: 저기서는 "수의 뜻", 여기서는 "날짜의 주인".
+    // The toggle and badge copy of the evidence layer uses the **same strings** as the
+    // "connections" tab — naming one layer differently per tab makes a learner read it as
+    // something else. Only the caption differs per tab: there it is "what the number means",
+    // here "whose date this is".
     evidenceShow: (count: number) => t("evidenceShow", { count }),
     evidenceHide: t("evidenceHide"),
     evidenceCaption: t("freshnessEvidenceCaption"),
@@ -889,25 +908,26 @@ export function OntologyInsightsPage() {
 
   return (
     <div className="flex min-h-full w-full">
-      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
+      {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
       {/*
-        * **높이 사슬** (2026-08-12 실측). 이 아래 `main` 까지 세로 flex 가 이어져야
-        * 탭패널의 `flex-1` 이 실제로 남은 높이를 받는다. 끊겨 있던 동안: 「구성」
-        * 카드들의 `flex-1`("빈 밴드 금지" 설계)이 한 번도 늘어난 적 없고, 「경계」
-        * 빈 상태 아래로 614px 이 죽은 공백이었다(1512×900 실측). `min-h-full` 사슬
-        * 이라 내용이 길면 그대로 자라 스크롤은 그대로다.
+        * **The height chain** (measured 2026-08-12). The vertical flex must run unbroken down
+        * to the `main` below, or the tab panel's `flex-1` never receives the remaining height.
+        * While it was broken: the `flex-1` on the "composition" cards (designed to forbid empty
+        * bands) never once stretched, and 614px below the "boundaries" empty state was dead
+        * space (measured at 1512×900). It is a `min-h-full` chain, so long content still grows
+        * and scrolling is unchanged.
         */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/*
-         * ⚠️ **실시간 표시를 뺐다** (2026-08-03, 소유자 지적 — 프로젝트 목록과
-         * 같은 이유). 「실시간 · 변경 N」은 **지도의 물건**이다: 무엇이 바뀌었는지
-         * 를 노드 위에 그려 주기 때문에 거기서는 그 수가 다음 행동으로 이어진다.
-         * 정비 보드는 자기 숫자(할 일 · 구성 · 연결 · 경계 · 신선도)를 이미
-         * 갖고 있어서, 그 위에 또 다른 변경 수가 뜨면 **어느 수를 봐야 하는지**가
-         * 흐려지고 우상단의 가장 센 잉크를 가져간다.
+         * ⚠️ **The live indicator was removed** (2026-08-03, owner report — same reason as the
+         * project list). "Live · N changed" is **the map's object**: it draws what changed onto
+         * the nodes, so there the number leads to a next action. The maintenance board already
+         * has its own numbers (to do · composition · connections · boundaries · freshness), and
+         * another change count on top of them blurs **which number to read** while taking the
+         * strongest ink in the top right.
          *
-         * 줄 자체가 `lg:hidden` 인 이유: 레일이 설정을 지는 폭에서는 이 줄에
-         * 남는 것이 없고, 빈 줄이 자리를 지키면 그건 여백이 아니라 결함이다.
+         * The row itself is `lg:hidden` because at the width where the rail carries settings there
+         * is nothing left in this row, and an empty row holding space is a defect, not whitespace.
          */}
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 lg:hidden">
           <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
@@ -941,10 +961,10 @@ export function OntologyInsightsPage() {
             </span>
           ) : null}
         </header>
-        {/* Toss I1 — 이 표면은 파워유저(온톨로지를 관리하는 사람·AI 에이전트)용
-            정비 보드다. 카피 전면 개편 대신 청중을 정직하게 선언해 기대치를
-            맞춘다 — 일반 방문자가 여기서 "내 프로젝트" 같은 걸 찾다가 헤매지
-            않도록. */}
+        {/* This surface is a maintenance board for power users — people who curate an ontology,
+            and AI agents. Rather than rewriting all the copy, it declares its audience honestly so
+            expectations match, and an ordinary visitor does not wander here looking for something
+            like "my projects". */}
         <p className="mt-1 max-w-2xl text-body text-[color:var(--color-text-quaternary)]">
           {t("audienceBanner")}
         </p>
@@ -957,19 +977,20 @@ export function OntologyInsightsPage() {
             items={INSIGHTS_TABS.map((key) => ({
               key,
               label: t(`tab.${key}`),
-              // 배지는 그 탭이 답하는 질문의 규모 — 탭마다 세는 대상이 다르다.
-              // #63 — 할 일 배지는 단일 판정 모델(`insights-verdict`)에서 나온다.
-              // 예전엔 do-next 통계 신호만 세고 CLI-parity 신호(분리된 섬 ·
-              // 누락된 연결)를 빠뜨려, 수리 큐가 1건을 보여주는데 배지는 0
-              // 이라고 말하는 모순이 났다.
-              // 개념이 0이면 이 페이지는 탭 본문 대신 빈 상태를 그린다. 그때
-              // 배지가 숫자를 말하면 **화면이 자기 자신과 모순**된다 —
-              // 2026-07-28 볼트 연결 재현: 「할 일 14」 배지 아래 본문은
-              // "아직 온톨로지 개념이 없습니다" 였다. 위 주석이 기록한
-              // 과거 사고(큐 1건인데 배지 0)의 정확한 반대 방향이다.
+              // A badge is the scale of the question that tab answers, so each tab counts
+              // something different.
+              // The to-do badge comes from the single verdict model (`insights-verdict`). It used
+              // to count only the do-next statistical signals and omit the CLI-parity ones
+              // (disconnected islands, missing containment), producing the contradiction of a
+              // repair queue showing one item beside a badge reading 0.
+              // With zero concepts this page draws an empty state instead of the tab body. A badge
+              // stating a number then makes **the screen contradict itself** — reproduced on a
+              // vault connection 2026-07-28: a "to do 14" badge above a body reading "no ontology
+              // concepts yet". That is the exact inverse of the earlier accident recorded above
+              // (queue 1, badge 0).
               //
-              // 배지는 "그 탭이 답하는 질문의 규모" 인데, 답할 탭 본문이
-              // 아예 안 그려지면 그 규모는 0 이다.
+              // A badge is "the scale of the question that tab answers", and if the tab body that
+              // would answer it is not drawn at all, that scale is 0.
               count: hasConcepts
                 ? INSIGHTS_TAB_BADGE[key]({
                     verdictTotal: insightsVerdict.total,
@@ -978,7 +999,7 @@ export function OntologyInsightsPage() {
                     crossDomainEdges: domainCoupling.crossDomainEdgeCount,
                   })
                 : 0,
-              // 라벨 없는 숫자가 무엇을 세는지 — hover/보조기술에만 뜨는 한 마디.
+              // What an unlabelled number counts — one line, surfaced only on hover and to assistive tech.
               countTitle: key === "freshness" ? undefined : t(`tabCountTitle.${key}`),
             }))}
           />
@@ -1018,9 +1039,9 @@ export function OntologyInsightsPage() {
             />
           </div>
         ) : (
-          // 내용은 크로스페이드로 들어오는데 **상자는 1프레임에** 튀었다
-          // (실측 878.5 → 605px, 문서 전체 246px 점프). 크로스페이드가
-          // 리플로우를 감싸도록 높이를 한 스텝(base) 뒤에 세운다.
+          // The content crossfades in while **the box jumped in one frame** (measured 878.5 →
+          // 605px, a 246px jump for the whole document). The height is set one step (base) later
+          // so the crossfade wraps the reflow.
           <div ref={insightsSwapHostRef} className="flex min-h-0 flex-1 flex-col">
           <div
             key={tab}
@@ -1060,8 +1081,8 @@ export function OntologyInsightsPage() {
                   domainLabels: meaningGapDomainLabels,
                 }}
                 labels={doNextLabels}
-                // 읽기 전용 묶음 머리가 *"내 폴더를 열면 …"* 이라 말한다 —
-                // 그 일을 하는 길을 같은 상자에 놓는다(2026-08-07 막다른 CTA).
+          // The read-only group heading says *"if you open your folder …"*, so the control that
+          // does that is placed in the same box (2026-08-07, a dead-end CTA).
                 openVaultAction={<OpenVaultCta testId="do-next-open-vault" />}
               />
             ) : null}
@@ -1077,13 +1098,13 @@ export function OntologyInsightsPage() {
                 kindLabel={kindLabel}
                 domainLink={{
                   href: mapNodeHref,
-                  // 막대는 aria-hidden 이라 행의 세 수를 링크 이름에 실어
-                  // 보낸다 — 화면에 있는 사실이 스크린리더에서 사라지면 안 된다
-                  // (「연결」 탭 impactRowAriaLabel 과 같은 규율). 목적지 문구는
-                  // 허브·신선도 행이 이미 쓰는 한 벌(`… : 지도에서 보기`)을
-                  // 그대로 쓴다 — 이 행이 더할 것은 수치뿐이라 새 문구 키를
-                  // 만들지 않는다. 순서는 화면에 보이는 순서 그대로(이름 →
-                  // 합계 → 역량·요소).
+                  // The bar is `aria-hidden`, so the row's three numbers are carried in the link
+                  // name — a fact present on screen must not vanish for a screen reader (the same
+                  // discipline as `impactRowAriaLabel` on the "connections" tab). The destination
+                  // phrasing reuses the set the hub and freshness rows already use
+                  // (`… : view on the map`); all this row adds is figures, so no new copy key is
+                  // introduced. The order follows what is visible on screen (name → total →
+                  // capabilities and elements).
                   ariaLabel: (row) =>
                     t("hubRowAriaLabel", {
                       title: `${row.title} ${row.total} · ${kindLabel("capability")} ${row.capabilityCount} · ${kindLabel("element")} ${row.elementCount}`,
@@ -1108,12 +1129,12 @@ export function OntologyInsightsPage() {
                 impact={impact}
                 impactLink={{
                   href: mapNodeHref,
-                  // 막대는 aria-hidden 이라 두 수를 링크 이름에 실어 보낸다 —
-                  // 화면에 있는 사실이 스크린리더에서 사라지면 안 된다.
+                  // The bar is `aria-hidden`, so the two numbers are carried in the link name — a
+                  // fact present on screen must not vanish for a screen reader.
                   ariaLabel: ({ title, direct, total }) =>
                     t("impactRowAriaLabel", { title, direct, total }),
-                  // 근거 계층은 같은 수를 다른 뜻으로 읽어 준다 — 위험도가
-                  // 아니라 "이 이름을 근거로 적은 개념 수".
+                  // The evidence layer reads the same number with a different meaning — not risk,
+                  // but "how many concepts cite this name as evidence".
                   evidenceAriaLabel: ({ title, total }) =>
                     t("impactEvidenceRowAriaLabel", { title, total }),
                 }}

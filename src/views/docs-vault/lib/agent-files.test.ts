@@ -7,9 +7,9 @@ import {
   WEB_SCAN_ANALYZE_OPTIONS,
 } from './agent-files';
 
-// 순수 분석 로직 자체는 tests/contract/agent-files.contract.test.ts 가 CLI
-// 구현과 함께 fixture 매트릭스로 검증한다. 여기서는 웹 전용 어댑터만 —
-// repo-root 게이트, manifest → 엔트리 선별, UI 모델 조인.
+// The pure analysis logic itself is verified against the CLI implementation over a fixture matrix
+// by tests/contract/agent-files.contract.test.ts. Only the web-only adapter is covered here: the
+// repo-root gate, manifest → entry selection, and the UI model join.
 
 describe('manifestIncludesRepoRoot — honest repo-root gate', () => {
   it('is true when CLAUDE.md or AGENTS.md sits at the manifest root', () => {

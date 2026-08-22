@@ -11,31 +11,35 @@ import { createOntologyEngine } from "../../mcp/src/ontology-engine.mjs";
 import { parseFrontmatter } from "../../mcp/src/parser.mjs";
 
 /**
- * 화면 · CLI · MCP 가 **같은 볼트에 같은 개념을 답한다**는 계약.
+ * The contract that the screen, the CLI, and MCP **answer with the same concepts
+ * for the same vault**.
  *
- * 실측 배경 (2026-07-26) — 웹 지도/인사이트는 296 개념, `ontology-atlas
- * overview` 와 MCP `list_kinds` 는 96 노드였다. 차이 200개는 다른 문서의 관계
- * 키에서 이름만 불린 개념(파생 노드)인데, 어느 화면도 그 경계를 말하지
- * 않았고 CLI·MCP 는 그 존재조차 몰랐다. 지도가 「바꾸면 멀리 퍼지는 개념」
- * 1위로 지목한 노드를 슬러그 그대로 `get_concept` 하면 "없음" 이 돌아왔다 —
- * 이 제품이 파는 약속("사람과 에이전트가 같은 온톨로지를 본다")이 정면으로
- * 깨지는 자리다.
+ * Measured background (2026-07-26): the web map and insights reported 296
+ * concepts while `ontology-atlas overview` and MCP `list_kinds` reported 96 nodes.
+ * The 200 difference were concepts named only inside another document's relation
+ * key (derived nodes) — no screen stated that boundary, and the CLI and MCP did
+ * not know they existed. Calling `get_concept` with the slug of the node the map
+ * ranked first for "changing this spreads furthest" returned "not found" — the
+ * exact place where this product's promise ("people and agents see the same
+ * ontology") breaks head-on.
  *
- * 그래서 세 가지를 못 박는다:
+ * So three things are pinned:
  *
- * 1. **문서 있는 개념의 수는 세 입구가 같다** — 웹의 `hasOwnDocument` 노드 수
- *    == 컴파일러 `nodeCount`.
- * 2. **문서 없는 개념의 집합도 같다** — 웹 파생 노드의 참조 원문 집합 ==
- *    컴파일러가 해석하지 못한 참조 집합. 두 곳이 각자 규칙을 쓰면 여기서
- *    갈라진다(실제로 웹이 `slug:` alias 를 몰라 유령 쌍둥이 7개를 만들고
- *    있었다).
- * 3. **화면이 복사해 주는 이름은 붙여넣으면 동작한다** — 모든 노드의 에이전트
- *    이름이 컴파일된 볼트에서 실제로 해석되거나(문서 있음), 볼트가 아는
- *    참조여서 엔진이 "문서만 없다" 고 정직하게 답한다(문서 없음).
+ * 1. **All three entry points agree on the count of documented concepts** — the
+ *    web's `hasOwnDocument` node count == the compiler's `nodeCount`.
+ * 2. **The set of undocumented concepts matches too** — the set of raw references
+ *    behind the web's derived nodes == the set of references the compiler could
+ *    not resolve. Two places applying their own rules diverge here (the web really
+ *    did not know about `slug:` aliases and was creating 7 phantom twins).
+ * 3. **A name the screen offers for copying works when pasted** — every node's
+ *    agent name either resolves in the compiled vault (documented) or is a
+ *    reference the vault knows, so the engine honestly answers "only the document
+ *    is missing" (undocumented).
  *
- * 숫자를 상수로 못 박지 않는 이유는 `derived-node-document.contract.test.ts`
- * 와 같다 — dogfood 볼트는 자주 자라므로 고정 숫자는 게이트가 아니라 소음이다.
- * 대신 드리프트할 수 없는 **항등식과 집합 동일성**을 건다.
+ * Numbers are not pinned as constants, for the same reason as
+ * `derived-node-document.contract.test.ts`: the dogfood vault grows often, so a
+ * fixed number is noise rather than a gate. What is pinned instead are
+ * **identities and set equalities**, which cannot drift.
  */
 
 const VAULT_ROOT = join(process.cwd(), "docs/ontology");
@@ -46,7 +50,7 @@ interface CompilerDoc {
   mtime: number;
 }
 
-/** `docs/ontology/` 를 MCP 가 물릴 때와 같은 뿌리 기준으로 읽는다. */
+/** Reads `docs/ontology/` against the same root MCP uses when it mounts. */
 function loadVaultDocs(dir = VAULT_ROOT, base = VAULT_ROOT): CompilerDoc[] {
   const out: CompilerDoc[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -78,15 +82,17 @@ const compiled = compileOntology(loadVaultDocs()) as {
 };
 
 /**
- * 컴파일러의 frontmatter 키 → 웹 derive 의 관계 타입(+방향 뒤집힘 여부).
+ * Compiler frontmatter key → the web derivation's relation type (and whether the
+ * direction flips).
  *
- * 컴파일러는 **적힌 참조 하나당 엣지 하나**를 낸다. 그래서 같은 관계를 양쪽
- * 문서가 다 적으면(도메인의 `capabilities:` + 역량의 `domain:`) 두 번 세고,
- * 자식이 부모를 가리키는 `domain:` 은 방향도 반대다. 웹은 같은 사실을
- * (from,to,type) 로 접어 **서로 다른 관계 하나**로 센다.
+ * The compiler emits **one edge per written reference**. So when both documents
+ * record the same relation (a domain's `capabilities:` plus a capability's
+ * `domain:`) it counts twice, and `domain:`, where the child points at the parent,
+ * also runs the other way. The web folds the same facts by (from,to,type) and
+ * counts them as **one distinct relation**.
  */
 const COMPILED_VIA_TO_WEB: Record<string, { type: string; reversed?: boolean }> = {
-  // `domain: X` 는 자식이 부모를 가리킨다 — 담기 관계의 방향은 부모→자식이다.
+  // `domain: X` points child at parent — containment runs parent → child.
   domain: { type: 'contains', reversed: true },
   domains: { type: 'contains' },
   capabilities: { type: 'contains' },
@@ -98,7 +104,7 @@ const COMPILED_VIA_TO_WEB: Record<string, { type: string; reversed?: boolean }> 
   broader: { type: 'is_a' },
 };
 
-/** 컴파일러가 문서로 해석하지 못한 참조 — "이름만 적힌 개념". */
+/** References the compiler could not resolve to a document — concepts that exist only as a name. */
 const referencedOnlyRefs = new Set(
   compiled.edges.filter((edge) => !edge.resolved).map((edge) => edge.ref),
 );
@@ -124,8 +130,9 @@ describe("화면 · CLI · MCP 개념 정합 (번들 dogfood == docs/ontology)",
         .filter((node) => node.hasOwnDocument === false)
         .map((node) => node.ref ?? node.id),
     );
-    // 한쪽에만 있는 값이 없어야 한다 — 있으면 두 계층이 같은 참조를 다르게
-    // 해석하고 있다는 뜻이고, 그 노드는 화면에서만(또는 CLI 에서만) 존재한다.
+    // No value may exist on only one side — one that does means the two layers read
+    // the same reference differently, and that node exists only on the screen (or
+    // only in the CLI).
     expect([...webRefs].filter((ref) => !referencedOnlyRefs.has(ref))).toEqual([]);
     expect([...referencedOnlyRefs].filter((ref) => !webRefs.has(ref))).toEqual([]);
   });
@@ -135,15 +142,16 @@ describe("화면 · CLI · MCP 개념 정합 (번들 dogfood == docs/ontology)",
   });
 
   /**
-   * 실측 배경 (2026-07-27) — 웹 인사이트는 **448 관계**, CLI `overview` 와 MCP
-   * `query_ontology` 는 **542** 였다(둘은 `graphHash` 까지 완전 일치). 차이 94 중
-   * 84 는 스코프였고(컴파일러는 적힌 참조를, 웹은 서로 다른 관계를 센다),
-   * **10 은 진짜 구멍**이었다: 웹 derive 가 `describes:` 키를 통째로 안 읽어
-   * 문서 노드가 자기가 설명하는 개념과 이어지지 않았다.
+   * Measured background (2026-07-27): web insights reported **448 relations**
+   * while the CLI's `overview` and MCP's `query_ontology` reported **542** (those two
+   * agreed right down to `graphHash`). Of the 94 difference, 84 was scope (the
+   * compiler counts written references, the web counts distinct relations) and
+   * **10 was a real hole**: the web derivation did not read the `describes:` key at
+   * all, so document nodes were not connected to the concepts they describe.
    *
-   * 그래서 숫자를 맞추는 대신 **접는 규칙을 못 박는다** — 컴파일러 엣지를
-   * (from,to,type) 로 접으면 웹 엣지 집합과 정확히 같아야 한다. 어느 쪽이 새
-   * frontmatter 키를 먼저 배워도 여기서 걸린다.
+   * So rather than matching numbers, **the folding rule is pinned** — folding
+   * compiler edges by (from,to,type) must equal the web's edge set exactly. Whichever
+   * side learns a new frontmatter key first, it is caught here.
    */
   it("컴파일러 관계를 (from,to,type) 로 접으면 화면의 관계 집합과 정확히 같다", () => {
     const strip = (value: string) => value.replace(/^ontology\//, '');
@@ -165,17 +173,17 @@ describe("화면 · CLI · MCP 개념 정합 (번들 dogfood == docs/ontology)",
       const to = mapped.reversed ? edge.from : edge.to;
       compiledSet.add(`${from}|${to}|${mapped.type}`);
     }
-    // 새 frontmatter 관계 키가 컴파일러에 생기면 이 표부터 갱신하라는 신호다.
+    // A new frontmatter relation key in the compiler is the signal to update this table first.
     expect([...unknownVia]).toEqual([]);
 
     const webSet = new Set(
       insight.edges.map((edge) => `${slugOf.get(edge.from)}|${slugOf.get(edge.to)}|${edge.type}`),
     );
 
-    // 회귀 재현: `describes:` 를 안 읽던 동안 여기 10건이 남았다.
+    // Regression reproduction: while `describes:` went unread, 10 entries remained here.
     expect([...compiledSet].filter((key) => !webSet.has(key))).toEqual([]);
     expect([...webSet].filter((key) => !compiledSet.has(key))).toEqual([]);
-    // 화면이 찍는 관계 총계는 곧 이 집합의 크기다.
+    // The relation total the screen prints is exactly the size of this set.
     expect(insight.edges).toHaveLength(webSet.size);
   });
 
@@ -192,13 +200,14 @@ describe("화면 · CLI · MCP 개념 정합 (번들 dogfood == docs/ontology)",
         : referencedOnlyRefs.has(target.ref);
       if (!known) unusable.push(`${node.id}: "${target.ref}"`);
     }
-    // 회귀 재현: `evidenceIds[0]` 을 그대로 쓰던 동안 번들 샘플의 모든 문서
-    // 노드가 `ontology/` 한 조각 때문에 여기서 걸린다.
+    // Regression reproduction: while `evidenceIds[0]` was used verbatim, every
+    // document node in the bundled sample was caught here over a single `ontology/`
+    // path fragment.
     expect(unusable).toEqual([]);
   });
 });
 
-/** 인계문 문자열에서 큰따옴표로 감싼 슬러그 인자만 뽑는다. */
+/** Extracts only the double-quoted slug argument from a handoff string. */
 function slugArgumentsIn(payload: string): string[] {
   return [...payload.matchAll(/(?:slug|fromSlug|intoSlug|from)\s*:\s*"([^"]+)"/g)].map(
     (match) => match[1],
@@ -218,10 +227,10 @@ describe("화면이 복사해 주는 MCP 호출의 인자 (인사이트)", () =>
 
   it("「비슷한 이름」 병합 인계의 슬러그가 볼트에서 해석된다", () => {
     const duplicates = buildDuplicatePairs(insight.nodes, insight.edges, 20);
-    // 이 계약이 의미를 가지려면 후보가 실제로 있어야 한다.
+    // Candidates must really exist for this contract to mean anything.
     expect(duplicates.rows.length).toBeGreaterThan(0);
     for (const row of duplicates.rows) {
-      // 회귀 재현: 예전엔 `ontology/elements/…` 가 나와 즉시 실패했다.
+      // Regression reproduction: this used to emit `ontology/elements/…` and fail immediately.
       assertResolvable(
         `merge_concepts({fromSlug:"${row.dissolveSlug}", intoSlug:"${row.keepSlug}"})`,
       );
@@ -242,9 +251,10 @@ describe("화면이 복사해 주는 MCP 호출의 인자 (인사이트)", () =>
 
 describe("이름만 적힌 개념을 물으면 엔진이 정직하게 답한다", () => {
   it("'없음' 이 아니라 '누가 어떤 키로 적었는지' 를 돌려준다", () => {
-    // [수술 2026-08-01] 종전에는 dogfood 에 미해석 참조가 **실재해야**
-    // (`expect(ref).toBeTruthy()`) 이 계약이 돌았다 — 결함을 요구하는
-    // 게이트는 결함을 보존한다. 엔진의 정직성은 합성 표본으로 항상 검증한다.
+    // 2026-08-01: this contract used to require an unresolved reference to **really
+    // exist** in dogfood (`expect(ref).toBeTruthy()`) — a gate that demands a defect
+    // preserves that defect. The engine's honesty is now always verified against a
+    // synthetic sample.
     const syntheticCompiled = compileOntology([
       {
         slug: "capabilities/ghost-parent",
@@ -269,7 +279,7 @@ describe("이름만 적힌 개념을 물으면 엔진이 정직하게 답한다"
       thrown = err as Error & { referencedBy?: Array<{ slug: string; via: string }> };
     }
     expect(thrown).not.toBeNull();
-    // 오타 추측("Did you mean…")으로 엉뚱한 노드를 들이밀지 않는다.
+    // It must not push a wrong node through a typo guess ("Did you mean…").
     expect(thrown?.message).not.toMatch(/Did you mean/);
     expect(thrown?.message).toContain("has no document of its own");
     expect(thrown?.referencedBy?.length ?? 0).toBeGreaterThan(0);

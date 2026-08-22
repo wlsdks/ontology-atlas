@@ -152,8 +152,9 @@ describe("sampleReleaseVelocity — 정지 릴리스 게이트 (iOS scroll rule)
     // Fast drag (t=0..32), then held stationary for ~150ms with events still
     // firing at the same coordinate, then released at t=180. The 80ms window
     // (t≥100) contains only the stationary tail → hold, even though the whole
-    // gesture had a fast start. This is the "드래그 후 멈추면 그 자리에 정지" case
-    // on a device that keeps emitting pointermove while the finger is held.
+    // gesture had a fast start. This is the 「드래그 후 멈추면 그 자리에 정지」 case
+    // (after dragging, stopping stops it right there) on a device that keeps
+    // emitting pointermove while the finger is held.
     const history = [
       { x: 0, y: 0, t: 0 },
       { x: 40, y: 0, t: 16 },

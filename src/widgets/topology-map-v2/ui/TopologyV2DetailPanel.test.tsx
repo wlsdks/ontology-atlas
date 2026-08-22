@@ -256,11 +256,11 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     const actions = screen.getByTestId("topology-v2-detail-panel-actions");
     expect(actions).toHaveAttribute("data-inline-action-count", "4");
     /*
-     * 2026-08-03 — 종전엔 `actions.children` 을 셌다. 그때는 타일이 그룹의
-     * **직접 자식**이었기 때문인데, 액션 스트립이 3층이 되면서(평결 ④) 직접
-     * 자식은 이제 **층**이다. 이 단언의 의도는 "타일 4개가 그려진다" 였으므로
-     * 층을 건너뛰고 타일을 센다 — 층 수가 바뀌어도 살아남고, 타일이 하나
-     * 사라지면 여전히 빨개진다.
+     * 2026-08-03 — this used to count `actions.children`, back when the tiles were
+     * the group's **direct children**. With the action strip now three rows
+     * (verdict ④) the direct children are **the rows**. This assertion's intent was
+     * "four tiles are drawn", so it skips the rows and counts the tiles — surviving
+     * a change in row count while still turning red if a tile disappears.
      */
     expect(
       actions.querySelectorAll('[data-testid^="topology-v2-detail-panel-action-"]'),
@@ -387,15 +387,16 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     expect(onProjectSourceAction).toHaveBeenCalledTimes(1);
     expect(action.className).toContain("--topology-v2-panel-primary-surface");
     /*
-     * **처방은 진단 옆에 있어야 한다.** 실측(2026-08-04)으로 이 둘은 393px
-     * 떨어져 있었고, 사이에 액션 타일 넷과 근거 목록이 끼어 있었다. 픽셀 거리는
-     * 단위 테스트가 잴 수 없으니 **같은 조상 안에 있는가**로 잠근다 — 누가 다시
-     * 푸터로 내리면 이 단언이 먼저 터진다.
+     * **The prescription has to sit beside the diagnosis.** Measured 2026-08-04,
+     * these two were 393px apart with four action tiles and the evidence list in
+     * between. A unit test cannot measure pixel distance, so it pins **whether they
+     * share an ancestor** — if someone drops it back into the footer, this assertion
+     * breaks first.
      */
     const remedy = screen.getByTestId("topology-v2-project-source-remedy");
     expect(remedy).toContainElement(action);
     expect(screen.getByTestId("topology-v2-project-source-receipt")).toContainElement(remedy);
-    // 같은 컨트롤이 두 곳에 그려지지 않는다.
+    // The same control is never drawn in two places.
     expect(screen.getAllByTestId("topology-v2-project-source-action")).toHaveLength(1);
 
     const fullDetail = screen.getByTestId("topology-v2-detail-panel-open-full-detail");
@@ -422,8 +423,8 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
       onProjectSourceAction: vi.fn(),
     });
 
-    // 진단 · 설명 · 처방이 한 덩어리다 — 셋 중 하나라도 빠지면 「진단만 하고
-    // 처방을 못 주는 화면」으로 되돌아간다.
+    // Diagnosis, explanation and prescription are one lump — missing any of the
+    // three reverts to "a screen that diagnoses but cannot prescribe".
     expect(screen.getByTestId("topology-v2-project-source-gap")).toBeInTheDocument();
     expect(screen.getByTestId("topology-v2-project-source-why")).toHaveTextContent(
       "Connecting a code folder shows where each concept lives.",
@@ -467,7 +468,7 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     const remedy = screen.getByTestId("topology-v2-project-source-remedy");
     expect(remedy).toHaveAttribute("data-remedy-mode", "proposed");
 
-    // ① 무엇을 제안하는지 — 경로 하나. ② 왜 그렇게 추정했는지 — 한 줄.
+    // ① What it proposes — one path. ② Why it guessed that — one line.
     const proposal = screen.getByTestId("topology-v2-project-source-proposal");
     expect(proposal).toHaveAttribute("data-proposal-confidence", "high");
     expect(screen.getByTestId("topology-v2-project-source-proposal-path")).toHaveAttribute(
@@ -478,19 +479,19 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
       screen.getByTestId("topology-v2-project-source-proposal-reason"),
     ).toHaveTextContent("55 of 55 declared paths were found here");
 
-    // ③ 한 번 눌러 확정 — 폴더 선택창을 거치지 않는다.
+    // ③ Confirm in one press — no folder picker in between.
     const confirm = screen.getByTestId("topology-v2-project-source-confirm");
     fireEvent.click(confirm);
     expect(onProjectSourceConfirmProposal).toHaveBeenCalledTimes(1);
     expect(onProjectSourceAction).not.toHaveBeenCalled();
 
-    // ④ 추정은 틀릴 수 있다 — 탈출구가 바로 옆에 있고, 그것이 종전의 선택창이다.
+    // ④ A guess can be wrong — the escape hatch is right beside it, and it is the previous picker.
     const pickOther = screen.getByTestId("topology-v2-project-source-action");
     expect(pickOther).toHaveTextContent("Choose another folder");
     fireEvent.click(pickOther);
     expect(onProjectSourceAction).toHaveBeenCalledTimes(1);
 
-    // 한 상자에 인디고 주 행동은 하나 — 탈출구는 조용한 스킨으로 물러난다.
+    // One indigo primary action per box — the escape hatch recedes into a quiet skin.
     expect(confirm.className).toContain("--topology-v2-panel-primary-surface");
     expect(pickOther.className).not.toContain("--topology-v2-panel-primary-surface");
   });
@@ -546,7 +547,7 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     renderPanel(vi.fn(), undefined, {
       kind: "project",
       projectSource,
-      // 웹: 실행 콜백이 없다. 종전에는 이 자리가 회색 문장 하나로 끝났다.
+      // Web: there is no execute callback. This position used to end at one grey sentence.
       projectSourceDegraded: {
         why: "A browser cannot tell where the folder sits on your disk.",
         ctaLabel: "Get the macOS app",
@@ -557,9 +558,9 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
 
     const remedy = screen.getByTestId("topology-v2-project-source-remedy");
     expect(remedy).toHaveAttribute("data-remedy-mode", "degraded");
-    // 실행할 수 없는 것을 버튼으로 그리지 않는다.
+    // What cannot be executed is not drawn as a button.
     expect(screen.queryByTestId("topology-v2-project-source-action")).not.toBeInTheDocument();
-    // ① 왜 ② 어디로 — 문장이 아니라 실제로 열리는 목적지 ③ 여기서도 되는 것.
+    // ① why ② where to — a destination that actually opens, not a sentence ③ what works here too.
     expect(screen.getByTestId("topology-v2-project-source-degraded-why")).toBeInTheDocument();
     expect(screen.getByTestId("topology-v2-project-source-degraded-cta")).toHaveAttribute(
       "href",
@@ -590,7 +591,7 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     });
 
     expect(screen.queryByTestId("topology-v2-project-source-remedy")).not.toBeInTheDocument();
-    // 행동은 사라지지 않는다 — 자리만 푸터에 그대로다.
+    // The action does not disappear — only its position stays in the footer.
     expect(screen.getAllByTestId("topology-v2-project-source-action")).toHaveLength(1);
   });
 
@@ -726,11 +727,12 @@ describe("TopologyV2DetailPanel — full-detail A1 opt-in link", () => {
   });
 });
 
-// P3-③ (2026-07-21 리텐션 라운드) — 1440×900 에서 연결이 많은 노드는 패널
-// 콘텐츠가 뷰포트를 넘겨 "전체 상세 →" 푸터가 화면 밖(y=911)으로 밀려나
-// 클릭 불가였다. 패널은 항상 뷰포트 안에서 스스로 스크롤해야 한다 — jsdom 은
-// 실제 레이아웃을 하지 않으므로 clamp 계약(토큰 기반 max-height + 내부
-// overflow)이 className 에 실제로 걸려 있는지로 회귀를 잡는다.
+// P3-③ (2026-07-21 retention round) — at 1440×900 a node with many connections
+// overflowed the panel content past the viewport, pushing the 「전체 상세 →」
+// (full detail) footer off screen (y=911) and out of reach. The panel must always
+// scroll inside the viewport by itself — jsdom does no real layout, so the
+// regression is caught by checking that the clamp contract (a token-based
+// max-height plus internal overflow) is actually on the className.
 describe("TopologyV2DetailPanel — viewport clamp (P3-③)", () => {
   it("+N 은 죽은 수가 아니다 — 누르면 그 자리에서 전부 펼쳐지고, 다시 누르면 접힌다", () => {
     const many = Array.from({ length: 9 }, (_, i) => ({
@@ -779,8 +781,8 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
       rows: [{ id: "capabilities/product-owner-operating-system", title: "product-owner-operating-system", path: "capabilities/" }],
       total: 1,
     });
-    // 잉크 분리 후 메트릭 스트립에도 "evidence" 라벨 span 이 생겨 getByText 는
-    // 다중 매치 — 그룹 마커로 직접 조회한다.
+    // After the ink split, the metric strip also has an "evidence" label span, so
+    // getByText matches more than one — look it up by the group marker directly.
     const group = document.querySelector("[data-datasheet-group='evidence']");
     expect(group).not.toBeNull();
     expect(group!.textContent).toContain("evidence");
@@ -792,7 +794,7 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
   // non-developer. It no longer renders in the visible DOM text; the row's
   // link carries the full `row.id` slug as a native `title=` hover instead
   // (information preserved, just no longer competing for first-read
-  // attention with the "근거" plain label).
+  // attention with the plain 「근거」 label).
   it("folds the evidence row's path behind a hover title instead of always-visible text", () => {
     renderPanel(undefined, {
       rows: [{ id: "capabilities/product-owner-operating-system", title: "product-owner-operating-system", path: "capabilities/" }],
@@ -822,7 +824,7 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
   });
 });
 
-// 시안 재설계 (2026-07-24) — the engraved per-type metric strip is replaced by
+// Mockup redesign (2026-07-24) — the engraved per-type metric strip is replaced by
 // a plain aggregate stats line ("Connected N · Source docs M"); the per-type
 // counts now live once each in their own relation-group header count chips.
 describe("TopologyV2DetailPanel — 근거 evidence count (numeric, in stats + group)", () => {
@@ -850,8 +852,8 @@ describe("TopologyV2DetailPanel — 근거 evidence count (numeric, in stats + g
   });
 });
 
-// R+ "코드 위치" (code location) — the REAL code evidence (raw file paths),
-// distinct from the "근거" group above (source-doc slug reference).
+// R+ 「코드 위치」 (code location) — the REAL code evidence (raw file paths),
+// distinct from the 「근거」 (evidence) group above, a source-doc slug reference.
 describe("TopologyV2DetailPanel — 코드 위치 (code location) group", () => {
   it("renders a code-location row for each path when codeLocations is non-empty", () => {
     renderPanel(undefined, undefined, {
@@ -888,7 +890,7 @@ describe("TopologyV2DetailPanel — 코드 위치 (code location) group", () => 
 // (`ontology/capabilities/mcp-server`) always visible, mono/quaternary but
 // still raw and unreadable to a non-developer. It now shows only the last
 // path segment and folds the full slug behind a native `title=` hover — the
-// "전체 상세 →" link already owns navigating to the full record.
+// 「전체 상세 →」 link already owns navigating to the full record.
 describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () => {
   it("shows only the slug's last segment in visible text, with the full slug as a hover title", () => {
     render(
@@ -933,10 +935,11 @@ describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () 
   });
 });
 
-// 슬라이스 B (element 라벨 인간화) — display 로 인간화된 title 이 렌더될 때
-// 원문 코드 경로를 모노 서브라인으로 보존한다. 호출자가 display !== 원문일
-// 때만 sourceTitle 을 넘기는 계약이므로 패널 자체는 sourceTitle 유무 +
-// title 과의 동일 여부만으로 렌더 여부를 결정한다.
+// Slice B (humanising element labels) — when a title humanised for display is
+// rendered, the original code path is preserved as a mono subline. The caller's
+// contract is to pass sourceTitle only when display differs from the original, so
+// the panel itself decides whether to render purely from sourceTitle's presence
+// and whether it equals the title.
 describe("TopologyV2DetailPanel — 원문 경로 서브라인 (슬라이스 B)", () => {
   it("sourceTitle 이 title 과 다르면 모노 서브라인으로 원문을 보존해 렌더한다", () => {
     renderPanel(undefined, undefined, { sourceTitle: "src/foo/bar-baz.ts" });
@@ -959,9 +962,9 @@ describe("TopologyV2DetailPanel — 원문 경로 서브라인 (슬라이스 B)"
   });
 });
 
-// 슬라이스 C (개발/비개발 모드 토글) — 비개발(plain) 모드는 인계 복사 액션과
-// 원문 경로 서브라인을 개발자 크롬으로 간주해 숨긴다. 기본(생략)은 둘 다 true
-// (기존 렌더 유지 — 회귀 0).
+// Slice C (the dev/non-dev mode toggle) — non-dev (plain) mode treats the
+// handoff-copy action and the raw path subline as developer chrome and hides them.
+// The default (omitted) is true for both, keeping the existing render (zero regression).
 describe("TopologyV2DetailPanel — showHandoff / showSourcePath (슬라이스 C)", () => {
   it("showHandoff 생략 시 기본으로 인계 복사 타일을 렌더한다", () => {
     renderPanel();
@@ -1048,9 +1051,9 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
   });
 });
 
-// 시안 재설계 (2026-07-24) — plain aggregate stats line: "Connected <N> ·
-// Source docs <M>". N = contains + usedBy + dependsOn totals; per-type detail
-// lives in each relation group's own indigo count chip.
+// Mockup redesign (2026-07-24) — a plain aggregate stats line: "Connected <N> ·
+// Source docs <M>". N = the contains + usedBy + dependsOn totals; the per-type
+// detail lives in each relation group's own indigo count chip.
 describe("TopologyV2DetailPanel — plain stats line + group count chips", () => {
   it("renders the aggregate stats line with the connected total (usedBy 1 + dependsOn 2)", () => {
     renderPanel();
@@ -1069,11 +1072,11 @@ describe("TopologyV2DetailPanel — plain stats line + group count chips", () =>
   });
 });
 
-// 스코프 정정 (2026-07-26) — "이어진 곳" 은 네 관계 버킷을 모두 세고, 세는
-// 버킷은 모두 그린다. 예전엔 속한 곳(들어오는 담김)만 빠져 있어서, 부모만
-// 있는 노드(dogfood 294개 중 221개 = 75%)가 "이어진 곳 0" 이라고 말했다 —
-// 바로 위에 클릭 가능한 도메인 칩을 띄운 채로. 화면이 확인 가능한 거짓을
-// 말하지 않게 잠근다.
+// Scope correction (2026-07-26) — 「이어진 곳」 (connected) counts all four relation
+// buckets, and every bucket it counts is drawn. Only 속한 곳 (incoming containment)
+// used to be missing, so a node with only a parent (221 of the dogfood vault's 294
+// = 75%) said 「이어진 곳 0」 — with a clickable domain chip right above it. This
+// pins the screen against stating a verifiable falsehood.
 describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", () => {
   const parentRow = {
     id: "capability:frontmatter-to-ontology",
@@ -1116,7 +1119,7 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
   it("counts the parent — a node with a parent never reads '이어진 곳 0'", () => {
     renderParentOnly();
     const stats = screen.getByTestId("topology-v2-detail-panel-stats");
-    // 첫 <b> 가 연결 집계, 두 번째가 근거 문서 수.
+    // The first <b> is the connection aggregate, the second the evidence document count.
     expect(stats.querySelectorAll("b")[0].textContent).toBe("1");
   });
 
@@ -1175,9 +1178,9 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
 
 describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs 미기록 disambiguation)", () => {
   it("renders the honest 'no relations recorded yet' empty-state when a node has zero recorded relations", () => {
-    // global-search 처럼 코드에선 널리 쓰이지만 vault frontmatter 에는 아직
-    // 어떤 관계도 선언되지 않은 노드 — "쓰는 곳 0" 이 "의존 없음" 이 아니라
-    // "아직 기록 안 됨" 임을 UI 가 정직하게 말해야 한다.
+    // A node like global-search, widely used in the code but with no relation yet
+    // declared in the vault frontmatter — the UI has to say honestly that
+    // 「쓰는 곳 0」 means "not recorded yet", not "no dependencies".
     render(
       <TopologyV2DetailPanel
         open
@@ -1288,7 +1291,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     ).not.toBeInTheDocument();
   });
 
-  // S2 파트 3 — 긴 "담는 것"은 경로 프리픽스 요약을 기본으로, "전체 보기"로 리스트.
+  // S2 part 3 — a long 「담는 것」 defaults to the path-prefix summary, with 「전체 보기」 for the list.
   it("담는 것이 15개 초과면 경로 프리픽스 요약을 보여주고 '전체 보기'로 리스트를 편다", () => {
     const rows = Array.from({ length: 6 }, (_, i) => ({
       id: `element:cli/src/commands/c${i}`,
@@ -1336,14 +1339,14 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         onSetPathSource={() => {}}
       />,
     );
-    // 기본: 요약이 보이고 개별 행 미리보기는 숨는다.
+    // Default: the summary is visible and the individual row preview is hidden.
     expect(screen.getByTestId("topology-v2-contains-summary")).toBeInTheDocument();
     expect(screen.getByText("cli/src/commands")).toBeInTheDocument();
     expect(screen.getByText("48")).toBeInTheDocument();
     expect(screen.getByText(labels.containsOtherGroup)).toBeInTheDocument();
     expect(screen.queryByText("cmd 0")).not.toBeInTheDocument();
 
-    // "전체 보기" 토글 → 리스트 표시.
+    // The 「전체 보기」 toggle → the list appears.
     fireEvent.click(screen.getByTestId("topology-v2-contains-summary-toggle"));
     expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
     expect(screen.getByText("cmd 0")).toBeInTheDocument();
@@ -1389,8 +1392,9 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     expect(screen.getByText("cap 0")).toBeInTheDocument();
   });
 
-  // B4 (H1) — 요약이 "기타" 한 덩어리로 무너지면(usable=false) 임계를 넘어도
-  // 요약/토글을 숨기고 개별 리스트를 렌더한다(정보 0 방지).
+  // B4 (H1) — when the summary collapses into one 「기타」 lump (usable=false), the
+  // summary and toggle are hidden even past the threshold and the individual list
+  // renders instead (avoiding zero information).
   it("담는 것이 15개 초과라도 요약이 usable=false 면 리스트로 폴백한다", () => {
     const rows = Array.from({ length: 6 }, (_, i) => ({
       id: `element:leaf${i}`,
@@ -1473,9 +1477,10 @@ describe("TopologyV2DetailPanel — last-edit provenance", () => {
   });
 });
 
-// 시안 재설계 (2026-07-24, 소유자 승인 mockup-panel-detail) — 균형 헤더(이름
-// hero + kind 배지 + 도메인 칩), 방향 아이콘 + 카운트 칩 + 언더라인 그룹 헤더,
-// 행 왼쪽 kind 글리프, 조용한 액션 스트립, 인디고 primary 푸터.
+// Mockup redesign (2026-07-24, owner-approved mockup-panel-detail) — a balanced
+// header (name hero + kind badge + domain chip), group headers with a direction
+// icon + count chip + underline, a kind glyph at each row's left, a quiet action
+// strip, and an indigo primary footer.
 describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
   it("renders the node name as the header hero (title2/650, truncatable)", () => {
     renderPanel();
@@ -1608,13 +1613,15 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
   });
 
   /**
-   * 이 패널은 **자기 퇴장 창을 스스로 진다** (2026-08-03). 종전엔 부모가
-   * `usePanelPresence` 로 창을 열고 `presence` prop 으로 클래스만 지시했다 —
-   * 그러면 «이 표면에 나가는 길이 있는가» 가 이 파일 밖의 사실이 되고, 부모가
-   * 즉시 언마운트로 되돌아가면 여기서는 아무도 못 잡는다.
+   * This panel **carries its own exit window** (2026-08-03). The parent used to
+   * open the window with `usePanelPresence` and only dictate the class through a
+   * `presence` prop — which made «does this surface have a way out» a fact living
+   * outside this file, and if the parent reverted to unmounting immediately nothing
+   * here could catch it.
    *
-   * HomePage 가 기대는 계약이 정확히 이 둘이다: 닫아도 창 동안 남고, 창이
-   * 끝나면 한 번 알린다(그 통보로 포지셔너를 내린다).
+   * The contract HomePage leans on is exactly these two: it stays for the window's
+   * duration after closing, and it reports once when the window ends (that report
+   * takes down the positioner).
    */
   it("닫아도 1프레임에 사라지지 않고, 퇴장이 끝나면 한 번 알린다", async () => {
     const onExited = vi.fn();
@@ -1651,7 +1658,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
     expect(screen.getByTestId("topology-v2-detail-panel")).toBeInTheDocument();
 
     rerender(panel(false));
-    // 퇴장 «중» 이다 — 아직 화면에 있고, 그 프레임은 못 눌린다.
+    // It is *mid*-exit — still on screen, and unpressable for that frame.
     expect(screen.getByTestId("topology-v2-detail-panel")).toBeInTheDocument();
     expect(onExited, "퇴장 중에 부르면 포지셔너가 애니 도중에 사라진다").not.toHaveBeenCalled();
 
@@ -1661,16 +1668,18 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
 });
 
 /**
- * 줄에 마우스를 올리면 옆 지도가 그 노드를 가리킨다 (2026-08-17 소유자 지시:
- * *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서 표시되면 좋겠는데
- * 가능할까? 지금은 아무 반응이 없어서.."*).
+ * Hovering a row makes the map beside it point at that node (owner instruction,
+ * 2026-08-17: *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서 표시되면
+ * 좋겠는데 가능할까? 지금은 아무 반응이 없어서.."* — hovering each of these should
+ * make it glint on the map beside it; right now nothing responds).
  *
- * 여기서 재는 것은 **어느 이름을 어느 콜백으로 내보내는가** 하나다. 두 줄이
- * 서로 다른 이름 공간을 쓰기 때문이다 — 관계 행은 캔버스 노드 id, 근거 문서
- * 행은 볼트 slug. 종전에 이 둘을 한 목록으로 합쳤다가 «배선은 있는데 아무
- * 이름도 안 걸리는» 죽은 기능이 됐고(`chat-node-index.ts`), 그때 없던 검사가
- * 바로 이것이다. 지도가 실제로 그려 주는지는 캔버스라 여기서 못 재고
- * `tests/e2e/datasheet-hover-map-brush.spec.ts` 가 픽셀로 잰다.
+ * What is measured here is one thing: **which name goes out through which
+ * callback.** The two row kinds use different namespaces — a relation row uses the
+ * canvas node id and an evidence document row uses the vault slug. Merging the two
+ * into one list once produced a dead feature that «had the wiring but caught no
+ * name at all» (`chat-node-index.ts`), and this is precisely the check that was
+ * missing then. Whether the map actually draws it is canvas and cannot be measured
+ * here; `tests/e2e/datasheet-hover-map-brush.spec.ts` measures that in pixels.
  */
 describe("TopologyV2DetailPanel — 줄 호버가 지도로 나가는 통로", () => {
   const childRow = {
@@ -1714,7 +1723,7 @@ describe("TopologyV2DetailPanel — 줄 호버가 지도로 나가는 통로", (
     expect(link).not.toBeNull();
     fireEvent.pointerEnter(link!);
     expect(onHoverEvidence).toHaveBeenCalledWith("domains/order");
-    // 캔버스 id 통로로 새면 호출부가 표를 안 거치고 그대로 지도에 넘긴다.
+    // Leaking through the canvas-id channel would let the caller pass it straight to the map without the lookup table.
     expect(onHoverConnection).not.toHaveBeenCalled();
     fireEvent.pointerLeave(link!);
     expect(onHoverEvidence).toHaveBeenLastCalledWith(null);

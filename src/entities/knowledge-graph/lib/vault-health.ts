@@ -3,16 +3,17 @@
  * `query_ontology({operation:'health'})` verdict (`mcp/src/ontology-engine.mjs`
  * `health()` + `mcp/src/ontology-compiler.mjs`).
  *
- * WHY this exists (C1 — 인사이트↔CLI 건강도 불일치, codex-audit 2026-07-25):
- * `/ontology/insights` used to derive its "수리 큐 / 건강도" from
+ * WHY this exists (insights and the CLI disagreed on health; audit 2026-07-25):
+ * `/ontology/insights` used to derive its repair queue and health score from
  * `deriveOntologyFromVault`, which AUTO-HEALS containment — a `domain: X`
  * frontmatter key becomes a synthetic `domain:X --contains--> node` edge. The
- * MCP compiler does NOT do this: `domain:` is only a node property + a
+ * MCP compiler does NOT do this: `domain:` is only a node property plus a
  * `node --domain--> X` edge (`collectNeighborRefs` inline key), so a
  * capability/element whose domain never links back stays a disconnected island
- * AND a missing-containment recommendation. Result: the app said
- * "100% 수리할 것 없음" while `node $ATLAS/cli/src/index.mjs health` said `needs_attention`
- * (섬 2 · 누락 containment 3) on the SAME vault — a trust hole.
+ * AND a missing-containment recommendation. Result: the app said "nothing to
+ * repair, 100%" while `node $ATLAS/cli/src/index.mjs health` said
+ * `needs_attention` (2 islands, 3 missing containments) on the SAME vault — a
+ * trust hole.
  *
  * This lib computes the SAME actionable checks from the raw vault frontmatter
  * (NOT the auto-healed derived graph), so both surfaces agree. A contract test
@@ -182,23 +183,22 @@ function malformedFrontmatterCount(doc: VaultHealthDoc): number {
 // Mirror of mcp/src/ontology-compiler.mjs compileOntology — only the parts the
 // health verdict needs (alias map, edges, resolution, issue count).
 /**
- * `kind:` 가 없는 문서는 **온톨로지 노드가 아니다** — 디자인 문서 · 백로그 ·
- * 릴리스 노트처럼 볼트 폴더 안에 같이 사는 평범한 마크다운이다.
+ * A document without `kind:` is **not an ontology node** — it is ordinary markdown
+ * living in the same folder: a design document, a backlog, a release note.
  *
- * ## 왜 이 한 줄이 필요한가 (2026-08-17 실측)
+ * Measured 2026-08-17: the MCP compiler does not count these as nodes (verified —
+ * adding one `kind:`-less document leaves `nodes` at 1), while this mirror
+ * **counted them all**. Against our own document folder (83 of 163 files are plain
+ * markdown) the screen said "83 things to fix" and the CLI called the same vault
+ * healthy.
  *
- * MCP 컴파일러는 이런 문서를 노드로 세지 않는데(확인: `kind:` 없는 문서 하나를
- * 넣어도 `nodes` 는 1), 이 사본은 **전부 셌다.** 그래서 우리 자신의 문서함
- * (163개 중 83개가 평범한 마크다운)에 대해 화면이 「고칠 곳 83군데」라고 말했고,
- * CLI 는 같은 볼트를 「정상」이라고 답했다.
+ * The top of this file exists to prevent exactly that — *"the insights surface must
+ * agree with the CLI"* — yet the two disagreed on what a node even is. For a user
+ * this is the worst kind of wrong answer: **a map that names 83 unfixable problems**
+ * is not believed about anything afterwards.
  *
- * 이 파일 맨 위가 그 상황을 막으려고 존재한다 — *"the insights surface must
- * agree with the CLI"*. 그런데 정작 노드가 무엇인지에서 갈라져 있었다.
- * 사용자에게는 이게 가장 나쁜 종류의 오답이다: **고칠 수 없는 것 83개를 고치라고
- * 말하는 지도**는 그 뒤로 아무 말도 믿기지 않는다.
- *
- * 게이트: `tests/fixtures/vault-health-cases.mjs` 의
- * `plain markdown without kind: is not a node`.
+ * Gate: `plain markdown without kind: is not a node` in
+ * `tests/fixtures/vault-health-cases.mjs`.
  */
 function isOntologyNode(doc: VaultHealthDoc): boolean {
   const kind = doc.frontmatter?.kind;
@@ -305,7 +305,7 @@ function actionableComponentCounts(graph: CompiledGraph): {
     const queue = [node.slug];
     visited.add(node.slug);
     const groupSlugs: string[] = [];
-    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    // Head pointer for O(1) dequeue — `Array.shift()` is O(n).
     let head = 0;
     while (head < queue.length) {
       const current = queue[head++];
@@ -379,7 +379,7 @@ function dependencyCycleCount(graph: CompiledGraph): number {
   const cycleKeys = new Set<string>();
   const sortedSlugs = graph.nodes.map((n) => n.slug).sort((a, b) => a.localeCompare(b));
 
-  // 역방향 인접 — "여기서 start 로 몇 걸음에 돌아갈 수 있나"를 재려고 만든다.
+    // Reverse adjacency, built to measure "how many steps from here back to start".
   const inByType = new Map<string, string[]>();
   for (const [from, targets] of outByType) {
     for (const to of targets) {
@@ -389,14 +389,16 @@ function dependencyCycleCount(graph: CompiledGraph): number {
   }
 
   /**
-   * start 로 MAX_DEPTH 이내에 되돌아올 수 있는 노드와 그 최단 거리(간선 수).
-   * 이 안에 없는 노드로 뻗는 가지는 **절대 사이클을 못 닫으므로** 탐색에서
-   * 잘라낸다 — 결과 집합은 그대로이고(정확성 보존) 죽은 경로 탐색만 사라진다.
+   * Nodes that can reach `start` again within MAX_DEPTH, and their shortest
+   * distance in edges. A branch into anything outside this set **can never close a
+   * cycle**, so it is pruned — the result set is unchanged and only dead paths
+   * disappear.
    *
-   * WHY: 브라우저(인사이트 화면)가 이 계산을 메인 스레드에서 돌린다. 가지치기
-   * 전 실측 — 2000노드 × 평균 4의존(강연결이지만 길이 ≤8 사이클은 0)에서
-   * 6.3초 블로킹. 가지치기 후 두 자릿수 ms. MCP 엔진과의 카운트 동일성은
-   * `tests/contract/vault-health.contract.test.ts` 가 계속 강제한다.
+   * WHY: the browser runs this on the main thread. Measured before pruning, on
+   * 2000 nodes averaging 4 dependencies (strongly connected but with zero cycles of
+   * length ≤ 8): 6.3 s blocked. After pruning: tens of milliseconds. Count parity
+   * with the MCP engine is still enforced by
+   * `tests/contract/vault-health.contract.test.ts`.
    */
   const reverseDistances = (start: string): Map<string, number> => {
     const dist = new Map<string, number>();
@@ -440,8 +442,8 @@ function dependencyCycleCount(graph: CompiledGraph): number {
         continue;
       }
       if (visited.has(next) || path.length >= MAX_DEPTH) continue;
-      // next 를 밟은 뒤 start 까지 남은 예산 안에 못 돌아오면 이 가지는 사이클을
-      // 만들 수 없다 → 자른다. (사이클 노드 수 = path.length + backDist ≤ MAX_DEPTH)
+      // If stepping to `next` leaves no budget to get back to start, this branch
+      // cannot form a cycle. (Cycle length = path.length + backDist ≤ MAX_DEPTH.)
       const back = backDist.get(next);
       if (back === undefined || path.length + back > MAX_DEPTH) continue;
       visited.add(next);
@@ -452,7 +454,7 @@ function dependencyCycleCount(graph: CompiledGraph): number {
 
   for (const slug of sortedSlugs) {
     const backDist = reverseDistances(slug);
-    if (backDist.size === 0) continue; // 아무도 start 로 못 돌아옴 → 사이클 불가
+    if (backDist.size === 0) continue; // nothing reaches start — no cycle possible
     dfs(slug, slug, [slug], new Set([slug]), backDist);
   }
   return cycleKeys.size;
@@ -473,9 +475,10 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
   const islands = actionableGroups.slice(1);
 
   const checks: VaultHealthCheck[] = [
-    // 셀 것이 있는가를 먼저 묻는다. 노드가 0개면 아래 다섯이 전부 셀 것이
-    // 없어 통과하고 「정상」이 나온다 — 폴더를 잘못 짚은 사람이 그 사실을
-    // 알아챌 자리가 없어진다 (2026-08-16 실측, MCP 엔진과 같은 결함이었다).
+    // Ask whether there is anything to count first. With zero nodes the five checks
+    // below all pass for want of anything to fail, and the verdict reads "healthy" —
+    // leaving someone who pointed at the wrong folder no way to notice (measured
+    // 2026-08-16; the MCP engine had the same defect).
     { id: 'vault_present', status: graph.nodes.length === 0 ? 'fail' : 'pass', count: graph.nodes.length },
     { id: 'compile_issues', status: graph.issueCount === 0 ? 'pass' : 'warn', count: graph.issueCount },
     { id: 'unresolved_edges', status: unresolvedEdges === 0 ? 'pass' : 'warn', count: unresolvedEdges },

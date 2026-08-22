@@ -35,10 +35,11 @@ describe("explainOntologyRelationKeyInference", () => {
   });
 });
 
-// infer 와 explain 은 같은 kind-pair 규칙을 따로 분기로 들고 있어 drift 위험이
-// 있다 (한쪽 매핑만 바꾸면 설명이 실제 키와 어긋남). 전체 25 pair 를 한 표로
-// 고정해 (1) infer 의 결정 매핑을 명세화하고 (2) explain 이 항상 infer 가 고른
-// 키를 그대로 설명하는지(= 두 함수가 단일 진실원을 공유하는지) 보장한다.
+// `infer` and `explain` each carry the same kind-pair rules in their own branches,
+// which can drift: change one mapping and the explanation no longer matches the key
+// actually produced. Pinning all 25 pairs in one table (1) specifies infer's mapping
+// and (2) guarantees explain always describes the key infer chose, i.e. that the two
+// functions share one source of truth.
 const KINDS = ["project", "domain", "capability", "element", "document"] as const;
 const EXPECTED_INFER: Record<string, string> = {
   "project->project": "dependencies",
@@ -75,7 +76,7 @@ describe("inferOntologyRelationKey — full kind-pair matrix (drift guard)", () 
       it(`${pair}: infer matches the pinned mapping and explain names that key`, () => {
         const key = inferOntologyRelationKey(source, target);
         expect(key).toBe(EXPECTED_INFER[pair]);
-        // explain 은 infer 가 고른 키를 반드시 문장에 포함 (두 함수 동기화 보장).
+        // explain must name the key infer chose, keeping the two functions in sync.
         expect(explainOntologyRelationKeyInference(source, target)).toContain(key);
       });
     }

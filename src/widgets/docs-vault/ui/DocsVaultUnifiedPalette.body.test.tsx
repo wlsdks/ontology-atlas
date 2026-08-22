@@ -93,13 +93,13 @@ describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
 
   it('본문에만 매치되는 문서가 스니펫과 함께 표시된다', () => {
     renderPalette({ initialQuery: 'deterministic', bodyIndex });
-    // 결과 행 자체 (title 은 매치어 없음)
+    // The result row itself (the title has no match).
     expect(screen.getByText('Beta Doc')).toBeInTheDocument();
-    // 스니펫: 매치어가 <mark> 로 하이라이트
+    // Snippet: the match is highlighted with <mark>.
     const marks = document.querySelectorAll('mark');
     const markTexts = Array.from(marks).map((m) => m.textContent);
     expect(markTexts).toContain('deterministic');
-    // 스니펫 문맥 노출
+    // Snippet context is shown.
     expect(
       screen.getByText(/compile flow is described/),
     ).toBeInTheDocument();
@@ -112,9 +112,9 @@ describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
     expect(onDocSelect).toHaveBeenCalledWith('beta', 'deterministic');
   });
 
-  // 착지 결함 (P1 검수) — 키보드(Enter) 경로도 마우스와 동일하게 쿼리를
-  // 넘겨야 한다. row.onRun 참조는 공유되지만 실측 회귀 방지를 위해 별도
-  // assertion 으로 고정.
+  // Landing defect (P1 review) — the keyboard (Enter) path has to pass the query just
+  // like the mouse. The `row.onRun` reference is shared, but a separate assertion pins
+  // it against a measured regression.
   it('본문 히트 행 선택 시 onDocSelect 에 쿼리가 전달된다 (뷰어 착지 — 키보드 Enter)', () => {
     const onDocSelect = vi.fn();
     renderPalette({ initialQuery: 'deterministic', bodyIndex, onDocSelect });
@@ -129,9 +129,11 @@ describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
   });
 
   it('인덱싱 중 0건이면 본문 인덱스 준비 중 안내를 덧붙인다', () => {
+    // Look the notice up by its message key, not by a fragment of its wording — the
+    // contract is "the notice appears", not "the notice reads like this".
     renderPalette({ initialQuery: 'zzz-no-match', bodyIndexing: true });
     expect(
-      screen.getByText(/본문 인덱스를 만드는 중/),
+      screen.getByText(koMessages.vaultWidgets.palette.bodyIndexingNotice),
     ).toBeInTheDocument();
   });
 

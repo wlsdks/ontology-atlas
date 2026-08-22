@@ -36,11 +36,11 @@ describe("hitTestEdges", () => {
       edge: edge("bow"),
       a: { x: 100, y: 300 },
       b: { x: 500, y: 300 },
-      control: { x: 300, y: 100 }, // 위로 휜 활
+      control: { x: 300, y: 100 }, // A bow curving upward.
     };
-    // 베지어 t=0.5 지점 = (300, 200) — 직선(현) 위가 아니다
+    // The bezier's t=0.5 point is (300, 200) — not on the straight chord.
     expect(hitTestEdges([bowed], 300, 200, 6)?.sourceId).toBe("bow-a");
-    // 현(y=300) 중앙은 곡선에서 멀다 — 잡히면 직선 근사를 하고 있다는 뜻
+    // The chord's midpoint (y=300) is far from the curve — a hit here would mean a straight-line approximation.
     expect(hitTestEdges([bowed], 300, 296, 6)).toBeNull();
   });
 
@@ -50,9 +50,10 @@ describe("hitTestEdges", () => {
     expect(hitTestEdges(many, 300, 203, 8)?.sourceId).toBe("target-a");
   });
 
-  // 히트테스트 역전 방지(패널3-S3) — 엣지 앵커 a/b 는 곧 끝 노드 중심이라,
-  // 노드 몸통 반경 안(또는 그 곁) 클릭은 노드 소유여야 한다. 엣지가 노드
-  // 중심을 관통하므로 반경 정보가 없으면 노드 정중앙/근접 클릭이 엣지로 샌다.
+  // Hit-test inversion guard (panel3-S3) — the edge anchors a/b are the end nodes'
+  // centres, so a click inside (or beside) a node's body radius must belong to the
+  // node. The edge passes through the node's centre, so without radius information a
+  // click dead centre on a node, or near it, leaks to the edge.
   describe("노드 바디 > 엣지 우선순위 (aRadius/bRadius)", () => {
     const withRadii = (id: string, y: number, r: number): EdgeHitCandidate => ({
       edge: edge(id),
@@ -64,21 +65,22 @@ describe("hitTestEdges", () => {
     });
 
     it("끝 노드 몸통 안(정중앙 포함) 클릭은 엣지 히트에서 제외된다", () => {
-      // 노드 a(100,200) 중심에서 4px — 반경 14 안 = 노드 영역. 엣지는 이 점을
-      // 관통하지만(거리 0) 노드가 소유하므로 null 이어야 한다.
+      // 4px from node a's centre (100,200) — inside radius 14, so node territory. The
+      // edge passes through this point (distance 0) but the node owns it, so this must be null.
       expect(hitTestEdges([withRadii("e", 200, 14)], 104, 200, 8)).toBeNull();
-      // 정중앙(노드 a 중심) 클릭도 마찬가지.
+      // Dead centre (node a's centre) behaves the same way.
       expect(hitTestEdges([withRadii("e", 200, 14)], 100, 200, 8)).toBeNull();
     });
 
     it("반경 정보가 없으면(구 동작) 같은 지점이 엣지로 잡힌다 — 회귀 대조군", () => {
-      // aRadius/bRadius 미지정 = 하위호환. 노드 개념이 없으니 엣지선 위 점은
-      // 그대로 히트 — 이 대조가 위 제외가 반경 때문임을 증명한다.
+      // aRadius/bRadius omitted = backwards compatible. With no notion of a node, a
+      // point on the edge line hits as before — this control proves the exclusion
+      // above is due to the radius.
       expect(hitTestEdges([straight("e", 200)], 104, 200, 8)?.sourceId).toBe("e-a");
     });
 
     it("엣지 중앙(양 끝 노드에서 먼 곳)은 반경이 있어도 그대로 잡힌다", () => {
-      // (300,204) — 두 노드 중심에서 200px, 반경 14 밖. 엣지선(y=200)에서 4px.
+      // (300,204) — 200px from both node centres, outside radius 14, and 4px from the edge line (y=200).
       expect(hitTestEdges([withRadii("e", 200, 14)], 300, 204, 8)?.sourceId).toBe("e-a");
     });
   });

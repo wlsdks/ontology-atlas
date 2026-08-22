@@ -176,7 +176,7 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
   it("handles an empty set with zero totals across all four role groups", () => {
     const groups = buildV2ConnectionGroups([]);
     expect(groups).toEqual({
-      // S2 파트 3 — contains 는 경로 프리픽스 요약을 함께 싣는다(빈 입력이면 빈 요약).
+      // S2 part 3 — contains also carries the path-prefix summary (empty in, empty summary out).
       contains: { rows: [], allRows: [], total: 0, summary: { groups: [], otherCount: 0, total: 0, usable: false } },
       usedBy: { rows: [], allRows: [], total: 0 },
       dependsOn: { rows: [], allRows: [], total: 0 },
@@ -225,10 +225,10 @@ describe("formatV2MetricLine — M-2 typed segments", () => {
     ).toBe("쓰는 곳 0 · 기대는 곳 0 · 근거 0");
   });
 
-  // 데이터시트 내부 정제 (2026-07-23) — 패널이 라벨/값 잉크를 분리 렌더할 수
-  // 있게 세그먼트를 구조화해 노출한다. key 는 아래 연결 그룹의
-  // `data-datasheet-group` id 와 동일 — 스트립 카운트와 그룹 카운트가 구성상
-  // 같은 사실임을 타입으로 고정한다.
+  // Datasheet internal refinement (2026-07-23) — segments are exposed structured so
+  // the panel can render label ink apart from value ink. The key matches the
+  // `data-datasheet-group` id of the connection group below, which pins in the type
+  // that the strip count and the group count are the same fact by construction.
   it("buildV2MetricSegments exposes the same segments structured, keyed by the group ids", () => {
     expect(
       buildV2MetricSegments({ contains: 18, usedBy: 4, dependsOn: 2, belongsTo: 0, evidence: 1 }, labels),
@@ -372,8 +372,8 @@ describe("buildV2EvidenceRows — 근거(evidence) group promotion (RATIO-SYSTEM
   });
 });
 
-// Toss C2 (청중 언어 평문화, 2026-07-24) — the sticky footer folds the full
-// slug behind a hover title and shows only this segment in visible text.
+// Toss C2 (audience-language plain-wording pass, 2026-07-24) — the sticky footer
+// folds the full slug behind a hover title and shows only this segment in visible text.
 describe("slugDisplaySegment — sticky 푸터 slug 평문화 (Toss C2)", () => {
   it("returns the last path segment of a folder-shaped slug", () => {
     expect(slugDisplaySegment("ontology/capabilities/mcp-server")).toBe("mcp-server");
@@ -397,16 +397,16 @@ describe("summarizeContainsByPathPrefix (S2 파트 3)", () => {
       ...Array.from({ length: 4 }, (_, i) => el(`cli/src/commands/c${i}`)),
       ...Array.from({ length: 2 }, (_, i) => el(`.claude/skills/s${i}`)),
       el("cli/src/lib/one"),
-      el("solo"), // 슬래시 없음 → 기타
+      el("solo"), // No slash → 기타 (other)
     ];
     const summary = summarizeContainsByPathPrefix(rows, 2);
     expect(summary.total).toBe(8);
-    // 상위 2개: cli/src/commands(4), .claude/skills(2)
+    // Top 2: cli/src/commands(4), .claude/skills(2)
     expect(summary.groups).toEqual([
       { key: "cli/src/commands", count: 4 },
       { key: ".claude/skills", count: 2 },
     ]);
-    // 나머지: cli/src/lib(1) + solo(프리픽스 없음 1) = 2
+    // The rest: cli/src/lib(1) + solo (no prefix, 1) = 2
     expect(summary.otherCount).toBe(2);
   });
 
@@ -424,14 +424,15 @@ describe("summarizeContainsByPathPrefix (S2 파트 3)", () => {
     expect(groups.usedBy.summary).toBeUndefined();
   });
 
-  // B4 (H1) — "기타" 한 덩어리로 무너지는 요약을 재분할/리스트 폴백으로 구제.
+  // B4 (H1) — rescue a summary collapsing into one 「기타」 lump by re-splitting, then by falling back to the list.
   it('깊은 프리픽스가 전부 흩어져 "기타"가 과반이면 1단계 프리픽스로 재분할', () => {
     const rows: V2DatasheetConnection[] = [
       ...["a", "b", "c", "d", "e", "f"].map((s) => el(`cli/${s}/x`)),
       ...["g", "h", "i", "j"].map((s) => el(`src/${s}/y`)),
     ];
-    // 깊은 프리픽스(cli/a … src/j)는 전부 count 1 → 상위 4만 명명, 나머지 6은 기타.
-    // 기타(6)가 과반이므로 1단계(cli/src)로 재분할해 전부 나뉘는 쪽을 택한다.
+    // The deep prefixes (cli/a … src/j) are all count 1 → only the top 4 are named and
+    // the remaining 6 go to 기타. 기타 (6) is the majority, so it re-splits on the
+    // one-level prefix (cli/src) and takes the side that actually divides.
     const summary = summarizeContainsByPathPrefix(rows, 4);
     expect(summary.usable).toBe(true);
     expect(summary.groups).toEqual([

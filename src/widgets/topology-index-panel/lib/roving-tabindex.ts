@@ -1,22 +1,25 @@
 /**
- * H3 P0 — INDEX 트리 로빙 tabindex 계약(WAI-ARIA `tree` 패턴).
+ * The INDEX tree's roving-tabindex contract (the WAI-ARIA `tree` pattern).
  *
- * `role="tree"` 는 "한 번의 Tab 으로 트리에 진입, 그 안은 Arrow 키로 이동"을
- * 약속한다. 종전 구현은 모든 `role="treeitem"` 행에 `tabIndex=0` 을 박아,
- * 도메인 하나만 펼쳐도 Tab 스톱이 +14 개씩 늘어나 키보드 사용자가 트리를
- * 통째로 밟고 지나가야 했다(접근성 감사 P0). 로빙 tabindex 는 "활성 행 하나만
- * tabIndex=0, 나머지는 -1" 로 두고 ArrowUp/Down 이 형제 이동을 담당한다.
+ * `role="tree"` promises "one Tab enters the tree, arrow keys move inside it".
+ * The previous implementation pinned `tabIndex=0` on every `role="treeitem"`
+ * row, so expanding a single domain added 14 more tab stops and a keyboard user
+ * had to step through the whole tree (accessibility audit P0). Roving tabindex
+ * keeps `tabIndex=0` on the active row alone, `-1` on the rest, and lets
+ * ArrowUp/Down handle sibling movement.
  *
- * 이 모듈은 그 이동 규칙을 순수 함수로 분리해 DOM/React 없이 단위 테스트한다
- * (`roving-tabindex.test.ts`). 패널은 이 함수들 + `ref.focus()` 만 조립한다.
+ * This module isolates those movement rules as pure functions so they can be
+ * unit-tested without DOM or React (`roving-tabindex.test.ts`). The panel
+ * assembles these functions plus `ref.focus()`.
  */
 
 import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
 
 /**
- * 현재 화면에 실제로 보이는 행들의 nodeId 를 위→아래 DOM 순서로 편다.
- * `isOpen` 는 패널의 것과 같은 술어(검색/렌즈 시 자동 펼침 포함) — 접힌
- * 부모의 자식은 건너뛴다. Arrow 이동 대상 = 이 배열이다.
+ * Flatten the nodeIds of the rows actually visible on screen into top-to-bottom
+ * DOM order. `isOpen` is the same predicate the panel uses (including the
+ * auto-expand during search and lens modes) — children of a collapsed parent are
+ * skipped. Arrow movement targets exactly this array.
  */
 export function flattenVisibleRowIds(
   roots: readonly OntologyTreeNode[],
@@ -36,11 +39,12 @@ export function flattenVisibleRowIds(
 export type RovingNavKey = "ArrowDown" | "ArrowUp" | "Home" | "End";
 
 /**
- * 방향키 하나가 로빙 포커스를 어느 nodeId 로 옮겨야 하는지 결정한다.
- * - ArrowDown/Up: 다음/이전 형제(경계에서 clamp — 순환 안 함, tree 관례).
- * - Home/End: 처음/끝.
- * currentId 가 목록 밖(필터로 사라짐 등)이면 첫 행으로 착지시킨다.
- * 빈 목록이면 null.
+ * Decide which nodeId one arrow key should move the roving focus to.
+ * - ArrowDown/Up: next/previous sibling, clamped at the boundary — no wrapping,
+ *   per the tree convention.
+ * - Home/End: first/last.
+ * If currentId is outside the list (removed by a filter, say), it lands on the
+ * first row. An empty list gives null.
  */
 export function nextRovingId(
   orderedIds: readonly string[],
@@ -58,10 +62,11 @@ export function nextRovingId(
 }
 
 /**
- * 어떤 행이 tabIndex=0(트리의 단일 Tab 진입점)이어야 하는지 해석한다.
- * 우선순위: 유효한 활성 행 → 선택된 노드(둘 다 보이는 경우) → 첫 행.
- * 활성/선택 id 가 현재 안 보이면(필터·접힘) 첫 행으로 강등해, 로빙 진입점이
- * 항상 실재하는 행 하나를 가리키도록 보장한다.
+ * Resolve which row should be `tabIndex=0` — the tree's single Tab entry point.
+ * Priority: a valid active row → the selected node (when both are visible) →
+ * the first row. When the active or selected id is not currently visible
+ * (filtered out or collapsed), it falls back to the first row, guaranteeing the
+ * roving entry point always names a row that exists.
  */
 export function resolveActiveRowId(
   orderedIds: readonly string[],

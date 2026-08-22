@@ -35,9 +35,10 @@ describe("useGuidedTourAutoStartReady", () => {
   });
 
   /**
-   * 실측 결함(2026-07-26): 예전 조건이 `mode === 'static'` 이라, 폴더를 고르는
-   * 순간 local 모드가 되어 **투어를 영영 못 받았다.** 투어가 설명하는
-   * 지도·INDEX·데이터시트는 두 모드에서 같은 화면인데도.
+   * Measured defect (2026-07-26): the old condition was `mode === 'static'`, so
+   * choosing a folder switched to local mode and **the tour was never received at all** —
+   * even though the map, INDEX, and datasheet the tour explains are the same screen in
+   * both modes.
    */
   it("내 폴더를 골라 로드돼도 띄운다", () => {
     mocks.mode = "local";

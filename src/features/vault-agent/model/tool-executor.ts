@@ -19,39 +19,37 @@ import {
 export { GRAPH_FRONTMATTER_KEYS, wrapUntrusted } from './concept-evidence-pack';
 
 /**
- * 정규화된 도구 호출 → 실제 실행.
+ * Normalized tool call → actual execution.
  *
- * ## 이 파일의 단 하나의 불변식
+ * **This file's one invariant: a model's write call never reaches the disk.** The
+ * executor is injected with `VaultReadPort` alone (a type with no write methods),
+ * and a write tool is not executed but returned as `blocked-write`. Converting
+ * that into a proposal card is the caller's (the loop's) job, and the real write
+ * belongs to a separate module the consent card's handler calls.
  *
- * **모델의 write 호출은 디스크에 닿지 않는다.** 실행기는 `VaultReadPort` 만
- * 주입받고(그 타입에는 쓰기 메서드가 없다), write 도구는 실행하지 않고
- * `blocked-write` 로 돌려준다. 제안 카드로의 변환은 호출자(루프)의 일이고,
- * 실제 쓰기는 동의 카드 핸들러가 부르는 별도 모듈의 일이다.
+ * This structure is a code path, not a discipline — even trying to call a write
+ * by mistake finds no function to call here.
  *
- * 이 구조가 규율이 아니라 코드 경로다 — 실수로 쓰기를 부르려 해도 부를 함수가
- * 여기 없다.
- *
- * ## 결과는 왜 잘리는가
- *
- * 도구 결과는 다음 왕복에 그대로 실려 나간다 — `list_concepts` 가 통째로
- * 실리면 사용자 비용(BYOK 요금)이 조용히 커진다. 상한을 넘으면 잘라내고
- * 모델에게 "좁혀서 다시 물어보라" 고 알린다.
+ * **Why results are truncated.** A tool result is carried verbatim into the next
+ * round trip, so a whole `list_concepts` would quietly grow the user's cost (BYOK
+ * billing). Beyond the cap it is truncated and the model is told to "narrow it and
+ * ask again".
  */
 
 export interface ToolExecution {
-  /** 다음 왕복에 실릴 결과 문자열. */
+  /** The result string carried into the next round trip. */
   content: string;
   isError: boolean;
   outcome: 'ok' | 'error' | 'blocked-write' | 'unknown-tool' | 'args-invalid';
-  /** 화면 행이 말할 대상 (노드 slug 등). */
+  /** The target the screen's row names (a node slug and the like). */
   target: string;
-  /** 화면 행 한 줄 (평문). */
+  /** One line for the screen's row (plain language). */
   summary: string;
-  /** 이 호출이 실제로 읽은 노드 slug 들 — 인용 검증·경고 행의 근거. */
+  /** The node slugs this call actually read — the basis for citation validation and warning rows. */
   readSlugs: string[];
-  /** 이 결과에 실린 볼트 발췌 글자수 (실측). */
+  /** The measured character count of vault excerpts carried in this result. */
   vaultChars: number;
-  /** write 도구였다면 그 호출 원문 — 호출자가 제안으로 바꾼다. */
+  /** For a write tool, the call verbatim — the caller turns it into a proposal. */
   writeIntent?: { name: string; args: unknown };
 }
 
@@ -75,11 +73,12 @@ function lastSegment(slug: string): string {
 }
 
 /**
- * 결과를 JSON 으로 접고, 상한을 넘으면 정직하게 줄인다.
+ * Folds the result into JSON, shrinking honestly when it exceeds the cap.
  *
- * **잘라도 유효한 JSON 이어야 한다.** 문자열을 가위로 자르면 모델이 받는 것은
- * 깨진 JSON 이고, 그때 모델이 하는 일은 추측이다 — 좁혀 물으라는 안내가
- * 도착하지도 않는다. 그래서 배열 필드의 행 수를 줄여 다시 접는다.
+ * **Truncated output must still be valid JSON.** Cutting the string with scissors
+ * hands the model broken JSON, and what a model does then is guess — the guidance
+ * to narrow the question never even arrives. So the array fields' row counts are
+ * reduced and it is re-serialized.
  */
 function pack(payload: unknown): { content: string; truncated: boolean } {
   const raw = JSON.stringify(payload);
@@ -113,7 +112,7 @@ function pack(payload: unknown): { content: string; truncated: boolean } {
   };
 }
 
-/** slug 별칭 → 노드. 문서 slug · 마지막 조각 · 파생 노드의 원문 참조를 받는다. */
+/** slug alias → node. Accepts the doc slug, its last segment, and a derived node's verbatim reference. */
 function buildResolver(port: VaultReadPort) {
   const index = new Map<string, KnowledgeGraphNode>();
   const add = (key: string | null | undefined, node: KnowledgeGraphNode) => {
@@ -197,8 +196,9 @@ export function createToolExecutor(port: VaultReadPort) {
     }
     const target = resolveNodeAgentTarget(node);
     if (!target.documented) {
-      // #691 계보 — 이름만 불린 개념은 "없음" 이 아니다. 누가 부르는지와
-      // 문서를 만드는 길을 준다. 오타 추측으로 엉뚱한 노드를 들이밀지 않는다.
+      // A concept that was merely named is not "absent". Give who references it and
+      // the path to creating the document, and never push a wrong node forward by
+      // guessing at a typo.
       const referencedBy = port.edges
         .filter((edge) => edge.to === node.id || edge.from === node.id)
         .map((edge) => (edge.to === node.id ? edge.from : edge.to))
@@ -223,9 +223,9 @@ export function createToolExecutor(port: VaultReadPort) {
     const slug = target.ref as string;
     const doc = docBySlug.get(slug);
     const fullBody = (await port.readDocText(slug)) ?? doc?.excerpt ?? '';
-    // 이 표면의 기본값은 **전체 본문**이다 — MCP 와 달리 여기는 사용자 자기
-    // 디스크를 직접 읽고 왕복 비용이 없다. `body: 'excerpt'` 는 훑어보기용
-    // 축약을 명시적으로 요청할 때만. 어느 쪽이든 잘렸는지는 말한다.
+    // This surface's default is **the full body** — unlike MCP, it reads the user's
+    // own disk directly with no round-trip cost. `body: 'excerpt'` is only for an
+    // explicitly requested skim. Either way, truncation is stated.
     const body = bodyMode === 'excerpt' ? (doc?.excerpt ?? fullBody) : fullBody;
     return {
       found: true as const,
@@ -236,7 +236,7 @@ export function createToolExecutor(port: VaultReadPort) {
         kind: node.kind,
         hasDocument: true,
         path: doc?.path,
-        // 동시 수정 가드의 근거 — patch 제안은 이 값을 실어야 한다.
+    // The basis for the concurrent-edit guard — a patch proposal must carry this value.
         mtime: doc?.mtime,
         frontmatter: doc?.frontmatter,
         body: wrapUntrusted(body),
@@ -279,7 +279,7 @@ export function createToolExecutor(port: VaultReadPort) {
 
     const args = asArgs(call.args);
 
-    // ── 쓰기: 실행하지 않는다. 제안으로만 나간다. ────────────────────────
+    // ── Writes: not executed. They go out only as proposals. ─────────────
     if (tool.effect === 'write') {
       const bodies = call.name === 'add_concepts' && Array.isArray(args.concepts)
         ? args.concepts.map((row) => asArgs(row).body)
@@ -363,9 +363,9 @@ export function createToolExecutor(port: VaultReadPort) {
           }
         }
         const documentTotal = Object.values(byKind).reduce((sum, n) => sum + n, 0);
-        // 필드 이름까지 MCP `list_kinds` 와 같다 — 계약 테스트가 대조한다.
-        // #691 — 문서 수와 "이름만 불린 개념" 수를 함께 말한다. 한쪽만
-        // 말하면 화면과 에이전트가 다른 숫자를 믿는다.
+    // The field names match MCP's `list_kinds` exactly — a contract test compares them.
+    // The document count and the "merely named concepts" count are stated together;
+    // stating only one makes the screen and the agent believe different numbers.
         const packed = pack({
           total: documentTotal,
           byKind,

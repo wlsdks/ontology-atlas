@@ -6,26 +6,31 @@ import { ConceptEgoGraph } from "./ConceptEgoGraph";
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 고른 개념의 **성질 + 바로 옆 이웃**. 지도로 나가지 않고 여기서 끝난다.
+ * The chosen concept's **properties plus its immediate neighbours** — the trail
+ * ends here instead of sending the reader out to the map.
  *
- * 왼쪽이 읽기, 오른쪽이 그림이다. 관계 이름을 그림에서 빼 왼쪽으로 옮긴 이유:
- * 그림 안에 두면 부채 바깥에 앉아 상자를 넓히고, 상자가 넓어지면 세로에 묶인
- * 그림이 통째로 줄어든다(실측 채움률 24%). 읽기표의 선 견본이 그림의 선과
- * 같은 토큰이라 범례도 따로 필요 없다.
+ * Reading on the left, drawing on the right. Relation names were pulled out of
+ * the drawing and moved left because inside it they sit outside the fan and
+ * widen the box, and a wider box shrinks the height-bound drawing (measured
+ * fill rate 24%). The reading table's line swatches use the same tokens as the
+ * drawing's lines, so no separate legend is needed.
  *
- * ## 무엇을 싣나 (2026-08-02 확장)
+ * ## What it carries (2026-08-02 expansion)
  *
- * 종전엔 세 칸(도메인 · 근거 문서 · 이어진 곳 수)뿐이었다. 그런데 그래프
- * 노드는 이미 **한 줄 설명 · 에이전트 이름 · 프로젝트**를 나르고 있었고 화면이
- * 그걸 안 쓰고 있었다 — 아는 것을 안 보여주는 것은 강등이 아니라 누락이다.
+ * It used to be three cells (domain · evidence document · connection count),
+ * while the graph node already carried a **one-line summary, an agent name and
+ * a project** that the screen was not using — withholding what you already know
+ * is an omission, not a demotion.
  *
- * 순서는 사람이 읽는 순서다: 이름 → **한 줄 설명** → 어디 속하나 → 어디에
- * 적혀 있나 → **에이전트에게 뭐라 부르나** → 무엇과 이어졌나. 마지막 둘이
- * 이 제품의 두 사용자에 각각 대응한다.
+ * The order is the order a person reads in: name → **one-line summary** → what
+ * it belongs to → where it is written down → **what to call it when talking to
+ * an agent** → what it connects to. The last two correspond to this product's
+ * two users.
  *
- * ⚠️ **없는 필드는 슬롯을 만들지 않는다** — 아무도 안 채우는 칸은 규격이
- * 아니라 오정보다. `summary`/`projectLabels` 는 값이 있을 때만 칸이 생긴다
- * (반복 세트가 아니라 단일 카드라 치수 규칙성 대상이 아니다).
+ * ⚠️ **A missing field gets no slot** — a cell nobody fills is misinformation,
+ * not a specification, so `summary`/`projectLabels` produce a cell only when
+ * they have a value. (This is a single card, not a repeated set, so the
+ * dimension-regularity rule does not apply.)
  */
 export function ConceptEgoCard({
   ego,
@@ -36,8 +41,8 @@ export function ConceptEgoCard({
   ego: ConceptEgo | null;
   t: (key: string, values?: Record<string, string | number>) => string;
   /**
-   * 종류 이름 — 이미 있는 `kinds` 네임스페이스가 진실원이다. 여기서 새 키를
-   * 만들면 같은 사실이 두 곳에 적히고 그 순간부터 드리프트가 시작된다.
+   * Kind names — the existing `kinds` namespace is the source of truth. Minting
+   * a key here writes the same fact in two places, and drift starts there.
    */
   kindLabel: (kind: string) => string;
   onSelect?: (nodeId: string) => void;
@@ -76,7 +81,7 @@ export function ConceptEgoCard({
             {t("egoLinkedCount", { count: ego.total })}
           </span>
         </div>
-        {/* 사람이 쓴 한 줄. 이 카드에서 사람이 가장 먼저 읽는 사실이다. */}
+        {/* The human-written line. It is the first fact a person reads on this card. */}
         {ego.summary ? (
           <p className="line-clamp-2 text-label leading-prose text-[color:var(--color-text-secondary)]">
             {ego.summary}
@@ -115,10 +120,10 @@ export function ConceptEgoCard({
             </div>
           ))}
           {/*
-            관계는 **수가 아니라 이름**을 보여준다. 「담고 있는 것 3」은 3이
-            무엇인지 물으면 답을 못 하고, 그 답을 얻으려면 그림에서 눈으로
-            세어야 했다. 이름이 있으면 이 칸만으로 끝나고, 누르면 그쪽으로
-            넘어가므로 그림의 클릭과 같은 문을 하나 더 여는 셈이다.
+            Relations show **names, not counts**. "Contains 3" cannot answer what
+            the 3 are, and getting that answer meant counting them by eye in the
+            drawing. With names this cell is enough on its own, and clicking one
+            navigates there — a second door onto what the drawing's click does.
           */}
           {bearings.map((row) => (
             <div
@@ -126,7 +131,7 @@ export function ConceptEgoCard({
               className="px-4 py-2.5 not-last:border-b not-last:border-[color:var(--color-divider)]"
             >
               <dt className="mb-1 flex items-center gap-2 text-caption text-[color:var(--color-text-quaternary)]">
-                {/* 선 견본 — 그림의 실선/점선과 같은 토큰이라 범례가 따로 필요 없다. */}
+                {/* Line swatch — same tokens as the drawing's solid/dashed lines, so no separate legend. */}
                 <i
                   aria-hidden
                   className="h-0 w-3.5 shrink-0 border-t"

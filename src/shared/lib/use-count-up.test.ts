@@ -32,17 +32,20 @@ describe("useCountUp — insights count-up (#3)", () => {
   });
 
   /**
-   * **인트로 도중 target 이 바뀌면 새 target 에서 끝난다** (2026-08-12 실측 회귀).
+   * **A target changing mid-intro must land on the new target** (regression measured
+   * 2026-08-12).
    *
-   * 분석 화면의 첫 렌더는 내장 견본(125 노드)으로 그려지고, 인트로가 0→125 로
-   * 세기 시작한다. 그 400ms 안에 사용자 볼트(5 노드)가 도착한다 — 동기화
-   * 이펙트가 5 로 스냅하지만, **인트로 rAF 루프는 마운트 때 클로저에 잡은 125 를
-   * 향해 계속 달려** 그 5 를 덮어쓰고 125 에 정착했다. 그 뒤 target 은 다시 안
-   * 바뀌므로 화면은 영원히 125 였다.
+   * The insights screen first renders from the built-in sample (125 nodes) and the
+   * intro starts counting 0→125. Within those 400ms the user's vault (5 nodes)
+   * arrives: the sync effect snaps to 5, but **the intro rAF loop keeps running
+   * toward the 125 it captured in a closure at mount**, overwrites that 5, and
+   * settles at 125. The target never changes again, so the screen stayed at 125
+   * forever.
    *
-   * 실측(구성 탭, 사용자 볼트 5 노드): +400ms 「개념 116」 → +900ms 「개념 125」
-   * 정착 · 같은 화면의 종류 분포와 상단 칩은 5 — **한 화면에서 숫자가 모순**됐고,
-   * 그 화면의 부제가 "모든 숫자는 문서에서 자동으로 계산돼요" 다.
+   * Measured (composition tab, a 5-node user vault): +400ms showed 116, +900ms
+   * settled at 125, while the kind distribution and the top chip on the same screen
+   * said 5 — **one screen contradicting itself**, under a subtitle promising that
+   * every number is computed from the documents.
    */
   it("인트로 도중 target 이 바뀌면 새 target 에서 끝난다 — 견본이 사용자 폴더를 덮으면 안 된다", () => {
     mockReducedMotion(false);
@@ -60,15 +63,15 @@ describe("useCountUp — insights count-up (#3)", () => {
         initialProps: { target: 125 },
       });
 
-      // 인트로가 절반쯤 달린 시점 —
+      // Halfway through the intro —
       clock = 200;
       act(() => frames.shift()!(clock));
       expect(result.current).toBeGreaterThan(0);
 
-      // — 사용자 볼트가 도착한다.
+      // — the user's vault arrives.
       rerender({ target: 5 });
 
-      // 남은 인트로를 끝까지 돌린다.
+      // Run the rest of the intro to completion.
       clock = 1_000;
       while (frames.length > 0) {
         act(() => frames.shift()!(clock));

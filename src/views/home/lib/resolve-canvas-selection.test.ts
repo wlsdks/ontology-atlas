@@ -19,8 +19,8 @@ describe("resolveCanvasSelectedSlug", () => {
   });
 
   /**
-   * 이 한 줄이 「유령 노드」의 수리다. 예전엔 원본 슬러그가 그대로 캔버스로
-   * 내려가 ego 포커스가 켜졌고, 이웃이 0이라 **지도의 모든 노드가 dim** 됐다.
+   * The ghost-node fix. The raw slug used to reach the canvas and switch on ego
+   * focus; with zero neighbours, every node on the map dimmed.
    */
   it("이 볼트에 없는 슬러그는 포커스하지 않는다 — 지도가 통째로 흐려지던 자리", () => {
     expect(
@@ -54,9 +54,9 @@ describe("resolveCanvasSelectedSlug", () => {
     ).toBe("capability:checkout");
   });
 
-  // bare 슬러그는 프로젝트 슬러그일 수 있다 — 목록이 도착하기 전엔 "없다" 를
-  // 확정할 수 없다. kind 접두사가 있으면 프로젝트와 절대 충돌하지 않으므로
-  // 기다릴 이유가 없다(미해석 토스트와 같은 문법).
+  // A bare slug may be a project slug, so absence cannot be certain until the
+  // project list arrives. A kind prefix can never collide with a project, so
+  // there is nothing to wait for (same grammar as the miss notice).
   it("bare 슬러그는 프로젝트 목록을 기다린다", () => {
     expect(
       resolveCanvasSelectedSlug({

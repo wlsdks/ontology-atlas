@@ -3,35 +3,34 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VaultManifest } from '../model/types';
 
 /**
- * **증분 재빌드가 mtime 을 알아내려고 파일을 열지 않는다.**
+ * **An incremental rebuild must not open a file just to learn its mtime.**
  *
- * ## 무엇이 났나 (2026-08-09, 설치된 앱 실측)
+ * Measured 2026-08-09 in the installed app. `rebuildLocalManifestIncremental`
+ * exists to re-read only changed files, yet it called `getFile()` per file to find
+ * out *what* changed. Under Tauri that is a `read_vault_text_file` IPC round trip
+ * returning **the whole body**, so body re-parsing was saved while transfer and
+ * round trips were not.
  *
- * `rebuildLocalManifestIncremental` 의 존재 이유는 「바뀐 파일만 다시 읽는다」인데,
- * 정작 *무엇이 바뀌었는지* 알아내려고 **파일마다 `getFile()`** 을 불렀다. Tauri
- * 에서 그건 `read_vault_text_file` IPC 왕복이고 그 명령은 **본문 전체를 함께**
- * 돌려준다. 그래서 본문 재파싱은 아꼈지만 전송과 왕복은 하나도 못 아꼈다.
+ * Time from editing one file to the app's map catching up:
  *
- * 실측 — 파일 하나를 고쳤을 때 앱의 지도가 따라오기까지:
- *
- * | 볼트 | 반영까지 |
+ * | Vault | Time to reflect |
  * |---|---|
- * | 71파일 | 2.0초 (1.6초엔 아직) |
- * | 5파일 | 0.7초 |
+ * | 71 files | 2.0 s (not yet at 1.6 s) |
+ * | 5 files | 0.7 s |
  *
- * 파일 수에 비례했고 건당 ≈20ms 로 IPC 왕복과 맞았다. 정작 같은 71파일을
- * 디스크에서 읽는 비용은 **1.8ms** 다 — 시간은 일이 아니라 다리에서 갔다.
+ * Linear in file count at ≈20 ms each, matching an IPC round trip. Reading those
+ * same 71 files from disk costs **1.8 ms** — the time went to the bridge, not the work.
  *
- * 고친 방법은 새 네이티브 명령이 아니다: 경로와 mtime 만 한 번에 주는
- * `vault_fingerprint` 가 **이미 있고 같은 파일에서 쓰고 있었다.**
+ * The fix was not a new native command: `vault_fingerprint` returns paths and
+ * mtimes in one call and was already used in the same file.
  *
- * ## 이 게이트가 잠그는 성질
+ * **What this gate locks:** when native stamps are available, an unchanged file is
+ * never opened.
  *
- * *네이티브 스탬프를 쓸 수 있으면, 바뀌지 않은 파일은 열지 않는다.*
- *
- * ⚠️ **밀리초로 재지 않는다** — 기계마다 달라 들쭉날쭉 실패한다(`architecture.md`
- * 가 이미 정해 둔 규율: 「몇 ms」가 아니라 「몇 번」으로 잠근다). 그래서 여기서
- * 세는 것은 `getFile()` **호출 횟수**이고, 그건 어느 기계에서나 같다.
+ * ⚠️ **It does not measure milliseconds** — those vary by machine and fail
+ * intermittently. Per `.claude/rules/architecture.md`, lock the *number of calls*,
+ * not the duration. So this counts `getFile()` invocations, which are the same
+ * everywhere.
  */
 
 const nativeVaultFingerprint = vi.fn();
@@ -47,7 +46,7 @@ interface FakeFile {
   lastModified: number;
 }
 
-/** `getFile()` 호출을 경로별로 세는 mock root. */
+/** Mock root that counts `getFile()` calls per path. */
 function makeRoot(
   files: Record<string, FakeFile>,
   opens: Map<string, number>,
@@ -139,12 +138,12 @@ beforeEach(() => {
 
 describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 파일을 열지 않는다', () => {
   it('한 파일만 바뀌면 그 파일만 연다', async () => {
-    // 1차: 전체 빌드로 직전 entries 를 만든다(여기서는 전부 열어야 정상).
+    // Pass 1: a full build produces the previous entries (opening everything is correct here).
     const seedOpens = new Map<string, number>();
     const seed = await buildLocalManifestWithEntries(makeRoot(FILES, seedOpens, '/vault'));
     expect(seedOpens.size, '1차 빌드가 파일을 하나도 안 열었다 — 이 시험이 헛돈다').toBe(5);
 
-    // 2차: b.md 만 mtime 이 바뀐다.
+    // Pass 2: only b.md changes mtime.
     const changed: Record<string, FakeFile> = {
       ...FILES,
       'capabilities/b.md': { text: node('capabilities/b', 'B2'), lastModified: 999 },
@@ -163,7 +162,7 @@ describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 �
       '바뀐 파일 하나만 열려야 한다 — 나머지는 mtime 만 보고 재사용',
     ).toEqual(['capabilities/b.md']);
 
-    // 그리고 결과는 전체 빌드와 같아야 한다(증분의 안전 계약).
+    // And the result must equal a full build — the incremental path's safety contract.
     const fullOpens = new Map<string, number>();
     const full = await buildLocalManifest(makeRoot(changed, fullOpens, '/vault'));
     expect(stripGenerated(result.build.manifest)).toEqual(stripGenerated(full.manifest));
@@ -194,8 +193,9 @@ describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 �
   });
 
   /**
-   * 폴백 — 웹에는 이 일괄 API 가 없다(`null`). 그러면 종전 경로로 떨어져
-   * **파일마다 열어** mtime 을 본다. 동작이 달라지지 않는 것이 계약이다.
+   * Fallback — the web has no batch API (`null`), so it drops to the previous path
+   * and opens **each file** to read its mtime. The contract is that behaviour does
+   * not change.
    */
   it('네이티브가 없으면(웹) 종전대로 파일별로 확인한다', async () => {
     const seedOpens = new Map<string, number>();

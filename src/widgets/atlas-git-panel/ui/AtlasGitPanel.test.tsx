@@ -79,7 +79,7 @@ const HISTORY = [
   },
 ];
 
-/** 한 걸음이 실제로 쓴 것 — `git show` 의 patch. */
+/** What one step actually wrote — the patch from `git show`. */
 const COMMIT_PATCH = [
   "diff --git a/docs/capabilities/foo.md b/docs/capabilities/foo.md",
   "index 05d74bf..e04bf82 100644",
@@ -157,17 +157,18 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
 
     renderPanel(<AtlasGitPanel sessionChangeset={changeset} />);
 
-    // 구 `atlas-git-web-body` → 셋업 프레임 (2026-07-26). 웹 강등은 이제
-    // "아직 자기 일을 못 하는" 상태 중 하나이고, 셋 상태(웹·폴더 없음·기록
-    // 시작 전)가 같은 프레임/측정폭을 공유한다.
+    // The old `atlas-git-web-body` became the setup frame (2026-07-26). The web
+    // degradation is now one of the "cannot do its job yet" states, and all three
+    // (web · no folder · not yet recording) share one frame and measure.
     const setup = await screen.findByTestId("atlas-git-setup");
     expect(setup).toHaveAttribute("data-setup-state", "web");
     expect(screen.getByText("개념 추가 1")).toBeInTheDocument();
     expect(screen.getByText("개념 수정 2")).toBeInTheDocument();
     expect(screen.getByText("관계 추가 1")).toBeInTheDocument();
-    // **터미널 탈출구는 없다** (2026-08-09 소유자 판정). `$ATLAS` 가 이 저장소의
-    // 소스 폴더를 가리켜야 도는 명령이라 clone 한 사람만 쓸 수 있었고, 볼트가 git
-    // 저장소면 그냥 `git commit` 이면 되므로 필요하지도 않았다. 돌아오는 것을 막는다.
+    // **There is no terminal escape** (owner call, 2026-08-09). The command only
+    // ran if `$ATLAS` pointed at this repository's source folder, so only people
+    // who cloned could use it, and a vault that is a git repo needs nothing but
+    // `git commit`. This stops it coming back.
     expect(screen.queryByTestId("atlas-git-web-copy")).toBeNull();
     expect(screen.queryByText(/cli\/src\/index\.mjs snapshot/)).toBeNull();
     expect(
@@ -180,8 +181,8 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
 
   it("shows the empty-session message when the changeset has no changes", async () => {
     renderPanel(<AtlasGitPanel sessionChangeset={null} />);
-    // Image #16 재구성 — 빈 상태 문장이 섹션 라벨("이 세션에서 감지된 변경")을
-    // 반복하지 않는 짧은 상태 카피로 교체됨.
+    // The empty-state sentence no longer repeats the section label; it is short
+    // status copy instead.
     expect(await screen.findByText("아직 없어요. 문서를 고치면 여기에 나타나요.")).toBeInTheDocument();
   });
 });
@@ -198,20 +199,21 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(groups).toHaveTextContent("수정 1");
     expect(groups).toHaveTextContent("capabilities/foo");
 
-    // #85 — 이력은 증거 pane 의 두 번째 탭이다(좌: 무엇을 남길까 / 우: 증거).
+    // #85 — history is the evidence pane's second tab (left: what to record, right: evidence).
     const step = screen.getByTestId("atlas-git-history-item");
-    // 2026-07-27 — 걸음 요약은 **사람 말**로 읽힌다. 커밋 제목
-    // `ontology snapshot: +1 concept (…)` 은 우리가 만든 문자열이고, 그걸
-    // 한국어 화면에서 원문으로 읽히는 것은 우리가 만든 문자열을 우리가
-    // 번역하지 않은 것이다.
+    // 2026-07-27 — a step's summary reads in **human language**. The commit
+    // subject `ontology snapshot: +1 concept (…)` is a string we wrote, and
+    // letting it be read raw on a Korean screen means we did not translate our own
+    // string.
     expect(step).toHaveTextContent("추가 1");
     expect(step).toHaveTextContent("capabilities/foo");
-    // 해시는 **행이 아니라 상세**가 진다 (시안 실측). 목록의 일은 훑는
-    // 것이고, 한 줄 3열(시각·이름·왜)에 해시를 끼우면 「왜」가 밀린다.
+    // The hash belongs to **the detail, not the row** (measured on the mockup). A
+    // list's job is scanning, and squeezing the hash into one row of three columns
+    // (time · name · why) pushes "why" out.
     expect(step).not.toHaveTextContent("abc1234");
     expect(step).not.toHaveTextContent("ontology snapshot");
 
-    // 다만 원문은 사라지지 않는다 — 펼치면 감사 흔적으로 그대로 있다.
+    // The raw text does not disappear — expanding shows it as the audit trail.
     fireEvent.click(step);
     expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
       "ontology snapshot: +1 concept (capabilities/foo)",
@@ -226,13 +228,13 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(snapshotInvokeCalls()).toHaveLength(0);
 
     fireEvent.click(snapshotButton);
-    // 확인 스텝이 열렸을 뿐 — 아직 invoke 0.
+    // The confirm step merely opened — still 0 invokes.
     expect(await screen.findByTestId("atlas-git-confirm-step")).toBeInTheDocument();
     expect(snapshotInvokeCalls()).toHaveLength(0);
 
     fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
     await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
-    // push 는 opt-in 기본 off.
+    // push is opt-in, off by default.
     expect(snapshotInvokeCalls()[0][1]).toMatchObject({ vaultPath: "/repo/vault", push: false });
   });
 
@@ -275,17 +277,18 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    // 이 화면의 결함은 "안내만 있고 누를 것이 없다" 였다 — 버튼 존재 자체가 계약.
+    // The defect on this screen was "guidance with nothing to press", so the
+    // button's existence is itself the contract.
     //
-    // 2026-08-02: 제목과 「되돌리는 방법」의 **자리가** 바뀌었다(무대의 h1 과
-    // 마지막 줄). 계약은 "이 화면에 있다" 이지 "이 div 안에 있다" 가 아니므로
-    // 범위를 셋업 무대로 올린다 — 안 그러면 배치를 고칠 때마다 게이트가
-    // 내용이 아니라 DOM 위치를 붙든다.
+    // 2026-08-02: the title and 「되돌리는 방법」 (how to undo) **moved** to the
+    // stage's h1 and last line. The contract is "it is on this screen", not "it is
+    // inside this div", so the scope rises to the setup stage — otherwise the gate
+    // holds a DOM position rather than content every time the layout changes.
     await screen.findByTestId("atlas-git-not-initialized");
     const setup = screen.getByTestId("atlas-git-setup");
     expect(setup).toHaveTextContent("git 을 연동하면 변경이 쌓여요");
     expect(screen.getByTestId("atlas-git-init")).toBeEnabled();
-    // 무엇이 만들어지는지 + 되돌리는 방법을 누르기 전에 말한다.
+    // Say what will be created, and how to undo it, before it is pressed.
     expect(setup).toHaveTextContent(".git");
     expect(setup).toHaveTextContent("그만두려면");
     expect(screen.queryByTestId("atlas-git-snapshot-button")).not.toBeInTheDocument();
@@ -305,7 +308,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-init");
 
-    // 신뢰 헌장: 쓰기 명령은 사용자 클릭 뒤에만. 읽기(git_status)는 허용.
+    // Trust charter: a write command only after a user click. Reads (git_status) are fine.
     const writes = tauriApiMock.invoke.mock.calls.filter(
       ([cmd]) => cmd === "git_init" || cmd === "git_set_remote" || cmd === "git_snapshot",
     );
@@ -332,7 +335,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
         tauriApiMock.invoke.mock.calls.filter(([cmd]) => cmd === "git_init"),
       ).toHaveLength(1),
     );
-    // init 은 init 만 한다 — 자동 커밋이야말로 진짜 헌장 위반이다.
+    // init only inits — an automatic commit is the real charter violation.
     expect(
       tauriApiMock.invoke.mock.calls.filter(([cmd]) => cmd === "git_snapshot"),
     ).toHaveLength(0);
@@ -346,18 +349,19 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    // 2026-07-27 — **사실은 크롬에, 입력은 온디맨드로.** 이전에는 같은 사실이
-    // 좌측 앰버 레일이 붙은 둥근 카드로 콘텐츠 **위에** 상주해, 기록을 보러
-    // 온 사용자의 첫 인상이 설정 권유였다(헌장 금지 패턴 + 앰버 확장).
+    // 2026-07-27 — **the fact in the chrome, the input on demand.** The same fact
+    // used to sit **above** the content as a rounded card with a left amber rail,
+    // so a user who came to read history got a settings pitch as a first
+    // impression (a charter-forbidden pattern plus amber creep).
     const location = await screen.findByTestId("atlas-git-location");
     expect(location).toHaveTextContent("원격 저장소가 아직 없어요");
-    // 입력칸은 아직 없다 — 상주하지 않는다.
+    // The input is not there yet — it does not sit there permanently.
     expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("atlas-git-remote-toggle"));
     expect(screen.getByTestId("atlas-git-remote-setup")).toBeInTheDocument();
 
-    // 빈 입력으로는 보낼 수 없다.
+    // An empty input cannot be submitted.
     expect(screen.getByTestId("atlas-git-remote-submit")).toBeDisabled();
 
     fireEvent.change(screen.getByTestId("atlas-git-remote-input"), {
@@ -370,7 +374,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
         tauriApiMock.invoke.mock.calls.filter(([cmd]) => cmd === "git_set_remote"),
       ).toHaveLength(1),
     );
-    // 주소 등록은 전송이 아니다 — 보내기는 사용자가 따로 눌러야 한다.
+    // Registering an address is not sending — the user has to press send separately.
     expect(
       tauriApiMock.invoke.mock.calls.filter(([cmd]) => cmd === "git_snapshot"),
     ).toHaveLength(0);
@@ -388,23 +392,24 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
   });
 
   /*
-   * 탭이 사라졌다(2026-08-02). 「변경 내용 / 커밋 이력」은 사실 *안 된 것 vs
-   * 된 것* 이라 목록의 위치가 이미 말한다 — 맨 위가 미커밋, 아래가 커밋.
-   * 그래서 이 테스트는 이제 **기본 선택**을 잡는다: 커밋할 게 있으면 그것이
-   * 열려 있고 변경 내용이 바로 보인다.
+   * The tabs are gone (2026-08-02). 「변경 내용 / 커밋 이력」 are really *not
+   * committed vs committed*, which the list's position already states —
+   * uncommitted at the top, committed below. So this test now pins the **default
+   * selection**: when there is something to commit it is open and its changes are
+   * visible immediately.
    */
   it("커밋할 게 있으면 그 변경이 기본으로 열려 있다 — 탭을 눌러 찾지 않는다", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
-    // 미커밋 줄이 목록 맨 위에 있고, 그것이 골라져 있다.
+    // The uncommitted row is at the top of the list and is the one selected.
     const pending = screen.getByTestId("atlas-git-pending-row");
-    // 2026-08-15 (8) — 이 행은 「지금 보고 있는 것」이지 눌린 버튼이 아니다.
-    // 형제 커밋 행이 이미 `aria-expanded` 를 쓰므로 pressed 를 두면 한 목록이
-    // 어휘 둘로 갈린다.
+    // 2026-08-15 (8) — this row is "what I am looking at", not a pressed button.
+    // The sibling commit rows already use `aria-expanded`, so pressed here would
+    // split one list across two vocabularies.
     expect(pending).toHaveAttribute("aria-current", "true");
-    // 탭 버튼은 더 이상 존재하지 않는다.
+    // The tab buttons no longer exist.
     expect(screen.queryByTestId("atlas-git-diff-toggle")).toBeNull();
     expect(screen.queryByTestId("atlas-git-history-tab")).toBeNull();
   });
@@ -415,26 +420,26 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     await screen.findByTestId("atlas-git-steps");
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
 
-    // 파일은 **다른 렌즈**다 — 정체(제목·해시)는 남고 표현만 바뀐다.
+    // Files are a **different lens** — identity (title, hash) stays and only the presentation changes.
     fireEvent.click(await screen.findByTestId("atlas-git-lens-files"));
 
-    // 바뀐 파일 — 「무엇이」. 이력이 개념 이름만 말하면 개념이 아닌 파일을
-    // 건드린 걸음은 화면에서 통째로 증발한다.
+    // Changed files — the "what". If history named only concepts, a step that
+    // touched non-concept files would vanish from the screen entirely.
     const files = await screen.findAllByTestId("atlas-git-commit-file");
     expect(files.map((el) => el.textContent).join(" ")).toContain(
       "docs/capabilities/foo.md",
     );
 
-    // 바뀐 내용 — 「어떻게」. 요약이 아니라 원문이라 터미널에서 보던 것과 같다.
+    // Changed content — the "how". Raw rather than summarised, so it matches what the terminal shows.
     const patch = await screen.findByTestId("atlas-git-commit-diff");
     expect(patch).toHaveTextContent("한 줄 새로 씀");
 
-    // 그리고 **잡음은 안 보인다**. `diff --git`·`index`·`---`·`+++` 넷이
-    // 말하는 것은 파일 이름 하나뿐이라, 넷을 접어 머리 한 줄로 바꿨다.
-    // 이 단언이 없으면 다음 사람이 파서를 되돌려도 아무도 모른다.
+    // And **the noise is not shown**. `diff --git`, `index`, `---` and `+++` all
+    // say one thing — the file name — so the four fold into one heading line.
+    // Without this assertion, the next person could revert the parser unnoticed.
     expect(patch.textContent).not.toContain("diff --git");
     expect(patch.textContent).not.toContain("index 05d74bf");
-    // 파일 이름은 **위 목록**이 나른다 — patch 상자에서 다시 말하지 않는다.
+    // The file name is carried by **the list above** — the patch box does not repeat it.
     expect(patch.textContent).not.toContain("docs/capabilities/foo.md");
   });
 
@@ -461,21 +466,22 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-panel");
 
-    // 모달이 삭제되면서(#78 Scope 2) 이 패널의 유일한 소비자가 `/git/` 목적지가
-    // 됐다. 목적지에 "닫기" 는 없다 — 레일로 다른 곳에 가면 그게 나가기다.
+    // When the modal was deleted (#78 Scope 2) this panel's only consumer became
+    // the `/git/` destination. A destination has no "close" — leaving is going
+    // elsewhere on the rail.
     expect(screen.queryByTestId("atlas-git-close")).not.toBeInTheDocument();
-    // 11px mono eyebrow 가 아니라 h1 — 실측에서 페이지 제목으로 너무 작았다.
+    // An h1, not an 11px mono eyebrow — measured, that was far too small for a page title.
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("기록");
   });
 });
 
 /**
- * 2026-07-26 재설계 — "이 화면이 지금 자기 일을 할 수 있는가" 로 갈리는
- * 두 모양(셋업 / 작업대)의 계약.
+ * 2026-07-26 redesign — the contract for the two shapes (setup / workbench) split
+ * by "can this screen do its job right now".
  */
 describe("AtlasGitPanel — 연결 셋업 모드", () => {
   it("연결 전 세 상태는 같은 셋업 프레임을 쓴다 — 걸음마다 표면이 바뀌지 않는다", async () => {
-    // ① 웹
+    // ① web
     const web = renderPanel(<AtlasGitPanel />);
     expect(await screen.findByTestId("atlas-git-setup")).toHaveAttribute(
       "data-setup-state",
@@ -483,7 +489,7 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
     );
     web.unmount();
 
-    // ② 앱인데 폴더 없음
+    // ② in the app, but no folder
     tauriApiMock.runtimeAvailable = true;
     const noVault = renderPanel(<AtlasGitPanel vaultPath={null} />);
     expect(await screen.findByTestId("atlas-git-setup")).toHaveAttribute(
@@ -492,7 +498,7 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
     );
     noVault.unmount();
 
-    // ③ 앱 + 폴더인데 아직 기록 시작 전
+    // ③ app plus folder, but not yet recording
     installDesktopGit({
       status: {
         initialized: false,
@@ -504,8 +510,9 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
       },
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    // 로딩 → 기록 시작 전. 로딩도 같은 프레임을 쓴다(그래서 상태가 바뀌어도
-    // 화면이 튀지 않는다) — 그래서 testid 가 아니라 상태 속성을 기다린다.
+    // loading → not yet recording. Loading uses the same frame (so the screen does
+    // not jump as state changes), which is why this waits on the state attribute
+    // rather than a testid.
     await waitFor(() =>
       expect(screen.getByTestId("atlas-git-setup")).toHaveAttribute(
         "data-setup-state",
@@ -515,9 +522,9 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
   });
 
   it("앱 안에서 폴더가 없으면 앱을 받으라고 하지 않는다 — 폴더 고르기로 보낸다", async () => {
-    // 회귀 차단: 이전엔 이 상태가 웹 강등으로 떨어져, **이미 앱을 쓰는**
-    // 사용자에게 "브라우저는 git 을 실행할 권한이 없어요 / 앱 받기 →" 라는
-    // 거짓 안내를 보여줬다.
+    // Regression guard: this state used to fall through to the web degradation,
+    // showing a user **already in the app** the false guidance "the browser has no
+    // permission to run git / get the app →".
     tauriApiMock.runtimeAvailable = true;
     renderPanel(<AtlasGitPanel vaultPath={null} />);
 
@@ -532,7 +539,7 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
     const ladder = await screen.findByTestId("atlas-git-ladder");
     const steps = ladder.querySelectorAll("li");
     expect(steps).toHaveLength(3);
-    // 웹에서는 첫 걸음이 "지금 할 일", 나머지는 아직.
+    // On the web the first step is "what to do now" and the rest are still ahead.
     expect(steps[0]).toHaveAttribute("data-step-state", "current");
     expect(steps[1]).toHaveAttribute("data-step-state", "todo");
     expect(steps[2]).toHaveAttribute("data-step-state", "todo");
@@ -560,8 +567,8 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
   });
 
   it("셋업 주 동작은 터치 승격 토큰으로 높이를 잡는다 (coarse 44px 계약)", async () => {
-    // 이 페이지가 하는 유일한 일이 이 버튼이라, 누군가 다시 h-9 같은 고정
-    // 높이로 되돌리면 `@media (pointer: coarse)` 승격이 조용히 사라진다.
+    // This button is the only thing this page does, so if someone reverts it to a
+    // fixed height like h-9, the `@media (pointer: coarse)` promotion silently disappears.
     renderPanel(<AtlasGitPanel />);
     const cta = await screen.findByTestId("atlas-git-web-get-app");
     expect(cta.className).toContain("h-[var(--git-setup-action-height)]");
@@ -599,13 +606,16 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
 describe("AtlasGitPanel — 작업대 빈 상태", () => {
   it("다 커밋한 상태에서도 작업대는 한 모양이다 — 열이 사라지지 않는다", async () => {
     /*
-     * 구 계약은 "미커밋 0 이면 열을 안 만든다"(`data-shape="recall"`)였다.
-     * 그건 **2단 전환 전의 판단**이다 — 그때 오른쪽은 「증거」라 정말 보여줄
-     * 게 없었다. 지금 오른쪽은 **고른 것의 상세**이고, 커밋을 고르면 바뀐
-     * 개념·ego 그림·변경 내용이 찬다. 그 갈래가 남아 있던 동안 커밋이 4개
-     * 쌓인 볼트에서 화면 절반이 통째로 사라졌다(소유자 실측 2026-08-02).
+     * The old contract was "with 0 uncommitted, do not make the column"
+     * (`data-shape="recall"`). That was **a judgement made before the two-column
+     * switch**, when the right side was 「증거」 (evidence) and there really was
+     * nothing to show. Now the right side is **the detail of what is selected**,
+     * and choosing a commit fills it with changed concepts, the ego drawing and
+     * the changed content. While that branch survived, a vault with four commits
+     * lost half the screen outright (owner measurement, 2026-08-02).
      *
-     * 모양은 하나다. 미커밋 유무는 **목록 맨 윗줄의 유무**로만 드러난다.
+     * There is one shape. Whether anything is uncommitted shows up only as the
+     * presence or absence of the list's top row.
      */
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
@@ -616,11 +626,11 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
 
     const workbench = await screen.findByTestId("atlas-git-workbench");
     expect(workbench).toHaveAttribute("data-shape", "decide");
-    // 커밋 이력은 목록에 그대로 있다.
+    // Commit history is still in the list.
     expect(screen.getByTestId("atlas-git-history-item")).toBeInTheDocument();
-    // 미커밋 줄만 없다.
+    // Only the uncommitted row is missing.
     expect(screen.queryByTestId("atlas-git-pending-row")).toBeNull();
-    // 상세 열은 살아 있다 — 기본 선택이 최근 커밋이다.
+    // The detail column is alive — the default selection is the most recent commit.
     expect(screen.getByTestId("atlas-git-evidence")).toBeInTheDocument();
   });
 
@@ -634,7 +644,7 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
 
     await screen.findByTestId("atlas-git-snapshot-button");
     expect(screen.getAllByText("모두 커밋했어요")).toHaveLength(1);
-    // 목록 자리는 같은 문장을 반복하는 대신 "그래서 지금 무슨 상태냐" 를 말한다.
+    // Instead of repeating the same sentence, the list position states what the current state is.
     expect(
       screen.getByText("지금 이 폴더와 마지막 커밋이 같아요. 문서를 고치면 여기에 나타나요."),
     ).toBeInTheDocument();
@@ -670,30 +680,33 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
 
 describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
   /*
-   * 이 화면에는 **Pull 이 아예 없었다** — 브리지에도 Rust 에도 있는데 호출부가
-   * 0회였다. Push 는 「남기기」 확인 단계의 체크박스 안에만 있어서, 남길 변경이
-   * 0 이면 이미 쌓인 걸음을 보낼 방법이 없었다(소유자 실측: ↑2 인데 보낼 길 없음).
-   * 아래 넷이 그 회귀를 잡는다.
+   * Pull was **entirely absent** from this screen — present in both the bridge and
+   * Rust with 0 callers. Push lived only inside a checkbox on the record confirm
+   * step, so with 0 changes to record there was no way to send steps already piled
+   * up (owner measurement: ↑2 with nowhere to send). The four below catch that
+   * regression.
    */
   it("갈라짐 수치는 **그 숫자가 정당화하는 버튼 위**에 있다", async () => {
     /*
-     * 종전엔 「↑2 ↓1」 칩이 따로 앉아 있었다. 그 숫자가 하는 일은 어느 버튼을
-     * 누를지 정해 주는 것 하나인데, 떨어져 있으면 읽고 나서 눈을 다시 옮겨야
-     * 한다. 칩을 없애고 라벨로 옮겼다 — 되돌리면 여기가 터진다.
+     * A separate 「↑2 ↓1」 chip used to sit apart. The only job those numbers do is
+     * tell you which button to press, and apart from it you have to read them and
+     * move your eyes again. The chip went and the numbers moved into the labels —
+     * reverting that breaks here.
      */
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("Push 2");
     expect(screen.getByTestId("atlas-git-remote-pull")).toHaveTextContent("Pull 1");
-    // 수치 자체는 보조 기술에도 남는다(시각 칩이 사라졌다고 사실이 사라지진 않는다).
+    // The numbers themselves stay for assistive technology (losing the visual chip does not lose the fact).
     expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("2");
   });
 
   it("커밋 제목을 직접 쓰면 그 문장이 그대로 git 에 간다", async () => {
     /*
-     * 자동 문구는 「무엇이 바뀌었나」를 잘 말하지만 **왜 바꿨나**는 못 말한다.
-     * 나중에 이력을 읽는 사람이 찾는 것은 후자다. 비워 두면 종전대로 자동
-     * 문구가 가므로 아무것도 안 하던 사람의 경로는 그대로다.
+     * The automatic wording says what changed well but never **why**, and why is
+     * what someone reading the history later looks for. Leaving it empty still
+     * sends the automatic wording, so the path for someone who did nothing is
+     * unchanged.
      */
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
@@ -709,10 +722,11 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
 
   it("Pull·Push 는 할 일이 없어도 **눌린다** — 침묵으로 답하지 않는다", async () => {
     /*
-     * 종전엔 `behind === 0` 이면 Pull 이 비활성이었다. 그런데 「받을 게 없다」는
-     * **눌러 보고 알 수 있어야 하는 사실**이지, 버튼을 죽여 침묵으로 답할 일이
-     * 아니다 — 화면은 마지막으로 확인한 시점의 수를 들고 있을 뿐이라 그 수가
-     * 이미 낡았을 수도 있다(소유자: *"버튼은 일단 눌려야지"*).
+     * Pull used to be disabled when `behind === 0`. But "there is nothing to pull"
+     * is **a fact you should be able to press and find out**, not something to
+     * answer with a dead button and silence — the screen only holds the count from
+     * the last check, and that count may already be stale (owner: *"버튼은 일단
+     * 눌려야지"* — the button should press first and tell you after).
      */
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, ahead: 0, behind: 0 },
@@ -724,17 +738,17 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
 
   it("아직 안 보낸 구간이 목록에서 갈린다 — 탭 뒤에 숨기지 않는다", async () => {
     /*
-     * 세 상태(커밋 안 함 · 안 보냄 · 원격에만 있음)를 탭으로 가르면 각 탭이
-     * 나머지를 숨긴다. 이 저장소에는 그러지 말자는 결정과 그것을 지키는
-     * 테스트가 이미 있다. 한 시간축 위의 구간이므로 필요한 것은 칸막이가
-     * 아니라 경계선이다.
+     * Splitting the three states (uncommitted · unpushed · remote-only) into tabs
+     * makes each tab hide the others, and this repository already has a decision
+     * against that plus a test that holds it. They are stretches of one timeline,
+     * so what is needed is a boundary, not a partition.
      */
     installDesktopGit({ status: { ...STATUS_WITH_CHANGES, ahead: 1, behind: 2 } });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     const sections = await screen.findAllByTestId("atlas-git-section");
     const text = sections.map((el) => el.textContent).join(" ");
     expect(text).toContain("아직 안 보냄 1");
-    // 원격에만 있는 걸음은 로컬 이력에 없으므로 **행이 아니라 안내**다.
+    // Steps that exist only on the remote are not in local history, so they are **guidance, not a row**.
     expect(screen.getByTestId("atlas-git-behind-row")).toHaveTextContent("2");
   });
 
@@ -793,10 +807,10 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
 
 describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
   /*
-   * 종전에는 커밋 **제목 문자열을 파싱해서** 무엇이 바뀌었는지 추측했다. 그건
-   * 우리 도구가 쓴 제목에만 맞고 사람이 쓴 커밋에는 안 맞아서, 실제 화면은
-   * 개념을 하나도 안 보여주고 제목만 나열했다(소유자 실측). #842 가 커밋별
-   * kind/slug 를 실어 보내므로 이제 추측하지 않는다.
+   * This used to guess what changed **by parsing the commit subject**. That only
+   * fit subjects our own tool wrote and never fit human commits, so the real
+   * screen showed no concepts at all and just listed subjects (owner measurement).
+   * #842 ships per-commit kind/slug, so nothing is guessed any more.
    */
   const GRAPH = {
     nodes: [
@@ -843,7 +857,7 @@ describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
     await screen.findByTestId("atlas-git-steps");
     const step = screen.getByTestId("atlas-git-history-item");
     expect(step).toHaveTextContent("첫 실행 안내");
-    // 원문은 사라지지 않는다 — 아래 줄에서 그 걸음을 구별해 준다.
+    // The raw text does not disappear — the line below still distinguishes that step.
     expect(step).toHaveTextContent("사람이 직접 쓴 커밋 제목");
   });
 
@@ -872,9 +886,10 @@ describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
 
 describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
   /*
-   * 「이 걸음을 지도에서 보기」를 없앤 자리다(소유자 판정: 여기서 다 보이게
-   * 하려던 건데 나가는 버튼을 둘 이유가 없다). 그래서 개념을 눌렀을 때 이
-   * 자리가 비어 있으면 그건 기능이 사라진 것이다.
+   * This is where 「이 걸음을 지도에서 보기」 (see this step on the map) used to be
+   * (owner call: the point was to show everything here, so there is no reason for a
+   * button that leaves). So if this position is empty when a concept is clicked,
+   * the feature has disappeared.
    */
   const EGO_GRAPH = {
     nodes: [
@@ -961,20 +976,21 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
     const ego = await screen.findByTestId("atlas-git-concept-ego");
     expect(ego).toHaveTextContent("첫 실행 안내");
-    // 소속 도메인은 belongsTo 이웃에서 온다 — 「속한 곳」이 그려져야 한다.
+    // The owning domain comes from the belongsTo neighbours — 「속한 곳」 has to be drawn.
     expect(ego).toHaveTextContent("속한 곳");
 
     /*
-     * **아는 것을 안 보여주는 것은 강등이 아니라 누락이다.** 그래프 노드가
-     * 이미 나르는 셋을 화면이 안 쓰고 있었다 — 사람이 가장 먼저 읽는 한 줄
-     * 설명, 이 개념이 속한 프로젝트, 그리고 **에이전트가 부르는 이름**.
-     * 마지막 것이 빠지면 이 화면은 두 사용자 중 하나에게만 답한 것이다.
+     * **Withholding what you already know is an omission, not a degradation.** The
+     * screen was not using three things the graph node already carries — the
+     * one-line summary a person reads first, the project this concept belongs to,
+     * and **the name an agent calls it by**. Without the last one this screen has
+     * answered only one of its two users.
      */
     expect(ego).toHaveTextContent("첫 실행에서 볼트를 만들어 준다");
     expect(ego).toHaveTextContent("아틀라스");
     expect(ego).toHaveTextContent("capabilities/foo");
 
-    // 관계는 **수가 아니라 이름**이다 — 「1」은 1이 무엇인지 못 말한다.
+    // Relations are **names, not counts** — 「1」 cannot say what the 1 is.
     const neighbors = screen.getAllByTestId("atlas-git-ego-neighbor");
     expect(neighbors.map((el) => el.textContent).join(" ")).toContain("온보딩·배포·앱 셸");
   });
@@ -990,15 +1006,15 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
 
 describe("AtlasGitPanel — 2단 작업대의 선택", () => {
   /*
-   * 탭을 없앤 자리는 **선택**이 진다. 그래서 "고르면 오른쪽이 바뀐다" 가
-   * 동작하지 않으면 화면은 멀쩡해 보이면서 아무것도 못 하게 된다 — 탭이
-   * 있던 시절에는 최소한 탭이 눈에 보였다.
+   * **Selection** took the tabs' place. So if "choose one and the right side
+   * changes" stops working, the screen looks fine while doing nothing — back when
+   * there were tabs, at least the tabs were visible.
    */
   it("커밋을 고르면 오른쪽이 그 커밋의 상세로 바뀐다", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    // 기본은 미커밋(변경이 있으므로) — 상세는 아직 없다.
+    // The default is uncommitted (there are changes) — no detail yet.
     await screen.findByTestId("atlas-git-pending-row");
     expect(screen.queryByTestId("atlas-git-history-detail")).toBeNull();
 
@@ -1006,9 +1022,10 @@ describe("AtlasGitPanel — 2단 작업대의 선택", () => {
     expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
       "abc1234def5678",
     );
-    // 커밋을 고르면 미커밋 줄은 눌린 상태가 풀린다 — 둘이 동시에 열리지 않는다.
-    // 안 고른 행은 속성 자체가 없다 — `aria-current="false"` 는 낭독기에게
-    // 「현재가 아님」을 굳이 말하는 소음이다(WAI-ARIA: 기본값이 false).
+    // Choosing a commit releases the uncommitted row — the two never open at once.
+    // An unselected row carries no attribute at all: `aria-current="false"` is
+    // noise that tells a screen reader "not current" for no reason (WAI-ARIA: the
+    // default is false).
     expect(screen.getByTestId("atlas-git-pending-row")).not.toHaveAttribute("aria-current");
   });
 
@@ -1036,13 +1053,14 @@ describe("AtlasGitPanel — 2단 작업대의 선택", () => {
 
 describe("AtlasGitPanel — git 이 없어도 바뀐 것은 보인다", () => {
   /*
-   * 소유자 지적(2026-08-02): "우리 깃 안쓰는 사람은 기록 보는거 제공 안하나?"
+   * Owner, 2026-08-02: *"우리 깃 안쓰는 사람은 기록 보는거 제공 안하나?"* (do people
+   * who don't use our git get no history at all?)
    *
-   * 제공된다 — `change-baseline-store` 가 볼트별 기준점을 들고 있어 git 과
-   * 무관하게 이번 세션의 변경을 안다. 그런데 그 요약을 **웹 강등에서만**
-   * 그려서, 아직 git 을 안 켠 데스크톱 사용자는 「연동하기」만 권유받고
-   * 지금 무엇이 바뀌었는지는 못 봤다. 아는 것을 안 보여주는 건 강등이
-   * 아니라 누락이다.
+   * They do — `change-baseline-store` holds a per-vault baseline, so this session's
+   * changes are known independently of git. But that summary was drawn **only in
+   * the web degradation**, so a desktop user who had not turned git on was offered
+   * 「연동하기」 and never saw what had changed. Withholding what you already know is
+   * an omission, not a degradation.
    */
   const CHANGESET = {
     addedNodes: ["a"],
@@ -1088,7 +1106,7 @@ describe("AtlasGitPanel — git 이 없어도 바뀐 것은 보인다", () => {
       },
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    // 상태가 도착하기 전에는 로딩 프레임이라, 연동 버튼이 뜰 때까지 기다린다.
+    // Before status arrives this is the loading frame, so wait for the connect button.
     expect(await screen.findByTestId("atlas-git-init")).toHaveTextContent("git 연동하기");
     expect(screen.getByTestId("atlas-git-setup")).toHaveTextContent("git 을 연동하면 변경이 쌓여요");
   });

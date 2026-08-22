@@ -1,19 +1,22 @@
 /**
- * "영역 전개" 깊이 시차 (S5, fable 설계) — 순수 모듈, DOM/카메라 지식 없음.
+ * "Realm expansion" depth parallax (S5, designed by fable) — pure module, with no
+ * knowledge of the DOM or the camera.
  *
- * WHAT: 영역이 active 인 동안 사용자가 카메라를 팬/줌하면 깊은 링(depth2+)의
- * **렌더 좌표**만 카메라 이동 델타에 비례해 살짝 뒤처지게 한다. 월드 좌표는
- * 불변 — 그리기 직전(그리고 히트테스트 직전)에만 오프셋을 더한다. 카메라가
- * 멈추면 오프셋이 0 으로 스프링 감쇠해 노드가 제자리로 수렴한다.
+ * While a realm is active and the user pans or zooms, only the **render
+ * coordinates** of the deep rings (depth2+) lag, in proportion to the camera's
+ * movement delta. World coordinates never change: the offset is added immediately
+ * before drawing, and before hit-testing. Once the camera stops, the offset
+ * spring-decays to 0 and the nodes converge back into place.
  *
- * 왜 순수 감쇠인가: 지속 애니메이션이 아니라 **입력 반응**이다. 카메라
- * 움직임이 있는 프레임에만 오프셋이 충전되고, 정지하면 tau 안에 사라진다.
- * 유휴 게이트 계약(움직임 없으면 grace 후 재드로 중단)을 깨지 않으려면 감쇠가
- * grace(1200ms) 안에 사실상 0 이 되어야 한다 — tau 0.18s 면 grace 시점에
- * exp(-1.2/0.18)≈0.001 로 무시 가능(호출부 주석 참조).
+ * Why a plain decay: this is an **input response**, not a continuous animation. The
+ * offset only charges on frames where the camera moved, and vanishes within tau
+ * once it stops. To keep the idle gate's runtime contract (stop redrawing after a
+ * grace period with no movement), the decay must be effectively 0 inside the
+ * 1200 ms grace — at tau 0.18 s that is exp(-1.2/0.18) ≈ 0.001, negligible (see the
+ * caller's comment).
  *
- * 결정론: 같은 (prev, cameraDelta, factor, dt, tau) 는 항상 같은 오프셋을 낸다.
- * `realm-depth-parallax.test.ts` 계약.
+ * Deterministic: the same (prev, cameraDelta, factor, dt, tau) always yields the
+ * same offset. Contract: `realm-depth-parallax.test.ts`.
  */
 
 export interface DepthParallaxOffset {
@@ -23,18 +26,18 @@ export interface DepthParallaxOffset {
 
 export const ZERO_PARALLAX: DepthParallaxOffset = { x: 0, y: 0 };
 
-/** 감쇠 시상수(초) — 카메라 정지 후 오프셋이 사라지는 속도. */
+/** Decay time constant (seconds) — how fast the offset vanishes once the camera stops. */
 export const REALM_PARALLAX_TAU_S = 0.18;
-/** depth2(capability 링) 시차 계수 — 카메라 델타의 3%. */
+/** depth2 (capability ring) parallax factor — 3% of the camera delta. */
 export const REALM_PARALLAX_FACTOR_DEPTH2 = 0.03;
-/** depth3+(element 링) 시차 계수 — 카메라 델타의 6%. 더 깊을수록 더 뒤처진다. */
+/** depth3+ (element ring) parallax factor — 6%. The deeper the ring, the further it lags. */
 export const REALM_PARALLAX_FACTOR_DEPTH3 = 0.06;
-/** 오프셋이 이 월드 단위(절대값) 아래면 "수렴"으로 보고 비활성 처리. */
+/** Below this absolute world-unit offset, treat it as converged and inactive. */
 export const REALM_PARALLAX_EPSILON = 0.02;
 
 /**
- * 멤버 깊이 → 시차 계수. depth≤1(루트·도메인 링)은 0(시차 없음), depth2 는
- * 3%, depth3+ 는 6%. 순수·결정론.
+ * Member depth → parallax factor. depth≤1 (root and domain rings) is 0, i.e. no
+ * parallax; depth2 is 3%; depth3+ is 6%. Pure and deterministic.
  */
 export function depthParallaxFactorForDepth(depth: number): number {
   if (depth <= 1) return 0;
@@ -43,15 +46,16 @@ export function depthParallaxFactorForDepth(depth: number): number {
 }
 
 /**
- * 한 깊이 밴드의 시차 오프셋 한 스텝(순수). 이전 오프셋을 0 으로 지수 감쇠시킨
- * 뒤, 이번 프레임의 카메라 델타(월드 단위) × 계수를 더한다.
+ * One parallax step for a single depth band (pure). Exponentially decays the
+ * previous offset toward 0, then adds this frame's camera delta (world units)
+ * × factor.
  *
- * - 카메라 정지(cameraDelta 0): 오프셋이 exp(-dt/tau) 로 0 에 수렴.
- * - 등속 팬: 오프셋이 factor·v·tau 근처의 작은 "지연 랙" 으로 수렴 — 깊은 링이
- *   카메라를 (1-factor) 속도로 따라가 뒤처져 보인다.
- * - factor 0: 항상 0(depth≤1).
+ * - Camera at rest (cameraDelta 0): the offset converges to 0 as exp(-dt/tau).
+ * - Constant pan: the offset settles into a small lag near factor·v·tau — the deep
+ *   ring follows the camera at (1-factor) speed and so appears to trail.
+ * - factor 0: always 0 (depth≤1).
  *
- * `tau≤0` 이면 감쇠를 즉시(잔여 0)로 처리한다(reduced-motion 안전).
+ * `tau≤0` decays instantly, leaving nothing — the reduced-motion safe path.
  */
 export function stepDepthParallax(
   prev: DepthParallaxOffset,
@@ -67,7 +71,7 @@ export function stepDepthParallax(
   };
 }
 
-/** 오프셋이 유의미하게 남아 있는가(수렴 판정). 둘 다 epsilon 이하면 false. */
+/** Is a meaningful offset still left? False once both axes are within epsilon. */
 export function isDepthParallaxActive(
   offset: DepthParallaxOffset,
   epsilon: number = REALM_PARALLAX_EPSILON,
@@ -76,9 +80,9 @@ export function isDepthParallaxActive(
 }
 
 /**
- * 노드 하나의 렌더 오프셋(월드 단위) — 깊이 밴드로 두 오프셋 중 하나를 고른다.
- * depth 미상/≤1 이면 0. 드로우와 히트테스트가 **같은** 함수를 써 클릭 어긋남을
- * 원천 차단한다.
+ * One node's render offset (world units) — the depth band picks one of the two
+ * offsets, and unknown depth or depth≤1 gives 0. Draw and hit-test call the
+ * **same** function, which is what rules out click misalignment.
  */
 export function depthParallaxOffsetFor(
   depth: number | undefined,

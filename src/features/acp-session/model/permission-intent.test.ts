@@ -3,23 +3,22 @@ import { describe, expect, it } from 'vitest';
 import { permissionIntent } from './permission-intent';
 
 /**
- * 권한 카드는 **어디**만이 아니라 **무엇을 하려는지**도 말해야 한다.
+ * The permission card must state not only **where** but **what it means to do.**
  *
- * ## 왜 (2026-08-17 실측)
+ * ## Why (measured 2026-08-17)
  *
- * 카드가 경로를 mono 로 크게 보여 주는데, 읽으려는 건지 고치려는 건지 지우려는
- * 건지는 어디에도 없었다. `/etc/hosts` **를 읽겠다**와 `/etc/hosts` **를
- * 고치겠다**는 완전히 다른 결정인데 화면이 똑같았다.
+ * The card showed the path large and in mono, but whether it meant to read, edit, or delete was
+ * nowhere. **Reading** `/etc/hosts` and **editing** `/etc/hosts` are entirely different decisions, and
+ * the screen looked identical.
  *
- * 값은 오고 있었다 — `toolKind` 가 요청에 실려 오고, 그 필드 주석이 직접
- * *"화면이 아이콘/색을 고르는 타입 있는 사실"* 이라고 적어 뒀다. 화면이 안
- * 쓰고 있었을 뿐이다.
+ * The value was arriving — `toolKind` comes with the request, and that field's own comment says it is
+ * *"the typed fact the screen picks its icon and colour from"*. The screen simply was not using it.
  *
- * ## 모르면 모른다고 한다
+ * ## Unknown is stated as unknown
  *
- * 어댑터마다 종류 이름이 다르고 안 줄 수도 있다. 그때 「읽기」라고 짐작하면
- * **가장 위험한 쪽으로 틀린다** — 사람이 안심하고 허용한다. 모르면 모른다고
- * 하고, 판단은 경로와 도구 이름에 맡긴다.
+ * The kind names differ per adapter and may not be sent. Guessing "read" then **errs toward the most
+ * dangerous side** — a person allows it with confidence. Unknown is stated as unknown, and the
+ * judgement is left to the path and the tool name.
  */
 
 describe('무엇을 하려는지 말한다', () => {
@@ -42,7 +41,7 @@ describe('무엇을 하려는지 말한다', () => {
   });
 
   it('어댑터가 다른 낱말을 써도 같은 뜻이면 같이 읽는다', () => {
-    // ACP 어댑터들이 실제로 쓰는 변종. 지어낸 게 아니라 표를 넓힌 것이다.
+    // Variants the ACP adapters actually use. Not invented — the table was widened from measurement.
     expect(permissionIntent('write')).toBe('edit');
     expect(permissionIntent('move')).toBe('edit');
     expect(permissionIntent('fetch')).toBe('read');
@@ -57,7 +56,7 @@ describe('무엇을 하려는지 말한다', () => {
   });
 
   it('「기타」 갈래를 읽기로 접지 않는다', () => {
-    // 어댑터가 분류를 못 한 것과 「읽기」는 다른 말이다.
+    // The adapter failing to classify is not the same statement as "read".
     expect(permissionIntent('other')).toBe('unknown');
   });
 });

@@ -16,8 +16,8 @@ import {
  * `render/labels.ts#draw`'s canvas text painting has no extractable
  * geometric invariant beyond the alpha formula below — its visual contrast/
  * legibility (light mode in particular) is a Design Guardian screenshot-review
- * question the design doc explicitly defers (§2.2: "라이트 대비는 P3 게이트에서
- * 스크린샷 필수"), left as `test.todo`.
+ * question the design doc explicitly defers (§2.2 requires a screenshot for
+ * light-mode contrast), left as `test.todo`.
  *
  * (label-clarity, 2026-07) — REDESIGN. Persona eval: domain names only
  * existed as an ultra-low-contrast far-field watermark; ego-revealed
@@ -27,8 +27,8 @@ import {
  *   all here — the domain far-field spaced-caps watermark is a SEPARATE
  *   decorative effect drawn in `draw()`, not part of this alpha function).
  * - `capability`/`element`: eligibility ramps with the node's own
- *   `revealAlpha` (tier alpha, or the ego-reveal ramp when exempted) — "잡을
- *   수 있으면 읽을 수 있다" (if you can click it, you can read it).
+ *   `revealAlpha` (tier alpha, or the ego-reveal ramp when exempted) — 「잡을 수
+ *   있으면 읽을 수 있다」 (if you can click it, you can read it).
  * - `egoState === "center"` (selected) or `isHovered`: ALWAYS 1, any kind,
  *   any zoom band — overrides everything except `dim`.
  * - `egoState === "dim"`: always 0, regardless of anything else.
@@ -111,11 +111,12 @@ describe("computeDomainWatermarkAlpha", () => {
   });
 
   /**
-   * **한 앵커에 두 효과가 같이 있으면 안 된다** (2026-08-19, 돔 실측
-   * `AΛI에이전트 연동동`). 종전 공식은 합이 1 인 크로스페이드라 중간 대역에서
-   * 둘 다 살아 있었고, 3D 돔이 카메라를 그 대역에 세워 두면서 이름이 뭉개진
-   * 채로 화면에 남았다. 이 시험이 그 겹침을 막는다 — farT 전 구간에서 두 알파
-   * 중 **하나는 반드시 0** 이다.
+   * **Two effects must never share one anchor.** Measured on the dome
+   * 2026-08-19: the name rendered as `AΛI에이전트 연동동`. The old formulas were a
+   * crossfade summing to 1, so both were alive in the middle band, and the 3D
+   * dome parks the camera in exactly that band, leaving the name illegible on
+   * screen. This test forbids the overlap: across all of farT, **one of the two
+   * alphas is always 0**.
    */
   it("never shares a frame with the compact label — one of the two is always 0", () => {
     for (let farT = 0; farT <= 1.0001; farT += 0.05) {
@@ -163,15 +164,15 @@ describe("resolveLabelBaselineY — 라벨이 자기 도형선에 닿지 않는�
     for (const fontScale of [1, 1.3, 1.9]) {
       const baseline = resolveLabelBaselineY(kind, 200, 40, fontScale);
       const glyphTop = baseline - scaledLabelFontSize(kind, fontScale);
-      // 외곽선(선택 링)은 원판 밖 LABEL_NODE_OUTLINE_ALLOWANCE 까지 나간다.
+      // The outline (selection ring) reaches LABEL_NODE_OUTLINE_ALLOWANCE past the disc.
       const outlineBottom = 200 + 40 + LABEL_NODE_OUTLINE_ALLOWANCE;
       expect(glyphTop - outlineBottom).toBeGreaterThanOrEqual(LABEL_NODE_CLEARANCE);
     }
   });
 
   it("종전 오프셋 식은 선택 링을 관통했다 — 이 함수가 그 자리를 고른 이유", () => {
-    // 회귀 증거: 역량 라벨의 옛 베이스라인(y + r + 13)에서 글리프 top 은
-    // 원판에서 2.5px 아래 — 선택 링(+6)보다 위다.
+    // Regression evidence: at the capability label's old baseline (y + r + 13) the
+    // glyph top sat 2.5px below the disc — above the selection ring at +6.
     const legacyBaseline = 200 + 40 + 13;
     const legacyGlyphTop = legacyBaseline - scaledLabelFontSize("capability", 1);
     expect(legacyGlyphTop).toBeLessThan(200 + 40 + LABEL_NODE_OUTLINE_ALLOWANCE);
@@ -187,22 +188,23 @@ describe("resolveLabelBaselineY — 라벨이 자기 도형선에 닿지 않는�
   it("뒤집힌 자리는 노드 위쪽 외곽선 밖에 앉는다", () => {
     const flipped = resolveFlippedLabelBaselineY(200, 40);
     expect(flipped).toBe(200 - 40 - LABEL_NODE_OUTLINE_ALLOWANCE - LABEL_NODE_CLEARANCE);
-    // 아래쪽 자리보다 반드시 위다(뒤집기가 실제로 자리를 바꾼다).
+    // Strictly above the lower slot, proving the flip actually moves it.
     expect(flipped).toBeLessThan(resolveLabelBaselineY("capability", 200, 40, 1));
   });
 });
 
 /**
- * **라벨 상자의 세로 범위는 폰트에서 실측한다.**
+ * **The label box's vertical extent is measured from the font.**
  *
- * 종전 근사는 `ascent = fontSize` · `descent = 2`(상수)였다. descent 가
- * **상수인데 fontSize 는 줌에 따라 커져서**, 확대할수록 베이스라인 아래
- * 미예약분이 벌어졌다 — 한글 받침과 라틴 디센더가 상자 밖으로 나가는데
- * 억제 판정은 "안 겹친다"고 말한다.
+ * The old approximation was `ascent = fontSize` and a constant `descent = 2`.
+ * Because descent was **constant while fontSize grows with zoom**, the
+ * unreserved band below the baseline widened as you zoomed in: Hangul jongseong
+ * and Latin descenders left the box while the suppression check still reported
+ * no overlap.
  *
- * 재는 것은 두 가지다: ① 실측값이 있으면 그걸 쓴다 ② 없으면 **종전 근사로
- * 떨어진다**(jsdom·스텁 컨텍스트에서 0 높이 상자를 만들어 라벨이 전부 겹치게
- * 두지 않는다).
+ * Two things are checked: that a real measurement is used when available, and
+ * that it **falls back to the old approximation** when it is not — so jsdom and
+ * stub contexts never produce a zero-height box that lets every label overlap.
  */
 describe("measureLabelVerticalMetrics — 세로 범위 실측", () => {
   const ctxWith = (metrics: Partial<TextMetrics> | null): CanvasRenderingContext2D =>
@@ -213,7 +215,7 @@ describe("measureLabelVerticalMetrics — 세로 범위 실측", () => {
 
   it("`fontBoundingBox*` 가 있으면 그 값을 쓴다", () => {
     const ctx = ctxWith({ fontBoundingBoxAscent: 11, fontBoundingBoxDescent: 4 } as TextMetrics);
-    // kind/scale 조합마다 캐시되므로 이 테스트만의 조합을 쓴다.
+    // Results are cached per (kind, scale), so this test uses its own combination.
     const m = measureLabelVerticalMetrics(ctx, "element", 1.37);
     expect(m).toEqual({ ascent: 11, descent: 4 });
   });
@@ -226,8 +228,8 @@ describe("measureLabelVerticalMetrics — 세로 범위 실측", () => {
   });
 
   it("실측값이 없으면 종전 근사로 떨어진다 — 회귀 0", () => {
-    // jsdom 은 fontBoundingBox* 를 안 준다. 그때 0 을 쓰면 상자 높이가 0 이 되어
-    // 모든 라벨이 "안 겹친다"가 된다 — 근사가 그 함정을 막는다.
+    // jsdom returns no fontBoundingBox*. Taking 0 there gives a zero-height box,
+    // which makes every label "not overlapping" — the approximation blocks that.
     const ctx = ctxWith({} as TextMetrics);
     const m = measureLabelVerticalMetrics(ctx, "domain", 1.43);
     expect(m.ascent).toBe(scaledLabelFontSize("domain", 1.43));

@@ -1,11 +1,9 @@
 import type { Category } from "./types";
 
 /**
- * 기본 카테고리 — 최초 빈 DB 진입 시 seed되고, 기존 프로젝트가 참조하던
- * 리터럴 값('in-progress', 'planned')과 ID 호환된다.
- *
- * 좌표·크기는 원본 하드코딩 값 그대로 이관.
- * 원본: 이전 entities/project/model/layout.ts의 CLUSTER_* 상수.
+ * Seed categories for an empty store. The IDs stay byte-compatible with the
+ * literals older projects reference ('in-progress', 'planned') — changing one
+ * orphans every project that points at it.
  */
 export const DEFAULT_CATEGORIES: Category[] = [
   {

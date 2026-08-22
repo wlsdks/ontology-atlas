@@ -1,17 +1,20 @@
 #!/usr/bin/env node
 /**
- * MCP 서버를 단일 자기완결 바이너리로 컴파일해 앱 번들에 실을 자리에 놓는다.
+ * Compiles the MCP server into a single self-contained binary and places it
+ * where the app bundle picks it up.
  *
- *   node scripts/build-mcp-binary.mjs                     # 호스트 아키텍처
+ *   node scripts/build-mcp-binary.mjs                     # host architecture
  *   node scripts/build-mcp-binary.mjs --target x86_64-apple-darwin
- *   node scripts/build-mcp-binary.mjs --skip-verify       # 컴파일만
+ *   node scripts/build-mcp-binary.mjs --skip-verify       # compile only
  *
- * 왜 필요한가: 설치형 앱을 깔아도 에이전트가 붙지 못하는 모순을 끊는다.
- * 다운로드 1회가 사람 표면과 에이전트 표면을 동시에 설치하게 만든다.
+ * Why: it removes the contradiction of installing the app and still having no
+ * agent surface. One download installs the human surface and the agent surface
+ * together.
  *
- * fail-closed: 컴파일 직후 실제로 스폰해 `initialize` → `tools/list` 왕복을
- * 받고 도구 수가 기대치와 같은지 본다. 부팅 못 하는 바이너리를 앱에 싣는 것이
- * 이 슬라이스의 최악 실패 모드라 여기서 막는다.
+ * fail-closed: right after compiling, the binary is actually spawned for an
+ * `initialize` → `tools/list` round trip and the tool count is compared against
+ * the expectation. Shipping a binary that cannot boot is this slice's worst
+ * failure mode, so it is caught here.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, statSync } from 'node:fs';

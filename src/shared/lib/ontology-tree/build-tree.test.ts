@@ -80,7 +80,7 @@ describe("buildOntologyTree — happy path", () => {
     const root = result.roots[0]!;
     // Project has 2 domains
     expect(root.children).toHaveLength(2);
-    // 인증 / 지식 알파벳 정렬
+    // Alphabetical order by id.
     expect(root.children.map((c) => c.node.id).sort()).toEqual(["d1", "d2"]);
     const d1 = root.children.find((c) => c.node.id === "d1")!;
     expect(d1.children).toHaveLength(1);
@@ -153,10 +153,10 @@ describe("buildOntologyTree — error handling", () => {
   });
 
   it("same-parent 중복 contains edge 는 silent (양방향 frontmatter 자기 중복 방어)", () => {
-    // 진짜 다중 부모 (서로 다른 parent) 만 사용자에게 노출되어야 한다.
-    // 같은 (parent, child) 가 두 번 들어오는 건 vault 양방향 frontmatter
-    // 중복일 뿐 정보 가치 없음 — derive-ontology 가 dedup 하지만 외부
-    // manifest 흡수 시 defense-in-depth.
+    // Only genuine multi-parent cases (different parents) should reach the user.
+    // The same (parent, child) arriving twice is just the vault's bidirectional
+    // frontmatter duplicating itself and carries no information. derive-ontology
+    // already dedupes; this is defence in depth for absorbed external manifests.
     const nodes = [makeNode("p1", "project"), makeNode("d1", "domain")];
     const edges = [
       makeEdge("e1", "p1", "d1", "contains"),

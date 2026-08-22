@@ -5,12 +5,12 @@ import { describe, expect, it } from 'vitest';
 
 import { controlClass } from '../../src/shared/ui/control-class';
 
-/** 주석은 값이 아니다 — 이 라운드에서 네 번 밟은 함정. */
+/** A comment is not a value — a trap stepped on four times in this round. */
 function stripComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
-/** 여는 태그를 중괄호 깊이로 끊는다 — 다행 태그와 콜백을 넘긴다. */
+/** Terminates an opening tag by brace depth — steps over multi-line tags and callbacks. */
 function openingTag(src: string, from: number): string {
   let depth = 0;
   let quote: string | null = null;
@@ -45,27 +45,32 @@ function collectTsx(): string[] {
 }
 
 /**
- * **키보드 초점 링은 값 층이 낸다** — 그리고 그것을 단언하는 게이트가 없었다.
+ * **The keyboard focus ring is emitted by the value layer** — and no gate asserted
+ * it.
  *
- * ## 왜 이 파일이 존재하나 (2026-08-05 감사)
+ * ## Why this file exists (2026-08-05 audit)
  *
- * 저장소 전체에서 초점 링을 언급하는 테스트는 셋뿐이었고 **어느 것도 「링이
- * 있는가」를 묻지 않았다**:
+ * Only three tests in the whole repository mentioned focus rings, and **none of
+ * them asked whether a ring exists**:
  *
- * - `prose-link.contract.test.ts` — 글 속 링크는 초점을 **선언하지 않는다**를 단언(반대 방향)
- * - `agent-client-buttons-use-shared-button.contract.test.ts` — 한 파일이 `<Button>` 을 쓰는지
- * - `tests/e2e/dialog-focus-ring.spec.ts` — 시트 **컨테이너 하나**가 `outline: auto` 가 아닌지
+ * - `prose-link.contract.test.ts` — asserts in-prose links **do not declare** focus
+ *   (the opposite direction)
+ * - `agent-client-buttons-use-shared-button.contract.test.ts` — whether one file
+ *   uses `<Button>`
+ * - `tests/e2e/dialog-focus-ring.spec.ts` — whether **one sheet container** avoids
+ *   `outline: auto`
  *
- * 그 사이에서 `controlClass` 와 `controls.tsx` 는 `focus` 라는 글자를 **0회**
- * 갖고 있었다. `Chip` 52 · `IconButton` 35 · `RowButton` 19 — 106개 컨트롤이
- * 키보드 초점에서 **OS 강조색**을 그렸다. axe 에는 focus-visible 룰이 없어
- * `a11y-ratchet` 도 못 잡는다.
+ * Meanwhile `controlClass` and `controls.tsx` contained the word `focus` **zero**
+ * times. `Chip` 52 · `IconButton` 35 · `RowButton` 19 — 106 controls drew the **OS
+ * accent colour** on keyboard focus. axe has no focus-visible rule, so
+ * `a11y-ratchet` cannot catch it either.
  *
- * **왜 e2e 가 아니라 계약인가**: 초점 링은 실제로 탭을 눌러야 보이므로 DOM
- * 스윕(쉬는 상태)으로는 원리적으로 안 보인다. 그런데 값 층이 문자열을 내는
- * 구조라 **조합 결과를 여기서 직접 만들어 볼 수 있다** — `control-class`
- * 계약이 여덟 모양 × 세 크기 × 아홉 톤을 전부 조립해 보는 것과 같은 방법이고,
- * 브라우저 없이 도는 만큼 모든 PR 에서 돈다.
+ * **Why a contract and not e2e**: a focus ring is only visible after an actual tab
+ * press, so a DOM sweep of the resting state cannot see it in principle. But the
+ * value layer emits strings, so **the combinations can be assembled and inspected
+ * right here** — the same method the `control-class` contract uses to assemble all
+ * eight shapes × three sizes × nine tones, and because it runs without a browser it
+ * runs on every PR.
  */
 
 const ROOT = process.cwd();
@@ -77,19 +82,21 @@ const SIZES = ['sm', 'md', 'lg'] as const;
 
 describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 그 위에 얹는다', () => {
   /**
-   * **바닥은 `globals.css` 의 base 규칙이다** (2026-08-05, 2차).
+   * **The floor is the base rule in `globals.css`** (2026-08-05, second pass).
    *
-   * 값 층에 `FOCUS` 를 넣어 106곳을 덮은 뒤에도, 값 층을 **안 거치는** 상호작용
-   * 요소가 **104곳 / 53파일** 남아 있었다(레일 · 크롬 · 손으로 쓴 버튼 · 인라인
-   * 링크). 104번의 편집은 다음에 생길 105번째를 못 막는다.
+   * Even after adding `FOCUS` to the value layer covered 106 places, **104
+   * interactive elements across 53 files** still did **not** go through the value
+   * layer (rails, chrome, hand-written buttons, inline links). 104 edits cannot stop
+   * the 105th that appears next.
    *
-   * 그래서 바로 위 커서 정책과 **같은 모양**으로 풀었다 — base 가 소유하고
-   * 컴포넌트는 필요할 때만 덮는다. `:where()` 라 명시도 0 이고,
-   * `outline-offset: -2px` 라 상자 치수 변화가 0 이다.
+   * So it was solved in **the same shape** as the cursor policy just above: the base
+   * owns it and components override only when needed. It uses `:where()` so
+   * specificity is 0, and `outline-offset: -2px` so box dimensions do not change.
    *
-   * 이 단언이 지키는 것: **그 바닥이 사라지지 않는 것.** 값 층 단언(아래)과
-   * 둘 다 있어야 한다 — 바닥만 있으면 값 층이 자기 링을 잃어도 안 보이고,
-   * 값 층만 있으면 그것을 안 거치는 104곳이 다시 맨몸이 된다.
+   * What this assertion protects: **that the floor does not disappear.** It and the
+   * value-layer assertion below are both required — with only the floor, the value
+   * layer losing its ring would be invisible; with only the value layer, the 104
+   * places that bypass it would be bare again.
    */
   it('base 레이어가 모든 상호작용 요소에 초점 바닥을 깐다', () => {
     const css = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
@@ -100,9 +107,10 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
     for (const needed of ['button', 'summary', 'a[href]', 'role="button"', 'tabindex']) {
       expect(selector, `초점 바닥이 ${needed} 를 안 덮는다`).toContain(needed);
     }
-    // 프로그램으로 옮기는 초점(모달 컨테이너)은 빠져야 한다 — 링이 결함인 자리다.
-    // `toContain('-1')` 로는 부족하다: 선택자 어딘가에 `-1` 이 있기만 하면
-    // 통과해서, 정작 면제가 사라져도 초록이었다(프로브로 확인).
+    // Programmatically moved focus (a modal container) must be excluded — a ring is a
+    // defect there. `toContain('-1')` is not enough: it passes as long as `-1` appears
+    // anywhere in the selector, so it stayed green even when the exemption was removed
+    // (confirmed by probe).
     expect(
       selector.replace(/\s+/g, ''),
       'tabindex="-1" 를 면제하지 않으면 프로그램으로 옮긴 초점(모달 컨테이너)에도 링이 그려진다',
@@ -122,7 +130,7 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
         try {
           out = controlClass({ shape, size } as Parameters<typeof controlClass>[0]);
         } catch {
-          continue; // 그 조합이 없으면 이 계약의 대상이 아니다
+          continue; // No such combination means it is outside this contract
         }
         if (!out.includes(RING) || !out.includes(OUTLINE_OFF)) missing.push(`${shape}/${size}`);
       }
@@ -150,32 +158,35 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
   });
 
   /**
-   * 값 층이 내더라도 **소비처가 `className` 으로 덮어쓰면** 무의미하다.
-   * `outline-none` 으로 브라우저 기본 링을 끄고 **아무 대체 표시도 안 주면**
-   * 초점이 완전히 안 보인다(WCAG 2.4.7).
+   * Even when the value layer emits a ring, **a consumer overriding it via
+   * `className`** makes it meaningless. Turning off the browser's default ring with
+   * `outline-none` and providing **no replacement indicator** leaves focus entirely
+   * invisible (WCAG 2.4.7).
    *
-   * ## 이 판정이 두 번 좁았다 — 첫 구현은 4건 전부 오탐이었다
+   * ## This predicate was too narrow twice — the first implementation's 4 hits were
+   * all false positives
    *
-   * 초판은 「`outline-none` 이 있으면 같은 **파일**에 `ring-` 도 있어야 한다」
-   * 였고, 실측 4건이 전부 정당했다:
+   * The first version was "if `outline-none` appears, the same **file** must also
+   * contain `ring-`", and all 4 measured hits were legitimate:
    *
-   * 1. **링이 유일한 초점 표시가 아니다** — `focus-visible:border-*` 로 테두리
-   *    색을 바꾸는 것도 보이는 초점이다(2건).
-   * 2. **프로그램으로 옮긴 초점은 링을 일부러 지운다** — `tabIndex={-1}` 인
-   *    모달·패널 컨테이너는 «알리는 용도»의 초점이라 링이 오히려 결함이다.
-   *    실제로 2026-08-04 감사가 첫 실행 시트에서 그 링을 **지우라고** 판정했고
-   *    `tests/e2e/dialog-focus-ring.spec.ts` 가 그것을 지킨다(2건).
+   * 1. **A ring is not the only focus indicator** — changing the border colour with
+   *    `focus-visible:border-*` is a visible focus too (2 cases).
+   * 2. **Programmatically moved focus deliberately removes the ring** — a modal or
+   *    panel container with `tabIndex={-1}` receives focus for announcement, so a
+   *    ring is the defect. The 2026-08-04 audit specifically ruled that the ring on
+   *    the first-run sheet **be removed**, and `tests/e2e/dialog-focus-ring.spec.ts`
+   *    protects that (2 cases).
    *
-   * 그래서 판정을 **파일 단위 → 여는 태그 단위**로 좁히고, 대체 표시의 범위를
-   * 넓히고, `tabIndex={-1}` 를 면제한다. 게이트를 새로 만들 때 자기 오탐부터
-   * 재는 것이 이 저장소의 규율이다(`design-gates.md` 「룰을 켜기 전 반드시
-   * 측정한다」).
+   * So the predicate was narrowed **from file scope to opening-tag scope**, the range
+   * of accepted indicators was widened, and `tabIndex={-1}` is exempt. Measuring your
+   * own false positives before switching a rule on is this repository's discipline
+   * (`design-gates.md`, on always measuring before enabling a rule).
    */
   it('초점을 끄기만 하고 아무 표시도 안 주는 자리가 없다', () => {
     const files = collectTsx();
     expect(files.length, '스캔이 비었다 — 공집합 위의 게이트는 게이트가 아니다').toBeGreaterThan(150);
 
-    /** 링 말고도 정당한 초점 표시 — 테두리·바탕·그림자 변화. */
+    /** Legitimate focus indicators other than a ring — border, background, or shadow changes. */
     const ANY_INDICATOR = /focus-visible:(ring-|border-|bg-|shadow-|text-)/;
     const offenders: string[] = [];
     let scannedTags = 0;
@@ -186,7 +197,7 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
         const tag = openingTag(src, m.index ?? 0);
         if (!tag.includes(OUTLINE_OFF)) continue;
         scannedTags += 1;
-        // 프로그램으로 옮기는 초점(모달·패널 컨테이너)은 링이 결함이다
+        // For programmatically moved focus (modal and panel containers) a ring is the defect
         if (/tabIndex=\{-1\}/.test(tag)) continue;
         if (ANY_INDICATOR.test(tag)) continue;
         const line = src.slice(0, m.index).split('\n').length;
@@ -216,13 +227,13 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
       }
       return out;
     };
-    // 위반 — 끄기만 했다
+    // Violation — turned off with nothing in its place
     expect(scan('<button className="focus-visible:outline-none" />')).toHaveLength(1);
-    // 정상 — 링 · 테두리 · 프로그램 컨테이너
+    // Legitimate — ring, border, programmatic container
     expect(scan('<button className="focus-visible:outline-none focus-visible:ring-2" />')).toEqual([]);
     expect(scan('<input className="focus-visible:outline-none focus-visible:border-x" />')).toEqual([]);
     expect(scan('<div tabIndex={-1} className="focus-visible:outline-none" />')).toEqual([]);
-    // 주석 속 인용은 값이 아니다
+    // A quotation inside a comment is not a value
     expect(scan('// <button className="focus-visible:outline-none" />\nconst a = 1;')).toEqual([]);
   });
 });

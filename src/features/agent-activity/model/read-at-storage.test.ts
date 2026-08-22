@@ -17,8 +17,8 @@ describe('알림 읽음 시각 — 볼트별 자리', () => {
   });
 
   /**
-   * **이 시험이 결함을 잠근다.** 종전엔 전역 키 하나라, 한 볼트에서 벨을 열면
-   * 다른 볼트의 안 본 항목이 읽음 처리됐다.
+   * **This test locks the defect.** There used to be one global key, so opening the bell in one vault
+   * marked another vault's unseen items as read.
    */
   it('한 볼트에서 읽음 처리해도 다른 볼트는 그대로다', () => {
     writeReadAt('local:alpha', 1_700_000_000_000);

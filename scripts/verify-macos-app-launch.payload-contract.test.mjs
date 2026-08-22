@@ -12,36 +12,43 @@ import {
 import { validateTopologyMapV2CanvasEvidence } from "./lib/verify-macos/payload-contract.mjs";
 
 /**
- * **설치 앱 WebView 페이로드 계약 — 남은 것만 잰다** (2026-08-12).
+ * **Installed-app WebView payload contract — measures only what is left**
+ * (2026-08-12).
  *
- * ## 이 파일이 10,042줄에서 여기까지 줄어든 이유
+ * ## Why this file shrank from 10,042 lines
  *
- * 종전 이 파일은 단언 **288개** · 마커 이름 **913종** · `sigma`/`skeleton` 언급
- * **135회**로, 사실상 **은퇴한 토폴로지 프로브의 시험 묶음**이었다. 그 프로브들은
- * #1034·#1036 에서 은퇴했다 — 없어진 Sigma 시절 DOM 을 기다렸고, 뷰포트 대신 지도를
- * 기준으로 삼는 제품과 좌표계가 달랐고, 한국어 문구를 그대로 못박고 있었다. 열한 개
- * 검증 스크립트 중 **하나도 초록이 될 수 없었다.**
+ * It used to carry **288 assertions**, **913 distinct marker names**, and **135**
+ * mentions of `sigma`/`skeleton` — effectively a test suite for retired topology
+ * probes. Those probes were retired in #1034 and #1036: they waited on Sigma-era
+ * DOM that no longer exists, used a coordinate system anchored to the viewport
+ * while the product anchors to the map, and pinned Korean copy verbatim. **Not one
+ * of the eleven verification scripts could go green.**
  *
- * 그 요구가 사라지자 이 파일의 두 거대 시험이 「메시지를 돌려줘야 한다」고 단언한
- * 자리에서 `null` 을 받아 빨개졌다 — **시험이 제품보다 오래 살아남은 것**이다.
+ * When that requirement disappeared, the two huge tests here that asserted "a
+ * message must come back" received `null` and turned red — **the test outlived the
+ * product.**
  *
- * 그래서 시험을 제품에 맞춘다. 여기 남는 것은 **오늘도 매 배포에서 실제로 도는 검사**
- * 다: 페이로드 모양 · 라우트 · 픽스처 볼트 · 감속 모션 · WebView 크기.
- * 그 검사들은 `pnpm desktop:deploy:app` 이 세션마다 통과시키고 있고, 은퇴한 요구가
- * 되살아나는 것은 `tests/contract/desktop-probe-markers.contract.test.ts` 가 막는다.
+ * So the tests were fitted to the product. What remains is **what actually runs on
+ * every deploy today**: payload shape · route · fixture vault · reduced motion ·
+ * WebView size. `pnpm desktop:deploy:app` passes those every session, and
+ * `tests/contract/desktop-probe-markers.contract.test.ts` stops the retired
+ * requirements coming back.
  *
- * ⚠️ **줄어든 것을 「검사가 약해졌다」로 읽지 말 것.** 지운 288개 단언은 **없는 DOM 을
- * 겨냥하고 있었다** — 그것들이 초록이던 이유는 제품이 옳아서가 아니라 아무도 안
- * 돌려서였다(CI 참조 0개).
+ * ⚠️ **Do not read the shrinkage as a weaker check.** The 288 deleted assertions
+ * **aimed at DOM that does not exist** — they were green because nobody ran them
+ * (0 references in CI), not because the product was right.
  */
 
 /**
- * 계약을 통과하는 최소 페이로드 — 여기서 한 가지씩 망가뜨려 각 검사를 확인한다.
+ * The minimal payload that passes the contract — each check is verified by
+ * breaking one thing at a time from here.
  *
- * ⚠️ **문서함 라우트를 쓴다.** `/topology` 에는 살아 있는 요구가 더 붙는다(Relief 마커 ·
- * 한국어 크롬 라벨 · 스테이지 팬 문턱 …). 그걸 최소 페이로드에 다 채우면 이 시험이
- * **일반 계약을 재는 게 아니라 지도 요구 목록을 베끼는 일**이 된다. 지도 쪽 요구가
- * 살아 있다는 사실은 아래 마지막 시험이 따로 확인한다.
+ * ⚠️ **Uses the docs route.** `/topology` carries further live requirements
+ * (Relief markers, Korean chrome labels, stage pan thresholds, …). Filling all of
+ * those into the minimal payload would turn this test into **a copy of the map's
+ * requirement list rather than a measurement of the general contract**. That the
+ * map's requirements are still alive is verified separately by the last test
+ * below.
  */
 function validPayload({ markers: markerOverrides, ...overrides } = {}) {
   return {
@@ -54,8 +61,8 @@ function validPayload({ markers: markerOverrides, ...overrides } = {}) {
     color: "rgb(247, 248, 248)",
     width: 1512,
     height: 917,
-    // 마커는 **병합한다** — 덮어쓰면 셸 마커가 사라져 엉뚱한 검사가 먼저 걸린다
-    // (이 시험을 쓰다 실제로 두 번 헛짚었다).
+    // Markers are **merged** — overwriting drops the shell markers and a different
+    // check fails first (this misled the author twice while writing these tests).
     markers: { ontologyNav: true, sourceVaultNav: true, ...markerOverrides },
     ...overrides,
   };
@@ -68,7 +75,7 @@ test("payload contract · 워크벤치 마커가 현행 한국어 셸을 받는�
     true,
     "현행 셸 문구가 마커를 통과하지 못한다 — 마커가 낡았다",
   );
-  // 공회전 차단: 마커가 아무거나 통과시키면 이 검사는 없는 것이다.
+  // Idling guard: if the markers pass anything, this check does not exist.
   assert.equal(
     WEBVIEW_WORKBENCH_MARKERS.every((marker) => marker.test("lorem ipsum")),
     false,
@@ -127,7 +134,7 @@ test("payload contract · 모양이 틀린 페이로드를 이유와 함께 막�
     validateWebviewVerifyPayload(validPayload({ bodyText: "lorem ipsum dolor" })),
     /workbench markers/,
   );
-  // 마커 자체가 없는 경우는 병합을 우회해서 직접 만든다.
+  // The "no markers at all" case bypasses the merge and is built directly.
   assert.match(
     validateWebviewVerifyPayload({ ...validPayload(), markers: null }),
     /structured markers/,
@@ -144,8 +151,9 @@ test("payload contract · 라우트를 확인한다", () => {
 
 test("payload contract · 픽스처 볼트가 그 볼트인지 확인한다", () => {
   const vault = "/tmp/atlas-fixture";
-  // 볼트를 요구했는데 다른 볼트(또는 없음)면 막는다 — 사용자의 실제 볼트를 읽고
-  // 검증했다고 말하는 것이 이 검사가 막으려는 사고다.
+  // Blocks a different vault (or none) when a vault was requested — the accident
+  // this guards against is claiming verification after reading the user's real
+  // vault.
   assert.match(
     validateWebviewVerifyPayload(validPayload(), { expectedFixtureVault: vault }),
     /fixture vault/,
@@ -201,9 +209,9 @@ test("payload contract · 중첩 JSON 을 그대로 되읽는다", () => {
 
 test("payload contract · 지도 라우트의 요구는 여전히 살아 있다", () => {
   /*
-   * 은퇴시킨 것은 **카드 시절 프로브**이고, 지도 페이로드의 기본 요구는 그대로다.
-   * 이 시험이 없으면 「일반 계약만 재는 파일」이 되어, 지도 쪽이 조용히 무력해져도
-   * 아무도 모른다.
+   * What was retired is **the card-era probes**; the map payload's baseline
+   * requirements stand. Without this test the file would measure only the general
+   * contract, and the map side could go silently inert with nobody noticing.
    */
   const message = validateWebviewVerifyPayload(
     validPayload({ href: "tauri://localhost/ko/topology/" }),

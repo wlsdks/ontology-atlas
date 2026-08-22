@@ -45,11 +45,10 @@ import { findProjectDocInList } from "@/entities/docs-vault";
 // token set.
 
 /*
- * ⚠️ **무게를 명시한다 — `<b>` 는 안 적으면 브라우저 기본 700 이다** (2026-08-05).
- * 700 은 이 저장소의 무게 램프(510/560/650) 밖이고, 형제인
- * `DomainCompositionGrid` 의 음각 숫자 `<b>` 는 이미 `strong`(650)이었다.
- * 값이 코드에 하나도 안 남는 결함이라 lint 도 소스 스캔도 못 본다 — 빌드된
- * 화면을 재서야 잡혔다.
+ * ⚠️ **State the weight — an unstyled `<b>` is the browser default of 700** (2026-08-05).
+ * 700 is outside this repository's weight ramp (510/560/650), and the engraved-numeral `<b>` in the
+ * sibling `DomainCompositionGrid` was already `strong` (650). The defect leaves no value in the code
+ * at all, so neither lint nor a source scan can see it — it was caught only by measuring the built screen.
  */
 const numeralClass =
   "font-mono font-[var(--font-weight-strong)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]";
@@ -70,16 +69,16 @@ export function ProjectSelectorPage() {
   const { projects } = useProjects();
   const { insight } = useOntologyInsight();
   const docs = useVaultDocs();
-  // 값을 읽는 곳이 없어서 바인딩만 지웠다. 호출은 남긴다 — `useLocalVault()` 는
-  // Provider 밖에서 throw 하므로, 이 한 줄이 「이 화면은 LocalVaultProvider 아래
-  // 있다」는 마운트 시점 단언이자 vault 구독이다. 호출까지 지우는 것은 렌더
-  // 횟수를 바꾸는 일이라 lint 정리의 몫이 아니다.
+  // Only the binding was removed because nothing reads the value; the call stays. `useLocalVault()`
+  // throws outside its Provider, so this one line is both a mount-time assertion that this screen sits
+  // under `LocalVaultProvider` and the vault subscription. Removing the call too would change the
+  // render count, which is not lint cleanup's business.
   useLocalVault();
   const dataSourceMode = useDataSourceMode();
 
-  // #15 설정 위치 통일 — 지도(HomePage)·인사이트와 동일하게 lg+ 는 나브레일
-  // 하단 rail-tile 톱니가 설정을 연다. <lg 는 아래 상단 유틸 레인의
-  // chrome-tile 이 담당(레일이 숨는 폭). 둘 다 uncontrolled.
+  // At lg+ the gear at the bottom of the nav rail opens settings, matching the map and insights.
+  // Below lg the chrome tile in the utility lane above takes over (the rail is hidden at that width).
+  // Both uncontrolled.
   const navRailSettingsSlot = useMemo(
     () => <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />,
     [dataSourceMode],
@@ -116,36 +115,36 @@ export function ProjectSelectorPage() {
 
   return (
     <div className="flex min-h-full w-full">
-      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
+      {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 bg-[color:var(--color-canvas)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
         {/*
-         * ⚠️ **실시간 표시를 여기서 뺐다** (2026-08-03, 소유자 지적).
+         * ⚠️ **The live indicator was removed from here** (owner report, 2026-08-03).
          *
-         * 「실시간 · 추적 중 · 변경 8」은 **지도의 물건**이다 — 무엇이 바뀌었는지
-         * 를 노드 위에 그려 주기 때문에 거기서는 그 수가 다음 행동으로 이어진다.
-         * 프로젝트 목록은 훑는 화면이라 그 수가 갈 곳이 없고, 대신 **화면에서
-         * 가장 센 잉크를 우상단에서 가져가고** 자기 줄까지 예약해 아래 내용을
-         * 통째로 밀어냈다(실측: lg+ 에서 이 줄의 유일한 내용이 그 칩이다).
+         * "Live · tracking · 8 changes" is **the map's object** — there it draws what changed onto the
+         * nodes, so the number leads to a next action. The project list is a screen you skim, where
+         * that number has nowhere to go, and instead it **took the strongest ink on the screen at the
+         * top right** and reserved a whole row, pushing everything below it down (measured: at lg+ that
+         * chip was the only content in this row).
          *
-         * 그래서 줄 자체도 `lg:hidden` 이다 — 레일이 설정을 지는 폭에서는 이
-         * 줄에 남는 것이 없고, 빈 줄이 자리를 지키면 그건 여백이 아니라 결함이다.
+         * So the row itself is `lg:hidden` — at widths where the rail carries settings, nothing is left
+         * in this row, and an empty row holding its place is a defect, not whitespace.
          */}
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 lg:hidden">
           <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
         </div>
         <div className={`${PAGE_FRAME} pb-6 md:pb-10`}>
         {/*
-         * ⚠️ **빵부스러기 줄을 통째로 뺐다** (2026-08-09, 소유자 지적 2건).
+         * ⚠️ **The breadcrumb row was removed entirely** (two owner reports, 2026-08-09).
          *
-         * ① 「← 지도」 — 왼쪽 레일이 이미 지도를 지고 있고, 지금 어디 있는지도
-         *    레일이 강조한다. 같은 목적지로 가는 입구가 둘이면 그게 `#65` 계열
-         *    혼란이다.
-         * ② 「폴더 전체 112 개념 · 241 관계」 — **아래 카드를 다르게 쪼갠 것이다.**
-         *    실측: 49 역량 + 54 요소 + 8 도메인 + 1 프로젝트 = **정확히 112**.
-         *    관계만 8 차이(프로젝트 밖 관계)다. 예전 주석은 이 겹침을 알고도
-         *    「스코프를 말하면 된다」로 넘겼는데, 소유자 판정은 그 반대였다 —
-         *    *"이런거 좀 혼란스러워 위에줄에 정보는 필요없고"*. 말로 구분하게
-         *    만드는 대신 **한 곳에서만 센다**: 프로젝트 카드 안.
+         * ① "← map" — the left rail already carries the map and highlights where you are. Two entrances
+         *    to one destination is exactly that class of confusion.
+         * ② "whole folder: 112 concepts · 241 relations" — **that is the cards below, sliced
+         *    differently.** Measured: 49 capabilities + 54 elements + 8 domains + 1 project = **exactly
+         *    112**. Only relations differed by 8 (relations outside the project). The old comment knew
+         *    about this overlap and waved it away with "just state the scope"; the owner's verdict was
+         *    the opposite — *"이런거 좀 혼란스러워 위에줄에 정보는 필요없고"* (this sort of thing is
+         *    confusing; the top row doesn't need information). Rather than making people distinguish by
+         *    words, **count it in one place**: inside the project card.
          */}
 
         <header className={PAGE_HEADER_ROW}>
@@ -174,17 +173,15 @@ export function ProjectSelectorPage() {
           {t("lede")}
         </p>
 
-        {/* Toss P1 — 프로젝트 카드가 이 페이지의 1차 콘텐츠, 최근 활동은
-            그 아래 보조 피드다. 이전엔 활동 피드가 카드보다 위에 있어
-            초점이 경쟁했다(방문자가 찾는 건 "내 프로젝트들"이지 "최근 어떤
-            문서가 바뀌었나"가 아니다). */}
+        {/* Project cards are this page's primary content and recent activity is a secondary feed
+            beneath them. The activity feed used to sit above the cards and competed for focus — a
+            visitor is looking for "my projects", not "which document changed recently". */}
         {projects.length > 0 ? (
           <div className="mt-7 flex flex-col gap-5">
             {projects.map((project) => {
-              // 문서 역참조는 `findProjectDocInList` 한 곳만 쓴다 —
-              // `VaultDoc.slug`(파일 경로)와 `Project.slug`(frontmatter)를
-              // 직접 비교하면 frontmatter 로 slug 를 명시한 프로젝트를 못
-              // 찾아, 카드만 "설명 없음" 으로 거짓말하게 된다.
+              // Document lookup goes only through `findProjectDocInList` — comparing `VaultDoc.slug`
+              // (the file path) against `Project.slug` (frontmatter) directly fails to find any project
+              // that declared its slug in frontmatter, so the card alone lies with "no description".
               const doc = findProjectDocInList(docs, project.slug);
               return (
                 <ProjectFullCard
@@ -252,9 +249,9 @@ export function ProjectSelectorPage() {
               {t("nextSlotSub")}
             </span>
           </div>
-          {/* 사람-우선: 첫 줄은 평문 인간 경로(위 「새 프로젝트」 버튼). 아래
-              두 코드 칩은 개발자·에이전트용 선택 경로로 명시 강등한다 — 삭제
-              아님(코드 문자열 자체는 보존). */}
+          {/* People first: the top line is the plain human path (the "new project" button above). The
+              two code chips below are explicitly demoted as the developer and agent path — demoted, not
+              deleted (the code strings themselves are preserved). */}
           <p className="mt-3 max-w-[640px] text-body leading-title text-[color:var(--color-text-secondary)]">
             {t("nextSlotHumanLead")}
           </p>
@@ -284,8 +281,8 @@ export function ProjectSelectorPage() {
                 {t("nextSlotAgentCaption")}
               </span>
             </div>
-            {/* CLI 줄이 `$ATLAS` 로 시작한다 — 채우는 법을 같은 자리에서
-                말한다(`cli-invocation.ts` 의 계약). */}
+            {/* The CLI line starts with `$ATLAS` — how to fill it in is stated in the same place
+                (the contract in `cli-invocation.ts`). */}
             <p
               data-testid="project-selector-cli-placeholder-hint"
               className="mt-2 text-label leading-prose text-[color:var(--color-text-quaternary)]"
@@ -304,10 +301,10 @@ interface ProjectFullCardProps {
   project: Project;
   facts: ReturnType<typeof buildProjectCardFacts>;
   domainRows: DomainCompositionRow[];
-  /** Toss P2 — 사용자가 frontmatter `description:` 에 직접 쓴 한 줄만.
-   * `Project.description` (엔티티 레이어)은 없으면 body 발췌로 fallback 하는데,
-   * 그 발췌가 내부 포지셔닝 카피일 수 있어 카드에는 절대 쓰지 않는다
-   * (`resolveAuthoredDescription` 참고). */
+  /** Only the single line the user wrote themselves in frontmatter `description:`.
+   * `Project.description` (the entity layer) falls back to a body excerpt when absent, and that
+   * excerpt can be internal positioning copy, so it is never used on a card
+   * (see `resolveAuthoredDescription`). */
   description: string | null;
   docPath: string | undefined;
   kindLabel: (kind: string) => string;
@@ -320,11 +317,11 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
   return (
     <article
       data-testid="project-selector-card"
-      // 드롭 그림자를 걷었다 (2026-08-06). 이 카드는 **떠 있지 않다** — 정적
-      // `<article>` 이고 sticky 도 z-index 도 없다. 같은 레시피의 정적 카드
-      // 셋(`:238` · `ProjectForm` 의 두 절 카드)은 전부 inset 재질만 쓰는데,
-      // 여기만 `0 14px 34px` 를 손으로 얹어 램프 밖 단을 하나 만들고 있었다.
-      // 드롭은 떠 있는 것의 몫이다.
+      // The drop shadow was removed (2026-08-06). This card **is not floating** — it is a static
+      // `<article>` with no sticky and no z-index. The three static cards on the same recipe (`:238`
+      // and the two section cards in `ProjectForm`) all use inset material only, while this one alone
+      // hand-applied `0 14px 34px`, creating a step outside the ramp. Drop shadows belong to things
+      // that float.
       className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-6 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2)] transition-colors hover:border-[color:var(--color-border-strong)]"
     >
       <div className="flex items-start gap-3.5">
@@ -346,12 +343,13 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
         </span>
       </div>
 
-      {/* 규모를 잘 말하는 역량·요소를 앞·크게, 도메인·문서·관계는 부수치로 작게.
-          ⚠️ 배경은 **앱 램프의 `--color-overlay-1`** 이다. 예전에는 지도 패널 전용
-          토큰(`--topology-v2-panel-metric-surface`, 알파 0.03)을 쓰고 있었는데,
-          이 카드는 지도 패널이 아니다. 그 결과 앱 램프에 없는 알파가 화면에 하나
-          생겼다(램프는 0.02 · 0.06 · 0.10). 대체값으로 이미 `overlay-1` 이 적혀
-          있었으니 원래 목적지를 알고 있었던 셈이다. 실제 차이는 알파 0.01. */}
+      {/* Capabilities and elements, which say the most about scale, come first and larger; domains,
+          documents, and relations are smaller secondary figures.
+          ⚠️ The background is **the app ramp's `--color-overlay-1`**. It used to use a map-panel-only
+          token (`--topology-v2-panel-metric-surface`, alpha 0.03), but this card is not a map panel.
+          That put an alpha on screen that the app ramp does not have (the ramp is 0.02, 0.06, 0.10).
+          `overlay-1` was already written as the fallback value, so the intended destination was known
+          all along. The real difference is 0.01 of alpha. */}
       <div className="mt-4 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-2.5">
         <p className="mb-1.5 text-label text-[color:var(--color-text-quaternary)]">
           {t("factStripGloss")}
@@ -368,8 +366,8 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
 
       {domainRows.length > 0 ? (
         <div className="mt-4 flex flex-col gap-1">
-          {/* 막대 두 조각의 열쇠는 이 막대 묶음에 한 줄만 — 행마다 반복하면
-              여섯 행 × 두 개로 열쇠가 소음이 된다. */}
+          {/* The key to the bar's two segments appears once per group of bars — repeating it per row
+              turns the key into noise across six rows × two segments. */}
           <DomainCapacityLegend
             labels={{ capabilityUnit: kindLabel("capability"), elementUnit: kindLabel("element") }}
             className="mb-1.5"
@@ -388,10 +386,10 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
               titleWidthClassName="sm:w-[200px] md:w-[280px]"
             />
           ))}
-          {/* 바로 위 계량 띠는 38 역량 · 245 요소인데, 이 막대들의 행 합은
-              40 · 279 다. 계산은 둘 다 맞다 — 여러 도메인에 속한 개념은 도메인
-              마다 한 번씩 세어진다. 그 사실이 인사이트 구성 탭에만 적혀 있어
-              여기서는 어긋난 수로만 보였다. 막대의 각주이므로 막대 아래에 둔다. */}
+          {/* The metric band directly above reads 38 capabilities · 245 elements, while these bars sum
+              to 40 · 279 by row. Both are correct — a concept belonging to several domains is counted
+              once per domain. That fact was written only in the insights composition tab, so here it
+              looked simply like mismatched numbers. It is a footnote to the bars, so it sits below them. */}
           <p
             data-testid="project-selector-domain-overlap-note"
             className="mt-1.5 text-label text-[color:var(--color-text-quaternary)]"
@@ -417,8 +415,8 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
         >
           {t("footTopologyView")}
         </Link>
-        {/* 갱신 시각은 상단 「최근 갱신」으로 일원화 — 이 줄은 파일 경로
-            브레드크럼으로 quaternary·caption 강등해 중복 경합을 없앤다. */}
+          {/* The update time is consolidated into "last updated" at the top — this line is demoted to a
+              file-path breadcrumb at quaternary/caption to remove the duplicate competition. */}
         <span className="ml-auto whitespace-nowrap font-mono text-caption tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
           {t("footUpdated", {
             date: formatDate(project.updatedAt),
@@ -439,8 +437,8 @@ function FactItem({
   value: number;
   emphasis?: boolean;
 }) {
-  // 강조치(역량·요소)는 숫자를 앞·크게 세워 규모를 먼저 읽히고, 부수치는
-  // 작은 라벨 우선 배치로 낮춘다 — 크기/순서 차이만으로 위계.
+  // Emphasised figures (capabilities, elements) put the number first and large so scale reads first;
+  // secondary figures are lowered with a label-first layout — hierarchy from size and order alone.
   if (emphasis) {
     return (
       <span className="inline-flex items-baseline gap-1.5">

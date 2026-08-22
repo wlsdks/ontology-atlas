@@ -65,11 +65,11 @@ const liveTriggerName =
   "Live: changed ontology nodes and agent heartbeat — 3 ontology nodes changed since the current baseline";
 
 /**
- * 「닫혔다」의 판정 — **없어졌다가 아니라 나가는 중이고 못 눌린다.**
+ * What "closed" means here — **not gone, but leaving and unpressable.**
  *
- * 이 팝오버는 `Surface` 위에 산다(2026-08-04). 닫으면 퇴장 창(≈140ms) 동안
- * DOM 에 남고 그동안 `inert` + `pointer-events-none` 이라 입력을 못 먹는다.
- * 즉시 소멸을 단언하면 그건 **하드컷을 요구하는 테스트**다.
+ * This popover lives on `Surface` (2026-08-04). On close it stays in the DOM for the exit
+ * window (≈140ms), during which `inert` + `pointer-events-none` keep it from taking input.
+ * Asserting immediate removal would be **a test demanding a hard cut.**
  */
 function expectPopoverClosed() {
   const el = screen.getByTestId("live-activity-popover-surface");

@@ -6,11 +6,10 @@ import { routing } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 import { GatewayEntryFallback } from "@/shared/ui/gateway-entry-fallback";
 
-// 각 locale page 의 canonical 은 *자기 자신 URL* 이어야 hreflang group 이
-// 정확히 동작. 이전엔 모든 locale 이 `/` 로 통일됐는데, 그러면 `/en/` 과
-// `/ko/` 가 같은 canonical → 검색엔진이 둘 중 하나만 색인 (한쪽 dedup).
-// hreflang map (layout.tsx) 의 trailing slash 정합 (PR #231) 과 같은 방향
-// 정정 — locale 별 명시 canonical.
+// Each locale page's canonical must be **its own URL** for the hreflang group to work. Every locale
+// used to be unified onto `/`, which gave `/en/` and `/ko/` the same canonical and let the search
+// engine index only one of them (deduplicating the other). This is the same direction of correction
+// as the trailing-slash alignment of the hreflang map — an explicit per-locale canonical.
 export async function generateMetadata({
   params,
 }: {
@@ -29,12 +28,13 @@ export async function generateMetadata({
   });
 }
 
-// 정적 export 에서 이 라우트의 HTML 본문은 Suspense fallback 이 전부다. 루트는
-// 이 제품의 첫 주소이므로 그 자리를 로딩 자막이 아니라 실제 첫 화면이 갖는다.
+// Under static export this route's HTML body is entirely the Suspense fallback. The root is this
+// product's first address, so that slot belongs to the real first screen rather than a loading caption.
 //
-// 2026-07-29 서명으로 `/` 의 첫 화면이 지도에서 **관문**으로 바뀌었으므로
-// fallback 도 함께 옮겼다 — 안 옮기면 대표 주소의 링크 미리보기가 실제로
-// 열리는 화면과 다른 말을 한다. 지도 설명은 그 말이 맞는 `/topology` 에 남는다.
+// With the 2026-07-29 sign-off, `/`'s first screen changed from the map to the **gateway**, so the
+// fallback moved with it — leaving it behind would make the primary address's link preview say
+// something different from what actually opens. The map description stays on `/topology`, where it
+// is true.
 export default async function Page({
   params,
 }: {

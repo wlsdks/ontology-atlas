@@ -153,10 +153,11 @@ describe("Select — disabled", () => {
 });
 
 /**
- * 2026-08-02 설치 앱 실측 회귀 — 목록이 조상의 `overflow: hidden` 에 잘려
- * 모델 7개 중 1개만 보였고(가시 14.8%), ArrowDown 은 화면을 1px 도 못 움직였다.
- * 자르던 조상(`.ai-row-disclosure`)의 `overflow: hidden` 은 높이 전이용이라
- * 풀 수 없으므로, 목록이 그 밖으로 나가는 것이 유일한 해였다.
+ * A regression measured in the installed app on 2026-08-02: the list was clipped
+ * by an ancestor's `overflow: hidden`, so 1 of 7 models was visible (14.8%) and
+ * ArrowDown moved the view by 0px. The clipping ancestor (`.ai-row-disclosure`)
+ * needs its `overflow: hidden` for the height transition, so moving the list
+ * outside it was the only fix.
  */
 describe("Select — 목록은 잘리는 조상 밖에 산다", () => {
   it("목록은 트리거의 DOM 서브트리가 아니라 body 아래로 포털된다", () => {
@@ -182,7 +183,7 @@ describe("Select — 목록은 잘리는 조상 밖에 산다", () => {
     fireEvent.click(screen.getByRole("combobox"));
     const listbox = screen.getByRole("listbox");
     expect(listbox).toHaveClass("fixed");
-    // 아래로 열지 위로 뒤집을지가 DOM 에 남아 있어야 계측/감사가 가능하다.
+    // Whether it opens downward or flips up must be visible in the DOM, or it cannot be measured or audited.
     expect(listbox).toHaveAttribute("data-placement");
     expect(listbox.style.maxHeight).not.toBe("");
   });
@@ -192,15 +193,16 @@ describe("Select — 목록은 잘리는 조상 밖에 산다", () => {
     fireEvent.click(screen.getByRole("combobox"));
     const option = screen.getByRole("option", { name: /요소/ });
     fireEvent.pointerDown(option);
-    // 여기서 닫히면 이어지는 click 이 사라져 **아무것도 고를 수 없다**.
+    // Closing here would swallow the following click and make **nothing selectable**.
     expect(screen.getByRole("listbox")).toBeInTheDocument();
   });
 });
 
 /**
- * 퇴장은 **눈에 보여야 하고, 접근성 트리에는 남지 않아야 한다.** 퇴장 창 동안
- * DOM 에 남는 프레임이 role 을 그대로 들고 있으면 닫힌 목록을 스크린 리더가
- * 계속 읽는다 — 모션의 대가를 접근성으로 치르는 것이다.
+ * The exit must be **visible on screen and absent from the accessibility tree.**
+ * If the frame that stays in the DOM during the exit window keeps its role, a
+ * screen reader keeps announcing a closed list — paying for motion with
+ * accessibility.
  */
 describe("Select — 퇴장 프레임", () => {
   it("닫는 순간 목록은 접근성 트리에서 빠지고 inert 가 된다", () => {

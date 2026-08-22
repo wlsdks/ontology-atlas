@@ -7,7 +7,7 @@ import { destinationTourStatusKey } from "../model/tour-storage";
 import { DestinationGuide } from "./DestinationGuide";
 
 const DOCS_KEY = destinationTourStatusKey("docs");
-/** 전역 자동 표시 스위치 — 한 테스트가 끄면 다음 테스트까지 꺼진 채로 넘어간다. */
+/** The global auto-display switch — one test turning it off leaves it off for the next. */
 const AUTO_START_KEY = "ontology-atlas:guide-auto-start:v1";
 
 function renderGuide(destination: "docs" | null = "docs") {
@@ -33,13 +33,13 @@ function ReplayButton() {
 }
 
 beforeEach(() => {
-  // 자동 시작 가드는 문서 포커스를 본다(백그라운드 탭에 안내를 쏘지 않기 위해).
-  // jsdom 기본값은 포커스 없음이라 명시적으로 세운다.
+  // The auto-start guard looks at document focus (so guidance is not fired into a
+  // background tab). jsdom defaults to unfocused, so it is set explicitly.
   vi.spyOn(document, "hasFocus").mockReturnValue(true);
   window.localStorage.removeItem(DOCS_KEY);
-  // 자동 표시는 2026-08-13 부터 기본 끔(opt-in) — 자동 발화 행동을 검사하는
-  // 아래 테스트들은 스위치를 켠 상태를 전제로 한다. 기본값 자체의 검사는
-  // 「기본(저장값 없음)이면」 테스트가 따로 한다.
+  // Auto-display has been off by default (opt-in) since 2026-08-13 — the tests below
+  // that examine automatic firing assume the switch is on. The default itself is
+  // checked separately by the "with no stored value" test.
   window.localStorage.setItem(AUTO_START_KEY, "1");
   vi.useFakeTimers({ shouldAdvanceTime: true });
 });
@@ -86,10 +86,11 @@ describe("DestinationGuide", () => {
     expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
   });
 
-  // 2026-07-26 회귀 — 공방은 도착하자마자 진입 선택(`role=dialog aria-modal`)이
-  // 서는 화면이다. 그 위에 안내를 쏘면 카드가 소개하려던 선택지를 덮고
-  // `aria-modal` 이 둘이 된다(스크린리더에서 카드 소실). 결정이 끝날 때까지
-  // 기다렸다가 작업 표면에서 뜨는 것이 계약이다.
+  // Regression 2026-07-26 — the workshop is a screen where the entry choice
+  // (`role=dialog aria-modal`) stands the moment you arrive. Firing guidance over it
+  // covers the very choices the card meant to introduce and puts two `aria-modal`
+  // elements up at once (the card vanishes for a screen reader). The contract is to
+  // wait until the decision is made and appear on the work surface.
   it("결정 모달이 서 있는 동안은 겹쳐 쏘지 않고, 물러난 뒤에 뜬다", async () => {
     const modal = document.createElement("section");
     modal.setAttribute("role", "dialog");
@@ -109,9 +110,10 @@ describe("DestinationGuide", () => {
     expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
   });
 
-  // 2026-07-27 감사 D3 — 안내가 떠 있는 동안 다른 내비를 누르면 클릭이 아무
-  // 반응 없이 삼켜졌다. "막혔다" 를 말하지 않는 차단은 사용자에게 "고장" 으로
-  // 읽힌다. 막힌 자리를 누르면 안내가 물러나고, 한 번 더 누르면 간다.
+  // Audit 2026-07-27 — pressing any other navigation while the guidance was up
+  // swallowed the click with no response. Blocking that does not say "blocked" reads
+  // to the user as "broken". Pressing a blocked spot withdraws the guidance, and a
+  // second press goes through.
   it("막힌 자리를 누르면 안내가 물러난다 — 말없이 삼키지 않는다", async () => {
     renderGuide();
     await act(async () => {
@@ -127,9 +129,10 @@ describe("DestinationGuide", () => {
     expect(screen.queryByTestId("guided-tour-card")).toBeNull();
   });
 
-  // 2026-07-28 판정 ① — 지도만 받았던 「대기 중 사용자가 먼저 움직이면 발화
-  // 취소」 가드를 목적지 투어 다섯에도 이식했다. 대기 창이 30초라, 그 사이
-  // 스스로 탐색을 시작한 사람 위로 뒤늦게 카드가 뜨는 것이 결함이었다.
+  // Verdict ① of 2026-07-28 — the "cancel the firing if the user moves first while
+  // waiting" guard, which only the map had, was ported to the five destination tours.
+  // With a 30-second waiting window, a card appearing belatedly over someone who had
+  // started exploring on their own was the defect.
   it("대기 중 사용자가 먼저 움직이면 안내가 아예 뜨지 않는다", async () => {
     renderGuide();
     await act(async () => {
@@ -179,11 +182,12 @@ describe("DestinationGuide", () => {
 });
 
 /**
- * 스위치의 진짜 계약 — **끄면 자동만 멎고, 부르면 여전히 온다.**
+ * The switch's real contract — **off stops only the automatic, and calling it still works.**
  *
- * 이 둘을 한 테스트에 묶는 이유: 반쪽만 지키면 각각 다른 결함이 된다. 자동이
- * 안 멎으면 스위치가 거짓말이고, 부를 때도 안 오면 스위치가 아니라 **삭제**다.
- * 소유자가 요청한 것은 후자가 아니다("아니면 클릭했을때나").
+ * Why both are in one test: honouring only half becomes a different defect each way.
+ * If the automatic does not stop, the switch is a lie; if it also does not come when
+ * called, that is not a switch but **deletion**. The owner asked for the former
+ * ("아니면 클릭했을때나" — or else when clicked).
  */
 describe("화면 안내 자동 표시 스위치", () => {
   it("끄면 목적지 안내가 저절로 뜨지 않는다", async () => {

@@ -1,18 +1,20 @@
 #!/usr/bin/env node
 /**
- * 빌드된 정적 export(`out/`)를 서빙한다 — **의존성 0**.
+ * Serves the built static export (`out/`) with **zero dependencies**.
  *
- * 왜 필요한가: dev 서버에는 없는 층을 재야 하는 e2e 스펙이 있다. 2026-07-28
- * 실측으로 공방의 같은-라우트 이동이 프로덕션 export 에서만 죽어 있었는데
- * (경로가 같고 쿼리만 다른 `router.push` 가 no-op), dev 는 같은 코드로 둘 다
- * 성공해 **그 결함에 대해 진단력이 0** 이었다. dev 에서만 도는 게이트는 그
- * 부류의 회귀를 영원히 통과시킨다.
+ * Why it exists: some e2e specs must measure a layer the dev server does not
+ * have. Measured 2026-07-28, same-route navigation in the studio was dead only in
+ * the production export (a `router.push` differing solely in query string was a
+ * no-op), while dev succeeded on the same code — giving the dev server **zero
+ * diagnostic power** for that defect. A gate that runs only against dev passes
+ * that whole class of regression forever.
  *
- * 왜 패키지를 안 쓰나: `serve`/`http-server` 를 넣으면 e2e 하나 때문에 배포
- * 표면에 의존성이 하나 는다. `trailingSlash: true` 정적 사이트의 라우팅은
- * "디렉토리면 `index.html`" 한 줄이면 끝나므로 값이 안 맞는다.
+ * Why not a package: adding `serve`/`http-server` puts one more dependency on the
+ * release surface for the sake of one e2e. Routing for a `trailingSlash: true`
+ * static site is one line ("a directory means `index.html`"), so it is not worth
+ * it.
  *
- * 사용: `node scripts/serve-static-export.mjs [--port=4173] [--dir=out]`
+ * Usage: `node scripts/serve-static-export.mjs [--port=4173] [--dir=out]`
  */
 import { createServer } from "node:http";
 import { createReadStream } from "node:fs";
@@ -52,7 +54,7 @@ async function resolveExistingInside(rootReal, candidate) {
   }
 }
 
-/** 디렉토리면 `index.html` — `trailingSlash: true` export 의 라우팅 전부다. */
+/** A directory means `index.html` — that is the whole routing of a `trailingSlash: true` export. */
 export async function resolveStaticExportFile(rootPath, urlPath) {
   let decoded;
   try {
@@ -80,7 +82,7 @@ export async function resolveStaticExportFile(rootPath, urlPath) {
   }
   if (resolved?.info.isFile()) return resolved.path;
 
-  // 확장자 없는 경로는 `<path>.html` 도 본다 — export 가 그렇게도 낸다.
+  // An extensionless path also tries `<path>.html` — the export emits that form too.
   if (path.extname(target)) return null;
   const html = await resolveExistingInside(rootReal, `${target}.html`);
   return html?.info.isFile() ? html.path : null;

@@ -1,23 +1,26 @@
 #!/usr/bin/env node
-// "영역 전개" (realm) 전환 프레임타임 실측 — topology-map-v2 S5 깊이 연출 검증용.
+// Frame-time measurement for the realm ("영역 전개") transition — verifies the
+// topology-map-v2 S5 depth staging.
 //
-// 프로덕션 코드에는 계측을 심지 않는다(오염 금지). 대신 이미 떠 있는 dev 서버
-// (:3107)를 읽기 전용으로 재사용해 Playwright 로 실제 화면을 몰고, 페이지 안에
-// 주입한 rAF 프로브 + PerformanceObserver(longtask)로 프레임 델타를 수집해
-// p95 프레임타임을 출력한다. 자체 빌드/서버를 띄우지 않는다.
+// No instrumentation is planted in production code. Instead an already-running
+// dev server (:3107) is reused read-only, Playwright drives the real screen, and
+// an injected rAF probe plus a PerformanceObserver (longtask) collect frame
+// deltas to print p95 frame time. This script builds nothing and starts no
+// server of its own.
 //
-// 흐름: `/ko/topology/?synth=N&p=<root>` 진입(전체 지도 정착) → 궤도 "영역 전개"
-// 버튼 클릭(전개 = entering 전환) → 대기 → 영역 칩 "영역 나가기" 클릭(해제) →
-// 대기. 진입 후 클릭으로 전개를 트리거하므로 초기 리빌 연출과 전환이 섞이지
-// 않는다.
+// Flow: open `/ko/topology/?synth=N&p=<root>` (let the full map settle) → click
+// the orbit's realm-enter button (entering transition) → wait → click the realm
+// chip's exit button → wait. Triggering the entry by click after the page has
+// settled keeps the initial reveal staging from mixing into the transition.
 //
-// 사용:
+// Usage:
 //   node scripts/perf-realm-transition.mjs
 //   node scripts/perf-realm-transition.mjs --synth=2000 --root=synth-domain-0
 //   node scripts/perf-realm-transition.mjs --base=http://localhost:3107 --json
 //   node scripts/perf-realm-transition.mjs --headed --budget-ms=20
 //
-// 목표: 전환 창 p95 ≤ 20ms. 초과 시 exit 1 + 병목 힌트.
+// Target: p95 ≤ 20ms inside the transition window. Over budget exits 1 with a
+// bottleneck hint.
 
 import { chromium } from "@playwright/test";
 
@@ -34,7 +37,7 @@ const locale = getArg("locale", "ko");
 const synth = Number(getArg("synth", "2000"));
 const root = getArg("root", "synth-domain-0");
 const budgetMs = Number(getArg("budget-ms", "20"));
-// ko 라벨(메시지 파일과 동기 — messages/ko.json realm.enterAction/chipClear).
+// ko labels, kept in sync with messages/ko.json realm.enterAction/chipClear.
 const enterLabel = getArg("enter-label", "영역 전개");
 const exitLabel = getArg("exit-label", "영역 나가기");
 
@@ -43,9 +46,9 @@ if (!Number.isFinite(synth) || synth < 100) {
   process.exit(2);
 }
 
-const ENTER_WINDOW_MS = 1600; // 전개(entering→active): 봉투 1180 + 여유.
-const EXIT_WINDOW_MS = 1400; // 해제(exiting→idle): S6 역재생 봉투 800 + 여유.
-const SETTLE_MS = 3200; // 초기 지도 정착 대기.
+const ENTER_WINDOW_MS = 1600; // entering→active: the 1180 envelope plus slack.
+const EXIT_WINDOW_MS = 1400; // exiting→idle: the S6 reverse envelope of 800 plus slack.
+const SETTLE_MS = 3200; // Wait for the initial map to settle.
 
 function percentile(sorted, p) {
   if (sorted.length === 0) return 0;
@@ -66,7 +69,7 @@ function summarize(deltas) {
   };
 }
 
-// 페이지 안에서 rAF 프레임 델타 + longtask 수집을 켠다(라벨 구간으로 나눈다).
+// Starts in-page collection of rAF frame deltas and longtasks, segmented by label.
 async function startProbe(page) {
   await page.evaluate(() => {
     const w = /** @type {any} */ (window);
@@ -86,7 +89,7 @@ async function startProbe(page) {
       obs.observe({ entryTypes: ["longtask"] });
       w.__perfRealm.__obs = obs;
     } catch {
-      // longtask 미지원 브라우저 — rAF 델타만으로도 충분.
+      // Browser without longtask support — rAF deltas alone are enough.
     }
   });
 }
@@ -113,7 +116,7 @@ function sliceWindow(deltas, marks, fromLabel, toLabel) {
   const from = marks.find((m) => m.label === fromLabel)?.t;
   const to = marks.find((m) => m.label === toLabel)?.t;
   if (from == null || to == null) return [];
-  // 첫 델타는 워밍업(큰 값)이라 mark 이후만. dt 만 뽑는다.
+  // The first delta is a large warm-up value, so take only what follows the mark.
   return deltas.filter((d) => d.t > from && d.t <= to).map((d) => d.dt);
 }
 
@@ -136,7 +139,7 @@ async function run() {
   await page.waitForTimeout(400);
   await mark(page, "baseline-end");
 
-  // --- 전개 트리거 ---
+  // --- Trigger entry ---
   const enterBtn = page.getByRole("button", { name: enterLabel });
   await mark(page, "enter-start");
   if (await enterBtn.count().then((c) => c > 0).catch(() => false)) {
@@ -145,20 +148,20 @@ async function run() {
       await page.goto(`${url}&realm=${encodeURIComponent(root)}`, { waitUntil: "domcontentloaded" });
     });
   } else {
-    // 폴백: 버튼 미노출(=focus 미도달) 시 딥링크로 전개 트리거.
+    // Fallback: if the button never appears (focus never reached it), trigger entry via deep link.
     usedFallback = true;
     await page.goto(`${base}/${locale}/topology/?synth=${synth}&realm=${encodeURIComponent(root)}`, {
       waitUntil: "domcontentloaded",
     });
     await page.waitForSelector("canvas", { timeout: 15000 });
-    // 폴백은 remount 라 프로브가 날아간다 — 다시 켠다.
+    // The fallback remounts, which loses the probe — start it again.
     await startProbe(page);
     await mark(page, "enter-start");
   }
   await page.waitForTimeout(ENTER_WINDOW_MS);
   await mark(page, "enter-end");
 
-  // --- 해제 트리거 ---
+  // --- Trigger exit ---
   await mark(page, "exit-start");
   const exitBtn = page.getByRole("button", { name: exitLabel });
   if (await exitBtn.count().then((c) => c > 0).catch(() => false)) {

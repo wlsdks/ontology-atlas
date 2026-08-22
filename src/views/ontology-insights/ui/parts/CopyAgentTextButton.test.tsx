@@ -28,12 +28,11 @@ function renderCompactButton() {
 }
 
 /**
- * 토큰 사용 회귀 가드.
+ * A regression guard on token usage.
  *
- * 과거 idle 텍스트 색이 하드코딩 rgba(예: rgba(211,215,255,0.96)) 였던 적이
- * 있다 — 지금은 앱이 다크 단일이라(design.md, 2026-07-19) 그 hue 는
- * `--color-indigo-pale-*` 로 토큰화됐다. 이 버튼은 별도 raw 리터럴 없이
- * indigo-accent 토큰만 써야 한다.
+ * The idle text colour was once a hardcoded rgba (e.g. rgba(211,215,255,0.96)) — now that the app is
+ * dark-only (`.claude/rules/design.md`, 2026-07-19) that hue is tokenized as
+ * `--color-indigo-pale-*`. This button must use only indigo-accent tokens, with no raw literal.
  */
 describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
   beforeEach(() => {
@@ -42,23 +41,23 @@ describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
   });
 
   /**
-   * 2026-08-05 — 못박는 토큰이 `indigo-accent` 에서 `indigo-text-soft` 로 바뀌었다.
+   * 2026-08-05 — the pinned token changed from `indigo-accent` to `indigo-text-soft`.
    *
-   * 이 버튼은 인디고 **틴트**를 지고 있고 호버에서 틴트가 한 단 오른다(a06 → a13).
-   * `accent`(#7170ff) 잉크는 쉴 때 4.56 으로 겨우 통과하다가 **호버에서 4.41 로
-   * AA 를 깼다**(실측). `design.md` 의 「틴트를 지는 컨트롤의 잉크는 accentOnTint」
-   * 가 이미 처방해 둔 규칙이고, 바꾸니 8.92 / 8.66 이 됐다.
+   * This button carries an indigo **tint**, and hover raises that tint one step (a06 → a13).
+   * `accent` (#7170ff) ink barely passed at rest with 4.56 and then **broke AA at 4.41 on hover**
+   * (measured). `.claude/rules/design.md`'s rule that "a control carrying a tint uses accentOnTint
+   * ink" already prescribed this, and switching gives 8.92 / 8.66.
    *
-   * 이 테스트의 원래 의도는 **raw rgba 재등장 금지**였고 그건 그대로 지킨다 —
-   * 바뀐 것은 «어느 토큰이 맞나» 뿐이다.
+   * This test's original intent was **forbidding raw rgba from returning**, and that is unchanged —
+   * only «which token is correct» moved.
    */
   it("idle 텍스트는 하드코딩 rgba 가 아니라 틴트용 잉크 토큰을 쓴다", () => {
     renderButton();
     const button = screen.getByRole("button");
     expect(button.className).toContain("text-[color:var(--color-indigo-text-soft)]");
-    // 틴트 위에서 AA 를 깨는 accent 잉크로 되돌아가지 않는다.
+    // It must not revert to the accent ink that breaks AA on a tint.
     expect(button.className).not.toContain("text-[color:var(--color-indigo-accent)]");
-    // 과거 회귀 원인이었던 raw 리터럴 재등장 금지.
+    // The raw literal behind the earlier regression must not reappear.
     expect(button.className).not.toContain("rgba(211,215,255");
     expect(button.className).not.toContain("rgba(211, 215, 255");
   });

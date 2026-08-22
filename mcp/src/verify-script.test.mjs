@@ -1333,9 +1333,10 @@ describe('verify.mjs first-contact gates', () => {
               type: 'string',
               enum: WRITE_RELATION_TYPE_VALUES,
             },
-            // P6 회귀 게이트와 짝 — 실제 서버 inputSchema 의 why(relation_notes
-            // rationale) 블록. 픽스처에서 빠지면 base fixture 자체가 drift 로
-            // 판정돼 negative test 가 성립하지 않는다.
+            // Paired with the regression gate — the `why` (relation_notes
+            // rationale) block of the real server inputSchema. Dropping it from the
+            // fixture makes the base fixture itself read as drift, and the negative
+            // test stops holding.
             why: { type: 'string', maxLength: 300 },
             expected_mtime: { type: 'number', minimum: 0 },
           },
@@ -6049,10 +6050,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.doesNotMatch(source, /\bprocess\.exit\s*\(/);
     assert.doesNotMatch(source, /spawn\('node', \[(PARSER_TEST|SERVER_ENTRY)\]/);
     assert.match(source, /spawn\(process\.execPath, \[PARSER_TEST\]/);
-    // 서버 기동은 `SERVER_BIN_OVERRIDE`(앱 번들에 실린 바이너리)를 받을 수
-    // 있게 한 겹 들어갔다. 지켜야 할 사실은 리터럴 모양이 아니라 **기본값이
-    // 이 프로세스의 Node** 라는 것이다 — `'node'` 를 PATH 에서 찾으면 사용자
-    // 환경의 다른 Node 가 잡힌다.
+    // Server startup gained a layer so it can take `SERVER_BIN_OVERRIDE` (the
+    // binary shipped in the app bundle). What must hold is not the literal shape
+    // but that **the default is this process's Node** — resolving `'node'` from
+    // PATH picks up whatever other Node the user's environment has.
     assert.match(source, /spawn\(SERVER_COMMAND, SERVER_COMMAND_ARGS/);
     assert.match(source, /const SERVER_COMMAND = SERVER_BIN_OVERRIDE \|\| process\.execPath;/);
     assert.match(source, /const SERVER_COMMAND_ARGS = SERVER_BIN_OVERRIDE \? \[\] : \[SERVER_ENTRY\];/);
@@ -11352,7 +11353,7 @@ Continue.`;
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
-      // 2026-08-17: 계약이 뒤집혔다 — 이제 **맨몸 이름**이 거절된다(실행 불가).
+      // 2026-08-17: the contract inverted — a **bare name** is now rejected (it cannot run).
       agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas health'] }),
       'agent_brief response missing cliFallbackCommands',
     );

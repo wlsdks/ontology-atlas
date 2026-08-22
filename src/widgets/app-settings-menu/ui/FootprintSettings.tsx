@@ -22,28 +22,31 @@ import {
 import { drawEdgeFootprints, drawNodeFootprint } from '@/shared/lib/footprint-glyph';
 
 /**
- * 발자국 설정 — 「지도」 서브뷰의 두 번째 세그먼트.
+ * Footprint settings — the 「지도」 subview's second segment.
  *
- * ## 왜 첫 화면이 프리셋인가
+ * ## Why the first screen is presets
  *
- * 값은 8개지만 **결정은 하나**다: "얼마나 세게 말할까". 슬라이더 8개를 첫 화면에
- * 쏟으면 고르려는 사람이 아니라 컨트롤이 주목을 가져간다. 프리셋 3개가 그 하나의
- * 결정을 먼저 받고, 세부는 「직접 맞추기」 뒤에 있다.
+ * There are 8 values but **one decision**: "how loudly should it speak". Pouring 8
+ * sliders onto the first screen lets the controls, not the person choosing, take
+ * the attention. Three presets take that one decision first, and the details sit
+ * behind 「직접 맞추기」 (adjust manually).
  *
- * ## 미리보기는 지도와 같은 렌더러다
+ * ## The preview uses the same renderer as the map
  *
- * `@/shared/lib/footprint-glyph` 의 같은 함수를 부른다. 미리보기를 따로 구현하면
- * 둘이 조용히 갈라지고, 그 순간 미리보기가 미리보기가 아니게 된다.
+ * It calls the same functions from `@/shared/lib/footprint-glyph`. A separate
+ * preview implementation would silently diverge, and at that moment the preview
+ * stops being a preview.
  */
 
 const PRESET_ORDER: readonly FootprintPresetName[] = ['subtle', 'default', 'bold'];
 
 /**
- * 미리보기 높이(px) — **고정**이다. 폭은 칸을 채운다.
+ * Preview height in px — **fixed**. The width fills the pane.
  *
- * 종전엔 폭까지 260px 로 고정해서 넓은 칸 안에 작은 상자가 떠 있었다(소유자:
- * *"너무 못생겼잖아"*). 미리보기는 이 절의 주인공이라 칸을 채워야 하고, 높이는
- * 절을 바꿔도 창이 흔들리지 않게 고정이어야 한다.
+ * The width used to be fixed at 260px too, leaving a small box floating inside a
+ * wide pane (owner: *"너무 못생겼잖아"* — that's just ugly). The preview is this
+ * section's protagonist, so it must fill the pane, and the height must be fixed so
+ * the window does not wobble when sections change.
  */
 const PREVIEW_H = 176;
 
@@ -53,7 +56,7 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // 폭은 레이아웃이 정하므로 렌더 시점에 실제 폭을 재서 백킹 크기를 맞춘다.
+    // The width is decided by layout, so the real width is measured at render time to size the backing store.
     const PREVIEW_W = Math.max(240, Math.round(canvas.getBoundingClientRect().width));
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = PREVIEW_W * dpr;
@@ -75,7 +78,7 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
     ctx.fillStyle = read('--topology-v2-canvas-bg-near', '#0a0a0d');
     ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
 
-    // 노드 둘 + 관계선 하나 — 지도에서 발자국이 앉는 두 자리를 다 보여준다.
+    // Two nodes plus one relation line — both places a footprint sits on the map.
     const r = 15;
     const inset = 76;
     const a = { x: inset, y: PREVIEW_H / 2 };
@@ -126,14 +129,16 @@ export function FootprintSettings() {
       <FootprintPreview pref={pref} />
 
       {/*
-        프리셋은 **한 줄 세그먼트**다. 종전엔 칸 폭을 3등분한 큰 버튼이라 세 개가
-        패널을 지배했는데, 이건 "세기 하나 고르기" 라는 작은 결정이다. 컨트롤의
-        시각 무게는 결정의 무게를 따라야 한다.
+        The presets are **one segmented row**. They used to be large buttons splitting
+        the pane into thirds, so all three dominated the panel — but this is a small
+        decision, "pick one intensity". A control's visual weight should follow the
+        weight of its decision.
       */}
-      {/* "지금 이 프리셋인가" 는 프리셋이 정하는 값들만 비교한다 — 색·배치처럼
-          프리셋이 건드리지 않는 값이 달라도 프리셋은 여전히 그 프리셋이다.
-          어느 프리셋과도 안 맞으면 value 가 어떤 옵션과도 불일치 → 체크 0
-          (APG: 첫 항목이 탭 스톱) — 프리미티브가 그 상태를 그대로 지원한다. */}
+      {/* "Is this the current preset" compares only the values the preset sets — a
+          preset is still that preset even if colour or layout, which it does not
+          touch, differ. Matching no preset leaves the value matching no option → zero
+          checked (APG: the first item is the tab stop), and the primitive supports
+          that state directly. */}
       <SegmentedControl
         ariaLabel={t('presetLabel')}
         className="justify-self-start"
@@ -191,8 +196,9 @@ export function FootprintSettings() {
             ]}
             onChange={(filled) => set({ filled })}
           />
-          {/* 테두리 굵기는 **윤곽선일 때만** 보인다 — 채움 상태에서는 화면에
-              아무 영향이 없어, 노출해 두면 "만져도 안 바뀌는 컨트롤"이 된다. */}
+          {/* Border width is visible **only in outline mode** — in the filled state it
+              has no effect on screen, so leaving it exposed makes it "a control that
+              does nothing when you touch it". */}
           {pref.filled ? null : (
             <Slider
               label={t('strokeWidth')}

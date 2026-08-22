@@ -18,8 +18,8 @@ function run(args, options = {}) {
 }
 
 /**
- * 노드 하나짜리 볼트를 만든다 — `src/features/auth/` 를 자기 구현으로 댄다.
- * git 은 필요 없다: `--changed-files` 는 파일 목록을 직접 받는 모드다.
+ * Builds a one-node vault that names `src/features/auth/` as its implementation.
+ * No git needed: `--changed-files` takes a file list directly.
  */
 function makeVaultFixture() {
   const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-freshness-args-"));
@@ -51,15 +51,16 @@ describe("vault-freshness-drift script arguments", () => {
     assert.match(result.stderr, /Either --base <ref> or --changed-files <list> is required\./);
   });
 
-  // ⚠️ **이 검사는 살아 있는 볼트의 상태를 못박고 있었다** (2026-08-17 발견).
-  // 원래는 `--changed-files README.md` 를 **이 저장소에** 돌려서 「아무것도
-  // 안 걸린다」를 단언했다. 그런데 `docs/ontology/ontology-atlas.md` 가
-  // `path: README.md` 를 갖게 되자 탐지기는 **맞게** 걸었고, 낡은 것은 전제
-  // 쪽이었다. 볼트에 노드 하나 더하면 뒤집히는 단언은 스크립트를 재는 게 아니라
-  // 볼트를 재는 것이다.
+  // ⚠️ **This check used to pin the state of the live vault** (found 2026-08-17).
+  // It ran `--changed-files README.md` against **this repository** and asserted
+  // that nothing matched. Once `docs/ontology/ontology-atlas.md` gained
+  // `path: README.md` the detector matched — **correctly** — and it was the
+  // premise that was stale. An assertion that flips when one node is added to the
+  // vault measures the vault, not the script.
   //
-  // 그리고 「0 이 나온다」만 재면 **탐지기가 늘 0을 내도 통과한다.** 그래서
-  // 같은 픽스처로 양방향을 잰다 — 안 걸리는 파일과 걸리는 파일.
+  // And asserting only "the result is 0" passes even if **the detector always
+  // returns 0**. So both directions are measured against the same fixture: a file
+  // that must not match and a file that must.
   it("--changed-files dry-run mode reports 0 drift with no vault matches", () => {
     const dir = makeVaultFixture();
     try {

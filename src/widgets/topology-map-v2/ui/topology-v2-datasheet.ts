@@ -8,11 +8,11 @@
  * derives (`TopologyNodeFocusModel`); the view maps that model into these
  * inputs. This module only groups + formats — it never recomputes counts.
  *
- * R+ 카운트 시맨틱 통일: groups used to split by relation TYPE (containment vs
- * depends) while the metric line above counted by DIRECTION (incoming vs
- * outgoing) — same words ("포함"/"의존" near "쓰는 곳"/"기대는 곳"), two
+ * R+ unified count semantics: groups used to split by relation TYPE (containment
+ * vs depends) while the metric line above counted by DIRECTION (incoming vs
+ * outgoing) — the same words (「포함」/「의존」 next to 「쓰는 곳」/「기대는 곳」), two
  * different axes, so the numbers never reconciled (persona finding: header
- * "used by 10 · depends on 73" vs groups "포함 71 / 의존 12"). Groups are now
+ * "used by 10 · depends on 73" vs groups 「포함 71 / 의존 12」). Groups are now
  * DIRECTION-based too, computed from the exact same connection set the metric
  * line counts — the header count and the group total are the SAME number by
  * construction, not just by convention. Relation TYPE (containment vs depends)
@@ -22,7 +22,7 @@
  * R+ full-detail A1: the base connection derivation (`buildConnections`/
  * `groupConnectionsByDirection` + structural types) moved to
  * `shared/lib/ontology-tree/connections.ts` so the NEW `full-detail-a1` widget
- * (topology "전체 상세" / `/ontology` full-detail surface) can reuse it too —
+ * (topology 「전체 상세」 (full detail) / `/ontology` full-detail surface) can reuse
  * FSD forbids widget→widget imports, so shared derivation lives one layer
  * down. Re-exported here under the SAME `V2`-prefixed names so this file's
  * existing consumers (`HomePage.tsx`, `TopologyV2DetailPanel`, this module's
@@ -37,34 +37,37 @@ import { groupConnectionsByRole } from "@/shared/lib/ontology-tree/connections";
 import type { DatasheetConnection as V2DatasheetConnection } from "@/shared/lib/ontology-tree/connections";
 
 /**
- * S2 파트 3 — "담는 것" 리스트가 길면(>15) 개별 행 대신 kind·경로 프리픽스별
- * 집계 요약을 보여준다(예: "cli/src/commands 48 · .claude/skills 6 · 기타 12").
- * 순수 결정론: 프리픽스별 카운트 → count 내림차순, 동률은 key 사전순 → 상위
- * `maxGroups` 만 명명, 나머지 + 프리픽스 없는 행은 `otherCount`("기타").
+ * S2 part 3 — when the 「담는 것」 (what this contains) list is long (>15), show an
+ * aggregate summary by kind and path prefix instead of individual rows (e.g.
+ * "cli/src/commands 48 · .claude/skills 6 · 기타 12"). Pure and deterministic:
+ * count per prefix → descending count, ties by key alphabetically → only the top
+ * `maxGroups` are named, and the rest plus prefix-less rows become `otherCount`
+ * (「기타」, other).
  */
 export interface V2ContainsGroupSummary {
   groups: { key: string; count: number }[];
   otherCount: number;
   total: number;
   /**
-   * B4 (H1 비개발자 언어 레이어) — 요약이 실제로 정보를 담는가. `false`면 요약이
-   * "기타" 한 덩어리로 무너져 정보가 0이라는 뜻 → 패널은 요약 대신 개별 리스트를
-   * 렌더한다. 명명 그룹이 하나라도 있으면 `true`.
+   * B4 (the H1 non-developer language layer) — does the summary actually carry
+   * information? `false` means it collapsed into a single 「기타」 (other) lump and
+   * carries nothing, so the panel renders the individual list instead. `true` as
+   * soon as one named group exists.
    */
   usable: boolean;
 }
 
-/** "담는 것" 그룹 요약을 켜는 임계 — 이 값을 **초과**하면 요약을 표시한다. */
+/** The threshold that turns the 「담는 것」 group summary on — a total **above** this shows the summary. */
 export const V2_CONTAINS_SUMMARY_THRESHOLD = 15;
 
-/** node id(`kind:slug`)에서 slug 부분만 뽑는다(`kind:` 프리픽스 제거). */
+/** Take only the slug part of a node id (`kind:slug`), dropping the `kind:` prefix. */
 function idToSlug(id: string): string {
   const colon = id.indexOf(":");
   return colon === -1 ? id : id.slice(colon + 1);
 }
 
-/** 마지막 슬래시 앞까지의 디렉터리 프리픽스 — 슬래시 없으면 null(기타). 예:
- * `cli/src/commands/add` → `cli/src/commands`. */
+/** The directory prefix up to the last slash — null with no slash (folds into 「기타」).
+ * e.g. `cli/src/commands/add` → `cli/src/commands`. */
 function deepPrefixKey(id: string): string | null {
   const slug = idToSlug(id);
   const slash = slug.lastIndexOf("/");
@@ -72,9 +75,9 @@ function deepPrefixKey(id: string): string | null {
   return slug.slice(0, slash);
 }
 
-/** 첫 경로 세그먼트(1단계) — 슬래시 없으면 null. 예:
- * `cli/src/commands/add` → `cli`, `.claude/skills/x` → `.claude`. 깊은
- * 프리픽스가 전부 count 1로 흩어져 "기타"로 무너질 때 더 굵게 재분할한다. */
+/** The first path segment (one level) — null with no slash. e.g.
+ * `cli/src/commands/add` → `cli`, `.claude/skills/x` → `.claude`. Used to re-split
+ * more coarsely when deep prefixes all scatter to count 1 and collapse into 「기타」. */
 function coarsePrefixKey(id: string): string | null {
   const slug = idToSlug(id);
   const slash = slug.indexOf("/");
@@ -82,8 +85,8 @@ function coarsePrefixKey(id: string): string | null {
   return slug.slice(0, slash);
 }
 
-/** 하나의 키 함수로 프리픽스 버킷을 만든다(순수). count 내림차순, 동률 key
- * 사전순. 상위 `cap` 만 명명하고 나머지 + 프리픽스 없는 행은 `otherCount`. */
+/** Build prefix buckets from one key function (pure). Descending count, ties by key
+ * alphabetically. Only the top `cap` are named; the rest plus prefix-less rows become `otherCount`. */
 function bucketByKey(
   rows: readonly V2DatasheetConnection[],
   keyOf: (id: string) => string | null,
@@ -109,14 +112,14 @@ function bucketByKey(
 }
 
 /**
- * 담는 것 행들을 경로 프리픽스별로 집계한다. 결정론: count 내림차순, 동률은
- * key 사전순. 상위 `maxGroups` 개만 명명하고 나머지 프리픽스 + 프리픽스 없는
- * 행은 `otherCount` 로 합친다.
+ * Aggregate 「담는 것」 rows by path prefix. Deterministic: descending count, ties by
+ * key alphabetically. Only the top `maxGroups` are named; the remaining prefixes plus
+ * prefix-less rows fold into `otherCount`.
  *
- * B4 (H1) — 깊은 프리픽스가 전부 흩어져 "기타"가 과반을 먹으면(정보 0),
- * 경로 1단계(첫 세그먼트)로 더 굵게 재분할해 실제로 나뉘는 쪽을 택한다.
- * 그래도 명명 그룹이 하나도 없으면(=슬래시 있는 행이 없음) `usable: false` 로
- * 표시해 패널이 요약 대신 개별 리스트를 렌더하게 한다.
+ * B4 (H1) — when the deep prefixes all scatter and 「기타」 takes the majority (zero
+ * information), re-split more coarsely on the first path segment and take whichever
+ * actually divides. If still no group is named (no row has a slash), mark
+ * `usable: false` so the panel renders the individual list instead.
  */
 export function summarizeContainsByPathPrefix(
   rows: readonly V2DatasheetConnection[],
@@ -126,12 +129,12 @@ export function summarizeContainsByPathPrefix(
   const cap = Math.max(0, maxGroups);
   const deep = bucketByKey(rows, deepPrefixKey, cap);
 
-  // "기타"가 과반을 차지하거나 명명 그룹이 없으면 더 굵은 1단계 프리픽스로 재시도.
+  // If 「기타」 takes the majority or no group is named, retry with the coarser one-level prefix.
   let chosen = deep;
   if (deep.groups.length === 0 || deep.otherCount * 2 > total) {
     const coarse = bucketByKey(rows, coarsePrefixKey, cap);
-    // 명명 커버리지(= total - otherCount)가 큰 쪽을 택하고, 동률이면 더 구체적인
-    // deep 을 유지한다.
+    // Take whichever has the larger named coverage (= total - otherCount), keeping the
+    // more specific deep split on a tie.
     const deepCovered = total - deep.otherCount;
     const coarseCovered = total - coarse.otherCount;
     if (coarseCovered > deepCovered) chosen = coarse;
@@ -151,14 +154,16 @@ export interface V2ConnectionGroupView {
   rows: V2DatasheetConnection[];
   total: number;
   /**
-   * 캡 없는 전체 행 — 「+N」이 죽은 수가 아니라 그 자리에서 펼치는 문이 되기
-   * 위한 재료(2026-08-13, 프로젝트 상세의 「역량 N개 더」 반려와 같은 계보).
-   * 캡 이전 배열을 그대로 참조하므로 추가 비용은 참조 하나다.
+   * The uncapped full rows — the material that makes 「+N」 a door you open in place
+   * rather than a dead number (2026-08-13, the same lineage as rejecting the project
+   * detail's 「역량 N개 더」). It references the pre-cap array directly, so the extra
+   * cost is one reference.
    */
   allRows?: V2DatasheetConnection[];
   /**
-   * S2 파트 3 — "담는 것" 그룹에만 채워지는 경로 프리픽스 집계(총 행이 임계를
-   * 넘을 때 개별 리스트 대신 표시). 전체 행 기준으로 계산(캡 이전).
+   * S2 part 3 — the path-prefix aggregate, filled only for the 「담는 것」 group (shown
+   * instead of the individual list once the total exceeds the threshold). Computed
+   * over all rows, before the cap.
    */
   summary?: V2ContainsGroupSummary;
 }
@@ -172,11 +177,12 @@ export interface V2ConnectionGroupsView {
   /**
    * Incoming containment — plain "속한 곳" (the parent(s) this node belongs to).
    *
-   * 스코프 정정 (2026-07-26): 이 버킷은 한동안 컴팩트 팝오버에서 렌더되지도,
-   * "이어진 곳" 집계에 세어지지도 않았다. 그래서 **부모만 있는 노드**(dogfood
-   * 294개 중 221개 = 75%)의 팝오버가 "이어진 곳 0" 이라고 말했다 — 바로 위에
-   * 클릭 가능한 도메인 칩을 띄운 채로. 검증 가능한 거짓이라 팝오버도 이 그룹을
-   * 그리고 집계에 포함한다(전체 상세와 같은 네 버킷·같은 단어).
+   * Scope correction (2026-07-26): for a while this bucket was neither rendered in the
+   * compact popover nor counted in the 「이어진 곳」 (connections) total. So the popover
+   * for **a node with only a parent** (221 of the dogfood's 294 = 75%) said
+   * 「이어진 곳 0」 — while showing a clickable domain chip directly above it. That is a
+   * checkable falsehood, so the popover now draws this group and counts it (the same
+   * four buckets and the same words as the full detail).
    */
   belongsTo: V2ConnectionGroupView;
 }
@@ -207,8 +213,8 @@ export function buildV2ConnectionGroups(
     allRows: rows.slice(),
   });
   return {
-    // S2 파트 3 — contains 는 전체 행 기준 경로 프리픽스 요약을 함께 싣는다
-    // (임계 초과 시 패널이 개별 리스트 대신 이 요약을 렌더).
+    // S2 part 3 — contains also carries a path-prefix summary computed over all rows
+    // (past the threshold the panel renders that summary instead of individual rows).
     contains: { ...toView(grouped.contains), summary: summarizeContainsByPathPrefix(grouped.contains) },
     usedBy: toView(grouped.usedBy),
     dependsOn: toView(grouped.dependsOn),
@@ -227,8 +233,8 @@ export interface V2MetricValues {
   dependsOn: number;
   /**
    * Direct incoming containment — plain "속한 곳" (the parent(s) this node sits
-   * inside). 부모만 있는 노드가 대다수라, 이 값이 빠지면 집계가 0 이 된다
-   * (`V2ConnectionGroupsView.belongsTo` 주석 참고).
+   * inside). Most nodes have nothing but a parent, so leaving this out zeroes the
+   * total (see the `V2ConnectionGroupsView.belongsTo` comment).
    */
   belongsTo: number;
   /** Node-level evidence references — plain "근거". */
@@ -255,12 +261,13 @@ export interface V2MetricSegment {
 /**
  * The ONE engraved metric line's segments — "담는 것 18 · 쓰는 곳 4 · 기대는
  * 곳 2 · 근거 1". Replaces the old subtitle + count boxes (the owner's
- * "정보가 세 번 나온다" complaint); every fact appears exactly once. M-2: the
- * leading "담는 것" segment appears ONLY for container nodes (`contains > 0`)
- * — a leaf's line stays "쓰는 곳 · 기대는 곳 · 근거", so the typed split adds
- * signal for domains without adding a "담는 것 0" to every element.
+ * *"정보가 세 번 나온다"* — the same information appears three times); every fact
+ * appears exactly once. M-2: the leading "담는 것" segment appears ONLY for
+ * container nodes (`contains > 0`) — a leaf's line stays "쓰는 곳 · 기대는 곳 ·
+ * 근거", so the typed split adds signal for domains without adding a "담는 것 0"
+ * to every element.
  *
- * 데이터시트 내부 정제 (2026-07-23) — segments are exposed structured (not
+ * Datasheet internal refinement (2026-07-23) — segments are exposed structured (not
  * only joined) so the panel can set label ink (tertiary) apart from value ink
  * (`--topology-v2-panel-metric-text`): the numbers are the data, the words
  * are the scale markings (Tufte data-ink). Each segment's ink pairing is the
@@ -276,8 +283,8 @@ export function buildV2MetricSegments(
     segments.push({ key: "contains", label: labels.contains, value: values.contains });
   segments.push({ key: "usedBy", label: labels.usedBy, value: values.usedBy });
   segments.push({ key: "dependsOn", label: labels.dependsOn, value: values.dependsOn });
-  // "속한 곳"도 "담는 것"과 같은 규칙 — 0 일 때만 감춘다(루트/고아 노드에
-  // "속한 곳 0" 을 붙이지 않기 위해). 있는데 감추면 그게 앞서의 결함이다.
+  // 「속한 곳」 follows the same rule as 「담는 것」 — hidden only at 0, so a root or
+  // orphan node never carries 「속한 곳 0」. Hiding it when it exists is the defect above.
   if (values.belongsTo > 0)
     segments.push({ key: "belongsTo", label: labels.belongsTo, value: values.belongsTo });
   segments.push({ key: "evidence", label: labels.evidence, value: values.evidence });
@@ -295,14 +302,14 @@ export function formatV2MetricLine(
     .join(" · ");
 }
 
-/** One row in the promoted 근거(evidence) group — RATIO-SYSTEM §4 scale-up
- * ("정보는 좋은데 너무 작고 그래"). Built from `KnowledgeGraphNode.evidenceIds`
- * (a vault slug like "capabilities/product-owner-operating-system" — the
- * node's own backing `.md`, see `derivationToInsight`'s doc comment), split
- * into a readable `title` (the last path segment) and a `path` prefix
- * (everything before it, trailing slash kept) so the row reads like the
- * mockup's doc-link ("PRODUCT-OWNER-OPERATING-SYSTEM.md" / "docs/"). Rows
- * are read-only/informational — evidenceIds are vault slugs, a different
+/** One row in the promoted 근거 (evidence) group — RATIO-SYSTEM §4 scale-up (owner:
+ * *"정보는 좋은데 너무 작고 그래"* — the information is good but far too small).
+ * Built from `KnowledgeGraphNode.evidenceIds` (a vault slug like
+ * "capabilities/product-owner-operating-system" — the node's own backing `.md`, see
+ * `derivationToInsight`'s doc comment), split into a readable `title` (the last path
+ * segment) and a `path` prefix (everything before it, trailing slash kept) so the row
+ * reads like the mockup's doc-link ("PRODUCT-OWNER-OPERATING-SYSTEM.md" / "docs/").
+ * Rows are read-only/informational — evidenceIds are vault slugs, a different
  * namespace than the canvas's graph node ids, so they are not wired to
  * `onSelectConnection`. */
 export interface V2EvidenceRow {
@@ -334,15 +341,17 @@ export function buildV2EvidenceRows(
 }
 
 /**
- * 파일경로형 문자열(슬러그/vault-path)의 마지막 세그먼트만 뽑는다 — sticky
- * 푸터가 전체 slug(`ontology/capabilities/mcp-server`)를 상시 노출하던 것의
- * 정리(Toss C2 청중 언어 평문화, 2026-07-24). `/`가 없으면 원문 그대로
- * 반환(이미 짧으므로 자를 것이 없음). 순수/결정론 — `buildV2EvidenceRows`의
- * title/path 분리와 같은 "마지막 슬래시 기준" 규칙을 재사용한다.
+ * Take only the last segment of a path-like string (a slug or vault path) — the
+ * cleanup of the sticky footer permanently exposing the whole slug
+ * (`ontology/capabilities/mcp-server`), from the 2026-07-24 Toss C2 audience-language
+ * pass. With no `/` it returns the source unchanged (already short enough to cut).
+ * Pure and deterministic — it reuses the same "split at the last slash" rule as
+ * `buildV2EvidenceRows`'s title/path split.
  *
- * 화면엔 이 결과만 보이고 원문 전체는 `title=` 네이티브 툴팁으로 접힌다 —
- * "전체 상세" 링크가 이미 목적지를 담당하므로 정보 손실은 없다(패널 쪽
- * 렌더는 `TopologyV2DetailPanel.tsx`의 sticky 푸터/근거 행 참고).
+ * Only this result is on screen and the full source folds into the native `title=`
+ * tooltip — no information is lost, because the 「전체 상세」 (full detail) link already
+ * owns that destination (for the panel-side render see the sticky footer and evidence
+ * rows in `TopologyV2DetailPanel.tsx`).
  */
 export function slugDisplaySegment(slug: string): string {
   const lastSlash = slug.lastIndexOf("/");
@@ -354,9 +363,10 @@ export interface V2HandoffInput {
   source: "loaded-vault" | "read-only-sample";
   slug: string;
   /**
-   * 이 노드에 자기 `.md` 문서가 있는가. 없으면 `slug` 는 볼트가 적어 둔 참조
-   * 원문이라 `get_concept` / `patch_concept` 이 성립하지 않는다 — 그때는
-   * 문서를 먼저 만드는 호출을 준다(미지정은 종전대로 문서 있음으로 읽는다).
+   * Does this node have its own `.md` document? Without one, `slug` is the raw
+   * reference text another document wrote down, so `get_concept` / `patch_concept`
+   * do not apply — the handoff then offers the call that creates the document first.
+   * (Unset reads as documented, as before.)
    */
   documented?: boolean;
   kind: string;
@@ -367,9 +377,9 @@ export interface V2HandoffInput {
   contains: number;
   usedBy: number;
   dependsOn: number;
-  /** Incoming containment count — 부모. 이게 빠져 있던 동안 부모만 있는 노드의
-   *  핸드오프는 `contains: 0 / used_by: 0 / depends_on: 0` 이라 에이전트에게
-   *  "고아 노드" 로 읽혔다(실제로는 도메인·역량 아래 있는 노드). */
+  /** Incoming containment count — the parent. While this was missing, the handoff for a
+   *  node with only a parent read `contains: 0 / used_by: 0 / depends_on: 0`, so an agent
+   *  saw an orphan node — when it actually sits under a domain or capability. */
   belongsTo: number;
   evidence: number;
   /** Names of the containment-child (contains) group's rows. */
@@ -378,15 +388,16 @@ export interface V2HandoffInput {
   usedByNames: readonly string[];
   /** Names of the outgoing non-containment (dependsOn) group's rows. */
   dependsNames: readonly string[];
-  /** Names of the incoming containment (belongsTo) group's rows — 부모 이름. */
+  /** Names of the incoming containment (belongsTo) group's rows — the parent names. */
   belongsToNames: readonly string[];
 }
 
 /**
- * Agent-ready handoff payload (MCP/CLI-style) for a single node — the "다음
- * 액션 복사" differentiation. Stable English field keys + a suggested MCP call
- * so it pastes cleanly into a coding agent regardless of UI locale; the button
- * label is localized, this payload is intentionally not. Deterministic.
+ * Agent-ready handoff payload (MCP/CLI-style) for a single node — the
+ * 「다음 액션 복사」 (copy the next action) differentiation. Stable English field keys
+ * + a suggested MCP call so it pastes cleanly into a coding agent regardless of UI
+ * locale; the button label is localized, this payload is intentionally not.
+ * Deterministic.
  *
  * M-2 payload shape change: containment is now its own `contains` /
  * `contains_names` fields, split OUT of `depends_on` / `depends_names` (which
@@ -404,9 +415,10 @@ export function formatV2HandoffText(input: V2HandoffInput): string {
       ? "next: open a markdown vault, then copy a node handoff from that loaded vault"
       : documented
         ? `next: get_concept("${input.slug}") → review context, then patch_concept / add_relation as needed`
-        // 문서 없는 파생 노드 — `get_concept` 은 존재하지 않는 이름을 조회하고
-        // 끝난다. 볼트가 이 개념을 아는 유일한 형태는 다른 문서가 적어 둔
-        // 참조 문자열이므로, 첫 걸음은 그 이름으로 문서를 만드는 것이다.
+        // A derived node with no document — `get_concept` would look up a name that does
+        // not exist and stop there. The only form the vault knows this concept in is a
+        // reference string written by another document, so the first step is creating a
+        // document under that name.
         : `next: add_concept({slug:"${input.slug}", kind:"${input.kind}"}) — this concept has no document yet; it exists only as a reference written in another doc`;
   return [
     `source: ${input.source}`,

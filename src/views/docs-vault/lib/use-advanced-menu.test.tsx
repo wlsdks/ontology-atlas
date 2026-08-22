@@ -67,7 +67,7 @@ describe('useAdvancedMenu', () => {
 
   it('open=false 시 listener 미등록 (cleanup verify)', () => {
     render(<MenuFixture />);
-    // 닫힌 상태에서 outside pointerdown 보내도 변화 없어야 (state 변경 0)
+    // An outside pointerdown while closed must change nothing (zero state changes).
     act(() => {
       const ev = new PointerEvent('pointerdown', { bubbles: true });
       Object.defineProperty(ev, 'target', {

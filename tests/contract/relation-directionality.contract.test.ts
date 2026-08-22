@@ -3,28 +3,31 @@ import { describe, expect, it } from "vitest";
 import { isContainmentRelation, isDirectionalRelation } from "@/shared/lib/ontology-tree/relations";
 
 /**
- * 지도가 **없는 방향을 주장하지 않는다** 는 계약.
+ * The contract that **the map does not claim a direction that does not exist.**
  *
- * 배경(2026-07-31 실측): 토폴로지 어댑터(`views/home/lib/topology-v2-adapter.ts`)
- * 가 `isContainmentRelation(type) ? "contains" : "depends"` 로 2치 분류를 하고,
- * 렌더러는 그 "depends" 전부에 **방향 테이퍼**(source 굵 → target 얇)를 그렸다.
- * 그런데 dogfood 볼트의 containment 밖 관계 89개 중 **62개(70%)가 `related_to`**
- * — 대칭 관계다. 관계선의 대다수가 거짓 인과를 주장하고 있었다.
+ * Background (measured 2026-07-31): the topology adapter
+ * (`views/home/lib/topology-v2-adapter.ts`) classified relations into two buckets with
+ * `isContainmentRelation(type) ? "contains" : "depends"`, and the renderer drew a
+ * **directional taper** (thick at source → thin at target) on every "depends". But of
+ * the dogfood vault's 89 non-containment relations, **62 (70%) were `related_to`** — a
+ * symmetric relation. Most of the edges were asserting a false causality.
  *
- * 이 계약이 lint 로 안 되는 이유: 판정에 **관계 타입 목록**(두 Set)이 필요한데
- * `no-restricted-syntax` 는 한 파일의 AST 셀렉터 매칭이라 다른 파일의 값 목록을
- * 볼 수 없다. `design.md` "lint 가 못 보는 층은 계약 테스트가 맡는다" 절 참고.
+ * Why lint cannot do this: the verdict needs **the relation type lists** (two Sets),
+ * and `no-restricted-syntax` matches selectors against one file's AST and cannot see
+ * another file's values. See `.claude/rules/design.md`, "the layer lint cannot see
+ * belongs to a contract test".
  */
 describe("relation directionality contract", () => {
   it("`related_to` 는 방향이 없다 — 두 철자 모두", () => {
-    // derive(`derive-ontology-from-vault.ts`)는 `related_to`, MCP/스키마는
-    // 키 이름 `relates` 를 쓴다. 어느 경로로 들어와도 같은 판정이어야 한다.
+    // derive (`derive-ontology-from-vault.ts`) uses `related_to` while MCP and the schema
+    // use the key name `relates`. The verdict must be the same whichever path it arrives
+    // through.
     expect(isDirectionalRelation("related_to")).toBe(false);
     expect(isDirectionalRelation("relates")).toBe(false);
   });
 
   it("의존·상위개념은 방향이 있다", () => {
-    // `is_a`(SKOS broader)는 하위 → 상위라 방향이 실재한다.
+    // `is_a` (SKOS broader) runs narrower → broader, so its direction is real.
     for (const type of ["depends_on", "is_a", "describes"]) {
       expect(isDirectionalRelation(type), type).toBe(true);
     }
@@ -37,9 +40,10 @@ describe("relation directionality contract", () => {
   });
 
   it("방향성 축과 containment 축은 서로 독립이다", () => {
-    // containment 는 "구조인가", directional 은 "방향이 있는가" — 다른 질문.
-    // 렌더에서 contains 는 실선이라 테이퍼 분기를 아예 안 타지만, 두 술어가
-    // 서로를 함의한다고 착각하면 다음 사람이 하나로 합치려 든다.
+    // Containment asks "is it structural"; directional asks "does it have a direction" —
+    // different questions. In the renderer, contains is a solid line and never enters the
+    // taper branch at all, but mistaking the two predicates for equivalents leads the next
+    // person to merge them.
     expect(isContainmentRelation("contains")).toBe(true);
     expect(isDirectionalRelation("contains")).toBe(true);
     expect(isContainmentRelation("related_to")).toBe(false);
@@ -47,8 +51,9 @@ describe("relation directionality contract", () => {
   });
 
   it("dogfood 볼트의 실측 분포에서 다수가 대칭이다 — 이 계약이 지키는 것의 크기", () => {
-    // 2026-07-31 `docs/ontology/` 전수: dependencies 27 · relates 62.
-    // 숫자가 크게 바뀌면 이 계약의 우선순위 근거도 다시 봐야 한다.
+    // Exhaustive count of `docs/ontology/`, 2026-07-31: dependencies 27, relates 62. A
+    // large change in those numbers means this contract's priority evidence should be
+    // re-examined.
     const observed = { depends_on: 27, related_to: 62 };
     const symmetric = Object.entries(observed)
       .filter(([type]) => !isDirectionalRelation(type))

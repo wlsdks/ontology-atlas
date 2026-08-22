@@ -5,13 +5,15 @@ import { ConceptEgoGraph } from "./ConceptEgoGraph";
 import type { ConceptEgo } from "../model/build-concept-ego";
 
 /**
- * **읽기표가 세는 수와 그림이 그리는 수는 같아야 한다.**
+ * **The count the reading table shows and the count the drawing renders must
+ * agree.**
  *
- * 2026-08-02 실측: 「담고 있는 것 3」이라고 써 놓고 원은 둘만 보였다. 관계가
- * 한 종류뿐이면 부채가 원 전체를 차지하는데, 슬롯을 `i/(slots-1)` 로 놓으면
- * 첫 슬롯과 끝 슬롯이 **정확히 같은 각도**라 하나가 다른 하나 밑에 숨는다.
+ * Measured 2026-08-02: the label said "contains 3" and only two circles were
+ * visible. With a single relation kind the fan spans the whole circle, and
+ * placing slots at `i/(slots-1)` puts the first and last at **exactly the same
+ * angle**, so one hides under the other.
  *
- * 겹침은 빈 칸보다 나쁘다 — 사용자가 잃은 것을 모른다.
+ * An overlap is worse than a gap — the user cannot tell what they lost.
  */
 function ego(count: number): ConceptEgo {
   return {
@@ -50,7 +52,8 @@ describe("ConceptEgoGraph — 그린 이웃 수", () => {
       const marks = screen.getAllByRole("img")[0].querySelectorAll("title");
       expect(marks.length).toBe(count);
 
-      // 좌표까지 본다 — 같은 자리에 둘이 앉으면 개수는 맞아도 하나는 안 보인다.
+      // Coordinates are checked too: two nodes at one position keep the count
+      // correct while one of them is invisible.
       const centers = [...screen.getAllByRole("img")[0].querySelectorAll("circle")]
         .map((c) => `${c.getAttribute("cx")},${c.getAttribute("cy")}`)
         .filter((v) => !v.includes("null"));

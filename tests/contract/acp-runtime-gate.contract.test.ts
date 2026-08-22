@@ -8,25 +8,25 @@ import {
 } from '@/features/acp-session/model/runtime-gate';
 
 /**
- * **화면이 「물어봐 준다」고 말하는 실행기에는 실제로 관문이 걸려야 한다.**
+ * **A runtime the screen says will ask must actually have a checkpoint in place.**
  *
- * ## 왜 이 게이트가 있나 (2026-08-16 실측)
- *
- * 관문을 세우는 방식이 도구마다 다르다는 것이 재 보고 나서야 드러났다:
+ * **Why this gate exists (measured 2026-08-16).** Only after measuring did it
+ * emerge that each tool establishes the checkpoint differently:
  *
  * | | Claude | Codex |
  * |---|---|---|
- * | 설정 격리 | 먹힌다 | **승인 정책만 무시된다** |
- * | 세션 모드 | 「읽기 전용」이 없다 | **`read-only` 가 먹힌다** |
+ * | config isolation | works | **only the approval policy is ignored** |
+ * | session mode | has no "read only" | **`read-only` works** |
  *
- * codex 는 격리한 `CODEX_HOME` 에 `approval_policy = "untrusted"` 를 넣어도
- * **권한 요청 0회에 볼트 밖 파일이 그대로 생겼다.** 같은 폴더의 `model` 값은
- * 반영됐으니 설정을 읽기는 하는 것이고, 승인 정책만 세션 모드가 덮어쓴다.
- * `read-only` 로 바꾸니 **권한 요청 1회 · 파일 안 생김 · MCP 도구는 그대로 동작**.
+ * With codex, putting `approval_policy = "untrusted"` in an isolated `CODEX_HOME`
+ * still produced **a file outside the vault after zero permission requests**. The
+ * `model` value in the same folder was applied, so the config *is* read — only the
+ * approval policy is overridden by the session mode. Switching to `read-only`
+ * gave **1 permission request, no file created, and MCP tools still working**.
  *
- * 그래서 위험은 **두 곳이 갈라지는 것**이다: 화면은 「이 도구는 물어봐 준다」고
- * 말하는데 세션은 그 모드를 안 걸거나, 반대로 모드는 거는데 화면이 말 안 하거나.
- * 둘 다 사용자가 알 방법이 없다 — 아무 에러도 안 난다.
+ * So the danger is **the two sides diverging**: the screen says this tool will ask
+ * while the session does not set that mode, or the mode is set and the screen does
+ * not say so. The user can detect neither — no error is raised.
  */
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -52,9 +52,10 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
 
   it('세션을 여는 코드가 **그 표를 실제로 쓴다**', () => {
     /*
-     * 표만 검사하면 아무도 그것을 안 읽는 날 조용히 뚫린다. 세션 시작 코드가
-     * 그 상수를 부르고, 실패하면 기록을 남기는지까지 본다 — 조용히 실패하면
-     * 관문이 없는 채로 「있다」고 말하는 화면이 된다.
+     * Checking only the table leaves a silent hole on the day nothing reads it. This
+     * also checks that the session-start code calls that constant and records a
+     * failure — failing silently produces a screen that claims a checkpoint that is
+     * not there.
      */
     const src = readFileSync(
       join(ROOT, 'src/features/acp-session/model/use-acp-session.ts'),
@@ -96,7 +97,8 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
       'utf8',
     );
     expect(src).toContain('isGuardedRuntime');
-    // 종전처럼 `isolated` 만 보고 판정하면 codex 가 관문이 있는데도 빠진다.
+    // Judging on `isolated` alone, as before, drops codex even though it has a
+    // checkpoint.
     expect(
       /\.filter\(\(r\) => r\.isolated\)/.test(src),
       '`isolated` 만 보고 세면 세션 모드로 거는 실행기가 빠진다',
@@ -105,12 +107,13 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
 
   it('건 모드를 **화면에도 반영한다** — 지금 상태를 틀리게 말하지 않는다', () => {
     /*
-     * 2026-08-16 실물 확인에서 잡힌 결함: 세션은 `read-only` 로 걸렸는데
-     * 드롭다운은 `Agent` 라고 적혀 있었다. `session/new` 가 준 값은 **모드를
-     * 걸기 전**의 것이라 그대로 두면 낡는다.
+     * Defect caught in live verification on 2026-08-16: the session was set to
+     * `read-only` while the dropdown read `Agent`. The value `session/new` returns is
+     * from **before** the mode is applied, so leaving it as-is goes stale.
      *
-     * 하필 그 값이 「폴더 밖을 물어보나」를 정하는 값이라, 가장 틀리면 안 되는
-     * 자리다. 사용자는 화면을 보고 안전하다고 믿거나 반대로 의심한다.
+     * That value happens to be the one deciding whether the agent asks before leaving
+     * the folder, which makes it the worst place to be wrong — the user trusts or
+     * distrusts safety based on that screen.
      */
     const src = readFileSync(
       join(ROOT, 'src/features/acp-session/model/use-acp-session.ts'),
@@ -123,7 +126,8 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
   });
 
   it('codex 는 실측한 그 모드로 건다', () => {
-    // 값이 바뀌면 다시 재야 한다 — 다른 모드는 관문을 세우지 못했다(실측).
+    // If this value changes it must be re-measured — other modes failed to establish
+    // the checkpoint (measured).
     expect(GATED_SESSION_MODE['codex-acp']).toBe('read-only');
   });
 });

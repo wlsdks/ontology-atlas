@@ -52,13 +52,13 @@ export const ONTOLOGY_KIND_TONE: Record<OntologyVisualKind, OntologyKindTone> = 
     nodeSize: 5.2,
   },
   element: {
-    // [strategy verdict 2026-07-21 §C] "부트스트랩 그린" 체감 해소 —
-    // sage(105,177,121, 채도 31%) → eucalyptus(124,166,141, 채도 19%),
-    // 냉색 쪽으로 미세 이동. element 가 dogfood 최다 kind(55/105)라 이
-    // 색을 쓰는 표면(인사이트 kind 막대·도메인 용량 막대)에서 지배색이
-    // 되므로 저채도로 조용하게 — topology-map-v2 캔버스는 이 팔레트가
-    // 아니라 중립 각인 토큰(`--topology-v2-node-fill-*`)을 쓴다 (Guardian
-    // 최종 검증 확인). 알파 램프(0.94/0.88/0.11/0.44)는 그대로 유지.
+    // Strategy verdict, 2026-07-21 §C — to remove the "bootstrap green" feel:
+    // sage (105,177,121, 31% saturation) → eucalyptus (124,166,141, 19%), nudged
+    // cooler. `element` is the most common kind in the dogfood vault (55/105), so it
+    // dominates any surface using this colour (the insights kind bars, the domain
+    // capacity bar) — hence low saturation to keep it quiet. The topology-map-v2
+    // canvas does not use this palette; it uses the neutral engraving tokens
+    // (`--topology-v2-node-fill-*`). The alpha ramp (0.94/0.88/0.11/0.44) is unchanged.
     hueName: "eucalyptus",
     fill: "rgba(124, 166, 141, 0.94)",
     border: "rgba(124, 166, 141, 0.88)",

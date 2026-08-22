@@ -30,8 +30,9 @@ describe("computeDomainCensusRows (Guardian I-1 — 도메인 크기 단일 진�
   });
 
   it("다중 부모 노드도 도메인마다 한 번씩 — 트리 단일-부모 유실이 없다", () => {
-    // e1 이 c1(도메인 A 소속)과 도메인 B 양쪽에 contained — 트리는 한쪽에만
-    // 배정해 다른 쪽 카운트를 잃었다 (INDEX 96 vs /projects 106 의 원인).
+    // `e1` is contained by both `c1` (in domain A) and domain B. The tree
+    // assigned it to one side and lost the other's count — the cause of the
+    // 96-vs-106 disagreement between two screens.
     const nodes = [
       node("a", "domain"),
       node("b", "domain"),

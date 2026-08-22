@@ -1,20 +1,22 @@
 /**
- * 문서 뷰어 마크다운 링크 리졸버 — 순수 함수로 추출해 단위 테스트 가능하게.
+ * The docs viewer's markdown link resolver, extracted as a pure function so it can
+ * be unit tested.
  *
- * `/docs` 뷰어의 `a` 컴포넌트가 상대 `.md` 링크를 어떻게 처리할지 결정한다.
- * 핵심 회귀: vault(예: `docs/`) **바깥**을 가리키는 상대 경로
- * (`../mcp/README.md` 처럼 `..` 로 vault root 를 벗어나는 링크) 를 그대로
- * `<a href>` 로 렌더하면, 브라우저가 이를 현재 라우트(`/ko/docs/`) 기준
- * 상대 URL(`/ko/mcp/README.md`) 로 해석해 앱 404 로 빠진다. MCP 등록 관문
- * 문서(`mcp/README.md`) 링크가 죽어 있던 원인.
+ * It decides how the `/docs` viewer's `a` component handles a relative `.md` link.
+ * The regression it exists for: a relative path pointing **outside** the vault
+ * (say `docs/`) — a link that escapes the vault root with `..`, like
+ * `../mcp/README.md` — rendered straight into `<a href>` is interpreted by the
+ * browser relative to the current route (`/ko/docs/`) as `/ko/mcp/README.md` and
+ * falls into the app's 404. That is why the link to the MCP registration doc
+ * (`mcp/README.md`) was dead.
  *
- * 결정 규칙:
- *   - 절대 URL(http(s)://…) · 앵커(`#…`) · 비-md 경로 → passthrough (기존 처리 유지)
- *   - vault 내부 상대 경로 & 알려진 slug → internal (앱 라우팅)
- *   - vault root 를 벗어나거나, 내부지만 알려지지 않은 slug →
- *       · repoBlobBase 가 주어지면 external (GitHub blob, 새 탭)
- *       · 없으면(로컬 vault 등 repo 위치 불명) unresolved — 죽은 404 대신
- *         비-라우팅 렌더로 처리
+ * Decision rules:
+ *   - absolute URL (http(s)://…) · anchor (`#…`) · non-md path → passthrough
+ *   - vault-internal relative path with a known slug → internal (app routing)
+ *   - escapes the vault root, or is internal with an unknown slug →
+ *       · with a repoBlobBase, external (GitHub blob, new tab)
+ *       · without one (a local vault, repo location unknown), unresolved — rendered
+ *         without routing rather than as a dead 404
  */
 
 export type ResolvedDocLink =
@@ -24,26 +26,26 @@ export type ResolvedDocLink =
   | { kind: 'passthrough' };
 
 export interface ResolveDocLinkParams {
-  /** 마크다운 링크의 raw href. */
+  /** The markdown link's raw href. */
   href: string;
-  /** 이 링크가 들어있는 문서의 vault slug (예: `README`, `ontology/project`). */
+  /** The vault slug of the document containing this link (e.g. `README`, `ontology/project`). */
   fromSlug: string;
-  /** vault 에 존재하는 모든 slug 집합 (내부/외부 판별용). */
+  /** Every slug present in the vault (used to decide internal vs external). */
   vaultSlugs: Set<string>;
   /**
-   * vault 외부 상대 경로를 GitHub blob URL 로 바꿀 때 쓰는 base
-   * (예: `https://github.com/wlsdks/ontology-atlas/blob/main`).
-   * 로컬 vault 처럼 repo 위치를 모르면 undefined — 그때는 unresolved.
+   * The base used to turn a vault-external relative path into a GitHub blob URL
+   * (e.g. `https://github.com/wlsdks/ontology-atlas/blob/main`). Undefined where the
+   * repo location is unknown, as in a local vault — then it is unresolved.
    */
   repoBlobBase?: string;
   /**
-   * 이 vault 가 repo 안에서 위치한 경로 (예: 번들 docs vault = `docs`).
-   * repoBlobBase 와 함께 있어야 external URL 을 만든다.
+   * Where this vault sits inside the repo (the bundled docs vault = `docs`). An
+   * external URL is only built when this is present alongside repoBlobBase.
    */
   vaultRepoRoot?: string;
 }
 
-/** posix 경로 정규화 — `.`·빈 세그먼트 제거, `..` 는 가능하면 상위 pop. */
+/** posix path normalisation — drop `.` and empty segments, pop the parent for `..` where possible. */
 function collapsePath(pathStr: string): string {
   const out: string[] = [];
   for (const seg of pathStr.split('/')) {
@@ -59,18 +61,18 @@ function collapsePath(pathStr: string): string {
 }
 
 /**
- * 볼트 경로 조각을 비교 가능한 형태로 — **퍼센트 디코드 + NFC**.
+ * Put a vault path segment into a comparable form — **percent-decode plus NFC**.
  *
- * 디코드가 먼저여야 정규화가 실제 글자에 걸린다. 잘린 퍼센트 시퀀스(`%`)는
- * `decodeURIComponent` 가 던지므로 원문을 그대로 돌려준다 — 던지면 그 문서가
- * 통째로 안 그려진다.
+ * Decoding has to come first for normalisation to apply to real characters. A
+ * truncated percent sequence (`%`) makes `decodeURIComponent` throw, so the raw
+ * value is returned — a throw here means the whole document does not render.
  */
 function decodeVaultPath(value: string): string {
   let decoded = value;
   try {
     decoded = decodeURIComponent(value);
   } catch {
-    /* 잘린 퍼센트 시퀀스 — 원문으로 둔다 */
+    /* Truncated percent sequence — leave the raw value. */
   }
   return decoded.normalize('NFC');
 }
@@ -82,27 +84,28 @@ export function resolveDocLink({
   repoBlobBase,
   vaultRepoRoot,
 }: ResolveDocLinkParams): ResolvedDocLink {
-  // 절대 URL · 프로토콜 · 앵커 only 는 리졸버 대상 아님.
+  // Absolute URLs, protocols and anchor-only links are not the resolver's business.
   if (!href || href.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(href)) {
     return { kind: 'passthrough' };
   }
   const [rawTarget, rawAnchor] = href.split('#');
   /*
-   * ⚠️ **퍼센트 디코드하고 NFC 로 맞춘다** (2026-08-08 실측 수리).
+   * ⚠️ **Percent-decode and normalise to NFC** (measured fix, 2026-08-08).
    *
-   * 마크다운 파서는 링크 URL 을 퍼센트 인코딩해서 넘긴다 —
-   * `../capabilities/스윕-검증-절차.md` 가 `%EC%8A%A4%EC%9C%95…` 로 도착한다.
-   * 그 문자열은 볼트 슬러그 집합에 없으므로 **한글 슬러그로 가는 링크가 전부
-   * 「알 수 없는 문서」로 떨어졌다.** 영문 슬러그는 인코딩할 것이 없어 멀쩡해서
-   * 이 결함은 한글(또는 공백·비ASCII) 슬러그 볼트에서만 보인다 — 우리 샘플이
-   * 영문이라 아무도 못 봤다.
+   * The markdown parser passes link URLs percent-encoded —
+   * `../capabilities/스윕-검증-절차.md` arrives as `%EC%8A%A4%EC%9C%95…`. That string
+   * is not in the vault's slug set, so **every link to a Hangul slug fell through
+   * to "unknown document"**. An ASCII slug has nothing to encode and stays fine, so
+   * this defect appears only in a vault with Hangul (or space, or non-ASCII) slugs —
+   * our samples were ASCII, so nobody saw it.
    *
-   * 위키링크 쪽에서 같은 결함을 먼저 잡았고(`DocsVaultViewer`), 여기는 **손으로
-   * 쓴 표준 링크**도 같이 살린다.
+   * The same defect was caught first on the wikilink side (`DocsVaultViewer`); this
+   * revives **hand-written standard links** too.
    *
-   * NFC 도 맞춘다: 한글은 출처에 따라 NFC/NFD 로 갈리고(macOS 파일시스템은
-   * NFD) 글자는 같은데 문자열이 안 맞는다. 한쪽만 정규화하면 그 상태가 그대로
-   * 남는다(`cli/src/commands/validate.mjs` 가 같은 판단을 적어 뒀다).
+   * NFC is matched as well: Hangul splits into NFC/NFD depending on origin (the
+   * macOS filesystem uses NFD), so the characters are identical while the strings
+   * do not match. Normalising only one side leaves that state intact
+   * (`cli/src/commands/validate.mjs` records the same judgement).
    */
   const target = decodeVaultPath(rawTarget);
   const anchor = rawAnchor ? decodeVaultPath(rawAnchor) : undefined;
@@ -116,7 +119,7 @@ export function resolveDocLink({
   const rel = target.replace(/^\.\//, '');
   const joined = fromDir ? `${fromDir}/${rel}` : rel;
 
-  // vault root 를 벗어났는지 판별하면서 정규화. `..` 가 빈 스택을 만나면 escape.
+  // Normalise while deciding whether it escapes the vault root. `..` meeting an empty stack is an escape.
   const stack: string[] = [];
   let escaped = false;
   for (const seg of joined.split('/')) {
@@ -140,8 +143,8 @@ export function resolveDocLink({
     }
   }
 
-  // 여기까지 왔으면 vault 외부(escape) 또는 내부지만 알 수 없는 slug.
-  // repo 위치를 알면 GitHub blob 외부 링크로, 모르면 unresolved.
+  // Getting here means either outside the vault (escape) or internal with an unknown
+  // slug. With the repo location known, an external GitHub blob link; otherwise unresolved.
   if (repoBlobBase && vaultRepoRoot !== undefined) {
     const repoRel = collapsePath(`${vaultRepoRoot}/${joined}`);
     const base = repoBlobBase.replace(/\/+$/, '');
@@ -151,12 +154,12 @@ export function resolveDocLink({
   return { kind: 'unresolved' };
 }
 
-/** 번들 docs vault(`docs/**`) 가 소속된 공개 repo 의 blob base 와 vault root. */
+/** The blob base and vault root of the public repo the bundled docs vault (`docs/**`) belongs to. */
 export const ONTOLOGY_ATLAS_REPO_BLOB_BASE =
   'https://github.com/wlsdks/ontology-atlas/blob/main';
 export const DOCS_VAULT_REPO_ROOT = 'docs';
 
-/** repo 루트 기준 경로를 GitHub blob URL 로. 캐노니컬 바로가기(mcp/README 등) 재사용. */
+/** A repo-root-relative path as a GitHub blob URL. Reused for canonical shortcuts (mcp/README and so on). */
 export function githubBlobUrl(
   repoRelativePath: string,
   base: string = ONTOLOGY_ATLAS_REPO_BLOB_BASE,

@@ -1,25 +1,25 @@
 /**
- * 대비 실측 — 렌더된 DOM 을 쓸어 **읽히지 않는 텍스트**를 지목한다.
+ * Contrast measurement — sweeps the rendered DOM and names **text that is not
+ * legible**.
  *
- * ## 왜 이 파일이 필요한가
+ * **Why this file exists.** `/design-council` instructs the 「도해」 (infoviz) seat
+ * that it *"must measure contrast"*, and that seat's brief makes the measurement a
+ * precondition of any verdict. **But there was no instrument** — as of 2026-08-03 no
+ * script in this repository computed contrast, and `/design-audit` only **checked
+ * colours against the token set**. Whether a token was used and whether it is legible
+ * are different questions: two legitimate tokens can fail to separate from each
+ * other.
  *
- * `/design-council` 은 「도해」석에게 *"must measure contrast"* 라고 명령하고 그
- * 자리의 브리프도 대비 실측을 판정 전 필수로 건다. **그런데 잴 도구가 없었다** —
- * 2026-08-03 기준 이 저장소의 어떤 스크립트도 대비를 계산하지 않았고,
- * `/design-audit` 은 색을 **토큰 집합과 대조**할 뿐이었다. 토큰을 썼는가와
- * 읽히는가는 다른 질문이다: 정당한 토큰 두 개가 서로 안 갈릴 수 있다.
+ * **What this file does — collection, not judgement.** The computation lives in
+ * `scripts/lib/contrast.mjs` (pure functions with fixture probes in
+ * `tests/contract/contrast.contract.test.ts`). What happens here is **resolving the
+ * real background**: walking up the ancestors and compositing translucent
+ * backgrounds in order. This app uses alpha tokens for text and borders, so skipping
+ * that step reports **better** than reality, and the optimism is silent.
  *
- * ## 이 파일이 하는 일 — 판정이 아니라 채집
+ * **Usage**
  *
- * 계산은 `scripts/lib/contrast.mjs` 가 한다(순수 함수, fixture 프로브 있음 —
- * `tests/contract/contrast.contract.test.ts`). 여기서는 **실제 배경을 해결**한다:
- * 조상을 거슬러 올라가며 반투명 배경을 차례로 합성한다. 이 앱은 텍스트와 보더를
- * 알파 토큰으로 쓰기 때문에 이 단계를 빼면 수치가 실제보다 **좋게** 나오고,
- * 그 낙관은 조용하다.
- *
- * ## 쓰는 법
- *
- *   node scripts/serve-static-export.mjs --port=4173 &   # 먼저 pnpm build
+ *   node scripts/serve-static-export.mjs --port=4173 &   # run pnpm build first
  *   node scripts/measure-contrast.mjs [baseUrl] [route...]
  */
 
@@ -36,14 +36,15 @@ const ROUTES = (maybeBase?.startsWith("http") ? maybeRoutes : [maybeBase, ...may
   Boolean,
 );
 /**
- * 기본 스윕 — **사람이 도달할 수 있는 화면 전부**.
+ * The default sweep — **every screen a person can reach**.
  *
- * 2026-08-04 감사 전까지 이 목록은 다섯 줄이었고, 빠진 여섯 화면 중에는
- * `/ko/ontology/insights` — **데이터 마크가 가장 조밀한 화면** — 이 있었다.
- * 재 보니 미달은 0이었지만 그건 통과가 아니라 **미측정**이었다. 목록이
- * 「오래 보는 화면」이라는 주관으로 좁혀져 있으면, 안 잰 화면과 깨끗한 화면이
- * 같은 초록으로 보인다. 라우트를 더하면 여기에도 더한다
- * (게이트: tests/contract/contrast-sweep-coverage.contract.test.ts).
+ * Until the 2026-08-04 audit this list had five lines, and among the six missing
+ * screens was `/ko/ontology/insights` — **the screen with the densest data marks**.
+ * Measuring it found 0 shortfalls, but that had been **unmeasured**, not passing.
+ * When the list is narrowed by a subjective "screens people look at for a long
+ * time", an unmeasured screen and a clean screen look like the same green. Adding a
+ * route means adding it here (gate:
+ * tests/contract/contrast-sweep-coverage.contract.test.ts).
  */
 export const DEFAULT_ROUTES = [
   "/ko/",
@@ -61,11 +62,11 @@ export const DEFAULT_ROUTES = [
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",
   "/ko/git/",
-  // 에이전트 (2026-08-20 신설, 원장 90) — 목적지 승격으로 감사 대상이 됐다.
+  // Agents (added 2026-08-20, ledger 90) — promoted to a destination, so it became auditable.
   "/ko/agents/",
-  // 404 는 **두 페이지**다 — 로케일이 붙은 것과 안 붙은 것. 2026-08-03 에
-  // AA 미달 4.42:1 이 숨어 있던 자리가 정확히 여기고, 그때 두 래칫 모두 이
-  // 자리를 한 번도 안 봤다. 하나만 넣으면 그 사고의 절반만 막는다.
+  // 404 is **two pages** — with and without a locale prefix. This is exactly where
+  // the AA shortfall of 4.42:1 hid on 2026-08-03, and neither ratchet had ever looked
+  // here. Including only one blocks half of that incident.
   "/ko/this-route-does-not-exist/",
   "/this-route-does-not-exist/",
 ];
@@ -73,11 +74,11 @@ const VIEWPORT = { width: 1512, height: 900 };
 const PROFILE = `/tmp/atlas-contrast-${process.pid}`;
 
 /**
- * 페이지에서 **텍스트를 가진 원소의 전경색 · 해결된 배경색 · 폰트**를 꺼내 온다.
- * 판정하지 않는다.
+ * Extracts, for every element that owns text, its **foreground colour, resolved
+ * background colour, and font**. It does not judge.
  */
 function collectInPage() {
-  /** 조상을 거슬러 반투명 배경을 차례로 합성해 **불투명 배경**을 구한다. */
+  /** Walks up the ancestors compositing translucent backgrounds to an **opaque background**. */
   const resolveBackground = (el) => {
     const stack = [];
     for (let node = el; node; node = node.parentElement) {
@@ -90,7 +91,7 @@ function collectInPage() {
       stack.push([p[0], p[1], p[2], a]);
       if (a >= 1) break;
     }
-    // 아무 불투명 배경도 못 만나면 캔버스 색이 바닥이다.
+    // With no opaque background anywhere up the chain, the canvas colour is the floor.
     const root = getComputedStyle(document.documentElement).getPropertyValue("--color-canvas").trim();
     const rm = /^#([0-9a-f]{6})$/i.exec(root);
     let base = rm
@@ -106,8 +107,8 @@ function collectInPage() {
   const out = [];
   const seen = new Set();
   for (const el of document.querySelectorAll("*")) {
-    // **직접 소유한 텍스트만.** 부모까지 세면 같은 글자를 여러 번 재고, 정작
-    // 어느 원소를 고쳐야 하는지는 못 짚는다.
+    // **Directly owned text only.** Counting ancestors measures the same glyphs several
+    // times and still cannot name which element to fix.
     const own = [...el.childNodes]
       .filter((n) => n.nodeType === 3)
       .map((n) => n.textContent.trim())
@@ -118,11 +119,12 @@ function collectInPage() {
     if (cs.visibility === "hidden" || cs.display === "none" || Number(cs.opacity) === 0) continue;
     const rect = el.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) continue;
-    // 화면 밖은 사용자가 못 읽는다 — 여기 결함을 세면 판정이 오염된다.
+    // Off-screen text is unreadable to the user — counting defects there contaminates the verdict.
     if (rect.bottom < 0 || rect.top > innerHeight || rect.right < 0 || rect.left > innerWidth) continue;
     const key = `${cs.color}|${cs.fontSize}|${cs.fontWeight}|${resolveBackground(el)}`;
-    // 같은 (색 · 크기 · 배경) 조합은 한 번만 — 반복 카드 200개를 200줄로 내면
-    // 보고가 읽히지 않고, 처방은 어차피 조합 단위다.
+    // Each (colour, size, background) combination once — printing 200 repeated cards as
+    // 200 lines makes the report unreadable, and the prescription is per combination
+    // anyway.
     if (seen.has(key)) continue;
     seen.add(key);
     out.push({
@@ -159,7 +161,7 @@ for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
     route,
     total: judged.length,
     failures: judged.filter((s) => !s.passes).sort((a, b) => a.ratio - b.ratio),
-    /** 파싱 실패는 **통과가 아니라 미측정**이다 — 침묵시키면 계기가 낙관한다. */
+    /** A parse failure is **unmeasured, not passing** — silencing it makes the instrument optimistic. */
     unmeasured: samples.length - judged.length,
     marks,
     separated,
@@ -185,7 +187,7 @@ for (const r of report) {
 }
 console.log(`\n  합계 미달 ${totalFail}건\n`);
 
-// ── 인접 데이터 마크 (WCAG 1.4.11 비텍스트 3:1)
+// ── Adjacent data marks (WCAG 1.4.11 non-text, 3:1)
 const markTotal = report.reduce((n, r) => n + r.marks.length, 0);
 const markFail = report.reduce((n, r) => n + r.markFailures.length, 0);
 const sepTotal = report.reduce((n, r) => n + r.separated.length, 0);

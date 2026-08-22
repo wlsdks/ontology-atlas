@@ -17,17 +17,18 @@ import { useDogfoodSample } from "./sample-source";
  */
 
 /**
- * 딥링크로 열 노드는 **볼트에서 골라 온다 — 이름을 여기 박지 않는다.**
+ * The node to deep-link into is **picked from the vault — its name is not pinned
+ * here.**
  *
- * 종전에는 `capability:topology-analysis-modes` 가 상수로 박혀 있었고,
- * 2026-08-01 볼트를 규격 기준으로 재생성하자 그 역량이 사라져 세 스펙이
- * 한꺼번에 죽었다(딥링크·Escape·문서 왕복). 볼트는 도그푸드라 계속 다시
- * 그려지는데, 스펙이 노드 하나의 이름에 기대면 **볼트를 고칠 때마다 e2e 를
- * 같이 고쳐야 한다.**
+ * `capability:topology-analysis-modes` used to be a constant, and when the vault was
+ * regenerated against the spec on 2026-08-01 that capability disappeared and three
+ * specs died at once (deep link, Escape, docs round trip). The vault is dogfood and
+ * keeps getting redrawn, so a spec leaning on one node's name means **fixing e2e
+ * every time the vault is fixed.**
  *
- * 이 스펙이 실제로 재는 것은 「어떤 역량이 열리는가」가 아니라 「딥링크가
- * 도착하고 선택이 유지되는가」다. 그러니 대상은 아무 역량이나 되면 되고,
- * 결정론만 있으면 된다 — 매니페스트에서 슬러그순 첫 역량을 고른다.
+ * What this spec actually measures is not which capability opens but whether the deep
+ * link arrives and the selection persists. So any capability will do as long as the
+ * choice is deterministic — take the first capability by slug from the manifest.
  */
 const REAL_CAPABILITY_SLUG = (() => {
   const manifestPath = path.resolve(
@@ -46,7 +47,7 @@ const REAL_CAPABILITY_SLUG = (() => {
       "dogfood 매니페스트에 역량 노드가 없다 — 볼트나 생성기가 깨졌다",
     );
   }
-  // 지도의 노드 id 는 `<kind>:<이름>` 이다 (볼트 슬러그의 `capabilities/` 접두와 다름).
+  // A map node id is `<kind>:<name>` (different from the vault slug's `capabilities/` prefix).
   return `capability:${slugs[0]}`;
 })();
 
@@ -59,20 +60,22 @@ const REAL_CAPABILITY_SLUG = (() => {
 // on it — same fix applied to the analogous `project-selector-new-cta`
 // duplicate in `ontology-ui.spec.ts`.
 async function gotoAndSettle(page: import("@playwright/test").Page, url: string) {
-  // 온보딩 자동 표면 억제 (2026-07-24 CI flake 정정) — /topology 는 샘플
-  // 모드 첫 방문에 폴더 안내 시트 + 900ms 자동 투어를 띄운다. 자동 투어의
-  // full-screen 스크림(z-70)이 느린 CI 러너에서 패널 액션 버튼을 덮어
-  // 클릭이 타임아웃났다(topology 스모크는 온보딩이 아니라 지도만 검증).
-  // 시드로 자동 표면을 끈다 — 수동 진입은 영향 없다.
+  // Suppress the automatic onboarding surfaces (fix for the 2026-07-24 CI flake): on a
+  // first visit in sample mode, /topology raises the folder guidance sheet plus a
+  // 900ms auto tour. The auto tour's full-screen scrim (z-70) covered the panel action
+  // button on a slow CI runner and the click timed out (the topology smoke verifies
+  // the map, not onboarding). Seeding turns the automatic surfaces off; manual entry
+  // is unaffected.
   await seedFirstRunSeen(page);
   await page.goto(url);
   await page.waitForLoadState("networkidle");
 }
 
 test.describe("topology-map-v2 smoke", () => {
-  // 이 파일의 단언은 전부 dogfood 볼트 데이터(프로젝트 이름 · 딥링크 슬러그 ·
-  // 노드 라벨)에 기댄다. 2026-07-26 기본 샘플이 예시 비즈니스로 바뀌었으니
-  // 기본값에 기대지 않고 파일 단위로 명시 선택한다.
+  // Every assertion in this file leans on dogfood vault data (project name, deep-link
+  // slug, node labels). Since the default sample became an example business on
+  // 2026-07-26, the vault is selected explicitly per file rather than relying on the
+  // default.
   test.beforeEach(async ({ page }) => {
     await useDogfoodSample(page);
   });
@@ -122,8 +125,9 @@ test.describe("topology-map-v2 smoke", () => {
       await page.keyboard.press("Escape");
       await expect(detailPanel).toHaveCount(0, { timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
-    // M-7 Esc 사다리 (UX 라운드 S3): 첫 유효 Esc 는 팝오버/패널만 닫고
-    // ego 포커스(`?p=`)는 유지 — one step at a time. 포커스 해제는 다음 Esc.
+    // The Esc ladder: the first effective Esc closes only the popover/panel and keeps
+    // the ego focus (`?p=`) — one step at a time. Releasing the focus takes the next
+    // Esc.
     expect(new URL(page.url()).searchParams.get("p")).toBe(REAL_CAPABILITY_SLUG);
     await expect(async () => {
       await page.keyboard.press("Escape");

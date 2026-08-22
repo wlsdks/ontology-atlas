@@ -12,9 +12,9 @@ interface Props {
 }
 
 /**
- * Root error boundary. NextIntlClientProvider 가 [locale]/layout 에 마운트되어
- * 있어 root error 시점에서는 i18n provider 가 동작하지 않을 수 있다. last-resort
- * fallback 이므로 영어 하드코딩으로 안전하게 노출.
+ * Root error boundary. `NextIntlClientProvider` is mounted in `[locale]/layout`, so the i18n
+ * provider may not be running when a root error occurs. As a last-resort fallback, the text is
+ * hardcoded English so it always renders.
  */
 export default function RouteError({ error, reset }: Props) {
   useEffect(() => {
@@ -45,14 +45,14 @@ export default function RouteError({ error, reset }: Props) {
           </p>
         )}
         {/*
-          ⚠️ **둘 다 `shape: "icon"` 이었다** (2026-08-17 소유자 지적). 그건
-          정사각 아이콘 전용 모양이라 — `justify-center` · `shrink-0` · 가로
-          여백 없음 — 라벨을 넣으면 글자가 상자를 넘어 두 줄로 접히며 서로 겹친다.
-          화면에 실제로 그렇게 나왔다.
+          ⚠️ **Both used to be `shape: "icon"`** (owner report 2026-08-17). That shape is for square
+          icons only — `justify-center`, `shrink-0`, no horizontal padding — so putting a label in it
+          made the text overflow the box, wrap to two lines, and overlap itself. That is exactly how
+          it rendered.
 
-          라벨이 있는 컨트롤의 모양은 `pill` 이고, 위 코드가 손으로 덧붙이던
-          `rounded-full`·`border` 는 그 모양이 이미 준다. 손으로 흉내 내는 대신
-          제 모양을 쓴다.
+          The shape for a labelled control is `pill`, and the `rounded-full` and `border` the code
+          was adding by hand are what that shape already provides. Use the real shape instead of
+          imitating it.
         */}
         <div className="mt-5 flex flex-wrap gap-2">
           <button

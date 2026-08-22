@@ -5,15 +5,15 @@ import { AgentProposalCard } from "./AgentProposalCard";
 import type { AgentProposal } from "@/features/vault-agent/model/types";
 
 /**
- * **쓰기가 도는 동안은 잠긴다.**
+ * **It locks while the write is running.**
  *
- * 초안은 `await applyProposal` 내내 상태를 `pending` 으로 두었다. 그래서
- * 「적용」을 두 번 누르면 **볼트 쓰기가 두 번 동시에** 들어갔고, 그 사이
- * 「취소」도 눌렸다. 화면에는 "적용 중" 이라는 구별이 **하나도 없었다** — 즉
- * 사용자에게 이중 클릭은 예외가 아니라 **기대되는 행동**이었다. 아무 반응이
- * 없으면 다시 누르는 것이 정상이다.
+ * The draft left the status `pending` throughout `await applyProposal`. So pressing
+ * 「적용」 (apply) twice sent **two simultaneous vault writes**, and 「취소」 (cancel)
+ * could be pressed in between. The screen had **no indication at all** that it was
+ * applying — meaning a double click was not an exception for the user but
+ * **expected behaviour**. With no response, pressing again is normal.
  *
- * (디자인 카운슬 「상호작용」 반려 사유, 2026-07-29)
+ * (The design council's 「상호작용」 rejection rationale, 2026-07-29.)
  */
 
 const baseProposal = (status: AgentProposal["status"]): AgentProposal =>
@@ -86,24 +86,24 @@ describe("AgentProposalCard — 적용 중 잠금", () => {
   });
 
   /**
-   * 이 두 단언이 이 파일의 존재 이유다 — **말하고, 잠근다.** 둘 중 하나만
-   * 있으면 안 된다: 잠그기만 하면 사용자는 왜 안 눌리는지 모르고, 말하기만
-   * 하면 두 번 눌러 두 번 쓴다.
+   * These two assertions are this file's reason to exist — **say it, and lock it.**
+   * Neither alone is enough: locking only leaves the user not knowing why nothing
+   * responds, and saying only means two presses become two writes.
    */
   it("says it is applying, and locks both actions while it does", () => {
     renderCard("applying");
 
     expect(screen.getByText("적용 중…")).toBeInTheDocument();
-    // **쓰기 동작만** 잠근다. 「펼치기」 같은 읽기 동작은 열어 둔다 — 쓰는
-    // 동안 무엇이 쓰이는지 들여다보는 것을 막을 이유가 없다.
+    // **Only the write actions** lock. Read actions such as 「펼치기」 (expand) stay
+    // open — there is no reason to stop someone inspecting what is being written.
     expect(screen.getByTestId("agent-proposal-apply")).toBeDisabled();
     expect(screen.getByTestId("agent-proposal-cancel")).toBeDisabled();
   });
 
   /**
-   * 그리고 **거짓말을 하지 않는다.** 초안은 `applying` 을 종료 상태로 취급해
-   * 종료 문구의 fallback 으로 떨어뜨렸고, 화면이 쓰는 중에 **"취소됨"** 이라고
-   * 말했다. 잠그지 않은 것보다 나쁘다.
+   * And **it does not lie.** The draft treated `applying` as a terminal state and
+   * fell through to the terminal-copy fallback, so the screen said **"cancelled"**
+   * while it was writing. That is worse than not locking.
    */
   it("does not claim the write is over while it is still running", () => {
     renderCard("applying");

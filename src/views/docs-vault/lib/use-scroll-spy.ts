@@ -4,31 +4,29 @@ import { useEffect, useRef, useState } from "react";
 import { scheduleStateSync } from "./persistence";
 
 /**
- * DocsVaultPage 의 article 스크롤 컨테이너에서 현재 heading 추적.
+ * Tracks the current heading inside the docs page's article scroll container.
  *
- * rAF 스로틀 scroll 핸들러가 heading 들의 root 상대 위치를 재계산해, 스크롤
- * 상단(32px 기준선)을 가장 최근에 지나간 heading 을 active 로 고른다. 아직
- * 어떤 heading 도 지나지 않았으면(문서 최상단) null, 최하단 도달 시 마지막
- * heading 클램프.
+ * A rAF-throttled scroll handler recomputes each heading's position relative to the root and picks
+ * the heading most recently passed by the 32px baseline at the top of the scroll. With no heading
+ * passed yet (the very top of the document) it is null, and reaching the bottom clamps to the last
+ * heading.
  *
- * 이전 구현은 IntersectionObserver 기반이었는데 세 가지 잠복 결함이 있었다:
- * ① 비동기 마크다운 fetch 전에 한 번만 heading 을 조회해 observer 가 영영 안
- * 붙음 ② React 재렌더가 article DOM 을 교체하면 detached 노드를 계속 관찰
- * ③ 점프 스크롤이 관찰 밴드를 건너뛰면 콜백이 안 옴. heading 은 문서당
- * 수 개 수준이라 스크롤마다의 직접 재계산이 더 단순하고 결정론적이다.
- * ①·②는 MutationObserver 상시 유지 + 재수집으로 방어한다.
+ * The previous implementation used IntersectionObserver and had three latent defects: ① it queried
+ * headings once, before the asynchronous markdown fetch, so the observer never attached; ② a React
+ * re-render replacing the article DOM left it observing detached nodes; ③ a jump scroll skipping
+ * the observed band produced no callback. There are only a handful of headings per document, so
+ * recomputing directly on each scroll is simpler and deterministic. ① and ② are additionally
+ * guarded by a permanently mounted MutationObserver that re-collects.
  *
- * 의존성:
- * - `selectedSlug` 가 바뀌면 active null 로 초기화 (새 문서)
- * - `source` ('server' | 'local') 가 바뀌면 article DOM 이 다시 그려지므로 재구독
+ * Dependencies:
+ * - `selectedSlug` changing resets active to null (a new document)
+ * - `source` ('server' | 'local') changing redraws the article DOM, so it re-subscribes
  *
- * 반환:
- * - `articleScrollRef` — article 컨테이너 div ref (caller 가 부착)
- * - `activeHeadingSlug` — 현재 active heading 의 id (또는 null)
- * - `setActiveHeadingSlug` — 외부 click 으로 즉시 active 갱신 (스크롤 애니메
- *   이션 도착 전에 indicator 를 미리 옮길 때)
- *
- * 호출자: `DocsVaultContent` 의 outline panel + 읽기 목차 레일.
+ * Returns:
+ * - `articleScrollRef` — the article container div ref, attached by the caller
+ * - `activeHeadingSlug` — the id of the current active heading, or null
+ * - `setActiveHeadingSlug` — updates active immediately from an outside click, moving the
+ *   indicator before the scroll animation arrives
  */
 export function useDocsVaultScrollSpy(
   selectedSlug: string | null,
@@ -61,15 +59,15 @@ export function useDocsVaultScrollSpy(
     const recompute = () => {
       rafPending = 0;
       if (headings.length === 0) return;
-      // 좌표는 전부 스크롤 컨테이너(root) 상단 기준 — viewport 기준으로
-      // 재면 root 가 화면 중간에서 시작하는 이 레이아웃에서 어긋난다.
+      // Every coordinate is relative to the top of the scroll container (root) — measuring against
+      // the viewport is wrong in this layout, where the root starts mid-screen.
       const rootTop = root.getBoundingClientRect().top;
       let pick: string | null = null;
       for (const h of headings) {
         if (h.getBoundingClientRect().top - rootTop < 32) pick = h.id;
       }
-      // bottom 클램프 — 마지막 섹션이 짧으면 기준선을 영영 못 지나므로
-      // 최하단 도달 시 마지막 heading.
+      // Bottom clamp — a short last section may never pass the baseline, so reaching the bottom
+      // selects the last heading.
       if (root.scrollTop + root.clientHeight >= root.scrollHeight - 8) {
         pick = headings[headings.length - 1]?.id ?? pick;
       }
@@ -84,8 +82,8 @@ export function useDocsVaultScrollSpy(
     const onScroll = () => scheduleRecompute();
     root.addEventListener("scroll", onScroll, { passive: true });
 
-    // 비동기 마크다운 도착 + React 의 DOM 노드 교체 양쪽을 커버 — heading
-    // 세트가 비었거나 detach 됐으면 재수집 후 재계산.
+    // Covers both the asynchronous markdown arriving and React replacing DOM nodes — if the
+    // heading set is empty or detached, re-collect and recompute.
     const domObserver = new MutationObserver(() => {
       if (headings.length === 0 || headings.some((h) => !h.isConnected)) {
         if (collectHeadings()) scheduleRecompute();

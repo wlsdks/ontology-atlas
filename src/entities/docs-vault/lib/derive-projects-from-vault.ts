@@ -3,19 +3,18 @@ import type { VaultDoc, VaultManifest } from '../model/types';
 import { computeProjectSlug, isProjectVaultDoc } from './project-slug';
 
 /**
- * vault manifest 에서 *project 노드* 를 Project 도메인 모델로 매핑.
+ * Maps *project nodes* in a vault manifest onto the Project domain model.
  *
- * 인식 기준 (mission v2 — frontmatter 가 진실원):
- *   1. `frontmatter.kind === 'project'` 인 doc (1순위, path 무관)
- *   2. 또는 path 가 `projects/` 로 시작 (legacy 호환 — frontmatter 누락 시)
+ * A doc counts as a project when:
+ *   1. `frontmatter.kind === 'project'` (primary, regardless of path), or
+ *   2. its path starts with `projects/` (legacy compatibility, when frontmatter is missing)
  *
- * 매니페스트 의 VaultDoc 은 이미 frontmatter / excerpt 가 파싱되어있어 React
- * 훅에서 sync 로 바로 호출 가능(구 `buildTopologyFromVault` 는 비동기로 raw
- * .md 를 다시 읽는 folder-topology 전용 빌더였으나 P5a 에서 folder-topology
- * 자체가 제거되며 함께 삭제됐다).
+ * The manifest's VaultDoc already has frontmatter and excerpt parsed, so React
+ * hooks can call this synchronously.
  *
- * 사용처: `useProjects` mode-aware 훅 — local / static (dogfood) 모드 read 측.
- * 로그인 / Firebase 없이 vault 만으로 /projects · /topology 살아남음.
+ * Used by the mode-aware `useProjects` hook for both local and static (dogfood)
+ * reads — `/projects` and `/topology` stay alive on the vault alone, with no login
+ * and no backend.
  */
 export function deriveProjectsFromVault(manifest: VaultManifest): Project[] {
   const projects: Project[] = [];
@@ -29,20 +28,20 @@ export function deriveProjectsFromVault(manifest: VaultManifest): Project[] {
 
 function mapVaultDocToProject(doc: VaultDoc): Project | null {
   const fm = doc.frontmatter;
-  // slug 산정은 computeProjectSlug 단일화 — buildTopologyDeeplinkForDoc
-  // 과 같은 helper 를 공유해야 토폴로지 ?p=<slug> deeplink 가 drawer 를
-  // 정확히 연다.
+  // The slug comes only from `computeProjectSlug`; `buildTopologyDeeplinkForDoc`
+  // shares the same helper, and they must agree or the topology `?p=<slug>` deeplink
+  // opens the wrong drawer.
   const slug = computeProjectSlug(doc);
   if (!slug) return null;
-  // name fallback 은 사람-읽기 좋은 파일명 (fm.slug 와 다른 값이어도) 을
-  // 우선 — fileSlug 는 그래서 별도 계산.
+  // The name falls back to the human-readable filename even when it differs from
+  // `fm.slug`, which is why `fileSlug` is computed separately.
   const fileSlug = doc.slug.startsWith('projects/')
     ? doc.slug.replace(/^projects\//, '')
     : doc.slug.split('/').pop() || doc.slug;
   const name = (fm.name as string) || (fm.title as string) || doc.title || fileSlug;
-  // R15 (Concern 1) honest derive — frontmatter 에 명시 없으면 undefined.
-  // 이전엔 'uncategorized' / 'active' / { x:0, y:0 } 등 fabricated default
-  // 박았으나 vault 가 *가지지 않은 정보* 를 web 이 표시 → mission 위반.
+  // Honest derivation: undefined unless the frontmatter states it. Fabricated
+  // defaults ('uncategorized', 'active', `{ x:0, y:0 }`) made the web display
+  // information the vault does not have.
   const category =
     typeof fm.category === 'string' && fm.category.trim()
       ? fm.category.trim()
@@ -54,15 +53,15 @@ function mapVaultDocToProject(doc: VaultDoc): Project | null {
   const isHub =
     fm.isHub === true || String(fm.isHub).toLowerCase() === 'true'
       ? true
-      : undefined; // false 도 fabrication — frontmatter 에 명시 없으면 undefined
+      : undefined; // `false` would be fabrication too — undefined unless stated
   const description =
     typeof fm.description === 'string' && fm.description.trim()
       ? fm.description.trim()
       : doc.excerpt;
-  // position: 명시된 frontmatter 값만. 없으면 undefined (web 측이 placement
-  // hook 에서 layout 결정 — vault 가 가지지 않은 좌표를 fabricate 하지 않음).
+  // Only an explicit frontmatter position. Absent stays undefined, and the web's
+  // placement hook decides layout rather than the vault fabricating coordinates.
   const position = parseSplitPosition(fm) ?? parseInlinePositionOpt(fm.position);
-  // timeline: 명시된 startedAt / launchedAt 만. 빈 객체 fabricate 안 함.
+  // Only explicit startedAt / launchedAt. No empty object is fabricated.
   const timeline = deriveTimeline(fm);
   const updatedAt = parseDateFlexible(fm.updatedAt) ?? parseDateFlexible(doc.updatedAt) ?? new Date();
   const createdAt = parseDateFlexible(fm.createdAt) ?? updatedAt;

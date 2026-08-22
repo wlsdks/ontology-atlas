@@ -9,11 +9,11 @@ import enMessages from "../../../../messages/en.json";
 import { ShortcutSheet } from "./ShortcutSheet";
 
 /**
- * W2-C — the "지형도"/"Relief" (topology) section used to list interactions
- * the v2 canvas never implemented (더블클릭 로컬 · Shift+클릭 경로 · Tab
- * 이웃 · / 검색 · 0 깊이). This test locks the corrected section to the
- * canvas's ACTUAL behavior so a future stale-key regression fails loudly
- * (the exact failure mode that motivated this rewrite in the first place).
+ * W2-C — the "지형도"/"Relief" (topology) section used to list interactions the v2
+ * canvas never implemented (double-click local · Shift+click path · Tab neighbours ·
+ * / search · 0 depth). This test locks the corrected section to the canvas's ACTUAL
+ * behavior so a future stale-key regression fails loudly (the exact failure mode that
+ * motivated this rewrite in the first place).
  */
 function renderSheet() {
   render(
@@ -50,14 +50,15 @@ describe("ShortcutSheet — topology section (W2-C)", () => {
 });
 
 /**
- * P1a-2 (persona 실측 N8 — 도메인/역량/요소 정의가 작업 UI 0곳). Locks the
- * one-line kind glossary added to this sheet's footer instead of a new
- * surface.
+ * P1a-2 (persona measurement N8 — the definitions of domain/capability/element
+ * appeared in 0 working UIs). Locks the one-line kind glossary added to this sheet's
+ * footer instead of a new surface.
  */
 describe("ShortcutSheet — kind glossary (P1a-2)", () => {
   /**
-   * 제품 이름에 박힌 단어인데 앱 안에서 정의되는 자리가 0곳이었다. 투어에서
-   * 한 번 이름을 붙인 뒤 되찾아 볼 곳이 여기라서, 세 kind 앞에 먼저 온다.
+   * A word baked into the product's name that was defined in 0 places inside the app.
+   * Once the tour names it, this is where it is recovered, so it comes before the
+   * three kinds.
    */
   it("defines ontology first, before the three kinds", () => {
     renderSheet();
@@ -88,9 +89,9 @@ describe("ShortcutSheet — kind glossary (P1a-2)", () => {
 });
 
 
-// #67 — 40여 행을 2열로 한 번에 쏟아 1512×900 에서 다이얼로그가 뷰포트의 95%
-// (852px)를 먹고 하단이 잘렸다. 해법은 **숨기기가 아니라 분류** — `전체` 탭이
-// 종전 목록을 그대로 유지하므로 발견 가능성을 잃지 않는다.
+// #67 — pouring some 40 rows into two columns at once made the dialog eat 95% of the
+// viewport (852px) at 1512×900 with the bottom cut off. The answer is **classification,
+// not hiding** — the `전체` (all) tab keeps the previous list, so discoverability is not lost.
 describe("ShortcutSheet — 문맥 탭 (#67)", () => {
   it("기본은 '지금 화면' — 지도에서는 문서함 섹션이 나오지 않는다", () => {
     renderSheet();
@@ -99,10 +100,10 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
       "aria-selected",
       "true",
     );
-    // 지도 표면 + 전역은 보인다.
+    // The map surface plus global are visible.
     expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.topology, { selector: "p" })).toBeInTheDocument();
     expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.navigation)).toBeInTheDocument();
-    // 문서함 전용 섹션은 이 탭에 없다.
+    // The docs-vault-only sections are not on this tab.
     expect(
       screen.queryByText(enMessages.searchWidgets.shortcuts.sections.docsPalette),
     ).not.toBeInTheDocument();
@@ -143,24 +144,26 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
   });
 });
 
-// #67 후속 — 스크롤 영역이 실제로 **제한**돼야 한다.
+// #67 follow-up — the scroll area has to be genuinely **constrained**.
 //
-// 실측 회귀(영문 `전체` 탭, 1512×806): 페이드 래퍼를 넣을 때 스크롤 div 에
-// `h-full` 을 썼는데, flex 로 높이가 정해진 래퍼(526px) 안에서 그 퍼센트가
-// 콘텐츠 높이(1112px)로 해석돼 `scrollHeight === clientHeight` 가 됐다. 결과:
-// 스크롤이 죽고 마지막 섹션이 뷰포트 밖(1256px)으로 잘렸다. jsdom 은 레이아웃을
-// 계산하지 않으므로 높이로는 못 잡는다 — **결정적인 앵커 방식**을 계약으로 잠근다.
+// Measured regression (English `전체` tab, 1512×806): adding the fade wrapper used
+// `h-full` on the scrolling div, and inside a wrapper whose height came from flex
+// (526px) that percentage resolved against the content height (1112px), making
+// `scrollHeight === clientHeight`. The result: the scroll died and the last section
+// was cut outside the viewport (1256px). jsdom does not compute layout, so this
+// cannot be caught by height — the **deterministic anchoring method** is pinned as a
+// contract instead.
 describe("ShortcutSheet — 스크롤 영역 높이 계약 (#67)", () => {
   it("스크롤 영역을 래퍼에 absolute 로 못박는다 — `h-full` 퍼센트 해석에 의존하지 않는다", () => {
     renderSheet();
     const scroll = screen.getByTestId("shortcut-sheet-scroll");
 
-    // 흐름 안에서 flex 로 제한한다 — 남는 공간만 먹고 나머지는 스크롤.
+    // Constrained with flex inside the flow — it takes only the remaining space and scrolls the rest.
     expect(scroll.className).toContain("min-h-0");
     expect(scroll.className).toContain("flex-1");
     expect(scroll.className).toContain("overflow-y-auto");
-    // `h-full` 은 콘텐츠 높이로 해석돼 스크롤을 죽였고(1112px),
-    // `absolute` 는 흐름에서 빠져 다이얼로그를 232px 로 무너뜨렸다. 둘 다 금지.
+    // `h-full` resolved against the content height and killed the scroll (1112px), and
+    // `absolute` dropped out of flow and collapsed the dialog to 232px. Both forbidden.
     expect(scroll.className).not.toContain("h-full");
     expect(scroll.className).not.toContain("absolute");
   });

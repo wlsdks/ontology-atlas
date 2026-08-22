@@ -8,16 +8,16 @@ import type { TierRevealConfig } from '@/widgets/topology-map-v2/model/tier-visi
 import { buildStageGraph, type StageGraph } from '../lib/stage-graph';
 
 /**
- * 관문 증거 절의 티어 공개 — **캡션이 세는 수만큼 그린다** (2026-08-18 소유자
- * 지적: 「81 개념」 캡션 밑에 8개짜리 그림).
+ * Tier reveal for the gateway's evidence section — **draw as many as the caption counts**
+ * (owner report 2026-08-18: a drawing of 8 under a caption reading "81 concepts").
  *
- * 워크벤치의 기본 공개 밴드(capability 1.5~2.0 · element 2.3~2.85)는 「개요는
- * 뼈대만, 줌인하면 한 단계씩」이라는 과업 화면의 문법이다. 증거 절의 일은
- * 과업이 아니라 **증명**이다 — 캡션이 「81 개념 · 107 관계」라고 적는데 화면이
- * 8개만 그리면, 캡션과 지도가 같은 그래프라는 이 페이지의 정직성 계약이
- * 눈으로는 배반당한다. 그래서 진입 배율(zoomRatio 1)에서 전 티어가 이미 다
- * 보이도록 밴드를 앞당긴다. 축소(줌아웃)하면 여전히 뼈대만 남는다 — 공개는
- * 앞당겼지 게이트를 없앤 것이 아니다.
+ * The workbench's default reveal bands (capability 1.5–2.0, element 2.3–2.85) are the grammar
+ * of a task screen: the overview shows only the skeleton and zooming in adds a tier at a time.
+ * The evidence section's job is not a task but **proof** — if the caption says "81 concepts ·
+ * 107 relations" and the screen draws 8, this page's honesty contract (caption and map are one
+ * graph) is betrayed to the eye. So the bands are pulled forward so every tier is already
+ * visible at the entry zoom (zoomRatio 1). Zooming out still leaves only the skeleton — the
+ * reveal moved earlier, the gate was not removed.
  */
 const GATEWAY_TIER_REVEAL: TierRevealConfig = {
   capability: { enterRatio: 0.35, fullRatio: 0.65 },
@@ -25,14 +25,14 @@ const GATEWAY_TIER_REVEAL: TierRevealConfig = {
 };
 
 /**
- * 무대가 그리는 그래프 — **캡션과 지도가 같은 객체를 본다**.
+ * The graph the stage draws — **caption and map look at the same object.**
  *
- * 예전엔 지도가 이 파생 그래프를 그리는 동안 캡션은 빌드 스크립트가 센
- * frontmatter 파일 수(`DOGFOOD_CENSUS`, 96)를 적었다. 같은 화면에 두 정의가
- * 있었고, 실측하면 지도의 노드는 **287** 이었다 — 캡션이 3배 작게 말한 것이다.
- * 캡션은 자기가 설명하는 그림을 세야 한다.
+ * The map used to draw this derived graph while the caption printed the frontmatter file count
+ * from the build script (`DOGFOOD_CENSUS`, 96). Two definitions on one screen, and measured, the
+ * map had **287** nodes — the caption understated by 3×. A caption must count the picture it
+ * describes.
  *
- * `useDogfoodInsight` 는 로케일별 메모 캐시라 두 곳에서 불러도 파생은 1회다.
+ * `useDogfoodInsight` memoizes per locale, so calling it from two places derives once.
  */
 export function useStageGraph(): StageGraph {
   const insight = useDogfoodInsight();
@@ -40,101 +40,96 @@ export function useStageGraph(): StageGraph {
 }
 
 /**
- * 무대의 지도 — **진짜 엔진이다** (2026-07-28 소유자 지시:
- * *"우리 실제가 훨씬 예쁘고 … 우측에서 드래그하면 움직이게 하고싶음 실제처럼,
- * 사용하는것처럼"*).
+ * The stage's map — **it is the real engine** (owner instruction 2026-07-28:
+ * *"우리 실제가 훨씬 예쁘고 … 우측에서 드래그하면 움직이게 하고싶음 실제처럼, 사용하는것처럼"*
+ * — ours is far prettier; I want dragging on the right to move it, like the real thing, like
+ * using it).
  *
- * ## 정적 초상을 버린 이유
+ * **Why the static portrait was dropped.** The previous version was an SVG portrait baked at
+ * build time. The logic was right ("do not build a second workbench on the gateway") but it
+ * **optimized the wrong thing** — if this page's job is to sell the service, no argument is
+ * stronger than **letting someone actually handle what is being sold**. A hand-drawn likeness
+ * is worse than the real thing no matter how polished, and a visitor spots the difference exactly.
  *
- * 직전 판은 빌드 시점에 구운 SVG 초상이었다. 논리는 맞았지만("관문에 두 번째
- * 워크벤치를 만들지 않는다") **틀린 것을 최적화한 것**이었다 — 이 페이지의 일이
- * 서비스를 파는 것이라면, 파는 물건을 **실제로 만져 보게 하는 것**보다 강한
- * 논증이 없다. 손으로 그린 닮은꼴은 아무리 다듬어도 진짜보다 못하고, 방문자는
- * 그 차이를 정확히 알아본다.
+ * **So what is protected instead.** What keeps the gateway from becoming a workbench was never
+ * *not using the engine* — it was **not attaching the chrome**. So there is no INDEX panel, no
+ * detail datasheet, no control bar. What remains is the map's own feel: it pushes when dragged,
+ * settles with inertia, and focuses a node when you press it. Anyone who wants more is sent to
+ * "open the map in the browser" and to the app.
  *
- * ## 그래서 무엇을 지키나
+ * **Data.** The graph comes from `useStageGraph()` above and is **shared with the caption** —
+ * the number the caption counts and the dots drawn here must be the same object for this page's
+ * honesty contract to hold.
  *
- * 관문이 워크벤치가 되지 않게 하는 것은 **엔진을 안 쓰는 것**이 아니라
- * **크롬을 안 붙이는 것**이었다. 그래서 여기엔 INDEX 패널도 상세 데이터시트도
- * 컨트롤 바도 없다. 남는 것은 지도 자체의 촉감 — 끌면 밀리고, 관성으로 정착하고,
- * 노드를 누르면 그 노드로 초점이 잡히는 것까지. 그 이상을 하고 싶어진 사람의
- * 목적지는 판 안의 「웹에서 지도 열기」와 앱이다.
- *
- * ## 데이터
- *
- * 그래프는 위 `useStageGraph()` 가 만들어 **캡션과 공유**한다 — 캡션이 세는
- * 숫자와 여기 그려지는 점이 같은 객체여야 이 페이지의 정직성 계약이 성립한다.
- *
- * `useDogfoodInsight()` 로 **출처를 고정**한다. `useOntologyInsight()` 는 세션의
- * 선택(로컬 볼트 · 스토어프론트 샘플)을 따라가는데, 그러면 캡션이 "이 저장소의
- * docs/ontology · 96 개념" 이라고 적어 둔 채 스토어프론트 7 노드를 그리는 일이
- * 생긴다(실측 2026-07-28, 첫 엔진 마운트). 무대가 주장하는 것과 그리는 것은
- * 같은 볼트여야 한다.
+ * `useDogfoodInsight()` **pins the source**. `useOntologyInsight()` follows the session's choice
+ * (a local vault, the storefront sample), which produced a caption claiming "this repository's
+ * docs/ontology · 96 concepts" while drawing the storefront's 7 nodes (measured 2026-07-28, the
+ * first engine mount). What the stage claims and what it draws must be the same vault.
  */
 export function StageMap({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download');
   const [selected, setSelected] = useState<string | null>(null);
   /**
-   * 접힌 자식 무리를 펼친 부모들. **이 상태가 없으면 클러스터 칩(`+17`)이
-   * 죽은 어포던스가 된다** — 엔진은 칩을 누를 수 있게 그리는데 받는 쪽이
-   * 없으면 눌러도 아무 일이 없다(실측 2026-07-28, 첫 엔진 마운트). 누를 수
-   * 있게 생긴 것은 눌리거나, 그렇게 생기지 않아야 한다.
+   * Parents whose collapsed children have been expanded. **Without this state the cluster chip
+   * (`+17`) is a dead affordance** — the engine draws it as pressable, and with no receiver
+   * pressing it does nothing (measured 2026-07-28, the first engine mount). Something that looks
+   * pressable must be pressed, or must not look that way.
    *
-   * URL 왕복은 하지 않는다 — 관문의 지도는 공유되는 상태가 아니라 만져 보는
-   * 물건이라, 펼침은 이 화면을 떠나면 사라져도 되는 세션 상태다.
+   * No URL round trip — the gateway's map is an object to handle, not shared state, so expansion
+   * is session state that may vanish when this screen is left.
    */
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(
     /**
-     * 시작부터 전부 펼친다 (2026-08-18) — 위 GATEWAY_TIER_REVEAL 과 같은 이유다:
-     * 밀도 게이트가 자식을 칩(`+17`)으로 접으면 캡션이 세는 수와 그려지는 수가
-     * 갈라진다. 전 노드 id 를 넣는 것은 안전하다 — 게이트는 childrenByParent 에
-     * 있는 부모만 보므로 잉여 id 는 무해하고, 사용자가 칩을 눌러 도로 접으면
-     * toggleCluster 가 그대로 동작한다.
+     * Everything starts expanded (2026-08-18), for the same reason as `GATEWAY_TIER_REVEAL`
+     * above: if the density gate folds children into a chip (`+17`), the number the caption
+     * counts diverges from the number drawn. Seeding every node id is safe — the gate looks only
+     * at parents present in `childrenByParent`, so surplus ids are harmless, and pressing a chip
+     * to collapse again still works through `toggleCluster`.
      */
     () => new Set(graph.nodes.map((node) => node.id)),
   );
 
   /**
-   * 첫 지도 연출 토큰 — **엔진이 이미 가진 안무를 관문에서 깨우는 것**이다
-   * (모션석 판정 2026-07-29).
+   * The first-map reveal token — **it wakes choreography the engine already has** (motion seat
+   * verdict, 2026-07-29).
    *
-   * `use-topology-loop.ts` 의 P3d(E1) 연출은 전 노드를 project 노드 홈에
-   * 모았다가 호밍 스프링(임계감쇠, reduced-motion 스냅 내장)으로 제자리에
-   * 정착시킨다. 신규 모션 계약이 0인 기존 기제인데, 여기서 `revealToken={1}`
-   * 을 **상수로** 넘기고 있어서 한 번도 발화한 적이 없었다 — 엔진의 비교
-   * 기준(`lastRevealTokenRef`)이 0 으로 시작하므로 첫 마운트가 그 증가를
-   * 그대로 삼킨다. 그 결과 p(t) 실측에서 캔버스가 **1프레임 하드컷**으로
-   * 완성된 지도를 내놓았다(첫 유효 프레임 diff 5042/5044).
+   * The reveal in `use-topology-loop.ts` gathers every node at the project node's home and
+   * settles them into place with a homing spring (critically damped, with a reduced-motion snap
+   * built in). It is an existing mechanism with zero new motion contracts, but `revealToken={1}`
+   * was passed here **as a constant** and therefore never fired — the engine's comparison basis
+   * (`lastRevealTokenRef`) starts at 0, so the first mount swallows the increment. Measured on
+   * p(t), the canvas produced a finished map in **one hard-cut frame** (first effective frame
+   * diff 5042/5044).
    *
-   * 이 페이지의 유일한 판매 논증이 "이건 그림이 아니라 살아 있는 엔진" 인데
-   * 도착하는 순간이 죽은 그림이면 그 논증이 첫 프레임에서 무너진다. 정착이
-   * 보이는 것이 곧 물리의 증명이다.
+   * This page's only sales argument is "this is not a picture, it is a live engine", so if the
+   * moment of arrival is a dead picture the argument collapses in the first frame. Seeing it
+   * settle *is* the proof of the physics.
    *
-   * rAF 한 틱을 기다리는 이유: 월드·루프가 준비된 **뒤에** 0→1 전이가 보여야
-   * 한다. 같은 프레임에 올리면 마운트가 다시 삼킨다.
+   * Why it waits one rAF tick: the 0→1 transition must be visible **after** the world and loop
+   * are ready. On the same frame, the mount swallows it again.
    */
   const [revealToken, setRevealToken] = useState(0);
 
   /**
-   * 관문 토큰 스코프를 켠다 — `app/globals.css` 의 `html[data-gateway-stage]`.
+   * Turns on the gateway token scope — `html[data-gateway-stage]` in `app/globals.css`.
    *
-   * 왜 루트 속성인가: 캔버스 토큰 리더는 `document.documentElement` 의
-   * computed style 을 **1회 읽고 전역 캐시**한다. 그래서 이 컴포넌트의
-   * 컨테이너에 클래스를 걸면 색은 CSS 로 상속돼 바뀌는 것처럼 보이지만
-   * 카메라 상한 같은 **숫자 토큰은 리더를 통해서만 전달**되므로 아무 일도
-   * 일어나지 않는다(실측 2026-07-28: 잉크만 밝아지고 지도 크기는 1픽셀도
-   * 안 변했다). 저장소 선례가 `html[data-topology-index="collapsed"]` 로
-   * 같은 구조를 이미 쓴다.
+   * Why a root attribute: the canvas token reader reads the computed style of
+   * `document.documentElement` **once and caches it globally**. Putting a class on this
+   * component's container makes colours appear to change (CSS inherits them), but **numeric
+   * tokens such as the camera ceiling only ever arrive through the reader**, so nothing happens
+   * (measured 2026-07-28: only the ink brightened while the map's size did not move one pixel).
+   * The repository precedent is `html[data-topology-index="collapsed"]`, which already uses this
+   * structure.
    *
-   * 언마운트에서 반드시 되돌린다 — 안 그러면 클라이언트 내비게이션으로
-   * `/topology` 에 갔을 때 워크벤치가 관문의 카메라 상한을 물려받는다.
+   * It must be reverted on unmount, or a client navigation to `/topology` leaves the workbench
+   * inheriting the gateway's camera ceiling.
    *
-   * ⚠️ **지도를 이 effect **뒤에** 마운트해야 한다.** React 는 자식 effect 를
-   * 부모보다 먼저 돌리므로, 지도를 같은 렌더에 그리면 **속성이 걸리기 전에**
-   * 토큰을 읽고 전역 캐시에 굳힌다 — 캐시를 지운 뒤엔 다시 읽을 계기가 없다.
-   * 실측(2026-07-28): 잉크 색은 CSS 상속으로 밝아졌는데 카메라 상한만 옛
-   * 값이라 지도 크기가 두 번 연속 1픽셀도 안 변했다. `scoped` 게이트가
-   * 그 순서를 강제한다.
+   * ⚠️ **The map must mount *after* this effect.** React runs child effects before the parent's,
+   * so drawing the map in the same render reads the tokens **before the attribute is set** and
+   * freezes them into the global cache — and after clearing the cache there is no trigger to read
+   * again. Measured 2026-07-28: the ink brightened by CSS inheritance while the camera ceiling
+   * kept its old value, so the map's size did not move one pixel twice in a row. The `scoped`
+   * gate enforces that order.
    */
   const [scoped, setScoped] = useState(false);
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -143,18 +138,19 @@ export function StageMap({ graph }: { graph: StageGraph }) {
     root.setAttribute('data-gateway-stage', '');
 
     /**
-     * [은퇴 2026-08-18] 여기 있던 카메라 예약폭 파생(`computeGatewaySafeInset`
-     * 읽기 + 리사이즈 구독 + `--gateway-safe-inset-left-computed` 쓰기)은
-     * 리메이크로 삭제됐다 — 지도가 판 뒤 배경이 아니라 자기 절(증거)이 되면서
-     * 판이 지도를 덮을 수 없고, 예약할 폭 자체가 없다. 겹침 불가는
-     * `tests/e2e/download-gateway-grid.spec.ts` 가 rect 로 잰다.
+     * [Retired 2026-08-18] The camera reserve derivation that lived here (reading
+     * `computeGatewaySafeInset`, subscribing to resize, writing
+     * `--gateway-safe-inset-left-computed`) was deleted in the remake — with the map in its own
+     * (evidence) section rather than behind the panel, the panel cannot cover the map and there
+     * is no width to reserve. `tests/e2e/download-gateway-grid.spec.ts` measures the
+     * impossibility of overlap by rect.
      */
     clearTopologyV2TokensCache();
-    // 이 setState 가 곧 **순서 계약**이다. 지도를 같은 렌더에 그리면 React 가
-    // 자식 effect 를 먼저 돌려 **속성이 걸리기 전에** 토큰을 읽고 전역 캐시에
-    // 굳힌다(실측 2026-07-28: 카메라 상한만 옛 값이라 지도가 두 번 연속
-    // 1픽셀도 안 커졌다). 렌더를 한 번 더 도는 비용으로 그 경합을 없앤다 —
-    // 대안은 렌더 중 DOM 을 만지는 것뿐이라 더 나쁘다.
+    // This setState **is** the ordering contract. Drawing the map in the same render lets React
+    // run the child effect first, reading tokens **before the attribute is set** and freezing
+    // them into the global cache (measured 2026-07-28: only the camera ceiling kept its old
+    // value, so the map failed to grow by even one pixel twice in a row). One extra render pass
+    // buys away that race — the alternative is touching the DOM during render, which is worse.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setScoped(true);
 
@@ -165,16 +161,16 @@ export function StageMap({ graph }: { graph: StageGraph }) {
   }, []);
 
   /**
-   * 도착 안무는 **눈앞에서** 발화한다 (리메이크 2026-08-18).
+   * The arrival choreography fires **in front of the viewer** (remake 2026-08-18).
    *
-   * 종전엔 마운트 다음 프레임에 revealToken 을 올렸다 — 지도가 첫 화면의
-   * 배경이라 마운트가 곧 「보이는 순간」이었다. 이제 지도는 스크롤 아래 증거
-   * 절에 사니, 마운트에 발화하면 안무가 **아무도 안 보는 동안** 끝난다. 절이
-   * 뷰포트에 들어오는 첫 순간에 rAF 한 틱을 미뤄 올린다(같은 프레임이면
-   * 마운트가 전이를 삼키는 함정은 그대로라서다 —
+   * It used to raise `revealToken` on the frame after mount, which was correct while the map was
+   * the first screen's background and mount *was* the moment of becoming visible. Now that the
+   * map lives in the evidence section below the fold, firing at mount finishes the choreography
+   * **while nobody is watching**. It is raised one rAF tick after the section first enters the
+   * viewport (the same-frame trap where mount swallows the transition still applies —
    * `tests/contract/gateway-map-reveal.contract.test.ts`).
    *
-   * IntersectionObserver 가 없는 환경(jsdom)에서는 즉시 발화한다.
+   * Where IntersectionObserver is unavailable (jsdom) it fires immediately.
    */
   useEffect(() => {
     if (!scoped) return;
@@ -212,7 +208,7 @@ export function StageMap({ graph }: { graph: StageGraph }) {
     });
   }, []);
 
-  // 스코프가 켜지기 전에는 지도를 그리지 않는다 (위 주석의 순서 계약).
+  // The map is not drawn before the scope is on (the ordering contract above).
   if (!scoped || graph.nodes.length === 0) return null;
 
   return (
@@ -221,7 +217,7 @@ export function StageMap({ graph }: { graph: StageGraph }) {
         nodes={graph.nodes}
         edges={graph.edges}
         focus={{ selectedSlug: selected }}
-        // 관문에는 "지도 맞추기" 버튼이 없으므로 토큰은 마운트 1회로 고정한다.
+  // The gateway has no "fit map" button, so the token is fixed at one mount.
         fitViewToken={1}
         relayoutToken={1}
         revealToken={revealToken}
@@ -231,22 +227,23 @@ export function StageMap({ graph }: { graph: StageGraph }) {
         onToggleCluster={toggleCluster}
         tierReveal={GATEWAY_TIER_REVEAL}
         /**
-         * 첫 카메라가 전 노드 bbox 를 프레임 중앙에 놓는다 (2026-08-18 소유자:
-         * *"처음 로딩될때 … 너무 아래임.. 딱 중앙이었음해"*). 워크벤치 기본
-         * (스파인 bbox 핏)은 진입에 스파인만 그릴 때의 정직한 프레임인데, 이
-         * 절은 위 tierReveal 로 진입부터 전 티어를 그린다 — 스파인 중심은 전
-         * 그래프 질량보다 위라 실측(1512) 위 143px 공백 · 아래 17px 로 낮게
-         * 앉았다. 라벨은 bbox 가 아니라 하단 여유(camera-math 의
-         * OVERVIEW_LABEL_BOTTOM_ALLOWANCE)로만 카메라에 참여한다.
+         * The first camera centres the full node bbox in the frame (owner, 2026-08-18:
+         * *"처음 로딩될때 … 너무 아래임.. 딱 중앙이었음해"* — on first load it sat too low; it
+         * should be dead centre). The workbench default (fit to the spine bbox) is the honest
+         * frame when only the spine is drawn on entry, but this section draws every tier from
+         * entry via `tierReveal` above — and the spine's centre is above the whole graph's mass,
+         * so measured at 1512 it sat low with 143px of space above and 17px below. Labels take
+         * part in the camera only through the bottom allowance
+         * (`OVERVIEW_LABEL_BOTTOM_ALLOWANCE` in camera-math), not through the bbox.
          */
         overviewFit="full"
         clusterHint={t('stageClusterHint')}
         canvasLabel={t('stageMapLabel')}
-        // 관문은 스크롤하는 문서다 — 휠과 세로 스와이프는 페이지 것이고,
-        // 줌은 명시적 핀치에만. 드래그 팬과 클릭은 그대로 지도 것이다.
+        // The gateway is a scrolling document — the wheel and vertical swipes belong to the page,
+        // and zoom only to an explicit pinch. Drag-pan and click still belong to the map.
         wheelIntent="page-scroll"
-        // 관문 세션은 워크벤치보다 짧고, 이 표면에는 혜성이 나르는 읽기 과업이
-        // 없다 — 손 안에서는 살아 있고 내려놓으면 몇 초 안에 식는다.
+        // A gateway session is shorter than a workbench one, and this surface has no reading task
+        // carried by comets — alive in your hand, cold within seconds once you put it down.
         ambientSleepDelayMs={3000}
       />
     </div>

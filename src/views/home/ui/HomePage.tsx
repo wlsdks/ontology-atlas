@@ -32,8 +32,8 @@ import {
 import { Link, useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { useLocale, useTranslations } from "next-intl";
-// `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
-// (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
+// `History as HistoryIcon` avoids colliding with the global DOM `History`
+// constructor (same aliasing as `AtlasGitPanel`).
 import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
@@ -56,8 +56,9 @@ import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-na
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
-// 지도 오른쪽 세로 도크. 지도와 같은 flex row 안에 있어야 폭 애니메이션 하나가
-// 두 컬럼을 함께 움직인다 — "자리를 내줬다" 로 읽히는 이유.
+// The dock down the right of the map. It has to sit in the same flex row as the
+// map so one width animation moves both columns — that is what reads as "the map
+// made room for it".
 const VaultAgentPanel = dynamic(
   () => import("@/widgets/vault-agent-panel").then((m) => m.VaultAgentPanel),
   { ssr: false },
@@ -71,9 +72,9 @@ const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
 // below (`../lib/deeplink-miss-notice.ts`) for why this exists.
 const DEEPLINK_MISS_GRACE_MS = 4000;
-// 지난 길 저장 디바운스 — 걸음마다 사용자 디스크에 쓰지 않도록 잠깐 모은다.
-// 짧게 잡는다: 여기서 기다린 시간만큼 "창을 바로 닫으면 마지막 걸음이 빠질"
-// 구간이 생긴다(탭 숨김 시 앞당기기로 한 번 더 줄인다).
+// Debounce before writing the past trail, so every step does not hit the user's
+// disk. Kept short on purpose: whatever we wait here is a window in which closing
+// the window loses the last step (a flush on tab hide narrows it further).
 const PAST_TRAIL_SAVE_DEBOUNCE_MS = 600;
 
 const TopologyFitControl = dynamic(
@@ -84,7 +85,7 @@ const HubRail = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.HubRail),
   { ssr: false },
 );
-/** P3b — 관계 타입 → 문장 i18n 키 (dependencies/depends_on 통일 등). */
+/** Relation type → sentence i18n key; folds synonym types onto one key. */
 function normalizeEdgeSentenceKey(type: string): string {
   if (type === "dependencies" || type === "depends_on") return "depends";
   if (type === "contains" || type === "elements" || type === "capabilities" || type === "domains" || type === "domain") return "contains";
@@ -114,26 +115,27 @@ const MountedGlobalSearch = dynamic(
     import("@/widgets/global-search").then((m) => m.MountedGlobalSearch),
   { ssr: false },
 );
-// perf sweep 2026-07 — `FullDetailA1` is the opt-in "전체 상세" overlay
-// (design.md: full-bleed detail is opt-in, never the click default), so like
-// the other overlay widgets above it has no business in the first-load
-// bundle. It statically imported `react-markdown` (+ `remark`), which alone
-// measured ~129KB gzip and was shipping to EVERY visit of `/`/`/topology`
-// even for users who never open a full-detail card. `buildFullDetailGroups`/
-// `buildFullDetailReachModel` are plain data-shaping functions (no
-// ReactMarkdown dependency) and stay regular imports — but they now live in
-// `../model/use-full-detail-a1-model.ts` with the model they build, and that
-// hook only calls them **while the card is open** (D4 처방 2026-07-28: 닫힌
-// 표면의 파생이 클릭 프레임을 먹고 있었다). 청크 예열과 모델 파생은 다른
-// 것이다 — 예열은 값이 싸고 등장 프레임을 지키지만, 파생 예열은 클릭
-// 프레임에 값을 청구한다.
-// 청크를 **미리 당길 수 있게** import 를 이름 있는 함수로 둔다 — 번들러가
-// 모듈 promise 를 캐시하므로 예열 후의 재호출은 즉시 끝난다. 여기서 `dynamic`
-// (React.lazy + Suspense)을 쓰지 않는 이유도 같은 결이다: lazy 는 청크가
-// 캐시돼 있어도 첫 렌더에서 한 번 서스펜드하므로 **배경과 내용이 다른
-// 커밋에 실린다** — 실측에서 배경이 먼저 칠해지고 83ms 뒤 내용이 팝했다.
-// 해결된 컴포넌트를 상태로 들고 있으면 둘이 같은 커밋에 실린다.
-// 왜 예열하는가는 아래 `FullDetailCard` 주석.
+// `FullDetailA1` is the opt-in full-detail overlay (`.claude/rules/design.md`:
+// full-bleed detail is opt-in, never the click default), so it has no business in
+// the first-load bundle. It statically imported `react-markdown` (+ `remark`),
+// measured at ~129KB gzip, and that shipped to EVERY visit of `/` and `/topology`
+// even for users who never open a full-detail card.
+//
+// `buildFullDetailGroups` / `buildFullDetailReachModel` carry no ReactMarkdown
+// dependency and stay regular imports, but they live in
+// `../model/use-full-detail-a1-model.ts` and that hook only calls them **while the
+// card is open** (2026-07-28: derivation for a closed surface was being paid for
+// on the click frame). Prewarming a chunk and prewarming a derivation are not the
+// same trade — the chunk is cheap and buys the appearance frame, the derivation
+// bills the click frame.
+//
+// The import is a named function so the chunk can be pulled early; the bundler
+// caches the module promise, so the call after a prewarm resolves immediately.
+// `dynamic` (React.lazy + Suspense) is rejected for the same reason: lazy
+// suspends once on first render even with the chunk cached, so **background and
+// content land in different commits** — measured, the background painted first
+// and the content popped in 83 ms later. Holding the resolved component in state
+// puts both in one commit. Why it is prewarmed at all: see `FullDetailCard` below.
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
@@ -352,41 +354,35 @@ import { resolveTourAnchorNodeId } from "../lib/resolve-tour-anchor-node";
 
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
-/** INDEX panel preference (B3 허브가 곧 지도) — separate key from the legacy
- * hero-rail `LEFT_PANEL_COLLAPSED_KEY` above, a different feature entirely. */
+/** INDEX panel preference — a separate key from the legacy hero-rail
+ * `LEFT_PANEL_COLLAPSED_KEY` above, which is a different feature entirely. */
 const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
 /**
- * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 필터(데이터 무변경). true 면
- * 비개발(일반) 모드: element 티어 기본 숨김(클릭 ego 는 예외 공개) + plain
- * 어휘 + 경로 서브정보 숨김 + 개발자 크롬 숨김. localStorage 만 진실원 —
- * `useLocalStorageBoolean` 은 setItem 후 리렌더 트리거가 없어(구독만) 여기선
- * useState 미러 + setter 에서 setItem 동기화 패턴을 쓴다(기존
- * `setIndexPreference` 의 "저장+즉시 적용" 계약과 동일).
- */
-/**
- * ── 부팅 렌더 게이트 (2026-08-19 실측) ──────────────────────────────────
+ * Boot render gate. Measured 2026-08-19: the single largest long task on a first
+ * visit to `/ko/topology/` was **this view's first client render + commit**, at
+ * 324–335 ms under 4× CPU throttling. The initial render at a lazy boundary runs
+ * in the synchronous lane, so the whole 6,000-line tree lands in one task.
  *
- * `/ko/topology/` 첫 진입의 단일 최대 long task 는 **이 뷰의 첫 클라이언트
- * 렌더+커밋 하나**였다 — CPU 4배 스로틀 기준 324~335ms(수술 전 실측). lazy
- * 경계의 초기 렌더는 동기 레인이라 6,000줄 트리 전체가 한 태스크로 돈다.
+ * The fix: the first client commit clones the DOM of the server fallback
+ * (`MapEntryFallback`) that is already on screen, so it finishes in a few ms with
+ * no pixel change, and the real tree renders in the following `startTransition`.
+ * The transition lane yields roughly every 5 ms, splitting the big render into
+ * many small tasks; what the user sees is unchanged — fallback, the same fallback
+ * again, then the finished page.
  *
- * 처방: 첫 클라이언트 커밋은 **화면에 이미 있는 서버 폴백(MapEntryFallback)의
- * DOM 을 그대로 복제**해 픽셀 변화 없이 끝내고(수 ms), 본체는 이어지는
- * `startTransition` 에서 렌더한다 — 전이 레인은 ~5ms 마다 양보하므로 큰
- * 렌더가 여러 작은 태스크로 갈라지고, 화면에 보이는 순서는 종전과 같다:
- * 폴백 → (동일한 폴백) → 완성된 페이지.
+ * Why clone rather than re-implement: `MapEntryFallback` is a server component and
+ * cannot be rendered here, and a hand-copied markup twin changes the screen the
+ * moment the two drift. Reusing the live `outerHTML` already in the document
+ * cannot structurally drift. When the fallback DOM is absent (client navigation),
+ * the gate is skipped — this optimisation only means anything on a cold boot.
  *
- * 왜 복제이고 재구현이 아닌가: `MapEntryFallback` 은 서버 컴포넌트라 여기서
- * 렌더할 수 없고, 마크업을 손으로 베끼면 두 벌이 어긋나는 순간 화면이 바뀐다.
- * 문서에 이미 서 있는 실물 `outerHTML` 을 그대로 쓰면 구조적으로 어긋날 수
- * 없다. 클라이언트 내비게이션 등으로 폴백 DOM 이 없으면(널) 게이트 없이
- * 종전 경로 그대로 간다 — 이 최적화는 콜드 부트에만 뜻이 있다.
- *
- * SSG 는 `window` 가 없어 곧장 본체로 가고, 본체는 종전대로 `useSearchParams`
- * 에서 서스펜드해 폴백이 HTML 에 구워진다 — 내보낸 문서는 바이트 그대로다.
+ * Under SSG there is no `window`, so it goes straight to the real tree, which
+ * suspends on `useSearchParams` as before and bakes the fallback into the HTML.
+ * The exported document is byte-identical.
  */
 export function HomePage() {
-  // lazy initializer — 첫 렌더(커밋 전)의 문서에는 서버 폴백이 아직 서 있다.
+  // Lazy initializer: before the first commit, the server fallback is still in
+  // the document.
   const [fallbackHtml] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return document.querySelector('[data-testid="map-entry-fallback"]')?.outerHTML ?? null;
@@ -399,7 +395,8 @@ export function HomePage() {
     return (
       <div
         style={{ display: "contents" }}
-        // 같은 문서가 방금 그린 자기 폴백의 복제(위 독블록) — 외부 입력이 아니다.
+        // A clone of this same document's own fallback (see the doc-block above);
+        // never external input.
         dangerouslySetInnerHTML={{ __html: fallbackHtml }}
       />
     );
@@ -412,43 +409,42 @@ function HomePageImpl() {
   const tMeaningEditor = useTranslations('meaningEditor');
   const reducedMotion = usePrefersReducedMotion();
   const siteT = useTranslations('metadata');
-  // 어권별 이름 입력(create composer) 계약의 '지금 화면 언어'.
+  // "The language on screen right now" for the create composer's per-locale
+  // name-input contract.
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
   const tTopologyKeyboardWalk = useTranslations('topologyWidgets.keyboardWalk');
-  // P2 결함⑤ — <lg 기록 chrome-tile 진입점의 aria-label/title (`atlasGit`
-  // 네임스페이스는 이미 `GitStatusTile` 이 쓰는 것과 같은 키를 재사용한다).
+  // aria-label/title for the history chrome-tile entry point below `lg`. Reuses
+  // the same `atlasGit` keys `GitStatusTile` already uses.
   const tAtlasGit = useTranslations('atlasGit');
   const relationVocabulary = useRelationVocabulary();
-  // 슬라이스 C — lazy initializer 는 클라이언트에서만 실제 실행(SSR 은 항상
-  // false), 클라이언트 hydration 도 localStorage 없는 서버 프리렌더 기준
-  // false 와 같아 hydration mismatch 없음(다른 세션 플래그와 같은 패턴).
-  // #65 — 공용 스토어로 승격. 셸(레일 하단 기록 타일)도 같은 값을 읽으므로
-  // 각자 localStorage 를 읽던 구조를 없앴다 — 설정에서 바꾸면 지도와 레일이
-  // 함께 바뀐다.
+  // Plain (non-developer) mode: a display lens only, never a data change. When on
+  // it hides the element tier by default (a clicked node's ego is the exception),
+  // switches to plain vocabulary, and hides path sub-info and developer chrome.
+  // It reads a shared store rather than localStorage directly, because the shell's
+  // history tile reads the same value — changing it in settings has to move the map
+  // and the rail together.
   const [audiencePlain, setAudiencePlain] = useAudiencePlain();
-  // Phase 5 #20/#21 — 개인화 설정(설정 시트에서 변경). 캔버스 배경 세트와 노드
-  // 아이콘 세트를 앱 전역 스토어에서 읽어 지도 캔버스에 내려보낸다. DOM 글리프는
-  // 같은 스토어를 스스로 구독하므로 두 표면이 lockstep 으로 스왑된다.
+  // Appearance preferences, all changed from the settings sheet. Each is read from
+  // an app-wide store and handed down to the map canvas; the DOM glyphs subscribe
+  // to the same store themselves, so both surfaces swap in lockstep.
   const canvasBackground = useCanvasBackground();
-  // 3D 보기 (2026-08-18, 옵트인) — 지도를 kind 동심 링의 돔으로 보는 뷰 모드.
-  // 토글 칩(SearchHint)이 같은 스토어를 스스로 구독하므로 lockstep 이다.
+  // 3D view (2026-08-18, opt-in): the map as a dome of concentric kind rings.
   const view3d = useView3d();
-  /** 3D 돔의 방위를 무엇이 정하나 — 「소유」/「결합」(`MapArrangement` 독블록). */
+  /** What decides the 3D dome's bearing — see the `MapArrangement` doc-block. */
   const mapArrangement = useMapArrangement();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
-  // 확장 설정(펼치기 표시 · 배치 · 세 숫자) — 같은 스토어, 같은 lockstep.
   const expand = useExpand();
-  // 슬라이스 C — 지도 표면의 관계 어휘 레지스터. 비개발(plain) 모드는
-  // 데이터시트와 같은 plain 레지스터로 통일.
+  // The map surface's relation-vocabulary register. Plain mode uses the same
+  // register as the datasheet.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   /*
-   * 빵부스러기가 **퇴장 창 동안에도 자기 내용을 그리게** 붙든다 — 안 붙들면
-   * 스택이 비는 순간 필(pill)만 남고 안이 텅 빈 채로 사라진다(등장/퇴장을
-   * 붙이려던 것이 더 나쁜 화면이 되는 그 실패). 키는 스택 자체다 — 배열은
-   * 매 렌더 정체성이 바뀌므로 원시값으로 눌러 둔다.
+   * Hold the breadcrumb's contents so it still draws during its exit window.
+   * Without this, the moment the stack empties the pill remains but its inside
+   * goes blank as it leaves. The hold key is the stack itself, flattened to a
+   * primitive because the array's identity changes every render.
    */
   const heldLocalGraphStack =
     useHeldValue(localGraphStack.length > 0 ? localGraphStack : null, localGraphStack.join('>')) ??
@@ -469,63 +465,60 @@ function HomePageImpl() {
     relations: number;
   } | null>(null);
   const router = useRouter();
-  // mode-aware projects read — local 모드는 vault 매니페스트 sync, static 은
-  // 빌드타임 dogfood 매니페스트. mission T7 — vault 의 .md 가 즉시 list/topology 에 반영.
+  // Mode-aware read: local mode syncs from the vault manifest, static mode from
+  // the build-time dogfood manifest. Either way a `.md` in the vault reaches the
+  // list and the map immediately.
   const projectsQuery = useProjects();
   const projects = projectsQuery.projects;
   const projectsError = projectsQuery.error;
-  /* 경보 문구도 퇴장 창 동안 붙든다 — 원시값이라 키가 필요 없다. */
+  /* The alert text is held across its exit window too; a primitive needs no key. */
   const heldProjectsError = useHeldValue(projectsError);
-  // R6 — 브랜드 pill 의 SAMPLE 배지(census 필의 일부)는 제거됐다. 정적 샘플
-  // 여부는 이제 INDEX 패널의 "시작하기" 모듈(FirstRunStarterModule)과 우하단
-  // 판독(FirstRunReadout)이 각자 판정해 표시한다 — pill 은 census 를 담지 않는다.
   const [routeState, setRouteState] = useHomeRouteState();
-  // 헤더 "Concept search" 버튼 · ⌘K · ⇧⌘K 모두 이 팔레트(MountedGlobalSearch,
-  // ontology 노드 + 프로젝트 통합 검색)를 연다 — persona-P1 fix: 예전에는
-  // ⌘K 가 프로젝트 전용 SearchPalette 를 열어 ontology 노드가 검색 결과에
-  // 전혀 없었고(project/doc 만), 그 팔레트의 ALL/HUB/NODE 레이어 칩도 프로젝트
-  // 허브 여부만 가르는 축이라 "NODE" 를 눌러도 체감상 no-op 이었다. 세 진입점
-  // 모두 이미 kind 필터가 동작하는 단일 통합 팔레트로 합쳐 새 팔레트를 만들지
-  // 않는다. 상세 화면(ProjectDetailPage)에서 Cmd+K를 누르면 홈으로 이동하며
-  // sessionStorage 플래그를 남긴다 — 여기서 그 플래그가 있으면 첫 렌더부터
-  // 이 팔레트를 열어 hydration mismatch 없이 한 번에 보이게 한다. lazy
-  // initializer는 클라이언트에서만 실제 실행되므로 SSR은 항상 false, 클라이언트
-  // hydration도 sessionStorage 없는 서버 프리렌더 기준 false → 불일치 없음.
   /**
-   * 에이전트 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
+   * The agent panel — a vertical dock the map makes room for on its right.
    *
-   * 한-번에-하나: 패널이 열리면 검색 팔레트와 개념 작성기는 물러난다. 셋 다
-   * 지도 위에서 주의를 요구하는 표면이라 겹치면 무엇이 주 표면인지 사라진다.
+   * One at a time: opening it retires the search palette and the concept composer.
+   * All three demand attention over the map, and overlapping them destroys which
+   * one is the primary surface.
    */
   const [vaultAgentOpen, setVaultAgentOpen] = useState(false);
   const [acpChatOpen, setAcpChatOpen] = useState(false);
   const [acpDockFrameOpen, setAcpDockFrameOpen] = useState(false);
   /**
-   * 처음부터 열어 둘 것인가 — 설치 앱 + 키가 있을 때만 참이다(`null` 은 아직
-   * 모름). 소유자 요구는 "시야로 보이면서" 인데, 키 없는 컴퓨터에서 잠긴
-   * 패널을 상주시키면 요구의 글자만 지키고 뜻은 어긴다.
+   * Whether the dock starts open — true only in the installed app with a key
+   * present (`null` means not known yet). The owner asked for it to be "in view",
+   * but parking a locked panel on a machine with no key keeps the letter of that
+   * and breaks its intent.
    */
   const agentDockDefaultOpen = useAgentDockDefaultOpen();
   /**
-   * 사용자가 한 번이라도 직접 여닫았으면 그 뜻이 기본값을 이긴다. 안 그러면
-   * 닫은 도크가 키 조회 한 번에 다시 열려 "닫기가 안 먹는" 것으로 읽힌다.
+   * Once the user has opened or closed the dock themselves, their intent beats the
+   * default. Otherwise a dock they closed reopens as soon as the key lookup
+   * resolves, which reads as "close does not work".
    */
   const agentDockTouchedRef = useRef(false);
   /*
-   * ⚠️ 스스로 여는 것은 **문 하나**(`openAgentChat`)를 탄다 — 그 문이 「코딩
-   * 에이전트냐 API 키냐」를 정하므로, 여기서 갈래를 다시 고르면 두 대화창이
-   * 같이 뜬다(2026-08-16 소유자 실보고: *"대화창 하나만 쓰자"*). 그 함수는
-   * 실행기 상태를 읽어야 해서 이 아래에 있고, 이 효과도 거기 붙어 있다.
+   * ⚠️ Opening by ourselves goes through the one door (`openAgentChat`), because
+   * that door decides coding-agent vs. API key. Choosing the branch again here
+   * puts two chat panels on screen at once. Owner, 2026-08-16: *"대화창 하나만
+   * 쓰자"* (one chat panel only). That function reads runtime state, so it and
+   * this effect both live further down.
    */
   /**
-   * 바깥에서 건너온 첫 마디(S7). 여기 실리는 것은 **문장 하나**뿐이고, 전송은
-   * 하지 않는다 — 패널의 입력칸에 앉을 뿐이라 사용자가 고쳐 보내거나 지울 수
-   * 있다. `nonce` 는 같은 문장을 다시 눌러도 다시 앉게 하는 값이다.
+   * A first line handed in from outside. Only a sentence lands here and nothing is
+   * sent — it sits in the panel's input so the user can edit, send, or clear it.
+   * `nonce` makes the same sentence land again when it is picked a second time.
    */
   const [vaultAgentPrefill, setVaultAgentPrefill] = useState<{
     text: string;
     nonce: number;
   } | null>(null);
+  // The header search button, ⌘K and ⇧⌘K all open this one palette
+  // (`MountedGlobalSearch`, ontology nodes + projects). ⌘K on a project detail
+  // page navigates home and leaves a sessionStorage flag; reading it in the lazy
+  // initializer opens the palette on the first render instead of a frame later.
+  // Lazy initializers only run on the client, so SSR and hydration both see
+  // `false` and there is no mismatch.
   const [ontologySearchOpen, setOntologySearchOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -551,25 +544,23 @@ function HomePageImpl() {
     return false;
   });
   const [docsDrawerOpen, setDocsDrawerOpen] = useState(false);
-  // SSR 과 첫 클라이언트 렌더가 같아야 한다 — useState 초기화에서
-  // localStorage 를 읽으면 hydration mismatch (서버/클라 className 불일치).
-  // 저장된 선호는 useSyncExternalStore 의 server snapshot 으로 SSR 기본값을
-  // 유지한 뒤 클라이언트 snapshot 에서 반영한다.
+  // SSR and the first client render must match, so the stored preference cannot be
+  // read in a `useState` initializer — that produces a hydration mismatch on the
+  // className. `useSyncExternalStore`'s server snapshot keeps the SSR default and
+  // the client snapshot applies the stored value after mount.
   const leftPanelCollapsed = useLocalStorageBoolean(LEFT_PANEL_COLLAPSED_KEY, true);
   const [topologyRelayoutToken, setTopologyRelayoutToken] = useState(0);
-  // useProjects 실패 시 UI 가 빈 채로 영구 고착되는 걸 막기 위한 에러
-  // 상태. 사용자 vault 디스크 read 실패 / 권한 만료 등의 경우 배너 노출
-  // + "다시 시도" 버튼으로 복구.
-  const toast = useToast();
 
   /**
-   * 방향키로 갈 곳이 없을 때 — 스스로 사라지는 안내 한 줄.
+   * When an arrow key has nowhere to go, one self-dismissing line.
    *
-   * 소유자: *"이동할 연관 노드가 없습니다 … 조금 보여지다 자동으로 사라지게"*.
-   * 새 표면을 만들지 않고 이미 있는 토스트를 쓴다 — 지도 위에 안내 상자를 새로
-   * 세우면 위치·토큰·모션을 다 정해야 하고 그건 혼자 정할 규격이 아니다.
-   * 연타 걸러 내기는 위젯이 한다(`shouldAnnounceDeadEnd`).
+   * Owner: *"이동할 연관 노드가 없습니다 … 조금 보여지다 자동으로 사라지게"*
+   * (show it briefly, then let it disappear on its own). This reuses the existing
+   * toast rather than adding a surface: a new notice box over the map would need
+   * its own position, tokens, and motion, and that is not a spec one author sets
+   * alone. The widget filters repeats (`shouldAnnounceDeadEnd`).
    */
+  const toast = useToast();
 
   const prefetchedProjectHrefsRef = useRef(new Set<string>());
   const preloadedImageUrlsRef = useRef(new Set<string>());
@@ -591,28 +582,30 @@ function HomePageImpl() {
     recentWindow,
   } = routeState;
   const renderProjects = projects;
-  // 밀도 게이트 (fable 설계) — URL `?open=` 의 부모 slug 목록을 Set 으로
-  // 변환해 지도로 내린다. 문자열 join 을 dep 으로 써 안정적으로 메모.
-  // **딥링크도 사용자의 상한을 받는다** (2026-08-02 실측 defect). `?open=` 파싱은
-  // 순수 함수라 설정을 모르고 기본값 3 을 쓴다 — 그래서 「동시에 펼쳐 둘 부모」를
-  // 1 로 내려 둔 사람이 링크 하나로 셋을 받았다(실측: maxOpen=1 인데 부모 3개가
-  // 펼쳐진 채 82노드). 클릭 경로만 상한을 지키면 그건 상한이 아니다. 뒤쪽을
-  // 남기는 방향은 `toggleExpandedParent` 의 LRU 축출과 같다(나중에 적힌 것이 더
-  // 최근 의도다).
+  // Density gate: turn the parent-slug list from `?open=` into a Set for the map,
+  // memoised on the joined string so the dependency is stable.
+  //
+  // **Deep links obey the user's cap too** (defect measured 2026-08-02). Parsing
+  // `?open=` is a pure function that knows nothing about settings and falls back to
+  // 3, so someone who had lowered "parents open at once" to 1 got three from a
+  // single link (measured: maxOpen=1, three parents expanded, 82 nodes). A cap the
+  // click path alone honours is not a cap. Keeping the tail matches
+  // `toggleExpandedParent`'s LRU eviction — what is written later is the more
+  // recent intent.
   const expandedParentsKey = limitExpandedParents(expandedParentSlugs, expand.maxOpenParents).join(",");
   const expandedParentSet = useMemo(
     () => new Set(expandedParentsKey ? expandedParentsKey.split(",") : []),
     [expandedParentsKey],
   );
-  // 밀도 게이트 — 클러스터 칩 클릭 → 해당 부모 확장 토글(URL 왕복). 노드
-  // 선택/포커스 상태는 건드리지 않는다(칩은 접힘/펼침만 담당).
+  // Cluster chip click toggles that parent's expansion through the URL. Node
+  // selection and focus are untouched — the chip only collapses and expands.
   const handleToggleCluster = useCallback(
     (parentId: string) => {
       setRouteState((current) => ({
         ...current,
-        // 상한은 설정(「확장 → 동시에 펼쳐 둘 부모」)이 정한다. 넘치면 여기서
-        // 가장 오래 펼쳐 둔 것이 닫힌다 — 클릭이 아무 일도 안 하는 상태를
-        // 만들지 않는다(`toggleExpandedParent` 주석).
+        // The cap comes from settings. Past it, the least recently expanded parent
+        // closes here rather than the click doing nothing — see
+        // `toggleExpandedParent`.
         expandedParents: toggleExpandedParent(
           current.expandedParents,
           parentId,
@@ -622,18 +615,19 @@ function HomePageImpl() {
     },
     [setRouteState, expand.maxOpenParents],
   );
-  // S4 "영역 전개" — 궤도 버튼/데이터시트 액션 → 이 노드의 세계로 전환(URL 왕복).
+  // Enter a realm: the orbit button or a datasheet action switches the map into
+  // this node's world, through the URL.
   const handleEnterRealm = useCallback(
     (slug: string) => {
       setRouteState((current) => enterRealmRouteState(current, slug));
     },
     [setRouteState],
   );
-  // S4 — 영역 해제(칩 ✕ / Esc). 전체 지도로 복귀.
+  // Leave the realm (chip ✕ or Esc) and return to the whole map.
   const handleExitRealm = useCallback(() => {
     setRouteState((current) => exitRealmRouteState(current));
   }, [setRouteState]);
-  // INDEX panel (B3 허브가 곧 지도) — the new default left occupant. Preference
+  // INDEX panel — the default left occupant. Preference
   // persists in localStorage; `?index=` (parsed into `routeState.indexState`)
   // wins for deep-linking (`resolveIndexPanelState` precedence). The analysis
   // rail ("reader lens") and INDEX are exclusive left-slot occupants —
@@ -652,23 +646,25 @@ function HomePageImpl() {
     leftSlotOwner,
     indexPreference,
   );
-  // C (소유자 실보고 2026-07-23, "어지럽다 — 모든 패널이 다 열려있어서") —
-  // 노드 선택(데이터시트 활성) 동안 좌측 스택은 접힘 탭으로 물러나고,
-  // 캔버스 빈 곳 클릭(선택 해제)이 원래 선호를 복귀시킨다. 선택 중 사용자가
-  // 탭으로 수동 전개하면 그 선택이 끝날 때까지 전개가 우선한다. 영구 선호
-  // (localStorage)는 건드리지 않는 순수 세션 강등.
+  // Owner, 2026-07-23: *"어지럽다 — 모든 패널이 다 열려있어서"* (it is dizzying
+  // because every panel is open at once). While a node is selected and the
+  // datasheet is up, the left stack retreats to a collapsed tab; clicking empty
+  // canvas restores the stored preference. If the user expands it manually during
+  // a selection, that expansion wins until the selection ends. This is a
+  // session-only demotion — the persisted preference is never touched.
   const [indexManualExpandDuringSelection, setIndexManualExpandDuringSelection] =
     useState(false);
   /*
-   * 아직 아무것도 없는 지도에서는 INDEX 를 접어 둔다 (2026-08-16 소유자 실보고,
-   * *"처음 시작하면 왼쪽 index 는 닫혀 있어야 할 듯"*).
+   * On a map with nothing in it yet, INDEX starts collapsed. Owner, 2026-08-16:
+   * *"처음 시작하면 왼쪽 index 는 닫혀 있어야 할 듯"* (on a first start the left
+   * index should be closed).
    *
-   * INDEX 는 「개념 목록」이라 개념이 0개면 **담을 것이 없다** — 실제로 그
-   * 화면에는 「일치하는 개념이 없습니다」한 줄만 있고, 그 한 줄이 화면 왼쪽
-   * 3분의 1을 가진 채 정작 이때 유일하게 할 일이 적힌 시작 체크리스트를
-   * 오른쪽으로 밀어내고 있었다. 위 선택-중 강등과 같은 구조다: **저장된
-   * 선호는 건드리지 않는 세션 강등**이라, 개념이 하나라도 생기면 원래대로
-   * 돌아오고 사용자가 직접 펼치면 그쪽이 이긴다.
+   * INDEX is a concept list, so with zero concepts it has nothing to hold — the
+   * panel showed one "no matching concepts" line while owning the left third of
+   * the screen, pushing the start checklist (the only thing there is to do at that
+   * moment) to the right. Same shape as the during-selection demotion above: a
+   * session-only demotion that never touches the stored preference, so it comes
+   * back as soon as a concept exists, and expanding it by hand wins.
    */
   const [indexManualExpandWhileEmpty, setIndexManualExpandWhileEmpty] = useState(false);
   const setIndexPreference = useCallback(
@@ -689,31 +685,25 @@ function HomePageImpl() {
     () => setIndexPreference("collapsed"),
     [setIndexPreference],
   );
-  // Settings gear's "INDEX 기본 상태" row — writes through the SAME
-  // `setIndexPreference` the INDEX panel's own fold/expand controls use, so
-  // it persists to `INDEX_PANEL_COLLAPSED_KEY` AND applies immediately
-  // (not just "on next reload") for consistent one-source-of-truth behavior.
+  // The settings gear's INDEX default row writes through the SAME
+  // `setIndexPreference` that the INDEX panel's own fold/expand controls use, so it
+  // persists to `INDEX_PANEL_COLLAPSED_KEY` and applies immediately rather than
+  // "on next reload".
   const handleChangeIndexDefaultCollapsed = useCallback(
     (next: boolean) => setIndexPreference(next ? "collapsed" : "expanded"),
     [setIndexPreference],
   );
-  // perf/persistent-shell — AppNavRail 은 이제 layout 에 상주해 지형도가 직접
-  // 마운트하지 않는다. 레일 하단 설정 게어는 이 페이지 소유 state
-  // (indexPanelCollapsedStored 등)에 의존하므로, 레일이 렌더할 노드를
-  // Context 로 등록한다(`useNavRailSettingsSlot`) — 다른 라우트로 이동하면
-  // effect cleanup 이 자동으로 비운다.
-  // 레일 설정 슬롯 memo 는 아래(vault·ontologyChangeset 정의 뒤)로 이동 —
-  // 기록(GitStatusTile)이 vault 경로와 세션 changeset 을 읽어야 해서다.
   // Clicking the collapsed edge tab always means "give the slot back to
   // INDEX" — the analysis rail owns the slot only because of a non-overview
   // mode (focus/path/health), so returning to overview is always enough.
   const handleIndexTabExpand = useCallback(() => {
     setIndexPreference("expanded");
-    // C — 선택 중 수동 전개는 그 선택 동안 자동 강등을 이긴다 (선택 해제
-    // 시 리셋; 비선택 상태에선 무해한 no-op 플래그).
+    // A manual expand during a selection beats the automatic demotion for the rest
+    // of that selection (reset when the selection clears; a harmless no-op flag
+    // otherwise).
     setIndexManualExpandDuringSelection(true);
-    // 빈 지도 강등도 같다 — 직접 펼쳤으면 그 뜻이 이긴다. 이 줄이 없으면
-    // 탭이 눌리는데 아무 일도 안 일어난다(강등이 매 렌더 다시 접는다).
+    // Same for the empty-map demotion. Without this line the tab depresses and
+    // nothing happens, because the demotion re-collapses it every render.
     setIndexManualExpandWhileEmpty(true);
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
@@ -724,10 +714,9 @@ function HomePageImpl() {
   // Collapsing INDEX narrows that reserved space — flip the DOM attribute
   // `app/globals.css` keys off of, invalidate the cached token read (canvas
   // reads CSS vars once per `read-topology-v2-tokens.ts`'s own contract),
-  // then force a re-fit via the existing "지도 맞추기" token so the camera
-  // actually re-centers against the new width instead of just changing CSS.
-  // (dataset/fit 이펙트는 selection-aware 최종 renderedIndexState 파생 뒤로
-  //  이동 — C 자동 강등 참조.)
+  // then force a re-fit via the existing fit-view token so the camera actually
+  // re-centres against the new width instead of only changing CSS. The dataset and
+  // fit effects live below the selection-aware `renderedIndexState` derivation.
   const selectedProject = useMemo(
     () =>
       selectedSlug
@@ -735,41 +724,35 @@ function HomePageImpl() {
         : null,
     [selectedSlug, renderProjects],
   );
-  // R+ ontology 노드 클릭 시 (#259 후속) drawer 가 비지 않게 ontology
-  // insight 에서 노드 정보 찾기. selectedSlug 가 ontology id 인데 project
-  // 매칭이 없을 때만 사용 — 즉 토폴로지에서 domain/capability/element
-  // 노드 클릭한 케이스.
   const vault = useLocalVault();
   const tAgent = useTranslations("vaultAgentPanel");
-  // 브리지가 없으면(웹 빌드) 버튼도 패널도 그리지 않는다 — 열리지 않을 문을
-  // 그려 두는 것이 정직 강등의 반대다.
+  // With no bridge (the web build) neither the button nor the panel is drawn —
+  // painting a door that will not open is the opposite of honest degradation.
   const llmBridgeAvailable = isLlmChatBridgeAvailable();
-  /** 첫 마디가 지목할 빈칸의 근거 — 패널·인사이트 큐가 읽는 것과 같은 사실 map. */
+  /** Evidence for the gap a first line points at — the same fact map the panel and
+   * the insight queue read. */
   const vaultConceptFacts = useVaultConceptFacts();
   const { insight: ontologyInsight } = useOntologyInsight();
-  // S-C1 — 노드 데이터시트 "언제 바뀌었나" (mode-aware manifest updatedAt).
+  // "When did this change" for the node datasheet (mode-aware manifest updatedAt).
   const docFreshnessIndex = useVaultDocFreshnessIndex();
-  // P4a — "최근 변경" 렌즈(mtime 창). `computeRecentChanges` 순수 함수 +
-  // 이 훅과 같은 session-snapshot 시각 규율(`use-recent-changes.ts`).
-  // 스포트라이트 (협의회 2026-07-23): `?recent=` 숫자 프리셋이면 그 창으로
-  // 고정, "auto"/off 면 기존 적응 램프 — 지도 침강과 INDEX 렌즈가 이 훅
-  // 하나(단일 진실원)를 공유한다.
+  // The recent-changes spotlight lens over an mtime window. A numeric `?recent=`
+  // preset pins that window; "auto" and off use the adaptive ramp. The map's
+  // sinking and the INDEX lens share this one hook as their single source.
   const spotlightOn = recentWindow !== null;
   /*
-   * 렌즈를 켜거나 기간을 바꾼 **순간**에만 카메라를 강조 노드로 맞춘다
-   * (2026-08-02 소유자 지적 — 창을 좁혀도 화면이 그대로였다).
+   * Fit the camera to the highlighted nodes only at the **moment** the lens turns
+   * on or its window changes (owner report 2026-08-02: narrowing the window left
+   * the view unmoved).
    *
-   * 값이 아니라 **사건**을 넘긴다: 지도는 `spotlightIds` 를 매 프레임 읽으므로
-   * 그것만으로는 "방금 바뀌었다"를 알 수 없고, 매 프레임 맞추면 사람이 그 뒤에
-   * 잡아둔 화면을 계속 뺏는다.
-   */
-  /*
-   * 사건 카운터 — 렌더 중 `Date.now()` 를 부르지 않는다. lint 가 잡았고
-   * 규칙이 맞다: 렌더는 순수해야 하고, 시계를 읽으면 같은 입력에 다른 출력이
-   * 나온다(React 가 렌더를 버리고 다시 할 수 있다).
+   * What crosses is an event, not a value: the map reads `spotlightIds` every
+   * frame, so the ids alone cannot say "this just changed", and fitting every frame
+   * would keep stealing the view the user parked afterwards.
    *
-   * 필요한 성질은 「시각」이 아니라 **「달라졌다」** 뿐이므로 단조 증가 카운터로
-   * 충분하다. 렌즈·기간이 바뀐 렌더에서만 올라간다.
+   * The counter exists so render never calls `Date.now()` — lint caught it and the
+   * rule is right: render must be pure, and reading the clock gives different
+   * output for the same input when React discards and retries a render. The only
+   * property needed is "it differs", so a monotonic counter is enough. It ticks
+   * only on renders where the lens or the window changed.
    */
   const [spotlightFitToken, setSpotlightFitToken] = useState(0);
   useEffect(() => {
@@ -779,19 +762,22 @@ function HomePageImpl() {
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );
   /*
-   * 샘플에서 이 칩을 누르면 **막다른 곳 대신 길**을 준다 (2026-08-03 소유자 지시:
-   * *"칩 누르면 뭔가 화면에서 팝업 띄워줘야 하지 않을까? … 화면 중앙에 예쁜 팝업
-   * 띄워서 폴더 세팅 유도하던지?"*).
+   * On the sample, pressing this chip offers a way forward instead of a dead end.
+   * Owner, 2026-08-03: *"칩 누르면 뭔가 화면에서 팝업 띄워줘야 하지 않을까? … 화면
+   * 중앙에 예쁜 팝업 띄워서 폴더 세팅 유도하던지?"* (the chip should open something
+   * — a dialog in the middle of the screen that leads to picking a folder).
    *
-   * **두 빈 상태를 가른다.** 내 폴더를 연 사람에게 최근 변경이 0이면 그건 진짜로
-   * 보여줄 게 없는 것이라 비활성 + 툴팁 그대로다 — 「아무것도 없다」를 말하려고
-   * 모달을 여는 것은 여전히 기각이다(2026-08-02, popup soup). 샘플은 다르다:
-   * 여기서 0인 이유는 **샘플의 날짜가 이 저장소가 픽스처를 마지막으로 건드린
-   * 시각**이라 사용자와 무관하다는 것이고, 기다린다고 켜지지 않는다. 사유가
-   * 「없음」이 아니라 「다음 행동」이면 다음 행동을 줘야 한다.
+   * **Two empty states, told apart.** For someone who opened their own folder, zero
+   * recent changes really means there is nothing to show, so the chip stays disabled
+   * with its tooltip — opening a modal to say "there is nothing" is still rejected
+   * (2026-08-02, popup soup). The sample is different: the zero there comes from the
+   * fixture's dates being whenever this repo last touched them, which has nothing to
+   * do with the user and will never become non-zero by waiting. When the reason is a
+   * next action rather than an absence, give the next action.
    */
   const [recentNeedsVaultOpen, setRecentNeedsVaultOpen] = useState(false);
-  /** 샘플에서 「이어서 새로 만들기」를 눌렀을 때 — 막다른 곳 대신 폴더로 가는 길. */
+  /** Same for "create one from here" on the sample: a route to a folder, not a dead
+   * end. */
   const [createNeedsVaultOpen, setCreateNeedsVaultOpen] = useState(false);
   const spotlightNeedsVault = vault.status !== 'loaded';
   const handleToggleSpotlight = useCallback(() => {
@@ -804,11 +790,12 @@ function HomePageImpl() {
       recentWindow: current.recentWindow === null ? "auto" : null,
     }));
   }, [spotlightNeedsVault, setRouteState, setRecentNeedsVaultOpen]);
-  // 소유자 지시 (Image #14): "전체 변경점을 보여주는 거면 아예 zoom out 을
-  // 크게" — 렌즈가 켜지는 순간 카메라를 전체 fit 으로 물러나 변경 지점
-  // 전부(자동 전개 포함)가 한 화면에 들어오게 한다. off→on 전이에서만 1회
-  // (렌즈 중 수동 탐색을 방해하지 않음), 기존 fit 토큰 재사용 — 신규 카메라
-  // 프리미티브 0.
+  // Owner: *"전체 변경점을 보여주는 거면 아예 zoom out 을 크게"* (if it is showing
+  // every change, zoom right out). The moment the lens turns on, the camera pulls
+  // back to a full fit so all the changed places — including auto-expansions — fit
+  // one screen. Once per off→on transition only, so it does not fight manual
+  // exploration while the lens is up, and it reuses the existing fit token rather
+  // than adding a camera primitive.
   const prevSpotlightOnRef = useRef(spotlightOn);
   useEffect(() => {
     if (spotlightOn && !prevSpotlightOnRef.current) {
@@ -816,25 +803,27 @@ function HomePageImpl() {
     }
     prevSpotlightOnRef.current = spotlightOn;
   }, [spotlightOn]);
-  // "N일 전" 계산의 기준 시각 — 일 단위 해상도라 세션 시작 스냅샷이면 충분
-  // (render 중 Date.now() 는 react-hooks/purity 위반; 세션 동안 라벨이
-  // 흔들리지 않는 것도 changeBaseline 과 같은 이유로 오히려 바람직하다).
+  // Reference instant for the "N days ago" labels. Day resolution, so a snapshot
+  // taken once per session is enough — and calling `Date.now()` during render
+  // violates react-hooks purity. Labels staying still for the session is desirable
+  // for the same reason `changeBaseline` is pinned.
   const [updatedAgoNowMs] = useState(() => Date.now());
-  // 변경점 baseline(공유 스토어)이 찍혀 있으면, 기준 이후 added/changed 된
-  // ontology 노드를 토폴로지에서 pulse 로 강조 — /ontology 변경 패널과 같은
-  // 기준을 spatial view 에서도 본다(회의·리뷰).
+  // When a change baseline is pinned in the shared store, nodes added or changed
+  // since it pulse on the map, so the spatial view and the ontology change panel
+  // show the same baseline during a review.
   const changeBaseline = useChangeBaseline();
-  // changeset 을 1회 계산 — pulse(touchedNodeIds)와 재진입 리뷰 pill(#5) 둘 다 사용.
+  // Computed once and used twice: the pulse (`touchedNodeIds`) and the re-entry
+  // review pill.
   const ontologyChangeset = useMemo(
     () =>
       computeOntologyChangeset(changeBaseline, ontologyInsight?.nodes ?? [], ontologyInsight?.edges ?? []),
     [changeBaseline, ontologyInsight],
   );
   const changedSlugs = ontologyChangeset.touchedNodeIds;
-  // 살아있는 지도 드리프트(④) — vault mtime 으로 "오래 손대지 않은" 노드를
-  // 판정해 엔진의 기존 stale 채널(dash + 불투명 토큰)로 가라앉힌다.
-  // 세션 스냅샷 시각(updatedAgoNowMs)을 재사용 — 렌더 중 라벨/판정이
-  // 흔들리지 않는 규율은 데이터시트 "N일 전" 라벨과 동일.
+  // Long-untouched nodes, judged from vault mtime, sink through the engine's
+  // existing stale channel (dash + opaque token). Reuses the session snapshot
+  // instant so the judgement does not shift mid-session, same as the datasheet's
+  // "N days ago" labels.
   const dustySlugs = useMemo(
     () => deriveDustySlugs(ontologyInsight?.nodes ?? [], docFreshnessIndex, updatedAgoNowMs),
     [ontologyInsight, docFreshnessIndex, updatedAgoNowMs],
@@ -863,28 +852,30 @@ function HomePageImpl() {
   // silent permanently — the dangling `?p=` param just sat there unexplained.
   const deeplinkMissNotifiedRef = useRef<string | null>(null);
   /**
-   * **볼트가 바뀌면 볼트 전용 주소 상태를 걷어낸다** — 「범위를 넘긴 상태」의
-   * 원인 치료 (2026-08-01, `?slug=` 문서함 수리와 같은 문법).
+   * **When the vault changes, clear vault-scoped URL state** (2026-08-01, the same
+   * treatment as the `?slug=` fix in the docs surface).
    *
-   * `?p=` · `?pathFrom=` 같은 키의 값은 **한 볼트 안에서만 뜻이 있는 이름**인데
-   * 주소는 볼트를 모른다. 그래서 사용자가 폴더를 바꾸거나 샘플↔내 볼트를
-   * 오가면 그 이름은 의미를 잃는데 아무도 걷어내지 않아 눌어붙었고, 지도는
-   * 없는 노드를 선택된 것으로 판정해 **통째로 흐려졌으며**, 경로 칩은 없는
-   * 노드 둘을 놓고 「경로 없음」이라고 단언했다.
+   * The values behind keys like `?p=` and `?pathFrom=` are names that only mean
+   * something inside one vault, and the URL knows nothing about vaults. So when the
+   * user switched folders or moved between the sample and their own vault, those
+   * names lost their meaning, nobody cleared them, and they stuck: the map judged a
+   * node that no longer exists as selected and dimmed **everything**, and the path
+   * chip asserted "no path" between two nodes that were not there.
    *
-   * 첫 마운트는 건너뛴다 — 그때의 `?p=` 는 잔재가 아니라 **누군가 준 것**이다
-   * (딥링크 · 에이전트 핸드오프 · 북마크). 그건 지울 게 아니라 아래 미해석
-   * 토스트가 정직하게 말해야 할 대상이다.
+   * First mount is skipped — a `?p=` present then is not residue, it is something
+   * somebody handed over (a deep link, an agent handoff, a bookmark). That case is
+   * not to be erased; it is what the unresolved-slug toast below must say honestly.
    *
-   * 토스트의 「한 번만」 기억도 같이 비운다. 그게 없으면 A→B→A 로 돌아왔을 때
-   * 같은 슬러그가 이번엔 진짜로 없는데도 화면이 **완전히 침묵한다**.
+   * The toast's once-only memory is cleared at the same time. Without that, coming
+   * back A→B→A leaves the screen **completely silent** for a slug that really is
+   * missing this time.
    */
   const vaultIdentity = useVaultIdentityScope();
   const vaultIdentityRef = useRef<string | null>(null);
   /**
-   * "없다" 를 진단해도 되는 시점인가 — 미해석 토스트와 캔버스 포커스 판정이
-   * **같은 신호**를 봐야 한다. 둘이 갈리면 화면은 유령을 포커스한 채로 있는데
-   * 토스트만 "없다" 고 말하는(또는 그 반대의) 상태가 생긴다.
+   * Whether it is yet safe to diagnose "not found". The unresolved toast and the
+   * canvas focus decision must read the **same** signal; if they diverge, the screen
+   * focuses a ghost while the toast says it is missing, or the reverse.
    */
   const deeplinkSourceReady =
     vault.restoreAttempted &&
@@ -892,12 +883,12 @@ function HomePageImpl() {
       vault.status === "loaded" ||
       vault.status === "unsupported");
   /**
-   * ⚠️ **정착하기 전의 범위는 범위가 아니다.** 첫 렌더는 아직 볼트를 복원하기
-   * 전이라 `sample:...` 로 보인다. 그 값을 "앞 볼트" 로 기록하면, 저장된 폴더가
-   * 복원되는 순간이 **볼트 전환으로 오인**돼 사용자가 준 딥링크(`?p=`)를
-   * 지워버린다 — 실측(2026-08-01 브라우저 재현): 진짜 노드를 가리키는 주소로
-   * 새로고침했더니 `?p=` 가 그 자리에서 사라졌다. 그래서 `deeplinkSourceReady`
-   * 가 참이 된 뒤의 값만 센다.
+   * ⚠️ **A scope before it settles is not a scope.** The first render happens
+   * before the vault is restored, so the identity reads as `sample:…`. Recording
+   * that as "the previous vault" makes the restore itself look like a vault switch
+   * and erases the deep link the user arrived with. Measured 2026-08-01 in the
+   * browser: reloading a URL pointing at a real node dropped its `?p=` on the spot.
+   * Only values seen after `deeplinkSourceReady` count.
    */
   useEffect(() => {
     if (!deeplinkSourceReady) return;
@@ -949,28 +940,27 @@ function HomePageImpl() {
     toast,
     t,
   ]);
-  // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
-  // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
-  // 기록(Atlas Git) 패널 — 레일 타일 클릭으로 열리는 스냅샷/히스토리 표면.
-  // #65 — 기록 패널은 셸 소유. `<lg` 크롬 타일은 같은 런처로 그 패널을 연다.
-  // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
-  // 타일/패널이 세션 changeset 기반으로 정직하게 강등한다.
+  // Absolute vault path on the Tauri desktop (bridge active); `null` for a web File
+  // System Access handle, which makes the history tile and panel degrade honestly to
+  // the session changeset.
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
   const handoffSource: "loaded-vault" | "read-only-sample" =
     vault.status === "loaded" ? "loaded-vault" : "read-only-sample";
-  // 레일 하단 설정 슬롯 — 지도 전용 화면 상태(screenControls)를 실어야 해서
-  // 이 페이지만 셸 기본 슬롯을 덮어쓴다. 기록 타일은 #65 에서 셸(AppShell)로
-  // 올라갔다 — 페이지마다 등록해야 하는 구조가 하단 유틸 티어를 1/2/3 개로
-  // 갈라놓은 원인이었다.
+  // `AppNavRail` lives in the layout, so this page cannot mount it. It registers the
+  // node the rail should render through context instead (`useNavRailSettingsSlot`),
+  // and effect cleanup clears it on navigation. Only this page overrides the shell's
+  // default settings slot, because only this page has the map's screen controls to
+  // put in it. The memo sits here, after `vault` and `ontologyChangeset`, because the
+  // history tile reads the vault path and the session changeset.
   const navRailSettingsSlot = useMemo(
     () => (
       <>
-        {/* 설정 통합 2026-07-24 — 구 "지도 설정" 팝오버(TopologyV2SettingsGear)
-            폐지. 톱니는 이제 단일 설정 시트(AppSettingsMenu)를 연다. 지도
-            전용 화면 상태(보기 모드·INDEX 기본 상태)는 screenControls 로
-            주입 — 미주입 페이지(빌더 등)에선 해당 행이 없다. 시트는 scrim
-            동반 모달이라 구 기어의 suppressed(transient 상호배제) 신호가
-            더는 필요 없다(⌘K demote 는 시트가 자체 처리). */}
+        {/* Settings were consolidated 2026-07-24: the old map-settings popover was
+            retired and the gear now opens the single settings sheet. Map-only
+            screen state is injected through `screenControls`, so pages that do not
+            inject it simply have no such row. The sheet is a scrim-backed modal and
+            handles its own ⌘K demotion, so the old gear's mutual-exclusion signal
+            is no longer needed. */}
         <AppSettingsMenu
           mode={vault.status === 'loaded' ? 'local' : 'static'}
           triggerVariant="rail-tile"
@@ -994,16 +984,17 @@ function HomePageImpl() {
     ],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
-  // 온보딩 디자이너 지적 — 첫 실행 카드를 닫으면 "폴더 열기" 진입점이 설정
-  // 기어 뒤로 사라졌다. 정적 샘플 모드(카드 dismiss 와 무관)일 때 상단 유틸리티
-  // 열에 조용한 "내 데이터로 전환 ⌘O" 필을 상시 노출하고, 실제 vault 가
-  // 연결되면 게이트가 꺼져 자동 소멸한다(카드 dismiss 축과 독립).
+  // Dismissing the first-run card used to hide the "open a folder" entry point
+  // behind the settings gear. While in static sample mode — independent of whether
+  // the card was dismissed — a quiet "switch to my data ⌘O" pill stays in the top
+  // utility row, and it disappears on its own once a real vault is connected.
   const sampleModeSettled = useFirstRunSampleModeSettled();
-  // 진입 검수 E-1c — 크롬 「내 데이터로 전환」과 ⌘O 는 미지원 브라우저(Safari·
-  // Firefox)에서 `vault.open()` 을 불러 아무 일도 일어나지 않았다. 상태만 조용히
-  // 'unsupported' 로 바뀌고, 첫 실행 카드를 이미 닫은 사람에게는 화면에 아무
-  // 응답이 없었다(같은 버튼을 계속 누르게 만드는 침묵). 못 하는 일이면 왜
-  // 못 하는지와 갈 곳을 준다 — 카드가 쓰는 그 시트를 미지원 모드로 연다.
+  // On unsupported browsers (Safari, Firefox) that pill and ⌘O called
+  // `vault.open()` and nothing happened: the status flipped quietly to
+  // `unsupported`, and anyone who had already dismissed the first-run card got no
+  // response at all — the kind of silence that makes people press the same button
+  // again. When something cannot be done, say why and give somewhere to go: open
+  // the same sheet the card uses, in its unsupported mode.
   const fsaUnsupported = vault.status === "unsupported";
   const [unsupportedGuideOpen, setUnsupportedGuideOpen] = useState(false);
   const requestVaultOpen = useCallback(() => {
@@ -1013,8 +1004,9 @@ function HomePageImpl() {
     }
     void vault.open();
   }, [fsaUnsupported, vault, setUnsupportedGuideOpen]);
-  // 자동 투어는 샘플/내 폴더 **양쪽** 정착을 다 받는다 — 예전 조건은 샘플만
-  // 봐서 폴더를 고른 사용자가 투어를 못 받았다 (`use-auto-start-ready.ts`).
+  // Auto-start accepts **both** the sample and a real folder settling. The earlier
+  // condition only watched the sample, so anyone who picked a folder never got the
+  // tour (`use-auto-start-ready.ts`).
   const tourAutoStartReady = useGuidedTourAutoStartReady();
   const nodeEditTarget = useMemo(
     () =>
@@ -1165,8 +1157,9 @@ function HomePageImpl() {
     agentActivityStatus?.heartbeat && agentActivityStatus.valid && !agentActivityStatus.stale,
   );
   const agentFocusNodeId = useMemo(() => {
-    // 인앱 ACP가 한 차례를 진행 중이면 그것이 현재다. 대상이 아직 없을 때도
-    // 이전 sidecar 대상에 되돌아가면 거짓 포커스가 되므로 null을 그대로 존중한다.
+    // An in-app ACP turn in progress is the current one. Its `null` target is
+    // honoured as-is: falling back to the previous sidecar target would draw a
+    // focus that is not real.
     if (acpTurnActivityFrame) {
       return resolveAgentFocusNodeId(
         acpTurnActivityFrame.activity.ontologySlug,
@@ -1184,17 +1177,19 @@ function HomePageImpl() {
     () => resolveOntologyRelationPreview(acpRelationPreview, ontologyInsight?.nodes),
     [acpRelationPreview, ontologyInsight],
   );
-  // 권한 카드가 떠 있는 순간에는 그 결정이 가장 급하다. 끝나면 수동 편집기의
-  // 기존 미리보기가 다시 이어진다 — 캔버스에는 언제나 관계 한 줄만 그린다.
+  // While a permission card is up, that decision is the most urgent thing; once it
+  // is done the manual editor's own preview resumes. The canvas never draws more
+  // than one relation at a time.
   const mapRelationPreview = resolvedAcpRelationPreview ?? meaningPreview;
-  // P4b — "에이전트가 방금" INDEX 배지. 이미 fresh-게이트를 통과한
-  // `agentFocusNodeId`(W6 지도 링과 같은 소스)가 최근-변경 렌즈 안에도 있을
-  // 때만 — 두 번째 매치 휴리스틱을 새로 만들지 않고 기존 신호를 그대로 재사용.
+  // The "an agent just touched this" INDEX badge fires only when the already
+  // fresh-gated `agentFocusNodeId` (the same source as the map ring) is also inside
+  // the recent-changes lens — reusing both existing signals rather than inventing a
+  // second matching heuristic.
   const agentAttributedRecentNodeId = useMemo(
     () => (agentFocusNodeId && recentChanges.recentNodeIds.has(agentFocusNodeId) ? agentFocusNodeId : null),
     [agentFocusNodeId, recentChanges],
   );
-  // S2 — 토폴로지에서 새 노드를 직접 생성. writable 로컬 vault 일 때만.
+  // Create a node from the map itself; only with a writable local vault.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
   const [createNodeProposal, setCreateNodeProposal] = useState<{
     input: {
@@ -1223,12 +1218,9 @@ function HomePageImpl() {
     });
   }, [setRouteState, setCreateNodeProposal, setCreateNodeOpen]);
   const canCreateNode = vault.manifest !== null;
-  // Slice 1 (discovery.md F1~F6) — "내 문서로 지도 만들기". 열린 vault 에
-  // .md 는 있는데 지도 노드가 0 인 순간의 부트스트랩 다이얼로그.
-  // P3d(E1) — 부트스트랩 완료 시 지도 리빌 연출 트리거.
+  // Triggers the map's reveal once bootstrap finishes.
   const [mapRevealToken, setMapRevealToken] = useState(0);
-  // P2a — "AI 에이전트 연결" 시트.
-  // P3b — 선택된 엣지 (노드 선택과 배타: 노드를 고르면 해제).
+  // The selected edge, exclusive with node selection: picking a node clears it.
   const [selectedEdge, setSelectedEdge] = useState<{
     sourceId: string;
     targetId: string;
@@ -1240,13 +1232,13 @@ function HomePageImpl() {
     const from = ontologyInsight.nodes.find((n) => n.id === selectedEdge.sourceId);
     const to = ontologyInsight.nodes.find((n) => n.id === selectedEdge.targetId);
     if (!from || !to) return null;
-    // P6 — 이 관계의 why (relation_notes → derive 가 edge.label 로 승격).
+    // This relation's why: `relation_notes` promoted to `edge.label` by derivation.
     const edgeRecord = ontologyInsight.edges.find(
       (e) => e.from === selectedEdge.sourceId && e.to === selectedEdge.targetId,
     );
     const why = edgeRecord?.label?.trim() || null;
     const typeLabel = relationVocabulary(selectedEdge.relationType, relationRegister);
-    // 과제 ⑩ — 엣지 문장/양 끝 노드 라벨은 표시용 짧은 제목.
+    // The edge sentence and both endpoint labels use the short display title.
     const fromDisplay = from.display ?? from.title;
     const toDisplay = to.display ?? to.title;
     const sentence = t(`edgeSentence.${normalizeEdgeSentenceKey(selectedEdge.relationType)}`, {
@@ -1257,11 +1249,11 @@ function HomePageImpl() {
       ? docFreshnessIndex.get(selectedEdge.declaredBySlug)
       : undefined;
     const ago = declaredIso ? computeUpdatedAgo(declaredIso, updatedAgoNowMs) : null;
-    // Slice 6 — 공방 엣지 딥링크. 이 엣지가 공방의 네 편집 가능한 bearing 중
-    // 하나이고(그 외 describes/도메인 멤버십은 null → 액션 미노출), 정말 `from`
-    // 노드의 프론트매터에서 authored 됐을 때만 "이 관계 고치기" 딥링크를
-    // 만든다. focal = 저자(`from`), 편집 카드는 `to` 위성에 열린다. 편집 불가면
-    // null → EdgePanel 이 액션을 렌더하지 않는다(dead affordance 금지).
+    // The "edit this relation" deep link is built only when this edge is one of the
+    // editable relations (others, such as `describes` or domain membership, resolve
+    // to null and show no action) AND it really is authored in the `from` node's
+    // frontmatter. When it is not editable this stays null and `EdgePanel` renders
+    // no action, because a dead affordance is worse than none.
     const meaningRelation = meaningEditRelationForEdgeType(selectedEdge.relationType);
     const authoredByFrom = edgeAuthoredByFromNode(
       selectedEdge.declaredBySlug,
@@ -1294,17 +1286,18 @@ function HomePageImpl() {
   }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister, vault.manifest]);
 
   /**
-   * 엣지 패널의 **열림**과 **내용**을 가른다 — 그래야 퇴장이 성립한다.
-   * `open` 은 지금 열려야 하는가, `held` 는 퇴장 창 동안에도 그릴 내용이다.
+   * The edge panel's **openness** and its **contents** are separate values, which is
+   * what makes an exit animation possible: `open` is whether it should be up now,
+   * `held` is what to keep drawing during the exit window.
    *
-   * ★ `useHeldValue` 에 **키**를 넘긴다. 첫 시도에서 키 없이 넘겼다가 React
-   * #301(무한 재렌더)로 지도가 죽었다 — `edgePanelModel` 은 `useMemo` 인데
-   * 정체성이 매 렌더 새로 만들어져 정체성 비교가 끝없이 돌았다.
+   * ★ `useHeldValue` must be given a **key**. Passing none killed the map with React
+   * error #301 (infinite re-render): `edgePanelModel` comes from a `useMemo` whose
+   * identity is new every render, so identity comparison never converged.
    */
   const edgePanelOpen = Boolean(edgePanelModel) && !selectedOntologyNode && !createNodeOpen;
   const edgePanelKey = selectedEdge ? `${selectedEdge.sourceId}→${selectedEdge.targetId}` : null;
   const heldEdgePanelModel = useHeldValue(edgePanelOpen ? edgePanelModel : null, edgePanelKey);
-  // P3c — 엣지 호버 마이크로카드 (클릭 팝오버의 가벼운 전신).
+  // Edge hover micro-card — the lightweight precursor to the click popover.
   const [hoverEdge, setHoverEdge] = useState<{
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null };
     x: number;
@@ -1338,8 +1331,8 @@ function HomePageImpl() {
       y: hoverEdge.y,
     };
   }, [hoverEdge, ontologyInsight, t, relationVocabulary, relationRegister]);
-  // S2 파트 5C — 클러스터 칩 호버 툴팁 상태 + 문장 모델. 부모 제목/카운트를
-  // i18n(`cluster.tooltipCollapsed/Expanded`) 에 넣어 완성한 평문 한 줄.
+  // Cluster-chip hover tooltip: state plus the sentence model. The parent title and
+  // counts go into `cluster.tooltipCollapsed`/`Expanded` to make one plain line.
   const [hoverCluster, setHoverCluster] = useState<{
     parentId: string;
     count: number;
@@ -1373,37 +1366,33 @@ function HomePageImpl() {
     if (!hoverCluster) return null;
     const parent = ontologyInsight?.nodes.find((n) => n.id === hoverCluster.parentId);
     const name = parent?.title ?? hoverCluster.parentId;
-    // 패널3-S6 숫자 계약 — "하위 전체 N · 이 티어 숨김 M" 병기. total=부모의
-    // 하위 전체 자손 수(노드 뱃지와 동일 출처), hidden=이 티어에서 접힌 직속 수.
+    // Both numbers are shown together: `total` is the parent's whole descendant
+    // count (the same source as the node badge), `hidden` is how many direct
+    // children this tier has collapsed.
     const numbers = { name, total: hoverCluster.descendantTotal, hidden: hoverCluster.count };
     const sentence = hoverCluster.expanded
       ? t("cluster.tooltipExpanded", numbers)
       : t("cluster.tooltipCollapsed", numbers);
     return { sentence, x: hoverCluster.x, y: hoverCluster.y };
   }, [hoverCluster, ontologyInsight, t]);
-  // HomePage 모듈화 2차 — 에이전트 연결 시트 조립은 use-agent-connect-model 소유.
-  // 번들 MCP 서버가 있는가 — 설정 스니펫·딥링크·연결 버튼이 전부 여기서 갈린다.
+  // Whether the bundled MCP server is present — the config snippet, deep links, and
+  // connect button all branch on it.
   const agentServer = useAgentServer();
-  // 「지금 붙어 있나」 하나만 묻는다 — 등록 스니펫·도메인 이름은 시트가
-  // 은퇴하며 이 모델을 떠났다(원장 90).
+  // Asks one question only: is an agent attached right now. The registration snippet
+  // and domain names left this model when the connect sheet was retired
+  // (`docs/DECISIONS.md`, entry 90).
   const agentConnect = useAgentConnectModel({ agentActivityStatus });
-  // LNB(AppShell 상주) 에이전트 타일 → 전역 "열려는 의도". 어느 페이지에서
-  // 눌렸든 지형도로 이동해 오면 레이아웃 상주 launcher 의 wantOpen 이 살아
-  // 있어 여기서 시트를 연다. static-export/WebView 가 그 state commit 보다
-  // 먼저 route 를 바꾸는 경우에는 일회성 URL marker 를 소비한다. openSheet 는
-  // "N분 전" 기준 시각도 함께 스냅한다.
-  // 폴더를 연 직후 AI 연결 시트를 **자동으로 열지 않는다**. 한때 1200ms 뒤
-  // 1회 자동 발화가 있었지만, 방금 만든 자기 지도와의 첫 대면을 요청하지 않은
-  // 모달이 덮어 첫 상호작용이 '닫기'가 됐다(2026-07-26 실측). 안내는 이미
-  // 시작 체크리스트의 "연결 안내 열기" 버튼과 레일의 AI 타일 두 곳에 있어
-  // 자동 발화가 더하는 값이 없고, "소개하는 것을 가리지 않는다"는 이 앱의
-  // 규율과도 어긋났다. 연결 의도는 사용자가 누를 때만 선다.
-  // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
-  // 완료 연출(토스트·E1 리빌)만 여기 남는다.
+  // **The AI connect sheet never opens by itself after a folder is picked.** There
+  // was once a one-shot auto-open 1200 ms later, but an unrequested modal covered
+  // the user's first meeting with the map they had just built, so their first
+  // interaction became "dismiss" (measured 2026-07-26). Two entry points already
+  // exist — the start checklist's connect button and the rail's AI tile — so the
+  // auto-open added nothing while breaking this app's rule against covering what it
+  // is introducing. Connect intent only stands when the user presses something.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
     vault,
     onCompleted: ({ addedToExisting, elementCount }) => {
-      // E1 — 리로드된 그래프가 "내 문서들이 모이는" 연출로 등장한다.
+      // The reloaded graph arrives as a reveal — "my documents gathering".
       setMapRevealToken((n) => n + 1);
       toast.show(
         t(addedToExisting ? "bootstrap.toastAdded" : "bootstrap.toastDone", { count: elementCount }),
@@ -1420,10 +1409,11 @@ function HomePageImpl() {
     }): Promise<false> => {
       try {
         /*
-         * **사람이 만든 노드**라고 적는다. 이 경로는 화면의 「개념 만들기」
-         * 하나뿐이라 호출 경로가 행위자를 증명한다 — 원장이 요구하는
-         * 「쓰기 시점 스탬프」의 조건이다. 이 한 줄이 없으면 방금 만든 노드가
-         * 지도에서 검수 대기 링을 못 받는다(2026-08-03 실측).
+         * Stamp the node as human-authored. This path is reachable only from the
+         * on-screen "create concept" control, so the call path itself proves the
+         * actor — the condition the ledger puts on a write-time stamp. Without this
+         * line a freshly created node gets no review-pending ring on the map
+         * (measured 2026-08-03).
          */
         const { slug, markdown } = buildNewNodeDoc({ ...input, createdBy: "human" });
         if (vault.fileHandles.has(slug)) {
@@ -1471,9 +1461,10 @@ function HomePageImpl() {
       setCreateNodeConfirming(false);
     }
   }, [closeCreateNode, createNodeConfirming, createNodeProposal, setRouteState, t, toast, vault]);
-  // #8 평문화 — "개념 추가" 도메인 피커 옵션. 자유 입력 slug 대신 기존 도메인
-  // 노드를 이름으로 고른다. value = bare tail-slug(`domain:auth` → `auth`),
-  // 저장 시 buildNewNodeDoc 이 canonicalizeDomainRef 로 한 번 더 정규화한다.
+  // Domain picker options for "add concept": pick an existing domain node by name
+  // rather than typing a slug. `value` is the bare tail slug (`domain:auth` →
+  // `auth`); `buildNewNodeDoc` normalises it again through `canonicalizeDomainRef`
+  // on save.
   const createNodeDomainOptions = useMemo(
     () =>
       (ontologyInsight?.nodes ?? [])
@@ -1524,9 +1515,10 @@ function HomePageImpl() {
     },
     [closeCreateNode],
   );
-  // S4 — 노드 "설명"(본문) 편집. manifest 의 excerpt 는 잘려 있어 편집 시
-  // 손실 위험 → 편집 전 fileHandle 로 *raw 전체*를 읽어 본문을 시드한다.
-  // 본문 로드 완료 전엔 explanationEdit 를 안 띄워 truncation 을 막는다.
+  // Editing a node's body. The manifest's excerpt is truncated, so editing from it
+  // would silently drop text — the body is seeded from the *whole raw file* through
+  // the file handle instead, and the explanation editor stays hidden until that read
+  // finishes.
   const [nodeBody, setNodeBody] = useState<{ slug: string; raw: string; body: string } | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -1534,7 +1526,8 @@ function HomePageImpl() {
     const fh =
       target && vault.manifest !== null ? vault.fileHandles.get(target.vaultSlug) : null;
     if (!target || !fh) {
-      // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
+      // Deferred to a microtask to avoid a synchronous setState (cascading-render
+      // warning).
       window.queueMicrotask(() => {
         if (!cancelled) setNodeBody(null);
       });
@@ -1572,14 +1565,14 @@ function HomePageImpl() {
     [nodeEditTarget, nodeBody, vault, toast, t],
   );
   const combinedFitToken = fitViewToken;
-  // 클라이언트 사이드 동적 타이틀 — 선택 프로젝트 컨텍스트를 브라우저 탭에
-  // 노출 (정적 export 환경의 page metadata 한계 보완).
+  // Client-side dynamic title: static export cannot vary page metadata, so the
+  // selected context reaches the browser tab from here.
   useDocumentTitle(
     Array.from(
       new Set(
         [
           selectedProject?.name,
-          // 과제 ⑩ — 브라우저 탭 타이틀도 표시용 짧은 제목.
+          // The tab title uses the short display title too.
           selectedOntologyNode?.display ?? selectedOntologyNode?.title,
           t('documentTitle'),
           siteT('siteName'),
@@ -1591,9 +1584,9 @@ function HomePageImpl() {
     () => new Map(renderProjects.map((project) => [project.slug, project])),
     [renderProjects],
   );
-  // reverse dependency map: slug → 이 slug 를 의존하는 프로젝트들.
-  // localGraphProjects 2-hop 확장에서 매번 projects 전체 순회를 피하려고 1회
-  // 계산해 재사용. O(E) 빌드, 조회 O(1).
+  // Reverse dependency map (slug → the projects that depend on it), built once so
+  // the 2-hop expansion below does not walk every project each time. O(E) to build,
+  // O(1) to look up.
   const reverseDeps = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const project of renderProjects) {
@@ -1610,10 +1603,9 @@ function HomePageImpl() {
   }, [renderProjects]);
 
   const hubs = useMemo(() => renderProjects.filter((p) => p.isHub), [renderProjects]);
-  // 지난 7일 내 updatedAt 된 프로젝트 수. hero subtitle 성장 카운터용.
-  // Date.now() 는 순수 경고 때문에 useState lazy initializer 로 mount 시 1회
-  // 만 캡처 (re-render 마다 경계 흔들리는 것도 방지 — 세션 동안 "이번 주"
-  // 기준점이 안정적).
+  // Reference instant for "updated in the last seven days". Captured once in a lazy
+  // initializer: `Date.now()` during render is impure, and pinning it also keeps the
+  // "this week" boundary from shifting between renders.
   const [mountNowMs] = useState<number>(() => Date.now());
   const recentlyUpdatedCount = useMemo(() => {
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -1622,14 +1614,14 @@ function HomePageImpl() {
       return mountNowMs - updated < SEVEN_DAYS_MS ? n + 1 : n;
     }, 0);
   }, [renderProjects, mountNowMs]);
-  // Local graph 모드: 선택 노드 + 2-hop 이웃만 Sigma에 넘김. 전체 지도에서
-  // 벗어나 해당 노드 주변만 집중해서 볼 수 있게 한다. Esc 또는 닫기 버튼으로
-  // 전체 맵 복귀.
+  // Local graph mode: only the selected node and its 2-hop neighbourhood are handed
+  // to the map, so the user can leave the whole map and concentrate on one area.
+  // Esc or the close button returns to the full map.
   const localGraphProjects = useMemo(() => {
     if (!localGraphRoot) return renderProjects;
-    // bySlug/reverseDeps 는 상위 useMemo 결과 재사용 — 매번 동일 Map 재생성
-    // 방지. dep 확장 = O(|deps|), 역방향 확장 = O(|reverseDeps[slug]|).
-    // 전체는 O(N + E) 로 2-hop 서브그래프 추출.
+    // Reuses the `projectBySlug` / `reverseDeps` memos above rather than rebuilding
+    // the same Maps. Forward expansion is O(|deps|), reverse is O(|reverseDeps|),
+    // so extracting the 2-hop subgraph is O(N + E) overall.
     const visited = new Set<string>([localGraphRoot]);
     let frontier = [localGraphRoot];
     for (let hop = 0; hop < 2; hop += 1) {
@@ -1659,15 +1651,14 @@ function HomePageImpl() {
     return renderProjects.filter((p) => visited.has(p.slug));
   }, [renderProjects, localGraphRoot, projectBySlug, reverseDeps]);
 
-  // 합성 대형 vault 시각 검증 (topology-map-v2 S1) — 숨은 `?synth=N` 파라미터
-  // (100..10000 clamp) 가 있으면 번들 dogfood 샘플 대신 결정론 합성 그래프를
-  // 지도에 공급해 computeConcentricLayout/relaxCollisions 를 실측 밀도로
-  // 스트레스한다. 프로덕션 데모에도 남지만 숨은 파라미터라 무해하고
-  // 노출되지 않는다(README/FEATURES 미언급). 사용자 vault·단일 진실원은
-  // 건드리지 않는다 — 파생 결과는 지도 어댑터로만 흐르고 저장되지 않는다.
-  // 마운트 시 1회 읽는다(세션 중 바뀌지 않는 데모 파라미터): SSR 은 null,
-  // 클라이언트 lazy initializer 만 실제 실행 — HomePage 의 기존 window-read
-  // lazy state(예: ontologySearchOpen) 와 같은 규율.
+  // Visual verification against a synthetic large vault. The hidden `?synth=N`
+  // parameter (clamped to 100..10000) feeds the map a deterministic synthetic graph
+  // instead of the bundled dogfood sample, to stress `computeConcentricLayout` and
+  // `relaxCollisions` at real density. It ships in production but is harmless and
+  // undocumented on purpose (absent from README and FEATURES). It never touches the
+  // user's vault or the single source of truth — the derived graph flows only into
+  // the map adapter and is never written. Read once at mount, since it is a demo
+  // parameter that cannot change mid-session.
   const [synthSize] = useState<number | null>(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -1678,16 +1669,11 @@ function HomePageImpl() {
       return null;
     }
   });
-  // topology-map-v2 mount gap fix — the P2 scaffold (87edec961) wired
-  // `<TopologyMapV2 nodes={[]} edges={[]} />` as a deliberate placeholder,
-  // so flipping the flag mounted the v2 canvas but left it with nothing to
-  // draw. `buildTopologyV2Graph` derives the real adapter-contract
-  // nodes/edges from the same `ontologyInsight` the other two engines
-  // already draw (topology-v2-adapter.ts).
-  // 스포트라이트 (협의회 조건 2) — 렌즈 ON 동안 지도 fresh 채널의 키는
-  // mtime 창 set **단독**이다(세션 changeset 과 동시 주입 금지 — 한 채널에
-  // 두 의미를 섞으면 "이게 왜 켜졌지"를 답할 수 없다). OFF 면 종전 세션
-  // changeset 동작 그대로. 침강 대상(spotlightIds)도 같은 set — 단일 진실원.
+  // While the spotlight lens is on, the map's fresh channel is keyed by the mtime
+  // window set **alone** — never mixed with the session changeset. Two meanings in
+  // one channel make "why is this lit?" unanswerable. With the lens off it is the
+  // session changeset as before. What sinks (`spotlightIds`) uses the same set, so
+  // there is one source.
   const spotlightIds = spotlightOn ? recentChanges.recentNodeIds : null;
   const freshChannelSlugs = spotlightOn ? recentChanges.recentNodeIds : changedSlugs;
   const topologyV2Graph = useMemo(() => {
@@ -1703,12 +1689,13 @@ function HomePageImpl() {
       : { nodes: [], edges: [] };
   }, [synthSize, ontologyInsight, freshChannelSlugs, dustySlugs]);
 
-  // 스포트라이트 자동 전개 (소유자 2026-07-23: "노드 눌러야 나오는 곳의
-  // 변경이면 그냥 다 펼쳐놔 — 연결된 거 싹 다") — 변경 노드가 클러스터 칩에
-  // 접혀 안 보이면 렌즈가 거짓말이 된다. 변경 노드 전체의 containment 조상
-  // 체인을 **파생 전개**로 합친다. URL `?open=` 은 건드리지 않는다:
-  // `?recent=` 에서 결정론 파생되므로 공유 링크 재현성이 유지되고, 렌즈를
-  // 끄면 사용자의 원래 전개 상태로 자연 복귀한다(수동 전개 오염 0).
+  // Spotlight auto-expansion. Owner, 2026-07-23: *"노드 눌러야 나오는 곳의 변경이면
+  // 그냥 다 펼쳐놔 — 연결된 거 싹 다"* (if the change is somewhere you would have to
+  // click into, just expand it all). A changed node collapsed inside a cluster chip
+  // makes the lens a lie, so every changed node's containment ancestor chain is
+  // merged in as a **derived** expansion. `?open=` is untouched: this is derived
+  // deterministically from `?recent=`, so shared links stay reproducible and turning
+  // the lens off returns to the user's own expansion with no contamination.
   const spotlightExpandedParents = useMemo(() => {
     if (!spotlightIds || spotlightIds.size === 0 || topologyV2Graph.edges.length === 0) return null;
     const parentOf = buildContainmentParentMap(topologyV2Graph.edges);
@@ -1721,42 +1708,42 @@ function HomePageImpl() {
     return merged;
   }, [spotlightIds, topologyV2Graph, expandedParentSet]);
 
-  /**
-   * **유령 슬러그로는 포커스하지 않는다** (2026-08-01). 판정 근거와 이 자리의
-   * 옛 결함은 `../lib/resolve-canvas-selection.ts` 주석에 있다 — 요약하면,
-   * 없는 노드를 선택으로 넘기면 지도가 통째로 흐려지고 첫 방문 힌트가 영구
-   * 소멸했다.
-   */
-  /**
-   * **실재가 확인된 선택**. `canvasSelectedSlug` 는 아직 판정할 수 없는 동안
-   * 원본 슬러그를 들고 있으므로(딥링크 깜빡임 방지), "노드를 정말 열어 봤다"
-   * 를 물어야 하는 곳은 이쪽을 본다 — 그 판정이 **영구 기록**을 남길 때 특히.
-   *
-   * 실측(2026-08-01): 첫 방문 힌트가 `canvasSelectedSlug` 를 보고 있어서, 없는
-   * 슬러그가 실린 링크로 들어오면 **판정이 확정되기 전 한 틱** 동안 참이 됐고
-   * 그걸로 힌트가 localStorage 에 영구 소멸했다. 누른 적도 없는데 학습 완료로
-   * 기록된 것이다.
-   */
   /*
-   * ⚠️ **캔버스가 원하는 것은 슬러그가 아니라 그래프 노드 이름이다**
-   * (2026-08-17 소유자 보고로 발견).
+   * ⚠️ **The canvas wants a graph node id, not a slug** (found from an owner report,
+   * 2026-08-17).
    *
-   * 노드 이름은 `${kind}:${슬러그}` 다(`derive-ontology-from-vault.ts`).
-   * 그런데 프로젝트 딥링크는 접두사 없는 슬러그를 보낸다
-   * (`topology-href.ts`: `kind: project` → `/topology/?p=<슬러그>`; 다른
-   * 종류는 노드 이름을 그대로 보낸다). 그래서 **프로젝트만** 캔버스에서
-   * 맞는 노드를 못 찾았고, 지도는 「하나 골랐는데 그게 어디에도 없네」를
-   * 「전부 흐리게」로 번역했다 — 실측 1.40:1(도형 최저 3:1).
+   * Node ids are `${kind}:${slug}` (`derive-ontology-from-vault.ts`), but project
+   * deep links send a bare slug (`topology-href.ts`: `kind: project` →
+   * `/topology/?p=<slug>`, while other kinds send the node id). So **projects alone**
+   * never matched a node on the canvas, and the map translated "something is selected
+   * but it is nowhere" into "dim everything" — measured at 1.40:1 against a 3:1 floor
+   * for shapes.
    *
-   * 프로젝트도 다른 종류와 같은 규칙을 태운다. 그래프에 그 노드가 없으면
-   * (컴파일이 프로젝트를 안 냈다면) 슬러그를 그대로 두되, 그때는 캔버스의
-   * 안전망이 「안 고름」으로 떨어뜨린다 — 화면이 죽지 않는다.
+   * Projects now go through the same rule as every other kind. If the graph has no
+   * such node (the compile emitted no project), the bare slug is kept and the
+   * canvas's own safety net drops it to "nothing selected" rather than dying.
+   *
+   * Focusing never happens on a ghost slug (2026-08-01); the reasoning and the old
+   * defect are in `../lib/resolve-canvas-selection.ts`.
    */
   const selectedProjectNodeId = useMemo(() => {
     if (!selectedProject) return null;
     const nodeId = `project:${selectedProject.slug}`;
     return ontologyInsight?.nodes.some((n) => n.id === nodeId) ? nodeId : selectedProject.slug;
   }, [selectedProject, ontologyInsight]);
+  /**
+   * **A selection confirmed to exist.** `canvasSelectedSlug` below deliberately
+   * keeps holding the raw slug while the answer is still undecidable (so deep links
+   * do not flicker), so anywhere that has to ask "did the user really open a node?"
+   * reads this one instead — above all when that answer writes a **permanent
+   * record**.
+   *
+   * Measured 2026-08-01: the first-visit hint watched `canvasSelectedSlug`, so
+   * arriving on a link carrying a slug that does not exist made it true for **one
+   * tick before the decision settled**, and that tick dismissed the hint in
+   * localStorage forever. It was recorded as learned without the user ever pressing
+   * anything.
+   */
   const resolvedSelectionSlug = selectedProjectNodeId ?? selectedOntologyNode?.id ?? null;
   const canvasSelectedSlug = resolveCanvasSelectedSlug({
     selectedSlug,
@@ -1765,7 +1752,8 @@ function HomePageImpl() {
     projectsLoaded: projectsQuery.loaded,
     ontologyLoaded: ontologyInsight !== null,
   });
-  /** 지금 고른 노드의 그래프 원본 — 「이어서 새로 만들기」가 kind 를 본다. */
+  /** The graph node behind the current selection; "create one from here" reads its
+   * kind. */
   const canvasSelectedGraphNode = useMemo(
     () =>
       canvasSelectedSlug
@@ -1775,31 +1763,32 @@ function HomePageImpl() {
   );
   const drawerProject = selectedProject;
 
-  // S7 realm slug 해석(패널3-S7) — URL 의 `?realm=` 은 사용자가 손으로 bare
-  // slug(`ai-agent-partner`)를 칠 수 있으나 노드 id 는 `kind:slug` 공간이라
-  // 그냥은 안 맞아 raw 칩 + 전체 지도가 조용히 렌더됐다. canonical 노드 id 로
-  // 승격하고(=`capability:ai-agent-partner`), 못 맞추면 null → 칩 미표시.
+  // A user can hand-type `?realm=` as a bare slug (`ai-agent-partner`), but node ids
+  // live in `kind:slug` space, so it silently matched nothing and rendered a raw chip
+  // over the whole map. Promote it to the canonical node id
+  // (`capability:ai-agent-partner`); when nothing matches, `null` hides the chip.
   const resolvedRealmSlug = useMemo(
     () => resolveRealmNodeId(realmSlug, (ontologyInsight?.nodes ?? []).map((n) => n.id)),
     [realmSlug, ontologyInsight],
   );
 
-  // S4 "영역 전개" — 현재 영역 루트 노드의 제목(칩 표시용). 해석된 id 로만
-  // 조회 — 미해석(null)이면 제목도 null 이라 칩이 뜨지 않는다. 전환 직후
-  // 그래프 재빌드 타이밍엔 canonical id 자체를 fallback 으로 써 칩이 깜빡이지
-  // 않게 한다(id 는 ontologyInsight 에 이미 존재 = 해석 성공한 케이스).
+  // Title of the current realm's root node, for the chip. Looked up by the resolved
+  // id only, so an unresolved realm has no title and no chip. During the graph
+  // rebuild right after entering a realm, the canonical id itself is the fallback so
+  // the chip does not flicker — reaching here means the id already resolved against
+  // `ontologyInsight`.
   const realmTitle = useMemo(() => {
     if (!resolvedRealmSlug) return null;
     return topologyV2Graph.nodes.find((n) => n.id === resolvedRealmSlug)?.label ?? resolvedRealmSlug;
   }, [resolvedRealmSlug, topologyV2Graph]);
 
-  // 딥링크 focus dive 조상 파생 (패널2-D1, R4 모션 헌법, fable 설계) — `?p=slug`
-  // 로 들어온 대상이 밀도 게이트(`model/density-gate.ts`)에 접힌 부모 서브트리
-  // 안이면, 그 contains 조상 체인을 `open=` 으로 자동 파생해 펼친다. 대상이
-  // 드러난 뒤 기존 focus dive(`focus={{ selectedSlug }}` → 캔버스)가 클릭과
-  // 동일한 이징 문법으로 1회 발화한다. 대상 slug 당 로드 1회만 — 사용자가 이후
-  // 수동으로 접으면 다시 강제 펼치지 않도록 ref 로 가드하고, 그래프 빌드 전
-  // (edges 0)엔 ref 를 세우지 않고 다음 렌더를 기다린다.
+  // Deep-link ancestor expansion. When a `?p=slug` target sits inside a parent
+  // subtree the density gate (`model/density-gate.ts`) has collapsed, its `contains`
+  // ancestor chain is derived into `open=` so the target becomes visible; the
+  // existing focus dive then fires once with the same easing as a click. Guarded by a
+  // ref to run at most once per target slug, so a parent the user collapses
+  // afterwards is not force-expanded again. Before the graph is built (zero edges)
+  // the ref is left unset so the next render can try.
   const deeplinkExpandedForRef = useRef<string | null>(null);
   useEffect(() => {
     if (!canvasSelectedSlug) return;
@@ -1807,9 +1796,9 @@ function HomePageImpl() {
     if (topologyV2Graph.edges.length === 0) return;
     const parentOf = buildContainmentParentMap(topologyV2Graph.edges);
     deeplinkExpandedForRef.current = canvasSelectedSlug;
-    // replace — 이건 사용자의 이동이 아니라 *들어온 딥링크를 정규화*하는
-    // 쓰기다. push 로 나가면 착지 직후 히스토리에 사용자가 만들지 않은 칸이
-    // 생겨, 뒤로가기 첫 번째가 아무것도 되돌리지 못한다.
+    // `replace`, because this write normalises the deep link the user arrived on
+    // rather than navigating. A push would add a history entry the user never made,
+    // so their first Back would undo nothing.
     setRouteState((current) => {
       const nextExpanded = deriveDeeplinkAncestorExpansion(
         canvasSelectedSlug,
@@ -1821,14 +1810,15 @@ function HomePageImpl() {
     }, { replace: true });
   }, [canvasSelectedSlug, topologyV2Graph, setRouteState]);
 
-  // 발자국 트레일 (fable 설계 — 소유자 요청, 사람 가치 우선) — 지도에서 노드를
-  // ego 포커스할 때마다 세션 방문 목록에 쌓이는 "걸어온 길". 모드가 아니라
-  // 지도 위에 얹히는 수동적 기록층: URL 비영속, localStorage 금지, 새로고침 시
-  // 초기화. 지도(최근성 감쇠 발자국 링)와 트레일 칩(미니 타임라인 + 인계 패킷)에
-  // 같은 순서 배열을 내려보낸다.
+  // Footprint trail — the path walked so far, appended each time a node takes ego
+  // focus on the map. It is not a mode but a passive record layer over the map: not
+  // in the URL, never in localStorage, cleared on reload. The same ordered array
+  // feeds the map (recency-decayed footprint rings) and the trail chip (mini
+  // timeline + handoff packet).
   const [footprintTrail, setFootprintTrail] = useState<string[]>([]);
-  // 직전 방문 노드 — 같은 노드로의 연속 전이(배경 클릭 후 재선택 등)를 중복
-  // append 하지 않게 가드. 서로 다른 노드 사이의 재방문은 append 가 순서를 갱신한다.
+  // Guards against appending the same node twice in a row (clicking the background
+  // and reselecting). Revisits between two different nodes still append and so
+  // refresh the order.
   const lastVisitedNodeRef = useRef<string | null>(null);
   useEffect(() => {
     if (!canvasSelectedSlug) return;
@@ -1836,23 +1826,24 @@ function HomePageImpl() {
     lastVisitedNodeRef.current = canvasSelectedSlug;
     setFootprintTrail((trail) => appendFootprintVisit(trail, canvasSelectedSlug));
   }, [canvasSelectedSlug]);
-  // 그래프 노드 조회(id → 라벨/kind). 삭제된 노드가 트레일에 남지 않게 살아있는
-  // 그래프 기준으로 정제한다(단일 진실원: 트레일은 파생 표시층일 뿐).
+  // id → label/kind lookup. The trail is refined against the live graph so a deleted
+  // node cannot linger in it — the trail is a derived display layer, never a source.
   const footprintNodeLookup = useMemo(
     () => new Map(topologyV2Graph.nodes.map((n) => [n.id, n])),
     [topologyV2Graph],
   );
   /**
-   * 타임라인·인계 패킷이 읽는 **접힌** 트레일 — 같은 노드의 마지막 방문만.
-   * 원본(`footprintTrail`)은 되돌아온 걸음까지 담고 있어 지도의 순번을 만들지만,
-   * 에이전트에게 같은 `get_concept` 을 세 번 주는 것은 정보가 아니라 소음이다.
+   * The **collapsed** trail the timeline and the handoff packet read: only the last
+   * visit to each node. The raw `footprintTrail` keeps the steps walked back over,
+   * which is what numbers the map, but handing an agent the same `get_concept` three
+   * times is noise, not information.
    */
   const footprintTrailEntries = useMemo<FootprintTrailEntry[]>(() => {
     const entries: FootprintTrailEntry[] = [];
     for (const id of collapseFootprintTrail(footprintTrail)) {
       const node = footprintNodeLookup.get(id);
       if (!node) continue;
-      // 인계 패킷에 박히는 이름은 캔버스 노드 id 가 아니라 볼트가 아는 이름.
+      // The handoff packet carries the name the vault knows, not the canvas node id.
       const target = resolveNodeAgentTarget(
         ontologyInsight?.nodes.find((n) => n.id === id),
       );
@@ -1867,10 +1858,11 @@ function HomePageImpl() {
     return entries;
   }, [footprintTrail, footprintNodeLookup, ontologyInsight]);
   /**
-   * 지도로 내리는 방문 id 목록 — 삭제 노드만 걸러낸 **원본** 순서다(접지 않는다).
-   * 지도만 반복 걸음을 필요로 한다: 순번(`buildFootprintSteps`)이 거기서 나오고,
-   * 최근성 rank 는 어차피 마지막 등장으로 접힌다. 접힌 목록을 내려보내면
-   * "3번 왔다"가 화면에서 다시 사라진다.
+   * The visit ids handed to the map: the **raw** order with only deleted nodes
+   * filtered out, never collapsed. Only the map needs the repeated steps — the step
+   * numbers (`buildFootprintSteps`) come from them, and the recency rank collapses on
+   * last appearance anyway. Sending the collapsed list would erase "I came here three
+   * times" from the screen.
    */
   const footprintVisitedIds = useMemo(
     () => footprintTrail.filter((id) => footprintNodeLookup.has(id)),
@@ -1896,20 +1888,20 @@ function HomePageImpl() {
     setFootprintPacketCopied(true);
     window.setTimeout(() => setFootprintPacketCopied(false), 1600);
   }, [footprintTrailEntries, dustySlugs, t]);
-  // ── 지난 길 ──────────────────────────────────────────────────────────
-  // 세션 궤적은 새로고침·창 닫기에서 죽는데 `?p=`(지금 여기)는 URL 로 살아남아,
-  // "어디"는 남고 "어떻게 왔는지"만 사라지는 비대칭이 있었다. 지난 길은 그
-  // 궤적을 잃지 않게 붙든다 — 살아있는 궤적을 끊는 자동 동작(시간 만료·유휴
-  // 감지)은 없다. `지우기` 는 반대로 **남기지 않고 버린다**: "지우기"라는 이름이
-  // 정직하려면 이미 쓰인 이번 세션 줄까지 함께 지워야 한다.
+  // ── Past trails ──────────────────────────────────────────────────────
+  // The session trail dies on reload or window close while `?p=` (where you are now)
+  // survives in the URL, so "where" was kept and "how you got there" was the only
+  // thing lost. Past trails hold on to that walk; nothing expires or idles it away.
+  // Clearing does the opposite and **discards without keeping a copy** — for "clear"
+  // to be an honest name it has to remove this session's already-written row too.
   //
-  // 저장 위치는 **볼트 폴더 안 파일**이다(`past-trail-store.ts` 참고) — 웹과
-  // 설치 앱은 다른 origin 이라 브라우저 저장소로는 같은 지난 길이 이어지지
-  // 않고, 두 곳이 공유하는 바닥은 사용자의 볼트 폴더뿐이다.
+  // It is stored as a **file inside the vault folder** (`past-trail-store.ts`): the
+  // web and the installed app are different origins, so browser storage cannot carry
+  // one past trail between them, and the only floor they share is the user's folder.
   //
-  // 볼트를 안 열었으면(샘플 탐색) 남기지 않는다 — 남길 바닥이 없고, 브라우저
-  // 저장소로 대신 남기면 바로 그 웹/앱 분리가 되살아난다. 샘플 탐색은 휘발해도
-  // 잃는 것이 없다.
+  // With no vault open (sample browsing) nothing is written — there is no floor to
+  // write to, and falling back to browser storage would recreate exactly that
+  // web/app split. Sample browsing loses nothing by being volatile.
   const pastTrailStore = useMemo<PastTrailStore | null>(
     () =>
       vault.status === "loaded" && vault.handle
@@ -1918,9 +1910,10 @@ function HomePageImpl() {
     [vault.status, vault.handle],
   );
   const [pastWalks, setPastWalks] = useState<PastWalk[]>([]);
-  // 쓰기 권한은 **묻지 않고 조회만** 한다 — 탐색하러 온 사람에게 "기록을
-  // 남기려면 권한을 주세요" 를 들이미는 건 마찰이다. 이미 권한이 있는 세션에서만
-  // 조용히 남기고, 없으면 남기지 않되 2층에서 왜 안 남는지는 답한다.
+  // Write permission is **queried, never requested**. Confronting someone who came to
+  // explore with "grant permission to keep a record" is friction. Sessions that
+  // already have permission write quietly; the rest write nothing, and the past-trail
+  // list says why.
   const [pastTrailWritable, setPastTrailWritable] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -1935,11 +1928,11 @@ function HomePageImpl() {
       cancelled = true;
     };
   }, [vault.status, vault.handle]);
-  // 이번 세션의 길 id — 이 세션의 모든 기록이 이 id 로 덮어써진다(한 세션 = 한 줄).
-  // ref 가 아니라 state 인 이유: 이 값이 2층 목록의 렌더(지금 걷는 줄 제외)에
-  // 쓰이므로 렌더 중 읽을 수 있어야 한다.
+  // This session's walk id; every write in this session overwrites that one row (one
+  // session = one row). State rather than a ref because the list render reads it to
+  // exclude the row currently being walked, so it must be readable during render.
   const [sessionWalkId, setSessionWalkId] = useState<string>(newPastWalkId);
-  // 이벤트 핸들러(탭 숨김 등)에서 최신 값을 읽기 위한 거울.
+  // Mirror so event handlers (tab hide) can read the latest values.
   const pastTrailSaveRef = useRef<{
     store: PastTrailStore | null;
     entries: FootprintTrailEntry[];
@@ -1955,7 +1948,8 @@ function HomePageImpl() {
     if (!store || entries.length < PAST_WALK_MIN_ENTRIES) return;
     void store.save(sessionWalkId, entries).then(setPastWalks);
   }, [sessionWalkId]);
-  // 볼트가 바뀌면 노드 id 체계가 달라진다 — 새 길로 시작하고 그 볼트의 목록을 읽는다.
+  // A different vault means a different node-id space: start a new walk and read that
+  // vault's list.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -1968,17 +1962,17 @@ function HomePageImpl() {
       cancelled = true;
     };
   }, [pastTrailStore]);
-  // **걸으면서 제자리에 덮어쓴다.** 파일 쓰기는 비동기라 페이지가 죽는 순간에
-  // 시작하면 끝나지 않는다 — 남겨야 할 바로 그 순간에 못 남기는 설계다. 걸음마다
-  // (디바운스 후) 같은 줄을 갱신해 두면 창을 강제 종료해도 마지막 상태가 이미
-  // 디스크에 있다.
+  // **Overwrite in place while walking.** A file write is async, so one started as
+  // the page dies never finishes — a design that fails at exactly the moment it must
+  // work. Refreshing the same row on every step (after the debounce) means even a
+  // force-quit leaves the last state already on disk.
   useEffect(() => {
     if (footprintTrailEntries.length < PAST_WALK_MIN_ENTRIES) return;
     const timer = window.setTimeout(flushPastTrail, PAST_TRAIL_SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [footprintTrailEntries, flushPastTrail]);
-  // 탭이 숨겨지는 순간은 아직 문서가 살아 있어 쓰기가 끝날 수 있다 — 디바운스
-  // 대기 중이던 마지막 걸음을 여기서 앞당긴다.
+  // At tab-hide the document is still alive and a write can complete, so the last
+  // step still waiting out the debounce is flushed here.
   useEffect(() => {
     const onHidden = () => {
       if (document.visibilityState === "hidden") flushPastTrail();
@@ -1989,7 +1983,7 @@ function HomePageImpl() {
   const clearFootprintTrail = useCallback(() => {
     lastVisitedNodeRef.current = null;
     setFootprintTrail([]);
-    // 프라이버시 밸브 — 이미 파일에 쓰인 이번 세션 줄도 함께 지운다.
+    // Privacy valve: this session's already-written row is removed too.
     setSessionWalkId(newPastWalkId());
     const store = pastTrailSaveRef.current.store;
     if (store) void store.remove(sessionWalkId).then(setPastWalks);
@@ -2006,9 +2000,9 @@ function HomePageImpl() {
     setSessionWalkId(newPastWalkId());
     void pastTrailStore.clear().then(setPastWalks);
   }, [pastTrailStore, setSessionWalkId]);
-  // 보관된 길을 살아있는 지도 기준으로 정제해 둔다 — 목록 문구(제목·개수)와
-  // 다시 펼 때 적재되는 걸음이 **같은 것**이어야 한다. 목록엔 12곳이라고 써
-  // 놓고 9곳만 펴지면 그게 조용한 거짓말이다.
+  // Stored walks are refined against the live map so the row's text (title, count)
+  // and the steps a replay actually loads are **the same thing**. A row that says 12
+  // places and replays 9 is a quiet lie.
   const refinedPastWalks = useMemo(() => {
     const lookup = (id: string) => {
       const node = footprintNodeLookup.get(id);
@@ -2019,13 +2013,14 @@ function HomePageImpl() {
       entries: refinePastWalkEntries(walk.entries, lookup),
     }));
   }, [pastWalks, footprintNodeLookup]);
-  // 행 문구는 여기서 완성한다 — 칩은 순수 크롬이라 i18n·날짜 지식을 갖지 않는다.
-  // 날짜는 **일 단위**만 쓴다(시·분을 보이면 목록이 행동 타임라인으로 읽힌다).
-  // 지금 걷고 있는 줄은 뺀다 — 그건 1층(걸어온 길)이 이미 보여주고 있다.
+  // Row text is finished here: the chip is pure chrome and holds no i18n or date
+  // knowledge. Dates are **day resolution only** — showing hours and minutes would
+  // make the list read as a behavioural timeline. The row currently being walked is
+  // excluded, because the live trail above already shows it.
   const pastWalkRows = useMemo<TopologyPastWalkRow[]>(() => {
-    // 기준 시각은 mount 시각(`mountNowMs`) — 렌더 중 `Date.now()` 는 purity
-    // 위반이고, 라벨이 일 단위라 세션 중 고정돼도 어긋나지 않는다(자정을 넘겨
-    // 계속 켜둔 창에서만 "오늘"이 하루 늦게 바뀐다).
+    // Reference instant is mount (`mountNowMs`): `Date.now()` during render violates
+    // purity, and day-resolution labels do not go wrong by being pinned for a session
+    // (only a window left open past midnight sees "today" change a day late).
     const now = mountNowMs;
     const dayFormat = new Intl.DateTimeFormat(activeLocale, { month: "long", day: "numeric" });
     const yearFormat = new Intl.DateTimeFormat(activeLocale, {
@@ -2045,11 +2040,12 @@ function HomePageImpl() {
               : day.kind === "sameYear"
                 ? dayFormat.format(day.at)
                 : yearFormat.format(day.at);
-        // 다시 펼 수 있으려면 살아남은 걸음이 길로 보일 만큼(칩 문턱과 같은 수)
-        // 있어야 한다 — 한 곳만 남은 길을 펴면 칩이 사라져 팝오버째 닫힌다.
+        // Replaying needs enough surviving steps to still read as a walk (the same
+        // threshold the chip uses): replaying a one-place walk makes the chip vanish
+        // and takes the popover with it.
         const replayable = entries.length >= PAST_WALK_MIN_ENTRIES;
-        // 이름은 지금 지도의 이름으로 — 못 펴는 길만 그때 이름을 그대로 둔다
-        // (지도에 없는 것을 지금 이름으로 부를 방법이 없다).
+        // Names come from today's map; only unreplayable walks keep the names they
+        // had, because there is no way to name something the map no longer has.
         const shown = replayable ? entries : walk.entries;
         return {
           id: walk.id,
@@ -2061,28 +2057,32 @@ function HomePageImpl() {
             ? t("footprint.pastRowMeta", { date, count: entries.length })
             : t("footprint.pastDeadRowMeta"),
           replayable,
-          // 못 펴는 길은 라벨도 만들지 않는다 — 버튼이 없는데 "0곳 다시 펴기"를
-          // 계산해 들고 있으면 그 문자열이 언젠가 다른 표면으로 샌다.
+          // An unreplayable walk gets no label at all. Computing "replay 0 places"
+          // when there is no button to attach it to only leaks that string onto some
+          // other surface later.
           ariaLabel: replayable
             ? t("footprint.pastReplayAriaLabel", { date, count: entries.length })
             : null,
         };
       });
   }, [refinedPastWalks, sessionWalkId, activeLocale, mountNowMs, t]);
-  // 읽기 전용 볼트에서 조용히 실패하지 않는다 — 2층이 왜 안 남는지 답한다.
+  // A read-only vault must not fail silently: the past-trail list says why nothing is
+  // being kept.
   const pastTrailNotice =
     vault.status === "loaded" && !pastTrailWritable ? t("footprint.pastReadOnlyNotice") : null;
-  // ── 걸어온 길 렌즈 ───────────────────────────────────────────────────
-  // 팝오버 열림과 **동치**인 일시 상태(새 모드·토글·URL 상태 0). 열려 있는 동안
-  // 지도가 관계 읽기(ego 강조 엣지)를 접고 궤적 읽기에 양보한다: 방문 노드만
-  // 값·라벨을 지키고 나머지·엣지 전부는 기존 dim 값으로 물러난다. 소유자가
-  // "어지럽다"고 한 파란 선의 정체가 그 ego 엣지였다 — 궤적 폴리라인을 새로
-  // 그리는 게 아니라(이 제품에서 선 = 관계다) 읽는 순간만 장을 비운다.
+  // ── Footprint lens ───────────────────────────────────────────────────
+  // A transient state **equivalent to** the popover being open: no new mode, toggle,
+  // or URL state. While it is open the map folds away relation reading (the ego
+  // highlight edges) and yields to trail reading — only visited nodes keep their
+  // values and labels, everything else and every edge falls back to the existing dim
+  // values. Those ego edges were the blue lines the owner called *"어지럽다"*
+  // (dizzying). No trail polyline is drawn (in this product a line means a relation);
+  // the field is simply cleared for the moment of reading.
   //
-  // 렌즈 on/off·브러싱 모두 state 가 아니라 **ref** 다: 이 값들을 state 로 올리면
-  // 켤 때마다·행을 훑을 때마다 이 페이지 트리가 통째로 다시 렌더된다(실측 전환
-  // 프레임 ~100ms, 호버당 68~109ms — "끈적하다"고 느껴지는 크기다). 캔버스 루프는
-  // 어차피 매 프레임 ref 를 읽으므로 렌더를 한 번도 돌리지 않고 같은 그림을 얻는다.
+  // The lens flag and the brush are **refs, not state**. As state, every toggle and
+  // every row hover re-renders this whole page tree (measured: ~100 ms per switch,
+  // 68–109 ms per hover — squarely in "sticky" territory). The canvas loop reads refs
+  // every frame anyway, so the same picture costs zero renders.
   const footprintLensActiveRef = useRef(false);
   const footprintBrushNodeIdRef = useRef<string | null>(null);
   const handleFootprintLens = useCallback((active: boolean) => {
@@ -2093,55 +2093,59 @@ function HomePageImpl() {
   }, []);
 
   /*
-    **옆 패널에서 노드 이름에 마우스를 올렸을 때** 지도가 그 노드를 가리키는
-    단 하나의 통로. 쓰는 곳이 둘이다:
+    The single channel by which **hovering a node name in a side panel** makes the
+    map point at that node. Two consumers:
 
-    ① 대화창(2026-08-17 소유자 지시: *"채팅에서 마우스만 올려도 우리 노드에
-       표시된다거나"*)
-    ② 데이터시트의 하위/상위/근거/도메인 줄 (2026-08-17 소유자 지시:
+    ① The chat panel. Owner, 2026-08-17: *"채팅에서 마우스만 올려도 우리 노드에
+       표시된다거나"* (just hovering in the chat could mark our node).
+    ② The datasheet's children / parents / evidence / domain rows. Owner, 2026-08-17:
        *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서 표시되면 좋겠는데
-       가능할까? 지금은 아무 반응이 없어서.."*)
+       가능할까? 지금은 아무 반응이 없어서.."* (hovering each of these should show it
+       on the map beside — right now nothing responds).
 
-    ②를 붙일 때 **새 통로를 만들지 않았다.** 「반짝」은 깜빡임·glow 를 뜻하는
-    말이 아니라 *"거기가 어디인지 보이게"* 라는 뜻이고(이 저장소는 깜빡임·
-    glow·pulse 를 금지한다 — `forbidden.md` 「디자인」절), 지도에는 이미 그
-    뜻으로 배운 표시가 있다: **마우스로 노드를 가리켰을 때 나오는 그 표시**.
-    통로를 하나로 두면 강조도 하나뿐이라 사용자가 새로 배울 것이 없다.
+    Adding ② created **no second channel**. 「반짝」 does not ask for a blink or a
+    glow — this repo forbids blink, glow, and pulse (`.claude/rules/forbidden.md`,
+    the design section) — it means *"make it visible where that is"*, and the map
+    already has a mark taught for exactly that: the one a node shows when the pointer
+    is over it. One channel means one highlight, so there is nothing new to learn.
 
-    발자국 브러싱과 **같은 계약**이다 — 커서가 캔버스가 아니라 옆 패널 위에
-    있어 캔버스 호버와 경쟁하지 않고, ref 라 호버마다 렌더를 돌리지 않는다.
-    두 소비처가 동시에 쓸 일은 없다(커서는 하나다).
+    Same contract as footprint brushing: the cursor is over a side panel rather than
+    the canvas, so it never competes with canvas hover, and being a ref it costs no
+    render per hover. The two consumers cannot collide — there is one cursor.
   */
   const panelHoverNodeIdRef = useRef<string | null>(null);
-  /* 답변에서 집을 이름들 — **실재하는 노드만**. 아무 `a/b` 나 링크로 만들면
-     파일 경로와 URL 까지 링크가 되고, 눌러도 아무 데도 안 가는 링크를 한 번
-     만난 사람은 나머지도 안 누른다.
+  /* Which names in a reply become links — **only names that really exist**. Linking
+     any `a/b` would turn file paths and URLs into links too, and someone who meets
+     one link that goes nowhere stops pressing the rest.
 
-     ⚠️ **이름 공간이 둘이다** (2026-08-17 실물 실측). 종전에는 이 목록을
-     `nodes.map((n) => n.id)` 로 만들었는데, 그 id 는 `domain:example-domain`
-     꼴이고 **에이전트가 쓰는 이름은 `domains/example-domain`** 이다. 둘은
-     절대 같아지지 않으므로 채팅에 나온 어떤 이름도 안 걸렸고, 이 기능은
-     배선만 있고 죽어 있었다. 판정과 재현은 `chat-node-index.ts`. */
+     ⚠️ **There are two name spaces** (measured against the real app, 2026-08-17).
+     This list used to be built from `nodes.map((n) => n.id)`, but those ids look like
+     `domain:example-domain` while **the name an agent uses is
+     `domains/example-domain`**. The two can never be equal, so no name in a chat ever
+     matched and the whole feature was wired but dead. The decision and the
+     reproduction live in `chat-node-index.ts`. */
   const chatNodeIndex = useMemo(
     () => buildChatNodeIndex(ontologyInsight?.nodes),
     [ontologyInsight],
   );
   const chatKnownSlugs = useMemo(() => new Set(chatNodeIndex.keys()), [chatNodeIndex]);
-  /* 표가 바뀔 때만 신원이 바뀐다 — 볼트가 바뀌는 순간이라 드물다. 렌더 중에
-     ref 를 쓰는 쪽이 더 싸 보이지만 그건 동시성 렌더에서 깨지는 패턴이다. */
+  /* Identity changes only when the index does, which is only when the vault changes.
+     Reading a ref during render would look cheaper but is the pattern that breaks
+     under concurrent rendering. */
   const handleChatHoverSlug = useCallback(
     (slug: string | null) => {
       panelHoverNodeIdRef.current = slug ? (chatNodeIndex.get(slug) ?? null) : null;
     },
     [chatNodeIndex],
   );
-  /* 데이터시트의 관계 행 — 넘어오는 값이 **이미 캔버스 노드 id** 다
-     (`onSelectConnection` 과 같은 이름 공간). 그래서 표를 거치지 않는다. */
+  /* The datasheet's relation rows already hand over a **canvas node id** (the same
+     name space as `onSelectConnection`), so they skip the index. */
   const handleDatasheetHoverConnection = useCallback((id: string | null) => {
     panelHoverNodeIdRef.current = id;
   }, []);
-  /* 근거 문서 행 — 넘어오는 값은 **볼트 slug** 라 채팅과 같은 표를 거친다.
-     지도에 없는 문서면 표가 못 찾고 null 이 되어 아무 일도 안 일어난다. */
+  /* Evidence rows hand over a **vault slug**, so they go through the same index as
+     the chat. A document the map does not have resolves to null and nothing
+     happens. */
   const handleDatasheetHoverEvidence = useCallback(
     (slug: string | null) => {
       panelHoverNodeIdRef.current = slug ? (chatNodeIndex.get(slug) ?? null) : null;
@@ -2149,12 +2153,13 @@ function HomePageImpl() {
     [chatNodeIndex],
   );
 
-  // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
-  // overview first, details-on-demand — 설계: docs/TOPOLOGY-FOCUS-AND-SCALE.md
-  // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
-  // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
+  // A node click defaults to the compact ego popover; the full-detail overlay is
+  // opt-in (overview first, details on demand — `docs/TOPOLOGY-FOCUS-AND-SCALE.md`).
+  // This holds the slug whose full detail is open, and the overlay renders only when
+  // it matches the current selection, so picking another node falls back to its
+  // popover with no effect needed.
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
-  // W2-B — node right-click context menu. `slug` here is the CANVAS graph
+  // Node right-click context menu. `slug` here is the CANVAS graph
   // node id (`TopologyV2Node.id`, same id space `onSelect`/`handleSelect`
   // use), reported by `use-topology-loop.ts`'s tier-aware hit test; `x`/`y`
   // are viewport-space cursor coordinates the menu anchors to.
@@ -2169,36 +2174,40 @@ function HomePageImpl() {
     [],
   );
   const interactionSelectedSlugRef = useRef<string | null>(null);
-  // 클릭 포커스 시그니처 — 지도에서 마지막으로 눌린 화면 좌표. 상세 팝오버가
-  // "클릭한 노드에서 자라난다"는 성장 원점으로 쓴다. 캔버스 클릭이 아닌 선택
-  // (INDEX·연결 row·키보드)은 좌표가 없어 fallback(center top)으로 둔다.
+  // The last screen coordinates pressed on the map. The detail popover uses them as
+  // its growth origin so it appears to grow out of the node that was clicked.
+  // Selections that are not canvas clicks (INDEX, a connection row, the keyboard)
+  // have no coordinates and fall back to `center top`.
   const lastCanvasPointerRef = useRef<{ x: number; y: number; at: number } | null>(null);
   const nodePopoverPositionerRef = useRef<HTMLDivElement | null>(null);
   const handleCanvasPointerDownCapture = useCallback((event: ReactPointerEvent) => {
     lastCanvasPointerRef.current = { x: event.clientX, y: event.clientY, at: performance.now() };
   }, []);
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
-  // M-7 — Escape rung 1 dismisses the node popover WITHOUT releasing the ego
-  // focus (dim); rung 2 (with this true) then deselects. Reset to false on
-  // every fresh node selection so re-clicking a node always re-opens its
-  // popover. `null` selection also clears it via handleClose.
+  // In the Esc dismissal order, the first press closes the node popover WITHOUT
+  // releasing the ego focus (the dim); the second — with this true — deselects. Reset
+  // to false on every fresh node selection so re-clicking a node always reopens its
+  // popover. A `null` selection also clears it via `handleClose`.
   const [nodePopoverDismissed, setNodePopoverDismissed] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
   /**
-   * 전체 상세는 lazy chunk 다. 예전에는 `fullDetailOpen` 이 되는 즉시 불투명한
-   * 전면 표면(`fixed inset-0` + 캔버스 배경)을 칠했는데, 그 안의 내용은 청크가
-   * 도착한 뒤에 왔다 — 그래서 누른 뒤 **창 전체가 150ms 검게 홀드**되고
-   * (프레임 diff 정확히 0.000 ×9프레임) 목적지가 1프레임에 팝했다. 어디서 왔는지
-   * 알 수 없는 등장이고, 앱이 죽은 것으로 읽힌다.
+   * Full detail is a lazy chunk. It used to paint the opaque full-bleed surface
+   * (`fixed inset-0` plus the canvas background) the instant `fullDetailOpen` went
+   * true, while its contents arrived only once the chunk did — so after the press
+   * **the whole window held black for 150 ms** (frame diff exactly 0.000 across nine
+   * frames) and the destination popped in one frame. An arrival with no visible
+   * origin, and it reads as the app having died.
    *
-   * 그래서 순서를 뒤집는다: 청크가 준비될 때까지 **출발 화면(지도)을 그대로
-   * 둔다**. 도착은 배경과 내용이 같은 커밋에 실려 크로스페이드 한 번으로
-   * 끝난다 — 닫기가 이미 쓰던 문법과 같다(들어온 경로로 나간다). 스켈레톤·
-   * 가짜 진행바는 쓰지 않는다: 출발 화면이 그 시간을 덮는다.
+   * So the order is inverted: **the departure screen (the map) stays** until the
+   * chunk is ready. The arrival then puts background and content in one commit and
+   * resolves as a single crossfade — the same grammar close already used, leaving by
+   * the way you came. No skeleton and no fake progress bar: the departure screen
+   * covers that time.
    *
-   * 예열은 노드가 선택되는 순간(= 팝오버가 열려 「전체 상세」가 보이는 순간)에
-   * 한다. 실제로 누를 때는 이미 준비돼 있으므로 대기 자체가 없다.
+   * Prewarming happens the moment a node is selected — that is, the moment the
+   * popover with the full-detail action becomes visible — so by the time it is
+   * actually pressed there is nothing left to wait for.
    */
   const [FullDetailCard, setFullDetailCard] = useState<FullDetailA1Component | null>(null);
   useEffect(() => {
@@ -2207,11 +2216,11 @@ function HomePageImpl() {
     let cancelled = false;
     void importFullDetailA1()
       .then((mod) => {
-        // 함수 값을 상태에 넣을 때는 updater 로 오해되지 않게 한 겹 감싼다.
+        // Wrapped once so a function value is not mistaken for a state updater.
         if (!cancelled) setFullDetailCard(() => mod.FullDetailA1);
       })
       .catch(() => {
-        /* 청크 실패는 아래 렌더 게이트가 그대로 닫힌 상태로 남긴다 */
+        /* A failed chunk leaves the render gate below closed, as it already is. */
       });
     return () => {
       cancelled = true;
@@ -2233,13 +2242,14 @@ function HomePageImpl() {
           ? "shortcuts"
           : "none";
   const topologyBlockingOverlayActive = topologyBlockingOverlayState !== "none";
-  // 2026-07-24 온보딩 QA — 시작 체크리스트가 "첫 프로젝트/도메인 만들기"
-  // 의도를 전달할 수 있게 컴포저 초기 kind 를 상태로 둔다. 일반 진입
-  // (+ 개념 버튼 등)은 종전 기본값(역량) 유지.
+  // Onboarding QA, 2026-07-24: the composer's initial kind is state so the start
+  // checklist can carry a "create your first project/domain" intent into it. Ordinary
+  // entry points keep the previous default.
   const [createNodeDefaultKind, setCreateNodeDefaultKind] = useState<CreateNodeKind>("capability");
   /**
-   * 「이어서 새로 만들기」가 미리 고르는 도메인 — 지도의 도메인 노드에서 열면
-   * 그 도메인이 이미 골라져 있다. 빈 문자열이면 종전대로 「도메인 없음」.
+   * The domain "create one from here" preselects: opening it from a domain node on
+   * the map arrives with that domain already chosen. An empty string means no domain,
+   * as before.
    */
   const [createNodeSeedDomain, setCreateNodeSeedDomain] = useState("");
   const openCreateNode = useCallback(() => {
@@ -2276,19 +2286,20 @@ function HomePageImpl() {
       cancelled = true;
     };
   }, [canCreateNode, createNodeIntent, createNodeOpen, openCreateNode, setRouteState]);
-  // 작성된 frontmatter `significance` (approach C override) — 있으면 "왜 중요한가"
-  // 줄을 derive 대신 그걸로. 미지정 키는 파서가 보존하므로 schema 변경 0.
+  // An authored `significance` in the frontmatter overrides the derived "why this
+  // matters" line. Unspecified keys are preserved by the parser, so this needs no
+  // schema change.
   const authoredSignificance = useMemo(() => {
     const value = nodeEditTarget?.frontmatter?.significance;
     return typeof value === "string" ? value : null;
   }, [nodeEditTarget]);
-  // HomePage 모듈화 3차 — 데이터시트 모델 조립은 use-node-datasheet-model 소유.
   const formatUpdatedLabel = useCallback(
     (key: string, count: number) => t(`nodeDatasheet.updated_${key}`, { count }),
     [t],
   );
-  // rank7 (design-council B5) — 마지막 편집 주체/충돌 배지 카피. DocFrontmatterBlock
-  // 과 같은 `editProvenance` 네임스페이스를 재사용 — 사본 없음, drift 방지.
+  // Copy for the last-editor and conflict badges. Reuses the same `editProvenance`
+  // namespace as `DocFrontmatterBlock` rather than copying it, so the two cannot
+  // drift.
   const tEditProvenance = useTranslations("editProvenance");
   const formatEditAgeLabel = useCallback(
     (key: string, count: number) => tEditProvenance(`age.${key}`, { count }),
@@ -2308,10 +2319,11 @@ function HomePageImpl() {
     formatEditAgeLabel,
   });
   /*
-   * 진단을 **선택 밖으로** 꺼낸다. 아래 `useProjectSourceModel` 은 선택된
-   * 프로젝트 하나만 보므로, 아무도 그 노드를 클릭하지 않으면 「연결된 코드
-   * 폴더가 없습니다」는 화면에 존재하지 않는다(실측 2026-08-04: 첫 화면 0회).
-   * 이 훅은 사이드카 한 번 읽기로 그 사실만 꺼내 INDEX 의 조용한 행에 싣는다.
+   * Lifts the diagnosis **out of the selection**. `useProjectSourceModel` below only
+   * ever sees the one selected project, so unless somebody clicks that node, "no code
+   * folder is linked" exists nowhere on screen (measured 2026-08-04: zero occurrences
+   * on the first screen). This hook reads the sidecar once and puts that one fact in
+   * a quiet INDEX row.
    */
   const unboundProjectSource = useUnboundProjectSource({
     vaultHandle: vault.status === "loaded" ? vault.handle : null,
@@ -2323,8 +2335,9 @@ function HomePageImpl() {
     vaultHandle: vault.status === "loaded" ? vault.handle : null,
     nodes: ontologyInsight?.nodes ?? [],
     docs: vault.manifest?.docs ?? [],
-    // OS 폴더 선택창의 제목까지 화면 언어여야 한다 — 설치 앱에서 한국어 화면
-    // 위에 영어 제목의 창이 열리고 있었다(실측 2026-08-04).
+    // Even the OS folder picker's title must be in the screen's language: measured
+    // 2026-08-04, the installed app opened an English-titled picker over a Korean
+    // screen.
     pickerTitle: t("nodeDatasheet.sourcePickerTitle"),
   });
   const projectSourceMeasuredAtLabel = useMemo(() => {
@@ -2339,27 +2352,28 @@ function HomePageImpl() {
         }).format(date);
     return t("nodeDatasheet.sourceMeasuredAt", { time });
   }, [projectSource.view?.measuredAt, activeLocale, t]);
-  // 과제 ⑪ — LNB 컨텍스트 이월. 노드를 선택한 채 좌측 레일의 "문서함"으로
-  // 이동하면 선택과 무관한 `/docs/` 기본 화면이 뜨던 문제 — 데이터시트가
-  // 이미 파생해 둔 `documentHref`(vault 파일 경로 `?slug=` 딥링크, H5 계약)를
-  // `buildNavRailContextHrefs` 로 그대로 레일에 등록한다. 새 파라미터/변환
-  // 발명 없음. 선택이 없으면 `documentHref`가 null 이라 레일은 기본 href
-  // 그대로(변화 0).
+  // Carries the selection into the nav rail. Going to the rail's documents entry with
+  // a node selected used to land on the default `/docs/` screen, unrelated to what
+  // was selected. The datasheet has already derived `documentHref` (a `?slug=` deep
+  // link to the vault file), so it is registered with the rail as-is — no new
+  // parameter and no new transform. With nothing selected `documentHref` is null and
+  // the rail keeps its default href.
   const navRailContextHrefs = useMemo(
     () => buildNavRailContextHrefs(v2DatasheetModel?.documentHref ?? null),
     [v2DatasheetModel?.documentHref],
   );
   useNavRailContextHrefs(navRailContextHrefs);
-  // C — 최종 INDEX 렌더 상태: 선택 활성 + 수동 전개 없음 + (영역 밖) 이면
-  // 자동 강등. 영역 대장은 영역의 유일한 탈출/탐색 표면이라 예외.
-  // M-7 Esc 사다리 존중 — rung 1(팝오버만 닫힘, 선택 유지) 상태에선 좌측이
-  // 돌아와야 하므로 "모델 존재"가 아니라 "데이터시트 실표시"에 결속한다.
+  // Bound to the datasheet being *shown*, not merely to its model existing, so the Esc
+  // dismissal order is honoured: after the first press (popover closed, selection
+  // kept) the left panel must come back. The realm ledger is exempt from the
+  // automatic demotion because it is a realm's only exit and navigation surface.
   const topologySelectionActive = Boolean(v2DatasheetModel) && !nodePopoverDismissed;
-  // 진입 검수 E-7 — `자동 정렬` 토스트가 우하단 상시 계기(범례 + 판독)를
-  // 통째로 덮었다. 둘 다 bottom-right 고정인데 토스트는 기본 16px 오프셋이라
-  // 알림이 계기 위에 그대로 얹혔다. 빌더 하단 바가 쓰던 예약 계약
-  // (`--app-toast-bottom-offset`)을 이 스택에 다시 연결한다 — 예약 높이는
-  // 상수가 아니라 스택의 실측 rect 다(로케일·줌 티어·≥1920 인셋에 따라 바뀐다).
+  // The auto-arrange toast used to cover the permanent bottom-right instruments (the
+  // legend and the readout) entirely: both are pinned bottom-right, and the toast's
+  // default 16px offset put it straight on top. This reconnects the reservation
+  // contract (`--app-toast-bottom-offset`) to this stack. The reserved height is not
+  // a constant but the stack's measured rect — it varies with locale, zoom tier, and
+  // the ≥1920 inset.
   const legendStackRef = useRef<HTMLDivElement | null>(null);
   const legendStackHidden = v2DatasheetModel !== null;
   useEffect(() => {
@@ -2372,7 +2386,8 @@ function HomePageImpl() {
     }
     const apply = () => {
       const rect = element.getBoundingClientRect();
-      // `<md` 에서는 계기가 `hidden` 이라 높이 0 — 예약할 것이 없다.
+      // Below `md` the instruments are `hidden`, so height is 0 and there is nothing
+      // to reserve.
       if (rect.height === 0) {
         clear();
         return;
@@ -2382,16 +2397,18 @@ function HomePageImpl() {
         `${resolveToastBottomOffsetForStack(window.innerHeight, rect.top)}px`,
       );
     };
-    // 스택의 줄 수는 나중에 늘어난다 — 계기 판독(`FirstRunReadout`)은 샘플
-    // 모드 판정이 끝난 뒤에 붙는다. mount 시점 한 번만 재면 예약이 한 줄
-    // 분량 부족한 채 굳어 토스트가 그대로 범례를 덮는다(실측 54px vs 필요 79px).
+    // The stack gains rows later — the readout (`FirstRunReadout`) only attaches once
+    // sample-mode detection settles. Measuring once at mount freezes the reservation
+    // one row short and the toast covers the legend anyway (measured: 54px reserved
+    // against 79px needed).
     //
-    // 첫 실측도 RO 의 **초기 전달**에 맡긴다 (2026-08-19 부팅 실측). 종전처럼
-    // 커밋 이펙트에서 `apply()` 를 동기로 부르면 방금 DOM 을 갈아 끼운 문서에
-    // 강제 레이아웃이 걸려 — CPU 4배 스로틀 기준 36~45ms — 부팅 최대 long
-    // task 의 최대 단일 항목이었다. RO 콜백은 명세상 «레이아웃 뒤·페인트 앞»
-    // 에 돌므로 같은 rect 를 공짜로 읽고, 변수는 여전히 첫 페인트 전에 앉는다
-    // (화면 결과 동일). RO 가 없는 환경만 종전 동기 실측으로 폴백한다.
+    // The first measurement is left to the ResizeObserver's **initial delivery**
+    // (boot measurement, 2026-08-19). Calling `apply()` synchronously from the commit
+    // effect, as it used to, forces layout on a document whose DOM was just swapped —
+    // 36–45 ms under 4× CPU throttling, the single largest item in the boot's longest
+    // task. An RO callback runs, by spec, after layout and before paint, so it reads
+    // the same rect for free and the variable is still set before the first paint. Only
+    // environments without RO fall back to the synchronous measurement.
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
     if (observer === null) apply();
@@ -2403,12 +2420,13 @@ function HomePageImpl() {
       clear();
     };
   }, [legendStackHidden]);
-  // 클릭 포커스 시그니처 — 팝오버의 성장 원점(transform-origin)을 방금 클릭한
-  // 노드의 화면 좌표 방향으로 맞춘다. 패널은 slug 로 keyed 되어 노드가 바뀔
-  // 때마다 재마운트 + `.topology-chrome-in` 등장을 재발화하므로, slug 를
-  // 의존성으로 두고 paint 전(useLayoutEffect)에 포지셔너의 로컬 좌표계로 환산한
-  // 원점을 CSS 변수로 주입한다(상속 → 내부 패널이 읽음). 최근(600ms 내) 캔버스
-  // 포인터가 없으면(리스트·키보드 선택) 변수를 지워 기존 `center top`으로 폴백.
+  // Aims the popover's `transform-origin` at the screen position of the node just
+  // clicked. The panel is keyed by slug, so changing nodes remounts it and replays the
+  // `.topology-chrome-in` entrance; keying this effect on the same slug and running it
+  // before paint (`useLayoutEffect`) injects the origin, converted into the
+  // positioner's local coordinates, as an inherited CSS variable the inner panel
+  // reads. With no recent canvas pointer (within 600 ms — list or keyboard selection)
+  // the variable is removed and it falls back to `center top`.
   const nodePopoverSlug = v2DatasheetModel?.slug ?? null;
   useLayoutEffect(() => {
     const positioner = nodePopoverPositionerRef.current;
@@ -2423,9 +2441,10 @@ function HomePageImpl() {
       positioner.style.removeProperty("--topology-chrome-in-origin");
       return;
     }
-    // 클릭 지점을 패널 박스 로컬 좌표로 환산하고 박스 안으로 clamp — 패널은
-    // 우상단 고정 앵커라 노드는 대개 좌·하단에 있고, 그쪽 모서리가 원점이 되어
-    // 팝오버가 노드 방향에서 자라나는 것으로 읽힌다.
+    // Convert the click point into the panel box's local coordinates and clamp it
+    // inside. The panel is anchored top-right, so the node is usually down and to the
+    // left; making that corner the origin is what reads as the popover growing out of
+    // the node.
     const ox = Math.max(0, Math.min(rect.width, pointer.x - rect.left));
     const oy = Math.max(0, Math.min(rect.height, pointer.y - rect.top));
     positioner.style.setProperty("--topology-chrome-in-origin", `${ox}px ${oy}px`);
@@ -2433,16 +2452,19 @@ function HomePageImpl() {
   useEffect(() => {
     if (!topologySelectionActive) setIndexManualExpandDuringSelection(false);
   }, [topologySelectionActive]);
-  // 소유자 후속 (2026-07-24): 영역/스포트라이트 원장도 노드 선택 중엔 닫는다
-  // — "좌/우 패널이 다 열려 불편". 탈출 어포던스는 상단 영역/렌즈 칩의 ✕ 와
-  // Esc 가 유지하므로 원장 상시 노출이 필수는 아니다. 선택 해제 시 복귀.
-  /** 담을 개념이 아직 하나도 없는 지도인가. 위 `indexManualExpandWhileEmpty` 참고. */
+  // Owner follow-up, 2026-07-24: the realm and spotlight ledgers close during a node
+  // selection too — having the left and right panels both open at once is
+  // uncomfortable. The escape affordance survives in the ✕ on the realm/lens chips and
+  // in Esc, so keeping the ledger permanently visible is not required. It returns when
+  // the selection clears.
+  /** Is this a map with no concepts to hold yet? See `indexManualExpandWhileEmpty`. */
   const topologyGraphEmpty = (ontologyInsight?.nodes.length ?? 0) === 0;
   /*
-   * 우측 에이전트가 열리면 INDEX도 같은 세션 강등을 탄다. 둘을 동시에 두면
-   * 에이전트가 바꾸는 대상을 판단해야 할 지도만 가운데 좁은 통로로 남는다.
-   * 저장 선호를 쓰지 않으므로 대화를 닫는 순간 사용자의 INDEX 상태가 복구된다.
-   * 주소로 들어온 ask intent도 첫 프레임부터 같은 공간 계약을 지킨다.
+   * Opening the agent dock on the right puts INDEX through the same session demotion.
+   * With both up, the map — the thing you need in order to judge what the agent is
+   * changing — is left as a narrow corridor in the middle. No stored preference is
+   * touched, so closing the chat restores the user's INDEX state. An ask intent
+   * arriving in the URL honours the same spatial contract from its first frame.
    */
   const agentDockRequestedOpen =
     acpDockFrameOpen ||
@@ -2458,54 +2480,53 @@ function HomePageImpl() {
     agentDockOpen: agentDockRequestedOpen,
   });
   /**
-   * 접힘 ↔ 펼침은 한 번의 클릭이 낳은 **하나의 사건**이다. 지금까지는 도착
-   * 표면만 시간을 받고 떠나는 표면은 0프레임이었다(위 `useSurfaceSwap` 주석의
-   * 실측). 두 프레임을 같은 슬롯에 겹쳐 그려 **떠나는 것과 오는 것과 지도가
-   * 같은 프레임에 출발**하게 한다 — 판정식② "같은 입력의 단계 시작차 ≤
-   * `--motion-fast`" 를 구조로 보장한다.
+   * Collapse ↔ expand is **one event** produced by one click. Previously only the
+   * arriving surface got any time and the leaving one got zero frames. Drawing both
+   * frames overlapped in the same slot makes **what leaves, what arrives, and the map
+   * all start on the same frame**, which structurally guarantees the rule that steps
+   * from one input must start within `--motion-fast` of each other.
    *
-   * 퇴장 창은 `EXIT_WINDOW_MS` 하나로 공유한다 — 지도 위 표면의 나가는 길이
-   * 표면마다 다르면 그게 다시 결함이다.
+   * The exit window is the shared `EXIT_WINDOW_MS`: surfaces over the map leaving by
+   * different timings would be the same defect again.
    */
   const indexSlotSwap = useSurfaceSwap(renderedIndexState);
   /*
-   * 폴더를 연 **바로 다음 화면**에서 「무엇을 쓸 수 있는지」를 말하기 위한 탐지
-   * (2026-08-16 소유자 지적). 설정 안에만 두면 그 사실은 찾아 들어간 사람에게만
-   * 존재한다.
+   * Detects which agent runtimes are available, so the screen **right after a folder
+   * is opened** can say what can be used (owner remark, 2026-08-16). Kept only inside
+   * settings, that fact exists solely for people who go looking for it.
    *
-   * **검증된 실행기만** 이름으로 부른다 — 우리가 실제로 재 보지 않은 것을
-   * 첫 화면에서 권하면, 그 권유가 곧 보증으로 읽힌다.
-   */
-  /*
-   * 여기서 **쓸 수 있는 것들**과 **지금 고른 것**을 나눠 둔다.
+   * **Only verified runtimes** are named. Recommending something we have not actually
+   * measured, on the first screen, reads as a guarantee.
    *
-   * ⚠️ 종전 조건은 `r.isolated` 였는데, 그건 「설정 격리가 되는가」다. codex 는
-   * 설정 격리로는 안 걸리고 **세션 모드**로 걸린다(2026-08-16 실측) — 그래서
-   * 관문을 붙여 놓고도 목록에서 빠져 **아무도 고를 수 없었다.** 판정은
-   * `isGuardedRuntime` 한 곳으로 모은다.
+   * ⚠️ The condition used to be `r.isolated`, which asks "can its config be isolated".
+   * Codex does not qualify that way; it qualifies by **session mode** (measured
+   * 2026-08-16), so despite having a gate wired it fell out of the list and **nobody
+   * could choose it**. The decision now lives in one place, `isGuardedRuntime`.
    */
   const [acpRuntimes, setAcpRuntimes] = useState<Array<{ id: string; label: string }>>([]);
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
   /**
-   * 대화 패널이 **화면에 붙어 있나** — 열림과 다른 값이다.
-   *
-   * 열림은 「보여야 하나」이고 이것은 「그려져 있나」다. 닫을 때 둘이 같은
-   * 값이면 사라지는 애니메이션이 돌 자리가 없다(그래서 종전에는 안 돌았다).
+   * Whether the chat panel is **mounted** — a different value from whether it is open.
+   * Open asks "should it be visible"; this asks "is it drawn". If the two were one
+   * value, closing would leave no room for the exit animation to run (which is why it
+   * used not to run).
    */
   const [chatMounted, setChatMounted] = useState(false);
   /**
-   * 대화 칸의 폭은 **사용자가 정하고 이 컴퓨터가 기억한다.** 어떤 사람은 지도를
-   * 보면서 짧게 묻고 어떤 사람은 코드 덩어리를 읽는다 — 그 둘에 다 맞는 한 수는
-   * 없어서, 우리는 지도가 죽지 않을 선만 지킨다.
+   * The chat column's width is **chosen by the user and remembered by this machine.**
+   * Some people ask short questions while watching the map; others read blocks of
+   * code. No single width serves both, so all we enforce is the line below which the
+   * map stops working.
    */
   const chatWidth = useChatWidth();
   useEffect(() => {
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     /*
-     * **두 번 부른다** — 첫 화면이 뜨는 프레임에 로그인 확인(수백 ms)을 얹지
-     * 않는다. 먼저 찾은 것으로 그리고, 확인이 끝나면 고친다. 로그인이 안 된
-     * 도구는 그때 목록에서 빠진다(그 도구로 열면 인증 오류로 죽으므로).
+     * **Called twice**, so the frame that paints the first screen does not also carry
+     * a login probe (hundreds of ms). Draw with what was found, then correct once the
+     * probe finishes: a tool that is not logged in drops out of the list at that
+     * point, because opening a session with it would die on an auth error.
      */
     const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
       if (cancelled) return;
@@ -2527,23 +2548,22 @@ function HomePageImpl() {
   }, []);
   const acpRuntime = acpRuntimes.find((r) => r.id === acpRuntimeId) ?? null;
   /*
-    「무엇을 물어보지」에 대한 답은 **이 폴더의 지금 상태**에서 뽑는다
-    (2026-08-17). 볼트를 읽는 것은 화면(뷰)의 일이고, 대화 패널은 결과만
-    받는다 — 패널이 볼트를 직접 읽으면 `LocalVaultProvider` 없이는 못 서게
-    되고, 그건 그 위젯이 지금까지 지켜 온 성질이 아니다.
+    The answer to "what should I ask?" is derived from **this folder's current state**
+    (2026-08-17). Reading the vault is the view's job and the chat panel receives only
+    the result: were the panel to read the vault itself it could not stand without a
+    `LocalVaultProvider`, and that is not a property that widget has ever had.
   */
   const chatSuggestions = useChatSuggestions();
   const acpRuntimeLabel = acpRuntime?.label ?? null;
   /*
-   * 매 렌더 새 배열을 만들면 그 값을 받는 훅의 `start` 정체가 매번 바뀌고,
-   * 그것을 지켜보는 effect 가 계속 다시 돈다. 잠금은 세션 훅이 지지만
-   * (`startingRef`) **헛돌게 두지 않는 것은 여기 몫**이다.
-   */
-  /*
-   * 이 런타임이 볼트에서 **스스로** 같은 서버를 읽어 오면 여기서 또 꽂지
-   * 않는다 — 2026-08-17 실측에서 `mcp.ontology-atlas.*` 와 `mcp.atlas-vault.*`
-   * 가 같은 결과를 내며 프로세스가 둘이었다. 판정과 실측 근거는
-   * `vault-mcp-server.ts`.
+   * Memoised: a fresh array every render changes the identity of the consuming hook's
+   * `start`, and the effect watching it re-runs forever. The session hook holds the
+   * lock (`startingRef`), but **not spinning in the first place is this call's job**.
+   *
+   * If the runtime already reads the same server from the vault **by itself**, it is
+   * not injected again here — measured 2026-08-17, `mcp.ontology-atlas.*` and
+   * `mcp.atlas-vault.*` produced identical results from two processes. The decision
+   * and its evidence are in `vault-mcp-server.ts`.
    */
   const acpMcpServers = useMemo(() => {
     const registration =
@@ -2563,11 +2583,12 @@ function HomePageImpl() {
   ]);
 
   /*
-   * 앱 안 에이전트가 **자기 이름을 볼트에 등록**한다 (2026-08-17 소유자 지시).
-   * 종전에는 그 에이전트가 만든 노드가 전부 `created_by: agent:unknown` 이었다 —
-   * 서버는 이름을 알았지만 그 칸은 「사람이 의도적으로 등록한 이름」만 받고,
-   * 정작 등록할 방법이 아무 데도 없었다. 사람이 어느 도구로 대화할지 고른 것이
-   * 그 의도이고, 앱은 그것을 안다. 판정과 근거는 `lib/acp-agent-heartbeat.ts`.
+   * The in-app agent **registers its own name in the vault** (owner instruction,
+   * 2026-08-17). Before this, every node it created carried
+   * `created_by: agent:unknown` — the server knew the name, but that field only accepts
+   * a name a human deliberately registered, and there was nowhere to register one. The
+   * human choosing which tool to talk to *is* that intent, and the app knows it. The
+   * decision and its evidence are in `lib/acp-agent-heartbeat.ts`.
    */
   const acpHeartbeatStore = useMemo<AcpHeartbeatStore | null>(
     () =>
@@ -2590,13 +2611,13 @@ function HomePageImpl() {
   }, [acpRuntimeId, acpTurnActivityFrame]);
   const handleAcpTurnActivityChange = useCallback(
     (activity: AcpTurnActivity | null) => {
-      // 화면은 이미 이 이벤트를 받았다. React 메모리를 먼저 갱신하고 sidecar는
-      // 외부 소비자와 재시작 연속성을 위해 뒤따라 기록한다.
+      // The screen already has this event. React memory updates first; the sidecar
+      // follows, for external consumers and for continuity across a restart.
       setAcpTurnActivityFrame(activity ? { activity, at: Date.now() } : null);
       const store = acpHeartbeatStore;
       if (!store) return;
       const agent = acpHeartbeatAgentName(acpRuntimeId);
-      // 이름을 모르면 등록하지 않는다 — 모름은 모름으로 남는 편이 낫다.
+      // With no name, register nothing — unknown is better left as unknown.
       if (!activity || !agent) {
         void store.clear().catch(() => {});
         return;
@@ -2616,23 +2637,27 @@ function HomePageImpl() {
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.topologyIndex = renderedIndexState;
-    // **전면 무효화를 쓰지 않는다** (2026-07-28 성능 트레이스). 이 effect 는
-    // 노드를 선택할 때도 돈다 — INDEX 가 레일로 강등되기 때문이다. 캐시를
-    // 통째로 버리면 다음 프레임이 `getPropertyValue` 115회로 스타일 재계산을
-    // 강제해 클릭마다 58ms 를 태운다. `data-topology-index` 가 실제로 바꾸는
-    // 토큰은 `--topology-v2-safe-inset-left` 하나뿐이라 그것만 갱신한다.
+    // **No blanket invalidation** (performance trace, 2026-07-28). This effect also
+    // runs when a node is selected, because INDEX demotes to the rail. Discarding the
+    // whole token cache forces a style recalculation on the next frame — 115
+    // `getPropertyValue` calls, 58 ms burnt on every click. The only token
+    // `data-topology-index` actually changes is `--topology-v2-safe-inset-left`, so
+    // only that one is refreshed.
     refreshIndexDependentTokens(root);
     let cancelled = false;
-    // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
+    // Deferred to a microtask to avoid a synchronous setState (cascading-render
+    // warning).
     //
-    // 3D 돔에서는 이 재핏을 쏘지 않는다 (2026-08-18 실측): 이 effect 는 노드를
-    // **선택/해제할 때마다** 돈다(INDEX 레일 강등). 2D 에선 이 fit 이 한 프레임
-    // 뒤 포커스 다이브에 덮여 무해했지만, 돔에서는 fit 토큰이 「자동 정렬」과
-    // 같은 경로(자세 홈 이징 + 자율 회전 재무장)를 타서 — 노드를 고르면 다이브
-    // 대신 돔이 제 맘대로 홈으로 돌아가고, 해제만 해도 시선 끌기 회전이
-    // 되살아났다(소유자 *"내가 조종하는 게 아니라 화면이 저 혼자 돈다"*).
-    // 돔 핏은 15% 여백이라 INDEX 레일 폭 변화는 흡수되고, 선택 리프레임은
-    // 소비 시점에 인셋을 직접 재므로 이 재핏 없이도 패널을 피한다.
+    // The 3D dome does not get this re-fit (measured 2026-08-18). This effect runs on
+    // **every selection and deselection** (the INDEX rail demotion). In 2D the fit was
+    // harmless because the focus dive overwrote it a frame later, but on the dome the
+    // fit token takes the same path as auto-arrange (easing the pose home and re-arming
+    // the autonomous rotation) — so selecting a node sent the dome home instead of
+    // diving, and merely deselecting revived the attention rotation. Owner: *"내가
+    // 조종하는 게 아니라 화면이 저 혼자 돈다"* (I am not steering it; the screen turns
+    // by itself). The dome fit has 15% margin, which absorbs the INDEX rail's width
+    // change, and the selection reframe measures the inset itself at use time, so it
+    // avoids the panel without this re-fit.
     if (!view3d && !acpDockFrameOpen) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
@@ -2681,8 +2706,9 @@ function HomePageImpl() {
   }, [projectSource, v2DatasheetModel, copyV2NodeHandoff, projectAwareHandoffText, setFullDetailSlug]);
   const projectSourceNextAction = projectSource.view?.nextAction.id ?? null;
   const projectSourceNextActionAvailable = Boolean(
-    // 추정이 아직 안 끝났으면 **아무 처방도 안 그린다.** 먼저 그리면 그 버튼이
-    // 300ms 뒤에 라벨과 스킨이 바뀌면서 위로 밀린다 — 마우스가 이미 가 있던 자리다.
+    // While the proposal is still settling, **draw no prescription at all.** Drawing
+    // early means the button changes label and skin 300 ms later and shifts upward —
+    // out from under a cursor that is already there.
     projectSource.proposalSettled
     && (projectSource.canRunSourceAction
     || projectSourceNextAction === "use_current_evidence"
@@ -2708,11 +2734,12 @@ function HomePageImpl() {
       currentness: t(`nodeDatasheet.sourceCurrent_${view.currentness}`),
       gap: t(`nodeDatasheet.sourceGap_${view.topGap?.id ?? "none"}`),
       /*
-       * 종전에는 이 자리가 웹에서 「설치 앱에서 코드 폴더를 연결할 수 있어요」로
-       * **바뀌었다** — 행동 라벨 자리에 안내 문장을 끼워 넣은 것이라, 웹 사용자는
-       * 누를 수 없는 회색 문장 하나를 받고 끝났다(왜인지도, 어디로 가면 되는지도,
-       * 이 화면에서 무엇이 되는지도 없이). 이제 라벨은 언제나 행동 라벨이고,
-       * 못 하는 표면의 안내는 `projectSourceDegraded` 가 통째로 맡는다.
+       * On the web this used to **turn into** an explanatory sentence ("you can link a
+       * code folder in the installed app"), i.e. a notice wedged into the slot for an
+       * action label. Web users got one grey unpressable sentence and nothing else —
+       * no why, no where to go, no what still works here. The label is now always an
+       * action label, and the notice for surfaces that cannot act is owned entirely by
+       * `projectSourceDegraded`.
        */
       action: t(`nodeDatasheet.sourceAction_${view.nextAction.id}`),
       why: t(`nodeDatasheet.sourceWhy_${view.nextAction.id}`),
@@ -2724,12 +2751,13 @@ function HomePageImpl() {
     t,
   ]);
   /**
-   * 이 표면에서 그 행동을 실행할 수 없을 때만 만들어진다 — 웹에서 폴더를 고르는
-   * 네 행동(연결·재설정·확인·재확인)은 절대 경로를 요구하고, 브라우저는 그것을
-   * 알 수 없다(`surfaces.md` 「볼트 절대 경로」 브리지).
+   * Built only when this surface cannot perform the action. The four folder-picking
+   * actions (connect, rebind, measure, remeasure) need an absolute path, and a browser
+   * cannot know one (the vault-absolute-path bridge in `.claude/rules/surfaces.md`).
    *
-   * 셋을 전부 담는다: 왜 · 어디서 · **여기서도 되는 것**. 셋째가 없으면 되는
-   * 일까지 안 된다고 말하게 된다(2026-08-01 「웹의 「연결 불가」는 거짓이었다」).
+   * It carries all three parts: why · where · **and what still works here**. Without
+   * the third, the notice claims things are impossible that are not (2026-08-01: the
+   * web's "cannot connect" was false).
    */
   const projectSourceDegraded = useMemo(
     () => !projectSource.runtimeAvailable && projectSourceNeedsNativeRuntime
@@ -2746,16 +2774,18 @@ function HomePageImpl() {
     ? t(`nodeDatasheet.sourceError_${projectSource.error}`)
     : null;
   /**
-   * **「이 폴더 맞나요?」 — 연결을 두 단계에서 한 단계로.**
+   * **「이 폴더 맞나요?」 ("Is this the right folder?", the on-screen prompt) — connecting in one step instead of two.**
    *
-   * 종전에는 「코드 폴더 연결하기」를 누르면 무조건 OS 폴더 선택창이 열렸고,
-   * 사람은 자기 저장소를 트리에서 다시 찾아야 했다. 앱은 그 답을 이미 안다 —
-   * 볼트 루트를 한 번 재면 그것을 감싸는 git 저장소까지 올라가기 때문이다.
+   * Pressing "link a code folder" used to always open the OS folder picker, leaving
+   * the person to find their own repository in a tree again. The app already knows
+   * the answer: measuring the vault root once walks up to the git repository that
+   * contains it.
    *
-   * 근거 한 줄은 **잰 것만** 말한다: git 저장소라는 사실 + 선언된 경로 중 몇
-   * 개가 실제로 거기 있었는지. 선언된 경로가 0개면 비율을 지어내지 않고 그렇게
-   * 적는다. 추정이 없거나 확신이 낮으면 이 값 자체가 `null` 이고, 그때 화면은
-   * 종전대로 폴더 선택창 하나만 그린다(죽은 CTA 0).
+   * The one line of evidence states **only what was measured**: that it is a git
+   * repository, and how many of the declared paths were actually found there. With
+   * zero declared paths it says so rather than inventing a ratio. When there is no
+   * proposal, or confidence is low, this whole value is `null` and the screen draws
+   * only the folder picker as before — no dead CTA.
    */
   const projectSourceProposal = useMemo(() => {
     const proposed = projectSource.proposedRoot;
@@ -2781,7 +2811,7 @@ function HomePageImpl() {
     if (!rootPath) return;
     await projectSource.runNextAction({ rootPath });
   }, [projectSource]);
-  // W2-A "경로" action tile — sets this node as the path-analysis source and
+  // The "path" action tile sets this node as the path-analysis source and
   // enters path mode. Reuses `selectTopologyPathRouteState` (already defined
   // in `model/url-state.ts` for the URL-driven path deep link, but never
   // wired to an in-app interaction until now) — no new path-mode entry logic.
@@ -2799,7 +2829,7 @@ function HomePageImpl() {
     },
     [setRouteState, setFullDetailSlug, setSelectedRelationActive],
   );
-  // W2-B context menu quick-action model — same construction as
+  // Context-menu quick-action model — same construction as
   // `v2DatasheetModel` (documentHref/meaningEditHref/handoffText), but keyed
   // off whichever node was right-clicked rather than the current selection,
   // since the context menu is reachable without selecting the node first.
@@ -2812,11 +2842,12 @@ function HomePageImpl() {
     const node = ontologyInsight.nodes.find((n) => n.id === contextMenuNode.slug);
     if (!node) return null;
     const sourceSlug = node.evidenceIds[0] ?? null;
-    // 자기 문서 / 남이 언급한 문서 구분 — 컨텍스트 메뉴는 `근거` 목록이 없어
-    // 문서가 없는 노드에서 링크를 그냥 지우면 정보가 사라진다. 라벨을 바꿔
-    // 정직하게 남긴다.
+    // Own document vs. a document that merely mentions it. The context menu has no
+    // evidence list, so simply dropping the link for a node with no document of its
+    // own would lose the information; the label changes instead and stays honest.
     const { ownSlug, mentionedInSlug } = resolveNodeDocument(node);
-    // 인계문에 박히는 이름은 볼트가 아는 이름 — 문서 slug 또는 참조 원문.
+    // The handoff text carries the name the vault knows: the document slug, or the
+    // reference as written.
     const agentTarget = resolveNodeAgentTarget(node);
     const slug = agentTarget.ref ?? sourceSlug ?? node.id;
     const connections = buildV2Connections(node.id, ontologyInsight.nodes, ontologyInsight.edges);
@@ -2845,15 +2876,15 @@ function HomePageImpl() {
       mentionDocumentHref: mentionedInSlug
         ? buildDocsVaultHref({ slug: mentionedInSlug })
         : null,
-      // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id)로 통일(H5).
+      // Editor deep links always use the canonical `<kind>:<slug>` graph node id.
       meaningEditHref: buildTopologyMeaningEditorNodeHref(node.id),
       handoffText,
     };
   }, [contextMenuNode, handoffSource, ontologyInsight]);
   /*
-   * 우클릭 메뉴도 퇴장 창을 갖는다 — 그동안 위치와 모델을 붙들어야 «닫히는
-   * 중에 빈 메뉴» 가 되지 않는다. 키는 슬러그+좌표: 같은 노드를 다른 자리에서
-   * 다시 우클릭하면 새 값이다.
+   * The context menu has an exit window too, and its anchor and model must be held
+   * through it or it becomes an empty menu while closing. The key is slug + position:
+   * right-clicking the same node somewhere else is a new value.
    */
   const contextMenuKey = contextMenuNode
     ? `${contextMenuNode.slug}@${contextMenuNode.x},${contextMenuNode.y}`
@@ -2865,10 +2896,9 @@ function HomePageImpl() {
     contextMenuKey,
   );
 
-  // A1 "데이터시트 확장판" 전체 상세 — TopologyOntologyDrawer(배지 수프 +
-  // reach 쿼리빌더 + collaborator brief)를 대체. groups/reach 는 compact
-  // datasheet 와 동일 소스(buildV2Connections 파생, buildOntologyReachability
-  // 재사용)라 두 표면의 숫자가 절대 drift 하지 않는다.
+  // Full detail is the datasheet expanded. Its groups and reach come from the same
+  // source as the compact datasheet (derived from `buildV2Connections`, reusing
+  // `buildOntologyReachability`), so the two surfaces' numbers cannot drift.
   const fullDetailA1Model = useFullDetailA1Model({
     open: fullDetailOpen,
     nodeFocus,
@@ -2882,10 +2912,11 @@ function HomePageImpl() {
     datasheet: v2DatasheetModel,
   });
   /*
-   * 전체 상세는 **닫히는 순간 모델이 null 이 된다**(「화면에 없는 표면의 모델은
-   * 만들지 않는다」 게이트 그대로) — 그래서 퇴장 창을 열려면 값도 붙들어야 한다.
-   * 키는 슬러그: 이 모델은 `useMemo` 라 정체성이 매 렌더 바뀌고, 키 없이 넘기면
-   * React #301 로 지도가 통째로 죽는다(엣지 패널 실측).
+   * Full detail's model **becomes null the instant it closes** — that is exactly the
+   * gate against deriving a model for a surface that is not on screen — so opening an
+   * exit window means holding the value too. The key is the slug: this model comes
+   * from a `useMemo` whose identity changes every render, and passing it with no key
+   * kills the whole map with React #301 (measured on the edge panel).
    */
   const heldFullDetailA1Model = useHeldValue(fullDetailA1Model, fullDetailSlug);
   const selectedNodeFocusActive =
@@ -2905,31 +2936,33 @@ function HomePageImpl() {
       !createNodeOpen &&
       !nodePopoverDismissed,
   );
-  // M-7 — the compact node popover is actually on screen (same condition the
-  // popover JSX renders under). Drives both the Escape ladder's
-  // `nodePopoverOpen` rung and the popover's own render guard, so the two can
-  // never disagree about whether Escape#1 should close it.
+  // Whether the compact node popover is actually on screen (the same condition the
+  // popover JSX renders under). Drives both the Esc dismissal order's
+  // `nodePopoverOpen` step and the popover's own render guard, so the two can never
+  // disagree about whether the first Esc should close it.
   const nodePopoverVisible =
     selectedNodeFocusActive &&
     !selectedRelationActive &&
     !createNodeOpen &&
     !nodePopoverDismissed;
-  // rank2 — 팝오버 등장/퇴장 대칭. `panelOpen` 이 false 로 떨어지면 즉시
-  // 언마운트하지 않고 퇴장 애니(≈120ms) 동안 유지한다. 퇴장 중엔 선택 파생
-  // 값(v2DatasheetModel)이 null 로 사라지므로 마지막 모델을 ref 로 잡아 그 창
-  // 동안 같은 내용을 계속 그린다(내용이 바뀌지 않고 접혀 사라지게).
+  // Popover entrance/exit symmetry. When `panelOpen` drops to false the panel is not
+  // unmounted immediately but kept for the exit animation (~120 ms). During the exit
+  // the selection-derived `v2DatasheetModel` goes null, so the last model is retained
+  // in a ref and the same content keeps drawing — it folds away rather than changing
+  // as it goes.
   //
-  // 2026-08-03 — **퇴장 창은 이제 패널이 진다**(`TopologyV2DetailPanel` 안의
-  // `<Surface>`). 여기 있던 `usePanelPresence` + `presence` prop 조합은 창을
-  // 부모에 두고 클래스만 자식에게 지시하는 형태라, «이 표면에 나가는 길이
-  // 있는가» 가 패널 파일 밖의 사실이었다(하드컷 래칫의 탐지기가 못 보는 자리).
-  // 남는 것은 **포지셔너를 언제 내리는가** 하나뿐이고, 그 답은 퇴장이 끝났다는
-  // 패널의 통보(`onExited`)다 — 한 표면에 퇴장 타이머가 둘이면 어느 쪽이
-  // 진실인지 알 수 없다.
+  // 2026-08-03: **the exit window now belongs to the panel** (the `<Surface>` inside
+  // `TopologyV2DetailPanel`). The old `usePanelPresence` + `presence` prop pairing kept
+  // the window in the parent and only told the child which class to wear, which made
+  // "does this surface have a way out" a fact living outside the panel's own file —
+  // somewhere the hard-cut ratchet's detector cannot see. All that remains here is
+  // **when to take the positioner down**, and the answer is the panel's own `onExited`
+  // notification: two exit timers on one surface means neither is the truth.
   const panelOpen = nodePopoverVisible && Boolean(v2DatasheetModel) && !meaningEditorOpen;
   const [nodePanelMounted, setNodePanelMounted] = useState(false);
-  // 렌더 중 조정 — effect 로 올리면 열린 첫 프레임에 포지셔너가 없어 등장이
-  // 한 프레임 늦는다(`useHeldValue` 가 같은 이유로 렌더 중에 붙든다).
+  // Adjusted during render. Raising this in an effect leaves the positioner missing on
+  // the first open frame and delays the entrance by one frame (`useHeldValue` holds
+  // during render for the same reason).
   if ((panelOpen || meaningEditorOpen) && !nodePanelMounted) setNodePanelMounted(true);
   const retainedDatasheetRef = useRef(v2DatasheetModel);
   if (v2DatasheetModel) retainedDatasheetRef.current = v2DatasheetModel;
@@ -2946,12 +2979,13 @@ function HomePageImpl() {
     topologyUtilityChromeState === "compact-focus" ||
     topologyUtilityChromeState === "selected-node-inspector";
   /*
-   * 알림함이 열린 동안만 유틸 레인을 한 단 올린다 (2026-08-17 소유자 지적:
-   * *"알림이 위로 덮어야지?"*). 레인의 `z-20` 이 쌓임 맥락을 만들어 그 안의
-   * 알림함이 밖으로 못 올라가고, 같은 `z-20` 이면서 DOM 상 뒤에 있는 오른쪽
-   * 도구 타일들이 알림함 위에 그려졌다. 상시로 올리지 않는 이유는 막
-   * (`--z-map-scrim`, 25)이 덮어야 할 때 레인이 그 위로 삐져나오기 때문이다.
-   * 게이트: `tests/e2e/agent-activity-placement.spec.ts`.
+   * The utility lane is raised one step **only while the activity inbox is open**.
+   * Owner, 2026-08-17: *"알림이 위로 덮어야지?"* (the notification should cover what is
+   * above). The lane's `z-20` creates a stacking context the inbox inside it cannot
+   * escape, so the right-hand tool tiles — also `z-20` but later in the DOM — painted
+   * over it. It is not raised permanently because the lane would then poke through the
+   * scrim (`--z-map-scrim`, 25) whenever the scrim is meant to cover it.
+   * Gate: `tests/e2e/agent-activity-placement.spec.ts`.
    */
   const [activityInboxOpen, setActivityInboxOpen] = useState(false);
   const topologyUtilityLaneSuppressionContract = selectedRelationActive
@@ -2961,10 +2995,11 @@ function HomePageImpl() {
       : undefined;
 
   /**
-   * 화면 문맥 — 이 에이전트의 가장 큰 우위. 매 턴 시스템 측에서 넣으므로
-   * 모델이 도구로 물을 필요가 없고 항상 신선하다. 이름은 화면이 부르는
-   * 이름(`resolveNodeAgentTarget` 이 정한 인계 슬러그)으로 넘긴다 — 사람과
-   * 에이전트가 같은 이름을 써야 인계가 붙여넣는 즉시 동작한다.
+   * Screen context — this agent's single biggest advantage. It is injected from the
+   * system side every turn, so the model never has to ask for it with a tool and it is
+   * always fresh. Names are passed as the screen names them (the handoff slug decided
+   * by `resolveNodeAgentTarget`): a handoff only works the moment it is pasted if the
+   * human and the agent use the same name.
    */
   const vaultAgentScreenContext = useMemo<ScreenContextSnapshot>(() => {
     const target = resolveNodeAgentTarget(selectedOntologyNode);
@@ -2979,21 +3014,23 @@ function HomePageImpl() {
   }, [selectedOntologyNode, spotlightOn, realmTitle, topologyV2Graph.nodes.length]);
 
   /**
-   * ## 대화창은 **하나**다 (2026-08-16 소유자 확정)
+   * **One chat panel** (owner decision, 2026-08-16).
    *
-   * 여기에는 대화를 하는 갈래가 둘 있다 — 내 컴퓨터에 깔린 코딩 에이전트와
-   * 이야기하는 것(ACP), 그리고 내가 넣어 둔 API 키로 이야기하는 것. 종전에는
-   * **둘 다 자기 문과 자기 창을 갖고 있었고**, 열림 상태도 서로 몰랐다. 그래서
-   * 지도 오른쪽에 비슷하게 생긴 대화창이 둘 뜰 수 있었다(소유자 실보고:
-   * *"이 에이전트랑 다른 거지? 이 대화창은? 뭔가 헷갈리는데"*).
+   * There are two ways to hold a conversation here: through a coding agent installed
+   * on this machine (ACP), or through an API key the user supplied. Each used to have
+   * **its own door and its own panel**, and neither knew whether the other was open —
+   * so two similar-looking chat panels could appear to the right of the map at once.
+   * Owner: *"이 에이전트랑 다른 거지? 이 대화창은? 뭔가 헷갈리는데"* (this chat is a
+   * different thing from that agent, isn't it? it's confusing).
    *
-   * 갈래가 둘인 것은 사실이고 그 자체는 문제가 아니다 — **문이 둘이고 창이
-   * 둘인 것**이 문제였다. 그래서 문을 하나로 모은다:
+   * Two branches is a fact and not itself the problem; **two doors and two panels**
+   * was. So there is one door:
    *
-   * - 코딩 에이전트가 잡히면 그쪽으로 간다(더 할 수 있는 게 많다 — 이 폴더의
-   *   MCP 도구를 그대로 쓰고, 사용자가 이미 쓰던 구독/설정을 탄다)
-   * - 없으면 키 갈래로 간다(코딩 에이전트를 안 쓰는 사람에게 남는 길)
-   * - **둘이 동시에 열리는 일은 없다**
+   * - a coding agent, if one is detected (it can do more — it uses this folder's MCP
+   *   tools directly and rides the subscription and settings the user already has)
+   * - otherwise the key branch, which is what remains for people who use no coding
+   *   agent
+   * - **never both at once**
    */
   const agentChatUsesRuntime = Boolean(acpRuntime && gitVaultPath);
 
@@ -3008,14 +3045,16 @@ function HomePageImpl() {
       setVaultAgentOpen(true);
       setAcpChatOpen(false);
     }
-    // 물러나는 표면들 — 툭 사라지지 않게 각자의 닫힘 경로를 그대로 탄다.
+    // The surfaces that retreat take their own close paths, so nothing simply blinks
+    // out.
     setOntologySearchOpen(false);
     setCreateNodeOpen(false);
   }, [agentChatUsesRuntime, setCreateNodeOpen]);
 
   /**
-   * 첫 마디의 화면 언어 — 패널의 빈 대화 칩과 **같은 키**를 읽는다. 두
-   * 입구가 각자 문구를 고르면 같은 개념을 두 가지로 말하게 된다.
+   * On-screen wording for the first line, read from **the same keys** as the panel's
+   * empty-chat chips. If each entry point picked its own phrasing, the same idea would
+   * be said two different ways.
    */
   const firstWordsLabels = useMemo<FirstWordsLabels>(
     () => ({
@@ -3029,10 +3068,10 @@ function HomePageImpl() {
   );
 
   /**
-   * S7 이음새 — 노드 상세의 「말로 시키기」. 문장은 **첫 마디 생성기**가
-   * 짓는다(`screenIntentFor`): 빈 대화의 1번 칩과 글자 하나까지 같은 문장이
-   * 되므로 두 입구가 갈라질 자리가 없다. 누르면 패널이 열리고 입력칸에 앉을
-   * 뿐 — 전송은 여전히 [보내기]다.
+   * "Ask about this" on the node detail. The sentence is written by the first-line
+   * generator (`screenIntentFor`), so it is character-for-character the empty chat's
+   * first chip and the two entry points cannot diverge. Pressing it opens the panel and
+   * seats the sentence in the input; sending is still the send button.
    */
   const askAgentAboutSelectedNode = useCallback(() => {
     const intent = screenIntentFor(selectedOntologyNode, vaultConceptFacts);
@@ -3045,12 +3084,12 @@ function HomePageImpl() {
   }, [selectedOntologyNode, vaultConceptFacts, firstWordsLabels, openVaultAgent]);
 
   /**
-   * S7 이음새 — 인사이트 큐에서 `?ask=` 를 달고 건너온 경우.
+   * Arriving from the insight queue with `?ask=` in the URL.
    *
-   * **주소가 곧 상태다.** 별도 React state 로 복사하지 않으므로 "패널이 열려
-   * 있는가" 와 "무엇을 물을 것인가" 가 한 곳에만 있고, 뒤로가기로 그 주소에
-   * 돌아오면 같은 문맥이 그대로 되살아난다. 주소가 나른 것은 **의도의
-   * 종류**뿐이라 문장은 여기서, 빈 대화 칩과 같은 생성기로 짓는다.
+   * **The URL is the state.** Nothing is copied into React state, so "is the panel
+   * open" and "what is being asked" live in one place, and going Back to that URL
+   * restores the same context. The URL carries only the **kind of intent**; the
+   * sentence is written here, by the same generator as the empty-chat chips.
    */
   const askPrefill = useMemo(() => {
     if (!llmBridgeAvailable || !routeState.askIntent) return null;
@@ -3058,25 +3097,25 @@ function HomePageImpl() {
     if (!intent) return null;
     return {
       text: sentenceForIntent(intent, firstWordsLabels),
-      // 같은 주소면 같은 값 — 렌더마다 초안을 다시 덮지 않는다.
+      // The same URL gives the same value, so a render never overwrites the draft.
       nonce: hashAskRequest(routeState.askIntent, "ref" in intent ? intent.ref : ""),
     };
   }, [llmBridgeAvailable, routeState.askIntent, selectedOntologyNode, firstWordsLabels]);
 
   /**
-   * 닫기는 주소의 요청도 함께 거둔다 — 안 그러면 닫아도 파생 상태가 다시
-   * 열고, 사용자에겐 "닫기가 안 먹는" 것으로 읽힌다.
+   * Closing also withdraws the request in the URL. Otherwise the derived state reopens
+   * the panel after every close and it reads as "close does not work".
    */
   const closeVaultAgent = useCallback(() => {
     agentDockTouchedRef.current = true;
     /*
-     * 닫는 순간에도 **그려진 채로 남는다** — 그래야 사라지는 애니메이션이 돌
-     * 자리가 있다. 다 사라지면 `Surface` 가 `onExited` 로 알려 주고 그때
-     * 언마운트한다(주소로 들어온 요청처럼 이 함수를 안 거친 경로도 있어서,
-     * 여기서 한 번 더 켜 둔다).
+     * It **stays drawn** through the close, so the exit animation has somewhere to
+     * run; `Surface` reports `onExited` when it is finished and it unmounts then.
+     * (Set again here because some paths — a request arriving in the URL — never go
+     * through this function.)
      */
     setChatMounted(acpChatOpen);
-    // 창이 하나이므로 닫는 것도 하나다 — 어느 갈래가 떠 있었든 이 한 번으로 닫힌다.
+    // One panel means one close: whichever branch was up, this closes it.
     setAcpDockFrameOpen(false);
     setVaultAgentOpen(false);
     setAcpChatOpen(false);
@@ -3085,16 +3124,18 @@ function HomePageImpl() {
   }, [acpChatOpen, setRouteState]);
 
   /**
-   * 어느 갈래가 **그 하나뿐인 창**을 갖고 있나.
+   * Which branch currently owns **the one panel**.
    *
-   * 주소가 들고 온 「이거 물어봐」도 같은 규칙을 탄다 — 코딩 에이전트가 있으면
-   * 그 문장은 그쪽 작성 칸에 앉는다. 종전에는 이 요청만 키 갈래를 따로 열어서,
-   * 칩으로 여는 창과 노드에서 여는 창이 **서로 다른 창**이었다.
+   * An "ask this" arriving in the URL follows the same rule: with a coding agent
+   * present, that sentence lands in its composer. Previously only this request opened
+   * the key branch separately, so the panel a chip opened and the panel a node opened
+   * were **different panels**.
    */
   const {
     runtime: runtimeChatOpen,
     key: keyChatOpen,
-    /** 지금 대화창이 떠 있나 — 어느 갈래든. 칩의 눌림 상태가 이 값을 읽는다. */
+    /** Is a chat panel up right now, on either branch? The chip's pressed state reads
+     * this. */
     open: agentChatOpen,
   } = agentChatDoor({
     hasRuntime: agentChatUsesRuntime,
@@ -3105,9 +3146,10 @@ function HomePageImpl() {
   const agentDockOpen = agentChatOpen || acpDockFrameOpen;
 
   /**
-   * 접힌 INDEX 탭은 좌측 작업대로 돌아가겠다는 명시적 선택이다. 에이전트가
-   * 열린 동안 탭만 펼치면 다시 양쪽 패널이 지도를 압축하므로, 같은 입력에서
-   * 에이전트는 퇴장하고 INDEX는 등장한다. 두 표면의 기존 모션을 그대로 쓴다.
+   * Pressing the collapsed INDEX tab is an explicit choice to go back to the left
+   * workbench. Expanding it while the agent is open would squeeze the map between two
+   * panels again, so the same input retires the agent as INDEX arrives. Both surfaces
+   * use the motion they already have.
    */
   const handleIndexTabExpandFromAgent = useCallback(() => {
     if (agentDockOpen) closeVaultAgent();
@@ -3115,8 +3157,9 @@ function HomePageImpl() {
   }, [agentDockOpen, closeVaultAgent, handleIndexTabExpand]);
 
   /**
-   * 이 폴더를 분석하라는 지시 — **볼트 경로를 아는 빌더**가 만든다. i18n 문자열로
-   * 두면 경로가 없어서, 에이전트가 어느 폴더를 보라는 것인지 문장만으로는 모른다.
+   * The instruction to analyse this folder, built by something that **knows the vault
+   * path**. Left as an i18n string it would carry no path, and the sentence alone
+   * would not tell the agent which folder to look at.
    */
   const analyzePrompt = useMemo(
     () =>
@@ -3130,8 +3173,8 @@ function HomePageImpl() {
   );
 
   /**
-   * 그 지시를 **대화 작성 칸에 앉힌다.** 보내는 것은 여전히 사람이 한다 —
-   * 노드의 「말로 시키기」와 같은 계약이고, 같은 상태를 쓴다.
+   * Seats that instruction **in the chat composer**. A person still does the sending —
+   * the same contract, and the same state, as "ask about this" on a node.
    */
   const sendAnalyzeToAgent = useCallback(() => {
     setVaultAgentPrefill({ text: analyzePrompt, nonce: Date.now() });
@@ -3139,8 +3182,8 @@ function HomePageImpl() {
   }, [analyzePrompt, openVaultAgent]);
 
   /**
-   * 첫 걸음 카드를 거둔다 — 마지막 걸음을 지났다는 뜻이다. 세션 단위라 앱을
-   * 새로 열면 다시 안내한다.
+   * Dismisses the first-steps card, meaning the last step is behind them. Session
+   * scoped, so reopening the app shows the guidance again.
    */
   const [startStepsDismissed, setStartStepsDismissed] = useState(() =>
     readFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY),
@@ -3151,13 +3194,15 @@ function HomePageImpl() {
   }, []);
 
   /**
-   * **오른쪽에 선 것을 알림이 비켜선다** (2026-08-16 소유자 화면).
+   * **Toasts step aside for whatever stands on the right** (owner's screen,
+   * 2026-08-16).
    *
-   * 토스트는 화면 오른쪽 아래 고정이라, 지도 오른쪽에 대화 패널이 서면 그
-   * 16px 여백이 **패널 안쪽**이 된다 — 「만들었어요」 알림이 작성 칸 위에
-   * 그대로 얹혔다. 하단에서 이미 쓰던 예약 계약을 오른쪽에도 건다.
+   * Toasts are pinned bottom-right, so with the chat panel standing to the right of
+   * the map that 16px margin ends up **inside the panel** — the "created" toast landed
+   * straight on the composer. The reservation contract already used at the bottom is
+   * applied on the right too.
    *
-   * 폭을 상수로 박지 않고 **실측한다**: 이 패널의 폭은 사용자가 끌어서 정한다.
+   * The width is **measured, not a constant**: the user drags this panel to size.
    */
   useEffect(() => {
     const root = document.documentElement;
@@ -3176,8 +3221,9 @@ function HomePageImpl() {
         clear();
         return;
       }
-      // 폭 자체를 적어 둔다 — 지도 위의 떠 있는 카드들이 오른쪽 벽을 이 값에서
-      // 구한다(`right-dock-reserve.ts`). 알림의 오프셋은 그 위에 여백을 더한 것.
+      // The width itself is published, because the cards floating over the map derive
+      // their right wall from it (`right-dock-reserve.ts`). The toast offset is that
+      // plus its margin.
       root.style.setProperty(RIGHT_DOCK_WIDTH_VAR, `${Math.round(width)}px`);
       root.style.setProperty(
         "--app-toast-right-offset",
@@ -3185,7 +3231,8 @@ function HomePageImpl() {
       );
     };
     apply();
-    // 폭은 끌 때마다 바뀌고, 패널은 열린 뒤에 붙는다 — 한 번만 재면 낡는다.
+    // The width changes on every drag and the panel attaches after opening, so a
+    // single measurement goes stale.
     const dock = document.querySelector<HTMLElement>("[data-right-dock]");
     const observer =
       typeof ResizeObserver === "undefined" || !dock ? null : new ResizeObserver(apply);
@@ -3199,9 +3246,10 @@ function HomePageImpl() {
   }, [agentDockOpen]);
 
   /*
-   * 설정의 Agents 칸에서 「이 도구로 대화 열기」를 누르면 여기로 온다
-   * (2026-08-16 검수: 「연결」하러 간 화면에 연결로 넘어갈 문이 없었다).
-   * 문은 여전히 하나다 — 실행기만 지목하고 여는 것은 같은 함수가 한다.
+   * "Open a chat with this tool" in the settings sheet's Agents section arrives here
+   * (2026-08-16 review: the screen people went to in order to connect had no door
+   * through to connecting). There is still one door — this only names the runtime and
+   * the same function does the opening.
    */
   useEffect(() => {
     return subscribeAgentChatIntent((runtimeId) => {
@@ -3212,9 +3260,9 @@ function HomePageImpl() {
   }, [openVaultAgent]);
 
   /*
-   * 스스로 여는 것도 **같은 문**을 탄다. 여기 있는 이유는 위 `openVaultAgent`
-   * 가 실행기 상태를 읽어야 해서다 — 이 효과가 갈래를 따로 고르면 그 순간
-   * 대화창이 둘이 된다.
+   * Opening by itself goes through **the same door**. It lives here because
+   * `openVaultAgent` above has to read runtime state — the moment this effect picks a
+   * branch of its own, there are two chat panels.
    */
   useEffect(() => {
     if (agentDockDefaultOpen !== true || agentDockTouchedRef.current) return;
@@ -3227,34 +3275,26 @@ function HomePageImpl() {
       options?: {
         preserveImpact?: boolean;
         /**
-         * INDEX 트리에서 고른 선택 (2026-07-24 소유자 지적) — 목록에서 행을
-         * 누르면 좌측 패널이 슬림 탭으로 접혀 방금 펼친 자식이 사라졌다.
-         * "목록을 보는 중" 이라는 맥락이 명확하므로 이 경우엔 좌측 패널을
-         * 계속 열어 둔다(지도에서 고른 선택은 종전대로 접혀 지도가 넓어진다).
+         * Selected from the INDEX tree (owner remark, 2026-07-24): pressing a row in
+         * the list collapsed the left panel to a slim tab, so the child they had just
+         * expanded disappeared. The context "I am reading the list" is unambiguous, so
+         * the left panel stays open in that case. A selection made on the map still
+         * collapses it and widens the map.
          */
         keepIndexOpen?: boolean;
       },
     ) => {
-      // Ontology node clicks and shareable vault slugs both stay on
-      // /topology; selected-node resolution happens against ontologyInsight.
-      // 노드 선택 = drawer 열기. 허브를 선택하면 포커스 모드 자동 활성,
-      // 일반 노드는 포커스 해제.
-      // projectBySlug Map 으로 O(1) lookup — 이전엔 매 클릭마다
-      // renderProjects.find 로 O(N) 스캔.
-      // 새 노드 선택(연결 클릭 포함) = 관계 row 가 보이는 inspector 부터.
-      // 사용자가 지도만 크게 보고 싶을 때 "지도 보기"로 명시적으로 접는다.
+      // Ontology node clicks and shareable vault slugs both stay on /topology;
+      // selected-node resolution happens against `ontologyInsight`.
       interactionSelectedSlugRef.current = slug;
-      // INDEX 트리에서 고른 선택은 목록을 접지 않는다 (2026-07-24 소유자
-      // 지적: 행을 누르면 패널이 슬림 탭으로 접혀 방금 펼친 자식이 사라졌다).
-      // 지도에서 고른 선택은 종전대로 접혀 지도가 넓어진다.
       if (options?.keepIndexOpen) setIndexManualExpandDuringSelection(true);
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
       setNodePopoverDismissed(false);
       const project = projectBySlug.get(slug);
-      // path 모드/일반 선택 분기는 `resolveTopologyNodeClickRouteState` 가
-      // 담당 — persona QA fix/persona-findings ②, 자세한 배경은 그 함수의
-      // 주석 참고 (`../model/url-state.ts`).
+      // The path-mode vs. ordinary-selection branch belongs to
+      // `resolveTopologyNodeClickRouteState`; its own comment in
+      // `../model/url-state.ts` carries the background.
       setRouteState((current) =>
         resolveTopologyNodeClickRouteState(current, slug, {
           isHub: Boolean(project?.isHub),
@@ -3273,16 +3313,17 @@ function HomePageImpl() {
   );
 
   /**
-   * 지난 길 한 줄을 **지금 걷는 길로 다시 편다**. 순서가 곧 계약이다:
+   * **Replays a past trail as the walk in progress.** The order is the contract:
    *
-   * ① 지금 걷던 길을 먼저 굳힌다 — 디바운스 대기 중이던 마지막 걸음까지
-   *    보관되므로 다시 펴는 대가로 잃는 것이 없다.
-   * ② 새 길 id 로 갈아탄다. 경로가 그대로면 `upsertPastWalk` 가 재보관을
-   *    건너뛰므로 원본 줄이 제 날짜 그대로 남고, 여기서 이어 걸어 경로가
-   *    달라지는 순간에만 새 줄이 생긴다.
-   * ③ 정제된 걸음을 세션 궤적으로 적재 — 지도 발자국 링은 이 궤적의 파생이라
-   *    렌더 코드를 건드리지 않고 그대로 다시 도장된다.
-   * ④ 끝 걸음을 ego 포커스 — "지금 여기"가 그 길의 끝이다.
+   * ① Flush the current walk first, including the last step still waiting out the
+   *    debounce, so replaying costs nothing.
+   * ② Switch to a new walk id. If the route is unchanged, `upsertPastWalk` skips
+   *    re-storing it, so the original row keeps its own date and a new row appears only
+   *    once walking on from here makes the route different.
+   * ③ Load the refined steps as the session trail. The map's footprint rings are
+   *    derived from that trail, so they re-stamp themselves with no render code
+   *    touched.
+   * ④ Ego-focus the last step — "you are here" is the end of that trail.
    */
   const handleReplayPastWalk = useCallback(
     (walkId: string) => {
@@ -3292,9 +3333,9 @@ function HomePageImpl() {
       setSessionWalkId(newPastWalkId());
       const ids = target.entries.map((entry) => entry.id);
       setFootprintTrail(ids);
-      // 끝 걸음을 직접 방문으로 표시해 둔다 — 아래 handleSelect 가 일으키는
-      // 방문 감지 effect 가 방금 적재한 궤적을 다시 흔들지 않게(같은 노드라
-      // 결과는 같지만, 그 사실에 기대는 대신 명시한다).
+      // Mark the last step as visited explicitly, so the visit-detection effect that
+      // `handleSelect` triggers below does not disturb the trail just loaded. (It is
+      // the same node either way, but stating it beats relying on that.)
       const last = ids[ids.length - 1];
       lastVisitedNodeRef.current = last;
       handleSelect(last);
@@ -3313,8 +3354,9 @@ function HomePageImpl() {
       impactMode: "none",
       meaningEditorIntent: false,
       meaningEditParam: null,
-      // 펼침(초점)의 닫기 = 지도 복귀. 배경 클릭/Esc/팝오버 X 가 전개를
-      // 접는다 — 클릭=선택, 배지=펼치기, 닫기=접기의 대칭 완성.
+      // Closing a focus returns to the map: a background click, Esc, or the popover's
+      // ✕ all collapse the expansion. That completes the symmetry of click = select,
+      // badge = expand, close = collapse.
       analysisMode:
         current.analysisMode === "focus" ? "overview" : current.analysisMode,
     }));
@@ -3322,14 +3364,16 @@ function HomePageImpl() {
 
   const handleDatasheetClose = useCallback(() => {
     const focusReturnNodeId = panelDatasheetModel?.nodeId ?? null;
-    // 3D 돔 (2026-08-18 소유자: *"x누르면 그냥 닫히거든? 선택된것도
-    // 취소되고? 그거때문에 보기가 힘들어"*) — X 는 「패널을 접는 것」이지
-    // 「고른 것을 버리는 것」이 아니다. 선택·ego 강조는 남기고 패널만 접는다
-    // — Escape 사다리 1단(`nodePopoverDismissed`)과 같은 기구 재사용, 새 상태
-    // 0개. 선택 해제는 빈 배경 클릭/Escape 2단의 몫. 다시 열기는 그 노드를
-    // 다시 클릭(돔에서는 재클릭이 해제가 아니라 재선택이다 —
-    // `topology-pointer-handlers.ts`). 2D 는 종전 그대로(닫기=접기 대칭,
-    // 2026-07 원장) — 돔은 전개·밀도 게이트가 없어 그 대칭의 전제가 없다.
+    // On the 3D dome, ✕ folds the panel; it does not throw the selection away. Owner,
+    // 2026-08-18: *"x누르면 그냥 닫히거든? 선택된것도 취소되고? 그거때문에 보기가
+    // 힘들어"* (pressing ✕ just closes it and cancels the selection too, which makes it
+    // hard to look at). The selection and its ego highlight stay; only the panel folds,
+    // reusing the first step of the Esc dismissal order (`nodePopoverDismissed`) with no
+    // new state. Deselecting belongs to a background click or the second Esc, and
+    // reopening is another click on that node (on the dome a re-click reselects rather
+    // than deselects — `topology-pointer-handlers.ts`). 2D keeps the close = collapse
+    // symmetry from the 2026-07 ledger; the dome has no expansion or density gate, so
+    // that symmetry has no premise there.
     if (view3d) {
       setNodePopoverDismissed(true);
     } else {
@@ -3341,10 +3385,10 @@ function HomePageImpl() {
     });
   }, [handleClose, panelDatasheetModel?.nodeId, view3d, setNodePopoverDismissed]);
 
-  // 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 지도 화면(/) 전담
-  // 의미 문해 투어. `canResolveTourAnchor` 는 이 view 가 testid(DOM) 또는
-  // canvas-node(그래프) 앵커를 실제로 해석해 feature 에 불리언만 돌려준다 —
-  // feature 는 widgets 를 import 하지 않는다(FSD).
+  // The guided tour (`src/features/guided-tour`) is the map screen's own literacy
+  // tour. `canResolveTourAnchor` lets this view resolve a testid (DOM) or canvas-node
+  // (graph) anchor and hand the feature only a boolean, because the feature may not
+  // import widgets (FSD import direction).
   const canResolveTourAnchor = useCallback(
     (anchor: TourAnchor) => {
       if (anchor === null) return true;
@@ -3358,9 +3402,10 @@ function HomePageImpl() {
   const tour = useGuidedTour({
     hasSelection: canvasSelectedSlug != null,
     canResolveAnchor: canResolveTourAnchor,
-    // 실측 회귀 — 5단계(datasheet)를 떠날 때 선택을 안 지우면 노드 포커스가
-    // 유틸리티 레인(스포트라이트 토글 포함)을 계속 접어, 7단계(recent) 앵커가
-    // 영구히 해석 불가능해지고 8단계(dev 분기)가 도달 불가능해졌다.
+    // Measured regression: not clearing the selection on leaving the datasheet step
+    // left node focus collapsing the utility lane (including the spotlight toggle), so
+    // the recent-changes step's anchor became permanently unresolvable and the step
+    // after it unreachable.
     onLeaveDatasheet: handleClose,
   });
   const tourAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -3373,8 +3418,8 @@ function HomePageImpl() {
     setSelectedEdge(null);
     handleSelect(tourAnchorNodeId);
   }, [handleSelect, tourAnchorNodeId, setSelectedEdge]);
-  // 투어를 열 때 다른 전이 표면을 강등한다(§4 "열림 시" 계약) — create-node
-  // composer 와 같은 "openX 가 나머지를 닫는다" 관례를 그대로 따른다.
+  // Opening the tour retires the other transient surfaces, following the same
+  // "openX closes the rest" convention as the create-node composer.
   const openGuidedTour = useCallback(() => {
     setOntologySearchOpen(false);
     setShortcutsOpen(false);
@@ -3383,23 +3428,23 @@ function HomePageImpl() {
     tour.start();
   }, [closeCreateNode, tour]);
 
-  // 안내 다시 보기 (2026-07-26) — 지도의 재진입은 우상단 나침반 타일이지만,
-  // 설정 메뉴의 "화면 안내" 행은 여섯 목적지에서 같은 자리에 있어야 사용자가
-  // 화면마다 다른 곳을 찾지 않는다. 나머지 다섯은 셸의 `DestinationGuide` 가
-  // 등록하고, 지도는 자기 투어를 여는 이 함수를 등록한다.
+  // The map's own re-entry is the compass tile top right, but the settings menu's
+  // guide row has to be in the same place across all six destinations so nobody hunts
+  // for it per screen. The other five register through the shell's `DestinationGuide`;
+  // the map registers this function.
   useRegisterGuideReplay(openGuidedTour);
 
-  // 첫 방문 자동 투어 (2026-07-24 온보딩 라운드) — 투어 자산이 있는데
-  // 진입점이 우측 레일 아이콘뿐이라 비개발자가 발견하지 못했다. 샘플
-  // 모드 정착(= vault 미선택 첫 실행, 복원 시도 완료) + 저장된 done/
-  // skipped 없음일 때 한 번만 자동 시작한다. skip 이 'skipped' 를
-  // 기록하므로 재방문에는 다시 뜨지 않고, 로컬 vault 사용자에게는
-  // `sampleModeSettled` 가 false 라 애초에 발화하지 않는다.
+  // First-visit auto tour (onboarding round, 2026-07-24). The tour existed but its
+  // only entry point was a rail icon, so non-developers never found it. It starts once
+  // when sample mode has settled (first run with no vault chosen, restore attempted)
+  // and no done/skipped status is stored. Skipping records `skipped`, so it does not
+  // return on a later visit, and for local-vault users `sampleModeSettled` is false so
+  // it never fires at all.
   const autoTourFiredRef = useRef(false);
-  // `openGuidedTour` 는 tour 객체 의존이라 매 렌더 재생성 — dep 로 두면
-  // effect 가 렌더마다 타이머를 지우고 다시 못 세운다(실측 회귀). ref 미러로
-  // deps 를 `sampleModeSettled` 하나로 고정하고, 발화 성공 시점에만 가드를
-  // 세운다.
+  // `openGuidedTour` depends on the tour object and is rebuilt every render, so as a
+  // dependency it made this effect clear its timer every render and never reach the
+  // timeout (measured regression). A ref mirror pins the deps to `tourAutoStartReady`
+  // alone, and the guard is raised only when it actually fires.
   const openGuidedTourRef = useRef(openGuidedTour);
   useEffect(() => {
     openGuidedTourRef.current = openGuidedTour;
@@ -3407,32 +3452,35 @@ function HomePageImpl() {
   useEffect(() => {
     if (autoTourFiredRef.current || !tourAutoStartReady) return undefined;
     if (!readGuideAutoStart()) return undefined;
-    // 「화면 안내」를 끈 사람에게는 어디서도 저절로 뜨지 않는다. 나침반 타일과
-    // 설정 › 다시 보기는 그대로 열리므로, 안내가 사라지는 게 아니라 부를 때만 온다.
+    // For anyone who turned the guide off, nothing ever appears by itself. The compass
+    // tile and settings › replay still open it, so the guidance is not gone — it only
+    // comes when called.
     if (readGuidedTourStatus() !== null) return undefined;
-    // 첫 시도는 900ms 뒤 — 레이아웃/카메라 정착 뒤에 열어 1단계 카드가
-    // 안정된 화면 위에 뜬다. Design Guardian (2026-07-24) stacked-transient
-    // 가드: 발화 순간 모달(폴더 안내 시트 등)이 열려 있거나 문서 포커스가
-    // 나가 있으면(백그라운드 탭 로드 · OS 폴더 선택창) 겹쳐 쏘지 않는다.
+    // The first attempt is 900 ms in, after layout and camera settle, so the first card
+    // opens over a stable screen. Stacked-transient guard (Design Guardian,
+    // 2026-07-24): if a modal is open at that moment (the folder guide sheet, say) or
+    // document focus has left (a background tab load, the OS folder picker), it does not
+    // fire on top of it.
     //
-    // 예전엔 재시도에 10회(≈19초) 상한이 있었는데, 그 상한이 곧 결함이었다 —
-    // 첫 화면의 폴더 안내 시트를 읽고 OS 폴더 선택창까지 거치면 19초는 쉽게
-    // 넘고, 그러면 투어는 storage 미기록 상태로 **영영 사라진다**. 실측
-    // (2026-07-26): 모달을 27초 두고 닫았더니 투어가 끝내 뜨지 않았다.
+    // Retries used to be capped at 10 (~19 s), and that cap was itself the defect:
+    // reading the first screen's folder guide sheet and going through the OS picker
+    // easily passes 19 s, after which the tour **disappears forever** with nothing
+    // recorded in storage. Measured 2026-07-26: leaving the modal up for 27 s meant the
+    // tour never appeared.
     //
-    // 그래서 상한을 없앴다. 무한 재시도처럼 보이지만 실제 동작은
-    // "**막힘이 풀리는 첫 순간에 쏜다**" 이고, 그게 정확히 원하는 동작이다 —
-    // 나중에 불쑥 튀어나오는 게 아니라, 가릴 것이 사라지자마자 뜬다. 틱 하나는
-    // querySelector 세 번이라 비용이 없고, 발화 즉시·언마운트 시 멈추며,
-    // 애초에 투어를 한 번도 안 본 사람에게만 돈다.
+    // So the cap is gone. It looks like infinite retry, but the behaviour is "**fire at
+    // the first moment the way is clear**", which is exactly what is wanted — it does not
+    // ambush the user later, it appears as soon as nothing is covering it. A tick is
+    // three `querySelector` calls, it stops on fire and on unmount, and it only ever runs
+    // for someone who has never seen the tour.
     //
-    // 다만 "막힘이 풀리는 첫 순간"이 사용자가 이미 스스로 탐색을 시작한 뒤일
-    // 수 있다 — 실측(2026-07-26): 시트를 [다음에]로 넘긴 뒤 2~6초 사이에 노드를
-    // 클릭해 상세 패널을 연 사용자의 화면 위로 1/7 카드가 끼어들었다. 그래서
-    // 대기 중 첫 실질 상호작용이 감지되면 **발화를 취소**한다(가드에 예외를
-    // 더하는 방향은 안내가 자기가 소개할 것을 덮는 역효과가 이미 확인됐다).
-    // 취소해도 길은 막히지 않는다 — 설정 › 화면 안내 › 다시 보기, 그리고 지도
-    // 우상단 나침반 타일이 같은 투어를 연다.
+    // But "the first moment the way is clear" can arrive after the user has started
+    // exploring on their own. Measured 2026-07-26: after dismissing the sheet with
+    // "later", users who clicked a node 2–6 s afterwards got card 1/7 cutting across the
+    // detail panel they had just opened. So the first real interaction while waiting
+    // **cancels** the fire. (Adding exceptions to the guard instead was already shown to
+    // backfire — the guidance covering the very thing it introduces.) Cancelling blocks
+    // nothing: settings › guide › replay and the compass tile open the same tour.
     let timerId = 0;
     const tick = () => {
       if (autoTourFiredRef.current) return;
@@ -3455,15 +3503,16 @@ function HomePageImpl() {
     };
   }, [tourAutoStartReady]);
 
-  // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
-  // `stepCloseOverlays` promise: "Close drawers and overlays one step at a
-  // time"). The composer/shortcuts/docs-drawer overlays already close
+  // The Esc dismissal order — which surface a single Escape closes, one step at a
+  // time (the shortcut sheet's `stepCloseOverlays` promise; `docs/FEATURES.md`). This
+  // is an ordering of surfaces, not a ramp of values. The composer, shortcuts, and
+  // docs-drawer overlays already close
   // themselves on Escape; this effect covers what previously had no Escape
   // binding at all — the full-detail drawer, the relation lens, the selected
   // node itself, and the local-graph ego-drill breadcrumb (which used to pop
   // unconditionally on every Escape, racing with whatever else was open).
   //
-  // `searchOpen: ontologySearchOpen` is passed so the ladder returns "none"
+  // `searchOpen: ontologySearchOpen` is passed so the resolver returns "none"
   // while the palette (a Radix `Dialog`) is open — otherwise this
   // window-level handler ALSO fired on the same keypress (e.g. deselecting
   // the node underneath), so one Escape closed both the palette AND the
@@ -3488,16 +3537,18 @@ function HomePageImpl() {
       if (event.key !== "Escape") return;
       if (event.defaultPrevented) return;
       /*
-       * ⚠️ **대화창 안에서 누른 Esc 는 지도의 것이 아니다** (2026-08-16 검수).
+       * ⚠️ **An Escape pressed inside the chat panel is not the map's** (2026-08-16
+       * review).
        *
-       * 이 사다리는 `window` 에서 듣고 `event.target` 을 안 봤다. 그래서 대화
-       * 작성 칸에 글을 쓰다가 Esc 를 누르면 — 한국어 입력을 취소하려는 손이
-       * 흔히 하는 일이다 — **뒤에 있는 지도의 선택이 풀렸다.** 사용자가 보고
-       * 있지도 않은 것이 바뀌는 것은 이 사다리가 약속한 「한 단계씩」이 아니다.
+       * This listener is on `window` and did not look at `event.target`, so pressing
+       * Escape while typing in the chat composer — which a hand does routinely to
+       * cancel a Korean IME composition — **cleared the selection on the map behind
+       * it**. Changing something the user is not even looking at is not the
+       * one-step-at-a-time this order promises.
        *
-       * 대화창은 자기 안의 것을 자기가 닫는다(지난 대화 목록). 그 안에서 더
-       * 닫을 것이 없으면 아무 일도 안 일어나는 편이 맞다 — 지도를 건드리는
-       * 것보다 낫다.
+       * The chat panel closes its own things (the past-conversation list). When it has
+       * nothing left to close, nothing happening is the right outcome — better than
+       * reaching into the map.
        */
       const target = event.target;
       if (
@@ -3520,25 +3571,25 @@ function HomePageImpl() {
         nodePopoverOpen: nodePopoverVisible,
         hasLocalGraphRoot: localGraphRoot !== null,
       });
-      // S4 — 영역 전개는 사다리 최우선. 영역 안에서 Esc 는 무엇보다 먼저
-      // 전체 지도로 복귀한다(엣지 팝오버 단축 소비보다도 위).
+      // Leaving a realm comes first in the order: inside a realm, Escape returns to the
+      // whole map before anything else, ahead even of the edge popover.
       if (action === "close-realm") {
         handleExitRealm();
         return;
       }
       switch (action) {
         case "close-edge-popover":
-          // R-1 (Guardian 총괄) — 엣지 팝오버가 열려 있으면 Esc 1단은 그것부터
-          // 닫는다 (영역 다음 최상단 소비 — 노드 팝오버와 같은 계약). 팝오버는
-          // 자체 포커스 관리(TopologyV2EdgePanel)로 트리거에 포커스를 되돌린다.
+          // With the edge popover open, the first Escape closes that — the highest
+          // consumer after leaving a realm, the same contract as the node popover. The
+          // popover returns focus to its trigger itself (`TopologyV2EdgePanel`).
           setSelectedEdge(null);
           break;
         case "close-context-menu":
           closeContextMenu();
           break;
         case "close-tour":
-          // §4 Esc 계약 — Escape 는 투어만 닫는다('skipped' 기록), 다른
-          // 표면으로 낙하하지 않는다(한 keypress = 한 표면).
+          // Escape closes only the tour (recording `skipped`) and does not fall
+          // through to another surface: one keypress, one surface.
           tour.skip();
           break;
         case "close-create-node":
@@ -3554,9 +3605,8 @@ function HomePageImpl() {
           setSelectedRelationActive(false);
           break;
         case "close-node-popover":
-          // M-7 rung 1 — hide the popover but keep the ego focus (dim). The
-          // NEXT Escape sees `nodePopoverOpen: false` and falls through to
-          // "deselect".
+          // Hide the popover but keep the ego focus (the dim). The NEXT Escape sees
+          // `nodePopoverOpen: false` and falls through to "deselect".
           setNodePopoverDismissed(true);
           break;
         case "deselect":
@@ -3599,27 +3649,20 @@ function HomePageImpl() {
     [setRouteState],
   );
 
-  // 「작업공간」 칩과 함께 **고정 문서 수 계산도 걷어냈다** (2026-08-03).
-  // 이 effect 는 드로어를 여닫을 때마다 localStorage 를 읽고 JSON 을 파싱해서
-  // 오직 그 칩의 뱃지 하나를 먹였다. 칩이 없으면 읽는 곳이 0이므로, 남겨 두면
-  // 화면에 없는 표면을 위해 매번 값을 치르는 꼴이다 —
-  // `architecture.md` 「화면에 없는 표면의 모델은 만들지 않는다」.
-
-  // #62 — 블로킹 표면이 열려 있는 동안 전역 단축키는 죽는다. 예전엔 표면마다
-  // `if (createNodeOpen) return;` 을 손으로 달아서 **투어가 빠져 있었고**,
-  // 투어 위에 `?` 단축키 모달이 겹쳐 뜨는 상태가 실제로 재현됐다. 이제 술어
-  // 하나(`blocking-surface`)로 모아 새 표면이 생겨도 한 곳만 고치면 된다.
+  // Global shortcuts go dead while a blocking surface is open. This used to be a
+  // hand-written `if (createNodeOpen) return;` per surface, which **left the tour
+  // out** — the `?` shortcut modal stacking on top of the tour was actually
+  // reproducible. One predicate (`blocking-surface`) now decides, so a new surface is
+  // one edit in one place.
   const shortcutsSuppressed = shouldSuppressGlobalShortcuts({
     createNodeOpen,
     tourOpen: tour.open,
   });
 
-  // 공용 useTypingShortcuts로 글로벌 키 단축키 통합.
-  // ⌘K 와 ⇧⌘K 는 이제 동일한 팔레트(ontology 노드 + 프로젝트 통합 검색)를
-  // 연다 — persona-P1: 예전엔 ⌘K 만 프로젝트 전용 SearchPalette 를 열어
-  // ontology 노드를 절대 찾을 수 없었다. useTypingShortcuts 는 첫 일치 후
-  // return 하므로 순서 자체는 유지(둘 다 같은 setter 를 호출해 순서 무관하지만
-  // 관례상 shift 조합을 먼저 둔다).
+  // ⌘K and ⇧⌘K open the same palette (ontology nodes + projects). ⌘K used to open a
+  // project-only palette in which an ontology node could never be found.
+  // `useTypingShortcuts` returns after the first match, so the shift combination is
+  // listed first by convention (both call the same setter, so order is immaterial).
   useTypingShortcuts([
     {
       combo: { key: "k", meta: true, shift: true },
@@ -3650,10 +3693,10 @@ function HomePageImpl() {
       },
     },
     {
-      // ⌘O — 정적 샘플 모드에서 내 markdown 폴더로 전환(vault.open). 첫 실행
-      // 카드의 ⌘O 힌트와 상단 "내 데이터로 전환" 필이 같은 이 핸들러를 가리켜
-      // 카드를 닫아도 살아있는 단축키가 된다. 실제 vault 연결(로컬 모드)에선
-      // 게이트가 꺼져 무동작.
+      // ⌘O switches from the static sample to the user's own markdown folder. The
+      // first-run card's ⌘O hint and the top "switch to my data" pill both point at
+      // this handler, so the shortcut survives dismissing the card. With a real vault
+      // connected the gate is off and it does nothing.
       combo: { key: "o", meta: true },
       onFire: () => {
         if (shortcutsSuppressed) return;
@@ -3689,9 +3732,9 @@ function HomePageImpl() {
       }),
     [pathTargetSlug, projectBySlug, ontologyInsight?.nodes],
   );
-  // 경로 칩(TopologyPathChip)의 "N홉" — 분석 패널 완전 소멸 2단계 §b. 예전
-  // path 패널엔 실제 hop 수 표시가 없었다(후보 가시성 문구만 있었다) — 칩의
-  // "성립" 상태를 의미 있게 만들려면 실제 최단 거리가 필요해 새로 계산한다.
+  // The hop count on `TopologyPathChip`. The old path panel never showed one (only a
+  // candidate-visibility sentence), but the chip's "resolved" state is meaningless
+  // without the real shortest distance, so it is computed here.
   const pathHopCount = useMemo(() => {
     if (!pathSourceSlug || !pathTargetSlug || !ontologyInsight) return null;
     return computeTopologyPathHopCount(
@@ -3701,10 +3744,11 @@ function HomePageImpl() {
       ontologyInsight.edges,
     );
   }, [pathSourceSlug, pathTargetSlug, ontologyInsight]);
-  // 경로 칩의 상단 중앙 상태 라인 — "경로: X → 대상 선택" / "X → Y · N홉" /
-  // 경로 없음 / **이 볼트에 없는 끝점**. 예전 path 패널이 좌측 슬롯에서 하던
-  // 걸 상단 칩 1개로 압축 (분석 패널 완전 소멸 2단계 §b). 판정은 순수 함수로
-  // 빠져 있다 — 근거와 옛 거짓말은 `../lib/topology-path-chip-state.ts`.
+  // The path chip's status line at top centre: awaiting a target, source → target
+  // with a hop count, no path, or **an endpoint this vault does not have**. It
+  // compresses what the old path panel did in the left slot into one chip. The
+  // decision is a pure function; its reasoning and the old lie it fixed are in
+  // `../lib/topology-path-chip-state.ts`.
   const pathChipState = useMemo(
     () =>
       resolveTopologyPathChipState({
@@ -3740,8 +3784,9 @@ function HomePageImpl() {
   }, [pathChipState, t]);
   const [pathPacketCopied, setPathPacketCopied] = useState(false);
   const copyPathPacket = useCallback(async () => {
-    // 끝점이 이 볼트에 없으면 넘길 사실이 없다 — 없는 슬러그 둘과 「경로 없음」
-    // 이라는 결론을 에이전트에게 넘기는 것이 이 버튼의 옛 결함이었다.
+    // With an endpoint missing from this vault there is no fact to hand over. Handing
+    // an agent two nonexistent slugs and the conclusion "no path" was this button's
+    // old defect.
     if (!canCopyTopologyPathPacket(pathChipState)) return;
     if (!pathSourceSlug || !pathTargetSlug || !pathSourceTitle || !pathTargetTitle) return;
     const ok = await copyText(
@@ -3769,8 +3814,8 @@ function HomePageImpl() {
     setPathPacketCopied(true);
     window.setTimeout(() => setPathPacketCopied(false), 1600);
   }, [pathChipState, pathSourceSlug, pathTargetSlug, pathSourceTitle, pathTargetTitle, pathHopCount, t]);
-  // 칩의 ✕ — 경로 상태를 완전히 지우고 지도로 복귀. 예전엔 path 모드가 좌측
-  // 슬롯을 차지해 "지도" 탭을 다시 눌러야 나갈 수 있었다.
+  // The chip's ✕ clears the path state completely and returns to the map. Path mode
+  // used to occupy the left slot, so leaving it meant pressing the map tab again.
   const handleClearPath = useCallback(() => {
     setRouteState((current) => ({
       ...current,
@@ -3785,8 +3830,9 @@ function HomePageImpl() {
       now,
       daysThreshold: 30,
     });
-    // ontology containment 에 참여하는 프로젝트(루트 등)는 소속 미정 오탐에서
-    // 제외 — project-deps 렌즈만으로는 contains 그래프가 안 보인다 (감사 ⑦-a).
+    // Projects that participate in ontology containment (roots and the like) are
+    // excluded from the "no owner" false positives: the project-deps lens alone cannot
+    // see the contains graph.
     const orphan = filterOntologyConnectedOrphans(
       detectOrphanProjects(renderProjects),
       ontologyInsight?.edges ?? [],
@@ -3816,10 +3862,10 @@ function HomePageImpl() {
       }),
     };
   }, [renderProjects, ontologyInsight, mountNowMs]);
-  // P0c — 정본 census: insight.nodes 에 kind:project 가 이미 포함돼 있어
-  // renderProjects 를 더하면 이중 가산(지도 294 vs 인사이트 293 불일치의
-  // 원인). "개념/관계" census 는 insight 파생 전체가 단일 출처다
-  // (`shared/lib/ontology-tree/canonical-census.ts`).
+  // Canonical census. `insight.nodes` already contains `kind: project`, so adding
+  // `renderProjects` double-counts — that was the cause of the map saying 294 while
+  // insights said 293. The whole insight derivation is the single source for the
+  // concept and relation counts (`shared/lib/ontology-tree/canonical-census.ts`).
   const topologyCanonicalCensus = computeCanonicalCensus(
     ontologyInsight?.nodes ?? [],
     ontologyInsight?.edges ?? [],
@@ -3838,21 +3884,20 @@ function HomePageImpl() {
     () => ontologyInsight?.nodes.filter((node) => node.kind === "domain").length ?? 0,
     [ontologyInsight],
   );
-  // 2026-07-24 온보딩 라운드 — 빈 vault 시작 체크리스트의 완료 판정용
-  // 프로젝트 실카운트(같은 ontologyInsight 파생이라 drift 불가).
-  // 빈 폴더 스타터 스캐폴드 (2026-07-24) — '빈 폴더로 새로 시작' 과 같은
-  // `scaffoldOntology()` 를 체크리스트 버튼으로도 노출한다. 자동 실행이
-  // 아니라 명시 클릭이라 local-first 원칙(남의 폴더에 무단 쓰기 금지)을
-  // 지킨다.
+  // Starter scaffold for an empty folder: the checklist button runs the same
+  // `scaffoldOntology()` as "start fresh in an empty folder". It is an explicit click
+  // rather than an automatic run, which is what keeps the local-first promise never to
+  // write into someone's folder unasked.
   const [starterScaffolding, setStarterScaffolding] = useState(false);
   const handleScaffoldStarter = useCallback(async () => {
     setStarterScaffolding(true);
     try {
-      // #73 — 화면 언어로 만든 볼트는 그 언어로 읽히게 한다.
+      // A vault created in the screen's language reads in that language.
       const result = await vault.scaffoldOntology(activeLocale);
       toast.show(
-        // #70 — 개념 수와 설정 파일 수를 따로 말한다(합치면 "8개" 인데 실제
-        // 온톨로지 개념은 5개라 설정 패널의 "문서 5개" 와 어긋났다).
+        // Concepts and config files are counted separately: summed it says 8, but there
+        // are 5 actual ontology concepts, which contradicted the settings panel's
+        // "5 documents".
         t("startChecklist.scaffoldToast", {
           concepts: result.markdownCreated,
           configs: result.agentConfigCreated,
@@ -3869,8 +3914,8 @@ function HomePageImpl() {
     }
   }, [vault, toast, t, activeLocale]);
 
-  // Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS). INDEX 트리 행과
-  // /projects·인사이트가 같은 숫자를 말하게 한다.
+  // Single source for domain size (a graph BFS), so INDEX tree rows, `/projects`, and
+  // insights all state the same number.
   const indexDomainCensus = useMemo(
     () =>
       ontologyInsight
@@ -3878,18 +3923,19 @@ function HomePageImpl() {
         : null,
     [ontologyInsight],
   );
-  // 미터 분모 단일 진실원 — 도메인 census BFS total 의 최댓값. INDEX 패널이
-  // 내부에서 계산하는 값과 같은 소스라 영역 대장 트리 행의 capacity 미터가
-  // 전역 트리와 어긋나지 않는다.
+  // Single source for the meter denominator: the largest domain-census BFS total. It
+  // is the same source the INDEX panel computes internally, so the realm ledger's
+  // capacity meters cannot disagree with the global tree.
   const indexMaxDomainDescendantCount = useMemo(() => {
     if (!indexDomainCensus || indexDomainCensus.size === 0) return 0;
     let max = 0;
     for (const row of indexDomainCensus.values()) if (row.total > max) max = row.total;
     return max;
   }, [indexDomainCensus]);
-  // S7 "영역 대장" — realm 활성 시 좌측 패널이 전역 콘텐츠 대신 이 노드의
-  // 세계만 보여줄 때 필요한 파생. 모두 그래프/트리에서만 나온다(순수 lib,
-  // `../lib/realm-ledger.ts` + 테스트) — topology-map-v2 를 건드리지 않는다.
+  // Derivations for the realm ledger: what the left panel shows when a realm is
+  // active and it presents only this node's world instead of the global content. All
+  // of it comes from the graph and tree through a pure lib
+  // (`../lib/realm-ledger.ts`), so nothing here touches `topology-map-v2`.
   const realmNodeById = useMemo(
     () => new Map((ontologyInsight?.nodes ?? []).map((n) => [n.id, n] as const)),
     [ontologyInsight],
@@ -3905,8 +3951,8 @@ function HomePageImpl() {
       memberIds,
       nodeById: realmNodeById,
     });
-    // 경계 행에 관계 타입 평문 라벨을 붙인다(위젯은 i18n 을 모른다) + 상위
-    // 몇 개만 노출(총수는 헤딩이 말한다).
+    // Boundary rows get a plain relation-type label here, because the widget knows no
+    // i18n, and only the first few are shown — the heading states the total.
     const boundaryRows = boundary.crossings.slice(0, 6).map((crossing) => ({
       edgeId: crossing.edgeId,
       fromTitle: crossing.fromTitle,
@@ -3925,9 +3971,9 @@ function HomePageImpl() {
     };
   }, [resolvedRealmSlug, indexTreeResult, ontologyInsight, realmNodeById, relationVocabulary]);
   const realmActive = resolvedRealmSlug !== null && realmLedgerModel !== null;
-  // 결계 하단 각인 — "○○ · 요소 N" (사용자 어휘 "이것만 보기", 2026-07-23 소유자
-  // 결정). 원장 패널과 **같은 census 객체 + 같은 단위 키**(index.elementsShort /
-  // capabilitiesShort)를 쓰므로 한 화면의 같은 사실이 두 숫자로 갈라질 수 없다.
+  // The caption under the realm boundary. It uses **the same census object and the
+  // same unit keys** (`index.elementsShort` / `capabilitiesShort`) as the ledger
+  // panel, so one fact cannot appear as two numbers on one screen.
   const realmCaption = useMemo(() => {
     if (!realmLedgerModel) return null;
     const { census, rootTitle } = realmLedgerModel;
@@ -3937,11 +3983,12 @@ function HomePageImpl() {
     return parts.length > 0 ? `${rootTitle} · ${parts.join(" · ")}` : rootTitle;
   }, [realmLedgerModel, t]);
   /**
-   * 「머리 위 막대」의 문구 — 캔버스는 문자열을 만들지 않는다.
+   * Wording for the bar above a cluster; the canvas never composes strings itself.
    *
-   * `{count}` 자리표시자를 **그대로** 넘긴다: 실제 개수는 렌더러가 프레임마다
-   * 알고(설정 「한 번에 여는 개수」와 남은 개수의 함수) 여기서는 모른다.
-   * next-intl 의 보간을 못 쓰는 대신 자리표시자 규약을 계약 테스트가 잡는다.
+   * The `{count}` placeholder is passed through **verbatim**: the real number is known
+   * to the renderer per frame (a function of the "open at once" setting and how many
+   * remain) and not here. next-intl's interpolation cannot be used, so a contract test
+   * enforces the placeholder convention instead.
    */
   const clusterBarLabels = useMemo(
     () => ({
@@ -3951,8 +3998,8 @@ function HomePageImpl() {
     }),
     [t],
   );
-  // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
-  // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
+  // The project count in the bottom-right readout (`FirstRunReadout`). Real data,
+  // derived from the same `ontologyInsight` as `indexDomainCount`, so it cannot drift.
   const firstRunProjectCount = useMemo(
     () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
     [ontologyInsight],
@@ -3977,14 +4024,15 @@ function HomePageImpl() {
   const currentTopologyGraphStats =
     topologyGraphStats?.key === visibleTopologyStatsKey ? topologyGraphStats : null;
   /**
-   * 부팅 long task 절단 (2026-08-19 실측). 이 페이지의 첫 클라이언트 커밋은
-   * 「페이지 크롬 + 지도 위젯 마운트 + 지도 mount 이펙트(강제 레이아웃 포함)」
-   * 를 **한 태스크**로 묶어 CPU 4배 스로틀 기준 324~335ms 를 붙잡고 있었다
-   * (`/ko/topology/` 로드의 단일 최대 long task — 실기기에서도 보이는 멈춤).
-   * 캔버스는 어차피 자기 rAF 첫 프레임 전에는 아무것도 그리지 않으므로,
-   * 마운트를 **한 rAF 뒤로** 미루면 화면에 그려지는 것은 그대로인 채(첫
-   * 페인트는 양쪽 다 빈 캔버스) 그 태스크가 「페이지 커밋」과 「지도 마운트」
-   * 둘로 갈라진다. 리빌 연출은 지도의 첫 rAF 프레임에서 시작하는 계약 그대로다.
+   * Splitting the boot long task (measured 2026-08-19). This page's first client
+   * commit bundled the page chrome, the map widget's mount, and the map's mount effect
+   * (forced layout included) into **one task**, holding 324–335 ms under 4× CPU
+   * throttling — the single largest long task on a `/ko/topology/` load, and a stall
+   * visible on real hardware. The canvas draws nothing before its own first rAF frame
+   * anyway, so deferring the mount by **one rAF** splits that task into "page commit"
+   * and "map mount" while what appears on screen is unchanged (either way the first
+   * paint is an empty canvas). The reveal still starts on the map's first rAF frame,
+   * as its contract says.
    */
   const [mapMountTaskReady, setMapMountTaskReady] = useState(false);
   useEffect(() => {
@@ -3996,9 +4044,8 @@ function HomePageImpl() {
     totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
     totalRelations: currentTopologyGraphStats?.relations ?? visibleTopologyRelationCount,
   });
-  // 조절 패널(검색/depth/허브만)이 철거된 뒤 유일하게 남은 필터 출처는
-  // URL route state 의 activeCategory(`?category=`)다. 지도 loop 가 소비하지
-  // 않던 topologyControls 계열 항은 모두 제거됐다.
+  // Since the controls panel was removed, the only remaining filter source is
+  // `activeCategory` in the URL route state (`?category=`).
   const topologyFiltersActive = activeCategory !== null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
@@ -4051,9 +4098,8 @@ function HomePageImpl() {
     relationQuality: topologyRelationQuality,
     ...topologyHealthSummary,
   });
-  // INDEX 푸터 "인계" 메뉴 3종 텍스트 — W3 분석 보기 은퇴로
-  // `TopologyAnalysisBar` overview 모드에서 이관. 포맷터는
-  // `views/home/lib/topology-analysis.ts` 단일 출처, 여기서는 조립만 한다.
+  // The three handoff texts in the INDEX footer menu. The formatters are the single
+  // source in `views/home/lib/topology-analysis.ts`; this only assembles the labels.
   const indexAgentHandoffBriefText = formatTopologyOverviewBrief({
     summary: analysisSummary,
     labels: {
@@ -4088,14 +4134,15 @@ function HomePageImpl() {
       mcpWorkspaceCheck: t("analysis.overviewBriefMcpWorkspaceCheck"),
     },
     url: typeof window === "undefined" ? null : window.location.href,
-    // S5 재편 — 수리 큐는 이제 인사이트 기본 탭 "할 일"에 있다.
+    // The repair queue now lives in the insights page's default tab.
     healthUrl: "/ontology/insights/",
     insightsUrl: "/ontology/insights/",
   });
   const indexAgentHandoffReanalyzeText = formatOntologyReanalysisAgentCommand();
   const indexAgentHandoffSyncText = formatAgentPostChangeSyncPacket();
 
-  // 카드 배지/더블클릭의 명시적 "펼치기" — 선택과 초점 진입을 한 번에.
+  // The explicit expand from a card badge or a double click: select and enter focus in
+  // one step.
   const handleExpandRequest = useCallback(
     (slug: string) => {
       interactionSelectedSlugRef.current = slug;
@@ -4140,9 +4187,9 @@ function HomePageImpl() {
     const candidateSlugs = new Set<string>();
     if (selectedSlug) candidateSlugs.add(selectedSlug);
 
-    // 허브 top 5 도 백그라운드 preload — 홈에 오자마자 사용자가 허브를
-    // 클릭해 드로어 열 때 스크린샷 즉시 뜨도록. idle callback 으로 현재
-    // 인터랙션 방해 없이 수행.
+    // The top five hubs are preloaded in the background so their screenshots are
+    // already there if the user clicks a hub straight after arriving. Run in an idle
+    // callback so it cannot disturb the current interaction.
     const addTopHubs = () => {
       hubs.slice(0, 5).forEach((hub) => candidateSlugs.add(hub.slug));
       candidateSlugs.forEach(preloadProjectAsset);
@@ -4163,23 +4210,25 @@ function HomePageImpl() {
     <main
       id="main"
       tabIndex={-1}
-      // 에이전트 패널이 자리를 차지하면 화면 오른쪽에 붙는 고정 표면(선택-노드
-      // 인스펙터)도 그만큼 안쪽으로 선다. 근거(노드)와 상대(에이전트)가 서로를
-      // 덮으면 "지도를 같이 보며" 가 성립하지 않는다 — 규칙은 globals.css.
+      // When the agent panel takes space, the fixed surface pinned to the right (the
+      // selected-node inspector) stands that much further in. If the evidence (the
+      // node) and the counterpart (the agent) cover each other, "looking at the map
+      // together" does not hold. The rule itself is in `app/globals.css`.
       data-agent-panel-open={agentDockOpen ? 'true' : 'false'}
       /*
-       * ⚠️ **그 규칙이 재는 폭이 틀려 있었다** (2026-08-16 검수).
+       * ⚠️ **That rule was reserving the wrong width** (2026-08-16 review).
        *
-       * globals.css 의 예약은 `var(--agent-panel-width)` — 키 갈래 패널이 쓰는
-       * `clamp(320px, 26vw, 420px)` 이다. 그런데 코딩 에이전트 갈래는 폭을
-       * **사용자가 끌어서** 정하고(320~968px) 그 토큰에 아무것도 안 쓴다.
-       * 둘 다 `data-agent-panel-open='true'` 를 켜므로, 규칙은 엉뚱한 수로
-       * 자리를 비웠다: 1512 폭에서 26vw = 393 인데 패널은 420 이라 인스펙터가
-       * 27px 겹쳐 **폭 조절 손잡이를 덮었고**, 사용자가 넓혀 두면 인스펙터가
-       * 패널 안으로 통째로 들어갔다.
+       * The reservation in `globals.css` reads `var(--agent-panel-width)`, which is the
+       * `clamp(320px, 26vw, 420px)` the key-branch panel uses. But the coding-agent
+       * branch is sized **by the user's drag** (320–968px) and writes nothing to that
+       * token. Both set `data-agent-panel-open='true'`, so the rule reserved the wrong
+       * number: at 1512 wide, 26vw is 393 while the panel is 420, leaving the inspector
+       * overlapping by 27px **on top of the resize handle** — and widened further, the
+       * inspector ended up entirely inside the panel.
        *
-       * 규칙을 고치는 대신 **그 규칙이 읽는 값을 맞는 값으로 채운다** — 두
-       * 갈래는 동시에 열리지 않으므로 이 덮어쓰기가 키 갈래를 건드리지 않는다.
+       * Rather than change the rule, **the value it reads is filled with the right
+       * number**. The two branches never open at once, so this override cannot affect
+       * the key branch.
        */
       style={
         runtimeChatOpen
@@ -4188,14 +4237,13 @@ function HomePageImpl() {
       }
       className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
     >
-      {/* 좌측 64px 내비 레일은 perf/persistent-shell 이후 `app/[locale]/layout.tsx`
-          (AppShell) 상주 — 이 페이지는 더 이상 직접 마운트하지 않는다. 레일
-          하단 설정 게어는 위 `useNavRailSettingsSlot(navRailSettingsSlot)`로
-          Context 등록. */}
+      {/* The left nav rail lives in `app/[locale]/layout.tsx` (AppShell); this page no
+          longer mounts it. Its settings gear is registered through context by
+          `useNavRailSettingsSlot(navRailSettingsSlot)` above. */}
       <div className="relative h-full flex-1 overflow-hidden">
       {/*
-        스크린리더 랜드마크 명시 + SEO h1. 시각 디자인은 canvas 중심이라
-        visible h1 을 두기 어려워 sr-only 로 문서 구조 only 에 보이게 한다.
+        Screen-reader landmark and SEO h1. The visual design is canvas-first with
+        nowhere to put a visible h1, so it exists in the document structure only.
       */}
       <h1 className="sr-only">
         {t('srHeading')}
@@ -4207,8 +4255,8 @@ function HomePageImpl() {
         message={(() => {
           if (!selectedProject) return "";
           const deps = selectedProject.dependencies.length;
-          // reverseDeps 는 위 useMemo 결과 — projects 전체 재filter 안 해도
-          // O(1) lookup. 이전엔 매 render 마다 projects.filter 로 O(N*D).
+          // `reverseDeps` is the memo above, so this is an O(1) lookup instead of
+          // re-filtering every project on every render.
           const referenced = reverseDeps.get(selectedProject.slug)?.length ?? 0;
           return t('selectionAnnouncement', {
             name: selectedProject.name,
@@ -4218,7 +4266,7 @@ function HomePageImpl() {
         })()}
       />
       <>
-            {/* 모바일 전용 미니 브랜드 라벨 */}
+            {/* Mobile-only mini brand label. */}
             <div className="pointer-events-none absolute left-4 top-[22px] z-10 -translate-y-1/2 md:hidden">
               <div className="flex items-center gap-2">
                 <Image
@@ -4232,12 +4280,12 @@ function HomePageImpl() {
                 />
                 <div
                   className="min-w-0 overflow-hidden"
-                  // 우측 topology-utility-action-lane(Graph/Workspace pill,
-                  // absolute right-4 + 콘텐츠 폭 ~236px)과 이 브랜드 라벨은
-                  // 서로 다른 absolute 오버레이라 flex-wrap 으로 자연스럽게
-                  // 밀어낼 수 없다 — 뷰포트가 좁을수록(<390px) 레인의 왼쪽
-                  // 시작점도 함께 왼쪽으로 밀리므로 고정 px 대신 vw 기반
-                  // calc 로 항상 여유 간격을 확보한다(criterion ② 겹침 0).
+                  // The utility action lane on the right (absolute `right-4`, content
+                  // about 236px wide) and this brand label are separate absolute
+                  // overlays, so `flex-wrap` cannot push them apart. The narrower the
+                  // viewport (below 390px) the further left the lane starts, so the gap
+                  // is held by a vw-based calc rather than a fixed px value, keeping
+                  // overlap at zero.
                   style={{ maxWidth: "max(0px, calc(100vw - 310px))" }}
                 >
                   <span
@@ -4252,11 +4300,11 @@ function HomePageImpl() {
                 </div>
               </div>
             </div>
-            {/* 좌상단 브랜드/워크스페이스 필 완전 은퇴 (소유자 지시
-                2026-07-24) — R6(오버뷰 제거)·7-23(선택 상태 은퇴) 이후에도
-                drawerOpen 조건이 남아 노드 클릭마다 사실상 부활했다. 선택은
-                팝오버/링이, INDEX 재열기는 세로 탭이, 프로젝트 이동은 레일이
-                이미 담당 — 중복 잉크라 마운트 자체를 제거한다. */}
+            {/* The top-left brand/workspace pill is retired for good (owner
+                instruction, 2026-07-24). A leftover `drawerOpen` condition had been
+                reviving it on every node click. Selection is carried by the popover and
+                the ring, reopening INDEX by the vertical tab, and project navigation by
+                the rail — duplicate ink, so the mount itself is gone. */}
             <div
               data-testid="topology-command-chrome"
               data-command-chrome-state={topologyUtilityChromeState}
@@ -4294,9 +4342,9 @@ function HomePageImpl() {
                   <SearchHint
                     density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                     phoneFocusSuppressed={selectedNodeFocusActive}
-                    // <md 확장 INDEX 는 풀-블리드 시트 — 시트가 주 표면인 동안
-                    // 상단 크롬 열은 강등된다 (겹침 소탕 2026-07-23, rank7 시트
-                    // 문법의 완성). utility lane 의 hidden md:flex 와 같은 계약.
+                    // Below `md`, an expanded INDEX is a full-bleed sheet; while the
+                    // sheet is the primary surface the top chrome row is demoted. Same
+                    // contract as the utility lane's `hidden md:flex`.
                     phoneSheetSuppressed={renderedIndexState === "expanded"}
                     onOpenSearch={() => {
                       setOntologySearchOpen(true);
@@ -4307,9 +4355,10 @@ function HomePageImpl() {
                     }}
                     realmChip={
                       resolvedRealmSlug && realmTitle ? (
-                        // 사용자 어휘는 "이것만 보기"(2026-07-23 소유자 결정), 내부명 realm 유지.
-                        // chipViewing 템플릿("Viewing only {title}" / "{title}만 보는 중")을
-                        // sentinel 로 쪼개 제목 앞/뒤 문구를 로케일 무관하게 얻는다.
+                        // On screen the feature is called "view only this" (owner
+                        // decision, 2026-07-23); "realm" stays as the internal name. The
+                        // `chipViewing` template is split on a sentinel so the text
+                        // before and after the title works in any locale.
                         <TopologyRealmChip
                           title={realmTitle}
                           beforeLabel={t("realm.chipViewing", { title: "\u0000" }).split("\u0000")[0] ?? ""}
@@ -4357,15 +4406,17 @@ function HomePageImpl() {
                     }
                     trailChip={
                       /*
-                       * 걸어온 길 칩 — **방문 1개부터** (2026-08-03 소유자 지적:
-                       * *"노드 1개만 봤을때 상단에 걸어온길에 안나오는 이슈"*).
+                       * The trail chip appears **from one visit**. Owner, 2026-08-03:
+                       * *"노드 1개만 봤을때 상단에 걸어온길에 안나오는 이슈"* (when
+                       * you have only looked at one node, the trail does not appear).
                        *
-                       * 종전 문턱은 2였다. 근거는 「길은 둘 이상이어야 길이다」
-                       * 였는데, 이 칩이 실제로 하는 일은 길 그리기만이 아니라
-                       * **에이전트 인계 패킷**과 **되돌아갈 문**이다 — 그 둘은
-                       * 방문 하나에서도 값이 있고, 오히려 첫 노드를 열어 본
-                       * 직후가 「이걸 AI 에게 넘기고 싶다」가 가장 강한 순간이다.
-                       * 문턱이 2 라서 그 순간에만 문이 없었다.
+                       * The threshold used to be 2, on the reasoning that a trail needs
+                       * at least two points. But what this chip actually provides is not
+                       * only a drawn trail: it is the **agent handoff packet** and the
+                       * **door back**. Both have value at one visit — and the moment
+                       * right after opening a first node is exactly when "I want to hand
+                       * this to the AI" is strongest. A threshold of 2 meant the door
+                       * was missing precisely then.
                        */
                       footprintTrailEntries.length >= 1 ? (
                         <TopologyTrailChip
@@ -4432,12 +4483,13 @@ function HomePageImpl() {
                       </div>
                     ) : null}
                     <div
-                      // 겹침 소탕 2026-07-23 — ① <md 확장 INDEX(풀-블리드 시트)
-                      // 동안은 시트가 주 표면이므로 레인 전체가 물러난다(시트
-                      // 상단 인셋 24px 위로 칩 상단 8px 이 삐져나와 보이던 결함).
-                      // ② 칩별 라벨은 아래 max-xl/max-2xl [data-chip-label]
-                      // 사다리로 축약 — 라벨 총폭 499px 가 768–1365 구간에서
-                      // 중앙 검색 레인·확장 INDEX 와 겹치던 원인.
+                      // Overlap sweep, 2026-07-23. ① Below `md`, while the expanded
+                      // INDEX is a full-bleed sheet, the whole lane retreats — 8px of
+                      // chip used to poke above the sheet's 24px top inset. ② Per-chip
+                      // labels shrink through the `max-xl` / `max-2xl`
+                      // `[data-chip-label]` steps below: 499px of combined label was
+                      // what overlapped the centre search lane and the expanded INDEX
+                      // between 768 and 1365.
                       className={`topology-ui-scale absolute right-4 top-4 flex-col items-end gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8 ${
                         activityInboxOpen ? "z-30" : "z-20"
                       } ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
@@ -4460,14 +4512,14 @@ function HomePageImpl() {
                       data-utility-lane-shadow-token="--topology-utility-lane-shadow"
                     >
                       <div className="flex items-center gap-[var(--topology-utility-lane-gap)]">
-                    {/* 「에이전트」 — 지도를 보다가 "이거 고쳐줘" 가 되는
-                        순간이 이 버튼의 자리다. 레일 목적지도 새 라우트도 만들지
-                        않고 기존 유틸 레인의 칩 규격을 그대로 쓴다(표면 추가 0).
-                        이름은 `vaultAgentPanel.title` **한 곳**에서만 정의된다 —
-                        칩·툴팁·aria·패널 헤더가 같은 키를 읽으므로 이름이 바뀌면
-                        네 자리가 함께 바뀐다(이름은 다시 검토될 수 있다).
-                        데스크톱 전용: 웹에는 키를 안전하게 둘 곳도 보낼 경로도
-                        없으므로, 열리지 않을 문을 그려 두지 않는다. */}
+                    {/* The agent chip. Its place is the moment reading the map turns
+                        into "fix this for me" — no rail destination and no new route,
+                        just the utility lane's existing chip spec, so no surface is
+                        added. The name is defined in **one place**
+                        (`vaultAgentPanel.title`): chip, tooltip, aria label, and panel
+                        header read the same key, so renaming moves all four. Desktop
+                        only — the web has nowhere safe to keep a key and no path to send
+                        it, so no door is drawn that will not open. */}
                     {llmBridgeAvailable ? (
                       <Tooltip content={tAgent('title')} side="bottom" withProvider={false}>
                         <ChromeChip
@@ -4486,10 +4538,10 @@ function HomePageImpl() {
                         </ChromeChip>
                       </Tooltip>
                     ) : null}
-                    {/* 온보딩 디자이너 지적 — 첫 실행 카드 dismiss 후에도 살아남는
-                        상시 "내 데이터로 전환" 진입점. 정적 샘플 모드에서만
-                        보이고(카드 dismiss 와 독립), 실제 vault 연결 시 소멸.
-                        chrome 타일 규격(ChromeChip) 준수, 조용한 support 표면. */}
+                    {/* The permanent "switch to my data" entry point that survives
+                        dismissing the first-run card. Visible only in static sample mode
+                        (independent of the card) and gone once a real vault is
+                        connected. Standard chrome-tile spec, a quiet support surface. */}
                     {sampleModeSettled ? (
                       <Tooltip content={t('controls.switchToMyDataTooltip')} side="bottom" withProvider={false}>
                         <ChromeChip
@@ -4504,59 +4556,43 @@ function HomePageImpl() {
                           compact={topologyUtilityChromeCompact}
                           icon={<FolderOpen className="text-[color:var(--color-indigo-accent)]" />}
                           kbd="⌘O"
-                          // 겹침 소탕 2026-07-23 — 레인 축약 사다리: <2xl 은 kbd
-                          // 캡 접기(검색 칩의 기존 max-2xl ⌘K 규칙과 대칭),
-                          // <xl 은 라벨 접기(아이콘-only). 이 칩의 라벨+kbd 총폭
-                          // 225px 가 768–1365 에서 중앙 검색 레인·확장 INDEX 와
-                          // 겹치던 주범(1280 실측 35px 침범). aria-label·툴팁이
-                          // 뜻을 보존하고 첫 실행 카드 CTA 가 같은 액션을 상시
-                          // 라벨로 노출한다.
+                          // Lane shrink steps: below `2xl` the kbd cap folds away
+                          // (mirroring the search chip's existing ⌘K rule), below `xl`
+                          // the label folds too and it becomes icon-only. This chip's
+                          // 225px of label + kbd was the main cause of overlap with the
+                          // centre search lane and the expanded INDEX between 768 and
+                          // 1365 (measured: 35px intrusion at 1280). The aria-label and
+                          // tooltip preserve the meaning, and the first-run card's CTA
+                          // exposes the same action with a permanent label.
                           className="max-2xl:[&_[data-chip-kbd]]:hidden max-xl:[&_[data-chip-label]]:hidden"
                         >
                           {t('controls.switchToMyDataLabel')}
                         </ChromeChip>
                       </Tooltip>
                     ) : null}
-                    {/*
-                        「변경점 N개」를 지웠다 (2026-08-02, 소유자 지적:
-                        *"(변경점 2개) 버튼을 누르면 지도 노드에서 표현이
-                        되어야지? 선택되면서.."*).
-
-                        그 버튼은 `/ontology/` 로 갔는데 **그 주소는 `/topology`
-                        로 되돌리는 리다이렉트**다 — 지도에서 눌러 지도로 돌아오는
-                        왕복이고, 그 사이 보고 있던 선택·펼침·카메라를 잃는다.
-                        아무 일도 안 일어나는 게 아니라 **상태만 잃는** 버튼이었다.
-
-                        숫자는 바로 옆 「최근 변경」 칩이 이미 badge 로 들고 있고,
-                        그쪽은 지도에서 **실제로 강조**한다. 숫자와 동작이 한자리에
-                        오면서 크롬이 하나 줄었다.
-                    */}
-                    {/* 살아있는 그래프(물리) 토글은 제거됐다(#19, fable 판정
-                        2026-07-25) — 상시 force 시뮬은 어느 청중의 과업에도
-                        봉사하지 않고(읽기엔 위치 안정성이 생명) 공간 기억을
-                        파괴했다. 자유 드래그는 남는다(그 노드만 이동, 세션 한정,
-                        상시 물리 없음). */}
-                    {/* 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — 렌즈
-                        토글. 스포트라이트 칩의 ChromeChip 문법/축약 사다리.
-                        상태는 URL `?recent=` 단일 진실원 (공유/에이전트 재현). */}
+                    {/* The recent-changes spotlight lens toggle. Its state lives in the
+                        URL as `?recent=`, which is what makes a shared link and an
+                        agent's reproduction show the same thing. */}
                     <Tooltip
                       /*
-                       * 왜 세 갈래인가 (2026-08-03 소유자 실보고: *"'최근 변경'
-                       * 누르니까 아무런 반응이 없는데?"*).
+                       * Why three branches. Owner, 2026-08-03: *"'최근 변경' 누르니까
+                       * 아무런 반응이 없는데?"* (pressing "recent changes" does
+                       * nothing).
                        *
-                       * 종전 빈 상태 문구는 **「문서를 고치면 여기서 짚어드려요」**
-                       * 하나였는데, 샘플을 보는 사람에게 그건 **고칠 문서가 있다는
-                       * 전제**다. 실제 이유는 다르다 — 샘플의 날짜는 이 저장소가
-                       * 그 픽스처를 마지막으로 건드린 시각이라 사용자와 아무 상관이
-                       * 없고, 그래서 이 기능은 **폴더를 열기 전에는 뜻을 가질 수
-                       * 없다.** 이유가 다르면 문장도 달라야 한다.
+                       * The empty-state text used to be one line — "edit a document and
+                       * we will point it out here" — which, to someone looking at the
+                       * sample, presumes **there is a document of theirs to edit**. The
+                       * real reason is different: the sample's dates are whenever this
+                       * repo last touched those fixtures, which has nothing to do with
+                       * the user, so this feature **cannot mean anything before a folder
+                       * is opened**. A different reason needs a different sentence.
                        *
-                       * 팝업은 안 띄운다. 「아무것도 없다」를 말하려고 모달을 여는
-                       * 것은 누른 사람에게 일을 두 번 시키는 것이고, 이 저장소가
-                       * 「popup soup」로 금지한 부류다(아래 칩 주석의 2026-08-02
-                       * 판단 그대로 유효). 대신 **비활성이 비활성처럼 보이게** 했다
-                       * — 그게 없어서 눌러 보고 나서야 알게 됐던 것이다
-                       * (`chrome-chip.tsx` 의 `DISABLED_CLASS`).
+                       * No popup. Opening a modal to say "there is nothing" makes the
+                       * person who pressed do the work twice, and it is the category this
+                       * repo forbids as popup soup (the 2026-08-02 decision in the chip
+                       * comment below still stands). Instead, **disabled now looks
+                       * disabled** — its not doing so was why people only found out by
+                       * pressing (`chrome-chip.tsx`, `DISABLED_CLASS`).
                        */
                       content={
                         spotlightOn || recentChanges.recentNodeIds.size > 0
@@ -4571,27 +4607,30 @@ function HomePageImpl() {
                       <ChromeChip
                         onClick={handleToggleSpotlight}
                         /*
-                         * 바뀐 게 없으면 **누를 수 없다** (2026-08-02, 소유자:
-                         * *"변경이 없을때는 그럼 버튼 클릭을 비활성화 하면 되는거
-                         * 아닌가? 누르면 팝업 나와서 변경된게 없다고 띄우거나"*).
+                         * With nothing changed it **cannot be pressed**. Owner,
+                         * 2026-08-02: *"변경이 없을때는 그럼 버튼 클릭을 비활성화 하면
+                         * 되는거 아닌가? 누르면 팝업 나와서 변경된게 없다고 띄우거나"*
+                         * (when there are no changes, just disable the button — or have
+                         * pressing it pop up "nothing changed").
                          *
-                         * 팝업 안은 안 골랐다 — 아무것도 없다는 사실을 말하려고
-                         * 모달을 여는 것은 누른 사람에게 일을 두 번 시키는 것이고,
-                         * 이 저장소가 「popup soup」로 금지한 부류다.
+                         * The popup option was not taken: opening a modal to state an
+                         * absence makes the person who pressed do the work twice, and it
+                         * is the category this repo forbids as popup soup.
                          *
-                         * **숨기지도 않는다.** 사라지면 「최근 변경이라는 기능이
-                         * 있었나」가 되고, 그건 이 세션에서 이미 겪은 문제다(무라벨
-                         * 아이콘이라 못 찾았다). 자리는 남기고 이유는 툴팁이 말한다
-                         * — `BlockImportModule` 의 「disabled + 힌트로 존치, 완전
-                         * 은폐 금지」와 같은 규율.
+                         * **Nor is it hidden.** Disappearing turns it into "was there a
+                         * recent-changes feature?", a problem already hit in this very
+                         * session (an unlabelled icon nobody could find). The place stays
+                         * and the tooltip gives the reason — the same discipline as
+                         * `BlockImportModule`'s "keep it disabled with a hint, never
+                         * conceal it".
                          *
-                         * 켜져 있는 동안은 **끌 수 있어야** 하므로, 꺼져 있고
-                         * 강조가 0일 때만 비활성이다.
-                         */
-                        /*
-                         * 샘플에서는 **비활성이 아니다** — 누르면 폴더 안내가 열린다.
-                         * 비활성은 「내 폴더를 열었는데 최근 변경이 0」일 때만이고,
-                         * 그때는 정말로 보여줄 게 없다.
+                         * While it is on it must remain **switchable off**, so it is
+                         * disabled only when off with zero highlights.
+                         *
+                         * On the sample it is **not disabled** — pressing it opens the
+                         * folder guidance. Disabled is only for "my folder is open and
+                         * there are no recent changes", where there really is nothing to
+                         * show.
                          */
                         disabled={
                           !spotlightNeedsVault && !spotlightOn && recentChanges.recentNodeIds.size === 0
@@ -4611,26 +4650,28 @@ function HomePageImpl() {
                         icon={<HistoryIcon />}
                         active={spotlightOn}
                         /*
-                         * 이름을 **항상** 보인다 (2026-08-02, 소유자:
-                         * *"최근 변경이라는 버튼이 어디에있음? 없는데?"*).
+                         * The name is **always** shown. Owner, 2026-08-02: *"최근
+                         * 변경이라는 버튼이 어디에있음? 없는데?"* (where is the "recent
+                         * changes" button? there isn't one).
                          *
-                         * 종전 `max-2xl` 은 **1536px 미만에서 라벨을 숨겼다** —
-                         * 옆의 「작업공간」·「내 데이터로 전환」은 1280px 미만에서
-                         * 숨기므로, 1512px 창에서는 **이 버튼 하나만** 이름이
-                         * 사라져 무라벨 시계 아이콘이 됐다. 못 찾는 게 당연했다.
+                         * The previous `max-2xl` **hid the label below 1536px**, while
+                         * its neighbours hide theirs below 1280px — so in a 1512px window
+                         * **this one button alone** lost its name and became an
+                         * unlabelled clock icon. Of course it could not be found.
                          *
-                         * 이제 이 칩이 「변경점 N개」가 하던 일까지 가져왔으므로
-                         * 상단 크롬에서 **변경을 말하는 유일한 자리**다 — 그 자리가
-                         * 이름 없이 설 이유가 없다.
+                         * This chip has since absorbed what the old "N changes" button
+                         * did, making it the **only place in the top chrome that speaks
+                         * about change**. That place has no business standing unnamed.
+                         *
+                         * The window and count are carried as a badge inside the chip
+                         * rather than the unlabelled mono text that used to float in the
+                         * lane (same grammar and tokens as the docs chip's pinned-count
+                         * badge). The INDEX segment already shows the same "last N days ·
+                         * count", so a duplicate string went away too, and the badge
+                         * survives every compact/shrink step, so the count is visible
+                         * even below `xl`. The window itself is preserved in the
+                         * aria-label and title.
                          */
-                        // P2 결함④ 후속 (소유자 실보고 2026-07-23, 상단 크롬
-                        // 과밀) — 시간창/건수 카운트를 레인에 떠 있던 무라벨
-                        // mono 텍스트 대신 칩 내부 badge 로 흡수한다(문서 칩의
-                        // 고정 수 badge 와 같은 문법·토큰). INDEX 세그먼트가
-                        // 같은 "최근 N일 · count" 를 이미 노출하므로 중복
-                        // 문자열도 제거되고, badge 는 compact/축약 사다리와
-                        // 무관하게 항상 남아 <xl 에서도 건수가 보인다. 시간창은
-                        // aria-label·title 로 보존.
                         badge={
                           spotlightOn ? (
                             <span
@@ -4658,51 +4699,48 @@ function HomePageImpl() {
                       </ChromeChip>
                     </Tooltip>
                     {/*
-                      ⚠️ **「작업공간」 칩을 뺐다** (2026-08-03, PO 카운슬 평결 ⑥ ·
-                      소유자 지시 *"이것도 그냥 lnb에서 문서함 누르면 나오는거 아닌가"*).
+                      ⚠️ Two chips were removed from this lane (2026-08-03), under one
+                      adopted rule: **a chip over the map earns its place only if it
+                      changes the map.**
 
-                      채택된 규칙: **지도 위 칩은 지도를 바꿀 때만 그 자리에 설
-                      자격이 있다.** 이 칩은 드로어를 열 뿐 지도를 안 바꿨다 —
-                      LNB 의 일이다. 게다가 자기 라벨(`docsLabel: "작업공간"`)과
-                      자기 툴팁(`docsTooltip: "문서함 빠른 보기"`)이 **한 컨트롤
-                      안에서 서로 다른 이름**을 쓰고 있었고, LNB 에는 이미 「문서함」이
-                      있어 같은 화면에 같은 말이 둘이었다.
+                      ① The workspace chip (PO council verdict; owner: *"이것도 그냥
+                      lnb에서 문서함 누르면 나오는거 아닌가"* — isn't this just the docs
+                      entry in the rail?). It opened a drawer and never changed the map;
+                      that is the rail's job. It also used **two different names inside
+                      one control** — its label said one thing and its tooltip another —
+                      while the rail already had a docs entry, so the same word appeared
+                      twice on one screen. **The drawer still exists**: the `D` shortcut
+                      (listed in the shortcut sheet) and the INDEX footer path both open
+                      it. A chip was removed, not a surface. This was a rediscovery — the
+                      old "N changes" button had been removed on 2026-08-02 for **the
+                      same reason** (a round trip that changes no map state) — so the rule
+                      itself was recorded in the ledger this time.
 
-                      **드로어는 살아 있다** — `D` 단축키(단축키 시트에 등재)와
-                      INDEX 푸터 경로가 그대로 연다. 없앤 것은 칩 하나지 표면이
-                      아니다.
-
-                      이건 재발견이다: 2026-08-02 에 「변경점 N개」가 **같은 이유**
-                      (왕복만 하고 지도 상태를 안 바꾼다)로 이미 지워졌다. 규칙이
-                      없어서 매번 한 개씩 손으로 발견하고 있었다 — 그래서 이번엔
-                      규칙을 원장에 등재했다.
+                      ② The "+ concept" pill (owner: *"이거좀 이상해 없어져도 될듯?"* —
+                      this is a bit odd, it could go). It was the **only** door to
+                      creating a concept on an already-populated map with nothing
+                      selected, because the empty map's two entry points (the start
+                      checklist and the empty state) disappear once the map fills. Simply
+                      deleting it would have removed that path entirely. **Right-clicking
+                      empty canvas** takes its place (`onContextMenuPane`): a right-click
+                      on empty space is the universal idiom for "create one here", and
+                      above all the clicked coordinates *are* where the new node goes,
+                      which says more than a pinned button at the top. Permanent ink drops
+                      to zero.
                     */}
-                    {/*
-                      ⚠️ **「+ 개념」 크롬 필을 뺐다** (2026-08-03, 소유자 지시).
-                      *"이거좀 이상해 없어져도 될듯?"*
+                    {/* The history entry point below `lg`. At `lg+` the rail destination
+                        owns it; where the rail disappears this chrome tile leads to the
+                        same destination, so a different breakpoint still reaches **the
+                        same surface**.
 
-                      이 필은 「노드가 이미 있는 지도에서, 아무것도 안 고른 채
-                      새 개념을 만들 때」의 **유일한** 문이었다 — 빈 지도의 두
-                      진입점(시작 체크리스트 · 빈 상태)은 지도가 차면 사라지기
-                      때문이다. 그래서 그냥 지우면 populated 지도에서 만들 길이
-                      통째로 없어진다.
-
-                      그 자리를 **빈 캔버스 우클릭**이 대신한다(`onContextMenuPane`).
-                      빈 자리 우클릭은 어느 도구에서나 «여기에 새로 만들기»의
-                      관용구이고, 무엇보다 **클릭한 좌표가 곧 새 노드의 자리**라
-                      상단 고정 버튼보다 뜻이 분명하다. 상시 잉크도 0이 된다.
-                    */}
-                    {/* 기록 <lg 진입점. `lg+` 는 레일 목적지가 담당하고
-                        레일이 사라지는 `<lg` 에서는 이 크롬 타일이 같은
-                        목적지로 보낸다 — 브레이크포인트가 달라도 **같은
-                        표면**을 본다.
-
-                        2026-07-25: 이 타일은 원래 560px 모달을 열었다. 기록이
-                        목적지로 승격되면서 링크로 바꿨다 — 모바일만 모달을 보면
-                        같은 기능이 두 표면으로 갈린다. `audiencePlain` 게이트도
-                        제거: 목적지는 전 청중에 노출한다("누가 언제 무슨 의미를
-                        바꿨나" 는 기획자·임원도 보는 정보이고 개발 작업이 아니다).
-                        청중에 따라 진입점 수가 달라지는 것 자체가 #65 계열이다. */}
+                        2026-07-25: this tile used to open a 560px modal. When history was
+                        promoted to a destination it became a link — if mobile alone saw a
+                        modal, one feature would live on two surfaces. The `audiencePlain`
+                        gate was removed with it: a destination is exposed to every
+                        audience ("who changed what meaning, when" is information planners
+                        and executives read, not developer work), and an entry-point count
+                        that varies by audience is exactly the problem that consolidation
+                        was meant to end. */}
                     {(
                       <Link
                         href="/git/"
@@ -4721,11 +4759,12 @@ function HomePageImpl() {
                         ) : null}
                       </Link>
                     )}
-                    {/* 설정 <lg 진입점 (겹침 소탕 2026-07-23) — 내비 레일
-                        (lg+ 전용)의 설정 슬롯이 사라지는 <lg 에서 설정 접근
-                        수단이 0 이었다. 레일 슬롯과 같은 단일 설정 시트를
-                        chrome-tile 변형으로 레인 끝에 꽂는다 — 하단 탭바
-                        5-목적지 계약은 불변. lg+ 에선 레일 톱니가 담당. */}
+                    {/* Settings entry point below `lg`. The nav rail is `lg+` only, so
+                        below it there was no way to reach settings at all. The same
+                        single settings sheet the rail slot opens is placed at the end of
+                        the lane as a chrome-tile variant; the bottom tab bar's
+                        five-destination contract is untouched. At `lg+` the rail's gear
+                        owns it. */}
                     <div className="lg:hidden">
                       <AppSettingsMenu
                         mode={vault.status === 'loaded' ? 'local' : 'static'}
@@ -4739,12 +4778,14 @@ function HomePageImpl() {
                       />
                     </div>
                       </div>
-                      {/* 활동 줄 **전체**(누가 · 언제 · 어느 노드 · 종 · 알림함)가
-                          위쪽 버튼들 아래 줄에 산다. 소유자 지시 두 번:
-                          *"사용자가 위는 봐도 아래는 잘 안볼듯한데"* →
-                          *"줄 전체를 하단으로!"*. 지도 하단에는 남기지 않는다 —
-                          같은 사실이 두 곳에 있으면 헷갈린다(실측 2곳).
-                          게이트: `tests/e2e/agent-activity-placement.spec.ts`. */}
+                      {/* The **whole** activity row (who · when · which node · bell ·
+                          inbox) sits on the line below the buttons above. Two owner
+                          instructions: *"사용자가 위는 봐도 아래는 잘 안볼듯한데"*
+                          (people look at the top, not the bottom) then *"줄 전체를
+                          하단으로!"* (move the entire row down). Nothing is left at the
+                          bottom of the map — the same fact in two places is confusing
+                          (measured: it was in two).
+                          Gate: `tests/e2e/agent-activity-placement.spec.ts`. */}
                       <AgentActivityChip
                         suppressed={Boolean(v2DatasheetModel)}
                         liveWork={acpLiveWork}
@@ -4826,10 +4867,10 @@ function HomePageImpl() {
                   aria-labelledby={CREATE_NODE_DIALOG_TITLE_ID}
                   tabIndex={-1}
                   onKeyDown={handleCreateNodePanelKeyDown}
-                  // 다이얼로그 폭 램프 채택 (#8 준비, 2026-07-25) — 공용
-                  // composer-width 대신 캐노니컬 --dialog-w-md(560px) 를 직접
-                  // 참조해 "개념 추가" 팝업이 램프 위에 앉게 한다. 좁은
-                  // 뷰포트는 calc 로 감싼다.
+                  // Uses the dialog-width ramp: it references the canonical
+                  // `--dialog-w-md` (560px) directly instead of the shared composer width,
+                  // so this create dialog sits on the ramp. Narrow viewports are handled by
+                  // the surrounding `calc`.
                   className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[min(var(--dialog-w-md),calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto"
                   data-testid="topology-create-node-panel"
                   data-attention-role="blocking-composer"
@@ -4873,8 +4914,8 @@ function HomePageImpl() {
                     }}
                     defaultKind={createNodeDefaultKind}
                     defaultDomain={createNodeSeedDomain}
-                    // 어권별 이름 — 지금 화면 언어가 필수 칸, 나머지가 선택
-                    // 칸(소유자 지시 2026-07-24).
+                    // Per-locale names: the current screen language is the required
+                    // field and the other is optional (owner instruction, 2026-07-24).
                     localeNames={{
                       primaryLocale: activeLocale,
                       secondaryLocale: activeLocale === 'ko' ? 'en' : 'ko',
@@ -4969,44 +5010,44 @@ function HomePageImpl() {
                 </div>
               </>
             ) : null}
-            {/* INDEX (B3 허브가 곧 지도) — the left instrument replacing the
-                old `/ontology` tree page. Persists alongside the selected-
-                node datasheet (unlike the analysis rail below, which the
-                node-focus popover suppresses) — the approved spec shows both
-                coexisting over the map (`docs/prototypes/hub-b3-immersive.html`). */}
+            {/* INDEX — the left instrument replacing the old `/ontology` tree page.
+                Persists alongside the selected-node datasheet (unlike the analysis rail
+                below, which the node-focus popover suppresses); the approved spec shows
+                both coexisting over the map. */}
             {!selectedRelationActive && !topologyCreateNodeBlockingActive
               ? indexSlotFrames.map((frame) => (
               <div
-                // 접힘 ↔ 펼침은 **같은 자리를 두 표면이 번갈아 쓰는 교체**다.
-                // 전이가 없어 300px 폭 10행이 1프레임에 존재/비존재를 왕복했고
-                // (휘도 Δ13.6 / 17ms), 같은 클릭의 카메라는 200ms 를 썼다 — 한
-                // 동작이 세 개의 시간을 가졌다. `key` 로 교체를 명시해 도착
-                // 표면이 지도 위 큰 표면의 공용 문법(`.map-overlay-in`,
-                // 180ms 불투명도)으로 들어온다: 팝오버·패널·전면 상세가 한
-                // 클럭을 쓴다.
+                // Collapse ↔ expand is **two surfaces taking turns in the same slot**.
+                // With no transition, 300px of panel and ten rows flipped between
+                // existing and not in one frame (luminance Δ13.6 over 17 ms) while the
+                // camera from the same click took 200 ms — one action with three
+                // different durations. Making the swap explicit through `key` lets the
+                // arriving surface use the shared grammar for large surfaces over the map
+                // (`.map-overlay-in`, 180 ms opacity), so popovers, panels, and full
+                // detail all run on one clock.
                 key={`${frame.state}-${frame.exiting ? "out" : "in"}`}
-                // `topology-ui-scale` — top-left-chrome-group(브랜드 pill)도
-                // 같은 클래스로 ≥1920px/≥2400px 에서 zoom 배율이 걸린다. 이
-                // wrapper 가 이 클래스 없이 고정 px 로만 있으면 그 zoom 배율
-                // 아래에서 pill 이 이 wrapper 보다 비례적으로 더 커져 다시
-                // 겹친다 — `--topology-index-top` 주석 참조.
+                // `topology-ui-scale`: the top-left chrome group carries the same class
+                // and is zoomed at ≥1920px / ≥2400px. Without it this wrapper would stay
+                // at fixed px while the group grows proportionally under that zoom, and
+                // the two would overlap again — see the `--topology-index-top` comment.
                 className={`${frame.exiting ? "map-overlay-out pointer-events-none" : "map-overlay-in"} topology-ui-scale absolute z-20`}
                 aria-hidden={frame.exiting || undefined}
                 inert={frame.exiting || undefined}
                 style={{
                   left: frame.state === "expanded" ? "var(--topology-index-inset)" : 0,
-                  // J (소유자 실보고 2026-07-23) — 상시 "지형도" 헤더가
-                  // 은퇴한 뒤 전개 스택 위 84px 이 빈 띠로 남았다. 전개
-                  // 상태는 크롬 인셋(24px)까지 올린다. 브랜드 pill 이 뜨는
-                  // 상태(선택/드로어)에선 C 자동 강등으로 스택이 접힘 탭이
-                  // 되므로 pill 과의 겹침이 구조적으로 없다. 접힘 탭은
-                  // pill 아래 정렬을 위해 기존 84px 유지.
+                  // Owner report, 2026-07-23: after the permanent map header retired, 84px
+                  // of empty band was left above the expanded stack. Expanded now rises to
+                  // the chrome inset (24px). In the states where the brand pill appears
+                  // (selection, drawer) the automatic demotion turns the stack into a
+                  // collapsed tab, so overlap with the pill is structurally impossible.
+                  // The collapsed tab keeps 84px to stay aligned under the pill.
                   top:
                     frame.state === "expanded"
                       ? "var(--topology-index-inset)"
                       : "var(--topology-index-top)",
-                  // rank7 — 하단 인셋은 전용 토큰: 데스크톱에선 크롬 인셋과
-                  // 동일, <md 시트 모드에선 BottomTabBar 예약고 위로 올라간다.
+                  // The bottom inset has its own token: equal to the chrome inset on
+                  // desktop, and below `md` in sheet mode it rises above the
+                  // `BottomTabBar` reserve.
                   bottom:
                     frame.state === "expanded"
                       ? "var(--topology-index-bottom-inset)"
@@ -5014,17 +5055,14 @@ function HomePageImpl() {
                 }}
               >
                 {frame.state === "expanded" && indexTreeResult ? (
-                  // S7 "영역 대장" — 영역 활성 시 좌측 패널이 전역 콘텐츠 대신
-                  // 이 노드의 세계만 보여주는 변신 표면으로 교체된다. 두 표면이
-                  // 같은 박스를 차지하므로 keyed 래퍼의 짧은 페이드-인(<200ms,
-                  // reduced-motion 즉시)이 크로스페이드로 읽힌다. 전역↔영역
-                  // 전환에서만 key 가 바뀌어 remount → 페이드; 영역→영역
-                  // 점프는 in-place 갱신.
+                  // While a realm is active the left panel is replaced by the realm
+                  // ledger, which shows only this node's world instead of the global
+                  // content. Both occupy the same box, so the keyed wrapper's short
+                  // fade-in (under 200 ms, instant under reduced-motion) reads as a
+                  // crossfade. Only the global ↔ realm switch changes the key and
+                  // remounts; a realm-to-realm jump updates in place.
                   <div
                     key={realmActive ? "realm" : "index"}
-                    // R4 모션 헌법 — 하드코딩 160ms/ease-out 을 크롬 모션 토큰으로
-                    // 통일(`--topology-motion-panel-duration` 180ms +
-                    // `--topology-motion-ease-out`). 크롬 등장 문법 단일 클럭.
                     className="h-full animate-[panelCrossfadeIn_var(--topology-motion-panel-duration)_var(--topology-motion-ease-out)] motion-reduce:animate-none"
                   >
                   {realmActive && realmLedgerModel ? (
@@ -5039,9 +5077,9 @@ function HomePageImpl() {
                       changedSlugs={changedSlugs}
                       onSelect={(id) => handleSelect(id)}
                       onExit={handleExitRealm}
-                      // 결계 관계 행의 "이 영역으로 이동" = 밖 노드의 도메인급
-                      // 상위로 realm 을 교체(realm-to-realm 점프). 진입 핸들러
-                      // 재사용 — 새 URL 로직 없음.
+                      // "Go to this realm" on a boundary row swaps the realm to the
+                      // outside node's domain-level ancestor (a realm-to-realm jump). It
+                      // reuses the enter handler, so there is no new URL logic.
                       onJumpRealm={handleEnterRealm}
                       maxDomainDescendantCount={indexMaxDomainDescendantCount}
                       domainCensus={indexDomainCensus}
@@ -5067,9 +5105,9 @@ function HomePageImpl() {
                     />
                   ) : (
                   <TopologyIndexPanel
-                    // 슬라이스 C — 비개발(plain) 모드는 element 행만 제외한
-                    // 파생 트리를 내린다(표시 게이트, 데이터 무변경). realm
-                    // 대장/census/카운트는 여전히 `indexTreeResult` 원본을 쓴다.
+                    // Plain mode passes a derived tree with only the element rows
+                    // removed — a display gate, no data change. The realm ledger, the
+                    // census, and the counts still use the original `indexTreeResult`.
                     treeResult={
                       audiencePlain
                         ? { ...indexTreeResult, roots: filterTreeExcludeKind(indexTreeResult.roots, "element") }
@@ -5084,39 +5122,37 @@ function HomePageImpl() {
                     onCollapse={handleIndexCollapse}
                     onStartTour={openGuidedTour}
                     onEnablePlainMode={() => setAudiencePlain(true)}
-                    // P1 결함①a — element 행이 왜 안 보이는지 설명하는
-                    // 조용한 힌트 행 게이트. treeResult 는 이미 위에서
-                    // element 를 제외했다(단일 진실원 무변경).
+                    // Gates the quiet hint row explaining why element rows are not
+                    // visible. `treeResult` above has already removed them; the single
+                    // source is unchanged.
                     plainMode={audiencePlain}
-                    // 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) —
-                    // vault 미연결(정적 샘플) 동안은 "먼지 앉은 노드" 행과
-                    // "인계" 메뉴가 이 제품 자신의 dogfood vault 상태를
-                    // 서술해 첫 방문자에게 남의 저장소 잡음으로 읽힌다.
-                    // `canCreateNode`(= vault.manifest !== null)가 이미 이
-                    // 페이지의 "vault 로드됨" 단일 진실원이므로 그대로 재사용.
+                    // While no vault is connected (the static sample), the dusty-nodes
+                    // row and the handoff menu describe **this product's own** dogfood
+                    // vault, which reads to a first-time visitor as noise from a stranger's
+                    // repository. `canCreateNode` (`vault.manifest !== null`) is already
+                    // this page's single source for "a vault is loaded", so it is reused.
                     vaultLoaded={canCreateNode}
-                    // 2026-08-21 — 붙이는 일의 주소는 「에이전트」 목적지 하나다(원장 90).
+                    // 2026-08-21: connecting an agent has exactly one address, the agents
+                    // destination (`docs/DECISIONS.md`, entry 90).
                     onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
-                    // P4-② (2026-07-21 리텐션 라운드) — 이미 연결된
-                    // 에이전트가 있는 2일차+ 사용자에게 "Updated with AI"
-                    // 클릭이 "AI 에이전트 연결" 등록 모달(어제 이미 끝낸
-                    // 셋업)로 돌려보내는 건 막다른 길이었다. 연결 상태일 땐
-                    // 그 클릭이 답해야 할 질문이 "가입할까?"가 아니라
-                    // "에이전트가 뭘 했지?"이므로 활동 다이제스트(인사이트
-                    // 기본 탭 "할 일")로 딥링크한다. 미연결/stale 은 기존
-                    // 모달 그대로.
+                    // For a returning user who already has an agent connected, sending the
+                    // "updated with AI" click to the connect modal — setup they finished
+                    // yesterday — was a dead end. Once connected, the question that click
+                    // must answer is not "should I set this up?" but "what did the agent
+                    // do?", so it deep-links to the activity digest instead. Not connected
+                    // or stale keeps the modal.
                     agentActivityHref={
                       agentConnect.status.kind === "connected" ? "/ontology/insights/" : null
                     }
                     domainCensus={indexDomainCensus}
-                    // P4a — 렌즈 필터용 id 집합 + P4b 배지 대상.
+                    // The id set the lens filters on, plus the badge target.
                     recentChanges={{
                       ids: recentChanges.recentNodeIds,
                       agentAttributedNodeId: agentAttributedRecentNodeId,
                     }}
-                    // 스포트라이트 단일 진실원 (협의회 §⑤) — URL `?recent=`
-                    // 하나가 지도 침강과 이 렌즈를 동시 구동. 렌즈 탭 클릭 =
-                    // 스포트라이트 on/off, 프리셋 칩 = 창 즉시 전환.
+                    // One source for the spotlight: the URL's `?recent=` drives both the
+                    // map's sinking and this lens. Clicking the lens tab toggles the
+                    // spotlight; a preset chip switches the window immediately.
                     lens={spotlightOn ? "recent" : "all"}
                     onLensChange={(next) =>
                       setRouteState((current) => ({
@@ -5128,14 +5164,14 @@ function HomePageImpl() {
                     onWindowChange={(next) =>
                       setRouteState((current) => ({ ...current, recentWindow: next }))
                     }
-                    // P4c — "지도에 없는 문서 N개 · 올리기". `bootstrapPlan` 은
-                    // vault 가 로드되기만 하면(빈 지도든 아니든) 항상 계산돼
-                    // 있으므로 새 파생 없이 그 카운트를 그대로 노출한다 —
-                    // 클릭은 기존 "내 문서로 지도 만들기" 다이얼로그를 연다
-                    // (이전에는 지도가 완전히 빈 상태의 empty-state 에서만
-                    // 열렸다; 이 행은 지도가 이미 채워진 상태에서도 연다).
+                    // "N documents not on the map · add them". `bootstrapPlan` is always
+                    // computed once a vault is loaded, empty map or not, so its count is
+                    // exposed with no new derivation. Clicking opens the existing
+                    // "build a map from my documents" dialog — previously reachable only
+                    // from the empty state, whereas this row opens it on a populated map
+                    // too.
                     uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
-                    // ④ 살아있는 지도 드리프트 — dusty 카운트. 0 이면 행 숨김.
+                    // Dusty (long-untouched) node count; the row hides at 0.
                     dustyNodeCount={dustySlugs.size}
                     unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
                     onPromoteUncatalogedDocs={
@@ -5143,16 +5179,16 @@ function HomePageImpl() {
                         ? () => setBootstrapOpen(true)
                         : undefined
                     }
-                    // 브랜드 필의 censusGrowthText 와 같은 출처(recentlyUpdatedCount)
-                    // — feat/chrome-system §9, 헤더→푸터 이관.
+                    // Same source (`recentlyUpdatedCount`) as the brand pill's growth
+                    // text used to use, moved from the header to this footer.
                     footerGrowthText={
                       recentlyUpdatedCount > 0
                         ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
                         : undefined
                     }
-                    // 슬라이스 C — 비개발(plain) 모드는 인계 메뉴를 개발자
-                    // 크롬으로 간주해 undefined 전달(위젯 기존 계약 — 미전달
-                    // 시 메뉴 미렌더).
+                    // Plain mode treats the handoff menu as developer chrome and passes
+                    // `undefined`; the widget's existing contract is that an absent value
+                    // renders no menu.
                     agentHandoff={
                       audiencePlain
                         ? undefined
@@ -5195,14 +5231,15 @@ function HomePageImpl() {
                       subtotalTitle: t("index.subtotalTitle"),
                       emptyHint: t("index.emptyHint"),
                       segmentAll: t("index.segmentAll"),
-                      // M-8 — 적응 창(7d→3d→1d)의 실제 창 일수를 라벨에 노출.
+                      // Exposes the adaptive window's actual span (7d → 3d → 1d) in the
+                      // label.
                       segmentRecent: t("index.segmentRecent", {
                         count: recentChanges.recentNodeIds.size,
                         days: recentChanges.windowDays,
                       }),
                       segmentRecentAria: t("index.segmentRecentAria"),
                       recentEmptyHint: t("index.recentEmptyHint", { days: recentChanges.windowDays }),
-                      // 스포트라이트 창 프리셋 칩 라벨 (협의회 §②).
+                      // Spotlight window preset chips.
                       windowChipAuto: t("index.windowChipAuto"),
                       windowChip1: t("index.windowChipDays", { days: 1 }),
                       windowChip7: t("index.windowChipDays", { days: 7 }),
@@ -5219,7 +5256,7 @@ function HomePageImpl() {
                         count: unboundProjectSource?.count ?? 0,
                       }),
                       sourceUnboundAction: t("index.sourceUnboundAction"),
-                      // P1 결함①a — plainMode 일 때만 실제 렌더(패널 게이트).
+                      // Rendered only in plain mode; the panel gates it.
                       plainHint: t("index.plainHint"),
                     }}
                   />
@@ -5237,12 +5274,6 @@ function HomePageImpl() {
               </div>
                 ))
               : null}
-            {/* TopologyAnalysisBar 완전 삭제(분석 패널 완전 소멸 2단계 §d) —
-                focus(§a)/path(§b)/health(§c) 가 모두 빠진 뒤 남은 지도/그래프
-                2-tab 레일은 우상단 유틸리티 레일의 그래프 토글 칩으로
-                이관했다. overview 모드의 예전 analysis-rail 콘텐츠는 이미
-                relation legend·INDEX 푸터 인계 메뉴·insights 관계 탭으로
-                은퇴했다(W3). */}
           </>
         <div
           data-testid="topology-map-surface"
@@ -5275,37 +5306,39 @@ function HomePageImpl() {
                 key={localGraphRoot ?? '__root__'}
                 className="absolute inset-0 animate-[topologyFade_var(--motion-base)_var(--motion-ease)]"
               >
-                {/* Empty-state overlay when the visible Sigma graph has 0–1
-                    nodes — the lone Sigma dot otherwise reads as a broken
-                    canvas. 빈 vault 는 Sigma 를 아예 마운트하지 않고 바로 빈
-                    상태만 보여 WebGL/토폴로지 모양이 잠깐 보이는 회귀를 막는다. */}
+                {/* Empty-state overlay when the visible graph has 0–1 nodes: a lone dot
+                    otherwise reads as a broken canvas. An empty vault never mounts the
+                    engine at all and shows only the empty state, which prevents the
+                    regression where a map shape flashed first. */}
                 {topologyOverlayState.kind === "structural-empty" && !createNodeOpen ? (
                   /*
-                   * 2026-07-24 온보딩 라운드 — 쓰기 가능한 로컬 vault 를 연
-                   * 사람에게 dead-end 문구 대신 진행형 시작 체크리스트를 세운다.
+                   * Onboarding round, 2026-07-24: someone who opened a writable local
+                   * vault gets a progressive start checklist instead of a dead-end
+                   * sentence.
                    *
-                   * ⚠️ **2026-08-03 게이트 확장** (PO 5석 + 디자인 4석 평결).
-                   * 종전 조건은 `&& (bootstrapPlan?.elements.length ?? 0) === 0`
-                   * — 즉 **진짜 빈 폴더만** 체크리스트를 봤다. 그 한 줄 때문에
-                   * 문서가 한 장이라도 있는 폴더, 곧 **개발 저장소를 연 사람**은
-                   * 에이전트 연결과 「AI 에게 줄 지시 복사」로 가는 문이 통째로
-                   * 닫혀 있었다 — 정확히 이 흐름이 도우려던 그 사람이다.
-                   * `TopologyEmptyState` 의 docs-found 갈래는 「내 문서로 지도
-                   * 만들기」만 주고 에이전트 이야기를 한 마디도 안 한다.
+                   * ⚠️ **The gate was widened 2026-08-03** (five PO seats plus four
+                   * design seats). The condition used to include
+                   * `&& (bootstrapPlan?.elements.length ?? 0) === 0`, so **only a truly
+                   * empty folder** ever saw the checklist. That one clause shut the door
+                   * to connecting an agent and copying the instruction for it for anyone
+                   * whose folder had even one document — that is, **anyone who opened a
+                   * development repository**, exactly the person this flow exists for.
+                   * `TopologyEmptyState`'s docs-found branch offers only "build a map from
+                   * my documents" and says nothing about agents at all.
                    *
-                   * 그래서 판정을 「쓸 수 있는 볼트인가」 하나로 좁히고, 문서가
-                   * 있으면 **체크리스트의 1단이 부트스트랩으로 바뀐다**(아래
-                   * `docsFoundCount`). 화면을 새로 만든 게 아니라 이미 있던
-                   * 화면에 도달하게 한 것이다 — 팝업 신설 0.
+                   * So the decision narrowed to one question, "is this a writable vault",
+                   * and when documents exist **the checklist's first step becomes
+                   * bootstrap** (`docsFoundCount` below). Nothing new was built; an
+                   * existing screen simply became reachable, with no popup added.
                    */
                   canCreateNode && !startStepsDismissed ? (
                     <VaultStartSteps
                       agentConnected={agentConnect.status.kind === "connected"}
                       acpRuntimeLabel={acpRuntimeLabel}
                       onCreateNode={openCreateNodeWithKind}
-                      // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈 폴더로
-                      // 새로 시작' 과 같은 스타터를 버튼으로 제공한다
-                      // (2026-07-24). 문서가 이미 있으면 미전달.
+                      // Someone who opened an empty folder through "choose an existing
+                      // folder" gets the same starter as "start fresh in an empty folder",
+                      // as a button. Not passed when documents already exist.
                       onScaffoldStarter={
                         (vault.manifest?.docs.length ?? 0) === 0
                           ? handleScaffoldStarter
@@ -5313,9 +5346,9 @@ function HomePageImpl() {
                       }
                       scaffolding={starterScaffolding}
                       /*
-                       * 문서가 있는 폴더면 그것이 첫 걸음이다 — 빈 폴더의
-                       * 1순위(에이전트 연결)는 빈 폴더 맥락의 순서였고, 이미
-                       * 가진 것이 있는 사람에게 첫 걸음은 그 가진 것이다.
+                       * With documents in the folder, they are the first step. Connecting
+                       * an agent is first in the empty-folder ordering; for someone who
+                       * already has something, the first step is that something.
                        */
                       docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                       onStartFromDocs={
@@ -5323,39 +5356,36 @@ function HomePageImpl() {
                           ? () => setBootstrapOpen(true)
                           : undefined
                       }
-                      /*
-                       * 지시문은 **볼트 경로를 아는 빌더**가 만든다. 종전엔 i18n
-                       * 문자열이라 경로가 없었고, 그래서 에이전트가 어느 폴더를
-                       * 보라는 것인지 문장만으로는 알 수 없었다.
-                       */
                       analyzePrompt={analyzePrompt}
                       /*
-                       * 붙여넣을 곳이 **이 앱 안에** 있으면 복사를 시키지 않는다
-                       * (2026-08-16 소유자: *"두번짼 뭔지도 모르겠고"*). 지시를
-                       * 대화 작성 칸에 앉히고, 보내는 것은 여전히 사람이 한다.
+                       * When there is somewhere **inside this app** to paste it, do not
+                       * make the user copy. Owner, 2026-08-16: *"두번짼 뭔지도 모르겠고"*
+                       * (I have no idea what the second one even is). The instruction is
+                       * seated in the chat composer; a person still sends it.
                        */
                       onSendAnalyzeToAgent={
                         agentChatUsesRuntime ? sendAnalyzeToAgent : null
                       }
-                      // 2026-08-16 소유자 실보고 — 카드가 INDEX 오른쪽 가장자리와
-                      // 겹쳐 보였다. INDEX 는 지도 칼럼을 좁히지 않고 그 **위에
-                      // 뜨므로**(오른쪽 에이전트 패널은 flex 형제라 실제로 좁힌다)
-                      // 카드의 중앙 계산에서 혼자 빠진다. 그 폭을 알려 준다.
+                      // Owner report, 2026-08-16: the card appeared to overlap INDEX's
+                      // right edge. INDEX floats **over** the map column rather than
+                      // narrowing it (the right-hand agent panel is a flex sibling and
+                      // genuinely does narrow it), so it alone is missing from the card's
+                      // centring calculation. This tells the card its width.
                       indexExpanded={renderedIndexState === "expanded"}
                       onFinish={dismissStartSteps}
                       /*
-                       * 이 걸음의 이름은 **연결**이고, 연결이 사는 곳은 설정의
-                       * Agents 칸이다 — 무엇이 잡혔는지 보고, 무엇을 쓸지 고르는
-                       * 자리다(2026-08-16 소유자 지적).
+                       * This step is named **connect**, and connecting lives at the agents
+                       * destination — where you see what was detected and choose what to
+                       * use (owner remark, 2026-08-16).
                        *
-                       * ⚠️ 종전에는 잡힌 것이 있으면 **대화**를 열었다. 그러면
-                       * 「연결」이라고 적힌 버튼이 대화를 여는 것이라 이름과 한
-                       * 일이 어긋난다. 대화로 가는 문은 따로 있다(유틸 레인의
-                       * 「에이전트」 칩 · 다음 걸음의 「에이전트에게 시키기」).
+                       * ⚠️ It used to open the **chat** when something was detected, so a
+                       * button labelled "connect" did something other than its name. The
+                       * doors to chat are separate (the utility lane's agent chip, and the
+                       * next step's "ask the agent"). Since 2026-08-21 the runtime list
+                       * moved out to the agents destination (`docs/DECISIONS.md`, entry
+                       * 90), so signalling "open the sheet" would now do nothing at all —
+                       * there is no sheet. It navigates instead.
                        */
-                      /* 2026-08-21 — 실행기 목록이 「에이전트」 목적지로 나갔다
-                         (원장 90). 시트를 열어 달라고 신호를 보내면 이제 그 자리가
-                         없어서 아무 일도 안 일어난다. 목적지로 보낸다. */
                       onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
                     />
                   ) : (
@@ -5364,10 +5394,11 @@ function HomePageImpl() {
                     reason={topologyOverlayState.emptyReason}
                     canCreateNode={canCreateNode}
                     onCreateNode={openCreateNode}
-                    // 능력으로 가른다 — `OpenVaultCta` 와 같은 단일 출처다.
-                    // 종전엔 위젯이 `isTauriVaultRuntime() || 볼트 열림` 을 스스로
-                    // 물었고, 둘 다 아닌 **FSA 지원 웹 방문자**에게 「앱을
-                    // 설치하세요」로 답했다(2026-08-08 카운슬 실측).
+                    // Decided by capability, from the same single source as
+                    // `OpenVaultCta`. The widget used to ask
+                    // `isTauriVaultRuntime() || vault is open` itself and answered "install
+                    // the app" to a **web visitor whose browser supports the File System
+                    // Access API** (council measurement, 2026-08-08).
                     canPickFolder={vault.status !== 'unsupported'}
                     docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                     onStartFromDocs={
@@ -5384,36 +5415,34 @@ function HomePageImpl() {
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas && mapMountTaskReady ? (
-                  // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2/P3) —
-                  // unifies the map tab, graph tab, and project-detail
-                  // neighbor map into one engine (§1.2); this call site is
-                  // wired once for all three, per §5.3's unchanged adapter
-                  // contract. `nodes`/`edges` come from `topologyV2Graph`
-                  // (topology-v2-adapter.ts), derived from `ontologyInsight`.
-                  // The map-canvas + legacy Sigma-as-engine branches this
-                  // ternary used to also hold were physically deleted once
-                  // v2 went default-on (owner directive: 예전 캔버스 코드는
-                  // 싹 다 지워줘) — see topology-map-v2's design docs for the
-                  // strangler history.
+                  // `topology-map-v2` (`docs/TOPOLOGY-V2-DESIGN.md`) unifies the map tab,
+                  // the graph tab, and the project-detail neighbour map into one engine;
+                  // this call site is wired once for all three. `nodes`/`edges` come from
+                  // `topologyV2Graph` (`topology-v2-adapter.ts`), derived from
+                  // `ontologyInsight`. The older engine branches this ternary used to
+                  // hold were deleted outright once v2 became the default — owner
+                  // directive: *"예전 캔버스 코드는 싹 다 지워줘"* (delete all the old
+                  // canvas code).
                   <TopologyMapV2
                     nodes={topologyV2Graph.nodes}
                     edges={topologyV2Graph.edges}
-                    /* 방향키로 걸을 곳이 없을 때 **말해 준다** (2026-08-10, 소유자).
-                       눌렀는데 아무 반응이 없으면 사용자는 「고장」과 「그 방향에는
-                       없음」을 구별할 수 없다. 문구와 표면은 페이지가 소유한다 —
-                       위젯은 사건만 내보낸다(그 위젯은 프로바이더 없이 시험된다). */
+                    /* Say so when an arrow key has nowhere to walk (owner, 2026-08-10).
+                       With no response at all the user cannot tell "broken" from "nothing
+                       that way". The wording and the surface belong to the page; the
+                       widget only emits the event, because it is tested with no provider
+                       around it. */
                     walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
                     focus={{ selectedSlug: canvasSelectedSlug }}
-                    /* 볼트를 세션 중에 갈아 끼우면(샘플 → 로컬) 지도가 직전
-                       그래프의 카메라로 새 그래프를 그리던 결함을 닫는다. 값의
-                       단일 출처는 위 `useVaultIdentityScope()` 하나이고, 딥링크
-                       정리가 쓰는 것과 **같은 신호**다 — 「지금 보고 있는 볼트가
-                       무엇인가」의 답이 화면마다 갈리면 안 된다.
-                       `deeplinkSourceReady` 로 감싸는 이유도 그 옆의 것과 똑같다
-                       (위 「정착하기 전의 범위는 범위가 아니다」): 라이브 갱신은
-                       status 를 `'loading'` 으로 되돌리고 그때의 정체성은
-                       `sample:…` 로 계산된다. 그 값을 그대로 내려보내면 볼트에
-                       파일 하나가 저장될 때마다 카메라가 튄다(실측 dy −10.66). */
+                    /* Closes the defect where switching vaults mid-session (sample →
+                       local) drew the new graph with the previous graph's camera. The
+                       single source is `useVaultIdentityScope()` above — the **same
+                       signal** the deep-link cleanup uses, because "which vault am I
+                       looking at" must not be answered differently per surface.
+                       `deeplinkSourceReady` wraps it for the same reason as its neighbour
+                       (see "a scope before it settles is not a scope"): a live refresh
+                       returns status to `'loading'`, and the identity computed then is
+                       `sample:…`. Passing that straight down makes the camera jump every
+                       time one file is saved into the vault (measured dy −10.66). */
                     dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
                     fitViewToken={combinedFitToken}
                     spotlightFitToken={spotlightFitToken}
@@ -5421,13 +5450,14 @@ function HomePageImpl() {
                     revealToken={mapRevealToken}
                     onSelectEdge={(edge) => {
                       setFullDetailSlug(null);
-                      setHoverEdge(null); // 팝오버가 열리면 마이크로카드는 강등
-                      // 노드 핸즈온 감사(2026-07-24) A안 — 노드 포커스 중 엣지
-                      // 클릭이 삼켜지던 결함(엣지 패널 게이트 `!selectedOntologyNode`).
-                      // 엣지 선택 = 페어 포커스는 노드 ego 포커스를 **대체**하는
-                      // 게 정의(두 transient 표면 동시 금지)이므로, onSelect 이
-                      // selectedEdge 를 지우는 것과 대칭으로 여기서 노드 포커스를
-                      // 해제해 게이트를 연다. 카메라는 overview→엣지 경로와 동일.
+                      setHoverEdge(null); // The popover demotes the hover micro-card.
+                      // Fixes edge clicks being swallowed while a node had focus, because
+                      // the edge panel is gated on `!selectedOntologyNode`. Selecting an
+                      // edge (pair focus) is by definition a **replacement** for a node's
+                      // ego focus — two transient surfaces may not coexist — so, mirroring
+                      // `onSelect` clearing `selectedEdge`, the node focus is released
+                      // here to open that gate. The camera path is the same as
+                      // overview → edge.
                       if (selectedOntologyNode) handleClose();
                       setSelectedEdge(edge);
                     }}
@@ -5450,9 +5480,10 @@ function HomePageImpl() {
                     onZoomTierChange={setMapZoomTier}
                     onContextMenuNode={handleContextMenuNode}
                     /*
-                     * 빈 캔버스 우클릭 = 「여기에 개념 만들기」 — 상단에서 뺀
-                     * 크롬 필의 자리를 대신한다. 쓰기 가능한 볼트일 때만 건다:
-                     * 못 쓰는 볼트에서 메뉴가 뜨면 그건 죽은 문이다.
+                     * Right-clicking empty canvas means "create a concept here" and takes
+                     * the place of the chrome pill removed from the top. Wired only for a
+                     * writable vault: a menu on a vault that cannot be written to is a
+                     * dead door.
                      */
                     onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
                     minimal={localGraphRoot !== null}
@@ -5473,26 +5504,26 @@ function HomePageImpl() {
                     trailLensActiveRef={footprintLensActiveRef}
                     trailHoverNodeIdRef={footprintBrushNodeIdRef}
                     panelHoverNodeIdRef={panelHoverNodeIdRef}
-                    // 슬라이스 C — 비개발(plain) 모드는 element 티어를 도달
-                    // 불가 밴드로 밀어 상시 숨김(ego 예외는 그대로).
+                    // Plain mode pushes the element tier into an unreachable band so it
+                    // stays hidden; the ego exception still applies.
                     tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
-                    // 가이드 투어 — 캔버스 노드 앵커(2·4단계) 프로젝션.
+                    // Projection for the guided tour's canvas-node anchors.
                     tourAnchorNodeId={tourAnchorNodeId}
                     tourAnchorRef={tourAnchorRef}
-                    // rank18 — GlobalSearch(⌘K)가 실제로 열려 있는 동안
-                    // (MountedGlobalSearch 의 open prop 과 동일 조건) 캔버스를
-                    // aria-hidden+inert 로 접근성 트리에서 제외.
+                    // While the global search palette is genuinely open (the same
+                    // condition as `MountedGlobalSearch`'s `open` prop), the canvas leaves
+                    // the accessibility tree via aria-hidden + inert.
                     overlayOpen={!createNodeOpen && ontologySearchOpen}
-                    // Phase 5 #20/#21 — 개인화 설정(설정 시트에서 변경). DOM
-                    // 글리프는 스스로 같은 스토어를 읽어 lockstep 스왑된다.
+                    // Appearance preferences from the settings sheet. The DOM glyphs read
+                    // the same store themselves and swap in lockstep.
                     glyphSet={glyphSet}
                     canvasBackground={canvasBackground}
                     view3d={view3d}
                     mapArrangement={mapArrangement}
-                    // 3D 선택 리프레임의 「창 크기가 바뀐 사건」 — 상세 패널이
-                    // 실제로 화면을 덮는 동안 true(퇴장 애니 종료 후 false).
-                    // 돔은 이 플립마다 보이는 영역 기준으로 부드럽게
-                    // 재프레이밍한다(2D 는 무시 — use-topology-loop 참고).
+                    // The "the viewport changed" event for the 3D selection reframe: true
+                    // while the detail panel actually covers the screen, false once its
+                    // exit animation ends. On each flip the dome reframes smoothly against
+                    // the visible area; 2D ignores it (see `use-topology-loop`).
                     detailPanelVisible={nodePanelMounted}
                     footprint={footprint}
                     expand={expand}
@@ -5520,10 +5551,10 @@ function HomePageImpl() {
                   onFitView={() => setFitViewToken((t) => t + 1)}
                 />
               )}
-              {/* 가이드 투어 진입 (2026-07-23, `src/features/guided-tour`) —
-                  "?" 타일 바로 위 형제, 같은 chrome-tile 토큰 가족. "?" 의
-                  phone 가시성 분기(topologyShortcutHelpPhoneVisible)는 복제하지
-                  않는다 — 투어는 md+ 전용 고정(`hidden md:flex`, spec §4). */}
+              {/* Guided tour entry point: the sibling directly above the "?" tile, same
+                  chrome-tile token family. It does not copy the "?" tile's phone
+                  visibility branch — the tour is `md`+ only by design
+                  (`hidden md:flex`). */}
               {createNodeOpen ||
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
@@ -5540,9 +5571,9 @@ function HomePageImpl() {
                   </button>
                 </Tooltip>
               )}
-              {/* 단축키/제스처 도움말 진입점 — 우상단 Fit 타일 아래 두 칸(투어
-                  타일 다음), 36×36 아이콘. phone 은 primary read rail
-                  (path/health) 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
+              {/* Shortcut and gesture help entry point: two slots below the fit tile, after
+                  the tour tile. On phones it appears only in overview and focus, where it
+                  cannot collide with the primary read rail (path/health). */}
               {createNodeOpen ||
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
@@ -5583,9 +5614,10 @@ function HomePageImpl() {
                       ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
                       : "top-[var(--topology-shortcuts-help-phone-top)]"
                   } z-20 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 size-[var(--chrome-tile-size)] ${
-                    // <md 확장 INDEX(풀-블리드 시트) 동안 "?" 타일이 시트 위에
-                    // 떠서 겹쳤다(600×900 실측 y188) — 시트가 주 표면, 크롬
-                    // 강등(겹침 소탕 2026-07-23). md+ 는 md:flex 가 유지.
+                    // Below `md`, while the expanded INDEX is a full-bleed sheet, the "?"
+                    // tile floated on top of it and overlapped (measured at 600×900,
+                    // y188). The sheet is the primary surface, so the chrome demotes. At
+                    // `md`+ the `md:flex` keeps it.
                     topologyShortcutHelpPhoneVisible && renderedIndexState !== "expanded"
                       ? "flex"
                       : "hidden"
@@ -5595,20 +5627,20 @@ function HomePageImpl() {
                 </button>
                 </Tooltip>
               )}
-              {/* 설정 기어는 좌측 내비 레일 하단으로 이관됐다
-                  (feat/chrome-system — chrome-rail-combined.html). 죽은 "조절"
-                  패널 철거 후 우측 세로 레일은 지도 전용 3타일(전체보기/가이드
-                  투어/단축키, 2026-07-23 투어 타일 추가로 2→3 현행화)만. */}
+              {/* The settings gear moved to the bottom of the left nav rail. After the
+                  dead controls panel was removed, the right vertical rail holds only the
+                  map's three tiles: fit view, guided tour, and shortcuts. */}
               <HubRail
                 projects={renderProjects}
                 selectedSlug={canvasSelectedSlug}
                 onSelect={(slug) => handleSelect(slug)}
-                // Hero 패널이 펼쳐져 있을 때 겹침 방지. hero 가 Collapsed
-                // (pill) 이거나 drawer 상태면 Hub Rail 이 정상 노출.
+                // Prevents overlap while the hero panel is expanded; with the hero
+                // collapsed to a pill, or in the drawer state, the hub rail shows
+                // normally.
                 suppressed={!leftPanelCollapsed && !drawerOpen}
               />
-              {/* 지도 위 상단 중앙에서 아래로 내려앉는 빵부스러기 —
-                  등장 원점은 그 위쪽 가장자리다. */}
+              {/* The breadcrumb settles down from the top centre of the map, so its
+                  entrance origin is its own top edge. */}
               <Surface
                 open={localGraphStack.length > 0}
                 origin="top center"
@@ -5663,35 +5695,35 @@ function HomePageImpl() {
                   </button>
               </Surface>
 
-              {/* 필터 컨텍스트 — 현재 visible 노드 수가 전체보다 적으면 표시.
-                  로컬 그래프/카테고리 필터가 노드를 줄였을 때 컨텍스트를 주는 칩. */}
+              {/* Filter context: shown when fewer nodes are visible than exist, so the
+                  local graph or a category filter having reduced them is explained. */}
               {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
                 <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
                   filter · {topologyVisibleCount} / {localGraphProjects.length}
                 </div>
               ) : null}
 
-              {/* 매칭 0건 empty state */}
+              {/* Zero-match empty state. */}
               {topologyOverlayState.kind === "filter-empty" ? (
                 <TopologyNoMatchesState onClearFilters={clearTopologyFilters} />
               ) : null}
 
-              {/* 우하단 계기 스택 — 관계선 범례(상시, W3 분석 보기 은퇴로
-                  TopologyAnalysisBar overview 모드에서 이관)가 위, root-first-open
-                  v3 계기 판독(FirstRunReadout, 정적 모드일 때만 자체 렌더)이 아래.
-                  같은 계기 판독 문법을 공유하되 가시성 조건은 서로 다르다.
+              {/* The bottom-right instrument stack: the relation legend on top (always
+                  present) and the first-run readout below it (which renders itself only
+                  in static mode). They share the instrument-readout grammar but have
+                  different visibility conditions.
 
-                  S3 마감 폴리시 (fable 설계) — 두 줄이 같은 계기 문법(mono 9px
-                  quaternary)이라 gap 이 좁으면 한 덩어리로 뭉쳐 보인다. gap-3 로
-                  줄 간 분리를 확실히 해 어떤 줌 상태의 문구 길이에서도 범례와
-                  판독이 겹쳐 읽히지 않게 한다. 코너 inset 은 orphan 이던
-                  `--topology-relation-legend-inset` 토큰(base 24px, ≥1920 32px)에
-                  연결 — ≥1920 에서 나머지 크롬이 1.15 로 커질 때 이 스택도 코너에서
-                  더 물러나 지도 라벨과 충돌하지 않는다. */}
-              {/* 검수 1바퀴 결함 2 (2026-07-23) — 우측 데이터시트가 열리면 이
-                  코너 스택(범례+판독)이 패널 뒤·왼편으로 파편처럼 비쳐 보였다
-                  (4개 로케일×해상도 전 조합 재현). 앰비언트 정보라 조사 중엔
-                  필요 없으므로 패널이 열려 있는 동안 조용히 사라진다. */}
+                  Both lines use the same grammar (mono, 9px, quaternary), so a narrow gap
+                  makes them read as one block; `gap-3` keeps them separate at any zoom
+                  state and label length. The corner inset hangs off the
+                  `--topology-relation-legend-inset` token (24px base, 32px at ≥1920), so
+                  when the rest of the chrome scales up at ≥1920 this stack also retreats
+                  further from the corner and never collides with map labels.
+
+                  It disappears while the datasheet is open (2026-07-23 review): with the
+                  right-hand panel up, this stack showed through beside and behind it as
+                  fragments, reproduced across every locale × resolution combination. It is
+                  ambient information and not needed mid-investigation. */}
               <div
                 ref={legendStackRef}
                 data-testid="topology-legend-stack"
@@ -5706,59 +5738,63 @@ function HomePageImpl() {
                   projectCount={firstRunProjectCount}
                   domainCount={indexDomainCount}
                   tier={mapZoomTier}
-                  // P1 결함①b — plain 모드는 element 티어에 절대 도달하지
-                  // 않으므로(PLAIN_TIER_REVEAL) tier 기반 힌트 드롭 로직이
-                  // 항상 거짓을 말했다. plain 문구로 치환.
+                  // Plain mode can never reach the element tier (`PLAIN_TIER_REVEAL`), so
+                  // the tier-based hint-drop logic always stated something false there.
+                  // It uses the plain wording instead.
                   audiencePlain={audiencePlain}
                 />
-                {/* 프레임 계기 — 기본 꺼짐, 설정 →「지도」에서 켠다.
-                    새 구석을 만들지 않고 **이미 계기 판독이 사는 스택**의 마지막
-                    줄로 들어간다. 같은 성격의 읽을거리를 다른 자리에 두면 눈이
-                    한 번 더 훑어야 하고, 그게 이 저장소가 경계하는 「과업이 더
-                    명확해지지 않는 새 크롬」이다. */}
-                {/* 활동 줄은 여기 살지 않는다 (2026-08-17 소유자 지시로 옮김).
+                {/* Frame meter: off by default, switched on in settings. It joins the
+                    stack where instrument readouts **already live** as its last line
+                    rather than claiming a new corner — putting readings of the same kind
+                    somewhere else makes the eye sweep twice, which is the "new chrome that
+                    makes no task clearer" this repo guards against. */}
+                {/* The activity row does not live here (moved by owner instruction,
+                    2026-08-17).
 
-                    **옛 근거와 무엇이 달라졌나.** 이 자리를 고른 실측은
-                    「상단 **중앙** 상태 열」과의 비교였다: 1024 에서 그 열은
-                    INDEX 오른끝과 69px 뿐인데 칩이 194px 이라 32px 겹쳤고, 우상단
-                    유틸 레인도 **같은 줄**에는 28px 밖에 안 남았다. 지금 자리는
-                    그 둘 중 어느 쪽도 아니다 — 유틸 레인의 **아래 줄**이라
-                    가로로 다툴 상대가 애초에 없다(오른쪽 정렬이라 왼쪽 빈 지도로
-                    자란다). 그래서 옛 측정이 이 자리를 반증하지 않는다.
+                    **What changed about the old reasoning.** The measurement that chose
+                    this spot compared it with the top **centre** status row: at 1024 that
+                    row had only 69px to INDEX's right edge while the chip was 194px, so
+                    they overlapped by 32px, and the top-right utility lane had only 28px
+                    left **on the same line**. The current position is neither of those —
+                    it is the **line below** the utility lane, so there is nothing to
+                    compete with horizontally (right-aligned, it grows leftwards into empty
+                    map). The old measurement therefore does not refute this spot.
 
-                    토스트는 이 스택의 실제 rect 를 읽어 비켜서므로
-                    (`resolveToastBottomOffsetForStack` + ResizeObserver) 줄이
-                    하나 빠지면 저절로 그만큼 내려온다 — 손댈 값이 없다. */}
+                    Toasts read this stack's actual rect and step aside
+                    (`resolveToastBottomOffsetForStack` plus a ResizeObserver), so removing
+                    a line moves them down by exactly that much with no value to adjust. */}
                 <FrameMeter />
               </div>
 
-              {/* 샘플 모드 첫 방문 1회성 지도 힌트 — 하단 중앙, pointer-events-none
-                  이라 노드 클릭을 막지 않는다(통과 클릭 = 소멸). 첫 노드 선택 시
-                  영구 소멸(localStorage). 소스: features/first-run-starter. */}
-              {/* 실재가 확인된 선택만 학습 완료로 친다 — 유령 슬러그가 첫 방문
-                  힌트를 영구 소멸시키던 자리(`resolvedSelectionSlug` 주석). */}
+              {/* One-time first-visit map hint in sample mode, bottom centre. It is
+                  `pointer-events-none`, so it never blocks a node click — a click passing
+                  through it dismisses it, and the first node selection dismisses it for
+                  good (localStorage). Source: `features/first-run-starter`.
+                  Only a selection confirmed to exist counts as learned — a ghost slug used
+                  to dismiss this hint permanently (see `resolvedSelectionSlug`). */}
               <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open} />
 
-              {/* E-1c — 미지원 브라우저에서 크롬 타일/⌘O 가 부르는 정직한 안내.
-                  지원 브라우저에서는 열리지 않으므로 숙련 사용자의 직행 경로
-                  (타일 → OS 선택창)는 그대로다. */}
+              {/* The honest notice the chrome tile and ⌘O raise on an unsupported
+                  browser. It never opens on a supported one, so an experienced user's
+                  direct path (tile → OS picker) is unchanged. */}
               <VaultOpenGuideSheet
                 open={unsupportedGuideOpen}
                 unsupported
                 onClose={() => setUnsupportedGuideOpen(false)}
               />
 
-              {/* 샘플에서 「최근 변경」을 눌렀을 때 — 막다른 곳 대신 폴더로 가는 길.
-                  `requestVaultOpen` 을 그대로 쓴다: 첫 실행 카드의 「내 폴더 열기」와
-                  **같은 핸들러**여야 미지원 브라우저 분기도 한 번만 존재한다. */}
+              {/* Pressing recent changes on the sample: a route to a folder instead of a
+                  dead end. It reuses `requestVaultOpen` — the **same handler** as the
+                  first-run card's open-folder action — so the unsupported-browser branch
+                  exists in exactly one place. */}
               <RecentChangesNeedsVaultDialog
                 open={recentNeedsVaultOpen}
                 onClose={() => setRecentNeedsVaultOpen(false)}
                 onOpenVault={requestVaultOpen}
               />
 
-              {/* 같은 골격, 다른 사유 — 「예시라 고칠 수 없다」는 「날짜가 무관하다」와
-                  다른 문장이어야 한다. */}
+              {/* Same skeleton, different reason: "this is a sample and cannot be edited"
+                  has to be a different sentence from "these dates are not yours". */}
               <RecentChangesNeedsVaultDialog
                 open={createNeedsVaultOpen}
                 copyKey="createNeedsVault"
@@ -5768,8 +5804,8 @@ function HomePageImpl() {
 
             </>
         </div>
-        {/* 상단에서 내려앉는 경보 띠 — 문구는 퇴장 창 동안 붙들어야 «사라지는
-            중에 빈 띠» 가 되지 않는다. */}
+        {/* The alert band settles down from the top. Its text must be held through the
+            exit window or it becomes an empty band while leaving. */}
         <Surface
           open={Boolean(projectsError)}
           origin="top center"
@@ -5809,11 +5845,11 @@ function HomePageImpl() {
             containerLabel={null}
           />
         ) : null}
-        {/* rank2 — presence 게이트: `panelOpen` 이 꺼져도 퇴장 애니가 끝날
-            때까지(≈140ms) mounted 유지. 그 동안 `panelDatasheetModel`(마지막
-            모델 retain)로 같은 내용을 계속 그리며 `.topology-chrome-out` 으로
-            접힌다. 창의 주인은 패널 안의 `<Surface>` 이고, 이 게이트는 그
-            창이 끝났다는 통보(`onExited`)에 맞춰 포지셔너를 내린다. */}
+        {/* Presence gate: even after `panelOpen` goes false, this stays mounted until the
+            exit animation finishes (~140 ms), drawing the same content from the retained
+            `panelDatasheetModel` as it folds away. The window belongs to the `<Surface>`
+            inside the panel; this gate only takes the positioner down when that surface
+            reports `onExited`. */}
         {nodePanelMounted && panelDatasheetModel ? (
           <div
             ref={nodePopoverPositionerRef}
@@ -5825,10 +5861,10 @@ function HomePageImpl() {
             data-selected-inspector-gutter-contract="no-phantom-utility-rail"
             data-position-top-token="--topology-node-popover-top"
             data-position-right-inset-token="--topology-node-popover-right-inset"
-            // `topology-ui-scale` 은 Tailwind variant 대상이 아닌 plain CSS
-            // 클래스라 항상 붙인다(zoom:1 기본, ≥1920px/≥2400px 에서만
-            // 실제 zoom) — 브랜드 pill 과 같은 비율로 커져야 --topology-
-            // index-top 과의 겹침 회피 gap 이 그 폭에서도 유지된다.
+            // `topology-ui-scale` is a plain CSS class, not a Tailwind variant, so it is
+            // always applied (zoom 1 by default, real zoom only at ≥1920px / ≥2400px). It
+            // must scale at the same ratio as the brand pill or the clearance against
+            // `--topology-index-top` stops holding at those widths.
             className="topology-ui-scale fixed inset-x-3 top-[72px] z-30 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
             <div className="grid">
@@ -5862,16 +5898,12 @@ function HomePageImpl() {
                   domainLabel: t("nodeDatasheet.domainLabel"),
                   poweredOn: t("nodeDatasheet.poweredOn"),
                   poweredOff: t("nodeDatasheet.poweredOff"),
-                  // P1a-1 (persona 실측 N5): usedBy 는 DIRECTION 집계라 단일
-                  // 관계 타입이 없어 그대로 자체 i18n 키를 쓴다. dependsOn/
-                  // evidence 는 각각 `depends_on`/`describes` 타입과 1:1
-                  // 대응해 공유 사전(`useRelationVocabulary`) plain 레지스터로
-                  // 옮겨 지도/빌더와 같은 단어(의미)를 한 곳에서 관리한다 —
-                  // 문구 값 자체는 기존과 동일("기대는 곳"/"근거"), 드리프트
-                  // 방지가 목적.
-                  // M-2 — "담는 것" from the shared relation vocabulary (plain
-                  // register), same source as depends_on/describes below so the
-                  // typed groups read in one consistent word family.
+                  // `usedBy` aggregates a direction rather than one relation type, so it
+                  // keeps its own i18n key. `contains`, `dependsOn`, `belongsTo`, and
+                  // `evidence` map 1:1 onto relation types and come from the shared
+                  // vocabulary's plain register, so the map, the editor, and this panel
+                  // manage the same word in one place. The wording is unchanged; the point
+                  // is preventing drift.
                   metricContains: relationVocabulary("contains", "plain"),
                   containsShowAll: t("nodeDatasheet.containsShowAll"),
                   groupShowMore: t("nodeDatasheet.groupShowMore"),
@@ -5880,14 +5912,12 @@ function HomePageImpl() {
                   containsOtherGroup: t("nodeDatasheet.containsOtherGroup"),
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
                   metricDependsOn: relationVocabulary("depends_on", "plain"),
-                  // "속한 곳" 도 공유 사전에서 — 전체 상세가 쓰는 단어와 같은
-                  // 출처라 두 표면이 같은 관계를 다르게 부를 수 없다.
                   metricBelongsTo: relationVocabulary("belongs_to", "plain"),
                   metricEvidence: relationVocabulary("describes", "plain"),
-                  // 시안 재설계 (2026-07-24) — 상단 평문 stats 라벨.
                   statsConnected: t("nodeDatasheet.statsConnected"),
                   statsEvidenceDocs: t("nodeDatasheet.statsEvidenceDocs"),
-                  // H1 B2/A — typed-fact 라벨 hover 풀이 + "직접" 연결 스코프 명시.
+                  // Hover explanations for the typed-fact labels, which also state that
+                  // the counts are "direct" connections only.
                   metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
                   metricUsedByHelp: t("nodeDatasheet.metricUsedByHelp"),
                   metricDependsOnHelp: t("nodeDatasheet.metricDependsOnHelp"),
@@ -5895,12 +5925,12 @@ function HomePageImpl() {
                   metricEvidenceHelp: t("nodeDatasheet.metricEvidenceHelp"),
                   metricHelp: t("nodeDatasheet.metricHelp"),
                   noConnections: t("nodeDatasheet.noConnections"),
-                  // R+ "코드 위치" — 실제 코드 근거(원문 파일 경로) 섹션.
+                  // 「코드 위치」 (Code locations): the actual code evidence — source file paths.
                   codeLocationsLabel: t("nodeDatasheet.codeLocationsLabel"),
                   codeLocationsCopyLabel: t("nodeDatasheet.codeLocationsCopyLabel"),
                   codeLocationsCopiedLabel: t("nodeDatasheet.codeLocationsCopiedLabel"),
-                  // rank7 (design-council B5) — DocFrontmatterBlock 과 같은
-                  // `editProvenance` 네임스페이스(단일 출처, drift 방지).
+                  // The same `editProvenance` namespace as `DocFrontmatterBlock` — one
+                  // source, no drift.
                   editSubjectPrefix: tEditProvenance("prefix"),
                   editSubjectAgent: tEditProvenance("subjectAgent"),
                   editSubjectHuman: tEditProvenance("subjectHuman"),
@@ -5919,8 +5949,9 @@ function HomePageImpl() {
                     : undefined,
                   actionPath: t("nodeDatasheet.actionPath"),
                   actionRealm: t("realm.enterAction"),
-                  // 결과-설명 툴팁 (소유자 승인) — 라벨 반복이 아닌 "누르면
-                  // 무엇이 되는가" 평문. 영역 전개는 기존 궤도 버튼 툴팁 재사용.
+                  // Outcome tooltips (owner-approved): plain "what happens if you press
+                  // this", never a repeat of the label. Entering a realm reuses the orbit
+                  // button's existing tooltip.
                   actionDocumentTip: t("nodeDatasheet.actionDocumentTip"),
                   actionEditRelationsTip: t("nodeDatasheet.actionEditRelationsTip"),
                   actionCopyHandoffTip: t("nodeDatasheet.actionCopyHandoffTip"),
@@ -5962,24 +5993,24 @@ function HomePageImpl() {
                   }
                 }
                 /*
-                 * 「이어서 새로 만들기」 — **도메인 노드에서만** 넘긴다.
+                 * "Create one from here" is passed **only on a domain node**.
                  *
-                 * 도메인→역량은 새 문서의 `domain:` 키 하나로 이어지므로 쓰기
-                 * 의미를 새로 만들 필요가 없다. 다른 조합(역량→요소 등)은 부모
-                 * 문서의 목록을 고쳐야 해서 «만들기»가 아니라 «남의 문서 수정»
-                 * 이 된다 — 그건 다른 일이고, 못 하는 자리에 문을 그리면 그게
-                 * 거짓 어포던스다.
-                 */
-                /*
-                 * 샘플에서도 **보인다** (2026-08-03 소유자 지시: *"샘플 모드에서도
-                 * 일단 보이게 하고 누르면 폴더 연결시키는 flow"*).
+                 * Domain → capability is expressed by one `domain:` key in the new
+                 * document, so no new write semantics are needed. Other combinations
+                 * (capability → element, say) require editing the parent document's list,
+                 * which makes it *editing someone else's document* rather than *creating*
+                 * — a different act, and drawing a door where that cannot happen is a
+                 * false affordance.
                  *
-                 * 종전엔 `canCreateNode` 가 false 면 이 타일이 통째로 사라졌다.
-                 * 그래서 소유자가 *"여기서 바로 노드 등록하는거 왜 사라짐?"* 이라고
-                 * 물었다 — 잠긴 기능이 조용히 없어지면 「있었나?」가 된다. 같은
-                 * 패턴을 「최근 변경」에서 이미 한 번 고쳤다.
-                 *
-                 * 이제 자리를 지키고, 누르면 **폴더로 가는 길**을 준다.
+                 * It is **visible on the sample too**. Owner, 2026-08-03: *"샘플 모드에서도
+                 * 일단 보이게 하고 누르면 폴더 연결시키는 flow"* (show it in sample mode
+                 * as well, and have pressing it lead into connecting a folder). Previously
+                 * the tile vanished entirely when `canCreateNode` was false, which is why
+                 * the owner asked *"여기서 바로 노드 등록하는거 왜 사라짐?"* (why did
+                 * creating a node right here disappear?) — a locked feature that quietly
+                 * goes away becomes "was that ever there?". The same pattern was already
+                 * fixed once on the recent-changes chip. Now the place stays and pressing
+                 * it offers **the route to a folder**.
                  */
                 onCreateLinked={
                   canvasSelectedGraphNode?.kind === "domain" && !canCreateNode
@@ -5995,8 +6026,8 @@ function HomePageImpl() {
                       }
                     : undefined
                 }
-                // 에이전트 표면이 없는 환경(웹)에서는 주입하지 않는다 — 타일도
-                // 함께 사라진다. 열리지 않을 문을 그리지 않는다.
+                // Not injected where there is no agent surface (the web), so the tile goes
+                // with it. No door is drawn that will not open.
                 onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
                 onClose={handleDatasheetClose}
                 onSetPathSource={() => handleSetPathSource(panelDatasheetModel.nodeId)}
@@ -6012,8 +6043,9 @@ function HomePageImpl() {
                   ? handleProjectSourceAction
                   : undefined}
                 onEnterRealm={
-                  // S4 — 컨테이너 노드(자식 있음)이며 영역 밖일 때만 2차 발견
-                  // 경로를 노출한다. leaf/이미 영역 안이면 omit → 버튼 미표시.
+                  // The secondary discovery path is offered only for a container node
+                  // (one with children) outside any realm. For a leaf, or when already
+                  // inside a realm, it is omitted and no button renders.
                   resolvedRealmSlug === null && panelDatasheetModel.groups.contains.total > 0
                     ? () => handleEnterRealm(panelDatasheetModel.nodeId)
                     : undefined
@@ -6023,8 +6055,8 @@ function HomePageImpl() {
                     ? () => setFullDetailSlug(selectedOntologyNode.id)
                     : undefined
                 }
-                // 슬라이스 C — 비개발(plain) 모드는 인계 복사 타일 + 원문
-                // 경로 서브라인(슬라이스 B)을 개발자 크롬으로 간주해 숨긴다.
+                // Plain mode treats the handoff-copy tile and the source-path subline as
+                // developer chrome and hides them.
                 showHandoff={!audiencePlain}
                 showSourcePath={!audiencePlain}
                 className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
@@ -6051,10 +6083,10 @@ function HomePageImpl() {
             </div>
           </div>
         ) : null}
-        {/* P3b — 엣지 팝오버: 노드 팝오버와 같은 포지셔너 계약, 배타 렌더. */}
-        {/* 노드 포커스(팝오버) 중에도 렌더 — 사용자 실보고 "노드 클릭한
-            상태에선 선 호버 툴팁이 안 나온다". 엣지 팝오버와만 상호배제
-            (같은 의미의 중복 표면 금지). */}
+        {/* The edge hover card renders even while a node has focus — user report: "with
+            a node clicked, hovering a line shows no tooltip". It is mutually exclusive
+            with the edge popover only, since that would be two surfaces for the same
+            meaning. */}
         {hoverEdgeCardModel && !selectedEdge && !createNodeOpen ? (
           <TopologyV2EdgeHoverCard
             sentence={hoverEdgeCardModel.sentence}
@@ -6065,8 +6097,9 @@ function HomePageImpl() {
             y={hoverEdgeCardModel.y}
           />
         ) : null}
-        {/* S2 파트 5C — 클러스터 칩 호버 툴팁. 엣지 카드/노드 생성과 상호배제
-            (칩 호버 시 포인터 핸들러가 엣지 호버를 이미 해제하지만 방어). */}
+        {/* Cluster-chip hover tooltip, mutually exclusive with the edge card and the
+            create composer. (The pointer handler already clears the edge hover when a
+            chip is hovered; this is belt and braces.) */}
         {clusterHoverCardModel && !hoverEdgeCardModel && !createNodeOpen ? (
           <TopologyV2ClusterHoverCard
             sentence={clusterHoverCardModel.sentence}
@@ -6074,9 +6107,9 @@ function HomePageImpl() {
             y={clusterHoverCardModel.y}
           />
         ) : null}
-        {/* 퇴장을 갖는다 — 종전엔 닫는 순간 1프레임에 사라졌다(등장만 있고
-            나가는 길이 없었다). `Surface` 가 퇴장 창·퇴장 클래스·`inert` 를 지고
-            `useHeldValue` 가 그 창 동안 모델을 붙든다. */}
+        {/* This one has an exit: it used to vanish in one frame on close, having an
+            entrance and no way out. `Surface` owns the exit window, the exit class, and
+            `inert`, while `useHeldValue` holds the model through it. */}
         {heldEdgePanelModel ? (
           <Surface
             open={edgePanelOpen}
@@ -6127,10 +6160,10 @@ function HomePageImpl() {
             />
           </Surface>
         ) : null}
-        {/* 엣지 패널과 같은 골격 — 붙든 모델이 한 번 생기면 자리를 지키고,
-            보이는지는 `Surface` 의 `open` 이 정한다(닫혀 있으면 `null` 을
-            그리므로 DOM 비용 0). 별도 마운트 플래그를 두면 effect 안에서
-            setState 를 하게 되고 그건 연쇄 렌더다. */}
+        {/* Same skeleton as the edge panel: once a held model exists the slot stays, and
+            `Surface`'s `open` decides visibility (closed, it renders `null`, so the DOM
+            cost is zero). A separate mount flag would mean calling setState inside an
+            effect, which is a cascading render. */}
         {heldContextMenu ? (
           <TopologyV2ContextMenu
             open={Boolean(contextMenuNode && contextMenuModel)}
@@ -6163,10 +6196,11 @@ function HomePageImpl() {
             onClose={closeContextMenu}
           />
         ) : null}
-        {/* 전면 표면 — **밝기 전용**(`motion="overlay"`). 종전엔 `map-overlay-in`
-            을 손으로 붙여 들어오는 길만 있었고, 닫으면 화면 전체가 1프레임에
-            사라졌다(지도가 200ms 를 받는 동안 주인공이 0프레임). `Surface` 가
-            같은 문법의 나가는 길(`map-overlay-out`)·`inert`·퇴장 창을 진다. */}
+        {/* Full-bleed surface, **opacity only** (`motion="overlay"`). It used to have
+            `map-overlay-in` applied by hand and therefore only a way in; closing made the
+            whole screen vanish in one frame, giving the protagonist zero frames while the
+            map got 200 ms. `Surface` now owns the matching way out (`map-overlay-out`),
+            `inert`, and the exit window. */}
         {heldFullDetailA1Model && FullDetailCard ? (
           <Surface
             open={fullDetailOpen && fullDetailA1Model !== null}
@@ -6198,12 +6232,12 @@ function HomePageImpl() {
             />
           </Surface>
         ) : null}
-        {/* 헤더 "Concept search" 버튼 · ⌘K · ⇧⌘K 공용 단일 팔레트 —
-            ontology 노드 + 프로젝트 통합 검색 (persona-P1). 노드 선택도
-            프로젝트 선택도 handleSelect 로 흘려 지도 위 선택 상태만 바꾼다 —
-            기본값(onSelectNode 미제공 시 `/ontology/?node=` 로 push)을 쓰면
-            지도를 벗어나므로 반드시 override. controlled (open/onOpenChange)
-            — hotkey 는 위 useTypingShortcuts 가 관리. */}
+        {/* The one palette shared by the header search button, ⌘K, and ⇧⌘K (ontology
+            nodes + projects). Both node and project selections go through `handleSelect`
+            so only the map's selection changes; the default (pushing to `/ontology/?node=`
+            when `onSelectNode` is absent) would leave the map, so the override is
+            mandatory. Controlled through `open`/`onOpenChange`; the hotkeys are managed by
+            `useTypingShortcuts` above. */}
         <MountedGlobalSearch
           open={!createNodeOpen && ontologySearchOpen}
           onOpenChange={(next) => {
@@ -6236,17 +6270,17 @@ function HomePageImpl() {
           onActivateAnchor={tourAnchorNodeId ? activateTourAnchor : undefined}
         />
       </div>
-      {/* 지도 컬럼과 **같은 flex row** 의 형제 — 폭 애니메이션 하나가 두
-          컬럼을 함께 움직이므로 지도 축소와 패널 진입이 같은 프레임, 같은
-          곡선이 된다. 따로 맞춘 두 애니메이션이 아니라 물리적으로 하나다. */}
+      {/* A sibling in the **same flex row** as the map column, so one width animation
+          moves both: the map narrowing and the panel arriving share a frame and a curve.
+          Not two animations tuned to match — physically one. */}
       {llmBridgeAvailable ? (
         <VaultAgentPanel
           /*
-           * 주소가 「이 개념을 물어보라」 를 들고 있으면 그것만으로 열린다.
+           * A URL carrying "ask about this concept" is enough to open it.
            *
-           * ⚠️ **코딩 에이전트 갈래가 창을 갖고 있으면 이쪽은 열리지 않는다** —
-           * 대화창은 하나다(2026-08-16). 이 조건이 없으면 주소로 들어온 요청이
-           * 두 번째 창을 띄운다.
+           * ⚠️ **It does not open while the coding-agent branch holds the panel** —
+           * there is one chat panel (2026-08-16). Without this condition a request
+           * arriving in the URL raises a second one.
            */
           open={keyChatOpen}
           onClose={closeVaultAgent}
@@ -6256,22 +6290,22 @@ function HomePageImpl() {
           screenContext={vaultAgentScreenContext}
           vaultIsGit={false}
           canWrite={vault.status === "loaded" && Boolean(vault.handle)}
-          // 칩 → 노드 포커스는 지도 노드 클릭과 **같은 함수**를 탄다 — 같은
-          // 동작이 다른 모션으로 보이면 그것이 결함이다.
+          // A chip focusing a node goes through the **same function** as clicking a node
+          // on the map: the same action appearing with different motion is a defect.
           onFocusNode={(slug) => handleSelect(slug)}
-          // 폴더가 없는 상태에도 문을 준다 — 상단 유틸 레인의 「내 데이터로
-          // 전환」과 **같은 함수**를 탄다(두 번째 열기 경로를 만들지 않는다).
+          // A door even with no folder open, through the **same function** as the utility
+          // lane's "switch to my data" — no second open path is created.
           onOpenFolder={() => void vault.open()}
           downloadHref={`/${activeLocale}/download/`}
           prefillRequest={vaultAgentPrefill ?? askPrefill}
         />
       ) : null}
       {/*
-        앱 안에서 **사용자의 코딩 에이전트**와 나누는 대화. 위 패널(키를 넣는
-        갈래)과 **같은 자리의 형제**다 — 새 표면을 만들지 않는다.
+        The in-app conversation with **the user's own coding agent**. A sibling in the
+        same slot as the panel above (the API-key branch) — no new surface.
 
-        「지도가 주」(2026-07-27 적용 규칙)는 그대로다: 이 패널은 지도 옆에
-        서고, 지도를 덮지 않는다.
+        The rule that the map comes first still holds: this panel stands beside the map
+        and never covers it.
       */}
       {gitVaultPath ? (
         <div
@@ -6280,15 +6314,17 @@ function HomePageImpl() {
           style={{
             width: acpDockFrameOpen ? `${chatWidth.width}px` : "0px",
             transitionProperty: "width",
-            // 키 갈래 `VaultAgentPanel`과 같은 역할·같은 클럭. 두 대화창이
-            // 갈래에 따라 서로 다른 속도로 지도를 밀면 한 문이라는 뜻이 깨진다.
+            // Same role and same clock as the key branch's `VaultAgentPanel`. If the two
+            // chat panels pushed the map at different speeds, "one door" would stop being
+            // true.
             transitionDuration: "var(--agent-panel-reflow-duration)",
             transitionTimingFunction: "var(--topology-motion-ease-out)",
           }}
           onTransitionEnd={(event) => {
             if (event.target !== event.currentTarget || event.propertyName !== "width") return;
-            // 공간이 먼저 자리를 잡은 뒤 세션을 띄운다. ACP 프로세스 시작이
-            // WebKit main thread를 잠깐 점유해도 이미 끝난 layout 모션은 안 끊긴다.
+            // Let the space settle first, then start the session. Even if starting the
+            // ACP process briefly occupies the WebKit main thread, a layout motion that
+            // has already finished cannot stutter.
             if (acpDockFrameOpen && !acpChatOpen) setAcpChatOpen(true);
           }}
           className="relative min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
@@ -6299,32 +6335,33 @@ function HomePageImpl() {
             as="aside"
             origin="right"
           /*
-           * ⚠️ **여기가 죽은 코드였다** (2026-08-16 검수에서 적발).
+           * ⚠️ **This used to be dead code** (caught in the 2026-08-16 review).
            *
-           * 종전에는 이 블록의 마운트 조건과 `open` 이 **같은 값**이었다. 그래서
-           * 닫기를 누르면 같은 프레임에 통째로 사라졌고, 퇴장 애니메이션은 한
-           * 번도 재생된 적이 없으며 이 콜백도 불린 적이 없다 — 「사라지는 동안」
-           * 이 존재하지 않았다.
+           * The mount condition for this block and `open` were **the same value**, so
+           * pressing close made it disappear whole in the same frame: the exit animation
+           * never once played and this callback was never called — there was no "while
+           * it leaves".
            *
-           * 마운트와 열림을 갈라 둔다: 열 때 마운트하고, 다 사라진 뒤에 언마운트.
-           * 이 저장소가 표면마다 지키는 「퇴장은 두 프레임짜리 일」 그대로다.
+           * Mount and open are now separate: mount on open, unmount once it has fully
+           * left. That is this repo's per-surface rule that an exit is a two-frame job.
            */
           onExited={() => setChatMounted(false)}
           /*
-           * ⚠️ 종전 폭은 `var(--topology-agent-panel-width, 360px)` 였는데 **그
-           * 토큰은 존재하지 않는다** — 늘 폴백 360px 이 쓰였고, 아무도 안 쓰는
-           * 토큰 이름이 규격처럼 보이고 있었다(`design.md`: 아무도 안 쓰는
-           * 토큰은 규격이 아니라 틀린 정보다).
+           * ⚠️ The width used to be `var(--topology-agent-panel-width, 360px)`, and **that
+           * token does not exist** — the 360px fallback was always what applied, while a
+           * token name nobody used looked like a spec (`.claude/rules/design.md`: a token
+           * nobody uses is not a spec, it is wrong information).
            *
-           * 그다음 폭은 `w-[420px] xl:w-[480px]` 두 리터럴이었다. 그 둘도
-           * **누구의 답도 아니었다** — 이제 사용자가 왼쪽 모서리를 끌어 정하고,
-           * 우리는 지도가 지켜야 할 몫만 지킨다(`panel-width.ts`). 화면 폭에
-           * 따른 분기가 사라지므로 `xl:` 도 없앤다.
+           * After that it was two literals, `w-[420px] xl:w-[480px]`, and neither was
+           * **anybody's answer**. Now the user drags the left edge to decide, and we only
+           * enforce the share the map must keep (`panel-width.ts`). With no
+           * viewport-width branch left, the `xl:` goes too.
            */
             style={{ width: chatWidth.width }}
             /*
-             * 고정 폭 내용은 오른쪽에 붙이고, 바깥 frame만 0→저장 폭으로 연다.
-             * 내용 폭까지 매 프레임 바꾸면 문장이 계속 다시 줄바꿈돼 더 버벅인다.
+             * The fixed-width content is pinned right and only the outer frame animates
+             * from 0 to the stored width. Animating the content width every frame would
+             * re-wrap the text continuously and stutter more.
              */
             className="absolute inset-y-0 right-0 flex min-h-0 shrink-0 flex-col bg-[color:var(--color-panel)] p-4"
           >
@@ -6335,9 +6372,9 @@ function HomePageImpl() {
           />
           <AcpChatPanel
             /*
-             * 실행기를 바꾸면 **패널을 다시 만든다.** 세션은 프로세스 하나에
-             * 묶여 있어서, 같은 패널에서 도구만 갈아 끼우면 「지금 무엇이
-             * 살아 있나」가 흐려진다. 다시 만드는 편이 싸고 분명하다.
+             * Changing the runtime **rebuilds the panel.** A session is bound to one
+             * process, so swapping only the tool inside the same panel blurs "what is
+             * alive right now". Rebuilding is cheaper and unambiguous.
              */
             key={acpRuntime.id}
             runtimeId={acpRuntime.id}
@@ -6346,7 +6383,8 @@ function HomePageImpl() {
             onRuntimeChange={setAcpRuntimeId}
             vaultRoot={gitVaultPath}
             mcpServers={acpMcpServers}
-            // 노드에서 건너온 문장은 **여기** 작성 칸에 앉는다 — 보내지는 않는다.
+            // A sentence handed over from a node lands in **this** composer; it is not
+            // sent.
             prefillRequest={vaultAgentPrefill ?? askPrefill}
             suggestions={chatSuggestions}
             knownSlugs={chatKnownSlugs}
@@ -6364,9 +6402,9 @@ function HomePageImpl() {
 }
 
 /**
- * 같은 「말로 시키기」 요청이면 같은 값 — 패널이 초안을 다시 앉히는 것은
- * 요청이 **달라졌을 때**뿐이어야 한다. 시각(Date.now)을 쓰면 렌더마다 값이
- * 달라져 사용자가 고쳐 쓰던 문장을 덮는다.
+ * The same ask request gives the same value: the panel must reseat the draft only when
+ * the request **differs**. Using a timestamp would change the value every render and
+ * overwrite the sentence the user was editing.
  */
 function hashAskRequest(kind: string, ref: string): number {
   const source = `${kind}:${ref}`;

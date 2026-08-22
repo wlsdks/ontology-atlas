@@ -40,9 +40,9 @@ describe("computeFreshnessSummary", () => {
     expect(row.weeks).toHaveLength(12);
     expect(row.weeks[11].isCurrentWeek).toBe(true);
     expect(row.weeks[11].level).toBeGreaterThanOrEqual(1);
-    // 셀 툴팁 진실원 — level 은 3에서 포화되므로 원본 건수도 함께 노출한다.
+    // The source of truth for the cell tooltip — `level` saturates at 3, so the raw count is exposed too.
     expect(row.weeks[11].count).toBe(1);
-    // domain-views 자신의 갱신(5/1, 11주 전)은 weeks[0] 버킷 — 중간 주는 0.
+    // domain-views' own update (5/1, 11 weeks ago) lands in the weeks[0] bucket — the weeks between are 0.
     expect(row.weeks[0].count).toBe(1);
     expect(row.weeks[5].count).toBe(0);
     expect(row.daysAgo).toBe(1);
@@ -129,9 +129,9 @@ describe("computeFreshnessSummary", () => {
     expect(summary.weeklyTotals.slice(0, 11).every((n) => n === 0)).toBe(true);
   });
   it("최근 갱신은 자기 문서를 가진 개념만 세운다 — 파생 이름은 접힌 근거 계층으로", () => {
-    // 파생 노드의 "갱신일" 은 자기 것이 아니라 자기를 인용한 문서의 mtime 이다.
-    // 두 파생(`.claude/` · `.codex/`)은 같은 제목이라 참조 원문 없이는 구별되지
-    // 않는다 — 그 값을 행에 실어야 두 줄이 다른 사실을 말한다.
+    // A derived node's "update date" is not its own but the mtime of the document that cited it.
+    // The two derived nodes (`.claude/` and `.codex/`) share a title and are indistinguishable
+    // without the reference string — carrying that value on the row is what makes the two lines state different facts.
     const nodes = [
       node("capability:written", "capability", {
         title: "Written by hand",

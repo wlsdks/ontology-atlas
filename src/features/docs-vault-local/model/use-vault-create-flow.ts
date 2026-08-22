@@ -14,13 +14,13 @@ export interface VaultCreateFlowVault {
 }
 
 /**
- * "새 vault 만들기" 액션 — 폴더 선택(open) 뒤 빈 폴더면 starter 를 시드
- * (scaffoldOntology) 한다. `FirstRunPage`(데스크톱 first-run) 와
- * `FirstRunChooser`(웹 root-first-open) 가 동일하게 재사용 — 새 파이프라인
- * 0, 결정 로직은 `vault-create-flow.ts` 의 순수 함수.
+ * The "create a new vault" action — after folder selection (open), an empty folder is seeded with the
+ * starter (scaffoldOntology). `FirstRunPage` (desktop first run) and `FirstRunChooser` (the web's
+ * root-first-open) reuse it identically — zero new pipeline, with the decision logic living as pure
+ * functions in `vault-create-flow.ts`.
  *
- * `starterLocale` 은 호출자가 화면 언어를 넘긴다 — 같은 "새 볼트 만들기" 가
- * 진입 경로에 따라 다른 언어의 볼트를 만들면 안 된다(흐름 점검 2026-07-26 D2).
+ * The caller passes the screen's language as `starterLocale` — the same "create a new vault" must not
+ * produce a vault in a different language depending on the entry path (walkthrough 2026-07-26).
  */
 export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: string) {
   const [createArmed, setCreateArmed] = useState(false);
@@ -39,8 +39,8 @@ export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: s
     if (!createArmed) return;
     const status = vault.status;
     const docCount = vault.manifest ? vault.manifest.docs.length : null;
-    // 렌더 직후 동기 setState 를 피하려고 microtask 로 미룬다 — 판정 입력은
-    // 이 effect 실행 시점 값으로 고정.
+    // Deferred to a microtask to avoid a synchronous setState straight after render — the decision
+    // inputs are pinned to the values at the time this effect ran.
     queueMicrotask(() => {
       if (shouldScaffoldAfterOpen({ createIntent: true, status, docCount })) {
         setCreateArmed(false);
@@ -48,9 +48,8 @@ export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: s
         vault
           .scaffoldOntology(starterLocale)
           .catch((err: unknown) => {
-            // '' (게 아니라 null) 로 "에러는 났지만 메시지가 없음" 을
-            // 표시 — 호출자(FirstRunPage 등)가 로케일별 fallback 문구를
-            // 채울 수 있게. null 은 "에러 없음".
+            // `''` (rather than null) marks "an error occurred but there is no message", so the caller
+            // (FirstRunPage and the like) can fill in a locale-specific fallback. null means no error.
             setActionError(err instanceof Error && err.message ? err.message : '');
           })
           .finally(() => setScaffolding(false));

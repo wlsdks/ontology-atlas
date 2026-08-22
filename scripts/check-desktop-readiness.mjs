@@ -4,11 +4,12 @@ import path from "node:path";
 
 const root = process.cwd();
 
-// 검사 대상 파일이 사라지면 raw ENOENT 스택트레이스로 죽지 않고 읽을 수 있는
-// 실패로 강등한다 — 크래시는 "게이트 실패"가 아니라 "게이트 부재"로 읽혀서,
-// 삭제된 `VaultToolsMenu.tsx` 를 계속 읽던 이 스크립트가 여러 머지 동안 조용히
-// 죽어 있었다 (opus5 검수 2026-07-25). 빈 문자열을 돌려주면 뒤따르는
-// `.includes(...)` 단언이 자연스럽게 실패해 어떤 계약이 깨졌는지도 함께 나온다.
+// A missing target file is downgraded to a readable failure rather than a raw
+// ENOENT stack trace: a crash reads as "no gate" instead of "gate failed", and
+// this script — still reading the deleted `VaultToolsMenu.tsx` — sat silently
+// dead across several merges (review 2026-07-25). Returning an empty string lets
+// the following `.includes(...)` assertion fail naturally, which also names which
+// contract broke.
 function readText(relativePath) {
   const absolute = path.join(root, relativePath);
   if (!fs.existsSync(absolute)) {
@@ -19,9 +20,9 @@ function readText(relativePath) {
 }
 
 /**
- * 디렉터리 아래 모든 `.md` 를 읽는다 — 볼트처럼 **파일 목록이 사람의 것이
- * 아닌** 표면을 검사할 때 쓴다. 파일명을 고정하면 볼트를 다시 지을 때마다
- * 게이트가 먼저 죽는다.
+ * Reads every `.md` under a directory — for surfaces like the vault where **the
+ * file list is not a human's to fix**. Pinning filenames means the gate dies
+ * first every time the vault is rebuilt.
  */
 function readVaultMarkdown(relativeDir) {
   const absolute = path.join(root, relativeDir);
@@ -61,10 +62,10 @@ function pass(message) {
   console.log(`✓ ${message}`);
 }
 
-// 산문 문서는 80열 랩이 걸려 같은 문장이 줄바꿈으로 쪼개진다. 문구 계약을
-// 검사할 때 줄바꿈·연속 공백을 한 칸으로 접어 "래핑 때문에 게이트가 깨지는"
-// 가짜 실패를 없앤다 (opus5 검수 — DESKTOP-MACOS.md 의 "separate GitHub\nPages
-// workflow" 가 정확히 그렇게 깨져 있었다).
+// Prose documents wrap at 80 columns, so one sentence is split across lines.
+// Folding newlines and runs of whitespace into a single space removes the false
+// "the gate broke because of wrapping" failure (review — DESKTOP-MACOS.md's
+// "separate GitHub\nPages workflow" was broken in exactly that way).
 function flow(text) {
   return text.replace(/\s+/g, " ");
 }
@@ -102,40 +103,43 @@ const architectureDoc = readText("docs/ARCHITECTURE.md");
 const developmentChecksDoc = readText("docs/DEVELOPMENT-CHECKS.md");
 const agentGraphWorkflowDoc = readText("docs/AGENT-GRAPH-WORKFLOW.md");
 const troubleshootingDoc = readText("docs/TROUBLESHOOTING.md");
-// npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27) 로 아카이브됐다. 게이트는
-// 그대로 둔다 — 이 문서가 살아 있는 한, 데스크톱 앱 경로를 지운 채 npm 경로만
-// 남기는 되돌림을 막는 기록으로 계속 쓸모가 있다.
+// Archived when the npm publishing plan was dropped (docs/DECISIONS.md
+// 2026-07-27). The gate stays: while this document lives it remains the record
+// that blocks a revert which deletes the desktop-app path and keeps only npm.
 const publishNpmDoc = readText("docs/archive/PUBLISH-NPM.md");
 const demoStoryboardDoc = readText("docs/launch/DEMO-GIF-STORYBOARD.md");
 const redditPostsDoc = readText("docs/launch/REDDIT-POSTS.md");
 /**
- * 도그푸드 볼트 **전체**. 파일명도 문장도 고정하지 않는다.
+ * The **whole** dogfood vault. Neither filenames nor sentences are pinned.
  *
- * [개정 2026-08-01] 종전에는 `capabilities/desktop-app-distribution.md` 와
- * `domains/onboarding-ux.md` **두 파일의 정확한 문장**을 핀했다. 볼트를 규격
- * 기준으로 0에서 다시 지으면서 두 파일이 모두 사라졌고, 게이트는 제품 결함이
- * 아니라 **자기 조준** 때문에 빨개졌다. 볼트는 에이전트가 자기 말로 쓰는
- * 표면이라 문장 핀은 원리적으로 유지 불가능하다 — 같은 뜻을 다른 문장으로
- * 쓰면 매번 게이트를 고쳐야 한다.
+ * [revised 2026-08-01] This used to pin **the exact sentences of two files**,
+ * `capabilities/desktop-app-distribution.md` and `domains/onboarding-ux.md`.
+ * Rebuilding the vault from zero against the spec removed both, and the gate went
+ * red because of **its own aim**, not a product defect. The vault is a surface
+ * agents write in their own words, so sentence pins are unmaintainable in
+ * principle — the same meaning in a different sentence means fixing the gate every
+ * time.
  *
- * 이 검사의 원래 목적은 「공유 온톨로지가 옛 hosted-workbench 프레이밍을
- * 보존하지 않는다」였다. 그건 **개념의 존재** 문제이지 문장의 문제가 아니므로,
- * 볼트 어딘가에 「데스크톱 앱 설치 결정」을 담은 노드가 있는지만 본다.
+ * The check's real purpose was "the shared ontology does not preserve the old
+ * hosted-workbench framing". That is a question of **whether a concept exists**,
+ * not of wording, so it only looks for a node somewhere in the vault carrying the
+ * desktop-app installation decision.
  */
 const vaultDocTexts = readVaultMarkdown("docs/ontology");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
 /**
- * 관문 상단 크롬 — 브랜드 이름이 실제로 그려지는 자리.
+ * The gateway's top chrome — where the brand name is actually drawn.
  *
- * ⚠️ 2026-07-30 이전에는 이 문자열이 `DownloadPage.tsx` 안에 있어서 아래 브랜드
- * 게이트가 그 파일 하나만 봐도 됐다. GNB 가 네 관문 주소(`/` · `/download` ·
- * `/guide` · `/changelog`)를 공유하게 되면서 `widgets/gateway-chrome` 으로
- * 내려갔고, 그 순간 게이트가 **화면에는 멀쩡히 있는 브랜드를 못 찾아** 빨개졌다.
- * 결함이 아니라 조준이 파일 경로에 묶여 있던 것이다 — 같은 날 지도 목적지
- * 게이트도 똑같은 이유로 터졌다(`map-destination-route.contract.test.ts`).
+ * ⚠️ Before 2026-07-30 this string lived in `DownloadPage.tsx`, so the brand gate
+ * below only had to read that one file. When the global nav started sharing four
+ * gateway addresses (`/` · `/download` · `/guide` · `/changelog`) it moved down
+ * into `widgets/gateway-chrome`, and the gate immediately went red **unable to
+ * find a brand that was plainly on screen**. Not a defect — the aim was tied to a
+ * file path. The map destination gate broke the same day for the same reason
+ * (`map-destination-route.contract.test.ts`).
  *
- * 그래서 **둘을 합쳐서** 본다. 브랜드가 판에 있든 크롬에 있든, 방문자가 보는
- * 화면에 있으면 통과다.
+ * So **both are read together**. Whether the brand sits in the page or in the
+ * chrome, being on the visitor's screen is a pass.
  */
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
@@ -172,17 +176,19 @@ const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surf
 const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools"];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
-// 문서함의 로컬 소스 컨트롤은 볼트 칩 메뉴가 이고 있다(2026-08-08 통합).
+// The docs surface's local-source control is carried by the vault chip menu
+// (merged 2026-08-08).
 const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
-// 구 `src/widgets/docs-vault/ui/VaultToolsMenu.tsx` 는 5164f68d7 (B2 — 문서함
-// vault 도구를 설정 메뉴로 합병) 에서 삭제됐다. 에이전트 셋업 표면은 설정 시트의
-// 드릴인 패널로 이사했으므로 게이트도 그쪽을 본다.
+// The old `src/widgets/docs-vault/ui/VaultToolsMenu.tsx` was deleted in 5164f68d7
+// (docs vault tools merged into the settings menu). The agent setup surface moved
+// to the settings sheet's drill-in panel, so the gate looks there.
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx");
 const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
-// 구 `LocalVaultPicker` 는 B2 병합 이후 어느 표면도 렌더하지 않는 고아였고
-// (#72), 그 표면(최근 볼트 회수 · 경로 복사 · Finder 열기)은 설정 시트의
-// [작업공간] 그룹으로 복원됐다. 게이트도 살아있는 쪽을 본다.
+// After that merge the old `LocalVaultPicker` was an orphan no surface rendered
+// (#72); its features (recent-vault recovery, copy path, open in Finder) were
+// restored into the settings sheet's workspace group. The gate looks at the live
+// one.
 const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologyStarterCta.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
 const localVaultHook = readText("src/features/docs-vault-local/model/use-local-vault.ts");
@@ -288,10 +294,11 @@ if (pkg.scripts?.["cli:mcp-verify"] && pkg.scripts?.["dogfood:agent-setup-gate"]
 if (
   agentGraphWorkflowDoc.includes("https://developers.openai.com/codex/mcp") &&
   agentGraphWorkflowDoc.includes("https://code.claude.com/docs/en/mcp") &&
-  // 이 게이트는 **경계가 어디인지**를 검사한다: Atlas 는 에이전트 루프/모델/키를
-  // 소유하지 않고, 창도 내주지 않는다 — 사용자 자신의 터미널로 인계한다.
-  // (같은 날 오전의 "Atlas hosts a terminal" 문장은 소유자 결정으로 번복됐고,
-  //  그 이력은 AGENT-GRAPH-WORKFLOW.md 의 번복 기록 절이 보관한다.)
+  // This gate checks **where the boundary is**: Atlas does not own the agent loop,
+  // the model, or the keys, and does not host a window — it hands off to the user's
+  // own terminal. (That morning's "Atlas hosts a terminal" wording was reversed by
+  // owner decision; the history is kept in AGENT-GRAPH-WORKFLOW.md's reversal
+  // section.)
   agentGraphWorkflowDoc.includes("does not reimplement Claude Code, Codex, or Cursor chat") &&
   agentGraphWorkflowDoc.includes("Atlas does not host a terminal; it hands off to yours") &&
   agentGraphWorkflowDoc.includes("Nothing runs on its own") &&
@@ -589,18 +596,20 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-hosted-download-surface.test.mjs") &&
   hostedDownloadSurfaceScript.includes("/ko/download/") &&
   hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/ontology-atlas/releases") &&
-  // 기대 문구를 검증기 안에 손으로 복제하면 페이지 카피가 바뀔 때마다
-  // 게이트가 조용히 빨간불이 된다(실제로 그랬다 — Pages 배포 5회 연속
-  // deploy 성공 + verify 실패). 진실원은 출고되는 메시지 카탈로그다.
+  // Copying the expected wording by hand into the verifier makes the gate go
+  // quietly red on every copy change — it did: five consecutive Pages deployments
+  // succeeded while verify failed. The source of truth is the shipped message
+  // catalogue.
   hostedDownloadSurfaceScript.includes('readFileSync(path.join(REPO_ROOT, "messages", "ko.json")') &&
-  // 게시 전/후 어느 release-facts 상태에서도 방문자가 결정할 것을 받는다 —
-  // 받을 파일이 있으면 파일, 없으면 오늘 당장 되는 브라우저 지도. 검증기는
-  // 두 분기를 같은 배포 계약으로 다룬다.
+  // In either release-facts state, published or not, the visitor gets something to
+  // decide on — a file if there is one to download, otherwise the browser map that
+  // works today. The verifier treats both branches as the same deployment contract.
   //
-  // 2026-08-19: 구 바늘 쌍(Windows 미서명 경고 · Windows 받기)은 설치 절이
-  // 삭제되며 페이지에서 사라졌다. 그리고 **정직성 사실의 마지막 자리**인
-  // 히어로 신뢰줄을 필수 바늘로 올린다 — 그 한 줄이 배포에서 빠지면 서명·
-  // 공증·「서버로 아무것도 안 보낸다」가 페이지에 하나도 없게 된다.
+  // 2026-08-19: the old needle pair (Windows unsigned warning, Windows download)
+  // left the page when the install section was deleted. The hero trust line is
+  // promoted to a required needle because it is **the last place the honesty facts
+  // live** — if that one line drops out of a deployment, signing, notarisation, and
+  // "nothing is sent to a server" appear nowhere on the page.
   hostedDownloadSurfaceScript.includes("downloadCopy.trustLine") &&
   hostedDownloadSurfaceScript.includes("downloadCopy.primaryCtaPublished") &&
   hostedDownloadSurfaceScript.includes("downloadCopy.webCta") &&
@@ -647,9 +656,10 @@ if (
   downloadReleaseVerifier.includes("do not match the tag version") &&
   downloadReleaseVerifier.includes("allowDraft") &&
   downloadReleaseVerifier.includes("per_page=100") &&
-  // 폴백은 **태그로** 초안을 찾는다. 그리고 프리릴리스 여부로 다시 거르지
-  // 않는다 — 호출자가 이름을 댔으면 무엇을 원하는지 이미 말했고, 거기서 한 번
-  // 더 거르면 RC 초안을 영영 검증할 수 없다(2026-07-27 v1.0.0-rc.1 실측).
+  // The fallback finds the draft **by tag**, and does not filter again on
+  // prerelease status — a caller who named the tag has already said what it wants,
+  // and filtering once more makes an RC draft impossible to verify (measured on
+  // v1.0.0-rc.1, 2026-07-27).
   downloadReleaseVerifier.includes("export function isRequestedDraft") &&
   downloadReleaseVerifier.includes("release?.tag_name === tag && release?.draft === true") &&
   downloadReleaseVerifier.includes("if (!options.tag && release.prerelease && !options.allowPrerelease)") &&
@@ -686,29 +696,30 @@ if (
 }
 
 /**
- * 이 순서는 취향이 아니라 계약이다. **DMG 서명이 패키징과 공증 사이에 있어야
- * 한다.**
+ * This order is a contract, not a preference. **DMG signing must sit between
+ * packaging and notarisation.**
  *
- * 2026-07-27 v1.0.0-rc.1 실측: `.app` 만 서명하고 DMG 로 감싸면 공증까지
- * 통과하는데, Gatekeeper 는 거절한다 —
+ * Measured on v1.0.0-rc.1, 2026-07-27: signing only the `.app` and wrapping it in
+ * a DMG passes notarisation, but Gatekeeper rejects it —
  *
  *   [desktop-notarize] notarized and stapled ...aarch64.dmg
  *   spctl --assess --type open ... : rejected
  *   source=no usable signature
  *
- * 공증 티켓은 붙었는데 감쌀 서명이 없었다. 공증 **뒤에** 서명하면 스테이플이
- * 무효가 되므로 자리도 하나뿐이다.
+ * The notarisation ticket attached but the wrapper had no signature. Signing
+ * **after** notarisation invalidates the staple, so there is exactly one slot.
  *
- * **업데이터 아카이브 재포장(`desktop:repack-updater`)도 자리가 하나다 — 앱
- * 서명 바로 뒤.** `tauri build` 는 `.app.tar.gz` 를 `.app` 과 함께 내는데, 이
- * 저장소는 코드서명을 그 뒤에 따로 한다. 그래서 아카이브가 담는 것은 **서명 전의
- * 앱**이고, 갱신받은 사용자만 "손상되었습니다" 를 만난다(DMG 로 받은 사용자는
- * 멀쩡하다). 실측 2026-07-28, 깨끗한 체크아웃:
+ * **Repacking the updater archive (`desktop:repack-updater`) also has exactly one
+ * slot — immediately after app signing.** `tauri build` emits `.app.tar.gz`
+ * alongside the `.app`, and this repository code-signs separately afterwards. So
+ * the archive carries the **pre-signature app**, and only users who updated meet
+ * "the app is damaged" (users who took the DMG are fine). Measured 2026-07-28 on a
+ * clean checkout:
  *
  *   tar xzf "Ontology Atlas.app.tar.gz" && codesign --verify --deep --strict …
  *     → code has no resources but signature indicates they must be present
  *
- * 서명 뒤에 다시 담고 다시 minisign 서명하면 `valid on disk` 가 된다.
+ * Repacking after signing and re-signing with minisign yields `valid on disk`.
  */
 const RELEASE_ARTIFACT_COMMAND = "node scripts/build-macos-release-artifact.mjs";
 const RELEASE_ARTIFACT_STEP_MARKERS = [
@@ -745,11 +756,11 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-desktop-goal-audit.test.mjs") &&
   goalAuditScript.includes("--pr=NUMBER is required") &&
   goalAuditScript.includes("desktop:release-preflight") &&
-  // #617 (Firebase Hosting 제거 → GitHub Pages 단일 호스트) 이후 호스팅 표면은
-  // macOS 앱 릴리스 감사에서 의도적으로 분리됐다 — Pages 는 deploy-pages.yml 이
-  // 따로 배포하고 `desktop:verify-hosted` 가 검증한다. 그래서 goal-audit 은
-  // release-status 를 호스팅 플래그 없이 부르고, 호스팅 검증기는 별도로 존재해야
-  // 한다(둘 다 없으면 호스팅이 아무 게이트에도 안 걸린다).
+  // Since #617 (Firebase Hosting removed, GitHub Pages as the single host) the
+  // hosting surface is deliberately separated from the macOS release audit — Pages
+  // is deployed by deploy-pages.yml and verified by `desktop:verify-hosted`. So
+  // goal-audit calls release-status without hosting flags, and the hosting verifier
+  // must exist separately; with neither, hosting would be behind no gate at all.
   !goalAuditScript.includes("--include-hosted-surface") &&
   releaseStatusScript.includes("use pnpm desktop:verify-hosted to check the deployed website") &&
   pkg.scripts?.["desktop:verify-hosted"] === "node scripts/check-hosted-download-surface.mjs" &&
@@ -767,17 +778,19 @@ if (
 }
 
 /*
- * 2026-08-19: 이 게이트의 절반이 주어를 잃었다. `MacosDownloadLink`(미게시
- * 분기의 릴리스 페이지 링크)와 저장소 출구(`GITHUB_REPOSITORY_URL` ·
- * `sourceCta`)는 **다운로드 판 안에만** 있었고, 소유자가 설치 절을 통째로
- * 걷어냈다(*"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*).
- * `docs/DECISIONS.md` 2026-08-19 가 그 대가 — 관문에 저장소 링크가 하나도
- * 없어진 것 — 를 적는다.
+ * 2026-08-19: half of this gate lost its subject. `MacosDownloadLink` (the
+ * release-page link on the unpublished branch) and the repository exits
+ * (`GITHUB_REPOSITORY_URL`, `sourceCta`) lived **only inside the download
+ * section**, and the owner removed that section entirely:
+ * *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*
+ * (the last section is probably unnecessary — it is all at the top anyway).
+ * `docs/DECISIONS.md` 2026-08-19 records the cost: the gateway now has no
+ * repository link at all.
  *
- * 남은 절반은 그대로 산다: 릴리스 URL 이 **깨지는 형태**(`releases/latest`
- * 는 공개 릴리스가 없으면 404, `api.github.com` 은 정적 export 에서 못 부른다)
- * 가 아니어야 한다. 그 property 는 컴포넌트가 어디서 쓰이든 유효하고, 실제로
- * 이 게이트가 막던 것이 그것이다.
+ * The other half stands: a release URL must not take a **shape that breaks**
+ * (`releases/latest` 404s when there is no public release, and `api.github.com`
+ * cannot be called from a static export). That property holds wherever the
+ * component is used, and it is what this gate was actually blocking.
  */
 if (
   macosDownloadLink.includes("GITHUB_RELEASES_URL") &&
@@ -803,20 +816,23 @@ if (
   !downloadPage.includes('/docs/?intent=local') &&
   docsVaultPage.includes("shouldHonorLocalIntent(intent, isDesktopRuntime)") &&
   docsVaultPage.includes("isDocsVaultLocalSourceDisabled") &&
-  // 구 `desktopOnlyTooltip` 키는 #435 (문서함 웹 세션 로컬 vault 개방) 에서
-  // `vaultStatus.unsupportedTooltip` 로 통합됐다. 시각 신호는 disabled,
-  // 스크린리더는 aria-describedby 로 *왜* 잠겼는지 듣는다 — 둘 다 요구한다.
+  // The old `desktopOnlyTooltip` key was merged into
+  // `vaultStatus.unsupportedTooltip` in #435. The visual signal is `disabled`; a
+  // screen reader hears *why* it is locked via aria-describedby — both are
+  // required.
   //
-  // ⚠️ **지키는 것은 「그 자리에 있다」가 아니라 「왜 잠겼는지 말한다」이다**
-  // (2026-08-08). 종전엔 이 줄이 `docs-vault-local-unsupported-hint` 라는
-  // **id 문자열 하나**를 못박고 있었다. 그 컨트롤이 화면 오른쪽 라디오에서
-  // 볼트 칩 메뉴로 옮겨 가자(같은 사실을 두 곳이 말하던 것을 한 곳으로) 게이트가
-  // 빨개졌는데, 정작 그때 이유 설명은 **보이는 문장 + aria-describedby** 로
-  // 더 좋아져 있었다. 그릇을 못박으면 정당한 개선에 빨개지고, 다음 사람은
-  // 게이트 대신 개선 쪽을 되돌린다(`design-gates.md` 「그릇과 내용물」).
-  // 그래서 문자열이 아니라 **짝**을 요구한다: 잠그는 근거(`localSourceDisabled`)
-  // 와 그 이유를 읽어 주는 배선(`aria-describedby` + 이유 문자열)이 둘 다
-  // 있는가. 어느 화면 조각이 그것을 이고 있는지는 묻지 않는다.
+  // ⚠️ **What is guarded is "it says why it is locked", not "it is in that spot"**
+  // (2026-08-08). This line used to pin **one id string**,
+  // `docs-vault-local-unsupported-hint`. When that control moved from the right-hand
+  // radio into the vault chip menu (two places saying the same fact folded into
+  // one), the gate went red — while the explanation had actually *improved*, into a
+  // **visible sentence + aria-describedby**. Pinning the container turns a
+  // legitimate improvement red, and the next person reverts the improvement instead
+  // of the gate (see .claude/rules/design-gates.md).
+  // So the requirement is a **pair**, not a string: the reason it is locked
+  // (`localSourceDisabled`) and the wiring that reads that reason out
+  // (`aria-describedby` + the reason string). Which piece of UI carries it is not
+  // asked.
   docsVaultPage.includes("vaultStatus.unsupportedTooltip") &&
   docsVaultPage.includes("localSourceDisabled") &&
   vaultChipSurface.includes("aria-describedby") &&
@@ -830,20 +846,24 @@ if (
 }
 
 /*
- * 이 블록은 **문장 핀이었다** — `openLabel === "Open vault folder"` 처럼 정확한
- * 문자열 여섯 개를 고정했다. 위 README 블록이 이미 배운 교훈("표 마크업을 문자
- * 그대로 검사했더니 재작성 한 번에 통째로 stale")을 이 블록만 안 배운 것이다.
+ * This block used to be a **sentence pin** — six exact strings such as
+ * `openLabel === "Open vault folder"`. It was the one block that had not learned
+ * the lesson the README block above already had ("checking table markup literally
+ * went wholly stale on one rewrite").
  *
- * 2026-08-03 에 그 값을 치렀다: PO 카운슬이 화면에서 「볼트/vault」를 은퇴시키자
- * (원장 참조) 이 핀이 즉시 빨개졌다. **문구가 나아졌는데 게이트가 막은 것**이고,
- * 그건 `documentation.md` 가 금지한 실패 방향이다 —
+ * The bill came due on 2026-08-03: when the PO council retired the word
+ * 「볼트/vault」 from the screen (see the decision ledger) this pin went red
+ * immediately. **The copy got better and the gate blocked it** — the failure
+ * direction .claude/rules/documentation.md forbids:
  *
- *   "도구 동작이 바뀌고 문서가 안 바뀌면 문장이 그대로라 **통과**하고,
- *    문서를 더 나은 말로 고치면 **빨개진다.**"
+ *   "if the tool's behaviour changes and the doc does not, the sentence is
+ *    unchanged so it **passes**; rewrite the doc in better words and it turns
+ *    **red**."
  *
- * 그래서 문장이 아니라 **사실**을 검사한다. 이 게이트가 실제로 지키려는 계약은
- * 하나다: **로컬 폴더 작업의 안내가 설치된 앱을 가리키고, 브라우저 File System
- * Access 를 능력처럼 광고하지 않는다.** 어떤 단어로 그러는지는 카피의 자유다.
+ * So it checks **facts**, not sentences. The one contract this gate really keeps:
+ * **guidance for local-folder work points at the installed app, and browser File
+ * System Access is not advertised as a capability.** Which words do that is the
+ * copy's business.
  */
 const desktopRoutingCopy = [
   enMessages.searchWidgets.shortcuts.rows.localVault,
@@ -853,37 +873,39 @@ const desktopRoutingCopy = [
   enMessages.featuresMisc.localVaultPicker.unsupported,
   koMessages.featuresMisc.localVaultPicker.unsupported,
 ];
-// 「설치된 앱」을 각 로케일이 자기 말로 가리키는가.
+// Does each locale point at "the installed app" in its own words?
 const namesInstalledApp = (text, locale) =>
   locale === "ko"
     ? /설치(된|해)/.test(text) && /앱/.test(text)
     : /installed|install the/i.test(text) && /app/i.test(text);
-// 브라우저 FSA 를 **능력으로 광고**하면 안 된다. 정직한 강등 고지에서 이름을
-// 대는 것까지 막지는 않는다 — 그래서 「할 수 있다」 쪽 문장에서만 본다.
+// Browser FSA must not be **advertised as a capability**. Naming it in an honest
+// degradation notice is fine, so only "you can do X" sentences are checked.
 const advertisesBrowserFsa = desktopRoutingCopy.some(
   (text) => text.includes("File System Access") && !/desktop|설치/i.test(text),
 );
 /**
- * ⚠️ **셋을 한 규칙으로 묶고 있었다** (2026-08-08 카운슬).
+ * ⚠️ **Three different things were bound to one rule** (council, 2026-08-08).
  *
- * 위 여섯 문자열은 성격이 둘이다:
+ * The six strings above are of two kinds:
  *
- * - **강등 고지 둘** (`unsupportedTooltip` · `localVaultPicker.unsupported`) —
- *   FSA 를 못 쓰는 브라우저에게 「여기서는 안 되고 앱에서 된다」고 말하는
- *   자리다. 설치된 앱을 가리키는 것이 맞고, 그대로 둔다.
- * - **단축키 설명 하나** (`shortcuts.rows.localVault`) — 팔레트의 단축키가
- *   무엇을 여는지 말하는 자리다. **그 단축키는 웹에서도 된다** — 그것이 켜는
- *   `/docs` 로컬 소스는 FSA 를 지원하면 브라우저에서 동작하고, 미지원일 때만
- *   칩이 비활성이 된다(`isDocsVaultLocalSourceDisabled`).
+ * - **Two degradation notices** (`unsupportedTooltip` ·
+ *   `localVaultPicker.unsupported`) — they tell a browser without FSA "not here,
+ *   but it works in the app". Pointing at the installed app is correct; unchanged.
+ * - **One shortcut description** (`shortcuts.rows.localVault`) — it says what the
+ *   palette's shortcut opens. **That shortcut works on the web too**: the `/docs`
+ *   local source it turns on runs in the browser when FSA is supported, and only
+ *   when it is not does the chip go inactive (`isDocsVaultLocalSourceDisabled`).
  *
- * 그런데 이 게이트는 셋 다에게 「설치된 앱을 대라」고 요구했고, 그 요구가
- * 단축키 설명을 **거짓말로 만들고 있었다** — `surfaces.md` 가 이름 붙인
- * 「되는 것을 안 된다고 쓰는 것」이다. 이 파일 머리말이 스스로 경고한 실패
- * 방향과 같다: *"문구를 더 나은 말로 고치면 빨개진다."*
+ * The gate required all three to name the installed app, and that requirement was
+ * **making the shortcut description a lie** — what .claude/rules/surfaces.md calls
+ * writing that something does not work when it does. The same failure direction
+ * this file's own preamble warns about: *"rewrite it in better words and it turns
+ * red."*
  *
- * 그래서 요구를 **자리의 성격에 맞춘다**. 단축키 설명은 커버리지를 잃지 않고
- * 요구가 바뀔 뿐이다 — 런타임이 아니라 **여는 대상**(폴더)을 말해야 한다.
- * FSA 를 능력으로 광고하지 않는지는 여섯 문자열 **전부**가 여전히 검사받는다.
+ * So the requirement now **matches the nature of each place**. The shortcut
+ * description loses no coverage; only its requirement changes — it must name **what
+ * it opens** (a folder) rather than a runtime. Whether FSA is advertised as a
+ * capability is still checked across **all six** strings.
  */
 const namesTheFolder = (text) => /folder/i.test(text) || /폴더/.test(text);
 
@@ -895,7 +917,7 @@ if (
   namesInstalledApp(enMessages.featuresMisc.localVaultPicker.unsupported, "en") &&
   namesInstalledApp(koMessages.featuresMisc.localVaultPicker.unsupported, "ko") &&
   !advertisesBrowserFsa &&
-  // 열기 라벨은 **여는 대상**을 말해야 한다. 어느 단어를 쓰는지는 안 고정한다.
+  // An open label must name **what it opens**. Which word it uses is not pinned.
   /folder/i.test(enMessages.featuresMisc.localVaultPicker.openLabel) &&
   /폴더/.test(koMessages.featuresMisc.localVaultPicker.openLabel)
 ) {
@@ -906,10 +928,11 @@ if (
   );
 }
 
-// 이 블록은 한때 README 의 정체성 *표 마크업* 을 문자 그대로 검사했다 — README 가
-// 재작성되자 통째로 stale 이 됐고, 게이트 크래시에 가려 아무도 못 봤다. 이제
-// 표 형식이 아니라 **사실**을 검사한다: 브랜드, 호스팅 URL, 데스크톱 브리지,
-// 브라우저에서의 로컬 폴더 개방, 그리고 은퇴한 표면으로의 유도 금지.
+// This block once checked the README's identity *table markup* literally. One
+// README rewrite made it wholly stale, and a gate crash hid that from everyone.
+// It now checks **facts** rather than table formatting: brand, hosting URL,
+// desktop bridge, opening a local folder in the browser, and no steering toward
+// retired surfaces.
 const readmeFlow = flow(rootReadme);
 if (
   readmeFlow.includes("# Ontology Atlas") &&
@@ -918,9 +941,9 @@ if (
   readmeFlow.includes("The desktop app uses a Tauri bridge to your selected folder") &&
   readmeFlow.includes("hosted web app can open a local folder through the File System Access API") &&
   readmeFlow.includes("github.com/wlsdks/ontology-atlas/releases") &&
-  // 은퇴/이전 표면으로 사용자를 보내면 안 된다. `/ontology/edit` 빌더는
-  // 2026-07-24 은퇴했고, 로컬 vault 작업을 `localhost:3000/docs` 로 몰던
-  // 옛 문구도 금지다.
+  // Users must not be sent to retired or relocated surfaces. The `/ontology/edit`
+  // builder was retired 2026-07-24, and the old wording that funnelled local vault
+  // work to `localhost:3000/docs` is forbidden too.
   !rootReadme.includes("/ontology/edit") &&
   !rootReadme.includes("| **Web workbench** |") &&
   !rootReadme.includes("Open `http://localhost:3000`, go to `/docs`")
@@ -939,9 +962,10 @@ if (
   featuresDoc.includes("lets you open your own local vault folder from the browser") &&
   productDirectionDoc.includes("Ontology Atlas") &&
   productDirectionDoc.includes("The Tauri bundle product name") &&
-  // 2026-07-28: npm 채널 폐기(#736)로 이 문장이 "설치 앱이 MCP 서버를 싣는다"
-  // 까지 말하게 바뀌었다. 옛 나열 순서를 요구하던 리터럴을 새 문장으로 옮긴다 —
-  // 게이트가 지키려는 것(설치 앱 + CLI 가 일상 표면)은 그대로다.
+  // 2026-07-28: dropping the npm channel (#736) extended this sentence to say the
+  // installed app carries the MCP server. The literal that demanded the old
+  // enumeration order moves to the new sentence — what the gate keeps (installed app
+  // + CLI are the everyday surfaces) is unchanged.
   productDirectionDoc.includes("installed desktop app (carrying the MCP server) + CLI as the daily workbench") &&
   productDirectionDoc.includes("hosted website is the product introduction and download entry point") &&
   desktopDoc.includes("Ontology Atlas") &&
@@ -971,9 +995,10 @@ if (
   developmentChecksDoc.includes("Firebase SDK, Firebase Admin, and Firebase CLI dependencies") &&
   developmentChecksDoc.includes("separate Hosting deploy toolchain") &&
   demoStoryboardDoc.includes("설치된 Ontology Atlas macOS 앱") &&
-  // 2026-07-28: #736 이 npm 전제를 걷으며 이 문단을 다시 썼다. 앱이 같은 `.md`
-  // 를 네이티브 브리지로 읽고 쓴다는 사실과, 웹은 소개·다운로드 입구라는 역할
-  // 분담이 요구 사항이다 — 그걸 말하는 새 문장으로 옮긴다.
+  // 2026-07-28: #736 rewrote this paragraph when it removed the npm premise. The
+  // requirement is the fact that the app reads and writes the same `.md` through a
+  // native bridge, plus the split where the web is the intro and download entry —
+  // moved to the new sentence that says it.
   redditPostsDoc.includes("reads/writes the same `.md` files through a local native") &&
   redditPostsDoc.includes("hosted website is the product intro and download")
 ) {
@@ -984,8 +1009,9 @@ if (
   );
 }
 
-// 한 노드 안에서 「macOS/데스크톱 앱」과 「다운로드/설치」가 함께 나오는가.
-// 개념의 존재만 본다 — 어느 파일인지, 어떤 문장인지는 볼트가 정한다.
+// Does a single node mention both the macOS/desktop app and download/install?
+// Only the concept's existence is checked — which file and which sentence is the
+// vault's business.
 if (
   vaultDocTexts.some(
     (text) => /macos|맥\s*os|desktop|데스크톱/i.test(text) && /download|install|다운로드|설치/i.test(text),
@@ -999,13 +1025,15 @@ if (
 }
 
 if (
-  // B3 허브가 곧 지도: `/ontology` 의 트리 허브(OntologyViewPage)가 retire 되고
-  // `/` 와 `/ontology` 모두 이 empty state 로 수렴했다 — 검증 대상도 하나로.
+  // The hub is the map: `/ontology`'s tree hub (OntologyViewPage) was retired and
+  // both `/` and `/ontology` converged on this empty state, so the check converges
+  // too.
   topologyEmptyState.includes("isTauriVaultRuntime") &&
-  // 목적지를 재지, **따옴표를 재지 않는다** (2026-08-03). 종전엔 큰따옴표를
-  // 못박아서, 같은 링크를 작은따옴표로 쓴 리팩터에 이 게이트가 빨간불을
-  // 냈다 — 목적지는 그대로인데 문자만 바뀐 자리였다. 게이트가 규격이 아니라
-  // 서식을 지키면, 다음 사람은 게이트를 고치는 대신 서식을 되돌린다.
+  // Measure the destination, **not the quote character** (2026-08-03). This used
+  // to pin double quotes, so a refactor that wrote the same link with single quotes
+  // turned the gate red — the destination was unchanged and only the character
+  // differed. A gate that guards formatting instead of the spec makes the next
+  // person revert the formatting rather than fix the gate.
   /["']\/download\/["']/.test(topologyEmptyState) &&
   /["']\/docs\/\?intent=local["']/.test(topologyEmptyState) &&
   /Install the desktop app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
@@ -1017,12 +1045,13 @@ if (
   );
 }
 
-// 다운로드 페이지가 주장할 수 있는 것은 "실제로 게시된 릴리스가 있는가"
-// 하나로 결정된다. 예전엔 크기/체크섬/대기문구가 각자 자리표시자를 들고
-// 있어서 6군데가 따로 낡았고, 방문자는 지금 설치가 되는지 알 수 없었다.
-// 게이트는 이제 두 가지를 지킨다: ① 릴리스 사실은 생성 모듈에서만 온다
-// ② 내부 파이프라인 상태(PR review, 태그 정합, CI 점검 명령)는 공개 표면에
-// 없다 — 그건 릴리스 런북(docs/DESKTOP-MACOS.md)의 소유다.
+// What the download page may claim is decided by one thing: whether a release is
+// actually published. Size, checksum, and waiting copy each used to carry their
+// own placeholder, so six places went stale independently and a visitor could not
+// tell whether installing worked today. The gate now keeps two properties:
+// ① release facts come only from the generated module ② internal pipeline state
+// (PR review, tag consistency, CI check commands) is absent from the public
+// surface — that belongs to the release runbook (docs/DESKTOP-MACOS.md).
 const downloadReleaseState = readText("src/views/download/lib/release-state.ts");
 const downloadGeneratedRelease = readText(
   "src/views/download/model/macos-release.generated.ts",
@@ -1039,13 +1068,15 @@ if (
   downloadPage.includes("isMacosReleasePublished") &&
   downloadPage.includes("macosAssetFor") &&
   downloadPage.includes("formatAssetSize") &&
-  // 2026-08-19: 구 마커 넷(`download-platform-macos` · `download-platform-windows`
-  // · `download-macos-pending` · `buildDmgName('aarch64')`)은 전부 설치 절 안에
-  // 살았고, 소유자가 그 절을 통째로 걷어냈다(*"맨 마지막 이거는 없어도 될듯?
-  // 어차피 맨 위에 다 있어서"*). 남은 property 는 같다 — **페이지가 릴리스
-  // 사실을 생성 모듈에서 읽는다** — 이고, 오늘 그것을 지는 자리는 히어로다:
-  // Windows 자산을 실제로 읽고(`windowsAsset`), 미게시일 때 개발 중 버전을
-  // 정직하게 부른다(`resolveDisplayReleaseTag`).
+  // 2026-08-19: the four old markers (`download-platform-macos` ·
+  // `download-platform-windows` · `download-macos-pending` ·
+  // `buildDmgName('aarch64')`) all lived inside the install section, and the owner
+  // removed that section entirely (*"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에
+  // 다 있어서"* — the last section is probably unnecessary, it is all at the top
+  // anyway). The remaining property is the same — **the page reads release facts
+  // from the generated module** — and today the hero carries it: it really reads the
+  // Windows asset (`windowsAsset`) and names the in-development version honestly
+  // when nothing is published (`resolveDisplayReleaseTag`).
   downloadPage.includes("windowsAsset") &&
   downloadPage.includes("resolveDisplayReleaseTag") &&
   downloadPage.includes("gateway-hero-windows") &&
@@ -1055,7 +1086,7 @@ if (
   downloadGeneratedRelease.includes("Generated by `pnpm download:release-facts`") &&
   /published:\s*(true|false)/.test(downloadGeneratedRelease) &&
   downloadReleaseState.includes("WINDOWS_STATUS") &&
-  // 게시 전에는 자리표시자 대신 "아직 없다" 한 상태만 남는다.
+  // Before publication only one state remains, "not yet", instead of placeholders.
   /has not been published yet/.test(enMessages.download?.macosPendingBody ?? "") &&
   /게시 전/.test(koMessages.download?.macosPendingBody ?? "") &&
   !enMessages.download?.checksumValuePending &&
@@ -1063,12 +1094,13 @@ if (
   !enMessages.download?.releaseAvailabilityNote &&
   !enMessages.download?.releaseStatusTitle &&
   !koMessages.download?.releaseStatusTitle &&
-  // Windows 는 침묵하지 않는다 — 빠진 게 아니라 아직 안 나왔다고 말한다.
+  // Windows is not silent — the page says it is not out yet, not that it is missing.
   //
-  // 2026-07-29 개정: 관문 재설계가 「준비 중」배지 + 카드를 한 줄 상태
-  // (`platformStatus`)와 추적 링크(`windowsTrackCta`), 그리고 기준을 밝히는
-  // 정책 문장(`windowsPolicy`)으로 바꿨다. 배지라는 **형태**가 아니라 셋이
-  // 함께 만드는 **계약**을 검사한다 — 위치 · 갈 곳 · 왜 아직인지.
+  // Revised 2026-07-29: the gateway redesign replaced the "coming soon" badge and
+  // card with a one-line status (`platformStatus`), a tracking link
+  // (`windowsTrackCta`), and a policy sentence stating the criteria
+  // (`windowsPolicy`). The check is on the **contract** the three make together —
+  // where it is, where it goes, why it is not out — not on the badge **form**.
   /Windows/.test(enMessages.download?.platformStatus ?? "") &&
   /Windows/.test(koMessages.download?.platformStatus ?? "") &&
   (enMessages.download?.windowsTrackCta ?? "").length > 0 &&
@@ -1077,20 +1109,21 @@ if (
   /코드 서명되지 않았습니다/.test(koMessages.download?.windowsUnsignedWarning ?? "") &&
   /SmartScreen/.test(enMessages.download?.windowsUnsignedWarning ?? "") &&
   /SmartScreen/.test(koMessages.download?.windowsUnsignedWarning ?? "") &&
-  // 서명 상태는 **지금 참인 것**으로 적는다 — 미래형("게이트가 요구합니다")도,
-  // 아직 사실이 아닌 과거형도 금지다.
+  // Signing status is written as **what is true now** — no future tense ("the gate
+  // will require") and no past tense that is not yet fact.
   //
-  // 2026-07-27 개정: 이 게이트는 미서명 시대에 쓰여서 `trustPolicy` 가
-  // "not signed or notarized" 또는 "only after Developer ID signing" 중
-  // 하나이기를 **요구**하고 있었다. 그날 Developer ID 인증서가 발급되면서
-  // (`docs/DECISIONS.md`) 릴리스가 서명 경로로 돌아왔는데, 그 요구 때문에
-  // 페이지는 여전히 미서명 안내를 들고 있어야 했다 — 게이트가 거짓을 붙들고
-  // 있었던 셈이다. 문구를 특정 문장에 못 박는 대신, **주장과 실제 릴리스
-  // 체인이 일치하는지**로 판정한다.
+  // Revised 2026-07-27: this gate was written in the unsigned era and **required**
+  // `trustPolicy` to be either "not signed or notarized" or "only after Developer ID
+  // signing". When the Developer ID certificate was issued that day
+  // (`docs/DECISIONS.md`) the release moved onto the signed path, but the
+  // requirement forced the page to keep showing the unsigned notice — the gate was
+  // holding a falsehood in place. Instead of pinning specific wording, it now
+  // decides on **whether the claim matches the actual release chain**.
   !/Release gate requires/.test(enMessages.download?.proofSigned ?? "") &&
   !/게이트가/.test(koMessages.download?.proofSigned ?? "") &&
   /\{file\}/.test(enMessages.download?.trustVerifyCommand ?? "") &&
-  // 서명을 주장하려면 릴리스 자산 체인이 실제로 서명·공증·검증을 해야 한다.
+  // Claiming signing requires the release asset chain to actually sign, notarise,
+  // and verify.
   (!/Developer ID/.test(enMessages.download?.proofSigned ?? "") ||
     (pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_COMMAND &&
       [
@@ -1098,13 +1131,13 @@ if (
         'args: ["desktop:notarize"]',
         'args: ["desktop:verify-release-dmg"]',
       ].every((marker) => buildMacosReleaseArtifactScript.includes(marker)))) &&
-  // 미서명 상태를 말하는 문구라면 우회 경로를 반드시 함께 준다 — 상태만 알리고
-  // 방법을 안 주면 그건 정직이 아니라 방치다. (인증서가 만료·폐기되어 문구가
-  // 미서명으로 되돌아가면 이 조건이 다시 무장한다.)
+  // Copy that states an unsigned status must also give the workaround — announcing
+  // the state without a way through is neglect, not honesty. (If the certificate
+  // expires or is revoked and the copy reverts to unsigned, this condition rearms.)
   (!/not signed or notarized/.test(JSON.stringify(enMessages.download ?? {})) ||
     (/Open Anyway/.test(JSON.stringify(enMessages.download ?? {})) &&
       /확인 없이 열기/.test(JSON.stringify(koMessages.download ?? {})))) &&
-  // 등록된 적 없는 도메인을 사실처럼 쓰지 않는다.
+  // Never state a never-registered domain as fact.
   !/ontology-atlas\.dev/.test(JSON.stringify(enMessages.download ?? {})) &&
   !/ontology-atlas\.dev/.test(JSON.stringify(koMessages.download ?? {}))
 ) {
@@ -1117,10 +1150,11 @@ if (
   );
 }
 
-// root-first-open (2026-07) 이후 `/` 는 마케팅 관문이 아니라 지도 허브 자체다 —
-// vault 없이도 dogfood 샘플 + 첫 실행 스타터를 렌더한다. `<lg` 에서 이 바를
-// 숨기면 데스크톱 nav-rail(`lg:flex`)도 없어 전역 내비가 0이 되므로, 이제
-// 숨김 대상은 자체 헤더를 가진 `/download` 하나뿐이다.
+// Since root-first-open (2026-07), `/` is the map hub itself rather than a
+// marketing gateway — with no vault it still renders the dogfood sample plus the
+// first-run starter. Hiding this bar below `lg` would leave no global nav at all
+// (the desktop nav rail is `lg:flex`), so the only thing hidden now is
+// `/download`, which has its own header.
 if (
   bottomTabBar.includes("shouldHideBottomTabBar(pathname") &&
   /normalized === ['"]\/download['"]/.test(bottomTabBarPolicy) &&
@@ -1427,9 +1461,10 @@ if (pkg.scripts?.["desktop:dev"] === "pnpm tauri dev") {
   fail("package.json must expose desktop:dev as pnpm tauri dev");
 }
 
-// 번들 MCP 서버는 앱 페이로드다 — Tauri 가 굽기 **전에** 컴파일돼 있어야
-// `externalBin` 이 찾는다. 순서가 뒤집히면 서버 없는 앱이 조용히 출하되고,
-// 사용자는 설치한 뒤에야 에이전트가 안 붙는 걸 알게 된다.
+// The bundled MCP server is app payload — it must be compiled **before** Tauri
+// bakes, or `externalBin` cannot find it. Reverse the order and an app ships
+// silently without the server, and the user only learns the agent will not attach
+// after installing.
 if (
   pkg.scripts?.["desktop:build:app"] ===
     "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app" &&
@@ -1480,17 +1515,20 @@ if (
 }
 
 /*
- * ⚠️ **라우트를 슬러그까지 못박지 않는다** (2026-08-10 에 풀었다).
+ * ⚠️ **Routes are not pinned down to the slug** (relaxed 2026-08-10).
  *
- * 종전에는 `--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'` 를
- * 문자열째로 못박고 있었다. 그런데 그 `views` 도메인은 도그푸드 볼트를 다시 만드는
- * 동안 **사라졌다** — 검증기 아홉이 없는 노드를 가리키며 조용히 실패하고 있었고,
- * 고치려 하니 **이 검사가 그 수정을 막았다.** 규격이 좋아지는 방향에서 터지는
- * 게이트는 다음 사람이 게이트 대신 규격을 되돌리게 만든다(`documentation.md`).
+ * This used to pin the whole string
+ * `--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'`. That
+ * `views` domain **disappeared** while the dogfood vault was rebuilt — nine
+ * verifiers were quietly failing against a node that did not exist, and when
+ * someone went to fix it **this check blocked the fix**. A gate that breaks in the
+ * direction of a better spec makes the next person revert the spec instead
+ * (.claude/rules/documentation.md).
  *
- * 그래서 역할을 나눈다: 여기서는 **플래그의 모양**(딥링크가 있고 모드가 맞나)만 보고,
- * 「그 노드가 실재하나」는 볼트를 직접 뒤지는 계약 시험이 본다
- * (`tests/contract/script-vault-references.contract.test.ts`, CI 에서 돈다).
+ * So the roles are split: here only the **shape of the flag** is checked (a deep
+ * link is present and the mode is right), while "does that node exist" is checked
+ * by a contract test that reads the vault directly
+ * (`tests/contract/script-vault-references.contract.test.ts`, runs in CI).
  */
 
 const agentDesignGateChecks = [
@@ -1498,10 +1536,11 @@ const agentDesignGateChecks = [
     "AGENTS mandatory design gate",
     agentsDoc.includes("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md") &&
       /design gate/i.test(agentsDoc) &&
-      // 마크다운 강조를 지우고 본다 — AGENTS.md 는 `Runs *after* the PO pass` 라고
-      // 쓴다. 종전 정규식은 연속 문자열을 요구해 **별표 하나에 깨졌다**(2026-07-31
-      // CI). 불변식(디자인 게이트가 PO 다음에 온다)은 지켜지고 있었고 게이트만
-      // 취약했다 — 산문의 서식까지 고정하면 게이트가 문서를 인질로 잡는다.
+      // Strip markdown emphasis before matching — AGENTS.md writes `Runs *after* the PO
+      // pass`. The old regex required a contiguous string and **broke on a single
+      // asterisk** (CI, 2026-07-31). The invariant (the design gate comes after the PO
+      // pass) was intact; only the gate was brittle. Pinning prose formatting makes the
+      // gate hold the document hostage.
       /after\s+the PO pass/i.test(agentsDoc.replace(/[*_`]/g, "")),
   ],
   [
@@ -1669,9 +1708,9 @@ if (missingBundleIcons.length === 0) {
 
 if (
   rootLayout.includes("title: 'Ontology Atlas'") &&
-  // GitHub Pages 는 `/ontology-atlas` base path 아래로 서빙되므로 manifest 링크는
-  // base-path 인식이어야 한다(#617). 리터럴 `/manifest.webmanifest` 는 Pages 에서
-  // 404 가 나므로 `withBasePath(...)` 형태를 계약으로 고정한다.
+  // GitHub Pages serves under the `/ontology-atlas` base path, so the manifest link
+  // must be base-path aware (#617). A literal `/manifest.webmanifest` 404s on Pages,
+  // so the `withBasePath(...)` form is pinned as the contract.
   rootLayout.includes("manifest: withBasePath('/manifest.webmanifest')") &&
   rootLayout.includes("alternateName: 'ontology-atlas'") &&
   webManifest.name === "Ontology Atlas" &&
@@ -1771,27 +1810,30 @@ if (
 }
 
 /**
- * 창에 주는 권한은 **이름으로 허용**하고, 위험한 계열은 접두어로 막는다.
+ * Window permissions are **allowed by name**, and dangerous families are blocked
+ * by prefix.
  *
- * 예전에는 `core:default` **하나만** 허용했다. 의도(광범위한 fs · shell · http ·
- * opener 금지)는 옳았지만 표현이 "아무것도 늘리지 마라" 였고, 업데이터처럼 좁고
- * 필요한 권한 하나를 더할 때 게이트를 지우고 싶게 만든다. 지우는 순간 이 게이트는
- * 사라진다.
+ * This used to allow `core:default` **only**. The intent (no broad fs, shell, http,
+ * or opener) was right, but the expression was "never add anything", which makes
+ * you want to delete the gate the moment you need one narrow permission such as the
+ * updater — and deleting it is the end of the gate.
  *
- * 그래서 두 방향으로 다시 썼다. **허용은 이 목록에 이름이 있을 때만** —
- * 목록이 짧게 유지되는 것이 계약이다. **금지는 계열째** — 새 이름을 몰라도
- * 막힌다. 후자가 실제 보호막이다.
+ * So it was rewritten in two directions. **Allow only what is named in this list**
+ * — keeping the list short is the contract. **Block whole families** — a new name
+ * is blocked without anyone knowing it. The latter is the real shield.
  */
 const ALLOWED_CAPABILITY_PERMISSIONS = [
   "core:default",
-  // 갱신 확인과 설치. 네트워크는 `tauri.conf.json` 의 endpoint 로 고정돼 있고
-  // 사용자 입력이 닿지 않는다. 설치 전 minisign 서명 검증이 강제된다.
+  // Check for and install updates. The network target is fixed by the endpoint in
+  // `tauri.conf.json` and no user input reaches it. minisign signature verification
+  // is enforced before install.
   "updater:default",
-  // 갱신 후 재시작 하나. `process:default` 가 아니다 — 종료까지 줄 이유가 없다.
+  // Restart after update, and only that. Not `process:default` — there is no reason
+  // to grant exit as well.
   "process:allow-restart",
 ];
 
-/** 이 계열은 이름을 몰라도 막는다. 로컬-퍼스트 앱이 창에 줄 이유가 없는 것들. */
+/** These families are blocked without knowing the individual names — nothing a local-first app has reason to grant a window. */
 const FORBIDDEN_CAPABILITY_PREFIXES = ["fs:", "shell:", "http:", "opener:"];
 
 const capabilityPermissions = Array.isArray(tauriCapability?.permissions)
@@ -1942,19 +1984,21 @@ if (
   );
 }
 
-// 파일 내용만 보는 게이트는 컴포넌트가 어디에도 마운트되지 않아도 초록으로
-// 남는다 — 실제로 `VaultToolsMenu` 삭제 후 `LocalVaultPicker` 가 고아가 됐는데도
-// 이 스크립트는 그 파일 내용을 계속 통과시켰다. 그래서 표면 계약은 "내용 + 마운트"
-// 두 가지를 함께 요구한다.
+// A gate that only reads file contents stays green even when the component is
+// mounted nowhere — after `VaultToolsMenu` was deleted, `LocalVaultPicker` became
+// an orphan and this script kept passing its contents. So the surface contract
+// requires both content and mount.
 //
-// ⚠️ **마운트하는 자리가 2026-08-21 에 바뀌었다** (원장 90). 이 패널은 설정
-// 시트를 떠나 「에이전트」 목적지(`/agents/`)로 갔고, 그 사이의 접착제가
-// `AgentSetupSection` 이다. 검사가 여전히 `AppSettingsMenu` 를 보고 있어서
-// **이관 직후 정확히 여기서 빨개졌다** — 이 게이트가 하려던 일 그대로다.
+// ⚠️ **The mount point changed on 2026-08-21** (decision ledger 90). This panel
+// left the settings sheet for the agents destination (`/agents/`), with
+// `AgentSetupSection` as the glue between them. The check was still looking at
+// `AppSettingsMenu`, so it **went red here right after the move** — exactly what
+// this gate is for.
 //
-// 그래서 「어느 파일이 그리나」를 못박지 않고 **체인이 이어지는가**를 잰다:
-// 패널이 절대 경로를 뽑고 → 접착제가 그 패널을 그리고 → 목적지가 그 접착제를
-// 그린다. 자리가 또 바뀌어도 체인만 이어져 있으면 통과하고, 끊기면 터진다.
+// So instead of pinning which file renders it, the check measures **whether the
+// chain holds**: the panel produces an absolute path → the glue renders the panel
+// → the destination renders the glue. If the location moves again it passes as
+// long as the chain is intact, and breaks when it is not.
 const agentSetupSection = readText("src/widgets/app-settings-menu/ui/AgentSetupSection.tsx");
 const agentsPage = readText("src/views/agents/ui/AgentsPage.tsx");
 
@@ -1987,12 +2031,14 @@ if (
   appSettingsMenu.includes("localVault.openRecent(record)") &&
   appSettingsMenu.includes("localVault.forgetRecent(record)") &&
   appSettingsMenu.includes("record.desktopRootPath") &&
-  // #72 — 선택한 vault 의 절대 경로 확인/복사/Finder 열기. 데스크톱에서 이
-  // 경로를 못 보면 에이전트에 붙여넣을 값을 사용자가 알 방법이 없다.
+  // #72 — see, copy, and open in Finder the selected vault's absolute path. Without
+  // that path on the desktop the user has no way to know the value to paste into an
+  // agent.
   appSettingsMenu.includes("getTauriVaultRootPath(localVault.handle)") &&
   appSettingsMenu.includes("openTauriVaultInFinder(vaultRootPath)") &&
   appSettingsMenu.includes("app-settings-copy-vault-path") &&
-  // 권한 재요청 중에도 최근 볼트 전환이 남아야 복구 경로가 끊기지 않는다.
+  // Recent-vault switching must survive a permission re-request, or the recovery
+  // path is cut.
   appSettingsMenu.includes("!isLocalVaultLoaded &&")
 ) {
   pass("desktop workspace settings expose recent vault recall, absolute vault path copy/reveal, stale-path cleanup, and vault-local agent config validation");
@@ -2011,8 +2057,9 @@ const tauriScaffoldFiles = [
   "src-tauri/icons/icon.png",
   "src-tauri/icons/icon.icns",
   "src/shared/lib/tauri-vault-fs.test.ts",
-  // #72 — 구 LocalVaultPicker 는 고아라 삭제됐다. 같은 계약(최근 볼트 회수 ·
-  // 경로 복사/Finder)은 설정 시트가 담당하며 그 테스트가 덮는다.
+  // #72 — the old LocalVaultPicker was an orphan and was deleted. The same contract
+  // (recent-vault recovery, copy path / Finder) is carried by the settings sheet and
+  // covered by its test.
   "src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx",
   "src/views/root-entry/ui/RootEntryPage.test.tsx",
   "scripts/package-macos-dmg.mjs",

@@ -1,9 +1,9 @@
 /**
  * IndexedDB-backed store for `LocalFsHandleRecord`.
  *
- * 단일 record 모드 (id = 'current') 가 default. 과거 docs-vault-local 이
- * 직접 raw `FileSystemDirectoryHandle` 만 저장하던 키 (`docs-vault:current-handle`)
- * 는 첫 read 시 자동으로 새 record 형태로 마이그레이션 후 폐기.
+ * Single-record mode (id = 'current') is the default. The legacy key
+ * `docs-vault:current-handle`, which held a raw `FileSystemDirectoryHandle`, is
+ * migrated into the new record shape on first read and then dropped.
  */
 
 import { idbDel, idbGet, idbSet } from '@/shared/lib/idb-kv';
@@ -70,10 +70,10 @@ async function rememberRecentLocalFsHandle(record: LocalFsHandleRecord): Promise
 }
 
 /**
- * id 에 해당하는 record 를 읽는다. 없으면 undefined.
+ * Reads the record for an id, or undefined.
  *
- * id 가 'current' 일 때만, legacy 키에 raw 핸들이 남아있으면 record 로
- * 감싸서 마이그레이션 (legacy 키는 삭제).
+ * Only for id 'current': a raw handle left under the legacy key is wrapped into a
+ * record and migrated, and the legacy key deleted.
  */
 export async function getLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
@@ -113,7 +113,7 @@ export async function deleteLocalFsHandle(
   await idbDel(recordKey(id));
 }
 
-/** 최근 vault 목록에서 특정 record 를 제거한다. 현재 열린 vault record 는 건드리지 않는다. */
+/** Removes one record from the recent-vault list. The currently open vault record is untouched. */
 export async function forgetRecentLocalFsHandle(
   record: LocalFsHandleRecord,
 ): Promise<void> {
@@ -125,7 +125,7 @@ export async function forgetRecentLocalFsHandle(
   );
 }
 
-/** 마지막 접근 시각만 갱신. record 자체가 없으면 no-op. */
+/** Updates the last-accessed time only. A no-op when the record does not exist. */
 export async function touchLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<void> {
@@ -136,7 +136,7 @@ export async function touchLocalFsHandle(
   await rememberRecentLocalFsHandle(next);
 }
 
-/** 최근에 열었던 vault 목록. Tauri desktop 은 저장된 경로로 handle shim 을 복원한다. */
+/** Recently opened vaults. On Tauri desktop the handle shim is rebuilt from the stored path. */
 export async function listRecentLocalFsHandles(): Promise<LocalFsHandleRecord[]> {
   const records = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
   return records

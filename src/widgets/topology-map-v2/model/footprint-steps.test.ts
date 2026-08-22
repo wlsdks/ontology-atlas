@@ -20,7 +20,7 @@ describe("buildWalkedEdgeKeys", () => {
     const keys = buildWalkedEdgeKeys(["a", "b", "c"]);
     expect(keys.has(walkedEdgeKey("a", "b"))).toBe(true);
     expect(keys.has(walkedEdgeKey("b", "c"))).toBe(true);
-    // a→c 는 연달아 방문한 적이 없다 — 걸은 길이 아니다.
+    // a→c was never visited consecutively — it is not a walked path.
     expect(keys.has(walkedEdgeKey("a", "c"))).toBe(false);
   });
 

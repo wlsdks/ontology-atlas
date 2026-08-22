@@ -400,8 +400,8 @@ export function formatAgentRunOrderPrompt(recipes: readonly AgentQueryRecipe[]):
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
-          // 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가
-          // 없다. 명령을 내보내는 자리는 이 한 줄을 함께 싣는다.
+          // A visible placeholder nobody knows how to fill is honest and
+          // useless. Anywhere that emits the command carries this line with it.
           ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
@@ -691,8 +691,8 @@ export function formatAgentPlaybookPrompt(playbook: AgentInvestigationPlaybook):
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
-          // 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가
-          // 없다. 명령을 내보내는 자리는 이 한 줄을 함께 싣는다.
+          // A visible placeholder nobody knows how to fill is honest and
+          // useless. Anywhere that emits the command carries this line with it.
           ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
@@ -777,8 +777,8 @@ export function formatAgentTraversalPacket(
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
-          // 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가
-          // 없다. 명령을 내보내는 자리는 이 한 줄을 함께 싣는다.
+          // A visible placeholder nobody knows how to fill is honest and
+          // useless. Anywhere that emits the command carries this line with it.
           ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
@@ -814,8 +814,8 @@ export function formatAgentGraphDbQueryPackItemPrompt(
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
-          // 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가
-          // 없다. 명령을 내보내는 자리는 이 한 줄을 함께 싣는다.
+          // A visible placeholder nobody knows how to fill is honest and
+          // useless. Anywhere that emits the command carries this line with it.
           ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]

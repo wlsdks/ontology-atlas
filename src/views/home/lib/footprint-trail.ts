@@ -1,33 +1,33 @@
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 /**
- * 발자국 트레일 세션 모델 (fable 설계 — 소유자 요청, 사람 가치 우선). 지도에서
- * 노드를 ego 포커스할 때마다 세션 방문 목록에 쌓이는 "걸어온 길". 모드가 아니라
- * 지도 위에 얹히는 수동적 기록층 — URL 비영속, localStorage 금지, 새로고침 시 초기화.
+ * Session model for the footprint trail — the path walked, appended to every
+ * time a node takes ego focus on the map. It is not a mode but a passive record
+ * layer over the map: never in the URL, never in localStorage, reset on reload.
  *
- * 순수 함수만 — React/DOM 지식 없음. HomePage 가 `canvasSelectedSlug` 변화를
- * 관찰해 append 하고, 지도(발자국 링)와 트레일 칩(미니 타임라인 + 인계 패킷)에
- * 같은 순서 배열을 내려보낸다.
+ * Pure functions only; no React or DOM knowledge.
  */
 
-/** 세션 트레일 최대 길이 — 넘으면 가장 오래된 방문부터 밀어낸다(무한 성장 방지). */
+/** Session trail cap; oldest visits are pushed out so it cannot grow without bound. */
 export const FOOTPRINT_TRAIL_MAX = 30;
 
 /**
- * 방문을 트레일에 추가한다. **재방문은 새 걸음으로 쌓인다** — 같은 노드가 여러 번
- * 나올 수 있다. 상한 초과 시 앞(오래된 방문)을 잘라낸다. 불변 — 새 배열을 반환.
+ * Appends a visit. **A revisit is a new step** — the same node may appear many
+ * times. Immutable; returns a new array.
  *
- * ## 왜 중복 제거를 걷어냈나 (소유자 지시 2026-07-29)
+ * **Why dedup was removed (owner instruction, 2026-07-29).** The old
+ * implementation deleted the previous position and moved the node to the end, so
+ * a node existed at most once in the trail, which made the owner's request —
+ * *"여러번 왔다갔다 했으면 숫자 여러개 표시"* (repeat visits should show several
+ * numbers) — structurally impossible: no amount of fixing the number-drawing
+ * code helps when the data holds one step.
  *
- * 종전 구현은 재방문 시 기존 위치를 **지우고** 맨 끝으로 옮겼다. 그래서 트레일에
- * 한 노드는 최대 한 번만 존재했고, 그 결과 *"여러번 왔다갔다 했으면 숫자 여러개
- * 표시"* 가 **구조적으로 불가능**했다 — 순번을 그리는 코드를 아무리 고쳐도 데이터에
- * 걸음이 하나뿐이었다.
+ * The trail is a route, not a set of recent visits. Collapsing A->B->A into A,B
+ * erases the fact that the user came back, which is the only thing this feature
+ * carries.
  *
- * 「걸어온 길」은 최근 방문 **집합**이 아니라 **경로**다. A→B→A 를 A,B 로 접으면
- * 되돌아왔다는 사실 자체가 사라지고, 그건 이 기능이 나르려던 유일한 정보다.
- *
- * **연속 중복만** 무시한다 — 같은 노드를 두 번 클릭하거나 포커스가 재확정되는 것은
- * 걸음이 아니다. 그걸 세면 가만히 있어도 순번이 늘어난다.
+ * **Consecutive duplicates are ignored**: clicking the same node twice, or focus
+ * being reconfirmed, is not a step. Counting those makes the numbers climb while
+ * the user sits still.
  */
 export function appendFootprintVisit(
   trail: readonly string[],
@@ -41,11 +41,11 @@ export function appendFootprintVisit(
 }
 
 /**
- * 인계 패킷·타임라인용 **접힌 트레일** — 같은 노드의 마지막 방문만 남긴다(오래된
- * → 최근 순서 보존). 에이전트에게 같은 `get_concept` 을 세 번 주는 것은 정보가
- * 아니라 소음이고, 사람이 읽는 타임라인도 마찬가지다.
+ * Collapsed trail for the handoff packet and the timeline: only each node's last
+ * visit survives, in original order. Handing an agent the same `get_concept`
+ * three times is noise, and so is a human timeline that repeats.
  *
- * 지도만 원본 트레일(중복 포함)을 쓴다 — 거기서만 반복이 **그림**이 되기 때문이다.
+ * Only the map uses the raw trail, because repetition is legible there as shape.
  */
 export function collapseFootprintTrail(trail: readonly string[]): string[] {
   const out: string[] = [];
@@ -55,10 +55,7 @@ export function collapseFootprintTrail(trail: readonly string[]): string[] {
   return out;
 }
 
-/**
- * 그래프 노드 id(`<kind>:<slug>`)에서 bare 개념 슬러그를 뽑는다 — 인계 패킷의
- * `get_concept("slug")` 시퀀스용. `project:foo` → `foo`, 접두 없는 id 는 그대로.
- */
+/** Bare concept slug from a graph node id (`project:foo` -> `foo`); unprefixed ids pass through. */
 export function graphIdToConceptSlug(nodeId: string): string {
   const idx = nodeId.indexOf(":");
   if (idx < 0) return nodeId;
@@ -67,43 +64,44 @@ export function graphIdToConceptSlug(nodeId: string): string {
 }
 
 export interface FootprintTrailEntry {
-  /** 그래프 노드 id(`<kind>:<slug>`). */
+  /** Graph node id (`<kind>:<slug>`). */
   id: string;
   title: string;
   kind: string;
   /**
-   * 에이전트가 아는 이름 — 볼트 뿌리 기준 문서 slug 또는 참조 원문
-   * (`resolveNodeAgentTarget`). id 꼬리로 되짚으면 슬러그가 뭉개진 파생
-   * 노드(`element:srcentitiesfoots`)에서 볼트에 없는 이름이 나간다.
+   * The name the agent knows: the vault-root document slug or the raw reference
+   * (`resolveNodeAgentTarget`). Deriving it from the id tail instead emits names
+   * the vault does not have for derived nodes whose slug was flattened
+   * (`element:srcentitiesfoots`).
    */
   agentRef?: string | null;
-  /** 자기 문서가 있는가. 없으면 `get_concept` 대신 문서 신설을 안내한다. */
+  /** Whether the node has its own document; if not, the packet suggests creating one instead of `get_concept`. */
   documented?: boolean;
 }
 
-/** 인계문에 박을 이름 — 에이전트가 아는 이름 우선, 없으면 id 꼬리. */
+/** Name for the handoff text: the agent-known name if any, else the id tail. */
 function agentRefOf(entry: FootprintTrailEntry): string {
   return entry.agentRef?.trim() || graphIdToConceptSlug(entry.id);
 }
 
 export interface FootprintTrailPacketLabels {
-  /** 패킷 제목 — "# 걸어온 길 (탐색 경로)". */
+  /** Packet heading. */
   title: string;
-  /** 방문 순서 목록 머리말 — "방문 순서 (오래된 → 최근):". */
+  /** Lead-in for the ordered visit list. */
   order: string;
-  /** get_concept 시퀀스 안내 한 줄. */
+  /** One line introducing the `get_concept` sequence. */
   reviewHint: string;
-  /** find_path 힌트 안내 한 줄(방문 2개 이상일 때만). */
+  /** One line introducing the `find_path` hint; only with 2+ visits. */
   pathHint: string;
-  /** ④ 드리프트 핸드오프 — dusty 노드 안내 한 줄(호출자가 count 포맷,
-   *  dusty 0 이면 섹션 자체 생략). */
+  /** Drift handoff: one line about dusty nodes. The caller formats the count, and
+   *  the whole section is omitted when there are none. */
   dustyHint?: string;
 }
 
 /**
- * 방문 체인을 기존 인계 패킷 문법으로 직렬화 — 슬러그 순서 + `get_concept`
- * 시퀀스 + `find_path` 힌트. 안정적 영문 MCP 호출이라 UI 로케일과 무관하게
- * 코딩 에이전트에 그대로 붙여넣어진다(경로 칩 패킷과 같은 규율). 결정론적.
+ * Serializes the visit chain into the handoff-packet grammar. The MCP calls are
+ * stable English regardless of UI locale, so the packet pastes straight into a
+ * coding agent — the same discipline the path chip's packet follows.
  */
 export function formatFootprintTrailAgentPacket(
   entries: readonly FootprintTrailEntry[],
@@ -117,8 +115,9 @@ export function formatFootprintTrailAgentPacket(
   lines.push("");
   lines.push(labels.reviewHint);
   for (const entry of entries) {
-    // 문서가 없는 개념에 `get_concept` 을 주면 붙여넣는 즉시 "없음" 이다 —
-    // 볼트가 아는 유일한 형태(다른 문서가 적어 둔 참조)를 그대로 밝힌다.
+    // `get_concept` on an undocumented concept answers "not found" the moment it
+    // is pasted, so state the only form the vault knows: a reference another
+    // document wrote down.
     lines.push(
       entry.documented === false
         ? `# ${agentRefOf(entry)} — 아직 문서 없음(참조로만 존재). add_concept 로 만들 수 있어요`
@@ -132,8 +131,8 @@ export function formatFootprintTrailAgentPacket(
     lines.push(labels.pathHint);
     lines.push(`find_path("${first}", "${last}")`);
   }
-  // ④ 살아있는 지도 드리프트 핸드오프 — 지도가 이미 아는 방치 신호를
-  // 에이전트 패킷에도 싣는다(대표 3개 + CLI 큐 힌트). dusty 0 이면 침묵.
+  // Carry the staleness signal the map already shows into the agent packet too:
+  // three representatives plus the CLI queue hint. Silent when there are none.
   if (labels.dustyHint && dustySlugs.length > 0) {
     lines.push("");
     lines.push(labels.dustyHint);

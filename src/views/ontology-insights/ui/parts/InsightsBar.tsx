@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 
 /**
- * 인사이트 분포 막대의 채움 fill(#3 조용한 모션) — 첫 페인트에 width 0 →
- * 목표% 로 --motion-settle 동안 자라며, 행마다 30ms 스태거로 위→아래로
- * 흐른다. reduced-motion 은 처음부터 목표값(애니메이션 없음). track(배경 홈)은
- * 소비처가 소유하고, 이 컴포넌트는 안쪽 fill 만 렌더한다.
+ * The fill of an insights distribution bar — on first paint it grows from width 0 to the target
+ * percentage over `--motion-settle`, staggered 30ms per row so it flows top to bottom. Under
+ * reduced-motion it starts at the target value with no animation. The track (the background groove)
+ * is owned by the consumer; this component renders only the inner fill.
  */
 export function InsightsBar({
   pct,

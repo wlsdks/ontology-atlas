@@ -13,49 +13,50 @@ import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 
 /**
- * "전체 상세"(A1 카드) 모델 조립 — HomePage 모듈화 4차.
+ * Assembles the full-detail card model.
  *
- * **왜 별도 훅인가 (D4 클릭 정지 처방, 2026-07-28).** 이 모델은 지도의 노드를
- * 누를 때마다 조립되고 있었지만, 그리는 표면(`FullDetailCard`)은 사용자가
- * `전체 상세`를 눌러 열기 전까지 렌더되지 않는다. 즉 **가장 잦은 상호작용이
- * 가장 비싼 파생을 매번 선불로 냈다**. 실측(격리 Chromium, dogfood 볼트,
- * 노드 클릭 1회): 그래프 연결 재구성 `buildConnections` 가 클릭당 **11회**
- * 돌았고 그중 9회가 이 닫힌 표면 몫이었다. 그 9회에는
+ * **Why it is a separate hook (click-stall prescription, 2026-07-28).** The
+ * model was being assembled on every map node click, while the surface that
+ * draws it (`FullDetailCard`) does not render until the user opens full
+ * detail. So **the most frequent interaction paid up front for the most
+ * expensive derivation.** Measured (isolated Chromium, dogfood vault, one node
+ * click): `buildConnections` ran **11 times** per click, 9 of them for this
+ * closed surface. Those 9 carry
  *
- * - `buildFullDetailReachModel` 의 **깊이 3 BFS**(그래프 전체),
- * - `buildFullDetailGroups` 안에서 이웃 **한 행마다** 도는
- *   `countContainmentChildren`(엣지 전수 순회 — 이웃 수 × 엣지 수),
- * - 팝오버가 이미 만든 것과 같은 `deriveCodeLocations`
+ * - `buildFullDetailReachModel`'s **depth-3 BFS** over the whole graph,
+ * - `countContainmentChildren` inside `buildFullDetailGroups`, run for **each**
+ *   neighbour row (a full edge scan — neighbours × edges),
+ * - the same `deriveCodeLocations` the popover already built.
  *
- * 가 들어 있다. 작은 볼트에서는 눈에 안 띄지만 볼트가 커질수록 이 항이 클릭
- * 프레임을 통째로 먹는다.
+ * On a small vault this is invisible; as the vault grows this term eats the
+ * whole click frame.
  *
- * 그래서 계약은 하나다: **`open` 이 false 면 그래프를 단 한 번도 순회하지
- * 않는다.** 열려 있을 때의 결과는 종전과 100% 같다 — 정확성을 늦추거나
- * 근사하지 않는다. 카드를 여는 순간 같은 렌더에서 동기로 조립되므로 "틀린
- * 값을 먼저 보여주고 나중에 고친다"는 실패 모드가 없다.
+ * Hence one contract: **while `open` is false the graph is never traversed.**
+ * The open result is identical to before — nothing is deferred or
+ * approximated. Opening the card assembles it synchronously in the same
+ * render, so there is no "show a wrong value first, fix it later" failure mode.
  *
- * 회귀 가드: `use-full-detail-a1-model.test.ts` (닫힘 → 순회 0회).
+ * Regression guard: `use-full-detail-a1-model.test.ts` (closed → 0 traversals).
  */
 export interface UseFullDetailA1ModelArgs {
   /**
-   * 전체 상세 카드가 실제로 화면에 있는가. `false` 면 이 훅은 즉시 `null` 을
-   * 돌려주고 어떤 그래프 순회도 하지 않는다.
+   * Whether the full-detail card is actually on screen. While `false` the hook
+   * returns `null` immediately and performs no graph traversal.
    */
   open: boolean;
   nodeFocus: TopologyNodeFocusModel | null;
   selectedOntologyNode: KnowledgeGraphNode | null;
   insight: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
-  /** 세션 changeset baseline — 데이터시트 판정이 없을 때의 fallback. */
+  /** Session changeset baseline — the fallback when the datasheet has no verdict. */
   changedSlugs: ReadonlySet<string>;
-  /** 열린 문서의 본문 (있으면 마크다운 본문으로 렌더). */
+  /** Body of the opened document, rendered as markdown when present. */
   nodeBody: { slug: string; raw: string; body: string } | null;
-  /** 이 노드에 대응하는 vault 문서 (있으면 인라인 편집 가능). */
+  /** The vault document matching this node; its presence enables inline editing. */
   nodeEditTarget: { vaultSlug: string } | null;
-  /** vault 가 로드돼 있는가 — 읽기 전용 샘플에서는 편집 액션을 내지 않는다. */
+  /** Whether a vault is loaded — read-only samples offer no edit action. */
   vaultLoaded: boolean;
   onSaveExplanation: (next: string) => void | Promise<void>;
-  /** 컴팩트 팝오버가 이미 내린 신선도/편집주체 판정 — 두 번 만들지 않는다. */
+  /** The freshness / last-edit verdicts the compact popover already made — never made twice. */
   datasheet: NodeDatasheetDerivation["v2DatasheetModel"];
 }
 
@@ -72,7 +73,7 @@ export function useFullDetailA1Model({
   datasheet,
 }: UseFullDetailA1ModelArgs) {
   return useMemo(() => {
-    // 닫힌 표면은 그래프를 순회하지 않는다 — 이 한 줄이 D4 처방의 전부다.
+    // A closed surface never traverses the graph — this one line is the whole fix.
     if (!open) return null;
     if (!nodeFocus || !selectedOntologyNode || !insight) return null;
     const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
@@ -95,8 +96,9 @@ export function useFullDetailA1Model({
     const projectTitle = insight.nodes.find((n) => n.kind === "project")?.title ?? null;
     const loadedBody = nodeBody && nodeBody.slug === slug ? nodeBody.body : null;
     const bodyMarkdown = loadedBody ?? selectedOntologyNode.summary ?? null;
-    // 전체 상세도 `근거` 목록이 없는 표면 — 자기 문서가 없으면 링크를 지우는
-    // 대신 "언급한 문서" 로 라벨을 바꿔 남긴다.
+    // Full detail has no evidence list either, so with no document of its own
+    // the link is relabelled as "the document that mentions it" rather than
+    // dropped.
     const documentHref = nodeFocus.ownDocumentSlug
       ? buildDocsVaultHref({ slug: nodeFocus.ownDocumentSlug })
       : null;
@@ -113,33 +115,33 @@ export function useFullDetailA1Model({
     return {
       node: {
         id: selectedOntologyNode.id,
-        // 과제 ⑩ — 헤더는 표시용 짧은 제목 크게 + 원본 title 은 fullTitle 로
-        // secondary 보존(FullDetailA1 이 다를 때만 렌더).
+        // The header shows the short display title large and keeps the
+        // original as `fullTitle`, rendered only when the two differ.
         title: nodeFocus.displayTitle,
         fullTitle: nodeFocus.title,
         kind: nodeFocus.kind,
         slug,
-        // 인계 체인이 쓰는 이름은 매니페스트 slug 가 아니라 볼트가 아는 이름.
+        // The handoff chain uses the name the vault knows, not the manifest slug.
         ...(() => {
           const target = resolveNodeAgentTarget(selectedOntologyNode);
           return { agentSlug: target.ref, documented: target.documented };
         })(),
-        // 진입 검수 E-5 — 신선도의 단일 진실원은 문서 mtime 램프다
-        // (`use-node-datasheet-model` M-3). 세션 changeset baseline 으로
-        // 따로 판정하던 이 자리가 데이터시트와 상반된 문장을 냈다
-        // (「2일 전 바뀜」 vs 「한동안 그대로」, 같은 domains/catalog).
-        // 같은 노드에 대한 데이터시트의 판정을 그대로 받는다 — 없을 때만
-        // (다른 노드 / 모델 미생성) 종전 baseline 으로 되돌린다.
+        // Freshness has one source: the document mtime ramp (see
+        // `use-node-datasheet-model`). Judging it here from the session
+        // changeset baseline instead produced a sentence contradicting the
+        // datasheet on the same node — "changed 2 days ago" beside "unchanged
+        // for a while" for the same domains/catalog. Take the datasheet's
+        // verdict for the same node, and fall back to the old baseline only
+        // when there is none (different node, or no model built).
         fresh:
           datasheet?.nodeId === selectedOntologyNode.id
             ? datasheet.powered
             : changedSlugs.has(selectedOntologyNode.id),
         updatedAtLabel:
           datasheet?.nodeId === selectedOntologyNode.id ? datasheet.updatedAtLabel : null,
-        // rank7 (design-council B5) — 같은 노드 선택에서 나온
-        // `v2DatasheetModel`(compact 패널)의 SAME fact 를 그대로 재사용 —
-        // 이 노드의 baseline/heartbeat 판정을 두 번 만들지 않는다(count
-        // drift 방지 원칙과 동일 이유).
+        // Reuse the SAME fact from the compact panel's `v2DatasheetModel` for
+        // this selection: the baseline/heartbeat verdict for this node is never
+        // computed twice (same reason as the count-drift rule).
         lastEditSubject:
           datasheet?.nodeId === selectedOntologyNode.id ? datasheet.lastEditSubject : null,
         mtimeConflict:
@@ -150,7 +152,7 @@ export function useFullDetailA1Model({
       codeLocations,
       breadcrumb: {
         projectTitle,
-        // P0c — 정본 census (renderProjects 이중 가산 제거)
+        // The canonical totals — `renderProjects` used to double-count these.
         totalConcepts: insight.nodes.length,
         totalRelations: insight.edges.length,
       },

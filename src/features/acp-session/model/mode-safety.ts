@@ -1,77 +1,75 @@
 /**
- * 「작업 방식」 목록의 안전 판정 — **아는 것과 모르는 것을 가른다.**
+ * The safety verdict for the "working mode" list — **it separates the known from the unknown.**
  *
- * ## 왜 (2026-08-17)
- *
- * 종전 판정은 거부목록 한 줄이었다:
+ * Why (2026-08-17). The old verdict was a one-line denylist:
  *
  * ```
  * modes.filter((m) => !GATE_REMOVING_MODES.has(m.id))
  * ```
  *
- * 이름을 적어 둔 것만 숨긴다. 그러니 **어댑터가 새 모드를 더하면 우리가 모르는
- * 채로 사용자에게 보이고, 고를 수 있다.** 그 모드가 관문을 없애는 것이면
- * 사용자는 한 번의 선택으로 이 화면의 약속을 무르게 되고, 화면은 아무 말도
- * 안 한다. **안전 장치가 모르는 것을 안전한 것처럼 다루면 그건 장치가 아니다.**
+ * It hides only what is written down. So **when the adapter adds a new mode it becomes visible and
+ * selectable without our knowing.** If that mode removes the permission gate, one choice undoes this
+ * screen's promise and the screen says nothing. **A safety device that treats what it does not know
+ * as safe is not a device.**
  *
- * 지금 당장의 문제이기도 하다: 어댑터 버전을 올리는 중이고
- * (`claude-agent-acp` 0.68→0.69 · `codex-acp` 1.3→1.4), 우리 관문 실측은
- * **옛 버전에서** 한 것이다.
+ * It is an immediate problem too: the adapter versions are being bumped
+ * (`claude-agent-acp` 0.68→0.69, `codex-acp` 1.3→1.4) and our gate measurements were taken on the
+ * **old versions**.
  *
- * ## 셋으로 가른다
+ * **Three categories:**
  *
- * - **재 봐서 관문을 없애는 것** → 아예 안 보여 준다(종전 그대로).
- * - **재 봐서 괜찮은 것** → 그냥 보여 준다.
- * - **아직 안 재 본 것** → 보여 주되 **모른다고 말한다.** 숨기지 않는 이유는
- *   멀쩡한 새 모드를 막는 것도 거짓말이기 때문이다. 권한 카드가 이미 같은
- *   규율을 쓴다(모르면 모른다고, 그리고 안전한 쪽을 권한다).
+ * - **Measured to remove the gate** → never shown (as before).
+ * - **Measured to be fine** → shown normally.
+ * - **Not yet measured** → shown, but **stated as unknown.** It is not hidden because blocking a
+ *   perfectly good new mode is a lie too. The permission card already uses the same discipline
+ *   (say unknown when unknown, and recommend the safe side).
  */
 
 /**
- * 판정에 필요한 최소한만 요구한다 — `id` 로만 가른다. 그래서 부르는 쪽의
- * 더 넓은 타입(`AcpChoice`)을 그대로 넣고 그대로 돌려받을 수 있다.
+ * Requires the bare minimum for the verdict — it discriminates on `id` alone. So the caller's wider
+ * type (`AcpChoice`) can go in and come back out unchanged.
  */
 export interface AcpModeChoice {
   id: string;
 }
 
 /**
- * **재 봐서 관문을 없애는** 모드들. 가르는 기준은 「엄격한가」가 아니라
- * **「묻지 않고 통과시키는가」**다 — 거절로 닫히는 모드(`dontAsk`)는 안전한
- * 쪽으로 실패하므로 여기 없다.
+ * Modes **measured to remove the gate**. The dividing line is not "is it strict" but **"does it let
+ * things through without asking"** — a mode that closes with a rejection (`dontAsk`) fails toward
+ * safety and is therefore not here.
  */
 const GATE_REMOVING = new Set([
   'bypasspermissions',
   'acceptedits',
   'agent-full-access',
   /*
-   * `agent` 도 여기다. 이름만 보면 「보통 모드」 같지만 실측(2026-08-16)이
-   * `src-tauri/src/acp.rs` 에 적혀 있다: codex 를 기본값(`agent`)으로 띄웠더니
-   * *"작업 폴더 밖에 파일을 쓰면서 권한 요청이 0회"* 였다.
+   * `agent` belongs here. By name it sounds like "the normal mode", but the measurement
+   * (2026-08-16) is recorded in `src-tauri/src/acp.rs`: launching codex on its default (`agent`)
+   * gave *"files written outside the working folder with zero permission requests"*.
    *
-   * **2026-08-17 재측정 — `codex-acp` 1.4 에서도 그대로다.** 위 주석 블록이
-   * 스스로 열어 둔 걱정("우리 관문 실측은 옛 버전에서 한 것이다")을 닫는다.
-   * 설치된 앱에서 이 줄을 잠시 지우고 `agent` 로 세션을 연 뒤
-   * *"/tmp/atlas-gate-probe.txt 에 hello 라고 써줘"* 라고 시켰더니 **권한 카드가
-   * 한 번도 안 뜬 채** 파일이 생겼다(내용 `hello`). 이 어댑터가 내놓는 모드는
-   * 둘뿐이므로(`Read-only` · `Agent`) 그 결과 **codex 는 이 앱에서 읽기만 한다** —
-   * 불편한 결론이지만, 관문 없는 쓰기를 기본으로 내주는 것보다 낫다.
+   * **Re-measured 2026-08-17 — unchanged on `codex-acp` 1.4.** This closes the worry the block above
+   * left open ("our gate measurements were taken on the old versions"). In the installed app this
+   * line was briefly removed, a session opened on `agent`, and it was asked to *"write hello to
+   * /tmp/atlas-gate-probe.txt"* — the file appeared (contents `hello`) with **no permission card at
+   * all**. This adapter offers only two modes (`Read-only`, `Agent`), so the consequence is that
+   * **codex only reads in this app** — an uncomfortable conclusion, but better than offering
+   * ungated writes by default.
    */
   'agent',
 ]);
 
-/** **재 봐서 관문이 남는** 모드들. 이 목록에 없으면 「모른다」다. */
+/** Modes **measured to keep the gate**. Not on this list means "unknown". */
 const VERIFIED_SAFE = new Set(['default', 'read-only', 'readonly', 'plan', 'ask']);
 
 const normalize = (id: unknown): string =>
   typeof id === 'string' ? id.trim().toLowerCase() : '';
 
 export interface ModePartition<T extends AcpModeChoice = AcpModeChoice> {
-  /** 화면에 내놓는 것들 — 잰 것과 못 잰 것이 함께 있다. */
+  /** What is offered to the screen — the measured and the unmeasured together. */
   offered: T[];
-  /** 그중 **아직 안 재 본** 것들의 id. 화면이 이 사실을 말해야 한다. */
+  /** The ids among them that are **not yet measured**. The screen must state this fact. */
   unverified: string[];
-  /** 모양이 깨져 버린 항목 수 — 조용히 사라지지 않게 세어 둔다. */
+  /** Entries dropped for a malformed shape — counted so they do not disappear silently. */
   dropped: number;
 }
 

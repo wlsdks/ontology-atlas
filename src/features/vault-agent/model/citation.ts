@@ -1,30 +1,32 @@
 import type { AnswerGrounding, CitedParagraph } from './types';
 
 /**
- * 인용 강제 — 답을 렌더하기 전에 `[[slug]]` 인용을 검증한다.
+ * Citation enforcement — validates `[[slug]]` citations before the answer is rendered.
  *
- * 규칙 셋:
- * ① **이 턴에 실제로 읽지 않은 slug 는 인용이 아니다.** 모델이 지어낸
- *    이름을 칩으로 만들면 누르는 순간 빈 곳으로 데려간다.
- * ② 근거의 판정은 **두 갈래**다 — 아래 참조.
- * ③ 모델이 쓴 마크다운 표기(`**굵게**` · 인라인 코드)는 화면에 글자로
- *    남지 않는다. 정보를 안 나르는 글자다.
+ * Three rules:
+ * ① **A slug not actually read this turn is not a citation.** Turning a name the
+ *    model invented into a chip takes the user somewhere empty when pressed.
+ * ② The evidence verdict has **two branches** — see below.
+ * ③ Markdown notation the model wrote (`**bold**`, inline code) does not survive as
+ *    literal characters on screen. Those characters carry no information.
  *
- * ## 왜 "인용 0" 하나로 판정하면 안 되나 (2026-08-02)
+ * ## Why "zero citations" alone must not decide (2026-08-02)
  *
- * 이 파일은 오래 `demoted: total === 0` 하나만 봤다. 인용 **표기**의 개수이지
- * 도구 호출과는 아무 상관이 없는 값이다. 실측 턴에서 도구를 4번 부르고
- * 1,370자를 읽어 화면에 「읽음: capabilities/checkout 635자」까지 찍어 놓고,
- * 네 줄 아래에서 「읽은 근거 없이 답했어요」가 떴다 — 모델이 `[[…]]` 대신
- * 백틱으로 이름을 적었기 때문이다. 화면이 자기 화면을 부정한 것이다.
+ * This file long looked only at `demoted: total === 0` — a count of citation
+ * **markers**, unrelated to tool calls. In a measured turn the agent called tools
+ * four times and read 1,370 characters, with "read: capabilities/checkout, 635
+ * characters" printed on screen, and four lines below it said "answered with no
+ * evidence read" — because the model wrote the name in backticks instead of
+ * `[[…]]`. The screen contradicted its own screen.
  *
- * 그래서 갈래를 나눈다. 둘은 **다음 행동이 다르다**:
+ * So the branches are split. The two have **different next actions**:
  *
- * - `unread` — 이 턴에 읽은 것이 하나도 없다. 근거가 없는 게 맞으니 강등하고,
- *   되돌아갈 길(다시 읽고 답하기)을 준다.
- * - `uncited` — 읽었는데 표기만 없다. 이건 고칠 문제가 아니라 **정확한
- *   자기 서술**이라 컨트롤을 붙이지 않는다. 화면이 읽은 목록을 「참고한 자료」
- *   칩으로 기계적으로 보정한다 — 모델 순응에 기대지 않는다.
+ * - `unread` — nothing was read this turn. There genuinely is no evidence, so it is
+ *   demoted and given a way back (read again and answer).
+ * - `uncited` — it was read, only the notation is missing. That is not a problem to
+ *   fix but **an accurate self-description**, so no control is attached. The screen
+ *   compensates mechanically with the read list as "sources consulted" chips —
+ *   never relying on the model complying.
  */
 
 const CITATION_PATTERN = /\[\[([^[\]]+)\]\]/g;
@@ -32,7 +34,7 @@ const CITATION_PATTERN = /\[\[([^[\]]+)\]\]/g;
 export interface CitationResult {
   paragraphs: CitedParagraph[];
   grounding: AnswerGrounding;
-  /** 읽은 적 없어 무효 처리된 이름들. 화면이 조용히 지우지 않고 알린다. */
+  /** Names invalidated because they were never read. The screen says so rather than deleting them quietly. */
   droppedCitations: string[];
 }
 
@@ -75,14 +77,15 @@ const BOLD_PATTERN = /\*\*([^*\n]+)\*\*/g;
 const INLINE_CODE_PATTERN = /`([^`\n]+)`/g;
 
 /**
- * 모델이 쓴 인라인 마크다운 표기를 **글자 단위로 지운다** (렌더하지 않는다).
+ * **Deletes inline markdown notation the model wrote, character by character**
+ * (it is not rendered).
  *
- * 화면에 `**증거가 없는 기능(\`capability\`):**` 이 문자 그대로 찍히고 있었다.
- * 별표와 백틱은 이 표면에서 아무 정보도 나르지 않는다 — 대화 본문의 강조
- * 문법은 인용 칩이고, 그건 `[[…]]` 가 이미 맡고 있다.
+ * `**증거가 없는 기능(\`capability\`):**` was being printed literally on screen.
+ * Asterisks and backticks carry no information on this surface — the emphasis
+ * grammar of the conversation body is the citation chip, and `[[…]]` already owns that.
  *
- * 코드 펜스(``` ) 안은 건드리지 않는다. 거기서는 백틱이 경계라서 지우면
- * 내용이 무너진다.
+ * Inside a code fence (```) nothing is touched: there the backticks are the
+ * boundary, and deleting them collapses the content.
  */
 function stripInlineMarkup(text: string): string {
   let inFence = false;

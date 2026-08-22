@@ -2,39 +2,37 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { trimToRecentSections } from '@/views/gateway-doc/lib/vault-doc';
-// 생성기 쪽 구현 — 아래 「같은 절단」 계약이 두 구현의 drift 를 잡는다.
+// The generator-side implementation — the "same trim" contract below catches drift between the two.
 import {
   GATEWAY_CHANGELOG_KEEP_SECTIONS,
   trimToRecentSections as generatorTrim,
 } from '../../scripts/build-docs-vault.mjs';
 
 /**
- * 번들 볼트 데이터의 **상시 크기 게이트** (2026-08-19).
+ * **Always-on size gate** for the bundled vault data (2026-08-19).
  *
- * ## 왜 이 시험이 있나
+ * **Why this test exists.** The hard budgets in `pnpm desktop:perf` (largest
+ * chunk 1.5MiB, Next static total 8MiB) run only in
+ * `desktop:release-preflight`, so **nobody saw red** while CHANGELOG grew to
+ * 634KB and 263KB of headings rode in every route's shared chunk — it surfaced at
+ * release prep as 1.71MiB/8.42MiB. Chunk size cannot be measured without
+ * `next build`, but the **cause** of the growth (data JSON statically imported
+ * into the shared chunk) is a file size and can be measured on every
+ * `pnpm test:run`. This test moves that half to always-on; the other half (real
+ * chunk measurement) still belongs to `desktop:perf`, which `checks:changed`
+ * recommends when the relevant paths change.
  *
- * `pnpm desktop:perf` 의 하드 예산(최대 청크 1.5MiB · Next 정적 합 8MiB)은
- * `desktop:release-preflight` 에서만 돌아서, CHANGELOG 가 634KB 로 자라고
- * headings 263KB 가 모든 라우트의 공통 청크에 실리는 동안 **아무도 빨간불을
- * 못 봤다** — 릴리스 준비에서야 1.71MiB/8.42MiB 로 발견됐다. 청크 크기는
- * `next build` 없이 못 재지만, 청크를 키운 **원인**(공통 청크에 정적으로
- * import 되는 데이터 JSON)은 파일 크기라서 매 `pnpm test:run` 에서 잴 수
- * 있다. 이 시험이 그 절반을 상시로 옮긴 것이다 — 나머지 절반(진짜 청크
- * 측정)은 여전히 `desktop:perf` 가 갖고, `checks:changed` 가 관련 경로 변경
- * 시 그것을 추천한다.
- *
- * ## 상한의 근거 (실측 2026-08-19)
- *
- * 공통 청크 = 이 데이터들(minify 후) + 앱 코드 ≈ 0.72MiB (예산 1.5MiB).
- * pretty-printed 합계 867KB 기준으로 상한 1.25MiB 를 두면, minify 후에도
- * 청크가 예산에 닿기 한참 전에 여기가 먼저 빨간불이 된다. 이 상한을 올리는
- * PR 은 `pnpm build && pnpm desktop:perf` 실측을 본문에 적어야 한다 —
- * 숫자만 올려 초록을 만드는 것은 계기를 고장 내는 것이다.
+ * **Basis for the cap (measured 2026-08-19).** The shared chunk = this data
+ * (minified) + app code ≈ 0.72MiB against a 1.5MiB budget. With a pretty-printed
+ * total of 867KB, a 1.25MiB cap here turns red well before the minified chunk
+ * approaches its budget. A PR raising this cap must include measured
+ * `pnpm build && pnpm desktop:perf` output in its body — raising the number to
+ * get green is breaking the instrument.
  */
 
 const DATA_DIR = path.join(process.cwd(), 'src', 'entities', 'docs-vault', 'data');
 
-/** static-vault-source.ts 가 **정적으로 import** 해 공통 청크에 실리는 파일들. */
+/** Files that static-vault-source.ts **imports statically**, putting them in the shared chunk. */
 const STATICALLY_BUNDLED = [
   'manifest.json',
   'gateway-content.json',
@@ -60,9 +58,9 @@ describe('번들 볼트 데이터 상시 예산', () => {
         ...sizes.map((f) => `  ${f.name}: ${(f.bytes / 1024).toFixed(0)}KB`),
       ].join('\n'),
     ).toBeLessThanOrEqual(AGGREGATE_BUDGET_BYTES);
-    // 가드 자가 증명 — 파일이 하나라도 못 읽히면 statSync 가 던지고, 합이
-    // 터무니없이 작으면(데이터가 사라졌으면) 게이트가 빈 집합 위에서 놀고
-    // 있는 것이다.
+    // Self-proof for the guard: an unreadable file makes statSync throw, and an
+    // absurdly small total (the data having disappeared) means the gate is idling on
+    // an empty set.
     expect(total).toBeGreaterThan(500 * 1024);
   });
 
@@ -91,7 +89,7 @@ describe('번들 볼트 데이터 상시 예산', () => {
         `${name} 에 headings 가 도로 인라인됐다 — 263KB 가 모든 라우트 공통 청크로 돌아간다. scripts/build-docs-vault.mjs 의 splitManifestHeadings 를 보라.`,
       ).toEqual([]);
     }
-    // 떼어낸 맵이 실제로 차 있다 — 둘 다 비면 분리가 아니라 유실이다.
+    // The extracted map really has content — both being empty is loss, not separation.
     const headings = JSON.parse(
       readFileSync(path.join(DATA_DIR, 'manifest.headings.json'), 'utf8'),
     ) as Record<string, unknown[]>;
@@ -118,8 +116,8 @@ describe('관문 CHANGELOG 미리보기 계약', () => {
     const expected = trimToRecentSections(changelogRaw, GATEWAY_CHANGELOG_KEEP_SECTIONS);
     expect(committed.body).toBe(expected.body);
     expect(committed.omittedSections).toBe(expected.omittedSections);
-    // 미리보기가 실제로 잘려 있다 — CHANGELOG 는 계속 자라는 문서이므로
-    // 접힌 절이 0 이라면 절단이 죽었거나 전문이 도로 들어온 것이다.
+    // The preview really is trimmed — CHANGELOG only grows, so 0 omitted sections
+    // means either the trim died or the full text came back.
     expect(committed.omittedSections).toBeGreaterThan(0);
   });
 

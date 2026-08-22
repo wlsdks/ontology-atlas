@@ -11,49 +11,49 @@ const buttonVariants = cva(
     'border border-transparent',
     'select-none',
     /*
-     * ⚠️ duration 을 안 적는다 (2026-08-15). 종전엔 `--motion-base`(180ms) —
-     * **이동 램프**였다. 호버는 「이미 일어난 상태를 알려 주는 것」이라
-     * `--motion-fast`(120ms) 예산이고, 그건 Tailwind 기본 전환이 이미 낸다
-     * (`design.md`: 「기본값이면 duration 클래스를 아예 쓰지 않는다」).
-     * `active:translate-y-[1px]` 누름 되먹임도 같은 그룹을 타므로 함께
-     * 120ms 가 된다 — 누름은 즉시여야 하는 자리다.
-     * `ease-` 도 같은 이유로 뺀다(기본값과 같은 값이었다).
+     * ⚠️ No duration here (2026-08-15). It used to be `--motion-base` (180ms), which is
+     * the **move** step. Hover only acknowledges a state that already changed, so its
+     * budget is `--motion-fast` (120ms) — and Tailwind's default transition already
+     * spends exactly that (`.claude/rules/design.md`: at the default value, omit the
+     * duration class entirely). The `active:translate-y-[1px]` press feedback rides the
+     * same group and therefore also lands at 120ms, which is right — a press must feel
+     * immediate. `ease-` is dropped for the same reason: it equalled the default.
      */
     'transition-[background-color,border-color,color,box-shadow,transform]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]',
     'active:translate-y-[1px]',
     'motion-reduce:transition-none motion-reduce:transform-none',
-    // disabled: 시각적 약화 + 커서 변경. pointer-events-none 대신 cursor-
-    // not-allowed 로 hover 시 "왜 눌러도 안 되지" 명확화. hover 스타일은
-    // disabled 일 때 적용 X — motion 단 여전히 가능 (transition 도 끔).
+    // Disabled uses `cursor-not-allowed` rather than `pointer-events-none`, so hovering
+    // still answers "why won't this press". Hover styling is suppressed while disabled.
     'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:bg-inherit disabled:hover:border-inherit disabled:active:translate-y-0',
   ].join(' '),
   {
     variants: {
       variant: {
-        // ✅ **착색 키 그림자를 걷었다 (2026-08-06 소유자 판정).**
+        // **The tinted key shadow was removed** (owner decision, 2026-08-06).
         //
-        // 종전 primary 는 쉴 때 `0 10px 24px var(--color-indigo-a22)`, 눌릴 때
-        // `0 6px 14px var(--color-indigo-a20)` 이라는 **인디고 착색 드롭**을
-        // 갖고 있었다. 위 두 줄이 예고한 그대로 «착색 그림자는 광원이 둘이라는
-        // 뜻» 이고, 소유자가 색을 바꿔도 된다고 판정하면 답은 이미 적혀 있었다 —
-        // `--shadow-control-press` 로 흡수.
+        // `primary` used to carry an indigo-tinted drop shadow — `0 10px 24px
+        // var(--color-indigo-a22)` at rest and `0 6px 14px var(--color-indigo-a20)` when
+        // pressed. A tinted shadow implies a second light source; once the owner allowed
+        // the colour to change, the answer was already on the ramp:
+        // `--shadow-control-press`.
         //
-        // 왜 쉴 때는 드롭을 아예 안 주나: 전수 실측(2026-08-06) 결과 이 저장소의
-        // 비토큰 `shadow-[…]` 21건 중 **18건이 inset(재질)뿐**이고, 드롭을 손으로
-        // 쓴 4건이 이탈이었다. 같은 cva 의 `outline` 도 쉴 때 inset 만 쓴다. 즉
-        // 관례는 「쉬는 컨트롤은 재질, 드롭은 떠 있는 것의 몫」이다. primary 가
-        // 주목을 이기는 근거는 그림자가 아니라 **채운 인디고 면**이다.
+        // Why no drop shadow at rest: a full inventory (2026-08-06) found that of the 21
+        // non-token `shadow-[…]` uses in this repo, **18 were inset only** (material), and
+        // the 4 hand-written drops were the outliers. `outline` in this same cva is also
+        // inset-only at rest. The convention is therefore: resting controls get material,
+        // drop shadows belong to things that float. What makes `primary` win attention is
+        // the filled indigo plane, not a shadow.
         //
-        // 결과: 램프 밖 기하 2건 제거 · 새 토큰 0개 · 광원 하나.
+        // Result: two off-ramp geometries removed, zero new tokens, one light source.
         //
-        // 잉크는 `--color-text-on-accent`(#ffffff) 다 — **`--color-text-primary`
-        // 가 아니다.** 채운 인디고(`#5e6ad2`) 위에서 `#f7f8f8` 은 합성 대비
-        // **4.42:1** 로 WCAG 1.4.3 AA(4.5) 밑이고, `#ffffff` 는 **4.70:1** 로
-        // 통과한다. 이 토큰은 2026-08-03 에 「채운 인디고 위의 잉크」 라는
-        // 이름으로 이미 만들어져 `control-class.ts` 의 `accentSolid` 가 쓰고
-        // 있었는데, 이 프리미티브만 이관에서 빠져 있었다 — 관문의 주 CTA 가
-        // 앱에서 가장 눈에 띄는 컨트롤인데 유일하게 AA 미달이던 이유다.
+        // The ink is `--color-text-on-accent` (#ffffff), **not `--color-text-primary`**.
+        // On filled indigo (`#5e6ad2`), `#f7f8f8` composites to **4.42:1**, under WCAG
+        // 1.4.3 AA (4.5); `#ffffff` reaches **4.70:1** and passes. That token was created
+        // on 2026-08-03 as "ink on filled indigo" and `accentSolid` in `control-class.ts`
+        // already used it — this primitive was the one site the migration missed, which is
+        // why the gateway's main CTA, the most prominent control in the app, was the only
+        // one below AA.
         primary:
           'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-border-strong)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-brand-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),var(--shadow-control-press)]',
         ghost:
@@ -84,17 +84,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         /*
-         * ★ **기본은 `button` 이다** (2026-08-15 이식성 시험이 잡았다).
+         * **The default is `type="button"`** (found by a portability test, 2026-08-15).
          *
-         * 형제 프리미티브(`Chip`·`IconButton`·`RowButton`)는 *"폼 안에서
-         * `<button>` 의 기본은 submit 이라 칩 하나가 폼을 보낸다"* 를 막는 것을
-         * 자기 존재 이유로 적어 두었는데, 정작 **표준 버튼만 raw `<button>`**
-         * 이었다. 이 저장소 안에서는 안 터졌다 — 폼이 하나뿐이고 그 안의 버튼
-         * 일곱이 전부 `type` 을 손으로 달아 뒀기 때문이다. 그 관례를 모르는
-         * 사람(= 이 시스템을 받아 갈 사람)에게는 「취소」가 폼을 보낸다.
+         * The sibling primitives (`Chip`, `IconButton`, `RowButton`) all name the same
+         * hazard as their reason to exist — inside a form a bare `<button>` defaults to
+         * submit, so one chip submits the form — yet the standard button was the one that
+         * stayed a raw `<button>`. It never broke here because this repo has a single form
+         * and all seven buttons in it set `type` by hand. For anyone who does not know
+         * that convention (i.e. anyone adopting this system), "Cancel" submits the form.
          *
-         * `{...props}` 가 **뒤에** 펼쳐지므로 `type="submit"` 을 넘기면 그쪽이
-         * 이긴다 — 기존 소비처는 하나도 안 바뀐다.
+         * `{...props}` spreads **after** this, so passing `type="submit"` still wins and
+         * no existing call site changes.
          */
         type="button"
         className={cn(buttonVariants({ variant, size }), className)}

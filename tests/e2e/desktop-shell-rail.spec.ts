@@ -2,31 +2,32 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **설치된 앱의 `/` 에는 좌측 레일이 있다** (2026-08-01 실측 수리).
+ * **The installed app's `/` has the left rail** (measured and repaired 2026-08-01).
  *
- * ## 이 스펙이 막는 회귀
+ * **The regression this spec blocks.** The owner caught it in the installed app —
+ * *"앱에서 왜 LNB가 없지?"* (why is there no left nav in the app?). The cause was not
+ * the rail logic but **the boundary between static prerender and hydration**:
  *
- * 소유자가 설치 앱에서 잡았다 — *"앱에서 왜 LNB가 없지?"*. 원인은 레일 로직이
- * 아니라 **정적 프리렌더와 하이드레이션의 경계**였다:
+ * 1. The shell hides the rail via
+ *    `isGatewaySurface(pathname, { desktop: isDesktopShell(), … })`.
+ * 2. Prerender has no `window`, so `isDesktopShell()` is **always false**. `/` is
+ *    therefore judged a gateway and `lg:hidden` is baked into the HTML.
+ * 3. **React hydration does not repair attribute mismatches.** Even when the client's
+ *    first render produces the right value, the class the server wrote stays in the DOM.
+ * 4. The installed app always opens `/` with that HTML, so the rail disappeared
+ *    **permanently**.
  *
- * 1. 셸은 `isGatewaySurface(pathname, { desktop: isDesktopShell(), … })` 로
- *    레일을 감춘다.
- * 2. 프리렌더에는 `window` 가 없으므로 `isDesktopShell()` 이 **항상 false** 다.
- *    그래서 `/` 가 「관문」으로 판정되고 `lg:hidden` 이 HTML 에 구워진다.
- * 3. **React 의 하이드레이션은 속성 불일치를 고쳐 주지 않는다.** 클라이언트
- *    첫 렌더가 옳은 값을 내도 서버가 쓴 클래스가 DOM 에 남는다.
- * 4. 설치 앱은 언제나 `/` 를 그 HTML 로 열기 때문에 레일이 **영구히** 사라졌다.
+ * On the web the same judgement happened to be correct (a visitor with no vault is on
+ * the gateway), so nobody saw it, and the same address **was fine when entered by
+ * client navigation** — a real re-render runs then. That asymmetry is the defect's
+ * fingerprint.
  *
- * 웹에서는 같은 판정이 마침 옳아서(볼트 없는 방문자 = 관문) 아무도 못 봤고,
- * 같은 주소도 **클라이언트 내비게이션으로 들어가면 정상**이었다 — 그때는 진짜
- * 리렌더가 돈다. 그 비대칭이 이 결함의 지문이다.
- *
- * ## 왜 브라우저에서 데스크톱을 재현하나
- *
- * 앱은 WKWebView 라 DOM 을 밖에서 잴 수 없고, 웹과 **같은 정적 export** 를 싣는다
- * (`surfaces.md` — 코드베이스는 가르지 않는다). 그래서 판정을 가르는 유일한
- * 신호(`globalThis.isTauri`)만 주입하면 같은 분기를 밟는다. 데스크톱 능력 자체는
- * 여전히 설치 앱 실측으로만 증명하지만, **이 결함은 능력이 아니라 렌더 경계**다.
+ * **Why the desktop is reproduced in a browser.** The app is a WKWebView so its DOM
+ * cannot be measured from outside, and it ships **the same static export** as the web
+ * (.claude/rules/surfaces.md — the codebase is not forked). So injecting the single
+ * signal that changes the judgement (`globalThis.isTauri`) walks the same branch.
+ * Desktop capabilities themselves are still proven only by measuring the installed app,
+ * but **this defect is a render boundary, not a capability**.
  */
 const DESKTOP_INIT = () => {
   (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {
@@ -53,8 +54,8 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
     await page.addInitScript(DESKTOP_INIT);
     await page.setViewportSize({ width: 1512, height: 949 });
     await seedFirstRunSeen(page);
-    // **SSR 진입이 요점이다** — 클라이언트 내비로 들어가면 리렌더가 돌아서
-    // 결함이 숨는다. 앱이 실제로 밟는 경로만 이 회귀를 드러낸다.
+    // **Entering via SSR is the point** — entering by client navigation runs a re-render
+    // and hides the defect. Only the path the app actually takes exposes this regression.
     await page.goto("/ko/", { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
 
@@ -93,14 +94,15 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
   });
 
   /**
-   * **레일 타일은 테두리 없이 면과 잉크로만 말한다.**
+   * **Rail tiles speak through surface and ink only, with no border.**
    *
-   * #961(손 컨트롤 → 값 층 일괄 이관)이 목적지 타일의 바깥 `<a>` 에
-   * `shape:"card"` 를 입히면서, 그 모양이 싣고 다니는 1px 헤어라인이 여섯
-   * 타일 전부에 얹혔다 — 이관 전 손 클래스에는 테두리가 없었고, 그 커밋의
-   * 전제가 「픽셀을 안 바꾸는 정확한 변환」이었다. 소유자가 실물에서 잡았다
-   * (2026-08-08). 값 층 이관은 코드에 정당한 토큰 값만 남기므로 어떤 값
-   * lint 도 이 부류를 못 본다 — 그려진 테두리 폭을 재는 수밖에 없다.
+   * #961 (bulk migration of hand controls into the value layer) applied `shape:"card"`
+   * to the outer `<a>` of the destination tiles, which put the 1px hairline that shape
+   * carries onto all six tiles — the pre-migration hand classes had no border, and that
+   * commit's premise was an exact conversion that changes no pixels. The owner caught it
+   * on the real thing (2026-08-08). A value-layer migration leaves only legitimate token
+   * values in the code, so no value lint can see this class of defect — the only way is
+   * to measure the rendered border width.
    */
   test("레일 목적지 타일에 그려진 테두리가 없다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
@@ -117,7 +119,8 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
       });
     });
 
-    // 공회전 차단 — 타일을 못 찾으면 아래 0 위반은 「깨끗해서」가 아니다.
+    // Idling guard — if no tiles are found, the 0 violations below are not "because it is
+    // clean".
     expect(tiles.length, "레일 타일을 못 찾았다 — 셀렉터가 낡았다").toBeGreaterThan(4);
 
     const bordered = tiles.filter((t) => t.borderWidth !== "0px" && t.borderStyle !== "none");

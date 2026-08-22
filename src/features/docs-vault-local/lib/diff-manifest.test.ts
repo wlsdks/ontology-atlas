@@ -6,7 +6,7 @@ import {
   type VaultDiffNode,
 } from './diff-manifest';
 
-/** 테스트용 축약 — 이름만 주고 종류는 선택. */
+/** Test shorthand — name required, kind optional. */
 function node(name: string, kind?: string, slug = `capabilities/${name}`): VaultDiffNode {
   return { slug, kind, name };
 }
@@ -53,8 +53,8 @@ describe('diffVaultManifest', () => {
       ['capabilities/bar', 1000],
     ]);
     const current = new Map<string, number | null>([
-      ['capabilities/foo', 2000], // 동일
-      ['capabilities/bar', 500], // 감소 (외부 git pull 등)
+      ['capabilities/foo', 2000], // unchanged
+      ['capabilities/bar', 500], // decreased (an external git pull and the like)
     ]);
     expect(diffVaultManifest(prev, current).modified).toEqual([]);
   });
@@ -86,7 +86,7 @@ describe('diffVaultManifest', () => {
     ]);
     const current = new Map<string, number | null>([
       ['capabilities/foo', 1500], // modified
-      ['capabilities/bar', 2000], // 그대로
+      ['capabilities/bar', 2000], // unchanged
       ['capabilities/baz', 3000], // added
       ['domains/qux', 4000], // added
     ]);
@@ -112,8 +112,8 @@ describe('diffVaultManifest', () => {
   });
 
   it('빈 prev (첫 polling 후 두 번째) → 모든 current 는 already-known, added 0', () => {
-    // 실제 사용처는 첫 mount baseline 후 호출. 빈 prev 는 이론 케이스지만
-    // 모든 slug 가 added 로 분류되는지 명세 — caller 가 baseline 보호.
+    // Real callers invoke this after the first-mount baseline. An empty prev is a theoretical case,
+    // but it specifies that every slug is classified as added — the caller protects the baseline.
     const prev = new Map<string, number | null>();
     const current = new Map<string, number | null>([
       ['capabilities/foo', 1000],
@@ -125,8 +125,8 @@ describe('diffVaultManifest', () => {
 });
 
 /**
- * **슬러그는 화면에 나가지 않는다** (2026-08-01 소유자 지시). 이 describe 가
- * 그 계약이다 — 되돌리면 여기서 걸린다.
+ * **A slug never reaches the screen** (owner instruction, 2026-08-01). This describe *is* that
+ * contract — reverting it is caught here.
  */
 describe('toVaultDiffNode', () => {
   it('display_<locale> 이 있으면 그 이름을 쓴다 — 폴더 경로도 슬러그도 아니다', () => {
@@ -165,8 +165,8 @@ describe('toVaultDiffNode', () => {
   });
 
   it('최후 수단이라도 폴더 경로는 붙지 않는다 — 슬러그의 마지막 조각만', () => {
-    // title 도 display_* 도 없는 손편집 .md. 이름을 지어낼 수는 없지만
-    // `capabilities/` 라는 개발자 폴더 이름은 어떤 경우에도 화면에 안 나간다.
+    // A hand-written `.md` with neither title nor display_*. A name cannot be invented, but the
+    // developer folder name `capabilities/` never reaches the screen under any circumstance.
     const result = toVaultDiffNode({ slug: 'capabilities/orphan' }, 'ko');
     expect(result.name).toBe('orphan');
     expect(result.name).not.toContain('/');
@@ -185,9 +185,9 @@ describe('planVaultDiffToasts', () => {
     expect(planVaultDiffToasts({ added: [], modified: [] })).toEqual([]);
   });
 
-  // N10 — 문구는 더 이상 여기서 완성 문자열로 만들지 않는다(영문 하드코딩
-  // "Added: <slug>" ko 리터럴 새는 것 방지). 구조만 반환하고,
-  // 실제 로케일 문구 조립은 `VaultDiffToaster` 가 `useTranslations` 로 한다.
+  // The text is no longer finished into a string here (which is what leaked a hardcoded English
+  // "Added: <slug>" into Korean). Only the structure is returned, and `VaultDiffToaster` assembles
+  // the localized text with `useTranslations`.
   it('added 와 modified 를 노드 + variant 구조로 변환한다', () => {
     const added = node('new', 'capability');
     const modified = node('existing', 'domain', 'domains/existing');
@@ -198,10 +198,10 @@ describe('planVaultDiffToasts', () => {
   });
 
   /**
-   * **부채꼴은 폐기됐다** (2026-08-01). 종전엔 앞 3개를 슬러그로 내고 나머지를
-   * `+N개 더` 라는 별도 토스트로 냈는데, 토스트는 각자 만료하므로 앞의 것이
-   * 먼저 사라지면 **참조 대상을 잃은 숫자만 남았다** — 소유자가 화면에서 그
-   * 상태를 잡았다(「+4개 더」 한 장). 34개 쓰기면 잔해가 「+31개 더」다.
+   * **The fan-out was dropped** (2026-08-01). It used to emit the first three as slugs and the rest
+   * as a separate `+N more` toast, but toasts expire independently, so when the earlier ones went
+   * first **only a number with nothing to refer to remained** — the owner caught that state on screen
+   * (a lone "+4 more"). For a 34-file write the residue reads "+31 more".
    */
   it('preview 를 넘으면 한 장으로 접고, 합계가 아니라 세 갈래로 센다', () => {
     expect(
@@ -226,8 +226,8 @@ describe('planVaultDiffToasts', () => {
   });
 
   /**
-   * 「15개 추가」보다 「역량 3 · 요소 12 추가」가 낫다 — 다이제스트가 개수만
-   * 말하면 사용자는 무엇이 늘었는지 모른 채 숫자만 본다.
+   * "3 capabilities · 12 elements added" beats "15 added" — a digest that states only a count leaves
+   * the user looking at a number without knowing what grew.
    */
   it('다이제스트는 종류별로 센다 — 많은 순, 동수면 이름 순', () => {
     const [digest] = planVaultDiffToasts(

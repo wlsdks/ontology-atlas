@@ -1,12 +1,12 @@
 /**
- * 가이드 투어 — 선언적 단계 배열 (`docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` PO
- * 패스 §2). 지도 화면(/)의 의미 문해 전담 표면 — 8단계, 기본 페르소나는
- * 비개발자(1–7), 7단계에서 "개발자예요" 분기 시 8단계.
+ * The guided tour's declarative step array. The map screen's (/) surface
+ * dedicated to meaning literacy — eight steps, with the non-developer persona
+ * (1–7) as the default and step 8 reached by choosing "I'm a developer" at step 7.
  *
- * 앵커는 testid 문자열(DOM) 또는 canvas-node(캔버스 프로젝션) 둘 중 하나 —
- * 이 파일은 위젯/뷰를 import 하지 않는다(FSD: feature → widgets 금지). 실제
- * DOM/캔버스 해석은 `resolve-anchor-rect.ts`(testid) 와 HomePage/TopologyMapV2
- * (canvas-node) 가 각자 담당한다.
+ * An anchor is either a testid string (DOM) or a canvas-node (canvas projection).
+ * This file imports no widgets or views (FSD forbids feature → widgets). The
+ * actual DOM and canvas resolution belongs to `resolve-anchor-rect.ts` (testid)
+ * and to HomePage/TopologyMapV2 (canvas-node).
  */
 
 export type TourPersona = "all" | "dev";
@@ -14,11 +14,12 @@ export type TourPersona = "all" | "dev";
 export type TourAnchor =
   | { type: "testid"; value: string }
   /**
-   * 캔버스 노드 앵커 — `domain` 은 "hub" 에서 정정된 값(2026-07-23 Guardian
-   * 실측): isHub 노드는 스파인 뷰에서 "+N" 클러스터 칩으로 접혀 있어 클릭이
-   * select 가 아니라 클러스터 확장(지도 전면 재배치)을 일으켰다. domain 은
-   * 스파인 티어에서 항상 보이고 클릭 = 선택(데이터시트)이라 인터랙티브
-   * 4단계의 "눌러보세요 → 카드가 열려요" 약속을 결정론적으로 지킨다.
+   * The canvas node anchor. `domain` is a correction from "hub" (measured
+   * 2026-07-23): an isHub node is folded into a "+N" cluster chip in the spine
+   * view, so clicking it triggered cluster expansion (a full map relayout) rather
+   * than selection. A domain is always visible at the spine tier and clicking it
+   * selects (opening the datasheet), which keeps step 4's interactive promise —
+   * "press it and a card opens" — deterministic.
    */
   | { type: "canvas-node"; target: "project" | "domain" }
   | null;
@@ -26,10 +27,10 @@ export type TourAnchor =
 export interface TourStep {
   id: string;
   anchor: TourAnchor;
-  /** 인터랙티브 단계(4) — [다음] 대신 실제 노드 클릭을 기다린다. */
+  /** The interactive step (4) — waits for a real node click instead of [next]. */
   interactive?: boolean;
   persona: TourPersona;
-  /** `messages/*.json` `guidedTour.steps.<copyKey>` 로 이어지는 카피 키. */
+  /** The copy key leading to `guidedTour.steps.<copyKey>` in `messages/*.json`. */
   copyKey: string;
 }
 
@@ -81,22 +82,23 @@ export const TOUR_STEPS: readonly TourStep[] = [
 ];
 
 /**
- * 목적지별 안내 (2026-07-26 소유자 요청: "각 LNB탭 들어갔을때 가이드는 다 각각
- * 있으면 좋겠네? 지금은 지도쪽만 있어서!").
+ * Per-destination guides (owner request 2026-07-26: *"각 LNB탭 들어갔을때
+ * 가이드는 다 각각 있으면 좋겠네? 지금은 지도쪽만 있어서!"* — each LNB tab should
+ * have its own guide; right now only the map does).
  *
- * **두 번째 가이드 체계를 만들지 않는다** — 지도가 쓰던 이 투어 기제를 그대로
- * 쓰고, 목적지마다 스텝 배열만 다르게 넣는다. 카드/스크림/컷아웃/진행 점/
- * 건너뛰기·다시 보기 계약이 전 화면에서 같아야 사용자가 한 번 배운 문법을
- * 재사용한다.
+ * **No second guidance system is built** — the tour mechanism the map already
+ * used is reused as is, with only the step array differing per destination. The
+ * card, scrim, cutout, progress dots, and skip/replay contracts must be identical
+ * across every screen so the grammar a user learns once is reused.
  *
- * 각 목적지는 **두 장**이다 — ①이 화면이 무엇을 하는 곳인지(앵커 없음, 중앙
- * 카드) ②여기서 처음 볼 것 하나(실제 요소 스포트라이트). 기능 나열이 아니라
- * "여기서 무엇을 할 수 있는가" 한 질문에만 답한다. ②의 앵커가 그 순간 화면에
- * 없으면(예: 문서 목록 접힘) `computeVisibleSteps` 가 자동으로 빼서 한 장짜리
- * 안내로 접힌다.
+ * Each destination is **two pages** — ① what this screen is for (no anchor, a
+ * centred card) ② the one thing to look at first here (spotlighting a real
+ * element). It answers only "what can I do here", not a feature list. If ②'s
+ * anchor is not on screen at that moment (the document list is collapsed, say),
+ * `computeVisibleSteps` removes it automatically and the guidance folds to one page.
  *
- * 지도(`map`)는 여기 없다 — 캔버스 노드 앵커·인터랙티브 클릭·개발자 분기를
- * 쓰는 8단계 여정이라 `TOUR_STEPS` 가 계속 소유한다.
+ * The map is not here — its eight-step journey uses canvas node anchors, an
+ * interactive click, and the developer branch, so `TOUR_STEPS` keeps owning it.
  */
 export type DestinationTourId =
   | "docs"
@@ -116,8 +118,8 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
     },
   ],
   /*
-   * 「에이전트」 — 2026-08-20 목적지 신설(원장 90). 두 장이다: 이 화면이 무엇을
-   * 하는지, 그리고 도구가 없을 때 어디를 누르면 되는지.
+   * Agents — a destination added 2026-08-20 (ledger 90). Two pages: what this
+   * screen does, and where to press when there is no tool.
    */
   agents: [
     { id: "agents-what", anchor: null, persona: "all", copyKey: "agentsWhat" },
@@ -159,17 +161,18 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
 
 export interface VisibleStepsContext {
   persona: TourPersona;
-  /** 4단계에서 실제 선택이 생겼는가 — false 면 5단계(datasheet) 스킵. */
+  /** Did a real selection occur at step 4 — false skips step 5 (datasheet). */
   hasSelection: boolean;
-  /** 앵커가 지금 해석 가능한가 (요소 부재/`display:none`/뷰포트 밖이면 false). */
+  /** Can the anchor resolve right now (false if the element is absent, `display:none`, or off-viewport). */
   canResolveAnchor: (anchor: TourAnchor) => boolean;
 }
 
 /**
- * 단계 스킵 규칙 (spec §2): `canResolveAnchor` 가 false 인 단계는 자동
- * 제외되고, 진행 점 분모(`visibleSteps.length`)도 그만큼 줄어든다. `datasheet`
- * 는 4단계에서 선택이 실제로 생겼을 때만 포함(선택 실패/건너뛰기 시 제외).
- * `agent` 는 `persona === 'dev'` 일 때만 포함.
+ * The step skip rules: a step whose `canResolveAnchor` is false is excluded
+ * automatically, and the progress denominator (`visibleSteps.length`) shrinks
+ * accordingly. `datasheet` is included only when a selection actually occurred at
+ * step 4 (excluded on a failed selection or a skip). `agent` is included only when
+ * `persona === 'dev'`.
  */
 export function computeVisibleSteps(
   steps: readonly TourStep[],

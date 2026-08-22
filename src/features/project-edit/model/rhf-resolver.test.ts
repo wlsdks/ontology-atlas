@@ -5,16 +5,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { projectFormSchema, type ProjectFormValues } from "./schema";
 
 /**
- * Fire 6-1 — react-hook-form + zod 통합 baseline test.
+ * Baseline test for the react-hook-form + zod integration.
  *
- * 본 test 는 RHF 의 zodResolver 가 projectFormSchema 와 정상 통합되는지
- * 검증. Fire 6-2/3/4 의 ProjectForm 마이그레이션 전에 schema↔resolver
- * 호환성을 fix 시켜 회귀 차단.
+ * Verifies that RHF's `zodResolver` integrates correctly with `projectFormSchema`, pinning
+ * schema↔resolver compatibility before ProjectForm migrated onto it.
  *
- * 핵심 검증:
- * 1. valid 입력 → errors {} + values 통과
- * 2. invalid 입력 (필수 필드 누락) → errors 채워짐
- * 3. resolver 가 projectToFormValues 와 같은 사람 친화 default 와 호환
+ * What it checks:
+ * 1. valid input → `errors` empty and `values` pass through
+ * 2. invalid input (a missing required field) → `errors` populated
+ * 3. the resolver is compatible with the same human-friendly defaults as `projectToFormValues`
  */
 describe("rhf zodResolver × projectFormSchema", () => {
   const resolver = zodResolver(projectFormSchema);
@@ -95,13 +94,13 @@ describe("rhf zodResolver × projectFormSchema", () => {
     );
     expect(result.current.formState.isDirty).toBe(false);
 
-    // setValue 로 변경 — isDirty true.
+    // Change via setValue — isDirty becomes true.
     act(() => {
       result.current.setValue("name", "수정된 이름", { shouldDirty: true });
     });
     expect(result.current.formState.isDirty).toBe(true);
 
-    // submit 성공 시뮬레이션 — reset(parsed) 후 isDirty false.
+    // Simulate a successful submit — after `reset(parsed)`, isDirty is false.
     const parsed: ProjectFormValues = {
       ...initial,
       name: "수정된 이름",

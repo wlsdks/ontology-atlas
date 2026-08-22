@@ -4,29 +4,31 @@ import { useDestinationShortcuts } from "./use-destination-shortcuts";
 import { NAV_LEADER_WINDOW_MS } from "@/shared/config/destinations";
 
 /**
- * 이동 단축키의 **거절 조건**은 여기서 잰다 — e2e 가 아니라.
+ * The navigation shortcuts' **refusal conditions** are measured here, not in e2e.
  *
- * ⚠️ **e2e 로 재려다 실패했다** (2026-08-09). 「입력 중에는 이동하지 않는다」를
- * 브라우저에서 재려면 입력칸에 초점을 줘야 하는데, 볼트를 안 고른 상태의 이 앱에는
- * **화면에 입력칸이 없다**(실측: `/topology` · `/projects` · `/docs` · `/git` 네
- * 라우트 전부 `input:visible` 0개). 그래서 ⌘K 팔레트를 열어 그 입력칸을 썼는데,
- * 팔레트가 **자기도 `aria-modal`** 이라 모달 판정이 먼저 걸렸다 — 입력 판정을
- * 통째로 지워도 그 시험은 초록이었다. **원리적으로 실패할 수 없는 시험**이었고,
- * 그건 게이트가 아니다(`/gate-probe`).
+ * ⚠️ **Measuring them in e2e failed** (2026-08-09). Proving "do not navigate while
+ * typing" in a browser needs a focused input, and with no vault selected this app
+ * has **no visible input on screen** (measured: `input:visible` count 0 on all of
+ * `/topology`, `/projects`, `/docs`, `/git`). Opening the ⌘K palette to borrow its
+ * input did not work either — the palette is **itself `aria-modal`**, so the modal
+ * check fired first and the spec stayed green even with the typing check deleted
+ * entirely. A spec that cannot fail is not a gate (`/gate-probe`).
  *
- * 여기서는 키보드 사건을 직접 만들어 보내므로 조건이 서로 가려지지 않는다.
- * 「정말 이동하나」는 여전히 e2e 의 몫이다 —
+ * Dispatching keyboard events directly keeps the conditions from masking each
+ * other. Whether navigation actually happens is still e2e's job —
  * `tests/e2e/destination-shortcuts.spec.ts`.
  */
 
 /**
- * 한글 입력기가 켜진 상태의 키 사건 — `key` 는 자모, `code` 는 물리 위치.
+ * A key event with a Korean IME active — `key` is a jamo, `code` is the physical
+ * position.
  *
- * ⚠️ **이 함수가 있는 이유가 실제 결함이다** (2026-08-10, 설치 앱 실측).
- * 한글 입력 상태에서 물리 `G` 는 `key="ㅎ"`, `P` 는 `key="ㅔ"` 로 온다. 조합키도
- * 없고 초점도 body 였고 막는 표면도 없었는데, **단지 글자가 달라 하나도 안 먹었다.**
- * 이 제품의 주 언어가 한국어이므로 그건 드문 환경이 아니라 **평소 상태**였고,
- * 브라우저 e2e 는 Latin 을 타이핑하므로 원리적으로 못 잡는다.
+ * ⚠️ **This helper exists because of a real defect** (2026-08-10, measured in the
+ * installed app). With the Korean IME on, physical `G` arrives as `key="ㅎ"` and
+ * `P` as `key="ㅔ"`. No modifier, focus on body, no blocking surface — and
+ * **nothing worked, purely because the character differed.** Korean is this
+ * product's primary language, so that is the normal state, not an edge case, and
+ * browser e2e types Latin so it can never catch it.
  */
 function pressHangul(jamo: string, code: string) {
   window.dispatchEvent(
@@ -63,8 +65,8 @@ describe("useDestinationShortcuts", () => {
 
   it("한글 입력기가 켜져 있어도 이동한다 — 물리 키로 판정한다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
-    pressHangul("ㅎ", "KeyG"); // 리더
-    pressHangul("ㅔ", "KeyP"); // 프로젝트
+    pressHangul("ㅎ", "KeyG"); // leader
+    pressHangul("ㅔ", "KeyP"); // projects
     expect(navigate, "한글 입력 상태에서 안 먹는다").toHaveBeenCalledWith("/projects/", "projects");
   });
 
@@ -77,7 +79,7 @@ describe("useDestinationShortcuts", () => {
 
   it("자판이 QWERTY 가 아니어도 찍힌 글자로 맞는다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
-    // AZERTY 에서 사용자가 `G` 라고 찍힌 키를 누르면 `code` 는 다를 수 있다.
+    // On AZERTY, pressing the key printed `G` can report a different `code`.
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "g", code: "KeyZ", bubbles: true }));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "p", code: "KeyX", bubbles: true }));
     expect(navigate).toHaveBeenCalledWith("/projects/", "projects");
@@ -115,9 +117,9 @@ describe("useDestinationShortcuts", () => {
   });
 
   /**
-   * ⚠️ `isContentEditable` 을 **흉내 내야 한다** — jsdom 은 그것을 구현하지 않아
-   * `contentEditable = "true"` 를 줘도 늘 `false` 다(실측으로 확인했다). 흉내를
-   * 안 내면 이 시험은 훅이 아니라 jsdom 을 재는 셈이 된다.
+   * ⚠️ `isContentEditable` **has to be faked** — jsdom does not implement it, so it
+   * stays `false` even after `contentEditable = "true"` (confirmed by measurement).
+   * Without the fake this spec measures jsdom rather than the hook.
    */
   it("contentEditable 도 같다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
@@ -141,9 +143,9 @@ describe("useDestinationShortcuts", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
     const modal = document.createElement("div");
     modal.setAttribute("aria-modal", "true");
-    // jsdom 은 레이아웃이 없어 `getClientRects()` 가 늘 비었다 — 그려진 것으로
-    // 보이게 흉내 낸다. 이 흉내가 필요하다는 사실 자체가, 화면 기준 판정을
-    // 브라우저에서 한 번 더 재야 하는 이유다(e2e 가 그 몫을 맡는다).
+    // jsdom has no layout, so `getClientRects()` is always empty — fake it into
+    // looking rendered. Needing this fake is itself the reason the visibility
+    // judgement is measured once more in a browser (e2e owns that half).
     modal.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof modal.getClientRects;
     document.body.append(modal);
     press("g");
@@ -152,15 +154,11 @@ describe("useDestinationShortcuts", () => {
   });
 
   /**
-   * **숨은 모달은 막지 않는다.** 이 단언이 없으면, 퇴장 중인 표면 하나가 DOM 에
-   * 남아 이동 단축키 전체를 영구히 죽이는 상태를 아무도 못 잡는다(실제로 그
-   * 결함을 냈다 — 훅 주석 참고).
-   */
-  /**
-   * **막힐 때 말해 준다** — 침묵이 아니라.
+   * **Say so when blocked**, rather than going silent.
    *
-   * 이것이 없던 동안 공방은 키보드 함정이었다: 도착하면 선택 창이 뜨고, 그 뒤로는
-   * 어떤 이동 단축키도 **조용히** 먹지 않았다(2026-08-10 전체 검수에서 잡혔다).
+   * While this was missing, the studio was a keyboard trap: arriving there opened
+   * a picker, after which every navigation shortcut **silently** did nothing
+   * (found in the 2026-08-10 sweep).
    */
   it("막는 표면이 있으면 이동하지 않고 알린다", () => {
     const onBlockedByOverlay = vi.fn();
@@ -182,16 +180,22 @@ describe("useDestinationShortcuts", () => {
     modal.setAttribute("aria-modal", "true");
     modal.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof modal.getClientRects;
     document.body.append(modal);
-    // 모달 안에서 그냥 타이핑하는 상황 — 안내가 쏟아지면 그게 소음이다.
+    // Plain typing inside a modal — a hint for every keystroke would be noise.
     for (const key of ["a", "b", "c", "z"]) press(key);
     expect(onBlockedByOverlay, "지목도 안 했는데 말했다").not.toHaveBeenCalled();
   });
 
+  /**
+   * **A hidden modal must not block.** Without this assertion, nobody catches the
+   * state where one exit-animating surface left in the DOM permanently kills every
+   * navigation shortcut — a defect this repo actually shipped (see the hook's own
+   * comment).
+   */
   it("숨은 막는 표면은 이동을 막지 않는다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
     const hidden = document.createElement("div");
     hidden.setAttribute("aria-modal", "true");
-    // 그려지지 않은 상태 = `getClientRects()` 가 비어 있다(jsdom 기본값).
+    // Not rendered = `getClientRects()` is empty (jsdom's default).
     document.body.append(hidden);
     press("g");
     press("p");
@@ -213,16 +217,17 @@ describe("useDestinationShortcuts", () => {
   });
 
   /**
-   * ⚠️ **이 시험이 설치 앱의 결함을 잡는 자리다** (2026-08-10).
+   * ⚠️ **This is the spec that catches the installed-app defect** (2026-08-10).
    *
-   * 처음 구현은 시각을 **`event.timeStamp`** 로 읽고 «0 이면 리더를 안 누른 것»
-   * 으로 판정했다. 브라우저에서는 잘 돌았고 e2e 도 통과했는데, **설치 앱
-   * (WKWebView)에서는 리더 조합이 하나도 안 먹었다** — `G P` 도 `G M` 도. 같은
-   * 화면에서 `?` 는 정상이었으니 키가 WebView 에 닿기는 했다.
+   * The first implementation read the clock from **`event.timeStamp`** and treated
+   * 0 as "the leader was never pressed". It worked in the browser and passed e2e,
+   * but **in the installed app (WKWebView) no leader combination worked at all** —
+   * neither `G P` nor `G M`. `?` still worked on the same screen, so the keys were
+   * reaching the WebView.
    *
-   * 0 을 «안 누름» 의 뜻으로 겸용한 것이 원인이고, 어떤 런타임이 0 을 주면 기능이
-   * 통째로 사라지면서 **화면에는 아무 단서도 없다.** 그래서 두 사건의 `timeStamp`
-   * 를 **둘 다 0** 으로 두고도 이동해야 한다고 못박는다.
+   * The cause was overloading 0 to mean "not pressed": any runtime that reports 0
+   * makes the whole feature vanish **with no clue on screen**. So both events are
+   * pinned at `timeStamp` 0 and navigation must still happen.
    */
   it("event.timeStamp 가 0 이어도 이동한다 — 시계를 사건에서 읽지 않는다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
@@ -235,7 +240,7 @@ describe("useDestinationShortcuts", () => {
   });
 
   it("리더를 누른 지 오래되면 글자만으로는 이동하지 않는다", () => {
-    // 시계는 `performance.now()` 다 — 그것만 가짜로 만든다.
+    // The clock is `performance.now()` — fake only that.
     vi.useFakeTimers();
     try {
       renderHook(() => useDestinationShortcuts({ navigate }));

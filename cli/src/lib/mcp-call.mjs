@@ -1,13 +1,12 @@
-// R15 follow-up — graph-level write commands (backlinks / rename / merge /
-// delete / query) thin-wrap MCP server. mcp/src/index.js 의 logic 이 single
-// source of truth — cli 는 child_process spawn + JSON-RPC 로 호출.
+// Graph-level commands (backlinks / rename / merge / delete / query) thin-wrap the
+// MCP server. The logic in mcp/src/index.js is the single source of truth; the CLI
+// calls it by spawning a child process and speaking JSON-RPC.
 //
-// Why spawn vs duplicate logic:
-//   - rename_concept / merge_concepts 의 atomic backlink redirect 는 100+ LOC.
-//     중복하면 5-way drift surface (이미 4-way schema/parser/validator).
-//   - spawn overhead ~50-100ms — 사용자 한 번씩 호출이라 acceptable.
-//   - mcp 가 published 되면 npm install 로 같이 install (cli/package.json
-//     dependencies). dev 에선 monorepo relative path fallback.
+// Why spawn rather than duplicate the logic:
+//   - the atomic backlink redirect of rename_concept / merge_concepts is 100+ LOC.
+//     Duplicating it would create a 5-way drift surface (schema/parser/validator
+//     are already 4-way).
+//   - spawn overhead is ~50-100ms, acceptable for a command a user runs one at a time.
 //
 // Resolution order for the mcp entry:
 //   1. OATLAS_MCP_PATH env (explicit override)
@@ -83,23 +82,23 @@ export function callMcpTool(vaultRoot, toolName, args = {}, options = {}) {
     const entry = resolveMcpEntry();
     const timeoutMs = mcpCallTimeoutMs();
     const killGraceMs = mcpKillGraceMs();
-    // `OATLAS_REPO_ROOT` 는 **명시된 경우에만** 넘긴다 (2026-08-01 실측).
+    // `OATLAS_REPO_ROOT` is passed **only when it was stated** (measured 2026-08-01).
     //
-    // 종전엔 미지정 시 `process.cwd()` 를 대신 실었다. 그러면 서버가 문서로
-    // 약속한 순서 — 볼트의 git top-level 을 먼저 본다 — 가 아예 실행되지
-    // 않고, **내가 서 있던 디렉터리**가 그 볼트의 저장소라고 선언된다. 남의
-    // 볼트를 이 저장소 안에서 점검하면 `health` 가 그 볼트의 코드 경로를
-    // *우리* 저장소에 대고 대조해서, 사실 아무 문제 없는 볼트에
-    // `needs_attention — vault_validation warn:13` 을 붙였다. 같은 볼트에
-    // `validate` 는 clean 이라고 답해서, 어느 쪽이 맞는지 알 방법이 없었다.
+    // It used to fall back to `process.cwd()`. That skipped the resolution order
+    // the server documents — look at the vault's git top-level first — and declared
+    // **whatever directory I happened to be in** to be that vault's repository.
+    // Inspecting someone else's vault from inside this repository made `health`
+    // check that vault's code paths against *our* repository and stamp
+    // `needs_attention — vault_validation warn:13` on a vault with nothing wrong,
+    // while `validate` called the same vault clean — with no way to tell which was right.
     const env = { ...process.env, OATLAS_VAULT: vaultRoot };
     if (repoRoot !== undefined) env.OATLAS_REPO_ROOT = repoRoot;
     else if (!process.env.OATLAS_REPO_ROOT) delete env.OATLAS_REPO_ROOT;
     const proc = spawn(process.execPath, [entry], {
       env,
-      // 서버의 마지막 fallback 도 `process.cwd()` 다. 자식의 cwd 를 볼트로
-      // 두어야 그 fallback 마저 볼트를 가리킨다 — 부모의 cwd 를 물려주면
-      // 위에서 지운 추측이 다른 문으로 되돌아온다.
+      // The server's own last fallback is `process.cwd()` too. Setting the child's
+      // cwd to the vault makes even that fallback point at the vault — inheriting
+      // the parent's cwd would let the guess removed above back in by another door.
       cwd: vaultRoot,
       stdio: ['pipe', 'pipe', 'pipe'],
     });

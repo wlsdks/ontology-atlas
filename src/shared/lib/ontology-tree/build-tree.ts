@@ -1,23 +1,21 @@
 /**
- * Ontology tree builder.
+ * Ontology tree builder: KnowledgeGraphNode + KnowledgeGraphEdge → a tree.
  *
- * KnowledgeGraphNode + KnowledgeGraphEdge → 트리 구조.
+ * Algorithm:
+ *   1. `document` / `vault-readme` nodes are excluded (reader/evidence docs).
+ *   2. `contains` edges give parent→child. `belongs_to` is its reverse, so reading
+ *      it child→parent yields the same result.
+ *   3. A node with no parent is a root (usually `kind=project`).
+ *   4. Cycle detection: walking the parent chain and reaching yourself is a cycle →
+ *      promote that child to a root and warn.
+ *   5. Multiple parents: when one child is the `to` of more than one `contains`
+ *      edge, only the first survives and the rest warn.
+ *   6. A node appears in the tree at most once — marked visited on first use.
  *
- * 알고리즘:
- *   1. document / vault-readme 노드는 트리에서 제외 (reader/evidence docs).
- *   2. `contains` 엣지로 부모→자식 관계 구성.
- *      `belongs_to` 는 역방향이라 자식→부모로 해석해도 같은 결과.
- *   3. 부모가 없으면 root. (보통 `kind=project`)
- *   4. cycle 감지: 부모-체인을 따라 올라가다 자기 자신에 도달하면 cycle →
- *      해당 자식을 root 로 승격 + warning.
- *   5. 다중 부모: 한 자식이 두 개 이상의 contains 엣지의 to 가 되면, 첫
- *      번째만 살리고 나머지는 warning.
- *   6. 같은 노드가 트리에 두 번 등장하지 않게 — 한 번 visited 표시.
- *
- * 정렬:
- *   - root: kind 우선 (project > 그 외) → title.
- *   - children: kind (domain > capability > element) → title.
- *   - 결정론적 — 같은 입력에 같은 출력.
+ * Ordering:
+ *   - roots: kind first (project before everything else), then title.
+ *   - children: kind (domain > capability > element), then title.
+ *   - Deterministic: the same input always produces the same output.
  */
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -45,12 +43,12 @@ export function buildOntologyTree(
 ): OntologyTreeBuildResult {
   const warnings: string[] = [];
 
-  // 1. graph reader/evidence docs 제외.
+  // 1. Exclude graph reader/evidence docs.
   const treeNodes = nodes.filter((n) => n.kind !== "document" && n.kind !== "vault-readme");
   const nodeById = new Map(treeNodes.map((n) => [n.id, n] as const));
 
-  // 2. parent 맵 — contains 엣지의 from = parent, to = child.
-  //    belongs_to 도 역방향으로 동일하게 (child belongs_to parent).
+  // 2. Parent map: on a `contains` edge `from` is the parent and `to` the child;
+  //    `belongs_to` says the same thing reversed (child belongs_to parent).
   const parentOf = new Map<string, string>();
   for (const edge of edges) {
     let parentId: string | undefined;
@@ -71,10 +69,10 @@ export function buildOntologyTree(
     }
     if (parentOf.has(childId)) {
       const existingParent = parentOf.get(childId)!;
-      // 같은 parent 가 두 번 등장하는 self-warning (양방향 frontmatter 중복)
-      // 은 silent — derive-ontology-from-vault 의 dedup 이 normally 차단하지만
-      // 외부 manifest 가 들어왔을 때를 위한 defense-in-depth. 진짜 다중 부모
-      // (서로 다른 parent) 만 사용자에게 노출.
+      // The same parent appearing twice (frontmatter declared from both sides) is
+      // silent: derive-ontology-from-vault's dedup normally blocks it, and this is
+      // defence in depth for an externally supplied manifest. Only genuine multiple
+      // parents — different parents — surface to the user.
       if (existingParent === parentId) continue;
       warnings.push(
         `node "${childId}" has multiple parents — keeping first (${existingParent}), ignoring (${parentId})`,
@@ -84,7 +82,7 @@ export function buildOntologyTree(
     parentOf.set(childId, parentId);
   }
 
-  // 3. cycle 감지 — 자식이 자기 조상이 되는 경우.
+  // 3. Cycle detection: a child that ends up being its own ancestor.
   function ancestorChainHasCycle(startId: string): boolean {
     const visited = new Set<string>();
     let curr: string | undefined = startId;
@@ -103,14 +101,14 @@ export function buildOntologyTree(
     }
   }
 
-  // 4. childrenOf 인덱스 만들기.
+  // 4. Build the childrenOf index.
   const childrenOf = new Map<string, string[]>();
   for (const [childId, parentId] of parentOf) {
     if (!childrenOf.has(parentId)) childrenOf.set(parentId, []);
     childrenOf.get(parentId)!.push(childId);
   }
 
-  // 5. 재귀 빌드.
+  // 5. Recursive build.
   const visited = new Set<string>();
   function buildSubtree(nodeId: string, depth: number): OntologyTreeNode | null {
     if (visited.has(nodeId)) {
@@ -130,7 +128,7 @@ export function buildOntologyTree(
     return { node, depth, children };
   }
 
-  // 6. root 후보 = parentOf 에 없는 노드. project kind 우선.
+  // 6. Root candidates are the nodes absent from parentOf; project kind sorts first.
   const rootIds = treeNodes
     .filter((n) => !parentOf.has(n.id))
     .map((n) => n.id);
@@ -142,13 +140,14 @@ export function buildOntologyTree(
   }
   roots.sort((a, b) => compareNodes(a.node, b.node));
 
-  // 7. orphans = 트리에 없는 non-document 노드 (visited 안 된 나머지 — 보통 0).
+  // 7. Orphans are non-document nodes never visited, i.e. absent from the tree —
+  //    normally none.
   const orphans = treeNodes.filter((n) => !visited.has(n.id));
 
   return { roots, orphans, warnings };
 }
 
-/** 트리 안의 총 노드 수 (재귀 카운트). 미니맵 / 통계용. */
+/** Total node count in the tree, counted recursively. Used by the minimap and stats. */
 export function countTreeNodes(roots: OntologyTreeNode[]): number {
   let count = 0;
   function visit(node: OntologyTreeNode) {
@@ -159,7 +158,7 @@ export function countTreeNodes(roots: OntologyTreeNode[]): number {
   return count;
 }
 
-/** flat list 로 전개 — depth 가 들여쓰기에 사용됨. expand/collapse UI 직전 단계. */
+/** Flattens to a list; `depth` drives indentation. The step before an expand/collapse UI. */
 export function flattenTree(roots: OntologyTreeNode[]): OntologyTreeNode[] {
   const out: OntologyTreeNode[] = [];
   function visit(node: OntologyTreeNode) {

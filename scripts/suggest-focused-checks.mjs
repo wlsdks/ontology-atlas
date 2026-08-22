@@ -17,16 +17,16 @@ const SHARED_AGENT_CONFIG_PATTERNS = [
 const LOCAL_AGENT_STATE_PREFIXES = ['.agents/', '.codex/'];
 
 /**
- * 지워진 파일은 검사 대상이 아니다.
+ * A deleted file is not a check subject.
  *
- * ⚠️ **2026-08-21 실측**: `git diff --name-only` 는 **삭제된 경로도 준다.**
- * 그것을 그대로 추천기에 넣으면 `eslint <지워진 파일>` 이 만들어지고, 그 명령은
- * 「존재하지 않는 파일」로 죽는다 — 연결 시트를 은퇴시킨 푸시가 정확히 그렇게
- * 막혔다(훅이 16초 만에 빨개졌다).
+ * ⚠️ **Measured 2026-08-21**: `git diff --name-only` **also returns deleted paths.**
+ * Feeding those into the suggester builds `eslint <deleted file>`, and that command
+ * dies on "no such file" — which is exactly how the push retiring the connect sheet
+ * was blocked (the hook went red in 16 seconds).
  *
- * 무엇이 지워졌는지는 여전히 중요하다(그 파일을 가리키던 장부·계약이 터져야
- * 한다). 다만 그건 **계약 검사의 일**이고, 파일을 읽는 도구에 없는 경로를
- * 넘기는 것은 그냥 고장이다.
+ * What was deleted still matters (the ledgers and contracts pointing at that file
+ * should break). But that is **the contract checks' job**; handing a non-existent path
+ * to a tool that reads files is simply a malfunction.
  */
 function existingPaths(paths, { cwd = process.cwd(), exists = existsSync } = {}) {
   return paths.filter((path) => exists(resolve(cwd, path)));
@@ -35,8 +35,9 @@ function existingPaths(paths, { cwd = process.cwd(), exists = existsSync } = {})
 export function changedPathsFromGit({
   cwd = process.cwd(),
   spawn = spawnSync,
-  // 실재 판정을 주입할 수 있게 연다 — 그래야 「중복 제거」와 「지워진 것 거르기」를
-  // **따로** 잴 수 있다. 섞어 두면 한쪽을 시험하려고 디스크에 파일을 만들게 된다.
+  // The existence predicate is injectable so that de-duplication and
+  // deleted-path filtering can be measured **separately**. Combined, testing one of
+  // them would require creating files on disk.
   exists = existsSync,
 } = {}) {
   const tracked = spawnGit({ cwd, spawn, args: ['diff', '--name-only', 'HEAD', '--'] });
@@ -73,21 +74,22 @@ export function untrackedPathsForAdvisor(output) {
 }
 
 /**
- * 추천을 **그대로 실행**한다 — 첫 실패에서 멈춘다.
+ * **Runs the recommendations as given**, stopping at the first failure.
  *
- * ## 왜 이 모드가 생겼나 (2026-08-21)
+ * **Why this mode exists** (2026-08-21). This tool has always named **exactly** what
+ * to run. But people (and agents) took that list and **ran only part of it.** Two CI
+ * rounds burned that way in one day on 2026-08-20 — only `test:contracts` was run
+ * while `test:run` and e2e were skipped, and the break was precisely in what was
+ * skipped.
  *
- * 이 도구는 무엇을 돌릴지 **정확히** 지목해 왔다. 그런데 사람(과 에이전트)이
- * 그 목록을 받아 **일부만 골라 돌렸다.** 2026-08-20 하루에 CI 두 라운드가
- * 그렇게 탔다 — `test:contracts` 만 돌리고 `test:run` 과 e2e 를 건너뛰었고,
- * 건너뛴 자리에서 정확히 터졌다.
+ * The same repository's `pre-commit` hook already recorded the lesson: *"a discipline
+ * that relies on memory, once it repeats three times, is not a discipline but an
+ * accident queue."* Removing the room to pick is the answer, and the place to remove
+ * it is **the suggester itself.**
  *
- * 같은 저장소의 `pre-commit` 훅이 그 교훈을 이미 적어 뒀다: *"기억에 의존하는
- * 규율은 세 번 이상 반복되면 규율이 아니라 사고 대기열이다."* 고르는 여지를
- * 없애는 것이 답이고, 그 자리는 **추천기 자신**이다.
- *
- * 첫 실패에서 멈추는 이유: 뒤의 검사는 대개 같은 원인으로 무너져서, 다 돌리면
- * 화면이 길어질 뿐 새 정보가 없다. 고칠 것 하나를 정확히 준다.
+ * Why it stops at the first failure: later checks usually collapse from the same
+ * cause, so running them all lengthens the output without adding information. This
+ * gives exactly one thing to fix.
  */
 export function runFocusedChecks({
   commands = [],
@@ -129,7 +131,7 @@ export function runSuggestFocusedChecks({
     stdout.write(`${suggestFocusedChecksUsage()}\n`);
     return 0;
   }
-  // `--run` 은 경로가 아니다. 안 걸러내면 그 문자열이 바뀐 파일로 취급된다.
+  // `--run` is not a path; without filtering it is treated as a changed file.
   const run = args.includes('--run');
   const pathArgs = args.filter((arg) => arg !== '--run');
   try {

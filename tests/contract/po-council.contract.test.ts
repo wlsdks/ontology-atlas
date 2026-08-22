@@ -47,28 +47,34 @@ const RUBRIC_ROWS = [
 ] as const;
 
 /*
- * 2026-08-03 — 티어는 **두 가지를 동시에** 만족해야 한다. 하나만 보면 둘 다 는친다.
+ * 2026-08-03 — the tier assignment must satisfy **two things at once**. Looking at
+ * only one loses both.
  *
- * ① **치명 행은 최상위가 서명한다.** PO OS 가 치명적이라 선언한 네 행(Problem
- *    insight · User moment · Ontology value · Agent value · Verification)을 전부
- *    sonnet 이 서명하고 있었고, 유일한 비치명 행(Differentiation)에만 opus 가
- *    붙어 있었다 — 정확히 뒤집혀 있었다. 특히 지킴이는 2026-07-27 사고(두 치명
- *    행에 「없음」을 쓰고 통과) **때문에 생긴 자리**인데 sonnet 이었다.
+ * ① **Fatal rows are signed by the top tier.** All the rows the PO OS declares fatal
+ *    (Problem insight · User moment · Ontology value · Agent value · Verification)
+ *    were signed by sonnet, and opus was attached only to the single non-fatal row
+ *    (Differentiation) — exactly inverted. In particular the steward seat exists
+ *    **because of** the 2026-07-27 accident (writing "없음" into two fatal rows and
+ *    passing), and it was sonnet.
  *
- * ② **계열이 갈려 있어야 한다.** ①만 보고 다섯을 전부 opus 로 만들면 카운슬의
- *    **유일한 모델 이질성이 사라진다.** 그건 배심원 다섯이 아니라 「다섯 번 다르게
- *    프롬프트한 심판 하나」다. 실측이 이미 그 방향을 가리켰다 — 원장 7회 · 좌석
- *    판정 35건에서 **평균 쌍별 일치율 65.7%**(우연 기대 36.8%), 7회 중 2회 만장일치.
- *    Verga et al.(arXiv:2404.18796): 이질 3인 패널이 인간과 κ 0.763, 단일 최상위
- *    모델은 0.627 — 게다가 각 모델의 최고 가점은 **자기가 자기를 심사할 때** 나온다.
- *    Panickssery et al.(NeurIPS 2024): 자기 인식과 자기 선호 편향이 선형 상관이라
- *    같은 계열은 같은 편향을 공유한다.
+ * ② **Model families must be split.** Reading ① alone and making all five opus
+ *    removes **the council's only model heterogeneity**, leaving not five jurors but
+ *    "one judge prompted five different ways". Measurement already pointed that way:
+ *    across 7 ledger rounds and 35 seat verdicts, **mean pairwise agreement 65.7%**
+ *    (chance expectation 36.8%), with 2 of 7 unanimous.
+ *    Verga et al. (arXiv:2404.18796): a heterogeneous 3-model panel reached κ 0.763
+ *    with humans versus 0.627 for a single top model — and each model's highest score
+ *    comes **when it judges itself**.
+ *    Panickssery et al. (NeurIPS 2024): self-recognition and self-preference bias are
+ *    linearly correlated, so one family shares one bias.
  *
- * 그래서 배치는 **opus 3 · fable 2** 이고, 이종을 받는 둘은 치명 행을 안 가진
- * 자리다(해자=Differentiation 하나, 지렛대=루브릭 행 없음). ①과 ② 를 둘 다
- * 만족하는 유일한 조합이다. 팀장(chief)도 fable — 소집·순서·기록을 지는 결정자다.
+ * So the assignment is **3 opus · 2 fable**, and the two that take the other family
+ * are the seats with no fatal row (wedge owns Differentiation only; leverage owns no
+ * rubric row). It is the only combination satisfying both ① and ②. The chief is
+ * fable too — the decider who owns convening, ordering, and the record.
  *
- * ⚠️ 이 표를 단일 계열로 되돌리려면 위 ②의 실측부터 반박해야 한다.
+ * ⚠️ Returning this table to a single family requires refuting ②'s measurements
+ * first.
  */
 const TIERS: Record<string, string> = {
   'po-evidence': 'opus',
@@ -79,8 +85,9 @@ const TIERS: Record<string, string> = {
 };
 
 /**
- * 계열이 최소 둘이어야 한다 — 위 ②. 이 단언이 없으면 다음 사람이 "일관성"을
- * 이유로 한 줄씩 통일해 이질성이 조용히 사라진다(오늘 실제로 그렇게 될 뻔했다).
+ * At least two families — ② above. Without this assertion the next person unifies
+ * the rows one at a time in the name of consistency and the heterogeneity quietly
+ * disappears (it nearly did today).
  */
 const MIN_MODEL_FAMILIES = 2;
 
@@ -209,9 +216,9 @@ describe('PO council wiring', () => {
 
   it('keeps every fatal rubric row on the top tier', () => {
     /*
-     * 이질성을 사는 대가로 치명 행을 약한 자리에 넘기면 2026-07-27 사고가
-     * 재발한다. 두 요구를 **한 테스트로 묶지 않는 이유**: 따로 두어야 어느 쪽이
-     * 깨졌는지 실패 메시지가 말해 준다.
+     * Buying heterogeneity by handing a fatal row to a weaker seat reproduces the
+     * 2026-07-27 accident. **Why the two requirements are not one test**: kept separate,
+     * the failure message says which of them broke.
      */
     const FATAL_ROWS = ['Problem insight', 'User moment', 'Ontology value', 'Agent value', 'Verification'];
     for (const row of FATAL_ROWS) {
@@ -230,20 +237,21 @@ describe('PO council wiring', () => {
   });
 
   /*
-   * 2026-08-03 — 지킴이가 `npx ontology-atlas init` 을 「진짜 에이전트 핸드오프」의
-   * 예시로 들고 있었다. AGENTS.md 는 그 명령을 **404 로 선언**한다(npm 발행이 없다).
-   * Agent value 를 단독 소유하고 거짓 면제를 기각하는 자리가, 없는 명령을 처방하고
-   * 있었던 것이다.
+   * 2026-08-03 — the steward seat was citing `npx ontology-atlas init` as an example
+   * of a real agent handoff. AGENTS.md **declares that command a 404** (there is no
+   * npm publication). The seat that solely owns Agent value and rejects false
+   * exemptions was prescribing a command that does not exist.
    *
-   * **왜 아무도 못 잡았나**: 원문이 `npx` 와 `ontology-atlas` 사이에서 줄바꿈돼
-   * 있어서 한 줄 grep 이 통과시켰다. 그래서 이 게이트는 **공백을 접고** 본다 —
-   * 줄바꿈으로 숨는 인용을 잡는 것이 이 단언의 존재 이유다.
+   * **Why nobody caught it**: the source wrapped between `npx` and `ontology-atlas`,
+   * so a single-line grep passed it. Hence this gate **folds whitespace** — catching a
+   * citation hidden by a line break is why this assertion exists.
    */
   it('never cites the retired npm entrypoint as a real handoff', () => {
     for (const agent of COUNCIL_AGENTS) {
       const folded = agentFile(agent).replace(/\s+/g, ' ');
       const cited = folded.match(/npx ontology-atlas/g) ?? [];
-      // 404 라고 **가르치는** 문장은 허용한다 — 금지되는 것은 처방으로 쓰는 것이다.
+      // A sentence **teaching** that it is a 404 is allowed — what is forbidden is using
+      // it as a prescription.
       const taughtAsDead = folded.match(/npx ontology-atlas [^.]{0,40}(404|아니다|없는)/g) ?? [];
       expect(
         cited.length,
@@ -268,20 +276,20 @@ describe('PO council wiring', () => {
   });
 
   /**
-   * 이 스킬은 **두 도구가 다 읽는다**(`.claude/skills` ↔ `.agents/skills` 바이트
-   * 동일). 그런데 자리 브리프는 `.claude/agents/` 한 곳에만 있고 Codex 는 그
-   * 디렉터리를 자동 로드하지 않는다 — 스킬이 다섯 자리를 **이름으로만** 부르던
-   * 동안, Codex 세션은 부를 수도 읽을 수도 없는 이름 다섯 개를 받고 즉흥으로
-   * 때웠다. 사본을 만드는 것은 답이 아니다(어긋나는 쪽이 기본값이 된다).
-   * 정본이 하나임을 밝히고 **명시적으로 열라**고 적는 것이 답이며, 그 문장이
-   * 사라지면 구멍이 그대로 돌아온다.
+   * **Both tools read this skill** (`.claude/skills` ↔ `.agents/skills`, byte
+   * identical). But the seat briefs live in `.claude/agents/` only, and Codex does not
+   * auto-load that directory — while the skill named the five seats **by name alone**,
+   * a Codex session received five names it could neither call nor read and improvised.
+   * Making a copy is not the answer (the diverging copy becomes the default). The
+   * answer is stating that there is one source and instructing that it be **opened
+   * explicitly**, and if that sentence disappears the hole comes straight back.
    */
   it('locates the seat briefs by a relative path that resolves inside each tool tree', () => {
     for (const path of [SKILL_PATH, SKILL_MIRROR_PATH]) {
       const skill = read(path).replace(/\s+/g, ' ');
-      // `.claude/skills/po-council/` 과 `.agents/skills/po-council/` 둘 다에서
-      // `../../agents/` 는 그 트리의 자리 폴더로 풀린다. 그래서 **한 문장이 두
-      // 도구에 맞고**, 바이트 동일 규칙과 충돌하지 않는다.
+      // From both `.claude/skills/po-council/` and `.agents/skills/po-council/`,
+      // `../../agents/` resolves to that tree's own seat folder. So **one sentence fits
+      // both tools** and does not conflict with the byte-identical rule.
       expect(skill, `${path} 가 자리 브리프의 상대 경로를 밝히지 않는다`).toContain(
         '../../agents/po-*.md',
       );
@@ -295,11 +303,12 @@ describe('PO council wiring', () => {
   });
 
   /**
-   * **도구 이름으로 분기하면 안 된다.** 이 스킬은 두 벌이 바이트 동일해야 하므로
-   * 사본마다 다른 경로를 적을 수 없고, 그래서 한때 «Claude Code 는 여기, Codex 는
-   * 저기» 표를 실었다. 그 표는 ① 새 도구가 생길 때마다 행이 늘고 ② 각 도구에게
-   * **남의 경로**를 읽히며 ③ 상대 경로 한 줄이면 없어도 되는 것이었다.
-   * 능력(«서브에이전트를 병렬로 띄울 수 있나»)으로 분기하면 이름이 필요 없다.
+   * **Never branch on tool name.** The two copies of this skill must be byte
+   * identical, so a copy cannot carry a different path, and it once carried a table
+   * saying "Claude Code here, Codex there". That table ① grew a row per new tool
+   * ② made each tool read **someone else's path** and ③ was unnecessary given one
+   * relative path. Branching on capability ("can it run subagents in parallel")
+   * needs no names at all.
    */
   it('branches on capability, not on tool brand names', () => {
     for (const path of [SKILL_PATH, SKILL_MIRROR_PATH]) {
@@ -350,8 +359,9 @@ describe('PO council wiring', () => {
 });
 
 /**
- * 평문 요약 규율을 실은 파일들 — 두 스킬의 양쪽 사본과, 기록을 쓰는 chief.
- * 목록이 곧 사정거리다: 새 카운슬을 만들면 여기 한 줄을 더한다.
+ * The files carrying the plain-language summary discipline — both copies of both
+ * skills, plus the chief that writes the record. The list is the reach: a new council
+ * adds a line here.
  */
 const PLAIN_SUMMARY_FILES = [
   SKILL_PATH,
@@ -360,39 +370,42 @@ const PLAIN_SUMMARY_FILES = [
 ] as const;
 
 /**
- * 카운슬 산출물은 **평문 요약으로 시작한다.**
+ * Council output **starts with a plain-language summary.**
  *
- * 이 저장소가 실측으로 배운 것(2026-07-29): 평결 블록을 그대로 소유자에게
- * 전달했더니 되물었다 — *"뭔 서명?"*. 카운슬 어휘(자리 이름 · 루브릭 · 반증
- * 조건 · 서명)는 다음 에이전트와 원장을 위한 것이지 결과를 받는 사람을 위한
- * 것이 아니다. 읽는 쪽이 사전을 먼저 배워야 하는 보고는 보고가 아니다.
+ * Measured 2026-07-29: handing the owner the verdict block verbatim produced the
+ * question *"뭔 서명?"* (what signature?). Council vocabulary — seat names, the
+ * rubric, falsifiers, signatures — is for the next agent and the ledger, not for the
+ * person receiving the result. A report whose reader must learn a dictionary first
+ * is not a report.
  *
- * 이 테스트가 없으면 그 규율은 산문으로만 남고, 이 저장소가 반복해 배운 대로
- * **문서에만 있는 규격은 지켜지지 않는다.**
+ * Without this test the discipline lives only in prose, and as this repository has
+ * learned repeatedly, **a spec that exists only in a document is not kept.**
  */
 describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
-  /** 세 줄은 협상 대상이 아니다 — 하나라도 빠지면 소유자가 물어봐야 한다. */
+  /** The three lines are not negotiable — missing any one forces the owner to ask. */
   const REQUIRED_LINES = ['정한 것', '네 말과 다르게 한 것', '네가 할 일'];
 
   /**
-   * 평문 절 안에서 쓰지 않는 말. **아래 평결 블록에서는 정확히 이 단어들이어야
-   * 하므로** 금지는 절 단위이지 문서 단위가 아니다.
+   * Words not used inside the plain-language section. **The verdict block below must
+   * use exactly these words**, so the ban is per section, not per document.
    */
   const BANNED_SAMPLE = ['루브릭', '반증 조건', '서명', 'appetite'];
 
   /**
-   * ⚠️ 판정 대상은 **템플릿 코드 펜스 안**이다. 파일 전체에서 문구를 찾으면,
-   * 같은 말이 설명 산문에도 있어서 **템플릿에서 지워도 통과한다** — 이 게이트를
-   * 처음 쓸 때 실제로 그렇게 새어나갔다(프로브로 발견). 문서 어딘가에 단어가
-   * 있다는 것과 산출물 형식이 그 줄을 요구한다는 것은 다른 주장이다.
+   * ⚠️ The judgement applies **inside the template code fence**. Searching the whole
+   * file finds the same words in the explanatory prose too, so **deleting them from the
+   * template still passes** — which is exactly how this gate leaked when it was first
+   * written (found by a probe). "The word appears somewhere in the document" and "the
+   * output format requires that line" are different claims.
    */
   const templateOf = (path: string): string => {
     const text = read(path);
     const anchor = text.indexOf('먼저 — 세 줄');
     expect(anchor, `${path} must carry the plain-summary template`).toBeGreaterThan(-1);
-    // 앵커는 펜스 **안**에 있다(`### 먼저 — 세 줄` 이 템플릿의 첫 줄이므로).
-    // 앞으로 뒤져 여는 펜스를, 뒤로 뒤져 닫는 펜스를 찾는다 — 앵커 뒤에서만
-    // 찾으면 닫는 펜스를 여는 펜스로 오인해 빈 문자열을 검사하게 된다.
+    // The anchor sits **inside** the fence (`### 먼저 — 세 줄` is the template's first
+    // line). Search backwards for the opening fence and forwards for the closing one —
+    // searching only after the anchor mistakes the closing fence for an opening one and
+    // ends up checking an empty string.
     const open = text.lastIndexOf('```', anchor);
     const close = text.indexOf('```', anchor);
     expect(open, `${path}의 평문 템플릿 여는 펜스가 없다`).toBeGreaterThan(-1);
@@ -419,12 +432,13 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
   });
 
   /**
-   * 2026-08-03: 위 단언들은 **전부 통과하는 중에** 사고가 났다. 소집자는 세 줄
-   * 요약을 정확히 썼고 그 아래 평결 블록을 통째로 붙였으며, 소유자는 두 번
-   * 되물었다("뭔말이야" · "더 쉽게 설명해줘"). 절의 존재만 검사하는 게이트는
-   * **표지를 얹는 것과 번역하는 것을 구별하지 못한다.** 그래서 구멍을 막은 세
-   * 규칙을 각각 못박는다 — 이 셋 중 하나가 문장에서 사라지면 같은 사고가 다시
-   * 가능해진다.
+   * 2026-08-03: the accident happened **while every assertion above passed**. The
+   * convener wrote the three-line summary correctly and then pasted the entire verdict
+   * block below it, and the owner asked twice ("뭔말이야" · "더 쉽게 설명해줘" — what
+   * does this mean, explain it more simply). A gate that checks only for a section's
+   * existence **cannot distinguish adding a cover page from translating.** So the three
+   * rules that closed the hole are each pinned — if any one of them disappears from the
+   * prose, the same accident becomes possible again.
    */
   const HOLE_CLOSING_RULES = [
     ['대화창이 아니다', '평결 블록의 목적지가 파일임을 못박는 문장'],
@@ -440,8 +454,9 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
   });
 
   /**
-   * 요청보다 좁히거나 넓혔으면 그 줄이 **반드시** 있다. 그 줄 없는 축소는
-   * 축소가 아니라 조용한 무시이고, 소유자가 나중에 화면에서 발견하게 된다.
+   * If the scope was narrowed or widened relative to the request, that line **must** be
+   * present. Narrowing without it is not narrowing but silent disregard, which the owner
+   * discovers later on the screen.
    */
   it.each(PLAIN_SUMMARY_FILES)('%s 가 "다르게 한 것" 줄을 생략 불가로 못박는다', (path) => {
     expect(read(path).replace(/\s+/g, ' ')).toMatch(/생략할 수 없다/);

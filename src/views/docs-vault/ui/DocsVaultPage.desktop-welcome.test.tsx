@@ -89,10 +89,10 @@ function renderWelcome(showDogfoodHint: boolean) {
 
 describe("DesktopVaultWelcome dogfood handoff", () => {
   /**
-   * 복사되는 값은 **이 빌드에 설정된 경로**여야 한다 — 종전엔 유지보수자의
-   * 홈 경로가 소스 상수였고 이 테스트도 그 문자열을 기대값으로 적었다.
-   * 이제 값은 `NEXT_PUBLIC_DOGFOOD_VAULT_PATHS` 에서 오므로, 테스트도 경로
-   * 문자열이 아니라 **같은 출처를 쓰는지**를 잰다(공개 빌드에서는 빈 문자열).
+   * The copied value must be **the path configured in this build**. The maintainer's home path used
+   * to be a source constant and this test held that string as its expectation. The value now comes
+   * from `NEXT_PUBLIC_DOGFOOD_VAULT_PATHS`, so the test measures **whether the same source is
+   * used**, not a path string (in a public build it is the empty string).
    */
   it("copies exactly the configured dogfood path", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);

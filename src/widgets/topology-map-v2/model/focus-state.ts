@@ -3,15 +3,15 @@
  * prototype's `nodeEgoState()`/`edgeEgoState()`/`startRipple()`/
  * `updateEmphasis()` (`docs/prototypes/topology-b2plus.html` §9, §11, §13).
  *
- * Contract (`docs/TOPOLOGY-V2-DESIGN.md` §3.2 "State Contract 매핑",
- * §3.6 "클릭=안전 계약"):
+ * Contract (`docs/TOPOLOGY-V2-DESIGN.md` §3.2 "State Contract 매핑" — the state
+ * contract mapping, §3.6 "클릭=안전 계약" — click is a safe action):
  * - **Click** sets a *durable* focus (`focusedNode`) — the ego-set (focused
  *   node + its 1-hop neighbors) reads as `"center"`/`"neighbor"`, everything
  *   else as `"dim"` (opaque dim tokens, never alpha — see
  *   `--topology-v2-node-fill-dim`/`node-stroke-dim`).
  * - **Hover** only raises `emphasis` (ripple) — it never touches focus/camera,
- *   and is suppressed entirely while a focus is active ("포커스가 emphasis
- *   소유권 독점", prototype: `if (focusedNode) return;` in pointermove).
+ *   and is suppressed entirely while a focus is active: focus takes exclusive
+ *   ownership of emphasis (prototype: `if (focusedNode) return;` in pointermove).
  * - `emphasis` per node is a scalar 0..1 that exponentially rises toward 1
  *   while the node is in the active hover's ego-set AND its ripple delay has
  *   elapsed, and decays toward 0 otherwise:
@@ -36,42 +36,47 @@ export type NodeEgoState = "center" | "neighbor" | "dim" | "normal";
 export type EdgeEgoState = "ego" | "dim" | "normal";
 
 /**
- * S2 파트 3a — 선택적 ego. 포커스 노드의 1-hop 이웃이 이 값을 넘으면(예: 87
- * 이웃 허브) 전부 점등하면 다발이 화면을 관통해 판독 불가다. DOI 랭크 상위
- * `EGO_NEIGHBOR_LIMIT` 개만 full 점등하고 나머지는 **dim 이 아니라 hidden**,
- * 포커스 노드 옆 `이웃 +N` 집계 칩으로 접는다(칩 클릭 = 다음 배치 점등).
+ * Selective ego. When a focused node has more 1-hop neighbours than this — a hub
+ * with 87 of them, say — lighting them all up drives a bundle straight across
+ * the screen and nothing is readable. Only the top `EGO_NEIGHBOR_LIMIT` by DOI
+ * rank light up fully; the rest are **hidden, not dimmed**, folded into a
+ * `이웃 +N` (neighbours +N) chip beside the focused node. Clicking the chip
+ * reveals the next batch.
  *
- * **값의 단일 출처는 설정이다** — 「확장 → 한 번에 여는 개수」(기본 24)가 그대로
- * 여기로 온다. 종전엔 이 파일이 24 를 직접 적었고 설정은 그 숫자를 다시 적어야
- * 했는데, 값이 두 곳에 적히면 이미 드리프트가 시작된 것이다(Carbon). 라이브
- * 값은 `use-topology-loop` 이 프레임마다 읽고, 이 상수는 그 기본값이자
- * 설정을 모르는 순수 함수의 폴백이다.
+ * **The single source of this value is the settings screen** — 「확장 → 한 번에
+ * 여는 개수」 (Expand → how many to open at once, default 24) feeds straight into
+ * it. This file used to write 24 itself and the settings screen had to repeat it;
+ * a value written in two places has already begun to drift (Carbon).
+ * `use-topology-loop` reads the live value each frame, and this constant is both
+ * its default and the fallback for pure functions that cannot see the settings.
  */
 export const EGO_NEIGHBOR_LIMIT = DEFAULT_EXPAND.batchSize;
 
 /**
- * 선택적 ego 의 `이웃 +N` 집계 칩이 쓰는 합성 parentId. 실제 노드 id 와
- * 충돌하지 않게 예약어를 쓴다 — 포인터 핸들러가 이 id 를 보고 URL 토글
- * 대신 다음 이웃 배치 점등으로 분기한다.
+ * Synthetic parentId used by selective ego's `이웃 +N` (neighbours +N) chip. It
+ * is a reserved word so it can never collide with a real node id; the pointer
+ * handler branches on it to reveal the next neighbour batch rather than toggling
+ * the URL.
  */
 export const EGO_NEIGHBOR_CHIP_ID = "__ego_neighbors__";
 
 /**
- * 고팬아웃 배치-공개(2026-07) — 펼친 클러스터 부모의 **잔여 배치**를 대신하는
- * `+N 더보기` 칩의 합성 parentId prefix. `이웃 +N` 칩(EGO_NEIGHBOR_CHIP_ID)과
- * 동형이되, 펼침은 여러 부모가 동시에 존재할 수 있어 단일 예약어로는 부족하다 —
- * 실제 부모 id 를 prefix 로 감싸 각 부모의 잔여 칩을 구분한다. 포인터 핸들러가
- * 이 접두어를 보고 URL 토글(접기) 대신 **그 부모의 다음 배치**를 점등한다.
- * 실제 부모 slug 와 충돌하지 않게 예약 접두어를 쓴다.
+ * Synthetic parentId prefix for the `+N 더보기` (show +N more) chip that stands
+ * in for the **remaining batches** of an expanded cluster parent. It mirrors the
+ * `이웃 +N` chip (`EGO_NEIGHBOR_CHIP_ID`), but several parents can be expanded at
+ * once, so a single reserved word is not enough: wrapping the real parent id in a
+ * reserved prefix keeps each parent's remainder chip distinct. The pointer
+ * handler branches on the prefix to reveal **that parent's** next batch instead
+ * of toggling the URL to collapse it.
  */
 export const CLUSTER_MORE_CHIP_PREFIX = "__cluster_more__:";
 
-/** 실제 부모 id → `+N 더보기` 칩의 합성 id. */
+/** Real parent id → the synthetic id of its `+N 더보기` (show +N more) chip. */
 export function clusterMoreChipId(parentId: string): string {
   return CLUSTER_MORE_CHIP_PREFIX + parentId;
 }
 
-/** 합성 `+N 더보기` 칩 id → 실제 부모 id(아니면 null). draw/hit/pointer 공용. */
+/** Synthetic chip id → the real parent id, else null. Shared by draw, hit-testing, and pointer handling. */
 export function parseClusterMoreChipId(chipId: string): string | null {
   return chipId.startsWith(CLUSTER_MORE_CHIP_PREFIX) ? chipId.slice(CLUSTER_MORE_CHIP_PREFIX.length) : null;
 }
@@ -79,22 +84,25 @@ export function parseClusterMoreChipId(chipId: string): string | null {
 export interface EgoNeighborRankEntry {
   id: string;
   kind: string;
-  /** 전체 차수(이웃 수) — 동일 kind 안에서 허브를 우선 노출. */
+  /** Total degree — surfaces hubs first within one kind. */
   degree: number;
   /**
-   * 이 이웃과 포커스 노드를 잇는 엣지의 **원 관계 타입**(`WorldEdge.relationType`
-   * — contains|depends 2치 kind 로 뭉개기 전 값). DOI 랭크에서 kind 다음
-   * 우선순위로 관계 위계(contains > depends > relates)를 반영한다. 관계 맥락이
-   * 없는 호출부(예: 레이아웃 디스크 정렬)는 생략 가능 — 미상은 가중치 1로 취급.
+   * The **original relation type** of the edge joining this neighbour to the
+   * focused node (`WorldEdge.relationType`, i.e. the value before it is collapsed
+   * into the binary contains|depends kind). It ranks just below kind in the DOI
+   * order, reflecting the relation hierarchy contains > depends > relates.
+   * Callers with no relation context — layout disc ordering, for instance — may
+   * omit it; unknown counts as weight 1.
    */
   relationType?: string;
 }
 
 /**
- * 관계 타입 위계 가중치 — 렌더의 잉크 램프(실선 contains > 파선 depends >
- * 약한 relates)와 같은 위계를 DOI 랭크에도 반영한다. containment(contains/
- * belongs_to) 3 > dependency(depends_on) 2 > 그 외(relates/related_to/
- * describes/…)·미상 1. 결정론 유지 — 순수 매핑, 부수효과 없음.
+ * Relation-hierarchy weight, so the DOI rank carries the same hierarchy the
+ * render ink already does (solid contains > dashed depends > faint relates):
+ * containment (contains, belongs_to) 3 > dependency (depends_on) 2 > everything
+ * else (relates, related_to, describes, …) and unknown 1. A pure mapping, so
+ * determinism is preserved.
  */
 function relationTypeWeight(relationType: string | undefined): number {
   if (relationType === "contains" || relationType === "belongs_to") return 3;
@@ -103,12 +111,14 @@ function relationTypeWeight(relationType: string | undefined): number {
 }
 
 /**
- * DOI(degree-of-interest) 랭크 — 결정론: ① kind 가중치(domain 3 > capability 2 >
- * element/기타 1) 내림차순 → ② 관계 타입 가중치(contains 3 > depends 2 >
- * relates/기타 1) 내림차순 → ③ degree 내림차순 → ④ slug(id) 사전순. Furnas
- * (1986) DOI 처럼 "구조적으로 중요한" 이웃을 먼저 보여준다 — 도메인·허브 우선,
- * 그리고 같은 kind·degree 라면 contains 자식이 스쳐가는 relates 이웃을 앞선다
- * (렌더 위계와 랭크 위계 정렬). kind 가중치가 관계 타입보다 우선한다.
+ * Degree-of-interest rank, deterministic in four keys: kind weight (domain 3 >
+ * capability 2 > element and the rest 1) descending, then relation-type weight
+ * (contains 3 > depends 2 > relates and the rest 1) descending, then degree
+ * descending, then slug (id) alphabetically. Like Furnas (1986) DOI, it shows the
+ * structurally important neighbours first — domains and hubs lead, and at equal
+ * kind and degree a contains child outranks a passing relates neighbour, which
+ * aligns the rank hierarchy with the render hierarchy. Kind weight always
+ * outranks relation type.
  */
 export function rankEgoNeighborsByDOI(neighbors: readonly EgoNeighborRankEntry[]): string[] {
   const weight = (kind: string): number => (kind === "domain" ? 3 : kind === "capability" ? 2 : 1);
@@ -124,18 +134,19 @@ export function rankEgoNeighborsByDOI(neighbors: readonly EgoNeighborRankEntry[]
 }
 
 export interface SelectiveEgoResult {
-  /** 이번에 full 점등할 이웃(랭크 상위 `revealedBatches × limit`). */
+  /** Neighbours lit fully this time — the top `revealedBatches × limit` by rank. */
   visibleNeighbors: Set<string>;
-  /** 접어서 숨길 이웃(그 엣지·라벨도 함께 숨긴다). */
+  /** Neighbours folded away; their edges and labels are hidden too. */
   hiddenNeighbors: Set<string>;
-  /** 숨긴 이웃 수 — `이웃 +N` 칩의 N. 0 이면 칩 소멸. */
+  /** How many are hidden — the N on the `이웃 +N` chip. At 0 the chip disappears. */
   hiddenCount: number;
 }
 
 /**
- * 랭크된 이웃을 배치 단위로 노출한다. `revealedBatches` 는 1 부터(기본 상위
- * limit 개), 칩 클릭마다 +1(다음 limit 개 추가). 상위 `revealedBatches × limit`
- * 는 visible, 나머지는 hidden. 세션 임시 상태(URL 저장 없음).
+ * Reveals ranked neighbours one batch at a time. `revealedBatches` starts at 1
+ * (the top `limit`) and grows by one per chip click, adding the next `limit`. The
+ * top `revealedBatches × limit` are visible and the rest hidden. Session-only
+ * state — nothing is written to the URL.
  */
 export function selectiveEgoNeighbors(
   rankedIds: readonly string[],
@@ -178,12 +189,15 @@ export function resolveEdgeEgoState(
 }
 
 /**
- * 엣지 선택 = 페어 포커스 (사용자 요청: "선을 클릭하면 그 선과 연결된
- * 노드간만 표시"). 노드 포커스가 없고 엣지가 선택된 동안:
- * - 양끝 노드는 "neighbor" 급 (주인공은 '선'이므로 center 링 없음)
- * - 나머지 노드/엣지는 "dim"
- * - 선택된 엣지 자체는 "ego" (+ 별도 selected 스트로크는 드로어 소관)
- * 노드 포커스가 있으면 기존 ego 규칙이 우선한다 (클릭=안전 계약 유지).
+ * Selecting an edge focuses the pair. Owner request: "선을 클릭하면 그 선과
+ * 연결된 노드간만 표시" (clicking a line should show only the nodes that line
+ * connects). While an edge is selected and no node is focused:
+ * - both endpoints read as `"neighbor"` — the line is the subject, so neither
+ *   gets the center ring
+ * - every other node and edge reads as `"dim"`
+ * - the selected edge itself reads as `"ego"`; its separate selected stroke is
+ *   the drawer's business
+ * A node focus takes precedence, which preserves the click-is-safe contract.
  */
 export interface EdgePairFocus {
   sourceId: string;
@@ -215,21 +229,26 @@ export function resolveEdgeEgoStateWithPair(
 }
 
 /**
- * 걸어온 길 렌즈 — 트레일 팝오버가 열려 있는 동안만 유효한 ego 분류 **대체**.
+ * The trail lens — a **replacement** ego classification, valid only while the
+ * trail popover is open.
  *
- * 왜 새 기호가 아니라 keep-set 교체인가: 팝오버를 열고 지도를 "궤적"으로 읽으려는
- * 순간에도 지도는 여전히 "관계"를 말한다(포커스 노드의 인디고 엣지). 소유자가 그
- * 관계 엣지를 걸어온 길의 일부로 오독했을 만큼 두 독법이 같은 화면에서 경쟁했다.
- * 그래서 궤적 선을 새로 그리는 대신(이 제품에서 선 = 관계다) 남길 집합만 바꾼다 —
- * 1-hop 이웃 대신 방문 노드를 남기고, 나머지는 **기존 dim 값 그대로** 후퇴시킨다.
- * "빛나게"는 glow 가 아니라 어두워진 장 위의 값 대비로 성립한다.
+ * Why it swaps the keep-set instead of adding a new mark: the moment you open the
+ * popover to read the map as a *path*, the map is still speaking about
+ * *relations* (the focused node's indigo edges). The two readings competed on one
+ * screen closely enough that the owner misread a relation edge as part of the
+ * path walked. So rather than drawing a new path line — in this product a line
+ * *is* a relation — only the kept set changes: visited nodes are kept instead of
+ * 1-hop neighbours, and everything else recedes to **the existing dim values**.
+ * "Glowing" here is value contrast against a darkened field, not glow.
  *
- * 방문 노드가 `"neighbor"` 가 아니라 `"normal"` 인 이유: neighbor 는 노드 외곽에
- * pale 인디고 링을 하나 더 두르는데, 방문 노드에는 이미 발자국 링(+3 궤도)이 있어
- * 같은 색 헤어라인 둘이 인접 궤도에서 브레이드로 읽힌다(궤도당 신호 1개 규율).
- * 방문 표시는 발자국 링이 이미 하고 있으므로 렌즈는 잉크를 더하지 않는다.
+ * Visited nodes are `"normal"` rather than `"neighbor"` because neighbor adds a
+ * second pale indigo ring outside the node, and a visited node already carries the
+ * footprint ring three orbits out — two same-coloured hairlines in adjacent orbits
+ * read as a braid, against the one-signal-per-orbit discipline. The footprint ring
+ * already marks the visit, so the lens adds no ink.
  *
- * 현재 포커스 노드는 `"center"` 로 남아 선택 링 > 발자국 링 위계가 불변이다.
+ * The currently focused node stays `"center"`, keeping the selection ring above
+ * the footprint ring in the hierarchy.
  */
 export function resolveTrailLensNodeEgoState(
   nodeId: string,
@@ -241,33 +260,34 @@ export function resolveTrailLensNodeEgoState(
 }
 
 /**
- * 렌즈 동안 이 노드가 **트레일 잉크를 얼마나 받나** (0 = 안 받음, 1 = 완전).
+ * How much **trail ink** this node takes while the lens is on (0 = none,
+ * 1 = full).
  *
- * ## 왜 이 함수가 생겼나 (2026-08-02 소유자 실보고)
+ * Owner, 2026-08-02: *"걸어온길 클릭했을때 화면인데 노드 선택되어서 빛나게
+ * 해줘야지?"* (this is the screen after clicking the walked-path control — the
+ * nodes should be selected and glowing). The lens previously only *kept* visited
+ * nodes at `"normal"`. Everything else being dim gave relative contrast, but the
+ * only visit marker was the footprint *beside* the node, so turning the path on
+ * left the nodes along it saying nothing with their own bodies.
  *
- * *"걸어온길 클릭했을때 화면인데 노드 선택되어서 빛나게 해줘야지?"* — 종전
- * 렌즈는 방문 노드를 `"normal"` 로 **남기기만** 했다. 나머지가 dim 이라 상대적
- * 대비는 있었지만 방문 표시는 노드 **옆** 발자국뿐이라, 「걸어온 길」을 켜도
- * 길 위의 노드가 자기 몸으로는 아무 말도 하지 않았다.
+ * **What 「빛나게」 (glowing) means inside the charter.** Not glow. Bloom
+ * (`ctx.shadowBlur`) exists only as the opt-in, default-0 exception inside the
+ * single file `shared/lib/footprint-glyph.ts`, and never leaves it
+ * (`.claude/rules/forbidden.md`). All that happens here is that the colour of the
+ * stroke channel the node **already has** moves toward the trail ink — no fourth
+ * ring, no new orbit, no new hue. On this map, glowing means value and colour
+ * contrast against a darkened field.
  *
- * ## 「빛나게」의 헌장 안 형태
- *
- * glow 가 아니다. 번짐(`ctx.shadowBlur`)은 `shared/lib/footprint-glyph.ts`
- * 한 파일의 opt-in·기본 0 예외로만 존재하고, 그 밖으로 나가지 않는다
- * (`.claude/rules/forbidden.md`). 여기서 하는 것은 노드가 **이미 가진 stroke
- * 채널**의 색을 트레일 잉크 쪽으로 옮기는 것뿐이다 — 새 링(넷째 원)도, 새
- * 궤도도, 새 hue 도 없다. 어두워진 장 위의 값·색 대비가 이 지도에서 「빛난다」의
- * 뜻이다.
- *
- * ## 세 규칙
- *
- * 1. **렌즈 한정** — `ramp` 는 팝오버가 열려 있는 동안만 1 로 오르고 닫히면
- *    0 으로 내린다. 상시 앰버 확장이 아니라는 것이 이 값이 보증하는 성질이고,
- *    선행 예외 둘(에이전트 포커스 링 · 최근 변경 스포트라이트)과 같은 구조다.
- * 2. **방문한 것만** — 안 방문한 노드는 0 이다(기존대로 dim 으로 물러난다).
- * 3. **고른 노드는 받지 않는다** — 선택 링(인디고) > 발자국 위계가 불변이다.
- *    받게 하면 사용자가 방금 고른 노드가 «걸었던 곳»과 같은 색이 되어, 화면이
- *    「지금 여기」와 「지나온 곳」을 더 이상 가르지 않는다.
+ * Three rules:
+ * 1. **Lens-only.** `ramp` rises to 1 only while the popover is open and falls to
+ *    0 when it closes. That is what guarantees this is not a standing expansion of
+ *    amber, and it is the same structure as the two prior exceptions (the agent
+ *    focus ring and the recent-change spotlight).
+ * 2. **Visited only.** An unvisited node is 0 and recedes to dim as before.
+ * 3. **The selected node takes none**, keeping the indigo selection ring above the
+ *    footprint. Letting it take ink would paint the node the user just picked the
+ *    same colour as the places they walked, and the screen would stop separating
+ *    "here now" from "been there".
  */
 export function trailNodeInkStrength(input: {
   kept: boolean;
@@ -305,8 +325,8 @@ export function resolveEdgePulseSpeed(
  * - **No focus:** hover owns the ripple — the hovered node and its 1-hop
  *   neighbors (`isHoverEgoMember`) ramp.
  * - **Focus active:** hover is suppressed (focus owns attention), EXCEPT the one
- *   node the user is hovering in the detail panel's "연결된 노드" list
- *   (`panelEmphasisNodeId`). That single neighbor still ramps so the panel row
+ *   node the user is hovering in the detail panel's "연결된 노드" (connected
+ *   nodes) list (`panelEmphasisNodeId`). That single neighbor still ramps so the panel row
  *   and the on-canvas node/edge light up together ("emphasis ripple" linkage,
  *   lead spec §4). `panelEmphasisNodeId` is null until the panel-hover API feeds
  *   it in.
@@ -390,7 +410,8 @@ export function stepEmphasis(
  * lerps each node's normal color toward its dim/ego target by this factor (and
  * eases the center node's radius 1→1.12), so the dim/neighbor/center color swap
  * a click triggers ramps IN with the camera dive instead of hard-cutting, and a
- * deselect ramps it back OUT (owner headline: "하드 컷으로 읽히지 않게"). One
+ * deselect ramps it back OUT (owner headline: "하드 컷으로 읽히지 않게" — it must
+ * not read as a hard cut). One
  * symmetric τ (`--topology-v2-focus-dim-tau`) — the color transition should feel
  * the same entering and leaving. Sibling to `stepEmphasis` (hover ripple) and
  * the ego-reveal ramp; kept separate because those gate on narrower conditions

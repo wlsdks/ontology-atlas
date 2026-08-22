@@ -3,31 +3,32 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * 웹 표면 스모크 — 무인 표면의 유일한 눈.
+ * Web surface smoke — the only eye on an unattended surface.
  *
- * 왜 이 파일이 있는가 (2026-07-27 표면 분리 결정, `docs/DECISIONS.md`):
- * 웹과 앱은 더 이상 같은 화면을 약속하지 않는다. 데스크톱 능력이 웹 동등물
- * 없이 출하되고, 소유자는 앱만 쓴다. 그 결정의 **유일한 구조적 대가**가
- * 웹의 무인 부패다 — 아무도 안 보는 사이 조용히 썩고, 그런데 웹은 지금
- * 유일한 유입 경로(14일 순방문 35명 전원 웹)다.
+ * The 2026-07-27 surface-split decision (`docs/DECISIONS.md`) stopped promising
+ * that web and app show the same screens: desktop capabilities ship without a web
+ * equivalent, and the owner uses only the app. The **one structural cost** of that
+ * decision is unattended decay on the web — nobody is looking, yet the web is
+ * currently the only inbound path (14-day unique visitors: 35, all web).
  *
- * 그래서 이 파일은 "웹이 자기 두 가지 일을 아직 하는가" 만 본다. 픽셀
- * 동등성도, 앱과의 대조도 보지 않는다 (그 왕복 검증은 같은 결정으로
- * 폐지됐다).
+ * So this file asks only whether the web still does its own two jobs. It does not
+ * check pixel equivalence or compare against the app; that round-trip
+ * verification was retired by the same decision.
  *
- *   ① 관문   — 볼트 없이 첫 화면이 쓸 만한 지도로 뜬다
- *   ② 차선   — 폴더를 골라 실제로 읽고, 못 고르는 브라우저는 정직히 강등된다
- *   ③ 강등   — 앱 전용 능력이 "왜 + 어디서" 를 말한다 (죽은 CTA 0)
+ *   ① Gateway  — the first screen opens as a usable map with no vault
+ *   ② Fallback — a picked folder is really read, and browsers that cannot pick
+ *                degrade honestly
+ *   ③ Degrade  — app-only capabilities state "why + where" (zero dead CTAs)
  *
- * 이 셋 중 하나라도 빨개지면 웹은 관문 노릇을 못 하고 있는 것이다.
+ * Any one of the three going red means the web is not doing its gateway job.
  */
 
-// ── 공통 ────────────────────────────────────────────────────────────────────
+// ── Shared ──────────────────────────────────────────────────────────────────
 
 /**
- * `next dev` 는 라우트 첫 진입을 온디맨드로 컴파일한다. 스위트를 연달아
- * 돌릴 때 하이드레이션이 늦게 끝나면 testid 가 한 프레임 늦게 붙는다 —
- * networkidle 까지 기다려 그 편차를 흡수한다(기존 스펙들과 같은 관례).
+ * `next dev` compiles a route on first entry. When suites run back to back,
+ * hydration can finish late and a testid attaches one frame later — waiting for
+ * networkidle absorbs that variance (the same convention as the other specs).
  */
 async function gotoSettled(page: Page, url: string) {
   await seedFirstRunSeen(page);
@@ -35,7 +36,7 @@ async function gotoSettled(page: Page, url: string) {
   await page.waitForLoadState("networkidle");
 }
 
-/** 사람이 고를 법한 최소 볼트 — 프로젝트 하나 + 도메인 하나 + 역량 하나. */
+/** The smallest vault a person would plausibly pick — one project, one domain, one capability. */
 const SEED_VAULT: Record<string, string> = {
   "project.md": [
     "---",
@@ -80,18 +81,20 @@ const SEED_VAULT: Record<string, string> = {
   ].join("\n"),
 };
 
-// ── ① 관문 — 얼굴과 지도가 각자의 주소에서 살아 있다 ──────────────────────
+// ── ① Gateway — the face and the map are each alive at their own address ────
 
 /**
- * **이 절은 2026-07-30 에 주소가 갈렸다.**
+ * **This section's addresses split on 2026-07-30.**
  *
- * 전에는 `/` 하나가 "볼트 없이 연 첫 화면이 실제 지도로 뜬다" 를 지켰다. 소유자
- * 서명(2026-07-29, 원장: 「root-first-open」 뒤집기)으로 `/` 는 웹 방문자의
- * **얼굴**이 되고 지도는 `/topology` 로 갔다.
+ * `/` alone used to guard "the first screen opened without a vault renders a real
+ * map". With the owner's sign-off (2026-07-29, decision ledger: reversing
+ * 「root-first-open」) `/` became the web visitor's **face** and the map moved to
+ * `/topology`.
  *
- * 그래서 검사를 **지운 게 아니라 옮겼다.** 지도가 0 아닌 숫자로 살아 있다는
- * 보증은 그대로 있고, 다만 그것을 묻는 주소가 `/topology` 다. 옮기지 않고
- * 지웠다면 이 전환이 관문의 눈을 하나 뽑는 일이 됐을 것이다.
+ * So the check was **moved, not deleted.** The guarantee that the map is alive
+ * with a non-zero count still stands; only the address asking it changed. Deleting
+ * instead of moving would have made that transition remove one of the gateway's
+ * eyes.
  */
 test.describe("웹 스모크 ① 관문", () => {
   test("`/` 가 얼굴로 뜬다 — 무엇인지 말하고, 받는 길과 보는 길을 함께 준다", async ({
@@ -99,103 +102,107 @@ test.describe("웹 스모크 ① 관문", () => {
   }) => {
     await gotoSettled(page, "/ko/");
 
-    // 관문 크롬이다 — 워크벤치 레일이 아니라 얼굴의 상단 바.
+    // Gateway chrome — the face's top bar, not the workbench rail.
     await expect(page.getByTestId("download-gnb")).toBeVisible({ timeout: 15_000 });
 
-    // 방문자가 할 수 있는 두 가지가 살아 있다: 받기, 그리고 설치 없이 보기.
+    // The visitor's two available actions are alive: download, and look without
+    // installing.
     //
-    // [재조준 2026-08-19] 둘 다 판(`download-hero-actions` ·
-    // `download-web-cta`) 안에 있었는데 소유자가 설치 절을 통째로 걷어냈다
-    // (*"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*). 두 목적지는
-    // 히어로가 전부 진다 — 그것이 그 결정의 근거이기도 하다.
+    // Re-aimed 2026-08-19: both used to live inside the install panel
+    // (`download-hero-actions` · `download-web-cta`), which the owner removed
+    // wholesale — *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*
+    // (the last section seems unnecessary; it is all at the top anyway). The hero now
+    // carries both destinations, which was also the basis for that decision.
     await expect(page.getByTestId("gateway-hero-cta")).toBeVisible();
     const toMap = page.getByTestId("gateway-hero-web-cta");
     await expect(toMap).toBeVisible();
-    // **`/` 로 되돌아오는 고리가 아니어야 한다** — 그러면 「보러 가기」가 죽은
-    // 약속이 된다. 전환 전에는 두 주소가 같은 화면이라 이 결함이 안 보였다.
+    // **Must not loop back to `/`** — that would make "go look" a dead promise.
+    // Before the split both addresses rendered the same screen, so this defect was
+    // invisible.
     await expect(toMap).toHaveAttribute("href", /\/topology\/?$/);
 
-    // 얼굴에는 「다운로드」 빵부스러기 마디가 없다 — 여기는 그 주소가 아니다.
+    // The face carries no "download" breadcrumb segment — this is not that address.
     await expect(page.getByTestId("download-back-to-map")).toHaveCount(0);
   });
 
   test("`/topology` 가 실제 지도 + 읽을 수 있는 숫자로 뜬다", async ({ page }) => {
     await gotoSettled(page, "/ko/topology/");
 
-    // 지도가 실제 크기를 가진 캔버스로 존재한다.
+    // The map exists as a canvas with real dimensions.
     const canvas = page.getByTestId("topology-map-v2-canvas");
     await expect(canvas).toBeVisible({ timeout: 15_000 });
     const box = await canvas.boundingBox();
     expect(box?.width ?? 0).toBeGreaterThan(0);
     expect(box?.height ?? 0).toBeGreaterThan(0);
 
-    // 지도 옆 INDEX 가 있고, 그 안에 첫 방문자가 읽을 시작 모듈이 있다.
+    // The INDEX beside the map exists, holding the starter a first visitor reads.
     await expect(page.getByTestId("topology-index-panel")).toBeVisible();
     const starter = page.getByTestId("first-run-starter");
     await expect(starter).toBeVisible();
 
-    // 그 숫자가 **실제 데이터에서 나온 값**이어야 한다. 0 이면 지도는 떴는데
-    // 아무것도 안 그려진 상태 — 관문으로서는 죽은 화면이다.
+    // The number must come from **real data**. A 0 means the map mounted but drew
+    // nothing — a dead screen as far as the gateway is concerned.
     //
-    // 마커를 카드 안 "숫자만 든 span" 에서 샘플 크기 캡션으로 옮겼다
-    // (2026-08-02). 그 전 마커는 3분할 계기 셀(`<span>112</span>`)의 마크업에
-    // 기대고 있었는데, 계기가 캡션 한 줄로 강등되면서 숫자가 문장 안으로
-    // 들어가 **컴포넌트보다 오래 산 마커**가 됐다 — 2026-08 에 릴리스를 하나
-    // 잃은 바로 그 실패 모드다. 이제 마커는 자기 testid 를 가진 표면 하나를
-    // 가리키고, 그 표면이 사라지면 게이트가 먼저 터진다.
+    // The marker moved from a "span holding only a number" inside the card to the
+    // sample-size caption (2026-08-02). The previous marker leaned on the markup of a
+    // three-part instrument cell (`<span>112</span>`); when that instrument was
+    // demoted to a one-line caption the number moved inside a sentence and the marker
+    // **outlived its component** — the exact failure mode that cost a release in
+    // 2026-08. The marker now points at one surface with its own testid, and if that
+    // surface disappears the gate breaks first.
     const scale = starter.getByTestId("first-run-starter-sample-scale");
     await expect(scale).toBeVisible();
     const counts = (((await scale.textContent()) ?? "").match(/\d+/g) ?? []).map(Number);
     expect(counts.length).toBeGreaterThan(0);
     expect(counts.some((value) => value > 0)).toBe(true);
 
-    // 관문의 다음 행동 두 개가 살아 있다(비활성·부재는 관문 고장).
+    // The gateway's two next actions are alive (disabled or absent means it is broken).
     await expect(page.getByTestId("first-run-starter-open")).toBeEnabled();
     await expect(page.getByTestId("first-run-starter-create")).toBeEnabled();
   });
 });
 
-// ── ② 차선 워크벤치 — 폴더를 실제로 읽는다 ─────────────────────────────────
+// ── ② Fallback workbench — the folder is actually read ──────────────────────
 
 test.describe("웹 스모크 ② 차선 워크벤치", () => {
   test("폴더를 고르면 웹이 그 폴더를 실제로 읽어 지도로 바꾼다", async ({ page }) => {
     await stubDirectoryPicker(page, SEED_VAULT);
-    // 워크벤치를 검사하므로 지도 주소로 간다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    // Testing the workbench, so go to the map address — since 2026-07-30 `/` is the gateway.
     await gotoSettled(page, "/ko/topology/");
 
     await page.getByTestId("first-run-starter-open").click();
     await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
     await page.getByTestId("vault-guide-pick-existing").click();
 
-    // 성공 판정은 "고른 폴더 안의 내 노드가 화면에 있다" 로 한다. 시작
-    // 모듈이 사라지는 것(샘플 → 내 데이터 전환)만으로는 부족하다 — 폴더를
-    // 열기만 하고 파싱은 못 했어도 사라질 수 있다.
+    // Success is judged as "my node from the picked folder is on screen". The
+    // starter disappearing (sample → my data) is not enough — it can also disappear
+    // when the folder opened but nothing was read.
     await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 20_000 });
 
     const index = page.getByTestId("topology-index-panel");
     await expect(index).toContainText("Smoke Shop", { timeout: 20_000 });
-    // 씨앗 폴더는 정확히 노드 3 · 관계 2 다. 숫자가 맞으면 프론트매터를
-    // 실제로 읽고 관계까지 이었다는 뜻이다.
+    // The seed folder is exactly 3 nodes and 2 edges. Matching counts mean the
+    // frontmatter was really read and the edges were wired.
     await expect(index).toContainText("3 개념");
     await expect(index).toContainText("2 관계");
   });
 
   test("폴더를 못 여는 브라우저는 약속 대신 이유와 갈 곳을 준다", async ({ page }) => {
-    // FSA 미지원 브라우저 재현 — 앱의 능력 판정은 `showDirectoryPicker` 가
-    // **호출 가능한지**로 하므로 지우는 것으로 충분하다.
+    // Reproduce a browser without FSA. The app decides that capability by whether
+    // `showDirectoryPicker` is **callable**, so deleting it is enough.
     await page.addInitScript(() => {
       try {
         delete (window as unknown as Record<string, unknown>).showDirectoryPicker;
       } catch {
-        /* non-configurable — 아래 단언이 알아서 실패한다 */
+        /* non-configurable — the assertion below fails on its own */
       }
     });
-    // 워크벤치를 검사하므로 지도 주소로 간다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    // Testing the workbench, so go to the map address — since 2026-07-30 `/` is the gateway.
     await gotoSettled(page, "/ko/topology/");
 
     const notice = page.getByTestId("first-run-starter-unsupported");
     await expect(notice).toBeVisible({ timeout: 15_000 });
-    // 왜 안 되는지 + 어디서 되는지가 한 문장 안에 있다.
+    // Why it does not work and where it does, in one sentence.
     await expect(notice).toContainText("지원하지 않아요");
     await expect(notice).toContainText("Chrome/Edge");
 
@@ -203,74 +210,80 @@ test.describe("웹 스모크 ② 차선 워크벤치", () => {
     await expect(cta).toBeVisible();
     await expect(cta).toHaveAttribute("href", /\/download\//);
 
-    // 갈 수 없는 곳을 가리키면 안내가 아니라 막다른 길이다.
+    // Pointing somewhere unreachable is a dead end, not guidance.
     await cta.click();
     await expect(page).toHaveURL(/\/download\//, { timeout: 15_000 });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 });
 
-// ── ③ 정직한 강등 — 앱 전용 능력이 왜 + 어디서를 말한다 ────────────────────
+// ── ③ Honest degradation — app-only capabilities state why + where ──────────
 
 /**
- * 웹에서 열리는 데스크톱 전용 표면 등록부.
+ * Registry of desktop-only surfaces as opened on the web.
  *
- * 목록이라서 값어치가 있다 — 데스크톱 능력을 새로 붙이는 사람이 여기 한 줄을
- * 더하지 않으면 그 능력의 웹 강등은 아무도 안 본다. 새 브리지를 만들면 이
- * 목록에도 넣는다(`.claude/rules/surfaces.md` 계약).
+ * The value is in it being a list: if whoever adds a desktop capability does not
+ * add a row here, nobody ever looks at that capability's web degradation. A new
+ * bridge gets a row (the `.claude/rules/surfaces.md` contract).
  */
-// 이 등록부는 **웹↔앱 축** 전용이다 — 각 행이 "브라우저는 원리적으로 이걸 못
-// 한다 → 유일한 목적지는 /download/" 를 주장한다. **뷰포트 폭 축**의 강등
-// (같은 웹 빌드가 넓은 화면에서는 여는 표면 — 첫 사례: 공방 <lg)은 여기
-// 넣지 않는다. 넣으면 그 행이 "웹은 못 한다" 는 거짓 주장을 하고 다음
-// 감사자가 그대로 읽는다. 폭 축의 게이트는 폭이 독립 변수인
-// `responsive-overflow-audit.spec.ts` 가 맡는다 (`.claude/rules/surfaces.md`
-// 「강등에는 축이 둘이다」, 2026-07-28).
+// This registry is for the **web↔app axis** only — each row claims "the browser
+// cannot do this in principle → the only destination is /download/". Degradation
+// on the **viewport-width axis** (a surface the same web build opens on wide
+// screens; first case: the studio below lg) does not belong here. Putting it here
+// would make the row assert the falsehood "the web cannot do this", and the next
+// auditor reads it as written. The width axis is gated by
+// `responsive-overflow-audit.spec.ts`, where width is the independent variable
+// (see `.claude/rules/surfaces.md` 「강등에는 축이 둘이다」 — degradation has two
+// axes, 2026-07-28).
 type DegradedSurface = {
   name: string;
   url: string;
   /**
-   * 주소만으로는 못 닿는 카드까지 가는 길. **설정 시트 안의 절처럼 눌러야
-   * 나오는 카드도 등록부에 담기 위해** 있다 — 이 칸이 없던 동안 그런 능력은
-   * 목록 밖에서 각자 스펙을 갖는 수밖에 없었고, 그건 이 목록이 막으려는
-   * 「등재 안 된 능력은 아무도 안 본다」를 뒷문으로 되살리는 길이다.
+   * The route to a card an address alone cannot reach. It exists **so that cards
+   * which only appear after a click — a section inside the settings sheet — can
+   * still be in the registry.** While this field did not exist, such capabilities
+   * had to keep their own spec outside the list, which reopens by the back door the
+   * very failure this list prevents: an unregistered capability nobody looks at.
    */
   open?: (page: Page) => Promise<void>;
   card: string;
-  /** ① **왜** 안 되나 — 사과문이 아니라 이유가 카드 안에 서 있다. */
+  /** ① **Why** it does not work — the card states a reason, not an apology. */
   reason: RegExp;
   /**
-   * ② **어디서** 되나 — 누를 수 있는 링크. 눌러서 `/download/` 가 실제로
-   * 열리는지까지 본다(「죽은 CTA 0」은 이 단언이 지킨다).
+   * ② **Where** it does work — a clickable link. The assertion goes as far as
+   * clicking it and checking `/download/` actually opens (this is what guards
+   * "zero dead CTAs").
    */
   destination?: string;
   /**
-   * ② 의 다른 모양 — **글로만** 갈 곳을 말하는 카드. `.claude/rules/surfaces.md`
-   * 가 갈 곳을 *"보통 `/download/`, 또는 CLI 명령 한 줄"* 로 정의하므로 링크가
-   * 아닌 안내도 계약을 지킨다.
+   * The other shape of ② — a card that names the destination **in prose only**.
+   * `.claude/rules/surfaces.md` defines the destination as *"usually `/download/`,
+   * or a single CLI command"*, so non-link guidance also satisfies the contract.
    *
-   * ⚠️ **링크가 있는 카드는 반드시 `destination` 을 쓴다.** 이쪽으로 옮기면
-   * 그 줄만 조용히 「눌러도 아무 데도 안 간다」 검사에서 빠진다.
+   * ⚠️ **A card that has a link must use `destination`.** Moving it here silently
+   * drops that row out of the "clicking goes nowhere" check.
    */
   destinationText?: RegExp;
   /**
-   * ③ **이 화면에서도 되는 것** (있을 때만). 되는 것을 안 된다고 쓰는 것도
-   * 「곧 됩니다」와 같은 갈래의 거짓말이라(2026-08-01, `surfaces.md`), 한 번
-   * 적은 뒤에는 조용히 사라지지 못하게 잠근다.
+   * ③ **What does work on this screen** (when anything does). Saying something is
+   * unavailable when it works is the same species of lie as "coming soon"
+   * (2026-08-01, `surfaces.md`), so once written it is locked against quietly
+   * disappearing.
    *
-   * ⚠️ **문구가 아니라 「가리킨 자리가 있는가」를 잰다** (2026-08-17). 종전에는
-   * `/내 에이전트 연결/` 처럼 문장을 통째로 못박았고, 문구가 바뀌자 빨간불이
-   * 되면서 **그 빨간불이 「문구가 낡았다」인지 「가리키는 곳이 없다」인지
-   * 구별되지 않았다**. 실제로는 둘 다였다 — 카드가 「MCP」 칸을 가리켰는데 그런
-   * 이름의 칸은 이 시트에 없었다. `documentation.md`: *사람이 쓴 문장을 못박지
-   * 마라, 기계가 만들어 낼 수 있는 것만 검사하라.*
+   * ⚠️ **Measure whether the named place exists, not the wording** (2026-08-17).
+   * This used to pin whole sentences like `/내 에이전트 연결/`; when the wording
+   * changed it went red, and **that red could not distinguish "the wording is
+   * stale" from "it points nowhere"**. It was in fact both — the card pointed at an
+   * 「MCP」 section, and no section by that name existed in the sheet.
+   * `documentation.md`: *do not pin sentences a human wrote; check only what a
+   * machine can generate.*
    *
-   * 그래서 여기서는 **「…」 안의 이름이 이 시트의 실제 칸 이름인지**만 본다.
-   * 번역 파일 쪽의 같은 검사는
+   * So this checks only **whether the name inside 「…」 is a real section name on
+   * this screen**. The equivalent check on the translation files is
    * `tests/contract/settings-section-reference.contract.test.ts`.
    */
   alsoHereNamesSettingsSection?: true;
-  /** 이 카드는 볼트를 연 뒤에만 그려진다 — 픽스처 폴더를 먼저 물린다. */
+  /** This card only renders after a vault is open — attach the fixture folder first. */
   needsVault?: true;
 };
 
@@ -283,26 +296,28 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destination: "atlas-git-web-get-app",
   },
   {
-    // ⚠️ **이 행이 주장하는 것은 「연결 불가」가 아니라 「자동 저장 불가」다**
-    // (2026-08-01). 종전 문구는 「이 화면에서는 연결할 수 없어요」였고 그건
-    // 거짓이었다 — MCP 는 Atlas 가 아니라 폴더에 붙고, 에이전트가 자기 세션에서
-    // 서버를 띄운다. 웹 사용자도 연결된다. 브라우저가 못 하는 것은 절대 경로를
-    // 몰라서 **설정 파일을 대신 저장해 주는 것** 하나다. 강등 카드가 능력의
-    // 범위를 실제보다 좁게 말하는 것도 정직 위반이라, 이 정규식은 그 좁은
-    // 주장(자동 저장)을 겨냥한다. 그 자리에서 끝나는 길이 살아 있는지는 아래
-    // 별도 스펙이 본다.
-    // ⚠️ **2026-08-21 재조준** (원장 90). 이 카드는 연결 시트가 열어 주던
-    // 것이었는데 그 시트가 은퇴했다. 이제 「에이전트」 목적지의 「MCP 연결」
-    // 절이 그린다 — **볼트를 연 뒤에.**
+    // ⚠️ **This row claims "cannot save automatically", not "cannot connect"**
+    // (2026-08-01). The previous wording was "이 화면에서는 연결할 수 없어요" (you
+    // cannot connect on this screen) and it was false — MCP attaches to the folder,
+    // not to Atlas, and the agent starts the server in its own session, so web users
+    // do connect. The one thing a browser cannot do is **write the config file for
+    // you**, because it does not know the absolute path. A degradation card
+    // understating the capability is also a honesty violation, so this regex targets
+    // the narrow claim (automatic saving). Whether the path that ends right there is
+    // alive is checked by a separate spec below.
     //
-    // 소유자 확정: *"볼트 있어야 그리는게 맞지"*. 그게 더 정확하기도 하다 —
-    // **볼트가 없으면 저장할 설정 자체가 없다.** 시트 시절에는 볼트 없이도
-    // 이 카드를 보여 줬는데, 그때 그 문장은 아직 존재하지 않는 파일에 대해
-    // 못 한다고 말하는 것이었다.
+    // ⚠️ **Re-aimed 2026-08-21** (ledger 90). This card used to be opened by the
+    // connect sheet, which has since been retired. It is now drawn by the 「MCP 연결」
+    // section of the 「에이전트」 destination — **after a vault is open.**
+    //
+    // Owner's call: *"볼트 있어야 그리는게 맞지"* (it is right to draw it only when
+    // a vault exists). It is also more accurate: **with no vault there is no config
+    // to save.** In the sheet era this card showed without a vault, and the sentence
+    // was then saying it could not act on a file that did not yet exist.
     name: "에이전트 연결 — 브라우저는 폴더의 절대 경로를 몰라 설정을 대신 저장하지 못한다",
     url: "/ko/topology/",
     open: async (page) => {
-      // 볼트를 먼저 연다 — 그래야 설정판이 그려지고, 그 안에 이 카드가 있다.
+      // Open the vault first — that is what draws the settings panel holding this card.
       await page.getByTestId("first-run-starter-open").click();
       await page.getByTestId("vault-guide-pick-existing").click();
       await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
@@ -315,23 +330,28 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destination: "agent-connect-web-get-app",
   },
   {
-    // **「실행기」 절** (2026-08-16 등재) — 이 기기에 설치된 코딩 에이전트를
-    // 찾아 앱 안에서 띄우는 화면. 브라우저는 이 컴퓨터의 프로그램을 띄우지
-    // 못하므로 원리적 기각이고, 그래서 「곧 됩니다」가 아니라 이유가 선다.
+    // **The 「실행기」 (runtimes) section** (registered 2026-08-16) — the screen that
+    // finds coding agents installed on this machine and launches them inside the app.
+    // A browser has no permission to launch programs on this computer, so the
+    // rejection is in principle and the card states a reason rather than "coming
+    // soon".
     //
-    // **갈 곳이 글인 첫 줄이다** — 이 절에는 오늘 링크 원소가 없다.
+    // **The first row whose destination is prose** — this section has no link element
+    // today.
     //
-    // **셋째 항목이 실제로 있는 첫 줄이기도 하다.** 등재 전 문구는 「브라우저
-    // 에서는 도구를 실행할 수 없어요」 하나였는데, 그 문장만 읽은 웹 사용자는
-    // 「웹에서는 에이전트를 아예 못 쓴다」로 읽는다 — `agent-server-unavailable`
-    // 이 2026-08-01 에 정정당한 바로 그 거짓이다. 웹에서도 자기가 직접 띄운
-    // 에이전트를 이 폴더에 붙일 수 있고, 그 길(「MCP」)은 같은 시트 안에
-    // 있다. 그래서 그 문장을 카드에 넣고 여기서 잠근다.
-    // ⚠️ **2026-08-21 재조준** (원장 90). 이 절은 설정 시트를 떠나 「에이전트」
-    // 목적지가 됐다. 검사를 지우지 않고 **주소만 옮긴다** — 강등 문장이 살아
-    // 있는지는 표면이 어디로 가든 물어야 하는 질문이다.
+    // **Also the first row where item ③ actually exists.** Before registration the
+    // wording was only "브라우저에서는 도구를 실행할 수 없어요" (the browser cannot
+    // run tools), and a web user reading just that sentence concludes the web cannot
+    // use agents at all — precisely the falsehood `agent-server-unavailable` was
+    // corrected for on 2026-08-01. Web users can attach an agent they started
+    // themselves to this folder, and that path (「MCP」) is in the same sheet. So that
+    // sentence went into the card and is locked here.
     //
-    // 그리고 이제 시트를 열 필요가 없다: 목적지는 주소로 바로 열린다.
+    // ⚠️ **Re-aimed 2026-08-21** (ledger 90). This section left the settings sheet
+    // and became the 「에이전트」 destination. The check is **re-addressed, not
+    // deleted** — whether the degradation sentence is alive is a question worth asking
+    // wherever the surface moves. Opening a sheet is no longer needed: the destination
+    // opens directly by address.
     name: "실행기 — 브라우저는 이 컴퓨터의 프로그램을 띄우지 못한다",
     url: "/ko/agents/",
     card: "app-settings-runtimes-web",
@@ -352,8 +372,8 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
       await expect(card).toBeVisible({ timeout: 15_000 });
       await expect(card).toHaveText(surface.reason);
 
-      // 갈 곳이 없는 줄은 등재된 적이 없는 것과 같다 — 둘 중 하나는 있어야
-      // 하고, 어느 쪽도 없이 등재하는 길을 열어 두지 않는다.
+      // A row with no destination is the same as never having been registered — one of
+      // the two must be present, and there is no path to registering without either.
       expect(surface.destination ?? surface.destinationText).toBeDefined();
 
       if (surface.destination) {
@@ -364,13 +384,13 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
       if (surface.destinationText) await expect(card).toHaveText(surface.destinationText);
       if (surface.alsoHereNamesSettingsSection) {
         /*
-         * 「…」 안의 이름이 **같은 화면에 실제로 있는 자리**여야 한다. 문구는
-         * 얼마든지 고쳐도 되고, 없는 곳을 가리킬 때만 터진다.
+         * The name inside 「…」 must be **a place that really exists on the same screen**.
+         * Wording may change freely; this only breaks when it points at something absent.
          *
-         * ⚠️ **2026-08-21 재조준**: 종전에는 «설정 시트의 칸 목록»에서 찾았다.
-         * 이 절이 목적지로 옮겨 오면서 가리키는 대상도 **이 페이지의 절 제목**이
-         * 됐다 — 그게 더 강한 계약이기도 하다. 「이 화면에서도 되는 것」이라고
-         * 말했으면 그 자리는 **이 화면**에 있어야 한다.
+         * ⚠️ **Re-aimed 2026-08-21**: it used to look in the settings sheet's section
+         * list. When this section moved to a destination, the referent became **this
+         * page's section headings** — a stronger contract too. If the card says something
+         * also works here, that place must be on **this** screen.
          */
         const quoted = [...(await card.innerText()).matchAll(/[「“]([^」”]+)[」”]/gu)].map((m) =>
           m[1].trim(),
@@ -388,17 +408,20 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
   }
 
   /**
-   * **강등의 반대편** — 이유와 갈 곳만 있고 *여기서 되는 것*이 없으면, 그건
-   * 정직하지만 막다른 길이다. 종전 이 카드의 유일한 대안은 긴 문서 링크였고,
-   * 연결하려던 사람은 시트를 잃고 문서 한가운데에 놓였다(소유자 실보고).
+   * **The far side of degradation** — a card with only a reason and a destination,
+   * and nothing that *works here*, is honest but a dead end. This card's only
+   * alternative used to be a long docs link, and someone trying to connect lost the
+   * sheet and landed in the middle of a document (reported by the owner).
    *
-   * 브라우저가 모르는 값(절대 경로)을 **아는 사람에게 물어** 그 자리에서
-   * 실행 가능한 설정을 만든다. 이 스펙이 지키는 것은 입력칸의 존재가 아니라
-   * **덜 채운 설정은 손에 쥐어 주지 않는다**는 계약이다.
+   * The value the browser does not know (the absolute path) is **asked of the person
+   * who does**, and a runnable config is built on the spot. What this spec guards is
+   * not the existence of input fields but the contract that **a half-filled config
+   * is never handed over**.
    */
   test("에이전트 연결 — 웹에서도 그 자리에서 붙는 설정을 만든다", async ({ page }) => {
-    // 2026-08-21 — 연결 시트가 은퇴했다(원장 90). 이 길은 목적지의 「MCP 연결」
-    // 절에 있고, 볼트를 연 뒤에 그려진다(볼트가 없으면 만들 설정이 없다).
+    // 2026-08-21 — the connect sheet was retired (ledger 90). This path lives in the
+    // destination's 「MCP 연결」 section and is drawn after a vault is open (with no
+    // vault there is no config to build).
     await stubDirectoryPicker(page, SEED_VAULT);
     await gotoSettled(page, "/ko/topology/");
     await page.getByTestId("first-run-starter-open").click();
@@ -410,22 +433,22 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     const panel = page.getByTestId("web-manual-connect");
     await expect(panel).toBeVisible({ timeout: 15_000 });
 
-    // 채우기 전에도 무엇을 해야 하는지 보인다 — 빈 화면에 입력칸만 두지 않는다.
+    // What to do is visible before anything is filled in — never bare inputs on an empty screen.
     const body = page.getByTestId("web-manual-connect-config-body");
     await expect(body).toContainText("mcpServers");
-    // 자리표시자가 든 설정은 붙지 않으므로 복사가 잠겨 있다.
+    // A config still holding placeholders will not attach, so copy stays locked.
     await expect(page.getByTestId("web-manual-connect-copy-config")).toBeDisabled();
 
-    // 확인한 적 없는 것을 확인했다고 말하지 않는다.
+    // Never claim to have verified something that was never verified.
     await expect(page.getByTestId("web-manual-connect-shape-only")).toContainText(
       "증명할 수 없어요",
     );
 
-    // 홈 물결은 설정 파일에서 펼쳐지지 않는다 — 잡고, 왜인지 말한다.
+    // A `~` does not expand inside a config file — catch it and say why.
     await page.getByTestId("web-manual-connect-vault-input").fill("~/notes");
     await expect(page.getByTestId("web-manual-connect-vault-input-issue")).toBeVisible();
 
-    // 두 절대 경로가 들어오면 자리표시자 없는 설정이 나오고 복사가 열린다.
+    // With both absolute paths in, the config has no placeholders and copy unlocks.
     await page.getByTestId("web-manual-connect-vault-input").fill("/Users/me/notes");
     await page
       .getByTestId("web-manual-connect-checkout-input")
@@ -437,28 +460,30 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await expect(page.getByTestId("web-manual-connect-copy-cli")).toBeEnabled();
 
     /*
-     * 문서 링크는 남되 **주 경로가 아니다** — 그 자리를 떠나지 않고 끝난다.
+     * The docs link stays but is **not the main path** — the task finishes without
+     * leaving this place.
      *
-     * 2026-08-21: 재는 대상이 시트에서 **목적지**로 바뀌었다(원장 90). 잠그는
-     * 뜻은 그대로다 — 연결하려던 사람이 설정을 만들다 말고 문서 한가운데로
-     * 떨어지면 안 된다.
+     * 2026-08-21: what is measured moved from the sheet to the **destination**
+     * (ledger 90). The locked meaning is unchanged — someone building a config must
+     * not be dropped into the middle of a document halfway through.
      */
     await expect(page.getByTestId("agent-setup-section")).toBeVisible();
     expect(new URL(page.url()).pathname).toBe("/ko/agents/");
   });
 
   /**
-   * 스킬 사본 판정은 **웹에 없는 것이 정상**이다 — manifest walker 가 dot
-   * 디렉터리를 걸러 `.claude/skills` 는 브라우저에서 원리적으로 안 보이고,
-   * FSA 핸들에는 그걸 우회할 절대 경로가 없다.
+   * Skill-copy comparison is **correctly absent on the web** — the manifest walker
+   * filters dot directories, so `.claude/skills` is invisible in a browser in
+   * principle, and an FSA handle has no absolute path to work around it.
    *
-   * 이 단언이 필요한 이유는 **반대 방향 결함** 때문이다: 능력이 없는데 있는
-   * 척하면(예: 0개를 "모두 일치" 로 그리면) 화면이 확인한 적 없는 것을
-   * 확인했다고 주장한다. `-` 는 "이 표면에 그 능력이 없음" 이고 `0/0` 은
-   * "능력은 있는데 볼 것이 없음" 이라, 둘은 같은 값으로 뭉개지면 안 된다.
+   * This assertion exists because of the **opposite defect**: pretending to have a
+   * capability that is absent (rendering 0 as "all match") makes the screen claim to
+   * have verified something it never did. `-` means "this surface lacks the
+   * capability" and `0/0` means "the capability works and found nothing" — the two
+   * must not collapse into one value.
    *
-   * 설치 앱 쪽 짝: 같은 속성이 `11/3` 을 냈고 CLI `agent-files` 의 판정
-   * (공유 스킬 11 · diverged 3)과 일치했다 (2026-07-29 실측).
+   * The installed-app counterpart: the same attribute produced `11/3`, matching the
+   * CLI `agent-files` verdict (11 shared skills, 3 diverged) — measured 2026-07-29.
    */
   test("문서함이 웹에서는 스킬 사본 판정을 하지 않는다 — 없는 능력을 있는 척하지 않는다", async ({
     page,
@@ -468,67 +493,70 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
   });
 
   test("다운로드 화면이 웹의 두 번째 일을 숨기지 않는다 (Windows 방문자)", async ({ page }) => {
-    // 강등의 반대 방향 결함 — 되는 것을 안 된다고 쓰는 것. 실측(2026-07-27)
-    // 으로 이 화면은 "폴더를 직접 여는 일은 설치한 앱만 할 수 있습니다" 라고
-    // 썼는데, 바로 위 스모크 ② 가 그게 거짓임을 증명했다. 앱이 없는 OS 의
-    // 방문자를 빈손으로 돌려보내지 않는 것이 웹의 2번 일이다.
+    // The reverse-direction defect — writing that something works nowhere when it
+    // works here. Measured 2026-07-27: this screen said "opening a folder directly is
+    // only possible in the installed app", and smoke ② directly above proves that
+    // false. Not sending away a visitor whose OS has no app is the web's second job.
     //
-    // ⚠️ 2026-07-29 — 이 스펙은 **이미 빨간 채로 방치돼 있었다**(카운슬 평결
-    // 적용 중 발견). 겨냥하던 문장 두 개가 모두 사라진 뒤였다: "Chrome·Edge"
-    // 는 어느 로케일 카탈로그에도 없고, "서명된 설치 파일"(`windowsPolicy`)은
-    // 정책 산문이라 접이식 안으로 내려가 **기본 상태에서 안 보인다**.
+    // ⚠️ 2026-07-29 — this spec had **already been sitting red** (found while
+    // applying a council verdict). Both sentences it targeted were gone: "Chrome·Edge"
+    // is in no locale catalogue, and "서명된 설치 파일" (`windowsPolicy`) is policy
+    // prose that moved inside a disclosure and is **invisible in the default state**.
     //
-    // 문자열을 되살리는 대신 **주장을 다시 쓴다**. 지켜야 할 것은 특정 문구가
-    // 아니라 "앱이 없는 OS 의 방문자가 빈손으로 돌아가지 않는다" 이다.
+    // Rather than resurrect the strings, **the claim was rewritten**. What must hold
+    // is not a particular wording but "a visitor on an OS with no app does not leave
+    // empty-handed".
     //
-    // [재조준 2026-08-19] 그 답이 살던 자리(판 안 플랫폼 절)는 설치 절과 함께
-    // 사라졌다. 지금 그 일을 하는 것은 히어로의 둘째 줄이다 — Windows 파일
-    // 버튼이 미서명 표식과 **함께** 서고, 그 옆에 오늘 당장 되는 곳이 있다.
+    // Re-aimed 2026-08-19: the place that answer lived in (the platform section inside
+    // the panel) disappeared with the install section. The hero's second row does that
+    // job now — the Windows file button stands **together with** the unsigned marker,
+    // and beside it is somewhere that works today.
     await gotoSettled(page, "/ko/download/");
 
-    // ① 자기 OS 의 파일이 어떤 상태인지 **받는 자리에서** 안다 — 스크롤을
-    //    내려야 알게 되는 것은 늦다.
+    // ① The state of the file for your OS is known **at the point of download** —
+    //    learning it only after scrolling is too late.
     const windows = page.getByTestId("gateway-hero-windows");
     await expect(windows).toBeVisible({ timeout: 15_000 });
     await expect(windows).toContainText("Windows");
     await expect(windows).toContainText(/미서명/);
     await expect(windows).toHaveAttribute("href", /github\.com/);
 
-    // ② **오늘 당장 되는 것**으로 가는 길이 같은 줄에 있다.
+    // ② The path to **what works today** is on the same row.
     //
-    // ⚠️ 2026-07-29 (밤) — 목적지가 `/ko/` 에서 `/ko/topology/` 로 바뀌었다.
-    // 소유자 결정으로 `/` 가 **마케팅 페이지**가 되기 때문이다(원장:
-    // 「root-first-open」 뒤집기). 이 단언의 의도는 *"앱이 없는 OS 의 방문자가
-    // 오늘 당장 되는 곳으로 갈 수 있다"* 이고, 그 곳은 소개 화면이 아니라 **웹
-    // 제품**이다 — `/topology`.
+    // ⚠️ 2026-07-29 (night) — the destination changed from `/ko/` to `/ko/topology/`
+    // because the owner's decision made `/` a **marketing page** (ledger: reversing
+    // 「root-first-open」). This assertion means *"a visitor on an OS with no app can
+    // reach something that works today"*, and that place is the **web product**, not
+    // the intro screen — `/topology`.
     //
-    // 라벨과 목적지의 짝은 `tests/contract/map-destination-route.contract.test.ts`
-    // 가 소스 레벨에서 따로 지킨다.
+    // The label-destination pairing is guarded separately at source level by
+    // `tests/contract/map-destination-route.contract.test.ts`.
     //
-    // [삭제 2026-08-19] 「추적할 곳」(`download-platform-windows-track`) — 그
-    // 링크는 Windows 빌드가 **미게시**일 때만 서던 강등 안내이고, 판과 함께
-    // 사라졌다. 지금은 실제 파일이 있으므로 갈 곳이 추적 이슈가 아니라 파일이다.
+    // Deleted 2026-08-19: 「추적할 곳」 (`download-platform-windows-track`) — that
+    // link was degradation guidance shown only while the Windows build was
+    // **unpublished**, and it went with the panel. A real file exists now, so the
+    // destination is the file rather than a tracking issue.
     const web = page.getByTestId("gateway-hero-web-cta");
     await expect(web).toBeVisible();
     await expect(web).toHaveAttribute("href", /\/ko\/topology\/?$/);
   });
 
   test("설정의 AI 연결이 브라우저에서 키를 받지 않는 이유를 말한다", async ({ page }) => {
-    // 워크벤치를 검사하므로 지도 주소로 간다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    // Testing the workbench, so go to the map address — since 2026-07-30 `/` is the gateway.
     await gotoSettled(page, "/ko/topology/");
 
-    // 설정 트리거는 레일과 지도 크롬 두 곳에 있다 — 레일 쪽 하나로 좁힌다.
+    // The settings trigger exists in both the rail and the map chrome — narrow to the rail.
     await page
       .getByTestId("app-nav-rail-utility-tier")
       .getByTestId("app-settings-trigger")
       .click();
-    // 2026-08-02 — 「앱 안 에이전트」는 LNB 한 줄이다(드릴인 복도 제거). 종전
-    // 두 걸음(절 → 요약 행)이 한 걸음이 됐다.
+    // 2026-08-02 — the in-app agent is one LNB row (the drill-in corridor was
+    // removed). The former two steps (section → summary row) became one.
     await page.getByTestId("app-settings-nav-ai").click();
 
     const card = page.getByTestId("ai-connection-web-degraded");
     await expect(card).toBeVisible({ timeout: 15_000 });
-    // 원리적 기각이라 "곧 됩니다" 가 아니라 이유가 서 있어야 한다.
+    // A rejection in principle, so a reason must stand — not "coming soon".
     await expect(card).toContainText("XSS");
     await expect(page.getByTestId("ai-connection-download-link")).toHaveAttribute(
       "href",

@@ -1,5 +1,6 @@
 /**
- * INDEX panel expanded/collapsed state contract (B3 허브가 곧 지도).
+ * INDEX panel expanded/collapsed state contract (「B3 허브가 곧 지도」 — the hub is
+ * the map).
  *
  * The state has two independent sources — a `?index=` URL param (deep-link
  * intent, e.g. `/ontology/` redirecting with `index=expanded`) and a

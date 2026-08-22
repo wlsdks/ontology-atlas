@@ -29,9 +29,9 @@ describe('applyFrontmatterUpdates', () => {
     expect(result).toContain('name: A');
   });
 
-  // 흐름 점검 2026-07-26 후속 확인 — 스타터가 블록 스타일(`capabilities:` +
-  // `  - …`)로 배열을 쓰는데, 키 줄만 치환하던 예전 구현은 옛 항목 줄을
-  // 파일에 남겨 표준 YAML 로 못 읽히는 문서를 만들었다.
+  // Follow-up to the 2026-07-26 walkthrough — the starter writes arrays in block style
+  // (`capabilities:` + `  - …`), and the old implementation, which replaced only the key line, left
+  // the previous item lines in the file and produced a document unreadable as standard YAML.
   it('블록 스타일 배열을 교체하면 옛 항목 줄이 남지 않는다', () => {
     const raw = `---\nkind: domain\ncapabilities:\n  - capabilities/a\n  - capabilities/b\ntitle: T\n---\n\n본문`;
     const result = applyFrontmatterUpdates(raw, {
@@ -118,7 +118,7 @@ describe('applyFrontmatterUpdates', () => {
       description: '줄띄우기 있는 문장',
     });
     expect(result).toContain('description: 줄띄우기 있는 문장');
-    // 실제로는 공백 OK — needsQuote 는 시작/끝 공백이나 특수문자만 커버
+    // In practice a space is fine — `needsQuote` covers only leading/trailing spaces and special characters.
   });
 
   it('본문 영향 없음', () => {

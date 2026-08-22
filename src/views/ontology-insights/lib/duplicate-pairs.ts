@@ -7,21 +7,22 @@ import {
 import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
 
 /**
- * 「비슷한 이름 — 같은 걸까요?」 카드의 계산.
+ * The computation behind the "similar names — are these the same thing?" card.
  *
- * 중복 개념은 자라는 폴더의 1번 고장이다. 그 판정을 화면이 새로 정의하면
- * 사람은 화면에서, 에이전트는 `query_ontology({operation:"similar_nodes"})`
- * 에서 서로 다른 쌍을 보게 된다 — 그 순간 이 카드는 정비 근거가 아니라
- * 소음이다. 그래서 아래 세 함수는 MCP 엔진(`mcp/src/ontology-engine.mjs` 의
- * `textTokens` · `setJaccard` · `similarityScore`)을 **그대로 옮긴 미러**이고,
- * 어긋나면 `tests/contract/duplicate-pairs.contract.test.ts` 가 잡는다.
+ * Duplicate concepts are the number-one failure of a growing folder. If the screen defined that
+ * verdict afresh, a person would see one set of pairs on screen and an agent a different set
+ * from `query_ontology({operation:"similar_nodes"})` — and at that moment this card becomes
+ * noise rather than grounds for maintenance. So the three functions below are a **verbatim
+ * mirror** of the MCP engine (`textTokens`, `setJaccard`, `similarityScore` in
+ * `mcp/src/ontology-engine.mjs`), and `tests/contract/duplicate-pairs.contract.test.ts` catches
+ * any divergence.
  *
- * 가중치도 엔진과 같다: slug 0.35 · title 0.35 · kind 0.1 · domain 0.1 ·
- * 이웃 0.1. 이름만 겹치는 쌍(0.7 상한)과 소속·이웃까지 겹치는 쌍을 갈라
- * 보려는 배분이라 임의로 재조정하지 않는다.
+ * The weights match the engine too: slug 0.35 · title 0.35 · kind 0.1 · domain 0.1 ·
+ * neighbours 0.1. That distribution exists to separate pairs sharing only a name (capped at
+ * 0.7) from pairs that also share a parent and neighbours, so it is not retuned arbitrarily.
  */
 
-/** 엔진 `textTokens` 미러 — 소문자화 후 영숫자 덩어리만, 2자 미만은 버린다. */
+/** Mirror of the engine's `textTokens` — lowercase, alphanumeric runs only, dropping anything under 2 characters. */
 export function similarityTokens(value: string | null | undefined): string[] {
   return String(value ?? "")
     .toLowerCase()
@@ -29,7 +30,7 @@ export function similarityTokens(value: string | null | undefined): string[] {
     .filter((token) => token.length >= 2);
 }
 
-/** 엔진 `setJaccard` 미러 — 교집합 / 합집합. 한쪽이 비면 0. */
+/** Mirror of the engine's `setJaccard` — intersection over union. Zero if either side is empty. */
 export function tokenSetJaccard(
   left: ReadonlySet<string>,
   right: ReadonlySet<string>,
@@ -39,25 +40,26 @@ export function tokenSetJaccard(
   for (const value of left) {
     if (right.has(value)) intersection += 1;
   }
-  // 합집합 크기는 |L|+|R|−|교집합| — Set 을 새로 만들던 이전 구현과 값이
-  // 정확히 같고(정수 산술), n² 쌍 비교의 안쪽 루프라 할당을 없앤다.
+  // The union size is |L| + |R| − |intersection| — exactly equal to the previous implementation
+  // that built a new Set (integer arithmetic), and it removes an allocation from the inner loop
+  // of an n² pair comparison.
   const union = left.size + right.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
 
-/** 엔진 `roundScore` 미러 — 부동소수 꼬리 때문에 두 엔진이 갈라지지 않게. */
+/** Mirror of the engine's `roundScore` — stops the two engines diverging on a floating-point tail. */
 function roundScore(value: number): number {
   return Number(value.toFixed(6));
 }
 
-/** 유사도 계산에 들어가는 노드 한 벌 — 엔진의 node 요약과 같은 필드. */
+/** One node as it enters the similarity computation — the same fields as the engine's node summary. */
 export interface SimilarityCandidate {
   slug: string;
   title: string;
   kind: string | null;
-  /** 소속 도메인 식별자. 도메인 노드 자신은 소속이 없다(엔진과 동일). */
+  /** The parent domain's identifier. A domain node itself has no parent (as in the engine). */
   domain: string | null;
-  /** 무방향 이웃 식별자 집합. */
+  /** The set of undirected neighbour identifiers. */
   neighbors: ReadonlySet<string>;
 }
 
@@ -70,7 +72,7 @@ export interface SimilaritySignals {
   total: number;
 }
 
-/** 엔진 `similarityScore` 미러. */
+/** Mirror of the engine's `similarityScore`. */
 export function scoreNodeSimilarity(
   left: SimilarityCandidate,
   right: SimilarityCandidate,
@@ -94,7 +96,7 @@ export function scoreNodeSimilarity(
   };
 }
 
-/** 중복 의심 한 쌍. `keep` 은 남길 쪽, `dissolve` 는 접을 쪽(연결이 적은 쪽). */
+/** One suspected duplicate pair. `keep` is the side to keep, `dissolve` the side to fold (the less connected one). */
 export interface DuplicatePairRow {
   id: string;
   keepId: string;
@@ -103,97 +105,97 @@ export interface DuplicatePairRow {
   dissolveId: string;
   dissolveSlug: string;
   dissolveTitle: string;
-  /** 두 노드의 kind 가 같으면 그 kind, 다르면 null. */
+  /** The kind if both nodes share one, otherwise null. */
   kind: string | null;
-  /** 0~1 유사도 — MCP `similar_nodes` 의 score 와 같은 수. */
+  /** Similarity from 0 to 1 — the same number as MCP `similar_nodes`'s score. */
   score: number;
-  /** 사람이 읽을 근거 — 두 이름에 함께 나오는 낱말. */
+  /** Human-readable evidence — the words appearing in both names. */
   sharedTokens: string[];
 }
 
 export interface DuplicatePairs {
   rows: DuplicatePairRow[];
   /**
-   * 접혀 있는 나머지 쌍 — 「더 보기」 펼침이 그리는 계층.
+   * The remaining folded pairs — the layer drawn by the "show more" disclosure.
    *
-   * 2026-07-27 실측: 배지는 10건이라 말하는데 화면에 3행만 있었고 더 보기도
-   * 없었다. 나머지 7건은 이 화면에서 **발견될 방법 자체가 없었다** — 총계만
-   * 크게 적고 나머지를 조용히 숨기는 건 절단이 아니라 은폐다.
+   * Measured 2026-07-27: the badge said 10 while the screen showed three rows with no "show
+   * more". The other seven had **no way to be discovered** on this screen — printing a large
+   * total while quietly hiding the rest is concealment, not truncation.
    */
   restRows: DuplicatePairRow[];
-  /** 임계값을 넘은 전체 쌍 수 — 「상위 N / 전체 M」 절단 문구의 M. */
+  /** Total pairs above the threshold — the M in the "top N / M total" truncation copy. */
   suspectCount: number;
 }
 
 /**
- * 중복으로 의심할 최소 유사도. 도그푸드 볼트(96개념) 실측에서 0.6 아래는
- * 이름 앞머리만 같은 서로 다른 개념(예: 같은 접두어를 쓰는 계약 문서들)이
- * 대부분이라, 사람이 확인할 값어치가 있는 구간의 바닥으로 잡았다.
+ * The minimum similarity for suspecting a duplicate. Measured against the dogfood vault (96
+ * concepts), below 0.6 is mostly genuinely different concepts sharing only a name prefix (such
+ * as contract documents using one prefix), so this is the floor of the range worth a person's
+ * confirmation.
  */
 export const DUPLICATE_SUSPECT_MIN_SCORE = 0.6;
 
 /**
- * 이름 낱말이 하나도 안 겹치는 쌍은 slug·title 신호가 0이라 최대 0.3 —
- * 임계값에 닿을 수 없다. 그래서 낱말 역색인으로 후보를 좁힌다(의미는 그대로,
- * n² 비교만 피한다).
+ * A pair sharing no name words at all has slug and title signals of 0, capping it at 0.3 — it
+ * can never reach the threshold. So candidates are narrowed with a word inverted index (the
+ * semantics are unchanged; only the n² comparison is avoided).
  */
 const MAX_SCORE_WITHOUT_SHARED_TOKEN = 0.3;
 
 /**
- * 근거 낱말에서 빼는 폴더 이름 — `elements/foo` 와 `elements/bar` 는 같은
- * 폴더에 있다는 사실만 공유한다. 점수 계산(엔진 미러)에는 그대로 두고,
- * 사람에게 보여줄 근거에서만 뺀다.
+ * Folder names excluded from the evidence words — `elements/foo` and `elements/bar` share only
+ * the fact of being in the same folder. They stay in the score computation (the engine mirror)
+ * and are removed only from the evidence shown to a person.
  */
 function slugFolders(slug: string): string[] {
   const segments = slug.split("/");
   return segments.slice(0, -1).flatMap((segment) => similarityTokens(segment));
 }
 
-/** 그래프 노드 하나를 엔진과 같은 필드로 환산한 것. */
+/** One graph node converted into the same fields the engine uses. */
 export type GraphSimilarityCandidate = SimilarityCandidate & { node: KnowledgeGraphNode };
 
 /**
- * 이 노드를 에이전트에게 가리켜 보일 이름. 화면이 복사해 주는
- * `merge_concepts` / `get_concept` 이 그대로 실행되려면 볼트 뿌리 기준
- * 이름이어야 한다 — `evidenceIds[0]` 을 그대로 쓰던 동안 번들 샘플의
- * `ontology/` 한 조각 때문에 복사한 호출이 즉시 실패했다(2026-07-26 실측).
- * 유사도 점수도 같은 값으로 낸다: 에이전트 쪽 `similar_nodes` 는 볼트 뿌리
- * 기준 slug 로 낱말을 자르므로, 접두사가 붙은 값으로 재면 두 순위가 갈린다.
+ * The name to point an agent at for this node. For the `merge_concepts` / `get_concept` the
+ * screen offers to copy to run as pasted, it must be relative to the vault root — while
+ * `evidenceIds[0]` was used directly, the bundled sample's extra `ontology/` segment made the
+ * copied call fail immediately (measured 2026-07-26). The similarity score uses the same value:
+ * the agent-side `similar_nodes` tokenizes a vault-root-relative slug, so measuring with a
+ * prefixed value splits the two rankings.
  */
 function slugOf(node: KnowledgeGraphNode): string {
   return resolveNodeAgentTarget(node).ref ?? node.id;
 }
 
 /**
- * 이 노드에 **자기 문서**가 있는가.
+ * Does this node have **its own document**?
  *
- * 파생 그래프에는 문서 없이 참조에서 태어난 노드가 섞인다 — 다른 문서의
- * `elements:` 에 적힌 코드 경로 같은 것들이다. 그런 노드는 근거 slug 가
- * 자기 것이 아니라 자기를 부른 문서의 것이라, 합치기를 제안하면 엉뚱한
- * 파일을 가리킨다. 실제로 도그푸드에서 「Test Name Pattern ↔ Test Name
- * Pattern Test」(원본 파일과 그 테스트 파일)가 겹침 100%로 올라왔다 —
- * 중복이 아니라 이름이 닮은 두 파일이다.
+ * The derived graph contains nodes born from references with no document — code paths written
+ * into another document's `elements:`, for instance. Such a node's evidence slug belongs not to
+ * itself but to the document that named it, so proposing a merge points at the wrong file. In
+ * the dogfood vault this really surfaced «Test Name Pattern ↔ Test Name Pattern Test» (a source
+ * file and its test file) at 100% overlap — not a duplicate, just two files with similar names.
  *
- * 판별은 `resolveNodeDocument` 한 곳에서만 한다 — derive 가 노드를 만들 때
- * 남긴 사실(`hasOwnDocument`)을 읽을 뿐 화면이 다시 추정하지 않는다. 예전의
- * "id 꼬리와 문서 slug 꼬리가 같은가" 추정은 **프로젝트 노드를 놓쳤다**:
- * 프로젝트 id 는 frontmatter `slug:` 로 만들어져(`ontology/project.md` →
- * `project:ontology-atlas`) 파일 이름 꼬리와 다르다. 같은 개념을 두 곳에서
- * 각자 판정하면 반드시 갈라진다.
+ * The verdict is made in exactly one place, `resolveNodeDocument` — it reads the fact derivation
+ * recorded when creating the node (`hasOwnDocument`) rather than having the screen re-infer it.
+ * The old inference ("does the id tail match the document slug tail?") **missed project nodes**:
+ * a project id is built from frontmatter `slug:` (`ontology/project.md` →
+ * `project:ontology-atlas`) and differs from the filename tail. Two places deciding one concept
+ * will always diverge.
  */
 function hasOwnDocument(node: KnowledgeGraphNode): boolean {
   return resolveNodeDocument(node).ownSlug !== null;
 }
 
 /**
- * 그래프 노드를 엔진의 유사도 입력으로 환산한다 — 화면과 contract test 가
- * 같은 환산을 쓰도록 한 곳에서만 만든다. 자기 문서가 없는 노드는 후보에서도
- * 이웃 집합에서도 빠진다(컴파일러의 그래프와 같은 대상만 본다).
+ * Converts a graph node into the engine's similarity input — built in one place so the screen
+ * and the contract test use the same conversion. A node with no document of its own drops out of
+ * both the candidates and the neighbour sets (only what the compiler's graph sees is considered).
  *
- * `domain` 은 담기 관계를 거슬러 올라간 가장 가까운 도메인의 문서 slug 다.
- * 컴파일러는 같은 값을 frontmatter `domain:` 에서 바로 읽는다 — 스키마가
- * 그 키를 자식 쪽에 쓰기 때문에 두 경로가 같은 값에 닿는다. 도메인 노드
- * 자신은 소속이 없다(엔진의 domain 도 비어 있다).
+ * `domain` is the document slug of the nearest domain found by walking containment upwards. The
+ * compiler reads the same value straight from frontmatter `domain:` — the schema writes that key
+ * on the child side, so both paths reach the same value. A domain node itself has no parent (the
+ * engine's `domain` is empty too).
  */
 export function buildSimilarityCandidates(
   nodes: readonly KnowledgeGraphNode[],
@@ -205,8 +207,8 @@ export function buildSimilarityCandidates(
     nodes.filter(hasOwnDocument).map((node) => [node.id, node] as const),
   );
 
-  // 이웃 집합은 엔진의 `traversalEdges(slug,'undirected')` 와 같은 뜻 —
-  // 관계 방향을 가리지 않는 인접 문서 slug 집합.
+  // The neighbour set means the same as the engine's `traversalEdges(slug,'undirected')` — the
+  // set of adjacent document slugs regardless of relation direction.
   const neighborsOf = new Map<string, Set<string>>();
   const addNeighbor = (fromId: string, toId: string) => {
     const from = documented.get(fromId);
@@ -226,14 +228,14 @@ export function buildSimilarityCandidates(
 
   const candidates = new Map<string, GraphSimilarityCandidate>();
   for (const node of documented.values()) {
-    // 도메인 조상 탐색은 전체 그래프에서 한다 — 중간에 문서 없는 노드가
-    // 끼어 있어도 소속은 그대로 도메인에 닿는다.
+  // The domain-ancestor walk runs over the whole graph, so membership still reaches the domain
+  // even with a document-less node in between.
     const domainId = node.kind === "domain" ? null : nearestDomainId(node, parentOf, nodeById);
     const domainNode = domainId ? nodeById.get(domainId) : null;
     candidates.set(node.id, {
       node,
       slug: slugOf(node),
-      // 점수는 검색/매칭의 진실원인 `title` 로 낸다 — `display` 는 렌더 전용.
+  // The score uses `title`, the source of truth for search and matching — `display` is render-only.
       title: node.title,
       kind: node.kind || null,
       domain: domainNode ? slugOf(domainNode) : null,
@@ -249,8 +251,9 @@ export function buildDuplicatePairs(
   limit: number,
   minScore = DUPLICATE_SUSPECT_MIN_SCORE,
   /**
-   * 펼침에 실을 나머지 행 수. 0 이면 접힌 계층이 없다(구 호출자 동작 유지).
-   * 값의 근거는 소비처가 실측으로 정한다 — 여기서는 자르기만 한다.
+   * How many remaining rows the disclosure carries. 0 means no folded layer (preserving the old
+   * caller's behaviour). The basis for the value is decided by the consumer from measurement;
+   * this function only truncates.
    */
   restLimit = 0,
 ): DuplicatePairs {
@@ -261,13 +264,13 @@ export function buildDuplicatePairs(
   if (candidates.size < 2) return empty;
 
   /**
-   * 노드당 낱말 집합을 **한 번만** 자른다. 종전에는 쌍마다
-   * `scoreNodeSimilarity` 가 slug·title 을 다시 토큰화해 Set 4개를 새로
-   * 만들었고 — 공유 폴더 낱말(`capabilities` 등)이 만드는 큰 버킷에서 이
-   * 함수 하나가 인사이트 진입 memo 시간의 74%(4x 스로틀 실측 34.8ms)를
-   * 먹었다. 점수 산식은 아래 `scorePair` 가 `scoreNodeSimilarity` 와 자리까지
-   * 같게 재현한다(반올림 순서 포함) — 어긋나면
-   * `duplicate-pairs.contract.test.ts` 의 엔진 대조가 잡는다.
+   * Tokenize each node's word set **once**. Previously `scoreNodeSimilarity` re-tokenized slug
+   * and title per pair, building four new Sets each time — and in the large buckets created by
+   * shared folder words (`capabilities` and the like) this one function consumed 74% of the
+   * insights entry memo time (34.8ms measured under 4× throttling). The scoring formula is
+   * reproduced by `scorePair` below, matching `scoreNodeSimilarity` down to the position of each
+   * term (rounding order included) — divergence is caught by the engine comparison in
+   * `duplicate-pairs.contract.test.ts`.
    */
   interface PairTokens {
     slug: Set<string>;
@@ -296,8 +299,8 @@ export function buildDuplicatePairs(
     return roundScore(slug + title + kind + domain + neighbors);
   };
 
-  // 낱말 → 노드 역색인. 임계값이 낱말 없이 도달 가능한 상한보다 낮으면
-  // 좁히기가 결과를 바꿀 수 있으므로 전수 비교로 되돌린다.
+  // Word → node inverted index. If the threshold is at or below the ceiling reachable with no
+  // shared word, narrowing could change the result, so it falls back to exhaustive comparison.
   const useTokenIndex = minScore > MAX_SCORE_WITHOUT_SHARED_TOKEN;
   const nodesByToken = new Map<string, string[]>();
   if (useTokenIndex) {
@@ -313,12 +316,13 @@ export function buildDuplicatePairs(
   }
 
   const degreeOf = (id: string): number => candidates.get(id)?.neighbors.size ?? 0;
-  // 중복 방문 차단 키 — 두 노드가 여러 낱말을 공유하면 같은 쌍이 여러 버킷에
-  // 나타난다. 이 키는 **내부 전용**이라 후보 순번의 정수 조합이면 충분하고,
-  // 쌍마다 문자열을 만들던 이전 구현(JSON.stringify)은 n² 안쪽 루프에서
-  // 눈에 띄는 상수 비용이었다. 행 `id` 출력은 여전히 JSON 배열이다 — 그쪽
-  // 근거(NUL 합성 키가 파일을 git 에게 바이너리로 만든 2026-08-08 사고)는
-  // 소스에 찍히는 문자열의 인쇄 가능성이라 이 정수 키와는 무관하다.
+  // The duplicate-visit key — two nodes sharing several words appear in several buckets, so the
+  // same pair is reached more than once. This key is **internal only**, so an integer combination
+  // of candidate indices is enough; the previous implementation built a string per pair
+  // (JSON.stringify), a noticeable constant cost in the inner loop of an n² comparison. The row
+  // `id` output is still a JSON array — its rationale (the 2026-08-08 accident where a NUL
+  // composite key made git treat the file as binary) is about the printability of strings written
+  // into source, and is unrelated to this integer key.
   const indexOfId = new Map<string, number>();
   for (const id of candidates.keys()) indexOfId.set(id, indexOfId.size);
   const indexSpan = indexOfId.size;
@@ -341,8 +345,8 @@ export function buildDuplicatePairs(
     const total = scorePair(leftId, rightId, left, right);
     if (total < minScore) return;
 
-    // 남길 쪽 = 연결이 많은 쪽. 합치면 백링크가 그쪽으로 모이므로 다시 이을
-    // 관계가 가장 적다. 동률이면 이름 순으로 고정해 매번 같은 제안을 준다.
+  // The side to keep is the more connected one — merging gathers backlinks there, so the fewest
+  // relations have to be reconnected. Ties break by name, so the same suggestion is given every time.
     const leftKeeps =
       degreeOf(leftId) !== degreeOf(rightId)
         ? degreeOf(leftId) > degreeOf(rightId)

@@ -1,6 +1,6 @@
-// P2-① — CLI 쓰기 감사 로그 헬퍼 계약. recordCliWrite 가 mcp 의 activity-log
-// 모듈을 재사용해 같은 `.ontology-atlas/activity.jsonl` 에 append 하는지,
-// heartbeat agent 를 복사하는지, best-effort(어떤 입력에도 throw 안 함)인지.
+// Contract for the CLI write audit-log helper: does recordCliWrite reuse mcp's
+// activity-log module to append to the same `.ontology-atlas/activity.jsonl`, does
+// it copy the heartbeat agent, and is it best-effort (never throwing on any input).
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
@@ -79,15 +79,15 @@ describe('cli activity-log — recordCliWrite (P2-①)', () => {
   });
 
   it('append 가 불가능한 경로에서도 throw 하지 않는다 (best-effort)', async () => {
-    // 존재하지 않는 부모 아래로 파일을 만들 수 없게 만든 뒤에도 조용히 넘어가야 한다.
-    // (여기서는 파일을 디렉토리 자리에 둬 mkdir 을 실패시킨다.)
+    // It must still pass silently once the file cannot be created under a missing
+    // parent. (Here a file sits where a directory is expected, so mkdir fails.)
     const root = tmpVault();
     try {
       writeFileSync(join(root, '.ontology-atlas'), 'not a directory', 'utf-8');
       await assert.doesNotReject(
         recordCliWrite(root, { tool: 'cli:add', target: 't', summary: 's' }),
       );
-      // 로그가 안 남았어도 호출 자체는 성공적으로 반환.
+      // The call still returns successfully even though no log line was written.
       assert.equal(existsSync(join(root, '.ontology-atlas/activity.jsonl')), false);
     } finally {
       rmSync(root, { recursive: true, force: true });

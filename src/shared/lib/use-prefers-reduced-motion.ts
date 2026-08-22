@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 
 /**
- * `prefers-reduced-motion: reduce` 를 React state 로 노출하는 SSR-안전 훅.
+ * SSR-safe hook exposing `prefers-reduced-motion: reduce` as React state.
  *
- * CSS 애니메이션/트랜지션은 `app/globals.css` base 레이어의 전역 규칙이 이미
- * 무력화하지만, **JS 로 구동되는 모션**(FLIP transform, 숫자 카운트업 등)은
- * 스스로 판단해 즉시 최종 상태로 건너뛰어야 한다. 그 단일 출처.
+ * CSS animations and transitions are already neutralised by the global rule in the base layer
+ * of `app/globals.css`, but **JS-driven motion** (FLIP transforms, number count-ups) has to
+ * decide for itself and jump straight to the final state. This is the single source for that
+ * decision.
  *
- * 정적 export(SSR) 에서는 `matchMedia` 가 없으므로 초기값 false(모션 허용)로
- * 시작하고, 클라이언트 첫 렌더에서는 동기적으로 실제 선호를 읽는다 —
- * 마운트 시 한 번 도는 JS 모션(카운트업 등)이 첫 프레임부터 올바르게
- * 게이트되도록.
+ * Under static export there is no `matchMedia`, so it starts at false (motion allowed) and
+ * reads the real preference synchronously on the client's first render — so JS motion that
+ * runs once on mount is gated correctly from its very first frame.
  */
 function readReducedMotion(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {

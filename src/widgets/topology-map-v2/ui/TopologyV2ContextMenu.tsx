@@ -14,26 +14,27 @@ import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
  * `topology-pointer-handlers.ts#createTopologyPointerHandlers` doc). Popover
  * (click) = information, this menu (right-click) = actions — the same 4
  * action-row items from `TopologyV2DetailPanel` (W2-A) plus the opt-in
- * "전체 상세" link, reachable without first selecting the node.
+ * 「전체 상세」 (full detail) link, reachable without first selecting the node.
  *
  * Hand-rolled rather than a Radix `DropdownMenu` — this repo's overlays
  * (`ShortcutSheet`, `SearchPalette`) already implement their own manual
  * Escape/focus-trap/outside-click handling even where a Radix primitive
  * (`@radix-ui/react-dialog`) is installed but unused; a cursor-anchored menu
  * with 5 static items doesn't need a new dependency to match that pattern.
- * Closing is owned by the caller (Esc ladder tier `close-context-menu` +
- * `onClose`, see `topology-esc-ladder.ts`) — this component only reports
- * outside-clicks, it doesn't decide close priority itself.
+ * Closing is owned by the caller (the Esc dismissal order's `close-context-menu`
+ * tier plus `onClose`, see `topology-esc-ladder.ts`) — this component only
+ * reports outside-clicks, it doesn't decide close priority itself.
  */
 export interface TopologyV2ContextMenuLabels {
   actionDocument: string;
   /**
-   * 자기 `.md` 가 없는 노드(다른 문서의 관계 키에서 이름만 불린 개념)에서
-   * `actionDocument` 대신 쓰는 라벨. 링크가 향하는 곳이 "이 개념의 문서" 가
-   * 아니라 "이 개념을 적어 둔 문서" 라서 라벨도 그렇게 말해야 한다.
+   * The label used instead of `actionDocument` for a node with no `.md` of its
+   * own (a concept named only in another document's relation key). The link goes
+   * not to "this concept's document" but to "the document that wrote this concept
+   * down", so the label has to say that.
    */
   actionMentionDocument: string;
-  /** 위 항목의 hover 한 줄 풀이 — 왜 다른 문서로 가는지. */
+  /** The hover one-liner for the item above — why it goes to a different document. */
   actionMentionDocumentTip: string;
   actionEditRelations: string;
   actionCopyHandoff: string;
@@ -43,17 +44,17 @@ export interface TopologyV2ContextMenuLabels {
 
 export interface TopologyV2ContextMenuProps {
   /**
-   * 열려 있는가. **닫힘은 즉시 언마운트가 아니다** — `Surface` 가 퇴장 창을
-   * 열고, 그동안 부모는 마지막 모델을 붙들어 준다.
+   * Whether it is open. **Closing is not an immediate unmount** — `Surface` opens
+   * an exit window, and the parent holds the last model for its duration.
    */
   open: boolean;
-  /** 퇴장이 끝난 뒤 한 번. 포커스 복귀처럼 언마운트에 붙는 일에만 쓴다. */
+  /** Once, after the exit finishes. Only for work that belongs to unmount, such as focus return. */
   onExited?: () => void;
   /** Viewport-space anchor (the right-click's `clientX`/`clientY`). */
   position: { x: number; y: number };
-  /** **이 노드 자신의** 문서. 자기 `.md` 가 없으면 null. */
+  /** **This node's own** document. null when it has no `.md` of its own. */
   documentHref: string | null;
-  /** 자기 문서가 없을 때, 이 노드를 적어 둔 다른 문서. 있으면 정직한 라벨로 렌더. */
+  /** With no document of its own, another document that wrote this node down. Rendered under an honest label when present. */
   mentionDocumentHref?: string | null;
   meaningEditHref: string;
   labels: TopologyV2ContextMenuLabels;
@@ -87,19 +88,20 @@ export function clampContextMenuPosition(
 }
 
 /**
- * 이 메뉴 항목의 **한 자리에만 참인 것** — 지도 패널 스코프 토큰(모서리·잉크·
- * 호버 표면)뿐이다. 모양·크기·정렬은 아래 `controlClass({ shape: "row" })` 가
- * 낸다. `row` 는 램프에 모서리가 없어서(패널 밖 행은 각지게 산다) 반경만
- * 여기서 얹는다 — 값은 `--topology-v2-panel-row-radius` 와 같은 `--radius-chip`
- * 이라 전역 램프 유틸리티로 적는다.
+ * The **only things true in this one place** for a menu item — the map panel's
+ * scoped tokens (radius, ink, hover surface). Shape, size and alignment come from
+ * `controlClass({ shape: "row" })` below. `row` has no radius in the ramp (rows
+ * outside a panel live square), so only the radius is added here — the value is
+ * `--radius-chip`, the same as `--topology-v2-panel-row-radius`, so it is written
+ * with the global ramp utility.
  */
 const MENU_ITEM_LOCAL =
   "rounded-chip text-[color:var(--topology-v2-panel-text-secondary)] hover:bg-[color:var(--topology-v2-panel-row-hover)]";
-/** `<Link>`/`<span>` 형제용 — `<RowButton>` 이 내는 것과 바이트 동일해야 한다. */
+/** For the `<Link>`/`<span>` siblings — must be byte-identical to what `<RowButton>` emits. */
 const MENU_ITEM_CLASS = controlClass({ shape: "row", size: "md", className: MENU_ITEM_LOCAL });
-// `<Link>`/`<span>` 은 `disabled:` 변형을 못 받아 흐림을 직접 적는다 —
-// 값은 값 층의 비활성 흐림(`CONTROL_DISABLED_CLASS` 의 55)과 같은 단이어야
-// 한다. 40 으로 갈려 있던 자리다.
+// `<Link>`/`<span>` cannot take the `disabled:` variant, so the dimming is
+// written directly — at the same step as the value layer's disabled dim (the 55
+// in `CONTROL_DISABLED_CLASS`). This is where it had drifted to 40.
 const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-55";
 
 export function TopologyV2ContextMenu({
@@ -117,12 +119,13 @@ export function TopologyV2ContextMenu({
 }: TopologyV2ContextMenuProps) {
   const menuRef = useRef<HTMLElement | null>(null);
 
-  // Outside-click closes — Esc is owned by the window-level ladder
-  // (`HomePage.tsx`'s keydown effect + `close-context-menu` tier) so both
+  // Outside-click closes — Esc is owned by the window-level dismissal order
+  // (`HomePage.tsx`'s keydown effect + the `close-context-menu` tier) so both
   // dismissal paths route through the same `onClose`.
   //
-  // ★ 퇴장 창 동안에는 다시 닫지 않는다 — 이미 닫히는 중인 메뉴가 바깥 클릭을
-  //   또 `onClose` 로 흘리면 부모의 «다음» 우클릭이 같은 프레임에 취소된다.
+  // ★ It does not close again during the exit window — a menu already closing
+  //   that leaks another outside click into `onClose` cancels the parent's *next*
+  //   right-click in the same frame.
   useEffect(() => {
     if (!open) return;
     const handlePointerDown = (event: PointerEvent) => {
@@ -143,17 +146,18 @@ export function TopologyV2ContextMenu({
       ? position
       : clampContextMenuPosition(position, {
           /*
-           * 오른쪽 벽은 **화면 끝이 아니라 지도의 끝**이다 (2026-08-16 검수).
-           * 지도 오른쪽에 대화 패널이 서 있으면 화면 폭으로 접었을 때 메뉴가
-           * 패널 위에 올라앉는다 — 그 메뉴가 다루는 것은 지도의 노드다.
+           * The right wall is **the map's edge, not the screen's** (review,
+           * 2026-08-16). With a conversation panel standing to the right of the
+           * map, folding against the screen width puts the menu on top of that
+           * panel — while what the menu acts on is a node in the map.
            */
           width: currentFloatingRightBound(),
           height: window.innerHeight,
         });
 
   return (
-    // 커서에서 자란다 — 앵커가 메뉴의 좌상단이므로 등장 원점도 거기다.
-    // (중앙에서 태어나는 메뉴는 «어디서 왔는지» 를 잃는다.)
+    // It grows from the cursor — the anchor is the menu's top-left, so the entry
+    // origin is there too. (A menu born at its centre loses where it came from.)
     <Surface
       open={open}
       onExited={onExited}
@@ -176,8 +180,9 @@ export function TopologyV2ContextMenu({
           {labels.actionDocument}
         </Link>
       ) : mentionDocumentHref ? (
-        // 자기 문서가 없는 노드 — 링크를 지우면 "이 개념이 어디에 적혀 있나"
-        // 를 잃는다. 목적지를 말하는 라벨로 바꿔 남긴다.
+        // A node with no document of its own — deleting the link would lose
+        // "where is this concept written down". It stays, under a label that
+        // names its destination.
         <Link
           href={mentionDocumentHref}
           role="menuitem"

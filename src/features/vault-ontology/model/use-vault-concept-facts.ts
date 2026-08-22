@@ -6,7 +6,7 @@ import { useLocalVault } from '@/features/docs-vault-local';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
 import type { VaultManifest } from '@/entities/docs-vault';
 
-/** 「할 일」 큐의 의미 공백 판정에 필요한 문서 사실만 — `MeaningGapRow` 의 입력. */
+/** Only the document facts the to-do queue's meaning-gap verdict needs — the input to `MeaningGapRow`. */
 export interface VaultConceptFacts {
   hasDefinition: boolean;
   domainRef: string | null;
@@ -14,12 +14,11 @@ export interface VaultConceptFacts {
 }
 
 /**
- * 매니페스트 → 문서 slug 별 사실. 순수 함수라 테스트가 매니페스트 한 벌만
- * 만들면 된다.
+ * Manifest → per-doc-slug facts. Pure, so a test only has to build one manifest.
  *
- * `hasDefinition` 은 `description` **또는** 본문 요약이다 — 파생
- * (`derive-ontology-from-vault`)이 노드 요약을 만들 때 쓰는 것과 같은 사다리라,
- * 지도 팝오버가 뜻을 보여주는데 큐가 "정의 없음" 이라고 말하는 모순이 없다.
+ * `hasDefinition` means a `description` **or** a body summary — the same ladder derivation
+ * (`derive-ontology-from-vault`) uses to build a node summary, so there is no contradiction
+ * where the map popover shows a meaning while the queue says "no definition".
  */
 export function manifestToConceptFacts(
   manifest: VaultManifest,
@@ -55,9 +54,9 @@ function cachedFacts(manifest: VaultManifest): Map<string, VaultConceptFacts> {
 }
 
 /**
- * Mode-aware 어댑터 — `useVaultDocFreshnessIndex` / `useVaultHealth` 와 같은
- * 패턴. static 이면 지금 보고 있는 번들 샘플, local 이면 사용자 폴더.
- * 사용자 폴더가 항상 우선이라 여기서 분기 이상의 판단은 하지 않는다.
+ * The mode-aware adapter — the same pattern as `useVaultDocFreshnessIndex` /
+ * `useVaultHealth`. Static means the bundled sample currently shown, local means the user's
+ * folder. The user's folder always wins, so nothing beyond the branch is decided here.
  */
 export function useVaultConceptFacts(): ReadonlyMap<string, VaultConceptFacts> {
   const mode = useDataSourceMode();
@@ -66,12 +65,11 @@ export function useVaultConceptFacts(): ReadonlyMap<string, VaultConceptFacts> {
 
   return useMemo(() => {
     if (mode === 'static') return cachedFacts(staticSource.manifest);
-    // `status` 가 아니라 **매니페스트 유무**로 판정한다. 저장 직후·폴링 때마다
-    // `load()` 가 status 를 'loading' 으로 돌리는데(매니페스트는 그대로 남는다),
-    // 그 순간 빈 map 을 돌려주면 이 사실로 만든 행이 통째로 사라진다 — 사용자
-    // 눈에는 "적던 칸이 없어졌다" 로 보인다(2026-07-26 실측). 재독해 중이라는
-    // 것은 데이터가 없다는 뜻이 아니다. 쓰기 안전은 여기가 아니라
-    // `expectedMtime` 가드가 지킨다.
+    // Decided by **whether a manifest exists**, not by `status`. `load()` flips status to
+    // 'loading' after every save and on every poll (the manifest stays), and returning an
+    // empty map in that moment makes every row built from these facts disappear — to the
+    // user it looks like "the fields I was filling vanished" (measured 2026-07-26).
+    // Re-reading does not mean there is no data. Write safety is guarded by `expectedMtime`, not here.
     if (!vault.manifest) return EMPTY_FACTS;
     return cachedFacts(vault.manifest);
   }, [mode, vault.manifest, staticSource.manifest]);

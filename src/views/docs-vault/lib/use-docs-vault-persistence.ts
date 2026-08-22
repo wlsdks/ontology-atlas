@@ -18,18 +18,14 @@ import type { VaultRecentKey } from '@/widgets/docs-vault';
 import { scheduleStateSync } from './persistence';
 
 /**
- * R11 #16 step 5 — DocsVaultPage 의 pinned/recent docs persistence 흐름 추출.
+ * The pinned/recent document persistence flow extracted from `DocsVaultPage`.
  *
- * 캡슐화:
- * - recentKey useMemo (현재 볼트의 namespace — local 폴더 이름 또는 'server')
- * - recentSlugs / pinnedSlugs state
- * - rehydrate useEffect (recentKey 변경 시 localStorage → state)
- * - togglePin useCallback (pinned toggle 후 자동 persist)
- * - pinnedSet derived (Set 변환 cache)
+ * Encapsulated here: the `recentKey` memo (the current vault's namespace — the local folder name,
+ * or 'server'), the `recentSlugs` / `pinnedSlugs` state, rehydration on `recentKey` change, the
+ * `togglePin` callback (which persists automatically), and the derived `pinnedSet`.
  *
- * setter 들 (setRecentSlugs / setPinnedSlugs) 도 외부 노출 — view 의 다양한
- * mutation 사이트 (delete / new doc / 등) 가 직접 호출. 완전한 encapsulation
- * 은 후속 step 에서 (mutation 들도 hook method 로 흡수).
+ * The setters (`setRecentSlugs`, `setPinnedSlugs`) are exposed as well, because the view's various
+ * mutation sites (delete, new document, and so on) call them directly.
  */
 
 interface LocalVaultLike {
@@ -56,16 +52,16 @@ export function useDocsVaultPersistence({
   localVault,
 }: UseDocsVaultPersistenceArgs): UseDocsVaultPersistenceResult {
   /**
-   * 이 볼트의 저장소 namespace.
+   * This vault's storage namespace.
    *
-   * **폴더를 아직 안 고른 로컬도 `server` 가 아니다** (2026-07-28 소유자 실사용
-   * 제보). 종전에는 `source === 'local'` 이어도 handle 이 없으면 `'server'` 로
-   * 떨어졌다. 그래서 샘플에서 문서를 열어 둔 채 로컬로 전환하면 — 폴더를 고르기
-   * 전 상태 — **샘플의 열린 탭이 로컬 화면에 그대로 남았다**. 사용자는 소스를
-   * 바꿨는데 이전 소스의 문서가 상단에 붙어 있는 것을 본다.
+   * **A local source with no folder chosen yet is still not `server`** (owner report from real
+   * use, 2026-07-28). It used to fall back to `'server'` whenever `source === 'local'` had no
+   * handle. So switching to local with documents open from the sample — the state before choosing
+   * a folder — left **the sample's open tabs sitting on the local screen**. The user changes the
+   * source and sees the previous source's documents still pinned at the top.
    *
-   * 사용자가 고른 소스가 namespace 를 정한다. 폴더 미선택은 "샘플" 이 아니라
-   * **"아직 폴더가 없는 로컬"** 이라는 별개 상태다.
+   * The source the user chose decides the namespace. "No folder chosen" is not "sample"; it is the
+   * separate state **"local, without a folder yet"**.
    */
   const recentKey = useMemo<VaultRecentKey>(() => {
     if (source === 'local') {
@@ -77,9 +73,9 @@ export function useDocsVaultPersistence({
   const [recentSlugs, setRecentSlugsInternal] = useState<string[]>([]);
   const [pinnedSlugs, setPinnedSlugsInternal] = useState<string[]>([]);
 
-  // ESLint 의 react-hooks/exhaustive-deps 가 destructured setter 의 stability
-  // 추적 못 함 — useCallback wrap 으로 ref-stable 명시. setState setter 는
-  // 본래 stable 이라 기능 영향 0 (useAdvancedMenu 와 동일 패턴).
+  // ESLint's react-hooks/exhaustive-deps cannot track the stability of a destructured setter, so
+  // the `useCallback` wrapper states it is ref-stable. A setState setter is stable by construction,
+  // so there is no functional effect.
   const setRecentSlugs = useCallback<typeof setRecentSlugsInternal>(
     (next) => setRecentSlugsInternal(next),
     [],
@@ -89,7 +85,7 @@ export function useDocsVaultPersistence({
     [],
   );
 
-  // recentKey 가 바뀔 때마다 해당 볼트의 recent + pinned 목록 로드.
+  // Load that vault's recent and pinned lists whenever `recentKey` changes.
   useEffect(() => {
     scheduleStateSync(() => {
       setRecentSlugsInternal(readRecentDocs(recentKey));
@@ -117,5 +113,5 @@ export function useDocsVaultPersistence({
   };
 }
 
-// pushRecentDoc 은 module-level helper — view 가 직접 호출 가능.
+// `pushRecentDoc` is a module-level helper, so the view can call it directly.
 export const pushRecentDoc = _pushRecentDoc;

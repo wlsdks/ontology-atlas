@@ -130,82 +130,83 @@ import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
 
-/** 오버뷰 핏 bbox 선택 — 훅 밖의 순수 함수라 effect 의존성 목록에 안 들어간다. */
+/** Kept outside the hook so it never enters an effect's dependency list. */
 function overviewBoundsFor(fit: "spine" | "full", world: TopologyWorld) {
   return fit === "full" ? world.bounds : world.spineBounds;
 }
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 
 /**
- * C1 B1 — no `--topology-v2-*` token assigned yet (same "no token" precedent
- * as `engine/camera.ts`'s `DEFAULT_PAN_BOUNDS_MARGIN` / `topology-pointer-
- * handlers.ts`'s `RIPPLE_PER_NEIGHBOR_DELAY_MS`): how fast a neighbor's tug
- * offset eases toward its target (or back to 0 on release) — NOT how far it
- * moves (that's the token-backed `dragTug1Hop`/`dragTug2Hop` factors).
+ * How fast a neighbour's tug offset eases toward its target (or back to 0 on
+ * release) — NOT how far it moves; that is the token-backed
+ * `dragTug1Hop`/`dragTug2Hop` factor. Deliberately not a `--topology-v2-*`
+ * token, on the same precedent as `engine/camera.ts`'s
+ * `DEFAULT_PAN_BOUNDS_MARGIN`.
  *
- * Research pass (haiku feel-tuning, C1 mid-implementation): a "connected"
- * drag reads as neighbors following with a slight lag — ~100-300ms catch-up,
- * not rigidly synced to the pointer and not so slow it feels disconnected.
- * 150ms sits in the middle of that band (vs. the initial 80ms, which was
- * closer to the hover-ripple rise tau and read as too instantaneous/rigid for
- * a physically-following neighbor).
+ * A "connected" drag reads as neighbours following with a slight lag —
+ * roughly 100–300 ms of catch-up. 150 ms sits mid-band. The first attempt,
+ * 80 ms, sat near the hover-ripple rise tau and read as rigidly pointer-locked
+ * rather than physically following.
  */
 const DRAG_TUG_EASE_TAU = 0.15;
 /**
- * A2 — 유휴 스킵 전 grace(ms). 램프 감쇠 꼬리(emphasis τ 0.15 → 시각 정착
- * ~0.7s)와 릴리즈 잔여를 여유 있게 덮는다. 시간 기반이라 주사율 무관(A4
- * 와 같은 원칙).
+ * Grace period before the idle gate may skip frames. Covers the ramp decay
+ * tail (emphasis tau 0.15 settles visually after ~0.7 s) plus drag-release
+ * residue. Time-based, so it is refresh-rate invariant.
  */
 const IDLE_GRACE_MS = 1200;
 /**
- * 뷰포트가 "멎었다" 고 볼 프레임 수 — 이 프레임 수만큼 새 크기가 안 들어오면
- * 뷰포트 의존 레이어(그리드/별먼지/우주 도트)를 다시 짓는다. ms 가 아니라
- * 프레임 수인 이유: 이건 디자인 duration 이 아니라 **크기 정착 감지**이고,
- * 기준이 되는 것은 리사이즈를 나르는 프레임 그 자체다(주사율 무관).
+ * Frames of unchanged size before the viewport counts as settled and the
+ * viewport-dependent layers (grid, star dust, cosmos dots) are rebuilt.
+ * Counted in frames rather than ms because this detects size settling, not a
+ * design duration, and the unit that carries a resize *is* the frame.
  */
 const VIEWPORT_SETTLE_FRAMES = 2;
 
 /**
- * 끄는 동안 백킹 해상도 상한 — **드래그의 비용은 계산이 아니라 칠하기다.**
+ * Backing-resolution cap while dragging. **A drag costs painting, not
+ * computing.**
  *
- * 2026-07-31 실측(synth=3000, 14" Retina): 드래그 중 전달 프레임이 **13fps**
- * 인데 우리 JS 는 프레임당 **2.2ms** 로 83ms 중 2.6% 였다. 메인 스레드는 100%
- * 차 있었지만 그중 스크립트는 0.43s/14.9s — 나머지는 전부 래스터다. 그래서
- * 같은 장면을 dpr 만 2→1 로 낮춰 재보니 **13fps → 45fps** 였다. 픽셀을 1/4 로
- * 줄이면 3.3배 빨라진다 = 비용이 픽셀 수에 실려 있다는 직접 증거다.
+ * Measured 2026-07-31 (synth=3000, 14" Retina): frames landed at **13 fps**
+ * during a drag while our own JS took **2.2 ms** per frame — 2.6% of the 83 ms
+ * budget. The main thread was 100% busy but scripting was only 0.43 s of
+ * 14.9 s; the rest was raster. Re-measuring the same scene with dpr lowered
+ * 2 → 1 gave **13 fps → 45 fps**: quartering the pixels ran 3.3× faster, which
+ * is direct evidence the cost rides on pixel count.
  *
- * 손을 뗀 프레임에 곧바로 원래 해상도로 돌아오므로, **정지 화면의 선명도는
- * 한 톨도 잃지 않는다.** 흐려지는 것은 어차피 눈이 못 읽는 «움직이는 동안»
- * 뿐이다. 지도 앱의 표준 기법이고, 여기서는 그 교환이 실측으로 정당화된다.
+ * Full resolution returns on the frame the pointer lifts, so **still frames
+ * lose no sharpness at all**. Only the moving frames blur, and the eye cannot
+ * resolve those anyway.
  */
 const INTERACTION_DPR_CAP = 1;
 /**
- * 시뮬 프레임의 파생 갱신을 «움직인 노드» 로 좁히는 희소성 문턱 — 터그 영향권이
- * 전체의 `1/이 값` 미만일 때만 좁힌 경로를 탄다.
+ * Sparsity threshold for narrowing a sim frame's derived updates to the nodes
+ * that actually moved: take the narrowed path only when the tug's reach is
+ * under `1/this` of the graph.
  *
- * 문턱이 필요한 이유는 좁히기가 공짜가 아니어서다: 인덱스 조회는 배열 순회보다
- * 캐시 지역성이 나쁘고, 어느 노드가 움직였는지 실측하려면 좌표 스냅샷도 떠야
- * 한다. 2026-07-31 구간 실측이 갈림점을 직접 보여줬다 — 영향권 **281/3000(9%)**
- * 에서 시뮬 블록 2.1 → 1.5ms(이득), **975/3000(33%)** 에서 기하 0.4 → 0.6ms
- * (손해). 5 는 그 사이에서 손해 쪽에 여유를 두고 고른 값이다.
+ * A threshold is needed because narrowing is not free — index lookups have
+ * worse cache locality than an array sweep, and detecting which nodes moved
+ * requires a coordinate snapshot. Measured 2026-07-31 per block, the crossover
+ * is visible directly: at a reach of **281/3000 (9%)** the sim block went
+ * 2.1 → 1.5 ms (win); at **975/3000 (33%)** geometry went 0.4 → 0.6 ms (loss).
+ * 5 sits between them, biased toward the loss side.
  */
 const SCOPED_FRAME_SPARSITY = 5;
 /** World-unit epsilon below which a homing node is considered "arrived" (`relayout-home.ts#isHomeSpringConverged`). */
 const HOME_CONVERGE_EPSILON = 0.5;
 
 /**
- * FA2 iterations to run per warm frame — a bounded synchronous tick budget
- * (`model/force-layout.ts` integration note). The sim is warm ONLY while a
- * node is being pin-dragged (or its brief release settle) — never on load. The
- * static default is the deterministic de-piled concentric grid built in
- * `model/layout.ts`; running FA2 on mount turned that clean circuit into a
- * generic force hairball, which was the guardian's 충실도 반려 reason.
- */
-/**
- * A4 — the sim advances a refresh-rate-invariant number of iterations: 1 per
- * 60Hz-frame-equivalent of real time, so a 120Hz display doesn't relax the
- * graph twice as fast (each of its frames just does "half a step" of work via
- * the rounded budget). Capped at 3 so a hitchy frame can't explode the sim.
+ * FA2 iterations per warm frame — a bounded synchronous tick budget
+ * (`model/force-layout.ts` integration note). The count is refresh-rate
+ * invariant (1 per 60 Hz-frame-equivalent of real time) so a 120 Hz display
+ * does not relax the graph twice as fast, and capped at 3 so one hitchy frame
+ * cannot explode the sim.
+ *
+ * The sim is warm ONLY while a node is pin-dragged, plus its brief release
+ * settle — never on load. The static default is the deterministic de-piled
+ * concentric grid from `model/layout.ts`; running FA2 on mount turned that
+ * clean circuit into a generic force hairball, which is why the design
+ * guardian rejected it.
  */
 function forceIterationsForDt(dt: number): number {
   return Math.min(3, Math.max(1, Math.round(dt * 60)));
@@ -222,51 +223,55 @@ export interface UseTopologyLoopArgs {
    * lead spec §4). Null until the panel-hover wiring feeds it in.
    */
   emphasizedNeighborSlug?: string | null;
-  /** 이 그래프의 출처 정체성 — 바뀌면 오버뷰를 다시 맞춘다. `TopologyMapV2Props` 의 같은 이름 참고. */
+  /** Identity of this graph's source; a change refits the overview. See the same name on `TopologyMapV2Props`. */
   dataSourceKey?: string | null;
   /**
-   * 오버뷰 카메라가 무엇에 맞추나 — `"spine"`(기본) 은 project/domain/hub
-   * bbox, `"full"` 은 전 노드 bbox. `TopologyMapV2Props` 의 같은 이름 참고.
+   * What the overview camera fits: `"spine"` (default) is the project/domain/
+   * hub bbox, `"full"` is every node's bbox. See the same name on
+   * `TopologyMapV2Props`.
    */
   overviewFit?: "spine" | "full";
   fitViewToken: number;
-  /** 렌즈/기간이 바뀐 순간 강조 노드로 카메라를 맞추는 토큰(0 = 안 씀). */
+  /** Bumped to aim the camera at the spotlit nodes when the lens or its window changes (0 = unused). */
   spotlightFitToken?: number;
   relayoutToken: number;
   /**
-   * P3d(E1) — "첫 지도 연출". 증가 시 전 노드가 스파인 중심(프로젝트
-   * 위치)에서 출발해 홈으로 스프링 정착한다 — "만들어졌다"가 아니라
-   * "내 문서들이 모였다"로 읽히는 거울의 순간. 부트스트랩 완료에만
-   * 발화(초기 로드 아님). reduced-motion 은 호밍 스냅 경로가 즉착 처리.
+   * The first-map reveal. On increment every node starts at the spine centre
+   * (the project's position) and springs home, so the moment reads as "my
+   * documents gathered" rather than "something was generated".
+   *
+   * Fires on bootstrap completion only — never on an ordinary load, where the
+   * animation would just delay the map. Under reduced-motion the homing snap
+   * path arrives immediately.
    */
   revealToken?: number;
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
-  /** P3c — 엣지 호버 마이크로카드 (식별 변경 시에만 발화, null=해제). */
+  /** Edge hover micro-card. Fires only when the identified edge changes; null clears. */
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
     position: { x: number; y: number } | null,
   ) => void;
   onSelect?: (slug: string) => void;
-  /** 방향키를 눌렀는데 그 방향에 이어진 노드가 없을 때. 연타는 훅이 걸러 낸다. */
   /**
-   * 막다른 길 — **어디서** 막혔는지까지 실어 보낸다(캔버스 지역 좌표).
-   * 자리를 아는 곳은 여기뿐이고, 안내를 노드 옆에 띄우려면 그 자리가 필요하다.
+   * An arrow key found no neighbour in that direction; repeats are debounced
+   * by the hook. Carries **where** the walk stopped (canvas-local coords)
+   * because this is the only place that knows the position, and the hint has
+   * to appear beside that node.
    */
   onWalkDeadEnd?: ((point: { x: number; y: number } | null) => void) | null;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
   /**
-   * M-5 — the semantic-zoom altitude tier changed (spine → circuit → element).
-   * Fires only on transitions (not per-frame), driven by the same reveal bands
-   * the draw pass gates node visibility with, so the corner readout's
-   * orientation label can never claim "zoom in to see elements" while elements
-   * are on screen.
+   * The semantic-zoom altitude tier changed (spine → circuit → element). Fires
+   * on transitions only, not per frame, and is driven by the same reveal bands
+   * the draw pass uses to gate node visibility — so the corner readout can
+   * never say "zoom in to see elements" while elements are already on screen.
    */
   onZoomTierChange?: (tier: ZoomTier) => void;
-  /** W2-B node right-click context menu — see `topology-pointer-handlers.ts#createTopologyPointerHandlers`'s `onContextMenuNode` doc. */
+  /** Node right-click context menu — see `topology-pointer-handlers.ts#createTopologyPointerHandlers`'s `onContextMenuNode` doc. */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
-  /** 빈 캔버스 우클릭 — 「여기에 개념 만들기」. */
+  /** Right-click on empty canvas — "create a concept here". */
   onContextMenuPane?: (position: { x: number; y: number }) => void;
   /**
    * W6 agent visibility — the graph node id matching the agent heartbeat's
@@ -276,157 +281,163 @@ export interface UseTopologyLoopArgs {
    */
   agentFocusNodeId?: string | null;
   /**
-   * 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — non-null 이면 렌즈 ON:
-   * 이 집합 밖 노드/엣지를 `--topology-v2-spotlight-rest-alpha` 까지 침강.
-   * 켜고 끄는 전이는 focusDimTau 램프 재사용(<200ms 체감), reduced-motion
-   * 즉착. null/생략 = off (회귀 0). 집합 자체는 HomePage 가 `?recent=` 창의
-   * mtime 산수(useAdaptiveRecentChanges)로 만든다.
+   * Recent-change spotlight. Non-null turns the lens on: nodes and edges
+   * outside this set sink to `--topology-v2-spotlight-rest-alpha`. The on/off
+   * transition reuses the focusDimTau ramp (<200 ms perceived) and arrives
+   * immediately under reduced-motion. The set itself is built by HomePage from
+   * the `?recent=` window's mtime arithmetic (`useAdaptiveRecentChanges`).
    */
   spotlightIds?: ReadonlySet<string> | null;
-  /** 엣지 선택 = 페어 포커스 (양끝만 표시, 선택 엣지 pale 인디고). */
+  /** Edge selection = pair focus: only the two endpoints stay lit, the selected edge pale indigo. */
   selectedEdge?: { sourceId: string; targetId: string } | null;
   previewEdge?: TopologyMapV2Props["previewEdge"];
   /**
-   * 밀도 게이트 (fable 설계) — 사용자가 펼친 부모 slug Set(URL `?open=`).
-   * 임계 초과 부모의 자식은 기본 접힘(클러스터 칩)이고, 여기 담긴 부모만
-   * 펼쳐 자식을 노출한다. 생략 시 전부 접힘.
+   * Density gate — the set of parent slugs the user has expanded (URL
+   * `?open=`). Children of a parent past the threshold are collapsed into a
+   * cluster chip by default; only parents listed here reveal theirs. Omitted
+   * means everything is collapsed.
    */
   expandedParents?: ReadonlySet<string>;
-  /** 밀도 게이트 — 클러스터 칩 클릭 → 해당 부모 확장 토글(URL 왕복). */
+  /** Density gate — a cluster chip click toggles that parent's expansion (round-trips through the URL). */
   onToggleCluster?: (parentId: string) => void;
-  /** S2 파트 5C — 클러스터 칩 호버 툴팁 (식별 변경 시 발화, null=해제). */
+  /** Cluster-chip hover tooltip. Fires only when the identified chip changes; null clears. */
   onHoverCluster?: (
     info: {
       parentId: string;
-      /** 이 티어에서 접힌 직속 게이트 자식 수(칩 `+N`). */
+      /** Direct children collapsed by the density gate at this tier (the chip's `+N`). */
       count: number;
-      /** 패널3-S6 — 부모의 하위 전체 자손 수(노드 뱃지 = descendantCount). */
+      /** Every descendant beneath the parent (the node badge's `descendantCount`). */
       descendantTotal: number;
       expanded: boolean;
       position: { x: number; y: number };
     } | null,
   ) => void;
   /**
-   * "영역 전개" (S4) — 지도를 이 노드의 세계로 전환한다 (`?realm=slug`). null 이면
-   * 전체 지도. 값이 바뀌면 루프가 서브트리 재배치 + 전환 안무를 시작한다.
+   * Realm entry — switches the map into this node's own world (`?realm=slug`);
+   * null is the whole map. A change starts a subtree relayout plus the
+   * transition choreography.
    */
   realmRootId?: string | null;
-  /** S4 — 궤도 "전개" 버튼 클릭 → 이 slug 로 영역 진입 (HomePage 가 URL 왕복). */
+  /** The orbit's enter button was clicked for this slug; HomePage round-trips it through the URL. */
   onEnterRealm?: (slug: string) => void;
-  /** S4 — 궤도 "전개" 버튼 DOM (캔버스 좌표 앵커, 매 프레임 카메라 추종). */
+  /** DOM for the orbit's enter button — anchored in canvas coords, following the camera every frame. */
   realmEnterButtonRef?: RefObject<HTMLButtonElement | null>;
   /**
-   * 결계 하단 센서스 각인 문구 — "○○ · 요소 N" (사용자 어휘 "이것만 보기",
-   * 2026-07-23 소유자 결정 — 내부명 realm 유지). HomePage 가 원장 census 와
-   * 같은 출처로 포맷해 내려보낸다(위젯은 i18n/census 를 직접 만지지 않는다).
+   * The census caption engraved under the warding ring. Formatted by HomePage
+   * from the same source as the ledger census, so the widget never touches
+   * i18n or census arithmetic itself. (The internal name stays `realm`; the
+   * user-facing wording is "이것만 보기" — owner decision 2026-07-23.)
    */
   realmCaption?: string | null;
   /**
-   * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드 id 목록
-   * (오래된 → 최근 순서). HomePage 세션 state 가 내려보낸다. 각 방문 노드에
-   * 최근성 감쇠 헤어라인 링을 얹는다 — URL 비영속·정적 표기. 생략/빈 배열 =
-   * 발자국 없음(회귀 0).
+   * Footprint trail — node ids visited (ego-focused) during this session,
+   * oldest to newest, held in HomePage session state. Each visited node gets a
+   * recency-decayed hairline ring. Not persisted to the URL. Omitted or empty
+   * draws no footprints.
    */
   visitedTrail?: readonly string[];
   /**
-   * 걸어온 길 렌즈 on/off 를 담는 **ref** — 트레일 팝오버가 열려 있는 동안 true.
-   * 지도가 잠시 관계 읽기를 접고 궤적 읽기에 양보한다: 방문 노드(`visitedTrail`)만
-   * 값과 라벨을 지키고 나머지 노드·칩·라벨·엣지 전부가 기존 dim 값으로 물러난다.
-   * 새 모드·토글·URL 상태가 아니라 팝오버 열림과 **동치**다(transient-surface 계약).
+   * Whether the trail lens is on, as a **ref** — true while the trail popover
+   * is open. The map briefly stops being read for relations and yields to
+   * being read for a path: only the `visitedTrail` nodes keep their values and
+   * labels, everything else recedes to the existing dim values. This is not a
+   * new mode, toggle, or URL state — it is **equivalent** to the popover being
+   * open (transient-surface contract).
    *
-   * 값이 아니라 ref 인 이유는 브러싱과 같다 — state 로 올리면 렌즈를 켤 때마다
-   * 페이지 트리가 통째로 다시 렌더돼 전환 프레임이 100ms 대로 튄다(실측). 루프가
-   * 매 프레임 읽고, 유휴 게이트는 "마지막으로 그린 렌즈 상태"와 비교해 스스로
-   * 깨어나므로 렌더 0회로 같은 전환을 얻는다.
+   * A ref rather than a value for the same reason as brushing: promoting it to
+   * state re-renders the whole page tree on every lens toggle, and the
+   * transition frame jumps into the 100 ms range (measured). The loop reads it
+   * every frame, and the idle gate wakes itself by comparing against the lens
+   * state it last drew, so the same transition costs zero renders.
    */
   trailLensActiveRef?: RefObject<boolean>;
   /**
-   * 「모두 펼치기」·「N개 펼치기」·「접기」의 번역문. 캔버스가 문자열을 만들지
-   * 않는다 — 결계 캡션(`realmCaption`)이 이미 쓰는 그 경로 그대로다.
+   * Translations for "expand all" / "expand N" / "collapse". The canvas never
+   * builds user-facing strings — same path `realmCaption` already uses.
    */
   clusterBarLabels?: ClusterBarLabels | null;
   /**
-   * 걸어온 길 브러싱 — 팝오버에서 hover/focus 중인 행의 노드 id를 담는 **ref**.
-   * 렌즈 동안 지도의 호버 채널을 빌려 그 노드에 기존 호버 프리뷰 링을 그린다
-   * ("2걸음 전이 어느 노드지"를 숫자 없이 가리켜서 답한다).
+   * Trail brushing — a **ref** holding the node id of the popover row under
+   * hover/focus. While the lens is on, the map borrows its own hover channel
+   * to draw the existing hover preview ring on that node, answering "which one
+   * was two steps ago" by pointing instead of numbering.
    *
-   * 왜 값이 아니라 ref 인가: 호버는 행을 훑는 동안 연속으로 바뀌는 신호인데
-   * React state 로 올리면 한 번 바뀔 때마다 HomePage 트리 전체가 다시 렌더된다
-   * (실측 68~109ms — 호버가 끈적하게 느껴지는 크기다). 프레임 루프는 어차피
-   * 매 프레임 ref 를 읽으므로 렌더를 한 번도 돌리지 않고 같은 결과를 얻는다
-   * (`tourAnchorRef` 와 같은 계약).
+   * A ref rather than a value because hover changes continuously as the cursor
+   * sweeps rows, and each change through React state re-renders the entire
+   * HomePage tree (measured 68–109 ms, enough to feel sticky). The frame loop
+   * already reads refs every frame, so it reaches the same result with zero
+   * renders — the same contract as `tourAnchorRef`.
    */
   trailHoverNodeIdRef?: RefObject<string | null>;
   /**
-   * **옆 패널 위에서 마우스가 가리키고 있는 노드** (2026-08-17).
+   * **The node the cursor is pointing at from a side panel** (2026-08-17).
+   * Two callers — chat-pane node names and the data sheet's
+   * relation/evidence/domain rows — share one channel because there is one
+   * cursor.
    *
-   * 쓰는 곳 둘: 대화창의 노드 이름, 그리고 데이터시트의 관계·근거·도메인 줄.
-   * 커서는 하나라 동시에 둘일 수 없으므로 통로도 하나다 (종전 이름
-   * `chatHoverNodeIdRef` — 데이터시트가 같은 통로를 쓰면서 이름이 거짓이 됐다).
+   * Second exception to "focus owns emphasis exclusively", for the same reason
+   * as the trail lens (`trailHoverNodeIdRef`): the cursor is over a panel, not
+   * the canvas, so it cannot compete with canvas hover.
    *
-   * 걸어온 길 렌즈(`trailHoverNodeIdRef`)와 **같은 이유로 같은 채널을 빌린다**:
-   * 커서가 캔버스가 아니라 옆 패널 위에 있어서 캔버스 호버와 경쟁하지 않는다.
-   * 그래서 「포커스가 emphasis 소유권을 독점한다」는 규칙의 두 번째 예외다.
-   *
-   * 새 시각 언어를 만들지 않는다 — **마우스로 올렸을 때와 똑같이** 보인다.
-   * 패널에서 온 강조만 다르게 보이면 사용자는 그것이 무슨 뜻인지 또 배워야
-   * 하고, 이 지도에는 이미 배울 색이 충분하다.
-   *
-   * ref 인 이유도 같다: 호버마다 렌더를 돌리면 큰 그래프에서 끈적해진다.
+   * It deliberately looks **exactly** like a mouse hover — a distinct
+   * appearance would be one more thing to learn. A ref, because a render per
+   * hover feels sticky on a large graph.
    */
   panelHoverNodeIdRef?: RefObject<string | null>;
   /**
-   * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략 시
-   * `DEFAULT_TIER_REVEAL`(개발 모드 — capability/element 모두 정상 줌 반응).
-   * HomePage 가 비개발(plain) 모드에서 `PLAIN_TIER_REVEAL`(element 상시 숨김)
-   * 을 넘긴다 — 드로우/히트/팬-클램프 전부 이 값 하나로 정합된다.
+   * Tier gate config for the display lens. Omitted means `DEFAULT_TIER_REVEAL`
+   * (developer mode — capability and element both respond to zoom normally).
+   * In plain mode HomePage passes `PLAIN_TIER_REVEAL`, which hides elements
+   * outright. Draw, hit-testing, and pan clamping all agree because they read
+   * this one value.
    */
   tierReveal?: TierRevealConfig;
   /**
-   * 가이드 투어 (2026-07-23) — 캔버스 노드 앵커(2·4단계) 프로젝션 대상 노드
-   * id, 또는 `null`(해당 단계가 아니거나 앵커 노드를 못 찾음). realm "전개"
-   * 버튼과 나란한 블록이 매 프레임 `tourAnchorRef` 의 DOM 에 transform +
-   * `--tour-anchor-r` 를 써넣는다.
+   * Guided tour — the node id the canvas anchor projects onto during steps 2
+   * and 4, or `null` when the step has no anchor or the node was not found.
+   * A block alongside the realm enter button writes a transform plus
+   * `--tour-anchor-r` into `tourAnchorRef`'s DOM every frame.
    */
   tourAnchorNodeId?: string | null;
-  /** 가이드 투어 앵커 원 DOM(`TopologyMapV2` 가 렌더, ref 만 공유). */
+  /** DOM for the guided tour's anchor circle — rendered by `TopologyMapV2`, shared here as a ref only. */
   tourAnchorRef?: RefObject<HTMLDivElement | null>;
   /**
-   * 아이콘 세트 (Phase 5 #21) — 노드 바디 렌더 스타일. `"geometric"`(기본, fill) /
-   * `"line"`(stroke-only). kind→실루엣 매핑 불변. DOM 글리프와 같은 스토어를 읽어
-   * 함께 스왑. 생략 시 `"geometric"`.
+   * Node body render style: `"geometric"` (default, filled) or `"line"`
+   * (stroke only). The kind→silhouette mapping is unchanged either way. Reads
+   * the same store as the DOM glyphs so both swap together.
    */
   glyphSet?: GlyphSet;
   /**
-   * 캔버스 배경 세트 — `"dot"`(기본, 정적 blueprint grid) / `"flow"`(흐름장) /
-   * `"web"`(근접 성좌) / `"gravity"`(중력장). 뒤 셋은 커서에 반응하는 입자
-   * 배경이고 앰비언트 휴면을 그대로 탄다. 생략 시 `"dot"`.
+   * Canvas background set — `"dot"` (default, a static blueprint grid),
+   * `"flow"`, `"web"` (proximity constellation), or `"gravity"`. The last
+   * three are cursor-reactive particle backgrounds and obey ambient sleep.
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D 보기 (2026-08-18, 옵트인) — 지도를 kind 동심 링의 돔으로 다시 배치해
-   * 그리는 뷰 모드(`model/dome-view.ts`). 드로우·히트테스트·DOM 앵커·검사
-   * 훅이 전부 같은 프레임 맵을 읽는다. 생략 시 false(종전 2D 그대로).
+   * 3D view (2026-08-18, opt-in) — relays the map onto a dome of concentric
+   * kind rings (`model/dome-view.ts`). Draw, hit-testing, DOM anchors, and the
+   * inspection hook all read the same frame map. Omitted keeps 2D.
    */
   view3d?: boolean;
-  /** 3D 돔 방위 기준 — `model/dome-view.ts` 의 `DomeArrangement`. 생략 시 「소유」. */
+  /** What the dome orients by — `model/dome-view.ts`'s `DomeArrangement`. */
   mapArrangement?: MapArrangement;
-  /** 3D 리프레임 입력 — 상세 패널이 화면을 덮고 있는가(`TopologyMapV2` JSDoc). */
+  /** 3D reframe input: is the detail panel covering the viewport (`TopologyMapV2` JSDoc). */
   detailPanelVisible?: boolean;
-  /** 발자국 표현 설정. 생략/`null` 이면 발자국을 그리지 않는다. */
+  /** Footprint appearance settings. Omitted or `null` draws no footprints. */
   footprint?: FootprintPreference | null;
   /**
-   * 확장 설정 — 펼치기 표시 · 자식 배치 · 한 번에 여는 개수 · 이름을 시도할
-   * 개수 · 동시에 펼쳐 둘 부모 수. 생략 시 `DEFAULT_EXPAND`.
+   * Expansion settings — the expand affordance, child placement, how many open
+   * at once, how many to attempt naming, and how many parents stay expanded
+   * together.
    */
   expand?: ExpandPreference;
-  /** 휠/세로 스와이프 소유권 — `topology-pointer-handlers.ts` 의 `wheelIntent` 참고. */
+  /** Wheel / vertical-swipe ownership — see `wheelIntent` in `topology-pointer-handlers.ts`. */
   wheelIntent?: "zoom" | "page-scroll";
-  /** 앰비언트 휴면 지연 — `TopologyMapV2` 의 `ambientSleepDelayMs` 참고. */
+  /** Ambient sleep delay — see `ambientSleepDelayMs` on `TopologyMapV2`. */
   ambientSleepDelayMs?: number;
 }
 
-/** 3D 돔 — 접힘/칩 소비자 비우기용 불변 상수(프레임당 할당 0). */
+/** Immutable empties so the dome's collapsed/chip consumers allocate nothing per frame. */
 const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
 const EMPTY_DOME_CHIPS: readonly ClusterChip[] = [];
 
@@ -436,7 +447,7 @@ const EMPTY_TRAIL: readonly string[] = [];
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
-  /** 방향키로 이웃을 걷는다 (2026-08-09, 갈래 B) — 캔버스의 `onKeyDown`. */
+  /** Walk to a neighbour with the arrow keys — the canvas's `onKeyDown`. */
   handleKeyDown: (event: ReactKeyboardEvent<HTMLCanvasElement>) => void;
 };
 
@@ -466,67 +477,72 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (previewEdge) previewEdgeHeldRef.current = previewEdge;
   }, [previewEdge]);
   /**
-   * ResizeObserver 가 **잰** 최신 크기. 커밋(캔버스 백킹 크기 교체)은 여기서
-   * 하지 않고 rAF 프레임이 가져간다 — 이유는 아래 리사이즈 effect 의 주석.
+   * The latest size **measured** by the ResizeObserver. Committing it (swapping
+   * the canvas backing size) does not happen here — an rAF frame picks it up.
+   * Why: see the resize effect below.
    */
   const pendingViewportRef = useRef<{ width: number; height: number; dpr: number } | null>(null);
-  /** 뷰포트 의존 레이어를 다시 지어야 하는가 (크기 정착 후 1회). */
+  /** Do the viewport-dependent layers need rebuilding (once, after the size settles). */
   const viewportRebuildPendingRef = useRef(false);
-  /** 지금 적용된 백킹 해상도 배율 — 상호작용 시작/종료에서만 바뀐다. */
+  /** The backing-resolution scale in force right now — changes only when an interaction starts or ends. */
   const appliedDprScaleRef = useRef<number | null>(null);
-  /** 새 크기가 안 들어온 연속 프레임 수 — `VIEWPORT_SETTLE_FRAMES` 와 비교. */
+  /** Consecutive frames with no new size — compared against `VIEWPORT_SETTLE_FRAMES`. */
   const viewportSettleFramesRef = useRef(0);
   const commitViewportSizeRef = useRef<(() => boolean) | null>(null);
   const rebuildViewportLayersRef = useRef<(() => void) | null>(null);
   const worldRef = useRef<TopologyWorld | null>(null);
   const dustPointsRef = useRef<DustPoint[]>([]);
-  /** S8 결함 6 — 영역 활성 중 결계 안 우주 도트(뷰포트당 1회 빌드, resize 갱신). */
+  /** Cosmos dots inside the warding ring while a realm is active — built once per viewport, refreshed on resize. */
   const cosmosPointsRef = useRef<DustPoint[]>([]);
   const gridPatternRef = useRef<CanvasPattern | null>(null);
   /**
-   * 움직이는 배경(흐름장/근접 성좌/중력장)의 입자 상태 + 오프스크린 버퍼.
-   * 변형이 바뀌면 통째로 새로 만든다 — 입자 의미가 변형마다 달라 재사용이
-   * 오히려 첫 몇 초를 이상하게 만든다.
+   * Particle state plus offscreen buffer for the animated backgrounds (flow,
+   * proximity web, gravity). A variant change rebuilds it outright: a particle
+   * means something different in each variant, so reusing state makes the first
+   * seconds look wrong.
    */
   const animatedBgRef = useRef<AnimatedBackground | null>(null);
-  /** 커서 스크린 좌표(캔버스 기준). 캔버스 밖이면 null — 배경이 조용해진다. */
+  /** Cursor position in canvas-screen coords, or null when off-canvas — which quietens the background. */
   const bgPointerRef = useRef<{ x: number; y: number } | null>(null);
-  /** 깊이 도트 세 층의 패턴(정적, 마운트/리사이즈 1회 빌드). */
+  /** Patterns for the three depth-dot layers — static, built once on mount and on resize. */
   const depthDotPatternsRef = useRef<(CanvasPattern | null)[]>([]);
   const depthDotCanvasRef = useRef<HTMLCanvasElement[]>([]);
-  // Phase 5 #20/#21 — 개인화 설정 prop 을 매 프레임 읽을 수 있게 ref 미러
-  // (tierReveal 선례). 설정 변경 시 아래 effect 가 갱신한다.
+  // Appearance-preference props mirrored into refs so the frame loop can read
+  // them without re-subscribing; an effect below refreshes each on change.
   const glyphStyleRef = useRef<"fill" | "line">(glyphSet === "line" ? "line" : "fill");
   const canvasBackgroundRef = useRef<CanvasBackground>(canvasBackground);
-  /** 3D 보기 타깃 — 매 프레임(드로우)·이벤트(히트)가 읽으므로 ref 미러. */
+  /** 3D view target — mirrored because draw reads it per frame and hit-testing reads it per event. */
   const view3dRef = useRef<boolean>(view3d);
   /**
-   * 배치 기준 미러 — 드로우 루프가 읽는다. 바뀌면 아래 이펙트가 돔 모델을
-   * 버려서 다음 프레임이 새 각도로 다시 짓는다(높이·카메라는 그대로).
+   * Arrangement mirror, read by the draw loop. On change an effect below drops
+   * the dome model so the next frame rebuilds it at the new angle; height and
+   * camera are untouched.
    */
   const mapArrangementRef = useRef<MapArrangement>(mapArrangement);
   /**
-   * 돔 런타임(`model/dome-view.ts#DomeRuntime`) — 모델·자세(yaw/pitch)·관성·
-   * 조립 시계·이번 프레임 전달 맵을 담는 단일 상자. 루프가 매 프레임 갱신하고
-   * 포인터 핸들러(궤도·평면 드래그·히트)와 계기가 같은 상자를 읽는다.
+   * Dome runtime (`model/dome-view.ts#DomeRuntime`) — one box holding the
+   * model, pose (yaw/pitch), inertia, assembly clock, and this frame's
+   * projection map. The loop updates it each frame; the pointer handlers
+   * (orbit, flat drag, hit-testing) and the instrumentation read the same box.
    */
   const domeRuntimeRef = useRef<DomeRuntime | null>(null);
-  /** 돔 모델이 어느 월드에서 계산됐나 — 월드가 갈리면 레이아웃 재계산. */
+  /** Which world the dome model was computed from — a different world forces a relayout. */
   const domeWorldSourceRef = useRef<unknown>(null);
   /**
-   * 첫 3D 프레임의 **슬라이스 중인 돔 모델 빌드** (2026-08-19 실측).
+   * The **in-progress, time-sliced** dome model build for the first 3D frame
+   * (measured 2026-08-19).
    *
-   * 결합 구름 배치의 완화는 O(n²)×반복이라 2,000 노드에서 ~350ms 다. 종전에는
-   * 돔이 처음 필요한 프레임이 `buildDomeModel` 을 동기로 다 돌려 **부팅이
-   * 단일 프레임 346~368ms 히치**로 시작했다. 지금은 그 프레임부터 예산
-   * (`DOME_BUILD_SLICE_MS`)만큼만 진행하고 다음 프레임에서 이어 간다 — 완료
-   * 전에는 돔 런타임을 만들지 않고 그리지도 않으므로, 화면은 종전 동기 히치
-   * 동안의 정지 화면과 같고(부팅은 빈 캔버스, 중간 토글은 마지막 2D 프레임)
-   * 입력·타이머만 산다. 완화는 슬라이스로 돌려도 부동소수점 연산 순서가 같아
-   * **결과가 비트 단위로 동일하다** — 조립 연출의 모양은 그대로다.
+   * Relaxing the coupled cloud placement is O(n²) × iterations, ~350 ms at
+   * 2,000 nodes, and running `buildDomeModel` synchronously started boot with a
+   * **single-frame hitch of 346–368 ms**. Now each frame advances only
+   * `DOME_BUILD_SLICE_MS` and resumes on the next. Nothing is drawn until the
+   * build completes, so the screen shows what the synchronous hitch showed
+   * anyway (an empty canvas on boot, the last 2D frame on a mid-session toggle)
+   * while input and timers stay alive. Slicing preserves the floating-point
+   * operation order, so the result is **bit-identical**.
    *
-   * `world`/`arrangement` 를 함께 적는 이유: 슬라이스 도중 월드가 갈리거나
-   * 배치 설정이 바뀌면 이 빌드는 낡은 입력의 것이라 버리고 새로 시작해야 한다.
+   * `world`/`arrangement` are recorded alongside: a world swap or arrangement
+   * change mid-slice makes this build stale input, and it is restarted.
    */
   const domeModelBuildRef = useRef<{
     world: unknown;
@@ -534,51 +550,56 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     build: DomeModelBuild;
   } | null>(null);
   /**
-   * 유휴 게이트 계측 (e2e 전용) — **마지막으로 프레임을 깨운 플래그들의 이름**.
+   * Idle-gate instrumentation (e2e only) — **the names of the flags that last
+   * kept a frame awake**.
    *
-   * 왜 있나 (2026-08-19 통합 검증): «드래그 후 지도가 다시 안 잠든다» 부류의
-   * 회귀는 증상(초당 CPU)만 보이고 원인(어느 활동 플래그가 참으로 남았나)은
-   * 캔버스 밖에서 볼 방법이 없었다 — 픽셀은 「그려졌다」만 말한다. idle-gate
-   * 독블록의 규율(진행 중인 모션은 전부 이름이 있어야 한다)을 **검증 가능**
-   * 하게 만들려면 그 이름이 창구로 나와야 한다. `?e2e=1` 로 붙는 검사 창구가
-   * 있을 때만 기록한다(아래 `idleDebugEnabledRef`) — 제품 경로 비용 0.
+   * Why it exists (2026-08-19 integration review): regressions of the "the map
+   * never falls back asleep after a drag" family show only their symptom (CPU
+   * per second); the cause — which activity flag stayed true — was invisible
+   * from outside the canvas, because pixels only ever say "something drew".
+   * The idle-gate doc-block's discipline (every motion in flight must have a
+   * name) is verifiable only if those names reach a window. Recorded only when
+   * the `?e2e=1` inspection window is attached (`idleDebugEnabledRef` below),
+   * so the product path pays nothing.
    */
   const lastActiveCausesRef = useRef<{ t: number; causes: string[] } | null>(null);
   const idleDebugEnabledRef = useRef(false);
   /**
-   * 3D 선택 리프레임 대기 — 포커스 effect 가 적고 루프의 돔 스텝이 소비한다.
-   * effect 시점에는 월드가 재구축 중일 수 있어(선택이 조상 클러스터를 같이
-   * 펼친다) 거기서 직접 계산하면 조용히 무산된다 — 루프는 항상 라이브 월드를
-   * 쥐고 있으므로 다음 돔 프레임에서 확실히 처리된다.
+   * Pending 3D reframe on selection: written by the focus effect, consumed by
+   * the loop's dome step. At effect time the world may still be rebuilding (a
+   * selection also expands ancestor clusters), so computing it there fails
+   * silently. The loop always holds the live world, so the next dome frame
+   * handles it for certain.
    */
   const domeFocusPendingRef = useRef<{ slug: string | null } | null>(null);
-  /** 3D 켜짐 직후 1회 — 카메라를 돔 bbox 로 시네마틱 핏(끄기는 카메라 불변). */
+  /** One-shot after 3D turns on: cinematically fit the camera to the dome bbox. Turning it off leaves the camera alone. */
   const domeFitPendingRef = useRef(false);
   /**
-   * 3D 를 끈 뒤 2D 개요로 되맞출 빚 — 위 `view3d` 이펙트가 적고 루프의 돔
-   * 스텝이 **해체가 끝난 뒤** 갚는다. 램프가 도는 동안 맞추면 morph 중인
-   * 좌표로 프레이밍하게 되므로, 끝난 프레임에 한 번만 한다.
+   * Debt to refit the 2D overview after 3D turns off — written by the `view3d`
+   * effect, paid by the loop's dome step **once teardown has finished**.
+   * Fitting while the ramp is still running would frame mid-morph coordinates.
    */
   const flatFitPendingRef = useRef(false);
-  /** 발자국 설정 + 잉크 — 매 프레임 읽으므로 ref 미러(캔버스 배경과 같은 패턴). */
+  /** Footprint preference and ink, mirrored because the frame loop reads them every frame. */
   const footprintPrefRef = useRef<FootprintPreference | null>(footprint ?? null);
   /**
-   * 확장 설정 — 프레임 루프가 매 프레임 읽으므로 ref 미러(발자국·배경과 같은
-   * 패턴). 설정이 바뀌면 아래 effect 가 갱신하고 **다음 프레임부터** 반영된다.
+   * Expansion preference, mirrored for the same reason. A settings change is
+   * picked up by an effect below and takes effect **from the next frame**.
    */
   const expandPrefRef = useRef<ExpandPreference>(expand);
   const footprintInkRef = useRef<FootprintInk>([232, 196, 122]);
   const footprintStepColorRef = useRef<string>("#e8c47a");
   /**
-   * 걸음이 하나 늘어난 순간 — 그 자국만 짧게 도착 모션을 받는다.
-   * 길이만 본다(내용 비교 불필요): 트레일은 뒤에만 자란다.
+   * The moment one more step joined the trail — only that mark gets a short
+   * arrival motion. Comparing length is enough: the trail only ever grows at
+   * the end.
    */
   const footprintTrailLenRef = useRef(0);
   const footprintAppearAtRef = useRef(0);
   /**
-   * 앰비언트 휴면 지연 — 프레임 루프가 매 프레임 읽으므로 값이 아니라 ref 다
-   * (이 파일이 `canvasBackground` 등에 이미 쓰는 패턴). 값으로 닫으면 루프
-   * effect 의 의존성이 되어 프롭이 바뀔 때마다 rAF 루프가 통째로 재시작한다.
+   * Ambient sleep delay as a ref rather than a value, because closing over the
+   * value would make it a dependency of the loop effect and restart the whole
+   * rAF loop whenever the prop changes.
    */
   const ambientSleepDelayRef = useRef<number | undefined>(ambientSleepDelayMs);
 
@@ -587,93 +608,105 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const simRef = useRef<ForceSimulation | null>(null);
   const heatRef = useRef(0);
   const nodeDragRef = useRef<NodeDragState | null>(null);
-  /** rank4 터치 핀치줌 — 활성 터치 포인터(pointerId → 캔버스 좌표). 핸들러 팩토리는 매 렌더 재생성되므로 훅이 상태를 소유한다. */
+  /** Touch pinch-zoom — the active touch pointers (pointerId → canvas coords). The hook owns this state because the handler factory is recreated every render. */
   const activeTouchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
-  /** rank4 — 진행 중 핀치의 직전 프레임 거리/중점(null = 핀치 아님). */
+  /** Previous frame's distance/midpoint for a pinch in progress (null = not pinching). */
   const pinchRef = useRef<{ dist: number; midX: number; midY: number } | null>(null);
-  /** C1 B1/B2 — the active (or just-released, through its settle burst) drag's tug/settle-restriction set. */
+  /** The tug/settle-restriction set for the active drag, or one just released through its settle burst. */
   const dragAffectedSetRef = useRef<{ draggedId: string; oneHop: ReadonlySet<string>; twoHop: ReadonlySet<string> } | null>(null);
-  /** C1 B1 — the dragged node's world position at grab time (for computing this drag's total displacement Δ). */
+  /** The dragged node's world position at grab time, for this drag's total displacement Δ. */
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
-  /** C1 B1 — each tug-affected neighbor's current eased offset (world units), added on top of its natural position. */
+  /** Each tug-affected neighbour's current eased offset (world units), added on top of its natural position. */
   const dragTugOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   /**
-   * 시뮬 프레임 «시작» 좌표 스냅샷 (노드 배열 순서). 프레임 끝에서 이것과
-   * 비교해 **정말 움직인 노드**를 뽑고, 파생 기하 갱신을 거기로 좁힌다
+   * Coordinate snapshot from the **start** of a sim frame (in node-array
+   * order). Comparing against it at the end of the frame yields the nodes that
+   * really moved, and narrows the derived geometry update to those
    * (`recomputeWorldGeometry(world, tokens, movedIds)`).
    *
-   * 「어느 집합이 움직일 예정인가」로 유추하지 않고 실측하는 이유: 한 프레임의
-   * 좌표를 쓰는 주체가 셋(힘 적용 · 이웃 터그 · 겹침 완화)인데 셋의 사정거리가
-   * 서로 다르다. 유추하면 언젠가 하나를 빠뜨리고, 그 증상은 «엣지가 노드에서
-   * 떨어져 보이는» 가시 결함이다.
+   * Measured rather than inferred from "which set is about to move" because
+   * three separate things write coordinates in one frame — force application,
+   * neighbour tug, and separation relaxation — and their reaches differ.
+   * Inference eventually misses one, and the symptom is a visible defect:
+   * edges detached from their nodes.
    */
   const geomPrevXRef = useRef<Float64Array | null>(null);
   const geomPrevYRef = useRef<Float64Array | null>(null);
   /**
-   * 직전 프레임에 **겹침 완화가 민** 노드들 중 힘-적용 집합 밖의 것.
+   * Nodes that **separation relaxation displaced** last frame and that sit
+   * outside the force-applied set.
    *
-   * 이 프레임의 `applyForcePositions` 가 이들의 좌표를 sim 값으로 되돌리는 것이
-   * 종전 동작이라, 좁힌 write-back 에도 그 되돌림을 남기려면 대상에 포함해야
-   * 한다. (되돌림 자체의 타당성은 별개 문제다 — 여기서는 동작을 바꾸지 않는다.)
+   * This frame's `applyForcePositions` reverting their coordinates to the sim
+   * values is the pre-existing behaviour, so the narrowed write-back has to
+   * include them to preserve it. (Whether that revert is correct at all is a
+   * separate question — nothing here changes the behaviour.)
    */
   const sepDisplacedIdsRef = useRef<Set<string>>(new Set());
-  /** C1 B3 — active auto-arrange homing springs, keyed by node id; empty/absent when no relayout is in flight. */
+  /** Active auto-arrange homing springs, keyed by node id; empty when no relayout is in flight. */
   const homeSpringsRef = useRef<Map<string, HomeSpringState>>(new Map());
   const homingActiveRef = useRef(false);
   /**
-   * 결계 불변식 (소유자 실보고 2026-07-23, 루트가 자기 결계 밖) — 영역 active 중
-   * 호밍의 노드별 목표 오버라이드. null 이면 전역 `homeX`/`homeY`, 영역 중엔
-   * `insideTargets`(영역 좌표계) 가 목표다. 전역 홈으로 호밍하면 결계 원은 영역
-   * 원점에 남는데 노드는 스파인 좌표로 날아가 "루트가 원 밖" 이 됐다. 호밍
-   * 수렴/취소 시 함께 클리어.
+   * Per-node homing target override while a realm is active; null falls back to
+   * the global `homeX`/`homeY`, and inside a realm the targets are
+   * `insideTargets` (realm coordinate space). Cleared when homing converges or
+   * is cancelled.
+   *
+   * Owner bug report 2026-07-23: the root sat outside its own warding ring.
+   * Homing to global home left the ring at the realm origin while the nodes
+   * flew off to spine coordinates.
    */
   const homeTargetOverrideRef = useRef<ReadonlyMap<string, { x: number; y: number }> | null>(null);
-  /** 결계 불변식 — 직전 프레임의 pin-drag 노드 id (릴리즈 전이 감지). */
+  /** Previous frame's pin-dragged node id, to detect the release transition. */
   const prevPinnedNodeIdRef = useRef<string | null>(null);
 
-  // --- S4 "영역 전개" 상태 ---
-  /** 전환 상태기계 (idle/entering/active/exiting). */
+  // --- Realm state ---
+  /** Transition state machine (idle/entering/active/exiting). */
   const realmTransitionRef = useRef<RealmTransitionState>(INITIAL_REALM_TRANSITION_STATE);
-  /** 현재 영역의 전환 시작 데이터(서브트리·재배치 좌표·결계·이탈 출발점). */
+  /** The current realm's transition-start data: subtree, relaid-out coords, warding ring, exit origins. */
   const realmDataRef = useRef<RealmRuntimeData | null>(null);
   /**
-   * S8 결함 5 — active 정착 후 좌표 소유권을 일반 경로(드래그/sim/호밍)에 넘겼는가.
-   * active 페이즈가 매 프레임 `node.x = insideTargets` 로 덮어쓰면 드래그와 싸워
-   * 노드가 안 움직였다(소유자 실보고). 정착 첫 프레임에 한 번 스냅 + sim 재시드
-   * 후 이 플래그를 세우고, 이후 active 프레임은 좌표를 건드리지 않는다. 진입/이탈
-   * 시 false 로 리셋.
+   * Has coordinate ownership been handed back to the ordinary paths (drag, sim,
+   * homing) after the realm settled into `active`?
+   *
+   * Owner bug report: while the active phase overwrote `node.x = insideTargets`
+   * every frame it fought the drag and nodes would not move. Now the first
+   * settled frame snaps once, reseeds the sim, and sets this flag; later active
+   * frames leave coordinates alone. Reset to false on entry and exit.
    */
   const realmActiveHandedOffRef = useRef(false);
   /**
-   * S9 결함 2 — 결계 반경 재적합 이징 상태. 매 프레임 **가시 멤버**(밀도 게이트
-   * 접힘 제외)로 목표 반경을 측정해 240ms 이징으로 옮긴다(칩 확장/접힘 시에만
-   * 1회 이징 — 지속 애니메이션 없음). 진입마다 null 로 리셋해 첫 프레임이 초기
-   * 반경으로 스냅 시드한다.
+   * Easing state for refitting the warding radius. Each frame measures the
+   * target radius from the **visible** members (excluding density-gate
+   * collapsed ones) and eases toward it over 240 ms — one ease per chip expand
+   * or collapse, never a continuous animation. Reset to null on every entry so
+   * the first frame seeds by snapping to the initial radius.
    */
   const wardingFitRef = useRef<WardingFitState | null>(null);
-  // 직전 `realmRootId`(전환 진입/이탈 diff). null 로 초기화하는 게 핵심:
-  // `?realm=slug` 딥링크로 마운트하면 prev(null) ≠ realmRootId(slug) 라 첫
-  // effect 가 영역 진입을 발화한다(공유 링크·에이전트가 영역을 그대로 재현).
+  // Previous `realmRootId`, for the enter/exit diff. Initialising to null is
+  // the point: mounting from a `?realm=slug` deep link gives prev(null) ≠
+  // realmRootId(slug), so the first effect fires realm entry and a shared link
+  // or an agent reproduces the realm exactly.
   const prevRealmRootIdRef = useRef<string | null>(null);
-  /** 궤도 "전개" 버튼이 지금 겨냥한 노드 slug (버튼 클릭이 읽는다). */
+  /** The node slug the orbit's enter button currently targets; the button's click reads it. */
   const realmEnterTargetRef = useRef<string | null>(null);
-  /** onEnterRealm prop 미러 (버튼 리스너 클로저용). */
+  /** `onEnterRealm` prop mirror, for the button listener's closure. */
   const onEnterRealmRef = useRef<typeof onEnterRealm>(onEnterRealm);
-  /** 궤도 버튼 DOM 미러 (rAF 마운트 전용 effect 가 prop ref 를 dep 으로 걸지 않게). */
+  /** Orbit button DOM mirror, so the mount-only rAF effect need not depend on the prop ref. */
   const realmEnterButtonElRef = useRef<HTMLButtonElement | null>(null);
-  /** 가이드 투어 앵커 원 DOM 미러 — 같은 이유(realm 버튼과 동형). */
+  /** Guided-tour anchor circle DOM mirror — same reason as the realm button. */
   const tourAnchorElRef = useRef<HTMLDivElement | null>(null);
-  // --- S5 깊이 시차 (영역 active 중 카메라 입력 반응) ---
-  /** depth2(capability 링) 시차 오프셋(월드 단위). 카메라 정지 시 0 수렴. */
+  // --- Depth parallax (reacts to camera input while a realm is active) ---
+  /** Parallax offset for depth 2 (the capability ring), in world units. Converges to 0 when the camera stops. */
   const realmParallaxDepth2Ref = useRef<DepthParallaxOffset>(ZERO_PARALLAX);
-  /** depth3+(element 링) 시차 오프셋(월드 단위). */
+  /** Parallax offset for depth 3+ (the element ring), in world units. */
   const realmParallaxDepth3Ref = useRef<DepthParallaxOffset>(ZERO_PARALLAX);
-  /** 직전 프레임 카메라 중심(월드) — 시차 델타 계산. null=이전 표본 없음. */
+  /** Previous frame's camera centre in world coords, for the parallax delta. null = no earlier sample. */
   const prevCameraCenterRef = useRef<{ x: number; y: number } | null>(null);
   /**
-   * 이번 프레임 시차 데이터(밴드별 오프셋 + depthById). rAF 가 매 프레임 갱신,
-   * 포인터 히트테스트가 읽어 드로우와 **같은** 오프셋으로 클릭을 맞춘다. 영역
-   * active + 오프셋 유의미할 때만 non-null.
+   * This frame's parallax data (per-band offsets plus depthById). rAF refreshes
+   * it every frame and pointer hit-testing reads it, so clicks land against the
+   * **same** offsets the draw used. Non-null only while a realm is active and
+   * the offsets are meaningful.
    */
   const realmParallaxRef = useRef<{
     depthById: ReadonlyMap<string, number>;
@@ -681,17 +714,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     depth3: DepthParallaxOffset;
   } | null>(null);
   /**
-   * S10 결함 3 — 이번 프레임의 깊이 기반 티어 kind 오버라이드. rAF 가 드로우와
-   * **같은 게이트**로 매 프레임 채우고(영역 비활성이면 null), 포인터 히트테스트가
-   * 읽어 depth1 element 자식이 그려질 때 함께 잡히게 한다.
+   * This frame's depth-derived tier kind overrides. rAF fills it every frame
+   * through the **same gate** the draw uses (null when no realm is active), and
+   * pointer hit-testing reads it so depth-1 element children are clickable
+   * exactly when they are drawn.
    */
   const realmTierKindsRef = useRef<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>(null);
-  /** 영역 루트의 contains 조상 체인 캐시 — 바깥 밀도 게이트가 영역 내부를 가리지 않게 펼침 취급할 집합. */
+  /** Cached `contains` ancestor chain of the realm root — treated as expanded so the outer density gate cannot hide the realm's interior. */
   const realmExpandChainRef = useRef<{ rootId: string; chain: ReadonlySet<string> } | null>(null);
-  /** 결계 센서스 캡션 prop 미러 — rAF 프레임 클로저가 최신 문구를 읽는다. */
+  /** Warding census caption prop mirror, so the rAF frame closure reads the latest wording. */
   const realmCaptionRef = useRef<string | null>(realmCaption);
   realmCaptionRef.current = realmCaption;
-  // 막대 문구 미러 — 히트테스트와 드로우가 **같은 문자열**로 폭을 잰다.
+  // Cluster bar label mirror — hit-testing and draw must measure width from the **same string**.
   const clusterBarLabelsRef = useRef<ClusterBarLabels | null>(clusterBarLabels);
   clusterBarLabelsRef.current = clusterBarLabels;
 
@@ -702,16 +736,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   const cameraTargetRef = useRef<CameraTarget>({ tx: 0, ty: 0, tscale: 1 });
   /**
-   * WCAG 2.2 §2.3.3 — "누가 카메라를 마지막으로 움직였나". 포인터 핸들러의
-   * 제스처(휠·핀치·팬·플릭)가 true 로, 이 파일의 **프로그램적** 이동(ego
-   * 다이브·fit·결계·초기 스냅)이 false 로 되돌린다. `stepTopologyPhysics` 가
-   * 이 값으로 reduced-motion 카메라 스냅을 앱 개시 이동에만 한정한다 —
-   * 사용자가 개시한 줌/팬은 표준이 명시적으로 예외로 두는 항목이고, 그걸
-   * 자르면 뷰포트 전체가 한 프레임에 순간이동해 오히려 더 나쁘다.
+   * WCAG 2.2 §2.3.3 — "who moved the camera last". Pointer-handler gestures
+   * (wheel, pinch, pan, flick) set it true; every **programmatic** move in this
+   * file (ego dive, fit, realm, initial snap) resets it to false.
+   * `stepTopologyPhysics` uses it to confine the reduced-motion camera snap to
+   * app-initiated moves: user-initiated zoom and pan are an explicit exception
+   * in the standard, and cutting them teleports the whole viewport in one
+   * frame, which is worse than the motion being removed.
    */
   const userDrivenCameraRef = useRef(false);
   /**
-   * S3 마감 폴리시 (fable 설계) — the live cubic camera transition, or null.
+   * The live cubic camera transition, or null.
    * Set by `beginCameraTween` on every programmatic move (focus dive, cluster
    * dive, fit/relayout); driven each frame in the rAF loop; cleared the instant
    * an interactive gesture (wheel/drag) takes over. Never set under
@@ -720,7 +755,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const cameraTweenRef = useRef<CameraTween | null>(null);
   const dampingRef = useRef(1.0);
   /**
-   * Dive-zoom fix (owner: "줌 인/아웃이 느림") — which spring angular frequency
+   * Dive-zoom fix. Owner: "줌 인/아웃이 느림" (zooming in and out feels
+   * slow.) Which spring angular frequency
    * this frame's camera step uses. `null` until the first token read (the rAF
    * loop falls back to `cameraSpringAngFreqTransition` for that first frame).
    * Set to `cameraSpringAngFreqInteractive` on every live wheel tick
@@ -734,55 +770,59 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const overviewScaleRef = useRef(1);
   const hasInitializedRef = useRef(false);
   /**
-   * 마지막으로 오버뷰를 맞춰 준 **출처**. 월드가 다시 지어질 때 이 값과 다르면
-   * 초기 맞춤을 한 번 더 돌린다 (`dataSourceKey` prop 의 주석 참고).
+   * The **source** the overview was last fitted to. When the world is rebuilt
+   * with a different value, the initial fit runs once more (see the
+   * `dataSourceKey` prop's comment).
    */
   const fittedDataSourceKeyRef = useRef<string | null>(null);
   const lastFrameTimeRef = useRef(0);
-  // FIX (QA first-light pass, blocker 2 continued): `useEffect(fn, [relayoutToken,
-  // fitViewToken])` also fires once on mount (standard React behavior, not just
-  // on token changes) — it used to be harmless because it recomputed the exact
-  // same tight-bounding-fit target `trySnapInitialCamera` had just set. Now that
-  // the initial camera intentionally starts at the *simplified* overview scale
-  // (`computeOverviewCameraTarget`), that same mount-time fire was immediately
-  // overwriting it back to the full/tight fit — the reduced-density fix never
-  // visibly took effect. Captured once (lazy initializer runs exactly once,
-  // even under React StrictMode's dev-only double-invoke of effects — a plain
-  // "have I run before" boolean ref does NOT survive that double-invoke
-  // safely, since the mount/cleanup/remount cycle flips it back and forth).
-  // The effect below skips whenever both tokens still equal their captured
-  // mount-time values — i.e. no real "fit view"/relayout click happened yet.
+  // `useEffect(fn, [relayoutToken, fitViewToken])` also fires once on mount
+  // (standard React behaviour, not only on token change). That used to be
+  // harmless because it recomputed the same tight-bounding fit target
+  // `trySnapInitialCamera` had just set. Once the initial camera deliberately
+  // started at the *simplified* overview scale (`computeOverviewCameraTarget`),
+  // the same mount-time fire immediately overwrote it back to the tight fit and
+  // the reduced-density fix never visibly took effect.
+  //
+  // Captured through a lazy initializer, which runs exactly once even under
+  // StrictMode's dev-only double-invoke of effects. A plain "have I run before"
+  // boolean ref does NOT survive that double-invoke, because the
+  // mount/cleanup/remount cycle flips it back and forth. The effect below skips
+  // while both tokens still equal their captured mount-time values — i.e. no
+  // real fit-view or relayout click has happened yet.
   const initialFitTokensRef = useRef({ relayout: relayoutToken, fitView: fitViewToken });
-  // 마운트 시점 값 — 위 fit 들과 같은 이유로 첫 발화를 건너뛴다.
+  // Mount-time value — skips the first fire for the same reason as the fits above.
   const initialSpotlightFitTokenRef = useRef(spotlightFitToken);
   /*
-   * **밀린 맞춤** — 딥링크로 들어온 세션을 위해 (2026-08-02, 모션석 감사가
-   * 잡았다).
+   * **Deferred fit** for deep-linked sessions (2026-08-02, caught by the motion
+   * seat's audit).
    *
-   * `?recent=` 가 URL 에 이미 있는 채로 마운트하면 토큰이 **마운트 직후 한 번**
-   * 올라가는데, 그 순간 지도는 아직 레이아웃 전이라 아래 가드
-   * (`!hasInitializedRef.current`)에 걸려 **조용히 반환**된다. 토큰은 다시 안
-   * 바뀌므로 **영영 안 움직인다** — 기록 화면에서 보낸 사람이 강조 노드가 화면
-   * 밖인 기본 오버뷰에 착지한다. 고치려던 바로 그 증상이다.
+   * Mounting with `?recent=` already in the URL bumps the token **once, right
+   * after mount** — at which point the map has not laid out yet, so the guard
+   * below (`!hasInitializedRef.current`) returns silently. The token never
+   * changes again, so the camera **never moves**: someone arriving from the
+   * history screen lands on the default overview with the spotlit node
+   * off-screen, which is the exact symptom this was meant to fix.
    *
-   * 그래서 「지금 못 하면 버린다」가 아니라 **「빚으로 남긴다」**로 바꾼다.
-   * 초기화가 끝나는 자리에서 한 번 갚고 지운다.
+   * So instead of dropping the fit when it cannot run, record it as debt and
+   * pay it once where initialization completes.
    */
   const pendingSpotlightFitRef = useRef(false);
-  /** 최신 `runSpotlightFit` 을 지역 함수에서 부르기 위한 손잡이(낡은 클로저 방지). */
+  /** Handle to the latest `runSpotlightFit`, so local functions never call a stale closure. */
   const runSpotlightFitRef = useRef<(() => boolean) | null>(null);
-  // C1 B3 — same mount-skip pattern, but for the DEDICATED relayout-only
-  // effect below (node-position homing), which must not fire on mount either.
+  // Same mount-skip pattern, for the dedicated relayout-only effect below
+  // (node-position homing), which must not fire on mount either.
   const initialRelayoutTokenRef = useRef(relayoutToken);
 
   const pointerMachineRef = useRef<PointerMachineState>(INITIAL_POINTER_MACHINE_STATE);
   const dragHistoryRef = useRef<{ x: number; y: number; t: number }[]>([]);
-  /**
-   * 3D 빈 곳 드래그의 정체 — 돔 «손잡이» 안에서 시작했으면 궤도 회전, 밖이면
-   * 카메라 팬(2D 와 동일). `pointerdown` 이 한 번 정한다(`DOME_GRIP_MARGIN`).
-   */
-  /** 이동 양보가 끝나는 시각 (`navigation-intent` 구독 이펙트 독블록). */
+  /** When the navigation yield ends — see the `navigation-intent` subscription effect's doc-block. */
   const navYieldUntilRef = useRef(0);
+  /**
+   * What an empty-space drag means in 3D: starting inside the dome's grip
+   * orbits it, starting outside pans the camera as in 2D. `pointerdown` decides
+   * once, using `DOME_GRIP_MARGIN`.
+   */
   const domeGripRef = useRef(false);
   const camStartAtDownRef = useRef({ x: 0, y: 0 });
   const canvasRectRef = useRef<{ left: number; top: number } | null>(null);
@@ -791,81 +831,88 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const lastFocusedSlugRef = useRef<string | null>(focusedSlug);
   const panelEmphasisNodeIdRef = useRef<string | null>(emphasizedNeighborSlug);
   const hoveredNodeIdRef = useRef<string | null>(null);
-  /** P3c — 호버 중 엣지 (드로우 잉크 강조 + 마이크로카드 공유 상태). */
+  /** The edge under hover — shared by the draw's ink emphasis and the micro-card. */
   const hoveredEdgeRef = useRef<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>(null);
-  /** 엣지 선택(페어 포커스) prop 미러 — rAF 클로저용. */
+  /** Edge-selection (pair focus) prop mirror, for the rAF closure. */
   const selectedEdgeRef = useRef<{ sourceId: string; targetId: string } | null>(selectedEdge);
-  /** 발자국 트레일 prop 미러 — rAF 클로저가 매 프레임 최근성 rank 를 만든다. */
+  /** Footprint trail prop mirror — the rAF closure builds the recency rank from it each frame. */
   const visitedTrailRef = useRef<readonly string[]>(visitedTrail);
   /**
-   * 걸어온 길 렌즈 keep-set — `visitedTrail` 이 바뀔 때만 제자리(clear+add)로
-   * 갱신한다. 60fps 루프 안에서 매 프레임 Set 을 새로 만들지 않기 위한 것
-   * (프레임 예산: 렌즈로 늘어나는 per-frame 할당 0).
+   * Keep-set for the trail lens, updated in place (clear + add) only when
+   * `visitedTrail` changes, so a 60 fps loop never allocates a fresh Set per
+   * frame. The lens adds zero per-frame allocation.
    */
   const visitedTrailSetRef = useRef<Set<string>>(new Set(visitedTrail));
   /**
-   * 마지막으로 **그린** 렌즈 상태. 유휴 게이트가 이걸 현재 ref 와 비교해
-   * "렌즈가 방금 바뀌었다"를 활동으로 친다 — 렌즈는 React state 가 아니라
-   * ref 라 effect 로 깨울 수 없으므로, 깨우기 책임을 프레임 게이트가 진다.
+   * The lens state that was last **drawn**. The idle gate compares it against
+   * the live ref and counts "the lens just changed" as activity — the lens is a
+   * ref rather than React state, so no effect can wake the loop and the frame
+   * gate has to own waking instead.
    */
   const drawnTrailLensRef = useRef(false);
-  /** 걸어온 길 렌즈/브러싱 prop ref 미러 — rAF 클로저가 deps 없이 최신 것을 읽게 (`tourAnchorRef` 와 같은 미러 관용). */
+  /** Trail lens / brushing prop-ref mirrors, so the rAF closure reads the latest without deps (same idiom as `tourAnchorRef`). */
   const trailLensPropRef = useRef<RefObject<boolean> | null>(trailLensActiveRef ?? null);
   const trailBrushPropRef = useRef<RefObject<string | null> | null>(trailHoverNodeIdRef ?? null);
   const panelHoverPropRef = useRef<RefObject<string | null> | null>(panelHoverNodeIdRef ?? null);
   /**
-   * 이번 프레임이 **실제로 호버로 대접한** 노드 — 계기(`__atlasMap.hover()`)
-   * 전용 거울. 캔버스에는 DOM 이 없어서, 밖에서 「지도가 그 노드를 가리키고
-   * 있나」를 확인할 방법이 픽셀 비교밖에 없었다(그건 무엇이 왜 바뀌었는지는
-   * 말해 주지 않는다). 프레임이 쓴 값을 그대로 복사하므로 화면과 어긋날 수 없다.
+   * The node this frame **actually treated as hovered** — a mirror kept solely
+   * for the `__atlasMap.hover()` instrument. The canvas has no DOM, so from
+   * outside, "is the map pointing at that node" could only be answered by
+   * comparing pixels, and pixels never say what changed or why. This copies the
+   * value the frame wrote, so it cannot disagree with the screen.
    */
   const drawnHoveredNodeIdRef = useRef<string | null>(null);
-  /** 밀도 게이트 — 펼친 부모 Set 미러(rAF + 포인터 클로저 공용). */
+  /** Density gate — expanded-parents Set mirror, shared by the rAF and pointer closures. */
   const expandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
-  /** S2 파트 5B — 직전 펼침 Set (새로 펼쳐진 부모 diff → 카메라 다이브용). */
+  /** Previous expanded set, diffed to find newly expanded parents for the camera dive. */
   const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
-  /** 밀도 게이트 — 이번 프레임의 클러스터 칩(월드 anchor). 히트테스트가 읽는다. */
+  /** Density gate — this frame's cluster chips (world-anchored). Hit-testing reads it. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
   /**
-   * S3 마감 폴리시 (fable 설계, S2 known gap) — 이번 프레임에 **그리지 않은**
-   * 노드 집합(밀도게이트 접힘 + 선택적 ego 로 숨긴 이웃). 포인터 히트테스트가
-   * 읽어 숨은 노드를 클릭/호버 대상에서 제외한다(그리지 않으면 잡히지 않는다).
+   * The nodes this frame did **not** draw: density-gate collapsed ones plus
+   * neighbours hidden by selective ego. Pointer hit-testing reads it to exclude
+   * them — what is not drawn must not be clickable or hoverable.
    */
   const clusteredIdsRef = useRef<ReadonlySet<string>>(EMPTY_EXPANDED_SET);
-  /** 밀도 게이트 — 호버 중인 클러스터 부모 id(칩 보더 강조 + 커서). */
+  /** Density gate — the cluster parent under hover (chip border emphasis + cursor). */
   const hoveredClusterIdRef = useRef<string | null>(null);
   /**
-   * S2 파트 3a — 선택적 ego 의 점등 배치 수(세션 임시). 1 = 상위 24 이웃만,
-   * `이웃 +N` 칩 클릭마다 +1. 포커스 변경 시 1 로 리셋(아래 focus 효과).
+   * How many batches of selective-ego neighbours are lit (session-only). 1 is
+   * the top 24; each "neighbours +N" chip click adds one. Reset to 1 whenever
+   * focus changes (see the focus effect below).
    */
   const egoRevealBatchesRef = useRef(1);
   /**
-   * 고팬아웃 배치-공개(2026-07) — 펼친 클러스터 부모별 점등 배치 수(parentId →
-   * 배치 수, 기본 1 = 상위 24 자식). `+N 더보기` 칩 클릭마다 그 부모만 +1(URL
-   * 비영속·세션 임시). 접힌 부모는 프레임 배치 처리부에서 정리한다. `이웃 +N`
-   * 의 단일 `egoRevealBatchesRef` 를 부모별로 일반화한 것 — 펼침은 여러 부모가
-   * 동시에 존재할 수 있기 때문.
+   * High-fan-out batch reveal — lit batches per expanded cluster parent
+   * (parentId → count, default 1 = the top 24 children). Each "+N more" chip
+   * click increments that parent only; not persisted to the URL. Collapsed
+   * parents are pruned in the frame's batch section. This generalises
+   * `egoRevealBatchesRef` per parent, because several parents can be expanded
+   * at once.
    */
   const clusterRevealBatchesRef = useRef<Map<string, number>>(new Map());
   /**
-   * 고팬아웃 배치-공개 — 배치로 이번에 드러난 자식의 등장 램프(childId → 0..1).
-   * DOI 순 center-out stagger 로 0→1 수렴한다(시작 시각은 `batchAppearStartRef`).
-   * `drawTopologyFrame` 이 자식 draw 알파 + 미세 appearScale(0.6→1)에 곱한다 —
-   * 펼침 그룹 페이드(chipReveal)를 이 per-child stagger 로 대체(이중 페이드 방지).
-   * reduced-motion 은 즉시 1.
+   * High-fan-out batch reveal — appearance ramp for children a batch just
+   * revealed (childId → 0..1), converging 0→1 with a DOI-ordered centre-out
+   * stagger (start times in `batchAppearStartRef`). `drawTopologyFrame`
+   * multiplies it into the child's draw alpha and a slight appearScale (0.6→1).
+   * It **replaces** the expand group fade (chipReveal) rather than stacking on
+   * it, so alphas never double-fade. Snaps to 1 under reduced-motion.
    */
   const batchAppearRef = useRef<Map<string, number>>(new Map());
   /**
-   * 고팬아웃 배치-공개 — 배치 자식별 등장 램프의 시작 절대 시각(childId → ms,
-   * `performance.now()` 동일 시계). `scheduleRipple`(base 0 + i·rippleStaggerMs,
-   * rippleStaggerMaxMs 예산 cap 재사용)로 DOI rank i 순으로 채운다. 시작 전엔
-   * 램프가 0 에 머물러 "느린 열거" 없이 총 예산 안에서 압축 stagger 된다.
+   * High-fan-out batch reveal — absolute start time per batched child (childId →
+   * ms on the same `performance.now()` clock). Filled in DOI rank order by
+   * `scheduleRipple` (base 0 + i·rippleStaggerMs, reusing the
+   * rippleStaggerMaxMs budget cap). Before its start the ramp stays at 0, so
+   * the stagger compresses inside the total budget instead of reading as a slow
+   * enumeration.
    */
   const batchAppearStartRef = useRef<Map<string, number>>(new Map());
-  /** 고팬아웃 배치-공개 — 직전 프레임에 배치로 보이던 자식(신규-공개 diff 용). */
+  /** High-fan-out batch reveal — children visible via a batch last frame, for the newly-revealed diff. */
   const prevBatchVisibleRef = useRef<Set<string>>(new Set());
   const emphasisRef = useRef<Map<string, number>>(new Map());
-  /** C1 A2 — ego tier-reveal ramp, stepped in `stepTopologyPhysics`, consumed by `drawTopologyFrame`. */
+  /** Ego tier-reveal ramp, stepped in `stepTopologyPhysics`, consumed by `drawTopologyFrame`. */
   const egoRevealRef = useRef<Map<string, number>>(new Map());
   /**
    * Click-focus signature — per-node 0..1 color ramp, stepped in
@@ -874,62 +921,68 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    */
   const focusRampRef = useRef<Map<string, number>>(new Map());
   /**
-   * rank7 — 클러스터 칩 펼침/접힘 reveal 램프(parentId → 0..1). 펼친 부모는 1 로,
-   * 접힌 부모는 0 으로 `--topology-v2-cluster-reveal-tau` 에 exp 수렴한다. 프레임
-   * 루프가 매 프레임 스텝하고, `drawTopologyFrame` 이 ① 펼친 디스크 자식의 draw
-   * 알파에 곱해 등장 페이드를, ② `drawClusterChip` 의 pill/badge 알파 페이드인을
-   * 만든다. `stepEmphasis`(focus-state) 재사용. reduced-motion 은 즉시 스냅.
+   * Cluster chip expand/collapse reveal ramp (parentId → 0..1), converging
+   * exponentially at `--topology-v2-cluster-reveal-tau` toward 1 when expanded
+   * and 0 when collapsed. Stepped every frame by the loop (reusing
+   * focus-state's `stepEmphasis`); `drawTopologyFrame` multiplies it into the
+   * expanded disc children's draw alpha and into `drawClusterChip`'s pill/badge
+   * fade-in. Snaps under reduced-motion.
    */
   const chipRevealRef = useRef<Map<string, number>>(new Map());
   /**
-   * 다섯째 티어 관통 채널 — **칩 펼침으로 드러난 자식**의 0..1 램프.
-   * 앞의 넷(엣지 선택 · 발자국 · ego · 스포트라이트)과 같은 문법이다.
+   * The fifth tier-piercing channel — a 0..1 ramp for **children a chip expand
+   * revealed**, in the same grammar as edge selection, footprints, ego and
+   * spotlight.
    *
-   * **`clusterRevealTau` 를 쓴다 — 칩 자신의 형태 전환과 같은 값이다.**
-   * 처음엔 `egoRevealRiseTau`(0.22)를 빌려 썼는데, 그건 *다른 사건*(ego
-   * 클릭)의 리듬이었다. 이 채널을 낳는 입력은 칩 클릭이고, 그 입력의 리듬은
-   * 이미 `clusterRevealTau`(0.17)로 정해져 있다 — 칩의 pill/badge 페이드가
-   * 그 값을 쓴다. `design.md` 의 **"한 입력 = 한 사건"** 이 요구하는 것이
-   * 정확히 이 일치다.
+   * Uses `clusterRevealTau` (0.17), the value the chip's own pill/badge fade
+   * uses, because the input producing this channel is a chip click. The first
+   * attempt borrowed `egoRevealRiseTau` (0.22), the rhythm of a *different*
+   * event (an ego click) — see `.claude/rules/design.md` "한 입력 = 한 사건"
+   * (one input, one event).
    *
-   * ⚠️ 그리고 이 채널은 드로우에서 **그룹 페이드를 대체한다**
-   * (`topology-frame-draw.ts` 의 `revealMul`). 둘 다 걸면 알파가 두 지수의
-   * **곱**이 되어, 칩이 "펼쳐졌다"고 말한 뒤로도 자식이 한참 오는 중이다
-   * (실측: 칩 90% 도달 391ms vs 자식 621ms — 230ms 차, 120ms 임계 초과).
-   * 같은 파일이 `batchAppear` 에 대해 "이중 페이드 방지"라고 적어 둔 가드에
-   * 이 채널이 나중에 붙느라 안 들어갔던 것이다.
+   * ⚠️ In the draw this channel **replaces** the group fade
+   * (`topology-frame-draw.ts`'s `revealMul`); applying both makes alpha the
+   * product of two exponentials. Measured: the chip reached 90% at 391 ms while
+   * its children took 621 ms — a 230 ms gap, past the 120 ms threshold. That
+   * file guards `batchAppear` against double fades; this channel was added
+   * later and missed the guard.
    */
   const expandRevealRef = useRef<Map<string, number>>(new Map());
   /**
-   * rank8 — 신규 노드 등장 램프(nodeId → 0..1). world 재빌드 시 이전 id 집합과
-   * diff 해 **신규** 노드에만 0 을 심고(기존 노드는 1 유지 → 회귀 0), 프레임 루프가
-   * 1 로 수렴시킨다. `drawTopologyFrame` 이 effRadius(0.6→1 미세 scale)와 globalAlpha
-   * (0→1)에 곱해 노드가 "툭" 나타나지 않고 부풀며 등장하게 한다. reduced-motion 은
-   * 즉시 1. 첫 빌드(이전 집합 없음)는 전부 1 로 심어 초기 로드 연출과 충돌 방지.
+   * New-node appearance ramp (nodeId → 0..1). On a world rebuild the id set is
+   * diffed and only **new** nodes are seeded at 0 (existing ones stay at 1, so
+   * nothing regresses); the frame loop converges them to 1.
+   * `drawTopologyFrame` multiplies it into effRadius (a slight 0.6→1 scale) and
+   * globalAlpha so a node swells into view instead of popping. Snaps to 1 under
+   * reduced-motion. The first build has no previous set, so everything is
+   * seeded at 1 and this cannot collide with the initial-load choreography.
    */
   const appearRef = useRef<Map<string, number>>(new Map());
   const prevNodeIdsRef = useRef<Set<string>>(new Set());
   /**
-   * **이번 세션에 새로 생긴 노드**의 id. 등장 램프(`appearRef`)만으로는 부족한
-   * 이유: 새 역량은 개요 배율에서 티어 알파가 0 이라 그 램프가 0 에 곱해진다 —
-   * 에이전트가 노드를 만들어도 화면에는 도메인의 자식 수만 2→3 으로 바뀌었다
-   * (2026-08-17 실측, 소유자 지시로 고침). 이 집합에 든 노드는 ego 클릭·칩
-   * 펼침과 같은 급의 티어 면제를 받아 실제로 그려진다.
+   * Ids of nodes **born during this session**. The appearance ramp
+   * (`appearRef`) alone is not enough: at overview zoom a new capability's tier
+   * alpha is 0, so the ramp is multiplied by zero — an agent could create a
+   * node and all the screen showed was the domain's child count going 2 → 3
+   * (measured 2026-08-17, fixed on the owner's instruction). Nodes in this set
+   * get the same class of tier exemption as an ego click or a chip expand, so
+   * they are actually drawn.
    *
-   * **세션 동안 유지된다.** 잠시 보였다 사라지면 그게 곧 깜빡임이고, 소유자가
-   * 정확히 그것을 하지 말라고 했다. 새로고침하면 원래 티어 규칙으로 돌아간다.
+   * **It persists for the session.** Appearing and then vanishing is exactly
+   * the flicker the owner said not to do. A reload returns to the ordinary tier
+   * rules.
    */
   const bornNodeIdsRef = useRef<Set<string>>(new Set());
   /**
-   * rank9 — 라벨별 LOD present 램프(nodeId → 0..1). `drawTopologyFrame` 이 배치
-   * 결과를 알고 그 자리에서 스텝/소비한다(루프는 수명만 소유). 라벨 깜빡임을
-   * 페이드로 바꾼다.
+   * Per-label LOD presence ramp (nodeId → 0..1), turning label flicker into a
+   * fade. `drawTopologyFrame` knows the layout result, so it steps and consumes
+   * this in place; the loop owns only its lifetime.
    */
   const labelPresentRef = useRef<Map<string, number>>(new Map());
   /**
    * Click-focus signature — the focus classification the COLOR ramp reads from,
    * held for the ~160ms fade after a deselect so the dim/ego target the colors
-   * ease FROM persists instead of snapping to normal (④·⑨). Mirrors the live
+   * ease FROM persists instead of snapping to normal. Mirrors the live
    * focus while a selection is active, then lingers until the retained subject's
    * ramp decays to ~0 (see the per-frame update after `stepTopologyPhysics`).
    */
@@ -937,7 +990,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const rippleStartRef = useRef<Map<string, number>>(new Map());
   const reducedMotionRef = useRef(false);
   /**
-   * Canvas-emphasis slice §B2 — the just-committed selection's one-shot
+   * The just-committed selection's one-shot
    * commit-pulse anchor (which node, and when it was clicked). Set once per
    * NEW selection by the "focused slug change" effect below, never mutated
    * per-frame — `drawTopologyFrame` derives `now - startAtMs` itself every
@@ -947,93 +1000,90 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    */
   const selectionPulseRef = useRef<{ nodeId: string; startAtMs: number } | null>(null);
   /**
-   * R6 호버 펄스 — 활성 일회성 신호 리스트. 포인터 핸들러가 호버 시 발사(append),
-   * 프레임 루프가 매 프레임 만료 제거(`updatePulses`) 후 드로우로 넘긴다.
+   * Hover pulses — the list of live one-shot signals. Pointer handlers append
+   * on hover; the frame loop drops expired ones (`updatePulses`) and hands the
+   * rest to the draw.
    */
   const pulsesRef = useRef<Pulse[]>([]);
   /**
-   * R6 상시 혜성 — 월드에 depends 엣지가 하나라도 있는가(유휴 게이트용, 월드
-   * 빌드 시 1회 계산). 없으면 코멧이 없어 유휴 판정이 성립한다.
+   * Does the world contain any `depends` edge at all — computed once per world
+   * build for the idle gate. Without one there are no comets, so the map is
+   * allowed to be judged idle.
    */
   const hasDependsEdgesRef = useRef(false);
   /**
-   * Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지도 코멧이
-   * 흐르므로, 포커스가 걸려 있고 그래프에 contains 엣지가 하나라도 있으면
-   * 유휴 게이트가 얼지 않아야 한다(정확한 "이 포커스 노드에 물린 캡 안쪽
-   * 엣지가 있는가"까지는 굳이 안 따진다 — `hasDependsEdgesRef`와 같은 결의
-   * 월드-단위 coarse 플래그로 충분하고, 포커스가 없으면 어차피 깨어있을
-   * 이유가 없다).
+   * Selecting a node also sends comets along its incident `contains` edges, so
+   * the idle gate must not freeze while a focus is set and the graph has any
+   * `contains` edge. Deliberately coarse — it does not ask "does *this* focused
+   * node have an incident edge inside the cap". A world-level flag of the same
+   * grain as `hasDependsEdgesRef` is enough, and with no focus there is nothing
+   * to stay awake for anyway.
    */
   const hasContainsEdgesRef = useRef(false);
-  /** A2 — 마지막 활동 시각. 활동 플래그가 참인 프레임마다 갱신. */
+  /** Time of last activity, refreshed on every frame where an activity flag is true. */
   const lastActiveMsRef = useRef(0);
   /**
-   * 앰비언트 휴면 — 마지막 **사용자 입력** 시각. `lastActiveMsRef` 와 다른
-   * 것이 요점이다: 저쪽은 "앰비언트 모션이 도는 중"에도 매 프레임 갱신되므로
-   * 영원히 최신이라, 그 값으로는 "사람이 손을 놓았는가"를 절대 알 수 없다.
-   * 이 ref 는 포인터·휠만 갱신한다 (2026-07-28 카운슬 「작업대」 P0).
+   * Ambient sleep — time of the last **user input**. Being different from
+   * `lastActiveMsRef` is the whole point: that one is refreshed every frame
+   * ambient motion is running, so it is permanently current and can never
+   * answer "has the person let go". This ref is touched by pointer and wheel
+   * only.
+   *
+   * Seeded at 0 rather than `performance.now()` because calling that during
+   * render is impure and lint blocks it — and 0 is also the semantically right
+   * value: `performance.now()`'s origin *is* the navigation, so "input happened
+   * at time 0" says "untouched since the page opened". Falling asleep 30 s
+   * later is the intended behaviour.
    */
-  // 렌더 중 `performance.now()` 는 불순 호출이라 lint 가 막는다(react-hooks/refs).
-  // 0 으로 두는 것이 의미상으로도 맞다 — `performance.now()` 의 원점이 곧 네비게이션
-  // 시각이므로, "입력이 0시에 있었다" 는 "페이지를 연 뒤로 아직 안 만졌다" 와 같다.
-  // 그 상태로 30초가 지나면 잠드는 것이 의도한 동작이다.
   const lastInputMsRef = useRef(0);
-  /** A2 — 직전 프레임 카메라 값 (움직임 감지용). */
+  /** Previous frame's camera values, for movement detection. */
   const prevCameraSampleRef = useRef<{ x: number; y: number; s: number } | null>(null);
   /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
   const agentFocusNodeIdRef = useRef<string | null>(agentFocusNodeId);
-  /** 가이드 투어 — `tourAnchorNodeId` prop 미러(같은 패턴). */
+  /** Guided tour — `tourAnchorNodeId` prop mirror, same pattern. */
   const tourAnchorNodeIdRef = useRef<string | null>(tourAnchorNodeId);
-  /** 스포트라이트 — prop 미러(같은 패턴) + on/off 지수 램프(0..1, 프레임 바디가 step). */
+  /** Spotlight — prop mirror plus its on/off exponential ramp (0..1, stepped in the frame body). */
   const spotlightIdsRef = useRef<ReadonlySet<string> | null>(spotlightIds);
   const spotlightRampRef = useRef(0);
   const spotlightDashOffsetRef = useRef(0);
   /**
-   * 「걸어온 길」 렌즈 세기 0..1 — 스포트라이트와 **같은** 지수 램프를 쓴다
-   * (신규 easing 0). 팝오버를 닫아도 이 값이 0 에 닿을 때까지 렌즈 집합을 계속
-   * 넘겨 트레일 잉크가 램프로 소멸한다.
+   * Trail lens strength 0..1, on the **same** exponential ramp as the spotlight
+   * so no new easing is introduced. Closing the popover keeps handing the lens
+   * set down until this reaches 0, so the trail ink dies out on the ramp rather
+   * than cutting.
    */
   const trailLensRampRef = useRef(0);
-  /** M-5 — mirror the tier-change callback into a ref for the rAF closure, and
+  /** Mirror the tier-change callback into a ref for the rAF closure, and
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
   const lastZoomTierRef = useRef<ZoomTier | null>(null);
-  /** 슬라이스 C — 티어 게이트 config 미러(같은 패턴). rAF 클로저 + 포인터 핸들러가 공유. */
+  /** Tier gate config mirror, shared by the rAF closure and the pointer handlers. */
   const tierRevealRef = useRef<TierRevealConfig>(tierReveal);
 
   /**
-   * S3 마감 폴리시 (fable 설계) — begin a cubic ease-in-out camera transition
-   * from the live camera to `target` (van Wijk 정신, 거리 비례 duration). The
-   * rAF loop drives it via `easeCameraKeyframe`. Under `prefers-reduced-motion`
-   * it no-ops (clears any tween) so the physics-step reduced snap owns the jump.
-   * Stable identity (refs only) so listing it in the programmatic-move effects'
-   * deps never re-fires them.
-   */
-  /**
-   * 카메라 목표 계산에 쓸 토큰 — **좌·우 안전 인셋만 실측값으로 바꾼다.**
+   * Tokens for computing a camera target — **only the left and right safe
+   * insets are replaced with measured values.**
    *
-   * ## 왜 (2026-08-10, 프로브가 드러낸 것)
+   * `topology-camera-math` already dodges the panels via the safe insets, but
+   * those are CSS tokens and therefore static while the real geometry depends
+   * on state. Measured 2026-08-10 at 1512×982: the tokens say left 78 / right
+   * 120; the truth was **left 324 / right 0 before a selection** and **left 0 /
+   * right 384 after one** (selecting collapses INDEX and opens the popover).
    *
-   * `topology-camera-math` 는 **이미** 안전 인셋으로 패널을 피한다. 그런데 그 값이
-   * CSS 토큰이라 정적이고, 실제 기하는 상태에 따라 바뀐다. 실측(1512×982):
-   * 토큰은 좌 78 · 우 120 인데, 실제는 **선택 전 좌 324 · 우 0**, **선택 후 좌 0 ·
-   * 우 384** 였다(선택하면 INDEX 가 접히고 팝오버가 열린다).
+   * A first attempt added a *second* correction (a free-area shift) on the
+   * selection path only — a second system for one concern, landing 188 px short
+   * in one case and over-correcting by 64 px in another. The fix is not another
+   * shift but **feeding the existing insets true values**.
    *
-   * 어제 나는 이 사실을 모르고 **선택 경로에만 두 번째 보정**(자유 영역 시프트)을
-   * 얹었다. 그건 같은 관심사의 둘째 체계이고, 그래서 한 번은 188px 어긋나고 한 번은
-   * 64px 과보정됐다. 옳은 처방은 시프트를 더 만드는 게 아니라 **이미 있는 인셋에
-   * 참값을 먹이는 것**이다.
+   * Left and right only, and only here. `safeInsetTop` (148) is the tool lane
+   * plus docked chips and `safeInsetBottom` (96) is a **label reservation** —
+   * without it the bottom row of labels once silently disappeared. Those are
+   * layout promises, not covering panels, so measuring over them brings that
+   * defect back; and `safeInset*` is also read by label culling
+   * (`topology-frame-draw`), which has nothing to do with the camera.
    *
-   * ## 왜 좌·우만, 왜 카메라 목표에만
-   *
-   * `safeInsetTop`(148)은 상단 도구 레인과 도킹 칩, `safeInsetBottom`(96)은 **라벨
-   * 자리 예약**이다(그 예약이 없어 최하단 라벨이 조용히 사라진 사고가 있었다) —
-   * 「덮는 패널」이 아니라 레이아웃 약속이라 측정으로 대체하면 그 사고가 돌아온다.
-   *
-   * 그리고 `safeInset*` 는 **라벨 컬링**(`topology-frame-draw`)도 읽는다. 전역으로
-   * 덮으면 카메라와 무관한 관심사를 건드리므로, 목표를 계산하는 자리에서만 갈아 끼운다.
-   *
-   * 토큰값과 **큰 쪽**을 쓴다 — 토큰이 패널 말고 다른 이유로 예약한 폭을 잃지 않는다.
+   * Takes the **larger** of token and measurement, so width the token reserved
+   * for other reasons is never lost.
    */
   const cameraTokens = useCallback(<T extends { safeInsetLeft: number; safeInsetRight: number }>(tokens: T): T => {
     const canvasEl = canvasRef.current;
@@ -1053,6 +1103,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     };
   }, []);
 
+  /**
+   * Begin a cubic ease-in-out camera transition from the live camera to
+   * `target` (van Wijk's principle: duration proportional to distance), driven
+   * each frame by the rAF loop via `easeCameraKeyframe`. Under
+   * `prefers-reduced-motion` it no-ops and clears any tween, so the
+   * physics-step reduced snap owns the jump. Its identity is stable (refs
+   * only), so listing it in the programmatic-move effects' deps never re-fires
+   * them.
+   */
   const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number) => {
     if (reducedMotionRef.current) {
       cameraTweenRef.current = null;
@@ -1088,11 +1147,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   useEffect(() => {
     focusedSlugRef.current = focusedSlug;
-    // 선택/해제는 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다
-    // (selectedEdge 효과와 대칭). 해제 시 이 wake 가 없으면 retained
-    // colorFocus 페이드가 유휴 게이트에 얼어 링이 풀 opacity 로 남는다.
-    // 이벤트 출처(빈-클릭 pointer · Escape key · 패널 X-close DOM 버튼)와
-    // 무관하게 focusedSlug→null 전이만으로 페이드를 보장한다.
+    // Select and deselect are static state transitions, so force one more draw
+    // even while idle skipping (symmetric with the selectedEdge effect).
+    // Without this wake on deselect, the retained colorFocus fade freezes in
+    // the idle gate and the ring stays at full opacity. Keying off the
+    // focusedSlug → null transition guarantees the fade regardless of where the
+    // event came from (empty-canvas click, Escape, the panel's close button).
     lastActiveMsRef.current = performance.now();
   }, [focusedSlug]);
 
@@ -1105,20 +1165,19 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     spotlightIdsRef.current = spotlightIds;
   }, [spotlightIds]);
-  // Phase 5 #21 — 아이콘 세트 변경 시 다음 프레임부터 새 렌더 스타일.
   useEffect(() => {
     glyphStyleRef.current = glyphSet === "line" ? "line" : "fill";
   }, [glyphSet]);
-  // 3D 토글 — 툴바 칩에서 바꾸는 순간 다음 프레임부터 조립/해체 램프가
-  // 걸린다. 유휴 스킵 중일 수 있으므로 활동 시각을 밀어 깨운다(noteInput 계약).
   /*
-   * 배치 기준이 바뀌면 **좌표만** 다시 짓는다 — 자세(yaw/pitch)도 카메라도
-   * 건드리지 않는다. 소유↔결합은 «어디를 보고 있나»가 아니라 «각도가 어디서
-   * 오나»의 변경이라, 시점을 리셋하면 사용자가 방금 맞춰 둔 각을 잃는다.
+   * An arrangement change rebuilds **coordinates only** — neither the pose
+   * (yaw/pitch) nor the camera is touched. Switching between ownership and
+   * coupling changes *where the angles come from*, not *what you are looking
+   * at*, so resetting the viewpoint would throw away the angle the user just
+   * set.
    *
-   * 모델 무효화는 `domeWorldSourceRef` 를 비우는 것으로 한다 — 루프의 돔
-   * 스텝이 이미 «월드가 갈렸으면 레이아웃만 다시 풀고 자세는 지킨다» 경로를
-   * 갖고 있어서, 그 경로를 그대로 탄다(새 분기 0개).
+   * The model is invalidated by clearing `domeWorldSourceRef`: the loop's dome
+   * step already has a "world changed, re-solve layout but keep the pose" path,
+   * so this reuses it and adds no new branch.
    */
   useEffect(() => {
     if (mapArrangementRef.current === mapArrangement) return;
@@ -1131,31 +1190,33 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (view3dRef.current === view3d) return;
     view3dRef.current = view3d;
     /*
-     * 켜짐 → 다음 프레임의 돔 스텝이 돔 bbox 로 카메라를 핏한다(시네마틱 트윈).
+     * Turning it on makes the next frame's dome step fit the camera to the dome
+     * bbox with a cinematic tween.
      *
-     * **끄기도 이제 핏한다** (2026-08-19 소유자 실보고: *"3D에서 다시 2D전환하면
-     * 이렇게 작게 이상하게 나옴"*).
+     * **Turning it off now fits too.** Owner bug report 2026-08-19: *"3D에서
+     * 다시 2D전환하면 이렇게 작게 이상하게 나옴"* (switching from 3D back to 2D
+     * comes out oddly small).
      *
-     * 종전 주석은 «끄기는 카메라를 건드리지 않는다 — 노드가 제자리로 morph 해
-     * 돌아오므로 화면이 튀지 않는다» 였다. 그 논리는 **3D 카메라가 2D 프레이밍과
-     * 같을 때만** 참이고, 실제로는 거의 항상 다르다: 돔 핏 배율은 2D 개요보다
-     * 훨씬 낮고(0.315 대 0.978), 선택 리프레임·사용자 팬·구름 배치가 각각 또
-     * 다른 자리에 카메라를 놓는다. 그 상태로 2D 로 돌아오면 노드만 제자리로
-     * 가고 **카메라는 3D 의 자리에 남아** 지도가 작고 낯설게 보인다. 게다가 그
-     * 배율에서는 시맨틱 줌이 도형을 원으로 수렴시키고 각인 숫자를 숨겨서,
-     * 「작다」가 아니라 「다른 화면」으로 읽힌다.
+     * The old reasoning — nodes morph back into place, so nothing jumps —
+     * holds only when the 3D camera matches the 2D framing, and it almost never
+     * does: the dome fit scale is far lower than the 2D overview (0.315 vs
+     * 0.978), and selection reframes, user pans and cloud placement each move
+     * it again. Returning to 2D then moves only the nodes, **leaving the camera
+     * where 3D put it**. At that zoom semantic zoom also collapses the shapes
+     * to circles and hides the engraved counts, so it reads as a different
+     * screen rather than a smaller one.
      *
-     * 브라우저에서 몇 번 재현이 안 됐던 이유는, 복귀가 **보장된 동작이 아니라
-     * 다른 이펙트의 부수 효과**였기 때문이다 — 그래서 우연히 맞는 경로가 있었다.
-     * 우연을 계약으로 바꾼다.
+     * It failed to reproduce in the browser a few times because returning was a
+     * **side effect of another effect rather than a guaranteed behaviour**, so
+     * some paths happened to land right. This makes the accident a contract.
      */
     domeFitPendingRef.current = view3d;
     if (!view3d) flatFitPendingRef.current = true;
-    // 3D 재진입은 «아직 만지지 않은 화면»의 재시작이다 — 시선 끌기 회전을
-    // 재무장한다(개입 시 내려가는 규칙은 spinArmed JSDoc).
-    // 진입 스윕도 같은 자리에서 재무장한다 — 재진입은 새 등장이다. 스윕은
-    // 조립 시계에 묶여 있으므로(`domeEntrySweep`), 시계가 0 부터 다시 도는 이
-    // 순간에만 의미가 있다.
+    // Re-entering 3D restarts an untouched screen, so rearm the attention spin
+    // (the rule that lowers it on interaction is in the spinArmed JSDoc) and
+    // the entry sweep — re-entry is a fresh appearance. The sweep is tied to
+    // the assembly clock (`domeEntrySweep`), so it only means anything at this
+    // moment, when that clock restarts from 0.
     if (view3d && domeRuntimeRef.current !== null) {
       domeRuntimeRef.current.spinArmed = true;
       domeRuntimeRef.current.entryArmed = true;
@@ -1164,14 +1225,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     lastInputMsRef.current = performance.now();
     lastActiveMsRef.current = lastInputMsRef.current;
   }, [view3d]);
-  // 3D — 상세 패널의 열림/닫힘은 카메라에게 「창 크기가 바뀐 사건」이다
-  // (2026-08-18 소유자: *"카메라 움직임이 패널 위치 고려해서 알아서 보기 좋은
-  // 사이즈로 변형되도록"*). 선택이 살아 있는 동안 이 플립이 오면 선택 노드를
-  // 새 보이는-영역 인셋으로 다시 프레이밍한다(같은 시네마틱 트윈 — 순간이동
-  // 없음). 값은 마운트 기준이라 닫힘은 퇴장 애니 종료 후(패널이 DOM 을 떠나
-  // 인셋 실측이 참이 된 뒤) 도착한다. 2D 는 이 사건을 쓰지 않는다 — 2D 포커스
-  // 목표는 선택 시점에 이미 패널 인셋을 반영하고, 패널 닫힘 = 선택 해제라
-  // 별도 재프레이밍 지점이 없다(바이트 동일 계약).
+  // In 3D, the detail panel opening or closing is a resize event as far as the
+  // camera is concerned. Owner, 2026-08-18: *"카메라 움직임이 패널 위치 고려해서
+  // 알아서 보기 좋은 사이즈로 변형되도록"* (the camera should account for where
+  // the panel is and settle at a good size by itself). If the flip arrives
+  // while a selection is live, the selected node is reframed against the new
+  // visible-area insets on the same cinematic tween — never a teleport.
+  //
+  // The value is mount-based, so a close arrives after the exit animation ends,
+  // once the panel has left the DOM and the measured insets are true. 2D does
+  // not use this event: the 2D focus target already accounts for the panel
+  // insets at selection time, and closing the panel *is* deselection, so there
+  // is no separate reframing point.
   const lastDetailPanelVisibleRef = useRef(detailPanelVisible);
   useEffect(() => {
     if (lastDetailPanelVisibleRef.current === detailPanelVisible) return;
@@ -1183,14 +1248,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     domeFocusPendingRef.current = { slug };
     lastActiveMsRef.current = performance.now();
   }, [detailPanelVisible]);
-  // 확장 설정 변경 — 다음 프레임부터 새 표시/배치/개수. 값만 갈아끼우므로
-  // 월드 재빌드 없이 즉시 반영된다(배치는 아래 레이아웃 effect 가 다시 푼다).
+  // An expansion-preference change takes effect from the next frame. Swapping
+  // the value needs no world rebuild; the layout effect below re-solves placement.
   useEffect(() => {
     expandPrefRef.current = expand;
   }, [expand]);
   /**
-   * 캔버스 배경 변경 — 도트면 입자 엔진을 **버리고**, 아니면 그 변형으로 새로
-   * 만든다. 도트에서 엔진을 살려 두면 보이지도 않는 버퍼를 매 프레임 굴린다.
+   * On a canvas-background change, **dispose** the particle engine for the dot
+   * background and build a fresh one for any other variant. Keeping the engine
+   * alive under "dot" would step an invisible buffer every frame.
    */
   useEffect(() => {
     canvasBackgroundRef.current = canvasBackground;
@@ -1216,8 +1282,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, [canvasBackground]);
 
   /**
-   * 발자국 설정 + 잉크 — 색 2택을 토큰에서 읽어 RGB 로 푼다. 캔버스는 CSS 변수를
-   * 못 읽으므로 여기서 한 번 푼다(설정이 바뀔 때만, 프레임마다가 아니다).
+   * Resolve the footprint ink: read whichever of the two colour tokens the
+   * preference names and expand it to RGB. The canvas cannot read CSS
+   * variables, so this happens once per preference change rather than per frame.
    */
   useEffect(() => {
     footprintPrefRef.current = footprint;
@@ -1232,17 +1299,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       footprintInkRef.current = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
       footprintStepColorRef.current = hex.startsWith("#") ? hex : `#${parsed[1]}`;
     } else {
-      // 토큰이 없거나 rgba() 형태 — 기본 앰버로 폴백한다(발자국이 사라지는 것보다 낫다).
+      // Token missing or in rgba() form — fall back to the default ink, which
+      // beats footprints disappearing.
       footprintInkRef.current = footprint.tone === "indigo" ? [200, 210, 255] : [232, 196, 122];
       footprintStepColorRef.current = footprint.tone === "indigo" ? "#c8d2ff" : "#e8c47a";
     }
   }, [footprint]);
 
   /**
-   * 커서 위치 추적 — 움직이는 배경만 쓴다. 큰 포인터 핸들러 팩토리를 건드리지
-   * 않고 네이티브 리스너로 좌표만 받는다(그쪽은 히트 테스트·드래그·핀치를
-   * 소유하고 있어, 배경 좌표 하나 때문에 그 계약에 손대는 것은 값이 비싸다).
-   * `passive` 라 스크롤/줌 성능에 영향이 없다.
+   * Cursor tracking for the animated backgrounds only. Takes the coordinates
+   * from a native `passive` listener rather than extending the large pointer
+   * handler factory — that one owns hit-testing, dragging and pinching, and
+   * touching its contract for one background coordinate is not worth the cost.
    */
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1250,28 +1318,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const onMove = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
       bgPointerRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      // 지도 위에서 손이 움직였다 = 이동이 취소됐거나 여기 남기로 했다.
+      // A hand moving over the map means the navigation was cancelled, or the
+      // user decided to stay here.
       navYieldUntilRef.current = 0;
     };
     const onLeave = () => {
       bgPointerRef.current = null;
       /*
-       * **커서가 캔버스를 떠나면 노드 호버도 떠난다** (2026-08-19 실측).
+       * **Leaving the canvas also clears node hover** (measured 2026-08-19).
        *
-       * 종전에는 이 핸들러가 배경 좌표만 지웠다. 노드 호버(`hoveredNodeIdRef`)
-       * 는 «캔버스 «안»에서 빈 자리로 움직인 pointermove» 로만 풀렸다. 그래서
-       * 노드 위에 커서를 둔 채 창을 벗어나면 — 창 밖으로 빠르게 빼거나,
-       * 노드를 끌다 가장자리에서 놓거나, Cmd-Tab 으로 넘어가면 — 아무도
-       * 가리키지 않는 강조가 **영원히** 남았다.
+       * Node hover (`hoveredNodeIdRef`) used to be released only by a
+       * pointermove onto empty space *inside* the canvas, so leaving the window
+       * with the cursor over a node — flicking out, releasing a drag at the
+       * edge, Cmd-Tabbing away — left an emphasis on it forever. And because
+       * `emphasisTarget` reads that ref, the idle gate **never closed again**:
+       * 2D at 2,000 nodes burned 130 ms/s even 48 s after the last input, where
+       * the same screen idles at 3 ms/s.
        *
-       * 값이 틀린 것만이 문제가 아니다. `emphasisTarget` 이 그 ref 를 읽으므로
-       * 유휴 게이트가 **다시는 닫히지 않는다**: 2,000 노드 2D 에서 무입력
-       * 48초 뒤에도 초당 130ms 를 태웠다(같은 화면의 정상 유휴는 3ms/s).
-       * 노드를 한 번 끌어 본 사람은 그 뒤로 계속 그 상태였다.
-       *
-       * 지운 «뒤» 활동 시각을 미는 것이 중요하다. 안 밀면 게이트가 그 자리에서
-       * 닫혀, 강조가 걷힌 화면을 아무도 안 그린다 — 링이 켜진 채 얼어붙는,
-       * 없애려던 것보다 나쁜 결함이 된다(`focusFadeSettling` 과 같은 이유).
+       * Pushing the activity timestamp *after* clearing matters: without it the
+       * gate closes right there and nobody draws the frame where the emphasis
+       * is gone, freezing the ring lit (same reason as `focusFadeSettling`).
        */
       if (hoveredNodeIdRef.current !== null) {
         hoveredNodeIdRef.current = null;
@@ -1287,21 +1353,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, []);
 
   /**
-   * **떠나기로 한 화면은 그리지 않는다** (2026-08-19 실측).
+   * **A screen being left is not worth drawing** (measured 2026-08-19).
    *
-   * 레일 탭을 눌렀을 때 새 화면이 뜨는 시간이 출발지에 따라 갈렸다. 4배
-   * 스로틀에서 문서함까지: 2D 2,000 노드 194ms 인데 **3D 2,000 노드(돔이
-   * 자율 회전 중)에서는 529ms, 3,000 노드에서는 745ms**. 새 화면이 느린 게
-   * 아니라, 지도가 «떠나는 순간까지» 매 프레임 전면 재도색을 해서 새 화면의
-   * 첫 렌더와 프레임 예산을 다투는 것이었다. 그 프레임들은 아무도 보지 않는다.
+   * Time-to-new-screen after a rail tap depended on where you started. To the
+   * docs screen under 4× throttling: 194 ms from 2D at 2,000 nodes, but
+   * **529 ms from 3D at 2,000 with the dome auto-spinning, and 745 ms at
+   * 3,000**. The new screen was not slow — the map kept fully repainting up to
+   * the moment it left, competing for frame budget with the new screen's first
+   * render.
    *
-   * 신호는 shared 층의 이벤트 하나뿐이다(`shared/lib/navigation-intent.ts`) —
-   * 지도가 내비 레일을 알거나 레일이 지도의 루프를 알면 그건 FSD 역방향이다.
+   * The signal is one shared-layer event (`shared/lib/navigation-intent.ts`);
+   * the map knowing the nav rail, or the rail knowing the map's loop, would be
+   * an FSD violation.
    *
-   * **시각으로 기록하고 저절로 푼다.** 이동이 취소돼도(누르고 딴 데로 끌거나
-   * 라우터가 같은 주소라 아무 일도 안 일어나도) 지도가 영영 멎는 실패 모드가
-   * 원리적으로 없다 — 상한이 지나면 복귀하고, 캔버스 위 포인터 한 번이면
-   * 그 전에 즉시 풀린다. `idle-gate` 가 wake 배선 없이 설계된 것과 같은 규율.
+   * **Recorded as a deadline, released on its own.** A cancelled navigation
+   * cannot stop the map forever: it resumes when the cap passes, and one
+   * pointer event over the canvas releases it sooner. Same discipline as
+   * `idle-gate` being designed without wake wiring.
    */
   useEffect(() => {
     const onIntent = () => {
@@ -1311,7 +1379,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     return () => window.removeEventListener(NAVIGATION_INTENT_EVENT, onIntent);
   }, []);
 
-  // 앰비언트 휴면 지연 — 표면마다 다르다(관문은 짧다). 자기 의존성으로 둔다.
+  // Ambient sleep delay differs per surface (the gateway's is shorter).
   useEffect(() => {
     ambientSleepDelayRef.current = ambientSleepDelayMs;
   }, [ambientSleepDelayMs]);
@@ -1322,7 +1390,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   useEffect(() => {
     selectedEdgeRef.current = selectedEdge;
-    // 선택 변경은 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다.
+    // A selection change is a static state transition: draw once more even
+    // while idle skipping.
     lastActiveMsRef.current = performance.now();
   }, [selectedEdge]);
 
@@ -1330,13 +1399,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const prev = prevExpandedParentsRef.current;
     prevExpandedParentsRef.current = expandedParents;
     expandedParentsRef.current = expandedParents;
-    // 밀도 게이트: 확장 토글 = 정적 상태 전이 → 유휴 스킵 중에도 wake 해서
-    // 접힌 자식이 나타나거나 사라진 결과를 즉시 다시 그린다 (selectedEdge 패턴).
+    // An expansion toggle is a static state transition: wake even while idle
+    // skipping so the collapsed children appearing or disappearing is drawn at
+    // once.
     lastActiveMsRef.current = performance.now();
 
-    // S2 파트 5B — 새로 펼쳐진 부모(있으면 하나)로 카메라 다이브. 접기(제거)만
-    // 있으면 카메라는 유지한다(소유자 지시). 자식은 카메라가 디스크로 들어가며
-    // tier 알파로 자연 리빌된다(기존 램프 재사용 — 신규 모션 계약 없음).
+    // Dive the camera to the newly expanded parent, if there is one. A collapse
+    // alone leaves the camera where it is (owner's instruction). The children
+    // reveal naturally through tier alpha as the camera descends into the disc,
+    // reusing the existing ramp rather than adding a motion contract.
     let newlyExpanded: string | null = null;
     for (const id of expandedParents) {
       if (!prev.has(id)) {
@@ -1350,16 +1421,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-    // 고팬아웃 배치-공개 — 다이브는 전량 디스크가 아니라 **이번 배치**(DOI 상위
-    // EGO_NEIGHBOR_LIMIT 자식)의 bbox 에 fit 한다. 소수를 크게 — 108 자식을
-    // 통째로 담으려 멀리 빼는 대신, 실제로 그려지는 상위 24 만 담아 크게 본다.
-    // 잔여는 접혀 있으므로 프레이밍에 넣을 필요가 없다(density-gate domain 면제
-    // 와 동일 규칙으로 게이트 자식만 랭크). 자식이 임계 이하면 restrict 없음.
+    // The dive fits the bbox of **this batch** (the top DOI-ranked children),
+    // not the whole disc: few and large beats pulling far back to contain, say,
+    // all 108 children when only the top 24 are actually drawn. The rest are
+    // collapsed, so they need no framing. Only gated children are ranked, by
+    // the same rule as the density gate's domain exemption. Below the threshold
+    // there is no restriction at all.
     const gatedChildren = (world.childrenByParent.get(newlyExpanded) ?? []).filter(
       (c) => world.nodeById.get(c)?.kind !== "domain",
     );
-    // 배치 크기는 설정(「확장 → 한 번에 여는 개수」)이 정한다 — 프레이밍이
-    // 실제로 그려지는 수와 어긋나면 「담으려던 것」과 「보이는 것」이 갈린다.
+    // Batch size comes from the expansion preference. If framing disagrees with
+    // how many are actually drawn, what we aimed to contain and what the user
+    // sees diverge.
     const batchSize = expandPrefRef.current.batchSize;
     let batchRestrict: Set<string> | null = null;
     if (gatedChildren.length > batchSize) {
@@ -1368,8 +1441,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           id,
           kind: world.nodeById.get(id)?.kind ?? "element",
           degree: world.neighborMap.get(id)?.size ?? 0,
-          // childrenByParent 는 containment(parentId ← contains) 유도라 전원
-          // contains — 균일 가중치라 상대 순서는 종전과 동일(결정론 유지).
+          // childrenByParent is derived from containment, so every entry is a
+          // `contains` edge — a uniform weight, which keeps the relative order
+          // deterministic.
           relationType: "contains",
         })),
       );
@@ -1380,8 +1454,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
     userDrivenCameraRef.current = false;
-    // 프로그램적 카메라 이동 — 큐빅 ease-in-out 트윈(reduced-motion 은 스프링에
-    // 위임). angfreq 는 트윈 종료 후/중단 시 스프링이 이어받을 때의 값.
+    // Programmatic camera move: a cubic ease-in-out tween, delegated to the
+    // spring under reduced-motion. angfreq is the value the spring takes over
+    // with once the tween ends or is interrupted.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(target);
   }, [expandedParents, beginCameraTween]);
@@ -1392,12 +1467,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   useEffect(() => {
     visitedTrailRef.current = visitedTrail;
-    // keep-set 은 제자리 갱신 — 프레임 루프는 이 Set 을 읽기만 한다.
+    // The keep-set is updated in place; the frame loop only reads it.
     const keep = visitedTrailSetRef.current;
     keep.clear();
     for (const id of visitedTrail) keep.add(id);
-    // 발자국 추가/소거는 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다
-    // (선택 링·엣지 선택과 같은 wake 계약).
+    // Adding or clearing a footprint is a static state transition: draw once
+    // more even while idle skipping, same wake contract as edge selection.
     lastActiveMsRef.current = performance.now();
   }, [visitedTrail]);
 
@@ -1413,32 +1488,37 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, []);
 
   /**
-   * #71 안전망 — 리사이즈/모니터 이동 뒤 **노드가 하나도 화면에 없으면** 전체
-   * 맞추기로 되돌린다.
+   * Which bbox the overview fit uses. The workbench (`"spine"`, the default)
+   * draws only the spine tier on entry, so the spine bbox is the honest frame;
+   * the gateway's evidence section (`"full"`) draws every tier from entry via
+   * `GATEWAY_TIER_REVEAL`, so the all-node bbox is. Measured 2026-08-18 at 1512
+   * on the gateway: drawing every tier while fitting the spine bbox left 143 px
+   * empty above the frame and 17 px below, because the graph's mass sits below
+   * the spine centre — the owner's "너무 아래임" (it sits too low).
    *
-   * 규율: 매 resize 마다 강제로 맞추지 않는다. 사용자가 잡아둔 줌·위치는 의도이고
-   * 그걸 지우는 건 다른 종류의 결함이다. 오직 "빈 지도로 보이는" 명백한 상태
-   * (`hasAnyNodeOnScreen === false`)에서만 개입한다. 튐을 막기 위해 스프링
-   * 타깃만 옮기고 값은 건드리지 않는다 — reduced-motion 은 카메라 트윈 계약이
-   * 이미 존중한다.
+   * Labels are not in the bbox; bottom clearance stays with
+   * `OVERVIEW_LABEL_BOTTOM_ALLOWANCE` in `topology-camera-math`. The
+   * `overviewScaleRef` anchor must use the same bbox or the entry zoomRatio
+   * stops being 1 — same contract as the warning in `trySnapInitialCamera`.
+   *
+   * Frozen at mount (both consumers pass a literal). A ref plus a module-level
+   * function, because lint blocks ref writes during render and
+   * component-local functions in effect deps, while a ref read and a pure
+   * function outside the hook trip neither.
    */
-  /**
-   * 오버뷰 핏이 맞출 bbox — 워크벤치(`"spine"`, 기본)는 진입에 스파인 티어만
-   * 그리므로 스파인 bbox 가 정직한 프레임이고, 관문 증거 절(`"full"`)은
-   * 진입부터 전 티어를 그리므로(`GATEWAY_TIER_REVEAL`) 전 노드 bbox 가 정직한
-   * 프레임이다. 실측(2026-08-18, 1512 관문): 전 티어를 그리면서 스파인 bbox 로
-   * 맞추면 그래프 질량이 스파인 중심 아래라 프레임 위 143px 이 비고 아래는
-   * 17px — 소유자의 "너무 아래임". 라벨은 bbox 에 넣지 않는다 — 하단 여유는
-   * `OVERVIEW_LABEL_BOTTOM_ALLOWANCE`(topology-camera-math)가 계속 맡는다.
-   * `overviewScaleRef` 앵커도 같은 bbox 를 써야 진입 zoomRatio 가 1 로 남는다
-   * (아래 trySnapInitialCamera 독블록의 경고와 같은 계약).
-   */
-  // 마운트 값 고정 — 두 소비처(워크벤치 기본 · 관문 `"full"`) 모두 리터럴을
-  // 넘기므로 살아 있는 전환이 없다. ref + 모듈 함수 조합인 이유: 렌더 중 ref
-  // 쓰기와 「컴포넌트 지역 함수가 effect 의존성」 둘 다 lint 가 막는다 —
-  // ref 읽기(안정)와 훅 밖 순수 함수는 어느 쪽도 걸리지 않는다.
   const overviewFitRef = useRef(overviewFit);
 
+  /**
+   * Safety net: if a resize or a monitor change leaves **no node on screen at
+   * all**, return to the overview fit.
+   *
+   * The discipline is not to refit on every resize. A zoom and position the
+   * user set are intent, and erasing them is its own kind of defect. This
+   * intervenes only in the unambiguous "the map looks empty" state
+   * (`hasAnyNodeOnScreen === false`), and moves the spring target rather than
+   * the value so nothing jumps; reduced-motion is already honoured by the
+   * camera tween contract.
+   */
   const rescueCameraIfEverythingOffscreen = (tokens: TopologyV2Tokens) => {
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -1454,11 +1534,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
-    // Passive default = the simplified overview scale (blocker 2 fix,
-    // `computeOverviewCameraTarget`'s own JSDoc), fit to the SPINE bbox
+    // Passive default = the simplified overview scale
+    // (`computeOverviewCameraTarget`'s own JSDoc), fit to the SPINE bbox
     // (project+domain+hub — the only tier drawn at entry), NOT the full
     // 295-node bounds. Fitting the full bounds after the de-pileup spread them
-    // wide shrank the ~8 visible spine nodes to a dot (the fit regression).
+    // wide shrank the ~8 visible spine nodes to a dot.
     // `overviewScaleRef` MUST anchor on the SAME spine bounds — it feeds both
     // the altitude band's "100%" reference AND the zoom-ratio entry scale
     // (`overviewEntryScale = overviewScale × overviewEntryRatio`), so if it used
@@ -1477,12 +1557,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
     /*
-     * 딥링크로 들어와 밀려 있던 강조 맞춤을 여기서 갚는다(`pendingSpotlightFitRef`).
-     * 초기 카메라를 방금 세운 **직후**라, 오버뷰가 한 프레임 보였다가 강조로
-     * 이동하는 게 아니라 처음부터 강조를 향한다.
+     * Pay off the deferred spotlight fit from a deep link
+     * (`pendingSpotlightFitRef`). Doing it immediately after the initial camera
+     * is set means the view aims at the spotlight from the first frame instead
+     * of showing the overview for one frame and then moving.
      *
-     * 함수를 ref 로 부르는 이유: 이 자리는 `useCallback` 밖의 지역 함수이고,
-     * `runSpotlightFit` 을 직접 닫으면 그 시점의 낡은 클로저를 붙든다.
+     * Called through a ref because this is a local function outside
+     * `useCallback`; closing over `runSpotlightFit` directly would capture a
+     * stale closure.
      */
     if (pendingSpotlightFitRef.current && runSpotlightFitRef.current?.()) {
       pendingSpotlightFitRef.current = false;
@@ -1493,20 +1575,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
-    // 설치 앱 proof — 데스크톱 WebView 검증이 클릭-취소 임계(hysteresis)를
-    // 읽는 계약 지점. 토큰 값 그대로 노출한다 (v2 = 7px).
+    // Contract point for installed-app proof: desktop WebView verification
+    // reads the click-cancel hysteresis from here. Exposes the token verbatim.
     containerRef.current?.setAttribute(
       "data-stage-pan-click-cancel-px",
       String(tokens.hysteresisPx),
     );
-    // 확장 구조는 **씨앗 좌표**를 정하므로 월드 빌드의 입력이다 — 아래 dep
-    // 배열에 들어 있어, 설정을 바꾸면 월드가 다시 지어지며 자식이 새 배치로 간다.
+    // The expansion structure decides the **seed coordinates**, so it is an
+    // input to the world build and appears in the dep array below: changing the
+    // preference rebuilds the world and children move to the new placement.
     const world = buildTopologyWorld(nodes, edges, tokens, expand.structure);
     worldRef.current = world;
-    // rank8 — 신규 노드 등장 램프 시드. 첫 빌드(이전 집합 없음)는 전부 1(연출
-    // 없음, 초기 로드 안무와 충돌 방지). 이후 빌드는 이전에 없던 id 만 0 으로
-    // 심어 부풀며 등장하게 하고, 기존 노드는 그대로(1) 둔다(회귀 0). 사라진 id
-    // 는 정리. 램프 자체의 수렴은 프레임 루프(stepTopologyPhysics)가 담당.
+    // Seed the new-node appearance ramp. On the first build (no previous set)
+    // everything is 1, so nothing animates and this cannot collide with the
+    // initial-load choreography. Later builds seed only previously unseen ids
+    // at 0 and leave existing nodes at 1; vanished ids are pruned. Convergence
+    // itself belongs to the frame loop (`stepTopologyPhysics`).
     {
       const prevIds = prevNodeIdsRef.current;
       const appear = appearRef.current;
@@ -1517,18 +1601,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         if (isFirstBuild || prevIds.has(n.id)) {
           if (!appear.has(n.id)) appear.set(n.id, 1);
         } else {
-          appear.set(n.id, 0); // 신규 노드 — 0 에서 부풀며 등장.
-          bornNodeIdsRef.current.add(n.id); // 티어 게이트 면제 — 위 주석.
+          appear.set(n.id, 0); // New node — swells into view from 0.
+          bornNodeIdsRef.current.add(n.id); // Tier-gate exemption; see `bornNodeIdsRef`.
         }
       }
       for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
       for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
       prevNodeIdsRef.current = nextIds;
     }
-    // R6 상시 혜성 — 유휴 게이트가 코멧 상시성을 알 수 있게 depends 유무를 캐시.
+    // Cache whether comets can ever run, so the idle gate can decide.
     hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
     hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
-    // 새 월드 = 이전 월드의 엣지를 겨냥한 펄스는 무효(엣지 id 가 옛 것).
+    // A new world invalidates pulses aimed at the old world's edges.
     pulsesRef.current = [];
     // Seed the force sim off the concentric layout (spatial memory) and warm it
     // so it settles into an organic layout that un-piles the fan-arcs.
@@ -1552,31 +1636,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onVisibleCountChange?.(nodes.length);
     onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
     /*
-     * **데이터 소스가 바뀌면 오버뷰를 다시 맞춘다** (원장 2026-08-08 (3) ②).
+     * **A different data source refits the overview** (decision ledger
+     * 2026-08-08 (3) ②).
      *
-     * `trySnapInitialCamera` 는 `hasInitializedRef` 로 최초 1회만 돌았다. 그래서
-     * 세션 중에 볼트를 열면(샘플 → 로컬) **직전 그래프의 카메라로 새 그래프를
-     * 그렸다** — 새 월드의 최외곽 노드가 크롬 안전영역 밖에 서고, 위 라벨 컬이
-     * 그 이름을 지우는 경로의 절반이 이것이다.
+     * `trySnapInitialCamera` ran once, guarded by `hasInitializedRef`, so
+     * opening a vault mid-session (sample → local) **drew the new graph with
+     * the previous graph's camera**, leaving the new world's outermost nodes
+     * outside the chrome safe area.
      *
-     * 트리거는 「출처 정체성」 하나다. 노드 수 변화로 걸면 사용자가 공방에서
-     * 노드 하나를 더할 때마다 카메라를 낚아채게 되고, 그건 고치려던 결함보다
-     * 나쁘다. 새 카메라 로직은 만들지 않는다 — 초기화 플래그를 내려 **같은
-     * 오버뷰 핏 경로**를 한 번 더 통과시킬 뿐이라, 안전영역 핏 · 오버뷰 배율
-     * 기준(`overviewScaleRef` → 하단 안내의 zoomRatio) · reduced-motion 처리가
-     * 전부 그대로 재사용된다. 새 월드의 노드는 등장 램프(위 `appearRef`)를 타고
-     * 부풀어 오르므로 주목 승자(새 그래프)가 전환을 갖는다.
+     * The single trigger is source identity; triggering on node count would
+     * hijack the camera every time the user adds one. Lowering the
+     * initialization flag reuses the **same overview fit path**, so safe-area
+     * fit, the `overviewScaleRef` anchor and reduced-motion handling all come
+     * along for free.
      *
-     * ⚠️ **`null` 은 「바뀜」이 아니라 「아직 모름」이다.** 볼트 정체성 문자열은
-     * 로딩 중에 **거짓말을 한다** — 라이브 갱신마다 `load()` 가 status 를
-     * `'loading'` 으로 되돌리므로(`use-local-vault.ts`) 그 순간의 정체성은
-     * `local:<폴더>` 가 아니라 `sample:<샘플>` 로 계산된다. 그 값을 변화로 세면
-     * **볼트에 파일 하나가 저장될 때마다 카메라를 낚아채게 된다** — 실측
-     * (2026-08-08): 노드 하나를 더하니 카메라가 dx −3.93 · dy −10.66 ·
-     * scale −0.0327 만큼 튀었다. 고치려던 결함보다 나쁜 쪽이다. 그래서 호출부가
-     * 정착 전에는 `null` 을 주고(HomePage 의 `deeplinkSourceReady`, 같은 신호가
-     * 딥링크 정리에서 이미 같은 값을 치렀다) 여기서는 **마지막으로 알던 값과만**
-     * 비교한다. 같은 규율의 한 줄 요약: 「정착하기 전의 범위는 범위가 아니다」.
+     * ⚠️ **`null` means "not known yet", not "changed".** The vault identity
+     * string **lies while loading**: every live refresh sends `load()` back to
+     * status `'loading'` (`use-local-vault.ts`), so the identity computed then
+     * is `sample:<sample>` rather than `local:<folder>`. Counting that as a
+     * change **hijacks the camera on every file saved into the vault** —
+     * measured 2026-08-08: adding one node jumped it dx −3.93, dy −10.66,
+     * scale −0.0327. So the caller passes `null` until it settles (HomePage's
+     * `deeplinkSourceReady`) and this compares only against the last value it
+     * knew.
      */
     if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
       fittedDataSourceKeyRef.current = dataSourceKey;
@@ -1593,15 +1675,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!container || !canvas) return;
 
     /**
-     * 재기: 크기만 적어 둔다. **캔버스 백킹 크기를 여기서 바꾸지 않는다.**
+     * Record the size only. **Do not change the canvas backing size here.**
      *
-     * `canvas.width = n` 은 비트맵을 지운다. ResizeObserver 콜백은 브라우저
-     * 프레임에서 rAF **뒤**, 페인트 **앞**에 돈다 — 그래서 여기서 크기를
-     * 바꾸면 그 프레임의 순서가 `그린다 → 지운다 → 페인트` 가 되어 **빈
-     * 캔버스가 화면에 나간다.** 도킹 패널의 폭 전이는 매 프레임 RO 를
-     * 발화시키므로 전이 내내(실측 183~200ms) 지도가 노드 0·엣지 0·그리드 0
-     * 으로 보였다. 커밋을 rAF 안으로 옮기면 순서가 `지운다 → 그린다 →
-     * 페인트` 가 되어 같은 리사이즈가 한 프레임도 비우지 않는다.
+     * `canvas.width = n` clears the bitmap, and a ResizeObserver callback runs
+     * **after** rAF and **before** paint within a browser frame. Resizing here
+     * makes that frame's order `draw → clear → paint`, so **an empty canvas
+     * reaches the screen**. A docking panel's width transition fires the
+     * observer every frame, so for the whole transition (measured
+     * 183–200 ms) the map showed 0 nodes, 0 edges, 0 grid. Committing inside
+     * rAF makes the order `clear → draw → paint`, and the same resize never
+     * blanks a frame.
      */
     const measure = () => {
       const rect = container.getBoundingClientRect();
@@ -1612,7 +1695,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       canvasRectRef.current = { left: rect.left, top: rect.top };
     };
 
-    /** 프레임 안에서 부르는 값싼 절반 — 백킹 크기 + 뷰포트 사실만. */
+    /** The cheap half, called from inside a frame: backing size and viewport facts only. */
     const commitViewportSize = () => {
       const pending = pendingViewportRef.current;
       if (!pending) return false;
@@ -1620,11 +1703,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const backingWidth = Math.max(1, Math.round(pending.width * pending.dpr));
       const backingHeight = Math.max(1, Math.round(pending.height * pending.dpr));
       const sizeChanged = canvas.width !== backingWidth || canvas.height !== backingHeight;
-      // **CSS 크기가 그대로면 뷰포트 레이어를 다시 만들지 않는다.**
-      // `rebuildViewportLayers` 가 쓰는 값(별먼지·격자·깊이 도트)은 전부 CSS
-      // 픽셀 기준이라 dpr 이 바뀌어도 그대로 유효하다. 이 구분이 없으면 드래그를
-      // 잡고 놓을 때마다 별먼지를 두 번 다시 만들게 되고, 렉을 고치려던 것이
-      // 새 렉이 된다.
+      // **An unchanged CSS size does not rebuild the viewport layers.**
+      // Everything `rebuildViewportLayers` produces (star dust, grid, depth
+      // dots) is in CSS pixels and stays valid across a dpr change. Without
+      // this distinction, grabbing and releasing a drag rebuilds the star dust
+      // twice, and the fix for lag becomes new lag.
       const cssSizeChanged =
         viewportRef.current.width !== pending.width || viewportRef.current.height !== pending.height;
       if (canvas.width !== backingWidth) canvas.width = backingWidth;
@@ -1635,10 +1718,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     };
 
     /**
-     * 비싼 절반 — 뷰포트 의존 레이어 재생성 + 카메라 구제. **크기가 정착한
-     * 뒤 1회만** 돈다(`VIEWPORT_SETTLE_FRAMES`). 전이 중에는 이전 점군을
-     * 그대로 그린다: 잠깐 어긋난 별먼지가 빈 화면보다 낫고, 카메라를 매
-     * 프레임 재-fit 하면 전이 끝에 두 번 튄다.
+     * The expensive half: rebuild the viewport-dependent layers and rescue the
+     * camera. Runs **once, after the size settles** (`VIEWPORT_SETTLE_FRAMES`).
+     * During a transition the previous point cloud keeps being drawn —
+     * momentarily misplaced star dust beats a blank screen, and refitting the
+     * camera every frame makes it jump twice at the end of the transition.
      */
     const rebuildViewportLayers = () => {
       const { width, height } = viewportRef.current;
@@ -1655,7 +1739,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           baseColor: tokens.canvasBgNear,
         });
       }
-      // 깊이 도트 세 층 — 정적 타일이라 뷰포트 재빌드 때 한 번만 만든다.
+      // The three depth-dot layers are static tiles, built once per viewport rebuild.
       if (depthDotCanvasRef.current.length === 0) {
         depthDotCanvasRef.current = DEPTH_DOT_LAYERS.map(() => document.createElement("canvas"));
       }
@@ -1667,8 +1751,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         );
       }
       dustPointsRef.current = buildDustPoints(width, height, computeStarDustCount(width, height, tokens.dustAreaPerPoint), tokens.dustParallaxMin, tokens.dustParallaxMax);
-      // S8 결함 6 — 우주 도트는 dust 의 2배 밀도(레이어 2장). dust 와 같은
-      // areaPerPoint 토큰 기준으로 카운트를 잡고 2배로.
+      // Cosmos dots are twice the density of the dust (two layers), counted off
+      // the same areaPerPoint token and doubled.
       cosmosPointsRef.current = buildRealmCosmosPoints(
         width,
         height,
@@ -1681,8 +1765,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     commitViewportSizeRef.current = commitViewportSize;
     rebuildViewportLayersRef.current = rebuildViewportLayers;
 
-    // 마운트 1회는 즉시 커밋한다 — `trySnapInitialCamera` 가 첫 카메라를
-    // 정하려면 첫 프레임 전에 뷰포트 사실이 있어야 한다.
+    // Commit immediately on mount: `trySnapInitialCamera` needs the viewport
+    // facts before the first frame in order to decide the first camera.
     measure();
     commitViewportSize();
     rebuildViewportLayers();
@@ -1699,11 +1783,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const observer = new ResizeObserver(measure);
     observer.observe(container);
 
-    // #71 — `ResizeObserver` 는 **크기** 변화만 본다. 창을 다른 모니터로 옮기면
-    // CSS 크기는 그대로인데 `devicePixelRatio` 만 바뀌고, 그러면 캔버스 백킹
-    // 크기가 옛 DPR 로 남아 그려지는 내용이 어긋난다. DPR 변화를 따로 듣는다.
-    // `matchMedia(resolution)` 은 현재 DPR 에서 벗어나는 순간 한 번 발화하므로
-    // 매번 새 질의로 다시 건다.
+    // `ResizeObserver` only sees **size** changes. Moving the window to another
+    // monitor leaves the CSS size intact and changes `devicePixelRatio` alone,
+    // which leaves the canvas backing size at the old DPR and misaligns
+    // everything drawn. So DPR is watched separately.
+    // `matchMedia(resolution)` fires once when the current DPR is left behind,
+    // so it is re-armed with a fresh query each time.
     let dprQuery: MediaQueryList | null = null;
     const onDprChange = () => {
       measure();
@@ -1738,10 +1823,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
-    // 결계 불변식 (소유자 실보고 2026-07-23) — 영역 전개 중의 fit/재배치 카메라는
-    // 전역 스파인이 아니라 **영역 콘텐츠 bbox** 로 복귀한다. 전역 overview 로
-    // 트윈하면 카메라가 결계 세계를 떠나 "빈 원 + 어딘가의 노드들" 이 된다
-    // (S9 결함 1 의 deselect 복귀와 같은 계약).
+    // Warding invariant (owner bug report 2026-07-23): inside a realm, fit and
+    // relayout return to the **realm's content bbox**, not the global spine.
+    // Tweening to the global overview takes the camera out of the realm and
+    // leaves "an empty ring plus some nodes somewhere" — same contract as the
+    // deselect return.
     const realmData = realmDataRef.current;
     const realmPhase = realmTransitionRef.current.phase;
     if (realmData !== null && (realmPhase === "entering" || realmPhase === "active")) {
@@ -1759,20 +1845,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       beginCameraTween(target);
       return;
     }
-    // 3D 「제자리로」 — 요리조리 돌리다 방향을 잃었을 때의 귀환로. 자세를 기본
-    // (yaw 0.55 · pitch 0.34)으로 이징하고, 카메라는 그 자세의 돔 bbox 로 핏한다.
-    // yaw 목표는 현재 각의 가장 가까운 등가각 — 반대로 반 바퀴 돌지 않는다.
+    // 3D "reset" — the way back after spinning the dome until you are lost.
+    // Eases the pose to the default (yaw 0.55, pitch 0.34) and fits the camera
+    // to that pose's dome bbox. The yaw target is the equivalent angle nearest
+    // the current one, so it never takes the long way round.
     const dome = domeRuntimeRef.current;
     if (dome !== null && dome.active) {
       const targetYaw = domeNearestYawTurn(0.55, dome.yaw);
       dome.yawVel = 0;
-      // 착지 겨냥도 함께 버린다 — 새 입력·명시적 리셋이 언제나 이긴다.
+      // Drop the landing target too — new input and an explicit reset always win.
       dome.yawSnap = null;
       dome.pitchVel = 0;
       dome.orbiting = false;
       dome.poseTween = { startYaw: dome.yaw, startPitch: dome.pitch, targetYaw, targetPitch: DOME_PITCH_DEFAULT, startMs: performance.now(), durationMs: DOME_POSE_MS };
-      // 「자동 정렬」은 자세를 집으로 돌리는 명시적 리셋이다 — 여기서만 시선
-      // 끌기 회전이 재무장된다(사용자 개입으로 내려간 spinArmed 의 복귀로).
+      // Auto-align is the explicit reset that sends the pose home, and it is
+      // the one place the attention spin is rearmed after user interaction
+      // lowered `spinArmed`.
       dome.spinArmed = true;
       const domeBounds = domeWorldBounds(dome.model, targetYaw, DOME_PITCH_DEFAULT);
       if (domeBounds !== null) {
@@ -1796,7 +1884,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       }
     }
     // Panel-aware: spring back to the overview centered in the VISIBLE area, not
-    // behind the left ReaderLens panel (Design Guardian 카메라 반려). Fits the
+    // behind the left ReaderLens panel (design guardian's camera rejection). Fits the
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
     // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
@@ -1813,26 +1901,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, [relayoutToken, fitViewToken, beginCameraTween]);
 
   /*
-   * spotlightFitToken — 「최근 변경」 렌즈를 켜거나 기간을 바꾼 **그 순간**,
-   * 강조된 노드가 전부 화면에 들어오게 카메라를 맞춘다.
+   * The spotlight fit: the **moment** the recent-changes lens turns on or its
+   * window changes, aim the camera so every spotlit node is on screen.
    *
-   * 왜 필요한가 (2026-08-02 소유자 지적): 창을 30일에서 1일로 좁히면 강조가
-   * 15개에서 3개로 줄어드는데 **화면은 그대로**였다. 남은 셋이 화면 밖이면
-   * 사용자에게는 「아무 일도 안 일어났다」로 보인다. 이 앱의 다른 곳(검색 선택 ·
-   * 「이것만 보기」)은 전부 카메라가 따라가는데 렌즈만 안 갔다.
+   * Owner report 2026-08-02: narrowing the window from 30 days to 1 dropped the
+   * spotlight from 15 nodes to 3 while **the view stayed put**, so nothing
+   * appeared to happen. Everywhere else — search selection, "이것만 보기" — the
+   * camera follows.
    *
-   * **사람이 잡아둔 화면을 뺏지 않는다**: 토큰이 바뀐 그 순간에만 한 번 맞추고,
-   * 그 뒤 팬/줌 하면 다시 안 건드린다(위 fit 들과 같은 계약). 강조가 0개면 아예
-   * 움직이지 않는다 — 맞출 대상이 없는데 움직이면 길만 잃는다.
-   */
-  /*
-   * 실제 맞춤 — 성공하면 `true`. 실패 이유가 「아직 준비 안 됨」이면 호출부가
-   * 빚으로 남기고, 「맞출 대상이 없음」이면 그대로 끝난다(빚을 남겨도 갚을 게
-   * 없다). 두 실패를 가르지 않으면 강조 0개인 세션이 초기화 때마다 헛일한다.
+   * It fits once when the token changes and never again after a pan or zoom, so
+   * it cannot take away a view the user set; with zero spotlit nodes it does
+   * not move at all.
+   *
+   * Returns `true` on success. The two failure reasons are deliberately
+   * distinct: "not ready yet" lets the caller record debt, "nothing to fit"
+   * ends there — debt recorded then could never be paid, and a session with no
+   * spotlit nodes would retry on every initialization.
    */
   const runSpotlightFit = useCallback((): boolean => {
     const ids = spotlightIdsRef.current;
-    if (ids === null || ids.size === 0) return true; // 갚을 빚 없음
+    if (ids === null || ids.size === 0) return true; // No debt to record.
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -1848,13 +1936,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       if (node.x > maxX) maxX = node.x;
       if (node.y > maxY) maxY = node.y;
     }
-    // 강조 id 가 현재 월드에 하나도 없을 수 있다(접힌 클러스터 안 등) — 맞출
-    // bbox 가 없으므로 카메라를 건드리지 않는다. 빚으로도 안 남긴다: 다시
-    // 시도해도 같은 결과다.
+    // None of the spotlit ids may exist in the current world (inside a
+    // collapsed cluster, say). With no bbox to fit, leave the camera alone —
+    // and record no debt, because retrying gives the same result.
     if (hit === 0) return true;
 
-    // 가장자리에 딱 붙지 않게 여백을 준다 — bbox 를 그대로 맞추면 라벨·링·자국이
-    // 잘린다.
+    // Pad so nothing sits flush against the edge: fitting the raw bbox clips
+    // labels, rings and footprints.
     const padX = Math.max(48, (maxX - minX) * 0.18);
     const padY = Math.max(48, (maxY - minY) * 0.18);
     const target = fitWorldTarget(
@@ -1881,10 +1969,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   // --- relayoutToken ONLY (not fitViewToken) — also restores every node's
   // position to its canonical (`homeX`/`homeY`) layout coordinate over a
-  // short critically-damped spring transition (C1 B3). "지도 전체 맞추기"/
-  // fit-view intentionally does NOT do this — it only recenters the camera,
-  // it's a different user action ("재배치"/auto-arrange is the button that
-  // implies "put the nodes back", per `HomePage.tsx`'s `onRelayout`). ---
+  // short critically-damped spring transition. Fit-view intentionally does NOT
+  // do this — it only recentres the camera. They are different user actions:
+  // auto-arrange is the button that implies "put the nodes back", per
+  // `HomePage.tsx`'s `onRelayout`. ---
   useEffect(() => {
     if (relayoutToken === initialRelayoutTokenRef.current) return;
     const world = worldRef.current;
@@ -1902,13 +1990,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragStartPosRef.current = null;
     dragTugOffsetsRef.current.clear();
 
-    // 결계 불변식 (소유자 실보고 2026-07-23, 재현 경로 ②) — 영역 전개 중의
-    // Auto-arrange 는 "이 세계를 다시 정돈" 이다: 호밍 목표는 전역 `homeX/homeY`
-    // 가 아니라 **영역 재배치 좌표**(insideTargets). 전역 홈으로 보내면 결계
-    // 원은 영역 원점에 남고 멤버 전원이 스파인 좌표로 날아가 "루트가 자기 결계
-    // 밖" 이 됐다. 밖 노드는 하드 컬 상태라 스프링을 만들지 않는다.
-    // 이탈(exiting) 중의 재배치는 전역 경로 — 역재생의 목적지가 전역 홈이므로
-    // 영역 타깃 호밍이 닫히는 세계로 노드를 되돌리면 안 된다.
+    // Warding invariant (owner bug report 2026-07-23, repro path ②): inside a
+    // realm, auto-arrange means "tidy *this* world", so the homing targets are
+    // the **realm layout coordinates** (`insideTargets`), not the global
+    // `homeX`/`homeY`. Sending them home globally left the warding ring at the
+    // realm origin while every member flew off to spine coordinates — the root
+    // ended up outside its own ring. Nodes outside are hard-culled, so they get
+    // no spring. A relayout while exiting takes the global path: the reverse
+    // playback's destination is global home, so realm-target homing must not
+    // pull nodes back into a world that is closing.
     const realmData = realmDataRef.current;
     const realmPhase = realmTransitionRef.current.phase;
     if (realmData !== null && (realmPhase === "entering" || realmPhase === "active")) {
@@ -1943,19 +2033,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     homingActiveRef.current = true;
   }, [relayoutToken]);
 
-  // --- P3d(E1) 첫 지도 연출 — 부트스트랩 직후 전 노드가 스파인 중심에서
-  // 모여 나와 제자리로 정착한다. 기존 호밍 스프링(A5 ω, A8 reduced-motion
-  // 스냅)을 그대로 타므로 신규 모션 계약이 없다.
-  // 0 초기화가 핵심: 빈 vault 는 캔버스를 마운트하지 않으므로 부트스트랩
-  // 완료(토큰 증가)가 마운트보다 먼저다 — 현재 prop 으로 초기화하면 첫
-  // 마운트가 그 증가를 삼켜 연출이 발화하지 않는다.
+  // --- First-map reveal: right after bootstrap, every node gathers out of the
+  // spine centre and settles home. It rides the existing homing springs
+  // (including their reduced-motion snap), so there is no new motion contract.
+  //
+  // Initialising to 0 is the point: an empty vault never mounts the canvas, so
+  // bootstrap completion (the token bump) happens BEFORE mount. Initialising
+  // from the current prop would let the first mount swallow that bump and the
+  // reveal would never fire.
   const lastRevealTokenRef = useRef(0);
   useEffect(() => {
     if (revealToken === lastRevealTokenRef.current) return;
     lastRevealTokenRef.current = revealToken;
     const world = worldRef.current;
     if (!world || world.nodes.length === 0) return;
-    // 출발점 = 프로젝트 노드의 홈 (없으면 스파인 bbox 중심)
+    // Origin = the project node's home, falling back to the spine bbox centre.
     const projectNode = world.nodes.find((n) => n.kind === "project");
     const cx = projectNode?.homeX ?? (world.spineBounds.minX + world.spineBounds.maxX) / 2;
     const cy = projectNode?.homeY ?? (world.spineBounds.minY + world.spineBounds.maxY) / 2;
@@ -1978,22 +2070,24 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     if (lastFocusedSlugRef.current === focusedSlug) return;
     lastFocusedSlugRef.current = focusedSlug;
-    // S2 파트 3a — 새 포커스는 상위 24 이웃부터 (칩 클릭으로 더 편 배치를 리셋).
+    // A new focus starts from the top-ranked neighbours again, discarding
+    // batches opened by chip clicks.
     egoRevealBatchesRef.current = 1;
 
-    // Canvas-emphasis slice §B2 — a NEW selection (never a deselect) starts
+    // A NEW selection (never a deselect) starts
     // the one-shot commit pulse. Captured unconditionally (before the
     // tokens/world early-return below) so the pulse timestamp is never
     // skipped even if the camera-target computation bails out for some
     // reason.
     selectionPulseRef.current = focusedSlug !== null ? { nodeId: focusedSlug, startAtMs: performance.now() } : null;
 
-    // 3D 돔 — 카메라 목표를 여기서 계산하지 않는다. 2D 식(`computeFocusCamera
-    // Target`)은 노드의 **2D 좌표** 기준이라 돔이 그린 자리와 다르고, 이
-    // effect 시점에는 선택이 조상 클러스터를 함께 펼치며 월드가 재구축 중일
-    // 수 있어 조용히 무산된다(2026-08-18 실측: 3D 선택 시 카메라 배율이 한
-    // 번도 움직이지 않았다). 대기표만 적고 루프의 돔 스텝이 라이브 월드로
-    // yaw 리프레임 + 카메라 트윈을 함께 세운다.
+    // In 3D the camera target is NOT computed here. The 2D formula
+    // (`computeFocusCameraTarget`) works from a node's **2D coordinates**,
+    // which differ from where the dome drew it; and at this point the selection
+    // may still be expanding ancestor clusters while the world rebuilds, so it
+    // fails silently (measured 2026-08-18: selecting in 3D never moved the
+    // camera scale once). Record a ticket instead, and let the loop's dome step
+    // set up the yaw reframe and camera tween together against the live world.
     if (view3dRef.current && realmTransitionRef.current.phase === "idle" && domeRuntimeRef.current !== null) {
       domeFocusPendingRef.current = { slug: focusedSlug };
       return;
@@ -2005,26 +2099,28 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!tokens || !world || width <= 0 || height <= 0) return;
 
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-    // S8 결함 4 — 영역 전개 중이면 ego bbox 를 영역 멤버로 제한(결계 밖 fling
-    // 이웃이 bbox 를 부풀려 카메라가 화면 밖으로 날아가는 것 차단). 포커스
-    // 다이브가 결계 안에서만 움직인다.
+    // Inside a realm the ego bbox is restricted to realm members, so a
+    // flung-out neighbour beyond the warding ring cannot inflate the bbox and
+    // throw the camera off screen. The focus dive stays inside the ring.
     const realmActive = realmTransitionRef.current.phase !== "idle";
     const realmData = realmDataRef.current;
-    // S9 결함 1 — 영역 안에서 바닥 클릭(deselect)하면 카메라가 폭주하던 결함:
-    // `computeFocusCameraTarget` 의 null 분기는 **전역** spineBounds 기준이라 영역
-    // 재배치 좌표계(원점 0,0)와 어긋나 화면 밖으로 날아갔다. 영역 active 중
-    // deselect 복귀 목표는 영역 콘텐츠 bbox(가시 멤버 기준) — entryCamera(영역
-    // '해제' 전용)가 아니라 현재 영역 fit 이다.
+    // Deselecting by clicking the floor inside a realm used to send the camera
+    // flying: `computeFocusCameraTarget`'s null branch works from the **global**
+    // spineBounds, which does not match the realm layout's coordinate space
+    // (origin 0,0). While a realm is active, the deselect return target is the
+    // realm's content bbox over its visible members — the current realm fit,
+    // not `entryCamera`, which belongs to leaving the realm.
     /*
-     * ⚠️ **목표 계산 자체를 한 프레임 미룬다.**
+     * ⚠️ **The target computation itself waits one frame.**
      *
-     * 피해야 할 팝오버는 **바로 이 선택 때문에** 열리므로, 이 effect 가 도는 시점에는
-     * DOM 에 없다. 그때 인셋을 재면 오른쪽이 0으로 나오고 보정이 사라진다 —
-     * 게이트가 정확히 그것을 잡았다(「자유 127px · 화면 64px」). 그래서 **재는 것과
-     * 계산하는 것을 같은 프레임**에 둔다.
+     * The popover to avoid is opened by *this very selection*, so it is not in
+     * the DOM while this effect runs. Measuring insets then reports 0 on the
+     * right and the correction vanishes — which the gate caught exactly ("free
+     * 127px, screen 64px"). So measuring and computing happen in the same
+     * frame.
      *
-     * 200~420ms 이동 앞의 한 프레임(≈16ms)은 보이지 않고, 「한 사건」 게이트가 그
-     * 시차를 프레임 수로 지킨다.
+     * One frame (≈16 ms) ahead of a 200–420 ms move is invisible, and the
+     * one-input-one-event gate holds that gap to a frame count.
      */
     const raf = requestAnimationFrame(() => {
     let target: CameraTarget | null;
@@ -2042,19 +2138,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     }
     if (!target) return;
     /*
-     * **패널에 가리지 않는 자리로 보정한다** (2026-08-10 소유자 확정:
-     * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*).
+     * **Aim at a spot the panel does not cover.** Owner, 2026-08-10:
+     * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"* (it must not be covered —
+     * centre it in the space left over after the panel).
      *
-     * 노드를 고르면 오른쪽에 팝오버가 열린다. 그런데 이 목표는 **뷰포트 가운데**
-     * 기준이라, 고른 것이 그것을 설명하는 패널 뒤로 들어갈 수 있었다. 실측
-     * (1512×982): 캔버스 x64 w1448 · 팝오버 x1128 w352 → 자유 영역 가운데는 화면
-     * 가운데보다 **192px 왼쪽**이다.
+     * Selecting a node opens a popover on the right while this target is
+     * computed against the **viewport centre**, so the selected node could end
+     * up behind the panel explaining it. Measured at 1512×982: canvas x64
+     * w1448, popover x1128 w352 — the free area's centre is **192 px left** of
+     * the screen centre. The overview path already dodged the panels; the
+     * selection path did not, and this is that one place.
      *
-     * 개요 경로에는 이미 같은 개념이 있었다(그 아래 *"Panel-aware: … not behind the
-     * left ReaderLens panel"*) — 없던 것은 **선택 경로**다. 여기가 그 한 곳이다.
-     *
-     * 패널 폭을 상수로 박지 않고 DOM 에서 잰다: 값을 박으면 패널이 바뀌는 날 조용히
-     * 어긋난다. 선택이 바뀔 때만 도는 계산이라 프레임 예산과 무관하다.
+     * The panel width is measured from the DOM, not pinned: a pinned value
+     * drifts silently the day the panel changes. It runs per selection, not per
+     * frame.
      */
       const finalTarget = target;
       dampingRef.current = tokens.cameraDampingDefault;
@@ -2071,11 +2168,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     return () => cancelAnimationFrame(raf);
   }, [focusedSlug, beginCameraTween, cameraTokens]);
 
-  // --- S4 "영역 전개" — realmRootId 변경 시 서브트리 재배치 + 전환 안무 시작.
-  // 진입: 서브트리를 그 노드 임시 루트로 재배치, 안 노드는 FLIP·밖 노드는 중력
-  // 이탈, 카메라는 결계 원으로 돌리 인. 이탈: 전 노드 홈 스프링 복귀(기존 relayout
-  // 호밍 재사용) + 카메라 overview fit. 신규 모션 계약은 realm-transition 의
-  // FLIP/fling 뿐, 이탈은 검증된 호밍 경로를 탄다.
+  // --- Realm entry/exit: a `realmRootId` change relays out the subtree and
+  // starts the transition choreography. Entering re-lays the subtree around
+  // that node as a temporary root, FLIPs the members, flings the outsiders away
+  // under gravity, and dollies the camera into the warding ring. Exiting
+  // returns every node on its home spring (reusing the relayout homing) and
+  // fits the camera to the overview. The only new motion contract is
+  // realm-transition's FLIP and fling; the exit rides the proven homing path.
   useEffect(() => {
     if (realmRootId === prevRealmRootIdRef.current) return;
     prevRealmRootIdRef.current = realmRootId;
@@ -2088,19 +2187,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const now = performance.now();
     const reduced = reducedMotionRef.current;
 
-    // 전환은 물리/호밍과 배타 — 진행 중 상태를 정리한다 (relayout 과 같은 계약).
+    // A transition is exclusive with physics and homing, so in-flight state is
+    // cleared — same contract as relayout.
     nodeDragRef.current = null;
     heatRef.current = 0;
     dragAffectedSetRef.current = null;
     dragStartPosRef.current = null;
     dragTugOffsetsRef.current.clear();
-    // S8 결함 5 — 새 전환은 좌표 소유권 핸드오프를 리셋(진입/이탈 모두).
+    // A new transition (either direction) resets the coordinate-ownership handoff.
     realmActiveHandedOffRef.current = false;
 
     if (realmRootId !== null) {
-      // --- 진입 ---
-      // S9 결함 2 — 결계/프레이밍을 진입 시점 펼침 상태 기준 가시 멤버로 잡는다
-      // (영역 루트는 항상 펼침 — 그 직속 자식이 영역 스파인).
+      // --- Entering ---
+      // The warding ring and framing use the members visible under the
+      // expansion state at entry. The realm root is always treated as expanded,
+      // because its direct children are the realm's spine.
       const data = buildRealmRuntimeData(
         world,
         realmRootId,
@@ -2109,7 +2210,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       );
       if (!data) return;
       realmDataRef.current = data;
-      // S9 결함 2 — 새 영역이므로 결계 이징을 리셋(첫 프레임이 초기 반경 스냅 시드).
+      // New realm, so the warding ease resets and the first frame seeds by
+      // snapping to the initial radius.
       wardingFitRef.current = null;
       realmTransitionRef.current = realmTransitionReducer(realmTransitionRef.current, {
         type: "enter",
@@ -2117,14 +2219,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         now,
         reducedMotion: reduced,
       });
-      // 호밍은 진입 중 realm 이 좌표를 소유하므로 끈다.
+      // Homing is off during entry: the realm owns coordinates.
       homingActiveRef.current = false;
       homeSpringsRef.current.clear();
       homeTargetOverrideRef.current = null;
-      // 카메라: 결계 원 fit 으로 돌리 인 (기존 큐빅 트윈 재사용).
+      // Camera: dolly in to the warding-ring fit, reusing the cubic tween.
       if (width > 0 && height > 0 && hasInitializedRef.current) {
-        // S8 결함 2 — 해제 시 복귀할 "원래 보던 곳" 키프레임을 진입 직전 카메라
-        // 값으로 저장(카메라 초기화된 경우만 — 딥링크 마운트는 null 유지).
+        // Save "where the user was looking" as the keyframe to return to on
+        // exit, taken from the camera just before entry. Only when the camera
+        // has initialized — a deep-link mount keeps this null.
         data.entryCamera = {
           tx: cameraRef.current.x.value,
           ty: cameraRef.current.y.value,
@@ -2135,41 +2238,48 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         cameraTargetRef.current = target;
         userDrivenCameraRef.current = false;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-        // 돌리 인은 안무 전체(이탈→FLIP→결계)를 타고 간다 — 거리 비례 단기
-        // 트윈이면 카메라만 먼저 끝나 "컷" 으로 읽힌다 (녹화 검수).
+        // The dolly-in spans the whole choreography (fling → FLIP → warding).
+        // A distance-proportional short tween finishes the camera first, which
+        // reads as a cut — confirmed on recorded review.
         beginCameraTween(target, 860);
       }
     } else {
-      // --- 이탈(S6): 입장의 결정론 역재생 — 안 노드 역FLIP(깊은 층 먼저) + 밖
-      // 노드 역중력 귀환. 좌표는 realm 데이터가 소유하므로(홈 스프링 아님) 프레임
-      // 루프의 exiting 스텝이 굴린다. 카메라는 750ms overview 트윈으로 안무 동기. ---
+      // --- Exiting: a deterministic reverse playback of the entry — inside
+      // nodes reverse-FLIP (deepest layer first) and outside nodes return
+      // against reverse gravity. The realm data owns those coordinates, not the
+      // home springs, so the frame loop's exiting step drives them. The camera
+      // rides a 750 ms overview tween to stay in sync with the choreography. ---
       realmTransitionRef.current = realmTransitionReducer(realmTransitionRef.current, {
         type: "exit",
         now,
         reducedMotion: reduced,
       });
-      // 물리는 전환과 배타 — 홈 좌표로 시드해 이탈 후 드래그가 튀지 않게 한다
-      // (전환 중엔 heat 0 이라 tick 안 함).
+      // Physics is exclusive with a transition, so the sim is reseeded at home
+      // coordinates and a drag right after the exit does not jump. Heat is 0
+      // during the transition, so it does not tick.
       simRef.current = createForceSimulation(
         world.nodes.map((n) => ({ id: n.id, x: n.homeX, y: n.homeY })),
         world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
       );
       if (reduced) {
-        // A8 — reduced-motion 은 여정 없이 결과만. 결정론 역재생(non-reduced 전용)
-        // 대신 검증된 홈 스프링 스냅 경로를 탄다(프레임 루프의 reduced 호밍 블록이
-        // 즉시 homeX/homeY 로 스냅). 이펙트에서 노드를 직접 mutate 하지 않는다.
+        // Under reduced-motion, deliver the result without the journey: skip
+        // the deterministic reverse playback and take the proven home-spring
+        // snap path, where the frame loop's reduced homing block jumps straight
+        // to homeX/homeY. Nodes are never mutated from inside an effect.
         const springs = new Map<string, HomeSpringState>();
         for (const node of world.nodes) springs.set(node.id, initHomeSpring(node.x, node.y));
         homeSpringsRef.current = springs;
-        homeTargetOverrideRef.current = null; // 이탈 목표는 전역 홈
+        homeTargetOverrideRef.current = null; // Exiting targets global home.
         homingActiveRef.current = true;
       } else {
-        // 안 노드 역FLIP + 밖 노드 역중력 귀환은 realm 데이터가 소유 → 홈 스프링 끔.
+        // The realm data owns the inside reverse-FLIP and the outside return,
+        // so the home springs are off.
         homingActiveRef.current = false;
         homeSpringsRef.current.clear();
         homeTargetOverrideRef.current = null;
-        // S8 결함 5 — 정착 후 드래그로 멤버가 옮겨졌을 수 있으므로, 역FLIP 시작점
-        // (insideTargets)을 현재 라이브 좌표로 갱신해 이탈 첫 프레임의 튐을 없앤다.
+        // Members may have been dragged since the realm settled, so refresh the
+        // reverse-FLIP origins (`insideTargets`) to the live coordinates and
+        // the first exit frame does not jump.
         const data = realmDataRef.current;
         if (data) {
           const liveTargets = new Map<string, { x: number; y: number }>();
@@ -2181,8 +2291,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
       if (width > 0 && height > 0 && hasInitializedRef.current) {
-        // S8 결함 2 — 진입 시 저장한 키프레임이 있으면 그 "원래 보던 곳"으로
-        // 복귀(없으면 overview fit 폴백). 750ms 트윈 유지.
+        // Return to "where the user was looking" if entry saved a keyframe,
+        // falling back to the overview fit.
         const savedEntry = realmDataRef.current?.entryCamera ?? null;
         const target = savedEntry ?? computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
         cameraTargetRef.current = target;
@@ -2190,7 +2300,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-        // 750ms 트윈 — 안무(안 역FLIP 660 / 밖 귀환 650)와 동기. 입장 860 패턴.
+        // 750 ms, matched to the choreography (inside reverse-FLIP 660,
+        // outside return 650) — the same pattern as entry's 860.
         beginCameraTween(target, 750);
       }
     }
@@ -2201,37 +2312,37 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const canvas = canvasRef.current;
     if (!canvas) return;
     /*
-     * 3D 자오선 제어점 — 드로우가 **엣지마다** 부른다. 이펙트 몸통에서 한 번만
-     * 만든다: 프레임 안에서 만들면 그 자체가 프레임당 할당이고, 컴포넌트 몸통의
-     * `useCallback` 으로 올리면 이 이펙트의 의존성 목록에 이름이 하나 더 늘어
-     * (그리고 hooks lint 가 그것을 요구해) 드로우 루프가 그 신원에 묶인다.
-     * 여기 있는 것이 실제 수명과 일치한다 — 이 함수는 ref 만 읽는다.
+     * 3D meridian control point — the draw calls this **per edge**, so it is
+     * created once in the effect body. Creating it inside the frame would be a
+     * per-frame allocation; lifting it to a `useCallback` in the component body
+     * would add another name to this effect's dependency list (hooks lint would
+     * demand it) and tie the draw loop to that identity. Here matches its real
+     * lifetime — the function reads only refs.
      */
     const domeEdgeControlForFrame = (sourceId: string, targetId: string) => {
       const dome = domeRuntimeRef.current;
       return dome === null ? null : domeEdgeControlWorld(dome, sourceId, targetId);
     };
     /**
-     * **`alpha: false` — 이 지도는 자기 뒤를 보여 줄 일이 없다.**
+     * **`alpha: false` — this map never needs to show what is behind it.**
      *
-     * 명세(WHATWG canvas): alpha 가 false 면 모든 픽셀의 알파 성분이 1.0 으로
-     * 고정되고 바꾸려는 시도는 조용히 무시된다. 그래서 **컴포지터가 캔버스
-     * 뒤 페이지 콘텐츠와의 블렌딩을 통째로 건너뛸 수 있다** — Blink 는
-     * `html_canvas_element.cc` 에서 이 값으로 `cc_layer_->SetContentsOpaque()`
-     * 를 직접 세우고, `cc/layers/layer.h` 는 그것을 "블렌딩을 생략해도 된다는
-     * 최적화 힌트"로 정의한다.
+     * Per the WHATWG canvas spec this pins every pixel's alpha to 1.0, which
+     * lets **the compositor skip blending against the page content behind the
+     * canvas**. Blink sets `cc_layer_->SetContentsOpaque()` from it in
+     * `html_canvas_element.cc`, and `cc/layers/layer.h` defines that as a hint
+     * that blending may be omitted.
      *
-     * 이득이 나는 자리가 중요하다 — **JS 프레임 시간이 아니라 컴포지트
-     * 단계**다. 그래서 `performance.mark` 프로파일에는 안 잡히고, 그 사실을
-     * 모르면 "재 봤는데 차이 없다"는 잘못된 결론이 나온다.
+     * ★ The win lands in **the composite stage, not JS frame time**, so it does
+     * not appear in a `performance.mark` profile — without knowing that you
+     * wrongly conclude "measured it, no difference".
      *
-     * 조건은 우리가 이미 만족한다: 다크 단일이고 매 프레임 배경을 전체
-     * 칠한다. 부작용은 안 그린 영역이 투명이 아니라 **검정**이 되는 것인데,
-     * 전체를 칠하므로 무관하다.
+     * The preconditions hold here: one dark theme, background fully painted
+     * every frame. Unpainted regions become black rather than transparent,
+     * which is moot when everything is painted.
      *
-     * ⚠️ **주 캔버스에만.** `render/grid.ts` · `render/animated-background.ts`
-     * 의 오프스크린은 이 캔버스 **위에 합성**되므로 알파가 필요하다 — 거기에
-     * 같이 넣으면 배경 타일이 서로를 가린다.
+     * ⚠️ **Main canvas only.** The offscreens in `render/grid.ts` and
+     * `render/animated-background.ts` composite **on top of** this one and need
+     * alpha; setting it there makes the background tiles occlude each other.
      */
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
@@ -2242,8 +2353,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const frame = (now: number) => {
       if (cancelled) return;
 
-      // 끄는 동안에만 백킹 해상도를 낮춘다(`INTERACTION_DPR_CAP`). 전이 시점은
-      // 상호작용의 **시작과 끝 두 번뿐**이라 프레임마다 캔버스를 재할당하지 않는다.
+      // Lower the backing resolution while dragging (`INTERACTION_DPR_CAP`).
+      // The transition happens exactly **twice** — at the start and end of an
+      // interaction — so the canvas is not reallocated per frame.
       {
         const deviceDpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
         const interacting =
@@ -2251,9 +2363,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const wantScale = interacting ? Math.min(deviceDpr, INTERACTION_DPR_CAP) : deviceDpr;
         const pending = pendingViewportRef.current;
         if (pending) {
-          // 리사이즈가 대기 중이면 그 dpr 을 **덮는다.** `measure()` 는 장치
-          // dpr 을 적어 두므로, 끄는 중에 창이 바뀌면 그 한 번으로 전체 해상도가
-          // 되살아나 남은 드래그 내내 느려진다(드문 대신 조용한 실패다).
+          // A pending resize has its dpr **overwritten**. `measure()` records
+          // the device dpr, so a window change mid-drag would restore full
+          // resolution for the rest of that drag — rare, but silent.
           pending.dpr = wantScale;
           appliedDprScaleRef.current = wantScale;
         } else if (appliedDprScaleRef.current !== wantScale) {
@@ -2265,12 +2377,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // 리사이즈 커밋은 **그리기 바로 앞**이다 — ResizeObserver 콜백에서 하면
-      // 캔버스를 지운 뒤 그대로 페인트돼 빈 지도가 화면에 나간다(리사이즈
-      // effect 의 `measure` 주석). 여기서 지우고 아래에서 곧바로 다시 그린다.
+      // The resize commit happens **immediately before drawing**. Doing it in
+      // the ResizeObserver callback clears the canvas and then paints, so a
+      // blank map reaches the screen (see the resize effect's `measure`
+      // comment). Here it clears and redraws in the same frame.
       if (commitViewportSizeRef.current?.()) {
         viewportSettleFramesRef.current = 0;
-        // 유휴 게이트가 이 프레임을 건너뛰면 지운 캔버스가 그대로 나간다.
+        // If the idle gate skipped this frame, the cleared canvas would ship.
         lastActiveMsRef.current = now;
       } else if (viewportRebuildPendingRef.current) {
         viewportSettleFramesRef.current += 1;
@@ -2335,22 +2448,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // 이동 양보 — 유휴 게이트보다 «앞» 이다. 활동 플래그가 무엇이든
-      // (자율 회전·혜성·조립 램프) 떠나기로 한 화면은 그리지 않는다.
+      // The navigation yield sits **ahead of** the idle gate: whatever the
+      // activity flags say (auto-spin, comets, assembly ramp), a screen that is
+      // being left does not get drawn.
       if (now < navYieldUntilRef.current) {
         handle = requestAnimationFrame(frame);
         return;
       }
 
-      // --- A2 유휴 게이트: 활동 플래그를 refs 에서 재평가. 전부 꺼진 채
-      // grace 가 지나면 물리+페인트를 건너뛴다 (rAF 는 유지 — 어떤 상태
-      // 변화든 다음 프레임에 자연 복귀, wake 배선/동결 실패 모드 없음).
+      // --- Idle gate: re-evaluate the activity flags from the refs. Once they
+      // are all off and the grace period has passed, physics and painting are
+      // skipped. rAF keeps running, so any state change resumes naturally on
+      // the next frame — no wake wiring and no freeze failure mode.
       {
         const cam = cameraRef.current;
         const target = cameraTargetRef.current;
         const prev = prevCameraSampleRef.current;
-        // M-1 회귀: 값 이동만 보면 유휴 스킵 중 휠(타깃만 변경)이 영원히
-        // 무시된다 — 스프링 미정착(타깃≠값)도 활동이다 (idle-gate 계약).
+        // Watching only the camera's value movement would ignore a wheel tick
+        // during an idle skip forever, because a wheel changes the target
+        // alone. An unsettled spring (target ≠ value) is activity too — the
+        // idle-gate contract.
         const cameraUnsettled = isCameraUnsettled(
           { x: cam.x.value, y: cam.y.value, scale: cam.scale.value },
           target,
@@ -2364,25 +2481,30 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         prevCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
 
         /**
-         * 앰비언트 휴면 계수 (2026-07-28 카운슬 「작업대」 P0 처방).
+         * Ambient sleep factor (design council 「작업대」 P0 prescription,
+         * 2026-07-28).
          *
-         * 상시 혜성과 fresh 브리드는 **끄지 않는다** — 혜성은 depends 엣지의
-         * 방향을 나르는 유일한 채널이라 끄면 타입 있는 사실이 사라진다(카운슬
-         * 판별식: "그 모션을 끄면 정보를 잃는가?" — 잃는다). 대신 사람이 손을
-         * 놓고 한참 지나면 속도를 0 으로 램프해 재운다.
+         * The always-on comets and the fresh breathe are **not switched off**:
+         * the comets are the only channel carrying a `depends` edge's
+         * direction, so switching them off would delete a typed fact. (The
+         * council's test — "does turning that motion off lose information?" —
+         * answers yes here.) Instead, once the person has let go for long
+         * enough, their speed ramps to 0 and they fall asleep.
          *
-         * 계수는 혜성 속도에 곱해지고(램프 = 흐르다 서서히 멎음), 0 에 닿는
-         * 순간 위 두 활동 플래그가 내려가 `isCanvasActive` 가 자연히 닫힌다.
-         * 어떤 입력이든 `noteInput()` 이 `lastInputMs` 를 밀어 다음 프레임에
-         * 계수가 1 로 복귀한다 — wake 배선이 필요 없는 idle-gate 설계 그대로.
+         * The factor multiplies comet speed, so the flow decelerates to a stop
+         * rather than cutting; the moment it reaches 0 the two activity flags
+         * above drop and `isCanvasActive` closes on its own. Any input pushes
+         * `lastInputMs` via `noteInput()` and the factor returns to 1 on the
+         * next frame — the idle-gate design that needs no wake wiring.
          */
         const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
         const ambientAsleep = isAmbientAsleep(ambientFactor);
 
-        // 3D — 돔이 아직 움직여야 하는가(조립/해체 램프 · 자율 회전 · 궤도
-        // 관성 · 비틀림 스프링백 · 평면 드래그 스프링 · 「제자리로」 이징).
-        // 자율 회전은 포인터가 캔버스 위면(bgPointer 존재) 정지 — 조준한
-        // 노드가 커서 밑에서 미끄러지지 않게 한다.
+        // Does the dome still have to move — assembly/teardown ramp, auto-spin,
+        // orbit inertia, twist spring-back, flat-drag spring, or the reset
+        // ease. The auto-spin stops while the pointer is over the canvas
+        // (bgPointer present) so an aimed-at node cannot slide out from under
+        // the cursor.
         const domeRt = domeRuntimeRef.current;
         const domeTargetOn = view3dRef.current && realmTransitionRef.current.phase === "idle";
         const domeMotion =
@@ -2394,33 +2516,40 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               domeRt.drag !== null ||
               domeRt.poseTween !== null ||
               /*
-               * **진행 중인 모션은 전부 여기 이름이 있어야 한다.** 아래 둘이
-               * 빠져 있어 실제로 화면이 중간에 얼었다(2026-08-18 실측):
+               * ★ **Every motion in flight must be named here.** These two
+               * were missing and the screen actually froze mid-animation
+               * (measured 2026-08-18):
                *
-               * - `yawSnap`: 착지 겨냥은 속도가 0 이 된 뒤에도 남은 갭을
-               *   지수로 마저 좁힌다. 속도만 보는 게이트는 그 구간을 «정지»로
-               *   읽어 프레임을 끊었고, 돔이 목표에서 0.073rad 못 미쳐 멎었다.
-               * - `entryArmed`: 진입 스윕의 시계(1500ms)가 조립 시계(1120ms)
-               *   보다 길다. 램프만 보는 게이트는 마지막 380ms 를 놓친다.
+               * - `yawSnap`: the landing target keeps closing the remaining gap
+               *   exponentially after velocity reaches 0. A gate that watched
+               *   velocity alone read that stretch as "stopped" and cut the
+               *   frames, leaving the dome 0.073 rad short of its target.
+               * - `entryArmed`: the entry sweep's clock (1500 ms) is longer
+               *   than the assembly clock (1120 ms). A gate that watched only
+               *   the ramp missed the last 380 ms.
                *
-               * 일반화: 유휴 게이트에 새 모션을 등록하는 것을 잊으면 증상이
-               * 「가끔 도중에 멈춘다」라 원인 추적이 가장 비싼 부류가 된다.
+               * Generally: forgetting to register a new motion with the idle
+               * gate produces "it sometimes stops halfway", which is the most
+               * expensive class of symptom to trace back to its cause.
                */
               domeRt.yawSnap !== null ||
               domeRt.entryArmed ||
               domeFocusPendingRef.current !== null ||
               Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
               domeRt.pitch !== clampDomePitch(domeRt.pitch) ||
-              // 자율 회전이 돌 수 있는 조건일 때만 rAF 를 깨워 둔다 — 개입으로
-              // spinArmed 가 내려간 돔은 정지 화면이라 유휴 게이트에 맡긴다.
+              // Keep rAF awake only while the auto-spin could actually run. A
+              // dome whose `spinArmed` was lowered by interaction is a still
+              // frame and belongs to the idle gate.
               //
-              // **`!ambientAsleep` 이 여기 있어야 하는 이유** (2026-08-19 실측):
-              // 자율 회전은 상시 혜성·fresh 브리드와 같은 부류의 앰비언트 모션
-              // 인데 혼자만 `ambient-sleep.ts` 계약 밖에 있었다. 그래서 3D 는
-              // **무입력 45초가 지나도 잠들지 않았다** — 2000노드에서 초당
-              // 520ms(코어 절반)를 영구히 태웠고, 같은 상태의 2D 는 3ms/s 였다
-              // (170배). 이 앱의 전형 시나리오가 "에이전트 터미널 옆에 띄워
-              // 두기"라는 것을 생각하면 이것이 가장 비싼 상태다.
+              // ★ **Why `!ambientAsleep` belongs here** (measured 2026-08-19):
+              // the auto-spin is ambient motion of the same family as the
+              // always-on comets and the fresh breathe, yet it alone sat
+              // outside the `ambient-sleep.ts` contract. So 3D **never fell
+              // asleep, even 45 s after the last input** — at 2,000 nodes it
+              // burned 520 ms per second (half a core) forever, where 2D in the
+              // same state burned 3 ms/s, a factor of 170. Given that this
+              // app's typical scenario is "leave it open beside the agent
+              // terminal", this was the most expensive state available.
               (!domeRt.orbiting &&
                 isDomeSpinAnimating({
                   domeOn: domeTargetOn,
@@ -2433,21 +2562,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
         const idleFlags = {
           pointerActive: pointerMachineRef.current.phase !== "idle",
-          // 드래그 grab/release 가 heat 를 충전하는 동안(또는 노드가 pin 된
-          // 동안)만 시뮬을 웜으로 인정한다. 상시 물리 토글은 제거됐다(#19).
+          // The sim counts as warm only while a drag grab/release is charging
+          // heat, or a node is pinned. There is no always-on physics toggle.
           simWarm: heatRef.current > 0 || nodeDragRef.current !== null,
           homing: homingActiveRef.current,
           selectionPulseActive: selectionPulseRef.current !== null &&
             now - selectionPulseRef.current.startAtMs < tokens.selectPulseDurationMs,
-          // R6 상시 혜성 — depends 엣지가 있고 reduced-motion 이 아니면 코멧이
-          // 포커스와 무관하게 항상 흐르므로 캔버스는 유휴가 되지 않는다(소유자
-          // 지시 "상시성"). 처방 E 의 포커스 contains 코멧과 호버 펄스도 같은
-          // 플래그를 짓는다. 문서 hidden 시엔 rAF 자체가 브라우저에 의해 정지돼
-          // 배터리를 지킨다.
+          // ★ The three branches are composed by a pure function in
+          // `idle-gate.ts`, not by an inline OR here. While it was inline,
+          // ambient sleep applied to the **`depends` branch only**, so leaving
+          // a node selected and letting go meant the app never slept.
           //
-          // 세 갈래의 합성은 `idle-gate.ts` 의 순수 함수가 소유한다 — 여기서
-          // 인라인 OR 로 짜던 동안 앰비언트 휴면이 **depends 갈래에만** 걸려,
-          // 노드를 선택해 둔 채 손을 놓으면 앱이 영원히 안 잠들었다.
+          // The branches: with `depends` edges present and reduced-motion off,
+          // comets flow regardless of focus (owner's instruction that they be
+          // always-on), so the canvas is never idle; the focused `contains`
+          // comets and the hover pulses raise the same flag. When the document
+          // is hidden the browser stops rAF itself, which protects the battery.
           egoTailAnimating: isEgoTailAnimating({
             reducedMotion: reducedMotionRef.current,
             ambientAsleep,
@@ -2457,42 +2587,46 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             hasContainsEdges: hasContainsEdgesRef.current,
             livePulseCount: pulsesRef.current.length,
           }),
-          // 렌즈 브러싱도 진행 중인 상호작용 — 유휴로 접으면 호버 링이 얼거나
-          // 뜨지 않는다(캔버스 호버와 같은 대우).
+          // Lens brushing is an interaction in progress too: folding to idle
+          // would freeze the hover ring or never draw it. Treated like canvas
+          // hover.
           emphasisTarget:
             hoveredNodeIdRef.current !== null ||
             panelEmphasisNodeIdRef.current !== null ||
             hoveredClusterIdRef.current !== null ||
             ((trailLensPropRef.current?.current ?? false) && (trailBrushPropRef.current?.current ?? null) !== null) ||
-            // 옆 패널 호버도 진행 중인 상호작용이다. 여기 안 넣으면 루프가
-            // 유휴로 접혀서, 마우스를 올려도 **아무 일도 안 일어난다** —
-            // 값은 맞는데 화면이 안 그려지는 종류의 결함이다.
+            // Side-panel hover is an interaction in progress as well. Leaving
+            // it out lets the loop fold to idle, and hovering then does
+            // **nothing** — the value is right but nothing is drawn.
             (panelHoverPropRef.current?.current ?? null) !== null,
-          // 렌즈 on/off 전이 — 마지막으로 그린 상태와 다르면 한 프레임 깨워
-          // 새 상태를 그린다(스포트라이트 램프 정착과 같은 계약).
+          // Lens on/off transition: if it differs from what was last drawn,
+          // wake for a frame and draw the new state — same contract as the
+          // spotlight ramp settling.
           trailLensSettling:
             (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current ||
             Math.abs(
               trailLensRampRef.current - ((trailLensPropRef.current?.current ?? false) ? 1 : 0),
             ) > 0.01,
-          // 앰비언트 휴면 — fresh 브리드는 에이전트가 매일 볼트를 고치는 이
-          // 제품의 **정상 상태**에서 거의 항상 참이라(카운슬 실측), 이 플래그가
-          // 유휴 게이트를 영구히 열어 두는 두 원인 중 하나였다.
+          // The fresh breathe is almost always true in this product's **normal
+          // state**, where an agent edits the vault daily (council
+          // measurement), which made this flag one of the two causes of the
+          // idle gate staying open forever. Hence the ambient-sleep guard.
           breathing: !reducedMotionRef.current && !ambientAsleep && world.nodes.some((n) => n.fresh),
           cameraMoving,
-          // 선택 해제 페이드: 라이브 포커스는 없는데 retained colorFocus 가 아직
-          // 남아 있으면(선택 링·배경 dim 의 색 타깃) focus 램프가 0 으로 감쇠할
-          // 때까지 깨어 있어야 한다. 이 감쇠·colorFocus 클리어는 아래 프레임
-          // 바디에서만 일어나므로, 코멧/카메라 같은 우발 활동에 의존하지 않고
-          // 여기서 명시적으로 활동으로 친다(deselect 링 잔류 회귀 차단).
+          // Deselect fade: with no live focus but a retained colorFocus still
+          // present (the colour target for the selection ring and background
+          // dim), the loop must stay awake until the focus ramp decays to 0.
+          // That decay and the colorFocus clear happen only in the frame body
+          // below, so this is counted as activity explicitly rather than
+          // relying on incidental activity like comets or the camera —
+          // otherwise the deselected ring lingers.
           focusFadeSettling:
             colorFocusRef.current !== null && focusedSlugRef.current === null && selectedEdgeRef.current === null,
-          // 스포트라이트 on/off 전이 중(램프 미도달)은 활동 — 램프 step 이
-          // 프레임 바디 안에서만 일어나므로 focusFadeSettling 과 같은 계약.
+          // A spotlight on/off transition whose ramp has not arrived is
+          // activity, on the same contract as focusFadeSettling: the ramp steps
+          // only inside the frame body.
           spotlightSettling:
             Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
-          // S6 — 이탈 역재생은 홈 스프링(homing)을 안 쓰므로 여기서 직접 깨워
-          // 둬야 안무가 유휴 게이트에 얼지 않는다.
         };
         const active =
           isCanvasActive(idleFlags) ||
@@ -2502,8 +2636,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           domeMotion;
         if (active) {
           lastActiveMsRef.current = now;
-          // e2e 계측 — 방금 프레임을 깨운 플래그 이름들(`lastActiveCausesRef`
-          // 독블록). 창구가 붙었을 때만 기록해 제품 경로 비용을 0 으로 유지.
+          // e2e instrumentation: the names of the flags that just kept this
+          // frame awake (see the `lastActiveCausesRef` doc-block). Recorded
+          // only while the window is attached, so the product path pays zero.
           if (idleDebugEnabledRef.current) {
             const causes: string[] = [];
             for (const [k, v] of Object.entries(idleFlags)) if (v === true) causes.push(k);
@@ -2518,9 +2653,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // --- 3D 돔 스텝 (2026-08-18) — 자세·관성·조립 시계·프레임 맵을 매
-      // 프레임 갱신한다. 값·물성은 전부 `model/dome-view.ts` 명공간 안에 산다
-      // (소유자 유예: 3D 모드는 앱 모션 규약 밖 — `docs/DECISIONS.md`). ---
+      // --- Dome step: refresh pose, inertia, assembly clock and frame map each
+      // frame. Every value and physical property lives in `model/dome-view.ts`
+      // (owner's dispensation: 3D mode sits outside the app's motion
+      // conventions — `docs/DECISIONS.md`). ---
       {
         const domeTargetOn = view3dRef.current && realmTransitionRef.current.phase === "idle";
         let dome = domeRuntimeRef.current;
@@ -2528,10 +2664,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           if (dome === null || domeWorldSourceRef.current !== world) {
             if (dome === null) {
               /*
-               * 첫 돔 — 모델 빌드를 **프레임 예산 슬라이스**로 소진한다
-               * (`domeModelBuildRef` 독블록: 종전엔 결합 구름 완화가 이 한
-               * 프레임에 346~368ms 히치를 만들었다). 소유 배치는 step 이
-               * null 이라 종전과 똑같이 이 프레임에 즉시 완성된다.
+               * First dome — the model build is consumed in **frame-budget
+               * slices** (see the `domeModelBuildRef` doc-block: the coupled
+               * cloud relaxation used to hitch this one frame by 346–368 ms).
+               * The ownership arrangement has a null `step`, so it still
+               * completes immediately in this frame.
                */
               let pending = domeModelBuildRef.current;
               if (
@@ -2545,8 +2682,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                   build: beginDomeModelBuild(
                     world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
                     /*
-                     * 「결합」 배치는 **모든 관계**를 각도의 입력으로 받는다 — 소유
-                     * 배치가 containment 부모만 보는 것과 다른 점이 정확히 이것이다.
+                     * The coupling arrangement takes **every relation** as
+                     * input to its angles — which is precisely how it differs
+                     * from the ownership arrangement, which sees only the
+                     * containment parent.
                      */
                     { arrangement: mapArrangementRef.current, edges: world.edges },
                   ),
@@ -2554,9 +2693,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 domeModelBuildRef.current = pending;
               }
               if (pending.build.step !== null && !pending.build.step(DOME_BUILD_SLICE_MS)) {
-                // 아직 완화 중 — 이번 프레임은 그리지 않는다(종전 동기 히치
-                // 동안의 정지 화면과 동일). 유휴 게이트가 접지 않게 활동으로
-                // 치고, 다음 프레임에서 이어 간다.
+                // Still relaxing — draw nothing this frame, exactly as the
+                // synchronous hitch used to show a still frame. Count it as
+                // activity so the idle gate does not fold, and resume next
+                // frame.
                 lastActiveMsRef.current = now;
                 handle = requestAnimationFrame(frame);
                 return;
@@ -2564,13 +2704,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               domeModelBuildRef.current = null;
               dome = createDomeRuntime(pending.build.model);
               domeRuntimeRef.current = dome;
-              // 3D 가 켜진 채 지도가 뜨는 경우(선호 저장 후 재방문) — 토글
-              // 이펙트가 안 돌므로 여기서 첫 핏을 예약한다.
+              // When the map loads with 3D already on (a saved preference on
+              // revisit) the toggle effect never runs, so the first fit is
+              // scheduled here.
               if (domeTargetOn) domeFitPendingRef.current = true;
             } else {
-              // 월드가 갈렸다 — 레이아웃만 다시 풀고 자세(yaw/pitch)는 지킨다.
-              // (돔이 이미 화면에 있으므로 종전대로 동기 재계산 — 슬라이스로
-              // 미루면 그 동안 낡은 모델이 그려져 «잠깐 옛 배치» 가 보인다.)
+              // The world changed — re-solve layout, keep the pose (yaw/pitch).
+              // Recomputed synchronously because the dome is already on screen;
+              // deferring it into slices would draw the stale model meanwhile
+              // and briefly show the old arrangement.
               dome.model = buildDomeModel(
                 world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
                 { arrangement: mapArrangementRef.current, edges: world.edges },
@@ -2582,8 +2724,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             domeWorldSourceRef.current = world;
           }
           dome.active = domeTargetOn;
-          // 켜짐 직후 1회 — 돔 전체가 여백을 갖고 화면에 앉게 카메라 핏.
-          // 여백 15% (히어로의 «물체가 가운데, 절반은 공» 판정).
+          // Once, right after turning on: fit the camera so the whole dome sits
+          // on screen with 15% padding (the hero's "object centred, half of it
+          // air" judgement).
           if (domeFitPendingRef.current && domeTargetOn) {
             domeFitPendingRef.current = false;
             const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
@@ -2598,8 +2741,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 world.nodes.length,
               );
               cameraTargetRef.current = target;
-              // 핏 배율이 2D 하한 밑이면 그 배율까지 하한을 내린다 — 안 그러면
-              // 목표≠값이 서서 휠 앵커가 허구의 배율로 계산된다(`fitScale` JSDoc).
+              // If the fit scale is below the 2D floor, lower the floor to it.
+              // Otherwise target ≠ value persists and the wheel anchor computes
+              // against a zoom that does not exist (see the `fitScale` JSDoc).
               dome.fitScale = target.tscale;
               userDrivenCameraRef.current = false;
               dampingRef.current = tokens.cameraDampingDefault;
@@ -2608,17 +2752,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             }
           }
           const dtMs = dt * 1000;
-          // 조립/해체 시계 — 켬은 정방향(티어 스태거), 끔은 1.6배속 역방향.
-          // reduced-motion 은 스냅(자율 조립 연출도 앱이 만드는 모션이다).
+          // Assembly/teardown clock: turning on runs forward with a tier
+          // stagger, turning off runs backward at 1.6×. Reduced-motion snaps —
+          // the assembly choreography is app-generated motion.
           if (reducedMotionRef.current) {
             dome.rampClock = domeTargetOn ? DOME_ASSEMBLE_TOTAL_MS : 0;
             /*
-             * reduced-motion 은 진입 스윕이 **아예 없다** — 앱이 만드는 모션이라
-             * WCAG 2.3.3 의 직접 조작 예외에 해당하지 않는다.
+             * Under reduced-motion there is **no entry sweep at all** — it is
+             * app-generated motion, so WCAG 2.3.3's direct-manipulation
+             * exception does not apply.
              *
-             * 여기서는 `commitDomeEntrySweep` 을 쓰지 **않는다**: 그것은 「이미
-             * 그리고 있던 스윕을 자세로 옮긴다」는 뜻이라, 한 번도 안 그린 각을
-             * 영구히 자세에 더해 버린다. 그린 적이 없으면 개어 넣을 것도 없다.
+             * `commitDomeEntrySweep` is deliberately NOT used here: it means
+             * "fold the sweep already being drawn into the pose", which would
+             * permanently add an angle that was never drawn. With nothing
+             * drawn there is nothing to fold in.
              */
             dome.entryArmed = false;
           } else {
@@ -2627,10 +2774,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               Math.min(DOME_ASSEMBLE_TOTAL_MS, dome.rampClock + (domeTargetOn ? dtMs : -dtMs * 1.6)),
             );
             /*
-             * 진입 스윕의 자기 시계 — 조립보다 길게 산다(`DOME_ENTRY_SWEEP_MS`
-             * 독블록: 조립 중에는 티어 램프가 낮아 자세를 돌려도 노드가 거의
-             * 안 움직인다). 다 소진되면 스스로 무장을 내려 이후 프레임에서
-             * 분기 자체가 사라진다.
+             * The entry sweep runs on its own clock, outliving assembly (see
+             * the `DOME_ENTRY_SWEEP_MS` doc-block: during assembly the tier
+             * ramps are low, so turning the pose barely moves any node). When
+             * it is spent it disarms itself and the branch disappears from
+             * later frames.
              */
             if (dome.entryArmed) {
               dome.entryClock += domeTargetOn ? dtMs : dtMs * 4;
@@ -2639,13 +2787,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
 
           /*
-           * 2D 복귀 핏 — **해체가 끝난 프레임에 한 번만** 갚는다(위
-           * `flatFitPendingRef` 독블록). 램프가 도는 동안 맞추면 morph 중인
-           * 좌표로 프레이밍하게 되고, 도착해서 보면 또 어긋나 있다.
+           * The 2D return fit, paid **once, on the frame teardown finishes**
+           * (see the `flatFitPendingRef` doc-block). Fitting while the ramp
+           * runs frames mid-morph coordinates and is wrong again on arrival.
            *
-           * 목표는 2D 「화면 맞춤」과 **같은 계산**을 쓴다(`overviewBoundsFor` +
-           * `computeOverviewCameraTarget`) — 3D 를 끄고 본 화면과 「화면 맞춤」을
-           * 누른 화면이 다르면 그것 자체가 다음 결함이다.
+           * The target uses the **same computation** as 2D fit-view
+           * (`overviewBoundsFor` + `computeOverviewCameraTarget`): if the view
+           * after turning 3D off differed from the view after pressing
+           * fit-view, that difference would itself be the next defect.
            */
           if (flatFitPendingRef.current && !domeTargetOn && dome.rampClock <= 0) {
             flatFitPendingRef.current = false;
@@ -2664,25 +2813,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               tokens,
               world.nodes.length,
             );
-            // 프로그램 이동이다 — 직전 휠 제스처가 남긴 대화형 스프링이 아니라
-            // 전환용 이징을 쓴다(2D 「화면 맞춤」과 같은 계약).
+            // This is a programmatic move, so it uses the transition easing
+            // rather than the interactive spring a preceding wheel gesture left
+            // behind — same contract as 2D fit-view.
             userDrivenCameraRef.current = false;
             dampingRef.current = tokens.cameraDampingDefault;
             cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
             beginCameraTween(flatTarget);
             lastActiveMsRef.current = now;
           }
-          // 3D 선택 리프레임 — 포커스 effect 가 적어 둔 대기를 이번 프레임에
-          // 소비한다(왜 effect 가 아니라 여기인가: `domeFocusPendingRef` JSDoc).
-          // 2D 포커스 다이브의 돔 등가물: 노드가 구조의 뒷면일 수 있으므로
-          // 줌·팬만으로는 대상이 가려진 채 커진다 — yaw(앞면으로) · 카메라
-          // 팬/줌(ego 투영 bbox 로)이 **같은 시계**(큐빅 ease-in-out, 같은
-          // duration)를 타고 함께 도착한다. 새 이징 문법 없음.
+          // 3D selection reframe: consume the ticket the focus effect left
+          // (why here rather than in the effect: the `domeFocusPendingRef`
+          // JSDoc). This is the dome equivalent of the 2D focus dive. The node
+          // may be on the far side of the structure, so zoom and pan alone
+          // would enlarge it while still occluded; instead the yaw (bringing it
+          // to the front) and the camera pan/zoom (to the ego projection bbox)
+          // ride the **same clock** — cubic ease-in-out, identical duration —
+          // and arrive together. No new easing vocabulary.
           if (
             domeFocusPendingRef.current !== null &&
             domeTargetOn &&
-            // 제스처 우선 — 사용자가 궤도/드래그 중이면 프로그램 이동을 세우지
-            // 않고 대기표를 버린다(입력이 항상 이긴다 — 트윈 중단 계약과 대칭).
+            // Gestures win: while the user is orbiting or dragging, the ticket
+            // is dropped rather than starting a programmatic move — input
+            // always wins, symmetric with the tween-interrupt contract.
             !dome.orbiting &&
             pointerMachineRef.current.phase !== "dragging"
           ) {
@@ -2691,8 +2844,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             const { width, height } = viewportRef.current;
             if (width > 0 && height > 0) {
               if (pending.slug === null) {
-                // 해제 — 자세는 두고(사용자의 시점 존중) 카메라만 현재 자세의
-                // 돔 전체 프레임으로 복귀한다(2D 의 overview 복귀 등가).
+                // Deselect: leave the pose alone (respect the user's
+                // viewpoint) and return only the camera to the whole-dome frame
+                // at the current pose — the equivalent of the 2D overview
+                // return.
                 const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
                 if (b !== null) {
                   const padX = (b.maxX - b.minX) * 0.15;
@@ -2712,15 +2867,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                   beginCameraTween(target);
                 }
               } else {
-                // 선택은 개입이다 — 시선 끌기 회전은 여기서 내려간다 (①).
-                // 좌표가 없는 노드(돔 모델 밖 kind)여도 개입은 개입이다.
+                // A selection is interaction, so the attention spin is
+                // lowered here. That holds even for a node with no coordinate
+                // (a kind outside the dome model) — interaction is interaction.
                 dome.spinArmed = false;
                 commitDomeEntrySweep(dome);
                 const coord = dome.model.coords.get(pending.slug);
                 if (coord !== undefined) {
                   dome.orbiting = false;
                   dome.yawVel = 0;
-                  // 착지 겨냥도 함께 버린다 — 새 입력·명시적 리셋이 언제나 이긴다.
+                  // Drop the landing target too — new input and an explicit
+                  // reset always win.
                   dome.yawSnap = null;
                   dome.pitchVel = 0;
                   const targetYaw = domeFocusYaw(coord, dome.yaw);
@@ -2744,8 +2901,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                       y: cameraRef.current.y.value,
                       scale: cameraRef.current.scale.value,
                     };
-                    // duration — 카메라 항(거리 비례, 기존 식)과 자세 항(반 바퀴
-                    // = `DOME_POSE_MS`) 중 큰 쪽. 두 축이 한 시계로 함께 도착한다.
+                    // Duration is the larger of the camera term (distance
+                    // proportional, the existing formula) and the pose term
+                    // (half a turn = `DOME_POSE_MS`), so both axes arrive
+                    // together on one clock.
                     const yawSpan = Math.abs(targetYaw - dome.yaw) + Math.abs(targetPitch - dome.pitch);
                     const yawMs =
                       CAMERA_TRANSITION_MIN_MS +
@@ -2765,8 +2924,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               }
             }
           }
-          // 프로그램 자세 이동(「제자리로」·선택 리프레임) — 궤도 드래그가
-          // 시작되면 그쪽이 이긴다(제스처는 현재 자세에서 그대로 이어받는다).
+          // Programmatic pose moves (reset, selection reframe). If an orbit
+          // drag starts, the gesture wins and continues from the current pose.
           const pose = dome.poseTween;
           if (pose !== null) {
             if (dome.orbiting) {
@@ -2783,26 +2942,30 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 dome.yaw = pose.startYaw + (pose.targetYaw - pose.startYaw) * e;
                 dome.pitch = pose.startPitch + (pose.targetPitch - pose.startPitch) * e;
                 /*
-                 * 프로그램 이동에도 티어 비틀림을 먹인다(`DOME_POSE_LAG_SCALE`
-                 * 독블록). 이 네 줄이 없으면 클릭 리프레임에서 네 링이 한
-                 * 덩어리로 굳어 돌고, 그것이 「물체가 자기 운동에 반응하지
-                 * 않는다」로 읽힌다. 이동이 끝나면 충전이 멎고 기존 감쇠가
-                 * 되감으므로 도착 뒤 안정화 흔들림이 공짜로 따라온다.
+                 * Programmatic moves feed the tier torsion too (see the
+                 * `DOME_POSE_LAG_SCALE` doc-block). Without it a click reframe
+                 * turns all four rings as one rigid block, which reads as an
+                 * object that does not react to its own motion. When the move
+                 * ends, charging stops and the existing decay unwinds, so the
+                 * settling wobble on arrival comes for free.
                  */
                 chargeTierLag(dome.lag, dome.yaw - prevPoseYaw, DOME_POSE_LAG_SCALE);
               }
               dome.yawVel = 0;
-              // 착지 겨냥도 함께 버린다 — 새 입력·명시적 리셋이 언제나 이긴다.
+              // Drop the landing target too — new input and an explicit reset
+              // always win.
               dome.yawSnap = null;
               dome.pitchVel = 0;
               dome.yawTarget = dome.yaw;
               dome.pitchTarget = dome.pitch;
             }
           }
-          // 궤도 드래그 중 — 포인터가 민 목표를 τ=45ms 로 따라간다(이벤트
-          // 주기가 프레임 주기보다 길 때의 계단 제거 — `ORBIT_SMOOTH_TAU_MS`
-          // JSDoc). 티어 비틀림도 **실제 프레임 이동**에서 충전해야 스무딩과
-          // 박자가 맞는다. reduced-motion 은 스냅(1:1 직접 조작 유지).
+          // While orbiting, follow the pointer-pushed target with τ = 45 ms,
+          // which removes the stepping when the event period is longer than the
+          // frame period (see the `ORBIT_SMOOTH_TAU_MS` JSDoc). The tier
+          // torsion must be charged from the **actual frame movement** to stay
+          // in time with that smoothing. Reduced-motion snaps, keeping 1:1
+          // direct manipulation.
           if (dome.orbiting) {
             const prevYaw = dome.yaw;
             if (reducedMotionRef.current) {
@@ -2817,10 +2980,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
           if (!dome.orbiting && dome.poseTween === null) {
             /*
-             * **의미 있는 착지로 데려가기** — 릴리스가 도메인 자오선을 겨눴을
-             * 때만(`dome.yawSnap`). τ 를 릴리스 속도에서 역산하므로 손을 뗀
-             * 프레임에 속도가 안 튄다(`orbitSnapTauMs` 독블록). 도착하면 스스로
-             * 목표를 지워 이후 프레임에서 이 분기가 사라진다.
+             * Carry the release to a meaningful landing, but only when it aimed
+             * at a domain meridian (`dome.yawSnap`). τ is derived from the
+             * release velocity, so speed does not jump on the frame the pointer
+             * lifts (see the `orbitSnapTauMs` doc-block). On arrival it clears
+             * its own target and this branch disappears from later frames.
              */
             if (dome.yawSnap !== null) {
               const delta = dome.yawSnap - dome.yaw;
@@ -2831,8 +2995,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               } else {
                 const tau = orbitSnapTauMs(delta, dome.yawVel);
                 dome.yaw += delta * (1 - Math.exp(-dtMs / tau));
-                // 속도 계기는 계속 «지금 얼마나 빨리 도는가»를 말해야 한다 —
-                // 관성 분기가 아니라도 감쇠를 이어 둔다(무장 해제 판정이 읽는다).
+                // The velocity gauge must keep saying how fast it is turning
+                // right now, so decay continues even outside the inertia
+                // branch — the disarm check reads it.
                 dome.yawVel = decayOrbitVelocity(dome.yawVel, dtMs);
               }
               dome.pitch += dome.pitchVel * dtMs;
@@ -2846,12 +3011,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 dome.pitchVel = 0;
               }
             } else {
-              // 릴리스 관성 — 놓는 순간의 속도가 이어지다 기하 감쇠로 멎는다.
+              // Release inertia: the velocity at release carries on and stops
+              // under geometric decay.
               dome.yaw += dome.yawVel * dtMs;
               dome.pitch += dome.pitchVel * dtMs;
               dome.yawVel = decayOrbitVelocity(dome.yawVel, dtMs);
               dome.pitchVel = decayOrbitVelocity(dome.pitchVel, dtMs);
-              // pitch 러버밴드 복귀 — 한계 밖이면 지수 스프링백.
+              // Pitch rubber-band: past the limit, spring back exponentially.
               const clampedPitch = clampDomePitch(dome.pitch);
               if (clampedPitch !== dome.pitch) {
                 dome.pitch += (clampedPitch - dome.pitch) * (1 - Math.exp(-dtMs / 120));
@@ -2859,19 +3025,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 dome.pitchVel = 0;
               }
             }
-            // 자율 회전(48s/바퀴) — 시선 끌기(attract) 루프라 **무장 상태에서만**
-            // 돈다: 사용자가 개입(궤도·줌·핀치·노드 드래그·선택)한 순간
-            // `spinArmed` 가 내려가 다시는 저절로 돌지 않는다(①, 소유자
-            // *"클릭하고 나서 좀 안돌아가게"*). 복귀는 「자동 정렬」·3D 재진입.
-            // 포인터가 캔버스 위면 정지, reduced-motion 0 은 종전 그대로.
+            // Auto-spin (48 s per turn) is an attention loop, so it runs
+            // **only while armed**: any interaction — orbit, zoom, pinch, node
+            // drag, selection — lowers `spinArmed` and it never turns by itself
+            // again. Owner: *"클릭하고 나서 좀 안돌아가게"* (stop it turning
+            // after I click). It is rearmed by auto-align or by re-entering 3D.
+            // It also stops while the pointer is over the canvas, and stays 0
+            // under reduced-motion.
             //
-            // 속도에 앰비언트 휴면 계수를 곱한다 — 끄는 게 아니라 재운다
-            // (`model/ambient-sleep.ts`). 손을 놓고 30초가 지나면 2초에 걸쳐
-            // 회전이 0 으로 램프하고, 0 에 닿는 순간 위 활동 플래그가 내려가
-            // 유휴 게이트가 닫힌다. 어떤 입력이든 `lastInputMs` 를 밀어 다음
-            // 프레임에 계수가 1 로 복귀하므로 wake 배선이 필요 없다. 스텝이
-            // 아니라 램프인 이유도 혜성과 같다: 한 프레임에 끊으면 돔이
-            // 「멎은」 것으로 읽힌다.
+            // Its speed is multiplied by the ambient sleep factor — put to
+            // sleep, not switched off (`model/ambient-sleep.ts`). 30 s after
+            // the hand lets go, rotation ramps to 0 over 2 s; the moment it
+            // reaches 0 the activity flag above drops and the idle gate closes.
+            // Any input pushes `lastInputMs` and the factor returns to 1 on the
+            // next frame, so no wake wiring is needed. A ramp rather than a
+            // step for the same reason as the comets: cutting it in one frame
+            // reads as the dome having seized.
             const spinFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
             if (
               dome.yawVel === 0 &&
@@ -2886,17 +3055,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             ) {
               dome.yaw += (dtMs / DOME_PERIOD_MS) * Math.PI * 2 * spinFactor;
             }
-            // 드래그 밖 불변식 — 목표는 항상 현재 자세를 따라온다(다음 드래그
-            // 가 낡은 목표-갭을 물려받지 않게).
+            // Invariant outside a drag: the target always follows the current
+            // pose, so the next drag does not inherit a stale target gap.
             dome.yawTarget = dome.yaw;
             dome.pitchTarget = dome.pitch;
           }
-          // 티어 비틀림 감쇠(스프링백) — 히어로의 elastic torsion.
+          // Tier torsion decay (spring-back) — the hero's elastic torsion.
           const lagDecay = Math.pow(DOME_TIER_LAG_DECAY_PER_MS, dtMs);
           dome.lag.domain = Math.abs(dome.lag.domain) < 1e-5 ? 0 : dome.lag.domain * lagDecay;
           dome.lag.capability = Math.abs(dome.lag.capability) < 1e-5 ? 0 : dome.lag.capability * lagDecay;
           dome.lag.element = Math.abs(dome.lag.element) < 1e-5 ? 0 : dome.lag.element * lagDecay;
-          // 평면 내 노드 드래그 — 임계감쇠 스프링(크리스프 층 각진동수 재사용).
+          // In-plane node drag: a critically damped spring, reusing the crisp
+          // layer's angular frequency.
           if (dome.drag !== null) {
             const coord = dome.model.coords.get(dome.drag.nodeId);
             if (coord === undefined) {
@@ -2927,7 +3097,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             }
           }
           if (dome.rampClock > 0) {
-            // 점 반지름의 분모 — 드로우·히트가 곱하는 기본 반지름과 같은 식.
+            // The dot radius denominator — the same formula draw and
+            // hit-testing multiply by.
             updateDomeFrame(dome, world.nodes, (n) => {
               const w = world.nodeById.get(n.id);
               return w ? radiusForKind(w.kind, tokens) * w.magnitudeScale : 1;
@@ -2956,7 +3127,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // reframing only existed to chase the removed load settle). ---
       const sim = simRef.current;
       const pinned = nodeDragRef.current !== null;
-      // C1 B3: a user grab interrupts any in-flight auto-arrange homing —
+      // A user grab interrupts any in-flight auto-arrange homing —
       // the drag wins, rather than the two fighting over the node's position.
       if (pinned && homingActiveRef.current) {
         homingActiveRef.current = false;
@@ -2964,11 +3135,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         homeTargetOverrideRef.current = null;
       }
 
-      // --- 결계 불변식 (소유자 실보고 2026-07-23, 재현 경로 ①) — 영역 멤버가
-      // 결계 **밖**에서 릴리즈되면 영역 타깃으로 재홈잉한다(고무줄 복귀). 결계는
-      // 경계다: 루트(타깃=원점)를 끌어내 놓으면 "자기 결계 밖의 루트" 로 세계
-      // 문법이 깨진다. 안쪽 릴리즈는 자유 배치 유지(MindNode 식) — Auto-arrange
-      // 가 언제든 정돈한다. 기존 홈 스프링 + 목표 오버라이드 재사용, 신규 모션 0. ---
+      // --- Warding invariant (owner bug report 2026-07-23, repro path ①): a
+      // realm member released **outside** the warding ring homes back to its
+      // realm target, like a rubber band. The ring is a boundary: dragging the
+      // root (whose target is the origin) out and dropping it there breaks the
+      // world's grammar into "a root outside its own ring". Releases inside
+      // keep free placement, and auto-arrange tidies whenever asked. Reuses the
+      // existing home springs plus the target override — no new motion. ---
       {
         const pinnedId = nodeDragRef.current?.nodeId ?? null;
         const releasedId = prevPinnedNodeIdRef.current !== null && pinnedId === null ? prevPinnedNodeIdRef.current : null;
@@ -2982,19 +3155,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             released !== undefined &&
             Math.hypot(released.x - realmData.wardingCenter.x, released.y - realmData.wardingCenter.y) > radius;
           if (target && released && outside) {
-            // 재홈잉 대상 = 릴리즈 노드 + 이번 드래그의 터그 영향권(1/2-hop) 중
-            // 영역 멤버. 릴리즈 노드만 스프링하면 터그로 끌려온 이웃이 변위
-            // 채로 동결된다(정상 릴리즈의 settle 이 터그를 0 으로 되감는 경로를
-            // 아래 heat=0 이 끊으므로) — 결계 위반은 흐트러진 무리 전체를
-            // 제자리로 정돈한다 (스코프 좁힌 relayout 과 같은 문법).
+            // Re-homed set = the released node plus the realm members inside
+            // this drag's tug reach (1- and 2-hop). Springing only the released
+            // node freezes the tugged neighbours at their displacement, because
+            // the heat = 0 below cuts the path where a normal release's settle
+            // eases the tug back to 0. A warding violation tidies the whole
+            // disturbed group — the same grammar as a scoped relayout.
             const affected = dragAffectedSetRef.current;
             const springIds = new Set<string>([releasedId]);
             if (affected !== null && affected.draggedId === releasedId) {
               for (const id of affected.oneHop) springIds.add(id);
               for (const id of affected.twoHop) springIds.add(id);
             }
-            // settle burst 대신 홈 스프링이 좌표를 소유 — 둘이 같은 노드를 놓고
-            // 싸우지 않게 열/터그를 접는다 (relayout 과 같은 배타 계약).
+            // The home springs own the coordinates instead of the settle
+            // burst, so heat and tug are folded away and the two never fight
+            // over the same node — the same exclusivity contract as relayout.
             heatRef.current = 0;
             dragAffectedSetRef.current = null;
             dragTugOffsetsRef.current.clear();
@@ -3010,9 +3185,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             homeSpringsRef.current = springs;
             homeTargetOverrideRef.current = override;
             homingActiveRef.current = true;
-            // sim 내부 좌표도 복귀 목표로 재시드 — 다음 드래그의 applyForcePositions
-            // 가 stale 드롭 좌표를 되쓰지 않게 (S8 결함 5와 같은 계약). heat=0 이라
-            // 스프링 수렴 전엔 sim 이 tick 하지 않아 목표 좌표 시드가 안전하다.
+            // Reseed the sim's own coordinates at the return targets, so the
+            // next drag's `applyForcePositions` does not write back the stale
+            // drop positions. With heat = 0 the sim does not tick until the
+            // springs converge, which makes seeding at the targets safe.
             simRef.current = createForceSimulation(
               world.nodes.map((n) => {
                 const t = override.get(n.id);
@@ -3024,25 +3200,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
       /*
-       * **완전히 조립된 돔에서는 2D 물리를 돌리지 않는다** (2026-08-19 실측).
+       * ★ **A fully assembled dome does not run 2D physics** (measured
+       * 2026-08-19).
        *
-       * `updateDomeFrame` 이 프레임에 싣는 오프셋은 `dx = (p.wx − node.x) · r`
-       * 이고 그리는 좌표는 `node.x + dx` 다. 티어 램프가 다 찬 상태(r=1)에서
-       * 이것은 `p.wx` 로 **정확히 약분된다** — 즉 조립이 끝난 돔의 어떤 마크도
-       * 2D 월드 좌표에 의존하지 않는다. 돔 모델(`dome.model.coords`)은 `world`
-       * 객체 «정체» 가 바뀔 때만 다시 짓지 좌표가 움직였다고 다시 짓지 않으므로,
-       * 이 프레임 동안 월드 좌표를 얼려도 돔은 한 픽셀도 달라지지 않는다.
+       * `updateDomeFrame`'s offset is `dx = (p.wx − node.x) · r` and the drawn
+       * coordinate is `node.x + dx`, so with the tier ramps full (r = 1) it
+       * **cancels exactly to `p.wx`**: no mark on an assembled dome depends on
+       * the 2D coordinates. `dome.model.coords` is rebuilt only when the
+       * `world` object's *identity* changes, so freezing those coordinates for
+       * a frame moves the dome by zero pixels.
        *
-       * 그런데 3D 노드 드래그는 `nodeDragRef` 를 세운다(돔 평면 드래그의 손잡이
-       * 로 쓴다). 그래서 `pinned` 가 참이 되어 **아무 데도 안 보이는 2D 물리가
-       * 통째로 돌고 있었다**: FA2 iterate + 겹침 완화가 2,000 노드 전체 위에서,
-       * 게다가 `dragAffectedSetRef` 는 돔 경로가 세우지 않아 활성 집합조차 없는
-       * 최악의 형태로. 프로파일에서 드래그 표본의 **73%**(resolvePair 50.9% +
-       * iterate 22.6%)가 여기였고, 3D 노드 드래그 p95 는 52.1ms(≈19fps)였다 —
-       * 같은 조건의 2D 는 2.7ms.
+       * But a 3D node drag sets `nodeDragRef` (the handle for the dome's
+       * in-plane drag), making `pinned` true and running **the entire 2D
+       * physics pass where nothing could be seen** — FA2 plus separation over
+       * all 2,000 nodes, in its worst shape, since the dome path never sets
+       * `dragAffectedSetRef` and there was not even an active set. **73%** of
+       * the profile's drag samples were here (resolvePair 50.9% + iterate
+       * 22.6%), and 3D node-drag p95 was 52.1 ms (≈19 fps) against 2.7 ms in 2D.
        *
-       * 3D 를 나가면 2D 레이아웃은 들어가기 전 그대로다. 보이지 않는 동안 굳는
-       * 것이 오히려 계약에 맞다 — 돌아왔을 때 지도가 낯설어지지 않는다.
+       * Leaving 3D finds the 2D layout exactly as it was on entry, which is the
+       * better contract anyway.
        */
       const domeAssembled =
         view3dRef.current &&
@@ -3050,19 +3227,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         domeRuntimeRef.current !== null &&
         domeRuntimeRef.current.rampClock >= DOME_ASSEMBLE_TOTAL_MS;
       if (domeAssembled) {
-        // 건너뛰는 동안에도 heat 는 흐른다 — 3D 를 나가는 순간 낡은 정착 버스트를
-        // 물려받지 않게 (아래 블록의 A4 예산과 같은 시간 규칙).
+        // Heat still drains while the pass is skipped, so leaving 3D does not
+        // inherit a stale settle burst — the same time budget rule as below.
         if (!pinned && heatRef.current > 0) heatRef.current = Math.max(0, heatRef.current - dt * 1000);
       } else if (sim && (heatRef.current > 0 || pinned)) {
-        // C1 B2 — radius-limited release settle: restrict BOTH the live-drag
+        // Radius-limited release settle: restrict BOTH the live-drag
         // tick and the post-release settle burst to the dragged node's own
         // cluster (itself + 1-hop + 2-hop), so far nodes never drift via FA2
         // either (matching the explicit tug's own falloff below).
         const affected = dragAffectedSetRef.current;
-        // **«움직일 수 있는 것» ∩ «그려지는 것».**
-        // 허브를 끌면 1홉+2홉이 그래프 대부분이라 홉 제한만으로는 안 걸러진다
-        // (실측: 활성 집합만 적용했을 때 137.6 → 137.6ms, 이득 0). 접혀서 화면에
-        // 없는 노드는 힘을 받아 움직여도 아무 데도 안 보이므로 계산 대상이 아니다.
+        // **What can move, intersected with what is drawn.**
+        // Dragging a hub makes 1-hop + 2-hop most of the graph, so the hop
+        // limit alone filters nothing (measured: applying the active set alone
+        // went 137.6 → 137.6 ms, zero gain). A node collapsed off screen moves
+        // where nobody can see it, so it is not worth computing.
         const clustered = clusteredIdsRef.current;
         const restrictToIds = affected
           ? new Set<string>(
@@ -3071,17 +3249,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               ),
             )
           : null;
-        // **좁힌 경로는 «희소할 때만» 이득이다** (2026-07-31 구간 실측).
+        // **The narrowed path wins only when the set is sparse** (measured per
+        // block, 2026-07-31).
         //
-        // 이 프레임에 좌표를 쓰는 주체가 셋인데 그중 이웃 터그는 접힌 노드까지
-        // 포함한 1/2홉 전체를 매 프레임 민다. 그래서 «움직인 노드» 는 감사가
-        // 가정한 ~30 이 아니라 **터그 영향권의 크기**다 — 프로젝트 루트를 끌면
-        // 975/3000(33%)이라 인덱스 우회가 오히려 손해였고(기하 0.4 → 0.6ms),
-        // 도메인을 끌면 281/3000(9%)이라 시뮬 블록이 2.1 → 1.5ms 로 줄었다.
+        // Three things write coordinates in this frame, and one of them — the
+        // neighbour tug — pushes the entire 1-/2-hop set, collapsed nodes
+        // included, every frame. So "nodes that moved" is not the ~30 the audit
+        // assumed but **the size of the tug's reach**: dragging the project
+        // root gives 975/3000 (33%), where the index detour was a net loss
+        // (geometry 0.4 → 0.6 ms), while dragging a domain gives 281/3000 (9%),
+        // where the sim block fell 2.1 → 1.5 ms.
         //
-        // 그래서 갈림길을 하나 둔다: 희소하면 좁히고, 아니면 **스냅샷조차 뜨지
-        // 않고** 종전 전체 경로 그대로 간다. 이득이 없을 때 비용만 남기지 않는
-        // 것이 이 판정의 목적이다.
+        // Hence one fork: narrow when sparse, otherwise take the original full
+        // path **without even taking the snapshot**. The point is to not pay
+        // the cost where there is no gain.
         const nodeCount = world.nodes.length;
         const scoped =
           affected !== null &&
@@ -3089,8 +3270,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         let prevX: Float64Array | null = null;
         let prevY: Float64Array | null = null;
         if (scoped) {
-          // 프레임 시작 좌표를 떠 둔다 — 프레임 끝에서 «정말 움직인 것» 을 실측해
-          // 파생 기하 갱신을 거기로 좁힌다.
+          // Snapshot the frame's starting coordinates, so the end of the frame
+          // can measure what really moved and narrow the derived geometry
+          // update to it.
           if (geomPrevXRef.current?.length !== nodeCount) {
             geomPrevXRef.current = new Float64Array(nodeCount);
             geomPrevYRef.current = new Float64Array(nodeCount);
@@ -3104,11 +3286,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
 
         sim.tick(forceIterationsForDt(dt), restrictToIds);
-        // **되쓸 대상도 제한한다.** 제한 틱은 부분 그래프 밖 좌표를 건드리지
-        // 않으므로 그 값을 다시 써 넣는 것은 무의미한 3000회 왕복이다. 단
-        // **터그 이웃과 직전 프레임의 겹침-밀림 노드는 포함해야 한다** — 이 되쓰기가
-        // 그들의 프레임 변위를 0 으로 되돌리는 것이 기존 계약이고, 빠뜨리면
-        // 터그 오프셋이 프레임마다 누적돼 이웃이 날아간다.
+        // **The write-back is restricted too.** A restricted tick never
+        // touches coordinates outside the subgraph, so writing those values
+        // back is a pointless 3,000-element round trip. But it **must include
+        // the tug neighbours and the previous frame's separation-displaced
+        // nodes**: reverting their frame displacement to 0 is the existing
+        // contract, and omitting them accumulates the tug offset every frame
+        // until neighbours fly away.
         const applyOnly =
           scoped && affected
             ? new Set<string>([
@@ -3120,7 +3304,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             : null;
         applyForcePositions(world, sim.positions(applyOnly));
 
-        // C1 B1 — explicit neighbor tug: the dragged node's own per-frame
+        // Explicit neighbor tug: the dragged node's own per-frame
         // world-space displacement (Δ since grab) propagates to 1-hop/2-hop
         // neighbors, falling off by hop distance, eased in/out so the motion
         // reads as springy lag-then-catch-up rather than a rigid rod. Also
@@ -3152,7 +3336,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               targetY = (draggedNode.y - dragStart.y) * factor;
             }
             const prevOffset = dragTugOffsetsRef.current.get(id) ?? { x: 0, y: 0 };
-            // A8 — under reduced motion the neighbor offset tracks the pointer
+            // Under reduced motion the neighbor offset tracks the pointer
             // 1:1 (user-driven position, no animated lag/catch-up easing).
             const nextOffset = reducedMotionRef.current
               ? { x: targetX, y: targetY }
@@ -3168,21 +3352,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
         }
 
-        // B7 — 드래그/정착이 만든 겹침을 같은 프레임에서 완화 (호밍 중에는
-        // 호출되지 않는 블록이라 첫 지도 연출의 의도적 모임은 보호된다).
+        // Relax the overlap a drag or settle created, in the same frame. This
+        // block is not reached while homing, so the first-map reveal's
+        // deliberate gathering is protected.
         {
-          // **그려지지 않는 노드는 겹칠 수 없다.**
+          // ★ **A node that is not drawn cannot overlap.**
           //
-          // 밀도 게이트로 접힌 서브트리는 칩 하나로 대체되어 화면에 없다
-          // (실측 synth=3000: 3000개 중 **2820개(94%)가 접혀 있고 화면 안은
-          // 118개**). 안 보이는 것들끼리의 겹침을 푸는 것은 결과가 아무 데도
-          // 나타나지 않는 순수 낭비인데, 쌍 수는 N² 라 그 낭비가 프레임의
-          // 78%(109.3ms)를 먹고 있었다.
+          // A subtree collapsed by the density gate is replaced by one chip and
+          // is not on screen (measured at synth=3000: **2,820 of 3,000 (94%)
+          // collapsed, 118 on screen**). Resolving overlaps among the invisible
+          // is pure waste whose result appears nowhere, and because pair count
+          // is N² that waste took 78% of the frame (109.3 ms).
           //
-          // 소유자가 세 번 물은 것이 정확히 이것이다 — *"화면에 보이는 건
-          // 20개인데 왜 3000개를 다 계산하나"*. 데이터로 들고 있는 것과 매
-          // 프레임 계산에 넣는 것은 다른 얘기이고, 여기서 그 둘이 구분 없이
-          // 같았다.
+          // This is exactly what the owner asked three times: *"화면에 보이는
+          // 건 20개인데 왜 3000개를 다 계산하나"* (only 20 are on screen — why
+          // compute all 3,000?). What you hold as data and what you feed into
+          // per-frame computation are different things, and here they were
+          // indistinguishably the same.
           const drawnIdx: number[] = [];
           const sepNodes: SeparationNode[] = [];
           for (let i = 0; i < world.nodes.length; i += 1) {
@@ -3196,13 +3382,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               r: radiusForKind(n.kind, tokens) * n.magnitudeScale,
             });
           }
-          // **이번 프레임에 실제로 움직인 것만 검사한다.** 정지-정지 쌍은 지난
-          // 프레임에 이미 안 겹쳤으므로 새로 겹칠 수 없다.
+          // **Only test what actually moved this frame.** A still-still pair
+          // did not overlap last frame, so it cannot overlap now.
           //
-          // 힘 시뮬은 이 집합(`dragAffectedSetRef`)을 **이미 받고 있었는데**
-          // 겹침 해소만 안 받아서, 3000노드에서 프레임당 900만 회 거리 계산의
-          // 99.99%가 «둘 다 정지» 였다(2026-07-31 실측 109.3ms, 프레임의 78%).
-          // 집합이 없으면(정착 종료 후 등) 종전대로 전 노드 — 동작 동일.
+          // The force sim **already received** this set
+          // (`dragAffectedSetRef`); only separation did not. At 3,000 nodes,
+          // 99.99% of the 9 million distance computations per frame were
+          // "both still" (measured 2026-07-31: 109.3 ms, 78% of the frame).
+          // With no set — after a settle ends, say — it falls back to every
+          // node, identical to the previous behaviour.
           const sepActive = affected
             ? new Set<string>([affected.draggedId, ...affected.oneHop, ...affected.twoHop])
             : null;
@@ -3212,8 +3400,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             pinnedId: nodeDragRef.current?.nodeId ?? null,
             activeIds: sepActive,
           });
-          // 밀린 노드를 여기서 기록해 둔다 — 다음 프레임의 좁힌 write-back 이
-          // 이들의 «되돌림» 을 빠뜨리지 않게 (위 `applyOnly`).
+          // Record the displaced nodes here so the next frame's narrowed
+          // write-back does not omit their revert (see `applyOnly` above).
           const sepDisplaced = sepDisplacedIdsRef.current;
           sepDisplaced.clear();
           for (let i = 0; i < sepNodes.length; i += 1) {
@@ -3225,8 +3413,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             target.y = sepNodes[i].y;
           }
         }
-        // 이 프레임에 좌표가 실제로 바뀐 노드만 — 셋(힘·터그·겹침) 중 누가 썼든
-        // 결과로 판정하므로 어느 하나를 빠뜨릴 수 없다.
+        // Only the nodes whose coordinates really changed this frame. Judging
+        // by result rather than by author means none of the three writers
+        // (force, tug, separation) can be missed.
         let movedIds: Set<string> | null = null;
         if (prevX && prevY) {
           movedIds = new Set<string>();
@@ -3236,7 +3425,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
         }
         recomputeWorldGeometry(world, tokens, movedIds);
-        // A4 — heat is a TIME budget (ms), not a frame count, so the release
+        // Heat is a TIME budget (ms), not a frame count, so the release
         // settle lasts `--topology-v2-node-release-settle-ms` on every display.
         if (!pinned && heatRef.current > 0) heatRef.current = Math.max(0, heatRef.current - dt * 1000);
         if (!pinned && heatRef.current <= 0) {
@@ -3245,21 +3434,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           dragAffectedSetRef.current = null;
           dragTugOffsetsRef.current.clear();
           sepDisplacedIdsRef.current.clear();
-          // 드래그 동안 bbox 는 «넓히기만» 했다(팬 클램프라 넉넉한 쪽이 안전).
-          // 정착이 끝나는 이 한 프레임에서 정확한 값으로 되돌린다 — 안쪽으로
-          // 모인 그래프의 클램프가 드래그 이전보다 헐렁한 채 남지 않게.
+          // During a drag the bbox only ever grew, because it feeds the pan
+          // clamp and erring generous is the safe direction. This one frame,
+          // where the settle ends, restores the exact value so a graph that
+          // gathered inward does not keep a looser clamp than before the drag.
           recomputeWorldGeometry(world, tokens);
         }
       }
 
-      // C1 B3 — auto-arrange homing: springs every node back to its own
+      // Auto-arrange homing: springs every node back to its own
       // `homeX`/`homeY` over a short critically-damped transition, independent
       // of the FA2/tug block above (relayout resets heat/pin, so the two never
       // run in the same frame in practice).
       if (homingActiveRef.current) {
-        // A8 — reduced-motion users get the relayout RESULT, not the journey.
-        // 결계 불변식 — 영역 중 호밍 목표는 오버라이드(영역 insideTargets)가
-        // 우선한다. null 이면 기존 전역 homeX/homeY 계약 그대로.
+        // Reduced-motion users get the relayout RESULT, not the journey.
+        // Warding invariant: inside a realm the override (the realm's
+        // `insideTargets`) wins as the homing target; null keeps the global
+        // homeX/homeY contract.
         const homeOverride = homeTargetOverrideRef.current;
         if (reducedMotionRef.current) {
           for (const node of world.nodes) {
@@ -3280,7 +3471,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             const t = homeOverride?.get(node.id);
             const targetX = t?.x ?? node.homeX;
             const targetY = t?.y ?? node.homeY;
-            // A5 — homing has its own ω (7.5): a relayout is a layout
+            // Homing has its own ω (7.5): a relayout is a layout
             // CORRECTION and should end decisively, unlike the camera's
             // cinematic transition spring (4.7) this used to borrow.
             const nextSpring = stepHomeSpring(spring, targetX, targetY, dt, tokens.nodeHomeSpringAngFreq, tokens.cameraDampingDefault);
@@ -3298,9 +3489,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // --- S4 "영역 전개" 좌표 스텝: 안 노드 FLIP + 밖 노드 중력 이탈. tick 으로
-      // entering→active / exiting→idle 정착. 이탈(exiting)은 위 호밍이 홈으로
-      // 되돌리므로 여기선 좌표를 건드리지 않는다(배타). ---
+      // --- Realm coordinate step: FLIP the inside nodes, fling the outside
+      // ones away under gravity. The tick settles entering → active and
+      // exiting → idle. While exiting, the homing above returns coordinates to
+      // home, so this block leaves them alone. ---
       {
         const rt = realmTransitionReducer(realmTransitionRef.current, { type: "tick", now });
         realmTransitionRef.current = rt;
@@ -3314,8 +3506,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             const target = data.insideTargets.get(node.id);
             if (target) {
               const from = data.insideFrom.get(node.id) ?? target;
-              // S5 깊이 계층 순차 조립 — 멤버 깊이별로 FLIP 시작을 계단식으로
-              // 밀어 루트→바깥 링이 층층이 앉는 공감각을 만든다(각 링 660 유지).
+              // Assemble depth by depth: each member's FLIP start is stepped
+              // by its depth, so the rings settle in layers from the root
+              // outward. Each ring still takes 660 ms.
               const delay = realmInsideFlipDelayFor(data.depthById.get(node.id) ?? 1);
               const p = realmInsidePosition(from, target, elapsed - delay, flipDur);
               node.x = p.x;
@@ -3334,10 +3527,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
           recomputeWorldGeometry(world, tokens);
         } else if (data && rt.phase === "active") {
-          // S8 결함 5 — 정착: 한 번만 목표로 스냅하고 sim 을 영역 좌표로 재시드해
-          // 좌표 소유권을 일반 경로(드래그/sim/호밍)에 넘긴다. 이후 active 프레임은
-          // 좌표를 덮어쓰지 않아 드래그가 정상 동작한다(매 프레임 target 로 덮어쓰던
-          // 구조가 드래그와 싸워 노드가 안 움직였다 — 소유자 실보고).
+          // Settling: snap to the targets once, reseed the sim at the realm
+          // coordinates, and hand coordinate ownership to the ordinary paths
+          // (drag, sim, homing). Later active frames do not overwrite
+          // coordinates, so dragging works. Overwriting to the targets every
+          // frame fought the drag and nodes would not move (owner bug report).
           if (!realmActiveHandedOffRef.current) {
             for (const node of world.nodes) {
               const target = data.insideTargets.get(node.id);
@@ -3346,8 +3540,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 node.y = target.y;
               }
             }
-            // sim 을 현재(영역) 좌표로 재시드 — 안 하면 드래그 첫 tick 의
-            // applyForcePositions 가 빌드 시 전역 좌표를 되써 멤버가 튄다.
+            // Reseed the sim at the current realm coordinates; otherwise the
+            // first drag tick's `applyForcePositions` writes back the global
+            // coordinates from build time and the members jump.
             simRef.current = createForceSimulation(
               world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
               world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
@@ -3356,10 +3551,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             recomputeWorldGeometry(world, tokens);
           }
         } else if (data && rt.phase === "exiting" && !reducedMotionRef.current) {
-          // S6 퇴장 역재생 — 안 노드 역FLIP(깊은 층 먼저, target→home) + 밖 노드
-          // 역중력 귀환(fling 위치→home). 입장 스텝의 결정론 역전. reduced-motion
-          // 은 위 exit effect 가 이미 홈으로 스냅 + duration0 로 즉시 idle 이라 여긴
-          // 안 온다.
+          // Exit reverse-playback: inside nodes reverse-FLIP (deepest layer
+          // first, target → home) and outside nodes return against gravity
+          // (fling position → home) — the deterministic inverse of the entry
+          // step. Reduced-motion never reaches here: the exit effect above
+          // already snapped home and went idle with duration 0.
           const elapsed = now - rt.startMs;
           for (const node of world.nodes) {
             const target = data.insideTargets.get(node.id);
@@ -3382,87 +3578,94 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             }
           }
           recomputeWorldGeometry(world, tokens);
-          // 이탈 프레이밍 결함(노드 감사 2026-07-24): 진입 시 collapse 된 영역
-          // 레이아웃에서 `overviewScaleRef` 가 collapsed spineFit(≈0.24)로 굳어,
-          // 이탈 후 stepCamera 의 scale 상한(overviewEntryScale×maxZoomRatio)이
-          // ≈0.73 으로 눌려 카메라가 canonical overview(≈1.14)에 못 오르고
-          // 축소 프레임에 고착됐다. 역재생으로 노드가 홈으로 돌아오는 매 프레임
-          // spineBounds 가 회복되므로 상한 anchor 를 라이브로 재계산해 트윈→스프링
-          // 인계 시점에 상한이 목표를 누르지 않게 한다(fresh/deselect 경로와 동치).
+          // Exit framing defect (node audit 2026-07-24): in the collapsed
+          // realm layout at entry, `overviewScaleRef` froze at the collapsed
+          // spine fit (≈0.24), which pushed stepCamera's scale ceiling
+          // (overviewEntryScale × maxZoomRatio) down to ≈0.73 after exit. The
+          // camera then could not climb back to the canonical overview (≈1.14)
+          // and stuck in a shrunken frame. Reverse playback restores
+          // spineBounds a little more each frame as nodes return home, so the
+          // ceiling anchor is recomputed live and cannot suppress the target at
+          // the tween → spring handover — equivalent to the fresh and deselect
+          // paths.
           overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
         } else if (rt.phase === "idle" && realmDataRef.current !== null) {
-          // 이탈 완료 — 역재생이 홈으로 되돌렸으니 realm 데이터 정리 + 홈 spineBounds
-          // 기준으로 overview anchor 를 최종 확정(위 exiting 재계산의 마감).
+          // Exit complete: reverse playback returned everything home, so drop
+          // the realm data and settle the overview anchor against the home
+          // spineBounds — the close of the recomputation above.
           realmDataRef.current = null;
           overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
         }
       }
 
       /*
-       * ⚠️ **이 그래프에 없는 이름으로는 포커스가 서지 않는다** (2026-08-17).
+       * ★ **A focus cannot stand on a name this graph does not have**
+       * (2026-08-17).
        *
-       * 소유자 보고: 문서함에서 프로젝트 문서의 「지도에서 열기」를 눌렀더니
-       * 지도가 통째로 사라진 것처럼 보였다. 흐린 게 아니라 **전부 흐리게
-       * 처리된** 것이었다 — 실측으로 가장 밝은 노드가 배경 대비 1.40:1
-       * (도형 최저 기준선 3:1), 125노드 샘플 볼트에서는 밝은 픽셀 0개.
+       * Owner report: "open in map" on a project document made the map look as
+       * if it had vanished. **Everything had been dimmed** — measured, the
+       * brightest node sat at 1.40:1 against the background (3:1 is the minimum
+       * for a shape), and the 125-node sample vault produced zero bright pixels.
        *
-       * 원인은 이름 체계 불일치였다(프로젝트 슬러그 `project` ↔ 노드 이름
-       * `project:project`). 그건 아래 `HomePage` 쪽에서 고쳤다. 그런데 진짜
-       * 위험은 그 한 경로가 아니라 **「없는 노드를 골랐다」가 「전부 흐리게」로
-       * 번역되는 규칙** 자체다 — 그 규칙이 남아 있는 한 다음 경로에서 또 난다.
+       * The cause was a naming mismatch (project slug `project` vs node id
+       * `project:project`), fixed in `HomePage`. But the hazard is not that one
+       * path — it is **the rule translating "selected a node that does not
+       * exist" into "dim everything"**, which the next path would hit again.
        *
-       * 그래서 여기서 떨어뜨린다: 포커스 이름이 이 프레임의 노드 목록에
-       * 없으면 **아무것도 안 고른 것**으로 본다. 골라 놓고 아무것도 안 보이는
-       * 것보다 안 고른 화면이 언제나 낫다.
-       *
-       * `world.nodeById` 를 쓰므로 비용은 조회 한 번이다.
-       * 게이트: `tests/e2e/map-focus-dangling.spec.ts`.
+       * So a focus id absent from this frame's node list counts as **nothing
+       * selected**: a screen with no selection always beats a selection that
+       * shows nothing. Costs one `world.nodeById` lookup.
+       * Gate: `tests/e2e/map-focus-dangling.spec.ts`.
        */
       const requestedFocusId = focusedSlugRef.current;
       const focusedNodeId =
         requestedFocusId !== null && world.nodeById.has(requestedFocusId)
           ? requestedFocusId
           : null;
-      // 포커스 중엔 호버를 널링한다("포커스가 emphasis 소유권 독점"). 걸어온 길
-      // 렌즈는 이 규칙의 **유일한 예외**다 — 렌즈 동안 커서는 캔버스가 아니라
-      // 팝오버 위에 있어 캔버스 호버와 경쟁하지 않고, 행 hover 가 지도 호버
-      // 채널을 그대로 빌려 브러싱(행 ↔ 노드)을 만든다. 렌즈가 꺼지면 즉시
-      // 원래 규칙으로 돌아온다.
+      // While focused, hover is nulled — focus owns emphasis exclusively. The
+      // trail lens is the **only exception**: during the lens the cursor is
+      // over the popover rather than the canvas, so it cannot compete with
+      // canvas hover, and a row hover borrows the map's hover channel to brush
+      // row ↔ node. Turning the lens off restores the original rule at once.
       const trailLensActive = trailLensPropRef.current?.current ?? false;
       const trailBrushNodeId = trailLensActive ? (trailBrushPropRef.current?.current ?? null) : null;
-      // 옆 패널(대화창·데이터시트) 호버는 걸어온 길 브러싱과 같은 자리에
-      // 선다 — 둘 다 커서가 캔버스 밖에 있을 때만 생기므로 서로 부딪히지 않는다.
+      // Side-panel hover (chat, data sheet) occupies the same slot as trail
+      // brushing. Both exist only while the cursor is off the canvas, so they
+      // cannot collide.
       const panelHoverNodeId = panelHoverPropRef.current?.current ?? null;
       const hoveredNodeId =
         trailBrushNodeId ?? panelHoverNodeId ?? (focusedNodeId ? null : hoveredNodeIdRef.current);
-      // 계기(`__atlasMap.hover()`)가 읽는 값 — **이번 프레임이 실제로 쓴 것**을
-      // 그대로 둔다. 통로별 원본 ref 를 따로 내보내면 「값은 맞는데 화면은 다른」
-      // 상태를 검사가 초록으로 통과시킨다.
+      // What the `__atlasMap.hover()` instrument reads: **exactly what this
+      // frame used**. Exposing each channel's source ref separately would let a
+      // check pass green on a state where the value is right and the screen is
+      // not.
       drawnHoveredNodeIdRef.current = hoveredNodeId;
       // Panel-row emphasis only bites while a node is focused (that's the only
       // time the "연결된 노드" list exists) — otherwise hover owns the ripple.
       //
-      // ⚠️ **호버 채널만으로는 화면에 아무것도 안 그려진다** (2026-08-17 실측).
-      // 포커스 중에는 `isNodeEmphasisActive` 가 이 값 하나만 보고 나머지를
-      // 전부 거른다. 그래서 옆 패널 호버가 `hoveredNodeId` 를 제대로 채워도
-      // emphasis 램프가 0 에 머물고, 호버 링의 알파는 그 램프를 타므로
-      // (`node-shapes.ts` — `ringAlpha = hoverEmphasis ?? 1`) 링이 **투명하게**
-      // 그려진다. 실측: 노드를 고른 상태에서 관계 행에 마우스를 올렸을 때
-      // 캔버스에서 바뀐 픽셀 **0개**(감속 모션 on, 전체 캔버스 비교).
+      // ★ **The hover channel alone draws nothing** (measured 2026-08-17).
+      // While focused, `isNodeEmphasisActive` looks at this value only and
+      // filters out the rest. So even when side-panel hover fills
+      // `hoveredNodeId` correctly, the emphasis ramp stays at 0 — and the hover
+      // ring's alpha rides that ramp (`node-shapes.ts`:
+      // `ringAlpha = hoverEmphasis ?? 1`), so the ring is drawn **transparent**.
+      // Measured: with a node selected, hovering a relation row changed **zero
+      // pixels** on the canvas (reduced motion on, whole-canvas comparison).
       //
-      // 그래서 같은 ref 가 이 입력도 먹인다. 새 통로가 아니다 — 이 입력은
-      // 애초에 *"detail panel 의 연결 목록에서 호버 중인 그 한 노드"* 를 받으려고
-      // 만들어졌고(`focus-state.ts` §isNodeEmphasisActive), 먹이는 쪽이 없어
-      // 계속 null 이었다. prop(`emphasizedNeighborSlug`)도 그대로 두어, 나중에
-      // 렌더 기반으로 먹이고 싶은 소비처가 생기면 그쪽이 이긴다.
+      // So the same ref feeds this input as well. It is not a new channel: this
+      // input was created to receive *"the one node hovered in the detail
+      // panel's connection list"* (`focus-state.ts`, `isNodeEmphasisActive`)
+      // and simply had nothing feeding it. The `emphasizedNeighborSlug` prop
+      // stays, so a render-based consumer can win later if one appears.
       const panelEmphasisNodeId = focusedNodeId
         ? (panelEmphasisNodeIdRef.current ?? panelHoverNodeId)
         : null;
 
-      // S3 마감 폴리시 — 큐빅 카메라 전환 트윈. 진행 중이면 이번 프레임 카메라를
-      // 이징으로 직접 구동하고 physics-step 의 스프링을 건너뛴다(freezeCamera).
-      // reduced-motion 은 트윈을 버리고 스프링/스냅 경로에 위임. 트윈 종료 시
-      // 최종값으로 스냅 후 해제 — 이후 프레임은 스프링이 목표에 정지해 있다.
+      // Cubic camera transition tween. While one is in flight it drives this
+      // frame's camera directly and skips the physics step's spring
+      // (`freezeCamera`). Reduced-motion drops the tween and delegates to the
+      // spring/snap path. On completion it snaps to the final value and
+      // clears, so later frames find the spring already at rest on target.
       let freezeCamera = false;
       {
         const tween = cameraTweenRef.current;
@@ -3480,10 +3683,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               cameraTweenRef.current = null;
             } else {
               /*
-               * 뷰포트 폭을 넘겨 **van Wijk 최적 경로**로 이동한다
-               * (`model/camera-easing.ts` 의 `VAN_WIJK_RHO` 독블록). 넘기지
-               * 않으면 축별 선형 보간으로 떨어지고, 그게 이동+확대가 겹칠 때
-               * 화면을 가로지르는 「lerp 처럼 보이는 것」의 정체였다.
+               * Passing the viewport width selects the **van Wijk optimal
+               * path** (see the `VAN_WIJK_RHO` doc-block in
+               * `model/camera-easing.ts`). Without it this degrades to
+               * per-axis linear interpolation, which is what the
+               * "looks like a lerp" sweep across the screen was whenever a
+               * move and a zoom overlapped.
                */
               const eased = easeCameraKeyframe(tween.start, tween.target, elapsed, tween.durationMs, width);
               cameraRef.current = {
@@ -3507,18 +3712,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         cameraAngularFrequency: cameraAngularFreqRef.current ?? tokens.cameraSpringAngFreqTransition,
         dt,
         now,
-        // 앰비언트 휴면 — 혜성 속도에 곱해지는 계수(각성 1 → 잠듦 0).
-        // 유휴 게이트 판정부와 다른 스코프라 여기서 다시 구한다. 순수 산술
-        // 함수라 비용이 없고, 같은 `now`/`lastInputMs` 면 같은 값이다.
+        // Ambient sleep factor multiplied into comet speed (1 awake, 0
+        // asleep). Recomputed here because the idle-gate decision is in another
+        // scope; it is pure arithmetic, so it costs nothing and returns the
+        // same value for the same `now`/`lastInputMs`.
         ambientFactor: ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current),
         focusedNodeId,
         pairFocusActive: selectedEdgeRef.current !== null,
         hoveredNodeId,
         panelEmphasisNodeId,
         isDragging: pointerMachineRef.current.phase === "dragging",
-        // 3D 돔 — 팬 리쉬 앵커를 «그려진» 돔의 bbox·포커스 노드의 그려진
-        // 자리로 넘긴다(2D `world.bounds` 앵커가 휠 줌 첫 틱에 카메라를 2D
-        // 중심으로 끌어가던 결함 — `topology-physics-step.ts` override JSDoc).
+        // In 3D, hand the pan leash its anchors from the *drawn* dome: its
+        // bbox and the focused node's drawn position. The 2D `world.bounds`
+        // anchor used to drag the camera toward the 2D centre on the first
+        // wheel-zoom tick (see the override JSDoc in
+        // `topology-physics-step.ts`).
         worldBoundsOverride:
           domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
             ? domeRuntimeRef.current.drawnBounds
@@ -3538,10 +3746,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         reducedMotion: reducedMotionRef.current,
         userDrivenCamera: userDrivenCameraRef.current,
         freezeCamera,
-        // **직전 프레임의** 접힘 집합이다 — 이번 프레임 것은 아래 클러스터
-        // 단계에서야 정해진다. 램프는 시간 위의 값이라 한 프레임 지연이 곧
-        // 정상 동작이고(펼친 노드는 다음 프레임부터 0 에서 램프 인, 접힌
-        // 노드는 한 프레임 더 램프), 순서를 뒤집어 얻을 것이 없다.
+        // This is the **previous frame's** collapsed set; this frame's is not
+        // decided until the cluster stage below. Ramps are values over time, so
+        // a one-frame lag is the correct behaviour — an expanded node ramps in
+        // from 0 starting next frame, a collapsed one ramps for one more frame
+        // — and reversing the order would gain nothing.
         clusteredIds: clusteredIdsRef.current,
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
@@ -3571,17 +3780,19 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // R6 호버 펄스 — 수명(420ms) 지난 펄스 제거. 발사(append)는 포인터
-      // 핸들러의 호버 경로가 한다(프로토타입 startRipple 의 펄스 부분).
+      // Drop hover pulses past their 420 ms lifetime. Firing (appending) is
+      // done by the pointer handlers' hover path.
       pulsesRef.current = updatePulses(pulsesRef.current, now);
 
-      // --- S5 깊이 시차 스텝 — 영역 active 중 카메라 입력(팬/줌으로 이동한 월드
-      // 중심)의 프레임 델타를 깊이 밴드별 오프셋에 충전한다. 카메라 정지 시
-      // exp 감쇠로 0 수렴 — reduced-motion 은 오프셋 0(effect 없음). 감쇠 꼬리는
-      // 유휴 grace(1200ms) 안에 사실상 0 이 되므로(tau 0.18s) 별도 wake 배선
-      // 없이 idle-gate 계약을 지킨다. entering 페이즈의 돌리-인은 프로그램적
-      // 이동이라 시차에서 제외(입력 반응만) — 중심만 동기화해 active 진입 시
-      // 큰 델타가 튀지 않게 한다. ---
+      // --- Depth parallax step: while a realm is active, charge the per-band
+      // offsets from the frame delta of camera input (the world centre moved by
+      // pan/zoom). When the camera stops they decay exponentially to 0;
+      // reduced-motion holds them at 0. The decay tail is effectively 0 within
+      // the idle grace of 1200 ms (tau 0.18 s), so this honours the idle-gate
+      // contract without wake wiring. The entering phase's dolly-in is a
+      // programmatic move and is excluded — parallax responds to input only —
+      // with the centre kept in sync so entering `active` does not produce a
+      // large delta spike. ---
       {
         const realmActive =
           realmDataRef.current !== null &&
@@ -3617,15 +3828,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         prevCameraCenterRef.current = { x: camera.x.value, y: camera.y.value };
       }
 
-      // M-5 — emit the semantic-zoom tier only when it changes (spine →
-      // circuit → element), so the corner readout's orientation hint tracks
-      // what's actually drawn. Same reveal bands as the draw pass (default
-      // config), so the label and the visible nodes can't contradict.
-      // S6 진입 히치 제거 — `onZoomTierChange` 는 HomePage 의 setState 라 호출마다
-      // 페이지 전체를 재렌더한다. 영역 전개/해제의 프로그램적 카메라 돌리 중엔
-      // 스케일이 tier 경계를 가로지르며 매번 방출돼 안무 프레임을 얼렸다(진입
-      // +331ms 125ms 히치, perf-realm 실측). 전환(entering/exiting) 중엔 방출을
-      // 미루고, 정착(active/idle) 후 아래 비교가 최종 tier 를 한 번만 방출한다.
+      // Emit the semantic-zoom tier only when it changes (spine → circuit →
+      // element), so the corner readout's orientation hint tracks what is
+      // actually drawn. Same reveal bands as the draw pass, so the label and
+      // the visible nodes cannot contradict each other.
+      //
+      // Emission is suppressed during a realm transition: `onZoomTierChange` is
+      // a HomePage setState, so every call re-renders the whole page. During
+      // the programmatic camera dolly of a realm enter/exit the scale crosses
+      // tier boundaries repeatedly and froze the choreography frames (measured
+      // on perf-realm: entry +331 ms, a 125 ms hitch). Once it settles into
+      // active or idle, the comparison below emits the final tier exactly
+      // once.
       const realmTransitioning =
         realmTransitionRef.current.phase === "entering" || realmTransitionRef.current.phase === "exiting";
       const nextZoomTier = classifyZoomTier(zoomRatio, tierRevealRef.current);
@@ -3634,24 +3848,30 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         onZoomTierChangeRef.current?.(nextZoomTier);
       }
 
-      // 밀도 게이트 (fable 설계) — 이번 프레임의 접힘/칩 상태를 라이브 위치로
-      // 계산한다(부모가 드래그/살아있는 그래프로 움직이면 칩 anchor 도 따라감).
-      // 판정 로직은 순수 모델(`density-gate.ts`), 여긴 좌표 주입만.
-      // 영역 전개 중엔 영역 루트를 항상 펼침 취급 — 루트 직속 자식은 그
-      // 세계의 스파인이라 게이트로 접으면 영역이 텅 빈 링으로 보인다
-      // (전역 도메인 면제와 같은 논리, /?synth=2000 실증). prop 이 아니라
-      // ref 를 읽는다 — 프레임 클로저가 stale realmRootId 를 캡처해 버튼
-      // 클릭 진입에선 펼침이 안 먹던 결함(녹화 프레임 검수 실증).
+      // Density gate: compute this frame's collapsed/chip state from the live
+      // positions, so a chip's anchor follows its parent as the parent is
+      // dragged or the graph moves. The decision logic is the pure model in
+      // `density-gate.ts`; this only injects coordinates.
+      //
+      // Inside a realm the realm root is always treated as expanded — its
+      // direct children are that world's spine, and collapsing them by the gate
+      // leaves the realm an empty ring (same logic as the global domain
+      // exemption; reproduced at /?synth=2000). It reads the ref rather than
+      // the prop: the frame closure captured a stale realmRootId, so entering
+      // via the button did not apply the expansion (confirmed on recorded
+      // frames).
       const liveRealmRootId = realmDataRef.current?.rootId ?? null;
-      // 소유자 실보고 (2026-07-23, capability 영역 텅 빈 링) — 루트만 펼침
-      // 취급하면 부족하다: 루트 자신이 바깥 세계에서 밀도 게이트에 접힌
-      // 자식(예: 역량 28개 도메인의 capability)이면 루트·멤버 전원이
-      // clusteredIds 에 걸려 영역이 통째로 비어 보인다. 루트의 contains
-      // 조상 체인까지 펼침 취급해 바깥 게이트가 영역 내부를 가리지 못하게
-      // 한다 (조상의 다른 자식들은 어차피 realm 밖 하드 컬 대상).
+      // Owner bug report 2026-07-23 (a capability realm rendered as an empty
+      // ring): treating only the root as expanded is not enough. If the root is
+      // itself a child the outer density gate collapsed — a capability under a
+      // domain with 28 of them, say — the root and every member land in
+      // clusteredIds and the realm looks empty. So the root's whole `contains`
+      // ancestor chain is treated as expanded and the outer gate cannot hide
+      // the realm's interior. The ancestors' other children are hard-culled as
+      // realm outsiders anyway.
       let effectiveExpanded: ReadonlySet<string> = expandedParentsRef.current;
       if (liveRealmRootId) {
-        // 조상 체인은 rootId 기준으로 1회만 계산해 캐시 (프레임 루프 내부).
+        // The ancestor chain is computed once per rootId and cached.
         if (realmExpandChainRef.current?.rootId !== liveRealmRootId) {
           const chain = new Set<string>([liveRealmRootId]);
           let cursor: string | null = liveRealmRootId;
@@ -3675,16 +3895,19 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       }
       const clusterState = computeTopologyClusterState(world, effectiveExpanded);
 
-      // S2 파트 3a — 선택적 ego: 포커스 노드의 이웃이 limit 을 넘으면 DOI 상위
-      // (revealedBatches × limit)만 남기고 나머지는 접는다(clusteredIds 에 합류 →
-      // 노드·엣지·라벨이 기존 스킵 경로로 함께 숨는다). `이웃 +N` 칩은 같은
-      // 렌더/히트 경로를 타는 ClusterChip(ego:true)로 얹는다. 세션 임시 상태.
+      // Selective ego: when a focused node has more neighbours than the batch
+      // limit, keep the top (revealedBatches × limit) by DOI and collapse the
+      // rest into clusteredIds, so their nodes, edges and labels hide through
+      // the existing skip path. The "neighbours +N" chip is a ClusterChip with
+      // `ego: true`, riding the same render and hit paths. Session-only state.
       let frameClusteredIds: ReadonlySet<string> = clusterState.clusteredIds;
       let frameChips: readonly ClusterChip[] = clusterState.chips;
-      // 영역 활성 시 — 멤버가 **바깥** 부모의 밀도 게이트로 접혀 있으면 해제
-      // (공유 요소의 1차 귀속처가 영역 밖 역량인 케이스). 영역 안 부모의
-      // 게이트(내부 +N 칩)는 유지한다. realmVisibleBounds 의 가시-멤버
-      // 규칙과 동일해야 결계/프레이밍과 드로우가 갈라지지 않는다.
+      // While a realm is active, un-collapse members held by an **outside**
+      // parent's density gate — the case where a shared element's primary owner
+      // is a capability outside the realm. Gates from parents inside the realm
+      // (the internal +N chips) are kept. This must match
+      // `realmVisibleBounds`'s visible-member rule, or the warding ring and
+      // framing diverge from what is drawn.
       if (liveRealmRootId && realmDataRef.current) {
         const memberIds = realmDataRef.current.memberIds;
         let needsFilter = false;
@@ -3713,11 +3936,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const focusId = focusedSlugRef.current;
         const neighbors = focusId ? world.neighborMap.get(focusId) : undefined;
         if (focusId && neighbors && neighbors.size > expandPrefRef.current.batchSize) {
-          // DOI 관계 위계 — 포커스 노드에 닿는 엣지의 원 relationType(WorldEdge.
-          // relationType, contains|depends 2치로 뭉개기 전)을 이웃별로 수집한다.
-          // 같은 페어에 엣지가 여럿이면 강한 쪽(contains > depends > relates)을
-          // 남긴다 — DOI 는 "가장 강한 구조적 결속"으로 랭크하는 게 맞다.
-          // O(E) 스캔이지만 이 블록은 >24 이웃 허브 포커스 중에만 돈다.
+          // DOI relation hierarchy: collect each neighbour's original
+          // `WorldEdge.relationType` — before it is flattened to the binary
+          // contains|depends. When a pair has several edges the stronger wins
+          // (contains > depends > relates), because DOI should rank by the
+          // strongest structural tie. An O(E) scan, but this block runs only
+          // while a hub with more neighbours than the batch limit is focused.
           const relTier = (t: string): number =>
             t === "contains" || t === "belongs_to" ? 3 : t === "depends_on" ? 2 : 1;
           const relByNeighbor = new Map<string, string>();
@@ -3747,12 +3971,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             expandPrefRef.current.batchSize,
           );
           if (sel.hiddenCount > 0) {
-            // 영역 언클러스터 필터가 적용된 frameClusteredIds 를 기반으로 합친다
-            // (clusterState 원본을 다시 쓰면 위 realm 보정이 무효화된다).
+            // Merge onto `frameClusteredIds`, which already carries the realm
+            // un-collapse filter. Re-using the original `clusterState` would
+            // undo that correction.
             frameClusteredIds = new Set<string>([...frameClusteredIds, ...sel.hiddenNeighbors]);
             const focusNode = world.nodeById.get(focusId);
             if (focusNode) {
-              // 포커스 노드 바로 아래(월드)에 앵커 — 반지름 + 여유만큼 내린다.
+              // Anchored just below the focused node in world space, by its
+              // radius plus clearance.
               const r = radiusForKind(focusNode.kind, tokens) * focusNode.magnitudeScale;
               frameChips = [
                 ...clusterState.chips,
@@ -3768,25 +3994,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
         }
       }
-      // --- 고팬아웃 배치-공개(2026-07) — 펼친 클러스터 부모의 자식을 DOI 순
-      //     배치로 드러낸다. density-gate 는 펼친 부모의 게이트 자식을 전량
-      //     노출하므로(수백 자식이 한 번에 쏟아져 라벨/노드가 뭉갬) 여기서
-      //     런타임 후처리: ① 게이트 자식(domain 면제 — density-gate 와 동일)을
-      //     rankEgoNeighborsByDOI 정렬 ② 상위 (배치수 × EGO_NEIGHBOR_LIMIT)만
-      //     보이고 ③ 나머지 + 그 서브트리는 frameClusteredIds 로 되돌려 접고
-      //     ④ 부모 옆(펼침 배지 anchor)에 `+N 더보기` 칩(합성 id)을 얹는다. 칩
-      //     클릭은 그 부모의 배치를 +1(clusterRevealBatchesRef, URL 비영속).
-      //     학습비용 0 — `이웃 +N` 배치-공개와 동형 UX. ego 블록이 이미
-      //     frameChips 를 새 배열로 바꿨을 수 있으므로 append 로 이어받는다. ---
+      // --- High-fan-out batch reveal: expose an expanded cluster parent's
+      //     children in DOI-ordered batches. The density gate exposes ALL of an
+      //     expanded parent's gated children, so hundreds pour out at once and
+      //     the labels and nodes mash together. This runtime post-pass instead
+      //     ① ranks the gated children (with the same domain exemption the
+      //     density gate uses) via `rankEgoNeighborsByDOI`, ② shows the top
+      //     (batches × batch size), ③ folds the rest and their subtrees back
+      //     into `frameClusteredIds`, and ④ places a "+N more" chip (a
+      //     synthetic id) at the parent's expand-badge anchor. Clicking it
+      //     increments that parent's batch count (`clusterRevealBatchesRef`,
+      //     not persisted to the URL) — the same UX as the "neighbours +N"
+      //     reveal, so it costs nothing to learn. The ego block may already
+      //     have replaced `frameChips` with a new array, so this appends. ---
       const batchAppearVisible = new Set<string>();
       {
         const expandedNow = new Set<string>();
         const moreChips: ClusterChip[] = [];
         const hiddenFromBatch = new Set<string>();
         const prevVisible = prevBatchVisibleRef.current;
-        // 배치는 사용자가 명시적으로 펼친 부모만(URL `?open=`) 대상이다. 영역
-        // 진입이 자동 주입한 펼침(realmExpandChain — 그 세계의 스파인)은 배치로
-        // 다시 접으면 영역이 텅 비므로 제외한다.
+        // Batching applies only to parents the user expanded explicitly (URL
+        // `?open=`). Expansions injected by realm entry (`realmExpandChain` —
+        // that world's spine) are excluded, since re-collapsing them into
+        // batches would empty the realm.
         const userExpanded = expandedParentsRef.current;
         const realmChain = realmExpandChainRef.current?.chain;
         for (const chip of clusterState.chips) {
@@ -3794,7 +4024,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const parentId = chip.parentId;
           if (!userExpanded.has(parentId) || realmChain?.has(parentId)) continue;
           expandedNow.add(parentId);
-          // density-gate 와 같은 domain 면제 — 스파인 자식은 배치 대상 아님.
+          // Same domain exemption as the density gate: spine children are not
+          // batched.
           const gated = (world.childrenByParent.get(parentId) ?? []).filter(
             (c) => world.nodeById.get(c)?.kind !== "domain",
           );
@@ -3804,12 +4035,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               id,
               kind: world.nodeById.get(id)?.kind ?? "element",
               degree: world.neighborMap.get(id)?.size ?? 0,
-              // childrenByParent 유도 = 전원 contains — 균일 가중치, 순서 불변.
+              // Derived from childrenByParent, so every entry is `contains`:
+              // a uniform weight that leaves the order unchanged.
               relationType: "contains",
             })),
           );
-          // shown = 배치수 × 24 (selectiveEgoNeighbors 와 동일 산식, 순서 보존
-          // 위해 ranked.slice 직접). 잔여는 접고 `+N 더보기` 칩으로.
+          // shown = batches × batch size, the same arithmetic as
+          // `selectiveEgoNeighbors`, sliced directly to preserve order. The
+          // remainder collapses behind a "+N more" chip.
           const shown =
             Math.max(1, clusterRevealBatchesRef.current.get(parentId) ?? 1) *
             expandPrefRef.current.batchSize;
@@ -3817,8 +4050,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const hidden = ranked.slice(shown);
           for (const id of visibleOrdered) batchAppearVisible.add(id);
           if (hidden.length > 0) {
-            // 잔여 자식 + 그 서브트리를 접는다(부모 없이 떠도는 손자 방지 —
-            // density-gate clusteredIds 규칙과 동형).
+            // Collapse the remaining children and their subtrees, so no
+            // grandchild floats without its parent — the same rule the density
+            // gate applies to clusteredIds.
             const stack = [...hidden];
             while (stack.length > 0) {
               const id = stack.pop() as string;
@@ -3827,9 +4061,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               const kids = world.childrenByParent.get(id);
               if (kids) stack.push(...kids);
             }
-            // `+N 더보기` 칩 — 펼침 배지 anchor(자식 디스크 바깥, outward)에 세운다.
-            // ego:true 로 표시해 펼침-디스크/그룹-리빌/chipReveal 로직에서 면제된다
-            // (포인터가 합성 id 를 실제 부모로 해석해 툴팁/배치 점등 분기).
+            // The "+N more" chip stands at the expand-badge anchor, outward
+            // from the child disc. `ego: true` exempts it from the expanded-
+            // disc, group-reveal and chipReveal logic; the pointer resolves the
+            // synthetic id back to the real parent for its tooltip and batch
+            // reveal.
             moreChips.push({
               parentId: clusterMoreChipId(parentId),
               count: hidden.length,
@@ -3838,9 +4074,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               ego: true,
             });
           }
-          // 신규-공개 자식(직전 프레임 미공개)만 DOI 순 center-out stagger 스케줄
-          // + 램프 0 시드. scheduleRipple(base 0 + i·rippleStaggerMs,
-          // rippleStaggerMaxMs 예산 cap 재사용) — 24개도 총 ~180ms 안에 압축.
+          // Only newly revealed children (not visible last frame) get a
+          // DOI-ordered centre-out stagger schedule and a ramp seeded at 0.
+          // `scheduleRipple` reuses the rippleStaggerMaxMs budget cap, so even
+          // a full batch compresses into roughly 180 ms total.
           const newly = visibleOrdered.filter((id) => !prevVisible.has(id));
           if (newly.length > 0) {
             const sched = scheduleRipple(parentId, now, newly, 0, tokens.rippleStaggerMs, tokens.rippleStaggerMaxMs);
@@ -3851,7 +4088,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             }
           }
         }
-        // 접힌 부모의 배치 카운트 정리 — 다음 펼침은 다시 상위 24 부터.
+        // Prune batch counts for collapsed parents, so the next expand starts
+        // from the top batch again.
         for (const pid of [...clusterRevealBatchesRef.current.keys()]) {
           if (!expandedNow.has(pid)) clusterRevealBatchesRef.current.delete(pid);
         }
@@ -3863,19 +4101,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
         prevBatchVisibleRef.current = batchAppearVisible;
       }
-      // --- S4 "영역 전개" — 밖 노드 하드 컬(fling 완료 후) + 결계 링 파라미터 ---
+      // --- Realm: hard-cull the outside nodes once the fling completes, and
+      // compute the warding ring parameters. ---
       const realmState = realmTransitionRef.current;
       const realmData = realmDataRef.current;
       let realmWarding: { centerX: number; centerY: number; radius: number; drawProgress: number; caption: string | null } | null = null;
       let realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null = null;
       let realmDustParallax = 0;
-      // S5 — 깊이 연출용: 선명도(entering+active)는 depthById, 시차(active 만)는
-      // 밴드 오프셋. 시차는 위 스텝이 이미 active+유의미일 때만 ref 를 채웠다.
+      // Depth presentation: sharpness (entering and active) comes from
+      // depthById, parallax (active only) from the band offsets. The step above
+      // filled the parallax ref only when active and non-trivial.
       let realmDepthById: ReadonlyMap<string, number> | null = null;
       let realmDepthParallax: { depth2: DepthParallaxOffset; depth3: DepthParallaxOffset } | null = null;
-      // S7 — 이탈 중 귀환하는 밖 노드의 materialize 알파(모션 감사 처방 B).
-      // exiting 이고 reduced-motion 이 아닐 때만 채운다 — reduced-motion 은
-      // exit effect 가 이미 즉시 홈으로 스냅해 이 프레임을 지나가지 않는다.
+      // Materialize alpha for outside nodes returning during an exit. Filled
+      // only while exiting and not under reduced-motion, where the exit effect
+      // has already snapped home and never reaches this frame.
       let realmOutsideReturnAlphaById: Map<string, number> | null = null;
       if (
         realmData &&
@@ -3884,17 +4124,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const exiting = realmState.phase === "exiting";
         realmTierKinds = realmData.tierKindById;
         realmDepthById = realmData.depthById;
-        // S5 시차 밴드는 active 전용 — 이탈 중엔 세계가 접히는 중이라 미적용.
+        // Parallax bands are active-only: during an exit the world is folding
+        // up, so they do not apply.
         realmDepthParallax = !exiting && realmParallaxRef.current
           ? { depth2: realmParallaxRef.current.depth2, depth3: realmParallaxRef.current.depth3 }
           : null;
         if (realmState.phase === "entering" && !reducedMotionRef.current) {
           realmDustParallax = realmDustParallaxFactor(now - realmState.startMs);
         }
-        // S7 — 귀환 중인 밖 노드마다 materialize 알파를 채운다. 위 좌표 스텝
-        // (S6)이 같은 `elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS` 를 좌표에
-        // 쓰므로 여기서도 그대로 재사용해 위치와 알파가 항상 같은 프레임에서
-        // 일치한다(drift 0).
+        // Fill the materialize alpha for each returning outside node. The
+        // coordinate step above uses the same
+        // `elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS`, so reusing it here
+        // keeps position and alpha in agreement within every frame.
         if (exiting && !reducedMotionRef.current) {
           const elapsed = now - realmState.startMs - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS;
           const alphaMap = new Map<string, number>();
@@ -3903,23 +4144,28 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
           realmOutsideReturnAlphaById = alphaMap;
         }
-        // 이탈 중엔 밖 노드가 귀환하므로 컬하지 않는다(isRealmOutsideCulled 가
-        // exiting 에 false). entering/active 에서만 fling 완료 후 하드 컬.
+        // Outside nodes are returning during an exit, so they are not culled
+        // (`isRealmOutsideCulled` is false while exiting). The hard cull
+        // applies only in entering/active, once the fling completes.
         if (isRealmOutsideCulled(realmState, now)) {
           frameClusteredIds = new Set<string>([...frameClusteredIds, ...realmData.outsideIds]);
         }
-        // 영역 밖 부모의 밀도 칩도 영역 세계에선 존재하지 않는다 — 노드는
-        // 컬되는데 칩만 남으면 빈 우주에 칩이 떠도는 결함 (실화면 실증).
-        // 고팬아웃 배치-공개 — `+N 더보기` 칩은 합성 id 라 실제 부모로 해석해
-        // 멤버 판정(영역 안 부모의 배치 칩은 유지, 밖 부모 것은 함께 컬).
+        // Density chips belonging to parents outside the realm do not exist
+        // inside it either: culling the nodes but keeping the chips leaves
+        // chips floating in empty space (seen on screen). "+N more" chips carry
+        // a synthetic id, so it is resolved back to the real parent for the
+        // membership test — batch chips from inside parents stay, those from
+        // outside parents are culled with them.
         frameChips = frameChips.filter((ch) =>
           realmData.memberIds.has(parseClusterMoreChipId(ch.parentId) ?? ch.parentId),
         );
-        // S9 결함 2 — 결계 반경은 이번 프레임의 **가시 멤버**(밀도 게이트/ego 로
-        // 접힌 것 제외)의 도달거리로 재적합한다. 접힌 phyllotaxis 자식까지 세던
-        // 정적 `realmData.wardingRadius` 는 보이는 세계보다 훨씬 큰 원을 그렸다.
-        // insideTargets(정착 좌표)로 측정해 진입 FLIP 중 매 프레임 목표가
-        // 흔들리지 않게 하고, 가시 집합이 바뀔 때만 240ms 이징으로 옮긴다.
+        // The warding radius is refitted to the reach of this frame's
+        // **visible** members, excluding anything collapsed by the density gate
+        // or by ego. The static `realmData.wardingRadius` counted collapsed
+        // phyllotaxis children too and drew a circle far larger than the
+        // visible world. Measuring against `insideTargets` (the settled
+        // coordinates) keeps the target steady through the entry FLIP, and it
+        // eases over 240 ms only when the visible set changes.
         const wc = realmData.wardingCenter;
         const reaches: number[] = [];
         for (const id of realmData.memberIds) {
@@ -3942,25 +4188,30 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           centerX: realmData.wardingCenter.x,
           centerY: realmData.wardingCenter.y,
           radius: nextFit.value,
-          // S6 — 이탈은 결계를 역방향으로 지운다(1→0); 입장은 지연 후 그린다(0→1).
+          // An exit erases the warding ring in reverse (1 → 0); an entry draws
+          // it after a delay (0 → 1).
           drawProgress: exiting
             ? realmWardingEraseProgress(now - realmState.startMs)
             : realmWardingDrawProgress(now - realmState.startMs - REALM_WARDING_DRAW_DELAY_MS),
-          // 결계 센서스 각인 — 원이 "무엇의 경계인지" 스스로 말한다 (진입 시 1회 파생).
+          // Census engraving, so the ring says what it is the boundary of.
           caption: realmCaptionRef.current,
         };
       }
 
-      // --- S4 궤도 "전개" 버튼 위치 — 포커스 노드 링 바깥 **정동(오른쪽)** 에
-      // 앵커, 매 프레임 카메라 추종. 영역 안이거나 자식 없는 노드면 소멸.
+      // --- Orbit enter-button position: anchored due **east** of the focused
+      // node's ring, following the camera every frame. It disappears inside a
+      // realm or on a node with no children.
       //
-      // 우상단 45° 였다가 옮겼다(2026-08-02): 확장 컨트롤(어깨 배지)이 **같은
-      // 방위**를 쓰고 있어서, 배지의 80% 가 이 버튼 밑으로 들어가고
-      // `elementFromPoint` 가 이 버튼을 돌려줬다 — 배지는 눌리지 않았고 화면에
-      // 삐져나온 끝 글자 하나가 거짓 수(`+17` → 「7」)로 읽혔다. 기본값인 머리
-      // 위 막대도 우하단 모서리 80px² 가 물렸다. 방위 배분의 단일 출처와 근거는
-      // `render/cluster-chips.ts` 의 「서로 다른 방위」 절이고, 반지름 전수
-      // 겹침 0 은 `expand-settings.contract.test.ts` 가 잠근다. ---
+      // It sat at 45° upper-right until 2026-08-02. The expand control (the
+      // shoulder badge) uses that **same bearing**, so 80% of the badge slid
+      // under this button and `elementFromPoint` returned the button: the badge
+      // could not be pressed, and the single character still poking out read as
+      // a false number (`+17` rendered as "7"). The default bar above the head
+      // also lost 80 px² of its lower-right corner. The single source for
+      // bearing allocation and its rationale is the 「서로 다른 방위」 (distinct
+      // bearings) section of `render/cluster-chips.ts`, and
+      // `expand-settings.contract.test.ts` locks zero overlap across all
+      // radii. ---
       {
         const btn = realmEnterButtonElRef.current;
         if (btn) {
@@ -3969,31 +4220,37 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const hasChildren = fid ? (world.childrenByParent.get(fid)?.length ?? 0) > 0 : false;
           const engaged = realmState.phase !== "idle";
           const eligible = Boolean(fid && node && hasChildren && !engaged && onEnterRealmRef.current);
-          // rank6 — 전개 버튼은 display flex/none 하드 토글(툭 나타남/사라짐)
-          // 대신 opacity + pointer-events 로 페이드한다(CSS transition 150ms,
-          // TopologyMapV2 JSX). 포커스 노드가 남아 있는 한 매 프레임 transform
-          // 을 계속 갱신해 페이드아웃 중에도 카메라를 따라 붙는다(위치 고정 아님).
+          // The enter button fades via opacity + pointer-events (a 150 ms CSS
+          // transition in the TopologyMapV2 JSX) rather than hard-toggling
+          // display, which would pop it in and out. Its transform keeps
+          // updating every frame while the focused node exists, so it follows
+          // the camera even mid-fade-out instead of freezing in place.
           if (node) {
-            // 3D — 버튼도 노드가 실제 그려진 링 좌표·원근 배율을 따라간다.
+            // In 3D the button follows the node's drawn ring position and
+            // perspective scale too.
             const dFrame = domeRuntimeRef.current?.frame.get(node.id);
             const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * (dFrame?.s ?? 1) * camera.scale.value;
             const s = worldToScreen(camera, width, height, node.x + (dFrame?.dx ?? 0), node.y + (dFrame?.dy ?? 0));
-            // 자리의 단일 출처 — 확장 컨트롤의 사각형 계산이 같은 함수를 본다.
+            // Single source for the position — the expand control's rect
+            // computation reads the same function.
             const orbit = orbitButtonRect(s.x, s.y, rr);
             const bx = orbit.x + orbit.w / 2;
             const by = orbit.y + orbit.h / 2;
             btn.style.transform = `translate(-50%, -50%) translate(${bx}px, ${by}px)`;
           }
-          // **탭 정지도 함께 켜고 끈다** (2026-07-29 키보드 실측).
+          // ★ **The tab stop is toggled along with visibility** (measured on
+          // keyboard, 2026-07-29).
           //
-          // `opacity: 0` 은 포커스 가능성을 끄지 않는다. 그래서 이 버튼이 안
-          // 보이는 동안에도 Tab 순서에 남아 있었고, 지도에서 26번째 Tab 이
-          // 여기 멈췄다 — 링은 alpha 0 이라 화면 어디에도 안 보이고 Enter 도
-          // 안 먹는다(클릭 판정은 캔버스 히트 테스트에 있다). 키보드 사용자
-          // 에게는 **포커스가 사라진 한 칸**이었다.
+          // `opacity: 0` does not remove focusability, so while invisible this
+          // button stayed in the tab order and the 26th Tab on the map stopped
+          // here — with the focus ring at alpha 0 it was nowhere on screen, and
+          // Enter did nothing either (the click decision lives in the canvas
+          // hit test). To a keyboard user it was **a slot where focus
+          // disappeared**.
           //
-          // `pointerEvents` 를 끄는 바로 이 자리가 짝이다. 여기서 안 끄면
-          // JSX 의 초기값만으로는 프레임마다 바뀌는 가시성을 따라갈 수 없다.
+          // This is the same place `pointerEvents` is switched off, and it has
+          // to be: the JSX's initial values alone cannot track visibility that
+          // changes every frame.
           if (eligible) {
             realmEnterTargetRef.current = fid;
             btn.style.opacity = "1";
@@ -4010,11 +4267,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // --- 가이드 투어 캔버스 노드 앵커(2·4단계) 프로젝션 — realm 버튼
-      // 블록과 나란한 동형 블록. `tourAnchorNodeId` 가 가리키는 노드의 화면
-      // 좌표 + 반경을 매 프레임 원(div)에 써넣는다. TopologyMapV2 가 그
-      // 원 자체를 스크림 컷아웃으로 그린다(CSS transition 없음 — 이 매
-      // 프레임 transform 이 곧 모션, spec §5). ---
+      // --- Guided-tour canvas anchor projection, structurally identical to
+      // the realm-button block above. Writes the screen position and radius of
+      // the node `tourAnchorNodeId` names into the anchor div every frame;
+      // TopologyMapV2 draws that circle as a scrim cutout. There is no CSS
+      // transition — this per-frame transform *is* the motion. ---
       {
         const anchorEl = tourAnchorElRef.current;
         if (anchorEl) {
@@ -4030,16 +4287,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // rank7 — 클러스터 칩 reveal 램프 스텝. 이번 프레임에 펼쳐진(!ego) 부모는
-      // 1 로, 그 외 추적 중인 부모는 0 으로 `clusterRevealTau` 에 수렴한다. ~0 에
-      // 도달하고 더는 펼쳐지지 않은 키는 정리한다. reduced-motion 은 즉시 스냅.
+      // Step the cluster chip reveal ramp: parents expanded this frame (and
+      // not ego chips) converge to 1, other tracked parents to 0, at
+      // `clusterRevealTau`. Keys that reach ~0 and are no longer expanded are
+      // pruned. Reduced-motion snaps.
       {
         const revealMap = chipRevealRef.current;
         const expandedNow = new Set<string>();
         for (const ch of frameChips) {
           if (ch.expanded && !ch.ego) expandedNow.add(ch.parentId);
         }
-        // 추적 대상 = 지금 펼친 부모 ∪ 이미 램프가 남아 있는(페이드아웃 중) 부모.
+        // Tracked = parents expanded now, plus parents whose ramp is still
+        // fading out.
         const tracked = new Set<string>([...expandedNow, ...revealMap.keys()]);
         for (const pid of tracked) {
           const target = expandedNow.has(pid);
@@ -4052,22 +4311,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // 고팬아웃 배치-공개 — 배치 자식의 등장 램프 스텝.
+      // Step the appearance ramp for batched children, using
+      // `clusterRevealTau` (0.17) — the value the chip's own pill/badge fade
+      // uses, since the input producing this ramp is a chip click.
       //
-      // **`clusterRevealTau` 를 쓴다 — 칩과 같은 값이다.** 종전엔
-      // `egoRevealRiseTau`(0.22)였는데, 그건 *다른 사건*(ego 클릭)의 리듬이다.
-      // 이 램프를 낳는 입력은 칩 클릭이고, 그 입력의 리듬은 칩의 pill/badge
-      // 페이드가 이미 `clusterRevealTau`(0.17)로 정해 뒀다.
+      // ★ **This line, not the fifth channel, is where that fix lands.** An
+      // earlier attempt changed only `expandRevealRef`'s tau, and frame
+      // measurement (design-motion, 2026-07-31) still found children rising at
+      // τ 226–236 ms: children of a chip click are registered on **this batch
+      // path without exception** (all of `visibleOrdered`, even when
+      // `hidden.length === 0`), and `revealMul`'s ternary consults
+      // `batchAppear` first, so the other channel's branch is never taken.
       //
-      // ⚠️ **이 한 줄이 그 수정의 실제 도달 지점이다.** 앞서 다섯째 관통 채널
-      // (`expandRevealRef`)의 tau 만 바꿨는데, 프레임 실측(design-motion,
-      // 2026-07-31)이 자식은 여전히 τ 226~236ms 로 오른다고 잡았다 — 칩 클릭
-      // 자식은 **전원 이 배치 경로**로 등록되고(`hidden.length===0` 이어도
-      // `visibleOrdered` 전량), `revealMul` 삼항이 `batchAppear` 를 먼저 보므로
-      // 그 채널의 갈래는 칩 클릭에서 한 번도 안 탄다. 표현식을 고쳐도 화면이
-      // 안 바뀌는 이유가 이것이었다.
-      // 이번 프레임 배치로 보이지 않는(접히거나 부모가 접힌) 키는 정리한다.
-      // reduced-motion 은 즉시 1(스태거 없이 스냅).
+      // Keys not visible in this frame's batch (collapsed, or with a collapsed
+      // parent) are pruned. Reduced-motion snaps to 1 with no stagger.
       {
         const appearMap = batchAppearRef.current;
         const startMap = batchAppearStartRef.current;
@@ -4082,26 +4339,31 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             startMap.delete(id);
             continue;
           }
-          if (now < (startMap.get(id) ?? 0)) continue; // 스태거 시작 전 — 0 유지.
+          if (now < (startMap.get(id) ?? 0)) continue; // Before its stagger start — hold 0.
           const next = stepEmphasis(appearMap.get(id) ?? 0, true, true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
           appearMap.set(id, next);
           if (next >= 0.999) startMap.delete(id);
         }
       }
 
-      // 펼침으로 **새로 보이게 된** 노드의 국소 재완화 (2026-07-31).
+      // Local re-relaxation for nodes that just **became visible** through an
+      // expand (2026-07-31).
       //
-      // `relaxScope`(월드 빌드 시점)는 아무것도 펼쳐지지 않은 상태를 기준으로
-      // 잡히므로, 칩을 펼치면 그 자식이 **씨앗 자리** 그대로 등장한다. 한 부모의
-      // 자식끼리는 phyllotaxis 간격이 충돌을 막지만(실측 겹침 0) **다른 부모의
-      // 부채와는 겹친다**(3개 펼침 5건 · 6개 18건 · 12개 70건).
+      // `relaxScope` is fixed at world-build time, against a state where
+      // nothing is expanded, so expanding a chip drops its children in at their
+      // **seed positions**. Phyllotaxis spacing keeps one parent's children
+      // apart (measured: zero overlap), but they **collide with other parents'
+      // fans**: 5 overlaps at 3 expands, 18 at 6, 70 at 12.
       //
-      // 전체를 다시 완화하면 비용이 누적되고(24개 펼침 341ms) **이미 보고 있던
-      // 노드가 움직인다**(최대 15 유닛). 그래서 새로 보이는 것만, 그 bbox 이웃만
-      // 넣어 푼다 — 클릭당 items 가 107~134개로 **클릭 수와 무관하게 상수**다.
+      // Re-relaxing everything both accumulates cost (341 ms at 24 expands) and
+      // **moves nodes the user was already looking at** (up to 15 units). So
+      // only the newly visible ones plus their bbox neighbours are solved,
+      // which keeps items per click at 107–134 — **constant regardless of how
+      // many clicks have happened**.
       //
-      // 프레임 안에서 도는 이유: 접힘 집합이 프레임마다 계산되므로 여기가
-      // "새로 보이게 됐다"를 아는 유일한 자리다. 펼침 1회당 1회만 돈다.
+      // It runs inside the frame because the collapsed set is computed per
+      // frame, making this the only place that knows what just became visible.
+      // It runs once per expand.
       {
         const prevClustered = clusteredIdsRef.current;
         const newlyVisible = new Set<string>();
@@ -4113,8 +4375,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               alreadyPlaced.add(node.id);
             }
           }
-          // 홈 좌표(정준 배치)를 푼다 — 스프링이 돌아갈 자리가 여기다. 라이브
-          // 좌표(x/y)는 아래에서 같은 델타만큼 옮겨 드래그/물리 상태를 보존한다.
+          // Solve the home (canonical) coordinates — that is where the springs
+          // return to. The live x/y are shifted by the same delta below, which
+          // preserves any drag or physics state.
           const homePoints = new Map(
             world.nodes.map((n) => [n.id, { id: n.id, x: n.homeX, y: n.homeY }]),
           );
@@ -4148,9 +4411,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // 다섯째 채널 램프 스텝 — 펼침으로 드러난(=접힘 집합 밖인) 자식은 1 로,
-      // 다시 접힌 자식은 0 으로 수렴한다. 티어가 이미 열어 준 노드는 이 채널이
-      // 필요 없으므로 대상에서 뺀다(램프 중복 없음).
+      // Fifth-channel ramp step: children revealed by an expand (i.e. outside
+      // the collapsed set) converge to 1, re-collapsed ones to 0. Nodes the
+      // tier already revealed do not need this channel and are excluded, so no
+      // ramp is applied twice.
       {
         const revealMap = expandRevealRef.current;
         const target = new Set<string>();
@@ -4169,38 +4433,46 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // 3D — 돔은 **모든 노드가 형태를 이룬다**: 밀도 게이트의 접힘·칩을
-      // 이 프레임의 소비자(드로우·히트·계기)에서 통째로 비운다. 원본 계산
-      // (`frameClusteredIds`)은 그대로 두므로 2D 복귀 프레임에 접힘이 원래
-      // 상태로 돌아오고, relax/reveal 부기가 돔 토글로 오작동하지 않는다.
+      // In 3D **every node is part of the shape**, so the density gate's
+      // collapsed set and chips are emptied for this frame's consumers (draw,
+      // hit-testing, instrumentation). The underlying computation
+      // (`frameClusteredIds`) is left intact, so the collapsed state returns as
+      // it was on the frame 2D resumes, and the relax/reveal bookkeeping cannot
+      // misfire on a dome toggle.
       const domeAllVisible = domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0;
       clusterChipsRef.current = domeAllVisible ? EMPTY_DOME_CHIPS : frameChips;
-      // S3 — 이번 프레임의 NOT-DRAWN 집합을 히트테스트가 볼 수 있게 공개(밀도
-      // 게이트 접힘 + 선택적 ego 숨김 이웃). 드로우와 히트가 같은 집합을 본다.
+      // Publish this frame's NOT-DRAWN set for hit-testing (density-gate
+      // collapsed plus selective-ego hidden neighbours), so draw and hit see
+      // the same set.
       clusteredIdsRef.current = domeAllVisible ? EMPTY_DOME_CLUSTERED : frameClusteredIds;
-      // S10 결함 3 — 드로우가 이번 프레임 티어 알파 계산에 쓴 깊이 오버라이드를
-      // 히트테스트에도 그대로 공개(영역 비활성이면 null). draw/hit lockstep.
+      // Publish the depth override the draw used for this frame's tier alphas
+      // to hit-testing as well (null when no realm is active), keeping draw and
+      // hit in lockstep.
       realmTierKindsRef.current = realmTierKinds;
 
-      // 발자국 트레일 — 이번 프레임의 방문 노드별 최근성 rank(현재 포커스 노드는
-      // 선택 링이 이미 있으므로 제외). 배열이 짧아(≤30) 매 프레임 계산 비용 무시.
-      // 노드별 방문 순번(1부터). 현재 포커스 노드는 선택 링이 이미 그 자리를
-      // 가지므로 뺀다 — 이중 표기 방지 + 위계(선택 > 발자국) 보존.
+      // Footprint trail: this frame's visit ordinal per node, starting at 1.
+      // The focused node is excluded because the selection ring already holds
+      // that position — this avoids marking it twice and preserves the
+      // hierarchy (selection over footprint). The array is short (≤30), so
+      // recomputing it per frame costs nothing.
       const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);
       if (focusedNodeId !== null) footprintStepsById.delete(focusedNodeId);
 
-      // 걸음이 늘었으면 도착 모션 시작 시각을 찍는다. 줄었으면(지우기) 램프도 버린다.
+      // A longer trail stamps the arrival motion's start time; a shorter one
+      // (cleared) drops the ramp.
       const trailLen = visitedTrailRef.current.length;
       if (trailLen > footprintTrailLenRef.current) footprintAppearAtRef.current = now;
       footprintTrailLenRef.current = trailLen;
       const footprintNewestId = trailLen > 0 ? visitedTrailRef.current[trailLen - 1] : null;
-      // 이동 램프(`--motion-base` 180ms)와 같은 단 — 표면이 자리를 잡는 일이다.
+      // Same step as the movement ramp (`--motion-base`, 180 ms): a surface
+      // taking its place.
       const footprintAppear = reducedMotionRef.current
         ? 1
         : Math.min(1, Math.max(0, (now - footprintAppearAtRef.current) / 180));
 
-      // 스포트라이트 on/off 지수 램프 — focusDimTau 재사용(신규 easing 0).
-      // reduced-motion 은 즉착(정적 대비만으로 정보 성립 — 협의회 §④).
+      // Spotlight on/off exponential ramp, reusing focusDimTau so no new
+      // easing is introduced. Reduced-motion arrives immediately: static
+      // contrast alone carries the information.
       spotlightRampRef.current = reducedMotionRef.current
         ? (spotlightIdsRef.current !== null ? 1 : 0)
         : stepFocusRamp(spotlightRampRef.current, spotlightIdsRef.current !== null, dt, tokens.focusDimTau);
@@ -4212,15 +4484,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         speedPxPerMs: tokens.spotlightRingSpeed,
       });
 
-      // 걸어온 길 렌즈 on/off 램프 — 같은 easing·같은 토큰 재사용.
-      // reduced-motion 은 즉착(정적 대비만으로 정보 성립 — 스포트라이트와 같은 계약).
+      // Trail lens on/off ramp, reusing the same easing and token.
+      // Reduced-motion arrives immediately — same contract as the spotlight.
       trailLensRampRef.current = reducedMotionRef.current
         ? (trailLensActive ? 1 : 0)
         : stepFocusRamp(trailLensRampRef.current, trailLensActive, dt, tokens.focusDimTau);
 
-      // 움직이는 배경 한 스텝 — 그리기 **전에** 자기 버퍼를 갱신한다.
-      // `ambientFactor` 를 그대로 넘기므로 손을 놓으면 감속해 멎고, 0 이 되면
-      // 이 호출은 조기 반환한다(유휴 래스터 비용 0).
+      // One animated-background step, refreshing its own buffer **before** the
+      // draw. It receives `ambientFactor` directly, so it decelerates to a stop
+      // once the hand lets go, and at 0 the call returns early — zero raster
+      // cost while idle.
       {
         const bg = animatedBgRef.current;
         if (bg) {
@@ -4290,7 +4563,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         realmDepthParallax,
         realmDustParallax,
         realmOutsideReturnAlphaById,
-        // S8 결함 6 — 영역 활성 시에만 우주 도트를 넘긴다(결계로 클립).
+        // Cosmos dots are passed only while a realm is active; they are
+        // clipped by the warding ring.
         realmCosmosPoints: realmWarding ? cosmosPointsRef.current : null,
         footprintStepsById,
         footprintPref: footprintPrefRef.current,
@@ -4299,9 +4573,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         footprintStepColor: footprintStepColorRef.current,
         footprintNewestId,
         footprintAppear,
-        // 렌즈 keep-set — 팝오버가 열려 있을 때만 넘긴다(닫히면 null = 회귀 0).
-        // 렌즈가 꺼져도 램프가 0 에 닿을 때까지 집합을 계속 넘긴다 — 그래야
-        // 트레일 잉크와 배경 dim 이 «사라지는» 대신 «내려간다».
+        // The lens keep-set is passed only while the popover is open; closed
+        // sends null. After the lens turns off the set keeps being passed until
+        // the ramp reaches 0, so the trail ink and background dim *fade down*
+        // rather than *disappear*.
         trailLensIds:
           trailLensActive || trailLensRampRef.current > 0.01 ? visitedTrailSetRef.current : null,
         trailLensRamp: trailLensRampRef.current,
@@ -4331,15 +4606,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         expand: expandPrefRef.current,
         clusterBarLabels: clusterBarLabelsRef.current,
       });
-      // 이번 프레임이 어떤 렌즈 상태를 그렸는지 기록 — 유휴 게이트가 다음
-      // 프레임에 "바뀌었나"를 이 값으로 판정한다.
+      // Record which lens state this frame drew; the idle gate compares
+      // against it next frame to decide whether the lens changed.
       drawnTrailLensRef.current = trailLensActive;
 
-      // 가이드 투어 스포트라이트 링 — 오버레이 DOM 원 대신 엔진이 프레임
-      // 위에 직접 그린다 (2026-07-24 소유자 실보고: DOM 원이 노드와 미세
-      // 오프셋/모양 불일치로 "딱 안 맞아" 보였다). 같은 worldToScreen ·
-      // 같은 프레임이라 그려진 노드와의 정합이 구조적으로 보장된다. 스크림
-      // 컷아웃(감광 구멍)은 계속 GuidedTourOverlay 프로브가 담당.
+      // Guided-tour spotlight ring, drawn by the engine onto the frame rather
+      // than as an overlay DOM circle. Owner bug report 2026-07-24: the DOM
+      // circle was slightly offset and a slightly different shape from the
+      // node, so it looked misaligned. Using the same `worldToScreen` in the
+      // same frame makes agreement with the drawn node structural. The scrim
+      // cutout stays with the GuidedTourOverlay.
       {
         const anchorId = tourAnchorNodeIdRef.current;
         const node = anchorId ? world.nodeById.get(anchorId) : undefined;
@@ -4361,27 +4637,28 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     };
 
     /**
-     * **GPU 가 캔버스를 회수하면 지도가 백지가 된다** — 그리고 아무도 그 사실을
-     * 모른다.
+     * ★ **If the GPU reclaims the canvas the map goes blank** — and nobody is
+     * told.
      *
-     * 가속 캔버스의 백킹 저장소는 브라우저가 회수할 수 있다(GPU 프로세스 크래시,
-     * 드라이버 리셋, 탭 백그라운드에서의 메모리 압박). 그러면 `contextlost` 가
-     * 오고 **그리기가 조용히 무효가 된다** — 예외도, 콘솔 오류도 없다. rAF 루프는
-     * 계속 도는데 화면만 비어 있으므로, 사용자에게는 "지도가 사라졌다"로 보이고
-     * 우리에게는 아무 신호도 안 남는다.
+     * An accelerated canvas's backing store can be reclaimed by the browser (a
+     * GPU process crash, a driver reset, memory pressure on a backgrounded
+     * tab). `contextlost` fires and **drawing silently becomes a no-op** — no
+     * exception, no console error. The rAF loop keeps running while the screen
+     * stays empty, so the user sees "the map disappeared" and we see nothing at
+     * all.
      *
-     * 명세가 주는 계약은 단순하다: `contextlost` 를 `preventDefault()` 로 막으면
-     * 브라우저가 컨텍스트 복구를 시도하고 `contextrestored` 가 온다. 그때 다음
-     * 프레임이 전부 다시 그리므로, 우리가 할 일은 **막고, 깨우는 것**뿐이다 —
-     * 이 루프는 매 프레임 전체 재그리기라 별도 복원 절차가 필요 없다.
-     * (`developer.chrome.com/blog/canvas2d` — "receive a callback and redraw".)
+     * The spec's contract is simple: `preventDefault()` on `contextlost` makes
+     * the browser attempt recovery and fire `contextrestored`. The next frame
+     * redraws everything, so all we have to do is **prevent, and wake** — this
+     * loop is a full redraw every frame, so no restore procedure is needed.
+     * (`developer.chrome.com/blog/canvas2d`: "receive a callback and redraw".)
      */
     const onContextLost = (event: Event) => {
-      event.preventDefault(); // 이걸 안 하면 브라우저가 복구를 시도하지 않는다
+      event.preventDefault(); // Without this the browser does not attempt recovery.
     };
     const onContextRestored = () => {
-      // 유휴 게이트가 프레임을 건너뛰고 있을 수 있다 — 복구 직후를 "활동"으로
-      // 표시해 다음 프레임이 확실히 그려지게 한다.
+      // The idle gate may be skipping frames, so mark the moment after
+      // recovery as activity to guarantee the next frame is drawn.
       lastActiveMsRef.current = performance.now();
       viewportRebuildPendingRef.current = true;
     };
@@ -4395,9 +4672,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       canvas.removeEventListener("contextlost", onContextLost);
       canvas.removeEventListener("contextrestored", onContextRestored);
     };
-    // beginCameraTween/cameraTokens 는 deps 가 [] 인 useCallback 이라 참조가
-    // 불변이다 — 3D 켜짐-핏·선택 리프레임이 프레임 바디에서 부르게 되며 deps 에
-    // 올렸을 뿐, 이 effect 가 다시 도는 일은 없다(루프 재마운트 0).
+    // `beginCameraTween` and `cameraTokens` are `useCallback`s with empty
+    // deps, so their references never change. They appear here only because the
+    // frame body calls them (3D fit-on, selection reframe); this effect never
+    // re-runs, so the loop is never remounted.
   }, [beginCameraTween, cameraTokens]);
 
   // refs below are only dereferenced inside the returned event-handler
@@ -4453,30 +4731,32 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onContextMenuPane,
     onToggleCluster,
     onHoverCluster,
-    // S2 파트 3a — `이웃 +N` 칩 클릭 → 다음 이웃 배치 점등(세션 임시). 클릭
-    // 제스처가 방금 캔버스를 활성으로 유지했으므로(유휴 grace 창 안) 다음
-    // 프레임이 새 배치로 다시 그린다 — 별도 wake 불필요.
+    // A "neighbours +N" chip click lights the next neighbour batch
+    // (session-only). The click gesture just kept the canvas active (inside the
+    // idle grace window), so the next frame redraws with the new batch — no
+    // separate wake needed.
     onExpandEgoNeighbors: () => {
       egoRevealBatchesRef.current += 1;
     },
-    // 고팬아웃 배치-공개 — `+N 더보기` 칩 클릭 → 그 부모의 배치 +1(세션 임시,
-    // URL 비영속). `이웃 +N` 과 동일 — 클릭 제스처가 방금 캔버스를 활성으로
-    // 유지했으므로(유휴 grace 창) 다음 프레임이 새 배치를 DOI 순 stagger 로
-    // 다시 그린다. 별도 wake 불필요.
+    // A "+N more" chip click increments that parent's batch count
+    // (session-only, not persisted to the URL). Same as above: the click kept
+    // the canvas active, so the next frame redraws the new batch with its
+    // DOI-ordered stagger.
     onExpandClusterBatch: (parentId: string) => {
       const map = clusterRevealBatchesRef.current;
       map.set(parentId, (map.get(parentId) ?? 1) + 1);
     },
   });
   /* eslint-enable react-hooks/refs */
-  // 검사 훅(`edgeAt`)이 deps [] 인 effect 안에서 최신 핸들러를 보게 한다.
-  // 렌더 중이 아니라 effect 에서 쓴다 — 렌더 중 ref 쓰기는 이 저장소의 lint 가
-  // 막고, 막는 이유가 정당하다(렌더는 순수해야 한다).
+  // Lets the inspection hook (`edgeAt`) see the latest handlers from inside an
+  // effect with empty deps. Written in an effect rather than during render:
+  // this repo's lint blocks ref writes during render, rightly — render must be
+  // pure.
   useEffect(() => {
     handlersRef.current = handlers;
   });
 
-  // FIX (QA first-light pass — console error sweep): a JSX `onWheel` prop
+  // A JSX `onWheel` prop
   // binds to React's delegated listener, which is registered `passive` by
   // default — calling `preventDefault()` inside it throws "Unable to
   // preventDefault inside passive event listener invocation" on every wheel
@@ -4497,8 +4777,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     return () => canvas.removeEventListener("wheel", listener);
   }, []);
 
-  // S4 — 궤도 "전개" 버튼 클릭 → 현재 겨냥 slug 로 영역 진입. 위치는 rAF 가
-  // 매 프레임 갱신하고, 클릭 대상 slug 는 `realmEnterTargetRef` 로 공유한다.
+  // Clicking the orbit enter button enters the realm of the slug currently
+  // targeted. rAF updates the button's position every frame; the target slug is
+  // shared through `realmEnterTargetRef`.
   useEffect(() => {
     const btn = realmEnterButtonRef?.current;
     if (!btn) return;
@@ -4512,44 +4793,47 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, [realmEnterButtonRef]);
 
   /**
-   * 앰비언트 휴면의 각성 신호 — 포인터/휠 입력이 들어온 시각을 남긴다.
+   * The ambient-sleep wake signal: records when pointer or wheel input arrived.
    *
-   * 반환 핸들러를 얇게 감싸는 이유: 입력 지점이 `createTopologyPointerHandlers`
-   * 안에 흩어져 있어 거기마다 심으면 새 핸들러가 늘 때 조용히 빠진다(#65 계열).
-   * **경계는 하나** — 이 훅이 밖으로 내주는 표면이다.
+   * It wraps the returned handlers thinly because the input sites are scattered
+   * through `createTopologyPointerHandlers`, and planting the call at each one
+   * means a new handler silently omits it. **There is one boundary** — the
+   * surface this hook hands outward.
    */
   const noteInput = useCallback(() => {
     lastInputMsRef.current = performance.now();
-    // 잠들어 있었다면 이 프레임부터 다시 그려야 한다. `idle-gate` 는 매 프레임
-    // refs 를 재평가하므로 활동 시각만 밀어 주면 복귀가 보장된다.
+    // If it was asleep, drawing must resume from this frame. `idle-gate`
+    // re-evaluates the refs every frame, so pushing the activity timestamp is
+    // enough to guarantee it.
     lastActiveMsRef.current = lastInputMsRef.current;
   }, []);
 
   /**
-   * 막다른 길을 말해 주는 자리 — **침묵이 문제였다.**
+   * Announcing a dead end — **silence was the defect.**
    *
-   * 소유자가 실제로 써 보고 *"방향키가 되긴 하는데 노드를 자유롭게 이동하진 못하네?"*
-   * 라고 했다. 그 방향에 이어진 노드가 없을 때 **아무 일도 안 하도록** 만들어 둔
-   * 것이 원인이다 — 「감싸 돌지 않는다」는 판단은 그대로 두고(반대편으로 뛰면
-   * 사용자가 자기 위치를 잃는다), 대신 **왜 안 움직이는지 말한다.** 눌렀는데 반응이
-   * 없으면 사용자는 「고장」과 「그 방향에는 없음」을 구별할 수 없다.
+   * Owner, using it for real: *"방향키가 되긴 하는데 노드를 자유롭게 이동하진
+   * 못하네?"* (the arrow keys work, but I cannot move between nodes freely).
+   * With no connected node in that direction it was built to do **nothing**.
+   * Not wrapping around stands — jumping to the far side loses the user's
+   * place — but it now says why it did not move, because a press with no
+   * response cannot be told from "broken".
    *
-   * **새 표면을 만들지 않는다** — 이 앱에는 이미 토스트가 있고 레이아웃 전체에
-   * 마운트돼 있다. 지도 위에 안내 상자를 새로 세우면 위치·토큰·모션을 다 정해야
-   * 하고, 그건 혼자 정할 규격이 아니다. 토스트는 스스로 사라지고
-   * (소유자: *"조금 보여지다 자동으로 사라지게"*) 보조기술에도 읽힌다.
+   * **No new surface**: the app already has a toast mounted across the layout,
+   * it dismisses itself (owner: *"조금 보여지다 자동으로 사라지게"* — show it
+   * briefly, then let it disappear) and assistive technology reads it. A hint
+   * box on the map would need position, tokens and motion decided, which is not
+   * a spec to set alone.
    *
-   * ⚠️ **문구와 토스트는 이 위젯의 것이 아니다.** 여기서 `useTranslations` 를
-   * 불렀다가 지도 컴포넌트 시험 5개가 깨졌다 — 그 시험은 프로바이더 없이 렌더한다.
-   * 그게 옳다: 이 위젯은 이미 `canvasLabel` 처럼 **문구를 prop 으로 받는다**.
-   * 그래서 사건만 밖으로 내보내고(`onWalkDeadEnd`), 무엇을 어떻게 보여 줄지는
-   * 페이지가 정한다.
+   * ⚠️ **The wording and the toast do not belong to this widget.** Calling
+   * `useTranslations` here broke five map component tests, which render without
+   * a provider. This widget already **takes its wording as props**, like
+   * `canvasLabel`, so only the event goes out (`onWalkDeadEnd`).
    */
   const onWalkDeadEndRef = useRef(onWalkDeadEnd);
   useEffect(() => {
     onWalkDeadEndRef.current = onWalkDeadEnd;
   });
-  /** 마지막으로 알린 시각 — 방향키를 누르고 있을 때 같은 말을 쏟지 않게. */
+  /** When it last announced, so holding an arrow key does not repeat itself. */
   const deadEndAtRef = useRef<number | null>(null);
 
   const announceDeadEnd = useCallback(() => {
@@ -4557,12 +4841,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!shouldAnnounceDeadEnd(deadEndAtRef.current, now)) return;
     deadEndAtRef.current = now;
     /*
-     * **막힌 그 노드의 화면 자리**를 함께 보낸다 (2026-08-10 소유자 실사용 지적:
-     * *"그냥 이동하던 노드 바로 옆에 좀 잘보이게 나타났다가 사라지는게 좋을듯"*).
+     * Send **the blocked node's screen position** along. Owner, 2026-08-10:
+     * *"그냥 이동하던 노드 바로 옆에 좀 잘보이게 나타났다가 사라지는게 좋을듯"*
+     * (it should appear clearly right beside the node you were moving from, and
+     * then disappear).
      *
-     * 화면 좌표 식은 `nodes()` 창구와 그리는 쪽이 함께 쓰는 그것이다 — 여기서 따로
-     * 만들면 세 번째 사본이 된다. 좌표를 못 내면 `null` 을 보내고, 받는 쪽이
-     * 「자리를 모르니 안 띄운다」를 스스로 정한다.
+     * The screen-coordinate formula is the one the `nodes()` window and the
+     * draw already share; deriving it here would be a third copy. When no
+     * coordinate can be produced it sends `null` and the receiver decides not
+     * to show anything.
      */
     const world = worldRef.current;
     const camera = cameraRef.current;
@@ -4580,25 +4867,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, []);
 
   /**
-   * 방향키로 **그래프 위를 걷는다** — 갈래 B (2026-08-09 소유자 확정).
+   * Arrow keys **walk the graph** (owner decision, 2026-08-09) — they move to a
+   * neighbour rather than pushing the camera. Which neighbour is decided by
+   * pure functions in `../interaction/keyboard-walk` (a ±60° wedge, projection
+   * plus an orthogonal penalty); this only wires the result into canvas state.
    *
-   * 방향키가 카메라를 미는 게 아니라 **이웃으로 옮겨 간다.** 어느 이웃인지
-   * 정하는 규칙은 `../interaction/keyboard-walk` 의 순수 함수에 있고(부채꼴
-   * ±60° · 투영 + 직교 벌점), 여기서는 그 결과를 이 캔버스의 상태에 잇는다.
+   * **Why no separate focus ring.** Separating focus from selection visually
+   * needs a second indigo mark, and in this app indigo already means
+   * "selected"; one colour with two meanings breaks the diagram, and that is
+   * not a spec to set alone (`.claude/rules/design.md`, 「규격을 바꾸려면
+   * 「체계」를 부른다」 — changing a spec convenes the design-systems seat). So
+   * the keys **move the selection**, identical in meaning to a click, with zero
+   * new visual language.
    *
-   * ## 왜 초점 링을 새로 만들지 않았나
-   *
-   * B 는 「초점이 움직이고 Enter 로 선택」이라고 그렸지만, **초점과 선택을
-   * 시각적으로 가르려면 인디고 마크가 하나 더 필요하다** — 그리고 이 앱에서
-   * 인디고는 이미 「선택됨」을 뜻한다. 같은 색이 두 뜻을 갖는 순간 도해가
-   * 깨지고, 그건 혼자 정할 규격이 아니다(`design.md` 「규격을 바꾸려면 「체계」를
-   * 부른다」). 그래서 방향키는 **선택을 옮긴다** — 클릭과 똑같은 뜻이고, 새 시각
-   * 언어가 0개다. 초점과 선택을 가르는 안은 규격 결정으로 남겨 둔다.
-   *
-   * ## 접힌 노드는 걷지 않는다
-   *
-   * 밀도 게이트가 접어 둔 서브트리는 화면에 없다(칩으로 대체된다). 거기로
-   * 옮기면 「눌렀는데 아무것도 안 보임」이 되므로 건너뛴다.
+   * **Collapsed nodes are not walked** — a subtree the density gate collapsed
+   * has been replaced by a chip, so moving there means "I pressed a key and
+   * nothing is visible".
    */
   const handleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLCanvasElement>) => {
     const direction = walkDirectionForKey(e.key);
@@ -4616,8 +4900,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     let nextId: string | null = null;
 
     if (currentId === null || !world.nodeById.has(currentId)) {
-      // 초점이 없으면 **지금 보고 있는 것**에서 시작한다. 카메라 x/y 가 곧 화면
-      // 중심의 월드 좌표다(`nodes()` 창구가 쓰는 것과 같은 식).
+      // With no focus, start from **what is being looked at**: the camera's
+      // x/y are the world coordinates of the screen centre (the same formula
+      // the `nodes()` window uses).
       nextId = pickInitialFocus(
         world.nodes.filter((n) => visible(n.id)).map((n) => ({ id: n.id, x: n.x, y: n.y })),
         { x: camera.x.value, y: camera.y.value },
@@ -4626,17 +4911,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const from = world.nodeById.get(currentId);
       if (!from) return;
       /*
-       * 갈 수 있는 곳 = **이어진 이웃 + 형제**.
+       * Reachable = **connected neighbours plus siblings**.
        *
-       * ⚠️ 처음에는 이웃(엣지)만 후보였고, 소유자가 실물에서 막혔다 —
-       * *"1depth 에서는 자기들끼리 자유롭게 이동 가능하게는 해야할듯? 중앙에서
-       * 자유롭게 이동이 안 되던데?"*. 지도 중앙의 프로젝트를 둘러싼 도메인 아홉은
-       * **서로 엣지가 없다**(각자 프로젝트에만 붙어 있다). 그래서 상품에서 회원으로
-       * 옆걸음이 안 됐고, 링처럼 둘러선 화면에서 그건 고장으로 읽힌다.
+       * ⚠️ Neighbours (edges) alone were the candidates at first, and the owner
+       * hit the wall in the real thing: *"1depth 에서는 자기들끼리 자유롭게
+       * 이동 가능하게는 해야할듯? 중앙에서 자유롭게 이동이 안 되던데?"* (at
+       * depth 1 they should be able to move among themselves — I could not move
+       * around freely at the centre). The nine domains ringing the project at
+       * the map's centre **have no edges to each other**; each attaches only to
+       * the project. So stepping sideways from one to the next was impossible,
+       * and on a screen where they visibly form a ring that reads as broken.
        *
-       * **임의 공간 점프를 허용한 것이 아니다.** 형제는 「같은 부모」라는 타입 있는
-       * 관계이고, 그것이 화면에서 링을 이루는 이유 자체다. 부모가 없는 뿌리끼리도
-       * 형제로 본다(프로젝트가 둘 이상인 볼트).
+       * **This does not permit arbitrary spatial jumps.** A sibling is the
+       * typed relation "same parent", which is the very reason they form that
+       * ring on screen. Parentless roots count as siblings of each other, for
+       * vaults with more than one project.
        */
       const candidateIds = new Set<string>(world.neighborMap.get(currentId) ?? []);
       for (const node of world.nodes) {
@@ -4650,7 +4939,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         if (node) candidates.push({ id: node.id, x: node.x, y: node.y });
       }
       if (candidates.length === 0) {
-        // 갈 곳이 아예 없는 노드. 아무 일도 안 하는 대신 왜 그런지 말한다.
+        // A node with nowhere to go. Say why, rather than doing nothing.
         e.preventDefault();
         announceDeadEnd();
         return;
@@ -4658,7 +4947,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       nextId = pickNeighborInDirection({ id: from.id, x: from.x, y: from.y }, candidates, direction);
     }
 
-    // 방향키는 우리 것이다 — 그 방향에 이웃이 없어도 페이지가 스크롤되면 안 된다.
+    // The arrow keys are ours: the page must not scroll even when there is no
+    // neighbour in that direction.
     e.preventDefault();
     if (nextId === null) {
       announceDeadEnd();
@@ -4670,18 +4960,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onSelect?.(nextId);
 
     /*
-     * 카메라는 **따라만 온다** — 초점이 자유 영역 밖으로 나가려 할 때만. 매번
-     * 데려오면 걷는 동안 지도가 계속 미끄러져 사용자가 자기 위치를 잃는다
-     * (Shneiderman 의 overview-first 를 스스로 깨는 셈이다).
+     * The camera only **follows**, and only when the focus is about to leave
+     * the free area. Recentring on every step keeps the map sliding while you
+     * walk and the user loses their place — breaking Shneiderman's
+     * overview-first on our own.
      *
-     * **판정과 목표를 모두 「자유 영역」으로 한다** (2026-08-10 소유자 확정:
-     * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*). 종전에는 뷰포트 가운데를
-     * 목표로 삼았는데, 노드를 고르면 오른쪽에 팝오버가 열리므로 **고른 것이 그것을
-     * 설명하는 패널 뒤로 들어갈 수 있었다.** 실측(1512×982): 캔버스 x64 w1448,
-     * 팝오버 x1128 w352 → 자유 영역 가운데는 화면 가운데보다 192px 왼쪽이다.
-     *
-     * 패널 폭을 상수로 박지 않고 **DOM 에서 재는** 이유: 값을 박으면 패널이 바뀌는
-     * 날 조용히 어긋난다. 이 계산은 프레임마다가 아니라 **걸을 때 한 번** 돈다.
+     * **Both the test and the target use the free area**, for the reason and
+     * the measurements recorded on the focus-dive path above (owner,
+     * 2026-08-10). It runs once per step, not per frame.
      */
     const { width, height } = viewportRef.current;
     const canvasEl = canvasRef.current;
@@ -4697,7 +4983,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const obstacles = collectCanvasObstacles(canvasEl, canvasRect);
       const free = computeFreeArea(canvasRect, obstacles);
 
-      // 초점이 지금 자유 영역 안에 넉넉히 들어와 있나 (문서 좌표로 비교).
+      // Is the focus comfortably inside the free area (compared in document
+      // coordinates).
       const sx = canvasBox.x + (target.x - camera.x.value) * scale + width / 2;
       const sy = canvasBox.y + (target.y - camera.y.value) * scale + height / 2;
       const margin = Math.min(free.width, free.height) * 0.18;
@@ -4708,22 +4995,24 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         sy > free.y + free.height - margin;
       if (outside) {
         /*
-         * 목표는 **카메라 수학의 그 식**으로 낸다(`centerForInsets`) — 여기 따로
-         * 적으면 그 식의 사본이 둘이 되고, 사본이 여럿이면 빠진 사본이 생기는 쪽이
-         * 기본값이다(초점 다이브가 실제로 그 빠진 사본이었다).
+         * The target comes from the camera-math formula (`centerForInsets`).
+         * Writing it out here would make two copies, and with several copies
+         * the default outcome is that one is missed — the focus dive was
+         * exactly that missed copy.
          *
-         * 자유 영역은 목표가 아니라 **「밖으로 나갔나」 판정**에만 남는다 — 인셋은
-         * 밀 거리를 주지만 담고 있는 사각형을 주지 않으므로, 그 판정은 인셋으로
-         * 표현할 수 없는 다른 질문이다.
+         * The free area stays only in the **"has it gone outside" test**:
+         * insets give a push distance but not a containing rectangle, so that
+         * test asks a question the insets cannot express.
          */
         const centered = centerForInsets(target.x, target.y, { ...measureCanvasInsets(canvasEl, canvasRect), top: 0, bottom: 0 }, scale);
         const cameraTarget = { tx: centered.tx, ty: centered.ty, tscale: scale };
         /*
-         * ⚠️ **트윈만 세우면 안 된다** (게이트가 잡았다). 트윈이 끝나면 스프링이
-         * `cameraTargetRef` 로 이어받으므로, 그것을 갱신하지 않으면 **옛 목표로
-         * 되끌어간다** — 실측: 노드가 자유 영역 가운데에서 188px 밀려 화면 가운데에
-         * 앉았다. 다른 프로그램 경로(포커스 다이브 · 칩 전개 · 핏뷰)가 둘을 함께
-         * 세우는 이유가 이것이다.
+         * ★ **Starting the tween alone is not enough** (the gate caught this).
+         * When the tween ends the spring takes over from `cameraTargetRef`, so
+         * leaving that stale **pulls the camera back to the old target** —
+         * measured: the node ended up 188 px off the free area's centre, sitting
+         * at the screen centre instead. This is why every other programmatic
+         * path (focus dive, chip expand, fit-view) sets both.
          */
         cameraTargetRef.current = cameraTarget;
         userDrivenCameraRef.current = false;
@@ -4759,35 +5048,40 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   );
 
   /**
-   * 검사 훅 — `?e2e=1` 일 때만 붙는 자동화용 창구. **제품 API 가 아니다.**
+   * ★ Inspection hook — an automation window attached only under `?e2e=1`.
+   * **Not a product API.**
    *
-   * ## 왜 필요한가 (2026-07-31 사고)
+   * The 2026-07-31 accident: six consecutive attempts to reproduce node-drag
+   * lag **only ever dragged the background**. The only way to aim at a node
+   * from outside was sweeping the canvas for a `pointer` cursor, but that is a
+   * **hover hit**, not **grabbable** — a grab must also pass
+   * `sim.hasNode(pressedNodeId)`, and failing that it silently becomes a pan.
+   * Node drag and pan then set **the same `grabbing`** cursor
+   * (`topology-pointer-handlers.ts`), so even checking afterwards was
+   * impossible. Every run answered "it isn't slow here", until the owner looked
+   * at the screen: *"너는 노드가 아니라 그냥 배경을 흔들잖아"* (you are shaking
+   * the background, not a node).
    *
-   * 노드 드래그 렉을 재현하려다 **여섯 번 연속 배경만 밀었다.** 밖에서 노드를
-   * 조준할 방법이 «캔버스를 훑어 커서가 pointer 인 지점을 찾는 것» 뿐이었는데,
-   * 그건 **호버 히트**일 뿐 **잡히는지**와 다르다 — 잡기는
-   * `sim.hasNode(pressedNodeId)` 를 통과해야 성립하고, 실패하면 조용히 팬으로
-   * 흘러간다. 게다가 노드 드래그와 팬이 커서를 **똑같이 `grabbing`** 으로
-   * 바꾸므로(`topology-pointer-handlers.ts`) 밖에서는 사후 확인조차 불가능했다.
-   * 그래서 매번 "안 느린데요" 라는 오답이 나왔고, 소유자가 화면을 보고
-   * *"너는 노드가 아니라 그냥 배경을 흔들잖아"* 라고 짚어준 뒤에야 끝났다.
+   * > **A state you cannot distinguish from outside cannot be tested from
+   * > outside.**
    *
-   * > **밖에서 구분할 수 없는 상태는 밖에서 검사할 수 없다.**
-   *
-   * 그래서 둘을 노출한다: 노드의 **화면 좌표 + 잡히는지**(사전 조준), 그리고
-   * 지금 끌고 있는 것이 **노드인지 배경인지**(사후 확인). 둘 다 refs 를 그때
-   * 읽는 게터라 프레임 비용은 0 이다.
+   * So two things are exposed: a node's **screen position and whether it is
+   * grabbable** (aiming), and whether the current drag is **a node or the
+   * background** (confirming). Both are getters reading refs on call, so the
+   * per-frame cost is zero.
    */
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!new URLSearchParams(window.location.search).has("e2e")) return;
-    // 유휴 게이트 계측 기록을 켠다 — 창구가 붙은 세션에서만(`lastActiveCausesRef`).
+    // Enable idle-gate cause recording, only in sessions where the window is
+    // attached (`lastActiveCausesRef`).
     idleDebugEnabledRef.current = true;
     const hook = {
       /**
-       * 마지막으로 프레임을 깨운 활동 플래그들의 이름 + 그 시각, 그리고 유휴
-       * 게이트의 입력이 되는 원시값 몇 개. «안 잠든다» 회귀에서 증상(초당 CPU)
-       * 이 아니라 **원인(어느 플래그)** 을 밖에서 특정하는 유일한 창구다.
+       * The names of the activity flags that last kept a frame awake, when that
+       * was, and a few of the raw values feeding the idle gate. In a "it never
+       * sleeps" regression this is the only window that names **the cause —
+       * which flag** — rather than the symptom (CPU per second).
        */
       idleDebug: () => ({
         lastActive: lastActiveCausesRef.current,
@@ -4797,7 +5091,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         hovered: hoveredNodeIdRef.current,
         pointerPhase: pointerMachineRef.current.phase,
       }),
-      /** 화면에 그려진 노드 — 좌표는 **CSS 픽셀**(마우스 좌표계)이다. */
+      /** Nodes as drawn; coordinates are **CSS pixels**, the mouse coordinate space. */
       nodes: () => {
         const world = worldRef.current;
         const camera = cameraRef.current;
@@ -4807,9 +5101,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const sim = simRef.current;
         const clustered = clusteredIdsRef.current;
         const preview = previewEdgeHeldRef.current;
-        // 3D — 계기는 **그려진** 좌표를 내보낸다. 드로우가 마지막으로 그린
-        // 프레임 맵을 그대로 읽지 않으면 계기가 화면이 아니라 자기 상상을 재게
-        // 된다(아래 엣지 계기의 원칙과 동일). 회전 중이어도 «이번 프레임» 좌표다.
+        // In 3D the instrument reports the **drawn** coordinates. Reading
+        // anything but the frame map the draw last produced would measure the
+        // instrument's own imagination rather than the screen (the same
+        // principle as the edge instrument below). Mid-rotation it is still
+        // *this frame's* coordinates.
         const domeFrame =
           domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
             ? domeRuntimeRef.current.frame
@@ -4820,23 +5116,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           id: n.id,
           kind: n.kind,
           label: n.label,
-          // screenToWorld 의 역함수 — 같은 카메라를 쓰므로 어긋날 수 없다.
+          // The inverse of screenToWorld, using the same camera, so they
+          // cannot disagree.
           x: (n.x + dOff.dx - camera.x.value) * camera.scale.value + width / 2,
           y: (n.y + dOff.dy - camera.y.value) * camera.scale.value + height / 2,
-          /** ★ 이걸 안 봐서 여섯 번 틀렸다 — 시뮬에 없으면 끌어도 팬이 된다. */
+          /** ★ Not checking this produced six wrong answers: a node absent from the sim pans instead of dragging. */
           draggable: sim?.hasNode(n.id) ?? false,
-          /** W6 에이전트 링 — 그리는 쪽과 같은 판정(`agentFocusNodeIdRef`)을
-           *  그대로 내보낸다. 캔버스 픽셀은 e2e 가 못 읽으므로 이 typed 신호가
-           *  「링이 실제로 이 노드에 붙었나」의 관측 창구다. */
+          /** W6 agent ring — reports the same decision the draw uses
+           *  (`agentFocusNodeIdRef`). e2e cannot read canvas pixels, so this
+           *  typed signal is the only window onto "is the ring actually on this
+           *  node". */
           agentFocus: agentFocusNodeIdRef.current === n.id,
-          /** 접힌 서브트리는 칩으로 대체돼 화면에 없다. */
+          /** A collapsed subtree is replaced by a chip and is not on screen. */
           hidden: isPreviewEndpointHidden(clustered?.has(n.id) ?? false, preview, n.id),
           previewEndpoint: isPreviewEndpoint(preview, n.id),
           /**
-           * ★ 그래프 가독성 계기용 — 겹침은 반지름 없이 못 센다.
-           * 그리는 쪽과 **같은 식**을 쓴다(`topology-frame-draw.ts` 의
-           * `radiusForKind × magnitudeScale`, 화면 반지름은 여기에 카메라 배율).
-           * 식이 갈리면 계기가 화면이 아니라 자기 상상을 재게 된다.
+           * ★ For the graph-readability instrument: overlap cannot be counted
+           * without radii. Uses the **same formula** as the draw
+           * (`radiusForKind × magnitudeScale` in `topology-frame-draw.ts`, times
+           * the camera zoom for the screen radius). Diverging formulas measure
+           * the instrument's imagination, not the screen.
            */
           radius: tokens
             ? radiusForKind(n.kind, tokens) *
@@ -4848,18 +5147,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         });
       },
       /**
-       * 화면에 그려진 **엣지** — 좌표는 노드와 같은 CSS 픽셀계다.
+       * **Edges** as drawn, in the same CSS pixel space as the nodes.
        *
-       * 왜 이걸 노출하나 (2026-08-03): 이 앱의 주 표면이 노드-링크 그래프인데
-       * **엣지 교차를 한 번도 세 본 적이 없었다.** 노드 규격(형태·반지름·parity)
-       * 에는 게이트가 있고 지도가 그래프로서 읽히는지에는 수치가 0이었다.
+       * Why expose this (2026-08-03): this app's primary surface is a node-link
+       * graph and **edge crossings had never once been counted**. Node specs
+       * (shape, radius, parity) had gates; whether the map reads as a graph had
+       * no numbers at all.
        *
-       * Purchase(1997, Graph Drawing) 실험이 우선순위를 정해 준다 — **엣지 교차를
-       * 줄이는 것이 인간 이해도에 압도적으로 가장 중요하고**, 각도 해상도 최대화와
-       * 격자 스냅은 통계적으로 유의하지 않았다. 그래서 교차와 겹침만 노출한다.
+       * Purchase (1997, Graph Drawing) sets the priority: **reducing edge
+       * crossings matters overwhelmingly most** for human comprehension, while
+       * maximising angular resolution and grid snapping were not statistically
+       * significant. So only crossings and overlap are exposed.
        *
-       * `hidden` 인 노드에 붙은 엣지는 화면에 없으므로 제외한다 — 안 보이는 선의
-       * 교차를 세면 수치가 화면을 설명하지 못한다.
+       * Edges attached to a `hidden` node are excluded — counting crossings of
+       * lines nobody can see produces numbers that do not describe the screen.
        */
       edges: () => {
         const world = worldRef.current;
@@ -4869,7 +5170,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const clustered = clusteredIdsRef.current;
         const toScreenX = (x: number) => (x - camera.x.value) * camera.scale.value + width / 2;
         const toScreenY = (y: number) => (y - camera.y.value) * camera.scale.value + height / 2;
-        // 3D — 드로우(`projectEdgePoints`)와 같은 끝점별 프레임 오프셋.
+        // The same per-endpoint frame offsets the draw uses
+        // (`projectEdgePoints`).
         const domeFrame =
           domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
             ? domeRuntimeRef.current.frame
@@ -4890,10 +5192,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             bx: toScreenX(e.bx + offB.dx),
             by: toScreenY(e.by + offB.dy),
             /**
-             * ★ 현선이 아니라 **그려지는 곡선**을 재기 위해서다. 드로우 경로는
-             * `quadraticCurveTo(control, b)` 인데(`topology-frame-draw.ts`),
-             * 계기가 끝점만 이으면 화면에 없는 교차를 세고 화면에 있는 교차를
-             * 놓친다 — 즉 지도가 아니라 자기 근사치를 재게 된다.
+             * ★ So the instrument measures **the curve that is drawn**, not its
+             * chord. The draw path is `quadraticCurveTo(control, b)`
+             * (`topology-frame-draw.ts`); joining endpoints instead counts
+             * crossings that are not on screen and misses crossings that are —
+             * measuring an approximation rather than the map.
              */
             controlX: toScreenX(e.controlX + (offA.dx + offB.dx) / 2),
             controlY: toScreenY(e.controlY + (offA.dy + offB.dy) / 2),
@@ -4901,34 +5204,37 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           });
       },
       /**
-       * `(x, y)` 에서 **앱이 고를 엣지** — 히트 없으면 null.
+       * **The edge the app would select** at `(x, y)`, or null on no hit.
        *
-       * 왜 이게 있어야 하나 (2026-08-03): 노드는 `nodes()` 로 좌표를 얻어 밖에서
-       * 몰 수 있는데 **엣지는 몰 수 없었다.** 실측 — 곡선 중점 101지점 × 오프셋
-       * 3종을 클릭해도 `selection().edge` 가 계속 null 이었다(임계 7px, 노드 몸통
-       * 안은 제외). 그래서 **엣지가 걸린 어떤 변경도 자동 검증이 불가능**했고,
-       * 엣지 패널에 등장/퇴장을 붙이려다 그 벽에 막혀 되돌렸다.
+       * Why it has to exist (2026-08-03): nodes can be driven from outside via
+       * `nodes()` coordinates, but **edges could not be**. Measured: clicking
+       * 101 points along a curve's midline across 3 offsets left
+       * `selection().edge` null every time (7 px threshold, excluding node
+       * bodies). So **no change touching edges could be verified
+       * automatically**, and an attempt to give the edge panel enter/exit
+       * motion was reverted at that wall.
        *
-       * 좌표를 새로 계산하지 않고 **포인터 핸들러와 같은 함수**를 부른다 —
-       * 계기가 앱과 다른 식을 쓰면 화면이 아니라 자기 상상을 재게 된다.
+       * It calls **the same function as the pointer handlers** rather than
+       * recomputing coordinates: an instrument with its own formula measures
+       * its imagination, not the screen.
        */
       edgeAt: (x: number, y: number, thresholdPx?: number) => {
         const e = handlersRef.current?.probeEdgeAt(x, y, thresholdPx);
         return e ? { sourceId: e.sourceId, targetId: e.targetId, kind: e.kind } : null;
       },
-      /** 지금 무엇을 끌고 있나 — 「노드」와 「배경」이 화면에서 같아 보이므로. */
+      /** What is being dragged, since a node and the background look identical on screen. */
       interaction: () => {
         const drag = nodeDragRef.current;
         if (drag) return { kind: "node" as const, nodeId: drag.nodeId };
         if (pointerMachineRef.current.phase === "dragging") return { kind: "pan" as const, nodeId: null };
         return { kind: "idle" as const, nodeId: null };
       },
-      /** 캔버스 백킹 크기 — 상호작용 중 해상도 캡이 실제로 걸렸는지 확인용. */
+      /** Canvas backing size, to confirm the interaction resolution cap actually applied. */
       backing: () => {
         const c = canvasRef.current;
         return c ? { width: c.width, height: c.height, dpr: window.devicePixelRatio } : null;
       },
-      /** 카메라 — 「지도가 어디를 보고 있나」. 딥링크·다이브·핏뷰 검증용. */
+      /** Where the map is looking — for verifying deep links, dives and fit-view. */
       camera: () => {
         const camera = cameraRef.current;
         const { width, height } = viewportRef.current;
@@ -4936,10 +5242,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
       },
       /**
-       * 3D 돔 자세 — 「돔이 어디를 보고 있고 아직 저절로 도는가」. 캔버스
-       * 픽셀로는 yaw/pitch/무장 상태를 밖에서 구분할 수 없어, 자율 회전
-       * 정지(①)·pitch 개방(③)·선택 리프레임(④)의 자동 검증 창구다.
-       * 2D(돔 꺼짐)면 null — 계기가 없는 상태와 구분된다.
+       * Dome pose — where the dome is looking and whether it still spins by
+       * itself. Canvas pixels cannot distinguish yaw, pitch or the armed state
+       * from outside, so this is the window for verifying the auto-spin stop,
+       * the pitch range and the selection reframe. Null in 2D (dome off), which
+       * is distinguishable from the instrument being absent.
        */
       dome: () => {
         const d = domeRuntimeRef.current;
@@ -4948,10 +5255,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           yaw: d.yaw,
           pitch: d.pitch,
           /*
-           * 포인터가 **명령한** 자세. `yaw` 와의 차이가 곧 「손을 얼마나 뒤에서
-           * 따라오나」이고, 그 값은 캔버스 밖에서 볼 방법이 없다 — 픽셀로는
-           * 「돔이 돈다」만 보이지 「늦게 돈다」는 안 보인다. 2026-08-19 에
-           * 스무딩 τ 를 45 → 14ms 로 내린 판단이 이 값으로 잰 것이다.
+           * The pose the pointer **commanded**. Its gap from `yaw` is how far
+           * behind the hand the dome trails, and there is no way to see that
+           * from outside the canvas — pixels show "the dome turns", never "the
+           * dome turns late". Lowering the smoothing τ from 45 to 14 ms on
+           * 2026-08-19 was decided by measuring this value.
            */
           yawTarget: d.yawTarget,
           pitchTarget: d.pitchTarget,
@@ -4960,16 +5268,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           orbiting: d.orbiting,
           spinArmed: d.spinArmed,
           /*
-           * 티어 비틀림(follow-through) — **캔버스 밖에서는 이것만이 「돔이
-           * 자기 운동에 반응하는가」를 말한다.** 픽셀로는 링이 조금 어긋난
-           * 것과 그냥 그렇게 그려진 것을 구별할 수 없다. 이 값이 프로그램
-           * 자세 이동 중 0 이 아니어야 클릭 리프레임이 굳어 돌지 않는다는
-           * 계약이 밖에서 검증된다.
+           * Tier torsion (follow-through) — **from outside the canvas this is
+           * the only thing that says whether the dome reacts to its own
+           * motion.** Pixels cannot tell a ring that lagged from a ring simply
+           * drawn that way. Requiring this to be non-zero during a
+           * programmatic pose move is what makes "a click reframe does not turn
+           * as a rigid block" verifiable from outside.
            */
           lag: { ...d.lag },
           /*
-           * 릴리스가 겨눈 «의미 있는 착지» — 캔버스 밖에서는 관성이 우연히
-           * 멎은 것과 겨눠서 멎은 것을 구별할 방법이 없다. 이 값이 그 구별이다.
+           * The meaningful landing a release aimed at. From outside the canvas
+           * there is no way to tell inertia that happened to stop from a stop
+           * that was aimed; this value is that distinction.
            */
           yawSnap: d.yawSnap,
           poseTween: d.poseTween !== null,
@@ -4978,25 +5288,28 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         };
       },
       /**
-       * 지금 지도가 **호버로 가리키고 있는** 노드 — 커서가 캔버스 위에 있든,
-       * 옆 패널(대화창·데이터시트)의 줄 위에 있든 같은 값이다.
+       * The node the map is **pointing at via hover** — the same value whether
+       * the cursor is over the canvas or over a row in a side panel (chat, data
+       * sheet).
        *
-       * 왜 있어야 하나 (2026-08-17): 패널 줄에 마우스를 올리면 지도가 그
-       * 노드를 가리킨다는 계약을 밖에서 확인할 방법이 **없었다**. 캔버스에는
-       * DOM 이 없으니 남는 수단은 픽셀 비교뿐인데, 픽셀은 «뭔가 바뀌었다»만
-       * 말하고 «그 노드인가»는 말하지 못한다 — 엉뚱한 노드를 가리켜도 초록이다.
+       * Why it exists (2026-08-17): there was **no way from outside** to check
+       * the contract that hovering a panel row makes the map point at that
+       * node. The canvas has no DOM, leaving only pixel comparison, and pixels
+       * say "something changed" but never "that node" — pointing at the wrong
+       * node would still pass green.
        */
       hover: () => drawnHoveredNodeIdRef.current,
-      /** 지금 무엇이 골라져 있나 — 노드 하나 또는 엣지 한 쌍. */
+      /** What is selected: one node, or one edge's endpoint pair. */
       selection: () => ({
         nodeId: focusedSlugRef.current,
         edge: selectedEdgeRef.current,
       }),
       /**
-       * 밀도 게이트 칩 — **「+24」가 진짜 24개를 드러내는지** 검증하는 자리다.
-       * 칩이 «24개 있다» 고 주장하는데 그리는 것은 1개였던 전례가 있다(티어
-       * 게이트가 칩 전개를 안 봐줬다). 주장(`count`)과 실제(`shownChildren`)를
-       * 나란히 내보내야 그 어긋남이 밖에서 잡힌다.
+       * Density-gate chips — where "+24 really reveals 24" is verified. A chip
+       * once claimed 24 while exactly 1 was drawn, because the tier gate did
+       * not honour the chip expansion. Reporting the claim (`count`) beside the
+       * reality (`shownChildren`) is what makes that mismatch catchable from
+       * outside.
        */
       chips: () => {
         const world = worldRef.current;
@@ -5007,7 +5320,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             parentId: chip.parentId,
             claimedCount: chip.count,
             expanded: chip.expanded,
-            /** 접히지 않은(=그려질 수 있는) 직속 자식 수. */
+            /** Direct children that are not collapsed, i.e. can be drawn. */
             shownChildren: children.filter((id) => !clustered.has(id)).length,
           };
         });

@@ -74,8 +74,8 @@ function EditorContent({
   const safeReturnLabel = t(resolveReturnLabelKey(normalizeReturnTo(returnTo)));
   const publicProjectHref = slug ? getProjectRuntimeDetailHref(slug) : null;
   const [project, setProject] = useState<Project | null>(null);
-  // mode-aware (vault manifest 또는 빌드타임 dogfood) — useProjects 가
-  // allProjects 의 단일 source.
+  // Mode-aware (the vault manifest or the build-time dogfood manifest) — `useProjects` is the single
+  // source for `allProjects`.
   const { projects: allProjects, loaded: projectsLoaded } = useProjects();
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(Boolean(targetSlug));
@@ -88,18 +88,18 @@ function EditorContent({
 
   useEffect(() => {
     if (!targetSlug) return;
-    // 첫 로드·write 직후 증분 rebuild가 끝나기 전에는 마지막 manifest나
-    // static fallback의 불완전한 목록으로 not-found를 확정하지 않는다.
+    // On first load, and right after a write before the incremental rebuild finishes, do not settle
+    // not-found from the last manifest or an incomplete static fallback list.
     if (!projectsLoaded) return;
 
-    // useProjects 결과에서 slug 매칭으로 동기 lookup. 매칭 실패 시
-    // loadError 로 빈 상세 카드 노출 (slug 가 manifest 에 없는 경우).
+    // Synchronous lookup by slug against the `useProjects` result. A miss surfaces an empty detail card
+    // via `loadError` (the slug is not in the manifest).
     const found = allProjects.find((p) => p.slug === targetSlug);
     if (found) {
       window.queueMicrotask(() => {
         setProject(found);
-        // persisted vault rehydrate 직전 static fallback이 먼저 보이면 한 번
-        // loadError가 잡힐 수 있다. 실제 local project가 도착하면 회복한다.
+        // Just before a persisted vault rehydrates, the static fallback can appear first and trip
+        // `loadError` once. It recovers when the real local project arrives.
         setLoadError(null);
         setLoading(false);
       });
@@ -143,8 +143,8 @@ function EditorContent({
       if (err instanceof VaultConflictError) {
         throw new Error(t("vaultConflict"));
       }
-      // [P-3] 방어 경로 — writeDisabled 가 제출 버튼을 이미 막아두지만,
-      // 혹시 도달하면 영어 raw 메시지 대신 ko/en 안내로 치환.
+      // A defensive path — `writeDisabled` already blocks the submit button, but if it is reached
+      // anyway, show the localized guidance instead of the raw English message.
       if (err instanceof ProjectStaticModeError) {
         throw new Error(t("demoModeSaveFailed"));
       }
@@ -244,19 +244,18 @@ function EditorContent({
   }
 
   return (
-    // 페이지 루트는 `min-h-full` 로 셸 본문 슬롯을 채우기만 한다. 스크롤 끝에서
-    // 하단 예약고가 살아 있게 하는 압축 금지 계약은 **셸이 소유**한다
-    // (`AppShell` 본문 슬롯의 `[&>*]:shrink-0`) — 예전엔 이 자리에 `shrink-0` 을
-    // 손으로 박았는데, 페이지가 기억해야 하는 구조는 다음 화면에서 또 빠진다
-    // (실제로 형제 라우트 4곳에 같은 결함이 살아 있었다).
+    // The page root only fills the shell's body slot with `min-h-full`. The no-compression contract
+    // that keeps the bottom reserve alive at the end of the scroll is **owned by the shell**
+    // (`[&>*]:shrink-0` on `AppShell`'s body slot) — `shrink-0` used to be hand-applied here, and a
+    // structure each page has to remember gets missed on the next screen (it really was missing on four
+    // sibling routes).
     <div className="flex min-h-full w-full">
-      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
-      {/* 하단 예약고는 base pb + lg:pb — `max-lg:pb-[...]` 는 `md:py-10` 보다
-          스타일시트 앞에 emit 되어 768–1023 에서 조용히 패배한다 (빌더 main 과
-          동일 처방, 겹침 소탕 2026-07-23). */}
+      {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
+      {/* The bottom reserve is a base `pb` plus `lg:pb` — `max-lg:pb-[...]` is emitted before
+          `md:py-10` in the stylesheet and silently loses between 768 and 1023. */}
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 bg-[color:var(--color-canvas)] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] lg:pb-10">
-      {/* 960 — RATIO-SYSTEM.md 유틸리티 컬럼. ProjectForm 의 640 폼 컬럼 +
-          260 미리보기 컬럼 + gap 이 여유 있게 들어간다. */}
+      {/* 960 — the utility column from RATIO-SYSTEM.md. `ProjectForm`'s 640 form column plus the 260
+          preview column plus the gap fit with room to spare. */}
       <div className={PAGE_FRAME_FORM}>
         <Link
           href={safeReturnTo}
@@ -273,12 +272,11 @@ function EditorContent({
           {safeReturnLabel}
         </Link>
 
-        {/* 머리말은 한 번만 말한다. 예전에는 eyebrow("새 프로젝트 만들기") 가
-            바로 아래 h1("새 프로젝트") 를 반복했고, 그 옆 칩 두 개
-            ("돌아갈 위치 유지" · "저장하고 계속 보기 가능") 는 시스템 사정이지
-            사용자 관심사가 아니었다. 만들기 화면에서는 eyebrow 를 지우고
-            부제 한 줄이 "무엇을 채우면 되는지" 를 말한다 — 그 문장이 바로
-            아래 필수 칸 4개를 가리키므로 안내가 한 자리에 모인다. */}
+        {/* The preamble is said once. The eyebrow ("create a new project") used to repeat the h1
+            directly beneath it ("new project"), and the two chips beside it ("your position is kept",
+            "you can save and keep looking") were system circumstances rather than user concerns. On the
+            create screen the eyebrow is removed and one subtitle line says "what do I fill in" — that
+            sentence points at the four required fields right below it, so the guidance sits in one place. */}
         <header className={mode === "create" ? "mt-6" : "mt-8"}>
           {mode === "edit" && (
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
@@ -357,12 +355,12 @@ function EditorContent({
           </div>
         ) : null}
 
-        {/* 2026-07-27 — 만들기 화면의 가르치는 표면 4개 중 2개(이 자리에 있던
-            "가장 쉬운 시작" 카드 + "처음 쓰는 운영자용" 3단계 카드)를 걷어냈다.
-            네 표면이 같은 말("이름·분류·상태·설명만 채우고 먼저 저장하라")을
-            네 번 반복했고, 그 높이가 정작 그 4칸을 화면 밖으로 밀어냈다.
-            안내가 부족했던 게 아니라 폼이 스스로 안 쉬웠던 것이다. 남은 한
-            자리는 위 부제 한 줄이고, 나머지는 필드 옆에서 말한다. */}
+        {/* 2026-07-27 — two of the create screen's four teaching surfaces (the "easiest start" card that
+            was here and the three-step "for a first-time operator" card) were removed. All four repeated
+            the same sentence ("fill in name, category, status, and description, and save first"), and
+            their height pushed those very four fields off the screen. Guidance was not lacking; the form
+            simply was not easy on its own. The one remaining place is the subtitle line above, and the
+            rest is said beside the fields. */}
 
         <section className={mode === "create" ? "mt-6" : "mt-10"}>
           {mode === "edit" && slug && (
@@ -390,22 +388,21 @@ function EditorContent({
             onDelete={mode === "edit" ? handleDelete : undefined}
             onDirtyChange={setIsDirty}
             /*
-             * 편집도 만들기와 같은 사실을 **미리** 말한다.
+             * Editing states the same fact **in advance**, exactly as creating does.
              *
-             * 종전에는 `mode === "create"` 일 때만 잠갔다. 그래서 편집 화면은
-             * 볼트가 없어도 저장 버튼이 활성이었고, 눌러야 비로소
-             * *"데모 모드에서는 저장할 수 없습니다"* 가 떴다 — 같은 사실을 한
-             * 화면은 미리 말하고 다른 화면은 누른 뒤에 말한 것이다.
+             * It used to lock only when `mode === "create"`. So on the edit screen the save button was
+             * active with no vault, and only on pressing it did *"you cannot save in demo mode"* appear —
+             * one screen stating a fact up front while the other stated it after the press.
              *
-             * `canEdit` 은 처음부터 있었고 주석에 «UI 사전 게이트용» 이라고
-             * 적혀 있었는데 이 폼만 안 쓰고 있었다.
+             * `canEdit` existed all along, with a comment saying it was «for the UI pre-gate», and this
+             * form alone was not using it.
              */
             writeDisabled={
               mode === "create" ? !projectMutations.canCreate : !projectMutations.canEdit
             }
-            // 배너의 «어디로» — 주소로 보내지 않고 그 자리에서 연다.
-            // 종전의 `/` 링크는 웹에서 관문(내려받기)으로 착지해 자기도
-            // 막다른 길이었다(2026-08-07 실측).
+            // The banner's «where to» — it opens in place rather than sending them to an address. The
+            // old `/` link landed on the gateway (download) on the web and was itself a dead end
+            // (measured 2026-08-07).
             openVaultAction={<OpenVaultCta testId="project-write-disabled-open-folder" />}
           />
         </section>
@@ -416,8 +413,8 @@ function EditorContent({
 }
 
 export function ProjectEditorPage(props: Props) {
-  // local-first 헌장: 진입 자체는 차단하지 않음. local 모드는 vault 에
-  // 직접 쓰고, static 모드는 useProjectMutations 안에서 mutation 거절.
+  // The local-first charter: entry itself is never blocked. Local mode writes straight to the vault,
+  // and static mode rejects the mutation inside `useProjectMutations`.
   return (
     <EditorContent
       key={`${props.slug ?? `new-${props.mode}`}:${props.duplicateFromSlug ?? ""}`}

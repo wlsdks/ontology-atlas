@@ -7,8 +7,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { controlClass, Tooltip } from '@/shared/ui';
 import type { Project } from '@/entities/project';
 
-// 첫 진입 사용자에게 21개 hub 목록이 즉시 펼쳐져 있으면 중앙 토폴로지로
-// 시선이 가지 못한다. 사용자가 한 번 직접 펼치면 그 선택을 기억한다.
+// With a list of 21 hubs already expanded on first entry, the eye never reaches the
+// topology in the centre. Once the user expands it themselves, that choice is remembered.
 const RAIL_OPEN_KEY = 'demo:sigma-hub-rail-open:v1';
 
 interface HubRailProps {
@@ -16,21 +16,22 @@ interface HubRailProps {
   selectedSlug?: string | null;
   onSelect: (slug: string) => void;
   /**
-   * true 면 Hub Rail 을 완전히 숨김 (tab 포함). 좌상단 Hero 패널이 펼쳐져
-   * 있을 때 위치가 겹치는 걸 방지. Hero 가 접히면 false 로 돌아와 정상 렌더.
+   * true hides the Hub Rail entirely (its tab included), preventing an overlap with
+   * the expanded Hero panel at the top left. It returns to false and renders normally
+   * once Hero collapses.
    */
   suppressed?: boolean;
   /**
-   * Layer 1 내부에서 각 hub 이름의 container prefix (예: "Demo Reactor · ")
-   * 를 제거해 rail 을 간결하게 만든다. 미지정이면 원본 이름 유지 (Layer 0).
+   * Inside Layer 1, strips each hub name's container prefix (e.g. "Demo Reactor · ")
+   * to keep the rail compact. Unset keeps the original name (Layer 0).
    */
   stripNamePrefix?: string;
 }
 
 /**
- * 좌측 세로 허브 shortcut 바. 11개 내외의 허브 프로젝트를 목록으로 노출해
- * 클릭 한 번에 해당 허브로 이동시킨다. 지도의 "주요 정거장" 역할. 접힘 시
- * 얇은 탭만 남겨 지도 공간 확보.
+ * The left vertical hub shortcut bar. It lists roughly eleven hub projects so one
+ * click reaches that hub — the map's "major stations". Collapsed, only a thin tab
+ * remains, freeing map space.
  */
 export function HubRail({
   projects,
@@ -52,7 +53,7 @@ export function HubRail({
   }, []);
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
   const buttonsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
-  // SSR/정적 export 호환 — initializeWithValue:false 로 hydration mismatch 회피.
+  // SSR/static-export compatible — initializeWithValue:false avoids a hydration mismatch.
   const prefersReducedMotion = useMediaQuery(
     '(prefers-reduced-motion: reduce)',
     { initializeWithValue: false },
@@ -75,8 +76,9 @@ export function HubRail({
     const rest = name.slice(prefixWithSep.length).trim();
     return rest.length > 0 ? rest : name;
   };
-  // 각 프로젝트의 degree (의존 + 참조 총합) 를 계산해 허브 우측 배지로 노출.
-  // 허브끼리 규모 차이가 한눈에 들어오게. O(N + E) 한 번만 돌림.
+  // Compute each project's degree (dependencies plus references) and expose it as a
+  // badge at the hub's right, so scale differences between hubs read at a glance. One
+  // O(N + E) pass.
   const degreeBySlug = new Map<string, number>();
   for (const project of projects) {
     const current = degreeBySlug.get(project.slug) ?? 0;
@@ -85,7 +87,7 @@ export function HubRail({
       degreeBySlug.set(dep, (degreeBySlug.get(dep) ?? 0) + 1);
     }
   }
-  // Layer 0 컨테이너 시스템 폐기 후 hub 만 rail 에 노출.
+  // With the Layer 0 container system retired, only hubs appear in the rail.
   const hubs = projects
     .filter((p) => p.isHub)
     .slice()
@@ -94,10 +96,10 @@ export function HubRail({
     );
   if (hubs.length === 0) return null;
   const railLabel = t('label');
-  // Roving tabindex — listbox 는 tab stop 1개만 가져야 한다. 선택된 option 이
-  // 유일한 tab 진입점이고, 선택이 없으면 첫 option 이 진입점. 나머지는 -1 로
-  // 빼서 방향키로만 이동(WAI-ARIA listbox 패턴). 이전엔 모든 native button 이
-  // tabIndex 0 이라 Tab 이 허브마다 멈췄다.
+  // Roving tabindex — a listbox must have exactly one tab stop. The selected option is
+  // the sole tab entry point, and with no selection the first option is. The rest are
+  // -1 so they are reached by arrow keys only (the WAI-ARIA listbox pattern). Every
+  // native button used to be tabIndex 0, so Tab stopped at every hub.
   const hasActiveOption = hubs.some((hub) => hub.slug === selectedSlug);
 
   if (!open) {
@@ -136,8 +138,9 @@ export function HubRail({
             type="button"
             onClick={() => setOpenPersisted(false)}
             aria-label={t('collapseAriaLabel')}
-            /* Tooltip 이 이 컨트롤의 이름을 이미 말하므로 `IconButton`(자체
-               `title` 부여) 대신 값 층만 쓴다 — 둘을 겹치면 툴팁이 두 벌이 된다. */
+            /* The tooltip already names this control, so only the value layer is used
+               rather than `IconButton` (which adds its own `title`) — combining them
+               produces two tooltips. */
             className={controlClass({
               shape: 'icon',
               size: 'sm',

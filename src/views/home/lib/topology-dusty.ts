@@ -1,27 +1,33 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 /**
- * 살아있는 지도 드리프트 — "먼지 앉은"(dusty) 노드 파생.
+ * Derives the "dusty" nodes — long-untouched ones — and sinks them through the
+ * engine's existing stale channel (dash [3,3] plus the opaque stale token pair,
+ * `model/freshness.ts`) so neglect reads together with graph position. No new
+ * draw code or tokens: it only wires `topology-world`'s `stale` flag.
  *
- * 오래 손대지 않은 노드를 엔진의 기존 stale 채널(dash [3,3] + 불투명
- * stale 토큰 페어, `model/freshness.ts`)로 가라앉혀 방치가 그래프 위치와
- * 함께 읽히게 한다. Guardian 1차 검수(2026-07-23) 처방:
- * - 신규 드로우 코드·토큰 0 — `topology-world` 의 `stale` 플래그에만 배선.
- * - 판정은 상대(중앙값 strict 미만) + 절대(`max(30일, 2 × 중앙값-age)` 초과)
- *   이중 조건. 동률은 fresh — 벌크 import / `git clone` 직후(전원 동일
- *   mtime)는 전원 fresh 가 되는 것이 의도된 알려진 한계다(합성/추정 금지,
- *   조용히 꺼짐). 배수 조건은 Guardian 1차 처방의 fallback — 순수 중앙값
- *   미만+30일 조건은 dogfood 실측에서 과반(56/105)을 dusty 로 마킹해
- *   "건강하지만 천천히 관리되는 vault 절반이 항상 먼지" 였다. 중앙값 age 의
- *   2배 이상 뒤처진 꼬리만 마킹하면 신호가 진짜 방치로 좁혀진다.
- * - 최하위 사분위 캡: dusty 는 어떤 분포에서도 전체의 25% 를 넘지 못한다
- *   (가장 오래된 순). dogfood 실측 2차 — 활발히 관리되는 vault(중앙값
- *   4일)에 방치 꼬리가 크면 배수 조건도 못 잡는다(이봉 분포). 이 신호의
- *   목적은 "가장 먼지 쌓인 구석"이지 낡음 센서스가 아니다 — 캡이 지도의
- *   주의 경제를 보존한다.
- * - 날짜 출처는 vault 문서 mtime(`useVaultDocFreshnessIndex` — local 은
- *   `file.lastModified`, dogfood 는 빌드타임 git 스탬프). 노드→문서 키는
- *   `evidenceIds[0]`(= derive 의 sourceSlug). 날짜 없는 노드는 fresh.
+ * The test is relative (strictly below the median mtime) **and** absolute (older
+ * than `max(30 days, 2 x median age)`). Ties count as fresh, which means a bulk
+ * import or a fresh `git clone` — where every file shares one mtime — marks
+ * nothing at all; that is the intended limit, since the alternative is
+ * synthesizing dates.
+ *
+ * The multiplier is the fallback from the guardian's first review (2026-07-23):
+ * a plain "below median and over 30 days" test marked the majority of the
+ * dogfood vault dusty (56/105), i.e. half of a healthy but slowly maintained
+ * vault was permanently dusty. Marking only the tail that lags 2x the median age
+ * narrows the signal to real neglect.
+ *
+ * The bottom-quartile cap (dusty never exceeds 25% of nodes, oldest first) comes
+ * from a second dogfood measurement: in an actively maintained vault (median 4
+ * days) a large neglected tail escapes the multiplier too, because the
+ * distribution is bimodal. This signal is meant to find the dustiest corner, not
+ * to take a staleness inventory, and the cap is what preserves the map's
+ * attention economy.
+ *
+ * Dates come from vault document mtime (`useVaultDocFreshnessIndex`:
+ * `file.lastModified` locally, a build-time git stamp for dogfood), keyed by
+ * `evidenceIds[0]`. A node with no date is fresh.
  */
 export const DUSTY_MIN_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -54,11 +60,11 @@ export function deriveDustySlugs(
   for (const [id, ts] of mtimeById) {
     if (ts < median && nowMs - ts > minAgeMs) candidates.push({ id, ts });
   }
-  // 최하위 사분위 캡 — 가장 오래된 순으로 전체 모수의 25%까지만.
-  // 동률 ts 는 id 오름차순 tie-break (결정론).
+  // Bottom-quartile cap: oldest first, at most 25% of the population. Ties on
+  // timestamp break by ascending id so the result is deterministic.
   candidates.sort((a, b) => a.ts - b.ts || (a.id < b.id ? -1 : 1));
-  // 소규모 vault 에서도 진짜 오래된 노드 하나는 보이도록 하한 1 (모수 4 미만
-  // 이어도 조건을 통과한 노드가 있으면 최소 1개는 표시).
+  // Floor of 1 so a genuinely old node is still visible in a small vault: under
+  // four nodes, any that passes the conditions still shows.
   const cap = Math.max(1, Math.floor(mtimeById.size / 4));
   return new Set(candidates.slice(0, cap).map((c) => c.id));
 }

@@ -5,32 +5,35 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **이 서버는 열어 준 폴더만 읽는다.**
+ * **This server reads only the folder it was given.**
  *
- * ## 왜 이 검사가 있나 (2026-08-16 검수, 실측으로 확인)
+ * ## Why this check exists (2026-08-16 review, confirmed by measurement)
  *
- * 폴더를 훑는 도구 넷(`analyze_repo_structure` · `infer_imports` ·
- * `index_project` · `validate_vault`)이 `rootPath` 를 `resolve()` 만 하고
- * **아무 경계도 안 봤다.** 그래서 이 호출이 그대로 성공했다:
+ * The four folder-walking tools (`analyze_repo_structure` · `infer_imports` ·
+ * `index_project` · `validate_vault`) only called `resolve()` on `rootPath` and
+ * **checked no boundary at all**. So this call simply succeeded:
  *
  * ```
- * analyze_repo_structure {"rootPath":"/etc"}  → ok, 디렉터리 구조를 돌려줌
+ * analyze_repo_structure {"rootPath":"/etc"}  → ok, returns the directory structure
  * ```
  *
- * 게다가 넷 다 **읽기 도구**라 `OATLAS_READ_ONLY` 가 안 막는다 — 그 모드의
- * 설명은 「등록한 사람이 볼트 주인이 아닐 때 권한다」인데, 쓰기는 못 해도
- * 디스크 전체를 훑을 수는 있는 상태였다.
+ * And because all four are **read tools**, `OATLAS_READ_ONLY` does not block them —
+ * that mode is described as "recommended when whoever registered the server is not
+ * the vault's owner", yet in that state writing was impossible while walking the
+ * entire disk was not.
  *
- * 이 제품이 사용자에게 한 약속과 정면으로 부딪힌다: *"사용자 디스크에 있는
- * 비밀번호·인증 키 같은 파일은 절대 자동으로 훑지 않는다"*
- * (`.claude/rules/local-first.md`). 프롬프트 한 줄로 유도되는 도구 호출이 그
- * 약속을 깨서는 안 된다.
+ * This collides head-on with the promise this product makes to users: *"사용자
+ * 디스크에 있는 비밀번호·인증 키 같은 파일은 절대 자동으로 훑지 않는다"* (files
+ * on the user's disk such as passwords and credentials are never scanned
+ * automatically) — `.claude/rules/local-first.md`. A tool call induced by one line
+ * of a prompt must not break that promise.
  *
- * ## 왜 진짜 서버를 띄우나
+ * ## Why a real server is started
  *
- * 함수만 부르면 그 함수가 **실제로 그 자리에서 불리는지**는 확인이 안 된다.
- * 이 저장소가 오늘 이미 그 실패를 겪었다 — 지어낸 입력으로 통과하던 게이트가
- * 하나 있었다. 그래서 서버를 프로세스로 띄우고 JSON-RPC 로 부른다.
+ * Calling the function directly cannot confirm the function is **actually called at
+ * that point**. This repository already hit that failure once — a gate that passed
+ * on invented input. So the server is started as a process and called over
+ * JSON-RPC.
  */
 
 const OUTSIDE = '/etc';
@@ -114,17 +117,17 @@ function makeVault(): string {
 
 describe('MCP 이름 바꾸기 — 대소문자만 다른 이름은 같은 파일이다', () => {
   /**
-   * 2026-08-16 검수가 **실제로 문서가 사라지는 것을 재현했다**:
+   * The 2026-08-16 review **reproduced an actual document disappearing**:
    *
    * ```
    * rename_concept{oldSlug:"Auth", newSlug:"auth", confirm:true, overwrite:true}
    *   → ok:true, moved:true, backlinkUpdates:{totalUpdated:1}
-   *   → 디스크에서 Auth.md 도 auth.md 도 없어짐. 참조는 매달린 채 남음
+   *   → on disk, neither Auth.md nor auth.md remains. The reference is left dangling
    * ```
    *
-   * 앞단의 충돌 검사가 **문자열 비교**라 그 둘을 다른 것으로 봤고, macOS 는
-   * 같은 파일로 봤다. 그래서 새 이름으로 쓰고 옛 이름을 지우니 방금 쓴 것이
-   * 지워졌다. 그리고 도구는 성공이라고 답했다.
+   * The upstream collision check is a **string comparison**, so it saw two different
+   * names while macOS saw one file. Writing under the new name and then deleting the
+   * old one deleted what had just been written — and the tool reported success.
    */
   it('대소문자만 다른 이름 바꾸기는 **거절**하고, 파일은 그대로 남는다', () => {
     const vault = mkdtempSync(join(tmpdir(), 'atlas-case-'));
@@ -144,7 +147,7 @@ describe('MCP 이름 바꾸기 — 대소문자만 다른 이름은 같은 파�
 
     expect(result.isError, `거절되지 않았다: ${result.text.slice(0, 200)}`).toBe(true);
     expect(result.text).toMatch(/letter case/);
-    // 그리고 무엇보다 — **파일이 그대로 있어야 한다.**
+    // And above all — **the file must still be there.**
     expect(
       readdirSync(join(vault, 'capabilities')),
       '문서가 사라졌다 — 이 검사가 막으려는 바로 그 일이다',
@@ -159,7 +162,7 @@ describe('MCP 스캔 경계 — 열어 준 폴더만 읽는다', () => {
     expect(result.isError, `«${OUTSIDE}» 를 훑는 것이 통과했다: ${result.text.slice(0, 200)}`).toBe(
       true,
     );
-    // 왜 막혔는지 사람이 읽을 수 있어야 한다 — 에이전트가 다음에 뭘 할지 정한다.
+    // Why it was blocked must be human-readable — the agent decides what to do next from it.
     expect(result.text).toMatch(/inside the vault/);
   }, 40_000);
 

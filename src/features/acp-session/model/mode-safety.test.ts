@@ -3,26 +3,22 @@ import { describe, expect, it } from 'vitest';
 import { partitionModes } from './mode-safety';
 
 /**
- * 「작업 방식」 목록의 안전 판정은 **거부목록**이었다.
+ * The safety verdict for the "working mode" list used to be a **denylist**.
  *
- * ## 왜 그게 위험한가 (2026-08-17)
+ * Why that is dangerous (2026-08-17). The code was
+ * `modes.filter((m) => !GATE_REMOVING_MODES.has(m.id))` — it hides only what is written down, so
+ * **an adapter adding a new mode makes it visible and selectable without our knowing.** If that mode
+ * removes the permission gate, one choice undoes this screen's promise and the screen says nothing.
  *
- * 코드는 이랬다: `modes.filter((m) => !GATE_REMOVING_MODES.has(m.id))`.
- * 이름을 적어 둔 것만 숨긴다 — **어댑터가 새 모드를 더하면 우리가 모르는 채로
- * 사용자에게 보이고, 고를 수 있다.** 그 모드가 관문을 없애는 것이면 사용자는
- * 한 번의 선택으로 이 화면의 약속을 무르게 되고, 화면은 아무 말도 안 한다.
+ * A safety device that treats **the unknown as safe** is not a device.
  *
- * 안전 장치가 **모르는 것을 안전한 것처럼** 다루면 그건 장치가 아니다.
+ * And it is an immediate problem: the adapter versions are being bumped
+ * (`claude-agent-acp` 0.68→0.69, `codex-acp` 1.3→1.4) while our gate measurements were taken on the
+ * **old versions**.
  *
- * 그리고 이건 지금 당장 문제다: 어댑터 버전을 올리는 중이고
- * (`claude-agent-acp` 0.68→0.69 · `codex-acp` 1.3→1.4), 우리 관문 실측은
- * **옛 버전에서** 한 것이다.
- *
- * ## 그래서 셋으로 가른다
- *
- * 재 봐서 안전한 것 · 재 봐서 관문을 없애는 것 · **아직 안 재 본 것**.
- * 마지막을 숨기지는 않는다(멀쩡한 새 모드를 막으면 그것도 거짓말이다) —
- * 대신 **모른다고 말한다.** 권한 카드가 이미 같은 규율을 쓴다.
+ * **So there are three categories**: measured safe, measured to remove the gate, and **not yet
+ * measured**. The last is not hidden (blocking a perfectly good new mode would be a lie too) —
+ * instead it is **stated as unknown**. The permission card already uses the same discipline.
  */
 
 const mode = (id: string, name = id) => ({ id, name });
@@ -35,8 +31,8 @@ describe('작업 방식 — 아는 것과 모르는 것을 가른다', () => {
   });
 
   it('codex 의 `agent` 도 숨긴다 — 이름은 평범한데 실측이 다르다', () => {
-    // 실측(2026-08-16): codex 를 `agent` 로 띄우니 작업 폴더 밖에 쓰면서
-    // 권한 요청이 0회였다.
+    // Measured 2026-08-16: launching codex on `agent` wrote outside the working folder with zero
+    // permission requests.
     const out = partitionModes([mode('agent'), mode('read-only')]);
     expect(out.offered.map((m) => m.id)).toEqual(['read-only']);
   });
@@ -75,23 +71,20 @@ describe('작업 방식 — 아는 것과 모르는 것을 가른다', () => {
 });
 
 /**
- * 위 검사들은 함수를 **추상적으로** 잰다 — 어떤 모드가 실제로 오는지는 안 본다.
- * 그래서 어댑터가 모드를 바꿔도 전부 초록불이다. 여기서 **실측한 그 목록**을
- * 못박는다.
+ * The tests above measure the function **abstractly** — they never look at which modes actually
+ * arrive, so they stay green even when the adapter changes its modes. This pins **the measured list**.
  *
- * ## 어떻게 쟀나 (2026-08-17, 설치된 앱)
+ * How it was measured (2026-08-17, the installed app): a `codex-acp` 1.4 session was opened and the
+ * "working mode" list unfolded. There were two: `Read-only` and `Agent`. Choosing `Agent` and asking
+ * *"write hello to /tmp/atlas-gate-probe.txt"* created a file **outside** the working folder with
+ * **no permission card at all** (contents `hello`).
  *
- * `codex-acp` 1.4 세션을 열고 「작업 방식」 목록을 펼쳤다. 두 개였다:
- * `Read-only` · `Agent`. 그리고 `Agent` 를 골라
- * *"/tmp/atlas-gate-probe.txt 에 hello 라고 써줘"* 라고 시켰더니 **권한 카드가
- * 한 번도 안 뜬 채** 작업 폴더 **밖에** 파일이 생겼다(내용 `hello`).
- *
- * 그래서 이 어댑터로는 **읽기 하나만** 내준다. 불편한 결론을 검사로 굳혀 두는
- * 이유는, 다음 사람이 「쓰기가 안 되네」를 보고 조용히 `agent` 를 열어 버리는
- * 것을 막기 위해서다 — 열려면 **다시 재고 이 블록을 고쳐야** 한다.
+ * So this adapter is offered **read only**. The uncomfortable conclusion is frozen into a test to
+ * stop the next person seeing "writing does not work" and quietly opening `agent` — opening it
+ * requires **measuring again and editing this block**.
  */
 describe('실측한 어댑터 — codex-acp 1.4', () => {
-  /** 세션에서 실제로 온 모드 목록 그대로. */
+  /** The mode list exactly as it arrived in the session. */
   const CODEX_ACP_1_4_MODES = [
     { id: 'read-only', name: 'Read-only' },
     { id: 'agent', name: 'Agent' },
@@ -104,8 +97,8 @@ describe('실측한 어댑터 — codex-acp 1.4', () => {
   });
 
   /*
-   * ⚠️ 이 검사가 먼저다. 어댑터가 모드를 하나로 줄여 버리면 위 검사는 통과하면서
-   * 아무것도 안 재게 된다 — 「늘 초록인 검사는 검사가 아니다」.
+   * ⚠️ This test comes first. If the adapter cuts down to a single mode, the tests above pass while
+   * measuring nothing — "a check that is always green is not a check".
    */
   it('실측 목록에 숨길 것이 실제로 들어 있다 — 아니면 위 검사가 헛돈다', () => {
     expect(CODEX_ACP_1_4_MODES).toHaveLength(2);

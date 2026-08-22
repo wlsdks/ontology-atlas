@@ -10,12 +10,13 @@
  * marks must read as shrunk copies of the same node/edge the canvas draws,
  * in both surfaces.
  *
- * 아이콘 세트 (Phase 5 #21, `docs/plans/DESIGN-OVERHAUL-2026-07-25.md`): 이 컴포넌트가
- * 앱 전역 DOM kind-glyph 의 **단일 게이트웨이**다. `useGlyphSet()` 으로 현재
- * 세트를 읽어 렌더 스타일만 바꾼다 — kind→실루엣 매핑은 세트 간 **불변**
- * (기하=fill+stroke, 라인=stroke-only 얇은 획). 설정에서 세트를 바꾸면 이
- * 게이트웨이를 쓰는 INDEX·공방·팝오버·상세가 함께 즉시 스왑된다(캔버스 렌더러도
- * 같은 스토어를 읽어 lockstep). `glyphSet` prop 은 테스트/미리보기 override 용.
+ * Icon sets: this component is the **single facade** for DOM kind glyphs across the
+ * app. It reads the current set with `useGlyphSet()` and changes only the render
+ * style — the kind→silhouette mapping is **invariant** across sets (geometric =
+ * fill + stroke, line = a thin stroke only). Changing the set in settings swaps INDEX,
+ * the studio, popovers, and detail together, because they all go through here; the
+ * canvas renderer reads the same store and stays in lockstep. The `glyphSet` prop is
+ * an override for tests and previews.
  */
 
 import { useGlyphSet, type GlyphSet } from "@/shared/lib/appearance-preferences";
@@ -49,7 +50,7 @@ export function TopologyV2KindGlyph({
   kind: string;
   size?: number;
   className?: string;
-  /** 테스트/미리보기 override — 생략 시 앱 전역 설정(`useGlyphSet`)을 읽는다. */
+  /** Test/preview override; omitted, the app-wide setting (`useGlyphSet`) is read. */
   glyphSet?: GlyphSet;
 }) {
   const preferredSet = useGlyphSet();
@@ -59,8 +60,8 @@ export function TopologyV2KindGlyph({
     ? kind
     : "element";
   const strokeColor = `var(--topology-v2-node-stroke-${resolved})`;
-  // 라인 세트: 실루엣은 그대로 두고 렌더 스타일만 바꾼다 — 채움 없이 얇은
-  // 외곽선(1px)만. 기하 세트: 기존 채움(kind fill) + 1.25px 외곽선.
+  // Line set: same silhouette, different render style — no fill, a 1px outline only.
+  // Geometric set: the kind fill plus a 1.25px outline.
   const common = {
     fill: line ? "none" : `var(--topology-v2-node-fill-${resolved})`,
     stroke: strokeColor,
@@ -88,7 +89,7 @@ export function TopologyV2KindGlyph({
       ) : (
         <g>
           <rect x={2.4} y={2.4} width={s - 4.8} height={s - 4.8} rx={1.4} {...common} />
-          {/* via-hole: 기하 세트는 hole-fill 채움 점, 라인 세트는 stroke-only 점 — 실루엣(사각+중심점) 동일 */}
+          {/* via-hole: a hole-fill dot in the geometric set, a stroke-only dot in the line set — same silhouette (square + centre dot) */}
           {line ? (
             <circle cx={c} cy={c} r={1.5} fill="none" stroke={strokeColor} strokeWidth={1} vectorEffect="non-scaling-stroke" />
           ) : (

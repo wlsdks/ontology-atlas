@@ -3,39 +3,36 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/shared/lib/cn';
 
 /**
- * 눌리는 것들의 **단일 클래스 출처**.
+ * The **single source of class strings** for anything that gets pressed.
  *
- * ## 왜 «값 층» 이 함수인가 — 컴포넌트를 안 만든다는 뜻이 아니다
+ * **Why the value layer is a function.** This is not a claim that components
+ * are wrong here — the first reading said that and was corrected the same day.
+ * Three primitives with zero call sites (`Card`, `Badge`, `DetailCard`) looked
+ * like proof. The owner pushed back — *"아직 안 쓴 걸 수도 있는 거 아님? 대부분
+ * 디자인 시스템 만들 때 컴포넌트를 만들지 않나?"* (maybe they just have not been
+ * adopted yet — doesn't every design system ship components?) — and opening them
+ * gave a different answer: created 2026-04-30, so "not yet" was out, and
+ * `CardTitle` used **`text-lg`**, a step that does not exist in this repo's type
+ * ramp (caption · label · body · body-lg · title · display · hero · hero-lg). A
+ * primitive that violates the system it is meant to encode is one nobody adopts.
+ * What failed was not components but **components without a gate**; all three
+ * were deleted. Carbon, Fluent, Material, Polaris and shadcn all ship components.
  *
- * ⚠️ **첫 판단은 틀렸고 같은 날 정정했다.** 처음에는 이 저장소에 사용처 0인
- * 프리미티브가 셋 있는 것(`Card`·`Badge`·`DetailCard`)을 근거로 «컴포넌트는
- * 여기서 안 먹힌다» 고 읽었다. 소유자 반문(*"아직 안 쓴 걸 수도 있는 거 아님?
- * 대부분 디자인 시스템 만들 때 컴포넌트를 만들지 않나?"*)을 받고 실물을 열어
- * 보니 다른 답이 나왔다 — 그 셋은 2026-04-30 생성이라 「아직」이 아니었고,
- * `CardTitle` 이 **`text-lg`** 를 쓰고 있었다. 이 저장소 타입 램프에 **없는**
- * 스텝이다(램프: caption·label·body·body-lg·title·display·hero·hero-lg).
+ * So what this file argues is a **split of layers**:
  *
- * **자기가 인코딩해야 할 시스템을 스스로 위반하는 프리미티브**였으니 아무도 안
- * 쓴 게 당연하다. 실패한 것은 컴포넌트가 아니라 **게이트 없는 컴포넌트**다.
- * 셋은 삭제했다. 그리고 업계 표준은 명백히 컴포넌트다 — Carbon · Fluent ·
- * Material · Polaris · shadcn 전부 컴포넌트를 낸다.
- *
- * 그래서 이 파일이 주장하는 것은 «컴포넌트 대신 함수» 가 아니라 **층의 분리**다:
- *
- * | 층 | 형태 | 왜 |
+ * | Layer | Form | Why |
  * |---|---|---|
- * | **값** (모양·크기·색) | 이 함수 | 문자열이면 충분하고, 계약 테스트가 램프 밖 값을 **못 내게** 막는다 |
- * | **행동** (기본 `type="button"` · 접근 이름 요구 · 비활성 어포던스 · 포커스) | 컴포넌트 | 문자열이 나를 수 없다 |
+ * | **Values** (shape · size · colour) | this function | A string suffices, and a contract test can stop off-ramp values from ever being emitted |
+ * | **Behaviour** (default `type="button"`, required accessible name, disabled affordance, focus) | a component | A string cannot carry it |
  *
- * 위에 컴포넌트를 얹는 것은 정상이고 권장이다. **단 게이트를 갖고 태어나야
- * 한다** — 그게 `Card` 가 3개월간 죽어 있던 이유이고, 이 파일이 계약 테스트를
- * 같은 PR 에 달고 나온 이유다.
+ * Layering a component on top is expected — **but it must be born with a gate**.
+ * That is why `Card` sat dead for three months, and why this file shipped with
+ * its contract test in the same PR.
  *
- * ## 왜 모양이 여섯인가 — 지어낸 분류가 아니다
+ * **Why six shapes.** A full inventory of the 419 raw production `<button>`s
+ * (2026-08-03):
  *
- * 프로덕션 생 `<button>` **419개**를 전수 분류한 결과다(2026-08-03):
- *
- * | 모양 | 개수 | 기존 `<Button>` 이 덮나 |
+ * | Shape | Count | Covered by `<Button>` |
  * |---|---:|---|
  * | `chip` | 128 | ✗ |
  * | `link` | 85 | ✗ |
@@ -43,622 +40,628 @@ import { cn } from '@/shared/lib/cn';
  * | `icon` | 36 | ✗ |
  * | `pill` | 32 | ✗ |
  * | `card` | 18 | ✗ |
- * | 표준 버튼(h-10/11) | **1** | ✓ |
+ * | standard button (h-10/11) | **1** | ✓ |
  *
- * 채택률 5%는 게으름이 아니라 **커버리지 구멍**이었다 — 시스템에 컨트롤 클래스가
- * 하나뿐인데 앱은 여섯을 쓴다. 그래서 «Button 을 쓰게 만든다»가 아니라 «없는
- * 클래스를 만든다»가 이 파일의 일이다.
+ * 5% adoption was a **coverage hole**, not laziness — the system had one control
+ * class and the app used six. The job here is to supply the missing classes, not
+ * to push people toward `Button`.
  *
- * ## 값은 실측에서 왔다 — 그런데 실측에 규격이 없었다
+ * **The values came from measurement, but the measurement had no spec.** Each
+ * shape's *shape* classes are today's modal values (chip: `rounded-chip` ×126,
+ * `transition-colors` ×121 …), which is lossless. **Sizes were not**: across 143
+ * chips the (height, `px`, `py`, type) combination had **50 distinct values**
+ * with the top three covering only **23%** — effectively arbitrary rather than a
+ * ramp, the exact defect `.claude/rules/design.md` 「치수 규칙성」 (dimensional
+ * regularity) names. So the size ramp below is **the spec to converge on, not a
+ * summary of today**:
  *
- * 각 모양의 **모양 클래스**는 오늘 화면의 최빈값이다(chip: `rounded-chip` 126회 ·
- * `transition-colors` 121 …). 여기까지는 무손실이다.
+ * > **Moving an existing control onto this function is normalisation, not a
+ * > refactor — pixels change.**
  *
- * **크기는 달랐다.** 칩 143개의 (높이, `px`, `py`, 타입) 결합 분포를 재 보니
- * **고유 조합 50종**이고 상위 3종을 합쳐도 **23%** 였다. 즉 이 앱의 칩 크기는
- * 램프가 아니라 사실상 임의값이었고, 그게 `design.md` 의 「치수 규칙성」이 말하는
- * 결함 그 자체다.
+ * A bulk migration is therefore the design gate's call (`/design-council`
+ * 「체계」, the design-systems seat), not this file's. What this file guarantees
+ * today is narrower — **a newly written control does not turn 50 combinations
+ * into 51** — enforced by
+ * `tests/contract/control-adoption-ratchet.contract.test.ts`.
  *
- * 그래서 **여기 3단 사이즈 램프는 «오늘의 요약»이 아니라 «가야 할 규격»이다.**
- * 결과가 중요하다:
- *
- * > **기존 컨트롤을 이 함수로 옮기는 것은 리팩터가 아니라 정규화다 — 픽셀이 바뀐다.**
- *
- * 그러므로 대량 전환은 이 파일이 단독으로 정할 일이 아니라 **디자인 게이트**의
- * 일이다(`/design-council` 의 「체계」). 이 파일이 오늘 보장하는 것은 하나다:
- * **새로 쓰는 컨트롤은 50종을 51종으로 만들지 않는다.** 그 강제가
- * `tests/contract/control-adoption-ratchet.contract.test.ts` 다.
- *
- * ## 이 함수가 하지 않는 것
- *
- * - **표준 버튼(`<Button>`)을 대체하지 않는다.** 그건 이미 variant/shadow 체계를
- *   갖고 있고 419개 중 1개만 그 모양이다. 겹치는 자리를 만들면 «어느 쪽이 규격인가»
- *   가 흐려진다.
- * - **접근성 기본값을 붙이지 않는다.** 함수는 문자열만 낸다 — `type="button"` 과
- *   접근 이름은 **별도 lint 룰**이 강제한다. 이게 갈래 D 의 명시된 대가였다.
+ * **What this function does not do.** It does not replace the standard
+ * `<Button>`: that already carries a variant/shadow system, only 1 of the 419
+ * had its shape, and overlapping would blur which one is the spec. And it emits
+ * no accessibility defaults — a function returns only a string, so
+ * `type="button"` and the accessible name are enforced by separate lint rules.
+ * That was the stated cost of this approach.
  */
 
 /**
- * 비활성 — **누를 수 없으면 누를 수 없어 보여야 한다.**
+ * Disabled — **what cannot be pressed must not look pressable.**
  *
- * 값 층에 두는 이유: 컴포넌트마다 챙기면 하나는 빠진다. 실제로 2026-08-03 에
- * `ChromeChip` 과 `ChromeTile` 이 둘 다 빠져 있었고, 소유자가 *"'최근 변경'
- * 누르니까 아무런 반응이 없는데?"* 로 발견했다. 값은 `Button` 이 이미 쓰는
- * 문법 그대로다(`tests/contract/disabled-affordance.contract.test.ts` 가
- * 프리미티브 간 값이 갈리는 것을 막는다).
+ * It lives in the value layer because per-component handling misses one: on
+ * 2026-08-03 both `ChromeChip` and `ChromeTile` were missing it, found by the
+ * owner as *"'최근 변경' 누르니까 아무런 반응이 없는데?"* (pressing "recent
+ * changes" does nothing). The values match what `Button` already uses;
+ * `tests/contract/disabled-affordance.contract.test.ts` keeps the primitives
+ * from drifting apart.
  *
- * ## 왜 export 인가 (2026-08-06 「체계」석)
+ * **Why it is exported** (2026-08-06, design-systems seat). After the value
+ * layer settled on 55, nine call sites still emitted 60/50/45 — six overrode the
+ * base of `controlClass()`/`fieldClass()` through `className`, three were
+ * hand-rolled controls that had copied the values and drifted. Without a name to
+ * compose, the next hand-rolled control copies them too. The four classes are
+ * one set (opacity · cursor · shadow removal · hover neutralisation); taking only
+ * the opacity leaves a half state that is disabled but still hovers.
  *
- * 값 층이 55 를 정한 뒤에도 화면 코드 9곳이 각자 60·50·45 를 쓰고 있었다 —
- * 6곳은 `controlClass()`/`fieldClass()` 의 base 가 이미 싣는 값을 `className`
- * 으로 **덮어쓴** 것이고, 3곳은 손 컨트롤이 값을 **베껴 적다** 어긋난 것이다.
- * 손 컨트롤이 값을 베끼지 않고 조합할 이름이 없으면 다음 손 컨트롤도 베낀다.
- * 그래서 역할 이름으로 내보낸다 — 넷은 한 세트다(흐림 · 커서 · 그림자 제거 ·
- * 호버 무력화). 흐림만 가져가면 비활성인데 호버가 살아 있는 반쪽 상태가 된다.
- *
- * 게이트: `eslint.config.mjs` `disabledAffordanceSelectors` 가 55 밖의
- * `disabled:opacity-*` 리터럴을 전역에서 막고, 위 계약 테스트가 이 상수와
- * lint 가 허용하는 값이 같은지 대조한다.
+ * Gate: `disabledAffordanceSelectors` in `eslint.config.mjs` blocks any
+ * `disabled:opacity-*` literal other than 55 repo-wide, and the contract test
+ * checks this constant against the value lint allows.
  */
 export const CONTROL_DISABLED_CLASS =
   'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-inherit disabled:hover:bg-inherit disabled:hover:text-inherit';
 const DISABLED = CONTROL_DISABLED_CLASS;
 
 /**
- * 키보드 초점 — **`DISABLED` 와 같은 이유로 값 층에 둔다.**
+ * Keyboard focus — in the value layer for the same reason as `DISABLED`.
  *
- * ## 왜 여기 없었나, 그리고 왜 그 판단이 틀렸나 (2026-08-05 실측)
+ * **Why it was missing, and why that reasoning was wrong** (measured
+ * 2026-08-05). This file used to state that hover and focus were not emitted
+ * here, citing the motion budget in `.claude/rules/design.md` (hover/focus must
+ * finish inside `--motion-fast`). That citation was a category error: the rule
+ * governs how *long* a focus transition takes, not *whether* focus is drawn.
  *
- * 이 파일은 아래 「축이 아닌 것」 절에서 *"호버·포커스는 여기서 안 낸다"* 고
- * 적어 두고 그 근거로 `design.md` 의 모션 예산(호버/포커스는 `--motion-fast`
- * 안에서 끝낸다)을 인용했다. **그 인용이 범주 오류였다** — 그 규칙은 초점
- * 전환이 얼마나 **오래** 걸리는지를 정하지, 초점을 **낼지 말지**를 정하지
- * 않는다.
+ * The consequence: the string `focus` appeared **0 times** in `controlClass` and
+ * `controls.tsx`, so `Chip` (52 sites), `IconButton` (35) and `RowButton` (19)
+ * all drew the browser default focus ring — the **OS accent colour, usually
+ * light blue**. That is outside the single-colour-system rule in
+ * `.claude/rules/forbidden.md`. The same defect had been caught once on the
+ * first-run sheet, producing `tests/e2e/dialog-focus-ring.spec.ts`, but that
+ * check looked at one container and not the buttons inside it.
  *
- * 결과 실측: `controlClass` 와 `controls.tsx` 에 `focus` 라는 글자가 **0회**
- * 나온다. 그래서 `Chip`(52곳) · `IconButton`(35곳) · `RowButton`(19곳)이 전부
- * 브라우저 기본 초점 링, 즉 **OS 강조색(보통 하늘색)** 을 그린다. 이는
- * `forbidden.md` 의 「둘 이상의 채색 시스템 금지」 밖이고, 같은 결함이 첫 실행
- * 시트에서 한 번 잡혀 `tests/e2e/dialog-focus-ring.spec.ts` 가 생겼는데 그
- * 검사는 **컨테이너 하나**만 보고 그 안의 버튼들은 안 봤다.
+ * The older primitives (`Button`, `ChromeChip`, `ChromeTile`, `TabBar`,
+ * `Select`, `InfoHint`) all had rings — **the new source of truth was the one
+ * that lost it**, exactly as `DISABLED` was lost on 2026-08-03.
  *
- * 더 오래된 프리미티브(`Button` · `ChromeChip` · `ChromeTile` · `TabBar` ·
- * `Select` · `InfoHint`)는 전부 링을 갖고 있었다 — **새 정본이 그것을 잃은
- * 쪽**이다. `DISABLED` 가 2026-08-03 에 같은 방식으로 발견된 것과 판박이다.
- *
- * `ring-inset` 인 이유: 컨트롤이 촘촘한 행·칩 묶음에서 바깥 링은 이웃과
- * 겹친다. 안쪽 링은 상자 치수를 한 픽셀도 안 바꾼다 — 그래서 이 상수를
- * 더해도 레이아웃 이동이 0 이다.
+ * `ring-inset` because an outer ring overlaps neighbours in dense rows and chip
+ * clusters. An inset ring changes the box by zero pixels, so adding this
+ * constant causes no layout shift.
  */
 const FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 /**
- * 손가락 바닥 표식 — `pointer: coarse` 에서만 컨트롤을 44px 로 밀어 올린다.
+ * Touch floor marker — raises a control to 44px under `pointer: coarse` only.
  *
- * ## 왜 값 층이 이걸 내나
+ * **Why the value layer emits this.** Heights here are **Tailwind literals**
+ * (`min-h-6`=24, `min-h-8`=32, `min-h-9`=36), not `--control-h-*`. So raising
+ * those tokens to 44 inside `@media (pointer: coarse)` reached **no chip, row or
+ * pill at all** — 38 sites measured under 44px.
  *
- * 이 파일은 높이를 **Tailwind 리터럴**(`min-h-6`=24 · `min-h-8`=32 ·
- * `min-h-9`=36)로 낸다. `--control-h-*` 를 읽지 않는다. 그래서
- * `@media (pointer: coarse)` 안에서 그 토큰들을 44 로 올려도 칩·행·pill 에는
- * **한 곳도 안 닿았다** — 실측 44px 미만 38곳.
+ * Converting the literals to token references is blocked: the 5 literals are not
+ * 1:1 with the 3 token steps, so the swap would move desktop pixels too. Hence a
+ * marker class that lays a floor **on touch only**. The rule sits at the end of
+ * `app/globals.css`, **outside the cascade layers** — inside a layer, `min-h-8`
+ * from `@layer utilities` wins regardless of specificity (we hit this).
  *
- * 리터럴을 토큰 참조로 바꾸는 길은 막혀 있다: 리터럴 5종이 토큰 3단과 1:1 이
- * 아니라 데스크톱 픽셀까지 움직인다. 그래서 표식 클래스로 **손가락에서만**
- * 바닥을 깐다. 규칙은 `app/globals.css` 파일 끝, **캐스케이드 레이어 밖**에
- * 있다 — 레이어 안에 있으면 `@layer utilities` 의 `min-h-8` 이 명시도와
- * 무관하게 이긴다(실제로 밟았다).
+ * **Why real height rather than `touch-hit-expand`.** Both were measured. Hit
+ * area alone lets controls **overlap**: of the 38 sites under 44px, **21 sat
+ * within 12px of a neighbour** (the EN/KO toggle within 1px), and overlapping
+ * invisible areas are mis-taps. `min-height` grows the control, which **pushes
+ * neighbours away**, so overlap is impossible. The cost is density (the mobile
+ * `/docs` header grows to ~50px tall) and we accepted it.
  *
- * ## 왜 `touch-hit-expand` 가 아니라 실제 높이인가
- *
- * 두 처방을 다 재 보고 골랐다. 히트 영역만 넓히면 컨트롤이 서로 **겹칠 수
- * 있다** — 44px 미만 38곳 중 **21곳이 이웃과 12px 미만**이었고(EN/KO 토글은
- * 1px), 보이지 않는 영역이 겹치면 그건 오터치다. `min-height` 는 컨트롤이
- * 실제로 커지면서 이웃을 **밀어내므로** 겹칠 수가 없다. 대가는 밀도(모바일
- * `/docs` 헤더 세로 ~50px)이고, 그 대가를 치르기로 했다.
- *
- * 정사각 표면 계약이라 `min-h` 로는 모양이 안 서는 `icon` 과, 글줄을 찢게 되는
- * `link`(WCAG 2.5.8 인라인 면제)는 이 표식을 받지 않는다.
- * 게이트: `tests/contract/touch-floor-layer.contract.test.ts`.
+ * `icon` is excluded because its square-surface contract cannot be held by
+ * `min-h`, and `link` because raising it would tear text lines (WCAG 2.5.8
+ * inline exemption). Gate: `tests/contract/touch-floor-layer.contract.test.ts`.
  */
 const TOUCH_FLOOR = 'atlas-touch-floor';
 
 const control = cva(`${DISABLED} ${FOCUS}`, {
   variants: {
     /**
-     * 무엇처럼 눌리는가. 위 표의 여섯이 전부이고, **일곱째를 추가하려면 전수를
-     * 다시 세야 한다** — 분류에 없는 모양이 나왔다는 뜻이라서다.
+     * What it presses like. The six above are all of them, and **adding a
+     * seventh requires re-running the inventory** — a new shape means the
+     * classification missed a population.
      */
     shape: {
-      /** 라벨을 가진 작은 알약형 컨트롤. 이 앱에서 가장 많다(128). */
       /*
-       * 반경이 여기 없는 유일한 모양 — 크기 컴파운드가 낸다(`xs`=micro,
-       * `sm`~`lg`=chip). 마이크로 티어(24px 아래가 아니라 **칩 아래** 한 층)는
-       * 반경도 한 단 작다: 전수 96곳의 4px(`rounded-micro`)이 그 증거다.
-       * 두 반경이 한 출력에 공존하지 않도록 base 에서 뺐다 — cn 의 radius
-       * 그룹 병합(`RADIUS_RAMP_STEPS`)이 있어도 출력은 한 클래스가 정직하다.
+       * A small pill-shaped control with a label; the most common in this app
+       * (128).
+       *
+       * The only shape whose radius is not here — the size compounds emit it
+       * (`xs`=micro, `sm`~`lg`=chip). The micro tier (one step below chip, not
+       * below 24px) also drops a radius step: 96 inventoried sites carried 4px
+       * (`rounded-micro`). Keeping radius out of the base stops two radii from
+       * coexisting in one output; `cn`'s radius group merge
+       * (`RADIUS_RAMP_STEPS`) would resolve it, but a single class is honest.
        */
       chip: `${TOUCH_FLOOR} inline-flex items-center gap-1.5 border transition-colors`,
       /**
-       * 정사각 아이콘 컨트롤. 라벨이 없으므로 접근 이름이 **필수**다(36).
+       * Square icon control. No label, so an accessible name is **required**
+       * (36).
        *
-       * ## `touch-hit-expand` 가 여기 붙는 이유 (2026-08-05)
+       * **Why `touch-hit-expand` is attached here** (2026-08-05). This shape
+       * emits **hard dimensions** — `h-6` (24), `h-7` (28), `h-8` (32) — because
+       * a square cannot be held by `min-h`. That part is right; the consequence
+       * is not. The 44px promotion under `@media (pointer: coarse)` applies to
+       * **9 CSS tokens** (`--chrome-tile-size`, `--overlay-close-size`, …) and
+       * this shape reads none of them: measured **51 sites** (`shape: 'icon'` 17
+       * + `IconButton` 34) at 24–32px under a finger, **0** with
+       * `touch-hit-expand`. "The promotion was landing in an empty room", the
+       * sentence `touch-target-contract.spec.ts` wrote in its own header, had
+       * become true again — this time because the value layer emits literals.
        *
-       * 이 모양은 **하드 치수**를 낸다 — `h-6`(24) · `h-7`(28) · `h-8`(32).
-       * 정사각이라 `min-h` 로는 모양이 안 서기 때문이고, 그 판단 자체는 맞다.
-       * 문제는 그 결과다: `@media (pointer: coarse)` 의 44px 승격은 **CSS
-       * 토큰 9개**(`--chrome-tile-size` · `--overlay-close-size` · …)에만
-       * 걸리는데, 이 모양은 그중 아무것도 안 읽는다. 실측 **51곳**(`shape:
-       * 'icon'` 17 + `IconButton` 34)이 손가락 아래에서 24~32px 였고
-       * `touch-hit-expand` 를 단 곳은 **0** 이었다.
-       *
-       * 「승격이 빈 방에 떨어지고 있었다」 — `touch-target-contract.spec.ts` 가
-       * 자기 헤더에 적어 둔 그 문장이 다시 참이 된 것이고, 이번엔 값 층이
-       * 리터럴을 내기 때문이다.
-       *
-       * **왜 값 층인가**: `DISABLED` · `FOCUS` 와 같은 이유다 — 컴포넌트마다
-       * 챙기면 하나는 빠진다. 그리고 이 클래스는 **`pointer: coarse` 안에만
-       * 존재**하므로 마우스에서는 규칙이 아예 안 만들어진다. 보이는 상자는
-       * 그대로 두고 **히트 영역만** 의사요소로 넓히는 것이라 레이아웃 이동도 0.
+       * It lives in the value layer for the `DISABLED`/`FOCUS` reason (per
+       * component, one gets missed). The class exists **only inside
+       * `pointer: coarse`**, so no rule is generated for mice, and it widens the
+       * hit area through a pseudo-element while leaving the visible box alone —
+       * zero layout shift.
        */
       icon: 'touch-hit-expand inline-flex shrink-0 items-center justify-center rounded-chip transition-colors',
-      /** 목록의 한 줄 전체가 눌리는 것. 좌정렬이 정체성이다(39). */
       /**
-       * ⚠️ `rounded-chip` 이 **처음엔 빠져 있었다.** 그래서 정규화된 목록 행의
-       * 호버 배경이 각지게 나왔다(반경 6 → 0). 모양을 정의하면서 반경을 안 준 것이
-       * 원인이고, 실측이 잡았다.
+       * A whole list row that is pressable; left alignment is its identity (39).
+       *
+       * ⚠️ `rounded-chip` was **missing at first**, so normalised list rows drew
+       * a square hover background (radius 6 → 0). Defining a shape without
+       * giving it a radius caused it; measurement caught it.
        */
       row: `${TOUCH_FLOOR} flex w-full items-center text-left transition-colors`,
-      /** 상태·수치를 나르는 완전 둥근 컨트롤(32). */
+      /** Fully rounded control carrying a state or a count (32). */
       pill: `${TOUCH_FLOOR} inline-flex items-center rounded-full border transition-colors`,
-      /** 카드 하나가 통째로 눌리는 큰 표면(18). */
+      /** A whole card as one large pressable surface (18). */
       card: 'flex items-center rounded-card border transition-colors',
       /**
-       * 글자만으로 눌리는 것. 보더도 배경도 없다(85). 바닥은 WCAG 2.5.8(AA)의
-       * 24(`min-h-6`) — coarse 포인터의 44 는 높이가 아니라 `.touch-hit-expand`
-       * (레이아웃 이동 0)가 낸다. 아래 「삭제된 축: inline」 참조.
+       * Text-only, no border and no background (85). Floor is WCAG 2.5.8 (AA)
+       * 24 (`min-h-6`) — the 44 for coarse pointers comes from
+       * `.touch-hit-expand` (zero layout shift), not from height. See the
+       * removed `inline` axis below.
        */
       link: 'inline-flex min-h-6 items-center gap-1 rounded-chip transition-colors',
       /**
-       * 아이콘 위, 글자 아래의 **세로** 타일.
+       * **Vertical** tile: icon above, label below.
        *
-       * 2026-08-03 정규화가 찾은 세 번째 구멍 — 모양 여섯이 **전부 가로**라
-       * 세로 액션 타일 5개가 시스템 밖에 있었다. 전수에서 「모양」을 셀 때 축을
-       * 하나만 본 것이다.
+       * The third hole the 2026-08-03 normalisation found — all six shapes were
+       * **horizontal**, leaving 5 vertical action tiles outside the system. The
+       * inventory had counted "shape" along one axis only.
        */
       tile: 'flex flex-col items-center justify-start rounded-card border text-center transition-colors',
       /**
-       * **보더 없는 인셋** — 세그먼트 항목 · 탭 · 고스트 버튼.
+       * **Borderless inset** — segmented items, tabs, ghost buttons.
        *
-       * ## 왜 여덟째 모양인가 — 네 라운드가 같은 결론에 다른 이름으로 닿았다
+       * **Why an eighth shape.** The rule against adding a seventh on instinct
+       * demands **repeat count**, and the adoption ratchet ledger reported the
+       * same hole four rounds running:
        *
-       * 「일곱째를 감으로 추가하지 않는다」는 규율이 이 자리에서 요구하는 것은
-       * **반복 횟수**다. 래칫 원장(`control-adoption-ratchet`)이 네 라운드
-       * 연속으로 같은 구멍을 보고했다:
-       *
-       * | 라운드 | 원장이 쓴 이름 | 못 옮긴 수 |
+       * | Round | What the ledger called it | Unmigrated |
        * |---|---|---:|
-       * | 설정 시트 | 「보더 있는 컨테이너 안의 보더 없는 컨트롤」 | 1 파일 · 반복 3 |
-       * | 지도 두 위젯 | 「세그먼트 탭」 | 3 |
-       * | features | 「보더 없는 인셋(고스트) 모양이 없다」 | 9 |
-       * | 위젯 | 「보더 없는 세그먼트·탭」 | 6 |
+       * | settings sheet | borderless control inside a bordered container | 1 file · 3 repeats |
+       * | two map widgets | segmented tabs | 3 |
+       * | features | no borderless inset (ghost) shape | 9 |
+       * | widgets | borderless segments/tabs | 6 |
        *
-       * 네 번 같은 결론이 나오면 그건 취향이 아니라 **모양이 실재한다**는
-       * 신호다. `chip`·`pill`·`card`·`tile` 은 보더가 필수라 이미 보더를 두른
-       * 상자 안에서 「상자 속 상자」가 되고, `link` 는 인셋이 0이라 세그먼트의
-       * 히트 영역이 사라진다. 그 사이가 이 모양이다.
+       * Four identical conclusions are evidence the shape **exists**, not a
+       * preference. `chip`/`pill`/`card`/`tile` all require a border, so inside
+       * an already-bordered container they become a box in a box; `link` has
+       * zero inset, so a segment loses its hit area. This shape is the gap
+       * between them.
        *
-       * ## 반경 — `--chrome-radius-inner` 는 새 값이 아니다
+       * **Radius — `--chrome-radius-inner` is not a new value.** Five consumers
+       * use `rounded-[var(--chrome-radius-inner)]`, and in `app/globals.css`
+       * that token is an **alias of `var(--radius-chip)`** (6px). Moving to
+       * `rounded-chip` therefore changes bytes and not pixels — no off-ramp
+       * radius needed.
        *
-       * 소비처 다섯이 `rounded-[var(--chrome-radius-inner)]` 를 쓰고 있는데,
-       * `app/globals.css` 에서 그 토큰은 **`var(--radius-chip)` 의 별칭**이다
-       * (6px, globals.css `--chrome-radius-inner: var(--radius-chip)`). 그래서
-       * `rounded-chip` 으로 옮기면 **바이트만 다르고 픽셀은 같다** — 램프 밖
-       * 반경을 새로 만들 이유가 없다.
-       *
-       * ## 크기 — 실측 최빈값이 `md` 다
-       *
-       * 남은 세그먼트/고스트 12개의 인셋 분포: `px-2 py-1`/`text-label` 6 ·
-       * `px-2.5 py-1`/`text-label` 2 · `px-2.5`+28px 고정 5 · `px-3` 계열 3.
-       * 최빈 하나를 `md` 에 정확히 앉혔다.
+       * **Size — `md` is the measured mode.** Inset distribution across the
+       * remaining 12 segment/ghost controls: `px-2 py-1`/`text-label` 6 ·
+       * `px-2.5 py-1`/`text-label` 2 · `px-2.5` + fixed 28px 5 · `px-3` family 3.
+       * The single mode was placed exactly on `md`.
        */
-      // TOUCH_FLOOR (2026-08-15 상호작용석 처방 + 체계석 공동 서명): 세그먼트만
-      // coarse 44 승격이 없어 「한 시트 두 규격」이 재현되고 있었다. gap-px 밀집
-      // 배치라 유령 히트(touch-hit-expand)는 자격 미달 — 실제 높이 방식이 유일하다.
+      // TOUCH_FLOOR (2026-08-15, prescribed by the interaction seat, co-signed by
+      // the design-systems seat): segments alone had no coarse 44 promotion, so
+      // "one sheet, two specs" was reproducing. Their gap-px packing disqualifies
+      // a phantom hit area (touch-hit-expand); real height is the only option.
       segment: `${TOUCH_FLOOR} atlas-touch-floor-wide inline-flex items-center justify-center rounded-chip text-center transition-colors`,
     },
     /**
-     * 크기 — **높이는 램프가 정하고, 패딩은 그 안에서 결정된다.**
+     * Size — **the ramp decides the height; padding is chosen within it.**
      *
-     * ## 2026-08-03 정정: 패딩의 부산물을 램프라고 부르지 않는다
+     * **2026-08-03 correction: a by-product of padding is not a ramp.** The
+     * first version of this ramp emitted heights **nobody had chosen** — the sum
+     * of padding, leading and border *was* the height, which measured out as
+     * chip 24/30/34 and pill 20/22/30. **30, 34, 22 and 20 appear nowhere in
+     * this app's height vocabulary** (24 · 28 · 32 · 36 · 40 · 44), and
+     * `app/globals.css` **already had** `--control-h-{sm,md,lg}` (28/32/40) as
+     * the single source. A value invented instead of found is not a system, it
+     * is a second system.
      *
-     * 처음 이 램프는 높이를 **아무도 안 고른 채** 냈다 — 패딩+행간+보더의 합이
-     * 곧 높이였고, 그 결과가 칩 24/30/34 · 필 20/22/30 이었다(실측). **30 · 34 ·
-     * 22 · 20 은 이 앱의 높이 어휘(24 · 28 · 32 · 36 · 40 · 44) 어디에도 없는
-     * 값**이고, 그때 이미 `app/globals.css` 에 `--control-h-{sm,md,lg}`
-     * (28/32/40)라는 단일 진실원이 **있었다**. 찾지 않고 만든 값은 시스템이
-     * 아니라 두 번째 시스템이다.
-     *
-     * 더 나빴던 것은 그 다음이다. 새 값이 계약(32px)과 부딪히자 값을 고치는
-     * 대신 **예외 축(`fixedHeight`)을 더했다.** 축은 값이 틀렸다는 **증상**이지
-     * 필요한 축이 아니었다 — 값을 고치니 축이 죽었다(2026-08-03 소유자 결정,
+     * What followed was worse: when the new values collided with the 32px
+     * contract, an exception axis (`fixedHeight`) was added instead of fixing
+     * the values. The axis was a **symptom** of wrong values, not a needed axis
+     * — fixing the values killed it (owner decision 2026-08-03,
      * `docs/DECISIONS.md`).
      *
-     * ## 2026-08-03 2차 정정: 램프 복원이 칩·필에서 멈춰 있었다
+     * **Second correction, same day: the restoration had stopped at chip and
+     * pill.** A second inventory found the same class of defect in the other
+     * shapes — segment/sm **22px** (below the WCAG 2.5.8 floor, 0 consumers),
+     * row/lg **42px** (outside the vocabulary, 0 consumers), card/sm **30px**
+     * (outside the vocabulary, 15 sites), card/md **34px** (accidentally
+     * occupying the chrome-locked `--docs-header-tile-size`, 5 sites). All four
+     * were "padding decided the height" by-products.
      *
-     * 위 정정(#884)이 세운 것은 `chip`/`pill` 뿐이었다. 같은 날 2차 전수가
-     * 나머지 모양에서 같은 부류의 결함을 찾았다 — segment/sm **22px**(WCAG
-     * 2.5.8 바닥 미달, 소비처 0) · row/lg **42px**(어휘 밖, 소비처 0) ·
-     * card/sm **30px**(어휘 밖, 15곳) · card/md **34px**(크롬 잠금 단
-     * `--docs-header-tile-size` 를 패딩 산수로 우연 점유, 5곳). 넷 다
-     * 「패딩이 높이를 정한」 부산물이다.
+     * Today's spec: **every combination of a single-row horizontal shape stands
+     * on the ramp through an explicit floor (`min-h-*`)**. Where the floor
+     * equals the natural height nothing moves, and the spec becomes a
+     * declaration rather than an arithmetic residue:
      *
-     * 그래서 오늘의 규격은 이렇다 — **가로 한 줄 모양은 전 조합이 명시
-     * 플로어(`min-h-*`)로 램프 위에 선다**. 플로어가 자연높이와 같은 조합은
-     * 픽셀 이동 0이고, 규격이 산수의 부산물이 아니라 선언이 된다:
-     *
-     * | 모양 | xs | sm | md | lg |
+     * | Shape | xs | sm | md | lg |
      * |---|---:|---:|---:|---:|
-     * | `chip`/`pill` | 24 | 24 | 32 | 32 — `lg` 가 키우는 것은 **글자와 좌우 인셋**이지 높이가 아니다(2026-08-03 소유자 확정, 소비처 26곳) |
+     * | `chip`/`pill` | 24 | 24 | 32 | 32 — what `lg` grows is **type and horizontal inset**, not height (owner call 2026-08-03, 26 consumers) |
      * | `segment` | 24 | 24 | 24 | 32 |
      * | `row` | 28 | 28 | 36 | 44 |
      * | `card` | 32 | 32 | 36 | 40 |
-     * | `icon` | 24 | 24 | 28 | 32 — 정사각이라 하드 `h-*` |
+     * | `icon` | 24 | 24 | 28 | 32 — square, so hard `h-*` |
      *
-     * `xs` 는 **높이의 단이 아니다** — 24 바닥은 그대로 두고 인셋·타입·반경만
-     * 마이크로 티어로 내린다(칩에서만 sm 과 다르고, 나머지 모양에서는 sm 의
-     * 별칭이다). 24 아래 단을 만들지 않는 이유는 램프 표의 첫 줄이다:
-     * WCAG 2.5.8 바닥 아래는 «작은 단»이 아니라 규격 미달이다.
+     * `xs` is **not a height step** — the 24 floor stays and only inset, type
+     * and radius drop to the micro tier (it differs from `sm` on chips alone and
+     * aliases `sm` elsewhere). No step below 24 exists because of the first row
+     * of the ramp table: below the WCAG 2.5.8 floor is not a "smaller step", it
+     * is out of spec.
      *
-     * `link` 는 바닥 24(`min-h-6`, 모양 base) — 2026-08-04 재설정 집행.
-     * 종전 44(`min-h-11`)는 WCAG 2.5.8(AA, 24×24)을 인용하면서 2.5.5(AAA)/HIG
-     * 터치 값을 실은 **사실 오류**였고, 44 는 터치 계약(design.md)이 «coarse
-     * 단일 출처»로 못박은 `--touch-target-min` 이다. coarse 의 44 는 높이가
-     * 아니라 `.touch-hit-expand` 가 내고, 부착 자격(이웃 타깃 여유 ≥12px)은
-     * 소비처가 진다 — 밀집 행에 무조건 붙이면 DOM 순서상 뒤 원소가 앞 원소의
-     * 탭을 훔친다. 자리별 전수 표: docs/DECISIONS.md 2026-08-04 「link 바닥 24」.
-     * `tile` 은 세로 2축 표면이라 내용이 높이를 정한다 — 램프 이탈이 아니라 축이 다르다.
+     * `link` floors at 24 (`min-h-6`, on the shape base) — reset 2026-08-04. The
+     * former 44 (`min-h-11`) was a **factual error**: it cited WCAG 2.5.8 (AA,
+     * 24×24) while carrying 2.5.5 (AAA)/HIG touch values, and 44 is
+     * `--touch-target-min`, which the touch contract pins as the single source
+     * for coarse pointers. Under coarse, 44 comes from `.touch-hit-expand`, and
+     * eligibility to attach it (≥12px clearance to neighbouring targets) is the
+     * consumer's — attaching it unconditionally in a dense row lets a later DOM
+     * element steal the earlier one's tap. Per-site table:
+     * `docs/DECISIONS.md` 2026-08-04 「link 바닥 24」 (the 24px floor for links).
+     * `tile` is a two-axis vertical surface whose content decides the height —
+     * a different axis, not a ramp escape.
      *
-     * 하드 `h-8` 이 아니라 **`min-h-8`** 인 이유: 하드 높이는 줄바꿈한 칩을
-     * 잘라 내용을 숨기지만, `min-h` 는 단행 칩을 32로 세우면서 넘치는 내용은
-     * 자라게 둔다.
+     * `min-h-8` rather than a hard `h-8`: a hard height clips a wrapped chip and
+     * hides content, while `min-h` stands a single-line chip at 32 and lets
+     * overflowing content grow.
      *
-     * 램프 전체(24 · 28 · 32 · 34 · 36 · 40 · 44)와 각 단의 소유자는
-     * `docs/DESIGN-SYSTEM.md` 「컨트롤 높이 사다리」 절이 정본이다.
+     * The full ramp (24 · 28 · 32 · 34 · 36 · 40 · 44) and each step's owner
+     * live in `docs/DESIGN-SYSTEM.md` 「컨트롤 높이 사다리」 (the control-height
+     * ramp).
      *
-     * ## 타입은 size 에 동승한다 — 분리는 반려됐다 (2026-08-04 체계석)
-     *
-     * 레퍼런스 조사(Carbon: size 는 높이만 · shadcn: 타입은 base)가 「타입을
-     * size 에서 빼면 ≈56 이 열린다」고 예측했고 소유자가 방향을 승인했지만,
-     * 부채 155 를 **자리 단위로** 열어 보니 분리(오버라이드·상속)가 혼자 여는
-     * 자리는 **2~3** 이었다 — 결합 부류의 자리 대부분이 rest 색 방언(틴트
-     * 채움 · panel 보더 · overlay 배경) · 무게 · 모노 보이스 · 램프 밖 높이 ·
-     * 상시 밑줄에 **겹쳐** 있어 타입만 풀어도 안 열린다(값 층 라운드 3 의
-     * 「겹친 구멍」 판정이 자리 단위에서 재확증됐다). 소비처 2~3 축은 만들지
-     * 않는다 — `fixedHeight` 를 죽인 그 기준이다. Carbon 형(전 크기 한 타입)은
-     * 위 표의 「`lg` 가 키우는 것은 글자와 좌우 인셋」 소유자 확정과 정면
-     * 충돌하고, 칩·필 `sm`(caption) 전수의 픽셀을 근거 없이 올린다.
-     * 원장: docs/DECISIONS.md 2026-08-04 「타입-크기 분리 반려」.
+     * **Type rides on size; separating them was rejected** (2026-08-04,
+     * design-systems seat). Reference research (Carbon: size controls height
+     * only; shadcn: type in the base) predicted that pulling type out of `size`
+     * would free ≈56 sites, and the owner approved the direction — but opening
+     * the 155 debt items **site by site** showed separation frees only **2–3**
+     * on its own: most coupled sites also carry a rest-colour dialect (tint
+     * fill, panel border, overlay background), a weight, a mono voice, an
+     * off-ramp height or a permanent underline **stacked on top of each other**,
+     * so unlocking type alone opens nothing. An axis with 2–3 consumers does not
+     * get built — the same bar that killed `fixedHeight`. The Carbon shape (one
+     * type across all sizes) also collides with the owner's call above that `lg`
+     * grows type and inset, and would raise every chip/pill `sm` (caption)
+     * without cause. Ledger: `docs/DECISIONS.md` 2026-08-04
+     * 「타입-크기 분리 반려」 (type/size separation rejected).
      */
     size: {
       /**
-       * 마이크로 티어 — 명령 태그·마이크로 배지·kbd 급. **칩에서만 `sm` 과
-       * 다르다**(인셋 px-1.5 · caption · 반경 micro). 높이는 그대로 24 바닥
-       * (`min-h-6`)이다 — 램프는 "24 아래는 규격 미달"이라 말하고, 이 단이
-       * 여는 것은 높이가 아니라 **인셋·타입·반경**이다. 다른 모양에서는 `sm`
-       * 의 별칭이다(소비처 0 값의 발명 금지 — 계약이 별칭임을 단언한다).
+       * Micro tier — command tags, micro badges, kbd-class controls. **Differs
+       * from `sm` on chips only** (inset `px-1.5`, caption, micro radius).
+       * Height stays on the 24 floor (`min-h-6`): the ramp says below 24 is out
+       * of spec, so this step opens inset, type and radius rather than height.
+       * On other shapes it is an alias of `sm` (no inventing values with zero
+       * consumers — the contract asserts the aliasing).
        *
-       * 근거: 「sm 아래 한 칸이 없다」가 래칫 원장에 **세 라운드 연속**
-       * (features 4 · 잔여 재측정 14 · 프리미티브 라운드 재확인) 기록된 뒤의
-       * 승격이다. 감이 아니라 반복 횟수다.
+       * Justification: "there is no step below sm" appears in the ratchet ledger
+       * for **three consecutive rounds** (features 4 · remainder re-measurement
+       * 14 · primitive round re-confirmation). Repeat count, not instinct.
        */
       xs: '',
-      /** 램프 바닥 24px — WCAG 2.5.8 최소 타깃. `text-caption`/`px-2`. */
+      /** Ramp floor 24px — the WCAG 2.5.8 minimum target. `text-caption`/`px-2`. */
       sm: '',
-      /** `--control-h-md` 32px — 실측 최빈. `px-2.5`/`text-label`. */
+      /** `--control-h-md` 32px — the measured mode. `px-2.5`/`text-label`. */
       md: '',
-      /** 같은 32px 인데 글자와 인셋이 한 단 크다. `px-3`/`text-body`. */
+      /** The same 32px with type and inset one step up. `px-3`/`text-body`. */
       lg: '',
     },
     /**
-     * 색은 **위계**이지 장식이 아니다. 헌장이 무채색 + 단일 인디고를 고정했으므로
-     * 여기서 나올 수 있는 것도 그 안이다.
+     * Colour is **hierarchy**, not decoration. The charter fixes neutrals plus a
+     * single indigo, so that is the whole range available here.
      */
     tone: {
-      /** 기본 — 3차 텍스트. 화면에서 가장 흔하다. */
+      /** Default — tertiary text. The most common on screen. */
       default: 'text-[color:var(--color-text-tertiary)]',
-      /** 더 물러난 것 — 4차. 아이콘 컨트롤의 최빈값이다. */
+      /** Further back — quaternary. The mode for icon controls. */
       muted: 'text-[color:var(--color-text-quaternary)]',
       /**
-       * 3차와 1차 사이 — **2026-08-03 정규화가 찾은 구멍.** 톤을 3단으로 냈는데
-       * 설정 시트만 해도 `text-secondary` 컨트롤이 7개였다. 모양은 전수에서 셌으면서
-       * **톤은 안 셌다.** 그 7개가 시스템 밖에 남아 있었다.
+       * Between tertiary and primary — **a hole the 2026-08-03 normalisation
+       * found.** Tones shipped as three steps while the settings sheet alone had
+       * 7 `text-secondary` controls: shapes were inventoried, **tones were not**,
+       * so those 7 stayed outside the system.
        */
       secondary: 'text-[color:var(--color-text-secondary)]',
-      /** 지금 이겨야 하는 것 — 1차. 한 화면에 여럿이면 위계가 없는 것이다. */
+      /** What must win right now — primary. Several on one screen means no hierarchy. */
       strong: 'text-[color:var(--color-text-primary)]',
       /**
-       * 인디고 강조 — 「이 화면의 주 행동」. 같은 정규화가 찾은 두 번째 구멍으로,
-       * 대응 톤이 없어 15개가 시스템 밖에 있었다. 헌장의 **단일 인디고**이고
-       * 새 hue 가 아니다.
+       * Indigo accent — "the primary action on this screen". The second hole the
+       * same normalisation found: with no matching tone, 15 controls sat outside
+       * the system. This is the charter's **single indigo**, not a new hue.
        *
-       * ## 사정거리 — 맨 바탕 위에서만 (2026-08-03 체계석 판정)
-       *
-       * `--color-indigo-accent`(#7170ff)는 앱 전역 99줄이 쓰는 «링크·라벨
-       * 인디고» 관용구다. **단 그 라이선스는 맨 어두운 바탕까지다**: 합성
-       * 대비 실측이 canvas 5.18 · panel 4.96 · elevated 4.53 인데, 인디고
-       * 틴트 채움(`--color-indigo-a14+`·`line-a13`)이나 앰버 힌트가 깔리면
-       * 3.5~4.4 로 WCAG 1.4.3 AA(4.5)를 깬다 — 호버(`a24`)는 canvas 위에서도
-       * 4.13 이다. 틴트를 지는 컨트롤은 아래 `accentOnTint` 다. 게이트:
-       * `tests/contract/accent-ink-contrast.contract.test.ts` + eslint
-       * 페어링 셀렉터.
+       * **Range — bare ground only** (2026-08-03, design-systems seat).
+       * `--color-indigo-accent` (#7170ff) is the link/label indigo idiom used on
+       * 99 lines app-wide, **but its licence ends at the darkest ground**:
+       * measured composite contrast is canvas 5.18, panel 4.96, elevated 4.53,
+       * while an indigo tint fill (`--color-indigo-a14`+, `line-a13`) or an
+       * amber hint drops it to 3.5–4.4 and breaks WCAG 1.4.3 AA (4.5) — hover
+       * (`a24`) is 4.13 even on canvas. Controls that carry a tint use
+       * `accentOnTint` below. Gates:
+       * `tests/contract/accent-ink-contrast.contract.test.ts` plus the eslint
+       * pairing selector.
        */
       accent: 'text-[color:var(--color-indigo-accent)]',
       /**
-       * **틴트 위의 인디고 강조** — 채움·호버 채움(인디고 a08~a24 · line-a13 ·
-       * 앰버 힌트)을 지는 「주 행동」의 잉크.
+       * **Indigo accent on a tint** — the ink for a "primary action" that
+       * carries a fill or hover fill (indigo a08–a24, `line-a13`, amber hint).
        *
-       * ## 왜 둘로 갈랐나 — 이 앱에는 인디고 잉크의 해가 둘이다
+       * **Why it was split in two**: indigo ink has two solutions in this app,
+       * the same grammar as the `scope` axis — one indigo, two grounds, two
+       * answers. The marker indigo (#7170ff) breaks AA the moment a tint is laid
+       * under it (26 of 29 inventoried sites measured below AA), while the text
+       * token `--color-indigo-text-soft` (rgba 188,195,255,.92) stays at 6.46:1
+       * or better on every surface composite in this app. The value is not new —
+       * the studio and map panels already used it by hand; this registers it on
+       * the ramp.
        *
-       * `scope` 축과 같은 문법이다: 하나의 인디고가 두 바탕 위에서 두 해를
-       * 갖는다. 표식 인디고(#7170ff)는 틴트가 깔리는 순간 AA 를 깨는데
-       * (전수 29곳 중 26곳이 실측 미달 상태였다), 글자용
-       * `--color-indigo-text-soft`(rgba 188,195,255,.92)는 이 앱의 모든
-       * 표면 합성에서 6.46:1 이상이다. 값은 새로 만들지 않았다 — 공방·지도
-       * 패널이 손으로 이미 쓰던 그 토큰의 램프 등재다.
-       *
-       * hue 는 같은 단일 인디고라 «주 행동» 의미는 유지되고, 잃는 것은
-       * 채도다 — 그 대가로 어떤 소비처도 자기 바탕의 대비 숙제를 다시 하지
-       * 않는다.
+       * The hue is the same single indigo, so the "primary action" meaning
+       * survives; what is lost is saturation. In exchange no consumer has to
+       * redo the contrast homework for its own ground.
        */
       accentOnTint: 'text-[color:var(--color-indigo-text-soft)]',
-      /** 신호 3종 — 헌장이 인정한 그 셋뿐이다(warning · error · success). 확장 금지. */
+      /** The three signals the charter allows — warning · error · success. Do not extend. */
       warning: 'text-[color:var(--color-status-warning)]',
       danger: 'text-[color:var(--color-danger-text)]',
       /*
-       * ⚠️ success 만 신호 토큰이 아니라 **글자 역할 토큰**이다 (2026-08-03
-       * 체계석 정정). 셋의 역할이 어긋나 있었다 — danger 는 글자 역할
-       * (`--color-danger-text`)인데 success 는 신호색(#32b97d)을 내서, 성공
-       * 틴트 위 글자(창백한 민트 a94)를 쓰는 소비처가 램프 밖에 남기를 택했고
-       * 실측 소비처가 **0**이었다(소비처 0 = fixedHeight 를 죽인 그 기준).
-       * 값을 앱의 실제 관용구(a94)로 맞추니 소비처가 돌아왔다. 기존 소비처
-       * 0이라 이 재지정으로 바뀐 픽셀·색도 0이다.
-       * warning 은 신호 토큰을 유지한다 — 유일 소비처(DependencyPicker)가
-       * 그 값 위에서 이미 옳고, 앰버 글자 관용구(amber-source-a90)와의 수렴
-       * 여부는 전수와 함께 다음 판정으로 넘겼다(래칫 원장 참조).
+       * ⚠️ success alone is a **text-role token**, not a signal token
+       * (2026-08-03, design-systems seat correction). The three had drifted
+       * apart: danger used a text role (`--color-danger-text`) while success
+       * emitted the signal colour (#32b97d), so any consumer wanting text on a
+       * success tint (the pale mint a94) chose to stay off-ramp — measured
+       * consumers **0**, the same bar that killed `fixedHeight`. Aligning the
+       * value with the app's real idiom (a94) brought consumers back. With 0
+       * prior consumers, this re-pointing changed 0 pixels and 0 colours.
+       * warning keeps the signal token: its sole consumer (DependencyPicker) is
+       * already correct on that value, and whether it should converge with the
+       * amber text idiom (amber-source-a90) was deferred to the next verdict
+       * together with an inventory (see the ratchet ledger).
        */
       success: 'text-[color:var(--color-success-text-a94)]',
       /**
-       * **채워진 인디고 위의 전경** — 이 화면의 단 하나의 주 동작.
+       * **Foreground on a filled indigo** — the one primary action on a screen.
        *
-       * ## 왜 톤이 바탕까지 내는가
+       * **Why a tone emits a ground too.** Two rounds reported the same hole
+       * independently (features 5 · widgets 6): *"when indigo is the background
+       * the text is `text-white`, and none of the eight tones covers that."*
+       * Ink alone forces consumers to keep writing `bg-…` and a weight through
+       * `className` — passing shape through className, which makes the layer
+       * pointless. Like "pressed" (`active: true`, which already emits
+       * background + border + ink together), a fill is a state ink alone cannot
+       * express, so the pair is emitted together.
        *
-       * 두 라운드가 독립으로 같은 구멍을 보고했다(features 5 · 위젯 6):
-       * *"인디고를 배경으로 깔면 글자는 `text-white` 인데 tone 여덟에 그 자리가
-       * 없다."* 잉크만 내면 소비처가 `bg-…`/무게를 `className` 으로
-       * 계속 써야 하고, 그건 **모양을 className 으로 넘기는 것**이라 층이 있으나
-       * 마나다. 그래서 잉크와 바탕을 **한 쌍으로** 낸다 — `active: true` 가 이미
-       * 같은 문법(배경+보더+잉크를 함께)을 쓰고 있고, 채움은 「눌림」과 마찬가지로
-       * 잉크 혼자로는 성립하지 않는 상태라서다.
+       * The weight is measured too: of the controls with an explicit weight over
+       * a `--color-indigo-brand` ground, **15 were semibold 13 / medium 2**
+       * (2026-08-03 inventory), so weight is part of this tone's identity and
+       * the 2 exceptions were drift — normalised to semibold while migrating
+       * (padding and leading decide the box, so height moved 0). **2026-08-05:
+       * that semibold moved onto the ramp** — `font-semibold` (600) is a
+       * Tailwind default step outside the `--font-weight-*` ramp, and this slot
+       * is a button label rather than a heading, so `emphasis` (560), which is
+       * also nearest to 600 (560 is −40, 650 is +50).
        *
-       * 무게를 포함한 이유도 실측이다: `--color-indigo-brand` 를 바탕으로 깐
-       * 컨트롤 중 무게를 명시한 **15개가 semibold 13 · medium 2** 였다
-       * (2026-08-03 전수). 무게가 이 톤의 정체성의 일부이고, 예외 2건은 규격이
-       * 아니라 편차다 — 옮기면서 semibold 로 정규화했다(상자 치수는 패딩·행간이
-       * 정하므로 높이 변화 0).
+       * **Hover: the prescription written here was wrong, and the right value is
+       * now emitted** (2026-08-15, ledger entry 11). This slot used to tell
+       * consumers to write `hover:bg-[color:var(--color-indigo-hover)]`, but
+       * `--color-indigo-hover` (#828fff) lightens *ink and borders*. As a surface
+       * under white ink it measures **2.87:1** — about half the 4.71 rest state,
+       * far under AA (4.5) — and it is the exact pair
+       * `tests/e2e/hover-contrast.spec.ts` plants as its known-failing case. No
+       * consumer had followed it, so the next person would have been the first.
        *
-       * **2026-08-05: 그 semibold 가 램프로 올라갔다.** `font-semibold`(600)는
-       * Tailwind 기본 스텝이라 `--font-weight-*` 램프 밖이었다. 이 자리는
-       * 제목이 아니라 버튼 라벨이므로 `emphasis`(560) — 600 에서 가장 가까운
-       * 스텝이기도 하다(560 은 −40, 650 은 +50). 「인디고 면 위에서 기본
-       * 무게보다 무겁다」는 이 톤의 정체성은 그대로다.
+       * `.claude/rules/design-gates.md` 「호버 상태 대비」 (hover-state contrast)
+       * had already settled the rule — **only filled buttons darken on hover**,
+       * measured from four primary CTAs sitting at 3.17–4.41 while hovered — but
+       * it was absent from the value layer, so **all 12 consumers hand-wrote the
+       * same string** while `button.tsx`'s primary variant already had it: a
+       * value mismatch between two value layers, not a question of pushing a
+       * rule down. Unlike the three hover axes below this one is **not opt-in**,
+       * because once white ink sits on an indigo surface, how that surface
+       * hovers is a contrast contract the tone must keep
+       * (`--color-indigo-brand` 4.70 → `-hover` 5.38).
        *
-       * ⚠️ **여기 적혀 있던 호버 처방은 틀렸다** (2026-08-15 실측으로 철회).
-       * 종전 문장은 소비처에게 `hover:bg-[color:var(--color-indigo-hover)]` 를
-       * 처방했는데, `--color-indigo-hover`(#828fff)는 **밝아지는 잉크·보더용**
-       * 토큰이다. 그것을 면으로 쓰면 이 톤의 흰 잉크 아래에서 **2.87:1** —
-       * 바로 아래 줄이 자랑하는 쉬는 상태 4.71 의 절반 남짓이고, AA(4.5) 한참
-       * 밑이다. `tests/e2e/hover-contrast.spec.ts` 가 **일부러 심어 두는
-       * 「알려진 미달」 짝**이 정확히 이 값이다.
-       *
-       * 오늘 이 처방을 따른 소비처는 0이다 — 즉 아직 아무도 안 밟았고, 다음
-       * 사람이 첫 위반자가 될 자리였다. 채워진 면의 호버는 **어두워진다**:
-       * `--color-indigo-brand-hover`(5.38, `design-gates.md` 「호버 상태 대비」).
-       * 그 값을 여기서 낼지는 hover 축 판정의 몫이고, 그때까지 이 자리는
-       * **처방하지 않는다** — 틀린 처방보다 없는 처방이 낫다.
-       *
-       * 새 hue 0: 바탕은 헌장의 단일 인디고, 잉크는 무채(#fff). 대비 실측
-       * 4.71:1 로 WCAG AA(4.5) 위다.
-       */
-      /*
-       * ⚠️ **호버가 여기 들어온 것은 축이 아니라 결원 보충이다** (2026-08-15 (11)).
-       *
-       * `design-gates.md` 「호버 상태 대비」가 이미 규칙을 확정해 뒀다 —
-       * **채워진 버튼만 호버에서 어두워진다**(밝히면 흰 잉크와 부딪혀 AA 를
-       * 깬다. 실측: 주 CTA 넷이 호버 중 3.17~4.41 이었다). 그런데 그 규칙이
-       * 값 층에 없어서 **소비처 12곳이 12곳 다 같은 문자열을 손으로** 쓰고
-       * 있었다. `button.tsx` 의 primary 변형은 그것을 이미 갖고 있다 — 즉
-       * 이건 「규칙을 값 층에 내릴까」가 아니라 **두 값 층의 값 불일치**였다.
-       *
-       * 이 호버는 위 세 축과 달리 **옵트인이 아니다.** 톤의 정의에 속하기
-       * 때문이다: 인디고 면에 흰 잉크를 얹기로 한 순간 「그 면이 어떻게
-       * 호버하는가」는 선택지가 아니라 그 톤이 지켜야 할 대비 계약이다.
-       * (`--color-indigo-brand` 4.70 → `-hover` 5.38.)
+       * New hues: 0. Ground is the charter's single indigo, ink is neutral
+       * (#fff), measured 4.71:1 — above WCAG AA.
        */
       onAccent:
         'bg-[color:var(--color-indigo-brand)] font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] hover:bg-[color:var(--color-indigo-brand-hover)]',
     },
     /**
-     * **어느 잉크 램프 위에 서 있는가.**
+     * **Which ink ramp it stands on.**
      *
-     * ## 왜 이 축이 필요한가 — 두 라운드가 독립으로 같은 결론에 닿았다
+     * **Why this axis exists** — two rounds reached the same conclusion
+     * independently. This repo has **two** neutral text ramps with different
+     * values:
      *
-     * 이 저장소에는 무채색 글자 램프가 **두 벌** 있고 값이 다르다:
-     *
-     * | 단 | `--color-text-*` | `--topology-v2-panel-text-*` |
+     * | Step | `--color-text-*` | `--topology-v2-panel-text-*` |
      * |---|---|---|
      * | primary | `#f7f8f8` | `#ececf0` |
      * | secondary | `#d0d6e0` | `#a3a3ac` |
      * | tertiary | `#8a8f98` | `#868690` |
      * | quaternary | `#82828a` | `#82828a` |
      *
-     * 우연이 아니다 — 패널 램프의 tertiary/quaternary 는 **패널 바탕
-     * `#17171c` 위에서 대비를 재서** 넛지된 값이다(globals.css 주석: 4.02:1 →
-     * ≈4.9:1, ~2.5:1 → ~4.7:1). 즉 두 램프는 두 개의 채색 시스템이 아니라
-     * **하나의 무채 램프가 두 바탕 위에서 갖는 두 해**다. (quaternary 는
-     * 2026-08-03 「체계」 판정으로 전역 값이 `#787c84` → `#82828a` 로 올라
-     * **두 해가 같은 값으로 수렴**했다 — 우연이 아니라 같은 제약(올라선 표면
-     * 위 AA)의 같은 답이다. 원장: docs/DECISIONS.md.)
+     * Not a coincidence: the panel ramp's tertiary/quaternary were nudged by
+     * **measuring contrast over the panel ground `#17171c`** (globals.css
+     * comment: 4.02:1 → ≈4.9:1, ~2.5:1 → ~4.7:1). The two ramps are not two
+     * colour systems but **one neutral ramp with two solutions over two
+     * grounds**. (quaternary converged when the design-systems verdict of
+     * 2026-08-03 raised the global from `#787c84` to `#82828a` — the same answer
+     * to the same constraint, AA over a raised surface. Ledger:
+     * `docs/DECISIONS.md`.) The ledger counted 11 sites in the features round
+     * plus 8 in the widgets round = **19** structurally outside the value layer
+     * for this reason.
      *
-     * 원장이 센 것: features 라운드 11개 + 위젯 라운드 8개 = **19개**가 이
-     * 이유로 구조적으로 값 층 밖이었다.
+     * **Why not "let the consumer add the ink".** That puts colour in
+     * `className`, the exact thing this file forbids, so migrating the 19 would
+     * be the same as migrating nothing.
      *
-     * ## 왜 「소비처가 잉크만 얹는다」를 택하지 않았나
+     * **Why not redefine the CSS variables.** Overriding `--color-text-*` inside
+     * the panel frees all 19 with no axis at all, but that panel holds far more
+     * non-control consumers (headings, statistics, hint sentences) whose output
+     * would change too — an unmeasured regression bought for free. An axis is
+     * explicit, changes only the sites that opt in, and can be locked by contract.
      *
-     * 그러면 `className` 에 색이 실린다. 이 파일이 스스로 금지한 바로 그것이고
-     * (「모양·크기·색을 여기 넣으면 이 함수가 있으나 마나다」), 19개를 옮겨도
-     * 색은 여전히 손으로 쓴 값이니 **아무것도 안 옮긴 것과 같다**.
-     *
-     * ## 왜 CSS 변수 재정의를 택하지 않았나
-     *
-     * 패널 안에서 `--color-text-*` 를 통째로 덮으면 축 없이 19개가 그냥
-     * 풀린다. 그런데 그 패널 안에는 컨트롤이 아닌 소비처(제목 · 통계 · 힌트
-     * 문장)가 훨씬 많고, **그 전부의 출력이 같이 바뀐다**. 재지 않은 회귀를
-     * 무료로 사는 셈이라 기각했다. 축은 명시적이고, 켠 자리만 바뀌고,
-     * 계약으로 잠글 수 있다.
-     *
-     * ## 이 축이 열 수 없는 것
-     *
-     * 패널 램프에는 **신호 3종도 인디고도 없다.** `accent`/`warning`/`danger`/
-     * `success` 는 `scope` 와 무관하게 전역 토큰을 그대로 낸다 — 신호는 바탕이
-     * 아니라 뜻으로 정해지기 때문이다. 계약이 이걸 잠근다.
+     * **What this axis cannot open.** The panel ramp has **no signal colours and
+     * no indigo**, so `accent`/`warning`/`danger`/`success` emit the global
+     * tokens regardless of `scope` — signals are decided by meaning, not ground.
+     * The contract locks this.
      */
     scope: {
-      /** 앱 전역 바탕(`--color-canvas` 계열) 위. 기본값이다. */
+      /** Over the app-wide ground (`--color-canvas` family). The default. */
       app: '',
-      /** 지도 패널(`--topology-v2-panel-surface`, `#17171c`) 위. */
+      /** Over the map panel (`--topology-v2-panel-surface`, `#17171c`). */
       panel: '',
     },
     /**
-     * **말줄임이 필요한가.**
+     * **Does it need to ellipsise.**
      *
-     * ## 왜 이 축이 필요한가 (2026-08-03 실측)
+     * **Why this axis exists** (measured 2026-08-03). All seven shapes are flex
+     * (`inline-flex`/`flex`), so `text-overflow: ellipsis` does not apply. At
+     * identical text and width, `inline-block` draws `…` while `inline-flex`
+     * **hard-clips** (the glyph simply stops). Controls that must stay fully
+     * legible when the width runs out — breadcrumbs, footprint rows, segmented
+     * tab labels — were therefore left outside the value layer (map-view round 3
+     * plus 5 segments).
      *
-     * 모양 일곱이 **전부 flex 계열**(`inline-flex`/`flex`)이라
-     * `text-overflow: ellipsis` 가 통하지 않는다. 실측: 같은 텍스트·같은 폭에서
-     * `inline-block` 은 `…` 를 그리고 `inline-flex` 는 **하드 클립**한다(글자가
-     * 잘린 자리에서 그냥 끊긴다). 그래서 「폭이 모자라면 줄여서라도 다 보여야
-     * 하는」 컨트롤 — 빵부스러기 · 발자국 행 · 세그먼트 탭 라벨 — 이 값 층 밖에
-     * 남았다(지도 뷰 라운드 3 + 세그먼트 5).
+     * Adding the `truncate` utility does not fix it. **The display has to
+     * change**, and that is the shape's job, not the consumer's.
      *
-     * `truncate` 유틸리티만 얹는 것으로는 못 고친다. **display 를 바꿔야
-     * 한다** — 그건 모양의 일이지 소비처의 일이 아니다.
-     *
-     * 켜면 `block` 이 된다(`inline-block` 이 아니라): flex 자식으로 놓였을 때
-     * `min-w-0`/`flex-1` 과 함께 줄어들어야 하는 자리가 실측 소비처의 전부다.
+     * When on it becomes `block`, not `inline-block`: every measured consumer
+     * sits as a flex child that must shrink alongside `min-w-0`/`flex-1`.
      */
     truncate: { true: 'block truncate', false: '' },
-    /** 눌려 있는 상태(`aria-pressed` / `aria-selected` 와 **짝**이어야 한다). */
     /**
-     * **쌓인 칸인가.** 이미 둥근 컨테이너(`overflow-hidden rounded-*`) 안에
-     * 세로로 쌓여 경계선으로 갈리는 칸이면 `true` — 자기 반경을 내면 안 된다.
+     * **Is it a stacked cell.** True when the control sits inside an
+     * already-rounded container (`overflow-hidden rounded-*`) stacked
+     * vertically and separated by dividers — it must not emit its own radius.
      *
-     * ## 왜 아홉째 모양이 아니라 축인가 (2026-08-06)
+     * **Why an axis and not a ninth shape** (2026-08-06). Using `row` as is
+     * brings `rounded-chip` along, so **the hover background rounds piecewise
+     * and gaps appear between cells** — the container already owns the corners
+     * and the inside claims them again. A ninth shape, meanwhile, would be a
+     * twin of `row` with **identical inset, alignment and touch floor**: the
+     * eight shapes are justified by a measured population, whereas this is a
+     * **placement condition** within the same population.
      *
-     * `row` 를 그대로 쓰면 `rounded-chip` 이 따라와서 **호버 배경이 조각조각
-     * 둥글어지고 칸 사이에 틈이 보인다** — 컨테이너가 이미 모서리를 맡고 있는데
-     * 안쪽이 또 맡는 것이다. 그렇다고 아홉째 모양을 만들면 `row` 와 **인셋·
-     * 정렬·터치 바닥이 전부 같은** 쌍둥이가 생긴다(모양 여덟의 근거는 실측
-     * 모집단인데, 이건 같은 모집단의 **배치 조건**이다).
-     *
-     * 전수 **9곳**: `DesktopVaultWelcome` 4 · `ProjectForm` · `DocsSidebarBody` ·
-     * `CommitDetail` · `SearchPalette` · `TopologyIndexTreeRow`.
+     * Inventory, **9 sites**: `DesktopVaultWelcome` ×4 · `ProjectForm` ·
+     * `DocsSidebarBody` · `CommitDetail` · `SearchPalette` ·
+     * `TopologyIndexTreeRow`.
      */
     stacked: { false: '', true: '' },
+    /** Pressed state — must be **paired** with `aria-pressed` / `aria-selected`. */
     active: { true: '', false: '' },
     /*
-     * ── **호버 축 셋** (2026-08-15 (11) — 전수 752선언 뒤 신설)
+     * ── **The three hover axes** (2026-08-15, ledger entry 11 — added after an
+     * inventory of 752 declarations)
      *
-     * 이 파일은 오래 「호버는 소비처의 몫」이라고 적어 뒀다. 그 규율이 낳은
-     * 실측이 이것이다: hover 선언 **752개 · 자리 511 · 파일 129**, 그리고 같은
-     * 「비활성 세그먼트 호버」 한 역할에 세 자리가 **서로 다른 잉크**를 썼다.
-     * 규율이 아니라 결원이었다 — `DISABLED`(2026-08-03) → `FOCUS`(08-05) 가
-     * 같은 발견을 이미 두 번 했고 이것이 세 번째다.
+     * This file long stated that hover belonged to the consumer. What that
+     * discipline produced: **752 hover declarations across 511 sites and 129
+     * files**, with three sites using **three different inks** for the single
+     * role "hovered inactive segment". It was a missing piece, not a discipline
+     * — `DISABLED` (2026-08-03) and `FOCUS` (08-05) made the same discovery
+     * twice already; this is the third.
      *
-     * **왜 한 축이 아니라 셋인가.** 자리별 실측이 답이다 — 호버를 가진 호출
-     * 309 중 **글자만 117 · 배경만 90 · 글자+테두리 61 · 글자+배경 31 ·
-     * 테두리만 6 · 셋 다 4**. 두 속성이 함께 필요한 자리가 **96**이라 열거형
-     * 하나로는 표현되지 않는다. 셋은 축 증식이 아니라 **서로 독립인 CSS 속성
-     * 셋**이고, 각 축의 선택지는 실측 다수파만 갖는다(합쳐도 넷).
+     * **Why three axes rather than one.** Of the 309 calls with hover: **text
+     * only 117 · background only 90 · text+border 61 · text+background 31 ·
+     * border only 6 · all three 4**. **96** sites need two properties together,
+     * which a single enum cannot express. These are three independent CSS
+     * properties, not axis proliferation, and each carries only the measured
+     * majority (four options in total).
      *
-     * **전부 옵트인이다.** 기본값으로 켜면 지금 호버가 아예 없는 자리들이
-     * 조용히 달라진다 — 보더만 세어도 **30곳**이다. 그건 축 신설이 아니라
-     * 전역 시각 변경이고, 그 판단은 이 축의 일이 아니다.
+     * **All three are opt-in.** Defaulting them on would silently change sites
+     * with no hover today — **30 sites** counting borders alone — which is a
+     * global visual change, not an axis addition.
      *
-     * **active 에서는 셋 다 안 낸다.** 「곧 선택될 것」과 「이미 선택된 것」이
-     * 같은 언어로 말하면 사용자는 자기가 뭘 골랐는지 모른다. 실측: 그렇게
-     * 겹친 자리에서 선택 보더가 호버에 덮여 **2.09 → 1.48** 로 약해지고 있었다
-     * (2026-08-15 (10) 이 두 자리를 손으로 고쳤고, 이 축이 그 가드를 구조로
-     * 흡수한다). 비활성 쪽은 `CONTROL_DISABLED_CLASS` 가 이미 무력화한다.
+     * **None of the three emit under `active`.** If "about to be selected" and
+     * "already selected" speak the same language, the user cannot tell what they
+     * picked; measured, the selection border weakened from **2.09 to 1.48** under
+     * hover where they overlapped (ledger entry 10 fixed two such sites by hand,
+     * this axis absorbs that guard structurally). On the disabled side
+     * `CONTROL_DISABLED_CLASS` already neutralises it.
      *
-     * 값은 **전부 기존 램프**다 — 새 토큰 0 · `globals.css` 변경 0.
+     * Values come **entirely from existing ramps** — 0 new tokens, 0 changes to
+     * `globals.css`.
      */
     /**
-     * 호버 잉크. 실측 331선언 중 상위 4종(앱·패널 × primary·secondary)이
-     * **95.2%** 이고, 그 4종은 `scope` 축이 이미 나르는 두 램프의 두 단이다.
-     * 그래서 이 축은 **밝기 단만** 고르고 값은 scope 가 정한다.
+     * Hover ink. Of 331 measured declarations the top 4 (app·panel ×
+     * primary·secondary) account for **95.2%**, and those 4 are two steps of the
+     * two ramps `scope` already carries. So this axis picks **only the
+     * brightness step** and `scope` decides the value.
      */
     hoverInk: { none: '', strong: '', secondary: '' },
     /**
-     * 호버 면 — 「지금 커서 아래」를 한 단 밝히는 것. 실측 216선언을 역할로
-     * 세면 이 중립 lift 가 **57%** 이고, 갈래(행이냐 부품이냐 · 앱이냐 패널이냐)는
-     * `shape`·`scope` 가 이미 나른다. 인디고 틴트 강화는 **축이 아니다** —
-     * 16종에 다수파가 없고, 틴트 단은 값이 아니라 위계 판정이다.
+     * Hover surface — raising "what is under the cursor" by one step. Counting
+     * the 216 measured declarations by role, this neutral lift is **57%**, and
+     * the branching (row vs part, app vs panel) is already carried by `shape`
+     * and `scope`. Intensifying an indigo tint is **not an axis**: 16 variants
+     * with no majority, and a tint step is a hierarchy judgement rather than a
+     * value.
      */
     hoverSurface: { none: '', lift: '' },
     /**
-     * 호버 테두리 — 경계가 또렷해지는 것. 선택지가 하나인 이유는 실측이다:
-     * 인디고 계열이 70%로 더 많지만 **13단으로 흩어져 있고 인접 단이 서로
-     * 구별되지 않는다**(합성 대비 1.0~1.2:1 — 이 저장소가 1.14 를 이미
-     * 「밝기로는 구분 안 됨」으로 기각했다). 아무도 못 가르는 13단은 정보가
-     * 아니라 소음이라 값 층이 고를 것이 없다.
+     * Hover border — the edge becoming crisper. There is one option because of
+     * measurement: the indigo family is more common at 70%, but it is **spread
+     * over 13 steps whose neighbours are indistinguishable** (composite contrast
+     * 1.0–1.2:1 — this repo has already rejected 1.14 as "not separable by
+     * brightness"). Thirteen steps nobody can tell apart are noise, not
+     * information, so the value layer has nothing to choose from.
      */
     hoverBorder: { none: '', strong: '' },
     /*
-     * ── **삭제된 축: `fixedHeight`** (2026-08-03 소유자 결정)
+     * ── **Removed axis: `fixedHeight`** (owner decision, 2026-08-03)
      *
-     * 여기 「높이를 고정한다」는 축이 있었다. 칩 램프가 30/34 를 내는데 계약이
-     * 32 를 못박아 «어느 조합으로도 2px 이 남는다» 는 것이 그 축의 근거였다.
-     * 그 진단이 한 칸 얕았다 — 남은 2px 은 **램프 값이 틀렸다는 신호**였지
-     * 축이 필요하다는 신호가 아니었다. 값을 32로 수렴시키자 축이 할 일이
-     * 없어졌고, 19개 소비처 중 18개가 **픽셀 이동 0** 으로 기본값에 흡수됐다.
+     * An axis here used to pin the height. Its justification was that the chip
+     * ramp emitted 30/34 while the contract demanded 32, so "no combination
+     * avoids a leftover 2px". That diagnosis was one level too shallow — the
+     * leftover 2px was **a signal that the ramp values were wrong**, not that an
+     * axis was needed. Converging the values on 32 left the axis with nothing to
+     * do, and 18 of its 19 consumers were absorbed by the defaults with **zero
+     * pixel movement**.
      *
-     * 이 자리에 다시 높이 축을 세우고 싶어지면 그 전에 물어라: **램프에
-     * 이미 있는 값인가?** 있으면 그건 축이 아니라 `size` 다.
+     * Before standing a height axis here again, ask: **is the value already on
+     * the ramp?** If it is, that is `size`, not an axis.
      */
     /*
-     * ── **삭제된 축: `inline`** (2026-08-04 체계석 판정 — docs/DECISIONS.md)
+     * ── **Removed axis: `inline`** (2026-08-04, design-systems seat —
+     * `docs/DECISIONS.md`)
      *
-     * 「문장 속인가」로 `min-h-11` 을 면제하던 불리언이 있었다. 두 겹으로
-     * 틀렸다: ① 면제하던 값(44)이 애초에 2.5.8 의 값이 아니었다(위 정정).
-     * ② 「문장 속」을 정하는 셋 — 형제 글자의 출처(마크다운·i18n) · used
-     * display(다른 파일의 부모가 정한다) · reflow — 이 전부 여는 태그 밖이라
-     * **정적으로 판정 불가**다. 실측: 14개 소비처 중 진짜 문장·캡션 행 속은 3곳뿐,
-     * 나머지 11곳은 「내 상자를 키우지 마라」는 일반 탈출구로 눌렀고 그중
-     * 16~17px 자리들을 어떤 검사도 못 봤다. 바닥이 24 로 서자 탈출구가 할
-     * 일이 없어졌다 — `fixedHeight` 와 같은 죽음이다.
+     * A boolean exempted "inside a sentence" from `min-h-11`. It was wrong twice
+     * over: ① the value it exempted (44) was never the 2.5.8 value (see the
+     * correction above); ② the three things that decide "inside a sentence" —
+     * where the sibling text comes from (markdown, i18n), the used display
+     * (decided by a parent in another file), and reflow — all live outside the
+     * opening tag, so it is **not statically decidable**. Measured: of 14
+     * consumers only 3 were genuinely inside a sentence or caption row, while
+     * the other 11 used it as a general "do not grow my box" escape hatch, and
+     * no check could see the 16–17px sites among them. Once the floor stood at
+     * 24 the escape hatch had nothing to do — the same death as `fixedHeight`.
      *
-     * 인라인 면제(WCAG 2.5.8 «in a sentence»)의 판정은 런타임 계기가 맡는다:
-     * `tests/e2e/touch-target-contract.spec.ts` 의 fine-pointer 검사가
-     * computed display 와 형제 글자로 판정한다. 산문 링크는 애초에 컨트롤이
-     * 아니다 — `.prose-link` 계약(`prose-link.contract.test.ts`) 소관.
+     * The inline exemption (WCAG 2.5.8 "in a sentence") is now decided by a
+     * runtime instrument: the fine-pointer audit in
+     * `tests/e2e/touch-target-contract.spec.ts` judges by computed display and
+     * sibling text. Prose links are not controls in the first place — that is
+     * the `.prose-link` contract's territory (`prose-link.contract.test.ts`).
      */
   },
   compoundVariants: [
     /*
-     * ── **호버 방출** (2026-08-15 (11)). 축은 「어느 단인가」만 고르고, 실제
-     * 값은 여기서 `scope`·`shape` 와 만나 정해진다. `active: false` 가 키의
-     * 절반이다 — 골라진 것은 호버를 안 받는다(위 축 주석의 2.09→1.48 실측).
+     * ── **Hover emission** (2026-08-15, ledger entry 11). The axes pick only
+     * which step; the actual value is decided here where they meet `scope` and
+     * `shape`. `active: false` is half of every key — what is selected takes no
+     * hover (the 2.09 → 1.48 measurement in the axis comment above).
      */
     { hoverInk: 'strong', scope: 'app', active: false, class: 'hover:text-[color:var(--color-text-primary)]' },
     { hoverInk: 'secondary', scope: 'app', active: false, class: 'hover:text-[color:var(--color-text-secondary)]' },
@@ -666,9 +669,10 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { hoverInk: 'secondary', scope: 'panel', active: false, class: 'hover:text-[color:var(--topology-v2-panel-text-secondary)]' },
 
     /*
-     * 면 — 「한 단 밝아진다」. 갈래는 실측이 정했다: rest 가 투명한 **행**은
-     * `overlay-1`, rest 가 이미 한 단 올라선 **부품**은 `overlay-2`(램프의
-     * 다음 칸), 패널 스코프는 그 스코프의 행 호버 토큰.
+     * Surface — "one step brighter". Measurement decided the branching: a **row**
+     * whose rest state is transparent gets `overlay-1`; a **part** whose rest
+     * state already sits one step up gets `overlay-2` (the next slot on the
+     * ramp); panel scope gets that scope's row-hover token.
      */
     { hoverSurface: 'lift', shape: 'row', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-1)]' },
     { hoverSurface: 'lift', shape: 'chip', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
@@ -677,27 +681,25 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { hoverSurface: 'lift', shape: 'segment', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
     { hoverSurface: 'lift', scope: 'panel', active: false, class: 'hover:bg-[color:var(--topology-v2-panel-row-hover)]' },
 
-    // 테두리 — 경계가 또렷해진다. 단 하나(위 축 주석의 「13단은 소음」 실측).
+    // Border — the edge sharpens. Exactly one option (see "13 steps are noise" above).
     { hoverBorder: 'strong', active: false, class: 'hover:border-[color:var(--color-border-strong)]' },
 
     /*
-     * ── 행의 반경은 **배치가 정한다** (2026-08-06).
-     *
-     * 홀로 서는 행은 자기 모서리를 갖고(`rounded-chip`), 이미 둥근 컨테이너 안에
-     * 쌓인 칸은 **갖지 않는다** — 안쪽이 또 둥글면 호버 배경이 조각조각 둥글어져
-     * 칸 사이에 틈이 보인다.
+     * ── A row's radius is **decided by its placement** (2026-08-06). A
+     * free-standing row owns its corners (`rounded-chip`); a cell stacked inside
+     * an already-rounded container does not — rounding the inside makes the
+     * hover background round piecewise and opens gaps between cells.
      */
     { shape: 'row', stacked: false, class: 'rounded-chip' },
-    // ── 크기: 모양마다 «크다» 의 뜻이 다르다. 정사각에 px 를 주면 정사각이 아니게 된다.
+    // ── Size: "large" means something different per shape. Give a square `px` and it stops being square.
     /*
-     * 칩 — 24 / 32 / 32. `md` 는 자연 높이 30 을 `min-h-8` 이 32 로 올리고,
-     * `lg` 는 `py` 를 한 단 줄여(1.5→1) 자연 30 을 만든 뒤 같은 32 에 세운다.
-     * `min-h` 는 **올리기만** 하므로 `py-1.5` 그대로면 34 가 남는다.
-     */
-    /*
-     * 칩 반경 — xs 만 micro(4px), 나머지는 chip(6px). 소비처 바이트가 근거다:
-     * 마이크로 태그 전수가 `rounded`(4px)를 입고 있었고, 옮기며 반경이 움직인
-     * 자리는 0이다.
+     * Chip — 24 / 32 / 32. `md` has a natural height of 30 that `min-h-8` lifts
+     * to 32; `lg` drops `py` one step (1.5 → 1) to reach a natural 30 and stands
+     * on the same 32. `min-h` only ever raises, so keeping `py-1.5` would leave 34.
+     *
+     * Chip radius — micro (4px) on `xs`, chip (6px) elsewhere. Consumer bytes are
+     * the evidence: every inventoried micro tag wore `rounded` (4px), and no site
+     * moved a radius during the migration.
      */
     { shape: 'chip', size: 'xs', class: 'rounded-micro min-h-6 gap-1 px-1.5 py-0.5 text-caption' },
     { shape: 'chip', size: ['sm', 'md', 'lg'], class: 'rounded-chip' },
@@ -708,31 +710,35 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { shape: 'icon', size: 'md', class: 'h-7 w-7' },
     { shape: 'icon', size: 'lg', class: 'h-8 w-8' },
     /*
-     * 행 — 28 / 36 / 44. 셋 다 자연높이가 이미 그 값이라(행간+패딩) 플로어는
-     * 픽셀 이동 0이다. `lg` 만 예외 — 자연 42는 어휘에 없는 값이라 `min-h-11`
-     * (`--touch-target-min` = `--control-row-h` 44)로 올린다. 소비처 0이라
-     * 이동도 0. 42를 쓰는 소비처가 생기기 전에 단을 램프에 세웠다.
+     * Row — 28 / 36 / 44. All three already had that natural height (leading +
+     * padding), so the floors move 0 pixels. `lg` is the exception: its natural
+     * 42 is not in the vocabulary, so it is lifted to `min-h-11`
+     * (`--touch-target-min` = `--control-row-h` 44). With 0 consumers that move
+     * is also 0 — the step was put on the ramp before anything could adopt 42.
      */
     { shape: 'row', size: ['xs', 'sm'], class: 'min-h-7 gap-1.5 px-2 py-1.5 text-label' },
     { shape: 'row', size: 'md', class: 'min-h-9 gap-2 px-2.5 py-2 text-body' },
     { shape: 'row', size: 'lg', class: 'min-h-11 gap-2.5 px-3 py-2.5 text-body-lg' },
     /*
-     * 필 — 같은 24 / 32 / 32. **여기가 실측이 소유자 가설과 갈린 자리다.**
-     * 필의 옛 자연 높이는 칩과 같은 24/30/34 가 아니라 **20 / 22 / 30** 이었다
-     * (`py-0.5` 라서). 그래서 `sm` 은 20 → 24 로 **올려야** 램프 바닥이자
-     * WCAG 2.5.8 최소 타깃(24×24)에 닿고, `md` 는 22 → 32 로 10px 이 움직인다.
-     * 소비처 9개(`sm`)·3개(`md`)의 실이동은 PR 본문의 표에 그대로 적혀 있다 —
-     * 「±2px 안」이라는 예상과 다른 값이라 숨기지 않는다.
+     * Pill — the same 24 / 32 / 32. **This is where measurement diverged from
+     * the owner's hypothesis.** A pill's old natural heights were not the chip's
+     * 24/30/34 but **20 / 22 / 30** (because of `py-0.5`). So `sm` has to be
+     * raised 20 → 24 to reach the ramp floor and the WCAG 2.5.8 minimum target
+     * (24×24), and `md` moves 22 → 32, a 10px shift. The real movement for the 9
+     * `sm` and 3 `md` consumers is tabulated in the PR body — it contradicted the
+     * "within ±2px" expectation, so it is not hidden.
      */
     { shape: 'pill', size: ['xs', 'sm'], class: 'min-h-6 px-2 py-1 text-caption' },
     { shape: 'pill', size: 'md', class: 'min-h-8 px-2.5 py-0.5 text-label' },
     { shape: 'pill', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
     /*
-     * 카드 — 32 / 36 / 40 (+4 등차, 전부 높이 어휘 안). 2차 전수가 찾은 자리:
-     * 자연높이가 sm 30 · md 34 로, 30은 어휘 밖이고 34는 크롬 잠금 단
-     * (`--docs-header-tile-size`)의 우연 점유였다. 플로어로 32/36에 세운다 —
-     * 한 줄짜리 카드만 +2px 움직이고(전수 표는 PR), 여러 줄 카드는 내용이
-     * 이미 플로어 위라 이동 0이다. `lg` 는 자연 40 = `--control-h-lg` 그대로.
+     * Card — 32 / 36 / 40 (+4 steps, all inside the height vocabulary). Found by
+     * the second inventory: natural heights were sm 30 and md 34, where 30 is
+     * outside the vocabulary and 34 was an accidental occupation of the
+     * chrome-locked `--docs-header-tile-size`. Floors stand them at 32/36 — only
+     * single-line cards move (+2px, table in the PR); multi-line cards already
+     * exceed the floor, so they move 0. `lg` keeps its natural 40 =
+     * `--control-h-lg`.
      */
     { shape: 'card', size: ['xs', 'sm'], class: 'min-h-8 gap-1.5 px-2.5 py-1.5 text-label' },
     { shape: 'card', size: 'md', class: 'min-h-9 gap-1.5 px-3 py-1.5 text-body' },
@@ -743,69 +749,79 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { shape: 'link', size: ['xs', 'sm'], class: 'text-caption' },
     { shape: 'link', size: 'md', class: 'text-label' },
     { shape: 'link', size: 'lg', class: 'text-body' },
-    // 세그먼트: `md` 가 실측 최빈(`px-2 py-1`/`text-label`, 24px)이라 6개가
-    // 픽셀 변화 0으로 들어온다. lg 는 32px. 보더가 없어 자연높이가 바닥을
-    // 뚫을 수 있다 — `min-h-6` 이 WCAG 2.5.8 바닥(24)에 세운다.
+    // Segment: `md` is the measured mode (`px-2 py-1`/`text-label`, 24px), so 6
+    // consumers arrive with zero pixel change. `lg` is 32px. Without a border the
+    // natural height can fall through the floor — `min-h-6` stands it on the
+    // WCAG 2.5.8 floor (24).
     //
-    // `sm` 은 2026-08-03 재정의됐다. 구 값(px-2 py-1 caption)은 소비처 0인
-    // 채 한 라운드를 다 돌았고, 실측 소비처(px-1 인셋의 마이크로 토글 —
-    // 트레일 「지난 길」· 알림 벨 · 패널 내보내기, 전수 4)의 최빈은
-    // `px-1 py-0.5`/`text-label`(md 와 같은 타입, 한 칸 좁은 인셋)이었다.
-    // caption 이던 옛 sm 을 지키면 xs 아래에 sm 이 서는 역전이 생긴다 —
-    // 소비처 0 값은 지키는 것이 아니라 고치는 것이다(#884 의 기준 그대로).
+    // `sm` was redefined 2026-08-03. The old value (px-2 py-1 caption) went a
+    // whole round with 0 consumers, while the measured consumers — micro toggles
+    // with a `px-1` inset (the footprint trail, the notification bell, panel
+    // export; 4 in total) — had a mode of `px-1 py-0.5`/`text-label` (the same
+    // type as md, one inset step tighter). Keeping the old caption `sm` would put
+    // `sm` below `xs`. A value with 0 consumers gets fixed, not preserved — the
+    // same bar as the correction above.
     { shape: 'segment', size: ['xs', 'sm'], class: 'min-h-6 gap-1 px-1 py-0.5 text-label' },
     { shape: 'segment', size: 'md', class: 'min-h-6 px-2 py-1 text-label' },
     { shape: 'segment', size: 'lg', class: 'min-h-8 px-3 py-1.5 text-body' },
 
-    // ── 테두리를 가진 모양의 기본 테두리색. `link`/`row`/`icon` 은 보더가 없다.
+    // ── Default border colour for the bordered shapes. `link`/`row`/`icon` have none.
     //
-    // chip/pill 이 `--color-divider`(0.08)에서 `--color-border-soft`(0.06)로
-    // 온 이유 (2026-08-03 체계석): 칩 반경 원소의 손 보더 전수가
-    // **border-soft/chrome-border 74 대 divider 18**(4:1)이었다. 램프 기본이
-    // 소수파(0.08)라서 칩을 옮길 때마다 보더가 조용히 한 단 진해졌다 —
-    // 다수를 찾지 않고 기본값을 정한 규칙 0 위반의 정정이다. card/tile 은
-    // 처음부터 border-soft 였으니 이제 네 모양이 같은 기본 위에 선다.
+    // Why chip/pill moved from `--color-divider` (0.08) to `--color-border-soft`
+    // (0.06) (2026-08-03, design-systems seat): across the inventory of
+    // hand-written borders on chip-radius elements it was **border-soft /
+    // chrome-border 74 vs divider 18** (4:1). The ramp default was the minority
+    // (0.08), so every chip migration silently darkened its border one step —
+    // this corrects a default that was set without finding the majority.
+    // card/tile were border-soft from the start, so all four shapes now share
+    // one default.
     { shape: 'chip', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'pill', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'card', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'tile', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'tile', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
 
-    // ── 눌려 있음: **인디고 하나**로만 표현한다. 새 hue 는 헌장 위반이다.
+    // ── Pressed: expressed with **the single indigo** only. A new hue violates the charter.
     { shape: 'chip', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
     { shape: 'pill', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
     { shape: 'card', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
     { shape: 'row', active: true, class: 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]' },
     { shape: 'icon', active: true, class: 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]' },
     { shape: 'link', active: true, class: 'text-[color:var(--color-text-primary)]' },
-    // 보더 없는 인셋의 눌림 — 상자 안에서 「지금 이것」을 인디고 틴트로만 말한다.
-    // 실측 소비처 12개 중 12개가 `--color-indigo-a16`/`a26` 틴트였다(보더 0).
+    // Pressed borderless inset — inside a box, "this one, now" is said with an
+    // indigo tint alone. All 12 measured consumers used the `--color-indigo-a16`
+    // or `a26` tint, and 0 used a border.
     { shape: 'segment', active: true, class: 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
 
     /*
-     * ── 두 번째 무채 램프. 패널 바탕(#17171c) 위에서 대비를 재서 넛지된 값이라
-     * 새 채색 시스템이 아니라 **같은 무채 램프의 두 번째 해**다. 신호 3종과
-     * 인디고는 여기 없다 — 뜻으로 정해지는 색은 바탕을 안 탄다.
+     * ── The second neutral ramp. Its values were nudged by measuring contrast
+     * over the panel ground (#17171c), so it is not a new colour system but **the
+     * same neutral ramp's second solution**. The three signals and indigo are not
+     * here — colours decided by meaning do not depend on the ground.
      */
     { scope: 'panel', tone: 'default', class: 'text-[color:var(--topology-v2-panel-text-tertiary)]' },
     /*
-     * `muted` 의 panel 컴파운드는 여기 **없다** (2026-08-03 삭제). 두 램프의
-     * quaternary 가 `#82828a` 로 수렴해(전역 상향, docs/DECISIONS.md) 재매핑이
-     * 같은 값을 내는 무노동 분기가 됐다 — 계약 시험의 처방대로 그 단은 tone
-     * 하나로 충분하다. 소비처는 그대로 `tone: 'muted', scope: 'panel'` 을 써도
-     * 된다(기본 muted 가 같은 값을 낸다, 픽셀 이동 0). 두 값이 다시 갈라지는
-     * 날은 계약 시험의 수렴 고정이 빨개져 이 컴파운드를 되살리라고 말한다.
+     * The panel compound for `muted` is **deliberately absent** (removed
+     * 2026-08-03). Both ramps' quaternary converged on `#82828a` (global raise,
+     * `docs/DECISIONS.md`), which made the remap a no-op branch emitting the same
+     * value — as the contract test prescribed, one tone is enough for that step.
+     * Consumers may keep writing `tone: 'muted', scope: 'panel'` (the default
+     * muted emits the same value, 0 pixel movement). If the two values ever
+     * diverge again, the contract test's convergence assertion turns red and
+     * tells you to restore this compound.
      */
     { scope: 'panel', tone: 'secondary', class: 'text-[color:var(--topology-v2-panel-text-secondary)]' },
     { scope: 'panel', tone: 'strong', class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
-    // 패널 안의 눌림도 패널 잉크를 쓴다 — 안 그러면 눌린 순간만 램프가 튄다.
+    // Pressed inside a panel also uses panel ink — otherwise the ramp jumps for
+    // exactly the pressed moment.
     { scope: 'panel', shape: 'segment', active: true, class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
     { scope: 'panel', shape: 'row', active: true, class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
     { scope: 'panel', shape: 'link', active: true, class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
 
     /*
-     * ── 채움 톤은 보더를 지운다. 여기 있어야 하는 이유는 순서다 — 위의
-     * `border-[…divider]` 컴파운드보다 **뒤**여야 tailwind-merge 에서 이긴다.
+     * ── A filled tone clears the border. It must sit here for ordering reasons:
+     * **after** the `border-[…divider]` compounds above, so it wins in
+     * tailwind-merge.
      */
     { tone: 'onAccent', class: 'border-transparent' },
   ],
@@ -827,12 +843,14 @@ export type ControlShape = NonNullable<VariantProps<typeof control>['shape']>;
 export type ControlSize = NonNullable<VariantProps<typeof control>['size']>;
 export type ControlTone = NonNullable<VariantProps<typeof control>['tone']>;
 /**
- * 호버 축 셋 — **부품 층이 그대로 받아 넘긴다**(2026-08-16).
+ * The three hover axes — **the primitive layer passes them straight through**
+ * (2026-08-16).
  *
- * 값 층에는 2026-08-15 부터 있었는데 `Chip`·`IconButton`·`RowButton` 은 그것을
- * 받을 자리가 없었다. 그래서 호버가 필요한 자리는 전부 `className` 으로 손수
- * 썼고(실측: `RowButton` 소비처 29곳 중 17곳), 그건 래칫이 막으려던 바로 그
- * 모양이다 — **값 층에 있는데 부품이 못 닿으면 없는 것과 같다.**
+ * They had been in the value layer since 2026-08-15, but `Chip`, `IconButton`
+ * and `RowButton` had no prop to receive them. So every site needing hover
+ * hand-wrote it through `className` (measured: 17 of `RowButton`'s 29
+ * consumers), which is exactly the shape the ratchet exists to stop —
+ * **a value the primitives cannot reach is a value that is not there.**
  */
 export type ControlHoverInk = NonNullable<VariantProps<typeof control>['hoverInk']>;
 export type ControlHoverSurface = NonNullable<VariantProps<typeof control>['hoverSurface']>;
@@ -840,82 +858,87 @@ export type ControlHoverBorder = NonNullable<VariantProps<typeof control>['hover
 
 export interface ControlClassOptions extends VariantProps<typeof control> {
   /**
-   * 이 컨트롤 **한 자리에만** 참인 것(자리잡기 · 폭 · 순서). 모양·크기·색을 여기
-   * 넣으면 이 함수가 있으나 마나다 — 그때는 램프에 스텝을 추가하는 것이 답이다.
+   * Only what is true of **this one site** — placement, width, order. Putting
+   * shape, size or colour here makes this function pointless; the answer then is
+   * to add a step to the ramp.
    */
   className?: string;
 }
 
 /**
- * 눌리는 원소의 className 을 낸다.
+ * Returns the className for a pressable element.
  *
  * ```tsx
- * <button type="button" className={controlClass({ shape: 'chip' })}>도메인</button>
- * <button type="button" aria-label="닫기" className={controlClass({ shape: 'icon', size: 'sm' })}>
+ * <button type="button" className={controlClass({ shape: 'chip' })}>Domain</button>
+ * <button type="button" aria-label="Close" className={controlClass({ shape: 'icon', size: 'sm' })}>
  * ```
- *
- * **호버·포커스는 여기서 안 낸다** — 빈도가 예산을 깎기 때문이다
- * (`.claude/rules/design.md`: 호버/포커스 표면은 `0~--motion-fast`). `transition-colors`
- * 만 싣고 실제 호버 색은 소비처가 정한다. 그래야 «이 컨트롤이 무엇을 바꾸는가»가
- * 자리마다 다를 수 있다.
  */
 export function controlClass({ className, ...variants }: ControlClassOptions = {}): string {
   return cn(control(variants), className);
 }
 
 /* ════════════════════════════════════════════════════════════════════
- * ## 폼 필드 — **둘째 cva** (2026-08-06, 디자인 카운슬 「체계」 + 「위계」)
+ * ## Form fields — **the second cva** (2026-08-06, design council: the
+ * design-systems and hierarchy seats)
  * ════════════════════════════════════════════════════════════════════
  *
- * ### 왜 아홉째 `shape` 가 아닌가
+ * ### Why not a ninth `shape`
  *
- * 세 가지가 전부 이 파일 자신의 규율이다:
+ * All three reasons are this file's own rules:
  *
- * 1. **모양 여덟의 근거는 `<button>` 419 전수다.** 위 머리말이 「일곱째를
- *    추가하려면 전수를 다시 세야 한다」고 못박았는데, 필드는 **다른 모집단**
- *    (폼 63)이고 축도 다르다.
- * 2. **죽은 조합이 두 번째 시스템이다.** `tone` 10단 중 필드에 뜻이 있는 것은
- *    사실상 0이다 — 필드 잉크는 primary 고정이고 플레이스홀더 quaternary 가
- *    정체성이라, `accent`·`onAccent`·`success` 필드는 소비처가 없다. 공유
- *    base 의 `FOCUS`(ring-inset)도 **눌리는 것의 관용구**이지 필드의 관용구
- *    (보더 스왑)가 아니다.
- * 3. **조합 산수.** `control-class.contract.test.ts` 의 전수는 지금 2,560
- *    케이스다. 아홉째 모양은 **+320** 을 만들고 그 대부분이 죽은 조합이다.
- *    별도 cva 는 **16**(frame 2 × size 4 × multiline 2)으로 끝난다.
+ * 1. **The eight shapes rest on an inventory of 419 `<button>`s.** The header
+ *    pins that adding a seventh requires re-running the inventory, and fields
+ *    are a **different population** (63 form controls) on different axes.
+ * 2. **Dead combinations are a second system.** Effectively none of the 10
+ *    tones mean anything for a field: field ink is fixed at primary and a
+ *    quaternary placeholder is the identity, so `accent`, `onAccent` and
+ *    `success` fields have no consumers. The shared base's `FOCUS`
+ *    (`ring-inset`) is likewise the idiom of a *pressable* thing, not of a field
+ *    (which swaps its border).
+ * 3. **Combination arithmetic.** The inventory in
+ *    `control-class.contract.test.ts` is currently 2,560 cases. A ninth shape
+ *    adds **+320**, mostly dead. A separate cva totals **16** (frame 2 × size 4
+ *    × multiline 2).
  *
- * ### 축이 셋인 근거 — 「위계」석이 같은 선을 독립적으로 그었다
+ * ### Why three axes — the hierarchy seat drew the same line independently
  *
- * 「위계」석이 실물을 열고 폼을 셋으로 갈랐다: **기록**(값이 디스크에 남는다 —
- * 눈은 입력에) · **조회**(있는 것에 도착한다 — 눈은 결과에) · **무대**(카드에
- * 쓰일 글자를 그 자리에서 쓴다).
+ * That seat opened the real screens and split forms into three: **recording**
+ * (the value lands on disk — the eye goes to the input), **look-up** (arriving
+ * at something that exists — the eye goes to the result), and **staging**
+ * (writing, in place, the text that will appear on a card).
  *
- * 앞의 둘이 `frame` 축이다. **합치면 안 되는 이유**가 그 자리에서 나왔다 —
- * 기록을 투명하게 만들면 폼이 사라지고, 조회를 무겁게 만들면 **입력이 결과를
- * 이긴다**(조회 10곳은 전부 트리·지도·목록이 주목 승자인 자리다).
+ * The first two are the `frame` axis, and they must not be merged: make
+ * recording transparent and the form disappears; make look-up heavy and **the
+ * input beats the result** (all 10 look-up sites are places where a tree, map or
+ * list is the attention winner).
  *
- * **무대는 이 규격 밖이다** — 공방의 이름 입력(23px)은 폼의 타입이 아니라
- * **만들어질 카드의 타입**이라, 크기가 장식이 아니라 정보를 나른다(Mackinlay
- * expressiveness). 상자에 넣는 순간 그 정보가 지워진다. 여기 등재해 두는 이유는
- * **다음 사람이 접지 않게** 하기 위해서다.
+ * **Staging is outside this spec** — the studio's name input (23px) carries the
+ * type of the **card being created**, not of the form, so its size carries
+ * information rather than decoration (Mackinlay expressiveness), and boxing it
+ * erases that. Recorded here so **the next person does not fold it in**.
  *
- * ### 새 토큰 0
+ * ### Zero new tokens
  *
- * 전부 기존 램프의 재사용이다. 높이는 `--control-h-{sm,md,lg}`(28/32/40)와
- * **1:1** 이고 그 1:1 을 계약이 CSS 에서 읽어 대조한다 — 「어휘 안에 있는가」로
- * 쓰면 안 된다. 실제로 프로브에서 「한 줄 md 를 `h-9`(36)로」가 어휘 검사를
- * **초록으로 통과**했다(36도 높이 어휘 안이라서).
+ * Everything reuses existing ramps. Heights are **1:1** with
+ * `--control-h-{sm,md,lg}` (28/32/40), and the contract reads that 1:1 out of
+ * the CSS rather than asking "is it in the vocabulary" — a probe proved why:
+ * "single-line md as `h-9` (36)" passed a vocabulary check **green**, because 36
+ * is also in the height vocabulary.
  */
 /**
- * ⚠️ **타입은 base 가 아니라 «크기와 짝»이다** — 화면을 보고 고쳤다.
+ * ⚠️ **Type is paired with size, not fixed in the base** — corrected by looking
+ * at the screen.
  *
- * 처음엔 `text-body`(12.5px) 하나로 냈다. `/project/new` 전후를 나란히 놓고
- * 보니 **주 폼에서 후퇴**였다 — 그 화면의 입력값이 종전 14px 였는데 12.5px 로
- * 내려가면서, **사용자가 입력한 값이 앱이 쓴 라벨(11px)과 거의 같은 급**이
- * 됐다. 폼에서 가장 잘 읽혀야 하는 것은 사용자가 넣은 값이다.
+ * The first version emitted a single `text-body` (12.5px). Placing `/project/new`
+ * before and after side by side showed a **regression in the primary form**: its
+ * inputs had been 14px, and dropping to 12.5px put **the value the user typed at
+ * nearly the same rank as the label the app wrote** (11px). In a form, the user's
+ * own value must be the most legible thing.
  *
- * 그래서 램프의 「크기 칸이 자기 행간을 같이 싣는다」와 같은 규율을 쓴다:
- * **넓은 칸(md·lg)은 `text-body-lg`(14) · 촘촘한 칸(xs·sm)은 `text-body`(12.5).**
- * 촘촘한 칸은 28px 상자라 14px 을 넣으면 위아래 여유가 사라진다.
+ * So it follows the ramp's own rule that a size step carries its own leading:
+ * **wide steps (md·lg) get `text-body-lg` (14), tight steps (xs·sm) get
+ * `text-body` (12.5).** A tight step is a 28px box, where 14px would leave no
+ * vertical room.
  */
 const fieldBase =
   'text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] transition-colors';
@@ -923,31 +946,32 @@ const fieldBase =
 const field = cva(`${fieldBase} ${DISABLED}`, {
   variants: {
     /**
-     * **누가 상자를 내는가.**
+     * **Who draws the box.**
      *
-     * `bare` 는 치수·보더·반경·터치 바닥을 **내면 안 된다** — 부모가 이미 상자를
-     * 냈고, 여기서 또 내면 그 상자를 안쪽에서 밀어낸다.
+     * `bare` **must not** emit dimensions, border, radius or a touch floor — the
+     * parent already drew the box, and emitting one here pushes against it from
+     * the inside.
      */
     frame: {
       /*
-       * **폭을 내지 않는다.** 처음엔 `w-full` 을 넣었다가 뺐다 — 소비처가
-       * 갈린다(`ProjectQuickEditPanel`·`WebManualConnectPanel` 은 `w-full`,
-       * `CreateNodeForm` 은 부모 grid 가 폭을 준다). base 가 폭을 내면 후자에서
-       * **0px 전환이 아니게 된다.**
+       * **Emits no width.** `w-full` was tried and removed: consumers differ
+       * (`ProjectQuickEditPanel` and `WebManualConnectPanel` want `w-full`,
+       * while `CreateNodeForm` gets its width from a parent grid). A base that
+       * emits width makes the latter **not a 0px migration**.
        */
       boxed:
         'atlas-touch-floor border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none',
       bare: 'bg-transparent text-body focus:outline-none',
     },
-    /** 한 줄인가 자라는가. **별개 모양이 아니다** — 보더·바탕·반경·초점·플레이스홀더가 같고 치수 문법만 다르다. */
+    /** Single line or growing. **Not a separate shape** — border, background, radius, focus and placeholder are identical; only the dimension grammar differs. */
     multiline: { false: '', true: 'resize-none' },
     size: { xs: '', sm: '', md: '', lg: '' },
   },
   compoundVariants: [
     /*
-     * 높이는 `--control-h-*` 와 1:1 이다: sm=28 · md=32 · lg=40.
-     * `xs` 는 높이 단이 아니라 **반경만 한 층 내리는** 티어다 — 위 `chip` 의
-     * `xs` 가 쓰는 문법 그대로이고, 소비처는 `DocFrontmatterBlock` 3곳이다.
+     * Heights are 1:1 with `--control-h-*`: sm=28 · md=32 · lg=40. `xs` is not a
+     * height step but a tier that **only drops the radius one level** — the same
+     * grammar `chip`'s `xs` uses. Consumers: 3 sites in `DocFrontmatterBlock`.
      */
     { frame: 'boxed', multiline: false, size: 'xs', class: 'h-7 rounded-micro px-2 text-body' },
     { frame: 'boxed', multiline: false, size: 'sm', class: 'h-7 rounded-chip px-2 text-body' },
@@ -965,55 +989,58 @@ export type FieldFrame = NonNullable<VariantProps<typeof field>['frame']>;
 export type FieldSize = NonNullable<VariantProps<typeof field>['size']>;
 
 export interface FieldClassOptions extends VariantProps<typeof field> {
-  /** 이 필드 **한 자리에만** 참인 것 — 폭(`w-full`·`flex-1`)과 자리잡기. 규격은 여기 넣지 않는다. */
+  /** Only what is true of **this one field** — width (`w-full`, `flex-1`) and placement. Spec values do not go here. */
   className?: string;
 }
 
 /**
- * 폼 필드의 className 을 낸다.
+ * Returns the className for a form field.
  *
  * ```tsx
- * <input className={fieldClass({ size: 'lg' })} />                       // 기록
- * <input className={fieldClass({ frame: 'bare', className: 'flex-1' })} /> // 조회
+ * <input className={fieldClass({ size: 'lg' })} />                       // recording
+ * <input className={fieldClass({ frame: 'bare', className: 'flex-1' })} /> // look-up
  * <textarea className={fieldClass({ multiline: true, size: 'lg' })} />
  * ```
  *
- * **폭을 안 낸다** — `boxed` 만 `w-full` 을 내고 `bare` 는 부모의 flex 배치에
- * 얹히므로 `flex-1`/`min-w-0` 은 자리의 몫이다. 위 `controlClass` 가 「자리잡기·
- * 폭은 className」이라고 정한 것과 같은 경계다.
+ * **Emits no width** — only `boxed` emits `w-full`; `bare` rides its parent's
+ * flex layout, so `flex-1`/`min-w-0` belong to the site. Same boundary
+ * `controlClass` above draws between spec and placement.
  */
 export function fieldClass({ className, ...variants }: FieldClassOptions = {}): string {
   return cn(field(variants), className);
 }
 
 /**
- * 필드 이름(라벨)의 규격 — **폼 전수를 옮기면서 갈래가 셋으로 드러났다** (2026-08-06).
+ * The spec for a field's name (label) — **migrating the whole form inventory
+ * revealed three kinds** (2026-08-06).
  *
- * | 갈래 | 무엇 | 규격이 있나 |
+ * | Kind | What | Has a spec |
  * |---|---|---|
- * | **이름 텍스트** | 「이름」·「카테고리」처럼 필드를 부르는 말 | ✅ 이 함수 |
- * | **행 전체가 눌리는 것** | 체크박스를 감싸 라벨 클릭이 곧 토글이 되는 행 | ✅ 이 함수(`row`) |
- * | **배치 전용 래퍼** | `block` · `flex flex-col gap-1` 처럼 자리만 잡는 것 | ❌ 규격이 아니다 |
+ * | **Name text** | the words that call the field ("Name", "Category") | ✅ this function |
+ * | **Whole pressable row** | a row wrapping a checkbox, where clicking the label toggles it | ✅ this function (`row`) |
+ * | **Layout-only wrapper** | `block`, `flex flex-col gap-1` — placement only | ❌ not a spec |
  *
- * 셋째 갈래를 여기 끌어들이지 않는다 — 자리만 잡는 `<label>` 에 타입·색을 얹으면
- * 그 안의 실제 이름 텍스트와 **둘이 규격을 다투게** 된다.
+ * The third kind stays out: putting type and colour on a `<label>` that only
+ * positions things makes it **compete with the real name text inside it**.
  *
- * ## 왜 잉크가 `secondary` 인가 — 「위계」석 실측이 뒤집은 값
+ * **Why the ink is `secondary`** — a value the hierarchy seat's measurement
+ * overturned. The field labels on `/project/new` were `text-caption` (9.5px) and
+ * quaternary while **the footnote right below them was 11px**: the field's name
+ * was one step smaller than its own footnote. So the user reads the 14px
+ * placeholder before the label, and that guidance disappears the moment they
+ * start typing — the exact failure NN/g's placeholder research describes.
  *
- * `/project/new` 의 필드 라벨이 `text-caption`(9.5px) · `quaternary` 였는데
- * **바로 아래 각주가 11px** 이었다. **필드의 이름이 자기 각주보다 한 단 작았다.**
- * 그래서 사용자는 라벨보다 14px 플레이스홀더를 먼저 읽고, 타이핑을 시작하는
- * 순간 그 안내가 사라진다(NN/g 플레이스홀더 연구가 말하는 실패 그대로).
- *
- * 2026-08-02 설정 시트에서 잡은 것과 **같은 과**다 — 종속 자리의 치수를 주
- * 역할에 그대로 들고 올라온 것. 규격: **이름은 `text-label`(11) 이상 · 잉크는
- * 각주(quaternary)보다 밝다.**
+ * The same class of defect as the settings sheet on 2026-08-02: dimensions from
+ * a subordinate slot carried up into a primary role. Spec: **the name is
+ * `text-label` (11) or larger, and its ink is brighter than the footnote's
+ * (quaternary).**
  */
 const fieldLabelVariants = cva('text-label text-[color:var(--color-text-secondary)]', {
   variants: {
     /**
-     * 행 전체가 눌리는가. 체크박스를 감싸면 **라벨이 곧 타깃**이라(WCAG 2.5.8)
-     * 24px 바닥과 손가락 바닥을 함께 진다.
+     * Is the whole row pressable. Wrapping a checkbox makes **the label itself
+     * the target** (WCAG 2.5.8), so it carries both the 24px floor and the touch
+     * floor.
      */
     row: {
       false: '',
@@ -1024,16 +1051,16 @@ const fieldLabelVariants = cva('text-label text-[color:var(--color-text-secondar
 });
 
 export interface FieldLabelOptions extends VariantProps<typeof fieldLabelVariants> {
-  /** 이 라벨 한 자리에만 참인 것 — 자리잡기·폭. 타입·색은 여기 넣지 않는다. */
+  /** Only what is true of this one label — placement and width. Type and colour do not go here. */
   className?: string;
 }
 
 /**
- * 필드 이름의 className 을 낸다.
+ * Returns the className for a field's name.
  *
  * ```tsx
- * <label htmlFor={id} className={fieldLabel()}>이름</label>
- * <label className={fieldLabel({ row: true })}><input type="checkbox" />허브로 표시</label>
+ * <label htmlFor={id} className={fieldLabel()}>Name</label>
+ * <label className={fieldLabel({ row: true })}><input type="checkbox" />Mark as hub</label>
  * ```
  */
 export function fieldLabel({ className, ...variants }: FieldLabelOptions = {}): string {

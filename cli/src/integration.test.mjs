@@ -1,5 +1,6 @@
-// R13 #40 — CLI 5 명령 통합 test. mcp 의 integration.test.mjs 패턴 reuse.
-// tmp vault fixture + cli spawn + stdout/exit code 검증.
+// Integration tests for the CLI commands, reusing the pattern of mcp's
+// integration.test.mjs: a tmp vault fixture, a CLI spawn, and assertions on stdout
+// and the exit code.
 //
 // Source-checkout only. Run via `pnpm integration:cli` or
 // `node --test cli/src/integration.test.mjs` from the repo root.
@@ -303,18 +304,20 @@ await test('init — vault config resolves the repository through a canonical pa
 });
 
 /**
- * `mcp-verify` 에 주는 **시간 상한** (2026-08-11).
+ * The **time limit** given to `mcp-verify` (2026-08-11).
  *
- * ⚠️ 넷 다 3,000ms 가 박혀 있었고, 그 값이 **기계 성능을 시험 조건으로 만들었다** —
- * 이 저장소에서 실측 4.1초(빌드가 도는 동안)라 로컬에서 세 번 연속 빨갰고 CI 에서는
- * 초록이었다. 그건 제품 신호가 아니라 그 순간의 부하다.
+ * ⚠️ All four used to hard-code 3,000ms, which **made machine speed a test
+ * condition** — measured 4.1s on this repository while a build was running, so it
+ * was red three times in a row locally and green in CI. That is load at that
+ * moment, not a product signal.
  *
- * **상한은 대기가 아니다** — verify 는 모든 응답이 오는 즉시 끝난다(30초를 줘도 4.1초에
- * 끝났다). 그래서 넉넉히 줘도 빠른 기계는 한 푼도 더 안 쓴다. 이 저장소가 이미 정해 둔
- * 규율(「게이트를 밀리초로 잠그지 않는다」)을 시험에도 적용하는 것이다.
+ * **A limit is not a wait** — verify finishes the instant every response arrives
+ * (given 30s it still finished in 4.1s). A generous limit therefore costs a fast
+ * machine nothing. This applies the discipline the repository already set (never
+ * lock a gate to milliseconds) to the tests as well.
  *
- * 그럼 무엇이 「너무 느리다」를 잡나 — 그건 시간이 아니라 **성능 예산 게이트**의 일이고
- * (`desktop:performance`), 여기서 재는 것은 「도구 전부가 응답하나」다.
+ * What then catches "too slow"? Not time — that is the **performance budget gate**
+ * (`desktop:performance`). What is measured here is "does every tool answer".
  */
 const MCP_VERIFY_TIMEOUT_MS = '30000';
 
@@ -338,27 +341,28 @@ function makeQuickStartRepoFixture() {
 }
 
 await test('init --locale=ko — Korean starter bodies, identical graph, English default unchanged', async () => {
-  // #73 — 한국어 UI 로 만든 볼트가 영어 산문으로 채워져 있으면 읽을 수 없다.
-  // 파일 세트와 frontmatter 는 로케일과 무관하게 같아야 한다 — 어떤 언어로
-  // 만들었든 같은 그래프가 나오고, 검색의 단일 진실원인 canonical `title` 도
-  // 그대로여야 하기 때문이다.
+  // A vault created through the Korean UI is unreadable if it is filled with
+  // English prose. The file set and the frontmatter must be identical regardless
+  // of locale: whichever language it was created in, the same graph comes out, and
+  // the canonical `title` — search's single source of truth — stays the same.
   const repo = mkdtempSync(join(tmpdir(), 'cli-init-locale-'));
   try {
     const ko = await run(['init', 'vault-ko', '--locale=ko'], { cwd: repo });
     assert.equal(ko.code, 0, `stdout: ${ko.stdout}\nstderr: ${ko.stderr}`);
     const koReadme = readFileSync(join(repo, 'vault-ko', 'README.md'), 'utf-8');
     assert.match(koReadme, /# 내 온톨로지 문서함/);
-    // canonical title 은 로케일과 무관하게 고정 — display_* 가 화면 이름을 맡는다.
+    // The canonical title is locale-independent; display_* carries the on-screen name.
     assert.match(koReadme, /title: My ontology vault/);
 
     const en = await run(['init', 'vault-en'], { cwd: repo });
     assert.equal(en.code, 0, `stdout: ${en.stdout}\nstderr: ${en.stderr}`);
     const enReadme = readFileSync(join(repo, 'vault-en', 'README.md'), 'utf-8');
-    // 기본값은 종전과 같은 영어 — 기존 사용자의 init 결과가 바뀌지 않는다.
+    // The default stays English, so existing users' init output does not change.
     assert.match(enReadme, /# My ontology vault/);
 
-    // UID는 템플릿에 고정하지 않고 실제 scaffold 때 발급한다. 한 vault 안의
-    // 모든 kind 문서(vault-readme 포함)가 고유하며 별도 init끼리도 겹치지 않는다.
+    // UIDs are minted at scaffold time rather than pinned in the template. Every
+    // kind document in one vault (vault-readme included) is unique, and separate
+    // inits never collide either.
     const starterPaths = [
       'README.md',
       'project.md',
@@ -384,21 +388,21 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       }
     }
 
-    // 두 볼트 모두 스키마상 유효하고 노드 수가 같다.
+    // Both vaults are schema-valid and hold the same number of nodes.
     for (const dir of ['vault-ko', 'vault-en']) {
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
       /*
-       * **디스크의 `.md` 전부가 볼트 문서인 것은 아니다** (2026-08-17).
+       * **Not every `.md` on disk is a vault document** (2026-08-17).
        *
-       * 볼트 스캔은 점으로 시작하는 폴더를 건너뛴다(`cli/src/lib/walk-vault.mjs`
-       * 27행, 그리고 그 규율의 출처는 `.claude/rules/local-first.md` — `.git/`
-       * 같은 시스템 폴더를 훑지 않는다는 약속이다). 스타터가 볼트에 넣는
-       * 절차 스킬(`.claude/skills/**\/SKILL.md`)이 정확히 거기 산다.
+       * The vault scan skips dot-prefixed folders (`cli/src/lib/walk-vault.mjs`,
+       * and the discipline comes from `.claude/rules/local-first.md` — the promise
+       * never to scan system folders such as `.git/`). The procedural skills the
+       * starter puts in the vault (`.claude/skills/**\/SKILL.md`) live exactly there.
        *
-       * 그래서 그냥 빼지 않고 **둘 다** 단언한다: 디스크에는 있고(안 깔리면
-       * 그것도 결함이다), 문서 수에는 안 잡힌다(잡히면 스킬이 온톨로지 문서로
-       * 오인된 것이다).
+       * So rather than dropping it, **both** are asserted: they exist on disk (not
+       * installing them is a defect too) and they are absent from the document
+       * count (counting them means a skill was mistaken for an ontology document).
        */
       const vaultRoot = join(repo, dir);
       const markdownEntries = readdirSync(vaultRoot, {
@@ -423,7 +427,7 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       );
     }
 
-    // 모르는 로케일은 조용히 영어로 떨어지지 않고 명확히 실패한다.
+    // An unknown locale fails explicitly rather than quietly falling back to English.
     const bad = await run(['init', 'vault-fr', '--locale=fr'], { cwd: repo });
     assert.equal(bad.code, 2);
     assert.match(stripAnsi(bad.stderr), /unknown --locale "fr": supported: en, ko/);
@@ -507,36 +511,43 @@ await test('init --quick-start — bootstrap failure reports written configs as 
 });
 
 /**
- * **갓 만든 볼트는 자기 검사를 통과해야 한다** (2026-08-11, 북극성 여정 실측).
+ * **A freshly created vault must pass its own checks** (2026-08-11, measured on
+ * the north-star journey).
  *
- * 이 결함은 코드를 읽어서가 아니라 **여정을 걸어서** 나왔다. `init --quick-start` 로
- * 만든 볼트에서 가이드가 시키는 다음 명령들을 그대로 돌렸더니 여덟 중 셋이 종료코드
- * 1이었다 — `health` · `mcp-verify` · `agent-brief`. 걸린 것은 경고 하나
- * (`missing-expected-field: domain`)뿐이었고, 그 문구가 *"트리에서 부모를 찾을 수
- * 있습니다"* 인데 프로젝트 노드는 **이미 그 역량들을 `contains:` 로 담고 있었다.**
+ * This defect came from **walking the journey**, not from reading code. Running
+ * the commands the guide names next, on a vault made by `init --quick-start`,
+ * three of eight exited 1 — `health`, `mcp-verify`, `agent-brief`. Exactly one
+ * warning was responsible (`missing-expected-field: domain`), and its wording was
+ * *"a parent can be found in the tree"* while the project node **already contained
+ * those capabilities via `contains:`**.
  *
- * 사람에게는 *"내가 뭘 잘못했나"* 이고 **에이전트에게는 연결 실패 신호**다 — 이 제품
- * 사용자의 절반이 에이전트인데, 설정 직후 `mcp-verify` 가 1을 내면 「안 붙었다」로
- * 읽힌다. 실제로는 서버도 도구 35개도 정상이었다.
+ * To a person that reads as *"what did I do wrong"*; to an agent it is **a
+ * connection-failure signal** — half this product's users are agents, and
+ * `mcp-verify` exiting 1 right after setup reads as "it did not connect". The
+ * server and all 35 tools were fine.
  *
- * 그래서 이 시험은 **첫 명령이 만든 상태가 다음 명령에서 실패로 보고되지 않는다**를
- * 잠근다. 도메인이 없는 것 자체는 그대로다(README 제목이 없는 저장소에서 경계를
- * 지어내지 않는다) — 바뀐 것은 **부모가 있는데 없다고 말하던 것**이다.
+ * So this test locks **the state the first command creates is never reported as a
+ * failure by the next one**. Having no domain is still reported (we do not invent
+ * boundaries in a repository whose README has no title) — what changed is
+ * **telling a node with a parent that it has none**.
  */
 /**
- * **1을 내는 그 순간에, 그게 실패가 아니라고 말한다** (2026-08-11, 워크스루 실측).
+ * **At the moment it exits 1, say that this is not a failure** (2026-08-11,
+ * measured in a walkthrough).
  *
- * `agent-brief` 의 종료코드 1은 「명령이 실패했다」가 아니라 **「그래프가 아직 덜
- * 여물었다」**는 신호다 — 그 판단은 이미 의도된 것이고 `--help` 에도, 코드 주석에도
- * 적혀 있다(그 주석은 이 오독을 *"agent-persona-2026-07 QA friction #5"* 로 기록해
- * 뒀다). 탈출구 `--exit-zero` 도 이미 있다.
+ * `agent-brief` exiting 1 does not mean "the command failed" — it signals **"the
+ * graph is not mature yet"**. That judgement was already deliberate and is written
+ * in `--help` and in the code comments (which recorded this misreading as
+ * *"agent-persona-2026-07 QA friction #5"*). The escape hatch `--exit-zero`
+ * already existed too.
  *
- * 문제는 **그 말이 마찰이 생기는 자리에 없었다**는 것이다: 갓 만든 볼트에서 1이 나는
- * 그 화면에는 아무 안내가 없었고, 가이드에도 `--exit-zero` 가 한 번도 안 나온다.
- * 사람은 `--help` 를 다시 읽지 않고, 에이전트는 1을 보면 대개 멈춘다.
+ * The problem was that **none of it was where the friction happens**: the screen
+ * showing the 1 on a fresh vault said nothing, and the guide never mentions
+ * `--exit-zero` once. People do not reread `--help`, and an agent seeing a 1
+ * usually stops.
  *
- * 그래서 계약은 그대로 두고 **화면에 한 줄**을 넣는다 — 이 저장소의 강등 카드 규칙과
- * 같은 모양이다(왜 + 어디로).
+ * So the contract is unchanged and **one line goes on screen** — the same shape as
+ * this repository's refusal cards (why, and where to go).
  */
 await test('agent-brief — readiness 로 1을 낼 때 그것이 실패가 아니라고 화면에서 말한다', async () => {
   const repo = makeQuickStartRepoFixture();
@@ -546,7 +557,7 @@ await test('agent-brief — readiness 로 1을 낼 때 그것이 실패가 아�
 
     const brief = await run(['agent-brief', 'ontology'], { cwd: repo });
     const clean = stripAnsi(brief.stdout) + stripAnsi(brief.stderr);
-    // 이 볼트는 얇아서 readiness 가 아직 ready 가 아니다 — 그래서 1이 나온다.
+    // This vault is thin, so readiness is not ready yet — hence the 1.
     assert.equal(brief.code, 1, `이 픽스처는 아직 ready 가 아니어야 한다:\n${clean}`);
     assert.match(
       clean,
@@ -565,8 +576,9 @@ await test('init --quick-start — fresh starter validates and reports health at
     assert.equal(init.code, 3, `stdout: ${init.stdout}\nstderr: ${init.stderr}`);
 
     /*
-     * ⚠️ **종료코드로 잠그면 안 된다** — `validate` 는 경고에 0을 낸다. 첫 판이 그래서
-     * 좁히기를 떼어도 초록이었다(통과가 증거가 아니다). 잠글 것은 **경고 0**이다.
+     * ⚠️ **Do not lock this with the exit code** — `validate` exits 0 on warnings.
+     * The first version was therefore green even with the narrowing removed (a pass
+     * was not evidence). What must be locked is **zero warnings**.
      */
     const validate = await run(['validate', 'ontology'], { cwd: repo });
     const validateOut = stripAnsi(validate.stdout) + stripAnsi(validate.stderr);
@@ -1840,8 +1852,9 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     const r = await run(['mcp-verify', 'ontology', '--timeout-ms', MCP_VERIFY_TIMEOUT_MS], { cwd: root });
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    // 값이 아니라 **넘긴 값이 화면에 그대로 나오는가**를 잠근다 — 상한 숫자를 못박으면
-    // 그 숫자를 바꾸는 날 이 시험이 제품 결함처럼 실패한다(방금 그랬다).
+    // Locks **that the value passed appears on screen**, not the value itself.
+    // Pinning the cap number makes this test fail like a product defect on the day
+    // that number changes (which is what just happened).
     assert.match(clean, new RegExp(`timeout=${MCP_VERIFY_TIMEOUT_MS}ms`));
     assert.match(clean, new RegExp(`tools/list ${EXPECTED_TOOL_COUNT}/${EXPECTED_TOOL_COUNT}`));
     assert.match(clean, new RegExp(escapeRegExp(expectedToolsListAnnotationSummary())));
@@ -2154,12 +2167,14 @@ await test('mcp-verify — times out a stalled verify script override', async ()
   );
 
   /*
-   * ⚠️ 벽시계 상한은 **절대값으로 박지 않는다.** 예전에는 `< 1000ms` 였는데,
-   * 그 1초 안에 node 프로세스 둘(CLI + verify 스크립트)이 기동까지 마쳐야 했다
-   * — 재는 대상은 25ms 짜리 시간 제한인데 바닥은 기계 속도였다. 같은 경로를
-   * **즉시 끝나는** 스크립트로 한 번 돌려 이 기계의 바닥을 재고, 거기에 여유를
-   * 더해 비교한다. 그러면 「제 시간 제한을 무시하고 기본값(15초)까지 기다린다」는
-   * 진짜 회귀는 여전히 잡히고, 느린 러너는 통과한다 (2026-08-17 검사 전수조사).
+   * ⚠️ A wall-clock limit is **never pinned as an absolute**. It used to be
+   * `< 1000ms`, and inside that second two node processes (the CLI and the verify
+   * script) had to finish booting — the subject under test is a 25ms time limit
+   * while the floor was machine speed. Instead, run the same path once with a
+   * script that **returns immediately** to measure this machine's floor, then
+   * compare against that plus headroom. The real regression ("it ignores its own
+   * time limit and waits for the 15s default") is still caught, and slow runners
+   * pass (full check inventory, 2026-08-17).
    */
   const instantScript = join(root, 'instant-verify.mjs');
   writeFileSync(instantScript, 'process.exit(1);', 'utf-8');
@@ -2888,8 +2903,9 @@ await test('add — --body= 명시 빈 문자열은 기본 본문으로 대체�
 });
 
 await test('validate — clean vault: exit 0', async () => {
-  // R14 — capability/element 는 domain 까지 박아야 missing-expected-field
-  // warning 없이 clean. canonical kind 인식 자체를 보는 fixture 라 domain 추가.
+  // A capability or element needs `domain` set to be clean of the
+  // missing-expected-field warning. This fixture tests canonical kind recognition
+  // itself, hence the added domain.
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ndomain: domains/auth\n---\n' },
     { slug: 'domains/auth', content: '---\nkind: domain\ntitle: Auth\n---\n' },
@@ -2917,8 +2933,8 @@ await test('validate — empty kind: exit 1 + empty-kind code', async () => {
 });
 
 await test('validate — 2+ 같은 code → "grouped by code" 요약 섹션 (R+)', async () => {
-  // 같은 missing-expected-field warning 이 3 file 에서 — grouped 섹션에
-  // "missing-expected-field — 3 occurrences" + 첫 3 file 노출되어야 함.
+  // The same missing-expected-field warning in 3 files — the grouped section must
+  // show "missing-expected-field — 3 occurrences" plus the first 3 files.
   const root = withVault([
     { slug: 'cap1', content: '---\nkind: capability\ntitle: One\n---\n' },
     { slug: 'cap2', content: '---\nkind: capability\ntitle: Two\n---\n' },
@@ -2929,10 +2945,10 @@ await test('validate — 2+ 같은 code → "grouped by code" 요약 섹션 (R+)
     // capability missing domain → warning, exit 0 (warning only)
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
-    // per-file detail 보존
+    // Per-file detail preserved
     assert.match(clean, /cap1\.md/);
     assert.match(clean, /cap2\.md/);
-    // grouped section 등장
+    // Grouped section appears
     assert.match(clean, /grouped by code/);
     assert.match(clean, /missing-expected-field · 3 occurrences/);
   } finally {
@@ -2941,7 +2957,7 @@ await test('validate — 2+ 같은 code → "grouped by code" 요약 섹션 (R+)
 });
 
 await test('validate — 1회짜리 code 는 grouped 섹션 안 보임 (per-file 만)', async () => {
-  // 단일 issue 는 per-file 출력만으로 충분 — grouped 섹션 노이즈 회피.
+  // A single issue needs only the per-file output — the grouped section would be noise.
   const root = withVault([
     { slug: 'bad', content: '---\nkind:\n---\n' }, // empty-kind error
   ]);
@@ -2972,7 +2988,7 @@ await test('validate --list-codes — issue code 목록 출력 (R+ cycle 44)', a
   ]) {
     assert.match(clean, new RegExp(code), `${code} 가 출력에 있어야`);
   }
-  // severity 표시
+    // Severity marker
   assert.match(clean, /error/i);
   assert.match(clean, /warning/i);
 });
@@ -2996,7 +3012,7 @@ await test('validate --fail-on=does-not-exist — stderr 에 unknown code 경고
   ]);
   try {
     const r = await run(['validate', root, '--fail-on=does-not-exist']);
-    // unknown code 경고가 stderr 에 보여야 (실행은 그대로 — 매치 없으니 exit 0).
+    // The unknown-code warning must appear on stderr (execution is unaffected — no match, so exit 0).
     assert.equal(r.code, 0);
     assert.match(r.stderr, /알려지지 않은 code|--list-codes/);
   } finally {
@@ -3020,8 +3036,8 @@ await test('validate --fail-on=empty-kind — empty-kind 있으면 exit 1 (R+ cy
 });
 
 await test('validate --fail-on=empty-kind — empty-kind 없으면 exit 0 (warning 무관)', async () => {
-  // 다른 warning (missing-expected-field) 만 있는 vault. --fail-on 이 그
-  // code 가 아니므로 exit 0.
+  // A vault carrying a different warning (missing-expected-field) only. `--fail-on`
+  // names another code, so exit 0.
   const root = withVault([
     { slug: 'capWithoutDomain', content: '---\nkind: capability\ntitle: A\n---\n' },
   ]);
@@ -3040,7 +3056,7 @@ await test('validate --fail-on=code1,code2 — 다중 code (CSV) 중 하나라�
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
   ]);
   try {
-    // missing-expected-field warning 만 있음. CSV 에 그 code 포함.
+    // Only the missing-expected-field warning is present; the CSV includes that code.
     const r = await run([
       'validate',
       root,
@@ -3055,8 +3071,8 @@ await test('validate --fail-on=code1,code2 — 다중 code (CSV) 중 하나라�
 });
 
 await test('validate --fail-on 이 --strict 보다 우선 — 다른 warning 은 fail 안 함', async () => {
-  // --strict 면 missing-expected-field warning → exit 1.
-  // --strict --fail-on=empty-kind 면 → empty-kind 만 보고 exit 0.
+  // With --strict, a missing-expected-field warning exits 1.
+  // With --strict --fail-on=empty-kind, only empty-kind counts, so exit 0.
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
   ]);
@@ -3093,8 +3109,8 @@ await test('validate --json --fail-on — summary.failOn 노출', async () => {
 });
 
 await test('validate --strict — warning 만 있어도 exit 1 (R+ cycle 42)', async () => {
-  // capability 의 domain 누락 → missing-expected-field warning. default 면
-  // exit 0 (errors 만 fail), --strict 면 exit 1.
+  // A capability missing its domain yields a missing-expected-field warning: exit 0
+  // by default (only errors fail), exit 1 under --strict.
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
   ]);
@@ -3105,7 +3121,7 @@ await test('validate --strict — warning 만 있어도 exit 1 (R+ cycle 42)', a
     assert.equal(strict.code, 1, '--strict: warning → exit 1');
     const clean = stripAnsi(strict.stdout);
     assert.match(clean, /missing-expected-field|warning/);
-    // strict 모드 표시.
+    // Strict-mode marker.
     assert.match(clean, /--strict/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3156,8 +3172,8 @@ await test('validate --json reports issue files relative to an absolute external
 });
 
 await test('validate --json — clean vault: scanned/problems[]/summary 노출, exit 0 (R+ cycle 40)', async () => {
-  // capability 는 domain 누락 시 missing-expected-field warning. project 로
-  // 정말 깨끗한 vault 만든다.
+  // A capability missing its domain warns with missing-expected-field, so the
+  // genuinely clean vault is built out of a project.
   const root = withVault([
     { slug: 'p', content: '---\nkind: project\ntitle: P\n---\n' },
   ]);
@@ -3213,16 +3229,16 @@ await test('validate --json — dangling graph reference warning', async () => {
 });
 
 /**
- * **그래프 참조는 노드로 resolve 되어야 한다** (2026-08-08 실측).
+ * **A graph reference must resolve to a node** (measured 2026-08-08).
  *
- * 종전엔 해소 대상이 «볼트의 모든 .md 파일» 이었다. 볼트에는 노드가 아닌
- * 마크다운(회의록·메모·초안)이 정상적으로 섞여 사는데, 그것들도 «있는
- * 슬러그» 로 쳐 준 것이다. 그래서 노드 → 잡문 관계가 **통과**했다.
+ * Resolution used to target «every .md in the vault». Markdown that is not a node
+ * (meeting notes, memos, drafts) legitimately lives in a vault, and those counted
+ * as «an existing slug» — so a node → loose-document relation **passed**.
  *
- * 침묵보다 나빴다: 그 상태에서 CLI 는 초록 글씨로
- * *"frontmatter · 그래프 참조 issue 0 ✓"* 라고 적었는데, 같은 볼트에서
- * `compile` 은 `unresolved 1 · issues 1` 을 냈다. **한 볼트를 두고 두 도구가
- * 반대로 말했고, 사람이 먼저 보는 쪽이 틀린 쪽이었다.**
+ * That was worse than silence: in that state the CLI printed
+ * *"frontmatter · graph reference issue 0 ✓"* in green while `compile` on the same
+ * vault reported `unresolved 1 · issues 1`. **Two tools said opposite things about
+ * one vault, and the one a person reads first was the wrong one.**
  */
 await test('validate — 그래프 참조가 잡문으로 resolve 되면 dangling 이다', async () => {
   const root = withVault([
@@ -3230,7 +3246,7 @@ await test('validate — 그래프 참조가 잡문으로 resolve 되면 danglin
       slug: 'capabilities/checkout',
       content: '---\nkind: capability\ntitle: 결제\nrelates: [notes-day-1]\n---\n',
     },
-    // 노드가 아닌 평범한 메모 — frontmatter 자체가 없다.
+    // An ordinary memo, not a node — it has no frontmatter at all.
     { slug: 'notes-day-1', content: '오늘 한 일 메모.\n' },
   ]);
   try {
@@ -3242,7 +3258,7 @@ await test('validate — 그래프 참조가 잡문으로 resolve 되면 danglin
       p.issues.some((i) => i.code === 'dangling-graph-reference'),
       `dangling 으로 안 잡혔다: ${JSON.stringify(p.issues)}`,
     );
-    // 왜 안 되는지 말해야 한다 — 파일이 없는 것과 노드가 아닌 것은 다른 문제다.
+    // Say why it is refused — a missing file and a non-node are different problems.
     const issue = p.issues.find((i) => i.code === 'dangling-graph-reference');
     assert.match(String(issue.message), /kind|node|노드/i, `이유를 안 말한다: ${issue.message}`);
   } finally {
@@ -3291,7 +3307,7 @@ await test('add — 새 노드 + duplicate throws', async () => {
     const written = readFileSync(join(root, 'capabilities/foo.md'), 'utf-8');
     assert.match(written, /kind: capability/);
     assert.match(written, /title: Foo/);
-    // 저작 스탬프 (2026-08-01 원장) — MCP add_concept 과 같은 기본값.
+    // Authorship stamp (decision ledger, 2026-08-01) — the same default as MCP add_concept.
     assert.match(written, /created_by: "?agent:unknown"?/);
 
     const r2 = await run([
@@ -3454,7 +3470,7 @@ await test('add --raw-slug — auto-prefix 명시 opt-out (R15)', async () => {
       root,
     ]);
     assert.equal(r.code, 0);
-    // --raw-slug 으로 root 에 직접
+    // Straight to the root with --raw-slug
     const written = readFileSync(join(root, 'baz.md'), 'utf-8');
     assert.match(written, /slug: baz/);
   } finally {
@@ -3463,8 +3479,9 @@ await test('add --raw-slug — auto-prefix 명시 opt-out (R15)', async () => {
 });
 
 await test('add element path-style → 거부 (2026-08-01 판정 「슬러그는 평평한 식별자다」)', async () => {
-  // 구 R15 는 path-style 을 cyan hint 로 통과시켰다 — 꼬리 별칭 충돌로 화면
-  // 노드가 접히는 결함(도그푸드 43건 실측)이라 이제 hard error 다.
+  // Path-style slugs used to pass with a cyan hint. They are a hard error now:
+  // tail-alias collisions folded nodes together on screen (43 cases measured in the
+  // dogfood vault).
   const root = withVault([]);
   try {
     const r = await run([
@@ -3650,7 +3667,7 @@ await test('find --kind 필터', async () => {
   }
 });
 
-// ── R14 import 명령 통합 ─────────────────────────────────────────────────
+// ── import command integration ───────────────────────────────────────────
 
 function withTmpDir() {
   return mkdtempSync(join(tmpdir(), 'cli-import-src-'));
@@ -3672,9 +3689,9 @@ await test('import — input frontmatter 의 kind 사용, schema arrayDefaults �
     const written = readFileSync(join(vault, 'capabilities/token-issue.md'), 'utf-8');
     assert.match(written, /kind: capability/);
     assert.match(written, /domain: domains\/auth/);
-    // schema arrayDefaults — capability 는 elements: [] 자동 추가.
+    // schema arrayDefaults — a capability gains elements: [] automatically.
     assert.match(written, /elements:/);
-    // body 보존.
+    // Body preserved.
     assert.match(written, /body\./);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -3700,9 +3717,9 @@ await test('import — frontmatter kind 없으면 --kind fallback', async () => 
     // R15 — auto-prefix default on, capability → capabilities/ folder
     const written = readFileSync(join(vault, 'capabilities/foo.md'), 'utf-8');
     assert.match(written, /kind: capability/);
-    // title 은 첫 H1 'Foo' 추출.
+    // The title is extracted from the first H1, 'Foo'.
     assert.match(written, /title: Foo/);
-    // body 보존.
+    // Body preserved.
     assert.match(written, /bare markdown/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -3717,7 +3734,7 @@ await test('import — kindless skip (kind 도 --kind 도 없음)', async () => 
     const file = join(src, 'note.md');
     writeFileSync(file, '# just a note\n', 'utf-8');
     const r = await run(['import', file, '--vault', vault]);
-    // 1 입력 모두 kindless → exit 1, 메시지에 kindless 명시.
+    // Every input is kindless → exit 1, with "kindless" named in the message.
     assert.equal(r.code, 1);
     const clean = stripAnsi(r.stderr + r.stdout);
     assert.match(clean, /kindless|no kind/);
@@ -3850,8 +3867,8 @@ await test('import — 잘못된 UID 행을 격리하고 뒤의 유효한 파일
 });
 
 await test('import — slug 충돌 시 default skip, --rename 시 -2 회피', async () => {
-  // 같은 slug 의 .md 가 vault 에 이미 있는 상태로 시작.
-  // R15 — auto-prefix default on, vault seed slug 도 capabilities/ 안.
+  // Start with a `.md` for the same slug already in the vault.
+  // auto-prefix is on by default, so the seeded slug sits under capabilities/ too.
   const vault = withVault([
     {
       slug: 'capabilities/foo',
@@ -3868,13 +3885,13 @@ await test('import — slug 충돌 시 default skip, --rename 시 -2 회피', as
       'utf-8',
     );
 
-    // default — auto-prefix on, slug 가 capabilities/foo 로 충돌.
+    // Default — auto-prefix on, so the slug collides at capabilities/foo.
     const r1 = await run(['import', file, '--vault', vault]);
     assert.equal(r1.code, 1);
     const c1 = stripAnsi(r1.stderr + r1.stdout);
     assert.match(c1, /conflict|already exists/);
 
-    // --rename — capabilities/foo-2.md 로 import 성공
+    // --rename — imports successfully as capabilities/foo-2.md
     const r2 = await run(['import', file, '--vault', vault, '--rename']);
     assert.equal(r2.code, 0);
     const written = readFileSync(
@@ -3901,7 +3918,7 @@ await test('import --dry-run — 디스크 변경 0', async () => {
     );
     const r = await run(['import', file, '--vault', vault, '--dry-run']);
     assert.equal(r.code, 0);
-    // vault 안에 파일 안 만들어졌어야.
+    // No file may have been created in the vault.
     assert.equal(
       existsSyncTest(join(vault, 'plan.md')),
       false,
@@ -3996,10 +4013,10 @@ function existsSyncTest(p) {
   }
 }
 
-// ── R15 graph-level commands (backlinks/query/rename/merge/delete) ───────
+// ── graph-level commands (backlinks/query/rename/merge/delete) ───────────
 //
-// 이 명령들은 mcp child_process spawn — relative path fallback (../../mcp/
-// src/index.js) 으로 monorepo dev 환경에서 작동.
+// These commands spawn mcp as a child process, working in a monorepo dev
+// environment through the relative-path fallback (../../mcp/src/index.js).
 
 async function buildGraphFixture() {
   const root = withVault([
@@ -4107,7 +4124,7 @@ await test('path — capabilities/bar → capabilities/foo (1 hop, via relates)'
     assert.match(clean, /1 hop/);
     assert.match(clean, /capabilities\/bar · Bar/);
     assert.match(clean, /capabilities\/foo · Foo/);
-    // bar.relates 가 foo 를 가리키므로 via=relates 로 노출
+    // bar.relates points at foo, so it surfaces with via=relates
     assert.match(clean, /relates/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4306,8 +4323,9 @@ await test('relate --why — 관계와 relation_notes 근거를 같은 쓰기로
     { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
   ]);
   try {
-    // parseArgs 가 why 를 반환 계약에서 빠뜨리면 관계만 쓰이고 근거가
-    // 조용히 증발한다 — 그 회귀를 파일 내용으로 잡는다.
+    // If parseArgs drops `why` from its return contract, the relation is written
+    // and the rationale silently evaporates — this catches that regression in the
+    // file contents.
     const r = await run(['relate', 'a', 'b', 'depends_on', root, '--why', 'A 의 쓰기 경로가 B 를 지난다']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const doc = readFileSync(join(root, 'a.md'), 'utf-8');
@@ -4331,7 +4349,7 @@ await test('CLI 쓰기(add/relate/import)는 감사 로그에 기록된다 (P2-�
     'utf-8',
   );
   try {
-    // dry-run 은 기록되면 안 된다.
+    // A dry run must not be recorded.
     const dry = await run(['relate', 'a', 'b', 'depends_on', root, '--dry-run', '--why', '감사 로그 없는 dry-run 근거']);
     assert.equal(dry.code, 0, `dry stdout: ${dry.stdout}\nstderr: ${dry.stderr}`);
     assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, 'dry-run must not log');
@@ -4352,7 +4370,7 @@ await test('CLI 쓰기(add/relate/import)는 감사 로그에 기록된다 (P2-�
     assert.equal(relEntry.why, 'A 는 B 를 지난다');
     assert.equal(relEntry.v, 1);
 
-    // agent-activity --log 로 사람이 읽는 경로도 확인.
+    // Check the human-readable path too, via agent-activity --log.
     const shown = await run(['agent-activity', root, '--log']);
     assert.equal(shown.code, 0);
     assert.match(stripAnsi(shown.stdout), /a --depends_on--> b/);
@@ -5340,16 +5358,16 @@ await test('graph diagnostic commands — reject invalid option values before MC
 
 await test('orphans — graph fixture 에서 referenced 노드 0건 보고', async () => {
   // buildGraphFixture: foo (referenced by bar.relates + auth.capabilities),
-  // bar (referenced by 0 — orphan? but auth domain.capabilities 가 references bar),
+  // bar (referenced by auth's domain.capabilities),
   // auth (referenced by foo/bar domain: inline parent).
-  // 정확한 그래프: foo, bar, auth 모두 referenced.
+  // So in the exact graph, foo, bar, and auth are all referenced.
   const root = await buildGraphFixture();
   try {
     const r = await run(['orphans', root]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /vault clean ✓|orphan 0/);
-    // domain / capability 모두 referenced — orphan 아님
+    // Both the domain and the capability are referenced — neither is an orphan
     assert.doesNotMatch(clean, /domains\/auth/);
     assert.doesNotMatch(clean, /capabilities\/foo/);
     assert.doesNotMatch(clean, /capabilities\/bar/);
@@ -5406,7 +5424,7 @@ await test('orphans --kind capability — 필터 적용', async () => {
     const r = await run(['orphans', root, '--kind', 'capability']);
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
-    // capability 인 orphan 0 (foo, bar 둘 다 referenced)
+    // Zero capability orphans (foo and bar are both referenced)
     assert.match(clean, /vault clean ✓|orphan 0/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -5901,18 +5919,18 @@ await test('reachability --plan --json — preserves traversal filters in query_
 });
 
 await test('overview — graph fixture 의 counts + 허브 정확', async () => {
-  // buildGraphFixture: 3 노드 (capabilities/foo, capabilities/bar, domains/auth)
+  // buildGraphFixture: 3 nodes (capabilities/foo, capabilities/bar, domains/auth)
   const root = await buildGraphFixture();
   try {
     const r = await run(['overview', root]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    // header — 3 노드 (vault-readme 없음)
+    // header — 3 nodes (no vault-readme)
     assert.match(clean, /3 노드/);
-    // KIND 분포 — capability 2 / domain 1
+    // KIND distribution — capability 2 / domain 1
     assert.match(clean, /capability\s+2/);
     assert.match(clean, /domain\s+1/);
-    // 허브 — degree 가 가장 큰 domains/auth 가 top
+    // Hubs — domains/auth has the highest degree, so it is top
     assert.match(clean, /domains\/auth/);
     assert.match(clean, /domains\/auth\s+· Auth/);
   } finally {
@@ -5933,7 +5951,7 @@ await test('overview --json — JSON 응답 graph/byKind/hubs 키 노출', async
     assert.equal(data.byKind.capability, 2);
     assert.equal(data.byKind.domain, 1);
     assert.ok(Array.isArray(data.hubs));
-    // domains/auth 가 hubs 안에 있어야 함 (degree 가장 큼)
+    // domains/auth must appear in hubs (highest degree)
     assert.ok(data.hubs.some((h) => h.slug === 'domains/auth'));
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -6054,7 +6072,7 @@ await test('overview --limit 3 — 허브 N 만 출력', async () => {
     const r = await run(['overview', root, '--limit', '3']);
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
-    // 허브 라인 (rank prefix 1-3 만) — 4+ 가 없어야
+    // Hub lines carry rank prefixes 1-3 only — nothing at 4+
     assert.match(clean, /허브 노드.*상위 3/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -6861,7 +6879,7 @@ await test('agent-brief --help — documents handoff and exit gates', async () =
   assert.match(clean, /--fallback-slow-ms N/);
   assert.match(clean, /OATLAS_AGENT_FALLBACK_TIMEOUT_MS=N/);
   assert.match(clean, /OATLAS_AGENT_FALLBACK_SLOW_MS=N/);
-  // #453 이 exit 의미를 0/1/2 서술로 확장 — 옛 한 줄 문구 대신 새 계약을 단언.
+  // The exit semantics were widened to a 0/1/2 description, so assert the new contract rather than the old one-liner.
   assert.match(clean, /0 = ready and healthy/);
   assert.match(clean, /pass --exit-zero to always exit 0/);
   assert.match(clean, /Tuning flags forward to query_ontology agent_brief/);
@@ -7295,7 +7313,7 @@ await test('node — graph fixture 의 capabilities/foo deep dive', async () => 
     // header
     assert.match(clean, /capability/);
     assert.match(clean, /slug\s+capabilities\/foo/);
-    // foo 는 bar 가 relates 로 reference + auth domain 의 capabilities 로 reference
+    // foo is referenced by bar via relates and by the auth domain via capabilities
     assert.match(clean, /INCOMING/);
     assert.match(clean, /capabilities\/bar|domains\/auth/);
   } finally {
@@ -7449,7 +7467,7 @@ await test('similar — title 매치로 graph fixture 의 비슷한 노드 발�
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /similar to:.*foo capability/);
-    // fixture 의 capabilities/foo 가 매치되어야 (title 'Foo' 에 매치)
+    // The fixture's capabilities/foo must match (on the title 'Foo')
     assert.match(clean, /capabilities\/(foo|bar)/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -7525,7 +7543,7 @@ await test('rename — dry-run preview, no disk change', async () => {
     assert.match(clean, /[1-9]\d* file\(s\) would change/);
     assert.match(clean, /capabilities\/bar\s+· Bar/);
     assert.match(clean, /relates changed/);
-    // foo.md 그대로 존재 (dry-run)
+    // foo.md still exists (dry run)
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), true);
     assert.equal(
       existsSyncTest(join(root, 'capabilities/foo-renamed.md')),
@@ -7556,7 +7574,7 @@ await test('rename --confirm — 파일 이동 + backlink redirect', async () =>
       existsSyncTest(join(root, 'capabilities/foo-renamed.md')),
       true,
     );
-    // bar 의 relates 가 redirect 됐는지
+    // Whether bar's relates was redirected
     const barText = readFileSync(
       join(root, 'capabilities/bar.md'),
       'utf-8',
@@ -7703,7 +7721,7 @@ await test('merge — dry-run preview', async () => {
     assert.match(clean, /[1-9]\d* file\(s\) would change/);
     assert.match(clean, /domains\/auth\s+· Auth/);
     assert.match(clean, /capabilities changed/);
-    // foo.md 그대로 존재 (dry-run)
+    // foo.md still exists (dry run)
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), true);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -7916,8 +7934,9 @@ await test('repo analysis commands — reject invalid numeric option values befo
 
 // ── analyze review/apply compatibility guard ────────────────────────────
 //
-// CLI는 analyze_repo_structure 후보를 표시만 한다. --apply는 기존 호출자의
-// 호환성 플래그일 뿐이며 constructionQualification lifecycle을 우회하지 않는다.
+// The CLI only displays analyze_repo_structure candidates. `--apply` is a
+// compatibility flag for existing callers and does not bypass the
+// constructionQualification lifecycle.
 
 function makeRepoFixture() {
   const repo = mkdtempSync(join(tmpdir(), 'cli-repo-'));
@@ -7930,7 +7949,7 @@ function makeRepoFixture() {
     ),
     'utf-8',
   );
-  // FSD-ish layout — features 한 두개 만들어 capability 후보 생성.
+  // FSD-ish layout — one or two features are enough to produce capability candidates.
   mkdirSync(join(repo, 'src', 'features', 'auth'), { recursive: true });
   mkdirSync(join(repo, 'src', 'features', 'billing'), { recursive: true });
   return repo;
@@ -8138,12 +8157,12 @@ await test('analyze --json — fails closed when analyze_repo_structure framewor
   }
 });
 
-// ── infer-imports --apply (R+ — agent-less depends_on landing) ──────────
+// ── infer-imports --apply (agent-less depends_on landing) ───────────────
 //
-// analyze --apply 의 짝. moduleEdges 를 depends_on 관계로 batch land.
+// The counterpart of analyze --apply: batch-lands moduleEdges as depends_on relations.
 
 function makeImportRepo() {
-  // 두 capability (a, b) 가 a → b 로 import. moduleEdges 가 1 개 나옴.
+  // Two capabilities (a, b) where a imports b, producing one moduleEdge.
   const repo = mkdtempSync(join(tmpdir(), 'cli-imp-'));
   mkdirSync(join(repo, 'src', 'a'), { recursive: true });
   mkdirSync(join(repo, 'src', 'b'), { recursive: true });
@@ -8289,7 +8308,7 @@ await test('infer-imports (default) — vault 변경 0', async () => {
 });
 
 await test('infer-imports --apply — endpoint 유무와 무관하게 자동 승격을 먼저 차단한다', async () => {
-  // vault 에 a 만 있고 b 가 없음 — a → b edge 는 fail 행, batch 자체는 OK.
+  // The vault has a but not b — the a → b edge is a failed row while the batch itself is OK.
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -8582,15 +8601,15 @@ await test('infer-imports --json — fails closed when unresolved reason payload
   }
 });
 
-// ── infer-imports --threshold N (R+ — weak edge 차단) ────────────────────
+// ── infer-imports --threshold N (blocking weak edges) ────────────────────
 
 function makeStrongImportRepo() {
-  // a 가 b 를 3번 import (count 3), c 를 1번 import (count 1).
+  // a imports b 3 times (count 3) and c once (count 1).
   const repo = mkdtempSync(join(tmpdir(), 'cli-thr-'));
   mkdirSync(join(repo, 'src', 'a'), { recursive: true });
   mkdirSync(join(repo, 'src', 'b'), { recursive: true });
   mkdirSync(join(repo, 'src', 'c'), { recursive: true });
-  // a 안 3개 파일이 b 를 import → b 는 count=3
+  // 3 files inside a import b → b has count=3
   writeFileSync(
     join(repo, 'src', 'a', 'one.ts'),
     "import { x } from '../b';\nexport const a1 = x;\n",
@@ -8606,7 +8625,7 @@ function makeStrongImportRepo() {
     "import { x } from '../b';\nexport const a3 = x;\n",
     'utf-8',
   );
-  // a/four 만 c 를 import → c 는 count=1 (weak)
+  // Only a/four imports c → c has count=1 (weak)
   writeFileSync(
     join(repo, 'src', 'a', 'four.ts'),
     "import { y } from '../c';\nexport const a4 = y;\n",
@@ -8629,7 +8648,7 @@ await test('infer-imports --threshold 3 — count < 3 edges 필터 (preview 모�
   const vault = withVault([]);
   const repo = makeStrongImportRepo();
   try {
-    // 사전 — threshold 없이는 a→b · a→c 두 edge 모두 보여야 함.
+    // Baseline — without a threshold, both a→b and a→c must show.
     const noThr = await run([
       'infer-imports',
       repo,
@@ -8644,7 +8663,7 @@ await test('infer-imports --threshold 3 — count < 3 edges 필터 (preview 모�
       `expected 2+ edges, got ${noThrData.moduleEdges.length}`,
     );
 
-    // threshold 3 — count < 3 인 a→c 는 제외.
+    // threshold 3 — a→c, with count < 3, is excluded.
     const r = await run([
       'infer-imports',
       repo,
@@ -8660,7 +8679,7 @@ await test('infer-imports --threshold 3 — count < 3 edges 필터 (preview 모�
     for (const m of data.moduleEdges) {
       assert.ok(m.count >= 3, `${m.from}→${m.to} count=${m.count} should be ≥3`);
     }
-    // thresholdApplied 메타데이터.
+    // thresholdApplied metadata.
     assert.ok(data.thresholdApplied);
     assert.equal(data.thresholdApplied.threshold, 3);
     assert.ok(data.thresholdApplied.filteredOut >= 1);
@@ -8671,8 +8690,8 @@ await test('infer-imports --threshold 3 — count < 3 edges 필터 (preview 모�
 });
 
 await test('infer-imports --threshold 3 --apply — count threshold도 semantic 승격 권한이 아니다', async () => {
-  // vault 에 a, b, c 모두 존재 — threshold 없으면 a→b, a→c 둘 다 land.
-  // threshold 3 면 a→b 만 land, a→c 는 filtered out (depend on c 안 생김).
+  // a, b, and c all exist in the vault — with no threshold both a→b and a→c land.
+  // At threshold 3 only a→b lands; a→c is filtered out (no depends_on c appears).
   const vault = withVault([
     { slug: 'capabilities/a', content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n' },
     { slug: 'capabilities/b', content: '---\nkind: capability\ntitle: B\ndomain: x\n---\n' },
@@ -8712,8 +8731,8 @@ await test('infer-imports --threshold 0 (또는 미지정) — 변경 없음', a
       '1',
       '--json',
     ]);
-    // threshold=1 이면 count >= 1 — 사실상 모든 edge. 필터 메타데이터도 안 붙음
-    // (코드가 threshold > 1 일 때만 필터).
+    // threshold=1 means count >= 1, i.e. effectively every edge, and no filter
+    // metadata is attached (the code only filters when threshold > 1).
     assert.equal(r.code, 0);
     const data = JSON.parse(r.stdout);
     assert.equal(data.thresholdApplied, undefined);
@@ -8743,12 +8762,12 @@ await test('infer-imports --threshold abc — 잘못된 입력 거부', async ()
   }
 });
 
-// ── bootstrap (R+ — analyze --apply + infer-imports --apply 합본) ───────
+// ── bootstrap (analyze --apply + infer-imports --apply combined) ─────────
 
 function makeFullRepo() {
-  // FSD-ish layout — cycle 35 fix 후 analyze 와 infer_imports 가 같은 slug
-  // ("auth" / "billing") 을 만들어 bootstrap 의 imports 단계가 endpoint 매치
-  // 가능. 이전 cycle 34 에선 생성된 generic layout 으로 우회했음.
+  // FSD-ish layout — analyze and infer_imports now produce the same slugs
+  // ("auth" / "billing"), so bootstrap's imports stage can match endpoints. An
+  // earlier version worked around this with a generic generated layout.
   const repo = mkdtempSync(join(tmpdir(), 'cli-bs-'));
   writeFileSync(
     join(repo, 'package.json'),
@@ -9040,7 +9059,7 @@ await test('bootstrap --json — analyze / imports / approval plan 모두 단일
 });
 
 await test('bootstrap --threshold 3 — 약한 import (count<3) 안 land', async () => {
-  // billing 는 1번만 import 됨 → threshold 3 면 import edge 안 land.
+  // billing is imported only once → at threshold 3 the import edge does not land.
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
@@ -9058,7 +9077,7 @@ await test('bootstrap --threshold 3 — 약한 import (count<3) 안 land', async
     // The review-only payload carries raw import evidence; no relation write is
     // attempted regardless of the threshold flag.
     assert.ok(Array.isArray(data.imports.moduleEdges));
-    // 자동 relation write는 항상 0이고, threshold는 review 후보에만 적용된다.
+    // Automatic relation writes are always 0, and the threshold applies to review candidates only.
     assert.equal(data.next.writes, 0);
   } finally {
     rmSync(vault, { recursive: true, force: true });

@@ -24,12 +24,12 @@ describe("hasAnyNodeOnScreen (#71)", () => {
   });
 
   it("하나라도 걸쳐 있으면 보정하지 않는다 — 사용자의 줌·위치 의도를 지우지 않는다", () => {
-    // 두 번째 노드만 화면 안쪽에 남게 카메라를 옮긴다.
+    // Move the camera so only the second node stays on screen.
     expect(hasAnyNodeOnScreen(cam(100, 40, 1), 200, 200, NODES)).toBe(true);
   });
 
   it("가장자리 여유 안쪽이면 '보인다' — 경계에서 카메라가 튀지 않게", () => {
-    // 노드를 오른쪽 경계 바로 바깥(+10px)에 두고 margin 24 를 준다.
+    // Put the node just outside the right edge (+10px) and give it a margin of 24.
     const width = 200;
     const justOutside = [{ x: width / 2 + 10, y: 0 }];
     expect(hasAnyNodeOnScreen(cam(0, 0, 1), width, 200, justOutside, 24)).toBe(true);

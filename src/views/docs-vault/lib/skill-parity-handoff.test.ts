@@ -34,9 +34,9 @@ describe('buildSkillParityHandoff', () => {
   });
 
   /**
-   * **죽은 채널을 부르지 않는다.** `npx ontology-atlas` / `ontology-atlas <cmd>`
-   * 는 레지스트리에 없어 404 다(`surfaces.md`). 그리고 우리는 이 컴퓨터의 CLI
-   * 체크아웃 경로를 모르므로, 아는 척 적으면 그 자체가 죽은 안내가 된다.
+   * **It never invokes a dead channel.** `npx ontology-atlas` and `ontology-atlas <cmd>` are not in
+   * the registry and 404 (`.claude/rules/surfaces.md`). And we do not know this machine's CLI
+   * checkout path, so writing one as if we did is itself dead guidance.
    */
   it('never emits a shell command it cannot guarantee', () => {
     const text = buildSkillParityHandoff([diverged, oneSided], ROOT);
@@ -46,8 +46,8 @@ describe('buildSkillParityHandoff', () => {
   });
 
   /**
-   * 자동 병합을 시키지 않는다 — 어느 사본이 최신인지는 **내용을 읽어야** 알고,
-   * 임의로 한쪽을 정본으로 삼으면 어제 배운 규율이 조용히 지워진다.
+   * It does not order an automatic merge — which copy is newer requires **reading the contents**,
+   * and arbitrarily treating one side as canonical silently erases a discipline learned yesterday.
    */
   it('asks the agent to judge, and to stop and ask when unsure', () => {
     const text = buildSkillParityHandoff([diverged], ROOT);
@@ -56,16 +56,16 @@ describe('buildSkillParityHandoff', () => {
   });
 
   /**
-   * 붙여넣는 쪽은 대개 **다른 창의 에이전트 세션**이고 그 세션의 작업
-   * 디렉터리가 이 볼트라는 보장이 없다. 상대 경로만 주면 그 세션은 엉뚱한
-   * 곳을 열거나, 더 나쁘게 같은 이름의 다른 파일을 고친다. 절대 경로는
-   * 이미 알고 있으니(브리지가 그것으로 읽었다) 반드시 싣는다.
+   * Whoever pastes this is usually **an agent session in another window**, with no guarantee its
+   * working directory is this vault. Given only relative paths, that session opens the wrong place
+   * or, worse, edits a different file with the same name. The absolute path is already known (the
+   * bridge read with it), so it is always included.
    */
   it('anchors every path to the absolute vault root', () => {
     const text = buildSkillParityHandoff([diverged], ROOT);
     expect(text).toContain(`${ROOT}/.claude/skills/`);
     expect(text).toContain(`${ROOT}/.agents/skills/`);
-    // 앵커 없는 맨몸 상대 경로가 남아 있으면 안 된다.
+    // No bare relative path may be left without its anchor.
     expect(text).not.toMatch(/(^|\s)\.claude\/skills\//m);
   });
 

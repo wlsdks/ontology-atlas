@@ -1,56 +1,52 @@
 /**
- * 이동 의사 신호 — "지금 화면을 떠난다, 프레임 예산을 비켜 달라".
+ * Navigation-intent signal — "I am leaving this screen, yield the frame budget".
  *
- * ## 왜 필요한가 (2026-08-19 실측)
+ * **Why (measured 2026-08-19).** How long a new screen took to appear after a rail
+ * tap **depended on where you left from**. From a quiet screen it was 90–200ms
+ * under 4× throttling; from an active map:
  *
- * 레일 탭을 눌렀을 때 새 화면이 뜨는 시간이 **출발지에 따라 갈렸다**. 조용한
- * 화면에서 출발하면 4배 스로틀에서 90~200ms 인데, 지도가 활동 중일 때
- * 출발하면 이렇게 됐다:
+ * | Departing state                       | Time to docs |
+ * |---------------------------------------|--------------|
+ * | 2D, 2,000 nodes                       | 194ms        |
+ * | **3D, 2,000 nodes (dome auto-rotating)** | **529ms**  |
+ * | **3D, 3,000 nodes**                   | **745ms**    |
  *
- * | 출발 상태 | 문서함까지 |
- * |---|---|
- * | 2D 2,000 노드 | 194ms |
- * | **3D 2,000 노드 (돔 자율 회전 중)** | **529ms** |
- * | **3D 3,000 노드** | **745ms** |
+ * The new screen is not slow. The map's rAF loop repaints in full every frame
+ * **right up to the moment it unmounts**, so the incoming screen's first render
+ * competes with those frames for the budget. The user has already said "I am
+ * leaving", which makes those frames **pictures nobody will see**.
  *
- * 원인은 새 화면이 느린 것이 아니다. 지도의 rAF 루프가 **떠나는 순간까지도**
- * 매 프레임 전면 재도색을 하고 있어서, 새 화면의 첫 렌더가 그 프레임들과
- * 프레임 예산을 다투는 것이다. 사용자는 이미 "여기를 떠나겠다"고 말했는데
- * 떠나는 화면이 계속 그려지는 셈이라, 그 프레임들은 **누구도 안 볼 그림**이다.
+ * **Why this shape.** The map must not know about the nav rail (a widget knowing
+ * about chrome is the reverse of the FSD import direction), and the rail must not
+ * know about the map's loop. So **the only thing both know is that navigation
+ * started**, and that alone travels as a shared-layer event. Any future surface
+ * with a standing loop subscribes to the same signal.
  *
- * ## 왜 이 모양인가
- *
- * 지도가 내비 레일을 알면 안 되고(위젯이 chrome 을 아는 방향은 FSD 역방향),
- * 레일이 지도의 루프를 알아도 안 된다. 그래서 **둘 다 아는 것은 «이동이
- * 시작됐다»는 사실 하나뿐**이고, 그것만 shared 층의 이벤트로 흘린다.
- * 상시 루프를 가진 표면이 앞으로 더 생겨도 같은 신호를 구독하면 된다.
- *
- * ## 스스로 풀린다 — 얼어붙는 실패 모드가 없다
- *
- * 신호를 받은 쪽은 «언제까지 양보할지»를 시각으로 기록하고 그때가 지나면
- * 저절로 복귀한다. 이동이 취소돼도(누르고 딴 데로 끌거나, 라우터가 같은
- * 주소라 아무 일도 안 일어나도) 지도가 영영 멈추는 일이 원리적으로 불가능하다
- * — `idle-gate.ts` 가 wake 배선 없이 설계된 것과 같은 이유다.
+ * **It releases itself — there is no freeze failure mode.** A listener records a
+ * deadline for how long to yield and returns on its own once it passes. Even if
+ * navigation is cancelled (press-and-drag-away, or a router no-op because the
+ * address is unchanged), the map cannot stop forever — the same reasoning behind
+ * `idle-gate.ts` being designed without wake wiring.
  */
 
-/** 이동이 시작됐다 (window 이벤트). */
+/** Navigation started (a window event). */
 export const NAVIGATION_INTENT_EVENT = "ontology-atlas:navigation-intent";
 
 /**
- * 신호 뒤 이만큼 동안 상시 루프가 프레임을 양보한다.
+ * How long a standing loop yields frames after the signal.
  *
- * 값의 근거: 4배 스로틀에서 관측된 가장 느린 전환이 745ms 였다. 그보다 넉넉히
- * 잡되, 이동이 «일어나지 않았을» 때 사람이 정지를 알아챌 만큼 길면 안 된다.
- * 실제로는 이동이 성사되면 지도가 언마운트되므로 이 상한이 쓰이는 것은
- * «취소된 이동» 뿐이고, 그때도 캔버스 위 포인터 움직임 한 번이면 즉시 풀린다.
+ * Chosen from the measurement above: the slowest observed transition under 4×
+ * throttling was 745ms, so this leaves headroom — but not so much that a person
+ * would notice the pause when navigation *does not* happen. In practice a
+ * successful navigation unmounts the map, so this cap only ever applies to a
+ * cancelled one, and a single pointer move over the canvas releases it at once.
  */
 export const NAVIGATION_YIELD_MS = 900;
 
 /**
- * 이동을 시작한다고 알린다. **클라이언트 이동 직전에** 부른다.
- *
- * 서버/프리렌더에서는 아무 일도 하지 않는다(정적 export 라 이 경로가 실제로
- * 밟힌다).
+ * Announce that navigation is starting. Call it **immediately before the client
+ * navigation**. A no-op on the server and during prerender — with static export
+ * that path is actually taken.
  */
 export function signalNavigationIntent(): void {
   if (typeof window === "undefined") return;

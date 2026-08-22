@@ -1,13 +1,12 @@
 /**
- * 모바일 BottomTabBar 의 한 탭 active 매칭 — pure helper.
+ * Active-tab matching for one mobile BottomTabBar tab — a pure helper.
  *
- * 정책:
- * 1. matchPrefixes 가 우선 — startsWith 매칭 — 루트 탭 ('/') 도
- *    ['/ontology'] prefix 위에서 활성화 (Concept map 하위 surface 진입 시
- *    아무 탭도 점등 안 되던 회귀 회피).
- * 2. prefix 가 안 잡히면 정확 일치 fallback — pathname 이 href 와 동일
- *    하거나 trailing-slash 변형까지 일치할 때만. 즉 '/' 일 때 홈 탭만,
- *    '/projects' 일 때 projects 탭만 활성되도록.
+ * 1. `matchPrefixes` wins, matched with `startsWith`. The root tab ('/') also
+ *    lights up under the `['/ontology']` prefix; without that, entering a
+ *    Concept-map sub-surface left no tab lit at all.
+ * 2. With no prefix hit, fall back to exact match — `pathname` equal to `href`
+ *    or its trailing-slash variant. That keeps '/' lighting only the home tab
+ *    and '/projects' only the projects tab.
  */
 export function isBottomTabActive(
   pathname: string,

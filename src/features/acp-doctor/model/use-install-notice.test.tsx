@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useInstallNotice } from './use-install-notice';
 
 /**
- * **설치가 끝났는데 다른 화면에 있었다면 알려 준다.**
+ * **When an install finishes while you are on another screen, say so.**
  *
- * #1175 는 「닫아 둔 사이의 완료」를 Rust 에 보관해 **돌아온 사람**에게 되살렸다.
- * 이 훅은 그 반대편이다 — **돌아오라고 말하는 것.**
+ * Storing "completion while closed" in Rust revived it for **someone who came back**. This hook is the
+ * other side — **telling them to come back.**
  */
 
 let emit: ((progress: unknown) => void) | null = null;

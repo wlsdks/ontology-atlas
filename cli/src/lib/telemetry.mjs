@@ -1,9 +1,10 @@
-// Slice 0 — magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9 북극성:
-// "흡수/init 직후 에이전트가 vault 노드를 인용하며 답하는 첫 순간" ≤5분 도달).
+// Magic-moment instrumentation for the north star in
+// docs/plans/PRODUCT-PLAN-2026-07.md §4/§9: reaching, within 5 minutes of
+// absorb/init, the first moment an agent answers while citing a vault node.
 //
 // LOCAL ONLY — this file never leaves the user's disk and is never
-// transmitted anywhere (PRODUCT-PLAN-2026-07.md §7 신뢰 헌장 ② "조용한 수집
-// 0"). It records two kinds of timestamp:
+// transmitted anywhere (docs/plans/PRODUCT-PLAN-2026-07.md §7, trust charter
+// clause ②: zero silent collection). It records two kinds of timestamp:
 //   - a baseline: `init`'s completion time, or `absorb --write`'s completion
 //     time if that ran more recently (either counts as "the moment the vault
 //     became worth asking").

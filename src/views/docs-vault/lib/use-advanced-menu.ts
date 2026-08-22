@@ -3,24 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * R11 #16 step 2 — DocsVaultPage 의 advanced dropdown menu state machine 추출.
- * - open / setOpen state
- * - 외부 영역 ref (containment check 용)
- * - outside-click 시 close (pointerdown 이벤트, 자기 영역 안 클릭은 무시)
- * - Escape 키 close
- * - cleanup (effect close 시 listener 제거)
+ * The advanced dropdown menu state machine for `DocsVaultPage`: open/setOpen state, a ref for the
+ * outer region (for the containment check), close on outside pointerdown (a click inside its own
+ * region is ignored), close on Escape, and listener cleanup.
  *
- * 이전엔 view 안 25 LOC 의 useEffect + state + ref 가 cross-cutting 으로
- * 흩어져 있었음. 한 hook 으로 캡슐화해 view 가 \`useAdvancedMenu()\` 한 줄로
- * 사용. 다른 dropdown / popover 가 있는 view 에서 재사용 가능 시점에
- * shared/lib 로 승격 (현재는 사용처 1, over-engineering 회피).
+ * It was 25 lines of cross-cutting effect, state, and ref scattered inside the view. Promote it to
+ * `shared/lib` once a second view with a dropdown or popover can reuse it — there is one consumer
+ * today.
  */
 export function useAdvancedMenu() {
   const [open, setOpenInternal] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
-  // ESLint 의 react-hooks/exhaustive-deps 가 useState setter 를 hook 결과
-  // (= 객체 method) 에서 stability 추적 못 하므로 useCallback 으로 wrap —
-  // ref-stable 명시. setState setter 는 본래 stable 이라 기능 영향 0.
+  // ESLint's react-hooks/exhaustive-deps cannot track the stability of a useState setter returned
+  // as an object method, so the `useCallback` wrapper states it is ref-stable. A setState setter is
+  // stable by construction, so there is no functional effect.
   const setOpen = useCallback<typeof setOpenInternal>(
     (next) => setOpenInternal(next),
     [],

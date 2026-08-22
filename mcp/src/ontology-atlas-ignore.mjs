@@ -1,18 +1,19 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// `.ontology-atlasignore` — vault 루트에 두는 gitignore-style 패턴 파일.
-// `materialize_external_element` 추천에서 제외할 reference 패턴을 한 줄에 하나.
-// 의도된 외부 코드 (예: 모든 src 디렉토리 하위) 가 noise 로 매번 surface 되는 걸 막는다.
+// `.ontology-atlasignore` — a gitignore-style pattern file at the vault root, one
+// reference pattern per line, excluded from `materialize_external_element`
+// suggestions. It stops deliberately external code (everything under a src
+// directory, say) surfacing as noise on every run.
 //
-//   - `#` 으로 시작하는 줄은 주석
-//   - 빈 줄 무시
-//   - `*` 는 `/` 를 제외한 모든 문자에 매치
-//   - `**` 는 디렉토리 포함 모든 문자에 매치
-//   - `?` 는 `/` 를 제외한 단일 문자
-//   - 행 끝의 `/` 는 strip (디렉토리 표시는 매칭 무영향)
+//   - lines starting with `#` are comments
+//   - blank lines are ignored
+//   - `*` matches any character except `/`
+//   - `**` matches any character including directory separators
+//   - `?` matches a single character except `/`
+//   - a trailing `/` is stripped (the directory marker does not affect matching)
 //
-// 부정 (`!pattern`) 은 1차 버전 미지원 — 필요해지면 추가.
+// Negation (`!pattern`) is unsupported for now.
 export function loadOntologyAtlasIgnore(vaultRoot) {
   const file = resolve(vaultRoot, '.ontology-atlasignore');
   if (!existsSync(file)) return [];
@@ -34,7 +35,7 @@ export function parseOntologyAtlasIgnore(text) {
 }
 
 /**
- * ref (예: `src/views/foo.tsx`) 가 patterns 중 하나라도 매치하는가?
+ * Does `ref` (e.g. `src/views/foo.tsx`) match any of the patterns?
  */
 export function refMatchesOntologyAtlasIgnore(ref, patterns) {
   if (!patterns || patterns.length === 0) return false;
@@ -50,27 +51,27 @@ function matchPattern(ref, pattern) {
 }
 
 function patternToRegex(pattern) {
-  // 1. regex special chars escape (except `*`, `?`, `/` — 우리 glob 의 의미 char).
+  // 1. Escape regex specials, except `*`, `?`, `/` — the meaningful chars of our glob.
   let r = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
 
-  // 2. `/**/` 중간 — `/(?:.*/)?` 로 *zero-or-more 디렉토리* 매칭.
-  //     예: `src/**/foo.ts` 가 `src/foo.ts` 와 `src/x/foo.ts` 둘 다 매치.
+  // 2. `/**/` in the middle → `/(?:.*/)?`, matching *zero or more directories*.
+  //     `src/**/foo.ts` therefore matches both `src/foo.ts` and `src/x/foo.ts`.
   r = r.replace(/\/\*\*\//g, '/__OATLAS_MID__');
-  // 3. `**/` 시작 — 같은 의미로 0+ 디렉토리 prefix.
+  // 3. Leading `**/` — the same, a 0+ directory prefix.
   if (r.startsWith('**/')) r = '__OATLAS_START__' + r.slice(3);
-  // 4. `/**` 끝 — 0+ 디렉토리 suffix (`src/**` 가 `src` 자체도 매치하나? gitignore
-  //     에선 디렉토리 안에 있는 것만 매치. 우리 ref 는 항상 path 라 `src/**` 는
-  //     `src/` 로 시작하는 모든 ref. 빈 경우 (`src` 단독) 는 매치 안 시킴).
+  // 4. Trailing `/**` — a 0+ directory suffix. gitignore matches only what is
+  //     inside the directory; our refs are always paths, so `src/**` means every
+  //     ref starting with `src/` and does not match the bare `src`.
   if (r.endsWith('/**')) r = r.slice(0, -3) + '__OATLAS_END__';
 
-  // 5. 남은 단순 `**` — `.*`
+  // 5. Any remaining bare `**` → `.*`
   r = r.replace(/\*\*/g, '.*');
   // 6. `*` — `[^/]*`
   r = r.replace(/\*/g, '[^/]*');
   // 7. `?` — `[^/]`
   r = r.replace(/\?/g, '[^/]');
 
-  // 8. placeholder 복원.
+  // 8. Restore the placeholder.
   r = r.replace(/__OATLAS_MID__/g, '(?:.*/)?');
   r = r.replace(/__OATLAS_START__/g, '(?:.*/)?');
   r = r.replace(/__OATLAS_END__/g, '/.*');

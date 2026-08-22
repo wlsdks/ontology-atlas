@@ -1,7 +1,9 @@
-// vault frontmatter validator — src/shared/lib/validate-vault-document.ts 와
-// mcp/src/validate.mjs 와 같은 contract. cli 가 별도 publish 라 cross-import
-// 불가능 → 자체 copy. drift 차단은 tests/contract/validate-vault-document.
-// contract.test.ts 의 fixture 매트릭스 (3-way 강제).
+// Vault frontmatter validator — same contract as
+// src/shared/lib/validate-vault-document.ts and mcp/src/validate.mjs. The CLI
+// ships separately and cannot cross-import, so this is a deliberate copy. Drift
+// is blocked by the fixture matrix in
+// tests/contract/validate-vault-document.contract.test.ts, which forces all
+// three to agree.
 
 import { parseFrontmatter } from './parse-frontmatter.mjs';
 import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema.mjs';
@@ -24,10 +26,10 @@ const GRAPH_ARRAY_KEYS = [
   'relates',
   'contains',
   'describes',
-  // `broader` (is_a / SKOS) — 공방과 함께 도입됐는데 이 리스트에서 빠져
-  // 있었다(감사 2026-07-25). 이 리스트는 canonical 정렬 검사와 dangling ref
-  // 검사를 **동시에** 구동하므로, 누락은 에이전트가 broader 에 오타 슬러그를
-  // 써도 CI 는 green 을 뜻했다. contract fixture 가 이 drift 를 고정한다.
+  // `broader` (is_a / SKOS) was missing from this list when it was introduced
+  // (audit 2026-07-25). This one list drives **both** the canonical-sort check and
+  // the dangling-reference check, so the omission meant CI stayed green while an
+  // agent wrote a typo slug into `broader`. The contract fixture pins it.
   'broader',
 ];
 
@@ -87,8 +89,8 @@ export function validateVaultDocument(raw) {
       message: `\`kind: ${rawKind.trim()}\` 는 인식되지 않는 값입니다.`,
     });
   } else {
-    // R14 — kind 별 expected 필드 (capability/element 의 domain) advisory.
-    // mcp/src/validate.mjs 와 동일 schema 모듈 사용.
+    // Advisory for per-kind expected fields (a capability's or element's domain),
+    // using the same schema module as mcp/src/validate.mjs.
     const trimmedKind = rawKind.trim();
     for (const key of missingExpectedFields(trimmedKind, frontmatter)) {
       issues.push({
@@ -113,36 +115,37 @@ export function validateVaultDocument(raw) {
 }
 
 /**
- * **이유 하나가 다음 이유들을 통째로 삼킨 자국**을 찾는다.
+ * Finds **the mark left when one rationale swallowed the ones after it.**
  *
- * ## 왜 (2026-08-16 검수 — 우리 볼트에서 실제로 발견)
- *
- * `domains/agent-integration.md` 는 관계 이유를 셋 선언해 뒀는데 읽어 보면
- * **하나**였다. 나머지 둘이 첫 값 안으로 글자로 삼켜져 있었다:
+ * **Why** (review 2026-08-16 — found in our own vault): `domains/agent-integration.md`
+ * declared three relation rationales, but reading it back yielded **one**. The
+ * other two had been swallowed into the first value as literal text:
  *
  * ```
  * capabilities/acp-runtime: "…permission gate., capabilities/skill-process-handoff: …"
  * ```
  *
- * 원인은 값 안의 **작은따옴표 한 개**(`user's`)였다. 값이 따옴표로 안 감싸여
- * 있으면 그 한 글자가 따옴표 상태를 열고, 그 뒤의 쉼표는 더 이상 구분자로
- * 안 읽힌다. 쓰는 쪽 규칙은 같은 날 고쳤지만(작은따옴표도 감싸게), **이미
- * 생긴 자국은 그대로 남는다.**
+ * The cause was **a single apostrophe** inside the value (`user's`). When a value
+ * is not wrapped in quotes, that one character opens a quote state and every comma
+ * after it stops reading as a separator. The writer's rule was fixed the same day
+ * (single quotes force quoting), but **the marks already written stay.**
  *
- * 그리고 그때 `validate` 는 **`issue 0`** 이라고 답했다 — 관계 배열은 멀쩡해서
- * 그래프는 정상이고, 사라진 것은 이유뿐이라 아무 검사도 볼 것이 없었다.
- * 「왜 그렇게 이었는지」는 이 제품이 가장 중요하게 여기는 기록인데, 그것이
- * 조용히 사라지는 길이 열려 있었던 것이다.
+ * And at that point `validate` answered **`issue 0`**: the relation arrays were
+ * intact, so the graph was fine, and only the rationales were gone — nothing any
+ * check was looking at. The record of *why two things were linked* is what this
+ * product values most, and there was an open path for it to vanish silently.
  *
- * 판정: 어떤 이유 값 안에 **이 노드가 실제로 선언한 다른 관계 대상**이
- * `대상: ` 꼴로 들어 있으면, 그건 문장이 아니라 삼켜진 항목이다. 이 조건은
- * 좁다 — 우연히 자기 이웃의 슬러그를 콜론까지 붙여 인용하는 문장은 없다.
+ * The test: if a rationale value contains **another relation target this node
+ * actually declared**, in `target: ` form, it is a swallowed entry rather than
+ * prose. The condition is deliberately narrow — no real sentence quotes a
+ * neighbour's slug with a trailing colon by accident.
  */
 function pushSwallowedRelationNoteIssues(frontmatter, issues) {
   const notes = frontmatter.relation_notes;
   if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return;
 
-  // 이 노드가 어디로 이어져 있다고 선언했는지 — 삼켜졌다면 그중 하나가 값 안에 있다.
+  // What this node declared itself linked to — if something was swallowed, one of
+  // these appears inside a value.
   const targets = new Set();
   for (const value of Object.values(frontmatter)) {
     if (!Array.isArray(value)) continue;
@@ -230,14 +233,17 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
 }
 
 /**
- * **포함이 세워 준 부모** — 다른 노드가 이 슬러그를 담고 있으면 트리에서 부모가 있다.
+ * **Parenthood established by containment** — if another node contains this slug,
+ * it has a parent in the tree.
  *
- * 2026-08-11: 북극성 여정을 걸어 보다 나왔다. `init --quick-start` 가 만든 볼트가
- * 자기 게이트를 통과하지 못했는데, 경고는 하나(`missing-expected-field: domain`)였고
- * 그 하나가 `health` · `mcp-verify` · `agent-brief` 셋을 빨갛게 만들었다. 그런데 그
- * 경고의 문구가 *"트리에서 부모를 찾을 수 있습니다"* 이고, 정작 그 볼트의 프로젝트
- * 노드는 이미 `contains:` 로 그 역량들을 담고 있었다 — **부모가 있는데 없다고 말한
- * 것이다.** 게이트가 파일 하나만 보기 때문이고, 그래서 볼트 단위에서 좁힌다.
+ * Found 2026-08-11 while walking the north-star journey. A vault created by
+ * `init --quick-start` failed its own gate on a single warning
+ * (`missing-expected-field: domain`), and that one warning turned `health`,
+ * `mcp-verify`, and `agent-brief` red. The warning's own wording is
+ * *"트리에서 부모를 찾을 수 있습니다"* ("so it can find a parent in the tree") —
+ * while that vault's project node already contained those capabilities via
+ * `contains:`. **It said there was no parent when there was one.** The gate looks
+ * at one file at a time, so the narrowing has to happen at vault level.
  */
 export function parentedSlugs(docs) {
   const parented = new Set();
@@ -255,15 +261,17 @@ export function parentedSlugs(docs) {
   return parented;
 }
 
-/** 포함이 부모를 세워 주는 키들 — 프로젝트/도메인이 아래를 담는 방향만 본다. */
+/** Keys through which containment establishes parenthood — only the downward
+ * direction, a project or domain containing what is below it. */
 const CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
 
 /**
- * 부모가 이미 있는 노드에서 **`domain:` 누락 경고만** 지운다.
+ * Clears **only the missing-`domain:` warning** on nodes that already have a parent.
  *
- * ⚠️ 없애는 것이 아니라 **좁히는 것**이다 — 아무도 안 담은 노드에는 그대로 남고,
- * 그때는 진짜로 부모가 없다. 다른 코드의 경고와 `domain` 이 아닌 기대 필드는
- * 건드리지 않는다(포함이 세워 주는 것은 부모뿐이다).
+ * ⚠️ This narrows the check, it does not remove it — a node nothing contains keeps
+ * the warning, and there it really has no parent. Warnings with other codes, and
+ * expected fields other than `domain`, are untouched: containment establishes
+ * parenthood and nothing else.
  */
 export function suppressParentedExpectedFieldIssues(issuesBySlug, docs) {
   const parented = parentedSlugs(docs);

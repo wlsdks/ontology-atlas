@@ -1,16 +1,17 @@
 /**
- * 첫 방문 폴더-우선 온보딩 (소유자 지시 2026-07-24) — "처음 화면을 열었을 때
- * 폴더 미지정 상태면 폴더 지정 유도부터 시작해야 한다. 건너뛰기는 제공."
+ * First-visit folder-first onboarding (owner instruction 2026-07-24): "when the
+ * first screen opens with no folder selected, it should start by prompting for a
+ * folder. Provide a skip."
  *
- * 첫 방문(샘플 모드 정착 + 이 플래그 미기록)에 사전 안내 시트
- * (`VaultOpenGuideSheet`)를 1회 자동으로 연다. 시트의 "다음에"(건너뛰기)를
- * 누르면 닫히고, 그때부터 자동 가이드 투어(HomePage)가 이어받는다 —
- * 투어의 stacked-transient 가드가 시트 열림 동안 발화를 미루므로 순서가
- * 자연히 "폴더 유도 → (건너뛰면) 투어" 가 된다.
+ * On a first visit (sample mode settled and this flag unrecorded) the guidance sheet
+ * (`VaultOpenGuideSheet`) auto-opens once. Pressing its "later" (skip) closes it and
+ * the automatic guided tour (HomePage) takes over from there — the tour's
+ * stacked-transient guard defers firing while the sheet is open, so the order is
+ * naturally "folder prompt → (if skipped) tour".
  *
- * localStorage(영구)인 이유: 폴더 지정 강권은 첫 만남 한 번이면 충분하다 —
- * 매 세션 다시 밀어붙이면 '둘러보기만' 하려는 사용자를 매번 가로막는다.
- * 수동 경로(폴더 CTA 클릭 → 같은 시트)는 항상 남는다.
+ * Why localStorage (permanent): pressing for a folder is enough once, at the first
+ * meeting. Pushing it every session blocks a user who only wants to look around. The
+ * manual path (pressing the folder CTA opens the same sheet) always remains.
  */
 import { readGuideAutoStart } from '@/shared/lib/guide-auto-start';
 
@@ -21,20 +22,22 @@ export function readVaultGuideAutoOpened(
 ): boolean {
   if (typeof window === 'undefined') return true;
   /*
-   * 전역 「자동 표시」 스위치가 **이 시트도** 덮는다 (2026-08-02, 소유자 실보고
-   * *"계속나와서 불편하네 테스트할때"*).
+   * The global "auto-display" switch covers **this sheet too** (2026-08-02, owner
+   * report: *"계속나와서 불편하네 테스트할때"* — it keeps appearing, which is
+   * annoying while testing).
    *
-   * 종전엔 그 스위치가 지도 투어와 목적지 안내 다섯만 봤고 이 시트는 자기 키만
-   * 봤다. 그래서 설정에서 안내를 껐는데도 폴더 없는 첫 화면에서는 시트가 그대로
-   * 떴다 — **사정거리가 짧은 룰은 룰이 없는 것과 같다**. 이 판정이 `shared/lib`
-   * 로 내려간 이유도 그것이다: 두 feature 가 같은 스위치를 봐야 하는데
-   * feature→feature import 는 FSD 가 막는다.
+   * That switch used to cover only the map tour and the five destination guides
+   * while this sheet looked at its own key alone. So with guidance turned off in
+   * settings, the sheet still appeared on a first screen with no folder — **a rule
+   * with too short a reach is the same as no rule**. That is also why this verdict
+   * moved down to `shared/lib`: two features must look at the same switch, and FSD
+   * forbids a feature→feature import.
    */
   if (!readGuideAutoStart()) return true;
   try {
     return window.localStorage.getItem(key) === '1';
   } catch {
-    // private mode — 자동 오픈을 포기(true 취급)해 반복 강권을 막는다.
+    // Private mode — give up on auto-opening (treated as true) to avoid pressing repeatedly.
     return true;
   }
 }

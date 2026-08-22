@@ -4,13 +4,15 @@ import { buildOntologyTree } from "@/shared/lib/ontology-tree";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TopologyRealmLedger, type RealmBoundaryRow } from "./TopologyRealmLedger";
 
-// 온톨로지 블록 export 액션은 자체 vault(useLocalVault)/i18n 컨텍스트가 필요한
-// 자립 모듈 — 동작은 `RealmBlockExportAction.test.tsx` 가 단위 검증하므로
-// 여기선 스텁 (TopologyIndexPanel.test 의 FirstRunStarterModule 스텁과 같은
-// 패턴). 이 파일은 렛저가 액션을 mount 한다는 사실만 본다.
+// The ontology block export action is a self-contained module needing its own vault
+// (useLocalVault) and i18n context — its behaviour is unit-verified by
+// `RealmBlockExportAction.test.tsx`, so it is stubbed here (the same pattern as the
+// FirstRunStarterModule stub in TopologyIndexPanel.test). This file only checks that
+// the ledger mounts the action.
 const exportActionProps = vi.hoisted(() => ({ current: null as unknown }));
-// 이 위젯은 라벨을 prop 으로 받지만 하위 행이 화면 언어를 읽는다
-// (라틴 아이브로를 한글에 얹지 않기 위한 판정, `shared/lib/latin-eyebrow`).
+// This widget receives labels as props, but the rows below it read the screen's
+// language (the decision that keeps a Latin eyebrow off Hangul,
+// `shared/lib/latin-eyebrow`).
 vi.mock("next-intl", () => ({
   useLocale: () => "ko",
   useTranslations: () => (key: string) => key,

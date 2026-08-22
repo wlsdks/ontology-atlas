@@ -19,9 +19,9 @@ export interface TabBarItem {
   /** Engraved count next to the label (e.g. node count) — omit for tabs with no count. */
   count?: string | number;
   /**
-   * 배지 숫자가 무엇을 세는지 한 마디 — `title` 로만 노출한다(잉크 0).
-   * 라벨 없는 숫자는 사용자가 화면 밖에서 단위를 추측하게 만든다. 카운트가
-   * 없는 탭에서는 무의미하므로 생략한다.
+   * One phrase naming what the count counts, exposed through `title` only so it costs no
+   * ink. An unlabelled number leaves the user guessing at the unit. Omit it on tabs that
+   * have no count.
    */
   countTitle?: string;
 }
@@ -38,21 +38,21 @@ export function TabBar({
   onSelect: (key: string) => void;
   ariaLabel: string;
   /**
-   * `id` / `aria-controls` 의 접두사. **두 번째 소비처가 생긴 순간 필수가 된
-   * 값이다** — 종전엔 `insights` 가 박혀 있어서, 프로젝트 상세가 이 탭바를
-   * 재사용하자 선택된 탭의 `aria-controls` 가 존재하지 않는
-   * `#insights-tabpanel-overview` 를 가리켰다(axe `aria-valid-attr-value`,
-   * WCAG 4.1.2 — 2026-08-04 볼트 물린 감사에서 실측).
+   * Prefix for `id` and `aria-controls`. **It became mandatory the moment a second consumer
+   * appeared**: this used to be hard-coded to `insights`, so when the project detail page
+   * reused the tab bar, the selected tab's `aria-controls` pointed at a non-existent
+   * `#insights-tabpanel-overview` (axe `aria-valid-attr-value`, WCAG 4.1.2 — measured in
+   * the 2026-08-04 audit against a connected vault).
    *
-   * 인사이트에서 안 걸린 이유는 그쪽이 **활성 탭의 패널만** 렌더하고 axe 는
-   * 선택된 탭의 `aria-controls` 만 해석을 요구하기 때문이다. 즉 이 결함은
-   * «두 소비처 중 한쪽에서만» 뜨는 종류였고, 래칫이 그 한쪽 라우트를
-   * 실재하지 않는 슬러그로 열고 있어 한 번도 렌더된 적이 없었다.
+   * It never surfaced on insights because that page renders **only the active tab's
+   * panel**, and axe requires only the selected tab's `aria-controls` to resolve. So this
+   * defect could appear at just one of the two consumers — and the ratchet was opening that
+   * route with a slug that did not exist, so it had never rendered at all.
    *
-   * ⚠️ **소비처는 같은 접두사로 패널을 그려야 한다** —
-   * `id={`${idPrefix}-tabpanel-${key}`}` + `role="tabpanel"` +
-   * `aria-labelledby={`${idPrefix}-tab-${key}`}`. 안 그리면 같은 위반이
-   * 그대로 돌아온다.
+   * ⚠️ **Consumers must render the panel with the same prefix** —
+   * `id={`${idPrefix}-tabpanel-${key}`}` plus `role="tabpanel"` plus
+   * `aria-labelledby={`${idPrefix}-tab-${key}`}`. Skip it and the violation returns
+   * unchanged.
    */
   idPrefix?: string;
 }) {
@@ -105,10 +105,10 @@ export function TabBar({
       role="tablist"
       aria-orientation="horizontal"
       aria-label={ariaLabel}
-      // overflow-x-auto — 좁은 폰(<=360px)에서 탭 라벨+카운트 합이 뷰포트를
-      // 넘을 수 있다(인사이트는 5탭). 탭을 줄바꿈하면 언더라인
-      // 탭바 자체 정체성이 깨지므로 AppSettingsMenu 의 tablist 와 같은
-      // 패턴(내부 가로 스크롤)으로 페이지 레벨 overflow 를 막는다.
+      // On narrow phones (<=360px) the labels plus counts can exceed the viewport
+      // (/ontology/insights has five tabs). Wrapping the tabs would destroy the underline
+      // tab bar's identity, so this scrolls horizontally inside itself — the same pattern
+      // AppSettingsMenu's tablist uses — and page-level overflow never happens.
       className="flex gap-7 overflow-x-auto border-b border-[color:var(--color-divider)]"
     >
       {items.map((item, index) => {
@@ -130,18 +130,18 @@ export function TabBar({
             onClick={() => activateTab(item.key)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             /*
-             * ⚠️ **아래 여백은 램프에 착지한다** (2026-08-08 실측).
+             * ⚠️ **The bottom padding lands on the ramp** (measured 2026-08-08).
              *
-             * 종전엔 `pb-[11px]` 이었다 — 4px 배수도 2px 반스텝도 아닌, 그
-             * 자리에서 손으로 고른 값. 그래서 탭 높이가 **29px**(행간 16 +
-             * 아래 여백 11 + 밑줄 2)로, 컨트롤 램프 어디에도 없는 값이었다.
-             * `min-h-*` 이 없어 높이가 전적으로 패딩 산술로 정해지는데,
-             * 그건 `DESIGN-SYSTEM.md` 가 *"패딩+행간+보더의 합을 램프라고
-             * 부르지 마라"* 고 적어 둔 바로 그 모양이다.
+             * It used to be `pb-[11px]` — neither a 4px multiple nor a 2px half-step, just a
+             * value picked by eye on the spot. That made the tab **29px** tall (16 leading +
+             * 11 bottom padding + 2 underline), a height that exists nowhere on the control
+             * ramp. With no `min-h-*`, the height is decided entirely by padding arithmetic,
+             * which is exactly what `docs/DESIGN-SYSTEM.md` warns against: do not call the
+             * sum of padding, leading and border a ramp value.
              *
-             * `pb-2.5`(10) 로 1px 만 줄이면 16 + 10 + 2 = **28** —
-             * `--control-h-sm` 에 정확히 선다. 밑줄이 글자에 1px 가까워지는
-             * 것이 이 변경의 시각적 전부다.
+             * Dropping one pixel to `pb-2.5` (10) gives 16 + 10 + 2 = **28**, landing exactly
+             * on `--control-h-sm`. The entire visual change is the underline sitting 1px
+             * closer to the text.
              */
             className={
               "-mb-px inline-flex items-baseline gap-2 border-b-[length:var(--tabbar-underline)] px-0.5 pb-2.5 font-mono text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caps-14)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +

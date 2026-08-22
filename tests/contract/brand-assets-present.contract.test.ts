@@ -8,30 +8,27 @@ import {
 } from '../../scripts/build-brand-assets.mjs';
 
 /**
- * 브랜드 자산이 **전부 있고, 전부 파이프라인이 만든 것**인지 잠근다.
+ * Locks that brand assets are **all present and all produced by the pipeline**.
  *
- * ## 이 게이트가 생긴 이유
+ * **Why this gate exists.** Until 2026-07-30, `public/logo.png` and
+ * `public/og-image.png` still carried the **retired "A" logo** (an alphabet A drawn
+ * from nodes), because those two alone went untouched across two mark overhauls.
  *
- * 2026-07-30 까지 `public/logo.png` 와 `public/og-image.png` 가 **폐기된 "A"
- * 로고**(노드로 그린 알파벳 A)를 달고 있었다. 마크를 두 번 갈아엎는 동안 그
- * 둘만 아무도 안 건드렸기 때문이다.
+ * The og card is the **only image** a link preview draws, so every time someone
+ * shared this product the retired brand went out with it. And nothing — type check,
+ * lint, or tests — could see it, because a PNG is not code.
  *
- * og 카드는 링크 미리보기가 그리는 **유일한 그림**이라, 누가 이 제품을 공유할
- * 때마다 폐기된 브랜드가 나갔다. 그런데 타입 검사·lint·테스트 어느 것도 그것을
- * 볼 수 없었다 — PNG 는 코드가 아니라서다.
- *
- * ## 그래서 무엇을 재는가
- *
- * "그림이 맞나" 를 이미지 비교로 물으면 의존성이 필요하고 재생성마다 깨진다.
- * 대신 **구조적 불변식**을 잰다: 자산은 설치 계획서(`install-brand-icons.mjs`)가
- * 만든다 → 계획서에 없는 브랜드 래스터가 디스크에 있으면 그것이 다음에 썩을
- * 파일이다. 실제로 위 두 파일이 정확히 그 상태였다.
+ * **What is measured instead.** Asking "is this the right image" via image
+ * comparison needs a dependency and breaks on every regeneration. Instead a
+ * **structural invariant** is measured: assets are produced by the install plan
+ * (`install-brand-icons.mjs`), so a brand raster on disk that the plan does not
+ * produce is the next file to rot. The two files above were in exactly that state.
  */
 
 const ROOT = join(import.meta.dirname, '../..');
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
 
-/** PNG 헤더(IHDR)에서 폭·높이 — 이미지 의존성 없이 읽는다. */
+/** Width and height from the PNG header (IHDR) — read without an image dependency. */
 function pngSize(relPath: string): { width: number; height: number } {
   const buf = readFileSync(join(ROOT, relPath));
   expect(buf.subarray(1, 4).toString('ascii'), `${relPath} 가 PNG 가 아니다`).toBe('PNG');
@@ -40,8 +37,9 @@ function pngSize(relPath: string): { width: number; height: number } {
 
 describe('브랜드 자산 — 전부 있고, 전부 파이프라인이 만든 것이다', () => {
   /**
-   * 생성기가 바로 만들 수 있는 SVG 는 **바이트로** 비교한다. 로크업은 브라우저가
-   * 폰트를 심고 잉크를 재서 뷰박스를 좁히므로 여기서 제외하고 아래에서 따로 본다.
+   * SVGs the generator can emit directly are compared **byte for byte**. The lockup
+   * is excluded here and checked separately below, because the browser embeds the
+   * font and measures the ink to tighten its viewBox.
    */
   it.each([
     ['public/brand/mark.svg', () => markSvg('full')],
@@ -54,9 +52,9 @@ describe('브랜드 자산 — 전부 있고, 전부 파이프라인이 만든 �
   });
 
   /**
-   * 로크업의 뷰박스는 **잉크에 맞춰져 있어야** 한다. 생성기의 추정 폭을 그대로
-   * 두면 자산의 25%가 오른쪽 빈 공간이 되고(실측), 로고 파일의 여백은 그것을
-   * 쓰는 모든 곳의 정렬을 틀리게 만든다.
+   * The lockup's viewBox must be **fitted to the ink**. Leaving the generator's
+   * estimated width makes 25% of the asset empty space on the right (measured), and
+   * padding inside a logo file misaligns every place that uses it.
    */
   it.each([
     ['public/brand/lockup.svg', () => lockupSvg()],
@@ -69,19 +67,20 @@ describe('브랜드 자산 — 전부 있고, 전부 파이프라인이 만든 �
     const box = (s: string) => s.match(/viewBox="([^"]*)"/)![1].split(' ').map(Number);
     const [, , dw] = box(onDisk);
     const [, , ew] = box(estimated);
-    // 좁혀졌어야 한다 — 추정치와 같으면 래스터 단계를 건너뛴 것이다.
+    // It must have tightened — equal to the estimate means the raster step was
+    // skipped.
     expect(dw, `${path}: 뷰박스가 생성기 추정치 그대로다 — 래스터 단계를 안 돌렸다`).toBeLessThan(
       ew,
     );
-    // 마크 말고 다른 것이 바뀌지 않았는지: 본문(텍스트/패스)은 같아야 한다.
+    // Nothing but the mark changed: the body (text/paths) must be identical.
     const strip = (s: string) => s.replace(/viewBox="[^"]*"/, '');
     expect(strip(onDisk).trim()).toBe(strip(estimated).trim());
   });
 
   /**
-   * og 카드 크기는 `app/layout.tsx` 가 **선언한 값과 같아야 한다**. 전에는 선언이
-   * 1200×630 인데 파일이 1536×1024 였다 — 비율이 1.905 vs 1.5 로 어긋나 크롤러가
-   * 레터박스를 넣거나 잘라낸다.
+   * The og card's size must **equal what `app/layout.tsx` declares**. It previously
+   * declared 1200×630 while the file was 1536×1024 — aspect ratios of 1.905 vs 1.5,
+   * so crawlers letterbox or crop it.
    */
   it('og 카드가 layout.tsx 의 선언과 같은 크기다', () => {
     const layout = read('app/layout.tsx');
@@ -90,7 +89,7 @@ describe('브랜드 자산 — 전부 있고, 전부 파이프라인이 만든 �
     expect(pngSize('public/og-image.png')).toEqual({ width, height });
   });
 
-  /** 매니페스트가 선언한 PWA 아이콘 크기도 실제 파일과 같아야 한다. */
+  /** The PWA icon sizes the manifest declares must match the real files too. */
   it('PWA 매니페스트 아이콘이 선언한 크기와 같다', () => {
     const manifest = JSON.parse(read('public/manifest.webmanifest')) as {
       icons: { src: string; sizes: string }[];
@@ -105,11 +104,11 @@ describe('브랜드 자산 — 전부 있고, 전부 파이프라인이 만든 �
   });
 
   /**
-   * **계획서에 없는 브랜드 래스터는 다음에 썩을 파일이다.**
+   * **A brand raster absent from the plan is the next file to rot.**
    *
-   * `logo.png` / `og-image.png` 가 정확히 이 상태였다 — 디스크에 있고 화면에
-   * 쓰이는데 어느 생성 계획에도 없어서, 마크를 두 번 갈아엎는 동안 아무도 손대지
-   * 않았다.
+   * `logo.png` and `og-image.png` were in exactly that state — on disk and used on
+   * screen, but in no generation plan, so nobody touched them across two mark
+   * overhauls.
    */
   it('src-tauri/icons 의 모든 PNG 가 설치 계획서에 있다', () => {
     const plan = read('scripts/install-brand-icons.mjs');

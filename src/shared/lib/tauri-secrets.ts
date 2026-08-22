@@ -1,23 +1,25 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
- * BYOK 키 보관 — Tauri IPC 브리지 (`src-tauri/src/secrets.rs` · `llm.rs` 의
- * 타입드 래퍼). `tauri-git.ts` 의 관례를 그대로 따른다.
+ * BYOK key storage — the Tauri IPC bridge (a typed wrapper over
+ * `src-tauri/src/secrets.rs` and `llm.rs`), following the conventions in
+ * `tauri-git.ts`.
  *
- * 계약 (Rust 코드가 진실원):
- * - `secret_set(provider, secret)`     → `SecretStatus`
- * - `secret_status(provider)`          → `SecretStatus` — 없음도 정상 상태
- * - `secret_clear(provider)`           → `SecretStatus` — 멱등, 못 지우면 throw
+ * Contract (the Rust code is the source of truth):
+ * - `secret_set(provider, secret)`       → `SecretStatus`
+ * - `secret_status(provider)`            → `SecretStatus` — absent is a normal state
+ * - `secret_clear(provider)`             → `SecretStatus` — idempotent, throws if it could not delete
  * - `secret_verify(provider, vaultPath)` → `LlmVerifyResult`
  *
- * **전체 키를 돌려주는 커맨드는 없다.** 화면이 아는 것은 `stored` 와 `last4`
- * 뿐이고, 그 계약은 `secrets.rs` 의 소스-리플렉션 테스트가 강제한다. 그래서 이
- * 파일에도 키를 담는 타입이 없다 — 키는 `secretSet` 의 인자로 한 번 흘러갈
- * 뿐이고, 호출부는 성공 직후 자기 상태에서 즉시 지운다.
+ * **No command returns the full key.** The UI only ever learns `stored` and
+ * `last4`, and a source-reflection test in `secrets.rs` enforces that. So no
+ * type here holds a key either — it flows through `secretSet`'s argument once,
+ * and the caller drops it from its own state the moment the call succeeds.
  *
- * 웹 강등 계약: Tauri 런타임이 아니면 `isSecretBridgeAvailable()` 이 false,
- * 모든 래퍼는 invoke 없이 `null` 을 돌려준다 — 호출부가 입력 필드를 아예
- * 렌더하지 않고 "왜 데스크톱 전용인가" 를 정직하게 설명한다.
+ * Web degradation contract: outside the Tauri runtime
+ * `isSecretBridgeAvailable()` is false and every wrapper returns `null` without
+ * invoking, so callers render no input field at all and explain honestly why
+ * this is desktop-only.
  */
 
 type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -29,22 +31,25 @@ function getInvoke(): TauriInvoke | null {
 }
 
 /**
- * Rust `PROVIDERS` 허용목록과 같은 순서 — 화면 표시 순서이기도 하다.
+ * Same order as the Rust `PROVIDERS` allow-list, which is also the display order.
  *
- * 명명 벤더는 **3에서 동결**한다(근거는 `secrets.rs` 의 같은 상수 주석). 넷째
- * 벤더를 여기 더하기 전에 그 조건부터 읽어라 — 나머지 벤더는 명명 팔이 아니라
- * 사용자가 주소를 직접 적는 갈래로 간다.
+ * Named vendors are **frozen at three** (rationale: the matching constant's
+ * comment in `secrets.rs`). Read that condition before adding a fourth here —
+ * every other vendor goes down the branch where the user types the address,
+ * not the named-vendor arm.
  */
 export const SECRET_PROVIDERS = ['anthropic', 'openai', 'gemini'] as const;
 export type SecretProvider = (typeof SECRET_PROVIDERS)[number];
 
 /**
- * 각 키가 실제로 향하는 호스트. 화면이 **붙여넣기 전에** "이 키가 가는 곳" 을
- * 말하는 근거이고, 같은 호스트가 감사 줄의 `host` 로 남는다.
+ * The host each key actually travels to. This is what lets the UI say where the
+ * key goes **before** it is pasted, and the same host lands in the audit line's
+ * `host`.
  *
- * 진실원은 Rust 쪽 확인 URL 이다(`src-tauri/src/llm.rs`). 여기 값이 그것과
- * 갈라지면 화면이 약속한 목적지와 실제 목적지가 달라지므로, 공유 픽스처
- * `tests/fixtures/llm-provider-hosts.json` 를 양쪽 테스트가 함께 본다.
+ * The source of truth is the Rust-side verification URL (`src-tauri/src/llm.rs`).
+ * If these values diverge, the destination the UI promised stops matching the
+ * real one — so both test suites read the shared fixture
+ * `tests/fixtures/llm-provider-hosts.json`.
  */
 export const SECRET_PROVIDER_HOSTS: Record<SecretProvider, string> = {
   anthropic: 'api.anthropic.com',
@@ -53,29 +58,30 @@ export const SECRET_PROVIDER_HOSTS: Record<SecretProvider, string> = {
 };
 
 /**
- * 명명 벤더가 아닌 **네 번째 갈래** — 사용자가 주소를 직접 적는 로컬/오픈소스
- * 러너(Ollama · LM Studio · llama.cpp server · vLLM …).
+ * The **fourth branch**, not a named vendor — a local/open-source runner whose
+ * address the user types in (Ollama · LM Studio · llama.cpp server · vLLM …).
  *
- * 여기 키는 없다. 키체인 허용목록(`SECRET_PROVIDERS`)에 넣지 않는 이유가 그
- * 것이다 — 보관할 비밀이 없으므로 `secret_set`/`secret_status`/`secret_clear`
- * 가 지나갈 자리 자체가 없고, 대신 주소와 모델이 이 브라우저의 localStorage
- * 에 산다(`local-endpoint.ts`). 진실원은 여전히 러너 자신이다.
+ * There is no key here, which is why it stays out of the keychain allow-list
+ * (`SECRET_PROVIDERS`): with no secret to store, `secret_set`/`secret_status`/
+ * `secret_clear` have nothing to act on. The address and model live in this
+ * browser's localStorage instead (`local-endpoint.ts`); the runner itself is
+ * still the source of truth.
  */
 export const LOCAL_PROVIDER = 'local';
 
-/** Ollama 의 기본 포트. Rust `LOCAL_DEFAULT_BASE_URL` 과 같은 값. */
+/** Ollama's default port. Same value as the Rust `LOCAL_DEFAULT_BASE_URL`. */
 export const LOCAL_DEFAULT_BASE_URL = 'http://localhost:11434';
 
-/** 연결할 수 있는 제공자 전부 — 키를 쓰는 셋 + 주소를 쓰는 하나. */
+/** Every provider that can be connected — the three that take a key plus the one that takes an address. */
 export type ConnectionProvider = SecretProvider | typeof LOCAL_PROVIDER;
 
 
 /** Rust `SecretStatus` (serde camelCase). */
 export interface SecretStatus {
   provider: string;
-  /** 키가 이 컴퓨터의 키체인에 있는가. */
+  /** Whether the key is in this machine's keychain. */
   stored: boolean;
-  /** 마지막 4자 — 있을 때만. 전체 키는 어떤 경로로도 오지 않는다. */
+  /** Last 4 characters, only when present. The full key never arrives by any path. */
   last4: string | null;
 }
 
@@ -84,38 +90,40 @@ export interface LlmVerifyResult {
   provider: string;
   ok: boolean;
   /**
-   * 키 자체가 거부됐나. **상태 코드로 화면이 다시 판정하지 않는다** — 거부를
-   * 뜻하는 코드가 벤더마다 다르기 때문이다(Gemini 는 401 이 아니라 400 을
-   * 준다). 판정은 Rust 한 곳에서 하고, 같은 결론이 감사 줄에도 남는다.
+   * Whether the key itself was rejected. **The UI never re-derives this from the
+   * status code** — the code that means "rejected" differs per vendor (Gemini
+   * answers 400, not 401). Rust decides once, and the same conclusion is what
+   * lands in the audit line.
    */
   denied: boolean;
   httpStatus: number | null;
-  /** 네트워크 실패 등의 한 줄. 키는 담기지 않는다. */
+  /** One line for a network failure and the like. Never contains the key. */
   message: string | null;
   durationMs: number;
-  /** 이 호출이 남긴 감사 줄의 시각. */
+  /** Timestamp of the audit line this call wrote. */
   loggedAt: string;
   /**
-   * 확인 응답 본문 — **주소 갈래에서 성공했을 때만** 값이 있다. 그 본문이 곧
-   * 설치된 모델 목록이고, 파싱은 `local-endpoint.ts` 가 한다(Rust 는 벤더
-   * 스키마를 모른다). 명명 벤더는 항상 null.
+   * The verification response body — present **only on success down the address
+   * branch**, where the body is the list of installed models. `local-endpoint.ts`
+   * parses it (Rust does not know vendor schemas). Always null for named vendors.
    */
   body: string | null;
 }
 
-/** Tauri 보관 IPC 가용 여부 — false 면 웹 강등 경로. */
+/** Whether the Tauri storage IPC is available — false means the degraded web path. */
 export function isSecretBridgeAvailable(): boolean {
   return getInvoke() !== null;
 }
 
 /**
- * 키 보유 상태가 방금 바뀌었다는 신호.
+ * Signal that key-possession state has just changed.
  *
- * 키를 등록하는 곳(설정 시트)과 그 키로 살아나는 곳(지도 오른쪽 도크)이 다른
- * 표면인데, 각자 자기 시점에만 키체인을 조회하면 키를 넣고 돌아온 사용자가
- * **새로고침을 해야** 하는 화면을 만난다. 그건 결함이다. 저장·삭제가 성공한
- * 순간을 한 번 알리고, 듣는 쪽이 스스로 다시 조회한다 — 상태를 공유 스토어로
- * 올리지 않고(키체인이 진실원이다) 갱신 시점만 공유한다.
+ * The key is registered on one surface (the settings sheet) and comes alive on
+ * another (the map's right dock). If each queried the keychain only at its own
+ * mount, a user who entered a key would come back to a screen that needs a
+ * **reload** — a defect. So a successful save or delete announces once and
+ * listeners re-query themselves: the state is not hoisted into a shared store
+ * (the keychain is the source of truth), only the moment to refresh is shared.
  */
 const SECRET_CHANGE_EVENT = 'ontology-atlas:secret-change';
 
@@ -124,14 +132,14 @@ function notifySecretChange(): void {
   window.dispatchEvent(new Event(SECRET_CHANGE_EVENT));
 }
 
-/** 키 보유 상태 변화를 듣는다. 반환값은 해지 함수. */
+/** Subscribe to key-possession changes. Returns the unsubscribe function. */
 export function subscribeSecretChange(handler: () => void): () => void {
   if (typeof window === 'undefined') return () => {};
   window.addEventListener(SECRET_CHANGE_EVENT, handler);
   return () => window.removeEventListener(SECRET_CHANGE_EVENT, handler);
 }
 
-/** 저장 — **사용자가 붙여넣고 저장을 누를 때만**. 성공 후 호출부는 입력값을 버린다. */
+/** Store — **only when the user pastes and presses save**. The caller discards the input on success. */
 export async function secretSet(
   provider: SecretProvider,
   secret: string,
@@ -143,7 +151,7 @@ export async function secretSet(
   return status;
 }
 
-/** 상태 조회 — "있는가 · 끝 4자". */
+/** Read status — "is it there · last 4 characters". */
 export async function secretStatus(
   provider: SecretProvider,
 ): Promise<SecretStatus | null> {
@@ -153,15 +161,16 @@ export async function secretStatus(
 }
 
 /**
- * 삭제 — **없어도 성공(멱등), 다만 못 지웠으면 실패한다** (2026-08-17).
+ * Delete — **absent still counts as success (idempotent), but a failed delete
+ * throws** (2026-08-17).
  *
- * 예전에는 Rust 가 삭제 결과를 통째로 버리고 무조건 「지웠다」를 돌려줬다.
- * 키체인이 잠겨 있으면 화면은 "지웠어요" 라고 말하는데 **키는 그대로 남아
- * 있었다.** 지워졌다는 거짓말은 사용자가 안심하고 그 자리를 떠나게 만든다 —
- * 지워졌다고 믿고 컴퓨터를 넘긴다.
+ * Rust used to discard the delete result and unconditionally report "deleted".
+ * With a locked keychain the UI said "deleted" while **the key was still there**.
+ * A false "deleted" is what makes someone walk away reassured — and hand the
+ * machine on believing the key is gone.
  *
- * 지금은 「없었다」와 「못 지웠다」를 가른다. 뒤엣것은 throw 하므로 부르는
- * 쪽이 `secretErrorMessage` 로 사용자에게 보여 준다.
+ * The two cases are now separated: "there was nothing" vs "could not delete".
+ * The latter throws, so the caller surfaces it via `secretErrorMessage`.
  */
 export async function secretClear(
   provider: SecretProvider,
@@ -174,16 +183,18 @@ export async function secretClear(
 }
 
 /**
- * 연결 확인 — 인증만 확인하는 최소 요청. **볼트 데이터는 0자** 나가고, 호출은
- * 볼트 안 `.ontology-atlas/llm-audit.jsonl` 에 남는다. 그래서 볼트 경로가
- * 필수다: 기록할 곳이 없으면 Rust 가 보내지 않는다(log-before-send).
+ * Connection check — the minimal request that verifies auth only. **Zero
+ * characters of vault data** leave, and the call is recorded in the vault's
+ * `.ontology-atlas/llm-audit.jsonl`. That is why the vault path is required:
+ * with nowhere to record it, Rust does not send (log-before-send).
  */
 export async function secretVerify(
   provider: ConnectionProvider,
   vaultPath: string,
   /**
-   * 주소 갈래에서만 넘긴다. 명명 벤더에 주소를 함께 넘기면 Rust 가 **거절**
-   * 한다 — 통과시키면 키체인의 키가 화면이 약속한 적 없는 호스트로 나간다.
+   * Passed only down the address branch. Rust **rejects** an address supplied
+   * alongside a named vendor — letting it through would send a keychain key to
+   * a host the UI never promised.
    */
   baseUrl?: string,
 ): Promise<LlmVerifyResult | null> {
@@ -196,7 +207,7 @@ export async function secretVerify(
   });
 }
 
-/** invoke reject 페이로드 → 사용자 한 줄 (Rust 는 `Err(String)`). */
+/** invoke reject payload → one line for the user (Rust returns `Err(String)`). */
 export function secretErrorMessage(err: unknown): string {
   if (typeof err === 'string') return err;
   if (err instanceof Error) return err.message;

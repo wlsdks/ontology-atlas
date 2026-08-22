@@ -1,49 +1,53 @@
 /**
- * 토스트 하단 오프셋 계약.
+ * The toast bottom-offset contract.
  *
- * 문제(빌더 감사 #5): sonner 토스트는 bottom-right 고정이라 기본 오프셋
- * (16px)에서는 빌더 하단 "쓰기 확인" 바의 우측 "vault 에 쓰기" 버튼을 덮는다.
- * 1440×900 처럼 세로가 짧은 뷰포트에서 특히 겹친다.
+ * The problem: sonner toasts are pinned bottom-right, so at the default 16px offset
+ * they cover the write button on the builder's bottom confirm bar — worst on short
+ * viewports such as 1440×900.
  *
- * 해법: 하단 바가 예약한 높이만큼 토스트를 위로 띄운다. ToastProvider 는
- * `--app-toast-bottom-offset` CSS 변수(기본 16px)를 읽고, 빌더 페이지가
- * 마운트되어 있는 동안 이 함수가 계산한 값을 그 변수에 심는다. 다른 페이지는
- * 기본값 그대로라 회귀가 없다.
+ * The fix: lift the toast by whatever height the bottom bar reserves. ToastProvider
+ * reads the `--app-toast-bottom-offset` CSS variable (default 16px), and while the
+ * builder page is mounted the value computed here is planted in it. Every other page
+ * keeps the default, so there is no regression.
  */
 
-/** 화면 가장자리에서 토스트까지의 기본 여백(px). */
+/** Default gap from the screen edge to the toast (px). */
 export const TOAST_EDGE_GAP_PX = 16;
 
 /**
- * 빌더 하단 쓰기 바가 예약하는 높이(px).
- * 바 = 버튼 h-8(32) + py-2.5(20) + border(2) ≈ 54px, 여기에 바 위 mt-2(8)와
- * 토스트가 바를 확실히 비켜서도록 하는 여유를 더한 값. 1440×900 에서도
- * 토스트 하단(88px)이 바 상단(≈62px)보다 위라 버튼을 가리지 않는다.
+ * Height (px) reserved by the builder's bottom write bar.
+ * The bar is button h-8 (32) + py-2.5 (20) + border (2) ≈ 54px, plus its mt-2 (8)
+ * and enough slack for the toast to clear it. At 1440×900 the toast's bottom (88px)
+ * still sits above the bar's top (≈62px), so the button stays uncovered.
  */
 export const BUILDER_WRITE_BAR_RESERVE_PX = 72;
 
 /**
- * 예약 높이 위로 토스트를 띄우기 위한 하단 오프셋(px)을 계산한다.
- * reservedBottomPx 가 0(예약 없음)이면 기본 여백만 반환.
+ * Bottom offset (px) that lifts the toast clear of the reserved height. With
+ * `reservedBottomPx` at 0 (nothing reserved) this is just the default gap.
  */
 export function resolveToastBottomOffset(reservedBottomPx = 0): number {
   return TOAST_EDGE_GAP_PX + Math.max(0, reservedBottomPx);
 }
 
 /**
- * 지도 우하단 상시 계기 스택(관계선 범례 + 계기 판독)을 비켜서기 위한 오프셋.
+ * Offset that clears the map's persistent instrument stack in the bottom-right (the
+ * relation legend plus the instrument readout).
  *
- * 진입 검수 E-7: `자동 정렬` 토스트가 그 스택을 **완전히** 덮었다 — 범례
- * 「큰 줄기 보기」·「줌인하면 요소가 나타납니다」가 사라지고 판독 좌변이
- * 잘렸다. 둘 다 bottom-right 고정인데 토스트는 기본 16px 오프셋이었다.
- * Tufte: 장식이 데이터를 가리면 안 된다 — 여기선 알림이 상시 계기를 가렸다.
+ * Measured during entry review: the auto-arrange toast covered that stack
+ * **completely** — the legend lines 「큰 줄기 보기」 (show the main branches) and
+ * 「줌인하면 요소가 나타납니다」 (elements appear as you zoom in) disappeared and the
+ * readout's left edge was clipped. Both are pinned bottom-right while the toast sat
+ * at the default 16px offset. Tufte: decoration must not hide data — here a
+ * notification hid a persistent instrument.
  *
- * 예약 높이를 상수로 박지 않고 **스택의 실제 rect 를 받는다**: 범례는 로케일·
- * 어휘 레지스터·줌 티어에 따라 줄 내용이 바뀌고 ≥1920 에서는 코너 인셋
- * 토큰까지 커진다. 상수는 그중 하나만 맞고 나머지에서 틀린다.
+ * The reserve is **taken from the stack's real rect** rather than pinned as a
+ * constant: the legend's lines change with locale, vocabulary register, and zoom
+ * tier, and at ≥1920 the corner inset token grows too. A constant would be right for
+ * exactly one of those and wrong for the rest.
  *
  * @param viewportHeight `window.innerHeight`
- * @param stackTop 스택의 `getBoundingClientRect().top`
+ * @param stackTop the stack's `getBoundingClientRect().top`
  */
 export function resolveToastBottomOffsetForStack(
   viewportHeight: number,
@@ -53,19 +57,21 @@ export function resolveToastBottomOffsetForStack(
 }
 
 /**
- * **오른쪽 도크를 비켜서기 위한 오프셋.**
+ * **Offset that clears the right-hand dock.**
  *
- * 2026-08-16 소유자 화면: 「온톨로지 개념 5개 · 에이전트 설정 파일 3개를
- * 만들었어요」 토스트가 대화 패널의 **작성 칸 위에 그대로 얹혔다.** 원인은
- * 위 하단 오프셋과 같은 모양이다 — 토스트는 `bottom-right` 고정이고
- * `right: 16` 인데, 지도 오른쪽에 패널이 서면 그 16px 은 이제 **패널 안쪽**
- * 이다. 알림이 화면 가장자리를 기준으로 서는 한, 오른쪽에 무엇이 서든 그 위에
- * 앉는다.
+ * Owner's screen, 2026-08-16: a toast reading 「온톨로지 개념 5개 · 에이전트 설정
+ * 파일 3개를 만들었어요」 (created 5 ontology concepts and 3 agent config files) sat
+ * **directly on top of the chat panel's composer.** Same shape as the bottom offset
+ * above: the toast is pinned `bottom-right` at `right: 16`, and once a panel stands
+ * to the right of the map those 16px are **inside the panel**. As long as a
+ * notification positions itself against the screen edge, it lands on whatever stands
+ * at that edge.
  *
- * 예약 폭을 상수로 박지 않고 **실측 rect 를 받는다**: 이 패널의 폭은 사용자가
- * 끌어서 정하고(320~968px) 기억된다. 상수는 그중 한 폭에서만 맞는다.
+ * The reserve is **taken from the measured rect** rather than pinned as a constant:
+ * the panel's width is dragged by the user (320–968px) and remembered. A constant
+ * would be right at exactly one of those widths.
  *
- * @param reservedRightPx 오른쪽에 선 도크의 실제 폭. 없으면 0.
+ * @param reservedRightPx actual width of the dock standing on the right; 0 when none.
  */
 export function resolveToastRightOffset(reservedRightPx = 0): number {
   return TOAST_EDGE_GAP_PX + Math.max(0, reservedRightPx);

@@ -5,9 +5,10 @@ import koMessages from '../../../messages/ko.json';
 import { RouteLoadingFallback } from './route-loading-fallback';
 
 /**
- * 자리표시자는 두 가지 약속만 지킨다: ① `#main` 랜드마크를 즉시 세운다(포커스
- * 관리자와 스크린리더가 착지할 곳), ② 아는 사실 한 문장만 말한다. 스피너·
- * 진행바·퍼센트는 없다 — 모르는 진행을 아는 척하지 않는다.
+ * The placeholder keeps exactly two promises: ① it establishes the `#main` landmark
+ * immediately, giving the focus manager and screen readers somewhere to land, and ② it states
+ * the one fact it knows. No spinner, no progress bar, no percentage — it never pretends to
+ * know progress it cannot measure.
  */
 function renderFallback() {
   return render(

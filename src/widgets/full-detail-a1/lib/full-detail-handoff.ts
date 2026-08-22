@@ -10,9 +10,10 @@ export function formatFullDetailHandoffChain(
   slug: string,
   maxDepth: FullDetailReachDepth,
   /**
-   * 문서가 없는 개념(다른 문서의 관계 키에서 이름만 불린 파생 노드)에는
-   * `get_concept` 이 성립하지 않는다 — 붙여넣는 즉시 "없음" 이 돌아온다.
-   * 그럴 때는 볼트가 아는 유일한 이름(참조 원문)으로 문서를 먼저 만든다.
+   * `get_concept` does not hold for a concept with no document (a derived node named
+   * only in another document's relation key) — pasted, it returns "not found"
+   * immediately. In that case the document is created first, under the only name the
+   * vault knows (the raw reference text).
    */
   options: { documented?: boolean; kind?: string } = {},
 ): string {

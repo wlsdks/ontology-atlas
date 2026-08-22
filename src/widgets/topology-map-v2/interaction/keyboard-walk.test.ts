@@ -10,7 +10,7 @@ import {
   type WalkNode,
 } from "./keyboard-walk";
 
-/** y 는 화면 좌표계 — 아래로 갈수록 커진다. */
+/** y is in screen coordinates — it grows downward. */
 const at = (id: string, x: number, y: number): WalkNode => ({ id, x, y });
 
 describe("pickNeighborInDirection", () => {
@@ -25,7 +25,7 @@ describe("pickNeighborInDirection", () => {
   });
 
   it("그 방향에 이웃이 없으면 아무 일도 하지 않는다 — 감싸 돌지 않는다", () => {
-    // 아래에만 이웃이 있다. 위를 눌러도 그 아래 노드로 뛰지 않는다.
+    // The only neighbour is below. Pressing up does not jump down to it.
     expect(pickNeighborInDirection(center, [at("only", 0, 200)], "up")).toBeNull();
   });
 
@@ -39,29 +39,31 @@ describe("pickNeighborInDirection", () => {
   });
 
   /**
-   * 직교 벌점이 하는 일 — 「거의 옆인데 살짝 위」가 「바로 위」를 이기지 못한다.
-   * 벌점이 없으면 거리만 비교되어 `sideways` 가 이긴다(거리 90 < 100).
+   * What the orthogonal penalty does — «almost beside, slightly above» must not
+   * beat «directly above». Without the penalty only distance is compared and
+   * `sideways` wins (90 < 100).
    */
   it("바로 위가, 더 가깝지만 옆으로 벗어난 것을 이긴다", () => {
     const straight = at("straight", 0, -100);
-    const sideways = at("sideways", 80, -40); // 직선거리 ≈ 89
+    const sideways = at("sideways", 80, -40); // straight-line distance ≈ 89
     const picked = pickNeighborInDirection(center, [sideways, straight], "up");
     expect(picked, "직교 벌점이 안 걸렸다").toBe("straight");
-    // 벌점이 실제로 결과를 갈랐는지 산수로 확인한다(값이 바뀌면 여기서 터진다).
+    // Confirm by arithmetic that the penalty is what split the result (a changed value breaks here).
     expect(100 + 0 * ORTHOGONAL_PENALTY).toBeLessThan(40 + 80 * ORTHOGONAL_PENALTY);
   });
 
   it("부채꼴(±60°) 밖은 버린다", () => {
-    // 위로 10, 옆으로 100 → across/along = 10 > tan(60°) ≈ 1.73
+    // 10 up, 100 across → across/along = 10 > tan(60°) ≈ 1.73
     expect(pickNeighborInDirection(center, [at("wide", 100, -10)], "up")).toBeNull();
-    // 부채꼴 안쪽 경계 바로 안 — 통과해야 한다.
+    // Just inside the cone's boundary — it has to pass.
     const inside = at("inside", 100 * (CONE_HALF_TANGENT - 0.05), -100);
     expect(pickNeighborInDirection(center, [inside], "up")).toBe("inside");
   });
 
   /**
-   * **네 방향이 틈 없이 평면을 덮는다** — 어떤 이웃이든 최소 한 방향키로는 닿는다.
-   * 이 성질이 ±60° 를 고른 이유이고, 각을 좁히면 여기서 먼저 터진다.
+   * **The four directions cover the plane with no gap** — any neighbour is
+   * reachable by at least one arrow key. That property is why ±60° was chosen, and
+   * narrowing the angle breaks here first.
    */
   it("어느 방향으로 놓인 이웃이든 최소 한 방향키로 닿는다", () => {
     const DIRECTIONS = ["up", "down", "left", "right"] as const;

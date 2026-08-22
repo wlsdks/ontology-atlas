@@ -30,7 +30,7 @@ vi.mock("@/features/taxonomy", () => ({
 }));
 
 beforeAll(() => {
-  // jsdom 미구현 — active row 스크롤에 쓰임.
+  // Unimplemented in jsdom — used to scroll the active row.
   window.HTMLElement.prototype.scrollIntoView = () => {};
 });
 
@@ -43,9 +43,9 @@ function render(ui: React.ReactElement) {
 }
 
 /**
- * rank2/18 (설계협의회 batch B1) — 오버레이 a11y 백본. SearchPalette 는
- * ESC/Tab-trap/트리거 포커스복귀를 이미 자체 구현하고 있었지만(테스트
- * 커버리지 0), rank2 스프링 통일이 이 계약을 깨지 않았는지 여기서 고정한다.
+ * rank2/18 (design council batch B1) — the overlay a11y backbone. SearchPalette
+ * already implemented ESC, the Tab trap and trigger focus return itself (with 0 test
+ * coverage); this pins that the rank2 spring unification did not break that contract.
  */
 function Harness() {
   const [open, setOpen] = useState(false);
@@ -79,9 +79,9 @@ describe("SearchPalette", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    // rank2 — 퇴장은 opacity/translateY 스프링을 다 재생한 뒤에야
-    // 언마운트된다(AnimatePresence). "닫힘 프로퍼티만 바뀌고 즉시 사라짐"
-    // 회귀를 여기서 같이 잡는다.
+    // rank2 — the exit unmounts only after the opacity/translateY spring has played
+    // through (AnimatePresence). The "only the closing properties change and it
+    // vanishes instantly" regression is caught here too.
     await waitForElementToBeRemoved(() => screen.queryByRole("dialog"), {
       timeout: 2000,
     });

@@ -5,26 +5,25 @@ import { computeVaultHealth } from '@/entities/knowledge-graph/lib/vault-health'
 import { chatSuggestions } from '@/features/acp-session/model/chat-suggestions';
 
 /**
- * 추천이 **진짜 볼트**를 통과해도 이 폴더의 것을 짚는지 잠근다.
+ * Locks that suggestions still point at things in this folder when they run
+ * through the **real vault**.
  *
- * ## 왜 단위 테스트만으로는 부족한가
+ * **Why unit tests are not enough.** `chat-suggestions.test.ts` locks "given
+ * these facts, what is suggested" and `AcpChatPanel.test.tsx` locks "does the
+ * screen draw it and is it clickable". Both can be green while the screen shows
+ * nothing — between them lies the **data path**, and a break there (health
+ * returning a different shape, or our vault simply not having such a fact) is
+ * invisible to both.
  *
- * `chat-suggestions.test.ts` 는 「어떤 사실이 오면 무엇을 권하나」를 잠그고,
- * `AcpChatPanel.test.tsx` 는 「화면이 그것을 그리고 눌리는가」를 잠근다. 둘 다
- * 초록인데 화면에는 아무 값도 없을 수 있다 — 그 사이에 **데이터 경로**가 있고,
- * 거기서 끊기면(건강 계산이 다른 모양을 돌려주거나, 우리 볼트에는 그런 사실이
- * 아예 없거나) 두 테스트 어느 쪽도 못 본다.
+ * So this runs the whole chain: **real vault manifest → health computation →
+ * suggestions**. Not invented input, but the vault we look at every day
+ * (dogfooding).
  *
- * 그래서 여기서는 **실제 볼트 매니페스트 → 건강 계산 → 추천** 을 통째로 돌린다.
- * 지어낸 입력이 아니라 우리가 매일 보는 그 볼트다(dogfooding).
+ * **Locked**: the path does not break · at least one suggestion always appears ·
+ * when a suggestion names a slug, that slug is **a node that exists**.
  *
- * ## 무엇을 잠그고 무엇을 안 잠그나
- *
- * **잠근다**: 경로가 끊기지 않는가 · 추천이 늘 하나는 나오는가 · 슬러그를
- * 짚는 추천이 나올 때 그 슬러그가 **실재하는 노드**인가.
- *
- * **안 잠근다**: 우리 볼트에 지금 섬이 몇 개인가. 그건 볼트를 고칠 때마다
- * 바뀌는 값이라 못박으면 아무 결함도 없는데 빨개진다.
+ * **Not locked**: how many islands our vault has right now. That changes with
+ * every vault edit, so pinning it turns red with no defect present.
  */
 
 const manifest = resolveStaticVaultSource('dogfood').manifest;
@@ -77,13 +76,13 @@ describe('추천은 진짜 볼트를 통과해도 이 폴더의 것을 짚는다
 
   it('우리 볼트에 실제로 있는 결함 하나는 추천으로 올라온다', () => {
     const { out, health, unevidenced } = suggestionsForRealVault();
-    // 이 볼트에 고칠 것이 하나라도 있으면 「설명해줘」만 나오면 안 된다 —
-    // 나오면 재료가 화면까지 못 온 것이다.
+    // If this vault has anything to fix, "explain" must not be the only suggestion —
+    // if it is, the material never reached the screen.
     const hasWork =
       health.islands.length > 0 ||
       health.missingContainment.length > 0 ||
       unevidenced.length > 0;
-    if (!hasWork) return; // 볼트가 완벽하면 검사할 것이 없다
+    if (!hasWork) return; // A perfect vault leaves nothing to check
     expect(
       out.some((s) => s.kind !== 'explain'),
       '고칠 것이 있는데 추천은 「설명해줘」뿐이다',

@@ -1,29 +1,28 @@
-// 못 읽는 언어로 구현된 관계를 「오래됐을 수 있다」고 말하지 않는다.
+// Never call a relation implemented in a language we cannot read "possibly stale".
 //
-// ## 왜 (2026-08-17 실측, 이 저장소 자신)
-//
-// `infer-imports` 가 우리 볼트를 이렇게 판정했다:
+// Why (measured 2026-08-17, on this repository itself): `infer-imports` judged our
+// own vault like this:
 //
 //   inBoth: 0
 //   inVaultNotInCode: 3   → "3 vault depends_on edge(s) have no matching
 //                            code import (review for stale)"
 //
-// 그 셋은 전부 **맞는 관계**다:
+// All three are **correct relations**:
 //   capabilities/acp-runtime      → capabilities/mcp-server
 //   capabilities/cli-developer-entry → capabilities/mcp-server
 //   capabilities/mcp-server       → capabilities/vault-ontology
 //
-// 스캐너가 못 본 이유는 관계가 없어서가 아니라 **볼 수 없어서**다.
-// `acp-runtime` 의 구현은 `src-tauri/src/acp.rs` — Rust 이고, 스캐너가 읽는
-// 확장자 목록(`.ts .js .py .go` …)에 `.rs` 는 없다. 나머지 둘은 프로세스를
-// 띄우는 관계(spawn)라 import 로 표현될 수 없다.
+// The scanner missed them not because the relations are absent but because it
+// **cannot see them**. `acp-runtime` is implemented in `src-tauri/src/acp.rs` —
+// Rust, and `.rs` is not in the scanner's extension list (`.ts .js .py .go` …).
+// The other two are spawn relations, which no import can express.
 //
-// **「못 봤다」를 「없다」로 말하면 에이전트가 맞는 관계를 지운다.** 이 저장소의
-// CodeGraph 규칙이 같은 말을 이미 하고 있다: *"'not found' 를 부재의 증거로
-// 쓰지 마라."*
+// **Reporting "did not see" as "does not exist" makes an agent delete correct
+// relations.** This repository's CodeGraph rule already says the same thing:
+// *"never use 'not found' as evidence of absence."*
 //
-// 그래서 판정을 셋으로 가른다: 볼 수 있는데 없으면 「오래됐을 수 있다」,
-// **볼 수 없으면 「판정 못 함」**.
+// So the verdict splits three ways: visible and absent → "possibly stale";
+// **not visible → "cannot judge"**.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';

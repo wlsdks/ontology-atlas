@@ -1,20 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
- * dogfood 볼트 단축키 — **경로는 빌드 설정에서 온다.**
+ * The dogfood vault shortcut — **the path comes from build configuration.**
  *
- * ## 왜 테스트가 바뀌었나 (2026-07-29)
+ * **Why these tests changed** (2026-07-29). Two of the maintainer's home paths used to be constants
+ * in the source, and this test held those values as its expectations. Those strings **shipped
+ * verbatim in the public bundle** (verified live). The on-screen condition was narrow enough that
+ * an ordinary visitor never saw them, but anyone opening the bundle reads them, and a macOS
+ * username and directory structure ship together. That path also exists only on the maintainer's
+ * machine, making it **dead code for the other 100% of users**.
  *
- * 종전엔 유지보수자의 홈 경로 두 개가 소스에 상수로 박혀 있었고, 이 테스트도
- * 그 값을 기대값으로 적어 두었다. 그 문자열은 **공개 배포 번들에 그대로 실려**
- * 나갔다(라이브 확인). 화면 노출 조건이 좁아 일반 방문자에겐 안 보였지만
- * 번들을 여는 사람에게는 읽히고, macOS 사용자명과 디렉터리 구조가 같이 나간다.
- * 게다가 그 경로는 유지보수자의 기계에만 있으므로 **나머지 100% 사용자에게는
- * 죽은 코드**였다.
- *
- * 이제 값은 `NEXT_PUBLIC_DOGFOOD_VAULT_PATHS` 에서 오고, 이 테스트는 **경로가
- * 아니라 규칙**을 잰다: 어떻게 파싱되는지, 어느 후보를 고르는지, 그리고 설정이
- * 없을 때(=공개 빌드) 조용히 없는 것이 되는지.
+ * The value now comes from `NEXT_PUBLIC_DOGFOOD_VAULT_PATHS`, and this test measures **the rule
+ * rather than the path**: how it parses, which candidate is chosen, and whether it quietly ceases
+ * to exist when unconfigured (a public build).
  */
 
 async function loadWith(paths: string | undefined) {
@@ -42,9 +40,9 @@ describe("dogfood 볼트 경로 — 설정 파싱", () => {
   });
 
   /**
-   * **공개 빌드가 이 경우다.** 설정이 없으면 후보가 0개이고 단축키는 조용히
-   * 없는 것이 된다 — 없는 경로를 여는 시늉을 하는 것보다 정직하다. 그리고
-   * 번들에는 어떤 개인 경로도 실리지 않는다.
+   * **This is the public build's case.** Unconfigured, there are zero candidates and the shortcut
+   * quietly does not exist — more honest than pretending to open a path that is not there. And no
+   * personal path ships in the bundle.
    */
   it("설정이 없으면 후보가 비고, 단축키는 없는 것이 된다", async () => {
     const m = await loadWith(undefined);

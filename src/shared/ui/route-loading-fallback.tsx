@@ -3,28 +3,28 @@
 import { useTranslations } from 'next-intl';
 
 /**
- * 화면이 아직 오지 않았을 때 그 사실만 말하는 표면.
+ * The surface that states one fact: the screen has not arrived yet.
  *
- * 왜 필요한가 — 이 앱의 전체 화면 라우트는 전부 `useSearchParams()` 를 쓰는
- * 클라이언트 뷰다. 정적 export 는 그런 뷰를 프리렌더하지 못하고 가장 가까운
- * Suspense fallback 을 대신 HTML 에 굽는다. 그 fallback 이 `null` 이면 배포된
- * `index.html` 본문에는 **아무것도, `#main` 조차 없다**. 번들이 내려와
- * 하이드레이트할 때까지 사용자는 레일만 남은 검은 화면을 본다 — 빠른 기기에선
- * 120ms 라 안 보이지만, CPU·네트워크가 눌리면 초 단위로 늘어나고 그동안
- * "고장" 과 "빈 볼트" 와 "불러오는 중" 이 전부 같은 그림이 된다.
+ * **Why it exists.** Every full-screen route in this app is a client view using
+ * `useSearchParams()`. Static export cannot prerender such a view, so it bakes the nearest
+ * Suspense fallback into the HTML instead. When that fallback is `null`, the deployed
+ * `index.html` body contains **nothing at all — not even `#main`**. Until the bundle arrives
+ * and hydrates, the user sees a black screen with only the rail. On a fast machine that is
+ * 120ms and invisible; under CPU or network pressure it stretches into seconds, and for that
+ * whole time "broken", "empty vault" and "loading" look identical.
  *
- * 무엇을 하지 않는가 — 스피너도, 진행바도, 퍼센트도 없다. 모르는 진행을
- * 아는 척하지 않는다. 아는 사실은 하나뿐이다: 이 화면은 아직 오는 중이다.
- * 그 한 문장만 쓴다.
+ * **What it does not do.** No spinner, no progress bar, no percentage — it does not pretend
+ * to know progress it cannot measure. Exactly one fact is known and exactly one sentence is
+ * written.
  *
- * 왜 400ms 뒤에 보이는가 — 대부분의 진입은 그보다 빨리 끝난다. 즉시 그리면
- * 정상 진입마다 자막이 한 번 번쩍이고, 그건 고치려던 것보다 나쁘다. 지연은
- * duration 이 아니라 CSS `animation-delay` 라서 `prefers-reduced-motion`
- * 전역 규칙(duration 만 0.01ms)에도 살아남는다 — 감속 사용자도 깜빡임 없이
- * 400ms 뒤 즉시 본다.
+ * **Why it appears only after 400ms.** Most entries finish sooner, and rendering immediately
+ * would flash a caption on every normal entry — worse than the problem being fixed. The
+ * delay is a CSS `animation-delay`, not a duration, so it survives the global
+ * `prefers-reduced-motion` rule (which only forces duration to 0.01ms): reduced-motion users
+ * still see it at 400ms, without a flash.
  *
- * `data-route-loading` 은 `RouteFocusManager` 가 이 임시 `#main` 을 목적지로
- * 착각해 포커스를 흘리지 않게 하는 표식이다.
+ * `data-route-loading` marks this temporary `#main` so `RouteFocusManager` does not mistake
+ * it for the destination and send focus into it.
  */
 export function RouteLoadingFallback() {
   const t = useTranslations('nav');
@@ -35,7 +35,7 @@ export function RouteLoadingFallback() {
       data-route-loading="true"
       data-testid="route-loading-fallback"
       aria-busy="true"
-      // 뷰포트 높이는 셸이 소유한다 — 페이지 루트는 슬롯을 채우기만 한다.
+      // Viewport height belongs to the shell; a page root only fills its slot.
       className="flex h-full min-h-full flex-1 items-center justify-center bg-[color:var(--color-canvas)] p-6"
     >
       <p

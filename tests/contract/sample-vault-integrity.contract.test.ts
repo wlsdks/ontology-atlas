@@ -3,25 +3,23 @@ import { describe, expect, it } from "vitest";
 import manifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
 
 /**
- * **예시 볼트도 검사받는다.**
+ * **The sample vault gets checked too.**
  *
- * ## 무엇이 났나 (2026-08-09)
+ * **What happened (2026-08-09).** `pnpm vault:validate` scans only the dogfood
+ * vault (`docs/ontology`) — **nobody checked the sample vault**
+ * (`samples/storefront`). That hole was fallen into twice in a row: two newly
+ * written capabilities pointed at slugs that do not exist
+ * (`capabilities/order-confirmation`, `capabilities/payment-authorization`) and
+ * the build passed and the screen rendered. The real slugs were `order-placement`
+ * and `payment-authorize`.
  *
- * `pnpm vault:validate` 는 도그푸드 볼트(`docs/ontology`)만 스캔한다 — 예시 볼트
- * (`samples/storefront`)는 **아무도 검사하지 않았다.** 그 구멍으로 방금 두 번
- * 빠졌다: 새로 쓴 역량 둘이 존재하지 않는 슬러그
- * (`capabilities/order-confirmation` · `capabilities/payment-authorization`)를
- * 가리켰는데 빌드도 통과하고 화면도 떴다. 실제 슬러그는
- * `order-placement` · `payment-authorize` 였다.
+ * The sample vault is **the only data a first-time visitor sees**. Broken here,
+ * the product looks broken — and we cannot tell, because we only look at dogfood.
  *
- * 예시 볼트는 **처음 온 사람이 보는 유일한 데이터**다. 여기가 깨져 있으면 제품이
- * 깨져 보이고, 정작 우리는 도그푸드만 보고 있으니 알 수가 없다.
- *
- * ## 왜 매니페스트를 읽나
- *
- * 매니페스트는 `pnpm docs-vault:build` 가 `samples/storefront/**` 에서 **생성**한
- * 것이라, 이걸 검사하면 원본과 파서를 같이 검사하게 된다(`documentation.md` 의
- * 「생성한 뒤 대조」 갈래). 원본을 다시 파싱하는 둘째 파서를 만들지 않는다.
+ * **Why read the manifest.** The manifest is **generated** from
+ * `samples/storefront/**` by `pnpm docs-vault:build`, so checking it checks the
+ * source and the parser together (`documentation.md`'s "generate then compare"
+ * branch). No second parser re-parses the source.
  */
 
 interface SampleDoc {
@@ -30,7 +28,7 @@ interface SampleDoc {
 
 const DOCS = (manifest as { docs?: SampleDoc[] }).docs ?? [];
 
-/** 슬러그를 가리키는 frontmatter 키 — 하나라도 없는 곳을 가리키면 그래프가 끊긴다. */
+/** Frontmatter keys that point at slugs — one pointing nowhere breaks the graph. */
 const REFERENCE_KEYS = [
   "capabilities",
   "elements",
@@ -83,14 +81,15 @@ describe("예시 볼트 무결성", () => {
   });
 
   /**
-   * **예시가 제품이 드러내려는 것을 실제로 드러내는가.**
+   * **Does the sample actually reveal what the product is meant to reveal?**
    *
-   * 2026-08-09 소유자 지적의 뿌리가 이것이었다 — 도메인 구성비가 38~57% 로 거의
-   * 평평해서, 「말은 많은데 증거가 얇은 영역」을 짚어 주는 막대가 데모에서는 할
-   * 말이 없었다. 예시가 고르게 만들어져 있으면 **제품이 약해 보인다.**
+   * This was the root of the owner's 2026-08-09 observation: domain composition
+   * ratios were almost flat at 38–57%, so the bar that points out "an area with much
+   * said and thin evidence" had nothing to say in the demo. An evenly built sample
+   * **makes the product look weak.**
    *
-   * 값을 못박지 않고 **퍼짐**을 잰다 — 예시를 더 늘리거나 손봐도 퍼져 있기만 하면
-   * 통과한다.
+   * Rather than pinning a value, this measures the **spread** — growing or editing
+   * the sample passes as long as it stays spread out.
    */
   it("도메인 구성비가 퍼져 있다 — 평평한 예시는 제품을 약하게 보이게 한다", () => {
     const byDomain = new Map<string, { capability: number; element: number }>();

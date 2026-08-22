@@ -5,33 +5,34 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * 대화가 **도는 동안** fresh heartbeat가 밝힌 노드에 지도가 표시를 낸다.
+ * While a conversation is **running**, the map marks the node a fresh heartbeat lit
+ * up.
  *
- * ## 이미 있는 것과 무엇이 다른가 (2026-08-17)
- *
- * `agent-activity-chip.spec.ts` 가 같은 사슬을 이미 잠근다 — 다만 신호를
- * **볼트를 열기 전에** 심는다. 그건 「앱을 켰더니 에이전트가 작업 중이더라」를
- * 재는 것이고, 소유자가 말한 것은 그게 아니다:
+ * **How this differs from what already exists** (2026-08-17).
+ * `agent-activity-chip.spec.ts` already locks the same chain, but it plants the signal
+ * **before the vault is opened**. That measures "I launched the app and an agent was
+ * already working", which is not what the owner asked for:
  *
  * > *"실시간으로 좌측 지도에 온톨로지가 그려지는게 보이도록"*
+ * > (so you can see the ontology being drawn on the left-hand map in real time)
  *
- * 즉 **보고 있는 동안** 들어오는 것. 현재형은 성공 쓰기 로그가 아니라 명시적인
- * heartbeat가 소유한다. 문서·감사 로그와 heartbeat를 함께 갱신한 뒤 폴링이
- * 새 목표를 지도까지 전달하는지를 잰다.
+ * That is, arriving **while you are watching**. The present tense is owned by an
+ * explicit heartbeat, not by a successful-write log. This updates the document, the
+ * audit log, and the heartbeat together, then measures whether polling carries the new
+ * target all the way to the map.
  *
- * ## 무엇이 끊기면 이 시험이 빨개지나
+ * **What has to break for this to turn red.** Confirmed by switching off the re-read
+ * on poll — it turns red. Conversely, neutralising the "only the sidecar changed"
+ * comparison still **passes**: a real agent leaves the document and the record
+ * together, and a changed document changes the fingerprint, so a full re-read runs
+ * anyway. That branch is recorded as outside this test's reach — do not read a pass as
+ * evidence about it.
  *
- * 되묻기 재독해를 끄고 확인했다 — 빨개진다. 반대로 「사이드카만 바뀐 경우」
- * 비교를 무력화해도 **통과한다**: 진짜 에이전트는 문서와 기록을 같이 남기고,
- * 문서가 바뀌면 지문이 달라져 전체 재독해가 돌기 때문이다. 그 갈래는 이
- * 시험의 사정거리 밖이라고 적어 둔다 — 통과를 그 갈래의 증거로 읽지 마라.
- *
- * ## 재는 법
- *
- * 캔버스는 단언할 원소가 없다. 픽셀 비교도 안 쓴다 — 물리 시뮬레이션이 스스로
- * 움직여서 「달라졌다」가 우리 신호 때문인지 알 수 없다(실제로 그렇게 만들어
- * 봤다가 버렸다). 대신 그리는 쪽과 **같은 판정**을 노출하는
- * `__atlasMap.nodes()` 의 `agentFocus` 를 본다 — 옆 스펙이 이미 쓰는 방식이다.
+ * **How it is measured.** A canvas has no element to assert on. Pixel comparison is
+ * not used either: the physics simulation moves on its own, so "it changed" cannot be
+ * attributed to our signal (this was actually built and discarded). Instead it reads
+ * `agentFocus` from `__atlasMap.nodes()`, which exposes **the same verdict** the
+ * renderer uses — the approach the neighbouring spec already takes.
  */
 
 const WRITTEN_SLUG = "capabilities/checkout";
@@ -87,14 +88,14 @@ test("보고 있는 동안 에이전트가 쓴 노드를 지도가 집는다", a
       return map.nodes().filter((n) => n.agentFocus).map((n) => n.id);
     });
 
-  // 시작 상태 — 아무도 안 쓰고 있다. 여기서 이미 켜져 있으면 아래 단언이
-  // 아무것도 증명하지 못한다.
+  // Starting state: nobody is writing. If it were already on here, the assertion
+  // below would prove nothing.
   await expect
     .poll(focused, { timeout: 30_000 })
     .not.toBeNull();
   expect(await focused(), "시작부터 켜져 있다 — 이 시험은 무엇도 못 잰다").toEqual([]);
 
-  // ── 「에이전트가 지금 이 노드를 편집한다」는 heartbeat를 볼트에 심는다 ───
+  // ── Plant the heartbeat saying "an agent is editing this node right now" ──
   const seeded = await page.evaluate(
     async ([line, heartbeat]) => {
       const root = await navigator.storage.getDirectory();
@@ -106,8 +107,8 @@ test("보고 있는 동안 에이전트가 쓴 노드를 지도가 집는다", a
       const dirName = names.at(-1);
       if (!dirName) return false;
       const dir = await root.getDirectoryHandle(dirName);
-      // 진짜 에이전트는 **문서와 기록을 같이** 남긴다 — 하나만 심으면 실제로
-      // 일어나지 않는 상태를 재게 된다.
+      // A real agent leaves **the document and the record together** — planting only one
+      // would measure a state that never actually occurs.
       const caps = await dir.getDirectoryHandle("capabilities");
       const doc = await caps.getFileHandle("checkout.md");
       const previous = await (await doc.getFile()).text();
@@ -133,7 +134,7 @@ test("보고 있는 동안 에이전트가 쓴 노드를 지도가 집는다", a
   );
   expect(seeded, "활동 기록을 못 심었다").toBe(true);
 
-  // 되묻기(직후 1.5초 / 잠잠하면 5초)가 그것을 읽어 오기까지 기다린다.
+  // Wait for polling (1.5 s right after a change, 5 s when quiet) to pick it up.
   await expect
     .poll(focused, {
       timeout: 30_000,

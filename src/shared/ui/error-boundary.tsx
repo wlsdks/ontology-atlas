@@ -3,33 +3,34 @@
 import { Component, type ReactNode } from 'react';
 
 /**
- * Generic React ErrorBoundary — render 단계 throw 만 catch (이벤트 핸들러
- * 안 throw 는 React 가 catch 안 함, caller 가 try/catch 책임).
+ * Generic React ErrorBoundary — catches throws during render only. React does not
+ * catch throws inside event handlers; the caller owns try/catch there.
  *
- * R11 #9 — Sigma WebGL context loss / GPU crash / 비동기 init 실패 같이
- * render 시점에 surface 통째로 죽는 시나리오에 fallback UI 제공.
+ * It exists for the cases where a whole surface dies at render time: WebGL context
+ * loss, a GPU crash, a failed async init.
  *
- * 사용:
+ * Usage:
  *   <ErrorBoundary fallback={({ error, reset }) => (...)} >
  *     <RiskyChild />
  *   </ErrorBoundary>
  *
- * fallback 은 함수 — caller 가 도메인-tuned UI (eg. 캔버스 렌더러 전용 reload
- * CTA, 그래프 뷰 전용 retry 버튼) 작성. error 객체 포함 — 디버그용.
+ * `fallback` is a function so the caller can write a domain-tuned UI (a reload CTA
+ * for the canvas renderer, a retry button for the graph view). The error object is
+ * passed through for debugging.
  */
 
 interface ErrorBoundaryProps {
   fallback: (info: { error: Error; reset: () => void }) => ReactNode;
-  /** mount/unmount 또는 다른 신호로 boundary 를 강제 reset. 키 변경 시 reset. */
+  /** Force a reset on mount/unmount or any other signal — the boundary resets when this key changes. */
   resetKey?: string | number;
-  /** componentDidCatch 의 콜백. 외부 logger 등으로 forward. */
+  /** componentDidCatch callback — forward to an external logger. */
   onError?: (error: Error) => void;
   children: ReactNode;
 }
 
 interface ErrorBoundaryState {
   error: Error | null;
-  /** resetKey prop 값 — 변경 시 boundary reset. */
+  /** Last seen `resetKey` — a change resets the boundary. */
   prevResetKey: string | number | undefined;
 }
 

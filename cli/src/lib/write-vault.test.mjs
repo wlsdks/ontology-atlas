@@ -1,11 +1,12 @@
-// writeDoc 슬러그 평면성 배선 테스트 (2026-08-01 판정 「슬러그는 평평한
-// 식별자다」 — docs/DECISIONS.md).
+// Wiring test for writeDoc slug flatness (decision 2026-08-01,
+// 「슬러그는 평평한 식별자다」 — a slug is a flat identifier; docs/DECISIONS.md).
 //
-// 규칙 자체(어떤 슬러그가 걸리는가)는
-// `tests/contract/vault-schema.contract.test.ts` 의 FLAT_SLUG_CASES 가
-// mcp/cli 미러 동일성까지 잰다. 여기서 재는 것은 **배선** 하나다: CLI 의
-// 쓰기 문(write-vault writeDoc — `add` / `import` 가 통과)이 그 규칙을
-// 실제로 태우는가. mcp 쪽 배선은 `mcp/src/write-path-gate.test.mjs` 가 잰다.
+// The rule itself — which slugs are rejected — is measured by FLAT_SLUG_CASES in
+// `tests/contract/vault-schema.contract.test.ts`, including mcp/cli mirror
+// equality. What is measured here is one thing: the **wiring**, i.e. whether the
+// CLI's write door (write-vault writeDoc, which `add` and `import` pass through)
+// actually applies that rule. The mcp side's wiring is measured by
+// `mcp/src/write-path-gate.test.mjs`.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';

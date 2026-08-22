@@ -1,17 +1,16 @@
-// 노드가 0개인 폴더에 「정상」이라고 답하지 않는다.
+// Never answer "healthy" for a folder with zero nodes.
 //
-// ## 왜 (2026-08-16 실측)
+// Why (measured 2026-08-16): running `health` on a folder that is not a vault (one
+// `.md`, no frontmatter) returned **`healthy`, exit 0** — because all six checks
+// were `pass:0`. Zero cycles, zero unresolved edges, zero disconnected components.
+// With nothing to count, everything passes.
 //
-// 볼트가 아닌 폴더(`.md` 한 장, frontmatter 없음)를 `health` 로 검사하니
-// **`healthy` · exit 0** 이 나왔다. 검사 6종이 전부 `pass:0` 이었기 때문이다 —
-// 순환 0개, 안 풀린 엣지 0개, 끊긴 덩어리 0개. 셀 것이 없으면 전부 통과한다.
+// That is exactly the failure `/gate-probe` names: **a check idling on an empty set
+// is not a check.** And the person receiving that answer loses the chance to
+// suspect they pointed at the wrong folder — the tool just said it was fine.
 //
-// 그건 `/gate-probe` 가 이름 붙여 둔 실패 그대로다: **빈 집합 위에서 헛도는
-// 검사는 검사가 아니다.** 그리고 이 답을 받는 사람은 "폴더를 잘못 짚었나"를
-// 의심할 기회를 잃는다 — 도구가 방금 괜찮다고 했으니까.
-//
-// 그래서 「셀 것이 있는가」를 먼저 검사한다. 이 검사가 없으면 나머지 6종의
-// `pass` 는 아무것도 증명하지 못한다.
+// So "is there anything to count" is checked first. Without it, the `pass` of the
+// other six proves nothing.
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -47,8 +46,9 @@ describe('빈 볼트를 정상이라고 답하지 않는다', () => {
   });
 
   it('나머지 검사가 빈 집합 위에서 헛돌고 있었다는 것도 같이 못박는다', () => {
-    // 이 단언이 깨지면 위 검사가 필요 없어진 것이 아니라, 다른 검사가
-    // 빈 볼트에서 다르게 행동하기 시작한 것이다 — 그때 여기를 다시 본다.
+    // If this assertion breaks, the check above has not become unnecessary — some
+    // other check has started behaving differently on an empty vault, and this is
+    // the place to look again.
     const others = health([]).checks.filter((c) => c.id !== 'vault_present');
     assert.ok(others.length >= 5);
     assert.deepEqual(

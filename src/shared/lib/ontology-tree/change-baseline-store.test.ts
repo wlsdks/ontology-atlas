@@ -19,9 +19,9 @@ const nodes = [node("a"), node("b")];
 const edges: KnowledgeGraphEdge[] = [];
 
 /**
- * baseline 은 **어느 볼트의 것인지 알 때만** 저장/복원된다(fail closed). 그래서
- * 모든 시험이 먼저 볼트를 알린다 — 그러지 않으면 `markChangeBaseline` 이
- * 메모리에만 남고 아무 키도 안 쓴다.
+ * A baseline is stored and restored **only when the vault it belongs to is known**
+ * (fail closed), so every spec announces the vault first — otherwise
+ * `markChangeBaseline` stays in memory and writes no key at all.
  */
 const VAULT_A = "local:alpha";
 const VAULT_B = "local:bravo";
@@ -79,7 +79,7 @@ describe("change-baseline-store — 영속/복원 (reload 생존, Self-Drawing D
   it("mark → localStorage 에 영속 (키에 볼트가 들어간다)", () => {
     markChangeBaseline(nodes, edges, 77);
     expect(window.localStorage.getItem(keyFor(VAULT_A))).not.toBeNull();
-    // 볼트를 모르던 시절의 전역 키는 더 이상 쓰지 않는다.
+    // The global key from before vault scoping is no longer written.
     expect(window.localStorage.getItem("demo:change-baseline:v1")).toBeNull();
   });
 
@@ -116,11 +116,12 @@ describe("change-baseline-store — 영속/복원 (reload 생존, Self-Drawing D
   });
 });
 
-// 테스트 헬퍼 — in-memory baseline 만 비우고 localStorage 는 보존(reload 시뮬).
-// clearChangeBaseline 은 영속도 지우므로 복원 테스트엔 부적합.
+// Test helper: clear the in-memory baseline while keeping localStorage, to
+// simulate a reload. `clearChangeBaseline` also wipes the persisted copy, which
+// makes it unusable for restore specs.
 function clearChangeBaseline_inMemoryOnly() {
-  // mark 직후 localStorage 값을 백업했다 복구하는 대신, 직접 store 의 in-memory
-  // 만 비우는 경로가 없으므로 localStorage 를 백업→clear(in-mem)→복구.
+  // The store exposes no in-memory-only reset, so back localStorage up, clear,
+  // and restore it.
   const scope = getChangeBaselineScope() ?? VAULT_A;
   const saved = window.localStorage.getItem(keyFor(scope));
   clearChangeBaseline(); // in-mem null + 영속 제거
@@ -128,12 +129,13 @@ function clearChangeBaseline_inMemoryOnly() {
 }
 
 /**
- * **볼트를 바꾸면 앞 볼트의 기준이 이 볼트의 판정에 쓰이지 않는다** (2026-08-01
- * 신설). 이게 없으면 「자리 비운 사이 N개 바뀜」의 N 이 **새 볼트 전체**가
- * 된다 — 화면이 아무 일도 없었던 폴더에 대해 대규모 변경을 보고한다.
+ * **Switching vaults must not let the previous vault's baseline decide this one**
+ * (added 2026-08-01). Without it, the N in "N changed while you were away" becomes
+ * **the entire new vault**, and the screen reports a mass change in a folder where
+ * nothing happened.
  *
- * 겹침 가드(`snapshotMatchesGraph`)로는 못 막는다. 그건 **복원 시점에만** 도는데,
- * 세션 중 전환은 복원을 거치지 않는다.
+ * The overlap guard (`snapshotMatchesGraph`) cannot catch this: it runs **only at
+ * restore time**, and an in-session switch never passes through restore.
  */
 describe("change-baseline-store — 볼트 전환 (범위를 넘긴 상태)", () => {
   const bravoNodes = [node("x"), node("y")];
@@ -155,15 +157,16 @@ describe("change-baseline-store — 볼트 전환 (범위를 넘긴 상태)", ()
     expect(window.localStorage.getItem(keyFor(VAULT_A))).not.toBeNull();
     expect(window.localStorage.getItem(keyFor(VAULT_B))).not.toBeNull();
 
-    // A 로 돌아오면 A 의 기준이 그대로 복원된다.
+    // Coming back to A restores A's own baseline.
     setChangeBaselineScope(VAULT_A);
     expect(restorePersistedBaseline(nodes)).toBe(true);
     expect(getChangeBaseline()?.takenAt).toBe(42);
   });
 
   it("볼트를 모르면 아무것도 저장하지 않는다 — 어느 볼트 것인지 모르는 기준은 거짓 판정의 입력", () => {
-    // 이 시험은 범위를 못 알린 상태를 직접 만들 수 없으므로(모듈 싱글턴),
-    // 대신 fail-closed 계약을 복원 쪽에서 확인한다: 저장된 자리가 없으면 false.
+    // The unscoped state cannot be constructed directly (module singleton), so
+    // the fail-closed contract is checked from the restore side: nothing stored,
+    // false.
     setChangeBaselineScope(VAULT_B);
     expect(restorePersistedBaseline(bravoNodes)).toBe(false);
   });

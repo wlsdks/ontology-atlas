@@ -7,8 +7,8 @@ describe('toErrorMessage', () => {
   });
 
   it('bare string rejection 을 살린다 (Tauri invoke → Err(String))', () => {
-    // 이게 P5 데스크톱 침묵 실패의 핵심: Tauri 커맨드가 Err(String) 을
-    // 반환하면 invoke Promise 는 Error 가 아니라 문자열로 reject 한다.
+    // The heart of the silent desktop failure: when a Tauri command returns
+    // Err(String), the invoke Promise rejects with a string rather than an Error.
     expect(toErrorMessage('No such file or directory (os error 2)')).toBe(
       'No such file or directory (os error 2)',
     );

@@ -12,42 +12,44 @@ export interface AgentTranscriptLabels {
   you: string;
   lookingAt: (title: string) => string;
   wholeMap: string;
-  /** `unread` 갈래 — 이 턴에 읽은 것이 하나도 없다. */
+  /** The `unread` branch — nothing at all was read in this turn. */
   unsupported: string;
-  /** `uncited` 갈래 — 읽었는데 인용 표기만 없다. 강등이 아니라 보정이다. */
+  /** The `uncited` branch — it read, but the citation is missing. A correction, not a demotion. */
   uncited: string;
   charsLabel: (chars: number) => string;
   thinking: string;
   thinkingSeconds: (seconds: number) => string;
-  /** 1행 라벨 — 사람 언어. 원값(글자수)은 `footerDetail` 로 내려간다. */
+  /** One-line label, in human language. The raw value (character count) drops to `footerDetail`. */
   footer: (args: { provider: string; rounds: number }) => string;
-  /** hover 로만 오는 원값. 데이터를 지우는 게 아니라 렌더만 내린다. */
+  /** The raw value, available only on hover. The data is not erased; only the render is demoted. */
   footerDetail: (args: { chars: number }) => string;
   nextStepTitle: string;
-  /** 실패한 턴의 되돌아갈 길 — 같은 말을 입력칸에 다시 앉힌다(전송 아님). */
+  /** The way back from a failed turn — it seats the same words in the composer again (it does not send). */
   retryTitle: string;
   /**
-   * `unread` 갈래의 되돌아갈 길 — 같은 슬롯, 다른 문구.
+   * The way back from the `unread` branch — same slot, different copy.
    *
-   * **멈춘 이유(라운드)를 이 한 줄이 함께 나른다.** 「도구를 한 번도 안
-   * 부르고 멈췄어요」를 별도 알림 줄로 세우면 한 턴에 경고가 셋이 되고,
-   * 셋이 되는 순간 그 경고들은 벽지가 된다.
+   * **This one line carries the reason it stopped (the round) along with it.**
+   * Standing 「도구를 한 번도 안 부르고 멈췄어요」 (it stopped without calling a tool
+   * once) as a separate notice row makes three warnings in one turn, and at three
+   * they become wallpaper.
    */
   regroundTitle: (args: { round: number; cap: number }) => string;
 }
 
 /**
- * 사람이 손을 써야 하는 알림 — 여기서 대화가 **멎는다**. 나머지(중단·상한
- * 도달)는 진행 상황 보고라 조용해도 된다.
+ * Notices where a person has to act — the conversation **stops** here. The rest
+ * (aborted, cap reached) are progress reports and may stay quiet.
  *
- * 구분이 필요한 이유: 이전에는 여섯 코드가 모두 같은 회색 마이크로 라벨이라
- * "호출 한도예요" 가 화면에서 가장 조용한 문장이었다. 멎은 이유는 그 턴에서
- * 가장 중요한 사실이다(Tufte — 잉크는 데이터에).
+ * Why the distinction is needed: all six codes used to be the same grey micro
+ * label, which made "you hit the call limit" the quietest sentence on screen. The
+ * reason it stopped is the most important fact in that turn (Tufte — ink to the data).
  */
 /**
- * 되돌아갈 칩이 **제목으로 흡수하는** 알림 코드. 데이터에는 남고 화면에서만
- * 접힌다 — 같은 사실을 두 줄로 말하지 않기 위한 것이지, 사실을 지우는 것이
- * 아니다(타입 코드는 인계·기록의 근거로 계속 읽힌다).
+ * Notice codes the recovery chip **absorbs into its title**. They stay in the data
+ * and are folded only on screen — this is to avoid stating the same fact in two
+ * rows, not to erase the fact (the type code is still read as the basis for handoff
+ * and for the record).
  */
 const ABSORBED_BY_RECOVERY: ReadonlySet<string> = new Set(['no-tool-call']);
 const EMPTY_CODES: ReadonlySet<string> = new Set();
@@ -62,12 +64,13 @@ const BLOCKING_NOTICES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * 대화 본문 — 아래로만 자란다.
+ * The conversation body — it grows downward only.
  *
- * 인용은 칩이 되고, 칩을 누르면 지도가 **기존 ego 포커스와 완전히 같은
- * 문법**으로 이동한다. 같은 동작은 같게 보여야 한다 — 지도 노드 클릭과 칩
- * 클릭이 다른 모션이면 결함이다. 그래서 여기서는 카메라를 직접 움직이지
- * 않고 `onFocusNode` 하나만 부른다(지도 선택 경로와 같은 함수).
+ * Citations become chips, and pressing one moves the map with **exactly the same
+ * grammar as the existing ego focus**. The same action has to look the same — a map
+ * node click and a chip click using different motion would be a defect. So the
+ * camera is never moved directly here; only `onFocusNode` is called (the same
+ * function as the map's own selection path).
  */
 export function AgentTranscript({
   turns,
@@ -82,7 +85,7 @@ export function AgentTranscript({
   labels: AgentTranscriptLabels;
   providerLabel: string;
   onFocusNode: (slug: string) => void;
-  /** 다음 한 걸음 칩 — 입력칸에 문장을 앉힐 뿐, 전송하지 않는다. */
+  /** The next-step chip — it only seats a sentence in the composer; it does not send. */
   onPrefill: (text: string) => void;
   renderProposal: (event: Extract<AgentEvent, { kind: 'proposal' }>) => React.ReactNode;
   elapsedSeconds: number | null;
@@ -91,27 +94,29 @@ export function AgentTranscript({
     <div className="flex flex-col gap-4">
       {turns.map((turn) => {
         /**
-         * 이 턴의 **결론** 한 자리. 인용 없는 답의 강등은 여기에만 붙는다 —
-         * 도구를 부르기 전 "먼저 읽어볼게요" 같은 중간 서술은 볼트에 대한
-         * 주장이 아니므로 경고할 것이 없고, 한 턴에 같은 경고가 세 번 붙으면
-         * 그 경고는 벽지가 된다(2026-07-27 실측: 3회/턴).
+         * The single position for this turn's **conclusion**. The demotion for an
+         * uncited answer attaches only here — an intermediate remark before a tool is
+         * called, like "let me read first", makes no claim about the vault so there is
+         * nothing to warn about, and three copies of the same warning in one turn make
+         * that warning wallpaper (measured 2026-07-27: 3 per turn).
          */
         const lastAssistant = turn.events.reduce(
           (found, event, index) => (event.kind === 'assistant' ? index : found),
           -1,
         );
-        /** 실패한 턴에서 다시 시도할 원문 — 이 턴을 연 사용자 본인의 말. */
+        /** The original text to retry from a failed turn — the words of the user who opened this turn. */
         const askedEvent = turn.events.find((event) => event.kind === 'user');
         const asked = askedEvent?.kind === 'user' ? askedEvent.text : null;
         /**
-         * 결론이 **아무것도 안 읽고 나온 답**인가. 그때만 되돌아갈 길을 준다 —
-         * 「읽었는데 표기를 안 했다」 는 고칠 문제가 아니라 정확한 자기
-         * 서술이라, 거기에 컨트롤을 붙이면 없는 문제를 있는 것처럼 만든다.
+         * Is the conclusion **an answer produced without reading anything**? Only then
+         * is a way back offered — 「it read but did not cite」 is not a problem to fix
+         * but an accurate self-description, so attaching a control there invents a
+         * problem that does not exist.
          */
         const conclusion = lastAssistant >= 0 ? turn.events[lastAssistant] : null;
         const unread =
           conclusion?.kind === 'assistant' && conclusion.grounding === 'unread';
-        // 같은 자리, 같은 문법. 이유가 둘이라 문구만 갈린다.
+        // Same position, same grammar. Two reasons, so only the copy differs.
         const recoveryTitle =
           turn.status === 'failed'
             ? labels.retryTitle
@@ -120,12 +125,13 @@ export function AgentTranscript({
               : null;
         const showsRecovery = Boolean(recoveryTitle && asked);
         /**
-         * **알림 줄을 칩이 흡수한다.** `no-tool-call` 은 데이터 층에 그대로
-         * 남아 있고(다음 사람이 프로그램으로 읽을 수 있어야 한다), 화면에서만
-         * 되돌아갈 칩의 제목으로 접힌다 — 같은 사실을 두 줄로 말하지 않는다.
+         * **The chip absorbs the notice row.** `no-tool-call` stays in the data layer
+         * intact (the next person has to be able to read it programmatically) and is
+         * folded into the recovery chip's title only on screen — the same fact is not
+         * stated in two rows.
          *
-         * 칩이 안 서는 경우(원 질문을 잃은 턴)에는 **알림이 그대로 남는다**.
-         * 흡수는 흡수하는 쪽이 실제로 있을 때만 성립한다.
+         * Where no chip stands (a turn that lost its original question) **the notice
+         * remains**. Absorption only holds when the absorbing side actually exists.
          */
         const absorbedCodes: ReadonlySet<string> = showsRecovery
           ? ABSORBED_BY_RECOVERY
@@ -162,14 +168,15 @@ export function AgentTranscript({
             </p>
           ) : null}
 
-          {/* 멎은 턴에는 **되돌아갈 길**을 준다. 이유만 말하고 길을 안 주면
-              그 자리가 막다른 골목이 된다. 「다음 한 걸음」과 같은 문법이라
-              새 상호작용을 배우지 않아도 된다 — 누르면 같은 말이 입력칸에
-              앉을 뿐, 전송은 언제나 [보내기]다.
+          {/* A stopped turn is given **a way back**. Stating the reason without giving
+              a route makes that position a dead end. It uses the same grammar as
+              「다음 한 걸음」 (the next step), so no new interaction has to be learned —
+              pressing it only seats the same words in the composer, and sending is
+              always [보내기].
 
-              같은 슬롯을 **볼트를 아예 안 본 턴**도 쓴다. 새 배너를 세우지
-              않는 이유: 이미 있는 칩 하나를 채우는 것으로 끝나고, 사용자가
-              배울 상호작용도 그대로 하나다. */}
+              A turn that **never looked at the vault at all** uses the same slot. Why
+              no new banner: filling one existing chip is the whole of it, and the user
+              still has exactly one interaction to learn. */}
           {showsRecovery && asked ? (
             <div data-testid="agent-retry" className="mt-2 flex flex-col gap-1.5">
               <p
@@ -186,8 +193,8 @@ export function AgentTranscript({
                   shape: 'card',
                   size: 'sm',
                   tone: 'secondary',
-                  /* `min-h-11` 은 WCAG 2.5.8 터치 타깃 — 값 층은 아직 `link` 에만
-                     그 축을 갖고 있어 여기서는 자리마다 싣는다. */
+                  /* `min-h-11` is the WCAG 2.5.8 touch target — the value layer still
+                     has that axis only on `link`, so it is carried per site here. */
                   className:
                     'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                 })}
@@ -197,14 +204,16 @@ export function AgentTranscript({
             </div>
           ) : null}
 
-          {/* 푸터는 상시 1행 예약 — 답이 와도 위 내용이 밀리지 않는다.
+          {/* The footer always reserves one row — an arriving answer does not push the
+              content above it.
 
-              **글자수는 여기서 hover 로 내려갔다** (2026-08-02). 한 라운드의
-              고정비가 18,934자(시스템 안내 8,500 + 도구 스키마 10,122)라
-              「이 턴 40,036자」는 사용자 데이터의 크기가 아니다 — 같은 화면의
-              읽기 줄 합계는 1,336자였고, 총량은 그것의 30배이며 대부분 도구
-              스키마다. 상시 노출되면 화면에서 가장 큰 숫자가 가장 뜻 없는
-              숫자가 된다. 데이터(`sentChars`)는 그대로 있고 렌더만 내렸다. */}
+              **The character count dropped to hover here** (2026-08-02). A round's
+              fixed cost is 18,934 characters (8,500 of system guidance plus 10,122 of
+              tool schemas), so 「이 턴 40,036자」 is not the size of the user's data —
+              the read rows on the same screen totalled 1,336 characters, and the total
+              is 30× that, mostly tool schemas. Permanently visible, the largest number
+              on screen becomes the most meaningless one. The data (`sentChars`) is
+              unchanged; only the render was demoted. */}
           <p
             data-testid="agent-turn-footer"
             title={
@@ -229,9 +238,9 @@ function renderEvent(
   onFocusNode: (slug: string) => void,
   onPrefill: (text: string) => void,
   renderProposal: (event: Extract<AgentEvent, { kind: 'proposal' }>) => React.ReactNode,
-  /** 이 턴의 마지막 답인가 — 강등 경고는 결론에만 붙는다. */
+  /** Is this the turn's last answer? The demotion warning attaches only to the conclusion. */
   isConclusion: boolean,
-  /** 되돌아갈 칩이 제목으로 흡수한 알림 코드 — 화면에서만 접힌다. */
+  /** Notice codes the recovery chip absorbed into its title — folded on screen only. */
   absorbedCodes: ReadonlySet<string>,
 ) {
   switch (event.kind) {
@@ -244,8 +253,9 @@ function renderEvent(
             </span>
             {event.text}
           </p>
-          {/* 화면 문맥 에코 — 에이전트가 본 것이 항상 화면에 남는다. 보내고
-              나서 다른 노드로 옮겨가면 어긋남이 보이고, 그게 수정 신호다. */}
+          {/* The screen-context echo — what the agent saw always stays on screen. Moving
+              to another node after sending makes the mismatch visible, and that is the
+              signal to correct. */}
           <p
             data-testid="agent-screen-context-echo"
             className="mt-1 text-label tracking-label text-[color:var(--color-text-quaternary)]"
@@ -267,14 +277,14 @@ function renderEvent(
       );
 
     case 'assistant': {
-      // 판정은 **결론에만**. 중간 서술은 볼트에 대한 주장이 아니다.
+      // The judgement applies **only to the conclusion**. An intermediate remark makes no claim about the vault.
       const grounding = isConclusion ? event.grounding : 'grounded';
-      /** 아무것도 안 읽고 나온 답 — 근거 있는 문장과 같은 무게로 그릴 수 없다. */
+      /** An answer produced without reading anything — it cannot be drawn at the same weight as a grounded one. */
       const unread = grounding === 'unread';
       /**
-       * 읽었는데 표기만 없는 답. **강등하지 않는다** — 근거는 실제로 있고,
-       * 화면이 그 목록을 칩으로 보정한다. 여기에 파선 테두리를 두면 화면이
-       * 자기가 방금 그린 「읽음」 줄을 부정하게 된다.
+       * An answer that read but did not cite. **It is not demoted** — the grounding
+       * really exists, and the screen corrects by showing that list as chips. A dashed
+       * border here would make the screen contradict the 「읽음」 (read) row it just drew.
        */
       const sources = grounding === 'uncited' ? (event.sources ?? []) : [];
       return (
@@ -300,9 +310,9 @@ function renderEvent(
           {event.paragraphs.map((paragraph, index) => (
             <CitedText key={index} paragraph={paragraph} onFocusNode={onFocusNode} />
           ))}
-          {/* 표기가 없어도 근거는 있었다 — 읽은 목록을 그대로 칩으로 놓는다.
-              인용 칩과 **같은 컴포넌트**라 누르면 같은 곳으로 간다(지도 ego
-              포커스). 새 상호작용 0. */}
+          {/* The citation was missing but the grounding was there — the read list is laid
+              out as chips directly. It is the **same component** as a citation chip, so
+              pressing goes to the same place (map ego focus). Zero new interactions. */}
           {sources.length > 0 ? (
             <p
               data-testid="agent-answer-sources"
@@ -314,9 +324,9 @@ function renderEvent(
               ))}
             </p>
           ) : null}
-          {/* 다음 한 걸음 — 반영을 먼저 보이고, 그 다음에 권한다. 순서가 곧
-              서사이므로 이 줄은 답 **뒤에** 오고, 등장은 짧은 페이드 하나다
-              (숫자 굴림·강조 펄스 같은 장식은 없다). */}
+          {/* The next step — what landed is shown first, and the suggestion comes after.
+              Order is narrative, so this row comes **after** the answer, and its entry is
+              one short fade (no decoration such as rolling numbers or emphasis pulses). */}
           {event.nextStep ? (
             <div
               data-testid="agent-next-step"
@@ -333,8 +343,8 @@ function renderEvent(
                   shape: 'card',
                   size: 'sm',
                   tone: 'secondary',
-                  /* `min-h-11` 은 WCAG 2.5.8 터치 타깃 — 값 층은 아직 `link` 에만
-                     그 축을 갖고 있어 여기서는 자리마다 싣는다. */
+                  /* `min-h-11` is the WCAG 2.5.8 touch target — the value layer still
+                     has that axis only on `link`, so it is carried per site here. */
                   className:
                     'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                 })}
@@ -351,10 +361,10 @@ function renderEvent(
       return renderProposal(event);
 
     case 'notice': {
-      // 되돌아갈 칩이 제목으로 이미 말한 사실은 줄을 하나 더 쓰지 않는다.
+      // A fact the recovery chip's title already states does not spend another row.
       if (absorbedCodes.has(event.code)) return null;
-      // 멎은 이유는 그 턴에서 가장 중요한 사실이라 본문 무게로 그린다.
-      // 진행 보고(중단·상한)는 종전대로 조용하다.
+      // The reason it stopped is the most important fact in that turn, so it is drawn at
+      // body weight. Progress reports (aborted, cap) stay quiet as before.
       const blocking = BLOCKING_NOTICES.has(event.code);
       return (
         <p
@@ -380,9 +390,10 @@ function renderEvent(
 const CITATION_PATTERN = /\[\[([^[\]]+)\]\]/g;
 
 /**
- * 개념 하나로 가는 칩. 본문 안의 `[[slug]]` 인용과, 표기가 없을 때 화면이
- * 보정으로 놓는 「참고한 자료」가 **같은 컨트롤**을 쓴다 — 같은 동작이 다르게
- * 보이면 그것이 결함이다.
+ * A chip leading to one concept. A `[[slug]]` citation inside the body and the
+ * 「참고한 자료」 (sources consulted) the screen lays out as a correction when the
+ * citation is missing use **the same control** — the same action looking different
+ * is itself the defect.
  */
 function ConceptChip({
   slug,
@@ -406,13 +417,13 @@ function ConceptChip({
   );
 }
 
-/** 칩에는 이름만 앉힌다 — 경로 전체는 한 줄을 다 먹고 정보를 더 주지 않는다. */
+/** Only the name is seated in a chip — the full path eats a whole row and adds no information. */
 function tailOfSlug(slug: string): string {
   const index = slug.lastIndexOf('/');
   return index >= 0 ? slug.slice(index + 1) : slug;
 }
 
-/** `[[slug]]` 을 칩으로 — 누르면 지도가 그 개념으로 이동한다. */
+/** `[[slug]]` as a chip — pressing it moves the map to that concept. */
 function CitedText({
   paragraph,
   onFocusNode,
@@ -434,7 +445,7 @@ function CitedText({
         <ConceptChip key={`chip-${key++}`} slug={resolved} label={raw} onFocusNode={onFocusNode} />,
       );
     } else {
-      // 읽은 적 없는 이름은 칩이 아니다 — 누르면 빈 곳으로 데려간다.
+      // A name that was never read is not a chip — pressing it would take you nowhere.
       parts.push(raw);
     }
     cursor = start + match[0].length;

@@ -7,7 +7,7 @@ import type { useTranslations } from "next-intl";
 import { DocsVaultTabStrip } from "./DocsVaultTabStrip";
 import type { DocTab } from "../../lib/doc-tabs";
 
-// jsdom 엔 ResizeObserver 가 없다 — 최소 stub.
+// jsdom has no ResizeObserver — a minimal stub.
 beforeAll(() => {
   if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
     class ResizeObserverStub {
@@ -46,7 +46,7 @@ function renderStrip(tabs: DocTab[], activeSlug: string) {
   );
 }
 
-// nav 의 스크롤 메트릭을 지정 — jsdom 은 전부 0 이라 직접 목킹한다.
+// Sets the nav's scroll metrics — jsdom reports all zeros, so they are mocked directly.
 function mockScrollMetrics(
   nav: HTMLElement,
   { scrollLeft, clientWidth, scrollWidth }: { scrollLeft: number; clientWidth: number; scrollWidth: number },

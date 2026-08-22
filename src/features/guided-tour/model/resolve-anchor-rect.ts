@@ -1,7 +1,8 @@
 /**
- * 앵커 해석 + 카드 배치. testid → DOMRect 는 DOM 의존(jsdom/브라우저에서만
- * 의미 있음), 카드 배치/클램프는 순수 함수 — `resolve-anchor-rect.test.ts` 가
- * 후자만 단위 테스트한다(전자는 통합 성격).
+ * Anchor resolution plus card placement. testid → DOMRect is DOM-dependent
+ * (meaningful only in jsdom or a browser), while card placement and clamping are pure
+ * functions — `resolve-anchor-rect.test.ts` unit-tests only the latter (the former is
+ * integration in nature).
  */
 
 export interface AnchorBox {
@@ -12,18 +13,20 @@ export interface AnchorBox {
 }
 
 /**
- * `[data-testid="<testId>"]` 를 찾아 뷰포트 기준 박스를 반환한다. 요소가
- * 없거나, 크기가 0(예: `display:none`)이거나, 뷰포트 밖(완전히 가려짐)이면
- * `null` — 호출부(`computeVisibleSteps`)가 그 단계를 자동 스킵하는 신호.
+ * Finds `[data-testid="<testId>"]` and returns its viewport-relative box. Returns
+ * `null` when the element is absent, has zero size (`display:none`), or is outside
+ * the viewport (fully hidden) — the signal for the caller (`computeVisibleSteps`) to
+ * skip that step automatically.
  *
- * SSR 가드 — `useGuidedTour` 의 `visibleSteps` useMemo 는 (투어가 닫혀
- * 있어도) 매 렌더 이 함수를 호출하고, 그 첫 렌더는 서버에서도 돈다(Next
- * 클라이언트 컴포넌트도 초기 HTML 은 서버가 만든다). `doc` 인자 없이 호출한
- * 서버 쪽에서는 전역 `document` 참조 자체가 `ReferenceError`(2026-07-24
- * 발견 — 모든 페이지 최초 요청마다 서버 콘솔에 스택 트레이스가 찍혔다,
- * 화면엔 안 보이는 이유는 하이드레이션 후 클라이언트 재실행이 정상값으로
- * 덮어써서다). `typeof document` 로 존재 여부만 먼저 확인해 서버에서는
- * 조용히 `null`(= 앵커 미해석 취급)로 떨어뜨린다.
+ * SSR guard — `useGuidedTour`'s `visibleSteps` useMemo calls this on every render
+ * (even while the tour is closed), and that first render runs on the server too (a
+ * Next client component's initial HTML is still produced by the server). On the
+ * server, called without the `doc` argument, referencing the global `document` is
+ * itself a `ReferenceError` (found 2026-07-24 — a stack trace was printed to the
+ * server console on the first request to every page; it was invisible on screen
+ * because the client re-run after hydration overwrote it with the correct value).
+ * Checking `typeof document` first drops it quietly to `null` on the server (treated
+ * as an unresolved anchor).
  */
 export function resolveAnchorRect(
   testId: string,
@@ -46,15 +49,15 @@ export function resolveAnchorRect(
 export type CardPlacementSide = "center" | "below" | "above" | "right" | "left";
 
 export interface CardPlacementInput {
-  /** 대상 rect — `null` 이면 컷아웃 없는 중앙 카드(1단계 welcome). */
+  /** The target rect — `null` gives a centred card with no cutout (step 1, welcome). */
   targetRect: AnchorBox | null;
   cardWidth: number;
   cardHeight: number;
   viewportWidth: number;
   viewportHeight: number;
-  /** 카드-대상 간 여백. 기본 12px. */
+  /** The gap between card and target. Defaults to 12px. */
   gap?: number;
-  /** 뷰포트 가장자리 최소 여백. 기본 16px. */
+  /** The minimum margin from the viewport edge. Defaults to 16px. */
   edgeMargin?: number;
 }
 
@@ -65,9 +68,9 @@ export interface CardPlacement {
 }
 
 /**
- * 컷아웃 인접 배치 — 아래→위→우→좌 우선순위로 뷰포트에 맞는 첫 후보를
- * 고르고, 어느 것도 완전히 맞지 않으면 첫 후보(아래)를 뷰포트 안으로
- * 클램프한다(spec §3-D).
+ * Placement adjacent to the cutout — the first candidate that fits the viewport is
+ * chosen in the order below → above → right → left, and if none fits completely the
+ * first candidate (below) is clamped into the viewport.
  */
 export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   const gap = input.gap ?? 12;

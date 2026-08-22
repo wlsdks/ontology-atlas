@@ -627,7 +627,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file is the single source of truth for the words this repository uses. English is canonical: comments, doc-blocks, and developer docs are written in English so contributors outside Korea can read them. Korean equivalents are listed for the maintainer and for the two Korean docs that stay Korean — docs/DECISIONS.md",
-      "wordCount": 1844,
+      "wordCount": 2160,
       "updatedAt": "2026-08-22",
       "linksOut": []
     },

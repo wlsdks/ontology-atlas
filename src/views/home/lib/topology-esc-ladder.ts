@@ -1,5 +1,6 @@
 /**
- * P0#3 — Esc staged-close ladder for the topology canvas selection layer.
+ * The Esc ladder for the topology canvas selection layer — the order in which a
+ * single Escape keypress dismisses things (a dismissal order, not a value ramp).
  *
  * The composer / search / shortcuts-sheet / docs-drawer overlays already
  * close themselves on Escape (`SearchPalette`, `ShortcutSheet`,
@@ -22,31 +23,30 @@
  */
 export interface TopologyEscLadderInput {
   /**
-   * "영역 전개" (S4) 활성 — 지도가 한 노드의 세계로 전환된 상태(`?realm=`).
-   * 소유자 지시로 Esc 사다리 최우선: 영역 안에서 Esc 는 무엇보다 먼저 영역을
-   * 벗어난다(전체 지도 복귀). 영역은 뷰 전체를 바꾸는 최상위 컨텍스트라, 그
-   * 안의 어떤 전이 오버레이보다 "이 세계에서 나가기"가 사용자의 1차 탈출
-   * 기대다. 미지정/false 면 사다리는 종전과 동일(회귀 0).
+   * A realm is expanded (`?realm=`) — the map has switched to one node's world.
+   * Owner instruction puts this first in the dismissal order: leaving the world
+   * is the primary escape expectation, ahead of any transient overlay inside it,
+   * because a realm is the top-level context that changes the whole view.
    */
   realmActive?: boolean;
   /**
-   * H3 P1 (R-1) — 엣지 클릭 팝오버(`TopologyV2EdgePanel`, role=dialog)가 열려
-   * 있다. 영역 전개 다음, 다른 어떤 오버레이보다 먼저 소비한다(노드 팝오버와
-   * 같은 "가장 최근에 연 임시 표면부터" 계약). 종전에는 이 판정이 `HomePage`
-   * 의 keydown 이펙트 안에 인라인으로 박혀 있어 사다리 단위 테스트가 이
-   * 단(段)을 볼 수 없었다 — 회귀 감사(엣지 팝오버가 Esc 로 안 닫힘)를 재현할
-   * 수 있게 사다리로 끌어올린다. 미지정/false 면 종전과 동일.
+   * The edge popover (`TopologyV2EdgePanel`, role=dialog) is open. It is
+   * consumed after the realm and before every other overlay, under the same
+   * "most recently opened transient surface first" contract as the node popover.
+   * This decision used to be inline in `HomePage`'s keydown effect, where the
+   * ladder's unit tests could not see this rung — it was lifted here so the
+   * regression (edge popover not closing on Escape) stays reproducible.
    */
   selectedEdgeActive?: boolean;
-  /** W2-B node right-click context menu open — the newest, most transient
+  /** Node right-click context menu open — the newest, most transient
    *  overlay, so it closes first (above even the create-node composer): a
    *  context menu that outlives the keypress meant to dismiss whatever else
    *  is open would read as stuck chrome. */
   contextMenuOpen: boolean;
   /**
    * Guided tour open (`src/features/guided-tour`). Ranked right after the
-   * context menu and before the create-node composer — "가장 최근에 연
-   * 전이 표면 우선" 계약. The tour installs its own transparent viewport
+   * context menu and before the create-node composer, under the "most recently
+   * opened transient surface first" contract. It installs its own transparent viewport
    * blocker, so leaving it open on Escape would read as the app ignoring
    * the keypress entirely. Escape closes ONLY the tour (records `skipped`);
    * it does not fall through to anything else on the same press.
@@ -57,16 +57,17 @@ export interface TopologyEscLadderInput {
    *  where focus has moved outside it while it's still blocking the page). */
   createNodeOpen: boolean;
   /**
-   * 「내 문서로 지도 만들기」 부트스트랩 패널(`ontology-bootstrap-panel`).
+   * The bootstrap panel (`ontology-bootstrap-panel`) is open.
    *
-   * 이 사다리에 **칸이 아예 없어서** Escape 가 아무 일도 하지 않았다
-   * (2026-07-28 볼트 연결 재현: 패널을 열고 Esc 를 눌러도 `aria-modal` 이
-   * 그대로 남는다). 앱은 자기 단축키 시트에 "Esc — 열린 표면을 한 단계씩
-   * 닫습니다" 라고 적어 두고 있고 다른 모든 다이얼로그는 그렇게 동작하므로,
-   * 이 하나만 안 닫히는 것은 **앱이 키를 무시하는 것**으로 읽힌다.
+   * It had no rung here at all, so Escape did nothing (reproduced 2026-07-28
+   * with a connected vault: `aria-modal` survived the keypress). The app's own
+   * shortcut sheet promises that Escape closes open surfaces one step at a time
+   * and every other dialog behaves that way, so this one exception reads as the
+   * app ignoring the key.
    *
-   * `aria-modal` 블로킹 표면이라 아래 칸들보다 먼저 답해야 한다 — 덮여 있는
-   * 것을 두고 그 아래 선택을 푸는 것은 사용자가 부른 일이 아니다.
+   * As an `aria-modal` blocking surface it must answer before the rungs below —
+   * releasing a selection underneath something that covers it is not what the
+   * user asked for.
    */
   bootstrapOpen: boolean;
   /** Global search / ontology palette open (`MountedGlobalSearch` → Radix
@@ -77,14 +78,14 @@ export interface TopologyEscLadderInput {
    *  two things at once. Regression: persona hit palette-open + node-selected
    *  → Escape closed the palette AND cleared the selection in one press. */
   searchOpen: boolean;
-  /** "전체 상세" drawer — the popover/datasheet's opt-in full-detail overlay. */
+  /** Full-detail drawer — the popover/datasheet's opt-in full-detail overlay. */
   fullDetailOpen: boolean;
   /** Relation lens active — replaces the popover with a relation-focused view. */
   selectedRelationActive: boolean;
   /** A node/project is selected, so the ego focus (dim) is active. */
   hasSelection: boolean;
   /**
-   * M-7 — the compact node popover/datasheet is currently VISIBLE (a node is
+   * The compact node popover/datasheet is currently VISIBLE (a node is
    * selected AND the popover has not yet been dismissed). Clicking a node sets
    * BOTH the ego focus (dim) and the popover; a single Escape used to clear
    * both at once (`hasSelection → deselect`), collapsing the two-rung "close
@@ -126,11 +127,9 @@ export type TopologyEscLadderAction =
 export function resolveTopologyEscLadderAction(
   input: TopologyEscLadderInput,
 ): TopologyEscLadderAction {
-  // S4 — 영역 전개는 뷰 전체를 바꾸는 최상위 컨텍스트라 Esc 사다리 최우선
-  // (소유자 지시). 영역 안에서 Esc 는 무엇보다 먼저 전체 지도로 복귀한다.
+  // A realm changes the whole view, so leaving it outranks every overlay inside
+  // it (owner instruction).
   if (input.realmActive) return "close-realm";
-  // R-1 — 엣지 팝오버는 영역 다음, 다른 오버레이보다 먼저 닫는다(HomePage 의
-  // 종전 인라인 순서를 그대로 사다리로 옮긴 것 — 회귀 0).
   if (input.selectedEdgeActive) return "close-edge-popover";
   if (input.contextMenuOpen) return "close-context-menu";
   if (input.tourOpen) return "close-tour";
@@ -143,7 +142,7 @@ export function resolveTopologyEscLadderAction(
   if (input.searchOpen) return "none";
   if (input.fullDetailOpen) return "close-full-detail";
   if (input.selectedRelationActive) return "close-relation-lens";
-  // M-7 — Escape#1 closes only the node popover, leaving the ego focus (dim)
+  // Escape#1 closes only the node popover, leaving the ego focus (dim)
   // in place; the NEXT Escape (with the popover now dismissed, so
   // `nodePopoverOpen` false) falls through to `deselect` and releases focus.
   if (input.hasSelection && input.nodePopoverOpen) return "close-node-popover";

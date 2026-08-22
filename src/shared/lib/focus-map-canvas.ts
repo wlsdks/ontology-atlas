@@ -1,47 +1,48 @@
 /**
- * 지도 캔버스에 초점을 준다 — **`G M` 이 「지도로 가기」가 아니라 「지도를 잡기」가
- * 되도록.**
+ * Focuses the map canvas, so that **`G M` means "grab the map", not just "go to
+ * the map"**.
  *
- * ## 왜 이 파일이 필요한가 — 실측이 구멍을 냈다
+ * **Why this exists — a measurement found the hole.** After arrow-key graph
+ * walking shipped (2026-08-09), measuring in the browser showed that **reaching
+ * that canvas from the keyboard took 30 Tab presses** (1440×900, on the map
+ * screen): the left rail, the top tools and the INDEX panel controls all come
+ * first. However well the walking works, 30 presses in front of it mean **the
+ * people it was built for cannot reach it** — those people are keyboard users.
  *
- * 방향키로 그래프를 걷는 기능(2026-08-09)을 붙인 뒤 브라우저에서 재 보니,
- * **키보드로 그 캔버스에 닿으려면 Tab 을 30번 눌러야 했다**(1440×900, 지도 화면
- * 실측). 좌측 레일 · 상단 도구 · INDEX 패널의 컨트롤이 전부 그 앞에 있다.
- * 걷는 기능이 아무리 잘 돌아도, 그 앞에 30번이 있으면 **그것을 쓸 사람이 도달할
- * 수 없다** — 기능을 만든 대상이 정확히 키보드 사용자다.
+ * So an existing key gains one more job. `G M` already navigated to the map and
+ * **did nothing when you were already there**; now it grabs the canvas. No new
+ * shortcut was invented, so there is nothing extra to memorise, and the shortcut
+ * sheet already documents the key, so discovery is unchanged.
  *
- * 그래서 이미 있는 키에 일을 하나 더 준다: `G M` 은 지도로 데려가는 키였고, 지도에
- * **이미 있을 때는 아무 일도 안 하던** 키였다. 이제 그 키가 캔버스를 잡는다.
- * 새 단축키를 만들지 않았으므로 외울 것이 늘지 않고, 단축키 시트가 이미 그 키를
- * 안내하므로 발견 경로도 그대로다.
+ * **Why it waits several frames instead of trying once.** Pressing `G M` from
+ * another screen calls this **before** the router has drawn the map, so the
+ * canvas is not in the DOM yet. Looking once and giving up produces a defect
+ * where it works from the map but not from elsewhere — the kind whose cause a
+ * user cannot guess.
  *
- * ## 왜 즉시 한 번이 아니라 몇 프레임을 기다리나
- *
- * 다른 화면에서 `G M` 을 누르면 라우터가 지도를 **그리기 전에** 이 함수가 불린다.
- * 그 순간 캔버스는 DOM 에 없다. 한 번만 찾고 포기하면 「같은 화면에서는 되는데
- * 다른 화면에서 오면 안 되는」 상태가 되고, 그건 사용자가 원인을 짐작할 수 없는
- * 종류의 결함이다.
- *
- * 기다리는 단위가 시간(ms)이 아니라 **프레임**인 이유: 그려지는 시점은 기계 속도에
- * 딸려 있어서 밀리초로 정하면 느린 기계에서만 실패한다(`architecture.md` 의
- * 「게이트는 밀리초가 아니라 횟수로 잠근다」와 같은 이유).
+ * The wait is counted in **frames** rather than milliseconds because paint timing
+ * follows machine speed, so a millisecond budget fails only on slow machines
+ * (the same reason `.claude/rules/architecture.md` locks gates by call count,
+ * not by milliseconds).
  */
 
-/** 캔버스를 찾는 표식. `data-testid` 를 런타임 선택자로 쓰지 않는다 — 그건 시험의 것이다. */
+/** The marker used to find the canvas. `data-testid` is never a runtime selector — that belongs to tests. */
 export const MAP_CANVAS_SURFACE_ROLE = 'map-canvas';
 
 /**
- * 몇 프레임까지 기다리나. 라우트 전환 + 첫 그림이 이 안에 들어야 한다.
+ * How many frames to wait: the route transition plus the first paint must fit.
  *
- * ⚠️ **처음에 30으로 뒀고 그게 부족했다** — 다른 화면에서 `G M` 을 눌렀을 때만
- * 실패했다(같은 화면에서는 캔버스가 이미 있어 첫 프레임에 끝난다). 실측:
- * 프로젝트 목록에서 `G M` 을 누르면 캔버스가 **395ms** 뒤에 생긴다. 30프레임은
- * 이상적으로 500ms 지만 라우트 전환 중에는 프레임이 고르지 않아 그 안에 못 든다.
+ * ⚠️ **This started at 30 and that was too few** — it failed only when `G M` was
+ * pressed from another screen (from the map itself the canvas already exists and
+ * it finishes on the first frame). Measured: pressing `G M` from the project list
+ * creates the canvas **395ms** later. 30 frames is 500ms in the ideal case, but
+ * frames are uneven during a route transition, so it does not fit.
  *
- * 그리고 이 값이 넉넉해도 초점 싸움이 나지 않는다: `RouteFocusManager` 는
- * **이미 `#main` 안에 초점이 있으면 건드리지 않는다**(그 파일의 규칙). 캔버스는
- * `#main` 안이라(실측 확인) 우리가 먼저 잡으면 그쪽이 물러난다 — 우리가 늦으면
- * 그쪽이 읽기 시작점을 잡고, 그건 정상적인 접근성 동작이다.
+ * A generous value causes no focus fight: `RouteFocusManager` **leaves focus
+ * alone when it is already inside `#main`** (its own rule), and the canvas is
+ * inside `#main` (verified), so it yields if we get there first. If we are late,
+ * it sets the reading start point instead, which is correct accessibility
+ * behaviour.
  */
 export const FOCUS_MAP_CANVAS_MAX_FRAMES = 120;
 
@@ -52,10 +53,11 @@ function findMapCanvas(): HTMLElement | null {
 }
 
 /**
- * 캔버스가 나타나면 초점을 준다. 이미 있으면 그 프레임에 끝난다.
+ * Focuses the canvas once it appears; finishes on the same frame if it is
+ * already there.
  *
- * 되돌리는 함수를 준다 — 사용자가 그 사이 다른 곳을 눌렀으면 호출자가 취소할 수
- * 있어야 한다(초점을 뺏는 것은 사용자를 놀라게 하는 일이다).
+ * Returns a cancel function, because if the user clicked elsewhere meanwhile the
+ * caller must be able to abort — stealing focus startles people.
  */
 export function focusMapCanvasWhenReady(
   maxFrames: number = FOCUS_MAP_CANVAS_MAX_FRAMES,

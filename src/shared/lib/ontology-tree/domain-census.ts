@@ -2,19 +2,21 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import { isContainmentRelation } from "./relations";
 
 /**
- * 도메인(및 프로젝트) 크기의 단일 진실원 — Guardian I-1.
+ * The single source of truth for the size of a domain (or project).
  *
- * 같은 도메인이 캔버스 칩 86 · INDEX 트리 96 · /projects 카드 106 으로
- * 세 표면 세 숫자였다. 원인:
- * - 캔버스: containment 서브트리의 **element 만** 센 subtreeWeight.
- * - INDEX/인사이트: `buildOntologyTree` 워크 — 트리는 노드마다 부모를
- *   하나만 배정하므로 다중 부모 노드가 유실된다.
- * - /projects: 그래프 BFS (containment 도달 가능 전체) — 유일하게 완전.
+ * One domain used to read as three different numbers on three screens: 86 on the
+ * canvas chip, 96 in the INDEX tree, 106 on the /projects card. The causes:
+ * - Canvas: `subtreeWeight` counted **only elements** in the containment subtree.
+ * - INDEX and insights: the `buildOntologyTree` walk — a tree assigns each node
+ *   exactly one parent, so multi-parent nodes were lost.
+ * - /projects: a graph BFS over everything reachable by containment — the only
+ *   complete one.
  *
- * 규칙: "이 도메인/프로젝트에 속한 개념 수" 를 말하는 표면은 전부 이
- * BFS 를 쓴다. containment(`contains`/`belongs_to`)를 parent→child 로
- * 정규화해 도달 가능한 capability/element 를 kind 별로 센다. 사이클
- * 안전(visited), 노드별 유일 집계(중복 경로 이중 가산 없음).
+ * Rule: every screen that states "how many concepts belong to this
+ * domain/project" uses this BFS. It normalises containment
+ * (`contains`/`belongs_to`) to parent→child and counts reachable capabilities and
+ * elements per kind. Cycle-safe (visited set), and each node is counted once, so
+ * duplicate paths never double-count.
  */
 export interface DomainCensusRow {
   id: string;
@@ -22,14 +24,14 @@ export interface DomainCensusRow {
   capabilityCount: number;
   elementCount: number;
   total: number;
-  /** `collectCapabilityIds` 옵션일 때만 — 도달한 capability 노드 id 들. */
+  /** Only with the `collectCapabilityIds` option — the reached capability node ids. */
   capabilityIds?: string[];
 }
 
 const DEFAULT_TARGET_KINDS: readonly string[] = ["domain", "project"];
 
 export interface DomainCensusOptions {
-  /** P-1 — 프로젝트 상세처럼 카운트 외에 멤버 목록(상위 역량 랭킹용)이 필요한 표면. */
+  /** For screens that need the member list as well as the count, such as project detail ranking its top capabilities. */
   collectCapabilityIds?: boolean;
 }
 
@@ -81,8 +83,8 @@ export function computeDomainCensusRows(
 
     rows.push({
       id: node.id,
-      // 과제 ⑩ — 표시용 짧은 제목. INDEX 서브카운트 · 도메인 용량 카드 ·
-      // /projects 도메인 목록 · MiniDomainMap 이 전부 이 rows 를 공유한다.
+      // Short display title. The INDEX subcount, the domain capacity card, the
+      // /projects domain list and MiniDomainMap all share these rows.
       title: node.display ?? node.title,
       capabilityCount,
       elementCount,
@@ -94,17 +96,18 @@ export function computeDomainCensusRows(
   return rows.sort((a, b) => b.total - a.total || a.title.localeCompare(b.title));
 }
 
-/** 표면에서 O(1) 조회용 — id → row. */
+/** id → row, for O(1) lookup from a screen. */
 export function domainCensusById(rows: readonly DomainCensusRow[]): ReadonlyMap<string, DomainCensusRow> {
   return new Map(rows.map((row) => [row.id, row]));
 }
 
 /**
- * P-2 — "이 노드 집합에 속한 문서 수". document 노드는 containment BFS
- * (contains/belongs_to)로는 projectIds 가 절대 안 채워진다 — vault 관례상
- * `relates:` 로만 개념과 이어지기 때문. 그래서 소속 판정된 멤버와 어떤
- * edge 로든 이어진 document 를 센다 (containment 보다 1 hop 넓힘). 프로젝트
- * 카드(/projects)와 상세가 같은 규칙을 써야 "문서 0 vs 3" 모순이 안 난다.
+ * "How many documents belong to this set of nodes." A containment BFS
+ * (contains/belongs_to) never fills `projectIds` for document nodes, because by
+ * vault convention documents connect to concepts only through `relates:`. So
+ * this counts documents joined by **any** edge to a node already judged a member
+ * — one hop wider than containment. The /projects card and the detail view must
+ * use the same rule, or they contradict each other with "0 documents vs 3".
  */
 export function countConnectedDocuments(
   nodes: readonly KnowledgeGraphNode[],

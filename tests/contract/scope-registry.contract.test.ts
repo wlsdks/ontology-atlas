@@ -8,47 +8,47 @@ import {
 } from "@/views/home/model/url-state";
 
 /**
- * # 선언된 범위 등록부 — 「범위를 넘긴 상태」의 게이트
+ * # Declared scope registry — the gate for state that outlived its scope
  *
- * ## 이 부류가 무엇인가
+ * **What this class of defect is.** State that only has meaning within scope X (a
+ * vault) survives a change of X and becomes **the input to a false verdict**.
+ * Observed in practice:
  *
- * **범위를 넘긴 상태**: 어떤 상태가 범위 X(볼트)에서만 뜻이 있는데, X 가 바뀌어도
- * 살아남아 **거짓 판정의 입력**이 된다. 실제로 관측된 것들:
+ * - docs `?slug=` — judging "the requested document does not exist" for a document
+ *   nobody requested
+ * - editor draft — another vault's body presented as my unsaved change, and when the
+ *   bytes match, **saving overwrote someone else's file**
+ * - map `?p=` — a non-existent node judged as the selection, dimming the whole map
+ * - `?pathFrom`/`?pathTo` — **asserting "no path"** between two non-existent nodes
+ * - change baseline and notification read timestamps — per-vault content under a
+ *   global key
  *
- * - 문서함 `?slug=` — 아무도 요청하지 않은 문서를 "요청한 문서가 없다" 로 판정
- * - 에디터 초안 — 남의 볼트 본문이 내 미저장 변경으로 제시되고, 바이트가 같으면
- *   **저장이 남의 파일을 덮어썼다**
- * - 지도 `?p=` — 없는 노드를 선택으로 판정해 지도가 통째로 흐려짐
- * - `?pathFrom`/`?pathTo` — 없는 노드 둘을 놓고 **「경로 없음」이라고 단언**
- * - 변경 baseline · 알림 읽음 시각 — 볼트별 내용인데 전역 키
+ * **Why a contract test rather than lint.** The defect is **a relationship between a
+ * key and a scope living in another file**, and the failing state leaves no literal
+ * behind — a cleanup effect that is *absent* is invisible to an AST selector.
+ * `no-restricted-syntax` matches the AST of one file and cannot express this spec
+ * (.claude/rules/design.md: layers lint cannot see belong to contract tests).
  *
- * ## 왜 lint 가 아니라 계약 테스트인가
+ * **The registry is the gate.** The two tables below carry **every** URL query key
+ * and persistent storage key, one row each. Three checks:
  *
- * 결함이 **키와 다른 파일에 사는 범위 사이의 관계**이고, 실패 상태가 리터럴을
- * 남기지 않는다 — *없는* 정리 effect 는 AST 셀렉터에 보이지 않는다.
- * `no-restricted-syntax` 는 한 파일의 AST 매칭이라 이 규격을 표현할 수 없다
- * (`design.md` "lint 가 못 보는 층은 계약 테스트가 맡는다").
+ * 1. a key in the code but not in the registry fails (no new key can appear quietly)
+ * 2. a key in the registry but not in the code fails (dead rows do not accumulate)
+ * 3. a `vault-scoped` key that is not protected fails — a storage key must be built
+ *    through a scope function, and a URL key must be in the cleanup list on a scope
+ *    change
  *
- * ## 등록부가 곧 게이트
- *
- * 아래 두 표가 **모든** URL 쿼리 키와 영속 저장 키를 한 줄씩 담는다. 검사는 셋:
- *
- * 1. 등록부에 없는 키가 코드에 있으면 실패 (새 키를 몰래 만들 수 없다)
- * 2. 등록부에 있는데 코드에 없으면 실패 (죽은 줄이 쌓이지 않는다)
- * 3. `vault-scoped` 인데 보호되지 않으면 실패 — 저장 키는 범위 함수를 거쳐
- *    만들어졌는가, URL 키는 범위 변화 시 정리 목록에 있는가
- *
- * 선례: `tests/contract/rules-path-scope.contract.test.ts`(등록부가 곧 게이트) ·
- * `src/entities/docs-vault/lib/vault-scope-key.ts`(범위 키의 선례).
+ * Precedents: `tests/contract/rules-path-scope.contract.test.ts` (registry as gate)
+ * and `src/entities/docs-vault/lib/vault-scope-key.ts` (scoped keys).
  */
 
 // ────────────────────────────────────────────────────────────────────────────
-// 범위 제공자 — **어떤 함수가 "정확한 범위" 인가**
+// Scope providers — **which functions count as an exact scope**
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * 볼트를 **정확히** 가르는 범위 제공자. `local:<폴더>` 와 `sample:<샘플>` 을
- * 모두 구별한다.
+ * Scope providers that separate vaults **exactly**. They distinguish both
+ * `local:<folder>` and `sample:<sample>`.
  */
 const EXACT_SCOPE_PROVIDERS = [
   "vaultIdentityScope",
@@ -57,17 +57,18 @@ const EXACT_SCOPE_PROVIDERS = [
 ] as const;
 
 /**
- * ⚠️ **`vaultScopeKey()` 만으로는 범위가 아니다.**
+ * ⚠️ **`vaultScopeKey()` alone is not a scope.**
  *
- * 그 함수는 **저장 namespace** 용이라 샘플 둘(도그푸드 · 예시 쇼핑몰)을
- * `'server'` 하나로 뭉뚱그린다. 그것을 "볼트가 바뀌었나" 의 판정에 쓰면
- * **샘플↔샘플 전환이 변화로 안 잡히고**, 이 게이트는 자기가 막으려던 결함을
- * 그대로 **인증**하게 된다.
+ * That function is for the **storage namespace**, so it collapses both samples
+ * (dogfood and the example storefront) into a single `'server'`. Using it to decide
+ * "did the vault change" means **a sample-to-sample switch is not seen as a change**,
+ * and this gate would **certify** the very defect it exists to block.
  *
- * 그렇다고 `vaultScopeKey` 를 넓히지도 않는다 — 그건 핀 · 최근 · 열린 탭의
- * **저장 자리를 옮기는 일**이라, 고치는 대신 사용자의 기존 목록을 고아로
- * 만든다. 그래서 이미 배포된 아래 네 자리만 이 거친 범위를 쓸 수 있고,
- * **목록은 얼어 있다** — 새 키가 여기 들어오려면 이 문단을 고쳐야 한다.
+ * Widening `vaultScopeKey` is not the answer either — that would **move the storage
+ * location** of pins, recents, and open tabs, orphaning users' existing lists instead
+ * of fixing anything. So only the four already-shipped sites below may use this
+ * coarse scope, and **the list is frozen**: a new key can only join by editing this
+ * paragraph.
  */
 const FROZEN_COARSE_SCOPE_KEYS = new Set([
   "demo:docs-vault:pinned:v1:",
@@ -77,14 +78,15 @@ const FROZEN_COARSE_SCOPE_KEYS = new Set([
 ]);
 
 // ────────────────────────────────────────────────────────────────────────────
-// ① URL 쿼리 키 등록부 — 지도(`/topology`)의 주소 어휘
+// ① URL query key registry — the map's address vocabulary (`/topology`)
 // ────────────────────────────────────────────────────────────────────────────
 
 type Scope = "global" | "vault-scoped";
 
 /**
- * `global` = 값이 **고정된 열거**라 어느 볼트에서나 같은 뜻.
- * `vault-scoped` = 값이 **이 볼트의 이름**이라, 볼트가 바뀌면 아무것도 안 가리킨다.
+ * `global` = the value is a **fixed enumeration**, so it means the same in any vault.
+ * `vault-scoped` = the value is **a name from this vault**, so after a vault change it
+ * points at nothing.
  */
 const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string }> = {
   p: { scope: "vault-scoped", note: "선택 노드/프로젝트 슬러그" },
@@ -110,36 +112,38 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string }> = {
 };
 
 // ────────────────────────────────────────────────────────────────────────────
-// ② 영속 저장 키 등록부
+// ② Persistent storage key registry
 // ────────────────────────────────────────────────────────────────────────────
 
 interface StorageEntry {
   key: string;
   /**
-   * `storage` = localStorage/sessionStorage/IndexedDB 키(또는 그 접두사).
-   * `event` = 같은 namespace 를 쓰는 window 이벤트 이름 — 저장이 아니다.
-   *   스캐너가 리터럴만 보고는 둘을 못 가르므로 여기 함께 등재한다(사각지대 0).
-   * `legacy` = **더 이상 쓰지 않는 옛 키.** 되읽지 않고, 한 번 치우기만 한다.
+   * `storage` = a localStorage/sessionStorage/IndexedDB key (or its prefix).
+   * `event` = a window event name sharing the same namespace — not storage. The
+   *   scanner sees only literals and cannot tell them apart, so they are registered
+   *   here too (zero blind spots).
+   * `legacy` = **an old key no longer in use.** Never read back, only cleaned up once.
    */
   kind: "storage" | "event" | "legacy";
   scope: Scope;
-  /** `vault-scoped` 저장 키가 범위를 받는 함수 이름. */
+  /** The function name through which a `vault-scoped` storage key receives its scope. */
   scopedBy?: string;
-  /** 키 리터럴을 선언한 파일 — "선언 자리가 옮겨졌나" 검사가 이걸 본다. */
+  /** The file declaring the key literal — the "did the declaration move" check reads this. */
   file?: string;
   /**
-   * **행동으로 잠근 시험 파일.** 소스에 범위 함수 *이름이 있는지* 보는 검사는
-   * 보호를 증명하지 못한다 — 실측(2026-08-01): 훅 안에서 범위를 떼어냈는데
-   * 파일이 여전히 그 이름을 언급해 계약 시험이 초록이었다. 그래서 각 키는
-   * "볼트 A 에 쓴 값이 볼트 B 에서 안 보인다" 를 실제로 단언하는 시험을
-   * 지목해야 한다. 그 시험이 이 부류의 진짜 탐지기다.
+   * **The test file that locks the behaviour.** Checking whether the scope function's
+   * *name appears* in the source does not prove protection — measured 2026-08-01: the
+   * scope was removed inside a hook while the file still mentioned the name, and the
+   * contract test stayed green. So every key must name a test that actually asserts
+   * "a value written in vault A is not visible in vault B". That test is this class's
+   * real detector.
    */
   provenBy?: string;
   note: string;
 }
 
 const STORAGE_KEY_REGISTRY: StorageEntry[] = [
-  // ── 앱 자체에 대한 상태 (볼트 무관) ─────────────────────────────────────
+  // ── State about the app itself (vault-independent) ───────────────────────
   { key: "app-update:dismissed-version", kind: "storage", scope: "global", note: "무시한 업데이트 버전" },
   { key: "app-update:last-check", kind: "storage", scope: "global", note: "업데이트 확인 시각" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "프레임 미터 표시 선호" },
@@ -152,8 +156,9 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "글리프 세트 선호" },
   { key: "ontology-atlas:accent:v1", kind: "storage", scope: "global", note: "악센트 팔레트 선호(잉걸/인디고)" },
   { key: "ontology-atlas:footprint:v1", kind: "storage", scope: "global", note: "발자국 트레일 선호" },
-  // 확장 어포던스·구조·세 숫자. 발자국·배경과 같은 화면 취향이라 볼트와 무관하다 —
-  // 폴더를 바꿔도 "펼치는 방식"에 대한 내 선호는 그대로여야 한다.
+  // Expansion affordance, structure, and three numbers. Screen preferences like the
+  // footprint and the background, so vault-independent — changing folder must not
+  // change my preference for how things expand.
   { key: "ontology-atlas:expand:v1", kind: "storage", scope: "global", note: "확장 어포던스·구조·개수 선호" },
   { key: "atlas.acp-chat.width", kind: "storage", scope: "global", note: "대화 칸 폭 — 이 컴퓨터의 화면 취향이라 볼트를 바꿔도 그대로다" },
   { key: "ontology-atlas:locale", kind: "storage", scope: "global", note: "화면 언어" },
@@ -175,20 +180,20 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "guided-tour:${destination}:v1", kind: "storage", scope: "global", note: "목적지별 투어 완료 표시" },
   { key: "ontology-atlas:last-route", kind: "storage", scope: "global", note: "**아무도 안 읽는다** — 라우트 복원이 2026-07-30 에 폐기됐다(`locale-redirect.tsx`). 결함이 아니라 죽은 키라 이 등록부는 사실만 적고 삭제는 별건으로 남긴다" },
 
-  // ── 범위를 *정의*하는 것들 (그 자체가 "어느 볼트인가" 의 답) ──────────
+  // ── Things that *define* the scope (they are the answer to "which vault") ──
   { key: "demo:sample-source:v1", kind: "storage", scope: "global", note: "어느 내장 샘플인가 — 범위의 입력이지 범위 안의 상태가 아니다" },
   { key: "demo:docs-vault:source", kind: "storage", scope: "global", note: "local|server 중 무엇을 보는가" },
   { key: "docs-vault:current-handle", kind: "storage", scope: "global", note: "IndexedDB — 현재 볼트 핸들" },
   { key: "docs-vault:fs-handle:", kind: "storage", scope: "global", note: "IndexedDB store 접두사 — 볼트 핸들 보관" },
   { key: "docs-vault:fs-handle:recent", kind: "storage", scope: "global", note: "IndexedDB — 최근 볼트 핸들" },
 
-  // ── 한 화면에서 다음 화면으로 넘기는 1회성 의도 (세션) ────────────────
+  // ── One-shot intent handed from one screen to the next (session) ─────────
   { key: "demo:open-search", kind: "storage", scope: "global", note: "세션 — 검색 팔레트 열기 의도" },
   { key: "demo:open-shortcuts", kind: "storage", scope: "global", note: "세션 — 단축키 시트 열기 의도" },
   { key: "ontology-atlas:route-focus-intent", kind: "storage", scope: "global", note: "세션 — 라우트 이동 후 포커스 대상" },
   { key: "ontology-atlas:settings-locale-focus", kind: "storage", scope: "global", note: "세션 — 설정 시트 언어 칸 포커스" },
 
-  // ── 볼트별 내용 — 정확한 범위로 보호됨 ────────────────────────────────
+  // ── Per-vault content — protected by an exact scope ──────────────────────
   {
     key: "demo:change-baseline:v1:",
     kind: "storage",
@@ -208,9 +213,9 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "알림 「여기까지 봤다」 — 피드가 볼트별이라 임계값도 볼트별",
   },
 
-  // ── 볼트별 내용 — 거친 범위(`vaultScopeKey`)로만 보호됨 ───────────────
-  //    이미 배포된 저장 자리라 넓히면 사용자 목록이 고아가 된다.
-  //    위 `FROZEN_COARSE_SCOPE_KEYS` 문단이 근거.
+  // ── Per-vault content — protected only by the coarse scope (`vaultScopeKey`) ──
+  //    Already-shipped storage locations; widening them orphans users' lists.
+  //    The `FROZEN_COARSE_SCOPE_KEYS` paragraph above is the evidence.
   {
     key: "demo:docs-vault:pinned:v1:",
     kind: "storage",
@@ -248,7 +253,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "활성 탭 — 위와 같음",
   },
 
-  // ── 볼트별 내용인데 **보호되지 않음** (아래 KNOWN_UNPROTECTED 참조) ────
+  // ── Per-vault content that is **not protected** (see KNOWN_UNPROTECTED below) ──
   {
     key: "ontology-atlas:docs-vault-editor-draft:",
     kind: "storage",
@@ -264,7 +269,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "최근 검색 슬러그 — 소비처가 현재 노드와 교집합으로 걸러 피해가 작다",
   },
 
-  // ── 옛 키 — 되읽지 않는다 ────────────────────────────────────────────
+  // ── Legacy keys — never read back ────────────────────────────────────────
   {
     key: "demo:change-baseline:v1",
     kind: "legacy",
@@ -284,7 +289,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "최근 문서 v1 — v2 로 마이그레이션 후 읽고 치우기만 한다",
   },
 
-  // ── 이벤트 이름 (저장이 아니다 — 같은 namespace 라 함께 등재) ─────────
+  // ── Event names (not storage — registered here because they share the namespace) ──
   { key: "ontology-atlas:agent-activity-read", kind: "event", scope: "global", note: "읽음 표시 브로드캐스트" },
   { key: "ontology-atlas:appearance-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:audience-preference-change", kind: "event", scope: "global", note: "" },
@@ -304,12 +309,12 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
 ];
 
 /**
- * **오늘 알면서 안 고친 것** — 각 줄에 이유가 있다.
+ * **Knowingly unfixed today** — each row carries its reason.
  *
- * 이 목록이 있는 이유: 게이트가 "모두 보호됨" 이라고 거짓말하는 것보다, 무엇이
- * 안 보호됐는지 이름으로 적혀 있는 편이 정직하다. 새 위반은 여기 없으므로 즉시
- * 실패한다. 상한(`MAX_KNOWN_UNPROTECTED`)이 래칫이라 목록은 늘지 못한다 —
- * 줄어들 때는(수리가 머지되면) 조용히 통과한다.
+ * Why this list exists: naming what is unprotected is more honest than a gate that
+ * claims everything is protected. A new violation is not on this list and therefore
+ * fails immediately. The ceiling (`MAX_KNOWN_UNPROTECTED`) is a ratchet, so the list
+ * cannot grow — and when it shrinks (a repair merges) it passes quietly.
  */
 const KNOWN_UNPROTECTED: Record<string, string> = {
   "ontology-atlas:docs-vault-editor-draft:":
@@ -320,14 +325,15 @@ const KNOWN_UNPROTECTED: Record<string, string> = {
 const MAX_KNOWN_UNPROTECTED = 2;
 
 // ────────────────────────────────────────────────────────────────────────────
-// 스캐너 — 코드에 실재하는 키 리터럴
+// Scanner — key literals that really exist in the code
 // ────────────────────────────────────────────────────────────────────────────
 
 const REPO_ROOT = join(__dirname, "..", "..");
 
 /**
- * 저장 키가 사는 namespace. 이 앱이 쓰는 접두사 전부 — 새 접두사로 키를 만들면
- * 스캐너가 못 보므로, 그런 키는 여기부터 넓혀야 한다.
+ * The namespaces storage keys live in — every prefix this app uses. A key created
+ * under a new prefix is invisible to the scanner, so such a key must widen this list
+ * first.
  */
 const KEY_NAMESPACE_SHAPE =
   /^(demo:|ontology-atlas:|atlas\.|atlas:|docs-vault:|docsVault:|guided-tour:|app-update:|dev:|vault-open-guide:)[A-Za-z0-9:._$%{}-]*$/;
@@ -352,7 +358,7 @@ function sourceFiles(): string[] {
   return files;
 }
 
-/** 주석 안의 예시 문자열은 키가 아니다 — 자리를 유지한 채 지운다. */
+/** An example string inside a comment is not a key — blanked out while preserving offsets. */
 function stripComments(text: string): string {
   return text
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
@@ -383,7 +389,7 @@ const SCANNED = scanKeyLiterals();
 const REGISTERED = new Map(STORAGE_KEY_REGISTRY.map((entry) => [entry.key, entry]));
 
 // ────────────────────────────────────────────────────────────────────────────
-// 검사
+// Checks
 // ────────────────────────────────────────────────────────────────────────────
 
 describe("범위 등록부 — URL 쿼리 키", () => {
@@ -405,9 +411,9 @@ describe("범위 등록부 — URL 쿼리 키", () => {
   });
 
   /**
-   * 태그가 실제 정리 목록과 일치해야 한다. 어긋나면 등록부는 "보호된다" 고
-   * 적혀 있는데 코드는 아무것도 안 걷어내는 상태가 된다 — 게이트가 결함을
-   * 인증하는 바로 그 자리.
+   * The tag must match the actual cleanup list. A mismatch leaves the registry saying
+   * "protected" while the code clears nothing — precisely where a gate certifies a
+   * defect.
    */
   it("vault-scoped 로 태그된 키가 곧 정리 목록이다", () => {
     const tagged = Object.entries(URL_KEY_REGISTRY)
@@ -418,9 +424,9 @@ describe("범위 등록부 — URL 쿼리 키", () => {
   });
 
   /**
-   * 순수 판정 함수만 시험하면 **배선이 빠진 것을 못 본다** — 함수는 초록인데
-   * 화면은 옛날 그대로일 수 있다. 그래서 소비처가 실제로 그 함수를 부르는지
-   * 소스로 확인한다(선례: `rules-path-scope.contract.test.ts`).
+   * Testing the pure predicate alone **cannot see missing wiring** — the function is
+   * green while the screen is unchanged. So the source is checked for consumers really
+   * calling it (precedent: `rules-path-scope.contract.test.ts`).
    */
   it("판정 함수들이 지도에 실제로 배선돼 있다", () => {
     const homePage = readFileSync(
@@ -428,12 +434,12 @@ describe("범위 등록부 — URL 쿼리 키", () => {
       "utf8",
     );
     for (const wired of [
-      // 볼트가 바뀌면 볼트 전용 주소 상태를 걷어낸다
+      // On a vault change, clear vault-specific address state
       "clearVaultScopedRouteState",
       "useVaultIdentityScope",
-      // 없는 노드를 포커스로 넘기지 않는다
+      // Never hand a non-existent node through as the focus
       "resolveCanvasSelectedSlug",
-      // 없는 끝점을 「경로 없음」이라 단언하지 않고, 에이전트에게도 안 넘긴다
+      // Never assert "no path" for non-existent endpoints, and never pass them to the agent
       "resolveTopologyPathChipState",
       "canCopyTopologyPathPacket",
     ]) {
@@ -473,9 +479,9 @@ describe("범위 등록부 — 영속 저장 키", () => {
   });
 
   /**
-   * **`vaultScopeKey` 는 정확한 범위가 아니다.** 이 시험이 없으면 등록부는
-   * 샘플 둘을 뭉뚱그리는 키를 "보호됨" 으로 인증한다 — 막으려던 결함을
-   * 게이트가 승인하는 자리.
+   * **`vaultScopeKey` is not an exact scope.** Without this test the registry certifies
+   * a key that collapses the two samples as "protected" — the gate approving the defect
+   * it exists to block.
    */
   it("거친 범위(vaultScopeKey)는 얼어 있는 네 자리에서만 허용된다", () => {
     const offenders = STORAGE_KEY_REGISTRY.filter(
@@ -498,11 +504,12 @@ describe("범위 등록부 — 영속 저장 키", () => {
   });
 
   /**
-   * **보호의 증거는 시험이다.** 소스에 범위 함수 이름이 있는지 보는 검사는
-   * 실측에서 통과해 버렸다(`StorageEntry.provenBy` 주석). 그래서 각 키는
-   * "볼트 A 에 쓴 값이 볼트 B 에서 안 보인다" 를 단언하는 시험 파일을 지목하고,
-   * 이 검사는 그 파일이 실재하고 그 키를 실제로 다루는지만 본다 — 되돌리면
-   * 빨개지는 것은 이 시험이 아니라 **그 시험**이다.
+   * **The evidence of protection is a test.** Checking whether the scope function's
+   * name appears in the source passed in a real measurement (see the
+   * `StorageEntry.provenBy` comment). So each key names a test file asserting "a value
+   * written in vault A is not visible in vault B", and this check only verifies that
+   * file exists and really handles that key — what turns red on a revert is **that
+   * test**, not this one.
    */
   it("vault-scoped 저장 키는 행동으로 잠긴 시험을 지목한다", () => {
     const unprotected: string[] = [];
@@ -514,7 +521,7 @@ describe("범위 등록부 — 영속 저장 키", () => {
         unprotected.push(`${entry.key} — scopedBy/provenBy 미선언`);
         continue;
       }
-      // 접두사여야 한다 — 뒤에 범위가 붙을 자리가 없으면 범위를 못 받는다.
+      // It must be a prefix — with no room for a scope suffix it cannot receive one.
       if (!entry.key.endsWith(":")) {
         unprotected.push(`${entry.key} — 접두사가 아니라 붙일 자리가 없다`);
         continue;
@@ -561,7 +568,7 @@ describe("범위 등록부 — 영속 저장 키", () => {
       if (entry.kind !== "legacy") continue;
       for (const file of SCANNED.get(entry.key) ?? []) {
         const source = stripComments(readFileSync(join(REPO_ROOT, file), "utf8"));
-        // `demo:docs-vault:recent:v1` 은 마이그레이션이라 읽기가 정당하다.
+        // Reading `demo:docs-vault:recent:v1` is legitimate because it is a migration.
         if (entry.key === "demo:docs-vault:recent:v1") continue;
         const readsIt = new RegExp(
           `getItem\\(\\s*["'\`]${entry.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,

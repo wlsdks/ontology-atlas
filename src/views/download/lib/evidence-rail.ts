@@ -1,15 +1,15 @@
 import type { StageGraph } from './stage-graph';
 
 /**
- * 증거 절 우측 레일의 데이터 — **전부 왼쪽 지도와 같은 `StageGraph` 에서
- * 파생된다** (2026-08-18 소유자 지적: 절의 80%가 빈 검정 — *"반 자르고
- * 우측에는 뭔가 다른걸"*). 장식이 아니라 증거이므로, 여기 적히는 숫자·관계·
- * 이름은 하나도 지어내지 않는다: 캡션·지도와 같은 객체를 세고, 같은 frontmatter
- * 관계를 그대로 옮겨 적는다.
+ * Data for the evidence section's right-hand rail — **all of it derived from the same `StageGraph`
+ * as the map on the left** (owner report 2026-08-18: 80% of the section was empty black —
+ * *"반 자르고 우측에는 뭔가 다른걸"*, cut it in half and put something else on the right). It is
+ * evidence rather than decoration, so nothing here is invented: the numbers, relations, and names
+ * count the same object as the caption and the map, and copy the same frontmatter relations verbatim.
  *
- * 선택은 전부 결정적이다(빈도 내림차순 → 이름 오름차순) — 같은 볼트면 어느
- * 빌드에서도 같은 세 줄이 나온다. 스냅숏이 아니라 파생이라 볼트가 자라면
- * 화면도 따라간다.
+ * Every selection is deterministic (frequency descending, then name ascending) — the same vault
+ * yields the same three lines on any build. It is derived rather than a snapshot, so the screen
+ * grows as the vault does.
  */
 
 export interface EvidenceCensusRow {
@@ -49,14 +49,14 @@ export function buildEvidenceRailModel(graph: StageGraph): EvidenceRailModel {
     if (count > 0) census.push({ kind, count });
   }
 
-  // 관계 세 줄 — 가장 흔한 관계 타입 셋을 고르고, 각 타입에서 (source, target)
-  // 사전순 첫 엣지를 옮겨 적는다. 흔한 타입이 먼저인 이유: 이 볼트가 실제로
-  // 무엇으로 짜여 있는지가 증거이지, 희귀한 타입의 전시가 아니다.
-  // ⚠️ 정렬은 전부 **코드포인트 비교**다. `localeCompare` 는 서버(Node ICU)와
-  // 브라우저가 한글·라틴 혼합 정렬을 다르게 매겨 SSR 하이드레이션이 갈라진다
-  // (실측 2026-08-18: 서버 "Agent Connect…" vs 클라이언트 "그래프 모델…").
-  // 비교 키도 표시 라벨이 아니라 **노드 id(슬러그)** 다 — 라벨은 로케일마다
-  // 다르지만 id 는 어디서나 같은 ASCII 라서 어느 로케일이든 같은 줄이 뽑힌다.
+  // Three relation lines — pick the three most common relation types, and from each copy the
+  // alphabetically first edge by (source, target). Common types come first because what this vault
+  // is actually woven from is the evidence, not a display of rare types.
+  // ⚠️ Every sort is a **code-point comparison**. `localeCompare` orders mixed Korean and latin
+  // differently on the server (Node ICU) and in the browser, which splits SSR hydration (measured
+  // 2026-08-18: server "Agent Connect…" vs client "그래프 모델…"). The comparison key is the
+  // **node id (slug)** rather than the display label — labels differ per locale, ids are the same
+  // ASCII everywhere, so the same lines are picked in either locale.
   const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
   const byType = new Map<string, { sourceId: string; targetId: string }[]>();
   for (const edge of graph.edges) {
@@ -79,9 +79,9 @@ export function buildEvidenceRailModel(graph: StageGraph): EvidenceRailModel {
     };
   });
 
-  // 영향 반경 — 비-컨테인먼트(depends 부류) 엣지가 가장 많이 향하는 노드 하나.
-  // 「이걸 고치면 몇 곳이 흔들리나」는 에이전트가 이 그래프에 실제로 묻는
-  // 질문이라(`find_backlinks`), 그 답 하나가 이 절의 가장 강한 증거다.
+  // Impact radius — the single node that the most non-containment (depends-family) edges point at.
+  // "How many places shake if I change this" is a question an agent really asks of this graph
+  // (`find_backlinks`), so that one answer is this section's strongest evidence.
   const incoming = new Map<string, number>();
   for (const edge of graph.edges) {
     if (edge.kind !== 'depends') continue;

@@ -12,26 +12,28 @@ import { DESTINATION_IDS } from "@/shared/config/destinations";
 const DESTINATIONS = Object.keys(DESTINATION_TOURS) as DestinationTourId[];
 
 /**
- * 레일 목적지 중 지도를 뺀 전부 — 하나라도 빠지면 **그 화면만 안내가 없다.**
+ * Every rail destination except the map — missing one means **that screen alone has
+ * no guidance.**
  *
- * ⚠️ **손으로 적은 목록에서 도출로 바꿨다** (2026-08-20). 종전에는 기대값이
- * 문자열 배열로 박혀 있었다. 그게 목적지를 늘릴 때 신호를 주기는 했지만
- * (「에이전트」 신설 때 실제로 여기서 먼저 터졌다), **다음 사람이 할 일은
- * 「안내를 만든다」가 아니라 「목록에 한 줄 더한다」가 되기 쉽다** — 그러면
- * 게이트가 스스로 무력해진다.
+ * ⚠️ **Changed from a hand-written list to a derivation** (2026-08-20). The expected
+ * value used to be a pinned string array. That did signal when a destination was
+ * added (adding "agents" really did break here first), but **the next person's task
+ * then reads as "add a line to the list" rather than "write the guidance"** — and the
+ * gate defeats itself.
  *
- * 이제 `DESTINATION_IDS`(레일의 정본)에서 지도를 빼고 도출한다. 목적지를
- * 늘리면 이 검사가 **안내가 없다고** 말하지, 목록이 다르다고 말하지 않는다.
+ * It is now derived from `DESTINATION_IDS` (the rail's source of truth) minus the
+ * map. Adding a destination makes this check say **there is no guidance**, not that
+ * the lists differ.
  */
 describe("목적지 안내", () => {
   it("지도를 뺀 모든 레일 목적지가 자기 안내를 갖는다", () => {
-    // 지도는 캔버스 앵커·인터랙티브 클릭이 있는 8단계라 `TOUR_STEPS` 가 소유한다.
+    // The map is an eight-step journey with canvas anchors and an interactive click, so `TOUR_STEPS` owns it.
     const expected = DESTINATION_IDS.filter((id) => id !== "map").slice().sort();
     expect(DESTINATIONS.slice().sort()).toEqual(expected);
   });
 
   it("검사기가 헛돌지 않는다 — 목적지를 실제로 읽어 왔다", () => {
-    // 정본이 비면 위 시험은 「빈 배열 == 빈 배열」로 통과해 버린다.
+    // If the source of truth were empty, the test above would pass as "empty == empty".
     expect(DESTINATION_IDS.length).toBeGreaterThan(5);
     expect(DESTINATION_IDS).toContain("map");
   });
@@ -40,9 +42,9 @@ describe("목적지 안내", () => {
     for (const id of DESTINATIONS) {
       const steps = DESTINATION_TOURS[id];
       expect(steps).toHaveLength(2);
-      // 첫 장은 앵커 없는 중앙 카드 — 화면 어디를 가리키는지와 무관하게 뜬다.
+    // The first page is a centred card with no anchor — it appears regardless of what it points at.
       expect(steps[0].anchor).toBeNull();
-      // 둘째 장은 화면에 실제로 있는 요소를 가리킨다(캔버스 앵커는 지도 전용).
+    // The second page points at an element really on screen (canvas anchors are map-only).
       expect(steps[1].anchor).toEqual({ type: "testid", value: expect.any(String) });
       expect(steps.every((s) => s.persona === "all")).toBe(true);
     }

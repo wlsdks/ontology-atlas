@@ -26,35 +26,30 @@ import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolv
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
 /**
- * Engraved frontmatter visualization — "frontmatter 가 곧 그래프" made literal
+ * Engraved frontmatter visualization — "the frontmatter is the graph" made literal
  * in the editor. Renders the ontology-shaped subset of `doc.frontmatter`
  * (kind/slug/title/domain/depends_on/relates_to/contains/belongs_to/evidence)
  * as a machined mono block, mirroring exactly what `deriveOntologyFromVault`
  * reads to build the topology graph.
  *
- * Only rendered when `frontmatter.kind` is present — plain guide docs (no
- * ontology kind) don't get an (empty, confusing) block.
+ * Collapsed by default (`<details open={false}>`) — on long documents this block
+ * used to push the H1 below the first screen. Frontmatter is the graph source, so
+ * it is never deleted or hidden from the DOM, only collapsed; the summary line
+ * still surfaces `kind` / `slug` / field count so the reader knows what is inside
+ * before expanding. The caller mounts this with `key={doc.slug}`, so switching
+ * documents remounts it and resets the collapse state — no cross-document memory,
+ * no URL or session pollution.
  *
- * Collapsed by default (`<details open={false}>`) — long documents used to
- * have this block push the H1 below the first screen. Frontmatter is the
- * graph source so it's never deleted/hidden from the DOM, only collapsed;
- * the summary line still surfaces `kind` / `slug` / field count so the
- * reader knows what's inside before expanding. Caller mounts this component
- * with `key={doc.slug}` so switching documents remounts it and resets the
- * collapse state — no cross-document memory, no URL/session pollution.
- *
- * P5b — quick-patch action (.qa-scratch/docs-identity-2026-07/verdict.md
- * 더하기①, "문서함 = 의미 편집실"). When a writable local vault is loaded
- * (`canEdit` + `onPatch` supplied) and the doc's kind is one the vault
- * schema recognizes, an inline edit affordance lets the reader fix
- * kind/domain/title in place — typed fields get a typed (select) tool
- * instead of raw YAML hand-editing. Saves go through the same
- * `updateFrontmatter` conflict-guarded write path the map contextual editor
- * uses for its relation writes — one write path, shared.
+ * Quick-patch action: when a writable local vault is loaded (`canEdit` plus
+ * `onPatch`) and the doc's kind is one the vault schema recognizes, an inline edit
+ * affordance lets the reader fix kind/domain/title in place — a typed field gets a
+ * typed (select) tool instead of hand-edited raw YAML. Saves go through the same
+ * conflict-guarded `updateFrontmatter` write path the map's contextual editor uses
+ * for its relation writes — one write path, shared.
  */
 
-// rank7 — 안정된 빈 Map 참조. props 로 안 넘어온 경우 매 렌더 새 Map 을
-// 만들지 않도록(useMemo dep 안정성).
+// A stable empty Map reference, so a render without the prop does not build a new
+// Map each time (keeping `useMemo` deps stable).
 const EMPTY_SELF_EDIT_TIMESTAMPS: ReadonlyMap<string, number> = new Map();
 
 const GRAPH_KEYS = [
@@ -71,8 +66,8 @@ const GRAPH_KEYS = [
   "evidence",
 ] as const;
 
-// vault frontmatter schema 가 인식하는 편집 가능 kind 만 — vault-readme /
-// unknown 같은 sentinel kind 는 이 select 로 건드리지 않는다.
+// Only the kinds the vault frontmatter schema treats as editable — sentinel kinds
+// such as vault-readme and unknown are not touched by this select.
 const EDITABLE_KINDS = ["project", "domain", "capability", "element", "document"] as const;
 type EditableKind = (typeof EDITABLE_KINDS)[number];
 
@@ -80,9 +75,9 @@ function isEditableKind(kind: string): kind is EditableKind {
   return (EDITABLE_KINDS as readonly string[]).includes(kind);
 }
 
-// 다른 vault 노드를 슬러그로 가리키는 참조 키 — 읽기 모드에서 해소 가능한
-// 토큰은 클릭 내비게이션을 준다. evidence(파일 경로) / category / status(enum)
-// 는 노드 참조가 아니라 제외한다.
+// Reference keys that point at another vault node by slug — in read mode a resolvable
+// token gets click navigation. `evidence` (file paths), `category`, and `status` (enums)
+// are not node references and are excluded.
 const REFERENCE_KEYS = new Set<string>([
   "domain",
   "depends_on",
@@ -131,25 +126,25 @@ export interface DocFrontmatterPatch {
 
 export interface DocFrontmatterBlockProps {
   doc: VaultDoc;
-  /** local vault 가 쓰기 가능할 때만 true — 서버/샘플 볼트에선 읽기 전용. */
+  /** True only when a writable local vault is loaded — read-only on server/sample vaults. */
   canEdit?: boolean;
-  /** capability/element 의 domain select 후보 — vault 의 `kind: domain` 문서들. */
+  /** Domain candidates for a capability or element — the vault's `kind: domain` documents. */
   domainOptions?: Array<{ slug: string; title: string }>;
-  /** 확정된 필드만 담아 호출 — 저장은 caller (updateFrontmatter conflict
-   *  guard 경유) 책임. */
+  /** Called with confirmed fields only. Saving is the caller's responsibility, through the
+   *  conflict-guarded `updateFrontmatter`. */
   onPatch?: (patch: DocFrontmatterPatch) => Promise<void>;
-  /** 참조 슬러그를 클릭했을 때 해당 문서로 이동 — 없으면 참조는 평문. */
+  /** Navigates to a reference slug when clicked — without it, references stay plain text. */
   onNavigate?: (slug: string) => void;
-  /** 맨슬러그(frontmatter 참조 표기)를 실제 네비게이션 슬러그로 해소.
-   *  null 이면 vault 에 없는 참조라 링크로 만들지 않는다. */
+  /** Resolves a bare slug (the frontmatter reference spelling) to a real navigation slug.
+   *  Null means the reference is not in the vault, so it is not rendered as a link. */
   resolveRef?: (token: string) => string | null;
-  /** rank7 (design-council B5) — "마지막 편집 · AI 에이전트" 사실의 실데이터
-   *  출처. 없으면(서버/샘플 볼트) AI 주체 행은 절대 렌더되지 않는다. */
+  /** The real data behind the "last edited · AI agent" fact. Without it (a server or sample
+   *  vault) the AI subject row is never rendered. */
   agentActivityStatus?: AgentActivityStatus | null;
-  /** rank7 — "마지막 편집 · 나" 및 충돌 배지의 실데이터 출처. 이번 브라우저
-   *  세션이 실제로 vault 쓰기 API 를 거쳐 쓴 slug 의 기록
-   *  (`useLocalVault().selfEditTimestamps`). 없으면(서버/샘플 볼트) 둘 다
-   *  절대 렌더되지 않는다. */
+  /** The real data behind "last edited · me" and the conflict badge — the record of slugs
+   *  this browser session actually wrote through the vault write API
+   *  (`useLocalVault().selfEditTimestamps`). Without it (a server or sample vault) neither
+   *  is ever rendered. */
   selfEditTimestamps?: ReadonlyMap<string, number>;
 }
 
@@ -170,18 +165,17 @@ export function DocFrontmatterBlock({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // rank7 — 이 문서를 "연" 시점의 mtime baseline + "지금" 스냅샷(렌더
-  // purity — `useState(() => Date.now())` 지연 초기화는 이 앱의 기존
-  // `updatedAgoNowMs` 계약과 같은 패턴, `Date.now()` 를 렌더 중 직접
-  // 호출하지 않는다). 캐러가 `key={doc.slug}` 로 문서 전환마다 이 컴포넌트를
-  // remount 하므로(파일 상단 docstring 참고) 둘 다 매 새 문서마다 자연스럽게
-  // 새 baseline 으로 초기화된다.
+  // The mtime baseline at the moment this document was "opened", plus a "now" snapshot.
+  // The lazy `useState(() => Date.now())` matches this app's existing `updatedAgoNowMs`
+  // contract — `Date.now()` is never called during render. The caller remounts this
+  // component per document via `key={doc.slug}` (see the file docstring), so both reset to
+  // a fresh baseline for each new document.
   const openedMtimeRef = useRef(doc.mtime);
   const [viewOpenedAtMs] = useState(() => Date.now());
   const resolvedSelfEditTimestamps = selfEditTimestamps ?? EMPTY_SELF_EDIT_TIMESTAMPS;
-  // rank7 — 실데이터 2종(heartbeat 매치 / 이번 세션 자기 쓰기)만 후보로
-  // 넣는다. 둘 다 근거 없으면 null → 아래 렌더에서 주체 행 자체가 없다
-  // (마케팅 칩 재탕 금지).
+  // Only two real-data candidates go in: a heartbeat match, and a self-write this session.
+  // With neither, this is null and the subject row is not rendered at all — no recycled
+  // marketing chip.
   const lastEditSubjectFact = useMemo(
     () =>
       resolveDocLastEditSubject({
@@ -203,7 +197,7 @@ export function DocFrontmatterBlock({
       ageLabel: tProvenance(`age.${age.key}`, { count: age.count }),
     };
   })();
-  // rank7 — 실제 mtime mismatch 가 있을 때만 true(신호 인플레이션 금지).
+  // True only on a real mtime mismatch — no signal inflation.
   const mtimeConflict = hasDocMtimeConflict({
     doc: { slug: doc.slug, mtime: doc.mtime },
     baselineMtime: openedMtimeRef.current,
@@ -217,14 +211,14 @@ export function DocFrontmatterBlock({
   const [draftDomain, setDraftDomain] = useState(currentDomain);
   const [draftTitle, setDraftTitle] = useState(currentTitle);
 
-  // ② validator 진단 인라인 — 편집 중이면 draft(kind/domain), 아니면 저장된
-  // frontmatter 를 대상으로 debounce(400ms) 후 검증.
+  // Inline validator diagnostics — while editing, the draft (kind/domain) is validated;
+  // otherwise the saved frontmatter is, after a 400ms debounce.
   //
-  // **오류도 보여 준다** (2026-08-04 정정). 종전엔 `severity === "warning"` 으로
-  // 걸러서, `missing-uid`·`invalid-uid`·`empty-kind` 같은 **오류는 감추고 경고만**
-  // 보여 주고 있었다 — 정확히 거꾸로다. 실측: 오류 5건짜리 폴더에서 파일 옆에
-  // 뜬 것은 경고 3건뿐이었고, 노드를 지도에서 지우는 바로 그 오류들은 화면
-  // 어디에도 없었다.
+  // **Errors are shown too** (corrected 2026-08-04). It used to filter on
+  // `severity === "warning"`, so **errors were hidden and only warnings shown** —
+  // exactly backwards. Measured: in a folder with 5 errors, all that appeared beside the
+  // files were 3 warnings, and the errors that actually remove a node from the map were
+  // nowhere on screen.
   const activeKind = editing ? draftKind : currentKind ?? "";
   const activeDomain = editing ? draftDomain : currentDomain;
   const [debouncedValidation, setDebouncedValidation] = useState({
@@ -240,14 +234,14 @@ export function DocFrontmatterBlock({
 
   const validationIssues = useMemo<VaultDocumentIssue[]>(() => {
     const stored = doc.frontmatter ?? {};
-    // kind 가 아직 없으면 **저장된 frontmatter 를 그대로** 검사한다. 종전엔
-    // `if (!kind) return []` 로 빠져나가서, kind 없음/빔이 노드가 사라지는 가장
-    // 흔한 두 경로인데도 그 두 경우에만 화면이 침묵했다.
+    // With no kind yet, **the saved frontmatter is validated as-is**. It used to bail out
+    // with `if (!kind) return []`, so the screen went silent in exactly the two most common
+    // ways a node disappears: a missing kind and an empty one.
     const frontmatterForValidation: Record<string, unknown> = debouncedValidation.kind
       ? { ...stored, kind: debouncedValidation.kind, domain: debouncedValidation.domain }
       : stored;
     const issues = validateVaultDocFrontmatter(frontmatterForValidation).issues;
-    // 오류 먼저 — 읽는 순서가 곧 손볼 순서다.
+    // Errors first — reading order is repair order.
     return [
       ...issues.filter((issue) => issue.severity === "error"),
       ...issues.filter((issue) => issue.severity !== "error"),
@@ -263,8 +257,9 @@ export function DocFrontmatterBlock({
       "missing-expected-field": t("validatorIssues.missingExpectedField"),
       "non-canonical-graph-array": t("validatorIssues.nonCanonicalGraphArray"),
       "parse-zero-keys": t("validatorIssues.parseZeroKeys"),
-      // 오류 코드 넷 — 종전엔 사전에 없었다. 화면이 오류를 걸러 내고 있었으니
-      // 평문도 필요 없었던 것이고, 그게 이 결함의 크기를 말해 준다.
+    // The four error codes had no entries in this dictionary before. The screen was
+    // filtering errors out, so no plain-language text was needed — which measures the size
+    // of that defect.
       "missing-uid": t("validatorIssues.missingUid"),
       "invalid-uid": t("validatorIssues.invalidUid"),
       "duplicate-uid": t("validatorIssues.duplicateUid"),
@@ -274,9 +269,9 @@ export function DocFrontmatterBlock({
     [t],
   );
 
-  // ③ "규격 예시 보기" — 현재 문서 kind 의 완성 예시를, 새 문서 생성이 이미
-  // 쓰는 스키마 스타터(NewDocKindDialog 선택 → buildNewNodeDoc →
-  // buildVaultMarkdown)에서 그대로 파생한다. 복제 없음, 같은 원천 재사용.
+  // "See a spec example" — a complete example for the current document's kind, derived from
+  // the same schema starter new-document creation already uses (NewDocKindDialog →
+  // buildNewNodeDoc → buildVaultMarkdown). No duplicate; the same source reused.
   const [exampleOpen, setExampleOpen] = useState(false);
   const { state: exampleCopyState, copy: copyExample } = useCopyFeedback();
   const exampleDoc = useMemo(() => {
@@ -309,7 +304,7 @@ export function DocFrontmatterBlock({
     } => f.value !== null,
   );
 
-  // "코드 위치" — the REAL code evidence: raw file paths from frontmatter
+  // The code-location section — the REAL code evidence: raw file paths from frontmatter
   // `elements: [...]`. `elements` isn't in `GRAPH_KEYS` above (it's not a
   // single-line key:value fact, and its entries need a distinct visual
   // treatment — raw code paths are NOT vault-node references, so they must
@@ -331,26 +326,26 @@ export function DocFrontmatterBlock({
     }
   }
 
-  // C10 — the 공방/CREATE writer stores the node's meaning in a `definition:`
-  // frontmatter key. It isn't in GRAPH_KEYS, so it used to be invisible in the
-  // read view (a hidden typed fact = charter violation). Surface it as a plain,
-  // always-visible lede at the top of the block so the reader sees the node's
-  // meaning without expanding the frontmatter or hunting the body.
+  // The CREATE writer stores a node's meaning in a `definition:` frontmatter key. It is not
+  // in GRAPH_KEYS, so it used to be invisible in the read view (a hidden typed fact violates
+  // the charter). It is surfaced as a plain, always-visible lede at the top of the block, so
+  // the reader sees the node's meaning without expanding the frontmatter or hunting the body.
   const definitionValue = formatValue(doc.frontmatter?.definition);
 
   const kindValue = currentKind;
 
-  // **kind 가 없는 문서도 자기 문제를 말한다** (2026-08-04).
+  // **A document with no kind states its own problem** (2026-08-04).
   //
-  // 종전에는 호출부(`DocsVaultPage`)가 `typeof kind === 'string' && kind` 로 막아
-  // 블록 자체를 안 그렸다. 그런데 kind 없음/빔이 **노드가 지도에서 사라지는 가장
-  // 흔한 두 경로**다 — 즉 설명이 가장 필요한 두 경우에만 화면이 침묵했다.
+  // The call site (`DocsVaultPage`) used to gate on `typeof kind === 'string' && kind` and
+  // not draw the block at all. But a missing or empty kind is **the two most common ways a
+  // node disappears from the map** — so the screen went silent in exactly the two cases that
+  // most needed explaining.
   //
-  // 그렇다고 아무 문서에나 그리지는 않는다. 판정은 validator 가 이미 갖고 있는
-  // 휴리스틱을 그대로 쓴다: `validateVaultDocFrontmatter` 는 ontology 의도가
-  // 없는 문서(kind 도 없고 domain/capabilities/… 같은 시그널 키도 없는 안내
-  // 문서)에는 이슈를 하나도 내지 않는다. 그래서 «이슈가 있다» 가 곧 «이 문서는
-  // 노드가 되려다 실패했다» 다. 판정을 복제하지 않고 빌려 쓴다.
+  // It is still not drawn on just any document. The verdict borrows the heuristic the
+  // validator already has: `validateVaultDocFrontmatter` raises no issue at all for a
+  // document with no ontology intent (no kind and no signal key such as domain or
+  // capabilities). So «there are issues» means «this document tried to be a node and
+  // failed». The verdict is borrowed rather than duplicated.
   const diagnosticOnly = !kindValue;
   if (diagnosticOnly && validationIssues.length === 0) return null;
   if (!diagnosticOnly && fields.length === 0 && codeLocations.length === 0 && !definitionValue) {
@@ -358,8 +353,8 @@ export function DocFrontmatterBlock({
   }
 
   const slugValue = formatValue(doc.frontmatter?.slug) ?? doc.slug;
-  // kind 가 비어 있을 때도 고칠 수 있어야 한다 — 진단만 보여 주고 고칠 길이
-  // 없으면 그건 막다른 문장이다.
+  // It must be fixable even when kind is empty — a diagnosis with no way to act on it is a
+  // dead end.
   const canQuickPatch =
     canEdit && Boolean(onPatch) && (kindValue == null || isEditableKind(kindValue));
 
@@ -398,10 +393,10 @@ export function DocFrontmatterBlock({
   }
 
   /**
-   * 진단 행 — 심각도가 **색과 데이터 속성 둘 다**로 나온다.
+   * A diagnostic row — severity comes through **both colour and a data attribute**.
    *
-   * 색만으로 갈리면 색이 유일한 구분 채널이 되므로(헌장 위반), 오류 행은
-   * 아이콘 자리의 `!` 와 라벨(「오류」/「경고」)을 함께 싣는다.
+   * Splitting on colour alone would make colour the only distinguishing channel (a charter
+   * violation), so an error row also carries a `!` in the icon slot and a label.
    */
   const issueRows =
     validationIssues.length > 0 ? (
@@ -415,8 +410,8 @@ export function DocFrontmatterBlock({
             key={`${issue.code}-${index}`}
             data-testid="doc-frontmatter-issue"
             data-severity={issue.severity}
-            // 공통 기하는 한 줄로 — 심각도로 갈리는 것은 **톤뿐**이다.
-            // (분기마다 클래스를 통째로 복사하면 off-ramp 유틸리티 래칫이 오른다.)
+            // Shared geometry stays on one line — **only the tone** varies by severity.
+            // (Copying the whole class string per branch raises the off-ramp utility ratchet.)
             className={`rounded-micro border px-2 py-1.5 text-label leading-label ${
               issue.severity === "error"
                 ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)]"
@@ -444,9 +439,9 @@ export function DocFrontmatterBlock({
             data-testid="doc-frontmatter-kind-select"
             className={fieldClass({ size: "xs" })}
           >
-            {/* kind 가 아직 없는 문서는 draft 도 "" 다 — 자리표시자가 없으면
-                브라우저가 첫 항목을 고른 것처럼 보여 «이미 정해졌다» 고
-                거짓말한다. */}
+            {/* A document with no kind has an empty draft too. Without a placeholder the
+                browser appears to have selected the first option, which lies that a kind is
+                already decided. */}
             {draftKind === "" ? <option value="">{t("editKindUnset")}</option> : null}
             {EDITABLE_KINDS.map((kind) => (
               <option key={kind} value={kind}>
@@ -529,9 +524,9 @@ export function DocFrontmatterBlock({
     )
   ) : null;
 
-  // 축약 진단 블록 — 각인 frontmatter 를 통째로 그리지 않는다. 이 문서는 아직
-  // 노드가 아니라서 보여 줄 그래프 사실이 없고, 필요한 것은 «왜 지도에 없는가»
-  // 한 줄과 «어디서 고치는가» 하나다.
+  // The short diagnostic block — the engraved frontmatter is not drawn whole. This document
+  // is not a node yet, so there are no graph facts to show; what is needed is one line of
+  // «why it is not on the map» and one place to fix it.
   if (diagnosticOnly) {
     return (
       <section
@@ -544,7 +539,7 @@ export function DocFrontmatterBlock({
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("notOnMapTitle")}
           </p>
-          {/* `leading-*` 없음 — `text-label` 이 자기 행간을 싣는다. */}
+          {/* No `leading-*` — `text-label` carries its own line height. */}
           <p className="mt-1 text-label text-[color:var(--color-text-tertiary)]">
             {t("notOnMapBody")}
           </p>
@@ -631,12 +626,14 @@ export function DocFrontmatterBlock({
                               type="button"
                               onClick={() => onNavigate!(target)}
                               data-testid={`doc-frontmatter-ref-${tok}`}
-                              // 글줄 속 참조 컨트롤 — 종전 주석은 44 를 «WCAG 2.5.8» 이라 불렀지만
-                              // 그건 2.5.5(AAA)/HIG 의 값이다(2026-08-04 바닥 재설정, 원장 「link 바닥 24」).
-                              // 2.5.8(AA)의 바닥 24 를 min-h-6 으로 세운다 — 줄바꿈된 참조 행의 피치가
-                              // 21 → 24 가 되어 24원 겹침(런타임 계기 실측)이 함께 풀린다. 값 층으로 못
-                              // 옮기는 이유는 타입 상속이다: link 램프는 text-label 을 강제하는데 이 참조는
-                              // 부모 글자 크기를 상속해야 한다(래칫 「타입 스텝을 안 내는 자리」 부채).
+                              // A reference control inside a line of text. An earlier comment
+                              // called 44 "WCAG 2.5.8", but that is the 2.5.5 (AAA) / HIG value
+                              // (floor reset 2026-08-04, ledger "link floor 24"). 2.5.8 (AA)'s
+                              // floor of 24 is set with `min-h-6`, which raises a wrapped
+                              // reference row's pitch from 21 to 24 and clears the 24px overlap
+                              // measured at runtime. It cannot move into the value layer because
+                              // of type inheritance: the link ramp forces `text-label` while this
+                              // reference must inherit the parent font size.
                               className={controlClass({ shape: "link", className: "min-h-6 rounded-chip text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)]" })}
                             >
                               {tok}
@@ -704,11 +701,11 @@ export function DocFrontmatterBlock({
           </svg>
           {t("note")}
         </p>
-        {/* 규격 예시는 **속성을 열었을 때** 자리를 얻는다 (2026-08-08).
-            문서마다 달라지지 않는 가르치는 줄이 112개 문서 위에 상주하고
-            있었다 — 읽으러 온 사람에게는 한 줄을 먹는 노이즈이고, 정작
-            필요한 순간(속성이 뭘 받는지 알고 싶을 때)은 이 속성 블록을
-            여는 순간이다. 그 순간으로 옮긴다. */}
+        {/* The spec example earns its place **when the properties are expanded** (2026-08-08).
+            A teaching line that does not vary per document was sitting above 112 documents —
+            noise costing a line to someone who came to read, while the moment it is actually
+            wanted (finding out what a property accepts) is the moment this block is opened.
+            So it moved to that moment. */}
         {exampleDoc ? (
           <div className="mt-2 font-sans">
             <button
@@ -774,10 +771,10 @@ export function DocFrontmatterBlock({
 }
 
 /**
- * One "코드 위치" row — a raw code path (truncated middle, full path on
- * hover) + a per-row copy button. Deliberately plain text, not a `Link`/
- * button like the `REFERENCE_KEYS` ref tokens above — a code path isn't a
- * vault node, so it must not visually promise navigation it can't deliver.
+ * One code-location row — a raw code path (truncated in the middle, full path on
+ * hover) plus a per-row copy button. Deliberately plain text, not a `Link` or
+ * button like the `REFERENCE_KEYS` tokens above — a code path is not a vault node,
+ * so it must not visually promise navigation it cannot deliver.
  */
 function CodeLocationRow({
   path,

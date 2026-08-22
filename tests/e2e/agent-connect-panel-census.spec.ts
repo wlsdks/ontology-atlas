@@ -5,40 +5,43 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * 「MCP 연결」 칸(구 「터미널에서 연결」)의 첫 화면이 다시 복잡해지지 못하게 잠근다.
+ * Locks the first screen of the MCP connect pane (formerly "connect from the
+ * terminal") against becoming complicated again.
  *
- * ## 왜 (2026-08-17)
+ * **Why** (2026-08-17). Owner: *"사용하기 복잡하지는 않을까"* (isn't this
+ * complicated to use?). Answering from the source alone was wrong — the file is
+ * 1,468 lines with 11 copy-state hooks, which read as "11 copy buttons in a row",
+ * but **opening it and measuring found 4 copy buttons on screen and 1 on the first
+ * screen**, because the advanced block was already collapsed (`advancedOpen`
+ * defaults to false).
  *
- * 소유자 지적: *"사용하기 복잡하지는 않을까"*. 소스만 읽고 답했더니 틀렸다 —
- * 파일이 1,468줄이고 복사 상태 훅이 11개라 「복사 버튼 11개가 늘어서 있다」고
- * 읽었는데, **열어서 재 보니 화면의 복사 버튼은 4개, 첫 화면에는 1개**였다.
- * 고급 블록이 이미 접혀 있었기 때문이다(`advancedOpen` 기본 false).
+ * > **A hook count is not a screen.** Conditional renders and collapsed blocks are
+ * > all visible when counted in source and invisible on screen. Same lesson this
+ * > repository has learned several times: to judge, measure **what was drawn**.
  *
- * > **훅 개수는 화면이 아니다.** 조건부 렌더와 접힌 블록은 소스에서 세면
- * > 전부 보이고 화면에서는 안 보인다. 이 저장소가 이미 여러 번 배운 것과 같다:
- * > 판정하려면 **그려진 것**을 재야 한다.
+ * So this spec is a **ratchet**, not a record of the current state. It turns red on
+ * anything worse than today's values — growth is blocked, shrinking is free.
  *
- * 그래서 이 스펙은 「지금 상태를 기록」이 아니라 **래칫**이다. 오늘 값보다
- * 나빠지면 빨개진다 — 늘리는 것은 막고 줄이는 것은 자유다.
- *
- * ⚠️ **이것은 웹 화면이다.** 설치된 앱에서는 연결 버튼이 실제로 파일을 쓰므로
- * 다른 것이 그려진다. 데스크톱 전용 동작의 증명은 설치본에서만 인정된다
- * (`.claude/rules/surfaces.md`) — 이 스펙은 웹 쪽만 잠근다.
+ * ⚠️ **This is the web screen.** In the installed app the connect button actually
+ * writes files, so something different is drawn. Proof of desktop-only behaviour is
+ * accepted only from an installed build (`.claude/rules/surfaces.md`) — this spec
+ * locks the web side only.
  */
 
-/** 오늘 실측(1512×900, 픽스처 볼트). 줄이는 것은 되고 늘리는 것은 안 된다. */
+/** Measured today (1512×900, fixture vault). Shrinking is allowed; growing is not. */
 const CEILING = {
-  /** 첫 화면에 한 번에 보이는 복사 버튼 */
+  /** Copy buttons visible at once on the first screen */
   copyVisibleFirstScreen: 1,
-  /** 칸 전체의 복사 버튼 */
+  /** Copy buttons in the whole pane */
   copyTotal: 4,
-  /** 스크롤해야 하는 배수 — 2.0 이면 두 화면 */
+  /** How many screens of scrolling — 2.0 means two screens */
   scrollRatio: 2.0,
 };
 
 /**
- * 칸이 스스로 스크롤하지 않으면(목적지처럼 페이지가 스크롤하면) 스크롤 배수는
- * **칸 높이 ÷ 뷰포트**로 잰다 — 「몇 화면을 넘겨야 끝인가」가 재려던 뜻이다.
+ * When the pane does not scroll itself (as a destination, where the page scrolls),
+ * the scroll multiple is measured as **pane height ÷ viewport** — the intended
+ * meaning was always "how many screens until the end".
  */
 test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInfo) => {
   test.setTimeout(300_000);
@@ -56,12 +59,14 @@ test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInf
   ).toHaveCount(0, { timeout: 30_000 });
 
   /*
-   * ⚠️ **2026-08-21 재조준** (원장 90). 이 칸은 설정 시트를 떠나 「에이전트」
-   * 목적지가 됐다. 종전에는 시트를 열고 `app-settings-nav-agent` 를 눌렀는데
-   * 그 자리가 없어져서 이 검사가 CI 에서 터졌다 — **검사가 옳았다.**
+   * ⚠️ **Re-aimed 2026-08-21** (ledger 90). This pane left the settings sheet and
+   * became the Agents destination. It used to open the sheet and click
+   * `app-settings-nav-agent`; that control no longer exists and this check broke in
+   * CI — **the check was right.**
    *
-   * 볼트를 물린 상태는 그대로 필요하다(그래야 설정판이 그려진다). 물린 뒤
-   * 레일의 「에이전트」 타일로 간다 — 사용자가 실제로 가는 길과 같다.
+   * An attached vault is still required (otherwise the settings panel is not drawn).
+   * After attaching, it navigates via the rail's Agents tile — the same path a user
+   * takes.
    */
   await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
   await expect(page.getByTestId("agents-page")).toBeVisible({ timeout: 10_000 });
@@ -71,16 +76,16 @@ test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInf
 
   const census = await pane.evaluate((root) => {
     /*
-     * ⚠️ **「첫 화면」의 기준이 2026-08-21 에 바뀌었다** (원장 90).
+     * ⚠️ **The reference for "first screen" changed on 2026-08-21** (ledger 90).
      *
-     * 시트 시절에는 **칸이 스크롤**했으므로 pane 의 보이는 영역과 겹치는지가
-     * 곧 「스크롤 없이 보이는가」였다. 목적지에서는 **페이지가 스크롤**하고 칸은
-     * 제 내용만큼 길어진다 — 그 상태로 pane 을 기준 삼으면 칸 안의 모든 것이
-     * 「첫 화면」이 되어 버린다(실측: 4/4 가 보이는 것으로 잡혔고, 실제로는
-     * 뷰포트 밖이었다).
+     * As a sheet, **the pane scrolled**, so intersecting the pane's visible area was
+     * the same as "visible without scrolling". As a destination **the page scrolls**
+     * and the pane grows to its content — with the pane as the reference, everything
+     * inside it counts as the first screen (measured: 4/4 were reported visible while
+     * actually outside the viewport).
      *
-     * 재는 뜻은 그대로다: **사용자가 스크롤하지 않고 만나는 것.** 기준만
-     * 뷰포트로 옮긴다.
+     * The intended measurement is unchanged: **what a user meets without scrolling.**
+     * Only the reference moves to the viewport.
      */
     const viewportHeight = window.innerHeight;
     const visibleInPane = (el: Element) => {
@@ -98,7 +103,7 @@ test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInf
       if (!m) return false;
       const parts = m[1].split(",").map((n) => Number.parseFloat(n));
       const alpha = parts.length > 3 ? parts[3] : 1;
-      // 채워진 브랜드 면 = 불투명에 가깝고 파랑이 확실히 앞선 것.
+      // A filled brand surface = near-opaque with blue clearly dominant.
       return alpha > 0.9 && parts[2] > parts[0] + 30 && parts[2] > 120;
     });
     return {
@@ -122,7 +127,7 @@ test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInf
   await pane.screenshot({ path: testInfo.outputPath("agent-connect-panel.png") });
   console.log("[census]", JSON.stringify(census));
 
-  // 헛돌지 않는가 — 아무것도 못 찾고 초록으로 지나가면 이 래칫은 없는 것과 같다.
+  // Idling guard — finding nothing and passing green makes this ratchet the same as no ratchet.
   expect(census.buttonsTotal, "칸에서 버튼을 하나도 못 찾았다 — 셀렉터가 죽었다").toBeGreaterThan(3);
   expect(census.copyTotal, "복사 버튼을 하나도 못 찾았다 — 판별식이 죽었다").toBeGreaterThan(0);
 

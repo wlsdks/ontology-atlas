@@ -19,33 +19,33 @@ export interface ProjectFrontmatterPatch {
 }
 
 /**
- * mode 별로 분기되는 project mutation hook. 2 모드:
+ * Project mutation hook, branching on mode:
  *
- * - **local**: vault `projects/<slug>.md` 를 직접 read/write/delete. 사용자
- *   디스크가 진실원. 충돌 검사는 manifest 의 fileHandles 에서 hit 여부.
- * - **static**: 모든 mutation 거절 — read-only dogfood manifest.
+ * - **local**: reads, writes, and deletes vault `projects/<slug>.md` directly. The
+ *   user's disk is the source of truth, and collision checks hit the manifest's
+ *   `fileHandles`.
+ * - **static**: rejects every mutation — the dogfood manifest is read-only.
  *
- * 호출자 (QuickCreate / QuickEdit / 인라인 편집) 가 모드 인지 없이 같은
- * 시그니처로 호출 가능. canCreate / canEdit / canDelete 는 사전 게이트
- * (UI disable 처리).
+ * Callers (quick create, quick edit, inline editing) use one signature without knowing
+ * the mode. `canCreate` / `canEdit` / `canDelete` are the up-front gate for disabling UI.
  */
 export interface ProjectMutations {
-  /** 신규 프로젝트 생성. 동일 slug 가 이미 있으면 throw. */
+  /** Creates a project. Throws when the same slug already exists. */
   createProject: (input: ProjectInput) => Promise<void>;
-  /** 기존 프로젝트 갱신 (upsert). slug 가 없으면 새로 만들지만 권장하지 않음. */
+  /** Updates an existing project (upsert). Creates when the slug is missing, though that is discouraged. */
   updateProject: (input: ProjectInput) => Promise<void>;
-  /** 상세/빠른 편집이 사용자가 만진 frontmatter key만 보존 갱신. */
+  /** Detail and quick edit: updates while preserving only the frontmatter keys the user touched. */
   patchProject: (
     slug: string,
     patch: ProjectFrontmatterPatch,
   ) => Promise<void>;
-  /** slug 로 삭제. 존재 안 하면 no-op. */
+  /** Deletes by slug. A no-op when it does not exist. */
   deleteProject: (slug: string) => Promise<void>;
-  /** UI 사전 게이트용 — 현재 모드에서 mutation 가능 여부. */
+  /** The up-front gate for UI — whether mutation is possible in the current mode. */
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
-  /** 디버그 / 게이트 메시지용. */
+  /** For debugging and gate messages. */
   mode: 'static' | 'local';
 }
 
@@ -53,11 +53,10 @@ const STATIC_REJECTION =
   'Cannot mutate projects in static demo mode. Open a markdown folder first.';
 
 /**
- * [P-3] static(샘플) 모드에서 mutation 이 거절됐음을 나타내는 typed error.
- * 호출자(ProjectEditorPage)가 이 타입으로 잡아 ko/en i18n 메시지로 치환한다
- * — plain Error(STATIC_REJECTION) 를 그대로 노출하면 영어 raw 문구가 사용자
- * 에게 보인다. 버튼이 사전에 disabled 되므로 정상 흐름에서는 도달하지
- * 않아야 하는 방어 경로.
+ * A typed error signalling that a mutation was rejected in static (sample) mode. The
+ * caller (`ProjectEditorPage`) catches this type and substitutes a localized message —
+ * exposing a plain `Error(STATIC_REJECTION)` would show the user raw English. Buttons are
+ * disabled up front, so this is a defensive path the normal flow should never reach.
  */
 export class ProjectStaticModeError extends Error {
   constructor() {
@@ -93,22 +92,22 @@ export function useProjectMutations(): ProjectMutations {
         ? findProjectVaultDoc(vault.manifest, input.slug)
         : null;
       const slug = existing?.slug ?? `projects/${input.slug}`;
-      // 존재 여부 — 없으면 새로 만든다 (upsert 시그니처).
+      // Whether it exists — create it if not (the upsert signature).
       if (!existing && !vault.fileHandles.has(slug)) {
         const md = buildProjectMarkdown(input);
         await vault.createDoc(slug, md);
         return;
       }
-      // frontmatter patch — body 는 그대로 둔다.
+      // Patch the frontmatter and leave the body alone.
       const fm = projectToFrontmatter(input);
       // C6 — same starter-display sync as inline rename: full-form saves that
       // change the name must also refresh a still-default display_<locale>.
       if (existing) {
         Object.assign(fm, buildStarterDisplaySync(existing.frontmatter, input.name));
       }
-      // path-agnostic starter/외부 vault는 project 이름을 title로만 쓰기도 한다.
-      // full edit도 inline patch와 같은 key-shape를 보존해 title/name 중복을
-      // 만들지 않는다. 신규 문서는 canonical name을 계속 사용한다.
+      // A path-agnostic starter or an external vault sometimes carries the project name
+      // as `title` only. Full edit preserves the same key shape as an inline patch so it
+      // never creates a duplicate title/name pair. New documents keep using the canonical name.
       if (
         existing &&
         typeof existing.frontmatter.title === 'string' &&
@@ -140,8 +139,9 @@ export function useProjectMutations(): ProjectMutations {
         string | number | boolean | string[] | null
       > = {};
       if (patch.name !== undefined) {
-        // 외부/초기 vault의 kind:project는 title만 쓰기도 한다. 인라인 rename이
-        // name을 겹쳐 만들면 사람에게 서로 다른 두 이름이 남으므로 원형 유지.
+      // An external or initial vault's `kind: project` sometimes uses `title` only. An
+      // inline rename that also creates `name` would leave a person with two different
+      // names, so the original shape is preserved.
         const nameKey =
           typeof existing.frontmatter.name === 'string'
             ? 'name'
@@ -149,10 +149,9 @@ export function useProjectMutations(): ProjectMutations {
               ? 'title'
               : 'name';
         updates[nameKey] = patch.name;
-        // C6 — carry the rename into any `display_<locale>` still at its starter
-        // default so the ko/en map + INDEX don't keep showing "내 프로젝트" /
-        // "My project" after the project is renamed. Customized display names
-        // are left untouched.
+        // Carry the rename into any `display_<locale>` still at its starter default, so
+        // the ko/en map and INDEX do not keep showing the starter name after the project
+        // is renamed. Customized display names are left untouched.
         Object.assign(updates, buildStarterDisplaySync(existing.frontmatter, patch.name));
       }
       if (patch.description !== undefined) {

@@ -1,54 +1,56 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
-// `window.__atlasMap` 타입은 한 곳에만 선언한다 — 사본이 둘이면 TS2717 이 난다.
+// The `window.__atlasMap` type is declared in exactly one place — two copies raise TS2717.
 import "./atlas-map-probe";
 
 /**
- * 카메라 전환 규격 — **재서 잠근다.**
+ * The camera transition spec — **measured and locked.**
  *
- * 코드에는 이미 주장이 적혀 있다(`model/camera-easing.ts`): 프로그램이 데려가는
- * 이동은 대칭 ease-in-out 3차 곡선이고, 시간은 **거리에 비례**하며 200~420ms 로
- * 잘리고, 사용자가 제스처로 끼어들면 즉시 스프링에 넘긴다. 그런데 **그 주장을
- * 화면에서 재는 검사가 없었다** — 「부드러워 보인다」로 판정되고 있었다.
+ * The claim is already written in code (`model/camera-easing.ts`): a
+ * programmatic move follows a symmetric ease-in-out cubic, its duration is
+ * **proportional to distance** and clamped to 200–420ms, and a user gesture hands
+ * it straight to the spring. But **no check measured that claim on screen** — it
+ * was being judged by "looks smooth".
  *
- * ## 왜 픽셀이 아니라 카메라 값을 재나
+ * **Why camera values rather than pixels.** `/motion-verify` judges motion from
+ * pixel deltas between recorded frames; that is the instrument for when you do not
+ * know what moved. The camera is different — `__atlasMap.camera()` returns x, y,
+ * and zoom **as numbers**, so the curve's shape and duration can be measured
+ * directly. Pixel deltas cannot tell 200ms from 420ms.
  *
- * `/motion-verify` 는 녹화 프레임의 픽셀 변화량으로 모션을 판정한다. 그것은 「무엇이
- * 움직였는지 모를 때」의 계기다. 카메라는 다르다 — `__atlasMap.camera()` 가 x·y·배율을
- * **숫자로** 내주므로, 곡선의 모양과 시간을 직접 잴 수 있다. 픽셀 차이로는 「200ms 인가
- * 420ms 인가」를 가를 수 없다.
+ * **Why arrow keys drive the camera.** Synthetic pointer events (`dispatchEvent`)
+ * do not select a node on this canvas (measured). And in the installed app,
+ * osascript reaches the canvas with **neither arrow keys nor clicks** (measured
+ * 2026-08-10 — DOM buttons work, the canvas does not). In the browser, Playwright's
+ * key events are real events, so **walking with arrow keys** is the only
+ * automatable path that causes a camera transition. It is also the path users take.
  *
- * ## 왜 방향키로 카메라를 미나
+ * **Probes — does this gate actually catch anything** (2026-08-10):
  *
- * 합성 포인터 사건(`dispatchEvent`)으로는 이 캔버스의 노드가 선택되지 않는다(실측).
- * 그리고 설치 앱에서는 osascript 로 **방향키도 클릭도** 캔버스에 닿지 않는다(2026-08-10
- * 실측 — DOM 버튼은 되는데 캔버스는 안 된다). 브라우저에서 Playwright 의 키 사건은
- * 진짜 사건이므로, **방향키로 걷기**가 카메라 전환을 일으키는 유일하게 자동화 가능한
- * 경로다. 그 경로가 곧 사용자가 쓰는 경로이기도 하다.
- *
- * ## 프로브 — 이 게이트가 정말 잡나 (2026-08-10)
- *
- * | 되돌린 것 | 결과 |
+ * | Defect reverted in | Result |
  * |---|---|
- * | 전환을 아예 없앰(`beginCameraTween` 즉시 반환) | 「하드컷이다」로 **실패** |
- * | 전환 시간 하한을 200 → 900ms | 「676ms 였다」로 **실패** |
- * | 전환 시간 **상한**만 420 → 1600ms | **안 잡힘** |
+ * | Transition removed entirely (`beginCameraTween` returns immediately) | **fails** with "it is a hard cut" |
+ * | Transition duration floor 200 → 900ms | **fails** with "it was 676ms" |
+ * | Transition duration **ceiling** only, 420 → 1600ms | **not caught** |
  *
- * 셋째가 중요하다: 이 거리의 이동은 시간이 이미 **하한 근처**라 상한을 올려도 값이
- * 안 변한다(`CAMERA_TRANSITION_MIN + min(1,normalized) × span`). 즉 이 spec 은
- * 「상한을 지키나」가 아니라 **「그 창 안에서 실제로 시간을 들여 움직이나」**를 잠근다.
- * 상한 자체는 순수 함수 시험(`cameraTransitionDurationMs` 의 클램프)이 잠근다 —
- * 계기마다 잡을 수 있는 것이 다르고, 그 경계를 적어 두지 않으면 다음 사람이 이
- * spec 을 「상한 게이트」로 착각한다.
+ * The third matters: a move of this distance already lands **near the floor**, so
+ * raising the ceiling does not change the value
+ * (`CAMERA_TRANSITION_MIN + min(1,normalized) × span`). This spec therefore locks
+ * **"does it actually take time to move inside that window"**, not "does it respect
+ * the ceiling". The ceiling itself is locked by the pure-function test (the clamp
+ * in `cameraTransitionDurationMs`). Different instruments catch different things,
+ * and without writing that boundary down the next person mistakes this spec for a
+ * ceiling gate.
  */
 
 /*
- * **영상을 남긴다** (소유자 요청: *"다 녹화해서 자리가 완벽하게 세팅되게끔"*).
- * 숫자는 아래 단언이 잡고, 사람이 눈으로 확인할 것은 이 영상이다 —
- * `output/playwright/test-results/**` 아래에 `.webm` 으로 떨어진다.
+ * **Keep the video** (owner request: *"다 녹화해서 자리가 완벽하게 세팅되게끔"* —
+ * record everything so the setup is provably perfect). The assertions below catch
+ * the numbers; this video is what a person checks by eye. It lands as `.webm`
+ * under `output/playwright/test-results/**`.
  *
- * ⚠️ 파일 **최상단**이어야 한다 — `describe` 안에 두면 Playwright 가
- * *"forces a new worker"* 로 거절한다(실측).
+ * ⚠️ This must be at the **top level of the file** — inside a `describe`,
+ * Playwright rejects it with *"forces a new worker"* (measured).
  */
 test.use({ video: "on" });
 
@@ -60,8 +62,9 @@ interface CameraSample {
 }
 
 /**
- * 이 spec 만 쓰는 기록용 창구. `__atlasMap` 과 달리 제품이 아니라 **이 시험이
- * 만드는 것**이라 여기 남는다(정본 선언은 `./atlas-map-probe`).
+ * A recording hook used only by this spec. Unlike `__atlasMap` it is not product
+ * code but **something this test creates**, so it lives here (the canonical
+ * declaration is in `./atlas-map-probe`).
  */
 declare global {
   interface Window {
@@ -70,7 +73,7 @@ declare global {
   }
 }
 
-/** 카메라를 매 프레임 기록하기 시작한다. */
+/** Starts recording the camera every frame. */
 async function startCameraTrace(page: import("@playwright/test").Page) {
   await page.evaluate(() => {
     window.__camTrace = [];
@@ -104,10 +107,11 @@ async function readCameraTrace(page: import("@playwright/test").Page): Promise<C
 }
 
 /**
- * 궤적에서 **실제로 움직인 구간**을 잘라낸다.
+ * Cuts the **actually-moving span** out of the trajectory.
  *
- * 카메라는 전환이 없을 때도 스프링이 미세하게 정착하므로, 「값이 변했다」를 그대로
- * 쓰면 잡음이 구간을 늘린다. 그래서 전체 이동량의 **0.5% 이상** 움직인 표본만 센다.
+ * The camera keeps settling on the spring even with no transition running, so
+ * using "the value changed" directly lets noise stretch the span. Only samples
+ * that moved **at least 0.5%** of the total distance are counted.
  */
 function movingSpan(trace: CameraSample[]) {
   if (trace.length < 3) return null;
@@ -131,7 +135,7 @@ function movingSpan(trace: CameraSample[]) {
   return { start, end, durationMs: trace[end].t - trace[start].t, total };
 }
 
-/** 방향키로 걸어 카메라 전환을 일으킨다. 일으키지 못하면 `null`. */
+/** Walks with arrow keys to cause a camera transition; `null` if none happens. */
 async function walkUntilCameraMoves(page: import("@playwright/test").Page) {
   const DIRECTIONS = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"] as const;
   for (let round = 0; round < 6; round += 1) {
@@ -171,40 +175,46 @@ test.describe("카메라 전환 규격", () => {
   });
 
   /**
-   * **한 입력 = 한 사건** — 선택 순간에 움직이는 셋이 같은 사건으로 읽히나.
+   * **One input = one event** — do the three things that move on selection read as
+   * the same event?
    *
-   * `design.md` 가 못박아 둔 규칙이다: *"같은 입력에서 나온 단계들은 같은 프레임에
+   * The rule is pinned in `design.md`: *"같은 입력에서 나온 단계들은 같은 프레임에
    * 시작한다. 시작 시점 차가 `--motion-fast`(120ms)를 넘으면 사용자가 두 사건으로
-   * 읽으므로 결함이다."* 그리고 이 저장소는 **이미 그 값을 냈다** — 노드 팝오버가 첫
-   * 프레임에 88.8% 로 끝나 버렸는데 배경 지도만 100ms 짜리 전환을 받고 있었다.
+   * 읽으므로 결함이다."* (stages caused by the same input start on the same frame;
+   * a start-time gap over `--motion-fast` (120ms) reads as two events and is a
+   * defect). This repository has **already produced that value** — the node popover
+   * finished at 88.8% on the first frame while only the background map received a
+   * 100ms transition.
    *
-   * 이 게이트가 생긴 계기는 **내 변경**이다(2026-08-10): 자유 영역을 재려면 팝오버가
-   * 열린 뒤여야 해서 카메라를 **한 프레임 미뤘다.** 그 미룸이 「두 사건」으로 벌어지지
-   * 않는지 재야 한다. 실측(120fps 환경): 캔버스 16.6ms · 팝오버 31ms · 카메라 43.9ms
-   * — 시차 약 27ms.
+   * The gate exists because of **a change made here** (2026-08-10): measuring free
+   * space requires the popover to be open, so the camera was delayed by **one
+   * frame**. That delay has to be measured so it does not widen into "two events".
+   * Measured (120fps machine): canvas 16.6ms · popover 31ms · camera 43.9ms — a
+   * spread of about 27ms.
    *
-   * ## 이 게이트가 실제로 걸려 있는 곳 — 프로브가 알려 줬다
+   * **What this gate is actually attached to — the probes told us.**
    *
-   * ⚠️ **카메라 쪽 단언은 「특정 코드 경로」에 걸려 있지 않다.** 선택 effect 의
-   * 카메라 설정을 **통째로 막아도** 이 시험은 초록이었다(프로브 3회: 300ms 지연 ·
-   * 임계값 상향 · 경로 차단). 선택할 때 **다른 경로**(이웃 전개의 클러스터 핏)가
-   * 카메라를 움직이기 때문이다.
+   * ⚠️ **The camera assertions are not attached to any specific code path.**
+   * Blocking the selection effect's camera setup **entirely** still left this test
+   * green (3 probes: 300ms delay · raised threshold · blocked path), because on
+   * selection a **different path** (the cluster fit of the neighbour expansion) moves
+   * the camera.
    *
-   * 그래서 이 단언이 잠그는 것은 **「입력 뒤 몇 프레임 안에 카메라가 반응한다」**는
-   * 관측 가능한 성질이고, 「자유 영역 재조준이 제때 돈다」는 아니다. 후자를 잠그려면
-   * 카메라를 움직이는 경로를 다 찾아 격리해야 하는데, 그건 이 게이트가 아니라 그
-   * 경로들을 정리하는 별개의 작업이다.
+   * So what this assertion locks is the observable property **"the camera reacts
+   * within a few frames of the input"**, not "free-space re-aiming runs on time".
+   * Locking the latter would require finding and isolating every path that moves the
+   * camera, which is separate work on those paths rather than this gate.
    *
-   * **팝오버 쪽은 판별력이 증명됐다** — 등장 애니메이션을 지우면 빨개진다.
-   * 그리고 「이름이 아니라 대상 요소로」 묶은 것도 프로브가 시켰다(이름으로 재던
-   * 판은 칩이 대신 만족시켰다).
+   * **The popover side is proven discriminating** — deleting its entry animation
+   * turns it red. Grouping by target element rather than by animation name was also
+   * the probes' doing (the name-based version was satisfied by a chip instead).
    *
-   * ## 계기의 경계 — 캔버스 하드컷은 여기서 재지 않는다
-   *
-   * 「주인공이 하드컷인가」는 캔버스 픽셀을 매 프레임 읽어야 알 수 있는데, **그 읽기가
-   * 프레임 간격을 8ms → 75ms 로 떨어뜨린다**(실측). 그러면 재려던 타이밍 자체가
-   * 바뀌므로 이 게이트에 넣지 않는다 — 한 번짜리 측정과 `/motion-verify` 의 몫이다
-   * (그 측정에서 첫 프레임 지분 14.3%, 하드컷 아님).
+   * **Instrument boundary — canvas hard cuts are not measured here.** Whether the
+   * protagonist hard-cuts can only be known by reading canvas pixels every frame,
+   * and **that reading drops the frame interval from 8ms to 75ms** (measured). That
+   * changes the very timing being measured, so it is not in this gate — it belongs to
+   * a one-off measurement and to `/motion-verify` (in that measurement the first
+   * frame's share was 14.3%, so not a hard cut).
    */
   test("입력 뒤 카메라와 팝오버가 한 사건으로 시작한다", async ({ page }) => {
     const canvas = page.getByTestId("topology-map-v2-canvas");
@@ -216,17 +226,20 @@ test.describe("카메라 전환 규격", () => {
       if (!el || !probe) return null;
       const cam0 = probe.camera();
       if (!cam0) return null;
-      const before = { x: cam0.x, y: cam0.y, s: cam0.scale };  // 정지 확인 뒤 갱신한다
+      const before = { x: cam0.x, y: cam0.y, s: cam0.scale };  // Refreshed after confirming stillness
 
       /*
-       * **프레임 번호로 센다 — 밀리초가 아니다.**
+       * **Counted in frames, not milliseconds.**
        *
-       * ⚠️ 처음엔 ms 로 쟀고 **CI 에서 터졌다**(내 기계 43.9ms · CI 267ms). ease-in
-       * 곡선은 처음에 거의 안 움직이므로, 「감지되는 첫 움직임」의 시각은 **프레임
-       * 간격에 딸린다** — 느린 기계에서 자동으로 늦어진다. 이 저장소가 이미 적어 둔
-       * 규칙 그대로다: *"게이트는 밀리초가 아니라 횟수로 잠근다"*(`architecture.md`).
+       * ⚠️ This was measured in ms at first and **broke in CI** (43.9ms locally, 267ms
+       * in CI). An ease-in curve barely moves at the start, so the time of "the first
+       * detectable movement" **depends on the frame interval** and gets later on a slow
+       * machine automatically. This is the rule the repository already wrote down:
+       * *"게이트는 밀리초가 아니라 횟수로 잠근다"* (`architecture.md` — a gate locks on
+       * counts, not milliseconds).
        *
-       * 프레임으로 세면 두 기계가 비교 가능해진다(같은 상황에서 4~5프레임).
+       * Counting frames makes two machines comparable (4–5 frames in the same
+       * situation).
        */
       const trace: { frame: number; d: number }[] = [];
       let frame = 0;
@@ -246,11 +259,12 @@ test.describe("카메라 전환 규격", () => {
       requestAnimationFrame(tick);
 
       /*
-       * **먼저 카메라가 멈출 때까지 기다린다.**
+       * **Wait for the camera to come to rest first.**
        *
-       * ⚠️ 이걸 안 하면 잔여 스프링 정착이 우리 임계값을 먼저 넘겨, 「카메라가 곧
-       * 움직였다」가 항상 참이 된다 — 프로브로 확인했다: 카메라를 **300ms 늦춰도**
-       * 시험이 초록이었다. 정지를 확인해야 그 뒤의 변화가 우리 것이 된다.
+       * ⚠️ Without this the residual spring settling crosses our threshold first and
+       * "the camera moved promptly" is always true — confirmed by probe: delaying the
+       * camera by **300ms** still left the test green. Only after confirming stillness
+       * does a subsequent change belong to us.
        */
       const quiet = async () => {
         for (let attempt = 0; attempt < 120; attempt += 1) {
@@ -267,7 +281,7 @@ test.describe("카메라 전환 규격", () => {
       };
       const settled = await quiet();
 
-      // 정지 시점을 기준으로 다시 잡는다.
+      // Re-anchor on the moment of rest.
       const rest = probe.camera();
       if (rest) {
         before.x = rest.x;
@@ -279,10 +293,11 @@ test.describe("카메라 전환 규격", () => {
 
       let popoverFrame: number | null = null;
       /*
-       * ⚠️ **애니메이션 이름만 보면 안 된다** — `topologyChromeIn` 은 공용 표면
-       * 프리미티브의 등장이라 칩·메뉴도 같은 이름을 쓴다. 이름만으로 재던 판을
-       * 프로브가 잡았다: 팝오버의 등장을 **통째로 지워도** 시험이 초록이었다(칩이
-       * 대신 만족시켰다). 그래서 애니메이션의 **대상 요소가 팝오버 안인지**로 묶는다.
+       * ⚠️ **Do not match on the animation name alone** — `topologyChromeIn` is the
+       * shared surface primitive's entry, so chips and menus use the same name. A probe
+       * caught the name-based version: deleting the popover's entry **entirely** left the
+       * test green (a chip satisfied it instead). So it groups on whether the
+       * animation's **target element is inside the popover**.
        */
       const watcher = setInterval(() => {
         if (popoverFrame !== null) return;
@@ -300,8 +315,9 @@ test.describe("카메라 전환 규격", () => {
 
       const after = trace.filter((s) => s.frame >= dispatchFrame);
       /*
-       * 임계값은 **월드 1단위** 다 — 0.001 로 두면 정지 확인 뒤에도 남는 미세
-       * 드리프트가 만족시켜 버린다(프로브 셋이 전부 초록이던 이유).
+       * The threshold is **1 world unit** — at 0.001 the micro-drift that remains even
+       * after confirming stillness satisfies it (which is why all three probes went
+       * green).
        */
       const camFirst = after.find((s) => s.d > 1);
       return {
@@ -320,9 +336,10 @@ test.describe("카메라 전환 규격", () => {
     expect(popoverFrames, "팝오버 안에서 도는 애니메이션을 못 봤다 — 등장이 하드컷이다").not.toBeNull();
 
     /*
-     * 한 사건의 창을 **프레임 수**로 둔다. 6프레임은 60fps 에서 100ms 로
-     * `--motion-fast`(120ms)와 같은 뜻이고, 느린 기계에서도 같은 「몇 프레임 안에」를
-     * 뜻한다. 실측: 내 기계 카메라 5프레임 · 팝오버 4프레임.
+     * The one-event window is expressed in **frames**. At 60fps, 6 frames is 100ms,
+     * which carries the same meaning as `--motion-fast` (120ms), and on a slow machine
+     * it still means the same "within a few frames". Measured locally: camera 5
+     * frames · popover 4 frames.
      */
     const ONE_EVENT_FRAMES = 6;
     expect(
@@ -345,10 +362,10 @@ test.describe("카메라 전환 규격", () => {
     expect(moved, "방향키로 카메라 전환을 한 번도 일으키지 못했다").not.toBeNull();
     const { span } = moved!;
     /*
-     * 상한에 여유를 준다: 프레임 간격(≈16.7ms)이 두 번 들어갈 수 있고, 마지막
-     * 프레임이 목표에 도달한 **뒤** 기록될 수 있다. 여유는 프레임 단위로 주고
-     * 밀리초를 손으로 늘리지 않는다 — 기계마다 다른 값을 상한으로 박으면 들쭉날쭉
-     * 실패한다(`architecture.md`).
+     * Slack on the ceiling: two frame intervals (≈16.7ms each) can fit, and the last
+     * frame can be recorded **after** the target is reached. The slack is given in
+     * frames rather than by hand-raising the milliseconds — pinning a machine-dependent
+     * value as a ceiling produces flaky failures (`architecture.md`).
      */
     const FRAME_MS = 1000 / 60;
     expect(
@@ -359,22 +376,27 @@ test.describe("카메라 전환 규격", () => {
   });
 
   /*
-   * ⚠️ **가속 곡선은 여기서 재지 않는다** — 재 봤고, 이 계기로는 못 가른다.
+   * ⚠️ **The acceleration curve is not measured here** — it was tried, and this
+   * instrument cannot resolve it.
    *
-   * 「가운데가 양 끝보다 빠른가」로 ease-in-out 을 판정하려 했는데 실측에서
-   * 끝이 가운데보다 빨랐다. 원인은 곡선이 틀린 게 아니라 **측정 대상이 하나가
-   * 아니라서**다: 방향키 한 번이 팬과 줌을 함께 움직이고(실측 배율
-   * 1.298 → 1.602 → 1.298 → 2.337), 전환이 끝난 뒤 노드 물리와 스프링 정착이
-   * 겹친다. 그 합성 궤적에서 뽑은 「구간별 평균 속도」는 곡선의 성질이 아니다.
+   * Judging ease-in-out by "is the middle faster than the ends" produced a
+   * measurement where the ends were faster than the middle. The cause is not a wrong
+   * curve but that **more than one thing is being measured**: one arrow key moves pan
+   * and zoom together (measured zoom 1.298 → 1.602 → 1.298 → 2.337), and after the
+   * transition ends node physics and spring settling overlap it. A "per-segment
+   * average speed" pulled from that composite trajectory is not a property of the
+   * curve.
    *
-   * **곡선은 이미 정확히 재는 자리가 있다** —
-   * `model/camera-easing.test.ts` 가 순수 함수로 대칭 중점 · 전반부 ease-in ·
-   * 단조 증가 · 거리 비례 시간 · 클램프 · 전 축 동시 워프를 전부 잠근다. 순수
-   * 함수는 잡음이 0이라 그쪽이 옳은 계기다.
+   * **The curve already has a place where it is measured exactly** —
+   * `model/camera-easing.test.ts` locks symmetric midpoint, ease-in first half,
+   * monotonicity, distance-proportional duration, the clamp, and simultaneous warp on
+   * all axes, as a pure function. A pure function has zero noise, so that is the
+   * right instrument.
    *
-   * 그래서 여기서는 **화면에서만 알 수 있는 것**을 남긴다: 정말 그 시간 안에
-   * 끝나나 · 도중에 멈추지 않나 · 목표를 지나치지 않나. 통과시키려고 단언을
-   * 약하게 고치지 않고, 계기를 옳은 자리로 옮긴 것이다.
+   * What stays here is **what only the screen can tell you**: does it really finish
+   * within that time, does it stall midway, does it overshoot the target. The
+   * assertion was not weakened to make it pass — the instrument was moved to the
+   * right place.
    */
 
   test("전환 중에 멈춘 프레임이 없다", async ({ page }) => {
@@ -390,25 +412,27 @@ test.describe("카메라 전환 규격", () => {
       );
     }
     /*
-     * ⚠️ **하한이 기계에 의존하면 안 된다** (2026-08-11, CI 가 잡았다).
+     * ⚠️ **A floor must not depend on the machine** (2026-08-11, caught by CI).
      *
-     * 처음 하한은 `> 3` 이었다. 전환은 200~420ms 라 표본 수가 **그 시간에 기계가 낸
-     * 프레임 수**로 정해지는데, CI 러너는 3개만 냈고 세 번 재시도해서 세 번 다
-     * 빨갰다(로컬은 통과). 이 저장소가 이미 정해 둔 규율 그대로다 — 게이트를 밀리초나
-     * 프레임 수로 잠그면 기계마다 들쭉날쭉 실패한다.
+     * The floor started at `> 3`. The transition is 200–420ms, so the sample count is
+     * decided by **how many frames the machine produced in that time** — the CI runner
+     * produced only 3 and went red on all three retries (local passed). This is the
+     * discipline the repository already set: locking a gate to milliseconds or frame
+     * counts produces machine-dependent flakiness.
      *
-     * 하한의 목적은 **공회전 차단**(빈 집합에 통과 도장을 찍지 않는 것)이지 성능
-     * 판정이 아니다. 그리고 판정 자체(「0인 프레임이 있나」)는 표본이 둘이어도 성립한다.
-     * 그래서 하한을 2로 내리고, 표본 수를 로그에 남긴다 — 표본이 적어지는 것은
-     * 「조용히 약해지는 것」이 아니라 눈에 보여야 한다.
+     * The floor's purpose is the **idling guard** (not stamping an empty set as
+     * passing), not a performance verdict. And the verdict itself ("is there a frame at
+     * 0") holds with two samples. So the floor drops to 2 and the sample count is
+     * logged — a shrinking sample must be visible rather than a silent weakening.
      */
     console.log(`[camera] 전환 표본 ${steps.length}개 · ${span.durationMs.toFixed(0)}ms`);
     expect(steps.length, "구간이 비었다 — 아무것도 재지 못했다").toBeGreaterThanOrEqual(2);
     /*
-     * 가운데 절반에서 **완전히 멈춘 프레임**(0)이 있으면 끊긴 것이다. 양 끝은
-     * ease-in-out 이라 원래 느리므로 세지 않는다 — 거기서 0에 가까운 것은 규격이다.
-     * 표본이 셋 이하로 적은 기계에서는 잘라낼 여유가 없으니 전부 본다(그때는 양 끝의
-     * 느림이 0까지 가지는 않는다 — 0은 정지이고, 정지는 어느 구간에서도 결함이다).
+     * A **fully stopped frame** (0) in the middle half means it stalled. The ends are
+     * not counted because ease-in-out is slow there by design — near-zero at the ends
+     * is the spec. On a machine with three or fewer samples there is no slack to trim,
+     * so all are checked (there the ends' slowness does not reach 0 — 0 is a stop, and a
+     * stop is a defect in any segment).
      */
     const interior =
       steps.length >= 6
@@ -425,9 +449,9 @@ test.describe("카메라 전환 규격", () => {
     const seg = trace.slice(span.start, span.end + 1);
     const target = seg[seg.length - 1];
     /*
-     * ease-in-out 은 **넘어갔다 되돌아오지 않는다**(스프링과 다른 점이다). 목표까지의
-     * 남은 거리가 단조롭게 줄어드는지 본다 — 늘어나는 프레임이 있으면 지나친 것이다.
-     * 한 프레임 정도의 반올림은 봐준다.
+     * ease-in-out **never overshoots and comes back** (unlike a spring). This checks
+     * that the remaining distance to the target decreases monotonically — a frame where
+     * it grows means an overshoot. About one frame of rounding is tolerated.
      */
     let increased = 0;
     let previous = Number.POSITIVE_INFINITY;

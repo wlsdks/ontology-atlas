@@ -1,27 +1,28 @@
 import { isTauriVaultRuntime } from './tauri-vault-fs';
 
 /**
- * 데스크톱 셸 (설치된 macOS 앱, Tauri WebView) 여부 판정.
+ * Decides whether this is the desktop shell (the installed macOS app, a Tauri
+ * WebView).
  *
- * 제품 정체성 분기 하나를 위해 존재한다: 설치 앱의 `/` 는 마케팅 관문이
- * 아니라 로컬 작업 진입(FirstRun)이어야 한다. 빌드 분리 없이 런타임에서
- * 한 번 분기 — 웹과 데스크톱은 같은 정적 export 를 쓴다.
+ * It exists for one product-identity branch: `/` in the installed app must be the
+ * local work entry (FirstRun), not the marketing gateway. The branch happens once
+ * at runtime with no build split — web and desktop share the same static export.
  *
- * 판정은 `resolveDesktopShell` 순수 함수로 분리해 테스트 seam 을 확보한다.
- * SSR (window 없음) 에서는 항상 false — 웹 첫 HTML 은 데스크톱 분기를 타지
- * 않는다.
+ * The decision is isolated in the pure `resolveDesktopShell` to give tests a
+ * seam. Under SSR (no window) it is always false, so the web's first HTML never
+ * takes the desktop branch.
  */
 export interface DesktopShellSignals {
-  /** `typeof window !== 'undefined'` — SSR 이면 false. */
+  /** `typeof window !== 'undefined'` — false under SSR. */
   hasWindow: boolean;
-  /** 실제 Tauri invoke 브리지 존재 여부 (`isTauriVaultRuntime`). */
+  /** Whether the real Tauri invoke bridge exists (`isTauriVaultRuntime`). */
   tauriRuntime: boolean;
-  /** dev 빌드 여부 — dev override 는 dev 빌드에서만 유효. */
+  /** Whether this is a dev build — the dev override only applies there. */
   isDevBuild: boolean;
   /**
-   * dev 전용 override 값 (`?shell=desktop` query 또는 localStorage
-   * `dev:desktop-shell`). production 빌드에서는 무시된다 — 브라우저에서
-   * FirstRun surface 를 검증/스크린샷하기 위한 seam 이지 기능 아님.
+   * The dev-only override (`?shell=desktop` query or the `dev:desktop-shell`
+   * localStorage key). Ignored in production builds — it is a seam for verifying
+   * and screenshotting the FirstRun surface in a browser, not a feature.
    */
   devOverride: string | null;
 }
@@ -32,7 +33,7 @@ export function resolveDesktopShell(signals: DesktopShellSignals): boolean {
   return signals.isDevBuild && signals.devOverride === 'desktop';
 }
 
-/** dev 전용 override 를 localStorage 에 둘 때 쓰는 키. */
+/** The localStorage key holding the dev-only override. */
 export const DESKTOP_SHELL_DEV_OVERRIDE_KEY = 'dev:desktop-shell';
 
 function readDevOverride(): string | null {

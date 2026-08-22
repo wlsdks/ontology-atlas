@@ -74,9 +74,9 @@ vi.mock("@/widgets/app-settings-menu", () => ({
   AppSettingsMenu: () => <button type="button" data-testid="app-settings-trigger-stub" />,
 }));
 
-// #15 — 설정을 나브레일 하단 슬롯으로 옮기면서 페이지가 useNavRailSettingsSlot
-// 을 호출한다. 이 훅은 provider 없이는 throw 하므로(레이아웃 상주 계약),
-// 페이지 단위 테스트에선 no-op 로 스텁한다.
+// Since settings moved to the nav rail's bottom slot, the page calls `useNavRailSettingsSlot`. That hook
+// throws without its provider (the layout-resident contract), so it is stubbed as a no-op in page-level
+// tests.
 vi.mock("@/widgets/app-nav-rail", () => ({
   useNavRailSettingsSlot: () => {},
 }));
@@ -88,8 +88,8 @@ vi.mock("../lib/use-vault-docs", () => ({
       path: "docs/ontology/capabilities/mcp-server.md",
       title: "MCP Server",
       tags: [],
-      // 두 생산 경로 모두 `doc.description` 을 frontmatter 의 그 키에서만
-      // 채운다 — 발췌 금지 규칙(A2)이 읽는 자리도 frontmatter 다.
+      // Both production paths fill `doc.description` only from that frontmatter key — the no-excerpt rule
+      // reads frontmatter too.
       frontmatter: { kind: "capability", description: "write 도구로 확장" },
       headings: [],
       excerpt: "",
@@ -126,18 +126,16 @@ function renderPage() {
 }
 
 describe("ProjectSelectorPage", () => {
-  // perf/persistent-shell — AppNavRail은 이제 app/[locale]/layout.tsx
-  // (AppShell)에 상주하고 이 페이지는 직접 마운트하지 않는다(레일 DOM
-  // identity를 라우트 이동 전반에서 유지하기 위함). 그래서 이 unit 테스트는
-  // 레일 자체가 아니라, 페이지가 여전히 소유하는 settings/agent-status
-  // 클러스터만 단언한다 — 레일 persistence 자체는 Playwright(프로덕션 정적
-  // 서빙에서 rail DOM identity 유지)로 검증한다.
+  // `AppNavRail` now lives in `app/[locale]/layout.tsx` (AppShell) and this page no longer mounts it
+  // directly (so the rail's DOM identity survives route changes). So this unit test asserts only the
+  // settings and agent-status cluster the page still owns, not the rail itself — rail persistence is
+  // verified by Playwright (rail DOM identity preserved under production static serving).
   it("설정은 남고, 실시간 표시는 여기 없다", () => {
     /*
-     * 「실시간 · 변경 N」은 **지도의 물건**이다 — 무엇이 바뀌었는지를 노드 위에
-     * 그려 주는 화면에서만 그 수가 다음 행동으로 이어진다. 목록 화면에서는 갈
-     * 곳이 없는 채로 우상단의 가장 센 잉크를 가져가고 자기 줄까지 예약해
-     * 아래 내용을 밀어냈다(소유자 실보고 2026-08-03).
+     * "Live · N changes" is **the map's object** — that number leads to a next action only on a screen
+     * that draws what changed onto the nodes. On a list screen it has nowhere to go while taking the
+     * strongest ink at the top right and reserving a whole row, pushing the content below it down
+     * (owner report 2026-08-03).
      */
     renderPage();
     expect(screen.getByTestId("app-settings-trigger-stub")).toBeInTheDocument();
@@ -145,18 +143,19 @@ describe("ProjectSelectorPage", () => {
   });
 
   /**
-   * **폴더 전체 수를 이 화면에서 세지 않는다** (2026-08-09 소유자 판정).
+   * **The whole-folder count is not tallied on this screen** (owner verdict, 2026-08-09).
    *
-   * 예전에는 빵부스러기 줄 오른쪽에 「폴더 전체 N 개념 · N 관계」가 있었다. 그런데
-   * 그건 **아래 프로젝트 카드를 다르게 쪼갠 것**이다 — 실측(storefront 샘플):
-   * 49 역량 + 54 요소 + 8 도메인 + 1 프로젝트 = **정확히 112**, 상단이 말하던 그
-   * 수다. 관계만 8 차이(프로젝트 밖 관계)였다.
+   * "Whole folder: N concepts · N relations" used to sit at the right of the breadcrumb row. But that is
+   * **the project cards below, sliced differently** — measured on the storefront sample:
+   * 49 capabilities + 54 elements + 8 domains + 1 project = **exactly 112**, the number the top was
+   * stating. Only relations differed by 8 (relations outside the project).
    *
-   * 같은 것을 두 스코프로 두 번 세면 읽는 사람은 **둘 중 하나가 틀렸다고 읽는다**.
-   * 코드 주석은 그걸 알면서도 「스코프 라벨을 붙이면 된다」로 넘겼고, 소유자
-   * 판정은 그 반대였다: *"이런거 좀 혼란스러워 위에줄에 정보는 필요없고"*.
+   * Counting the same thing twice under two scopes makes the reader **assume one of them is wrong**. The
+   * code comment knew this and waved it away with "just add a scope label"; the owner's verdict was the
+   * opposite: *"이런거 좀 혼란스러워 위에줄에 정보는 필요없고"* (this sort of thing is confusing; the top
+   * row doesn't need information).
    *
-   * 이 시험은 그 줄이 조용히 돌아오는 것을 막는다.
+   * This test stops that row from quietly coming back.
    */
   it("폴더 전체 개념·관계 수를 다시 들이지 않는다 — 세는 곳은 프로젝트 카드 하나다", () => {
     renderPage();
@@ -171,11 +170,10 @@ describe("ProjectSelectorPage", () => {
     renderPage();
     expect(screen.getByTestId("project-selector-activity-row")).toBeInTheDocument();
     expect(screen.getByText("capabilities/mcp-server")).toBeInTheDocument();
-    // 2줄 스택 통일 이후 subtitle 은 도메인 + 설명을 한 줄로 합친다
-    // (RecentNodeRow — Apple C3 unification). 이 파일의 mock 노드 id 는
-    // (kind:folder/slug) tailSlug 계산 규약과 우연히 불일치해 nodeId 매칭이
-    // 항상 실패하므로 domainTitle 은 fallback("—")으로 남는다 — 실제 매칭
-    // 경로는 ProjectSelectorPage.activity-link.test.tsx 가 전담 검증한다.
+    // Since the two-line stack was unified, the subtitle joins the domain and the description on one line
+    // (`RecentNodeRow`). This file's mock node ids happen not to match the (kind:folder/slug) tailSlug
+    // convention, so nodeId matching always fails and `domainTitle` stays at its "—" fallback — the real
+    // matching path is covered by `ProjectSelectorPage.activity-link.test.tsx`.
     expect(screen.getByText("— · write 도구로 확장")).toBeInTheDocument();
   });
 
@@ -224,8 +222,8 @@ describe("ProjectSelectorPage", () => {
     );
   });
 
-  // 감사 D8 — 영어 화면에서 "1 project · 1 domains" 로 나갔다. 셈이 1 일 때
-  // 복수형은 문장이 자동 생성됐다는 신호로 읽힌다.
+  // Audit finding: the English screen shipped "1 project · 1 domains". A plural at a count of 1 reads as
+  // a sentence that was generated automatically.
   it("agrees in number with the count it labels", () => {
     renderPage();
     const header = screen.getByRole("main").textContent ?? "";
@@ -234,6 +232,6 @@ describe("ProjectSelectorPage", () => {
     expect(header).not.toContain("1 domains");
     expect(header).not.toContain("1 CONCEPTS");
     expect(header).not.toContain("1 RELATIONS");
-    // 폴더 전체 수는 2026-08-09 에 이 화면에서 빠졌다 — 위 시험이 그 자리를 지킨다.
+    // The whole-folder count left this screen on 2026-08-09 — the test above holds that ground.
   });
 });

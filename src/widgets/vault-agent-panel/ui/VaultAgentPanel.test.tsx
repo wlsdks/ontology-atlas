@@ -1,4 +1,4 @@
-// 패널이 지키는 것: 웹 정직 강등 · 닫힘=중단 · 범위 시트 선행 · 리플로우 계약.
+// What the panel holds: honest web degradation · closing = stopping · the scope sheet comes first · the reflow contract.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -28,21 +28,22 @@ vi.mock('@/shared/lib/tauri-secrets', () => ({
     stored: secrets.stored && provider === 'anthropic',
     last4: 'abcd',
   })),
-  // 실제 브로드캐스트와 같은 계약 — 등록/삭제가 성공하면 듣는 쪽이 다시 조회한다.
+  // The same contract as the real broadcast — a successful register or delete makes listeners re-query.
   subscribeSecretChange: (handler: () => void) => {
     secrets.listeners.add(handler);
     return () => secrets.listeners.delete(handler);
   },
 }));
 
-/** 설정 시트에서 키가 저장된 순간을 흉내낸다. */
+/** Imitate the moment a key is saved in the settings sheet. */
 function emitSecretChange() {
   for (const listener of secrets.listeners) listener();
 }
 
 /**
- * 첫 마디의 재료 — 「할 일」 큐가 읽는 것과 같은 사실 map. 테스트가 폴더
- * 상태를 직접 정해야 세 경우(빈 폴더·큐 있는 폴더·노드 선택)를 잴 수 있다.
+ * The first words' raw material — the same fact map the 「할 일」 (to-do) queue reads.
+ * The test has to set the folder state directly to measure the three cases (empty
+ * folder, folder with a queue, node selected).
  */
 const conceptFacts = vi.hoisted(() => ({
   map: new Map<string, { hasDefinition: boolean; domainRef: string | null; mtime: number | null }>(),
@@ -52,7 +53,7 @@ vi.mock('@/features/vault-ontology', () => ({
   useVaultConceptFacts: () => conceptFacts.map,
 }));
 
-/** git 이력 — 세션 사이 이어짐의 근거. 기본은 "git 이 아닌 폴더". */
+/** git history — the basis for continuity across sessions. The default is "not a git folder". */
 const gitBridge = vi.hoisted(() => ({ available: false, commits: [] as unknown[] }));
 vi.mock('@/shared/lib/tauri-git', () => ({
   isGitBridgeAvailable: () => gitBridge.available,
@@ -72,7 +73,7 @@ import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
 
 import { VaultAgentPanel } from './VaultAgentPanel';
 
-/** 패널이 보낸 "설정의 그 자리를 열어라" 요청 기록. */
+/** A record of the "open that place in settings" requests the panel sent. */
 const settingsIntents: string[] = [];
 beforeEach(() => {
   settingsIntents.length = 0;
@@ -127,7 +128,7 @@ const refundNode = {
   ref: null,
 } as never;
 
-/** 뜻이 빈 「결제 처리」 + 소속이 빈 「환불」 — 큐가 지목할 두 개념. */
+/** 「결제 처리」 with an empty meaning plus 「환불」 with an empty owner — the two concepts the queue points at. */
 function loadQueueFolder() {
   conceptFacts.map = new Map([
     ['capabilities/payment', { hasDefinition: false, domainRef: 'billing', mtime: null }],
@@ -143,7 +144,7 @@ describe('VaultAgentPanel', () => {
   });
 
   it('웹에서는 입력칸 대신 정직 강등을 그린다', () => {
-    // 키를 안전하게 둘 곳도 보낼 경로도 없는데 입력칸을 그리면 거짓말이다.
+    // Drawing a composer with nowhere safe to keep a key and no route to send is a lie.
     bridge.available = false;
     renderPanel();
     expect(screen.getByTestId('vault-agent-download-link')).toBeInTheDocument();
@@ -176,7 +177,7 @@ describe('VaultAgentPanel', () => {
   });
 
   it('첫 턴 전에는 범위 시트가 먼저 서고 입력칸이 없다', async () => {
-    // 보내기 전에 무엇이 어디로 가는지 한 번 말한다.
+    // Before sending, it states once what goes where.
     bridge.available = true;
     renderPanel();
     expect(await screen.findByTestId('agent-scope-sheet')).toBeInTheDocument();
@@ -192,7 +193,7 @@ describe('VaultAgentPanel', () => {
     const panel = screen.getByTestId('vault-agent-panel');
     expect(panel).toHaveAttribute('data-agent-panel-state', 'open');
     expect(panel.style.width).toBe('var(--agent-panel-width)');
-    // 애니메이션되는 속성은 폭 하나뿐 — 지도 축소가 같은 프레임에 따라온다.
+    // Width is the only animated property — the map's shrink follows in the same frame.
     expect(panel.style.transitionProperty).toBe('width');
     expect(panel.style.transitionDuration).toBe('var(--agent-panel-reflow-duration)');
 
@@ -223,26 +224,27 @@ describe('VaultAgentPanel', () => {
   });
 
   it('키가 없으면 말로 길을 알려주는 대신 그 자리로 가는 문을 준다', async () => {
-    // 소유자 판정 반전(2026-07-26). 구 계약은 "설정을 여는 두 번째 입구를 만들지
-    // 않고 자리를 말한다" 였다 — 「왼쪽 아래 설정(톱니)의 「AI 연결」에서…」.
-    // 화면이 데려다 줄 수 있는 곳을 사람이 찾게 만드는 것은 안내가 아니다.
+    // Owner reversal (2026-07-26). The old contract was "do not create a second
+    // entrance into settings; name the location instead" — 「왼쪽 아래 설정(톱니)의
+    // 「AI 연결」에서…」. Making a person hunt for somewhere the screen could take them
+    // is not guidance.
     bridge.available = true;
     secrets.stored = false;
     renderPanel();
     const door = await screen.findByTestId('vault-agent-open-settings');
-    // 입력칸의 **자리**에 서 있고, 그 자리는 실제로 동작하는 컨트롤 하나다
-    // (비활성 버튼도, 눌러도 아무 일 없는 흉내 입력칸도 만들지 않는다).
+    // It stands in the composer's **position**, and that position is a single control
+    // that really works (no disabled button, no imitation input that does nothing).
     expect(door).toHaveAccessibleName(messages.vaultAgentPanel.degraded.noKeyAction);
     expect(screen.queryByTestId('vault-agent-input')).not.toBeInTheDocument();
 
     fireEvent.click(door);
-    // 설정 시트는 앱 셸이 소유한다 — 패널은 "저 자리를 열어라" 만 보낸다.
+    // The settings sheet is owned by the app shell — the panel only sends "open that place".
     expect(settingsIntents).toEqual(['ai']);
     secrets.stored = true;
   });
 
   it('키를 넣고 돌아오면 새로고침 없이 살아난다', async () => {
-    // 키를 등록한 사용자에게 F5 를 요구하면 그건 결함이다.
+    // Demanding F5 from a user who just registered a key is a defect.
     bridge.available = true;
     secrets.stored = false;
     renderPanel();
@@ -255,7 +257,7 @@ describe('VaultAgentPanel', () => {
   });
 
   it('브라우저 강등은 설정이 아니라 앱으로 보낸다', () => {
-    // 웹에는 키를 둘 곳 자체가 없다 — 여기서 설정으로 보내면 열리지 않는 문이다.
+    // The web has nowhere to keep a key at all — sending them to settings here is a door that does not open.
     bridge.available = false;
     renderPanel();
     expect(screen.getByTestId('vault-agent-download-link')).toHaveAttribute(
@@ -272,7 +274,7 @@ describe('VaultAgentPanel', () => {
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));
 
     const chips = await screen.findAllByTestId('agent-first-words-chip');
-    // 화면 → 큐 → 상비. 슬롯 우선순위는 고정이다.
+    // Screen → queue → standing. The slot priority is fixed.
     expect(chips.map((chip) => chip.dataset.firstWordsSlot)).toEqual([
       'screen',
       'queue',
@@ -282,8 +284,8 @@ describe('VaultAgentPanel', () => {
   });
 
   it('칩을 눌러도 아무것도 나가지 않는다 — 프리필이지 전송이 아니다', async () => {
-    // 이 슬라이스의 핵심 계약. 칩이 모델을 부르면 그것은 동의 없는 전송이고
-    // 남의 돈(BYOK 요금)을 쓰는 일이다.
+    // This slice's core contract. A chip calling the model would be a transmission
+    // without consent, and it spends someone else's money (BYOK charges).
     bridge.available = true;
     loadQueueFolder();
     const { llmChat } = await import('@/shared/lib/tauri-llm');
@@ -298,7 +300,7 @@ describe('VaultAgentPanel', () => {
     const input = screen.getByTestId('vault-agent-input') as HTMLTextAreaElement;
     expect(input.value).toBe(chipText);
     expect(llmChat).not.toHaveBeenCalled();
-    // 칩은 눌린 뒤에도 남는다 — 상태 없는 컨트롤이라 다시 누르면 다시 앉는다.
+    // A chip survives being pressed — it is a stateless control, so pressing again seats it again.
     expect(screen.getAllByTestId('agent-first-words-chip').length).toBeGreaterThan(0);
   });
 
@@ -312,7 +314,7 @@ describe('VaultAgentPanel', () => {
   });
 
   it('키가 없는 상태의 목록도 같은 생성기에서 나온다 — 다만 평문이다', async () => {
-    // 완결할 수 없는 순간에 버튼을 그리면 함정이 된다. 문장은 같고 옷만 다르다.
+    // Drawing a button in a moment that cannot be completed is a trap. Same sentence, different clothes.
     bridge.available = true;
     secrets.stored = false;
     loadQueueFolder();
@@ -325,9 +327,9 @@ describe('VaultAgentPanel', () => {
   });
 
   it('키를 맡길지 정하는 자리에서 쓰기 동의 약속이 읽힌다', async () => {
-    // 안전장치는 코드에 있는 것으로 부족하다 — 사람이 자기 키와 문서 폴더를
-    // 맡길지 정하는 **그 순간**에 "파일은 내가 확인해야 바뀐다" 가 화면에
-    // 없으면, 그 안전장치는 결정에 아무 도움이 안 된다.
+    // A safeguard in the code is not enough — if "files change only after I confirm"
+    // is not on screen at **the moment** a person decides whether to entrust their key
+    // and docs folder, that safeguard does nothing for the decision.
     bridge.available = true;
     secrets.stored = false;
     renderPanel();
@@ -338,7 +340,7 @@ describe('VaultAgentPanel', () => {
   });
 
   it('범위 시트가 승낙 범위에 쓰기가 있다는 것을 말한다', async () => {
-    // 읽기·전송·기록만 말하고 쓰기를 빼면 그 승낙은 범위를 모르는 승낙이다.
+    // Speaking only of reading, sending and logging while omitting writing makes it consent with an unknown scope.
     bridge.available = true;
     renderPanel();
     expect(await screen.findByTestId('agent-scope-consent')).toHaveTextContent(
@@ -366,11 +368,13 @@ describe('VaultAgentPanel', () => {
   });
 
   it('이어가기를 펼치면 경계와 함께 폴더 절대경로·부탁 문장이 온다', async () => {
-    // 앱 내장 터미널을 걷어낸 뒤 떠나는 순간을 잇는 유일한 표면이다. 문구만
-    // 있으면 사용자가 폴더 절대경로를 손으로 찾아야 하고, 거기서 흐름이 끊긴다.
-    // 상주하지 않는 이유(2026-07-27): 이 카드는 **떠날 때만** 필요한데 입력칸
-    // 아래에 늘 서 있으면서 경계 문장까지 두 줄을 상시로 먹고 있었다. 계약은
-    // 그대로다 — 한 번 눌러 펼치면 같은 세 가지(왜 · 어디로 · 무엇을)가 온다.
+    // After the in-app terminal was removed, this is the only surface bridging the
+    // moment of leaving. With copy alone the user has to find the folder's absolute
+    // path by hand, and the flow breaks there. Why it does not sit permanently
+    // (2026-07-27): this card is needed **only when leaving**, yet it stood below the
+    // composer at all times, eating two lines along with the boundary sentence. The
+    // contract is unchanged — one press expands it and the same three things arrive
+    // (why · where to · what).
     bridge.available = true;
     renderPanel();
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));
@@ -378,10 +382,10 @@ describe('VaultAgentPanel', () => {
     fireEvent.click(screen.getByTestId('agent-meta-handoff'));
     const packet = await screen.findByTestId('agent-handoff-packet');
     expect(packet).toHaveTextContent('cd /vault');
-    // 보고 있던 개념이 부탁 문장에 실린다 — 붙여넣는 즉시 볼트에서 풀려야 한다.
+    // The concept being viewed rides in the request sentence — it has to resolve in the vault the moment it is pasted.
     expect(packet).toHaveTextContent('capabilities/payment');
     expect(screen.getByTestId('agent-handoff-copy')).toBeInTheDocument();
-    // 왜 넘기는지가 넘기는 자리에 함께 있다.
+    // Why it is being handed over sits with the handing over.
     expect(screen.getByTestId('agent-handoff-card')).toHaveTextContent(
       messages.vaultAgentPanel.boundary,
     );
@@ -400,12 +404,13 @@ describe('VaultAgentPanel', () => {
     expect(screen.getByTestId('agent-handoff-card')).toBeInTheDocument();
     expect(screen.queryByTestId('agent-prompt-disclosure')).not.toBeInTheDocument();
 
-    // 같은 버튼을 다시 누르면 닫힌다 — 열어 둔 것을 닫을 길이 항상 있다.
+    // Pressing the same button again closes it — there is always a way to close what
+    // was opened.
     //
-    // 닫힘은 **1프레임이 아니다** (2026-08-03): 상자는 퇴장 창 동안 남아 접히고,
-    // 그 동안 `inert` + `pointer-events-none` 이라 사라지는 중인 표면이 클릭을
-    // 먹지 않는다. 열림은 리플로우로 자라는데 닫힘만 하드컷이면 같은 입력의 두
-    // 방향이 다른 문법이 된다.
+    // Closing is **not one frame** (2026-08-03): the box stays through the exit window
+    // and collapses, and during that it is `inert` plus `pointer-events-none` so a
+    // disappearing surface does not eat a click. Opening grows through reflow, so a
+    // hard-cut close would make the two directions of the same input different grammars.
     fireEvent.click(screen.getByTestId('agent-meta-handoff'));
     const exiting = screen.getByTestId('agent-meta-disclosure');
     expect(exiting).toHaveAttribute('data-surface-state', 'exiting');
@@ -417,8 +422,8 @@ describe('VaultAgentPanel', () => {
   });
 
   it('아직 아무 말도 안 한 사람에게는 이어갈 것이 없다 — 자리표시가 다르다', async () => {
-    // 잠긴 띠와 실제 입력칸이 **같은 문구**를 쓴다: 키가 들어와도 같은 자리에
-    // 같은 글자가 남으므로 "여기가 열렸다" 로 읽힌다.
+    // The locked strip and the real composer use **the same copy**: even after a key
+    // arrives, the same text stays in the same place, so it reads as "this opened".
     bridge.available = true;
     secrets.stored = false;
     renderPanel();

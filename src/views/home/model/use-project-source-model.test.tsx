@@ -200,11 +200,12 @@ describe("project source model", () => {
   });
 
   /**
-   * 「이 폴더 맞나요?」 — 이 넷이 이 기능의 계약이다.
+   * 「이 폴더 맞나요?」 ("Is this the right folder?") — four things are this feature's contract.
    *
-   * ① 추정에 **새 파일시스템 순회가 없다**(볼트 루트 실측 한 번). ② 확정이
-   * **폴더 선택창을 건너뛴다**. ③ 근거가 잰 값이다. ④ 못 재면 조용하다 —
-   * 회색 버튼이 생기지 않고 종전의 폴더 선택창으로 간다.
+   * (1) The inference performs **no new filesystem walk** — one measurement on
+   * the vault root. (2) Confirming **skips the folder picker**. (3) The
+   * evidence is measured, not asserted. (4) When it cannot measure it stays
+   * quiet: no greyed-out button, just the plain folder picker.
    */
   const vaultRootPath = "/private/work/music/docs/ontology";
 
@@ -221,14 +222,14 @@ describe("project source model", () => {
     }));
 
     await waitFor(() => expect(result.current.proposedRoot).not.toBeNull());
-    // 볼트 루트 한 번뿐 — 후보를 찾겠다고 폴더를 훑지 않는다.
+    // The vault root only — no folder scan to hunt for candidates.
     expect(inspect).toHaveBeenCalledTimes(1);
     expect(inspect).toHaveBeenCalledWith(vaultRootPath);
     expect(result.current.proposedRoot).toEqual({
       rootPath: inspection.rootPath,
       marker: "enclosing_git_repository",
       confidence: "high",
-      // 근거는 주장이 아니라 측정이다 — 선언된 경로 1개가 실제로 거기 있었다.
+      // The evidence is a measurement, not a claim: 1 declared path was really there.
       witnessSummary: { total: 1, supported: 1, missing: 0 },
     });
   });
@@ -256,7 +257,7 @@ describe("project source model", () => {
       bindingCardinality: 1,
     });
     expect(vault.files.get(".ontology-atlas/project-sources.json") ?? "").toContain(proposed);
-    // 확정되면 질문도 사라진다 — 같은 자리에 물음과 답이 함께 남지 않는다.
+    // Confirming removes the question — the ask and the answer never share a spot.
     expect(result.current.proposedRoot).toBeNull();
   });
 
@@ -278,8 +279,9 @@ describe("project source model", () => {
     }));
 
     await waitFor(() => expect(inspect).toHaveBeenCalled());
-    // 아직 무엇을 처방할지 모른다 — 「폴더 고르기」인지 「이 폴더 맞나요?」인지.
-    // 이 순간에 그리면 300ms 뒤 같은 자리의 버튼이 라벨과 스킨을 갈아입는다.
+    // What to prescribe is still unknown — "pick a folder" or "is this the right
+    // folder?". Drawing now means the button in that spot swaps its label and
+    // skin 300 ms later.
     expect(result.current.proposalSettled).toBe(false);
 
     await act(async () => { release?.(); });
@@ -318,7 +320,8 @@ describe("project source model", () => {
 
     await waitFor(() => expect(inspect).toHaveBeenCalledWith(vaultRootPath));
     await waitFor(() => expect(result.current.canRunSourceAction).toBe(true));
-    // 선언된 경로 1개 중 0개 → 확신 low. 틀릴 수 있는 추정을 확정 버튼으로 팔지 않는다.
+    // 0 of 1 declared path → low confidence. A guess that may be wrong is never
+    // sold as a confirm button.
     expect(result.current.proposedRoot).toBeNull();
   });
 
@@ -338,7 +341,8 @@ describe("project source model", () => {
     expect(result.current.runtimeAvailable).toBe(false);
     expect(result.current.canRunSourceAction).toBe(false);
     expect(inspect).not.toHaveBeenCalled();
-    // 잴 수 없는 표면은 **기다리지도 않는다** — 강등 안내가 첫 프레임에 나온다.
+    // A surface that cannot measure **does not even wait** — the degraded notice
+    // is there on the first frame.
     expect(result.current.proposalSettled).toBe(true);
     expect(result.current.proposedRoot).toBeNull();
   });

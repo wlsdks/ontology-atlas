@@ -9,11 +9,12 @@ const HTML_ESCAPE: Record<string, string> = {
 };
 
 /**
- * JSON을 HTML의 raw-text `<script>` 안에 넣을 수 있는 문자열로 만든다.
+ * Serialise JSON into a string safe to embed in an HTML raw-text `<script>`.
  *
- * `JSON.stringify`만 쓰면 데이터의 `</script>`가 태그를 닫고 다음 HTML을
- * 실행 가능한 형제로 만들 수 있다. JSON 문자열의 의미는 그대로 두고 HTML이
- * 경계로 해석하는 문자만 JSON 유니코드 escape로 바꾼다.
+ * With plain `JSON.stringify`, a `</script>` inside the data closes the tag and
+ * turns the following HTML into an executable sibling. This keeps the JSON string's
+ * meaning intact and only rewrites the characters HTML treats as a boundary into
+ * JSON unicode escapes.
  */
 export function serializeJsonForHtml(value: unknown): string {
   const json = JSON.stringify(value);
@@ -27,7 +28,7 @@ export interface JsonLdProps {
   data: unknown;
 }
 
-/** HTML script 경계를 중앙에서 지키는 JSON-LD 표면. */
+/** JSON-LD surface that guards the HTML script boundary in one place. */
 export function JsonLd({ data }: JsonLdProps) {
   return (
     <script

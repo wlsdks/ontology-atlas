@@ -30,28 +30,31 @@ export interface Point {
 
 /** Six points of a regular hexagon, flat-top-rotated -90° (prototype: `a = i*60 - 90` degrees). */
 /**
- * 입체 음영의 광원 오프셋(반지름 배수) — 위·왼쪽. 근거는 `depthShade` 독블록
- * (Sun & Perona 1998 — 시각계의 «빛은 위에서, 약간 왼쪽» 가정).
+ * Light-source offset of the depth shading, as a multiple of the radius — up and
+ * to the left. Rationale: the `depthShade` doc-block (Sun & Perona 1998 — the
+ * visual system's "light comes from above, slightly left" assumption).
  */
 const NODE_DEPTH_SHADE_LIGHT_OFFSET = 0.4;
-/** 그늘진 쪽 가장자리의 최대 검정 알파. 이보다 세면 원판이 «구멍»으로 읽힌다. */
+/** Max black alpha at the shaded rim. Any stronger and the disc reads as a hole. */
 const NODE_DEPTH_SHADE_MAX_ALPHA = 0.5;
 /**
- * 이 화면 반지름(px) 아래에서는 음영을 안 그린다 — 3~4px 원판에서 기울기는
- * 입체가 아니라 잡음이고, 노드마다 그라디언트 객체를 만드는 비용만 남는다.
+ * Below this screen radius (px) the shading is skipped — on a 3–4px disc the
+ * gradient reads as noise rather than volume, and all that is left is the cost
+ * of building a gradient object per node.
  */
 const NODE_DEPTH_SHADE_MIN_RADIUS_PX = 3.5;
 
 /**
- * 입체 음영 그라디언트 캐시 — 키는 반올림한 (반지름, 세기). 좌표는 키에 없다:
- * 그라디언트를 **원점 기준**으로 만들고 그릴 때 `translate` 로 옮긴다.
+ * Depth-shading gradient cache, keyed by rounded (radius, strength). Coordinates
+ * are deliberately not in the key: the gradient is built **around the origin**
+ * and moved into place with `translate` at draw time.
  */
 const shadeGradientCache = new Map<string, CanvasGradient>();
 const SHADE_CACHE_MAX = 512;
 
 function buildDepthShade(ctx: CanvasRenderingContext2D, r: number, strength: number): CanvasGradient {
   const shade = ctx.createRadialGradient(
-    // 빛이 오는 쪽 — 위·약간 왼쪽. 그 점 근처는 손대지 않는다.
+    // Where the light comes from — up and slightly left; that spot stays untouched.
     -r * NODE_DEPTH_SHADE_LIGHT_OFFSET,
     -r * NODE_DEPTH_SHADE_LIGHT_OFFSET,
     r * 0.05,
@@ -121,8 +124,8 @@ export interface NodeShapeDrawState {
   /**
    * The currently-hovered node (no focus active — hover is suppressed under
    * focus, `topology-frame-draw.ts` nulls `hoveredNodeId` there). Draws a
-   * static 1px indigo hairline preview ring ("잡을 수 있다" affordance,
-   * canvas-emphasis slice §C) — never for the already-`"center"` node, which
+   * static 1px indigo hairline preview ring — the "잡을 수 있다" (can grab this)
+   * affordance of the canvas-emphasis slice §C — never for the already-`"center"` node, which
    * has its own stronger selection ring below.
    */
   isHovered: boolean;
@@ -152,71 +155,80 @@ export interface NodeShapeDrawState {
    * heartbeat is fresh (`hasFreshHeartbeat`, `topology-frame-draw.ts`'s
    * caller nulls the id otherwise). Draws a static amber hairline ring — the
    * SAME `amberHub` signal tone as the hub ring / project hexagon, never a
-   * glow (design.md "발광 대신 재질"). Real heartbeat data only; `false`
+   * glow (design.md 「발광 대신 재질」 — material, not emission). Real heartbeat
+   * data only; `false`
    * whenever there's no fresh focus (fabrication 0).
    */
   agentFocus: boolean;
   /**
-   * 스포트라이트 변경-노드 링 (소유자 지시 2026-07-23, Image #14 — "변경된
-   * 것만 테두리가 돌아가게"). 렌즈 ON 동안 mtime 창 안 노드에 amberHub
-   * **회전 파선** kind-outline 을 얹는다 — 침강 대비만으론 element 뷰에서
-   * 변경 노드가 안 읽히던 실보고의 처방. glow/blur 0(발광 대신 재질),
-   * amberHub 는 에이전트 포커스 링과 같은 신호 톤 선례. `alpha` = 렌즈
-   * 램프(켜고 끄기 페이드), `dashOffset` = 회전 위상(px, reduced-motion 은
-   * 호출자가 0 고정 → 정적 파선). null = 미표시.
+   * Spotlight ring for changed nodes. Owner, 2026-07-23: "변경된 것만 테두리가
+   * 돌아가게" (only the changed ones should have a rotating border). While the
+   * lens is on, nodes inside the mtime window get an amberHub **rotating dashed**
+   * kind-outline — the fix for a report that changed nodes were unreadable in
+   * the element view when settling contrast was the only cue. Zero glow/blur
+   * (material, not emission); amberHub follows the agent-focus ring's precedent
+   * as a signal tone. `alpha` is the lens fade in/out, `dashOffset` the rotation
+   * phase in px (the caller pins it to 0 under reduced-motion, giving a static
+   * dash). null hides it.
    */
   spotlightRing: { alpha: number; dashOffset: number } | null;
   /**
-   * Design Guardian 처방 L — 호버 circuit-trace shimmer 의 시간원. 프레임의
-   * `performance.now()` 호환 타임스탬프(픽셀 드로우 자체는 시간을 모르는
-   * 순수 계층이 아니므로 여기서만 받는다) + reduced-motion 게이트. 정지 호버
-   * 링(`isHovered` 블록)은 이 값과 무관하게 항상 그려지고, shimmer 아크만
-   * `!reducedMotion` 일 때 그 위에 얹힌다.
+   * Time source for the hover circuit-trace shimmer: the frame's
+   * `performance.now()`-compatible timestamp, taken here only because the pixel
+   * drawing itself is a pure layer that knows nothing of time. The static hover
+   * ring (the `isHovered` block) is drawn regardless of this value; only the
+   * shimmer arc is layered on top, and only when `!reducedMotion`.
    */
   now: number;
   reducedMotion: boolean;
   /**
-   * 아이콘 세트 (Phase 5 #21) — kind→실루엣 매핑은 이 값과 무관하게 항상 동일
-   * (`bodyPoints` 그대로). 이 값은 **렌더 스타일만** 바꾼다: `"fill"`(기하, 현행
-   * 기본) = kind fill + 금속 sheen 그라디언트, `"line"`(라인) = 채움 없이 flat
-   * 다크 바디(hole-fill) + 살짝 얇은 외곽선. DOM `TopologyV2KindGlyph` 의 라인
-   * 세트와 같은 스토어(`appearance-preferences`)를 읽어 두 표면이 함께 스왑된다.
-   * 생략 시 `"fill"`(회귀 0).
+   * Icon set. The kind→silhouette mapping is identical regardless of this value
+   * (`bodyPoints` unchanged); it switches **render style only**: `"fill"` (the
+   * current default) is the kind fill plus the metallic sheen gradient, `"line"`
+   * is an unfilled flat dark body (hole-fill) with a slightly thinner outline.
+   * It reads the same store (`appearance-preferences`) as the DOM
+   * `TopologyV2KindGlyph` line set, so both surfaces swap together. Defaults to
+   * `"fill"`.
    */
   glyphStyle?: "fill" | "line";
   /**
-   * 3D 보기 — **입체 음영**의 세기 0..1. 0(기본)이면 획이 하나도 안 늘어난다.
+   * 3D view — **depth shading** strength, 0..1. At 0 (the default) not a single
+   * extra stroke is issued.
    *
-   * 사람의 시각계는 명암의 모호함을 «빛은 위에서, 약간 왼쪽에서 온다»는 가정
-   * 으로 푼다(Sun & Perona, *Nature Neuroscience* 1(3), 1998). 그래서 원판
-   * 위에 그 방향의 명암 기울기 하나만 얹으면 원판이 **구**로 읽힌다 — 3D 에서
-   * 점이 «스티커»로 보이던 것을 없애는 가장 싼 장치다.
+   * The human visual system resolves shading ambiguity by assuming light comes
+   * from above and slightly to the left (Sun & Perona, *Nature Neuroscience*
+   * 1(3), 1998). So laying a single luminance gradient in that direction over a
+   * disc makes it read as a **sphere** — the cheapest way to stop the dots from
+   * looking like stickers in 3D.
    *
-   * **밝은 쪽을 밝히지 않고 어두운 쪽만 어둡게 한다.** 반대편에 하이라이트나
-   * 림 라이트를 넣으면 그것이 곧 헌장이 금지한 glow 다. 여기 쓰는 것은 검정
-   * 알파 하나뿐이라 새 색상(hue)이 0 이고, 번지지도 움직이지도 않는다.
+   * **The dark side is darkened; the lit side is never brightened.** A highlight
+   * or rim light on the opposite side would be exactly the glow the charter
+   * bans. All this uses is one black alpha: zero new hues, no bleed, no motion.
    */
   depthShade?: number;
   /**
-   * 3D 보기 — **먼 쪽 상세 램프** 0..1 (`model/dome-view.ts#domeDetailFactor`).
-   * 1(기본)이면 종전과 픽셀 동일. 뒤쪽 반구에서 0 으로 접히며 **부가 획**만
-   * 물러난다: 외곽선 stroke(채움 세트에서만 — 라인 세트의 외곽선은 마크
-   * 자체라 안 접는다)와 도메인 핀 틱. 원판 fill(마크)은 어느 값에서도 그대로.
-   * 감쇠는 C¹ 연속(smoothstep)이라 돔 회전 중 획이 «툭» 사라질 수 없다.
+   * 3D view — **far-side detail factor**, 0..1
+   * (`model/dome-view.ts#domeDetailFactor`). At 1 (the default) the result is
+   * pixel-identical to before. It folds to 0 on the rear hemisphere, and only
+   * **supplementary strokes** recede: the outline stroke (fill set only — in the
+   * line set the outline *is* the mark, so it never folds) and the domain pin
+   * ticks. The disc fill, being the mark itself, is untouched at any value. The
+   * falloff is C¹ continuous (smoothstep), so a stroke can never pop out
+   * mid-rotation.
    */
   detail?: number;
 }
 
-/** kind→실루엣 불변, 렌더 스타일만 결정하는 순수 디스크립터 (canvas 게이트). */
+/** Pure descriptor for render style only; the kind→silhouette mapping is invariant. */
 export interface GlyphStyleDescriptor {
-  /** true면 채움 없이 flat 다크 바디 + 외곽선만(라인 세트). */
+  /** Line set: no kind fill, a flat dark body plus the outline. */
   lineOnly: boolean;
-  /** 바디 외곽선 두께 배수 — 라인 세트는 살짝 가볍다. */
+  /** Body outline width multiplier — the line set is slightly lighter. */
   lineWidthScale: number;
 }
 
-// perf 2026-08-19 — 노드마다 새 객체를 만들 이유가 없는 순수 상수 둘. 공유
-// 객체를 돌려줘도 소비처는 읽기만 한다(값 동일 → 픽셀 동일).
+// perf 2026-08-19 — two pure constants with no reason to be rebuilt per node.
+// Consumers only read them, so sharing one object each is pixel-identical.
 const GLYPH_STYLE_LINE: GlyphStyleDescriptor = { lineOnly: true, lineWidthScale: 0.8 };
 const GLYPH_STYLE_FILL: GlyphStyleDescriptor = { lineOnly: false, lineWidthScale: 1 };
 
@@ -231,8 +243,9 @@ export interface NodeShapeTokens {
   numeralFace: string;
   holeFill: string;
   /**
-   * Canvas-emphasis slice — Layer-0 container identity (design.md: "Hub 노드와
-   * Layer 0 컨테이너에만 보조 톤(앰버) 허용"). Inner offset hairline for the
+   * Canvas-emphasis slice — Layer-0 container identity (design.md: 「Hub 노드와
+   * Layer 0 컨테이너에만 보조 톤(앰버) 허용」 — amber is allowed on hub nodes and
+   * Layer-0 containers only). Inner offset hairline for the
    * project hexagon's double-hairline "machined bezel" (spec §A1's second
    * stroke — the outer stroke itself is `amberHub`, applied to the BODY
    * stroke by `topology-frame-draw.ts#resolveNodeVisual`, not here).
@@ -255,11 +268,11 @@ export interface NodeShapeTokens {
   neighborRing: string;
   /** Canvas-emphasis slice — the hover preview ring's color (spec §C), a static 1px indigo hairline distinct from the brighter selection ring. */
   hoverRing: string;
-  /** Design Guardian 처방 L — 호버 shimmer 아크 길이(둘레 비율, `--topology-v2-hover-shimmer-seg`). */
+  /** Hover shimmer arc length, as a fraction of the perimeter (`--topology-v2-hover-shimmer-seg`). */
   hoverShimmerSeg: number;
-  /** Design Guardian 처방 L — 호버 shimmer 1회전 주기(ms, `--topology-v2-hover-shimmer-period-ms`). */
+  /** Hover shimmer period for one full revolution, ms (`--topology-v2-hover-shimmer-period-ms`). */
   hoverShimmerPeriodMs: number;
-  /** Design Guardian 처방 L — 호버 shimmer 아크 색(`--topology-v2-indigo-bright` 재사용, 새 hue 없음). */
+  /** Hover shimmer arc colour — reuses `--topology-v2-indigo-bright`; no new hue. */
   hoverShimmerColor: string;
 }
 
@@ -295,7 +308,7 @@ const PROJECT_DECOR_MIN_RADIUS = 8;
 const PROJECT_DECOR_MAX_FAR_T = 0.9;
 /** Inner hairline sits inset at this fraction of the outer body radius (ported ratio from the flagship prototype's double-hex, `docs/prototypes/first-run-v3-flagship.html` — outer circumradius 41, inner 31 ≈ 0.756). */
 const PROJECT_HAIRLINE_INNER_RATIO = 0.75;
-/** Selection ring offsets — the inner ring sits exactly on the body outline (spec §B1's "노드 외곽"), the outer hairline 6px beyond it. */
+/** Selection ring offsets — the inner ring sits exactly on the body outline (spec §B1's 「노드 외곽」, the node's outer edge), the outer hairline 6px beyond it. */
 const SELECTION_RING_OUTER_OFFSET = 6;
 /** The one-shot commit-pulse ring sits between the two static rings so its brief expansion reads as coming FROM the node, not replacing either static ring. */
 const SELECTION_PULSE_RING_OFFSET = 3;
@@ -327,7 +340,7 @@ export function domainPinTicks(cx: number, cy: number, s: number): PinTick[] {
   return ticks;
 }
 
-/** Fixed 6px leg length for the project hexagon's 4-direction pin ticks (owner spec, canvas-emphasis slice — "핀 틱 4방향(상하좌우 6px 선)"), unlike domain's radius-proportional ticks. */
+/** Fixed 6px leg length for the project hexagon's 4-direction pin ticks (owner spec, canvas-emphasis slice — 「핀 틱 4방향(상하좌우 6px 선)」: four ticks, up/down/left/right, 6px each), unlike domain's radius-proportional ticks. */
 const PROJECT_PIN_TICK_LENGTH = 6;
 
 /**
@@ -363,8 +376,9 @@ function resolveBodyFill(
   sheenTop: string,
 ): string | CanvasGradient {
   if (r <= SHEEN_MIN_RADIUS || farT >= SHEEN_MAX_FAR_T) return fill;
-  // 먼 쪽 상세 램프가 sheenTop 을 fill 로 수렴시키면(동일 문자열) 두 정지점이
-  // 같은 그라디언트다 — 만들지 않고 평면 fill 로 조기 반환한다(픽셀 동일).
+  // When the far-side detail factor has converged sheenTop onto fill (identical
+  // string), both stops are the same colour — return the flat fill early instead
+  // of building that gradient. Pixel-identical.
   if (sheenTop === fill) return fill;
   const grad = ctx.createLinearGradient(x, y - r, x, y + r);
   grad.addColorStop(0, sheenTop);
@@ -438,14 +452,16 @@ export function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: numbe
 }
 
 /*
- * perf 2026-08-19 — 그리기 내부 전용 스크래치판 `bodyPoints`.
+ * perf 2026-08-19 — draw-internal scratch version of `bodyPoints`.
  *
- * `hexPoints`/`squarePoints` 는 호출마다 점 객체 4~6개 + 배열 하나를 만든다.
- * 노드 바디 + 링 오버레이가 노드마다 부르므로 2,000 노드 × 60fps 면 초당
- * 수십만 개다. 좌표 식은 위 함수들과 **완전히 같고**(같은 각도·같은 비율),
- * 결과는 `roundedPolygonPath` 가 즉시 소비하므로 프레임 간 공유 상태가 없다
- * — 이 파일의 draw 경로는 단일 rAF 루프에서 동기로만 돈다. 외부 계약
- * (`bodyPoints` export, contract test)은 그대로 할당판을 쓴다.
+ * `hexPoints`/`squarePoints` allocate 4–6 point objects plus an array per call.
+ * The node body and the ring overlays each call them per node, so 2,000 nodes ×
+ * 60fps is hundreds of thousands per second. The coordinate formulas here are
+ * **exactly** those functions' (same angles, same ratios), and the result is
+ * consumed immediately by `roundedPolygonPath`, so no state is shared across
+ * frames — this file's draw path runs synchronously inside a single rAF loop.
+ * The external contract (the `bodyPoints` export, contract test) keeps the
+ * allocating version.
  */
 const HEX_SCRATCH: Point[] = Array.from({ length: 6 }, () => ({ x: 0, y: 0 }));
 const SQUARE_SCRATCH: Point[] = Array.from({ length: 4 }, () => ({ x: 0, y: 0 }));
@@ -499,7 +515,8 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
  * Strokes ONE ring at `radius`, following the node's own kind-shape (hex/
  * square/rounded-square, converging to a circle past `FULL_CIRCLE_FAR_T` —
  * same convergence rule as the body itself) — a "material ring" overlay
- * (`.claude/rules/design.md` "발광 대신 재질"), never a glow/shadow. Shared by
+ * (`.claude/rules/design.md` 「발광 대신 재질」 — material, not emission), never a
+ * glow/shadow. Shared by
  * the hub ring, the project double-hairline, the selection double-ring, its
  * one-shot commit pulse, and the hover preview ring — all five are the same
  * primitive at a different radius/color/width/alpha.
@@ -553,12 +570,12 @@ function outlinePerimeter(kind: NodeShapeDrawState["kind"], radius: number, farT
 }
 
 /**
- * Design Guardian 처방 L — 정지 호버 링(`strokeKindOutline`) 위에 저속 순회
- * 아크 1개를 얹는다. 같은 형상 패스(hex/사각/원, farT 수렴 규칙까지 동일)를
- * 다시 그리되 `setLineDash`/`lineDashOffset` 로 일부만 보이게 해 "회로를
- * 순회하는 신호" 를 표현한다 — 글로우/그림자 0(design.md), 색은 인디고
- * bright 표준 톤 재사용. 세그먼트 길이가 0 이면(토큰 drift 등) 아무 것도
- * 그리지 않는다.
+ * Design Guardian-approved: one slow travelling arc layered over the static
+ * hover ring (`strokeKindOutline`). It re-traces the same shape path (hex/
+ * square/circle, farT convergence rule included) but reveals only part of it via
+ * `setLineDash`/`lineDashOffset`, reading as a signal running around a circuit —
+ * zero glow/shadow (design.md), colour reused from the standard bright indigo.
+ * A zero segment length (token drift, say) draws nothing.
  */
 function drawHoverShimmer(
   ctx: CanvasRenderingContext2D,
@@ -629,11 +646,12 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
 
   const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
 
-  // perf 2026-08-19 — 대시 없는 노드(대다수)는 대시 호출을 아예 안 낸다.
-  // 모든 painter 가 파선을 쓰고 나면 [] 로 되돌리는 규약이라(traces ·
-  // cluster-chips · dome-rings · frame-draw 링 블록 · 이 함수 자신) 진입
-  // 대시 상태는 항상 비어 있다 — 매 노드 2회이던 네이티브 호출·스프레드
-  // 할당이 fresh/stale 파선 노드에서만 남는다.
+  // perf 2026-08-19 — nodes without a dash (the vast majority) issue no dash
+  // call at all. Every painter restores [] after using a dash (traces,
+  // cluster-chips, dome-rings, the frame-draw ring block, and this function
+  // itself), so the dash state on entry is always empty — the two native calls
+  // and the spread allocation per node now happen only on fresh/stale dashed
+  // nodes.
   const hasDash = dash.length > 0;
   if (hasDash) ctx.setLineDash([...dash]);
   const points = bodyPointsScratch(kind, x, y, r);
@@ -643,53 +661,59 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   } else {
     roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, r), r, farT));
   }
-  // 라인 세트: 채움 없이 flat 다크 바디(hole-fill) — 뒤 엣지가 비치지 않도록
-  // 투명 대신 다크로 채우되 금속 sheen 은 생략(순수 외곽선 독법). 기하 세트:
-  // 기존 kind fill + sheen 그라디언트. 실루엣(패스)은 위에서 이미 동일하게 그림.
+  // Line set: a flat dark body (hole-fill) rather than transparency, so edges
+  // behind do not show through, and no metallic sheen — the mark reads as pure
+  // outline. Fill set: the kind fill plus the sheen gradient. Either way the
+  // silhouette path was already traced identically above.
   ctx.fillStyle = lineOnly ? tokens.holeFill : resolveBodyFill(ctx, x, y, r, farT, fill, sheenTop);
   ctx.fill();
   /*
-   * 입체 음영 (3D) — 위 `depthShade` 독블록. 방금 채운 **그 패스 그대로**
-   * (canvas 의 fill 은 현재 경로를 비우지 않는다) 한 번 더 채우므로 실루엣이
-   * 어긋날 수 없다. 반지름이 몇 px 인 노드에서는 기울기가 잡음이 되므로
-   * 최소 크기 아래에서는 건너뛴다.
+   * Depth shading (3D) — see the `depthShade` doc-block above. This re-fills
+   * **the very path just filled** (canvas `fill` does not clear the current
+   * path), so the silhouette cannot drift. Skipped below the minimum radius,
+   * where the gradient would be noise rather than volume.
    */
   if (depthShade > 0.01 && r >= NODE_DEPTH_SHADE_MIN_RADIUS_PX) {
     /*
-     * **그라디언트는 캐시한다.** 이 분기는 3D 에서 노드마다 도는데, 캔버스
-     * 그라디언트 객체는 만들 때마다 새로 태어난다 — 125노드 × 120Hz 면 초당
-     * 1만 5천 개고, 그 청구서는 프레임 시간이 아니라 GC 가 끼어드는 순간의
-     * 튐으로 온다.
+     * **The gradient is cached.** This branch runs per node in 3D, and every
+     * canvas gradient object is born fresh: 125 nodes × 120Hz is 15,000 per
+     * second, and the bill arrives not as frame time but as a stutter the moment
+     * GC steps in.
      *
-     * 캐시 키는 **반지름과 세기를 반올림한 값**이다. 그라디언트의 모양은 그
-     * 둘만으로 정해지고(중심 오프셋·정지점 모두 r 과 세기의 함수), 0.5px·0.05
-     * 단위 아래의 차이는 화면에서 구별되지 않는다. 좌표는 키에 안 넣는다 —
-     * 아래에서 `translate` 로 옮겨 쓰기 때문이다.
+     * The key is the **rounded radius and strength**. Those two alone fix the
+     * gradient's shape (both the centre offset and the stops are functions of r
+     * and strength), and differences below 0.5px / 0.05 are indistinguishable on
+     * screen. Coordinates stay out of the key because `translate` below moves the
+     * gradient into place.
      */
     const key = `${Math.round(r * 2)}:${Math.round(depthShade * 20)}`;
     let shade = shadeGradientCache.get(key);
     if (!shade) {
       shade = buildDepthShade(ctx, r, depthShade);
-      // 캐시가 무한히 자라지 않게 — 반지름×세기 조합은 유한하지만, 줌이
-      // 연속이라 오래 돌면 수천 칸이 된다. 넘치면 통째로 비운다(LRU 를
-      // 만들 만큼 비싼 객체가 아니다).
+      // Keep the cache from growing without bound: the radius × strength
+      // combinations are finite, but zoom is continuous, so a long session
+      // reaches thousands of entries. On overflow just clear it — these objects
+      // are not expensive enough to justify an LRU.
       if (shadeGradientCache.size > SHADE_CACHE_MAX) shadeGradientCache.clear();
       shadeGradientCache.set(key, shade);
     }
-    // perf 2026-08-19 — save/restore(전체 상태 스택) 대신 역이동으로 되돌린다.
-    // 기본 변환은 DPR 순수 스케일(tx=0)이라 `translate(x,y)` 후 `translate(-x,-y)`
-    // 는 부동소수점까지 정확히 원상이다(0 + d - d = 0). 이 블록이 바꾸는 다른
-    // 상태는 fillStyle 뿐이고, 다음 획이 어차피 자기 스타일을 먼저 세팅한다.
+    // perf 2026-08-19 — undone by an inverse translate rather than save/restore
+    // of the whole state stack. The base transform is a pure DPR scale (tx = 0),
+    // so `translate(x, y)` followed by `translate(-x, -y)` restores it exactly,
+    // down to the float (0 + d - d = 0). The only other state this block touches
+    // is fillStyle, and the next stroke sets its own first anyway.
     ctx.translate(x, y);
     ctx.fillStyle = shade;
     ctx.fill();
     ctx.translate(-x, -y);
   }
   /*
-   * 외곽선 — 먼 쪽 상세 램프(`detail` 독블록). 채움 세트에서 외곽선은 fill 위에
-   * 얹는 **부가 획**이라 뒤쪽 반구에서 알파로 연속 페이드 후 생략한다. 라인
-   * 세트(lineOnly)의 외곽선은 마크 자체라 어느 깊이에서도 그대로 — 「노드를
-   * 없애지 않는다」는 계약이 그 경로에서는 외곽선에 걸려 있다.
+   * Outline — governed by the far-side detail factor (see the `detail`
+   * doc-block). In the fill set the outline is a **supplementary stroke** laid
+   * over the fill, so on the rear hemisphere it fades continuously by alpha and
+   * is then skipped. In the line set (lineOnly) the outline *is* the mark and
+   * survives at any depth — on that path the "never make a node vanish"
+   * contract rests on this stroke.
    */
   const strokeFade = lineOnly ? 1 : detail;
   if (strokeFade >= 0.999) {
@@ -708,7 +732,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
 
   // Domain chip-leg pin ticks — circuit-only detail, fades out with altitude
   // (prototype: `s > 6 && farT < 0.9`, alpha `1 - smoothstep(0.55,0.9,farT)`).
-  // 먼 쪽 상세 램프 — 뒤쪽 반구에서 틱 알파를 detail 로 함께 접는다(연속).
+  // Far-side detail factor also folds the tick alpha on the rear hemisphere, continuously.
   if (kind === "domain" && egoState !== "dim" && detail > 0.01) {
     const s = r * DOMAIN_HALF_EXTENT_RATIO;
     if (s > DOMAIN_PIN_MIN_HALF_EXTENT && farT < DOMAIN_PIN_MAX_FAR_T) {
@@ -755,10 +779,11 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     strokeKindOutline(ctx, kind, x, y, r + AGENT_FOCUS_RING_OFFSET, farT, tokens.amberHub, 1, 1);
   }
 
-  // 스포트라이트 변경-노드 링 (Image #14 처방) — amberHub **회전 파선**
-  // kind-outline. 오프셋 r+6: hub(r+4)·agentFocus(r+8) 사이의 자기 자리 —
-  // 셋이 공존해도 스택(대체 아님). lineDashOffset 이 회전 위상; reduced-
-  // motion 은 호출자가 dashOffset 0 을 고정해 정적 파선이 된다. glow 0.
+  // Spotlight ring for changed nodes — an amberHub **rotating dashed**
+  // kind-outline. The r+6 offset is its own slot between hub (r+4) and
+  // agentFocus (r+8), so all three stack rather than replace one another.
+  // lineDashOffset carries the rotation phase; under reduced-motion the caller
+  // pins dashOffset to 0, leaving a static dash. Zero glow.
   if (spotlightRing !== null && egoState !== "dim") {
     ctx.setLineDash([5, 4]);
     ctx.lineDashOffset = -spotlightRing.dashOffset;
@@ -768,7 +793,8 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   }
 
   // Canvas-emphasis slice §A — project hexagon's own decorative identity
-  // (design.md: "Hub 노드와 Layer 0 컨테이너에만 보조 톤(앰버) 허용"). The
+  // (design.md: 「Hub 노드와 Layer 0 컨테이너에만 보조 톤(앰버) 허용」 — amber on
+  // hub nodes and Layer-0 containers only). The
   // OUTER amber stroke is the body's own `stroke` (set by
   // `topology-frame-draw.ts#resolveNodeVisual` for kind==="project", not
   // here) — this block only adds the inner offset hairline + the 4-direction
@@ -802,9 +828,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     // emphasis to 1 upstream, so the ring is instantly solid there.
     const ringAlpha = Math.min(1, Math.max(0, hoverEmphasis ?? 1));
     strokeKindOutline(ctx, kind, x, y, r + HOVER_RING_OFFSET, farT, tokens.hoverRing, 1, ringAlpha);
-    // Design Guardian 처방 L — shimmer 아크는 정지 링 위의 순수 모션 오버레이라
-    // reduced-motion 사용자에겐 정지 링만 남기고 완전히 미표시(새 분기 없이
-    // 여기 한 곳에서만 게이트).
+    // The shimmer arc is pure motion layered over the static ring, so
+    // reduced-motion users keep the static ring and see none of it. Checked here
+    // only — no second branch elsewhere.
     if (!reducedMotion) {
       drawHoverShimmer(
         ctx,

@@ -5,16 +5,17 @@
  *
  * | state | visual (B2+) |
  * |---|---|
- * | fresh (전원 켜짐)  | breathe (`1 + 0.04·sin(t·1.15+phase)`), stroke lerp 85% toward indigo |
+ * | fresh (powered on) | breathe (`1 + 0.04·sin(t·1.15+phase)`), stroke lerp 85% toward indigo |
  * | neutral            | tier color, no breathe |
- * | stale (비전원)     | dash `[3,3]`, dim fill/stroke tokens, no breathe |
+ * | stale (unpowered)  | dash `[3,3]`, dim fill/stroke tokens, no breathe |
  * | hub                | +4px amber ring — orthogonal to the three above, can combine with any |
  *
  * These four are **not mutually exclusive** — `hub+fresh` and `hub+stale`
  * both occur in the fixture data (prototype `mcp-server` capability is
  * `hub+fresh`, `adapter-registry` is `hub+stale`). Each is applied as an
  * independent overlay, never a replacement color (design.md "새 채색 대신
- * 보더/오버레이로 상태" — extended from Sigma reducers to canvas-2D here).
+ * 보더/오버레이로 상태" — carry state on a border or overlay rather than a new
+ * fill colour; extended from Sigma reducers to canvas-2D here).
  *
  * `reducedMotion` disables breathe unconditionally (prototype: `if (n.fresh
  * && !reduced) breathe = ...` — otherwise `breathe` stays `1`).

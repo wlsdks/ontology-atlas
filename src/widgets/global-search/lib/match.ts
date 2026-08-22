@@ -16,67 +16,71 @@ export function isPathLikeTitle(title: string): boolean {
 }
 
 /**
- * 검색 결과 항목 — ontology approved node source.
+ * One search result — an ontology approved node source.
  */
 export interface OntologySearchResult {
   node: KnowledgeGraphNode;
-  /** 매치 점수 — 호출자가 정렬에 사용. 높을수록 우선. */
+  /** The match score the caller sorts on. Higher wins. */
   score: number;
 }
 
 /**
- * matchOntologyNodes 의 선택적 필터.
+ * Optional filters for matchOntologyNodes.
  *
- * 두 set 모두 비어 있거나 (또는 미지정) 이면 필터 비활성 (모든 노드 후보).
- * 비어 있지 않으면 AND 조건 — kind 도 매치 + project 도 매치 해야 결과.
+ * With both sets empty (or unset) the filter is inactive and every node is a
+ * candidate. Non-empty sets are ANDed — a result must match the kind *and* the
+ * project.
  *
- * 사용자 멘탈 모델:
- *   "capability 만 보고 싶다" → kinds = {capability}
- *   "이 project 의 노드만" → projectIds = {project-slug}
- *   "capability + 이 project" → 둘 다 set
+ * The user's mental model:
+ *   "only show capabilities" → kinds = {capability}
+ *   "only nodes in this project" → projectIds = {project-slug}
+ *   "capabilities in this project" → both sets
  */
 export interface MatchOntologyOptions {
   /**
-   * 결과 노드의 kind 가 이 set 안에 있어야. 비어 있으면 모든 kind 허용.
+   * The result node's kind must be in this set. Empty allows every kind.
    */
   kinds?: ReadonlySet<string>;
   /**
-   * 결과 노드의 projectIds 중 적어도 하나가 이 set 안에 있어야. 비어 있으면
-   * 모든 project 허용 (project 미연결 노드 포함).
+   * At least one of the result node's projectIds must be in this set. Empty allows
+   * every project, including nodes attached to none.
    */
   projectIds?: ReadonlySet<string>;
 }
 
 /**
- * ontology 노드 검색.
+ * Ontology node search.
  *
- * 점수 (낮을수록 약한 매치):
- *   5 — 이름 정확 일치 — 이름을 끝까지 친 사용자가 찾는 것은 그 이름의
- *       노드다. prefix 와 동점이면 최신순 동점 처리가 정확 일치를 가라앉힌다
- *       (2026-08-13 실측: 「주문」이 「주문서 작성」 등 5개 아래 6위)
- *   4 — 이름 prefix 매치
- *   3 — 이름 substring 매치
- *   2 — summary substring 매치
- *   1 — id substring 매치 (kebab-case slug 직접 검색용)
- *   0 — 매치 없음 (결과 제외)
+ * Scores (lower is a weaker match):
+ *   5 — exact name match. Someone who typed a name in full is looking for the node
+ *       with that name; tied with a prefix match, the recency tie-break sinks the
+ *       exact match (measured 2026-08-13: 「주문」 landed 6th, below five others)
+ *   4 — name prefix match
+ *   3 — name substring match
+ *   2 — summary substring match
+ *   1 — id substring match (for searching a kebab-case slug directly)
+ *   0 — no match (excluded)
  *
- * "이름" 은 canonical `title` **과** 화면에 보이는 표시 이름 전부
- * (`display` + 모든 `display_<locale>`) 다 — `shared/lib/node-name-match` 가
- * 그 규칙의 단일 출처이고 공방 피커도 같은 규칙을 쓴다. 표시 이름을 title 과
- * **동급 점수**로 두는 이유: 사용자가 입력한 문자열은 대개 방금 화면에서 읽은
- * 이름이라, 그 매치를 summary(본문) 매치보다 아래로 내리면 정작 찾던 노드가
- * 본문만 스친 노드 밑에 깔린다. title 은 여전히 진실원이고 범위가 넓어질 뿐,
- * 원문으로 찾던 사용자는 그대로 찾는다.
+ * "Name" means the canonical `title` **and** every display name on screen
+ * (`display` plus all `display_<locale>`) — `shared/lib/node-name-match` is the
+ * single source of that rule and the studio picker uses it too. Display names score
+ * **level with the title** because what a user types is usually the name they just
+ * read on screen: ranking that match below a summary (body) match buries the node
+ * they were looking for under one the body merely grazed. The title is still the
+ * source of truth and only the scope widens, so anyone searching by the raw title is
+ * unaffected.
  *
- * 빈 query 는 전체 nodes 리턴 (limit 적용) — UI 가 "초기 추천" 으로 활용 가능.
- * 정렬: score desc, 같은 점수면 lastApprovedAt desc (최신 우선) — documents
- * 매처와 통일해 사용자 예상 가능한 순서.
+ * An empty query returns all nodes (limit applied), so the UI can use it as an
+ * initial suggestion. Sorted by score desc, then lastApprovedAt desc (most recent
+ * first) — unified with the documents matcher for a predictable order.
  *
- * 한·영 혼합을 위해 정규화(NFC + 소문자 + 공백 정리) 후 substring 매칭
- * (`auth-login` 도 `로그인` 도 같은 함수 한 번에).
+ * For mixed Korean and English, matching is substring-based after normalisation
+ * (NFC + lowercase + whitespace tidy), so `auth-login` and `로그인` go through the
+ * same call.
  *
- * options 의 kind / projectIds 필터는 score 계산 전에 적용 (필터 통과 노드만
- * 점수 평가). 빈 query + 필터 조합 시 "이 kind/project 의 최신 N 개" 가 됨.
+ * The kind and projectIds filters are applied before scoring (only nodes that pass
+ * are scored). An empty query plus a filter becomes "the most recent N of this kind
+ * or project".
  */
 export function matchOntologyNodes(
   query: string,
@@ -128,7 +132,7 @@ export function matchOntologyNodes(
 
   matches.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    // 같은 점수 안에서 최신 (lastApprovedAt desc) 우선 — documents 매처와 통일.
+    // Within an equal score, most recent first (lastApprovedAt desc) — unified with the documents matcher.
     return b.node.lastApprovedAt.getTime() - a.node.lastApprovedAt.getTime();
   });
 
@@ -136,30 +140,30 @@ export function matchOntologyNodes(
 }
 
 /**
- * 검색 결과 항목 — project source. S4 closure.
+ * One search result — a project source. S4 closure.
  */
 export interface ProjectSearchResult {
   project: Project;
-  /** 매치 점수 — 높을수록 우선. */
+  /** The match score. Higher wins. */
   score: number;
 }
 
 /**
- * project 검색.
+ * Project search.
  *
- * 점수:
- *   5 — name / nameEn 정확 일치 (노드 매처와 같은 이유 — 동점 최신순이
- *       정확 일치를 가라앉히지 못하게)
- *   4 — name / nameEn prefix 매치
- *   3 — name / nameEn substring 매치
- *   2 — description / tags / category substring 매치
- *   1 — slug substring 매치 (kebab-case 직접 검색)
- *   0 — 매치 없음 (결과 제외)
+ * Scores:
+ *   5 — exact name / nameEn match (same reason as the node matcher — so the recency
+ *       tie-break cannot sink an exact match)
+ *   4 — name / nameEn prefix match
+ *   3 — name / nameEn substring match
+ *   2 — description / tags / category substring match
+ *   1 — slug substring match (searching kebab-case directly)
+ *   0 — no match (excluded)
  *
- * 빈 query 는 updatedAt desc 기준 limit. 정렬: score desc, 동률은 updatedAt desc
- * (다른 매처와 통일 — ontology 는 lastApprovedAt desc).
+ * An empty query returns a limit by updatedAt desc. Sorted by score desc, ties by
+ * updatedAt desc (unified with the other matchers — ontology uses lastApprovedAt desc).
  *
- * 한·영 혼합 lower-case substring.
+ * Lowercased substring matching for mixed Korean and English.
  */
 export function matchProjects(
   query: string,

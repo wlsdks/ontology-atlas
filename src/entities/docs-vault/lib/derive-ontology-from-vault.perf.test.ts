@@ -3,18 +3,17 @@ import { deriveOntologyFromVault } from './derive-ontology-from-vault';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
 /**
- * 성능 회귀 차단 — live-update 의 핵심 비용.
+ * Performance regression guard for the live-update hot path.
  *
- * `deriveOntologyFromVault` 는 vault 가 바뀔 때마다(에이전트 편집 → 폴링/워처 →
- * refresh) 토폴로지를 다시 그리기 위해 *전체* 재실행되는 derivation 이다. wedge
- * charter 의 심장(실시간 시각 성장, 렉 0)에서 이 함수가 대형 vault 에서 얼마나
- * 걸리는지가 곧 "틀어놓고 보는데 끊기느냐" 를 좌우한다.
+ * `deriveOntologyFromVault` re-runs in **full** every time the vault changes
+ * (agent edit → watcher → refresh) so the topology can be redrawn. How long it
+ * takes on a large vault decides whether watching the map live stutters.
  *
- * 여기서 *전체-재빌드* 비용의 baseline + 회귀 가드를 잡는다. charter 의 north-star
- * (증분 업데이트)는 이 비용을 변경분만으로 줄이는 것 — 그 작업의 측정 기준.
+ * This pins the baseline for the *full rebuild* cost. Making it incremental is the
+ * work this measurement exists to judge.
  *
- * jsdom 절대값은 실 브라우저와 다르지만 회귀 감지엔 충분. 임계는 환경 noise
- * 고려해 lenient.
+ * jsdom absolute numbers differ from a real browser but are adequate for detecting
+ * regression; the threshold is lenient to absorb environment noise.
  */
 
 function makeDoc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
@@ -34,9 +33,9 @@ function makeDoc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
 }
 
 /**
- * project 1 + domain D + (domain 당) capability C + (capability 당) element E.
- * capability 는 domain·elements·dependencies·relates frontmatter 를 달아 derive
- * 의 엣지 빌드(+ stub 생성)를 현실적으로 자극한다.
+ * project 1 + D domains + C capabilities per domain + E elements per capability.
+ * Capabilities carry domain / elements / dependencies / relates frontmatter so the
+ * edge build (and stub creation) is realistically exercised.
  */
 function buildLargeManifest(domainCount: number, capPerDomain: number, elemPerCap: number): {
   manifest: VaultManifest;
@@ -56,7 +55,7 @@ function buildLargeManifest(domainCount: number, capPerDomain: number, elemPerCa
         elements.push(elemSlug);
         docs.push(makeDoc(elemSlug, { kind: 'element', domain }));
       }
-      // 인접 capability 로의 dependency + relates — cross-edge 자극.
+      // Dependency and relates onto the neighbouring capability — exercises cross edges.
       const nextCap = `capabilities/${domain}-c${(c + 1) % capPerDomain}`;
       docs.push(
         makeDoc(`capabilities/${capName}`, {
@@ -91,8 +90,8 @@ describe('deriveOntologyFromVault — live-update perf baseline', () => {
     const result = deriveOntologyFromVault(manifest);
     const elapsed = performance.now() - t0;
 
-    // derive 가 실제로 그래프를 만들었는지 sanity. 모든 ref 가 실제 doc 으로
-    // 해소되면 노드 수 = doc 수(추가 stub 0), missing ref 면 그 이상.
+    // Sanity that derivation actually built a graph. With every ref resolving to a real
+    // doc, node count equals doc count (no extra stubs); a missing ref makes it larger.
     expect(result.nodes.length).toBeGreaterThanOrEqual(docCount);
     expect(result.edges.length).toBeGreaterThan(0);
 
@@ -100,7 +99,8 @@ describe('deriveOntologyFromVault — live-update perf baseline', () => {
       `[perf] deriveOntologyFromVault — ${docCount} docs → ${result.nodes.length} nodes / ${result.edges.length} edges in ${elapsed.toFixed(1)}ms`,
     );
 
-    // lenient 절대 임계 — jsdom noise 흡수. 이 줄이 깨지면 derive hot-path 회귀.
+    // Lenient absolute threshold to absorb jsdom noise. Breaking this line means a
+    // regression in the derive hot path.
     expect(elapsed).toBeLessThan(2500);
   });
 });

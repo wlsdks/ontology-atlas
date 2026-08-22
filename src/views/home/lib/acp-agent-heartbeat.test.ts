@@ -7,10 +7,11 @@ import {
 } from "./acp-agent-heartbeat";
 
 /**
- * 2026-08-17 실측. 앱 안 에이전트가 만든 노드가 전부 `agent:unknown` 이었다 —
- * 같은 쓰기에서 `activity.jsonl` 에는 `codex-mcp-client` 라고 적혔는데도.
- * `created_by` 는 「사람이 의도적으로 등록한 이름」만 받는데, 등록할 방법이
- * 아무 데도 없었다. 앱이 대신 등록한다(소유자 지시).
+ * Measured 2026-08-17: every node the in-app agent created read
+ * `agent:unknown`, even though the same write logged `codex-mcp-client` to
+ * `activity.jsonl`. `created_by` accepts only a name a person deliberately
+ * registered, and there was no way to register one. The app now registers on
+ * their behalf (owner instruction).
  */
 describe("앱 안 에이전트의 볼트 등록", () => {
   const at = new Date("2026-08-17T01:23:45.000Z");
@@ -56,8 +57,8 @@ describe("볼트에 적을 이름", () => {
   });
 
   /*
-   * 이름이 이상하면 **등록하지 않는다.** `created_by` 는 볼트에 영구히 박히는
-   * 값이라, 모양이 깨진 것을 적느니 종전대로 `agent:unknown` 이 낫다.
+   * A malformed name registers nothing. `created_by` is permanent in the vault,
+   * so falling back to `agent:unknown` beats writing a broken value.
    */
   it("모양이 깨진 것은 등록하지 않는다 — 모름이 낫다", () => {
     for (const bad of ["", "   ", "a/b", "a b", "../x", "a\nb", "\u0000x", null, undefined, 7]) {

@@ -1,38 +1,36 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
- * 연동 점검 브리지 — `src-tauri/src/acp_doctor.rs` 의 두 command.
+ * The connection-check bridge — the two commands in `src-tauri/src/acp_doctor.rs`.
  *
- * 계약(Rust 가 진실원):
- * - `acp_diagnose(runtimeId)` → 검사 목록. **아무것도 고치지 않는다.**
- * - `acp_repair(runtimeId, checkId)` → 고친 뒤 **다시 잰** 검사 목록.
+ * The contract (Rust is the source of truth):
+ * - `acp_diagnose(runtimeId)` → the list of checks. **It fixes nothing.**
+ * - `acp_repair(runtimeId, checkId)` → the list of checks **re-measured** after fixing.
  *
- * 문구는 여기 없다. Rust 는 id 와 기계가 잰 사실만 돌려주고, 사람이 읽는 문장은
- * 화면이 i18n 으로 만든다 — Rust 에 한국어를 박으면 영어 화면이 거짓말을 한다.
+ * No copy lives here. Rust returns ids and machine-measured facts, and the human-readable sentence
+ * is built by the screen through i18n — hardcoding Korean into Rust makes the English screen lie.
  *
- * ## 웹에서는 없다
- *
- * 브라우저는 남의 프로세스를 띄우지도, 키체인을 보지도 못한다. 그래서 이 기능은
- * 앱에만 있고, 웹에서는 호출부가 아예 그리지 않는다 — 「곧 됩니다」가 아니라
- * 처음부터 없는 것이다(`.claude/rules/surfaces.md`).
+ * **It does not exist on the web.** A browser can neither spawn another process nor read the
+ * keychain, so this feature is app-only and the caller simply does not draw it on the web — not
+ * "coming soon", but absent from the start (`.claude/rules/surfaces.md`).
  */
 
-/** Rust `AcpCheck` 와 1:1. 필드가 늘면 계약 테스트가 먼저 터진다. */
+/** 1:1 with Rust's `AcpCheck`. A new field turns the contract test red first. */
 export interface AcpCheck {
-  /** i18n 키와 1:1인 검사 이름. */
+  /** The check's name, 1:1 with the i18n key. */
   id: string;
-  /** `ok` · `problem` · `unknown` — **모르는 것은 ok 가 아니다.** */
+  /** `ok` · `problem` · `unknown` — **unknown is not ok.** */
   state: 'ok' | 'problem' | 'unknown';
-  /** 앱이 스스로 고칠 수 있나. `problem` 일 때만 뜻이 있다. */
+  /** Can the app fix it itself? Meaningful only when `problem`. */
   fixable: boolean;
   /**
-   * 앞 단계가 막혀서 이 단계는 손대도 소용없다.
+   * An earlier step is blocked, so touching this one is pointless.
    *
-   * 도구가 아예 없는 사람에게 「앱 몫 설정 고치기」를 권하던 것을 막는다
-   * (2026-08-20 워크스루). 상태는 그대로 보여 주되 **행동은 권하지 않는다.**
+   * Stops recommending "fix the app's config" to someone who has no tool at all (walkthrough
+   * 2026-08-20). The state is still shown, but **no action is recommended.**
    */
   blocked: boolean;
-  /** 기계가 잰 사실 한 조각(경로 · 사유). 지어내지 않으므로 없을 수 있다. */
+  /** One machine-measured fact (a path, a reason). Never invented, so it may be absent. */
   detail?: string | null;
 }
 
@@ -46,7 +44,7 @@ function getInvoke(): TauriInvoke | null {
   }
 }
 
-/** 앱에서만 점검이 가능하다. 호출부는 이것으로 그릴지 말지를 정한다. */
+/** The check is possible only in the app. Callers decide whether to draw from this. */
 export function isAgentDoctorAvailable(): boolean {
   return getInvoke() !== null;
 }
@@ -64,11 +62,11 @@ export async function repairAgentCheck(runtimeId: string, checkId: string): Prom
 }
 
 /**
- * 연결을 처음부터 다시 맺는다 — 앱이 만든 것만 지우고 다시 만든다.
+ * Rebuilds the connection from scratch — deleting and recreating only what the app created.
  *
- * 「로그아웃」이 아닌 이유: 이 앱에는 앱 몫 로그인이 없다. 사용자가 터미널에서
- * 쓰는 그 로그인을 링크해서 그대로 쓰므로, 여기서 로그아웃을 내주면 남의 로그인을
- * 지우거나 아무것도 안 하면서 그런 척하게 된다. 자세한 근거는 Rust 쪽 독블록.
+ * Why not "log out": this app has no login of its own. It links the login the user uses in their
+ * terminal and uses that as-is, so offering a logout here would either erase someone else's login or
+ * do nothing while pretending to. The full rationale is in the Rust-side doc-block.
  */
 export async function resetAgentConnection(runtimeId: string): Promise<AcpCheck[]> {
   const invoke = getInvoke();
@@ -77,10 +75,10 @@ export async function resetAgentConnection(runtimeId: string): Promise<AcpCheck[
 }
 
 /**
- * 이 도구를 앱이 대신 깔아 줄 수 있나 — 그렇다면 **무슨 명령으로.**
+ * Can the app install this tool for the user — and if so, **with what command.**
  *
- * 화면은 이것을 받아 **누르기 전에 명령 원문을 보여 준다.** 그게 원장
- * 2026-08-20 (88) 의 조건 ②다: 무엇을 실행하는지 먼저 보여 준다.
+ * The screen takes this and **shows the command text before anything is pressed.** That is
+ * condition ② of ledger entry 2026-08-20 (88): show what will be run, first.
  */
 export async function agentInstallPlan(runtimeId: string): Promise<string | null> {
   const invoke = getInvoke();
@@ -89,9 +87,9 @@ export async function agentInstallPlan(runtimeId: string): Promise<string | null
 }
 
 /**
- * 앱 전용 자리에 그 도구를 깐다. 깐 뒤 **다시 잰 값**을 돌려준다.
+ * Installs the tool into an app-only location, returning **the re-measured values** afterwards.
  *
- * 전역 npm 도 시스템 PATH 도 안 건드린다(조건 ③). 버전은 고정돼 있다(조건 ④).
+ * It touches neither global npm nor the system PATH (condition ③). The version is pinned (condition ④).
  */
 export async function installAgentCli(runtimeId: string): Promise<AcpCheck[]> {
   const invoke = getInvoke();
@@ -100,10 +98,10 @@ export async function installAgentCli(runtimeId: string): Promise<AcpCheck[]> {
 }
 
 /**
- * Node 를 앱이 받아 줄 수 있나 — 그렇다면 **어디서 무엇을.**
+ * Can the app fetch Node — and if so, **from where and what.**
  *
- * 돌려주는 문자열에는 받을 주소와 해시 앞머리가 들어 있다. 화면은 누르기 전에
- * 그것을 보여 준다 — 「검증한다」가 말뿐이 아님을 화면이 스스로 댄다.
+ * The returned string carries the download address and the hash prefix. The screen shows it before
+ * anything is pressed — the screen itself supplies the evidence that "we verify it" is not just words.
  */
 export async function nodeInstallPlan(): Promise<string | null> {
   const invoke = getInvoke();
@@ -111,7 +109,7 @@ export async function nodeInstallPlan(): Promise<string | null> {
   return invoke<string | null>('acp_node_plan');
 }
 
-/** Node 를 앱 전용 자리에 받아 두고 해시를 대조한다. 뒤에 다시 잰 값을 돌려준다. */
+/** Fetches Node into an app-only location and checks the hash. Returns the re-measured values. */
 export async function installManagedNode(runtimeId: string): Promise<AcpCheck[]> {
   const invoke = getInvoke();
   if (!invoke) return [];
@@ -120,21 +118,19 @@ export async function installManagedNode(runtimeId: string): Promise<AcpCheck[]>
 
 
 /**
- * 설치가 어디까지 왔는지 — Rust `AcpInstallProgress` 와 1:1.
+ * How far the install has got — 1:1 with Rust's `AcpInstallProgress`.
  *
- * ## 왜 이벤트인가 (2026-08-20 소유자 지적)
- *
- * *"버튼들만 누르면 알아서 설치되는 과정도 보여주고 완료된것도 체크해주고
- * 하나?"* — 아니었다. `acp_install_cli` / `acp_install_node` 는 **끝나야**
- * 돌아오므로, 52MB 를 받고 npm 이 도는 동안 화면이 할 수 있는 일은 칩을
- * 비활성으로 두는 것뿐이었다. 이 저장소의 워크스루가 **「조용한 기다림」**
- * 이라고 이름 붙여 둔 패턴 그대로다.
+ * Why an event (owner report, 2026-08-20): *"버튼들만 누르면 알아서 설치되는 과정도 보여주고
+ * 완료된것도 체크해주고 하나?"* (does pressing the buttons show the install progress and check off
+ * completion?) — it did not. `acp_install_cli` / `acp_install_node` return only **when finished**, so
+ * while 52MB downloaded and npm ran, all the screen could do was leave the chip disabled. Exactly
+ * the pattern this repository's walkthrough named **"the silent wait"**.
  */
 export interface AcpInstallProgress {
   runtimeId: string;
-  /** `node` · `cli` — 어느 일인가. */
+  /** `node` · `cli` — which job. */
   job: 'node' | 'cli';
-  /** 어느 단계인가. **문구는 여기 없다** — 화면이 i18n 으로 만든다. */
+  /** Which stage. **No copy here** — the screen builds it through i18n. */
   stage:
     | 'downloading'
     | 'verifying'
@@ -143,45 +139,45 @@ export interface AcpInstallProgress {
     | 'verifying-install'
     | 'done'
     | 'failed';
-  /** 아는 만큼만. 모르면 `null` 이고 화면은 퍼센트를 안 그린다. */
+  /** Only as much as is known. Unknown is `null`, and the screen draws no percentage. */
   received: number | null;
   total: number | null;
-  /** 그 도구가 실제로 뱉은 줄. 우리가 지어낸 문장이 아니다. */
+  /** The line that tool actually emitted. Not a sentence we invented. */
   note: string | null;
-  /** 이 상태가 생긴 시각(epoch ms). 낡은 것을 안 그리기 위한 값. */
+  /** When this state arose (epoch ms). Used to avoid drawing something stale. */
   at: number;
 }
 
 /**
- * **들고 있던 상태를 언제까지 보여 주나.**
+ * **How long a held state stays on screen.**
  *
- * 마지막 상태를 보관하는 것과 그것을 계속 보여 주는 것은 다른 질문이다.
- * 이 창이 없으면 어제 끝난 설치가 오늘 설정을 열 때 「설치했어요」로 뜬다 —
- * 방금 한 일이 아닌 것을 방금 한 것처럼 말하는 셈이다.
+ * Keeping the last state and continuing to show it are different questions. Without this window, an
+ * install that finished yesterday appears as "installed" when settings are opened today — stating
+ * something that is not what was just done as if it were.
  *
- * 5분인 이유: 시트를 닫고 딴 일 하다 돌아오는 시간은 덮되(그게 이 값이 존재하는
- * 이유다), 다음 세션까지 넘어가지는 않는 길이다.
+ * Five minutes because it covers closing the sheet, doing something else, and coming back (which is
+ * why this value exists) without carrying over into the next session.
  */
 export const INSTALL_PROGRESS_FRESH_MS = 5 * 60 * 1000;
 
-/** 지금 그려도 되는 상태인가. `now` 를 받는 이유는 시험이 시계를 고정하려고. */
+/** May this state still be drawn? `now` is a parameter so tests can pin the clock. */
 export function isInstallProgressFresh(
   progress: Pick<AcpInstallProgress, 'at'>,
   now: number = Date.now(),
 ): boolean {
-  // 시계가 뒤로 간 경우(시간대 변경·수동 조정)를 낡음으로 오해하지 않는다.
+  // A clock that went backwards (a timezone change, a manual adjustment) is not mistaken for stale.
   const elapsed = now - progress.at;
   return elapsed < 0 || elapsed <= INSTALL_PROGRESS_FRESH_MS;
 }
 
 /**
- * 설치 진행을 듣는다. 떼는 함수를 돌려준다.
+ * Listens to install progress. Returns the detach function.
  *
- * 웹에서는 붙지 않는다 — 애초에 설치 버튼이 없다.
+ * It does not attach on the web — there is no install button there to begin with.
  */
 /**
- * @param runtimeId 이 도구의 진행만 받는다. `null` 이면 **전부** 받는다 —
- *   레일 배지처럼 「어느 도구든 끝났나」를 보는 소비처가 쓴다.
+ * @param runtimeId Receives only this tool's progress. `null` receives **everything** — used by
+ *   consumers such as the rail badge that watch "has any tool finished".
  */
 export async function listenInstallProgress(
   runtimeId: string | null,
@@ -191,20 +187,20 @@ export async function listenInstallProgress(
   try {
     const { listen } = await import('@tauri-apps/api/event');
     const unlisten = await listen<AcpInstallProgress>('acp-install://progress', (event) => {
-      // 한 화면에 여러 도구 줄이 있다. 남의 진행을 내 줄에 그리지 않는다.
+      // One screen has several tool rows. Another tool's progress is not drawn on this row.
       if (!event.payload) return;
       if (runtimeId === null || event.payload.runtimeId === runtimeId) onProgress(event.payload);
     });
     return unlisten;
   } catch {
-    // 못 들으면 진행률이 없을 뿐, 설치 자체는 그대로 돈다.
+    // Failing to listen only means there is no progress indicator; the install itself runs unchanged.
     return () => undefined;
   }
 }
 
 /**
- * 바이트를 사람이 읽는 크기로. 소수 한 자리까지 — 52MB 를 받는 동안 숫자가
- * 실제로 움직이는 것이 보여야 한다.
+ * Bytes into a human-readable size, to one decimal — the number must visibly move while 52MB
+ * downloads.
  */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '';
@@ -215,15 +211,14 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
- * 이 도구의 **마지막 진행 상태**를 Rust 에 물어본다. 없으면 `null`.
+ * Asks Rust for this tool's **last progress state**, or `null`.
  *
- * ## 왜 필요한가 (2026-08-20)
+ * Why it is needed (2026-08-20): the settings sheet **unmounts entirely** when closed, so this
+ * hook's state disappears and the event subscription drops. The Node download ticks every 250ms and
+ * revives on reopening, but **completion (`done`) is a single event**, so going past while closed
+ * means it is **never seen**.
  *
- * 설정 시트는 닫히면 **통째로 언마운트된다** — 그래서 이 훅의 상태가 사라지고
- * 이벤트 구독도 끊긴다. Node 내려받기는 250ms 주기라 다시 열면 곧 되살아나지만,
- * **완료(`done`)는 단발 이벤트**라 닫아 둔 사이에 지나가면 **영영 못 본다.**
- *
- * 이벤트만으로는 「끝났다」를 못 지킨다. 그래서 마운트할 때 한 번 물어본다.
+ * Events alone cannot keep the "it finished" promise, so it is asked once on mount.
  */
 export async function lastInstallProgress(
   runtimeId: string,
@@ -233,15 +228,15 @@ export async function lastInstallProgress(
   try {
     const last =
       (await invoke<AcpInstallProgress | null>('acp_install_progress', { runtimeId })) ?? null;
-    // 낡은 것은 아예 안 돌려준다 — 화면마다 판정을 다시 하게 두면 어긋난다.
+    // Stale values are not returned at all — leaving each screen to judge again lets them diverge.
     return last && isInstallProgressFresh(last) ? last : null;
   } catch {
-    // 못 물어봤다고 화면을 세우지 않는다 — 고치기 전과 같은 상태가 될 뿐이다.
+    // A failed query does not stop the screen — it simply ends up as it was before the fix.
     return null;
   }
 }
 
-/** 더는 바뀌지 않는 단계 — 「끝났다」와 「실패했다」. */
+/** Stages that no longer change — "finished" and "failed". */
 export const TERMINAL_INSTALL_STAGES = ['done', 'failed'] as const;
 
 export function isTerminalInstallStage(stage: AcpInstallProgress['stage']): boolean {

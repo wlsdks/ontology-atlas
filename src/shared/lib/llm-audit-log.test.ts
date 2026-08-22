@@ -12,12 +12,12 @@ describe('llm audit log parser', () => {
     expect(entry.purpose).toBe('verify');
     expect(entry.outcome).toBe('ok');
     expect(entry.httpStatus).toBe(200);
-    // 연결 확인의 약속: 볼트에서 나간 글자 0.
+    // The promise of a connection check: 0 characters left the vault.
     expect(entry.scope).toEqual({ nodes: [], promptChars: 0, vaultChars: 0 });
   });
 
   it('reads a crash residue line as unknown instead of inventing an outcome', () => {
-    // 전송 직전 예약된 줄은 결과 필드가 없다. 성공으로도 실패로도 읽지 않는다.
+    // A line reserved just before sending has no outcome fields; it is read as neither success nor failure.
     const pending =
       '{"v":1,"at":"2026-07-26T09:12:33.120Z","provider":"openai","model":null,"purpose":"verify","question":null,"scope":{"nodes":[],"promptChars":0,"vaultChars":0},"payloadSha256":"e3b0"}';
     const [entry] = parseLlmAuditLog(pending);
@@ -41,7 +41,7 @@ describe('llm audit log parser', () => {
   });
 
   it('tolerates a future purpose without losing the row', () => {
-    // S4(볼트 질문)가 붙으면 purpose 값이 늘어난다 — 스키마 v 는 그대로다.
+    // Vault questions add another `purpose` value — the schema `v` stays the same.
     const ask = VERIFY_LINE.replace('"purpose":"verify"', '"purpose":"ask"').replace(
       '"question":null',
       '"question":"결제 모듈 바꾸면 뭐가 깨져?"',
@@ -52,9 +52,10 @@ describe('llm audit log parser', () => {
   });
 
   it('reads a line written before host existed without inventing a destination', () => {
-    // `host` 는 추가형 확장이라 옛 줄이 그대로 남아 있다(헌장 ⑤ — 소급 변경
-    // 금지). 목적지를 모르면 모른다고 말한다: provider 이름으로 추측해 채우면
-    // 감사 로그가 조용히 거짓을 말하게 된다.
+    // `host` was an additive extension, so old lines remain as they were
+    // (charter clause ⑤ — records are never rewritten retroactively). An unknown
+    // destination is reported as unknown: guessing it from the provider name
+    // would make the audit log quietly lie.
     const legacy = VERIFY_LINE.replace('"host":"api.anthropic.com",', '');
     const [entry] = parseLlmAuditLog(legacy);
     expect(entry.host).toBeNull();

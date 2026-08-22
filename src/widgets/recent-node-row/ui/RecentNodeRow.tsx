@@ -51,10 +51,10 @@ export function RecentNodeRow({
         <span className="block truncate text-body text-[color:var(--color-text-primary)]">{title}</span>
         <span className="block truncate text-label text-[color:var(--color-text-quaternary)]">{subtitle}</span>
       </span>
-      {/* 좁은 화면(360px) 가로 오버플로우 방지 (2026-07-24 overflow-sweep) —
-          긴 slug(trailingSecondary)가 flex-none 로 안 줄어 body 를 밀어냈다.
-          최대폭 제약 + truncate 로 넘치지 않게 한다(제목 열이 우선 늘고,
-          꼬리는 자기 상한 안에서 말줄임). */}
+      {/* Prevents horizontal overflow on a narrow screen (360px, the 2026-07-24
+          overflow sweep) — a long slug (trailingSecondary) was flex-none and would not
+          shrink, so it pushed the body out. A max-width plus truncate keeps it inside
+          (the title column grows first and the tail ellipsises within its own cap). */}
       <span className="flex-none max-w-[45%] text-right">
         <span className="block font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]">
           {trailing}
@@ -68,8 +68,8 @@ export function RecentNodeRow({
     </>
   );
 
-  // 클릭 대상이 없는 행(지도 노드로 못 찾은 dangling doc)엔 hover 배경을
-  // 주지 않는다 — 누를 수 없는데 인터랙티브해 보이면 그 자체가 결함.
+  // A row with no click target (a dangling doc with no matching map node) gets no hover
+  // background — looking interactive while being unpressable is itself the defect.
   const className = `flex items-center gap-2.5 rounded-chip border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 ${
     href ? "-mx-1.5 hover:bg-[color:var(--color-overlay-1)]" : ""
   }`;

@@ -1,10 +1,9 @@
 /**
- * 채팅에 나온 이름 → 지도의 노드. **이름 공간이 둘이라서 필요하다.**
+ * Maps a name that appeared in chat to a node on the map. **Needed because there
+ * are two namespaces.**
  *
- * ## 실물에서 본 것 (2026-08-17, 설치된 앱)
- *
- * codex 에게 *"이 폴더에 있는 개념들의 slug 를 전부 알려줘"* 라고 물었더니
- * 이렇게 답했다:
+ * Observed in the installed app, 2026-08-17. Asked codex *"이 폴더에 있는 개념들의
+ * slug 를 전부 알려줘"* (list every concept slug in this folder), it answered:
  *
  * ```
  * project
@@ -13,43 +12,42 @@
  * elements/example-element
  * ```
  *
- * 그 글자 위에 마우스를 올려도 **지도는 0픽셀도 안 변했다**(계기 검증: 같은
- * 방법으로 버튼에 올리면 2430픽셀이 바뀐다 — 호버 자체는 일어나고 있었다).
+ * Hovering those strings changed **zero pixels** on the map (instrument check:
+ * hovering a button the same way changes 2430 pixels, so hover itself was firing).
  *
- * 왜냐면 채팅이 집을 이름 목록을 **지도 내부 id** 로 만들고 있었기 때문이다:
+ * The chat was building its list of recognizable names out of **internal map ids**:
  *
- * | | 생김새 | 누가 쓰나 |
+ * | | Looks like | Who uses it |
  * |---|---|---|
- * | 지도 노드 id | `domain:example-domain` | 캔버스 · 선택 · 호버 |
- * | 에이전트 slug | `domains/example-domain` | **에이전트가 쓰고 읽는 이름** |
+ * | map node id | `domain:example-domain` | canvas, selection, hover |
+ * | agent slug | `domains/example-domain` | **what the agent writes and reads** |
  *
- * 둘은 **절대 같아질 수 없다**(`derive-ontology-from-vault.ts` 가 id 를
- * `` `${kind}:${idSlug}` `` 로 만든다). 그러니 채팅에 나온 어떤 이름도 목록에
- * 걸리지 않았고, 기능은 배선만 있고 실제로는 죽어 있었다.
+ * The two can **never** coincide — `derive-ontology-from-vault.ts` builds ids as
+ * `` `${kind}:${idSlug}` ``. So no name in chat ever matched, and the feature was
+ * wired but dead.
  *
- * ## 왜 검사가 못 잡았나
+ * Why no gate caught it: the panel's test passed
+ * `knownSlugs={new Set(['capabilities/invoice', …])}` **directly** — handing it the
+ * agent namespace by hand. The panel worked perfectly with those names, so it was
+ * green. The wrong place was not the panel but **where the screen builds that list**,
+ * and there was no test there.
  *
- * 패널 검사가 `knownSlugs={new Set(['capabilities/invoice', …])}` 를 **직접**
- * 넘겼다 — 즉 **에이전트 이름공간**을 손으로 쥐여 줬다. 패널은 그 이름으로
- * 완벽히 동작했고, 그래서 초록불이었다. 틀린 곳은 패널이 아니라 **화면이 그
- * 목록을 만드는 자리**였는데 거기엔 검사가 없었다.
+ * > Where two namespaces meet without a gate, both sides stay correct in their own
+ * > names and never meet.
  *
- * > 두 이름 공간이 만나는 자리에 검사가 없으면, 양쪽 다 자기 이름으로는
- * > 멀쩡한 채로 서로를 못 만난다.
- *
- * 그래서 그 자리를 순수 함수로 꺼내 왔다. `chat-node-index.test.ts` 가
- * **두 이름이 실제로 다른지**부터 확인한다 — 같아져 버리면 이 검사는 아무것도
- * 안 재는 것이므로, 그날 검사가 먼저 터져야 한다.
+ * So that place is extracted as a pure function. `chat-node-index.test.ts` starts by
+ * asserting **the two names really are different** — if they ever converge this test
+ * measures nothing, and it should fail that day.
  */
 
 import type { KnowledgeGraphNode } from '../model/types';
 
 /**
- * 채팅 글에서 집을 이름들과, 각 이름이 가리키는 지도 노드 id.
+ * The names to pick out of chat text, each mapped to the map node id it means.
  *
- * **에이전트가 쓰는 이름을 먼저 넣는다.** 지도 id 도 함께 받는 이유는 값이
- * 공짜이고(같은 문자열이 키이자 값), 언젠가 에이전트가 id 를 그대로 옮겨
- * 적었을 때 조용히 안 걸리는 것보다는 걸리는 편이 낫기 때문이다.
+ * **The agent's name goes in first.** The map id is included too because it is free
+ * (same string as key and value) and because an agent that happens to copy an id
+ * verbatim should match rather than silently miss.
  */
 export function buildChatNodeIndex(
   nodes: readonly KnowledgeGraphNode[] | null | undefined,
@@ -57,8 +55,8 @@ export function buildChatNodeIndex(
   const index = new Map<string, string>();
   for (const node of nodes ?? []) {
     if (typeof node?.id !== 'string' || node.id.length === 0) continue;
-    // 지도 id 가 먼저 자리를 잡으면 안 된다 — 아래에서 덮어쓰지 않으므로
-    // 에이전트 이름을 **먼저** 넣는다.
+    // The map id must not claim the slot first — later writes do not overwrite, so
+    // the agent name is inserted **first**.
     const agentSlug = typeof node.agentSlug === 'string' ? node.agentSlug.trim() : '';
     if (agentSlug.length > 0 && !index.has(agentSlug)) index.set(agentSlug, node.id);
     if (!index.has(node.id)) index.set(node.id, node.id);

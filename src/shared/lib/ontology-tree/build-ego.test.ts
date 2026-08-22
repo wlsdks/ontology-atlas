@@ -135,7 +135,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
       [edge("e1", "c", "a"), edge("e2", "a", "c")],
       { hops: 2 },
     );
-    // hop1 outgoing (c→a) + hop1 incoming (a→c). 2-hop 추가 없음 (a→c 는 center).
+    // hop1 outgoing (c→a) + hop1 incoming (a→c). Nothing added at 2-hop: a→c is the center.
     expect(result.neighbors).toHaveLength(2);
     expect(result.neighbors.every((n) => n.hop === 1)).toBe(true);
   });
@@ -198,7 +198,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
       [edge("e1", "c", "ghost"), edge("e2", "ghost", "far")],
       { hops: 2 },
     );
-    // hop1 으로 ghost 1 entry, 2-hop 은 ghost 가 미존재라 탐색 안 함.
+    // One ghost entry at hop1; 2-hop does not traverse it because the node does not exist.
     expect(result.neighbors).toHaveLength(1);
     expect(result.neighbors[0]?.hop).toBe(1);
     expect(result.neighbors[0]?.neighborId).toBe("ghost");

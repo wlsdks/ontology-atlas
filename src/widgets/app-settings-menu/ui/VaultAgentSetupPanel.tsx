@@ -41,35 +41,39 @@ import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 import { AgentSetupStep, type AgentSetupStepState } from './AgentSetupStep';
 
 /**
- * B2 병합 (feat/settings-vault-merge) — 이전 `VaultToolsMenu` (문서함 헤더
- * 드롭다운) 의 AI agent 설정 블록을 `AppSettingsMenu` 의 mcpAgents 탭으로
- * 옮긴 presentational 패널. 설정 파일 상태 · 수리 · 복사 패킷 · 체크리스트 ·
- * mode chooser · 검증 게이트가 모두 여기로 흡수됐다. 문서함 헤더에는 더
- * 이상 이 도구가 없고(중복 표면 제거), 설정 메뉴가 유일한 집이다.
+ * The presentational panel that moved the AI-agent settings block out of the old
+ * `VaultToolsMenu` (the docs-vault header dropdown) into `AppSettingsMenu`'s
+ * mcpAgents tab (B2 merge, feat/settings-vault-merge). Config file status, repair,
+ * copy packets, the checklist, the mode chooser and the validation gate were all
+ * absorbed here. The docs-vault header no longer carries this tool (duplicate
+ * surface removed) and the settings menu is its only home.
  *
- * localVault 컨텍스트에 의존 — vault 가 loaded 이고 agentConfigStatus 가
- * 있을 때만 렌더(그 외 null). 복사 패킷은 현재 vault 경로/이름을 인자로
- * 받아 절대경로를 채운다. 번역 네임스페이스는 원본 그대로 `docsVault` 를
- * 재사용해 i18n 이관 0.
+ * It depends on the localVault context and renders only when the vault is loaded
+ * and `agentConfigStatus` exists (otherwise null). The copy packets take the
+ * current vault path and name as arguments to fill in absolute paths. The
+ * translation namespace reuses the original `docsVault`, so no i18n was migrated.
  */
 
 /**
- * 이 패널의 복사 칩 잉크 — **값 층이 일부러 안 내는 층**만 여기 산다.
+ * Copy-chip ink for this panel — **only the layers the value layer deliberately
+ * omits** live here.
  *
- * `controlClass` 는 호버를 안 낸다(빈도가 모션 예산을 깎으므로 소비처가 정한다).
- * 테두리·배경 틴트도 아직 램프에 없다 — 톤은 **글자색만** 낸다. 그래서 같은
- * 문자열이 여섯 자리에 흩어져 있었고, 손으로 여섯 번 쓰면 언젠가 한 벌이
- * 갈린다. 상수 하나로 묶어 그 갈림을 없앤다.
+ * `controlClass` does not supply hover (frequency eats the motion budget, so the
+ * consumer decides). Border and background tints are not in the ramp yet either —
+ * tone supplies **text colour only**. So the same string was scattered across six
+ * sites, and written by hand six times one copy eventually diverges. One constant
+ * removes that divergence.
  */
 const NEUTRAL_COPY_CHIP =
   'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
 /**
- * 이 절의 **주 행동** 하나만 인디고 틴트를 받는다.
+ * Only this section's **one primary action** gets the indigo tint.
  *
- * 2026-08-04 이전엔 복사 칩 11개가 전부 전폭 32px 로 세로로 쌓여 있었다 —
- * 「그룹의 주 행동」과 「그 옆의 보조」가 같은 무게라, 어느 것을 눌러야 하는지를
- * 화면이 말해 주지 않았다. 폭도 다시 내용에 맡긴다(`w-full` 제거).
+ * Before 2026-08-04 all 11 copy chips were stacked vertically at full width and
+ * 32px tall — «the group's primary action» and «the secondary beside it» carried
+ * the same weight, so the screen never said which to press. Width is left to the
+ * content again too (`w-full` removed).
  */
 const ACCENT_ACTION_CHIP =
   'border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]';
@@ -77,11 +81,11 @@ const ACCENT_ACTION_CHIP =
 function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
   const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
   return [
-    // **복사되는 것은 명령 여러 줄이다 — 첫 줄이 `$ATLAS` 를 정의해야 한다.**
-    // 이 블록은 그대로 터미널에 붙여넣으라고 만든 것인데, 아홉 줄 전부가
-    // `$ATLAS` 로 시작하면서 그 변수를 아무도 채워 주지 않았다. 붙여넣으면
-    // 셸이 빈 값으로 풀어 `node /cli/src/index.mjs` 를 아홉 번 돌린다
-    // (2026-07-29 도그푸딩). 주석 한 줄이면 붙여넣기 한 번으로 끝난다.
+    // **What gets copied is several command lines, so the first line has to define
+    // `$ATLAS`.** This block is meant to be pasted straight into a terminal, yet all
+    // nine lines began with `$ATLAS` and nobody filled that variable in. Pasted, the
+    // shell expands it to empty and runs `node /cli/src/index.mjs` nine times
+    // (dogfooding, 2026-07-29). One comment line ends it in a single paste.
     `# export ATLAS=<path to your ontology-atlas source checkout>`,
     `${ATLAS_CLI} validate ${target}`,
     `${ATLAS_CLI} workspace-brief ${target}`,
@@ -290,9 +294,9 @@ export interface VaultAgentSetupLocalVault {
   } | null;
   recentVaults: LocalFsHandleRecord[];
   /**
-   * 설정 쓰기 — **도구를 받는다.** 이 인터페이스가 인자 없는 서명을 재선언하고
-   * 있어서, 훅 쪽을 고쳐도 여기서 다시 삼켜졌다. 서명을 복제한 자리가 계약을
-   * 되돌리는 전형이다.
+   * Writing configs — **it takes a tool.** This interface was re-declaring an
+   * argument-less signature, so fixing the hook side was swallowed again here. A
+   * duplicated signature is the classic place a contract gets reverted.
    */
   ensureAgentConfigs: (
     client?: AgentClientId,
@@ -315,15 +319,17 @@ export function VaultAgentSetupPanel({
   onOpenWorkflowGuide,
 }: Props) {
   const t = useTranslations('docsVault');
-  // 원클릭 버튼·3단계 카피는 지도 시트와 동일 출처(`agentConnect`)를 재사용해
-  // 두 표면이 어긋나지 않게 한다.
+  // The one-click button and the three-step copy reuse the same source as the map
+  // sheet (`agentConnect`), so the two surfaces cannot diverge.
   const tc = useTranslations('agentConnect');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   /**
-   * 「잘 안 되나요?」 서랍 — 흐름 안 접기라 목록 행 펼침 문법을 쓴다.
-   * 첫 판의 `Surface`(chrome 문법)는 떠 있는 표면의 것이라 아래 형제가 두 번
-   * 튀었다(설치 앱 프레임 실측 — `AgentSetupStep.tsx` 머리말에 수치).
-   * `publicPackagesReady`(= launch 가능) 선언보다 앞이라 prop 에서 직접 센다.
+   * The 「잘 안 되나요?」 (having trouble?) drawer — in-flow collapsing, so it uses
+   * the list-row disclosure grammar. The first version's `Surface` (chrome grammar)
+   * belongs to a floating surface, so the siblings below jumped twice (frame
+   * measurement in the installed app — numbers in the `AgentSetupStep.tsx` preamble).
+   * This sits before `publicPackagesReady` (= can launch) is declared, so it counts
+   * from the prop directly.
    */
   const advancedRevealOpen = serverAvailability.launch !== null && advancedOpen;
   const {
@@ -332,12 +338,12 @@ export function VaultAgentSetupPanel({
     contentRef: advancedContentRef,
   } = useRowDisclosure(advancedRevealOpen);
   /**
-   * 펼친 단계 — `null` 이면 **지금 할 일을 따라간다.**
+   * The expanded step — `null` means **follow whatever is next to do.**
    *
-   * 파생값 하나로 두면 사용자가 3단계를 열어 놓고 1단계 버튼을 눌렀을 때 화면이
-   * 제멋대로 접힌다. 상태 하나로 두면 연결이 끝나도 1단계가 계속 열려 있다.
-   * 그래서 「따라가기(null)」와 「사용자가 골랐다(숫자)」를 구분한다 — `0` 은
-   * 「셋 다 접음」이다.
+   * As a pure derived value, opening step 3 and then pressing step 1's button
+   * collapses the screen unpredictably. As pure state, step 1 stays open even after
+   * the connection is finished. So «follow (null)» and «the user chose (a number)»
+   * are distinguished — `0` means «all three collapsed».
    */
   const [openStepOverride, setOpenStepOverride] = useState<number | null>(null);
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
@@ -376,10 +382,10 @@ export function VaultAgentSetupPanel({
     ? getTauriVaultRootPath(localVault.handle)
     : null;
   const vaultNameForConfig = localVault.handle?.name ?? 'vault';
-  // 딥링크는 절대 경로가 있어야 성립(설치 앱). 웹은 null → 복사 강등.
+  // A deep link needs an absolute path (installed app). Web is null → degrade to copy.
   const cursorDeeplink = buildCursorMcpDeeplink(vaultRootPath, serverAvailability.launch);
 
-  /** 도구를 받아 그 파일만 쓴다 — 안 넘기면 종전대로 한 벌 전부(스캐폴드 자리). */
+  /** Take a tool and write only its file — omit it and all of them go, as before (the scaffold position). */
   async function handleEnsureAgentConfigs(client?: AgentClientId) {
     setAgentSetupError(null);
     setAgentSetupBusy(true);
@@ -465,7 +471,7 @@ export function VaultAgentSetupPanel({
 
   if (localVault.status !== 'loaded' || !agentStatus) return null;
 
-  // 서버를 띄울 방법을 아는가 — 이 하나가 원클릭 성립 여부를 가른다.
+  // Do we know how to launch the server? This one thing decides whether one-click is possible.
   const publicPackagesReady = serverAvailability.launch !== null;
   const agentSetupReady = Boolean(
     publicPackagesReady &&
@@ -485,9 +491,9 @@ export function VaultAgentSetupPanel({
       ? 'invalid'
       : 'ready';
   /**
-   * 파일 셋 — **역할 라벨을 뺐다** (2026-08-04). 「Claude Code · Cursor 연결 파일」
-   * 은 바로 옆의 도구 이름 + 경로 + 「연결 파일 상태」 묶음 제목이 이미 세 번
-   * 말하는 것이라, 넷째 진술이었다.
+   * The file set — **the role label was removed** (2026-08-04). 「Claude Code ·
+   * Cursor 연결 파일」 was a fourth statement of what the tool name beside it, the
+   * path, and the 「연결 파일 상태」 group title already say three times.
    */
   const agentSetupFiles = [
     {
@@ -528,13 +534,14 @@ export function VaultAgentSetupPanel({
     (file) => agentStatus[file.key] && agentStatus[file.validKey] === false,
   );
   /**
-   * 접기 뒤의 **더 확인할 것** — 3단계 뒤에 오는 것만.
+   * **Further checks** behind the fold — only what comes after step 3.
    *
-   * 종전에는 여기가 6줄이었고 앞 셋(설정 파일 · 재시작 · 연결 확인)이 위
-   * 3단계와 **같은 말을 번호만 바꿔** 다시 했다. 그래서 이 화면에는 번호 배지가
-   * 네 벌(단계 3 · 흐름 6 · 증거 4 · 명령 6) 있었고 어느 것도 「지금 할 일」을
-   * 못 가리켰다. 앞 셋은 단계로 승격됐으니 여기서는 뒤 셋만 남는다 —
-   * 사라진 것이 아니라 **올라간 것**이라 도달 가능성은 그대로다.
+   * There used to be 6 rows here, and the first three (config files · restart ·
+   * verify connection) repeated **the same things as the three steps above with
+   * different numbers**. That left this screen with four numbering systems (3 steps ·
+   * 6 flow · 4 evidence · 6 commands) and none of them pointing at "what to do now".
+   * The first three were promoted into steps, so only the last three remain here —
+   * they were **promoted, not deleted**, so reachability is unchanged.
    */
   const agentDeeperChecks = [
     { key: 'gate', label: t('agentSetup.stepGate') },
@@ -614,10 +621,11 @@ export function VaultAgentSetupPanel({
           : validationState === 'error'
             ? 'blocked'
             : 'warning',
-      // **「5개가 막음」이 갈 곳을 갖는다** (2026-08-04). 종전 이 블록의
-      // 인터랙티브 요소는 **0개**였고, 어느 파일이 잘못됐는지 한 글자도 없었다 —
-      // 사람이 수치를 읽고 나서 할 수 있는 일이 창을 닫는 것뿐이었다. 「할 일」
-      // 화면의 준비도 미터가 같은 검사 결과를 세므로 그리로 보낸다.
+      // **「5 are blocking」 gets somewhere to go** (2026-08-04). This block previously
+      // had **0** interactive elements and not one character saying which file was
+      // wrong — after reading the number, all a person could do was close the window.
+      // The readiness meter on the 「할 일」 screen counts the same check results, so
+      // this sends them there.
       href:
         validationState === 'error' || validationState === 'warning'
           ? '/ontology/insights/?tab=do-next'
@@ -625,12 +633,12 @@ export function VaultAgentSetupPanel({
     },
     {
       /*
-       * ⚠️ 여기 있던 「연결 파일 {ready}/{total}」 행은 뺐다 (2026-08-04).
-       * 같은 수를 화면이 **세 번** 말하고 있었다 — 머리 요약 · 이 행 · 3단계의
-       * 상태 줄. 2026-08-02 디자인 카운슬이 「누락」 배지를 뺀 것과 정확히 같은
-       * 사유이고(그때는 세 번째 진술이 색으로 소리쳤다), 그 판정이 여기서
-       * 되살아난 것이다. 머리 요약은 **항상 보이므로** 남는 둘 중 하나는
-       * 언제나 화면에 있다.
+       * ⚠️ The 「연결 파일 {ready}/{total}」 row that stood here was removed
+       * (2026-08-04). The screen was stating the same number **three times** — the
+       * header summary, this row, and step 3's status line. It is exactly the reason
+       * the 2026-08-02 design council removed the 「누락」 badge (there the third
+       * statement shouted in colour), and that ruling resurfaced here. The header
+       * summary is **always visible**, so one of the two survivors is always on screen.
        */
       key: 'agentRoot',
       label: t('agentSetup.proofAgentRoot'),
@@ -754,12 +762,13 @@ export function VaultAgentSetupPanel({
 
 
   /**
-   * 지금 할 일은 하나다 — **앱이 실제로 아는 것만으로** 정한다.
+   * There is one thing to do now — decided **only from what the app actually knows.**
    *
-   * 1단계(연결 파일)는 디스크를 봐서 안다. 2단계(다시 켜기)와 3단계(연결 확인)는
-   * 원리적으로 알 수 없다 — Atlas 는 에이전트에 접속하지 않는다(`connectionHint`
-   * 가 이미 그렇게 말한다). 그래서 둘은 **자동으로 완료가 되지 않고**, 대신
-   * 사용자가 직접 열 수 있다. 모르는 것을 아는 척하는 대신 순서만 안내한다.
+   * Step 1 (config files) is known by looking at disk. Steps 2 (restart) and 3
+   * (verify connection) are unknowable in principle — Atlas does not connect to the
+   * agent (`connectionHint` already says so). So those two **never complete
+   * automatically**, and the user can open them directly instead. Rather than
+   * pretending to know what it does not, it guides the order only.
    */
   const stepOneDone = agentSetupReadyCount === agentSetupFiles.length;
   const currentStep = stepOneDone ? 2 : 1;
@@ -773,14 +782,14 @@ export function VaultAgentSetupPanel({
   return (
     <section aria-label={t('agentSetup.ariaLabel')} className="min-w-0">
       {/*
-        **머리는 두 줄이다** (2026-08-04). 종전에는 여기에 제목 `<h3>` 이 하나 더
-        있었는데, 왼쪽 LNB 가 같은 눈높이에서 이 칸의 이름을 이미 말하고 있었다 —
-        같은 이름을 두 번 쓰는 대신 한 번만 쓴다. 이름은 region 의 접근 이름으로
-        남으므로 보조기술에서도 잃지 않는다.
+        **The head is two lines** (2026-08-04). There used to be another `<h3>` title
+        here, while the left LNB was already naming this pane at the same eye level —
+        the same name is written once instead of twice. The name survives as the
+        region's accessible name, so it is not lost to assistive technology.
 
-        ⚠️ 그 LNB 의 이름이 2026-08-16 에 「MCP」로 바뀌었다. 여기 접근 이름도
-        같이 옮겼다 — 안 옮기면 화면이 부르는 이름과 낭독기가 부르는 이름이
-        달라지고, 그 어긋남은 화면을 보는 사람에게는 영영 안 보인다.
+        ⚠️ That LNB name changed to 「MCP」 on 2026-08-16, and the accessible name moved
+        with it — otherwise the name on screen and the name a screen reader speaks
+        diverge, and that mismatch is invisible forever to anyone looking at the screen.
       */}
       <p className="break-keep text-body text-[color:var(--color-text-tertiary)]">
         {publicPackagesReady
@@ -807,10 +816,10 @@ export function VaultAgentSetupPanel({
       </p>
 
       {/*
-        ── 3단계 ────────────────────────────────────────────────────────
-        한 번에 하나만 펼친다. 웹(서버를 띄울 방법을 모르는 자리)에서는 1단계가
-        곧 강등 카드라서 2·3단계가 성립하지 않는다 — 없는 단계를 회색으로
-        보여 주는 것은 안내가 아니라 막다른 길이다.
+        ── Three steps ─────────────────────────────────────────────────
+        Only one expands at a time. On the web (where we do not know how to launch a
+        server), step 1 *is* the degradation card, so steps 2 and 3 do not exist —
+        showing a step that is not there, greyed out, is a dead end rather than guidance.
       */}
       <ol
         aria-label={t('agentSetup.stepListAriaLabel')}
@@ -831,16 +840,16 @@ export function VaultAgentSetupPanel({
         >
           <AgentClientButtons
             serverAvailability={serverAvailability}
-            /* 도구를 그대로 넘긴다 — `() => void handleEnsureAgentConfigs()` 는
-               인자를 삼켜서, 어느 버튼을 눌러도 같은 파일들이 나갔다. */
+            /* Pass the tool through — `() => void handleEnsureAgentConfigs()` swallows
+               the argument, so whichever button was pressed, the same files went out. */
             onWriteConfigs={
               publicPackagesReady && canEditCurrent
                 ? (client) => void handleEnsureAgentConfigs(client)
                 : null
             }
-            /* 넷은 「정답 하나」가 아니라 **하나 고르는 것**이다 — 세로 전폭 넷은
-               각각이 큰 결정처럼 읽혔다(소유자 지적 2026-08-04). 2열이면 한 벌로
-               읽히고 세로 152px 이 76px 이 된다. */
+            /* The four are **pick one**, not «one right answer» — four full-width rows
+               each read as a large decision (owner report, 2026-08-04). Two columns
+               read as one set and turn 152px of height into 76px. */
             layout="grid"
             cursorDeeplink={cursorDeeplink}
             mcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, vaultRootPath)}
@@ -864,13 +873,15 @@ export function VaultAgentSetupPanel({
               onToggle={() => toggleStep(2)}
             />
             {/*
-              **`step3Desc` 를 여기서는 안 쓴다** (2026-08-02, 디자인 카운슬).
-              그 문장은 「에이전트가 이 지도를 읽기 시작하면 여기에 표시돼요」
-              인데, 그 약속을 지키는 heartbeat 신호는 **지도 시트만** 갖고
-              있다(`use-agent-connect-model.ts`). 이 화면이 아는 것은 연결
-              파일의 유효성까지라, 문장을 그대로 두면 지키지 않는 약속이 된다.
-              대신 이 화면이 **실제로 아는 것**(파일 상태)과 사람이 직접 확인할
-              방법(도구별 확인 명령)을 준다.
+              **`step3Desc` is not used here** (2026-08-02, design council). That
+              sentence reads 「에이전트가 이 지도를 읽기 시작하면 여기에 표시돼요」
+              (once an agent starts reading this map it will show here), but the
+              heartbeat signal that keeps that promise belongs **only to the map
+              sheet** (`use-agent-connect-model.ts`). What this screen knows stops at
+              the config files' validity, so leaving the sentence would make it a
+              promise we do not keep. It gives **what this screen actually knows**
+              (file status) and a way for the person to verify directly (the per-tool
+              check command) instead.
             */}
             <AgentSetupStep
               n={3}
@@ -881,11 +892,12 @@ export function VaultAgentSetupPanel({
               onToggle={() => toggleStep(3)}
             >
               {/*
-                단계 하나 = 상자 하나. 상태 줄과 도구별 확인 방법이 따로 떠 있으면
-                「이 단계가 무엇인가」가 두 덩어리로 읽힌다 — 이 화면이 고치려던
-                바로 그 평평함이다. 하나로 묶고 안에서 헤어라인으로 가른다.
-                (확인 방법은 종전 고급 접기 안에만 있었다. 「연결 확인」 단계의
-                내용이 곧 이것이라 여기가 제자리다.)
+                One step = one box. With the status line and the per-tool check method
+                floating separately, "what is this step" reads as two lumps — the very
+                flatness this screen set out to fix. They are bound into one and split
+                inside by a hairline. (The check method used to live only inside the
+                advanced fold. It *is* the content of the 「연결 확인」 step, so this is
+                its home.)
               */}
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
                 <div className="flex items-center gap-2 px-2.5 py-2">
@@ -926,9 +938,10 @@ export function VaultAgentSetupPanel({
       </ol>
 
       {/*
-        ── 잘 안 되나요? ────────────────────────────────────────────────
-        고급·검증·CLI·다른 폴더 연결이 전부 이 뒤에 있다. **지운 것이 아니라
-        접은 것**이라, 접힌 것에는 전부 도달할 수 있어야 한다.
+        ── Having trouble? ──────────────────────────────────────────────
+        Advanced, verification, CLI and connecting from another folder all sit behind
+        this. It is **collapsed, not deleted**, so everything collapsed must remain
+        reachable.
       */}
       {publicPackagesReady ? (
         <button
@@ -953,9 +966,10 @@ export function VaultAgentSetupPanel({
           {t('agentSetup.troubleshootToggle')}
         </button>
       ) : null}
-      {/* 상자는 늘 그려 둔다(전이의 출발 높이) — 내용만 접힘에서 빠진다.
-          `id` 가 상자에 있어 위 토글의 `aria-controls` 대상이 접힘 중에도
-          실재하고, testid 는 내용에 있어 「접히면 없다」 계약이 유지된다. */}
+      {/* The box is always drawn (the transition's starting height) — only the content
+          drops out of the collapse. The `id` lives on the box so the toggle's
+          `aria-controls` target exists even mid-collapse, and the testid lives on the
+          content so the "absent when collapsed" contract holds. */}
       <section
         ref={advancedBoxRef}
         id="agent-setup-advanced"
@@ -971,21 +985,22 @@ export function VaultAgentSetupPanel({
             className="ai-row-disclosure-body flex flex-col gap-4 pt-2"
           >
         {/*
-          ── 검사 묶음 ──────────────────────────────────────────────────
-          ⚠️ **이 한 덩어리는 곧 「손볼 곳」 탭으로 옮겨간다** (소유자 확정
-          2026-08-04 — 검사·수리·삭제가 그리로 간다). 이번 라운드에서 옮기지
-          않는 대신 **옮기기 쉬운 형태**로 한 노드 아래 모아 둔다. 흩어 두면
-          그때 다시 여덟 자리를 찾아다녀야 한다.
+          ── Check group ────────────────────────────────────────────────
+          ⚠️ **This whole lump is soon moving to the 「손볼 곳」 tab** (owner call,
+          2026-08-04 — check, repair and delete go there). Rather than moving it this
+          round, it is gathered under one node in **a shape that is easy to move**.
+          Left scattered, someone would have to hunt down eight places again.
         */}
         <div data-testid="agent-setup-inspection" className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.groupFiles')}</SectionLabel>
           {/*
-            **목록이 하나다** (2026-08-04). 종전에는 같은 세 파일을 두 번 그렸다 —
-            위는 「도구 이름 + 확인 방법 + 배지」, 아래는 「경로 + 역할」. 두 목록의
-            행 수도 순서도 같았고, 다른 것은 어느 쪽이 경로를 말하느냐뿐이었다.
-            같은 사실을 두 자리에서 말하면 어느 쪽이 최신인지 아무도 모른다.
-            확인 방법(`/mcp` 등)은 3단계로 올라갔으므로 여기 남는 것은
-            **이름 · 경로 · 상태** 셋이다.
+            **There is one list** (2026-08-04). The same three files used to be drawn
+            twice — above as 「tool name + check method + badge」, below as 「path +
+            role」. The two lists had the same row count and the same order, and the
+            only difference was which one stated the path. Stating the same fact in two
+            places leaves nobody knowing which is current. The check methods (`/mcp`
+            and so on) were promoted into step 3, so what remains here is three things:
+            **name · path · status**.
           */}
           <ul aria-label={t('agentSetup.connectionAriaLabel')} className="grid gap-1">
             {agentSetupConnections.map(({ key, file, label }) => {
@@ -1057,15 +1072,17 @@ export function VaultAgentSetupPanel({
           </p>
 
           {/*
-            ── 폴더 상태 ────────────────────────────────────────────────
-            ⚠️ **2026-08-04 정정 — 이 상자는 거짓말을 하고 있었다.**
-            빨간 「HANDOFF BLOCKED」 배지와 *"에이전트가 ontology를 수정하기 전에
-            vault validation 오류를 먼저 해결해야 합니다"* 라는 문장을 달고
-            있었는데, **막지 않는다**. MCP 쓰기 경로(`add_concept` ·
-            `patch_concept` …)에 그 게이트가 없다. 오류가 실제로 거절하는 것은
-            `git_snapshot({confirm:true})` 하나뿐이다(`mcp/src/index.js` —
-            *"git_snapshot blocked: validate_vault found N file(s) with errors"*).
-            화면이 근거 없는 사실을 주장하면 사용자는 되는 일을 포기한다.
+            ── Folder status ──────────────────────────────────────────────
+            ⚠️ **Correction, 2026-08-04 — this box was lying.**
+            It carried a red 「HANDOFF BLOCKED」 badge and the sentence *"에이전트가
+            ontology를 수정하기 전에 vault validation 오류를 먼저 해결해야 합니다"*
+            (the agent must resolve vault validation errors before modifying the
+            ontology) — but **nothing is blocked**. The MCP write paths
+            (`add_concept` · `patch_concept` …) have no such gate. The only thing an
+            error actually refuses is `git_snapshot({confirm:true})`
+            (`mcp/src/index.js` — *"git_snapshot blocked: validate_vault found N
+            file(s) with errors"*). When a screen asserts a fact with no basis, users
+            give up on things that would have worked.
           */}
           <div
             role="status"
@@ -1178,7 +1195,7 @@ export function VaultAgentSetupPanel({
           </dl>
         </div>
 
-        {/* ── 에이전트가 이 폴더를 쓰는 방식 ──────────────────────────── */}
+        {/* ── How agents use this folder ────────────────────────────────── */}
         <div className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.groupHowAgentsUse')}</SectionLabel>
           <p className="break-keep rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
@@ -1268,7 +1285,7 @@ export function VaultAgentSetupPanel({
           </div>
         </div>
 
-        {/* ── 명령으로 확인하기 ──────────────────────────────────────── */}
+        {/* ── Verify from the command line ──────────────────────────────── */}
         <div className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.verifyGroup')}</SectionLabel>
           <div
@@ -1370,7 +1387,7 @@ export function VaultAgentSetupPanel({
           </div>
         </div>
 
-        {/* ── 다른 코드 폴더에서 열 때 ───────────────────────────────── */}
+        {/* ── Opening from another code folder ──────────────────────────── */}
         <div className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.connectGroup')}</SectionLabel>
           <dl aria-label={t('agentSetup.rootContractAriaLabel')} className="grid gap-1">
@@ -1454,14 +1471,16 @@ export function VaultAgentSetupPanel({
 }
 
 /**
- * 접기 안의 묶음 제목 — 루트 시트의 그룹 헤더와 **같은 규격**을 가리킨다.
+ * A group title inside the fold — it points at **the same specification** as the
+ * root sheet's group headers.
  *
- * ⚠️ 여기 있던 주석은 *"이 자리의 `text-caption`(9.5px)은 금지된 그 쓰임이 아니다 —
- * 램프 정의가 말하는 「마이크로 라벨」이다"* 라고 적혀 있었고, **그게 틀렸다**
- * (2026-08-09, 소유자 지적 2차). 한글에는 `uppercase` 가 아무 일도 하지 않아서
- * 「대문자 마이크로 라벨」이라는 타이포 장치가 성립하지 않고, 남는 건 그냥 9.5px
- * 흐린 글자다. 게다가 루트 시트가 같은 역할에 이미 11px 을 쓰고 있었다.
- * 값은 `SETTINGS_SECTION_LABEL` 한 곳에 있다.
+ * ⚠️ The comment that stood here said *"the `text-caption` (9.5px) in this position
+ * is not the forbidden usage — it is the «micro label» the ramp's definition names"*,
+ * and **that was wrong** (2026-08-09, the owner's second report). `uppercase` does
+ * nothing to Hangul, so the "uppercase micro label" typographic device does not
+ * exist and all that remains is 9.5px of dim text. And the root sheet already used
+ * 11px for the same role. The value lives in one place,
+ * `SETTINGS_SECTION_LABEL`.
  */
 function SectionLabel({ children }: { children: ReactNode }) {
   return <h4 className={SETTINGS_SECTION_LABEL}>{children}</h4>;

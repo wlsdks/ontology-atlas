@@ -4,33 +4,40 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 관문 무대 폭(`--gateway-stage-max`) — 넓은 폭 개정(2026-08-19)의 불변식.
+ * The gateway stage width (`--gateway-stage-max`) — the invariants of the
+ * wide-width revision (2026-08-19).
  *
- * 원장 (83) 은 시연 무대를 48rem 으로 내렸다(소유자: *"동영상도 지금 너무
- * 커"* — 1512 에서 클립이 폭의 73%). 그 처방은 **비례** 문제였는데 절대 px 로
- * 굳혀서, 소유자의 2560 스크린샷에서는 반대로 무대가 뷰포트의 30%로 쪼그라들어
- * 화면이 비어 보였다. 개정은 상한을 `clamp(48rem, 40vw, 80rem)` 토큰으로
- * 올렸고, 이 시험은 그 세 값이 지는 **약속**을 잠근다:
+ * Ledger entry (83) brought the demo stage down to 48rem (owner: *"동영상도 지금
+ * 너무 커"* — the video is too big right now; at 1512 the clip took 73% of the
+ * width). That prescription addressed a **proportion** problem but froze it in
+ * absolute px, so on the owner's 2560 screenshot the stage shrank to 30% of the
+ * viewport and the screen looked empty. The revision raised the cap to a
+ * `clamp(48rem, 40vw, 80rem)` token, and this test locks the **promises** those
+ * three values carry:
  *
- *  (a) **바닥 = 48rem** — 원장 (83) 의 소유자 승인값. 발자국 번짐 예외가
- *      「기본 0 · 상한 6」을 못박는 것과 같은 형식의 결정값 고정이다.
- *  (b) **≤1920 무회귀 불변식** — 기울기(vw 계수)로 1920 에서 계산한 값이
- *      바닥을 넘지 않는다. 이 성질이 깨지면 게이트가 지키는 1440–1920 폭에서
- *      소유자가 승인한 768px 렌더가 조용히 움직인다. (40vw×1920 = 768 = 48rem
- *      — 성장은 가장 넓은 무회귀 폭 바로 위에서만 시작한다.)
- *  (c) **상한 ≤ 클립 원본 폭** — 시연 클립 원본은 1512px 폭이다. 상한이 그걸
- *      넘으면 1x 밀도에서 영상을 업스케일해 흐려진 것을 «더 크게» 라고 부르게
- *      된다.
- *  (d) **무대 폭의 진실원은 하나다** — 시연 절과 에이전트 장면이 전부 이
- *      토큰을 소비하고, `src/views/download/**` 에 무대 폭을 따로 정하는
- *      `max-w-[48rem]` 이 남아 있지 않다. (48rem 이 두 곳에 적히면 한쪽만
- *      고쳐지는 날이 온다 — 이 저장소가 반복해서 잡아 온 그 드리프트다.)
- *  (e) **문서 등재** — `docs/DESIGN-SYSTEM.md` 관문 표에 같은 공식이 있다.
- *      값이 코드에만 있으면 규격이 아니라 우연이다.
+ *  (a) **Floor = 48rem** — the owner-approved value from ledger (83). The same
+ *      form of pinned decision as the footprint bloom exception pinning
+ *      "default 0, cap 6".
+ *  (b) **No-regression invariant at ≤1920** — the slope (the vw coefficient)
+ *      evaluated at 1920 does not exceed the floor. Break this and the
+ *      owner-approved 768px render moves silently across the 1440–1920 widths the
+ *      gate protects. (40vw×1920 = 768 = 48rem — growth starts only just above the
+ *      widest no-regression width.)
+ *  (c) **Cap ≤ the clip's source width** — the demo clip's source is 1512px wide.
+ *      A larger cap upscales the video at 1x density, and we would be calling a
+ *      blurrier picture "bigger".
+ *  (d) **One source of truth for the stage width** — the demo section and the
+ *      agent scene both consume this token, and no `max-w-[48rem]` setting the
+ *      stage width separately remains in `src/views/download/**`. (Write 48rem in
+ *      two places and a day comes when only one is updated — the drift this
+ *      repository has caught repeatedly.)
+ *  (e) **Documented** — the gateway table in `docs/DESIGN-SYSTEM.md` carries the
+ *      same formula. A value that exists only in code is a coincidence, not a spec.
  *
- * 렌더된 무대가 실제로 이 토큰을 따라 자라는지(그리고 시연·에이전트 두 장면이
- * 같은 폭인지)는 `tests/e2e/download-gateway-grid.spec.ts` 가 폭별 rect 로
- * 잰다 — 여기는 정적 불변식, 거기는 실측이다.
+ * Whether the rendered stage actually grows with this token (and whether the demo
+ * and agent scenes share a width) is measured per width with rects by
+ * `tests/e2e/download-gateway-grid.spec.ts` — static invariants here, measurement
+ * there.
  */
 
 const repoRoot = join(import.meta.dirname, "..", "..");
@@ -38,7 +45,7 @@ const read = (rel: string): string => readFileSync(join(repoRoot, rel), "utf8");
 
 const TOKEN = "--gateway-stage-max";
 
-/** globals.css 의 토큰 선언에서 clamp 세 값을 뽑는다. */
+/** Extracts the three clamp values from the token declaration in globals.css. */
 function parseStageClamp(css: string): { floorRem: number; slopeVw: number; capRem: number } {
   const match = css.match(
     /--gateway-stage-max:\s*clamp\(\s*([\d.]+)rem\s*,\s*([\d.]+)vw\s*,\s*([\d.]+)rem\s*\)/,
@@ -96,7 +103,7 @@ describe("관문 무대 폭 — --gateway-stage-max 의 불변식", () => {
       const text = readFileSync(file, "utf8");
       const rel = relative(repoRoot, file).replace(/\\/g, "/");
       if (text.includes("max-w-[var(--gateway-stage-max)]")) consumers.push(rel);
-      // 주석이 아니라 className 문자열 안의 무대 폭 하드코딩만 잡는다.
+      // Catches hardcoded stage widths inside className strings, not in comments.
       if (/max-w-\[48rem\]/.test(text)) strays.push(rel);
     }
     expect(

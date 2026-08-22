@@ -63,7 +63,7 @@ describe("DomainCompositionRows", () => {
     fireEvent.click(orders);
 
     expect(orders).toHaveAttribute("aria-expanded", "true");
-    // 「상위 2개」가 아니라 전부 — 「역량 N개 더」라는 갈 곳 없는 수가 사라진다.
+    // All of them, not "the top 2" — the number with nowhere to go ("N more capabilities") disappears.
     expect(screen.getByText("주문 생성")).toBeInTheDocument();
     expect(screen.getByText("주문 취소")).toBeInTheDocument();
     expect(screen.getByText("주문 조회")).toBeInTheDocument();
@@ -77,7 +77,7 @@ describe("DomainCompositionRows", () => {
     const boxes = screen.getAllByTestId("project-detail-domain-disclosure");
     expect(boxes[0]).toHaveAttribute("data-state", "open");
     expect(boxes[1]).toHaveAttribute("data-state", "closed");
-    // 접힌 쪽은 탭 순서·스크린리더에서 빠진다(보이지 않는 것은 읽히지도 않는다).
+    // The collapsed side leaves the tab order and the screen reader (what is not visible is not read).
     expect(boxes[1]).toHaveAttribute("inert");
   });
 

@@ -3,32 +3,33 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 사이드카는 **첫 cargo 호출보다 먼저** 만들어져야 한다.
+ * The sidecar must be built **before the first cargo call**.
  *
- * `src-tauri/tauri.conf.json` 이 `externalBin` 으로 MCP 바이너리를 선언한
- * 뒤로는, 번들 단계뿐 아니라 **모든 cargo 호출**이 그 파일을 요구한다 —
- * Tauri 빌드 스크립트가 resource path 존재를 확인하고, 없으면
- * `resource path ... doesn't exist` 로 죽는다.
+ * Once `src-tauri/tauri.conf.json` declares the MCP binary as an `externalBin`,
+ * **every cargo call** requires that file, not just the bundle step — the Tauri
+ * build script checks the resource path exists and dies with
+ * `resource path ... doesn't exist` when it does not.
  *
- * 2026-07-28 `v1.0.0-rc.2` 가 정확히 여기서 멈췄다. 사이드카를
- * `desktop:build:app` 안에서만 만들고 있었는데, 워크플로는 그 전에
- * `cargo test`(= `test:desktop:bridge`)를 돌린다. 두 아키텍처 모두 실패했고
- * 스테이징·발행은 건너뛰어졌다.
+ * On 2026-07-28 `v1.0.0-rc.2` stopped exactly here. The sidecar was built only
+ * inside `desktop:build:app`, but the workflow runs `cargo test`
+ * (= `test:desktop:bridge`) before that. Both architectures failed and staging and
+ * publishing were skipped.
  *
- * 로컬에서는 안 드러난다 — 사람이 한 번 빌드해 두면 파일이 남아 있어서
- * 그 뒤 모든 cargo 호출이 통과한다. **깨끗한 체크아웃에서만 보이는 결함**이라
- * 워크플로 순서를 계약으로 고정한다.
+ * It does not show up locally — once a person has built the file it stays, and
+ * every later cargo call passes. **A defect visible only on a clean checkout**, so
+ * the workflow order is pinned as a contract.
  */
 
 const WORKFLOW_PATH = join(process.cwd(), ".github/workflows/release-macos.yml");
 const TAURI_CONF_PATH = join(process.cwd(), "src-tauri/tauri.conf.json");
 
 /**
- * cargo 를 (직접이든 pnpm 스크립트를 거쳐서든) 돌리는 **실행 줄**.
+ * The **executed lines** that run cargo, directly or through a pnpm script.
  *
- * 주석이 아니라 `run:` 이 실제로 실행하는 것만 본다 — 처음엔 `"cargo "` 를
- * 통째로 찾게 썼다가, 바로 위 단계에 내가 적은 **설명 주석**이 걸려서 계약이
- * 스스로 빨개졌다. 문자열을 찾는 게이트는 자기 문서까지 읽는다.
+ * Only what `run:` actually executes, never comments — the first version searched
+ * for `"cargo "` anywhere and caught an explanatory comment written on the step
+ * just above, turning the contract red against itself. A gate that searches for
+ * strings reads its own documentation too.
  */
 const CARGO_RUN_LINES = [/^\s*run:\s*pnpm test:desktop:bridge\b/m, /^\s*run:.*\bcargo\s/m] as const;
 
@@ -41,8 +42,8 @@ describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => 
     const conf = JSON.parse(readFileSync(TAURI_CONF_PATH, "utf8")) as {
       bundle?: { externalBin?: string[] };
     };
-    // 이 선언이 사라지면 아래 순서 계약의 전제 자체가 없어진다 — 그때는
-    // 이 파일을 지우는 것이 맞고, 이 단언이 그 사실을 먼저 알려 준다.
+    // If this declaration disappears, the ordering contract below loses its premise —
+    // deleting this file is then the right move, and this assertion says so first.
     expect(conf.bundle?.externalBin ?? []).toContain("binaries/ontology-atlas-mcp");
   });
 
@@ -51,11 +52,13 @@ describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => 
   });
 
   /**
-   * 사이드카를 굽는 컴파일러(`bun build --compile`)가 러너에 기본으로 있지
-   * 않다. 번들링을 들여올 때(#732) 설치 단계가 같이 안 들어와서
-   * `v1.0.0-rc.2` 가 여기서 한 번 더 멈췄다 — 순서를 고친 **직후**에.
+   * The compiler that builds the sidecar (`bun build --compile`) is not on the runner
+   * by default. When bundling was introduced (#732) the install step did not come
+   * with it, and `v1.0.0-rc.2` stopped here once more — **right after** the ordering
+   * was fixed.
    *
-   * 순서만 잠그면 "먼저 부르지만 부를 도구가 없는" 상태를 못 잡는다.
+   * Locking the order alone cannot catch "called first, but the tool to call is
+   * missing".
    */
   it("bun 설치가 사이드카 빌드보다 앞선다", () => {
     const bunAt = workflow.indexOf("oven-sh/setup-bun");
@@ -64,13 +67,14 @@ describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => 
   });
 
   /**
-   * `mcp/` 는 pnpm 워크스페이스 멤버가 아니라 자체 `node_modules` 를 쓴다 —
-   * 루트 `pnpm install` 이 그걸 안 깐다. 사람 머신에는 예전에 한 번 깔아 둔
-   * 것이 남아 있어 로컬 컴파일이 통과하고, 러너에서만 `@modelcontextprotocol/sdk`
-   * 를 못 찾는다.
+   * `mcp/` is not a pnpm workspace member; it uses its own `node_modules`, which the
+   * root `pnpm install` does not populate. A person's machine still has an old
+   * install, so local compilation passes and only the runner fails to find
+   * `@modelcontextprotocol/sdk`.
    *
-   * 도구(bun)와 순서를 다 잠근 뒤에도 **컴파일 대상의 의존**이 비어 있으면
-   * 같은 자리에서 멈춘다. 세 조건을 다 잠가야 이 단계가 실제로 통과한다.
+   * Even with the tool (bun) and the order both locked, an empty **dependency tree
+   * for the compilation target** stops it at the same place. All three conditions
+   * must be locked for this step to actually pass.
    */
   it("bundled MCP 의존 설치가 사이드카 빌드보다 앞선다", () => {
     const depsAt = workflow.indexOf("pnpm --dir mcp install");

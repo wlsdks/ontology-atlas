@@ -18,18 +18,18 @@ describe("backgroundParallaxOrigin", () => {
     expect(backgroundParallaxOrigin({ x: 320, y: 210 }, VP, 0)).toEqual(CENTER);
   });
 
-  // 이것이 시차의 정의다: 배경이 지면보다 **덜** 움직인다.
+  // This is the definition of parallax: the background moves **less** than the ground.
   it("0<k<1 이면 배경이 지면 이동량의 k 배만 움직인다", () => {
     const k = 0.82;
     const moved = { x: CENTER.x - 200, y: CENTER.y + 100 };
     const bg = backgroundParallaxOrigin(moved, VP, k);
     expect(bg.x).toBeCloseTo(CENTER.x - 200 * k, 6);
     expect(bg.y).toBeCloseTo(CENTER.y + 100 * k, 6);
-    // 배경의 이동 거리가 지면보다 짧다 = 더 멀리 있다
+    // The background travels a shorter distance than the ground = it is further away
     expect(Math.abs(bg.x - CENTER.x)).toBeLessThan(Math.abs(moved.x - CENTER.x));
   });
 
-  // 중심 기준으로 걸지 않으면 정지 상태에서도 층이 어긋난 채 시작한다.
+  // Applied about anything but the centre, the layers start out misaligned even at rest.
   it("카메라가 원점이면 어느 계수에서도 층이 어긋나지 않는다", () => {
     for (const k of [0, 0.5, 0.82, 1]) {
       expect(backgroundParallaxOrigin(CENTER, VP, k)).toEqual(CENTER);
@@ -51,9 +51,10 @@ describe("resolveBackgroundParallax", () => {
   });
 
   /**
-   * 감속에서 **0 이 아니라 1** 인 것이 이 계약의 핵심이다. 전정 자극을 만드는
-   * 것은 층간 상대 운동이므로 1.0 이 그것을 없앤다. 0 으로 두면 배경이 화면에
-   * 용접돼 내용 대비 상대 운동이 오히려 생긴다 — 없애려던 것을 만드는 셈.
+   * The heart of this contract is that reduced-motion is **1, not 0**. Vestibular
+   * stimulus comes from relative motion between layers, and 1.0 removes it. At 0
+   * the background welds to the screen and relative motion against the content
+   * appears instead — manufacturing the thing being avoided.
    */
   it("prefers-reduced-motion 에서는 1.0 (상대 운동 제거)", () => {
     expect(resolveBackgroundParallax("web", 0.82, true)).toBe(1);
@@ -74,8 +75,9 @@ describe("resolveBackgroundParallax", () => {
 });
 
 describe("resolveBackgroundOrigin — 결정 전체를 한 함수로", () => {
-  // 호출부(topology-frame-draw)가 두 함수를 손으로 엮으면 그 조립이 미검증
-  // 표면이 된다. 하나로 묶어 두면 남는 위험은 "결과를 넘기는가" 한 줄뿐이다.
+  // If the caller (topology-frame-draw) wires the two functions together by hand,
+  // that assembly becomes an unverified surface. Bundled into one, the only risk
+  // left is whether the caller passes the result through.
   it("근접 성좌 + 각성 = 시차가 걸린 원점", () => {
     const out = resolveBackgroundOrigin({ x: 300, y: 300 }, VP, "web", 0.82, false);
     expect(out.x).toBeCloseTo(CENTER.x + (300 - CENTER.x) * 0.82, 6);
