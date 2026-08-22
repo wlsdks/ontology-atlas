@@ -66,6 +66,32 @@ describe("useUnboundProjectSource", () => {
     expect(result.current.unbound?.nodeId).toBe("project:storefront");
   });
 
+  it("re-reads after the selected project finishes connecting its source", async () => {
+    let connected = false;
+    const createStore = () => stubStore(
+      connected
+        ? {
+            status: "ok",
+            bindings: [{ projectSlug: "storefront" } as never],
+          }
+        : { status: "missing", bindings: [] },
+    );
+    const { result, rerender } = renderHook(
+      ({ refreshToken }) => useProjectSourceReadiness({
+        vaultHandle: handle,
+        nodes: NODES,
+        createStore,
+        refreshToken,
+      }),
+      { initialProps: { refreshToken: "before" } },
+    );
+    await waitFor(() => expect(result.current.state).toBe("unbound"));
+
+    connected = true;
+    rerender({ refreshToken: "after" });
+    await waitFor(() => expect(result.current.state).toBe("bound"));
+  });
+
   it("reports the project whose code folder was never connected", async () => {
     const { result } = renderHook(() =>
       useUnboundProjectSource({

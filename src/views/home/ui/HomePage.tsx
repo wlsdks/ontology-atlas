@@ -2319,11 +2319,6 @@ function HomePageImpl() {
    * 폴더가 없습니다」는 화면에 존재하지 않는다(실측 2026-08-04: 첫 화면 0회).
    * 이 훅은 사이드카 한 번 읽기로 그 사실만 꺼내 INDEX 의 조용한 행에 싣는다.
    */
-  const projectSourceReadiness = useProjectSourceReadiness({
-    vaultHandle: vault.status === "loaded" ? vault.handle : null,
-    nodes: ontologyInsight?.nodes ?? [],
-  });
-  const unboundProjectSource = projectSourceReadiness.unbound;
   const sourceProjectSlug = projectSlugForSource(selectedOntologyNode);
   const projectSource = useProjectSourceModel({
     projectSlug: sourceProjectSlug,
@@ -2334,6 +2329,20 @@ function HomePageImpl() {
     // 위에 영어 제목의 창이 열리고 있었다(실측 2026-08-04).
     pickerTitle: t("nodeDatasheet.sourcePickerTitle"),
   });
+  const projectSourceReadiness = useProjectSourceReadiness({
+    vaultHandle: vault.status === "loaded" ? vault.handle : null,
+    nodes: ontologyInsight?.nodes ?? [],
+    // 연결/측정은 markdown graph를 안 바꾸므로 manifest 갱신만 기다리면 영원히
+    // 재독해하지 않는다. 선택된 프로젝트 모델이 실제 sidecar 전환을 끝낸
+    // 순간을 이 읽기 전용 요약의 무효화 토큰으로 쓴다.
+    refreshToken: [
+      sourceProjectSlug ?? "",
+      projectSource.view?.bindingCardinality ?? "",
+      projectSource.view?.measuredAt ?? "",
+      projectSource.proposalSettled ? "settled" : "pending",
+    ].join(":"),
+  });
+  const unboundProjectSource = projectSourceReadiness.unbound;
   const projectSourceMeasuredAtLabel = useMemo(() => {
     const measuredAt = projectSource.view?.measuredAt;
     if (!measuredAt) return t("nodeDatasheet.sourceMeasuredNever");

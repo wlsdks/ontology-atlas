@@ -47,6 +47,8 @@ export function useProjectSourceReadiness(input: {
   nodes: readonly KnowledgeGraphNode[];
   /** 테스트용 주입구. 미지정이면 볼트 파일 사이드카를 읽는다. */
   createStore?: (handle: FileSystemDirectoryHandle) => ProjectSourceStore;
+  /** A completed bind/measure transition invalidates the sidecar read in this mounted view. */
+  refreshToken?: string | number | null;
 }): ProjectSourceReadiness {
   const projects = useMemo(
     () =>
@@ -101,7 +103,7 @@ export function useProjectSourceReadiness(input: {
     // `projects` 는 매 렌더 새 배열이라 그대로 넣으면 사이드카를 매 렌더 읽는다.
     // 실제로 달라졌는지는 슬러그 목록이 정한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input.vaultHandle, input.createStore, projectKey]);
+  }, [input.vaultHandle, input.createStore, input.refreshToken, projectKey]);
 
   if (!input.vaultHandle) return { state: "unavailable", unbound: null };
   if (projects.length === 0) return { state: "no-projects", unbound: null };
@@ -115,6 +117,7 @@ export function useUnboundProjectSource(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
   createStore?: (handle: FileSystemDirectoryHandle) => ProjectSourceStore;
+  refreshToken?: string | number | null;
 }): UnboundProjectSource | null {
   return useProjectSourceReadiness(input).unbound;
 }
