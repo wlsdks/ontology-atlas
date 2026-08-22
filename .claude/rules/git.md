@@ -58,12 +58,20 @@
 
 ## 함부로 하지 말 것
 
-- `--no-verify` 로 hook 을 건너뛰지 말 것. **이 저장소의 hook 은 실제로 돌아간다**
-  — `pnpm install` 이 git 의 hook 위치를 `.githooks/` 로 바꿔 두고, `pre-commit`
-  이 "생성된 파일이 원본과 어긋난 채 커밋되는 것"을, `pre-push` 가 "`checks:changed`
-  가 지목한 검사가 빨간 채 푸시되는 것"을 그 자리에서 막는다. 예전에는 둘 다
-  CI 에서야 터졌다 (`docs/DEVELOPMENT-CHECKS.md`). 막히면 hook 이 시키는 명령을
-  그대로 돌린다.
+- **푸시 전에 `pnpm checks:changed -- --run` 은 네가 돌린다.** 대신 돌려 주는
+  것은 없다 — 판정은 CI 이고 8분 걸린다. 목록에서 골라 돌리지 마라: 여기서 탄
+  CI 라운드는 전부 고른 데서 났다.
+
+  [2026-08-22] **`pre-push` 훅은 없앴다.** 그 훅이 `checks:changed` 를 직렬로
+  전부 돌렸는데, 1,536 파일짜리 변경에서 657개 검사 · **12시간**이 나왔다(CI 는
+  같은 것을 병렬로 8분). 아이러니하게도 그 훅의 짝이던 계약 테스트가 이 결말을
+  이미 적어 뒀다 — *"10분이 넘으면 사람이 훅을 끈다. 끄는 순간 이 훅은 없는 것과
+  같다."* 비교 대상(Ghostty · Zed · Cap)은 셋 다 git 훅이 아예 없고 CI 로만
+  판정한다. 근거와 진 반대: `docs/DECISIONS.md` 2026-08-22.
+
+- `--no-verify` 로 남은 hook(`pre-commit`)을 건너뛰지 말 것. 그건 **몇 초**이고
+  "생성된 파일이 원본과 어긋난 채 커밋되는 것"을 막는다 — 조용히 깨지는 종류라
+  CI 에서야 알면 늦다. 막히면 hook 이 시키는 명령을 그대로 돌린다.
 - `git reset --hard` / `git push --force` 는 사용자가 직접 시켰을 때만.
 - main 에 force push 절대 금지.
 - **자동 생성된 JSON 의 충돌을 손으로 고치지 말 것.** `src/entities/docs-vault/data/*`
