@@ -17,6 +17,7 @@ created_by: "agent:unknown"
 ## 경계
 - 화면은 `codex-mcp-client`·`codex-acp` 같은 감사용 client/runtime ID를 Codex·Claude Code 같은 사람용 제품명으로 바꾸지만, 원본 로그와 heartbeat 값은 그대로 보존한다. 지도 상태 줄뿐 아니라 전역 레일과 상세 activity 표면도 같은 표시 이름 경계를 쓴다.
 - 현재 대상은 heartbeat나 도구 입력이 실재하는 볼트 slug를 밝힌 경우에만 지도 링과 포커스로 연결한다. 이미 지도 위에서는 같은 HomePage의 선택 상태를 갱신해 볼트를 remount하지 않고, 독립 소비처만 `/topology?mode=focus&p=…` fallback을 쓴다. 모르는 대상은 링크나 링을 만들지 않는다.
+- 앱 안 ACP의 `onTurnActivityChange`는 같은 렌더 주기에 지도 포커스와 활동 칩을 먼저 갱신하고, sidecar 기록은 외부 소비자·재시작 연속성을 위해 뒤따른다. 현재 인앱 차례에 대상이 없으면 직전 sidecar 대상을 되살리지 않는다.
 - 우측 에이전트 도크가 열리면 INDEX는 저장 선호를 바꾸지 않고 세션 동안 접혀 지도 폭을 내준다. 도크를 닫으면 원래 선호가 복구되고, INDEX 탭을 직접 열면 도크가 닫힌다.
 - 도크 공간은 기존 `--agent-panel-reflow-duration`으로 먼저 열리고 ACP 세션은 그 전환 뒤에 마운트된다. 프로세스 기동이 지도 layout 모션을 끊지 않으며, 에이전트가 열린 동안 자동 INDEX 강등은 카메라를 다시 맞춰 사용자의 시점을 빼앗지 않는다.
 - 한 사용자 차례의 thought와 tool call은 기본 접힌 `작업 과정 · N단계` 한 묶음이다. 에이전트 답변은 별도 본문으로 남고, 상세을 펼치면 원래 작업 순서와 실재 target을 볼 수 있다. thought의 Markdown은 원문 표식이 아니라 굵게·코드·목록으로 렌더된다.
@@ -25,6 +26,7 @@ created_by: "agent:unknown"
 
 ## 근거
 - src/features/agent-activity/model/agent-work-projection.ts: heartbeat·쓰기 세션의 정직한 우선순위와 live/recent-write/completed 분리
+- src/features/agent-activity/model/use-agent-activity-feed.ts: 인앱 ACP 관측값이 다음 sidecar 폴링보다 먼저 현재 작업 projection을 이기는 세션 오버레이
 - src/features/agent-activity/ui/AgentActivityChip.tsx: 에이전트·단계·현재/마지막 대상과 작업 상세/집계 기록 표면
 - src/features/acp-session/model/acp-turn-activity.ts: ACP 사용자 요청·도구·권한 대기에서 단계와 실재 target 파생
 - src/views/home/lib/acp-agent-heartbeat.ts: 순서가 보장된 vault heartbeat write/clear와 지도 focus handoff

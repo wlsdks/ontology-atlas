@@ -953,7 +953,7 @@
       },
       "headings": [],
       "excerpt": "사람이 지도에서 AI 에이전트의 제품명, 검증된 현재 단계, 작업 목표와 대상, 다음 행동을 한 흐름으로 판독하는 능력. fresh heartbeat가 있을 때만 계획·편집·검증·승인 대기를 현재형으로 말하고, 쓰기 로그만 최근이면 작업 중이라고 추측하지 않고 변경 감지 또는 마지막 작업으로 구분한다. 화면은 codex-mcp-client·codex-acp 같은 감사용 client/runtime ID를 Codex·Claude Code 같은 사람용 제품명으로 바꾸지만, 원본 로그와 heartbeat 값은 그대로 보존한다. 지도 상태 줄뿐 아니라 전역 레일과 상세 act",
-      "wordCount": 353,
+      "wordCount": 399,
       "updatedAt": "2026-08-22",
       "linksOut": []
     },
@@ -1428,8 +1428,8 @@
       },
       "headings": [],
       "excerpt": "지도에서 사람이 직접 고치거나 ACP 에이전트가 요청한 온톨로지 쓰기를, 정확한 typed 변경안 검토 뒤에만 마크다운 frontmatter에 적용하는 능력. 지도 선택 맥락과 사람의 최종 의미 결정권을 같은 흐름에 남긴다. 변경안은 휘발성 pre-write 상태이며 별도 승인 원장이나 두 번째 정본이 아니다. 확인 뒤 쓰인 마크다운이 즉시 정본이다. 지도 편집기는 한 번에 관계 하나만 다루고, ACP read tool은 자동 진행하지만 write tool은 allowonce 또는 rejectonce를 기다린다. 의미 쓰기에는 allowalways를 제공하지 않는다.",
-      "wordCount": 125,
-      "updatedAt": "2026-08-21",
+      "wordCount": 180,
+      "updatedAt": "2026-08-22",
       "linksOut": []
     },
     {
