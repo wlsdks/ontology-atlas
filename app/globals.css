@@ -4155,12 +4155,47 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  * 700ms 아이브로우·리드 → 800ms CTA → 950ms 신뢰줄·계기 스트립. 그 뒤 전경은
  * 영구 정지. 지연 리터럴은 이 안무의 악보 값이라 램프 토큰이 아니다.
  */
+/*
+ * ⚠️ **쉬는 상태는 「보임」이다 — 안무는 그 위에 얹힌다** (2026-08-22 정정).
+ *
+ * 여기 있던 `opacity: 0` 은 안무의 시작 프레임이었는데, 그것이 **기본값**이라
+ * 실질적으로 「JS 가 `.is-in` 을 달아 줄 때까지 이 페이지는 백지」였다. 실측:
+ * 정적 export 인 `/ko/download/` 를 열고 곧바로 찍은 첫 스크린샷에 GNB 만
+ * 있었고 히어로 전체가 비어 있었다. 그 뒤에 서 있는 것이 **JS 32파일 ·
+ * 디코드 2,572KB** 다. 다운로드 페이지의 첫 문장이 번들 파싱 뒤에 있을 이유가
+ * 없다 — 마크업에는 이미 다 들어 있었다.
+ *
+ * 그래서 시작 프레임을 `@starting-style` 로 옮겼다. 값도 시간축도 종전과
+ * 똑같고(`gateway-t***` 지연은 그대로 악보다), 바뀐 것은 **누가 방아쇠를
+ * 당기나** 하나다: 하이드레이션 뒤의 rAF 가 아니라 **첫 스타일 계산**이다.
+ * 그래서 안무는 더 일찍, 더 고르게 시작한다.
+ *
+ * 세 갈래 전부 안전하다.
+ * - `@starting-style` 지원(Chrome/Edge/Safari): 종전과 같은 안무.
+ * - 미지원(구 Firefox): at-rule 을 통째로 무시하므로 **처음부터 다 보인다** —
+ *   잃는 것은 등장 순서(장식)뿐이고 정보는 전부 남는다. 감속 사용자에게 주는
+ *   것과 정확히 같은 대체물이다(아래 base 레이어 carve-out).
+ * - JS 실패: 종전에는 영구 백지, 이제는 전문(全文).
+ *
+ * `.is-in` 은 남겨 둔다 — 쉬는 상태와 같은 값이라 아무 일도 하지 않지만,
+ * `useInViewOnce` 를 쓰는 아래 절들이 여전히 그 클래스를 달고 있고, 스크롤
+ * 타임라인을 못 쓰는 브라우저에서 그쪽의 등장을 지는 것이 이 선언이다.
+ */
 .gateway-rise {
-  opacity: 0;
-  transform: translateY(14px);
+  opacity: 1;
+  transform: none;
   transition:
     opacity var(--motion-fast) var(--motion-ease),
     transform var(--motion-settle) var(--motion-ease);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @starting-style {
+    .gateway-rise {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
 }
 
 .gateway-rise.is-in {
