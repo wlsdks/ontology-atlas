@@ -132,6 +132,13 @@ describe("CreateNodeForm", () => {
               relation: null,
               fields: [{ key: "title", after: "Contextual Editing" }],
               itemCount: 1,
+              items: [{
+                key: "add_concept:0:capabilities/contextual-editing",
+                target: "capabilities/contextual-editing",
+                exact: true,
+                relation: null,
+                fields: [{ key: "title", after: "Contextual Editing" }],
+              }],
             },
             confirming: false,
             onBack,

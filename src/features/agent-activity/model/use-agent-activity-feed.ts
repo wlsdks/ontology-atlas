@@ -41,6 +41,7 @@ import {
   type AgentLiveWorkInput,
   type AgentWorkProjection,
 } from './agent-work-projection';
+import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 /**
  * 「지금 내 폴더에서 뭐가 벌어지고 있나」 한 곳 — 상태 칩과 알림함이 **같은
@@ -113,13 +114,15 @@ export interface AgentActivityFeed {
   /** 대상이 배치·문서 흡수라 이름이 없거나, 볼트에서 사라졌다. */
   lastTargetUnnamed: boolean;
   notifications: AgentNotification[];
+  /** Human allow/reject decisions made in the in-app ACP workbench. */
+  workReceipts: AcpWorkReceipt[];
   unreadCount: number;
   notificationsEnabled: boolean;
   markAllRead: () => void;
 }
 
 export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null): AgentActivityFeed {
-  const { agentActivityLog, agentActivityStatus, manifest, status } = useLocalVault();
+  const { agentActivityLog, agentActivityStatus, acpWorkReceipts, manifest, status } = useLocalVault();
   const locale = useLocale();
   const statusEnabled = useAgentActivityStatusEnabled();
   const notificationsEnabled = useAgentNotificationsEnabled();
@@ -287,6 +290,7 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
     lastNode,
     lastTargetUnnamed: lastAt !== null && lastNode === null,
     notifications: notificationsEnabled ? notifications : [],
+    workReceipts: acpWorkReceipts ?? [],
     unreadCount: notificationsEnabled ? countUnread(notifications, readAt) : 0,
     notificationsEnabled,
     markAllRead,

@@ -3355,7 +3355,21 @@
     "toolLabel": "도구",
     "historyTitle": "최근 기록",
     "inboxEmpty": "아직 알릴 것이 없어요. 에이전트나 사람이 이 폴더를 고치면 여기에 남습니다.",
-    "inboxFooter": "작업 단위로만 알립니다. 줄 단위 기록은 폴더 안 activity.jsonl 과 기록 화면에 있어요.",
+    "inboxFooter": "실행 기록은 activity.jsonl, 앱 안 승인·거절은 acp-work.jsonl에 로컬로 남습니다.",
+    "receiptTitle": "작업 영수증",
+    "receiptItems": "변경 {count}건",
+    "receiptAt": "결과 시각",
+    "receiptDecision": {
+      "allowed": "허용함",
+      "rejected": "거절함"
+    },
+    "receiptResult": {
+      "pending": "실행 대기",
+      "completed": "완료",
+      "failed": "실패",
+      "cancelled": "취소됨",
+      "not-run": "실행 안 함"
+    },
     "summaryAdded": "추가 {count}",
     "summaryEdited": "편집 {count}",
     "summaryRemoved": "삭제 {count}",
@@ -3394,6 +3408,9 @@
     "to": "도착",
     "why": "이유",
     "itemCount": "{count}건",
+    "batchLabel": "묶음 변경 항목",
+    "batchHint": "항목을 눌러 하나씩 확인합니다. 허용과 거절은 이 묶음 전체에 적용돼요.",
+    "unknownTarget": "대상을 확인할 수 없음",
     "moreFields": "그 밖의 필드 {count}개"
   },
   "meaningEditor": {
@@ -3522,9 +3539,13 @@
     },
     "suggest": {
       "heading": "이 폴더에서 지금 할 만한 것",
+      "connectSource": {
+        "label": "먼저 코드 폴더 연결하기",
+        "prompt": "이 프로젝트가 실제로 구현된 코드 폴더를 먼저 연결해 줘. 연결되기 전에는 볼트 파일을 소스 코드로 분석하지 마."
+      },
       "bootstrap": {
         "label": "코드 훑어서 지도 시작하기",
-        "prompt": "이 저장소를 훑어서 도메인과 역량 후보를 뽑아 줘. 근거가 되는 파일 경로를 같이 대고, 내가 확인하기 전에는 볼트에 아무것도 쓰지 마."
+        "prompt": "연결된 소스 코드를 근거로 온톨로지 구축을 시작해 줘. 먼저 connection_info와 list_kinds로 현재 볼트를 확인하고, 소스에서 도메인·역량·구현 원소 후보와 근거 파일을 제안해. 비슷한 기존 개념을 먼저 찾고, 내가 검토하기 전에는 쓰지 마. 내가 승인한 후보만 묶음 변경으로 쓰고 마지막에 validate_vault와 compile_ontology 결과를 알려 줘."
       },
       "island": {
         "label": "「{first}」 쪽 {count}개가 지도에서 떨어져 있어요",

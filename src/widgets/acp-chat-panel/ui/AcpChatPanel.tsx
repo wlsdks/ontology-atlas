@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowUp, ChevronRight, History, Square, SquarePen, X } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   createElement,
@@ -55,6 +55,7 @@ import {
   deriveAcpTurnActivity,
   type AcpTurnActivity,
 } from '@/features/acp-session/model/acp-turn-activity';
+import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
 
@@ -137,14 +138,16 @@ export interface AcpOntologyRelationPreview {
 function relationPreviewForChangeSet(
   changeSet: OntologyChangeSet | null,
   phase: AcpOntologyRelationPreview['phase'],
+  itemIndex = 0,
 ): AcpOntologyRelationPreview | null {
-  const relation = changeSet?.relation;
-  // 배치는 한 줄로 축약하지 않는다. 첫 항목만 보여 주면 나머지를 숨긴 승인이다.
+  const item = changeSet?.items[itemIndex];
+  const relation = item?.relation;
+  // 배치는 카드에서 **사람이 고른 한 행**만 미리 본다. 전부 겹쳐 그리면 어느
+  // 선을 판단 중인지 다시 모호해지고, 첫 행 고정이면 나머지를 숨긴 승인이 된다.
   if (
     !changeSet ||
     changeSet.operation !== 'relate' ||
-    !changeSet.exact ||
-    changeSet.itemCount !== 1 ||
+    !item?.exact ||
     !relation
   ) {
     return null;
@@ -166,10 +169,12 @@ export function AcpChatPanel({
   onRuntimeChange,
   prefillRequest,
   suggestions = [],
+  onSuggestionAction,
   knownSlugs,
   onHoverSlug,
   onTurnActivityChange,
   onOntologyRelationPreviewChange,
+  onWorkReceipt,
   onClose,
 }: {
   runtimeId: string;
@@ -197,6 +202,8 @@ export function AcpChatPanel({
    * 온 성질이 아니다(`vaultRoot` · `runtimes` 도 전부 받아 온다).
    */
   suggestions?: readonly ChatSuggestion[];
+  /** App-owned prerequisites such as opening source connection instead of drafting a prompt. */
+  onSuggestionAction?: (suggestion: ChatSuggestion) => boolean;
   /**
    * 이 볼트에 **실재하는** 노드 이름들. 에이전트의 답에서 이 이름들만 집어
    * 지도와 이어 준다 — 아무 `a/b` 나 링크로 만들면 파일 경로와 URL 까지
@@ -214,6 +221,8 @@ export function AcpChatPanel({
   onTurnActivityChange?: (activity: AcpTurnActivity | null) => void;
   /** 승인 전 점선, 승인 후 해당 ACP 도구가 끝날 때까지 실선인 단일 관계 변경안. */
   onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
+  /** Durable local summary of each ontology-write allow/reject and terminal result. */
+  onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
@@ -240,6 +249,7 @@ export function AcpChatPanel({
     vaultRoot,
     mcpServers,
     approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,
+    onWorkReceipt,
   });
   const pendingChangeSet = useMemo(
     () =>
@@ -255,12 +265,27 @@ export function AcpChatPanel({
         : null,
     [approvedOntologyWrite],
   );
+  const [previewSelection, setPreviewSelection] = useState<{
+    requestKey: string;
+    itemIndex: number;
+  } | null>(null);
+  const previewRequest = approvedOntologyWrite ?? pending?.request ?? null;
+  const previewRequestKey = previewRequest?.toolCallId ?? previewRequest?.toolName ?? null;
+  const previewChangeSet = approvedOntologyWrite ? approvedChangeSet : pendingChangeSet;
+  const requestedPreviewIndex =
+    previewRequestKey && previewSelection?.requestKey === previewRequestKey
+      ? previewSelection.itemIndex
+      : 0;
+  const activePreviewIndex = Math.min(
+    Math.max(requestedPreviewIndex, 0),
+    Math.max(0, (previewChangeSet?.items.length ?? 1) - 1),
+  );
   const relationPreview = useMemo(
     () =>
       approvedOntologyWrite
-        ? relationPreviewForChangeSet(approvedChangeSet, 'committing')
-        : relationPreviewForChangeSet(pendingChangeSet, 'draft'),
-    [approvedChangeSet, approvedOntologyWrite, pendingChangeSet],
+        ? relationPreviewForChangeSet(approvedChangeSet, 'committing', activePreviewIndex)
+        : relationPreviewForChangeSet(pendingChangeSet, 'draft', activePreviewIndex),
+    [activePreviewIndex, approvedChangeSet, approvedOntologyWrite, pendingChangeSet],
   );
   const previewSourceSlug = relationPreview?.sourceSlug ?? null;
   const previewTargetSlug = relationPreview?.targetSlug ?? null;
@@ -797,7 +822,10 @@ export function AcpChatPanel({
                        `overlay-1` 을 그대로 쓴다: 새 값 0개. */
                     className="rounded-chip bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
                     data-testid={`acp-chat-suggestion-${s.kind}`}
-                    onClick={() => setDraft(t(`suggest.${s.kind}.prompt`, s.params))}
+                    onClick={() => {
+                      if (onSuggestionAction?.(s)) return;
+                      setDraft(t(`suggest.${s.kind}.prompt`, s.params));
+                    }}
                   >
                     <span className="min-w-0 break-keep">
                       {t(`suggest.${s.kind}.label`, s.params)}
@@ -944,7 +972,20 @@ export function AcpChatPanel({
       */}
       <Surface open={Boolean(pending)} origin="bottom center" motion="overlay">
         {pendingHeld ? (
-          <AcpPermissionCard pending={pendingHeld} changeSet={pendingHeldChangeSet} />
+          <AcpPermissionCard
+            pending={pendingHeld}
+            changeSet={pendingHeldChangeSet}
+            activeItemIndex={
+              (pendingHeld.request.toolCallId ?? pendingHeld.request.toolName) === previewRequestKey
+                ? activePreviewIndex
+                : 0
+            }
+            onActiveItemChange={(itemIndex) => {
+              const requestKey =
+                pendingHeld.request.toolCallId ?? pendingHeld.request.toolName ?? 'ontology-write';
+              setPreviewSelection({ requestKey, itemIndex });
+            }}
+          />
         ) : null}
       </Surface>
 
@@ -1417,6 +1458,28 @@ function slugMarkComponents(
   return out;
 }
 
+/** 대화의 GFM 표는 좁은 도크에서 열이 뭉개지지 않도록 자기 스크롤을 갖는다. */
+function chatMarkdownComponents(
+  known: ReadonlySet<string> | undefined,
+  onHoverSlug: ((slug: string | null) => void) | undefined,
+): Components {
+  const marked = slugMarkComponents(known, onHoverSlug) ?? {};
+  return {
+    ...marked,
+    table: ({ node: _node, ...props }) => (
+      <div
+        data-testid="acp-chat-markdown-table"
+        className="my-2 max-w-full overflow-x-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+      >
+        <table
+          {...props}
+          className="w-max min-w-full border-collapse text-left text-label leading-label [&_thead]:bg-[color:var(--color-overlay-2)] [&_tr]:border-b [&_tr]:border-[color:var(--color-divider)] [&_tbody_tr:last-child]:border-b-0 [&_th]:px-2.5 [&_th]:py-2 [&_th]:font-[var(--font-weight-emphasis)] [&_th]:text-[color:var(--color-text-primary)] [&_td]:px-2.5 [&_td]:py-2 [&_td]:align-top [&_td]:text-[color:var(--color-text-secondary)]"
+        />
+      </div>
+    ),
+  };
+}
+
 function TranscriptEntry({
   event,
   knownSlugs,
@@ -1464,7 +1527,7 @@ function TranscriptEntry({
       <div data-acp-entry="agent" className={CHAT_MARKDOWN}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          components={slugMarkComponents(knownSlugs, onHoverSlug)}
+          components={chatMarkdownComponents(knownSlugs, onHoverSlug)}
         >
           {event.text}
         </ReactMarkdown>
@@ -1476,7 +1539,7 @@ function TranscriptEntry({
       <div data-acp-entry="thought" className={WORK_MARKDOWN}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          components={slugMarkComponents(knownSlugs, onHoverSlug)}
+          components={chatMarkdownComponents(knownSlugs, onHoverSlug)}
         >
           {event.text}
         </ReactMarkdown>

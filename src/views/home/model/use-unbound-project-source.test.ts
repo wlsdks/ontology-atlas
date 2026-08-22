@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { ProjectSourceStore } from "@/shared/lib/project-source-store";
 
-import { useUnboundProjectSource } from "./use-unbound-project-source";
+import {
+  useProjectSourceReadiness,
+  useUnboundProjectSource,
+} from "./use-unbound-project-source";
 
 function node(id: string, kind: string, agentSlug?: string): KnowledgeGraphNode {
   return {
@@ -43,6 +46,52 @@ const NODES = [
 ];
 
 describe("useUnboundProjectSource", () => {
+  it("distinguishes loading, unbound, and bound so bootstrap cannot run early", async () => {
+    let release: (value: Awaited<ReturnType<ProjectSourceStore["read"]>>) => void = () => undefined;
+    const pending = new Promise<Awaited<ReturnType<ProjectSourceStore["read"]>>>((resolve) => {
+      release = resolve;
+    });
+    const store = stubStore({ status: "missing", bindings: [] });
+    store.read = () => pending;
+    const { result } = renderHook(() =>
+      useProjectSourceReadiness({
+        vaultHandle: handle,
+        nodes: NODES,
+        createStore: () => store,
+      }),
+    );
+    expect(result.current.state).toBe("loading");
+    release({ status: "missing", bindings: [] });
+    await waitFor(() => expect(result.current.state).toBe("unbound"));
+    expect(result.current.unbound?.nodeId).toBe("project:storefront");
+  });
+
+  it("re-reads after the selected project finishes connecting its source", async () => {
+    let connected = false;
+    const createStore = () => stubStore(
+      connected
+        ? {
+            status: "ok",
+            bindings: [{ projectSlug: "storefront" } as never],
+          }
+        : { status: "missing", bindings: [] },
+    );
+    const { result, rerender } = renderHook(
+      ({ refreshToken }) => useProjectSourceReadiness({
+        vaultHandle: handle,
+        nodes: NODES,
+        createStore,
+        refreshToken,
+      }),
+      { initialProps: { refreshToken: "before" } },
+    );
+    await waitFor(() => expect(result.current.state).toBe("unbound"));
+
+    connected = true;
+    rerender({ refreshToken: "after" });
+    await waitFor(() => expect(result.current.state).toBe("bound"));
+  });
+
   it("reports the project whose code folder was never connected", async () => {
     const { result } = renderHook(() =>
       useUnboundProjectSource({

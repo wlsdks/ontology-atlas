@@ -138,6 +138,18 @@ export function buildOntologyRelationEditPlan({
       },
       fields,
       itemCount: 1,
+      items: [{
+        key: `patch_concept:0:${sourceSlug}`,
+        target: sourceSlug,
+        exact: true,
+        relation: {
+          from: sourceSlug,
+          type: RELATION_EDGE_TYPE[toRelation],
+          to: targetSlug,
+          ...(trimmedWhy ? { why: trimmedWhy } : {}),
+        },
+        fields,
+      }],
     },
   };
 }
@@ -202,6 +214,17 @@ export function buildOntologyRelationRemovalPlan({
       },
       fields,
       itemCount: 1,
+      items: [{
+        key: `patch_concept:0:${sourceSlug}`,
+        target: sourceSlug,
+        exact: true,
+        relation: {
+          from: sourceSlug,
+          type: RELATION_EDGE_TYPE[relation],
+          to: targetSlug,
+        },
+        fields,
+      }],
     },
   };
 }

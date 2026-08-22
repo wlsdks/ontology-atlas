@@ -30,12 +30,26 @@ export interface UnboundProjectSource {
   count: number;
 }
 
-export function useUnboundProjectSource(input: {
+export type ProjectSourceReadinessState =
+  | "loading"
+  | "unbound"
+  | "bound"
+  | "unavailable"
+  | "no-projects";
+
+export interface ProjectSourceReadiness {
+  state: ProjectSourceReadinessState;
+  unbound: UnboundProjectSource | null;
+}
+
+export function useProjectSourceReadiness(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
   /** 테스트용 주입구. 미지정이면 볼트 파일 사이드카를 읽는다. */
   createStore?: (handle: FileSystemDirectoryHandle) => ProjectSourceStore;
-}): UnboundProjectSource | null {
+  /** A completed bind/measure transition invalidates the sidecar read in this mounted view. */
+  refreshToken?: string | number | null;
+}): ProjectSourceReadiness {
   const projects = useMemo(
     () =>
       input.nodes
@@ -54,14 +68,14 @@ export function useUnboundProjectSource(input: {
    */
   const [read, setRead] = useState<{
     key: string;
-    value: UnboundProjectSource | null;
+    value: ProjectSourceReadiness;
   } | null>(null);
 
   useEffect(() => {
     if (!input.vaultHandle || projects.length === 0) return;
     let cancelled = false;
     const key = projectKey;
-    const settle = (value: UnboundProjectSource | null) => {
+    const settle = (value: ProjectSourceReadiness) => {
       if (!cancelled) setRead({ key, value });
     };
     const store = (input.createStore ?? createVaultFileProjectSourceStore)(input.vaultHandle);
@@ -73,19 +87,37 @@ export function useUnboundProjectSource(input: {
        * 「폴더 없음」으로 그리면 이 행이 거짓말을 시작한다.
        */
       if (result.status === "malformed" || result.status === "unavailable") {
-        settle(null);
+        settle({ state: "unavailable", unbound: null });
         return;
       }
       const bound = new Set(result.bindings.map((binding) => binding.projectSlug));
       const missing = projects.filter((project) => !bound.has(project.slug));
-      settle(missing.length > 0 ? { nodeId: missing[0].nodeId, count: missing.length } : null);
-    }, () => settle(null));
+      settle(missing.length > 0
+        ? {
+            state: "unbound",
+            unbound: { nodeId: missing[0].nodeId, count: missing.length },
+          }
+        : { state: "bound", unbound: null });
+    }, () => settle({ state: "unavailable", unbound: null }));
     return () => { cancelled = true; };
     // `projects` 는 매 렌더 새 배열이라 그대로 넣으면 사이드카를 매 렌더 읽는다.
     // 실제로 달라졌는지는 슬러그 목록이 정한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input.vaultHandle, input.createStore, projectKey]);
+  }, [input.vaultHandle, input.createStore, input.refreshToken, projectKey]);
 
-  if (!input.vaultHandle) return null;
-  return read && read.key === projectKey ? read.value : null;
+  if (!input.vaultHandle) return { state: "unavailable", unbound: null };
+  if (projects.length === 0) return { state: "no-projects", unbound: null };
+  return read && read.key === projectKey
+    ? read.value
+    : { state: "loading", unbound: null };
+}
+
+/** Existing INDEX consumer: only the actionable missing-project summary. */
+export function useUnboundProjectSource(input: {
+  vaultHandle: FileSystemDirectoryHandle | null;
+  nodes: readonly KnowledgeGraphNode[];
+  createStore?: (handle: FileSystemDirectoryHandle) => ProjectSourceStore;
+  refreshToken?: string | number | null;
+}): UnboundProjectSource | null {
+  return useProjectSourceReadiness(input).unbound;
 }

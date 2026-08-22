@@ -40,10 +40,14 @@ import type { PendingPermission } from '@/features/acp-session/model/use-acp-ses
 export function AcpPermissionCard({
   pending,
   changeSet: providedChangeSet,
+  activeItemIndex,
+  onActiveItemChange,
 }: {
   pending: PendingPermission;
   /** 패널과 지도가 같은 typed change를 읽도록, 계산된 값을 함께 받는다. */
   changeSet?: OntologyChangeSet | null;
+  activeItemIndex?: number;
+  onActiveItemChange?: (index: number) => void;
 }) {
   const t = useTranslations('acpChat.permission');
   const { request, resolve } = pending;
@@ -142,7 +146,11 @@ export function AcpPermissionCard({
         모르면 모른다고 한다. 「읽기」로 짐작하면 가장 위험한 쪽으로 틀린다.
       */}
       {changeSet ? (
-        <OntologyChangeReview changeSet={changeSet} />
+        <OntologyChangeReview
+          changeSet={changeSet}
+          activeItemIndex={activeItemIndex}
+          onActiveItemChange={onActiveItemChange}
+        />
       ) : (
         <p
           data-testid="acp-permission-intent"

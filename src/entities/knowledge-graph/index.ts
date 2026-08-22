@@ -50,6 +50,7 @@ export { translateOntologyDeeplinkToTopologyParam } from "./lib/translate-ontolo
 export {
   buildOntologyChangeSet,
   type OntologyChangeField,
+  type OntologyChangeItem,
   type OntologyChangeOperation,
   type OntologyChangeSet,
   type OntologyRelationChange,
