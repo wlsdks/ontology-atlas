@@ -1374,6 +1374,21 @@ describe('빈 대화의 추천 — 이 폴더에 대한 것만 그린다', () =>
     expect(screen.getByTestId('acp-chat-empty')).toBeTruthy();
     expect(screen.queryByTestId('acp-chat-suggestions')).toBeNull();
   });
+
+  it('소스 연결 추천은 에이전트 문장으로 바꾸지 않고 앱의 연결 행동으로 보낸다', async () => {
+    const onSuggestionAction = vi.fn(() => true);
+    await bootSession({
+      suggestions: [{ kind: 'connectSource', params: { count: 1 } }],
+      onSuggestionAction,
+    });
+    fireEvent.click(screen.getByTestId('acp-chat-suggestion-connectSource'));
+
+    expect(onSuggestionAction).toHaveBeenCalledWith({
+      kind: 'connectSource',
+      params: { count: 1 },
+    });
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
 });
 
 describe('답변 속 노드 이름 — 지도와 잇는다', () => {

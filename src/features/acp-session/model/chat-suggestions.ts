@@ -26,6 +26,8 @@
 export const SUGGESTION_LIMIT = 3;
 
 export type SuggestionKind =
+  /** starter vault has a project but no source binding — connect before analysis */
+  | 'connectSource'
   /** 볼트가 비어 있다 — 고칠 것이 없으니 만들 것을 권한다 */
   | 'bootstrap'
   /** 지도에서 따로 떨어진 덩어리가 있다 */
@@ -50,6 +52,7 @@ export interface SuggestionInput {
   missingContainment: readonly { slug: string; domain: string }[];
   /** `path:` 가 비어 있는 역량 슬러그 */
   unevidenced: readonly string[];
+  sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
 }
 
 /**
@@ -61,6 +64,16 @@ const STARTER_NODE_CEILING = 5;
 export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   // 아직 지을 것이 없는 볼트에 「고쳐라」를 권하면 없는 문제를 만들어 낸다.
   if (input.nodeCount <= STARTER_NODE_CEILING) {
+    if (input.sourceState === 'unbound') {
+      return [{ kind: 'connectSource', params: { count: input.nodeCount } }];
+    }
+    if (
+      input.sourceState === 'loading'
+      || input.sourceState === 'unavailable'
+      || input.sourceState === 'no-projects'
+    ) {
+      return [];
+    }
     return [{ kind: 'bootstrap', params: { count: input.nodeCount } }];
   }
 

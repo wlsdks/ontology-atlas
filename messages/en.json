@@ -3539,9 +3539,13 @@
     },
     "suggest": {
       "heading": "Worth doing in this folder right now",
+      "connectSource": {
+        "label": "Connect the code folder first",
+        "prompt": "Connect the code folder that actually implements this project first. Do not analyze vault files as source code before it is connected."
+      },
       "bootstrap": {
         "label": "Read the code and start the map",
-        "prompt": "Read this repository and propose candidate domains and capabilities. Cite the file paths you based each on, and write nothing to the vault until I confirm."
+        "prompt": "Start building the ontology from the connected source code. First orient with connection_info and list_kinds. Propose domains, capabilities, implementation elements, and evidence paths from the source; look for similar existing concepts first and write nothing before I review it. Write only the candidates I approve as a batch, then report validate_vault and compile_ontology results."
       },
       "island": {
         "label": "{count} nodes around “{first}” sit apart from the map",

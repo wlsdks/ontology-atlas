@@ -169,6 +169,7 @@ export function AcpChatPanel({
   onRuntimeChange,
   prefillRequest,
   suggestions = [],
+  onSuggestionAction,
   knownSlugs,
   onHoverSlug,
   onTurnActivityChange,
@@ -201,6 +202,8 @@ export function AcpChatPanel({
    * 온 성질이 아니다(`vaultRoot` · `runtimes` 도 전부 받아 온다).
    */
   suggestions?: readonly ChatSuggestion[];
+  /** App-owned prerequisites such as opening source connection instead of drafting a prompt. */
+  onSuggestionAction?: (suggestion: ChatSuggestion) => boolean;
   /**
    * 이 볼트에 **실재하는** 노드 이름들. 에이전트의 답에서 이 이름들만 집어
    * 지도와 이어 준다 — 아무 `a/b` 나 링크로 만들면 파일 경로와 URL 까지
@@ -819,7 +822,10 @@ export function AcpChatPanel({
                        `overlay-1` 을 그대로 쓴다: 새 값 0개. */
                     className="rounded-chip bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
                     data-testid={`acp-chat-suggestion-${s.kind}`}
-                    onClick={() => setDraft(t(`suggest.${s.kind}.prompt`, s.params))}
+                    onClick={() => {
+                      if (onSuggestionAction?.(s)) return;
+                      setDraft(t(`suggest.${s.kind}.prompt`, s.params));
+                    }}
                   >
                     <span className="min-w-0 break-keep">
                       {t(`suggest.${s.kind}.label`, s.params)}

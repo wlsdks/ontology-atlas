@@ -15,6 +15,7 @@ import {
 } from "@/widgets/acp-chat-panel";
 import { vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session/model/vault-mcp-server";
 import { useChatSuggestions } from "@/features/acp-session/model/use-chat-suggestions";
+import type { ChatSuggestion } from "@/features/acp-session/model/chat-suggestions";
 import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -192,7 +193,7 @@ import {
   projectSlugForSource,
   useProjectSourceModel,
 } from "../model/use-project-source-model";
-import { useUnboundProjectSource } from "../model/use-unbound-project-source";
+import { useProjectSourceReadiness } from "../model/use-unbound-project-source";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -2318,10 +2319,11 @@ function HomePageImpl() {
    * 폴더가 없습니다」는 화면에 존재하지 않는다(실측 2026-08-04: 첫 화면 0회).
    * 이 훅은 사이드카 한 번 읽기로 그 사실만 꺼내 INDEX 의 조용한 행에 싣는다.
    */
-  const unboundProjectSource = useUnboundProjectSource({
+  const projectSourceReadiness = useProjectSourceReadiness({
     vaultHandle: vault.status === "loaded" ? vault.handle : null,
     nodes: ontologyInsight?.nodes ?? [],
   });
+  const unboundProjectSource = projectSourceReadiness.unbound;
   const sourceProjectSlug = projectSlugForSource(selectedOntologyNode);
   const projectSource = useProjectSourceModel({
     projectSlug: sourceProjectSlug,
@@ -2537,7 +2539,7 @@ function HomePageImpl() {
     받는다 — 패널이 볼트를 직접 읽으면 `LocalVaultProvider` 없이는 못 서게
     되고, 그건 그 위젯이 지금까지 지켜 온 성질이 아니다.
   */
-  const chatSuggestions = useChatSuggestions();
+  const chatSuggestions = useChatSuggestions(projectSourceReadiness.state);
   const acpRuntimeLabel = acpRuntime?.label ?? null;
   /*
    * 매 렌더 새 배열을 만들면 그 값을 받는 훅의 `start` 정체가 매번 바뀌고,
@@ -3290,6 +3292,15 @@ function HomePageImpl() {
       setNodePopoverDismissed,
     ],
   );
+
+  const handleChatSuggestionAction = useCallback((suggestion: ChatSuggestion): boolean => {
+    if (suggestion.kind !== 'connectSource' || !unboundProjectSource) return false;
+    // 연결은 에이전트가 추측할 일이 아니라 설치 앱의 폴더 선택 관문이 맡는다.
+    // 먼저 프로젝트 데이터시트를 열어 사용자가 실제 코드 폴더를 고르게 한다.
+    closeVaultAgent();
+    handleSelect(unboundProjectSource.nodeId, { keepIndexOpen: true });
+    return true;
+  }, [closeVaultAgent, handleSelect, unboundProjectSource]);
 
   /**
    * 지난 길 한 줄을 **지금 걷는 길로 다시 편다**. 순서가 곧 계약이다:
@@ -6368,6 +6379,7 @@ function HomePageImpl() {
             // 노드에서 건너온 문장은 **여기** 작성 칸에 앉는다 — 보내지는 않는다.
             prefillRequest={vaultAgentPrefill ?? askPrefill}
             suggestions={chatSuggestions}
+            onSuggestionAction={handleChatSuggestionAction}
             knownSlugs={chatKnownSlugs}
             onHoverSlug={handleChatHoverSlug}
             onTurnActivityChange={handleAcpTurnActivityChange}
