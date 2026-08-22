@@ -1,0 +1,146 @@
+#!/bin/sh
+# Fast local mirror of CI — path-scoped lanes, run in parallel.
+#
+# ## Why this exists at all
+#
+# 2026-08-20 burned two CI rounds in one day because the `checks:changed` list was
+# received and then only partly run. The lesson `pre-commit` already recorded
+# applies: a discipline that leans on memory becomes an accident queue once it
+# repeats. So the room to pick is removed here rather than trusted to whoever is
+# pushing.
+#
+# ## Why it looks like this and not like the last one
+#
+# The first version ran `checks:changed --run` over the whole pushed range,
+# serially. On a 1,536-file branch that produced **657 checks** and measured
+# **40 minutes for 35 of them** — twelve hours to finish, against CI's eight.
+# It was deleted on 2026-08-22 (ledger 94) after a comparison of Ghostty, Zed and
+# Cap found none of them ships a git hook at all.
+#
+# That comparison missed the project this repository actually benchmarks against.
+# **Buzz (`block/buzz`) does ship a pre-push hook** — and its shape is the answer:
+# lanes filtered by path glob, run in parallel, scoped to `origin/main...HEAD`,
+# with e2e left to CI and a written note that CI remains the authoritative gate.
+# This hook is that shape. Ledger 95 supersedes 94.
+#
+# ## The four properties that make it survivable
+#
+#  1. **Parallel.** Lanes run at once; the wall clock is the slowest lane, not the
+#     sum. Output is buffered per lane and printed only for lanes that fail —
+#     interleaved live output from eight processes is unreadable.
+#  2. **Path-scoped.** A lane runs only when the branch touched files its glob
+#     matches. A docs-only push runs the docs lane and nothing else.
+#  3. **Three-dot diff.** `origin/main...HEAD` is the merge-base diff, so merging
+#     main into the branch does not drag main's changes into the lane filters.
+#  4. **No e2e.** Playwright is CI's job — sharded three ways there, serial here.
+#     Its absence is deliberate and the contract test asserts it.
+#
+# **CI remains the authoritative gate.** This hook exists to make the common
+# failure cheap to find, not to replace the judgement.
+#
+# ## Bypass
+#
+# `--no-verify`, which `.claude/rules/git.md` forbids. If a lane is wrong, fix the
+# lane — do not step around the hook silently.
+
+set -e
+
+BASE_REF="origin/main"
+ZERO="0000000000000000000000000000000000000000"
+
+# git feeds `<local ref> <local sha> <remote ref> <remote sha>` on stdin.
+have_push=0
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  [ -n "$local_sha" ] || continue
+  case "$local_sha" in "$ZERO") continue ;; esac
+  have_push=1
+done
+# Nothing being pushed (branch deletion, or invoked by hand with no stdin).
+[ "$have_push" = "1" ] || exit 0
+
+if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
+  echo "[pre-push] $BASE_REF 를 못 찾아 범위를 못 정했다 — 검사를 건너뛴다."
+  exit 0
+fi
+
+# Three-dot: what THIS branch changed, ignoring what main moved underneath it.
+CHANGED=$(git diff --name-only "$BASE_REF...HEAD" -- 2>/dev/null || true)
+[ -n "$CHANGED" ] || exit 0
+
+n_changed=$(printf '%s\n' "$CHANGED" | sed '/^$/d' | wc -l | tr -d ' ')
+
+# `touched <glob>...` — true when the branch changed a file matching any glob.
+touched() {
+  for pattern in "$@"; do
+    if printf '%s\n' "$CHANGED" | grep -qE "$pattern"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+TMP=$(mktemp -d)
+# shellcheck disable=SC2064
+trap "rm -rf '$TMP'" EXIT INT TERM
+
+lane_names=""
+lane_count=0
+
+# `lane <name> <command>` — record and start one lane in the background.
+lane() {
+  name=$1
+  shift
+  lane_count=$((lane_count + 1))
+  lane_names="$lane_names $name"
+  ( eval "$@" >"$TMP/$name.log" 2>&1; echo $? >"$TMP/$name.code" ) &
+  eval "pid_$name=$!"
+}
+
+echo "[pre-push] 이 브랜치가 바꾼 $n_changed 개 파일로 레인을 고른다 (병렬)"
+
+TS='\.tsx?$|\.mjs$|tsconfig.*\.json$|next\.config\.ts$'
+APP='^src/|^app/'
+DOCS='^docs/|^[A-Z0-9_-]+\.md$|^\.claude/|^\.agents/'
+
+touched "$TS" "$APP" && lane typecheck 'pnpm exec tsc --noEmit'
+touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
+touched "$APP" '^messages/' && lane unit 'pnpm test:run'
+touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
+touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/' && lane agents 'pnpm agents:check'
+touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:links && pnpm docs-vault:check'
+touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
+
+# Repo-wide scanners: these read the whole tree, so almost any edit can move them.
+# Cheap enough (~1 min) that filtering would buy noise, not time.
+lane contract 'pnpm exec vitest run tests/contract/'
+lane comment_refs 'node scripts/check-comment-refs.mjs'
+lane decisions 'pnpm decisions:check'
+
+echo "[pre-push] 레인 $lane_count 개: $lane_names"
+wait
+
+failed=""
+for name in $lane_names; do
+  code=$(cat "$TMP/$name.code" 2>/dev/null || echo 1)
+  if [ "$code" = "0" ]; then
+    printf '  ok    %s\n' "$name"
+  else
+    printf '  FAIL  %s\n' "$name"
+    failed="$failed $name"
+  fi
+done
+
+if [ -n "$failed" ]; then
+  for name in $failed; do
+    echo ""
+    echo "──────── $name ────────"
+    tail -40 "$TMP/$name.log"
+  done
+  echo ""
+  echo "[pre-push] CI 가 볼 것을 여기서 먼저 봤고, 빨갛다:$failed"
+  echo "[pre-push] 고치고 다시 푸시해라 — CI 를 8분 태우는 것보다 싸다."
+  echo ""
+  exit 1
+fi
+
+echo "[pre-push] 전부 통과. e2e 는 CI 가 본다 (병렬 3갈래)."
