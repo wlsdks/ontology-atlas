@@ -363,7 +363,13 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
       }),
     );
 
-    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    // Wait for the card itself, not only for a side effect of the same event.
+    // `previews` updates from the preview callback while the permission card mounts
+    // on a later render, so a green `previews` assertion does not mean the button
+    // exists yet. CI caught the gap on 2026-08-22 ("Unable to find
+    // [data-testid=acp-permission-allow]") while every local run passed — the two
+    // renders land in the same tick on a fast machine and not on a slow one.
+    fireEvent.click(await screen.findByTestId('acp-permission-allow'));
     await waitFor(() =>
       expect(previews.at(-1)).toEqual({
         sourceSlug: 'capabilities/contextual-editing',
@@ -434,7 +440,13 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     };
     emit(mcpPermissionRequest('mcp__atlas-vault__add_relation', 96, rawInput));
     await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    // Wait for the card itself, not only for a side effect of the same event.
+    // `previews` updates from the preview callback while the permission card mounts
+    // on a later render, so a green `previews` assertion does not mean the button
+    // exists yet. CI caught the gap on 2026-08-22 ("Unable to find
+    // [data-testid=acp-permission-allow]") while every local run passed — the two
+    // renders land in the same tick on a fast machine and not on a slow one.
+    fireEvent.click(await screen.findByTestId('acp-permission-allow'));
 
     await waitFor(() => expect(receipts.at(-1)).toMatchObject({
       request: '관계를 정리해줘',
@@ -673,7 +685,13 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     emit(permissionRequest('/somewhere/else.md'));
     await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    // Wait for the card itself, not only for a side effect of the same event.
+    // `previews` updates from the preview callback while the permission card mounts
+    // on a later render, so a green `previews` assertion does not mean the button
+    // exists yet. CI caught the gap on 2026-08-22 ("Unable to find
+    // [data-testid=acp-permission-allow]") while every local run passed — the two
+    // renders land in the same tick on a fast machine and not on a slow one.
+    fireEvent.click(await screen.findByTestId('acp-permission-allow'));
     await waitFor(() => expect(answerFor(77)).toEqual({ outcome: 'selected', optionId: 'allow' }));
   });
 
