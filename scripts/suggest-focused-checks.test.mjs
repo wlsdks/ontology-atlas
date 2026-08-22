@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   changedPathsFromGit,
+  collapsePlaywrightCommands,
   runFocusedChecks,
   runSuggestFocusedChecks,
   stripLeadingSeparator,
@@ -244,4 +245,47 @@ describe('deleted paths', () => {
     });
     assert.match(output.join(''), /1 changed path/);
   });
+});
+
+describe('collapsePlaywrightCommands', () => {
+  it('collapsePlaywrightCommands merges every spec into one invocation, keeping order', () => {
+  /*
+   * Measured 2026-08-22: a 1,536-file branch produced 657 checks, most of them one
+   * `playwright test <single spec>` each. Serially that ran past twelve hours while
+   * CI finished the same specs in about eight minutes. The fix must not drop a spec —
+   * this repository's whole reason for `--run` is that picking a subset burns CI.
+   */
+  const merged = collapsePlaywrightCommands([
+    { command: 'pnpm exec tsc --noEmit' },
+    { command: 'pnpm exec playwright test tests/e2e/a.spec.ts' },
+    { command: 'pnpm exec playwright test tests/e2e/b.spec.ts tests/e2e/c.spec.ts' },
+    { command: 'pnpm lint' },
+    { command: 'pnpm exec playwright test tests/e2e/a.spec.ts' },
+  ]);
+  assert.deepEqual(
+    merged.map((c) => c.command),
+    [
+      'pnpm exec tsc --noEmit',
+      'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts',
+      'pnpm lint',
+    ],
+  );
+});
+
+  it('collapsePlaywrightCommands leaves a single Playwright command alone', () => {
+  const one = [
+    { command: 'pnpm exec tsc --noEmit' },
+    { command: 'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts' },
+  ];
+  assert.deepEqual(collapsePlaywrightCommands(one), one);
+});
+
+  it('collapsePlaywrightCommands loses no spec — the union is exactly preserved', () => {
+  const specs = Array.from({ length: 40 }, (_, i) => `tests/e2e/s${i}.spec.ts`);
+  const commands = specs.map((s) => ({ command: `pnpm exec playwright test ${s}` }));
+  const merged = collapsePlaywrightCommands(commands);
+  assert.equal(merged.length, 1);
+  const kept = merged[0].command.replace('pnpm exec playwright test ', '').split(' ');
+  assert.deepEqual(kept.sort(), specs.slice().sort());
+});
 });

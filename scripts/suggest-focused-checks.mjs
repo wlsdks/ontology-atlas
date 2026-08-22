@@ -91,6 +91,63 @@ export function untrackedPathsForAdvisor(output) {
  * cause, so running them all lengthens the output without adding information. This
  * gives exactly one thing to fix.
  */
+const PLAYWRIGHT_PREFIX = 'pnpm exec playwright test ';
+
+/**
+ * Collapse many single-spec Playwright invocations into one.
+ *
+ * **Why** (measured 2026-08-22). Playwright commands are emitted one spec at a time,
+ * which is right for a human who wants to run one. On a large change it is not: a
+ * 1,536-file branch produced **657** checks, most of them a separate
+ * `playwright test <one spec>`. Each invocation pays its own startup and global
+ * setup, and the hook runs them serially — 35 checks took 40 minutes, putting the
+ * full run past **twelve hours**. CI runs the same specs sharded in parallel and
+ * finishes in about eight minutes.
+ *
+ * Playwright accepts several spec paths in a single invocation, so the specs are
+ * merged into one command. **Coverage is identical** — the same spec files, in one
+ * process instead of N. Nothing is dropped and nothing is deferred, which is what
+ * separates this from the "pick a few and hope" failure this tool exists to stop.
+ *
+ * The merged command takes the place of the first Playwright entry so ordering is
+ * preserved: whatever ran before e2e still runs before it.
+ */
+export function collapsePlaywrightCommands(commands) {
+  const specs = [];
+  const seen = new Set();
+  for (const c of commands) {
+    if (!c.command.startsWith(PLAYWRIGHT_PREFIX)) continue;
+    for (const spec of c.command.slice(PLAYWRIGHT_PREFIX.length).trim().split(/\s+/)) {
+      if (spec && !seen.has(spec)) {
+        seen.add(spec);
+        specs.push(spec);
+      }
+    }
+  }
+  // One invocation already — nothing to gain, and rewriting it would only lose the
+  // suggester's own wording.
+  if (commands.filter((c) => c.command.startsWith(PLAYWRIGHT_PREFIX)).length < 2) {
+    return commands;
+  }
+  const merged = {
+    command: PLAYWRIGHT_PREFIX + specs.join(' '),
+    reason: `${specs.length} e2e specs in one Playwright run — same coverage, one startup`,
+  };
+  const out = [];
+  let placed = false;
+  for (const c of commands) {
+    if (!c.command.startsWith(PLAYWRIGHT_PREFIX)) {
+      out.push(c);
+      continue;
+    }
+    if (!placed) {
+      out.push(merged);
+      placed = true;
+    }
+  }
+  return out;
+}
+
 export function runFocusedChecks({
   commands = [],
   cwd = process.cwd(),
@@ -100,6 +157,14 @@ export function runFocusedChecks({
   if (commands.length === 0) {
     stdout.write('[focused-checks] 돌릴 것이 없다 — 바뀐 경로에 걸리는 검사가 없다.\n');
     return 0;
+  }
+  const before = commands.length;
+  commands = collapsePlaywrightCommands(commands);
+  if (commands.length !== before) {
+    stdout.write(
+      `[focused-checks] e2e ${before - commands.length + 1}건을 한 번의 Playwright 실행으로 합쳤다 ` +
+        `(${before} → ${commands.length}개). 같은 spec 을 같은 수만큼 돈다 — 기동만 1회다.\n`,
+    );
   }
   for (const [index, suggestion] of commands.entries()) {
     stdout.write(`\n[focused-checks] (${index + 1}/${commands.length}) ${suggestion.command}\n`);
