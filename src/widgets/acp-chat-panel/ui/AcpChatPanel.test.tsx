@@ -208,6 +208,26 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(screen.getAllByText(/네, 볼게요\./)).toHaveLength(1);
   });
 
+  it('에이전트의 GFM 표를 좁은 패널에서도 구획과 가로 스크롤이 있는 표로 그린다', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { text: '| 항목 | 값 |\n| --- | --- |\n| 소스 코드 | 연결 안 됨 |' },
+        },
+      },
+    });
+
+    const scroller = await screen.findByTestId('acp-chat-markdown-table');
+    expect(scroller).toHaveClass('overflow-x-auto');
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '항목' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '연결 안 됨' })).toBeInTheDocument();
+  });
+
   it('생각과 말을 다른 것으로 그린다 — 중간 과정을 결론으로 읽지 않게', async () => {
     await bootSession();
     emit({
@@ -399,21 +419,37 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'reject' });
   });
 
-  it('여러 관계 요청의 첫 항목만 골라 지도에 내보내지 않는다', async () => {
-    const previews: Array<unknown> = [];
+  it('여러 관계 요청은 모든 행을 보여 주고 고른 행 하나만 지도에 내보낸다', async () => {
+    const previews: Array<AcpOntologyRelationPreview | null> = [];
     await bootSession({
       onOntologyRelationPreviewChange: (preview) => previews.push(preview),
     });
     emit(
       mcpPermissionRequest('mcp__atlas-vault__add_relations', 90, {
         relations: [
-          { from: 'capabilities/a', to: 'domains/one', type: 'depends_on' },
-          { from: 'capabilities/a', to: 'domains/two', type: 'depends_on' },
+          { from: 'capabilities/a', to: 'domains/one', type: 'depends_on', why: '첫 이유' },
+          { from: 'capabilities/b', to: 'domains/two', type: 'contains', why: '둘째 이유' },
         ],
       }),
     );
     await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
-    expect(previews.filter(Boolean)).toHaveLength(0);
+    const rows = screen.getAllByTestId('acp-ontology-change-item');
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toHaveTextContent('domains/two');
+    expect(previews.at(-1)).toEqual({
+      sourceSlug: 'capabilities/a',
+      targetSlug: 'domains/one',
+      relationType: 'depends_on',
+      phase: 'draft',
+    });
+
+    fireEvent.click(screen.getByTestId('acp-ontology-change-item-1'));
+    await waitFor(() => expect(previews.at(-1)).toEqual({
+      sourceSlug: 'capabilities/b',
+      targetSlug: 'domains/two',
+      relationType: 'contains',
+      phase: 'draft',
+    }));
   });
 
   it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {

@@ -3394,6 +3394,9 @@
     "to": "To",
     "why": "Why",
     "itemCount": "{count} changes",
+    "batchLabel": "Batch changes",
+    "batchHint": "Select each item to review it. Allow or reject applies to the whole batch.",
+    "unknownTarget": "Unknown target",
     "moreFields": "{count} more fields"
   },
   "meaningEditor": {

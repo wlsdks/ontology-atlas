@@ -3394,6 +3394,9 @@
     "to": "도착",
     "why": "이유",
     "itemCount": "{count}건",
+    "batchLabel": "묶음 변경 항목",
+    "batchHint": "항목을 눌러 하나씩 확인합니다. 허용과 거절은 이 묶음 전체에 적용돼요.",
+    "unknownTarget": "대상을 확인할 수 없음",
     "moreFields": "그 밖의 필드 {count}개"
   },
   "meaningEditor": {
