@@ -593,6 +593,33 @@ export const arbitrarySizeSelectors = [
    * (켤 때 위반 0). 변형 접두 꼴(`[&_code]:rounded`)까지 잡도록 `:` 를
    * 구획자에 포함한다.
    */
+  /*
+   * Tailwind's named type and radius steps — the ramp's last bypass.
+   *
+   * `named-offramp-utility-ratchet.contract.test.ts` held these with a budget of 0
+   * each, which is a ratchet that has finished ratcheting: it only ever restated
+   * "zero", and it re-scanned the whole tree to do it. Moving the check here makes
+   * it fire at edit time instead of at test time.
+   *
+   * ⚠️ **Probed before moving** (2026-08-22). An audit had reported the ratchet as
+   * fully covered by eslint already. It was not — of its 21 families, **nine had no
+   * selector at all** (`rounded-xs` `rounded-2xl` `rounded-3xl` `text-base` `text-lg`
+   * `text-xl` `text-2xl` `text-3xl` `text-4xl`). Deleting the contract on that
+   * report would have opened a hole rather than removed a duplicate. These nine are
+   * the selectors that close it.
+   */
+  {
+    selector:
+      'Literal[value=/(^|[^-\\w])(rounded-(xs|2xl|3xl)|text-(base|lg|xl|2xl|3xl|4xl))([^-\\w]|$)/]',
+    message:
+      'Geometry Codex — Tailwind 이름 스텝 금지(램프 우회). 반경은 rounded-micro/chip/card/panel/sheet, 크기는 text-caption/label/body/body-lg/title/display/hero 로.',
+  },
+  {
+    selector:
+      'TemplateElement[value.raw=/(^|[^-\\w])(rounded-(xs|2xl|3xl)|text-(base|lg|xl|2xl|3xl|4xl))([^-\\w]|$)/]',
+    message:
+      'Geometry Codex — Tailwind 이름 스텝 금지 (template literal). 램프 토큰으로.',
+  },
   {
     selector: 'Literal[value=/(^|[^-\\w])rounded([^-\\w]|$)/]',
     message:
