@@ -79,7 +79,7 @@ describe('업데이트 확인 절', () => {
   });
 
   it('실패는 실패라고 말한다 — 조용히 아무 일도 없던 척하지 않는다', () => {
-    renderAt({ kind: 'failed', message: 'network' });
+    renderAt({ kind: 'failed', operation: 'check', message: 'network' });
     expect(screen.getByTestId('app-settings-update-result')).toHaveAttribute(
       'data-phase',
       'failed',

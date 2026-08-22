@@ -7,10 +7,23 @@ import { fileURLToPath } from "node:url";
 import { evaluateHostedSurface } from "./check-hosted-download-surface.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const hostedUpdaterManifest = JSON.stringify({
+  version: "1.0.0-rc.9",
+  platforms: {
+    "darwin-aarch64": {
+      signature: "signed",
+      url: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.9/app.tar.gz",
+    },
+  },
+});
 
 function startServer(routes) {
   const server = http.createServer((request, response) => {
-    const route = routes[request.url ?? ""];
+    const route =
+      routes[request.url ?? ""] ??
+      (request.url === "/update/latest.json"
+        ? { body: hostedUpdaterManifest, contentType: "application/json" }
+        : null);
     if (!route) {
       response.writeHead(404, { "content-type": "text/html" });
       response.end("not found");
@@ -73,6 +86,7 @@ test("hosted download surface check passes for promo/download-aligned pages", as
 
     assert.equal(result.rootUrl, `${server.baseUrl}/ko/`);
     assert.equal(result.downloadUrl, `${server.baseUrl}/ko/download/`);
+    assert.equal(result.updaterUrl, `${server.baseUrl}/update/latest.json`);
   } finally {
     await server.close();
   }
@@ -125,6 +139,22 @@ test("hosted download surface check rejects a missing download route", async () 
       /\/ko\/download\/ returned HTTP 404/,
     );
 
+  } finally {
+    await server.close();
+  }
+});
+
+test("hosted download surface check rejects a missing updater manifest", async () => {
+  const server = await startServer({
+    "/ko/": { body: alignedLanding },
+    "/ko/download/": { body: alignedDownload },
+    "/update/latest.json": { status: 404, body: "not found" },
+  });
+  try {
+    await assert.rejects(
+      evaluateHostedSurface({ baseUrl: server.baseUrl, timeoutMs: 5000 }),
+      /\/update\/latest\.json returned HTTP 404/,
+    );
   } finally {
     await server.close();
   }

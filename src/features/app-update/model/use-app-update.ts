@@ -91,7 +91,11 @@ export function useAppUpdate() {
       // 말을 걸 이유가 없다. 사용자가 직접 눌렀을 때만 실패를 보고한다.
       // **「조용히」는 「지운다」가 아니다** — 위 주석의 결함이 그 혼동이었다.
       if (manual) {
-        setPhase({ kind: 'failed', message: error instanceof Error ? error.message : String(error) });
+        setPhase({
+          kind: 'failed',
+          operation: 'check',
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }, []);
@@ -122,7 +126,11 @@ export function useAppUpdate() {
 
       setPhase({ kind: 'ready', version: update.version });
     } catch (error) {
-      setPhase({ kind: 'failed', message: error instanceof Error ? error.message : String(error) });
+      setPhase({
+        kind: 'failed',
+        operation: 'install',
+        message: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       installing.current = false;
     }

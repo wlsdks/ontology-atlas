@@ -25,7 +25,7 @@ export type UpdatePhase =
   /** 설치까지 끝났다. 남은 것은 재시작뿐이다. */
   | { kind: 'ready'; version: string }
   /** 실패. 무엇이 실패했는지 말하고, 손으로 받을 길을 남긴다. */
-  | { kind: 'failed'; message: string };
+  | { kind: 'failed'; operation: 'check' | 'install'; message: string };
 
 /** 하루에 한 번. 앱을 자주 켜는 사람에게 매번 묻지 않기 위해서다. */
 export const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;

@@ -4,6 +4,7 @@ import http from "node:http";
 import https from "node:https";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateHostedUpdaterManifest } from "./stage-hosted-updater-manifest.mjs";
 
 // The expected copy is read from the shipped message catalog rather than
 // duplicated here. A hand-copied string list is how this gate quietly went
@@ -159,6 +160,21 @@ function assertOkPage(page, path) {
   }
 }
 
+function assertOkJson(page, path) {
+  if (page.status < 200 || page.status >= 300) {
+    throw new Error(`${path} returned HTTP ${page.status}`);
+  }
+  let value;
+  try {
+    value = JSON.parse(page.body);
+  } catch (error) {
+    throw new Error(`${path} is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const version = typeof value?.version === "string" ? value.version : "";
+  validateHostedUpdaterManifest(value, `v${version}`);
+  return value;
+}
+
 /**
  * ⚠️ **A missing message key must fail loudly, not pass quietly.**
  *
@@ -208,13 +224,16 @@ function assertExcludes(text, label, needles) {
 export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   const rootPath = "/ko/";
   const downloadPath = "/ko/download/";
-  const [root, download] = await Promise.all([
+  const updaterPath = "/update/latest.json";
+  const [root, download, updater] = await Promise.all([
     requestText(`${baseUrl}${rootPath}`, { timeoutMs }),
     requestText(`${baseUrl}${downloadPath}`, { timeoutMs }),
+    requestText(`${baseUrl}${updaterPath}`, { timeoutMs }),
   ]);
 
   assertOkPage(root, rootPath);
   assertOkPage(download, downloadPath);
+  assertOkJson(updater, updaterPath);
 
   const rootText = renderedText(root.body);
   const downloadText = renderedText(download.body);
@@ -263,6 +282,7 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
   return {
     rootUrl: root.url,
     downloadUrl: download.url,
+    updaterUrl: updater.url,
   };
 }
 
@@ -273,6 +293,7 @@ async function main() {
     console.log(`[hosted-download-surface] ${options.baseUrl} matches the root-first-open contract`);
     console.log(`root: ${report.rootUrl}`);
     console.log(`download: ${report.downloadUrl}`);
+    console.log(`updater: ${report.updaterUrl}`);
   } catch (error) {
     const next = deploymentNextAction(error);
     fail(next ? `${error.message}\n${next}` : error.message);

@@ -34,7 +34,12 @@ export interface UpdateToastProps {
 export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateToastProps) {
   const t = useTranslations('appUpdate');
 
-  if (phase.kind === 'idle' || phase.kind === 'checking' || phase.kind === 'current') {
+  if (
+    phase.kind === 'idle' ||
+    phase.kind === 'checking' ||
+    phase.kind === 'current' ||
+    (phase.kind === 'failed' && phase.operation === 'check')
+  ) {
     return null;
   }
 
@@ -66,8 +71,9 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
       case 'failed':
         return {
           title: t('failedTitle'),
-          // 실패는 무엇이 실패했는지 말한다. 손으로 받을 길이 남아 있다.
-          detail: phase.message || t('failedBody'),
+          // updater 라이브러리의 영문 진단을 제품 문구로 노출하지 않는다.
+          // 상세 진단은 개발자 로그의 것이고, 사람에게는 남은 길을 말한다.
+          detail: t('failedBody'),
           action: null,
         };
     }

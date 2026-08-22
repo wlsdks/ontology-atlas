@@ -2,13 +2,14 @@
 /**
  * 설치된 앱이 갱신을 찾는 단 하나의 파일, `latest.json` 을 만든다.
  *
- * 앱은 `tauri.conf.json` 의 endpoint 하나만 안다:
+ * 앱은 `tauri.conf.json` 의 안정 endpoint 하나만 안다:
  *
- *   https://github.com/wlsdks/ontology-atlas/releases/latest/download/latest.json
+ *   https://wlsdks.github.io/ontology-atlas/update/latest.json
  *
- * `releases/latest` 는 **프리릴리스를 가리키지 않는다.** 그게 이 설계의 핵심
- * 안전장치다 — RC 를 내도 정식 사용자에게는 내려가지 않고, 찾아온 사람만 받는다.
- * 채널 분리를 위해 코드를 더 쓸 필요가 없다.
+ * GitHub의 `releases/latest`는 프리릴리스를 제외해 RC-only 기간에 404가 된다.
+ * Pages 배포가 newest non-draft release(프리릴리스 포함)의 이 파일을 위 안정
+ * 주소에 복사한다(`stage-hosted-updater-manifest.mjs`). 설치 전 minisign 검증은
+ * 그대로라 게시 주소가 바뀌어도 신뢰 경계는 바뀌지 않는다.
  *
  * ## 서명이 두 겹인 이유
  *
