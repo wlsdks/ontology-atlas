@@ -278,6 +278,11 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded.
+- **Expand all** → the top action opens every containment parent in one step and
+  fits every rendered node inside the map. It is a temporary overview, not a
+  saved default; pressing it again collapses the batch. A route arriving with
+  existing `?open=` parents also uses full-bounds fitting on its first frame so
+  already-open nodes do not begin off screen.
 - **How the chip looks and where children land is a setting** (설정 › 확장, 2026-08-01 — ported from the `.qa-scratch/proto-expand.html` measurement prototype). Five values: the open control (`뜬 알약` · **`머리 위 막대`, default** · `어깨 배지`), the child layout (`나선 원반`, default · `부챗살` · `고리` · `기둥`), and three numbers — how many open at once (4–24, default 24), how many names are attempted per parent (3–40, default 8), and how many parents stay open at once (1–6, default 3). The default control is the bar docked directly above the **selected** node: nothing shows until you select a node, and the folded count keeps living on the node body. Rationale and the observation that would reverse it: `docs/DECISIONS.md`.
 - **Expand realm (영역 전개)** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **영역: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
 - **Ontology block exchange** — 개념 묶음을 폴더째 주고받는 기능이다. INDEX 의
@@ -312,12 +317,37 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Shortcuts button** (`?`) → `ShortcutSheet`
 - **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: 언어 (`LocaleSwitch`) · 테마 (`ThemeToggle`) · INDEX 기본 상태 (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
 
+#### Node detail actions
+- The detail panel has one primary outcome: **Ask the agent** in the installed app,
+  or **Copy handoff** on the web. Relation editing and linked-node creation live
+  under **Edit**; document, fallback handoff, and realm actions live under
+  **More**. Typed relation and evidence totals remain on their own group headers,
+  rather than being repeated as a second aggregate line.
+- The relation-line guide is pull-only in the existing `?` shortcut sheet. The
+  map corner no longer carries a persistent legend, and INDEX no longer repeats
+  agent/growth/handoff controls below the tree.
+
 #### 에이전트 패널 — 처음 무슨 말을 걸지부터 다음 할 일까지 (2026-07-27, 데스크톱 앱 전용)
 - 화면 위쪽 도구 줄의 **「에이전트」** 버튼을 누르면 지도 오른쪽에 세로로 긴 패널이 열린다. 패널이 열리면 지도와 노드 정보 칸이 함께 밀려나며 폭을 다시 잡는다. 데스크톱 앱에서만 쓸 수 있다 — 브라우저에는 API 키를 안전하게 둘 곳도, 요청을 보낼 경로도 없어서, 눌러도 아무 일이 일어나지 않을 버튼은 아예 그리지 않는다
+- 바깥 도크는 계속 지도 폭을 양보하지만 실제 대화 표면은 위·아래·오른쪽을
+  12px 띄운 패널로 선다. 네 면의 테두리·radius·그림자는 INDEX와 노드 상세이
+  쓰는 기존 패널 토큰을 공유하며, ACP와 API-key 대화 갈래가 같은 형태다.
+  패널 왼쪽의 상단·세로 지도 컨트롤은 seam 양쪽 12px씩, 총 24px 간격으로 붙어
+  도크와 같은 시간·곡선으로 이동한다
+- 패널을 여는 첫 프레임부터 헤더·빈 대화 안내·현재 폴더 추천·작성 칸이 모두
+  최종 위치에 보인다. 연결을 기다리는 동안은 헤더의 작은 spinner와 「연결 중」
+  상태만 움직이고, 준비되면 같은 자리의 글자만 「준비됨」으로 바뀐다. 세션 시작은
+  도크 폭 이동과 카메라의 마지막 착지가 끝난 뒤 진행해 지도 모션과 프로세스
+  부팅이 같은 프레임을 다투지 않는다.
 - 에이전트 패널이 열리는 동안 왼쪽 INDEX는 저장된 기본 상태를 바꾸지 않고 잠시 접혀 지도 폭을 내준다. 대화를 닫으면 원래 INDEX 선호가 복구되고, 접힌 INDEX 탭을 직접 열면 에이전트 패널이 닫혀 두 보조 패널이 동시에 지도를 압축하지 않는다
 - 사용자의 말 한 차례에서 생긴 생각 조각과 도구 호출은 기본 접힌 **「작업 과정 · N단계」** 한 줄로 모인다. 실행 중에는 인디고 점과 단계 수만 갱신하고, 에이전트 답변은 별도 본문으로 읽힌다. 필요할 때 펼치면 기존 순서와 대상 노드를 모두 볼 수 있고, 생각의 Markdown도 실제 굵게·코드·목록으로 렌더된다
 - 에이전트 답변의 GFM 표는 헤더·행 구분·셀 여백이 있는 실제 표로 보인다. 긴 표는
   대화 도크 전체를 넓히지 않고 표 안에서만 가로로 스크롤한다.
+- `get_concept`의 현재 볼트 slug는 그 노드를 지도에서 바로 선택한다.
+  `find_path`의 두 slug는 정확한 최단 경로 노드와 관계선을 밝힌다. 같은 턴의
+  typed Atlas read tool만 입력으로 쓰며, 답변 문장이나 존재하지 않는 이름은
+  지도 이동 근거로 쓰지 않는다. 초기 `tool_call` 뒤 streamed input을 완성하는
+  `tool_call_update.rawInput`도 같은 도구 행으로 병합한다.
 - starter vault에 연결된 project source가 없으면 「코드 훑기」를 먼저 실행하지
   않는다. 「먼저 코드 폴더 연결하기」가 project 데이터시트로 이동하고, 연결을
   같은 화면에서 다시 읽은 뒤에만 source-evidence-first 구축 prompt가 나타난다.
@@ -331,6 +361,19 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **이번 대화 요약** — 헤더 부제목 자리의 한 줄이 「이 대화에서 개념 N개 · 연결 M개」로 바뀐다(실제로 저장에 성공한 것만 센다). 글자만 바뀌고 줄의 위치와 크기는 그대로다
 - **다른 화면에서 넘어와도 같은 문장** — 노드 상세의 **「말로 시키기」** 버튼과 인사이트 목록 행의 `⋮` 메뉴 안 **「에이전트에게 말로 시키기」** 는 위 버튼들과 **같은 코드로 만든 같은 문장**을 쓴다. 인사이트에서 넘어올 때 주소(`?ask=missing-definition|missing-domain|missing-relations`)가 나르는 것은 **어떤 종류의 요청인지**뿐이고, 실제 문장은 도착한 화면이 그 화면의 언어로 만든다. 주소가 곧 상태라서 뒤로가기를 누르면 같은 문맥이 되살아나고, 패널을 닫으면 그 요청도 함께 사라진다
 - **겹치지 않게** — 패널이 열려 있는 동안 선택한 노드의 정보 칸은 패널 폭만큼 안쪽으로 옮겨 선다(둘은 같이 읽어야 하는 한 쌍이다). 옮겨 가는 시간과 가속 곡선은 패널이 열리는 것과 똑같이 맞춘다
+- **14인치 상단 크롬도 같은 폭을 양보한다** — 선택한 노드 정보 칸이 있으면
+  상단 지도 도구는 그 칸을 제외한 남은 지도 중앙으로 이동한다. 에이전트 도크가
+  열리면 중앙·우측 버튼 라벨은 아이콘 밀도로 접혀 두 절대 레인이 겹치지 않는다.
+- **지도 카메라도 남은 폭을 같은 클럭으로 읽는다** — 에이전트 도크의 폭이
+  변하는 매 프레임에 전체·선택 노드·영역·경로/전체 렌즈 중 현재 보기를 새 가용
+  영역으로 따라가고 마지막 프레임에 목표·속도를 함께 확정한다. 그래서 도크 뒤에
+  카메라가 따로 출발하거나 되튕기지 않으며, 직접 팬·줌한 화면은 빼앗지 않는다.
+  노드 상세을 닫을 때도 퇴장 중인 패널 폭을 최종 overview 안전영역으로 잘못
+  남기지 않는다.
+- **작업 상태와 알림은 같은 사실을 다른 문으로 열지 않는다** — 작업 상태 행은
+  현재 에이전트·단계·대상만 열고, 우상단 도구줄 맨 오른쪽의 독립 종은 알림과
+  작업 영수증만 연다. 안 읽은 수는 종 안의 겹침 배지라 정사각 타일 폭을 늘리지
+  않는다. 알림함은 `--topology-v2-panel-width`를 써 352px까지 읽기 폭을 확보한다.
 - **위아래 여백에 뜻을 준다 (2026-07-28)** — 아직 키를 연결하지 않은 상태에서는 **위**가 "무엇을 시킬 수 있나", **아래**가 "무엇이 필요한가 + 그것을 하는 버튼", **가운데**가 대화가 생길 자리다(보내면 실제로 거기에 답이 나타난다). 대화 중이거나 동의를 묻는 중일 때는 아래쪽부터 내용이 자라서, 답과 누를 버튼이 가까이 붙는다. 1512×950 실측: 뜻 없이 비어 있던 두 여백(위 361px · 아래 361px)을 뜻 있는 하나로 합쳤고, 대화 중 여백은 639 → 512px 로 줄었다
 - **바닥은 입력칸 하나만 남긴다 (2026-07-28)** — 지침 보기와 터미널로 넘기기는 항상 떠 있지 않고, 입력칸 아래 **한 줄**을 눌러 폈다 접었다 한다(펼쳐지는 영역은 한 번에 하나만 — 임시 화면을 여러 겹 쌓지 않는다). "코드까지 봐야 하는 일은 터미널의 AI 가 낫다" 는 안내 문장도 그 접히는 영역 안으로 내렸다. 바닥에 상시로 차지하던 높이가 176 → 104px 로 줄었다
 - **저장 전에 물어본다는 약속을, 정하는 화면에서 읽게 한다 (2026-07-28)** — "문서를 고칠 일이 생기면 바뀔 내용을 먼저 보여주고, 확인해야 저장돼요" 라는 문장이 API 키를 맡길지 정하는 화면과 동의를 묻는 시트 **양쪽 모두**에 나온다. 예전에는 제안 카드가 뜨기 전까지 화면 어디에도 이 말이 없었다
