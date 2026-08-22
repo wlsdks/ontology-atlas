@@ -2590,13 +2590,14 @@ function HomePageImpl() {
         : null,
     [vault.status, vault.handle],
   );
+  const refreshVault = vault.refresh;
   const handleAcpWorkReceipt = useCallback((receipt: AcpWorkReceipt) => {
     if (!acpWorkReceiptStore) return;
     void acpWorkReceiptStore
       .append(receipt)
-      .then(() => vault.refresh())
+      .then(() => refreshVault())
       .catch(() => {});
-  }, [acpWorkReceiptStore, vault.refresh]);
+  }, [acpWorkReceiptStore, refreshVault]);
   const acpLiveWork = useMemo<AgentLiveWorkInput | null>(() => {
     const frame = acpTurnActivityFrame;
     if (!frame) return null;
