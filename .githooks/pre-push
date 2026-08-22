@@ -104,7 +104,13 @@ DOCS='^docs/|^[A-Z0-9_-]+\.md$|^\.claude/|^\.agents/'
 
 touched "$TS" "$APP" && lane typecheck 'pnpm exec tsc --noEmit'
 touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
-touched "$APP" '^messages/' && lane unit 'pnpm test:run'
+# `*.perf.test.*` is excluded here and **only** here — those three compare a fast
+# path against a naive one and read the clock to do it. This hook deliberately
+# saturates the machine (eight lanes, ~900% CPU measured), which is the one
+# condition under which a timing ratio cannot be trusted; it went red once on a
+# push whose diff could not affect it. CI runs them on a quiet runner, where the
+# number means something.
+touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --exclude "**/*.perf.test.*"'
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/' && lane agents 'pnpm agents:check'
 touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:links && pnpm docs-vault:check'

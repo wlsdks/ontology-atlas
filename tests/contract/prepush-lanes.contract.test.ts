@@ -69,6 +69,31 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     );
   });
 
+  /**
+   * Timing ratios cannot be measured on a machine this hook is deliberately
+   * saturating. `duplicate-pairs.perf.test.ts` compares a fast path against a naive
+   * one and reads the clock; under eight parallel lanes (~900% CPU measured) it went
+   * red on a push whose diff could not have touched it, and passed on a rerun. CI
+   * runs the same three files on a quiet runner, where the number means something.
+   *
+   * The exclusion is scoped to this lane. Removing it re-introduces a flake that
+   * looks like a real failure, which is worse than no gate — people learn to retry.
+   */
+  it("성능 시험은 훅에서 뺀다 — 바쁜 기계에서 잰 비율은 뜻이 없다", () => {
+    const unitLane = executable.split("\n").find((line) => /lane unit /.test(line)) ?? "";
+    expect(unitLane, "unit 레인을 못 찾았다 — 이 시험이 헛돈다").not.toBe("");
+    expect(unitLane, "훅이 성능 시험까지 돌린다 — 바쁜 기계에서 흔들린다").toContain(
+      "--exclude",
+    );
+    expect(unitLane).toContain("perf.test");
+
+    // CI must still run them; the exclusion is local-only.
+    const ci = readFileSync(path.join(ROOT, ".github/workflows/checks.yml"), "utf8");
+    expect(ci, "CI 가 성능 시험을 제외한다 — 그러면 아무도 안 재는 것이 된다").not.toContain(
+      "perf.test",
+    );
+  });
+
   it("실패한 레인만 출력한다 — 여덟 개가 동시에 떠들면 아무도 안 읽는다", () => {
     expect(executable).toMatch(/failed/);
     expect(executable, "실패 로그를 보여주지 않는다").toMatch(/tail .*\.log/);

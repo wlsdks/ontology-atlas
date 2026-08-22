@@ -483,6 +483,18 @@
       ]
     },
     {
+      "slug": "CONTROL-ADOPTION-ROUNDS",
+      "path": "docs/CONTROL-ADOPTION-ROUNDS.md",
+      "title": "Control adoption — round history",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "What lives here and why. This is the round-by-round record behind tests/contract/control-adoption-ratchet.contract.test.ts: the exhaustive counts, the registration verdicts, the categories that were rejected and on what evidence. It was 579 lines of doc-block at the top of that test file until 2026-08-22. .claude/rules",
+      "wordCount": 7816,
+      "updatedAt": "2026-08-22",
+      "linksOut": []
+    },
+    {
       "slug": "DECISIONS",
       "path": "docs/DECISIONS.md",
       "title": "DECISIONS — 카운슬 결정 원장",
@@ -627,7 +639,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file is the single source of truth for the words this repository uses. English is canonical: comments, doc-blocks, and developer docs are written in English so contributors outside Korea can read them. Korean equivalents are listed for the maintainer and for the two Korean docs that stay Korean — docs/DECISIONS.md",
-      "wordCount": 2160,
+      "wordCount": 2336,
       "updatedAt": "2026-08-22",
       "linksOut": []
     },
@@ -5650,6 +5662,13 @@
         "type": "doc",
         "slug": "CHANGELOG",
         "title": "CHANGELOG"
+      },
+      {
+        "name": "CONTROL-ADOPTION-ROUNDS",
+        "path": "CONTROL-ADOPTION-ROUNDS",
+        "type": "doc",
+        "slug": "CONTROL-ADOPTION-ROUNDS",
+        "title": "Control adoption — round history"
       },
       {
         "name": "DECISIONS",

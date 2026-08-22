@@ -235,7 +235,32 @@ In every case: keep the Korean, add a short English gloss.
 
 ---
 
-## 7. Gates
+## 7. What a test may pin
+
+A test may assert on a **short label** — a button, a heading, a status word.
+Those are the screen: change one and the screen changed, so a test that notices
+is doing its job.
+
+A test may **not** assert on a sentence or a paragraph. Those get reworded for
+clarity without the behaviour moving an inch, and the pin turns red for nothing
+while catching no real defect. Reach for the message key instead:
+`ko.agentConnect.manualShapeOnlyNote` follows the copy; a retyped excerpt does
+not.
+
+Measured 2026-08-22 against `block/buzz`, which pins 1,449 strings in its e2e
+suite:
+
+| | Buzz | boundary |
+|---|---|---|
+| median pinned string | **9 characters** | labels |
+| ≤ 20 characters | **83%** | labels |
+| > 50 characters | **7 of 1,449 (0%)** | never paragraphs |
+
+Every pin that broke here that day was a paragraph — the shape Buzz does not
+pin either. The short labels were untouched and stay that way; this is a
+boundary, not a ban.
+
+## 8. Gates
 
 | Gate | Scope |
 |---|---|
