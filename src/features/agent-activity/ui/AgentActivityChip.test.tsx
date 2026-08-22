@@ -37,6 +37,7 @@ function feed(overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed {
     lastNode: { slug: "capabilities/checkout", name: "주문서 작성", kind: "capability" },
     lastTargetUnnamed: false,
     notifications: [],
+    workReceipts: [],
     unreadCount: 0,
     notificationsEnabled: true,
     markAllRead: vi.fn(),
@@ -70,6 +71,37 @@ function renderBell(next: Partial<AgentActivityFeed> = {}) {
 
 describe("AgentActivityChip", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('앱 안 승인과 결과를 접을 수 있는 작업 영수증으로 보여 준다', () => {
+    renderChip({
+      showStatus: false,
+      workReceipts: [{
+        v: 1,
+        id: 's-1:tc-1',
+        at: '2026-08-01T11:55:00.000Z',
+        updatedAt: '2026-08-01T11:56:00.000Z',
+        agent: 'codex-acp',
+        request: '관계를 정리해줘',
+        tool: 'add_relations',
+        decision: 'allowed',
+        result: 'completed',
+        items: [{
+          target: 'capabilities/checkout',
+          operation: 'relate',
+          relation: {
+            from: 'capabilities/checkout',
+            type: 'depends_on',
+            to: 'domains/orders',
+          },
+          fields: [],
+        }],
+      }],
+    });
+
+    fireEvent.click(screen.getByTestId('agent-activity-bell'));
+    expect(screen.getByTestId('agent-work-receipts')).toHaveTextContent('관계를 정리해줘');
+    expect(screen.getByTestId('agent-work-receipts')).toHaveTextContent('완료');
+  });
 
   it("fresh heartbeat만 현재 단계와 대상으로 말한다", () => {
     renderChip({

@@ -3355,7 +3355,21 @@
     "toolLabel": "Tool",
     "historyTitle": "Recent history",
     "inboxEmpty": "Nothing to report yet. When an agent or a person edits this folder, it lands here.",
-    "inboxFooter": "Only whole tasks are announced. The line-by-line record lives in activity.jsonl inside the folder, and on the history screen.",
+    "inboxFooter": "Execution stays local in activity.jsonl; in-app allow and reject decisions stay in acp-work.jsonl.",
+    "receiptTitle": "Work receipts",
+    "receiptItems": "{count} changes",
+    "receiptAt": "Result time",
+    "receiptDecision": {
+      "allowed": "Allowed",
+      "rejected": "Rejected"
+    },
+    "receiptResult": {
+      "pending": "Waiting to run",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "not-run": "Not run"
+    },
     "summaryAdded": "{count} added",
     "summaryEdited": "{count} edited",
     "summaryRemoved": "{count} removed",

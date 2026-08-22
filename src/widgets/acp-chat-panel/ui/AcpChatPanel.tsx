@@ -55,6 +55,7 @@ import {
   deriveAcpTurnActivity,
   type AcpTurnActivity,
 } from '@/features/acp-session/model/acp-turn-activity';
+import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
 
@@ -172,6 +173,7 @@ export function AcpChatPanel({
   onHoverSlug,
   onTurnActivityChange,
   onOntologyRelationPreviewChange,
+  onWorkReceipt,
   onClose,
 }: {
   runtimeId: string;
@@ -216,6 +218,8 @@ export function AcpChatPanel({
   onTurnActivityChange?: (activity: AcpTurnActivity | null) => void;
   /** 승인 전 점선, 승인 후 해당 ACP 도구가 끝날 때까지 실선인 단일 관계 변경안. */
   onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
+  /** Durable local summary of each ontology-write allow/reject and terminal result. */
+  onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
@@ -242,6 +246,7 @@ export function AcpChatPanel({
     vaultRoot,
     mcpServers,
     approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,
+    onWorkReceipt,
   });
   const pendingChangeSet = useMemo(
     () =>

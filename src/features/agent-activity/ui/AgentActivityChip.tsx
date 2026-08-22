@@ -137,7 +137,8 @@ export function AgentActivityChip({
     };
   }, [open, close]);
 
-  const showBell = feed.notificationsEnabled && feed.notifications.length > 0;
+  const showBell =
+    (feed.notificationsEnabled && feed.notifications.length > 0) || feed.workReceipts.length > 0;
   const showStatus = feed.showStatus;
   // 스택이 물러난 동안(데이터시트 조사 중)은 **언마운트한다** — 스택은 opacity-0
   // 로만 사라지므로 남겨 두면 보이지 않는 채 클릭·포커스 가능한 컨트롤이 된다.
@@ -426,7 +427,76 @@ export function AgentActivityChip({
               </dl>
             </section>
           ) : null}
-          {feed.notifications.length === 0 && feed.work.mode === 'idle' ? (
+          {feed.workReceipts.length > 0 ? (
+            <section
+              data-testid="agent-work-receipts"
+              className="border-b border-[color:var(--topology-floating-panel-divider)]"
+            >
+              <p className="px-3 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+                {t('receiptTitle')}
+              </p>
+              <div className="max-h-[240px] overflow-y-auto px-2 py-1.5">
+                {[...feed.workReceipts].slice(-5).reverse().map((receipt) => {
+                  const result = t(`receiptResult.${receipt.result}`);
+                  const decision = t(`receiptDecision.${receipt.decision}`);
+                  return (
+                    <details key={receipt.id} className="group border-b border-[color:var(--color-divider)] last:border-b-0">
+                      <summary
+                        className={controlClass({
+                          shape: 'row',
+                          size: 'sm',
+                          tone: 'secondary',
+                          hoverInk: 'strong',
+                          hoverSurface: 'lift',
+                          className: 'list-none py-2',
+                        })}
+                      >
+                        <span className="grid min-w-0 flex-1 gap-0.5 text-left">
+                          <span className="truncate text-label text-[color:var(--color-text-primary)]">
+                            {receipt.request}
+                          </span>
+                          <span className="flex min-w-0 items-center gap-1.5 text-caption text-[color:var(--color-text-quaternary)]">
+                            <span>{agentDisplayName(receipt.agent)}</span>
+                            <span aria-hidden>·</span>
+                            <span>{decision}</span>
+                            <span aria-hidden>·</span>
+                            <span>{result}</span>
+                            <span aria-hidden>·</span>
+                            <span>{t('receiptItems', { count: receipt.items.length })}</span>
+                          </span>
+                        </span>
+                      </summary>
+                      <div className="grid gap-2 px-2 pb-2 text-caption leading-label">
+                        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1">
+                          <dt className="text-[color:var(--color-text-quaternary)]">{t('toolLabel')}</dt>
+                          <dd className="min-w-0 truncate font-mono text-[color:var(--color-text-tertiary)]">
+                            {receipt.tool}
+                          </dd>
+                          <dt className="text-[color:var(--color-text-quaternary)]">{t('receiptAt')}</dt>
+                          <dd className="text-[color:var(--color-text-tertiary)]">
+                            {relative(Date.parse(receipt.updatedAt))}
+                          </dd>
+                        </dl>
+                        <ol className="grid max-h-32 gap-1 overflow-y-auto border-t border-[color:var(--color-divider)] pt-2">
+                          {receipt.items.map((item, index) => (
+                            <li
+                              key={`${receipt.id}:${index}`}
+                              className="break-all font-mono text-[color:var(--color-text-tertiary)]"
+                            >
+                              {item.relation
+                                ? `${item.relation.from} → ${item.relation.type} → ${item.relation.to}`
+                                : item.target ?? item.fields.join(' · ')}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+          {feed.notifications.length === 0 && feed.work.mode === 'idle' && feed.workReceipts.length === 0 ? (
             <p
               data-testid="agent-activity-inbox-empty"
               className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-tertiary)]"

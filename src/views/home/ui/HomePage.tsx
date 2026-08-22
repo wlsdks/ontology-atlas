@@ -332,6 +332,11 @@ import {
   type AgentLiveWorkInput,
 } from "@/features/agent-activity";
 import { FrameMeter } from "@/shared/ui/frame-meter";
+import {
+  createVaultAcpWorkReceiptStore,
+  type AcpWorkReceipt,
+  type AcpWorkReceiptStore,
+} from "@/shared/lib/acp-work-receipt";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
@@ -2576,6 +2581,20 @@ function HomePageImpl() {
         : null,
     [vault.status, vault.handle],
   );
+  const acpWorkReceiptStore = useMemo<AcpWorkReceiptStore | null>(
+    () =>
+      vault.status === "loaded" && vault.handle
+        ? createVaultAcpWorkReceiptStore(vault.handle)
+        : null,
+    [vault.status, vault.handle],
+  );
+  const handleAcpWorkReceipt = useCallback((receipt: AcpWorkReceipt) => {
+    if (!acpWorkReceiptStore) return;
+    void acpWorkReceiptStore
+      .append(receipt)
+      .then(() => vault.refresh())
+      .catch(() => {});
+  }, [acpWorkReceiptStore, vault.refresh]);
   const acpLiveWork = useMemo<AgentLiveWorkInput | null>(() => {
     const frame = acpTurnActivityFrame;
     if (!frame) return null;
@@ -6353,6 +6372,7 @@ function HomePageImpl() {
             onHoverSlug={handleChatHoverSlug}
             onTurnActivityChange={handleAcpTurnActivityChange}
             onOntologyRelationPreviewChange={setAcpRelationPreview}
+            onWorkReceipt={handleAcpWorkReceipt}
             onClose={closeVaultAgent}
           />
           </Surface>

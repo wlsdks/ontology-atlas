@@ -3355,7 +3355,21 @@
     "toolLabel": "도구",
     "historyTitle": "최근 기록",
     "inboxEmpty": "아직 알릴 것이 없어요. 에이전트나 사람이 이 폴더를 고치면 여기에 남습니다.",
-    "inboxFooter": "작업 단위로만 알립니다. 줄 단위 기록은 폴더 안 activity.jsonl 과 기록 화면에 있어요.",
+    "inboxFooter": "실행 기록은 activity.jsonl, 앱 안 승인·거절은 acp-work.jsonl에 로컬로 남습니다.",
+    "receiptTitle": "작업 영수증",
+    "receiptItems": "변경 {count}건",
+    "receiptAt": "결과 시각",
+    "receiptDecision": {
+      "allowed": "허용함",
+      "rejected": "거절함"
+    },
+    "receiptResult": {
+      "pending": "실행 대기",
+      "completed": "완료",
+      "failed": "실패",
+      "cancelled": "취소됨",
+      "not-run": "실행 안 함"
+    },
     "summaryAdded": "추가 {count}",
     "summaryEdited": "편집 {count}",
     "summaryRemoved": "삭제 {count}",

@@ -71,6 +71,7 @@ import {
   AcpChatPanel,
   type AcpOntologyRelationPreview,
 } from './AcpChatPanel';
+import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 /** 에이전트가 한 줄 보낸다. */
 function emit(payload: unknown) {
@@ -417,6 +418,57 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(previews.at(-1)).toBeNull());
     expect(previews.some((preview) => preview?.phase === 'committing')).toBe(false);
     expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'reject' });
+  });
+
+  it('온톨로지 쓰기의 사람 결정과 최종 도구 상태를 작업 영수증으로 내보낸다', async () => {
+    const receipts: AcpWorkReceipt[] = [];
+    await bootSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 정리해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    const rawInput = {
+      from: 'capabilities/a',
+      to: 'domains/b',
+      type: 'relates',
+      why: '같은 흐름이라서',
+    };
+    emit(mcpPermissionRequest('mcp__atlas-vault__add_relation', 96, rawInput));
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+
+    await waitFor(() => expect(receipts.at(-1)).toMatchObject({
+      request: '관계를 정리해줘',
+      tool: 'add_relation',
+      decision: 'allowed',
+      result: 'pending',
+    }));
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'tool_call_update', toolCallId: 'tc9', status: 'completed' },
+      },
+    });
+    await waitFor(() => expect(receipts.at(-1)?.result).toBe('completed'));
+    expect(receipts.at(-1)?.items[0].relation?.to).toBe('domains/b');
+  });
+
+  it('거절한 변경은 실행 안 함 영수증으로 즉시 닫는다', async () => {
+    const receipts: AcpWorkReceipt[] = [];
+    await bootSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    emit(mcpPermissionRequest('mcp__atlas-vault__add_concept', 97, {
+      slug: 'capabilities/not-created',
+      kind: 'capability',
+      title: 'Not Created',
+    }));
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+
+    await waitFor(() => expect(receipts).toHaveLength(1));
+    expect(receipts[0]).toMatchObject({
+      decision: 'rejected',
+      result: 'not-run',
+      tool: 'add_concept',
+    });
   });
 
   it('여러 관계 요청은 모든 행을 보여 주고 고른 행 하나만 지도에 내보낸다', async () => {
