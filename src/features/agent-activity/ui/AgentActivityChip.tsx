@@ -2,20 +2,107 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Bell } from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { Link } from '@/i18n/navigation';
 import { getTopologyFocusHref } from '@/entities/project';
 import { CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
-import { IconButton } from '@/shared/ui/controls';
+import { IconButton, RowButton } from '@/shared/ui/controls';
 import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
+import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { agentDisplayName } from '@/shared/lib/agent-display-name';
 import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
+import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
 import type { AgentLiveWorkInput } from '../model/agent-work-projection';
+
+function WorkReceiptRow({ receipt, nowMs }: { receipt: AcpWorkReceipt; nowMs: number }) {
+  const t = useTranslations('agentActivity');
+  const format = useFormatter();
+  const [open, setOpen] = useState(false);
+  const { mounted, boxRef, contentRef } = useRowDisclosure(open);
+  const bodyId = `agent-receipt-${receipt.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  const result = t(`receiptResult.${receipt.result}`);
+  const decision = t(`receiptDecision.${receipt.decision}`);
+
+  return (
+    <div className="border-b border-[color:var(--color-divider)] last:border-b-0">
+      <RowButton
+        size="sm"
+        tone={open ? 'strong' : 'secondary'}
+        active={open}
+        hoverInk="strong"
+        hoverSurface="lift"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        data-testid="agent-work-receipt-row"
+        onClick={() => setOpen((value) => !value)}
+        className="w-full py-2"
+      >
+        <ChevronRight
+          size={ICON_SIZE.sm}
+          aria-hidden
+          className="shrink-0 transition-transform"
+          style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        />
+        <span className="grid min-w-0 flex-1 gap-0.5 text-left">
+          <span className="truncate text-label text-[color:var(--color-text-primary)]">
+            {receipt.request}
+          </span>
+          <span className="flex min-w-0 items-center gap-1.5 text-caption text-[color:var(--color-text-quaternary)]">
+            <span>{agentDisplayName(receipt.agent)}</span>
+            <span aria-hidden>·</span>
+            <span>{decision}</span>
+            <span aria-hidden>·</span>
+            <span>{result}</span>
+            <span aria-hidden>·</span>
+            <span>{t('receiptItems', { count: receipt.items.length })}</span>
+          </span>
+        </span>
+      </RowButton>
+      <div
+        ref={boxRef}
+        id={bodyId}
+        data-state={open ? 'open' : 'closed'}
+        className="ai-row-disclosure"
+        inert={!open}
+      >
+        {mounted ? (
+          <div
+            ref={contentRef}
+            className="ai-row-disclosure-body grid gap-2 px-2 pb-2 pl-7 text-caption leading-label"
+          >
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1">
+              <dt className="text-[color:var(--color-text-quaternary)]">{t('toolLabel')}</dt>
+              <dd className="min-w-0 truncate font-mono text-[color:var(--color-text-tertiary)]">
+                {receipt.tool}
+              </dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">{t('receiptAt')}</dt>
+              <dd className="text-[color:var(--color-text-tertiary)]">
+                {format.relativeTime(new Date(receipt.updatedAt), nowMs)}
+              </dd>
+            </dl>
+            <ol className="grid max-h-32 gap-1 overflow-y-auto border-t border-[color:var(--color-divider)] pt-2">
+              {receipt.items.map((item, index) => (
+                <li
+                  key={`${receipt.id}:${index}`}
+                  className="break-all font-mono text-[color:var(--color-text-tertiary)]"
+                >
+                  {item.relation
+                    ? `${item.relation.from} → ${item.relation.type} → ${item.relation.to}`
+                    : item.target ?? item.fields.join(' · ')}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 /**
  * The "working / last worked" chip, plus the bell and the notification box.
@@ -139,7 +226,8 @@ export function AgentActivityChip({
     };
   }, [open, close]);
 
-  const showBell = feed.notificationsEnabled && feed.notifications.length > 0;
+  const showBell =
+    (feed.notificationsEnabled && feed.notifications.length > 0) || feed.workReceipts.length > 0;
   const showStatus = feed.showStatus;
   // While the stack has receded (during a datasheet investigation) it **unmounts** — the stack
   // disappears by `opacity-0` alone, so leaving it makes an invisible but clickable, focusable control.
@@ -428,7 +516,22 @@ export function AgentActivityChip({
               </dl>
             </section>
           ) : null}
-          {feed.notifications.length === 0 && feed.work.mode === 'idle' ? (
+          {feed.workReceipts.length > 0 ? (
+            <section
+              data-testid="agent-work-receipts"
+              className="border-b border-[color:var(--topology-floating-panel-divider)]"
+            >
+              <p className="px-3 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+                {t('receiptTitle')}
+              </p>
+              <div className="max-h-[240px] overflow-y-auto px-2 py-1.5">
+                {[...feed.workReceipts].slice(-5).reverse().map((receipt) => (
+                  <WorkReceiptRow key={receipt.id} receipt={receipt} nowMs={feed.nowMs} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+          {feed.notifications.length === 0 && feed.work.mode === 'idle' && feed.workReceipts.length === 0 ? (
             <p
               data-testid="agent-activity-inbox-empty"
               className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-tertiary)]"

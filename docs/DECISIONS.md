@@ -40,6 +40,75 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-22 (94) — 묶음 변경은 전부 검토하고, 앱 안 결정은 로컬 영수증으로 남기며, 소스 연결 뒤에만 구축을 시작한다
+
+**소집**: 단독 PO 패스. 소유자가 서브에이전트를 쓰지 말라고 요청해 카운슬은
+소집하지 않고 설치 앱 dogfood → 구현 → Codex Computer Use 재검수로 진행했다. ·
+**트리거**: 기존 (92)의 지도+ACP 작업대와 (93)의 작업 가시성은 유지하되, 실사용에서
+검토·기억·첫 시작의 세 단절이 동시에 관측됨.
+**루브릭**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology value 4 ·
+Agent value 4 · Verification 4 = **24/24** (치명적 0 없음).
+
+**선행 결정 관계**:
+
+- (92)의 “지도와 ACP가 주 작업대이고, 쓰기 전 typed 변경안을 사람이 결정한다”는
+  유효하다. 새 Studio·라우트·승인 원장은 만들지 않는다.
+- (93)의 “현재 작업과 과거 기록을 한 activity surface에서 구분한다”는 유효하다.
+  실행 사실인 activity.jsonl은 의미를 바꾸지 않고, 앱 안 사람 결정만 별도 로컬
+  기록으로 보강한다.
+
+**관찰된 현상**:
+
+1. add_relations 2건을 요청하면 카드가 “2건”이라고만 적고 첫 관계의
+   source/type/target/why만 보여 줬다. 두 번째 관계는 거절 뒤 에이전트 답에서야
+   처음 보였다.
+2. 거절·허용과 최종 도구 상태는 ACP 대화 안에서만 살아, 전역 「기록」의 Git
+   화면이나 activity 팝오버에서는 “왜 아무것도 안 바뀌었나”를 복원할 수 없었다.
+3. starter vault의 「코드 훑어서 지도 시작하기」는 project source가 0개여도
+   실행됐다. 실제 에이전트는 vault README와 starter Markdown만 훑고 “소스 코드가
+   없다”고 끝냈다.
+4. 에이전트가 돌려준 GFM 표는 셀 경계·헤더 면·행 구분이 없어 좁은 도크에서
+   띄엄띄엄 놓인 문장처럼 보였다.
+
+**결정**:
+
+1. batch ChangeSet은 protocol order의 모든 item을 보존한다. 검토 카드는 전 행을
+   accordion으로 나열하고 선택한 한 행의 전체 사실을 펼친다. 허용/거절은 현재
+   batch 전체에만 적용하며 부분 승인은 이번 slice에 넣지 않는다.
+2. 지도에는 고른 관계 한 건만 dashed preview로 보낸다. 첫 행 고정이나 모든 선의
+   동시 중첩은 금지한다. 승인이 끝나면 기존 단일 preview 수명주기를 그대로 탄다.
+3. 앱 안 ontology-write 결정은 .ontology-atlas/acp-work.jsonl에 append-only
+   snapshot으로 남긴다. 160자 요청 요약, agent/tool, typed target/relation/field
+   이름, allow/reject, pending/completed/failed/cancelled/not-run만 저장한다. 전체
+   대화·thought·tool output·절대 경로·본문 값은 저장하지 않는다. 실행 사실의
+   activity.jsonl과 섞지 않는다.
+4. 작업 영수증은 기존 activity popover 안에서 최근 다섯 건을 접어 보고, 공유
+   row-disclosure 모션으로 세부 도구와 변경 항목을 연다. 새 라우트나 Git 기록
+   의미 변경은 없다.
+5. starter project source 상태가 unbound이면 에이전트 분석 대신 프로젝트
+   데이터시트의 「코드 폴더 연결하기」를 연다. sidecar 연결 완료를 같은 화면에서
+   다시 읽은 뒤에만 source-evidence-first 구축 prompt를 보여 준다.
+6. ACP GFM 표는 semantic table을 유지하고, 기존 neutral/token ramp로 header,
+   divider, cell padding을 주며 좁은 도크에서는 표 내부만 가로 스크롤한다.
+
+**기록된 반대**: batch 전체 승인만 있으면 사용자가 10개 중 9개는 맞고 1개만 틀린
+경우 전부 거절하고 에이전트에게 다시 요청해야 한다. 부분 승인이나 항목 삭제가
+있으면 더 빠를 수 있다.
+**반증 조건**: 실제 batch 검토에서 일부만 승인하려고 전체 거절 후 재요청하는 행동이
+세 번 관측되거나, 20건 이상 batch에서 accordion 전수 검토가 반복적으로 중단되면
+부분 선택 review를 재검토한다. 그때도 writer input을 몰래 바꾸지 않고 선택된 subset을
+새 plan으로 재검증한다.
+**재검토**: 설치 앱 batch 쓰기 10회 또는 위 관측 3회.
+
+**검증 증거**: 변경 경로 게이트 16/16, contract 2,017개, web smoke 11개,
+desktop check 347개, 설치 앱에서 2행 전수 검토·선택 preview·거절 0-write·영수증
+상세·source unbound→bound CTA 전환·377px 표를 Codex Computer Use로 왕복했다.
+120fps 원본을 30fps로 재표본한 disclosure 녹화는 열림 7프레임, 닫힘 6프레임의
+활성 구간에서 멈춘 프레임 0개였다.
+
+**서명**: 진안 — 세 우선순위와 구현 승인; Codex — 단독 PO, 구현, 검수 책임.
+**상태**: 유효
+
 ## 2026-08-22 (93) — 에이전트 작업은 확인된 heartbeat만 현재형으로 말하고, 저작자와 README를 작업 상태로 쓰지 않는다
 
 **소집**: 단독 PO 패스 → 디자인 방향 4안 중 기존 지도 상태 칩·지도·우측 패널을

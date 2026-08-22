@@ -43,10 +43,14 @@ import type { PendingPermission } from '@/features/acp-session/model/use-acp-ses
 export function AcpPermissionCard({
   pending,
   changeSet: providedChangeSet,
+  activeItemIndex,
+  onActiveItemChange,
 }: {
   pending: PendingPermission;
   /** The computed value comes along so the panel and the map read the same typed change. */
   changeSet?: OntologyChangeSet | null;
+  activeItemIndex?: number;
+  onActiveItemChange?: (index: number) => void;
 }) {
   const t = useTranslations('acpChat.permission');
   const { request, resolve } = pending;
@@ -148,7 +152,11 @@ export function AcpPermissionCard({
         When it is unknown, it says so. Guessing 「read」 errs on the most dangerous side.
       */}
       {changeSet ? (
-        <OntologyChangeReview changeSet={changeSet} />
+        <OntologyChangeReview
+          changeSet={changeSet}
+          activeItemIndex={activeItemIndex}
+          onActiveItemChange={onActiveItemChange}
+        />
       ) : (
         <p
           data-testid="acp-permission-intent"

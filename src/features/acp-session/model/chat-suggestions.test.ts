@@ -19,8 +19,17 @@ const empty = {
 
 describe('추천은 이 볼트에서 관측된 사실에서만 나온다', () => {
   it('빈 볼트에는 「짓기」를 권한다 — 고칠 것이 없으니 만들 것을 권해야 한다', () => {
-    const out = chatSuggestions(empty);
+    const out = chatSuggestions({ ...empty, sourceState: 'bound' });
     expect(out[0]?.kind).toBe('bootstrap');
+  });
+
+  it('새 볼트에 코드 폴더가 없으면 분석보다 연결을 먼저 권한다', () => {
+    const out = chatSuggestions({ ...empty, nodeCount: 5, sourceState: 'unbound' });
+    expect(out.map((item) => item.kind)).toEqual(['connectSource']);
+  });
+
+  it('소스 연결을 아직 읽는 중에는 틀릴 수 있는 시작 버튼을 먼저 그리지 않는다', () => {
+    expect(chatSuggestions({ ...empty, nodeCount: 5, sourceState: 'loading' })).toEqual([]);
   });
 
   it('끊긴 덩어리가 있으면 그 노드 이름을 들고 나온다', () => {
@@ -110,6 +119,7 @@ describe('추천은 이 볼트에서 관측된 사실에서만 나온다', () =>
       ...empty,
     // Even if the calculator emitted something for an empty vault (which it cannot), building comes first.
       islands: [['a/1']],
+      sourceState: 'bound',
     });
     expect(out[0]?.kind).toBe('bootstrap');
   });

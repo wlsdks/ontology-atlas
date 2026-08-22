@@ -15,6 +15,7 @@ import {
 } from "@/widgets/acp-chat-panel";
 import { vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session/model/vault-mcp-server";
 import { useChatSuggestions } from "@/features/acp-session/model/use-chat-suggestions";
+import type { ChatSuggestion } from "@/features/acp-session/model/chat-suggestions";
 import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -194,7 +195,7 @@ import {
   projectSlugForSource,
   useProjectSourceModel,
 } from "../model/use-project-source-model";
-import { useUnboundProjectSource } from "../model/use-unbound-project-source";
+import { useProjectSourceReadiness } from "../model/use-unbound-project-source";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -334,6 +335,11 @@ import {
   type AgentLiveWorkInput,
 } from "@/features/agent-activity";
 import { FrameMeter } from "@/shared/ui/frame-meter";
+import {
+  createVaultAcpWorkReceiptStore,
+  type AcpWorkReceipt,
+  type AcpWorkReceiptStore,
+} from "@/shared/lib/acp-work-receipt";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
@@ -2325,10 +2331,6 @@ function HomePageImpl() {
    * on the first screen). This hook reads the sidecar once and puts that one fact in
    * a quiet INDEX row.
    */
-  const unboundProjectSource = useUnboundProjectSource({
-    vaultHandle: vault.status === "loaded" ? vault.handle : null,
-    nodes: ontologyInsight?.nodes ?? [],
-  });
   const sourceProjectSlug = projectSlugForSource(selectedOntologyNode);
   const projectSource = useProjectSourceModel({
     projectSlug: sourceProjectSlug,
@@ -2340,6 +2342,20 @@ function HomePageImpl() {
     // screen.
     pickerTitle: t("nodeDatasheet.sourcePickerTitle"),
   });
+  const projectSourceReadiness = useProjectSourceReadiness({
+    vaultHandle: vault.status === "loaded" ? vault.handle : null,
+    nodes: ontologyInsight?.nodes ?? [],
+    // 연결/측정은 markdown graph를 안 바꾸므로 manifest 갱신만 기다리면 영원히
+    // 재독해하지 않는다. 선택된 프로젝트 모델이 실제 sidecar 전환을 끝낸
+    // 순간을 이 읽기 전용 요약의 무효화 토큰으로 쓴다.
+    refreshToken: [
+      sourceProjectSlug ?? "",
+      projectSource.view?.bindingCardinality ?? "",
+      projectSource.view?.measuredAt ?? "",
+      projectSource.proposalSettled ? "settled" : "pending",
+    ].join(":"),
+  });
+  const unboundProjectSource = projectSourceReadiness.unbound;
   const projectSourceMeasuredAtLabel = useMemo(() => {
     const measuredAt = projectSource.view?.measuredAt;
     if (!measuredAt) return t("nodeDatasheet.sourceMeasuredNever");
@@ -2553,7 +2569,7 @@ function HomePageImpl() {
     the result: were the panel to read the vault itself it could not stand without a
     `LocalVaultProvider`, and that is not a property that widget has ever had.
   */
-  const chatSuggestions = useChatSuggestions();
+  const chatSuggestions = useChatSuggestions(projectSourceReadiness.state);
   const acpRuntimeLabel = acpRuntime?.label ?? null;
   /*
    * Memoised: a fresh array every render changes the identity of the consuming hook's
@@ -2597,6 +2613,21 @@ function HomePageImpl() {
         : null,
     [vault.status, vault.handle],
   );
+  const acpWorkReceiptStore = useMemo<AcpWorkReceiptStore | null>(
+    () =>
+      vault.status === "loaded" && vault.handle
+        ? createVaultAcpWorkReceiptStore(vault.handle)
+        : null,
+    [vault.status, vault.handle],
+  );
+  const refreshVault = vault.refresh;
+  const handleAcpWorkReceipt = useCallback((receipt: AcpWorkReceipt) => {
+    if (!acpWorkReceiptStore) return;
+    void acpWorkReceiptStore
+      .append(receipt)
+      .then(() => refreshVault())
+      .catch(() => {});
+  }, [acpWorkReceiptStore, refreshVault]);
   const acpLiveWork = useMemo<AgentLiveWorkInput | null>(() => {
     const frame = acpTurnActivityFrame;
     if (!frame) return null;
@@ -3311,6 +3342,15 @@ function HomePageImpl() {
       setNodePopoverDismissed,
     ],
   );
+
+  const handleChatSuggestionAction = useCallback((suggestion: ChatSuggestion): boolean => {
+    if (suggestion.kind !== 'connectSource' || !unboundProjectSource) return false;
+    // 연결은 에이전트가 추측할 일이 아니라 설치 앱의 폴더 선택 관문이 맡는다.
+    // 먼저 프로젝트 데이터시트를 열어 사용자가 실제 코드 폴더를 고르게 한다.
+    closeVaultAgent();
+    handleSelect(unboundProjectSource.nodeId, { keepIndexOpen: true });
+    return true;
+  }, [closeVaultAgent, handleSelect, unboundProjectSource]);
 
   /**
    * **Replays a past trail as the walk in progress.** The order is the contract:
@@ -6387,10 +6427,12 @@ function HomePageImpl() {
             // sent.
             prefillRequest={vaultAgentPrefill ?? askPrefill}
             suggestions={chatSuggestions}
+            onSuggestionAction={handleChatSuggestionAction}
             knownSlugs={chatKnownSlugs}
             onHoverSlug={handleChatHoverSlug}
             onTurnActivityChange={handleAcpTurnActivityChange}
             onOntologyRelationPreviewChange={setAcpRelationPreview}
+            onWorkReceipt={handleAcpWorkReceipt}
             onClose={closeVaultAgent}
           />
           </Surface>

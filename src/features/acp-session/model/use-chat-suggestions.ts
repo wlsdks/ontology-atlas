@@ -39,7 +39,9 @@ function unevidencedCapabilities(manifest: VaultManifest | null): string[] {
   return out.sort();
 }
 
-export function useChatSuggestions(): ChatSuggestion[] {
+export function useChatSuggestions(
+  sourceState: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects' = 'bound',
+): ChatSuggestion[] {
   const health = useVaultHealth();
   const mode = useDataSourceMode();
   const vault = useLocalVault();
@@ -57,7 +59,8 @@ export function useChatSuggestions(): ChatSuggestion[] {
         islands: health.islands,
         missingContainment: health.missingContainment,
         unevidenced: unevidencedCapabilities(manifest),
+        sourceState,
       }),
-    [health, manifest],
+    [health, manifest, sourceState],
   );
 }

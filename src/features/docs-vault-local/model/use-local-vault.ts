@@ -4,6 +4,11 @@ import { type AgentClientId, filesForClient } from '../lib/agent-clients';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
 import {
+  ACP_WORK_RECEIPT_FILE,
+  parseAcpWorkReceipts,
+  type AcpWorkReceipt,
+} from '@/shared/lib/acp-work-receipt';
+import {
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
   computeLocalVaultFingerprintWithStamps,
@@ -239,6 +244,8 @@ interface State {
   agentActivityStatus: AgentActivityStatus;
   /** Tail of the local audit log; empty array when absent. */
   agentActivityLog: AgentActivityEntry[];
+  /** App-local human decision receipts from `.ontology-atlas/acp-work.jsonl`. */
+  acpWorkReceipts: AcpWorkReceipt[];
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
@@ -281,6 +288,7 @@ function emptyState(status: Status = 'idle'): State {
     agentConfigStatus: null,
     agentActivityStatus: emptyAgentActivityStatus(),
     agentActivityLog: [],
+    acpWorkReceipts: [],
     fileHandles: new Map(),
     imageHandles: new Map(),
     errorMessage: null,
@@ -513,13 +521,15 @@ async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Prom
   agentConfigStatus: AgentConfigStatus;
   agentActivityStatus: AgentActivityStatus;
   agentActivityLog: AgentActivityEntry[];
+  acpWorkReceipts: AcpWorkReceipt[];
 }> {
-  const [agentConfigStatus, agentActivityStatus, agentActivityLog] = await Promise.all([
+  const [agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts] = await Promise.all([
     readAgentConfigStatus(handle),
     readAgentActivityStatus(handle),
     readAgentActivityLog(handle),
+    readAcpWorkReceipts(handle),
   ]);
-  return { agentConfigStatus, agentActivityStatus, agentActivityLog };
+  return { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts };
 }
 
 /** Tail of the local audit log (read-only; empty array when absent). */
@@ -528,6 +538,16 @@ async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<
     const dir = await handle.getDirectoryHandle('.ontology-atlas');
     const raw = await readTextFileIfPresent(dir, 'activity.jsonl');
     return raw ? parseAgentActivityLog(raw, { limit: 50 }) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function readAcpWorkReceipts(handle: FileSystemDirectoryHandle): Promise<AcpWorkReceipt[]> {
+  try {
+    const dir = await handle.getDirectoryHandle('.ontology-atlas');
+    const raw = await readTextFileIfPresent(dir, ACP_WORK_RECEIPT_FILE);
+    return raw ? parseAcpWorkReceipts(raw) : [];
   } catch {
     return [];
   }
@@ -705,7 +725,7 @@ export function useLocalVaultInternal() {
       }
       const { build, entries } = result;
       const { manifest, fileHandles, imageHandles, fingerprint } = build;
-      const { agentConfigStatus, agentActivityStatus, agentActivityLog } =
+      const { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts } =
         await readVaultSidecarStatuses(handle);
       lastFingerprintRef.current = fingerprint;
       lastBuildRef.current = { handle, entries };
@@ -716,6 +736,7 @@ export function useLocalVaultInternal() {
         agentConfigStatus,
         agentActivityStatus,
         agentActivityLog,
+        acpWorkReceipts,
         fileHandles,
         imageHandles,
         errorMessage: null,
@@ -737,6 +758,7 @@ export function useLocalVaultInternal() {
         agentConfigStatus: null,
         agentActivityStatus: emptyAgentActivityStatus(),
         agentActivityLog: [],
+        acpWorkReceipts: [],
         fileHandles: new Map(),
         imageHandles: new Map(),
         errorMessage: toErrorMessage(err),
@@ -968,7 +990,9 @@ export function useLocalVaultInternal() {
             const same =
               shallowEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
               shallowEqualStatus(s.agentActivityStatus, sidecars.agentActivityStatus) &&
-              s.agentActivityLog.length === sidecars.agentActivityLog.length;
+              s.agentActivityLog.length === sidecars.agentActivityLog.length &&
+              s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
+              s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt;
             return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
           });
           return false;
@@ -1349,6 +1373,7 @@ export function useLocalVaultInternal() {
               agentConfigStatus: null,
               agentActivityStatus: emptyAgentActivityStatus(),
               agentActivityLog: [],
+              acpWorkReceipts: [],
               fileHandles: new Map(),
               imageHandles: new Map(),
               errorMessage: null,
@@ -1369,6 +1394,7 @@ export function useLocalVaultInternal() {
           agentConfigStatus: null,
           agentActivityStatus: emptyAgentActivityStatus(),
           agentActivityLog: [],
+          acpWorkReceipts: [],
           fileHandles: new Map(),
           imageHandles: new Map(),
           errorMessage: null,
@@ -1536,6 +1562,7 @@ export function useLocalVaultInternal() {
     agentConfigStatus: state.agentConfigStatus,
     agentActivityStatus: state.agentActivityStatus,
     agentActivityLog: state.agentActivityLog,
+    acpWorkReceipts: state.acpWorkReceipts,
     recentVaults,
     fileHandles: state.fileHandles,
     imageHandles: state.imageHandles,

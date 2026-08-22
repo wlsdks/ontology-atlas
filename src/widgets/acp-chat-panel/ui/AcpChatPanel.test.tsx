@@ -71,6 +71,7 @@ import {
   AcpChatPanel,
   type AcpOntologyRelationPreview,
 } from './AcpChatPanel';
+import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 /** The agent sends one line. */
 function emit(payload: unknown) {
@@ -207,6 +208,26 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     // Several chunks still make one bubble — a single sentence arrives split up.
     await waitFor(() => expect(screen.getByText('네, 볼게요.')).toBeInTheDocument());
     expect(screen.getAllByText(/네, 볼게요\./)).toHaveLength(1);
+  });
+
+  it('에이전트의 GFM 표를 좁은 패널에서도 구획과 가로 스크롤이 있는 표로 그린다', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { text: '| 항목 | 값 |\n| --- | --- |\n| 소스 코드 | 연결 안 됨 |' },
+        },
+      },
+    });
+
+    const scroller = await screen.findByTestId('acp-chat-markdown-table');
+    expect(scroller).toHaveClass('overflow-x-auto');
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '항목' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '연결 안 됨' })).toBeInTheDocument();
   });
 
   it('생각과 말을 다른 것으로 그린다 — 중간 과정을 결론으로 읽지 않게', async () => {
@@ -400,21 +421,88 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'reject' });
   });
 
-  it('여러 관계 요청의 첫 항목만 골라 지도에 내보내지 않는다', async () => {
-    const previews: Array<unknown> = [];
+  it('온톨로지 쓰기의 사람 결정과 최종 도구 상태를 작업 영수증으로 내보낸다', async () => {
+    const receipts: AcpWorkReceipt[] = [];
+    await bootSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 정리해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    const rawInput = {
+      from: 'capabilities/a',
+      to: 'domains/b',
+      type: 'relates',
+      why: '같은 흐름이라서',
+    };
+    emit(mcpPermissionRequest('mcp__atlas-vault__add_relation', 96, rawInput));
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+
+    await waitFor(() => expect(receipts.at(-1)).toMatchObject({
+      request: '관계를 정리해줘',
+      tool: 'add_relation',
+      decision: 'allowed',
+      result: 'pending',
+    }));
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'tool_call_update', toolCallId: 'tc9', status: 'completed' },
+      },
+    });
+    await waitFor(() => expect(receipts.at(-1)?.result).toBe('completed'));
+    expect(receipts.at(-1)?.items[0].relation?.to).toBe('domains/b');
+  });
+
+  it('거절한 변경은 실행 안 함 영수증으로 즉시 닫는다', async () => {
+    const receipts: AcpWorkReceipt[] = [];
+    await bootSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    emit(mcpPermissionRequest('mcp__atlas-vault__add_concept', 97, {
+      slug: 'capabilities/not-created',
+      kind: 'capability',
+      title: 'Not Created',
+    }));
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+
+    await waitFor(() => expect(receipts).toHaveLength(1));
+    expect(receipts[0]).toMatchObject({
+      decision: 'rejected',
+      result: 'not-run',
+      tool: 'add_concept',
+    });
+  });
+
+  it('여러 관계 요청은 모든 행을 보여 주고 고른 행 하나만 지도에 내보낸다', async () => {
+    const previews: Array<AcpOntologyRelationPreview | null> = [];
     await bootSession({
       onOntologyRelationPreviewChange: (preview) => previews.push(preview),
     });
     emit(
       mcpPermissionRequest('mcp__atlas-vault__add_relations', 90, {
         relations: [
-          { from: 'capabilities/a', to: 'domains/one', type: 'depends_on' },
-          { from: 'capabilities/a', to: 'domains/two', type: 'depends_on' },
+          { from: 'capabilities/a', to: 'domains/one', type: 'depends_on', why: '첫 이유' },
+          { from: 'capabilities/b', to: 'domains/two', type: 'contains', why: '둘째 이유' },
         ],
       }),
     );
     await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
-    expect(previews.filter(Boolean)).toHaveLength(0);
+    const rows = screen.getAllByTestId('acp-ontology-change-item');
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toHaveTextContent('domains/two');
+    expect(previews.at(-1)).toEqual({
+      sourceSlug: 'capabilities/a',
+      targetSlug: 'domains/one',
+      relationType: 'depends_on',
+      phase: 'draft',
+    });
+
+    fireEvent.click(screen.getByTestId('acp-ontology-change-item-1'));
+    await waitFor(() => expect(previews.at(-1)).toEqual({
+      sourceSlug: 'capabilities/b',
+      targetSlug: 'domains/two',
+      relationType: 'contains',
+      phase: 'draft',
+    }));
   });
 
   it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {
@@ -1299,6 +1387,21 @@ describe('빈 대화의 추천 — 이 폴더에 대한 것만 그린다', () =>
     await bootSession();
     expect(screen.getByTestId('acp-chat-empty')).toBeTruthy();
     expect(screen.queryByTestId('acp-chat-suggestions')).toBeNull();
+  });
+
+  it('소스 연결 추천은 에이전트 문장으로 바꾸지 않고 앱의 연결 행동으로 보낸다', async () => {
+    const onSuggestionAction = vi.fn(() => true);
+    await bootSession({
+      suggestions: [{ kind: 'connectSource', params: { count: 1 } }],
+      onSuggestionAction,
+    });
+    fireEvent.click(screen.getByTestId('acp-chat-suggestion-connectSource'));
+
+    expect(onSuggestionAction).toHaveBeenCalledWith({
+      kind: 'connectSource',
+      params: { count: 1 },
+    });
+    expect(screen.getByRole('textbox')).toHaveValue('');
   });
 });
 

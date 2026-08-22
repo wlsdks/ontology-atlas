@@ -23,6 +23,8 @@
 export const SUGGESTION_LIMIT = 3;
 
 export type SuggestionKind =
+  /** starter vault has a project but no source binding — connect before analysis */
+  | 'connectSource'
   /** The vault is empty — nothing to fix, so recommend making something */
   | 'bootstrap'
   /** There is a cluster detached from the map */
@@ -47,6 +49,7 @@ export interface SuggestionInput {
   missingContainment: readonly { slug: string; domain: string }[];
   /** Capability slugs with an empty `path:` */
   unevidenced: readonly string[];
+  sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
 }
 
 /**
@@ -58,6 +61,16 @@ const STARTER_NODE_CEILING = 5;
 export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   // Recommending "fix this" to a vault with nothing built yet invents a problem that does not exist.
   if (input.nodeCount <= STARTER_NODE_CEILING) {
+    if (input.sourceState === 'unbound') {
+      return [{ kind: 'connectSource', params: { count: input.nodeCount } }];
+    }
+    if (
+      input.sourceState === 'loading'
+      || input.sourceState === 'unavailable'
+      || input.sourceState === 'no-projects'
+    ) {
+      return [];
+    }
     return [{ kind: 'bootstrap', params: { count: input.nodeCount } }];
   }
 

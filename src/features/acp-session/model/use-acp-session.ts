@@ -23,6 +23,12 @@ import {
   type AcpSessionSummary,
   type AcpTransport,
 } from './acp-client';
+import { buildOntologyChangeSet } from '@/entities/knowledge-graph';
+import type {
+  AcpWorkDecision,
+  AcpWorkReceipt,
+  AcpWorkResult,
+} from '@/shared/lib/acp-work-receipt';
 
 /**
  * The lifetime of one ACP session — start it, talk to it, ask for permission, end it.
@@ -80,6 +86,55 @@ export interface UseAcpSessionOptions {
   mcpServers?: unknown[];
   /** Time to let the confirm motion finish before proceeding with the tool. 0 under reduced motion. */
   approvalSettleMs?: number;
+  /** Human ontology-write decisions, emitted as bounded local receipt snapshots. */
+  onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
+}
+
+const RECEIPT_REQUEST_LIMIT = 160;
+
+function receiptRequestSummary(value: string | null): string {
+  const oneLine = (value ?? '').replace(/\s+/g, ' ').trim();
+  return oneLine ? oneLine.slice(0, RECEIPT_REQUEST_LIMIT) : 'Ontology write request';
+}
+
+function workReceipt({
+  request,
+  sessionId,
+  runtimeId,
+  userRequest,
+  decision,
+  result,
+  at,
+}: {
+  request: AcpPermissionRequest;
+  sessionId: string | null;
+  runtimeId: string;
+  userRequest: string | null;
+  decision: AcpWorkDecision;
+  result: AcpWorkResult;
+  at: string;
+}): AcpWorkReceipt {
+  const changeSet = buildOntologyChangeSet(request.toolName ?? 'ontology-write', request.rawInput);
+  const toolCallId = request.toolCallId ?? `${changeSet.toolName}:${at}`;
+  return {
+    v: 1,
+    id: `${sessionId ?? 'session'}:${toolCallId}`,
+    at,
+    updatedAt: at,
+    agent: runtimeId,
+    request: receiptRequestSummary(userRequest),
+    tool: changeSet.toolName,
+    decision,
+    result,
+    items: changeSet.items.map((item) => ({
+      target: item.target,
+      operation: changeSet.operation,
+      relation: item.relation
+        ? { from: item.relation.from, type: item.relation.type, to: item.relation.to }
+        : null,
+      fields: item.fields.map((field) => field.key),
+    })),
+  };
 }
 
 /**
@@ -153,6 +208,7 @@ export function useAcpSession({
   vaultRoot,
   mcpServers,
   approvalSettleMs = 0,
+  onWorkReceipt,
 }: UseAcpSessionOptions) {
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
   /*
@@ -255,6 +311,24 @@ export function useAcpSession({
   const permissionDecisionTimerRef = useRef<number | null>(null);
   /** Held alongside state so the `tool_call_update` callback reads the latest approval target. */
   const approvedOntologyWriteRef = useRef<AcpPermissionRequest | null>(null);
+  const approvedReceiptRef = useRef<{
+    toolCallId: string | null;
+    receipt: AcpWorkReceipt;
+  } | null>(null);
+  const latestUserRequestRef = useRef<string | null>(null);
+  const onWorkReceiptRef = useRef(onWorkReceipt);
+
+  useEffect(() => {
+    onWorkReceiptRef.current = onWorkReceipt;
+  }, [onWorkReceipt]);
+
+  const emitWorkReceipt = useCallback((receipt: AcpWorkReceipt) => {
+    try {
+      onWorkReceiptRef.current?.(receipt);
+    } catch {
+      // A local audit write must never strand the ACP permission response.
+    }
+  }, []);
 
   const setApprovedOntologyWriteTracked = useCallback(
     (request: AcpPermissionRequest | null) => {
@@ -314,15 +388,30 @@ export function useAcpSession({
         setEvents((prev) =>
           prev.map((e) => (e.kind === 'tool' && e.id === id ? { ...e, status: nextStatus } : e)),
         );
+        const approvedReceipt = approvedReceiptRef.current;
         if (
           TERMINAL_TOOL_STATES.has(nextStatus) &&
           approvedOntologyWriteRef.current?.toolCallId === id
         ) {
+          if (approvedReceipt?.toolCallId === id) {
+            const result: AcpWorkResult =
+              nextStatus === 'completed'
+                ? 'completed'
+                : nextStatus === 'failed'
+                  ? 'failed'
+                  : 'cancelled';
+            emitWorkReceipt({
+              ...approvedReceipt.receipt,
+              updatedAt: new Date().toISOString(),
+              result,
+            });
+            approvedReceiptRef.current = null;
+          }
           setApprovedOntologyWriteTracked(null);
         }
       }
     },
-    [push, setApprovedOntologyWriteTracked],
+    [emitWorkReceipt, push, setApprovedOntologyWriteTracked],
   );
 
   /** Creates the promise that waits until the screen answers. */
@@ -333,6 +422,24 @@ export function useAcpSession({
         request,
         resolve: (optionId) => {
           const selectedKind = request.options.find((option) => option.optionId === optionId)?.kind;
+          const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
+          if (ontologyWrite) {
+            const decision: AcpWorkDecision = selectedKind === 'allow_once' ? 'allowed' : 'rejected';
+            const at = new Date().toISOString();
+            const receipt = workReceipt({
+              request,
+              sessionId: sessionIdRef.current,
+              runtimeId,
+              userRequest: latestUserRequestRef.current,
+              decision,
+              result: decision === 'allowed' ? 'pending' : 'not-run',
+              at,
+            });
+            emitWorkReceipt(receipt);
+            approvedReceiptRef.current = decision === 'allowed'
+              ? { toolCallId: request.toolCallId, receipt }
+              : null;
+          }
           const settlesBeforeWrite =
             request.reviewKind === 'ontology-write' &&
             selectedKind === 'allow_once' &&
@@ -356,7 +463,7 @@ export function useAcpSession({
         },
       });
     });
-  }, [approvalSettleMs, setApprovedOntologyWriteTracked]);
+  }, [approvalSettleMs, emitWorkReceipt, runtimeId, setApprovedOntologyWriteTracked]);
 
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
@@ -663,6 +770,7 @@ export function useAcpSession({
     async (sessionId: string | null) => {
       await stopRef.current?.();
       setEvents([]);
+      latestUserRequestRef.current = null;
       setApprovedOntologyWriteTracked(null);
       setError(null);
       resumeIdRef.current = sessionId;
@@ -699,6 +807,7 @@ export function useAcpSession({
       const client = clientRef.current;
       const sessionId = sessionIdRef.current;
       if (!client || !sessionId || !text.trim()) return;
+      latestUserRequestRef.current = text.trim();
       push({ kind: 'user', id: nextEventId(), text });
       setStatusTracked('thinking');
       try {
@@ -739,6 +848,15 @@ export function useAcpSession({
     pendingResolverRef.current?.(null);
     pendingResolverRef.current = null;
     setPending(null);
+    const approvedReceipt = approvedReceiptRef.current;
+    if (approvedReceipt) {
+      emitWorkReceipt({
+        ...approvedReceipt.receipt,
+        updatedAt: new Date().toISOString(),
+        result: 'cancelled',
+      });
+      approvedReceiptRef.current = null;
+    }
     setApprovedOntologyWriteTracked(null);
     // Release the lock even if it was starting — otherwise it can never start again.
     startingRef.current = false;
@@ -751,7 +869,7 @@ export function useAcpSession({
     sessionIdRef.current = null;
     if (acpSessionId) await stopAcpSession(acpSessionId);
     setStatusTracked('idle');
-  }, [setApprovedOntologyWriteTracked, setStatusTracked]);
+  }, [emitWorkReceipt, setApprovedOntologyWriteTracked, setStatusTracked]);
 
   /*
    * Hold the latest in a ref so `switchSession` can call it without a circular dependency.
