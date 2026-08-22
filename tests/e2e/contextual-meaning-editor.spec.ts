@@ -29,8 +29,17 @@ async function openCheckoutEditor(page: import('@playwright/test').Page) {
   await expect(row).toBeVisible({ timeout: 15_000 });
   await row.click();
   await expect(page.getByTestId('topology-v2-detail-panel')).toBeVisible({ timeout: 15_000 });
-  await page.getByTestId('topology-v2-detail-panel-action-edit').click();
+  await openRelationEditorFromDetail(page);
   await expect(page.getByTestId('meaning-editor-panel')).toBeVisible({ timeout: 15_000 });
+}
+
+async function openRelationEditorFromDetail(page: import('@playwright/test').Page) {
+  const detailPanel = page.getByTestId('topology-v2-detail-panel');
+  await detailPanel.getByTestId('topology-v2-detail-panel-edit-menu-trigger').click();
+  await detailPanel
+    .getByTestId('topology-v2-detail-panel-edit-menu')
+    .getByTestId('topology-v2-detail-panel-action-edit')
+    .click();
 }
 
 async function chooseOption(
@@ -86,7 +95,7 @@ test('contextual editor stays inside the responsive workbench and every control 
     .poll(() => page.evaluate(() => window.__atlasMap?.nodes().length ?? 0), { timeout: 15_000 })
     .toBeGreaterThan(0);
   await expect(page.getByTestId('topology-v2-detail-panel')).toBeVisible({ timeout: 15_000 });
-  await page.getByTestId('topology-v2-detail-panel-action-edit').click();
+  await openRelationEditorFromDetail(page);
   await expect(page.getByTestId('meaning-editor-panel')).toBeVisible({ timeout: 15_000 });
   await chooseOption(page, 'meaning-editor-relation', '비슷한 것');
   await chooseOption(page, 'meaning-editor-target', '세금 신고 자료');

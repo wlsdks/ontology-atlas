@@ -15,6 +15,7 @@ import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
+import { useRelationVocabulary } from "@/entities/knowledge-graph";
 import {
   SHORTCUT_SCOPES,
   sectionVisible,
@@ -70,6 +71,49 @@ const GLOSSARY_TERMS = [
   "evidence",
   "nodeNumber",
 ] as const;
+
+function ShortcutRelationGuide({ title }: { title: string }) {
+  const relationVocabulary = useRelationVocabulary();
+  return (
+    <section data-testid="shortcut-sheet-relation-guide">
+      <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+        {title}
+      </p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-body text-[color:var(--color-text-tertiary)]">
+        <span className="flex items-center gap-2">
+          <span aria-hidden className="relative h-2.5 w-8 shrink-0">
+            <span className="absolute left-0 right-1 top-1/2 h-px -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-halo)]" />
+            <span className="absolute right-0 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-terminal)]" />
+          </span>
+          {relationVocabulary("contains", "formal")}
+        </span>
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="h-[3px] w-8 shrink-0"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",
+              clipPath: "polygon(0 0, 100% 33%, 100% 67%, 0 100%)",
+            }}
+          />
+          {relationVocabulary("depends_on", "formal")}
+        </span>
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="h-[2px] w-8 shrink-0 rounded-full"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",
+            }}
+          />
+          {relationVocabulary("related_to", "formal")}
+        </span>
+      </div>
+    </section>
+  );
+}
 
 /**
  * The destination-navigation rows — **generated from the table**, not written by hand.
@@ -565,7 +609,19 @@ export function ShortcutSheet({ open, onClose }: Props) {
             </div>
 
             <footer className="shrink-0 border-t border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-5 py-3">
-              <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+              {currentSurface === "topology" &&
+              (scope === "current" || scope === "topology" || scope === "all") ? (
+                <ShortcutRelationGuide title={t("glossary.relationsTitle")} />
+              ) : null}
+              <p
+                className={cn(
+                  "font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]",
+                  currentSurface === "topology" &&
+                    (scope === "current" || scope === "topology" || scope === "all")
+                    ? "mt-3"
+                    : undefined,
+                )}
+              >
                 {t("glossary.title")}
               </p>
               <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">

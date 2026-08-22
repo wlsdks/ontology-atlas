@@ -1,8 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useCallback } from 'react';
 
 import { AcpRuntimeSettings, AgentSetupSection } from '@/widgets/app-settings-menu';
+import { useRouter } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
+import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
 /**
@@ -35,6 +39,14 @@ import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-fr
  */
 export function AgentsPage() {
   const t = useTranslations('agents');
+  const router = useRouter();
+  const openChatOnMap = useCallback(
+    (runtimeId: string) => {
+      queueAgentChatIntent(runtimeId);
+      router.push(DESTINATION_HREF.map);
+    },
+    [router],
+  );
 
   return (
     /*
@@ -75,7 +87,7 @@ export function AgentsPage() {
 
       <section className="mt-6 min-w-0" aria-label={t('runtimesHeading')}>
         <h2 className="sr-only">{t('runtimesHeading')}</h2>
-        <AcpRuntimeSettings embedded />
+        <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
       </section>
 
       {/*

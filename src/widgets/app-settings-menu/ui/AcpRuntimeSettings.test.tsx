@@ -54,6 +54,19 @@ afterEach(() => {
 });
 
 describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
+  it('준비된 도구의 큰 대화 버튼은 고른 runtime을 호출한다', async () => {
+    const onOpenChat = vi.fn();
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
+    ]);
+    render(<AcpRuntimeSettings embedded onOpenChat={onOpenChat} />);
+
+    const button = await screen.findByTestId('app-settings-runtime-chat-claude-acp');
+    expect(button).toHaveClass('min-h-8');
+    fireEvent.click(button);
+    expect(onOpenChat).toHaveBeenCalledWith('claude-acp');
+  });
+
   it('바로 쓸 수 있는 것은 펼쳐 두고, 설치가 필요한 것은 접어 둔다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),

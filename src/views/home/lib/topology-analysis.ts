@@ -9,7 +9,6 @@ import {
   type KnowledgeGraphNode,
   type OntologyHealthActionTarget,
 } from "@/entities/knowledge-graph";
-import { buildOntologyReachability } from "@/shared/lib/ontology-tree";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
 export interface TopologyAnalysisSummaryInput {
@@ -450,34 +449,129 @@ export function formatTopologyPathMcpCheck(from: string, to: string): string {
   });
 }
 
+export interface TopologyPathStep {
+  edgeId: string;
+  relationType: string;
+  /** frontmatter가 선언한 실제 방향. */
+  authoredFrom: string;
+  authoredTo: string;
+  /** 이 경로를 따라 걷는 순서. */
+  from: string;
+  to: string;
+  reversed: boolean;
+}
+
+export interface TopologyShortestPath {
+  hops: number;
+  nodeIds: string[];
+  edgeIds: string[];
+  steps: TopologyPathStep[];
+}
+
+interface PathCandidate {
+  next: string;
+  edge: KnowledgeGraphEdge;
+  reversed: boolean;
+}
+
 /**
- * The hop count on the path chip: shortest hops between two nodes over an
- * undirected BFS. Relations have direction, but "is there a path, and how many
- * steps" is a direction-agnostic question, so this follows the same
- * `direction: "undirected"` convention as the `explain_relation` MCP operation.
- * depth and limit are opened to the node count so the true shortest distance is
- * found across the whole graph rather than missed by a partial BFS. 0 for the
- * same node, null when unreachable.
+ * 지도에 실제로 그릴 최단 연결 경로. 관계 자체의 방향은 보존하되 탐색 질문은
+ * 방향 무관으로 푼다. 같은 길이가 여럿이면 다음 노드·관계 타입·edge id 순으로
+ * 골라 입력 배열 순서가 바뀌어도 같은 경로를 돌려준다.
+ *
+ * `nodes`는 의도적으로 `{id}`만 요구한다. Home은 캔버스에 실린 노드 목록을
+ * 넘겨 문서/reader 노드를 경유하는 보이지 않는 경로를 구조적으로 제외한다.
  */
+export function computeTopologyShortestPath(
+  sourceId: string,
+  targetId: string,
+  nodes: readonly Pick<KnowledgeGraphNode, "id">[],
+  edges: readonly KnowledgeGraphEdge[],
+): TopologyShortestPath | null {
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  if (!nodeIds.has(sourceId) || !nodeIds.has(targetId)) return null;
+  if (sourceId === targetId) {
+    return { hops: 0, nodeIds: [sourceId], edgeIds: [], steps: [] };
+  }
+
+  const adjacent = new Map<string, PathCandidate[]>();
+  const add = (id: string, candidate: PathCandidate) => {
+    const list = adjacent.get(id) ?? [];
+    list.push(candidate);
+    adjacent.set(id, list);
+  };
+  for (const edge of edges) {
+    if (
+      edge.from === edge.to ||
+      !nodeIds.has(edge.from) ||
+      !nodeIds.has(edge.to)
+    ) {
+      continue;
+    }
+    add(edge.from, { next: edge.to, edge, reversed: false });
+    add(edge.to, { next: edge.from, edge, reversed: true });
+  }
+  for (const candidates of adjacent.values()) {
+    candidates.sort(
+      (left, right) =>
+        left.next.localeCompare(right.next) ||
+        left.edge.type.localeCompare(right.edge.type) ||
+        left.edge.id.localeCompare(right.edge.id),
+    );
+  }
+
+  const queue = [sourceId];
+  const visited = new Set([sourceId]);
+  const previous = new Map<string, { nodeId: string; candidate: PathCandidate }>();
+  let head = 0;
+  while (head < queue.length && !visited.has(targetId)) {
+    const current = queue[head++] as string;
+    for (const candidate of adjacent.get(current) ?? []) {
+      if (visited.has(candidate.next)) continue;
+      visited.add(candidate.next);
+      previous.set(candidate.next, { nodeId: current, candidate });
+      queue.push(candidate.next);
+      if (candidate.next === targetId) break;
+    }
+  }
+  if (!visited.has(targetId)) return null;
+
+  const reversedNodes = [targetId];
+  const reversedSteps: TopologyPathStep[] = [];
+  let cursor = targetId;
+  while (cursor !== sourceId) {
+    const row = previous.get(cursor);
+    if (!row) return null;
+    reversedSteps.push({
+      edgeId: row.candidate.edge.id,
+      relationType: row.candidate.edge.type,
+      authoredFrom: row.candidate.edge.from,
+      authoredTo: row.candidate.edge.to,
+      from: row.nodeId,
+      to: cursor,
+      reversed: row.candidate.reversed,
+    });
+    cursor = row.nodeId;
+    reversedNodes.push(cursor);
+  }
+  const orderedNodes = reversedNodes.reverse();
+  const steps = reversedSteps.reverse();
+  return {
+    hops: steps.length,
+    nodeIds: orderedNodes,
+    edgeIds: steps.map((step) => step.edgeId),
+    steps,
+  };
+}
+
+/** Backward-compatible hop-only view of `computeTopologyShortestPath`. */
 export function computeTopologyPathHopCount(
   sourceId: string,
   targetId: string,
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
 ): number | null {
-  if (sourceId === targetId) return 0;
-  const bound = Math.max(nodes.length, 1);
-  const reachability = buildOntologyReachability(sourceId, nodes, edges, {
-    direction: "both",
-    depth: bound,
-    limit: bound,
-  });
-  for (const layer of reachability.layers) {
-    if (layer.nodes.some((node) => node.id === targetId)) {
-      return layer.distance;
-    }
-  }
-  return null;
+  return computeTopologyShortestPath(sourceId, targetId, nodes, edges)?.hops ?? null;
 }
 
 export interface TopologyPathAgentPacketLabels {
@@ -546,32 +640,6 @@ export function getTopologyHealthNextAction(
     return labels.actionOrphan;
   }
   return labels.actionPromotion;
-}
-
-/**
- * The agent prompt copied by the reanalysis item in the INDEX panel's handoff
- * menu. Fixed text with no input, so it does not depend on view state.
- */
-export function formatOntologyReanalysisAgentCommand(): string {
-  return [
-    "Ontology Atlas agent task: reanalyze and strengthen this codebase ontology.",
-    "",
-    "If Atlas MCP is connected, run these read-first calls:",
-    '1. list_kinds({})',
-    '2. analyze_repo_structure({ "rootPath": "[repo-root]", "maxDepth": 3 })',
-    '3. query_ontology({ "operation": "growth_plan", "limit": 20 })',
-    '4. query_ontology({ "operation": "maintenance_plan", "limit": 20 })',
-    '5. validate_vault({ "repoRoot": "[repo-root]" })',
-    "",
-    "Then propose only confirmed domain/capability/element/relation updates.",
-    "Before writing, compare against existing nodes with find_evidence/similar_nodes and avoid duplicates.",
-    "",
-    "CLI fallback:",
-    "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
-    "node cli/src/index.mjs growth docs/ontology --limit 20",
-    "node cli/src/index.mjs maintenance docs/ontology --limit 20",
-    "node cli/src/index.mjs validate docs/ontology",
-  ].join("\n");
 }
 
 function getTopologyHealthActionKindLabel(

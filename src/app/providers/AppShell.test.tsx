@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AppShell } from "./AppShell";
 
 /**
- * The rail's bottom utility tier (activity, git, settings) is **the same on every screen.**
+ * #65 — 레일 하단 유틸 티어(설정)는 **모든 화면에서 같다.**
  *
  * Pages used to register it by hand via `useNavRailSettingsSlot`, and one page forgot,
  * leaving that screen with a single icon (measured 2026-07-25: map 3, docs/insights/projects 2,
@@ -43,7 +43,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
-  it("페이지가 슬롯을 주입하지 않아도 활동·설정이 선다", () => {
+  it("페이지가 슬롯을 주입하지 않아도 설정이 선다", () => {
     render(
       <AppShell>
         <div>page</div>
@@ -51,12 +51,11 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
     );
 
     const tier = screen.getByTestId("app-nav-rail-utility-tier");
-    // The fact under test is "the shell supplies the default slots", not the **number**
-    // of children. It used to count `children.length === 2`, a proxy that broke the
-    // moment one web-only element joined the tier (the "get the app" addition, 2026-07-28).
-    // Check the **members**, not the count.
-    expect(screen.getByTestId("app-nav-rail-agent-status")).toBeInTheDocument();
-    expect(tier).toContainElement(screen.getByTestId("app-nav-rail-agent-status"));
+    // 지키는 사실은 "셸이 기본 슬롯을 공급한다" 이지 자식 **개수**가 아니다.
+    // 종전에는 `children.length === 2` 로 셌는데, 그건 티어에 웹 전용 원소가
+    // 하나 붙는 것만으로 깨지는 대리 지표였다(2026-07-28 「앱 받기」 추가).
+    // 개수 대신 **구성원**을 본다.
+    expect(screen.queryByTestId("app-nav-rail-agent-status")).not.toBeInTheDocument();
     expect(tier.querySelector("details"), "설정 트리거가 없다").not.toBeNull();
   });
 

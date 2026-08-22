@@ -23,8 +23,8 @@ export type UpdatePhase =
   | { kind: 'downloading'; version: string; received: number; total: number | null }
   /** Installed. All that remains is a restart. */
   | { kind: 'ready'; version: string }
-  /** Failed. It says what failed and leaves a path to download by hand. */
-  | { kind: 'failed'; message: string };
+  /** 실패. 무엇이 실패했는지 말하고, 손으로 받을 길을 남긴다. */
+  | { kind: 'failed'; operation: 'check' | 'install'; message: string };
 
 /** Once a day. So someone who opens the app often is not asked every time. */
 export const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;

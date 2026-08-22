@@ -20,7 +20,7 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
 접근을 사람에게 되묻는 능력. 새 API 키도 새 벤더 연동도 필요 없다: 그 도구가
 이미 쓰는 구독 인증을 그대로 쓴다.
 
-이 능력이 실제로 하는 일 일곱:
+이 능력이 실제로 하는 일 여덟:
 
 1. **탐지.** 이 기기의 실행기 상태를 다섯으로 갈라 판정한다: `ready`,
    `cli-missing`, `node-missing`, `uvx-missing`, `binary-missing`. 상태를
@@ -55,10 +55,32 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
    손자를 놓치지 않는다. 어댑터가 띄운 손자까지 같이 끝내지 않으면 앱을 꺼도
    프로세스가 남는다.
 
+8. **지도 동기화.** 현재 사용자 턴에서 실제로 호출된 Atlas
+   `get_concept`와 `find_path`의 typed input을 현재 볼트의 slug 표와 대조한
+   뒤, 같은 HomePage의 노드 포커스나 정확한 최단 경로 렌즈로 옮긴다. 자연어
+   답변이나 존재하지 않는 slug는 지도 이동 근거로 쓰지 않는다. Claude adapter가
+   pending `tool_call` 뒤 status 없는 `tool_call_update.rawInput`으로 streamed
+   input을 완성하는 실제 순서도 같은 도구 행에 병합한 뒤 intent를 판정한다.
+9. **인셋 대화 표면.** 지도 폭을 실제로 양보하는 바깥 flex dock은 유지하되,
+   사용자가 보는 ACP/API-key 대화 표면은 위·아래·오른쪽 spacing ramp 안에
+   띄운다. INDEX·node inspector의 기존 panel radius·border·surface·shadow를
+   공유해 창 높이를 무경계로 덮는 검은 벽처럼 보이지 않는다. 패널 왼쪽의 지도
+   control rail도 같은 seam 반대편 12px로 당겨 둘 사이 공백을 24px로 제한하고,
+   dock reflow와 같은 시계·곡선으로 이동한다.
+10. **첫 프레임 연결 상태.** 대화 scaffold와 세션 부팅을 분리해 header·empty
+    guidance·vault-derived suggestions·composer는 dock이 열리는 첫 frame부터
+    그린다. width reflow 뒤 camera live spring의 잔여 착지 240ms까지 지난 다음
+    ACP start를 허용하고, 그 사이는 같은 status badge의 spinner와 `connecting`
+    문구만 바뀐다. 큰 panel에는 scale/translate chrome motion을 겹치지 않고
+    overlay fade만 써서 layout reflow가 주 동작이 된다.
+
 ## 경계
 - **「에이전트」 목적지(`/agents/`)와 홈 지도 오른쪽 대화 패널이 현재 사용자
   표면이다.** 격리 관문을 실측한 실행기를 고르면 `HomePage`가 `AcpChatPanel`을
-  열고 현재 볼트를 작업 폴더와 MCP 서버로 넘긴다.
+  열고 현재 볼트를 작업 폴더와 MCP 서버로 넘긴다. 목적지의 「이 도구로 대화
+  열기」는 선택 runtime id를 sessionStorage의 one-shot 큐에 넣고 지도로 이동한
+  뒤, HomePage가 같은 실행기의 준비 상태를 확인했을 때만 소비한다. `/agents`에서
+  구독자가 없는 window event만 보내는 경로는 쓰지 않는다.
 
   ⚠️ 이 줄은 2026-08-20 까지 *"설정의 「실행기」 절 … 별도 경로나 새 화면은
   아니다"* 였다. 원장 (90)이 그것을 뒤집었다. 설치·연결은 값을 고르는 일이 아니라
@@ -106,8 +128,9 @@ Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 
   (목적지와 설정 시트가 같이 쓴다. 소개 줄을 그릴지는 부르는 쪽이 정한다)
 - src/views/agents/ui/AgentsPage.tsx: 「에이전트」 목적지, 이 능력의 현재 사용자
   표면 (`[[elements/agents-destination]]`)
-- src/features/acp-session/model/chat-suggestions.ts · src/views/home/model/use-unbound-project-source.ts: source unbound→bound 준비도와 starter 구축 CTA 순서\n- src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx:
-  지도 옆 ACP 대화 진입점과 미검증 작업 방식 표시
+- src/features/acp-session/model/chat-suggestions.ts · src/views/home/model/use-unbound-project-source.ts: source unbound→bound 준비도와 starter 구축 CTA 순서\n- src/views/home/ui/HomePage.tsx · src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx ·
+  src/features/acp-session/model/map-intent.ts: 지도 옆 ACP 대화 진입점, 미검증
+  작업 방식 표시, typed Atlas read tool에서 지도 포커스/경로로 가는 경계
 - docs/DECISIONS.md 2026-08-16 ACP 도입·격리 기록과 2026-08-17 (53)·(54)·
   (56)·(57)·(58): 어댑터 안전 상태의 화면 전달, 세션 루트 권한 경계, 프로세스
   그룹 수명 판정, 현재 볼트에 유효한 MCP 서버의 단일 실행

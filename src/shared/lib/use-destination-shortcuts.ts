@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import {
   DESTINATION_BY_KEY,
   DESTINATION_HREF,
@@ -147,11 +147,13 @@ export function useDestinationShortcuts({
    * `performance.now()` and "was it pressed" is **is it non-null**. Overloading
    * 0 to also mean "not pressed" makes the whole feature vanish, with no clue on
    * screen, the moment a runtime hands out 0.
-   */
+  */
   const leaderAt = useRef<number | null>(null);
-  const onBlockedByOverlayRef = useRef(onBlockedByOverlay);
-  useEffect(() => {
-    onBlockedByOverlayRef.current = onBlockedByOverlay;
+  const navigateToDestination = useEffectEvent((id: DestinationId) => {
+    navigate(hrefOverrides?.[id] ?? DESTINATION_HREF[id], id);
+  });
+  const reportBlockedByOverlay = useEffectEvent(() => {
+    onBlockedByOverlay?.();
   });
 
   useEffect(() => {
@@ -178,12 +180,12 @@ export function useDestinationShortcuts({
          * above, `onBlockedByOverlay`). The check is deferred to here because it
          * should only speak once the user has named a destination — checking on
          * every key would pour guidance out while they type inside the modal.
-         */
+        */
         if (blockingSurfaceOpen()) {
-          onBlockedByOverlayRef.current?.();
+          reportBlockedByOverlay();
           return;
         }
-        navigate(hrefOverrides?.[id] ?? DESTINATION_HREF[id], id);
+        navigateToDestination(id);
         return;
       }
 
@@ -202,5 +204,5 @@ export function useDestinationShortcuts({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [navigate, disabled, hrefOverrides]);
+  }, [disabled]);
 }

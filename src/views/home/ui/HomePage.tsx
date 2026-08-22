@@ -4,13 +4,17 @@ import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
-import { subscribeAgentChatIntent } from "@/shared/lib/agent-chat-intent";
+import {
+  consumeQueuedAgentChatIntent,
+  subscribeAgentChatIntent,
+} from "@/shared/lib/agent-chat-intent";
 import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
 import { agentChatDoor } from "../model/agent-chat-door";
 import {
   AcpChatPanel,
   AcpChatResizeHandle,
   useChatWidth,
+  type AcpMapIntent,
   type AcpOntologyRelationPreview,
 } from "@/widgets/acp-chat-panel";
 import { vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session/model/vault-mcp-server";
@@ -77,6 +81,9 @@ const DEEPLINK_MISS_GRACE_MS = 4000;
 // disk. Kept short on purpose: whatever we wait here is a window in which closing
 // the window loses the last step (a flush on tab hide narrows it further).
 const PAST_TRAIL_SAVE_DEBOUNCE_MS = 600;
+// 도크가 자리를 만든 직후에도 지도 카메라 spring은 마지막 몇 픽셀을 갚는다.
+// ACP 프로세스 부팅을 이만큼 늦춰 WebKit main thread 점유가 그 착지를 끊지 않게 한다.
+const ACP_SESSION_START_AFTER_REFLOW_MS = 240;
 
 const TopologyFitControl = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyFitControl),
@@ -140,14 +147,11 @@ const MountedGlobalSearch = dynamic(
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
-import { ChromeChip, LiveAnnouncer, Surface, Tooltip, controlClass, useToast } from "@/shared/ui";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, ChromeChip, LiveAnnouncer, Surface, Tooltip, controlClass, useToast } from "@/shared/ui";
 import { MOTION } from "@/shared/motion";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { resolveToastBottomOffsetForStack } from "@/shared/ui/toast-position";
 import {
-  detectOrphanProjects,
-  detectPromotionCandidates,
-  detectStaleProjects,
   getProjectRuntimeDetailHref,
   type ProjectImpactMode,
 } from "@/entities/project";
@@ -157,7 +161,6 @@ import {
   buildTopologyMeaningEditorNodeHref,
   buildChatNodeIndex,
   buildTopologyMeaningEditorEdgeHref,
-  buildOntologyHealthSignals,
   buildOntologyInsightsReturnHref,
   edgeAuthoredByFromNode,
   resolveNodeDocument,
@@ -183,7 +186,6 @@ import {
   computeOntologyChangeset,
   domainCensusById,
   filterTreeExcludeKind,
-  formatAgentPostChangeSyncPacket,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
@@ -211,15 +213,9 @@ import {
 } from "../model/url-state";
 import { useVaultIdentityScope } from "@/features/vault-scope";
 import {
-  buildTopologyAnalysisSummary,
-  buildTopologyHealthActionTarget,
-  classifyTopologyRelationQuality,
-  computeTopologyPathHopCount,
-  formatOntologyReanalysisAgentCommand,
-  formatTopologyOverviewBrief,
+  computeTopologyShortestPath,
   formatTopologyPathAgentPacket,
 } from "../lib/topology-analysis";
-import { filterOntologyConnectedOrphans } from "../lib/topology-health";
 import {
   countProjectRelationsWithinGraph,
   resolveTopologyOverlayState,
@@ -228,10 +224,7 @@ import {
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
 import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
 import { resolveCanvasSelectedSlug } from "../lib/resolve-canvas-selection";
-import {
-  compactTopologyPanelTitle,
-  resolveTopologyNodeTitle,
-} from "../lib/resolve-topology-node-title";
+import { resolveTopologyNodeTitle } from "../lib/resolve-topology-node-title";
 import {
   canCopyTopologyPathPacket,
   resolveTopologyPathChipState,
@@ -255,6 +248,7 @@ import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
 import { resolveToastRightOffset } from "@/shared/ui/toast-position";
+import { MapEntryLoadingVisual } from "@/shared/ui/map-entry-loading-visual";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
@@ -299,9 +293,6 @@ import {
   findRealmSubtree,
 } from "../lib/realm-ledger";
 import {
-  classifyTopologyRelationProvenance,
-} from "../lib/topology-ontology-drawer";
-import {
   normalizeKindLabelKey,
 } from "../lib/topology-node-significance";
 import { TopologyPathChip } from "./TopologyPathChip";
@@ -329,7 +320,6 @@ import {
 import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-trail-store";
 import { verifyHandlePermission } from "@/entities/local-fs-handle";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
-import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import {
   AgentActivityChip,
   type AgentLiveWorkInput,
@@ -376,34 +366,28 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
  * many small tasks; what the user sees is unchanged — fallback, the same fallback
  * again, then the finished page.
  *
- * Why clone rather than re-implement: `MapEntryFallback` is a server component and
- * cannot be rendered here, and a hand-copied markup twin changes the screen the
- * moment the two drift. Reusing the live `outerHTML` already in the document
- * cannot structurally drift. When the fallback DOM is absent (client navigation),
- * the gate is skipped — this optimisation only means anything on a cold boot.
+ * 처방: 첫 클라이언트 커밋은 서버 폴백과 같은 공유 로딩 비주얼만 렌더하고,
+ * 본체는 이어지는 `startTransition` 에서 렌더한다. 전이 레인은 ~5ms 마다
+ * 양보하므로 큰 렌더가 여러 작은 태스크로 갈라지고, 화면 순서는
+ * 폴백 → 동일한 중앙 로딩 상태 → 완성된 지도다. 서버·클라이언트가 같은
+ * `MapEntryLoadingVisual` 을 쓰므로 별도 HTML 복제나 마크업 드리프트가 없다.
  *
- * Under SSG there is no `window`, so it goes straight to the real tree, which
- * suspends on `useSearchParams` as before and bakes the fallback into the HTML.
- * The exported document is byte-identical.
+ * SSG 는 `window` 가 없어 곧장 본체로 가고, 본체는 종전대로 `useSearchParams`
+ * 에서 서스펜드해 폴백이 HTML 에 구워진다 — 내보낸 문서는 바이트 그대로다.
  */
 export function HomePage() {
-  // Lazy initializer: before the first commit, the server fallback is still in
-  // the document.
-  const [fallbackHtml] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return document.querySelector('[data-testid="map-entry-fallback"]')?.outerHTML ?? null;
-  });
+  const tMapEntry = useTranslations('mapEntry');
   const [bootRenderReady, setBootRenderReady] = useState(false);
   useEffect(() => {
     startTransition(() => setBootRenderReady(true));
   }, []);
-  if (!bootRenderReady && fallbackHtml !== null && fallbackHtml !== "") {
+  if (!bootRenderReady) {
     return (
-      <div
-        style={{ display: "contents" }}
-        // A clone of this same document's own fallback (see the doc-block above);
-        // never external input.
-        dangerouslySetInnerHTML={{ __html: fallbackHtml }}
+      <MapEntryLoadingVisual
+        title={tMapEntry('mapComing')}
+        description={tMapEntry('loadingDetail')}
+        headline={tMapEntry('headline')}
+        lede={tMapEntry('lede')}
       />
     );
   }
@@ -587,6 +571,8 @@ function HomePageImpl() {
     realmSlug,
     recentWindow,
   } = routeState;
+  /** 사용자가 명시적으로 부른 전 노드 개관. URL/설정에 남기지 않는 세션 보기다. */
+  const [expandAllActive, setExpandAllActive] = useState(false);
   const renderProjects = projects;
   // Density gate: turn the parent-slug list from `?open=` into a Set for the map,
   // memoised on the joined string so the dependency is stable.
@@ -607,6 +593,12 @@ function HomePageImpl() {
   // selection and focus are untouched — the chip only collapses and expands.
   const handleToggleCluster = useCallback(
     (parentId: string) => {
+      if (expandAllActive) {
+        setExpandAllActive(false);
+        setRouteState((current) => ({ ...current, expandedParents: [] }));
+        setFitViewToken((current) => current + 1);
+        return;
+      }
       setRouteState((current) => ({
         ...current,
         // The cap comes from settings. Past it, the least recently expanded parent
@@ -619,12 +611,13 @@ function HomePageImpl() {
         ),
       }));
     },
-    [setRouteState, expand.maxOpenParents],
+    [setRouteState, expand.maxOpenParents, expandAllActive],
   );
   // Enter a realm: the orbit button or a datasheet action switches the map into
   // this node's world, through the URL.
   const handleEnterRealm = useCallback(
     (slug: string) => {
+      setExpandAllActive(false);
       setRouteState((current) => enterRealmRouteState(current, slug));
     },
     [setRouteState],
@@ -714,7 +707,12 @@ function HomePageImpl() {
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
     }
-  }, [analysisMode, setIndexPreference, setRouteState]);
+  }, [
+    analysisMode,
+    setIndexManualExpandDuringSelection,
+    setIndexPreference,
+    setRouteState,
+  ]);
   // The map's safe-inset-left assumes INDEX's width by default
   // (`--topology-v2-safe-inset-left: 344` = 18 inset + 300 width + 26 gap).
   // Collapsing INDEX narrows that reserved space — flip the DOM attribute
@@ -763,7 +761,7 @@ function HomePageImpl() {
   const [spotlightFitToken, setSpotlightFitToken] = useState(0);
   useEffect(() => {
     setSpotlightFitToken((n) => n + 1);
-  }, [recentWindow, spotlightOn]);
+  }, [recentWindow, spotlightOn, pathSourceSlug, pathTargetSlug, expandAllActive]);
   const recentChanges = useAdaptiveRecentChanges(
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );
@@ -1388,13 +1386,14 @@ function HomePageImpl() {
   // and domain names left this model when the connect sheet was retired
   // (`docs/DECISIONS.md`, entry 90).
   const agentConnect = useAgentConnectModel({ agentActivityStatus });
-  // **The AI connect sheet never opens by itself after a folder is picked.** There
-  // was once a one-shot auto-open 1200 ms later, but an unrequested modal covered
-  // the user's first meeting with the map they had just built, so their first
-  // interaction became "dismiss" (measured 2026-07-26). Two entry points already
-  // exist — the start checklist's connect button and the rail's AI tile — so the
-  // auto-open added nothing while breaking this app's rule against covering what it
-  // is introducing. Connect intent only stands when the user presses something.
+  // 폴더를 연 직후 AI 연결 시트를 **자동으로 열지 않는다**. 한때 1200ms 뒤
+  // 1회 자동 발화가 있었지만, 방금 만든 자기 지도와의 첫 대면을 요청하지 않은
+  // 모달이 덮어 첫 상호작용이 '닫기'가 됐다(2026-07-26 실측). 안내는 이미
+  // 시작 체크리스트와 「에이전트」 목적지에 있어
+  // 자동 발화가 더하는 값이 없고, "소개하는 것을 가리지 않는다"는 이 앱의
+  // 규율과도 어긋났다. 연결 의도는 사용자가 누를 때만 선다.
+  // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
+  // 완료 연출(토스트·E1 리빌)만 여기 남는다.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
     vault,
     onCompleted: ({ addedToExisting, elementCount }) => {
@@ -1609,20 +1608,12 @@ function HomePageImpl() {
   }, [renderProjects]);
 
   const hubs = useMemo(() => renderProjects.filter((p) => p.isHub), [renderProjects]);
-  // Reference instant for "updated in the last seven days". Captured once in a lazy
-  // initializer: `Date.now()` during render is impure, and pinning it also keeps the
-  // "this week" boundary from shifting between renders.
+  // 세션의 과거 걸음 상대 시각 기준. Date.now()를 렌더마다 읽지 않고 mount 때
+  // 한 번 캡처해 같은 기록의 상대 시각이 재렌더마다 흔들리지 않게 한다.
   const [mountNowMs] = useState<number>(() => Date.now());
-  const recentlyUpdatedCount = useMemo(() => {
-    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-    return renderProjects.reduce((n, p) => {
-      const updated = p.updatedAt ? p.updatedAt.getTime() : 0;
-      return mountNowMs - updated < SEVEN_DAYS_MS ? n + 1 : n;
-    }, 0);
-  }, [renderProjects, mountNowMs]);
-  // Local graph mode: only the selected node and its 2-hop neighbourhood are handed
-  // to the map, so the user can leave the whole map and concentrate on one area.
-  // Esc or the close button returns to the full map.
+  // Local graph 모드: 선택 노드 + 2-hop 이웃만 Sigma에 넘김. 전체 지도에서
+  // 벗어나 해당 노드 주변만 집중해서 볼 수 있게 한다. Esc 또는 닫기 버튼으로
+  // 전체 맵 복귀.
   const localGraphProjects = useMemo(() => {
     if (!localGraphRoot) return renderProjects;
     // Reuses the `projectBySlug` / `reverseDeps` memos above rather than rebuilding
@@ -2384,19 +2375,18 @@ function HomePageImpl() {
   // kept) the left panel must come back. The realm ledger is exempt from the
   // automatic demotion because it is a realm's only exit and navigation surface.
   const topologySelectionActive = Boolean(v2DatasheetModel) && !nodePopoverDismissed;
-  // The auto-arrange toast used to cover the permanent bottom-right instruments (the
-  // legend and the readout) entirely: both are pinned bottom-right, and the toast's
-  // default 16px offset put it straight on top. This reconnects the reservation
-  // contract (`--app-toast-bottom-offset`) to this stack. The reserved height is not
-  // a constant but the stack's measured rect — it varies with locale, zoom tier, and
-  // the ≥1920 inset.
-  const legendStackRef = useRef<HTMLDivElement | null>(null);
-  const legendStackHidden = v2DatasheetModel !== null;
+  // 진입 검수 E-7 — `자동 정렬` 토스트가 우하단 상시 판독을
+  // 통째로 덮었다. 둘 다 bottom-right 고정인데 토스트는 기본 16px 오프셋이라
+  // 알림이 계기 위에 그대로 얹혔다. 빌더 하단 바가 쓰던 예약 계약
+  // (`--app-toast-bottom-offset`)을 이 스택에 다시 연결한다 — 예약 높이는
+  // 상수가 아니라 스택의 실측 rect 다(로케일·줌 티어·≥1920 인셋에 따라 바뀐다).
+  const readoutStackRef = useRef<HTMLDivElement | null>(null);
+  const readoutStackHidden = v2DatasheetModel !== null;
   useEffect(() => {
     const root = document.documentElement;
     const clear = () => root.style.removeProperty("--app-toast-bottom-offset");
-    const element = legendStackRef.current;
-    if (legendStackHidden || !element) {
+    const element = readoutStackRef.current;
+    if (readoutStackHidden || !element) {
       clear();
       return undefined;
     }
@@ -2413,10 +2403,9 @@ function HomePageImpl() {
         `${resolveToastBottomOffsetForStack(window.innerHeight, rect.top)}px`,
       );
     };
-    // The stack gains rows later — the readout (`FirstRunReadout`) only attaches once
-    // sample-mode detection settles. Measuring once at mount freezes the reservation
-    // one row short and the toast covers the legend anyway (measured: 54px reserved
-    // against 79px needed).
+    // 스택의 줄 수는 나중에 늘어난다 — 계기 판독(`FirstRunReadout`)은 샘플
+    // 모드 판정이 끝난 뒤에 붙는다. mount 시점 한 번만 재면 예약이 한 줄
+    // 분량 부족한 채 굳어 토스트가 그대로 판독을 덮는다(실측 54px vs 필요 79px).
     //
     // The first measurement is left to the ResizeObserver's **initial delivery**
     // (boot measurement, 2026-08-19). Calling `apply()` synchronously from the commit
@@ -2435,14 +2424,13 @@ function HomePageImpl() {
       window.removeEventListener("resize", apply);
       clear();
     };
-  }, [legendStackHidden]);
-  // Aims the popover's `transform-origin` at the screen position of the node just
-  // clicked. The panel is keyed by slug, so changing nodes remounts it and replays the
-  // `.topology-chrome-in` entrance; keying this effect on the same slug and running it
-  // before paint (`useLayoutEffect`) injects the origin, converted into the
-  // positioner's local coordinates, as an inherited CSS variable the inner panel
-  // reads. With no recent canvas pointer (within 600 ms — list or keyboard selection)
-  // the variable is removed and it falls back to `center top`.
+  }, [readoutStackHidden]);
+  // 클릭 포커스 시그니처 — 팝오버의 성장 원점(transform-origin)을 방금 클릭한
+  // 노드의 화면 좌표 방향으로 맞춘다. 패널은 slug 로 keyed 되어 노드가 바뀔
+  // 때마다 재마운트 + `.topology-chrome-in` 등장을 재발화하므로, slug 를
+  // 의존성으로 두고 paint 전(useLayoutEffect)에 포지셔너의 로컬 좌표계로 환산한
+  // 원점을 CSS 변수로 주입한다(상속 → 내부 패널이 읽음). 최근(600ms 내) 캔버스
+  // 포인터가 없으면(리스트·키보드 선택) 변수를 지워 기존 `center top`으로 폴백.
   const nodePopoverSlug = v2DatasheetModel?.slug ?? null;
   useLayoutEffect(() => {
     const positioner = nodePopoverPositionerRef.current;
@@ -2521,6 +2509,7 @@ function HomePageImpl() {
    */
   const [acpRuntimes, setAcpRuntimes] = useState<Array<{ id: string; label: string }>>([]);
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
+  const [pendingAgentChatRuntimeId, setPendingAgentChatRuntimeId] = useState<string | null>(null);
   /**
    * Whether the chat panel is **mounted** — a different value from whether it is open.
    * Open asks "should it be visible"; this asks "is it drawn". If the two were one
@@ -2528,6 +2517,20 @@ function HomePageImpl() {
    * used not to run).
    */
   const [chatMounted, setChatMounted] = useState(false);
+  const acpSessionStartTimerRef = useRef<number | null>(null);
+  const cancelAcpSessionStart = useCallback(() => {
+    if (acpSessionStartTimerRef.current === null) return;
+    window.clearTimeout(acpSessionStartTimerRef.current);
+    acpSessionStartTimerRef.current = null;
+  }, []);
+  const scheduleAcpSessionStart = useCallback(() => {
+    cancelAcpSessionStart();
+    acpSessionStartTimerRef.current = window.setTimeout(() => {
+      acpSessionStartTimerRef.current = null;
+      setAcpChatOpen(true);
+    }, ACP_SESSION_START_AFTER_REFLOW_MS);
+  }, [cancelAcpSessionStart]);
+  useEffect(() => cancelAcpSessionStart, [cancelAcpSessionStart]);
   /**
    * The chat column's width is **chosen by the user and remembered by this machine.**
    * Some people ask short questions while watching the map; others read blocks of
@@ -2848,6 +2851,7 @@ function HomePageImpl() {
   // wired to an in-app interaction until now) — no new path-mode entry logic.
   const handleSetPathSource = useCallback(
     (slug: string) => {
+      setExpandAllActive(false);
       interactionSelectedSlugRef.current = null;
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
@@ -3008,7 +3012,8 @@ function HomePageImpl() {
         : "visible";
   const topologyUtilityChromeCompact =
     topologyUtilityChromeState === "compact-focus" ||
-    topologyUtilityChromeState === "selected-node-inspector";
+    topologyUtilityChromeState === "selected-node-inspector" ||
+    agentDockRequestedOpen;
   /*
    * The utility lane is raised one step **only while the activity inbox is open**.
    * Owner, 2026-08-17: *"알림이 위로 덮어야지?"* (the notification should cover what is
@@ -3066,6 +3071,7 @@ function HomePageImpl() {
   const agentChatUsesRuntime = Boolean(acpRuntime && gitVaultPath);
 
   const openVaultAgent = useCallback(() => {
+    cancelAcpSessionStart();
     if (agentChatUsesRuntime) {
       setChatMounted(true);
       setAcpChatOpen(false);
@@ -3080,7 +3086,7 @@ function HomePageImpl() {
     // out.
     setOntologySearchOpen(false);
     setCreateNodeOpen(false);
-  }, [agentChatUsesRuntime, setCreateNodeOpen]);
+  }, [agentChatUsesRuntime, cancelAcpSessionStart, setCreateNodeOpen]);
 
   /**
    * On-screen wording for the first line, read from **the same keys** as the panel's
@@ -3139,20 +3145,21 @@ function HomePageImpl() {
    */
   const closeVaultAgent = useCallback(() => {
     agentDockTouchedRef.current = true;
+    cancelAcpSessionStart();
     /*
      * It **stays drawn** through the close, so the exit animation has somewhere to
      * run; `Surface` reports `onExited` when it is finished and it unmounts then.
      * (Set again here because some paths — a request arriving in the URL — never go
      * through this function.)
      */
-    setChatMounted(acpChatOpen);
-    // One panel means one close: whichever branch was up, this closes it.
+    setChatMounted(true);
+    // 창이 하나이므로 닫는 것도 하나다 — 어느 갈래가 떠 있었든 이 한 번으로 닫힌다.
     setAcpDockFrameOpen(false);
     setVaultAgentOpen(false);
     setAcpChatOpen(false);
     setVaultAgentPrefill(null);
     setRouteState({ askIntent: null }, { replace: true });
-  }, [acpChatOpen, setRouteState]);
+  }, [cancelAcpSessionStart, setRouteState]);
 
   /**
    * Which branch currently owns **the one panel**.
@@ -3283,12 +3290,36 @@ function HomePageImpl() {
    * the same function does the opening.
    */
   useEffect(() => {
-    return subscribeAgentChatIntent((runtimeId) => {
-      if (runtimeId) setAcpRuntimeId(runtimeId);
+    const accept = (runtimeId: string | null) => {
+      const target = runtimeId ?? acpRuntime?.id ?? null;
+      if (!target) return;
+      setAcpRuntimeId(target);
+      setPendingAgentChatRuntimeId(target);
+    };
+    const queued = consumeQueuedAgentChatIntent();
+    if (queued) window.queueMicrotask(() => accept(queued));
+    return subscribeAgentChatIntent(accept);
+  }, [acpRuntime?.id]);
+
+  useEffect(() => {
+    if (
+      pendingAgentChatRuntimeId === null ||
+      acpRuntime?.id !== pendingAgentChatRuntimeId ||
+      !agentChatUsesRuntime
+    ) {
+      return;
+    }
+    let cancelled = false;
+    window.queueMicrotask(() => {
+      if (cancelled) return;
       agentDockTouchedRef.current = true;
       openVaultAgent();
+      setPendingAgentChatRuntimeId(null);
     });
-  }, [openVaultAgent]);
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingAgentChatRuntimeId, acpRuntime?.id, agentChatUsesRuntime, openVaultAgent]);
 
   /*
    * Opening by itself goes through **the same door**. It lives here because
@@ -3318,6 +3349,10 @@ function HomePageImpl() {
       // Ontology node clicks and shareable vault slugs both stay on /topology;
       // selected-node resolution happens against `ontologyInsight`.
       interactionSelectedSlugRef.current = slug;
+      setExpandAllActive(false);
+      // INDEX 트리에서 고른 선택은 목록을 접지 않는다 (2026-07-24 소유자
+      // 지적: 행을 누르면 패널이 슬림 탭으로 접혀 방금 펼친 자식이 사라졌다).
+      // 지도에서 고른 선택은 종전대로 접혀 지도가 넓어진다.
       if (options?.keepIndexOpen) setIndexManualExpandDuringSelection(true);
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
@@ -3340,6 +3375,46 @@ function HomePageImpl() {
       setFullDetailSlug,
       setSelectedRelationActive,
       setNodePopoverDismissed,
+    ],
+  );
+
+  const handleAcpMapIntent = useCallback(
+    (intent: AcpMapIntent) => {
+      if (intent.kind === "focus") {
+        const nodeId = chatNodeIndex.get(intent.slug);
+        if (!nodeId) return;
+        setMeaningEditorState(null);
+        setExpandAllActive(false);
+        setSelectedEdge(null);
+        handleSelect(nodeId);
+        return;
+      }
+
+      const sourceId = chatNodeIndex.get(intent.from);
+      const targetId = chatNodeIndex.get(intent.to);
+      if (!sourceId || !targetId || sourceId === targetId) return;
+      interactionSelectedSlugRef.current = null;
+      setExpandAllActive(false);
+      setMeaningEditorState(null);
+      setSelectedEdge(null);
+      setFullDetailSlug(null);
+      setSelectedRelationActive(false);
+      setRouteState((current) =>
+        selectTopologyPathRouteState(current, {
+          sourceSlug: sourceId,
+          targetSlug: targetId,
+        }),
+      );
+    },
+    [
+      chatNodeIndex,
+      handleSelect,
+      setExpandAllActive,
+      setFullDetailSlug,
+      setMeaningEditorState,
+      setRouteState,
+      setSelectedEdge,
+      setSelectedRelationActive,
     ],
   );
 
@@ -3747,13 +3822,6 @@ function HomePageImpl() {
   ]);
 
   const drawerOpen = drawerProject !== null || selectedOntologyNode !== null;
-  const analysisSelectedTitle = useMemo(
-    () =>
-      compactTopologyPanelTitle(
-        selectedProject?.name ?? selectedOntologyNode?.title ?? null,
-      ),
-    [selectedOntologyNode?.title, selectedProject?.name],
-  );
   const pathSourceTitle = useMemo(
     () =>
       resolveTopologyNodeTitle({
@@ -3772,23 +3840,63 @@ function HomePageImpl() {
       }),
     [pathTargetSlug, projectBySlug, ontologyInsight?.nodes],
   );
-  // The hop count on `TopologyPathChip`. The old path panel never showed one (only a
-  // candidate-visibility sentence), but the chip's "resolved" state is meaningless
-  // without the real shortest distance, so it is computed here.
-  const pathHopCount = useMemo(() => {
+  // 홉 수뿐 아니라 지도에 그릴 정확한 노드·authored edge 순서를 함께 구한다.
+  // 캔버스 노드 목록을 경계로 넘겨 reader/document 노드를 경유하는 보이지 않는
+  // 경로가 답이 되는 것을 막는다.
+  const pathResult = useMemo(() => {
     if (!pathSourceSlug || !pathTargetSlug || !ontologyInsight) return null;
-    return computeTopologyPathHopCount(
+    return computeTopologyShortestPath(
       pathSourceSlug,
       pathTargetSlug,
-      ontologyInsight.nodes,
+      topologyV2Graph.nodes,
       ontologyInsight.edges,
     );
-  }, [pathSourceSlug, pathTargetSlug, ontologyInsight]);
-  // The path chip's status line at top centre: awaiting a target, source → target
-  // with a hop count, no path, or **an endpoint this vault does not have**. It
-  // compresses what the old path panel did in the left slot into one chip. The
-  // decision is a pure function; its reasoning and the old lie it fixed are in
-  // `../lib/topology-path-chip-state.ts`.
+  }, [pathSourceSlug, pathTargetSlug, ontologyInsight, topologyV2Graph.nodes]);
+  const pathHopCount = pathResult?.hops ?? null;
+  const pathLensNodeIds = useMemo(
+    () => (pathResult ? new Set(pathResult.nodeIds) : null),
+    [pathResult],
+  );
+  const pathLensEdgeIds = useMemo(
+    () => (pathResult ? new Set(pathResult.edgeIds) : null),
+    [pathResult],
+  );
+  const allMapNodeIds = useMemo(
+    () => new Set(topologyV2Graph.nodes.map((node) => node.id)),
+    [topologyV2Graph.nodes],
+  );
+  const allExpandedParentIds = useMemo(
+    () =>
+      new Set(
+        topologyV2Graph.edges
+          .filter((edge) => edge.kind === "contains")
+          .map((edge) => edge.source),
+      ),
+    [topologyV2Graph.edges],
+  );
+  const mapLensIds =
+    analysisMode === "path"
+      ? pathLensNodeIds
+      : expandAllActive
+        ? allMapNodeIds
+        : spotlightIds;
+  const mapLensKind =
+    analysisMode === "path" ? "path" as const : expandAllActive ? "all" as const : "recent" as const;
+  const pathExpandedParents = useMemo(() => {
+    if (!pathLensNodeIds || topologyV2Graph.edges.length === 0) return null;
+    const parentOf = buildContainmentParentMap(topologyV2Graph.edges);
+    const merged = new Set(expandedParentSet);
+    for (const id of pathLensNodeIds) {
+      for (const ancestor of deriveDeeplinkAncestorExpansion(id, parentOf, [])) {
+        merged.add(ancestor);
+      }
+    }
+    return merged;
+  }, [pathLensNodeIds, topologyV2Graph.edges, expandedParentSet]);
+  // 경로 칩의 상단 중앙 상태 라인 — "경로: X → 대상 선택" / "X → Y · N홉" /
+  // 경로 없음 / **이 볼트에 없는 끝점**. 예전 path 패널이 좌측 슬롯에서 하던
+  // 걸 상단 칩 1개로 압축 (분석 패널 완전 소멸 2단계 §b). 판정은 순수 함수로
+  // 빠져 있다 — 근거와 옛 거짓말은 `../lib/topology-path-chip-state.ts`.
   const pathChipState = useMemo(
     () =>
       resolveTopologyPathChipState({
@@ -3864,48 +3972,43 @@ function HomePageImpl() {
       pathTargetSlug: null,
     }));
   }, [setRouteState]);
-  const topologyHealthSummary = useMemo(() => {
-    const now = new Date(mountNowMs);
-    const stale = detectStaleProjects(renderProjects, {
-      now,
-      daysThreshold: 30,
-    });
-    // Projects that participate in ontology containment (roots and the like) are
-    // excluded from the "no owner" false positives: the project-deps lens alone cannot
-    // see the contains graph.
-    const orphan = filterOntologyConnectedOrphans(
-      detectOrphanProjects(renderProjects),
-      ontologyInsight?.edges ?? [],
-    );
-    const promotion = detectPromotionCandidates(renderProjects, {
-      minFanIn: 4,
-    });
-    const ontologySignals = ontologyInsight
-      ? buildOntologyHealthSignals(ontologyInsight.nodes, ontologyInsight.edges, {
-          now,
-          staleDaysThreshold: 30,
-          promotionMinFanIn: 4,
-        })
-      : { stale: [], orphan: [], promotion: [] };
-    const staleSignals = [...stale, ...ontologySignals.stale];
-    const orphanSignals = [...orphan, ...ontologySignals.orphan];
-    const promotionSignals = [...promotion, ...ontologySignals.promotion];
-
-    return {
-      staleCount: staleSignals.length,
-      orphanCount: orphanSignals.length,
-      promotionCount: promotionSignals.length,
-      actionTarget: buildTopologyHealthActionTarget({
-        stale: staleSignals,
-        orphan: orphanSignals,
-        promotion: promotionSignals,
-      }),
-    };
-  }, [renderProjects, ontologyInsight, mountNowMs]);
-  // Canonical census. `insight.nodes` already contains `kind: project`, so adding
-  // `renderProjects` double-counts — that was the cause of the map saying 294 while
-  // insights said 293. The whole insight derivation is the single source for the
-  // concept and relation counts (`shared/lib/ontology-tree/canonical-census.ts`).
+  const handleToggleExpandAll = useCallback(() => {
+    if (expandAllActive) {
+      setExpandAllActive(false);
+      setRouteState((current) => ({ ...current, expandedParents: [] }));
+      setFitViewToken((current) => current + 1);
+      return;
+    }
+    setMeaningEditorState(null);
+    setSelectedEdge(null);
+    setFullDetailSlug(null);
+    setSelectedRelationActive(false);
+    setExpandAllActive(true);
+    setRouteState((current) => ({
+      ...current,
+      analysisMode: "overview",
+      selectedSlug: null,
+      focusedHubSlug: null,
+      pathSourceSlug: null,
+      pathTargetSlug: null,
+      realmSlug: null,
+      expandedParents: [],
+      meaningEditorIntent: false,
+      meaningEditParam: null,
+    }));
+  }, [
+    expandAllActive,
+    setExpandAllActive,
+    setFullDetailSlug,
+    setMeaningEditorState,
+    setRouteState,
+    setSelectedEdge,
+    setSelectedRelationActive,
+  ]);
+  // P0c — 정본 census: insight.nodes 에 kind:project 가 이미 포함돼 있어
+  // renderProjects 를 더하면 이중 가산(지도 294 vs 인사이트 293 불일치의
+  // 원인). "개념/관계" census 는 insight 파생 전체가 단일 출처다
+  // (`shared/lib/ontology-tree/canonical-census.ts`).
   const topologyCanonicalCensus = computeCanonicalCensus(
     ontologyInsight?.nodes ?? [],
     ontologyInsight?.edges ?? [],
@@ -4107,82 +4210,7 @@ function HomePageImpl() {
       activeCategory: null,
     }));
   }, [setRouteState]);
-  const topologyRelationProvenance = useMemo(() => {
-    const counts = { sourceBacked: 0, authored: 0, needsReview: 0 };
-    for (const edge of ontologyInsight?.edges ?? []) {
-      const provenance = classifyTopologyRelationProvenance(edge);
-      if (provenance === "source_backed") {
-        counts.sourceBacked += 1;
-      } else if (provenance === "needs_review") {
-        counts.needsReview += 1;
-      } else {
-        counts.authored += 1;
-      }
-    }
-    return counts;
-  }, [ontologyInsight]);
-  const topologyRelationQuality = useMemo(() => {
-    const counts = { strong: 0, supported: 0, weak: 0, review: 0 };
-    for (const edge of ontologyInsight?.edges ?? []) {
-      counts[classifyTopologyRelationQuality(edge)] += 1;
-    }
-    return counts;
-  }, [ontologyInsight]);
-  const analysisSummary = buildTopologyAnalysisSummary({
-    mode: analysisMode,
-    selectedTitle: analysisSelectedTitle,
-    visibleCount: topologyVisibleCount,
-    totalCount: topologyTotalNodes,
-    relationCount: topologyTotalRelations,
-    relationProvenance: topologyRelationProvenance,
-    relationQuality: topologyRelationQuality,
-    ...topologyHealthSummary,
-  });
-  // The three handoff texts in the INDEX footer menu. The formatters are the single
-  // source in `views/home/lib/topology-analysis.ts`; this only assembles the labels.
-  const indexAgentHandoffBriefText = formatTopologyOverviewBrief({
-    summary: analysisSummary,
-    labels: {
-      title: t("analysis.overviewBriefTitle"),
-      totalNodes: t("analysis.overviewBriefTotalNodes"),
-      totalRelations: t("analysis.overviewBriefTotalRelations"),
-      relationReading: t("analysis.overviewBriefRelationReading"),
-      relationProvenance: t("analysis.overviewBriefRelationProvenance"),
-      relationSourceBacked: t("analysis.overviewBriefRelationSourceBacked"),
-      relationAuthored: t("analysis.overviewBriefRelationAuthored"),
-      relationNeedsReview: t("analysis.overviewBriefRelationNeedsReview"),
-      relationQuality: t("analysis.overviewBriefRelationQuality"),
-      relationQualityStrong: t("analysis.overviewBriefRelationQualityStrong"),
-      relationQualitySupported: t("analysis.overviewBriefRelationQualitySupported"),
-      relationQualityWeak: t("analysis.overviewBriefRelationQualityWeak"),
-      relationQualityReview: t("analysis.overviewBriefRelationQualityReview"),
-      agentReadiness: t("analysis.overviewAgentReadiness"),
-      agentReadinessReady: t("analysis.overviewAgentReadinessReady"),
-      agentReadinessPreflight: t("analysis.overviewAgentReadinessPreflight"),
-      agentReadinessReview: t("analysis.overviewAgentReadinessReview"),
-      healthSignals: t("analysis.overviewBriefHealthSignals"),
-      stale: t("analysis.healthStale"),
-      orphan: t("analysis.healthOrphan"),
-      promotion: t("analysis.healthPromotion"),
-      url: t("analysis.healthEvidenceUrl"),
-      healthUrl: t("analysis.overviewBriefHealthUrl"),
-      insightsUrl: t("analysis.overviewBriefInsightsUrl"),
-      agentCheck: t("analysis.overviewBriefAgentCheck"),
-      mcpCheck: t("analysis.overviewBriefMcpCheck"),
-      mcpQueryPlan: t("analysis.overviewBriefMcpQueryPlan"),
-      workspaceCheck: t("analysis.overviewBriefWorkspaceCheck"),
-      mcpWorkspaceCheck: t("analysis.overviewBriefMcpWorkspaceCheck"),
-    },
-    url: typeof window === "undefined" ? null : window.location.href,
-    // The repair queue now lives in the insights page's default tab.
-    healthUrl: "/ontology/insights/",
-    insightsUrl: "/ontology/insights/",
-  });
-  const indexAgentHandoffReanalyzeText = formatOntologyReanalysisAgentCommand();
-  const indexAgentHandoffSyncText = formatAgentPostChangeSyncPacket();
-
-  // The explicit expand from a card badge or a double click: select and enter focus in
-  // one step.
+  // 카드 배지/더블클릭의 명시적 "펼치기" — 선택과 초점 진입을 한 번에.
   const handleExpandRequest = useCallback(
     (slug: string) => {
       interactionSelectedSlugRef.current = slug;
@@ -4271,7 +4299,7 @@ function HomePageImpl() {
        * the key branch.
        */
       style={
-        runtimeChatOpen
+        acpDockFrameOpen || runtimeChatOpen
           ? ({ '--agent-panel-width': `${chatWidth.width}px` } as CSSProperties)
           : undefined
       }
@@ -4382,9 +4410,10 @@ function HomePageImpl() {
                   <SearchHint
                     density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                     phoneFocusSuppressed={selectedNodeFocusActive}
-                    // Below `md`, an expanded INDEX is a full-bleed sheet; while the
-                    // sheet is the primary surface the top chrome row is demoted. Same
-                    // contract as the utility lane's `hidden md:flex`.
+                    rightInspectorReserved={nodePanelMounted}
+                    // <md 확장 INDEX 는 풀-블리드 시트 — 시트가 주 표면인 동안
+                    // 상단 크롬 열은 강등된다 (겹침 소탕 2026-07-23, rank7 시트
+                    // 문법의 완성). utility lane 의 hidden md:flex 와 같은 계약.
                     phoneSheetSuppressed={renderedIndexState === "expanded"}
                     onOpenSearch={() => {
                       setOntologySearchOpen(true);
@@ -4393,6 +4422,8 @@ function HomePageImpl() {
                       setTopologyRelayoutToken((current) => current + 1);
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
+                    onToggleExpandAll={handleToggleExpandAll}
+                    allExpanded={expandAllActive}
                     realmChip={
                       resolvedRealmSlug && realmTitle ? (
                         // On screen the feature is called "view only this" (owner
@@ -4539,6 +4570,7 @@ function HomePageImpl() {
                           : undefined
                       }
                       data-testid="topology-utility-action-lane"
+                      data-agent-dock-adjacent-rail="true"
                       data-utility-lane-density={
                         topologyUtilityChromeCompact ? "compact-focus" : "default"
                       }
@@ -4551,15 +4583,18 @@ function HomePageImpl() {
                       data-utility-lane-border-token="--topology-utility-lane-border"
                       data-utility-lane-shadow-token="--topology-utility-lane-shadow"
                     >
-                      <div className="flex items-center gap-[var(--topology-utility-lane-gap)]">
-                    {/* The agent chip. Its place is the moment reading the map turns
-                        into "fix this for me" — no rail destination and no new route,
-                        just the utility lane's existing chip spec, so no surface is
-                        added. The name is defined in **one place**
-                        (`vaultAgentPanel.title`): chip, tooltip, aria label, and panel
-                        header read the same key, so renaming moves all four. Desktop
-                        only — the web has nowhere safe to keep a key and no path to send
-                        it, so no door is drawn that will not open. */}
+                      <div
+                        className="relative flex items-center gap-[var(--topology-utility-lane-gap)]"
+                        data-testid="topology-utility-action-row"
+                      >
+                    {/* 「에이전트」 — 지도를 보다가 "이거 고쳐줘" 가 되는
+                        순간이 이 버튼의 자리다. 레일 목적지도 새 라우트도 만들지
+                        않고 기존 유틸 레인의 칩 규격을 그대로 쓴다(표면 추가 0).
+                        이름은 `vaultAgentPanel.title` **한 곳**에서만 정의된다 —
+                        칩·툴팁·aria·패널 헤더가 같은 키를 읽으므로 이름이 바뀌면
+                        네 자리가 함께 바뀐다(이름은 다시 검토될 수 있다).
+                        데스크톱 전용: 웹에는 키를 안전하게 둘 곳도 보낼 경로도
+                        없으므로, 열리지 않을 문을 그려 두지 않는다. */}
                     {llmBridgeAvailable ? (
                       <Tooltip content={tAgent('title')} side="bottom" withProvider={false}>
                         <ChromeChip
@@ -4756,17 +4791,13 @@ function HomePageImpl() {
                       same reason** (a round trip that changes no map state) — so the rule
                       itself was recorded in the ledger this time.
 
-                      ② The "+ concept" pill (owner: *"이거좀 이상해 없어져도 될듯?"* —
-                      this is a bit odd, it could go). It was the **only** door to
-                      creating a concept on an already-populated map with nothing
-                      selected, because the empty map's two entry points (the start
-                      checklist and the empty state) disappear once the map fills. Simply
-                      deleting it would have removed that path entirely. **Right-clicking
-                      empty canvas** takes its place (`onContextMenuPane`): a right-click
-                      on empty space is the universal idiom for "create one here", and
-                      above all the clicked coordinates *are* where the new node goes,
-                      which says more than a pinned button at the top. Permanent ink drops
-                      to zero.
+                      **드로어는 살아 있다** — `D` 단축키(단축키 시트에 등재)가
+                      그대로 연다. 없앤 것은 칩 하나지 표면이 아니다.
+
+                      이건 재발견이다: 2026-08-02 에 「변경점 N개」가 **같은 이유**
+                      (왕복만 하고 지도 상태를 안 바꾼다)로 이미 지워졌다. 규칙이
+                      없어서 매번 한 개씩 손으로 발견하고 있었다 — 그래서 이번엔
+                      규칙을 원장에 등재했다.
                     */}
                     {/* The history entry point below `lg`. At `lg+` the rail destination
                         owns it; where the rail disappears this chrome tile leads to the
@@ -4817,21 +4848,16 @@ function HomePageImpl() {
                         }}
                       />
                     </div>
+                    {/* 작업 상태는 이 행 아래에 앵커되고, 알림 종만 이 행의
+                        마지막 정사각 타일로 선다. 같은 컴포넌트가 둘의 feed와
+                        바깥 클릭/Escape를 함께 소유해 폴링·읽음 상태를 복제하지 않는다. */}
+                    <AgentActivityChip
+                      suppressed={Boolean(v2DatasheetModel)}
+                      liveWork={acpLiveWork}
+                      onOpenChange={setActivityInboxOpen}
+                      onOpenNode={handleSelect}
+                    />
                       </div>
-                      {/* The **whole** activity row (who · when · which node · bell ·
-                          inbox) sits on the line below the buttons above. Two owner
-                          instructions: *"사용자가 위는 봐도 아래는 잘 안볼듯한데"*
-                          (people look at the top, not the bottom) then *"줄 전체를
-                          하단으로!"* (move the entire row down). Nothing is left at the
-                          bottom of the map — the same fact in two places is confusing
-                          (measured: it was in two).
-                          Gate: `tests/e2e/agent-activity-placement.spec.ts`. */}
-                      <AgentActivityChip
-                        suppressed={Boolean(v2DatasheetModel)}
-                        liveWork={acpLiveWork}
-                        onOpenChange={setActivityInboxOpen}
-                        onOpenNode={handleSelect}
-                      />
                     </div>
                     </>
                   )}
@@ -5166,24 +5192,7 @@ function HomePageImpl() {
                     // visible. `treeResult` above has already removed them; the single
                     // source is unchanged.
                     plainMode={audiencePlain}
-                    // While no vault is connected (the static sample), the dusty-nodes
-                    // row and the handoff menu describe **this product's own** dogfood
-                    // vault, which reads to a first-time visitor as noise from a stranger's
-                    // repository. `canCreateNode` (`vault.manifest !== null`) is already
-                    // this page's single source for "a vault is loaded", so it is reused.
                     vaultLoaded={canCreateNode}
-                    // 2026-08-21: connecting an agent has exactly one address, the agents
-                    // destination (`docs/DECISIONS.md`, entry 90).
-                    onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
-                    // For a returning user who already has an agent connected, sending the
-                    // "updated with AI" click to the connect modal — setup they finished
-                    // yesterday — was a dead end. Once connected, the question that click
-                    // must answer is not "should I set this up?" but "what did the agent
-                    // do?", so it deep-links to the activity digest instead. Not connected
-                    // or stale keeps the modal.
-                    agentActivityHref={
-                      agentConnect.status.kind === "connected" ? "/ontology/insights/" : null
-                    }
                     domainCensus={indexDomainCensus}
                     // The id set the lens filters on, plus the badge target.
                     recentChanges={{
@@ -5219,41 +5228,6 @@ function HomePageImpl() {
                         ? () => setBootstrapOpen(true)
                         : undefined
                     }
-                    // Same source (`recentlyUpdatedCount`) as the brand pill's growth
-                    // text used to use, moved from the header to this footer.
-                    footerGrowthText={
-                      recentlyUpdatedCount > 0
-                        ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
-                        : undefined
-                    }
-                    // Plain mode treats the handoff menu as developer chrome and passes
-                    // `undefined`; the widget's existing contract is that an absent value
-                    // renders no menu.
-                    agentHandoff={
-                      audiencePlain
-                        ? undefined
-                        : {
-                            briefText: indexAgentHandoffBriefText,
-                            reanalyzeText: indexAgentHandoffReanalyzeText,
-                            syncText: indexAgentHandoffSyncText,
-                            labels: {
-                              menuLabel: t("index.agentHandoff"),
-                              menuAria: t("index.agentHandoffAria"),
-                              briefCopy: t("analysis.overviewBriefCopy"),
-                              briefCopied: t("analysis.overviewBriefCopied"),
-                              briefCopyAriaLabel: t("analysis.overviewBriefCopyAriaLabel"),
-                              briefCopiedAriaLabel: t("analysis.overviewBriefCopiedAriaLabel"),
-                              reanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
-                              reanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
-                              reanalyzeCopyAriaLabel: t("analysis.overviewReanalyzeCopyAriaLabel"),
-                              reanalyzeCopiedAriaLabel: t("analysis.overviewReanalyzeCopiedAriaLabel"),
-                              syncCopy: t("analysis.overviewSyncCopy"),
-                              syncCopied: t("analysis.overviewSyncCopied"),
-                              syncCopyAriaLabel: t("analysis.overviewSyncCopyAriaLabel"),
-                              syncCopiedAriaLabel: t("analysis.overviewSyncCopiedAriaLabel"),
-                            },
-                          }
-                    }
                     labels={{
                       label: t("index.label"),
                       fold: t("index.fold"),
@@ -5262,8 +5236,6 @@ function HomePageImpl() {
                       censusConcepts: t("index.censusConcepts"),
                       censusRelations: t("index.censusRelations"),
                       censusDomains: t("index.censusDomains"),
-                      agentSync: t("index.agentSync"),
-                      agentSyncIdle: t("index.agentSyncIdle"),
                       capabilitiesShort: t("index.capabilitiesShort"),
                       elementsShort: t("index.elementsShort"),
                       freshTitle: t("index.freshTitle"),
@@ -5314,6 +5286,11 @@ function HomePageImpl() {
               </div>
                 ))
               : null}
+            {/* TopologyAnalysisBar 완전 삭제(분석 패널 완전 소멸 2단계 §d) —
+                focus(§a)/path(§b)/health(§c) 가 모두 빠진 뒤 남은 지도/그래프
+                2-tab 레일은 우상단 유틸리티 레일의 그래프 토글 칩으로
+                이관했다. overview 모드의 예전 analysis-rail 콘텐츠는 이미
+                단축키 도움말의 관계선 표본으로 은퇴했다(W3). */}
           </>
         <div
           data-testid="topology-map-surface"
@@ -5484,6 +5461,9 @@ function HomePageImpl() {
                        `sample:…`. Passing that straight down makes the camera jump every
                        time one file is saved into the vault (measured dy −10.66). */
                     dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
+                    overviewFit={
+                      expandAllActive || expandedParentSet.size > 0 ? "full" : "spine"
+                    }
                     fitViewToken={combinedFitToken}
                     spotlightFitToken={spotlightFitToken}
                     relayoutToken={topologyRelayoutToken}
@@ -5528,8 +5508,15 @@ function HomePageImpl() {
                     onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
                     minimal={localGraphRoot !== null}
                     agentFocusNodeId={agentFocusNodeId}
-                    spotlightIds={spotlightIds}
-                    expandedParents={spotlightExpandedParents ?? expandedParentSet}
+                    spotlightIds={mapLensIds}
+                    mapLensKind={mapLensKind}
+                    pathEdgeIds={pathLensEdgeIds}
+                    expandedParents={
+                      pathExpandedParents ??
+                      (expandAllActive ? allExpandedParentIds : null) ??
+                      spotlightExpandedParents ??
+                      expandedParentSet
+                    }
                     onToggleCluster={handleToggleCluster}
                     onHoverCluster={handleHoverCluster}
                     clusterHint={t('cluster.hint')}
@@ -5605,6 +5592,7 @@ function HomePageImpl() {
                     onClick={openGuidedTour}
                     aria-label={t('controls.tourAriaLabel')}
                     data-testid="topology-tour-button"
+                    data-agent-dock-adjacent-rail="true"
                     className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] md:right-6 md:top-[var(--topology-tour-help-desktop-top)] md:flex xl:right-8 size-[var(--chrome-tile-size)]"
                   >
                     <Compass className="size-[var(--chrome-icon)]" aria-hidden />
@@ -5624,6 +5612,7 @@ function HomePageImpl() {
                   onClick={() => setShortcutsOpen(true)}
                   aria-label={t('controls.shortcutsAriaLabel')}
                   data-testid="topology-shortcuts-help-button"
+                  data-agent-dock-adjacent-rail="true"
                   data-controls-density={
                     topologyUtilityChromeCompact ? "compact-focus" : "default"
                   }
@@ -5748,32 +5737,24 @@ function HomePageImpl() {
                 <TopologyNoMatchesState onClearFilters={clearTopologyFilters} />
               ) : null}
 
-              {/* The bottom-right instrument stack: the relation legend on top (always
-                  present) and the first-run readout below it (which renders itself only
-                  in static mode). They share the instrument-readout grammar but have
-                  different visibility conditions.
-
-                  Both lines use the same grammar (mono, 9px, quaternary), so a narrow gap
-                  makes them read as one block; `gap-3` keeps them separate at any zoom
-                  state and label length. The corner inset hangs off the
-                  `--topology-relation-legend-inset` token (24px base, 32px at ≥1920), so
-                  when the rest of the chrome scales up at ≥1920 this stack also retreats
-                  further from the corner and never collides with map labels.
-
-                  It disappears while the datasheet is open (2026-07-23 review): with the
-                  right-hand panel up, this stack showed through beside and behind it as
-                  fragments, reproduced across every locale × resolution combination. It is
-                  ambient information and not needed mid-investigation. */}
+              {/* 우하단 계기 스택 — root-first-open v3 판독(FirstRunReadout).
+                  코너 inset 은 기존
+                  `--topology-relation-legend-inset` 토큰(base 24px, ≥1920 32px)에
+                  연결 — ≥1920 에서 나머지 크롬이 1.15 로 커질 때 이 스택도 코너에서
+                  더 물러나 지도 라벨과 충돌하지 않는다. */}
+              {/* 검수 1바퀴 결함 2 (2026-07-23) — 우측 데이터시트가 열리면 이
+                  코너 판독이 패널 뒤·왼편으로 파편처럼 비쳐 보였다
+                  (4개 로케일×해상도 전 조합 재현). 앰비언트 정보라 조사 중엔
+                  필요 없으므로 패널이 열려 있는 동안 조용히 사라진다. */}
               <div
-                ref={legendStackRef}
-                data-testid="topology-legend-stack"
+                ref={readoutStackRef}
+                data-testid="topology-readout-stack"
                 className={cn(
                   "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
                   v2DatasheetModel ? "opacity-0" : "opacity-100",
                 )}
                 aria-hidden={v2DatasheetModel ? true : undefined}
               >
-                <TopologyRelationLegend register={relationRegister} />
                 <FirstRunReadout
                   projectCount={firstRunProjectCount}
                   domainCount={indexDomainCount}
@@ -5954,16 +5935,12 @@ function HomePageImpl() {
                   metricDependsOn: relationVocabulary("depends_on", "plain"),
                   metricBelongsTo: relationVocabulary("belongs_to", "plain"),
                   metricEvidence: relationVocabulary("describes", "plain"),
-                  statsConnected: t("nodeDatasheet.statsConnected"),
-                  statsEvidenceDocs: t("nodeDatasheet.statsEvidenceDocs"),
-                  // Hover explanations for the typed-fact labels, which also state that
-                  // the counts are "direct" connections only.
+                  // H1 B2/A — typed-fact 라벨 hover 풀이 + "직접" 연결 스코프 명시.
                   metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
                   metricUsedByHelp: t("nodeDatasheet.metricUsedByHelp"),
                   metricDependsOnHelp: t("nodeDatasheet.metricDependsOnHelp"),
                   metricBelongsToHelp: t("nodeDatasheet.metricBelongsToHelp"),
                   metricEvidenceHelp: t("nodeDatasheet.metricEvidenceHelp"),
-                  metricHelp: t("nodeDatasheet.metricHelp"),
                   noConnections: t("nodeDatasheet.noConnections"),
                   // 「코드 위치」 (Code locations): the actual code evidence — source file paths.
                   codeLocationsLabel: t("nodeDatasheet.codeLocationsLabel"),
@@ -5981,23 +5958,17 @@ function HomePageImpl() {
                   actionsGroupLabel: t("nodeDatasheet.actionsGroupLabel"),
                   actionDocument: t("nodeDatasheet.actionDocument"),
                   actionEditRelations: t("nodeDatasheet.actionEditRelations"),
+                  actionEditMenu: t("nodeDatasheet.actionEditMenu"),
+                  actionMore: t("nodeDatasheet.actionMore"),
                   actionCreateLinked: t("nodeDatasheet.actionCreateLinked"),
-                  actionCreateLinkedTip: t("nodeDatasheet.actionCreateLinkedTip"),
                   actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
                   actionAskAgent: llmBridgeAvailable
                     ? t("nodeDatasheet.actionAskAgent")
                     : undefined,
-                  actionPath: t("nodeDatasheet.actionPath"),
                   actionRealm: t("realm.enterAction"),
-                  // Outcome tooltips (owner-approved): plain "what happens if you press
-                  // this", never a repeat of the label. Entering a realm reuses the orbit
-                  // button's existing tooltip.
-                  actionDocumentTip: t("nodeDatasheet.actionDocumentTip"),
-                  actionEditRelationsTip: t("nodeDatasheet.actionEditRelationsTip"),
-                  actionCopyHandoffTip: t("nodeDatasheet.actionCopyHandoffTip"),
+                  // 결과-설명 툴팁 (소유자 승인) — 라벨 반복이 아닌 "누르면
+                  // 무엇이 되는가" 평문. 영역 전개는 기존 궤도 버튼 툴팁 재사용.
                   actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
-                  actionPathTip: t("nodeDatasheet.actionPathTip"),
-                  actionRealmTip: t("realm.enterTooltip"),
                   sourceHeading: projectSourceLabels?.heading,
                   sourceKind: projectSourceLabels?.sourceKind,
                   sourceStatus: projectSourceLabels?.status,
@@ -6066,11 +6037,10 @@ function HomePageImpl() {
                       }
                     : undefined
                 }
-                // Not injected where there is no agent surface (the web), so the tile goes
-                // with it. No door is drawn that will not open.
+                // 에이전트 표면이 없는 환경(웹)에서는 주입하지 않고 handoff 복사가
+                // 주 행동을 맡는다. 열리지 않을 문을 그리지 않는다.
                 onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
                 onClose={handleDatasheetClose}
-                onSetPathSource={() => handleSetPathSource(panelDatasheetModel.nodeId)}
                 projectSource={projectSource.view}
                 projectSourceBusy={projectSource.busy}
                 projectSourceError={projectSourceErrorLabel}
@@ -6095,8 +6065,8 @@ function HomePageImpl() {
                     ? () => setFullDetailSlug(selectedOntologyNode.id)
                     : undefined
                 }
-                // Plain mode treats the handoff-copy tile and the source-path subline as
-                // developer chrome and hides them.
+                // 슬라이스 C — 비개발(plain) 모드는 handoff 복사 행동 + 원문
+                // 경로 서브라인(슬라이스 B)을 개발자 크롬으로 간주해 숨긴다.
                 showHandoff={!audiencePlain}
                 showSourcePath={!audiencePlain}
                 className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
@@ -6362,18 +6332,17 @@ function HomePageImpl() {
           }}
           onTransitionEnd={(event) => {
             if (event.target !== event.currentTarget || event.propertyName !== "width") return;
-            // Let the space settle first, then start the session. Even if starting the
-            // ACP process briefly occupies the WebKit main thread, a layout motion that
-            // has already finished cannot stutter.
-            if (acpDockFrameOpen && !acpChatOpen) setAcpChatOpen(true);
+            // 공간이 먼저 자리를 잡은 뒤 세션을 띄운다. ACP 프로세스 시작이
+            // WebKit main thread를 잠깐 점유해도 이미 끝난 layout 모션은 안 끊긴다.
+             if (acpDockFrameOpen && !acpChatOpen) scheduleAcpSessionStart();
           }}
-          className="relative min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
+          className="relative min-h-0 shrink-0 overflow-hidden bg-[color:var(--color-canvas)]"
         >
           {(runtimeChatOpen || chatMounted) && acpRuntime ? (
           <Surface
-            open={runtimeChatOpen}
+            open={acpDockFrameOpen}
             as="aside"
-            origin="right"
+            motion="overlay"
           /*
            * ⚠️ **This used to be dead code** (caught in the 2026-08-16 review).
            *
@@ -6397,13 +6366,14 @@ function HomePageImpl() {
            * enforce the share the map must keep (`panel-width.ts`). With no
            * viewport-width branch left, the `xl:` goes too.
            */
-            style={{ width: chatWidth.width }}
+            data-agent-dock-surface="inset"
+            style={{ width: `calc(${chatWidth.width}px - var(--chrome-inset))` }}
             /*
              * The fixed-width content is pinned right and only the outer frame animates
              * from 0 to the stored width. Animating the content width every frame would
              * re-wrap the text continuously and stutter more.
              */
-            className="absolute inset-y-0 right-0 flex min-h-0 shrink-0 flex-col bg-[color:var(--color-panel)] p-4"
+            className={`${AGENT_DOCK_INSET_SURFACE_CLASS} flex min-h-0 shrink-0 flex-col p-4`}
           >
           <AcpChatResizeHandle
             width={chatWidth.width}
@@ -6423,14 +6393,15 @@ function HomePageImpl() {
             onRuntimeChange={setAcpRuntimeId}
             vaultRoot={gitVaultPath}
             mcpServers={acpMcpServers}
-            // A sentence handed over from a node lands in **this** composer; it is not
-            // sent.
+            sessionEnabled={acpChatOpen}
+            // 노드에서 건너온 문장은 **여기** 작성 칸에 앉는다 — 보내지는 않는다.
             prefillRequest={vaultAgentPrefill ?? askPrefill}
             suggestions={chatSuggestions}
             onSuggestionAction={handleChatSuggestionAction}
             knownSlugs={chatKnownSlugs}
             onHoverSlug={handleChatHoverSlug}
             onTurnActivityChange={handleAcpTurnActivityChange}
+            onMapIntent={handleAcpMapIntent}
             onOntologyRelationPreviewChange={setAcpRelationPreview}
             onWorkReceipt={handleAcpWorkReceipt}
             onClose={closeVaultAgent}

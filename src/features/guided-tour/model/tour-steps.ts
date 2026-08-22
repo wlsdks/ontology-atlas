@@ -44,7 +44,9 @@ export const TOUR_STEPS: readonly TourStep[] = [
   },
   {
     id: "relations",
-    anchor: { type: "testid", value: "topology-relation-legend" },
+    // 관계 범례는 상시 코너에서 pull-only 「?」 도움말로 이동했다. 이 단계는
+    // 지도 전체를 보며 선 의미를 읽는 중앙 설명이라 특정 DOM 상자를 가리키지 않는다.
+    anchor: null,
     persona: "all",
     copyKey: "relations",
   },

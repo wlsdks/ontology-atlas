@@ -4031,6 +4031,49 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   }
 }
 
+/* ── 에이전트 도크 옆 지도 컨트롤 레일 (2026-08-22) ───────────────────────
+   도크 자체가 지도 컬럼을 줄인 뒤에도 우측 지도 컨트롤은 와이드 기본 inset
+   (32px)에 남고, 새 대화 표면은 seam 반대쪽에서 12px 더 들어가 있었다. 둘의
+   합 44px은 한 쌍이 아니라 서로 무관한 두 열처럼 보였다(14인치 실측).
+
+   도크가 열릴 때만 지도 쪽 inset도 `--chrome-inset / 2`(12px)로 맞춘다. 대화
+   표면의 `right-3`과 같은 seam 양쪽이므로 실제 간격은 24px이고, 화면별 보정값은
+   없다. right 이동은 도크 폭과 같은 시계/곡선으로 따라가며 기존 hover 색 전환은
+   `--motion-fast`로 보존한다. reduced-motion은 위 전역 규칙이 즉시 배치로 낮춘다. */
+[data-agent-dock-adjacent-rail='true'] {
+  transition-property: right, color, background-color, border-color;
+  transition-duration:
+    var(--agent-panel-reflow-duration),
+    var(--motion-fast),
+    var(--motion-fast),
+    var(--motion-fast);
+  transition-timing-function:
+    var(--topology-motion-ease-out),
+    ease,
+    ease,
+    ease;
+}
+
+@media (min-width: 768px) {
+  [data-agent-panel-open='true'] [data-agent-dock-adjacent-rail='true'] {
+    right: calc(var(--chrome-inset) / 2);
+  }
+}
+
+/* ── 우측 인스펙터와 상단 지도 명령의 남은 폭 중앙 (2026-08-22) ───────────
+   SearchHint는 지도 컬럼 자체의 중앙에 선다. 에이전트 도크는 그 컬럼을 줄이므로
+   저절로 반영되지만, fixed node inspector는 컬럼 위를 덮기 때문에 별도 예약이
+   필요하다. 패널 폭과 같은 오른쪽 inset의 절반만큼 왼쪽으로 옮기면 명령 열은
+   inspector를 제외한 실제 남은 지도 영역의 중앙에 선다. 스크린샷별 픽셀이나
+   채팅 폭 상수가 아니라 현재 디자인 토큰의 합이다. */
+@media (min-width: 1280px) {
+  [data-right-inspector-reserve='recenter-in-remaining-map'] {
+    left: calc(
+      50% - (var(--topology-v2-panel-width) + var(--topology-node-popover-right-inset)) / 2
+    );
+  }
+}
+
 /* ── 토스트(sonner) 모션 — 벤더 공장값을 앱 램프로 갈아 끼운다 (2026-07-28) ──
    실측(1512×853, 60fps rAF 샘플): 등장 불투명도가
    0.025 → 0.101 → 0.177 → 0.267 → 0.362 → 0.497 … 로 **델타가 커지다가**

@@ -27,6 +27,8 @@ import { isCameraUnsettled, isCanvasActive, isDomeSpinAnimating, isEgoTailAnimat
 import { ambientSleepFactor, isAmbientAsleep } from "../model/ambient-sleep";
 import { NAVIGATION_INTENT_EVENT, NAVIGATION_YIELD_MS } from "@/shared/lib/navigation-intent";
 import { stepSpotlightPhase } from "../model/spotlight-motion";
+import type { TopologyMapLensKind } from "../model/path-lens";
+import { resolveViewportReframeMode } from "../model/viewport-reframe";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
@@ -162,6 +164,7 @@ const IDLE_GRACE_MS = 1200;
  * design duration, and the unit that carries a resize *is* the frame.
  */
 const VIEWPORT_SETTLE_FRAMES = 2;
+type ViewportReframeMotion = "tracking" | "finalize-tracking" | "settled";
 
 /**
  * Backing-resolution cap while dragging. **A drag costs painting, not
@@ -288,7 +291,9 @@ export interface UseTopologyLoopArgs {
    * the `?recent=` window's mtime arithmetic (`useAdaptiveRecentChanges`).
    */
   spotlightIds?: ReadonlySet<string> | null;
-  /** Edge selection = pair focus: only the two endpoints stay lit, the selected edge pale indigo. */
+  mapLensKind?: TopologyMapLensKind;
+  pathEdgeIds?: ReadonlySet<string> | null;
+  /** 엣지 선택 = 페어 포커스 (양끝만 표시, 선택 엣지 pale 인디고). */
   selectedEdge?: { sourceId: string; targetId: string } | null;
   previewEdge?: TopologyMapV2Props["previewEdge"];
   /**
@@ -452,7 +457,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -810,8 +815,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const pendingSpotlightFitRef = useRef(false);
   /** Handle to the latest `runSpotlightFit`, so local functions never call a stale closure. */
   const runSpotlightFitRef = useRef<(() => boolean) | null>(null);
-  // Same mount-skip pattern, for the dedicated relayout-only effect below
-  // (node-position homing), which must not fire on mount either.
+  /** 정착한 뷰포트 크기로 현재 의미 상태를 다시 프레이밍하는 최신 함수. */
+  const reframeViewportRef = useRef<((motion: ViewportReframeMotion) => boolean) | null>(null);
+  /** 폭 전환 중 이미 카메라가 새 가용 영역을 따라갔는가. */
+  const viewportCameraTrackedRef = useRef(false);
+  // C1 B3 — same mount-skip pattern, but for the DEDICATED relayout-only
+  // effect below (node-position homing), which must not fire on mount either.
   const initialRelayoutTokenRef = useRef(relayoutToken);
 
   const pointerMachineRef = useRef<PointerMachineState>(INITIAL_POINTER_MACHINE_STATE);
@@ -1044,6 +1053,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const tourAnchorNodeIdRef = useRef<string | null>(tourAnchorNodeId);
   /** Spotlight — prop mirror plus its on/off exponential ramp (0..1, stepped in the frame body). */
   const spotlightIdsRef = useRef<ReadonlySet<string> | null>(spotlightIds);
+  const mapLensKindRef = useRef<TopologyMapLensKind>(mapLensKind);
+  const pathEdgeIdsRef = useRef<ReadonlySet<string> | null>(pathEdgeIds);
   const spotlightRampRef = useRef(0);
   const spotlightDashOffsetRef = useRef(0);
   /**
@@ -1165,6 +1176,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     spotlightIdsRef.current = spotlightIds;
   }, [spotlightIds]);
+  useEffect(() => {
+    mapLensKindRef.current = mapLensKind;
+    pathEdgeIdsRef.current = pathEdgeIds;
+  }, [mapLensKind, pathEdgeIds]);
+  // Phase 5 #21 — 아이콘 세트 변경 시 다음 프레임부터 새 렌더 스타일.
   useEffect(() => {
     glyphStyleRef.current = glyphSet === "line" ? "line" : "fill";
   }, [glyphSet]);
@@ -1713,7 +1729,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       if (canvas.width !== backingWidth) canvas.width = backingWidth;
       if (canvas.height !== backingHeight) canvas.height = backingHeight;
       viewportRef.current = pending;
-      if (cssSizeChanged) viewportRebuildPendingRef.current = true;
+      if (cssSizeChanged) {
+        viewportRebuildPendingRef.current = true;
+        // 도크 폭과 카메라를 같은 클럭으로 움직인다. 정착 뒤 처음 target을
+        // 만들면 「패널 이동 → 잠깐 멈춤 → 지도 이동」의 두 동작으로 보인다.
+        // 이 경로는 별먼지/격자를 다시 만들지 않고 카메라 목표만 값싸게 갱신한다.
+        if (
+          hasInitializedRef.current &&
+          reframeViewportRef.current?.("tracking")
+        ) {
+          viewportCameraTrackedRef.current = true;
+        }
+      }
       return sizeChanged;
     };
 
@@ -1758,8 +1785,19 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         height,
         computeStarDustCount(width, height, tokens.dustAreaPerPoint) * 2,
       );
+      // 최초 마운트는 아래 `trySnapInitialCamera` 가 즉시 카메라를 세운다. 이미
+      // 카메라가 있던 resize만 현재 의미 상태를 새 폭에 다시 맞춘다.
+      const hadCameraBeforeResize = hasInitializedRef.current;
       trySnapInitialCamera(tokens);
-      rescueCameraIfEverythingOffscreen(tokens);
+      const reframeMotion: ViewportReframeMotion = viewportCameraTrackedRef.current
+        ? "finalize-tracking"
+        : "settled";
+      const reframed =
+        hadCameraBeforeResize && reframeViewportRef.current?.(reframeMotion);
+      viewportCameraTrackedRef.current = false;
+      // 사람의 팬/줌처럼 의도적으로 보존한 카메라도, resize 뒤 노드가 전부
+      // 사라진 명백한 실패 상태라면 기존 안전망이 마지막으로 구제한다.
+      if (!reframed) rescueCameraIfEverythingOffscreen(tokens);
     };
 
     commitViewportSizeRef.current = commitViewportSize;
@@ -1918,7 +1956,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * ends there — debt recorded then could never be paid, and a session with no
    * spotlit nodes would retry on every initialization.
    */
-  const runSpotlightFit = useCallback((): boolean => {
+  const runSpotlightFit = useCallback((motion: "tween" | "follow" | "snap" = "tween"): boolean => {
     const ids = spotlightIdsRef.current;
     if (ids === null || ids.size === 0) return true; // No debt to record.
     const tokens = readTopologyV2TokensOrNull();
@@ -1955,8 +1993,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraTargetRef.current = target;
     userDrivenCameraRef.current = false;
     dampingRef.current = tokens.cameraDampingDefault;
-    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-    beginCameraTween(target);
+    // live viewport tracking은 휠처럼 매 프레임 움직이는 목표다. 느린 서사 전환
+    // spring을 쓰면 도크가 멈춘 뒤에도 카메라가 오래 따라와 두 동작으로 보인다.
+    cameraAngularFreqRef.current =
+      motion === "follow"
+        ? tokens.cameraSpringAngFreqInteractive
+        : tokens.cameraSpringAngFreqTransition;
+    if (motion === "snap") {
+      cameraTweenRef.current = null;
+      cameraRef.current = {
+        x: { value: target.tx, velocity: 0 },
+        y: { value: target.ty, velocity: 0 },
+        scale: { value: target.tscale, velocity: 0 },
+      };
+    } else if (motion === "follow") cameraTweenRef.current = null;
+    else beginCameraTween(target);
     return true;
   }, [beginCameraTween]);
   runSpotlightFitRef.current = runSpotlightFit;
@@ -1966,6 +2017,134 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!runSpotlightFit()) pendingSpotlightFitRef.current = true;
   }, [spotlightFitToken, runSpotlightFit]);
 
+  /**
+   * 도킹 패널·창·split 폭 전환을 따라가며 현재 보고 있던 의미를 새 가용
+   * 영역으로 다시 계산한다. `tracking`은 폭과 같은 프레임에서 spring target만
+   * 옮기고, `finalize-tracking`은 마지막 목표에 속도 0으로 착지해 underdamped
+   * 되튕김을 없앤다. `settled`은 즉시 끝난 resize의 일반 카메라 tween을 쓴다.
+   *
+   * 종전 resize 경로는 캔버스 해상도와 별먼지만 다시 만들고 카메라는 「전부
+   * 화면 밖」일 때만 구했다. 그래서 INDEX가 접히고 우측 에이전트가 들어오는
+   * 동안 노드가 조금이라도 남아 있으면, 이전 폭의 카메라가 그대로 합격해 전체
+   * 그래프가 왼쪽으로 밀렸다. 노드 선택만 정상인 이유는 선택 effect가 새 폭과
+   * 인스펙터를 따로 재기 때문이었다.
+   *
+   * 여기서는 무조건 overview로 되돌리지 않는다. 선택·영역·경로/전체 렌즈·3D가
+   * 각각 소유한 카메라 의미를 그대로 다시 계산하고, 직접 팬/줌한 화면은 보존한다.
+   */
+  const reframeViewport = useCallback((motion: ViewportReframeMotion): boolean => {
+    const rawTokens = readTopologyV2TokensOrNull();
+    const world = worldRef.current;
+    const { width, height } = viewportRef.current;
+    if (!rawTokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) {
+      return false;
+    }
+
+    // INDEX·선택 인스펙터의 실제 DOM 폭을 같은 안전 인셋 문법에 넣는다.
+    const tokens = cameraTokens(rawTokens);
+    const overviewBounds = overviewBoundsFor(overviewFitRef.current, world);
+    overviewScaleRef.current = computeOverviewFitScale(
+      overviewBounds,
+      width,
+      height,
+      tokens,
+      world.nodes.length,
+    );
+
+    const realmPhase = realmTransitionRef.current.phase;
+    const realmActive = realmPhase === "entering" || realmPhase === "active";
+    const focused = focusedSlugRef.current;
+    const dome = domeRuntimeRef.current;
+    const mode = resolveViewportReframeMode({
+      userDriven: userDrivenCameraRef.current,
+      domeActive: dome !== null && dome.active,
+      focused: focused !== null,
+      pairFocused: selectedEdgeRef.current !== null,
+      realmActive,
+      spotlightActive: (spotlightIdsRef.current?.size ?? 0) > 0,
+    });
+
+    if (mode === "preserve") return false;
+
+    // 3D는 rAF가 가진 라이브 투영 좌표로 처리해야 한다. 자세는 리셋하지 않고,
+    // 기존 선택/해제 리프레임 경로에 새 뷰포트만 다시 먹인다.
+    if (mode === "dome-focus" || mode === "dome-overview") {
+      // 돔은 자기 투영 스텝이 최종 bbox를 소유한다. 폭 매 프레임마다 그 스텝을
+      // 재시작하지 않고 정착 시 한 번만 빚을 넘긴다.
+      if (motion === "tracking") return false;
+      domeFocusPendingRef.current = { slug: mode === "dome-focus" ? focused : null };
+      lastActiveMsRef.current = performance.now();
+      return true;
+    }
+
+    let target: CameraTarget | null = null;
+    if (mode === "focus" && focused !== null) {
+      const realmData = realmDataRef.current;
+      target = computeFocusCameraTarget(
+        world,
+        tokens,
+        width,
+        height,
+        focused,
+        overviewScaleRef.current * tokens.overviewEntryRatio,
+        realmActive ? realmData?.memberIds ?? null : null,
+      );
+    } else if (mode === "realm") {
+      const realmData = realmDataRef.current;
+      if (realmData !== null) {
+        const bounds = realmVisibleBounds(
+          world,
+          realmData,
+          new Set([...expandedParentsRef.current, realmData.rootId]),
+          tokens,
+        );
+        target = realmCameraTarget(bounds, tokens, width, height);
+      }
+    } else if (mode === "spotlight") {
+      // 최근 변경·경로·전체 펼치기는 이미 같은 노드 집합 fit을 한 곳에 소유한다.
+      return runSpotlightFit(
+        motion === "tracking"
+          ? "follow"
+          : motion === "finalize-tracking"
+            ? "snap"
+            : "tween",
+      );
+    } else if (mode === "overview") {
+      target = computeOverviewCameraTarget(
+        overviewBounds,
+        width,
+        height,
+        tokens,
+        world.nodes.length,
+      );
+    }
+
+    if (target === null) return false;
+    cameraTargetRef.current = target;
+    userDrivenCameraRef.current = false;
+    dampingRef.current = tokens.cameraDampingDefault;
+    cameraAngularFreqRef.current =
+      motion === "tracking"
+        ? tokens.cameraSpringAngFreqInteractive
+        : tokens.cameraSpringAngFreqTransition;
+    lastActiveMsRef.current = performance.now();
+    if (motion === "finalize-tracking") {
+      cameraTweenRef.current = null;
+      cameraRef.current = {
+        x: { value: target.tx, velocity: 0 },
+        y: { value: target.ty, velocity: 0 },
+        scale: { value: target.tscale, velocity: 0 },
+      };
+    } else if (motion === "tracking") cameraTweenRef.current = null;
+    else beginCameraTween(target);
+    return true;
+  }, [beginCameraTween, cameraTokens, runSpotlightFit]);
+  useEffect(() => {
+    reframeViewportRef.current = reframeViewport;
+    return () => {
+      reframeViewportRef.current = null;
+    };
+  }, [reframeViewport]);
 
   // --- relayoutToken ONLY (not fitViewToken) — also restores every node's
   // position to its canonical (`homeX`/`homeY`) layout coordinate over a
@@ -2134,7 +2313,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       target = realmCameraTarget(bounds, tokens, width, height);
     } else {
       const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
-      target = computeFocusCameraTarget(world, cameraTokens(tokens), width, height, focusedSlug, overviewEntryScale, realmMembers);
+      /*
+       * 선택 진입은 방금 열린 인스펙터의 실제 폭을 피한다. 반대로 선택 해제는
+       * 인스펙터가 **퇴장 애니메이션 동안 아직 DOM에 남아 있어도** 최종 overview
+       * 에서는 피하면 안 된다. 종전에는 두 방향 모두 `cameraTokens()`로 재서,
+       * 닫힌 뒤에도 그래프가 인스펙터 반 폭(실측 약 192px)만큼 왼쪽에 남았다.
+       *
+       * 해제의 목적지는 패널이 사라진 다음의 안전영역이므로 정본 CSS 토큰을,
+       * 선택의 목적지는 현재 실제 장애물을 포함한 실측 토큰을 쓴다. 한 상태의
+       * 입장/퇴장 차이이지 별도 보정값은 없다.
+       */
+      const focusTokens = focusedSlug === null ? tokens : cameraTokens(tokens);
+      target = computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers);
     }
     if (!target) return;
     /*
@@ -4581,6 +4771,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           trailLensActive || trailLensRampRef.current > 0.01 ? visitedTrailSetRef.current : null,
         trailLensRamp: trailLensRampRef.current,
         spotlightIds: spotlightIdsRef.current,
+        mapLensKind: mapLensKindRef.current,
+        pathEdgeIds: pathEdgeIdsRef.current,
         spotlightRamp: spotlightRampRef.current,
         spotlightDashOffset: spotlightDashOffsetRef.current,
         tierReveal: tierRevealRef.current,

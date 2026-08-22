@@ -91,8 +91,6 @@ const labels = {
   censusConcepts: "concepts",
   censusRelations: "relations",
   censusDomains: "domains",
-  agentSync: "Agent sync",
-  agentSyncIdle: "Agent not connected",
   capabilitiesShort: "caps",
   elementsShort: "elems",
   domainCountTitle: "겹침 포함", freshTitle: "recently updated",
@@ -128,6 +126,54 @@ function buildFixtureTree() {
 }
 
 describe("TopologyIndexPanel", () => {
+  it("does not render the retired agent/growth/handoff footer", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    expect(screen.queryByTestId("topology-index-footer")).not.toBeInTheDocument();
+  });
+
+  it("opens newly loaded root rows so the INDEX does not stop at one project line", () => {
+    const empty = buildOntologyTree([], []);
+    const { rerender } = render(
+      <TopologyIndexPanel
+        treeResult={empty}
+        totalConcepts={0}
+        totalRelations={0}
+        domainCount={0}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    rerender(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    expect(screen.getByText("Onboarding & UX")).toBeInTheDocument();
+  });
+
   /**
    * 「다른 폴더에서 노드 가져오기」 (import nodes from another folder) is **not in
    * INDEX** (moved 2026-08-02, owner: *"이건 뭐임? 이 문구가 왜 있는거지..?"* — what is
@@ -608,104 +654,10 @@ describe("TopologyIndexPanel", () => {
     expect(screen.getByTestId("topology-index-census")).toBeInTheDocument();
   });
 
-  // The footer's "Updated with AI" was a dead end that sent an already-connected
-  // second-day user back to the registration modal.
-  describe("footer agent-connect control (P4-②)", () => {
-    it("opens the agent-connect sheet (button) when there is no agentActivityHref", () => {
-      const onOpenAgentConnect = vi.fn();
-      render(
-        <TopologyIndexPanel
-          treeResult={buildFixtureTree()}
-          totalConcepts={4}
-          totalRelations={3}
-          domainCount={1}
-          changedSlugs={new Set()}
-          selectedId={null}
-          onSelect={() => {}}
-          onCollapse={() => {}}
-          labels={labels}
-          onOpenAgentConnect={onOpenAgentConnect}
-        />,
-      );
-      const control = screen.getByTestId("topology-index-agent-connect");
-      expect(control.tagName).toBe("BUTTON");
-      fireEvent.click(control);
-      expect(onOpenAgentConnect).toHaveBeenCalledTimes(1);
-    });
-
-    // C11 — no heartbeat (no agentActivityHref) must NOT show the progressive
-    // "Updated with AI" copy that implies active sync. Show the neutral idle
-    // label instead.
-    it("shows the neutral idle label (not the progressive sync copy) when there is no heartbeat", () => {
-      render(
-        <TopologyIndexPanel
-          treeResult={buildFixtureTree()}
-          totalConcepts={4}
-          totalRelations={3}
-          domainCount={1}
-          changedSlugs={new Set()}
-          selectedId={null}
-          onSelect={() => {}}
-          onCollapse={() => {}}
-          labels={labels}
-          onOpenAgentConnect={() => {}}
-        />,
-      );
-      const control = screen.getByTestId("topology-index-agent-connect");
-      expect(control).toHaveTextContent("Agent not connected");
-      expect(control).not.toHaveTextContent("Agent sync");
-    });
-
-    it("shows the live sync copy only when connected (agentActivityHref present)", () => {
-      render(
-        <TopologyIndexPanel
-          treeResult={buildFixtureTree()}
-          totalConcepts={4}
-          totalRelations={3}
-          domainCount={1}
-          changedSlugs={new Set()}
-          selectedId={null}
-          onSelect={() => {}}
-          onCollapse={() => {}}
-          labels={labels}
-          onOpenAgentConnect={() => {}}
-          agentActivityHref="/ontology/insights/"
-        />,
-      );
-      const control = screen.getByTestId("topology-index-agent-connect");
-      expect(control).toHaveTextContent("Agent sync");
-      expect(control).not.toHaveTextContent("Agent not connected");
-    });
-
-    it("deep-links to the activity digest instead of opening the modal when agentActivityHref is set (connected agent)", () => {
-      const onOpenAgentConnect = vi.fn();
-      render(
-        <TopologyIndexPanel
-          treeResult={buildFixtureTree()}
-          totalConcepts={4}
-          totalRelations={3}
-          domainCount={1}
-          changedSlugs={new Set()}
-          selectedId={null}
-          onSelect={() => {}}
-          onCollapse={() => {}}
-          labels={labels}
-          onOpenAgentConnect={onOpenAgentConnect}
-          agentActivityHref="/ontology/insights/"
-        />,
-      );
-      const control = screen.getByTestId("topology-index-agent-connect");
-      expect(control.tagName).toBe("A");
-      expect(control).toHaveAttribute("href", "/ontology/insights/");
-      fireEvent.click(control);
-      expect(onOpenAgentConnect).not.toHaveBeenCalled();
-    });
-  });
-
-  // Plain (non-developer) mode excludes element rows from the tree (through the
-  // caller's filterTreeExcludeKind), and nothing anywhere explained that, so it read
-  // as a consistency defect: "capabilities 2 · elements 7" that expanded to show only
-  // 2 rows.
+  // P1 결함①a (사용성 전수 검수 2026-07-23) — 일반(비개발) 모드는
+  // element 행을 트리에서 제외하는데(호출자의 filterTreeExcludeKind), 그
+  // 사실을 설명하는 텍스트가 어디에도 없어 "역량 2 · 요소 7"인데 펼치면
+  // 2행만 보이는 정합성 결함으로 읽혔다.
   describe("plainMode hint (P1 결함①a)", () => {
     it("renders the quiet plain-mode hint when plainMode is true and the label is provided", () => {
       render(
@@ -763,36 +715,12 @@ describe("TopologyIndexPanel", () => {
     });
   });
 
-  // Unifying the overview left rail's attention winner (2026-07-24) — with no vault
-  // connected (the static sample), maintenance and agent controls such as "dusty
-  // nodes" and 「인계」 (handoff) are not exposed to a first-time visitor. The real data
-  // (dustyNodeCount, agentHandoff) still arrives, but `vaultLoaded=false` suppresses
-  // only the render, and `vaultLoaded=true` (or omitted — the backwards-compatible
-  // default) must show them as before.
-  describe("vault-connected gate for maintenance/agent controls (P1 오버뷰 레일)", () => {
-    const agentHandoffProp = {
-      briefText: "brief",
-      reanalyzeText: "reanalyze",
-      syncText: "sync",
-      labels: {
-        menuLabel: "인계",
-        menuAria: "인계 메뉴",
-        briefCopy: "브리핑 복사",
-        briefCopied: "복사됨",
-        briefCopyAriaLabel: "브리핑 복사",
-        briefCopiedAriaLabel: "복사됨",
-        reanalyzeCopy: "재분석 복사",
-        reanalyzeCopied: "복사됨",
-        reanalyzeCopyAriaLabel: "재분석 복사",
-        reanalyzeCopiedAriaLabel: "복사됨",
-        syncCopy: "동기화 복사",
-        syncCopied: "복사됨",
-        syncCopyAriaLabel: "동기화 복사",
-        syncCopiedAriaLabel: "복사됨",
-      },
-    };
-
-    it("hides the dusty-nodes row and the agent-handoff menu when vaultLoaded is false, even though counts/props are non-empty", () => {
+  // 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) — vault 미연결
+  // (정적 샘플) 상태에서 "먼지 앉은 노드" 같은 유지보수 컨트롤은 첫
+  // 방문자에게 노출하지 않는다. `vaultLoaded=false`면 렌더만 억제하고,
+  // `vaultLoaded=true`(또는 생략 — 하위호환 기본값)면 그대로 나타나야 한다.
+  describe("vault-connected gate for maintenance controls (P1 오버뷰 레일)", () => {
+    it("hides maintenance rows when vaultLoaded is false", () => {
       render(
         <TopologyIndexPanel
           treeResult={buildFixtureTree()}
@@ -805,18 +733,16 @@ describe("TopologyIndexPanel", () => {
           onCollapse={() => {}}
           labels={labels}
           dustyNodeCount={51}
-          agentHandoff={agentHandoffProp}
           uncatalogedDocCount={3}
           onPromoteUncatalogedDocs={() => {}}
           vaultLoaded={false}
         />,
       );
       expect(screen.queryByTestId("topology-index-dusty-nodes")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("topology-index-agent-handoff")).not.toBeInTheDocument();
       expect(screen.queryByTestId("topology-index-uncataloged-docs")).not.toBeInTheDocument();
     });
 
-    it("shows the dusty-nodes row and the agent-handoff menu once vaultLoaded is true", () => {
+    it("shows maintenance rows once vaultLoaded is true", () => {
       render(
         <TopologyIndexPanel
           treeResult={buildFixtureTree()}
@@ -829,14 +755,12 @@ describe("TopologyIndexPanel", () => {
           onCollapse={() => {}}
           labels={labels}
           dustyNodeCount={51}
-          agentHandoff={agentHandoffProp}
           uncatalogedDocCount={3}
           onPromoteUncatalogedDocs={() => {}}
           vaultLoaded
         />,
       );
       expect(screen.getByTestId("topology-index-dusty-nodes")).toBeInTheDocument();
-      expect(screen.getByTestId("topology-index-agent-handoff")).toBeInTheDocument();
       expect(screen.getByTestId("topology-index-uncataloged-docs")).toBeInTheDocument();
     });
 
@@ -903,11 +827,9 @@ describe("TopologyIndexPanel", () => {
           onCollapse={() => {}}
           labels={labels}
           dustyNodeCount={51}
-          agentHandoff={agentHandoffProp}
         />,
       );
       expect(screen.getByTestId("topology-index-dusty-nodes")).toBeInTheDocument();
-      expect(screen.getByTestId("topology-index-agent-handoff")).toBeInTheDocument();
     });
   });
 });

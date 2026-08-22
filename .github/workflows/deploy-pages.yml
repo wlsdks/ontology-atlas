@@ -64,6 +64,11 @@ jobs:
           # 등록이 막힌다. 미설정이면 `app/layout.tsx` 가 태그 자체를 안 낸다.
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
           NEXT_PUBLIC_BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
+      - name: Stage the newest published updater manifest
+        run: pnpm desktop:stage-hosted-updater
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PUBLISHED_RELEASE_TAG: ${{ env.PUBLISHED_RELEASE_TAG }}
       - name: Adapt static PWA manifest to base path
         run: |
           test -f out/manifest.webmanifest

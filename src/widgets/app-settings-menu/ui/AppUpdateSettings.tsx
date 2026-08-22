@@ -83,7 +83,7 @@ export function AppUpdateSettings() {
       case 'ready':
         return t('resultReady', { version: phase.version });
       case 'failed':
-        return t('resultFailed');
+        return phase.operation === 'check' ? t('resultFailed') : t('resultInstallFailed');
       default:
         return undefined;
     }

@@ -125,6 +125,7 @@ export function buildTopologyV2Graph(
   const v2Edges: TopologyV2Edge[] = includedEdges.map((edge) => {
     const quality = classifyTopologyRelationQuality(edge);
     return {
+      id: edge.id,
       source: edge.from,
       target: edge.to,
       relationType: edge.type,

@@ -23,7 +23,7 @@ import {
   type LocalEndpointSettings,
 } from '@/shared/lib/local-endpoint';
 import { useHeldValue } from '@/shared/lib/use-presence';
-import { Surface } from '@/shared/ui';
+import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from '@/shared/ui';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
@@ -511,11 +511,13 @@ export function VaultAgentPanel({
         transitionDuration: 'var(--agent-panel-reflow-duration)',
         transitionTimingFunction: 'var(--topology-motion-ease-out)',
       }}
-      className="relative flex h-full shrink-0 flex-col overflow-hidden border-l border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]"
+      className="relative flex h-full shrink-0 flex-col overflow-hidden bg-[color:var(--color-canvas)]"
     >
       <div
-        className="flex h-full w-[var(--agent-panel-width)] flex-col"
-        // Map interaction is not blocked even while opening — this is not a blocking surface.
+        data-agent-dock-surface="inset"
+        style={{ width: 'calc(var(--agent-panel-width) - var(--chrome-inset))' }}
+        className={`${AGENT_DOCK_INSET_SURFACE_CLASS} flex flex-col`}
+        // 열리는 동안에도 지도 조작을 막지 않는다 — 블로킹 표면이 아니다.
         inert={!open ? true : undefined}
       >
         <header className="flex shrink-0 items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2">

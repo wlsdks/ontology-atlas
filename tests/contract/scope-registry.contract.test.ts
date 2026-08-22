@@ -192,6 +192,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "demo:open-shortcuts", kind: "storage", scope: "global", note: "세션 — 단축키 시트 열기 의도" },
   { key: "ontology-atlas:route-focus-intent", kind: "storage", scope: "global", note: "세션 — 라우트 이동 후 포커스 대상" },
   { key: "ontology-atlas:settings-locale-focus", kind: "storage", scope: "global", note: "세션 — 설정 시트 언어 칸 포커스" },
+  { key: "ontology-atlas:agent-chat-intent:pending", kind: "storage", scope: "global", note: "세션 — 에이전트 목적지에서 지도 대화 도크로 넘기는 실행기 id" },
 
   // ── Per-vault content — protected by an exact scope ──────────────────────
   {

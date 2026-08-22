@@ -46,8 +46,6 @@ const labels = {
   metricDependsOn: "leans on",
   metricBelongsTo: "belongs to",
   metricEvidence: "evidence",
-  statsConnected: "Connected",
-  statsEvidenceDocs: "Source docs",
   codeLocationsLabel: "code location",
   codeLocationsCopyLabel: "copy",
   codeLocationsCopiedLabel: "copied",
@@ -62,8 +60,11 @@ const labels = {
   actionsGroupLabel: "Node actions",
   actionDocument: "Document",
   actionEditRelations: "Edit relations",
+  actionCreateLinked: "Create linked",
   actionCopyHandoff: "Copy handoff",
   actionAskAgent: "Ask agent",
+  actionEditMenu: "Edit",
+  actionMore: "More actions",
   actionPath: "Path",
   actionRealm: "Expand realm",
   sourceHeading: "Code evidence",
@@ -90,7 +91,6 @@ function renderPanel(
   overrides: {
     documentHref?: string | null;
     onCopyHandoff?: () => void;
-    onSetPathSource?: () => void;
     domain?: { id: string; title: string } | null;
     onSelectConnection?: (id: string) => void;
     onHoverConnection?: (id: string | null) => void;
@@ -106,6 +106,7 @@ function renderPanel(
     onProjectSourceAction?: () => void | Promise<void>;
     onAskAgent?: () => void;
     onEditRelations?: () => void;
+    onCreateLinked?: () => void;
     onEnterRealm?: () => void;
     projectSourceBusy?: boolean;
     projectSourceError?: string | null;
@@ -151,8 +152,8 @@ function renderPanel(
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onAskAgent={overrides.onAskAgent}
       onEditRelations={overrides.onEditRelations}
+      onCreateLinked={overrides.onCreateLinked}
       onClose={() => {}}
-      onSetPathSource={overrides.onSetPathSource ?? (() => {})}
       onEnterRealm={overrides.onEnterRealm}
       onOpenFullDetail={onOpenFullDetail}
       projectSource={overrides.projectSource}
@@ -232,7 +233,7 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     );
   });
 
-  it("keeps four inline ontology actions for a current project and one footer handoff", () => {
+  it("keeps one primary action plus Edit and More for a current project", () => {
     const projectSource: ProjectSourceView = {
       contractVersion: 1,
       projectSlug: "views",
@@ -254,17 +255,9 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     });
 
     const actions = screen.getByTestId("topology-v2-detail-panel-actions");
-    expect(actions).toHaveAttribute("data-inline-action-count", "4");
-    /*
-     * 2026-08-03 — this used to count `actions.children`, back when the tiles were
-     * the group's **direct children**. With the action strip now three rows
-     * (verdict ④) the direct children are **the rows**. This assertion's intent was
-     * "four tiles are drawn", so it skips the rows and counts the tiles — surviving
-     * a change in row count while still turning red if a tile disappears.
-     */
-    expect(
-      actions.querySelectorAll('[data-testid^="topology-v2-detail-panel-action-"]'),
-    ).toHaveLength(4);
+    expect(actions.querySelectorAll('[data-action-role="primary"]')).toHaveLength(1);
+    expect(screen.getByTestId("topology-v2-detail-panel-edit-menu-trigger")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-v2-detail-panel-more-menu-trigger")).toBeInTheDocument();
     expect(screen.queryByTestId("topology-v2-detail-panel-action-handoff")).not.toBeInTheDocument();
     expect(screen.queryByTestId("topology-v2-detail-panel-action-path")).not.toBeInTheDocument();
     expect(screen.getByTestId("topology-v2-project-source-action")).toBeInTheDocument();
@@ -611,7 +604,7 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     renderPanel(vi.fn(), undefined, { kind: "domain", projectSource });
 
     expect(screen.queryByTestId("topology-v2-project-source-receipt")).not.toBeInTheDocument();
-    expect(screen.getByTestId("topology-v2-detail-panel-stats")).toBeInTheDocument();
+    expect(screen.queryByTestId("topology-v2-detail-panel-stats")).not.toBeInTheDocument();
     expect(screen.getByTestId("topology-v2-detail-panel-open-full-detail").className).toContain(
       "--topology-v2-panel-primary-surface",
     );
@@ -824,24 +817,7 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
   });
 });
 
-// Mockup redesign (2026-07-24) — the engraved per-type metric strip is replaced by
-// a plain aggregate stats line ("Connected N · Source docs M"); the per-type
-// counts now live once each in their own relation-group header count chips.
-describe("TopologyV2DetailPanel — 근거 evidence count (numeric, in stats + group)", () => {
-  it("shows the evidence total in the plain stats line (Source docs M)", () => {
-    renderPanel(undefined, {
-      rows: [{ id: "capabilities/mcp-server", title: "mcp-server", path: "capabilities/" }],
-      total: 1,
-    });
-    const stats = screen.getByTestId("topology-v2-detail-panel-stats");
-    expect(stats.textContent).toContain(labels.statsEvidenceDocs);
-    expect(stats.textContent).toContain("1");
-    // the old engraved metric strip is gone
-    expect(
-      screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']"),
-    ).toBeNull();
-  });
-
+describe("TopologyV2DetailPanel — 근거 evidence count (group only)", () => {
   it("shows the evidence count as a number in the group header total (matches the mockup)", () => {
     renderPanel(undefined, {
       rows: [{ id: "capabilities/mcp-server", title: "mcp-server", path: "capabilities/" }],
@@ -917,7 +893,6 @@ describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () 
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
     const slugEl = screen.getByTestId("topology-v2-detail-panel-slug");
@@ -1031,7 +1006,6 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
     // the contains group exists and holds the contained capabilities
@@ -1051,18 +1025,7 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
   });
 });
 
-// Mockup redesign (2026-07-24) — a plain aggregate stats line: "Connected <N> ·
-// Source docs <M>". N = the contains + usedBy + dependsOn totals; the per-type
-// detail lives in each relation group's own indigo count chip.
-describe("TopologyV2DetailPanel — plain stats line + group count chips", () => {
-  it("renders the aggregate stats line with the connected total (usedBy 1 + dependsOn 2)", () => {
-    renderPanel();
-    const stats = screen.getByTestId("topology-v2-detail-panel-stats");
-    expect(stats.textContent).toContain(labels.statsConnected);
-    // contains 0 + usedBy 1 + dependsOn 2 = 3
-    expect(stats.textContent).toContain("3");
-  });
-
+describe("TopologyV2DetailPanel — group count chips", () => {
   it("gives each relation group header an indigo count chip (not the old metric ink)", () => {
     renderPanel();
     const total = document.querySelector("[data-datasheet-group-total='usedBy']");
@@ -1111,17 +1074,9 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
         onSelectConnection={onSelectConnection}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
   }
-
-  it("counts the parent — a node with a parent never reads '이어진 곳 0'", () => {
-    renderParentOnly();
-    const stats = screen.getByTestId("topology-v2-detail-panel-stats");
-    // The first <b> is the connection aggregate, the second the evidence document count.
-    expect(stats.querySelectorAll("b")[0].textContent).toBe("1");
-  });
 
   it("draws the 속한 곳 group with the parent row, clickable like any other connection", () => {
     const onSelectConnection = vi.fn();
@@ -1139,7 +1094,7 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
     expect(screen.queryByText(labels.noConnections)).not.toBeInTheDocument();
   });
 
-  it("keeps the aggregate equal to the sum of the four rendered group totals", () => {
+  it("keeps the four rendered group totals independently readable", () => {
     render(
       <TopologyV2DetailPanel
         open
@@ -1164,15 +1119,13 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
-    const stats = screen.getByTestId("topology-v2-detail-panel-stats");
     const groupTotals = [...document.querySelectorAll("[data-datasheet-group-total]")]
       .filter((el) => el.getAttribute("data-datasheet-group-total") !== "evidence")
       .map((el) => Number(el.textContent));
     expect(groupTotals.reduce((a, b) => a + b, 0)).toBe(38);
-    expect(stats.querySelectorAll("b")[0].textContent).toBe("38");
+    expect(screen.queryByTestId("topology-v2-detail-panel-stats")).not.toBeInTheDocument();
   });
 });
 
@@ -1205,7 +1158,6 @@ describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs �
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
     expect(screen.getByText(labels.noConnections)).toBeInTheDocument();
@@ -1241,8 +1193,48 @@ describe("TopologyV2DetailPanel — N6 소속 도메인 1급 사실", () => {
 });
 
 describe("TopologyV2DetailPanel — W2-A action row", () => {
-  it("links the 문서 tile to the document href when the node has a backing doc", () => {
+  it("keeps one primary agent action and moves the rest behind Edit and More menus", () => {
+    const onAskAgent = vi.fn();
+    renderPanel(undefined, undefined, {
+      onAskAgent,
+      onEditRelations: vi.fn(),
+      onCreateLinked: vi.fn(),
+      onEnterRealm: vi.fn(),
+    });
+
+    const actions = screen.getByTestId("topology-v2-detail-panel-actions");
+    expect(actions.querySelectorAll('[data-action-role="primary"]')).toHaveLength(1);
+    expect(screen.queryByTestId("topology-v2-detail-panel-action-path")).not.toBeInTheDocument();
+    expect(screen.getByTestId("topology-v2-detail-panel-edit-menu-trigger")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-v2-detail-panel-more-menu-trigger")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-action-ask-agent"));
+    expect(onAskAgent).toHaveBeenCalledTimes(1);
+  });
+
+  it("reveals edit actions in one anchored menu", () => {
+    const onEditRelations = vi.fn();
+    const onCreateLinked = vi.fn();
+    renderPanel(undefined, undefined, { onEditRelations, onCreateLinked });
+
+    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-edit-menu-trigger"));
+    const menu = screen.getByTestId("topology-v2-detail-panel-edit-menu");
+    expect(menu).toHaveAttribute("role", "menu");
+    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-action-create-linked"));
+    expect(onCreateLinked).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses handoff copy as the primary action when the in-app agent is unavailable", () => {
+    const onCopyHandoff = vi.fn();
+    renderPanel(undefined, undefined, { onCopyHandoff });
+    const handoff = screen.getByTestId("topology-v2-detail-panel-action-handoff");
+    expect(handoff).toHaveAttribute("data-action-role", "primary");
+    fireEvent.click(handoff);
+    expect(onCopyHandoff).toHaveBeenCalledWith("node: domains/views");
+  });
+
+  it("links the 문서 menu item to the document href when the node has a backing doc", () => {
     renderPanel(undefined, undefined, { documentHref: "/docs/domains/views" });
+    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-more-menu-trigger"));
     const link = screen.getByTestId("topology-v2-detail-panel-action-document");
     expect(link.tagName).toBe("A");
     expect(link).toHaveAttribute("href", expect.stringContaining("/docs/domains/views"));
@@ -1255,8 +1247,9 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("links the 관계 편집 tile to the studio deep link", () => {
+  it("links the 관계 편집 menu item to the studio deep link", () => {
     renderPanel();
+    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-edit-menu-trigger"));
     const link = screen.getByTestId("topology-v2-detail-panel-action-edit");
     expect(link).toHaveAttribute("href", expect.stringContaining("/ontology/studio/"));
   });
@@ -1264,6 +1257,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
   it("keeps 관계 편집 in place when a contextual editor callback is available", () => {
     const onEditRelations = vi.fn();
     renderPanel(undefined, undefined, { onEditRelations });
+    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-edit-menu-trigger"));
     const action = screen.getByTestId("topology-v2-detail-panel-action-edit");
     expect(action.tagName).toBe("BUTTON");
     fireEvent.click(action);
@@ -1275,13 +1269,6 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     renderPanel(undefined, undefined, { onCopyHandoff });
     fireEvent.click(screen.getByTestId("topology-v2-detail-panel-action-handoff"));
     expect(onCopyHandoff).toHaveBeenCalledWith("node: domains/views");
-  });
-
-  it("calls onSetPathSource when the 경로 tile is clicked", () => {
-    const onSetPathSource = vi.fn();
-    renderPanel(undefined, undefined, { onSetPathSource });
-    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-action-path"));
-    expect(onSetPathSource).toHaveBeenCalledTimes(1);
   });
 
   it("no longer renders a duplicate handoff button in the footer", () => {
@@ -1336,7 +1323,6 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
     // Default: the summary is visible and the individual row preview is hidden.
@@ -1384,7 +1370,6 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
     expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
@@ -1431,7 +1416,6 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
     expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
@@ -1541,7 +1525,6 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
     const group = document.querySelector("[data-datasheet-group='contains']");
@@ -1585,7 +1568,6 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />,
     );
     const zone = document
@@ -1650,7 +1632,6 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
         onClose={() => {}}
-        onSetPathSource={() => {}}
       />
     );
 

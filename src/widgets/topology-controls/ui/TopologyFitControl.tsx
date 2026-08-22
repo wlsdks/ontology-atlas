@@ -26,6 +26,7 @@ export function TopologyFitControl({ onFitView, density = 'default' }: TopologyF
     <div
       className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 flex flex-col gap-2 md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
       data-testid="topology-fit-control"
+      data-agent-dock-adjacent-rail="true"
       data-controls-density={density}
       data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
       data-control-desktop-top-token="--topology-floating-control-desktop-top"

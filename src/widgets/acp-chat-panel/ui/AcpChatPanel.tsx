@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUp, ChevronRight, History, Square, SquarePen, X } from 'lucide-react';
+import { ArrowUp, ChevronRight, History, LoaderCircle, Square, SquarePen, X } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -58,6 +58,10 @@ import {
 import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
+import {
+  deriveAcpMapIntent,
+  type AcpMapIntent,
+} from '@/features/acp-session/model/map-intent';
 
 import { AcpPermissionCard } from './AcpPermissionCard';
 import { groupEvents } from './group-events';
@@ -138,6 +142,8 @@ export interface AcpOntologyRelationPreview {
   phase: 'draft' | 'committing';
 }
 
+export type { AcpMapIntent };
+
 function relationPreviewForChangeSet(
   changeSet: OntologyChangeSet | null,
   phase: AcpOntologyRelationPreview['phase'],
@@ -169,6 +175,7 @@ export function AcpChatPanel({
   runtimeLabel,
   vaultRoot,
   mcpServers,
+  sessionEnabled = true,
   runtimes = [],
   onRuntimeChange,
   prefillRequest,
@@ -177,6 +184,7 @@ export function AcpChatPanel({
   knownSlugs,
   onHoverSlug,
   onTurnActivityChange,
+  onMapIntent,
   onOntologyRelationPreviewChange,
   onWorkReceipt,
   onClose,
@@ -186,9 +194,13 @@ export function AcpChatPanel({
   vaultRoot: string | null;
   mcpServers?: unknown[];
   /**
-   * The runners currently selectable — **only the ones with a permission
-   * checkpoint** arrive here (`isGuardedRuntime`). With just one there is nothing to
-   * choose, so only the name is drawn.
+   * 패널 scaffold와 ACP 프로세스 시작을 분리한다. false여도 완성된 빈 대화는
+   * 그리되 세션은 시작하지 않는다 — 도크 reflow가 끝난 뒤 true가 된다.
+   */
+  sessionEnabled?: boolean;
+  /**
+   * 지금 고를 수 있는 실행기들 — **관문이 있는 것만** 담겨 온다
+   * (`isGuardedRuntime`). 하나뿐이면 고를 것이 없으므로 이름만 그린다.
    */
   runtimes?: ReadonlyArray<{ id: string; label: string }>;
   onRuntimeChange?: (runtimeId: string) => void;
@@ -225,7 +237,12 @@ export function AcpChatPanel({
   onHoverSlug?: (slug: string | null) => void;
   /** One turn's observable step, goal and target. `null` when it ends or closes. */
   onTurnActivityChange?: (activity: AcpTurnActivity | null) => void;
-  /** A single relation proposal: dashed before approval, solid after it until that ACP tool finishes. */
+  /**
+   * 실제 Atlas read tool의 정확한 입력이 가리키는 지도 이동. 에이전트 답변
+   * 문장은 해석하지 않는다(`model/map-intent.ts`).
+   */
+  onMapIntent?: (intent: AcpMapIntent) => void;
+  /** 승인 전 점선, 승인 후 해당 ACP 도구가 끝날 때까지 실선인 단일 관계 변경안. */
   onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
   /** Durable local summary of each ontology-write allow/reject and terminal result. */
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
@@ -345,6 +362,18 @@ export function AcpChatPanel({
     },
     [onTurnActivityChange],
   );
+  const mapIntent = useMemo(
+    () => deriveAcpMapIntent(events, knownSlugs ?? EMPTY_KNOWN_SLUGS),
+    [events, knownSlugs],
+  );
+  const emittedMapIntentRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!mapIntent || !onMapIntent) return;
+    const key = `${mapIntent.kind}:${mapIntent.toolCallId}`;
+    if (emittedMapIntentRef.current === key) return;
+    emittedMapIntentRef.current = key;
+    onMapIntent(mapIntent);
+  }, [mapIntent, onMapIntent]);
 
   /**
    * Translate what the adapter gave into a kind a person reads — `unknown` when
@@ -474,8 +503,9 @@ export function AcpChatPanel({
   );
 
   useEffect(() => {
+    if (!sessionEnabled) return;
     void start();
-  }, [start]);
+  }, [sessionEnabled, start]);
 
   /*
    * A floating list **closes on Esc.** On the real thing, pressing Esc left the list
@@ -642,6 +672,11 @@ export function AcpChatPanel({
 
   const busy = status === 'thinking';
   const canType = status === 'ready' || status === 'thinking';
+  // 도크의 첫 프레임과 세션 교체 직후에는 프로세스 effect가 아직 시작 전이라
+  // 실제 상태가 idle이다. 이 패널이 떠 있는 동안 사용자가 보는 사실은 「연결을
+  // 기다리는 중」 — 화면 상태만 starting으로 투영하고 프로토콜 상태는 건드리지
+  // 않는다. sessionEnabled=true가 되는 한 렌더 사이에도 「꺼짐」이 번쩍이지 않는다.
+  const displayStatus = status === 'idle' ? 'starting' : status;
   const transcriptItems = groupEvents(withoutErrorEcho(events, error));
   const lastWorkGroupId = [...transcriptItems]
     .reverse()
@@ -651,7 +686,7 @@ export function AcpChatPanel({
     <section
       ref={panelRef}
       data-testid="acp-chat-panel"
-      data-acp-status={status}
+      data-acp-status={displayStatus}
       /*
        * ⚠️ The whole screen was bunched at the top because `flex-1` was missing (owner
        * report from the real thing, 2026-08-16: *"입력하는 곳이 왜 위에 붙어 있는지도
@@ -693,14 +728,23 @@ export function AcpChatPanel({
         )}
         <span className="flex shrink-0 items-center gap-2">
           <span
-            data-acp-status-badge={status}
+            data-acp-status-badge={displayStatus}
+            aria-live="polite"
             className={badgeClass({
               shape: 'micro',
               className:
-                'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
+                'gap-1 bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
             })}
           >
-            {t(`status.${status}`)}
+            {displayStatus === 'starting' ? (
+              <LoaderCircle
+                data-testid="acp-connection-spinner"
+                size={ICON_SIZE.sm}
+                className="motion-safe:animate-spin"
+                aria-hidden
+              />
+            ) : null}
+            {t(`status.${displayStatus}`)}
           </span>
           {/*
             The door appears **only when past conversations exist** — no reason to show
@@ -735,7 +779,7 @@ export function AcpChatPanel({
                 size="lg"
                 label={t('newChat')}
                 data-testid="acp-chat-new"
-                disabled={status === 'starting'}
+                disabled={displayStatus === 'starting'}
                 onClick={() => {
                   setHistoryOpen(false);
                   void switchSession(null);
@@ -801,10 +845,10 @@ export function AcpChatPanel({
             ) : null}
           </div>
         ) : null}
-        {events.length === 0 && status !== 'starting' ? (
-          // An empty conversation's guidance sits **in the middle of where the
-          // transcript will accumulate**. Pinned to the top it reads as the first
-          // bubble, and the place the conversation will actually start looks empty.
+        {events.length === 0 && !download ? (
+          // 빈 대화의 안내는 **기록이 쌓일 그 자리 한가운데**에 둔다. 위쪽에
+          // 붙여 두면 그것이 첫 번째 말풍선처럼 읽히고, 정작 대화가 시작될
+          // 자리는 비어 보인다.
           <div className="m-auto grid max-w-[34ch] gap-3">
             <p
               data-testid="acp-chat-empty"

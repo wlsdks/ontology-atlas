@@ -28,10 +28,6 @@ import {
 } from "../lib/roving-tabindex";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import { fieldClass } from '@/shared/ui/control-class';
-import {
-  TopologyIndexAgentHandoff,
-  type TopologyIndexAgentHandoffLabels,
-} from "./TopologyIndexAgentHandoff";
 
 /** INDEX lenses — 「전체」 (all) and 「최근 변경」 (recently changed). */
 export type IndexLens = "all" | "recent";
@@ -44,9 +40,6 @@ export interface TopologyIndexPanelLabels {
   censusConcepts: string;
   censusRelations: string;
   censusDomains: string;
-  agentSync: string;
-  /** Neutral copy for when there is no agent heartbeat (not connected). Never progressive tense. */
-  agentSyncIdle: string;
   capabilitiesShort: string;
   elementsShort: string;
   freshTitle: string;
@@ -104,20 +97,6 @@ export interface TopologyIndexPanelProps {
   selectedId: string | null;
   onSelect: (nodeId: string) => void;
   onCollapse: () => void;
-  /** Press the footer's agent status to open the "AI 에이전트 연결" (connect an AI
-   *  agent) sheet. When `agentActivityHref` is given, that takes precedence (below). */
-  onOpenAgentConnect?: (() => void) | null;
-  /**
-   * When an agent is already connected, pressing the footer's "Updated with AI"
-   * navigates to this href (the activity digest, the to-do tab of
-   * `/ontology/insights/`) instead of the registration modal
-   * (`onOpenAgentConnect`). The observation behind it: "registration guidance is a
-   * dead end for a second-day user who finished setup yesterday" — once connected,
-   * the question this badge actually has to answer is not "should I sign up?" but
-   * "what did the agent do?". null/undefined keeps the existing modal-button
-   * behaviour (not connected, or a stale heartbeat).
-   */
-  agentActivityHref?: string | null;
   /**
    * The first-run card's "take a 2-minute look" CTA. The tour state machine is
    * owned by HomePage (the view), per FSD, so only the callback comes down here.
@@ -129,21 +108,6 @@ export interface TopologyIndexPanelProps {
   onEnablePlainMode?: () => void;
   labels: TopologyIndexPanelLabels;
   className?: string;
-  /** The growth-signal fragment appended after the footer's "agent sync" (e.g.
-   *  " · +1 this week") — received as an already-resolved string (the same source as
-   *  HomePage's growthLabel; moved from the header to the footer). */
-  footerGrowthText?: string;
-  /** The footer's 「인계」 (handoff) menu — three copies: brief, re-analysis
-   *  instruction, and sync gate (moved here from `TopologyAnalysisBar`'s overview
-   *  mode when the analysis view was retired). HomePage assembles the text in
-   *  advance with the `views/home/lib/topology-analysis.ts` formatters; this widget
-   *  owns only the copy UI. Omitting it renders no menu at all. */
-  agentHandoff?: {
-    briefText: string;
-    reanalyzeText: string;
-    syncText: string;
-    labels: TopologyIndexAgentHandoffLabels;
-  };
   /**
    * The "recently changed" lens (a 7-day mtime window, `useRecentChanges`). Omitting
    * it renders no segmented control at all (the previous search-only behaviour).
@@ -192,17 +156,16 @@ export interface TopologyIndexPanelProps {
    */
   plainMode?: boolean;
   /**
-   * Unifying the overview left rail's attention winner (2026-07-24) — with no vault
-   * connected (the static sample), neither the "N dusty nodes" row nor the 「인계」
-   * (handoff) menu is exposed. Both surfaces describe *the currently loaded graph*,
-   * and in sample mode that graph is not the user's project but this product's own
-   * dogfood vault, so a neglect count and agent handoff commands are both noise
-   * about someone else's repository to a first-time visitor. (This differs from
-   * `BlockImportModule`'s "the feature does not work at all without a vault" case —
-   * that one stays disabled with a hint rather than hidden outright.) Omitting the
-   * prop keeps the previous behaviour of always showing them; with a real vault
-   * connected (`vaultLoaded=true`) both rows reappear — this is a demotion, not a
-   * deletion.
+   * 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) — vault 미연결
+   * (정적 샘플) 상태에서 "먼지 앉은 노드 N" 행은 노출하지 않는다.
+   * 이 표면은 *현재 로드된 그래프*를 서술한다 — 샘플 모드에선
+   * 그 그래프가 사용자의 프로젝트가 아니라 이 제품 자신의 dogfood
+   * vault라서 방치 카운트는 첫 방문자에게 남의 저장소 얘기라 잡음이다
+   * (`BlockImportModule`의 "vault 없인 기능 자체가
+   * 작동 안 함" 케이스와는 다른 문제 — 그쪽은 P1 결함②에 따라 여전히
+   * disabled+힌트로 존치, 완전 은폐 금지). 생략 시 기존 하위호환 동작
+   * (항상 노출)을 유지 — 실 vault 연결(`vaultLoaded=true`)이면 두 행이
+   * 그대로 다시 나타난다(값 삭제가 아니라 강등).
    */
   vaultLoaded?: boolean;
 }
@@ -214,10 +177,8 @@ export interface TopologyIndexPanelProps {
  * `docs/prototypes/index-panel-v2-full.html` (v2.1) for the approved visual
  * spec and `TopologyIndexTab` for the collapsed counterpart.
  *
- * v2.1 — the header keeps only "INDEX · N" (N = total nodes) and the square
- * collapse button; the old header's "● agent sync" copy moved to the footer
- * (alongside footerGrowthText). The tree rows' own grid, caret and meter styling
- * is owned by `TopologyIndexTreeRow`.
+ * header 는 "INDEX · N"(N=노드 총수) + 접기 정사각 버튼만 둔다.
+ * 트리 행 자체의 grid/캐럿/미터 스타일은 `TopologyIndexTreeRow` 가 소유한다.
  *
  * Search reuses `filterTreeByQuery` (`@/shared/lib/ontology-tree`) — the
  * SAME pure filter the old `/ontology` tree used — instead of a bespoke
@@ -235,15 +196,11 @@ export function TopologyIndexPanel({
   onCollapse,
   labels,
   className,
-  footerGrowthText,
-  agentHandoff,
   recentChanges = null,
   uncatalogedDocCount,
   dustyNodeCount,
   unboundProjectNodeId = null,
   onPromoteUncatalogedDocs = null,
-  onOpenAgentConnect = null,
-  agentActivityHref = null,
   onStartTour,
   onEnablePlainMode,
   domainCensus = null,
@@ -281,14 +238,33 @@ export function TopologyIndexPanel({
   });
 
   const [query, setQuery] = useState("");
-  const [openIds, setOpenIds] = useState<Set<string>>(
-    () => new Set(treeResult.roots.map((root) => root.node.id)),
+  const rootIds = useMemo(
+    () => treeResult.roots.map((root) => root.node.id),
+    [treeResult.roots],
   );
-  // The "recently changed" lens. When search is active, search wins — narrowing by
-  // both at once splits "why can't I see it" into two causes — so the lens narrows
-  // the tree only while search is empty.
-  // Spotlight: with lensProp supplied the lens is controlled (single source of truth
-  // = the `?recent=` URL param); otherwise it keeps the previous local state.
+  const rootIdsKey = rootIds.join("\u0000");
+  const [treeOpenState, setTreeOpenState] = useState(() => ({
+    rootIdsKey,
+    knownRootIds: new Set(rootIds),
+    openIds: new Set(rootIds),
+  }));
+  if (treeOpenState.rootIdsKey !== rootIdsKey) {
+    const nextOpenIds = new Set(treeOpenState.openIds);
+    for (const id of rootIds) {
+      if (!treeOpenState.knownRootIds.has(id)) nextOpenIds.add(id);
+    }
+    setTreeOpenState({
+      rootIdsKey,
+      knownRootIds: new Set(rootIds),
+      openIds: nextOpenIds,
+    });
+  }
+  const openIds = treeOpenState.openIds;
+  // P4a — "최근 변경" 렌즈. 검색이 활성이면 검색이 우선한다(둘을 동시에 좁히면
+  // "왜 안 보이지"가 두 원인으로 갈라져 헷갈린다) — 렌즈는 검색이 비어 있을
+  // 때만 트리를 좁힌다.
+  // 스포트라이트 (협의회 §⑤) — lensProp 제공 시 controlled(단일 진실원 =
+  // URL `?recent=`), 아니면 종전 로컬 state.
   const [lensLocal, setLensLocal] = useState<IndexLens>("all");
   const lens = lensProp ?? lensLocal;
   const setLens = (next: IndexLens) => {
@@ -319,11 +295,11 @@ export function TopologyIndexPanel({
   }, [treeResult.roots, domainCensus]);
 
   const toggleOpen = (nodeId: string) => {
-    setOpenIds((current) => {
-      const next = new Set(current);
+    setTreeOpenState((current) => {
+      const next = new Set(current.openIds);
       if (next.has(nodeId)) next.delete(nodeId);
       else next.add(nodeId);
-      return next;
+      return { ...current, openIds: next };
     });
   };
   // As with search, an active lens auto-expands too, so the user does not have to
@@ -406,9 +382,7 @@ export function TopologyIndexPanel({
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
       >
-      {/* v2.1 header — label, measured total, collapse. The agent sync state moved to
-          the footer (below): the header says "what this panel is", the footer says
-          "when it was last alive".
+      {/* 헤더 — 라벨 + 실측 총수 + 접기만.
 
           The whole header row is the collapse toggle (owner feedback — a hit area
           limited to the chevron was awkward). It reuses the INDEX tree rows' hover
@@ -750,103 +724,6 @@ export function TopologyIndexPanel({
           「블록」 (block) is defined nowhere in this app, so a first-time reader had no
           way to know what the button opens. */}
 
-      {/* v2.1 footer — the old header's "● agent sync" copy plus the growth signal
-          moved here. The shortcut cap is decorative (⇧⌘K is the hotkey the global
-          palette already owns; this is a restatement, not a separate binding).
-
-          **Why two rows** (2026-07-28): these four do not fit one row within the
-          panel's fixed 274px (266px inside) — the measured natural EN width sums to
-          381px. Even dropping the growth signal leaves 271px, still over, so shorter
-          copy could not close the distance. What got clipped was not "a long title"
-          but **the status label**: EN "Agent not connected" was cut from 104 to 89px,
-          becoming "Agent not conn…", and in KO the growth signal went from 92 to 29px.
-          The clamping guidance in `design.md` 「치수 규칙성」 (dimension regularity) is
-          about **user data whose length is unknown** (and it gives the full value on
-          hover or in a detail view instead). These two are strings we wrote, with
-          finite values and nowhere that gives the full value — so this is not graceful
-          truncation but a budget defect. A container's dimensions are a design decision
-          rather than a by-product of its content, so the space is enlarged.
-
-          The line break follows meaning — above is **what is true now** (connection
-          state and growth signal, joined by `·` so they read as one sentence), below is
-          **what you can do** (the handoff menu and the palette hint). */}
-      <div
-        data-testid="topology-index-footer"
-        className="mt-2.5 flex shrink-0 flex-col gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
-      >
-        <div className="flex items-center gap-1.5">
-          {/* When connected (agentActivityHref supplied), deep-link to the activity
-              digest; otherwise the button opens the registration sheet as before. */}
-          {agentActivityHref ? (
-            <Link
-              href={agentActivityHref}
-              data-testid="topology-index-agent-connect"
-              className={controlClass({ shape: "link", className: "shrink-0 gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
-            >
-              <span
-                aria-hidden="true"
-                className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
-              />
-              {/* The status label is never truncated — clipped, the state cannot be
-                  read. When the row gets tight, the growth signal below yields first. */}
-              <span className="shrink-0 whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
-                {labels.agentSync}
-              </span>
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={onOpenAgentConnect ?? undefined}
-              disabled={!onOpenAgentConnect}
-              data-testid="topology-index-agent-connect"
-              className={controlClass({
-                shape: "link",
-                size: "md",
-                className:
-                  "shrink-0 enabled: enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
-              })}
-            >
-              {/* Not-connected state: a power-on (indigo) dot plus a progressive
-                  "AI is updating alongside you" implied activity without any heartbeat.
-                  Corrected to a neutral muted dot plus "waiting for an agent to
-                  connect" — progressive-tense copy is forbidden. */}
-              <span
-                aria-hidden="true"
-                className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-text-quaternary)]"
-              />
-              {/* The status label is never truncated — clipped, the state cannot be
-                  read. When the row gets tight, the growth signal below yields first. */}
-              <span className="shrink-0 whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
-                {labels.agentSyncIdle}
-              </span>
-            </button>
-          )}
-          {footerGrowthText ? (
-            <span
-              data-testid="topology-index-footer-growth"
-              className="min-w-0 flex-1 truncate whitespace-nowrap"
-            >
-              {footerGrowthText}
-            </span>
-          ) : null}
-        </div>
-        <div className="flex items-center justify-end gap-1.5">
-          {agentHandoff && vaultLoaded ? (
-            <TopologyIndexAgentHandoff
-              briefText={agentHandoff.briefText}
-              reanalyzeText={agentHandoff.reanalyzeText}
-              syncText={agentHandoff.syncText}
-              labels={agentHandoff.labels}
-            />
-          ) : null}
-          <span
-            aria-hidden="true"
-            className="shrink-0 rounded-micro border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--topology-v2-panel-text-quaternary)]"
-          >
-            ⇧⌘K
-          </span>
-        </div>
-      </div>
       </FirstRunStarterModule>
     </aside>
   );

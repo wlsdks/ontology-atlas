@@ -469,7 +469,7 @@ function HeroSection({
                vs h-11). Only the primary CTA carries a size: decision material belongs to the
                winner. The `unsigned` marker on Windows cannot be dropped even here, because
                signing status is a fact you need before downloading.
- 
+
                The `px-3` below `sm` is arithmetic, not taste (measured 2026-08-19). At 320px in
                `en` the "Download Windows x64 beta + unsigned" button broke 8px past the screen, and
                because `gateway-fx-stage` is `overflow-hidden` it was **simply clipped, with no

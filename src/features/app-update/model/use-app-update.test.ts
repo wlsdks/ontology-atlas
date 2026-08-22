@@ -52,6 +52,7 @@ describe('직접 누른 확인의 결과', () => {
       await result.current.check(true);
     });
     expect(result.current.phase.kind, '직접 누른 확인이 실패를 보고해야 한다').toBe('failed');
+    expect(result.current.phase).toMatchObject({ operation: 'check' });
 
     // The automatic check scheduled four seconds after mount now fires.
     await act(async () => {
@@ -64,6 +65,20 @@ describe('직접 누른 확인의 결과', () => {
         result.current.phase.kind,
         '자동 확인이 사용자가 받은 답을 지웠다 — 눌렀는데 아무 말 없이 사라진다',
       ).toBe('failed');
+    });
+  });
+
+  it('설치 단계 실패는 확인 실패와 구분한다', async () => {
+    check.mockRejectedValue(new Error('download failed'));
+    const { result } = renderHook(() => useAppUpdate());
+
+    await act(async () => {
+      await result.current.install();
+    });
+
+    expect(result.current.phase).toMatchObject({
+      kind: 'failed',
+      operation: 'install',
     });
   });
 

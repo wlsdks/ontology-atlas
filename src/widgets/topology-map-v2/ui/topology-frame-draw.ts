@@ -11,6 +11,11 @@ import { resolveFreshnessVisual } from "../model/freshness";
 import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
 import {
+  isPathLensEdge,
+  isPathLensNode,
+  type TopologyMapLensKind,
+} from "../model/path-lens";
+import {
   drawEdgeFootprints,
   drawFootprintSteps,
   drawNodeFootprint,
@@ -677,7 +682,9 @@ export interface FrameDrawParams {
    * selection beats lens, never dim twice), and the hovered node is exempt.
    */
   spotlightIds: ReadonlySet<string> | null;
-  /** Spotlight on/off exponential ramp 0..1 — the loop steps it with `stepFocusRamp` (reusing `focusDimTau`). */
+  mapLensKind: TopologyMapLensKind;
+  pathEdgeIds: ReadonlySet<string> | null;
+  /** 스포트라이트 on/off 지수 램프 0..1 — loop 가 `stepFocusRamp`(focusDimTau 재사용)로 step. */
   spotlightRamp: number;
   /** Spotlight dash phase — advanced only during the transition, then held fixed. */
   spotlightDashOffset: number;
@@ -809,6 +816,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     footprintAppear = 1,
     trailLensIds = null,
     spotlightIds,
+    mapLensKind,
+    pathEdgeIds,
     spotlightRamp,
     spotlightDashOffset,
     tierReveal = DEFAULT_TIER_REVEAL,
@@ -830,6 +839,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // to everything with `inSpotlight === false`.
   const spotlightLensActive =
     spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
+  const pathLensActive = spotlightLensActive && mapLensKind === "path";
+  const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
   const spotlightSink = (inSpotlight: boolean): number =>
     spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - tokens.spotlightRestAlpha) : 1;
 
@@ -1442,6 +1453,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         selectedEdge !== null &&
         edge.sourceId === selectedEdge.sourceId &&
         edge.targetId === selectedEdge.targetId;
+      const isPathEdge = isPathLensEdge(mapLensKind, edge.id, pathEdgeIds);
       const hovered =
         hoveredEdge !== null &&
         edge.sourceId === hoveredEdge.sourceId &&
@@ -1459,14 +1471,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       let edgeEgoState: EdgeEgoState = trailLensActive
         ? "dim"
         : resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
-      // High-fan batch reveal (2026-07) — suppress `depends` while a disc is
-      // expanded. If an unrelated `depends` hairball blankets the map while batch
-      // children surface in DOI order, the handful just revealed cannot be read.
-      // A `depends` edge is lowered to dim ink when something is expanded, it is
-      // not `contains` (the hierarchy stays solid), and it is not already alive by
-      // ego / selection / hover / emphasis. Hovering or focusing a child makes
-      // `touches`/`emphasized`/`isSelected` true, so the existing comet and
-      // emphasis rules revive that edge.
+      if (isPathEdge && !trailLensActive) edgeEgoState = "ego";
+      // 고팬아웃 배치-공개(2026-07) 처방 4 — 펼침 중 depends 억제. 배치 자식이
+      // DOI 순으로 드러나는 동안 무관한 depends 실타래가 지도를 뒤덮으면 방금
+      // 드러난 소수가 안 읽힌다. anyExpanded 이고 contains 가 아니며(계층 실선은
+      // 유지) 이미 ego/선택/호버/emphasis 로 살아있지 않은 depends 엣지는 dim
+      // 잉크로 강등한다. 자식 hover/ego 시 touches/emphasized/isSelected 가 참이라
+      // 기존 코멧/강조 규칙이 그 엣지를 되살린다(회귀 0).
       if (
         anyExpanded &&
         kind !== "contains" &&
@@ -1482,7 +1493,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // otherwise it sinks. Hovered and selected edges were already revived as
       // ego/selected by the branch above.
       const edgeSpotlightSink = spotlightSink(
-        spotlightIds !== null && spotlightIds.has(edge.sourceId) && spotlightIds.has(edge.targetId),
+        pathLensActive
+          ? isPathEdge
+          : spotlightIds !== null &&
+              spotlightIds.has(edge.sourceId) &&
+              spotlightIds.has(edge.targetId),
       );
       // Trail — only for a consecutively walked pair that is also a **real
       // relation line**. The latter is structurally guaranteed because this loop
@@ -1498,11 +1513,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         )
           ? trailRamp
           : 0;
-      // 3D fog exemption — a relation the interaction pointed at is never buried
-      // by depth.
-      const domeEdgeExempt = emphasized || isSelectedEdge || edgeEgoState === "ego";
-      // Far-side detail follows the same rule as the fog exemption: a relation
-      // brightened to be read gets its halo back too.
+      // 3D 안개 면제 — 상호작용이 짚은 관계는 깊이에 묻히지 않는다.
+      const domeEdgeExempt = emphasized || isSelectedEdge || isPathEdge || edgeEgoState === "ego";
+      // 먼 쪽 상세 생략 — 안개 면제와 같은 규칙: 읽으라고 밝힌 관계는 헤일로도
+      // 되찾는다(면제 엣지가 뒤엉킨 실타래를 자를 수 없으면 면제가 반쪽이다).
       if (!domeEdgeExempt && domeEdgeDetail < 1) domeHaloWidthPx *= domeEdgeDetail;
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
@@ -1538,7 +1552,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           // **original relation type**, not by `kind`.
           directional: isDirectionalRelation(edge.relationType),
           egoState: edgeEgoState,
-          selected: isSelectedEdge && !trailLensActive,
+          selected: (isSelectedEdge || isPathEdge) && !trailLensActive,
           trailWalked: walkedTrail,
           farT,
           t: edge.t,
@@ -2005,7 +2019,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // only: an endless `now`-driven rotation is forbidden, because other canvas
         // activity can outlive the ramp settling. Pinned to 0 under reduced-motion.
         spotlightRing:
-          spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id)
+          recentSpotlightActive && spotlightIds !== null && spotlightIds.has(node.id)
             ? {
                 alpha: spotlightRamp,
                 dashOffset: reducedMotion ? 0 : spotlightDashOffset,
@@ -2452,6 +2466,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         ? "normal"
         : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     const trailKept = isTrailKept(node.id);
+    const pathKept = isPathLensNode(mapLensKind, node.id, spotlightIds);
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
     // High-fan disc density gate: an expanded-disc child that didn't make its
     // disc's DOI top-K stays a DOT (no label candidate) — unless it's the
@@ -2465,18 +2480,30 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       egoState !== "neighbor" &&
       !isHovered &&
       !previewEndpoint &&
-      !trailKept
+      !trailKept &&
+      !pathKept
     ) {
       continue;
     }
-    let compactAlpha = computeLabelAlpha({ kind: node.kind, farT, egoState, isHovered, revealAlpha });
-    // 3D — labels are **on demand**: permanent labels break the silhouette and pull
-    // the eye to text instead of form. Only nodes the hover, focus (ego), or trail
-    // points at earn a name; the rest recede along the assembly ramp. At ramp 0
-    // this is the 2D behaviour. Labels are core to the product and are never
-    // removed — the mode decides only WHEN they show.
-    const domeLabelKeep = egoState === "center" || egoState === "neighbor" || isHovered || trailKept;
-    // perf 2026-08-19 — reads the index buffer (`nodeFrameAt`) instead of re-fetching.
+    const pathLabelSink = pathLensActive
+      ? spotlightSink(pathKept || isHovered || previewEndpoint)
+      : 1;
+    const labelRevealAlpha = revealAlpha * pathLabelSink;
+    let compactAlpha = computeLabelAlpha({
+      kind: node.kind,
+      farT,
+      egoState,
+      isHovered,
+      revealAlpha: labelRevealAlpha,
+    });
+    // 3D — 라벨은 **온디맨드**다(히어로 판정: 상시 라벨이 실루엣을 부수고
+    // 시선이 형태 대신 텍스트로 간다). 호버·포커스(ego)·트레일이 짚은 노드만
+    // 이름을 얻고, 나머지는 조립 램프를 따라 서서히 물러난다. 램프 0 = 2D
+    // 그대로. 라벨은 제품의 핵심이라 없애지 않는다 — 언제 보이느냐만 모드가
+    // 정한다.
+    const domeLabelKeep =
+      egoState === "center" || egoState === "neighbor" || isHovered || trailKept || pathKept;
+    // perf 2026-08-19 — 프레임 재조회 대신 인덱스 버퍼(`nodeFrameAt`) 사용.
     const labelDome = nodeFrameAt(index);
     const domeLabelGate = domeOn && !domeLabelKeep ? 1 - labelDome.a : 1;
     compactAlpha *= domeLabelGate;
@@ -2489,7 +2516,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // would revive decorative ink on a trajectory-reading screen — the same grain
     // as the existing rule that switches watermarks off under focus.
     const watermarkAlpha =
-      (node.kind === "domain" && !trailLensActive ? computeDomainWatermarkAlpha(farT, egoState) : 0) *
+      (node.kind === "domain" && !trailLensActive && !pathLensActive
+        ? computeDomainWatermarkAlpha(farT, egoState)
+        : 0) *
       domeLabelGate;
     if (Math.max(compactAlpha, watermarkAlpha) <= 0.02) continue;
 
@@ -2527,15 +2556,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     let anchorX = screen.x;
     let clampedAnchorY = anchorY;
     if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
-      // A protected label is pulled to the inset edge instead of dropped. The
-      // predicate lives in exactly one place,
-      // `render/label-layout.ts#isSafeRectProtectedLabel` — inlined here it could
-      // not be measured outside a canvas, leaving nowhere to attach the unit test
-      // that prevents a regression — and that file also records why project and hub
-      // are on the list. Only those two small classes clamp, so the original worry
-      // that "everything piles up at the inset" does not return, and anything that
-      // does collide is still separated by the greedy suppression.
-      if (!isSafeRectProtectedLabel({ egoState, isHovered, trailKept, kind: node.kind, isHub: node.isHub })) {
+      // 보호 대상이면 버리는 대신 인셋 가장자리로 당긴다. 판정식은
+      // `render/label-layout.ts#isSafeRectProtectedLabel` 하나이고 — 이 파일에
+      // 인라인으로 두면 캔버스 밖에서 잴 수 없어 회귀를 막는 단위 테스트를 붙일
+      // 자리가 없다 — project/hub 가 왜 그 목록에 들어갔는지도 거기 적혀 있다.
+      // 클램프 대상이 적은 두 등급뿐이라 「전부 인셋에 쌓인다」는 원래 우려는
+      // 되살아나지 않고, 부딪히는 것은 여전히 greedy 억제가 가른다.
+      if (!isSafeRectProtectedLabel({
+        egoState,
+        isHovered,
+        trailKept: trailKept || pathKept,
+        kind: node.kind,
+        isHub: node.isHub,
+      })) {
         continue;
       }
       const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
@@ -2556,6 +2589,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         egoState === "center" ||
         isHovered ||
         trailKept ||
+        pathKept ||
         (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }
@@ -2616,7 +2650,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenRadius,
         egoState,
         isHovered,
-        revealAlpha,
+        revealAlpha: labelRevealAlpha,
         agentFocus,
       },
     });

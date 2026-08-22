@@ -67,6 +67,8 @@ export interface WorldNode {
 }
 
 export interface WorldEdge {
+  /** 원본 graph edge identity. embed fixture는 생략할 수 있다. */
+  id?: string;
   sourceId: string;
   targetId: string;
   kind: "contains" | "depends";
@@ -509,6 +511,7 @@ export function buildTopologyWorld(
             tokens.edgeBlendContains,
           );
     worldEdges.push({
+      id: edge.id,
       sourceId: a.id,
       targetId: b.id,
       kind: edge.kind,

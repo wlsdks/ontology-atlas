@@ -134,3 +134,54 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
     .poll(visibleCount, { timeout: 20_000, message: "접기가 원상 복귀하지 않았다" })
     .toBe(before);
 });
+
+test("상단 전체 펼치기는 전 노드를 드러내고 자동으로 화면 안에 맞춘다", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await seedFirstRunSeen(page);
+  await page.addInitScript(() => {
+    window.localStorage.setItem("demo:sample-source:v1", "dogfood");
+  });
+  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => document.fonts.ready);
+  await expect
+    .poll(() => page.evaluate(() => window.__atlasMap?.nodes().length ?? 0), {
+      timeout: 20_000,
+      message: "전 노드 검사가 읽을 지도 계기가 없다",
+    })
+    .toBeGreaterThan(20);
+
+  const action = page.getByTestId("topology-expand-all");
+  await expect(action).toBeVisible();
+  await action.click();
+  await expect(page.getByTestId("topology-map-v2")).toHaveAttribute("data-map-lens", "all");
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const nodes = window.__atlasMap?.nodes() ?? [];
+          return nodes.length > 0 && nodes.every((node) => !node.hidden);
+        }),
+      { timeout: 30_000 },
+    )
+    .toBe(true);
+  await settleLayout(page);
+
+  const offscreen = await page.evaluate(() => {
+    const map = document.querySelector<HTMLElement>('[data-testid="topology-map-v2"]');
+    const nodes = window.__atlasMap?.nodes().filter((node) => !node.hidden) ?? [];
+    if (!map || nodes.length === 0) return -1;
+    const box = map.getBoundingClientRect();
+    return nodes.filter(
+      (node) =>
+        node.x - node.radius < 0 ||
+        node.y - node.radius < 0 ||
+        node.x + node.radius > box.width ||
+        node.y + node.radius > box.height,
+    ).length;
+  });
+  expect(offscreen, "전체 펼치기 뒤 화면 밖에 남은 노드가 있다").toBe(0);
+
+  await action.click();
+  await expect(page.getByTestId("topology-map-v2")).not.toHaveAttribute("data-map-lens");
+});

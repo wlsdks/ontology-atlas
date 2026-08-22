@@ -57,29 +57,24 @@ describe("computeVisibleSteps", () => {
     expect(dev.map((s) => s.id)).toContain("agent");
   });
 
-  it("excludes a step whose anchor cannot be resolved and shrinks the denominator", () => {
+  it("keeps the centered relation explanation even when a DOM anchor cannot resolve", () => {
     const visible = computeVisibleSteps(TOUR_STEPS, {
       persona: "all",
       hasSelection: false,
       canResolveAnchor: (anchor) => {
-        if (anchor && anchor.type === "testid" && anchor.value === "topology-relation-legend") {
-          return false;
-        }
-        return true;
+        return anchor === null;
       },
     });
-    expect(visible.map((s) => s.id)).not.toContain("relations");
-    // one fewer than the full non-datasheet set (6 - 1 = 5)
-    expect(visible).toHaveLength(5);
+    expect(visible.map((s) => s.id)).toEqual(["welcome", "relations"]);
   });
 
-  it("always keeps the null-anchor welcome step regardless of resolver", () => {
+  it("always keeps centered null-anchor explanations regardless of resolver", () => {
     const visible = computeVisibleSteps(TOUR_STEPS, {
       persona: "all",
       hasSelection: false,
       canResolveAnchor: () => false,
     });
-    expect(visible.map((s) => s.id)).toEqual(["welcome"]);
+    expect(visible.map((s) => s.id)).toEqual(["welcome", "relations"]);
   });
 
   it("passes the canvas-node anchor target through to the resolver", () => {

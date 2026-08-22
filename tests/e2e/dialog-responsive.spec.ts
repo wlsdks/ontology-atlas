@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
  * The Dialog (center) responsive contract — merge condition ⓐ of the 체계 seat's
@@ -27,35 +28,20 @@ test("center Dialog 는 세 폭에서 스크림·폭 공식·수납을 지킨다
   await seedFirstRunSeen(page);
   await page.setViewportSize({ width: 1280, height: 900 });
 
-  // Stubs OPFS as the folder picker to create a writable vault along the real journey
-  // (the same technique as the chrome-text-fit spec — each context gets a fresh OPFS,
-  // so they never mix).
-  await page.addInitScript(() => {
-    (window as unknown as { showDirectoryPicker: () => Promise<unknown> }).showDirectoryPicker =
-      async () => navigator.storage.getDirectory();
+  // 실제 FileSystemDirectoryHandle인 OPFS를 고르되, 이 검사의 주제가 아닌
+  // starter scaffold를 거치지 않도록 문서 하나를 미리 둔다.
+  await stubDirectoryPicker(page, {
+    "README.md": "# Dialog fixture\n\n새 문서 대화상자를 여는 최소 로컬 폴더.\n",
   });
   await page.goto("/ko/topology/", { waitUntil: "domcontentloaded" });
-  await page.getByTestId("first-run-starter-create").click();
-  await page.getByTestId("vault-guide-create-new").click();
-  await expect(page.getByTestId("topology-index-footer")).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId("first-run-starter-open").click();
+  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
+  await page.getByTestId("vault-guide-pick-existing").click();
+  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
 
-  // Seeding from topology then going to /docs races the write completion (measured:
-  // /docs saw an empty folder even after the growth signal). Create the document with
-  // /docs's own seed CTA, then wait until a real document appears in the tree before
-  // opening.
+  // 같은 로컬 handle을 문서함이 읽은 뒤 새 문서 대화상자를 연다.
   await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
-  const seedCta = page.getByRole("button", { name: "시작 시드 만들기" });
   const treeButton = page.getByRole("navigation", { name: "문서 목록" }).getByRole("button").first();
-  // ⚠️ `isVisible()` **does not wait**. This used to query the CTA with it right after
-  // goto; in the instant before it is drawn it returns false, so the click was
-  // **skipped** and the test then waited 30 seconds on the tree with an empty folder
-  // before dying (2026-08-21: all 3 CI retries failed, reproduced on a local static
-  // build too). Now it waits for whichever appears first and then decides — the CTA
-  // for an empty folder, the tree if a document already exists.
-  await expect(seedCta.or(treeButton).first()).toBeVisible({ timeout: 30_000 });
-  if (await seedCta.isVisible()) {
-    await seedCta.click();
-  }
   await expect(treeButton).toBeVisible({ timeout: 30_000 });
   await page.getByTestId("docs-sidebar-new-doc").click();
   const dialog = page.getByRole("dialog");

@@ -16,7 +16,6 @@ import type {
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
-  Activity,
   BarChart3,
   Bot,
   Download,
@@ -30,9 +29,6 @@ import {
   Map as MapIcon,
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { useLocalVault } from "@/features/docs-vault-local";
-import { formatActivityAge } from "@/features/vault-ontology";
 import { cn } from "@/shared/lib/cn";
 import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
 import { BrandMark } from "@/shared/ui";
@@ -43,7 +39,6 @@ import {
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 import { shouldShowGetAppTile } from "@/shared/lib/show-get-app-tile";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
-import { agentDisplayName } from "@/shared/lib/agent-display-name";
 
 /** The runtime never changes after load, so subscribing is a formality — a no-op. */
 const subscribeToRuntime = () => () => {};
@@ -80,13 +75,8 @@ export interface AppNavRailProps {
    * place seen out of the corner of the eye.
    */
   agentsNoticeCount?: number;
-  /** Click handler for the bottom agent tile — the rail decides `connected` from its
-   *  own heartbeat state and passes it in. `AppShell` routes connected → insights and
-   *  not-connected → open the connect sheet (the global launcher). Left unset, the
-   *  tile stays display-only (for the case where the rail mounts in another context). */
-  onAgentTileActivate?: ((connected: boolean) => void) | null;
-  /** Whether the connect sheet is currently open — the source of truth for the tile's
-   *  `aria-expanded` (the global launcher's `wantOpen`). */
+  /** 연결 시트가 현재 열려 있는지 — 타일의 `aria-expanded` 진실원(전역
+   *  launcher `wantOpen`). */
   className?: string;
 }
 
@@ -150,11 +140,9 @@ export function AppNavRail({
   contextHrefs,
   gitDirtyCount = 0,
   agentsNoticeCount = 0,
-  onAgentTileActivate = null,
   className,
 }: AppNavRailProps) {
   const t = useTranslations("navRail");
-  const tLive = useTranslations("liveActivity");
   const pathname = usePathname() ?? "/";
   /**
    * 「앱 받기」 (get the app) — the only download prompt, drawn **on the web only**.
@@ -235,45 +223,6 @@ export function AppNavRail({
     const raf = requestAnimationFrame(() => setIndicatorReady(true));
     return () => cancelAnimationFrame(raf);
   }, [indicator, indicatorReady]);
-  const vault = useLocalVault();
-  const agentStatus = vault.agentActivityStatus;
-  const heartbeat = agentStatus?.heartbeat ?? null;
-  const heartbeatAgentName = heartbeat
-    ? (agentDisplayName(heartbeat.agent) ?? heartbeat.agent)
-    : null;
-  const hasFreshHeartbeat = Boolean(heartbeat && agentStatus?.valid && !agentStatus.stale);
-  const stateLabel = heartbeat
-    ? ({
-        planning: tLive("statePlanning"),
-        editing: tLive("stateEditing"),
-        verifying: tLive("stateVerifying"),
-        blocked: tLive("stateBlocked"),
-        complete: tLive("stateComplete"),
-      }[heartbeat.state] ?? null)
-    : null;
-  const baseAgentTitle = !agentStatus?.exists
-    ? tLive("agentMissing")
-    : !agentStatus.valid
-      ? tLive("agentInvalid")
-      : agentStatus.stale
-        ? tLive("agentStale")
-        : heartbeat
-          ? `${tLive("agentTitle")} — ${heartbeatAgentName} · ${stateLabel}`
-          : tLive("agentMissing");
-  // W6 agent visibility — rail tile title enhancement: append "last activity"
-  // (which ontology node the agent last touched, and how long ago) whenever
-  // the heartbeat actually carries a focus slug + a reported age. Shown
-  // regardless of `stale`/`valid` state (it describes the heartbeat's OWN
-  // last-known data, not "is this connection healthy right now") — real
-  // heartbeat data only, never fabricated (no slug/age → no suffix).
-  const lastActivitySuffix =
-    heartbeat?.focus?.ontologySlug && agentStatus?.ageMs != null
-      ? tLive("railLastActivity", {
-          slug: heartbeat.focus.ontologySlug,
-          age: formatActivityAge(agentStatus.ageMs),
-        })
-      : null;
-  const agentTitle = [baseAgentTitle, lastActivitySuffix].filter(Boolean).join(" · ");
 
   // The addresses have one source of truth, `shared/config/destinations` — keyboard
   // navigation and the shortcut sheet must read the same table, so it moved outside
@@ -493,61 +442,12 @@ export function AppNavRail({
         </ul>
       </nav>
 
-      {/* #65 — the bottom utility tier. Its composition (activity · trail · settings)
-          must be the same on every screen — the shell (AppShell) owns it and pages do
-          not register into it. */}
+      {/* 하단 유틸 티어 — 설정과 웹 전용 앱 받기만. 에이전트는 위 목적지 하나가
+          연결·대화·상태 확인을 모두 소유한다. */}
       <div
         data-testid="app-nav-rail-utility-tier"
         className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"
       >
-        {/* Agent tile — clickable. Connected goes to the activity digest (insights);
-            not connected or stale goes to the 「에이전트」 (agents) destination (AppShell
-            routes it). */}
-        <button
-          type="button"
-          title={agentTitle}
-          aria-label={agentTitle}
-          /*
-           * ⚠️ **`aria-haspopup="dialog"` was removed** (2026-08-21, ledger 90).
-           *
-           * This tile used to open the connect sheet over the map when not connected,
-           * so advertising that it opens a dialog was correct. It now **navigates to
-           * the 「에이전트」 destination.** A button that navigates while claiming to open
-           * a dialog leaves a screen-reader user waiting for a window that never opens.
-           * Saying something works when it does not is not the only kind of lie —
-           * describing what you do as something else is one too.
-           */
-          onClick={onAgentTileActivate ? () => onAgentTileActivate(hasFreshHeartbeat) : undefined}
-          disabled={!onAgentTileActivate}
-          data-testid="app-nav-rail-agent-status"
-          className={cn(
-            // The same state choreography as the cluster chip (ChromeChip) contract:
-            // rest → hover (colour wake) → active (1px press plus an overlay-3 surface,
-            // for tactility) → focus-visible ring. transform is included in the
-            // transition so releasing the press eases rather than snaps.
-            "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
-            onAgentTileActivate &&
-              "enabled:hover:bg-[color:var(--color-overlay-2)] enabled:hover:text-[color:var(--color-text-primary)] enabled:active:translate-y-px enabled:active:bg-[color:var(--color-overlay-3)]",
-          )}
-        >
-          {/* The utility tier's icon size order (logo 26 / destination 24 plus label /
-              utility 18) — owner report 2026-07-23: the bottom utility icons used the
-              destination size (24) and so looked larger than the settings gear. All
-              three utility tiles (activity, trail, settings) sit on the single
-              `--app-nav-rail-utility-icon-size` token. */}
-          <Activity
-            size={ICON_SIZE.lg}
-            aria-hidden
-            className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
-          />
-          {hasFreshHeartbeat ? (
-            <span
-              aria-hidden="true"
-              data-testid="app-nav-rail-agent-dot"
-              className="rail-status-dot-in absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-[color:var(--topology-v2-amber-hub)]"
-            />
-          ) : null}
-        </button>
         {/*
           The one position that exists on the web only. Why a single tile in the chrome
           rather than a banner planted on every surface is written in

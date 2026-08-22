@@ -81,7 +81,13 @@ const NOT_READY_INK =
   'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]';
 
 
-export function AcpRuntimeSettings({ embedded = false }: { embedded?: boolean } = {}) {
+export function AcpRuntimeSettings({
+  embedded = false,
+  onOpenChat = requestAgentChat,
+}: {
+  embedded?: boolean;
+  onOpenChat?: (runtimeId: string) => void;
+} = {}) {
   const t = useTranslations('nav.settingsMenu.runtimes');
   const [runtimes, setRuntimes] = useState<AcpRuntimeStatus[] | null>(null);
   const [checking, setChecking] = useState(false);
@@ -252,7 +258,12 @@ export function AcpRuntimeSettings({ embedded = false }: { embedded?: boolean } 
               <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
             ) : (
               ready.map((runtime) => (
-                <RuntimeRow key={runtime.id} runtime={runtime} onRuntimesChanged={() => void refresh()} />
+                <RuntimeRow
+                  key={runtime.id}
+                  runtime={runtime}
+                  onOpenChat={onOpenChat}
+                  onRuntimesChanged={() => void refresh()}
+                />
               ))
             )}
           </SettingsGroup>
@@ -297,6 +308,7 @@ export function AcpRuntimeSettings({ embedded = false }: { embedded?: boolean } 
                       <RuntimeRow
                         key={runtime.id}
                         runtime={runtime}
+                        onOpenChat={onOpenChat}
                         onRuntimesChanged={() => void refresh()}
                       />
                     ))}
@@ -313,9 +325,11 @@ export function AcpRuntimeSettings({ embedded = false }: { embedded?: boolean } 
 
 function RuntimeRow({
   runtime,
+  onOpenChat,
   onRuntimesChanged,
 }: {
   runtime: AcpRuntimeStatus;
+  onOpenChat: (runtimeId: string) => void;
   onRuntimesChanged?: () => void;
 }) {
   const t = useTranslations('nav.settingsMenu.runtimes');
@@ -422,13 +436,13 @@ function RuntimeRow({
              */}
             {isReady && isGuardedRuntime(runtime.id, runtime.isolated) ? (
               <Chip
-                size="sm"
+                size="lg"
                 tone="accentOnTint"
                 data-testid={`app-settings-runtime-chat-${runtime.id}`}
-                onClick={() => requestAgentChat(runtime.id)}
+                onClick={() => onOpenChat(runtime.id)}
                 className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
               >
-                <MessageSquare size={ICON_SIZE.sm} aria-hidden />
+                <MessageSquare size={ICON_SIZE.md} aria-hidden />
                 {t('openChat')}
               </Chip>
             ) : null}

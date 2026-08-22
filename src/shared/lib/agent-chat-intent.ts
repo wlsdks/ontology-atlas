@@ -19,6 +19,7 @@
  */
 
 const AGENT_CHAT_INTENT_EVENT = 'ontology-atlas:agent-chat-intent';
+const AGENT_CHAT_INTENT_QUEUE_KEY = 'ontology-atlas:agent-chat-intent:pending';
 
 interface AgentChatIntentDetail {
   /** Which runtime to open with; unset means whichever is currently selected. */
@@ -32,6 +33,45 @@ export function requestAgentChat(runtimeId: string | null = null): void {
       detail: { runtimeId },
     }),
   );
+}
+
+/**
+ * Queue a destination-to-map request before navigation. A window event alone is
+ * lost while `/agents` is mounted because the map subscriber does not exist on
+ * that route. Session storage carries exactly one one-shot runtime id across the
+ * route change; the map consumes and removes it before opening the dock.
+ */
+export function queueAgentChatIntent(runtimeId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(
+      AGENT_CHAT_INTENT_QUEUE_KEY,
+      JSON.stringify({ runtimeId } satisfies AgentChatIntentDetail),
+    );
+  } catch {
+    // Navigation still proceeds. The map will simply have no queued request.
+  }
+}
+
+/** Returns `undefined` when no valid queued request exists. Always clears the slot. */
+export function consumeQueuedAgentChatIntent(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  let raw: string | null = null;
+  try {
+    raw = window.sessionStorage.getItem(AGENT_CHAT_INTENT_QUEUE_KEY);
+    window.sessionStorage.removeItem(AGENT_CHAT_INTENT_QUEUE_KEY);
+  } catch {
+    return undefined;
+  }
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as Partial<AgentChatIntentDetail>;
+    return typeof parsed.runtimeId === 'string' && parsed.runtimeId.length > 0
+      ? parsed.runtimeId
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Subscribes to the request. Returns the unsubscribe function, for use as effect cleanup. */

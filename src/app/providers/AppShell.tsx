@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
@@ -24,7 +24,6 @@ import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/
 import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
-import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { useInstallNotice } from "@/features/acp-doctor/model/use-install-notice";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { useHydrated } from "@/shared/lib/use-hydrated";
@@ -227,26 +226,6 @@ function AppNavRailSlot() {
     vaultKnown: vault.restoreAttempted,
   });
 
-  // Connected: go to the activity digest (insights). Not connected or stale: go to the
-  // agents destination — see the comment on that branch.
-  const onAgentTileActivate = useCallback(
-    (connected: boolean) => {
-      if (connected) {
-        router.push("/ontology/insights/");
-        return;
-      }
-      /*
-       * ⚠️ **Not connected means going to the destination** (2026-08-21, ledger 90).
-       *
-       * This used to open the connect sheet on the map, moving to the topology first
-       * if you were elsewhere. That made **three** places doing one job: the sheet,
-       * the settings pane, and (now) the destination. Attaching an agent has one address.
-       */
-      router.push(DESTINATION_HREF.agents);
-    },
-    [router],
-  );
-
   /*
    * If an install finished while you were on another screen, the rail says so. It
    * counts **terminal states only** (no progress), and it clears once you visit that
@@ -317,7 +296,6 @@ function AppNavRailSlot() {
       contextHrefs={contextHrefs}
       gitDirtyCount={gitDirtyCount}
       agentsNoticeCount={installNotice.count}
-      onAgentTileActivate={onAgentTileActivate}
     />
   );
 }

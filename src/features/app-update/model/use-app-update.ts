@@ -91,7 +91,11 @@ export function useAppUpdate() {
       // the network is down. Failure is reported only when the user pressed it themselves.
       // **"Quietly" is not "erase"** — that confusion was the defect described above.
       if (manual) {
-        setPhase({ kind: 'failed', message: error instanceof Error ? error.message : String(error) });
+        setPhase({
+          kind: 'failed',
+          operation: 'check',
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }, []);
@@ -122,7 +126,11 @@ export function useAppUpdate() {
 
       setPhase({ kind: 'ready', version: update.version });
     } catch (error) {
-      setPhase({ kind: 'failed', message: error instanceof Error ? error.message : String(error) });
+      setPhase({
+        kind: 'failed',
+        operation: 'install',
+        message: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       installing.current = false;
     }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { RefreshCcw, Rotate3d, Search } from 'lucide-react';
+import { ListTree, RefreshCcw, Rotate3d, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { ChromeChip } from '@/shared/ui/chrome-chip';
 import { useView3d } from '@/shared/lib/appearance-preferences';
@@ -12,12 +12,14 @@ interface Props {
   onOpenSearch: () => void;
   /** Auto-arrange trigger — reheats the topology physics. */
   onRelayout: () => void;
+  /** 모든 고팬아웃 부모를 한 번에 펼치거나 다시 접는다. */
+  onToggleExpandAll?: () => void;
+  allExpanded?: boolean;
   density?: 'default' | 'compact-focus';
   /**
-   * With a node focused, the popover takes input priority. The node popover occupies
-   * the top centre below `lg` (fixed inset-x-3 top-[72px]), so this lane withdraws over
-   * the same band — widened from <md to <lg in the 2026-07-23 overlap sweep, because
-   * the lane itself drops to the right in 2 rows below `lg` and overlaps the popover.
+   * Selected-node focus 에서는 popover 가 입력 우선권을 가진다. 1024px 실측에서
+   * 우측 두 번째 줄로 내려온 308px 도구줄이 352px 상세 패널과 겹쳤다. 두 표면
+   * 사이에 75px 여유가 생기는 xl(1280px) 전까지 이 레인은 물러난다.
    */
   phoneFocusSuppressed?: boolean;
   /**
@@ -29,11 +31,16 @@ interface Props {
    */
   phoneSheetSuppressed?: boolean;
   /**
-   * The path-mode status chip (`TopologyPathChip`). Its placement requirement — "beside
-   * the top-centre search" — is satisfied by riding this component's existing centring
-   * calculation (`md:left-1/2 md:-translate-x-1/2`) with no new absolute positioning.
-   * Rendered only when the slot is filled; outside path mode it is entirely empty and
-   * the layout matches the previous two-button search/arrange row.
+   * 넓은 화면의 우측 node inspector가 지도 폭을 실제로 차지하는 상태. 같은
+   * 지도 컬럼 안에서 남은 영역의 중앙으로 이동해 inspector와 겹치지 않는다.
+   */
+  rightInspectorReserved?: boolean;
+  /**
+   * path 모드 상태 칩(`TopologyPathChip`, 분석 패널 완전 소멸 2단계 §b) —
+   * "상단 중앙 검색 옆"이라는 배치 요구를 이 컴포넌트의 기존 중앙 정렬
+   * 계산(`xl:left-1/2 xl:-translate-x-1/2`)에 얹어 새 절대 위치 계산 없이
+   * 만족한다. 이 슬롯이 있을 때만 렌더 — path 모드가 아니면 완전히 비어
+   * 기존 검색/정렬 2버튼 레이아웃과 동일하다.
    */
   pathChip?: ReactNode;
   /**
@@ -76,9 +83,12 @@ const ARRANGE_FEEDBACK_MS = 950;
 export function SearchHint({
   onOpenSearch,
   onRelayout,
+  onToggleExpandAll,
+  allExpanded = false,
   density = 'default',
   phoneFocusSuppressed = false,
   phoneSheetSuppressed = false,
+  rightInspectorReserved = false,
   pathChip,
   returnChip,
   realmChip,
@@ -100,29 +110,29 @@ export function SearchHint({
 
   return (
     <div
-      // Overlap sweep 2026-07-23 (Image #9) — top-centre alignment applies from `lg`
-      // only. Below `lg` the centre lane collided three ways with the expanded INDEX
-      // (300px on the left) and the right utility lane (measured at 768: search lane
-      // 251–556 × INDEX 24–324 × lane 245–744). The existing <md phone grammar (right
-      // column, 2 rows, top-[4.75rem] = 24px chrome inset + 44px tile + 8px gap)
-      // widens to the whole band below `lg`.
+      // 겹침 소탕 2026-08-22 — 상단 중앙 정렬은 xl+ 부터만. 전체 펼치기가
+      // 합류한 350px 레인은 1024에서 INDEX 끝(388)과 19px 겹쳤다. <xl에서는
+      // 우측 두 번째 줄(top 76px)에 두고, 1280부터 가운데로 돌아간다.
       className={cn(
-        "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 md:right-6 lg:left-1/2 lg:right-auto lg:top-6 lg:-translate-x-1/2 xl:top-8",
-      // When both demotions apply at once, the stricter focus one (<lg) wins — laying
-      // both classes on together lets md:block revive hidden at md and they collide.
+        "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 transition-[left] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 xl:left-1/2 xl:right-auto xl:top-8 xl:-translate-x-1/2",
+        // 두 강등이 동시일 땐 더 엄격한 focus(<lg)가 이긴다 — 두 클래스를
+        // 같이 얹으면 md:block 이 hidden 을 md 에서 되살려 충돌한다.
         phoneFocusSuppressed
-          ? "hidden lg:block"
+          ? "hidden xl:block"
           : phoneSheetSuppressed
             ? "hidden md:block"
             : undefined,
       )}
       data-testid="topology-search-action-lane"
+      data-right-inspector-reserve={
+        rightInspectorReserved ? "recenter-in-remaining-map" : undefined
+      }
       data-search-lane-density={density}
       data-search-lane-contract={
         compact ? 'icon-first-focus-search' : 'labeled-search-utility'
       }
       data-phone-focus-utility-contract={
-        phoneFocusSuppressed ? "hidden-below-lg-while-node-popover-owns-focus" : undefined
+        phoneFocusSuppressed ? "hidden-below-xl-while-node-popover-owns-focus" : undefined
       }
       data-phone-sheet-utility-contract={
         phoneSheetSuppressed ? "hidden-below-md-while-index-sheet-owns-surface" : undefined
@@ -139,11 +149,35 @@ export function SearchHint({
         {realmChip}
         {pathChip}
         {trailChip}
-        {/* Auto-arrange — desktop only. On mobile it is a rarely used action, so a
-            floating top-right button eating visual weight is the bigger loss; trigger
-            it from inside the graph controls panel when needed. The wrapper's
-            hidden/md:block owns visibility so it does not clash with ChromeChip's own
-            display utilities. */}
+        {onToggleExpandAll ? (
+          <div className="hidden md:block">
+            <ChromeChip
+              type="button"
+              onClick={onToggleExpandAll}
+              aria-pressed={allExpanded}
+              aria-label={t(allExpanded ? 'collapseAllAriaLabel' : 'expandAllAriaLabel')}
+              title={t(allExpanded ? 'collapseAllTitle' : 'expandAllTitle')}
+              data-testid="topology-expand-all"
+              data-utility-action-token-contract="support-surface-family"
+              data-utility-action-surface-token="--chrome-surface"
+              data-utility-action-border-token="--chrome-border"
+              data-utility-action-hover-surface-token="--color-overlay-2"
+              data-utility-action-active-surface-token="--chrome-active-surface"
+              data-utility-action-active-border-token="--chrome-active-border"
+              data-utility-action-shadow-token="--chrome-shadow"
+              data-utility-action-focus-ring-token="--color-indigo-accent"
+              icon={<ListTree />}
+              active={allExpanded}
+              compact={compact}
+            >
+              {t(allExpanded ? 'collapseAllLabel' : 'expandAllLabel')}
+            </ChromeChip>
+          </div>
+        ) : null}
+        {/* 자동 정렬 — 데스크톱에서만 노출. 모바일에서는 자주 안 쓰는 액션이라
+            우상단 floating 버튼이 시각적 무게를 잡아먹는 게 더 큰 손실. 필요하면
+            그래프 컨트롤 패널 안에서 트리거. wrapper 의 hidden/md:block 이
+            표시 여부를 맡아 ChromeChip 자체 display 유틸과 안 부딪힌다. */}
         <div className="hidden md:block">
           <ChromeChip
             type="button"

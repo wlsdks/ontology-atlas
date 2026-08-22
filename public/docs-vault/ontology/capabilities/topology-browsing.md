@@ -2,7 +2,7 @@
 uid: c183b392-62bd-455f-a310-c541f49e7c38
 slug: capabilities/topology-browsing
 kind: capability
-title: Topology Map Rendering & Search
+title: "Topology Map Rendering & Search"
 domain: domains/topology-navigation
 elements: [elements/global-search, elements/search-palette, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
 path: src/widgets/topology-map-v2
@@ -55,6 +55,28 @@ created_by: "agent:unknown"
   `atlas.appearance.map-arrangement`, UI 는 지도 상단 「3D」 칩이 여는 고르개
   (`widgets/search-hint/ui/View3dMenu.tsx`) 한 곳. 세 줄(평면·돔·구름)이라
   「3D 끄기」와 「모양 고르기」가 한 자리에서 읽힌다.
+
+## 대형 지도 개관과 ACP 탐색 (2026-08-22)
+- 상단 「전체 펼치기」는 모든 containment 부모를 세션 한정으로 열고, 렌더된
+  모든 노드를 한 번에 화면 bounds 안으로 맞춘다. 다시 누르면 일괄 전개를
+  접는다. 개별 `+N`과 URL `?open=` 계약은 그대로다.
+- 비동기로 도착한 INDEX의 새 루트는 기본으로 열되 사용자가 이미 닫은 루트는
+  다시 열지 않는다. 지도 콜드 부트는 서버·클라이언트가 공유하는 중앙 로딩
+  비주얼로 현재 작업만 말한다.
+- ACP가 현재 턴에서 실제로 호출한 Atlas `get_concept`와 `find_path`의
+  typed input만 지도 상태로 옮긴다. 실재 slug만 포커스하고, 경로는 정확한
+  최단 경로 edge만 밝힌다. 에이전트 답변의 자연어는 지도 이동 근거가 아니다.
+- 노드 상세은 주 행동 하나와 편집/더보기 메뉴로 접었고, 관계선 표본은 상시
+  지도 범례 대신 기존 단축키 도움말에서 요청할 때만 보여 준다.
+- 14인치에서 agent dock과 node inspector가 함께 서면 상단 명령 열은 inspector
+  폭과 inset을 제외한 남은 지도 중앙으로 이동하고, dock이 열린 동안 중앙·우측
+  크롬은 아이콘 밀도로 접힌다. 화면별 픽셀이 아니라 현재 패널 토큰을 읽는다.
+- agent dock·split·창 resize가 진행되는 매 프레임에 overview·focus·realm·
+  spotlight 중 현재 의미 상태의 카메라 target을 새 가용영역으로 따라 보낸다.
+  live 입력용 spring으로 따라가다가 도크 정착 프레임에 최종 target과 속도 0을
+  함께 확정해 underdamped 2차 이동을 막고, 사용자가 직접 팬·줌한 카메라는
+  보존한다. node inspector 해제는 퇴장 중 DOM 폭이 아니라 패널이 사라진 뒤의
+  안전영역을 목표로 삼아 전체 지도가 왼쪽으로 남는 잔류 오프셋을 막는다.
 
 ## 확신도
 medium-high (0.85): capability 후보가 features/ 폴더가 아닌 widgets/ 증거로만 뒷받침됨을 명시

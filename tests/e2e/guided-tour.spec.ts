@@ -48,10 +48,10 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
     await expect(page.getByTestId("guided-tour-cutout")).toBeVisible({ timeout: 5_000 });
     await page.screenshot({ path: testInfo.outputPath("02-nodes.png") });
 
-    // Step 3 — relations (testid: topology-relation-legend)
+    // Step 3 — relations (centered explanation; the persistent corner legend is retired)
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "relations");
-    await expect(page.getByTestId("guided-tour-cutout")).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId("guided-tour-cutout")).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath("03-relations.png") });
 
     // Step 4 — try-click (interactive canvas-node: domain). Click through the

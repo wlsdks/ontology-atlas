@@ -114,7 +114,9 @@ authority, not this table.
 - **Installing the desktop app installs the agent surface.** Both bundles carry
   the compiled MCP server. There is no npm package; Linux and every other
   platform runs the browser app, or the CLI and MCP server from a source
-  checkout.
+  checkout. The in-app updater reads a stable Pages manifest staged from the
+  newest non-draft GitHub Release, including release candidates; every archive
+  still has to pass the bundled updater signature check before installation.
 - **Screenshots demonstrate the product journey, not release availability.**
 
 ## Where it stands

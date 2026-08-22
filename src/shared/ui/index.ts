@@ -5,6 +5,7 @@ export { Button, buttonVariants, type ButtonProps } from './button';
  * were inline panels.
  */
 export { Surface, type SurfaceMotion, type SurfaceProps } from './surface';
+export { AGENT_DOCK_INSET_SURFACE_CLASS } from './agent-dock-surface';
 export { Dialog, type DialogProps } from './dialog';
 export { Input, Textarea, type InputProps, type TextareaProps } from './input';
 export { Checkbox, type CheckboxProps } from './checkbox';

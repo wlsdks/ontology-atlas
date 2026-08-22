@@ -88,6 +88,16 @@ describe("ShortcutSheet — kind glossary (P1a-2)", () => {
   });
 });
 
+describe("ShortcutSheet — relation guide", () => {
+  it("keeps the three real line encodings in pull-only help instead of the map corner", () => {
+    renderSheet();
+    const guide = screen.getByTestId("shortcut-sheet-relation-guide");
+    expect(guide).toHaveTextContent("Contains");
+    expect(guide).toHaveTextContent("Depends on");
+    expect(guide).toHaveTextContent("Related to");
+  });
+});
+
 
 // #67 — pouring some 40 rows into two columns at once made the dialog eat 95% of the
 // viewport (852px) at 1512×900 with the bottom cut off. The answer is **classification,

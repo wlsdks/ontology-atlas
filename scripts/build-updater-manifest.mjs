@@ -2,13 +2,14 @@
 /**
  * Builds `latest.json`, the single file an installed app checks for updates.
  *
- * The app knows only the one endpoint in `tauri.conf.json`:
+ * 앱은 `tauri.conf.json` 의 안정 endpoint 하나만 안다:
  *
- *   https://github.com/wlsdks/ontology-atlas/releases/latest/download/latest.json
+ *   https://wlsdks.github.io/ontology-atlas/update/latest.json
  *
- * `releases/latest` **never points at a prerelease.** That is this design's central
- * safety device — shipping an RC does not push it to release users; only people who
- * go looking receive it. No extra code is needed to separate the channels.
+ * GitHub의 `releases/latest`는 프리릴리스를 제외해 RC-only 기간에 404가 된다.
+ * Pages 배포가 newest non-draft release(프리릴리스 포함)의 이 파일을 위 안정
+ * 주소에 복사한다(`stage-hosted-updater-manifest.mjs`). 설치 전 minisign 검증은
+ * 그대로라 게시 주소가 바뀌어도 신뢰 경계는 바뀌지 않는다.
  *
  * **Why two layers of signature.** The Apple certificate attests who built it; the
  * minisign key attests that this update package is ours. Those are different

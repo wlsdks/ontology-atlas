@@ -79,12 +79,31 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
     `종이 가로로 늘어났다 (${Math.round(bellBox.width)}×${Math.round(bellBox.height)})`,
   ).toBeLessThanOrEqual(1.35);
 
-  // ③ Opening it must show all of it — neither off-screen nor covering the utility row.
+  // 종은 상태 행 안이 아니라 우상단 도구줄의 맨 오른쪽 한 칸이다.
+  const utilityRow = page.getByTestId('topology-utility-action-row');
+  const utilityRowBox = (await utilityRow.boundingBox())!;
+  expect(Math.abs(bellBox.y - utilityRowBox.y), '종이 위쪽 도구줄과 같은 행이 아니다').toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(bellBox.x + bellBox.width - (utilityRowBox.x + utilityRowBox.width)),
+    '종이 도구줄 맨 오른쪽이 아니다',
+  ).toBeLessThanOrEqual(1);
+  const statusBox = (await page.getByTestId('agent-activity-status-trigger').boundingBox())!;
+  expect(statusBox.y, '작업 상태 행이 독립 알림 아이콘 아래로 분리되지 않았다').toBeGreaterThan(
+    bellBox.y + bellBox.height,
+  );
+  const statusLabelFits = await page.getByTestId('agent-activity-status').evaluate(
+    (element) => element.scrollWidth <= element.clientWidth + 1,
+  );
+  expect(statusLabelFits, 'Codex와 마지막 작업 시각이 도구줄 폭에 묶여 잘렸다').toBe(true);
+
+  // ③ 열면 다 보여야 한다 — 화면 밖으로 나가지도, 유틸 줄을 덮지도 않는다.
   await bell.click();
   const inbox = page.getByTestId("agent-activity-inbox");
   await expect(inbox).toBeVisible();
   const inboxBox = (await inbox.boundingBox())!;
   const view = page.viewportSize()!;
+
+  expect(inboxBox.width, '알림함이 280px짜리 좁은 예전 폭에 머물렀다').toBeGreaterThanOrEqual(340);
 
   expect(Math.round(inboxBox.y), "알림함 윗변이 화면 위로 잘렸다").toBeGreaterThanOrEqual(0);
   expect(

@@ -71,6 +71,34 @@ describe("SearchHint", () => {
     expect(arrange).toHaveAttribute("data-arranging", "true");
   });
 
+  it("offers one visible global expand/collapse action and reports the requested state", () => {
+    const onToggleExpandAll = vi.fn();
+    const { rerender } = render(
+      <SearchHint
+        onOpenSearch={vi.fn()}
+        onRelayout={vi.fn()}
+        onToggleExpandAll={onToggleExpandAll}
+        allExpanded={false}
+      />,
+    );
+    const action = screen.getByTestId("topology-expand-all");
+    expect(action).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(action);
+    expect(onToggleExpandAll).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <SearchHint
+          onOpenSearch={vi.fn()}
+          onRelayout={vi.fn()}
+          onToggleExpandAll={onToggleExpandAll}
+          allExpanded
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("topology-expand-all")).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("keeps compact focus density icon-first while preserving action token markers", () => {
     render(<SearchHint density="compact-focus" onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
 
@@ -88,10 +116,8 @@ describe("SearchHint", () => {
     );
   });
 
-  it("can suppress the focus lane below lg while keeping desktop utility access", () => {
-    // Overlap sweep 2026-07-23 — the node popover takes the top centre below `lg`
-    // (fixed inset-x-3 top-[72px]) and this lane also drops to the right in 2 rows
-    // below `lg`, so the focus-demotion band widened from <md to <lg.
+  it("can suppress the focus lane below xl while keeping wide-screen utility access", () => {
+    // 1024px에서 우측 2행 레인과 상세 패널이 겹쳐 강등 구간을 xl까지 넓혔다.
     render(
       <SearchHint
         density="compact-focus"
@@ -104,10 +130,10 @@ describe("SearchHint", () => {
     const lane = screen.getByTestId("topology-search-action-lane");
     expect(lane).toHaveAttribute(
       "data-phone-focus-utility-contract",
-      "hidden-below-lg-while-node-popover-owns-focus",
+      "hidden-below-xl-while-node-popover-owns-focus",
     );
     expect(lane).toHaveClass("hidden");
-    expect(lane).toHaveClass("lg:block");
+    expect(lane).toHaveClass("xl:block");
   });
 
   it("demotes below md while the expanded INDEX sheet owns the surface", () => {
@@ -139,7 +165,24 @@ describe("SearchHint", () => {
 
     const lane = screen.getByTestId("topology-search-action-lane");
     expect(lane).toHaveClass("hidden");
-    expect(lane).toHaveClass("lg:block");
+    expect(lane).toHaveClass("xl:block");
     expect(lane).not.toHaveClass("md:block");
+  });
+
+  it("marks a visible right inspector so the wide lane can recenter in the remaining map", () => {
+    render(
+      <SearchHint
+        rightInspectorReserved
+        onOpenSearch={vi.fn()}
+        onRelayout={vi.fn()}
+      />,
+    );
+
+    const lane = screen.getByTestId("topology-search-action-lane");
+    expect(lane).toHaveAttribute(
+      "data-right-inspector-reserve",
+      "recenter-in-remaining-map",
+    );
+    expect(lane).toHaveClass("transition-[left]");
   });
 });

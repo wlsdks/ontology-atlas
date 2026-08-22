@@ -63,6 +63,14 @@ export function OpenVaultCta({ testId, className }: OpenVaultCtaProps) {
   // `status` is the single source for the capability verdict — the runtime is not asked again.
   const unsupported = vault.status === "unsupported";
   const busy = vault.status === "opening";
+  const ctaClassName = controlClass({
+    shape: "chip",
+    size: CTA_SIZE,
+    hoverInk: "strong",
+    hoverSurface: "lift",
+    hoverBorder: "strong",
+    className,
+  });
 
   if (unsupported) {
     return (
@@ -70,7 +78,7 @@ export function OpenVaultCta({ testId, className }: OpenVaultCtaProps) {
         href="/download/"
         data-testid={testId}
         data-open-vault-cta="download"
-        className={controlClass({ shape: "chip", size: CTA_SIZE, className })}
+        className={ctaClassName}
       >
         <FolderOpen size={ICON_SIZE.sm} aria-hidden />
         {t("unsupportedLabel")}
@@ -87,7 +95,7 @@ export function OpenVaultCta({ testId, className }: OpenVaultCtaProps) {
       onClick={() => {
         void vault.open();
       }}
-      className={controlClass({ shape: "chip", size: CTA_SIZE, className })}
+      className={ctaClassName}
     >
       <FolderOpen size={ICON_SIZE.sm} aria-hidden />
       {busy ? t("busyLabel") : t("label")}
