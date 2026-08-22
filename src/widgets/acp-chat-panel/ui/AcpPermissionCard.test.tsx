@@ -25,6 +25,7 @@ function card(
         pending={{
           request: {
             title: '무언가',
+            toolCallId: 'tool-permission',
             toolName: 'Write',
             toolKind,
             filePath,
@@ -126,6 +127,7 @@ describe('온톨로지 쓰기 검토 — 한 번의 정확한 결정만 제공�
           pending={{
             request: {
               title: 'mcp__atlas-vault__add_relation',
+              toolCallId: 'tool-relation',
               toolName: 'mcp__atlas-vault__add_relation',
               toolKind: 'other',
               filePath: null,

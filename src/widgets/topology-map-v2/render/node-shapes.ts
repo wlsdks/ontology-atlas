@@ -156,8 +156,6 @@ export interface NodeShapeDrawState {
    * whenever there's no fresh focus (fabrication 0).
    */
   agentFocus: boolean;
-  /** 사람이 쓴 노드 — 검수 대기 링을 그린다(`created_by: human`). */
-  reviewPending?: boolean;
   /**
    * 스포트라이트 변경-노드 링 (소유자 지시 2026-07-23, Image #14 — "변경된
    * 것만 테두리가 돌아가게"). 렌즈 ON 동안 mtime 창 안 노드에 amberHub
@@ -227,8 +225,6 @@ export function glyphStyleDescriptor(glyphStyle: "fill" | "line" | undefined): G
 }
 
 export interface NodeShapeTokens {
-  /** 사람이 쓴 노드의 검수 대기 링 — 정적 파선, glow 아님. */
-  reviewRing: string;
   amberHub: string;
   recentChange: string;
   numeralShadow: string;
@@ -623,7 +619,6 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     hoverEmphasis,
     selectionPulse,
     agentFocus,
-    reviewPending = false,
     spotlightRing,
     now,
     reducedMotion,
@@ -749,7 +744,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     strokeKindOutline(ctx, kind, x, y, r + 4, farT, tokens.amberHub, 1.4, 1);
   }
 
-  // W6 agent visibility — the agent's last-touched node gets a static amber
+  // W6 agent visibility — the fresh heartbeat's current target gets a static amber
   // hairline ring (owner spec: "정적 1px, r+8", same signal tone as the hub
   // ring/project hexagon amber — never a new color system). Independent of
   // `hub`/`egoState === "center"` — an agent-focused node can simultaneously
@@ -758,24 +753,6 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   // each other.
   if (agentFocus && egoState !== "dim") {
     strokeKindOutline(ctx, kind, x, y, r + AGENT_FOCUS_RING_OFFSET, farT, tokens.amberHub, 1, 1);
-  }
-
-  /*
-   * 검수 대기 링 — **사람이 쓴 노드**(`created_by: human`). 소유자 지시
-   * 2026-08-03: *"사람이 등록한 노드는 검수가 필요하다는 의미로 붉은색 테두리…
-   * 오류는 아니라도 이건 경고성으로"*.
-   *
-   * 오프셋 r+3 — hub(r+4)·스포트라이트(r+6)·agentFocus(r+8)보다 안쪽의 자기
-   * 자리라 넷이 공존해도 스택된다(대체 아님).
-   *
-   * **정적 파선이다.** 회전을 안 주는 이유: 스포트라이트의 회전 파선은 렌즈가
-   * 켜진 동안만 사는 한시적 표시지만, 이 링은 그 노드가 검수될 때까지 상주한다
-   * — 상주하는 것이 돌면 지도 전체가 떨린다. glow(`shadowBlur`)도 0이다.
-   */
-  if (reviewPending && egoState !== "dim") {
-    ctx.setLineDash([4, 3]);
-    strokeKindOutline(ctx, kind, x, y, r + 3, farT, tokens.reviewRing, 1.2, 1);
-    ctx.setLineDash([]);
   }
 
   // 스포트라이트 변경-노드 링 (Image #14 처방) — amberHub **회전 파선**

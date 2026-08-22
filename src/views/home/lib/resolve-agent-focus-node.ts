@@ -31,3 +31,37 @@ export function resolveAgentFocusNodeId(
   const normalized = translateOntologyDeeplinkToTopologyParam(ontologySlug);
   return resolveTopologySelectedOntologyNode(normalized, nodes)?.id ?? null;
 }
+
+export interface OntologyRelationPreviewInput {
+  sourceSlug: string;
+  targetSlug: string;
+  relationType: string;
+  phase: 'draft' | 'committing';
+}
+
+export interface ResolvedOntologyRelationPreview {
+  sourceId: string;
+  targetId: string;
+  relationType: string;
+  phase: 'draft' | 'committing';
+}
+
+/**
+ * ACP는 vault slug를 말하고 캔버스는 graph node id를 쓴다. 두 끝점이 모두
+ * 현재 지도에 실재할 때만 유령 엣지를 만든다 — 한쪽을 짐작해 그리지 않는다.
+ */
+export function resolveOntologyRelationPreview(
+  preview: OntologyRelationPreviewInput | null,
+  nodes: readonly KnowledgeGraphNode[] | null | undefined,
+): ResolvedOntologyRelationPreview | null {
+  if (!preview) return null;
+  const sourceId = resolveAgentFocusNodeId(preview.sourceSlug, nodes);
+  const targetId = resolveAgentFocusNodeId(preview.targetSlug, nodes);
+  if (!sourceId || !targetId) return null;
+  return {
+    sourceId,
+    targetId,
+    relationType: preview.relationType,
+    phase: preview.phase,
+  };
+}

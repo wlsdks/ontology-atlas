@@ -7,7 +7,10 @@ import { useTranslations } from 'next-intl';
 import { permissionIntent } from '@/features/acp-session/model/permission-intent';
 import { permissionScope } from '@/features/acp-session/model/permission-scope';
 import { OntologyChangeReview } from '@/features/ontology-change-review';
-import { buildOntologyChangeSet } from '@/entities/knowledge-graph';
+import {
+  buildOntologyChangeSet,
+  type OntologyChangeSet,
+} from '@/entities/knowledge-graph';
 
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
@@ -34,13 +37,22 @@ import type { PendingPermission } from '@/features/acp-session/model/use-acp-ses
  * 온다. 한 번의 클릭이 경계를 통째로 넓히는 것이라, 다른 둘과 같은 무게로 두면
  * 사람은 가장 편한 것을 고른다. 그래서 텍스트 버튼으로 내리고 그 뜻을 적는다.
  */
-export function AcpPermissionCard({ pending }: { pending: PendingPermission }) {
+export function AcpPermissionCard({
+  pending,
+  changeSet: providedChangeSet,
+}: {
+  pending: PendingPermission;
+  /** 패널과 지도가 같은 typed change를 읽도록, 계산된 값을 함께 받는다. */
+  changeSet?: OntologyChangeSet | null;
+}) {
   const t = useTranslations('acpChat.permission');
   const { request, resolve } = pending;
   const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
-  const changeSet = ontologyWrite
-    ? buildOntologyChangeSet(request.toolName!, request.rawInput)
-    : null;
+  const changeSet = providedChangeSet === undefined
+    ? ontologyWrite
+      ? buildOntologyChangeSet(request.toolName!, request.rawInput)
+      : null
+    : providedChangeSet;
   /* 어디만이 아니라 **무엇을** — 아래 주석 참고. */
   const intent = permissionIntent(request.toolKind);
   /*

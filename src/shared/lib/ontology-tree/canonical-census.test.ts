@@ -25,10 +25,11 @@ describe("computeCanonicalCensus", () => {
     node("c", "capability"),
     node("e", "element"),
     node("doc", "document"),
+    node("readme", "vault-readme"),
   ];
   const edges = [{ id: "1", from: "p", to: "d", type: "contains" }] as KnowledgeGraphEdge[];
 
-  it("kind 를 걸러내지 않는다 — project 도 document 도 개념이다", () => {
+  it("project/document 는 개념이지만 reader sentinel 은 화면 census 에서 제외한다", () => {
     expect(computeCanonicalCensus(nodes, edges)).toEqual({ conceptCount: 5, relationCount: 1 });
   });
 

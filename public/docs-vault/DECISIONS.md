@@ -40,6 +40,88 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-22 (93) — 에이전트 작업은 확인된 heartbeat만 현재형으로 말하고, 저작자와 README를 작업 상태로 쓰지 않는다
+
+**소집**: 단독 PO 패스 → 디자인 방향 4안 중 기존 지도 상태 칩·지도·우측 패널을
+한 흐름으로 묶는 B안 → 디자인 벤치 관련 8자리와 guardian을 순차 직접 검토.
+**소유자가 서브에이전트를 쓰지 말라고 요청해 1라운드 독립성은 없다.** ·
+**트리거**: 설치 앱에서 에이전트 이름·진행 단계·대상·저작 표기가 서로 다른 뜻을
+한 줄과 한 링에 섞어 보여, 소유자가 현재 화면의 의미를 해석하지 못한 관측.
+**루브릭**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology value 4 ·
+Agent value 4 · Verification 4 = **24/24** (치명적 0 없음).
+
+**선행 결정 관계**:
+
+- 2026-07-31 「데이터는 `created_by`, 화면 라벨은 저작이 아니라 작업 상태」는
+  **유효하다.** 이번 설치 앱에는 그 결정과 반대로 `created_by: human`을 붉은
+  검토 대기 링과 「사람이 쓴 것」 INDEX 탭으로 승격한 구현이 들어 있었다. 탭은
+  눌러도 controlled lens가 `all`로 돌아가 실제로 아무 변화가 없었다. 선행 결정의
+  화면 제약을 복구한다.
+- 2026-08-01 「알림은 도구 호출이 아니라 작업 단위」와 5분 작업 집계는
+  **유효하다.** 다만 최근 성공 쓰기만으로 5분 동안 `작업 중`이라고 단정한 즉시
+  상태 표현은 뒤집는다. 로그는 이미 일어난 변경의 증거이지 현재 실행의 증거가
+  아니다.
+- 2026-08-20 (90)의 후속 트리거였던 「이 폴더에서 에이전트가 한 일」 층을 새
+  라우트 없이 기존 지도 activity surface에서 연다.
+
+**설치 앱 관측**:
+
+1. 상단 줄은 `codex-mcp-client · 마지막 작업 3시간 전`처럼 내부 transport ID를
+   제품명으로 노출하고, 파란 `앱 안 코딩 에이전트 실행기 (ACP)`가 현재 작업인지
+   마지막 대상인지 설명하지 않았다. 누르면 레거시 `/ontology` redirect를 거쳤다.
+2. 우측 패널의 현재 실행기는 `Claude Agent`인데 상단은 과거
+   `codex-mcp-client`를 말해, 현재 actor와 최근 history가 충돌했다.
+3. 알림함은 작업 시작/끝과 `추가 7 · 편집 5`만 보여 목표·단계·대상·다음 행동을
+   알 수 없었다.
+4. `아틀라스 자기 볼트`는 reserved reader kind `vault-readme`인데 INDEX와 지도에
+   개념처럼 나타나 관계 편집·경로·AI 액션을 열었다.
+
+**결정**:
+
+1. 감사 로그와 heartbeat에는 raw client/runtime ID를 그대로 보존한다. 화면만
+   `codex-mcp-client`/`codex-acp`→`Codex`, Claude/Cursor/기타는 각 제품·에이전트
+   이름으로 정규화한다. 모르는 이름은 지어내지 않고 원문을 다듬어 쓴다.
+2. `fresh + valid + non-complete heartbeat`만 `live`다. 그때만 계획·편집·검증·
+   승인 기다림을 현재형으로 말한다. heartbeat 없이 최근 쓰기 세션만 있으면
+   `recent-write`(변경 감지), 끝났으면 `completed`(마지막 작업)로 말한다.
+3. ACP는 한 차례 동안 사용자의 마지막 요청, 관측된 도구 종류, 권한 대기,
+   실재하는 ontology target을 heartbeat에 갱신한다. 도구가 밝히지 않았거나 현재
+   볼트에 없는 target은 null이며 지도 링을 만들지 않는다. 종료 clear는 이전
+   비동기 write를 추월하지 못하게 순서화한다.
+4. 상태 줄은 기존 자리에서 작업 상세를 연다. 상세은 actor · phase · summary ·
+   target · next step · last tool을 현재 작업으로 먼저 보여 주고, 작업 단위 알림은
+   「최근 기록」으로 아래에 분리한다. 파란 링크에는 `현재 대상:` 또는
+   `마지막 변경:`을 눈에 보이게 붙인다. 이미 지도 위에서는 같은 `HomePage`의
+   선택 상태를 갱신해 볼트를 remount하지 않고, 독립 소비처만
+   `/topology?mode=focus&p=…` fallback을 쓴다.
+   상세 카드는 오른쪽 지도 도구 열에서 `--chrome-tile-size + 8px`만큼 갈라
+   반투명 표면 뒤의 도구가 행 액션처럼 비치지 않게 한다.
+5. `created_by`는 provenance 데이터로 남기되 INDEX 렌즈와 검토 링을 제거한다.
+   검토는 실제 typed change review/permission 상태만 말한다. `vault-readme`는 Docs의
+   reader guide로 보존하되 topology adapter·INDEX·개념 census·편집에서 제외한다.
+6. 새 라우트·LNB·backend·색·motion/token ramp를 만들지 않는다. 기존
+   `AgentActivityChip`, `Surface`, 인디고 live dot, amber agent-focus ring,
+   fast/base surface motion만 재사용하고 잘못된 red review-ring token을 삭제한다.
+
+**디자인 판정**: attention winner는 검증된 현재 작업 한 건이다. actor/state/target을
+한 문장에 섞지 않고 역할 라벨로 분리하며, map ring은 실재 target이 있을 때만
+support layer로 쓴다. 상태 변화는 기존 popover 등장/퇴장 한 번뿐이고 반복 pulse,
+glow, progress fabrication은 없다. 1024부터 wide까지 기존 utility lane 안에서
+축약하고, 상세은 280px anchored surface로 reflow한다.
+
+**기록된 반대**: heartbeat를 쓰지 않는 외부 MCP 클라이언트도 실제로는 계속
+작업할 수 있다. 로그-only 세션을 `변경 감지`로 낮추면 사용자는 진행 중인 일을
+끝난 일처럼 읽고 즉시성이 줄 수 있다.
+**반증 조건**: heartbeat가 없는 실제 에이전트가 연속 쓰기 중인데 사용자가 반복해서
+“왜 작업 중이 아니냐”고 보고하거나, 승인 판단 전에 현재 단계가 필요한 흐름이 두 번
+이상 막히면 반대가 옳다. 그때는 성공 쓰기를 다시 live로 추측하지 말고 해당
+MCP/CLI 클라이언트에 명시적 heartbeat 발행을 연결한다.
+**재검토**: 설치 앱 dogfood 10회 에이전트 작업 또는 위 관측 2건.
+
+**서명**: 진안 — 전체 구현 승인; Codex — 현재 main/설치 앱 실측, 순차 검토,
+구현·검증 책임.
+**상태**: 유효
+
 ## 2026-08-21 (92) — 지도 안에서 뜻을 고치고, ACP 쓰기는 사람의 변경안 확인 뒤에만 이어간다
 
 **소집**: 단독 PO 패스 → PO 카운슬 5자리 순차 수행 → 디자인 방향 4안 중 소유자가

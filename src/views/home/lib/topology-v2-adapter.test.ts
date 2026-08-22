@@ -38,12 +38,13 @@ describe("buildTopologyV2Graph — regression: TopologyMapV2 must not be mounted
       node({ id: "project:ontology-atlas", kind: "project", title: "ontology-atlas" }),
       node({ id: "domain:auth", kind: "domain", title: "Auth" }),
       node({ id: "document:readme", kind: "document", title: "README" }),
+      node({ id: "vault-readme:readme", kind: "vault-readme", title: "Vault guide" }),
     ];
     const edges = [edge()];
 
     const graph = buildTopologyV2Graph(nodes, edges);
 
-    expect(graph.nodes).toHaveLength(2); // document kind excluded — not in TopologyV2Node's kind union
+    expect(graph.nodes).toHaveLength(2); // document/reader kinds excluded from the topology canvas
     expect(graph.nodes.map((n) => n.id).sort()).toEqual([
       "domain:auth",
       "project:ontology-atlas",

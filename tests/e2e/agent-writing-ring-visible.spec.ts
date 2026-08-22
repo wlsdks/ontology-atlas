@@ -5,7 +5,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * 대화가 **도는 동안** 에이전트가 쓴 노드에 지도가 표시를 낸다.
+ * 대화가 **도는 동안** fresh heartbeat가 밝힌 노드에 지도가 표시를 낸다.
  *
  * ## 이미 있는 것과 무엇이 다른가 (2026-08-17)
  *
@@ -15,10 +15,9 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  *
  * > *"실시간으로 좌측 지도에 온톨로지가 그려지는게 보이도록"*
  *
- * 즉 **보고 있는 동안** 들어오는 것. 그 경로는 다른 코드가 탄다 — 첫 로드가
- * 아니라 되묻기(폴링)와 그 안의 「사이드카만 바뀐 경우」 갈래다. 그 갈래는
- * 2026-08-16 에 「안 바뀌었으면 상태도 안 건드린다」로 좁혀졌고, 그때 사이드카
- * 비교는 **길이만** 본다. 아무도 그 길을 실제로 걸어 본 적이 없다.
+ * 즉 **보고 있는 동안** 들어오는 것. 현재형은 성공 쓰기 로그가 아니라 명시적인
+ * heartbeat가 소유한다. 문서·감사 로그와 heartbeat를 함께 갱신한 뒤 폴링이
+ * 새 목표를 지도까지 전달하는지를 잰다.
  *
  * ## 무엇이 끊기면 이 시험이 빨개지나
  *
@@ -46,6 +45,17 @@ function activityLine(slug: string, atIso: string): string {
     summary: "시험이 심은 쓰기",
     agent: "claude-code",
     why: null,
+  });
+}
+
+function heartbeatLine(slug: string, atIso: string): string {
+  return JSON.stringify({
+    agent: "claude-code",
+    state: "editing",
+    focus: { summary: "결제 역량을 고치는 중", ontologySlug: slug, files: [] },
+    plan: [],
+    evidence: { mcp: ["patch_concept"], source: [], codegraph: [], verification: [] },
+    updatedAt: atIso,
   });
 }
 
@@ -84,9 +94,9 @@ test("보고 있는 동안 에이전트가 쓴 노드를 지도가 집는다", a
     .not.toBeNull();
   expect(await focused(), "시작부터 켜져 있다 — 이 시험은 무엇도 못 잰다").toEqual([]);
 
-  // ── 「에이전트가 방금 이 노드를 썼다」를 볼트에 심는다 ──────────────────
+  // ── 「에이전트가 지금 이 노드를 편집한다」는 heartbeat를 볼트에 심는다 ───
   const seeded = await page.evaluate(
-    async ([line]) => {
+    async ([line, heartbeat]) => {
       const root = await navigator.storage.getDirectory();
       const names: string[] = [];
       for await (const key of (root as unknown as { keys: () => AsyncIterable<string> }).keys()) {
@@ -110,9 +120,16 @@ test("보고 있는 동안 에이전트가 쓴 노드를 지도가 집는다", a
       const writable = await handle.createWritable();
       await writable.write(`${line}\n`);
       await writable.close();
+      const heartbeatHandle = await sidecar.getFileHandle("agent-activity.json", { create: true });
+      const heartbeatWritable = await heartbeatHandle.createWritable();
+      await heartbeatWritable.write(`${heartbeat}\n`);
+      await heartbeatWritable.close();
       return true;
     },
-    [activityLine(WRITTEN_SLUG, new Date().toISOString())],
+    [
+      activityLine(WRITTEN_SLUG, new Date().toISOString()),
+      heartbeatLine(WRITTEN_SLUG, new Date().toISOString()),
+    ],
   );
   expect(seeded, "활동 기록을 못 심었다").toBe(true);
 
@@ -121,10 +138,9 @@ test("보고 있는 동안 에이전트가 쓴 노드를 지도가 집는다", a
     .poll(focused, {
       timeout: 30_000,
       message:
-        "보고 있는 동안 에이전트가 노드를 썼는데 지도가 그것을 모른다. " +
-        "첫 로드에서는 되는 길이므로(agent-activity-chip.spec.ts) 끊긴 곳은 " +
-        "**되묻기(폴링) 재독해**다 — 지문이 달라졌는데 다시 안 읽었거나, " +
-        "다시 읽고도 활동 기록이 화면까지 안 왔다.",
+        "보고 있는 동안 fresh heartbeat가 생겼는데 지도가 target을 모른다. " +
+        "끊긴 곳은 **되묻기(폴링) 재독해** 또는 heartbeat→focus 배선이다.",
     })
     .not.toEqual([]);
+  await expect(page.getByTestId("agent-activity-status")).toHaveText("Claude Code · 편집 중");
 });

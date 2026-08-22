@@ -29,6 +29,13 @@ import {
   snapScrollTop,
 } from '@/shared/lib/composer-growth';
 import { cn } from '@/shared/lib/cn';
+import { MOTION } from '@/shared/motion';
+import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import {
+  buildOntologyChangeSet,
+  type OntologyChangeSet,
+} from '@/entities/knowledge-graph';
+import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
 import { isAgentDoctorAvailable } from '@/features/acp-doctor/model/acp-doctor';
@@ -44,6 +51,10 @@ import { withoutErrorEcho } from '@/features/acp-session/model/error-echo';
 import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
 import { linkSlugs } from '@/features/acp-session/model/link-slugs';
 import { readToolTargets } from '@/features/acp-session/model/tool-targets';
+import {
+  deriveAcpTurnActivity,
+  type AcpTurnActivity,
+} from '@/features/acp-session/model/acp-turn-activity';
 
 import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
 
@@ -76,6 +87,18 @@ const CHAT_MARKDOWN = [
   '[&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2',
 ].join(' ');
 
+/** 작업 과정을 펼쳤을 때의 보조 밀도. 답변보다 한 단계 조용해야 한다. */
+const WORK_MARKDOWN = [
+  'break-keep text-label leading-label text-[color:var(--color-text-quaternary)]',
+  '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+  '[&_p]:mb-1.5',
+  '[&_ul]:my-1.5 [&_ul]:pl-[18px] [&_ol]:my-1.5 [&_ol]:pl-[18px]',
+  '[&_li]:mb-1 [&_li]:list-disc',
+  '[&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)]',
+  '[&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-caption',
+  '[&_strong]:font-[var(--font-weight-emphasis)] [&_strong]:text-[color:var(--color-text-tertiary)]',
+].join(' ');
+
 /**
  * 앱 안에서 사용자의 코딩 에이전트와 나누는 대화.
  *
@@ -101,6 +124,38 @@ const CHAT_MARKDOWN = [
  * 고르는 목록이 아니라 스크롤 벽이 된다. 더 좁히려면 계속 치면 된다.
  */
 const SLASH_MENU_LIMIT = 8;
+const EMPTY_KNOWN_SLUGS: ReadonlySet<string> = new Set();
+
+/** 지도에 그릴 수 있는 단일 ACP 관계 변경안. vault slug는 Home이 실제 node id로 해석한다. */
+export interface AcpOntologyRelationPreview {
+  sourceSlug: string;
+  targetSlug: string;
+  relationType: string;
+  phase: 'draft' | 'committing';
+}
+
+function relationPreviewForChangeSet(
+  changeSet: OntologyChangeSet | null,
+  phase: AcpOntologyRelationPreview['phase'],
+): AcpOntologyRelationPreview | null {
+  const relation = changeSet?.relation;
+  // 배치는 한 줄로 축약하지 않는다. 첫 항목만 보여 주면 나머지를 숨긴 승인이다.
+  if (
+    !changeSet ||
+    changeSet.operation !== 'relate' ||
+    !changeSet.exact ||
+    changeSet.itemCount !== 1 ||
+    !relation
+  ) {
+    return null;
+  }
+  return {
+    sourceSlug: relation.from,
+    targetSlug: relation.to,
+    relationType: relation.type,
+    phase,
+  };
+}
 
 export function AcpChatPanel({
   runtimeId,
@@ -113,7 +168,8 @@ export function AcpChatPanel({
   suggestions = [],
   knownSlugs,
   onHoverSlug,
-  onTurnActiveChange,
+  onTurnActivityChange,
+  onOntologyRelationPreviewChange,
   onClose,
 }: {
   runtimeId: string;
@@ -154,16 +210,14 @@ export function AcpChatPanel({
    * 담는다 — 큰 그래프에서 호버마다 렌더하면 끈적해진다.
    */
   onHoverSlug?: (slug: string | null) => void;
-  /**
-   * 한 차례가 **돌기 시작했다/끝났다**. 볼트에 무엇을 적을지는 화면(뷰)의
-   * 일이라(이 패널은 `LocalVaultProvider` 없이도 서야 한다) 여기서는 사실만
-   * 알린다. 오늘의 소비처는 「에이전트가 자기 이름을 볼트에 등록」이다 —
-   * `views/home/lib/acp-agent-heartbeat.ts`.
-   */
-  onTurnActiveChange?: (active: boolean) => void;
+  /** 한 차례의 관측 가능한 단계·목표·대상. 끝나거나 닫히면 `null`. */
+  onTurnActivityChange?: (activity: AcpTurnActivity | null) => void;
+  /** 승인 전 점선, 승인 후 해당 ACP 도구가 끝날 때까지 실선인 단일 관계 변경안. */
+  onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
+  const reducedMotion = usePrefersReducedMotion();
   const {
     status,
     events,
@@ -172,6 +226,7 @@ export function AcpChatPanel({
     diagnostics,
     download,
     pending,
+    approvedOntologyWrite,
     sessions,
     choices,
     chooseModel,
@@ -180,22 +235,84 @@ export function AcpChatPanel({
     send,
     cancel,
     switchSession,
-  } = useAcpSession({ runtimeId, vaultRoot, mcpServers });
-  /*
-   * 차례가 도는 동안만 알린다. 세션이 열려 있는 내내 알리면 화면이 「에이전트
-   * 활동 중」을 아무 일도 없을 때 켜게 된다 — 이 패널이 이미 지키는 규율과
-   * 같다(*"전송 전에 「읽음」으로 찍으면 화면이 아직 일어나지 않은 일을 말하는
-   * 것"*). 패널이 사라질 때도 꺼 준다.
-   */
-  const turnActive = status === 'thinking';
+  } = useAcpSession({
+    runtimeId,
+    vaultRoot,
+    mcpServers,
+    approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,
+  });
+  const pendingChangeSet = useMemo(
+    () =>
+      pending?.request.reviewKind === 'ontology-write' && pending.request.toolName
+        ? buildOntologyChangeSet(pending.request.toolName, pending.request.rawInput)
+        : null,
+    [pending],
+  );
+  const approvedChangeSet = useMemo(
+    () =>
+      approvedOntologyWrite?.toolName
+        ? buildOntologyChangeSet(approvedOntologyWrite.toolName, approvedOntologyWrite.rawInput)
+        : null,
+    [approvedOntologyWrite],
+  );
+  const relationPreview = useMemo(
+    () =>
+      approvedOntologyWrite
+        ? relationPreviewForChangeSet(approvedChangeSet, 'committing')
+        : relationPreviewForChangeSet(pendingChangeSet, 'draft'),
+    [approvedChangeSet, approvedOntologyWrite, pendingChangeSet],
+  );
+  const previewSourceSlug = relationPreview?.sourceSlug ?? null;
+  const previewTargetSlug = relationPreview?.targetSlug ?? null;
+  const previewRelationType = relationPreview?.relationType ?? null;
+  const previewPhase = relationPreview?.phase ?? null;
   useEffect(() => {
-    onTurnActiveChange?.(turnActive);
-  }, [turnActive, onTurnActiveChange]);
+    onOntologyRelationPreviewChange?.(
+      previewSourceSlug && previewTargetSlug && previewRelationType && previewPhase
+        ? {
+            sourceSlug: previewSourceSlug,
+            targetSlug: previewTargetSlug,
+            relationType: previewRelationType,
+            phase: previewPhase,
+          }
+        : null,
+    );
+  }, [
+    onOntologyRelationPreviewChange,
+    previewPhase,
+    previewRelationType,
+    previewSourceSlug,
+    previewTargetSlug,
+  ]);
+  useEffect(
+    () => () => onOntologyRelationPreviewChange?.(null),
+    [onOntologyRelationPreviewChange],
+  );
+  const turnActivity = useMemo(
+    () => deriveAcpTurnActivity(status, events, pending, knownSlugs ?? EMPTY_KNOWN_SLUGS),
+    [status, events, pending, knownSlugs],
+  );
+  const turnState = turnActivity?.state ?? null;
+  const turnSummary = turnActivity?.summary ?? null;
+  const turnOntologySlug = turnActivity?.ontologySlug ?? null;
+  const turnToolName = turnActivity?.toolName ?? null;
+  useEffect(() => {
+    onTurnActivityChange?.(
+      turnState
+        ? {
+            state: turnState,
+            summary: turnSummary,
+            ontologySlug: turnOntologySlug,
+            toolName: turnToolName,
+          }
+        : null,
+    );
+  }, [turnState, turnSummary, turnOntologySlug, turnToolName, onTurnActivityChange]);
   useEffect(
     () => () => {
-      onTurnActiveChange?.(false);
+      onTurnActivityChange?.(null);
     },
-    [onTurnActiveChange],
+    [onTurnActivityChange],
   );
 
   /**
@@ -302,9 +419,20 @@ export function AcpChatPanel({
   /*
    * 퇴장 애니메이션이 도는 동안에도 그릴 것이 있어야 한다 — `pending` 이
    * null 로 바뀌는 순간 내용이 사라지면 **빈 상자**가 사라지는 애니메이션을
-   * 하게 된다. 키는 요청의 파일 경로다(같은 카드인지 가르는 값).
+   * 하게 된다. 키는 ACP `toolCallId`가 우선이고, 없는 일반 요청만 파일 경로를
+   * 쓴다 — 경로가 없는 ontology write 둘을 같은 카드로 붙들면 안 된다.
    */
-  const pendingHeld = useHeldValue(pending, pending?.request.filePath ?? null);
+  const pendingHeld = useHeldValue(
+    pending,
+    pending?.request.toolCallId ?? pending?.request.filePath ?? null,
+  );
+  const pendingHeldChangeSet = useMemo(
+    () =>
+      pendingHeld?.request.reviewKind === 'ontology-write' && pendingHeld.request.toolName
+        ? buildOntologyChangeSet(pendingHeld.request.toolName, pendingHeld.request.rawInput)
+        : null,
+    [pendingHeld],
+  );
 
   useEffect(() => {
     void start();
@@ -466,6 +594,10 @@ export function AcpChatPanel({
 
   const busy = status === 'thinking';
   const canType = status === 'ready' || status === 'thinking';
+  const transcriptItems = groupEvents(withoutErrorEcho(events, error));
+  const lastWorkGroupId = [...transcriptItems]
+    .reverse()
+    .find((item) => item.kind === 'workGroup')?.id;
 
   return (
     <section
@@ -683,12 +815,13 @@ export function AcpChatPanel({
           갖고, 그 조건은 「이미 떠 있는 오류 원문 안에 통째로 든 마지막 한 줄」
           뿐이다 — 에이전트의 말을 화면이 지우는 일이니 넓히지 않는다.
         */}
-        {groupEvents(withoutErrorEcho(events, error)).map((item, index) => {
-          if (item.kind === 'toolGroup')
+        {transcriptItems.map((item, index) => {
+          if (item.kind === 'workGroup')
             return (
-              <ToolGroup
+              <WorkGroup
                 key={item.id}
                 events={item.events}
+                active={busy && item.id === lastWorkGroupId}
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
               />
@@ -810,7 +943,9 @@ export function AcpChatPanel({
         손이 이미 가 있는 자리에서 태어나야 한다.
       */}
       <Surface open={Boolean(pending)} origin="bottom center" motion="overlay">
-        {pendingHeld ? <AcpPermissionCard pending={pendingHeld} /> : null}
+        {pendingHeld ? (
+          <AcpPermissionCard pending={pendingHeld} changeSet={pendingHeldChangeSet} />
+        ) : null}
       </Surface>
 
       {/*
@@ -1134,29 +1269,39 @@ export function AcpChatPanel({
 }
 
 /**
- * 답이 온 뒤의 도구 줄 묶음 — **접어 두고, 눌러서 편다.**
+ * 한 차례의 생각·도구 호출을 답변과 분리한 작업 과정.
  *
- * 기다리는 동안에는 펼쳐져 있었다(`groupEvents` 가 마지막 덩어리는 안 묶는다).
- * 답이 오면 그때부터는 답이 주인공이라 자리를 내준다. 숨기는 것이 아니라
- * **한 줄로 접는 것**이라, 무슨 일이 있었는지는 언제든 볼 수 있다.
+ * 기본은 한 줄이다. 실행 중에도 점과 단계 수만 갱신해 “살아 있음”을 말하고,
+ * 원문은 사용자가 요구할 때만 펼친다. 흐름 안 접기라 `Surface`가 아니라 기존
+ * `.ai-row-disclosure` + `useRowDisclosure`를 써 아래 답변이 연속으로 자리를
+ * 내주게 한다. 새 토큰·새 키프레임은 없다.
  */
-function ToolGroup({
+function WorkGroup({
   events,
+  active,
   knownSlugs,
   onHoverSlug,
 }: {
-  events: Extract<AcpEvent, { kind: 'tool' }>[];
+  events: Extract<AcpEvent, { kind: 'thought' | 'tool' }>[];
+  active: boolean;
   knownSlugs?: ReadonlySet<string>;
   onHoverSlug?: (slug: string | null) => void;
 }) {
   const t = useTranslations('acpChat');
   const [open, setOpen] = useState(false);
+  const bodyId = `acp-work-${events[0].id}`;
+  const { mounted, boxRef, contentRef } = useRowDisclosure(open);
   return (
-    <div data-acp-entry="tool-group" data-tool-count={events.length}>
+    <div
+      data-acp-entry="work-group"
+      data-work-count={events.length}
+      data-work-active={active ? 'true' : 'false'}
+    >
       <button
         type="button"
-        data-testid="acp-chat-tool-group"
+        data-testid="acp-chat-work-group"
         aria-expanded={open}
+        aria-controls={bodyId}
         onClick={() => setOpen((v) => !v)}
         className={controlClass({
           shape: 'link',
@@ -1168,22 +1313,40 @@ function ToolGroup({
         <ChevronRight
           size={ICON_SIZE.sm}
           aria-hidden
-          className={open ? 'rotate-90 transition-transform' : 'transition-transform'}
+          className="transition-transform"
+          style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
         />
-        {t('toolGroup', { count: events.length })}
+        <span
+          aria-hidden
+          className={cn(
+            'size-1.5 shrink-0 rounded-full',
+            active
+              ? 'bg-[color:var(--color-indigo-accent)]'
+              : 'bg-[color:var(--color-text-quaternary)]',
+          )}
+        />
+        {t(active ? 'workGroupActive' : 'workGroup', { count: events.length })}
       </button>
-      {open ? (
-        <div className="mt-1 grid gap-1 pl-4">
-          {events.map((event) => (
-            <TranscriptEntry
-              key={event.id}
-              event={event}
-              knownSlugs={knownSlugs}
-              onHoverSlug={onHoverSlug}
-            />
-          ))}
-        </div>
-      ) : null}
+      <div
+        ref={boxRef}
+        id={bodyId}
+        data-state={open ? 'open' : 'closed'}
+        className="ai-row-disclosure"
+        inert={!open}
+      >
+        {mounted ? (
+          <div ref={contentRef} className="ai-row-disclosure-body mt-1 grid gap-2 pl-4">
+            {events.map((event) => (
+              <TranscriptEntry
+                key={event.id}
+                event={event}
+                knownSlugs={knownSlugs}
+                onHoverSlug={onHoverSlug}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -1310,12 +1473,14 @@ function TranscriptEntry({
   }
   if (event.kind === 'thought') {
     return (
-      <p
-        data-acp-entry="thought"
-        className="whitespace-pre-wrap break-keep text-label leading-label text-[color:var(--color-text-quaternary)]"
-      >
-        {event.text}
-      </p>
+      <div data-acp-entry="thought" className={WORK_MARKDOWN}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={slugMarkComponents(knownSlugs, onHoverSlug)}
+        >
+          {event.text}
+        </ReactMarkdown>
+      </div>
     );
   }
   if (event.kind === 'tool') {

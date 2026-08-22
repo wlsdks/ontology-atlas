@@ -9,9 +9,10 @@ export function resolveTopologySelectedOntologyNode(
 
   const normalizedSlug = selectedSlug.replace(/^ontology\//, "");
   const ontologyPrefixedSlug = `ontology/${normalizedSlug}`;
+  const selectableNodes = nodes.filter((node) => node.kind !== "vault-readme");
 
   return (
-    nodes.find((node) => {
+    selectableNodes.find((node) => {
       if (node.id === selectedSlug) return true;
       if (node.id === normalizedSlug) return true;
       if (node.evidenceIds.includes(selectedSlug)) return true;
@@ -21,6 +22,6 @@ export function resolveTopologySelectedOntologyNode(
     }) ??
     (isOntologyNodeId(selectedSlug)
       ? null
-      : nodes.find((node) => node.id.endsWith(`:${normalizedSlug}`)) ?? null)
+      : selectableNodes.find((node) => node.id.endsWith(`:${normalizedSlug}`)) ?? null)
   );
 }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { resolveAgentFocusNodeId } from "./resolve-agent-focus-node";
+import {
+  resolveAgentFocusNodeId,
+  resolveOntologyRelationPreview,
+} from "./resolve-agent-focus-node";
 
 const stamp = new Date(0);
 
@@ -56,6 +59,39 @@ describe("resolveAgentFocusNodeId", () => {
     expect(resolveAgentFocusNodeId("capabilities/agent-live-activity-contract", [])).toBeNull();
     expect(
       resolveAgentFocusNodeId("capabilities/agent-live-activity-contract", undefined),
+    ).toBeNull();
+  });
+
+  it("관계 변경안의 두 vault slug를 실제 지도 node id로 함께 해석한다", () => {
+    expect(
+      resolveOntologyRelationPreview(
+        {
+          sourceSlug: "capabilities/agent-live-activity-contract",
+          targetSlug: "domains/views",
+          relationType: "depends_on",
+          phase: "draft",
+        },
+        nodes,
+      ),
+    ).toEqual({
+      sourceId: "capability:agent-live-activity-contract",
+      targetId: "domain:views",
+      relationType: "depends_on",
+      phase: "draft",
+    });
+  });
+
+  it("두 끝점 중 하나라도 지도에 없으면 관계를 지어내지 않는다", () => {
+    expect(
+      resolveOntologyRelationPreview(
+        {
+          sourceSlug: "capabilities/agent-live-activity-contract",
+          targetSlug: "domains/missing",
+          relationType: "depends_on",
+          phase: "committing",
+        },
+        nodes,
+      ),
     ).toBeNull();
   });
 });

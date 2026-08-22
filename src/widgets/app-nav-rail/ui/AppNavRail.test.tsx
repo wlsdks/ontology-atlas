@@ -164,13 +164,17 @@ describe("AppNavRail", () => {
       valid: true,
       stale: false,
       ageMs: 30_000,
-      heartbeat: { agent: "claude", state: "editing" },
+      heartbeat: { agent: "codex-acp", state: "editing" },
     };
     renderRail();
     expect(screen.getByTestId("app-nav-rail-agent-dot")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-agent-status")).toHaveAttribute(
       "title",
-      expect.stringContaining("claude"),
+      expect.stringContaining("Codex"),
+    );
+    expect(screen.getByTestId("app-nav-rail-agent-status")).not.toHaveAttribute(
+      "title",
+      expect.stringContaining("codex-acp"),
     );
   });
 

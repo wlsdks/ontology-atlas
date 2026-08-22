@@ -30,6 +30,27 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
 }
 
 describe('deriveOntologyFromVault', () => {
+  it('vault-readme 는 reader/agent 파생에 남고 topology 표면이 별도로 제외한다', () => {
+    const result = deriveOntologyFromVault(
+      makeManifest([
+        makeDoc({
+          slug: 'README',
+          title: 'Vault guide',
+          frontmatter: { kind: 'vault-readme', title: 'Vault guide' },
+        }),
+        makeDoc({
+          slug: 'projects/example',
+          title: 'Example',
+          frontmatter: { kind: 'project', title: 'Example' },
+        }),
+      ]),
+    );
+    expect(result.nodes.map((node) => node.kind)).toContain('vault-readme');
+    expect(result.nodes.map((node) => node.title)).toContain('Vault guide');
+    expect(result.sourceConceptCount).toBe(2);
+    expect(result.sourceKindCounts).toEqual({ 'vault-readme': 1, project: 1 });
+  });
+
   it('frontmatter 가 빈 vault → 빈 결과 + warning', () => {
     const result = deriveOntologyFromVault(makeManifest([]));
     expect(result.nodes).toHaveLength(0);

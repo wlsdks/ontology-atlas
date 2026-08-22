@@ -2895,7 +2895,6 @@
      * 회전 파선은 «렌즈가 켜진 동안»의 한시적 표시지만, 이 링은 노드가 검수될
      * 때까지 상주하므로 움직이면 지도 전체가 떨린다.
      */
-    --topology-v2-review-ring: rgba(255, 74, 122, 0.72);
     --topology-v2-hover-ring: var(--color-indigo-a55);
     /* Design Guardian 승인 처방 L — 호버 circuit-trace shimmer. 정지 호버
        링(위) 위에 저속 순회하는 밝은 아크 1개(글로우 0 — `strokeKindOutline`

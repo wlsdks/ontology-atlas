@@ -21,6 +21,7 @@ import { Surface } from "@/shared/ui/surface";
 import { formatActivityAge } from "../lib/format-activity-age";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
+import { agentDisplayName } from "@/shared/lib/agent-display-name";
 
 // P4b — heartbeat 신호를 지우는 CLI 명령. `<vault>` 는 `agent-activity-status.ts`
 // 의 `formatRefreshCommand` 와 같은 관례로 실제 경로가 아니라 자리표시자 —
@@ -176,6 +177,9 @@ export function LiveActivityBadge({
   const rootRef = useRef<HTMLDivElement>(null);
   const active = changedCount > 0;
   const heartbeat = agentActivityStatus?.heartbeat ?? null;
+  const heartbeatAgentName = heartbeat
+    ? (agentDisplayName(heartbeat.agent) ?? heartbeat.agent)
+    : null;
   const hasFreshHeartbeat = Boolean(heartbeat && agentActivityStatus?.valid && !agentActivityStatus.stale);
   const stateLabel = heartbeat
     ? {
@@ -417,7 +421,7 @@ export function LiveActivityBadge({
               <p className={agentActivityStatus.stale ? "text-[color:var(--color-amber-docs-a95)]" : "text-[color:var(--color-text-primary)]"}>
                 {agentActivityStatus.stale ? labels.agentStale : labels.agentCurrent}
                 <span className="ml-1 font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-accent)]">
-                  {heartbeat.agent} · {stateLabel}
+                  {heartbeatAgentName} · {stateLabel}
                 </span>
               </p>
               {agentActivityStatus.stale ? (

@@ -1021,7 +1021,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     projectPinTick: tokens.projectPinTick,
     selectionIndigo: tokens.selectionRingIndigo,
     selectionHairline: tokens.selectionRingHairline,
-    reviewRing: tokens.reviewRing,
     neighborRing: tokens.edgeSelected,
     hoverRing: tokens.hoverRing,
     hoverShimmerSeg: tokens.hoverShimmerSeg,
@@ -1892,8 +1891,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         hoverEmphasis: isHovered && trailLensActive ? 1 : emphasis,
         selectionPulse: selectionPulseVisual,
         agentFocus: agentFocusNodeId !== null && node.id === agentFocusNodeId,
-        // 값이 **정확히** `human` 일 때만. 부재는 unknown 이지 사람이 아니다.
-        reviewPending: node.createdBy === "human",
         // 스포트라이트 변경-노드 링 (Image #14) — 렌즈 ON + 창 안 노드에만.
         // dashOffset는 loop가 bounded transition 중에만 갱신한다. 램프가
         // 정착한 뒤에도 다른 캔버스 활동이 남아 있을 수 있으므로 now 기반

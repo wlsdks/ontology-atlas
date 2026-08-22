@@ -26,5 +26,8 @@ export function computeCanonicalCensus(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
 ): CanonicalCensus {
-  return { conceptCount: nodes.length, relationCount: edges.length };
+  return {
+    conceptCount: nodes.filter((node) => node.kind !== 'vault-readme').length,
+    relationCount: edges.length,
+  };
 }

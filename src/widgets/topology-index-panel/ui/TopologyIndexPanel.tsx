@@ -33,13 +33,8 @@ import {
   type TopologyIndexAgentHandoffLabels,
 } from "./TopologyIndexAgentHandoff";
 
-/**
- * INDEX 의 렌즈 — 「전체」 · 「최근 변경」 · 「사람이 쓴 것」.
- *
- * 마지막 것은 지도의 검수 대기 링(`created_by: human`)과 **같은 사실**을 보는
- * 두 번째 창구다: 지도는 «어디에 있나»를, 이 렌즈는 «전부 몇 개인가»를 답한다.
- */
-export type IndexLens = "all" | "recent" | "human";
+/** INDEX 의 렌즈 — 「전체」 · 「최근 변경」. */
+export type IndexLens = "all" | "recent";
 
 export interface TopologyIndexPanelLabels {
   label: string;
@@ -64,8 +59,6 @@ export interface TopologyIndexPanelLabels {
   segmentAll: string;
   /** P4a — 렌즈 세그먼트 "최근 변경 N"(호출자가 count 를 이미 포맷). */
   segmentRecent: string;
-  /** 「사람이 쓴 것 N」 — 없으면 그 칸을 안 그린다. */
-  segmentHuman?: string;
   segmentRecentAria: string;
   /** P4a — "최근 변경" 렌즈가 활성인데 결과가 0일 때. */
   recentEmptyHint: string;
@@ -158,12 +151,6 @@ export interface TopologyIndexPanelProps {
     /** P4b — fresh heartbeat 의 focus 와 일치하는 노드(있다면) 하나. */
     agentAttributedNodeId: string | null;
   } | null;
-  /**
-   * 「사람이 쓴 것」 렌즈의 대상 (`created_by: human`). 생략/`null` 이면 그
-   * 세그먼트를 **안 그린다** — 볼트에 그 값이 하나도 없으면 켤 것이 없고,
-   * 빈 렌즈는 누르면 아무 일도 안 일어나는 죽은 컨트롤이다.
-   */
-  humanAuthored?: { ids: ReadonlySet<string> } | null;
   /** P4c — vault 에 있지만 아직 kind 없는(=지도에 없는) 문서 수. */
   uncatalogedDocCount?: number;
   /** ④ 살아있는 지도 드리프트 — 먼지 앉은(dusty) 노드 수. 0 이면 행 숨김. */
@@ -242,7 +229,6 @@ export function TopologyIndexPanel({
   footerGrowthText,
   agentHandoff,
   recentChanges = null,
-  humanAuthored = null,
   uncatalogedDocCount,
   dustyNodeCount,
   unboundProjectNodeId = null,
@@ -299,21 +285,11 @@ export function TopologyIndexPanel({
   const trimmedQuery = query.trim();
   const isFiltering = trimmedQuery.length > 0;
   const lensActive = !isFiltering && lens === "recent" && recentChanges !== null;
-  /*
-   * 「사람이 쓴 것」 렌즈 (2026-08-03) — `created_by: human` 인 노드만.
-   *
-   * 검수 대기 링과 **같은 사실**을 보는 두 번째 창구다: 지도는 «어디에 있나»를,
-   * 이 렌즈는 «전부 몇 개인가»를 답한다. 프롭이 없으면 세그먼트 자체가 2칸으로
-   * 남아 종전 동작 그대로다 — 볼트에 그 값이 하나도 없으면 켤 것이 없다.
-   */
-  const humanLensActive = !isFiltering && lens === "human" && humanAuthored !== null;
-
   const visibleRoots = useMemo(() => {
     if (isFiltering) return filterTreeByQuery(treeResult.roots, trimmedQuery);
     if (lensActive && recentChanges) return filterTreeByNodeIds(treeResult.roots, recentChanges.ids);
-    if (humanLensActive && humanAuthored) return filterTreeByNodeIds(treeResult.roots, humanAuthored.ids);
     return treeResult.roots;
-  }, [treeResult.roots, isFiltering, trimmedQuery, lensActive, recentChanges, humanLensActive, humanAuthored]);
+  }, [treeResult.roots, isFiltering, trimmedQuery, lensActive, recentChanges]);
   const maxDomainDescendantCount = useMemo(() => {
     // 미터 분모도 같은 진실원에서 — census 가 있으면 BFS total 의 최댓값.
     if (domainCensus && domainCensus.size > 0) {
@@ -340,7 +316,7 @@ export function TopologyIndexPanel({
   // 검색과 마찬가지로 렌즈 활성 시에도 자동 펼침 — 좁혀진 조상 경로를 사용자가
   // 일일이 캐럿으로 열지 않게 한다(filterTreeByQuery 의 "auto-reveal matches"
   // 와 같은 UX 계약, filterTreeByNodeIds 결과에도 그대로 적용).
-  const isOpen = (nodeId: string) => isFiltering || lensActive || humanLensActive || openIds.has(nodeId);
+  const isOpen = (nodeId: string) => isFiltering || lensActive || openIds.has(nodeId);
 
   // H3 P0 — 로빙 tabindex. 화면에 실제로 보이는 행들을 위→아래 순서로 펴고
   // (검색/렌즈의 자동 펼침을 그대로 반영하는 `isOpen` 사용), 그 중 단 하나만
@@ -490,9 +466,7 @@ export function TopologyIndexPanel({
         <div
           role="tablist"
           aria-label={labels.segmentRecentAria}
-          className={`mb-3 grid shrink-0 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1 ${
-            humanAuthored && labels.segmentHuman ? "grid-cols-3" : "grid-cols-2"
-          }`}
+          className="mb-3 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
         >
           <button
             type="button"
@@ -525,25 +499,6 @@ export function TopologyIndexPanel({
           >
             {labels.segmentRecent}
           </button>
-          {/* 사람이 쓴 것 — 지도의 검수 대기 링과 **같은 사실**을 세는 자리. */}
-          {humanAuthored && labels.segmentHuman ? (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={humanLensActive}
-              data-testid="topology-index-segment-human"
-              onClick={() => setLens("human")}
-              className={controlClass({
-                shape: "segment",
-                scope: "panel",
-                truncate: true,
-                active: humanLensActive,
-                className: "min-w-0 hover:text-[color:var(--topology-v2-panel-text-primary)]",
-              })}
-            >
-              {labels.segmentHuman}
-            </button>
-          ) : null}
         </div>
       ) : null}
 

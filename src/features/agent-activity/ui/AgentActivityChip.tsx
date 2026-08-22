@@ -6,14 +6,16 @@ import { Bell } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { Link } from '@/i18n/navigation';
-import { buildOntologyNodeHref } from '@/entities/knowledge-graph';
+import { getTopologyFocusHref } from '@/entities/project';
 import { CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
 import { IconButton } from '@/shared/ui/controls';
 import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
+import { agentDisplayName } from '@/shared/lib/agent-display-name';
 import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
+import type { AgentLiveWorkInput } from '../model/agent-work-projection';
 
 /**
  * 「작업 중 / 마지막 작업」 칩 + 벨 + 알림함.
@@ -62,9 +64,13 @@ import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
  */
 export function AgentActivityChip({
   suppressed = false,
+  liveWork = null,
   onOpenChange,
+  onOpenNode,
 }: {
   suppressed?: boolean;
+  /** 오른쪽 인앱 ACP가 이미 아는 현재 상태. 파일 폴링 전에도 같은 칩을 갱신한다. */
+  liveWork?: AgentLiveWorkInput | null;
   /**
    * 알림함이 열리고 닫힐 때 알린다.
    *
@@ -79,13 +85,17 @@ export function AgentActivityChip({
    * 누르거나 Escape 로 스스로 닫히므로 올라간 상태가 오래 남지 않는다.
    */
   onOpenChange?: (open: boolean) => void;
+  /** 이미 지도 위라면 route remount 없이 같은 HomePage의 선택 상태를 갱신한다. */
+  onOpenNode?: (slug: string) => void;
 } = {}) {
   const t = useTranslations('agentActivity');
   const format = useFormatter();
-  const feed = useAgentActivityFeed();
+  const feed = useAgentActivityFeed(liveWork);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const statusRef = useRef<HTMLButtonElement | null>(null);
   const bellRef = useRef<HTMLButtonElement | null>(null);
+  const openTriggerRef = useRef<'status' | 'bell'>('status');
 
   useEffect(() => {
     onOpenChange?.(open);
@@ -97,7 +107,10 @@ export function AgentActivityChip({
   const close = useCallback(
     (returnFocus: boolean) => {
       setOpen(false);
-      if (returnFocus) bellRef.current?.focus();
+      if (returnFocus) {
+        const trigger = openTriggerRef.current === 'bell' ? bellRef.current : statusRef.current;
+        trigger?.focus();
+      }
     },
     [],
   );
@@ -133,9 +146,42 @@ export function AgentActivityChip({
   if (!showStatus && !showBell) return null;
 
   const relative = (at: number) => format.relativeTime(new Date(at), feed.nowMs);
+  const phase = feed.work.phase ? t(`phase.${feed.work.phase}`) : null;
+  const age = feed.lastAt === null ? null : relative(feed.lastAt);
+  const statusLabel =
+    feed.work.mode === 'live'
+      ? feed.agentName && phase
+        ? t('liveAgent', { agent: feed.agentName, phase })
+        : phase ?? t('writing')
+      : feed.work.mode === 'recent-write'
+        ? feed.agentName && age
+          ? t('recentWriteAgent', { agent: feed.agentName, age })
+          : age
+            ? t('recentWrite', { age })
+            : t('quietUnknown')
+        : feed.lastAt === null
+          ? t('quietUnknown')
+          : feed.agentName
+            ? t('lastWorkedAtAgent', { agent: feed.agentName, age: age ?? '' })
+            : t('lastWorkedAt', { age: age ?? '' });
+  const targetPrefix = feed.work.mode === 'live' ? t('currentTarget') : t('lastTarget');
+  const openInbox = (trigger: 'status' | 'bell') => {
+    if (open) {
+      close(false);
+      return;
+    }
+    openTriggerRef.current = trigger;
+    setOpen(true);
+    feed.markAllRead();
+  };
 
   return (
-    <div ref={rootRef} className="pointer-events-auto relative min-w-0" data-testid="agent-activity-chip">
+    <div
+      ref={rootRef}
+      className="pointer-events-auto relative min-w-0"
+      data-testid="agent-activity-chip"
+      data-work-mode={feed.work.mode}
+    >
       {/* **상자는 내용이 정한다.** 칩 껍데기는 «글줄» 을 담는 것이라 좌우
           14px 안여백을 갖는다. 말할 상태가 없어 종 하나만 남는 경우
           (상태 표시를 끈 설정)에 그 껍데기를 씌우면 아이콘 하나가 56px 짜리
@@ -145,34 +191,39 @@ export function AgentActivityChip({
         data-writing={feed.writing ? 'true' : 'false'}>
         {showStatus ? (
           <>
-            {/* 상태는 색이 아니라 **글**이 말한다 — 점은 거들 뿐이라 색을
-                못 보는 사람도 문구만으로 판정이 선다(WCAG 1.4.1). */}
-            <span
-              aria-hidden
-              data-testid="agent-activity-dot"
-              className={cn(
-                'inline-block size-1.5 shrink-0 rounded-full',
-                feed.writing
-                  ? 'bg-[color:var(--color-indigo-accent)]'
-                  : 'bg-[color:var(--color-text-quaternary)]',
-              )}
-            />
-            <span
-              data-testid="agent-activity-status"
-              className="min-w-0 truncate text-[color:var(--color-text-primary)]"
+            <button
+              ref={statusRef}
+              type="button"
+              aria-haspopup="true"
+              aria-expanded={open}
+              aria-label={t('statusAria', { status: statusLabel })}
+              data-testid="agent-activity-status-trigger"
+              onClick={() => openInbox('status')}
+              className={controlClass({
+                shape: 'link',
+                hoverInk: 'strong',
+                className: 'min-w-0 gap-1.5 text-left text-inherit',
+              })}
             >
-              {/* 이름은 로그가 아는 만큼만 — claude-code/codex 처럼 스스로
-                  밝힌 그대로 쓰고, 모르면 이름 없이 상태만 말한다. */}
-              {feed.writing
-                ? feed.agentName
-                  ? t('writingAgent', { agent: feed.agentName })
-                  : t('writing')
-                : feed.lastAt === null
-                  ? t('quietUnknown')
-                  : feed.agentName
-                    ? t('lastWorkedAtAgent', { agent: feed.agentName, age: relative(feed.lastAt) })
-                    : t('lastWorkedAt', { age: relative(feed.lastAt) })}
-            </span>
+              {/* 상태는 색이 아니라 **글**이 말한다 — 점은 거들 뿐이라 색을
+                  못 보는 사람도 문구만으로 판정이 선다(WCAG 1.4.1). */}
+              <span
+                aria-hidden
+                data-testid="agent-activity-dot"
+                className={cn(
+                  'inline-block size-1.5 shrink-0 rounded-full',
+                  feed.writing
+                    ? 'bg-[color:var(--color-indigo-accent)]'
+                    : 'bg-[color:var(--color-text-quaternary)]',
+                )}
+              />
+              <span
+                data-testid="agent-activity-status"
+                className="min-w-0 truncate text-[color:var(--color-text-primary)]"
+              >
+                {statusLabel}
+              </span>
+            </button>
             {/* 대상이 없으면(배치 쓰기·문서 흡수, 또는 볼트에서 사라진 슬러그)
                 **대상 없이 상태만** 말한다. 죽은 링크를 만들지 않는다. */}
             {feed.lastNode ? (
@@ -182,10 +233,30 @@ export function AgentActivityChip({
                 <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
                   ·
                 </span>
-                <Link
-                  href={buildOntologyNodeHref(feed.lastNode.slug)}
-                  data-testid="agent-activity-target"
-                  aria-label={t('openOnMap', { name: feed.lastNode.name })}
+                {onOpenNode ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenNode(feed.lastNode!.slug)}
+                    data-testid="agent-activity-target"
+                    aria-label={t('openOnMap', { name: feed.lastNode.name })}
+                    className={controlClass({
+                      shape: 'link',
+                      tone: 'accent',
+                      hoverInk: 'strong',
+                      className:
+                        'min-w-0 max-w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                    })}
+                  >
+                    <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
+                      {targetPrefix}:
+                    </span>
+                    <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                  </button>
+                ) : (
+                  <Link
+                    href={getTopologyFocusHref(feed.lastNode.slug)}
+                    data-testid="agent-activity-target"
+                    aria-label={t('openOnMap', { name: feed.lastNode.name })}
                   /*
                    * ⚠️ `truncate` 축을 쓰지 않는다 (2026-08-17 소유자 지적 →
                    * 실측). 그 축은 `block truncate` 를 내는데, `block` 이
@@ -198,15 +269,20 @@ export function AgentActivityChip({
                    * 잉크 높이 9px). 그래서 자르기는 안쪽 글자에 맡기고
                    * 모양은 그대로 둔다.
                    */
-                  className={controlClass({
-                    shape: 'link',
-                    tone: 'accent',
-                    className:
-                      'min-w-0 max-w-40 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-                  })}
-                >
-                  <span className="min-w-0 truncate">{feed.lastNode.name}</span>
-                </Link>
+                    className={controlClass({
+                      shape: 'link',
+                      tone: 'accent',
+                      hoverInk: 'strong',
+                      className:
+                        'min-w-0 max-w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                    })}
+                  >
+                    <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
+                      {targetPrefix}:
+                    </span>
+                    <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                  </Link>
+                )}
               </span>
             ) : null}
           </>
@@ -232,11 +308,7 @@ export function AgentActivityChip({
               ref={bellRef}
               size="sm"
               onClick={() => {
-                if (open) close(false);
-                else {
-                  setOpen(true);
-                  feed.markAllRead();
-                }
+                openInbox('bell');
               }}
               aria-haspopup="true"
               aria-expanded={open}
@@ -272,15 +344,89 @@ export function AgentActivityChip({
         role="group"
         aria-label={t('inboxTitle')}
         data-testid="agent-activity-inbox"
+        // 오른쪽 지도 도구 열과 정확히 한 타일+간격만큼 가른다. 표면이 위에
+        // 그려져도 rect가 겹치면 반투명 배경 아래 아이콘이 행 액션처럼 비친다.
+        style={{ right: 'calc(var(--chrome-tile-size) + 8px)' }}
         // `whitespace-normal` 은 필수다 — 이 패널이 사는 판독 스택은 컨테이너에
         // `whitespace-nowrap` 을 걸어 두므로(범례·판독은 한 줄짜리 문구다),
         // 상속을 끊지 않으면 푸터 문장이 패널 밖으로 흘러나간다(1512 실측).
-        className="absolute top-[calc(100%+8px)] right-0 z-30 w-[280px] overflow-hidden whitespace-normal rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
+        className="absolute top-[calc(100%+8px)] z-30 w-[280px] overflow-hidden whitespace-normal rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
       >
           <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             <span className="min-w-0 flex-1 truncate">{t('inboxTitle')}</span>
           </div>
-          {feed.notifications.length === 0 ? (
+          {feed.work.mode !== 'idle' ? (
+            <section
+              data-testid="agent-activity-current-work"
+              className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-3"
+            >
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-label text-[color:var(--color-text-primary)]">
+                  {feed.agentName ?? t('unknownAgent')}
+                </span>
+                <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                  {feed.work.mode === 'live'
+                    ? phase ?? t('writing')
+                    : feed.work.mode === 'recent-write'
+                      ? t('recentWriteShort')
+                      : t('complete')}
+                </span>
+              </div>
+              {feed.work.summary ? (
+                <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-secondary)]">
+                  {feed.work.summary}
+                </p>
+              ) : null}
+              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 text-caption leading-label">
+                {feed.lastNode ? (
+                  <>
+                    <dt className="text-[color:var(--color-text-quaternary)]">{t('targetLabel')}</dt>
+                    <dd className="min-w-0">
+                      {onOpenNode ? (
+                        <button
+                          type="button"
+                          onClick={() => onOpenNode(feed.lastNode!.slug)}
+                          className={controlClass({
+                            shape: 'link',
+                            tone: 'accent',
+                            hoverInk: 'strong',
+                            className: 'min-w-0',
+                          })}
+                        >
+                          <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                        </button>
+                      ) : (
+                        <Link
+                          href={getTopologyFocusHref(feed.lastNode.slug)}
+                          className={controlClass({
+                            shape: 'link',
+                            tone: 'accent',
+                            hoverInk: 'strong',
+                            className: 'min-w-0',
+                          })}
+                        >
+                          <span className="min-w-0 truncate">{feed.lastNode.name}</span>
+                        </Link>
+                      )}
+                    </dd>
+                  </>
+                ) : null}
+                {feed.work.nextStep ? (
+                  <>
+                    <dt className="text-[color:var(--color-text-quaternary)]">{t('nextStepLabel')}</dt>
+                    <dd className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">{feed.work.nextStep}</dd>
+                  </>
+                ) : null}
+                {feed.work.lastTool ? (
+                  <>
+                    <dt className="text-[color:var(--color-text-quaternary)]">{t('toolLabel')}</dt>
+                    <dd className="min-w-0 truncate font-mono text-[color:var(--color-text-tertiary)]">{feed.work.lastTool}</dd>
+                  </>
+                ) : null}
+              </dl>
+            </section>
+          ) : null}
+          {feed.notifications.length === 0 && feed.work.mode === 'idle' ? (
             <p
               data-testid="agent-activity-inbox-empty"
               className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-tertiary)]"
@@ -288,14 +434,26 @@ export function AgentActivityChip({
               {t('inboxEmpty')}
             </p>
           ) : (
-            <ul
-              data-testid="agent-activity-inbox-list"
-              className="flex max-h-[300px] flex-col overflow-y-auto px-2 py-1.5"
-            >
-              {feed.notifications.map((item) => (
-                <NotificationRow key={item.id} item={item} age={relative(item.at)} />
-              ))}
-            </ul>
+            feed.notifications.length > 0 ? (
+              <>
+                <p className="px-3 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+                  {t('historyTitle')}
+                </p>
+                <ul
+                  data-testid="agent-activity-inbox-list"
+                  className="flex max-h-[240px] flex-col overflow-y-auto px-2 py-1.5"
+                >
+                  {feed.notifications.map((item) => (
+                    <NotificationRow
+                      key={item.id}
+                      item={item}
+                      age={relative(item.at)}
+                      onOpenNode={onOpenNode}
+                    />
+                  ))}
+                </ul>
+              </>
+            ) : null
           )}
           {/* 알림함은 감사 로그의 대체물이 아니다 — 전체 흐름은 볼트 안
               `activity.jsonl` 과 `/git` 이 들고 있다. 그 사실을 숨기지 않는다. */}
@@ -327,7 +485,15 @@ const EVENT_LABEL_KEY_WITH_AGENT: Readonly<Partial<Record<AgentNotificationKind,
  * 한 줄은 **2행 고정**이다 — 제목이 길든 짧든, 세부가 있든 없든 같은 리듬으로
  * 읽힌다(치수 규칙성: 반복 세트에서 높이가 글자 수로 정해지면 격자가 무너진다).
  */
-function NotificationRow({ item, age }: { item: AgentNotification; age: string }) {
+function NotificationRow({
+  item,
+  age,
+  onOpenNode,
+}: {
+  item: AgentNotification;
+  age: string;
+  onOpenNode?: (slug: string) => void;
+}) {
   const t = useTranslations('agentActivity');
   const problem = item.kind === 'vault-problem';
 
@@ -370,23 +536,42 @@ function NotificationRow({ item, age }: { item: AgentNotification; age: string }
           )}
         >
           {item.agent && EVENT_LABEL_KEY_WITH_AGENT[item.kind]
-            ? t(EVENT_LABEL_KEY_WITH_AGENT[item.kind] as string, { agent: item.agent })
+            ? t(EVENT_LABEL_KEY_WITH_AGENT[item.kind] as string, { agent: agentDisplayName(item.agent) ?? item.agent })
             : t(EVENT_LABEL_KEY[item.kind])}
         </span>
         {item.node ? (
-          <Link
-            href={buildOntologyNodeHref(item.node.slug)}
-            aria-label={t('openOnMap', { name: item.node.name })}
-            className={controlClass({
-              shape: 'link',
-              tone: 'accent',
-              truncate: true,
-              className:
-                'min-w-0 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-            })}
-          >
-            {item.node.name}
-          </Link>
+          onOpenNode ? (
+            <button
+              type="button"
+              onClick={() => onOpenNode(item.node!.slug)}
+              aria-label={t('openOnMap', { name: item.node.name })}
+              className={controlClass({
+                shape: 'link',
+                tone: 'accent',
+                truncate: true,
+                hoverInk: 'strong',
+                className:
+                  'min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+              })}
+            >
+              {item.node.name}
+            </button>
+          ) : (
+            <Link
+              href={getTopologyFocusHref(item.node.slug)}
+              aria-label={t('openOnMap', { name: item.node.name })}
+              className={controlClass({
+                shape: 'link',
+                tone: 'accent',
+                truncate: true,
+                hoverInk: 'strong',
+                className:
+                  'min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+              })}
+            >
+              {item.node.name}
+            </Link>
+          )
         ) : null}
       </div>
       {/* 세부가 없어도 이 줄은 자리를 지킨다 — 선택적 절이 줄 수를 바꾸지 않는다. */}

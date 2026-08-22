@@ -26,6 +26,7 @@ describe("resolveTopologySelectedOntologyNode", () => {
       "capabilities/topology-analysis-modes",
     ]),
     node("domain:views", ["ontology/domains/views"], "domain"),
+    node("vault-readme:README", ["README"], "vault-readme"),
   ];
 
   it("resolves graph ids used by Sigma clicks", () => {
@@ -44,5 +45,10 @@ describe("resolveTopologySelectedOntologyNode", () => {
     expect(resolveTopologySelectedOntologyNode("domains/views", nodes)).toMatchObject({
       id: "domain:views",
     });
+  });
+
+  it("reserved reader guide는 topology 편집 대상으로 열지 않는다", () => {
+    expect(resolveTopologySelectedOntologyNode("README", nodes)).toBeNull();
+    expect(resolveTopologySelectedOntologyNode("vault-readme:README", nodes)).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -66,7 +67,10 @@ vi.mock('next-intl', () => ({
     values ? `${key}:${JSON.stringify(values)}` : key,
 }));
 
-import { AcpChatPanel } from './AcpChatPanel';
+import {
+  AcpChatPanel,
+  type AcpOntologyRelationPreview,
+} from './AcpChatPanel';
 
 /** 에이전트가 한 줄 보낸다. */
 function emit(payload: unknown) {
@@ -84,13 +88,16 @@ function replyTo(method: string, result: unknown) {
  * 꽂았을 때」만 켜진다(2026-08-16) — 안 넘기면 그 갈래가 아예 없는 세션을
  * 재게 되고, 그건 실제 앱과 다른 것을 재는 것이다.
  */
-async function bootSession() {
+async function bootSession(
+  props: Partial<ComponentProps<typeof AcpChatPanel>> = {},
+) {
   render(
     <AcpChatPanel
       runtimeId="claude-acp"
       runtimeLabel="Claude Code"
       vaultRoot="/vault"
       mcpServers={[{ name: 'atlas-vault' }]}
+      {...props}
     />,
   );
   await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
@@ -122,6 +129,15 @@ function permissionRequest(filePath: string, id = 77) {
 function answerFor(id: number) {
   const answer = bridge.sent.find((m) => m.id === id && 'result' in m);
   return (answer?.result as { outcome?: { outcome?: string; optionId?: string } })?.outcome;
+}
+
+/** 작업 상세는 기본 접힘이다. 도구 행 자체를 재는 검사는 먼저 명시적으로 편다. */
+async function openLatestWorkGroup() {
+  const groups = await screen.findAllByTestId('acp-chat-work-group');
+  const group = groups.at(-1)!;
+  if (group.getAttribute('aria-expanded') !== 'true') fireEvent.click(group);
+  await waitFor(() => expect(group).toHaveAttribute('aria-expanded', 'true'));
+  return group;
 }
 
 afterEach(() => {
@@ -197,12 +213,20 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     emit({
       jsonrpc: '2.0',
       method: 'session/update',
-      params: { update: { sessionUpdate: 'agent_thought_chunk', content: { text: '어디부터 볼까' } } },
+      params: { update: { sessionUpdate: 'agent_thought_chunk', content: { text: '**어디부터** 볼까' } } },
     });
+    await waitFor(() => expect(screen.getByTestId('acp-chat-work-group')).toBeInTheDocument());
+    expect(screen.getByTestId('acp-chat-work-group')).toHaveAttribute('aria-expanded', 'false');
+    expect(document.querySelector('[data-acp-entry="thought"]')).toBeNull();
+    expect(document.querySelector('[data-acp-entry="agent"]')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('acp-chat-work-group'));
     await waitFor(() =>
       expect(document.querySelector('[data-acp-entry="thought"]')).toBeInTheDocument(),
     );
-    expect(document.querySelector('[data-acp-entry="agent"]')).toBeNull();
+    expect(screen.getByTestId('acp-chat-work-group')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByText('**어디부터** 볼까')).toBeNull();
+    expect(screen.getByText('어디부터').tagName).toBe('STRONG');
   });
 
   it('도구 줄은 부른 뒤에 생기고, 상태는 알려 준 대로만 바뀐다', async () => {
@@ -214,6 +238,7 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
         update: { sessionUpdate: 'tool_call', toolCallId: 'tc1', title: 'Read notes.md', kind: 'read', status: 'pending' },
       },
     });
+    await openLatestWorkGroup();
     await waitFor(() => {
       const row = document.querySelector('[data-acp-entry="tool"]');
       expect(row).toHaveAttribute('data-tool-status', 'pending');
@@ -268,6 +293,128 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
       },
     };
   }
+
+  it('단일 관계 변경안을 지도에 즉시 내보내고 승인부터 도구 완료까지 실선 단계로 잇는다', async () => {
+    const previews: Array<{
+      sourceSlug: string;
+      targetSlug: string;
+      relationType: string;
+      phase: 'draft' | 'committing';
+    } | null> = [];
+    await bootSession({
+      onOntologyRelationPreviewChange: (preview) => previews.push(preview),
+    });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 추가해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'thinking'),
+    );
+
+    const rawInput = {
+      from: 'capabilities/contextual-editing',
+      to: 'domains/graph-modeling',
+      type: 'depends_on',
+      why: '지도 안 쓰기 흐름이 graph modeling 계약을 따른다.',
+    };
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc9',
+          title: 'mcp__atlas-vault__add_relation',
+          kind: 'other',
+          status: 'pending',
+          rawInput,
+        },
+      },
+    });
+    emit(mcpPermissionRequest('mcp__atlas-vault__add_relation', 89, rawInput));
+
+    await waitFor(() =>
+      expect(previews.at(-1)).toEqual({
+        sourceSlug: 'capabilities/contextual-editing',
+        targetSlug: 'domains/graph-modeling',
+        relationType: 'depends_on',
+        phase: 'draft',
+      }),
+    );
+
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    await waitFor(() =>
+      expect(previews.at(-1)).toEqual({
+        sourceSlug: 'capabilities/contextual-editing',
+        targetSlug: 'domains/graph-modeling',
+        relationType: 'depends_on',
+        phase: 'committing',
+      }),
+    );
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    expect(
+      answerFor(89),
+      '확정 모션이 끝나기 전에 ACP 도구를 진행하면 빠른 쓰기에서 실선이 보이지 않는다',
+    ).toBeUndefined();
+    await waitFor(() =>
+      expect(answerFor(89)).toEqual({ outcome: 'selected', optionId: 'allow' }),
+    );
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'tool_call_update', toolCallId: 'some-other-tool', status: 'completed' },
+      },
+    });
+    await waitFor(() => expect(previews.at(-1)?.phase).toBe('committing'));
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'tool_call_update', toolCallId: 'tc9', status: 'completed' },
+      },
+    });
+    await waitFor(() => expect(previews.at(-1)).toBeNull());
+  });
+
+  it('관계 변경을 거절하면 실선 단계 없이 지도 변경안을 즉시 거둔다', async () => {
+    const previews: Array<AcpOntologyRelationPreview | null> = [];
+    await bootSession({
+      onOntologyRelationPreviewChange: (preview) => previews.push(preview),
+    });
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_relation', 91, {
+        from: 'capabilities/contextual-editing',
+        to: 'domains/graph-modeling',
+        type: 'depends_on',
+      }),
+    );
+    await waitFor(() => expect(previews.at(-1)?.phase).toBe('draft'));
+
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+
+    await waitFor(() => expect(previews.at(-1)).toBeNull());
+    expect(previews.some((preview) => preview?.phase === 'committing')).toBe(false);
+    expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'reject' });
+  });
+
+  it('여러 관계 요청의 첫 항목만 골라 지도에 내보내지 않는다', async () => {
+    const previews: Array<unknown> = [];
+    await bootSession({
+      onOntologyRelationPreviewChange: (preview) => previews.push(preview),
+    });
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_relations', 90, {
+        relations: [
+          { from: 'capabilities/a', to: 'domains/one', type: 'depends_on' },
+          { from: 'capabilities/a', to: 'domains/two', type: 'depends_on' },
+        ],
+      }),
+    );
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    expect(previews.filter(Boolean)).toHaveLength(0);
+  });
 
   it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {
     await bootSession();
@@ -641,6 +788,7 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
         },
       },
     });
+    await openLatestWorkGroup();
 
     const row = await waitFor(() => {
       const el = document.querySelector('[data-acp-entry="tool"]');
@@ -668,6 +816,7 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
         },
       },
     });
+    await openLatestWorkGroup();
     const row = await waitFor(() => {
       const el = document.querySelector('[data-acp-entry="tool"]');
       expect(el).not.toBeNull();
@@ -1241,6 +1390,8 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
       },
     });
 
+    await openLatestWorkGroup();
+
     const mark = await screen.findByTestId('acp-chat-slug');
     expect(mark.getAttribute('data-slug')).toBe('capabilities/invoice');
     fireEvent.pointerEnter(mark);
@@ -1275,6 +1426,7 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
         },
       },
     });
+    await openLatestWorkGroup();
     await waitFor(() =>
       expect(document.querySelectorAll('[data-acp-entry="tool"]').length).toBe(1),
     );
@@ -1335,14 +1487,14 @@ describe('답하다 죽은 것과 다 끝난 것은 다른 말이다', () => {
  */
 describe('대화 패널 — 차례가 도는 동안만 알린다', () => {
   it('보내면 켜지고, 답이 끝나면 꺼진다', async () => {
-    const seen: boolean[] = [];
+    const seen: Array<{ state: string; summary: string | null } | null> = [];
     render(
       <AcpChatPanel
         runtimeId="claude-acp"
         runtimeLabel="Claude Code"
         vaultRoot="/vault"
         mcpServers={[{ name: 'atlas-vault' }]}
-        onTurnActiveChange={(active) => seen.push(active)}
+        onTurnActivityChange={(activity) => seen.push(activity)}
       />,
     );
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
@@ -1358,27 +1510,27 @@ describe('대화 패널 — 차례가 도는 동안만 알린다', () => {
 
     fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: '안녕' } });
     fireEvent.click(screen.getByTestId('acp-chat-send'));
-    await waitFor(() => expect(seen.at(-1)).toBe(true));
+    await waitFor(() => expect(seen.at(-1)).toMatchObject({ state: 'planning', summary: '안녕' }));
 
     const call = [...bridge.sent].reverse().find((m) => m.method === 'session/prompt');
     emit({ jsonrpc: '2.0', id: call?.id, result: { stopReason: 'end_turn' } });
-    await waitFor(() => expect(seen.at(-1)).toBe(false));
+    await waitFor(() => expect(seen.at(-1)).toBeNull());
   });
 
   it('패널이 사라지면 꺼 준다 — 켠 채로 남기지 않는다', async () => {
-    const seen: boolean[] = [];
+    const seen: Array<{ state: string } | null> = [];
     const view = render(
       <AcpChatPanel
         runtimeId="claude-acp"
         runtimeLabel="Claude Code"
         vaultRoot="/vault"
         mcpServers={[{ name: 'atlas-vault' }]}
-        onTurnActiveChange={(active) => seen.push(active)}
+        onTurnActivityChange={(activity) => seen.push(activity)}
       />,
     );
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
     view.unmount();
-    expect(seen.at(-1)).toBe(false);
+    expect(seen.at(-1)).toBeNull();
   });
 });
 
