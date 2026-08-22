@@ -1,28 +1,28 @@
-// 내보내기가 **무엇을 안 담았는지** 세어서 말한다.
+// Counts and states **what an export did not carry**.
 //
-// ## 왜 (2026-08-17 실측)
+// **Why** (measured 2026-08-17): the status line of `export --format jsonld` read
+// `80 nodes · 174 edges`. Nodes and relations really do all go out (174 = 174,
+// confirmed). But none of our vault's **7 relation rationales**
+// (`relation_notes`) went, and neither did the implementation paths (`path`) or
+// the descriptions.
 //
-// `export --format jsonld` 의 상태 줄은 `80 nodes · 174 edges` 였다. 노드와
-// 관계는 정말 다 나간다(174 = 174, 확인함). 그런데 우리 볼트의 **관계 이유
-// 7개**(`relation_notes`)는 하나도 안 나가고, 구현 경로(`path`)와 설명도
-// 마찬가지다.
+// This repository wrote the rule itself: *"an edge with no rationale is a
+// mind-map line, not an ontology claim."* Someone moving to Protégé sees
+// "80 nodes · 174 relations" and believes the whole ontology came across — while
+// what makes this product this product is missing.
 //
-// 이 저장소가 스스로 적어 둔 말이 있다: *"근거 없는 엣지는 마인드맵 선이지
-// 온톨로지 주장이 아니다."* Protégé 로 옮긴 사람은 「80 노드 · 174 관계」를
-// 보고 온톨로지를 다 가져온 줄 안다 — 실제로는 이 제품을 이 제품이게 하는
-// 것이 빠진 채다.
+// Same degradation discipline as `.claude/rules/surfaces.md`: **say plainly what
+// cannot be done.**
 //
-// `surfaces.md` 의 강등 규율과 같다: **못 하는 것은 못 한다고 말한다.**
-//
-// ## 목록을 손으로 적지 않는다
-//
-// 「무엇이 빠지나」를 상수로 적어 두면 스키마가 늘 때 조용히 낡는다. 그래서
-// **볼트에 실제로 있는 칸**과 **형식이 담는 칸**을 비교해서 낸다. 새 칸이
-// 생기고 형식이 안 담으면 그날부터 저절로 보고된다.
+// **The list is never hand-written.** A constant naming "what gets dropped" rots
+// silently as the schema grows, so this compares **the fields actually present in
+// the vault** against **the fields the format carries**. A new field the format
+// does not carry is reported from the day it appears.
 
 /**
- * 그래프 내부용 파생 칸 — 사용자가 적은 것이 아니라 컴파일러가 붙인 것이다.
- * 이것들을 「잃었다」고 하면 상태 줄이 매번 시끄러워지고 진짜 손실이 묻힌다.
+ * Graph-internal derived fields — attached by the compiler, not written by the
+ * user. Reporting these as "lost" makes the status line noisy every time and
+ * buries the real losses.
  */
 const DERIVED_KEYS = new Set([
   'mtime',
@@ -36,7 +36,7 @@ const DERIVED_KEYS = new Set([
   'merged_uids',
 ]);
 
-/** 값이 실제로 들어 있나 — 빈 칸을 「잃었다」고 하지 않는다. */
+/** Does the field actually hold a value — an empty one is never reported as lost. */
 function hasValue(value) {
   if (value === null || value === undefined) return false;
   if (typeof value === 'string') return value.trim().length > 0;
@@ -47,18 +47,17 @@ function hasValue(value) {
 
 /**
  * @param {object} input
- * @param {Array<Record<string, unknown>>} input.nodes 컴파일된 노드들.
- * @param {Array<Record<string, unknown>>} [input.edges] 컴파일된 엣지들.
- *   **관계의 이유(`rationale`)가 여기 산다** — 노드가 아니다. 이 제품이
- *   「마인드맵 선」과 「온톨로지 주장」을 가르는 바로 그 값이라, 안 나가면
- *   반드시 말해야 한다.
- * @param {readonly string[]|null} input.carriedKeys 이 형식이 실제로 담는 노드 칸.
- *   `null` 이면 원본 그대로라는 뜻이라 손실을 안 따진다.
- * @param {boolean} [input.carriesEdgeRationale] 이 형식이 엣지 이유를 담나.
+ * @param {Array<Record<string, unknown>>} input.nodes compiled nodes.
+ * @param {Array<Record<string, unknown>>} [input.edges] compiled edges.
+ *   **A relation's rationale lives here**, not on the node. It is the value that
+ *   separates a mind-map line from an ontology claim, so its absence must be stated.
+ * @param {readonly string[]|null} input.carriedKeys the node fields this format
+ *   actually carries. `null` means the format is lossless, so nothing is counted.
+ * @param {boolean} [input.carriesEdgeRationale] does this format carry edge rationales.
  * @returns {{omitted: string[], counts: Record<string, number>, sentence: string|null}}
  */
 export function describeExportOmissions({ nodes, edges, carriedKeys, carriesEdgeRationale = false }) {
-  // `null` = 「이 형식은 원본 그대로다」 — 손실을 따지지 않는다.
+  // `null` means the format is lossless — nothing to count.
   if (carriedKeys === null || carriedKeys === undefined) return { omitted: [], counts: {}, sentence: null };
   const carried = new Set(carriedKeys);
   const counts = {};

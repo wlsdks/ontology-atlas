@@ -50,15 +50,15 @@ function renderMetaBar(targetDoc: VaultDoc = doc) {
 
 describe("DocMetaBar", () => {
   /*
-   * **이름이 바뀐 이유 (2026-08-08)**: 종전 이 시험은 지도에 **있는** 문서에서도
-   * 설명 문장이 렌더되는 것을 계약으로 못박고 있었다. 그건 계약이 아니라 낭비였다 —
-   * 그 문장은 바로 왼쪽 칩(「지도 근거」)과 오른쪽 링크(「지형도」)가 이미 말한 것을
-   * 다시 말하면서 본문 위에 한 줄을 통째로 먹는다. 실측: 배포 샘플 볼트는 112개
-   * 문서 **전부가 노드**라 같은 문장이 112번 반복됐다.
+   * **Why this was renamed (2026-08-08)**: this test used to pin, as a contract, that the
+   * explanation sentence renders even on a document that **is** on the map. That was waste, not a
+   * contract — the sentence repeats what the chip on its left ("map evidence") and the link on its
+   * right ("topology") already say, while eating a whole line above the body. Measured: in the
+   * shipped sample vault **all 112 documents are nodes**, so the same sentence repeated 112 times.
    *
-   * 지키는 성질은 그대로다 — 「지도에 있다」가 **사람이 읽는 말**로 나오고,
-   * frontmatter 전문용어가 화면에 안 나온다. 설명이 필요한 경우(지도에 없는 문서)는
-   * 아래 시험이 따로 지킨다.
+   * The property held is unchanged — "it is on the map" is stated in **words a person reads**, and
+   * no frontmatter jargon appears on screen. The case that does need an explanation (a document not
+   * on the map) is held by the test below.
    */
   it("in-graph 문서는 칩으로만 말한다 — 같은 말을 문장으로 되풀이하지 않는다", () => {
     renderMetaBar();
@@ -67,23 +67,23 @@ describe("DocMetaBar", () => {
       screen.getByRole("region", { name: "지도 근거" }),
     ).toBeInTheDocument();
     expect(screen.getByText("지도 근거")).toBeInTheDocument();
-    // 경로 mono 칩은 의도적으로 제거됨(qw6) — canonical 경로는 ehead 가 소유해
-    // 메타바에서 중복 노출하지 않는다.
+    // The mono path chip was deliberately removed — the canonical path is owned by the editor head
+    // and is not duplicated in the meta bar.
     expect(
       screen.queryByText("docs/ontology/capabilities/agent-graph-readiness.md"),
     ).not.toBeInTheDocument();
-    // 칩이 말한 것을 문장으로 한 번 더 말하지 않는다.
+    // What the chip said is not repeated as a sentence.
     expect(
       screen.queryByText(/개념으로 연결됩니다/),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/frontmatter/)).not.toBeInTheDocument();
-    // 그러나 지도로 가는 길은 그대로 있다 — 줄인 것은 설명이고 사실이 아니다.
+    // But the way to the map is still there — what was cut is the explanation, not the fact.
     expect(screen.getByTestId("doc-map-open")).toBeInTheDocument();
   });
 
-  // 이름이 바뀐 이유 (2026-08-04): 종전 이 테스트는 그래프에 **없는** 문서가
-  // 「지도 근거」라고 말하는 것을 «계약»으로 못박고 있었다. 그건 계약이 아니라
-  // 결함이었다 — 근거가 아닌 것을 근거라고 부르면 근거라는 말이 아무 뜻도 없어진다.
+  // Why this was renamed (2026-08-04): this test used to pin, as a «contract», that a document
+  // **absent** from the graph calls itself "map evidence". That was a defect, not a contract —
+  // calling something evidence when it is not makes the word evidence mean nothing.
   it("tells a non-graph doc that it is not on the map (and offers no map CTA)", () => {
     renderMetaBar({
       ...doc,
@@ -92,7 +92,7 @@ describe("DocMetaBar", () => {
       frontmatter: {},
     });
 
-    // 경로 mono 칩 제거(qw6) — ehead 가 파일 정체성을 소유.
+    // The mono path chip was removed — the editor head owns file identity.
     expect(screen.queryByText("docs/README.md")).not.toBeInTheDocument();
     expect(screen.getByTestId("doc-map-evidence")).toHaveAttribute("data-in-graph", "false");
     expect(screen.getByText("지도에 없음")).toBeInTheDocument();
@@ -101,7 +101,7 @@ describe("DocMetaBar", () => {
         /아직 지도의 노드가 아니에요/,
       ),
     ).toBeInTheDocument();
-    // 죽은 CTA 0 — 주소를 못 만들면 링크 자체가 없다.
+    // Zero dead CTAs — with no address to build, the link does not exist.
     expect(screen.queryByTestId("doc-map-open")).toBeNull();
     expect(
       screen.queryByRole("link", { name: /의미 지도/ }),
@@ -109,15 +109,15 @@ describe("DocMetaBar", () => {
   });
 
   /**
-   * 지도로 가는 입구는 **하나**다 (2026-07-28).
+   * There is **one** entrance to the map (2026-07-28).
    *
-   * 종전에는 「의미 지도」(`/ontology/?node=`)와 「지형도」(`/topology/?p=`)가
-   * 나란히 있었다. 그런데 `/ontology` 는 지도로 가는 **얇은 리다이렉트**라
-   * 두 링크가 같은 화면에 도착한다 — 파라미터만 다른 두 입구는 선택지가
-   * 아니라 망설임이다. 직접 가는 쪽만 남겼다.
+   * "Meaning map" (`/ontology/?node=`) and "topology" (`/topology/?p=`) used to sit side by side.
+   * But `/ontology` is a **thin redirect** to the map, so both links arrive at the same screen —
+   * two entrances differing only in parameters are not a choice, they are hesitation. Only the
+   * direct one was kept.
    *
-   * 이 테스트가 지키는 것은 "입구가 하나" 와 "그 하나가 실제로 지도로
-   * 간다" 둘 다이다 — 하나로 줄이면서 길까지 잃으면 축소가 아니라 손실이다.
+   * This test holds both "there is one entrance" and "that one really goes to the map" — reducing
+   * to one while also losing the path would be loss, not reduction.
    */
   it("renders exactly one map entrance, and it goes to the map", () => {
     renderMetaBar();
@@ -128,11 +128,11 @@ describe("DocMetaBar", () => {
       "/topology/?mode=focus&p=ontology%2Fcapabilities%2Fagent-graph-readiness",
     );
     expect(relationMapLink).toHaveAttribute("title", "이 개념을 지도에서 열기");
-    // 터치 계약은 그대로 — 줄인 것은 개수이지 크기가 아니다.
+    // The touch contract is unchanged — what was reduced is the count, not the size.
     expect(relationMapLink.className).toContain("min-h-8");
     expect(relationMapLink.className).toContain("active:translate-y-px");
 
-    // 리다이렉트를 한 홉 거치던 두 번째 입구는 사라졌다.
+    // The second entrance, which went through a redirect hop, is gone.
     expect(screen.queryByRole("link", { name: /의미 지도/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link").filter((a) => (a.getAttribute("href") ?? "").includes("/ontology/?node="))).toHaveLength(0);
   });

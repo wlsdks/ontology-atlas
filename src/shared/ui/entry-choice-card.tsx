@@ -3,19 +3,21 @@
 import { controlClass } from "@/shared/ui/control-class";
 
 /**
- * **입구 카드** — 빈 무대가 내미는 갈림길 한 장.
+ * **Entry card** — one fork in the road offered by an empty stage.
  *
- * 스튜디오 입구(`StudioEntryChoice`)가 혼자 쓰던 문법이었는데, 스킬 빈 화면이
- * 같은 구조를 골랐다(2026-08-13 소유자: 스킬 무대 갈래 중 *"B로 가자"* — 그
- * 갈래의 근거가 「스튜디오 입구가 스킬 무대와 다른 점은 딱 셋: 48px 아이콘 ·
- * 갈림길 2장 · 글의 양」이었다). 두 번째 소비처가 생기는 순간이 이름을 붙일
- * 때라는 이 저장소의 규율대로 여기로 올렸다 — 사본이 둘이면 어긋나는 쪽이
- * 기본값이 된다.
+ * The pattern started as the studio entry's own, then the skills empty state chose
+ * the same structure (owner, 2026-08-13, picking among the skills-stage options:
+ * *"B로 가자"* — go with B; that option's rationale was that the studio entry
+ * differed from the skills stage in only three ways: a 48px icon, two cards, and
+ * the amount of prose). Per this repo's rule that a value earns a name the moment
+ * a second consumer appears, it moved here — with two copies, drifting is the
+ * default.
  *
- * 값은 전부 기존 것: `controlClass({shape:"card",size:"lg"})` + panel 라운드 +
- * 48px(h-12) 글리프 타일. 등장 모션은 **소비처가 className 으로 준다**
- * (스튜디오는 `studio-stage-in` + 스태거 변수를 쓰고, 억제 계약도 그 화면의
- * 것이다 — 여기 박으면 다른 소비처가 남의 계약을 상속한다).
+ * All values are existing ones: `controlClass({shape:"card",size:"lg"})` plus the
+ * panel radius plus a 48px (h-12) glyph tile. **The entrance motion comes from the
+ * consumer's className**, because the studio's stagger variables and its
+ * reduced-motion contract belong to that screen; baking them in here would make
+ * every other consumer inherit someone else's contract.
  */
 export const EntryChoiceCard = ({
   ref,
@@ -44,8 +46,9 @@ export const EntryChoiceCard = ({
     data-testid={testId}
     onClick={onClick}
     style={style}
-    /* 2026-08-04 체계석 판정 — 이 카드는 인플로우 콘텐츠라 시트 단이 아니라
-     * panel(12) 라운드다(스튜디오 입구에서 확정된 그 판정을 그대로 상속). */
+    /* Design-system seat, 2026-08-04: this card is in-flow content, so it takes the
+     * panel radius (12) rather than the sheet step — inherited from the ruling made
+     * for the studio entry. */
     className={controlClass({
       shape: "card",
       size: "lg",

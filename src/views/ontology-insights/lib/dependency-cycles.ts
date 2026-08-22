@@ -1,21 +1,22 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 /**
- * 의존 사이클 카드 (전략 verdict B 후보 ④) — "구조적으로 위험한 순환이
- * 생겼나?"에 답한다. depends_on 방향 그래프의 순환만 목록으로 낸다.
+ * The dependency-cycle card — it answers "has a structurally dangerous loop appeared?" and lists
+ * only loops in the directed depends_on graph.
  *
- * 데이터: 페이지에 이미 로드된 nodes/edges 에서 client 계산 (단일 진실원 —
- * 별도 store 없음). 의존 계열 판정은 MCP `query_ontology({operation:"cycles"})`
- * 파생과 같은 의미다: containment(contains/belongs_to)가 아닌 depends_on
- * (frontmatter 저장 키가 canonicalize 전 `dependencies` 일 수 있어 둘 다 허용).
+ * Data: computed on the client from the nodes/edges already loaded by the page (single source of
+ * truth — no separate store). The dependency-family verdict means the same as the MCP
+ * `query_ontology({operation:"cycles"})` derivation: depends_on rather than containment
+ * (contains/belongs_to). Both spellings are accepted because the frontmatter storage key may still
+ * be `dependencies` before canonicalization.
  *
- * 알고리즘: 각 노드를 시작점으로 하는 깊이 제한 DFS + Johnson 식 최소-정점
- * 제약(현재 시작점보다 큰 id 로만 전진)으로 각 단순 방향 사이클을 그 최소
- * 노드에서 정확히 1번만 찾는다 → 회전 중복이 구조적으로 배제된다. 희소한
- * 온톨로지 의존 그래프에서 300 노드급도 ms 급.
+ * Algorithm: a depth-limited DFS from each node, plus a Johnson-style minimum-vertex constraint
+ * (advance only to ids greater than the current start), so each simple directed cycle is found
+ * exactly once at its minimum node — rotational duplicates are structurally excluded. On a sparse
+ * ontology dependency graph this is milliseconds even at 300 nodes.
  */
 
-/** 의존(방향) 계열 edge 타입 — 구조(containment) 아님. MCP cycles 와 동일 의미. */
+/** Directed dependency-family edge types — not structural (containment). Same meaning as MCP cycles. */
 const DEPENDENCY_EDGE_TYPES = new Set(["depends_on", "dependencies"]);
 
 export function isDependencyEdgeType(type: string): boolean {
@@ -23,46 +24,46 @@ export function isDependencyEdgeType(type: string): boolean {
 }
 
 export interface DependencyCycle {
-  /** 안정 id — 최소 노드에서 시작하는 방향 경로를 join 한 canonical key. */
+  /** A stable id — the canonical key from joining the directed path starting at the minimum node. */
   id: string;
-  /** 사이클의 실제 노드 수(distinct). 표기 상한과 무관한 정직한 길이. */
+  /** The cycle's real (distinct) node count. An honest length, independent of the display cap. */
   length: number;
   /**
-   * 표기용 distinct 노드 경로(시작 반복 없음). maxPathNodes 로 캡됨.
-   * UI 는 마지막에 nodeIds[0] 를 붙여 "A → B → C → A" 로 닫는다.
+   * The distinct node path for display (no repeated start), capped by `maxPathNodes`.
+   * The UI appends `nodeIds[0]` at the end to close it as "A → B → C → A".
    */
   nodeIds: string[];
-  /** length - nodeIds.length. >0 이면 경로가 잘림 → "외 N" 표기. */
+  /** length − nodeIds.length. Above 0 the path was truncated, printed as "N more". */
   hiddenNodeCount: number;
 }
 
 export interface DependencyCyclesResult {
-  /** maxCycles 로 캡된, 짧은 것 우선 정렬된 사이클. */
+  /** Cycles capped by `maxCycles`, sorted shortest first. */
   cycles: DependencyCycle[];
-  /** 탐지된 서로 다른 사이클 총수(maxCycles 초과 가능). */
+  /** The total number of distinct cycles detected (may exceed `maxCycles`). */
   totalCycles: number;
-  /** totalCycles - cycles.length. >0 이면 "외 N개" 표기. */
+  /** totalCycles − cycles.length. Above 0 it is printed as "N more". */
   hiddenCycles: number;
-  /** 표시 상한과 무관한 현재 전체 사이클 id. exact review 판정에 쓴다. */
+  /** Every current cycle id, independent of the display cap. Used for the exact review verdict. */
   activeCycleIds: string[];
-  /** 깊이 상한/작업 예산에 걸려 탐색이 잘렸는가(더 긴 사이클을 놓쳤을 수 있음). */
+  /** Was the search truncated by the depth limit or the work budget (longer cycles may have been missed)? */
   limited: boolean;
 }
 
 export interface FindDependencyCyclesOptions {
-  /** 노출할 최대 사이클 수. 기본 5. */
+  /** The maximum cycles to expose. Defaults to 5. */
   maxCycles?: number;
-  /** 경로에 표기할 최대 노드 수. 기본 8. */
+  /** The maximum nodes to print in a path. Defaults to 8. */
   maxPathNodes?: number;
   /**
-   * 탐지 깊이 상한(경로 distinct 노드 수). 기본 16 — 표기 상한(8)보다 크게
-   * 둬서 "경로 외 N" 절단이 실제로 의미를 갖게 한다. MCP cycles 자체 기본은
-   * maxDepth 8 이지만, 여기선 표기 절단을 위해 넉넉히 잡는다.
+   * The detection depth limit (distinct nodes in a path). Defaults to 16 — deliberately larger than
+   * the display cap (8) so the "N more" truncation actually means something. MCP cycles itself
+   * defaults to maxDepth 8; here it is generous for the sake of that truncation.
    */
   maxHops?: number;
 }
 
-/** 탐색 폭주 하드 가드 — 병리적 밀집 그래프에서도 ms 보장. */
+/** A hard guard against runaway search — milliseconds even on a pathologically dense graph. */
 const STEP_BUDGET = 500_000;
 
 export function findDependencyCycles(
@@ -76,8 +77,9 @@ export function findDependencyCycles(
 
   const nodeIdSet = new Set(graphNodes.map((node) => node.id));
 
-  // 의존 edge 만 인접 리스트로. 양 끝이 모두 알려진 노드여야(MCP edge.resolved
-  // 대응 — dangling 참조 무시). self-loop 는 자기참조 사이클로 따로 수집.
+  // Only dependency edges enter the adjacency list, and both endpoints must be known nodes
+  // (matching MCP's `edge.resolved` — dangling references are ignored). Self-loops are collected
+  // separately as self-referencing cycles.
   const adjacency = new Map<string, Set<string>>();
   const selfLoops = new Set<string>();
   for (const edge of edges) {
@@ -96,19 +98,19 @@ export function findDependencyCycles(
   }
 
   const foundPaths = new Map<string, string[]>();
-  // depthTruncated: 어떤 가지가 깊이 상한에 걸려 더 긴 사이클을 놓쳤을 수
-  // 있음(가지 단위 prune, 전역 중단 아님). budgetExhausted: 하드 작업 예산
-  // 소진 → 전역 중단. 둘 중 하나라도면 결과의 limited=true.
+  // `depthTruncated`: some branch hit the depth limit and may have missed a longer cycle (a
+  // per-branch prune, not a global stop). `budgetExhausted`: the hard work budget ran out, stopping
+  // globally. Either one makes the result's `limited` true.
   let depthTruncated = false;
   let budgetExhausted = false;
   let steps = 0;
 
-  // ① 자기참조 — A depends_on A.
+  // ① Self-reference — A depends_on A.
   for (const id of [...selfLoops].sort()) {
     foundPaths.set(id, [id]);
   }
 
-  // ② 다중 노드 사이클 — 최소-정점 제약 DFS.
+  // ② Multi-node cycles — DFS with the minimum-vertex constraint.
   const path: string[] = [];
   const inPath = new Set<string>();
   const starts = [...adjacency.keys()].sort();
@@ -123,8 +125,8 @@ export function findDependencyCycles(
       budgetExhausted = true;
       return;
     }
-    // 깊이 상한 = 가지 단위 prune. 형제 가지(더 짧은 사이클)는 계속 탐색해야
-    // 하므로 전역 중단이 아니라 이 가지만 접는다.
+  // The depth limit is a per-branch prune. Sibling branches (shorter cycles) must keep being
+  // searched, so only this branch is folded rather than stopping globally.
     if (path.length >= maxHops) {
       depthTruncated = true;
       return;
@@ -139,8 +141,8 @@ export function findDependencyCycles(
         }
         continue;
       }
-      // Johnson 최소-정점 제약: 시작점보다 큰 id 로만 전진 → 각 사이클을 그
-      // 최소 노드에서만 발견(회전 중복 배제 + 작업량 절감).
+  // Johnson's minimum-vertex constraint: advance only to ids greater than the start, so each cycle
+  // is discovered only at its minimum node (excluding rotational duplicates and cutting work).
       if (next < start) continue;
       if (inPath.has(next)) continue;
       dfs(start, next);

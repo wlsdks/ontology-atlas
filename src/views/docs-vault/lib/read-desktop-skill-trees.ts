@@ -3,34 +3,31 @@ import { listTauriVaultEntries, readTauriVaultText } from '@/shared/lib/tauri-va
 import type { AgentFileEntry } from './agent-files';
 
 /**
- * 두 스킬 트리를 **절대 경로로** 읽는다 — 데스크톱 전용.
+ * Reads both skill trees **by absolute path** — desktop only.
  *
- * ## 왜 manifest 가 아닌가
+ * **Why not the manifest.** `build-local-manifest.ts` and `build-docs-vault.mjs` both skip dot
+ * directories with `if (name.startsWith('.')) continue;`. So `.claude/skills` **never enters the
+ * manifest**, and a check that consumes the manifest can never fire even though the code exists
+ * (found by the PO council, 2026-07-29).
  *
- * `build-local-manifest.ts` 와 `build-docs-vault.mjs` 는 둘 다
- * `if (name.startsWith('.')) continue;` 로 dot 디렉터리를 건너뛴다. 그래서
- * `.claude/skills` 는 **manifest 에 절대 들어오지 않고**, manifest 를 먹는
- * 검사는 코드가 있어도 영영 발화하지 못한다(2026-07-29 PO 카운슬이 발견).
+ * Not fixing the walker is this slice's decision. That filter is the rule defining a vault as "a
+ * folder of documents a person reads and writes", and mixing agent configuration files into the
+ * document list blurs what the docs surface shows. Instead they are read **separately**, where
+ * needed.
  *
- * walker 를 고치지 않는 것이 이 슬라이스의 결정이다. 그 필터는 볼트를
- * "사람이 읽고 쓰는 문서 폴더" 로 정의하는 규칙이고, 에이전트 설정 파일을
- * 문서 목록에 섞으면 문서함이 무엇을 보여 주는 곳인지 흐려진다. 대신 필요한
- * 곳에서 **따로** 읽는다.
- *
- * ## 왜 웹에는 없나
- *
- * FSA 핸들에는 절대 경로가 없고, 사용자가 고른 폴더 밖으로 나갈 수도 없다.
- * `.claude/` 를 못 보는 것이 브라우저의 원리적 한계라 웹 동등물은 짓지 않는다
- * (`surfaces.md` — 데스크톱 능력은 웹 백필 의무가 없다). 다리가 없으면 이
- * 함수는 **빈 배열**을 돌려주고, 호출부는 그 자리에 아무것도 그리지 않는다.
+ * **Why there is no web equivalent.** An FSA handle has no absolute path and cannot leave the
+ * folder the user chose. Not seeing `.claude/` is a browser limitation in principle, so no web
+ * equivalent is built (`.claude/rules/surfaces.md` — a desktop capability carries no obligation to
+ * backfill the web). With no bridge this function returns an **empty array** and the caller draws
+ * nothing in that slot.
  */
 
 const SKILL_TREES = ['.claude/skills', '.agents/skills'] as const;
 
-/** 스킬 트리 안에서 비교할 가치가 있는 파일 — 설정·지침은 텍스트다. */
+/** Files inside a skill tree worth comparing — configuration and instructions are text. */
 const READABLE = /\.(md|mdc|txt|json|ya?ml|toml)$/i;
 
-/** 폭주 방지 — 스킬 트리에 수천 파일이 들어 있을 이유가 없다. */
+/** A runaway guard — there is no reason for a skill tree to hold thousands of files. */
 const MAX_FILES = 400;
 const MAX_DEPTH = 4;
 
@@ -45,7 +42,7 @@ async function walk(
   try {
     entries = await listTauriVaultEntries(rootPath, relative);
   } catch {
-    // 트리가 아예 없는 것은 결함이 아니다 — 대부분의 볼트에 `.claude/` 는 없다.
+    // A missing tree is not a defect — most vaults have no `.claude/`.
     return;
   }
   for (const entry of entries) {
@@ -60,8 +57,8 @@ async function walk(
       const text = await readTauriVaultText(rootPath, path);
       out.push({ path, content: text });
     } catch {
-      // 읽기 실패한 파일은 **없는 척하지 않는다** — 내용 없이 경로만 싣는다.
-      // 그래야 "한쪽에만 있다" 판정이 읽기 실패로 뒤바뀌지 않는다.
+      // A file that failed to read is **not pretended away** — the path is carried with no
+      // content, so a "present in one tree only" verdict is never really a read failure.
       out.push({ path, content: null });
     }
   }

@@ -27,9 +27,10 @@ import {
   vaultPathspec,
 } from './git-snapshot.mjs';
 
-// 실제 git 프로세스를 쓰는 임시 repo fixture — partial-commit pathspec
-// 동작(다른 staged 파일 보호)은 mock 으로는 검증할 수 없어 real repo 로
-// end-to-end 확인한다. 각 test 는 자기만의 tmp dir 을 만들고 끝에 지운다.
+// Temporary repository fixture driving a real git process. The partial-commit
+// pathspec behaviour (protecting other staged files) cannot be verified with a
+// mock, so it is checked end to end against a real repository. Each test creates
+// its own tmp dir and removes it afterwards.
 
 function sh(args, cwd) {
   return execFileSync('git', args, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -324,7 +325,7 @@ test('getPorcelainStatus / findGitRepoRoot — a vault directory with no .git an
   }
 });
 
-// ── LOW-5: rename 표기 ────────────────────────────────────────────────────
+// ── Rename notation ───────────────────────────────────────────────────────
 
 test('classifyChange — R index is a rename', () => {
   assert.equal(classifyChange({ index: 'R', worktree: ' ' }), 'renamed');
@@ -358,7 +359,7 @@ test('buildChangeSummary + formatSnapshotSummary — rename keeps the previous p
   }
 });
 
-// ── HIGH-1: 우아한 git 실패 분류 ──────────────────────────────────────────
+// ── Graceful git failure classification ───────────────────────────────────
 
 test('classifyGitError — maps common git failure stderr to clean reasons + guidance', () => {
   assert.equal(
@@ -465,7 +466,7 @@ test('pushCurrentBranch — a remote that moved ahead rejects the push and class
   }
 });
 
-// ── 패리티: --history / --diff / --pull ───────────────────────────────────
+// ── Parity: --history / --diff / --pull ───────────────────────────────────
 
 test('getVaultLog — returns only commits touching the vault pathspec, newest first', () => {
   const repoRoot = initRepo();

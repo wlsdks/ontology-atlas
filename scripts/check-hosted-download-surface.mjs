@@ -234,18 +234,21 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     // never match after that, so the headline is deliberately NOT a needle —
     // the eyebrow names the platform and the product in one unbroken line.
     //
-    // [재조준 2026-08-19] 구 바늘 셋(`sourceCta` · `windowsPlatformTitle` ·
-    // `releaseGateNote`)은 전부 설치 절 안에 살았고 소유자가 그 절을 통째로
-    // 걷어냈다(*"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*).
-    // 지금 이 페이지를 이루는 것은 네 절이므로 절마다 바늘 하나를 세운다 —
-    // 한 절이 배포에서 통째로 빠지면 그 절의 바늘이 잡는다.
+    // Re-aimed 2026-08-19: the three old needles (`sourceCta`,
+    // `windowsPlatformTitle`, `releaseGateNote`) all lived inside the install section,
+    // and the owner removed that section wholesale (*"맨 마지막 이거는 없어도 될듯?
+    // 어차피 맨 위에 다 있어서"* — the last one seems unnecessary since it's all at the
+    // top anyway). The page is now made of four sections, so one needle is placed per
+    // section: if a section drops out of a deployment, that section's needle catches
+    // it.
     downloadCopy.eyebrow,
     downloadCopy.demoTitle,
     downloadCopy.evidenceTitle,
     downloadCopy.agentsTitle,
-    // 정직성 사실의 **마지막** 자리다. 검증 레일이 사라진 뒤 서명·공증·「서버로
-    // 아무것도 안 보낸다」를 말하는 곳은 히어로 신뢰줄 한 줄뿐이라, 이 줄이
-    // 배포에서 빠지면 페이지에 그 주장이 하나도 없게 된다.
+    // The **last** place the honesty facts live. Since the verification rail was
+    // removed, the only thing stating signing, notarisation, and "nothing is sent to a
+    // server" is the hero's trust line — if that line drops out of a deployment, the page
+    // carries none of those claims.
     downloadCopy.trustLine,
   ]);
   // A deploy can legitimately sit on either side of the release-facts commit:

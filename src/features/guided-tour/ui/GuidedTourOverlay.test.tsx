@@ -105,9 +105,9 @@ describe("GuidedTourOverlay", () => {
   });
 
   it("keeps a FULL blocking blocker on the interactive step while the canvas anchor hole is unresolved", () => {
-    // jsdom 의 앵커 프로브는 0-크기 → 구멍 해석 불가 → 전면 차단 폴백 유지
-    // (2026-07-23 Guardian 정정 — 구 계약의 전면 pointer-events-none 은 투어
-    // 위로 다른 transient 표면을 쌓을 수 있었다).
+    // jsdom's anchor probe is zero-size → the hole cannot resolve → the full-block
+    // fallback stays (2026-07-23 correction — the old contract's blanket
+    // `pointer-events-none` allowed other transient surfaces to stack over the tour).
     render(<Harness />);
     act(() => screen.getByTestId("test-start").click());
     // advance welcome -> nodes -> relations -> try-click
@@ -145,7 +145,7 @@ describe("GuidedTourOverlay", () => {
     act(() => screen.getByTestId("guided-tour-next").click());
     expect(screen.getByTestId("guided-tour-overlay")).toHaveAttribute("data-tour-step", "try-click");
 
-    // 앵커 프로브가 실제 원 rect 를 갖게 스텁 → 다음 프레임 tick 이 읽는다.
+    // Stub the anchor probe with a real circle rect → the next frame's tick reads it.
     const probe = screen.getByTestId("test-canvas-anchor");
     probe.getBoundingClientRect = () =>
       ({ top: 400, left: 700, width: 48, height: 48, right: 748, bottom: 448, x: 700, y: 400, toJSON: () => ({}) }) as DOMRect;
@@ -159,9 +159,9 @@ describe("GuidedTourOverlay", () => {
     expect(screen.queryByTestId("guided-tour-blocker")).not.toBeInTheDocument();
     const cutout = screen.getByTestId("guided-tour-cutout");
     expect(cutout).toHaveAttribute("data-cutout-shape", "circle");
-    // 구멍 위 스트립 높이 = 컷아웃 top - 16px 패딩 (2026-07-24 하드닝 —
-    // funnel 구멍은 프로브 rect 보다 사방 16px 넓게 뚫려 카메라 스프링 중
-    // 시각 노드와의 순간 오차를 흡수한다).
+    // The strip height above the hole = cutout top − 16px padding (hardening
+    // 2026-07-24 — the funnel hole is opened 16px wider on every side than the probe
+    // rect to absorb momentary error against the visual node during the camera spring).
     expect(strips[0].style.height).toBe("384px");
   });
 
@@ -172,14 +172,14 @@ describe("GuidedTourOverlay", () => {
   });
 
   /**
-   * 모달리티의 **되돌리기** 축 — 위 "traps Tab" 은 카드 안에서의 감김을 재고,
-   * 이건 이미 **밖에 나가 있는** 포커스가 되돌아오는지를 잰다.
+   * The **return** axis of modality — "traps Tab" above measures the wrap inside the
+   * card, while this measures whether focus that is already **outside** comes back.
    *
-   * 왜 따로 필요한가: 스크림은 포인터를 막지만 프로그램적 `focus()` 는 못 막는다
-   * (어떤 트랩도 못 막고, 막을 필요도 없다). 그래서 라우트 이동·자동 포커스·
-   * 브라우저 복원 같은 경로로 포커스가 투어 밖에 앉아 있을 수 있고, 그 상태에서
-   * Tab 이 바깥을 계속 걸으면 포인터로는 도달 못 하는 컨트롤을 키보드로만
-   * 활성화할 수 있게 된다. 감김만 검사하면 이 경로는 통과한다.
+   * Why it is needed separately: the scrim blocks the pointer but cannot block a
+   * programmatic `focus()` (no trap can, and none needs to). So focus can end up
+   * outside the tour through a route change, an autofocus, or browser restoration,
+   * and if Tab then kept walking outside, a control unreachable by pointer could be
+   * activated by keyboard alone. Checking only the wrap lets that route pass.
    */
   it("포커스가 이미 투어 밖에 있어도 Tab 이 투어 안으로 되돌린다", () => {
     render(<Harness />);
@@ -195,22 +195,22 @@ describe("GuidedTourOverlay", () => {
       ),
     );
 
-    // 트랩의 범위는 카드가 아니라 **오버레이**다 (GuidedTourOverlay 가 소유).
+    // The trap's scope is **the overlay**, not the card (GuidedTourOverlay owns it).
     expect(
       screen.getByTestId("guided-tour-overlay").contains(document.activeElement),
     ).toBe(true);
   });
   /**
-   * **「이전」은 단계에 따라 사라지지 않는다** (2026-07-29 도그푸딩 회귀 가드).
+   * **[back] does not disappear per step** (regression guard from dogfooding 2026-07-29).
    *
-   * 초안은 back/next 줄 전체를 `!isInteractive` 로 감쌌다. 그래서 다섯 단계
-   * 동안 왼쪽 아래에 있던 「이전」이 4/7 「직접 눌러보세요」에서 **말없이
-   * 사라졌다** — 사용자는 그 자리에서 투어가 되돌아갈 수 있는 것인지를 다시
-   * 배워야 한다. 앞으로 가는 방법은 단계마다 달라도 되지만(다음 · 직접 눌러보기
-   * · 분기 선택) **뒤로 가는 방법이 달라질 이유는 없다.**
+   * The draft wrapped the whole back/next row in `!isInteractive`, so 「이전」 —
+   * present at the bottom left for five steps — **vanished silently** on 4/7 ("try
+   * pressing it yourself"), and the user had to relearn on the spot whether this
+   * tour can go back. How to go forward may differ per step (next, try it, choose a
+   * branch), but **there is no reason for how to go back to differ.**
    *
-   * 이 검사는 `next` 로 못 넘어가는 단계까지 걸어 들어가므로, 대화형 단계의
-   * 전진 경로(앵커 활성화)가 죽으면 여기서 함께 터진다.
+   * This check walks into steps that cannot be passed with `next`, so if the
+   * interactive step's forward path (activating the anchor) dies, it breaks here too.
    */
   it("모든 단계에서 「이전」이 자리를 지킨다 — 대화형 단계 포함", () => {
     const onActivateAnchor = vi.fn();
@@ -226,7 +226,7 @@ describe("GuidedTourOverlay", () => {
       const stepId = overlay.getAttribute("data-tour-step") ?? "?";
       seen.push(stepId);
 
-      // 첫 단계만 비활성이고, 그 뒤로는 어느 단계에서도 존재해야 한다.
+    // Only the first step is disabled; after that it must exist on every step.
       const back = screen.queryByTestId("guided-tour-back");
       expect(back, `단계 "${stepId}" 에 「이전」이 없다`).toBeInTheDocument();
 
@@ -237,7 +237,7 @@ describe("GuidedTourOverlay", () => {
       }
       const action = screen.queryByTestId("guided-tour-activate-target");
       if (action) {
-        // 앵커를 눌러 선택이 생긴 상태로 다시 그린다 — 실제 사용자의 경로.
+    // Redraw with a selection created by pressing the anchor — the real user's path.
         rerender(<Harness hasSelection onActivateAnchor={onActivateAnchor} />);
         const advanced = screen.queryByTestId("guided-tour-next");
         if (advanced) {
@@ -249,9 +249,9 @@ describe("GuidedTourOverlay", () => {
       break;
     }
 
-    // 탐지기가 조용히 무력화되는 것을 막는 프로브 — 대화형 단계까지 실제로
-    // 걸어 들어갔는지 확인한다. 첫 단계에서 멈췄다면 위 단언은 1회만 돌고
-    // 통과했을 것이다.
+    // A probe against the detector being silently defeated — confirms it really walked
+    // into the interactive step. Had it stopped at the first step, the assertion above
+    // would have run once and passed.
     expect(seen.length, `걸은 단계: ${seen.join(" → ")}`).toBeGreaterThanOrEqual(4);
   });
 });

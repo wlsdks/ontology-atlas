@@ -8,12 +8,13 @@ import {
 } from "./guide-auto-start";
 
 /**
- * 「화면 안내 자동 표시」 — 여섯 안내를 한 곳에서 끄는 스위치.
+ * "Show screen guides automatically" — one switch that turns off all six guides.
  *
- * 각 안내는 이미 화면당 한 번만 뜨는데, 안내가 여섯이라(지도 + 목적지 다섯)
- * 화면을 옮길 때마다 하나씩 떠서 **매번 나오는 것처럼** 느껴진다. 개별 키를
- * 고쳐서는 못 고치는 종류라 축을 하나 더 만든 것이고, 그래서 이 스위치의
- * 계약은 "**끄면 자동만 멎고 부르면 온다**" 이다.
+ * Each guide already appears once per screen, but there are six of them (the map
+ * plus five destinations), so moving between screens brings up another one and it
+ * **feels like they appear every time**. That is not fixable by editing individual
+ * keys, hence a separate axis — and hence this switch's contract: **off stops the
+ * automatic appearance only; asking for a guide still opens it.**
  */
 describe("guide auto-start switch", () => {
   beforeEach(() => {
@@ -33,8 +34,9 @@ describe("guide auto-start switch", () => {
   });
 
   /**
-   * 명시적 선택만 존중한다 — 기본을 끔으로 뒤집기 전에 직접 켜 둔 사람의
-   * "1" 이 살아남아야 하고, 모르는 값·빈 값·깨진 값은 기본값(끔)이다.
+   * Only an explicit choice is honoured: the "1" of someone who turned it on before
+   * the default flipped to off must survive, while unknown, empty and corrupt
+   * values all fall back to the default (off).
    */
   it("켜 둔 저장값(\"1\")은 살아남고, 모르는 값은 끔이다", () => {
     expect(resolveGuideAutoStart("1")).toBe(true);

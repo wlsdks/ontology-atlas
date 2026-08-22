@@ -31,15 +31,15 @@ import { FullDetailA1GroupsPanel } from "./full-detail-a1-groups-panel";
 import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 
 /**
- * The A1 "데이터시트 확장판" full-detail surface — owner-approved mockup
- * `docs/prototypes/detail-a1-datasheet.html`. Replaces BOTH rejected
- * surfaces (`TopologyOntologyDrawer`'s badge-soup FROM THIS/CONTAINS rows +
+ * The A1 「데이터시트 확장판」 (expanded datasheet) full-detail surface —
+ * owner-approved mockup `docs/prototypes/detail-a1-datasheet.html`. Replaces BOTH
+ * rejected surfaces (`TopologyOntologyDrawer`'s badge-soup FROM THIS/CONTAINS rows +
  * rich collaborator brief, and `OntologyViewPage`'s `NodeDetailPanel`
  * query-builder reach explorer + Meaning/Connections/checks sidebar) with a
  * single flat page: header → ONE engraved metric strip → four full
  * direction groups → reach sentence instrument → agent handoff row → body.
  *
- * Shared between two entry points: the topology datasheet's "전체 상세"
+ * Shared between two entry points: the topology datasheet's 「전체 상세」 (full detail)
  * opt-in (`HomePage.tsx`) and the `/ontology` page's node detail
  * (`OntologyViewPage.tsx`) — both feed the SAME `groups`/`reach` facts built
  * by `buildFullDetailGroups`/`buildFullDetailReachModel` (lib/), so the
@@ -48,33 +48,35 @@ import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 
 export interface FullDetailA1Node {
   id: string;
-  /** 과제 ⑩ — 표시용 짧은 제목 (display 필드 우선, 없으면 title 의 괄호
-   * 부연 설명 컷). 헤더 h1 은 이것을 크게 그린다. */
+  /** The short display title (the display field wins; otherwise the title's
+   *  parenthetical explanation is cut). The header h1 draws this large. */
   title: string;
-  /** 원본 vault title 전체 — `title` 과 다를 때만 h1 아래 secondary 텍스트로
-   * 보존한다(정보 은닉이 아니라 계층화). 같으면 렌더 생략. */
+  /** The full original vault title — preserved as secondary text under the h1 only
+   *  when it differs from `title` (layering, not hiding). Identical, it is not rendered. */
   fullTitle?: string;
   kind: string;
   /** Vault slug / evidence path shown mono top-right. */
   slug: string;
   /**
-   * 에이전트에게 건네는 이름 — 볼트 뿌리 기준 문서 slug, 또는 문서가 없는
-   * 개념이면 볼트가 적어 둔 참조 원문(`resolveNodeAgentTarget`). 인계 체인은
-   * `slug` 가 아니라 이 값을 쓴다: 화면이 쥔 매니페스트 slug 를 그대로
-   * 넘기면 에이전트 볼트에 없는 이름이 된다. 미지정이면 `slug` 로 되돌린다.
+   * The name handed to an agent — the document slug relative to the vault root, or,
+   * for a concept with no document, the raw reference text the vault recorded
+   * (`resolveNodeAgentTarget`). The handoff chain uses this value rather than `slug`:
+   * passing the manifest slug the screen holds gives a name absent from the agent's
+   * vault. Unset, it falls back to `slug`.
    */
   agentSlug?: string | null;
-  /** 자기 문서가 있는가. 없으면 인계 체인이 문서 신설부터 시작한다. */
+  /** Does it have its own document? Without one, the handoff chain starts by creating it. */
   documented?: boolean;
   fresh: boolean;
   /**
-   * 진입 검수 E-5 — 같은 노드의 신선도가 한 클릭 거리에서 상반됐다.
-   * 데이터시트 패널은 「2일 전 바뀜」(문서 mtime 사다리), 이 화면은
-   * 「한동안 그대로」(세션 changeset baseline)였다. `use-node-datasheet-model`
-   * 의 M-3 계약이 금지한 바로 그 이원화다 — 신선도의 단일 진실원은 mtime 이다.
-   * 호출자가 데이터시트가 쓰는 **그 문장 그대로** 넘긴다. 있으면 이진
-   * (최근 갱신/한동안 그대로) 대신 이 문장을 쓴다 — 패널이 같은 자리에서
-   * 하는 것과 동일한 우선순위.
+   * Entry review E-5 — the same node's freshness contradicted itself one click apart.
+   * The datasheet panel said 「2일 전 바뀜」 (changed 2 days ago; the document mtime
+   * ramp) while this screen said 「한동안 그대로」 (unchanged for a while; the session
+   * changeset baseline). That is precisely the split `use-node-datasheet-model`'s M-3
+   * contract forbids — freshness has one source of truth, mtime. The caller passes
+   * **the very sentence the datasheet uses**. When present it replaces the binary
+   * (recently updated / unchanged for a while) — the same precedence the panel applies
+   * in the same position.
    */
   updatedAtLabel?: string | null;
   /**
@@ -123,12 +125,12 @@ export interface FullDetailA1Props {
   onSelectNode: (id: string) => void;
   onClose: () => void;
   onBackToMap?: () => void;
-  /** **이 노드 자신의** 문서. 자기 `.md` 가 없으면 null/omit. */
+  /** **This node's own** document. null or omitted when it has no `.md` of its own. */
   documentHref?: string | null;
   /**
-   * 자기 문서가 없을 때, 이 노드를 적어 둔 다른 문서. 이 표면에는 `근거`
-   * 목록이 없어 링크를 지우면 "어디에 적혀 있나" 를 잃으므로, 목적지를
-   * 말하는 라벨로 바꿔 남긴다.
+   * When it has no document of its own, another document that records this node. This
+   * surface has no 「근거」 (evidence) list, so removing the link would lose "where is
+   * this written down" — it is kept, relabelled to name its destination.
    */
   mentionDocumentHref?: string | null;
   /**
@@ -173,8 +175,8 @@ export function FullDetailA1({
   className,
 }: FullDetailA1Props) {
   const t = useTranslations("fullDetailA1");
-  // rank7 (design-council B5) — DocFrontmatterBlock/TopologyV2DetailPanel 과
-  // 같은 `editProvenance` 네임스페이스(단일 출처, drift 방지).
+  // The same `editProvenance` namespace as DocFrontmatterBlock and
+  // TopologyV2DetailPanel (single source, drift prevention).
   const tProvenance = useTranslations("editProvenance");
   const getKindLabel = useOntologyKindLabel();
   const { show } = useToast();
@@ -293,9 +295,9 @@ export function FullDetailA1({
           <h1 className="text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--topology-v2-panel-text-primary)]">
             {node.title}
           </h1>
-          {/* 과제 ⑩ — 표시명이 원본 title 을 축약한 경우, 전체 title 을
-              secondary 텍스트로 보존한다(정보 은닉이 아니라 계층화). 같으면
-              생략(중복 렌더 방지). */}
+          {/* When the display name abbreviates the original title, the full title is
+              preserved as secondary text (layering, not hiding). Identical, it is
+              omitted to avoid rendering it twice. */}
           {node.fullTitle && node.fullTitle !== node.title ? (
             <p
               data-testid="full-detail-a1-full-title"
@@ -629,10 +631,10 @@ function FullDetailCodeLocationRow({
         aria-label={state === "copied" ? copiedLabel : copyLabel}
         title={state === "copied" ? copiedLabel : copyLabel}
         data-testid="full-detail-a1-code-location-copy"
-        /* 잉크는 `tone: 'muted'` 가 낸다(#82828a — 2026-08-03 quaternary 수렴
-           후 panel 재매핑 없이 전역 값이 곧 패널 값이다). 상자는
-           `p-1`(20px) 대신 정사각 램프의 `sm`(24px) — 이 행이 이미
-           `min-h-[32px]` 이라 커져도 행 높이가 안 밀린다. */
+        /* The ink comes from `tone: 'muted'` (#82828a — after the 2026-08-03 quaternary
+           convergence the global value is the panel value, with no panel remapping).
+           The box is the square ramp's `sm` (24px) rather than `p-1` (20px) — this row
+           is already `min-h-[32px]`, so growing it does not push the row height. */
         className={controlClass({
           shape: "icon",
           size: "sm",

@@ -11,15 +11,14 @@ import koMessages from "@/messages/ko.json";
 import enMessages from "@/messages/en.json";
 
 /**
- * 404 안내. 사용자가 잘못된 링크로 들어왔을 때 막다른 느낌 없이 3가지
- * 길을 즉시 안내한다.
+ * The 404 page. When someone arrives from a bad link it offers three ways out immediately, so it
+ * does not feel like a dead end.
  *
- * Root layout 에는 NextIntlClientProvider 가 마운트되지 않아 useTranslations
- * 가 동작하지 않고, output:'export' + Turbopack 환경에서는 `[locale]/
- * not-found.tsx` 가 trigger 되지 않을 수 있다. 그래서 이 root not-found 가
- * 모든 미해결 경로의 단일 진입점이 된다.
- * locale 은 URL 첫 segment 로 client-side 감지 (`/ko/...` → ko).
- * messages JSON 을 직접 import — useTranslations 우회로 i18n 일관성 유지.
+ * The root layout does not mount NextIntlClientProvider, so `useTranslations` does not work, and
+ * under `output: 'export'` with Turbopack `[locale]/not-found.tsx` may not be triggered at all.
+ * So this root not-found is the single entry point for every unresolved path.
+ * The locale is detected client-side from the URL's first segment (`/ko/...` → ko), and the message
+ * JSON is imported directly — bypassing `useTranslations` while keeping i18n consistent.
  */
 const LOCALE_MESSAGES = { ko: koMessages, en: enMessages } as const;
 type SupportedLocale = keyof typeof LOCALE_MESSAGES;
@@ -40,10 +39,9 @@ export default function NotFound() {
   );
   const t = LOCALE_MESSAGES[locale].notFound;
 
-  // 404 surface 는 dead-end 카드만 노출. 모바일 BottomTabBar 가
-  // 동시에 보이면 "어디 갈지" 가 두 군데에 분산되어 카드 안 3가지
-  // 출구의 명확함이 흐려진다. body data 속성으로 BottomTabBar 가 자기
-  // 자신을 숨기게 한다 (CSS rule 은 globals.css 에 정의).
+  // The 404 surface shows only the dead-end card. With the mobile BottomTabBar visible at the same
+  // time, "where to go" is split across two places and the clarity of the card's three exits is
+  // lost. A body data attribute lets BottomTabBar hide itself (the CSS rule is in globals.css).
   useEffect(() => {
     document.body.setAttribute("data-no-tabbar", "true");
     return () => {
@@ -88,20 +86,21 @@ export default function NotFound() {
           {t.title}
         </h1>
         {/*
-         * `break-keep` — **한국어는 단어 중간에서 끊기면 읽다가 걸린다** (2026-08-12 실측).
+         * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
          *
-         * 이 문단이 440px 카드(실폭 382px)에서 「바뀌었|을」로 끊겼다 (계기: 글자마다
-         * Range 를 재서 줄이 바뀐 자리의 앞뒤 글자를 본다 — 둘 다 한글이고 공백이
-         * 없으면 단어 중간이다). 원인은 `word-break: normal` 이고, 이 저장소는 이미
-         * 다른 자리에서 `break-keep` 을 쓰고 있었다.
+         * This paragraph broke as 「바뀌었|을」 in a 440px card (382px real width). Instrument: a
+         * `Range` per character reveals the characters on either side of the line break — both
+         * Korean with no space means mid-word. The cause is `word-break: normal`, and this
+         * repository already used `break-keep` elsewhere.
          */}
         <p className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
           {t.body}
         </p>
         <div className="mt-5 flex flex-col gap-2">
-          {/* [locale]/not-found 와 같은 정규화 — 세 출구는 표준 버튼의 3변형이다.
-              구 rounded-full 방언은 채운 인디고 위 AA 미달(4.42:1) 잉크였다.
-              raw buttonVariants 는 base border-transparent 와 충돌이 남아 cn 병합. */}
+          {/* Normalized the same way as [locale]/not-found — the three exits are three variants of
+              the standard button. The old rounded-full dialect used ink below AA on filled indigo
+              (4.42:1). Raw `buttonVariants` still conflicts with the base `border-transparent`, so
+              it is merged through `cn`. */}
           <Button type="button" variant="primary" onClick={openSearchOnHome}>
             <Search size={ICON_SIZE.md} />
             {t.findByProject}

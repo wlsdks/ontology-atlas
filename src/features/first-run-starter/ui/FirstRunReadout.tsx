@@ -16,34 +16,33 @@ export interface FirstRunReadoutProps {
    */
   tier?: "spine" | "circuit" | "element";
   /**
-   * P1 결함①b (사용성 전수 검수 2026-07-23) — 비개발(plain) 모드에서는
-   * element 티어가 도달 불가 밴드로 밀려 있어(`PLAIN_TIER_REVEAL`) 줌으로는
-   * 절대 element 가 드러나지 않는다. "줌인하면 요소가 나타납니다"는 이
-   * 모드에서 항상 거짓이므로, `tier` 와 무관하게 클릭 기반 plain 문구로
-   * 치환한다(드롭하지 않음 — 이 모드에선 그 안내가 항상 유효하다).
+   * In plain (non-developer) mode the element tier is pushed into an unreachable band
+   * (`PLAIN_TIER_REVEAL`), so zooming never reveals elements. "Zoom in to see
+   * elements" is therefore always false in this mode, so it is replaced with the
+   * click-based plain wording regardless of `tier` (not dropped — that guidance is
+   * always valid in this mode).
    */
   audiencePlain?: boolean;
 }
 
 /**
- * 우하단 계기 판독 — "1 project · 6 domains · Spine view · 줌인하면 요소가
- * 나타납니다" (승인 계약: `first-run-v3-flagship.html` `.readout`). 이전
- * 라운드의 하단 오픈소스 스트립을 대체 — v3 는 그 자리를 지도 방향성 지표로
- * 바꿨다("소개·macOS 앱·GitHub" 링크는 기존 크롬/설정 기어 경로로 충분,
- * 별도 스트립 불필요).
+ * The bottom-right instrument readout — "1 project · 6 domains · Spine view · zoom in
+ * to see elements" (approved contract: `first-run-v3-flagship.html` `.readout`). It
+ * replaced the previous round's bottom open-source strip: v3 turned that slot into a
+ * map orientation indicator, since the "about, macOS app, GitHub" links are already
+ * covered by the existing chrome and settings gear.
  *
- * M-5 — the tier label + zoom hint used to be one frozen string
- * (`readout.hint` = "Spine view · 줌인하면 요소가 나타납니다"). It stayed
- * "Spine view · zoom in to see elements" even at max zoom with element nodes
- * on screen — an orientation instrument that lies. The label now tracks the
- * live `tier`, and the "zoom in to see elements" hint only shows while
- * elements are NOT yet revealed (spine / circuit); at the element tier it is
- * dropped.
+ * The tier label and zoom hint used to be one frozen string
+ * (`readout.hint` = "Spine view · zoom in to see elements"). It stayed that way even
+ * at maximum zoom with element nodes on screen — an orientation instrument that lies.
+ * The label now tracks the live `tier`, and the "zoom in to see elements" hint shows
+ * only while elements are NOT yet revealed (spine / circuit); at the element tier it
+ * is dropped.
  *
- * `useFirstRunStarter` 의 `visible`(= sample mode settled && !dismissed) 과
- * 달리 dismiss 에 묶이지 않는다 — 시작하기 모듈을 닫아도 정적 샘플을 계속
- * 둘러보는 동안은 방향성 지표로 남아있는 게 유용하다(이전 오픈소스 스트립과
- * 같은 지속성).
+ * Unlike `useFirstRunStarter`'s `visible` (= sample mode settled && !dismissed), this
+ * is not tied to dismiss — closing the get-started module still leaves a useful
+ * orientation indicator while browsing the static sample (the same persistence the
+ * previous open-source strip had).
  */
 export function FirstRunReadout({
   projectCount,
@@ -53,18 +52,18 @@ export function FirstRunReadout({
 }: FirstRunReadoutProps) {
   const t = useTranslations("firstRunStarter.readout");
   const visible = useFirstRunSampleModeSettled();
-  // 진입 검수 E-10 — 이 계기 판독 문법(mono + uppercase + wide tracking)은
-  // 라틴에서는 정상 신호지만 한글에서는 공백 글리프만 벌려 「큰  줄기  보기」로
-  // 읽혔다(실측 자간 1.8px). 로케일로 조건을 내린다 — 영문은 종전 그대로.
+  // This readout's grammar (mono + uppercase + wide tracking) is a normal signal in
+  // latin but in Korean only widens the space glyphs, reading as 「큰  줄기  보기」
+  // (measured tracking 1.8px). The condition is made per locale — English is unchanged.
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
 
   if (!visible) return null;
 
   const tierLabel = t(`tier_${tier}`);
-  // At the element tier the "zoom in to see elements" promise is already
-  // fulfilled — showing it would be a lie (M-5). Below it, keep the guidance.
-  // P1 결함①b — plain 모드는 이 tier 판정 자체가 무의미하다(줌으로는 절대
-  // element 에 도달 못 함) — 항상 보여주고 문구만 클릭 기반으로 바꾼다.
+  // At the element tier the "zoom in to see elements" promise is already fulfilled —
+  // showing it would be a lie. Below it, keep the guidance.
+  // In plain mode the tier verdict itself is meaningless (zooming can never reach an
+  // element), so it always shows and only the wording becomes click-based.
   const showZoomHint = audiencePlain || tier !== "element";
   const zoomHintText = audiencePlain ? t("zoomHintPlain") : t("zoomHint");
 

@@ -17,16 +17,17 @@ describe("resolveProjectTagline — 히어로 한 줄 정의", () => {
     ).toBe("이 프로젝트는 고객 주문을 재고와 배송까지 잇습니다.");
   });
 
-  // 너무 짧은 첫 문장(20자 미만)은 정의를 대표하지 못하므로 문장으로 치지
-  // 않고 뒤를 이어 붙인다 — `compactOntologyDescription` 의 기존 계약이다.
+  // A first sentence that is too short (under 20 characters) does not represent the definition, so it is
+  // not treated as a sentence and the next one is appended — the existing contract of
+  // `compactOntologyDescription`.
   it("첫 문장이 너무 짧으면 거기서 끊지 않는다", () => {
     expect(resolveProjectTagline({ description: "짧다. 이어지는 설명이 본체다." })).toBe(
       "짧다. 이어지는 설명이 본체다.",
     );
   });
 
-  // 실측 결함: 히어로가 발췌 320자를 그대로 흘려 "…이 프로젝트의 ontology 는
-  // 비즈니" 처럼 **어절 한가운데**에서 끊겼다. 문장 경계에서 끝나야 한다.
+  // Measured defect: the hero passed a 320-character excerpt straight through and cut **mid-word**, as in
+  // "…이 프로젝트의 ontology 는 비즈니". It has to end at a sentence boundary.
   it("어절 중간에서 자르지 않는다 — 문장 경계에서 끝난다", () => {
     const long =
       "마크다운에서 자라는 오픈소스 온톨로지 워크벤치입니다. " +

@@ -10,11 +10,11 @@ import {
 } from "@/features/docs-vault-local";
 
 /**
- * "내 문서에서 온톨로지 시작하기" 흐름의 상태 조합 — HomePage 모듈화 1차.
- * 계획 파생(deriveBootstrapPlan) + 다이얼로그 open 상태 + 실행
- * (executeBootstrapPlan, features 레벨 batch 쓰기 계약) 만 소유하고,
- * 완료 후 연출(토스트·E1 리빌)은 onCompleted 콜백으로 호출자(HomePage)에
- * 남긴다 — 이 훅은 지도/토스트를 모른다.
+ * State for the "start an ontology from my documents" flow. It owns only the
+ * plan derivation (`deriveBootstrapPlan`), the dialog's open state, and
+ * execution (`executeBootstrapPlan`, the features-level batch write contract).
+ * What happens after completion — toast, reveal — is left to the caller via
+ * `onCompleted`: this hook knows nothing about the map or toasts.
  */
 export interface UseBootstrapFlowArgs {
   vault: BootstrapVaultWriter & { handle?: { name: string } | null };

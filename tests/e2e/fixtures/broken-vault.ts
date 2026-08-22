@@ -1,28 +1,30 @@
 /**
- * 결함 볼트 픽스처 — **게이트가 빈 집합 위에서 놀지 못하게 하는 데이터**.
+ * Broken-vault fixture — **data that stops gates idling over an empty set.**
  *
- * ## 왜 이 파일이 `tests/e2e/fixtures/` 에 승격됐나
+ * **Why this was promoted into `tests/e2e/fixtures/`.** The dogfood vault and the
+ * sample vault both have **zero issues**, so every gate measuring "does the screen
+ * report the check results" had **never once turned red** — not passing, but having
+ * nothing to look at. A 2026-08-04 measurement showed the cost: in a folder with 5
+ * errors the readiness meter was 100% indigo (0px of danger segment), the per-file
+ * diagnostics showed only warnings while hiding the errors, and a document absent
+ * from the map claimed to be "map evidence". None of those three defects can exist in
+ * a healthy vault.
  *
- * dogfood 볼트와 샘플 볼트는 **이슈가 0** 이다. 그래서 "검사 결과를 화면이
- * 말하는가" 를 재는 모든 게이트가 지금까지 **한 번도 빨개져 본 적이 없었다** —
- * 통과가 아니라 *볼 것이 없었던 것*이다. 2026-08-04 실측이 그 대가를 보여줬다:
- * 오류 5개가 있는 폴더에서 준비도 미터가 100% 인디고(위험 세그먼트 0px)였고,
- * 파일 옆 진단은 경고만 보여 주고 오류는 감추고 있었으며, 지도에 없는 문서가
- * 「지도 근거」라고 말했다. 세 결함 모두 **정상 볼트에서는 존재할 수 없다.**
+ * So the defects are fixed as data — exactly one per check — and reverting any one
+ * prescription makes that one disappear from the screen, breaking the gate on the
+ * spot.
  *
- * 그래서 결함을 데이터로 고정한다. 검사 코드마다 정확히 한 건씩 — 어느 처방을
- * 되돌려도 그 한 건이 화면에서 사라지므로 게이트가 그 자리에서 터진다.
+ * **Exact expectations** (UI fast path = `validateVaultDocFrontmatter` +
+ * `summarizeVaultValidation`): **5 errors, 4 warnings**, itemised by the numbered
+ * comments below. `unclosed-frontmatter` and `parse-zero-keys` are not included — the
+ * parser is lenient so the fast path cannot see them in principle, and they belong to
+ * the CLI (`validateVaultDocument`).
  *
- * ## 정확한 기댓값 (UI fast path = `validateVaultDocFrontmatter` + `summarizeVaultValidation`)
- *
- * **오류 5 · 경고 4**. 아래 주석의 번호가 그 내역이다. `unclosed-frontmatter`
- * 와 `parse-zero-keys` 는 담지 않는다 — 파서가 lenient 라 fast path 가 원리적으로
- * 못 보고, 그건 CLI(`validateVaultDocument`)의 몫이다.
- *
- * 소비처: `tests/e2e/vault-truth-telling.spec.ts`.
+ * Consumer: `tests/e2e/vault-truth-telling.spec.ts`.
  */
 export const BROKEN_VAULT: Record<string, string> = {
-  // ── 정상 앵커 — 그래프에 실재하는 노드가 있어야 "지도에 있다/없다" 가 갈린다 ──
+  // ── Healthy anchor: a node that really exists in the graph is what makes "on the
+  // map" and "not on the map" distinguishable ──
   "project.md": [
     "---",
     "kind: project",
@@ -37,7 +39,7 @@ export const BROKEN_VAULT: Record<string, string> = {
     "",
   ].join("\n"),
 
-  // 경고① non-canonical-graph-array — `contains:` 가 정렬돼 있지 않다.
+  // Warning ① non-canonical-graph-array — `contains:` is not sorted.
   "domains/orders.md": [
     "---",
     "kind: domain",
@@ -53,7 +55,7 @@ export const BROKEN_VAULT: Record<string, string> = {
     "",
   ].join("\n"),
 
-  // 오류① missing-uid + 경고② missing-expected-field(domain)
+  // Error ① missing-uid + warning ② missing-expected-field(domain)
   "capabilities/checkout.md": [
     "---",
     "kind: capability",
@@ -65,7 +67,7 @@ export const BROKEN_VAULT: Record<string, string> = {
     "",
   ].join("\n"),
 
-  // 오류② invalid-uid — slug 에서 파생한 값은 UUIDv4 가 아니다.
+  // Error ② invalid-uid — a value derived from the slug is not a UUIDv4.
   "capabilities/payment.md": [
     "---",
     "kind: capability",
@@ -79,8 +81,8 @@ export const BROKEN_VAULT: Record<string, string> = {
     "",
   ].join("\n"),
 
-  // 오류③ empty-kind — `kind:` 는 있는데 값이 없다. 노드가 지도에서 사라지는
-  // 가장 흔한 두 경로 중 하나.
+  // Error ③ empty-kind — `kind:` is present with no value. One of the two most common
+  // ways a node disappears from the map.
   "elements/ghost.md": [
     "---",
     "kind:",
@@ -94,7 +96,7 @@ export const BROKEN_VAULT: Record<string, string> = {
     "",
   ].join("\n"),
 
-  // 경고③ unknown-kind
+  // Warning ③ unknown-kind
   "elements/legacy.md": [
     "---",
     "kind: widget",
@@ -108,8 +110,8 @@ export const BROKEN_VAULT: Record<string, string> = {
     "",
   ].join("\n"),
 
-  // 경고④ missing-kind — kind 가 아예 없는데 ontology 시그널(`domain:`)은 있다.
-  // 사라지는 두 번째 경로.
+  // Warning ④ missing-kind — no kind at all, yet an ontology signal (`domain:`) is
+  // present. The second way a node disappears.
   "notes/handover.md": [
     "---",
     "slug: handover",
@@ -121,7 +123,7 @@ export const BROKEN_VAULT: Record<string, string> = {
     "",
   ].join("\n"),
 
-  // 오류④⑤ duplicate-uid — 두 노드가 같은 정체성을 주장한다(양쪽 다 오류).
+  // Errors ④⑤ duplicate-uid — two nodes claim the same identity (both are errors).
   "elements/twin-a.md": [
     "---",
     "kind: element",
@@ -149,10 +151,11 @@ export const BROKEN_VAULT: Record<string, string> = {
 };
 
 /**
- * 같은 모양의 **정상** 볼트 — 같은 노드 수, 같은 관계, 이슈 0.
+ * The same vault, **healthy** — same node count, same relations, zero issues.
  *
- * 결함 볼트만으로는 게이트를 못 믿는다. "빨개지는가" 와 "초록이 되는가" 는
- * 서로 다른 질문이고, 둘 다 물어야 탐지기가 항상-빨강이 아님을 안다.
+ * The broken vault alone is not enough to trust a gate. "Does it turn red" and "does
+ * it turn green" are different questions, and both must be asked to know the detector
+ * is not always-red.
  */
 export const HEALTHY_VAULT: Record<string, string> = {
   "project.md": [

@@ -1,87 +1,88 @@
 /**
- * A2 — 유휴 프레임 게이트 (순수 판정).
+ * The idle-frame skip condition — pure predicates, no timers or canvas.
  *
- * Guardian 관측: 입력 0 상태에서도 rAF 가 매 프레임 전량 재도색했다.
- * P1(코멧테일 포커스 강등)·모션 토큰화가 끝나 "정지 상태"가 정의 가능해진
- * 지금이 착수 조건이다.
- *
- * 설계는 보수적이다 — rAF 를 멈추지 않는다. 유휴가 충분히 길면(grace)
- * 물리 스텝과 페인트만 건너뛴다. 조건은 매 프레임 refs 에서 재평가되므로
- * 어떤 상태 변화든 다음 프레임에 자연 복귀한다: wake 배선이 없고, 따라서
- * wake 누락으로 캔버스가 얼어붙는 실패 모드 자체가 없다. no-op 프레임
- * 비용은 µs 급 — 프레임 예산의 실질 소거.
+ * It exists because rAF repainted the entire canvas every frame even with zero
+ * input. The design is deliberately conservative: **rAF is never stopped.**
+ * Once idle has lasted longer than the grace window, only the physics step and
+ * the paint are skipped. Every predicate is re-evaluated from refs each frame,
+ * so any state change resumes drawing on the next frame — there is no wake
+ * wiring, and therefore no failure mode where a missed wake freezes the canvas.
+ * A no-op frame costs microseconds.
  */
 
 export interface CanvasActivityFlags {
-  /** 포인터 상태머신이 idle 이 아님 (드래그/프레스/호버 이동 중). */
+  /** The pointer state machine is not idle (dragging, pressing, hover-moving). */
   pointerActive: boolean;
-  /** 시뮬레이션 heat 또는 pin (드래그/릴리즈 정착). */
+  /** Simulation heat or a pin — a drag, or settling after release. */
   simWarm: boolean;
-  /** 자동 정렬/첫 지도 연출 호밍 진행 중. */
+  /** Homing: auto-arrange, or the first-map reveal. */
   homing: boolean;
-  /** 선택 커밋 펄스 재생 중. */
+  /** The selection-commit pulse is playing. */
   selectionPulseActive: boolean;
-  /** 포커스 상태 + ego 테일 진행(속도>0) — 유일한 상시 모션. */
+  /** Focus plus an advancing ego tail (speed > 0) — the only always-on motion. */
   egoTailAnimating: boolean;
-  /** 호버/패널 강조 대상 존재 (리플 램프 가능 구간). */
+  /** A hover/panel emphasis target exists, so the ripple may be ramping. */
   emphasisTarget: boolean;
   /**
-   * 선택 해제 페이드 진행 중 — 라이브 포커스(노드/엣지)는 없는데 retained
-   * colorFocus(선택 링 + 배경 dim 의 색 타깃)가 아직 남아 focus 램프가 0 으로
-   * 감쇠하는 중. 이 구간은 위 어떤 플래그(코멧·카메라·호버)와도 무관하게
-   * 활동이다 — 램프 감쇠·colorFocus 클리어는 프레임 바디 안에서만 일어나므로,
-   * 유휴 스킵이 여기서 끼면 링이 풀 opacity 로 얼어붙는다(deselect 회귀).
-   * reduced-motion 이면 램프가 한 프레임에 스냅→클리어되므로 딱 1 프레임만
-   * 깨어 있으면 된다.
+   * A deselect fade is running: no live focus (node or edge) remains, but the
+   * retained colorFocus — the color target of the selection ring and background
+   * dim — is still there while the focus ramp decays to 0. This counts as
+   * activity independently of every other flag, because both the ramp decay and
+   * the colorFocus clear happen only inside the frame body: skip a frame here
+   * and the ring freezes at full opacity. Under reduced motion the ramp snaps
+   * and clears in one frame, so one awake frame is enough.
    */
   focusFadeSettling: boolean;
-  /** fresh 노드 브리드 (reduced-motion 이면 false 로 넘길 것). */
+  /** Fresh-node breathing (pass false under reduced motion). */
   breathing: boolean;
-  /** 카메라가 아직 움직임 (스프링 미정착). */
+  /** The camera is still moving — its spring has not settled. */
   cameraMoving: boolean;
   /**
-   * 최근 변경 스포트라이트 램프가 목표(on=1 / off=0)에 미도달 — 켜고 끄는
-   * 침강/복귀 전이가 진행 중이다. 램프 step 은 프레임 바디 안에서만 일어나므로
-   * focusFadeSettling 과 같은 이유로 명시 활동으로 친다(전이 중 동결 방지).
+   * The recent-change spotlight ramp has not reached its target (1 on, 0 off),
+   * so the transition is still in flight. Counted explicitly for the same reason
+   * as `focusFadeSettling`: the ramp steps only inside the frame body, so a skip
+   * mid-transition freezes it.
    */
   spotlightSettling: boolean;
   /**
-   * 걸어온 길 렌즈가 켜지거나 꺼졌는데 아직 그 상태로 그린 프레임이 없다.
-   * 렌즈는 React state 가 아니라 ref 로 내려오므로(전환마다 페이지 트리를
-   * 다시 렌더하지 않기 위해) effect 로 깨울 수 없다 — 대신 "현재 ref ≠
-   * 마지막으로 그린 상태"를 여기서 활동으로 쳐서 한 프레임을 확보한다.
+   * The trail lens was toggled but no frame has been drawn in the new state.
+   * The lens arrives through a ref rather than React state (so toggling does not
+   * re-render the page tree), which means no effect can wake the loop — instead
+   * "current ref ≠ last drawn state" counts as activity and buys one frame.
    */
   trailLensSettling: boolean;
 }
 
 /**
- * `egoTailAnimating` 을 짓는 세 갈래 — 순수 판정.
+ * The three branches behind `egoTailAnimating` — pure predicate.
  *
- * 왜 함수로 뽑았나: 이 플래그는 OR 세 개인데 **앰비언트 휴면이 그중 둘에만
- * 걸려 있었다.** depends 혜성과 fresh 브리드는 재웠는데 포커스 contains 혜성
- * 갈래가 게이트 밖에 남아, **노드를 하나 선택해 둔 채 손을 놓으면 앱이 영원히
- * 안 잠들었다** — 데이터시트를 열어 두고 터미널로 넘어가는, 이 워크벤치에서
- * 가장 흔한 방치 상태가 정확히 그것이다.
+ * Why it is a function at all: the flag is three ORs, and **ambient sleep was
+ * applied to only two of them.** The depends comets and the fresh breathing
+ * slept; the focused-contains comet branch stayed outside the condition, so
+ * **leaving one node selected and taking your hands off meant the app never
+ * slept** — which is exactly this workbench's most common idle state: a
+ * datasheet left open while you switch to the terminal.
  *
- * 그 상태에서 화면은 이미 정지해 있었다는 게 요점이다: 물리 스텝이 모든 혜성
- * 속도에 `ambientFactor` 를 곱하므로(`topology-physics-step.ts`) 계수가 0 이면
- * 위상이 한 톨도 안 나간다. 즉 **바뀌지 않는 그림을 매 프레임 전면 재래스터**
- * 하고 있었다 — P0 실측이 지목한 바로 그 비용이 한 갈래에만 살아남은 것이다.
+ * The point is that the screen had already stopped moving. The physics step
+ * multiplies every comet speed by `ambientFactor` (`topology-physics-step.ts`),
+ * so at factor 0 no phase advances at all — a picture that cannot change was
+ * being fully re-rasterised every frame.
  *
- * 펄스 갈래는 일부러 게이트 밖에 둔다. 호버가 낳고 420ms 에 만료되는 일회성
- * 신호이고, 호버는 입력이라 그 순간 계수가 1 로 복귀해 있다 — 게이트를 걸어도
- * 참이 되는 일이 없고, 걸면 "발사됐는데 안 그려지는" 실패 모드만 생긴다.
+ * The pulse branch is deliberately left outside the condition. It is a one-shot
+ * signal born from hover that expires after 420 ms, and hover is input, so the
+ * factor is already back at 1 the moment it fires. Gating it could never be
+ * true, and would only add a "fired but never drawn" failure mode.
  */
 export interface EgoTailActivityInput {
   reducedMotion: boolean;
-  /** `isAmbientAsleep(ambientSleepFactor(...))` — 계수가 0 에 닿았는가. */
+  /** `isAmbientAsleep(ambientSleepFactor(...))` — has the factor reached 0? */
   ambientAsleep: boolean;
   hasDependsEdges: boolean;
   edgePulseSpeed: number;
-  /** 선택된 노드가 있는가 (처방 E — 인시던트 contains 코멧). */
+  /** Is a node selected — the incident-contains comet case. */
   focused: boolean;
   hasContainsEdges: boolean;
-  /** 살아있는 호버 펄스 수. */
+  /** Number of live hover pulses. */
   livePulseCount: number;
 }
 
@@ -93,33 +94,37 @@ export function isEgoTailAnimating(input: EgoTailActivityInput): boolean {
 }
 
 /**
- * 3D 돔 자율 회전이 «지금 돌아야 하는가» — 순수 판정.
+ * Whether the 3D dome's autonomous spin should be running — pure predicate.
  *
- * 왜 여기 있나 (2026-08-19 실측): 자율 회전은 상시 혜성·fresh 브리드와 같은
- * 부류의 **앰비언트 모션**인데, 혼자만 `ambient-sleep.ts` 계약 밖에서 살고
- * 있었다. 결과는 `isEgoTailAnimating` 독블록이 적은 실패와 **글자 그대로 같은
- * 모양**이다: 무입력 45초가 지나도 3D 는 잠들지 않고, 2,000 노드에서 초당
- * 520ms(코어 절반)를 영구히 태웠다 — 같은 상태의 2D 는 3ms/s 였다(170배).
+ * Measured 2026-08-19: the autonomous spin is ambient motion of exactly the same
+ * class as the always-on comets and the fresh breathing, yet it alone lived
+ * outside the `ambient-sleep.ts` contract. The result was literally the same
+ * shape of failure the `isEgoTailAnimating` doc-block describes — after 45 s
+ * with no input the 3D view still would not sleep, burning 520 ms per second
+ * (half a core) at 2,000 nodes, where the same state in 2D cost 3 ms/s: 170×.
  *
- * 이 앱의 전형 시나리오가 「에이전트 터미널 옆에 워크벤치를 띄워 두기」라는
- * 것을 생각하면 그것이 가장 흔한 상태다. 그래서 같은 처방을 쓴다 — 끄지 않고
- * 재운다. 술어를 뽑아 둔 이유도 같다: OR/AND 가 두 자리(활동 플래그 · 회전
- * 적용)에 흩어져 있으면 **한쪽에만 조건이 붙는 사고**가 정확히 다시 난다.
+ * Given that this app's typical scenario is a workbench parked next to an agent
+ * terminal, that is its most common state. Hence the same prescription: do not
+ * turn the motion off, put it to sleep. The predicate is extracted for the same
+ * reason too — with the ORs and ANDs spread across two places (the activity
+ * flag and the spin application), the accident of applying a condition to only
+ * one of them recurs exactly.
  *
- * 두 자리에서 다른 항(`orbiting` · `yawVel`)은 여기 넣지 않는다 — 그건
- * 「지금 손/관성이 이미 돌리고 있나」라 자율 회전의 조건이 아니다.
+ * The terms those two places do not share (`orbiting`, `yawVel`) stay out of
+ * here: they answer "is a hand or its momentum already turning it", which is not
+ * a condition on the autonomous spin.
  */
 export interface DomeSpinInput {
-  /** 3D 보기가 켜져 있고 영역 전환 중이 아님. */
+  /** The 3D view is on and no realm transition is in flight. */
   domeOn: boolean;
   reducedMotion: boolean;
-  /** `isAmbientAsleep(ambientSleepFactor(...))` — 계수가 0 에 닿았는가. */
+  /** `isAmbientAsleep(ambientSleepFactor(...))` — has the factor reached 0? */
   ambientAsleep: boolean;
-  /** 개입(궤도·줌·노드 드래그·선택)으로 내려가는 무장 상태. */
+  /** Armed state, lowered by any intervention: orbit, zoom, node drag, select. */
   spinArmed: boolean;
-  /** 커서가 캔버스 위 — 조준한 노드가 커서 밑에서 미끄러지지 않게 정지. */
+  /** Cursor over the canvas — hold still so the aimed node cannot slide away under it. */
   pointerOverCanvas: boolean;
-  /** 조립 램프가 다 찼는가. */
+  /** Has the assembly ramp finished? */
   assembled: boolean;
 }
 
@@ -150,17 +155,18 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   );
 }
 
-/** 유휴 판정 — 마지막 활동 후 `graceMs` 가 지나야 스킵을 허용한다 (램프 감쇠 꼬리 보호). */
+/** Skipping is allowed only `graceMs` after the last activity, which protects the tail of a decaying ramp. */
 export function shouldSkipFrame(nowMs: number, lastActiveMs: number, graceMs: number): boolean {
   return nowMs - lastActiveMs > graceMs;
 }
 
 /**
- * M-1 회귀 계약 — 카메라 스프링 "미정착(타깃≠값)"은 활동이다.
+ * An unsettled camera spring (target ≠ value) is activity.
  *
- * 값 이동만 활동으로 치면: 유휴 스킵 중엔 물리 스텝이 안 돌아 값이 못
- * 움직이고, 휠 줌은 타깃만 바꾸므로 게이트가 영원히 안 깨어나는 교착
- * (유휴 1.2초 후 휠 줌 사망). 타깃과 값의 차이를 직접 본다.
+ * Counting only *moving* values deadlocks: while frames are skipped the physics
+ * step does not run, so the value cannot move, and a wheel zoom changes only the
+ * target — so nothing ever wakes the loop and wheel zoom dies 1.2 s into idle.
+ * Compare target against value directly instead.
  */
 export function isCameraUnsettled(
   camera: { x: number; y: number; scale: number },

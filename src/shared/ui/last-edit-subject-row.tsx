@@ -6,11 +6,11 @@ export type LastEditSubjectKind = "agent" | "human";
 
 export interface LastEditSubjectRowProps {
   kind: LastEditSubjectKind;
-  /** "마지막 편집" — caller resolves via i18n. */
+  /** The "last edited" label — the caller resolves it via i18n. */
   prefixLabel: string;
-  /** "AI 에이전트" | "나" — caller resolves via i18n. */
+  /** Who edited it (agent or the user) — the caller resolves it via i18n. */
   subjectLabel: string;
-  /** "3분 전" — caller resolves via `computeEditAge` + i18n (tabular-nums). */
+  /** Relative age, e.g. "3 minutes ago" — the caller resolves it via `computeEditAge` plus i18n (tabular-nums). */
   ageLabel: string;
   className?: string;
 }

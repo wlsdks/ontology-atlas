@@ -12,7 +12,7 @@ import {
 } from "./build-updater-manifest.mjs";
 
 test("platform keys are Tauri's Rust target names, not our arch labels", () => {
-  // 오타가 나도 조용히 실패한다 — 앱이 "갱신 없음" 이라고 말할 뿐이다.
+  // A typo fails silently — the app just says "no update".
   assert.deepEqual(PLATFORM_BY_ARCH, {
     aarch64: "darwin-aarch64",
     x64: "darwin-x86_64",
@@ -31,8 +31,8 @@ test("download URLs pin the tag, never `latest`", () => {
     },
   });
 
-  // `latest` 로 두면 다음 릴리스가 나오는 순간 이 매니페스트가 가리키는 파일이
-  // 바뀌고, 서명 검증이 실패한다.
+  // With `latest`, the file this manifest points at changes the moment the next
+  // release ships and signature verification fails.
   for (const platform of Object.values(manifest.platforms)) {
     assert.match(platform.url, /\/releases\/download\/v1\.0\.1\//);
     assert.doesNotMatch(platform.url, /releases\/latest/);
@@ -43,7 +43,7 @@ test("download URLs pin the tag, never `latest`", () => {
 });
 
 test("a missing architecture is refused rather than shipped half-complete", () => {
-  // 한쪽만 내면 그 아키텍처 사용자는 영영 갱신을 못 받는다 — 오류도 없이.
+  // Emitting only one arch means that architecture's users never receive an update — with no error either.
   const originalExit = process.exit;
   const originalError = console.error;
   let exitCode = null;
@@ -95,7 +95,7 @@ test("an archive without its .sig is refused — that build had no signing key",
     console.error = originalError;
     rmSync(dir, { recursive: true, force: true });
   }
-  // 서명 없이 배포하면 앱이 조용히 "갱신 없음" 으로 본다. 그래서 여기서 멈춘다.
+  // Shipping without a signature makes the app silently see "no update", so it stops here.
   assert.match(message, /sig/);
 });
 
@@ -118,16 +118,17 @@ test("both architectures are required", () => {
 });
 
 /**
- * 2026-07-27 v1.0.0-rc.1 이 여기서 멈췄다: "업데이터 아티팩트가 없는 아키텍처:
- * aarch64, x64". 빌드는 두 아치 모두 성공했고 서명도 됐는데, **찾는 자리가
- * 틀렸다** — `merge-multiple: false` 는 아티팩트 *이름*을 폴더로 만들므로
- * `release-assets/ontology-atlas-macos-aarch64/` 이지 `release-assets/aarch64/`
- * 가 아니다.
+ * v1.0.0-rc.1 stopped here on 2026-07-27: "architectures with no updater artifact:
+ * aarch64, x64". Both arches built and signed successfully; **the place being searched
+ * was wrong** — `merge-multiple: false` turns the artifact *name* into the folder, so
+ * it is `release-assets/ontology-atlas-macos-aarch64/`, not `release-assets/aarch64/`.
  *
- * 폴더 이름만 재현하던 초판은 **빈 폴더**를 만들었고, 그래서 초록이면서도 CI 는
- * 여전히 빨갰다. 어긋남이 둘이었기 때문이다: 이름 하나, **깊이 하나**. 업로드
- * 경로가 넷이던 동안 아티팩트 루트는 최소공통조상 `bundle/` 이라 아치 폴더
- * 바로 밑에는 `dmg/` 와 `macos/` 뿐이었다. 픽스처에 파일까지 실제 자리에 둔다.
+ * The first version of this fixture reproduced only the folder name and created an
+ * **empty folder**, so it went green while CI stayed red — there were two
+ * divergences: the name, and **the depth**. While there were four upload paths the
+ * artifact root was their lowest common ancestor `bundle/`, so directly under the arch
+ * folder there were only `dmg/` and `macos/`. The fixture therefore places the files
+ * at their real locations too.
  */
 test("resolves the arch folder CI actually produces, not the bare arch name", () => {
   const root = mkdtempSync(join(tmpdir(), "oa-archdir-"));
@@ -143,8 +144,9 @@ test("resolves the arch folder CI actually produces, not the bare arch name", ()
 });
 
 test("reaches the archive even when it sits a folder deeper than expected", () => {
-  // 최소공통조상이 `bundle/` 로 잡히던 그 레이아웃 그대로다. 지금은 업로드 전에
-  // 평평하게 모으지만, 찾는 쪽이 깊이에 기대면 같은 종류로 또 멈춘다.
+  // Exactly the layout where the lowest common ancestor resolved to `bundle/`. Uploads
+  // are flattened beforehand now, but if the finder depends on depth it stops the same
+  // way again.
   const root = mkdtempSync(join(tmpdir(), "oa-archdir-deep-"));
   try {
     const macosDir = join(root, "ontology-atlas-macos-aarch64", "macos");
@@ -161,7 +163,7 @@ test("reaches the archive even when it sits a folder deeper than expected", () =
 });
 
 test("two archives under one arch folder are refused, not guessed", () => {
-  // 잘못 고르면 사용자가 다른 아키텍처의 앱을 받는다 — 조용한 실패다.
+  // Choosing wrong ships users an app for a different architecture — a silent failure.
   const root = mkdtempSync(join(tmpdir(), "oa-archdir-dup-"));
   const archDir = join(root, "ontology-atlas-macos-x64");
   mkdirSync(join(archDir, "macos"), { recursive: true });
@@ -200,8 +202,8 @@ test("still resolves a bare arch folder", () => {
 });
 
 test("x64 does not match the aarch64 folder", () => {
-  // `endsWith` 를 순진하게 쓰면 "…-x64" 검사가 "…-aarch64" 를 잡을 수 있다.
-  // 잘못 고르면 사용자가 다른 아키텍처의 앱을 받는다 — 조용한 실패다.
+  // A naive `endsWith` lets a "…-x64" check match "…-aarch64". Choosing wrong ships
+  // users an app for a different architecture — a silent failure.
   const root = mkdtempSync(join(tmpdir(), "oa-archdir-x-"));
   try {
     mkdirSync(join(root, "ontology-atlas-macos-aarch64"), { recursive: true });

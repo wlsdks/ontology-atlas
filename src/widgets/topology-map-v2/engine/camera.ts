@@ -95,25 +95,27 @@ export interface CameraStepInput {
  */
 const SCALE_CRITICAL_DAMPING = 1.0;
 /**
- * 러버밴드 복귀는 **시간에 비례한다** (2026-07-28 코드 리뷰 수정).
+ * The rubber-band return is **proportional to time** (code review fix, 2026-07-28).
  *
- * 프로토타입은 프레임당 14% 당기고 속도를 15% 흘렸다 — 60Hz 를 전제한 값이라
- * **화면 주사율에 따라 감각이 갈린다**: 120Hz(ProMotion)에서는 같은 시간에 두
- * 배 당겨져 뻣뻣하고, 30fps 로 떨어지면 절반만 당겨져 늘어진다. 발산은 아니고
- * 감각의 문제지만, 이 저장소의 다른 모든 시각 램프는 이미 `1-exp(-dt/τ)` 형이라
- * 여기만 프레임 종속이었다(`NODE_DRAG_HEAT_MS` 를 프레임 수 → ms 로 고친 것과
- * 같은 부류).
+ * The prototype pulled 14% per frame and bled 15% of the velocity — values that
+ * assume 60Hz, so **the feel diverges with the display's refresh rate**: at 120Hz
+ * (ProMotion) it pulls twice as much in the same time and feels stiff, while
+ * dropping to 30fps pulls half as much and feels slack. Not divergence but a matter
+ * of feel — yet every other visual ramp in this repository is already of the form
+ * `1-exp(-dt/τ)`, leaving only this one frame-dependent (the same species as fixing
+ * `NODE_DRAG_HEAT_MS` from a frame count to ms).
  *
- * τ 는 **60Hz 에서 옛 값과 정확히 같아지도록** 역산했다 — 그 주사율의 감각을
- * 기준으로 삼고 나머지 주사율을 거기에 맞춘다.
- * τ 를 소수로 적어 두지 않고 **옛 값에서 역산**한다 — 손으로 반올림한 상수는
- * 60Hz 에서조차 옛 감각과 미세하게 어긋나고(실측: 5자리에서 불일치), 그
- * 어긋남이 어디서 왔는지 다음 사람이 못 읽는다.
+ * τ is derived **so that it matches the old value exactly at 60Hz** — that refresh
+ * rate's feel is the reference and every other rate is aligned to it.
+ * τ is back-computed from the old value rather than written as a decimal: a
+ * hand-rounded constant diverges slightly from the old feel even at 60Hz (measured:
+ * disagreeing at the fifth digit), and the next person cannot read where that
+ * divergence came from.
  */
 const REFERENCE_FRAME_SECONDS = 1 / 60;
-/** 프로토타입 `updateCamera()` — 60Hz 기준 프레임당 14% 복귀. */
+/** Prototype `updateCamera()` — 14% return per frame at 60Hz. */
 const PAN_BOUNDS_PULL_PER_REFERENCE_FRAME = 0.14;
-/** 프로토타입 `updateCamera()` — 60Hz 기준 프레임당 속도 15% 감쇠. */
+/** Prototype `updateCamera()` — 15% velocity decay per frame at 60Hz. */
 const PAN_BOUNDS_VELOCITY_RETENTION_PER_REFERENCE_FRAME = 0.85;
 const PAN_BOUNDS_PULL_TAU_SECONDS =
   -REFERENCE_FRAME_SECONDS / Math.log(1 - PAN_BOUNDS_PULL_PER_REFERENCE_FRAME);

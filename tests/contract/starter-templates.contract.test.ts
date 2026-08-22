@@ -16,16 +16,18 @@ import {
 import { runCliJson } from "../helpers/run-cli-json";
 
 /**
- * CLI 템플릿 ↔ 웹 스타터 **바이트 동일** 계약 (#73).
+ * CLI template ↔ web starter **byte-identical** contract (#73).
  *
- * `ontology-starter.ts` 헤더가 원래부터 "Mirrors cli/templates/vault/. Keep both
- * in sync so the CLI and the web workbench produce the same starter files." 라고
- * 요구했지만, 그걸 강제하는 테스트가 없어 **사람 기억에만 의존**하고 있었다.
- * 로케일 인지 스타터를 넣으면서 동기화해야 할 파일이 5개 → 10개로 늘었으므로
- * 계약으로 고정한다 (parser/validator 3-way·2-way 계약과 같은 패턴).
+ * The `ontology-starter.ts` header always required "Mirrors cli/templates/vault/.
+ * Keep both in sync so the CLI and the web workbench produce the same starter
+ * files.", but no test enforced it, so it **rested on human memory**. Adding
+ * locale-aware starters raised the files to keep in sync from 5 to 10, so it is
+ * pinned as a contract (the same pattern as the 3-way and 2-way parser/validator
+ * contracts).
  *
- * 왜 중요한가: `node $ATLAS/cli/src/index.mjs init` 으로 만든 볼트와 앱 스타터로 만든 볼트가
- * 다르면, 같은 제품을 두 경로로 쓰는 사용자가 서로 다른 문서를 읽게 된다.
+ * Why it matters: if the vault produced by `node $ATLAS/cli/src/index.mjs init`
+ * differs from the one produced by the app starter, users reaching the same product
+ * by two routes read different documents.
  */
 
 const CLI_TEMPLATE_ROOTS = {
@@ -65,8 +67,9 @@ describe("starter templates — CLI ↔ web parity (#73)", () => {
     for (const enFile of en) {
       const koFile = ko.find((f) => f.relPath === enFile.relPath);
       expect(koFile, `missing ko file for ${enFile.relPath}`).toBeDefined();
-      // canonical `title` 은 검색/매칭의 단일 진실원(AGENTS.md)이라 로케일에
-      // 따라 바뀌면 안 된다. `display_ko`/`display_en` 이 화면 이름을 담당한다.
+      // The canonical `title` is the single source of truth for search and matching
+      // (AGENTS.md), so it must not vary by locale. `display_ko`/`display_en` carry the
+      // on-screen names.
       expect(frontmatterOf(koFile!.content)).toBe(frontmatterOf(enFile.content));
     }
   });
@@ -87,17 +90,20 @@ describe("starter templates — CLI ↔ web parity (#73)", () => {
 });
 
 /**
- * **갓 만든 볼트는 제품 자신의 품질 기준을 통과해야 한다** (2026-08-17 실측).
+ * **A freshly created vault must pass the product's own quality bar** (measured
+ * 2026-08-17).
  *
- * `init` 직후 `ontology-atlas health` 를 돌렸더니 사용자가 아무것도 안 했는데
- * `relation_recommendations warn:1` 이 떴다. 우리가 쓴 파일 때문이었다 —
- * `elements/example-element` 는 `domain: domains/example-domain` 을 선언하는데
- * 그 도메인이 `elements:` 로 되받아 걸지 않았다.
+ * Running `ontology-atlas health` right after `init` reported
+ * `relation_recommendations warn:1` before the user had done anything. The cause was
+ * a file we wrote: `elements/example-element` declares
+ * `domain: domains/example-domain` while that domain does not link back via
+ * `elements:`.
  *
- * 첫 화면이 「손볼 것 있음」으로 시작하면 그 신호는 그날부터 잡음이 된다.
+ * If the first screen opens with "something to fix", that signal becomes noise from
+ * day one.
  *
- * 판정은 **제품 자신의 유지보수 계획기**를 부른다 — 여기서 규칙을 다시
- * 구현하면 그 사본이 언젠가 본체와 어긋난다.
+ * The verdict calls **the product's own maintenance planner** — reimplementing the
+ * rules here would produce a copy that eventually diverges from the original.
  */
 describe("starter templates — 제품 자신의 품질 기준", () => {
   for (const locale of ["en", "ko"] as const) {
@@ -114,10 +120,10 @@ describe("starter templates — 제품 자신의 품질 기준", () => {
         }>([join(process.cwd(), "cli", "src", "index.mjs"), "health", dir, "--json"]);
         const byId = new Map((payload.checks ?? []).map((c) => [c.id, c]));
 
-        // 헛돌지 않는지 — 볼트를 실제로 읽었는가.
+        // Not idling — did it actually read the vault?
         expect(byId.get("vault_present")?.count).toBe(5);
         expect(byId.get("compile_issues")?.status).toBe("pass");
-        // 이 줄이 이 검사의 요점이다.
+        // This line is the point of the check.
         expect(byId.get("relation_recommendations")?.status, "우리가 쓴 파일이 손볼 거리를 남긴다").toBe(
           "pass",
         );
@@ -130,12 +136,12 @@ describe("starter templates — 제품 자신의 품질 기준", () => {
 });
 
 /**
- * 개념 노드가 **아닌** 스타터 파일도 두 경로가 같아야 한다.
+ * Starter files that are **not** concept nodes must match across both routes too.
  *
- * 위 계약은 `starterFilesForLocale` 다섯만 봤다. 그 사이에 안내문 둘
- * (`AGENTS.md` · `CLAUDE.md`)과 절차 스킬 셋이 들어왔는데, 둘 다 CLI 템플릿과
- * TS 상수에 **사본이 둘**이면서 아무 검사도 없었다. 사본이 둘인데 게이트가
- * 없으면 어긋나는 쪽이 기본값이다.
+ * The contract above covered only the five in `starterFilesForLocale`. Since then
+ * two guidance documents (`AGENTS.md`, `CLAUDE.md`) and three procedural skills
+ * arrived, each with **two copies** — the CLI template and the TS constant — and no
+ * check at all. With two copies and no gate, the diverging one is the default.
  */
 describe("starter templates — 개념이 아닌 파일도 CLI ↔ web 바이트 동일", () => {
   for (const locale of ["en", "ko"] as const) {
@@ -165,14 +171,14 @@ describe("starter templates — 개념이 아닌 파일도 CLI ↔ web 바이트
 });
 
 /**
- * 스킬 frontmatter 규칙.
+ * Skill frontmatter rules.
  *
- * `name` 은 폴더 이름과 같아야 Claude Code 가 그 스킬을 부른다. `description`
- * 은 **화면에 그려진다** — 작성창 `/` 메뉴가 한 줄로 잘라서 보여 주므로
- * (`AcpChatPanel`), 앞부분이 뜻을 날라야 하고 작대기(—)를 쓰지 않는다.
- * 작대기 금지는 이 저장소가 화면에 그려지는 문서에 이미 건 규율과 같은 것인데,
- * `em-dash-ratchet` 의 사정거리는 `docs/**` 이고 점으로 시작하는 폴더를
- * 건너뛰므로 이 파일들은 그 시야 밖이다.
+ * `name` must equal the folder name for Claude Code to invoke the skill.
+ * `description` **is drawn on screen** — the composer's `/` menu truncates it to one
+ * line (`AcpChatPanel`), so the opening must carry the meaning and it must not use an
+ * em dash. The em-dash ban is the same discipline this repository already applies to
+ * on-screen documents, but `em-dash-ratchet`'s reach is `docs/**` and it skips
+ * dot-prefixed folders, leaving these files outside its field of view.
  */
 describe("starter templates — 볼트 스킬 frontmatter", () => {
   for (const locale of ["en", "ko"] as const) {

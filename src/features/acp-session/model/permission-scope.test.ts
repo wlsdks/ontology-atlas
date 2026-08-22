@@ -3,22 +3,19 @@ import { describe, expect, it } from 'vitest';
 import { permissionScope } from './permission-scope';
 
 /**
- * 「계속 허용」이 **무엇을 허용하는지** 카드가 정확히 말해야 한다.
+ * The card must state exactly **what "always allow" allows.**
  *
- * ## 왜 (2026-08-17)
+ * ## Why (2026-08-17)
  *
- * 카드의 셋째 버튼이 *"위 경로가 있는 폴더 전체를 이번 대화 내내 허용"* 이라고
- * **단정**하고 있었다. 그런데 그 범위를 정하는 것은 우리가 아니라 어댑터이고,
- * 어댑터는 `_meta.permission.changes[].targets[]` 로 그것을 말해 준다 —
- * 실측에서 그 값은 **폴더가 아니라 도구**였다
+ * The card's third button **asserted** *"allow the entire folder containing the path above for this
+ * whole conversation"*. But the adapter, not us, decides that scope, and it states it through
+ * `_meta.permission.changes[].targets[]` — measured, that value was **a tool, not a folder**
  * (`{ type: 'tool', toolName: 'mcp__atlas-vault__add_concept' }`).
  *
- * 폴더를 허용한다고 적어 놓고 실제로는 도구를 허용하면, 사용자는 **자기가 준
- * 적 없는 권한을 준 줄 알거나 그 반대로 안다.** 가장 값비싼 결정에서 화면이
- * 틀린 말을 하는 것이다.
+ * Writing "allow the folder" while actually allowing a tool leaves the user believing **they granted
+ * a permission they never gave, or the reverse.** That is the screen lying at the most expensive decision.
  *
- * 그래서 **어댑터가 선언한 것만 말한다.** 아무것도 안 주면 아무것도 단정하지
- * 않는다.
+ * So it **states only what the adapter declared.** Given nothing, it asserts nothing.
  */
 
 const withTargets = (targets: unknown[]) => [
@@ -82,10 +79,9 @@ describe('계속 허용의 범위 — 어댑터가 말한 것만 말한다', () 
   });
 
   it('아는 것 **옆에** 모르는 것이 있어도 모른다고 한다', () => {
-    // 이 사례가 없으면 「조용히 삼키지 않는다」 규칙을 지워도 아무도 모른다
-    // (모르는 것만 있을 때는 어차피 빈손이라 결과가 같다 — 프로브로 확인함).
-    // 삼키면 카드가 「이 도구만 허용」이라고 말하는 동안 그 옆의 것도 같이
-    // 허용된다.
+    // Without this case, deleting the "never swallow silently" rule would go unnoticed (with only
+    // unknowns present the result is empty either way — verified with a probe). Swallowing lets
+    // something alongside be allowed while the card says "only this tool".
     const scope = permissionScope(
       withTargets([
         { type: 'tool', toolName: 'mcp__atlas-vault__add_concept' },

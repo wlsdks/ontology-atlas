@@ -7,33 +7,30 @@ import {
 } from "./duplicate-pairs";
 
 /**
- * 성능 게이트 — 쌍 비교 안쪽 루프의 재토큰화 회귀 차단.
+ * A performance gate against retokenization regressing into the pair-comparison inner loop.
  *
- * ## 무엇이 있었나 (2026-08-19 실측)
+ * **What happened** (measured 2026-08-19). `buildDuplicatePairs` narrows candidates with a word
+ * inverted index, but the same folder name (`capabilities/…`, `elements/…`) appears in **every**
+ * node's slug words, so one bucket is effectively the full n². Inside that loop
+ * `scoreNodeSimilarity` was called per pair, **re-tokenizing** slug and title and building four
+ * new Sets each time — on a cold entry to `/ontology/insights` with the bundled sample vault (125
+ * documents) this one function consumed 74% of the page's derivation time (34.8ms of 46.9ms under
+ * 4× CPU throttling) and turned one render slice into a 62–66ms long task. The fix: tokenize each
+ * node's word set once and let the pair comparison read only those sets.
  *
- * `buildDuplicatePairs` 는 후보를 낱말 역색인으로 좁히지만, 같은 폴더 이름
- * (`capabilities/…`, `elements/…`)이 **모든** 노드의 slug 낱말에 들어가서
- * 한 버킷이 사실상 전수 n² 이 된다. 그 안쪽 루프가 쌍마다
- * `scoreNodeSimilarity` 를 불러 slug·title 을 **다시 토큰화**하고 Set 을
- * 4개씩 새로 만들었다 — 번들 샘플 볼트(125 문서)로 `/ontology/insights` 에
- * 콜드 진입할 때 이 함수 하나가 페이지 파생 계산 시간의 74%(CPU 4x 스로틀
- * 실측 34.8ms/46.9ms)를 먹었고, 렌더 한 조각을 62~66ms 롱태스크로 만들었다.
- * 처방: 노드당 낱말 집합을 한 번만 잘라 두고 쌍 비교는 그 집합만 본다.
+ * **Gate design — a self-calibrating ratio, never absolute wall-clock.** It started as an absolute
+ * threshold (80ms), but while parallel agents ran builds on the same machine, runs that should
+ * have been green wandered to 82–91ms and produced a false red once in five (measured 2026-08-19).
+ * Wall-clock is a function of CI machine speed and concurrent load. So a naive loop scoring all the
+ * same pairs in the defective shape (re-tokenizing per pair) is measured **inside the same run**,
+ * and the assertion is how many times faster than it we are — numerator and denominator ride the
+ * same load, so the verdict does not depend on the machine.
  *
- * ## 게이트 설계 — 절대 벽시계가 아니라 **자기보정 비율**
- *
- * 처음엔 절대 임계(80ms)로 놓았는데, 병렬 에이전트가 같은 머신에서 빌드를
- * 돌리는 동안 초록이어야 할 실행이 82~91ms 로 흔들려 5회 중 1회 헛빨강이
- * 났다(2026-08-19 실측). 벽시계는 CI 머신 속도와 동시 부하의 함수다. 그래서
- * 같은 쌍 전부를 결함 형태 그대로(쌍마다 재토큰화) 채점하는 naive 루프를
- * **같은 실행 안에서** 재고, 그 대비 몇 배 빠른지를 단언한다 — 분자와 분모가
- * 같은 부하를 타므로 판정이 머신에 좌우되지 않는다.
- *
- * 실측(2026-08-19, 600 노드 ≈ 18만 쌍, min of 3): buildDuplicatePairs ~45ms ·
- * naive ~175ms → 비율 3.8~4.2. 결함 재주입(안쪽 루프의 `scorePair` 를
- * `scoreNodeSimilarity(left, right).total` 로 되돌림) 시 비율 0.88 로
- * 3회 연속 빨간불 — gate-probe 확인. 임계 2 는 두 상태의 기하평균(≈1.9)
- * 바로 위다.
+ * Measured 2026-08-19 (600 nodes ≈ 180k pairs, min of 3): buildDuplicatePairs ~45ms, naive ~175ms
+ * → a ratio of 3.8–4.2. Reinjecting the defect (reverting the inner loop's `scorePair` to
+ * `scoreNodeSimilarity(left, right).total`) gives a ratio of 0.88 and three consecutive reds —
+ * confirmed by gate-probe. The threshold of 2 sits just above the geometric mean of the two states
+ * (≈1.9).
  */
 function node(id: string, kind: string, title: string, slug: string): KnowledgeGraphNode {
   return {
@@ -52,10 +49,11 @@ describe("buildDuplicatePairs 성능 게이트", () => {
     const N = 600;
     const nodes: KnowledgeGraphNode[] = [];
     for (let i = 0; i < N; i += 1) {
-      // 폴더 낱말(`elements`) 하나만 공유 → 역색인 버킷 하나가 전수가 되어
-      // n² 쌍이 비교된다. 제목 낱말은 노드마다 유일해 어떤 쌍도 임계값
-      // (0.6)에 못 닿고, 제목이 길수록 「쌍마다 재토큰화」의 비용 비중이
-      // 커져 결함과 수정의 분리가 넓어진다(실제 볼트 제목도 여러 낱말이다).
+      // Sharing only the folder word (`elements`) makes one inverted-index bucket the full set, so
+      // n² pairs are compared. Title words are unique per node so no pair can reach the threshold
+      // (0.6), and the longer the title the larger the share of cost taken by "re-tokenize per
+      // pair", widening the separation between the defect and the fix (real vault titles are
+      // multi-word too).
       nodes.push(
         node(
           `element:u${i}x`,
@@ -65,15 +63,15 @@ describe("buildDuplicatePairs 성능 게이트", () => {
         ),
       );
     }
-    // 측정기가 헛돌지 않는다는 증명용 — 임계값을 실제로 넘는 한 쌍을 심는다.
-    // 이 쌍이 안 잡히면 fixture 가 비교 자체를 안 한 것이다.
+      // Proof the instrument is not idling — one pair that really does exceed the threshold is
+      // planted. If it is not caught, the fixture never compared anything.
     nodes.push(node("element:node-drawer", "element", "Node drawer", "elements/node-drawer"));
     nodes.push(node("element:node-drawer-copy", "element", "Node drawer", "elements/node-drawer-copy"));
     const edges: KnowledgeGraphEdge[] = [];
 
-    // 기준선: 같은 쌍 전부를 결함 형태 그대로(쌍마다 재토큰화하는
-    // `scoreNodeSimilarity`) 채점하는 naive 루프 — 같은 머신·같은 부하에서
-    // 재므로 CI 속도에 자기보정된다.
+    // The baseline: a naive loop scoring all the same pairs in the defective shape
+    // (`scoreNodeSimilarity`, re-tokenizing per pair) — measured on the same machine under the same
+    // load, so it self-calibrates against CI speed.
     const candidates = [...buildSimilarityCandidates(nodes, edges).values()];
     const naiveScan = () => {
       let above = 0;
@@ -85,7 +83,7 @@ describe("buildDuplicatePairs 성능 게이트", () => {
       return above;
     };
 
-    // JIT 워밍업 각 1회 + 3회 중 최솟값 — 단발 측정의 GC/스케줄링 노이즈 제거.
+    // One JIT warm-up each, then the minimum of three — removing GC and scheduling noise from a single measurement.
     buildDuplicatePairs(nodes, edges, 3);
     naiveScan();
     let bestBuild = Infinity;
@@ -101,17 +99,17 @@ describe("buildDuplicatePairs 성능 게이트", () => {
       bestNaive = Math.min(bestNaive, performance.now() - start);
     }
 
-    // 측정기가 헛돌지 않는다는 증명 — 심어 둔 중복 쌍을 양쪽 다 잡았다.
+    // Proof the instrument is not idling — both sides caught the planted duplicate pair.
     expect(result?.suspectCount).toBe(1);
     expect(result?.rows[0]?.dissolveSlug).toBe("elements/node-drawer-copy");
     expect(naiveAbove).toBe(1);
 
-    // 실측(2026-08-19, min of 3): 단독 실행 비율 3.8~4.2 (build ~45ms ·
-    // naive ~175ms) · vitest 전체 스위트(2,183 테스트) 병렬 부하 아래 통과
-    // 확인. 결함 재주입(쌍마다 scoreNodeSimilarity 재토큰화) 시 0.88 로
-    // 3회 연속 빨간불(gate-probe). 임계 2 는 두 상태의 기하평균(≈1.9) 바로
-    // 위 — 벽시계가 아니라 비율이라 머신 속도·동시 부하에 판정이 뒤집히지
-    // 않는다.
+    // Measured 2026-08-19 (min of 3): a standalone ratio of 3.8–4.2 (build ~45ms, naive ~175ms),
+    // confirmed passing under the parallel load of the full vitest suite (2,183 tests). Reinjecting
+    // the defect (re-tokenizing with scoreNodeSimilarity per pair) gives 0.88 and three consecutive
+    // reds (gate-probe). The threshold of 2 sits just above the geometric mean of the two states
+    // (≈1.9) — being a ratio rather than wall-clock, the verdict is not flipped by machine speed or
+    // concurrent load.
     expect(bestNaive / bestBuild).toBeGreaterThan(2);
   });
 });

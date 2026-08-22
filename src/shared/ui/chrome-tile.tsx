@@ -3,21 +3,23 @@ import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 
 /**
- * ChromeTile — 44px 정사각 아이콘 버튼. 크롬 시스템(feat/chrome-system,
- * `docs/prototypes/index-panel-v2-full.html` 승인 시안)의 타일 계층. 순수
- * 표현 컴포넌트 — 상태/네비게이션 로직은 호출부 책임이고, 이 컴포넌트는
- * 시각 계약(44px · 10px radius · 16px 아이콘 · title/aria 필수)만 강제한다.
- * `href` 를 주면 next-intl `Link` 로, 없으면 `button` 으로 렌더한다.
+ * ChromeTile — the square icon button of the chrome system (approved mockup:
+ * `docs/prototypes/index-panel-v2-full.html`). A purely presentational
+ * component: state and navigation belong to the caller, and all this enforces is
+ * the visual contract — the `--chrome-*` size, radius and icon tokens, plus a
+ * required `title`/`aria` name. With `href` it renders a next-intl `Link`,
+ * otherwise a `button`.
  *
- * 크롬 표면은 이 컴포넌트를 소비해야 한다 — 정사각 44px 버튼을 JSX 안에서
- * 인라인으로 재구현하지 말 것 (`docs/DESIGN-SYSTEM.md` "크롬 문법" 챕터).
+ * Chrome surfaces must consume this component; do not rebuild a square chrome
+ * button inline in JSX (`docs/DESIGN-SYSTEM.md` 「크롬 문법」, the chrome
+ * grammar chapter).
  */
 interface ChromeTileBaseProps {
   icon: ReactNode;
-  /** 툴팁 텍스트이자 접근성 이름의 기본값. */
+  /** The tooltip text, and the default accessible name. */
   title: string;
   'aria-label'?: string;
-  /** 현재 목적지/토글 상태 — 인디고 보더로만 표시 (제2 채색 없음). */
+  /** Current destination or toggle state — shown by an indigo border only, never a second colour. */
   active?: boolean;
   className?: string;
 }
@@ -40,12 +42,13 @@ const TILE_CLASS =
   'inline-flex size-[var(--chrome-tile-size)] shrink-0 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-[var(--chrome-icon)]';
 
 /**
- * 비활성 — **누를 수 없으면 누를 수 없어 보여야 한다.**
+ * Disabled — **what cannot be pressed must not look pressable.**
  *
- * `ChromeChip` 과 같은 값·같은 문법이다. 2026-08-03 에 칩 쪽 구멍이 소유자 실보고
- * (*"'최근 변경' 누르니까 아무런 반응이 없는데?"*)로 드러났고, 그때 새로 건
- * 게이트(`tests/contract/disabled-affordance.contract.test.ts`)가 **이 파일의
- * 같은 구멍을 함께 잡았다** — 아무도 실보고하기 전에.
+ * Same values and same grammar as `ChromeChip`. The chip's hole surfaced on
+ * 2026-08-03 through an owner report — *"'최근 변경' 누르니까 아무런 반응이
+ * 없는데?"* (pressing "recent changes" does nothing) — and the gate added then
+ * (`tests/contract/disabled-affordance.contract.test.ts`) **caught the identical
+ * hole in this file too**, before anyone had reported it.
  */
 const DISABLED_CLASS =
   'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-[color:var(--chrome-border)] disabled:hover:bg-[color:var(--chrome-surface)] disabled:hover:text-[color:var(--color-text-tertiary)]';

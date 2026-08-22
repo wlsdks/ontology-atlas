@@ -41,7 +41,7 @@ describe("resolveTopologyEscLadderAction", () => {
   });
 
   it("R-1: closes the edge popover right after the realm, above the context menu and every other tier", () => {
-    // Regression (H3 접근성 감사 P1): the edge popover (role=dialog) did not
+    // Regression from the accessibility audit: the edge popover (role=dialog) did not
     // close on Escape and focus fell to <body>. This rung, promoted out of
     // HomePage's inline check, is the single decision point the popover close
     // now routes through.
@@ -274,12 +274,11 @@ describe("resolveTopologyEscLadderAction", () => {
 });
 
 /**
- * 부트스트랩 패널이 **사다리에 칸이 없어서** Escape 가 아무 일도 하지 않았다
- * (2026-07-28 볼트 연결 재현).
- *
- * 앱은 자기 단축키 시트에 "Esc — 열린 표면을 한 단계씩 닫습니다" 라고 적어
- * 두고 있고 다른 모든 다이얼로그가 그렇게 동작한다. 이 하나만 안 닫히는 것은
- * **앱이 키를 무시하는 것**으로 읽힌다.
+ * The bootstrap panel had no rung in the dismissal order at all, so Escape did
+ * nothing (reproduced 2026-07-28 with a connected vault). The app's own shortcut
+ * sheet promises Escape closes open surfaces one step at a time and every other
+ * dialog behaves that way, so this one exception reads as the app ignoring the
+ * key.
  */
 describe("부트스트랩 패널 — 블로킹 표면이 먼저 답한다", () => {
   it("열려 있으면 Escape 가 그것을 닫는다", () => {
@@ -288,7 +287,7 @@ describe("부트스트랩 패널 — 블로킹 표면이 먼저 답한다", () =
     ).toBe("close-bootstrap");
   });
 
-  // 덮여 있는 것을 두고 그 아래 선택을 푸는 것은 사용자가 부른 일이 아니다.
+  // Releasing a selection underneath something that covers it is not what the user asked for.
   it("아래에 선택이 있어도 패널이 먼저다", () => {
     expect(
       resolveTopologyEscLadderAction({

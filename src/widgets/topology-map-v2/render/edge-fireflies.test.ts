@@ -19,8 +19,9 @@ import {
 } from "./edge-fireflies";
 
 /**
- * R6 상시 혜성 + 호버 펄스의 순수 계약 — 위상 전진 결정론, reduced-motion
- * 정지, 펄스 수명/방향. 실제 픽셀 드로우는 :3107 실화면에서 메인 세션이 검증.
+ * The pure contract of the always-on comets and hover pulses: phase-advance
+ * determinism, the reduced-motion stop, pulse lifetime and direction. The pixels
+ * themselves are verified on a real screen.
  */
 describe("fireflySeed", () => {
   it("결정론 — 같은 엣지는 항상 같은 시드", () => {
@@ -81,8 +82,8 @@ describe("updateParticles", () => {
   it("depends 엣지만 전진, contains 는 불변", () => {
     const edges = makeEdges();
     updateParticles(edges, 0.016, false, () => 0.075);
-    expect(edges[0].t).toBeGreaterThan(0.1); // depends 전진
-    expect(edges[1].t).toBe(0.1); // contains 불변
+    expect(edges[0].t).toBeGreaterThan(0.1); // depends advances
+    expect(edges[1].t).toBe(0.1); // contains does not
   });
 
   it("reduced-motion 이면 아무 것도 전진하지 않는다(정지)", () => {
@@ -95,8 +96,8 @@ describe("updateParticles", () => {
   it("speedOf 로 엣지별 속도 — 0 이면 그 엣지는 정지", () => {
     const edges = makeEdges();
     updateParticles(edges, 0.016, false, (e) => (e.sourceId === "a" ? 0 : 0.2));
-    expect(edges[0].t).toBe(0.1); // speed 0 → 정지
-    expect(edges[2].t).not.toBe(0.9); // speed 0.2 → 전진
+    expect(edges[0].t).toBe(0.1); // speed 0 → stationary
+    expect(edges[2].t).not.toBe(0.9); // speed 0.2 → advances
   });
 
   it("처방 E — isEgoContainsEligible 이 true 인 contains 엣지는 depends 처럼 전진한다", () => {
@@ -108,7 +109,7 @@ describe("updateParticles", () => {
       () => 0.075,
       (e) => e.kind === "contains" && e.sourceId === "a" && e.targetId === "c",
     );
-    expect(edges[1].t).toBeGreaterThan(0.1); // 이제 eligible contains 도 전진
+    expect(edges[1].t).toBeGreaterThan(0.1); // an eligible contains edge now advances too
   });
 
   it("처방 E — isEgoContainsEligible 이 false 인 contains 는 여전히 불변", () => {
@@ -171,12 +172,12 @@ describe("edgePairMeta — 캐시가 원본 함수와 같은 값을 낸다 (perf
     const meta = edgePairMeta(edge);
     expect(meta.seed).toBe(fireflySeed(edge.sourceId, edge.targetId));
     expect(meta.key).toBe(edgePairKey(edge.sourceId, edge.targetId));
-    expect(edgePairMeta(edge)).toBe(meta); // WeakMap 캐시 히트
+    expect(edgePairMeta(edge)).toBe(meta); // WeakMap cache hit
   });
 });
 
 describe("rankCometEdges 재구현 파리티 — 종전 비교자(seed→key 사전순)와 원소까지 동일", () => {
-  /** 종전 구현 그대로의 참조판 — 캐시 도입 전 코드를 전사했다. */
+  /** Reference implementation, transcribed verbatim from the code before the cache. */
   const reference = (edges: readonly { sourceId: string; targetId: string }[], limit: number): Set<string> => {
     const ranked = [...edges].sort((a, b) => {
       const seedDiff = fireflySeed(a.sourceId, a.targetId) - fireflySeed(b.sourceId, b.targetId);
@@ -205,7 +206,7 @@ describe("spawnHoverPulses", () => {
   const edges = [
     { sourceId: "hub", targetId: "x" },
     { sourceId: "y", targetId: "hub" },
-    { sourceId: "p", targetId: "q" }, // hub 미포함
+    { sourceId: "p", targetId: "q" }, // does not touch the hub
   ];
 
   it("호버 노드에 닿는 엣지마다 펄스 하나", () => {
@@ -236,7 +237,7 @@ describe("updatePulses", () => {
   ];
 
   it("수명 지난 펄스 제거", () => {
-    // now=600 → 첫째 경과 600 > 420(만료), 둘째 경과 100 < 420(생존)
+    // now=600 → the first has run 600 > 420 (expired), the second 100 < 420 (alive)
     const alive = updatePulses(pulses, 600);
     expect(alive).toHaveLength(1);
     expect(alive[0].t0).toBe(500);

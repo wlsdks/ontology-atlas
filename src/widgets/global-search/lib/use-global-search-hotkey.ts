@@ -2,27 +2,28 @@ import { useEffect } from "react";
 
 export interface GlobalSearchHotkeyOptions {
   /**
-   * shift 도 함께 눌려야 fire. 기본 false (= 단순 ⌘K).
+   * Requires shift to be held as well. Defaults to false (plain ⌘K).
    *
-   * 홈 토폴로지의 SearchPalette (project 전용 ⌘K) 와 동거 시 충돌 회피용 —
-   * ontology 검색은 ⇧⌘K 로 분리.
+   * For coexisting with the home topology's SearchPalette (project-only ⌘K) —
+   * ontology search is split off onto ⇧⌘K.
    */
   shift?: boolean;
   /**
-   * hotkey binding 자체를 비활성화 (controlled-mount 시 외부 hotkey 가 open
-   * state 를 관리할 때 사용).
+   * Disable the hotkey binding itself (used on a controlled mount, where an external
+   * hotkey manages the open state).
    */
   disabled?: boolean;
 }
 
 /**
- * ⌘K (mac) / Ctrl+K (그 외) — 글로벌 검색 토글 hotkey.
+ * ⌘K (mac) / Ctrl+K (elsewhere) — the global search toggle hotkey.
  *
- * input · textarea · contentEditable 안에서는 동작 안 함 (이미 검색이 열려
- * 있으면 닫는 동작은 허용 — 검색 input 안에서 ⌘K 로 닫기 가능).
+ * Inert inside input, textarea and contentEditable — except that closing an already
+ * open search is allowed, so ⌘K closes from within the search input.
  *
- * options.shift=true 면 ⇧⌘K (홈에서 SearchPalette 와 분리), disabled=true 면
- * binding 자체 무효 (외부 hotkey 가 open 을 관리하는 controlled mount).
+ * With options.shift=true it becomes ⇧⌘K (split from SearchPalette on home); with
+ * disabled=true the binding is inert (a controlled mount where an external hotkey
+ * manages open).
  */
 export function useGlobalSearchHotkey(
   open: boolean,

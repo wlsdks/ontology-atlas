@@ -89,9 +89,9 @@ describe("SearchHint", () => {
   });
 
   it("can suppress the focus lane below lg while keeping desktop utility access", () => {
-    // 겹침 소탕 2026-07-23 — 노드 팝오버가 <lg 에서 상단 중앙(fixed inset-x-3
-    // top-[72px])을 차지하고, 이 레인도 <lg 우측 2행으로 내려왔으므로 focus
-    // 강등 구간이 <md → <lg 로 확장됐다.
+    // Overlap sweep 2026-07-23 — the node popover takes the top centre below `lg`
+    // (fixed inset-x-3 top-[72px]) and this lane also drops to the right in 2 rows
+    // below `lg`, so the focus-demotion band widened from <md to <lg.
     render(
       <SearchHint
         density="compact-focus"
@@ -111,8 +111,9 @@ describe("SearchHint", () => {
   });
 
   it("demotes below md while the expanded INDEX sheet owns the surface", () => {
-    // <md 확장 INDEX 는 풀-블리드 시트 — 시트가 주 표면인 동안 크롬 열은
-    // 물러난다 (utility lane 의 hidden md:flex 와 같은 계약).
+    // Below `md` the expanded INDEX is a full-bleed sheet — while the sheet is the
+    // primary surface the chrome column withdraws (the same contract as the utility
+    // lane's hidden md:flex).
     render(
       <SearchHint phoneSheetSuppressed onOpenSearch={vi.fn()} onRelayout={vi.fn()} />,
     );

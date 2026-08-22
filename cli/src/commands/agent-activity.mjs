@@ -616,16 +616,17 @@ function printUsage(stream = process.stderr) {
 }
 
 /**
- * B3 — 로컬 감사 로그 tail (`.ontology-atlas/activity.jsonl`). 리더는
- * ontology-atlas-mcp 패키지의 activity-log 모듈을 재사용한다 (published /
- * source-checkout 양쪽에서 require.resolve 로 해석 — mcp-call.mjs 패턴).
+ * Tails the local audit log (`.ontology-atlas/activity.jsonl`). The reader reuses
+ * the activity-log module from the ontology-atlas-mcp package, resolved via
+ * require.resolve from either a published install or a source checkout — the same
+ * pattern as mcp-call.mjs.
  */
 async function showActivityLog({ vaultRoot, json, limit }) {
   const { createRequire } = await import('node:module');
   const { existsSync: fileExists } = await import('node:fs');
   const { resolve: resolvePath, dirname: dirnamePath } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
-  // mcp-call.mjs 와 같은 2단 해석: 모노레포 소스 체크아웃 → 설치 패키지.
+  // Two-stage resolution, as in mcp-call.mjs: monorepo source checkout, then installed package.
   const here = dirnamePath(fileURLToPath(import.meta.url));
   const monoDev = resolvePath(here, '../../../mcp/src/activity-log.mjs');
   let modPath = monoDev;

@@ -5,27 +5,27 @@ import { useCallback, useEffect, useState } from 'react';
 import { isTerminalInstallStage, listenInstallProgress } from './acp-doctor';
 
 /**
- * **설치가 끝났는데 다른 화면에 있었다면, 레일이 알려 준다.**
+ * **When an install finishes while you are on another screen, the rail says so.**
  *
- * ## 왜 (2026-08-21, 원장 90 · 카운슬 처방)
+ * ## Why (2026-08-21, ledger 90, council prescription)
  *
- * 도구 설치는 몇 분이 걸린다(Node 52MB · npm). 그동안 사람이 그 화면을 보고
- * 있을 이유가 없다 — 지도를 보거나 문서를 읽는다. 그런데 돌아오지 않으면
- * **끝난 것을 영영 모른다.** #1175 가 「닫아 둔 사이의 완료」를 Rust 에 보관해
- * 화면이 다시 열릴 때 되살리게 했는데, 그건 **돌아온 사람**에게만 유효하다.
+ * A tool install takes minutes (Node 52MB, npm). There is no reason for a person to sit watching that
+ * screen — they look at the map or read documents. But if they do not come back, they **never learn
+ * it finished.** Storing "completion while closed" in Rust so the screen can revive it on reopening
+ * helps only **someone who came back**.
  *
- * 이 훅은 그 반대편을 맡는다: **돌아오라고 말하는 것.**
+ * This hook takes the other side: **telling them to come back.**
  *
- * ## 무엇을 세지 않나
+ * ## What it does not count
  *
- * **진행률은 안 센다.** 카운슬 처방이 「종단 상태만」이었다 — 레일 배지는
- * 곁눈으로 보는 것이라, 초마다 바뀌는 숫자를 거기 두면 읽는 게 아니라
- * 깜빡이는 것이 된다. 끝났거나(`done`) 실패했을(`failed`) 때만 선다.
+ * **It does not count progress.** The council's prescription was "terminal states only" — a rail badge
+ * is seen out of the corner of the eye, and a number changing every second there is not read, it
+ * flickers. It stands only on `done` or `failed`.
  *
- * ## 언제 사라지나
+ * ## When it disappears
  *
- * **그 화면에 가면.** 배지는 「아직 안 본 것이 있다」는 뜻이고, 보면 그 뜻이
- * 사라진다. 이 저장소의 기록 배지(`gitDirtyCount`)와 같은 문법이다.
+ * **On reaching that screen.** The badge means "there is something you have not seen", and seeing it
+ * removes that meaning. Same grammar as this repository's other record badge (`gitDirtyCount`).
  */
 export function useInstallNotice(atDestination: boolean): {
   count: number;
@@ -41,8 +41,8 @@ export function useInstallNotice(atDestination: boolean): {
     void listenInstallProgress(null, (progress) => {
       if (!alive || !isTerminalInstallStage(progress.stage)) return;
       setSeenIds((current) =>
-        // 같은 도구가 두 번 끝나도 배지는 하나다 — 세는 것은 「할 일이 있는
-        // 도구 수」이지 사건 수가 아니다.
+  // The same tool finishing twice still gives one badge — what is counted is "tools with something to
+  // look at", not the number of events.
         current.includes(progress.runtimeId) ? current : [...current, progress.runtimeId],
       );
     }).then((unlisten) => {
@@ -56,9 +56,9 @@ export function useInstallNotice(atDestination: boolean): {
   }, []);
 
   /*
-   * 목적지에 있으면 셀 것이 없다 — 보고 있는 것을 「안 봤다」고 말할 수 없다.
-   * 도착한 순간 지우는 대신 **그리지 않는다**: effect 안에서 상태를 지우면
-   * 렌더가 한 번 더 돌고, 이 저장소의 lint 래칫이 그 모양을 막는다.
+   * At the destination there is nothing to count — what is being looked at cannot be called unseen.
+   * Rather than clearing on arrival it **is not drawn**: clearing state inside an effect costs another
+   * render, and this repository's lint ratchet blocks that shape.
    */
   return { count: atDestination ? 0 : seenIds.length, clear };
 }

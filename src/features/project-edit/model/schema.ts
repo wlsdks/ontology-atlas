@@ -20,10 +20,10 @@ function toDateInputValue(date?: Date) {
   return `${year}-${month}-${day}`;
 }
 
-// [P-4] 링크 파싱 실패 코드 — 영문 원문 대신 안정적 코드만 반환한다. 실제
-// 사용자 노출 문구는 ProjectForm 의 resolveValidationMessage() 가
-// `validation.linkLine.<code>` i18n 키로 번역한다 (zod 모델 계층은
-// useTranslations 훅에 접근할 수 없음).
+// Link parsing failure codes — a stable code is returned rather than English prose. The
+// user-facing text is translated by `resolveValidationMessage()` in ProjectForm through
+// the `validation.linkLine.<code>` i18n key (the zod model layer has no access to the
+// `useTranslations` hook).
 type LinkLineErrorCode = "format" | "protocol" | "invalidUrl";
 
 function parseLinkLine(line: string) {
@@ -78,9 +78,9 @@ export function parseLinksText(
     .map((parsed) => parsed.value);
 }
 
-// [P-4] zod 의 min/regex 메시지는 settings.projectForm 네임스페이스 기준
-// "validation.<key>" i18n 키 그 자체다 — model 계층은 useTranslations 훅에
-// 접근할 수 없으므로 코드만 들고, ProjectForm 이 t(issue.message) 로 번역한다.
+// zod's min/regex messages are literally the `validation.<key>` i18n keys, resolved in the
+// `settings.projectForm` namespace — the model layer has no access to `useTranslations`, so
+// it carries only the code and ProjectForm translates with `t(issue.message)`.
 export const projectFormSchema = z
   .object({
     slug: z
@@ -89,9 +89,8 @@ export const projectFormSchema = z
       .regex(/^[\p{L}\p{N}-]+$/u, "validation.slugFormat"),
     name: z.string().min(1, "validation.nameRequired"),
     nameEn: z.string().optional(),
-    // 동적 카테고리/상태 — taxonomy default 또는 미래 vault frontmatter 기반
-    // taxonomy 로 확장될 수 있어 free string. 존재 여부 검증은 호출자
-    // (ProjectForm) 가 taxonomy 와 대조해 수행.
+    // Category and status are dynamic and may extend to a vault-frontmatter-based taxonomy,
+    // so they stay free strings. The caller (ProjectForm) validates existence against the taxonomy.
     category: z.string().min(1, "validation.categoryRequired"),
     status: z.string().min(1, "validation.statusRequired"),
     description: z.string().min(1, "validation.descriptionRequired"),
@@ -116,8 +115,8 @@ export const projectFormSchema = z
 
         const parsed = parseLinkLine(line);
         if (!parsed.ok) {
-          // "validation.linkLine:<1-based index>:<code>" — ProjectForm 이
-          // 파싱해 t("validation.linkLine.<code>", { index }) 로 번역.
+          // "validation.linkLine:<1-based index>:<code>" — ProjectForm parses this and
+          // translates with `t("validation.linkLine.<code>", { index })`.
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["linksText"],
@@ -163,8 +162,8 @@ export const projectFormSchema = z
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
 /**
- * 기존 project에 없던 taxonomy fact를 full edit가 임의 생성하지 않기 위한
- * form-only 값. serializer로 보내기 전에 반드시 undefined로 되돌린다.
+ * A form-only value that stops a full edit from inventing a taxonomy fact the existing
+ * project lacked. It must be turned back into `undefined` before reaching the serializer.
  */
 export const PRESERVE_MISSING_TAXONOMY_VALUE =
   "__ontology_atlas_preserve_missing__";
@@ -216,7 +215,7 @@ export function duplicateProjectToFormValues(
 }
 
 /**
- * 폼 값을 ProjectInput으로 변환 — position은 호출자가 주입해야 함.
+ * Converts form values into a `ProjectInput` — `position` must be injected by the caller.
  */
 export function formValuesToProjectInput(
   values: ProjectFormValues,

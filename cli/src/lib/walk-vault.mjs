@@ -11,7 +11,7 @@ const SKIP_DIRS = new Set([
   '.serena',
 ]);
 
-/** vault root 안의 모든 .md 절대 경로. dotfile / build artifact 폴더 skip. */
+/** Absolute paths of every .md under the vault root; dotfiles and build-artifact folders are skipped. */
 export function walkMd(rootPath) {
   const out = [];
   const stack = [rootPath];
@@ -37,10 +37,11 @@ export function walkMd(rootPath) {
 }
 
 export function pathToSlug(rootPath, filePath) {
-  // NFC 정규화 — macOS 가 넘겨주는 NFD 한글 파일명과 사용자가 타이핑한 NFC
-  // 참조가 글자는 같고 바이트가 달라서, 종전엔 그 노드로 오는 엣지가 전부
-  // dangling 이 됐다(`mcp/src/vault.mjs` 의 같은 함수에 상세). 식별자만
-  // 정규화하고 디스크 경로는 그대로 둔다.
+  // NFC normalisation. macOS hands back NFD filenames while a user types NFC
+  // references; the characters look identical but the bytes differ, so every edge
+  // into such a node used to end up dangling (details on the same function in
+  // `mcp/src/vault.mjs`). Only the identifier is normalised — the path on disk is
+  // left as it is.
   return relative(rootPath, filePath)
     .replace(/\\/g, '/')
     .replace(/\.md$/, '')

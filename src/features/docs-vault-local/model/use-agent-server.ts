@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * 「이 자리에서 에이전트를 붙일 수 있는가」를 한 번 물어 두는 훅.
+ * Asks once whether an agent can be attached from here.
  *
- * 설치된 앱은 자기 번들 안의 MCP 서버 경로를 안다 — 그러면 원클릭이 성립한다.
- * 브라우저는 모른다. 이 훅은 그 사실 하나만 돌려주고, 화면은 그걸 보고
- * 갈린다. 렌더마다 네이티브를 다시 묻지 않는다 (앱 수명 동안 안 바뀐다).
+ * The installed app knows the path of the MCP server inside its own bundle, which is what makes
+ * one-click possible; a browser does not. This hook returns that one fact and the screen branches on
+ * it. The native side is not re-asked on every render (it does not change for the app's lifetime).
  */
 import { useEffect, useState } from 'react';
 

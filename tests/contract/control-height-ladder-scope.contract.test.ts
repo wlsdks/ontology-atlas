@@ -4,56 +4,60 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 컨트롤 높이 사다리의 **적용 범위** 게이트.
+ * The **scope** gate for the control-height ladder.
  *
- * ## 왜 별도 파일인가 — `control-class.contract.test.ts` 가 못 보는 층
+ * **Why a separate file — the layer `control-class.contract.test.ts` cannot see.**
+ * That file measures the **string `controlClass()` emits**, so it puts every
+ * control that uses the value layer on the ladder, while **places outside the value
+ * layer where a chrome token owns the dimension** stay out of view. That is the
+ * hole the ledger counted for five consecutive rounds as "a chrome token owns the
+ * dimension".
  *
- * 그 파일은 `controlClass()` 가 **내는 문자열**을 잰다. 그래서 값 층을 쓰는
- * 컨트롤은 전부 사다리 위에 세우지만, **값 층 밖에서 크롬 토큰이 치수를
- * 소유하는 자리**는 시야 밖이다. 원장이 다섯 라운드 연속으로 「크롬 토큰이
- * 치수를 소유한다」를 구멍으로 세어 온 그 자리다.
+ * The real cost of that blind spot was **34** (measured 2026-08-03):
  *
- * 그 사각지대의 실제 비용이 **34** 였다(2026-08-03 실측):
+ * - `--docs-header-tile-size: 34px` was born when chrome tiles were **44px**, on
+ *   the grounds that *"44 does not suit header density"*.
+ * - On 2026-07-23 chrome tiles **came down to 36px**. The only evidence for 34
+ *   disappeared that day and **no gate made a sound.**
+ * - So the same role (a square icon tile) carried two values and two coarse
+ *   promotion rules for 9 days, until the next audit rediscovered it.
  *
- * - `--docs-header-tile-size: 34px` 는 크롬 타일이 **44px** 이던 시절
- *   *"44 는 헤더 밀도에 안 맞는다"* 를 근거로 태어났다.
- * - 2026-07-23 에 크롬 타일이 **36px 로 내려왔다**. 34 의 유일한 근거가
- *   그날 사라졌는데, **아무 게이트도 울리지 않았다.**
- * - 그래서 같은 역할(정사각 아이콘 타일)에 값 둘 · coarse 승격 규칙 둘이
- *   9일 동안 남아 있었고, 다음 감사가 그것을 다시 발견했다.
+ * For the ladder to say "outside this table is a deviation", the rule must say
+ * **which shapes it applies to**, and a machine must hold that scope. Source table:
+ * docs/DESIGN-SYSTEM.md 「이 사다리는 어느 모양에 적용되나」 (which shapes the
+ * ladder applies to).
  *
- * 사다리가 「이 표 밖은 이탈」이라고 말하려면 **어느 모양에 적용되는지**를
- * 규칙이 말해야 하고, 그 범위를 기계가 잡아야 한다. 정본 표:
- * `docs/DESIGN-SYSTEM.md` 「이 사다리는 어느 모양에 적용되나」.
- *
- * | 부류 | 사다리가 잡는 것 | 이 파일이 잡는가 |
+ * | Category | What the ladder holds | Held here? |
  * |---|---|---|
- * | 가로 한 줄 컨트롤(chip·pill·segment·row·card) | 바깥 높이 | `control-class` 계약이 잡는다 |
- * | 정사각 아이콘 컨트롤(icon · 크롬/문서함 타일) | 변(邊) | **여기** — 크롬 토큰 쪽 |
- * | 세로로 쌓는 컨트롤(tile · 나브레일 항목) | **안쪽 타일**(바깥 합계는 아님) | **여기** |
- * | 인라인 텍스트 링크 | 면제 | 해당 없음 |
+ * | Single-row horizontal controls (chip·pill·segment·row·card) | outer height | the `control-class` contract |
+ * | Square icon controls (icon, chrome/docs tiles) | the side | **here** — the chrome-token side |
+ * | Vertically stacked controls (tile, nav rail items) | **the inner tile** (not the outer total) | **here** |
+ * | Inline text links | exempt | n/a |
  *
- * 원장: `docs/DECISIONS.md` 2026-08-03 「타일 치수는 하나다」.
+ * Ledger: `docs/DECISIONS.md` 2026-08-03 「타일 치수는 하나다」 (one tile
+ * dimension).
  */
 describe('컨트롤 높이 사다리 — 적용 범위', () => {
   const GLOBALS = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
-  /** `--name: <값>;` 의 첫 선언. 다중 줄 값(`max(\n …\n)`)도 하나로 읽는다. */
+  /** The first `--name: <value>;` declaration. Multi-line values (`max(\n …\n)`) read as one. */
   const cssVar = (name: string): string | undefined =>
     new RegExp(`^\\s*${name}:\\s*([^;]+);`, 'm').exec(GLOBALS)?.[1].trim();
 
   /**
-   * 값에서 **기본 px** 를 꺼낸다. 이 앱의 치수 토큰은 세 형태로만 쓰인다:
+   * Extracts the **base px** from a value. This app's dimension tokens take only
+   * three forms:
    *   `36px` · `max(36px, var(--touch-target-min))` · `calc(32px * var(--scale))`
-   * 셋 다 「기본값 + 승격/배율」이라 판정 대상은 **첫 px 리터럴**이다.
-   * 승격 상한(44)과 배율은 각자의 계약(터치 타깃 e2e · 지도 스케일)이 진다.
+   * All three are "base value + promotion/scale", so the thing judged is the **first
+   * px literal**. The promotion ceiling (44) and the scale factor are carried by their
+   * own contracts (the touch-target e2e and the map zoom).
    */
   function basePx(value: string): number | null {
     const px = /(\d+(?:\.\d+)?)px/.exec(value);
     return px ? Number(px[1]) : null;
   }
 
-  /** 높이 어휘 — 손으로 적지 않고 사다리 토큰에서 파생한다. */
+  /** The height vocabulary — derived from the ladder tokens rather than written by hand. */
   function heightVocabulary(): Set<number> {
     const WCAG_TARGET_FLOOR_PX = 24;
     const tokenPx = (name: string): number => {
@@ -69,14 +73,15 @@ describe('컨트롤 높이 사다리 — 적용 범위', () => {
       tokenPx('--control-h-lg'),
       tokenPx('--touch-target-min'),
     ]);
-    // 토큰이 수렴해 어휘가 쪼그라들면 파생 자체가 신호를 잃는다.
+    // If tokens converge and the vocabulary shrinks, the derivation itself loses its
+    // signal.
     expect([...vocabulary].sort((a, b) => a - b), '높이 어휘가 6단이 아니다').toEqual([
       24, 28, 32, 36, 40, 44,
     ]);
     return vocabulary;
   }
 
-  /** `--*-tile-size` · `--*-tile-height` 선언 전수. (width 는 높이 축이 아니다.) */
+  /** Every `--*-tile-size` and `--*-tile-height` declaration. (width is not a height axis.) */
   const TILE_DIMENSION_DECL = /^[ \t]*(--[a-z0-9-]*tile-(?:size|height))\s*:\s*([^;]+);/gm;
 
   function tileDimensionOffenders(css: string, vocabulary: Set<number>): string[] {
@@ -98,13 +103,15 @@ describe('컨트롤 높이 사다리 — 적용 범위', () => {
   it('타일 치수 토큰의 기본값이 전부 높이 어휘 안이다 — 34 가 태어난 구멍', () => {
     const vocabulary = heightVocabulary();
 
-    // 공회전 차단 — 스캔이 0건이면 「위반 없음」이 아니라 정규식/경로 결함이다.
+    // Idling guard — a scan returning 0 means a broken regex or path, not "no
+    // violations".
     const scanned = [...GLOBALS.matchAll(TILE_DIMENSION_DECL)];
     expect(
       scanned.length,
       '타일 치수 선언을 하나도 못 셌다 — 셀렉터나 파일 경로가 깨졌다',
     ).toBeGreaterThanOrEqual(3);
-    // 기본 선언과 coarse 승격이 **둘 다** 잡혀야 한다(승격만 어휘 밖인 사고를 막는다).
+    // **Both** the base declaration and the coarse promotion must be caught (blocking
+    // the accident where only the promotion is off-vocabulary).
     expect(
       scanned.filter(([, , value]) => value.includes('max(')).length,
       'coarse 승격 선언이 스캔에 안 잡혔다 — 다중 줄 값을 놓치고 있다',
@@ -118,13 +125,14 @@ describe('컨트롤 높이 사다리 — 적용 범위', () => {
 
   it('세로로 쌓는 컨트롤은 **안쪽 타일**이 사다리에 선다 — 바깥 합계는 사다리의 일이 아니다', () => {
     /*
-     * 나브레일 항목은 전 라우트에서 **62px** 로 렌더된다(실측 1440×900):
-     * `py-1.5`(12) + 타일 32 + `gap-1`(4) + 라벨 줄상자 14. 62 는 어휘에 없지만
-     * 결함이 아니다 — 세로 2축이라 높이를 **내용이** 정하는 게 맞고, 바깥
-     * 합계를 사다리로 못박으면 라벨 글자 수가 규격을 정하게 되어 사다리가
-     * 자기 규율 1(「패딩이 높이를 정하면 안 된다」)을 스스로 어긴다.
+     * Nav rail items render at **62px** on every route (measured at 1440×900):
+     * `py-1.5`(12) + tile 32 + `gap-1`(4) + label line box 14. 62 is not in the
+     * vocabulary but it is not a defect — with two vertical axes it is right that
+     * **content** decides the height, and pinning the outer total to the ladder would
+     * let label length decide the spec, making the ladder break its own first rule
+     * ("padding must not decide height").
      *
-     * 대신 규칙은 **안쪽 정사각 타일**에 걸린다. 그게 이 단언이다.
+     * The rule applies to the **inner square tile** instead. That is this assertion.
      */
     const railTile = basePx(cssVar('--app-nav-rail-tile-height') ?? '');
     const controlMd = basePx(cssVar('--control-h-md') ?? '');
@@ -137,10 +145,10 @@ describe('컨트롤 높이 사다리 — 적용 범위', () => {
 
   it('문서함 헤더 타일이 자기 치수 토큰을 다시 만들지 않았다', () => {
     /*
-     * 되돌아오는 경로가 정확히 이 모양이다: 「이 표면만 조금 다른 밀도가
-     * 필요해」 → 새 `--<표면>-tile-size` → 어느 날 크롬 토큰이 움직여도
-     * 이 값만 남는다. 위 어휘 게이트가 값을 잡지만, **소비처가 크롬 토큰을
-     * 읽는지**는 소스가 말한다.
+     * The way this comes back has exactly this shape: "this one surface needs slightly
+     * different density" → a new `--<surface>-tile-size` → the day the chrome token
+     * moves, only that value stays behind. The vocabulary gate above catches the value,
+     * but **whether the consumer reads the chrome token** is something the source says.
      */
     const source = readFileSync(
       join(process.cwd(), 'src/views/docs-vault/ui/parts/DocsHeaderTile.tsx'),
@@ -158,11 +166,12 @@ describe('컨트롤 높이 사다리 — 적용 범위', () => {
   it('게이트가 실제로 위반을 잡는다 — 세 형태와 34 로 프로브', () => {
     const vocabulary = heightVocabulary();
 
-    // 위반 — 34 가 태어난 그 선언 그대로.
+    // Violation — the exact declaration that produced 34.
     expect(
       tileDimensionOffenders('  --docs-header-tile-size: 34px;\n', vocabulary),
     ).toHaveLength(1);
-    // 위반 — coarse 승격의 **기본값**이 어휘 밖인 경우(승격만 보면 44라 정상으로 보인다).
+    // Violation — the coarse promotion's **base value** is off-vocabulary (looking at
+    // the promotion alone it is 44 and appears fine).
     expect(
       tileDimensionOffenders(
         '  --foo-tile-size: max(\n    34px,\n    var(--touch-target-min)\n  );\n',
@@ -170,7 +179,7 @@ describe('컨트롤 높이 사다리 — 적용 범위', () => {
       ),
       '다중 줄 max() 안의 어휘 밖 기본값을 놓쳤다',
     ).toHaveLength(1);
-    // 위반 — 배율 형태의 기본값이 어휘 밖인 경우.
+    // Violation — the base value of the scale form is off-vocabulary.
     expect(
       tileDimensionOffenders(
         '  --foo-tile-height: calc(30px * var(--topology-ui-scale-factor));\n',
@@ -178,7 +187,7 @@ describe('컨트롤 높이 사다리 — 적용 범위', () => {
       ),
     ).toHaveLength(1);
 
-    // 정상 — 세 형태 전부 어휘 안이면 통과한다.
+    // Clean — all three forms pass when they are in the vocabulary.
     expect(
       tileDimensionOffenders(
         [
@@ -191,7 +200,8 @@ describe('컨트롤 높이 사다리 — 적용 범위', () => {
       ),
     ).toEqual([]);
 
-    // 폭은 높이 축이 아니다 — 나브레일 타일은 38×32 가 설계다(잡으면 오탐).
+    // Width is not a height axis — nav rail tiles are 38×32 by design (catching it
+    // would be a false positive).
     expect(
       tileDimensionOffenders(
         '  --app-nav-rail-tile-width: calc(38px * var(--topology-ui-scale-factor));\n',

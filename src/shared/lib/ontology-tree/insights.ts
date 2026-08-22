@@ -2,8 +2,9 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import { isContainmentRelation } from "./relations";
 
 /**
- * 노드의 kind 별 카운트 — UI 차트 / chip 에 사용. document / project 도 모두
- * 포함 (호출자가 필요시 필터). Map 의 입력 순서는 입력 nodes 순서.
+ * Node counts per kind, for charts and chips. `document` and `project` are included
+ * too — filter at the call site if needed. The Map's iteration order follows the
+ * input node order.
  */
 export function computeKindDistribution(
   nodes: readonly KnowledgeGraphNode[],
@@ -16,11 +17,11 @@ export function computeKindDistribution(
 }
 
 /**
- * 노드별 degree — outgoing + incoming edge 의 합. self-loop 는 1 만 카운트.
+ * Degree per node: outgoing plus incoming edges, with a self-loop counted once.
  *
- * 입력 edges 가 미존재 노드 를 가리키더라도 노드 인덱스에 없으면 무시 (orphan
- * edge). 결과 Map 은 모든 입력 nodes 가 키로 들어감 (degree 0 도 포함) —
- * UI 가 zero-degree 도 표시할지 결정.
+ * Edges pointing at nodes absent from the index are ignored (orphan edges). Every
+ * input node appears as a key, degree 0 included, so the UI decides whether to show
+ * zero-degree nodes.
  */
 export function computeDegreeCentrality(
   nodes: readonly KnowledgeGraphNode[],
@@ -70,8 +71,8 @@ export interface DomainCouplingMatrix {
   crossDomainEdgeCount: number;
   selfDomainEdgeCount: number;
   domains: DomainCouplingDomainRow[];
-  /** `connections` 가 limit 으로 잘리기 전의 distinct domain-pair 총수 — UI/CLI
-   * 가 "상위 N / 전체 M" truncation 을 사용자에게 알려 silent cap 을 피한다. */
+  /** Total distinct domain pairs before `connections` is truncated by `limit`, so
+   * the UI and CLI can say "top N of M" instead of capping silently. */
   totalConnectionCount: number;
   connections: DomainCouplingConnectionRow[];
 }
@@ -81,9 +82,9 @@ export interface ComputeDomainCouplingMatrixOptions {
 }
 
 /**
- * degree 내림차순으로 정렬된 **전체** 허브 후보 (degree > 0, document / project
- * 기본 제외). slice 없이 모두 반환하므로 호출자가 "상위 N / 전체 M" 처럼
- * truncation 을 사용자에게 알릴 수 있다 (silent cap 회피).
+ * **All** hub candidates sorted by descending degree (degree > 0; `document` and
+ * `project` excluded by default). Nothing is sliced off, so the caller can report
+ * "top N of M" rather than capping silently.
  */
 export function rankAllByDegree(
   nodes: readonly KnowledgeGraphNode[],
@@ -110,16 +111,16 @@ export function rankAllByDegree(
 }
 
 /**
- * 도메인 간 결합 행렬 — MCP `query_ontology(domain_matrix)` 의 브라우저
- * local-first 대응. 서버/MCP 없이 현재 derive 된 frontmatter graph 만으로
- * "어느 도메인이 어느 도메인에 의존/연결되는지"를 계산한다.
+ * The domain coupling matrix — the browser, local-first counterpart to MCP
+ * `query_ontology(domain_matrix)`. It computes which domain depends on or connects
+ * to which from the currently derived frontmatter graph alone, with no server or MCP.
  *
- * 도메인 배정은 containment tree 를 따라 가장 가까운 domain 조상을 찾는다.
- * domain 노드 자신은 자기 domain 으로 배정된다. document/project 처럼 domain
- * 조상이 없는 메타 노드는 unassigned 로 남겨 결합 edge 계산에서 제외한다.
- * `contains` / `belongs_to` 는 domain 배정을 위한 구조 edge 라서 coupling
- * count 에서는 제외한다. 사람용 UI 에서는 계층 구조가 아니라 경계 압력을
- * 보여주는 쪽이 더 해석 가능하다.
+ * Domain assignment walks the containment tree to the nearest domain ancestor; a
+ * domain node is assigned to itself. Meta nodes with no domain ancestor (document,
+ * project) stay unassigned and are excluded from coupling edges. `contains` /
+ * `belongs_to` are structural edges used *for* that assignment, so they are excluded
+ * from the coupling count: for a human-facing UI, showing pressure on boundaries is
+ * more interpretable than showing the hierarchy again.
  */
 export function computeDomainCouplingMatrix(
   nodes: readonly KnowledgeGraphNode[],
@@ -286,11 +287,12 @@ export function nearestDomainId(
 }
 
 /**
- * 가장 최근 갱신된 N 노드 — `lastApprovedAt` 내림차순. 활동 feed 에 사용.
- * 같은 시각이면 title asc. document / project 도 포함 (활동의 한 면).
+ * The N most recently updated nodes by descending `lastApprovedAt`, for the activity
+ * feed; ties break on title ascending. `document` and `project` are included, since
+ * they are part of the activity too.
  *
- * 필드 이름은 v1 cloud LLM 워커 시점의 명명이지만, mission v2 에서는 단순
- * "마지막 쓰기 / 갱신 시각" — vault 모드는 sentinel 값이라 vault 노드끼리는 동률.
+ * The field name dates from the v1 cloud LLM worker; here it simply means "last
+ * written or updated". In vault mode it is a sentinel value, so vault nodes all tie.
  */
 export function selectRecentNodes(
   nodes: readonly KnowledgeGraphNode[],

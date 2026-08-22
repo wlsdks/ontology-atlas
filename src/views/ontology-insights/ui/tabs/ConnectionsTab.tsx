@@ -24,9 +24,9 @@ export interface ConnectionHubRow {
   kind: string;
   degree: number;
   /**
-   * 근거로만 적힌 이름(자기 문서 없음)인가. 허브는 순서를 바꾸지 않는다 —
-   * 연결이 실제로 많은 것을 아래로 내리면 "지금 뭐가 중심인가"의 답이 틀려진다.
-   * 대신 그 행이 아직 문서가 없다는 사실을 조용히 밝힌다.
+   * Is this a name written only as evidence (no document of its own)? Hubs do not reorder — pushing
+   * something genuinely well connected downward makes the answer to "what is central right now?"
+   * wrong. Instead the row quietly states that it has no document yet.
    */
   evidenceOnly: boolean;
 }
@@ -41,13 +41,13 @@ export interface ConnectionsTabLabels {
   noHubsHint: string;
   hubTruncated: (shown: number, total: number) => string;
   hubDegreeCaption: string;
-  /** 근거 계층 배지 — 영향 랭킹과 **같은 i18n 키**에서 온다(문구는 한 벌). */
+  /** The evidence-layer badge — from the **same i18n key** as the impact ranking (one set of copy). */
   evidenceBadge: string;
   evidenceBadgeHint: string;
 }
 
 export interface ConnectionsTabHubLink {
-  /** 허브 행 클릭 → 지도 노드 포커스 딥링크 (`buildOntologyNodeHref`). */
+  /** Clicking a hub row deeplinks to that node on the map (`buildOntologyNodeHref`). */
   href: (nodeId: string) => string;
   ariaLabel: (title: string) => string;
 }
@@ -67,26 +67,26 @@ export interface ConnectionsTabProps {
 }
 
 /**
- * `연결` 탭 — "어떤 개념이 중심이고, 바꾸면 어디까지 퍼지나"에 답한다. 카드 세
- * 장(관계 타입 ∥ 허브 · 영향 랭킹)은 같은 해부구조로 읽히도록 머리(제목+총계)
- * → 차트 → 행 → 각주 한 줄 순서를 공유한다.
+ * The `connections` tab — it answers "which concepts are central, and how far does a change
+ * spread?". The three cards (relation types ∥ hubs · impact ranking) share one anatomy so they read
+ * alike: head (title + total) → chart → rows → one footnote.
  *
- * 두 번의 잉크 삭감이 여기 반영돼 있다.
- * ① 「가장 많이 기대는 곳」 카드 삭제 — 도그푸드 실측에서 상위 5행이 전부
- *    count 1 이라 순위가 성립하지 않았다(의존 엣지가 전체의 6%). 신호 없는 표는
- *    읽는 사람의 시간만 쓴다.
- * ② 허브 에고 썸네일 삭제 — 6행이 모두 같은 바퀴 모양이라 구분 정보가 숫자에만
- *    있었다(Tufte: erase non-data-ink). 남은 것은 kind 글리프 · 제목 · 상대
- *    막대 · 숫자로, 행 높이가 절반이 됐다.
+ * Two ink reductions are reflected here.
+ * ① The "most depended upon" card was deleted — measured against the dogfood vault, all top five
+ *    rows had a count of 1, so there was no ranking (dependency edges were 6% of the total). A table
+ *    with no signal spends only the reader's time.
+ * ② The hub ego thumbnails were deleted — all six rows were the same wheel shape, so the
+ *    distinguishing information lived only in the number (Tufte: erase non-data ink). What remains
+ *    is the kind glyph, title, relative bar, and number, and the row height halved.
  *
- * 둘째 줄(양 칸 폭)의 「바꾸면 멀리 퍼지는 개념」은 허브의 짝이다 — 허브가
- * "지금 뭐가 중심인가"를 말하면, 영향 랭킹은 "그걸 건드리면 어디까지 다시
- * 봐야 하나"를 말한다. 같은 질문의 두 얼굴이라 같은 탭에 산다.
+ * "Concepts whose change spreads furthest" on the second line (full width) is the hub's counterpart —
+ * where hubs say "what is central right now", the impact ranking says "how far do I have to re-read
+ * if I touch it". Two faces of one question, so they live in one tab.
  *
- * 두 카드가 근거 계층을 다르게 다루는 것은 질문이 다르기 때문이다. 영향
- * 랭킹은 위험도를 묻는 자리라 문서 없는 파생 개념을 접힌 아래 계층으로
- * 내리고, 허브는 "실제로 연결이 많은 것"을 묻는 자리라 순서를 그대로 두고
- * 배지로만 밝힌다 — 여기서 순서를 바꾸면 답 자체가 틀려진다.
+ * The two cards treat the evidence layer differently because their questions differ. The impact
+ * ranking asks about risk, so it pushes document-less derived concepts into a folded layer below;
+ * hubs ask "what actually has many connections", so the order is left alone and the fact is stated
+ * with a badge only — reordering here would make the answer itself wrong.
  */
 export function ConnectionsTab({
   edgeTypeRows,
@@ -102,7 +102,7 @@ export function ConnectionsTab({
   impactLabels,
 }: ConnectionsTabProps) {
   const edgeMax = edgeTypeRows.reduce((m, r) => Math.max(m, r.count), 0);
-  // hubs 는 이미 degree 내림차순 — hubs[0] 이 이 목록 안의 최대치.
+  // `hubs` is already sorted by degree descending — `hubs[0]` is the maximum within this list.
   const hubDegreeMax = hubs.reduce((m, h) => Math.max(m, h.degree), 0);
 
   return (
@@ -139,9 +139,9 @@ export function ConnectionsTab({
                 );
               })}
             </div>
-            {/* 관계 타입은 3~4행뿐이라 옆 허브 카드(6행)가 그리드 높이를
-                정한다 — 남는 세로를 행 사이로 고르게 나눠 카드 아래가 비어
-                보이지 않게 한다(종류 분포 카드와 같은 처리). */}
+            {/* Relation types are only 3–4 rows, so the hub card beside it (6 rows) sets the grid
+                height — the leftover vertical space is distributed evenly between rows so the bottom
+                of the card does not look empty (the same treatment as the kind distribution card). */}
             <div className="mt-2 flex flex-1 flex-col justify-evenly">
               {edgeTypeRows.map((row, i) => {
                 const width = edgeMax > 0 ? Math.max(2, Math.round((row.count / edgeMax) * 100)) : 0;
@@ -179,8 +179,8 @@ export function ConnectionsTab({
         aria-label={labels.hubsTitle}
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        {/* 허브 총계는 아래 절단 문구("상위 6 / 전체 289")가 이미 말한다 —
-            같은 수치를 한 카드에서 두 번 쓰지 않는다. */}
+        {/* The hub total is already stated by the truncation copy below ("top 6 / 289 total") — the
+            same figure is not printed twice in one card. */}
         <CardHead label={labels.hubsTitle} />
         <div className="mt-2 flex flex-1 flex-col justify-start">
           {hubs.length === 0 ? (
@@ -229,16 +229,15 @@ export function ConnectionsTab({
             })
           )}
         </div>
-        {/* 절단 문구를 각주에 이어 붙여 한 줄로 유지한다 — 선택적 슬롯이
-            카드 높이를 흔들면 같은 그리드의 두 카드가 서로 다른 해부구조를
-            갖게 된다. */}
+        {/* The truncation copy is appended to the footnote to keep it one line — an optional slot
+            that shifts the card height would give two cards in the same grid different anatomies. */}
         <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
           {hubTotalCount > hubs.length ? `${labels.hubTruncated(hubs.length, hubTotalCount)} · ` : ""}
           {labels.hubDegreeCaption}
         </p>
       </section>
 
-      {/* 같은 그리드의 둘째 줄 — 랭킹은 제목이 길어 반 칸에서는 잘린다. */}
+      {/* The second line of the same grid — the ranking's titles are long and would be clipped in half a column. */}
       <ImpactRankingCard
         className="lg:col-span-2"
         rows={impact.rows}

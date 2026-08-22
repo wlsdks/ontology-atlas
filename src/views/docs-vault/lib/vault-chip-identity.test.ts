@@ -13,9 +13,9 @@ describe("볼트 칩 정체 — 고른 소스를 말한다", () => {
   });
 
   /**
-   * 이것이 결함의 정확한 재현이다 — 로컬을 골랐는데 칩이 "샘플 문서 31개" 라고
-   * 적혀 있었다. 그 숫자는 샘플 매니페스트의 것이라, 로컬 화면에 띄우면
-   * "내 폴더에 31개가 있다" 로 읽힌다.
+   * This is the exact reproduction of the defect — local was chosen while the chip read "31 sample
+   * documents". That number belongs to the sample manifest, so putting it on a local screen reads
+   * as "my folder has 31 documents".
    */
   it("폴더를 아직 안 고른 로컬은 샘플이 아니다 — 숫자를 숨긴다", () => {
     const pending = resolveVaultChipIdentity({

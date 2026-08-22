@@ -3,19 +3,20 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 오류 화면의 두 행동은 **라벨이 있는 버튼**이다 (2026-08-17 소유자 지적).
+ * The error screen's two actions are **buttons with labels** (owner, 2026-08-17).
  *
- * 둘 다 `shape: "icon"` 이었다. 그건 정사각 아이콘 전용 모양이라
- * (`justify-center` · `shrink-0` · 가로 여백 없음) 라벨을 넣으면 글자가 상자를
- * 넘어 두 줄로 접히며 서로 겹친다 — 화면에 그대로 그렇게 나왔다. 하필 이
- * 화면은 **뭔가 잘못됐을 때만** 보이는 자리라, 깨진 채로도 아무도 안 마주친다.
+ * Both used `shape: "icon"`, which is the square icon-only shape
+ * (`justify-center` · `shrink-0` · no horizontal padding). With a label the text
+ * overflows the box, wraps to two lines, and overlaps itself — which is exactly
+ * how it rendered. And this screen is only visible **when something has already
+ * gone wrong**, so it can stay broken without anyone meeting it.
  *
- * lint 는 이걸 못 본다: `icon` 도 `pill` 도 정당한 모양이고, 틀린 것은 값이
- * 아니라 **내용과 모양의 짝**이다.
+ * lint cannot see this: `icon` and `pill` are both legitimate shapes, and what is
+ * wrong is not a value but **the pairing of content and shape.**
  */
 const SOURCE = readFileSync(join(process.cwd(), "app", "error.tsx"), "utf8");
 
-/** `controlClass({ … })` 호출 하나하나. */
+/** Each individual `controlClass({ … })` call. */
 const controlCalls = [...SOURCE.matchAll(/controlClass\(\{[\s\S]*?\}\)/gu)].map((m) => m[0]);
 
 describe("오류 화면의 컨트롤", () => {
@@ -35,8 +36,8 @@ describe("오류 화면의 컨트롤", () => {
   });
 
   it("모양이 이미 주는 것을 손으로 다시 적지 않는다", () => {
-    // `pill` 이 `rounded-full` 과 `border` 를 갖는다 — 겹쳐 적으면 다음 사람이
-    // 어느 쪽이 규격인지 알 수 없다.
+    // `pill` already carries `rounded-full` and `border` — repeating them leaves the
+    // next person unable to tell which side is the spec.
     for (const call of controlCalls) {
       expect(call).not.toMatch(/\brounded-full\b/u);
       expect(call).not.toMatch(/className:[^}]*\bborder\s/u);

@@ -19,8 +19,9 @@ function edge(id: string, from: string, to: string, type = "contains"): Knowledg
 }
 
 describe("computeWorkspaceCensus", () => {
-  // P0c 계약 변경: "개념" census 는 정본(파생 전체)이다 — meaningful 필터가
-  // 다른 표면과 -5 불일치(N2)를 만들던 것을 교정. 필터는 kind 막대 전용.
+  // Contract change: the "concepts" census is canonical (the whole derivation) — correcting the
+  // `meaningful` filter that produced a -5 disagreement with other surfaces. The filter is for the kind
+  // bars only.
   it("counts EVERY derived node as a concept (canonical census — no kind filter)", () => {
     const nodes = [
       node("project:atlas", "project"),

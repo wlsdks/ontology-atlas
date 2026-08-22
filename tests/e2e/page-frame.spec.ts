@@ -3,26 +3,29 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **목록형 목적지 셋의 제목이 같은 자리에 선다.**
+ * **The titles of the three list destinations stand in the same place.**
  *
- * ## 무엇이 났나 (2026-08-09, 소유자 지적)
+ * **What happened (2026-08-09, owner report):**
  *
  * > *"인사이트, 프로젝트, 스킬 모두 상단 공백이 동일해야하는데 … 디자인 시스템
  * > 있는거 아녔나? 왜 다 다르지?"*
+ * > (insights, projects, and skills should all have the same top spacing — don't
+ * > we have a design system? why are they all different?)
  *
- * 재 보니 제목까지의 거리가 **32 / 48 / 20px** 이었다. 그리고 어긋난 축이 상단만이
- * 아니었다 — 좌우 인셋(40/40/32)과 최대 폭(1600/1600/1400)까지 셋이 다 달랐고,
- * 같은 1600 이 CSS 토큰과 JS 상수 **두 곳에** 적혀 있었다.
+ * Measured, the distance to the title was **32 / 48 / 20px**. And the top was not
+ * the only axis that diverged: the horizontal inset (40/40/32) and the maximum
+ * width (1600/1600/1400) all differed too, and the same 1600 was written in **two
+ * places**, a CSS token and a JS constant.
  *
- * ## 왜 클래스가 아니라 실측인가
+ * **Why measure rather than check classes.** The 48px is not one margin but a
+ * **sum**: 40 top padding + (36 header row − 28 title leading). So checking only
+ * the `PAGE_FRAME` string passes even when the header row height is missing — that
+ * +8 is visible only once rendered.
  *
- * 48px 은 여백 하나가 아니라 **합**이다: 상단 패딩 40 + (헤더 행 36 − 제목 행간 28).
- * 그래서 `PAGE_FRAME` 문자열만 확인하면 헤더 행 높이가 빠져도 통과한다 — 그 +8 은
- * 그려 봐야 보인다.
- *
- * ⚠️ 값을 못박지 않고 **셋이 서로 같은지**만 본다. 기준값을 리터럴로 적으면 램프를
- * 정당하게 옮길 때 이 시험이 먼저 터지고, 그러면 다음 사람이 규격 쪽을 되돌린다
- * (`design-gates.md` 가 이미 적어 둔 실패 2건과 같은 모양).
+ * ⚠️ No value is pinned; only **whether the three agree with each other**. Writing
+ * a reference value as a literal makes this test fail first when the ramp moves
+ * legitimately, and then the next person reverts the spec (the same shape as the
+ * two failures `design-gates.md` already records).
  */
 
 const MEMBERS = [
@@ -41,11 +44,13 @@ async function measureHeader(
   return page.evaluate(() => {
     const main = document.querySelector("main")!;
     const h1 = main.querySelector("h1")!;
-    // **틀 요소를 구조로 찾지 않는다.** 화면마다 감싼 깊이가 달라서
-    // `main > div` 같은 셀렉터는 한 화면에서만 맞는다(실측: 인사이트에서 null).
-    // 틀의 정의는 「최대 폭을 가진 조상」이므로 그걸로 찾는다.
-    // ⚠️ `main` 자신이 틀인 화면도 있다(인사이트) — 멈추는 지점을 `main` 으로
-    // 잡으면 그 화면만 `null` 이 나오고, 그건 결함이 아니라 **못 잰 것**이다.
+    // **The frame element is not found structurally.** Wrapper depth differs per
+    // screen, so a selector like `main > div` matches on one screen only (measured:
+    // null on insights). The frame is defined as "the ancestor carrying the maximum
+    // width", so that is how it is found.
+    // ⚠️ On some screens `main` itself is the frame (insights) — stopping the walk at
+    // `main` returns `null` for that screen alone, which is a failure to measure, not
+    // a defect.
     let column: HTMLElement | null = null;
     for (let node: HTMLElement | null = h1.parentElement; node; node = node.parentElement) {
       if (getComputedStyle(node).maxWidth !== "none") {
@@ -55,11 +60,12 @@ async function measureHeader(
       if (node === main) break;
     }
     const cs = column ? getComputedStyle(column) : null;
-    // **틀이 소유한 것만 잰다** — `main` 위쪽부터 재면 틀 밖의 것이 섞인다.
-    // 실측(768): 프로젝트 96 / 인사이트 40 / 스킬 48 로 갈렸는데, 원인은 틀이
-    // 아니라 **모바일 설정 줄의 위치**였다(프로젝트는 `main` 안, 인사이트는 밖,
-    // 스킬은 아예 없음). 그건 이 규격이 답하는 질문이 아니다 — 섞어서 재면
-    // 이 게이트가 엉뚱한 것을 잡고, 다음 사람은 틀 쪽을 되돌린다.
+    // **Measure only what the frame owns** — measuring from above `main` mixes in
+    // things outside it. Measured at 768: projects 96 / insights 40 / skills 48, and
+    // the cause was not the frame but **where the mobile settings row sat** (inside
+    // `main` for projects, outside for insights, absent for skills). That is not the
+    // question this spec answers — measuring them together makes the gate catch the
+    // wrong thing and the next person revert the frame.
     return {
       titleY: column
         ? Math.round(h1.getBoundingClientRect().top - column.getBoundingClientRect().top)
@@ -72,8 +78,9 @@ async function measureHeader(
 
 test.describe("페이지 틀", () => {
   /**
-   * 같은 PAGE_FRAME 을 쓰는 세 목적지가 실제 렌더에서도 같은 제목 원점과 인셋을
-   * 갖는지 잰다. 문자열 계약만으로는 헤더 안쪽 높이 차이를 잡지 못한다.
+   * Measures whether the three destinations sharing PAGE_FRAME really render with
+   * the same title origin and inset. A string contract alone cannot catch a
+   * difference in header interior height.
    */
   test("세 목적지의 제목이 같은 y 에 선다 (1280 · 768)", async ({ page }) => {
     await seedFirstRunSeen(page);

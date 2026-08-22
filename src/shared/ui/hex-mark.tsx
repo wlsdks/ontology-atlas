@@ -31,7 +31,7 @@ const HEX_POINTS = ((): string => {
 
 export interface HexMarkProps
   extends Omit<SVGProps<SVGSVGElement>, 'width' | 'height' | 'viewBox' | 'children'> {
-  /** 렌더 크기(px), 정사각형. 기본 12 — 타이틀/브레드크럼 옆 6px 급 리듬 글리프. */
+  /** Render size in px, square. Default 12 — the small rhythm glyph beside a title or breadcrumb. */
   size?: number;
 }
 

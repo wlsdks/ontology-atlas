@@ -13,17 +13,18 @@ import {
 import type { OntologyTreeBuildResult } from "./types";
 
 /**
- * 단일 "에이전트 온보딩 브리핑" — 개발자가 한 번 복사해 AI 코딩 에이전트
- * (Claude Code / Codex / Cursor)에 붙여넣으면, 그 에이전트가 이 코드베이스의
- * 온톨로지 메모리를 즉시 갖게 하는 완전한 1-paste 패킷.
+ * The single agent onboarding briefing — one copy, pasted once into an AI coding
+ * agent (Claude Code / Codex / Cursor), gives that agent this codebase's ontology
+ * memory immediately.
  *
- * 흩어져 있던 ~10개의 개별 "Copy …" 패킷(run order / graph-DB pack / readiness /
- * guardrails …)을 하나로 묶는다. 새 로직을 만들지 않고 기존 certified composer
- * (buildAgentHandoffPrompt 등)를 조립하며, 맨 앞에 mental-model + readiness
- * 헤더만 덧붙여 "무엇을 보고 있는지"를 먼저 알린다.
+ * It folds the ~10 scattered "Copy …" packets (run order, graph-DB pack,
+ * readiness, guardrails, …) into one. No new logic: it assembles the existing
+ * certified composers (`buildAgentHandoffPrompt` and friends) and prepends a
+ * mental-model plus readiness header so the reader learns what they are looking at
+ * first.
  *
- * 브리핑 본문은 에이전트가 소비하는 영어 텍스트(buildAgentHandoffPrompt 와 동일
- * 톤). UI 버튼 라벨/토스트만 i18n.
+ * The briefing body is English text an agent consumes (same register as
+ * `buildAgentHandoffPrompt`). Only the button label and toast go through i18n.
  */
 const BRIEFING_INTRO = [
   "# ontology-atlas — agent onboarding brief",
@@ -99,17 +100,18 @@ function buildBusinessToCodeLens(
 }
 
 export interface AgentBriefingPacket {
-  /** 한 번에 복사할 완전한 브리핑 문자열. */
+  /** The complete briefing string, copied in one go. */
   briefing: string;
-  /** readiness 요약 — 버튼 토스트/설명에 status·score 표시용. */
+  /** Readiness summary — the status and score shown in the button's toast and caption. */
   readiness: AgentReadinessSummary;
-  /** 추천 시작 노드(hub) — 호출자가 미리보기/설명에 쓸 수 있게 노출. */
+  /** Suggested starting nodes (hubs), exposed so the caller can preview or describe them. */
   entrypoints: AgentQueryEntrypoint[];
 }
 
 /**
- * vault 그래프에서 완전한 에이전트 온보딩 브리핑을 조립한다.
- * 모든 입력은 기존 순수 composer 에서 derive — 동일 그래프면 동일 출력.
+ * Assemble the complete agent onboarding briefing from the vault graph. Every
+ * input is derived from existing pure composers, so the same graph always produces
+ * the same output.
  */
 export function buildAgentBriefingPacket(
   nodes: readonly KnowledgeGraphNode[],

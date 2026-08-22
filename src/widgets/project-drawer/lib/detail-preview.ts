@@ -4,8 +4,8 @@ export interface ProjectDetailPreview {
 }
 
 /**
- * 드로어에서는 detail 전문 대신 앞부분만 요약해서 보여준다.
- * fenced code block 내부의 빈 줄은 preview block 분리로 취급하지 않는다.
+ * The drawer summarises only the beginning of the detail rather than the full text.
+ * An empty line inside a fenced code block is not treated as a preview-block break.
  */
 export function getProjectDetailPreview(
   detail: string | undefined,

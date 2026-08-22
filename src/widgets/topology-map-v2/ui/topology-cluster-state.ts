@@ -1,12 +1,13 @@
 /**
- * 밀도 게이트 슬라이스 (fable 설계) — 월드의 정적 클러스터 메타
- * (`topology-world.ts` 의 `childrenByParent` / `clusterMetaByParent`) 와 부모의
- * *라이브* 좌표를 합쳐 순수 `computeDensityGate` 를 호출하는 얇은 어댑터.
+ * The density gate slice (fable's design) — a thin adapter that combines the world's
+ * static cluster metadata (`childrenByParent` / `clusterMetaByParent` in
+ * `topology-world.ts`) with the parent's *live* coordinates and calls the pure
+ * `computeDensityGate`.
  *
- * anchor 를 매 프레임 라이브 위치로 다시 계산하는 이유: 드래그/살아있는
- * 그래프가 부모를 옮기면 칩도 함께 따라가야 하기 때문(정적 anchor 는 어긋난다).
- * 판정 로직(누가 접히는가/칩이 나오는가)은 전부 순수 모델(`density-gate.ts`)에
- * 있고, 이 파일은 좌표 주입만 담당한다.
+ * The anchor is recomputed from the live position every frame because a drag or the
+ * living graph moves the parent and the chip has to follow (a static anchor drifts).
+ * Every decision (who collapses, which chips appear) lives in the pure model
+ * (`density-gate.ts`); this file only injects coordinates.
  */
 
 import {
@@ -35,7 +36,7 @@ export function computeTopologyClusterState(
     childrenByParent: world.childrenByParent,
     expandedParents,
     parentGeometry,
-    // domain 자식(프로젝트의 뼈대)은 게이트 면제 — Part 0 도메인 티어 게이트 면제.
+    // domain children (a project's skeleton) are exempt from the gate — the Part 0 domain-tier gate exemption.
     kindOf: (id) => world.nodeById.get(id)?.kind,
   });
 }

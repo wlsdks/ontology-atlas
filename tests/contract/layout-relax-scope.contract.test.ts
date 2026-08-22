@@ -9,27 +9,31 @@ import {
 import { DENSITY_GATE_THRESHOLD } from "@/widgets/topology-map-v2/model/density-gate";
 
 /**
- * 배치 완화는 **그려질 노드에만** 돈다는 계약.
+ * The contract that layout relaxation runs **only on nodes that will be drawn**.
  *
- * 배경(2026-07-31 실측): 씨앗 배치(부채꼴 + phyllotaxis)는 싸고 완화가 비싸다 —
- * N=3,000 에서 씨앗 4.3ms 대 전체 2,253ms 로 **완화가 99.8%** 다. 그런데 그
- * 완화의 대부분은 화면에 한 번도 그려지지 않는 노드를 위한 것이었다: 밀도
- * 게이트가 자식 12개 초과 부모를 접어 element 의 **95%**가 칩 뒤에 숨는다.
+ * Background (measured 2026-07-31): seed placement (fan + phyllotaxis) is cheap
+ * and relaxation is expensive — at N=3,000 the seed takes 4.3ms against 2,253ms
+ * total, so **relaxation is 99.8%** of it. And most of that relaxation was for
+ * nodes never drawn at all: the density gate folds parents with more than 12
+ * children, hiding **95%** of elements behind a chip.
  *
- * 안 그리는 것을 위해 겹침을 푸는 계산이 느린 PC 에서 **13.5초 프리즈**를
- * 만들었다(CPU 6배 스로틀 실측, 라운드 42). 범위를 좁히면 같은 볼트가 7.5ms —
- * **284배**이고 겹침 품질은 오히려 낫다.
+ * Resolving overlaps for things that are not drawn produced a **13.5 second
+ * freeze** on a slow machine (measured under 6× CPU throttling, round 42).
+ * Narrowing the scope takes the same vault to 7.5ms — **284×** faster, with
+ * better overlap quality.
  *
- * ⚠️ **게이트는 ms 가 아니라 횟수/집합으로 잠근다.** `architecture.md` 선례:
- * *"성능 예산은 기계마다 달라 플레이크가 되지만 '닫혀 있으면 순회 0회'는 어느
- * 기계에서나 참이다."* 그래서 여기서는 시간을 재지 않고 **완화가 실제로 움직인
- * 노드가 범위 안에 갇히는가**를 본다.
+ * ⚠️ **The gate locks counts and sets, not milliseconds.** Precedent from
+ * `architecture.md`: *"성능 예산은 기계마다 달라 플레이크가 되지만 '닫혀 있으면
+ * 순회 0회'는 어느 기계에서나 참이다"* (a performance budget differs per machine
+ * and turns flaky, but "closed means zero traversals" is true on every machine).
+ * So nothing is timed here; what is measured is **whether the nodes relaxation
+ * actually moved stay inside the scope**.
  */
 
 const RINGS = { domain: 250, capability: 145, element: 90 };
 const RADII = { project: 30, domain: 17, capability: 11, element: 7 };
 
-/** 한 부모가 임계를 넘는 자식을 갖는 볼트 — 게이트가 접을 대상이 실재한다. */
+/** A vault where one parent exceeds the child threshold, so the gate really has something to fold. */
 function denseVault(childCount: number): LayoutGraphNode[] {
   const nodes: LayoutGraphNode[] = [
     { id: "p", kind: "project", parentId: null },
@@ -67,7 +71,7 @@ const movedIds = (
 describe("layout relax scope contract", () => {
   it("범위 밖 노드는 **한 톨도 움직이지 않는다** (완화 대상에서 아예 빠진다)", () => {
     const nodes = denseVault(DENSITY_GATE_THRESHOLD * 4);
-    // 게이트가 접을 서브트리(c0 의 자식 전부)를 범위에서 뺀다.
+    // Exclude the subtree the gate will fold (all of c0's children) from the scope.
     const scope = new Set(nodes.filter((n) => n.parentId !== "c0").map((n) => n.id));
     const moved = movedIds(nodes, scope);
     const outsideMoved = [...moved].filter((id) => !scope.has(id));
@@ -82,14 +86,15 @@ describe("layout relax scope contract", () => {
   });
 
   it("좌표 구멍이 없다 — 범위 밖 노드도 **씨앗 좌표를 갖는다**", () => {
-    // 티어가 열리거나 칩을 펼칠 때 좌표가 비어 있으면 노드가 원점에 쌓인다.
-    // 완화만 건너뛸 뿐 배치는 전부 한다는 것이 이 설계의 전제다.
+    // If coordinates are empty when a tier opens or a chip expands, nodes pile up at
+    // the origin. This design assumes placement always runs and only relaxation is
+    // skipped.
     const nodes = denseVault(DENSITY_GATE_THRESHOLD * 4);
     const scope = new Set(["p", "d0", "d1", "c0", "c1"]);
     const placed = place(nodes, scope);
     expect(placed.size).toBe(nodes.length);
     const atOrigin = [...placed.values()].filter((p) => p.x === 0 && p.y === 0);
-    // 원점은 project 하나뿐이어야 한다 — 나머지가 원점이면 씨앗이 안 돈 것이다.
+    // Only the project may sit at the origin — anything else there means the seed never ran.
     expect(atOrigin.map((p) => p.id)).toEqual(["p"]);
   });
 
@@ -99,13 +104,15 @@ describe("layout relax scope contract", () => {
   });
 
   it("범위 밖은 **장애물로도 남지 않는다** — 있든 없든 범위 안 좌표가 같다", () => {
-    // 처음엔 범위 밖을 `pinned: true` 로 items 에 남겼다. 이동은 막혔지만
-    // 그리드 재구축과 쌍 열거는 그대로 돌아 **비용이 하나도 안 줄었다**
-    // (실측: N=3,000 이 2,081ms 로 변동 없음 → 제외 후 21ms).
+    // The first attempt left out-of-scope nodes in items as `pinned: true`. Movement
+    // was blocked but grid rebuilds and pair enumeration still ran, so **the cost did
+    // not fall at all** (measured: N=3,000 stayed at 2,081ms; excluding them gave
+    // 21ms).
     //
-    // 관측 가능한 불변식은 이것이다: 범위 밖 노드가 **몇 개든** 범위 안 노드의
-    // 좌표가 바뀌지 않는다. 장애물로 남기면 그 순간 좌표가 달라지므로, 다음
-    // 사람이 되돌리면 여기서 걸린다(겹침 유무 같은 우연한 기하에 기대지 않는다).
+    // The observable invariant is this: **however many** out-of-scope nodes exist, the
+    // coordinates of in-scope nodes do not change. Leaving them as obstacles changes
+    // those coordinates immediately, so reverting is caught here — without relying on
+    // incidental geometry such as whether an overlap happens to occur.
     const scope = new Set(["p", "d0", "d1", "c0", "c1"]);
     const few = place(denseVault(DENSITY_GATE_THRESHOLD * 2), scope);
     const many = place(denseVault(DENSITY_GATE_THRESHOLD * 20), scope);
@@ -138,12 +145,13 @@ describe("layout relax scope contract", () => {
 
   describe("펼침 시 국소 재완화 (relaxNewlyVisible)", () => {
     /**
-     * 한 부모의 자식끼리는 phyllotaxis 간격이 이미 충돌을 막지만(실측 겹침 0),
-     * **다른 부모의 부채와는 겹친다** — 3개 펼침 5건 · 6개 18건 · 12개 70건.
-     * 전체 재완화는 비용이 누적되고(24개에서 341ms) **이미 보고 있던 노드가
-     * 움직인다**(최대 15 유닛). 그래서 새로 보이는 것만 국소로 푼다.
+     * Within one parent, phyllotaxis spacing already prevents collisions (measured 0
+     * overlaps), but **fans of different parents do overlap** — 5 cases when 3 expand,
+     * 18 at 6, 70 at 12. Relaxing everything accumulates cost (341ms at 24) and
+     * **moves nodes the user was already looking at** (up to 15 units). So only the
+     * newly visible ones are relaxed, locally.
      */
-    /** 두 부모가 서로 가까워 부채가 실제로 겹치는 볼트. */
+    /** A vault where two parents sit close enough that their fans really overlap. */
     function twoFans(childCount: number): LayoutGraphNode[] {
       const nodes: LayoutGraphNode[] = [
         { id: "p", kind: "project", parentId: null },
@@ -167,12 +175,13 @@ describe("layout relax scope contract", () => {
       );
 
     it("bbox 밖의 **먼** 노드는 결과에 영향을 주지 않는다 — 비용이 클릭 수와 무관한 이유", () => {
-      // 이웃(같은 도메인의 형제 부채)은 당연히 영향을 준다 — 그게 이 함수가
-      // 푸는 겹침이다. 여기서 고정하는 것은 **먼 노드는 아예 안 본다** 는 것:
-      // 그래서 이미 펼친 클러스터가 2개든 24개든 클릭당 비용이 같다
-      // (실측 2026-07-31: 클릭당 items 107~134개, 클릭 순서와 무관).
+      // Neighbours (sibling fans in the same domain) naturally influence each other —
+      // that is the overlap this function resolves. What is pinned here is that
+      // **distant nodes are never looked at**, so the per-click cost is the same
+      // whether 2 or 24 clusters are already expanded (measured 2026-07-31: 107–134
+      // items per click, independent of click order).
       const near = twoFans(DENSITY_GATE_THRESHOLD * 3);
-      // 반대편 도메인에 같은 크기의 부채를 하나 더 — 공간적으로 멀다.
+      // One more fan of the same size in the opposite domain — spatially distant.
       const withFar: LayoutGraphNode[] = [
         ...near,
         { id: "dFar", kind: "domain", parentId: "p" },
@@ -237,7 +246,7 @@ describe("layout relax scope contract", () => {
       const seeded = count(pts);
       relaxNewlyVisible(pts, nodes, newly, placed, { radii: RADII });
       const relaxed = count(pts);
-      // 씨앗 상태에 겹침이 실재해야 이 계약이 무언가를 지킨다(빈 진술 방지).
+      // The seed state must really contain overlaps for this contract to guard anything (no vacuous assertion).
       expect(seeded).toBeGreaterThan(0);
       expect(relaxed).toBeLessThan(seeded);
     });

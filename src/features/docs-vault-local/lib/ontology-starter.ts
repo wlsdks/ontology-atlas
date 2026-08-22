@@ -306,11 +306,11 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
   - \`relates: [...]\` — loose related-to references (optional)
 `;
 
-// ── 한국어 스타터 본문 (#73) ────────────────────────────────────────────────
-// `cli/templates/vault-ko/` 와 **바이트 동일**해야 한다 — 계약 테스트가 잡는다.
-// 파일 세트와 frontmatter(slug/kind/title/display_*)는 영어판과 같고 산문 본문만
-// 다르다. 그래서 어떤 언어로 만들었든 같은 그래프가 나오고, 검색의 단일
-// 진실원인 canonical `title` 도 그대로다.
+// ── Korean starter bodies ───────────────────────────────────────────────────
+// Must be **byte-identical** to `cli/templates/vault-ko/` — a contract test enforces it.
+// The file set and the frontmatter (slug/kind/title/display_*) match the English version and only
+// the prose differs, so any creation language yields the same graph and the canonical `title`,
+// the single source of truth for search, is unchanged.
 const README_MD_KO = `---
 slug: README
 kind: vault-readme
@@ -582,7 +582,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
   - \`relates: [...]\` — 느슨한 연관 참조(선택)
 `;
 
-/** 스타터 본문 언어. 파일 세트·frontmatter 는 동일, 산문만 다르다. */
+/** Starter body language. The file set and frontmatter are identical; only the prose differs. */
 export type StarterLocale = "en" | "ko";
 
 const STARTER_FILES_EN: ReadonlyArray<StarterFile> = [
@@ -601,15 +601,15 @@ const STARTER_FILES_KO: ReadonlyArray<StarterFile> = [
   { relPath: 'elements/example-element.md', content: ELEMENT_MD_KO },
 ];
 
-/** 이 로케일의 스타터 파일. 모르는 로케일은 영어로 떨어진다. */
+/** The starter files for this locale. An unknown locale falls back to English. */
 export function starterFilesForLocale(locale: string): ReadonlyArray<StarterFile> {
   return locale === "ko" ? STARTER_FILES_KO : STARTER_FILES_EN;
 }
 
 /**
- * 정적 스타터에는 영구 식별자를 넣지 않는다. 실제 vault scaffold 한 번마다
- * 모든 kind 문서(vault-readme 포함)에 서로 다른 UUIDv4를 발급한다. 테스트는
- * factory를 주입해 산출물을 결정론적으로 검증한다.
+ * Static starters carry no permanent identity. Every actual vault scaffold mints a distinct
+ * UUIDv4 for each `kind` document (including vault-readme). Tests inject a factory to verify the
+ * output deterministically.
  */
 export function materializeStarterFiles(
   locale: string,
@@ -629,30 +629,28 @@ export function materializeStarterFiles(
 }
 
 /**
- * 볼트 안에 두는 **에이전트 안내문**. 볼트 폴더가 곧 에이전트의 작업 폴더라
- * codex 는 `AGENTS.md` 를, Claude Code 는 `CLAUDE.md`/`AGENTS.md` 를 여기서
- * 스스로 읽는다.
+ * The **agent guide** placed inside the vault. The vault folder is the agent's working folder, so
+ * codex reads `AGENTS.md` and Claude Code reads `CLAUDE.md`/`AGENTS.md` from here on their own.
  *
- * ## 왜 필요한가 (2026-08-17 실측)
+ * **Why it is needed** (measured 2026-08-17). Even with the MCP server properly attached, **the
+ * agent does not reach for it.** Asked in the installed app to list every concept slug in the
+ * folder, codex did this:
  *
- * MCP 서버가 제대로 붙어 있어도 **에이전트가 그걸 안 집는다.** 설치된 앱에서
- * codex 에게 *"이 폴더에 있는 개념들의 slug 를 전부 알려줘"* 라고 물었더니:
- *
- * | | 무엇을 했나 | MCP 호출 |
+ * | | What it did | MCP calls |
  * |---|---|---|
- * | 안내문 없음 | 다섯 파일을 `sed` 로 읽고 `grep '^slug:'` 로 한 번 더 | **0회** |
- * | 안내문 있음 | *"list_concepts 를 먼저 호출하겠습니다"* → 바로 호출 | **1회** |
+ * | No guide | read five files with `sed`, then `grep '^slug:'` again | **0** |
+ * | With guide | *"I will call list_concepts first"* → called it | **1** |
  *
- * 도구 설명은 이미 *"AI agents call this first"* 라고 적혀 있었다. 모자란 것은
- * 설명이 아니라 **작업 폴더에서 읽히는 한 줄**이었다.
+ * The tool description already said *"AI agents call this first"*. What was missing was not a
+ * description but **one line readable from the working folder**.
  *
- * 이 저장소가 정해 둔 확장 방식과도 맞는다(`forbidden.md`): *"허용되는 확장은
- * 파일에 적어 두는 형태뿐 — vault 안의 마크다운… 코드는 한 줄도 실행하지 않고,
- * git diff 로 무엇이 바뀌었는지 다 보여야 한다."*
+ * This matches the extension mechanism this repository settled on (`.claude/rules/forbidden.md`):
+ * the only permitted extension is something written to a file — markdown inside the vault — that
+ * executes no code and shows every change in a git diff.
  *
- * ⚠️ **개념 노드가 아니다.** `ONTOLOGY_STARTER_FILES` 에 넣으면 개수 계약
- * (`starter-counts.ts`)이 5를 6으로 세게 되고, 그 숫자는 화면 문구가 쓴다.
- * 그래서 설정 파일(`.mcp.json` · `.codex/config.toml`) 과 같은 자리에서 쓴다.
+ * ⚠️ **It is not a concept node.** Putting it in `ONTOLOGY_STARTER_FILES` would make the count
+ * contract (`starter-counts.ts`) report 6 instead of 5, and screen copy uses that number. So it is
+ * written alongside the config files (`.mcp.json`, `.codex/config.toml`).
  */
 export const VAULT_AGENT_GUIDE_PATH = "AGENTS.md";
 
@@ -742,7 +740,7 @@ const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
 안 보입니다.
 `;
 
-/** 이 로케일의 안내문. 모르는 로케일은 영어로 떨어진다 — 스타터와 같은 규율. */
+/** The guide for this locale. An unknown locale falls back to English — same rule as the starters. */
 export function vaultAgentGuideForLocale(locale: string): StarterFile {
   return {
     relPath: VAULT_AGENT_GUIDE_PATH,
@@ -751,19 +749,17 @@ export function vaultAgentGuideForLocale(locale: string): StarterFile {
 }
 
 /**
- * Claude Code 를 위한 **다리 파일**. 내용은 한 줄뿐이고 `AGENTS.md` 를 가리킨다.
+ * The **bridge file** for Claude Code. Its content is a single line pointing at `AGENTS.md`.
  *
- * ## 왜 따로 필요한가
+ * With the guide living only in `AGENTS.md`, **a Claude Code session receives nothing** — this
+ * repository's own tool table records why: Codex reads `AGENTS.md` directly, while Claude Code
+ * reaches it through `CLAUDE.md`'s `@AGENTS.md` import. The vault uses the same arrangement this
+ * repository uses at its own root.
  *
- * 안내문을 `AGENTS.md` 하나로 두면 **Claude Code 세션은 아무것도 못 받는다** —
- * 이 저장소 자신의 도구 표가 그렇게 적어 두었다: `AGENTS.md` 를 Codex 는 직접
- * 읽고, Claude Code 는 `CLAUDE.md` 의 `@AGENTS.md` 임포트를 거쳐 읽는다.
- * 이 저장소가 자기 루트에 쓰는 방식을 그대로 볼트에도 쓴다.
- *
- * 그리고 제품에 이미 그 판정을 하는 검사가 있다 —
- * `cli/src/lib/agent-files.mjs` 의 `claude-agents-bridge`. 다만 `CLAUDE.md`
- * 자체가 없으면 **「해당 없음」으로 조용히 넘어가서**, 안내가 반쪽만 닿는 상태를
- * 아무도 못 봤다. 파일을 놓으면 그 검사가 비로소 일한다.
+ * The product already has a check for this — `claude-agents-bridge` in
+ * `cli/src/lib/agent-files.mjs`. But with no `CLAUDE.md` at all it **silently reports "not
+ * applicable"**, so nobody saw that the guidance was reaching only half its audience. Placing the
+ * file is what puts that check to work.
  */
 export const VAULT_CLAUDE_BRIDGE_PATH = "CLAUDE.md";
 
@@ -785,7 +781,7 @@ Codex · Cursor · Gemini CLI 는 \`AGENTS.md\` 를 직접 읽습니다. 안내�
 두려고 이 파일은 가리키기만 합니다 — 고칠 때는 \`AGENTS.md\` 를 고치세요.
 `;
 
-/** 이 로케일의 다리 파일. 모르는 로케일은 영어로 떨어진다. */
+/** The bridge file for this locale. An unknown locale falls back to English. */
 export function vaultClaudeBridgeForLocale(locale: string): StarterFile {
   return {
     relPath: VAULT_CLAUDE_BRIDGE_PATH,
@@ -795,36 +791,34 @@ export function vaultClaudeBridgeForLocale(locale: string): StarterFile {
 
 
 /**
- * 볼트가 들고 다니는 **절차 스킬 셋**.
+ * The **procedural skill set** the vault carries with it.
  *
- * ## 왜 볼트 안에 두나 (2026-08-17 실측)
+ * **Why they live inside the vault** (measured 2026-08-17). The app launches the coding agent
+ * **from the vault folder** (`cwd: vaultRoot` in `use-acp-session.ts`), so
+ * `.claude/skills/<name>/SKILL.md` inside the vault appears directly in that session's `/` listing.
+ * Measured: of the 50 commands in a session launched with the app's own configuration, these three
+ * took **the first three slots**, tagged `(project)`.
  *
- * 앱은 코딩 에이전트를 **볼트 폴더에서** 띄운다(`use-acp-session.ts` 의
- * `cwd: vaultRoot`). 그래서 볼트 안 `.claude/skills/<이름>/SKILL.md` 는 그
- * 세션의 `/` 목록에 그대로 올라온다. 실측: 앱 전용 설정으로 띄운 세션의 명령
- * 50개 중 이 셋이 **맨 앞 세 자리**를 차지했고 `(project)` 딱지가 붙었다.
+ * **Why the tool table is not enough.** `AGENTS.md` says **what to call** but not **in what order,
+ * or where to stop**. With 35 tools the agent re-decides that order every time, so the same request
+ * produces different work each time. These three fix the order — in particular "do not write during
+ * the proposal step" and "verify after writing".
  *
- * ## 왜 도구 표만으로는 부족한가
+ * ⚠️ **They are not concept nodes.** Putting them in `ONTOLOGY_STARTER_FILES` would make the count
+ * contract report 8 instead of 5, and screen copy uses that number. They are written alongside the
+ * guide and the config files.
  *
- * `AGENTS.md` 는 **무엇을 부를지**를 알려 주지만 **어떤 순서로, 어디서 멈출지**는
- * 말하지 않는다. 도구가 35개라 그 순서를 매번 에이전트가 새로 정하고, 그래서
- * 같은 부탁에 매번 다른 일이 벌어진다. 이 셋은 그 순서를 고정한다 — 특히
- * 「제안 단계는 쓰지 않는다」와 「쓴 다음 확인한다」를.
+ * ⚠️ **`description` is rendered on screen** — the composer's `/` menu truncates it to one line
+ * (`AcpChatPanel`). So the opening has to carry the meaning, and em dashes are not used.
+ * Gate: `tests/contract/starter-templates.contract.test.ts`.
  *
- * ⚠️ **개념 노드가 아니다.** `ONTOLOGY_STARTER_FILES` 에 넣으면 개수 계약이
- * 5를 8로 세고, 그 숫자를 화면 문구가 쓴다. 안내문·설정 파일과 같은 자리에서 쓴다.
- *
- * ⚠️ **`description` 은 화면에 그려진다** — 작성창 `/` 메뉴가 한 줄로 잘라서
- * 보여 준다(`AcpChatPanel`). 그래서 앞부분이 뜻을 날라야 하고, 작대기(—)를
- * 쓰지 않는다. 게이트: `tests/contract/starter-templates.contract.test.ts`.
- *
- * ⚠️ Codex 는 `.agents/skills/` 를 읽는다. 그쪽 사본은 **아직 안 넣었다** —
- * `codex-acp` 가 스킬을 `/` 목록에 올리는지 재 보지 않았고, 재지 않은 사본을
- * 모든 볼트에 넣으면 죽은 파일이 된다.
+ * ⚠️ Codex reads `.agents/skills/`. That copy is **not shipped yet** — whether `codex-acp` surfaces
+ * skills in its `/` listing has not been measured, and shipping an unmeasured copy into every vault
+ * would make it a dead file.
  */
 export const VAULT_SKILL_NAMES = ["atlas-review", "atlas-grow", "atlas-absorb"] as const;
 
-/** 볼트 안 스킬 파일의 자리. Claude Code 가 이 폴더를 읽는다. */
+/** Where a skill file lives inside the vault. Claude Code reads this folder. */
 export function vaultSkillPath(name: string): string {
   return `.claude/skills/${name}/SKILL.md`;
 }
@@ -1162,7 +1156,7 @@ description: 글에서 개념 뽑기. 회의록·기획서·PR 설명에서 개�
 - \`title\` 언어를 볼트와 다르게 넣어 검색이 갈린다
 `;
 
-/** 이 로케일의 절차 스킬. 모르는 로케일은 영어로 떨어진다 — 스타터와 같은 규율. */
+/** The procedural skills for this locale. An unknown locale falls back to English. */
 export function vaultSkillFilesForLocale(locale: string): ReadonlyArray<StarterFile> {
   const ko = locale === "ko";
   return [
@@ -1173,18 +1167,18 @@ export function vaultSkillFilesForLocale(locale: string): ReadonlyArray<StarterF
 }
 
 /**
- * 기존 소비자를 위한 영어 기본값 — 개수 계약(`starter-counts`)과 CLI 기본
- * `init` 이 이걸 기준으로 남는다.
+ * The English default, kept for existing consumers — the count contract (`starter-counts`) and the
+ * CLI's default `init` both measure against it.
  */
 export const ONTOLOGY_STARTER_FILES: ReadonlyArray<StarterFile> = STARTER_FILES_EN;
 
 /**
- * 설정 템플릿이 서버를 **어떻게 띄우는가**.
+ * **How** a config template launches the server.
  *
- * 설치된 앱은 자기 번들 안의 바이너리 절대 경로를 넘긴다 — 사용자 머신에
- * node 도 npx 도 소스 체크아웃도 필요 없다. 그걸 모르는 표면(웹)은 소스
- * 체크아웃 자리표시자로 강등한다. `npx` 는 더 이상 어느 경로에도 없다
- * (npm 발행 계획 폐기, docs/DECISIONS.md 2026-07-27).
+ * The installed app passes the absolute path of the binary inside its own bundle, so the user's
+ * machine needs neither node, npx, nor a source checkout. A surface that does not know that path
+ * (the web) degrades to a source-checkout placeholder. `npx` is no longer on any path (the npm
+ * publishing plan was dropped — docs/DECISIONS.md 2026-07-27).
  */
 const SOURCE_CHECKOUT_PLACEHOLDER: McpServerLaunch = {
   kind: 'source-checkout',

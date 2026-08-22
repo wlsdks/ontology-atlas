@@ -110,15 +110,16 @@ describe("easeCameraKeyframe", () => {
   });
 });
 
-/* ── van Wijk 최적 경로 ─────────────────────────────────────────────────── */
+/* ── van Wijk optimal path ──────────────────────────────────────────────── */
 
 const VIEW_W = 1512;
 
 /**
- * **광학 흐름** — van Wijk 가 실제로 일정하게 만든 그 값이다: 한 걸음의
- * 월드 이동량을 그 순간 화면에 담기는 월드 폭으로 나눈 것(= 화면 폭 대비
- * 몇 배가 흘러갔나). 픽셀로 재면 줌 항을 어떻게 섞을지가 임의값이 되어
- * 무엇을 재는지 흐려진다 — 그래서 논문의 무차원량을 그대로 쓴다.
+ * **Optical flow** — the quantity van Wijk actually holds constant: one step's
+ * world displacement divided by the world width the screen holds at that moment
+ * (i.e. how many screen-widths flowed past). Measured in pixels, how to mix in the
+ * zoom term becomes arbitrary and it stops being clear what is being measured, so
+ * the paper's dimensionless quantity is used as-is.
  */
 function opticalFlowSpread(
   path: (p: number) => CameraKeyframe,
@@ -132,12 +133,13 @@ function opticalFlowSpread(
     const w = (VIEW_W / prev.scale + VIEW_W / now.scale) / 2;
     const dlnw = Math.abs(Math.log(prev.scale / now.scale));
     /*
-     * 논문의 계량이다. 해석적으로 확인한 항등식:
+     * The paper's metric. Identity verified analytically:
      *   u'(s)/w(s) = sech(ρs+r₀)/ρ · · · w'(s)/w(s) = −ρ·tanh(ρs+r₀)
-     * 이므로 `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1` 이다. 즉 이 조합만이
-     * 경로 위에서 상수이고, 그것이 van Wijk 가 최적화한 「지각되는 흐름」이다.
-     * 이동만 재거나(du/w) ρ 를 반대로 걸면(hypot(du/w, ρ·dlnw)) 상수가 아니라서
-     * 시험이 엉뚱한 결론을 낸다 — 이 라운드에서 그 둘을 다 밟아 봤다.
+     * hence `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1`. Only this combination is
+     * constant along the path, and that is the perceived flow van Wijk optimised.
+     * Measuring travel alone (du/w), or applying ρ the other way round
+     * (hypot(du/w, ρ·dlnw)), is not constant and makes the test draw the wrong
+     * conclusion — both were stepped on during this round.
      */
     flow.push(Math.hypot((VAN_WIJK_RHO * du) / w, dlnw / VAN_WIJK_RHO));
     prev = now;
@@ -159,10 +161,11 @@ describe("van Wijk 경로 — 광학 흐름이 일정하다", () => {
   });
 
   /*
-   * `/gate-probe` — **배선을 재는 단 하나의 단언이다.** 나머지는
-   * `vanWijkCameraKeyframe` 을 직접 부르므로, `easeCameraKeyframe` 안에서
-   * 경로를 다시 선형으로 되돌려도 전부 초록이다(실측으로 확인했다). 뷰포트
-   * 폭을 준 호출이 실제로 경로를 타는지는 여기서만 잡힌다.
+   * `/gate-probe` — **the one assertion that measures the wiring.** Every other
+   * test calls `vanWijkCameraKeyframe` directly, so reverting the path back to
+   * linear inside `easeCameraKeyframe` leaves them all green (verified by probe).
+   * Whether a call that supplies a viewport width really takes the path is caught
+   * only here.
    */
   it("뷰포트 폭을 주면 경로가 바뀐다 — 안 주면 선형, 주면 van Wijk", () => {
     const a: CameraKeyframe = { x: 0, y: 0, scale: 1 };
@@ -180,10 +183,10 @@ describe("van Wijk 경로 — 광학 흐름이 일정하다", () => {
   });
 
   /*
-   * `/gate-probe` — **이 단언이 van Wijk 를 lerp 와 가르는 유일한 지점이다.**
-   * 어떤 축별 보간도 중간 배율이 두 끝점 사이에 갇히므로, 「중간에 더 물러난다」
-   * 는 선형으로는 원리적으로 만들 수 없다. 경로를 lerp 로 되돌리면 여기가
-   * 빨개진다(실측으로 확인).
+   * `/gate-probe` — **the only point that separates van Wijk from a lerp.** Any
+   * per-axis interpolation traps the mid-path zoom between the two endpoints, so
+   * "pull back further in the middle" is impossible for a linear path in
+   * principle. Reverting the path to a lerp turns this red (verified by probe).
    */
   it("멀리 갈수록 중간에 물러난다 — 같은 배율의 먼 이동에서 중간이 더 축소된다", () => {
     const a: CameraKeyframe = { x: 0, y: 0, scale: 1 };
@@ -221,11 +224,11 @@ describe("van Wijk 경로 — 광학 흐름이 일정하다", () => {
       scale: start.scale + (target.scale - start.scale) * p,
     }));
     /*
-     * 1.00 = 완전 균일. van Wijk 경로는 **정의상** 이 계량에서 상수이므로
-     * 유한 표본 잔차만 남아야 하고, 선형 보간은 크게 흔들려야 한다. 두
-     * 단언을 같이 두는 이유: 앞의 것만 두면 두 경로를 다 망가뜨려도 초록이고,
-     * 뒤의 것만 두면 「선형이 원래 나쁘다」만 말하지 우리 경로가 좋다는 말을
-     * 못 한다.
+     * 1.00 = perfectly uniform. The van Wijk path is constant in this metric **by
+     * definition**, so only finite-sampling residue should remain, while linear
+     * interpolation must swing wide. Both assertions are kept because the first
+     * alone stays green even if both paths are broken, and the second alone only
+     * says linear is bad — never that ours is good.
      */
     expect(
       wijk.ratio,

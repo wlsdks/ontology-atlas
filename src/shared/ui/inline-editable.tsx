@@ -11,39 +11,39 @@ import { cn } from "@/shared/lib/cn";
 import { fieldClass } from '@/shared/ui/control-class';
 
 interface Props {
-  /** 현재 값 (display + edit 모드 초기값). */
+  /** Current value — shown in view mode, seeded into edit mode. */
   value: string;
-  /** 편집 가능 여부. false 면 클릭해도 편집 모드 진입 안 함. */
+  /** When false, clicking does not enter edit mode. */
   editable: boolean;
-  /** 편집 완료(Enter·blur) 시 호출. 값이 동일하면 호출 안 됨. */
+  /** Called on commit (Enter or blur). Not called when the value is unchanged. */
   onSave: (next: string) => void | Promise<void>;
   /**
-   * 렌더 태그. 편집 모드에선 input/textarea 로 전환되지만, view 모드의
-   * 레이아웃을 유지하기 위해 같은 블록 레벨을 선택할 수 있다.
+   * The tag to render. Edit mode swaps in an input/textarea, so this exists to keep
+   * view mode at the same block level and preserve the surrounding layout.
    */
   as?: "h1" | "h2" | "h3" | "p" | "span" | "div";
-  /** true 면 textarea, false 면 input. */
+  /** textarea when true, input when false. */
   multiline?: boolean;
   className?: string;
-  /** 값이 비어 있을 때 view 모드에 표시할 placeholder 텍스트. */
+  /** Placeholder shown in view mode when the value is empty. */
   placeholder?: string;
-  /** 비어 있는 값 저장 허용 여부. false (기본) 면 빈 값 제출 시 취소 처리. */
+  /** Whether an empty value may be saved. When false (default) an empty submit cancels. */
   allowEmpty?: boolean;
-  /** 접근성 라벨 (스크린리더). */
+  /** Accessible name for screen readers. */
   ariaLabel?: string;
-  /** E2E 식별자. view·edit 양쪽 element 에 그대로 부여. */
+  /** E2E id, applied to both the view and the edit element. */
   dataTestId?: string;
 }
 
 /**
- * 클릭 → 인라인 편집 → Enter·blur 저장 · Esc 취소 의 얇은 컴포넌트.
+ * Click → edit in place → commit on Enter/blur, cancel on Esc.
  *
- * Notion / Obsidian 식 "내가 주인인 공간은 즉시 편집" UX 를 위한 기본 블록.
- * owner 가 자기 프로젝트 상세 페이지를 보면 h1·description 을 바로 고칠
- * 수 있도록 사용한다.
+ * The building block for the Notion/Obsidian expectation that a space you own is
+ * editable on the spot: an owner reading their own project detail page can fix the
+ * `h1` and the description without leaving it.
  *
- * 저장 실패 처리는 호출부(onSave) 책임 — 이 컴포넌트는 throw 를 그대로
- * 흘려보내지 않고 삼킨 뒤 view 모드로 복귀한다.
+ * Handling a failed save is the caller's job (`onSave`). This component swallows
+ * the throw rather than propagating it and returns to view mode.
  */
 export function InlineEditable({
   value,
@@ -63,7 +63,7 @@ export function InlineEditable({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // 외부에서 value 가 바뀌면 (실시간 구독 등) 편집 중이 아닌 경우에만 동기화.
+  // Sync an externally changed value (live subscription and the like) only while not editing.
   useEffect(() => {
     if (!editing) queueMicrotask(() => setDraft(value));
   }, [value, editing]);
@@ -72,7 +72,7 @@ export function InlineEditable({
     if (!editing) return;
     const el = multiline ? textareaRef.current : inputRef.current;
     el?.focus();
-    // select 는 input 에서만 동작하도록.
+    // Selection applies to the input case only.
     if (el && "select" in el && typeof el.select === "function") {
       el.select();
     }
@@ -103,7 +103,7 @@ export function InlineEditable({
     try {
       await onSave(next);
     } catch {
-      // 호출부가 토스트 등으로 안내. 이곳은 view 복귀만.
+      // The caller reports the failure (a toast, say); here we only return to view mode.
     } finally {
       setSaving(false);
       setEditing(false);
@@ -116,7 +116,7 @@ export function InlineEditable({
       cancel();
       return;
     }
-    // single-line 은 Enter 로 바로 커밋. multiline 은 Cmd/Ctrl+Enter.
+    // Single-line commits on Enter; multiline needs Cmd/Ctrl+Enter.
     if (e.key === "Enter") {
       if (multiline && !(e.metaKey || e.ctrlKey)) return;
       e.preventDefault();
@@ -207,9 +207,9 @@ function renderView({
   ariaLabel?: string;
   dataTestId?: string;
 }) {
-  // ariaLabel 은 view 모드에서도 surface — interactive role=button 일 때
-  // 스크린리더가 "이게 뭘 편집하는 버튼" 인지 알아야 한다. 이전엔 destructure
-  // 만 하고 spread 누락이라 view 모드 a11y 가 비었음.
+  // ariaLabel has to reach view mode too: with `role=button`, a screen reader must
+  // be able to say which field this button edits. It was previously destructured
+  // but never spread, leaving view mode with no accessible name.
   const commonProps = {
     className,
     "data-testid": dataTestId,

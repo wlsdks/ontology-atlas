@@ -1,55 +1,55 @@
 /**
- * **잠깐 뜨는 표면은 스스로를 밝힌다** (2026-08-11).
+ * **A transient surface declares what it is** (2026-08-11).
  *
- * ## 왜 생겼나 — 검사가 볼 수 없는 층이 있었다
+ * **Why it exists — there was a layer no check could see.** On 2026-08-10 the
+ * owner found three defects in the real app. The notice shown when arrow-key
+ * walking on the map reaches a dead end ① appeared in the bottom-right corner
+ * (500px from the blocked node), ② never dismissed itself, and ③ **swallowed the
+ * arrow keys entirely while it was up**. All three had one cause: it was raised
+ * through the app-wide toast, whose close button stops the dismissal timer when
+ * it takes focus, and the keys then never reach the canvas.
  *
- * 2026-08-10 에 소유자가 실물에서 결함 셋을 찾았다. 지도를 방향키로 걷다 막다른
- * 길에 닿았을 때 뜨는 안내가 ① 화면 우하단에 떴고(막힌 노드에서 500px) ② 스스로
- * 사라지지 않았고 ③ **떠 있는 동안 방향키가 아예 안 먹었다.** 셋 다 한 원인이었다 —
- * 앱 공용 토스트로 띄웠고, 그 닫기 버튼이 초점을 받으면 사라지는 시계가 멈추며
- * 키가 캔버스에 도착하지 않는다.
+ * **The problem was not the defect but that no check could see it.** An
+ * instrument sweeping every route did not see it either: nothing on screen told
+ * the app which element was "the notice", so the instrument picked the
+ * **largest** element and measured the scrim instead of the dialog. It reported
+ * 6 violations, every one of them the instrument's own fault (the settings sheet
+ * closes on Escape and returns focus correctly). Neither passing nor failing was
+ * evidence.
  *
- * **문제는 결함이 아니라, 그것을 볼 수 있는 검사가 하나도 없었다는 것이다.**
- * 그래서 전 라우트를 훑는 계기를 만들어 봤는데 그것도 못 봤다: 화면에 뜬 것 중
- * 무엇이 「안내」인지 앱이 말해 주지 않으니, 계기가 **가장 큰 요소**를 골라
- * 다이얼로그 대신 스크림을 쟀다. 위반 6건이 떴고 전부 계기 탓이었다(설정 시트는
- * Escape 로 잘 닫히고 초점도 돌아온다). 통과도 실패도 증거가 아니었던 것이다.
+ * This repo has had that disease repeatedly — motion checks carried
+ * **hand-maintained file lists**, so a surface missing from the list was quietly
+ * outside the check (dropdown open/close actually was). It is the discipline
+ * `/gate-probe` names: making a human maintain the list means the check silently
+ * goes toothless whenever an entry is not added.
  *
- * 이 저장소는 그 병을 이미 여러 번 앓았다 — 모션 검사들이 **사람이 손으로 적어 둔
- * 파일 목록**을 들고 있어서, 목록에 없는 표면은 조용히 검사 밖이었다(드롭다운
- * 여닫기가 실제로 그랬다). `/gate-probe` 의 규율 그대로다: *"금지어 목록을 사람이
- * 손으로 관리하게 만들기 — 항목을 안 더하면 검사가 조용히 무력해진다."*
+ * **So each surface declares its kind through one attribute.** The check then
+ * measures that instead of guessing, and each kind owes different properties:
  *
- * ## 그래서 무엇을 하나
- *
- * 표면이 **자기 종류를 한 글자 표시로 선언한다.** 그러면 검사는 짐작하지 않고
- * 그것만 재고, 종류마다 지켜야 할 성질이 갈린다:
- *
- * | 종류 | 자리 | 초점 | Escape |
+ * | Kind | Position | Focus | Escape |
  * |---|---|---|---|
- * | `anchored` 앵커드 팝오버·목록 | 부른 것 옆 | 받아도 된다 | 닫히고 초점이 돌아온다 |
- * | `menu` 컨텍스트 메뉴 | 부른 자리 옆 | 받아도 된다 | 닫히고 초점이 돌아온다 |
- * | `sheet` 뒤를 막는 시트·모달 | 화면 기준 | 받는다(가둔다) | 닫히고 초점이 돌아온다 |
- * | `notice` 원인 옆에 잠깐 | **원인 옆** | **못 받는다** | 스스로 사라진다 |
- * | `hint` 마우스를 올려서 뜨는 카드 | 가리킨 것 옆 | **못 받는다** | 포인터가 떠나면 사라진다 |
+ * | `anchored` popovers and lists | beside what opened it | may take focus | closes and returns focus |
+ * | `menu` context menus | beside the invocation point | may take focus | closes and returns focus |
+ * | `sheet` blocking sheets and modals | relative to the viewport | takes focus (and traps it) | closes and returns focus |
+ * | `notice` brief note beside its cause | **beside the cause** | **must not take focus** | dismisses itself |
+ * | `hint` card raised on hover | beside what is pointed at | **must not take focus** | disappears when the pointer leaves |
  *
- * `notice` 와 `hint` 의 「초점을 못 받는다」가 이 파일의 핵심이다 — 그 하나가
- * 2026-08-10 결함 셋 중 둘을 구조적으로 불가능하게 만든다.
+ * "Must not take focus" for `notice` and `hint` is the point of this file — that
+ * one property makes two of the three 2026-08-10 defects structurally impossible.
  *
- * ## 토스트는 왜 여기 없나
- *
- * sonner 가 이미 `data-sonner-toast` 를 붙인다. 같은 뜻의 표시를 하나 더 달면
- * 사본이 둘이 되므로, 훑는 검사가 **그 표시를 토스트의 선언으로 인정**한다.
+ * **Why toasts are not here.** sonner already sets `data-sonner-toast`. A second
+ * attribute meaning the same thing would be a duplicate, so the sweeping check
+ * **accepts that attribute as a toast's declaration**.
  */
 
 export const TRANSIENT_SURFACE_ATTR = "data-transient-surface" as const;
 
 export type TransientSurfaceKind = "anchored" | "menu" | "sheet" | "notice" | "hint";
 
-/** 초점을 받을 수 **없어야** 하는 종류 — 놓쳐도 잃는 것이 없는 표면들. */
+/** Kinds that **must not** be able to take focus — surfaces you lose nothing by missing. */
 export const FOCUSLESS_KINDS: readonly TransientSurfaceKind[] = ["notice", "hint"];
 
-/** 부른 것 **옆**에 서야 하는 종류 — 화면 구석에 뜨면 원인과 이어지지 않는다. */
+/** Kinds that must stand **beside** what raised them — in a screen corner they do not connect to their cause. */
 export const ANCHORED_KINDS: readonly TransientSurfaceKind[] = [
   "anchored",
   "menu",
@@ -58,10 +58,11 @@ export const ANCHORED_KINDS: readonly TransientSurfaceKind[] = [
 ];
 
 /**
- * JSX 에 펼쳐 넣는다 — `<div {...transientSurface("notice")}>`.
+ * Spread into JSX — `<div {...transientSurface("notice")}>`.
  *
- * 문자열을 손으로 적지 않게 하는 것이 요점이다. 손으로 적으면 오타가 「선언 없음」과
- * 구별되지 않고, 그때 훑는 검사는 **아무 말 없이** 그 표면을 건너뛴다.
+ * The point is that nobody hand-writes the string: a typo is indistinguishable
+ * from no declaration at all, and the sweeping check then skips that surface
+ * **without saying anything**.
  */
 export function transientSurface(kind: TransientSurfaceKind): Record<string, string> {
   return { [TRANSIENT_SURFACE_ATTR]: kind };

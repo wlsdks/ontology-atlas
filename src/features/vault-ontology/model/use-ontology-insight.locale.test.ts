@@ -3,8 +3,8 @@ import { deriveOntologyFromVault } from '@/entities/docs-vault';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { derivationToInsight } from './use-ontology-insight';
 
-// 어권별 표시 이름 (소유자 지시 2026-07-24) — frontmatter `display_<locale>` 가
-// stub 에 수집되고, insight 경계에서 화면 로케일로 해석되는지 고정한다.
+// Per-locale display names (owner instruction, 2026-07-24) — pins that frontmatter
+// `display_<locale>` is collected onto the stub and resolved to the screen locale at the insight boundary.
 const manifest = {
   docs: [
     {

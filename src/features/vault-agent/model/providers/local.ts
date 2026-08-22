@@ -23,8 +23,9 @@ function verifiedDetailSlugs(exchanges: TurnAssembly['exchanges']): string[] {
           if (row.found !== false && typeof row.slug === 'string') slugs.add(row.slug);
         }
       } catch {
-        // 실행기는 유효 JSON을 보장하지만, 외부 호환 러너와의 경계에서는
-        // 깨진 과거 exchange 하나가 이후 합성 전체를 막게 하지 않는다.
+        // The runner guarantees valid JSON, but at the boundary with an
+        // externally compatible runner one broken past exchange must not block all
+        // subsequent composition.
       }
     }
   }
@@ -212,49 +213,53 @@ function forcedReadTool(turn: TurnAssembly): string | null {
 }
 
 /**
- * 「주소로 연결」 갈래의 어댑터 — 로컬/오픈소스 러너.
+ * The adapter for the "connect by address" branch — local and open-source runners.
  *
- * ## 왜 OpenAI 호환 문법을 그대로 쓰는가 (네이티브 `/api/chat` 이 아니라)
+ * **Why the OpenAI-compatible grammar rather than the native `/api/chat`.**
+ * Ollama opens both doors: native `/api/chat` and OpenAI-compatible
+ * `/v1/chat/completions`. The compatible one was chosen because **this branch is
+ * not for Ollama alone** — LM Studio, llama.cpp server, vLLM, and LocalAI all
+ * expose the same compatible grammar, so the same adapter runs unchanged with
+ * only the address swapped. Choosing native would mean one adapter per runner,
+ * which is exactly the long tail `secrets.rs` avoids by freezing named vendors at three.
  *
- * Ollama 는 두 문을 다 연다: 네이티브 `/api/chat` 과 OpenAI 호환
- * `/v1/chat/completions`. 호환 쪽을 고른 이유는 **이 갈래가 Ollama 하나를
- * 위한 것이 아니기 때문**이다 — LM Studio · llama.cpp server · vLLM ·
- * LocalAI 가 전부 같은 호환 문법을 내놓으므로, 주소만 바꾸면 같은 어댑터가
- * 그대로 돈다. 네이티브를 골랐다면 러너마다 어댑터를 하나씩 써야 하고, 그건
- * `secrets.rs` 가 명명 벤더를 3에서 동결하며 피하려던 바로 그 롱테일이다.
+ * The cost is stated honestly: **compatibility depends on the runner's version.**
+ * Tool calling (`tools` / `tool_calls`) arrived relatively late in the compatible
+ * layer and is at different levels of completeness per runner. So the screen does
+ * not say "this should work" — it carries the runner's own error sentence through
+ * verbatim alongside the model name, so choosing a model that cannot use tools is
+ * visible to the user right there.
  *
- * 대가는 정직하게 적는다: **호환성이 러너 버전에 달렸다.** 도구 호출
- * (`tools` / `tool_calls`)은 호환 층에서 비교적 늦게 붙었고 러너마다 완성도가
- * 다르다. 그래서 화면은 "될 겁니다" 라고 말하지 않고, 러너가 준 오류 문장을
- * 모델 이름과 함께 그대로 옮긴다 — 도구를 못 쓰는 모델을 골랐다는 사실이
- * 사용자에게 그 자리에서 보인다.
+ * Body assembly and response parsing are delegated to the OpenAI adapter. The
+ * address branch does add the OpenAI-compatible `reasoning_effort` and
+ * `tool_choice` fields according to the turn's position. The first round trip has
+ * no evidence yet and product discipline requires a read, so the tool is pinned by
+ * name: `get_concept` on a selected node, `list_kinds` on the whole map. The whole
+ * map then picks candidates with `list_concepts` and reads their bodies together
+ * with `get_concepts`. After three tool round trips the answer comes from a
+ * synthesis instruction with the tools withdrawn. Every local round trip runs at
+ * `reasoning_effort: none`.
  *
- * 본문 조립과 응답 해석은 OpenAI 어댑터에 위임한다. 단, 주소 갈래는
- * OpenAI 호환 필드인 `reasoning_effort` / `tool_choice` 를 턴의 위치에 맞게
- * 추가한다. 첫 왕복은 아직 근거가 없고 제품 규율상 반드시 읽어야 하므로
- * 선택 노드에서는 `get_concept`, 전체 지도에서는 `list_kinds` 를 이름으로
- * 고정한다. 전체 지도는 이어서 `list_concepts` 로 후보를 고르고
- * `get_concepts` 로 실제 본문을 묶어 읽는다. 세 도구 왕복 뒤에는 도구를 회수한
- * 합성 지시로 답을 받는다. 모든 로컬
- * 왕복은 `reasoning_effort: none` 이다. 프롬프트만의
- * 턴 제한은 gemma4:12b 가 무시해 6회 도구 턴을 모두 소진했다. 실행 계약이
- * 그 제한을 지켜야 한다. 2026-08-02 실물 Ollama + gemma4:12b 의 복잡한 감사
- * 첫 tool call 은 low 59.7초, none+required 0.632초였고 둘 다 `list_kinds`였다.
- * `required` 와 named tool choice 모두 모델에 따라 무시될 수 있어 필수 턴은
- * 허용 도구도 하나로 줄인다. 로컬 품질은 사고 시간으로 가정하지 않고 실제
- * 읽기·인용·결함 재현으로만 판정한다. 합성 직전에는 결과 상한 뒤에도 실제
- * payload에 남은 상세 slug만 receipt로 다시 주고, 그중 하나도 인용하지 않거나
- * 한국어 질문을 한국어 없이 답하면 한 번 재합성한다. 두 번째에도 어기면 유창한
- * 추측을 보여주는 대신 답을 폐기한다.
+ * A prompt-only turn limit was ignored by gemma4:12b, which burned all six tool
+ * turns — the execution contract has to enforce that limit. Measured 2026-08-02
+ * against real Ollama with gemma4:12b on a complex audit: the first tool call took
+ * 59.7s at `low` and 0.632s at `none` + `required`, and both were `list_kinds`.
+ * Both `required` and a named tool choice can be ignored depending on the model,
+ * so required turns also narrow the allowed tools to one. Local quality is never
+ * assumed from thinking time — it is judged only by actual reads, citations, and
+ * defect reproduction. Just before synthesis, the detail slugs still present in the
+ * real payload after the result cap are handed back as a receipt, and if none of
+ * them is cited, or a Korean question is answered without Korean, it re-synthesizes
+ * once. Breaking it a second time discards the answer rather than showing a fluent guess.
  */
 export const localAdapter: ProviderAdapter = {
   provider: 'local',
   /**
-   * 기본 모델이 **없다.** 명명 벤더는 우리가 이름을 아는 모델이 있지만, 이
-   * 갈래에서 무엇이 설치돼 있는지는 그 컴퓨터만 안다. 그래서 사용자가 설정에서
-   * 목록을 보고 고르고, 고르기 전까지 이 갈래는 켜지지 않는다
-   * (`isLocalEndpointReady`). 아무 이름이나 기본값으로 박아 두면 첫 왕복이
-   * "model not found" 로 죽고, 그 이유가 화면 어디에도 없다.
+   * There is **no default model.** Named vendors have models whose names we know,
+   * but in this branch only that computer knows what is installed. So the user
+   * picks from a list in settings, and until they do this branch does not turn on
+   * (`isLocalEndpointReady`). Pinning any name as a default kills the first round
+   * trip with "model not found", with the reason nowhere on screen.
    */
   defaultModel: '',
 
@@ -276,8 +281,9 @@ export const localAdapter: ProviderAdapter = {
       const messages = body.messages as Array<Record<string, unknown>>;
       messages.push({ role: 'user', content: requiredReadInstruction(turn, forcedToolName) });
       body.reasoning_effort = 'none';
-      // Ollama 의 모델은 named tool_choice 도 무시할 수 있다. 이 왕복에 허용된
-      // 도구 목록까지 하나로 줄여야 다른 census 도구로 새는 것을 막을 수 있다.
+      // Ollama's models can ignore a named tool_choice too. The list of tools allowed
+      // in this round trip must also be narrowed to one to stop it leaking into
+      // another census tool.
       body.tool_choice = {
         type: 'function',
         function: { name: forcedToolName },

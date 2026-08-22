@@ -3,46 +3,47 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 크기 스텝이 행간을 함께 싣는(companion) 뒤에 생긴 실패 모드를 막는다:
- * **조건부로 글자 크기만 갈아끼워 짝이 어긋나는 원소.**
+ * Blocks the failure mode created once size steps started carrying a companion line
+ * height: **an element that conditionally swaps only the font size, breaking the
+ * pair.**
  *
- * ## 결함의 모양
+ * **The shape of the defect.** `text-<step>` now also loads that step's line height.
+ * But layering a conditional arbitrary size on the same element (`text-[Npx]`,
+ * `text-[length:…]`, clamp) **changes only the size while the original step's line
+ * height stays** — an arbitrary size has no companion. A ratio nobody ever chose is
+ * produced, and only at that breakpoint. Measured 2026-07-27: the /git headline at
+ * wide widths carried 23px text with the title step's 24px line height (1.04), the
+ * largest deviation in this repository.
  *
- * `text-<스텝>` 은 이제 그 단의 행간까지 싣는다. 그런데 같은 원소에 arbitrary
- * 크기(`text-[Npx]` · `text-[length:…]` · clamp)를 조건부로 얹으면 **크기만
- * 바뀌고 행간은 원래 단의 것이 그대로 남는다** — arbitrary 크기에는 companion
- * 이 없기 때문이다. 아무도 고른 적 없는 비율이 그 브레이크포인트에서만 만들어
- * 진다. 2026-07-27 실측: /git 헤드라인이 넓은 폭에서 23px 글자에 title 짝인
- * 24px 행간(1.04)을 달고 있었고, 이 저장소에서 가장 큰 이탈이었다.
+ * Two prescriptions: ① make the conditional size a ramp utility too (then the pair
+ * follows), or ② attach an explicit `leading-*` so the line height is set directly for
+ * both sizes. ② is a real, legitimate choice (a single-line cohesive hero), so it is
+ * not counted as a violation.
  *
- * 처방은 둘 중 하나다 — ① 조건부 크기도 램프 유틸리티로 쓰거나(그러면 짝이
- * 따라온다) ② 명시 `leading-*` 을 달아 두 크기 모두에서 행간을 직접 정한다.
- * ②는 실재하는 정당한 선택이라(단일행 응집 히어로) 위반으로 세지 않는다.
- *
- * ## 왜 ESLint 가 아니라 계약 테스트인가
- *
- * `no-restricted-syntax` 는 **AST 노드 하나**에 셀렉터를 맞춘다. 이 판정은
- * 한 원소의 클래스 **전체**를 봐야 하는데, className 은 `cn()` 인자로 여러
- * 리터럴에 쪼개지므로 셀렉터 하나에 담기지 않는다. 램프 토큰을 arbitrary
- * length 로 우회하는 **부분집합**만 lint 가 잡고(`eslint.config.mjs` 의
- * `arbitrarySizeSelectors`), 나머지 일반형을 여기서 붙든다.
- * (`design.md` 「lint 가 못 보는 층은 계약 테스트가 맡는다」)
+ * **Why a contract test and not ESLint.** `no-restricted-syntax` matches a selector
+ * against **one AST node**. This verdict needs **all** of an element's classes, and a
+ * className splits across several literals as `cn()` arguments, which no single
+ * selector can hold. Lint catches only the **subset** that routes a ramp token through
+ * an arbitrary length (`arbitrarySizeSelectors` in `eslint.config.mjs`); the general
+ * form is caught here. (`.claude/rules/design.md`: the layer lint cannot see belongs
+ * to a contract test.)
  */
 
 const ROOTS = ["src", "app"] as const;
 
-/** 램프 크기 스텝 — 이 클래스가 companion 행간을 싣는다. */
+/** Ramp size steps — these classes carry the companion line height. */
 const RAMP_STEP =
   /(?:^|[\s"'`{(])(?:[a-z0-9-]+:)*text-(?:caption|label|body-lg|body|title|display|hero)(?![\w-])/;
 
 /**
- * companion 이 **없는** 크기 덮어쓰기 — Tailwind 는 arbitrary 크기에 행간을
- * 붙이지 않는다. 기본 스케일(text-sm 등)은 자기 행간을 싣고 오므로 제외한다.
+ * Size overrides with **no** companion — Tailwind attaches no line height to an
+ * arbitrary size. The default scale (`text-sm` and friends) brings its own line
+ * height, so it is excluded.
  */
 const SIZE_OVERRIDE_WITHOUT_PAIR =
   /(?:^|[\s"'`{(])(?:[a-z0-9-]+:)*text-\[(?:length:|clamp|[0-9])/;
 
-/** 명시 행간 — 두 크기 모두를 덮으므로 짝 어긋남이 성립하지 않는다. */
+/** An explicit line height covers both sizes, so no pair can break. */
 const EXPLICIT_LEADING = /(?:^|[\s"'`{(])(?:[a-z0-9-]+:)*leading-[\w[.\]]/;
 
 function collectSourceFiles(dir: string, out: string[]): void {
@@ -60,9 +61,9 @@ function collectSourceFiles(dir: string, out: string[]): void {
 }
 
 /**
- * `className` 이 실어 나르는 문자열 영역을 통째로 뽑는다. `cn(...)` 로 여러
- * 인자에 쪼개진 클래스도 한 덩어리로 봐야 판정이 성립하므로, 중괄호 표현식은
- * 짝을 세어 끝까지 읽는다.
+ * Extracts the whole string region a `className` carries. Classes split across
+ * several `cn(...)` arguments must be seen as one blob for the verdict to hold, so a
+ * brace expression is read to its end by counting pairs.
  */
 export function extractClassNameRegions(source: string): string[] {
   const out: string[] = [];
@@ -88,7 +89,7 @@ export function extractClassNameRegions(source: string): string[] {
   return out;
 }
 
-/** 한 원소의 클래스 영역이 짝 어긋남인지 판정한다. */
+/** Decides whether one element's class region breaks the pair. */
 export function isMismatchedPair(region: string): boolean {
   if (!RAMP_STEP.test(region)) return false;
   if (!SIZE_OVERRIDE_WITHOUT_PAIR.test(region)) return false;
@@ -134,18 +135,18 @@ describe("타입 램프 × 행간 짝 — 조건부 크기 어긋남 차단", ()
   });
 
   it("판정이 실제로 잡는다 (프로브)", () => {
-    // ① 결함형 — 램프 단 + 조건부 arbitrary 크기 + 행간 없음.
+    // ① The defect: a ramp step + a conditional arbitrary size + no line height.
     expect(isMismatchedPair('"text-title font-semibold sm:text-[length:var(--text-display)]"')).toBe(
       true,
     );
     expect(isMismatchedPair('"text-hero md:text-[34px]"')).toBe(true);
-    // ② 명시 행간이 있으면 두 크기 모두를 덮으므로 위반이 아니다.
+    // ② An explicit line height covers both sizes, so this is not a violation.
     expect(isMismatchedPair('"text-hero leading-tight md:text-[34px]"')).toBe(false);
-    // ③ 조건부 크기도 램프면 짝이 따라온다.
+    // ③ When the conditional size is also a ramp step, the pair follows.
     expect(isMismatchedPair('"text-title font-semibold sm:text-display"')).toBe(false);
-    // ④ 색/그림자 arbitrary 는 크기가 아니다 — 오검출 금지.
+    // ④ Arbitrary colours and shadows are not sizes — no false positives.
     expect(isMismatchedPair('"text-body text-[color:var(--color-text-primary)]"')).toBe(false);
-    // ⑤ cn() 인자로 쪼개져도 한 원소로 본다.
+    // ⑤ Split across cn() arguments, it is still one element.
     expect(isMismatchedPair('cn("text-title", wide && "sm:text-[23px]")')).toBe(true);
   });
 });

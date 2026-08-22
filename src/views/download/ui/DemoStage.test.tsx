@@ -12,14 +12,14 @@ import {
 } from '../model/demo-clips';
 
 /**
- * 첫 페이지 시연 절 — 재생 계약을 잠근다.
+ * The front-page demo section — locks the playback contract.
  *
- * 이 파일이 지키는 것은 **재생의 성질**이다: 한 클립 · 무음 · 루프 없음 ·
- * 로케일별 자산 · reduced-motion 에서 포스터 생존 · 자산 없으면 절 자체가 없음.
+ * What this file protects is the **properties of playback**: one clip, muted, no loop, per-locale
+ * assets, the poster surviving under reduced-motion, and no section at all without an asset.
  *
- * 값(길이·프레임 지분)은 **촬영본으로만** 검증되고 그 게이트는 `/motion-verify`
- * 와 ffprobe 다. 여기서 그것까지 주장하지 않는다 — 촬영 전에 통과하는 검사가
- * 촬영 후 품질을 보증하는 척하면 그게 가짜 초록이다.
+ * Values (length, frame share) are verified **only against footage**, and that gate is
+ * `/motion-verify` plus ffprobe. This file does not claim them — a check that passes before the
+ * shoot pretending to guarantee post-shoot quality is a false green.
  */
 const wrap = (ui: React.ReactNode) => (
   <NextIntlClientProvider locale="en" messages={messages}>
@@ -55,9 +55,9 @@ describe('DemoStage', () => {
 
   it('클립은 하나다 — 첫인상 자리에서 「무엇을 볼지 고르기」는 비용이지 값이 아니다', () => {
     /*
-     * 종전엔 둘이었고 탭으로 갈렸다. 대부분은 첫 탭만 보고 떠나므로 두 번째
-     * 클립은 만들었지만 아무도 안 보는 것이 됐다(소유자 확정 2026-08-03).
-     * 되돌리면 여기가 터진다.
+     * There used to be two, split across tabs. Most people watch only the first tab and leave, so
+     * the second clip became something made but never watched (owner-confirmed 2026-08-03).
+     * Reverting turns this red.
      */
     expect(DEMO_CLIPS).toHaveLength(1);
     render(wrap(<DemoStage available={['atlas-tour']} />));
@@ -75,9 +75,9 @@ describe('DemoStage', () => {
 
   it('자산은 로케일을 탄다 — 화면 안의 글자가 그 언어이기 때문이다', () => {
     /*
-     * 한 마스터에 자막만 갈아 끼우던 구조가 아니다. 영상 자체를 언어별로
-     * 찍으므로 경로에 로케일이 박힌다 — 이게 깨지면 한국어 사용자가 영어
-     * 화면을 본다.
+     * This is not the structure where one master had captions swapped. The video itself is filmed
+     * per language, so the locale is baked into the path — breaking this makes a Korean user watch
+     * an English screen.
      */
     const clip = DEMO_CLIPS[0];
     expect(demoSources(clip, 'ko')[0].src).toContain('.ko.');
@@ -86,8 +86,8 @@ describe('DemoStage', () => {
   });
 
   it('webm 을 먼저 제안하고 mp4 를 보루로 둔다', () => {
-    // 주 방문자가 macOS(=Safari)이고 Safari 의 AV1 은 하드웨어 지원에 따라
-    // 갈린다 — 떨어질 자리가 있어선 안 된다.
+    // The primary visitor is on macOS (i.e. Safari), and Safari's AV1 depends on hardware support —
+    // there must be somewhere to fall back to.
     const [first, second] = demoSources(DEMO_CLIPS[0], 'en');
     expect(first.type).toBe('video/webm');
     expect(second.type).toBe('video/mp4');
@@ -101,7 +101,8 @@ describe('DemoStage', () => {
   });
 
   it('등록부와 자산 목록이 둘 다 있어야 켜진다', () => {
-    // 파일 존재만으로 켜면 반쯤 올라간 자산이 첫인상 자리에 그대로 나간다.
+    // Switching on from file existence alone would put a half-uploaded asset straight into the
+    // first-impression slot.
     expect(availableDemoClips([])).toHaveLength(0);
     expect(availableDemoClips(['atlas-tour'])).toHaveLength(1);
   });

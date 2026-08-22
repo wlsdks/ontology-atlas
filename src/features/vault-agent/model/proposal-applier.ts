@@ -5,37 +5,38 @@ import {
 } from './competency-qualification-boundary';
 
 /**
- * 동의된 제안을 디스크에 쓰는 **유일한** 모듈.
+ * The **only** module that writes a consented proposal to disk.
  *
- * ## 이 파일이 존재하는 이유
+ * **Why this file exists.** The price of stopping the executor from writing is
+ * that writes gather in this one place. It should be called from exactly one
+ * place — the consent card's [apply] handler. Calling it elsewhere breaks "it
+ * writes only when the user presses".
  *
- * 실행기가 쓰기를 못 하게 만든 대가로, 쓰기는 여기 한 곳에 모인다. 여기를
- * 부르는 곳은 동의 카드의 [적용] 핸들러 하나뿐이어야 한다 — 다른 곳에서
- * 부르면 "사용자가 누를 때만 쓴다" 가 깨진다.
+ * **The order is the contract:**
  *
- * ## 순서가 계약이다
+ * 1. Re-check mtime — if a person edited the same file after the proposal,
+ *    **nothing is written.**
+ * 2. (When checked and this is a git repository) the save point first.
+ * 3. Write the `after` string **verbatim** — the same value the card drew.
+ * 4. Re-read to refresh the map.
  *
- * 1. mtime 재확인 — 제안한 뒤 사람이 같은 파일을 고쳤으면 **쓰지 않는다.**
- * 2. (체크됐고 git 이면) 저장점 먼저.
- * 3. `after` 문자열을 **그대로** 쓴다 — 카드가 그린 것과 같은 값.
- * 4. 다시 읽어 지도를 갱신.
- *
- * 어느 단계에서 막히든 **파일 0개 변경**으로 끝난다. 반쯤 적용된 상태를
- * 만들지 않기 위해 mtime 검사는 쓰기 시작 전에 전부 끝낸다.
+ * Blocking at any stage ends with **zero files changed**. To avoid a half-applied
+ * state, every mtime check completes before any write begins.
  */
 
 export interface VaultWritePort {
-  /** 새 파일. 이미 있으면 실패해야 한다. */
+  /** A new file. Must fail if one already exists. */
   createDoc(slug: string, content: string): Promise<void>;
-  /** 기존 파일 덮어쓰기. */
+  /** Overwrite an existing file. */
   saveDoc(slug: string, content: string, options?: { expectedMtime?: number }): Promise<void>;
-  /** 지금 디스크의 mtime. 모르면 undefined. */
+  /** The current mtime on disk. Undefined when unknown. */
   currentMtime(slug: string): number | undefined;
-  /** 매니페스트 재적재 → 지도 갱신. */
+  /** Reload the manifest, refreshing the map. */
   refresh(): Promise<void>;
   /**
-   * 적용 직전 git 저장점. git 볼트가 아니면 null 을 돌려준다 — 그 사실을
-   * 카드가 정직하게 말한다("이 폴더는 git 이 아니라 저장점을 만들 수 없어요").
+   * A git save point taken right before applying. Returns null when this is not a
+   * git vault — and the card states that honestly ("this folder is not a git
+   * repository, so no save point can be made").
    */
   snapshot(label: string): Promise<string | null>;
 }
@@ -66,36 +67,36 @@ export async function applyProposal(
     return { status: 'failed', message: SOURCE_BACKED_COMPETENCY_MESSAGE };
   }
 
-  // ── 1. 쓰기 전에 전부 검사한다 ──────────────────────────────────────
+  // ── 1. Check everything before writing ──────────────────────────────
   const conflicted: string[] = [];
   for (const change of selected) {
     if (change.expectedMtime === undefined) continue;
     for (const file of change.files) {
       if (file.kind !== 'modify') continue;
       const current = port.currentMtime(slugOf(file.path));
-      // mtime 을 모르면(정적 모드 등) 가드를 걸 수 없다 — 없는 사실로
-      // 충돌을 지어내지도, 안전하다고 말하지도 않는다.
+      // With an unknown mtime (static mode, say) no guard can be applied — do not
+      // invent a conflict from a fact that does not exist, and do not claim safety either.
       if (current === undefined) continue;
       if (current !== change.expectedMtime) conflicted.push(file.path);
     }
   }
   if (conflicted.length > 0) {
-    // 파일 0개 변경. 카드가 "방금 이 문서가 바뀌었어요" 로 강등된다.
+    // Zero files changed. The card degrades to "this document just changed".
     return { status: 'conflict', conflictedPaths: conflicted };
   }
 
-  // ── 2. 저장점 ────────────────────────────────────────────────────────
+  // ── 2. Save point ───────────────────────────────────────────────────
   let snapshotSha: string | null = null;
   if (proposal.snapshotRequested) {
     try {
       snapshotSha = await port.snapshot(options.snapshotLabel);
     } catch (error) {
-      // 저장점을 못 만들었는데 쓰면 "되돌릴 수 있다" 는 약속이 거짓이 된다.
+    // Writing after failing to create a save point makes the promise "this can be undone" false.
       return { status: 'failed', message: String(error) };
     }
   }
 
-  // ── 3. 쓰기 ─────────────────────────────────────────────────────────
+  // ── 3. Write ────────────────────────────────────────────────────────
   const written: string[] = [];
   try {
     for (const change of selected) {
@@ -115,12 +116,12 @@ export async function applyProposal(
     return { status: 'failed', message: String(error) };
   }
 
-  // ── 4. 지도 갱신 ────────────────────────────────────────────────────
+  // ── 4. Refresh the map ──────────────────────────────────────────────
   await port.refresh();
   return { status: 'applied', snapshotSha, writtenPaths: written };
 }
 
-/** 읽기 전용 볼트용 — [적용] 대신 [이 변경을 복사] 가 주는 문자열. */
+/** For a read-only vault — the string [copy this change] gives instead of [apply]. */
 export function proposalToClipboardPacket(proposal: AgentProposal): string {
   const lines: string[] = [
     'Apply these vault changes with the ontology-atlas MCP tools:',
@@ -141,7 +142,7 @@ export function proposalToClipboardPacket(proposal: AgentProposal): string {
   return lines.join('\n');
 }
 
-/** 카드 헤더의 총량 — "파일 3개 · +42줄 −3줄". 접힌 diff 도장을 막는다. */
+/** The card header's totals — "3 files · +42 −3". Stops the diff from being a folded rubber stamp. */
 export function summarizeChangeVolume(changes: readonly ProposalChange[]): {
   files: number;
   added: number;

@@ -1,56 +1,59 @@
 /**
- * 대화 패널의 **폭** — 순수 산수 한 벌 + 저장 자리.
+ * The chat panel's **width** — one set of pure arithmetic plus where it is stored.
  *
- * ## 왜 값이 아니라 규칙인가
+ * ## Why a rule instead of a value
  *
- * 종전 폭은 `w-[420px] xl:w-[480px]` 두 리터럴이었다. 그 두 수는 **누구의
- * 답도 아니었다** — 긴 코드 덩어리를 읽는 사람에게는 좁고, 지도를 보면서
- * 짧게 묻는 사람에게는 넓다. 어느 한 수를 고르는 대신 **사용자가 끌게** 하고,
- * 우리는 그 끌기가 넘으면 안 되는 선만 정한다.
+ * The width used to be two literals, `w-[420px] xl:w-[480px]`. Those two numbers
+ * were **nobody's answer** — too narrow for someone reading a long block of code,
+ * too wide for someone glancing at the map and asking something short. Rather than
+ * picking one number, **the user drags**, and we only decide the lines that drag
+ * must not cross.
  *
- * ## 넘으면 안 되는 선
+ * ## The lines it must not cross
  *
- * 이 패널은 지도를 **덮지 않는다**(2026-07-27 「지도가 주」 규칙). 그래서
- * 상한은 취향이 아니라 계산이다 — 화면에서 레일과 지도의 몫을 빼고 남는 것이
- * 이 패널이 가질 수 있는 전부다. 지도가 가져야 하는 최소 폭
- * (`MAP_MIN_WIDTH`)은 이 패널을 처음 들일 때 정한 바닥을 그대로 쓴다.
+ * This panel **never covers the map** (the 2026-07-27 "the map is primary" rule).
+ * So the upper bound is not taste but arithmetic — whatever is left of the screen
+ * after the rail's and the map's shares. The minimum width the map must keep
+ * (`MAP_MIN_WIDTH`) is the same floor set when this panel was first introduced.
  *
- * 하한은 **한 줄이 읽히는 폭**이다. 이보다 좁으면 말풍선과 도구 줄이 글자
- * 두세 개마다 접혀서, 패널이 살아 있는데 아무것도 읽을 수 없는 상태가 된다.
+ * The lower bound is **the width at which one line is readable**. Narrower than
+ * this, bubbles and tool lines wrap every two or three characters, leaving the
+ * panel alive but unreadable.
  */
 
-/** 한 줄이 읽히는 최소 폭. 이보다 좁으면 대화가 세로 글씨가 된다. */
+/** The minimum width at which one line reads. Below it, the conversation becomes vertical text. */
 export const CHAT_WIDTH_MIN = 320;
-/** 아무도 끌지 않았을 때의 폭 — 종전 기본값을 그대로 잇는다. */
+/** The width when nobody has dragged — carries the previous default forward. */
 export const CHAT_WIDTH_DEFAULT = 420;
-/** 지도가 지켜야 하는 최소 폭. 이 패널의 상한은 여기서 나온다. */
+/** The minimum width the map must keep. This panel's upper bound derives from it. */
 export const MAP_MIN_WIDTH = 480;
-/** 왼쪽 레일. 지도와 함께 화면에서 미리 빠지는 몫이다. */
+/** The left rail. Along with the map, it comes off the screen's width first. */
 export const RAIL_WIDTH = 64;
-/** 키보드로 한 번 눌렀을 때 움직이는 거리. */
+/** How far one keyboard press moves it. */
 export const CHAT_WIDTH_STEP = 16;
 
-/** 이 화면에서 패널이 가질 수 있는 최대 폭. */
+/** The largest width the panel can take on this screen. */
 export function maxChatWidth(viewportWidth: number): number {
   if (!Number.isFinite(viewportWidth)) return CHAT_WIDTH_DEFAULT;
-  // 화면이 아주 좁으면 계산 결과가 하한보다 작아진다. 그때는 하한이 이긴다 —
-  // 「읽히지 않는 패널」보다 「지도가 조금 좁은 화면」이 낫다.
+  // On a very narrow screen the computed result falls below the lower bound. The
+  // lower bound wins then — "a slightly narrow map" beats "an unreadable panel".
   return Math.max(CHAT_WIDTH_MIN, viewportWidth - RAIL_WIDTH - MAP_MIN_WIDTH);
 }
 
-/** 끌린 폭을 이 화면에서 허용되는 범위 안으로 접는다. */
+/** Fold a dragged width into the range this screen allows. */
 export function clampChatWidth(width: number, viewportWidth: number): number {
   if (!Number.isFinite(width)) return CHAT_WIDTH_DEFAULT;
   return Math.round(Math.min(Math.max(width, CHAT_WIDTH_MIN), maxChatWidth(viewportWidth)));
 }
 
 /**
- * 저장 자리. 폭은 비밀이 아니고 이 컴퓨터의 취향이라 `localStorage` 에 산다 —
- * 볼트 안 파일로 만들면 폴더를 옮길 때마다 남의 화면 크기를 물려받는다.
+ * Where it is stored. A width is not a secret and is this computer's preference, so
+ * it lives in `localStorage` — as a file inside the vault it would hand someone
+ * else's screen size over every time the folder moved.
  */
 export const CHAT_WIDTH_STORAGE_KEY = 'atlas.acp-chat.width';
 
-/** 저장된 폭. 없거나 망가졌으면 `null` — 호출자가 기본값을 쓴다. */
+/** The stored width. `null` when absent or corrupt — the caller then uses the default. */
 export function readStoredChatWidth(storage: Pick<Storage, 'getItem'>): number | null {
   try {
     const raw = storage.getItem(CHAT_WIDTH_STORAGE_KEY);
@@ -58,7 +61,7 @@ export function readStoredChatWidth(storage: Pick<Storage, 'getItem'>): number |
     const value = Number.parseFloat(raw);
     return Number.isFinite(value) && value > 0 ? value : null;
   } catch {
-    // 저장소가 막힌 브라우저(프라이빗 모드 등)에서도 패널은 열려야 한다.
+    // The panel must still open in a browser with storage blocked (private mode and the like).
     return null;
   }
 }
@@ -67,6 +70,6 @@ export function writeStoredChatWidth(storage: Pick<Storage, 'setItem'>, width: n
   try {
     storage.setItem(CHAT_WIDTH_STORAGE_KEY, String(Math.round(width)));
   } catch {
-    // 저장에 실패해도 이번 세션의 폭은 살아 있다 — 조용히 넘어간다.
+    // Even if the write fails, this session's width is alive — pass over it quietly.
   }
 }

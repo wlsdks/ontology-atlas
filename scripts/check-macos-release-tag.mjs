@@ -11,13 +11,15 @@ const cargoToml = fs.readFileSync(path.join(root, "src-tauri", "Cargo.toml"), "u
 const cargoVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 
 /**
- * 다섯 번째 자리 — 웹 번들의 `RELEASE_VERSION` (2026-07-28 추가).
+ * The fifth place — the web bundle's `RELEASE_VERSION` (added 2026-07-28).
  *
- * `v1.0.0-rc.2` 를 낼 때 **프리플라이트는 초록인데 테스트가 빨간** 상태가 나왔다.
- * 버전이 다섯 곳에 있는데 이 검사는 넷(실은 셋)만 봤기 때문이다 — 이 값은 웹
- * 번들이 서버 진입점을 못 끌어와 손으로 두는 상수라, 잊으면 다운로드 화면이
- * 옛 버전을 말한다. 그때는 테스트가 잡았지만 **프리플라이트를 믿고 태그를 밀면
- * 놓친다.** 게이트가 진실의 일부만 보면 그 게이트는 거짓 초록을 만든다.
+ * Shipping `v1.0.0-rc.2` produced a **green preflight with red tests**: the version
+ * lives in five places and this check only looked at four (really three). This one
+ * is a hand-maintained constant because the web bundle cannot pull in the server
+ * entry point, so forgetting it makes the download screen state an old version. The
+ * tests caught it that time, but **trusting the preflight and pushing the tag would
+ * have missed it.** A gate that sees only part of the truth manufactures false
+ * greens.
  */
 const releaseFacts = fs.readFileSync(
   path.join(root, "src", "views", "download", "lib", "release-facts.ts"),

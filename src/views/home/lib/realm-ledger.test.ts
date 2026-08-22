@@ -10,13 +10,13 @@ import {
 } from "./realm-ledger";
 
 /**
- * S7 "영역 대장" 파생 테스트. 소형 온톨로지:
+ * Realm ledger derivations over a small ontology:
  *   project P ─contains→ domain D1 ─contains→ cap C1 ─contains→ elem E1
  *                     └─contains→ cap C2
  *   project P ─contains→ domain D2 ─contains→ cap C3
- *   경계(lateral): C1 ─depends_on→ C3   (D1 영역 밖 D2 로 나감)
- *                  E1 ─uses→ E9 (그래프 밖 도메인 없는 element)
- *   구조 엣지(contains)는 경계에서 제외되어야 한다.
+ *   lateral boundary: C1 ─depends_on→ C3   (leaves D1's realm for D2)
+ *                     E1 ─uses→ E9 (an element outside the graph, no domain)
+ * Structural `contains` edges must be excluded from the boundary.
  */
 const node = (id: string, kind: string, title = id): KnowledgeGraphNode => ({
   id,

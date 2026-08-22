@@ -1,5 +1,5 @@
-// vault helpers — 디렉토리 walking + .md 읽기/쓰기. 동기 fs 만 사용 (MCP
-// tool 호출 빈도가 낮아 async 오버헤드 불필요).
+// Vault helpers — directory walking plus `.md` read/write. Synchronous fs only:
+// MCP tool calls are infrequent, so async overhead buys nothing.
 
 import {
   accessSync,
@@ -43,31 +43,33 @@ import {
 import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 
 /**
- * 외부 변경 감지 (R11 #8). 사람 GUI · 외부 에디터 · 다른 AI MCP 가 같은 .md
- * 를 동시에 만질 때 silent overwrite 차단.
+ * External-change detection — blocks a silent overwrite when a human GUI, an
+ * outside editor, or another AI's MCP server touches the same `.md` concurrently.
  *
- * 동작: caller 가 옵션으로 `expectedMtime` 을 넘기면 write 직전 현재 mtime 과
- * 비교. 다르면 ConflictError throw — caller 가 사용자에게 알리고 강행 여부
- * 결정. 옵션 미지정이면 검증 skip (회귀 회피 — 기존 호출자 호환).
+ * When the caller passes `expectedMtime`, the current mtime is compared just
+ * before the write and a conflict throws, leaving the caller to tell the user and
+ * decide whether to force. Omitting the option skips the check, which keeps
+ * existing callers working.
  *
- * mtime 은 ms 정밀 정수. fs 파일시스템마다 정밀도가 다르지만 MCP 호출 빈도
- * 낮아 1s 단위 변경 감지로도 충분.
+ * mtime is an integer in ms. Filesystems differ in precision, but MCP calls are
+ * infrequent enough that 1s-granularity detection suffices.
  */
 export class VaultConflictError extends Error {
   constructor(slug, expectedMtime, currentMtime) {
     super(
       `Vault conflict: "${slug}" was modified externally (changed on disk) between read and write. ` +
         `expectedMtime=${expectedMtime} currentMtime=${currentMtime}. ` +
-        // **없는 복구법을 알려주지 않는다** (2026-07-29 실측).
+        // **Never name a recovery path that does not exist** (measured 2026-07-29).
         //
-        // 종전 문구는 `force:true` 로 덮어쓰라고 했는데, 이 오류를 내는 여덟
-        // 개 쓰기 도구 중 **일곱은 `force` 를 아예 선언하지 않는다** — 그대로
-        // 시도하면 `unknown_argument` 다. 유일하게 `force` 를 받는
-        // `delete_concept` 조차 그 뜻은 "백링크가 있어도 지운다" 이지 "mtime 을
-        // 무시한다" 가 아니라, 역시 `vault_conflict` 로 되돌아온다.
+        // The old wording said to overwrite with `force:true`. Of the eight write
+        // tools that raise this error, **seven do not declare `force` at all** —
+        // trying it yields `unknown_argument`. The one that does accept it,
+        // `delete_concept`, means "delete even with backlinks", not "ignore
+        // mtime", so it comes back as `vault_conflict` too.
         //
-        // 즉 여덟 도구 전부에서 **안내된 복구 경로가 죽어 있었다.** 에이전트는
-        // 그 말을 그대로 믿고 한 번 더 실패한다. 실제로 되는 길만 적는다.
+        // The advertised recovery was therefore dead in all eight tools, and an
+        // agent that believes the message fails a second time. State only the
+        // path that actually works.
         `Re-read the doc with get_concept to get the current expected_mtime, then retry the write.`,
     );
     this.name = 'VaultConflictError';
@@ -79,8 +81,8 @@ export class VaultConflictError extends Error {
 }
 
 /**
- * 파일 mtime (ms). 파일 없으면 null. caller 가 read-modify-write 흐름에서
- * read 직후 캡처해 후속 write 호출에 expectedMtime 으로 전달.
+ * File mtime (ms), or null when the file is absent. In a read-modify-write flow
+ * the caller captures it right after the read and passes it as `expectedMtime`.
  */
 export function getFileMtime(filePath) {
   try {
@@ -98,7 +100,7 @@ function sameFileSnapshot(left, right) {
     && left.ctimeMs === right.ctimeMs;
 }
 
-/** 같은 열린 파일에서 bytes와 metadata를 묶어 읽고, 현재 경로도 그 파일인지 확인한다. */
+/** Reads bytes and metadata together from one open file, and confirms the current path is still that file. */
 function readStableFileSnapshot(filePath) {
   let lastError = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -121,7 +123,7 @@ function readStableFileSnapshot(filePath) {
         try {
           closeSync(descriptor);
         } catch {
-          /* 이미 닫혔다 */
+          /* already closed */
         }
       }
     }
@@ -164,10 +166,10 @@ function assertBoundedNonNegativeInteger(value, name, { max }) {
 }
 
 /**
- * frontmatter 의 array 키 중 *그래프 엣지로 해석되는* 키. 새 edge 타입을
- * 추가하면 (e.g. 'aggregates', 'implements') 여기만 갱신하면 findOrphans /
- * findPath 등 모두 자동 cover. 예전에 두 함수가 각자 로컬로 같은 배열을
- * 들고 있어 drift 위험.
+ * The frontmatter array keys that are *interpreted as graph edges*. Adding a new
+ * edge type (`aggregates`, `implements`, …) here covers findOrphans, findPath,
+ * and the rest automatically. Two functions used to hold their own local copy of
+ * this array, which is exactly how they drifted.
  */
 const NEIGHBOR_KEYS = Object.freeze([
   'domains',
@@ -254,17 +256,18 @@ export function collectNeighborRefs(doc) {
 }
 
 /**
- * `ref` 를 **관계 키에서 이름으로 부르는 문서들**을 찾는다.
+ * Finds the documents that **name `ref` in a relation key**.
  *
- * 왜 필요한가 (2026-07-26 실측) — 웹 지도는 개념을 289개 보여주는데 컴파일된
- * 그래프의 노드는 96개다. 차이 193개는 *문서가 아직 없고 다른 문서의 관계
- * 키에만 이름이 적힌 개념*이다. 지도에서 그 이름을 베껴 `get_concept` 을
- * 부르면 종전에는 `Doc not found` 로 끝났다 — 볼트가 그 이름을 **알고 있는데도**
- * 모른다고 답한 셈이라, 사용자는 화면의 숫자를 믿을 수 없게 된다.
+ * Why it exists (measured 2026-07-26): the web map showed 289 concepts while the
+ * compiled graph had 96 nodes. The 193 in between are *concepts with no document
+ * of their own, named only in another document's relation keys*. Copying such a
+ * name off the map into `get_concept` used to end in `Doc not found` — the vault
+ * answering "unknown" about a name it **does know**, which makes the numbers on
+ * screen untrustworthy.
  *
- * 이 함수는 노드를 만들어내지 않는다(그래프 census 는 그대로 96이다). "이
- * 이름을 볼트의 어느 문서가 어떤 키로 적어 두었는가" 라는 사실만 돌려주고,
- * 호출자가 그 사실을 오류 대신 답으로 바꾼다.
+ * This function creates no nodes (the graph inventory stays 96). It returns only
+ * the fact of "which document in this vault wrote this name, under which key",
+ * and the caller turns that fact into an answer instead of an error.
  */
 export function findGraphReferences(docs, ref) {
   const target = String(ref ?? '').trim();
@@ -282,19 +285,19 @@ export function findGraphReferences(docs, ref) {
 }
 
 /**
- * body 에서 *prose 한 단락* 만 뽑아 excerpt 로. AI agent 가 get_concept 응답
- * 에서 받는 body 미리보기를 markdown 표 / 코드블록 syntax 가 아니라 *사람이
- * 의도해서 쓴 첫 설명문* 으로 받게 한다.
+ * Extracts *one prose paragraph* from a body as an excerpt, so the body preview an
+ * agent receives from `get_concept` is the *first sentence a human meant to write*
+ * rather than markdown table or code-block syntax.
  *
- * 알고리즘 (단순 line-based):
- *   1. 빈 줄 / heading / 코드블록 / 표 / 이미지 / 구분선 / 리스트 / 인용은 skip.
- *   2. 첫 nonempty line 이 prose 면 (= 위 block 아님) 그 paragraph 끝
- *      (다음 빈 줄 또는 block 시작) 까지 모음.
- *   3. 어떤 prose 도 못 찾으면 fallback — body.slice(0, maxLen).
- *   4. cap maxLen (기본 800자) — 넘치면 trim + '…'.
+ * Line-based algorithm:
+ *   1. Skip blank lines, headings, code blocks, tables, images, rules, lists, quotes.
+ *   2. If the first non-empty line is prose, collect through the end of its
+ *      paragraph (next blank line, or the start of a block).
+ *   3. If no prose is found, fall back to `body.slice(0, maxLen)`.
+ *   4. Cap at `maxLen` (default 800); trim and append '…' beyond it.
  *
- * NEIGHBOR_KEYS 같은 graph schema 와 무관 — 단순 문자열 추출 helper.
- * 단위 테스트 가능 (export).
+ * Independent of the graph schema (NEIGHBOR_KEYS and friends) — a plain string
+ * helper, exported so it can be unit-tested.
  */
 export function extractSummaryExcerpt(body, maxLen = 800) {
   if (typeof body !== 'string' || body.length === 0) return '';
@@ -317,7 +320,7 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
     const line = lines[i];
     const trimmed = line.trim();
     if (trimmed === '' || isBlockStart(line)) {
-      // 코드블록 안쪽도 통째로 skip — 다음 ``` 찾기
+      // Skip the whole inside of the code block — scan forward to the next ```
       if (trimmed.startsWith('```')) {
         i += 1;
         while (i < lines.length && !lines[i].trim().startsWith('```')) i += 1;
@@ -325,7 +328,7 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
       i += 1;
       continue;
     }
-    // prose 단락 시작 — 다음 빈 줄 또는 block 시작 까지 모음
+    // Prose paragraph begins — collect to the next blank line or block start
     const para = [];
     while (i < lines.length) {
       const cur = lines[i];
@@ -338,7 +341,7 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
       return text.length > maxLen ? text.slice(0, maxLen).trimEnd() + '…' : text;
     }
   }
-  // prose 한 줄도 못 찾음 — 원본 fallback
+  // No prose line found — fall back to the raw body
   const trimmedBody = body.trim();
   return trimmedBody.length > maxLen
     ? trimmedBody.slice(0, maxLen).trimEnd() + '…'
@@ -346,47 +349,46 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
 }
 
 /**
- * `body: 'full'` 이 한 번에 돌려주는 최대 글자 수.
+ * Maximum characters `body: 'full'` returns in one call.
  *
- * 왜 상한이 있나 — vault 안의 `.md` 는 사용자 디스크의 아무 파일이고, 붙여넣은
- * 로그 하나가 수백 KB 일 수 있다. 그런 문서 하나가 에이전트의 컨텍스트를
- * 통째로 먹는 것을 막는다. 실측한 볼트들의 본문은 1–3 KB 라 이 상한에 닿는
- * 문서는 사실상 없고, 닿으면 {@link describeBodyDelivery} 가 잘렸다고 말한다.
+ * Why there is a cap at all: a `.md` inside a vault is any file on the user's
+ * disk, and one pasted log can be hundreds of KB. This stops a single document
+ * eating an agent's whole context. Measured vault bodies run 1–3 KB, so almost
+ * nothing reaches the cap, and what does is reported by {@link describeBodyDelivery}.
  */
 export const FULL_BODY_MAX_CHARS = 40_000;
 
 /**
- * `get_concepts({ body: "full" })` 한 호출의 selector 상한.
+ * Selector cap for one `get_concepts({ body: "full" })` call.
  *
- * 전체 본문은 행당 페이로드가 커서 일반 batch 50개보다 좁다. 의미 수선처럼
- * 실행 가능한 read workflow를 만드는 코드도 같은 값을 사용해야, 서버가 거절할
- * 호출을 handoff에 내보내지 않는다.
+ * Full bodies make each row's payload large, so this is narrower than the general
+ * batch cap of 50. Code that builds runnable read workflows (meaning repair, for
+ * one) must use the same value, or a handoff will emit a call the server rejects.
  */
 export const GET_CONCEPTS_FULL_BODY_MAX = 20;
 
 /**
- * **본문을 얼마나 돌려줬고 무엇을 안 돌려줬는지**를 같이 실어 보낸다.
+ * Reports **how much body was returned and what was not**.
  *
- * ## 왜 이게 따로 있나 (2026-08-01 실측)
+ * Why this is separate (measured 2026-08-01): an agent handed only the vault
+ * answered — *"MCP `get_concept` returns the body as an excerpt only. Each node's
+ * body may hold more code evidence, but that part was outside the scope of this
+ * read."* The construction rules **require** evidence, confidence, and
+ * inclusion/exclusion to be written in the body, and the read tool returned the
+ * first paragraph while **saying nothing about the cut**. Not knowing what is
+ * missing means you cannot ask for it — half of what was written was unreachable.
  *
- * 볼트만 넘겨받은 에이전트가 이렇게 답했다 — *"MCP `get_concept` 은 본문을
- * 발췌로만 돌려줍니다. 각 노드 본문에 더 많은 코드 증거가 적혀 있을 수 있는데,
- * 그 부분은 이번 읽기 범위에서 확인하지 못했습니다."* 구축 규격은 근거·확신도·
- * 포함/제외를 **본문에 적으라고 시키는데**, 읽기 도구는 첫 단락만 돌려주고
- * **잘렸다는 말을 하지 않았다.** 무엇이 남았는지 모르면 다시 요청할 수도 없다 —
- * 그래서 쓴 글의 절반이 도달 불가였다.
+ * So the contract here is two lines:
  *
- * 그래서 이 helper 의 계약은 두 줄이다:
+ * 1. When cut, report `truncated: true` and **how many characters were withheld**.
+ * 2. Only when cut, put **the exact call that fetches the rest** in `hint`. An
+ *    untruncated response has no `hint` at all — no payload on a clean answer.
  *
- * 1. 잘렸으면 `truncated: true` 와 **안 준 글자 수**를 말한다.
- * 2. 잘렸을 때만 `hint` 에 **나머지를 받는 정확한 호출**을 적는다. 안 잘렸으면
- *    `hint` 자체가 없다 — 멀쩡한 응답에 페이로드를 붙이지 않는다.
- *
- * @param {string} body 원본 markdown 본문
+ * @param {string} body raw markdown body
  * @param {object} [options]
- * @param {'excerpt'|'full'} [options.mode] 기본 `'excerpt'`
- * @param {number} [options.maxLen] excerpt 상한 (기본 800)
- * @param {string} [options.hint] 잘렸을 때 붙일 후속 호출 안내
+ * @param {'excerpt'|'full'} [options.mode] defaults to `'excerpt'`
+ * @param {number} [options.maxLen] excerpt cap (default 800)
+ * @param {string} [options.hint] follow-up call to attach when truncated
  * @returns {{ text: string, info: { mode: string, totalChars: number, returnedChars: number, truncated: boolean, omittedChars?: number, hint?: string } }}
  */
 export function describeBodyDelivery(body, options = {}) {
@@ -402,10 +404,10 @@ export function describeBodyDelivery(body, options = {}) {
   } else {
     text = extractSummaryExcerpt(source, maxLen);
   }
-  // 발췌는 줄을 공백으로 이어 붙이므로 **글자 수 비교로는 판정할 수 없다** —
-  // 줄바꿈 하나 차이로 멀쩡히 다 실은 본문이 "잘렸다" 가 된다. 그래서 공백을
-  // 정규화한 뒤 비교한다: 표·코드블록·둘째 단락을 건너뛴 경우만 잘린 것이고,
-  // 한 단락짜리 본문을 통째로 실었으면 잘리지 않은 것이다.
+  // An excerpt joins lines with spaces, so **a character-count comparison cannot
+  // decide this** — one newline of difference turns a fully delivered body into
+  // "truncated". Compare with whitespace normalised: only skipping a table, a code
+  // block, or a second paragraph counts as a cut; a whole one-paragraph body does not.
   const returnedChars = text.length;
   const flatten = (value) => value.replace(/\s+/g, ' ').trim();
   const truncated =
@@ -421,8 +423,8 @@ export function describeBodyDelivery(body, options = {}) {
 }
 
 /**
- * vault root 안의 모든 `.md` 파일 walk. dotfile / node_modules 등 제외.
- * 반환: 각 파일의 절대 경로.
+ * Walks every `.md` under the vault root, excluding dotfiles, node_modules, and
+ * the like. Returns each file's absolute path.
  */
 export function walkMd(rootPath) {
   const out = [];
@@ -458,27 +460,24 @@ export function walkMd(rootPath) {
 }
 
 /**
- * file path → vault-relative slug (`projects/foo.md` → `projects/foo`).
- */
-/**
- * 파일 경로 → vault-relative slug.
+ * File path → vault-relative slug (`projects/foo.md` → `projects/foo`).
  *
- * **NFC 로 정규화한다** (2026-07-29 실측). macOS 는 파일 이름의 한글을 NFD
- * (자모 분해)로 넘겨주는 경로가 흔한데(HFS+ 복사본, 압축 해제, 비-macOS
- * 툴체인이 만든 zip), 사용자가 프론트매터에 타이핑하는 값은 NFC 다. 두
- * 문자열은 **글자가 완전히 같은데 바이트가 다르다.**
+ * **Normalised to NFC** (measured 2026-07-29). macOS commonly hands back Korean
+ * filenames as NFD (decomposed jamo) — HFS+ copies, unzipped archives, zips built
+ * by non-macOS toolchains — while what a user types into frontmatter is NFC. The
+ * two strings are **character-identical but byte-different**.
  *
- * 그래서 종전에는 이런 일이 났다:
+ * That produced this:
  *
- *   validate: `한글` 가 vault 의 어떤 node 로도 resolve 되지 않습니다
- *   list:     domain  한글  NFD file        ← 바로 다음 줄에 그 노드가 있다
+ *   validate: `한글` does not resolve to any node in the vault
+ *   list:     domain  한글  NFD file        ← the node is on the very next line
  *
- * 컴파일러도 같이 실패해서 그 노드로 들어오는 엣지가 `resolved: false` 로
- * 떨어졌다 — **한글 이름 노드가 관계를 잃는다**, 이 제품의 주 플랫폼에서.
- * 눈으로는 구별할 수 없으니 사용자가 고칠 수도 없다.
+ * The compiler failed alongside it, so edges into that node dropped to
+ * `resolved: false` — **nodes with Korean names lose their relations**, on this
+ * product's primary platform. The difference is invisible, so the user cannot fix it.
  *
- * 정규화는 **식별자에만** 한다. 디스크 경로는 손대지 않는다 — 파일은 NFD
- * 그대로 있고 그걸로 읽는다.
+ * Normalisation applies **to identifiers only**. Disk paths are untouched: the
+ * file stays NFD and is read as NFD.
  */
 export function pathToSlug(rootPath, filePath) {
   const rel = relative(rootPath, filePath).replace(/\\/g, '/');
@@ -486,62 +485,62 @@ export function pathToSlug(rootPath, filePath) {
 }
 
 /**
- * vault-relative slug → file path (확장자 자동 부착).
+ * vault-relative slug → file path (extension appended automatically).
  *
- * 보안: AI agent / prompt injection 으로 악의적인 slug
- * (\`../../etc/passwd\` 등) 가 들어와도 vault root 바깥의 파일을
- * 가리키지 못하도록 normalize 후 root 포함 검사. 위반 시 throw —
- * 호출자 (writeDoc / readDoc / patchFrontmatter / updateDoc /
- * deleteDoc) 가 모두 실패하므로 vault 외부 read/write 모두 차단.
+ * Security: a malicious slug from an agent or prompt injection (`../../etc/passwd`
+ * and friends) must not be able to name a file outside the vault root, so the path
+ * is normalised and then checked to contain the root. A violation throws, and
+ * every caller (writeDoc, readDoc, patchFrontmatter, updateDoc, deleteDoc) fails
+ * with it — blocking reads and writes outside the vault alike.
  */
 export function slugToPath(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) {
     throw new Error('slug must be a non-empty string');
   }
-  // null byte injection 차단 — Node fs API 가 일부 환경에서 truncate 됨.
+  // Block null-byte injection — the Node fs API truncates on it in some environments.
   if (slug.includes('\0')) {
     throw new Error('slug must not contain a null byte');
   }
   const candidate = resolve(rootPath, `${slug}.md`);
   const normalizedRoot = resolve(rootPath);
-  // candidate 가 rootPath 의 prefix 와 sep 로 이어지는지 확인.
-  // 정확히 normalizedRoot 자체이거나, normalizedRoot + sep 로 시작해야.
+  // The candidate must join the rootPath prefix on a separator: either exactly
+  // normalizedRoot, or normalizedRoot + sep.
   if (
     candidate !== normalizedRoot &&
     !candidate.startsWith(normalizedRoot + sep)
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
-  // **문자열 검사만으로는 심볼릭 링크를 못 막는다** (2026-07-29 실측).
+  // **A string check alone cannot stop a symlink** (measured 2026-07-29).
   //
-  // 위 검사는 slug 를 `resolve()` 한 **경로 문자열**이 root 안에 있는지만 본다.
-  // 그런데 vault 안의 `escape.md` 가 vault 밖 파일을 가리키는 링크면, 문자열은
-  // 완벽히 root 안이고 `writeFileSync` 는 링크를 따라 **밖에 쓴다.** 실측:
-  // `relate escape real --vault /tmp/sym/vault` 가 `/tmp/sym/outside.md` 를
-  // 고치고는 `wrote /tmp/sym/vault/escape.md` 라고 보고했다 — 사용자는 자기
-  // 편집을 그 경로에서 찾을 수 없다.
+  // The check above only asks whether the **path string** from `resolve()` sits
+  // inside the root. But if `escape.md` inside the vault links to a file outside
+  // it, the string is perfectly inside the root and `writeFileSync` follows the
+  // link and **writes outside**. Measured: `relate escape real --vault
+  // /tmp/sym/vault` edited `/tmp/sym/outside.md` and reported `wrote
+  // /tmp/sym/vault/escape.md` — the user cannot find their edit at that path.
   //
-  // 이 함수의 주석이 스스로 *"AI agent / prompt injection 으로 악의적인 slug 가
-  // vault root 바깥의 파일을 가리키지 못하도록"* 이라고 적어 둔 바로 그 위협이,
-  // slug 가 아니라 **파일시스템 쪽에서** 열려 있었다.
+  // The very threat this function's own doc-block names — *"a malicious slug from
+  // an agent or prompt injection must not name a file outside the vault root"* —
+  // was open on the **filesystem** side rather than the slug side.
   //
-  // 존재하는 경로만 realpath 한다 — 새 파일 생성(아직 없는 경로)은 정상이고,
-  // 그 부모 디렉터리는 아래에서 함께 확인한다.
+  // Only existing paths are realpath'd: creating a new file (a path that does not
+  // exist yet) is normal, and its parent directory is checked below.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
 }
 
 /**
- * 실제 경로(심볼릭 링크 해소 후)가 여전히 vault 안인지. 파일이 아직 없으면
- * 가장 가까운 **존재하는 조상**을 기준으로 본다 — 링크된 디렉터리 안에 새
- * 파일을 만드는 경로도 같은 탈출이기 때문이다.
+ * Whether the real path (after symlink resolution) is still inside the vault. When
+ * the file does not exist yet, the nearest **existing ancestor** is used instead —
+ * creating a new file inside a linked directory is the same escape.
  */
 function assertRealPathInside(candidate, normalizedRoot, slug) {
   let realRoot;
   try {
     realRoot = realpathSync(normalizedRoot);
   } catch {
-    // root 자체를 해소할 수 없으면 문자열 검사까지가 우리가 할 수 있는 전부다.
+    // If the root itself cannot be resolved, the string check is all we can do.
     return;
   }
   let probe = candidate;
@@ -557,7 +556,7 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('slug resolves outside')) throw error;
       const parent = dirname(probe);
-      // 루트까지 올라갔는데도 존재하는 조상이 없다 — 더 볼 것이 없다.
+      // Walked to the filesystem root with no existing ancestor — nothing left to check.
       if (parent === probe) return;
       probe = parent;
     }
@@ -565,13 +564,13 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
 }
 
 /**
- * vault 안에 주어진 slug 의 .md 파일이 실재하는지. add_relation 같은
- * AI agent 입력 검증에 사용 — typo / hallucinated slug 가 frontmatter
- * array 에 dangling reference 로 silently 추가되는 걸 차단.
+ * Whether a `.md` for the given slug exists in the vault. Used to validate agent
+ * input (add_relation and friends) so a typo or hallucinated slug is not silently
+ * appended to a frontmatter array as a dangling reference.
  *
- * slug 자체가 잘못된 형태 (빈 문자열 / null byte / vault 외부) 면 false
- * 반환 (slugToPath 가 throw 하는 대신 — caller 가 boolean 만 보고
- * 분기 가능). 진짜 fs 오류는 caller 가 후속 read 에서 자연스럽게 잡음.
+ * A malformed slug (empty, null byte, outside the vault) returns false rather than
+ * throwing out of slugToPath, so the caller can branch on a boolean. A genuine fs
+ * error surfaces naturally on the caller's follow-up read.
  */
 export function vaultSlugExists(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) return false;
@@ -585,10 +584,10 @@ export function vaultSlugExists(rootPath, slug) {
 }
 
 /**
- * 한 .md 파일을 읽어 { slug, frontmatter, body, raw, mtime }.
+ * Reads one `.md` into `{ slug, frontmatter, body, raw, mtime }`.
  *
- * mtime: read 시점의 파일 mtimeMs. caller 가 후속 write 의 `expectedMtime`
- * 으로 전달해 conflict 감지 가능 (R11 #8).
+ * `mtime` is the file's mtimeMs at read time; passing it as `expectedMtime` on a
+ * later write is what makes conflict detection work.
  */
 export function readDoc(rootPath, filePath) {
   const snapshot = readStableFileSnapshot(filePath);
@@ -606,8 +605,8 @@ export function readDoc(rootPath, filePath) {
 }
 
 /**
- * vault 의 모든 doc 을 manifest 형태로 로드. 호출자가 필요한 필터를 직접
- * 적용한다. 큰 vault 에서는 무겁지만 MCP 호출 빈도가 낮아 OK.
+ * Loads every doc in the vault as a manifest, leaving filtering to the caller.
+ * Heavy on a large vault, but MCP calls are infrequent enough that it is fine.
  */
 export function loadVaultDocs(rootPath) {
   const files = walkMd(rootPath);
@@ -615,19 +614,19 @@ export function loadVaultDocs(rootPath) {
 }
 
 /**
- * vault 에서 badSlug 와 비슷한 slug 후보를 반환 — AI agent 가 오타 / 접두 누락
- * 으로 not-found 를 받았을 때 다음 액션 후보를 제시.
+ * Returns slug candidates similar to `badSlug`, so an agent that hit not-found via
+ * a typo or a missing prefix gets its next action.
  *
- * 매칭 단계 (먼저 hit 되는 게 우선):
- *  1. tail 정확 일치 — `auth` 입력 → `capabilities/auth`, `domains/auth` 등.
- *  2. tail substring 양방향 — `auth` ⊂ `auth-platform`, `oauth` ⊃ `auth`.
- *  3. tail prefix — 사용자가 일부만 친 경우.
+ * Matching stages, first hit wins:
+ *  1. Exact tail match — input `auth` → `capabilities/auth`, `domains/auth`, ….
+ *  2. Tail substring, either direction — `auth` ⊂ `auth-platform`, `oauth` ⊃ `auth`.
+ *  3. Tail prefix — the user typed only part of it.
  *
- * 자기 자신 (badSlug) 은 후보에서 제외. limit (기본 3) 까지 반환.
+ * `badSlug` itself is excluded. Returns up to `limit` (default 3).
  *
- * 가벼운 substring 비교만 — Levenshtein 같은 distance 는 큰 vault 에서
- * 비싸고 false positive 도 많다. 이 helper 는 "did you mean" 을 만드는
- * 게 목표가 아니라 "이런 slug 들이 vault 에 있어요" 를 1 호출에 보여주는 게 목표.
+ * Substring comparison only. A distance metric such as Levenshtein is expensive on
+ * a large vault and yields many false positives, and the goal here is not "did you
+ * mean" — it is showing "these slugs exist in the vault" in one call.
  */
 export function suggestSimilarSlugs(rootPath, badSlug, limit = 3) {
   if (typeof badSlug !== 'string' || badSlug.length === 0) return [];
@@ -661,8 +660,8 @@ export function suggestSimilarSlugs(rootPath, badSlug, limit = 3) {
 }
 
 /**
- * AI agent 가 not-found / dup 에러를 받을 때 다음 액션을 곧바로 결정할 수
- * 있도록 actionable suffix 를 만든다. caller 는 에러 메시지에 이 결과를 붙임.
+ * Builds an actionable suffix so an agent receiving a not-found or duplicate error
+ * can decide its next action immediately. Callers append it to the error message.
  */
 function notFoundSuffix(rootPath, slug) {
   const suggestions = suggestSimilarSlugs(rootPath, slug);
@@ -1133,34 +1132,37 @@ function assertNodeIdentity(rootPath, slug, frontmatter) {
 }
 
 /**
- * 손으로 쓴 노드에 **신원이 아직 없는가**. 있으면 불변, 없으면 채울 자리다.
+ * Does a hand-authored node **not yet have an identity**? If it has one it is
+ * immutable; if not, there is a slot to fill.
  *
- * 사람이 옵시디언·vim·GitHub 웹에서 노드를 직접 적으면 `uid:` 가 없다.
- * 이 저장소는 「마크다운을 그냥 손으로 쓰면 된다」고 약속하므로 그 상태는
- * 정상적인 입력이다 — 다만 그대로 두면 컴파일이 신원 오류에서 멈춰
- * **볼트 전체의 그래프 명령이 죽는다**(overview·health·agent-brief·
- * query_ontology).
+ * A node written directly in Obsidian, vim, or the GitHub web editor has no
+ * `uid:`. This repository promises that «you can just write the markdown by
+ * hand», so that state is legitimate input — but left alone, the compile stops on
+ * an identity error and **every graph command on the whole vault dies**
+ * (overview, health, agent-brief, query_ontology).
  */
 function hasSettledUid(frontmatter) {
   return typeof frontmatter?.uid === 'string' && frontmatter.uid.trim() !== '';
 }
 
 /**
- * ⚠️ **불변성은 「있던 값을 바꾸는 것」에만 적용된다** (2026-08-08).
+ * ⚠️ **Immutability applies only to changing a value that was there** (2026-08-08).
  *
- * 종전엔 «없던 값을 처음 채우는 것»도 같은 문장으로 막았고, 그 결과 Atlas MCP
- * 만 붙은 에이전트에게 **손으로 쓴 노드를 고칠 문이 하나도 없었다**:
+ * Filling an absent value for the first time used to be refused by the same
+ * sentence, which left an agent carrying only Atlas MCP with **no door at all**
+ * for fixing a hand-authored node:
  *
- * | 시도 | 종전 응답 |
+ * | attempt | old response |
  * |---|---|
- * | `patch_concept(uid 없이 다른 필드)` | "`uid:` 는 UUIDv4 여야 한다" |
- * | `patch_concept({uid: 새 값})` | "`uid:` 는 불변이다" |
- * | `add_concept(같은 슬러그)` | "이미 있다. patch 를 써라" |
+ * | `patch_concept` (other fields, no uid) | "`uid:` must be a UUIDv4" |
+ * | `patch_concept({uid: <new value>})` | "`uid:` is immutable" |
+ * | `add_concept` (same slug) | "already exists; use patch" |
  *
- * 셋이 서로를 가리키며 닫혀 있었다(2026-08-08 실측 재현). 바꿀 값이 없으면
- * 바꾸는 것이 아니다. 남의 신원을 가져오는 위험은 이 함수가 아니라
- * `assertNodeIdentity` 의 충돌 검사가 이미 따로 막는다 — 그래서 여기를 열어도
- * 신원 도용은 여전히 불가능하다.
+ * The three pointed at each other in a closed loop (reproduced 2026-08-08). With
+ * no value to change, nothing is being changed. The real risk — taking over
+ * someone else's identity — is already blocked separately by the collision check
+ * in `assertNodeIdentity`, so opening this door still makes identity theft
+ * impossible.
  */
 function assertIdentityPatch(previousFrontmatter, patch) {
   if (!patch) return;
@@ -1178,14 +1180,14 @@ function assertIdentityPatch(previousFrontmatter, patch) {
 }
 
 /**
- * 신원이 없는 노드를 고치려 할 때 **그 쓰기가 신원을 채워 준다**.
+ * When a node without identity is edited, **that write mints the identity**.
  *
- * 채우는 주체가 쓰기라는 것이 이 저장소의 규약 그대로다(「writer-minted
- * immutable UUIDv4」). 손으로 쓴 노드에는 아직 minter 가 없었을 뿐이고, 처음
- * 손대는 쓰기가 그 자리를 맡는다.
+ * The writer minting it is exactly this repository's contract ("writer-minted
+ * immutable UUIDv4"). A hand-authored node simply had no minter yet, and the
+ * first write to touch it takes that role.
  *
- * **조용히 하지 않는다** — 채운 값을 반환에 실어 호출자가 사람에게 말할 수
- * 있게 한다. 신원이 생기는 것은 사람이 알아야 하는 사건이다.
+ * **Not silently** — the minted value rides the return so the caller can tell the
+ * person. Identity coming into existence is an event a person should know about.
  */
 function fillMissingUid(previousFrontmatter, nextFrontmatter) {
   const kind = nextFrontmatter?.kind;
@@ -1221,8 +1223,8 @@ function noteParentGrowth(slug, previousFrontmatter, nextFrontmatter) {
 }
 
 /**
- * 새 doc 작성. 디렉토리 자동 생성. 기존 파일 있으면 throw (덮어쓰기 의도라면
- * 호출자가 명시적으로).
+ * Writes a new doc, creating directories as needed. Throws if the file exists —
+ * an overwrite has to be the caller's explicit choice.
  */
 export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   const filePath = slugToPath(rootPath, slug);
@@ -1235,8 +1237,9 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   if (typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
-  // 슬러그 평면성 — 새 정체성이 태어나는 유일한 문에서 잰다. 형태 유효성이라
-  // hard error (팬아웃 게이트의 「막지 않는다」 원칙은 의미 판단에만 적용).
+  // Slug flatness — measured at the one door where a new identity is born. This
+  // is shape validity, so it is a hard error (the fan-out gate's "never block"
+  // principle covers judgements of meaning only).
   const slugIssue = flatSlugIssue(frontmatter?.kind, slug);
   if (slugIssue) throw new Error(slugIssue);
   assertNodeIdentity(rootPath, slug, frontmatter);
@@ -1245,17 +1248,19 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
 }
 
 /**
- * patchFrontmatter / updateDoc / deleteDoc / redirectBacklinks 의 옵션 형태:
+ * Options shape for patchFrontmatter / updateDoc / deleteDoc / redirectBacklinks:
  *   { expectedMtime?: number }
  *
- * caller 가 read 시점 mtime 을 전달하면 write 직전 mtime 변경 감지 → conflict
- * throw. 미지정이면 검증 skip (기존 호출자 호환).
+ * When the caller passes the mtime it read, a change detected just before the
+ * write throws a conflict. Omitting it skips the check, keeping existing callers
+ * working.
  */
 
 /**
- * doc 영구 삭제. 호출자가 confirmation / backlinks 검사를 책임진다.
- * 반환: 삭제 직전 캡처한 { slug, filePath, frontmatter, body, raw, mtime }.
- * 파일 없으면 throw. expectedMtime 옵션으로 외부 변경 감지 가능.
+ * Deletes a doc permanently. Confirmation and backlink checks are the caller's
+ * responsibility. Returns `{ slug, filePath, frontmatter, body, raw, mtime }`
+ * captured just before the delete, throws when the file is absent, and honours
+ * `expectedMtime` for external-change detection.
  */
 export function deleteDoc(rootPath, slug, options = {}) {
   const filePath = slugToPath(rootPath, slug);
@@ -1271,12 +1276,14 @@ export function deleteDoc(rootPath, slug, options = {}) {
 }
 
 /**
- * 기존 doc 의 frontmatter 만 patch. body 보존. patch 객체의 null 은 키
- * 삭제, undefined 는 skip. options.expectedMtime 으로 외부 변경 감지.
+ * Patches only the frontmatter of an existing doc, preserving the body. In the
+ * patch object, `null` deletes the key and `undefined` skips it.
+ * `options.expectedMtime` enables external-change detection.
  *
- * 반환: `{ filePath, frontmatter, mintedUid }`. `mintedUid` 는 **이 쓰기가
- * 신원을 처음 채웠을 때만** 값이 있다(손으로 쓴 노드의 복구) — 호출자는 그
- * 사실을 사람에게 말해야 한다. 신원이 생기는 것은 조용히 지나갈 사건이 아니다.
+ * Returns `{ filePath, frontmatter, mintedUid }`. `mintedUid` has a value **only
+ * when this write minted the identity for the first time** (recovering a
+ * hand-authored node) — the caller must tell the person, because identity coming
+ * into existence is not an event to pass over silently.
  */
 export function patchFrontmatter(rootPath, slug, patch, options = {}) {
   const filePath = slugToPath(rootPath, slug);
@@ -1308,11 +1315,12 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
 }
 
 /**
- * 기존 doc 의 frontmatter + body 를 동시에 갱신. frontmatter 는 patchFrontmatter
- * 와 동일한 patch 의미 (null = 삭제, undefined = skip). body 가 string 이면
- * 교체, undefined 면 보존. expectedMtime 옵션으로 외부 변경 감지.
+ * Updates frontmatter and body of an existing doc together. Frontmatter patch
+ * semantics match patchFrontmatter (`null` deletes, `undefined` skips); a string
+ * `body` replaces, `undefined` preserves. `expectedMtime` enables
+ * external-change detection.
  *
- * 반환 계약은 `patchFrontmatter` 와 같다 — `{ filePath, frontmatter, mintedUid }`.
+ * The return contract matches `patchFrontmatter`: `{ filePath, frontmatter, mintedUid }`.
  */
 export function updateDoc(rootPath, slug, {
   frontmatter: patch,
@@ -1355,9 +1363,9 @@ export function updateDoc(rootPath, slug, {
 }
 
 /**
- * vault 의 kind 분포 통계 (T31). 각 kind 별 노드 수 + 전체 수.
- * AI agent 가 "이 vault 에 capability 가 몇 개?" 같은 census 질문에
- * O(1) 응답 가능 (load → 1 pass count).
+ * Kind distribution for the vault: node count per kind plus the total. Lets an
+ * agent answer inventory questions ("how many capabilities are in this vault?")
+ * in one load plus one counting pass.
  */
 export function listKinds(rootPath) {
   const docs = loadVaultDocs(rootPath);
@@ -1375,10 +1383,10 @@ export function listKinds(rootPath) {
     byKind[kind] = (byKind[kind] || 0) + 1;
     total += 1;
   }
-  // 문서 없이 관계 키에서 이름만 불린 개념. 화면(지도·인사이트)은 이것들도
-  // 개념으로 세므로, 이 수를 같이 내지 않으면 `total` 하나만 보고 "화면이
-  // 부풀렸다" 고 오해하게 된다. kind 별 census 에는 넣지 않는다 — 이것들은
-  // kind 를 선언한 적이 없다.
+  // Concepts named only in a relation key, with no document. The screens (map,
+  // insights) count these as concepts too, so omitting this number makes `total`
+  // alone read as "the screen inflated it". They are not in the per-kind
+  // inventory — they never declared a kind.
   const referencedOnly = new Set();
   for (const doc of docs) {
     for (const { ref } of collectNeighborRefs(doc)) {
@@ -1394,17 +1402,16 @@ export function listKinds(rootPath) {
 }
 
 /**
- * vault 의 orphan 노드 찾기 — 다른 어느 노드도 frontmatter graph 키
- * (domains/capabilities/elements/dependencies/relates/contains/describes/domain)
- * 에서 가리키지 않는 doc. 매칭 정책은 findBacklinks 와 동일 (절대 slug
- * 또는 마지막 segment).
+ * Finds orphan nodes: docs that no other node points at from a frontmatter graph
+ * key (domains/capabilities/elements/dependencies/relates/contains/describes/domain).
+ * Matching policy matches findBacklinks (absolute slug, or the last segment).
  *
- * 옵션:
- *   - kind: 특정 kind 만 대상
- *   - excludeKinds: 이 kind 들은 결과에서 제외 (기본 ['project', 'vault-readme'])
+ * Options:
+ *   - kind: restrict to one kind
+ *   - excludeKinds: drop these kinds from the result (default ['project', 'vault-readme'])
  *
- * 사용 시나리오: AI agent 가 "이 vault 의 고립 노드 정리하자" / 사용자가
- * "내가 만든 노드 중 안 쓰이는 거 뭐냐" 점검.
+ * Used when an agent tidies isolated nodes, or a user asks which of their nodes
+ * nothing uses.
  */
 export function findOrphans(rootPath, options = {}) {
   const docs = loadVaultDocs(rootPath);
@@ -1467,9 +1474,9 @@ export function findOrphans(rootPath, options = {}) {
       slug: doc.slug,
       kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-      // R+ — list_concepts / find_backlinks 와 동일 shape. agent 가 orphans
-      // 받자마자 "특정 도메인 orphan 만 / 최근 변경된 orphan 만" sort/filter
-      // 가능 — 후속 get_concept 없이.
+      // Same shape as list_concepts / find_backlinks, so an agent can sort or
+      // filter orphans ("only in this domain", "only recently changed") straight
+      // from the response, with no follow-up get_concept.
       domain: doc.frontmatter.domain,
       mtime: doc.mtime,
     });
@@ -1478,22 +1485,22 @@ export function findOrphans(rootPath, options = {}) {
 }
 
 /**
- * 두 slug 사이 그래프 최단 경로 (T30, BFS). edge 는 frontmatter graph
- * 키 (domains, capabilities, elements, dependencies, relates, contains,
- * describes, domain) 의 항목 + 양방향 (backlink) 으로 구성된 무방향 그래프.
+ * Shortest graph path between two slugs (BFS). Edges come from the frontmatter
+ * graph keys (domains, capabilities, elements, dependencies, relates, contains,
+ * describes, domain) plus their backlinks, forming an undirected graph.
  *
- * 항목 string 이 절대 slug 또는 slug 의 마지막 segment 둘 다 매칭
- * 가능하도록 — findBacklinks 와 같은 정책.
+ * An entry string matches either the absolute slug or the slug's last segment —
+ * the same policy as findBacklinks.
  *
- * 경로 못 찾으면 null. maxHops (기본 5) 초과면 cutoff.
+ * Returns null when no path exists; cuts off beyond `maxHops` (default 5).
  */
 export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   assertBoundedNonNegativeInteger(maxHops, 'maxHops', { max: 20 });
   const docs = loadVaultDocs(rootPath);
   const slugs = new Set(docs.map((d) => d.slug));
-  // 마지막 segment 와 frontmatter slug 는 alias 로. project.md 가
-  // `slug: ontology-atlas` 같은 user-facing slug 를 갖는 dogfood vault 에서
-  // file slug 와 frontmatter slug 가 달라도 같은 노드로 탐색한다.
+  // The last segment and the frontmatter slug are aliases, so in a dogfood vault
+  // where project.md carries a user-facing `slug: ontology-atlas`, traversal still
+  // treats the file slug and the frontmatter slug as one node.
   const tailToFull = new Map();
   const frontmatterSlugToFull = new Map();
   for (const slug of slugs) {
@@ -1520,17 +1527,19 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   }
   const resolvedFrom = resolveRef(fromSlug);
   const resolvedTo = resolveRef(toSlug);
-  // 두 끝점이 vault 에 모두 존재해야 의미 있는 응답. 동일 slug 도 vault 안에
-  // 있을 때만 trivial path 반환 — 존재하지 않는 slug 에 대해 fake path 를
-  // 만들지 않도록 (이전 회귀: from===to 인 가짜 slug 도 hops:[slug] 반환했음).
+  // Both endpoints must exist in the vault for the answer to mean anything. Even
+  // an identical slug returns a trivial path only when it is in the vault, so no
+  // fake path is invented for a nonexistent slug (past regression: from===to on a
+  // fabricated slug returned hops:[slug]).
   if (!resolvedFrom || !resolvedTo) return null;
   if (resolvedFrom === resolvedTo) return { from: fromSlug, to: toSlug, hops: [resolvedFrom], edges: [] };
-  // adjacency: 무방향, 각 edge 는 frontmatter `via` 키 (domains / capabilities /
-  // elements / dependencies / relates / contains / describes / domain) 를 기록한다. 한 doc 가
-  // 같은 neighbor 를 여러 키에서 참조하면 *첫 키* 를 기억 (가장 구체적인 의미를
-  // 잃지 않게 NEIGHBOR_KEYS 순서가 domains → describes 로 의미적 specificity 약화).
-  // AI agent 가 path 를 받았을 때 "왜 이 두 노드가 연결됐는지" 한 hop 단위로
-  // 표현 가능 — 단순 slug 시퀀스보다 mental model 전달력 ↑.
+  // adjacency: undirected, each edge recording the frontmatter `via` key (domains,
+  // capabilities, elements, dependencies, relates, contains, describes, domain).
+  // When one doc references the same neighbour under several keys, the *first* key
+  // wins — NEIGHBOR_KEYS runs domains → describes, from most to least specific, so
+  // the most specific meaning is kept. This lets an agent that receives a path
+  // explain hop by hop why two nodes are connected, which carries far more of the
+  // mental model than a bare slug sequence.
   const adj = new Map();
   function addEdge(a, b, via) {
     if (!adj.has(a)) adj.set(a, new Map());
@@ -1546,9 +1555,9 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
       }
     }
   }
-  // BFS — depth 를 큐에 같이 들고 다녀서 매 dequeue 시 parent 체인을 거꾸로
-  // 거슬러 올라가는 O(D) 작업 회피. 큐도 head index 로 운용해 Array.shift()
-  // 의 O(V) 비용 제거 (큰 vault 에서 의미 있음).
+  // BFS carrying depth in the queue, which avoids walking the parent chain back on
+  // every dequeue (O(D)). The queue runs on a head index too, removing
+  // Array.shift()'s O(V) cost — measurable on a large vault.
   const queue = [{ node: resolvedFrom, depth: 0 }];
   const visited = new Set([resolvedFrom]);
   const parent = new Map();
@@ -1564,9 +1573,9 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
       parent.set(n, cur);
       parentVia.set(n, via);
       if (n === resolvedTo) {
-        // Path reconstruction: push to end + reverse 한 번 (O(D)). 이전엔 매
-        // step 마다 \`hops.unshift(p)\` 라 O(D²) — maxHops 가 작아도 안티패턴.
-        // edges[] 는 hops i ↔ i+1 사이 'via' (frontmatter key) 를 노출.
+        // Path reconstruction: push to the end, then reverse once (O(D)). It used
+        // to `hops.unshift(p)` each step, i.e. O(D²) — an antipattern even with a
+        // small maxHops. edges[] exposes the 'via' frontmatter key between hops i and i+1.
         const hops = [n];
         const edges = [];
         let p = n;
@@ -1586,18 +1595,18 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
 }
 
 /**
- * 어느 vault doc 이 `targetSlug` 를 가리키는지 스캔. frontmatter 의 array
- * 키 (capabilities, elements, dependencies, relates, contains, describes)
- * 와 body 의 wikilink/markdown link 까지 본다.
+ * Scans which vault docs point at `targetSlug`, looking at the frontmatter array
+ * keys (capabilities, elements, dependencies, relates, contains, describes) and at
+ * wikilinks and markdown links in the body.
  */
 export function findBacklinks(rootPath, targetSlug) {
   const docs = loadVaultDocs(rootPath);
   const resolveRef = buildRefResolver(docs);
   const resolvedTarget = resolveRef(targetSlug) || targetSlug;
   const matches = [];
-  // Graph frontmatter 는 collectNeighborRefs 기준으로 읽는다. 그래야
-  // depends_on 같은 legacy key 도 canonical dependencies edge 로 보이고,
-  // targetSlug 가 frontmatter slug alias 여도 같은 노드를 찾는다.
+  // Graph frontmatter is read through collectNeighborRefs, so a legacy key such as
+  // depends_on still reads as the canonical dependencies edge, and a targetSlug
+  // that is a frontmatter slug alias still finds the same node.
   const requestedTail = targetSlug.split('/').pop();
   const resolvedTail = resolvedTarget.split('/').pop();
   const bodyNeedles = new Set([
@@ -1626,9 +1635,9 @@ export function findBacklinks(rootPath, targetSlug) {
       slug: doc.slug,
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-      // R+ — agent 가 backlinks 받자마자 "어느 도메인 / 언제 변경" 파악 가능.
-      // list_concepts 와 동일 shape 유지 — 같은 mental model 의 두 view 가
-      // 같은 필드 노출하면 agent 가 일관 처리.
+      // Same shape as list_concepts, so an agent reading backlinks immediately
+      // knows the domain and the change time. Two views of one mental model
+      // exposing the same fields is what lets an agent handle both identically.
       domain: doc.frontmatter.domain,
       mtime: doc.mtime,
       matchedKeys: matchedKeys.length > 0 ? matchedKeys : undefined,
@@ -1673,56 +1682,54 @@ function buildRefResolver(docs) {
 }
 
 /**
- * 볼트 다중 파일 쓰기를 **전부 아니면 전무**로 적용한다.
+ * Applies a multi-file vault write **all-or-nothing**.
  *
- * ## 왜 필요했나 — 「atomic」이 거짓이었다
+ * **Why it was needed — «atomic» was false.** `rename_concept`'s tool description
+ * said *"update every backlink in one atomic graph-level operation"* and
+ * `AGENTS.md` said *"atomically rewrites every backlink"*. In reality
+ * `redirectBacklinks` wrote each file immediately inside a loop, and one failed
+ * write left a **half vault** (measured 2026-08-01: `chmod 444` on one of three
+ * references → new file created, old file not deleted → **two nodes with the same
+ * title**, two references on the new name and one on the old).
  *
- * `rename_concept` 의 도구 설명은 *"update every backlink in one atomic
- * graph-level operation"* 이라고 말하고 `AGENTS.md` 도 *"atomically rewrites
- * every backlink"* 라고 적었다. 실제로는 `redirectBacklinks` 가 루프 안에서
- * 파일마다 즉시 썼고, 중간에 한 파일이 안 써지면 **반쪽 볼트**가 남았다
- * (2026-08-01 실측: 참조 3개 중 하나를 `chmod 444` → 새 파일 생성됨 · 옛 파일
- * 안 지워짐 → **제목이 같은 노드 둘**, 참조 2개는 새 이름 1개는 옛 이름).
+ * The worst part came next: on that vault `validate` answered *"issue 0 ✓"* and
+ * `health` answered *"vault_validation pass"*. **A split graph passed both
+ * checks.** On a product whose premise is that the user's disk is the source of
+ * truth, that is the most expensive kind of silent failure.
  *
- * 가장 나쁜 것은 그 다음이다 — 그 볼트에 `validate` 는 *"issue 0 ✓"*,
- * `health` 는 *"vault_validation pass"* 라고 답했다. **분열된 그래프가 검사
- * 둘을 다 통과한다.** 사용자의 디스크가 진실원이라는 이 제품의 전제 위에서
- * 그건 가장 비싼 종류의 조용한 실패다.
+ * **Guaranteed:** **as long as the process lives**, any I/O failure (EACCES,
+ * EROFS, ENOSPC, an editor lock, a read-only file left by a sync client) leaves
+ * the vault as it started. Two stages — ① before writing anything, **pre-check
+ * write permission on every target**, and ② if it still fails, restore what was
+ * already written from the original bytes.
  *
- * ## 무엇을 보장하고 무엇을 안 하나
+ * **Not guaranteed: crash and power-loss safety.** That needs a journal or a
+ * `rename(2)`-based commit, and it duplicates this product's recovery path — the
+ * vault is a git repository (snapshot → diff → revert). So the line is drawn
+ * honestly: this function is named `applyAllOrNothing`, not `applyAtomically`.
  *
- * 보장: **프로세스가 살아 있는 한** 어떤 I/O 실패(EACCES · EROFS · ENOSPC ·
- * 편집기 잠금 · 동기화 클라이언트가 만든 읽기 전용 파일)에서도 볼트는 시작
- * 상태로 돌아간다. 두 단계다 — ① 아무것도 쓰기 전에 **전 대상의 쓰기 권한을
- * 미리 확인**하고, ② 그래도 실패하면 이미 쓴 것을 원본 바이트로 되돌린다.
- *
- * 안 하는 것: **크래시·전원 손실 안전성.** 그건 저널이나 `rename(2)` 기반
- * 커밋이 필요하고, 볼트가 git 저장소라는 이 제품의 회복 경로(스냅샷 → diff →
- * revert)와 중복된다. 그래서 여기서는 정직하게 선을 긋는다 — 이 함수의
- * 이름은 `applyAllOrNothing` 이지 `applyAtomically` 가 아니다.
- *
- * 되돌리기마저 실패하면(그 자체가 I/O 실패다) **숨기지 않는다** — 에러가
- * 어느 파일이 어느 상태로 남았는지 나열한다. 모른다고 말하는 것이
- * 괜찮다고 말하는 것보다 낫다.
+ * If the rollback itself fails (an I/O failure in its own right) it is **not
+ * hidden** — the error lists which file was left in which state. Saying "I do not
+ * know" beats saying "it is fine".
  *
  * @param {Array<{op:'write'|'delete', path:string, content?:string}>} plan
  * @returns {{applied:number}}
  */
 /**
- * 파일 하나를 **끊기지 않게** 쓴다 — 임시 파일에 쓰고, 디스크에 확정하고, 이름을 바꾼다.
+ * Writes one file **without a torn state**: write to a temp file, flush it to
+ * disk, then rename.
  *
- * ## 왜 (2026-08-16 검수)
+ * **Why** (review 2026-08-16): it used to be a bare `writeFileSync`, which
+ * **truncates the original first** and then writes. A process death or a full
+ * disk in between leaves the user's markdown **truncated** — and that file is in
+ * the folder we just asked them to open.
  *
- * 종전에는 `writeFileSync` 하나였다. 그건 원본을 **먼저 비우고** 쓴다. 그
- * 사이에 프로세스가 죽거나 디스크가 차면 사용자의 마크다운이 **잘린 채로**
- * 남는다 — 그리고 그 파일은 방금 우리가 열어 준 그 폴더의 것이다.
+ * ⚠️ This repository **already had** a safe write (`writeTextAtomically` in
+ * `cli/src/lib/agent-config.mjs`), used only for `.mcp.json` and `config.toml` —
+ * i.e. **protecting the config files and not the user's data**.
  *
- * ⚠️ 이 저장소에는 안전한 쓰기가 **이미 있었다**(`cli/src/lib/agent-config.mjs`
- * 의 `writeTextAtomically`). 그런데 쓰는 곳이 `.mcp.json` 과 `config.toml`
- * 뿐이었다 — **설정 파일은 지키고 사용자 데이터는 안 지키는** 모양이었다.
- *
- * 이름 바꾸기(rename)는 같은 파일 시스템 안에서 원자적이다. 그래서 어느
- * 순간에 죽어도 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
+ * A rename is atomic within one filesystem, so a death at any moment leaves the
+ * file holding **either the old contents or the new**, never half.
  */
 function existingRegularFileMode(filePath) {
   try {
@@ -1768,11 +1775,11 @@ export function writeFileAtomically(filePath, text, options = {}) {
   let descriptor = null;
   try {
     descriptor = openSync(temporaryPath, 'wx');
-    // private 원본의 권한을 temp가 잠깐이라도 넓히지 않도록 내용보다 먼저 적용한다.
+    // Applied before the contents so the temp file never widens a private original's mode, even briefly.
     if (existingMode !== null) fchmodSync(descriptor, existingMode);
     writeFileSync(descriptor, text, 'utf-8');
-    // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고 내용은
-    // 아직 캐시에 있는 상태로 전원이 나갈 수 있다.
+  // Flush to disk before the rename — otherwise power can be lost with the new
+  // name in place and the contents still in cache.
     fsyncSync(descriptor);
     closeSync(descriptor);
     descriptor = null;
@@ -1797,38 +1804,38 @@ export function writeFileAtomically(filePath, text, options = {}) {
       try {
         closeSync(descriptor);
       } catch {
-        /* 이미 닫혔다 */
+        /* already closed */
       }
     }
     try {
-      // 성공하면 rename 이 가져갔으므로 여기서 지울 것이 없다. 실패했을 때만
-      // 임시 파일이 남고, 그건 원본을 건드리지 않고 치운다.
+      // On success the rename took it, so there is nothing to remove. A temp file
+      // remains only on failure, and clearing it never touches the original.
       if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
     } catch {
-      /* 못 치워도 원본은 멀쩡하다 */
+      /* even if it cannot be cleared, the original is intact */
     }
   }
 }
 
 /**
- * 두 경로가 **같은 파일을 가리키는가**를 비교할 열쇠.
+ * The key for comparing whether two paths **name the same file**.
  *
- * 이미 있는 파일이면 실제 경로(심볼릭 링크를 편 것)를 쓰고, 아직 없으면 경로
- * 문자열을 쓴다. 대소문자를 구별하지 않는 파일 시스템(macOS 기본 · Windows)을
- * 위해 소문자로 눕힌다 — 구별하는 시스템에서는 서로 다른 두 파일이 같은 열쇠를
- * 갖게 되지만, 그 경우 손해는 「지우기 하나를 안 한 것」뿐이고 그건 데이터가
- * 사라지는 쪽보다 언제나 낫다.
+ * For an existing file it is the real path (symlinks resolved); for one that does
+ * not exist yet, the path string. Lowercased for case-insensitive filesystems
+ * (macOS by default, Windows) — on a case-sensitive one, two genuinely different
+ * files then share a key, but the cost of that is one skipped delete, which always
+ * beats losing data.
  */
 function sameFileKey(path) {
   try {
     if (existsSync(path)) return realpathSync(path).toLowerCase();
   } catch {
-    /* 실제 경로를 못 펴면 문자열로 간다 — 판정이 없는 것보다 낫다. */
+    /* if the real path cannot be resolved, fall back to the string — better than no verdict */
   }
   return resolve(path).toLowerCase();
 }
 
-/** 아직 없는 쓰기 대상에서 가장 가까운 기존 부모. 사전점검은 절대 만들지 않는다. */
+/** Nearest existing parent of a write target that does not exist yet. The pre-check never creates anything. */
 function nearestExistingParent(path) {
   let probe = dirname(path);
   for (;;) {
@@ -1840,10 +1847,11 @@ function nearestExistingParent(path) {
 }
 
 /**
- * 실제 적용 중에만 부모 디렉터리를 한 칸씩 만든다.
+ * Creates parent directories one level at a time, and only during the real apply.
  *
- * `recursive:true`는 다른 프로세스가 경합으로 만든 디렉터리까지 우리가 만든
- * 것으로 오인할 수 있다. 한 칸씩 EEXIST를 가르면 rollback이 소유한 것만 안다.
+ * `recursive:true` can make us mistake a directory another process created in a
+ * race for one of ours. Splitting on EEXIST per level means rollback knows exactly
+ * what it owns.
  */
 function createMissingParents(path, createdDirectories) {
   const missing = [];
@@ -1868,17 +1876,17 @@ export function applyAllOrNothing(plan, options = {}) {
   if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
 
   /*
-   * ⓪ **같은 파일을 쓰고 또 지우는 계획은 지우기를 뺀다.**
+   * ⓪ **A plan that writes and then deletes the same file drops the delete.**
    *
-   * 이름만 대소문자가 다른 rename 은 이 계획을 만든다:
+   * A rename differing only in case produces exactly this plan:
    *   write `capabilities/auth.md` · delete `capabilities/Auth.md`
-   * 그런데 macOS·Windows 의 파일 시스템은 그 둘을 **같은 파일**로 본다. 그래서
-   * 쓰고 나서 지우면 방금 쓴 그것이 지워진다 — 노드가 통째로 사라지고, 도구는
-   * 성공이라고 답한다(2026-08-16 검수에서 재현).
+   * and the macOS and Windows filesystems treat those as the **same file**, so
+   * deleting after writing deletes what was just written — the node disappears
+   * entirely and the tool reports success (reproduced in the 2026-08-16 review).
    *
-   * 앞단(`rename_concept`)에서 그 경우를 거절하지만, 같은 계획을 만드는 도구가
-   * 셋(rename · merge · reclassify)이라 **쓰기 층에도** 막아 둔다. 문자열 비교로
-   * 못 잡는 것을 여기서는 **실제 경로**로 잡는다.
+   * The front door (`rename_concept`) rejects that case, but three tools build
+   * this plan (rename, merge, reclassify), so the **write layer** blocks it too.
+   * What a string comparison cannot catch is caught here by **real path**.
    */
   const writeTargets = new Set();
   for (const entry of plan) {
@@ -1907,19 +1915,18 @@ export function applyAllOrNothing(plan, options = {}) {
   }
 
   /*
-   * ⓪-b **남이 그 사이에 고쳤으면 한 글자도 안 쓴다.**
+   * ⓪-b **If someone edited it in the meantime, write nothing at all.**
    *
-   * ## 왜 (2026-08-16 검수)
+   * Why (review 2026-08-16): the `expected_mtime` check existed only on the
+   * single-file paths. But the three tools using this function (rename, merge,
+   * reclassify) rewrite N referencing documents from **a snapshot read minutes
+   * earlier**. If the user edited one of them in Obsidian in between, that edit
+   * vanished silently — and a human and an agent sharing one folder is the exact
+   * situation this product sells, so protection was missing precisely there.
    *
-   * `expected_mtime` 검사는 **한 파일**을 고치는 길에만 있었다. 그런데 이 함수를
-   * 쓰는 셋(rename · merge · reclassify)은 참조하는 문서 N개를 **몇 분 전에 읽은
-   * 스냅샷**으로 다시 쓴다. 그 사이 사용자가 옵시디언에서 그중 하나를 고쳤으면
-   * 그 편집은 조용히 사라졌다 — 사람과 에이전트가 한 폴더를 같이 쓰는 것이
-   * 이 제품이 파는 바로 그 상황인데, 그 상황에서만 보호가 없었다.
-   *
-   * 계획을 만든 쪽이 각 항목에 `expectedMtime` 을 실어 보내면 여기서 본다.
-   * 안 실어 보내면 종전대로 검사하지 않는다(회귀 0) — 다만 그 자리는 이제
-   * 「안 넣은 것」이지 「없는 것」이 아니다.
+   * When the planner attaches `expectedMtime` to an entry, it is checked here.
+   * Without it nothing is checked, as before (zero regression) — but that slot is
+   * now "not supplied" rather than "does not exist".
    */
   const conflicts = [];
   for (const entry of plan) {
@@ -1929,8 +1936,9 @@ export function applyAllOrNothing(plan, options = {}) {
     throw changedOnDiskError(conflicts);
   }
 
-  // ① 사전 점검 — 한 글자도 쓰기 전에. 흔한 실패(읽기 전용 파일·잠긴 파일·
-  //    읽기 전용 볼트)는 여기서 걸러져 되돌리기 자체가 필요 없어진다.
+  // ① Pre-check, before a single character is written. The common failures
+  //    (read-only file, locked file, read-only vault) are caught here, so no
+  //    rollback is needed at all.
   const blocked = [];
   for (const entry of plan) {
     const dir = dirname(entry.path);
@@ -1941,7 +1949,7 @@ export function applyAllOrNothing(plan, options = {}) {
         accessSync(nearestExistingParent(entry.path), fsConstants.W_OK);
       }
       if (entry.op === 'delete' && existsSync(entry.path)) {
-        // 파일을 지우려면 **파일이 아니라 디렉터리**에 쓰기 권한이 있어야 한다.
+        // Deleting a file needs write permission on **the directory**, not on the file.
         accessSync(dir, fsConstants.W_OK);
       }
     } catch (error) {
@@ -1957,7 +1965,7 @@ export function applyAllOrNothing(plan, options = {}) {
     );
   }
 
-  // ② 적용 — 각 항목의 **직전 상태**를 들고 간다. 되돌릴 재료다.
+  // ② Apply, carrying each entry's **prior state** — the material for a rollback.
   const done = [];
   const createdDirectories = [];
   try {
@@ -2037,30 +2045,30 @@ export function applyAllOrNothing(plan, options = {}) {
 }
 
 /**
- * targetSlug 를 가리키는 모든 vault doc 의 frontmatter array 키와 body link
- * 를 nextSlug 로 치환. rename_concept / merge_concepts 의 핵심 동작.
+ * Rewrites every frontmatter array key and body link that points at `targetSlug`
+ * to `nextSlug`. The core operation behind rename_concept and merge_concepts.
  *
- * 매칭 정책 (findBacklinks 와 동일):
- *  - 절대 slug 매칭 (`capabilities/mcp-server`)
- *  - 마지막 segment 매칭 (`mcp-server`) — 이때 치환은 *같은 표현* 유지를 위해
- *    target tail 그대로 두지 않고 nextSlug 의 tail 로 치환 (rename 의도라
- *    슬러그 어느 표현이든 일관성 있게 새 이름이 보여야 한다).
- *  - 끝부분 일치 (`*** /mcp-server`) 도 같은 정책.
+ * Matching policy (same as findBacklinks):
+ *  - absolute slug (`capabilities/mcp-server`)
+ *  - last segment (`mcp-server`) — the replacement uses `nextSlug`'s tail rather
+ *    than keeping the target tail, so a rename shows the new name consistently
+ *    whichever form the slug was written in
+ *  - trailing match (`…/mcp-server`) follows the same policy
  *
- * 본문 치환: `[[targetSlug]]` 와 `(targetSlug.md)` 를 nextSlug 로 치환.
+ * Body replacement covers `[[targetSlug]]` and `(targetSlug.md)`.
  *
- * options.dryRun = true 면 디스크에 쓰지 않고 미리보기만.
- * options.excludeSlugs 는 호출자가 같은 계획에서 교체할 문서를 제외한다.
+ * `options.dryRun = true` previews without writing to disk.
+ * `options.excludeSlugs` lets the caller skip documents it replaces in the same plan.
  *
- * 반환: { updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated }.
+ * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated }`.
  */
 export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) {
   /**
-   * `deferWrite: true` 면 계획만 만들어 `plan` 으로 돌려주고 디스크는 안
-   * 건드린다. `dryRun` 과 다르다 — dry-run 은 *사용자에게 보여 줄* 미리보기고,
-   * 이건 **호출자가 자기 쓰기까지 한 계획에 합쳐** 전부-아니면-전무로 적용하기
-   * 위한 것이다. `rename_concept` 이 파일 생성·백링크 재작성·옛 파일 삭제를
-   * 한 단위로 묶는 데 쓴다.
+   * With `deferWrite: true` only the plan is built and returned as `plan`; disk is
+   * untouched. Different from `dryRun`: a dry run is a preview *for the user*,
+   * while this lets **the caller merge its own writes into one plan** and apply
+   * them all-or-nothing. `rename_concept` uses it to bind file creation, backlink
+   * rewriting, and old-file deletion into one unit.
    */
   const { dryRun = false, deferWrite = false, excludeSlugs = [] } = options;
   const excluded = new Set(Array.isArray(excludeSlugs) ? excludeSlugs : []);
@@ -2091,7 +2099,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     if (value === targetSlug) return { value: nextSlug, changed: true };
     if (canRewriteTail && value === targetTail) return { value: nextTail, changed: true };
     if (canRewriteTail && value.endsWith(`/${targetTail}`)) {
-      // path-prefixed tail — 보존 prefix + 새 tail
+      // path-prefixed tail — preserved prefix plus the new tail
       const prefix = value.slice(0, value.length - targetTail.length);
       return { value: `${prefix}${nextTail}`, changed: true };
     }
@@ -2099,7 +2107,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   }
 
   const updates = [];
-  /** 디스크에 낼 쓰기 계획: 루프가 끝난 뒤 한 번에 적용한다. */
+  /** The write plan destined for disk: applied in one go once the loop ends. */
   const plan = [];
   for (const doc of docs) {
     if (doc.slug === targetSlug || excluded.has(doc.slug)) continue;
@@ -2115,8 +2123,8 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
         const before = [...value];
         const after = value.map((v) => rewriteArrayItem(v).value);
         if (before.some((b, i) => b !== after[i])) {
-          // dedup + sort — 이미 nextSlug 가 있으면 중복 추가하지 않고, 같은
-          // 그래프 상태는 같은 frontmatter 배열로 남긴다.
+          // dedup + sort — never append a duplicate when nextSlug is already
+          // present, so the same graph state leaves the same frontmatter array.
           const deduped = normalizeRelationRefs(after);
           nextFm[key] = deduped;
           beforeKeys.push({ key, before });
@@ -2124,12 +2132,13 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           fmChanged = true;
         }
       } else if (typeof value === 'string') {
-        // 그래프 참조 슬롯만 다시 쓴다 (`domain:` + GRAPH_ARRAY_KEYS 계열).
-        // `path:` 같은 증거 문자열은 참조가 아니다 — 실측(2026-08-01, 도그푸드
-        // 볼트 평탄화): `elements/src/widgets/docs-vault` → `elements/
-        // docs-vault-widget` rename 의 tail-suffix 절이 **다른 노드의**
-        // `path: src/entities/docs-vault` 까지 `…/docs-vault-widget` 으로
-        // 고쳐 존재하지 않는 파일을 가리키게 했다(pathDrift 3건).
+        // Only graph reference slots are rewritten (`domain:` plus the
+        // GRAPH_ARRAY_KEYS family). An evidence string such as `path:` is not a
+        // reference — measured 2026-08-01 while flattening the dogfood vault: the
+        // tail-suffix clause of the rename `elements/src/widgets/docs-vault` →
+        // `elements/docs-vault-widget` also rewrote **another node's**
+        // `path: src/entities/docs-vault` to `…/docs-vault-widget`, pointing it at
+        // a file that does not exist (3 cases of pathDrift).
         const isRefSlot = key === 'domain' || GRAPH_ARRAY_KEY_SET.has(key);
         const r = isRefSlot ? rewriteArrayItem(value) : { changed: false };
         if (r.changed) {
@@ -2139,14 +2148,16 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           fmChanged = true;
         }
       } else if (value && typeof value === 'object') {
-        // P6 게이트 ① — 객체 맵 값(예: relation_notes: {ref: "왜"})의 KEY 도
-        // rename 대상이다. 이걸 안 하면 관계 근거(why) 노트가 rename 순간
-        // 고아가 된다 (레드팀이 실증한 스키마 착수 차단 사유).
+        // The KEY of an object map value (`relation_notes: {ref: "why"}`) is a
+        // rename target too. Without this, a relation's rationale note is orphaned
+        // the moment the rename happens — the red-team finding that blocked the
+        // schema from shipping.
         //
-        // 키 충돌 병합 정책: old/new 키가 둘 다 존재하면 기존(new) 값을
-        // 이긴다 — 사용자가 새 이름으로 이미 쓴 노트가 더 최신 의도이고,
-        // rename 이 그것을 덮어쓰면 조용한 데이터 손실이다. 밀려난 old
-        // 값은 버리지 않고 beforeKeys 에 남아 dry-run/감사에서 보인다.
+        // Key-collision merge policy: when both the old and the new key exist, the
+        // existing (new) value wins — a note the user already wrote under the new
+        // name is the more recent intent, and letting the rename overwrite it is
+        // silent data loss. The displaced old value is not discarded: it stays in
+        // beforeKeys, visible in the dry run and the audit.
         const entries = Object.entries(value);
         let mapChanged = false;
         const nextMap = {};
@@ -2158,13 +2169,13 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           }
           mapChanged = true;
           if (r.value in nextMap || entries.some(([k]) => k === r.value)) {
-            // 충돌 — 기존(new 키) 값 승리, old 값은 기록만.
+            // Collision — the existing (new key) value wins; the old value is only recorded.
             continue;
           }
           nextMap[r.value] = mapValue;
         }
         if (mapChanged) {
-          // 충돌 승리자(원래 new 키) 값 보존
+          // Preserve the collision winner (the original new key) value
           for (const [mapKey, mapValue] of entries) {
             if (!(mapKey in nextMap) && !rewriteArrayItem(mapKey).changed) nextMap[mapKey] = mapValue;
           }
@@ -2201,18 +2212,19 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
       bodyChanged,
     });
 
-    // 여기서 **쓰지 않는다.** 종전엔 이 줄이 `writeFileSync` 였고, 그래서
-    // 다음 파일이 안 써지면 앞의 것들만 바뀐 반쪽 볼트가 남았다.
+    // **Do not write here.** This line used to be a `writeFileSync`, so a failure
+    // on the next file left a half vault with only the earlier ones changed.
     plan.push({
       op: 'write',
       path: filePath,
       content: buildMarkdown({ frontmatter: nextFm, body: nextBody }),
       /*
-       * **읽은 시점을 같이 들고 간다** (2026-08-16 검수).
+       * **Carry the read timestamp along** (review 2026-08-16).
        *
-       * 이 문서는 몇 초~몇 분 전에 읽은 스냅샷이다. 그 사이 사용자가 자기
-       * 편집기에서 이 파일을 고쳤으면, 여기서 그대로 쓰는 순간 그 편집이
-       * 사라진다. 쓰기 직전에 이 값과 디스크를 대조한다.
+       * This document is a snapshot read seconds or minutes ago. If the user
+       * edited the file in their own editor in between, writing it as-is here
+       * destroys that edit. Compare this value against disk immediately before
+       * the write.
        */
       expectedMtime: doc.mtime,
       expectedRaw: doc.raw,
@@ -2246,17 +2258,19 @@ function normalizeForDuplicateTitle(title) {
 }
 
 /**
- * 새 노드의 title 이 기존 노드와 정규화 기준(소문자·공백 정리)으로 동일하면
- * advisory 경고 문자열을, 아니면 null 을 반환한다.
+ * Returns an advisory warning string when a new node's title matches an existing
+ * node's under normalisation (lowercased, whitespace collapsed), else null.
  *
- * 성장하는 vault 의 #1 실패 모드는 **중복/hallucinated 노드** — agent 가
- * add_concept 전에 similar_nodes 로 확인하는 게 정석이지만, 잊으면 near-duplicate
- * 가 조용히 쌓인다. 이 함수는 add_concept 의 안전망: 같은 title 이 이미 있으면
- * "patch_concept 로 합쳐라" 라고 알린다. write 를 막지 않는 advisory.
+ * The #1 failure mode of a growing vault is **duplicate or hallucinated nodes**.
+ * Checking `similar_nodes` before `add_concept` is the correct discipline, but
+ * forgetting it lets near-duplicates pile up quietly. This is add_concept's safety
+ * net: when the same title already exists, it says "merge with patch_concept". It
+ * is advisory and never blocks the write.
  *
- * 정확도 우선(정규화 후 *완전 일치*)으로 오경고를 최소화한다 — fuzzy/부분 매칭은
- * 서로 다른 개념(예: auth-login vs auth-logout)에 오경고를 내므로 배제. 자기 자신
- * (같은 slug)·빈 title 은 제외.
+ * Precision first — *exact* match after normalisation — to minimise false alarms.
+ * Fuzzy or partial matching is excluded because it fires on genuinely different
+ * concepts (auth-login vs auth-logout). The node itself (same slug) and empty
+ * titles are excluded.
  */
 export function detectDuplicateTitle(title, slug, docs) {
   const norm = normalizeForDuplicateTitle(title);
@@ -2275,8 +2289,9 @@ export function detectDuplicateTitle(title, slug, docs) {
 }
 
 /**
- * vault root 가 markdown vault 같은지 가벼운 검사. 절대 경로 + 디렉토리만
- * OK 로 본다 (frontmatter 가 없는 폴더도 빈 vault 로 허용).
+ * Light check that the vault root looks like a markdown vault. Only an absolute
+ * path and a directory are required — a folder with no frontmatter is allowed as
+ * an empty vault.
  */
 export function ensureVaultRoot(rootPath) {
   if (!rootPath) {

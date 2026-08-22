@@ -1,46 +1,48 @@
 /**
- * 관문 프레임 루프 — 관문 랜딩의 캔버스 층(전류장 `GatewayFx` · 히어로
- * 오브젝트 `hero-object-engine`)이 공유하는 **단 하나의 rAF 드라이버 +
- * 앰비언트 휴면**.
+ * The gateway's frame loop — one shared rAF driver plus ambient sleep for the
+ * gateway's canvas layers (`GatewayFx`, `hero-object-engine`).
  *
- * ## 왜 생겼나 (2026-08-19 실측)
+ * ## Why it exists
  *
- * 관문(`/ko/` · `/ko/download/`)은 무입력 40초 뒤에도 초당 55~68ms 를 영구히
- * 태우고 있었다 — 같은 앱의 지도 화면이 무입력 32초 뒤 0 busy 프레임으로
- * 완전히 잠드는 것과 정반대다. 원인 둘:
+ * Measured 2026-08-19: the gateway (`/ko/`, `/ko/download/`) burned 55–68 ms per
+ * second forever, even 40 s after the last input — the exact opposite of the map
+ * screen, which reaches zero busy frames 32 s after input stops. Two causes:
  *
- * 1. **rAF 루프가 3개 돌았다** (5초 창에 콜백 900회 = 60Hz × 3). 전류장과
- *    히어로 오브젝트가 각자 루프를 소유했고, 증거 절의 지도 엔진 루프까지
- *    합쳐 셋이었다. 여러 루프가 각자 도는 것은 설계가 아니라 사고다 — 여기로
- *    합쳐 관문 자신의 루프는 하나가 됐다(지도 엔진은 위젯 소유라 그대로 두되,
- *    그 루프는 이미 자기 휴면을 갖고 있어 noop 프레임만 돈다).
- * 2. **관문의 두 루프에는 휴면이 없었다.** 지도는 `ambient-sleep.ts` 계약
- *    ("손 안에서는 살아 있고, 내려놓으면 잠든다")으로 잠드는데, 전류장·돔
- *    회전만 그 계약 밖에서 살았다 — `idle-gate.ts` 독블록이 경고한
- *    「한쪽에만 조건이 붙는 사고」의 관문판이다.
+ * 1. **Three rAF loops were running** (900 callbacks in a 5 s window = 60 Hz × 3).
+ *    The FX layer and the hero object each owned one, and the evidence section's
+ *    map engine added a third. Several loops running independently is an accident,
+ *    not a design, so the gateway's own two were merged into this one. The map
+ *    engine's loop stays where it is — it is owned by that widget and already has
+ *    its own sleep, so it only spins noop frames.
+ * 2. **Neither gateway loop could sleep.** The map sleeps under the
+ *    `ambient-sleep.ts` contract ("alive in your hand, asleep when you put it
+ *    down"); the FX layer and the dome rotation lived outside it. This is the
+ *    gateway's instance of the failure `idle-gate.ts` warns about: a condition
+ *    applied to one side only.
  *
- * ## 계약 — 지도와 같은 방식
+ * ## The contract — same as the map's
  *
- * 시간 상수·램프·판정을 전부 `ambient-sleep.ts` 에서 **수입**한다(사본을
- * 만들지 않는다). 마지막 입력 후 `AMBIENT_SLEEP_DELAY_MS`(30s)까지는 계수 1 —
- * **종전과 1픽셀도 다르지 않다.** 그 뒤 `AMBIENT_SLEEP_RAMP_MS`(2s)에 걸쳐
- * 계수가 1→0 으로 램프하고(모션이 감속으로 멎는다 — 스텝 컷은 「고장난 것」
- * 으로 읽힌다), 0 에 닿으면 클라이언트 호출을 전면 스킵한다.
+ * Every time constant, ramp, and decision is **imported** from
+ * `ambient-sleep.ts`; no copy is made here. Until `AMBIENT_SLEEP_DELAY_MS` (30 s)
+ * after the last input the factor is 1 — **not one pixel differs from before**.
+ * Over the next `AMBIENT_SLEEP_RAMP_MS` (2 s) it ramps 1 → 0, so motion decelerates
+ * to a stop rather than cutting, because a step cut reads as breakage. At 0 the
+ * client calls are skipped entirely.
  *
- * rAF 자체는 멈추지 않는다 — `idle-gate.ts` 의 보수 설계 그대로다. 유휴
- * 판정이 매 프레임 재평가되므로 어떤 입력이든(마우스 이동·클릭·휠·스크롤·
- * 키·터치) **다음 프레임에** 계수 1 로 복귀한다: wake 배선이 없고, 따라서
- * wake 누락으로 화면이 얼어붙는 실패 모드 자체가 없다. noop 프레임 비용은
- * µs 급이다(지도의 유휴 실측 1.7ms/s 와 같은 부류).
+ * rAF itself never stops, matching the conservative design in `idle-gate.ts`. The
+ * idle decision is re-evaluated every frame, so any input (move, click, wheel,
+ * scroll, key, touch) restores the factor to 1 **on the next frame**. There is no
+ * wake wiring, and therefore no failure mode where a missed wake freezes the
+ * screen. A noop frame costs microseconds — the same order as the map's measured
+ * 1.7 ms/s at idle.
  *
- * reduced-motion 은 여기 오지 않는다 — 두 소비처 모두 감속에서는 루프를
- * 아예 등록하지 않고 정지 1프레임만 그린다(관문 FX 예외 조건 (b),
+ * reduced-motion never reaches here: under it, both consumers skip registering the
+ * loop and draw a single static frame instead (gateway FX exception clause (b),
  * `tests/contract/gateway-fx-exception.contract.test.ts`).
  *
- * 게이트: `tests/e2e/gateway-idle-sleep.spec.ts` 가 무입력 후 rAF 콜백의
- * 초당 동기 시간이 실제로 바닥에 닿는지를 잰다.
+ * Gate: `tests/e2e/gateway-idle-sleep.spec.ts` measures whether the per-second
+ * synchronous time in rAF callbacks actually reaches the floor after input stops.
  */
-
 import {
   AMBIENT_SLEEP_DELAY_MS,
   AMBIENT_SLEEP_RAMP_MS,

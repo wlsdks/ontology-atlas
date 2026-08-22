@@ -1,19 +1,21 @@
 'use client';
 
 /**
- * "지침" 열람 — 편집은 불가하되 **열람은 1클릭**.
+ * Viewing the 「지침」 (instructions) — not editable, but **one click to read**.
  *
- * 숨긴 프롬프트는 신뢰 부채다. 사용자가 자기 볼트 내용과 함께 어떤 지시가
- * 나가는지 알아야 한다. 여기 그려지는 문자열은 실제로 전송되는 문자열과
- * **같은 함수의 결과**다 — 다르면 그 열람은 투명성이 아니라 장식이다.
+ * A hidden prompt is trust debt. The user has to know what instructions go out
+ * alongside their own vault content. The string drawn here is **the result of the
+ * same function** as the string actually sent — otherwise this view is decoration,
+ * not transparency.
  *
- * ## 왜 카드가 아니라 내용만인가
+ * ## Why content only, not a card
  *
- * 이 열람과 「터미널에서 이어가기」는 둘 다 **떠날 때·의심될 때** 여는
- * 곁가지인데, 각자 테두리 있는 띠로 상주하면서 입력칸과 같은 무게로 바닥에
- * 쌓여 있었다(1512×950 실측: 바닥 4개 띠). 이제 여닫는 자리는 입력칸 아래
- * 한 줄이 소유하고, 열리는 영역도 **한 번에 하나**다 — 이 파일은 그 영역에
- * 들어갈 내용만 그린다.
+ * This view and 「터미널에서 이어가기」 (continue in the terminal) are both side
+ * branches opened **when leaving or when in doubt**, yet each used to sit
+ * permanently as a bordered strip, stacking at the floor at the same weight as the
+ * composer (measured 1512×950: 4 strips at the floor). Now one row under the
+ * composer owns opening and closing them, and **only one** area opens at a time —
+ * this file draws only the content that goes into that area.
  */
 export function AgentPromptText({
   systemPrompt,

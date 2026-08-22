@@ -1,45 +1,49 @@
 /**
- * 두 볼트 슬러그 사이의 **상대 마크다운 경로** — `@` 멘션이 본문에 넣는 링크.
+ * The **relative markdown path** between two vault slugs — the link an `@` mention
+ * puts in the body.
  *
- * ## 왜 표준 링크인가 (2026-08-08, 소유자 지적)
+ * ## Why a standard link (2026-08-08, owner report)
  *
- * 첫 판은 본문에 `[[슬러그|이름]]` 위키링크를 넣었다. 소유자가 물었다 —
- * *"`[[` 이거는 옵시디언 특유라서 우리가 쓰면 안되는거 아닌가?"*
+ * The first version put a `[[slug|name]]` wikilink in the body. The owner asked —
+ * *"`[[` 이거는 옵시디언 특유라서 우리가 쓰면 안되는거 아닌가?"* (isn't `[[` an
+ * Obsidian thing we shouldn't use?)
  *
- * 짚은 것이 맞다. 위키링크는 MediaWiki(2001)에서 왔고 Roam·Logseq·Obsidian·
- * Foam·Dendron 이 다 쓰는 **PKM 공통 관습**이지 옵시디언 발명은 아니다. 그러나
- * 인상은 옵시디언이고, 무엇보다 **재 보니 표준 링크가 모든 축에서 낫다**:
+ * A fair point. Wikilinks come from MediaWiki (2001) and are a **PKM convention**
+ * used by Roam, Logseq, Obsidian, Foam and Dendron rather than an Obsidian
+ * invention. But the impression is Obsidian — and above all, **measured, the
+ * standard link wins on every axis**:
  *
- * | | `[[슬러그\|이름]]` | `[이름](../경로.md)` |
+ * | | `[[slug\|name]]` | `[name](../path.md)` |
  * |---|---|---|
- * | 우리 뷰어 | 링크 | 링크 (`resolveDocLink`) |
- * | 옵시디언 | 링크 | 링크 |
- * | **GitHub · VS Code · 일반 마크다운 뷰어** | **깨진 글자** | **링크** |
- * | 노드 이름을 바꾸면 | 낡는다 | 낡는다 |
+ * | Our viewer | link | link (`resolveDocLink`) |
+ * | Obsidian | link | link |
+ * | **GitHub · VS Code · generic markdown viewers** | **broken text** | **link** |
+ * | When a node is renamed | goes stale | goes stale |
  *
- * 마지막 줄이 결정적이었다. 위키링크가 «슬러그라서 파일 이동에 견딘다» 고
- * 생각했는데, `redirectBacklinks` 는 **frontmatter 만** 고치고 본문은 손대지
- * 않는다(실측). 즉 두 표기가 그 축에서 같고, 남는 차이는 **GitHub 에서
- * 읽히는가** 하나다.
+ * The last row settled it. Wikilinks were assumed to «survive file moves because
+ * they are slugs», but `redirectBacklinks` fixes **frontmatter only** and never
+ * touches bodies (measured). So the two notations are equal on that axis, and the
+ * remaining difference is **whether it renders on GitHub**.
  *
- * 그래서 답은 「우리만의 문법을 만든다」가 아니다 — 우리 문법은 **모든 다른
- * 도구에서 깨진 글자**가 되고, 그건 「평범한 마크다운으로 들고 나갈 수 있다」는
- * 이 제품의 약속을 우리가 깨는 것이다. 남의 문법도 아니고 우리 문법도 아닌
- * **마크다운 표준**을 쓴다.
+ * So the answer is not "invent our own syntax" — ours would be **broken text in
+ * every other tool**, and that would be us breaking this product's promise that
+ * everything can be carried out as plain markdown. Not their syntax and not ours:
+ * **the markdown standard**.
  */
 
 /**
- * `fromSlug` 문서에서 `toSlug` 문서로 가는 상대 경로(`.md` 포함).
+ * The relative path (including `.md`) from the `fromSlug` document to the `toSlug`
+ * document.
  *
- * 뷰어의 `resolveDocLink` 가 링크를 **그 문서의 폴더 기준**으로 푼다. 그래서
- * 볼트 루트 기준 경로를 그대로 쓰면 안 된다 — `domains/typed-api` 에서
- * `capabilities/fixtures.md` 라고 쓰면 `domains/capabilities/fixtures` 를
- * 찾으러 간다(실측으로 확인한 해소 규칙).
+ * The viewer's `resolveDocLink` resolves a link **relative to that document's
+ * folder**, so a vault-root-relative path cannot be used as is — writing
+ * `capabilities/fixtures.md` from `domains/typed-api` sends it looking for
+ * `domains/capabilities/fixtures` (a resolution rule confirmed by measurement).
  */
 export function relativeDocPath(fromSlug: string, toSlug: string): string {
   const fromParts = fromSlug.split('/');
   const toParts = toSlug.split('/');
-  // 마지막 조각은 파일 이름이므로 디렉터리 비교에서 뺀다.
+  // The last segment is the file name, so it is dropped from the directory comparison.
   fromParts.pop();
   const fileName = `${toParts.pop()}.md`;
 
@@ -51,18 +55,18 @@ export function relativeDocPath(fromSlug: string, toSlug: string): string {
   const segments = [...Array.from({ length: up }, () => '..'), ...toParts.slice(shared), fileName];
   const path = segments.join('/');
   /*
-   * 같은 폴더면 `./` 를 붙인다. 없으면 `fixtures.md` 가 되는데, 그건 링크로도
-   * 읽히지만 **글 속에서 파일 이름처럼 보인다** — 링크임을 눈으로 알 수 있게
-   * 한다. 해소 쪽은 `./` 를 이미 벗겨 낸다.
+   * The same folder gets a `./` prefix. Without it the link is `fixtures.md`, which
+   * still reads as a link but **looks like a file name inside prose** — the prefix
+   * makes it visibly a link. The resolving side already strips `./`.
    */
   return up === 0 && toParts.length === shared ? `./${path}` : path;
 }
 
 /**
- * 본문에 넣을 마크다운 링크 한 줄.
+ * One markdown link line to put in the body.
  *
- * 라벨에 `]` 가 있으면 링크 문법이 그 자리에서 끊긴다 — 이스케이프한다.
- * 제목은 사람이 쓴 값이라 무엇이든 들어올 수 있다.
+ * A `]` in the label breaks the link syntax on the spot, so it is escaped — a title
+ * is a human-written value and can contain anything.
  */
 export function buildDocLinkMarkdown({
   fromSlug,

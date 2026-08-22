@@ -6,8 +6,8 @@ import enMessages from '../../messages/en.json';
 import { KNOWLEDGE_EDGE_TYPES } from '../../src/entities/knowledge-graph/model/types';
 
 /**
- * P1a-1 — relation-vocabulary contract (persona 실측 N5: 표면마다 4벌 관계
- * 어휘). Before `relation-vocabulary.ts`, the 4 surfaces that name a
+ * relation-vocabulary contract (persona measurement N5: four separate relation
+ * vocabularies, one per surface). Before `relation-vocabulary.ts`, the 4 surfaces that name a
  * `KnowledgeEdgeType` to a human each picked their own wording: the map
  * legend and `/ontology/insights` used formal Korean nouns, the node
  * datasheet used its own plain phrases, and the ERD builder rendered raw

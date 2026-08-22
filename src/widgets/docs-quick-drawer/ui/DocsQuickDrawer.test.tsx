@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DocsQuickDrawer } from "./DocsQuickDrawer";
 
 /**
- * #61 — 이 드로어는 **활성 볼트**의 빠른 접근이다. 예전엔 빌드타임 번들
- * `vaultManifest` 를 직접 읽어, 5개짜리 로컬 볼트를 선택해도 Atlas 번들 문서가
- * 나왔다 (opus5 검수 2026-07-25 · codex 감사 P1). 고정/최근도 `:server` 로
- * 고정돼 다른 볼트의 목록이 섞였다.
+ * #61 — this drawer is quick access to **the active vault**. It used to read the
+ * build-time bundled `vaultManifest` directly, so selecting a 5-document local
+ * vault still produced Atlas bundle documents (review 2026-07-25 · codex audit P1).
+ * Pinned and recent were fixed at `:server` too, mixing in another vault's lists.
  */
 
 const mocks = vi.hoisted(() => ({
@@ -74,7 +74,7 @@ describe("DocsQuickDrawer — 활성 볼트 범위 (#61)", () => {
   it("로컬 볼트가 없으면 번들(도그푸드) 문서를 보여준다 — 기존 fallback 유지", () => {
     renderDrawer();
 
-    // 번들 매니페스트에 실제로 있는 문서. 로컬 볼트 문서는 없어야 한다.
+    // A document that really is in the bundled manifest. Local vault documents must not appear.
     expect(screen.queryByText("정산 규칙")).not.toBeInTheDocument();
   });
 
@@ -86,15 +86,15 @@ describe("DocsQuickDrawer — 활성 볼트 범위 (#61)", () => {
 
     renderDrawer();
 
-    // 트리와 목록 양쪽에 나오므로 개수는 보지 않고 존재만 확인한다.
+    // It appears in both the tree and the list, so only existence is checked, not the count.
     expect(screen.getAllByText("정산 규칙").length).toBeGreaterThan(0);
     expect(screen.getAllByText("환불").length).toBeGreaterThan(0);
-    // 번들 도그푸드 문서(ARCHITECTURE 등)는 이 볼트에 없다.
+    // The bundled dogfood documents (ARCHITECTURE and so on) are not in this vault.
     expect(screen.queryByText("ARCHITECTURE")).not.toBeInTheDocument();
   });
 
   it("고정/최근은 볼트 범위로 나뉜다 — 샘플에서 고정한 게 로컬 볼트에 섞이지 않는다", () => {
-    // 번들 범위에 고정을 심어 둔다.
+    // Plant a pin in the bundle scope.
     window.localStorage.setItem(
       "demo:docs-vault:pinned:v1:server",
       JSON.stringify(["ARCHITECTURE"]),
@@ -107,7 +107,7 @@ describe("DocsQuickDrawer — 활성 볼트 범위 (#61)", () => {
 
     renderDrawer();
 
-    // 번들 범위의 고정 문서가 로컬 볼트 드로어에 나타나면 안 된다.
+    // A document pinned in the bundle scope must not appear in the local vault's drawer.
     expect(screen.queryByText("ARCHITECTURE")).not.toBeInTheDocument();
   });
 });

@@ -2,26 +2,28 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * 레일 활성 표시는 **하나의 원소가 옮겨 다닌다** (2026-07-28 모션 감사의 「가장 큰 한 방」).
+ * The rail's active indicator is **one element that moves** (the biggest single win
+ * of the 2026-07-28 motion audit).
  *
- * ## 왜 이게 정보인가
+ * **Why this carries information.** Previously two tiles each killed and lit their own
+ * colour. By Gestalt **common fate**, two marks that disappear and reappear are
+ * perceived as "two things", while one mark that travels is perceived as "**the same
+ * thing moved**". The rail's vertical order is this app's only spatial model, so the
+ * indicator's direction and distance of travel carry "where it came from and where it
+ * went" on top of that model — switching it off loses that information (it passes the
+ * discriminator).
  *
- * 종전에는 두 타일이 각자 색을 죽이고 켰다. 게슈탈트 **공통 운명**상 사라졌다
- * 나타나는 두 표시는 "두 개의 것" 으로 지각되고, 이동하는 한 표시는 "**같은
- * 것이 옮겨갔다**" 로 지각된다. 레일의 세로 순서는 이 앱의 유일한 공간
- * 모델이므로, 지표의 이동 방향과 거리는 그 모델 위에서 "어디서 와서 어디로
- * 갔는지" 를 나른다 — 끄면 그 정보를 잃는다(판별식 통과).
+ * **What is measured.**
  *
- * ## 무엇을 재나
+ * 1. There is **exactly one** indicator — several make the claim "it moves" false.
+ * 2. At every destination it **overlaps the active tile exactly** — a misaligned
+ *    indicator is the kind of thing people do not reliably localise by eye, so it must
+ *    be measured in pixels.
+ * 3. The travel uses the **base ramp plus the house easing** — chosen by use, not by
+ *    value (a surface changing position = travel = 180 ms).
  *
- * 1. 지표가 **하나뿐**이다 — 여럿이면 "옮겨간다" 는 주장이 거짓이다.
- * 2. 매 목적지에서 활성 타일과 **정확히 겹친다** — 어긋난 지표는 사람이 눈으로
- *    잘 못 집는 종류라 픽셀로 재야 한다.
- * 3. 이동에 **base 램프 + 하우스 이징**을 쓴다 — 값이 아니라 쓰임으로 고른
- *    결과다(표면이 자리를 바꾸는 일 = 이동 = 180ms).
- *
- * 콘텐츠는 한 톨도 움직이지 않는다. 그래서 주목 예산은 사용자가 부른 목적물이
- * 가져가고 크롬은 한 점만 따라간다.
+ * Not one bit of content moves, so the attention budget goes to the destination the
+ * user asked for while the chrome follows with a single dot.
  */
 
 const DESTINATIONS = [
@@ -47,9 +49,10 @@ async function readIndicator(page: Page) {
       count: document.querySelectorAll('[data-testid="app-nav-rail-active-indicator"]').length,
       offsetY: Math.round(i.top - t.top),
       offsetHeight: Math.round(i.height - t.height),
-      // **가로축도 잰다.** 이 게이트는 처음에 Y 와 높이만 봤고, 그래서 지표가
-      // 타일보다 19px 왼쪽으로 밀려 레일 밖으로 잘려 나가는 것을 통과시켰다
-      // (소유자 실사용 제보 2026-07-28). 겹침은 네 변 전부의 문제다.
+      // **Measure the horizontal axis too.** This gate originally looked only at Y and
+      // height, and so passed an indicator pushed 19px left of its tile and clipped
+      // outside the rail (reported by the owner in real use, 2026-07-28). Overlap is a
+      // question about all four edges.
       offsetX: Math.round(i.left - t.left),
       offsetWidth: Math.round(i.width - t.width),
       duration: style.transitionDuration,
@@ -75,7 +78,7 @@ test.describe("레일 활성 표시 — 같은 것이 옮겨간다", () => {
       await page.getByTestId(`app-nav-rail-item-${destination.id}`).click();
       await page.waitForURL(destination.url);
 
-      // 이동이 끝난 상태를 본다 — 이동 중을 재면 전이가 아니라 스케줄링을 잰다.
+      // Look at the settled state — measuring mid-travel measures scheduling, not the transition.
       await expect
         .poll(async () => (await readIndicator(page))?.offsetY, { timeout: 5_000 })
         .toBe(0);
@@ -92,14 +95,14 @@ test.describe("레일 활성 표시 — 같은 것이 옮겨간다", () => {
     await seedFirstRunSeen(page);
     await page.goto("/ko/topology/?guides=off", { waitUntil: "networkidle" });
 
-    // 첫 배치가 끝나야 전이가 켜진다 — 처음 그려질 때 미끄러져 들어오면
-    // 이동이 아니라 등장이 되고, 사용자가 부르지 않은 모션이 된다.
+    // The transition only switches on after the first layout — sliding in on first paint
+    // would be an entrance rather than travel, i.e. motion the user did not ask for.
     await expect
       .poll(async () => (await readIndicator(page))?.duration, { timeout: 5_000 })
       .not.toBe("0s");
 
     const measured = await readIndicator(page);
-    // 180ms = `--motion-base` (표면이 자리를 바꾸는 일 = 이동).
+    // 180ms = `--motion-base` (a surface changing position = travel).
     expect(measured!.duration).toContain("0.18s");
     expect(measured!.easing).toBe("cubic-bezier(0.25, 0.1, 0.25, 1)");
   });

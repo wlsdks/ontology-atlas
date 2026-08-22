@@ -17,13 +17,13 @@ import type {
 import type { VaultReadPort } from './vault-read-port';
 
 /**
- * 모델의 쓰기 시도 → **제안 카드**.
+ * A model's attempted write → **a proposal card**.
  *
- * 여기서 만드는 `ProposedFileChange.after` 는 카드가 그리는 문자열이자
- * 적용기가 디스크에 쓰는 문자열이다 — **같은 값 하나**. 카드가 보여준 것과
- * 실제로 쓰이는 것이 다르면 동의는 동의가 아니다.
+ * The `ProposedFileChange.after` built here is both the string the card draws and
+ * the string the applier writes to disk — **one and the same value**. If what the
+ * card showed differs from what actually gets written, consent is not consent.
  *
- * 이 모듈은 디스크에 쓰지 않는다. 읽기 포트만 받는다.
+ * This module does not write to disk. It takes only a read port.
  */
 
 export interface WriteIntent {
@@ -34,21 +34,21 @@ export interface WriteIntent {
 export interface BuildProposalInput {
   intents: readonly WriteIntent[];
   port: VaultReadPort;
-  /** 이 턴에 실제로 읽은 노드들 — 카드의 경고 행 판정 근거. */
+  /** The nodes actually read this turn — the basis for the card's warning row. */
   readNodesThisTurn: readonly string[];
-  /** 볼트가 git 저장소면 저장점 체크박스가 기본 ON. */
+  /** When the vault is a git repository the save-point checkbox defaults to ON. */
   vaultIsGit: boolean;
-  /** 화면 언어 — 새 문서의 어권별 이름 칸을 채운다. */
+  /** The screen's language — fills the per-locale name field of a new document. */
   locale: string;
   labels: ProposalLabels;
   /**
-   * 이 턴의 초안을 실제로 쓴 행위자의 이름 — 패널이 물린 LLM 제공자
-   * (`anthropic` / `openai` / …), 감사 로그(`llm-audit.jsonl`)가 이미 남기는
-   * 그 신원이다. 새 신원 체계를 만들지 않는다.
+   * The name of the actor who actually wrote this turn's draft — the LLM provider
+   * the panel is attached to (`anthropic` / `openai` / …), the same identity the
+   * audit log (`llm-audit.jsonl`) already records. No new identity scheme is invented.
    *
-   * **이 표면은 웹 UI 지만 저작자는 에이전트다** (2026-07-31 원장). 사람의
-   * 「적용」 클릭은 승인이지 저작이 아니므로 `human` 으로 뒤집히지 않는다.
-   * 모르면 이름만 모르는 것이라 `agent:unknown` 으로 떨어진다.
+   * **This surface is a web UI but the author is an agent** (2026-07-31 ledger). A
+   * person's [apply] click is approval, not authorship, so it does not flip to
+   * `human`. When unknown, only the name is unknown, so it falls to `agent:unknown`.
    */
   agentName: string | null;
 }
@@ -69,7 +69,7 @@ function str(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-/** frontmatter 배열 키에 값을 더한다 (중복은 더하지 않는다). */
+/** Appends a value to a frontmatter array key (duplicates are not appended). */
 function appendRef(current: unknown, ref: string): string[] {
   const list = Array.isArray(current)
     ? current.filter((entry): entry is string => typeof entry === 'string')
@@ -80,8 +80,8 @@ function appendRef(current: unknown, ref: string): string[] {
 }
 
 /**
- * `add_relation` 의 관계 타입 → 소스 문서의 frontmatter 키.
- * MCP `add_relation` 의 정규화와 같은 매핑이다.
+ * `add_relation`'s relation type → the source document's frontmatter key. The same
+ * mapping as MCP `add_relation`'s normalization.
  */
 const RELATION_KEY: Record<string, string> = {
   depends_on: 'dependencies',
@@ -102,8 +102,8 @@ export async function buildProposal(
   input: BuildProposalInput,
 ): Promise<AgentProposal | null> {
   const changes: ProposalChange[] = [];
-  // 같은 파일을 여러 번 고치는 제안이 와도 diff 는 한 번만 그려야 한다 —
-  // 누적된 결과를 여기서 들고 이어 붙인다.
+  // Even when a proposal edits the same file several times, the diff must be drawn
+  // once — the accumulated result is held here and appended to.
   const pending = new Map<string, { before: string | null; after: string }>();
 
   async function currentText(slug: string): Promise<string | null> {
@@ -198,8 +198,8 @@ function buildAddConcept(
     slug,
     domain: str(args.domain),
     localeLabels: {
-      // 화면 언어 칸은 반드시 채운다 — 한쪽만 채우면 다른 언어 사용자에게
-      // 원문 title 이 그대로 노출된다.
+  // The screen language's field must always be filled — filling only one exposes the
+  // raw title to speakers of the other language.
       [input.locale]: str(labels[input.locale]) ?? title,
       ...Object.fromEntries(
         Object.entries(labels).filter(([, value]) => typeof value === 'string'),
@@ -235,8 +235,8 @@ async function buildAddRelation(
   const doc = input.port.docs.find(
     (candidate) => candidate.slug === from || candidate.slug.endsWith(`/${from}`),
   );
-  // 문서가 없는 개념에는 관계를 쓸 수 없다 — 남의 문서에 쓰면 그 문서가
-  // 하지 않은 주장을 하게 된다 (#688 이 공방에서 고친 바로 그 결함).
+  // A relation cannot be written on a concept with no document — writing it into
+  // someone else's document makes that document assert something it never said.
   if (!doc) return null;
 
   const before = await currentText(doc.slug);
@@ -297,7 +297,7 @@ async function buildPatch(
     summary: input.labels.modifyFile(`${doc.slug}.md`),
     files: [record(pending, doc.slug, before, after)],
     selected: true,
-    // 제안 시점의 mtime — 적용 때 달라져 있으면 쓰지 않는다.
+    // The mtime at proposal time — if it differs at apply time, nothing is written.
     expectedMtime:
       typeof args.expected_mtime === 'number' ? args.expected_mtime : doc.mtime,
   };

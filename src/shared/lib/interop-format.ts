@@ -137,19 +137,20 @@ function normalizeGraph(graph: InteropGraph): {
     const via = typeof e?.via === 'string' && e.via.trim() ? e.via.trim() : '';
     if (!from || !to || !via) continue;
     if (!nodeBySlug.has(from) || !nodeBySlug.has(to)) continue;
-    // ⚠️ **구분자를 쓰지 않는다** (2026-08-08). 종전엔 이 짝(`cli/src/lib/
-    // interop-format.mjs`)과 여기가 **서로 다른 구분자**를 쓰고 있었다 — 저쪽은
-    // NUL(U+0000), 여기는 공백. 두 파일은 같은 입력에 같은 출력을 내야 한다고
-    // 문서와 계약 테스트가 말하는데, 정렬 키가 다르면 그 약속이 특정 입력에서만
-    // 조용히 깨진다. 게다가 공백 구분자는 **애매하다**: ["a b","c"] 와
-    // ["a","b c"] 가 같은 키가 된다. `JSON.stringify` 는 양쪽 다 해결한다.
+    // ⚠️ **No separator is used** (2026-08-08). This file and its counterpart
+    // (`cli/src/lib/interop-format.mjs`) used to use **different** separators — NUL (U+0000)
+    // there, a space here. The docs and a contract test both say the two must produce the same
+    // output for the same input, and differing sort keys break that promise silently, on
+    // certain inputs only. A space separator is also **ambiguous**: ["a b","c"] and
+    // ["a","b c"] collapse to the same key. `JSON.stringify` fixes both problems.
     const key = JSON.stringify([from, via, to]);
     if (seenEdge.has(key)) continue;
     seenEdge.add(key);
     edges.push({ from, to, via });
   }
-  // 필드 순서대로 비교한다 — 이어 붙인 문자열에 localeCompare 를 걸면 구분자가
-  // 무시되는 콜레이션이 있어서, 이쪽이 의도한 「필드 우선순위」를 정확히 말한다.
+  // Compare field by field. Running localeCompare over a concatenated string is unsafe
+  // because some collations ignore the separator; comparing per field states the intended
+  // field priority exactly.
   edges.sort(
     (a, b) =>
       a.from.localeCompare(b.from) ||

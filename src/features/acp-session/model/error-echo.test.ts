@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { isErrorEcho, withoutErrorEcho } from './error-echo';
 
 /**
- * 실물(설치된 앱, 2026-08-17)에서 잰 두 문자열. 어댑터는 실패를 **메시지로도**
- * 보내고 RPC 도 거절하므로, 화면이 그대로 두면 같은 실패가 두 번 보이고
- * 영문 원문이 평문 카드보다 먼저 읽힌다.
+ * The two strings measured on the real thing (installed app, 2026-08-17). The adapter sends the
+ * failure **as a message too** and also rejects the RPC, so leaving the screen as-is shows the same
+ * failure twice, with the English original reading before the plain-language card.
  */
 const AGENT_ECHO = 'Failed to authenticate: OAuth session expired and could not be refreshed';
 const RPC_ERROR =
@@ -37,8 +37,8 @@ describe('오류 되풀이 — 같은 실패를 두 번 말하지 않는다', ()
   });
 
   it('짧은 한 마디는 우연히 포함돼도 지우지 않는다', () => {
-    // `Error` 는 어떤 오류 원문에도 들어 있다. 그 이유로 에이전트의 말을
-    // 지우기 시작하면 이건 되풀이 제거가 아니라 검열이다.
+    // `Error` is contained in any error text. Starting to erase what the agent said for that reason is
+    // not echo removal but censorship.
     expect(isErrorEcho('Error', RPC_ERROR)).toBe(false);
     expect(isErrorEcho('authenticate', RPC_ERROR)).toBe(false);
   });

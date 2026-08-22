@@ -13,18 +13,16 @@ function render(ui: React.ReactElement) {
 }
 
 /**
- * rank2/18 (설계협의회 batch B1) — DOM 오버레이 3종 공용 a11y 계약을
- * NewDocKindDialog 에서 고정한다: 열릴 때 첫 focusable 로 포커스, ESC 로
- * 닫힘, Tab 이 다이얼로그 밖으로 새지 않음(trap), 닫히면 트리거로 포커스
- * 복귀. rank2 스프링은 발행 게이트(rank18)를 통과해야만 하므로 이 셋을
- * 여기서 같이 고정한다.
+ * Pins the shared a11y contract of the three DOM overlays here in NewDocKindDialog: focus moves to
+ * the first focusable on open, ESC closes, Tab does not leak outside the dialog (trap), and focus
+ * returns to the trigger on close.
  */
 describe("NewDocKindDialog", () => {
   const triggers: HTMLButtonElement[] = [];
   afterEach(() => {
-    // ⚠️ `document.body.innerHTML = ""` 로 통째로 비우면 안 된다 — Dialog 가
-    // body 에 포털을 세우므로, React 언마운트 전에 그 노드를 지우면
-    // removeChild 가 NotFoundError 로 터진다. 트리거만 걷는다.
+    // ⚠️ Do not clear everything with `document.body.innerHTML = ""` — Dialog mounts a portal on
+    // body, and removing that node before React unmounts makes removeChild throw NotFoundError.
+    // Only the triggers are cleared.
     for (const trigger of triggers.splice(0)) trigger.remove();
   });
 

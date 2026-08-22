@@ -4,12 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 import { Checkbox } from "./checkbox";
 
 /**
- * Checkbox — 계약 (2026-08-15 「체계」석 비준).
+ * Checkbox contract, ratified by the 「체계」 (design systems) seat on 2026-08-15.
  *
- * 창립 census: 6곳/5파일이 손으로 반복하며 세 갈래로 갈라져 있었다 — accent
- * 토큰 2종(brand 4 · accent 1) + **UA 기본색 1**(둘 이상의 채색 시스템 금지의
- * 현행범), 그리고 **6곳 전부 focus-visible 0**. 이 계약이 그 셋을 못박는다:
- * accent 는 brand 하나 · 크기는 size-4 · 초점 링은 값 층 문법.
+ * Founding inventory: 6 hand-repeated call sites across 5 files had split three ways
+ * — two accent tokens (brand ×4, accent ×1) plus **one UA default colour**, a live
+ * violation of the ban on more than one colour system — and **all 6 had zero
+ * focus-visible**. This contract pins those three: one brand accent, size-4, and the
+ * value layer's focus-ring grammar.
  */
 
 describe("Checkbox", () => {

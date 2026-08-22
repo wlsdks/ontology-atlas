@@ -8,28 +8,27 @@ const SEED: Record<string, string> = {
 };
 
 /**
- * **「고치면 지도가 따라온다」** — 이 제품의 핵심 약속을 왕복으로 잰다 (2026-08-11).
+ * **"Fix it and the map follows"** — measures this product's core promise as a round
+ * trip (2026-08-11).
  *
- * ## 왜 이 spec 이 생겼나
+ * **Why this spec exists.** Walking the north-star journey revealed that **no gate at
+ * all** measured this. Opening a vault is covered by web smoke ②, and drawing the map
+ * by the map specs. But **the screen following after the disk changes** was watched by
+ * nobody — even though that is exactly the sentence this product sells.
  *
- * 북극성 여정을 걸어 보다 이 자리를 재는 게이트가 **하나도 없다**는 것을 알았다.
- * 볼트를 여는 것은 웹 스모크 ②가 보고, 지도 그리기는 지도 spec 들이 본다. 그런데
- * **디스크가 바뀐 뒤 화면이 따라오는 것**은 아무도 안 봤다 — 이 제품이 파는 문장이
- * 정확히 그것인데도.
+ * Only the picker is stubbed; everything behind it is real code
+ * (`vault-picker-stub`). So what this spec measures is not an imitation but **the path
+ * by which the web re-reads the folder**.
  *
- * 픽커만 스텁하고 그 뒤는 전부 실제 코드다(`vault-picker-stub`). 그래서 이 spec 이
- * 재는 것은 흉내가 아니라 **웹이 폴더를 다시 읽는 그 경로**다.
+ * **It does not lock on time.** The measurement was 5.6 s (the web polls every 5 s
+ * when idle — .claude/rules/surfaces.md), but that number is not pinned as a ceiling.
+ * Making a gate out of a value that varies with machine and load measures the runner
+ * rather than the product (this repository has failed that way twice). The property
+ * locked is **whether it eventually follows**.
  *
- * ## 시간으로 잠그지 않는다
- *
- * 실측 5.6초였는데(웹은 잠잠할 때 5초 주기 — `surfaces.md`), 그 숫자를 상한으로 박지
- * 않는다. 기계와 부하에 따라 달라지는 값을 게이트로 만들면 제품이 아니라 러너를 재게
- * 된다(이 저장소가 이미 두 번 그렇게 실패했다). 잠글 성질은 **결국 따라오는가**다.
- *
- * ## 지우는 방향도 잰다
- *
- * 파일이 사라졌는데 화면에 남아 있으면 사용자는 없는 노드를 근거로 판단한다 — 더하는
- * 것보다 나쁘다. 한 방향만 재면 그 절반은 아무도 안 본다.
+ * **The deletion direction is measured too.** A file that is gone but still on screen
+ * makes the user reason from a node that does not exist — worse than a missing
+ * addition. Measuring one direction leaves the other half unwatched.
  */
 test("고치면 지도가 따라온다 — 더할 때와 지울 때 모두", async ({ page }) => {
   test.setTimeout(300_000);
@@ -44,11 +43,11 @@ test("고치면 지도가 따라온다 — 더할 때와 지울 때 모두", asy
   await expect(index).toContainText("2 개념", { timeout: 20_000 });
   console.log("OPENED · 2 개념");
 
-  // 디스크에 노드를 하나 더 쓴다 — 사용자가 에디터로 파일을 만든 것과 같다.
+  // Write one more node to disk — the same as a user creating the file in an editor.
   const t0 = Date.now();
   await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
-    // 스텁이 만든 볼트 폴더를 찾는다
+    // Find the vault folder the stub created
     let vault: FileSystemDirectoryHandle | null = null;
     for await (const [name, handle] of root.entries()) {
       if (name.startsWith("stub-vault-") && handle.kind === "directory") vault = handle as FileSystemDirectoryHandle;
@@ -63,7 +62,7 @@ test("고치면 지도가 따라온다 — 더할 때와 지울 때 모두", asy
   await expect(index).toContainText("3 개념", { timeout: 30_000 });
   console.log(`[reflect] 더하기 반영 ${Date.now() - t0}ms`);
 
-  // 그리고 지웠을 때도 따라와야 한다 — 없는 노드가 화면에 남으면 더 나쁘다.
+  // It must follow on deletion too — a non-existent node left on screen is worse.
   const t1 = Date.now();
   await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();

@@ -1,19 +1,16 @@
 import { escapeHtml } from "./persistence";
 
 /**
- * 외부 popout / print 용 self-contained HTML 페이지 합성.
+ * Composes a self-contained HTML page for an external popout or print.
  *
- * 호출자: `DocsVaultPage` 의 `handleExportDocHtml` — 문서 본문 article 의
- * `outerHTML` 을 받아 dark theme HTML 한 페이지로 wrap. 다운로드 파일 (.html)
- * 은 무채색 + 인디고 alpha 만 사용 (offline self-contained).
+ * Called by `handleExportDocHtml` in `DocsVaultPage`: it takes the document body article's
+ * `outerHTML` and wraps it into a single dark-theme HTML page. The downloaded `.html` uses
+ * neutrals plus indigo alpha only, and is offline self-contained.
  *
- * 이 문서는 앱 밖 standalone HTML 이라 `:root` CSS 토큰 (`var(--color-*)`) 이
- * 정의돼 있지 않다. 따라서 색은 CSS 변수가 아니라 design token 의 *리터럴 값*
- * 으로 박되, 아래 POPOUT_TOKENS 한 곳에서만 정의해 drift 를 막는다. 값은
- * `docs/DESIGN-SYSTEM.md` · `app/globals.css` 의 토큰과 동일하게 유지한다.
- *
- * `escapeHtml` 은 lib/persistence.ts 에서 import — 문서 title 안 사용자 입력을
- * 안전하게 이스케이프.
+ * This document is standalone HTML outside the app, so the `:root` CSS tokens (`var(--color-*)`)
+ * are not defined. Colours are therefore pinned as the design tokens' *literal values*, defined in
+ * `POPOUT_TOKENS` alone to prevent drift. Keep the values equal to the tokens in
+ * `docs/DESIGN-SYSTEM.md` and `app/globals.css`.
  */
 const POPOUT_TOKENS = {
   canvas: "#08090a",
@@ -22,7 +19,7 @@ const POPOUT_TOKENS = {
   textSecondary: "#d0d6e0",
   textTertiary: "#8a8f98",
   borderSoft: "rgba(255,255,255,0.08)",
-  // 단일 채색 = 인디고. code/link/blockquote 강조에 인디고 alpha 만 사용.
+  // One colour: indigo. Code, links, and blockquote emphasis use indigo alpha only.
   indigoAlphaStrong: "rgba(139,151,255,0.9)",
   indigoAlphaBorder: "rgba(139,151,255,0.35)",
   indigoAlphaSurface: "rgba(139,151,255,0.08)",

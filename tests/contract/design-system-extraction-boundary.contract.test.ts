@@ -4,42 +4,40 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 디자인 시스템 추출 경계 — **코어 부품은 이 앱에 묶이지 않는다** (2026-08-15).
+ * Design-system extraction boundary — **core parts are not bound to this app**
+ * (2026-08-15).
  *
- * ## 왜
+ * **Why.** On 2026-08-15 the PO council deferred extraction into a separate
+ * repository and confirmed as its slice "draw the boundary now so the cost on
+ * extraction day converges to zero". A boundary drawn only in a document gets redrawn
+ * by the next person, so a machine holds it here.
  *
- * 2026-08-15 PO 카운슬이 별도 저장소 추출을 보류하면서 「추출하는 날 비용이 0에
- * 수렴하도록 경계만 먼저 긋는다」를 슬라이스로 확정했다. 경계를 문서에만 그으면
- * 다음 사람이 다시 긋는다 — 그래서 여기서 기계가 지킨다.
+ * **What the measurement overturned.** The council briefing said "8 files in
+ * `shared/ui` are bound to next-intl/@i18n/sonner". Counting exhaustively, **only 1
+ * of them was a real defect**:
  *
- * ## 실측이 뒤집은 것
- *
- * 카운슬 브리핑은 「`shared/ui` 8파일이 next-intl/@i18n/sonner 에 결박」이었다.
- * 전수해 보니 **그중 진짜 결함은 1개**였다:
- *
- * | 갈래 | 수 | 판정 |
+ * | Kind | n | Verdict |
  * |---|---:|---|
- * | 주석에서 이름만 언급(`transient-surface` · `toast-position`) | 2 | 결박 아님 |
- * | **앱 전용 부품**이라 결박이 정상(관문·지도·라우팅 폴백·크롬 타일) | 5 | 추출 대상이 아니다 |
- * | 범용 부품인데 번역을 직접 읽음(`toast.tsx` 의 `containerAriaLabel` 한 줄) | **1** | **진짜 결함 — 고쳤다** |
+ * | Name mentioned only in a comment (`transient-surface`, `toast-position`) | 2 | Not bound |
+ * | **App-only parts** where binding is correct (gateway, map, routing fallback, chrome tile) | 5 | Not extraction candidates |
+ * | A general part reading translations directly (one `containerAriaLabel` line in `toast.tsx`) | **1** | **A real defect — fixed** |
  *
- * 「거짓 부채」가 또 나온 셈이다(아이콘 래칫 9건 · 폼 미경유 3파일에 이어 세 번째).
- * **부채를 갚기 전에 그게 정말 부채인지 먼저 잰다.**
+ * Another case of false debt (the third, after the icon ratchet's 9 and the 3 files
+ * said to bypass the form layer). **Before repaying debt, measure whether it is debt.**
  *
- * ## 무엇을 강제하나
- *
- * `src/shared/ui/**` 중 `ATLAS_BOUND` 에 등재되지 않은 파일(= 코어)은 앱 결박을
- * import 하지 못한다. 코어가 자기 문자열·라우팅·상위 레이어를 스스로 가져오면
- * 그 부품은 시스템의 것이 아니라 이 앱의 것이다.
+ * **What is enforced.** Files under `src/shared/ui/**` not registered in `ATLAS_BOUND`
+ * (the core) may not import an app binding. A core part that fetches its own strings,
+ * routing, or upper layers belongs to this app rather than to the system.
  */
 
 const ROOT = process.cwd();
 const UI_DIR = path.join(ROOT, "src/shared/ui");
 
 /**
- * **앱 결박이 정상인 부품** — 추출 대상이 아니다. 각 줄은 「왜 이 앱의 것인가」를
- * 진다. 이 목록이 알리바이가 되지 않게, 아래 계약이 **등재된 파일이 실제로 앱
- * 결박을 갖거나 Atlas 도메인 어휘를 나르는지** 되묻는다.
+ * **Parts for which app binding is correct** — not extraction candidates. Each row
+ * carries why it belongs to this app. So this list cannot become an alibi, the
+ * contract below asks back whether **a registered file really has an app binding or
+ * carries Atlas domain vocabulary.**
  */
 const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
   ["chrome-tile.tsx", "지도 크롬 36px 타일 계약 + i18n Link — 스케일 고정 계약이 이 앱의 것이다"],
@@ -65,7 +63,7 @@ const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
   ["entry-choice-card.tsx", "첫 실행 진입 선택 — 이 앱의 온보딩"],
 ];
 
-/** 코어 부품이 가지면 안 되는 것 — 이 앱의 라우팅·번역·상위 레이어. */
+/** What a core part must not have — this app's routing, translations, or upper layers. */
 const APP_COUPLING = [
   { pattern: "next-intl", why: "번역을 스스로 읽으면 이 앱의 메시지 네임스페이스에 묶인다" },
   { pattern: "@/i18n", why: "이 앱의 로케일 라우팅에 묶인다" },
@@ -129,7 +127,7 @@ describe("디자인 시스템 추출 경계", () => {
     expect(problems).toEqual([]);
   });
 
-  /* ── 상주 프로브 (/gate-probe) ── */
+  /* ── Standing probes (/gate-probe) ── */
   it("프로브: import 출처를 정확히 뽑는다", () => {
     const sample = [
       "import { useTranslations } from 'next-intl';",

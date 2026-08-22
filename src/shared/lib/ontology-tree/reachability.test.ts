@@ -104,9 +104,9 @@ describe("buildOntologyReachability", () => {
   });
 
   it("excludeTypes 로 특정 관계 타입을 traversal 에서 제외 (impact blast-radius 용)", () => {
-    // start → a (depends_on), start → b (related_to). impact 에서 related_to
-    // (soft association) 는 제외해야 — "relates to" 는 의존이 아니므로 blast
-    // radius 에 안 들어간다.
+    // start → a (depends_on), start → b (related_to). Impact must exclude
+    // related_to: a soft association is not a dependency, so it is outside the
+    // blast radius.
     const nodes = [node("start"), node("a"), node("b")];
     const edges = [
       edge("e1", "start", "a", "depends_on"),
@@ -120,13 +120,13 @@ describe("buildOntologyReachability", () => {
     expect(excluded.layers[0]?.nodes.map((n) => n.id)).toEqual(["a"]);
     expect(excluded.byRelation).toEqual({ depends_on: 1 });
 
-    // 제외 안 하면 둘 다 도달 — 대비(baseline).
+    // Without the exclusion both are reachable — the baseline to compare against.
     const all = buildOntologyReachability("start", nodes, edges, {});
     expect(all.summary.reachableNodes).toBe(2);
   });
 
   it("excludeTypes 가 transitive 경로를 끊는다 (체인 중간 related_to)", () => {
-    // start →(depends_on) a →(related_to) b. related_to 제외 시 b 는 도달 불가.
+    // start →(depends_on) a →(related_to) b. Excluding related_to makes b unreachable.
     const nodes = [node("start"), node("a"), node("b")];
     const edges = [
       edge("e1", "start", "a", "depends_on"),
@@ -140,9 +140,9 @@ describe("buildOntologyReachability", () => {
   });
 
   it("깊은 체인에서 BFS distance 순서 보존 (head-pointer dequeue 회귀 가드)", () => {
-    // start → n1 → n2 → n3 → n4 일직선 체인. head pointer 로 바꾼 BFS 가
-    // FIFO(breadth-first) 순서를 유지하는지 — 각 노드가 정확한 hop 거리의
-    // 레이어에 들어가야 한다.
+    // A straight chain start → n1 → n2 → n3 → n4. Checks that the head-pointer
+    // BFS still dequeues FIFO, so every node lands in the layer at its exact hop
+    // distance.
     const nodes = ["start", "n1", "n2", "n3", "n4"].map((id) => node(id));
     const edges = [
       edge("e1", "start", "n1"),
@@ -162,11 +162,12 @@ describe("buildOntologyReachability", () => {
   });
 });
 
-// blast-radius = "이 노드를 (직접·간접) 의존으로 가진 노드 수" = incoming transitive
-// closure, soft-association(related_to/describes) 제외. drawer 와 변경점 diff 가
-// *같은 함수* 를 호출해 같은 수를 보장(can't-drift graft, Self-Drawing Diff #2).
+// Blast radius = how many nodes depend on this one, directly or transitively =
+// the incoming transitive closure with soft associations (related_to, describes)
+// excluded. The drawer and the change diff call the *same* function so their
+// numbers cannot drift apart.
 describe("computeOntologyDependents", () => {
-  // a depends_on b depends_on c : c 를 바꾸면 b, a 가 영향 → c 의 dependents = 2
+  // a depends_on b depends_on c: changing c affects b and a, so c has 2 dependents.
   const chain = [node("a"), node("b"), node("c")];
   const chainEdges = [edge("e1", "a", "b"), edge("e2", "b", "c")];
 
@@ -178,7 +179,7 @@ describe("computeOntologyDependents", () => {
 
   it("soft association(related_to)은 의존이 아니라 제외", () => {
     const nodes = [node("x"), node("y")];
-    // y related_to x — related_to 는 blast radius 에서 제외 → x 의 dependents = 0
+    // y related_to x — related_to is outside the blast radius, so x has 0 dependents.
     const edges = [edge("r", "y", "x", "related_to")];
     expect(computeOntologyDependents("x", nodes, edges)).toBe(0);
   });
@@ -204,8 +205,8 @@ describe("computeOntologyDependents", () => {
   });
 
   it("drawer 와 동일 수 — 같은 함수 source (can't drift)", () => {
-    // drawer 의 reach.dependents 와 정확히 같은 computation 인지 — buildOntologyReachability
-    // incoming/fullDepth/exclude 로 직접 계산한 값과 일치해야.
+    // Must equal the drawer's reach.dependents exactly — i.e. what
+    // buildOntologyReachability computes with incoming/fullDepth/exclude.
     const direct = buildOntologyReachability("c", chain, chainEdges, {
       direction: "incoming",
       depth: chain.length,

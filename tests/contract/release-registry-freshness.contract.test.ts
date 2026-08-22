@@ -3,32 +3,29 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **낡은 ACP 레지스트리로 릴리스가 나가지 않는가.**
+ * **Does a release ship with a stale ACP registry?**
  *
- * ## 왜 생겼나 (2026-08-20 정식 공개 전 검수)
+ * **Why this exists** (pre-launch review, 2026-08-20). `pnpm acp:registry:check`
+ * **already existed**, but it was in neither CI nor a git hook, so **nobody called
+ * it**. The snapshot fell quietly behind, and measuring found **9 packages** older
+ * than upstream — two of them adapters we actually launch
+ * (`claude-agent-acp` 0.69.0→0.70.0 · `codex-acp` 1.4.0→1.6.2).
  *
- * `pnpm acp:registry:check` 는 **전부터 있었다.** 그런데 CI 에도 git 훅에도
- * 없어서 **아무도 부르지 않았다.** 그 사이 스냅샷이 조용히 뒤처졌고, 실측하니
- * 상류보다 **9개 패키지**가 낡아 있었다 — 그중 둘이 우리가 실제로 띄우는
- * 어댑터였다(`claude-agent-acp` 0.69.0→0.70.0 · `codex-acp` 1.4.0→1.6.2).
+ * **A gate that exists but never runs is worse than none** — it gives false
+ * reassurance. The release this repository lost in 2026-08 had the same shape (a
+ * smoke gate whose markers outlived their components).
  *
- * **있는데 안 도는 게이트는 없는 것보다 나쁘다** — 헛된 안심을 준다. 이 저장소가
- * 2026-08 에 릴리스를 하나 잃은 것도 같은 모양이었다(마커가 컴포넌트보다 오래
- * 살아남은 스모크 게이트).
+ * **Why at release rather than every PR.** This check turns red **when upstream
+ * publishes**. As a PR gate, someone else's change would randomly block our PRs,
+ * making it noise rather than a rule — the same discipline this repository already
+ * set for lint rules ("if it is too much to fix in one PR, the rule is warning noise
+ * rather than a rule"). A release is started by hand, so asking there blocks exactly
+ * one thing: shipping something stale.
  *
- * ## 왜 매 PR 이 아니라 릴리스인가
- *
- * 이 검사는 **상류가 배포할 때** 빨개진다. PR 게이트로 걸면 남의 변경이 우리
- * PR 을 무작위로 막고, 그러면 규칙이 아니라 소음이 된다 — 이 저장소가 lint 룰에
- * 대해 이미 정해 둔 규율과 같다("한 PR 로 다 못 고칠 만큼 많으면 그 룰은 규칙이
- * 아니라 경고 소음이 된다"). 릴리스는 손으로 시작하는 일이라, 거기서 묻는 것이
- * 정확히 「낡은 것을 내보내지 않는다」만 막는다.
- *
- * ## 이 검사가 지키는 것
- *
- * 스냅샷이 최신인지는 **여기서 안 본다**(그건 네트워크가 필요하고, 이 저장소의
- * CI 는 밖으로 안 나간다). 여기서 지키는 것은 **그 질문을 던지는 자리가 릴리스
- * 경로에 실제로 남아 있는가** 하나다.
+ * **What this check guards.** Whether the snapshot is current is **not checked here**
+ * (that needs the network, and this repository's CI does not go outside). What is
+ * guarded is one thing: **that the place asking the question still exists on the
+ * release path.**
  */
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -38,12 +35,13 @@ const workflow = readFileSync(
 );
 
 /**
- * 실제로 **실행되는** 줄만 남긴다 — 주석(`#`)은 버린다.
+ * Keeps only lines that actually **execute** — comments (`#`) are dropped.
  *
- * ⚠️ **첫 판은 가짜 게이트였다** (같은 날, 프로브가 잡았다). 파일 전체에서
- * 문자열을 찾았는데, 이 워크플로의 **주석에도** 그 명령 이름이 적혀 있어서
- * (왜 이 스텝이 있는지 설명하느라) **스텝을 지워도 검사가 통과했다.**
- * 검사가 재는 것은 「어딘가 그 글자가 있는가」가 아니라 「그것이 실행되는가」다.
+ * ⚠️ **The first version was a fake gate** (caught by a probe the same day). It
+ * searched the whole file for a string, and this workflow's **comments** also contain
+ * the command name (explaining why the step is there), so **deleting the step still
+ * passed.** What the check measures is whether it executes, not whether the
+ * characters appear somewhere.
  */
 const executableLines = workflow
   .split('\n')
@@ -56,8 +54,8 @@ const manifest = JSON.parse(
 describe('릴리스 전 ACP 레지스트리 신선도', () => {
   it('검사 스크립트가 실재한다', () => {
     expect(manifest.scripts?.['acp:registry:check']).toBeDefined();
-    // `--check` 없이 등록돼 있으면 검사가 아니라 **덮어쓰기**다 — 릴리스
-    // 경로에서 그것을 돌리면 조용히 갱신하고 통과해 버린다.
+    // Registered without `--check` it is an **overwrite**, not a check — running that on
+    // the release path silently updates and passes.
     expect(manifest.scripts?.['acp:registry:check']).toContain('--check');
   });
 
@@ -78,11 +76,11 @@ describe('릴리스 전 ACP 레지스트리 신선도', () => {
   });
 
   it('검사기가 헛돌지 않는다 — 워크플로를 실제로 읽어 왔다', () => {
-    // 파일을 못 읽거나 경로가 바뀌면 위 시험들이 전부 조용히 통과할 수 있다.
+    // If the file cannot be read or its path changes, every test above can pass silently.
     expect(executableLines).toContain('admit-release:');
     expect(executableLines.length).toBeGreaterThan(2000);
-    // 주석을 걷어내고도 내용이 남아야 한다 — 필터가 과하게 먹으면 위 시험들이
-    // 전부 조용히 통과하는 쪽으로 무너진다.
+    // Content must remain after comments are stripped — an over-eager filter collapses
+    // every test above into silent passing.
     expect(executableLines).toContain('pnpm desktop:release-tag');
   });
 });

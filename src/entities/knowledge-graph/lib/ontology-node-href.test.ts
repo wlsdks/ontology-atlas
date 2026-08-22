@@ -44,7 +44,7 @@ describe("buildOntologyNodeHref", () => {
     ).toBe(
       `/ontology/?node=${encodeURIComponent("domain:views")}&via=${encodeURIComponent("insights:structure")}`,
     );
-    // via 미지정이면 기존 링크 형식 그대로 — 다른 7+ 호출처 무변경.
+    // Without `via` the link form is unchanged — the seven-plus other call sites are untouched.
     expect(buildOntologyNodeHref("domain:views")).toBe(
       `/ontology/?node=${encodeURIComponent("domain:views")}`,
     );
@@ -183,7 +183,7 @@ describe("resolveOntologyBuilderNodeSlug", () => {
 });
 
 describe("buildTopologyMeaningEditorNodeHref", () => {
-  // URL 계약: 지도 편집기 발신 링크는 canonical `<kind>:<slug>` 로 통일한다.
+  // URL contract: links sent from the map editor always use canonical `<kind>:<slug>`.
   it("canonical graph id 를 그대로 실어 보낸다", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("domain:views")).toBe(
       "domains/views",
@@ -249,7 +249,7 @@ describe("meaningEditRelationForEdgeType (Slice 6 — 지도 엣지 → bearing)
   });
 
   it("returns null for edge types outside the four bearings — no dead action", () => {
-    // describes / belongs_to / domain-membership aren't editable in the 지도 편집기.
+    // describes / belongs_to / domain-membership are not editable in the map editor.
     expect(meaningEditRelationForEdgeType("describes")).toBeNull();
     expect(meaningEditRelationForEdgeType("belongs_to")).toBeNull();
     expect(meaningEditRelationForEdgeType("domain")).toBeNull();

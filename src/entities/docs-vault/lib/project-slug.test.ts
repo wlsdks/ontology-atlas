@@ -120,8 +120,8 @@ describe("findProjectVaultDoc", () => {
   });
 
   it("project 가 아닌 doc 의 slug 우연 일치는 무시한다", () => {
-    // frontmatter.slug 가 우연히 같아도 kind !== project / projects/ path
-    // 아니면 project doc 으로 취급하지 않는다.
+    // Even when frontmatter.slug happens to match, a doc is not a project doc unless
+    // kind === project or the path starts with projects/.
     const manifest = makeManifest([
       makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain", slug: "foo" } }),
     ]);
@@ -132,9 +132,10 @@ describe("findProjectVaultDoc", () => {
 
 describe("findProjectDocInList", () => {
   it("finds a project doc whose file path differs from its frontmatter slug", () => {
-    // 도그푸드 매니페스트의 실제 shape — 파일은 `ontology/project`, 프로젝트
-    // 이름은 frontmatter `slug: ontology-atlas`. 두 값을 직접 비교하던 표면
-    // (/projects 카드)이 문서를 못 찾아 "설명 없음" 으로 거짓말했다.
+    // The dogfood manifest's real shape: the file is `ontology/project` while the
+    // project name comes from frontmatter `slug: ontology-atlas`. A surface comparing
+    // the two directly (the /projects cards) failed to find the document and lied
+    // with "no description".
     const docs = [
       makeDoc({
         slug: "ontology/project",

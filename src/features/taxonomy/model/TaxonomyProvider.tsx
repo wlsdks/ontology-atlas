@@ -11,9 +11,8 @@ export interface TaxonomyContextValue {
   statuses: Status[];
   getCategory: (id: string | undefined) => Category | undefined;
   getStatus: (id: string | undefined) => Status | undefined;
-  // R15 (Concern 1) — vault frontmatter 가 category/status 명시 안 하면
-  // undefined. taxonomy provider 가 *—* (em-dash) placeholder 로 표시 —
-  // fabricated 'uncategorized' 보다 honest.
+  // Vault frontmatter that does not state category/status yields undefined, and the taxonomy
+  // provider displays an em-dash placeholder — more honest than a fabricated 'uncategorized'.
   categoryLabel: (id: string | undefined) => string;
   statusLabel: (id: string | undefined) => string;
 }
@@ -25,15 +24,15 @@ interface Props {
 }
 
 /**
- * defaults 만 노출하는 정적 provider — taxonomy (categories / statuses) 는
- * 빌드타임 defaults 만으로 충분. vault 기반 사용자 정의 분류 (예:
- * `categories.md` frontmatter) 는 추후 단계.
+ * A static provider exposing the defaults only — build-time defaults are enough for the
+ * taxonomy (categories and statuses). Vault-defined custom classifications (a
+ * `categories.md` frontmatter, say) are a later stage.
  */
 export function TaxonomyProvider({ children }: Props) {
-  // 라벨은 화면 언어를 따른다 — category/status 는 vault 가 아니라 코드
-  // 상수라 어권별 라벨을 우리가 쥐고 있다 (`shared/lib/taxonomy-label`).
-  // 이 provider 가 라벨을 고르는 **유일한 자리**다: 호출부가 `.label` 을
-  // 직접 읽으면 영문 화면에 한국어가 샌다 (2026-07-28 `/project/new` 결함).
+  // Labels follow the screen's language — category and status are code constants rather than
+  // vault data, so we hold the per-locale labels ourselves (`shared/lib/taxonomy-label`).
+  // This provider is the **only place** that picks a label: a caller reading `.label`
+  // directly leaks Korean onto the English screen (the 2026-07-28 `/project/new` defect).
   const locale = useLocale();
   const value = useMemo<TaxonomyContextValue>(() => {
     const categoryMap = new Map(DEFAULT_CATEGORIES.map((c) => [c.id, c]));
@@ -43,8 +42,8 @@ export function TaxonomyProvider({ children }: Props) {
       statuses: DEFAULT_STATUSES,
       getCategory: (id) => (id ? categoryMap.get(id) : undefined),
       getStatus: (id) => (id ? statusMap.get(id) : undefined),
-      // id 가 defaults 에 없으면 사용자 vault 의 값이다 — 번역하지 않고
-      // 원문(id) 을 그대로 보여준다.
+      // An id absent from the defaults comes from the user's vault — it is shown verbatim
+      // (the id) rather than translated.
       categoryLabel: (id) =>
         id ? (pickTaxonomyLabel(categoryMap.get(id), locale) ?? id) : '—',
       statusLabel: (id) =>

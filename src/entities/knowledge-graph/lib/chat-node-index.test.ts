@@ -4,8 +4,8 @@ import { buildChatNodeIndex } from './chat-node-index';
 import type { KnowledgeGraphNode } from '../model/types';
 
 /**
- * 실물(설치된 앱, 2026-08-17)에서 잰 그대로의 두 이름. codex 가 답에 쓴 이름은
- * 아래쪽이고, 지도가 노드를 부르는 이름은 위쪽이다.
+ * The two names exactly as measured in the installed app (2026-08-17): the lower one
+ * is what codex used in its answer, the upper one is what the map calls the node.
  */
 const CANVAS_ID = 'domain:example-domain';
 const AGENT_SLUG = 'domains/example-domain';
@@ -24,8 +24,8 @@ const node = (over: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode =>
 
 describe('채팅에 나온 이름 → 지도 노드', () => {
   /*
-   * ⚠️ **이 검사가 먼저다.** 두 이름이 같아져 버리면 아래 검사들은 전부
-   * 통과하면서 아무것도 안 재게 된다 — 「늘 초록인 검사는 검사가 아니다」.
+   * ⚠️ **This check comes first.** If the two names ever coincide, every test below
+   * passes while measuring nothing — a check that is always green is not a check.
    */
   it('두 이름은 실제로 다르다 — 같아지면 이 파일 전체가 헛돈다', () => {
     expect(AGENT_SLUG).not.toBe(CANVAS_ID);
@@ -40,10 +40,10 @@ describe('채팅에 나온 이름 → 지도 노드', () => {
   });
 
   it('**결함 재현** — 지도 id 만으로 만들면 에이전트의 이름이 안 걸린다', () => {
-    // 2026-08-17 이전의 코드가 정확히 이랬다: `new Set(nodes.map(n => n.id))`.
+    // This is exactly what the code did before 2026-08-17: `new Set(nodes.map(n => n.id))`.
     const brokenIndex = new Set([node().id]);
     expect(brokenIndex.has(AGENT_SLUG)).toBe(false);
-    // 고친 쪽은 걸린다.
+    // The fixed version matches.
     expect(buildChatNodeIndex([node()]).has(AGENT_SLUG)).toBe(true);
   });
 

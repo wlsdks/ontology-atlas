@@ -1,7 +1,7 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { computeDomainCensusRows } from "@/shared/lib/ontology-tree";
 
-/** 한 도메인의 용량 — containment 도달 가능 역량/요소 수 (단일 진실원 BFS). */
+/** One domain's capacity — capability/element counts reachable through containment (single-source BFS). */
 export interface DomainCapacityRow {
   id: string;
   title: string;
@@ -11,12 +11,12 @@ export interface DomainCapacityRow {
 }
 
 /**
- * insights 탭1 "도메인 용량" 카드의 진실원 — Guardian I-1 이후
- * `computeDomainCensusRows` (shared 그래프 BFS) 를 쓴다. 이전의
- * `buildOntologyTree` 서브트리 워크는 노드마다 부모를 하나만 배정해
- * 다중 부모 노드를 유실했다 (INDEX 96 vs /projects 106 분기의 원인).
+ * The source of truth for the "domain capacity" card on the insights overview tab. It uses
+ * `computeDomainCensusRows` (the shared graph BFS). The earlier `buildOntologyTree` subtree walk
+ * assigned each node exactly one parent and so lost multi-parent nodes — the cause of the INDEX 96
+ * vs /projects 106 divergence.
  *
- * 결과는 total 내림차순 — 동률은 title 오름차순으로 결정론적.
+ * The result is sorted by total descending, with ties broken by title ascending for determinism.
  */
 export function computeDomainCapacityRows(
   nodes: readonly KnowledgeGraphNode[],

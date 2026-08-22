@@ -7,49 +7,49 @@ import {
 import { rankAllByDegree } from "@/shared/lib/ontology-tree";
 
 /**
- * "할 일" 탭 (S5, 전략 verdict B) — 인사이트를 재고 나열에서 "그래서 뭘
- * 해야 하는데?"로. 이 페이지에 이미 로드된 파생(healthSignals ·
- * rankAllByDegree · docFreshnessIndex)만 조합한다 — maintenance_plan 급
- * 정밀 순위의 client 재구현은 의도적으로 하지 않는다(패널 반대 의견 절충:
- * 단일 진실원 유지, 정밀 판정은 행별 에이전트 핸드오프로 위임).
+ * The "to do" tab — insights moving from listing inventory to "so what should I do?". It combines
+ * only derivations already loaded by this page (health signals, `rankAllByDegree`,
+ * `docFreshnessIndex`). A client reimplementation of `maintenance_plan`-grade precise ranking is
+ * deliberately avoided: one source of truth is kept, and precise judgement is delegated to the
+ * per-row agent handoff.
  */
 
 export type DoNextRowKind = "neglected-hub" | "orphan" | "promotion";
 
 export interface DoNextRow {
-  /** 행 고유 id — `${kind}:${nodeId}`. */
+  /** The row's unique id — `${kind}:${nodeId}`. */
   id: string;
   rowKind: DoNextRowKind;
   nodeId: string;
   title: string;
   nodeKind: string;
-  /** 연결도 (neglected-hub · promotion). */
+  /** Degree (neglected-hub · promotion). */
   degree?: number;
-  /** 마지막 갱신 후 일수 (neglected-hub). */
+  /** Days since the last update (neglected-hub). */
   agoDays?: number;
   /**
-   * 근거로만 적힌 이름(자기 문서 없음)인가. 이 행의 첫 걸음은 다른 행과 다르다
-   * — 고칠 문서가 아직 없으므로 「문서부터 만들기」다(`handoffPayload` 가 이미
-   * 그렇게 쓰여 있는데 화면은 그 사실을 말하지 않았다).
+   * Is this a name written only as evidence (no document of its own)? This row's first step differs
+   * from the others — there is no document to fix yet, so it is "create the document first"
+   * (`handoffPayload` already read that way while the screen did not say so).
    */
   evidenceOnly: boolean;
-  /** 행별 에이전트 핸드오프 — MCP 호출 순서 제안 (복사용). */
+  /** The per-row agent handoff — a suggested order of MCP calls, for copying. */
   handoffPayload: string;
 }
 
 export interface DoNextQueue {
   rows: DoNextRow[];
-  /** 표시 상한과 무관한 현재 전체 신호 id. 검토 종료 판정의 진실원. */
+  /** Every current signal id, independent of the display cap. The source of truth for deciding a review has ended. */
   activeRowIds: string[];
   counts: { neglectedHub: number; orphan: number; promotion: number };
 }
 
 export interface BuildDoNextQueueOptions {
-  /** 허브로 볼 최소 연결도. 기본 4. */
+  /** The minimum degree to count as a hub. Defaults to 4. */
   hubMinDegree?: number;
-  /** "방치"로 볼 최소 경과 일수. 기본 30. */
+  /** The minimum elapsed days to count as "neglected". Defaults to 30. */
   neglectMinDays?: number;
-  /** 유형별 최대 행 수. 기본 5. */
+  /** The maximum rows per kind. Defaults to 5. */
   perKindLimit?: number;
   now?: Date;
 }
@@ -59,8 +59,8 @@ const DO_NEXT_VERIFICATION_GATE =
   'query_ontology({operation:"health"}) 로 변경 결과 재확인';
 
 /**
- * 행별 핸드오프는 "무엇을 바꿀지"에서 끝나지 않고 같은 그래프의 health
- * 재조회로 닫힌다. UI의 "에이전트로 검증" 라벨과 복사되는 실제 계약을 맞춘다.
+ * A per-row handoff does not end at "what to change" — it closes with a health re-query on the same
+ * graph, matching the UI's "verify with an agent" label to the contract actually copied.
  */
 export function withDoNextVerification(
   instruction: string,
@@ -70,11 +70,11 @@ export function withDoNextVerification(
 }
 
 /**
- * 행별 인계문은 **붙여넣으면 동작해야** 한다. 그래서 이름은 화면의 그래프 id
- * 가 아니라 볼트가 아는 이름(`resolveNodeAgentTarget`)으로 쓰고, 아직 문서가
- * 없는 개념에는 조회·수정 호출 대신 **문서를 먼저 만드는 호출**을 준다 —
- * `patch_concept` / `get_concept` 은 문서가 있어야 성립하므로, 없는 개념에
- * 그 호출을 주면 인계가 아니라 숙제가 된다.
+ * A per-row handoff must **work when pasted**. So the name is written not as the screen's graph id
+ * but as the name the vault knows (`resolveNodeAgentTarget`), and a concept with no document yet is
+ * given **a call that creates the document first** rather than read or edit calls —
+ * `patch_concept` / `get_concept` require an existing document, so giving those to a concept
+ * without one turns a handoff into homework.
  */
 function agentNameOf(node: KnowledgeGraphNode | undefined, fallbackId: string): {
   ref: string;
@@ -87,7 +87,7 @@ function agentNameOf(node: KnowledgeGraphNode | undefined, fallbackId: string): 
   };
 }
 
-/** 문서가 없는 개념에 붙는 공통 첫 걸음 — 문서 신설. */
+/** The shared first step attached to a concept with no document — create it. */
 function createDocFirst(ref: string, kind: string): string {
   return `이 개념은 아직 볼트에 "${ref}" 라는 참조로만 적혀 있어요(문서 없음) → add_concept({slug:"${ref}", kind:"${kind}"}) 로 문서부터 만들기`;
 }
@@ -134,7 +134,7 @@ function buildPromotionHandoff(node: KnowledgeGraphNode | undefined, fallbackId:
   );
 }
 
-/** 갱신일 조회용 문서 slug — 매니페스트 기준 값이라 접두사를 그대로 둔다. */
+/** The document slug used to look up the update date — a manifest-relative value, so the prefix is left on. */
 function nodeSlug(node: KnowledgeGraphNode): string | null {
   return node.evidenceIds[0] ?? null;
 }
@@ -152,24 +152,24 @@ export function buildDoNextQueue(
 
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
 
-  // ① 방치된 허브 — degree 높음 × 갱신 오래됨. 둘 다 이미 페이지에 있는
-  // 신호의 곱이라 계산 비용은 랭킹 한 번이다.
+  // ① Neglected hubs — high degree × long since updated. Both are products of signals already on
+  // the page, so the computation costs one ranking.
   const neglectedHubs: DoNextRow[] = [];
   for (const { node, degree } of rankAllByDegree(nodes, edges)) {
-    if (degree < hubMinDegree) break; // 내림차순 — 임계 밑이면 종료
-    // 문서가 없는 노드의 `evidenceIds[0]` 은 *자기를 인용한 남의 문서* 라,
-    // 그 날짜를 이 노드의 갱신일로 읽으면 남의 방치를 이 개념 탓으로 돌린다.
+    if (degree < hubMinDegree) break; // descending — stop below the threshold
+    // For a node with no document, `evidenceIds[0]` is *someone else's document that cited it*, so
+    // reading that date as this node's update date blames this concept for another's neglect.
     if (resolveNodeAgentTarget(node).documented === false) continue;
     const slug = nodeSlug(node);
     const iso = slug ? freshnessIndex.get(slug) : undefined;
-    if (!iso) continue; // 갱신 시점을 모르면 "방치"라 단정하지 않는다
+    if (!iso) continue; // with no known update time, "neglected" is not asserted
     const agoDays = Math.floor((nowMs - Date.parse(iso)) / DAY_MS);
     if (!Number.isFinite(agoDays) || agoDays < neglectMinDays) continue;
     neglectedHubs.push({
       id: `neglected-hub:${node.id}`,
       rowKind: "neglected-hub",
       nodeId: node.id,
-      // 과제 ⑩ — "할 일" 큐 행도 표시용 짧은 제목.
+    // Queue rows use the short display title too.
       title: node.display ?? node.title,
       nodeKind: node.kind,
       degree,
@@ -180,8 +180,8 @@ export function buildDoNextQueue(
   }
   neglectedHubs.sort((a, b) => (b.degree ?? 0) * (b.agoDays ?? 0) - (a.degree ?? 0) * (a.agoDays ?? 0));
 
-  // ②③ 고아 · 승격 후보 — 지도 health 칩과 같은 entities 함수 재사용
-  // (진실원 1벌 — 지도 칩과 이 큐의 숫자가 갈라질 수 없다).
+  // ②③ Orphans and promotion candidates — reusing the same entities function as the map's health
+  // chip (one source of truth, so the map chip and this queue cannot diverge).
   const signals = buildOntologyHealthSignals(nodes, edges, { now: options.now });
 
   const orphans: DoNextRow[] = signals.orphan.map(({ slug, name }) => ({
@@ -200,7 +200,7 @@ export function buildDoNextQueue(
     nodeId: slug,
     title: name,
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
-    // "왜 뽑혔나"의 근거 — 들어오는 참조 수. 행 metric("참조 N개")으로 그대로 노출.
+    // The evidence for "why was this picked" — the incoming reference count, exposed verbatim as the row metric ("N references").
     degree: fanIn,
     evidenceOnly: isEvidenceOnlyConcept(nodeById.get(slug)),
     handoffPayload: buildPromotionHandoff(nodeById.get(slug), slug),

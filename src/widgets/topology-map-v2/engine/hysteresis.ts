@@ -7,7 +7,8 @@
  * }
  * ```
  * where `HYSTERESIS = 7` (px). This is the click-safe contract's mechanical
- * core (`.claude/rules/design.md` "클릭=안전 계약", `docs/INTERACTION-DESIGN.md`
+ * core (`.claude/rules/design.md` 「클릭=안전 계약」 — a click is a safe contract;
+ * `docs/INTERACTION-DESIGN.md`
  * §1): a pointerdown does not commit to a drag until the pointer has moved
  * more than `thresholdPx` from its down-position — below that, a
  * pointerup is a click (`setFocus`/`clearFocus`), not a pan.
@@ -22,8 +23,7 @@
  * Pure geometry — no pointer-event/DOM knowledge. `interaction/pointer-state-machine.ts`
  * calls this once per pointermove while `dragging` is still false.
  *
- * STUB: the lead implements the body. Exact expected values are pinned in
- * `hysteresis.test.ts`.
+ * Exact expected values are pinned in `hysteresis.test.ts`.
  */
 
 export interface Point {

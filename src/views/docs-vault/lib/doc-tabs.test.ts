@@ -165,7 +165,7 @@ describe("openOrActivateDocTab", () => {
     );
     expect(next).toHaveLength(2);
     expect(next[0]).toEqual({ slug: "README", title: "새 타이틀", lastActivatedAt: 99 });
-    // 탭 순서(위치)는 유지 — activate 가 재배열하지 않는다.
+    // Tab order (position) is preserved — activating does not reorder.
     expect(next.map((t) => t.slug)).toEqual(["README", "FEATURES"]);
   });
 
@@ -175,9 +175,9 @@ describe("openOrActivateDocTab", () => {
       tabs = openOrActivateDocTab(tabs, { slug: `doc-${i}`, title: `doc-${i}` }, i);
     }
     expect(tabs).toHaveLength(DOC_TABS_MAX);
-    // doc-3 을 최근 activate 로 갱신 — 가장 오래된 후보에서 제외되게.
+    // Refresh doc-3's activation time so it is no longer the oldest candidate.
     tabs = openOrActivateDocTab(tabs, { slug: "doc-3", title: "doc-3" }, 100);
-    // 새 문서 추가 → 상한 초과 → 가장 오래(activate 안 된) 탭이 축출된다.
+    // Adding a new document exceeds the ceiling, so the least recently activated tab is evicted.
     tabs = openOrActivateDocTab(tabs, { slug: "doc-new", title: "doc-new" }, 101);
     expect(tabs).toHaveLength(DOC_TABS_MAX);
     expect(tabs.map((t) => t.slug)).not.toContain("doc-0");

@@ -39,19 +39,18 @@ import { fieldClass } from '@/shared/ui/control-class';
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 
 /**
- * DocsVaultPage 의 사이드바 본문 — machined 파일 트리 (docs-vault-final spec).
+ * The docs sidebar body — the machined file tree.
  *
- * 세 섹션이 항상 보인다: **Pinned** (고정) → **Vault** (전체 트리, kind 글리프
- * + 폴더별 음각 count) → **Recent** (최근). 이전 라운드는 Pinned/Recent 를
- * "필터와 저장" 이라는 접이식 details 안에 숨겼는데, 옵시디언식 vault 워크스페이스
- * 에서 고정/최근은 트리 자체만큼 자주 쓰는 진입점이라 항상 보이는 게 맞다
- * (approved docs-vault-final.html 프로토타입 §좌 파일 목록).
+ * Three sections are always visible: **Pinned** → **Vault** (the full tree, kind
+ * glyphs plus an engraved per-folder count) → **Recent**. An earlier round hid
+ * Pinned and Recent inside a collapsible "filters and saved" details block; in an
+ * Obsidian-style vault workspace those two are used as often as the tree itself,
+ * so they stay open. Only the tag filter is still collapsible — it is not this
+ * screen's primary purpose.
  *
- * 태그 필터만 여전히 접이식 — 이 화면의 1차 목적은 아니므로.
- *
- * 모바일은 drawer 안, 데스크톱은 left rail. onSelect 콜백은 caller 가
- * `setMobileTreeOpen(false)` 와 함께 wrapping — 컴포넌트 내부엔 mobile 가시
- * 상태 의존 없음 (자립적).
+ * Mobile renders it inside a drawer, desktop as the left rail. The caller wraps
+ * `onSelect` with `setMobileTreeOpen(false)`, so this component depends on no
+ * mobile visibility state of its own.
  */
 export interface DocsSidebarBodyProps {
   pinnedSlugs: string[];
@@ -68,35 +67,33 @@ export interface DocsSidebarBodyProps {
   onTogglePin: (slug: string) => void;
   onTagSelect: (tag: string | null) => void;
   /**
-   * 목록 순서 — `?sort=` / `?group=` 이 진실원이고 caller 가 내려준다.
-   * 두 축인 이유와 기본값 생략 규칙은 `widgets/docs-vault/lib/tree-order.ts`.
+   * List order — `?sort=` / `?group=` is the source of truth and the caller passes
+   * it down. Why there are two axes, and the default-omission rule, are in
+   * `widgets/docs-vault/lib/tree-order.ts`.
    */
   sort: DocsTreeSort;
   group: DocsTreeGroup;
   onSortChange: (sort: DocsTreeSort) => void;
   onGroupChange: (group: DocsTreeGroup) => void;
-  /**
-   * [D-4] 트리 상단 "새 문서" 진입점 — 지도(topology)와 같은 kind-first
-   * 다이얼로그를 연다(DocsVaultPage.handleOpenNewDocDialog). 샘플(읽기
-   * 전용) 모드에서는 canCreateNewDoc=false 로 비활성 + 툴팁 힌트만 노출해
-   * 기능 존재 자체를 알린다 — 이전엔 진입점이 통째로 사라져 있었다.
-   */
+  /** Opens the same kind-first dialog the map uses to create a node. */
   onCreateNewDoc: () => void;
   canCreateNewDoc: boolean;
   /**
-   * "에이전트 파일" 그룹 — vault 가 repo 루트를 포함할 때만
-   * (CLAUDE.md/AGENTS.md 존재, `useAgentFilesModel` 게이트) non-null.
-   * 파일별 "어느 도구가 읽나" 배지 + drift 배지(amber warning — 미결 주의).
-   * 읽기 전용 감지: 클릭은 기존 에디터로 여는 것이 전부, 변환/수리 없음.
+   * The "agent files" group — non-null only when the vault includes the repo root
+   * (CLAUDE.md / AGENTS.md present, gated inside `useAgentFilesModel`). Shows a
+   * per-file "which tool reads this" badge plus a drift badge (warning tone —
+   * an unresolved state). Detection is read-only: a click only opens the file in
+   * the existing editor; nothing is converted or repaired.
    */
   agentFiles?: AgentFilesUiModel | null;
 }
 
-// "최근 바뀐 문서" 스트립에 노출할 최대 행 수. 7일 창은 대량 커밋일에
-// 수십 건을 통과시켜(dogfood 샘플 27건) 스트립이 아래 트리와 겹치는 두 번째
-// 전체 목록 + 독립 스크롤이 됐다(사이드바에 스크롤 영역 2~3개 = "어디를
-// 드래그하지" 혼란). 최근 5건만 미리보기로 남기고 스크롤을 제거해 주
-// 스크롤을 트리 하나로 단일화한다 — 나머지는 트리가 이미 전부 담는다.
+// Maximum rows in the "recently changed" strip. The 7-day window lets a bulk-commit
+// day through by the dozen (27 in the dogfood sample), which turned the strip into a
+// second full listing with its own scrollbar overlapping the tree below — two or three
+// scroll areas in one sidebar leaves "which do I drag?" unanswered. Keeping five as a
+// preview and dropping the scroll leaves the tree as the single scroller; the rest is
+// already in the tree.
 const RECENTLY_CHANGED_STRIP_MAX = 5;
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -108,31 +105,31 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 /**
- * 이 레일 버튼이 **무슨 상태를 말하는가** — 소비처가 반드시 고른다 (2026-08-15).
+ * **Which state this rail button reports — the consumer must choose** (2026-08-15).
  *
- * 종전엔 `{...railStateAria(state)}` 를 무조건 붙였다. 그런데 `controls.tsx` 의
- * `Chip` 머리말이 이미 그 자동 묶기를 금지해 뒀다: *"`active` 는 **보이는
- * 상태**이고 `aria-pressed` 는 **말해지는 상태**라, 둘을 자동으로 묶으면
- * 토글이 아닌 것이 스크린리더에 토글로 읽힌다."* 규칙은 적혀 있었고 이
- * 래퍼가 정확히 그것을 어기고 있었다.
+ * It used to attach `{...railStateAria(state)}` unconditionally. `Chip` in
+ * `controls.tsx` already forbids that automatic pairing in its own header:
+ * *"`active` is the **visible** state and `aria-pressed` is the **spoken** state,
+ * so binding them automatically makes a non-toggle read as a toggle to a screen
+ * reader."* The rule was written down and this wrapper was breaking it.
  *
- * 실측(2026-08-15 전수)한 소비처 셋이 **서로 다른 셋**이다:
+ * A full sweep on 2026-08-15 found the three consumers are **three different things**:
  *
- * | 소비처 | 무엇인가 | 정직한 속성 |
+ * | Consumer | What it is | Honest attribute |
  * |---|---|---|
- * | 거르기 | 켜고 끄는 토글 | `aria-pressed` |
- * | 정렬 | **메뉴를 여는 버튼** | `aria-expanded` + `aria-haspopup` |
- * | 새 문서 | **행동**(다이얼로그를 열거나 폴더 열기로 보낸다) | 없음 |
+ * | filter | a toggle | `aria-pressed` |
+ * | order | **a button that opens a menu** | `aria-expanded` + `aria-haspopup` |
+ * | new document | **an action** (opens a dialog, or sends you to open a folder) | none |
  *
- * 새 문서 버튼은 눌림 상태가 존재하지 않는데 `aria-pressed="false"` 를 계속
- * 낭독하고 있었다. 정렬 버튼은 `orderMenuOpen || !orderIsDefault` 라 **두
- * 가지를 한 속성에 섞었다** — 메뉴를 닫아도 정렬이 기본이 아니면 pressed 가
- * true 로 남았다. 그 둘은 실제로 다른 사실이고, 지금은 갈라져 있다:
- * 보이는 인디고는 「정렬이 기본이 아니다」를 말하고, 접근성 트리는 「메뉴가
- * 열려 있다」를 말한다.
+ * The new-document button has no pressed state yet kept announcing
+ * `aria-pressed="false"`. The order button used `orderMenuOpen || !orderIsDefault`,
+ * **mixing two facts into one attribute** — closing the menu left pressed true
+ * whenever the order was not the default. Those really are different facts and are
+ * now separated: the visible indigo says "the order is not the default", the
+ * accessibility tree says "the menu is open".
  *
- * 그래서 `state` 는 **선택 가능한 옵션이 아니라 필수**다 — 빠뜨리면 타입이
- * 막는다. 자동으로 채워 주면 그 순간 이 결함이 되돌아온다.
+ * So `state` is **required, not optional** — omitting it is a type error. Filling it
+ * in automatically brings the defect straight back.
  */
 type RailButtonState =
   | { kind: "toggle"; pressed: boolean }
@@ -151,8 +148,9 @@ function railStateAria(state: RailButtonState) {
 }
 
 /**
- * #22 — 옵시디언식 상단 아이콘 행의 단일 버튼. hover 툴팁(평문) + active
- * 인디고. a11y: title(툴팁) + aria-label + `state` 가 정하는 상태 속성.
+ * A single button in the top icon row: plain-text hover tooltip plus an active
+ * indigo. a11y: title (the tooltip), aria-label, and whatever state attribute
+ * `state` decides.
  */
 function RailIconButton({
   icon,
@@ -165,7 +163,7 @@ function RailIconButton({
 }: {
   icon: ReactNode;
   label: string;
-  /** **보이는** 상태(인디고). 말해지는 상태는 `state` 가 따로 진다. */
+  /** The **visible** state (indigo). The spoken state is carried separately by `state`. */
   active: boolean;
   state: RailButtonState;
   disabled?: boolean;
@@ -191,9 +189,9 @@ function RailIconButton({
 }
 
 /**
- * 목록 순서 메뉴의 한 줄. 같은 축 안에서 하나만 고를 수 있으니
- * `menuitemradio` — 체크 표시 자리는 고른 줄이 아니어도 비워 둬 글자가
- * 좌우로 흔들리지 않게 한다.
+ * One row of the list-order menu. Only one option per axis can be chosen, hence
+ * `menuitemradio`. The check-mark column stays reserved on unselected rows so the
+ * text does not shift horizontally.
  */
 function OrderOption({
   label,
@@ -252,13 +250,14 @@ export function DocsSidebarBody({
   const locale = useLocale();
   const tAgentFiles = useTranslations("agentFiles");
   const [treeQuery, setTreeQuery] = useState("");
-  // #22 — 검색 입력은 상단 아이콘 행의 토글로 열고 닫는다(옵시디언식 밀도
-  // 축소). 쿼리가 남아 있으면 강제로 열어 둔다(사라진 필터가 안 보이는 결함 방지).
+  // The search input is opened and closed by a toggle in the top icon row. A
+  // surviving query forces it open, so a filter that is still applied is never invisible.
   const [searchOpen, setSearchOpen] = useState(false);
-  // 정렬/묶음은 상시 드롭다운 두 개가 아니라 아이콘 행의 메뉴 하나로 접는다
-  // — 사이드바는 좁고, 컨트롤이 목록보다 커지면 그것도 결함이다.
-  // hook 결과는 바로 구조 분해한다 — 객체째 들고 렌더에서 `.open` 을 읽으면
-  // lint 가 같은 객체의 `ref` 필드를 보고 "렌더 중 ref 접근" 으로 오탐한다.
+  // Sort and group fold into one icon-row menu rather than two always-on dropdowns —
+  // the sidebar is narrow, and controls larger than the list they control is itself a defect.
+  // The hook result is destructured immediately: holding the object and reading `.open`
+  // during render makes lint see the same object's `ref` field and falsely report a
+  // ref access during render.
   const {
     open: orderMenuOpen,
     setOpen: setOrderMenuOpen,
@@ -266,25 +265,25 @@ export function DocsSidebarBody({
   } = useAdvancedMenu();
   const orderIsDefault =
     sort === DEFAULT_DOCS_TREE_SORT && group === DEFAULT_DOCS_TREE_GROUP;
-  // 호버 툴팁이 지금 순서를 그대로 읽어 준다 — 메뉴를 열지 않아도 알 수 있게.
+  // The hover tooltip reads the current order out, so it is knowable without opening the menu.
   const orderSummary = `${t("orderMenuLabel")} · ${t(`orderSort.${sort}`)} · ${t(`orderGroup.${group}`)}`;
-  // P4a — "최근 바뀐 문서" 진입점. `selectRecentVaultDocs` 는 INDEX 지도 렌즈
-  // (`useRecentChanges`)와 같은 mtime 7일 창 산수(`recent-changes.ts`)를
-  // 공유한다 — 문서함은 `VaultDoc.updatedAt` 을 직접 갖고 있어 온톨로지
-  // 노드처럼 evidenceIds 간접 조회가 필요 없다. 세션 스냅샷 시각 —
-  // `updatedAgoNowMs`(HomePage)와 같은 렌더-purity 이유로 mount 시 1회.
+  // The "recently changed" entry point. `selectRecentVaultDocs` shares the same 7-day
+  // mtime window arithmetic (`recent-changes.ts`) as the INDEX map lens
+  // (`useRecentChanges`) — the docs surface has `VaultDoc.updatedAt` directly and needs
+  // no indirect evidenceIds lookup. The session snapshot time is taken once at mount,
+  // for the same render-purity reason as `updatedAgoNowMs`.
   const [recentNowMs] = useState(() => Date.now());
   const recentlyChangedDocs = useMemo(
     () => selectRecentVaultDocs(manifest.docs, recentNowMs),
     [manifest.docs, recentNowMs],
   );
-  // #22 — 최근 바뀐 문서는 목록 안의 조용한 섹션으로 강등, 기본 접힘.
+  // Recently changed is a quiet section inside the list, collapsed by default.
   const [recentlyChangedOpen, setRecentlyChangedOpen] = useState(false);
   const normalizedTreeQuery = treeQuery.trim().toLowerCase();
-  // 활성 태그가 매치하는 slug 집합 — DocsVaultTree 가 매 노드 재귀 시 .has()
-  // 로 조회. 매 render 새 Set 만들면 트리 내부 useMemo 들이 활성/해제 무관
-  // invalidate 되므로 부모에서 안정화. activeTag 가 null 이면 undefined
-  // (트리가 필터 자체 skip).
+  // The set of slugs matching the active tag — `DocsVaultTree` calls `.has()` on it at
+  // every node during recursion. A fresh Set per render would invalidate the tree's
+  // internal `useMemo`s whether or not the filter changed, so it is stabilized here.
+  // A null `activeTag` yields undefined, and the tree skips filtering entirely.
   const activeTagSlugs = useMemo(
     () =>
       activeTag ? new Set(manifest.tags[activeTag] ?? []) : undefined,
@@ -322,17 +321,18 @@ export function DocsSidebarBody({
   const collectionOptions: DocsVaultCollection[] = ["all", "guides", "ontology"];
 
   /*
-   * 컬렉션 칩 — **배타 단일선택**이다(`collection` 이 단일 값이고, 고른 것을 다시
-   * 눌러도 해제되지 않는다). 종전엔 `role="group"` + 형제 `aria-pressed` 였다.
+   * The collection chips are an **exclusive single selection** (`collection` holds one
+   * value, and pressing the selected chip again does not clear it). They used to be
+   * `role="group"` with sibling `aria-pressed`.
    *
-   * 그 선택에는 기록된 근거가 있었다 — 바로 위 주석이 `tablist` 를 반납한
-   * 이유를 적어 뒀다. **그 판단은 여전히 옳다.** 다만 그때 검토한 대안이
-   * tablist 였지 radiogroup 이 아니었고, 배타성을 접근성 트리에 싣는 것은
-   * radiogroup 의 일이다(2026-08-15 (3)).
+   * That choice had a recorded basis — the comment directly below records why `tablist`
+   * was given up. **That judgement still holds.** But the alternative considered then was
+   * `tablist`, not `radiogroup`, and carrying exclusivity into the accessibility tree is
+   * `radiogroup`'s job (2026-08-15 (3)).
    *
-   * 그릇은 자리에 남는다 — `bg-canvas` 우물 · `p-0.5`/`gap-0.5` · 아이템이
-   * `Chip` · `Tooltip` 래퍼 · 「켜진 칩만 라벨을 보여 준다」 다섯이 프리미티브의
-   * 두 캐노니컬 어디에도 안 맞는다(2026-08-15 (8) 등재).
+   * The container stays here: five things — the `bg-canvas` well, `p-0.5`/`gap-0.5`, items
+   * being `Chip`, the `Tooltip` wrapper, and "only the active chip shows its label" — fit
+   * neither of the primitive's two canonical containers (2026-08-15 (8)).
    */
   const collectionGroup = useRovingRadioGroup({
     value: collection,
@@ -347,36 +347,36 @@ export function DocsSidebarBody({
   const searchExpanded = searchOpen || Boolean(treeQuery);
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* 한 줄 안에 **필터 한 벌 + 액션 셋**이 있다. 밀도를 낮추려고 큰
-          헤더·상시 검색창을 걷어낸 것은 그대로 두되, 셋을 테두리로 묶고
-          켜진 것에 이름을 붙여 «상태» 와 «액션» 을 눈으로 가른다
-          (2026-08-08 — 소유자가 이 줄을 「복잡도」로 지목했다). */}
+      {/* One row holds **a set of filters plus three actions**. The larger header and the
+          always-on search box stay removed for density, but the three are now bound by a
+          border and the active one is labelled, so «state» and «action» separate visually
+          (2026-08-08 — the owner named this row as "복잡도" / complexity). */}
       {/*
-        a11y: 이 줄은 `role="tablist"` 가 **아니다**. 2026-08-03 axe 전수에서
-        `aria-required-children`(WCAG 4.1.2) 위반 1건이 여기였다 — 줄 안에
-        컬렉션 3개 말고 검색 토글 · 정렬 메뉴 · 새 문서가 같이 있어서
-        `tablist` 가 허용하지 않는 자식(`button[aria-label]`)을 이고 있었다.
+        a11y: this row is **not** `role="tablist"`. A full axe sweep on 2026-08-03 found one
+        `aria-required-children` (WCAG 4.1.2) violation here — besides the three collections
+        the row also holds the search toggle, the order menu, and new-document, so `tablist`
+        was carrying a child it does not allow (`button[aria-label]`).
 
-        고침은 **자식을 `role="tab"` 으로 바꾸는 쪽이 아니라 role 을 반납하는
-        쪽**이다. 형제인 `DocsVaultTabStrip` 이 같은 이유로 이미 그렇게 적어
-        뒀다: `tabpanel`·`aria-controls`·roving tabindex 가 없는데 role 만
-        빌리면 AT 는 «탭 n/N» 과 화살표키 이동을 약속하고 아무 일도 일어나지
-        않는다. 여기 세 버튼은 아래 트리를 **거르는 토글**이고 진실원은
-        `collection` 상태다 — 정직한 계약은 `group` + `aria-pressed` 다.
-        `toolbar` 도 안 쓴다: 그건 다시 화살표키 이동 약속이다.
+        The fix is **giving up the role, not turning the children into `role="tab"`.** Its
+        sibling `DocsVaultTabStrip` already records the same reasoning: borrowing the role
+        without `tabpanel`, `aria-controls`, and roving tabindex makes AT promise "tab n of N"
+        and arrow-key movement, and nothing happens. These three buttons are **toggles that
+        filter** the tree below and the source of truth is the `collection` state — the
+        honest contract is `group` + `aria-pressed`. `toolbar` is out for the same reason:
+        it is another arrow-key promise.
       */}
       <div className="flex flex-none items-center gap-1 border-b border-[color:var(--color-overlay-2)] px-2 py-2">
         {/*
-          ⚠️ **켜진 것은 이름을 갖는다** (2026-08-08, 소유자 지적 "복잡도").
-          종전엔 셋 다 라벨 없는 32px 아이콘이라 «지금 무엇으로 걸러진
-          목록인가» 를 아이콘만으로 읽을 수 없었고, 그 답은 아래 회색 캡션
-          한 줄에만 있었다 — 정보가 컨트롤 밖에 있으면 사람은 두 곳을 봐야
-          한다. 이제 **켜진 칩이 자기 이름과 개수를 말하고**, 캡션 줄은
-          검색·태그처럼 컨트롤이 말할 수 없는 상태에만 남는다.
+          ⚠️ **What is active has a name** (2026-08-08, owner reported "복잡도" / complexity).
+          All three used to be unlabelled 32px icons, so «which filter is this list under»
+          could not be read from the icons alone — that answer lived only in the grey caption
+          line below. Information outside the control makes a person look in two places. Now
+          **the active chip states its own name and count**, and the caption row is left only
+          for states a control cannot speak, such as search and tags.
 
-          그리고 이 셋은 **서로 배타적인 필터**인데 옆의 검색·정렬·새 문서와
-          똑같이 생겼었다. 테두리 하나로 묶어 «여기까지가 한 벌» 이라고
-          말한다 — 상태와 액션이 한 줄에 섞여 있던 것이 복잡도의 절반이다.
+          And these three are **mutually exclusive filters** that looked identical to the
+          search, order, and new-document buttons beside them. One border binds them and says
+          «this much is one set» — state and action mixed in one row was half the complexity.
         */}
         <div
           {...collectionGroup.groupProps}
@@ -411,9 +411,9 @@ export function DocsSidebarBody({
         </div>
         <RailIconButton
           testId="docs-sidebar-search-toggle"
-          // 돋보기가 화면에 둘이었다 — 이 버튼(목록 좁히기)과 헤더의 ⌘K
-          // 전체 검색. 같은 기호가 다른 일을 하면 둘 다 못 믿는다. 이쪽은
-          // 하는 일이 «거르기» 라 깔때기가 정직하다(2026-08-08).
+          // There were two magnifiers on screen — this button (narrow the list) and the
+          // header's ⌘K global search. The same symbol doing different jobs makes both
+          // untrustworthy. This one filters, so a funnel is the honest icon (2026-08-08).
           icon={<ListFilter size={ICON_SIZE.md} aria-hidden />}
           label={t("searchLabel")}
           active={searchExpanded}
@@ -432,24 +432,24 @@ export function DocsSidebarBody({
             testId="docs-sidebar-order-toggle"
             icon={<ArrowDownUp size={ICON_SIZE.md} aria-hidden />}
             label={orderSummary}
-            // 보이는 인디고는 「정렬이 기본이 아니다」, 접근성 트리는 「메뉴가
-            // 열려 있다」 — 서로 다른 사실이라 서로 다른 값을 진다.
+            // The visible indigo says "the order is not the default"; the accessibility tree
+            // says "the menu is open" — different facts, so different values.
             active={orderMenuOpen || !orderIsDefault}
             state={{ kind: "disclosure", expanded: orderMenuOpen }}
             onClick={() => setOrderMenuOpen((open) => !open)}
           />
           <Surface
               open={orderMenuOpen}
-              // 앵커가 오른쪽 위이므로 등장도 거기서 자란다 — 아래 주석의
-              // "그 가장자리를 기준으로 자란다" 를 배치만이 아니라 모션도 지킨다.
+            // The anchor is the top right, so it grows from there — the comment below about
+            // growing from the nearest edge applies to the motion, not just the placement.
               origin="top right"
               role="menu"
               aria-label={t("orderMenuLabel")}
               data-testid="docs-sidebar-order-menu"
-              // 오른쪽 모서리에 앵커한다 — 이 버튼은 사이드바 오른쪽 끝에
-              // 붙어 있어서 `left-0` 으로 열면 192px 메뉴가 사이드바 밖으로
-              // 나간다(실측: 73px 넘침, 소유자 제보 2026-07-28). 컨테이너
-              // 가장자리 근처의 메뉴는 그 가장자리를 기준으로 자란다.
+            // Anchored to the right edge. This button sits at the sidebar's right edge, so
+            // opening with `left-0` pushes the 192px menu outside the sidebar (measured: 73px
+            // of overflow, owner report 2026-07-28). A menu near a container edge grows from
+            // that edge.
               className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
             >
               <p className="px-1.5 pb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
@@ -485,16 +485,16 @@ export function DocsSidebarBody({
           </Surface>
         </div>
         <span className="flex-1" />
-        {/* [D-4] "새 문서" 진입점 — 샘플(읽기 전용) 모드에서도 버튼 + 툴팁으로
-            기능 존재를 알린다(지도와 같은 kind-first 다이얼로그). */}
+        {/* The "new document" entry point — the same kind-first dialog the map uses. */}
         {/*
-          읽기 전용 샘플에서도 **누를 수 있다**. 종전에는 비활성 + 호버 툴팁
-          이었는데, 40% 불투명도 아이콘의 호버 전용 설명은 도달하지 않았다 —
-          소유자 실사용에서 "새 문서 작성은 왜 없지?" 로 읽혔다.
+          It is **pressable even in the read-only sample**. It used to be disabled with a
+          hover tooltip, but a hover-only explanation on a 40%-opacity icon never arrived —
+          in the owner's own use it read as "새 문서 작성은 왜 없지?" (why is there no
+          "create document"?).
 
-          이제 누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다. 라벨이
-          그 사실을 미리 말하므로 놀라지 않는다 — 헌장의 강등 문법("왜 안
-          되는지 + 어디로 가면 되는지")을 버튼 하나에 적용한 것이다.
+          Pressing it now goes to what makes it possible: open my folder. The label says so in
+          advance, so nothing is surprising — the charter's degradation grammar ("why it is
+          unavailable **and where to go**") applied to one button.
         */}
         <RailIconButton
           testId="docs-sidebar-new-doc"
@@ -505,16 +505,16 @@ export function DocsSidebarBody({
           onClick={onCreateNewDoc}
         />
       </div>
-      {/* 이 줄은 **컨트롤이 말할 수 없는 상태**만 말한다 (2026-08-08).
-          종전엔 여기가 활성 컬렉션의 이름과 개수까지 이고 있었다 — 위 줄의
-          아이콘들이 라벨을 툴팁에만 갖고 있어서, 이 줄을 지우면 그 둘이
-          화면에서 통째로 사라졌기 때문이다. 이제 **켜진 칩이 자기 이름과
-          개수를 직접 말하므로** 그 몫은 여기 남을 이유가 없다: 같은 사실을
-          두 곳이 말하면 눈이 두 번 일한다.
+      {/* This row states **only what a control cannot say** (2026-08-08).
+          It used to carry the active collection's name and count as well, because the icons
+          in the row above kept their labels in tooltips only — deleting this row removed both
+          from the screen entirely. Now **the active chip states its own name and count**, so
+          that job has no reason to remain here: one fact said in two places makes the eye work
+          twice.
 
-          검색어와 태그는 다르다 — 그건 컨트롤의 «상태» 가 아니라 사용자가
-          방금 입력한 «값» 이라 칩에 담기지 않는다. 그래서 이 줄은 그 둘일
-          때만 그려진다. 아무것도 아닐 때는 줄 자체가 없다. */}
+          Search text and tags are different — they are not a control's «state» but a «value»
+          the user just typed, which no chip carries. So this row is drawn only for those two,
+          and when there is neither, the row does not exist. */}
       {normalizedTreeQuery || activeTag ? (
         <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
           {normalizedTreeQuery
@@ -559,8 +559,8 @@ export function DocsSidebarBody({
               setTreeQuery("");
               onTagSelect(null);
             }}
-            // 이 필터 바는 `py-1`(28px)이다 — `link` 의 44px 최소 높이가 바를
-            // 그만큼 부풀린다. 문장/바 속 컨트롤에는 이 모양이 아직 안 맞는다.
+            // This filter bar is `py-1` (28px), and `link`'s 44px minimum height would inflate
+            // it by that much. That shape does not yet fit a control inside a sentence or a bar.
             className={controlClass({ shape: "link", className: "flex-none rounded-chip px-1.5 py-0.5 hover:text-[color:var(--color-text-primary)]" })}
           >
             {t("clearFilter")}
@@ -568,13 +568,13 @@ export function DocsSidebarBody({
         </div>
       ) : null}
 
-      {/* 항상 보이는 섹션 — 최근 바뀐 문서(조용, 기본 접힘) / 에이전트 파일 /
-          Pinned / Vault 트리 / Recent. 트리(Vault)만 남는 공간을 채우며
-          스크롤한다 (flex-1 min-h-0). */}
+      {/* Always-visible sections: recently changed (quiet, collapsed by default), agent files,
+          Pinned, the Vault tree, Recent. Only the tree fills the remaining space and scrolls
+          (flex-1 min-h-0). */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {/* #22 — "최근 바뀐 문서"는 이제 목록 안의 조용한 섹션(기본 접힘).
-            별도 스택으로 상단을 차지하지 않는다. `recentSlugs`(세션 중 방문)
-            와는 다른, 실제 mtime 7일 창 문서다. */}
+        {/* Recently changed is a quiet section inside the list, collapsed by default, rather
+            than its own stack taking the top. Unlike `recentSlugs` (visited this session),
+            these are documents inside a real 7-day mtime window. */}
         {recentlyChangedDocs.length > 0 ? (
           <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
             <button
@@ -612,7 +612,7 @@ export function DocsSidebarBody({
                             className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                           >
                             <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
-                            {/* 트리·검색·지도와 같은 이름 규칙. */}
+                            {/* Same naming rule as the tree, search, and map. */}
                             <span className="min-w-0 flex-1 truncate">
                               {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
                             </span>
@@ -633,11 +633,11 @@ export function DocsSidebarBody({
           </section>
         ) : null}
 
-        {/* "에이전트 파일" 그룹 — 트리 상단 고정. vault 가 repo 루트일 때만
-            (useAgentFilesModel 게이트) 나타난다. FSA 는 상위 폴더에 접근할 수
-            없으므로 docs/ontology 같은 하위 vault 에서는 그룹 자체를 렌더하지
-            않는 것이 정직하다. drift 배지는 신호 톤 warning(amber) — 미결
-            주의 상태. 읽기 전용: 클릭 = 기존 에디터로 열기. */}
+        {/* The "agent files" group, pinned to the top of the tree. It appears only when the
+            vault is the repo root (gated by `useAgentFilesModel`). FSA cannot reach a parent
+            folder, so for a nested vault such as docs/ontology not rendering the group at all
+            is the honest answer. The drift badge uses the warning (amber) signal tone — an
+            unresolved state. Read-only: a click opens the file in the existing editor. */}
         {agentFiles && agentFiles.records.length > 0 ? (
           <section
             data-testid="docs-sidebar-agent-files"

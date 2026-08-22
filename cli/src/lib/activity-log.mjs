@@ -1,22 +1,22 @@
-// P2-① (retention-round-2026-07-21) — CLI 쓰기도 로컬 감사 로그에 남긴다.
+// CLI writes land in the local audit log too.
 //
-// 지금까지 `.ontology-atlas/activity.jsonl` 감사 로그는 MCP 쓰기 경로만
-// 기록했다 (mcp/src/index.js 의 logWrite). CLI 의 add/import/relate 는
-// vault 파일을 직접 fs 로 쓰기 때문에 로그에 안 남아 "에이전트가 vault 에
-// 쓰면 기록됩니다" 약속에 구멍이 났다. (rename/merge/delete 는 이미
-// callMcpTool 로 MCP 서버를 거치므로 그쪽 logWrite 가 기록한다.)
+// The `.ontology-atlas/activity.jsonl` audit log used to record only the MCP write
+// path (logWrite in mcp/src/index.js). The CLI's add/import/relate write vault
+// files through fs directly, so they left no record and put a hole in the promise
+// that "an agent writing to your vault leaves a record". (rename/merge/delete
+// already go through the MCP server via callMcpTool, so logWrite records those.)
 //
-// 여기서는 mcp 패키지의 activity-log 모듈을 **재사용**한다 — 스키마·로테이션·
-// best-effort append 를 한 곳(single source)에 유지하기 위해. 모듈 해석은
-// agent-activity.mjs 의 showActivityLog 와 같은 2단 해석(모노레포 소스 →
-// 설치 패키지)을 쓴다.
+// This **reuses** the mcp package's activity-log module, so the schema, the
+// rotation, and the best-effort append stay in one place. Module resolution uses
+// the same two-step lookup as showActivityLog in agent-activity.mjs (monorepo
+// source, then installed package).
 
 let cachedModule = null;
 
 /**
- * mcp 의 activity-log.mjs 를 resolve + import 한다 (2단: 모노레포 소스 체크아웃
- * → 설치된 ontology-atlas-mcp 패키지). 결과는 캐시 — 배치 쓰기(import)가
- * 파일당 재해석하지 않도록.
+ * Resolves and imports mcp's activity-log.mjs (monorepo source checkout first,
+ * then the installed ontology-atlas-mcp package). The result is cached so a batch
+ * write (`import`) does not re-resolve per file.
  */
 async function loadActivityLogModule() {
   if (cachedModule) return cachedModule;
@@ -36,21 +36,12 @@ async function loadActivityLogModule() {
 }
 
 /**
- * CLI 쓰기 1건을 감사 로그에 append 한다. 순수 best-effort —
- * 어떤 실패도 throw 하지 않고, 호출자의 exit code / 출력 계약을 바꾸지 않는다.
- * dry-run·실패한 쓰기에서는 **호출하지 말 것** (감사 로그는 "일어난 일"만).
+ * Reads the agent name from the heartbeat file, best-effort (null when absent).
  *
- * @param {string} vaultRoot  절대 경로 (add/import 는 resolve(vault), relate 는 resolveVaultRoot).
- * @param {{tool:string, target:string, summary:string, why?:string|null}} entry
- *   tool 은 `cli:add` 처럼 CLI 쓰기임을 구분할 수 있게 접두한다.
- *   agent 필드는 heartbeat 파일에서 복사(없으면 null) — MCP logWrite 와 동일.
- */
-/**
- * heartbeat 파일의 에이전트 이름을 best-effort 로 읽는다 (없으면 null).
- *
- * `created_by` 스탬프(2026-08-01 원장 — CLI 도 MCP 와 같은 문)가 MCP 의
- * `agentProvenance()` 와 **같은 신원 출처**를 쓰기 위한 helper — 새 신원
- * 체계를 만들지 않는다는 2026-07-31 결정 그대로다.
+ * This is what lets the `created_by` stamp (decision ledger 2026-08-01 — the CLI
+ * uses the same door as MCP) draw on **the same identity source** as MCP's
+ * `agentProvenance()`, keeping the 2026-07-31 decision that no second identity
+ * scheme is created.
  */
 export async function readHeartbeatAgentName(vaultRoot) {
   try {
@@ -61,6 +52,16 @@ export async function readHeartbeatAgentName(vaultRoot) {
   }
 }
 
+/**
+ * Appends one CLI write to the audit log. Purely best-effort: it never throws and
+ * never changes the caller's exit code or output contract. **Do not call it** for
+ * a dry run or a failed write — the audit log carries what happened, nothing else.
+ *
+ * @param {string} vaultRoot absolute path.
+ * @param {{tool:string, target:string, summary:string, why?:string|null}} entry
+ *   `tool` is prefixed (`cli:add`) so a CLI write is distinguishable. The agent
+ *   field is copied from the heartbeat file (null when absent), as in MCP logWrite.
+ */
 export async function recordCliWrite(vaultRoot, { tool, target, summary, why = null }) {
   try {
     const { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } =
@@ -76,6 +77,6 @@ export async function recordCliWrite(vaultRoot, { tool, target, summary, why = n
       }),
     );
   } catch {
-    /* 감사 로그는 부수: 쓰기 결과 / exit code 를 절대 해치지 않는다. */
+    /* The audit log is a side effect — it must never damage the write result or exit code. */
   }
 }

@@ -3,29 +3,34 @@ import type { OntologyEgoNeighbor, OntologyEgoSubgraph } from "./types";
 
 export interface BuildOntologyEgoOptions {
   /**
-   * center 로부터의 탐색 깊이. 1 = 직접 연결만 (기본, 기존 동작 호환), 2 = 한
-   * 다리 건넌 이웃까지. 2-hop 시 노드 수가 폭증할 수 있어 호출자가 명시 토글.
+   * Traversal depth from the center: 1 = direct connections only (the default),
+   * 2 = one hop further. 2-hop can explode the node count, so the caller opts in
+   * explicitly.
    */
   hops?: 1 | 2;
 }
 
 /**
- * center 노드 ego subgraph — 1-hop (기본) 또는 2-hop.
+ * The ego subgraph around a center node — 1-hop (default) or 2-hop.
  *
- * - self-loop (`from === to === centerId`) 는 제외 — center 자기 자신을 이웃으로 두지 않는다.
- * - 양방향 (같은 노드가 outgoing edge + incoming edge 둘 다) 은 두 entry 로 표시.
- *   사용자가 두 관계를 다른 것으로 보고 싶을 가능성이 높기 때문.
- * - 이웃 노드가 `nodes` 에 없는 경우 (데이터 누락 / stub 정리 직전 등) `node = null`,
- *   `neighborId` 는 보존해 UI 가 "ID only" 상태로 표시 가능.
+ * - Self-loops (`from === to === centerId`) are excluded: the center is never its
+ *   own neighbour.
+ * - A bidirectional pair (the same node on both an outgoing and an incoming edge)
+ *   yields two entries, because the user most likely wants to see the two
+ *   relations as distinct.
+ * - When a neighbour is absent from `nodes` (missing data, a stub about to be
+ *   cleaned up) the entry keeps `node = null` and preserves `neighborId` so the UI
+ *   can render an "ID only" state.
  *
- * 2-hop 정책:
- * - 1-hop 에 이미 등장한 노드는 2-hop 에 다시 추가되지 않음 (시각 중복 회피).
- *   "더 가까운 hop 우선".
- * - center 자신을 가리키는 2-hop edge 는 제외 (cycle 방지).
- * - 1-hop 의 `node === null` (미존재) 인 stub placeholder 는 2-hop 탐색의
- *   pivot 으로 쓰지 않음 — 어차피 실 노드가 없어 from/to 매칭이 의미 없음.
+ * 2-hop policy:
+ * - A node already present at 1-hop is not added again at 2-hop — nearer hop wins,
+ *   which also avoids drawing it twice.
+ * - A 2-hop edge pointing back at the center is excluded (cycle).
+ * - A 1-hop stub placeholder (`node === null`) is not used as a 2-hop pivot: with
+ *   no real node there, from/to matching means nothing.
  *
- * 정렬: hop=1 (outgoing → incoming) → hop=2. 같은 그룹 안은 입력 edges 순서.
+ * Ordering: hop 1 (outgoing then incoming), then hop 2; within a group, the input
+ * edge order.
  */
 export function buildOntologyEgoSubgraph(
   centerId: string,
@@ -48,7 +53,7 @@ export function buildOntologyEgoSubgraph(
     const isOutgoing = edge.from === centerId;
     const isIncoming = edge.to === centerId;
     if (!isOutgoing && !isIncoming) continue;
-    // self-loop 제외 — outgoing/incoming 모두 true 인 동시에 양 끝 같은 노드.
+    // Exclude self-loops — outgoing and incoming both true with identical endpoints.
     if (isOutgoing && isIncoming) continue;
 
     const neighborId = isOutgoing ? edge.to : edge.from;
@@ -70,24 +75,24 @@ export function buildOntologyEgoSubgraph(
   const neighbors: OntologyEgoNeighbor[] = [...hop1Outgoing, ...hop1Incoming];
 
   if (hops === 2) {
-    // 2-hop: 각 1-hop 이웃에서 다시 BFS. center 와 hop1 에 이미 있는 노드는 제외.
+    // 2-hop: BFS again from each 1-hop neighbour, skipping the center and hop-1 nodes.
     const seen2Hop = new Set<string>();
     for (const hop1 of [...hop1Outgoing, ...hop1Incoming]) {
-      // null 노드 (미존재) 는 2-hop pivot 으로 쓰지 않음.
+      // A null (absent) node is never a 2-hop pivot.
       if (!hop1.node) continue;
       const pivotId = hop1.neighborId;
       for (const edge of edges) {
         const isOutFromPivot = edge.from === pivotId;
         const isInToPivot = edge.to === pivotId;
         if (!isOutFromPivot && !isInToPivot) continue;
-        // self-loop 제외.
+        // Exclude self-loops.
         if (isOutFromPivot && isInToPivot) continue;
         const farId = isOutFromPivot ? edge.to : edge.from;
-        // center 자신을 가리키는 edge 는 cycle, 제외.
+        // An edge pointing back at the center is a cycle; exclude it.
         if (farId === centerId) continue;
-        // 1-hop 에 이미 있는 노드는 더 가까운 hop 우선 — 2-hop 에 추가 안 함.
+        // Nearer hop wins: a node already at 1-hop is not added at 2-hop.
         if (hop1NodeIds.has(farId)) continue;
-        // 2-hop 안에서 같은 (pivot, far, edge) 조합 중복 방지.
+        // Deduplicate the same (pivot, far, edge) combination within 2-hop.
         const dedupKey = `${pivotId}:${edge.id}:${farId}`;
         if (seen2Hop.has(dedupKey)) continue;
         seen2Hop.add(dedupKey);

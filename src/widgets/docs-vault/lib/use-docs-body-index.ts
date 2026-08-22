@@ -11,34 +11,34 @@ import {
 } from './body-index';
 import { fetchServerDocContent } from './server-doc-content';
 
-/** 동시에 열어두는 본문 읽기 수 — FSA/fetch 폭주 방지. */
+/** How many body reads run at once — keeps FSA/fetch from stampeding. */
 const READ_CONCURRENCY = 6;
 
-/** 인덱스 구축을 초기 렌더/매니페스트 빌드와 겹치지 않게 미루는 기본 지연. */
+/** The default delay that keeps index building from overlapping the initial render and the manifest build. */
 const DEFAULT_START_DELAY_MS = 250;
 
 interface Options {
   docs: VaultDoc[];
   /**
-   * 로컬 볼트의 slug → raw md 리더 (DocsVaultPage 의 viewer resolver 와 동일
-   * 소스: FileSystemFileHandle.getFile().text()). 미지정이면 static 볼트로
-   * 보고 번들 content.json + /docs-vault/{slug}.md fetch 로 폴백 — viewer 의
-   * 본문 소스와 같은 우선순위.
+   * A local vault's slug → raw md reader (the same source as DocsVaultPage's viewer
+   * resolver: FileSystemFileHandle.getFile().text()). Unset means a static vault,
+   * falling back to the bundled content.json plus a `/docs-vault/{slug}.md` fetch —
+   * the same priority as the viewer's body source.
    */
   getDocContent?: (slug: string) => Promise<string>;
-  /** 테스트용 — 구축 시작 지연 override. */
+  /** Test-only override of the build start delay. */
   startDelayMs?: number;
 }
 
 /**
- * 팔레트 본문 검색용 인메모리 인덱스. vault 로드(docs 배열 교체) 시 전 문서
- * 본문을 읽어 소문자 정규화해 두고, 폴링 diff 재빌드 후에는
- * {@link docBodyCacheKey} (slug+mtime) 가 같은 문서의 재독을 건너뛴다 —
- * 변경 파일만 다시 읽는다.
+ * The in-memory index the palette searches bodies with. When the vault loads (the
+ * docs array is replaced) it reads and lowercases every body, and after a polling
+ * diff rebuild it skips the re-read of any document whose {@link docBodyCacheKey}
+ * (slug + mtime) is unchanged — only changed files are read again.
  *
- * 크기 감각: 305 docs × ~6KB × (raw+lower) ≈ 3.5MB 메모리, 구축 I/O 는
- * 매니페스트 빌드가 이미 하는 전 파일 읽기와 같은 차수. 검색 자체는
- * `search.ts` 의 선형 스캔 (~0.1–0.2ms/키 실측).
+ * Sense of scale: 305 docs × ~6KB × (raw + lower) ≈ 3.5MB of memory, and the build
+ * I/O is the same order as the full-file read the manifest build already does.
+ * Search itself is the linear scan in `search.ts` (~0.1–0.2ms/key measured).
  */
 export function useDocsBodyIndex({
   docs,
@@ -47,13 +47,14 @@ export function useDocsBodyIndex({
 }: Options): { bodyIndex: DocsBodyIndex; indexing: boolean } {
   const [bodyIndex, setBodyIndex] = useState<DocsBodyIndex>(() => new Map());
   const [indexing, setIndexing] = useState(false);
-  // static 볼트의 번들 본문 — 검색 결과가 목록(매니페스트)과 같은 볼트를
-  // 가리키게 하려면 본문도 같은 샘플에서 와야 한다. 번들 content.json 을
-  // 직접 읽으면 "예시 비즈니스 보기" 에서 도그푸드 본문이 검색된다.
+  // A static vault's bundled bodies — for search results to point at the same vault
+  // as the list (the manifest), the bodies have to come from the same sample. Reading
+  // the bundled content.json directly makes "view the example business" search the
+  // dogfood bodies.
   const { content: bundledContent } = useStaticVaultSource();
-  /** slug → entry 캐시. docs 배열이 갈려도 key 가 같으면 재사용. */
+  /** slug → entry cache. Reused across a changed docs array whenever the key matches. */
   const cacheRef = useRef<Map<string, DocsBodyEntry>>(new Map());
-  /** 실패한 key — 같은 mtime 에 대한 재시도 폭주 방지 (변경되면 재시도). */
+  /** Keys that failed — prevents a retry stampede for the same mtime (a change retries). */
   const failedKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -104,7 +105,7 @@ export function useDocsBodyIndex({
             if (cancelled) return;
             cache.set(doc.slug, buildBodyEntry(raw, key));
           } catch {
-            // 읽기 실패 문서는 인덱스에서 제외 — 같은 버전 재시도는 skip.
+            // A document that failed to read is left out of the index — the same version is not retried.
             failed.add(key);
             cache.delete(doc.slug);
           }

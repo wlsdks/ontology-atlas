@@ -4,39 +4,42 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 관문 본문 컬럼 상한(`--gateway-page-max`) — 넓은 폭 개정 2탄(2026-08-19)의
- * 불변식.
+ * The gateway body column cap (`--gateway-page-max`) — the invariants of the
+ * second wide-width revision (2026-08-19).
  *
- * 소유자의 2560 스크린샷 실측: 컬럼이 `--page-max`(1600)에서 멈춰 좌우 여백이
- * 각 480px — 화면의 37.5%가 빈 캔버스였다. 네 안 중 소유자가 고른 것은
- * **「관문에서만 넓힌다」** — 2560 에서 [320][1920][320], 다른 화면은 1600
- * 유지. 그래서 `--page-max` 를 올리는 대신 관문 전용 상한을 하나 더 두고,
- * 이 시험이 그 값이 지는 **약속**을 잠근다:
+ * Measured from the owner's 2560 screenshot: the column stopped at `--page-max`
+ * (1600), leaving 480px of margin on each side — 37.5% of the screen was empty
+ * canvas. Of four options the owner chose **"widen the gateway only"** —
+ * [320][1920][320] at 2560, every other screen stays at 1600. So instead of
+ * raising `--page-max`, a gateway-only cap was added, and this test locks the
+ * **promises** that value carries:
  *
- *  (a) **값 = 1920px** — 소유자 선택값. 무대 폭 게이트가 바닥 48rem 을
- *      못박는 것과 같은 형식의 결정값 고정이다.
- *  (b) **≤1920 무회귀 불변식 — 상한 ≥ `--page-max`** — 원점 공식이
- *      `max(홈통, (vw − 상한)/2)` 이고 컬럼이 `min(vw − 2×홈통, 상한)` 이라,
- *      상한이 `--page-max` 이상인 한 vw ≤ `--page-max` + 2×홈통(= 2000)
- *      구간에서는 종전 공식과 **바이트 동일한** 원점·컬럼이 나온다(양쪽 다
- *      홈통이 이기고 컬럼은 vw − 2×홈통). 이 성질이 깨지면 게이트가 지키는
- *      1440–1920 폭의 렌더가 조용히 움직인다.
- *  (c) **원점과 컬럼은 같은 상한을 읽는다** — `--gateway-origin` 공식이 이
- *      토큰을 소비한다. 한쪽만 바꾸면 컬럼은 넓어지는데 원점이 옛 수를 중앙
- *      삼아 좌우가 비대칭이 된다 — 「다섯 원소가 같은 x · 좌우 동일」을 지키는
- *      전제가 이 짝이다.
- *  (d) **컬럼 상한의 진실원은 하나다** — `PAGE_COLUMN`(shared/lib/
- *      gateway-frame.ts)이 이 토큰을 소비하고, 관문 표면 코드에
- *      `max-w-[var(--page-max)]` 가 남아 있지 않다. 반쪽 이행(컬럼만 넓고
- *      원점은 옛 상한, 또는 그 반대)이 이 저장소가 반복해서 잡아 온 그
- *      드리프트다.
- *  (e) **문서 등재** — `docs/DESIGN-SYSTEM.md` 관문 표에 같은 값이 있다.
- *      값이 코드에만 있으면 규격이 아니라 우연이다.
+ *  (a) **Value = 1920px** — the owner's chosen value. The same form of pinned
+ *      decision as the stage-width gate pinning a 48rem floor.
+ *  (b) **No-regression invariant at ≤1920 — cap ≥ `--page-max`.** The origin
+ *      formula is `max(gutter, (vw − cap)/2)` and the column is
+ *      `min(vw − 2×gutter, cap)`, so as long as the cap is at least `--page-max`,
+ *      every vw ≤ `--page-max` + 2×gutter (= 2000) yields **byte-identical**
+ *      origin and column to the old formula (in both, the gutter wins and the
+ *      column is vw − 2×gutter). Break this property and the 1440–1920 renders the
+ *      gate protects move silently.
+ *  (c) **Origin and column read the same cap** — the `--gateway-origin` formula
+ *      consumes this token. Change only one and the column widens while the origin
+ *      centres on the old number, making the sides asymmetric — this pairing is the
+ *      premise behind "five elements on the same x, sides equal".
+ *  (d) **One source of truth for the column cap** — `PAGE_COLUMN`
+ *      (shared/lib/gateway-frame.ts) consumes this token, and no
+ *      `max-w-[var(--page-max)]` remains in gateway surface code. A half migration
+ *      (column widened, origin still on the old cap, or the reverse) is the drift
+ *      this repository has caught repeatedly.
+ *  (e) **Documented** — the gateway table in `docs/DESIGN-SYSTEM.md` carries the
+ *      same value. A value that exists only in code is a coincidence, not a spec.
  *
- * 렌더된 컬럼·원점이 실제로 이 값을 따르는지(그리고 좌우가 같은지)는
- * `tests/e2e/download-gateway-grid.spec.ts` 가 폭별 rect 로 잰다 — 그 스펙은
- * `--gateway-origin` 계산값을 라이브로 읽으므로 여기 값이 바뀌면 자동으로
- * 따라간다. 여기는 정적 불변식, 거기는 실측이다.
+ * Whether the rendered column and origin actually follow this value (and whether
+ * the sides match) is measured per width with rects by
+ * `tests/e2e/download-gateway-grid.spec.ts` — that spec reads the computed
+ * `--gateway-origin` live, so it follows automatically when this value changes.
+ * Static invariants here; measurement there.
  */
 
 const repoRoot = join(import.meta.dirname, "..", "..");
@@ -105,7 +108,7 @@ describe("관문 본문 컬럼 상한 — --gateway-page-max 의 불변식", () 
     const strays: string[] = [];
     for (const dir of gatewayDirs) {
       for (const file of walk(dir)) {
-        // 주석의 계보 서술이 아니라 className 문자열의 소비만 잡는다.
+        // Catches consumption in className strings, not lineage described in comments.
         if (readFileSync(file, "utf8").includes("max-w-[var(--page-max)]")) {
           strays.push(relative(repoRoot, file).replace(/\\/g, "/"));
         }
@@ -119,9 +122,9 @@ describe("관문 본문 컬럼 상한 — --gateway-page-max 의 불변식", () 
 
   it("(e) DESIGN-SYSTEM.md 관문 표에 같은 값이 등재돼 있다", () => {
     const doc = read("docs/DESIGN-SYSTEM.md");
-    // 낱말이 어딘가 흩어져 있는 것으로는 부족하다 — **같은 표 행** 안에서
-    // 토큰과 값이 짝지어 있어야 등재다 (첫 게이트 프로브에서 행 이름만 바꿔도
-    // 초록이던 구멍을 이 정규식이 막는다).
+    // Words scattered anywhere are not enough — the token and value must be paired
+    // **within the same table row** to count as documented (this regex closes the
+    // hole the first gate probe found, where renaming the row alone kept it green).
     const row = new RegExp(`^\\|[^|\\n]*\\|\\s*\`${TOKEN}\`\\s*\\|[^\\n]*\`${gatewayMax}px\``, "m");
     expect(
       row.test(doc),

@@ -11,18 +11,18 @@ import {
 } from '../model/update-state';
 
 /**
- * 앱이 꺼낸 말이지 사용자가 부른 화면이 아니다.
+ * The app spoke; the user did not ask for this screen.
  *
- * 그래서 이 표면의 설계 기준은 "눈에 띄는가" 가 아니라 **"무시하기 쉬운가"** 다.
- * 모달이 아니고, 스크림이 없고, 진행 중인 작업을 막지 않고, 닫기가 항상 한
- * 클릭이다. 업데이트는 급한 적이 없다.
+ * So this surface's design criterion is not "is it noticeable" but **"is it easy to ignore"**. It is
+ * not a modal, has no scrim, blocks no work in progress, and dismissal is always one click. An update
+ * has never been urgent.
  *
- * 절제 헌장을 그대로 따른다 — glow · 배지 · 흔들림 · 그라디언트 없음. 색을 직접
- * 칠하지 않고 `Button` 을 쓰는 것도 같은 이유다: 주 버튼의 인디고는 이미 디자인
- * 시스템이 소유한 결정이고, 여기서 다시 정하면 그 결정이 두 곳으로 갈라진다.
+ * It follows the charter of restraint exactly — no glow, badge, shake, or gradient. Using `Button`
+ * rather than painting colours directly is the same reason: the primary button's indigo is a decision
+ * the design system already owns, and re-deciding it here splits that decision across two places.
  *
- * `checking` 단계는 **그리지 않는다.** 사용자가 시키지 않은 확인을 화면에
- * 보고하는 것은 소음이다 — 결과가 "새 버전 있음" 일 때 처음 말을 건다.
+ * The `checking` stage is **not drawn.** Reporting a check the user did not ask for is noise — it
+ * speaks first when the result is "a new version exists".
  */
 export interface UpdateToastProps {
   readonly phase: UpdatePhase;
@@ -52,7 +52,7 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
         const percent = formatDownloadProgress(phase.received, phase.total);
         return {
           title: t('downloadingTitle', { version: phase.version }),
-          // 총량을 모르면 퍼센트를 지어내지 않고 그 사실만 말한다.
+  // With the total unknown, no percentage is invented; it states only that fact.
           detail: percent ? t('downloadingPercent', { percent }) : t('downloadingUnknown'),
           action: null,
         };
@@ -66,7 +66,7 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
       case 'failed':
         return {
           title: t('failedTitle'),
-          // 실패는 무엇이 실패했는지 말한다. 손으로 받을 길이 남아 있다.
+  // A failure says what failed. A path to download by hand remains.
           detail: phase.message || t('failedBody'),
           action: null,
         };
@@ -75,15 +75,15 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
 
   return (
     <div
-      // 라이브 영역이되 assertive 가 아니다 — 스크린리더 사용자의 흐름도 끊지 않는다.
+  // A live region, but not assertive — it does not break a screen-reader user's flow either.
       role="status"
       aria-live="polite"
       data-testid="app-update-toast"
       data-phase={phase.kind}
       className={cn(
-        // 알림과 **같은 계약**을 탄다 — 화면 오른쪽에 도크가 서면 그만큼
-        // 비켜서고, 지도 우하단 계기 위에도 앉지 않는다(2026-08-16 검수:
-        // 이것만 두 오프셋을 다 무시하고 작성 칸 위에 그대로 앉았다).
+  // Rides the **same contract** as notifications — it steps aside by however much a dock stands on the
+  // right of the screen, and never sits on the map's bottom-right instruments (review 2026-08-16: this
+  // alone ignored both offsets and sat straight on top of the composer).
         'pointer-events-auto fixed bottom-[var(--app-toast-bottom-offset,16px)]',
         'right-[var(--app-toast-right-offset,16px)] z-50 w-[min(22rem,calc(100vw-2rem))]',
         'flex flex-col items-start gap-2 rounded-card border border-[color:var(--color-border-strong)]',
@@ -98,9 +98,9 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
           type="button"
           onClick={onDismiss}
           data-testid="app-update-dismiss"
-          /* 제목과 한 줄을 이루는 토스트 헤더 행 — 바닥 24(`min-h-6`)는 램프가
-             내고, `-m-1 p-1` 이 시각 발자국을 글자 크기로 되돌린다. coarse 의
-             44 는 `.touch-hit-expand` 가 낸다(아래 CTA 와 세로 여유 ≥12px). */
+          /* The toast header row forming one line with the title — the 24 floor (`min-h-6`) comes from
+             the ramp, and `-m-1 p-1` returns the visual footprint to the text size. The coarse 44 is
+             produced by `.touch-hit-expand` (≥12px of vertical clearance from the CTA below). */
           className={controlClass({
             shape: 'link',
             tone: 'muted',

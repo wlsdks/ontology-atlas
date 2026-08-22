@@ -1,15 +1,18 @@
 /**
- * 브랜드 자산 생성기 — `src/shared/ui/brand-mark.tsx` 의 좌표에서 **전부** 파생한다.
+ * Brand asset generator — **everything** derives from the coordinates in
+ * `src/shared/ui/brand-mark.tsx`.
  *
- * 자산이 여덟 군데(icns · ico · png 4종 · Windows 타일 · 파비콘 · 애플터치 ·
- * 마스터 SVG)에 흩어져 있는데, 각각을 손으로 만들면 다음 변경 때 반드시 몇 개가
- * 뒤처진다. 그래서 좌표 진실원은 컴포넌트 하나이고 이 스크립트가 나머지를 찍어낸다.
+ * The assets are spread across eight places (icns, ico, 4 pngs, Windows tile,
+ * favicon, apple-touch, master SVG), and hand-making each one guarantees some of
+ * them fall behind on the next change. So one component owns the coordinates and
+ * this script stamps out the rest.
  *
- * 래스터는 브라우저(Chrome) 캔버스를 쓴다 — 저장소에 이미지 의존성을 새로 들이지
- * 않기 위해서다. 그래서 이 스크립트는 **SVG 만** 만들고, PNG/icns/ico 조립은
- * `scripts/build-brand-raster.mjs` 가 이어받는다.
+ * Rasterising uses the browser's (Chrome) canvas so the repository gains no new
+ * image dependency. That is why this script emits **SVG only**; assembling
+ * PNG/icns/ico is `scripts/build-brand-raster.mjs`.
  *
- * 사양 출처: `docs/DECISIONS.md` 「브랜드 마크 겹 육각형 집행 사양」.
+ * Spec source: `docs/DECISIONS.md` 「브랜드 마크 겹 육각형 집행 사양」 (the
+ * nested-hexagon brand mark enforcement spec).
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -32,12 +35,14 @@ const NODES = [
 ];
 
 /**
- * 획 두께 — `src/shared/ui/brand-mark.tsx` 의 `BRAND_STROKES` 와 **같아야 한다**.
+ * Stroke widths — **must equal** `BRAND_STROKES` in
+ * `src/shared/ui/brand-mark.tsx`.
  *
- * .mjs 는 .tsx 를 import 할 수 없어 값을 복제한다. 복제본은 반드시 어긋나므로
- * `tests/contract/brand-asset-parity.contract.test.ts` 가 두 쪽이 그린 SVG 를
- * 실제로 비교해 잠근다 — 값 비교가 아니라 **출력 비교**라, 값을 맞춰 놓고 다른
- * 데를 고치는 경우도 걸린다.
+ * A .mjs file cannot import a .tsx one, so the values are duplicated. Duplicates
+ * always drift, so `tests/contract/brand-asset-parity.contract.test.ts` locks
+ * them by comparing the SVG both sides actually draw — an **output** comparison
+ * rather than a value comparison, which also catches keeping the values in sync
+ * while changing something else.
  */
 export const STROKES = {
   outer: 18,
@@ -53,29 +58,32 @@ export const STROKES = {
 };
 
 /**
- * 단색 브랜드 컬러 — 컴포넌트의 `BRAND_MARK_SOLID` 와 같다.
+ * Solid brand colour — equals the component's `BRAND_MARK_SOLID`.
  *
- * 2026-08-18 오전에 인디고에서 잉걸(`#C14A24`)로 갈았다가 같은 날 **소유자가
- * 되돌렸다**. 구운 자산(아이콘·파비콘·og)은 런타임 악센트 스위치를 못 따라오므로,
- * Dock 에 뜨는 색은 언제나 여기서 고른 하나다 — 그래서 기본 악센트가 인디고로
- * 돌아온 이상 이 값도 같이 돌아와야 한다. 아니면 앱 안은 인디고인데 Dock 아이콘
- * 만 구리색인 상태가 된다.
+ * On the morning of 2026-08-18 this moved from indigo to ember (`#C14A24`) and
+ * **the owner reverted it the same day**. Baked assets (icon, favicon, og) cannot
+ * follow a runtime accent switch, so the colour in the Dock is always whichever
+ * single value is chosen here — once the default accent returned to indigo this
+ * had to return with it, otherwise the app is indigo inside while the Dock icon
+ * alone is copper.
  */
 export const BRAND_SOLID = '#5E6AD2';
 
 /**
- * 브랜드 자산 전용 단일 hue 램프. `forbidden.md` 가 «앱 화면 밖(OS 아이콘 ·
- * 파비콘 · og)에서만, 한 색의 밝기 램프까지» 로 열어 둔 그 예외다.
+ * Single-hue ramp for brand assets only — the exemption `forbidden.md` opens
+ * for "outside app screens (OS icon, favicon, og), and only as a brightness ramp
+ * of one colour".
  *
- * 값은 인디고 한 색의 밝기 램프다 — `forbidden.md` 가 «다른 색을 새로 들이거나
- * 여러 색을 섞는 그라디언트는 브랜드 자산에서도 금지» 라고 못박은 그 한 줄을
- * 지키는 형태다. (2026-08-18 에 잉걸 회전값 `#E46238` → `#A83E1D` 로 갔다가
- * 악센트가 인디고로 되돌아오면서 함께 되돌아왔다.)
+ * These values are a brightness ramp of one indigo, which is what keeps the
+ * companion rule that `forbidden.md` pins: introducing a new colour, or a
+ * gradient mixing several, is forbidden in brand assets too. (On 2026-08-18 it
+ * went to the ember rotation `#E46238` → `#A83E1D` and came back when the accent
+ * returned to indigo.)
  */
 export const GRADIENT_FROM = '#787EF6';
 export const GRADIENT_TO = '#3E4BDF';
 
-/** 그라디언트는 userSpaceOnUse — 마크 바운딩박스 대각선을 따라 흐른다. */
+/** The gradient is userSpaceOnUse — it runs along the mark's bounding-box diagonal. */
 const gradientDef = (id) =>
   `<defs><linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="82.8" y1="56" x2="429.2" y2="456">` +
   `<stop offset="0" stop-color="${GRADIENT_FROM}"/><stop offset="1" stop-color="${GRADIENT_TO}"/>` +
@@ -83,7 +91,7 @@ const gradientDef = (id) =>
 
 /**
  * @param {'full'|'compact'|'micro'} detail
- * @param {{ paint?: string, withDash?: boolean }} opts  paint 생략 시 그라디언트
+ * @param {{ paint?: string, withDash?: boolean }} opts  omitting paint uses the gradient
  */
 export function markBody(detail, { paint, withDash = true } = {}) {
   const id = 'atlasMark';
@@ -130,15 +138,18 @@ export function markSvg(detail, opts = {}) {
 }
 
 /**
- * 마크가 실제로 칠하는 잉크의 세로 길이(512 좌표계) — 바깥 육각형 + 획 절반.
+ * Vertical extent of the ink the mark actually paints (512 coordinate space) —
+ * the outer hexagon plus half a stroke.
  *
- * **뷰박스가 아니라 이것이 마크의 크기다.** 512 뷰박스 안에서 잉크는 세로 418
- * 밖에 안 되고(육각형이 세로로 400, 획이 ±9), 나머지 94 는 빈 여백이다. 그래서
- * 뷰박스를 판의 81% 로 맞추면 눈에 보이는 마크는 **65.8%** 가 된다 — 정확히
- * 그것이 1차 구현이 "좀 작다" 는 실보고를 받은 이유다.
+ * **This, not the viewBox, is the mark's size.** Inside a 512 viewBox the ink is
+ * only 418 tall (the hexagon is 400, the stroke ±9); the remaining 94 is empty
+ * margin. Fitting the viewBox to 81% of the plate therefore renders a visible
+ * mark of **65.8%** — exactly why the first implementation drew a "it's a bit
+ * small" report.
  *
- * 잉크 높이는 detail 마다 다르다(축약형·미형은 획이 굵다). 높이를 기준으로
- * 재면 사다리 전체에서 **보이는 크기가 같게** 유지된다.
+ * Ink height differs per detail level (compact and micro have thicker strokes).
+ * Measuring by ink height keeps the **visible size constant** across the whole
+ * ladder.
  */
 const INK_HEIGHT = {
   full: 400 + STROKES.outer,
@@ -146,21 +157,23 @@ const INK_HEIGHT = {
   micro: 400 + STROKES.microOuter,
 };
 
-/** 잉크 세로가 판에서 차지하는 비율 — 카운슬 집행 사양. */
+/** Share of the plate the ink height occupies — the council's enforcement spec. */
 const MARK_RATIO = 0.81;
 
 /**
- * 앱 아이콘 — 1024 캔버스 위 824 스쿼클(모서리 186) + **잉크 기준** 마크 81%.
+ * App icon — an 824 squircle (corner 186) on a 1024 canvas, with the mark at 81%
+ * **measured by ink**.
  *
- * 아이콘의 여백은 취향이 아니라 OS 격자에 대한 비율이다. 세로가 긴 육각형이라
- * 기준은 세로다 — 가로로 재면 세로가 판을 넘는다.
+ * An icon's margin is a ratio against the OS grid, not a preference. The hexagon
+ * is taller than wide, so height is the reference — measuring by width pushes the
+ * height past the plate.
  */
 export function appIconSvg({ detail = 'full', withDash = true } = {}) {
   const SIZE = 1024;
   const PLATE = 824;
   const PLATE_XY = (SIZE - PLATE) / 2;
   const scale = (PLATE * MARK_RATIO) / INK_HEIGHT[detail];
-  // 잉크 중심은 뷰박스 중심(256,256)과 같다 — 캔버스 중심으로 보낸다.
+  // The ink centre coincides with the viewBox centre (256,256) — move it to the canvas centre.
   const t = SIZE / 2 - (V / 2) * scale;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" role="img" aria-label="Ontology Atlas">` +
@@ -173,12 +186,13 @@ export function appIconSvg({ detail = 'full', withDash = true } = {}) {
 }
 
 /**
- * 단색(모노크롬) 아이콘 — 라이트/다크.
+ * Monochrome icon — light and dark.
  *
- * 인쇄·워터마크·한 색만 쓸 수 있는 자리를 위한 것이다. 그라디언트를 빼면
- * **획이 유일한 정보 채널**이 되므로 사다리는 전체형을 쓰고, 판과 마크는 서로
- * 뒤집는다. 브랜드 인디고는 여기서 쓰지 않는다 — 단색의 요점이 색을 안 쓰는
- * 것이라, 인디고를 남기면 그건 단색이 아니라 그냥 다른 색 버전이다.
+ * For print, watermarks, and anywhere only one colour is available. Without the
+ * gradient **the stroke is the only information channel**, so this always uses
+ * the full detail level and inverts plate against mark. Brand indigo is not used
+ * here: the point of monochrome is using no colour, and keeping indigo would make
+ * it not monochrome but simply another colour variant.
  */
 export function monoIconSvg(tone = 'light') {
   const plate = tone === 'light' ? '#FFFFFF' : '#0A0B14';
@@ -198,20 +212,18 @@ export function monoIconSvg(tone = 'light') {
 }
 
 /**
- * 가로형 로고(lockup) — 마크 + 워드마크 + 태그라인.
+ * Horizontal lockup — mark + wordmark + tagline.
  *
- * ## 비율은 마크의 **잉크**에서 나온다
+ * **Proportions derive from the mark's ink.** The mark's ink height is 1, and the
+ * wordmark, tagline, and gaps are sized against it. Fitting to the viewBox makes
+ * the mark alone look small — the same trap as the icon above.
  *
- * 마크의 잉크 높이를 1 로 두고 워드마크·태그라인·간격을 거기 맞춘다. 뷰박스에
- * 맞추면 마크만 작아 보인다 — 아이콘에서 겪은 것과 같은 함정이다.
- *
- * ## 텍스트를 패스로 굽지 않는 이유
- *
- * 글자를 아웃라인으로 바꾸려면 폰트 파서 의존성이 필요한데(`forbidden.md` —
- * 새 dependency 는 이유를 대야 한다), 이 자산 하나를 위해 들일 값이 아니다.
- * 대신 **둘 다 낸다**: 이 SVG 는 살아 있는 텍스트라 어디서나 열리고 편집되며,
- * 픽셀이 정확해야 하는 자리에는 브라우저가 진짜 폰트로 구운 PNG 를 쓴다.
- * 어느 쪽을 쓰는지는 `docs/BRAND.md` 가 정한다.
+ * **Why the text is not baked into paths.** Converting glyphs to outlines needs a
+ * font-parser dependency (`forbidden.md` — a new dependency must state its
+ * reason), and that is not worth it for one asset. Both forms ship instead: this
+ * SVG keeps live text so it opens and edits anywhere, and where pixels must be
+ * exact a browser-baked PNG with the real font is used. `docs/BRAND.md` decides
+ * which one goes where.
  */
 export function lockupSvg({ tone = 'brand', tagline = true } = {}) {
   const ink =
@@ -219,9 +231,10 @@ export function lockupSvg({ tone = 'brand', tagline = true } = {}) {
   const wordFill = tone === 'brand' ? '#F2F3F8' : ink;
   const taglineFill = tone === 'brand' ? BRAND_SOLID : ink;
 
-  // 잉크 높이 1 단위 = 96px. 비율은 **시트 픽셀 실측**이다 — 마크:워드마크 폰트
-  // ≈ 2.9:1, 마크↔글자 간격 0.25. 초안이 2.4:1 로 읽고 워드마크를 29%, 간격을
-  // 50% 키워 놨었다(fable 대조 검증 2026-07-30).
+  // One ink-height unit = 96px. The ratios are **measured off the sheet in
+  // pixels**: mark:wordmark font ≈ 2.9:1, mark-to-text gap 0.25. The draft read it
+  // as 2.4:1 and had the wordmark 29% and the gap 50% too large (cross-checked
+  // 2026-07-30).
   const INK = 96;
   const scale = INK / INK_HEIGHT.full;
   const markW = (346.4 + STROKES.outer) * scale;
@@ -231,7 +244,7 @@ export function lockupSvg({ tone = 'brand', tagline = true } = {}) {
   const textX = markW + gap;
   const W = Math.round(textX + wordSize * 12);
   const H = Math.round(INK * (tagline ? 1.12 : 1));
-  // 마크 잉크의 세로 중심을 로크업 중심에 맞춘다.
+  // Align the vertical centre of the mark's ink with the lockup's centre.
   const mt = H / 2 - (V / 2) * scale;
   const ml = -(82.8 - STROKES.outer / 2) * scale;
   const baseline = tagline ? H * 0.52 : H * 0.66;
@@ -254,14 +267,15 @@ export function lockupSvg({ tone = 'brand', tagline = true } = {}) {
 }
 
 /**
- * OG 카드 — 링크 미리보기가 그리는 유일한 그림.
+ * OG card — the only image a link preview draws.
  *
- * 크기는 **`app/layout.tsx` 가 선언한 1200×630 그대로**다. 전에는 선언이
- * 1200×630 인데 파일이 1536×1024 여서 비율이 어긋나 있었다(1.905 vs 1.5) —
- * 크롤러가 레터박스를 넣거나 잘라낸다.
+ * The size is **exactly the 1200×630 declared in `app/layout.tsx`**. Previously
+ * the declaration said 1200×630 while the file was 1536×1024, so the aspect
+ * ratios disagreed (1.905 vs 1.5) and crawlers letterboxed or cropped it.
  *
- * 마크와 글자는 로크업과 같은 비율 체계를 쓰되, 이 카드는 **읽히는 거리가
- * 멀어서**(타임라인 썸네일) 태그라인을 한 단 키우고 마크를 크게 잡는다.
+ * Mark and text use the same proportional system as the lockup, but this card is
+ * **read from further away** (a timeline thumbnail), so the tagline goes up one
+ * step and the mark is set larger.
  */
 export function ogImageSvg() {
   const W = 1200;
@@ -287,7 +301,7 @@ export function ogImageSvg() {
   );
 }
 
-/** 앱이 쓰는 폰트와 같은 스택 — Pretendard 가 없는 환경은 시스템 산세리프로 내린다. */
+/** The same stack the app uses — environments without Pretendard fall back to the system sans. */
 const FONT_STACK =
   "Pretendard Variable, Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 

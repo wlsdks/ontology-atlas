@@ -9,18 +9,18 @@ import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 중립 칩의 **면과 호버.** 값 층(`controlClass`)은 모양·크기·글자색만 내고
- * 배경 틴트와 호버는 일부러 소비처에 남긴다(호버 빈도가 모션 예산을 깎으므로).
- * 이 표면에서 네 자리가 같은 문자열을 들고 있었다 — 한 벌로 묶는다.
+ * The neutral chip's **face and hover**. The value layer (`controlClass`) emits shape, size, and
+ * text colour only, deliberately leaving the background tint and hover to the consumer (hover
+ * frequency eats the motion budget). Four slots on this surface held the same string — bundled as one.
  */
 const NEUTRAL_CHIP_SKIN =
   'bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
-/** 인디고 틴트 칩 — 테두리·배경·호버가 아직 램프 밖이라 한 벌로 둔다. */
+/** The indigo tint chip — border, background, and hover are still outside the ramp, so kept as one set. */
 const INDIGO_CHIP_SKIN =
   'border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
-/** 주 행동(인디고 채움) — 같은 이유로 한 벌. */
+/** The primary action (indigo fill) — one set for the same reason. */
 const INDIGO_SOLID_SKIN =
   'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] hover:bg-[color:var(--color-indigo-a28)]';
 
@@ -54,12 +54,12 @@ export const ONTOLOGY_POST_CHANGE_SYNC_LINES = [
 ];
 
 interface Props {
-  /** 클릭 시 useLocalVault.scaffoldOntology() 호출. created/skipped 반환. */
+  /** Calls `useLocalVault.scaffoldOntology()` on click, returning created/skipped. */
   onScaffold: () => Promise<{ created: number; skipped: number }>;
-  /** 현재 vault 의 doc 수 — 0 이면 빈 vault. 0 보다 크면 "기존 vault 에
-   *  starter 추가" 톤으로 보조 메시지 표시. */
+  /** The current vault's document count. 0 means an empty vault; above 0 shows the secondary
+   *  message in the "adding a starter to an existing vault" tone. */
   docCount: number;
-  /** Installed app 에서 선택한 vault 절대경로. 있으면 복사 명령이 바로 실행 가능해진다. */
+  /** The absolute path of the vault chosen in the installed app. With it, the copied command is directly runnable. */
   vaultPath?: string | null;
 }
 
@@ -106,13 +106,12 @@ export function buildOntologyStarterAgentVerifyPrompt(
 }
 
 /**
- * mission v2 ontology starter CTA — vault 폴더 선택 후 비어 있으면 prominent
- * 카드, 이미 있으면 작은 보조 버튼. 사용자 비전 ("비개발자도 같이") 의
- * 핵심 진입점 — 터미널 / npm 없이 5 md 시드 + .mcp.json +
- * .codex/config.toml 작성.
+ * The ontology starter CTA — a prominent card when the chosen vault folder is empty, a small
+ * secondary button when it is not. The key entry point for "non-developers too": five seeded md
+ * files plus `.mcp.json` and `.codex/config.toml`, with no terminal and no npm.
  *
- * AI agent (Claude Code 등) 등록 안내는 scaffold 후 toast 로 띄우는 게
- * 자연스럽지만 이 컴포넌트는 결과만 emit — 호출자 (DocsVaultPage) 가 toast.
+ * This component only emits the result; the caller (DocsVaultPage) raises the toast that explains
+ * registering an AI agent.
  */
 export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: Props) {
   const t = useTranslations('featuresMisc.starterCta');
@@ -182,7 +181,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         : t('copyJsonGateLabel');
 
   if (isEmpty) {
-    // 빈 vault — 큰 카드로 "여기서 시작" 안내
+    // Empty vault — a large card saying "start here".
     return (
       <section
         aria-label={t('emptyAriaLabel')}
@@ -277,10 +276,10 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
             {copyCliLabel}
           </button>
           {/*
-            2026-08-03 체계석이 `tone: 'success'` 를 글자 역할 토큰(a94)으로
-            재지정하면서 이 자리가 램프로 돌아왔다. 틴트 표면·보더는 신호
-            사다리의 자리 고유 값이라 className 이 진다(DependencyPicker 의
-            warning 필과 같은 문법).
+            When `tone: 'success'` was redefined against the text role token (a94) on 2026-08-03,
+            this slot returned to the ramp. The tint surface and border are values specific to this
+            slot on the signal ladder, so className wins (the same grammar as DependencyPicker's
+            warning pill).
           */}
           <button
             type="button"
@@ -322,7 +321,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     );
   }
 
-  // 이미 vault 에 .md 가 있는 경우 — 작은 보조 옵션
+  // The vault already has `.md` files — a small secondary option.
   return (
     <div className="grid gap-2">
       <button

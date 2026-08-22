@@ -11,9 +11,10 @@ import { controlClass } from "@/shared/ui/control-class";
  * Full-detail A1 "reach = sentence instrument" — replaces the rejected
  * query-builder (from/to/both direction × 1/2/3-step segments) with a
  * single outward-reach sentence + a clickable 1/2/3 step selector + a
- * per-domain engraved bar breakdown (indigo reserved for the self domain —
- * `.claude/rules/design.md` "hub/container 만 보조 톤" 원칙과 별개로 이 바는
- * self/other 구분용 유일한 인디고 사용처).
+ * per-domain engraved bar breakdown. Indigo is reserved for the self domain:
+ * separately from `.claude/rules/design.md`'s 「hub/container 만 보조 톤」
+ * (only hub/container get a supporting tone) principle, this bar is the sole
+ * place indigo is used, to separate self from other.
  */
 export interface FullDetailA1ReachLabels {
   leadIn: string;
@@ -85,7 +86,7 @@ export function FullDetailA1ReachPanel({
                 shape: "chip",
                 size: "xs",
                 className: [
-                  // 4px 는 더 이상 램프 밖 예외가 아니다 — `--radius-micro` 등재(2026-08-03).
+                  // 4px is no longer an off-ramp exception — registered as `--radius-micro` (2026-08-03).
                   "px-1 py-0.5",
                   candidate === step
                     ? "border-[color:var(--topology-v2-indigo-border)] text-[color:var(--topology-v2-indigo-bright)]"
@@ -145,10 +146,10 @@ function DomainBarRow({
       >
         {displayName}
       </span>
-      {/* eslint-disable-next-line no-restricted-syntax -- 3px 높이 게이지 트랙의 2px 헤어라인 반경은 chip(6px) 밖 예외. */}
+      {/* eslint-disable-next-line no-restricted-syntax -- the 2px hairline radius of a 3px-tall gauge track is an exception outside chip(6px). */}
       <span className="relative h-[3px] overflow-hidden rounded-[2px] bg-[color:var(--topology-v2-panel-border)]">
         <span
-          // eslint-disable-next-line no-restricted-syntax -- 위 게이지 트랙과 짝인 fill 의 2px 헤어라인 반경.
+          // eslint-disable-next-line no-restricted-syntax -- the fill paired with the gauge track above, same 2px hairline radius.
           className="absolute inset-y-0 left-0 rounded-[2px]"
           style={{
             width: `${widthPercent}%`,

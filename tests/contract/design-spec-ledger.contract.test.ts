@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// 게이트 스크립트와 **같은 모듈**을 부른다. 사본을 만들면 계약이 검사하는
-// 대상이 게이트가 아니라 사본이 된다.
+// Calls **the same module** as the gate script. A copy would make the contract check
+// the copy rather than the gate.
 import {
   censusFor,
   diffCensus,
@@ -12,25 +12,28 @@ import {
 } from "../../scripts/lib/design-spec-census.mjs";
 
 /**
- * 「규격을 바꾸려면 「체계」를 부른다」를 **문서에만 있는 규칙**으로 되돌리지
- * 않기 위한 계약.
+ * Contract keeping 「규격을 바꾸려면 「체계」를 부른다」 (changing a spec means
+ * convening the design-systems seat) from reverting to **a rule that lives only in a
+ * document.**
  *
- * ## 배경 (2026-08-03 규칙 감사 실측)
+ * ## Background (rules audit, measured 2026-08-03)
  *
- * `docs/DESIGN-SYSTEM.md` 의 「시스템을 늘리는 규칙」 3번과 그 트리거 목록
- * (`.claude/rules/design.md`)은 존재했지만 **강제가 없었다.** 값 층 램프를
- * 넓힌 최근 커밋 다섯 중 자기 원장 기록이 있는 것은 하나뿐이었고,
- * `pnpm decisions:check` 는 라우트와 MCP/CLI 계약만 봐서 규격 변경은 그냥
- * 통과했다.
+ * Rule 3 of 「시스템을 늘리는 규칙」 in `docs/DESIGN-SYSTEM.md` and its trigger list
+ * (`.claude/rules/design.md`) both existed, but **nothing enforced them.** Of the
+ * five most recent commits that widened a value-layer ramp, one had a ledger record,
+ * and `pnpm decisions:check` looked only at routes and the MCP/CLI contract, so spec
+ * changes passed straight through.
  *
- * 이 계약이 지키는 것은 넷이다:
+ * This contract protects four things:
  *
- * 1. 트리거 목록이 **정본 문서 한 곳**에만 있고, 게이트가 그것을 읽는다
- * 2. 목록의 모든 경로가 **실재한다** — 없는 파일을 가리키는 목록은 조용히
- *    사라진 규칙이다(이 저장소는 글롭이 0개를 매칭해 규칙이 증발한 전례가 있다)
- * 3. 탐지기가 **빈 집합 위에서 놀지 않는다** — 각 트리거 파일이 오늘 실제로
- *    규격 항목을 갖는다
- * 4. **오탐을 억제한다** — 주석·공백만 바뀐 diff 는 규격 변경이 아니다
+ * 1. The trigger list lives in **one authoritative document** and the gate reads it.
+ * 2. Every path on the list **exists** — a list pointing at a missing file is a rule
+ *    that silently disappeared (this repository has a precedent of a glob matching 0
+ *    files and the rule evaporating).
+ * 3. The detector **does not run on an empty set** — each trigger file really carries
+ *    spec entries today.
+ * 4. **False positives are suppressed** — a diff changing only comments or whitespace
+ *    is not a spec change.
  */
 
 const TRIGGER_SECTION_DOC = SPEC_RULE_DOC as string;
@@ -44,7 +47,7 @@ describe("디자인 규격 → 원장 게이트", () => {
     const gate = readFileSync("scripts/check-decision-record.mjs", "utf8");
     expect(gate).toContain("design-spec-census.mjs");
     expect(gate).toContain("parseTriggerFiles");
-    // 게이트가 자기 목록을 들고 있으면 두 벌이 되고, 어긋나는 쪽이 기본값이 된다.
+    // A gate holding its own list makes two copies, and drift becomes the default.
     for (const path of parseTriggerFiles(readDoc()) as string[]) {
       expect(
         gate.includes(`"${path}"`) || gate.includes(`'${path}'`),

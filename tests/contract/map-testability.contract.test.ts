@@ -4,19 +4,20 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 지도 검사 훅(`window.__atlasMap`)의 계약.
+ * Contract for the map inspection hook (`window.__atlasMap`).
  *
- * ## 왜 계약 테스트인가
+ * **Why a contract test.** This hook is **the only window automation has for
+ * telling the map apart from outside**. If it quietly disappears, or if its gate
+ * comes off, each fails badly in its own way:
  *
- * 이 훅은 **자동화가 지도를 밖에서 구분하기 위한 유일한 창구**다. 창구가 조용히
- * 사라지거나 게이트가 풀리면 두 가지가 각각 나쁘게 실패한다:
+ * - Window gone → the harness does not die with "node not found"; it **falls back
+ *   to the old method (cursor sweeping), pushes the background, and reports "it
+ *   isn't slow here".** That wrong answer was given six times on 2026-07-31.
+ * - Gate (the `e2e` query) gone → the diagnostic window is attached **for every
+ *   user**.
  *
- * - 창구가 사라지면 → 하네스가 "노드를 못 찾음" 으로 죽는 게 아니라 **옛 방식
- *   (커서 훑기)으로 되돌아가 배경을 밀며 «안 느린데요» 를 낸다.** 2026-07-31 에
- *   그 오답을 여섯 번 냈다.
- * - 게이트(`e2e` 쿼리)가 풀리면 → 진단 창구가 **모든 사용자에게** 붙는다.
- *
- * lint 로는 못 잡는다 — 값 규칙이 아니라 «이 코드가 존재하고 조건부인가» 라서다.
+ * Lint cannot catch either: this is not a value rule but "does this code exist and
+ * is it conditional".
  */
 const LOOP = join(
   process.cwd(),
@@ -28,7 +29,7 @@ const source = readFileSync(LOOP, "utf8");
 describe("지도 검사 훅 (window.__atlasMap)", () => {
   it("`e2e` 쿼리가 있을 때만 붙는다 — 상시 노출이 아니다", () => {
     expect(source).toContain("__atlasMap");
-    // 게이트가 이 형태여야 한다. 조건을 지우면 진단 창구가 제품 표면이 된다.
+    // The gate must have this shape. Delete the condition and the diagnostic window becomes product surface.
     expect(source).toMatch(/URLSearchParams\(window\.location\.search\)\.has\("e2e"\)/);
   });
 
@@ -37,17 +38,18 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   });
 
   /**
-   * 이 목록이 곧 「밖에서 구분 가능한 것」의 사정거리다. 하나가 빠지면 그만큼
-   * 자동 검사의 사각지대가 생기고, 그 사각지대에서 사람이 대신 화면을 봐야 한다.
+   * This list is the reach of what can be distinguished from outside. Each missing
+   * entry is a blind spot for automated checking, and in that blind spot a person has
+   * to look at the screen instead.
    */
   const REQUIRED_ACCESSORS = [
-    "nodes:", // 무엇이 어디에 있고 무엇을 끌 수 있나
-    "edges:", // 선이 어디로 지나가나 — 지도가 «그래프로서» 읽히는지의 유일한 입력
-    "interaction:", // 지금 끄는 것이 노드인가 배경인가 ← 사고의 핵심
-    "backing:", // 해상도 캡이 실제로 걸렸나
-    "camera:", // 지도가 어디를 보고 있나
-    "selection:", // 무엇이 골라져 있나
-    "chips:", // 칩의 주장과 실제가 같은가
+    "nodes:", // What is where, and what can be dragged
+    "edges:", // Where the lines run — the only input for whether the map reads *as a graph*
+    "interaction:", // Is the current drag a node or the background — the core of the incident
+    "backing:", // Is the resolution cap actually applied
+    "camera:", // Where the map is looking
+    "selection:", // What is selected
+    "chips:", // Does a chip's claim match reality
   ] as const;
 
   it.each(REQUIRED_ACCESSORS)("`%s` 창구가 있다", (accessor) => {
@@ -55,31 +57,35 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   });
 
   it("엣지는 컨트롤 포인트까지 낸다 — 현선을 재면 화면에 없는 교차를 센다", () => {
-    // 드로우 경로는 `quadraticCurveTo` 다. 끝점만 노출하면 가독성 계기가 지도가
-    // 아니라 자기 근사치를 재게 되고, 그 오차는 조용하다(숫자가 나오니까).
-    // 3D 보기(2026-08-18)부터 컨트롤 포인트도 드로우(`projectEdgePoints`)와
-    // 같은 끝점 오프셋 평균을 탄다 — 꺼져 있으면 오프셋 0 으로 종전과 동일.
+    // The draw path is `quadraticCurveTo`. Exposing only the endpoints makes the
+    // readability instrument measure its own approximation rather than the map, and
+    // that error is silent (a number still comes out). Since the 3D view
+    // (2026-08-18) the control point also takes the same endpoint-offset average as
+    // draw (`projectEdgePoints`) — with 3D off the offset is 0 and behaviour is
+    // unchanged.
     expect(source).toContain("controlX: toScreenX(e.controlX + (offA.dx + offB.dx) / 2)");
     expect(source).toContain("controlY: toScreenY(e.controlY + (offA.dy + offB.dy) / 2)");
   });
 
   it("노드는 화면 반지름을 낸다 — 겹침은 반지름 없이 셀 수 없다", () => {
-    // 그리는 쪽과 **같은 식**이어야 한다: radiusForKind × magnitudeScale × 카메라
-    // 배율 (× 3D 프레임의 원근 배율 s — 드로우와 동일, 2D 는 1).
+    // Must be **the same expression** as the drawing side: radiusForKind ×
+    // magnitudeScale × camera zoom (× the 3D frame's perspective factor s — identical
+    // to draw; 1 in 2D).
     expect(source).toMatch(
       /radius:\s*tokens\s*\n?\s*\?\s*radiusForKind\(n\.kind, tokens\) \*\s*\n?\s*n\.magnitudeScale \*\s*\n?\s*camera\.scale\.value \*\s*\n?\s*dOff\.s/,
     );
   });
 
   it("`draggable` 을 노출한다 — 호버 히트와 «잡히는지» 는 다르다", () => {
-    // 커서가 pointer 여도 시뮬에 없으면 잡기가 실패하고 조용히 팬이 된다.
-    // 이 필드가 없으면 하네스는 그 차이를 볼 수 없고, 그게 정확히 그 사고다.
+    // A pointer cursor still fails to grab if the node is absent from the
+    // simulation, and it silently becomes a pan. Without this field the harness
+    // cannot see that difference — which is exactly the incident.
     expect(source).toMatch(/draggable:\s*sim\?\.hasNode/);
   });
 
   it("칩은 주장과 실제를 나란히 낸다", () => {
-    // `claimedCount` 만 있고 `shownChildren` 이 없으면 「+24 라 써 놓고 1개만
-    // 그린다」는 어긋남이 밖에서 안 보인다 — 실제로 있었던 결함이다.
+    // With `claimedCount` but no `shownChildren`, the mismatch of "says +24 and draws
+    // 1" is invisible from outside — a defect that actually occurred.
     expect(source).toContain("claimedCount");
     expect(source).toContain("shownChildren");
   });

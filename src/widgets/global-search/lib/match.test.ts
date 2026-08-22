@@ -32,15 +32,15 @@ describe("matchOntologyNodes", () => {
 
   it("title exact > prefix > substring > summary > id 순 점수", () => {
     const r = matchOntologyNodes("세션", corpus);
-    // "세션" 은 title 과 글자까지 같다 — 정확 일치.
+    // "세션" matches the title character for character — an exact match.
     expect(r[0]?.node.id).toBe("session");
     expect(r[0]?.score).toBe(5);
   });
 
   it("정확 일치는 더 최근에 승인된 prefix 매치보다 위다 (2026-08-13 실측 회귀)", () => {
-    // 실측: 「주문」을 치면 도메인 「주문」(정확 일치)이 「주문서 작성」 등
-    // 나중에 승인된 접두 일치 5개 아래 6위였다 — 동점(4) 후 최신순이 정확
-    // 일치를 가라앉혔다. 이름을 끝까지 친 사용자가 찾는 것은 그 이름의 노드다.
+    // Measured: typing 「주문」 put the domain 「주문」 (an exact match) 6th, below five
+    // later-approved prefix matches — after the tie at 4, recency sank the exact
+    // match. Someone who typed a name in full is looking for the node with that name.
     const earlier = new Date("2026-04-01T00:00:00Z");
     const later = new Date("2026-04-27T00:00:00Z");
     const vault = [
@@ -65,8 +65,8 @@ describe("matchOntologyNodes", () => {
     const r = matchOntologyNodes("logout", corpus);
     expect(r).toHaveLength(1);
     expect(r[0]?.node.id).toBe("auth-logout");
-    // title 'logout' 포함이라면 score 3, id-only fallback 이라면 1.
-    // "로그아웃" title 에는 영어 logout 없으니 id fallback.
+    // Score 3 if the title contains 'logout', 1 for the id-only fallback. The title
+    // "로그아웃" has no English logout, so this is the id fallback.
     expect(r[0]?.score).toBe(1);
   });
 
@@ -79,7 +79,7 @@ describe("matchOntologyNodes", () => {
     ];
     const r = matchOntologyNodes("가능", same);
     expect(r).toHaveLength(2);
-    // 같은 점수 (둘 다 substring 매치 = score 3) — 최신 (알파) 가 먼저.
+    // Same score (both substring matches = score 3) — the more recent (alpha) comes first.
     expect(r[0]?.node.id).toBe("b");
     expect(r[1]?.node.id).toBe("a");
   });
@@ -89,8 +89,9 @@ describe("matchOntologyNodes", () => {
     expect(r).toHaveLength(0);
   });
 
-  // 흐름 점검 2026-07-26 D1 — 지도/INDEX 는 `display_ko` 를 그리는데 검색은
-  // canonical title 만 봐서, 화면에서 읽은 한국어 이름을 그대로 치면 0건이었다.
+  // Flow review 2026-07-26 D1 — the map and INDEX draw `display_ko` while search
+  // looked only at the canonical title, so typing the Korean name read off the
+  // screen returned zero results.
   describe("어권별 표시 이름 (display_ko / display_en)", () => {
     const localized = node({
       id: "ontology-core",
@@ -104,7 +105,7 @@ describe("matchOntologyNodes", () => {
       const r = matchOntologyNodes("온톨로지 코어", [localized]);
       expect(r).toHaveLength(1);
       expect(r[0]?.node.id).toBe("ontology-core");
-      // 화면에 보이는 이름은 title 과 동급 — 표시 이름 정확 일치도 5.
+    // The name visible on screen ranks with the title — an exact display-name match also scores 5.
       expect(r[0]?.score).toBe(5);
     });
 
@@ -120,7 +121,7 @@ describe("matchOntologyNodes", () => {
     });
 
     it("한국어 화면에서도 다른 어권 이름으로 찾힌다", () => {
-      // display 는 ko 로 해석돼 있어도 en 이름이 검색에서 사라지면 안 된다.
+    // Even with display resolved as ko, the en name must not vanish from search.
       const koScreen = node({
         id: "cap-payments",
         title: "결제",
@@ -184,7 +185,7 @@ describe("matchOntologyNodes", () => {
     });
 
     it("project 필터 — 노드의 projectIds 중 적어도 하나 매치 (OR within node)", () => {
-      // elem-1 은 [iam, knowledge] 둘 다 — 어느 한쪽 set 이어도 매치.
+    // elem-1 carries both [iam, knowledge] — either set matches.
       const iam = matchOntologyNodes("", filterCorpus, 30, {
         projectIds: new Set(["demo-iam"]),
       });
@@ -267,7 +268,7 @@ describe("matchProjects", () => {
 
   it("name prefix > substring 우선", () => {
     const r = matchProjects("ia", corpus);
-    expect(r[0]?.project.slug).toBe("demo-iam"); // "IAM" prefix 매치
+    expect(r[0]?.project.slug).toBe("demo-iam"); // an "IAM" prefix match
     expect(r[0]?.score).toBe(4);
   });
 

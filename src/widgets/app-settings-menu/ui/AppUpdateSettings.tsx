@@ -12,30 +12,32 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
 
 /**
- * 「앱」 — 지금 쓰는 버전과 **직접 누르는 갱신 확인.**
+ * 「앱」 (app) — the version in use and **an update check you press yourself.**
  *
- * ## 왜 없었나 (2026-08-20 소유자 지적)
+ * ## Why it was missing (owner report, 2026-08-20)
  *
- * 자동 확인과 우하단 토스트는 2026-07-27 부터 있었다. 그런데 **사용자가 직접
- * 누를 길이 없었다** — `useAppUpdate` 가 `check(manual)` 을 내주는데 저장소
- * 전체에서 그것을 부르는 곳이 **0곳**이었고, 「최신이에요」(`current` 단계)는
- * 토스트가 `null` 로 되돌려서 **그려질 수조차 없었다.** 설계는 다 해 두고
- * 배선을 안 한 상태였다.
+ * Automatic checking and the bottom-right toast have existed since 2026-07-27. But
+ * **there was no way for the user to press it** — `useAppUpdate` exposes
+ * `check(manual)` and **0 places** in the whole repository called it, while
+ * 「최신이에요」 (the `current` stage) **could not even be drawn**, because the toast
+ * returned `null` for it. The design was complete and the wiring was not.
  *
- * 그 사이에 뚫려 있던 구멍: 자동 확인은 **하루 한 번**이고 거절은 그 버전에
- * 한해 기억된다. 즉 한 번 「나중에」를 누른 사람은 다음 버전이 나오기 전까지
- * 갱신에 **접근할 방법이 아예 없었다.**
+ * The hole that left open: automatic checks run **once a day** and a dismissal is
+ * remembered for that version. So anyone who pressed 「나중에」 once had **no way to
+ * reach an update at all** until the next version shipped.
  *
- * ## 왜 여기서 설치까지 안 하나
+ * ## Why installation does not happen here
  *
- * 내려받기·설치·재시작은 이미 토스트가 한다. 같은 흐름을 두 벌 만들면 진행률이
- * 두 곳에서 각각 그려지고, 어느 쪽이 진짜인지 아무도 모른다. 이 칸이 하는 일은
- * **확인을 시작하는 것** 하나이고, 결과는 늘 같은 자리(토스트)에서 이어진다.
+ * Download, install and restart are already handled by the toast. Building the same
+ * flow twice draws progress in two places and nobody knows which is real. This
+ * pane's one job is **starting the check**, and the result always continues in the
+ * same place (the toast).
  *
- * ## 웹에서는 그리지 않는다
+ * ## Not drawn on the web
  *
- * 브라우저 탭은 자기를 교체할 수 없다. 거기서 갱신을 말하는 것은 **할 수 없는
- * 일을 제안하는 것**이라, 강등 카드조차 두지 않고 절 자체가 없다.
+ * A browser tab cannot replace itself. Talking about updates there **offers
+ * something we cannot do**, so there is not even a degradation card — the section
+ * simply does not exist.
  */
 export function AppUpdateSettings() {
   const t = useTranslations('nav.settingsMenu.appUpdate');
@@ -43,8 +45,8 @@ export function AppUpdateSettings() {
   const [version, setVersion] = useState<string | null>(null);
 
   /*
-   * 지금 도는 버전은 **번들이 아는 값**에서 가져온다. 빌드 상수를 쓰면 「내가
-   * 지금 쓰는 것」이 아니라 「이 소스가 만들어질 때의 것」을 말하게 된다.
+   * The running version comes from **what the bundle knows**. A build constant would
+   * state "what this source was when it was built" rather than "what I am running".
    */
   useEffect(() => {
     if (!isDesktopShell()) return;
@@ -55,7 +57,7 @@ export function AppUpdateSettings() {
         if (alive) setVersion(value);
       })
       .catch(() => {
-        // 못 읽으면 버전 줄을 안 그린다 — 모르는 값을 지어내지 않는다.
+        // If it cannot be read, the version line is not drawn — no value is invented.
       });
     return () => {
       alive = false;
@@ -67,8 +69,8 @@ export function AppUpdateSettings() {
   const phase = update.phase;
   const checking = phase.kind === 'checking';
   /*
-   * **무엇을 말하나** — 잰 것만 말한다. 아직 안 눌렀으면 결과 줄이 없다.
-   * `available` 뒤에는 토스트가 이어받으므로 여기서는 그 사실만 알린다.
+   * **What it says** — only what was measured. Before a press there is no result
+   * line. After `available`, the toast takes over, so this only announces the fact.
    */
   const outcome = (() => {
     switch (phase.kind) {

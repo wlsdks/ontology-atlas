@@ -1,10 +1,10 @@
-// MCP 도구 핸들러 통합 test (R11 #20).
+// Integration tests for the MCP tool handlers.
 //
-// verify.mjs 의 spawn + stdio JSON-RPC 패턴을 test framework 에 옮김. tmp
-// vault 만들어 server boot → 도구 호출 → response 검증 → cleanup.
+// Ports verify.mjs's spawn + stdio JSON-RPC pattern into the test framework:
+// build a tmp vault, boot the server, call a tool, check the response, clean up.
 //
-// 단위 helper test (parser / vault / redirect-backlinks 등) 가 cover 하지
-// 않는 *도구 핸들러 자체* 의 input → routing → output 흐름 회귀 차단.
+// Covers what the unit helper tests (parser, vault, redirect-backlinks, …) do not:
+// the input → routing → output flow of the tool handlers themselves.
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
@@ -98,8 +98,8 @@ function makeVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), "ontology-atlas-int-"));
   for (const [index, { slug, content }] of seed.entries()) {
     const fullPath = join(root, `${slug}.md`);
-    // subdir slug ("capabilities/foo") 도 자동 mkdir — fixture writer 가
-    // top-level 외에도 자유롭게 디렉터리 구조 표현 가능.
+    // Subdirectory slugs ("capabilities/foo") get their directories created too,
+    // so a fixture writer can express any structure, not only top-level files.
     mkdirSync(dirname(fullPath), { recursive: true });
     const seededContent = /^---\r?\n/.test(content) && /(?:^|\r?\n)kind\s*:/m.test(content) && !/(?:^|\r?\n)uid\s*:/m.test(content)
       ? content.replace(
@@ -113,8 +113,9 @@ function makeVault(seed = []) {
 }
 
 /**
- * tmp vault 에 server spawn → requests JSON-RPC 로 보내고 모든 응답 수집.
- * 1.5s timeout 후 SIGTERM. 응답 = JSON.parse 가능한 stdout line 들.
+ * Spawns the server on a tmp vault, sends the requests as JSON-RPC, and collects
+ * every response. SIGTERM after a 1.5s timeout. Responses are the stdout lines
+ * that JSON.parse accepts.
  */
 function rpc(vaultRoot, requests, timeoutMs = 1500, extraEnv = {}) {
   return new Promise((resolveP, rejectP) => {
@@ -164,16 +165,17 @@ function rpcForRepo(vaultRoot, repoRoot, requests, timeoutMs = 1500, extraEnv = 
 }
 
 /**
- * ⚠️ **`2024-11-05` 은 낡은 상수가 아니라 시험 대상이다.**
+ * ⚠️ **`2024-11-05` is not a stale constant — it is the thing under test.**
  *
- * 이 핸드셰이크는 **가장 오래된 지원 버전**을 일부러 쓴다. 서버가 v2 SDK 로
- * 옮겨간 뒤(2026-07-29)에도 구 클라이언트가 붙는다는 것이 이 파일이 지키는
- * 계약이고, 최신 버전으로 바꾸면 그 계약이 검증되지 않는다 — 통과해도
- * "요즘 클라이언트끼리 잘 통한다" 만 알게 된다.
+ * This handshake deliberately uses the **oldest supported version**. The contract
+ * this file protects is that old clients still connect after the server moved to
+ * the v2 SDK (2026-07-29); bumping to the newest version stops verifying it, and
+ * a pass would only mean "current clients talk to each other".
  *
- * 실측(이관 시점): v2 서버가 이 요청에 `2024-11-05` 로 협상하고
- * `tools/list`·`tools/call` 을 정상 응답한다. SDK 가 언젠가 이 버전을 목록에서
- * 떨구면 여기서 먼저 빨개지고, 그때가 "가장 오래된 지원 버전" 을 올릴 때다.
+ * Measured at migration time: the v2 server negotiates `2024-11-05` for this
+ * request and answers `tools/list` and `tools/call` normally. If the SDK ever
+ * drops this version from its list, this turns red first — and that is when
+ * "oldest supported version" gets raised.
  */
 const INIT_REQUESTS = [
   {
@@ -394,10 +396,10 @@ function assertInstructionToolInventoryMatches(initializeResponse, tools) {
   assert.deepEqual([...inventory.writeNames].sort(), expectedWrite, "inventory write names match tools/list");
 }
 
-// R+ — cycle 39: 단일 도구 (get_concept · add_concept · add_relation) 의
-// description 이 batch 짝 (get_concepts · add_concepts · add_relations) 을
-// 명시 cross-reference. agent 가 tool list 만 보고도 K-round-trip 대안을
-// 인지. drift 시 즉시 회귀.
+// The single tools (get_concept, add_concept, add_relation) must cross-reference
+// their batch counterparts (get_concepts, add_concepts, add_relations) in their
+// descriptions, so an agent reading only the tool list knows the K-round-trip
+// alternative exists. Drift turns this red immediately.
 await test("tools/list — 단일 도구 description 이 batch 짝을 cross-reference", async () => {
   const root = makeVault([]);
   try {
@@ -1976,9 +1978,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
 });
 
 await test("initialize — instructions 필드 (#45) AI agent 안내 노출", async () => {
-  // initialize 응답에 instructions 가 있어야 연결된 agent (Claude Code 등) 가
-  // authorable/reserved kind 경계 / 호출 순서 / write 도구 dry-run 패턴을 즉시 인지. 누락 시
-  // agent 는 매 세션 시행착오로 학습 — 명시 가드.
+  // The initialize response must carry instructions, so a connected agent knows
+  // the authorable/reserved kind boundary, the call order, and the write tools'
+  // dry-run pattern immediately. Without them, agents relearn all of it by trial
+  // and error every session.
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, INIT_REQUESTS);
@@ -1990,7 +1993,7 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
       instructions.length > 200,
       `instructions 가 의미 있는 길이여야 (got ${instructions.length})`,
     );
-    // 핵심 키워드 — drift 시 즉시 깨짐
+    // Core keywords — drift breaks this at once
     assert.match(instructions, /five authorable kinds/i);
     assert.match(instructions, /vault-readme.*reserved reader kind/i);
     assert.match(instructions, /dry-run|confirm/i);
@@ -2002,9 +2005,9 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
     for (const toolName of EXPECTED_TOOLS) {
       assert.match(instructions, new RegExp(`\\b${toolName}\\b`), `instructions mention ${toolName}`);
     }
-    // R+ — cycle 36: batch tools 가 기본 path 임을 instructions 가 안내해야.
-    // agent 가 per-row K-round-trip 패턴 대신 batch 1-call 을 default 로
-    // 사용하도록 stale 안내 회귀 차단.
+    // The instructions must state that the batch tools are the default path, so
+    // agents reach for one batch call instead of K per-row round trips. Blocks a
+    // regression to stale guidance.
     assert.match(instructions, /add_concepts/);
     assert.match(instructions, /add_relations/);
     assert.match(instructions, /non-object row/);
@@ -2901,7 +2904,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
     assert.ok(result.edges.some((edge) => edge.from === "src/features/auth/index.ts" && edge.to === "src/entities/user/index.ts" && edge.kind === "static"));
     assert.ok(result.edges.some((edge) => edge.from === "src/features/auth/index.ts" && edge.to === "src/shared/api/client.ts"));
     assert.ok(result.externalImports.some((entry) => entry.from === "src/features/auth/index.ts" && entry.spec === "zod"));
-    // 슬러그는 평평한 식별자 (2026-08-01 판정) — 모듈 슬러그는 role 이름만.
+    // Slugs are flat identifiers (decided 2026-08-01) — a module slug is the role name only.
     assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/user" && edge.count >= 1));
     assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/client" && edge.count >= 1));
     assert.equal(result.reconciliationSummary.unresolvedImports, 1);
@@ -2985,8 +2988,8 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
   const vaultRoot = makeVault([
     {
       slug: "capabilities/legacy",
-      // 이 fixture는 "읽을 수 있는데 import가 없음"을 시험한다. path가 없으면
-      // 새 계약상 notJudgeableByImports가 맞고 stale follow-up 시험이 사라진다.
+      // This fixture tests "readable, but no import". Without a path, the new
+      // contract makes it notJudgeableByImports and the stale follow-up test disappears.
       content: "---\nkind: capability\ntitle: Legacy\npath: src/legacy.ts\ndependencies: [capabilities/target]\n---\n",
     },
     {
@@ -4386,11 +4389,12 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
     /*
      * Structurally connected, but the graph still has a finding.
      *
-     * ⚠️ 2026-08-11 — 종전에는 「domain 이 없는 capability」로 소견을 만들었다. 그런데
-     * 이 픽스처의 `domains/core` 가 **그 capability 를 담고 있어서**, 부모가 있는 노드에
-     * 「부모가 없다」고 말하던 그 거짓 양성이 사라지자 이 시험도 같이 초록이 됐다
-     * (`containment-parent`). 시험의 뜻은 「소견이 있으면 healthy 라고 말하지 않는다」이므로
-     * **다른 진짜 소견**으로 바꾼다 — 없는 노드를 가리키는 참조 하나.
+     * ⚠️ 2026-08-11 — the finding used to be "a capability with no domain". But
+     * this fixture's `domains/core` **contains that capability**, so when the
+     * false positive of telling a node with a parent that it has none was fixed
+     * (`containment-parent`), this test went green with it. The point of the test
+     * is "never report healthy while a finding exists", so it now uses **a
+     * different, real finding** — one reference pointing at a node that does not exist.
      */
     { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\ndomain: domains/core\nelements: [elements/worker]\ndepends_on: [capabilities/missing]\n---\n" },
     { slug: "elements/worker", content: "---\nkind: element\ntitle: Worker\ndomain: domains/core\n---\n" },
@@ -4411,10 +4415,11 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
     assert.equal(brief.status, "needs_attention");
     assert.equal(brief.health.validation.summary.warningFiles, 1);
     assert.equal(brief.health.checks.find((check) => check.id === "vault_validation").status, "warn");
-    // 문구가 **무엇을 봤는지** 말한다 (2026-08-01). 종전엔 두 종류의 경고를
-    // 한 숫자로 합쳐 놓아서, `validate` 가 clean 이라고 답한 볼트에 이 검사가
-    // warn 을 붙였을 때 그 수가 어느 쪽인지 알 방법이 없었다. 이 tmp 볼트는
-    // git 저장소 밖이라 코드 경로는 애초에 재지 않았고, 그 사실도 말한다.
+    // The wording states **what was looked at** (2026-08-01). It used to merge two
+    // kinds of warning into one number, so when this check warned on a vault
+    // `validate` called clean, there was no way to tell which kind those were.
+    // This tmp vault is outside a git repository, so code paths were never
+    // measured at all — and it says so.
     const validationAction = brief.nextActions.find((action) => action.id === "vault_validation");
     assert.equal(validationAction.kind, "validate_vault");
     assert.equal(validationAction.severity, "warn");
@@ -4584,8 +4589,9 @@ await test("list_concepts — 100/125/500 pagination boundary contract", async (
 });
 
 await test("list_concepts — domain 필터 (R+)", async () => {
-  // "all capabilities under auth" 같은 흔한 query 를 query_concepts DSL 없이
-  // 한 호출로. capability/element kind 만 의미 있지만 모든 kind 에 일관 적용.
+  // Answers a common query ("all capabilities under auth") in one call without the
+  // query_concepts DSL. Only capability/element kinds are meaningful, but the
+  // filter applies uniformly across kinds.
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -4609,7 +4615,7 @@ await test("list_concepts — domain 필터 (R+)", async () => {
     },
   ]);
   try {
-    // domain=auth 만 — capability 2 + element 1 = 3 (domain 자체는 domain: 없음)
+    // domain=auth only — capability 2 + element 1 = 3 (the domain itself has no domain:)
     const { responses: r1 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { domain: "auth" }),
@@ -4626,7 +4632,7 @@ await test("list_concepts — domain 필터 (R+)", async () => {
     const out2 = getCallParsed(r2, 2);
     assert.equal(out2.total, 2, "domain=auth + kind=capability → 2");
 
-    // 매칭 없는 domain → 빈 결과 (throw 없이)
+    // A domain with no matches → empty result, no throw
     const { responses: r3 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { domain: "totally-unknown" }),
@@ -4639,8 +4645,8 @@ await test("list_concepts — domain 필터 (R+)", async () => {
 });
 
 await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async () => {
-  // agent 가 find_evidence 한 호출로 *어떤 doc 이 reference 하는지* + *그 doc
-  // 이 무슨 내용인지* 둘 다 받음. 추가 get_concept 없이.
+  // One find_evidence call gives an agent both *which docs reference this* and
+  // *what those docs are about*, with no follow-up get_concept.
   const root = makeVault([
     {
       slug: "capabilities/auth",
@@ -4665,16 +4671,16 @@ await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async ()
     for (const m of result.matches) {
       assert.match(m.uid, /^[0-9a-f-]{36}$/, `${m.slug}.uid`);
       assert.equal(typeof m.excerpt, "string");
-      // markdown table syntax / # heading 은 안 들어가야
+      // No markdown table syntax or # heading may appear
       assert.doesNotMatch(m.excerpt, /^#/);
       assert.doesNotMatch(m.excerpt, /^\|/);
     }
-    // domains/billing 매치는 첫 prose 단락 ("결제 도메인 — auth 와 함께...")
+    // The domains/billing match is its first prose paragraph
     const billing = result.matches.find((m) => m.slug === "domains/billing");
     if (billing) {
       assert.match(billing.excerpt, /결제 도메인/);
     }
-    // R+ — read tool 5종 응답 shape 일관성: domain + mtime 동봉
+    // Response-shape consistency across the read tools: domain + mtime included
     for (const m of result.matches) {
       assert.equal(typeof m.mtime, "number", `${m.slug}.mtime number`);
       assert.ok(m.mtime > 0);
@@ -4685,49 +4691,50 @@ await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async ()
 });
 
 /**
- * **잡문이 근거 1등을 차지하면 안 된다** (2026-08-08 실측).
+ * **Loose documents must not take first place in evidence** (measured 2026-08-08).
  *
- * 볼트는 평범한 마크다운 폴더라 회의록·메모·초안이 노드와 같이 산다 — 그건
- * 설계다(`kind:` 가 회원 자격이고, 없으면 그래프 밖이다). 문제는 근거 검색이
- * 그 둘을 **구분하지 않은 채** 섞어서, 본문 매치가 전부 같은 점수(0.3)로
- * 묶이는 순간 정렬이 사실상 **슬러그 알파벳순**이 된다는 것이다.
+ * A vault is an ordinary markdown folder, so meeting notes, memos, and drafts live
+ * alongside nodes — by design (`kind:` is the membership test, and without it a
+ * document is outside the graph). The problem was that evidence search mixed the
+ * two **without distinguishing them**: once every body match scores the same (0.3),
+ * the ordering is effectively **alphabetical by slug**.
  *
- * 실측(잡문 3,000장 볼트): "토큰 발급" 을 물으면 상위 5개가 전부 메모였고
- * 진짜 노드는 하나도 안 나왔다. 작은 볼트에서는 *"근거는 없었음"* 이라고
- * 적힌 커피챗 메모가 근거로 돌아왔다. 그런데 이 도구의 설명문은 에이전트에게
- * *"가장 관련된 **노드**는 matches[0]"* 라고 말한다 — 노드가 아닌 것을
- * 노드라고 부르며 1등으로 건네고 있었다.
+ * Measured on a vault of 3,000 loose documents: asking about "token issuance"
+ * returned five memos in the top five and not one real node. On a small vault, a
+ * coffee-chat memo saying *"there was no evidence"* came back as evidence. Yet this
+ * tool's description tells the agent *"the most relevant **node** is matches[0]"* —
+ * it was calling a non-node a node and handing it over first.
  *
- * 고치는 방향은 «잡문을 감추기» 가 아니다. 사람의 메모가 진짜 근거일 때가
- * 있고, 그걸 숨기면 로컬-퍼스트 약속을 깬다. 대신 셋을 준다:
- * ① 같은 점수면 **노드가 먼저**  ② 행마다 `isNode` 로 정직하게 말하기
- * ③ 에이전트가 좁힐 수 있게 `nodesOnly`.
+ * The fix is not «hide the loose documents». A person's memo is sometimes the real
+ * evidence, and hiding it breaks the local-first promise. Three things instead:
+ * ① on a tie, **nodes first** ② per-row honesty via `isNode` ③ `nodesOnly` so the
+ * agent can narrow.
  */
 /**
- * **그래프 밖 문서를 개념처럼 돌려주면 안 된다** (2026-08-08 실측).
+ * **A document outside the graph must not be returned as a concept** (measured 2026-08-08).
  *
- * `get_concept('notes/coffee-chat')` — frontmatter 가 아예 없는 메모인데
- * 정상 응답이 나왔다: excerpt, 빈 neighbors, 빈 outgoingEdges, 그리고
- * **경고 0건**. frontmatter 가 있고 `kind:` 만 없는 문서에는 `missing-kind`
- * 경고라도 붙는데, frontmatter 가 통째로 없는 진짜 잡문에는 아무 표시가
- * 없었다 — 제일 흔한 경우에 신호가 제일 없다.
+ * `get_concept('notes/coffee-chat')` — a memo with no frontmatter at all — returned
+ * a normal response: an excerpt, empty neighbors, empty outgoingEdges, and **zero
+ * warnings**. A document that has frontmatter but no `kind:` at least gets a
+ * `missing-kind` warning, while genuinely loose prose got no marker whatsoever —
+ * the least signal in the most common case.
  *
- * 도구 이름이 `get_concept` 이므로 응답은 «이건 개념이다» 라고 말하는 셈이다.
- * 거절하지는 않는다(사람의 메모를 읽는 것은 정당하다). 대신 **무엇을 주고
- * 있는지 말한다.**
+ * The tool is named `get_concept`, so the response asserts «this is a concept».
+ * It is not rejected (reading a person's notes is legitimate); it **says what it
+ * is handing over**.
  */
 /**
- * **관계의 양 끝은 노드여야 한다** (2026-08-08 실측).
+ * **Both ends of a relation must be nodes** (measured 2026-08-08).
  *
- * `add_relation({from: 노드, to: "notes/daily/day-1"})` 가 `ok: true` 로
- * 성공했다. 원인은 존재 검사가 «그게 노드인가» 가 아니라 **«그 이름의 .md
- * 파일이 있나»** 를 물은 것이다 — 존재하지 않는 슬러그는 제대로 거절하는데
- * 일기 메모는 통과했다.
+ * `add_relation({from: <node>, to: "notes/daily/day-1"})` succeeded with
+ * `ok: true`. The existence check asked **«is there a .md by that name»** rather
+ * than «is that a node» — so it rejected nonexistent slugs correctly and let a
+ * diary memo through.
  *
- * 사후에 잡히긴 한다(같은 응답의 `danglingReferences`, compile 의
- * `dangling-graph-reference`, maintenance 큐). 하지만 그건 **쓰고 나서**의
- * 이야기이고, 그 사이 그래프에는 컴파일러가 버릴 관계가 적혀 있다. 쓰기 문이
- * 먼저 말하는 편이 싸다.
+ * It is caught afterwards (`danglingReferences` in the same response, compile's
+ * `dangling-graph-reference`, the maintenance queue). But that is **after the
+ * write**, and in between the graph holds a relation the compiler will discard.
+ * The write gate saying it first is cheaper.
  */
 await test("add_relation — 그래프 밖 문서는 관계 끝이 될 수 없다", async () => {
   const root = makeVault([
@@ -4749,7 +4756,7 @@ await test("add_relation — 그래프 밖 문서는 관계 끝이 될 수 없�
     ]);
     const text = getCallText(responses, 2);
     assert.match(text, /Error/i, `잡문을 관계 끝으로 받아 줬다: ${text}`);
-    // 왜 안 되는지 + 어디로 가면 되는지 — 이 저장소의 강등 문법.
+    // Why it cannot happen, and where to go instead — this repository's refusal grammar.
     assert.match(text, /not a graph node|kind/i, `이유를 안 말한다: ${text}`);
     assert.match(text, /absorb_document|add_concept|kind:/i, `길을 안 알려준다: ${text}`);
   } finally {
@@ -4780,9 +4787,9 @@ await test("get_concept — 그래프 밖 문서는 그렇다고 말한다", asy
       `그래프 밖이라는 말이 없다: ${JSON.stringify(junk.warnings)}`,
     );
 
-    // 진짜 노드는 그대로다 — 이 수리가 정상 경로에 소음을 더하면 안 된다.
-    // (다른 정당한 경고까지 금지하지는 않는다. 「그래프 밖」 이라는 말이
-    //  붙지 않는 것이 이 시험이 지키는 것이다.)
+    // Real nodes are untouched — this repair must add no noise to the normal path.
+    // (Other legitimate warnings are not forbidden; what this test protects is
+    //  that the words "outside the graph" do not appear on them.)
     const node = getCallParsed(responses, 3);
     assert.equal(node.isNode, true);
     assert.ok(
@@ -4796,7 +4803,7 @@ await test("get_concept — 그래프 밖 문서는 그렇다고 말한다", asy
 
 await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, 행마다 isNode", async () => {
   const root = makeVault([
-    // 슬러그 알파벳순으로는 잡문이 이긴다(aaa… < capabilities/…).
+    // By slug alphabetisation the loose document wins (aaa… < capabilities/…).
     {
       slug: "aaa-meeting-note",
       content: "민수랑 얘기함. 토큰 발급이 느리다는 말이 나왔는데 근거는 없었음.\n",
@@ -4819,13 +4826,13 @@ await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, �
     ]);
     const all = getCallParsed(responses, 2);
     assert.ok(all.matches.length >= 3, "세 문서가 다 매치되어야 이 시험이 성립한다");
-    // ① 노드가 먼저 — 점수가 같아도(본문 매치 0.3) 슬러그 알파벳에 지지 않는다.
+    // ① Nodes first — an equal score (body match 0.3) must not lose to slug alphabetisation.
     assert.equal(
       all.matches[0].slug,
       "capabilities/token-issue",
       `노드가 1등이 아니다: ${all.matches.map((m) => m.slug).join(", ")}`,
     );
-    // ② 행마다 정직하게 — 없는 kind 를 «안 적힘» 으로 두면 읽는 쪽이 추측한다.
+    // ② Per-row honesty — leaving an absent kind as «unwritten» makes the reader guess.
     for (const m of all.matches) {
       assert.equal(typeof m.isNode, "boolean", `${m.slug}.isNode`);
     }
@@ -4837,10 +4844,10 @@ await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, �
     assert.equal(node.isNode, true);
     assert.match(node.uid, /^[0-9a-f-]{36}$/);
     assert.equal(node.kind, "capability");
-    // 잡문이 섞였으면 그 사실을 말한다 — 에이전트가 좁힐 길까지 같이.
+    // When loose documents are mixed in, say so — along with how the agent can narrow.
     assert.match(String(all.nonNodeHint ?? ""), /nodesOnly/);
 
-    // ③ 좁힐 수 있다.
+    // ③ It can be narrowed.
     const onlyNodes = getCallParsed(responses, 3);
     assert.ok(onlyNodes.matches.length >= 1);
     assert.ok(
@@ -4892,8 +4899,8 @@ await test("find_evidence — 0 hits 면 growthHint (near-title 후보 또는 ad
 });
 
 await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약", async () => {
-  // agent 가 한 호출로 "vault 노드 list + 무슨 내용인지" 모두 받음. 후속
-  // get_concept N 회 안 함. summary:false (default) 일 때는 응답에 안 들어감.
+  // One call gives an agent the node list plus what each is about, with no N
+  // follow-up get_concept calls. Absent from the response when summary:false (default).
   const root = makeVault([
     {
       slug: "capabilities/auth",
@@ -4907,7 +4914,7 @@ await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약
     },
   ]);
   try {
-    // default: summary 없음
+    // default: no summary
     const { responses: r1 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts"),
@@ -4918,7 +4925,7 @@ await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약
       assert.equal(node.summary, undefined, "default 에선 summary 안 들어감");
     }
 
-    // summary:true → 모든 노드에 prose 요약
+    // summary:true → a prose summary on every node
     const { responses: r2 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { summary: true }),
@@ -4926,7 +4933,7 @@ await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약
     const out2 = getCallParsed(r2, 2);
     for (const node of out2.nodes) {
       assert.equal(typeof node.summary, "string", `${node.slug}.summary 가 string`);
-      // markdown heading / table syntax 안 들어가야 (prose 만)
+    // No markdown heading or table syntax (prose only)
       assert.doesNotMatch(node.summary, /^#/);
       assert.doesNotMatch(node.summary, /^\|/);
     }
@@ -4938,14 +4945,15 @@ await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약
 });
 
 await test("list_concepts — since 필터 (R+) — incremental sync", async () => {
-  // agent 가 이전 list 응답에서 캡처한 max mtime 을 since 로 패스 → vault 의
-  // *바뀐 것만* 전송. strict mtime > since 로 같은 max 재전송해도 double-fetch 0.
+  // Passing the max mtime captured from a previous list response as `since` sends
+  // *only what changed*. Strict mtime > since means resending the same max
+  // double-fetches nothing.
   const root = makeVault([
     { slug: "old", content: "---\nkind: capability\ntitle: Old\n---\n" },
     { slug: "newer", content: "---\nkind: capability\ntitle: Newer\n---\n" },
   ]);
   try {
-    // 1차: 전체 list — 두 노드의 mtime 캡처
+    // Pass 1: full list — capture both nodes' mtimes
     const { responses: r1 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts"),
@@ -4954,7 +4962,7 @@ await test("list_concepts — since 필터 (R+) — incremental sync", async () 
     assert.equal(out1.total, 2);
     const maxMtime = Math.max(...out1.nodes.map((n) => n.mtime));
 
-    // 2차: since=maxMtime — strict > 라 0건 (모두 stale)
+    // Pass 2: since=maxMtime — 0 rows, because the comparison is strict
     const { responses: r2 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { since: maxMtime }),
@@ -4962,7 +4970,7 @@ await test("list_concepts — since 필터 (R+) — incremental sync", async () 
     const out2 = getCallParsed(r2, 2);
     assert.equal(out2.total, 0, "since=max → 0건 (재전송 방지)");
 
-    // 3차: since=maxMtime - 1 — 1건 이상 (가장 최근 노드)
+    // Pass 3: since=maxMtime - 1 — at least 1 row (the most recent node)
     const { responses: r3 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "list_concepts", { since: maxMtime - 1 }),
@@ -4975,8 +4983,8 @@ await test("list_concepts — since 필터 (R+) — incremental sync", async () 
 });
 
 await test("list_concepts — 각 노드에 mtime 포함 (R+)", async () => {
-  // get_concept 의 mtime 과 같은 의미. agent 가 list 한 호출로 "어느 노드가
-  // 최근에 변경됐나" 파악 가능 — 후속 get_concept 없이 sort/filter.
+  // Same meaning as get_concept's mtime. One list call tells an agent which nodes
+  // changed recently, so it can sort or filter with no follow-up get_concept.
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -4999,8 +5007,8 @@ await test("list_concepts — 각 노드에 mtime 포함 (R+)", async () => {
 });
 
 await test("find_backlinks — 매치 row 에 domain + mtime 포함 (R+)", async () => {
-  // agent 가 backlinks 받자마자 "어느 도메인 / 언제 변경" 파악. list_concepts
-  // 와 동일 shape — 같은 mental model 의 두 view 가 일관 필드 노출.
+  // An agent reading backlinks immediately knows the domain and the change time.
+  // Same shape as list_concepts: two views of one mental model exposing consistent fields.
   const root = makeVault([
     {
       slug: "capabilities/auth",
@@ -5214,8 +5222,8 @@ await test("find_path — structuredContent 로 shortest path 계약을 노출",
       to: "missing-node",
       found: false,
       reason: "경로 없음 (또는 maxHops 초과)",
-      // R+ (과제 ⑧ — Ask-to-Grow) — "to" 는 vault 에 없고 "login" 은 있으니
-      // add_concept 스캐폴드 제안 (add_relation 이 아니라).
+      // "to" is absent from the vault while "login" is present, so the suggestion
+      // is an add_concept scaffold, not add_relation.
       growthHint: {
         reason: '"missing-node" does not resolve to a vault node.',
         suggestion:
@@ -5695,8 +5703,8 @@ await test("MCP read/query tools — blank/padded scalar string inputs are rejec
 });
 
 await test("query_concepts — 매치 row 에 mtime 포함 (R+)", async () => {
-  // list_concepts / find_backlinks / find_orphans 와 동일 shape — read tool
-  // 응답 일관성. agent 가 DSL query 결과를 sort/filter 추가 호출 없이 처리.
+  // Same shape as list_concepts / find_backlinks / find_orphans, for read-tool
+  // response consistency: an agent handles DSL query results with no extra call.
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\ndomain: x\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\ndomain: x\n---\n" },
@@ -5727,11 +5735,11 @@ await test("query_concepts — 0 rows 면 growthHint (부재 kind/domain 사실 
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      // "project" kind 는 유효한 enum 이지만 이 vault 엔 0개.
+      // "project" is a valid kind enum but this vault has none.
       callTool(2, "query_concepts", { filter: "kind=project" }),
-      // "auth" domain 은 있지만 "billing" 은 0개.
+      // "auth" domain exists; "billing" has none.
       callTool(3, "query_concepts", { filter: "domain=billing" }),
-      // kind/domain 모두 실제 존재 — 필터 조합만 0 rows ("a" 는 elements 있음).
+      // Both kind and domain exist — only the combination yields 0 rows ("a" has elements).
       callTool(4, "query_concepts", { filter: "kind=capability AND domain=auth AND NOT has(elements)" }),
     ]);
 
@@ -5905,8 +5913,8 @@ await test("query_ontology all_paths — limited exposes hidden MCP paths", asyn
 });
 
 await test("find_orphans — orphan row 에 domain + mtime 포함 (R+)", async () => {
-  // list_concepts / find_backlinks 와 동일 shape. agent 가 orphans 받자마자
-  // sort/filter 가능 — 후속 get_concept 없이.
+  // Same shape as list_concepts / find_backlinks, so an agent can sort or filter
+  // orphans straight from the response with no follow-up get_concept.
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -5930,7 +5938,7 @@ await test("find_orphans — orphan row 에 domain + mtime 포함 (R+)", async (
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    // domains/auth + used-cap (어느 곳도 used-cap 을 reference 안 함) — 둘 다 orphan
+    // domains/auth + used-cap (nothing references used-cap) — both are orphans
     assert.ok(result.total >= 1);
     for (const o of result.orphans) {
       assert.match(o.uid, /^[0-9a-f-]{36}$/, `${o.slug}.uid`);
@@ -5971,9 +5979,9 @@ await test("get_concept — 존재하지 않는 slug 는 growthHint 를 실은 e
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      // tail-substring 근접 후보 존재 (login) — did-you-mean 분기.
+    // A tail-substring near miss exists (login) — the did-you-mean branch.
       callTool(2, "get_concept", { slug: "capabilities/log" }),
-      // 근접 후보 전혀 없음 — add_concept 스캐폴드 분기.
+    // No near miss at all — the add_concept scaffold branch.
       callTool(3, "get_concept", { slug: "totally-unrelated-thing" }),
     ]);
 
@@ -6159,8 +6167,8 @@ await test("identity reads — list/get/batch expose uid beside canonical slug a
   }
 });
 
-// R+ — get_concepts 배치 reader. K개 slug → 1 round trip. 입력 순서 보존,
-// missing slug 는 batch 를 abort 하지 않고 { ok: false, error } 행으로 surface.
+// get_concepts batch reader: K slugs in one round trip. Input order is preserved,
+// and a missing slug surfaces as an `{ ok: false, error }` row instead of aborting.
 await test("get_concepts — 배치 read, 입력 순서 보존 + partial result", async () => {
   const root = makeVault([
     { slug: "alpha", content: "---\nkind: capability\ntitle: Alpha\n---\nbody A" },
@@ -6175,7 +6183,7 @@ await test("get_concepts — 배치 read, 입력 순서 보존 + partial result"
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.concepts.length, 3, "concepts row 수 = 입력 slugs 수");
-    // 순서 보존: 입력 [beta, missing, alpha] → 출력 같은 순서.
+    // Order preserved: input [beta, missing, alpha] → output in the same order.
     assert.equal(result.concepts[0].slug, "beta");
     assert.equal(result.concepts[0].ok, true);
     assert.equal(result.concepts[0].frontmatter.title, "Beta");
@@ -6184,7 +6192,7 @@ await test("get_concepts — 배치 read, 입력 순서 보존 + partial result"
     assert.deepEqual(result.concepts[0].outgoingEdges, []);
     assert.equal(typeof result.concepts[0].mtime, "number");
     assert.ok(result.concepts[0].mtime > 0);
-    // missing slug → ok:false, error message, batch 살아남음.
+    // Missing slug → ok:false with an error message; the batch survives.
     assert.equal(result.concepts[1].slug, "missing-slug");
     assert.equal(result.concepts[1].ok, false);
     assert.match(result.concepts[1].error, /not found/i);
@@ -6194,7 +6202,7 @@ await test("get_concepts — 배치 read, 입력 순서 보존 + partial result"
     assert.deepEqual(result.concepts[1].recoveryTools, ["list_concepts", "find_evidence"]);
     assert.equal(result.concepts[1].createTool, "add_concept");
     assert.equal(result.concepts[1].growthHint.exampleCall.tool, "add_concept");
-    // 그 다음 valid 한 slug 는 정상 처리.
+    // The valid slug after it is processed normally.
     assert.equal(result.concepts[2].slug, "alpha");
     assert.equal(result.concepts[2].ok, true);
     assert.equal(result.concepts[2].frontmatter.title, "Alpha");
@@ -6234,7 +6242,7 @@ await test("get_concepts — invalid slug rows are isolated as partial results",
   }
 });
 
-// R+ — get_concepts 빈 배열 / cap (50) 가드. 정상 빈 응답 vs error.
+// get_concepts empty-array and cap (50) gates: a normal empty response vs an error.
 await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
@@ -6247,14 +6255,14 @@ await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", a
     const empty = getCallParsed(r1, 2);
     assert.deepEqual(empty.concepts, []);
 
-    // 51개 → error response (batch 호출 자체가 throw, MCP 가 error 직렬화).
+    // 51 entries → error response (the batch call itself throws; MCP serialises the error).
     const tooMany = Array.from({ length: 51 }, (_, i) => `s${i}`);
     const { responses: r2 } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "get_concepts", { slugs: tooMany }),
     ]);
-    // server 는 throw → MCP 응답에 isError content 또는 error 필드. text 안에
-    // 우리 cap 메시지 ("Too many slugs") 가 있는지로만 검증.
+    // The server throws, so the MCP response carries isError content or an error
+    // field. Only checked for our cap message ("Too many slugs") in the text.
     const text = JSON.stringify(r2.find((r) => r.id === 2));
     assert.match(text, /Too many slugs|50/i);
     assert.equal(getCallStructured(r2, 2)?.errorCode, "invalid_arguments");
@@ -6263,9 +6271,9 @@ await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", a
   }
 });
 
-// R+ — add_concepts 배치 writer. /ontology-bootstrap 흐름이 여러 노드를 한
-// 호출에 land. 입력 순서 보존, partial result (한 row 의 실패가 batch 를
-// abort 하지 않음).
+// add_concepts batch writer, so an /ontology-bootstrap flow lands several nodes in
+// one call. Input order is preserved and results are partial (one row failing does
+// not abort the batch).
 await test("add_concepts — 배치 write, 순서 보존 + partial result", async () => {
   const root = makeVault([
     { slug: "exist", content: "---\nkind: capability\ntitle: Exist\n---\n" },
@@ -6283,13 +6291,13 @@ await test("add_concepts — 배치 write, 순서 보존 + partial result", asyn
           { slug: "gamma", kind: "capability" },
         ],
       }),
-      // batch 후 list 로 land 된 row 검증
+      // Verify the landed rows with a list after the batch
       callTool(3, "list_concepts"),
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.concepts.length, 4, "concepts row 수 = 입력 길이");
-    // 순서 보존: alpha → exist (fail) → beta → gamma (fail)
+    // Order preserved: alpha → exist (fail) → beta → gamma (fail)
     assert.equal(result.concepts[0].slug, "alpha");
     assert.equal(result.concepts[0].ok, true);
     assert.equal(typeof result.concepts[0].filePath, "string");
@@ -6308,7 +6316,7 @@ await test("add_concepts — 배치 write, 순서 보존 + partial result", asyn
     assert.match(result.concepts[3].error, /required|title/i);
     assertPostWriteMaintenanceShape(result.postWriteMaintenance, "batch concept postWriteMaintenance");
     assert.equal(result.concepts[0].postWriteMaintenance, undefined);
-    // list 응답에 alpha + beta 가 추가됨, gamma 는 안 됨.
+    // The list response gains alpha and beta; gamma is absent.
     const list = getCallParsed(responses, 3);
     const slugs = list.nodes.map((n) => n.slug).sort();
     assert.ok(slugs.includes("alpha"), "alpha land");
@@ -6353,13 +6361,13 @@ await test("add_concept/add_concepts — implementation path is preserved as evi
   }
 });
 
-// ── 저작 출처 `created_by` (2026-07-31 원장) ───────────────────────────────
+// ── Authorship `created_by` (decision ledger, 2026-07-31) ──────────────────
 //
-// 이 서버를 통과한 쓰기의 행위자는 **에이전트다** — 호출 경로 자체가 그것을
-// 증명하므로 위조할 수 없다. 소급 추론은 금지이고, 부재는 unknown 이다.
-// 순수 계약(값 규약 · 스키마 · 질의 필터)은
-// `tests/contract/created-by-provenance.contract.test.ts` 가 맡고,
-// 여기서는 **실제 서버가 디스크에 무엇을 남기는지**를 잰다.
+// A write that came through this server was made by **an agent** — the call path
+// itself proves it, so it cannot be forged. Retroactive inference is forbidden and
+// absence is unknown. The pure contract (value conventions, schema, query filters)
+// belongs to `tests/contract/created-by-provenance.contract.test.ts`; this measures
+// **what the running server actually leaves on disk**.
 
 function writeHeartbeat(root, agent) {
   mkdirSync(join(root, ".ontology-atlas"), { recursive: true });
@@ -6381,7 +6389,7 @@ await test("add_concept/add_concepts — created_by 는 활동 로그와 같은 
         concepts: [{ slug: "capabilities/batch", kind: "capability", title: "Batch", domain: "auth" }],
       }),
       callTool(4, "get_concepts", { slugs: ["capabilities/single", "capabilities/batch"] }),
-      // 「사람이 만든 것만 모아보기」의 반대편 — 에이전트가 쓴 것은 사람으로 세지 않는다.
+      // The other side of "show only what a human made" — an agent's write is not counted as human.
       callTool(5, "query_concepts", { filter: "created_by=human" }),
       callTool(6, "query_concepts", { filter: 'created_by="agent:codex"' }),
     ]);
@@ -6411,13 +6419,14 @@ await test("add_concept/add_concepts — 하트비트가 없으면 이름만 모
   }
 });
 
-// 활동 기록(activity.jsonl)의 `agent` 는 created_by 보다 한 단계 더 안다:
-// 하트비트(의도적 등록)가 없어도 initialize 인사의 clientInfo.name 이 남는다
-// (2026-08-13 — 등록 없이 붙은 claude-code/codex 의 활동에 이름을 붙이는 조각).
-// created_by 각인은 여전히 하트비트만 믿는다 — 볼트에 영구히 박히는 값이라
-// 자동 추정을 들이지 않는다(2026-07-31 원장). 순수 우선순위 로직은
-// activity-log.test.mjs 가 맡고, 여기서는 배선 — 서버가 인사에서 받은 이름을
-// 실제로 디스크에 남기는지 — 를 잰다.
+// The `agent` field of the activity log (activity.jsonl) knows one step more than
+// created_by: even with no heartbeat (deliberate registration), the initialize
+// greeting's clientInfo.name is recorded (2026-08-13 — the piece that names the
+// activity of claude-code/codex sessions that connect without registering). The
+// created_by stamp still trusts the heartbeat alone, because that value is written
+// permanently into the vault and must not admit an automatic guess (decision
+// ledger, 2026-07-31). The pure precedence logic belongs to activity-log.test.mjs;
+// this measures the wiring — whether the server really persists the greeted name.
 await test("add_concept/add_concepts — 활동 기록 agent 는 하트비트 없이도 연결 인사 이름을 남긴다", async () => {
   const noHeartbeat = makeVault([]);
   const withHeartbeat = makeVault([]);
@@ -6445,11 +6454,12 @@ await test("add_concept/add_concepts — 활동 기록 agent 는 하트비트 �
   }
 });
 
-// 2026-08-16 — 배치로 쓴 관계의 **이유가 활동 기록에서만 사라지던 버그**.
-// `why` 는 frontmatter 에는 들어가는데 `summarizeWrite` 의 배치 분기가
-// `{target, summary}` 만 돌려줘서 기록 줄에서 빠졌다. 실제로 그 상태에서
-// 살아있는 볼트의 활동 15줄 전부가 `why: null` 이었고, 그 사실이 「대화가
-// 앱 밖에서 일어나서 이유가 안 남는다」는 **틀린 결론의 근거**로 쓰일 뻔했다.
+// 2026-08-16 — the bug where the reason for a batch-written relation **vanished
+// from the activity record only**. `why` reached the frontmatter, but
+// `summarizeWrite`'s batch branch returned `{target, summary}` alone, so it was
+// dropped from the log line. In that state all 15 activity lines in a live vault
+// read `why: null`, and that nearly became **evidence for the wrong conclusion**
+// ("the conversation happens outside the app, so no reason is recorded").
 await test("add_relations — 배치로 쓴 관계도 활동 기록에 이유를 남긴다", async () => {
   const root = makeVault([
     { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
@@ -6479,7 +6489,7 @@ await test("add_relations — 배치로 쓴 관계도 활동 기록에 이유를
 });
 
 await test("add_relations — 같은 이유가 반복되면 한 번만 적는다", async () => {
-  // 열 행이 같은 이유일 때 그것을 열 번 적으면 읽을 수 없는 줄이 된다.
+  // Ten rows sharing a reason would print it ten times and become unreadable.
   const root = makeVault([
     { slug: "capabilities/a", content: "---\nslug: capabilities/a\nkind: capability\ntitle: A\ndomain: auth\n---\n\n# A\n" },
     { slug: "capabilities/b", content: "---\nslug: capabilities/b\nkind: capability\ntitle: B\ndomain: auth\n---\n\n# B\n" },
@@ -6518,13 +6528,13 @@ await test("patch_concept — created_by 는 보존되고 덮어쓸 수 없다",
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      // 패치는 저작이 아니다 — 사람이 만든 노드를 에이전트가 다듬어도 출처는 사람 그대로.
+      // A patch is not authorship — an agent refining a human's node leaves the origin human.
       callTool(2, "patch_concept", { slug: "capabilities/by-hand", frontmatter: { domain: "auth" } }),
       callTool(3, "get_concept", { slug: "capabilities/by-hand" }),
-      // 출처 없는 노드에는 패치가 출처를 만들어내지 않는다.
+      // A patch never invents an origin for a node that has none.
       callTool(4, "patch_concept", { slug: "capabilities/unknown-origin", frontmatter: { domain: "auth" } }),
       callTool(5, "get_concept", { slug: "capabilities/unknown-origin" }),
-      // 스스로를 사람이라고 주장하는 패치는 반려된다.
+      // A patch claiming to be human is rejected.
       callTool(6, "patch_concept", { slug: "capabilities/unknown-origin", frontmatter: { created_by: "human" } }),
     ]);
     assert.equal(getCallParsed(responses, 3).frontmatter.created_by, "human", "patch preserves an existing stamp");
@@ -6621,8 +6631,8 @@ await test("add_concept/add_concepts — 명시한 빈 body 는 기본 본문으
   }
 });
 
-// R+ — add_concepts 빈 배열 / cap (50) 가드. get_concepts/add_relations 와
-// 같은 batch 계약을 writer 쪽에도 명시 고정한다.
+// add_concepts empty-array and cap (50) gates, pinning the same batch contract on
+// the writer side as get_concepts and add_relations.
 await test("add_concepts — 빈 concepts[] → 빈 results, 51개 → error", async () => {
   const root = makeVault([]);
   try {
@@ -6651,8 +6661,8 @@ await test("add_concepts — 빈 concepts[] → 빈 results, 51개 → error", a
   }
 });
 
-// R+ — add_concepts 입력 내 중복 slug 사전 감지. 두번째 동일 slug row 는
-// "이미 존재" 가 아닌 row label + first-seen index 로 더 명확한 에러.
+// add_concepts detects duplicate slugs within the input up front, so the second row
+// gets a clearer error (row label plus first-seen index) than "already exists".
 await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", async () => {
   const root = makeVault([]);
   try {
@@ -6680,9 +6690,10 @@ await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", asyn
   }
 });
 
-// 같은 slug 는 error(데이터 보호) 지만 같은 title·다른 slug 는 둘 다 land 하되
-// near-duplicate advisory — bootstrap 흐름에서 에이전트가 같은 개념을 두 노드로
-// 쪼개는 #1 실패 모드를 첫 batch 에서 잡는다(vault load 없이 in-batch 비교).
+// The same slug is an error (data protection), but the same title on a different
+// slug lands both with a near-duplicate advisory — catching bootstrap's #1 failure
+// mode (splitting one concept into two nodes) in the first batch, by in-batch
+// comparison with no vault load.
 await test("add_concepts — 같은 title 의 두번째 row 는 land 하되 near-duplicate warning", async () => {
   const root = makeVault([]);
   try {
@@ -7183,10 +7194,10 @@ await test("MCP write tools — blank/padded string inputs are rejected before d
   }
 });
 
-// R+ — add_relations 배치 writer. analyze_repo_structure (suggestedRelations)
-// / infer_imports (moduleEdges) 출력을 한 호출에 land. 결과 row 는 입력 순서 보존,
-// frontmatter relation 배열은 canonical sort, idempotent (같은 edge 두번 →
-// 두번째는 alreadyExists), missing slug 은 row-level fail.
+// add_relations batch writer, landing analyze_repo_structure (suggestedRelations)
+// and infer_imports (moduleEdges) output in one call. Result rows preserve input
+// order, frontmatter relation arrays get a canonical sort, the operation is
+// idempotent (a repeated edge returns alreadyExists), and a missing slug fails at row level.
 await test("add_relations — 배치 write, row 순서 보존 + canonical sort + partial", async () => {
   const root = makeVault([
     { slug: "p", content: "---\nkind: project\ntitle: P\n---\n" },
@@ -7199,9 +7210,9 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
       callTool(2, "add_relations", {
         relations: [
           { from: "p", to: "c2", type: "contains", why: "P contains the C2 capability." },
-          // 같은 from 으로 누적 — readDoc 이 매번 다시 읽어 누락 없음
+          // Accumulating on the same `from` — readDoc re-reads each time, so nothing is lost
           { from: "p", to: "c1", type: "contains" },
-          // idempotent — 같은 edge 두번
+          // Idempotent — the same edge twice
           { from: "p", to: "c1", type: "contains" },
           // missing target → ok:false
           { from: "p", to: "missing", type: "contains" },
@@ -7216,14 +7227,14 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.relations.length, 6, "relations row 수 = 입력 길이");
-    // 순서 보존
+    // Order preserved
     assert.equal(result.relations[0].ok, true);
     assert.equal(result.relations[0].to, "c2");
     assert.equal(result.relations[0].key, "contains");
     assert.equal(result.relations[0].changed, true);
     assert.equal(result.relations[1].ok, true);
     assert.equal(result.relations[1].to, "c1");
-    // idempotent — 두번째는 alreadyExists
+    // Idempotent — the second is alreadyExists
     assert.equal(result.relations[2].ok, true);
     assert.equal(result.relations[2].alreadyExists, true);
     // missing target
@@ -7248,7 +7259,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
     assert.equal(result.relations[5].suggestion, "depends_on");
     assertPostWriteMaintenanceShape(result.postWriteMaintenance, "batch relation postWriteMaintenance");
     assert.equal(result.relations[0].postWriteMaintenance, undefined);
-    // p.contains 는 edge set 기준으로 중복 제거 + 정렬되어 land
+    // p.contains lands deduplicated and sorted by edge set
     const p = getCallParsed(responses, 3);
     assert.deepEqual(p.frontmatter.contains, ["c1", "c2"]);
     assert.equal(p.frontmatter.relation_notes.c2, "P contains the C2 capability.");
@@ -7257,7 +7268,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
   }
 });
 
-// R+ — add_relations 빈 배열 / cap 가드.
+// add_relations empty-array and cap gates.
 await test("add_relations — 빈 relations[] → 빈 results, 51개 → error", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
@@ -7401,7 +7412,7 @@ await test("add_relations — unknown row field 는 row-level error 로 격리",
   }
 });
 
-// R+ — cycle 46: validate_vault tool. agent 가 vault 전체 health 한 호출에.
+// validate_vault — the whole vault's health in one agent call.
 await test("validate_vault — clean vault: scanned/problems[]/summary 시그너처", async () => {
   const root = makeVault([
     { slug: "p", content: "---\nkind: project\ntitle: P\n---\n" },
@@ -7522,7 +7533,7 @@ await test("patch_concept — expected_mtime stale 면 conflict error response",
       callTool(2, "patch_concept", {
         slug: "foo",
         frontmatter: { title: "Updated" },
-        expected_mtime: 1, // ms=1 — 분명히 안 맞음
+        expected_mtime: 1, // ms=1 — deliberately mismatched
       }),
     ]);
     assert.ok(
@@ -9038,11 +9049,11 @@ await test("remove_relation — resolves stored frontmatter-slug aliases and the
 });
 
 /**
- * ⚠️ 이 케이스는 2026-08-01 까지 **경로형 슬러그**(`elements/src/entities/claim`)를
- * 썼고, #806 이 그 형태를 쓰기 관문에서 거부하기 시작한 뒤로 계속 실패하고
- * 있었다. 아무도 못 본 이유는 이 파일이 **어느 워크플로에도 안 물려 있어서**다
- * (`checks.yml` 이 162초를 이유로 빼면서 *"별도 스텝의 몫"* 이라 적었는데 그
- * 스텝이 만들어진 적이 없다). 슬러그를 평평하게 고쳤다.
+ * ⚠️ Until 2026-08-01 this case used a **path-shaped slug**
+ * (`elements/src/entities/claim`), and it had been failing ever since #806 started
+ * rejecting that form at the write gate. Nobody saw it because this file **was not
+ * wired into any workflow** (`checks.yml` dropped it over a 162s runtime, noting it
+ * was *"a separate step's job"* — that step was never created). The slug is flat now.
  */
 await test("reclassify_concept — kind/slug/domain/body and backlinks move together", async () => {
   const root = makeVault([
@@ -9087,10 +9098,11 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
   }
 });
 
-// 2026-08-01 — 볼트만 넘겨받은 에이전트가 "본문에 더 있을 수 있는데 확인 못
-// 했다" 로 답을 끝냈다. 구축 규격은 근거를 본문에 적으라고 시키는데 읽기
-// 도구가 첫 단락만 주고, 잘렸다는 말조차 안 했기 때문이다. 이 테스트가 지키는
-// 계약은 두 줄이다 — 전체를 달라면 주고, 안 줬으면 안 줬다고 말한다.
+// 2026-08-01 — an agent handed only the vault ended its answer with "there may be
+// more in the body but I could not confirm". The construction rules require the
+// evidence to be written in the body, and the read tool returned the first
+// paragraph without even saying it was cut. The contract this test protects is two
+// lines: give the whole thing when asked, and say so when you did not.
 await test("body delivery — 전체 본문을 받을 수 있고 잘림은 조용하지 않다", async () => {
   const ruledBody = [
     "## 정의",
@@ -9128,7 +9140,7 @@ await test("body delivery — 전체 본문을 받을 수 있고 잘림은 조�
       callTool(8, "get_concept", { slug: "elements/editor", body: "outline" }),
     ]);
 
-    // ① 기본은 그대로 발췌 — 그러나 잘렸다는 사실과 나머지를 받는 호출을 준다.
+    // ① The default stays an excerpt — but it reports the cut and the call that fetches the rest.
     const excerptRead = getCallParsed(responses, 2);
     assert.equal(excerptRead.excerpt, "워크스페이스 안에서 앱을 만드는 능력.");
     assert.equal(excerptRead.body, undefined);
@@ -9137,7 +9149,7 @@ await test("body delivery — 전체 본문을 받을 수 있고 잘림은 조�
     assert.ok(excerptRead.bodyInfo.omittedChars > 0);
     assert.match(excerptRead.bodyInfo.hint, /body: "full"/);
 
-    // ② full 은 근거·확신도까지 전부 싣고, 같은 글을 excerpt 로 중복 과금하지 않는다.
+    // ② full carries evidence and confidence too, and does not bill the same text again as an excerpt.
     const fullRead = getCallParsed(responses, 3);
     assert.match(fullRead.body, /## 근거/);
     assert.match(fullRead.body, /app\/src\/editor\/index\.ts/);
@@ -9147,24 +9159,24 @@ await test("body delivery — 전체 본문을 받을 수 있고 잘림은 조�
     assert.equal(fullRead.bodyInfo.truncated, false);
     assert.equal(fullRead.bodyInfo.hint, undefined);
 
-    // ③ 다 실은 본문에는 거짓 경고를 붙이지 않는다.
+    // ③ A fully delivered body gets no false truncation warning.
     const wholeRead = getCallParsed(responses, 4);
     assert.equal(wholeRead.bodyInfo.truncated, false);
 
-    // ④ 배치도 같은 파라미터를 받는다.
+    // ④ The batch takes the same parameters.
     const batch = getCallParsed(responses, 5);
     assert.equal(batch.concepts[0].ok, true);
     assert.match(batch.concepts[0].body, /## 확신도/);
     assert.equal(batch.concepts[0].bodyInfo.mode, "full");
 
-    // ⑤ find_evidence 도 잘림을 말하고 후속 호출을 이름으로 준다.
+    // ⑤ find_evidence reports truncation too, and names the follow-up call.
     const evidence = getCallParsed(responses, 6);
     const hit = evidence.matches.find((m) => m.slug === "capabilities/app-authoring");
     assert.equal(hit.excerptTruncated, true);
     assert.ok(hit.bodyChars > hit.excerpt.length);
     assert.match(evidence.bodyHint, /body: "full"/);
 
-    // ⑥ list_concepts 의 요약도 마찬가지.
+    // ⑥ The same holds for list_concepts summaries.
     const listed = getCallParsed(responses, 7);
     const row = listed.nodes.find((n) => n.slug === "capabilities/app-authoring");
     assert.equal(row.summaryTruncated, true);
@@ -9172,7 +9184,7 @@ await test("body delivery — 전체 본문을 받을 수 있고 잘림은 조�
     const shortRow = listed.nodes.find((n) => n.slug === "elements/editor");
     assert.equal(shortRow.summaryTruncated, undefined);
 
-    // ⑦ 없는 모드는 조용히 발췌로 떨어지지 않고 허용값을 말하며 실패한다.
+    // ⑦ An unknown mode fails while naming the allowed values, rather than quietly falling back to excerpt.
     assert.match(getCallText(responses, 8), /excerpt, full/);
   } finally {
     rmSync(root, { recursive: true, force: true });

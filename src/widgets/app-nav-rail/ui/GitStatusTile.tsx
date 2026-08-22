@@ -8,28 +8,31 @@ import { gitStatus, isGitBridgeAvailable } from "@/shared/lib/tauri-git";
 import { cn } from "@/shared/lib/cn";
 
 /**
- * Atlas Git 상태 타일 — 레일 하단 슬롯용 (에이전트 타일과 같은 문법).
- * `AppNavRail.tsx` 는 수정하지 않는다 — mount 배선은 HomePage/AppShell 이
- * `settingsSlot` 옆 하단 스택에 이 타일을 끼워 넣는 방식으로 한다.
+ * The Atlas Git status tile — for the rail's bottom slot (the same grammar as the
+ * agent tile). `AppNavRail.tsx` is not modified: HomePage/AppShell do the mount
+ * wiring by slotting this tile into the bottom stack beside `settingsSlot`.
  *
- * dirty 점 조회 계약: **폴링 없음.** 마운트 시 1회 + window focus 시 1회
- * `git_status` (읽기 전용) 만. 웹(브리지 없음)에서는 invoke 0 으로 정직하게
- * 강등하고 `sessionDirty` prop(세션 changeset total > 0)으로 대신 판정한다.
+ * The dirty-dot query contract: **no polling.** One read-only `git_status` on mount
+ * and one on window focus. On the web (no bridge) it degrades honestly to zero
+ * invokes and decides from the `sessionDirty` prop instead (the session changeset's
+ * total > 0).
  *
- * dirty 점 톤 = `--color-status-warning` (신호 3톤 중 warning/amber).
- * 근거: "기록되지 않은 변경이 있다" 는 오류(red)도 완료(green)도 아닌
- * '주의를 끄는 미결 상태' — 신호 톤 의미 예약과 git 생태계의 modified=amber
- * 관례에 일치한다. hub/Layer-0 예약 앰버(`--topology-v2-amber-hub`)와는
- * 별개의 status 토큰이므로 헌장의 장식 앰버 확장 금지에 걸리지 않는다.
+ * The dirty dot's tone is `--color-status-warning` (warning/amber of the three signal
+ * tones). Rationale: "there are unrecorded changes" is neither an error (red) nor a
+ * completion (green) but an unresolved state that draws attention — consistent with
+ * the reserved meanings of the signal tones and with the git ecosystem's
+ * modified = amber convention. It is a status token distinct from the hub/Layer-0
+ * reserved amber (`--topology-v2-amber-hub`), so it does not fall under the charter's
+ * ban on spreading decorative amber.
  */
 export interface GitStatusTileProps {
-  /** 클릭 → Atlas Git 패널 열기 (배선은 HomePage/AppShell 담당). */
+  /** Click → open the Atlas Git panel (HomePage/AppShell own the wiring). */
   onActivate: () => void;
-  /** 패널이 현재 열려 있는지 — `aria-expanded` 진실원. */
+  /** Whether the panel is currently open — the source of truth for `aria-expanded`. */
   panelOpen?: boolean;
-  /** Tauri 데스크톱 vault 절대 경로 — 없으면(웹) git_status 조회를 건너뛴다. */
+  /** The Tauri desktop vault's absolute path — without it (on the web) the git_status query is skipped. */
   vaultPath?: string | null;
-  /** 웹 강등 dirty 신호 — 세션 changeset 에 변경이 있는가. */
+  /** The web degradation's dirty signal — whether the session changeset has changes. */
   sessionDirty?: boolean;
   className?: string;
 }
@@ -42,7 +45,7 @@ export function GitStatusTile({
   className,
 }: GitStatusTileProps) {
   const t = useTranslations("atlasGit");
-  // null = 아직 git_status 결과 없음(웹 포함) → sessionDirty 로 폴백.
+  // null = no git_status result yet (the web included) → fall back to sessionDirty.
   const [gitChangedCount, setGitChangedCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -56,10 +59,10 @@ export function GitStatusTile({
           setGitChangedCount(status.initialized ? status.changedCount : 0);
         }
       } catch {
-        // 읽기 실패는 조용히 — 타일은 신호 표면일 뿐, 에러는 패널이 말한다.
+        // A failed read stays silent — the tile is only a signal surface; the panel reports errors.
       }
     };
-    // 마운트 1회 + 포커스 복귀 시 1회 — interval 폴링 금지(무거움).
+    // Once on mount and once on focus return — no interval polling (too heavy).
     void check();
     const onFocus = () => void check();
     window.addEventListener("focus", onFocus);
@@ -84,14 +87,14 @@ export function GitStatusTile({
       onClick={onActivate}
       data-testid="app-nav-rail-git-tile"
       className={cn(
-        // 에이전트 타일과 동일 상태 안무: rest → hover(색-웨이크) → active(1px
-        // 눌림 + overlay-3) → focus-visible 링.
+        // The same state choreography as the agent tile: rest → hover (colour wake) →
+        // active (1px press plus overlay-3) → focus-visible ring.
         "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset active:translate-y-px active:bg-[color:var(--color-overlay-3)]",
         className,
       )}
     >
-      {/* 유틸리티 티어 아이콘 사다리 — `AppNavRail.tsx` 활동 타일과 동일 토큰
-          (`--app-nav-rail-utility-icon-size`, 소유자 실보고 2026-07-23). */}
+      {/* The utility tier's icon size order — the same token as the activity tile in
+          `AppNavRail.tsx` (`--app-nav-rail-utility-icon-size`, owner report 2026-07-23). */}
       <History
         size={ICON_SIZE.lg}
         aria-hidden

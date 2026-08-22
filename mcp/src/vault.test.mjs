@@ -290,7 +290,7 @@ describe('actionable 에러 메시지 (R+)', () => {
   it('deleteDoc not-found (substring-similar slug) — 비슷한 slug 후보 노출', () => {
     let caught;
     try {
-      // bad slug 가 'mcp-server' 를 substring 으로 포함 — 후보 매칭 가능.
+      // The bad slug contains 'mcp-server' as a substring, so candidates can match.
       deleteDoc(errRoot, 'capabilities/mcp-server-x');
     } catch (e) {
       caught = e;
@@ -319,10 +319,10 @@ describe('UID identity write gate', () => {
   const uidB = '11890f3e-7b5d-4c0a-8f14-123456789abc';
 
   /**
-   * 사람이 에디터에서 직접 적은 노드를 흉내낸다 — `uid:` 가 없다.
-   * `writeDoc` 을 쓰지 않는 것이 요점이다: 그 문은 신원을 요구하므로,
-   * 그것을 통과해서는 이 상태가 애초에 만들어지지 않는다. 실제 사용자는
-   * 옵시디언·vim·GitHub 웹 에디터에서 파일을 그냥 만든다.
+   * Mimics a node a person typed straight into an editor — no `uid:`. The point is
+   * that it does not use `writeDoc`: that door demands identity, so this state
+   * cannot be created through it. Real users just make the file in Obsidian, vim,
+   * or the GitHub web editor.
    */
   const handWrite = (slug, title) => {
     const filePath = join(root, `${slug}.md`);
@@ -365,32 +365,35 @@ describe('UID identity write gate', () => {
   });
 
   /**
-   * **없던 신원을 처음 채우는 것은 신원을 바꾸는 것이 아니다** (2026-08-08).
+   * **Filling an absent identity for the first time is not changing an identity**
+   * (2026-08-08).
    *
-   * 사람이 옵시디언이나 에디터에서 노드를 손으로 적으면 `uid:` 가 없다. 그
-   * 상태에서 **볼트 전체의 그래프 명령이 죽는다**(`overview`·`health`·
-   * `agent-brief`·`query_ontology` 전부 — 컴파일이 노드 신원 오류에서 멈춘다).
-   * 그런데 Atlas MCP 만 붙은 에이전트에게는 **고칠 문이 하나도 없었다**:
+   * A node a person writes by hand in Obsidian or an editor has no `uid:`. In that
+   * state **every graph command on the whole vault dies** (`overview`, `health`,
+   * `agent-brief`, `query_ontology` — the compile stops on a node identity error).
+   * Yet an agent carrying only Atlas MCP had **no door at all** to fix it:
    *
-   * | 시도 | 종전 응답 |
+   * | attempt | old response |
    * |---|---|
-   * | `patch_concept(uid 없이 다른 필드)` | "`uid:` 는 UUIDv4 여야 한다" |
-   * | `patch_concept({uid: 새 값})` | "`uid:` 는 불변이다" |
-   * | `add_concept(같은 슬러그)` | "이미 있다. patch 를 써라" |
+   * | `patch_concept` (other fields, no uid) | "`uid:` must be a UUIDv4" |
+   * | `patch_concept({uid: <new value>})` | "`uid:` is immutable" |
+   * | `add_concept` (same slug) | "already exists; use patch" |
    *
-   * 셋이 서로를 가리키며 닫혀 있었다. 원인은 불변성 검사가 **「있던 값을
-   * 바꾸는 것」과 「없던 값을 처음 채우는 것」을 구분하지 않은 것**이다.
-   * 바꿀 값이 없으면 바꾸는 것이 아니다 — 훔칠 위험(다른 노드의 신원)은
-   * `assertNodeIdentity` 의 충돌 검사가 이미 따로 막는다.
+   * The three pointed at each other in a closed loop. The cause: the immutability
+   * check did not distinguish **changing a value that was there from filling one
+   * that was not**. With no value to change, nothing is being changed — and the
+   * theft risk (taking another node's identity) is already blocked separately by
+   * the collision check in `assertNodeIdentity`.
    *
-   * 이것은 로컬-퍼스트 약속의 문제이기도 하다: 「마크다운을 그냥 손으로 쓰면
-   * 된다」고 말해 놓고, 손으로 쓴 노드가 볼트를 죽이고 복구도 막혀 있었다.
+   * It is also a local-first promise problem: we say «you can just write the
+   * markdown by hand», and then a hand-written node killed the vault with recovery
+   * blocked.
    */
   it('uid 가 없던 노드는 첫 쓰기가 신원을 채워 준다 — 손으로 쓴 노드의 복구로', () => {
-    // 사람이 에디터에서 손으로 적은 파일 — `writeDoc` 를 안 거친다.
-    // (거치면 그 문이 uid 를 요구하므로 이 상태 자체가 만들어지지 않는다.)
+    // A file a person typed by hand in an editor — it does not go through `writeDoc`.
+    // (Going through it would demand a uid, so this state could not exist at all.)
     handWrite('capabilities/hand-written', 'Hand written');
-    // ① 값을 안 줘도 채워진다 — 다른 필드를 고치는 평범한 patch 로 살아난다.
+    // ① Filled even with no value supplied — an ordinary patch of another field revives it.
     const patched = patchFrontmatter(root, 'capabilities/hand-written', {
       description: 'now repaired',
     });
@@ -398,7 +401,7 @@ describe('UID identity write gate', () => {
     assert.equal(nodeUidIssue(patched.frontmatter.uid), null);
     assert.equal(patched.mintedUid, patched.frontmatter.uid, '채운 사실을 응답이 말해야 한다');
 
-    // ② 한 번 채워진 뒤에는 다시 불변이다 — 이 수리가 불변성을 뚫으면 안 된다.
+    // ② Once filled it is immutable again — this repair must not pierce immutability.
     const settled = patched.frontmatter.uid;
     assert.throws(
       () => patchFrontmatter(root, 'capabilities/hand-written', { uid: uidB }),
@@ -409,12 +412,12 @@ describe('UID identity write gate', () => {
       /immutable|uid/i,
     );
 
-    // ③ 호출자가 값을 직접 주는 것도 된다(에이전트가 UUID 를 만들어 오는 경우).
+    // ③ The caller may also supply the value directly (an agent that mints its own UUID).
     handWrite('capabilities/hand-written-2', 'HW2');
     const filled = patchFrontmatter(root, 'capabilities/hand-written-2', { uid: uidB });
     assert.equal(filled.frontmatter.uid, uidB);
 
-    // ④ 남의 신원을 채워 넣는 것은 여전히 막힌다 — 충돌 검사가 살아 있다.
+    // ④ Filling in someone else's identity is still blocked — the collision check lives.
     handWrite('capabilities/hand-written-3', 'HW3');
     assert.throws(
       () => patchFrontmatter(root, 'capabilities/hand-written-3', { uid: settled }),
@@ -463,7 +466,7 @@ describe('extractSummaryExcerpt (R+)', () => {
   it('block 만 있는 body — fallback (원본 trim, prose 0건)', () => {
     const body = '| a | b |\n|---|---|\n| 1 | 2 |';
     const r = extractSummaryExcerpt(body);
-    // prose 못 찾았을 때 fallback — body 전체 (cap 안)
+    // Fallback when no prose is found — the whole body, within the cap
     assert.match(r, /\|/);
   });
 
@@ -494,8 +497,9 @@ describe('extractSummaryExcerpt (R+)', () => {
 });
 
 describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-01)', () => {
-  // 구축 규격이 시킨 「정의 / 근거 / 확신도 / 포함·제외」가 그대로 담긴 본문.
-  // 발췌는 첫 단락만 가져가므로 나머지 절 전부가 응답 밖에 남는다.
+  // A body carrying exactly what the construction rules demand: definition,
+  // evidence, confidence, inclusion/exclusion. The excerpt takes only the first
+  // paragraph, so every remaining section stays outside the response.
   const RULED_BODY = [
     '## 정의',
     '',
@@ -530,8 +534,9 @@ describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-
   });
 
   it('줄바꿈만 다른 한 단락은 잘린 것이 아니다 (글자 수 비교의 오탐)', () => {
-    // 발췌는 줄을 공백으로 이어 붙이므로 길이가 원본과 다르다. 그것만으로
-    // "잘렸다" 고 하면 다 실은 본문에 매번 거짓 경고가 붙는다.
+    // An excerpt joins lines with spaces, so its length differs from the original.
+    // Deciding "truncated" on that alone puts a false warning on every fully
+    // delivered body.
     const body = '\n첫 줄.\n둘째 줄.\n';
     const { info } = describeBodyDelivery(body);
     assert.equal(info.truncated, false);

@@ -10,10 +10,9 @@ export interface DomainCompositionRow {
 }
 
 /**
- * Per-domain capability/element composition — the /projects card's domain
- * rows (meter track + adjacent counts). Guardian I-1 이후 도메인 크기의
- * 단일 진실원은 `computeDomainCensusRows` (shared BFS) — 이 모듈은 표면
- * 계약(row shape + zero-row 생략)만 유지하는 얇은 어댑터다.
+ * Per-domain capability/element composition — the `/projects` card's domain rows (meter track plus
+ * adjacent counts). The single source of truth for domain size is `computeDomainCensusRows` (the shared
+ * BFS); this module is a thin adapter keeping only the surface contract (row shape and omitting zero rows).
  */
 export function buildDomainCompositionRows(
   nodes: readonly KnowledgeGraphNode[],

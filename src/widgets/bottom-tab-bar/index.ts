@@ -1,4 +1,4 @@
 export { BottomTabBar } from './ui/BottomTabBar';
-// `/download` 는 이 바가 없는 유일한 라우트라 스크롤 끝 예약고를 잡지
-// 않는다. 그 결합을 그 페이지의 테스트가 고정할 수 있게 판정 함수를 공개한다.
+// `/download` is the only route without this bar, so it reserves no scroll-end
+// space. Exporting the decision lets that page's test pin the pair together.
 export { shouldHideBottomTabBar } from './lib/is-tab-active';

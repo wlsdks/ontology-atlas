@@ -20,8 +20,9 @@ describe("appendFootprintVisit", () => {
   });
 
   /**
-   * 종전엔 재방문이 기존 위치를 지우고 끝으로 이동했다. 그 구현에서는 노드당
-   * 걸음이 최대 1개라 "숫자 여러 개"가 데이터 층에서 불가능했다.
+   * A revisit used to delete the earlier position and move the node to the end.
+   * With at most one step per node, several numbers on one node were impossible
+   * at the data layer.
    */
   it("재방문은 지우지 않고 새 걸음으로 쌓인다 — 되돌아온 사실이 경로에 남는다", () => {
     expect(appendFootprintVisit(["a", "b", "c"], "a")).toEqual(["a", "b", "c", "a"]);
@@ -36,7 +37,7 @@ describe("appendFootprintVisit", () => {
     const next = appendFootprintVisit(full, "new");
     expect(next.length).toBe(FOOTPRINT_TRAIL_MAX);
     expect(next[next.length - 1]).toBe("new");
-    expect(next[0]).toBe("n1"); // n0 밀려남
+    expect(next[0]).toBe("n1"); // n0 pushed out
   });
 
   it("불변 — 입력 배열을 변형하지 않는다", () => {

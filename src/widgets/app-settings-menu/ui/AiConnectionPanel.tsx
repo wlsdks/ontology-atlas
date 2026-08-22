@@ -39,58 +39,64 @@ import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import type { AiConnectionState } from '../model/use-ai-connection';
 
 /**
- * [AI 연결] 서브뷰 (#80 S1·S2) — 내 API 키를 이 컴퓨터의 키체인에 두고,
- * 그 키가 살아 있는지 1클릭으로 확인하고, 나간 호출을 볼트 안 기록으로 본다.
+ * The [AI 연결] subview (#80 S1·S2) — put my API key in this computer's keychain,
+ * check in one click that the key is alive, and read the calls that went out from
+ * a log inside the vault.
  *
- * 이 화면이 지키는 것:
- * - **전체 키를 다시 그리는 경로가 없다.** 저장 성공 즉시 입력 상태를 비우고,
- *   그 뒤로 화면이 아는 것은 `last4` 뿐이다(Rust 계약 그대로).
- * - **정직한 웹 강등.** 브리지가 없으면 입력 필드를 렌더하지 않고 "왜 데스크톱
- *   전용인가" 를 그대로 설명한다. 숨기는 것보다 설명하는 것이 신뢰 자산이다.
- * - **연결이 무엇을 여는지 목록보다 먼저 적는다.** 여기 오는 사람의 첫 질문은
- *   "연결하면 뭐가 되나" 다. 그 답이 목록 아래 각주로 있던 동안 이 화면은
- *   **이미 출시된 에이전트를 "준비 중" 이라고 부정**하고 있었다 — 그 문장은
- *   기능이 없던 시절의 잔재였고, 정직함이 아니라 거짓말이 된 뒤였다. 지금
- *   문구가 말하는 것은 **오늘 동작하는 것만**이다.
- * - **보안 주장은 코드가 증명하는 범위까지만.** "절대 안전" 류 문구를 쓰지
- *   않는다(신뢰 헌장 ⑥). 명명 벤더에서 우리가 증명할 수 있는 것은 "코드에 박힌
- *   공식 주소로만 간다" 까지다 — 그래서 확인 범위 문구가 그 주소를 이름으로
- *   말한다.
- * - **미등록 행은 접혀 있다.** 입력칸 셋이 동시에 쌓이면 설정 시트가 폼 관문처럼
- *   읽힌다. 접힌 행도 상태(미등록)는 그대로 말하고, 시각 무게만 줄인다.
- * - **펼침은 되돌릴 수 있다.** [키 등록]을 눌러 본 사람이 마음을 바꿀 자리가
- *   화면에 있어야 한다 — 보이는 [취소] 와 Esc, 둘 다.
+ * What this screen holds to:
+ * - **There is no path that redraws the full key.** The input state is cleared the
+ *   moment a save succeeds, and after that the screen knows only `last4` (exactly
+ *   the Rust contract).
+ * - **Honest web degradation.** With no bridge it renders no input field and
+ *   explains why this is desktop-only. Explaining is a trust asset; hiding is not.
+ * - **What connecting opens is written above the list.** The first question of
+ *   anyone arriving here is "what do I get if I connect". While that answer sat as
+ *   a footnote below the list, this screen was **denying an already-shipped agent
+ *   by calling it "coming soon"** — a leftover from before the feature existed,
+ *   which had stopped being honesty and become a lie. The copy now states **only
+ *   what works today**.
+ * - **Security claims go no further than the code proves.** No "absolutely safe"
+ *   phrasing (trust charter ⑥). For a named vendor, all we can prove is "it only
+ *   goes to the official address hard-coded here", so the verification-scope copy
+ *   names that address.
+ * - **Unregistered rows stay collapsed.** Three input fields stacked at once make
+ *   the settings sheet read as a form gate. A collapsed row still states its
+ *   status (unregistered); only its visual weight drops.
+ * - **Expanding is reversible.** Someone who pressed [키 등록] and changed their
+ *   mind needs a way back on screen — both a visible [취소] and Esc.
  *
- * ## 이 화면의 시각 위계 (2026-07-26 소유자 지적)
+ * ## This screen's visual hierarchy (2026-07-26 owner report)
  *
- * 채워진 테두리 상자는 **벤더 목록 하나뿐**이다. 사람이 여기 오는 이유가
- * 대개 "키를 넣으려고" 인데, 벤더 목록·나가는 것 표·보낸 기록이 똑같은
- * 테두리+표면으로 쌓여 있으면 그 이유가 첫 번째로 읽히지 않는다(잉크가
- * 위계를 만드는 대신 상자 카탈로그를 만든다). 그래서 조작하는 블록만 상자를
- * 갖고, 읽는 블록(신뢰 고지·나가는 것·보낸 기록)은 구분선 + 라벨로 내려간다.
- * 정보는 하나도 줄이지 않는다 — 무게만 다르게 준다.
+ * The **vendor list is the only** filled, bordered box. People come here mostly to
+ * enter a key, but with the vendor list, the outbound table and the sent log all
+ * stacked in the same border-plus-surface, that reason is not what reads first
+ * (ink builds a catalogue of boxes instead of a hierarchy). So only the block you
+ * operate has a box, and the blocks you read (trust notice · what goes out · sent
+ * log) drop to a divider plus a label. No information is removed — only the weight
+ * differs.
  */
 
 const CLEAR_ARM_MS = 3000;
 
 /**
- * 중립 칩의 **호버·포커스**. 값 층(`controlClass`)이 일부러 안 내는 층이라
- * (빈도가 모션 예산을 깎으므로 호버 색은 소비처가 정한다) 여기 한 번만 적고
- * 네 자리가 같은 문자열을 쓴다 — 손으로 네 번 쓰면 언젠가 한 벌이 갈린다.
+ * **Hover and focus** for a neutral chip. The value layer (`controlClass`)
+ * deliberately does not supply this layer (frequency eats the motion budget, so
+ * the consumer decides the hover colour), so it is written once here and used by
+ * four sites — written by hand four times, one copy eventually diverges.
  */
 const NEUTRAL_CHIP_HOVER =
   'shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
 /**
- * 인디고 강조 칩의 **테두리와 호버** — 같은 이유로 한 벌이다. `tone: 'accentOnTint'`
- * 는 글자색만 내고(램프가 소유하는 것이 그것이다), 테두리 틴트와 호버는 아직
- * 램프 밖이다. 네 자리(검증 ×2 · 저장 · 로컬 검증)가 손으로 같은 문자열을
- * 들고 있었다.
+ * The **border and hover** of the indigo emphasis chip — one copy, for the same
+ * reason. `tone: 'accentOnTint'` gives only the text colour (that is what the ramp
+ * owns), and the border tint and hover are still outside the ramp. Four sites
+ * (verify ×2 · save · local verify) were holding the same string by hand.
  */
 const INDIGO_CHIP =
   'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
-/** 감사 기록 파일의 볼트 상대 경로 — 경로만 mono, 곁의 한국어는 본문 서체. */
+/** The audit log file's vault-relative path — only the path is mono; the Korean beside it uses the body face. */
 const LLM_AUDIT_RELATIVE_PATH = '.ontology-atlas/llm-audit.jsonl';
 
 type VerifyState =
@@ -102,7 +108,7 @@ type VerifyState =
 
 export interface AiConnectionPanelProps {
   connection: AiConnectionState;
-  /** 데스크톱에서 알려진 볼트 절대 경로 — 감사 기록을 남길 곳. */
+  /** The vault's absolute path where known on the desktop — where the audit log is written. */
   vaultRootPath: string | null;
   downloadHref: string;
   onDownloadNavigate: () => void;
@@ -117,19 +123,19 @@ export function AiConnectionPanel({
   const t = useTranslations('settings.ai');
   const { bridgeAvailable, statuses, applyStatus, auditEntries, refreshAudit } =
     connection;
-  // 한 번에 하나만 펼친다 — 어느 키를 넣는 중인지가 화면에 하나뿐이어야
-  // 붙여넣기 직전의 안전 문구가 그 키에 대한 말로 읽힌다.
+  // Only one expands at a time — the screen must show exactly one key being
+  // entered, so the safety copy beside the paste field reads as being about that key.
   const [expanded, setExpanded] = useState<ConnectionProvider | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   /**
-   * 펼침 취소 — [취소] 버튼과 Esc 가 공유하는 단 하나의 경로.
+   * Cancel an expansion — the single path shared by the [취소] button and Esc.
    *
-   * 접기만으로 초안 키는 사라진다(`KeyDraftForm` 이 언마운트되므로). 여기서
-   * 추가로 하는 일은 **포커스 복귀** 하나다: 방금 눌렀던 [키 등록] 으로
-   * 돌려보내지 않으면 포커스가 body 로 떨어져, 사용자가 있던 자리를 잃는 데다
-   * Esc 사다리의 다음 칸(서브뷰 → 루트)까지 죽는다 — 다이얼로그 밖으로 나간
-   * 포커스에서는 시트의 keydown 이 더 이상 오지 않는다.
+   * Collapsing alone discards the draft key (`KeyDraftForm` unmounts). The one
+   * extra thing done here is **returning focus**: without sending it back to the
+   * [키 등록] just pressed, focus falls to body, which loses the user's place and
+   * also kills the next rung of the Esc order (subview → root) — the sheet's
+   * keydown no longer arrives once focus has left the dialog.
    */
   const cancelDraft = (provider: ConnectionProvider) => {
     setExpanded(null);
@@ -141,9 +147,9 @@ export function AiConnectionPanel({
   };
 
   const handleStatusChange = (provider: SecretProvider, next: SecretStatus) => {
-    // 저장이 끝났거나 키를 지웠다면 그 행은 도로 접힌다. 특히 **지운 직후** —
-    // 방금 비운 자리에 입력칸이 다시 열려 있으면 화면이 다시 넣으라고
-    // 재촉하는 것처럼 읽힌다.
+    // If the save finished or the key was cleared, the row collapses again —
+    // especially **right after clearing**: an input reopened where a value was just
+    // emptied reads as the screen pressing you to enter it again.
     setExpanded((current) => (current === provider ? null : current));
     applyStatus(provider, next);
   };
@@ -165,10 +171,10 @@ export function AiConnectionPanel({
           <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
             {t('webDegradedBody')}
           </p>
-          {/* 키 없는 갈래(주소로 연결)가 생긴 뒤로, 위 문단만 두면 강등이
-              절반만 정직해진다 — "키가 문제라면 키가 필요 없는 Ollama 는
-              되겠지" 로 읽히기 때문이다. 왜 그것도 안 되는지와 어디로 가면
-              되는지를 같은 카드 안에서 말한다. */}
+          {/* Once the key-less path (connect by address) existed, the paragraph
+              above alone made the degradation only half honest — it reads as "if
+              keys are the problem, then key-less Ollama must work". Why that does
+              not work either, and where to go instead, are said in the same card. */}
           <p
             className="mt-1.5 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
             data-testid="ai-connection-web-degraded-local"
@@ -189,19 +195,21 @@ export function AiConnectionPanel({
   }
 
   return (
-    // 폭은 **루트 얼굴의 행과 같은 값**으로 묶는다(`--settings-content-measure`).
-    // 드릴인은 LNB 를 떼면서 그 180px 를 내용이 먹었고, 그 결과 같은 시트인데
-    // 행이 846px 로 벌어져 「Anthropic ‥‥‥ [키 등록]」 사이가 통째로 빈 칸이
-    // 됐다. 묶는 것은 시트가 아니라 행이다 — 시트는 고정 크기이고, 줄이면
-    // 루트의 LNB 2단이 깨진다.
+    // The width is pinned to **the same value as the root face's rows**
+    // (`--settings-content-measure`). Drilling in removed the LNB, and the content
+    // ate those 180px, so within the same sheet a row spread to 846px and the gap
+    // between 「Anthropic ‥‥‥ [키 등록]」 became one long emptiness. What is pinned is
+    // the row, not the sheet — the sheet is fixed size, and shrinking it breaks the
+    // root's two-column LNB.
     <div
       className="grid max-w-[var(--settings-content-measure)] content-start gap-3"
       data-testid="ai-connection-view"
       onKeyDown={(event) => {
-        // Esc 사다리의 **가장 안쪽 칸**. 펼친 입력 카드가 있으면 그것부터
-        // 접고, 같은 keypress 가 위로 새지 않게 막는다 — 가로채지 않으면 설정
-        // 시트가 같은 Esc 로 루트 뷰까지 물러나서, 키 하나 취소하려던 사람이
-        // 서브뷰까지 잃는다("one overlay owns one Escape" 의 안쪽 확장).
+        // The **innermost rung** of the Esc order. With an expanded input card,
+        // collapse that first and stop the same keypress leaking upward — without
+        // interception the settings sheet retreats to the root view on that same
+        // Esc, so someone cancelling one key loses the subview too (the inward
+        // extension of "one overlay owns one Escape").
         if (event.key !== 'Escape' || expanded === null) return;
         event.preventDefault();
         event.stopPropagation();
@@ -210,20 +218,22 @@ export function AiConnectionPanel({
     >
       <TrustHeadline>{t('principle')}</TrustHeadline>
 
-      {/* 목록 **위**에 있는 이유: 여기 온 사람의 첫 질문은 "연결하면 뭐가
-          되나" 이고 "어떻게 연결하나" 는 그다음이다. 이 문장이 목록 아래
-          각주로 있던 동안에는 순서가 뒤집혀 있었고, 게다가 이미 출시된
-          기능을 "준비 중" 이라고 부정하고 있었다 — 에이전트 패널의
-          [설정에서 키 등록] 이 사람을 여기로 보내는데 도착 화면이 자기를
-          보낸 CTA 를 무효화했다. 그래서 문구는 **오늘 되는 것만** 말한다:
-          읽고 답한다(읽기 도구 10종) · 쓰기는 확인 뒤(`scope.consent` 가
-          이미 그 계약이다). 미래 시제는 한 톨도 쓰지 않는다. */}
-      {/* 크기는 `text-label`(11px) — 이 문장은 램프가 말하는 "마이크로 라벨·
-          범례·타임스탬프"(9.5px)가 아니라 **읽히려고 있는 한 줄**이다. 행간은
-          스텝이 자기 짝(16px)을 싣는다.
-          폭은 산문 measure 안으로 — 도크의 산문 칼럼은 846px 이라 9.5px 로
-          **한 줄에 74자**가 들어갔다(`--measure-prose: 70ch` 초과). 컨트롤 행은
-          820px 를 쓰므로 이 상한은 **산문에만** 건다. */}
+      {/* It sits **above** the list because the first question of anyone arriving
+          here is "what do I get if I connect", and "how do I connect" comes second.
+          While this sentence was a footnote below the list the order was inverted,
+          and it was denying an already-shipped feature as "coming soon" — the agent
+          panel's [설정에서 키 등록] sends people here, and the arrival screen was
+          invalidating the CTA that sent them. So the copy states **only what works
+          today**: it reads and answers (10 read tools) · writes happen after
+          confirmation (`scope.consent` is already that contract). Not one word of
+          future tense. */}
+      {/* The size is `text-label` (11px) — this sentence is **a line meant to be
+          read**, not the ramp's "micro label, legend, timestamp" (9.5px). Leading
+          comes with the step's own pair (16px).
+          The width stays inside the prose measure — the dock's prose column was
+          846px, which at 9.5px fitted **74 characters per line** (over
+          `--measure-prose: 70ch`). Control rows use 820px, so this cap applies to
+          **prose only**. */}
       <p
         data-testid="ai-what-it-unlocks"
         className="max-w-[var(--git-setup-measure)] break-keep px-1 text-label text-[color:var(--color-text-secondary)]"
@@ -231,7 +241,7 @@ export function AiConnectionPanel({
         {t('whatItUnlocks')}
       </p>
 
-      {/* 이 패널에서 채워진 테두리 상자를 갖는 유일한 블록 — 조작하는 곳. */}
+      {/* The only block in this panel with a filled bordered box — the place you operate. */}
       <div
         ref={listRef}
         className="divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
@@ -249,10 +259,11 @@ export function AiConnectionPanel({
             onVerified={refreshAudit}
           />
         ))}
-        {/* 네 번째 행 — 키가 아니라 **주소**를 적는 갈래. 같은 상자 안에 두는
-            이유: 사람이 이 화면에 오는 이유("내 모델을 붙인다")가 같고, 별도
-            상자를 하나 더 세우면 이 패널의 시선 승자가 둘이 되어 위계가
-            무너진다(§ 이 화면의 시각 위계). */}
+        {/* The fourth row — the path where you enter an **address** rather than a
+            key. It shares the box because people come to this screen for the same
+            reason ("attach my model"), and standing up a second box would give this
+            panel two attention winners and collapse the hierarchy (§ this screen's
+            visual hierarchy). */}
         <LocalEndpointCard
           vaultRootPath={vaultRootPath}
           expanded={expanded === LOCAL_PROVIDER}
@@ -291,12 +302,13 @@ export function AiConnectionPanel({
 }
 
 /**
- * 신뢰 고지 한 줄 — 이 패널에서 가장 먼저 읽혀야 하는 문장이다.
+ * The one-line trust notice — the first sentence that should be read in this panel.
  *
- * 구 스타일은 `text-label` + tertiary 로 화면에서 **가장 흐린 잉크**였다.
- * 키체인·전송 시점·기록이라는 이 제품의 핵심 약속을 각주 크기로 적어 두면,
- * 정보를 지운 것과 실질이 같다. 상자를 주지 않고 본문 크기·2차 잉크로만
- * 올린다 — 아래 벤더 목록(1차 잉크 + 테두리)이 여전히 시선의 승자다.
+ * The old styling was `text-label` plus tertiary, the **dimmest ink on screen**.
+ * Writing this product's core promises — keychain, when transmission happens,
+ * logging — at footnote size is materially the same as deleting them. It is raised
+ * with body size and secondary ink and given no box, so the vendor list below
+ * (primary ink plus border) is still the attention winner.
  */
 function TrustHeadline({ children }: { children: ReactNode }) {
   return (
@@ -307,12 +319,13 @@ function TrustHeadline({ children }: { children: ReactNode }) {
 }
 
 /**
- * 읽는 블록 — 테두리와 표면 대신 얇은 구분선 + 평문 라벨.
+ * A block you read — a thin divider plus a plain label instead of a border and
+ * surface.
  *
- * 라벨에 mono/uppercase/wide-tracking 아이브로를 쓰지 않는 이유: 그 조합은
- * 라틴 전용 관습이라 한글에는 대문자화가 적용되지 않고 **낱말 사이만 벌어진다**
- * (소유자가 "무엇이  나가는가" 로 읽은 것이 그 간극이다). 이 자리의 제목은
- * 문장형 한국어라 장식 대신 크기·잉크로만 낮춘다.
+ * Why no mono/uppercase/wide-tracking eyebrow on the label: that combination is a
+ * Latin-only convention, so Hangul gets no capitalisation and **only the word gaps
+ * widen** (the gap the owner read as "무엇이  나가는가"). The heading here is a
+ * Korean sentence, so it is demoted by size and ink rather than by decoration.
  */
 function SupportingSection({
   title,
@@ -353,10 +366,10 @@ function ProviderCard({
   provider: SecretProvider;
   status: SecretStatus | null;
   vaultRootPath: string | null;
-  /** 미등록 행이 입력칸을 펼치고 있나 — 펼침은 패널이 소유한다(한 번에 하나). */
+  /** Is this unregistered row expanding its input? The panel owns expansion (one at a time). */
   expanded: boolean;
   onExpand: () => void;
-  /** 아무것도 넣지 않고 되돌아가기 — 펼침을 되돌릴 수 있게 하는 유일한 경로. */
+  /** Go back without entering anything — the only path that makes expanding reversible. */
   onCancel: () => void;
   onStatusChange: (provider: SecretProvider, next: SecretStatus) => void;
   onVerified: () => void;
@@ -385,8 +398,9 @@ function ProviderCard({
       const result = await secretVerify(provider, vaultRootPath);
       if (!result) return;
       if (result.ok) setVerify({ kind: 'ok' });
-      // 거부 판정은 Rust 가 한다 — 거부를 뜻하는 상태 코드는 벤더마다 다르고
-      // (Gemini 는 400), 그 지식이 화면에도 복제되면 조용히 갈라진다.
+      // Rust decides what counts as denied — the status code meaning denial differs
+      // per vendor (Gemini uses 400), and duplicating that knowledge on screen makes
+      // the two diverge silently.
       else if (result.denied) setVerify({ kind: 'denied', status: result.httpStatus });
       else
         setVerify({
@@ -396,22 +410,22 @@ function ProviderCard({
     } catch (err) {
       setVerify({ kind: 'failed', message: secretErrorMessage(err) });
     } finally {
-      // 성공이든 거부든 호출은 기록됐다 — 기록을 바로 보여준다.
+      // Success or denial, the call was logged — so the log is shown immediately.
       onVerified();
     }
   };
 
   const handleSaved = (next: SecretStatus) => {
     onStatusChange(provider, next);
-    // 행이 스스로 바뀌는 것(입력칸 → 등록됨 ···· 끝4자)이 1차 증거이고, 토스트는
-    // 그 사실을 말로 확인해 준다 — 삭제(`cleared`)와 같은 대칭. 둘 중 하나만
-    // 있으면 "눌렀는데 뭐가 됐지" 가 남는다.
+    // The row changing itself (input → registered ···· last 4) is the primary
+    // evidence, and the toast confirms that fact in words — symmetric with clearing
+    // (`cleared`). With only one of the two, "I pressed it, so what happened?" remains.
     toast.show(t('saved'));
   };
 
   const handleClear = async () => {
     if (!clearArmed) {
-      // 2단 확정 — 모달을 띄울 만큼 무거운 판단이 아니고, 되돌리기도 쉽다.
+    // Two-step confirmation — not heavy enough a judgement for a modal, and easy to undo.
       setClearArmed(true);
       clearTimer.current = window.setTimeout(() => setClearArmed(false), CLEAR_ARM_MS);
       return;
@@ -428,12 +442,14 @@ function ProviderCard({
     }
   };
 
-  // 상세 영역이 열려 있어야 하는가 — 등록된 행(확인/지우기)이거나, 미등록 행이
-  // 입력칸을 펼친 상태. 두 경우가 **같은 영역**을 쓰므로 저장 성공(입력 폼 →
-  // 등록됨 액션)도 열고 닫는 것과 같은 하나의 높이 전이를 지난다.
+  // Whether the detail area should be open — either a registered row (verify/clear)
+  // or an unregistered row expanding its input. Both cases use **the same area**, so
+  // a successful save (input form → registered actions) passes through the same
+  // single height transition as opening and closing.
   const detailOpen = stored || expanded;
-  // 구조 분해로 받는다 — ref 를 담은 객체를 렌더에서 property 로 읽으면
-  // React Compiler 린트가 "렌더 중 ref 접근" 으로 센다(실제 접근은 없다).
+  // Destructured on receipt — reading a property off an object holding a ref during
+  // render makes the React Compiler lint count it as "ref access during render"
+  // (there is no actual access).
   const {
     mounted: detailMounted,
     boxRef: detailBoxRef,
@@ -442,22 +458,26 @@ function ProviderCard({
 
   return (
     <div data-testid={`ai-provider-${provider}`}>
-      {/* 상태와 무관하게 **항상 같은 헤더 밴드**(`--control-row-h`). 상태별로
-          다른 행을 그리면(구 구조) 펼침이 교체라서 전이할 대상이 없고, 이름 열도
-          8px 씩 흔들린다. 하나의 밴드 + 그 아래 상세 영역으로 두면 이름은
-          고정되고 아래만 자란다 — 접힌 행이 펼친 행으로 "변하는" 것이지 다른
-          것으로 바뀌는 게 아니라는 사실이 움직임으로 읽힌다(치수 규칙성). */}
+      {/* **The same header band regardless of state** (`--control-row-h`). Drawing a
+          different row per state (the old structure) makes expansion a replacement,
+          so there is nothing to transition, and the name column also shifts by 8px.
+          One band plus a detail area below it fixes the name and grows only below —
+          so the movement reads as a collapsed row *becoming* an expanded one rather
+          than being swapped for something else (dimension regularity). */}
       <div className="flex h-[var(--control-row-h)] items-center justify-between gap-3 px-3">
-        {/* 벤더 이름은 정체성이지 상태가 아니다 — 등록 여부와 무관하게 같은
-            잉크로 그린다. 미등록이라는 사실은 뒤따르는 슬롯이 [키 등록] 버튼이냐
-            끝 4자냐로 이미 오해 없이 말한다. 이름까지 어둡히면 같은 사실을 두 번
-            부호화하면서, 이 화면의 1차 과업("내 벤더 찾기")만 어려워진다.
-            이 목록이 패널의 시선 승자이므로 이름은 본문 크기 · 1차 잉크. */}
+        {/* The vendor name is identity, not status — it is drawn in the same ink
+            whether or not a key is registered. Being unregistered is already said
+            without ambiguity by whether the following slot is a [키 등록] button or
+            the last 4 characters. Dimming the name too encodes the same fact twice
+            while making this screen's primary task ("find my vendor") harder.
+            This list is the panel's attention winner, so the name is body size,
+            primary ink. */}
         <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>
         {stored ? (
-          // 상태어는 본문 서체, 마스킹된 끝 4자만 mono — 한 덩어리로 등폭
-          // 처리하면 "등록됨" 뒤 공백이 벌어져 라벨과 값이 갈라져 보인다.
-          // 저장 직후 이 조각이 페이드로 들어오는 것이 "저장됐다" 의 얼굴이다.
+          // Status words use the body face and only the masked last 4 are mono —
+          // treating the whole thing as monospace widens the gap after "등록됨" so the
+          // label and value look separated. This fragment fading in right after a
+          // save is the face of "it saved".
           <span
             key={status?.last4 ?? 'stored'}
             data-testid={`ai-stored-${provider}`}
@@ -469,15 +489,17 @@ function ProviderCard({
         ) : (
           <Chip
             data-testid={`ai-register-${provider}`}
-            // `aria-expanded` 를 달았으면 다시 눌렀을 때 접혀야 한다 — 안 접히면
-            // 스크린 리더에게 한 약속이 거짓말이 된다. 그래서 이 버튼도 [취소]·
-            // Esc 와 **같은 경로**(`onCancel`)로 되돌린다.
+            // Having declared `aria-expanded`, pressing again must collapse it —
+            // otherwise a promise made to a screen reader becomes a lie. So this
+            // button also returns through **the same path** as [취소] and Esc
+            // (`onCancel`).
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
-            // 펼친 동안에도 사라지지 않고 **눌린 상태**로 남는다. 사라지면
-            // 카드가 어디서 나왔는지 가리키는 것이 화면에서 없어져, 접힐 때
-            // 돌아갈 자리도 같이 사라진다. 눌림은 이제 값 층의 `active` 가 낸다 —
-            // 손으로 쓴 인디고 3종 대신 램프의 눌림 한 벌이다.
+            // It does not disappear while expanded but stays in the **pressed
+            // state**. If it vanished, nothing on screen would point at where the
+            // card came from, and the place to return to on collapse would go with
+            // it. Pressed now comes from the value layer's `active` — one ramp state
+            // instead of three hand-written indigos.
             active={expanded}
             className={cn(
               'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
@@ -496,15 +518,15 @@ function ProviderCard({
         className="ai-row-disclosure"
         data-state={detailOpen ? 'open' : 'closed'}
         data-testid={`ai-detail-${provider}`}
-        // 접히는 동안(≈180ms)에도 DOM 에 남아 있으므로, 보이지 않는 입력칸이
-        // 탭 순서와 스크린 리더에 남지 않게 즉시 비활성화한다 — 퇴장 모션의
-        // 대가를 접근성으로 치르지 않는다.
+        // It stays in the DOM while collapsing (≈180ms), so it is disabled
+        // immediately to keep an invisible input out of tab order and the screen
+        // reader — the price of an exit motion is not paid in accessibility.
         inert={!detailOpen}
       >
         {detailMounted ? (
           <div ref={detailContentRef} className="ai-row-disclosure-body px-3 pb-2.5">
-            {/* 상태가 바뀌면 이 블록만 크로스페이드로 교체된다 — 높이는 바깥
-                전이가 이어 주므로 둘이 한 동작으로 끝난다. */}
+            {/* Only this block cross-fades when the state changes — the height is
+                carried by the outer transition, so the two finish as one movement. */}
             <div key={stored ? 'stored' : 'draft'} className="ai-row-swap grid gap-2">
               {stored ? (
                 <div className="flex flex-wrap items-center gap-2">
@@ -518,8 +540,9 @@ function ProviderCard({
                     {verify.kind === 'checking' ? t('verifying') : t('verify')}
                   </Chip>
                   <Chip
-                    // 무장하면 톤이 바뀐다 — 되돌릴 수 없는 삭제라는 사실을
-                    // 색으로 먼저 말한다. 손으로 쓴 위험색 대신 램프의 `danger`.
+                    // Arming changes the tone — colour states first that this
+                    // deletion cannot be undone. The ramp's `danger`, not a
+                    // hand-written danger colour.
                     tone={clearArmed ? 'danger' : 'default'}
                     data-testid={`ai-clear-${provider}`}
                     onClick={() => void handleClear()}
@@ -534,10 +557,11 @@ function ProviderCard({
                   </Chip>
                 </div>
               ) : (
-                // `key` 가 초안의 수명이다. 접히기 시작하는 커밋에 키가 바뀌어
-                // 이 인스턴스가 언마운트되므로, 붙여넣던 값은 퇴장 모션을
-                // 기다리지 않고 그 자리에서 사라진다 — 모션을 얻자고 "저장
-                // 전까지만 화면에 있다" 를 "접힘이 끝날 때까지" 로 늘리지 않는다.
+                // `key` is the draft's lifetime. The key changes on the commit where
+                // collapsing begins and this instance unmounts, so a value being
+                // pasted disappears on the spot rather than waiting for the exit
+                // motion — the motion is not bought by stretching "on screen only
+                // until saved" into "until the collapse finishes".
                 <KeyDraftForm
                   key={expanded ? 'draft-open' : 'draft-closing'}
                   provider={provider}
@@ -571,25 +595,27 @@ type LocalVerifyState =
   | { kind: 'done'; reason: LocalVerifyReason; models: string[]; detail: string };
 
 /**
- * 네 번째 행 — **키가 아니라 주소를 적는 갈래** (Ollama · LM Studio ·
- * llama.cpp server · vLLM …).
+ * The fourth row — **the path where you enter an address, not a key** (Ollama ·
+ * LM Studio · llama.cpp server · vLLM …).
  *
- * 위 세 행과 해부구조가 같다(헤더 밴드 + 상세 영역). 다른 것은 상세 영역에
- * 무엇이 들어가느냐뿐이다: 붙여넣는 키 대신 **주소 한 칸과 모델 하나**.
+ * Its anatomy matches the three rows above (header band plus detail area). The
+ * only difference is what goes in the detail area: **one address field and one
+ * model** instead of a pasted key.
  *
- * ## 왜 모델을 손으로 타이핑하게 두지 않는가
+ * ## Why the model is not typed by hand
  *
- * 러너의 모델 이름은 `qwen3:8b` 처럼 태그가 붙어 있어서 사람이 옮겨 적으면
- * 틀린다. 그리고 틀렸을 때 러너가 주는 답은 404 한 줄이라, 화면에는 "실패"
- * 밖에 안 남는다. 그래서 [연결 확인] 한 번이 목록까지 받아 오고, 고르는
- * 것은 목록에서만 한다 — 존재하지 않는 이름을 고를 방법 자체를 없앤다.
+ * A runner's model names carry tags like `qwen3:8b`, so people transcribe them
+ * wrongly. And when they do, the runner answers with one line of 404, so all that
+ * remains on screen is "failed". So one [연결 확인] fetches the list too, and
+ * choosing happens only from that list — removing any way to pick a name that does
+ * not exist.
  *
- * ## 실패는 이유별로 다른 문장을 받는다
+ * ## Each failure reason gets its own sentence
  *
- * 꺼져 있음 · 포트 다름 · 모델 없음이 구별되지 않으면 사용자는 셋 중 무엇을
- * 해야 하는지 모른다. 판정은 `readLocalVerdict` 한 곳에서 하고(상태 코드와
- * curl 종료 코드를 Rust 가 이미 갈라 놨다), 여기서는 그 판정에 문장을
- * 붙이기만 한다.
+ * If "not running", "wrong port" and "no such model" are not distinguished, the
+ * user cannot tell which of the three to act on. The decision happens in one place
+ * (`readLocalVerdict` — Rust has already separated status codes from curl exit
+ * codes), and here it only gets a sentence attached.
  */
 function LocalEndpointCard({
   vaultRootPath,
@@ -621,7 +647,7 @@ function LocalEndpointCard({
     contentRef: detailContentRef,
   } = useRowDisclosure(detailOpen);
 
-  /** 확인에 성공한 뒤 고를 수 있는 모델들. 저장하지 않는다 — 진실원은 러너다. */
+  /** Models selectable after a successful check. Nothing is stored — the runner is the source of truth. */
   const models = verify.kind === 'done' ? verify.models : [];
 
   const handleVerify = async () => {
@@ -633,9 +659,10 @@ function LocalEndpointCard({
       const verdict = readLocalVerdict(result);
       setVerify({ kind: 'done', ...verdict });
       if (verdict.reason === 'ok') {
-        // 주소는 응답한 그 순간 저장한다 — 모델을 아직 못 골랐어도 다음에
-        // 다시 타이핑하게 만들지 않는다. 대화가 켜지는 조건은 여전히
-        // "모델까지 골랐을 때" 다(`isLocalEndpointReady`).
+        // The address is saved the moment it answers — nobody should have to type it
+        // again just because they have not picked a model yet. The condition for
+        // conversation to switch on is still "a model has been picked too"
+        // (`isLocalEndpointReady`).
         const model = verdict.models.includes(settings.model) ? settings.model : '';
         const next = { baseUrl: draftUrl.trim(), model };
         setSettings(next);
@@ -649,7 +676,7 @@ function LocalEndpointCard({
         detail: secretErrorMessage(err),
       });
     } finally {
-      // 성공이든 실패든 이 호출은 기록됐다 — 기록을 바로 보여준다.
+      // Success or failure, this call was logged — so the log is shown immediately.
       onVerified();
     }
   };
@@ -751,19 +778,21 @@ function LocalEndpointCard({
               </Chip>
             </div>
 
-            {/* 모델 칸은 **고를 것이 생겼을 때만** 나타난다. 빈 셀렉트를 미리
-                그려 두면 "여기서 고르라" 는 지시가 고를 수 없는 상태에 걸린다. */}
+            {/* The model field appears **only once there is something to choose**.
+                Drawing an empty select in advance hangs the instruction "choose
+                here" on a state where nothing can be chosen. */}
             {models.length > 0 ? (
               <div className="flex items-center gap-2" data-testid="ai-local-model-row">
                 <Select
                   size="md"
                   value={settings.model}
                   onChange={handlePickModel}
-                  // 임베딩으로 판정된 행만 두 번째 줄을 받는다 — 이름만으로는
-                  // `embeddinggemma:latest` 가 대화가 되는지 알 수 없고,
-                  // 모르면 사람은 1번을 고른다(소유자가 실제로 그랬다).
-                  // 지우지 않고 **적어 준다**: 지우면 화면이 사용자 기계에
-                  // 있는 것을 없다고 말하게 된다.
+                  // Only rows judged to be embeddings get a second line — the name
+                  // alone cannot tell you whether `embeddinggemma:latest` can hold a
+                  // conversation, and not knowing, a person picks the first one (the
+                  // owner actually did). It is **annotated, not removed**: removing
+                  // it would make the screen deny something present on the user's
+                  // own machine.
                   options={models.map((model) => ({
                     value: model,
                     label: model,
@@ -815,12 +844,13 @@ function LocalEndpointCard({
 }
 
 /**
- * 이 행의 한 줄 — 상태마다 **다음에 할 일이 다르므로** 문장도 다르다.
+ * This row's single line — the next thing to do **differs per state**, so the
+ * sentence does too.
  *
- * 로컬 갈래의 전송 범위 문구가 여기 산다. 루프백일 때와 아닐 때가 갈리는
- * 이유: "이 컴퓨터 밖으로 나가지 않아요" 는 `localhost` 에서만 참이고,
- * 사용자가 https 로 다른 기계를 가리킬 수도 있다(그것도 허용한다). 참이
- * 아닌 자리에 그 문장을 쓰면 이 제품의 신뢰 서사 자체가 거짓말이 된다.
+ * The local path's transmission-scope copy lives here. Loopback and non-loopback
+ * split because "nothing leaves this computer" is true only on `localhost`, and a
+ * user may point at another machine over https (which is allowed). Writing that
+ * sentence where it is not true would make this product's whole trust story a lie.
  */
 function LocalCaption({
   verify,
@@ -862,9 +892,9 @@ function LocalCaption({
     );
   }
   if (verify.kind === 'done' && verify.reason === 'ok') {
-    // 「설치된 모델 N개」만 말하면 그 N 이 전부 고를 만한 것처럼 읽힌다 —
-    // 실측된 러너에서는 7개 중 4개가 임베딩 전용이었다. 임베딩이 하나도
-    // 없으면 종전 문장 그대로다(없는 구분을 만들지 않는다).
+    // Saying only 「설치된 모델 N개」 reads as though all N are worth choosing — on the
+    // measured runner, 4 of 7 were embedding-only. With no embeddings at all the
+    // sentence stays as it was (no distinction is invented where there is none).
     const chatCount = countChatCapableModels(verify.models);
     return (
       <p
@@ -892,7 +922,7 @@ function LocalCaption({
   );
 }
 
-/** 이 기계 자신인가 — Rust `is_loopback_authority` 와 같은 판정. */
+/** Is this machine itself — the same decision as Rust's `is_loopback_authority`. */
 function isLoopbackHost(authority: string): boolean {
   const host = authority.startsWith('[')
     ? (authority.slice(1).split(']')[0] ?? '')
@@ -901,33 +931,34 @@ function isLoopbackHost(authority: string): boolean {
 }
 
 /**
- * 붙여넣는 칸 — **펼쳐진 동안만 존재하는 컴포넌트다.**
+ * The paste field — **a component that exists only while expanded.**
  *
- * 초안 키를 부모가 아니라 여기서 들고 있는 것이 요점이다. 행이 접히면 이
- * 컴포넌트가 언마운트되면서 초안도 **함께 사라진다** — 지우는 코드가 따로 있는
- * 게 아니라, 남을 자리 자체가 없다.
+ * The point is that the draft key is held here rather than by the parent. When the
+ * row collapses this component unmounts and **the draft goes with it** — there is
+ * no clearing code, because there is nowhere for it to remain.
  *
- * 왜 굳이 이렇게 하나: 행 접기는 "화면에서 사라졌으니 없어졌겠지" 라는 믿음을
- * 만든다. 초안을 부모가 들고 있으면 그 믿음이 틀리게 된다 — 붙여넣었다가 다른
- * 행으로 옮겨 그만둔 키가 시트가 닫힐 때까지 메모리에 남는다. 수명을 가시성에
- * 묶어 두면 "붙여넣은 키는 저장 전까지만 화면에 있다" 는 이 패널의 계약이
- * 규율이 아니라 구조가 된다.
+ * Why go to the trouble: collapsing a row creates the belief "it left the screen,
+ * so it must be gone". A draft held by the parent makes that belief false — a key
+ * pasted and then abandoned by moving to another row would stay in memory until the
+ * sheet closes. Tying the lifetime to visibility turns this panel's contract ("a
+ * pasted key is on screen only until it is saved") from discipline into structure.
  *
- * 그래서 [취소]는 여기서 지우는 일을 하지 않는다 — 부모에게 접으라고만 알린다.
- * 이 컴포넌트가 사라지는 것이 곧 초안이 사라지는 것이다.
+ * So [취소] does no clearing here — it only tells the parent to collapse. This
+ * component disappearing *is* the draft disappearing.
  *
- * **퇴장 모션이 생겨도 그 계약은 늘어나지 않는다.** 접힘이 눈에 보이려면 접힌
- * 영역이 전이가 끝날 때까지(≈180ms) DOM 에 남아야 하는데, 그 김에 초안까지
- * 남으면 위 문장이 "행이 접히면" 에서 "접힘 애니메이션이 끝나면" 으로 슬며시
- * 늘어난다. 그래서 호출부가 `key` 를 펼침 상태에 묶어, 접히기 **시작하는
- * 커밋**에 이 인스턴스를 통째로 교체한다 — 여전히 "지우는 코드가 없고 남을
- * 자리가 없다". 모션을 얻자고 약속을 깎지 않는다.
+ * **An exit motion does not stretch that contract.** For the collapse to be
+ * visible, the collapsing area has to stay in the DOM until the transition ends
+ * (≈180ms), and if the draft rode along, the sentence above would quietly widen
+ * from "when the row collapses" to "when the collapse animation finishes". So the
+ * caller ties `key` to the expanded state and replaces this instance wholesale on
+ * the commit where collapsing **begins** — still "no clearing code, nowhere to
+ * remain". The promise is not shaved to buy a motion.
  *
- * **입력한 내용이 있어도 확인창을 띄우지 않는다.** ① 잃는 것이 클립보드/벤더
- * 콘솔에서 다시 붙여넣으면 되는 값이고, ② 모달 위의 모달은 이 저장소가
- * 금지하는 스택 형태이며, ③ 이 카드의 확인 예산은 이미 [지우기] 2단 확정이
- * 쓰고 있다 — 되돌릴 수 있는 일과 없는 일에 같은 마찰을 물리면 진짜 경고가
- * 값싸진다.
+ * **No confirmation dialog even with text entered.** ① What is lost is a value you
+ * can paste again from the clipboard or the vendor console, ② a modal on a modal is
+ * a stacking form this repository forbids, and ③ this card's confirmation budget is
+ * already spent on [지우기]'s two-step arming — charging the same friction for
+ * reversible and irreversible actions makes the real warning cheap.
  */
 function KeyDraftForm({
   provider,
@@ -939,7 +970,7 @@ function KeyDraftForm({
 }: {
   provider: SecretProvider;
   label: string;
-  /** 이 행이 아직 펼쳐져 있나 — false 면 접히는 중(퇴장 전이). */
+  /** Is this row still expanded — false means it is collapsing (exit transition). */
   open: boolean;
   onSaved: (next: SecretStatus) => void;
   onCancel: () => void;
@@ -952,10 +983,10 @@ function KeyDraftForm({
 
   useEffect(() => {
     if (!open) return;
-    // 사용자가 방금 [키 등록]을 눌러 이 칸을 연 참이다 — 한 번 더 클릭하게
-    // 만들지 않는다. `autoFocus` 대신 명시 호출인 이유는 `preventScroll`:
-    // 마운트 시점의 컨테이너 높이는 0(전이 시작점)이라 브라우저가 스크롤로
-    // 보정하려 들면 패널이 튄다.
+    // The user just pressed [키 등록] to open this field, so do not make them click
+    // again. The explicit call rather than `autoFocus` is for `preventScroll`: the
+    // container's height at mount is 0 (the transition's start point), and the panel
+    // jumps if the browser tries to correct with a scroll.
     inputRef.current?.focus({ preventScroll: true });
   }, [open]);
 
@@ -965,8 +996,8 @@ function KeyDraftForm({
     onError(null);
     try {
       const next = await secretSet(provider, draftKey);
-      // 저장 성공 즉시 프런트 상태에서 키를 지운다 — 전체 키가 이 화면에
-      // 남아 있을 수 있는 유일한 순간을 여기서 끝낸다.
+      // Clear the key from front-end state the instant the save succeeds — this ends
+      // the only moment the full key can exist on this screen.
       setDraftKey('');
       if (next) onSaved(next);
     } catch (err) {
@@ -991,13 +1022,15 @@ function KeyDraftForm({
         onKeyDown={(event) => {
           if (event.key === 'Enter') void handleSave();
         }}
-        // 값은 mono(기계 문자열), 안내 문구는 본문 서체 — 한국어 placeholder 까지
-        // 등폭으로 그리면 "API  키  붙여넣기" 처럼 낱말 사이가 벌어진다.
+        // The value is mono (a machine string) and the guidance uses the body face —
+        // drawing a Korean placeholder monospaced too widens the word gaps into
+        // "API  키  붙여넣기".
         className={fieldClass({ size: "md", className: "min-w-0 flex-1 font-mono placeholder:font-sans" })}
       />
-      {/* 저장 왼쪽의 중립 컨트롤 — 눌러 보고 마음이 바뀐 사람의 출구다.
-          Esc 로도 같은 일이 일어나지만 그건 보이지 않는다. 되돌릴 길이 화면에
-          없는 펼침은 함정이라, 발견 가능한 컨트롤이 있어야 계약이 성립한다. */}
+      {/* The neutral control left of save — the exit for someone who pressed and
+          changed their mind. Esc does the same thing, but Esc is invisible. An
+          expansion with no visible way back is a trap, so a discoverable control is
+          what makes the contract hold. */}
       <Chip
         data-testid={`ai-cancel-${provider}`}
         onClick={onCancel}
@@ -1018,7 +1051,7 @@ function KeyDraftForm({
   );
 }
 
-/** 카드마다 정확히 한 줄의 설명 — 상태가 바뀌어도 카드 높이 해부구조는 같다. */
+/** Exactly one line of explanation per card — the card's height anatomy is the same across states. */
 function ProviderCaption({
   error,
   provider,
@@ -1029,7 +1062,7 @@ function ProviderCaption({
 }: {
   error: string | null;
   provider: string;
-  /** 이 확인 요청이 향하는 호스트 — 우리가 증명할 수 있는 만큼의 목적지 주장. */
+  /** The host this verification request goes to — a destination claim only as strong as we can prove. */
   host: string;
   stored: boolean;
   verify: VerifyState;
@@ -1045,8 +1078,8 @@ function ProviderCaption({
     );
   }
   if (!stored) {
-    // 붙여넣는 순간이 신뢰를 판단하는 순간이다 — 포커스 시에만 뜨는 툴팁이
-    // 아니라 필드 아래 상시 노출.
+    // The moment of pasting is the moment trust is judged — permanently visible
+    // below the field, not a tooltip that appears on focus.
     return (
       <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
         {t('pasteSafety', { provider })}
@@ -1105,7 +1138,7 @@ function StatusDot({ tone }: { tone: 'success' | 'danger' }) {
   );
 }
 
-/** 보낸 기록 — 실제 JSONL 줄만 그린다. 없는 줄을 요약으로 지어내지 않는다. */
+/** Sent log — it draws only real JSONL lines. It never invents a summary for lines that do not exist. */
 function AuditTail({
   entries,
   vaultRootPath,
@@ -1126,10 +1159,10 @@ function AuditTail({
             data-testid="ai-audit-open"
             onClick={() => void openTauriVaultInFinder(vaultRootPath)}
             /*
-             * 글자만으로 눌리는 것 = `link`. 램프 바닥이 WCAG 2.5.8(AA)의
-             * 24×24 다 — 종전 주석은 44 를 «2.5.8 만족»이라 불렀지만 44 는
-             * 2.5.5(AAA)/HIG 의 터치 값이고, 그건 coarse 에서
-             * `.touch-hit-expand` 가 낸다(2026-08-04 바닥 재설정).
+             * Text that is pressable on its own is `link`. The ramp's floor is WCAG
+             * 2.5.8 (AA)'s 24×24 — the old comment called 44 "satisfying 2.5.8", but
+             * 44 is the touch value from 2.5.5 (AAA) and the HIG, and that comes from
+             * `.touch-hit-expand` on a coarse pointer (floor reset 2026-08-04).
              */
             className={controlClass({
               shape: 'link',
@@ -1185,10 +1218,11 @@ function AuditTail({
           ))
         )}
       </div>
-      {/* 경로만 mono, 곁의 한국어는 본문 서체 — 한 줄을 통째로 mono 로 두면
-          한글 낱말 사이가 벌어져 "커밋할지는  당신의  선택이에요" 처럼 읽힌다
-          (등폭 글리프 폭이 한글 자간에 그대로 들어오기 때문). 파일 경로는
-          기계 문자열이라 mono 가 정보지만, 그 옆 문장은 아니다. */}
+      {/* Only the path is mono; the Korean beside it uses the body face. A whole
+          line in mono widens Hangul word gaps into "커밋할지는  당신의  선택이에요",
+          because the monospace glyph width carries straight into Hangul letter
+          spacing. A file path is a machine string, so mono is information there —
+          the sentence next to it is not. */}
       <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
         <span className="font-mono">{LLM_AUDIT_RELATIVE_PATH}</span>
         {' · '}
@@ -1198,7 +1232,7 @@ function AuditTail({
   );
 }
 
-/** 기록의 시각 — 로컬 타임존 기준 `MM.DD HH:mm`. 값이 이상하면 원문 그대로. */
+/** A log entry's time — `MM.DD HH:mm` in the local timezone. If the value is odd, the raw string is shown. */
 function formatAuditTime(at: string): string {
   const date = new Date(at);
   if (Number.isNaN(date.getTime())) return at;

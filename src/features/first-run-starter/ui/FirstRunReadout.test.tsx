@@ -11,7 +11,7 @@ vi.mock('../model/use-first-run-sample-mode-settled', () => ({
 }));
 
 vi.mock('next-intl', () => ({
-  // 라틴 아이브로 판정이 화면 언어를 읽는다 (E-10).
+  // The latin-eyebrow verdict reads the screen's language.
   useLocale: () => "ko",
   useTranslations: () => (key: string) => key,
 }));
@@ -65,10 +65,9 @@ describe('FirstRunReadout', () => {
     expect(screen.getByTestId('first-run-readout')).toBeInTheDocument();
   });
 
-  // P1 결함①(b), 사용성 전수 검수 2026-07-23 — 비개발(plain) 모드에서는
-  // element 티어가 도달 불가(`PLAIN_TIER_REVEAL`)라 "줌인하면 요소가
-  // 나타납니다"가 영원히 거짓으로 남는다. plain 모드는 tier 와 무관하게
-  // 항상 클릭 기반 plain 문구를 보여준다.
+  // In plain (non-developer) mode the element tier is unreachable
+  // (`PLAIN_TIER_REVEAL`), so "zoom in to see elements" stays false forever. Plain mode
+  // always shows the click-based wording regardless of tier.
   describe('audiencePlain (P1 결함①b)', () => {
     it('shows the plain click-based hint instead of the zoom hint, regardless of tier', () => {
       render(<FirstRunReadout projectCount={1} domainCount={6} tier="circuit" audiencePlain />);

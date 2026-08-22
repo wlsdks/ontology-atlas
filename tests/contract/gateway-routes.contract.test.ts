@@ -7,16 +7,16 @@ import { isGatewayRoute, isGatewaySurface } from '@/shared/lib/nav-destination';
 const repoRoot = resolve(__dirname, '../..');
 
 /**
- * **관문 표면을 새로 만들면 셸이 그것을 알아야 한다.**
+ * **A new gateway surface must be known to the shell.**
  *
- * 2026-07-30 실측: `/guide` · `/changelog` 를 만들고 첫 렌더를 열었더니 워크벤치
- * 좌측 레일 6개 목적지가 그대로 떴다. `isGatewayRoute()` 가
- * `startsWith("/download")` 한 줄이라 새 라우트를 몰랐기 때문이다. 화면은
- * 정상적으로 렌더됐고 타입도 lint 도 통과했다 — **판정이 빠진 것은 에러가 아니라
- * 잘못된 크롬**이라 값 검사로는 잡히지 않는다.
+ * Measured 2026-07-30: `/guide` and `/changelog` were created, and the first render
+ * showed the workbench's six left-rail destinations intact, because
+ * `isGatewayRoute()` was the single line `startsWith("/download")` and did not know
+ * the new routes. The screen rendered fine and types and lint passed — **a missing
+ * verdict is not an error but wrong chrome**, so no value check catches it.
  *
- * 그래서 라우트 **디렉터리의 존재**와 **판정 함수**를 맞대어 본다. 새 관문
- * 라우트를 만들고 등록을 잊으면 여기서 먼저 터진다.
+ * So the **existence of a route directory** is compared against the **predicate**. A
+ * new gateway route whose registration is forgotten breaks here first.
  */
 const GATEWAY_ROUTES = ['download', 'guide', 'changelog'] as const;
 
@@ -38,9 +38,9 @@ describe('관문 라우트 등록', () => {
   });
 
   /**
-   * ⚠️ `/docs` 는 **문서함**이고 관문의 읽을거리가 아니다. 이 둘이 섞이면
-   * 상단 내비의 "가이드" 가 볼트 피커로 사람을 보낸다 — `/guide` 라는 이름을
-   * 고른 이유 자체가 이 충돌이다(원장 2026-07-30).
+   * ⚠️ `/docs` is **the workspace library**, not gateway reading material. Mixing the
+   * two sends someone who clicked "guide" in the top nav into the vault picker — that
+   * collision is precisely why the name `/guide` was chosen (ledger, 2026-07-30).
    */
   it('`/docs` 는 워크벤치로 남는다 — 가이드와 이름이 갈렸다', () => {
     expect(isGatewayRoute('/docs')).toBe(false);
@@ -48,8 +48,8 @@ describe('관문 라우트 등록', () => {
   });
 
   /**
-   * `/` 만은 경로가 아니라 **방문자**가 정한다. 새 라우트를 등록하면서 이
-   * 분기를 깨뜨리면 설치된 앱이 자기 설치를 권하게 된다.
+   * `/` alone is decided by the **visitor**, not the path. Breaking this branch while
+   * registering a new route makes the installed app recommend installing itself.
    */
   it('`/` 판정은 방문자 맥락이 정한다 — 등록 목록이 이 분기를 삼키지 않았다', () => {
     const web = { hasVault: false, desktop: false, vaultKnown: true };
@@ -68,17 +68,20 @@ describe('관문 라우트 등록', () => {
 });
 
 /**
- * X 자리는 **목적지가 없으면 링크가 아니다**.
+ * The X entry is **not a link when it has no destination**.
  *
- * 핸들이 빈 채로 `<a href>` 가 되는 순간 웹 스모크 ③ 이 막는 「죽은 CTA」가
- * 된다. 상수 하나가 그 분기를 소유하므로 여기서 그 상수의 계약만 지킨다.
+ * The moment an empty handle becomes an `<a href>` it is the dead CTA web smoke ③
+ * blocks. One constant owns that branch, so only that constant's contract is guarded
+ * here.
  */
 /**
- * 가이드는 **여러 장이 한 벌**이라 목록·라우트·본문 셋이 어긋나기 쉽다.
+ * The guide is **many chapters as one set**, so its list, routes, and bodies drift
+ * apart easily.
  *
- * `GUIDE_PAGES` 가 단일 진실원인데, 그 목록이 가리키는 볼트 문서나 번역 키가
- * 없으면 화면에 **빈 페이지나 키 이름**이 그대로 나온다. 셋 다 실행 없이는
- * 안 보이는 실패라 여기서 맞대어 본다.
+ * `GUIDE_PAGES` is the single source of truth, and when a vault document or
+ * translation key it names is missing, the screen shows **an empty page or the key
+ * name**. All three are failures invisible without running, so they are compared
+ * here.
  */
 describe('가이드 차례', () => {
   it(
@@ -128,11 +131,11 @@ describe('X 링크 자리', () => {
   it('핸들이 비면 URL 이 null · 채워지면 그 핸들의 주소다', async () => {
     const { X_HANDLE, xProfileUrl } = await import('@/shared/config/social-links');
     /**
-     * `X_HANDLE` 을 `string` 으로 받아 두는 이유: 리터럴 타입이면 값이 채워진
-     * 순간 `=== ''` 비교가 **타입 오류**가 되어, 이 계약이 「빈 상태」쪽 절을
-     * 잃는다. 이 자리는 두 상태 **모두**에서 참이어야 한다 — 핸들은 소유자가
-     * 넣고 빼는 값이고, 빼는 순간 크롬이 다시 비활성으로 돌아가는 것이
-     * 이 파일이 지키는 계약이다(2026-08-08 에 핸들이 채워졌다).
+     * `X_HANDLE` is typed as `string` because with a literal type the `=== ''` comparison
+     * becomes a **type error** the moment the value is filled in, and this contract loses
+     * its "empty" clause. This place must hold in **both** states — the handle is a value
+     * the owner adds and removes, and the contract this file guards is that removing it
+     * returns the chrome to inactive (the handle was filled in on 2026-08-08).
      */
     const handle: string = X_HANDLE;
     if (handle === '') expect(xProfileUrl()).toBeNull();
@@ -140,7 +143,8 @@ describe('X 링크 자리', () => {
   });
 
   it('핸들만 저장한다 — URL 전체를 박지 않는다', () => {
-    // 도메인이 또 바뀌어도(twitter.com → x.com) 상수가 안 흔들리게 하는 계약.
+    // The contract that keeps the constant stable through another domain change
+    // (twitter.com → x.com).
     expect(source).toMatch(/export const X_HANDLE = '[^/]*';/);
   });
 });

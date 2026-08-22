@@ -8,23 +8,22 @@ import {
 import { generateNodeUid } from '@/entities/docs-vault';
 
 /**
- * 부트스트랩("내 문서에서 온톨로지 시작하기") 승인분을 vault 에 쓰는
- * 오케스트레이션 — HomePage 모듈화 1차로 인라인 runBootstrap 에서 추출.
+ * Orchestrates writing the approved part of a bootstrap ("start an ontology from my documents") into
+ * the vault.
  *
- * 계약 (전부 회귀 이력 있음 — 테스트가 고정):
- * - 모든 쓰기는 skipRefresh, 마지막에 refresh() 정확히 1회 (batch — 마지막
- *   쓰기가 no-op 이어도 반영 보장).
- * - 요소: frontmatter 만 추가 (본문 무변경).
- * - 도메인(재검 마찰 D): 실제 .md 생성 — 같은 경로/동명 domain 문서가
- *   있으면 생략.
- * - 프로젝트(재검 마찰 A): 기존 kind:project 가 있으면 두 번째 파일 대신
- *   그 문서의 domains 에 승인분 병합.
+ * Contracts (every one has a regression history; the tests pin them):
+ * - every write uses skipRefresh, with exactly one refresh() at the end (batched, so the result lands
+ *   even when the last write is a no-op)
+ * - elements: frontmatter is added only (the body is untouched)
+ * - domains: a real `.md` is created, skipped when a domain document of the same path or name exists
+ * - project: with an existing `kind: project`, the approved domains are merged into that document's
+ *   `domains` instead of creating a second file
  */
 
 /**
- * vault write 표면의 최소 계약 — use-local-vault 반환값의 부분집합 (fake 로
- * 테스트 가능). 메서드 축약 표기 — use-local-vault 의 더 넓은
- * FrontmatterUpdateValue 시그니처가 그대로 대입되도록.
+ * The minimal contract of the vault write surface — a subset of what use-local-vault returns, so a
+ * fake can satisfy it in tests. Written in method shorthand so use-local-vault's wider
+ * `FrontmatterUpdateValue` signature assigns directly.
  */
 export interface BootstrapVaultWriter {
   manifest: {
@@ -40,9 +39,9 @@ export interface BootstrapVaultWriter {
 }
 
 export interface ExecuteBootstrapResult {
-  /** 기존 프로젝트에 덧붙였는가 (토스트 분기용). */
+  /** Whether it was appended to an existing project (used to branch the toast). */
   addedToExisting: boolean;
-  /** 승격된 요소 수. */
+  /** How many elements were promoted. */
   elementCount: number;
 }
 

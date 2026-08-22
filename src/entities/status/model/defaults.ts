@@ -1,7 +1,8 @@
 import type { Status } from './types';
 
 /**
- * 기본 상태 — 8 단계 라이프사이클. ID 는 이전 리터럴 유니온과 호환.
+ * The eight lifecycle statuses. IDs stay compatible with the earlier literal
+ * union, so stored project records keep resolving.
  */
 export const DEFAULT_STATUSES: Status[] = [
   { id: 'idea', label: '아이디어', labelEn: 'Idea', dotColor: 'neutral' },

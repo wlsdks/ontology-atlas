@@ -43,9 +43,10 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-skills', kind: 'skill', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/skills\/.+/ }),
   Object.freeze({ id: 'claude-agents', kind: 'agent', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/agents\/.+/ }),
   Object.freeze({ id: 'agents-skills', kind: 'skill', tools: Object.freeze(['codex']), pattern: /^\.agents\/skills\/.+/ }),
-  // `.claude/agents` 는 Claude Code 의 **소환 등록부**(없으면 서브에이전트를 못
-  // 띄운다)이고, 이 짝은 서브에이전트가 없는 도구가 같은 브리프를 **열어서
-  // 읽는** 자리다. 목적은 달라도 내용은 같아야 하므로 agent-copy 가 지킨다.
+  // `.claude/agents` is Claude Code's **summoning registry** — a seat missing from
+  // it cannot be spawned at all. Its twin here is where a tool without subagents
+  // **opens and reads** the same brief. The purposes differ but the content must
+  // match, which is what agent-copy enforces.
   Object.freeze({ id: 'agents-agents', kind: 'agent', tools: Object.freeze(['codex']), pattern: /^\.agents\/agents\/.+/ }),
   Object.freeze({ id: 'cursor-rules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursor\/rules\/.+\.mdc$/ }),
   Object.freeze({ id: 'cursorrules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursorrules$/ }),
@@ -173,18 +174,19 @@ function checkClaudeAgentsBridge(recordByPath, existingPathSet, drift) {
 }
 
 /**
- * `.claude/agents` ↔ `.agents/agents` — 자리 브리프의 교차 도구 짝.
+ * `.claude/agents` ↔ `.agents/agents` — the cross-tool pair for seat briefs.
  *
- * **왜 스킬과 따로 있나.** 스킬은 두 도구가 *같은 목적으로* 읽지만, 자리
- * 브리프는 목적이 다르다: Claude Code 에게 `.claude/agents/*.md` 는 서브에이전트
- * **등록부**(거기 없으면 소환 자체가 안 된다)이고, Codex 에게 `.agents/agents/*.md`
- * 는 카운슬을 순차로 돌 때 **여는 참고 문서**다. 목적이 달라도 내용은 같아야
- * 하므로 짝이 필요하고, 짝인데 게이트가 없으면 어긋나는 쪽이 기본값이 된다 —
- * 이 저장소가 스킬 이중화에서 이미 겪은 실패다.
+ * **Why this is separate from the skill pair.** Two tools read a skill for the
+ * *same* purpose; seat briefs serve different ones. For Claude Code
+ * `.claude/agents/*.md` is the subagent **registry** (a seat absent from it cannot
+ * be summoned); for Codex `.agents/agents/*.md` is a **reference document it
+ * opens** while walking a council sequentially. Different purposes, identical
+ * content — so the pair is required, and a pair with no gate drifts by default.
+ * This repository already lived that failure with duplicated skills.
  *
- * 한쪽에만 있는 파일도 drift 다. Claude 전용 자리를 새로 만들면 Codex 세션은
- * 그 자리를 **부를 수도 읽을 수도 없이** 이름만 받는다(2026-08-04 실측: 자리
- * 15개 전부가 그 상태였다).
+ * A file present on one side only is drift too. Adding a Claude-only seat leaves a
+ * Codex session with a name it can **neither summon nor read** (measured
+ * 2026-08-04: all 15 seats were in that state).
  */
 function checkAgentCopy(records, drift) {
   const claudeByName = new Map();

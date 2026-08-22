@@ -89,8 +89,9 @@ function renderPanel(
       onOpenWorkflowGuide={vi.fn()}
     />,
   );
-  // C13 — 상세 검증/스니펫/게이트는 "고급" 접기 뒤로 강등됐다. 이 접기를
-  // 검사하는 기존 어서션이 내용을 보게 펼쳐 둔다(첫 화면 3단계는 그대로 노출).
+  // C13 — the detailed verification, snippets and gate were demoted behind the
+  // "advanced" fold. It is expanded here so the existing assertions can see the
+  // content (the first screen's three steps stay exposed).
   const advancedToggle = screen.queryByTestId('agent-setup-advanced-toggle');
   if (advancedToggle) fireEvent.click(advancedToggle);
   return localVault;
@@ -124,8 +125,9 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByRole('region', { name: 'MCP 연결' }),
     ).toBeInTheDocument();
-    // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
-    // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
+    // The amber badge that stated the same fact a third time is gone (design
+    // council S2, 2026-08-02) — the row stating the number is still directly below
+    // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('연결 파일 1/2개 준비됨')).toBeInTheDocument();
     expect(screen.getByText('· 다음: .mcp.json 만들기')).toBeInTheDocument();
@@ -148,8 +150,9 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByRole('list', { name: '더 확인할 것' }),
     ).toBeVisible();
-    // 앞 셋(설정 파일 · 다시 켜기 · 연결 확인)은 **3단계로 승격**됐다 — 여기
-    // 남는 것은 그 뒤에 오는 셋뿐이다. 번호 배지가 네 벌이던 화면의 정리다.
+    // The first three (config files · restart · verify connection) were **promoted
+    // into the three steps**, so only the three that follow remain here. This is the
+    // cleanup of a screen that had four separate numbering systems.
     expect(
       screen.getByText('고치기 전에 확인 명령을 돌려 「되나」와 「빠른가」를 따로 봅니다.'),
     ).toBeInTheDocument();
@@ -159,7 +162,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽습니다.'),
     ).toBeInTheDocument();
-    // 승격된 셋은 사라진 게 아니라 위로 올라갔다 — 3단계가 이름으로 실재한다.
+    // The promoted three did not disappear but moved up — the three steps exist by name.
     expect(screen.getByTestId('agent-setup-step-1')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
@@ -170,7 +173,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('이 폴더에서 문서 1개를 읽었어요')).toBeInTheDocument();
     expect(screen.getByText('상태')).toBeInTheDocument();
     expect(screen.getByText('아직 검사 결과가 없어요')).toBeInTheDocument();
-    // 「연결 파일 {ready}/{total}」 행은 뺐다 — 머리 요약이 같은 수를 항상 말한다.
+    // The 「연결 파일 {ready}/{total}」 row was removed — the header summary always states the same number.
     expect(screen.getByText('여는 자리')).toBeInTheDocument();
     expect(
       screen.getByText('다른 코드 폴더에서 열기 전에 연결 설정을 복사하세요'),
@@ -179,8 +182,9 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('자체 점검')).toBeInTheDocument();
     expect(screen.getByText('고치기 전에 아래 명령을 복사해 실행하세요')).toBeInTheDocument();
     expect(screen.getByLabelText('첫 연결에서 확인되는 것')).toBeInTheDocument();
-    // 「연결 파일 상태」는 두 자리에 있다 — 접기의 묶음 제목과 첫 연결 증거의
-    // 항목 이름. 둘 다 같은 것을 가리키므로 존재만 본다.
+    // 「연결 파일 상태」 appears in two places — the fold's group title and the first
+    // connection evidence's item name. Both point at the same thing, so only
+    // existence is checked.
     expect(screen.getAllByText('연결 파일 상태').length).toBeGreaterThan(0);
     expect(
       screen.getByText(
@@ -280,8 +284,9 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
-    // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
+    // The amber badge that stated the same fact a third time is gone (design
+    // council S2, 2026-08-02) — the row stating the number is still directly below
+    // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('연결 파일 2/2개 준비됨')).toBeInTheDocument();
     expect(
@@ -298,7 +303,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    // 파일 상태는 「잘 안 되나요?」 안의 한 목록이 소유한다 — 이름 · 경로 · 상태.
+    // File status is owned by one list inside 「잘 안 되나요?」 — name · path · status.
     const connections = screen.getByRole('list', {
       name: '도구별 연결 파일 상태',
     });
@@ -313,7 +318,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('.mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.'),
     ).toBeInTheDocument();
 
-    // 도구별 «어떻게 확인하나» 는 3단계의 내용이다 — 「연결 확인」을 열면 나온다.
+    // The per-tool «how do I check» is step 3's content — it appears when 「연결 확인」 opens.
     fireEvent.click(screen.getByTestId('agent-setup-step-3-toggle'));
     const step3 = screen.getByTestId('agent-setup-step-3');
     expect(within(step3).getByText('/mcp 로 확인')).toBeInTheDocument();
@@ -359,10 +364,11 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText(/오류 1개: 커밋을/)).toBeInTheDocument();
   });
 
-  // ⑤ — 「5개가 막음」이 갈 곳을 갖는다. 종전 이 블록의 인터랙티브 요소는 0개였고
-  // 어느 파일이 잘못됐는지 한 글자도 없었다: 사람이 수치를 읽고 나서 할 수 있는
-  // 일이 창을 닫는 것뿐이었다. 게이트가 «링크가 있다» 만 보지 않고 «깨끗할 때는
-  // 없다» 까지 보는 이유는, 항상 뜨는 링크는 상태를 안 나르기 때문이다.
+  // ⑤ — 「5 are blocking」 gets somewhere to go. This block previously had 0
+  // interactive elements and not one character saying which file was wrong: after
+  // reading the number, all a person could do was close the window. The gate checks
+  // not only «the link exists» but also «it is absent when clean», because a link
+  // that is always there carries no state.
   it('검사 결과 행이 「할 일」 큐로 가는 길을 준다 (깨끗하면 주지 않는다)', () => {
     renderPanel(
       { agentConfigStatus: { mcpJson: true, codexConfig: true, mcpExample: true } },
@@ -370,8 +376,9 @@ describe('VaultAgentSetupPanel', () => {
     );
 
     const link = screen.getByTestId('agent-setup-proof-health-link');
-    // 후행 슬래시는 라우터 설정(`trailingSlash`)이 붙이는 것이라 jsdom 렌더에는
-    // 없다. 게이트가 재야 하는 것은 «목적지와 탭» 이지 슬래시가 아니다.
+    // The trailing slash is added by the router config (`trailingSlash`), so it is
+    // absent from a jsdom render. What the gate has to measure is «destination and
+    // tab», not the slash.
     const href = link.getAttribute('href') ?? '';
     expect(href).toContain('/ontology/insights');
     expect(href).toContain('tab=do-next');
@@ -425,8 +432,9 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
-    // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
+    // The amber badge that stated the same fact a third time is gone (design
+    // council S2, 2026-08-02) — the row stating the number is still directly below
+    // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('연결 파일 1/2개 준비됨')).toBeInTheDocument();
     expect(
@@ -1239,8 +1247,9 @@ describe('VaultAgentSetupPanel', () => {
         "OATLAS_VAULT='<absolute path to your team-vault folder>'",
       ),
     );
-    // npm 발행 계획 폐기 후: 복사되는 명령은 앱이 아는 실행 경로여야 한다.
-    // 웹/테스트처럼 번들 서버를 모르는 자리에서는 소스 체크아웃 자리표시자.
+    // After the npm publishing plan was dropped: the copied command has to be a run
+    // path the app actually knows. Where the bundled server is unknown (web, tests)
+    // it is a source-checkout placeholder.
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('mcp/src/index.js'),
     );
@@ -1262,15 +1271,15 @@ describe('VaultAgentSetupPanel', () => {
         onOpenWorkflowGuide={vi.fn()}
       />,
     );
-    // 3단계 카드 + 클라이언트 버튼은 첫 화면에 노출
+    // The three step cards plus the client buttons are exposed on the first screen.
     expect(screen.getByTestId('agent-setup-step-1')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
     expect(screen.getByTestId('agent-client-claude-code')).toBeInTheDocument();
     expect(screen.getByTestId('agent-connect-server-line')).toBeInTheDocument();
-    // 상세 검증(모드 chooser 등)은 접힌 상태라 안 보인다
+    // The detailed verification (mode chooser and so on) is collapsed, so it is not visible.
     expect(screen.queryByTestId('agent-setup-advanced')).not.toBeInTheDocument();
-    // 펼치면 나타난다
+    // Expanding reveals it.
     fireEvent.click(screen.getByTestId('agent-setup-advanced-toggle'));
     expect(screen.getByTestId('agent-setup-advanced')).toBeInTheDocument();
   });
@@ -1367,8 +1376,8 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // 셋 다 준비된 상태라 1단계는 「완료」로 접혀 있다 — 도구 열을 보려면 연다.
-    // (접은 것이지 지운 것이 아니라는 증명이 이 한 줄이다.)
+    // With all three ready, step 1 is collapsed as 「완료」 — open it to see the tool
+    // column. This one line is the proof that it was collapsed, not deleted.
     fireEvent.click(screen.getByTestId('agent-setup-step-1-toggle'));
 
     expect(screen.getByRole('status', { name: '.mcp.json 준비됨' })).toBeInTheDocument();
@@ -1403,8 +1412,9 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // 2026-08-01 — 종전 단언은 「연결할 수 없어요」였고 그 문장은 거짓이었다.
-    // 브라우저가 못 하는 것은 **자동 저장** 하나다(원장 2026-08-01).
+    // 2026-08-01 — the old assertion was 「연결할 수 없어요」 and that sentence was
+    // false. The one thing a browser cannot do is **save it automatically** (ledger
+    // 2026-08-01).
     const card = screen.getByTestId('agent-server-unavailable');
     expect(card).toHaveTextContent('설정 파일을 대신 저장하지 못합니다');
     expect(card).not.toHaveTextContent('연결할 수 없어요');

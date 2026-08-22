@@ -19,18 +19,18 @@ const node = (id: string, title: string, kind = "capability"): KnowledgeGraphNod
   lastApprovedAt: APPROVED_AT,
   lastApprovedBy: "test",
 });
-// 트리 구조는 \`contains\` edges 로 표현 (KnowledgeGraphNode.parentId 필드는
-// 폐기 — buildOntologyTree 가 \`edge.type==='contains'\` 의 from/to 로 부모
-// 추론). 이 helper 는 dead-field-free 노드를 그냥 복제 (호출 site 가독성용).
+// Tree shape comes from `contains` edges — `buildOntologyTree` infers the parent
+// from their from/to. This helper only clones; it exists so call sites read as
+// "this node has a parent".
 function withParent(n: KnowledgeGraphNode): KnowledgeGraphNode {
   return { ...n };
 }
 
 describe("filterTreeByQuery", () => {
   // root
-  // ├─ child-1 (title: "auth-login")
-  // │  └─ grand-1 (title: "session")
-  // └─ child-2 (title: "logout")
+  // ├─ child-1 (capability)
+  // │  └─ grand-1 (element)
+  // └─ child-2 (capability)
   const nodes = [
     node("root", "프로젝트", "project"),
     withParent(node("child-1", "로그인")),
@@ -93,7 +93,7 @@ describe("filterTreeByQuery", () => {
 
   it("매치 노드의 자손은 모두 살림 (컨텍스트 보존)", () => {
     const r = filterTreeByQuery(tree.roots, "로그인");
-    // child-1 매치 → grand-1 (자손) keep
+    // child-1 matches, so its descendant grand-1 is kept for context.
     expect(r[0]?.children[0]?.children).toHaveLength(1);
     expect(r[0]?.children[0]?.children[0]?.node.id).toBe("grand-1");
   });
@@ -104,9 +104,9 @@ describe("filterTreeByQuery", () => {
   });
 
   it("slug (node.id) 도 매치 — 사용자가 'mcp-server' 같은 slug 로 검색", () => {
-    // 개발자는 frontmatter / 코드에서 slug 형태 (kind:tail) 를 일상적으로 본다.
-    // 검색이 title 만 매칭하면 'mcp-server' 같은 slug 검색이 빈 결과로 떨어져
-    // 사용자가 이 트리에 없다고 오해. id 도 매치 대상에 포함.
+    // Developers see slugs (`kind:tail`) constantly in frontmatter and code.
+    // Matching titles only returns nothing for a slug search, which reads as
+    // "not in this tree" rather than "not searchable that way".
     const slugNodes = [
       node("root", "프로젝트", "project"),
       withParent(node("capability:mcp-server", "MCP Server (32 tools)")),
@@ -186,9 +186,8 @@ describe("countMatchingTreeNodes", () => {
   });
 
   it("매치 노드 수만 카운트 (조상 구조 노드 제외)", () => {
-    // "로그" → 로그인 + 로그아웃 = 2 (root/세션 은 비매치)
+    // Ancestors kept for structure are not counted as matches.
     expect(countMatchingTreeNodes(tree.roots, "로그")).toBe(2);
-    // "세션" → grand-1 1개 (조상 root/child-1 은 카운트 안 함)
     expect(countMatchingTreeNodes(tree.roots, "세션")).toBe(1);
   });
 
@@ -199,9 +198,9 @@ describe("countMatchingTreeNodes", () => {
 
 describe("filterTreeByNodeIds", () => {
   // root
-  // ├─ child-1 (로그인)
-  // │  └─ grand-1 (세션)
-  // └─ child-2 (로그아웃)
+  // ├─ child-1 (capability)
+  // │  └─ grand-1 (element)
+  // └─ child-2 (capability)
   const nodes = [
     node("root", "프로젝트", "project"),
     withParent(node("child-1", "로그인")),
@@ -228,7 +227,8 @@ describe("filterTreeByNodeIds", () => {
   });
 
   it("변경 노드의 자손은 *변경된 것만* 살림 (전 subtree 아님)", () => {
-    // child-1 변경 but grand-1 미변경 → grand-1 은 숨김 (query filter 와 다른 점)
+    // Unlike the query filter, an unchanged descendant is hidden even when its
+    // parent changed.
     const r = filterTreeByNodeIds(tree.roots, new Set(["child-1"]));
     expect(r[0]?.children[0]?.children).toHaveLength(0);
   });
@@ -254,14 +254,13 @@ describe("filterTreeByNodeIds", () => {
   });
 });
 
-// 슬라이스 C (개발/비개발 모드 토글) — 비개발(plain) 모드의 INDEX 트리에서
-// element 행을 제외한다. 데이터 자체는 무변경 — 이 함수는 트리 뷰만 가지치기
-// 한다(카운트/census 는 이 함수의 출력을 쓰지 않는다).
+// Prunes the tree view only; the data is untouched and the counts do not read
+// this function's output.
 describe("filterTreeExcludeKind (슬라이스 C — 비개발 모드 element 행 제외)", () => {
   // root (project)
-  // ├─ child-1 (capability, 로그인)
-  // │  └─ grand-1 (element, 세션)
-  // └─ child-2 (capability, 로그아웃)
+  // ├─ child-1 (capability)
+  // │  └─ grand-1 (element)
+  // └─ child-2 (capability)
   const nodes = [
     node("root", "프로젝트", "project"),
     withParent(node("child-1", "로그인", "capability")),
@@ -278,9 +277,9 @@ describe("filterTreeExcludeKind (슬라이스 C — 비개발 모드 element 행
   it("해당 kind 의 서브트리를 제거한다 (자손 포함)", () => {
     const r = filterTreeExcludeKind(tree.roots, "element");
     expect(r).toHaveLength(1); // root
-    expect(r[0]?.children).toHaveLength(2); // child-1, child-2 그대로
+    expect(r[0]?.children).toHaveLength(2);
     const child1 = r[0]?.children.find((c) => c.node.id === "child-1");
-    expect(child1?.children).toHaveLength(0); // grand-1(element) 제거됨
+    expect(child1?.children).toHaveLength(0);
   });
 
   it("구조를 보존한다 — 제외 대상이 아닌 노드는 그대로 남는다", () => {
@@ -295,7 +294,7 @@ describe("filterTreeExcludeKind (슬라이스 C — 비개발 모드 element 행
     filterTreeExcludeKind(tree.roots, "element");
     expect(tree.roots.map((r) => r.node.id)).toEqual(beforeIds);
     expect(tree.roots.map((r) => r.children.length)).toEqual(beforeChildCounts);
-    // grand-1(element) 는 여전히 원본 트리 안에 남아 있다.
+    // The excluded node is still present in the source tree.
     const child1 = tree.roots[0]?.children.find((c) => c.node.id === "child-1");
     expect(child1?.children).toHaveLength(1);
     expect(child1?.children[0]?.node.id).toBe("grand-1");

@@ -4,9 +4,9 @@ import { readVaultGuideAutoOpened } from './vault-guide-auto-open';
 
 describe('전역 「자동 표시」 스위치의 사정거리', () => {
   /*
-   * 이 테스트가 붙기 전엔 스위치가 «안내 여섯 중 다섯»만 껐다. 화면은 「자동
-   * 표시 끔」이라고 말하면서 폴더 없는 첫 화면에서 시트를 그대로 띄웠다.
-   * 게이트가 없으면 다음에 안내가 하나 더 늘 때 같은 구멍이 다시 생긴다.
+   * Before this test existed the switch turned off «five of six guides». The screen
+   * said "auto-display off" while still raising the sheet on a first screen with no
+   * folder. Without a gate, the same hole reappears the next time a guide is added.
    */
   beforeEach(() => {
     window.localStorage.clear();
@@ -19,7 +19,7 @@ describe('전역 「자동 표시」 스위치의 사정거리', () => {
 
   it('스위치를 끄면 폴더-우선 시트도 자동으로 뜨지 않는다', () => {
     window.localStorage.setItem('ontology-atlas:guide-auto-start:v1', '0');
-    // 「이미 열었음」으로 취급 = 자동 표시 안 함.
+    // Treated as "already opened" = not auto-displayed.
     expect(readVaultGuideAutoOpened()).toBe(true);
   });
 

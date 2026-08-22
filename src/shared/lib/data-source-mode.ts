@@ -1,11 +1,12 @@
 /**
- * 운영 모드 (data source mode) 식별 유틸. 2 모드:
+ * Identifies which data source is in play. Two modes:
  *
- * - **static** — `pnpm build` 의 정적 dogfood manifest. vault 미선택 시 fallback.
- * - **local** — File System Access API 로 사용자 디스크의 .md vault.
+ * - **static** — the dogfood manifest baked by `pnpm build`; the fallback when no vault is
+ *   selected.
+ * - **local** — the user's own `.md` vault, read through the File System Access API.
  *
- * 본 함수는 *순수* — vault loaded 상태만 받아 mode 결정.
- * UI 레이어는 `useDataSourceMode` 훅으로 합성된 결과를 사용.
+ * Pure: the mode follows from the vault-loaded flag alone. The UI layer consumes the composed
+ * result through the `useDataSourceMode` hook.
  */
 
 export type DataSourceMode = 'static' | 'local';
@@ -20,8 +21,8 @@ export function getDataSourceMode({ vaultLoaded }: ModeInputs): DataSourceMode {
 }
 
 /**
- * window 에 현재 모드를 expose — 개발자 도구에서 `window.__ohMyOntologyMode`
- * 로 조회 가능. 런타임 코드는 이 값을 사용하지 말 것 (hook 결과 의존).
+ * Exposes the current mode on `window` so it can be read as `window.__ohMyOntologyMode` in
+ * devtools. Runtime code must not read this value — depend on the hook result instead.
  */
 export function publishDataSourceModeForDebug(mode: DataSourceMode): void {
   if (typeof window === 'undefined') return;

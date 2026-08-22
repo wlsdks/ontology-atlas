@@ -97,165 +97,177 @@ const NODE_CULL_SLACK = 3;
 import { isSpineNode, radiusForKind, type TopologyWorld, type WorldEdge, type WorldNode } from "./topology-world";
 
 /**
- * S8 결함 1 — 펼친(확장) 부모 노드를 접힘과 시각 구분하는 파선 오라 링. 선택
- * (ego) 링은 실선이라 채널이 겹치지 않는다. 반지름 = 노드 디스크 + 이 오프셋(px),
- * 1px, 인디고. glow/네온 금지 — 파선 헤어라인만.
+ * Dashed aura ring that tells an expanded parent apart from a collapsed one. The
+ * selection (ego) ring is solid, so the two channels never collide. Radius =
+ * node disc + this offset (px), 1px, indigo. No glow/neon — dashed hairline only.
  */
 const EXPANDED_AURA_RING_OFFSET = 6;
 const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
 /**
- * 이름 상자를 좌우로 넓히는 여백(px). 두 이름이 **닿기만 해도** 한 단어로
- * 읽히는데 AABB 겹침 판정은 닿는 것을 겹침으로 안 센다 — 그 사각지대를 예약
- * 단계에서 메운다. 값은 시안(`.qa-scratch/proto-expand.html`)의 예약 상자
- * `측정폭 + 6`(좌우 3)과 같다.
+ * Horizontal padding (px) added to each side of a label box. Two labels that
+ * merely **touch** read as one word, but AABB overlap testing does not count
+ * touching as overlapping — this closes that blind spot at the reservation step.
+ * The value matches the mockup's reserved box: `measured width + 6` (3 per side).
  */
 const LABEL_SIDE_GAP = 3;
-/** 영역 루트 앵커 링 알파 — 결계(0.5)보다 한 단계 또렷한 실선 헤어라인(중심이 주인공). */
+/** Realm root anchor ring alpha — a solid hairline one step crisper than the warding circle (0.5); the centre is the protagonist. */
 const REALM_ROOT_ANCHOR_ALPHA = 0.7;
-/** 결계 센서스 각인 — 원 하단 바깥 오프셋(px, 화면 고정)과 잉크 알파. */
+/** Warding count caption — offset below the circle (px, screen-fixed) and ink alpha. */
 const WARDING_CAPTION_OFFSET_PX = 24;
 const WARDING_CAPTION_ALPHA = 0.62;
 const EXPANDED_AURA_ALPHA = 0.55;
 /**
- * S11 — 전개 코호트(직속 자식) 소속 링 알파. 부모 오라(0.55)보다 낮아 부모가
- * attention winner 를 유지한다 — 자식 30개가 부모와 같은 세기로 울면 "전개된
- * 묶음" 이 아니라 "지도가 반짝인다" 로 읽힌다.
+ * Membership-ring alpha for an expanded cohort (the direct children). Lower than
+ * the parent aura (0.55) so the parent stays the attention winner — 30 children
+ * ringing as loudly as their parent read as "the map is sparkling", not "this
+ * bundle was expanded".
  */
 const EXPANDED_COHORT_ALPHA = 0.42;
 /**
- * S8 결함 1 — 확장 디스크와 무관한 배경 노드를 확장 중 미세 dim 해 "어지러움"을
- * 줄인다(확장이 없으면 1.0, 회귀 0). 색이 아니라 알파만 낮춘다.
- * 고팬아웃 배치-공개(2026-07) 처방 5 — 배치가 소수(상위 24)만 크게 드러내므로
- * 배경을 한 단계 더 낮춰(0.5→0.42) 드러난 배치가 더 또렷이 읽히게 한다.
+ * While a disc is expanded, background nodes unrelated to it dim slightly to cut
+ * the visual noise (1.0 when nothing is expanded). Alpha only, never colour.
+ *
+ * High-fan batch reveal (2026-07) lowered it a further step, 0.5 → 0.42: a batch
+ * reveals only a few children (top 24) at a time, so the background has to
+ * recede further for the revealed batch to read clearly.
  */
 const BACKGROUND_DIM_WHEN_EXPANDED = 0.42;
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
-/** Design Guardian 처방 E — 포커스 없음(또는 인시던트 contains 0개)일 때 재사용하는 빈 캡 Set. */
+/** Reused empty cap set for frames with no focus (or no incident `contains` edges). */
 const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
 // perf sweep 2026-07 — reused frame-scratch Map, see its `.clear()` call
 // site in `drawTopologyFrame` below for why this is safe.
 const effectiveAlphaByIdReused = new Map<string, number>();
 
 /*
- * ── 프레임당 할당 0 을 향한 스크래치 버퍼들 ──────────────────────────────
+ * ── Scratch buffers, aiming at zero allocation per frame ─────────────────
  *
- * 3D 는 매 프레임 **깊이순으로 다시 정렬**하고 **링을 화면으로 투영**한다.
- * 그것을 매번 새 배열·새 객체로 만들면 이 볼트에서만 프레임당 배열 2개 +
- * 객체 291개가 태어난다(엣지 258 정렬 배열 · 노드 125 정렬 배열 · 링 3×96 점).
- * 120Hz 에서 그것은 초당 3만 5천 개고, 그 청구서는 프레임 시간이 아니라
- * **GC 가 끼어드는 순간의 튐**으로 온다.
+ * Dome mode re-sorts by depth and re-projects the latitude rings every frame.
+ * Allocating fresh arrays and objects for that costs, in this vault alone, 2
+ * arrays + 291 objects per frame (258-edge sort array · 125-node sort array ·
+ * 3 rings × 96 points). At 120Hz that is 35,000 objects per second, and the bill
+ * arrives not as frame time but as the stutter when GC interrupts.
  *
- * 이 저장소가 이미 쓰는 관용구(`effectiveAlphaByIdReused`)와 같다 — 드로우는 단일
- * rAF 루프에서만 동기로 도므로 모듈 스코프 재사용이 안전하다.
+ * Same idiom the repo already uses for `effectiveAlphaByIdReused`: the draw only
+ * ever runs synchronously from a single rAF loop, so module-scope reuse is safe.
  */
 const domeEdgeOrderReused: WorldEdge[] = [];
-/** 깊이 정렬 보조 — 프레임마다 재사용해 할당 0 (위 `edgeDrawOrder` 블록 참고). */
+/** Depth-sort scratch — reused per frame, zero allocation (see the `edgeDrawOrder` block). */
 const domeEdgeDepthReused: number[] = [];
 const domeEdgeIndexReused: number[] = [];
 const domeNodeOrderReused: WorldNode[] = [];
 const domeRingScreenReused: { a: number; points: { x: number; y: number; u: number }[] }[] = [];
 /**
- * perf 2026-08-19 — 돔 전달값(DomeNodeFrame) **프레임당 1회 조회** 버퍼.
+ * perf 2026-08-19 — one `DomeNodeFrame` lookup per node per frame.
  *
- * 종전에는 같은 노드의 프레임을 알파 루프·노드 정렬 비교자(O(n log n)!)·
- * 노드 드로우·라벨 패스가 각자 `domeFrame.get(id)`(문자열 해시 조회)로
- * 다시 꺼냈다 — synth=2000 회전 프로파일에서 `domeFrameFor` self 2.6%.
- * 엣지도 깊이 계산·드로우·투영이 끝점당 2~3회씩 다시 꺼냈다. 여기 원본
- * 인덱스 기준으로 한 번만 담아 두고 전부 이 배열을 읽는다. 값이 같은
- * 객체이므로 픽셀은 같고, 노드 정렬은 엣지 정렬과 같은 인덱스-정렬
- * 관용구라 순서도 한 자리도 다르지 않다(안정 정렬 + 동일 비교 기준).
+ * The alpha loop, the node sort comparator (O(n log n)!), the node draw, and the
+ * label pass each used to re-fetch the same node's frame through
+ * `domeFrame.get(id)` — a string-hash lookup, and `domeFrameFor` measured 2.6%
+ * self time in the synth=2000 rotation profile. Edges re-fetched 2–3 times per
+ * endpoint for depth, draw, and projection. Filled once here, keyed by the node's
+ * original index, and everything reads this array. Same objects, so identical
+ * pixels; the node sort uses the same index-sort idiom as the edge sort, so the
+ * ordering is identical too (stable sort + identical comparison key).
  */
 const domeNodeFrameReused: DomeNodeFrame[] = [];
 const domeNodeDepthReused: number[] = [];
 const domeNodeIndexReused: number[] = [];
 const domeEdgeFrameAReused: DomeNodeFrame[] = [];
 const domeEdgeFrameBReused: DomeNodeFrame[] = [];
-/** 노드 패스가 실제 그린 반지름(E-4) — 프레임마다 `.clear()` 로 재사용. */
+/** The radius the node pass actually drew — reused each frame via `.clear()`. */
 const drawnScreenRadiusByIdReused = new Map<string, number>();
-/** 앰비언트 depends 코멧 캡 입력 — 매 프레임 `filter` 가 만들던 새 배열의 재사용판. */
+/** Input to the ambient `depends` comet cap — replaces the array `filter` built every frame. */
 const ambientDependsInputReused: WorldEdge[] = [];
 /**
- * 엣지 끝점 투영 스크래치 — `projectEdgePoints` 가 매 엣지 4개(점 3 + 래퍼 1)
- * 만들던 임시 객체의 재사용판. 드로우는 단일 rAF 루프에서 동기로만 돌고
- * 반환값은 다음 엣지 전에 소비되므로 안전하다(`effectiveAlphaByIdReused` 근거).
+ * Edge endpoint projection scratch — replaces the 4 temporaries (3 points + 1
+ * wrapper) `projectEdgePoints` allocated per edge. Safe for the same reason as
+ * `effectiveAlphaByIdReused`: the draw runs synchronously from one rAF loop, and
+ * the return value is consumed before the next edge.
  */
 const edgePointsScratch = {
   a: { x: 0, y: 0 },
   b: { x: 0, y: 0 },
   control: { x: 0, y: 0 },
 };
-/** 노드·라벨 패스의 스크린 좌표 스크래치 — 반복당 1개씩 태어나던 점 객체의 재사용판. */
+/** Screen-coordinate scratch for the node and label passes — replaces one point object per iteration. */
 const nodeScreenScratch = { x: 0, y: 0 };
 const labelScreenScratch = { x: 0, y: 0 };
 /*
- * perf 2026-08-19 — 엣지 헤일로 인자의 재사용판. `tracesDraw` 는 동기적으로
- * 읽고 보관하지 않으므로(순수 드로우) 같은 객체를 필드만 바꿔 재사용해도
- * 값 — 그러니까 픽셀 — 은 같다. 드로우 호출의 토큰 인자도 프레임 안에서
- * 불변이라 프레임당 1개로 족하다(`traceTokensFrame`/`nodeShapeTokensFrame`).
+ * perf 2026-08-19 — reused edge-halo argument object. `tracesDraw` reads it
+ * synchronously and never retains it (it is a pure draw), so mutating fields on
+ * one shared object yields identical values — and therefore identical pixels.
+ * Token arguments are frame-invariant too, hence one per frame
+ * (`traceTokensFrame`/`nodeShapeTokensFrame`).
  */
 const edgeHaloScratch = { color: "", px: 0, alpha: 0 };
 
-/** `lerpColorHex(fill, sheenTint, blend)` 캐시 — fill 별로 값이 불변(토큰이 바뀌면 통째 무효화). */
+/** `lerpColorHex(fill, sheenTint, blend)` cache — constant per fill; invalidated wholesale when tokens change. */
 const sheenTopCache = new Map<string, string>();
 let sheenTopCacheTint = "";
 let sheenTopCacheBlend = -1;
-/** kind 2패스 순서 — 프레임마다 배열 리터럴을 새로 만들지 않는다. */
+/** The two kind passes, in ink order — hoisted so no array literal is built per frame. */
 const EDGE_KIND_PASSES = ["contains", "depends"] as const;
 /**
- * perf 2026-08-19 — 엣지 알파 사전 계산 버퍼(원본 엣지 인덱스 기준).
- * 종전엔 앰비언트 코멧 필터와 드로우 루프가 각각 엣지당 `clusteredIds.has`
- * 2회 + `effectiveAlphaById.get` 2회를 반복했다. 한 패스에서 계산해 두 소비처가
- * 같은 값을 읽는다. -1 = 밀도 게이트로 접힌 엣지(그리지 않음) 표식.
+ * perf 2026-08-19 — precomputed edge alpha, keyed by original edge index. The
+ * ambient comet filter and the draw loop each used to repeat 2 `clusteredIds.has`
+ * plus 2 `effectiveAlphaById.get` calls per edge; now one pass computes it and
+ * both consumers read the same value. -1 marks an edge folded away by the density
+ * condition (not drawn).
  */
 const edgeAlphaReused: number[] = [];
 /**
- * perf 2026-08-19 — 무포커스 프레임의 노드 시각(NodeVisual) 캐시.
+ * perf 2026-08-19 — `NodeVisual` cache for focus-free frames.
  *
- * 회전/유휴 프레임(포커스·페어·렌즈·호버 리플 없음)에서 `resolveNodeVisual`
- * 은 (kind, fresh, stale) 만의 함수인데도 노드마다 매 프레임 freshness 객체 +
- * NodeVisual 객체를 새로 만들었다(2,000 노드 × 60fps). 같은 입력 조합은 같은
- * 객체를 재사용한다 — 값이 같으니 픽셀도 같다. 토큰/모션 설정이 바뀌면 통째로
- * 무효화하고, 캐시 대상이 아닌 프레임(포커스 등)은 종전 경로 그대로다.
- * 캐시된 객체는 어떤 소비처도 변형하지 않는다(트레일 잉크 변형은 렌즈 활성
- * 프레임에만 있고, 그 프레임은 캐시를 안 탄다).
+ * On a rotating or idle frame (no focus, pair, lens, or hover ripple)
+ * `resolveNodeVisual` is a function of (kind, fresh, stale) alone, yet it still
+ * built a fresh freshness object plus a fresh `NodeVisual` per node per frame
+ * (2,000 nodes × 60fps). Identical inputs now reuse the identical object — same
+ * values, same pixels. Invalidated wholesale when tokens or the motion preference
+ * change; frames that are not cacheable (focus, etc.) take the original path.
+ * No consumer mutates a cached object: the trail-ink mutation only happens on
+ * lens-active frames, and those never hit the cache.
  */
 const nodeVisualCache: (NodeVisual | undefined)[] = new Array(16);
 let nodeVisualCacheTokens: TopologyV2Tokens | null = null;
 let nodeVisualCacheReducedMotion: boolean | null = null;
 const KIND_CACHE_INDEX: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
-/** 3D 전달값의 0 값 — 돔이 꺼진 노드·2D 경로가 공유(불변). */
+/** The zero dome frame — shared (and never mutated) by dome-off nodes and the 2D path. */
 const ZERO_DOME_FRAME: DomeNodeFrame = { dx: 0, dy: 0, s: 1, a: 0, u: 0 };
 
 /**
- * **이번 프레임에 실제로 그려진 노드 알파** — 히트테스트의 단일 출처.
+ * **The node alphas this frame actually drew** — the single source for hit testing.
  *
- * 티어 관통 면제 채널이 드로우에는 넷인데(엣지 선택 · 발자국 렌즈 · ego 포커스 ·
- * 최근변경 스포트라이트) 히트에는 ego 하나뿐이라, 발자국 렌즈로 떠오른 노드가
- * **보이는데 안 눌렸다**(2026-07-31 전수 검사). 인자를 하나씩 더 넘기면 다음에
- * 채널이 늘 때 또 어긋나므로, 드로우가 이미 만드는 이 맵을 그대로 읽게 한다.
+ * The draw had four tier-piercing exemption channels (edge selection · footprint
+ * lens · ego focus · recent-change spotlight) but hit testing had only one (ego),
+ * so a node raised by the footprint lens was **visible yet unclickable** (found in
+ * a full sweep, 2026-07-31). Passing one more argument per channel would drift
+ * again the next time a channel is added, so hit testing reads the map the draw
+ * already builds.
  *
- * 안전한 이유는 `effectiveAlphaByIdReused` 의 주석과 같다 — `drawTopologyFrame`
- * 은 단일 rAF 루프에서 **동기적으로만** 돌고, 포인터 이벤트가 그 사이에 끼어들
- * 수 없다. 히트가 읽는 값은 항상 **완결된 직전 프레임**이고, 그건 오히려 더
- * 정확하다: 사용자는 **자기가 본 것**을 클릭한다.
+ * Safe for the same reason given on `effectiveAlphaByIdReused`: `drawTopologyFrame`
+ * runs **synchronously only**, from a single rAF loop, and a pointer event cannot
+ * interleave with it. Hit testing therefore always reads a **completed previous
+ * frame** — which is more accurate, not less: the user clicks **what they saw**.
  */
 export function lastDrawnNodeAlphas(): ReadonlyMap<string, number> {
   return effectiveAlphaByIdReused;
 }
-// 그룹 A — 클러스터 칩 hover 색 이징 앵커. 어느 칩이 언제부터 hover 됐는지
-// 하나만 추적한다(동시 hover 는 1개). rest→hover 색 램프(~150ms)를 이 시작
-// 시각으로 유도한다. reduced-motion 이면 즉시 스냅이라 앵커를 안 쓴다.
+// Cluster-chip hover colour easing anchor: which chip has been hovered since
+// when (only one can be hovered at a time). The rest→hover colour transition
+// (~150ms) is driven from this start time. Under reduced-motion the colour snaps,
+// so the anchor goes unused.
 const CLUSTER_CHIP_HOVER_MS = 150;
 let clusterChipHoverAnim: { id: string; startAt: number } | null = null;
-// rank9 — 지난 프레임에 배치된 라벨 id 집합(히스테리시스: 같은 우선순위 안에서
-// 직전 placed 를 우대) + present 램프 스텝용 직전 타임스탬프(dt 유도, `now`
-// 는 monotonic). 모듈 상태 — `clusterChipHoverAnim` 과 같은 프레임-지속 패턴.
+// Label ids placed on the previous frame (hysteresis: within one priority band,
+// prefer what was placed last frame) plus the previous timestamp used to derive
+// dt for the presence ramp (`now` is monotonic). Module state — the same
+// frame-to-frame pattern as `clusterChipHoverAnim`.
 let prevPlacedLabelIds: ReadonlySet<string> = new Set();
 let lastLabelRampNow = 0;
-// Project bumped 2 → 1.5 (canvas-emphasis slice §A1) to match the owner spec's
-// "외곽 스트로크 1.5px 앰버" exactly — the outer stroke itself now hardcodes
-// amber for project (see `resolveNodeVisual` below), so its width is spec'd
+// Project bumped 2 → 1.5 to match the owner spec exactly: "외곽 스트로크 1.5px
+// 앰버" (a 1.5px amber outer stroke). The outer stroke hardcodes amber for
+// project (see `resolveNodeVisual` below), so its width is specified
 // independently of the other kinds' tier-neutral outlines.
 const LINE_WIDTH_BY_KIND: Record<WorldNode["kind"], number> = {
   project: 1.5,
@@ -312,8 +324,8 @@ interface NodeVisual {
  * BOTH the node's normal (no-focus) look and its focused-state target, then
  * lerps between them by `focusRamp` (0..1, `stepFocusRamp`). So a click's
  * dim (background→gray) / ego (neighbor→indigo, center→bright) color swap eases
- * IN on the camera-dive time axis (owner headline: "하드 컷으로 읽히지 않게"),
- * and a deselect eases it back OUT — the caller keeps `colorEgoState` pinned to
+ * IN on the camera-dive time axis (owner headline: "하드 컷으로 읽히지 않게" —
+ * it must never read as a hard cut), and a deselect eases it back OUT — the caller keeps `colorEgoState` pinned to
  * the retained focus while the ramp decays, so the dim target persists to fade
  * FROM instead of snapping to normal. Only color+dash+breathe here; center
  * radius easing is in the draw loop. No new hue — every lerp target is an
@@ -426,9 +438,9 @@ export interface FrameDrawParams {
    * Null in the common case (no panel hover).
    */
   emphasizedNeighborId: string | null;
-  /** P3c — 호버 중 엣지 (마이크로카드와 같은 상태) — 해당 엣지 잉크 강조. */
+  /** The hovered edge (same state the microcard shows) — brightens that edge's ink. */
   hoveredEdge: { sourceId: string; targetId: string; relationType: string } | null;
-  /** 엣지 선택 = 페어 포커스 — 양끝만 밝히고 나머지 dim, 선택 엣지는 pale 인디고. */
+  /** Edge selection = pair focus — only the two endpoints stay lit, the rest dims, and the selected edge goes pale indigo. */
   selectedEdge: EdgePairFocus | null;
   previewEdge: {
     sourceId: string;
@@ -458,14 +470,15 @@ export interface FrameDrawParams {
    */
   appearById?: ReadonlyMap<string, number>;
   /**
-   * **이번 세션에 새로 생긴 노드**의 id (`use-topology-loop` 의 월드 diff 가
-   * 채운다). 등장 램프(`appearById`)는 원래 있었지만, 새 역량은 개요 배율에서
-   * 티어 알파가 0 이라 **그 연출이 0 에 곱해지고 있었다** — 에이전트가 노드를
-   * 만들어도 화면에는 도메인의 자식 수 숫자만 2→3 으로 바뀌었다(2026-08-17
-   * 실측). 그래서 새로 생긴 노드는 ego 클릭·칩 펼침과 같은 급의 면제를 받아
-   * 그려지고, 이미 있던 그 램프를 타고 0.6배에서 부풀며 떠오른다.
+   * Ids of **nodes born during this session** (filled by `use-topology-loop`'s
+   * world diff). The appear ramp (`appearById`) already existed, but at overview
+   * zoom a new capability's tier alpha is 0, so **the whole animation was being
+   * multiplied by zero** — an agent could create a node and the only on-screen
+   * change was the domain's child count going 2 → 3 (measured 2026-08-17). Born
+   * nodes therefore get the same class of tier exemption as an ego click or a
+   * chip expansion, and rise through that existing ramp, swelling from 0.6×.
    *
-   * 세션 동안 유지된다 — 잠시 보였다 사라지면 그게 곧 깜빡임이다.
+   * The set persists for the session: appearing and then vanishing IS a flicker.
    */
   bornNodeIds?: ReadonlySet<string> | null;
   /**
@@ -476,7 +489,7 @@ export interface FrameDrawParams {
    */
   chipRevealById?: ReadonlyMap<string, number>;
   /**
-   * 고팬아웃 배치-공개(2026-07) — per-child batch reveal ramp (childId → 0..1),
+   * High-fan batch reveal (2026-07) — per-child batch reveal ramp (childId → 0..1),
    * stepped by the loop with a DOI-ordered center-out stagger. For a batch-
    * revealed disc child this REPLACES the per-parent group fade (`chipRevealById`)
    * as the node's reveal multiplier + drives the micro appearScale (0.6→1), so an
@@ -496,7 +509,8 @@ export interface FrameDrawParams {
    * The node id whose focus classification drives the COLOR ramp — normally the
    * live `focusedNodeId`, but RETAINED by the caller for the ~160ms after a
    * deselect while `focusRampById` decays, so the dim/ego target the colors fade
-   * FROM persists instead of snapping to normal (④ 선택 링 · 배경 dim 페이드아웃).
+   * FROM persists instead of snapping to normal (the selection ring and the
+   * background dim fade out together).
    * `null` once nothing is focused and the ramp has reached 0. Kept separate
    * from live `focusedNodeId` so labels / tier-reveal / camera never inherit the
    * retention lag — only node body color + rings do.
@@ -506,9 +520,9 @@ export interface FrameDrawParams {
   colorSelectedEdge: EdgePairFocus | null;
   reducedMotion: boolean;
   /**
-   * R6 호버 펄스 — 노드 호버가 발사한 활성 일회성 신호들(`use-topology-loop.ts`가
-   * 수명 관리). 엣지 커브 위에 헤드+트레일로 그린다. reduced-motion 이면 발사가
-   * 없어 항상 비어 미표시.
+   * Live one-shot hover pulses fired by a node hover (`use-topology-loop.ts` owns
+   * their lifetime). Drawn as a head plus trail riding the edge curve. Under
+   * reduced-motion nothing fires, so this stays empty.
    */
   pulses: readonly Pulse[];
   /**
@@ -532,173 +546,183 @@ export interface FrameDrawParams {
    */
   agentFocusNodeId: string | null;
   /**
-   * 밀도 게이트 (fable 설계) — 접힌 부모의 서브트리에 속해 이 프레임에서
-   * **그리지 않을** 노드 id 집합. 노드·엣지·라벨 패스 모두 이 집합을 건너뛴다.
+   * Density condition — ids of nodes inside a collapsed parent's subtree, which
+   * this frame will **not** draw. The node, edge, and label passes all skip them.
    */
   clusteredIds: ReadonlySet<string>;
-  /** 밀도 게이트 — 이 프레임에 그릴 클러스터 칩(월드 anchor, 부모 티어 알파 상속). */
+  /** Density condition — the cluster chips this frame draws (world-space anchor, inheriting the parent's tier alpha). */
   clusterChips: readonly ClusterChip[];
-  /** 밀도 게이트 — 호버 중인 클러스터 부모 id (칩 보더 강조), 없으면 null. */
+  /** Density condition — the hovered cluster parent's id (brightens the chip border), or null. */
   hoveredClusterId: string | null;
   /**
-   * S4 "영역 전개" — 결계 링. 영역 활성(entering/active) 시 서브트리 바운딩
-   * 반경에 1px 인디고 헤어라인 원을 두른다. `drawProgress` 0..1 로 stroke 를
-   * 자기 드로잉한다(전환 초반 ~200ms). null 이면 미표시(회귀 0).
+   * The warding ring of a realm expansion. While a realm is entering or active,
+   * a 1px indigo hairline circle is drawn at the subtree's bounding radius,
+   * self-drawing its stroke over `drawProgress` 0..1 (~200ms at the start of the
+   * transition). Null draws nothing.
    */
   wardingRing: { centerX: number; centerY: number; radius: number; drawProgress: number; caption: string | null } | null;
-  /** S4 — 멤버별 깊이 기반 티어 kind 오버라이드 (영역 세계의 티어 = 재배치 깊이). */
+  /** Per-member tier-kind override by depth — inside a realm, tier means re-layout depth. */
   realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
   /**
-   * 다섯째 티어 관통 채널 — **칩 펼침으로 드러난 자식**의 0..1 램프.
-   * `use-topology-loop.ts` 가 스텝한다. 앞의 넷과 같은 문법이라 히트 경로는
-   * `effectiveAlphaById` 를 통해 자동으로 따라온다(별도 배선 불필요).
+   * The fifth tier-piercing channel — a 0..1 ramp for children revealed by
+   * expanding a chip, stepped by `use-topology-loop.ts`. Same shape as the other
+   * four, so hit testing follows automatically through `effectiveAlphaById` with
+   * no extra wiring.
    */
   expandRevealById?: ReadonlyMap<string, number> | null;
   /**
-   * S5 — 멤버별 루트 깊이(루트=0). 영역 활성(entering/active) 시 깊이 선명도
-   * (알파·스케일 차등)와 시차 밴드 판정에 쓴다. null 이면 깊이 연출 없음(회귀 0).
+   * Per-member depth from the realm root (root = 0). While a realm is entering or
+   * active this drives depth clarity (alpha and size differentiation) and which
+   * parallax band a node belongs to. Null means no depth treatment.
    */
   realmDepthById: ReadonlyMap<string, number> | null;
   /**
-   * S5 — 깊이 시차 밴드 오프셋(월드 단위). 영역 active 중 카메라 입력에 반응해
-   * depth2/depth3+ 노드의 렌더 좌표를 이 오프셋만큼 밀어 그린다(월드 좌표 불변).
-   * null 이면 시차 없음(정지/entering/reduced-motion). 히트테스트도 같은 오프셋.
+   * Depth parallax band offsets (world units). While a realm is active, camera
+   * input pushes the RENDER coordinates of depth2 / depth3+ nodes by these — the
+   * world coordinates never move. Null means no parallax (at rest, entering, or
+   * reduced-motion). Hit testing applies the same offset.
    */
   realmDepthParallax: { depth2: { x: number; y: number }; depth3: { x: number; y: number } } | null;
-  /** S4 — 전개 순간의 도트 방사 시차 팩터 0..1 (전환 중에만 >0). */
+  /** Radial dust parallax factor 0..1 at the moment of expansion (>0 only during the transition). */
   realmDustParallax: number;
   /**
-   * S7 — 영역 퇴장(exiting) 중 하드 컬됐던 밖 노드의 귀환 materialize 알파
-   * (모션 감사 처방 B). `realm-transition.ts#realmOutsideReturnAlpha` 로 계산 —
-   * 완전 이탈=0(안 보임) → 홈=1(풀 알파). 이 노드의 `effectiveAlphaById` 항목에
-   * 곱해져 노드 자신과, `edgeTierAlpha`(min 결합)를 통해 그 노드로 향하는 엣지
-   * 모두를 램프시킨다 — 뷰포트 컬 경계에 걸리는 순간 풀 알파로 팝인하던 결함의
-   * 수정. null 이면 미적용(entering/active/idle — 회귀 0).
+   * Materialize alpha for outside nodes returning after being hard-culled during
+   * a realm exit, computed by `realm-transition.ts#realmOutsideReturnAlpha`:
+   * fully away = 0 (invisible) → home = 1 (full alpha). Multiplied into the node's
+   * `effectiveAlphaById` entry, so it ramps both the node and — through
+   * `edgeTierAlpha`'s min combination — every edge reaching it. This fixes the
+   * defect where such a node popped in at full alpha the instant it crossed the
+   * viewport cull boundary. Null while entering/active/idle.
    */
   realmOutsideReturnAlphaById: ReadonlyMap<string, number> | null;
   /**
-   * 발자국 — 노드별 **방문 순번 목록**(1부터). 재방문 노드는 여러 개를 갖는다.
-   * `views/home/lib/footprint-trail.ts#buildFootprintSteps` 가 만든다.
-   * 현재 포커스 노드는 호출부가 제외해 선택 링과 이중이 안 된다.
-   * 빈 map = 발자국 없음(회귀 0).
+   * Footprints — the **visit ordinals** (1-based) per node; a revisited node has
+   * several. Built by `views/home/lib/footprint-trail.ts#buildFootprintSteps`.
+   * The caller excludes the currently focused node so its footprint does not
+   * double up with the selection ring. An empty map draws no footprints.
    */
   footprintStepsById: ReadonlyMap<string, readonly number[]>;
-  /** 발자국 표현 설정. null 이면 아무것도 그리지 않는다. */
+  /** Footprint appearance preference. Null draws nothing. */
   footprintPref?: FootprintPreference | null;
   /**
-   * 연달아 방문한 노드 쌍의 키 집합(`model/footprint-steps.ts#buildWalkedEdgeKeys`).
-   * 이 중 실재하는 관계선에만 선 옆 자국이 얹힌다. null = 선 자국 없음.
+   * Keys of consecutively visited node pairs
+   * (`model/footprint-steps.ts#buildWalkedEdgeKeys`). Beside-the-line footprints
+   * are laid only on those pairs that are real edges. Null = no edge footprints.
    */
   walkedEdgeKeys?: ReadonlySet<string> | null;
-  /** 발자국 잉크 RGB — 호출부가 `--color-footprint-trail` 또는 인디고 토큰에서 읽는다. */
+  /** Footprint ink RGB — the caller reads it from `--color-footprint-trail` or the indigo token. */
   footprintInk?: FootprintInk;
-  /** 순번 글자색 — 자국 잉크보다 한 단 밝다(작은 글자라 대비가 더 필요). */
+  /** Ordinal text colour — one step brighter than the footprint ink; small glyphs need more contrast. */
   footprintStepColor?: string;
   /**
-   * 가장 최근 걸음의 노드 id + 그 걸음의 등장 진행 [0,1]. 이 노드의 자국만
-   * 램프를 받고 나머지는 1(정착)이다 — 한 입력이 낳은 사건은 하나다.
+   * The node id of the most recent step, plus that step's appear progress [0,1].
+   * Only this node's footprint animates; every other sits at 1 (settled) — one
+   * input produces one event.
    */
   footprintNewestId?: string | null;
   footprintAppear?: number;
   /**
-   * 걸어온 길 렌즈 — 트레일 팝오버가 열려 있는 동안 **그 동안만** non-null.
-   * 방문 노드 집합(현재 포커스 포함)을 ego keep-set 대신 쓴다: 방문 노드는
-   * 값(색·라벨)을 지키고 나머지 노드·클러스터 칩·라벨·**엣지 전부(ego 강조
-   * 엣지 포함)** 는 기존 ego dim 값으로 후퇴한다. 지도가 잠시 "관계 읽기"를
-   * 접고 "궤적 읽기"에 양보하는 일시 렌즈다 — 새 토큰 0, 새 모션 0, 궤적
-   * 폴리라인 없음(이 제품에서 선 = 관계다). null/빈 집합 = 렌즈 off(회귀 0).
+   * The trail lens — non-null **only** while the trail popover is open. The visited
+   * nodes (including the current focus) replace the ego keep-set: they hold their
+   * colour and label while every other node, cluster chip, label, and **edge —
+   * ego-emphasised edges included** — retreats to the existing ego dim values.
+   * No new tokens, no new motion, and deliberately no trail polyline, because in
+   * this product a line means a relation.
    *
-   * 매 프레임 새로 만들지 않는다 — loop 가 `visitedTrail` 이 바뀔 때만 갱신하는
-   * Set 을 그대로 넘긴다(60fps 루프 안 신규 할당 0).
+   * Not rebuilt per frame: the loop hands over a Set it refreshes only when
+   * `visitedTrail` changes, so the 60fps loop allocates nothing.
    */
   trailLensIds?: ReadonlySet<string> | null;
   /**
-   * S8 결함 6 — 결계 안 우주 도트 레이어(뷰포트 스페이스, 카메라 원점 시차).
-   * 영역 활성(wardingRing 존재) 시에만 결계 원으로 클립해 그린다. null 이면 미표시.
+   * The cosmos dust layer inside the warding circle (viewport space, parallaxed
+   * from the camera origin). Drawn clipped to the warding circle, and only while a
+   * realm is active (`wardingRing` present). Null draws nothing.
    */
   realmCosmosPoints: readonly DustPoint[] | null;
   /**
-   * 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — non-null 이면 렌즈 ON:
-   * 이 집합 **밖** 노드(와 양끝이 모두 집합 안이 아닌 엣지)를 `spotlightRamp`
-   * 진행에 따라 `tokens.spotlightRestAlpha` 까지 침강시킨다. 집합 안 노드는
-   * 여기서 밝히지 않는다 — 어댑터가 fresh 채널 키를 mtime 창으로 교체해 이미
-   * 켠다("빛내기"가 아니라 "가라앉히기"). ego/엣지 포커스가 활성인 동안은
-   * 침강을 적용하지 않는다(주의 레이어: 선택 > 렌즈, 이중 dim 금지). 호버
-   * 노드도 면제(상호작용 대상은 항상 또렷 — realm 선명도와 같은 규칙).
-   * null = off (회귀 0).
+   * Recent-change spotlight (council design, 2026-07-23) — non-null turns the lens
+   * ON: nodes **outside** this set (and edges without both endpoints inside it)
+   * sink toward `tokens.spotlightRestAlpha` as `spotlightRamp` advances. Nodes
+   * inside are NOT brightened here; the adapter already lights them by swapping the
+   * fresh channel's key to an mtime window. The lens sinks, it does not shine.
+   * Suspended while an ego or edge focus is active (attention layer order:
+   * selection beats lens, never dim twice), and the hovered node is exempt.
    */
   spotlightIds: ReadonlySet<string> | null;
-  /** 스포트라이트 on/off 지수 램프 0..1 — loop 가 `stepFocusRamp`(focusDimTau 재사용)로 step. */
+  /** Spotlight on/off exponential ramp 0..1 — the loop steps it with `stepFocusRamp` (reusing `focusDimTau`). */
   spotlightRamp: number;
-  /** 스포트라이트 파선 위상 — transition 중에만 갱신되고 이후 고정된다. */
+  /** Spotlight dash phase — advanced only during the transition, then held fixed. */
   spotlightDashOffset: number;
   /**
-   * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config. 생략 시
-   * `DEFAULT_TIER_REVEAL`(개발 모드). 비개발(plain) 모드는 HomePage 가
-   * `PLAIN_TIER_REVEAL`(element 상시 숨김)을 넘긴다 — 그리기 게이트도 히트/
-   * 팬-클램프와 같은 config 를 봐야 lockstep 이 깨지지 않는다.
+   * Tier-visibility config for the developer / plain mode toggle; defaults to
+   * `DEFAULT_TIER_REVEAL` (developer mode). In plain mode `HomePage` passes
+   * `PLAIN_TIER_REVEAL` (elements always hidden). The draw must read the same
+   * config as hit testing and pan clamping, or the three fall out of lockstep.
    */
   tierReveal?: TierRevealConfig;
   /**
-   * 아이콘 세트 (Phase 5 #21) — 노드 바디 렌더 스타일. `"fill"`(기하, 기본) /
-   * `"line"`(라인, stroke-only). kind→실루엣 매핑은 이 값과 무관(불변). DOM
-   * 글리프와 같은 스토어를 읽어 두 표면이 함께 스왑. 생략 시 `"fill"`(회귀 0).
+   * Node body render style: `"fill"` (solid geometry, the default) or `"line"`
+   * (stroke only). The kind → silhouette mapping is independent of this and never
+   * changes. Reads the same store as the DOM glyphs so both surfaces swap together.
    */
   glyphStyle?: "fill" | "line";
   /**
-   * 캔버스 배경 세트 (Phase 5 #20) — `gridDraw` 로 전달. 도트(기본, blueprint
-   * grid)·성좌·등고선. 생략 시 `"dot"`(회귀 0).
+   * Canvas background variant, forwarded to `gridDraw`: dots (the default
+   * blueprint grid), constellation, or contour.
    */
   backgroundVariant?: CanvasBackgroundVariant;
-  /** 움직이는 배경 버퍼를 얹는 콜백(도트가 아닐 때만 소비) — `render/grid.ts` 참고. */
+  /** Callback that paints the animated background buffer — consumed only by the non-dot variants. See `render/grid.ts`. */
   paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
-  /** 깊이 도트 세 층의 패턴(`variant === "depth"` 일 때만 소비). 원점은 여기서 계산한다. */
+  /** Patterns for the three depth-dot layers (consumed only when `variant === "depth"`). Their origins are computed here. */
   depthDotPatterns?: readonly (CanvasPattern | null)[];
   /**
-   * 확장 설정 — 이 프레임이 쓰는 것은 둘이다: **펼치기 표시**(칩을 알약/막대/
-   * 배지 중 무엇으로 그리나)와 **이름을 시도할 개수**(펼친 원반의 라벨 예산).
-   * 생략 시 `DEFAULT_EXPAND`(설정을 안 건드린 화면과 동일).
+   * Expand preference. This frame uses two of its fields: the expand affordance
+   * (whether a chip draws as a pill, bar, or badge) and the label attempt count
+   * (the label budget for an expanded disc).
    */
   expand?: ExpandPreference;
   /**
-   * 막대 문구(번역문). 캔버스 렌더러는 문자열을 만들지 않는다 — 결계 캡션
-   * (`wardingRing.caption`)이 이미 쓰는 그 경로 그대로 호출부가 번역해 넘긴다.
+   * Translated bar copy. The canvas renderer never composes strings — the caller
+   * translates and passes them in, exactly as the warding caption
+   * (`wardingRing.caption`) already does.
    */
   clusterBarLabels?: ClusterBarLabels | null;
   /**
-   * 3D 보기 (2026-08-18, 옵트인) — 지도를 kind 동심 링의 돔으로 다시 배치해
-   * 그리는 뷰 모드(`model/dome-view.ts`). 루프가 매 프레임 갱신하는 노드별
-   * 전달 맵(오프셋 + 원근 배율) — 노드·라벨·엣지·칩이 전부 이 맵을 지나고,
-   * 히트테스트·계기(`__atlasMap`)도 **같은 맵**을 읽어 회전 중에도 클릭이
-   * 그려진 자리를 따라온다. 영역 전개(realm) 중에는 루프가 램프를 되감아
-   * null 이 된다(영역의 S5 깊이 문법과 이중 인코딩 방지). 생략/null = 종전
-   * 화면과 픽셀 동일(회귀 0).
+   * 3D view (2026-08-18, opt-in) — the view mode that re-lays the map out as a
+   * dome of concentric kind rings (`model/dome-view.ts`). Per-node transform map
+   * (offset + perspective factor), refreshed by the loop every frame. Nodes,
+   * labels, edges, and chips all pass through it, and hit testing and the
+   * instrument (`__atlasMap`) read **the same map**, so a click follows the drawn
+   * position even mid-rotation. During a realm expansion the loop rewinds the ramp
+   * to null, so realm depth is never encoded twice. Null = pixel-identical to the
+   * pre-dome screen.
    */
   domeFrame?: ReadonlyMap<string, DomeNodeFrame> | null;
   /**
-   * 3D 조립 시계의 전체 진행 0..1 — 표현층 전환(배경 격자 소등 등)의 보간자.
-   * 노드별 진행은 `domeFrame` 의 `a` 가 나른다. 생략/0 = 2D 표현 그대로.
+   * Overall progress 0..1 of the dome assembly — the interpolator for
+   * presentation-layer switches such as extinguishing the background grid.
+   * Per-node progress is carried by `domeFrame`'s `a`. 0 = the 2D presentation.
    */
   domeRamp?: number;
   /**
-   * 3D — 이번 프레임의 **위도 링**(월드 좌표 + 정규화 깊이). 링이 왜 필요한지는
-   * `model/dome-view.ts` 의 `DOME_RING_KINDS` 독블록. 생략/null = 안 그린다.
+   * 3D — this frame's **latitude rings** (world coordinates + normalized depth).
+   * Why the rings are needed: the `DOME_RING_KINDS` doc-block in
+   * `model/dome-view.ts`. Null draws none.
    */
   domeRings?: readonly { a: number; points: readonly { wx: number; wy: number; u: number }[] }[] | null;
   /**
-   * 3D — 한 관계선의 **자오선 제어점**(월드 2D). 왜 직선이 아니라 휘어야
-   * 하는지는 `model/dome-view.ts` 의 `DOME_EDGE_BOW` 독블록. 생략/null 을
-   * 돌려주면 그 엣지는 2D 제어점을 그대로 쓴다(회귀 0).
+   * 3D — the **meridian control point** for one edge (world 2D). Why an edge must
+   * bow rather than run straight: the `DOME_EDGE_BOW` doc-block in
+   * `model/dome-view.ts`. Returning null leaves that edge on its 2D control point.
    */
   domeControlFor?: ((sourceId: string, targetId: string) => { wx: number; wy: number } | null) | null;
   /**
-   * 「걸어온 길」 렌즈의 세기 0..1 — on/off 지수 램프(loop 가 스텝).
+   * Strength 0..1 of the trail lens — an on/off exponential ramp stepped by the loop.
    *
-   * 왜 boolean 이 아닌가: 렌즈가 켜지면 방문 노드와 **밟은 관계선**이 트레일
-   * 색으로 올라오는데, 그 색이 하드컷으로 나타나고 사라지면 «장식이 튀어나왔다»
-   * 로 읽힌다. 선행 렌즈 예외 둘(에이전트 포커스 링 · 최근 변경 스포트라이트)이
-   * 이미 램프로 소멸하는 문법을 세워 뒀고, 이 렌즈도 같은 문법을 쓴다.
-   * 생략 시 `trailLensIds` 유무로 0/1(하위호환).
+   * Not a boolean: the trail colour hard-cutting in and out reads as decoration
+   * jumping out at you. The two earlier lenses (agent-focus ring, recent-change
+   * spotlight) already established ramping. Omitted falls back to 0/1 by whether
+   * `trailLensIds` is set.
    */
   trailLensRamp?: number;
 }
@@ -773,57 +797,63 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     trailLensRamp,
   } = params;
 
-  // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
-  // 일 때만 유효(선택 > 렌즈 우선순위). inSpotlight=false 대상에 적용한다.
+  // Spotlight sink multiplier — live only while the lens is on, the ramp is
+  // advancing, and no node/edge focus is active (selection outranks lens). Applied
+  // to everything with `inSpotlight === false`.
   const spotlightLensActive =
     spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
   const spotlightSink = (inSpotlight: boolean): number =>
     spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - tokens.spotlightRestAlpha) : 1;
 
-  // 걸어온 길 렌즈 — 트레일 팝오버가 열려 있는 동안만. 켜지면 ego keep-set 이
-  // "1-hop 이웃"에서 "방문 노드"로 바뀐다(아래 `lensNodeEgoState`), 엣지는 전부
-  // dim 으로 내려앉는다. 새 토큰·새 램프 없이 기존 dim 값만 재사용하므로 on/off
-  // 는 즉시 전환이고(200ms 이내 계약), 닫으면 ego 강조가 그대로 복귀한다.
+  // Trail lens — active only while the trail popover is open. It swaps the ego
+  // keep-set from "1-hop neighbours" to "visited nodes" (see `lensNodeEgoState`
+  // below) and sinks every edge to dim. It reuses the existing dim values, adding
+  // no token and no ramp, so on/off stays within the 200ms contract and closing
+  // the popover restores the ego emphasis exactly.
   const trailLensKeepIds = trailLensIds !== null && trailLensIds.size > 0 ? trailLensIds : null;
   const trailLensActive = trailLensKeepIds !== null;
   /**
-   * 렌즈의 **세기** — 0 이면 아무 트레일 잉크도 없다.
+   * The lens's **strength** — at 0 there is no trail ink at all.
    *
-   * 켜짐(집합 유무)과 세기(램프)를 갈라 둔 이유: 팝오버를 닫는 순간 집합을
-   * 비우면 색이 하드컷으로 사라진다. loop 가 램프가 0 에 닿을 때까지 집합을
-   * 계속 넘기고, 이 값만 내려간다.
+   * On/off (does the set exist) is kept separate from strength (the ramp) because
+   * emptying the set the instant the popover closes would hard-cut the colour
+   * away. The loop keeps passing the set until the ramp reaches 0; only this value
+   * falls.
    */
   const trailRamp = trailLensActive
     ? Math.min(1, Math.max(0, trailLensRamp ?? 1))
     : 0;
   const isTrailKept = (nodeId: string): boolean => trailLensKeepIds !== null && trailLensKeepIds.has(nodeId);
-  /** 렌즈 ON 이면 방문 keep-set 기준 분류, OFF 면 기존 ego/페어 분류 그대로. */
+  /** Lens on: classify against the visited keep-set. Lens off: the usual ego/pair classification. */
   const lensNodeEgoState = (nodeId: string, focusId: string | null, neighbors: ReadonlySet<string>, pair: EdgePairFocus | null): NodeEgoState =>
     trailLensKeepIds !== null
       ? resolveTrailLensNodeEgoState(nodeId, focusId, trailLensKeepIds)
       : resolveNodeEgoStateWithPair(nodeId, focusId, neighbors, pair);
 
-  // S5 깊이 연출 — 노드 하나의 렌더 오프셋(월드 단위, 시차)과 깊이 선명도
-  // 배수를 한 곳에서 계산해 드로우 전체가 일관되게 쓴다. 영역 밖(depthById 에
-  // 없음)·depth≤1 은 오프셋 0, 선명도 배수 1(무효과) — 회귀 0.
+  // Realm depth treatment — one place computes a node's render offset (world
+  // units, parallax) and its depth clarity multiplier so the whole draw agrees.
+  // Outside the realm (absent from `realmDepthById`) or depth ≤ 1 yields offset 0
+  // and multiplier 1, i.e. no effect.
   const realmDepthOf = (nodeId: string): number | undefined => realmDepthById?.get(nodeId);
   const realmParallaxOffsetFor = (nodeId: string): { x: number; y: number } => {
     if (!realmDepthParallax || !realmDepthById) return ZERO_PARALLAX;
     return depthParallaxOffsetFor(realmDepthById.get(nodeId), realmDepthParallax.depth2, realmDepthParallax.depth3);
   };
 
-  // 3D 보기 — 램프가 0 이면 루프가 null 을 넘겨 이 프레임은 종전 2D 경로다.
+  // 3D view — at ramp 0 the loop passes null, so this frame takes the 2D path.
   const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
   /**
-   * 한 노드의 3D 렌더 전달값(월드 오프셋 + 원근 배율). 노드·라벨·엣지 끝점·칩
-   * 앵커가 전부 이 맵을 지나므로 한 프레임의 모든 마크가 **하나의 자세**를
-   * 공유한다 — 히트테스트(`renderOffsetForNode`)·계기도 같은 맵을 읽는다.
+   * One node's 3D transform (world offset + perspective factor). Nodes, labels,
+   * edge endpoints, and chip anchors all pass through this map, so every mark on a
+   * frame shares **one pose** — and hit testing (`renderOffsetForNode`) and the
+   * instrument read the same map.
    */
   const domeFrameFor = (nodeId: string): DomeNodeFrame =>
     (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
-  // perf 2026-08-19 — 노드 프레임을 원본 인덱스 기준으로 한 번만 조회해 두고,
-  // 이후의 알파 루프·노드 정렬·노드 드로우·라벨 패스가 전부 이 배열을 읽는다
-  // (`domeNodeFrameReused` 독블록). 값은 `domeFrameFor` 와 동일한 객체다.
+  // perf 2026-08-19 — look each node's frame up once, keyed by original index;
+  // the alpha loop, node sort, node draw, and label pass all read this array
+  // afterwards (see the `domeNodeFrameReused` doc-block). Same objects as
+  // `domeFrameFor` returns.
   if (domeOn) {
     domeNodeFrameReused.length = 0;
     for (let i = 0; i < world.nodes.length; i += 1) {
@@ -836,16 +866,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // Where world (0,0) currently lands on screen — the blueprint grid rides
   // this so the background belongs to the world, not the display (B3).
   const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
-  // 발자국 크기 계수 — 줌아웃에서 자국이 그래프를 덮지 않게 함께 줄인다.
+  // Footprint size factor — shrinks with the camera so footprints never blanket
+  // the graph when zoomed out.
   const footprintScale = footprintScaleFor(camera.scale.value);
-  // B5 — 라벨 줌 스케일 (프레임당 1회, 전 라벨 공용).
+  // Label zoom factor — computed once per frame, shared by every label.
   const labelScale = labelZoomScale(camera.scale.value);
 
-  // 성좌 배경만 **먼 층**으로 흘린다 (2026-07-28 카운슬 — 소유자 "우주처럼
-  // 관성 있어보이게"). 격자·등고선은 지면이라 계수 1(세계에 용접) 그대로다.
-  // 자율 운동 0 — 카메라 원점의 함수일 뿐이라 카메라가 서면 배경도 선다.
-  // 결정 전체가 `model/background-parallax.ts` 의 순수 함수 한 개에 있다 —
-  // 여기 남는 미검증 표면은 "그 결과를 gridDraw 에 넘기는가" 한 줄뿐이다.
+  // Only the constellation background drifts on a **far layer**. Council
+  // 2026-07-28, owner: "우주처럼 관성 있어보이게" (it should carry inertia, like
+  // space). Grid and contour are ground, so they stay at factor 1, welded to the
+  // world. Zero autonomous motion: purely a function of the camera origin, so when
+  // the camera stops the background stops. The whole decision lives in one pure
+  // function in `model/background-parallax.ts`, leaving only the line that hands
+  // its result to `gridDraw` untested here.
   const bgOrigin = resolveBackgroundOrigin(
     gridOrigin,
     { width: viewportWidth, height: viewportHeight },
@@ -861,13 +894,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       viewportHeight,
       farT,
       variant: backgroundVariant,
-      // 3D — 배경 격자·도트는 **공(void)** 으로 물러난다(히어로 판정: 격자가
-      // 있으면 물체가 떠 있지 않고 바닥에 놓여 보인다). 바탕 채움·비네트는
-      // 유지 — 꺼지는 것은 무늬 층뿐이다.
+      // 3D — the background grid and dots recede into **void**: with a grid
+      // present the object reads as resting on a floor rather than floating. The
+      // base fill and vignette stay; only the pattern layer switches off.
       gridPattern: domeRamp > 0.001 ? null : gridPattern,
       paintAnimated: domeRamp > 0.001 ? null : paintAnimatedBackground,
-      // 층별 시차 원점은 배경 원점이 아니라 **격자 원점**에서 각자 계산한다 —
-      // 배경 원점은 이미 한 번 시차가 걸려 있어 두 번 걸면 층이 뭉친다.
+      // Each layer derives its parallax origin from the **grid** origin, not the
+      // background origin — the latter is already parallaxed once, and applying it
+      // twice collapses the layers together.
       depthLayers:
         depthDotPatterns && domeRamp <= 0.001
           ? DEPTH_DOT_LAYERS.map((layer, i) => {
@@ -891,8 +925,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // must not be scaled a second time.
   drawStarDust(ctx, { points: dustPoints, farT, devicePixelRatio: 1, originX: gridOrigin.x, originY: gridOrigin.y, radialParallax: realmDustParallax });
 
-  // S8 결함 6 — 영역 활성 중 결계 **안**을 우주로. 결계 밖은 도트 없음(클립).
-  // farT 무관(영역은 circuit 고도라 dust 는 꺼져 있다). 카메라 정지 시 완전 정지.
+  // While a realm is active, the space **inside** the warding circle becomes
+  // cosmos; outside it is clipped away. Independent of `farT` (a realm sits at
+  // circuit altitude, where dust is off). Fully still when the camera is still.
   if (wardingRing !== null && realmCosmosPoints !== null && realmCosmosPoints.length > 0) {
     const wc = worldToScreen(camera, viewportWidth, viewportHeight, wardingRing.centerX, wardingRing.centerY);
     drawRealmCosmos(ctx, {
@@ -907,24 +942,26 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
-  // perf 2026-08-19 — 핫 패스(엣지·노드·라벨)의 투영은 `worldToScreen` 과
-  // **같은 식**을 인라인으로 계산한다: `(w - cam) * scale + viewport/2`.
-  // 함수 호출 + 반환 객체 할당(프레임당 수천 개)을 없앨 뿐 좌표는 동일하다.
-  // 드로우는 동기라 카메라 값이 프레임 중간에 변하지 않는다.
+  // perf 2026-08-19 — the hot passes (edges, nodes, labels) inline **the same
+  // formula** `worldToScreen` uses: `(w - cam) * scale + viewport/2`. This removes
+  // a call plus a returned object (thousands per frame) and leaves the coordinates
+  // identical. The draw is synchronous, so the camera cannot change mid-frame.
   const camX = camera.x.value;
   const camY = camera.y.value;
   const camScale = camera.scale.value;
   const halfW = viewportWidth / 2;
   const halfH = viewportHeight / 2;
   /**
-   * 엣지 끝점·제어점의 스크린 투영 — 3D 보기가 켜지면 **각 끝점이 자기 끝
-   * 노드의 kind 깊이 오프셋**을 따라간다(끝 노드 디스크와 같은 층). 제어점은
-   * 두 끝 오프셋의 평균 — 커브가 두 층 사이를 잇는다. 꺼져 있으면 오프셋 0
-   * (기존 경로와 동일). 엣지 드로우와 호버 펄스가 같은 함수를 쓴다.
+   * Screen projection of an edge's endpoints and control point. In 3D each
+   * endpoint follows **its own end node's kind-depth offset**, so it sits on the
+   * same layer as that node's disc, and the control point averages the two offsets
+   * so the curve bridges the layers. With 3D off the offsets are 0. The edge draw
+   * and the hover pulses share this function.
    *
-   * perf 2026-08-19 — 반환값은 `edgePointsScratch` 재사용 객체다(다음 호출
-   * 전에 소비 완료). 엣지 드로우 루프는 깊이 정렬 때 이미 꺼낸 끝점 프레임을
-   * `offA`/`offB` 로 넘겨 Map 재조회를 없앤다(펄스 리졸버는 생략 → 자체 조회).
+   * perf 2026-08-19 — the return value is the reused `edgePointsScratch` object,
+   * consumed before the next call. The edge draw loop passes the endpoint frames it
+   * already fetched during depth sorting as `offA`/`offB`, removing the map
+   * re-lookup; the pulse resolver omits them and looks them up itself.
    */
   const projectEdgePoints = (
     edge: {
@@ -953,12 +990,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const offA = knownOffA ?? domeFrameFor(edge.sourceId);
     const offB = knownOffB ?? domeFrameFor(edge.targetId);
     /*
-     * 제어점 — 돔에서는 «두 끝점 오프셋의 평균»이 아니라 **자오선 제어점**이다
-     * (`model/dome-view.ts` 의 `DOME_EDGE_BOW`). 평균은 곧 현(chord)이라 선이
-     * 돔 속을 가로지르고, 그 실루엣은 돔이 아니라 천막이 된다.
+     * On the dome the control point is the **meridian** control point, not the
+     * average of the two endpoint offsets (`DOME_EDGE_BOW` in
+     * `model/dome-view.ts`). The average is a chord, so the line cuts through the
+     * inside of the dome and the silhouette reads as a tent, not a dome.
      *
-     * 조립 램프(`aMin`)로 2D 제어점에서 자오선 제어점으로 **건너간다** — 3D 를
-     * 켜는 700ms 동안 곡률이 이어져야 선이 «툭» 휘지 않는다.
+     * The assembly ramp (`aMin`) crosses from the 2D control point to the meridian
+     * one: over the 700ms of switching 3D on the curvature must stay continuous,
+     * or the line visibly snaps into its bow.
      */
     const flatControlX = edge.controlX + (offA.dx + offB.dx) / 2;
     const flatControlY = edge.controlY + (offA.dy + offB.dy) / 2;
@@ -984,19 +1023,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const colorNeighbors = colorFocusedNodeId
     ? world.neighborMap.get(colorFocusedNodeId) ?? EMPTY_NEIGHBOR_SET
     : EMPTY_NEIGHBOR_SET;
-  // perf 2026-08-19 — 포커스·페어·렌즈가 전부 없는 프레임(회전·유휴의 통상
-  // 상태)은 모든 노드의 ego 분류가 "normal" 로 정해져 있다(`resolveNodeEgoState`
-  // 첫 분기). 노드·라벨 루프가 노드마다 분류 함수를 다시 부르지 않게 한 번만
-  // 판정해 둔다 — 값이 같으므로 픽셀도 같다.
+  // perf 2026-08-19 — on a frame with no focus, pair, or lens (the usual rotating
+  // or idle state) every node's ego classification is fixed at "normal"
+  // (`resolveNodeEgoState`'s first branch). Deciding that once keeps the node and
+  // label loops from re-calling the classifier per node — same values, same pixels.
   const egoAllNormal = focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
   const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
-  // perf 2026-08-19 — 무포커스 NodeVisual 캐시 무효화(토큰/모션 설정 변경 시).
+  // perf 2026-08-19 — invalidate the focus-free `NodeVisual` cache when tokens or
+  // the motion preference change.
   if (nodeVisualCacheTokens !== tokens || nodeVisualCacheReducedMotion !== reducedMotion) {
     nodeVisualCache.fill(undefined);
     nodeVisualCacheTokens = tokens;
     nodeVisualCacheReducedMotion = reducedMotion;
   }
-  // perf 2026-08-19 — 드로우 호출의 토큰 인자(프레임 안 불변)를 프레임당 1개로.
+  // perf 2026-08-19 — one token argument object per frame; it is frame-invariant.
   const traceTokensFrame = {
     edgeContains: tokens.edgeContains,
     edgeContainsL0: tokens.edgeContainsL0,
@@ -1006,9 +1046,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     indigo: tokens.indigo,
     indigoBright: tokens.indigoBright,
     edgeSelected: tokens.edgeSelected,
-    // 트레일 잉크는 토큰이 아니라 **발자국이 쓰는 그 색 그대로**다 —
-    // 사용자가 설정에서 고른 노랑/인디고 2택이 자국과 선에 동시에 적용돼야
-    // 둘이 같은 사실의 두 표기로 읽힌다.
+    // Trail ink is not a token but **the exact colour the footprints use** — the
+    // user's yellow/indigo choice has to reach the footprints and the lines at
+    // once, or the two stop reading as two notations of one fact.
     edgeTrail: footprintStepColor,
   };
   const nodeShapeTokensFrame = {
@@ -1053,12 +1093,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   for (let nodeIndex = 0; nodeIndex < world.nodes.length; nodeIndex += 1) {
     const node = world.nodes[nodeIndex];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
-    // **접힌 노드는 알파를 가질 이유가 없다** — 칩 하나로 대체돼 이 프레임에
-    // 그려지지 않는다(실측 synth=3000: 3000 중 2820개). 소비처 넷이 전부 이
-    // 조회 «앞에서» 접힘을 이미 거른다: 엣지 루프 둘은 양 끝이 접히면 continue,
-    // 노드/라벨 루프는 첫 줄이 같은 가드, 히트 판정(`isNodeHittable`)은 알파
-    // 맵을 읽기 전에 접힘으로 false 를 낸다. 칩 부모는 정의상 접히지 않으며
-    // 그마저 `?? 1` 기본값을 갖는다.
+    // **A collapsed node has no reason to carry an alpha** — one chip stands in
+    // for it and it is not drawn this frame (measured at synth=3000: 2,820 of
+    // 3,000). All four consumers filter collapse *before* this lookup: both edge
+    // loops `continue` when either endpoint is collapsed, the node and label loops
+    // guard on the same first line, and hit testing (`isNodeHittable`) returns
+    // false on collapse before it reads the alpha map. A chip's parent is by
+    // definition not collapsed, and even it falls back to `?? 1`.
     if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
     const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
     const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, tierReveal);
@@ -1066,39 +1107,38 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       focusedNodeId === null &&
       selectedEdge !== null &&
       (node.id === selectedEdge.sourceId || node.id === selectedEdge.targetId);
-    // 걸어온 길 렌즈 — 방문 노드는 ego 멤버와 같은 티어 관통 채널을 탄다.
-    // 방문한 뒤 줌아웃해 티어 아래로 내려간 노드도 렌즈 동안엔 서 있어야
-    // "방문 노드만 이름을 갖고 서 있는" 상태가 성립하고, 같은 관통이
-    // 히트테스트에도 걸려 지도에서 바로 다시 클릭할 수 있다.
+    // Trail lens — visited nodes ride the same tier-piercing channel as ego
+    // members, so a node visited and then zoomed past its tier still stands while
+    // the lens is on. The same piercing reaches hit testing, so it stays clickable.
     const trailKept = isTrailKept(node.id);
     const isEgoMember =
       isPairMember ||
       trailKept ||
       previewEndpoint ||
       (focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id)));
-    // 스포트라이트 티어 관통 공개 (소유자: "눈으로 보는 노드를 보고 바로
-    // 파악") — 변경 노드가 줌 티어 아래(element 등)에 숨어 있으면 렌즈가
-    // 켜져도 안 보인다. ego 이웃과 같은 tier-exemption reveal 채널에
-    // 스포트라이트 램프를 합류시켜, 렌즈 ON 동안 변경 노드는 줌 무관하게
-    // 램프로 떠오른다(끄면 램프 감쇠로 자연 강하).
+    // Spotlight tier-piercing reveal. Owner: "눈으로 보는 노드를 보고 바로
+    // 파악" (you should grasp it straight from the node you are looking at). A
+    // changed node hidden below the zoom tier (an element, say) stays invisible
+    // even with the lens on, so the spotlight ramp joins the same tier-exemption
+    // reveal channel ego neighbours use: while the lens is on, changed nodes rise
+    // regardless of zoom, and sink again as the ramp decays when it is turned off.
     const spotlightReveal =
       spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id) ? spotlightRamp : 0;
-    // **다섯째 티어 관통 채널 — 칩 펼침** (2026-07-31).
+    // **The fifth tier-piercing channel — chip expansion** (2026-07-31). The other
+    // four (edge selection · footprints · ego · spotlight) pierced the tier
+    // condition; chip expansion only removed children from `clusteredIds`, and held
+    // no privilege at the next checkpoint, the zoom tier condition.
     //
-    // 앞의 넷(엣지 선택 · 발자국 · ego · 스포트라이트)은 티어를 관통하는데 칩
-    // 펼침만 없었다. 칩은 자식을 `clusteredIds`(=안 그림)에서 빼줄 뿐, 그
-    // 다음 관문인 줌 티어 게이트 앞에서는 아무 특권이 없었다.
-    //
-    // 그래서 `+43 더보기` 칩이 "24개가 지금 보인다"고 주장하는데 **1개가
-    // 그려졌다**(모션석 프레임 실측). 개요 배율에서 element 자식은 zoomRatio
-    // 2.5 까지 알파 0 이다 — 칩을 눌러도 2.5 초 동안이 아니라 **줌을 그만큼
-    // 올릴 때까지** 아무것도 안 나온다.
-    //
-    // 사용자가 칩을 눌렀다는 것은 "이걸 보겠다"는 명시적 요청이라 ego 클릭과
-    // 같은 급이다. 새 개념이 아니라 **빠진 다섯 번째**다.
+    // So a `+43 more` chip claimed "24 are visible now" while **1 was drawn**
+    // (measured frame by frame by the motion seat): at overview magnification an
+    // element child has alpha 0 until zoomRatio 2.5, so pressing the chip revealed
+    // nothing until the zoom was raised that far — a dead end, not a wait.
+    // Pressing a chip is an explicit "show me this", the same class of request as
+    // an ego click, so this is the **missing fifth**, not a new concept.
     const chipExpandReveal = expandRevealById?.get(node.id) ?? 0;
-    // 방금 생긴 노드 — 등장 램프를 그대로 면제 채널로 쓴다. 새 개념이 아니라
-    // 이미 있던 램프가 닿지 못하던 자리에 닿게 하는 것이다(위 `bornNodeIds`).
+    // A just-born node reuses its appear ramp as the exemption channel — not a new
+    // concept, just letting an existing ramp reach where it could not (see
+    // `bornNodeIds` above).
     const bornReveal = bornNodeIds?.has(node.id)
       ? Math.min(1, Math.max(0, appearById?.get(node.id) ?? 1))
       : 0;
@@ -1113,16 +1153,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         previewEndpoint ? previewEdge?.alpha ?? 1 : 0,
       ),
     );
-    // S7 — 영역 퇴장 중 귀환하는 밖 노드는 이 램프로 강등(모션 감사 처방 B). 이
-    // 노드로 향하는 엣지는 `edgeTierAlpha`(min 결합)를 통해 같은 프레임에서
-    // 자동으로 따라온다 — 별도 엣지 경로 없이 노드 alpha 하나로 충분.
+    // An outside node returning during a realm exit is held back by this ramp.
+    // Edges reaching it follow automatically on the same frame through
+    // `edgeTierAlpha`'s min combination — one node alpha suffices, no separate
+    // edge path.
     const returnAlpha = realmOutsideReturnAlphaById?.get(node.id);
     let outAlpha = returnAlpha !== undefined ? baseAlpha * returnAlpha : baseAlpha;
-    // 3D — 돔은 **모든 티어가 형태를 이룬다**(히어로 판정): 시맨틱 줌 게이트가
-    // 숨겨 둔 capability/element 도 자기 티어의 조립 램프를 타고 떠오른다.
-    // 램프 0 이면 종전 값 그대로(2D 회귀 0), 램프 1 이면 완전 공개. 깊이에
-    // 따른 어두움은 여기가 아니라 노드/엣지의 안개(fog)가 나른다 — 이 맵은
-    // 히트 판정의 단일 출처라 안개를 섞으면 먼 노드가 안 잡히게 된다.
+    // 3D — on the dome **every tier takes part in the form**: capabilities and
+    // elements the semantic-zoom condition hides still rise on their tier's
+    // assembly ramp. At ramp 0 the value is unchanged (2D), at ramp 1 fully
+    // revealed. Depth darkening is NOT applied here but carried by the node/edge
+    // fog: this map is the single source for hit testing, and mixing fog in would
+    // make distant nodes unclickable.
     if (domeOn) {
       const domeA = domeNodeFrameReused[nodeIndex].a;
       if (domeA > 0) outAlpha = outAlpha + (1 - outAlpha) * domeA;
@@ -1130,18 +1172,22 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     effectiveAlphaById.set(node.id, outAlpha);
   }
 
-  // S8 결함 1 — 펼친 부모(파선 오라 대상) + 그 디스크(부모 + contains 하위 전이
-  // 폐포) 집합. 배경 dim 은 "확장 중" 무관 노드에만 걸어야 하므로 디스크 멤버를
-  // 미리 모은다. 확장이 없으면 둘 다 비어 회귀 0. ego(`이웃 +N`) 칩은 제외.
-  // 엣지 루프의 depends 억제(고팬아웃 배치-공개 처방 4)도 `anyExpanded` 를
-  // 읽으므로 엣지 그리기 **앞**에서 계산한다.
+  // Expanded parents (which carry the dashed aura) and their discs (the parent
+  // plus the transitive closure of its `contains` descendants). The background dim
+  // must only hit nodes unrelated to the expansion, so disc members are collected
+  // up front. Both stay empty when nothing is expanded. Ego (`neighbours +N`) chips
+  // are excluded. Computed **before** the edge draw because the edge loop's
+  // `depends` suppression also reads `anyExpanded`.
   const expandedParentIds = new Set<string>();
   const expandedDiscIds = new Set<string>();
-  // S11 결함 (소유자 실보고 "+ 버튼 눌렀을때는 뭐가 선택된건지 모르겠거든?") —
-  // 칩을 눌러 **직접 드러난** 자식 집합. 노드 클릭은 ego dim + 실선 인디고 링으로
-  // "무엇이 골라졌는지"가 즉시 읽히는데, 칩 전개는 자식이 그냥 나타날 뿐 소속
-  // 표시가 없어 사용자가 자기 행동의 결과를 못 봤다. 전이 폐포(`expandedDiscIds`)가
-  // 아니라 **직속 자식**만 표시한다 — 손자는 자기 칩으로 열린 별개 코호트다.
+  // The children a chip press **directly** revealed. Owner, from a live report:
+  // "+ 버튼 눌렀을때는 뭐가 선택된건지 모르겠거든?" (after pressing +, I can't
+  // tell what got selected). A node click reads instantly through the ego dim plus
+  // a solid indigo ring, but a chip expansion just made children appear with no
+  // membership marking, so the user could not see the result of their own action.
+  // Marks **direct children only**, not the transitive closure
+  // (`expandedDiscIds`) — grandchildren are a separate cohort opened by their own
+  // chip.
   const expandedChildIds = new Set<string>();
   for (const chip of clusterChips) {
     if (!chip.expanded || chip.ego) continue;
@@ -1160,11 +1206,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
   const anyExpanded = expandedParentIds.size > 0;
 
-  // Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지 코멧
-  // 캡. `topology-physics-step.ts`가 위상 전진을 게이트하는 것과 정확히 같은
-  // 결정론 로직(포커스 노드에 물린 contains 엣지 → seed 순 상위 24개)이라,
-  // 상태 공유 없이 같은 프레임에서 같은 Set 이 나온다 — 드로우 게이트만 별도
-  // 계산해도 drift 없음.
+  // Comet cap for the `contains` edges incident to the focused node. Exactly the
+  // deterministic logic `topology-physics-step.ts` uses to decide whether to
+  // advance a phase (incident `contains` edges → the top 24 by seed order), so
+  // both produce the same Set on the same frame with no shared state — computing
+  // the draw-side condition separately cannot drift.
   const egoContainsComets =
     focusedNodeId === null
       ? EMPTY_EGO_CONTAINS_COMETS
@@ -1174,18 +1220,22 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           ),
         );
 
-  // 상시 앰비언트 `depends` 코멧 캡 — 형제 갈래(contains)가 이미 갖는 24 상한을
-  // 빠진 쪽에 적용한다. **#512(소유자의 앰비언트 복원)를 재뒤집는 게 아니다**:
-  // 혜성은 여전히 상시로, 포커스 무관하게, 같은 속도로 흐른다. 다만 element
-  // 티어에서 화면이 depends 로 찰 때 **동시에 흐르는 점 개수에 천장이 없던**
-  // 것을 형제와 같은 결정론 랭킹으로 막는다.
+  // Always-on ambient `depends` comet cap — applies the limit of 24 its sibling
+  // branch (`contains`) already had to the branch that was missing one. **This
+  // does not re-reverse #512** (the owner's restoration of the ambient comets):
+  // comets still flow permanently, regardless of focus, at the same speed. What it
+  // caps, with the same deterministic ranking the sibling uses, is the previously
+  // unbounded number of points flowing at once when the element tier fills the
+  // screen with `depends`.
   //
-  // 입력은 "이 프레임에 실제로 그려질 depends 엣지" 다 — 드로우 루프와 같은
-  // 두 게이트(밀도 게이트 · 티어 알파)를 통과한 것만 캡 슬롯을 차지해야,
-  // 안 보이는 엣지가 슬롯을 물고 보이는 엣지가 코멧을 잃는 일이 없다.
-  // perf 2026-08-19 — 엣지 알파를 원본 인덱스 기준으로 한 번만 계산한다
-  // (`edgeAlphaReused` 독블록). 아래 앰비언트 코멧 필터와 엣지 드로우 루프가
-  // 같은 값을 읽는다 — 술어·값이 종전과 동일하므로 결과도 동일하다.
+  // The input is "the `depends` edges this frame will actually draw" — only edges
+  // that passed the same two conditions as the draw loop (density, tier alpha) may
+  // take a cap slot, so an invisible edge can never hold a slot while a visible
+  // one loses its comet.
+  // perf 2026-08-19 — compute each edge's alpha once, keyed by original index
+  // (see the `edgeAlphaReused` doc-block). The ambient comet filter below and the
+  // edge draw loop read the same value; predicates and values are unchanged, so
+  // the results are too.
   edgeAlphaReused.length = 0;
   for (let i = 0; i < world.edges.length; i += 1) {
     const edge = world.edges[i];
@@ -1195,7 +1245,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         : edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1),
     );
   }
-  // `filter` 가 매 프레임 만들던 배열을 재사용 버퍼로 대체(원소·순서 동일).
+  // Replaces the array `filter` allocated every frame — same elements, same order.
   ambientDependsInputReused.length = 0;
   for (let i = 0; i < world.edges.length; i += 1) {
     const edge = world.edges[i];
@@ -1206,42 +1256,46 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const ambientDependsComets = selectAmbientDependsComets(ambientDependsInputReused);
 
   /*
-   * ── 3D 화가 정렬 + 깊이 헤일로 ────────────────────────────────────────
+   * ── 3D painter's ordering + depth halos ──────────────────────────────
    *
-   * 2D 에서 엣지는 배열 순서대로 그려도 된다 — 겹침에 앞뒤가 없다. 돔에서는
-   * 그것이 곧 결함이다: 뒤쪽 링을 잇는 선이 앞쪽 링의 선 **위에** 그려지면
-   * 깊이 단서가 매 프레임 무작위로 뒤집힌다(안개는 색만 낮추지 가리지 못한다).
+   * In 2D edges may be drawn in array order — overlap has no front and back. On
+   * the dome that becomes a defect: when a line joining a far ring is drawn **over**
+   * a line on a near ring, the depth cue flips at random every frame (fog lowers
+   * colour, it does not occlude).
    *
-   * 그래서 노드가 이미 하는 것(`nodeDrawOrder`)을 엣지에도 한다: **먼 것부터**
-   * 그린다. 정렬은 kind 패스 **안에서** 한다 — contains 아래, depends 위라는
-   * 잉크 위계는 깊이보다 위의 규약이라 그대로 둔다.
+   * So edges do what nodes already do (`nodeDrawOrder`): **farthest first**. The
+   * sort happens **inside** each kind pass — the ink hierarchy of `contains` below
+   * and `depends` above is a convention that outranks depth, and it stays.
    *
-   * 깊이를 실제로 «가리게» 만드는 것은 정렬만으로는 안 되고 헤일로가 한다
-   * (`model/dome-view.ts` 의 `domeHaloPx` 독블록 — Everts et al. 2009).
-   * 헤일로 색은 그리드가 칠한 그 바탕과 **같은 식**으로 낸다: 값이 어긋나면
-   * 잘린 자리가 배경보다 밝거나 어두운 띠로 남는다.
+   * Sorting alone does not make depth actually occlude; the halo does
+   * (the `domeHaloPx` doc-block in `model/dome-view.ts` — Everts et al. 2009). The
+   * halo colour is derived by **the same formula** the grid paints its ground
+   * with: if the values diverge, the cut leaves a band lighter or darker than the
+   * background.
    */
   const domeHaloColor = domeOn ? lerpColorHex(tokens.canvasBgNear, tokens.canvasBgFar, farT) : "";
   /*
-   * 깊이 정렬 — **깊이를 비교자 «안» 에서 재지 않는다** (2026-08-19 실측).
+   * Depth sort — **never measure depth inside the comparator** (measured 2026-08-19).
    *
-   * 종전 비교자는 호출마다 `domeFrameFor` 를 두 번 불렀다. 정렬 비교는
-   * O(n log n) 번 일어나므로 엣지 1,914개(synth=2000 의 3D) 기준 프레임당
-   * 약 42,000회의 Map 조회가 됐고, 60fps 로 초당 2.5M 회다. CPU 프로파일에서
-   * `domeFrameFor` 단독 self time 이 3D 유휴의 **7.2%** 로 잡힌 것이 이것이다.
+   * The old comparator called `domeFrameFor` twice per invocation. Comparisons
+   * happen O(n log n) times, so at 1,914 edges (synth=2000 in 3D) that was about
+   * 42,000 map lookups per frame, 2.5M per second at 60fps. That is what showed up
+   * as `domeFrameFor` alone taking **7.2%** self time in the 3D idle CPU profile.
    *
-   * 깊이는 엣지당 «한 번»만 재고(2n 조회), 정렬은 인덱스 배열로 돌린다 —
-   * 비교자는 배열 읽기 둘뿐이다. 인덱스가 오름차순으로 들어가고 V8 정렬이
-   * 안정적이므로 **결과 순서는 종전과 한 자리도 다르지 않다**.
+   * Depth is now measured once per edge (2n lookups) and the sort runs over an
+   * index array, so the comparator does two array reads. Indices go in ascending
+   * and V8's sort is stable, so **the resulting order is identical, position for
+   * position**.
    */
   let edgeDrawOrder: readonly WorldEdge[] = world.edges;
   if (domeOn) {
     const edges = world.edges;
     domeEdgeDepthReused.length = 0;
     domeEdgeIndexReused.length = 0;
-    // perf 2026-08-19 — 끝점 프레임도 여기서 한 번만 꺼내 담는다(원본 인덱스
-    // 기준). 드로우 루프의 안개 계산과 `projectEdgePoints` 가 재조회하지 않고
-    // 이 두 배열을 읽는다 — 같은 객체라 값도 픽셀도 같다.
+    // perf 2026-08-19 — endpoint frames are fetched once here too, keyed by
+    // original index. The draw loop's fog computation and `projectEdgePoints` read
+    // these two arrays instead of re-fetching — same objects, same values, same
+    // pixels.
     domeEdgeFrameAReused.length = 0;
     domeEdgeFrameBReused.length = 0;
     for (let i = 0; i < edges.length; i += 1) {
@@ -1260,20 +1314,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   /*
-   * ── 위도 링 — 무대를 먼저 깐다 ─────────────────────────────────────────
+   * ── Latitude rings — lay the stage first ──────────────────────────────
    *
-   * 관계선보다 **먼저** 그린다. 링은 데이터가 아니라 좌표계라, 배우(노드·관계)
-   * 위에 오면 그 순간 데이터인 척하게 된다 — 배경 도트 격자를 노드 위에 그리지
-   * 않는 것과 같은 이유다. 3D 에서 그 도트 격자는 «공(void)» 으로 물러나 있고
-   * (위 `gridDraw` 의 `gridPattern: null`), 링이 그 빈자리를 대신한다: 3D 의
-   * 바닥은 평면이 아니라 구면이므로 좌표계도 구면의 것이어야 한다.
+   * Drawn **before** the relation lines. A ring is a coordinate system, not data;
+   * above the actors it would start pretending to be data — the same reason the
+   * background dot grid is never drawn over nodes. In 3D that grid has receded into
+   * void (`gridPattern: null` above) and the rings take its place, because the
+   * floor of a 3D scene is a sphere, so its coordinate system must be spherical.
    */
   if (domeOn && domeRings !== null && domeRings.length > 0) {
     domeRingsDraw(
       ctx,
       {
-        // 링 투영도 스크래치에 제자리로 쓴다 — 매 프레임 288개 객체를 새로
-        // 만들지 않는다(위 버퍼 독블록).
+        // Ring projection writes into the scratch in place, rather than
+        // allocating 288 objects per frame (see the buffer doc-block above).
         rings: (() => {
           for (let i = 0; i < domeRings.length; i += 1) {
             const ring = domeRings[i];
@@ -1302,8 +1356,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         })(),
         baseAlpha: DOME_RING_ALPHA,
         baseWidthPx: DOME_RING_WIDTH_PX,
-        // 노드·엣지와 **같은 램프**를 넘긴다 — 좌표계가 데이터와 다른 안개를
-        // 쓰면 같은 깊이의 둘이 다른 밝기가 되어 깊이 단서가 서로를 부정한다.
+        // The **same fog ramp** the nodes and edges use: if the coordinate system
+        // fogged differently from the data, two things at one depth would render at
+        // different brightness and the depth cues would contradict each other.
         fog: domeFogAlpha,
         widthFactor: domeLineWidthFactor,
       },
@@ -1315,25 +1370,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     for (let drawPos = 0; drawPos < edgeDrawOrder.length; drawPos += 1) {
       const edge = edgeDrawOrder[drawPos];
       if (edge.kind !== kind) continue;
-      // perf 2026-08-19 — 원본 인덱스(돔이면 정렬 인덱스 역참조, 2D 는 그대로)
-      // 로 사전 계산된 알파를 읽는다. -1 = 밀도 게이트 접힘(종전 continue 와
-      // 동일), ≤0.02 = 티어 반려(동일).
+      // perf 2026-08-19 — read the precomputed alpha by original index (in dome
+      // mode dereference the sort index; in 2D they coincide). -1 = collapsed by
+      // the density condition, ≤0.02 = rejected by tier — both skip, as before.
       const edgeOrigIndex = domeOn ? domeEdgeIndexReused[drawPos] : drawPos;
       const edgeAlpha = edgeAlphaReused[edgeOrigIndex];
       if (edgeAlpha <= 0.02) continue;
-      // 끝점 프레임은 깊이 정렬 때 담아 둔 것을 원본 인덱스로 되찾는다.
+      // Endpoint frames come back by original index from the depth-sort pass.
       const edgeFrameA = domeOn ? domeEdgeFrameAReused[edgeOrigIndex] : ZERO_DOME_FRAME;
       const edgeFrameB = domeOn ? domeEdgeFrameBReused[edgeOrigIndex] : ZERO_DOME_FRAME;
       const { a, b, control } = projectEdgePoints(edge, edgeFrameA, edgeFrameB);
-      // 3D — 깊이 안개·헤어라인 감쇠(히어로의 fog·lw 그대로). 읽어야 할 때
-      // (호버·선택·ego)는 아래에서 면제돼 도로 밝아진다.
+      // 3D — depth fog and hairline attenuation. Anything that must be read
+      // (hover, selection, ego) is exempted below and brightens back up.
       let domeEdgeFog = 1;
       let domeWidthScale = 1;
-      // 헤일로 반폭(화면 px) — 조립 램프로 크로스페이드해 2D↔3D 전환 중에도
-      // 획이 «툭» 생기지 않는다. 알파는 아래에서 이 엣지의 최종 알파를 안 뒤에.
+      // Halo half-width (screen px), cross-faded on the assembly ramp so no stroke
+      // pops into existence during the 2D↔3D transition. Its alpha is set below,
+      // once this edge's final alpha is known.
       let domeHaloWidthPx = 0;
-      // 먼 쪽 상세 램프(`domeDetailFactor` 독블록) — 뒤쪽 반구에서 헤일로를
-      // 깊이 연속으로 접는다. 조립 램프와 같은 크로스페이드 문법(2D = 1).
+      // Far-side detail ramp (`domeDetailFactor` doc-block) — folds the halo away
+      // continuously with depth across the back hemisphere. Same cross-fade grammar
+      // as the assembly ramp (2D = 1).
       let domeEdgeDetail = 1;
       if (domeOn) {
         const aMin = Math.min(edgeFrameA.a, edgeFrameB.a);
@@ -1349,7 +1406,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // before this guard. Hull-based, so it only ever drops strokes that
       // could not have landed on canvas (see `render/viewport-cull.ts`).
       if (isEdgeCulled(a, b, control, EDGE_CULL_MARGIN_PX, viewportWidth, viewportHeight)) continue;
-      // B2 잔여 — 끝점이 하나도 안 보이는 관통 엣지는 잉크 강등 (실타래 해소).
+      // A pass-through edge with neither endpoint on screen gets its ink lowered,
+      // which is what untangles the hairball.
       const passthrough = isPassthroughEdge(a, b, 24, viewportWidth, viewportHeight);
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
       const isSelectedEdge =
@@ -1366,18 +1424,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           (emphasizedNeighborId !== null &&
             touches &&
             (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId)));
-      // 걸어온 길 렌즈 — 엣지는 **전부** dim(ego 강조 엣지 포함). 소유자가
-      // "어지럽다"고 한 파란 선의 정체가 바로 이 ego 관계 엣지였다. 삭제가
-      // 아니라 렌즈 동안의 후퇴다 — 팝오버를 닫으면 그대로 돌아온다.
+      // Trail lens — **every** edge dims, ego-emphasised ones included. The blue
+      // lines the owner called "어지럽다" (dizzying) were exactly these ego
+      // relation edges. Not a deletion but a retreat for the duration of the lens:
+      // closing the popover brings them straight back.
       let edgeEgoState: EdgeEgoState = trailLensActive
         ? "dim"
         : resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
-      // 고팬아웃 배치-공개(2026-07) 처방 4 — 펼침 중 depends 억제. 배치 자식이
-      // DOI 순으로 드러나는 동안 무관한 depends 실타래가 지도를 뒤덮으면 방금
-      // 드러난 소수가 안 읽힌다. anyExpanded 이고 contains 가 아니며(계층 실선은
-      // 유지) 이미 ego/선택/호버/emphasis 로 살아있지 않은 depends 엣지는 dim
-      // 잉크로 강등한다. 자식 hover/ego 시 touches/emphasized/isSelected 가 참이라
-      // 기존 코멧/강조 규칙이 그 엣지를 되살린다(회귀 0).
+      // High-fan batch reveal (2026-07) — suppress `depends` while a disc is
+      // expanded. If an unrelated `depends` hairball blankets the map while batch
+      // children surface in DOI order, the handful just revealed cannot be read.
+      // A `depends` edge is lowered to dim ink when something is expanded, it is
+      // not `contains` (the hierarchy stays solid), and it is not already alive by
+      // ego / selection / hover / emphasis. Hovering or focusing a child makes
+      // `touches`/`emphasized`/`isSelected` true, so the existing comet and
+      // emphasis rules revive that edge.
       if (
         anyExpanded &&
         kind !== "contains" &&
@@ -1388,15 +1449,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ) {
         edgeEgoState = "dim";
       }
-      // 스포트라이트 — 양끝이 모두 창 안일 때만 정상 잉크(변경 노드 간 연결
-      // 은 구조를 보여줘야 함), 아니면 침강. 호버/선택 엣지는 이미 위 분기가
-      // ego/selected 로 살린다.
+      // Spotlight — normal ink only when both endpoints are inside the window
+      // (a connection between two changed nodes has to show its structure);
+      // otherwise it sinks. Hovered and selected edges were already revived as
+      // ego/selected by the branch above.
       const edgeSpotlightSink = spotlightSink(
         spotlightIds !== null && spotlightIds.has(edge.sourceId) && spotlightIds.has(edge.targetId),
       );
-      // 「걸어온 길」 — 연달아 밟은 쌍이면서 **실재하는 관계선**일 때만. 이 루프가
-      // `world.edges` 를 돌기 때문에 후자는 구조적으로 보장된다(발자국이 이미
-      // 쓰는 그 계약). 렌즈가 꺼져 있으면 램프가 0 이라 값이 종전과 같다.
+      // Trail — only for a consecutively walked pair that is also a **real
+      // relation line**. The latter is structurally guaranteed because this loop
+      // iterates `world.edges`, the same contract the footprints already rely on.
+      // With the lens off the ramp is 0 and the value is unchanged.
       const walkedTrail =
         trailRamp > 0.001 &&
         walkedEdgeKeys !== null &&
@@ -1407,28 +1470,28 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         )
           ? trailRamp
           : 0;
-      // 3D 안개 면제 — 상호작용이 짚은 관계는 깊이에 묻히지 않는다.
+      // 3D fog exemption — a relation the interaction pointed at is never buried
+      // by depth.
       const domeEdgeExempt = emphasized || isSelectedEdge || edgeEgoState === "ego";
-      // 먼 쪽 상세 생략 — 안개 면제와 같은 규칙: 읽으라고 밝힌 관계는 헤일로도
-      // 되찾는다(면제 엣지가 뒤엉킨 실타래를 자를 수 없으면 면제가 반쪽이다).
+      // Far-side detail follows the same rule as the fog exemption: a relation
+      // brightened to be read gets its halo back too.
       if (!domeEdgeExempt && domeEdgeDetail < 1) domeHaloWidthPx *= domeEdgeDetail;
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
         edgeSpotlightSink *
         (domeEdgeExempt ? 1 : domeEdgeFog);
       /*
-       * 헤일로의 진하기는 **이 선이 지금 얼마나 진한가**를 따라간다 —
-       * 가까운(=진한) 선은 세게 자르고, 안개에 묻힌 먼 선은 거의 안
-       * 자른다. 그래야 헤일로 자체가 «내가 앞에 있다»는 주장을 하지
-       * 않는다. 상호작용이 짚어 면제된 엣지는 안개를 안 받으므로 자동으로
-       * 가장 세게 자른다 — 읽으라고 밝힌 선이 뒤엉킨 실타래에 다시 묻히면
-       * 면제가 반쪽이다.
+       * A halo's strength follows **how strong this line currently is**: a near
+       * (strong) line cuts hard, a far line buried in fog barely cuts at all, which
+       * is what keeps the halo from asserting "I am in front". An edge exempted by
+       * interaction takes no fog, so it cuts hardest of all.
        *
-       * perf 2026-08-19 — 헤일로 인자는 재사용 스크래치(`edgeHaloScratch`),
-       * 토큰 인자는 프레임당 1개(`traceTokensFrame`), 페어 키는 엣지 객체당
-       * 1회 계산 캐시(`edgePairMeta`)다. 상태 리터럴 자체는 계약 게이트
-       * (footprint-bloom-exception · review-ring-authorship)가 배선 표기를
-       * 핀으로 잡고 있어 그대로 둔다.
+       * perf 2026-08-19 — the halo argument is reused scratch
+       * (`edgeHaloScratch`), the token argument is one per frame
+       * (`traceTokensFrame`), and the pair key is computed once per edge object and
+       * cached (`edgePairMeta`). The state literals themselves stay spelled out
+       * because contract gates (footprint-bloom-exception, review-ring-authorship)
+       * pin that wiring.
        */
       if (domeHaloWidthPx > 0.05) {
         edgeHaloScratch.color = domeHaloColor;
@@ -1442,8 +1505,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           b,
           control,
           relationType: kind,
-          // 2치 `kind` 는 "containment 가 아닌 것 전부" 를 depends 로 묶는다.
-          // 방향 테이퍼를 그려도 되는지는 **원 관계 타입**이 정한다.
+          // The binary `kind` lumps everything that is not containment into
+          // `depends`. Whether a directional taper may be drawn is decided by the
+          // **original relation type**, not by `kind`.
           directional: isDirectionalRelation(edge.relationType),
           egoState: edgeEgoState,
           selected: isSelectedEdge && !trailLensActive,
@@ -1461,13 +1525,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         traceTokensFrame,
       );
       /**
-       * 선 옆 발자국 — 이 관계선을 **연달아 밟았을 때만**. 선 위가 아니라
-       * 법선 방향으로 비켜 찍는다: 관계선은 타입 있는 사실(포함/의존)을 나르는
-       * 채널이라, 그 위에 마크를 얹으면 두 사실이 한 잉크를 다툰다.
+       * Footprints beside the line — only when this relation was **walked
+       * consecutively**. Stamped along the normal, offset from the line rather
+       * than on it: a relation line is the channel carrying a typed fact
+       * (containment / dependency), and a mark laid on top would make two facts
+       * fight over one ink.
        *
-       * 후보(연속 방문 쌍) 중 **실재하는 엣지**에만 얹히는 것이 여기서 보장된다 —
-       * 이 루프는 `world.edges` 를 돌기 때문이다. 관계 없는 두 노드를 연달아
-       * 방문했다면 그 쌍은 여기 오지 않는다.
+       * That only **real edges** among the candidate pairs receive them is
+       * guaranteed here, because this loop iterates `world.edges`. Two unrelated
+       * nodes visited back to back never reach this point.
        */
       if (
         footprintPref !== null &&
@@ -1484,9 +1550,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           edgeAlpha * footprintPref.opacity,
         );
       }
-      // R6 상시 혜성 — 코멧 꼬리 자체는 `tracesDraw`가 `edge.t`를 읽어
-      // 엣지 커브와 함께 그린다(포커스 무관, dim 제외). 이 프레임 패스는 더
-      // 이상 별도 반딧불 점을 얹지 않는다(구 S10 포커스-게이트형 삭제).
+      // Always-on comets: the tail is drawn by `tracesDraw` off `edge.t`, together
+      // with the edge curve, regardless of focus (dim edges excluded). This pass
+      // no longer lays separate firefly points on top.
       ctx.globalAlpha = 1;
     }
   }
@@ -1514,9 +1580,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
   }
 
-  // R6 호버 펄스 — 노드 호버가 발사한 일회성 신호(420ms). 엣지 커브 위, 노드
-  // 아래. reduced-motion 이면 애초에 발사가 없어 pulses 가 비므로 자연히 미표시.
-  // 곡선은 라이브 엣지 좌표를 스크린으로 투영(드래그/살아있는 그래프 추종).
+  // Hover pulses — one-shot signals (420ms) fired by a node hover, drawn above the
+  // edge curves and below the nodes. Under reduced-motion nothing fires, so
+  // `pulses` is empty and nothing draws. The curve projects live edge coordinates,
+  // so it follows dragging and a settling graph.
   if (pulses.length > 0) {
     const pairKey = (sourceId: string, targetId: string): string => `${sourceId} ${targetId}`;
     const edgeByPair = new Map(world.edges.map((edge): [string, typeof edge] => [pairKey(edge.sourceId, edge.targetId), edge]));
@@ -1552,29 +1619,33 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     return 1;
   };
 
-  // 진입 검수 E-4 — 라벨 앵커는 **실제로 그려진** 디스크를 따라가야 한다.
-  // 라벨 패스는 `radiusForKind × cameraScale` 만 썼는데, 그 값에는 노드의
-  // magnitudeScale·breathe·등장 램프·**선택 시 1.12 성장**이 전부 빠져 있다.
-  // 그래서 선택 노드는 자기 라벨을 자기 테두리 위에 얹고(실측: 테두리 bottom
-  // 215 vs 라벨 top 216), 큰 노드는 이름이 도형 안으로 들어갔다. 이 패스가
-  // 계산한 값을 그대로 넘겨 두 패스가 같은 도형을 본다.
-  // perf 2026-08-19 — 프레임마다 새 Map 대신 재사용(`effectiveAlphaByIdReused` 근거).
+  // A label anchor has to follow the disc that was **actually drawn**. The label
+  // pass used `radiusForKind × cameraScale`, which omits the node's
+  // `magnitudeScale`, its breathe, its appear ramp, and the **1.12 growth on
+  // selection**. So a selected node laid its label on its own border (measured:
+  // border bottom 215 vs label top 216) and a large node pulled its name inside the
+  // shape. Handing over what this pass computed makes both passes see one shape.
+  // perf 2026-08-19 — reused instead of a new Map per frame (see
+  // `effectiveAlphaByIdReused`).
   drawnScreenRadiusByIdReused.clear();
   const drawnScreenRadiusById = drawnScreenRadiusByIdReused;
-  // ego 멤버/호버 노드가 점유한 원판 — 수동적 라벨이 그 위에 글자를 얹지
-  // 못하게 라벨 배치기에 예약으로 넘긴다(칩 예약과 같은 메커니즘 재사용).
+  // Discs occupied by ego members and the hovered node, handed to the label placer
+  // as reservations so a passive label cannot lay text over them (the same
+  // mechanism the chip reservations use).
   const nodeDiscReservations: ReservedBox[] = [];
 
-  // 3D — 화가 알고리즘: 먼 노드(u 큼)부터 그려 가까운 노드가 위에 얹힌다.
-  // 히트테스트(`hitTestWorld`의 depth 우선)가 «가까운 노드가 이긴다» 로
-  // 판정하므로, 그리는 순서가 같은 규칙을 따라야 눈에 보이는 것과 잡히는
-  // 것이 일치한다. 2D(domeOn 아님)는 종전 배열 순서 그대로 — 할당 0.
+  // 3D painter's algorithm: draw far nodes (large `u`) first so near ones land on
+  // top. Hit testing (`hitTestWorld`'s depth preference) resolves as "the nearer
+  // node wins", so the draw order must follow the same rule for what is seen and
+  // what is grabbed to agree. In 2D the original array order stands — zero
+  // allocation.
   let nodeDrawOrder: readonly WorldNode[] = world.nodes;
   if (domeOn) {
-    // perf 2026-08-19 — 엣지 정렬과 같은 인덱스-정렬 관용구(위 `edgeDrawOrder`
-    // 독블록). 종전 비교자는 호출마다 `domeFrameFor` 를 두 번 불러 O(n log n)
-    // 번의 Map 조회가 됐다. 깊이는 노드당 한 번(이미 담아 둔 프레임에서),
-    // 비교자는 배열 읽기 둘뿐 — 안정 정렬 + 동일 기준이라 순서는 종전과 같다.
+    // perf 2026-08-19 — the same index-sort idiom as the edge sort (see the
+    // `edgeDrawOrder` doc-block). The old comparator called `domeFrameFor` twice
+    // per invocation, making O(n log n) map lookups. Depth is now read once per
+    // node from the already-buffered frame and the comparator does two array
+    // reads — stable sort plus identical key, so the order is unchanged.
     domeNodeDepthReused.length = 0;
     domeNodeIndexReused.length = 0;
     for (let i = 0; i < world.nodes.length; i += 1) {
@@ -1591,7 +1662,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const node = nodeDrawOrder[drawPos];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
     const previewTarget = node.id === previewEdge?.targetId;
-    // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
+    // Density condition: nodes inside a collapsed parent's subtree are replaced by
+    // a chip and not drawn.
     if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= 0.02) continue;
@@ -1608,16 +1680,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       : colorAllNormal
         ? "normal"
         : lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
-    // 렌즈는 자기 easing 을 만들지 않는다(신규 이징 0) — 스포트라이트가 이미 쓰는
-    // 지수 램프(`focusDimTau`)를 그대로 색 램프로 꽂는다. 그래서 팝오버를 열면
-    // 배경이 램프로 내려앉고, 닫으면 램프로 되돌아온다(하드컷 없음). 포커스가
-    // 있는 통상 경로에선 렌즈가 꺼져 있어 값이 바뀌지 않는다(회귀 0).
+    // The lens introduces no easing of its own: it feeds the exponential ramp the
+    // spotlight already uses (`focusDimTau`) straight into the colour ramp. Opening
+    // the popover ramps the background down and closing it ramps back up, never a
+    // hard cut. On the ordinary focused path the lens is off and nothing changes.
     const focusRamp = trailLensActive ? trailRamp : (focusRampById.get(node.id) ?? 0);
     const emphasis = emphasisById.get(node.id) ?? 0;
     const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
-    // perf 2026-08-19 — 무포커스 프레임의 시각은 (kind, fresh, stale) 만의
-    // 함수라 캐시를 탄다(`nodeVisualCache` 독블록). 조건이 하나라도 어긋나면
-    // (포커스 램프·호버 리플·렌즈) 종전 경로 그대로 새로 계산한다.
+    // perf 2026-08-19 — on a focus-free frame the visual is a function of
+    // (kind, fresh, stale) alone and hits the cache (`nodeVisualCache` doc-block).
+    // If any condition fails (focus ramp, hover ripple, lens) it is recomputed on
+    // the original path.
     let visual: NodeVisual;
     const visualCacheable =
       colorEgoState === "normal" &&
@@ -1640,20 +1713,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
     }
     /**
-     * 「걸어온 길」 — **방문한 노드 자신**이 트레일 색으로 읽힌다.
+     * The trail — **the visited node itself** reads in the trail colour. The
+     * earlier lens only left visited nodes at `"normal"`, marking a visit solely
+     * with the footprint **beside** the node, so on the screen the owner saw,
+     * neither the trail's nodes nor its lines were marked.
      *
-     * 종전 렌즈는 방문 노드를 `"normal"` 로 «남기기만» 했다. 나머지가 dim 이라
-     * 상대적으로 도드라지긴 했지만, 방문 표시는 노드 **옆** 발자국뿐이라
-     * 소유자가 본 화면에는 「걸어온 길」의 노드도 선도 없었다.
-     *
-     * 새 원(넷째 링)을 두르지 않는다 — 노드가 **이미 가진 stroke 채널**의 색만
-     * 바꾼다. 그래서 궤도가 늘지 않고, 잉크도 늘지 않고, 램프로 되돌아온다.
-     * 「빛나게」의 헌장 안 형태가 이것이다: 어두워진 장 위의 **값·색 대비**이지
-     * glow 가 아니다(번짐은 발자국 글리프 한 파일의 opt-in 예외로만 존재한다).
+     * No new circle (a fourth ring): only the colour of the stroke channel the node
+     * **already has** changes, so no orbit and no ink are added. This is what "make
+     * it glow" looks like inside the charter — **value and colour contrast** on a
+     * darkened field, not a glow (bloom exists only as the opt-in exception in the
+     * one footprint-glyph file).
      */
-    // perf 2026-08-19 — 렌즈가 꺼져 있으면 kept=false 라 항상 0 이다
-    // (`trailNodeInkStrength` 첫 분기). 노드마다 인자 객체를 만들지 않게
-    // 활성 프레임에서만 부른다 — 값 동일.
+    // perf 2026-08-19 — with the lens off, `kept` is false and the result is always
+    // 0 (`trailNodeInkStrength`'s first branch), so it is only called on active
+    // frames and no argument object is built per node. Same values.
     const trailInk = trailLensActive
       ? trailNodeInkStrength({
           kept: isTrailKept(node.id),
@@ -1671,21 +1744,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // Both default to 1 (no map / existing node / not in an expanding disc), so
     // steady state is unchanged (regression 0).
     const appear = Math.min(1, Math.max(0, appearById?.get(node.id) ?? 1));
-    // 고팬아웃 배치-공개 — 배치로 드러나는 자식은 per-child stagger 램프
-    // (`batchAppearById`)가 부모 그룹 페이드(`nearestExpandedRevealMul`)를
-    // 대체한다(이중 페이드 방지) + 미세 appearScale 을 이 값으로 몬다. 배치
-    // 자식이 아니면 기존 그룹/월드-등장 경로(회귀 0).
+    // High-fan batch reveal — for a child surfacing in a batch, the per-child
+    // stagger ramp (`batchAppearById`) REPLACES the parent group fade
+    // (`nearestExpandedRevealMul`) so it never fades twice, and it also drives the
+    // micro appear scale. A node outside a batch takes the existing group /
+    // world-appear path.
     const batchAppear = batchAppearById?.get(node.id);
-    // 다섯째 티어 관통 채널도 **그룹 페이드를 대체한다** — `batchAppear` 와 같은
-    // 이유다. 이 노드의 `tierAlpha` 는 이미 `effectiveAlphaById` 를 거쳐 나오고,
-    // 그 값에 칩-펼침 램프가 들어 있다(`chipExpandReveal`). 여기서 그룹 페이드를
-    // 또 곱하면 알파가 **두 지수의 곱**이 되어, 칩이 "펼쳐졌다"고 말한 뒤로도
-    // 자식이 한참 오는 중이다(실측: 칩 90% 391ms vs 자식 621ms — 230ms 차,
-    // `design.md` 의 120ms "한 입력 = 한 사건" 임계 초과).
-    //
-    // 위 `batchAppear` 주석이 "이중 페이드 방지"라고 이미 적어 둔 그 가드인데,
-    // 이 채널이 나중에 붙느라 안 들어갔다. 두 램프가 같은 `clusterRevealTau` 를
-    // 쓰므로, 대체해도 페이드는 사라지지 않고 **한 번만** 일어난다.
+    // The fifth tier-piercing channel **replaces the group fade** too, for the same
+    // reason as `batchAppear` — it was added later and missed that guard. This
+    // node's `tierAlpha` already came through `effectiveAlphaById`, which has the
+    // chip-expand ramp folded in (`chipExpandReveal`), so multiplying the group fade
+    // in again would make the alpha a **product of two exponentials** and children
+    // would keep arriving long after the chip said "expanded" — measured: chip at
+    // 90% in 391ms vs children at 621ms, a 230ms gap, past the 120ms "one input =
+    // one event" threshold in `.claude/rules/design.md`. Both ramps use the same
+    // `clusterRevealTau`, so replacing does not remove the fade — it happens once.
     const chipExpandReveal = expandRevealById?.get(node.id);
     const revealMul =
       batchAppear !== undefined
@@ -1711,8 +1784,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       effRadius += emphasis * baseRadius * 0.12;
     }
 
-    // S5 깊이 선명도 — 영역 활성 중 깊은 링을 알파·스케일로 살짝 낮춘다. 호버·
-    // ego 멤버(center/neighbor)는 100% 복귀 — 상호작용 대상은 항상 또렷하게.
+    // Realm depth clarity — while a realm is active, deeper rings drop slightly in
+    // alpha and size. Hovered and ego members (center/neighbor) return to 100%:
+    // whatever the interaction is on stays crisp.
     const isHoveredNode = node.id === hoveredNodeId;
     let realmClarityAlpha = 1;
     if (realmDepthById !== null && !isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
@@ -1722,16 +1796,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         effRadius *= realmDepthClarityScale(depth);
       }
     }
-    // 3D 보기 — 점 반지름(원근 포함, `s` 에 역산돼 있다)은 기하라 항상 곱하고,
-    // 깊이 안개(히어로 fog: 가까움 1.0 → 멂 0.09)는 상호작용 대상(호버·ego·
-    // 트레일)을 면제한다 — «읽어야 할 때는 다시 밝아진다». 이 깊은 감쇠는
-    // 2D 잉크 대비 바닥(3:1) 밖이며 소유자가 3D 한정으로 연 유예다
-    // (`docs/DECISIONS.md` «3D 유예 목록»).
-    // perf 2026-08-19 — 정렬 인덱스로 담아 둔 프레임을 되찾는다(Map 재조회 0).
+    // 3D view — the dot radius (perspective already folded into `s`) is geometry,
+    // so it is always applied, while depth fog (near 1.0 → far 0.09) exempts
+    // whatever the interaction is on (hover, ego, trail): anything that must be
+    // read brightens again. This deep attenuation falls outside the 2D ink-contrast
+    // floor (3:1) and is a waiver the owner granted for 3D only — see
+    // `docs/DECISIONS.md` 「3D 유예 목록」 (the 3D waiver list).
+    // perf 2026-08-19 — recovers the buffered frame by sort index, no map re-lookup.
     const nodeDome = domeOn ? domeNodeFrameReused[domeNodeIndexReused[drawPos]] : ZERO_DOME_FRAME;
-    // 먼 쪽 상세 램프(`domeDetailFactor` 독블록) — 뒤쪽 반구 노드의 부가 획
-    // (깊이 헤일로 · 입체 음영 · 금속 시인 · 외곽선 · 도메인 핀 틱)을 깊이
-    // 연속으로 접는다. 안개와 같은 면제 규칙: 호버·트레일·ego 노드는 1.
+    // Far-side detail ramp (`domeDetailFactor` doc-block) — folds the extra strokes
+    // of back-hemisphere nodes (depth halo, depth shading, metallic sheen, outline,
+    // domain pin tick) away continuously with depth. Same exemption rule as the
+    // fog: hovered, trail, and ego nodes stay at 1.
     let domeDetail = 1;
     if (domeOn) {
       effRadius *= nodeDome.s;
@@ -1741,10 +1817,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       }
     }
 
-    // S5 깊이 시차 — 렌더 좌표에만 밴드 오프셋(월드)을 더한다(월드 좌표 불변).
-    // 3D 오프셋도 같은 문법 — 히트테스트가 같은 맵을 읽는다.
+    // Depth parallax adds the band offset (in world units) to the RENDER
+    // coordinates only; the world coordinates never move. The 3D offset follows the
+    // same grammar, and hit testing reads the same map.
     const pOff = realmParallaxOffsetFor(node.id);
-    // perf 2026-08-19 — `project` 인라인 + 스크래치 재사용(좌표 식 동일).
+    // perf 2026-08-19 — `project` inlined plus scratch reuse; identical formula.
     const screen = nodeScreenScratch;
     screen.x = (node.x + pOff.x + nodeDome.dx - camX) * camScale + halfW;
     screen.y = (node.y + pOff.y + nodeDome.dy - camY) * camScale + halfH;
@@ -1753,10 +1830,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // the whole off-screen node cost (see `render/viewport-cull.ts`).
     if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight)) continue;
     drawnScreenRadiusById.set(node.id, screenRadius);
-    // 포커스가 있을 때의 ego 멤버(중심·이웃)와 호버 노드만 예약한다 — 개관
-    // 화면 전체의 라벨 밀도를 바꾸지 않고, 보고된 결함(기본 클릭 상호작용의
-    // ego 포커스)이 나는 자리만 다룬다. 선택 링/펼침 배지가 원판 바로 밖에
-    // 앉으므로 링 여유를 함께 예약한다.
+    // Reserve only ego members (center, neighbor) under an active focus and the
+    // hovered node. That leaves the overview's overall label density untouched and
+    // addresses just where the reported defect occurs — the ego focus of the
+    // default click interaction. The selection ring and expand badge sit just
+    // outside the disc, so the ring clearance is reserved with it.
     if (egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId) {
       const half = screenRadius + EXPANDED_AURA_RING_OFFSET;
       nodeDiscReservations.push({
@@ -1771,22 +1849,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       });
     }
 
-    // S8 결함 1 — 확장 중 무관 배경 노드 미세 dim(디스크 멤버·스파인·ego 제외).
+    // Slight dim on background nodes unrelated to the expansion (disc members,
+    // spine, and ego excluded).
     const backgroundDim =
       anyExpanded && !previewEndpoint && egoState === "normal" && !isTrailKept(node.id) && !expandedDiscIds.has(node.id) && !isSpineNode(node)
         ? BACKGROUND_DIM_WHEN_EXPANDED
         : 1;
 
-    // 스포트라이트 — 창 밖 노드 침강(호버는 면제: 상호작용 대상은 또렷).
+    // Spotlight — nodes outside the window sink; the hovered one is exempt.
     const nodeSpotlightSink = spotlightSink(
       (spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode || previewEndpoint,
     );
     ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
     // so `render/node-shapes.ts` stays token-free and pure.
-    // perf 2026-08-19 — fill 이 같으면 결과 문자열도 같다(tint·blend 는 토큰
-    // 상수). 노드마다 hex 파싱+문자열 조립을 반복하지 않도록 fill 별 캐시 —
-    // 토큰이 바뀌면(테마 전환) 통째로 무효화한다.
+    // perf 2026-08-19 — equal fills yield equal result strings (tint and blend are
+    // token constants), so this caches per fill instead of re-parsing hex and
+    // rebuilding a string per node. Invalidated wholesale when the tokens change.
     if (sheenTopCacheTint !== tokens.nodeSheenTint || sheenTopCacheBlend !== tokens.nodeSheenBlend) {
       sheenTopCache.clear();
       sheenTopCacheTint = tokens.nodeSheenTint;
@@ -1798,11 +1877,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       if (sheenTopCache.size > 256) sheenTopCache.clear();
       sheenTopCache.set(visual.fill, sheenTop);
     }
-    // 먼 쪽 상세 램프 — 금속 시인 그라디언트를 fill 로 깊이 연속 수렴시킨다.
-    // detail 0 이면 sheenTop === fill (동일 문자열) 이 되어 `resolveBodyFill`
-    // 이 그라디언트 생성 없이 평면 fill 로 조기 반환한다. 중간 구간은 블렌드
-    // 계수를 detail 로 죽이는 색 보간이라 하드컷이 없다(detail 1 = 캐시 값과
-    // 같은 식·같은 문자열).
+    // Far-side detail ramp — converges the metallic sheen gradient toward the flat
+    // fill continuously with depth. At detail 0, `sheenTop === fill` (the same
+    // string) and `resolveBodyFill` returns early with a flat fill, building no
+    // gradient at all. In between it is a colour interpolation that kills the blend
+    // factor by detail, so there is no hard cut (detail 1 = the same formula and
+    // the same string as the cached value).
     if (domeDetail < 1) {
       sheenTop =
         domeDetail <= 0.01
@@ -1811,7 +1891,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
     // Engraved numeral: project/domain only, and only when there's a count to
     // show (prototype `if (n.count && (project||domain) ...)`).
-    // 3D — 점에는 숫자를 새기지 않는다(데이터 표가 아니라 형태를 보는 층).
+    // 3D — no numeral is engraved on a dot: this layer is about form, not a data table.
     const showCount =
       (node.kind === "project" || node.kind === "domain") && node.count > 0 && !(domeOn && nodeDome.a > 0.5);
     // Canvas-emphasis slice §C — hover ring eligibility. `hoveredNodeId` is
@@ -1829,18 +1909,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       selectionPulseVisual = computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs, tokens.selectPulseScaleDelta);
     }
     /*
-     * 노드 깊이 헤일로 — 엣지와 같은 장치를 원판에 건다(`domeHaloPx` 독블록).
-     *
-     * 엣지끼리는 위에서 정렬 + 헤일로로 앞뒤가 생겼는데, 노드는 **엣지를 전부
-     * 그린 뒤** 한 번에 얹힌다. 그래서 노드 자체는 늘 선 위에 오지만, 선이
-     * 노드 원판 **가장자리에서 끊기지 않으면** 점이 선 위에 «떠» 있는 스티커로
-     * 보인다. 원판보다 조금 넓은 바탕색 원을 먼저 깔면 그 자리에서 선이 잘려,
-     * 점이 선다발 **속에** 앉는다.
-     *
-     * 진하기 규칙은 엣지와 같다 — 이 노드가 지금 그려지는 알파를 따라간다.
+     * Node depth halo — the same device the edges use, applied to the disc
+     * (`domeHaloPx` doc-block). Nodes are laid down all at once **after every edge
+     * is drawn**, so a node always sits above the lines; unless the lines are **cut
+     * at the disc's rim** the dot reads as a sticker floating on top. A slightly
+     * wider background-colour circle laid first cuts them there, and the dot sits
+     * **inside** the bundle. Strength follows the edges' rule: the alpha this node
+     * is currently drawn at.
      */
     if (domeOn && nodeDome.a > 0.01) {
-      // 먼 쪽 상세 램프 — 엣지 헤일로와 같은 감쇠(연속·앞쪽 무변).
+      // Far-side detail ramp — the same attenuation as the edge halo: continuous,
+      // and unchanged on the near side.
       const haloPx = domeHaloPx(nodeDome.u) * nodeDome.a * domeDetail;
       if (haloPx > 0.05) {
         const prevAlpha = ctx.globalAlpha;
@@ -1852,17 +1931,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         ctx.globalAlpha = prevAlpha;
       }
     }
-    // perf 2026-08-19 — 토큰 인자는 프레임당 1개(`nodeShapeTokensFrame`).
-    // 상태 리터럴은 계약 게이트(review-ring-authorship)가 배선 표기를 핀으로
-    // 잡고 있어 그대로 둔다.
+    // perf 2026-08-19 — one token argument per frame (`nodeShapeTokensFrame`). The
+    // state literals stay spelled out because the review-ring-authorship contract
+    // gate pins that wiring.
     nodeShapesDraw(
       ctx,
       {
-        // 3D 입체 음영 — 조립 램프로 크로스페이드(2D 는 0, 획 0개 추가).
-        // 먼 쪽 상세 램프가 뒤쪽 반구에서 세기를 0 으로 접는다(연속) — 0.01
-        // 게이트가 두 번째 fill + translate 쌍을 통째로 생략한다.
+        // 3D depth shading, cross-faded on the assembly ramp (0 in 2D, adding no
+        // strokes). The far-side detail ramp folds its strength to 0 across the back
+        // hemisphere, continuously; the 0.01 threshold then skips the second
+        // fill + translate pair entirely.
         depthShade: domeOn ? nodeDome.a * domeDetail : 0,
-        // 먼 쪽 상세 램프 — 외곽선·도메인 핀 틱이 이 값으로 함께 물러난다.
+        // Far-side detail ramp — the outline and the domain pin tick recede with it.
         detail: domeDetail,
         kind: node.kind,
         screenX: screen.x,
@@ -1872,7 +1952,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // Rings (selection double-ring, hub, project decor) follow the RETAINED
         // color ego so the selection ring holds through the deselect fade and
         // clears only once the ramp reaches 0 — instead of snapping off the
-        // instant `focusedNodeId` goes null (④). Equals live `egoState` while a
+        // instant `focusedNodeId` goes null. Equals live `egoState` while a
         // selection is active.
         egoState: colorEgoState,
         fill: visual.fill,
@@ -1885,16 +1965,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         isHovered,
         // rank5 — hover ring alpha rides this node's hover-ripple emphasis
         // (same scalar the body wake uses) so it fades up instead of hard-popping.
-        // 렌즈 브러싱(팝오버 행 hover)은 포인터 리플을 발사하지 않아 emphasis 가
-        // 0 이다 — 그대로 두면 링 알파가 0 이라 안 보인다. 행 hover 는 이산
-        // 이벤트라 즉시 solid(1)가 맞다(reduced-motion 경로와 같은 값).
+        // Brushing through the lens (hovering a popover row) fires no pointer
+        // ripple, so `emphasis` is 0 and the ring would be invisible. A row hover is
+        // a discrete event, so solid (1) immediately is correct — the same value the
+        // reduced-motion path uses.
         hoverEmphasis: isHovered && trailLensActive ? 1 : emphasis,
         selectionPulse: selectionPulseVisual,
         agentFocus: agentFocusNodeId !== null && node.id === agentFocusNodeId,
-        // 스포트라이트 변경-노드 링 (Image #14) — 렌즈 ON + 창 안 노드에만.
-        // dashOffset는 loop가 bounded transition 중에만 갱신한다. 램프가
-        // 정착한 뒤에도 다른 캔버스 활동이 남아 있을 수 있으므로 now 기반
-        // 무한 회전은 금지한다. reduced-motion은 0으로 고정한다.
+        // Spotlight changed-node ring — only with the lens on and the node inside
+        // the window. The loop advances `dashOffset` during the bounded transition
+        // only: an endless `now`-driven rotation is forbidden, because other canvas
+        // activity can outlive the ramp settling. Pinned to 0 under reduced-motion.
         spotlightRing:
           spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id)
             ? {
@@ -1910,12 +1991,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     );
 
     // Diffraction spike: the ranked "bright star" set PLUS the project node
-    // unconditionally (canvas-emphasis slice §A3, "허브 노드에 이미 쓰는 패턴
-    // 재사용") — reuses the exact same far-field-only overlay hub/magnitude
-    // stars already get, just widening eligibility so the Layer-0 anchor
-    // reads as luminous too. Color still derives from `visual.stroke`, which
-    // is now hardcoded amber for project, so the spike is amber for free.
-    // perf 2026-08-19 — farT 게이트를 앞으로(회로 고도 farT=0 에선 Set 조회도 생략). 논리 동일.
+    // unconditionally — reusing the pattern hub nodes already use, i.e. the exact
+    // same far-field-only overlay hub/magnitude stars get, just widening
+    // eligibility so the Layer-0 anchor reads as luminous too. Colour still derives
+    // from `visual.stroke`, hardcoded amber for project, so the spike is amber for
+    // free.
+    // perf 2026-08-19 — the `farT` test moved first, so at circuit altitude
+    // (farT = 0) even the Set lookup is skipped. Same logic.
     if (farT > 0.02 && (world.brightStarIds.has(node.id) || node.kind === "project")) {
       drawDiffractionSpike(ctx, {
         screenX: screen.x,
@@ -1927,13 +2009,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
 
     /**
-     * 발자국 — 방문했던 노드 우상단에 신발 자국(양발) + 방문 순번.
+     * Footprints — a pair of shoe prints plus the visit ordinal, at the visited
+     * node's top right.
      *
-     * 종전은 동심 헤어라인 링이었다. 링은 선택 링·확장 오라·결계와 **같은
-     * 원 문법**이라 넷째 원이 되어 "이건 무슨 원인가"를 매번 다시 배워야 했고,
-     * 순서와 방향을 나를 수 없었다. 자국은 그 문법 밖이라 충돌이 없다.
+     * This used to be a concentric hairline ring. A ring shares **the circle
+     * grammar** of the selection ring, the expand aura, and the warding circle, so
+     * it became a fourth circle whose meaning had to be relearned every time, and
+     * it could carry neither order nor direction. Prints sit outside that grammar,
+     * so nothing collides.
      *
-     * 노드 티어·dim·영역 선명도 알파를 함께 곱해 ego dim/전환에 자연히 물러난다.
+     * The node's tier, dim, and realm-clarity alphas all multiply in, so prints
+     * recede naturally with an ego dim or a transition.
      */
     const footprintSteps = footprintStepsById.get(node.id);
     if (footprintSteps !== undefined && footprintPref !== null) {
@@ -1943,7 +2029,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         pref: footprintPref,
         ink: footprintInk,
         scale: footprintScale,
-        // 램프는 **방금 생긴 걸음**에만. 나머지는 이미 거기 있던 것이라 정착 상태다.
+        // Only the **step just taken** ramps; the rest were already there and are settled.
         appear: node.id === footprintNewestId ? footprintAppear : 1,
       };
       drawNodeFootprint(paint, screen.x, screen.y, screenRadius, layerAlpha * footprintPref.opacity);
@@ -1959,13 +2045,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx.globalAlpha = 1;
     }
 
-    // S8 결함 1 — 펼친 부모 구분: 노드 디스크 바깥에 파선 오라 링(선택 ego 링은
-    // 실선이라 채널 충돌 없음). 노드 위에 얹되 알파는 노드 티어 알파를 따른다.
-    // 단, 스포트라이트 변경-노드 링(앰버 파선, 같은 r+6 궤도)이 활성인 노드에선
-    // 오라를 양보한다 — 두 파선이 같은 반경에서 인터리브되어 두-색 브레이드로
-    // 읽히는 결함(모션 검수 2026-07-23 프레임 증거). 렌즈 중 변경 노드는 앰버
-    // 링 하나가 "전개+변경"을 다 말한다(궤도당 신호 1개); 변경 아닌 전개
-    // 조상(티어 관통 전개)은 기존 인디고 오라 유지.
+    // Marks an expanded parent: a dashed aura ring outside the node disc (the
+    // selection ego ring is solid, so the channels do not collide). Drawn over the
+    // node, but its alpha follows the node's tier alpha.
+    //
+    // The aura yields on any node where the spotlight changed-node ring (amber
+    // dashes, same r+6 orbit) is active: two dash patterns interleaving at one
+    // radius read as a two-colour braid (frame evidence, motion review 2026-07-23).
+    // For a changed node under the lens, the single amber ring says both "expanded"
+    // and "changed" — one signal per orbit. An expanded ancestor that has not
+    // changed keeps its indigo aura.
     if (
       expandedParentIds.has(node.id) &&
       !(spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id))
@@ -1982,19 +2071,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx.restore();
     }
 
-    // S11 — 전개 코호트 소속 링. 칩으로 방금 드러난 **직속 자식**에 부모 오라와
-    // **같은 파선 기하**(같은 묶음이라는 뜻)를 두르되 잉크는 탈채도 인디고
-    // (`expandedCohort`)로 한 단계 낮춘다: 부모가 주인공, 자식은 소속 표시.
+    // Expanded-cohort membership ring. A **direct child** just revealed by a chip
+    // gets **the same dashed geometry** as the parent aura — that is what says
+    // "same bundle" — with the ink one step down to desaturated indigo
+    // (`expandedCohort`), so the parent stays the protagonist.
     //
-    // 왜 색이 아니라 값·기하인가 (소유자 "선택했을때 파란색이니까 다르게
-    // 구분되도록"): 헌장은 무채색 + 단일 인디고라 새 hue 가 금지다. 대신 이미
-    // 있는 사다리를 한 칸 더 쓴다 — 노드 선택 = 채도 있는 인디고 **실선**,
-    // 엣지 선택 = pale 인디고, 전개 코호트 = **탈채도 인디고 파선**. 실선/파선이
-    // 채널을 갈라 "선택" 과 "전개" 가 한눈에 다르게 읽힌다.
+    // Why value and geometry rather than colour. Owner: "선택했을때 파란색이니까
+    // 다르게 구분되도록" (selection is already blue, so make this distinguishable).
+    // The charter is neutrals plus a single indigo, so a new hue is forbidden;
+    // instead it takes one more step down an existing ramp — node selection =
+    // saturated indigo **solid**, edge selection = pale indigo, expanded cohort =
+    // **desaturated indigo dashed**. Solid vs dashed splits the channel.
     //
-    // 선택/호버 중인 자식은 건너뛴다 — 그 노드는 이미 자기 선택 링이 주인공이고,
-    // 두 링이 같은 궤도에서 겹치면 브레이드로 읽힌다(파선 오라 ↔ 앰버 링과 같은
-    // 규칙: 궤도당 신호 1개).
+    // A selected or hovered child is skipped: its own selection ring is already the
+    // protagonist, and two rings on one orbit read as a braid (same rule as dashed
+    // aura vs amber ring — one signal per orbit).
     if (
       expandedChildIds.has(node.id) &&
       !expandedParentIds.has(node.id) &&
@@ -2014,11 +2105,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx.restore();
     }
 
-    // 영역 루트 앵커 링 (소유자 실보고 2026-07-23 "루트가 유령 같다") — 영역
-    // 전개 중 루트(depth 0)에 결계와 **같은 인디고 실선 헤어라인** 링을 두른다.
-    // 세계의 경계(큰 원)와 그 중심(작은 링)이 같은 잉크로 호응해 "이 원은 이
-    // 노드의 세계" 가 기하만으로 읽힌다. 파선 오라(확장)·앰버 링과 채널 분리,
-    // glow 0, 신규 토큰 0 (tokens.indigo 재사용).
+    // Realm root anchor ring. Owner, live report 2026-07-23: "루트가 유령 같다"
+    // (the root looks like a ghost). During a realm expansion the root (depth 0)
+    // gets **the same indigo solid hairline** as the warding circle, so the world's
+    // boundary (the large circle) and its centre (the small ring) answer each other
+    // in one ink and "this circle is that node's world" reads from geometry alone.
+    // Channel-separate from the dashed aura (expansion) and the amber ring; no
+    // glow, and no new token (it reuses `tokens.indigo`).
     if (realmDepthById !== null && realmDepthById.get(node.id) === 0 && wardingRing !== null) {
       ctx.save();
       ctx.globalAlpha = tierAlpha * REALM_ROOT_ANCHOR_ALPHA * wardingRing.drawProgress;
@@ -2032,14 +2125,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.globalAlpha = 1;
   }
 
-  // --- S4 "영역 전개" 결계(warding) — 서브트리 바운딩 원. 노드 위, 칩/라벨
-  // 아래. 드라마는 기하·자기드로잉으로만(glow/네온 금지) — 1px 인디고 헤어라인.
-  // S8 — 결계 밖으로 나가는 외부 관계는 아예 그리지 않는다(페이드 스텁 제거):
-  // 영역 안은 그 세계만 담고, 바깥과 닿은 관계는 S7 대장이 담당한다. ---
+  // --- Realm warding circle: the subtree's bounding circle, drawn above the nodes
+  // and below the chips and labels. The drama comes from geometry and self-drawing
+  // only (glow/neon forbidden) — a 1px indigo hairline. Relations leaving the
+  // warding circle are not drawn at all: inside a realm holds only that world, and
+  // relations touching the outside are the exit transition's business. ---
   if (wardingRing !== null) {
     const center = project(wardingRing.centerX, wardingRing.centerY);
     const screenRadius = wardingRing.radius * camera.scale.value;
-    // 결계 링 자기 드로잉: 위(-90°)에서 시계방향으로 drawProgress 만큼 호를 그린다.
+    // The ring self-draws: an arc from the top (-90°) clockwise, `drawProgress` of
+    // the way round.
     ctx.save();
     ctx.globalAlpha = 0.5;
     ctx.strokeStyle = tokens.indigo;
@@ -2051,10 +2146,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.restore();
     ctx.globalAlpha = 1;
 
-    // 결계 센서스 각인 — 원 하단 바깥, tracked-caps 계기 문법(도메인 워터마크와
-    // 동일 폰트/트래킹, 화면 고정 크기). 원이 "무엇의 경계인지" 스스로 말한다
-    // ("2 ELEMENTS" 류). 잉크는 노드 라벨과 같은 neutral(labelDomain), 링
-    // 자기드로잉 진행도에 실려 함께 나타나고 함께 지워진다. 신규 토큰 0.
+    // Warding count caption — below the circle, in the tracked-caps instrument
+    // style (same font and tracking as the domain watermark, at a screen-fixed
+    // size), so the circle says what it bounds ("2 ELEMENTS"). Ink is the same
+    // neutral as the node labels (`labelDomain`), and it rides the ring's
+    // self-drawing progress so the two appear and disappear together. No new token.
     if (wardingRing.caption && wardingRing.drawProgress > 0.05) {
       drawInstrumentCaption(
         ctx,
@@ -2067,26 +2163,29 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
   }
 
-  // --- 밀도 게이트 클러스터 칩 (fable 설계) — 노드 위, 라벨 아래에 그린다.
-  // 칩 알파는 부모 노드의 effective 티어 알파를 상속한다(스파인 부모=1). 부모가
-  // 티어로 사라지면 칩도 사라진다. 미확장 접힘 칩의 자식/엣지는 이미 위에서
-  // 스킵됐다. anchor 는 월드 좌표라 카메라 팬/줌을 함께 탄다. ---
+  // --- Density-condition cluster chips, drawn above the nodes and below the
+  // labels. A chip's alpha inherits its parent node's effective tier alpha (a spine
+  // parent is 1), so a chip disappears with its parent. The children and edges of
+  // an unexpanded collapsed chip were already skipped above. The anchor is in world
+  // coordinates, so chips pan and zoom with the camera. ---
   const chipScale = clusterChipScale(camera.scale.value);
-  // 그룹 A — hover 이징 앵커 정리: hover 대상이 바뀌거나 사라지면 리셋해
-  // 다시 hover 될 때 램프가 0 부터 다시 오르게 한다(스냅 방지).
+  // Reset the hover easing anchor when the hover target changes or goes away, so
+  // the next hover rises from 0 instead of snapping.
   if (clusterChipHoverAnim !== null && clusterChipHoverAnim.id !== hoveredClusterId) {
     clusterChipHoverAnim = null;
   }
-  // S11 결함 (소유자 실보고 "노드 사이에 +31 이 겹쳐지는것도 보기싫은데") — 칩이
-  // 이번 프레임에 점유한 사각형을 모아 아래 라벨 배치기에 **예약**으로 넘긴다.
-  // 칩은 라벨보다 먼저 그려지므로, 배치기가 이걸 모르면 라벨이 칩 위에 그대로
-  // 덮어 그려진다. 새 회피 알고리즘을 만들지 않고 기존 bbox 억제를 재사용한다.
+  // Owner, live report: "노드 사이에 +31 이 겹쳐지는것도 보기싫은데" (a +31
+  // overlapping between nodes looks bad too). Collect the rectangles the chips
+  // occupy this frame and hand them to the label placer below as **reservations**.
+  // Chips draw before labels, so without this the placer would paint labels
+  // straight over them. Reuses the existing bbox suppression rather than adding a
+  // new avoidance algorithm.
   const chipReservations: ReservedBox[] = [];
   for (const chip of clusterChips) {
     const parentAlpha = effectiveAlphaById.get(chip.parentId) ?? 1;
     if (parentAlpha <= 0.02) continue;
     const isChipHovered = hoveredClusterId === chip.parentId;
-    // hover 색 이징 진행도 0..1 — reduced-motion 이면 즉시 스냅.
+    // Hover colour easing progress 0..1 — snaps immediately under reduced-motion.
     let hoverT = 0;
     if (isChipHovered) {
       if (reducedMotion) {
@@ -2096,41 +2195,46 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         hoverT = Math.min(1, (now - clusterChipHoverAnim.startAt) / CLUSTER_CHIP_HOVER_MS);
       }
     }
-    // 3D 보기 — 칩도 부모 노드의 링을 따라간다(앵커·커넥터 둘 다).
+    // 3D view — chips follow their parent node's ring too, anchor and connector alike.
     const parentNode = world.nodeById.get(chip.parentId);
     const chipDOff = parentNode ? domeFrameFor(parentNode.id) : ZERO_DOME_FRAME;
     const screen = project(chip.anchor.x + chipDOff.dx, chip.anchor.y + chipDOff.dy);
-    // 부모→칩 점선 커넥터의 시작점 = 부모 노드의 라이브 스크린 좌표.
+    // The parent→chip dotted connector starts at the parent node's live screen position.
     const parentScreen = parentNode ? project(parentNode.x + chipDOff.dx, parentNode.y + chipDOff.dy) : null;
-    // S10 결함 2 — 펼침 배지는 부모 노드 base 스크린 반지름 기준으로 우상단에
-    // 앉는다(히트테스트와 같은 계산). breathe/ego 배율은 배지 위치를 흔들지
-    // 않도록 base 반지름만 쓴다.
+    // The expand badge sits at the top right of the parent node's BASE screen
+    // radius — the same computation hit testing uses. Only the base radius is used
+    // so breathe and ego scaling never shake the badge's position.
     const nodeScreenRadius = parentNode
       ? radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value
       : undefined;
-    // 스포트라이트 침강 상속 (소유자 실보고 Image #13 — "+60 유령 칩"):
-    // 침강은 노드 draw 에서 직접 곱해 effectiveAlphaById 에 없으므로, 칩이
-    // 이걸 상속하지 않으면 부모 노드는 0.35 로 가라앉았는데 칩만 풀 알파로
-    // 남아 빈 캔버스에 혼자 떠 있는 버튼처럼 읽힌다. 호버는 면제(상호작용
-    // 대상 또렷 — 노드와 같은 규칙).
-    // 걸어온 길 렌즈 — 방문 노드에 속하지 않은 칩(`+N`)도 함께 물러난다. 칩은
-    // 노드 dim(색 스왑)을 상속하지 않으므로 여기서만 값으로 낮춘다. 배수는 확장
-    // 중 배경 dim 과 같은 값 재사용 — 신규 토큰 0.
+    // Inherit the spotlight sink. Owner, live report: the "+60 ghost chip". The
+    // sink is multiplied in during the node draw and is therefore absent from
+    // `effectiveAlphaById`, so without inheriting it the parent node sank to 0.35
+    // while the chip stayed at full alpha, reading as a button floating alone on an
+    // empty canvas. Hover is exempt, the same rule the nodes use.
+    //
+    // Trail lens — a `+N` chip not belonging to a visited node recedes too. A chip
+    // does not inherit the node dim (a colour swap), so it is lowered by value only
+    // here, reusing the same multiplier as the background dim during an expansion.
+    // No new token.
     ctx.globalAlpha =
       parentAlpha *
       spotlightSink(
         (spotlightIds !== null && spotlightIds.has(chip.parentId)) || isChipHovered,
       ) *
-      // 걸어온 길 렌즈 — **확장 컨트롤은 궤적이 아니다.** 종전에는 방문 노드에
-      // 붙은 칩만 예외로 남겼는데, 기본 어포던스가 「머리 위 막대」가 되면서 그
-      // 예외가 불투명한 판이 되어 **밟은 관계선을 정확히 가로막았다**(실측
-      // 2026-08-02: 「주문」에 도착하는 트레일이 판 밑에서 끊겼다). 렌즈가 켜져
-      // 있는 동안에는 칩도 함께 물러난다 — 예외가 하나 줄고 궤적이 주인공이 된다.
-      // 램프를 타므로 렌즈가 꺼질 때 칩만 하드컷으로 돌아오지 않는다
-      // (모션 §「한 입력 = 한 사건」).
+      // Trail lens — **an expand control is not part of the trajectory.** The
+      // earlier exception kept chips attached to visited nodes at full strength;
+      // once the default affordance became the overhead bar, that exception turned
+      // into an opaque slab that **blocked exactly the walked relation line**
+      // (measured 2026-08-02: the trail arriving at 「주문」 was cut off beneath the
+      // slab). While the lens is on, chips recede with everything else — one fewer
+      // exception, and the trajectory becomes the protagonist. It rides the ramp,
+      // so the chip does not hard-cut back when the lens turns off — see
+      // `.claude/rules/design.md` 「한 입력 = 한 사건」 (one input = one event).
       (trailLensActive ? 1 - (1 - BACKGROUND_DIM_WHEN_EXPANDED) * trailRamp : 1);
-    // draw 와 라벨 예약이 **같은 입력**을 보게 하나로 묶는다 — 갈라지면 라벨이
-    // 칩 위에 다시 겹치거나(예약 누락) 빈 곳을 피한다(유령 예약).
+    // The draw and the label reservation are bound to **one input object**. Split
+    // them and labels either overlap chips again (a missed reservation) or avoid
+    // empty space (a ghost reservation).
     const chipDrawInput = {
       screenX: screen.x,
       screenY: screen.y,
@@ -2138,7 +2242,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       expanded: chip.expanded,
       hovered: isChipHovered,
       hoverT,
-      // rank7 — ego(`+N`) 칩은 reveal 대상 아님(항상 즉시). 그 외엔 램프값 전달.
+      // An ego (`+N`) chip is never revealed gradually — it is always immediate.
+      // Every other chip passes its ramp value.
       revealT: chip.ego ? undefined : chipRevealById?.get(chip.parentId),
       scale: chipScale,
       parentScreenX: parentScreen?.x,
@@ -2147,8 +2252,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       affordance: expand.affordance,
       batchSize: expand.batchSize,
       barLabels: clusterBarLabels ?? undefined,
-      // 「고른 노드 바로 위」 어포던스의 존재 조건. ego 합성 칩(`이웃 +N`)의
-      // 부모는 정의상 고른 노드다 — 그걸 빼면 배치 공개가 통째로 닫힌다.
+      // The existence condition for the "directly above the selected node"
+      // affordance. A synthetic ego chip (`neighbours +N`) has the selected node as
+      // its parent by definition — leave that out and batch reveal closes entirely.
       focused: chip.ego === true || focusedNodeId === chip.parentId,
     };
     const occupancy = clusterChipOccupancyRect(chipDrawInput);
@@ -2167,20 +2273,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx,
       chipDrawInput,
       {
-        // rest = **크롬은 콘텐츠보다 어둡다**(2026-07-31 위계석 실측: 칩 피크
-        // 102.5 대 자식 28.4 = 3.6배 역전). 칩 전용 rest 단은 램프 맨 아래이고
-        // (3.01/3.14:1) 어느 노드 stroke 보다 어둡다. rest 에서 인디고를 쓰지
-        // 않는 것이 핵심 — 인디고는 단일 악센트라 크롬이 상시로 쓰면 사용자가
-        // 부른 목적물과 경쟁한다. hover 에서 인디고로 깨어난다(아래 hover*).
+        // At rest, **chrome is darker than content** (measured by the hierarchy
+        // seat, 2026-07-31: chip peak 102.5 vs children 28.4, a 3.6× inversion).
+        // The chip's rest step sits at the bottom of the ramp (3.01/3.14:1), darker
+        // than any node stroke. The key point is that rest uses no indigo: indigo is
+        // the single accent, and chrome holding it permanently would compete with
+        // the object the user actually asked for. It wakes to indigo on hover
+        // (`hover*` below).
         surface: tokens.nodeFillDim,
         border: tokens.clusterChipBorderRest,
         plusInk: tokens.clusterChipInkRest,
         numeralInk: tokens.clusterChipInkRest,
         tether: tokens.edgeContains,
-        // 막대는 **부른 컨트롤**이라 상시 크롬 잉크로는 글자가 안 읽힌다
-        // (rest 단은 3.0:1 로 램프 맨 아래 — 배경 노드 테두리보다 어둡다).
-        // 노드 라벨과 같은 단으로 올리되 인디고는 쓰지 않는다 — 인디고는
-        // 사용자가 고른 노드의 것이고, 막대는 그 노드에 붙은 종속물이다.
+        // The bar is a control the user summoned, so permanent chrome ink leaves
+        // its text unreadable (the rest step is 3.0:1, bottom of the ramp, darker
+        // than a background node's border). Raised to the same step as the node
+        // labels, but still no indigo: indigo belongs to the node the user selected,
+        // and the bar is a dependent attached to that node.
         barInk: tokens.numeralFace,
         hoverSurface: tokens.nodeFillCapability,
         hoverBorder: tokens.indigo,
@@ -2191,7 +2300,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   // --- labels: viewport/panel cull + priority greedy suppression + ellipsis ---
-  // (Design Guardian 가독성 반려) Labels used to leak behind the left ReaderLens
+  // (Design Guardian readability rejection.) Labels used to leak behind the left ReaderLens
   // panel, clip off the right edge, and collide horizontally. Build a candidate
   // per still-visible label, drop any whose anchor is outside the safe rect,
   // word-boundary-ellipsize long titles, then greedily place by priority so no
@@ -2209,7 +2318,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     screenX: number;
     screenY: number;
     screenRadius: number;
-    /** E-4 — 배치기가 확정한 라벨 베이스라인(위로 뒤집힌 자리 포함). */
+    /** The baseline the placer settled on, including a slot flipped above the node. */
     baselineY: number;
     egoState: NodeEgoState;
     isHovered: boolean;
@@ -2217,12 +2326,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
     agentFocus: boolean;
   }
-  // Label top-K LOD (S3 마감 폴리시, fable 설계): at the overview/spine and mid
-  // (circuit) bands the label budget goes to the highest-degree nodes; at the
-  // deepest element zoom the budget lifts and every label returns. Exempt from
-  // the budget: ego focus members and the hovered node only.
+  // Label top-K LOD: at the overview/spine and mid (circuit) bands the label budget
+  // goes to the highest-degree nodes; at the deepest element zoom the budget lifts
+  // and every label returns. Exempt from the budget: ego focus members and the
+  // hovered node only.
   const applyLabelTopK = classifyZoomTier(zoomRatio, tierReveal) !== "element";
-  // High-fan disc 밀도 처방: an expanded phyllotaxis disc can hold dozens–
+  // High-fan disc density prescription: an expanded phyllotaxis disc can hold dozens–
   // hundreds of children. Blanket-exempting them all (the old behavior) punched
   // a wall of ~60 labels across the map. Instead, per disc only the DOI top-K
   // children (rankEgoNeighborsByDOI: domain > capability > element → degree →
@@ -2245,23 +2354,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             id,
             kind: world.nodeById.get(id)?.kind ?? "element",
             degree: world.neighborMap.get(id)?.size ?? 0,
-            // childrenByParent 유도 = 전원 contains — 균일 가중치, 순서 불변.
+            // Derived from `childrenByParent`, so every relation is `contains` —
+            // uniform weight, order unchanged.
             relationType: "contains",
           })),
         ),
       );
     }
-    // 예산은 설정(「확장 → 이름을 시도할 개수」)이 정한다. 상수는 그 기본값.
+    // The budget comes from the preference (expand → label attempts); the constant
+    // is only its default.
     return selectDiscLabelEligible(rankedByDisc, expand.labelAttempts);
   })();
-  // 노드 감사 처방 — 포커스(ego) 도메인 자식 라벨 겹침 LOD. `neighborsOfFocused`
-  // 는 EGO_NEIGHBOR_LIMIT(24) 이하면 전원 full 점등되고(선택적 ego 컷은 >24 에서만
-  // 발동), 이전엔 그 전원이 무조건 라벨 exempt 였다 — 자식 18개짜리 도메인을
-  // 포커스하면 겹치는 라벨이 그대로 다 그려졌다(위 high-fan disc 처방과 같은
-  // 문제, 여긴 처방이 없었다). 같은 DOI-top-K 컷(`selectDiscLabelEligible`)을
-  // 이웃 집합에도 적용 — 상위 degree 이웃만 무조건 라벨, 컷 밖은 일반 greedy
-  // 경쟁으로 강등(겹치지 않으면 여전히 뜬다 — "과하지 않게", 라벨 다 지우지
-  // 않음). 「이름을 시도할 개수」 이하 소규모 포커스는 전원 그대로 exempt(회귀 0).
+  // Label-overlap LOD for the children of a focused domain. `neighborsOfFocused`
+  // lights up in full at or below EGO_NEIGHBOR_LIMIT (24) — the selective ego cut
+  // only fires above 24 — and all of them used to be unconditionally label-exempt,
+  // so focusing a domain with 18 children drew every overlapping label as-is. Same
+  // problem as the high-fan disc above, which had a prescription while this did
+  // not. The same DOI top-K cut (`selectDiscLabelEligible`) now applies to the
+  // neighbour set: only the highest-degree neighbours get an unconditional label,
+  // and the rest fall back to ordinary greedy competition — they still appear when
+  // nothing overlaps, so no label is erased outright. A focus smaller than the
+  // label-attempt count stays fully exempt.
   const egoNeighborLabelEligibleIds: ReadonlySet<string> | null =
     applyLabelTopK && focusedNodeId !== null && neighborsOfFocused.size > expand.labelAttempts
       ? selectDiscLabelEligible(
@@ -2279,26 +2392,28 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       : null;
   const labelRankEntries: LabelRankEntry[] = [];
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
-  // perf 2026-08-19 — 3D 라벨 온디맨드 조기 탈출의 성립 조건: keep(호버·ego·
-  // 트레일)이 불가능한 프레임(포커스·페어·렌즈 전부 없음)에서 조립 램프 a ≥
-  // 0.98 이면 gate = 1-a ≤ 0.02 이고, compact/watermark 알파는 둘 다 ≤1 이라
-  // 곱이 ≤0.02 — 아래 기존 `<= 0.02` 반려와 **같은 결론**이다. 그 결론을
-  // ego 분류·알파 계산·투영을 하기 전에 내려, 회전 중 2,000 노드가 매 프레임
-  // 라벨 파이프라인 앞부분을 헛돌던 것을 없앤다(결과 집합 불변).
+  // perf 2026-08-19 — when the early exit for on-demand 3D labels is valid: on a
+  // frame where a keep (hover, ego, trail) is impossible because there is no focus,
+  // pair, or lens, an assembly ramp a ≥ 0.98 gives 1 - a ≤ 0.02, and both the
+  // compact and watermark alphas are ≤ 1, so the product is ≤ 0.02 — **the same
+  // conclusion** as the existing `<= 0.02` rejection below. Reaching it before the
+  // ego classification, the alpha computation, and the projection stops 2,000 nodes
+  // from spinning through the front of the label pipeline every rotating frame.
+  // The resulting set is unchanged.
   const domeLabelSkipEligible =
     domeOn && focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
   for (let index = 0; index < world.nodes.length; index += 1) {
     const node = world.nodes[index];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
     const previewTarget = node.id === previewEdge?.targetId;
-    // 밀도 게이트: 접힌 서브트리 노드는 라벨도 그리지 않는다(노드/엣지와 동일).
+    // Density condition: a collapsed subtree's nodes get no label either, matching
+    // the node and edge passes.
     if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
     if (domeLabelSkipEligible && !previewEndpoint && node.id !== hoveredNodeId && domeNodeFrameReused[index].a >= 0.98) continue;
     // Uses the SAME effective alpha as the node draw pass (C1 A2) — an
     // ego-exempt capability that's now visible must also get a label, or it
     // reads as an unlabeled ghost circle. Also the SAME signal capability/
-    // element label eligibility ramps with (label-clarity — "잡을 수 있으면
-    // 읽을 수 있다").
+    // element label eligibility ramps with — if you can grab it, you can read it.
     const revealAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (revealAlpha <= 0.02) continue;
     const egoState = previewTarget
@@ -2325,13 +2440,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       continue;
     }
     let compactAlpha = computeLabelAlpha({ kind: node.kind, farT, egoState, isHovered, revealAlpha });
-    // 3D — 라벨은 **온디맨드**다(히어로 판정: 상시 라벨이 실루엣을 부수고
-    // 시선이 형태 대신 텍스트로 간다). 호버·포커스(ego)·트레일이 짚은 노드만
-    // 이름을 얻고, 나머지는 조립 램프를 따라 서서히 물러난다. 램프 0 = 2D
-    // 그대로. 라벨은 제품의 핵심이라 없애지 않는다 — 언제 보이느냐만 모드가
-    // 정한다.
+    // 3D — labels are **on demand**: permanent labels break the silhouette and pull
+    // the eye to text instead of form. Only nodes the hover, focus (ego), or trail
+    // points at earn a name; the rest recede along the assembly ramp. At ramp 0
+    // this is the 2D behaviour. Labels are core to the product and are never
+    // removed — the mode decides only WHEN they show.
     const domeLabelKeep = egoState === "center" || egoState === "neighbor" || isHovered || trailKept;
-    // perf 2026-08-19 — 프레임 재조회 대신 인덱스 버퍼(`nodeFrameAt`) 사용.
+    // perf 2026-08-19 — reads the index buffer (`nodeFrameAt`) instead of re-fetching.
     const labelDome = nodeFrameAt(index);
     const domeLabelGate = domeOn && !domeLabelKeep ? 1 - labelDome.a : 1;
     compactAlpha *= domeLabelGate;
@@ -2339,27 +2454,31 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // the separate far-field watermark) — a candidate must be built whenever
     // EITHER is visible, or the watermark silently vanishes once the compact
     // label alpha hits 0 at farT=1 (label-clarity fix, far-field regression).
-    // 렌즈 동안 원거리 워터마크는 침묵한다 — 방문 노드는 `"normal"` 로 남는데
-    // 워터마크는 그 상태에서만 켜지므로, 그대로 두면 궤적 읽기 화면에 장식
-    // 잉크가 되살아난다(포커스 중 워터마크를 끄는 기존 규칙과 같은 결).
+    // The far-field watermark stays silent under the lens. Visited nodes remain
+    // `"normal"` and the watermark only lights in that state, so leaving it on
+    // would revive decorative ink on a trajectory-reading screen — the same grain
+    // as the existing rule that switches watermarks off under focus.
     const watermarkAlpha =
       (node.kind === "domain" && !trailLensActive ? computeDomainWatermarkAlpha(farT, egoState) : 0) *
       domeLabelGate;
     if (Math.max(compactAlpha, watermarkAlpha) <= 0.02) continue;
 
-    // S5 — 라벨도 노드 디스크와 같은 깊이 시차 오프셋으로 그려 붙어 다닌다.
-    // 3D 오프셋도 동일 — 라벨이 링으로 옮겨 간 디스크를 따라간다.
+    // Labels take the same depth parallax offset as the node disc so they travel
+    // with it; likewise the 3D offset, so a label follows a disc that moved onto a
+    // ring.
     const labelPOff = realmParallaxOffsetFor(node.id);
     const labelDOff = labelDome;
     const screen = labelScreenScratch;
     screen.x = (node.x + labelPOff.x + labelDOff.dx - camX) * camScale + halfW;
     screen.y = (node.y + labelPOff.y + labelDOff.dy - camY) * camScale + halfH;
-    // E-4 — 노드 패스가 실제로 그린 반지름(magnitudeScale·breathe·등장 램프·
-    // 선택 성장 포함). 그 패스에서 컬링된 노드만 nominal 로 되돌린다.
+    // The radius the node pass actually drew, including `magnitudeScale`, breathe,
+    // the appear ramp, and the selection growth. Only nodes culled by that pass fall
+    // back to the nominal radius.
     const screenRadius =
       drawnScreenRadiusById.get(node.id) ?? radiusForKind(node.kind, tokens) * camera.scale.value;
-    // E-4 — 페인트와 **같은 함수**로 베이스라인을 잡는다(종전엔 bbox 는
-    // 오프셋 미스케일, 페인트는 스케일 적용이라 상자와 글자가 갈라졌다).
+    // The baseline comes from **the same function** the paint uses. Previously the
+    // bbox left the offset unscaled while the paint scaled it, so the box and the
+    // glyphs drifted apart.
     const anchorY = resolveLabelBaselineY(node.kind, screen.y, screenRadius, labelScale);
     const text = ellipsizeToWidth(node.label, tokens.labelMaxWidth * labelScale, (candidate) =>
       measureLabelWidth(ctx, node.kind, candidate, labelScale),
@@ -2378,12 +2497,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     let anchorX = screen.x;
     let clampedAnchorY = anchorY;
     if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
-      // 보호 대상이면 버리는 대신 인셋 가장자리로 당긴다. 판정식은
-      // `render/label-layout.ts#isSafeRectProtectedLabel` 하나이고 — 이 파일에
-      // 인라인으로 두면 캔버스 밖에서 잴 수 없어 회귀를 막는 단위 테스트를 붙일
-      // 자리가 없다 — project/hub 가 왜 그 목록에 들어갔는지도 거기 적혀 있다.
-      // 클램프 대상이 적은 두 등급뿐이라 「전부 인셋에 쌓인다」는 원래 우려는
-      // 되살아나지 않고, 부딪히는 것은 여전히 greedy 억제가 가른다.
+      // A protected label is pulled to the inset edge instead of dropped. The
+      // predicate lives in exactly one place,
+      // `render/label-layout.ts#isSafeRectProtectedLabel` — inlined here it could
+      // not be measured outside a canvas, leaving nowhere to attach the unit test
+      // that prevents a regression — and that file also records why project and hub
+      // are on the list. Only those two small classes clamp, so the original worry
+      // that "everything piles up at the inset" does not return, and anything that
+      // does collide is still separated by the greedy suppression.
       if (!isSafeRectProtectedLabel({ egoState, isHovered, trailKept, kind: node.kind, isHub: node.isHub })) {
         continue;
       }
@@ -2396,10 +2517,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (applyLabelTopK) {
       // Real exempt = the focused center + the hovered node, always. An ego
       // NEIGHBOR is exempt too unless the focus is over the readable DOI-top-K
-      // band, in which case only the DOI winners keep the exemption (노드 감사
-      // 처방 — see `isEgoNeighborLabelExempt`).
-      // 렌즈 동안 방문 노드는 top-K 예산 밖 — 8-0 실측의 "링 낀 익명 상자"를
-      // 없애는 게 이 렌즈의 핵심이라 이름은 반드시 서 있어야 한다.
+      // band, in which case only the DOI winners keep the exemption (node audit
+      // prescription — see `isEgoNeighborLabelExempt`).
+      // Under the lens, visited nodes sit outside the top-K budget: removing the
+      // "anonymous box wearing a ring" is the point of this lens, so the name has
+      // to stand.
       const exempt =
         egoState === "center" ||
         isHovered ||
@@ -2413,27 +2535,30 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       isHovered,
       isHub: node.isHub,
     });
-    // 세로 범위는 **폰트에서 실측**한다 — 종전의 `ascent = fontSize` /
-    // `descent = 2`(상수) 근사는 위로 과잉·아래로 부족이었고, descent 가
-    // 상수인데 fontSize 는 줌에 따라 커져서 **확대할수록 아래가 더 샜다**.
-    // 폰트당 1회 측정 후 캐시(`measureLabelVerticalMetrics`), 실측 불가한
-    // 컨텍스트는 종전 근사로 폴백해 회귀 0.
+    // The vertical extent is **measured from the font**. The old approximation
+    // (`ascent = fontSize`, `descent = 2` constant) overshot above and undershot
+    // below, and because the descent was constant while `fontSize` grew with zoom,
+    // **the further you zoomed in the more the bottom leaked**. Measured once per
+    // font and cached (`measureLabelVerticalMetrics`); contexts where measurement
+    // is unavailable fall back to the old approximation.
     const vertical = measureLabelVerticalMetrics(ctx, node.kind, labelScale);
     const boxAt = (baselineY: number) => ({
-      // 좌우로 `LABEL_SIDE_GAP` 만큼 넓혀 예약한다 — **닿는 두 이름은 한
-      // 단어로 읽힌다.** 겹침 판정(`bboxesOverlap`)은 «닿는 것» 을 겹침으로
-      // 안 세므로, 실측에서 「카카오 알림톡」과 「적립금 원장」이 0.7px 간격으로
-      // 나란히 서서 한 문자열처럼 읽혔다(2026-08-02, 부챗살 펼침). 시안이 예약
-      // 상자를 `측정폭 + 6` 으로 잡는 것과 같은 처방이다.
+      // Reserve `LABEL_SIDE_GAP` extra on each side — **two labels that touch read
+      // as one word.** The overlap test (`bboxesOverlap`) does not count touching
+      // as overlapping, so in a measurement on 2026-08-02 (fan expansion) 「카카오
+      // 알림톡」 and 「적립금 원장」 stood side by side 0.7px apart and read as a
+      // single string. Same prescription as the mockup's reserved box of
+      // `measured width + 6`.
       minX: anchorX - width / 2 - LABEL_SIDE_GAP,
       maxX: anchorX + width / 2 + markReserve + LABEL_SIDE_GAP,
       minY: baselineY - vertical.ascent,
       maxY: baselineY + vertical.descent,
     });
-    // E-4 — 아래가 남의 노드 도형으로 막혔으면 **이름을 버리기 전에 위로
-    // 뒤집는다**. 억제만 하면 이 슬라이스가 없애려던 "이름 없는 도형"이 다시
-    // 생기므로, 자리를 하나 더 시도한 다음에만 떨어진다. 위쪽 자리는 같은
-    // 오프셋을 노드 위로 대칭 이동한 것 — 새 간격/토큰 0.
+    // When the slot below is blocked by another node's shape, **flip above before
+    // discarding the name**. Suppressing outright would recreate the very
+    // "unlabelled shape" this work removes, so a label is dropped only after a
+    // second slot has been tried. The upper slot mirrors the same offset across the
+    // node — no new spacing, no new token.
     let labelBaselineY = clampedAnchorY;
     if (overlapsForeignReserved(boxAt(labelBaselineY), node.id, priority, nodeDiscReservations)) {
       const flipped =
@@ -2453,8 +2578,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         text,
         screenX: screen.x + shiftX,
         screenY: screen.y + shiftY,
-        // 배치기가 확정한 베이스라인을 그대로 넘긴다 — `draw()` 가 다시
-        // 계산하면 뒤집힌 자리가 되돌려진다.
+        // Pass the baseline the placer settled on: recomputing it inside `draw()`
+        // would undo the flipped slot.
         baselineY: labelBaselineY,
         screenRadius,
         egoState,
@@ -2476,26 +2601,26 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       })()
     : labelCandidates;
 
-  // rank9 — greedy 배치에 직전 프레임 placed 우대(히스테리시스)로 같은 우선순위
-  // 안의 LOD churn 을 억제한다. 결과 placed id 집합을 다음 프레임 우대 기준으로
-  // 남긴다.
+  // Greedy placement prefers what was placed on the previous frame (hysteresis),
+  // which damps LOD churn within one priority band. The resulting placed-id set
+  // becomes the next frame's preference.
   const placedResult = greedyPlaceLabels(
     placedLabelCandidates,
     (c) => prevPlacedLabelIds.has(c.payload.nodeId),
-    // S11 — 칩이 점유한 영역과 겹치는 **수동적** 라벨(도메인/역량/요소)은 떨어뜨린다.
-    // 선택/호버 라벨은 칩보다 상위라 그대로 남는다(사용자가 보고 있는 이름을 칩이
-    // 침묵시키지 않는다).
-    // 칩 점유 + ego 노드 원판을 함께 예약한다 — 라벨은 둘 다 피한다.
+    // A **passive** label (domain/capability/element) overlapping a chip's occupied
+    // area is dropped. Selected and hovered labels outrank chips and stay: a chip
+    // never silences the name the user is looking at. Chip occupancy and ego node
+    // discs are reserved together, and labels avoid both.
     [...chipReservations, ...nodeDiscReservations],
   );
   const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
 
-  // rank9 — LOD present 램프. 화면 안 후보별로 placed(1)/미배치(0) 를 향해
-  // tipFadeMs(120ms, 재사용)에 걸쳐 선형 페이드한다. placed 는 램프로 페이드-인,
-  // 방금 이탈했지만 아직 화면 안인 후보는 잔여 램프로 페이드-아웃(하드 컷 제거).
-  // 화면 밖으로 나간 id 는 컬링이므로 램프에서 제거(다음 등장 시 0 부터 재상승).
-  // `labelPresentById` 미제공(기존 테스트 경로)이면 종전과 동일하게 placed 만
-  // 알파 1 로 그린다(회귀 0).
+  // LOD presence ramp. Each on-screen candidate fades linearly toward placed (1)
+  // or unplaced (0) over `tipFadeMs` (120ms, reused): placed candidates fade in,
+  // and a candidate that just lost placement while still on screen fades out on its
+  // remaining ramp instead of hard-cutting. Ids that leave the screen are culled
+  // from the ramp, so they rise from 0 again next time. Without `labelPresentById`
+  // (the existing test path) only placed labels draw, at alpha 1.
   const presenceById = labelPresentById;
   const drawList: { payload: LabelPayload; presenceAlpha: number }[] = [];
   if (presenceById) {

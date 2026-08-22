@@ -1,20 +1,20 @@
 import type { Project, ProjectInput } from './types';
 
 /**
- * `Project` → `ProjectInput` 매핑.
+ * `Project` → `ProjectInput`.
  *
- * 인라인 편집 등에서 기존 프로젝트 한 필드만 patch 하고 나머지를 그대로
- * 들고 갈 때 사용. 결정성 유지를 위해 array / nested object 는 모두 새로
- * 생성 (참조 공유 회피).
+ * Used when patching one field of an existing project and carrying the rest through,
+ * as in inline editing. Arrays and nested objects are rebuilt rather than shared by
+ * reference, which keeps the result deterministic.
  */
 export function projectToInput(project: Project): ProjectInput {
   return {
     slug: project.slug,
     name: project.name,
     description: project.description,
-    // Vault에 없던 taxonomy fact를 변환 단계에서 만들지 않는다. Form의
-    // 신규 작성 기본값은 form-local에서 정하고, 기존 project를 bulk/update로
-    // 다시 쓰는 경로는 omission을 그대로 보존해야 한다.
+    // Never invent a taxonomy fact the vault lacked during conversion. The form's
+    // defaults for a new project are decided form-locally, and any path that rewrites
+    // an existing project must preserve the omission.
     category: project.category,
     status: project.status,
     owner: project.owner,

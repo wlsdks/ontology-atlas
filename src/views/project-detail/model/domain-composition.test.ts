@@ -80,8 +80,8 @@ describe("buildProjectDomainComposition", () => {
     ];
     const result = buildProjectDomainComposition(nodes, edges, SLUG);
     const [views] = result.domains;
-    // 「상위 2 + N개 더」가 아니라 전부다 — 행을 펼치면 목록이 다 보이므로
-    // 갈 곳 없는 수(「역량 1개 더」)를 만들 이유가 없다.
+    // All of them, not "the top 2 plus N more" — expanding the row shows the whole list, so there is no
+    // reason to create a number with nowhere to go ("1 more capability").
     expect(views.capabilities.map((cap) => cap.title)).toEqual(["Bravo", "Alpha", "Charlie"]);
     expect(views.capabilities[0]).toEqual({ id: "capability:b", title: "Bravo" });
     expect(views.capabilityCount).toBe(3);
@@ -101,10 +101,10 @@ describe("buildProjectDomainComposition", () => {
   });
 
   it("P-1 — containment 도달 멤버는 projectIds 와 무관하게 센다 (4면 census 정합)", () => {
-    // 구 계약(projectIds 필터)은 지도 INDEX·인사이트·/projects 의 단일
-    // 진실원 BFS 와 숫자가 갈라지는 원인이었다. 도메인이 담고 있으면
-    // 어느 프로젝트 스탬프든 그 도메인의 크기에 포함된다 — 표면 간 같은
-    // 숫자가 개별 필터보다 우선한다는 것이 이번 라운드의 계약.
+    // The old contract (filtering by projectIds) was why the numbers diverged from the single-source BFS
+    // used by the map INDEX, insights, and `/projects`. If a domain contains it, it counts toward that
+    // domain's size whatever project stamp it carries — the same number across surfaces takes precedence
+    // over per-surface filtering.
     const nodes = [
       n("domain:views", "domain", [SLUG], "Views"),
       n("capability:foreign", "capability", ["other-project"]),

@@ -14,33 +14,34 @@ import { IconButton, RowButton } from "@/shared/ui";
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * P3b — 엣지 팝오버. 노드 데이터시트와 같은 재질(panel 토큰)로, 관계
- * 하나의 의미를 말한다: 평문 문장 → 타입·방향 → 선언 출처(.md) → 변경일
- * → 관계 편집 딥링크.
+ * P3b — the edge popover. Built from the same material as the node datasheet
+ * (panel tokens), it states one relation's meaning: plain sentence → type and
+ * direction → the declaring source (.md) → change date → a relation-edit deep link.
  *
- * 레퍼런스 판정: "온톨로지답다"의 분기점은 타입 이름이 아니라 문장화 +
- * 선언 출처다 — frontmatter 가 곧 그래프라 출처 표시 비용이 0 인 것이
- * 이 제품의 차별점. 문장/라벨은 관계 어휘 사전(P1a)을 쓰는 호출자가
- * 조립해 넘긴다 (이 위젯은 표시 전용).
+ * The reference study's verdict: what makes something read as an ontology is not
+ * the type's name but the sentence plus the declaring source — frontmatter *is*
+ * the graph here, so showing provenance costs nothing, and that is this product's
+ * point of difference. The sentence and labels are assembled by the caller from
+ * the relation lexicon (P1a); this widget is display-only.
  */
 export interface TopologyV2EdgePanelProps {
-  /** 평문 문장 — "A 가 B 에 기대요" (어휘 사전 plain 레지스터 기반). */
+  /** The plain sentence — "A 가 B 에 기대요" (from the lexicon's plain register). */
   sentence: string;
-  /** formal 타입 라벨 — "의존". */
+  /** The formal type label — "의존" (depends). */
   typeLabel: string;
   fromTitle: string;
   toTitle: string;
-  /** P6 — 관계의 근거 한 줄 (relation_notes). null 이면 생략. */
+  /** P6 — one line of rationale for the relation (relation_notes). null omits it. */
   why?: string | null;
-  /** 선언한 vault 문서 — null 이면 출처 행 생략. */
+  /** The declaring vault document — null omits the provenance row. */
   declaredBy: { slug: string; href: string } | null;
-  /** 선언 문서의 변경 시점 라벨 (S-C1 사다리 재사용) — null 이면 생략. */
+  /** The declaring document's change-time label (reusing the S-C1 ramp) — null omits it. */
   updatedAtLabel: string | null;
   /**
-   * 공방(Compass Stage) 편집 딥링크 — 이 관계를 authored 한 노드를 focal 로 열고
-   * 해당 관계 편집 카드를 편다 (Slice 6). null 이면 공방에서 편집 불가한
-   * 엣지(describes·도메인 멤버십 등)이라 "고치기" 액션을 렌더하지 않는다
-   * (dead affordance 금지).
+   * The studio (Compass Stage) edit deep link — opens the node that authored this
+   * relation as the focal one and expands that relation's edit card (Slice 6).
+   * null means an edge the studio cannot edit (describes, domain membership and
+   * the like), so the "fix this" action is not rendered at all (no dead affordance).
    */
   meaningEditHref: string | null;
   labels: {
@@ -75,11 +76,11 @@ export function TopologyV2EdgePanel({
   onClose,
   className,
 }: TopologyV2EdgePanelProps) {
-  // H3 P1 — 엣지 팝오버 포커스 계약. 열릴 때 dialog 로 포커스를 들여
-  // (role=dialog + aria-label 이 스크린리더에 발화되게), 닫힐 때는 팝오버를
-  // 연 트리거(캔버스 등 직전 포커스 요소)로 되돌린다. 종전에는 아무 포커스
-  // 관리가 없어 Esc 로 닫으면 dialog 언마운트 후 포커스가 body 로 유실됐다
-  // (접근성 감사 P1).
+  // H3 P1 — the edge popover's focus contract. On open, focus moves into the
+  // dialog so `role=dialog` plus `aria-label` is announced to a screen reader; on
+  // close it returns to the trigger that opened it (the canvas, or whatever held
+  // focus before). There used to be no focus management at all, so closing with
+  // Esc unmounted the dialog and lost focus to body (accessibility audit P1).
   const dialogRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
@@ -89,7 +90,7 @@ export function TopologyV2EdgePanel({
         trigger.focus();
       }
     };
-    // 마운트/언마운트 1회 — 열릴 때 포커스 진입, 닫힐 때 복귀.
+    // Once, on mount and unmount — focus enters on open and returns on close.
   }, []);
 
   return (
@@ -116,7 +117,7 @@ export function TopologyV2EdgePanel({
         </IconButton>
       </div>
 
-      {/* 문장이 주인공 — 의미의 평문화 */}
+      {/* The sentence is the protagonist — meaning in plain language. */}
       <p
         data-testid="topology-v2-edge-sentence"
         className="text-body-lg font-[var(--font-weight-signature)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]"
@@ -132,7 +133,7 @@ export function TopologyV2EdgePanel({
         </p>
       ) : null}
 
-      {/* 양 끝 노드 — 클릭 시 해당 노드 포커스 */}
+      {/* The two end nodes — clicking focuses that node. */}
       <div className="flex flex-col gap-0.5">
         {[
           { id: fromId, title: fromTitle },

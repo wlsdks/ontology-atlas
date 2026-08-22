@@ -14,9 +14,9 @@ const node = (id: string, kind: string): KnowledgeGraphNode => ({
 });
 
 /**
- * P0c — 표면별 census 불일치(지도 294/인사이트 293/프로젝트 288)의 회귀
- * 가드. 정본은 파생 전체이며, project 를 다시 더하거나 kind 를 걸러내는
- * 순간 표면 간 숫자가 갈라진다.
+ * Regression guard for surfaces disagreeing on the node count — measured at map 294, insights
+ * 293, projects 288. The canonical figure is the whole derivation; the moment a surface adds
+ * `project` back in or filters by kind, the numbers split apart again.
  */
 describe("computeCanonicalCensus", () => {
   const nodes = [

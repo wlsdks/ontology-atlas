@@ -15,11 +15,10 @@ import {
 const ALLOWED_FLAGS = ['--vault', '--json', '--strict', '--list-codes', '--fail-on'];
 
 
-// R+ — cycle 44: validateVaultDocument 가 surface 하는 issue codes 의
-// canonical list. --list-codes 출력 + --fail-on 의 unknown code 감지에
-// 사용. cli/src/lib/validate.mjs (3-way contract) 의 코드와 일관 — cycle
-// 45 의 contract test (tests/contract/known-codes-drift.contract.test.ts)
-// 가 drift 즉시 차단.
+// The canonical list of issue codes `validateVaultDocument` can surface. Used for
+// `--list-codes` output and for detecting an unknown code in `--fail-on`. Kept in
+// step with the codes in cli/src/lib/validate.mjs (the 3-way contract);
+// tests/contract/known-codes-drift.contract.test.ts blocks drift immediately.
 //
 // Exported so the contract test can import the canonical list.
 export const KNOWN_CODES = [
@@ -104,20 +103,20 @@ export const KNOWN_CODES = [
 ];
 
 /**
- * R11 #32 — \`ontology-atlas validate [vault]\`
+ * `ontology-atlas validate [vault]`
  *
- * vault 의 frontmatter integrity 검증. error issue 1+ 시 exit 1.
+ * Verifies the vault's frontmatter integrity. Exits 1 on one or more error issues.
  *
- * R+ — \`--json\` 플래그 (cycle 40): 머신 가독 출력. CI / 스크립트 / agent
- * 가 ANSI strip 없이 issue 행을 그대로 파싱.
+ * `--json` gives machine-readable output, so CI, scripts, and agents parse issue
+ * rows without stripping ANSI.
  *
- * R+ — \`--strict\` 플래그 (cycle 42): warning 도 exit 1. CI 가 missing-
- * expected-field (capability/element 의 domain 누락 등) 도 차단하려 할 때.
- * default 는 errors 만 fail.
+ * `--strict` makes warnings exit 1 as well, for CI that also wants to block
+ * missing-expected-field (a capability or element without its domain). The
+ * default fails on errors only.
  *
- * R+ — \`--fail-on=<code1,code2,...>\` (cycle 43): 특정 issue code 만 fail.
- * \`--strict\` 보다 우선 — listed code 들에 해당하는 issue 1+ 시 exit 1,
- * 나머지는 무시. CI 가 점진적으로 특정 violation 만 hard-gate 하려 할 때.
+ * `--fail-on=<code1,code2,...>` fails on the listed issue codes only and takes
+ * precedence over `--strict`: one or more matching issues exit 1, everything else
+ * is ignored. This is how CI hard-gates specific violations incrementally.
  */
 export function runValidate(args) {
   const parsed = parseArgs(args);
@@ -130,14 +129,14 @@ export function runValidate(args) {
     return 1;
   }
 
-  // --list-codes 는 vault 안 보고 즉시 출력. 다른 옵션이 같이 와도 무시.
+  // --list-codes prints immediately without looking at the vault, ignoring any other option.
   if (parsed.listCodes) {
     return printKnownCodes(parsed.json);
   }
 
   const { json, strict, failOn } = parsed;
-  // R+ — cycle 44: --fail-on 에 unknown code 가 들어오면 stderr 경고.
-  // 실행은 진행 (silently no-match 로 빠지는 것보다 *명시 경고* 가 나음).
+  // An unknown code in --fail-on warns on stderr but still runs — an *explicit
+  // warning* beats silently falling through to no match.
   if (failOn) {
     const known = new Set(KNOWN_CODES.map((c) => c.code));
     const unknown = failOn.filter((c) => !known.has(c));
@@ -162,19 +161,19 @@ export function runValidate(args) {
     try {
       raw = readFileSync(file, 'utf-8');
     } catch (error) {
-      // **못 읽은 파일을 "스캔했다" 고 세지 않는다** (2026-07-29 실측).
+      // **A file we could not read is not counted as "scanned"** (measured 2026-07-29).
       //
-      // 종전엔 조용히 `continue` 하면서 `scanned` 에는 계속 포함시켰다. 권한이
-      // 없는 `.md` 하나가 있으면 `6 파일 스캔 — issue 0. vault clean ✓` 라고
-      // 답하고, 같은 볼트에서 `compile` 은 EACCES 로 exit 2 했다. **열어 보지도
-      // 못한 파일을 깨끗하다고 보증**한 것이다.
+      // It used to `continue` silently while still counting the file in `scanned`.
+      // With one unreadable `.md`, this answered `6 files scanned — 0 issues. vault
+      // clean ✓` while `compile` on the same vault exited 2 with EACCES. It was
+      // **certifying a file it never managed to open**.
       unreadable.push({
         file,
         message: error instanceof Error ? error.message : String(error),
       });
       continue;
     }
-    // NFC — `pathToSlug` 와 같은 식별자 규칙(자세한 이유는 그쪽 주석).
+    // NFC — the same identifier rule as `pathToSlug` (its comment carries the reason).
     const slug = relative(vaultPath, file)
       .replace(/\\/g, '/')
       .replace(/\.md$/, '')
@@ -186,8 +185,9 @@ export function runValidate(args) {
   }
 
   /*
-   * 부모가 이미 있는 노드에 「부모가 없다」고 말하지 않는다 (2026-08-11) — MCP 쪽
-   * `validate_vault` 와 같은 좁히기다. 파일 하나만 보는 검사로는 알 수 없다.
+   * Never tell a node that already has a parent that it has none (2026-08-11) —
+   * the same narrowing as `validate_vault` on the MCP side. A check that sees one
+   * file cannot know.
    */
   const issuesBySlugForParents = new Map();
   const fileBySlug = new Map();
@@ -235,23 +235,26 @@ export function runValidate(args) {
     else warningFiles += 1;
   }
 
-  // **문제 수와 파일 수는 다른 것이다** (2026-08-04 실측 정정).
+  // **An issue count and a file count are different things** (correction measured
+  // 2026-08-04).
   //
-  // 마지막 요약 줄이 `reports.length`(문제가 있는 **파일** 수)를 「문제」라고
-  // 찍고, `errorFiles`/`warningFiles`(파일 수)를 「error/warning」이라고 찍었다.
-  // 그래서 오류 5 · 경고 4 짜리 볼트를 `9 파일 / 8 문제 (error 5 · warning 3)`
-  // 라고 불렀다 — 경고 하나는 **오류가 있는 파일 안에 있어서 통째로 사라졌다**
-  // (파일은 errorFiles 로만 세지므로). 같은 명령의 `--json` 은 issue 단위로 세어
-  // 5/4 라고 답했다. 한 폴더를 두 출력이 다른 수로 부르면 둘 다 못 믿는다.
+  // The final summary line printed `reports.length` (the number of **files** with
+  // a problem) as "problems", and `errorFiles`/`warningFiles` (file counts) as
+  // "error/warning". So a vault with 5 errors and 4 warnings was called
+  // `9 files / 8 problems (error 5 · warning 3)` — one warning **vanished entirely
+  // because it sat inside a file that also had an error** (files count only into
+  // errorFiles). The same command's `--json` counted per issue and answered 5/4.
+  // When two outputs give one folder two different numbers, neither is believable.
   //
-  // exit code 는 파일 수 기준 그대로 둔다 — 0 이냐 아니냐만 보므로 값이 같다.
+  // The exit code stays on file counts — only zero vs non-zero matters, so the
+  // value is the same.
   const allIssues = reports.flatMap(({ report }) => report.issues);
   const errorIssues = allIssues.filter((i) => i.severity === 'error').length;
   const warningIssues = allIssues.length - errorIssues;
 
-  // R+ — JSON 출력은 항상 같은 shape (clean vault 도 problems: [] 로). caller
-  // 가 .summary.errorFiles 만 보고 분기 가능 — text 모드의 분기 없는 단일
-  // structure.
+  // JSON output always has the same shape (a clean vault still gets
+  // `problems: []`), so a caller can branch on `.summary.errorFiles` alone —
+  // one structure, unlike the branching text mode.
   const groups = groupIssuesByCode(reports);
   if (json) {
     const byCode = {};
@@ -265,8 +268,8 @@ export function runValidate(args) {
     process.stdout.write(
       JSON.stringify(
         {
-          // 열어 본 파일만 "스캔" 이다. 못 읽은 것은 따로 센다 — 그래야
-          // `scanned` 가 보증의 범위와 일치한다.
+          // Only a file we opened counts as "scanned". Unreadable ones are counted
+          // separately, so `scanned` matches the scope of what is being certified.
           scanned: files.length - unreadable.length,
           unreadable: unreadable.map((u) => ({
             file: relative(vaultPath, u.file).replace(/\\/g, '/'),
@@ -296,8 +299,8 @@ export function runValidate(args) {
     return decideExit(errorFiles, warningFiles, strict, failOn, groups);
   }
 
-  // 못 읽은 파일은 **clean 선언 전에** 말한다. 이 줄이 없으면 "vault clean ✓"
-  // 가 열어 보지도 못한 파일까지 보증하는 문장이 된다.
+  // Unreadable files are named **before** declaring clean. Without this line,
+  // "vault clean ✓" certifies files that were never opened.
   if (unreadable.length > 0) {
     console.log(
       `\n${COLORS.yellow}[validate] 읽지 못한 파일 ${unreadable.length}건: 아래는 검사 범위 밖입니다.${COLORS.reset}`,
@@ -308,13 +311,14 @@ export function runValidate(args) {
   }
 
   if (reports.length === 0) {
-    // **"vault clean ✓" 라고만 말하지 않는다** (2026-08-01 실측).
+    // **Do not say only "vault clean ✓"** (measured 2026-08-01).
     //
-    // 이 명령은 frontmatter 와 그래프 참조만 본다 — `elements:` / `path:` 가
-    // 가리키는 **코드 파일이 실재하는지는 보지 않는다.** 그런데 문구가 그 차이를
-    // 말하지 않아서, 같은 볼트에 `validate` 는 "clean", `health` 는
-    // "needs_attention" 이라고 답했고 어느 쪽이 맞는지 알 방법이 없었다.
-    // 검사 범위를 문장이 말하면 두 답은 모순이 아니라 서로 다른 두 검사가 된다.
+    // This command looks at frontmatter and graph references only — it **does not
+    // check whether the code files `elements:` / `path:` point at exist**. The
+    // wording did not say so, so on one vault `validate` answered "clean" while
+    // `health` answered "needs_attention", with no way to tell which was right.
+    // Once the sentence states the scope, the two answers stop contradicting each
+    // other and become two different checks.
     console.log(
       `${COLORS.green}[validate] ${files.length - unreadable.length} 파일 스캔: frontmatter · 그래프 참조 issue 0 ✓${COLORS.reset}`,
     );
@@ -324,7 +328,7 @@ export function runValidate(args) {
     return unreadable.length > 0 ? 1 : 0;
   }
 
-  // strict 모드 안내는 마지막 summary 줄에서 처리.
+  // The strict-mode notice is handled by the final summary line.
 
   for (const { file, report } of reports) {
     console.log(`\n${file}`);
@@ -336,10 +340,11 @@ export function runValidate(args) {
     }
   }
 
-  // R+ — issue code 별 그룹 요약. 큰 vault 에서 같은 종류 경고가 30+ 줄 흐를
-  // 때 *어느 코드가 얼마나 많은지* 한눈에. 2+ 회 등장한 code 만 노출 — 1
-  // 회짜리는 위 per-file 출력으로 충분.
-  // (groups 는 위에서 한 번 빌드해놨음 — JSON / fail-on / 텍스트 모두 공유.)
+  // Per-issue-code group summary: on a large vault where 30+ lines of the same
+  // warning scroll past, this shows *which code and how many* at a glance. Only
+  // codes appearing 2+ times are listed — a single occurrence is already covered
+  // by the per-file output above.
+  // (`groups` was built once above and is shared by JSON, fail-on, and text.)
   const repeatedCodes = groups.filter((g) => g.count >= 2);
   if (repeatedCodes.length > 0) {
     console.log(`\n${COLORS.dim}── grouped by code ──${COLORS.reset}`);
@@ -375,7 +380,7 @@ export function runValidate(args) {
   return decideExit(errorFiles, warningFiles, strict, failOn, groups);
 }
 
-// 우선순위: --fail-on (있으면 그것만) > --strict > default (errors only).
+// Precedence: --fail-on (when present, it alone) > --strict > default (errors only).
 function decideExit(errorFiles, warningFiles, strict, failOn, groups) {
   if (failOn && failOn.length > 0) {
     return groups.some((g) => failOn.includes(g.code)) ? 1 : 0;
@@ -428,8 +433,8 @@ function printUsage(stream = process.stderr) {
   );
 }
 
-// R+ — cycle 44: --list-codes 출력. text 모드는 사람이 읽기 좋은 표,
-// --json 모드는 머신 가독 (CI 가 어떤 code 가 있는지 동적으로 알 수 있게).
+// --list-codes output: a human-readable table in text mode, machine-readable in
+// --json mode so CI can discover the codes dynamically.
 function printKnownCodes(asJson) {
   if (asJson) {
     process.stdout.write(JSON.stringify({ codes: KNOWN_CODES }, null, 2) + '\n');
@@ -450,10 +455,10 @@ function printKnownCodes(asJson) {
 }
 
 /**
- * reports 를 issue code 별로 묶는다. severity 는 같은 code 내에서 max
- * (error > warning) — 한 code 가 양쪽으로 등장하면 더 높은 severity 표시.
- * files 는 등장 순 dedup. count 는 같은 file 의 같은 code 가 여러 번이어도
- * file 당 1로 카운트 (사용자 입장에서 "몇 개 file 이 영향받았나" 가 더 유용).
+ * Groups reports by issue code. Severity within a code is the max (error >
+ * warning), so a code appearing as both shows the higher one. `files` is deduped
+ * in order of appearance. `count` counts one per file even when the same code
+ * recurs in it — "how many files are affected" is the more useful number.
  */
 function groupIssuesByCode(reports) {
   const map = new Map();
@@ -473,7 +478,7 @@ function groupIssuesByCode(reports) {
     }
   }
   return Array.from(map.values()).sort((a, b) => {
-    // error 먼저, 그 안에서 count 내림차순
+    // Errors first, then by descending count
     if (a.severity !== b.severity) return a.severity === 'error' ? -1 : 1;
     return b.count - a.count;
   });
@@ -505,19 +510,22 @@ function collectGraphRefs(frontmatter) {
 }
 
 /**
- * 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
+ * Two documents claiming the same canonical slug (measured 2026-07-29).
  *
- * **파일 단위 검사로는 원리적으로 못 잡는다** — 한 파일만 보면 완벽히
- * 정상이기 때문이다. 그래서 dangling 검사와 같은 자리(볼트 전수 패스)에 산다.
+ * **A per-file check cannot catch this in principle** — either file alone looks
+ * perfectly fine, which is why this lives in the same place as the dangling check
+ * (the whole-vault pass).
  *
- * 어떻게 생기나: `patch_concept` 이 `frontmatter.slug` 를 다른 노드가 이미
- * 가진 값으로 덮어써도 막지 않는다(`add_concept` 은 막고 `rename_concept` 은
- * `overwrite:true` 를 요구하는데 이 경로만 열려 있다). 그러면 두 파일이 같은
- * 이름을 주장하고, 그 이름을 가리키는 모든 관계가 **어느 쪽을 뜻하는지 알 수
- * 없게** 된다 — 컴파일러는 `ambiguous-alias` 로 보는데 `validate` 는 조용했다.
+ * How it arises: `patch_concept` does not stop `frontmatter.slug` being overwritten
+ * with a value another node already holds (`add_concept` blocks it and
+ * `rename_concept` demands `overwrite:true`; only this path is open). Two files
+ * then claim one name, and every relation naming it becomes **impossible to
+ * resolve to one side** — the compiler saw `ambiguous-alias` while `validate`
+ * stayed silent.
  *
- * error 로 올린다. dangling 은 "아직 안 만든 것" 일 수 있어 warning 이지만,
- * 중복 slug 는 **이미 있는 두 문서 사이의 모순**이라 그래프가 성립하지 않는다.
+ * Raised as an error. A dangling reference may be "not built yet", hence a
+ * warning; a duplicate slug is a **contradiction between two documents that both
+ * already exist**, and the graph does not hold.
  */
 function findDuplicateSlugIssues(entries) {
   const byDeclared = new Map();
@@ -583,23 +591,25 @@ function findDuplicateUidIssues(entries) {
 }
 
 /**
- * ⚠️ **그래프 참조는 «노드» 로 resolve 되어야 한다** (2026-08-08 실측).
+ * ⚠️ **A graph reference must resolve to a «node»** (measured 2026-08-08).
  *
- * 종전엔 해소 대상이 «볼트의 모든 .md 파일» 이었다. 볼트에는 노드가 아닌
- * 마크다운(회의록·메모·초안)이 정상적으로 섞여 사는데 — 그건 설계다 —
- * 그것들까지 «있는 슬러그» 로 쳐 줘서, 노드 → 잡문 관계가 통과했다.
+ * Resolution used to target «every .md file in the vault». Markdown that is not a
+ * node (meeting notes, memos, drafts) legitimately lives in a vault — that is by
+ * design — and counting those as «an existing slug» let node → loose-document
+ * relations pass.
  *
- * 침묵보다 나빴다: 그 상태에서 이 명령은 초록 글씨로 *"frontmatter · 그래프
- * 참조 issue 0 ✓"* 라고 적었는데, 같은 볼트에서 `compile` 은 `unresolved 1`
- * 을 냈다. **한 볼트를 두고 두 도구가 반대로 말했고, 사람이 먼저 보는 쪽이
- * 틀린 쪽이었다.** 없는 검사를 했다고 말하는 것이 가장 나쁜 종류다.
+ * That was worse than silence: in that state this command printed, in green,
+ * *"frontmatter · graph reference issues 0 ✓"* while `compile` on the same vault
+ * reported `unresolved 1`. **Two tools said opposite things about one vault, and
+ * the one a person reads first was the wrong one.** Claiming to have run a check
+ * that did not happen is the worst kind.
  */
 function findDanglingGraphReferenceIssues(entries) {
   const isNodeEntry = (entry) =>
     typeof entry.frontmatter?.kind === 'string' && entry.frontmatter.kind.trim() !== '';
   const nodeEntries = entries.filter(isNodeEntry);
-  // 노드가 아닌 문서의 슬러그 — 「없다」와 「노드가 아니다」를 갈라 말하려고
-  // 따로 들고 있는다. 사람에게는 그 둘이 전혀 다른 할 일이다.
+  // Slugs of documents that are not nodes, held separately so «missing» and «not a
+  // node» can be said apart. For a person those are entirely different tasks.
   const nonNodeSlugs = new Set(entries.filter((e) => !isNodeEntry(e)).map((e) => e.slug));
   const nonNodeTails = new Set(
     [...nonNodeSlugs].map((slug) => slug.split('/').pop()).filter(Boolean),
@@ -621,8 +631,8 @@ function findDanglingGraphReferenceIssues(entries) {
   }
   const resolveRef = (rawRef) => {
     if (typeof rawRef !== 'string') return null;
-    // 참조도 NFC 로 맞춘다 — 슬러그는 `pathToSlug` 가 이미 NFC 다. 한쪽만
-    // 정규화하면 글자가 같은데 안 맞는 상태가 그대로 남는다.
+    // Normalise references to NFC too — slugs are already NFC via `pathToSlug`.
+    // Normalising one side only leaves characters that look identical but do not match.
     const ref = rawRef.normalize('NFC');
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
@@ -638,10 +648,10 @@ function findDanglingGraphReferenceIssues(entries) {
       if (typeof ref !== 'string' || ref.trim() === '') continue;
       if (key === 'elements' && isPathLikeGraphRef(ref)) continue;
       if (resolveRef(ref)) continue;
-      // 「파일이 없다」와 「파일은 있는데 노드가 아니다」는 다른 할 일이다.
-      // 앞의 것은 만들거나 오타를 고치는 일이고, 뒤의 것은 그 문서에 `kind:`
-      // 를 주거나(승격) 관계를 지우는 일이다. 같은 문장으로 말하면 사람이
-      // 파일을 찾아 헤맨다 — 그 파일은 눈앞에 있다.
+      // «The file is missing» and «the file exists but is not a node» are different
+      // tasks: the first means creating it or fixing a typo, the second means giving
+      // that document a `kind:` (promoting it) or deleting the relation. Saying both
+      // in one sentence sends a person hunting for a file that is right in front of them.
       const normalized = ref.normalize('NFC');
       const isNonNodeDoc = nonNodeSlugs.has(normalized) || nonNodeTails.has(normalized);
       issues.push({

@@ -3,16 +3,20 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * **이름 변경 뒤 주소가 새 이름을 따라간다** (2026-08-13 걷기에서 발견).
+ * **After a rename, the address follows the new name** (found in a walkthrough,
+ * 2026-08-13).
  *
- * 이름 변경 핸들러가 선택(`setSelectedSlug`)만 옮기고 주소(`?slug=`)와 활성
- * 기억은 옛 주소에 남겼다. 볼트 매니페스트가 갱신되어 옛 주소가 사라지는
- * 순간, 「URL 이 요청한 문서가 없다」 판정이 걸려 **방금 자기가 바꾼 이름을
- * 못 찾았다는 경고**가 떴다 — 이름 변경은 성공했는데 화면은 실패를 알렸다.
+ * The rename handler moved only the selection (`setSelectedSlug`), leaving the
+ * address (`?slug=`) and the active memory on the old one. The moment the vault
+ * manifest refreshed and the old address disappeared, the "the URL asked for a
+ * document that does not exist" verdict fired and **warned that the name the user
+ * had just changed could not be found** — the rename succeeded while the screen
+ * reported failure.
  *
- * 두 가지를 잰다: ① 이름 변경 뒤 「못 찾았어요」 배너가 (매니페스트 갱신
- * 공백을 포함해) 끝까지 안 뜬다 ② 주소창의 `?slug=` 가 새 이름을 가리킨다 —
- * 그 주소를 복사해 공유하면 받는 사람도 같은 문서로 와야 한다.
+ * Two things are measured: ① after a rename the "not found" banner never appears,
+ * including across the manifest-refresh gap, and ② the address bar's `?slug=`
+ * points at the new name — copying and sharing that address must bring the
+ * recipient to the same document.
  */
 const VAULT = {
   "README.md": "# 걷기 볼트\n",
@@ -44,30 +48,32 @@ test("이름 변경 뒤 — 경고가 안 뜨고 주소가 새 이름을 가리�
   await page.getByText("장바구니", { exact: true }).first().click();
   await page.waitForTimeout(1200);
 
-  // 팔레트 → 이름 변경 명령 (prompt 는 위 dialog 핸들러가 새 주소로 답한다)
+  // Palette → rename command (the dialog handler above answers the prompt with the new address)
   await page.keyboard.press("Meta+k");
   await page.waitForTimeout(600);
   await page.keyboard.type("이름 변경");
   await page.waitForTimeout(600);
   await page.keyboard.press("Enter");
 
-  // 매니페스트 갱신 공백(웹 폴링 1.5s/5s)을 넘겨 가며 배너가 한 번도 안
-  // 뜨는지 본다 — 공백 중 한 프레임만 떠도 거짓 경고다.
+  // Watches across the manifest-refresh gap (web polling at 1.5s/5s) for the
+  // banner never appearing — a single frame during the gap is already a false
+  // warning.
   const banner = page.getByText(/못 찾았어요/);
   for (let i = 0; i < 12; i += 1) {
     await page.waitForTimeout(500);
     expect(await banner.count(), `이름 변경 ${(i + 1) * 0.5}s 후 거짓 「못 찾았어요」 경고`).toBe(0);
   }
 
-  // 주소가 새 이름을 가리킨다 — 문서도 여전히 열려 있다.
+  // The address points at the new name, and the document is still open.
   expect(page.url()).toContain("slug=capabilities%2Fcart-renamed");
   await expect(page.getByText("장바구니").first()).toBeVisible();
 });
 
 /**
- * 삭제도 같은 병이었다 (2026-08-13 걷기 실측): 사용자가 확인 대화상자까지
- * 거쳐 지운 문서를, 앱이 「못 찾았어요 — 문서함을 바꿔 보라」고 알렸다.
- * 자기가 방금 지운 주소는 밖에서 온 깨진 링크가 아니다.
+ * Deletion had the same illness (measured in the 2026-08-13 walkthrough): for a
+ * document the user deleted through a confirmation dialog, the app reported "not
+ * found — try a different workspace". An address the user just deleted is not a
+ * broken link from outside.
  */
 test("삭제 뒤 — 경고가 안 뜨고 주소가 지운 문서를 가리키지 않는다", async ({ page }) => {
   test.setTimeout(150_000);

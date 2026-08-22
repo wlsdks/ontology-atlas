@@ -12,14 +12,15 @@ import {
 
 /**
  * Mode-aware vault health verdict — the browser-side twin of
- * `node $ATLAS/cli/src/index.mjs health` (`query_ontology({operation:'health'})`). C1: the
+ * `node $ATLAS/cli/src/index.mjs health` (`query_ontology({operation:'health'})`). The
  * insights surface must agree with the CLI, so it reads the SAME rule outcomes
  * from the raw frontmatter (`computeVaultHealth`) instead of the auto-healed
  * derived graph. Mirrors the mode selection of `useOntologyInsight` so the
  * verdict is computed against whatever vault the rest of the page shows.
  */
-// 매니페스트는 리졸버를 통해서만 받는다 — JSON 직접 import 는 샘플 선택을
-// 우회할 수 있는 두 번째 진입점이 된다(tests/contract/static-vault-source.contract.test.ts).
+// The manifest is only ever taken through the resolver — importing the JSON directly becomes
+// a second entry point that can bypass the sample choice
+// (tests/contract/static-vault-source.contract.test.ts).
 const staticManifest = resolveStaticVaultSource('dogfood').manifest;
 const storefrontManifest = resolveStaticVaultSource('storefront').manifest;
 

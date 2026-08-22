@@ -1,5 +1,5 @@
-// `ontology-atlas health [vault]` — graph 무결성 dashboard.
-// MCP `query_ontology({operation: 'health'})` thin wrapper.
+// `ontology-atlas health [vault]` — graph integrity dashboard.
+// Thin wrapper over MCP `query_ontology({operation: 'health'})`.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -66,12 +66,13 @@ export async function runHealth(args) {
         ` ${COLORS.dim}${c.message ?? ''}${COLORS.reset}\n`,
     );
   }
-  // dependency cycle / 분리된 그래프(islands) 강조 — 각 실패 검사에 드릴다운 명령 안내.
+  // Highlights dependency cycles and disconnected islands, naming the drill-down command for each failing check.
   if (sum.dependencyCycles) {
     process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset}: \`cycles\` 명령으로 자세히\n`);
   }
-  // actionableComponents > 1 = 의미있는 노드가 분리된 섬으로 나뉨(연결 안 됨).
-  // vault-readme 등 ignored 는 제외한 수라 1 초과면 실제 단절. `components` 로 목록.
+  // actionableComponents > 1 means meaningful nodes have split into disconnected
+  // islands. Ignored kinds (vault-readme and friends) are already excluded, so
+  // anything above 1 is a real break; `components` lists them.
   if (sum.actionableComponents > 1) {
     process.stdout.write(`${COLORS.yellow}components ${sum.actionableComponents}${COLORS.reset}: 그래프가 분리됨, \`components\` 명령으로 자세히\n`);
   }

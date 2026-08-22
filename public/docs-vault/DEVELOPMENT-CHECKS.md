@@ -181,6 +181,7 @@ pnpm docs:check                  # both gates below
 pnpm docs:surface:check          # regenerate the MCP/CLI surface and diff it
 pnpm docs:surface:build          # refresh docs/.generated/mcp-surface.json
 pnpm docs:links                  # broken repo links + cited file paths
+pnpm docs:comment-refs           # .md paths cited from CODE COMMENTS resolve
 pnpm docs:links:external         # opt-in: resolve http(s) links over the network
 pnpm test:docs:checks            # focused helper contracts for both scripts
 ```
@@ -205,6 +206,30 @@ someone improved the prose. They are gone; these two nets replace them.
   manifest determinism* above, which the same discipline governs). Its first run
   found six CLI commands (`absorb`, `agent-activity`, `agent-files`, `export`,
   `index`, `moment`) that had never appeared in the CLI README's command tables.
+- **`docs:comment-refs` — the other half of referential integrity.**
+  `docs/GLOSSARY.md` §6 tells authors to move long rationale into a markdown file
+  and leave a one-line pointer in the comment. That trade only holds if the
+  pointer keeps working. The owner named the risk before the first pointer was
+  written — *"폴더 위치 바뀌는순간 다 난리날테니"* — and he was describing a hole
+  that already existed: `docs:links` walks **markdown files only**, so every `.md`
+  path cited from a `.ts`/`.mjs` comment was outside every gate's field of view.
+
+  Switching it on found 261 citations and **2 genuinely dead pointers**, both
+  from docs that had moved to `docs/archive/` while the comments kept the old
+  path (`launch-docs-current.test.ts` → `PUBLISH-NPM.md`,
+  `verify-macos/payload-contract.mjs` → `TOPOLOGY-MAP-REBUILD.md`). A reader
+  following either found nothing.
+
+  `docs/ontology/**` is excluded: that is this project's own vault, so a comment
+  naming a node address under it is citing example data, not pointing at
+  documentation — 5 of the first 10 hits were exactly that. The check fails on a
+  zero count as well as on a missing file, because a scan that sees nothing is
+  indistinguishable from a clean repo.
+
+  ⚠️ The two gates carve out **different** things, and that is deliberate:
+  `docs:links` has no vault exclusion, so it still catches a *document* citing a
+  vault path that does not exist. It caught this very paragraph's first draft.
+
 - **`docs:links` — referential integrity.** Repo-relative markdown links plus
   repo-anchored `.md` paths cited in prose. Fenced code blocks and inline code are
   skipped (examples are not claims). Root-absolute links resolve as docs-vault

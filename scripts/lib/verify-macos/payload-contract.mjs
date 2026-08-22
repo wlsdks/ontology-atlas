@@ -94,11 +94,12 @@ export function validateWebviewVerifyPayload(payload, {
   }
   const webviewUrl = new URL(payload.href);
   const webviewPath = webviewUrl.pathname;
-  // 지도 재구성 엔진 (docs/TOPOLOGY-MAP-REBUILD.md) — Sigma/skeleton 계약
-  // 대신 map-canvas 계약을 검증한다. 함수 전역에서 게이트로 쓰인다.
+  // Map rebuild engine (docs/archive/TOPOLOGY-MAP-REBUILD.md) — validates the
+  // map-canvas contract instead of the Sigma/skeleton one. Used as a gate
+  // throughout this function.
   const topologyMapEngine = payload?.markers?.topologyMapEngine ?? "";
-  // "canvas" = 구 map-canvas 엔진, "v2" = topology-map-v2 (현행 기본 지도).
-  // 둘 다 Sigma/skeleton 계약 대신 canvas 계약을 탄다.
+  // "canvas" = the old map-canvas engine, "v2" = topology-map-v2 (today's default
+  // map). Both take the canvas contract rather than Sigma/skeleton.
   const topologyMapCanvasActive =
     topologyMapEngine === "canvas" || topologyMapEngine === "v2";
   const topologyMapV2Active = topologyMapEngine === "v2";
@@ -124,7 +125,7 @@ export function validateWebviewVerifyPayload(payload, {
       expectedUrl.searchParams.get("p"),
     );
     const canvasV2RelationOwnsTransientRoute =
-      false && // 은퇴: 선택 관계 검증(2026-08-11) — 프로브가 카드 시절 DOM 을 기다렸다
+      false && // Retired 2026-08-11: the selected-relation check waited on card-era DOM
       topologyMapV2Active &&
       payload.markers.topologySelectedRelationVerifySelected === true &&
       webviewPath === expectedUrl.pathname &&
@@ -135,8 +136,9 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView reported route ${actualRoute}, expected ${expectedRoute}`;
     }
   }
-  // 라우트 판정 **뒤**에 둔다 — 화면이 엉뚱한 라우트에 있으면 그 사실이 먼저
-  // 보고돼야 한다. 순서를 뒤집으면 "설정 시트를 못 열었다" 가 원인처럼 읽힌다.
+  // Placed **after** the route verdict: if the screen is on the wrong route, that
+  // fact must be reported first. Reversed, "could not open the settings sheet"
+  // reads as the cause.
   if (requireAiSettings) {
     const aiSettingsError = validateAiSettingsMarkers(payload.markers, {
       expectedBaseUrl: expectedAiSettingsBaseUrl,
@@ -903,13 +905,16 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView Add Concept composer top token was ${payload.markers.topologyCreateNodePanelTopToken || "missing"}`;
     }
     /*
-     * ⚠️ **이름을 못박지 않는다** (2026-08-11). 여기는 `--topology-blocking-composer-width`
-     * 하나만 통과시켰는데, 제품은 **의도해서** 캐노니컬 대화상자 폭(`--dialog-w-md`)으로
-     * 옮겼다(`HomePage.tsx`: *"composer-width 대신 캐노니컬 --dialog-w-md(560px) 를 직접"*).
-     * 그래서 이 검증은 규격이 좋아진 날부터 반드시 실패했다 — `design-gates.md` 가
-     * 경고하는 그 모양이고, 그런 게이트는 다음 사람이 **규격 쪽을 되돌리게** 만든다.
+     * ⚠️ **Do not pin the token name** (2026-08-11). This used to accept only
+     * `--topology-blocking-composer-width`, while the product **deliberately** moved
+     * to the canonical dialog width (`--dialog-w-md`) — `HomePage.tsx`: *"composer-width
+     * 대신 캐노니컬 --dialog-w-md(560px) 를 직접"* (use the canonical --dialog-w-md
+     * (560px) directly instead of composer-width). So this check was guaranteed to
+     * fail from the day the spec improved — exactly the shape `design-gates.md` warns
+     * about, and such a gate makes the next person **revert the spec**.
      *
-     * 잠글 성질은 「어느 이름인가」가 아니라 **「폭이 토큰에서 오는가」**다.
+     * The property to lock is not "which name" but **"does the width come from a
+     * token"**.
      */
     const widthToken = payload.markers.topologyCreateNodePanelWidthToken || "";
     if (!widthToken.startsWith("--")) {
@@ -1056,11 +1061,11 @@ export function validateWebviewVerifyPayload(payload, {
     webviewUrl.searchParams.get("mode") !== "path"
   ) {
     const selectedFocusNoopContextVisible =
-      false && // 은퇴(2026-08-11)
+      false && // Retired 2026-08-11
       payload.markers.topologyCameraMotionTrigger === "selected-focus-already-safe" &&
       payload.markers.topologyCameraMotionState === "already-safe";
     const selectedFocusZoomContextVisible =
-      false && // 은퇴(2026-08-11)
+      false && // Retired 2026-08-11
       payload.markers.topologySelectedFocusContextRailZoomActive === true;
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
@@ -1963,8 +1968,9 @@ export function validateWebviewVerifyPayload(payload, {
     if (!topologyMapCanvasActive && payload.markers.topologySigmaReady === false) {
       return "WebView reported Relief before the Sigma renderer was ready";
     }
-    // v2 캔버스의 클릭-취소 임계는 `--topology-v2-hysteresis-px` = 7 (B2+
-    // 프로토타입 승인값) — 구 Relief 의 12px 하한은 v2 에는 사전 부패다.
+    // The v2 canvas click-cancel threshold is `--topology-v2-hysteresis-px` = 7
+    // (the value approved on the B2+ prototype) — the old Relief floor of 12px is
+    // stale for v2.
     const stagePanFloor = topologyMapV2Active ? 6 : 12;
     if (!(Number(payload.markers.topologyStagePanClickCancelPx) >= stagePanFloor)) {
       return `WebView reported an over-sensitive stage pan threshold (${payload.markers.topologyStagePanClickCancelPx ?? "missing"}px, floor ${stagePanFloor}px)`;
@@ -1982,13 +1988,14 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView reported no Sigma canvas (${payload.markers.topologySigmaCanvasCount ?? "unknown"} canvas element(s))`;
     }
-    // mode=graph (옵시디언식 살아있는 그래프) 는 skeleton 없이 그리는 것이
-    // 계약 — 골격 카드 검사를 건너뛴다. Sigma 캔버스/뷰포트 검사는 그대로.
+    // mode=graph (the Obsidian-style live graph) contractually draws without a
+    // skeleton, so the skeleton-card check is skipped. Sigma canvas and viewport
+    // checks still apply.
     const topologyGraphModeActive =
       webviewUrl.searchParams.get("mode") === "graph";
     if (topologyMapEngine === "canvas") {
-      // 카드 수는 구 map-canvas(DOM 카드) 전용 — v2 는 순수 캔버스 드로잉이라
-      // DOM 카드가 0 인 것이 정상이다.
+      // Card count applies only to the old map-canvas (DOM cards) — v2 draws purely
+      // on canvas, so 0 DOM cards is correct.
       if (!(Number(payload.markers.topologyMapCanvasCardCount) >= 8)) {
         return `WebView map canvas rendered too few cards (${payload.markers.topologyMapCanvasCardCount ?? "unknown"})`;
       }
@@ -2345,7 +2352,7 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologyAnalysisPanelSelectedContext !== true &&
       payload.markers.topologyAnalysisPanelSelectedFocusRail !== true;
     if (
-      // v2 크롬은 분석 패널(W3)을 INDEX 로 대체했다 — 은퇴 표면 게이트 제외.
+      // v2 chrome replaced the analysis panel (W3) with INDEX — excluded from the retired-surface gate.
       !topologyMapV2Active &&
       Object.hasOwn(payload.markers, "topologyAnalysisPanelVisible") &&
       !selectedRelationContextVisible &&

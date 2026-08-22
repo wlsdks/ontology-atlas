@@ -42,8 +42,8 @@ describe('useVaultCreateFlow', () => {
     await waitFor(() => {
       expect(vault.scaffoldOntology).toHaveBeenCalledTimes(1);
     });
-    // 흐름 점검 2026-07-26 D2 — 무인자 호출이 기본 'en' 으로 떨어져, 한국어
-    // 화면에서 만든 볼트가 영어 본문으로 시드되던 회귀.
+    // Walkthrough 2026-07-26 — an argument-less call fell back to 'en', so a vault created from a
+    // Korean screen was seeded with English bodies.
     expect(vault.scaffoldOntology).toHaveBeenCalledWith('ko');
   });
 

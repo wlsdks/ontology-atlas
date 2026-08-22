@@ -5,21 +5,23 @@ import { cn } from "@/shared/lib/cn";
 import { EGO_BEARINGS, type ConceptEgo, type EgoBearing } from "../model/build-concept-ego";
 
 /**
- * 한 개념과 **바로 옆 이웃**의 작은 그림. 지도가 아니라 조회용 미리보기다.
+ * One concept and its **immediate neighbours** — a read-only preview, not the map.
  *
- * 지도와 **같은 실루엣**을 쓴다 — 육각=프로젝트 · 둥근사각=도메인 · 원=역량 ·
- * 사각=요소. 색이 아니라 형태가 종류를 나른다(헌장: Kind = shape, not color).
- * 선은 두 갈래: 실선 = 담음/속함, 점선 = 기댐/쓰임.
+ * It reuses the map's **silhouettes**: hexagon = project · rounded square =
+ * domain · circle = capability · square = element. Shape carries kind, colour
+ * does not (charter: Kind = shape, not color). Two line styles: solid =
+ * contains/belongs to, dashed = depends on/used by.
  *
- * 여기서 SVG 를 직접 그리는 이유는 `TopologyV2KindGlyph` 가 **DOM 글리프**라
- * 좌표계 안에 놓을 수 없기 때문이다. 실루엣의 정의는 그 게이트웨이가 계속
- * 진실원이고, 이 파일은 같은 매핑을 좌표계로 옮긴 것뿐이다 —
- * `node-kind-shape-parity` 계약이 지키는 그 매핑에서 벗어나면 안 된다.
+ * The SVG is drawn by hand here because `TopologyV2KindGlyph` is a **DOM glyph**
+ * and cannot be placed inside a coordinate system. That facade stays the source
+ * of truth for the silhouettes; this file only ports the same mapping into
+ * coordinates, and must not diverge from what the `node-kind-shape-parity`
+ * contract holds.
  */
 
-/** 부채 하나에 보이는 이웃 상한. 넘으면 「외 N」 알약. */
+/** Neighbours visible in one fan. Beyond it, an "and N more" pill. */
 const FAN_CAP = 7;
-/** 이웃이 많을수록 라벨이 붙는다 — 자르는 길이를 밀도에 맞춘다. */
+/** More neighbours means more labels — truncate in step with density. */
 function labelCap(slots: number): number {
   if (slots > 12) return 9;
   if (slots > 8) return 12;
@@ -39,8 +41,8 @@ type Geometry = {
 };
 
 /**
- * 기하는 **토큰이 정한다**(`--git-ego-*`). 컴포넌트가 숫자를 들고 있으면 그
- * 값이 어디서 왔는지 다음 사람이 못 찾는다.
+ * The geometry is **decided by tokens** (`--git-ego-*`). Numbers held inside the
+ * component leave the next person unable to find where the value came from.
  */
 function readGeometry(el: Element | null): Geometry {
   const read = (name: string, fallback: number) => {
@@ -73,7 +75,7 @@ function radiusOf(map: Record<string, number>, kind: string): number {
   return map[kind] ?? map.element;
 }
 
-/** 지도와 같은 매핑. `document` 등 지도에 없는 kind 는 요소로 접는다. */
+/** Same mapping as the map. Kinds the map has no shape for (`document`) fold into element. */
 function NodeShape({
   kind,
   x,
@@ -132,7 +134,7 @@ export function ConceptEgoGraph({
   className,
 }: {
   ego: ConceptEgo;
-  /** 방위 이름 — i18n 은 호출부가 진다(위젯은 문구를 만들지 않는다). */
+  /** Bearing names — i18n belongs to the caller; the widget never composes copy. */
   bearingLabel: (bearing: EgoBearing) => string;
   moreLabel: (count: number) => string;
   onSelect?: (nodeId: string) => void;
@@ -160,10 +162,11 @@ export function ConceptEgoGraph({
   const slotTotal = groups.reduce((sum, g) => sum + g.slots, 0);
   const maxSlots = Math.max(...groups.map((g) => g.slots), 1);
   /*
-   * 방위를 고정하면 이웃이 한 종류뿐인 개념에서 화면 3/4 가 빈다(실측: 담고
-   * 있는 것 17 · 나머지 0). 그래서 **몫으로 나눈다** — 각 관계가 자기 개수에
-   * 비례한 부채를 갖고 그 합이 원 전체다. 순서는 고정이라 개념을 바꿔도
-   * 방향이 안 흔들린다.
+   * Fixed bearings leave three quarters of the frame empty for a concept whose
+   * neighbours are all one kind (measured: contains 17, everything else 0). So
+   * the circle is **divided by share** — each relation gets a fan proportional
+   * to its own count and the fans sum to the full circle. The order is fixed,
+   * so switching concepts never shifts a direction.
    */
   const gap = groups.length > 1 ? 10 : 0;
   const usable = 360 - gap * groups.length;
@@ -183,10 +186,11 @@ export function ConceptEgoGraph({
     const span = (group.slots / slotTotal) * usable;
     const cap = labelCap(group.slots);
     /*
-     * 부채가 **원 전체**를 차지할 때(관계가 한 종류뿐)는 양 끝이 같은 각도다.
-     * `i/(slots-1)` 로 나누면 첫 슬롯과 끝 슬롯이 정확히 겹쳐 이웃 하나가
-     * 다른 하나 밑에 숨는다 — 화면은 「담고 있는 것 3」이라 써 놓고 둘만
-     * 그렸다(실측 2026-08-02). 닫힌 원에서는 `slots` 로 나눈다.
+     * When a fan spans the **whole circle** (only one relation kind), its two
+     * ends are the same angle. Dividing by `i/(slots-1)` puts the first and last
+     * slot at exactly the same place, so one neighbour hides under another — the
+     * screen said "contains 3" and drew two (measured 2026-08-02). A closed
+     * circle divides by `slots`.
      */
     const closed = groups.length === 1;
     for (let i = 0; i < group.slots; i += 1) {
@@ -242,9 +246,10 @@ export function ConceptEgoGraph({
       const r = radiusOf(geometry.neighbor, neighbor.kind);
       const cos = Math.cos(angle);
       /*
-       * 세로에 가까운 자리에서 라벨을 노드 위/아래(가운데 정렬)에 두면 이웃한
-       * 두 슬롯의 라벨이 같은 높이에 쌓여 겹친다(실측). 거의 수직인 자리만
-       * 가운데로 두고 나머지는 좌우로 뻗게 해 서로 비켜 가게 한다.
+       * Near-vertical slots whose labels sit above or below the node (centre
+       * aligned) stack two adjacent labels at the same height and overlap
+       * (measured). Only the almost-vertical slots stay centred; the rest reach
+       * left or right so they step around each other.
        */
       const right = cos > 0.04;
       const left = cos < -0.04;
@@ -286,7 +291,8 @@ export function ConceptEgoGraph({
         </g>,
       );
     }
-    // 방위 이름은 그림 밖 읽기표가 진다 — 여기 두면 상자를 넓혀 그림이 줄어든다.
+    // Bearing names belong to the reading table outside the drawing — placing
+    // them here widens the box, and a wider box shrinks the drawing.
     cursor += span + gap;
   }
 

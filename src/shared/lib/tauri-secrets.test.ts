@@ -33,8 +33,8 @@ describe('tauri secrets bridge', () => {
   });
 
   it('degrades honestly on the web: every wrapper returns null with zero invokes', async () => {
-    // 브라우저에서는 키를 받을 곳 자체가 없다 — 조용히 실패하는 대신 null 로
-    // 강등해 호출부가 입력 필드를 렌더하지 않게 한다.
+    // In a browser there is nowhere to put a key at all. Degrading to null rather than
+    // failing quietly is what stops the caller from rendering an input field.
     expect(await secretStatus('anthropic')).toBeNull();
     expect(await secretSet('anthropic', 'sk-ant-test')).toBeNull();
     expect(await secretClear('anthropic')).toBeNull();
@@ -60,7 +60,7 @@ describe('tauri secrets bridge', () => {
     });
 
     await secretStatus('anthropic');
-    // 조회 인자에는 키가 없다 — 돌려받을 커맨드 자체가 없다.
+    // Lookup arguments never carry the key — no command returns one.
     expect(tauriApiMock.invoke).toHaveBeenLastCalledWith('secret_status', {
       provider: 'anthropic',
     });
@@ -81,16 +81,16 @@ describe('tauri secrets bridge', () => {
     expect(tauriApiMock.invoke).toHaveBeenCalledWith('secret_verify', {
       provider: 'openai',
       vaultPath: '/vault',
-      // 명명 벤더는 주소를 **못 바꾼다** — null 로 명시해 보내는 것이
-      // 계약이다. Rust 는 여기 값이 오면 거절한다(키가 사용자가 적은
-      // 호스트로 나가는 길을 남기지 않는다).
+      // A named vendor **cannot** override the address; sending an explicit null is the
+      // contract. Rust rejects any value here, so there is no path for a key to leave for a
+      // host the user typed.
       baseUrl: null,
     });
   });
 
   it('키 보유 상태가 바뀌면 한 번 알린다 — 듣는 표면이 새로고침 없이 살아나게', async () => {
-    // 키를 넣는 곳(설정 시트)과 그 키로 살아나는 곳(지도 오른쪽 도크)이 다른
-    // 표면이라, 저장·삭제 순간을 알리지 않으면 사용자가 F5 를 눌러야 한다.
+    // The key is entered on one surface (the settings sheet) and comes alive on another (the
+    // map's right dock), so without a signal on save and delete the user has to reload.
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue({
       provider: 'anthropic',
@@ -104,7 +104,7 @@ describe('tauri secrets bridge', () => {
     expect(changes).toHaveBeenCalledTimes(1);
     await secretClear('anthropic');
     expect(changes).toHaveBeenCalledTimes(2);
-    // 조회는 상태를 바꾸지 않으므로 알리지 않는다.
+    // A lookup changes no state, so it does not notify.
     await secretStatus('anthropic');
     expect(changes).toHaveBeenCalledTimes(2);
 

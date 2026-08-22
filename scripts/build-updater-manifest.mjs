@@ -1,34 +1,32 @@
 #!/usr/bin/env node
 /**
- * 설치된 앱이 갱신을 찾는 단 하나의 파일, `latest.json` 을 만든다.
+ * Builds `latest.json`, the single file an installed app checks for updates.
  *
- * 앱은 `tauri.conf.json` 의 endpoint 하나만 안다:
+ * The app knows only the one endpoint in `tauri.conf.json`:
  *
  *   https://github.com/wlsdks/ontology-atlas/releases/latest/download/latest.json
  *
- * `releases/latest` 는 **프리릴리스를 가리키지 않는다.** 그게 이 설계의 핵심
- * 안전장치다 — RC 를 내도 정식 사용자에게는 내려가지 않고, 찾아온 사람만 받는다.
- * 채널 분리를 위해 코드를 더 쓸 필요가 없다.
+ * `releases/latest` **never points at a prerelease.** That is this design's central
+ * safety device — shipping an RC does not push it to release users; only people who
+ * go looking receive it. No extra code is needed to separate the channels.
  *
- * ## 서명이 두 겹인 이유
+ * **Why two layers of signature.** The Apple certificate attests who built it; the
+ * minisign key attests that this update package is ours. Those are different
+ * questions. The app swaps the bundle only after verifying the `.sig` against
+ * `pubkey`, so a package not signed with our key installs by no route at all — even
+ * if the releases page is compromised.
  *
- * Apple 인증서는 "누가 만들었나" 를 보증하고, minisign 키는 "이 갱신 패키지가
- * 우리 것인가" 를 보증한다. 둘은 다른 질문이다. 앱은 `pubkey` 로 `.sig` 를
- * 검증한 뒤에만 번들을 교체하므로, 우리 키로 서명되지 않은 패키지는 어떤
- * 경로로 와도 설치되지 않는다 — 릴리스 페이지가 뚫려도 마찬가지다.
- *
- * ## 왜 스크립트인가
- *
- * `.sig` 는 base64 한 줄이고 플랫폼 키(`darwin-aarch64`)는 오타가 나도 조용히
- * 실패한다 — 앱이 "갱신 없음" 이라고 말할 뿐이라, 손으로 만들면 틀린 줄도
- * 모른다. 여기서 만들고 여기서 검사한다.
+ * **Why a script.** The `.sig` is one base64 line and the platform key
+ * (`darwin-aarch64`) fails silently on a typo — the app just says "no update", so a
+ * hand-built manifest gives no sign of being wrong. It is built here and checked
+ * here.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-/** Tauri 가 macOS 에 쓰는 플랫폼 키. Rust 타깃 이름이지 우리 arch 표기가 아니다. */
+/** The platform keys Tauri uses on macOS. These are Rust target names, not our arch notation. */
 export const PLATFORM_BY_ARCH = {
   aarch64: "darwin-aarch64",
   x64: "darwin-x86_64",
@@ -42,17 +40,18 @@ function fail(message) {
 }
 
 /**
- * 아치별 아티팩트 폴더를 찾는다.
+ * Finds the per-arch artifact folder.
  *
- * CI 의 폴더 이름은 아치가 아니라 **아티팩트 이름**이다
- * (`ontology-atlas-macos-aarch64`), `merge-multiple: false` 가 그 이름을 그대로
- * 폴더로 만들기 때문이다. 처음엔 `<dir>/aarch64` 를 찾도록 썼고, 그래서 실제
- * 릴리스에서 "업데이터 아티팩트가 없는 아키텍처: aarch64, x64" 로 멈췄다
- * (2026-07-27 v1.0.0-rc.1). 빌드는 정상이었고 찾는 자리가 틀렸다.
+ * In CI the folder name is the **artifact name**, not the arch
+ * (`ontology-atlas-macos-aarch64`), because `merge-multiple: false` turns that name
+ * straight into a folder. The first version looked for `<dir>/aarch64` and stopped a
+ * real release with "architectures with no updater artifact: aarch64, x64"
+ * (v1.0.0-rc.1, 2026-07-27). The build was fine; the place being searched was wrong.
  *
- * 이름을 못박지 않고 **아치로 끝나는 폴더**를 찾는다 — 아티팩트 이름이 바뀌어도
- * 견딘다. 정확히 하나여야 한다: 여럿이면 어느 것이 그 아치인지 알 수 없고,
- * 잘못 고르면 사용자가 다른 아키텍처의 앱을 받는다.
+ * Rather than pinning the name, it looks for **a folder ending in the arch**, which
+ * survives an artifact rename. There must be exactly one: with several there is no
+ * way to know which belongs to that arch, and choosing wrong ships users an app for
+ * a different architecture.
  */
 export function resolveArchDir(root, arch) {
   if (!fs.existsSync(root)) return null;
@@ -70,7 +69,7 @@ export function resolveArchDir(root, arch) {
   return matches.length === 1 ? path.join(root, matches[0]) : null;
 }
 
-/** 폴더 아래 모든 `.app.tar.gz` 를 깊이 상관없이 모은다. */
+/** Collects every `.app.tar.gz` under a folder, at any depth. */
 function collectArchives(dir) {
   const found = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -85,20 +84,22 @@ function collectArchives(dir) {
 }
 
 /**
- * 아치 폴더 **아래 어디서든** 업데이터 아티팩트를 찾는다.
+ * Finds the updater artifact **anywhere under** the arch folder.
  *
- * 깊이는 우리가 고른 적이 없다. `actions/upload-artifact` 는 경로를 여럿 받으면
- * 그들의 최소공통조상을 아티팩트 루트로 잡는데, `bundle/dmg/*` 와
- * `bundle/macos/*` 를 같이 올리던 동안 그 루트가 `bundle/` 이었다 — 아치 폴더
- * 바로 밑에는 `dmg/` 와 `macos/` 뿐이고 `.app.tar.gz` 는 한 겹 더 안에 있었다.
- * 그래서 v1.0.0-rc.1 이 "업데이터 아티팩트가 없는 아키텍처" 로 멈췄다.
+ * The depth was never our choice. Given several paths,
+ * `actions/upload-artifact` takes their lowest common ancestor as the artifact root,
+ * and while `bundle/dmg/*` and `bundle/macos/*` were uploaded together that root was
+ * `bundle/` — directly under the arch folder there were only `dmg/` and `macos/`,
+ * with `.app.tar.gz` one level deeper. That is what stopped v1.0.0-rc.1 with
+ * "architectures with no updater artifact".
  *
- * 지금은 업로드 전에 `scripts/stage-macos-release-assets.mjs` 가 한 폴더로 모아
- * 평평하게 못박는다. 그래도 찾는 쪽이 깊이에 기대지 않는 이유는, 규칙이 한쪽
- * 머릿속에만 있으면 다음에 또 어긋나기 때문이다.
+ * Today `scripts/stage-macos-release-assets.mjs` gathers everything into one flat
+ * folder before upload. The finder still avoids depending on depth, because a rule
+ * that lives in one person's head goes out of step again.
  *
- * 아카이브는 그 아치에 **정확히 하나**여야 한다 — 여럿이면 어느 것이 이 아치의
- * 것인지 알 수 없고, 잘못 고르면 사용자가 다른 아키텍처의 앱을 받는다.
+ * There must be **exactly one** archive for that arch — with several there is no way
+ * to know which is this arch's, and choosing wrong ships users an app for a
+ * different architecture.
  */
 export function findUpdaterArtifacts(dir) {
   if (!dir || !fs.existsSync(dir)) return null;
@@ -128,8 +129,8 @@ export function findUpdaterArtifacts(dir) {
 }
 
 /**
- * 매니페스트를 만든다. 다운로드 URL 은 **태그 고정**이다 — `latest` 로 두면
- * 다음 릴리스가 나오는 순간 이 매니페스트가 가리키는 파일이 바뀐다.
+ * Builds the manifest. The download URL is **pinned to the tag** — with `latest`,
+ * the file this manifest points at changes the moment the next release ships.
  */
 export function buildManifest({ version, pubDate, notes, repo, tag, platforms }) {
   const missing = REQUIRED_ARCHES.filter((arch) => !platforms[arch]);
@@ -178,8 +179,9 @@ function main() {
 
   const platforms = {};
   for (const arch of REQUIRED_ARCHES) {
-    // 폴더 이름은 아티팩트 이름(`ontology-atlas-macos-<arch>`)이다 — 아치로
-    // 끝나는 폴더를 찾는다. 평평하게 합치면 두 아치를 구분할 수 없다.
+    // The folder name is the artifact name (`ontology-atlas-macos-<arch>`), so look for
+    // a folder ending in the arch. Merging them flat makes the two arches
+    // indistinguishable.
     const found = findUpdaterArtifacts(resolveArchDir(options.dir, arch));
     if (!found) continue;
     platforms[arch] = {

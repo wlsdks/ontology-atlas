@@ -5,52 +5,58 @@ import koMessages from "../../messages/ko.json";
 import enMessages from "../../messages/en.json";
 
 /**
- * 진입 직후의 빈 화면을 막는 게이트 (2026-07-27, 감사 D1 · D2).
+ * Gate against a blank screen right after entry (2026-07-27, audit D1 and D2).
  *
- * 배경 — 이 앱의 전체 화면 라우트는 전부 `useSearchParams()` 를 쓰는 클라이언트
- * 뷰다. `output: 'export'` 는 그런 뷰를 프리렌더하지 못하고 **가장 가까운
- * Suspense fallback 을 대신 HTML 로 굽는다**. 그 fallback 이 `null` 이면 배포된
- * `index.html` 의 본문에는 아무것도 — `#main` 랜드마크조차 — 없다. 번들이
- * 내려와 하이드레이트할 때까지 사용자가 보는 것은 레일만 남은 검은 화면이고,
- * 그동안 "고장" 과 "빈 볼트" 와 "불러오는 중" 이 전부 같은 그림이다.
+ * Background: every full-screen route in this app is a client view using
+ * `useSearchParams()`. `output: 'export'` cannot prerender such a view and
+ * **bakes the nearest Suspense fallback into the HTML instead**. If that fallback
+ * is `null`, the deployed `index.html` body contains nothing — not even the
+ * `#main` landmark. Until the bundle downloads and hydrates, the user sees a black
+ * screen with only the rail, and during that time "broken", "empty vault", and
+ * "loading" all look identical.
  *
- * 실측(정적 export, 2026-07-27): CPU 6× 스로틀에서 공방·인사이트 모두 진입
- * 500ms 시점에 50/50 빈 화면, fast3G 를 겹치면 3s 시점에도 30/30 빈 화면.
- * 타이밍 결함이라 조용히 돌아온다 — 그래서 소스 게이트로 잠근다.
+ * Measured (static export, 2026-07-27): under 6× CPU throttling both the studio
+ * and insights were blank in 50/50 samples at 500ms after entry; adding fast3G
+ * left them blank in 30/30 samples even at 3s. A timing defect returns quietly, so
+ * it is locked with a source gate.
  *
- * 이 테스트가 잠그는 계약:
- *  1. `app/` · `src/` 어디에도 `<Suspense fallback={null}>` 이 없다. 라우트
- *     page.tsx 뿐 아니라 **뷰 안쪽 경계**까지 본다 — 안쪽 경계가 더 가까우면
- *     HTML 에 구워지는 것은 그쪽 fallback 이라, 라우트만 고치면 문서함처럼
- *     조용히 빈 채로 남는다(2026-07-27 실측).
- *  2. Suspense 를 쓰는 파일은 **승인된 공용 fallback** 만 쓴다
- *     (자리표시자를 화면마다 손으로 만들면 하나가 빠져도 아무도 모른다).
- *  3. 자리표시자 문구는 두 로케일 모두에 있다.
- *  4. 지도 진입 라우트(`/`, `/topology`)의 fallback 은 로딩 자막이 아니라 **내용**
- *     을 담는다. 이 두 라우트는 정적 export 에서 HTML 본문이 fallback 이 전부인데,
- *     그중 `/topology` 는 README·런치 자산이 가리키는 **데모 URL** 이다 —
- *     2026-07-27 실측에서 197KB 를 내려주고 사람이 읽을 수 있는 글자가 142자,
- *     그 핵심 문장이 "화면을 불러오는 중이에요" 였다. 링크 미리보기 카드와
- *     크롤러가 본 페이지 내용이 그게 전부였다는 뜻이다. 이 행이 그 회귀를 잠근다.
+ * What this test locks:
+ *  1. Nowhere in `app/` or `src/` is there a `<Suspense fallback={null}>`. It
+ *     covers not just route `page.tsx` files but **boundaries inside views** — if
+ *     an inner boundary is nearer, its fallback is what gets baked into the HTML,
+ *     so fixing only the route leaves surfaces such as the docs vault silently
+ *     blank (measured 2026-07-27).
+ *  2. Files using Suspense use **approved shared fallbacks** only (hand-made
+ *     placeholders per screen mean nobody notices when one is missing).
+ *  3. The placeholder copy exists in both locales.
+ *  4. The fallbacks for the entry routes (`/`, `/topology`) carry **content**, not
+ *     a loading caption. In a static export the HTML body of those two routes is
+ *     the fallback and nothing else, and `/topology` is the **demo URL** that the
+ *     README and launch assets point at — measured 2026-07-27, it served 197KB
+ *     containing 142 human-readable characters whose key sentence was "loading the
+ *     screen". That was the entire page content seen by link-preview cards and
+ *     crawlers. This row locks that regression.
  */
 
 const SCAN_DIRS = [join(process.cwd(), "app"), join(process.cwd(), "src")];
 
 /**
- * 승인된 공용 fallback 은 둘뿐이고, 둘의 일이 다르다.
+ * The approved shared fallbacks, each with a different job.
  *
- * - `RouteLoadingFallback` — 기본값. "이 화면은 아직 오는 중" 한 문장만 쓴다.
- * - `MapEntryFallback` — 지도 진입 라우트(`/topology`) 전용.
- * - `GatewayEntryFallback` — 루트 `/` 전용.
+ * - `RouteLoadingFallback` — the default. One sentence: this screen is still
+ *   coming.
+ * - `MapEntryFallback` — for the map entry route (`/topology`) only.
+ * - `GatewayEntryFallback` — for the root `/` only.
  *
- * **세 번째가 생긴 이유**(2026-07-30): `/` 가 지도에서 관문(얼굴)으로 바뀌었다
- * (원장: 「root-first-open」 뒤집기 구현). 두 자리는 "HTML 본문이 fallback 이
- * 전부" 라는 성질을 공유하지만 **말해야 할 내용이 다르다** — 하나는 지도를,
- * 하나는 제품의 얼굴을 설명한다. 하나로 합치면 대표 주소의 링크 미리보기가
- * 실제로 열리는 화면과 다른 말을 한다.
+ * **Why a third exists** (2026-07-30): `/` changed from the map to the gateway
+ * (the product's face) — the ledger's reversal of "root-first-open". Both places
+ * share the property that the HTML body is nothing but the fallback, but **what
+ * they must say differs**: one describes the map, the other the product's face.
+ * Merging them makes the link preview of the primary address say something other
+ * than what actually opens.
  *
- * 이 배열이 짧게 유지되는 것이 계약이다. 네 번째를 추가하려면 그 화면만의
- * 자리표시자가 왜 필요한지가 먼저 서야 한다.
+ * Keeping this array short is the contract. Adding a fourth requires first
+ * establishing why that screen needs its own placeholder.
  */
 const APPROVED_FALLBACKS = [
   "RouteLoadingFallback",
@@ -59,10 +65,12 @@ const APPROVED_FALLBACKS = [
 ] as const;
 
 /**
- * fallback 이 곧 페이지 내용인 자리 — [라우트, 그 자리가 써야 할 fallback].
+ * Places where the fallback *is* the page content — [route, the fallback that
+ * place must use].
  *
- * **짝이 중요하다.** 전에는 "둘 다 `MapEntryFallback`" 이었는데, `/` 가 얼굴이
- * 된 뒤에도 그 검사가 통과하면 게이트가 정확히 틀린 것을 지키게 된다.
+ * **The pairing matters.** It used to be "both use `MapEntryFallback`", and if
+ * that check still passed after `/` became the face, the gate would be guarding
+ * exactly the wrong thing.
  */
 const CONTENT_FALLBACK_ROUTES = [
   [join(process.cwd(), "app/[locale]/page.tsx"), "GatewayEntryFallback"],
@@ -123,7 +131,7 @@ describe("라우트 진입 빈 화면 게이트", () => {
     for (const [route, expected] of CONTENT_FALLBACK_ROUTES) {
       const source = readFileSync(route, "utf-8");
       expect(source, `${route} 가 ${expected} 를 안 쓴다`).toContain(expected);
-      // 짝이 아닌 쪽을 쓰면 그 주소가 다른 화면을 설명하게 된다.
+      // Using the other one makes that address describe a different screen.
       const other = expected === "MapEntryFallback" ? "GatewayEntryFallback" : "MapEntryFallback";
       expect(source, `${route} 가 ${other} 를 쓴다 — 그 주소의 화면이 아니다`).not.toContain(other);
     }
@@ -134,11 +142,12 @@ describe("라우트 진입 빈 화면 게이트", () => {
       join(process.cwd(), "src/shared/ui/gateway-entry-fallback.tsx"),
       "utf-8",
     );
-    // 얼굴이 말해야 하는 것: 무엇인지(헤드라인) + 갈 수 있는 두 곳.
-    // 2026-08-18 리메이크: 헤드라인 키가 `stageTitle` → `heroTitleLine1/2` 로
-    // 옮겨갔다(fallback 은 실제 화면과 같은 문장을 실어야 한다는 이 파일의
-    // 계약 그대로 — 옛 키는 카탈로그에서 사라졌는데 이 소스가 계속 불러서
-    // `/ko/` 가 MISSING_MESSAGE 를 찍었다).
+    // What the face must say: what it is (the headline) plus the two places to go.
+    // 2026-08-18 remake: the headline key moved from `stageTitle` to
+    // `heroTitleLine1/2` — following this file's own contract that the fallback
+    // carries the same sentences as the real screen (the old key vanished from the
+    // catalogue while this source kept requesting it, so `/ko/` printed
+    // MISSING_MESSAGE).
     expect(source).toContain("heroTitleLine1");
     expect(source).toContain("heroTitleLine2");
     expect(source).toContain("heroLead");
@@ -151,7 +160,7 @@ describe("라우트 진입 빈 화면 게이트", () => {
       join(process.cwd(), "src/shared/ui/map-entry-fallback.tsx"),
       "utf-8",
     );
-    // 헤드라인과 리드가 있어야 데모 URL 이 읽을 것 없는 페이지로 되돌아가지 않는다.
+    // A headline and a lede are what keep the demo URL from reverting to a page with nothing to read.
     for (const key of ["headline", "lede"]) {
       expect(source).toContain(`t('${key}')`);
     }
@@ -159,7 +168,7 @@ describe("라우트 진입 빈 화면 게이트", () => {
     for (const messages of [koMessages, enMessages]) {
       const mapEntry = (messages as { mapEntry: Record<string, string> })
         .mapEntry;
-      // 자막 한 줄(대략 40자)보다 확실히 긴 실제 문장이어야 한다.
+      // Must be a real sentence, clearly longer than a one-line caption (roughly 40 characters).
       expect(mapEntry.headline.trim().length).toBeGreaterThan(10);
       expect(mapEntry.lede.trim().length).toBeGreaterThan(40);
     }

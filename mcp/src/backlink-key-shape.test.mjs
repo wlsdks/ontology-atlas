@@ -1,27 +1,27 @@
-// 이름을 바꿀 때 **관계의 이유도 따라간다** — 그리고 게이트가 그걸 결함으로
-// 보지 않아야 한다.
+// When a name changes, **the relation's rationale follows it** — and the gate must
+// not treat that as a defect.
 //
-// ## 왜 (2026-08-17 실측)
-//
-// 이 저장소의 가장 넓은 도그푸드 게이트(`pnpm dogfood:verify`)가 빨간불이었다:
+// Why (measured 2026-08-17): this repository's broadest dogfood gate
+// (`pnpm dogfood:verify`) was red:
 //
 //   ✗ rename_concept dry-run response backlinkUpdates.updates[0].beforeKeys[1] before drift
 //
-// 재현해 보니 **동작은 맞았다**. `capabilities/mcp-server` 를 바꿀 때
-// `capabilities/acp-runtime` 의 이유가 이렇게 따라간다:
+// Reproducing it showed **the behaviour was correct**. Renaming
+// `capabilities/mcp-server` carries `capabilities/acp-runtime`'s rationale along:
 //
 //   before: { "capabilities/mcp-server":   "ACP 세션은 …" }
 //   after : { "capabilities/mcp-server-x": "ACP 세션은 …" }
 //
-// 틀린 것은 **게이트의 계약**이었다: `before`/`after` 가 문자열이거나 문자열
-// 배열이어야 한다고 못박아 두었는데, `relation_notes` 는 **맵**이다. 그래서
-// 맞는 동작에 빨간불이 켜졌다.
+// What was wrong was **the gate's contract**: it pinned `before`/`after` to a
+// string or an array of strings, while `relation_notes` is a **map**. So correct
+// behaviour lit up red.
 //
-// > **맞는 동작에 켜지는 게이트는, 꺼지는 게이트다.** 「못 잡는 게이트」와
-// > 방향만 반대이고 결과는 같다 — 아무도 안 본다.
+// > **A gate that fires on correct behaviour is a gate that gets switched off.**
+// > It is the mirror image of a gate that catches nothing, with the same outcome —
+// > nobody looks at it.
 //
-// 그래서 계약을 넓히되 **느슨하게는 안 한다**: 문자열 · 문자열 배열 ·
-// **납작한 문자열 맵**까지다. 중첩된 것은 여전히 거절한다.
+// So the contract is widened but **not loosened**: string, array of strings, and a
+// **flat string map**. Anything nested is still rejected.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';

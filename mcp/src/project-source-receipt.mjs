@@ -5,9 +5,9 @@ import {
   readVaultSidecarText,
   replaceVaultSidecarText,
 } from './vault-sidecar.mjs';
-// 낱말은 한 곳에서 선언한다 — 예전에는 이 목록이 여기와
-// `project-meaning-inventory.mjs` 에 두 벌 있었고, 한쪽만 고치면 다른 쪽이
-// 조용히 거절했다 (2026-08-17).
+// The vocabulary is declared in one place. This list used to exist twice, here
+// and in `project-meaning-inventory.mjs`, and editing one left the other quietly
+// rejecting (2026-08-17).
 import {
   PROJECT_SOURCE_ACTION_IDS as ACTION_IDS,
   PROJECT_SOURCE_GAP_IDS as GAP_IDS,

@@ -30,60 +30,50 @@ import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { useHydrated } from "@/shared/lib/use-hydrated";
 
 /**
- * perf/persistent-shell — 레일(AppNavRail)을 8개 페이지 각각의 개별 마운트
- * (rail-rollout, #377)에서 `app/[locale]/layout.tsx` 상주로 승격한 진짜 SPA
- * 셸. 이동 전/후 프로덕션 정적 서빙(:3156) 진단 결과: 클릭은 이미 Next.js
- * client-side RSC 전환(`__next.*.txt` payload, `window` 전역 생존 확인)이라
- * 풀 문서 리로드는 아니었다 — 그런데도 페이지 트리가 통째로 unmount/remount
- * 되면서 레일 DOM도 매번 새로 생성돼(주입한 data attribute 가 이동 후
- * 사라짐) "깜빡이며 로딩되는" 체감을 만들었다. 레일을 라우트 트리 바깥,
- * layout 레벨로 옮기면 콘텐츠 영역만 교체되고 레일은 리액트 identity 를
- * 유지한다.
+ * The persistent SPA shell. The nav rail lives here, in
+ * `app/[locale]/layout.tsx`, rather than being mounted by each of the eight
+ * pages. Navigation was already a client-side RSC transition, but unmounting and
+ * remounting the whole page tree rebuilt the rail's DOM every time (injected data
+ * attributes vanished after a move), which read as "flickering and reloading".
+ * At layout level only the content area swaps and the rail keeps its React identity.
  *
- * **높이 계약 (2026-07-26 개정 — 종전 "높이는 강제하지 않는다" 는 폐기).**
- * 예전에는 각 페이지가 최상위 wrapper 로 뷰포트 높이를 직접 주장했고
- * (`h-screen` / `min-h-screen`), 셸은 투명한 pass-through 였다. 그 모델은
- * 셸이 본문 아래에 무엇을 더 세우는 순간 깨진다 — 페이지가 100vh 를
- * 주장하면 셸 칼럼이 `100vh + 그것` 이 되어 아래 표면이 화면 밖으로
- * 밀린다(실측: 보이는 픽셀 0).
+ * **Height contract (revised 2026-07-26 — the earlier "the shell does not force
+ * height" is retired).** Pages used to claim viewport height on their own root
+ * (`h-screen` / `min-h-screen`) while the shell was a transparent pass-through.
+ * That model breaks the moment the shell puts anything below the body: a page
+ * claiming 100vh makes the shell column `100vh + that`, pushing the lower surface
+ * off screen (measured: 0 visible pixels).
  *
- * 그래서 **뷰포트 높이는 셸이 소유한다**: 셸이 `h-dvh overflow-hidden` 칼럼을
- * 잡고 본문 슬롯만 스크롤한다. 페이지 루트는 `h-full` / `min-h-full` 로
- * 슬롯을 채우기만 하면 되고, 셸이 아래에 무엇을 두는지 알 필요가 없다 —
- * 페이지가 기억해야 하는 구조는 #65 계열의 drift 를 부른다.
- * 새 페이지에서 `h-screen`/`min-h-screen` 은 결함이다.
- *
- * ⚠️ `AgentConnectLauncherProvider` 는 **2026-08-21 에 사라졌다**(원장 90).
- * 그것은 「어느 페이지에서든 연결 시트를 열려는 의도」를 지형도까지 실어 나르는
- * 장치였는데, 붙이는 일이 목적지(`/agents/`)가 되면서 그 의도가 필요 없어졌다 —
- * 이제는 그냥 그 주소로 간다.
+ * So **the shell owns viewport height**: it holds an `h-dvh overflow-hidden`
+ * column and only the body slot scrolls. A page root just fills the slot with
+ * `h-full` / `min-h-full` and never needs to know what the shell puts below it —
+ * structure a page has to remember is what causes drift. `h-screen` /
+ * `min-h-screen` on a new page is a defect.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   useGuideOverride();
   /*
-   * **앱 안의 밖으로 나가는 링크를 여기 한 곳에서 살린다** (2026-08-20).
+   * **Every outbound link in the app is revived from this one place** (2026-08-20).
    *
-   * Tauri WebView 는 `target="_blank"` 를 열지 않는다. 그래서 「↗ 설치 방법」
-   * 같은 링크가 **아무 소리 없이** 죽어 있었다 — 도구가 하나도 없는 사람에게
-   * 우리가 준 유일한 다음 걸음이 그것이었는데.
+   * A Tauri WebView does not open `target="_blank"`, so links like "↗ install
+   * instructions" were dead **with no sign of it** — and that was the only next
+   * step we offered someone with no tooling at all.
    *
-   * 링크마다 고치지 않는 이유: 밖으로 나가는 링크는 10개 파일에 흩어져 있고,
-   * 하나씩 고치면 열한 번째를 빠뜨린다. 셸에서 한 번 가로채면 새로 만드는
-   * 링크도 저절로 덮인다. 웹에서는 붙지도 않는다(브라우저가 이미 연다).
+   * Not fixed per link: outbound links are spread across 10 files, and fixing them
+   * one by one means missing the eleventh. Intercepting once in the shell covers
+   * links added later too. On the web it does not attach at all (the browser
+   * already opens them).
    */
   useEffect(() => installExternalLinkOpener(), []);
   return (
     <NavRailShellProvider>
-      {/* 2026-07-25 — 기록 모달 런처 제거. 목적지(`/git/`)가 lg+ 레일과
-          `<lg` 크롬 타일 양쪽에서 같은 표면을 담당하므로 셸에 상주하는 모달이
-          더는 필요 없다(런처·패널 호스트·구 레일 타일 전부 도달 불가였다). */}
       <GuideReplayProvider>
           {/*
-            갱신 상태 기계는 **여기 한 벌**이다 (2026-08-20). 소비처가 둘이
-            됐다 — 우하단 토스트와 설정의 「업데이트 확인」. 각자 훅을 부르면
-            상태 기계가 둘이 되어 설정과 토스트가 서로 다른 말을 하고, 하루
-            한 번 자동 확인이 두 번 돈다. 설정 시트는 레일 안에 있으므로
-            이 provider 는 레일보다 바깥이어야 한다.
+            The update state machine lives **here, once** (2026-08-20). It has two
+            consumers — the bottom-right toast and "check for updates" in settings.
+            If each called the hook there would be two state machines, settings and
+            the toast would disagree, and the once-a-day auto check would run twice.
+            The settings sheet is inside the rail, so this provider must sit outside it.
           */}
           <AppUpdateProvider>
             <RouteFocusManager />
@@ -95,16 +85,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 /**
- * `?guides=off|reset` 를 **자식이 렌더되기 전에** 적용한다 (감사 세션용).
+ * Applies `?guides=off|reset` **before children render** (for audit sessions).
  *
- * lazy state 초기화인 이유: 안내 표면들은 자기 state 초기화/effect 에서
- * localStorage 를 읽는데, React 는 부모 렌더 → 자식 렌더 → 자식 effect →
- * 부모 effect 순으로 돈다. 그래서 여기서 `useEffect` 를 쓰면 **이미 늦어**
- * 안내가 한 프레임 떴다가 사라지고, 그 한 프레임이 정확히 모션 감사가 재는
- * 프레임이다. 초기화 함수는 부모 **렌더 중**에 돌아 자식보다 먼저다.
+ * Lazy state initialization rather than an effect: guide surfaces read
+ * localStorage in their own state initializers and effects, and React runs parent
+ * render → child render → child effects → parent effects. A `useEffect` here is
+ * **already too late** — the guide appears for one frame and disappears, and that
+ * frame is exactly what a motion audit measures. An initializer runs during the
+ * parent's *render*, ahead of the children.
  *
- * 부수효과를 렌더에서 내는 것은 일반적으로 피해야 하지만, 이 쓰기는
- * 멱등이고(같은 키에 같은 값) StrictMode 이중 렌더에서도 결과가 같다.
+ * Side effects during render are normally avoided, but this write is idempotent
+ * (same key, same value) and gives the same result under StrictMode double render.
  */
 function useGuideOverride(): void {
   useState(() => {
@@ -114,21 +105,21 @@ function useGuideOverride(): void {
 }
 
 /**
- * 셸 본문 — 레일 + 스크롤되는 본문 슬롯 + 목적지 안내.
+ * The shell body — rail, scrolling body slot, and destination guides.
  *
- * 하단에 앱 내장 터미널 도크가 살던 자리다. 2026-07-26 소유자 결정으로
- * 걷어냈다 — 에이전트를 돌리는 사람은 자기 터미널을 켜고, 앱이 내주던
- * 유일한 이점(같은 폴더에서 지도 옆에 뜬다)은 볼트 워처가 프로세스 위치와
- * 무관하게 이미 주고 있었다. 셸이 `h-dvh` 칼럼을 소유하는 계약은 그대로
- * 남는다 — 페이지들이 이미 그 위에 서 있다.
+ * The in-app terminal dock used to live at the bottom; the owner removed it on
+ * 2026-07-26, since anyone running an agent opens their own terminal and the one
+ * advantage the app offered (appearing beside the map in the same folder) was
+ * already provided by the vault watcher regardless of where the process runs.
  */
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const surface = resolveActiveNavDestination(pathname);
 
-  // 목적지 안내를 띄울 화면. 지도는 자기 8단계 여정을 직접 소유하므로 제외하고,
-  // 프로젝트는 **목록에서만** 띄운다 — `/project/<slug>` 상세도 레일에서는 같은
-  // 목적지로 켜지지만 안내 문구("카드로 서요")가 가리키는 화면이 아니다.
+  // Which screens get a destination guide. The map is excluded because it owns its
+  // own eight-step journey, and projects gets one **only on the list** — the rail
+  // lights the same destination for `/project/<slug>`, but the guide's copy
+  // ("they stand as cards") does not describe that screen.
   const guideDestination =
     !surface || surface === "map"
       ? null
@@ -137,41 +128,42 @@ function ShellColumn({ children }: { children: ReactNode }) {
         : surface;
 
   return (
-    // 뷰포트 소유권은 **셸**이 갖는다. 토큰(`--app-viewport-h`)을 만들어 **각
-    // 페이지가 쓰도록** 하는 방법도 있었지만, 그건 "페이지가 기억해야 하는
-    // 구조" 라 #65(레일 유틸 티어가 화면마다 1/2/3 개였던 결함)와 같은 drift 를
-    // 부른다. 셸이 `h-dvh` 를 잡고 본문을 스크롤 영역으로 가두면 어떤 페이지도
-    // 아무것도 몰라도 된다.
+    // **The shell owns the viewport.** The alternative — a `--app-viewport-h` token
+    // for each page to consume — was rejected: that is structure a page has to
+    // remember, and it invites the same drift that left the rail's utility tier at
+    // 1/2/3 tiles depending on the screen. With the shell holding `h-dvh` and
+    // confining the body to a scroll area, no page has to know anything.
     //
-    // `relative` 는 그 소유권의 나머지 절반이다 (2026-08-08): 셸이 `static` 이면
-    // positioned 조상이 없는 `absolute` 원소(대표적으로 `sr-only`)의 위치 기준이
-    // **뷰포트**가 되고, `overflow-hidden` 은 자기 containing block 이 아닌
-    // 원소를 자르지 못하므로 그 원소가 **문서 스크롤 범위를 늘린다** — 관문에서
-    // 펼침 콘텐츠 속 sr-only 둘이 문서를 1108px 늘려, 끝까지 스크롤하면 빈
-    // 화면이 나왔다(600×900 실측). 게이트: document-scroll-lock.spec.ts.
+    // `relative` is the other half of that ownership (2026-08-08): with a `static`
+    // shell, an `absolute` element with no positioned ancestor (`sr-only` above all)
+    // positions against **the viewport**, and `overflow-hidden` cannot clip an
+    // element whose containing block it is not — so that element **extends the
+    // document scroll range**. Two `sr-only` elements inside expanded content on the
+    // gateway stretched the document by 1108px, so scrolling to the end showed a
+    // blank screen (measured at 600×900). Gate: document-scroll-lock.spec.ts.
     <div className="relative flex h-dvh w-full flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1">
         <AppNavRailSlot />
-        {/* 본문 슬롯은 **스크롤 컨테이너**다 — 그러니 자기 자식을 압축하면 안 된다.
-            아래 자식 변형이 그 계약이다. 페이지 루트는 슬롯을 채우려고
-            `min-h-full` 을 쓰는데, 그 명시적 min-height 는 flex 아이템의 자동
-            최소 크기(= 내용 높이)를 덮어쓴다. 그래서 내용이 뷰포트보다 길어지면
-            flex 가 페이지 박스를 뷰포트 높이까지 **줄여** 버렸고, 내용은 visible
-            overflow 로 삐져나와 스크롤은 되는데 페이지의 하단 패딩이 줄어든 박스
-            바닥에 붙어 스크롤 끝에서 여백이 사라졌다 (1512×950 실측 · 결함 당시:
-            프로젝트 목록 내용 1368 / 박스 950 / 끝 여백 0px, 다운로드 2334 / 950 /
-            0px, 프로젝트 상세·인사이트 동일 형태).
-            페이지마다 `shrink-0` 을 기억하게 하는 처방은 #65 계열 drift 를 부른다 —
-            다음에 만드는 화면이 또 빠뜨린다. 스크롤 컨테이너를 소유한 셸이 한 번
-            선언한다. 자식이 늘어나는 건 그대로 두므로(`grow` 미변경) 짧은 내용의
-            세로 중앙 정렬과 `h-full` 페이지는 영향받지 않는다. */}
+        {/* The body slot is **a scroll container**, so it must not compress its own
+            child — the child variant below is that contract. A page root uses
+            `min-h-full` to fill the slot, and that explicit min-height overrides a
+            flex item's automatic minimum size (its content height). So once content
+            grew past the viewport, flex **shrank** the page box down to viewport
+            height, the content spilled out as visible overflow, and the page's bottom
+            padding sat at the floor of the shrunken box — leaving no gap at the end of
+            the scroll (measured at 1512×950: projects list content 1368 / box 950 /
+            end gap 0px; download 2334 / 950 / 0px; project detail and insights the same).
+            Prescribing `shrink-0` per page invites drift — the next screen forgets it.
+            The shell owns the scroll container, so it declares this once. Children are
+            still free to grow (`grow` unchanged), so vertically centred short content
+            and `h-full` pages are unaffected. */}
         {/*
-          `data-testid` 가 있는 이유: 이 슬롯을 재는 계약이 종전에는
-          `.overflow-y-auto` **첫 번째**를 집었는데, 2026-08-20 에 레일이 여덟
-          목적지가 되면서 스크롤을 갖게 되자 그 선택자가 **레일의 `<nav>` 를**
-          집었다. 검사는 초록이 아니라 빨개져서 알려 줬지만(다행이다), 반대
-          방향으로 틀렸다면 아무 말 없이 엉뚱한 원소를 재고 있었을 것이다.
-          이름으로 지목하면 그 부류가 원리적으로 안 생긴다.
+          Why there is a `data-testid`: the contract that measures this slot used to
+          grab the **first** `.overflow-y-auto`, and when the rail became eight
+          destinations on 2026-08-20 and gained scroll, that selector grabbed **the
+          rail's `<nav>`**. The check went red rather than green, which was lucky —
+          had it been wrong the other way it would have silently measured the wrong
+          element. Naming the target makes that class of failure impossible.
         */}
         <div
           data-testid="app-shell-body-slot"
@@ -181,24 +173,24 @@ function ShellColumn({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* 목적지 첫 방문 안내 (2026-07-26) — 지도에만 있던 안내를 나머지 다섯
-          목적지로 넓힌다. 셸이 소유하는 이유: 페이지마다 손으로 마운트하게
-          하면 하나가 빠져도 아무도 모른다(#65 계열 drift).
-          `key` 로 목적지마다 remount — 이동 중 이전 화면의 카드가 남지 않는다.
-          지도는 캔버스 노드 앵커·인터랙티브 클릭이 있는 8단계 여정이라
-          HomePage 가 계속 직접 소유한다(여기서는 `null`). */}
+      {/* First-visit guide per destination (2026-07-26). The shell owns it because
+          hand-mounting it on every page means nobody notices when one is missing.
+          The `key` remounts it per destination so the previous screen's card does not
+          linger mid-navigation. The map passes `null` — its eight-step journey has
+          canvas node anchors and interactive clicks, so HomePage keeps owning it. */}
       <DestinationGuide key={guideDestination ?? "none"} destination={guideDestination} />
 
-      {/* 업데이트 알림 (2026-07-27) — 셸이 소유한다. 페이지마다 마운트하게 하면
-          어떤 화면에서는 갱신을 못 만나고, 그 화면을 주로 쓰는 사람은 영영
-          구버전에 머문다. 데스크톱 셸이 아니면 훅이 스스로 아무것도 하지 않으므로
-          여기서 분기하지 않는다 — 조건을 두 곳에 두면 한쪽이 드리프트한다. */}
+      {/* Update notifications are owned by the shell (2026-07-27). Mounting them per
+          page means some screens never surface an update, and whoever mostly uses
+          those screens stays on an old version forever. Outside a desktop shell the
+          hook does nothing on its own, so there is no branch here — a condition in two
+          places lets one drift. */}
       <AppUpdateSurface />
     </div>
   );
 }
 
-/** 프로젝트 **목록** 화면인가 — `/project/<slug>` 상세·편집은 아니다. */
+/** Is this the project **list** screen? `/project/<slug>` detail and edit are not. */
 function resolveIsProjectListPath(pathname: string): boolean {
   return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "").startsWith("/projects");
 }
@@ -210,23 +202,24 @@ function AppNavRailSlot() {
   const dataSourceMode = useDataSourceMode();
   const vault = useLocalVault();
 
-  // 관문 라우트는 워크벤치 크롬(좌측 레일)을 쓰지 않는다 (2026-07-28 소유자
-  // 확정). `hidden` prop 은 언마운트가 아니라 `lg:hidden` 이라
-  // persistent-shell 의 DOM identity 계약을 지키면서 레이아웃에서만 빠진다.
+  // Gateway routes do not use the workbench chrome (the left rail) — owner decision,
+  // 2026-07-28. The `hidden` prop is `lg:hidden` rather than an unmount, so the
+  // persistent shell's DOM identity contract holds and only the layout drops it.
   //
-  // **셸이 판정하는 이유**: 페이지가 `setHidden(true)` 를 부르는 방식이면
-  // ① 첫 프레임에 레일이 그려졌다 사라지는 깜빡임이 생기고 ② 다음에 만드는
-  // 관문 표면이 그 호출을 빠뜨린다(공방이 유틸 슬롯 등록을 빠뜨렸던 #65
-  // 계열). 경로 판정은 렌더 중에 끝난다.
-  // `/` 는 **웹 방문자에게만** 관문(얼굴)이다 — 볼트를 연 사람과 설치된 앱에는
-  // 그대로 작업 진입점이라, 판정에 방문자 맥락이 든다. 단일 출처는
-  // `isGatewaySurface`(같은 함수를 `RootEntryPage` 도 쓴다).
-  // ⚠️ `isDesktopShell()` 은 **브라우저만 아는 사실**이다. 정적 프리렌더에는
-  // `window` 가 없어 항상 false 이고, 그 값이 `lg:hidden` 으로 HTML 에 구워지면
-  // **하이드레이션이 그 속성을 고쳐 주지 않는다** — 렌더 함수는 옳은데 화면은
-  // 틀린 채로 남는다. 설치된 앱이 `/` 를 그 HTML 로 열기 때문에 좌측 레일이
-  // 영구히 사라졌다(2026-08-01 실측: 같은 주소도 클라이언트 내비로 들어가면
-  // 정상이었다). `useHydrated()` 가 하이드레이션 뒤 한 번의 리렌더를 보장한다.
+  // **Why the shell decides**: with pages calling `setHidden(true)` instead,
+  // ① the rail would paint for one frame and vanish, and ② the next gateway surface
+  // built would forget the call. A path check finishes during render.
+  // `/` is a gateway (the face) **only for a web visitor** — for someone with a vault
+  // open, and inside the installed app, it stays the work entry point, so the verdict
+  // takes visitor context. The single source is `isGatewaySurface` (`RootEntryPage`
+  // calls the same function).
+  // ⚠️ `isDesktopShell()` is **a fact only the browser knows**. The static prerender
+  // has no `window`, so it is always false, and once that value is baked into the HTML
+  // as `lg:hidden` **hydration does not correct the attribute** — the render function
+  // is right while the screen stays wrong. Since the installed app opens `/` from that
+  // HTML, the left rail disappeared permanently (measured 2026-08-01: reaching the same
+  // address by client navigation worked fine). `useHydrated()` guarantees one re-render
+  // after hydration.
   const hydrated = useHydrated();
   const gateway = isGatewaySurface(pathname, {
     hasVault: Boolean(vault.manifest),
@@ -234,10 +227,8 @@ function AppNavRailSlot() {
     vaultKnown: vault.restoreAttempted,
   });
 
-  // P4-② 분기(TopologyIndexPanel 푸터와 동일 계약) — 연결됨: 활동
-  // 다이제스트(인사이트)로. 미연결/stale: 연결 시트를 여는 전역 의도를 세운다.
-  // 시트 본체는 HomePage 소유이므로 지형도 밖이면 지형도로 이동 —
-  // launcher.wantOpen 이 레이아웃 상주라 도착한 HomePage 가 곧바로 소비한다.
+  // Connected: go to the activity digest (insights). Not connected or stale: go to the
+  // agents destination — see the comment on that branch.
   const onAgentTileActivate = useCallback(
     (connected: boolean) => {
       if (connected) {
@@ -245,11 +236,11 @@ function AppNavRailSlot() {
         return;
       }
       /*
-       * ⚠️ **미연결이면 목적지로 간다** (2026-08-21, 원장 90).
+       * ⚠️ **Not connected means going to the destination** (2026-08-21, ledger 90).
        *
-       * 종전에는 지도 위의 연결 시트를 열었다 — 지형도 밖이면 지형도로 먼저
-       * 옮기고 나서. 그래서 같은 일을 하는 자리가 **셋**이었다: 시트 · 설정 칸 ·
-       * (지금은) 목적지. 붙이는 일의 주소는 하나여야 한다.
+       * This used to open the connect sheet on the map, moving to the topology first
+       * if you were elsewhere. That made **three** places doing one job: the sheet,
+       * the settings pane, and (now) the destination. Attaching an agent has one address.
        */
       router.push(DESTINATION_HREF.agents);
     },
@@ -257,23 +248,23 @@ function AppNavRailSlot() {
   );
 
   /*
-   * 설치가 끝났는데 다른 화면에 있었다면 레일이 알려 준다. **종단 상태만**
-   * 세고(진행률 금지), 그 화면에 가면 사라진다 — 기록 배지와 같은 문법이다.
+   * If an install finished while you were on another screen, the rail says so. It
+   * counts **terminal states only** (no progress), and it clears once you visit that
+   * screen — the same grammar as the git badge.
    */
   const installNotice = useInstallNotice(
     resolveActiveNavDestination(pathname) === "agents",
   );
 
-  // #65 — 레일 하단 유틸 티어는 셸이 기본으로 채운다. 예전엔 페이지마다
-  // `useNavRailSettingsSlot(<AppSettingsMenu triggerVariant="rail-tile" />)` 를
-  // 손으로 등록해야 했고, **공방(OntologyStudioPage)이 그걸 빠뜨려** 그 화면만
-  // 하단에 아이콘 1개(에이전트)만 남았다 (지도 3 · 문서함/인사이트/프로젝트 2 ·
-  // 공방 1, opus5 검수 2026-07-25 실측). 페이지가 기억해야 하는 구조가 drift 의
-  // 원인이므로 기본값을 셸로 올린다 — 페이지는 특별한 슬롯이 필요할 때만
-  // 덮어쓴다.
-  // 뱃지 카운트 — 목적지와 **같은 훅**을 읽는다(값이 갈리면 목록은 비었는데
-  // 숫자가 남는 신뢰 사고가 난다). 세션 changeset 기준이라 웹/데스크톱 모두
-  // 동작한다 — 데스크톱 정밀 카운트(`git_status.changedCount`)는 후속.
+  // The rail's bottom utility tier is filled by the shell by default. Pages used to
+  // register `useNavRailSettingsSlot(<AppSettingsMenu triggerVariant="rail-tile" />)`
+  // by hand, and one page forgot, leaving that screen with a single icon at the bottom
+  // (measured 2026-07-25: map 3, docs/insights/projects 2, that page 1). Structure a
+  // page has to remember is the source of drift, so the default moves up to the shell
+  // and a page overrides only when it needs a special slot.
+  // The badge count reads **the same hook** as the destination — if the two values
+  // diverge you get the trust-breaking case where the list is empty but a number
+  // remains. It is based on the session changeset, so it works on both web and desktop.
   const { changeset: gitChangeset } = useAtlasGitContext();
   const gitDirtyCount = gitChangeset.touchedNodeIds.size;
 
@@ -281,28 +272,30 @@ function AppNavRailSlot() {
   const tShortcutRows = useTranslations("searchWidgets.shortcuts.rows");
 
   /**
-   * 목적지 이동 단축키(`G` 다음 한 글자) — **레일과 같은 자리**에서 배선한다.
+   * Destination shortcuts (`G` then one key) are wired **in the same place as the rail**.
    *
-   * 레일이 그리는 목적지와 키보드가 데려가는 목적지가 어긋나면 안 되고, 그
-   * 어긋남을 막는 가장 싼 방법은 둘이 같은 `contextHrefs` 와 같은 `gateway`
-   * 판정을 보는 것이다. 관문 화면에서는 레일이 없으므로 키도 없다 — 화면에
-   * 입구가 없는데 키보드에만 있으면, 그건 발견할 수 없는 기능이다.
+   * The destinations the rail draws and the ones the keyboard reaches must not diverge,
+   * and the cheapest way to prevent that is for both to read the same `contextHrefs` and
+   * the same `gateway` verdict. On a gateway screen there is no rail, so there are no
+   * keys either — a feature with no on-screen entrance but a keyboard binding is
+   * undiscoverable.
    */
   useDestinationShortcuts({
     navigate: (href, id) => {
       router.push(href);
       /*
-       * 지도는 **데려가는 것으로 끝나지 않는다** — 캔버스에 초점을 줘야 방향키로
-       * 걸을 수 있다. 실측: 키보드로 그 캔버스에 닿으려면 Tab **30번**이었다
-       * (`shared/lib/focus-map-canvas.ts` 에 이유를 적어 뒀다). 새 단축키를
-       * 만들지 않고 이미 있는 `G M` 에 이 일을 준다.
+       * The map is **not done once you arrive** — the canvas needs focus before arrow
+       * keys can walk it. Measured: reaching that canvas by keyboard took **30 Tab
+       * presses** (the reasoning is in `shared/lib/focus-map-canvas.ts`). Rather than
+       * inventing a shortcut, the existing `G M` takes on this job.
        */
       if (id === "map") focusMapCanvasWhenReady();
     },
     /*
-     * 막는 창 때문에 못 갈 때 **말해 준다.** 이것이 없던 동안 공방은 키보드
-     * 함정이었다 — 도착하면 「무엇을 할까요?」 선택 창이 뜨고, 그 뒤로는 어떤
-     * 이동 단축키도 조용히 먹지 않았다(2026-08-10 전체 검수에서 잡혔다).
+     * **Say so when a blocking overlay prevents the move.** Without this, one screen
+     * was a keyboard trap: arriving there raised a "what would you like to do?" dialog,
+     * after which every navigation shortcut silently did nothing (caught in the
+     * 2026-08-10 full review).
      */
     onBlockedByOverlay: () => {
       toast.show(tShortcutRows("navBlockedByOverlay"), "info");
@@ -311,9 +304,9 @@ function AppNavRailSlot() {
     hrefOverrides: contextHrefs?.docs ? { docs: contextHrefs.docs } : undefined,
   });
 
-  // 2026-07-25 — 기록은 **목적지로 승격**됐고 이 유틸 타일은 흡수됐다. 입구가
-  // 둘이면(타일 + 목적지) #65 와 같은 계열의 혼란이 재발한다. 미커밋 변경 수는
-  // 목적지 아이콘의 warning 뱃지로 옮겼다.
+  // Git was promoted to a destination on 2026-07-25 and this utility tile was absorbed.
+  // Two entrances (tile plus destination) reproduce the same confusion the tier drift
+  // caused. The uncommitted-change count moved to the destination icon's warning badge.
   const utilityTier =
     settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />;
 
@@ -330,8 +323,8 @@ function AppNavRailSlot() {
 }
 
 /**
- * 토스트는 **공용 상태 기계를 읽기만 한다.** 훅을 여기서 다시 부르지 않는
- * 이유는 위 provider 주석에.
+ * The toast only **reads** the shared state machine. Why the hook is not called again
+ * here is in the provider comment above.
  */
 function AppUpdateSurface() {
   const update = useAppUpdateContext();

@@ -70,8 +70,9 @@ describe('validateVaultDocument (R11 #23)', () => {
   });
 
   it('canonical kind 6 종 모두 인식 (capability/element 는 domain 채워야 clean)', () => {
-    // R14 — capability/element 는 domain 누락 시 missing-expected-field warn.
-    // canonical kind 가 인식 자체는 되는지 보는 테스트라 domain 까지 박아 clean.
+    // capability and element warn with missing-expected-field when `domain` is
+    // absent. This test only checks that the canonical kind is recognised, so
+    // `domain` is filled in to keep it clean.
     const cases = [
       { k: 'project' },
       { k: 'domain' },

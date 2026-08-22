@@ -6,52 +6,60 @@ import { describe, expect, it } from 'vitest';
 import { ICON_SIZE } from '../../src/shared/ui/icon-size';
 
 /**
- * 콘텐츠 아이콘 크기 램프 — **CSS ↔ JS 거울 + 램프 밖 리터럴 래칫.**
+ * Content icon size ramp — **CSS ↔ JS mirror plus an off-ramp literal ratchet.**
  *
- * ## 왜 이 게이트가 없으면 안 되나 (2026-08-04 체계석 전수, docs/DECISIONS.md)
+ * ## Why this gate has to exist (체계 seat inventory 2026-08-04, docs/DECISIONS.md)
  *
- * 콘텐츠 아이콘(lucide)의 크기는 JSX **숫자 prop**(`size={N}`)으로 들어간다.
- * className 이 아니므로 값 lint(`text-[Npx]` 류)의 사정거리 밖이고, 크기 토큰
- * (`--topology-chrome-icon-size` 등)은 표면 전용이라 콘텐츠 아이콘이 기댈 데가
- * 없었다. 결과 — 전수 167 콜사이트가 px 값 **9종**(10·11·12·13·14·15·16·17 +
- * 무지정 24)으로 갈라졌고, 같은 파일 안에 4값이 섞인 표면이 둘이었다
- * (문서함 팔레트 10/11/12/14 · 의존 피커 10/11/12/13). 역할이 아니라 드리프트다.
- * 실사용 시험자의 기록: *"아무것도 나에게 다른 값을 알려주지 않았다."*
+ * Content icon (lucide) sizes arrive as a JSX **numeric prop** (`size={N}`). That
+ * is not a className, so it is out of range of the value lints (`text-[Npx]` and
+ * friends), and the size tokens (`--topology-chrome-icon-size` and so on) are
+ * surface-owned, leaving content icons nothing to lean on. The result: 167 call
+ * sites split across **9 px values** (10·11·12·13·14·15·16·17 plus unspecified 24),
+ * and two surfaces mixed 4 values within a single file (docs palette 10/11/12/14 ·
+ * dependency picker 10/11/12/13). That is drift, not role.
+ * A field tester's note: *"아무것도 나에게 다른 값을 알려주지 않았다."*
+ * (nothing told me the values differed)
  *
- * framer duration 사고(`motion-token-mirror.contract.test.ts`)와 같은 병 —
- * **값이 게이트가 안 보는 채널에 살면 반드시 갈라진다.**
+ * The same disease as the framer duration incident
+ * (`motion-token-mirror.contract.test.ts`): **a value living in a channel no gate
+ * watches will always drift.**
  *
- * ## 왜 lint 룰이 아니라 래칫인가
+ * ## Why a ratchet and not a lint rule
  *
- * 부채 64건은 한 PR 로 못 치운다 — 치환이 곧 렌더 픽셀 변경(±1~2px)이라
- * 자리마다 디자인 판정이 필요하다(컨트롤 래칫 창립 판단과 같은 이유). 그리고
- * lint 로 걸면 부채 파일을 `no-restricted-syntax` 예외로 빼야 하는데, flat
- * config 는 rule option 을 병합하지 않고 교체하므로 아이콘 전용 예외 블록이
- * 그 파일들의 **램프 셀렉터까지 통째로** 바꿔치기한다(다중 블록 함정) —
- * 예외의 사정거리가 원리적으로 안 맞는다. 래칫은 파일 단위로 정확히 이
- * 리터럴만 세고, **새 파일은 첫날부터 0 이어야 한다.**
+ * 64 debt items cannot be cleared in one PR — each substitution moves rendered
+ * pixels (±1–2px) and needs a per-place design verdict (the same reasoning as the
+ * control ratchet's founding judgement). And a lint rule would need the debt files
+ * excluded via `no-restricted-syntax`, but flat config replaces rule options
+ * rather than merging them, so an icon-only exception block would swap out **those
+ * files' ramp selectors wholesale** (the multi-block trap) — the exception's range
+ * cannot be made to fit. The ratchet counts exactly these literals per file, and
+ * **a new file must be 0 from day one.**
  *
- * ## 사정거리
+ * ## Range
  *
- * lucide import 가 있는 프로덕션 `.tsx` 의 lucide 여는 태그만 본다. 크롬·레일
- * 아이콘 토큰(`--*-icon-size` · `--chrome-icon`)은 표면 계약 소유라 대상 밖.
- * 알려진 한계 둘 — **둘 다 과소 계상 방향**이다:
+ * Only lucide opening tags in production `.tsx` files that import lucide. Chrome
+ * and rail icon tokens (`--*-icon-size` · `--chrome-icon`) are owned by the
+ * surface contract and are out of scope. Two known limits, **both in the
+ * under-reporting direction**:
  *
- * 1. `size={cond ? 14 : undefined}` 같은 **조건식은 리터럴이 아니라 안 보인다**
- *    (현재 1곳, AppSettingsMenu — 단 그 자리는 결함이 아니다: 세 variant 전부
- *    className 토큰(`--app-nav-rail-utility-icon-size` ·
- *    `--topology-chrome-icon-size`) 또는 size={14} 가 덮는다. 2026-08-15 재실측
- *    — 종전 «else 가지는 무지정 24 로 렌더된다» 는 className 을 안 본 오판).
- * 2. **런타임 변수로 렌더되는 아이콘**(`const Icon = item.icon; <Icon size={17} />`)
- *    은 여는 태그 이름이 lucide import 집합에 없어 안 보인다. 2026-08-05 실측
- *    8곳이고, 그중 **하나가 실제로 램프 밖이었다** — `BottomTabBar` 의 내비
- *    아이콘 17px 이 바로 옆 「앱 받기」 아이콘 16px 과 **한 바 안에서 어긋나
- *    있었다**(브라우저 실측으로 발견: 소스 스캔은 17 을 한 건도 못 봤는데
- *    화면에는 17 이 4개 그려지고 있었다). 고쳤고, 나머지 7곳은 램프 위다.
- *    `Map as MapIcon` 같은 **별칭은 시야 안**이다(import 파싱이 별칭을 딴다).
+ * 1. **A conditional is not a literal and is invisible**, e.g.
+ *    `size={cond ? 14 : undefined}` (1 place today, AppSettingsMenu — and that
+ *    place is not a defect: all three variants are covered by a className token
+ *    (`--app-nav-rail-utility-icon-size` · `--topology-chrome-icon-size`) or by
+ *    size={14}. Re-measured 2026-08-15 — the earlier claim that "the else branch
+ *    renders unspecified at 24" was a misreading that ignored the className).
+ * 2. **Icons rendered through a runtime variable**
+ *    (`const Icon = item.icon; <Icon size={17} />`) are invisible because the
+ *    opening tag name is not in the lucide import set. Measured 2026-08-05: 8
+ *    places, and **one of them really was off-ramp** — `BottomTabBar`'s nav icons
+ *    at 17px **disagreed within a single bar** with the neighbouring "get the app"
+ *    icon at 16px (found by measuring in the browser: the source scan saw not one
+ *    17, while the screen drew four). It was fixed; the other 7 sit on the ramp.
+ *    **Aliases such as `Map as MapIcon` are in view** (import parsing follows the
+ *    alias).
  *
- * → **소스 스캔만으로 「0」이라고 말하지 않는다.** 이 두 한계가 사는 층은
- *    렌더된 화면이고, 그래서 라운드마다 브라우저에서 `svg` 실측을 함께 한다.
+ * → **Never claim "0" from the source scan alone.** Both limits live in the
+ *    rendered screen, so every round also measures `svg` in the browser.
  */
 
 const ROOT = process.cwd();
@@ -63,7 +71,21 @@ function cssPx(name: string): number {
   return Number(m[1]);
 }
 
-/** 여는 태그를 중괄호 깊이로 끊는다 — 컨트롤 래칫이 두 번 밟은 함정의 회피. */
+/** Terminates an opening tag by brace depth — the trap the control ratchet stepped on twice. */
+/**
+ * Comments are blanked before tag parsing — byte offsets and line numbers are
+ * preserved. `openingTag` tracks quotes, and a comment inside a JSX opening tag
+ * defeats that: an English apostrophe (`This scrim's name`) opens a quote that
+ * never closes, so the parser runs past the tag. Measured 2026-08-22 in
+ * `control-adoption-ratchet`, where a census silently fell 5 → 4. Latent here
+ * for the same reason and closed the same way.
+ */
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
 function openingTag(source: string, from: number): string {
   let depth = 0;
   let quote: string | null = null;
@@ -80,33 +102,35 @@ function openingTag(source: string, from: number): string {
 }
 
 interface IconScan {
-  /** lucide 여는 태그 수 (공회전 방지의 분모). */
+  /** Number of lucide opening tags (the denominator for the idling guard). */
   total: number;
-  /** 파일별 램프 밖 크기 리터럴 수 (`size={N}` prop + `size-N`/`h-N w-N` class). */
+  /** Off-ramp size literals per file (`size={N}` prop plus `size-N`/`h-N w-N` classes). */
   offRamp: Map<string, number>;
-  /** 파일별 무지정(lucide 기본 24px 렌더) 수. */
+  /** Unspecified sizes per file (lucide renders those at its 24px default). */
   unsized: Map<string, number>;
 }
 
 /**
- * **`icon={…}` 슬롯의 크기는 소비자가 소유한다** (2026-08-15).
+ * **The size of an `icon={…}` slot is owned by the consumer** (2026-08-15).
  *
- * 종전 장부는 «무지정 lucide = 기본 24px 렌더» 로 9곳(5파일)을 부채로 들고
- * 있었는데, **9곳 전부 거짓 부채였다** — 셋 다 슬롯 컨테이너가 CSS 로 크기를
- * 정한다: ChromeChip `[&>svg]:size-3.5`(14) · ChromeTile
- * `[&>svg]:size-[var(--chrome-icon)]`(16) · EmptyState `[&>svg]:size-4`(16).
- * 이 자리들에 `size=` prop 을 달아 «갚는» 것은 컨테이너가 소유한 값을 콜사이트
- * 에 한 번 더 적는 것 — 값이 두 곳에 적히면 그때부터 어긋난다(Carbon).
+ * The previous ledger treated "unspecified lucide = renders at the 24px default"
+ * and carried 9 places (5 files) as debt. **All 9 were false debt** — the slot
+ * container sets the size in CSS in every case: ChromeChip
+ * `[&>svg]:size-3.5` (14) · ChromeTile `[&>svg]:size-[var(--chrome-icon)]` (16) ·
+ * EmptyState `[&>svg]:size-4` (16). "Repaying" these by adding a `size=` prop
+ * would write the container's value a second time at the call site — and a value
+ * written in two places starts drifting from then on (Carbon).
  *
- * 그래서 무지정 판정에서 뺀다. 단 **아무 `icon={` 나 면제하지 않는다** — 슬롯
- * 바로 앞의 가장 가까운 여는 태그가 아래 목록(슬롯에 `[&>svg]:size-` 를 거는
- * 것이 별도 단언으로 증명된 프리미티브)일 때만이다. 모르는 소비자의
- * `icon={<X/>}` 는 그대로 무지정으로 세인다(과대 방향 — 사람이 보게 된다).
- * `size={13}` 같은 램프 밖 리터럴은 슬롯 안이어도 여전히 잡힌다.
+ * So they are excluded from the unspecified count. But **not every `icon={` is
+ * exempt**: only when the nearest opening tag before the slot is in the list below
+ * (primitives proven by a separate assertion to set `[&>svg]:size-` on the slot).
+ * An unknown consumer's `icon={<X/>}` still counts as unspecified — the
+ * over-reporting direction, so a person sees it. Off-ramp literals such as
+ * `size={13}` are still caught inside a slot.
  */
 const SIZED_SLOT_OWNERS = new Set(['ChromeChip', 'ChromeTile', 'EmptyState']);
 
-/** 슬롯 소유자 판정 — `icon={` 직전에서 가장 가까운 여는 컴포넌트 태그. */
+/** Slot-owner resolution — the nearest opening component tag before `icon={`. */
 function slotOwner(source: string, tagIndex: number): string | null {
   const before = source.slice(0, tagIndex);
   if (!/icon=\{\s*$/.test(before)) return null;
@@ -115,22 +139,25 @@ function slotOwner(source: string, tagIndex: number): string | null {
   return owner;
 }
 
-function scanSource(rel: string, source: string, ramp: Set<number>, acc: IconScan): void {
-  // [^}] 는 개행도 포함하므로 /s 플래그가 필요 없다. [\s\S]*? 로 쓰면 안 된다 —
-  // 게으른 수량자가 앞선 다른 모듈의 import 를 건너 삼켜 아이콘 이름 집합이 오염된다
-  // (전수 스캔에서 실제로 그랬다: 파일 9개의 분류가 조용히 틀어졌다).
+function scanSource(rel: string, raw: string, ramp: Set<number>, acc: IconScan): void {
+  // Tag parsing below must not see comment text — see `stripComments`.
+  const source = stripComments(raw);
+  // [^}] already spans newlines, so no /s flag is needed. Do not write it as
+  // [\s\S]*? — the lazy quantifier swallows past another module's import and
+  // contaminates the icon name set (it did, in a full scan: 9 files were silently
+  // misclassified).
   /*
-   * ⚠️ **따옴표 둘 다 본다** (2026-08-05). 종전엔 `'lucide-react'` 작은따옴표만
-   * 매칭했는데, 이 저장소의 lucide import 99개 중 **72개가 큰따옴표**였다 —
-   * 즉 이 래칫은 아이콘의 **73% 를 한 번도 본 적이 없다.** 그래서 장부에 63건
-   * 이라 적혀 있던 부채의 실측은 **230건**이었다.
+   * ⚠️ **Match both quote styles** (2026-08-05). This used to match only the single
+   * quotes of `'lucide-react'`, while **72 of this repository's 99 lucide imports
+   * used double quotes** — meaning the ratchet had never once seen **73% of the
+   * icons**. The debt recorded in the ledger as 63 measured **230**.
    *
-   * 분모 단언(`total >= 120`)이 이 구멍을 못 막았다: 작은따옴표 파일 27개만
-   * 세어도 120을 넘었기 때문이다. **공집합이 아니라는 것과 전집합을 본다는
-   * 것은 다르다** — 분모 단언은 앞의 것만 증명한다.
+   * The denominator assertion (`total >= 120`) did not close this hole: 27
+   * single-quote files alone exceed 120. **Not being an empty set is different from
+   * seeing the whole set** — a denominator assertion proves only the former.
    *
-   * 값이 아니라 **문법**이 게이트를 피한 사례이고, 이 라운드에서만 세 번째다
-   * (무게 이름 스텝 · 스코프 블록 override · 여기).
+   * A case of **syntax**, not value, evading a gate — the third in this round alone
+   * (named weight steps · scoped-block override · here).
    */
   const importMatch = /import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/.exec(source);
   if (!importMatch) return;
@@ -176,54 +203,60 @@ function scanProduction(ramp: Set<number>): IconScan {
 }
 
 /**
- * **리터럴 장부다 — 스캔 결과에서 파생하지 않는다** (컨트롤 래칫의 규율 그대로:
- * 기준선을 실측에서 파생하면 「늘지 않는다」가 원리적으로 실패 불가가 된다).
+ * **A literal ledger — not derived from the scan** (the control ratchet's
+ * discipline: deriving the baseline from the measurement makes "it never grows"
+ * impossible to fail in principle).
  *
- * 값은 2026-08-04 전수. 여기 있는 파일은 **면제가 아니라 부채**다 — 수가
- * 늘면 빨개지고, 0 이 되면 줄을 지워야 한다. 갚는 라운드는 자리마다
- * before→after 표를 갖는 디자인 패스다(±1~2px 픽셀 이동).
+ * Values are the 2026-08-04 inventory. Files listed here are **debt, not
+ * exemptions** — the gate turns red when a count grows, and when it reaches 0 the
+ * row must be deleted. Repaying is a design pass with a per-place before→after
+ * table (±1–2px of pixel movement).
  */
 /*
- * ## 2026-08-05: 장부가 통째로 틀려 있었다 — 스캐너가 73% 를 못 봤다
+ * ## 2026-08-05: the ledger was wrong end to end — the scanner missed 73%
  *
- * 위 따옴표 주석 참조. 종전 장부는 16파일 63건이었는데, 큰따옴표 import 를
- * 보게 하자 **41파일 230건**이 나왔다. 장부가 후한 게 아니라 **눈이 멀어
- * 있었다.**
+ * See the quote-style comment above. The ledger said 16 files / 63 items; making
+ * it see double-quoted imports produced **41 files / 230 items**. The ledger was
+ * not generous, it was **blind**.
  *
- * 그중 **127건은 이 라운드에서 갚았다** — 램프 스텝이 판정 없이 정해지는
- * 것들이다(9·10·11 → sm, 17·18 → lg). 함께 이미 램프 위에 있던 207건도
- * 리터럴에서 `ICON_SIZE` 참조로 바꿨다: 그 전까지 `ICON_SIZE` 와 `--icon-*`
- * 의 **소비처는 0** 이었고, 값이 우연히 맞았을 뿐 램프가 아니었다
- * (「아무도 안 쓰는 토큰은 규격이 아니라 틀린 정보다」 — design.md).
+ * **127 of those were repaid in that round** — the ones whose ramp step is
+ * determined without a verdict (9·10·11 → sm, 17·18 → lg). At the same time the
+ * 207 that were already on the ramp were converted from literals to `ICON_SIZE`
+ * references: until then `ICON_SIZE` and `--icon-*` had **0 consumers**, so the
+ * values merely happened to match and there was no ramp ("a token nobody uses is
+ * misinformation, not a spec" — design.md).
  *
- * **남은 103건은 전부 13px 과 15px 이다.** 이 둘은 두 램프 스텝의 **정확히
- * 가운데**라(13 → 12|14, 15 → 14|16) 「최근접」이 답을 주지 못한다. 램프의
- * 타이브레이커는 «옆에 앉는 타입 단»인데, 실측해 보니 그 판정에 쓸 타입이
- * **59곳에는 아예 없다**(아이콘만 있는 컨트롤·아이콘 전용 버튼). 코드모드가
- * 지어낼 수 있는 값이 아니므로 자리마다 before→after 를 갖는 디자인 패스로
- * 넘긴다 — 이 파일의 창립 판단과 같은 이유다.
+ * **The remaining 103 are all 13px and 15px.** Both sit **exactly halfway**
+ * between two ramp steps (13 → 12|14, 15 → 14|16), so "nearest" gives no answer.
+ * The ramp's tiebreaker is the type step sitting beside the icon, and measurement
+ * found that **59 places have no type at all** (icon-only controls and icon-only
+ * buttons). That is not a value a codemod can invent, so it goes to a design pass
+ * with a per-place before→after table — the same reasoning as this file's founding
+ * judgement.
  */
 const OFF_RAMP_DEBT: ReadonlyArray<readonly [string, number]> = [
-  // **2026-08-05: 비었다.** 13/15 타이 103곳을 전부 램프로 옮겼다.
+  // **2026-08-05: empty.** All 103 of the 13/15 ties were moved onto the ramp.
   //
-  // 이 배열이 비었다고 아래 검사가 공짜 초록이 되면 안 된다 — 스캐너가 여전히
-  // 저장소 전체를 훑고 분모(`total`)를 세므로, 램프 밖 값이 하나라도 새로
-  // 들어오면 «장부 0 을 넘었다» 로 빨개진다.
+  // An empty array must not make the checks below free green — the scanner still
+  // sweeps the whole repository and counts the denominator (`total`), so a single
+  // new off-ramp value turns it red as "exceeded the ledger's 0".
 ];
 
 /**
- * **2026-08-15: 비었다 — 그리고 갚아서 빈 것이 아니라 장부가 틀려서 빈 것이다.**
+ * **2026-08-15: empty — and empty because the ledger was wrong, not because it
+ * was repaid.**
  *
- * 여기 있던 9곳(HomePage 3 · ConnectionsTab 2 · ImpactRankingCard 1 ·
- * SearchHint 2 · TopologyFitControl 1)은 전부 `icon={…}` 슬롯이었고, 슬롯
- * 컨테이너(ChromeChip 14 · ChromeTile 16 · EmptyState 16)가 CSS 로 크기를
- * 정하고 있었다 — «기본 24px 로 렌더된다» 는 종전 전제가 컨테이너의
- * `[&>svg]:size-*` 를 안 본 오판이었다. `SIZED_SLOT_OWNERS` 분류 + 슬롯 소유자
- * CSS 단언이 그 판정을 이어받는다.
+ * The 9 places listed here (HomePage 3 · ConnectionsTab 2 · ImpactRankingCard 1 ·
+ * SearchHint 2 · TopologyFitControl 1) were all `icon={…}` slots whose container
+ * set the size in CSS (ChromeChip 14 · ChromeTile 16 · EmptyState 16). The old
+ * premise that they "render at the 24px default" was a misreading that ignored the
+ * container's `[&>svg]:size-*`. The `SIZED_SLOT_OWNERS` classification plus the
+ * slot-owner CSS assertion carry that judgement now.
  *
- * 이 배열이 비어도 검사는 공회전하지 않는다 — 스캐너는 여전히 저장소 전체를
- * 훑고, 슬롯 밖 무지정이나 모르는 소비자의 슬롯 무지정이 하나라도 생기면
- * «장부 0 을 넘었다» 로 빨개진다(프로브가 양쪽 다 증명한다).
+ * An empty array does not make the check idle — the scanner still sweeps the whole
+ * repository, and a single unspecified icon outside a slot, or inside an unknown
+ * consumer's slot, turns it red as "exceeded the ledger's 0" (probes prove both
+ * directions).
  */
 const UNSIZED_DEBT: ReadonlyArray<readonly [string, number]> = [];
 
@@ -241,7 +274,7 @@ describe('콘텐츠 아이콘 크기 램프', () => {
   });
 
   it('램프 단이 타입 램프의 짝 위에 서 있다 — sm≈label·body, md=body-lg, lg=title', () => {
-    // 짝의 정의가 움직이면(타입 램프 개정) 이 단언이 재판정을 요구한다.
+    // If the pairing is redefined (a type ramp revision), this assertion forces a re-decision.
     expect(ICON_SIZE.md).toBe(cssPx('--text-body-lg'));
     expect(ICON_SIZE.lg).toBe(cssPx('--text-title'));
     expect(ICON_SIZE.sm).toBeGreaterThan(cssPx('--text-label'));
@@ -251,8 +284,9 @@ describe('콘텐츠 아이콘 크기 램프', () => {
   const scan = scanProduction(ramp);
 
   it('탐지기가 공회전하지 않는다 — 제품을 실제로 먹는다', () => {
-    // 2026-08-04 실측 167. 아이콘을 지우는 리팩터를 막자는 게 아니라
-    // 「스캔 대상이 사라졌는데 0 위반」을 초록으로 두지 않으려는 바닥이다.
+    // Measured 167 on 2026-08-04. Not there to block refactors that remove icons —
+    // it is the floor that stops "the scan target vanished, therefore 0 violations"
+    // from reading as green.
     expect(scan.total).toBeGreaterThanOrEqual(120);
   });
 
@@ -292,10 +326,11 @@ describe('콘텐츠 아이콘 크기 램프', () => {
   });
 
   /**
-   * **슬롯 면제는 소비자가 실제로 크기를 소유할 때만 성립한다.** 분류가
-   * `SIZED_SLOT_OWNERS` 이름만 믿으면, 그 프리미티브에서 `[&>svg]:size-*` 가
-   * 지워지는 날 슬롯 아이콘 전부가 24px 로 풀리는데 아무것도 안 빨개진다 —
-   * 그래서 이름 집합과 CSS 실물을 여기서 묶는다.
+   * **The slot exemption holds only while the consumer really owns the size.** If
+   * the classification trusted the `SIZED_SLOT_OWNERS` names alone, the day
+   * `[&>svg]:size-*` is deleted from one of those primitives every slot icon would
+   * fall back to 24px with nothing turning red. So the name set and the real CSS are
+   * tied together here.
    */
   it('슬롯 소유자는 자기 슬롯의 svg 크기를 실제로 소유한다 ([&>svg]:size-*)', () => {
     const OWNER_FILES: Record<string, string> = {
@@ -314,8 +349,9 @@ describe('콘텐츠 아이콘 크기 램프', () => {
   });
 
   /*
-   * ── 상주 프로브 — 탐지기 자신이 살아 있는지. 합성 소스를 같은 함수에 먹인다.
-   * (게이트 프로브 규율: 「위반이 있다」가 아니라 「제품/결함을 실제로 먹는다」)
+   * ── Standing probes: is the detector itself alive? Synthetic sources are fed to
+   * the same function. (The gate-probe discipline: prove the detector consumes real
+   * defects, not merely that violations exist.)
    */
   it('프로브: 램프 밖 prop·class 는 잡히고, 램프 값·문자열 size·비-lucide 는 통과한다', () => {
     const probe = (body: string): IconScan => {
@@ -328,42 +364,43 @@ describe('콘텐츠 아이콘 크기 램프', () => {
       );
       return acc;
     };
-    // 위반 — 램프 밖 숫자 prop (다행 태그 + 콜백 중괄호까지 검증)
+    // Violation — off-ramp numeric prop (also exercises multi-line tags and callback braces)
     const bad = probe('<Check\n  size={13}\n  onClick={() => {}}\n/>');
     expect(bad.offRamp.get('probe.tsx')).toBe(1);
-    // 위반 — 램프 밖 class 표기
+    // Violation — off-ramp class notation
     expect(probe('<Check className="h-5 w-5" />').offRamp.get('probe.tsx')).toBe(1);
-    // 정상 — 램프 값 셋
+    // Healthy — the three ramp values
     const good = probe('<Check size={12} /><Check size={14} /><Search size={16} />');
     expect(good.offRamp.size).toBe(0);
     expect(good.total).toBe(3);
-    // 정상 — 램프 class 표기 (size-3 = 12px)
+    // Healthy — ramp class notation (size-3 = 12px)
     expect(probe('<Check className="size-3" />').offRamp.size).toBe(0);
-    // 무지정 — 기본 24 로 잡힌다
+    // Unspecified — caught as the 24px default
     expect(probe('<Check aria-hidden />').unsized.get('probe.tsx')).toBe(1);
-    // 슬롯 무지정 — 크기를 소유한 프리미티브의 슬롯이면 무지정이 아니다
+    // Unspecified in a slot — not unspecified when the slot belongs to a size-owning primitive
     const owned = probe('<ChromeChip icon={<Check aria-hidden />} />');
     expect(owned.unsized.size).toBe(0);
     expect(owned.total, '슬롯 면제가 분모까지 지우면 공회전 단언이 헐거워진다').toBe(1);
-    // 슬롯이어도 **모르는 소비자**면 그대로 무지정이다 (면제의 방향: 과대 계상 쪽)
+    // A slot on an **unknown consumer** still counts as unspecified (the exemption errs toward over-reporting)
     expect(probe('<Mystery icon={<Check aria-hidden />} />').unsized.get('probe.tsx')).toBe(1);
-    // 슬롯이어도 램프 밖 리터럴은 여전히 잡힌다
+    // Off-ramp literals are still caught inside a slot
     expect(probe('<ChromeChip icon={<Check size={13} />} />').offRamp.get('probe.tsx')).toBe(1);
-    // 시야 밖이 맞는 것 — 비-lucide 태그의 숫자 size, 문자열 size
+    // Correctly out of view — numeric size on a non-lucide tag, and string sizes
     expect(probe('<Select size={13} />').total).toBe(0);
-    // 토큰 참조는 무지정도 위반도 아니다
+    // A token reference is neither unspecified nor a violation
     const varRef = probe('<Check className="size-[var(--icon-sm)]" />');
     expect(varRef.offRamp.size).toBe(0);
     expect(varRef.unsized.size).toBe(0);
   });
 
   /**
-   * **따옴표 프로브 — 2026-08-05 에 실제로 일어난 실명(失明)을 재현한다.**
+   * **Quote-style probe — reproduces the blindness that actually occurred on
+   * 2026-08-05.**
    *
-   * 종전 스캐너는 작은따옴표 import 만 봤고, 이 저장소 파일의 **73% 가
-   * 큰따옴표**였다. 위 합성 프로브가 그것을 못 잡은 이유는 프로브 자신이
-   * 작은따옴표로만 쓰여 있었기 때문이다 — **프로브가 결함과 같은 가정을
-   * 공유하면 그 결함을 증명할 수 없다.**
+   * The old scanner saw only single-quoted imports while **73% of this repository's
+   * files used double quotes**. The synthetic probes above failed to catch it
+   * because the probes themselves were written with single quotes only — **a probe
+   * that shares the defect's assumption cannot prove the defect.**
    */
   it('프로브: 큰따옴표 lucide import 도 본다 (73% 를 못 보던 실명의 재현)', () => {
     const acc: IconScan = { total: 0, offRamp: new Map(), unsized: new Map() };
@@ -378,12 +415,12 @@ describe('콘텐츠 아이콘 크기 램프', () => {
   });
 
   /**
-   * **실물 커버리지 — 합성 프로브가 증명하지 못하는 층.**
+   * **Real coverage — the layer synthetic probes cannot prove.**
    *
-   * 「공집합이 아니다」와 「전집합을 본다」는 다르다. 종전 분모 단언(≥120)은
-   * 앞의 것만 증명했고, 그래서 스캐너가 파일의 73% 를 건너뛰는 동안에도
-   * 초록이었다. 이 단언은 **저장소에 실재하는 두 표기 모두**에서 아이콘을
-   * 실제로 세고 있는지 확인한다.
+   * "Not an empty set" and "sees the whole set" are different. The old denominator
+   * assertion (≥120) proved only the former, so it stayed green while the scanner
+   * skipped 73% of the files. This assertion checks that icons are actually being
+   * counted in **both notations that exist in the repository**.
    */
   it('실물 커버리지: 두 따옴표 표기 파일 모두에서 아이콘을 센다', () => {
     const seen = { single: 0, double: 0 };
@@ -413,6 +450,6 @@ describe('콘텐츠 아이콘 크기 램프', () => {
   it('프로브: 스캔 루트가 공집합이면 실패한다', () => {
     const acc: IconScan = { total: 0, offRamp: new Map(), unsized: new Map() };
     scanSource('empty.tsx', '', ramp, acc);
-    expect(acc.total).toBe(0); // 빈 소스는 0 — 위 분모 단언(≥120)이 공집합 공회전을 막는다
+    expect(acc.total).toBe(0); // Empty source is 0 — the denominator assertion (≥120) above blocks empty-set idling
   });
 });

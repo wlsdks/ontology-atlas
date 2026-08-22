@@ -7,48 +7,51 @@ import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast
 import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
 
 /**
- * **알파 틴트 면 위의 잉크 라이선스 — 호버 상태까지** (2026-08-15).
+ * **Ink licence on alpha tint surfaces — including hover** (2026-08-15).
  *
- * ## 어디가 비어 있었나 — 세 계약이 나란히 비켜 갔다
+ * ## Where the hole was — three contracts stepped past it side by side
  *
- * 이 저장소에는 잉크 라이선스가 이미 셋 있는데, 셋 다 이 자리를 안 본다:
+ * This repository already has three ink licences, and none of them looks here:
  *
- * | 계약 | 관할 | 왜 이 자리를 못 보나 |
+ * | Contract | Jurisdiction | Why it cannot see this place |
  * |---|---|---|
- * | `accent-ink-contrast` | 틴트 위 **인디고** 잉크 | 잉크가 danger/success/amber 면 관할 밖 |
- * | `brand-fill-ink-license` | **불투명** 브랜드 면 | 면이 알파 틴트면 관할 밖 |
- * | `quaternary-ink-surface` | 무채색 바탕의 겹침 단계 | 색이 섞인 면은 그 사다리에 없다 |
+ * | `accent-ink-contrast` | **indigo** ink on tint | out of jurisdiction when the ink is danger/success/amber |
+ * | `brand-fill-ink-license` | **opaque** brand surfaces | out of jurisdiction when the surface is an alpha tint |
+ * | `quaternary-ink-surface` | overlay steps on achromatic backgrounds | a colour-mixed surface is not on that ladder |
  *
- * 그 사이로 **알파 틴트 면 × 비-인디고 잉크**가 통째로 빠졌고, 실제로 하나가
- * 샜다: 스튜디오 삭제 확인 칩이 호버에서 `--color-danger-a32` 면을 켜는데
- * 그 위 `--color-danger-text` 는 **어느 호스트 표면에서도** AA 미달이었다
- * (canvas 4.30 · panel 4.05 · elevated 3.72). 쉬는 상태가 5.32 였으니
- * **호버가 읽기를 나쁘게 만들고 있었다.**
+ * **Alpha tint surface × non-indigo ink** fell through the gap entirely, and one
+ * defect really leaked: the studio's delete-confirmation chip turns on a
+ * `--color-danger-a32` surface on hover, and `--color-danger-text` on top of it was
+ * below AA **on every host surface** (canvas 4.30 · panel 4.05 · elevated 3.72).
+ * At rest it was 5.32, so **hover was making it harder to read.**
  *
- * 값은 하나도 안 틀렸다 — `danger-a32` 도 `danger-text` 도 정당한 램프
- * 토큰이다. 틀린 것은 **자리**이고(`design-gates.md` 「값이 아니라 «자리» 가
- * 토큰을 정한다」), 게다가 `a32` 는 이 저장소에서 **보더로 14번 · 면으로
- * 1번**(그 결함 자리) 쓰인 토큰이었다.
+ * No value was wrong — both `danger-a32` and `danger-text` are legitimate ramp
+ * tokens. What was wrong is the **place** (`design-gates.md`, 「값이 아니라 «자리»
+ * 가 토큰을 정한다」 — the place, not the value, decides the token), and on top of
+ * that `a32` was a token used **14 times as a border and once as a surface** (that
+ * defect).
  *
- * ## 왜 호버가 특히 위험한가
+ * ## Why hover is especially dangerous
  *
- * 호버 면 전수(2026-08-15): 대비가 **좋아지는 222 대 나빠지는 73**. 나빠지는
- * 73 중 71이 「면만 바뀌는」 자리다 — 잉크는 그대로인데 면이 밝아지는 것이
- * 이 앱의 호버 기본값이다. 지금 대부분 안 터지는 이유는 규칙이 아니라
- * **출발점**이다: 그 71의 대부분이 16~18:1 에서 출발해 1~2 떨어져도 14 위에
- * 남는다. **잉크가 낮은 톤(danger · accent · tertiary)에서 출발한 자리에서만
- * 터졌고, 실제로 터진 세 자리가 전부 그 셋이었다.**
+ * Inventory of hover surfaces (2026-08-15): **222 improve contrast, 73 worsen it.**
+ * 71 of the 73 are places where only the surface changes — the ink stays and the
+ * surface brightens, which is this app's hover default. Most do not break today
+ * because of the **starting point**, not a rule: most of those 71 start at 16–18:1
+ * and stay above 14 after losing 1–2. **Only places starting from a low-contrast
+ * ink (danger · accent · tertiary) broke, and all three that broke were exactly
+ * those.**
  *
- * ## 판정은 허용목록이 아니라 계산이다
+ * ## The verdict is a calculation, not an allowlist
  *
- * `brand-fill-ink-license` 와 같은 문법 — `app/globals.css` 에서 토큰 값을
- * 읽어 합성 대비를 낸다. 목록을 손으로 적으면 램프가 움직이는 날 검사가
- * 조용히 틀린다.
+ * Same construction as `brand-fill-ink-license` — token values are read from
+ * `app/globals.css` and the composited contrast is computed. A hand-written list
+ * goes silently wrong the day the ramp moves.
  *
- * 호스트 표면은 소스만 봐서는 모르므로 **네 불투명 표면 전부에서** 잰다.
- * 하나에서라도 통과하면 「자리에 달렸다」로 두고(경계 목록), **전부에서
- * 미달이면 호스트와 무관한 결함**이라 빨개진다. 그 문턱이 이 계약을
- * 「추측으로 남을 잡지 않는」 것으로 만든다.
+ * The host surface cannot be known from source alone, so it is measured **on all
+ * four opaque surfaces**. Passing on any one leaves it as "depends on the place"
+ * (the borderline list); **failing on all of them is a host-independent defect** and
+ * turns red. That threshold is what keeps this contract from catching innocents by
+ * guesswork.
  */
 
 const ROOT = process.cwd();
@@ -64,12 +67,12 @@ function cssToken(name: string): Rgba | null {
   return (parseColor(v) as Rgba) ?? null;
 }
 
-/** 앱의 불투명 호스트 표면 넷 — 알파 면은 이 중 하나 위에 얹힌다. */
+/** The app's four opaque host surfaces — an alpha surface sits on one of them. */
 const HOSTS = ["--color-canvas", "--color-panel", "--color-elevated", "--topology-v2-panel-surface"]
   .map((n) => [n, cssToken(n)] as const)
   .filter((e): e is readonly [string, Rgba] => e[1] !== null);
 
-/** 본문 기준. 이 앱의 컨트롤 타입은 9.5~14px 이라 큰-글자 완화가 안 걸린다. */
+/** The body-text threshold. This app's control type is 9.5–14px, so the large-text relaxation never applies. */
 const AA = 4.5;
 
 const ratio = (ink: Rgba, bg: Rgba) => contrastRatio(composite(ink, bg), bg);
@@ -88,9 +91,10 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 /**
- * className 리터럴 단위로 본다 — 여는 태그 파서는 이 저장소에서 이미 한 번
- * 원소 수십 개를 한 「태그」로 삼켰다(`brand-fill-ink-license` 머리말).
- * className 리터럴에는 JSX 가 들어 있을 수 없다는 성질로 인공물을 버린다.
+ * Scans by className literal — an opening-tag parser has already swallowed dozens
+ * of elements as one "tag" in this repository (see `brand-fill-ink-license`'s
+ * preamble). Artefacts are discarded using the property that a className literal
+ * cannot contain JSX.
  */
 const JSX_INSIDE = /<[A-Za-z/]/;
 const literals = (src: string): string[] =>
@@ -99,19 +103,21 @@ const literals = (src: string): string[] =>
     .filter((s) => !JSX_INSIDE.test(s));
 
 /**
- * **톤 → 잉크 표를 값 층에서 읽어 온다.**
+ * **Reads the tone → ink table from the value layer.**
  *
- * 이 계약을 처음 켰을 때 프로브가 구멍을 잡았다: 고친 그 결함 자리
- * (`StudioLaneOverlays` 삭제 확인 칩)를 **되돌려도 초록**이었다. className
- * 리터럴에 잉크가 없었기 때문이다 — 그 자리의 잉크는 `tone: "danger"` 가
- * 내고, tone 은 문자열이 아니라 **`controlClass` 호출의 다른 속성**이다.
+ * When this contract was first switched on, a probe found a hole: reverting the
+ * very defect it had fixed (the `StudioLaneOverlays` delete-confirmation chip) left
+ * it **green**. The className literal carried no ink — that place's ink comes from
+ * `tone: "danger"`, and tone is not a string but **another property of the
+ * `controlClass` call**.
  *
- * 즉 스캐너의 단위(리터럴)가 결함의 단위(호출)보다 작았다. 2026-08-15 (9) 가
- * 배운 그 문장의 반대 방향이다 — **단위가 굵어도 가늘어도 그만큼 못 본다.**
- * 그래서 리터럴 스캔에 더해 호출 블록도 본다.
+ * The scanner's unit (the literal) was smaller than the defect's unit (the call).
+ * That is the opposite direction of the lesson learned on 2026-08-15 (9) — **a unit
+ * too coarse or too fine misses exactly that much.** So the call block is scanned
+ * alongside the literals.
  *
- * 표는 베끼지 않고 `control-class.ts` 에서 **읽는다** — 값이 두 곳에 적히면
- * 그 순간부터 어긋나기 시작한다(Carbon).
+ * The table is **read** from `control-class.ts` rather than copied — a value
+ * written in two places starts drifting from then on (Carbon).
  */
 function toneInkMap(): Map<string, string> {
   const src = readFileSync(path.join(ROOT, "src/shared/ui/control-class.ts"), "utf8");
@@ -122,7 +128,7 @@ function toneInkMap(): Map<string, string> {
   return out;
 }
 
-/** `controlClass({ … })` 를 중괄호 깊이로 끊는다 — `=>` 에서 잘리지 않게. */
+/** Terminates `controlClass({ … })` by brace depth, so it is not cut at a `=>`. */
 function callBlocks(src: string): string[] {
   const out: string[] = [];
   for (const m of src.matchAll(/controlClass\(\{/g)) {
@@ -150,9 +156,9 @@ function callBlocks(src: string): string[] {
   return out;
 }
 
-/** 호버 면 — 알파(불투명하지 않은) 것만. 불투명 면은 brand-fill 계약의 관할이다. */
+/** Hover surfaces — alpha (non-opaque) only. Opaque surfaces belong to the brand-fill contract. */
 const HOVER_FACE = /hover:bg-\[color:var\((--[a-z0-9-]+)\)\]/g;
-/** 같은 리터럴이 지는 잉크 — 호버 잉크가 있으면 그것이 이긴다. */
+/** The ink the same literal carries — a hover ink wins when present. */
 const HOVER_INK = /hover:text-\[color:var\((--[a-z0-9-]+)\)\]/;
 const REST_INK = /(?:^|[\s"'`])text-\[color:var\((--[a-z0-9-]+)\)\]/;
 
@@ -200,12 +206,12 @@ function scan() {
     for (const file of walk(path.join(ROOT, dir))) {
       const rel = path.relative(ROOT, file).split(path.sep).join("/");
       const src = stripComments(readFileSync(file, "utf8"));
-      // ① 호출 블록 — 잉크가 `tone:` 으로 오는 자리를 본다.
+      // ① Call blocks — covers places whose ink arrives through `tone:`.
       for (const block of callBlocks(src)) {
         const tone = /tone:\s*["']([a-zA-Z]+)["']/.exec(block)?.[1];
         consider(rel, block, tone ? tones.get(tone) : undefined);
       }
-      // ② 리터럴 — 호출 밖(호이스트 상수·네이티브 원소)까지 덮는다.
+      // ② Literals — covers what is outside a call (hoisted constants, native elements).
       for (const literal of literals(src)) {
         consider(rel, literal);
       }
@@ -228,9 +234,9 @@ describe("호버 틴트 면 위의 잉크 — 계산이 판정한다", () => {
 
   it("분리의 근거가 아직 실재한다 — 실제로 AA 를 깨는 짝이 계산 가능하다", () => {
     /*
-     * `/gate-probe`: 빈 집합 위에서 공회전하는 검출기를 금지한다. 이 단언이
-     * 빨개지는 날은 danger 램프가 수렴해 어떤 틴트 위에서도 통과하게 된
-     * 날이고, 그날 이 계약의 문턱을 재평가한다.
+     * `/gate-probe`: a detector idling on an empty set is forbidden. The day this
+     * assertion turns red is the day the danger ramp has converged enough to pass on
+     * any tint, and that is when this contract's threshold is re-evaluated.
      */
     const ink = cssToken("--color-danger-text")!;
     const face = cssToken("--color-danger-a32")!;
@@ -256,9 +262,9 @@ describe("호버 틴트 면 위의 잉크 — 계산이 판정한다", () => {
 
   it("경계 자리는 세어만 둔다 — 표면을 옮기면 조용히 깨지는 자리들", () => {
     /*
-     * 「지금 놓인 표면에서만」 통과하는 짝이다. 결함은 아니지만 옮기면
-     * 깨지므로, 수가 늘면 그 자리를 열어 봐야 한다. 오늘 실측을 상한으로
-     * 박는다 — 줄이는 것은 자유다.
+     * Pairs that pass only on the surface they currently sit on. Not defects, but they
+     * break if moved, so a growing count means those places need opening. Today's
+     * measurement is pinned as the cap; lowering it is free.
      */
     const lines = census.boundary.map(
       (o) => `${o.where}: ${o.face} × ${o.ink} — ${o.worst.toFixed(2)}~${o.best.toFixed(2)}`,

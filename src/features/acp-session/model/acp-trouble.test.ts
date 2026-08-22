@@ -3,15 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { isDiagnosticStderr, readAcpTrouble } from './acp-trouble';
 
 /**
- * 실측 문자열로만 검사한다 — 지어낸 오류로 맞춰 놓으면 진짜 오류가 왔을 때
- * 못 알아본다.
+ * Tested against measured strings only — tuned to an invented error, it would fail to recognize a
+ * real one.
  */
 describe('오류 옮기기 — 아는 것만 옮기고 모르면 원문을 접어 둔다', () => {
   it('로그인이 풀린 것을 알아본다 (2026-08-16 실측 그대로)', () => {
     const raw =
       '{"code":-32603,"message":"Internal error: Failed to authenticate: OAuth session expired and could not be refreshed","data":{"errorKind":"authentication_failed"}}';
     expect(readAcpTrouble(raw).kind).toBe('auth');
-    // 원문은 버리지 않는다 — 접어 두었다가 「자세히」에서 보여 준다.
+    // The original is never discarded — it is folded away and shown under "details".
     expect(readAcpTrouble(raw).detail).toContain('authentication_failed');
   });
 
@@ -30,20 +30,20 @@ describe('오류 옮기기 — 아는 것만 옮기고 모르면 원문을 접�
   });
 
   it('반쯤 남은 npx 캐시 — 오류 문자열이 아무 말도 안 하면 stderr 가 말한다 (2026-08-19 실기계)', () => {
-    // 소유자 화면 그대로: 오류는 이것뿐이었고,
+    // Exactly as on the owner's screen: this was the entire error,
     const raw = 'acp session closed';
-    // 단서는 전부 stderr 에 있었다.
+    // and every clue was on stderr.
     const stderr = [
       'npm error code ENOENT',
       'npm error path /Users/me/.npm/_npx/8757e2301903ae53/package.json',
       'npm error enoent Could not read package.json: Error: ENOENT: no such file or directory',
     ];
     expect(readAcpTrouble(raw, stderr).kind).toBe('install');
-    // 원문은 그대로 접힌다 — stderr 로 바꿔치기하지 않는다.
+    // The original stays folded — it is not swapped out for the stderr.
     expect(readAcpTrouble(raw, stderr).detail).toBe(raw);
-    // 오류 문자열 자체에 실려 와도 같은 갈래다.
+    // Carried in the error string itself, it is the same kind.
     expect(readAcpTrouble('npm error enoent Could not read package.json').kind).toBe('install');
-    // stderr 가 없으면 이 오류 문자열은 여전히 모른다고 말한다 — 지어내지 않는다.
+    // With no stderr this error string still says unknown — nothing is invented.
     expect(readAcpTrouble(raw).kind).toBe('unknown');
   });
 

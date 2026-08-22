@@ -32,20 +32,22 @@ interface PreviewSource {
 }
 
 /**
- * 온톨로지 블록 Slice A — "블록 가져오기" (병합 프리뷰). 전역 INDEX 패널
- * (`TopologyIndexPanel`) 안에 상시 마운트되는 자립 모듈 — FirstRunStarterModule
- * 과 같은 계약(상태·라벨 자급, 호스트 prop 표면 0).
+ * "Import a block" (the merge preview). A self-contained module mounted permanently
+ * inside the global INDEX panel (`TopologyIndexPanel`) — the same contract as
+ * `FirstRunStarterModule` (it supplies its own state and labels and adds zero prop
+ * surface to its host).
  *
- * 절대 계약: **승인 전 쓰기 0.** 폴더 선택 → 공유 파서로 .md 파싱 →
- * `planBlockImport` 순수 dry-run 으로 신규/충돌 리포트만 만든 뒤, 사용자가
- * scrim 딸린 다이얼로그에서 확인해야만 기존 vault 쓰기 경로(`createDoc`)로
- * 기록한다. 충돌 해소는 건너뛰기(기본) 또는 블록명 자동 접두사 — CLI
- * `import --rename` 과 같은 -2/-3 폴백까지 정합 (`merge-plan.ts` 참고).
+ * Absolute contract: **zero writes before approval.** Pick a folder → parse `.md` with the
+ * shared parser → build a new/conflict report with the pure dry run `planBlockImport`, and
+ * only once the user confirms in a scrim-backed dialog does it write through the existing
+ * vault write path (`createDoc`). Conflicts resolve by skipping (the default) or by an
+ * automatic block-name prefix — consistent with the CLI's `import --rename` down to the
+ * -2/-3 fallback (see `merge-plan.ts`).
  *
- * P1 결함② (사용성 전수 검수 2026-07-23) — 로컬 vault 미로드(정적 샘플)일 때
- * "블록 가져오기" 행이 흔적 없이 사라져 "기능 존재 은폐"로 읽혔다. 이제
- * 같은 자리에 disabled + "내 폴더를 열면 쓸 수 있어요" 힌트로 남는다 —
- * `RealmBlockExportAction` G1 강등과 같은 문법.
+ * Defect found in the 2026-07-23 usability sweep: with no local vault loaded (the static
+ * sample) the "import a block" row vanished without a trace, which read as hiding that the
+ * feature exists. It now stays in the same place, disabled with a hint that opening your
+ * own folder enables it — the same grammar as `RealmBlockExportAction`'s degradation.
  */
 export function BlockImportModule() {
   const t = useTranslations("ontologyBlocks");
@@ -54,13 +56,13 @@ export function BlockImportModule() {
   const [resolution, setResolution] = useState<BlockConflictResolution>("skip");
 
   /*
-   * 충돌 해결 선택 — role 은 이미 옳았는데 **화살표 이동이 없었다**(약속만 하고
-   * 아무 일도 안 일어남).
+   * The conflict-resolution choice — the role was already correct, but **arrow-key
+   * movement was missing** (it promised navigation and nothing happened).
    *
-   * ⚠️ 그릇은 자리에 남는다 — 이 컨테이너는 프리미티브 캐노니컬과 거의 같은데
-   * `p-1`/`gap-1` 이고(캐노니컬은 `p-px`/`gap-px`), 비활성 세그먼트가 값 층에
-   * 없는 hover 잉크를 진다. 인셋만이면 이주가 맞지만 hover 가 함께 걸려 있어
-   * 그릇 수렴은 hover 축 판정 뒤로 미룬다(2026-08-15 (8) 후속).
+   * ⚠️ The container stays put: it is nearly the primitive canonical but uses `p-1`/`gap-1`
+   * (the canonical is `p-px`/`gap-px`), and an inactive segment carries hover ink that is
+   * not in the value layer. If it were only the inset, migrating would be right, but hover
+   * is entangled, so container convergence waits until the hover axis is decided.
    */
   const resolutionGroup = useRovingRadioGroup<BlockConflictResolution>({
     value: resolution,
@@ -130,9 +132,9 @@ export function BlockImportModule() {
     setInlineText({ kind: "error", text: t("importError") });
   }, [planError, t]);
 
-  // 키 존재(`in`)가 아니라 호출 가능한지로 판정 — 값이 undefined 인 환경에서
-  // "지원함"으로 오판하면 원문 JS 오류가 사용자 문구 자리에 그려진다.
-  // 설치 앱은 같은 폴더 IO 계약을 구현한 Tauri picker/shim을 사용한다.
+  // Decided by whether it can be called, not by key presence (`in`) — judging "supported"
+  // in an environment where the value is undefined paints a raw JS error where the user
+  // copy belongs. The installed app uses a Tauri picker/shim implementing the same folder IO contract.
   const supported =
     (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") ||
     isTauriVaultRuntime();
@@ -181,7 +183,7 @@ export function BlockImportModule() {
     try {
       for (let i = 0; i < plan.writes.length; i += 1) {
         const write = plan.writes[i];
-        // 마지막 쓰기에서만 매니페스트 리로드 — 부트스트랩 연속 생성과 같은 계약.
+        // Reload the manifest only on the last write — the same contract as bootstrap's run of creates.
         await createDoc(write.slug, write.content, {
           skipRefresh: i < plan.writes.length - 1,
         });
@@ -203,7 +205,7 @@ export function BlockImportModule() {
 
   return (
     <>
-      {/* "지도에 없는 문서" 행과 같은 조용한 행 문법 — 상시 버튼 소음 금지. */}
+        {/* The same quiet row grammar as the "documents not on the map" row — no permanent button noise. */}
       <button
         type="button"
         onClick={() => void pickBlockFolder()}

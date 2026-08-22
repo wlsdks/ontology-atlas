@@ -46,8 +46,8 @@ describe('derivationToInsight', () => {
     ]);
   });
 
-  // D7 회귀 — 두 종류의 노드가 `evidenceIds[0]` 한 칸을 공유하므로, 구분
-  // 플래그가 그래프 노드까지 따라오지 않으면 화면이 다시 남의 문서를 연다.
+  // Regression: both kinds of node share the single `evidenceIds[0]` slot, so unless the
+  // distinguishing flag follows through to the graph node, the screen opens someone else's document again.
   it('자기 문서 보유 여부를 그래프 노드로 그대로 옮긴다', () => {
     const insight = derivationToInsight({
       nodes: [

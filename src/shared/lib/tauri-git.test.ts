@@ -124,8 +124,9 @@ describe('gitInit · gitSetRemote (쓰기 — 사용자 클릭 뒤에만)', () =
   });
 
   it('주소를 다듬거나 추측하지 않고 사용자 입력 그대로 넘긴다', async () => {
-    // 신뢰 헌장: 우리가 원격 주소를 제안·보정·자동탐지하지 않는다. 정규화는
-    // Rust `validate_remote_url` 의 책임이고 브리지는 통과시키기만 한다.
+    // Trust charter: we never suggest, correct, or auto-detect a remote URL.
+    // Normalisation is `validate_remote_url`'s job in Rust; the bridge only
+    // passes the value through.
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue({});
     await gitSetRemote('/v', '  https://example.com/r.git ');

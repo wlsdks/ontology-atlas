@@ -30,8 +30,9 @@ function withRepo(files, fn) {
 
 describe('markdown link extraction', () => {
   it('ignores links written inside fenced code blocks', () => {
-    // 실측 사고: 스토리보드 문서가 ```markdown 펜스 안에서 아직 만들지 않은
-    // gif 를 예시로 임베드하고 있었다. 펜스를 안 벗기면 그게 위반이 된다.
+    // Real incident: a storyboard document embedded a not-yet-created gif as an
+    // example inside a ```markdown fence. Without stripping fences that reads as a
+    // violation.
     const markdown = ['[real](./a.md)', '```markdown', '[example](./nope.md)', '```', '[after](./b.md)'].join('\n');
 
     assert.deepEqual(

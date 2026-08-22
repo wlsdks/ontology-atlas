@@ -336,9 +336,10 @@ export const CASES = [
     },
   },
   {
-    // 자리 브리프 짝 — 스킬과 **다른 이유로** 존재한다. 한쪽은 서브에이전트
-    // 소환 등록부이고, 다른 쪽은 서브에이전트가 없는 도구가 카운슬을 순차로
-    // 돌 때 여는 참고 문서다. 목적이 달라도 내용은 같아야 한다.
+    // The seat-brief pair exists for a **different reason** than the skills: one is the
+    // registry a subagent is summoned from, the other is the reference a tool without
+    // subagents opens while walking the council sequentially. Different purposes, but the
+    // contents must match.
     name: 'agent brief copy in sync — identical bytes in both duplicated trees',
     input: {
       files: [
@@ -389,9 +390,9 @@ export const CASES = [
     },
   },
   {
-    // 한쪽에만 있는 자리는 스킬과 달리 informational 이 아니라 drift 다 —
-    // 그 도구에서는 카운슬 프로토콜 자체가 성립하지 않기 때문이다.
-    // 2026-08-04 실측: 자리 15개 전부가 이 상태였고 아무 신호도 없었다.
+    // Unlike skills, a seat present on only one side is drift rather than informational
+    // — the council protocol does not hold at all in that tool.
+    // Measured 2026-08-04: all 15 seats were in this state with no signal at all.
     name: 'agent brief one-sided — a seat that exists in only one tree is drift, not informational',
     input: {
       files: [

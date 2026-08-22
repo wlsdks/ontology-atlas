@@ -16,10 +16,10 @@ const ALLOWED_FLAGS = ['--vault', '--kind', '--json'];
 
 
 /**
- * R11 #32 — \`ontology-atlas list [vault]\`
+ * `ontology-atlas list [vault]`
  *
- * vault 의 ontology 노드 (frontmatter `kind:` 있는 .md) 를 표 형태로 출력.
- * --kind <kind> 필터, --json 머신 가독 출력.
+ * Prints the vault's ontology nodes (`.md` with a frontmatter `kind:`) as a table.
+ * `--kind <kind>` filters; `--json` gives machine-readable output.
  */
 export function runList(args) {
   const parsed = parseArgs(args);

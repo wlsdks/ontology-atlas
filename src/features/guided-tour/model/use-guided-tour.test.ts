@@ -62,9 +62,10 @@ describe("useGuidedTour", () => {
     expect(window.localStorage.getItem(TEST_KEY)).toBe("skipped");
   });
 
-  // 2026-07-23 최종 스윕 P2 — 앵커 해석 가능 여부가 순간마다 바뀌어도(선택 중
-  // 유틸리티 레인 접힘 → recent 증발) 진행 표시 분모는 페르소나 고정 여정
-  // (비개발 7) 그대로여야 한다. "5/5" 다음이 "5/6" 이 되는 요동 회귀 차단.
+  // Even while anchor resolvability fluctuates moment to moment (a selection folds the
+  // utility lane and `recent` vanishes), the progress denominator must stay the
+  // persona's fixed journey (7 for non-developers). Blocks the regression where "5/5"
+  // is followed by "5/6".
   it("keeps the display denominator (personaSteps) fixed while anchor resolvability fluctuates", () => {
     let resolvable = true;
     const { result, rerender } = renderHook(
@@ -80,14 +81,14 @@ describe("useGuidedTour", () => {
     expect(result.current.personaSteps).toHaveLength(7);
     expect(result.current.personaStepIndex).toBe(0);
 
-    // recent/relations 등 testid 앵커가 일시적으로 전부 해석 불가가 돼도
-    // (visibleSteps 는 줄어들지만) 표시 여정은 7 그대로.
+    // Even if the testid anchors (recent, relations) all become momentarily
+    // unresolvable — shrinking visibleSteps — the displayed journey stays at 7.
     resolvable = false;
     rerender({ hasSelection: true });
     expect(result.current.visibleSteps.length).toBeLessThan(7);
     expect(result.current.personaSteps).toHaveLength(7);
 
-    // dev 분기 시에만 8 로 — 사용자가 명시적으로 한 단계를 더 선택한 경우다.
+    // Only on the dev branch does it become 8 — the user explicitly chose one more step.
     resolvable = true;
     rerender({ hasSelection: true });
     act(() => result.current.chooseDevBranch());
@@ -96,13 +97,13 @@ describe("useGuidedTour", () => {
     expect(result.current.personaStepIndex).toBe(7);
   });
 
-  // 2026-07-26 회귀 — 카드의 [다음]/[완료] 라벨을 `visibleSteps` 길이로
-  // 정하면 데이터시트 단계에서 거짓말을 한다. 그 단계에서는 열린 상세 패널이
-  // 뒤 단계(INDEX·스포트라이트)의 앵커를 가려 목록이 거기서 끊기지만,
-  // `advance()` 는 패널을 닫고 DOM 을 다시 읽어 다음 장으로 간다. 길이 기준일
-  // 때는 5/7 에서 [완료] 가 그려졌고 누르면 투어가 조기 종료됐다.
+  // Regression 2026-07-26 — deciding the card's [next]/[done] label from the
+  // `visibleSteps` length lies on the datasheet step. There, the open detail panel
+  // hides the anchors of later steps (INDEX, spotlight) and the list is cut off, but
+  // `advance()` closes the panel, re-reads the DOM, and moves on. By length, [done]
+  // was drawn at 5/7 and pressing it ended the tour early.
   it("datasheet 단계는 목록의 끝이어도 마지막 장이 아니다", () => {
-    // 데이터시트 앵커만 해석되고 그 뒤 단계 앵커는 가려진 상태를 모델링한다.
+    // Models the state where only the datasheet anchor resolves and later anchors are hidden.
     const canResolveAnchor = (anchor: TourAnchor) =>
       anchor === null ||
       anchor.type === "canvas-node" ||
@@ -129,7 +130,7 @@ describe("useGuidedTour", () => {
     const { result } = setup();
     act(() => result.current.start());
     expect(result.current.isFinalStep).toBe(false);
-    // 비개발 여정의 끝은 recent — 그 다음 장(agent)은 dev 페르소나 전용이다.
+    // The non-developer journey ends at recent — the next page (agent) is dev-persona only.
     for (let i = 0; i < 8 && result.current.step?.id !== "recent"; i += 1) {
       act(() => result.current.advance());
     }
@@ -266,9 +267,9 @@ describe("useGuidedTour", () => {
   });
 
   it("reports devBranchAvailable=false and finishes as 'done' (not a welcome reset) when the agent anchor can't resolve", () => {
-    // 2026-07-23 Guardian 실측 회귀 가드 — 첫 실행 카드(`first-run-starter`)를
-    // 이미 dismiss 한 사용자: "저는 개발자예요 →" 가 해석 불가 stepId 로
-    // 점프해 첫 단계(welcome)로 조용히 리셋되는 루프가 있었다.
+  // Measured regression guard 2026-07-23 — for a user who had already dismissed the
+  // first-run card (`first-run-starter`), "I'm a developer →" jumped to an
+  // unresolvable stepId and silently reset to the first step (welcome), forming a loop.
     const { result } = renderHook(() =>
       useGuidedTour({
         hasSelection: true,
@@ -310,8 +311,8 @@ describe("useGuidedTour", () => {
 });
 
 /**
- * 목적지 안내(문서함·공방 등)는 **같은 상태기계**에 스텝 배열만 갈아 끼운다 —
- * 두 번째 가이드 체계를 만들지 않았다는 것을 이 테스트가 고정한다.
+ * Destination guides (docs, workshop, and so on) swap only the step array into **the
+ * same state machine** — this test pins that no second guidance system was built.
  */
 describe("useGuidedTour — 주입된 스텝 배열", () => {
   const DEST_KEY = "guided-tour:docs:v1:test";

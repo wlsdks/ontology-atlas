@@ -11,14 +11,15 @@ import {
 } from "../../cli/src/lib/git-snapshot.mjs";
 
 /**
- * Atlas Git 요약 산식 2-way contract — 같은 로직이 두 곳에 산다:
+ * Atlas Git summary arithmetic, 2-way contract — the same logic lives in two places:
  *   - cli/src/lib/git-snapshot.mjs (developer CLI `node $ATLAS/cli/src/index.mjs snapshot`)
- *   - src/shared/lib/atlas-git-changes.ts (웹 Atlas Git 패널)
- * (Rust `src-tauri/src/git.rs` 는 세 번째 미러 — Rust 자체 단위 테스트가
- * 같은 fixture 의도를 검증한다.)
+ *   - src/shared/lib/atlas-git-changes.ts (the web Atlas Git panel)
+ * (Rust `src-tauri/src/git.rs` is a third mirror — its own Rust unit tests verify
+ * the same fixture intent.)
  *
- * 웹 패널이 CLI 와 다른 커밋 메시지/카운트를 말하면 사용자는 두 표면에서
- * 서로 다른 "발자취" 를 보게 된다 — 이 테스트가 그 drift 를 차단한다.
+ * If the web panel reports different commit messages or counts than the CLI, the
+ * user sees two different histories on the two surfaces. This test blocks that
+ * drift.
  */
 
 const PORCELAIN_FIXTURES = [
@@ -57,8 +58,8 @@ const CHANGE_FIXTURES = [
 describe("atlas-git summary contract — web mirror agrees with the CLI", () => {
   for (const fixture of PORCELAIN_FIXTURES) {
     it(`porcelain parsing + classification: ${fixture.name}`, () => {
-      // CLI 의 파서는 injectable run 뒤에 있으므로 fixture 텍스트를 돌려주는
-      // fake run 으로 구동한다 (실 git 프로세스 0).
+      // The CLI's parser sits behind an injectable run, so it is driven by a fake run
+      // that returns the fixture text (zero real git processes).
       const cliRows = getPorcelainCli({
         repoRoot: "/repo",
         pathspec: ".",

@@ -1,13 +1,14 @@
-// 4-way frontmatter parser contract — 같은 입력에 같은 출력을 보장.
+// 4-way frontmatter parser contract — the same input must give the same output.
 //
-// 단일 진실원: 이 fixture 1 곳. 검증 대상:
-//   - src/shared/lib/parse-frontmatter.ts        (런타임)
-//   - mcp/src/parser.mjs                         (AI agent surface, 별도 npm pkg)
-//   - scripts/lib/parse-frontmatter.mjs          (빌드 스크립트 + validator CLI)
-//   - cli/src/lib/parse-frontmatter.mjs          (developer CLI, 별도 npm pkg)
+// Single source of truth: this fixture. Verified against:
+//   - src/shared/lib/parse-frontmatter.ts        (runtime)
+//   - mcp/src/parser.mjs                         (AI agent surface, separate package)
+//   - scripts/lib/parse-frontmatter.mjs          (build scripts + validator CLI)
+//   - cli/src/lib/parse-frontmatter.mjs          (developer CLI, separate package)
 //
-// 한쪽이 drift 하면 contract test 가 즉시 잡는다. mcp/ 와 cli/ 는 별도 publish 라
-// 물리적 단일 모듈로 묶을 수 없으므로 contract test 가 effective 단일화.
+// If one drifts, the contract test catches it immediately. `mcp/` and `cli/` ship
+// separately and cannot be folded into one physical module, so the contract test is
+// what unifies them in effect.
 
 export const CASES = [
   {
@@ -181,9 +182,9 @@ export const CASES = [
     },
   },
   {
-    // P6 게이트 ② — relation_notes 같은 객체 맵(중첩 들여쓰기 key: value)이
-    // 3-way 파서(런타임/MCP/스크립트)에서 동일하게 해석돼야 why 스키마가
-    // 안전하다. rename 시 키 재작성(redirectBacklinks)의 전제이기도 하다.
+    // Object maps such as relation_notes (nested indented key: value) must parse
+    // identically across the parsers, or the `why` schema is unsafe. It is also the
+    // premise for key rewriting on rename (redirectBacklinks).
     name: "객체 맵 (relation_notes 형) — 중첩 key: value",
     input: "---\nkind: capability\ntitle: T\nrelation_notes:\n  capabilities/mcp-server: 쓰기 경로가 이 서버를 지난다\n  domains/views: 지도가 이 관계를 그린다\n---\n본문",
     expected: {
@@ -198,19 +199,18 @@ export const CASES = [
       body: "본문",
     },
   },
-  // ── 줄바꿈·인코딩 (2026-07-28 코드 품질 리뷰 실측) ────────────────────────
+  // ── Line endings and encoding (measured in the 2026-07-28 code-quality review) ──
   //
-  // 이 매트릭스에 CRLF·BOM 케이스가 **0건**이었다. 4-way 계약은 네 파서의
-  // *일치*를 보장하지만 **넷이 똑같이 틀리면 통과한다** — 그리고 실제로
-  // 똑같이 틀려 있었다.
+  // This matrix had **zero** CRLF or BOM cases. The 4-way contract guarantees the four
+  // parsers *agree*, but **it passes when all four are wrong the same way** — and all
+  // four were.
   //
-  // 왜 치명적인가: `surfaces.md` 가 명시 지원한다고 적은 인구가 "Windows
-  // Chromium 의 차선 워크벤치" 이고, Windows 편집기가 만드는 것이 정확히
-  // CRLF 다. PowerShell `Out-File` 기본값은 UTF-8 **BOM** 이다.
+  // Why that is critical: the population `.claude/rules/surfaces.md` explicitly
+  // supports is "the fallback workbench on Windows Chromium", and what Windows editors
+  // produce is exactly CRLF. PowerShell `Out-File` defaults to UTF-8 **with BOM**.
   {
-    // 스칼라는 `.trim()` 이 구제해서 살아남고 블록 리스트만 죽는다 — 그래서
-    // 증상이 "노드는 보이는데 관계만 전부 사라진다" 는 형태로 나타난다.
-    // 아무 경고도 없다.
+    // `.trim()` rescues scalars, so only block lists die — which makes the symptom
+    // "the nodes are visible but every relation disappeared", with no warning at all.
     name: "CRLF — 블록 리스트가 살아남는다",
     input: "---\r\nkind: capability\r\ntitle: T\r\nrelates:\r\n  - a\r\n  - b\r\n---\r\n본문",
     expected: {
@@ -227,8 +227,8 @@ export const CASES = [
     },
   },
   {
-    // BOM 은 `---` 판정을 통째로 빗나가게 해서 **그 문서가 그래프에서 노드
-    // 자체로 사라진다**. `kind:` 가 없는 문서로 보이기 때문이다.
+    // A BOM makes the `---` check miss entirely, so **the document disappears from the
+    // graph as a node**: it looks like a document with no `kind:`.
     name: "BOM — frontmatter 블록이 증발하지 않는다",
     input: "\uFEFF---\nkind: capability\ntitle: T\n---\n본문",
     expected: { frontmatter: { kind: "capability", title: "T" }, body: "본문" },
@@ -238,14 +238,14 @@ export const CASES = [
     input: "\uFEFF---\r\nkind: domain\r\ntitle: D\r\n---\r\n본문",
     expected: { frontmatter: { kind: "domain", title: "D" }, body: "본문" },
   },
-  // ── 인용·구분자 (2026-07-28 코드 품질 리뷰 실측) ──────────────────────────
+  // ── Quoting and separators (measured in the 2026-07-28 code-quality review) ──
   //
-  // serializer 는 `"` 를 `\"` 로 이스케이프하는데 파서는 언이스케이프를 안
-  // 했다. 그래서 `patch_concept` 가 프론트매터를 재직렬화할 때마다 백슬래시가
-  // **배가**된다 — 저장 반복 = 오염 증식(실측 3회: 1개 → 2개 → 4개).
+  // The serializer escapes `"` as `\"` while the parser never unescaped it, so every
+  // re-serialisation of frontmatter by `patch_concept` **doubled** the backslashes —
+  // repeated saves multiplied the corruption (measured over 3 saves: 1 → 2 → 4).
   //
-  // 인라인 리스트/객체는 무조건 `split(',')` 라 값 안의 콤마에서 쪼개졌다.
-  // `labels: { ko: "지도, 검색" }` 의 뒷조각이 조용히 사라진다.
+  // Inline lists and objects were unconditionally `split(',')`, so they split on commas
+  // inside values: the tail of `labels: { ko: "지도, 검색" }` silently disappeared.
   {
     name: "따옴표 안의 이스케이프된 따옴표 — 원문으로 되돌린다",
     input: '---\nkind: capability\ntitle: "say \\"hello\\""\n---\n',
@@ -272,22 +272,24 @@ export const CASES = [
       body: "",
     },
   },
-  // ── YAML 이 허용하는데 우리 파서가 못 읽던 두 형식 (2026-07-29 도그푸딩) ──
+  // ── Two forms YAML allows that our parser could not read (dogfooding, 2026-07-29) ──
   //
-  // 이 매트릭스의 블록 리스트 케이스는 전부 **2칸 들여쓰기**였다. 그런데 YAML
-  // 은 키 아래 시퀀스에 들여쓰기를 요구하지 않는다 — `- ` 를 0칸으로 쓰는 것이
-  // PyYAML·js-yaml·gray-matter·Obsidian·GitHub 모두에서 정상이다. 우리 파서는
-  // `/^\s+-\s+/` 라 **공백 하나 이상**을 요구했고, 그래서 그 형식의 관계가
-  // 통째로 빈 문자열이 됐다. 증상은 CRLF 때와 같다: **노드는 보이는데 관계만
-  // 전부 사라지고 경고 0.**
+  // Every block-list case in this matrix used **two-space indentation**. But YAML does
+  // not require a sequence under a key to be indented — writing `- ` at column 0 is
+  // valid in PyYAML, js-yaml, gray-matter, Obsidian, and GitHub alike. Our parser used
+  // `/^\s+-\s+/`, requiring **at least one space**, so relations written that way
+  // became empty strings wholesale. The symptom matches the CRLF case: **the nodes are
+  // visible, every relation disappeared, zero warnings.**
   //
-  // 블록 스칼라(`|`, `>`)는 더 나빴다. 지시자가 값으로 저장되고(`"|"`), 이어지는
-  // 들여쓴 본문 줄들이 **최상위 키로 재해석**됐다 — 파서가 키를 `.trim()` 하기
-  // 때문이다. 그래서 설명문 안의 `kind: element` 한 줄이 그 노드의 **종류를
-  // 바꿔 버렸다.** 문서가 자기 설명으로 자기 타입을 덮어쓰는 것이다.
+  // Block scalars (`|`, `>`) were worse. The indicator was stored as the value
+  // (`"|"`), and the indented body lines that followed were **reinterpreted as
+  // top-level keys**, because the parser `.trim()`s keys. So a single `kind: element`
+  // line inside a description **changed that node's kind** — a document overwriting
+  // its own type with its own prose.
   //
-  // 넷이 똑같이 틀리면 4-way 계약은 통과한다 — 이 매트릭스가 진실원이라
-  // 여기에 케이스를 넣는 것이 곧 네 파서 모두에 대한 요구다.
+  // The 4-way contract passes when all four are wrong the same way, so adding a case
+  // to this matrix — the source of truth — is what makes it a requirement on all four
+  // parsers.
   {
     name: "블록 리스트 — 0칸 들여쓰기도 YAML 이다",
     input: "---\nkind: capability\ndepends_on:\n- alpha\n- beta\n---\n",

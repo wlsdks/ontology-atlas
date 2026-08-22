@@ -3,7 +3,7 @@ import { translateOntologyDeeplinkToTopologyParam } from "@/entities/knowledge-g
 import { resolveTopologySelectedOntologyNode } from "./resolve-topology-selected-node";
 
 /**
- * W6 agent visibility — resolves an agent heartbeat's `focus.ontologySlug`
+ * Resolves an agent heartbeat's `focus.ontologySlug`
  * (a raw vault slug, e.g. `"capabilities/agent-live-activity-contract"`,
  * `"domains/onboarding-ux"`, or a bare/canonical slug) into the topology
  * graph node id (`"capability:agent-live-activity-contract"`) that
@@ -19,9 +19,8 @@ import { resolveTopologySelectedOntologyNode } from "./resolve-topology-selected
  * need to know the graph's `kind:slug` id shape.
  *
  * Returns `null` when there's no slug, no node list, or no match — the
- * caller (`HomePage`) then draws nothing extra on the map (fabrication 0,
- * per the W6 brief: a heartbeat whose focus can't be resolved is silently
- * ignored, never guessed at).
+ * caller then draws nothing extra on the map: a heartbeat whose focus cannot be
+ * resolved is silently ignored, never guessed at.
  */
 export function resolveAgentFocusNodeId(
   ontologySlug: string | null,
@@ -47,8 +46,9 @@ export interface ResolvedOntologyRelationPreview {
 }
 
 /**
- * ACP는 vault slug를 말하고 캔버스는 graph node id를 쓴다. 두 끝점이 모두
- * 현재 지도에 실재할 때만 유령 엣지를 만든다 — 한쪽을 짐작해 그리지 않는다.
+ * ACP speaks in vault slugs while the canvas keys on graph node ids. A ghost
+ * edge is drawn only when both endpoints exist on the current map — neither end
+ * is ever guessed.
  */
 export function resolveOntologyRelationPreview(
   preview: OntologyRelationPreviewInput | null,

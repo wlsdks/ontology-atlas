@@ -13,7 +13,7 @@ describe("buildEdgeTypeRows", () => {
         ["contains", 5],
       ]),
     );
-    // KNOWLEDGE_EDGE_TYPES 순서: contains, belongs_to, depends_on, ...
+    // KNOWLEDGE_EDGE_TYPES order: contains, belongs_to, depends_on, ...
     expect(rows.map((r) => r.type)).toEqual(["contains", "depends_on"]);
     expect(rows.map((r) => r.count)).toEqual([5, 3]);
   });
@@ -47,7 +47,7 @@ describe("buildEdgeTypeRows", () => {
 
   it("canonical 미포함 type → 0 카운트로 표시 안 함", () => {
     const rows = buildEdgeTypeRows(new Map([["uses", 2]]));
-    // KNOWLEDGE_EDGE_TYPES 의 모든 항목 (count 0 = skip), uses 만 노출
+    // Every entry of KNOWLEDGE_EDGE_TYPES with count 0 is skipped, leaving only `uses`.
     expect(rows).toEqual([{ type: "uses", count: 2 }]);
   });
 });

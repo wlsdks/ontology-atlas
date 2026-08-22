@@ -161,13 +161,14 @@ describe("isSafeRectProtectedLabel — 인셋 밖으로 나간 이름을 버리�
   };
 
   it("허브와 프로젝트는 아무 상호작용 없이도 살아남는다 (원장 2026-08-08 (3) ②)", () => {
-    // 실측 재현: 세션 중 볼트를 열면 최외곽 허브(반경 395)가 상단 인셋(148) 위로
-    // 밀려 **그려지는데 이름만 없는** 앰버 링이 됐다. 노드 패스는 뷰포트 전체로
-    // 컬하고 이 패스만 안전영역으로 컬해서 생긴 비대칭이다.
+    // Reproduces the measurement: opening a vault mid-session pushed the outermost
+    // hub (radius 395) above the top inset (148), leaving an amber ring that was
+    // **drawn but nameless** — the asymmetry of culling nodes against the whole
+    // viewport while culling this path against the safe rect.
     expect(isSafeRectProtectedLabel({ ...plain, isHub: true })).toBe(true);
     expect(isSafeRectProtectedLabel({ ...plain, kind: "project" })).toBe(true);
-    // 허브 판정은 kind 와 무관하다 — 허브는 `resolveLabelPriority` 에서도 이미
-    // project 와 같은 등급이다(위 「project/hub」 케이스).
+    // The hub test is independent of kind: in `resolveLabelPriority` a hub already
+    // ranks equal to a project.
     expect(isSafeRectProtectedLabel({ ...plain, kind: "domain", isHub: true })).toBe(true);
   });
 
@@ -260,7 +261,8 @@ describe("노드 도형 예약 — 라벨이 노드 위에 글자를 얹지 않�
   const disc = { bbox: box(100, 160, 0, 60), priority: NODE_DISC_LABEL_PRIORITY, ownerId: "n1" };
 
   it("자기 노드의 예약에는 굴복하지 않는다 — 안 그러면 모든 라벨이 사라진다", () => {
-    // 라벨은 언제나 자기 노드 바로 아래(또는 위)에 붙으므로 자기 예약과 겹친다.
+    // A label always sits directly below (or above) its own node, so it always
+    // overlaps its own reservation.
     expect(overlapsForeignReserved(box(110, 150), "n1", 5, [disc])).toBe(false);
   });
 

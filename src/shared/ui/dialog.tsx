@@ -16,72 +16,70 @@ import {
 import { transientSurface } from "./transient-surface";
 
 /**
- * Dialog — **뒤를 막는 중앙 대화상자.** 모달성 계약이 기본으로 딸려 온다.
+ * Dialog — **the centred dialog that blocks what is behind it.** Modality comes
+ * as standard.
  *
- * ## 왜 (2026-08-15 「체계」석 비준 — docs/DECISIONS.md)
+ * **Why** (ratified by the design-systems seat 2026-08-15 — `docs/DECISIONS.md`).
+ * 26 `role="dialog"` sites across 23 files were each assembling modality
+ * themselves. Measured drift: **5 different** scrim tokens, plus 2 `aria-modal`
+ * surfaces with no scrim at all (modal without modality — forbidden by
+ * `.claude/rules/design.md`); **8 hardcoded widths** (360–576); hardcoded z
+ * (`z-50` ×12, `z-40` ×3); and a focus trap actually present in **8 of 20**
+ * sites that declared `aria-modal`. This is the slot `Surface` deliberately left
+ * empty ("if you need a modal, stack that contract separately") — the same
+ * disease as the inline-panel hard-cut incident, a missing **asset to copy**
+ * rather than missing discipline, so it gets the same prescription: a primitive.
  *
- * `role="dialog"` 26곳/23파일이 각자 모달성을 조립하고 있었다. 실측 드리프트:
- * 스크림 토큰 **5갈래** + 무스크림 aria-modal 2곳(modal without modality —
- * design.md 가 금지한 그것) · 폭 하드코딩 **8종**(360~576) · z 하드코딩
- * (z-50 12곳 · z-40 3곳) · aria-modal 선언 대비 **트랩 실재 8/20**. `Surface`
- * 가 "모달이 필요하면 이 계약을 따로 쌓는다"고 비워 둔 그 자리다 — 인라인
- * 패널 하드컷 사고와 같은 병(규율이 아니라 **베낄 자산**의 부재)이라 같은
- * 처방(프리미티브)을 쓴다.
+ * **The contract — all on by default, no opt-out.** Focus trap · owns Escape ·
+ * returns focus to the opening control · body scroll lock · `aria-modal` ·
+ * close on scrim click. **There is no `modal={false}`**: the WAI-ARIA APG
+ * requires this set as one package for the modal-dialog pattern, and an opt-out
+ * switch becomes a hole through the whole contract. Non-modal surfaces are not
+ * consumers of this component but of `Surface` plus
+ * `transientSurface("anchored")`.
  *
- * ## 계약 — 전부 기본 on, opt-out 없음
+ * **Canonical tokens** (exactly as the seat ruled). Scrim `--overlay-scrim`
+ * (0.85 — the container doubles as the scrim, so there is a single z layer) · z
+ * `--z-dialog` · surface `--color-panel` (the scrim provides the brightness
+ * separation) · border `--color-divider` (one token with internal dividers) ·
+ * radius `rounded-panel` · shadow `--shadow-elevation-3` (the dialog step) ·
+ * width `--dialog-w-sm/md`, two steps, because the 8 hardcoded widths clustered
+ * into exactly two (360–448 → 420, 480–576 → 560).
  *
- * 포커스 트랩 · Escape 소유 · 여는 컨트롤로 복귀 · body 스크롤락 ·
- * `aria-modal` · 스크림 클릭 닫기. **`modal={false}` 는 만들지 않는다** —
- * WAI-ARIA APG 가 모달 다이얼로그 패턴에 이 세트를 한 벌로 요구하고,
- * opt-out 스위치는 그 계약 전체를 빠져나가는 구멍이 된다. 비모달 표면은
- * 이 컴포넌트의 소비자가 아니라 `Surface` + `transientSurface("anchored")`
- * 의 소비자다.
+ * **Motion** follows the incumbent majority overlay grammar — `SCRIM_FADE` for
+ * the scrim, `OVERLAY_SPRING` for the panel (no overshoot; opacity plus an 8px
+ * rise). Unifying on `Surface`'s CSS-keyframe grammar needs the motion seat's
+ * co-signature and is not decided here (seat condition ⓒ).
  *
- * ## 캐노니컬 토큰 (체계석 판정 그대로)
- *
- * 스크림 `--overlay-scrim`(0.85 — 컨테이너가 스크림을 겸해 z 층이 하나로
- * 끝난다) · z `--z-dialog` · 표면 `--color-panel`(밝기 분리는 스크림이 낸다)
- * · 보더 `--color-divider`(내부 구획과 한 토큰) · 반경 `rounded-panel` ·
- * 그림자 `--shadow-elevation-3`(dialog 단) · 폭 `--dialog-w-sm/md` 2단
- * (하드코딩 8종의 실측 군집이 정확히 둘: 360~448 → 420 · 480~576 → 560).
- *
- * ## 모션
- *
- * 현직 다수파 오버레이 문법 그대로다 — 스크림 `SCRIM_FADE`, 패널
- * `OVERLAY_SPRING`(오버슈트 0, opacity + 8px 상승). Surface 의 CSS 키프레임
- * 문법으로의 통일은 모션석 공동 서명 대상이라 여기서 결정하지 않는다
- * (체계석 조건 ⓒ).
- *
- * ## 게이트
- *
- * `dialog.test.tsx`(모달성 계약) + `tests/contract/dialog-adoption-ratchet`
- * (이 파일 밖의 `role="dialog"` 는 장부를 넘지 못한다 — 새 파일은 첫날부터 0).
- * `data-transient-surface="sheet"` 자기선언으로 2026-08-11 훑기 검사를 자동
- * 상속한다.
+ * **Gates:** `dialog.test.tsx` (the modality contract) and
+ * `tests/contract/dialog-adoption-ratchet` (a `role="dialog"` outside this file
+ * cannot exceed the recorded baseline — new files start at 0). Declaring
+ * `data-transient-surface="sheet"` inherits the 2026-08-11 sweep automatically.
  */
 export interface DialogProps {
   open: boolean;
-  /** Escape · 스크림 클릭 · 소비자의 닫기 버튼이 전부 이 하나로 모인다. */
+  /** Escape, a scrim click and the consumer's close button all funnel through this one. */
   onClose: () => void;
-  /** 폭 2단 — sm 420(기본) · md 560. 새 단이 필요하면 「체계」 소집이 먼저다. */
+  /** Two width steps — sm 420 (default), md 560. A new step means convening the design-systems seat first. */
   size?: "sm" | "md";
-  /** 패널 안 제목 원소의 id. 없으면 `aria-label` 을 넘겨라 — 이름 없는 모달 금지. */
+  /** Id of the title element inside the panel. Without one, pass `aria-label` — an unnamed modal is not allowed. */
   labelledBy?: string;
   "aria-label"?: string;
   /**
-   * 여는 순간 초점이 가는 곳. 기본 `first`(첫 focusable — APG 권고).
-   * `container` 는 첫 컨트롤이 파괴적일 때(삭제 확인 등), `none` 은 소비자가
-   * 자기 effect 로 특정 컨트롤(주 행동 버튼 등)에 직접 줄 때 — 트랩·복귀는
-   * 그대로 이 컴포넌트가 소유한다.
+   * Where focus lands on open. Default `first` (the first focusable — the APG
+   * recommendation). Use `container` when the first control is destructive (a
+   * delete confirmation), and `none` when the consumer moves focus to a specific
+   * control from its own effect. The trap and the focus return stay owned by
+   * this component either way.
    */
   initialFocus?: "container" | "first" | "none";
   testId?: string;
-  /** 패널에 더하는 클래스 — 레이아웃(플렉스·패딩)용. 토큰 계약은 덮지 마라. */
+  /** Extra classes for the panel — layout only (flex, padding). Do not override the token contract. */
   className?: string;
   children: ReactNode;
 }
 
-/** SSR(정적 export 빌드)에서는 document 가 없다 — 클라이언트 마운트 후에만 포털. */
+/** There is no `document` during the static-export build, so portal only after the client mounts. */
 function useIsMounted(): boolean {
   return useSyncExternalStore(
     () => () => {},
@@ -142,8 +140,8 @@ export function Dialog({
             data-testid={testId}
             data-overlay-spring="true"
             {...transientSurface("sheet")}
-            // 프로그램으로 옮긴 컨테이너 초점에는 링을 그리지 않는다
-            // (dialog-focus-ring.spec.ts 가 지키는 판정).
+            // No ring on programmatically moved container focus
+            // (the verdict `dialog-focus-ring.spec.ts` enforces).
             className={cn(
               "w-[min(var(--dialog-w-sm),calc(100vw-2rem))] rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-3)] focus:outline-none",
               size === "md" && "w-[min(var(--dialog-w-md),calc(100vw-2rem))]",

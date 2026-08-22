@@ -19,9 +19,9 @@ vi.mock('@/features/docs-vault-local', async () => {
   const actual = await vi.importActual<typeof import('@/features/docs-vault-local')>(
     '@/features/docs-vault-local',
   );
-  // useVaultCreateFlow/useJustStartVault 는 vault 를 인자로만 받는 순수 hook 이라
-  // 실제 구현을 그대로 쓴다 — mocking 이 필요한 건 useLocalVault (전역 provider
-  // 접근) 뿐. useJustStartVault 내부의 tauri-vault-fs 호출은 아래에서 mock.
+  // `useVaultCreateFlow` / `useJustStartVault` are pure hooks taking the vault as an argument, so the
+  // real implementations are used — only `useLocalVault` (global provider access) needs mocking. The
+  // tauri-vault-fs calls inside `useJustStartVault` are mocked below.
   return { ...actual, useLocalVault: () => mocks.vault };
 });
 
@@ -99,7 +99,7 @@ describe('FirstRunPage', () => {
     expect(screen.getByTestId('first-run-create')).toBeInTheDocument();
     expect(screen.getByTestId('first-run-demo')).toBeInTheDocument();
     expect(screen.getByText('trustLine')).toBeInTheDocument();
-    // 설치 앱 안에서 자기 자신을 다운로드하라는 CTA 는 절대 없다.
+    // There is never a CTA inside the installed app telling you to download it.
     expect(screen.queryByText(/download/i)).not.toBeInTheDocument();
   });
 
@@ -115,7 +115,7 @@ describe('FirstRunPage', () => {
   it('keeps every action card keyboard-operable (focusable native button/link)', () => {
     render(<FirstRunPage />);
 
-    // 네이티브 button/a 요소 = 포커스 가능 + Enter 활성화가 브라우저 보장.
+    // Native button/a elements — focusable, with Enter activation guaranteed by the browser.
     const open = screen.getByTestId('first-run-open');
     const create = screen.getByTestId('first-run-create');
     const demo = screen.getByTestId('first-run-demo');

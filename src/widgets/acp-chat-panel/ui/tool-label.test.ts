@@ -3,13 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { toolLabel } from './tool-label';
 
 /**
- * 도구 줄은 **함수 이름이 아니라 일어난 일**을 적는다.
+ * A tool line records **what happened, not a function name.**
  *
- * 실물에서 이렇게 나왔던 것을 고친 자리다:
+ * This is where the real thing coming out like this was fixed:
  * ```
  * 작업  mcp__atlas-vault__list_concepts
  * ```
- * 이 저장소의 디자인 규칙이 이미 그것을 금지한다 — *"전문용어는 쉬운 말로"*.
+ * This repository's design rule already forbids it — *"전문용어는 쉬운 말로"*
+ * (jargon in plain words).
  */
 const OURS = 'atlas-vault';
 
@@ -27,8 +28,8 @@ describe('도구 줄 — 아는 것만 뜻으로 옮긴다', () => {
 
   it('우리 서버인데 모르는 도구는 **이름만** 보여 준다 — 지어내지 않는다', () => {
     /*
-     * 도구가 늘었다는 뜻이다. 「무언가 했습니다」로 얼버무리면 그 줄이 아무것도
-     * 안 나르고, 그럴듯한 말을 지어내면 실제로 한 일과 어긋난다.
+     * It means the tool set grew. Fudging it as "did something" makes the line carry
+     * nothing, and inventing something plausible diverges from what was actually done.
      */
     expect(toolLabel('mcp__atlas-vault__brand_new_thing', OURS)).toEqual({
       kind: 'raw',
@@ -41,7 +42,7 @@ describe('도구 줄 — 아는 것만 뜻으로 옮긴다', () => {
       kind: 'raw',
       text: 'write_file',
     });
-    // 서버 이름에 밑줄이 있어도 도구 이름만 남아야 한다.
+    // Even with an underscore in the server name, only the tool name should remain.
     expect(toolLabel('mcp__my_server__do_thing', OURS)).toEqual({
       kind: 'raw',
       text: 'do_thing',
@@ -58,7 +59,7 @@ describe('도구 줄 — 아는 것만 뜻으로 옮긴다', () => {
   });
 
   it('서버 이름이 바뀌면 우리 도구도 남의 도구가 된다 — 이름을 박아 두지 않았다', () => {
-    // 판정 기준이 리터럴이 아니라 **주입한 그 이름**이라는 계약.
+    // The contract that the test is **the injected name**, not a literal.
     expect(toolLabel('mcp__atlas-vault__add_concept', 'other-name').kind).toBe('raw');
   });
 });

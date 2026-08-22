@@ -18,10 +18,7 @@ function entries(...ids: string[]): PastWalkEntry[] {
   return ids.map((id) => ({ id, title: id.toUpperCase(), kind: id.split(":")[0] ?? "element" }));
 }
 
-/**
- * 볼트 폴더의 최소 가짜 — File System Access API 중 이 저장층이 실제로 쓰는
- * 표면만 흉내낸다(디렉터리 생성 · 파일 쓰기 · 삭제).
- */
+/** Minimal vault-folder fake: only the File System Access surface this store actually uses. */
 function createFakeVaultHandle(options: { readOnly?: boolean } = {}) {
   const files = new Map<string, string>();
   const dirs = new Set<string>();
@@ -81,8 +78,8 @@ function createFakeVaultHandle(options: { readOnly?: boolean } = {}) {
 }
 
 /**
- * 저장 매체가 바뀌어도 화면이 보는 계약은 같아야 한다 — 그래서 같은 매트릭스를
- * 구현마다 돌린다. 새 매체를 붙일 때 여기 한 줄만 더하면 계약 검증이 끝난다.
+ * The contract screens see must survive a change of medium, so the same matrix
+ * runs against every implementation. Adding a medium is one line here.
  */
 const IMPLEMENTATIONS: Array<{ name: string; create: () => PastTrailStore }> = [
   { name: "vault file", create: () => createVaultFilePastTrailStore(createFakeVaultHandle().handle) },
@@ -205,7 +202,7 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
     for (const entry of parsed.walks[0].entries as Array<Record<string, unknown>>) {
       expect(Object.keys(entry).sort()).toEqual(["id", "kind", "title"]);
     }
-    // 전수 감사 — 파일 안 숫자값은 `v: 1` 과 `endedAt` 둘뿐.
+    // Exhaustive audit: the only numbers in the file are `v: 1` and `endedAt`.
     const numbers: number[] = [];
     const walkTree = (node: unknown): void => {
       if (typeof node === "number") numbers.push(node);
@@ -219,7 +216,7 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
   it("읽기 전용 볼트에서 조용히 지나간다 — 던지지 않고, 파일도 만들지 않는다", async () => {
     const vault = createFakeVaultHandle({ readOnly: true });
     const store = createVaultFilePastTrailStore(vault.handle);
-    // 쓰기가 막히면 목록도 늘어난 척하지 않는다 — 화면과 디스크가 어긋나지 않게.
+    // A blocked write must not pretend the list grew, so screen and disk agree.
     await expect(
       store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 }),
     ).resolves.toEqual([]);
@@ -235,8 +232,8 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     await store.clear();
     expect(vault.files.has(PAST_TRAILS_RELATIVE_PATH)).toBe(false);
-    // 사이드카 폴더의 .gitignore 는 남는다 — agent-activity.json 등과 공용이라
-    // 지난 길을 지웠다고 폴더 전체의 커밋 가드를 걷어낼 이유가 없다.
+    // The sidecar's .gitignore stays: it is shared with `agent-activity.json`,
+    // so clearing trails is no reason to drop the whole folder's commit guard.
     expect([...vault.files.keys()]).toEqual([`${PAST_TRAILS_VAULT_DIR}/${SIDECAR_IGNORE_FILE}`]);
   });
 
@@ -249,7 +246,7 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
 
   it("파손된 파일이 있어도 빈 목록으로 읽고 다음 저장이 복구한다", async () => {
     const vault = createFakeVaultHandle();
-    // 먼저 정상 저장으로 폴더를 만든 뒤 내용만 망가뜨린다.
+    // Create the folder with a normal save first, then corrupt only the content.
     const store = createVaultFilePastTrailStore(vault.handle);
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     vault.files.set(PAST_TRAILS_RELATIVE_PATH, "{not json");

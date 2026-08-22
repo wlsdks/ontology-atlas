@@ -1,9 +1,10 @@
 /**
- * ⚠️ 색 게이트 예외 (`scripts/check-no-raw-color.mjs` 의 `ALLOWLIST`, 2026-08-04).
- * 비네트의 `rgba(3,3,4,…)` 는 `CanvasGradient.addColorStop()` 이 먹는 문자열이라
- * `var(--…)` 를 해석하지 못하고, 알파는 카메라 깊이(`farT`)로 프레임마다
- * 계산된다. 값이 눈에는 검정이지만 정확히 r=g=b 가 아니라 자동 무채색 면제에도
- * 안 걸린다. 새 색을 여기 더하지 말 것 — 더해야 하면 그 이유를 여기에 같이 적는다.
+ * ⚠️ Colour-gate exemption (the `ALLOWLIST` in `scripts/check-no-raw-color.mjs`,
+ * 2026-08-04). The vignette's `rgba(3,3,4,…)` is a string consumed by
+ * `CanvasGradient.addColorStop()`, which cannot resolve `var(--…)`, and its alpha
+ * is recomputed every frame from camera depth (`farT`). It looks black but is
+ * not exactly r=g=b, so it misses the automatic greyscale exemption too. Do not
+ * add new colours here — if one is unavoidable, record why alongside it.
  *
  * Background + blueprint grid + vignette — ported from the B2+ prototype's
  * `buildGrid()`/`render()` background section
@@ -112,31 +113,31 @@ export function computeVignetteAlpha(baseAlpha: number, farAlpha: number, farT: 
 }
 
 /**
- * 캔버스 배경 세트. 도트=현 blueprint grid(정적 기본), 나머지 셋은 커서에 반응하는
- * 입자 배경(`render/animated-background.ts`). 구 정적 타일 2종(성좌·등고선)은
- * 2026-07-29 소유자 확정으로 폐기됐다.
+ * The canvas background set. `dot` is the blueprint grid (the static default);
+ * the rest are the cursor-reactive particle background
+ * (`render/animated-background.ts`). Two older static tiles (constellation and
+ * contour) were retired by owner decision on 2026-07-29.
  */
 export type CanvasBackgroundVariant = "dot" | "web" | "depth";
 
 /**
- * 깊이 도트의 세 층 — 시차 계수 · 점 간격(px) · 점 반지름 · 알파 배수.
+ * The three depth-dot layers — parallax factor, dot spacing (px), dot radius,
+ * alpha multiplier (design council 2026-07-29).
  *
- * ## 왜 이 형태인가 (카운슬 2026-07-29)
+ * All eleven rejected background candidates were made of lines or closed shapes,
+ * i.e. the **same grammar** as nodes and edges, so they read as more data rather
+ * than as background. Dots survived because they do not pretend to be data — so
+ * this third background **introduces no new primitive**, it just stacks the
+ * already-approved dot in three layers.
  *
- * 기각된 후보 열한 개는 전부 선이거나 닫힌 도형이라 노드·관계선과 **같은
- * 문법**을 썼고, 그래서 배경이 아니라 "또 다른 데이터"로 읽혔다. 도트만
- * 살아남은 이유는 데이터인 척을 안 해서다. 그래서 세 번째 배경은 **새 원시형을
- * 들이지 않는다** — 이미 승인된 점을 세 층으로 둘 뿐이다.
+ * **All motion comes from the user's hand.** Each layer has a different parallax
+ * factor, so they separate **only while the camera moves** and freeze completely
+ * when it stops. Zero autonomous motion makes idle burn structurally impossible
+ * — satisfying the workbench seat's 2026-07-28 P0 through **form** rather than
+ * wiring, and staying inside WCAG 2.2 §2.3.3's user-initiated exception.
  *
- * ## 움직임이 사용자 손에서만 나온다
- *
- * 층마다 시차 계수가 달라 **카메라가 움직일 때만** 서로 어긋나고, 카메라가
- * 서면 완전히 정지한다. 자율 운동이 0이라 유휴 연소가 구조적으로 불가능하다 —
- * 2026-07-28 「작업대」의 P0 를 배선이 아니라 **형태**로 만족시킨다. WCAG 2.2
- * §2.3.3 의 사용자-개시 예외 안이기도 하다.
- *
- * 계수가 1 을 넘지 않는 이유: 1 을 넘으면 배경이 내용보다 빨라 "가까운 층"으로
- * 읽히는데, 그건 깊이의 반대다.
+ * No factor exceeds 1: above 1 the background would move faster than the content
+ * and read as the nearer layer, which is the opposite of depth.
  */
 export const DEPTH_DOT_LAYERS = [
   { parallax: 0.55, spacing: 132, radius: 0.9, alphaScale: 0.55 },
@@ -145,8 +146,8 @@ export const DEPTH_DOT_LAYERS = [
 ] as const;
 
 /**
- * 한 깊이 층의 타일 패턴 — 점 하나가 든 정사각 타일을 반복한다.
- * 정적이라 마운트/리사이즈 때 한 번만 만든다(blueprint grid 와 같은 문법).
+ * Tile pattern for one depth layer — a square tile holding one dot, repeated.
+ * Static, so it is built once at mount/resize, the same way the blueprint grid is.
  */
 export function buildDepthDotPattern(
   offscreenCanvas: HTMLCanvasElement,
@@ -170,20 +171,22 @@ export interface BackgroundDrawState {
   viewportWidth: number;
   viewportHeight: number;
   farT: number;
-  /** 어느 배경을 그릴지 — 생략 시 도트(blueprint grid). */
+  /** Which background to draw; defaults to the dot (blueprint grid). */
   variant?: CanvasBackgroundVariant;
   gridPattern: CanvasPattern | null;
   /**
-   * 깊이 도트의 세 층 패턴 + 각 층의 이미 시차가 적용된 원점.
-   * `variant === "depth"` 일 때만 소비한다.
+   * The three depth-dot layer patterns, each with its parallax already applied to
+   * its origin. Consumed only when `variant === "depth"`.
    */
   depthLayers?: readonly { pattern: CanvasPattern | null; originX: number; originY: number; spacing: number }[];
   /**
-   * 움직이는 배경의 이번 프레임 버퍼를 얹는 콜백(도트가 아닐 때만 호출).
+   * Callback compositing the animated background's buffer for this frame; called
+   * only for non-dot variants.
    *
-   * 패턴이 아니라 콜백인 이유: 입자 배경은 **자기 오프스크린 버퍼**에 누적된
-   * 잔상이라 `createPattern` 으로 표현되지 않는다. 시차도 타일 반복이 아니라
-   * 버퍼 자체를 카메라 델타만큼 옮겨서 만든다.
+   * A callback rather than a pattern because the particle background is an
+   * afterimage accumulated in **its own offscreen buffer**, which `createPattern`
+   * cannot express — and its parallax comes from shifting that buffer by the
+   * camera delta, not from repeating a tile.
    */
   paintAnimated?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
   /**
@@ -217,12 +220,13 @@ export interface BackgroundTokens {
 
 /** Draws the background fill, the selected background layer, and the vignette, in that order (bottom-most layer). */
 /*
- * perf 2026-08-19 — 프레임 불변 산출물 캐시 둘.
+ * perf 2026-08-19 — two caches for frame-invariant results.
  *
- * 바탕색 문자열(`lerpColorHex`)과 비네트 그라디언트는 (색 토큰, farT, 뷰포트)
- * 만의 함수인데 매 프레임 다시 만들어지고 있었다. 입력이 지난 프레임과 같으면
- * 같은 값을 재사용한다 — 값이 같으니 픽셀도 같고, 입력이 하나라도 바뀌면
- * (줌 전환·리사이즈·테마) 그 프레임에 즉시 다시 만든다.
+ * The base colour string (`lerpColorHex`) and the vignette gradient are functions
+ * of (colour tokens, farT, viewport) alone, yet were rebuilt every frame. When
+ * the inputs match the previous frame the same value is reused — identical value,
+ * identical pixels — and any input change (zoom, resize, theme) rebuilds
+ * immediately in that frame.
  */
 let bgBaseCacheKeyNear = "";
 let bgBaseCacheKeyFar = "";
@@ -248,7 +252,8 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
   ctx.fillRect(0, 0, w, h);
 
   if (variant === "depth" && state.depthLayers) {
-    // 층마다 자기 시차 원점으로 채운다 — 카메라가 서면 세 층이 함께 선다.
+    // Each layer fills from its own parallax origin, so all three stop together
+    // when the camera does.
     for (const layer of state.depthLayers) {
       if (!layer.pattern) continue;
       const ox = wrapToTile(layer.originX, layer.spacing);
@@ -260,11 +265,13 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
       ctx.restore();
     }
   } else if (variant !== "dot" && state.paintAnimated) {
-    // 움직이는 배경 — 잉크 상한은 버퍼를 그릴 때 이미 지켜졌다. farT 페이드를
-    // 걸지 않는 것은 정적 성좌와 같은 이유다(고도와 무관한 상수 잉크).
+    // Animated background — the ink ceiling was already enforced while drawing the
+    // buffer. No farT fade, for the same reason as the static constellation: its
+    // ink is constant with altitude.
     state.paintAnimated(ctx, w, h);
   } else if (farT < 0.98) {
-    // 도트(기본) — blueprint grid: circuit 고도에서만 보이고 farT 로 페이드아웃.
+    // Dot (default) — the blueprint grid: visible only at circuit altitude, fading
+    // out with farT.
     ctx.globalAlpha = 1 - farT;
     ctx.fillStyle = gridPattern ?? bgBase;
     const ox = wrapToTile(state.originX, GRID_TILE_PX);

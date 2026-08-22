@@ -11,10 +11,10 @@ interface Props {
 }
 
 /**
- * 루트 layout 자체가 렌더 중 터진 경우를 최후 방어한다. `error.tsx` 는 layout
- * 이 정상일 때만 동작하므로 global-error 가 없으면 그 상황에서 브라우저 기본
- * 에러 화면이 노출돼 Demo 아이덴티티가 깨진다. NextIntlClientProvider 가 작동
- * 하지 않는 last-resort surface 이므로 텍스트는 영어 하드코딩.
+ * The last line of defence for the root layout itself throwing during render. `error.tsx` works only
+ * while the layout is fine, so without global-error that situation shows the browser's default error
+ * screen and the product identity breaks. `NextIntlClientProvider` does not run on this last-resort
+ * surface, so the text is hardcoded English.
  */
 export default function GlobalError({ error, reset }: Props) {
   useEffect(() => {

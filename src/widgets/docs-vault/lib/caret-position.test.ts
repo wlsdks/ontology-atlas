@@ -3,13 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { clampMenuToBox } from './caret-position';
 
 /**
- * `caretPoint` 자체는 브라우저의 줄바꿈 계산에 기대므로 jsdom 에서 잴 수 없다
- * (jsdom 은 레이아웃을 하지 않아 `offsetTop` 이 항상 0 이다). 그래서 여기서는
- * **자리 잡기 규칙**만 잰다 — 그 규칙이 순수 산술이고, 실제로 사고가 나는
- * 지점이기도 하다: 메뉴가 편집기 밖으로 나가면 잘리거나 스크롤을 만들어
- * 편집 중인 글이 흔들린다.
+ * `caretPoint` itself relies on the browser's line-breaking, so it cannot be
+ * measured in jsdom (which does no layout, leaving `offsetTop` always 0). So only
+ * the **placement rule** is measured here — that rule is pure arithmetic, and it
+ * is also where the accidents happen: a menu leaving the editor gets clipped, or
+ * creates a scroll that shifts the text being edited.
  *
- * 캐럿 좌표 자체는 실기기에서 확인한다(브라우저 없이 증명할 수 없는 층).
+ * The caret coordinates themselves are confirmed on a real device (a layer that
+ * cannot be proven without a browser).
  */
 describe('clampMenuToBox — 메뉴는 편집기 밖으로 나가지 않는다', () => {
   const box = { width: 800, height: 600 };
@@ -30,7 +31,7 @@ describe('clampMenuToBox — 메뉴는 편집기 밖으로 나가지 않는다',
       box,
       menu,
     });
-    // 520 + 20 + 6 + 240 = 786 > 600 → 위로
+    // 520 + 20 + 6 + 240 = 786 > 600 → flip above
     expect(at.top).toBe(520 - 240 - 6);
   });
 

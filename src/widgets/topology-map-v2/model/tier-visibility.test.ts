@@ -176,17 +176,17 @@ describe("isNodeHittable", () => {
     const neighbors = new Set(["capability:hidden"]);
     // Without the clustered set the ego exemption keeps it hittable...
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors)).toBe(true);
-    // ...but once it's folded behind the `이웃 +N` chip (in the frame's clustered
+    // ...but once it's folded behind the `이웃 +N` ("+N neighbours") chip (in the frame's clustered
     // set) it must not be grabbable — it isn't drawn.
     const clustered = new Set(["capability:hidden"]);
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors, DEFAULT_TIER_REVEAL, clustered)).toBe(false);
   });
 
   it("uses the realm depth-tier override so a depth1 element child is hittable at spine zoom (S10 결함 3)", () => {
-    // In a realm ('영역') the child's ORIGINAL kind is `element` (tier-gated at
-    // spine zoom), but its depth-1 placement makes the draw pass treat it as a
+    // In a realm the child's ORIGINAL kind is `element` (tier-gated at spine
+    // zoom), but its depth-1 placement makes the draw pass treat it as a
     // `domain`-tier node (always drawn). Without the override the hit test gates
-    // it out by its element kind → drawn-but-unclickable (the reported 무반응).
+    // it out by its element kind → drawn-but-unclickable, the reported dead child.
     const depth1Element = { id: "element:child", kind: "element" as const, isHub: false };
     // No override → element tier gated out at overview entry, no focus.
     expect(isNodeHittable(depth1Element, ENTRY, null, undefined)).toBe(false);
@@ -219,10 +219,10 @@ describe("isNodeHittable", () => {
 });
 
 /**
- * 슬라이스 C (개발/비개발 모드 토글) — 비개발(plain) 렌즈는 element 티어를
- * 도달 불가 밴드(1e6/2e6)로 밀어 상시 숨김. capability 는 DEFAULT 와 동일
- * (지도 상위 구조는 그대로), ego 예외(effectiveNodeAlpha)는 이 config 와
- * 무관하게 그대로 작동한다.
+ * Slice C (developer / non-developer mode toggle) — the plain lens pushes the
+ * element tier into an unreachable band (1e6/2e6) so it is always hidden.
+ * `capability` matches DEFAULT, leaving the map's upper structure intact, and the
+ * ego exemption (`effectiveNodeAlpha`) works regardless of this config.
  */
 describe("PLAIN_TIER_REVEAL (슬라이스 C — 비개발 모드 element 상시 숨김)", () => {
   const REALISTIC_RATIOS = [0.5, 1, 1.5, 2, 2.85, 4, 10, 50];

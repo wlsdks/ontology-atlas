@@ -1,19 +1,19 @@
 import type { OntologyClass } from './types';
 
 /**
- * 6 노드 클래스 시드 (5 정식 + unknown placeholder).
+ * The six node classes (five real, plus an `unknown` placeholder).
  *
- * 4-layer (Project → Domain → Capability → Element) + Document 근거 노드.
- * 클래스 자체의 계층은 단순하고, 데이터 인스턴스 사이 관계는
- * `KNOWLEDGE_EDGE_TYPES` (contains / belongs_to / depends_on / implements /
- * uses / describes / related_to) 로 표현한다.
+ * Four layers (Project → Domain → Capability → Element) plus the Document
+ * evidence node. The class hierarchy itself is flat; relations between data
+ * instances are expressed by `KNOWLEDGE_EDGE_TYPES` (contains / belongs_to /
+ * depends_on / implements / uses / describes / related_to).
  *
- * `unknown` 은 vault frontmatter 가 미존재 slug 를 참조할 때 derivation 이
- * 자동 생성하는 stub placeholder — UI 가 stub 을 amber 톤으로 surface.
+ * `unknown` is the stub derivation mints when vault frontmatter references a slug
+ * that does not exist; the UI surfaces stubs in the amber tone.
  *
- * **단일 진실원**: 이 배열은 `scripts/build-docs-vault.mjs` 의 빌드타임
- * 매니페스트와 `derive-ontology-from-vault` 의 runtime derivation 모두에
- * 동일 5 정식 + 1 stub 으로 사용된다. `mcp/add_concept` 의 enum 도 정합.
+ * **Single source of truth**: this array serves both the build-time manifest in
+ * `scripts/build-docs-vault.mjs` and the runtime derivation in
+ * `derive-ontology-from-vault`, and matches the enum in `mcp/add_concept`.
  */
 export const DEFAULT_ONTOLOGY_CLASSES: OntologyClass[] = [
   {
@@ -42,8 +42,8 @@ export const DEFAULT_ONTOLOGY_CLASSES: OntologyClass[] = [
     description: '근거 노드. 계층 트리에 매달지 않고 describes 관계로 개념과 연결.',
   },
   {
-    // stub placeholder kind — frontmatter relates.target 이 미존재 노드를
-    // 가리킬 때 자동 생성된다.
+    // The stub placeholder kind, minted automatically when a frontmatter
+    // relation target names a node that does not exist.
     id: 'unknown',
     name: '미지',
     description: 'frontmatter relates.target 이 가리키는 미존재 노드의 placeholder.',

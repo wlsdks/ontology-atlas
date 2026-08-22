@@ -251,8 +251,8 @@ describe('RouteFocusManager', () => {
     expect(screen.getByRole('heading', { name: '공방' })).not.toHaveFocus();
   });
 
-  // 로딩 자리표시자는 목적지가 아니다 — 여기에 포커스를 두면 진짜 화면이
-  // 그 노드를 교체하는 순간 포커스가 body 로 떨어진다.
+  // A loading placeholder is not a destination: focusing it drops focus to body the
+  // moment the real screen replaces that node.
   it('waits past the loading placeholder and lands on the real destination', async () => {
     route.pathname = '/ko/topology/';
     const view = render(

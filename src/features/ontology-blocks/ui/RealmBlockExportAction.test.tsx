@@ -90,7 +90,7 @@ function makeVault(): MockVault {
   };
 }
 
-/** 쓰기 추적 fake 대상 폴더 (block-fsa 구조 타입). */
+/** A write-tracking fake target folder (the block-fsa structural type). */
 function fakeTargetDir() {
   const written = new Map<string, string>();
   function dir(prefix: string) {
@@ -124,8 +124,8 @@ describe('RealmBlockExportAction', () => {
   });
 
   it('P1 결함② — is disabled with a "open your folder" hint (not hidden) when no vault is loaded', () => {
-    // 정적 샘플 모드에서 이 액션이 흔적 없이 사라져 "기능 존재 은폐"로 읽혔다
-    // (사용성 전수 검수). null 렌더 대신 같은 자리에 disabled + 힌트.
+    // In static sample mode this action vanished without a trace, which read as hiding that
+    // the feature exists (usability sweep). Instead of rendering null it stays in place, disabled with a hint.
     mocks.vault = { ...makeVault(), status: 'idle', manifest: null };
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
     const button = screen.getByTestId('realm-block-export');
@@ -154,7 +154,7 @@ describe('RealmBlockExportAction', () => {
     await waitFor(() => {
       expect(target.written.has('block-manifest.json')).toBe(true);
     });
-    // realm(domain:views) 서브트리의 원본만 — 바깥 문서/프로젝트 루트 미포함.
+    // Only originals from the realm (domain:views) subtree — no outside documents, no project root.
     expect(target.written.get('domains/views.md')).toBe('VIEWS RAW');
     expect(target.written.get('capabilities/render.md')).toBe('RENDER RAW');
     expect(target.written.has('capabilities/other.md')).toBe(false);

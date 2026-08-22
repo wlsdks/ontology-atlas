@@ -46,9 +46,9 @@ function feed(overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed {
 }
 
 /**
- * **한 줄이 한 곳에 산다** (2026-08-17, 자리를 가른 것을 되돌렸다). 상태 줄과
- * 종이 같은 칩에 있으므로 검사도 조각을 밝히지 않는다. `renderBell` 은 이름만
- * 남겨 둔다 — 종을 보려면 볼 알림이 있어야 한다는 조건을 그 이름이 나른다.
+ * **One line lives in one place** (2026-08-17, reverting the split). The status line and the bell are
+ * in the same chip, so the tests do not light up fragments either. `renderBell` is kept as a name —
+ * that name carries the condition that seeing the bell requires having a notification to see.
  */
 function renderChip(next: Partial<AgentActivityFeed> = {}) {
   mocks.feed = feed(next);
@@ -59,7 +59,7 @@ function renderChip(next: Partial<AgentActivityFeed> = {}) {
   );
 }
 
-/** 종은 **볼 알림이 있을 때만** 그려진다 — 빈 알림함을 여는 버튼은 두지 않는다. */
+/** The bell is drawn **only when there is a notification to see** — no button that opens an empty box. */
 function renderBell(next: Partial<AgentActivityFeed> = {}) {
   return renderChip({
     notifications: [
@@ -234,7 +234,7 @@ describe("AgentActivityChip", () => {
     expect(row).toHaveAttribute("data-kind", "task-end");
     expect(row.textContent).toContain("추가 34");
     expect(row.textContent).toContain("삭제 4");
-    // 0인 갈래는 그리지 않는다.
+    // A kind at zero is not drawn.
     expect(markAllRead).toHaveBeenCalledOnce();
   });
 
@@ -248,7 +248,7 @@ describe("AgentActivityChip", () => {
     fireEvent.click(screen.getByTestId("agent-activity-bell"));
     const rows = screen.getAllByTestId("agent-activity-inbox-row");
     expect(rows[0].textContent).toContain("Codex 작업 끝");
-    // 이름 모르는 줄은 예전 문구 그대로 — 지어내지 않는다.
+    // A row with an unknown name keeps the previous copy — nothing is invented.
     expect(rows[1].textContent).toContain("작업 시작");
     expect(rows[1].textContent).not.toContain("Codex");
   });
@@ -289,8 +289,8 @@ describe("AgentActivityChip", () => {
 });
 
 /**
- * 대상 노드 링크가 이웃 글자보다 **위로 뜨지 않는다** (2026-08-17 소유자 지적).
- * 원인과 실측은 `tests/contract/agent-bar-link-alignment.contract.test.ts`.
+ * The target node link does **not float above** the neighbouring text (owner report, 2026-08-17).
+ * The cause and the measurements are in `tests/contract/agent-bar-link-alignment.contract.test.ts`.
  */
 describe('하단 바 — 대상 링크 정렬', () => {
   it('모양의 flex 를 지킨다 — truncate 축을 쓰면 깨진다', () => {

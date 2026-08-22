@@ -16,21 +16,25 @@ import { compileOntology } from '../../mcp/src/ontology-compiler.mjs';
 import { RELATION_TYPE_VALUES, queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';
 
 /**
- * S2 — 영향 랭킹 contract. 「바꾸면 멀리 퍼지는 개념」 카드가 화면에 쓰는 수와
- * 에이전트가 `query_ontology({operation:'blast_radius', direction:'incoming'})`
- * 로 받는 수는 **같은 볼트에서 같아야 한다**. 다르면 사람과 에이전트가 같은
- * 그래프를 두고 다른 위험도를 말하게 되고, 그 순간 이 화면은 의사결정 자료가
- * 아니라 소음이 된다.
+ * Impact ranking contract. The number the "concepts whose change spreads far" card
+ * paints on screen and the number an agent receives from
+ * `query_ontology({operation:'blast_radius', direction:'incoming'})` **must agree on
+ * the same vault**. If they differ, a person and an agent state different risk over
+ * the same graph, and at that moment this screen becomes noise rather than material
+ * for a decision.
  *
- * parser 3-way / validator 2-way / vault-health contract 와 같은 패턴: 하나의
- * fixture 를 양쪽 파이프라인에 그대로 흘리고 결과를 strict 비교한다.
+ * Same pattern as the parser 3-way, validator 2-way, and vault-health contracts: one
+ * fixture flows through both pipelines and the results are compared strictly.
  *
- * 두 엔진의 표현 차이는 호출 인자로만 흡수한다 —
- * - 깊이: 웹은 전체 closure(노드 수), MCP 는 최대 20 → fixture 는 20 미만.
- * - 필터: 구조/의존 관계만 있는 볼트는 **필터 없이** 비교한다(가장 강한 형태).
- *   연관/설명이 섞인 볼트만, 화면이 의도적으로 빼는 그 두 종류를 빼려고
- *   include-list(`IMPACT_INCLUDED_GRAPH_KEYS`)를 넘긴다.
- * 의미론(역방향 전이 도달 집합의 크기) 자체는 손대지 않는다.
+ * Differences in the two engines' expression are absorbed through call arguments
+ * only:
+ * - Depth: the web takes the full closure (node count), MCP caps at 20 → the fixture
+ *   stays under 20.
+ * - Filters: a vault with only structural and dependency relations is compared
+ *   **without a filter** (the strongest form). Only a vault mixing in association and
+ *   description passes an include list (`IMPACT_INCLUDED_GRAPH_KEYS`) to exclude the
+ *   two kinds the screen deliberately omits.
+ * The semantics (the size of the reverse transitive reachable set) are untouched.
  */
 
 const MCP_DEPTH = 20;
@@ -115,9 +119,9 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
     it(`${testCase.name} — 카드 행의 숫자도 같은 계산에서 나온다`, () => {
       const insight = derivationToInsight(deriveOntologyFromVault(manifestOf(testCase.docs)));
       const ranking = buildImpactRanking(insight.nodes, insight.edges, 6);
-      // 근거 계층은 **표시만** 강등된 것이지 다른 계산이 아니다. 두 계층을
-      // 같은 단언에 넣어, 강등을 "파생 개념을 그래프에서 빼는" 방식으로
-      // 다시 구현하면 여기가 깨지게 한다.
+      // The evidence tier is demoted **in display only**, not computed differently. Both
+      // tiers go into the same assertion so that reimplementing the demotion as "remove
+      // derived concepts from the graph" breaks here.
       const rows = [...ranking.rows, ...ranking.evidenceRows];
 
       for (const row of rows) {
@@ -125,15 +129,16 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
         const slug = node?.evidenceIds[0];
         expect(slug, `${row.id} 의 근거 문서를 찾지 못했습니다`).toBeDefined();
         expect(row.total).toBe(agentBlastRadius(testCase.docs, slug!));
-        // 「바로」는 「건너서 포함」의 부분집합 — 막대가 자기 자신을 넘칠 수 없다.
+        // "direct" is a subset of "including indirect" — a bar cannot exceed itself.
         expect(row.direct).toBeLessThanOrEqual(row.total);
       }
     });
   }
 
-  // 엔진의 관계 어휘가 커지면(예: 볼트 스키마의 `broader` 가 뒤늦게 들어오면)
-  // "파급으로 볼 것"인지 사람이 한 번 결정해야 한다. 이 단언이 그 순간 깨져
-  // 결정을 강제한다 — 조용히 한쪽만 넓어지는 게 drift 다.
+  // When an engine's relation vocabulary grows (say the vault schema's `broader`
+  // arrives later), a person must decide once whether it counts as impact. This
+  // assertion breaks at that moment and forces the decision — one side widening
+  // quietly is exactly what drift is.
   it('엔진의 관계 어휘 == 파급 include-list + 소프트 연관 + 방향 비대칭 키', () => {
     expect([...RELATION_TYPE_VALUES].sort()).toEqual(
       [
@@ -145,11 +150,12 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
     );
   });
 
-  // 알려진 비대칭 — 인라인 `domain:` 한 줄을 두 엔진이 반대 방향으로 읽는다.
-  // 웹 파생은 `도메인 → 역량`(도메인 아래 매달리는 트리), 컴파일러는
-  // `역량 → 도메인`(belongs-to). 그래서 파급이 정확히 거울처럼 뒤집힌다.
-  // 이 테스트는 버그를 축복하는 게 아니라 **좌표를 고정**한다 — 언젠가 방향을
-  // 맞추면 여기가 깨지고, 그때 이 키를 include-list 로 옮기면 된다.
+  // A known asymmetry: the two engines read a single inline `domain:` line in
+  // opposite directions. The web derivation reads `domain → capability` (a tree
+  // hanging beneath the domain) and the compiler reads `capability → domain`
+  // (belongs-to), so the impact is exactly mirrored. This test does not bless the bug
+  // — it **pins the coordinates**: aligning the direction one day breaks here, and
+  // that is when this key moves into the include list.
   it('인라인 `domain:` 은 방향 차이와 무관하게 영향에서 제외한다', () => {
     const docs = [
       { slug: 'domains/auth', frontmatter: { kind: 'domain', title: 'Auth' } },

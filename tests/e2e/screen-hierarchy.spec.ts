@@ -3,148 +3,157 @@ import { test, expect } from "@playwright/test";
 import { AUDITED_ROUTES } from "./audited-routes";
 
 /**
- * 화면 위계 — **눈이 먼저 닿아야 하는 것이 실제로 가장 큰가 · 채워진 악센트는
- * 하나인가.**
+ * Screen hierarchy — **is what the eye should land on first actually the largest,
+ * and is there exactly one filled accent?**
  *
- * ## 왜 이 층이어야 하나
+ * ## Why this layer has to exist
  *
- * 2026-08-06 「위계」석이 `/project/new` 에서 둘을 지적했고 둘 다 **실측으로
- * 확인됐다**:
+ * On 2026-08-06 the 「위계」 (design-lead) seat named two defects on
+ * `/project/new`, and both were **confirmed by measurement**:
  *
- * | 결함 | 실측 |
+ * | Defect | Measured |
  * |---|---|
- * | 보조 패널의 「0%」가 페이지 제목과 **동률** | 둘 다 30px |
- * | amber 배너가 *"폴더를 열어야 한다"* 는데 **여는 길이 없다** | 폴더 여는 컨트롤 **0개** |
+ * | The side panel's "0%" **ties** with the page title | both 30px |
+ * | An amber banner says *"you need to open a folder"* but **there is no way to open one** | **0** folder-opening controls |
  *
- * 둘 다 **코드에 아무 값도 안 남기는 결함**이다 — 「0%」는 램프 안의 정당한 칸
- * (`text-hero`)을 쓰고 있었고, 배너는 문구가 멀쩡했다. 값을 보는 lint 도 소스를
- * 훑는 계약도 볼 수 없다. **그려진 화면에서만 보인다.**
+ * Both are **defects that leave no value in the code** — "0%" was using a
+ * legitimate ramp step (`text-hero`), and the banner's wording was fine. Neither a
+ * value lint nor a source-scanning contract can see them. **They are visible only
+ * on the rendered screen.**
  *
- * ## 왜 소스가 아니라 렌더를 재나
+ * ## Why the render rather than the source
  *
- * 「제목보다 큰 것이 없다」는 **두 원소의 관계**이고, 그 둘은 서로 다른 파일에
- * 산다(제목은 페이지, 통계는 폼 위젯). 한 파일의 구문 트리를 보는 검사로는
- * 원리적으로 표현할 수 없다.
+ * "nothing is larger than the title" is a **relation between two elements**, and
+ * those two live in different files (the title in the page, the statistic in a
+ * form widget). A check that reads one file's syntax tree cannot express it in
+ * principle.
  *
- * ## 왜 라우트 하나가 아니라 전수인가 (2026-08-08)
+ * ## Why every route rather than one (2026-08-08)
  *
- * 이 파일은 태어날 때 **`/project/new` 한 라우트**만 봤다. 같은 날 태어난 옆
- * 게이트(`open-vault-cta.spec.ts`)가 정확히 그 이유로 전수로 넓혀졌고, 넓히는
- * 순간 같은 병이 **두 곳 더** 나왔다. 이 저장소가 이미 값을 치른 실패형이다
- * (`design-gates.md`): **허용목록으로 만든 검사는 목록에 없는 것에서 실패하고,
- * 목록에 없는 것은 언제나 새로 만든 것이다.**
+ * At birth this file looked at **one route, `/project/new`**. The sibling gate born
+ * the same day (`open-vault-cta.spec.ts`) was widened to the full set for exactly
+ * that reason, and widening it immediately found the same disease in **two more
+ * places**. This repository has already paid for this failure mode
+ * (`design-gates.md`): **a check built from an allowlist fails on what is not on
+ * the list, and what is not on the list is always what was just created.**
  *
- * 그래서 라우트 목록은 여기서 손으로 쓰지 않는다 — 정본
- * (`audited-routes.ts`)을 import 하고, 빠지는 자리는 **「없음」이 아니라
- * 「예외 + 실측치 + 무엇이 대신 재는가」**로 아래에 적는다.
+ * So the route list is not hand-written here — the authoritative one
+ * (`audited-routes.ts`) is imported, and any route left out is recorded below as
+ * **an exception with its measurement and what measures it instead**, never as
+ * silence.
  *
- * ## 전수 측정 (2026-08-08 · 정적 export · 1512×900 · `?guides=off`)
+ * ## Full measurement (2026-08-08 · static export · 1512×900 · `?guides=off`)
  *
- * | 라우트 | 제목 | 제목≥ 위반 | 채워진 악센트 | 비고 |
+ * | Route | Title | Title≥ violations | Filled accents | Notes |
  * |---|---|---|---|---|
- * | `/ko/` | 34px | 0 | 1 (`gateway-hero-cta`) | ②2026-08-19 개명 |
- * | `/ko/topology/` | **없음**(h1 = `sr-only` 1×1) | — | 1 (`first-run-starter-open`) | ①예외 |
- * | `/ko/docs/` | **없음**(h1 = `sr-only` 1×1) | — | 0 | ①예외 |
+ * | `/ko/` | 34px | 0 | 1 (`gateway-hero-cta`) | ② renamed 2026-08-19 |
+ * | `/ko/topology/` | **none** (h1 = `sr-only` 1×1) | — | 1 (`first-run-starter-open`) | ① exception |
+ * | `/ko/docs/` | **none** (h1 = `sr-only` 1×1) | — | 0 | ① exception |
  * | `/ko/ontology/insights/` | 23px | 0 | 0 | |
- * | `/ko/projects/` | 23px | 0 | 0 | 용량 막대 10개는 data-mark(h≤8) |
- * | `/ko/project/storefront/` | 23px | 0 | 0 | h1 이 둘(23·16) — a11y 소관 |
- * | `/ko/project/storefront/edit/` | 30px | 0 | 1 (`project-save-top`) | 2026-08-08 에 2개에서 고쳐짐 |
- * | `/ko/project/new/` | 30px | 0 | 1 (`project-save`) | 이 파일의 출생지 |
- * | `/ko/project/fallback/` | 23px | 0 | 0 | `/projects` 와 같은 화면 |
+ * | `/ko/projects/` | 23px | 0 | 0 | the 10 capacity bars are data-marks (h≤8) |
+ * | `/ko/project/storefront/` | 23px | 0 | 0 | two h1s (23·16) — an a11y matter |
+ * | `/ko/project/storefront/edit/` | 30px | 0 | 1 (`project-save-top`) | fixed from 2 on 2026-08-08 |
+ * | `/ko/project/new/` | 30px | 0 | 1 (`project-save`) | where this file was born |
+ * | `/ko/project/fallback/` | 23px | 0 | 0 | same screen as `/projects` |
  * | `/ko/git/` | 23px | 0 | 1 (`atlas-git-web-get-app`) | |
- * | `/ko/download/` | 34px | 0 | 1 (`gateway-hero-cta`) | ②2026-08-19 개명 |
+ * | `/ko/download/` | 34px | 0 | 1 (`gateway-hero-cta`) | ② renamed 2026-08-19 |
  * | `/ko/guide/` | 34px | 0 | 0 | |
  * | `/ko/guide/what-is-atlas/` | 34px | 0 | 0 | |
- * | `/ko/changelog/` | 34px | 0 | 0 | 훑은 글자 225 |
+ * | `/ko/changelog/` | 34px | 0 | 0 | 225 text nodes scanned |
  * | `/ko/this-route-does-not-exist/` | 23px | 0 | 1 | |
- * | `/this-route-does-not-exist/` | 23px | 0 | 1 | 같은 루트 파일 |
+ * | `/this-route-does-not-exist/` | 23px | 0 | 1 | same root file |
  *
- * ② 2026-08-19: 설치 절이 삭제되면서 판의 `download-primary-cta` 가 사라졌다.
- * 채워진 악센트는 여전히 라우트당 하나이고, 그 하나가 히어로 CTA 다 — 수는
- * 안 바뀌고 이름만 바뀌었다.
+ * ② 2026-08-19: deleting the install section removed the panel's
+ * `download-primary-cta`. There is still exactly one filled accent per route and
+ * it is the hero CTA — the count did not change, only the name.
  *
- * 구 Studio 주소는 자기 화면이 없는 지도 호환 리다이렉트가 되어 이 표와 공유
- * 감사 목록에서 빠졌다. 지도 contextual editor는 볼트 기반 상태 감사가 따로 연다.
+ * The old Studio addresses became map-compatibility redirects with no screen of
+ * their own, so they left this table and the shared audit list. The map's
+ * contextual editor is covered separately by the vault-backed state audit.
  *
- * ## 예외가 셋에서 둘로 줄었다 (2026-08-08, 같은 날 오후)
+ * ## Exceptions went from three to two (2026-08-08, same day)
  *
- * 위 표의 「①예외(실측 등재)」 둘은 **판정을 기다리던 위반**이었고, 소유자 위임
- * 판정으로 고쳐졌다 — 그래서 예외가 아니라 규칙으로 들어왔다:
+ * Two of the "① exception (registered by measurement)" rows above were
+ * **violations awaiting a verdict**, and an owner-delegated verdict fixed them, so
+ * they entered as rules rather than exceptions:
  *
- * | 고친 것 | 전 | 후 |
+ * | Fixed | Before | After |
  * |---|---|---|
- * | 공방 h1 「무엇을 할까요?」 | `text-body-lg` 14px + secondary (입구 카드 라벨과 동률·색 열세) | `text-title` 16px + primary (동률 0건) |
- * | 편집 폼 끝 저장 | 채워진 인디고 142×40 (상단 sticky 와 쌍둥이) | `outline` — 채워진 악센트는 상단 sticky 하나 |
+ * | Studio h1 「무엇을 할까요?」 (what shall we do?) | `text-body-lg` 14px + secondary (tied with the entry card labels and losing on colour) | `text-title` 16px + primary (0 ties) |
+ * | Save at the end of the edit form | filled indigo 142×40 (a twin of the top sticky one) | `outline` — the only filled accent is the top sticky |
  *
- * 남은 예외는 「그려진 제목이 없는 화면」 둘(지도·문서함)뿐이고, 그 둘은 아래
- * 「제목 없는 화면은 정말 제목이 없다」가 계속 지킨다.
+ * The remaining exceptions are the two screens with no rendered title (map, docs),
+ * and those are held by "a screen with no title really has no title" below.
  */
 
-/** 상호작용 컨트롤 — 「채워진 악센트 면」의 주인이 될 수 있는 것. */
+/** Interactive controls — the things that can own a filled accent surface. */
 const CONTROL = 'a[href],button,[role="button"],[role="link"],input,select,summary';
 
 /**
- * **채워진 악센트인지 가르는 크기 바닥** — data-mark 와 CTA 를 나눈다.
+ * **The size floor that separates a filled accent from a data-mark.**
  *
- * 하드코딩한 «디자인 판단» 이 아니라 실측으로 벌어진 틈이다(2026-08-08):
- * 악센트로 칠해진 data-mark 의 최대 높이는 **8px**(`domain-capacity-bar-*` ·
- * 노드 힌트 점 6 · 공방 추천 점 4 · 문서함 밑줄 h2)이고, 진짜 CTA 의 최소는
- * **36×85**(`atlas-git-web-get-app`)다. 24×44 는 그 사이에 있고, 아래쪽 값은
- * WCAG 2.5.8 의 최소 타깃과도 같다.
+ * Not a hard-coded design judgement but a gap found by measurement (2026-08-08):
+ * the tallest accent-coloured data-mark is **8px** (`domain-capacity-bar-*` · node
+ * hint dots 6 · studio suggestion dots 4 · docs h2 underline), and the smallest
+ * real CTA is **36×85** (`atlas-git-web-get-app`). 24×44 sits between them, and the
+ * lower value equals WCAG 2.5.8's minimum target.
  *
- * 색 자체는 절대 하드코딩하지 않는다 — `:root` 에서 읽는다(아래 `readAccents`).
- * 낡은 색 목록은 정상을 결함이라 부르고 결함을 정상이라 부른다.
+ * The colours themselves are never hard-coded — they are read from `:root` (see
+ * `readAccents` below). A stale colour list calls the healthy broken and the
+ * broken healthy.
  */
 const ACCENT_MIN_HEIGHT = 24;
 const ACCENT_MIN_WIDTH = 44;
 
 /**
- * **프로브 훅 — 결함을 *더하는* 방향으로만 동작한다.**
+ * **Probe hook — it only ever *adds* defects.**
  *
  * `HIERARCHY_PROBE=title` / `=accent` / `=h1` / `=blind-accent` / `=blind-title`
- * (쉼표로 조합) 을 주면 각 라우트에 위반 원소를 심거나 판정기를 눈멀게 한다. 검사를 **통과시키는** 경로가 아니므로(오직 위반을
- * 더한다) 게이트에 낸 구멍이 아니다 — 이 훅으로 할 수 있는 최악은 «항상
- * 빨강» 이다. 게이트를 고칠 때마다 `/gate-probe` 를 손으로 재현하지 않아도
- * 되게 파일 안에 둔다.
+ * (comma-combinable) plants a violating element on each route or blinds the
+ * detector. It is never a path that makes the check **pass** (it only adds
+ * violations), so it is not a hole in the gate — the worst it can do is "always
+ * red". It lives in the file so that `/gate-probe` need not be reproduced by hand
+ * every time the gate changes.
  *
- * 셋째 `h1` 은 **예외 자신을 겨눈다**: 제목 없는 화면(지도·문서함)에 그려진 h1
- * 을 심어, 「예외가 낡으면 빨개진다」는 주장이 실제로 참인지 확인한다. 예외를
- * 등재하면서 그 예외가 빨개질 수 있는지 재지 않으면, 예외는 «영원히 초록인
- * 검사» 와 구별되지 않는다.
+ * The third one, `h1`, **aims at the exceptions themselves**: it plants a rendered
+ * h1 on the title-less screens (map, docs) to check whether "the exception turns
+ * red when it goes stale" is actually true. Registering an exception without
+ * measuring whether it can turn red leaves it indistinguishable from a check that
+ * is green forever.
  *
- * 2026-08-08 실측:
+ * Measured 2026-08-08:
  *
- * | 프로브 | 빨개진 것 |
+ * | Probe | What turned red |
  * |---|---|
- * | `title` | ①이 **비예외 15/15** 라우트에서 빨강(예외 2개는 그대로 초록 — 설계대로) |
- * | `accent` | ②가 이미 악센트 1개였던 **8 라우트**에서 빨강 |
- * | `accent` | 「편집의 주 CTA 는 상단 sticky」 가드가 둘째 악센트를 보고 빨강 |
- * | `h1` | 제목 없음 예외 가드가 지도·문서함 둘에서 빨강 |
- * | `blind-accent` | ②가 «악센트 0개(전 라우트)» 를 **통과가 아니라 측정 실패**로 빨강 |
- * | `blind-title` | ①이 «기준 없음» 을 첫 비예외 라우트(`/ko/`)에서 빨강 |
+ * | `title` | ① on **15/15 non-exception** routes (the 2 exceptions stayed green — by design) |
+ * | `accent` | ② on the **8 routes** that already had one accent |
+ * | `accent` | the "the edit screen's primary CTA is the top sticky" guard, on seeing a second accent |
+ * | `h1` | the title-less exception guard, on map and docs |
+ * | `blind-accent` | ② treating "0 accents (all routes)" as a **measurement failure, not a pass** |
+ * | `blind-title` | ① on "no baseline" at the first non-exception route (`/ko/`) |
  */
 const PROBE = (process.env.HIERARCHY_PROBE ?? "").split(",").map((s) => s.trim());
 
-/** 각 라우트에서 잰 것. */
+/** What is measured on each route. */
 type RouteMeasurement = {
   route: string;
-  /** 그려진 h1 중 가장 큰 글자 크기. 0 이면 그려진 제목이 없다. */
+  /** The largest font size among rendered h1s. 0 means there is no rendered title. */
   titlePx: number;
   paintedH1: number;
   offenders: { text: string; px: number; testid: string | null }[];
   scanned: number;
-  /** `:root` 에서 실제로 읽어 낸 악센트 토큰 수. */
+  /** How many accent tokens were actually read from `:root`. */
   accentTokens: number;
-  /** 배경색을 들여다본 그려진 원소 수 — 0 이면 스캐너가 죽었다. */
+  /** Rendered elements whose background colour was inspected — 0 means the scanner died. */
   considered: number;
   filled: { token: string; testid: string | null; text: string; w: number; h: number }[];
 };
 
 /**
- * 한 라우트를 열고 **두 속성을 한 번에** 잰다.
+ * Opens one route and measures **both properties in a single pass**.
  *
- * 브라우저 안에서 도는 함수라 위 상수를 인자로 넘긴다(클로저는 직렬화되지
- * 않는다).
+ * The constants above are passed as arguments because this runs inside the
+ * browser and closures are not serialised.
  */
 async function measureRoute(
   page: import("@playwright/test").Page,
@@ -188,18 +197,21 @@ async function measureRoute(
         a.setAttribute("data-hierarchy-probe", "accent");
         document.body.appendChild(a);
       }
-      // ── 공회전 방지 자신을 겨누는 둘 ─────────────────────────────────
+      // ── The two probes that aim at the idling guards themselves ─────
       //
-      // 위 셋은 «결함이 들어오면 빨개지나» 를 재고, 아래 둘은 «판정기가 죽으면
-      // 빨개지나» 를 잰다. 이 저장소가 릴리스를 하나 잃은 실패형이 정확히
-      // 후자다 — 표식이 컴포넌트보다 오래 살아남은 스모크 게이트는 한 번도
-      // 자기가 주장한 것을 확인한 적이 없었다(`AGENTS.md` /gate-probe).
+      // The three above measure "does a planted defect turn it red"; these two
+      // measure "does a dead detector turn it red". The latter is exactly the
+      // failure that cost this repository a release — a smoke gate whose markers
+      // outlived their components had never once checked what it claimed
+      // (`AGENTS.md`, /gate-probe).
       if (kinds.includes("blind-accent")) {
-        // 색 기준을 아무것도 안 맞는 값으로 바꾼다 = 「채워진 악센트 0개」.
-        // 규칙(≤1)은 참이 되지만 그건 통과가 아니라 **측정 실패**여야 한다.
-        // **서로 다른** 미사용 색으로 바꾼다. 같은 색 넷으로 바꾸면 토큰이
-        // 하나로 접혀서 앞단 가드(`accentTokens > 2`)가 먼저 잡고, 정작 재려던
-        // 뒷단 가드(`totalFilled > 5`)는 한 번도 안 돈다 — 첫 시도가 그랬다.
+        // Repoint the colour baseline at values nothing matches = "0 filled
+        // accents". The rule (≤1) becomes true, but that must count as a
+        // **measurement failure**, not a pass.
+        // Use **distinct** unused colours. Four copies of the same colour collapse
+        // into one token, so the earlier guard (`accentTokens > 2`) catches it
+        // first and the guard actually under test (`totalFilled > 5`) never runs —
+        // which is what happened on the first attempt.
         const names = [
           "--color-indigo-brand",
           "--color-indigo-brand-hover",
@@ -211,8 +223,8 @@ async function measureRoute(
         });
       }
       if (kinds.includes("blind-title")) {
-        // 제목을 안 보이게 한다 = 기준 상실. 「제목보다 큰 글자 0개」가 참이
-        // 되지만 그것도 측정 실패다.
+        // Hide the title = lose the baseline. "0 items larger than the title"
+        // becomes true, but that too is a measurement failure.
         for (const h of document.querySelectorAll("h1")) {
           (h as HTMLElement).style.display = "none";
         }
@@ -232,13 +244,13 @@ async function measureRoute(
         return !el.closest("details:not([open])");
       };
 
-      // ── ① 제목보다 크거나 같은 글자 ──────────────────────────────────
+      // ── ① Text at or above the title's size ─────────────────────────
       //
-      // 기준은 **그려진 h1 중 가장 큰 것**이다. `querySelector("h1")` 이 아니다:
-      // 실측 2026-08-08 에 두 부류가 그 셀렉터를 배신했다 — 지도/문서함은 h1 이
-      // `sr-only`(1×1, 상속된 16px)라 «보이지도 않는 16px» 이 기준이 되고,
-      // 프로젝트 상세는 h1 이 둘(23px 표시 제목 + 16px 두 번째)이라 DOM 순서에
-      // 기준이 걸린다.
+      // The baseline is **the largest rendered h1**, not `querySelector("h1")`:
+      // measured 2026-08-08, two cases betrayed that selector — on map/docs the
+      // h1 is `sr-only` (1×1, inherited 16px), so an invisible 16px would become
+      // the baseline; on project detail there are two h1s (a 23px visible title
+      // plus a 16px second one), so the baseline would hang on DOM order.
       const h1s = [...document.querySelectorAll("h1")];
       const paintedH1s = h1s.filter(painted);
       let base: Element | null = null;
@@ -276,10 +288,11 @@ async function measureRoute(
         }
       }
 
-      // ── ② 채워진 악센트 면 ──────────────────────────────────────────
+      // ── ② Filled accent surfaces ────────────────────────────────────
       //
-      // 기준값은 `:root` 에서 읽는다. 임의 CSS 표기(hex·rgb·oklch)를 브라우저가
-      // 정규화한 뒤 비교해야 하므로, 일회용 원소에 색을 넣고 계산된 값을 받는다.
+      // The reference values are read from `:root`. Comparison has to happen
+      // after the browser normalises arbitrary CSS notation (hex, rgb, oklch), so
+      // each colour is applied to a throwaway element and read back computed.
       const root = getComputedStyle(document.documentElement);
       const normalize = (value: string) => {
         const probe = document.createElement("div");
@@ -300,7 +313,7 @@ async function measureRoute(
         if (raw) accents.set(normalize(raw), name);
       }
 
-      // 컨트롤 단위로 접는다 — 버튼과 그 안의 칠해진 span 을 두 번 세지 않는다.
+      // Fold to the control — do not count a button and a filled span inside it twice.
       const byControl = new Map<
         Element,
         { token: string; testid: string | null; text: string; w: number; h: number }
@@ -312,7 +325,7 @@ async function measureRoute(
         const token = accents.get(getComputedStyle(el).backgroundColor);
         if (!token) continue;
         const b = el.getBoundingClientRect();
-        if (b.height < minH || b.width < minW) continue; // data-mark 는 여기서 걸러진다
+        if (b.height < minH || b.width < minW) continue; // data-marks are filtered out here
         const ctl = el.closest(control);
         if (!ctl) continue;
         if (byControl.has(ctl)) continue;
@@ -342,12 +355,13 @@ async function measureRoute(
 }
 
 /**
- * **①의 예외 — 라우트 하나 단위로, 실측치와 「무엇이 대신 재는가」를 함께.**
+ * **Exceptions to ① — one route per row, with its measurement and what measures
+ * it instead.**
  *
- * ⚠️ 여기 줄을 더하는 것은 그 화면에서 규칙을 끄는 것이다. 그래서 각 줄에는
- * **자기 몫의 검사**(`titleGuard` describe)가 붙는다 — 예외가 낡으면 그 검사가
- * 먼저 빨개져서 사람을 이 목록으로 되돌린다. 사유가 「대기」인 예외는 두지
- * 않는다(2026-08-08 `open-vault-cta` 가 같은 값을 치렀다).
+ * ⚠️ Adding a row here switches the rule off for that screen. So every row carries
+ * **its own check** (the `titleGuard` describe) — when an exception goes stale that
+ * check turns red first and sends a person back to this list. No exception is kept
+ * whose reason is "pending" (`open-vault-cta` paid that price on 2026-08-08).
  */
 const TITLE_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
   {
@@ -365,17 +379,19 @@ const TITLE_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
 const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
 
 /**
- * **②의 예외 — 같은 규율.**
+ * **Exceptions to ② — same discipline.**
  */
 const ACCENT_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
   /*
-   * 편집(`/ko/project/storefront/edit/`) 예외는 **지웠다** (2026-08-08 위계 판정
-   * 적용). `project-save-top`(고정 머리)과 `project-save`(폼 끝)가 같은 행동·같은
-   * 라벨·같은 142×40 의 **채워진 인디고 둘**이었다. sticky 는 스크롤 어디서나
-   * 보이므로 주 CTA 를 상단이 지고, 폼 끝의 되풀이는 `Button` 의 기존 `outline`
-   * 으로 내려왔다 — 편집 모드에서만. 만들기 화면(`/ko/project/new/`)에는 sticky
-   * 띠가 없어 그 자리가 유일한 주 CTA 이므로 채워진 채로 남는다(그래서 이 규칙은
-   * 두 라우트 모두에서 「정확히 1개」로 참이다).
+   * The edit exception (`/ko/project/storefront/edit/`) was **deleted** on
+   * 2026-08-08 when the 위계 (design-lead) verdict was applied.
+   * `project-save-top` (sticky header) and `project-save` (end of form) were **two
+   * filled indigos** with the same action, the same label, and the same 142×40. The
+   * sticky one is visible at any scroll position so it carries the primary CTA, and
+   * the repeat at the end of the form dropped to `Button`'s existing `outline` — in
+   * edit mode only. The create screen (`/ko/project/new/`) has no sticky bar, so
+   * there that button is the only primary CTA and stays filled (which is why the
+   * rule holds as "exactly 1" on both routes).
    */
 ];
 const ACCENT_EXEMPT_ROUTES = new Set(ACCENT_EXEMPT.map((e) => e.route));
@@ -394,15 +410,15 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
       const m = await measureRoute(page, route);
       totalScanned += m.scanned;
 
-      // 공회전 방지 ⓐ — 라우트마다. 글자를 거의 못 훑었으면 아래 0 은
-      // 「깨끗해서」가 아니라 「안 봐서」다. 바닥이 3 인 것은 404 가 실제로
-      // 4개뿐이기 때문이다(실측) — 가장 얇은 화면이 바닥을 정한다.
+      // Idling guard ⓐ — per route. If almost no text was scanned, a 0 below means
+      // "we did not look", not "it is clean". The floor is 3 because 404 really has
+      // only 4 (measured) — the thinnest screen sets the floor.
       expect(m.scanned, `${route}: 글자 원소를 거의 못 훑었다 — 스캐너가 죽었다`).toBeGreaterThan(2);
 
       if (TITLE_EXEMPT_ROUTES.has(route)) continue;
 
-      // 예외가 아니면 **기준이 있어야 한다** — 그려진 h1 이 사라지면 이 검사는
-      // 조용히 아무것도 안 재게 된다. 그 상태를 통과로 두지 않는다.
+      // Outside the exceptions there **must be a baseline** — if the rendered h1
+      // disappears this check silently measures nothing. That state is not a pass.
       expect(
         m.titlePx,
         `${route}: 그려진 h1 이 없다 — 기준을 잃었다. 의도한 것이면 TITLE_EXEMPT 에 실측치와 함께 등재하라`,
@@ -414,7 +430,7 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
       }
     }
 
-    // 공회전 방지 ⓑ — 스윕 전체. 실측 964(예외 3 라우트 제외 시 887).
+    // Idling guard ⓑ — across the whole sweep. Measured 964 (887 excluding the 3 exception routes).
     expect(totalScanned, "전 라우트를 합쳐도 훑은 글자가 적다 — 스윕이 죽었다").toBeGreaterThan(600);
     expect(routesWithTitle, "제목을 가진 라우트를 거의 못 찾았다 — 기준 판정기가 죽었다").toBeGreaterThan(10);
 
@@ -436,8 +452,8 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
       totalFilled += m.filled.length;
       totalConsidered += m.considered;
 
-      // 공회전 방지 ⓐ — 색 기준을 `:root` 에서 **실제로 읽었나.**
-      // 토큰 이름이 바뀌면 이 검사는 «악센트 0개» 라서 영원히 초록이 된다.
+      // Idling guard ⓐ — were the reference colours **actually read** from `:root`?
+      // If a token is renamed, this check sees "0 accents" and goes green forever.
       expect(m.accentTokens, `${route}: 악센트 토큰을 :root 에서 못 읽었다 — 색 기준을 잃었다`).toBeGreaterThan(2);
       expect(m.considered, `${route}: 배경색을 들여다본 원소가 없다 — 스캐너가 죽었다`).toBeGreaterThan(20);
 
@@ -447,14 +463,15 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
       }
     }
 
-    // 공회전 방지 ⓑ — 하나도 못 찾았으면 «전부 최대 하나» 는 참이지만 그건
-    // 측정 실패다. 실측 9개(예외 라우트 2 제외 시 7).
+    // Idling guard ⓑ — finding none makes "at most one everywhere" true, but that
+    // is a measurement failure. Measured 9 (7 excluding the 2 exception routes).
     expect(
       totalFilled,
       "채워진 악센트 컨트롤을 전 라우트에서 하나도 못 찾았다 — 판정기가 죽었다(측정 실패)",
     ).toBeGreaterThan(5);
-    // 실측 2974(2026-08-08). 바닥은 추측이 아니라 실측에서 내려온다 — 첫 시도에
-    // 3000 을 눌러 박았다가 정상 상태가 빨개졌다(거짓 빨강도 게이트 결함이다).
+    // Measured 2974 (2026-08-08). The floor comes from measurement, not a guess —
+    // the first attempt pinned 3000 and turned a healthy state red (a false red is
+    // a gate defect too).
     expect(totalConsidered, "그려진 원소를 거의 못 봤다 — 스윕이 죽었다").toBeGreaterThan(2000);
 
     expect(
@@ -464,8 +481,9 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
   });
 
   /**
-   * ①의 예외가 **낡지 않았는지** 각자 값을 치른다. 예외를 그냥 두면 그 화면에서
-   * 이 파일의 어떤 층도 안 돈다 — 제목이 생겨도, 동률이 넷으로 늘어도 초록이다.
+   * Each exception to ① pays for itself by proving it has **not gone stale**. Left
+   * alone, no layer of this file runs on that screen — it stays green even if a
+   * title appears, even if the ties grow to four.
    */
   test("예외가 낡지 않았다 — 제목 없는 화면은 정말 제목이 없다", async ({ page }) => {
     for (const route of ["/ko/topology/", "/ko/docs/"]) {
@@ -479,11 +497,13 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
   });
 
   /**
-   * **고쳐진 둘은 이제 ①·② 본체가 잰다** — 예외가 없으므로 감시 장치도 없다.
+   * **The two that were fixed are now measured by ① and ② themselves** — with no
+   * exception there is no watchdog either.
    *
-   * 다만 하나는 규칙 ② 로 표현되지 않는다: 편집 화면의 주 CTA 가 **위쪽 sticky
-   * 여야 한다**는 것. 「최대 하나」는 그 하나가 어느 쪽이어도 참이라, 반대로 고쳐
-   * (상단을 내리고 하단을 채워) 놓아도 초록이다. 그래서 그 방향만 여기서 못박는다.
+   * One thing rule ② cannot express: the edit screen's primary CTA **must be the
+   * top sticky one**. "At most one" is true whichever of the two it is, so
+   * inverting the fix (demoting the top one and filling the bottom one) would still
+   * be green. Only that direction is pinned here.
    */
   test("편집 화면의 채워진 주 CTA 는 위쪽 sticky 저장이다", async ({ page }) => {
     const m = await measureRoute(page, "/ko/project/storefront/edit/");
@@ -491,7 +511,7 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
       m.filled.map((f) => f.testid),
       "편집 화면의 채워진 악센트가 상단 sticky 저장 하나가 아니다 — 방향이 뒤집혔거나 둘로 늘었다",
     ).toEqual(["project-save-top"]);
-    // 하단 저장은 살아 있어야 한다 — 강등이지 삭제가 아니다.
+    // The bottom Save must stay alive — this was a demotion, not a removal.
     await expect(
       page.getByTestId("project-save"),
       "폼 끝의 저장이 사라졌다 — 이건 강등이 아니라 기능 제거다",
@@ -499,25 +519,26 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
   });
 
   /**
-   * 쓰기 잠금 배너가 **이유만 말하고 끝나지 않는다.** 여기서는 「갈 길이 그
-   * 상자 안에 있는가」까지만 본다.
+   * A write-lock banner must **not stop at stating the reason**. This checks only
+   * that the way forward is inside that same box.
    *
-   * ## 무엇을 이 파일에서 뺐나 (2026-08-07)
+   * ## What was removed from this file (2026-08-07)
    *
-   * 종전에는 이 자리에서 CTA 를 눌러 **URL 이 `/ko/` 로 바뀌는지**를 쟀다.
-   * 그 단언이 두 가지로 틀렸다:
+   * This used to click the CTA and measure **whether the URL changed to `/ko/`**.
+   * That assertion was wrong in two ways:
    *
-   * ① **범위** — `/project/new` 한 라우트 · testid 하나에 손으로 박혀 있었고,
-   *    같은 병이 두 곳 더 살아 있었다(인사이트 · 프로젝트 상세). 허용목록
-   *    게이트의 고전적 실패다(`design-gates.md`).
-   * ② **깊이** — URL 이 바뀌는 것과 거기서 폴더를 열 수 있는 것은 다른 사실인데
-   *    앞의 것만 쟀다. 실제로 그 갈 곳(`/`)은 볼트 없는 웹 방문자에게
-   *    **관문**(내려받기 화면, 폴더 컨트롤 0개)이라 한 홉 뒤의 막다른 길이었고,
-   *    이 검사는 그동안 초록이었다.
+   * ① **Scope** — it was hand-pinned to one route (`/project/new`) and one testid,
+   *    while the same disease was alive in two more places (insights, project
+   *    detail). The classic allowlist-gate failure (`design-gates.md`).
+   * ② **Depth** — the URL changing and being able to open a folder there are
+   *    different facts, and only the first was measured. For a web visitor with no
+   *    vault that destination (`/`) is the **gateway** (the download screen, 0
+   *    folder controls), so it was a dead end one hop away — and this check was
+   *    green the whole time.
    *
-   * 그래서 그 층은 `tests/e2e/open-vault-cta.spec.ts` 로 옮겼다 — 감사 대상
-   * 라우트를 전부 훑고, 그 길이 **실제로 폴더 선택기를 부르는지**까지 잰다.
-   * 이 파일은 이름 그대로 **위계**만 맡는다.
+   * So that layer moved to `tests/e2e/open-vault-cta.spec.ts`, which sweeps every
+   * audited route and measures whether the path **actually opens the folder
+   * picker**. This file keeps only what its name says: hierarchy.
    */
   test("쓰기 잠금 배너가 갈 길을 함께 준다 — 막다른 경고가 아니다", async ({ page }) => {
     await page.goto("/ko/project/new/?guides=off");

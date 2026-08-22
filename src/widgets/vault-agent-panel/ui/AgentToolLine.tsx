@@ -3,13 +3,15 @@
 import type { ToolCallRecord } from '@/features/vault-agent';
 
 /**
- * 도구 왕복 한 줄 — **진행 표시가 곧 이 행이다.**
+ * One line per tool round trip — **this row is the progress indicator.**
  *
- * 가짜 진행바도 장식 스피너도 없다. 실제로 일어난 왕복만 한 줄씩 붙고,
- * 각 행은 무엇을 읽었고 몇 자가 나갔는지 실측으로 말한다. 행이 붙는 것이
- * 진행이고, 안 붙으면 아직 아무 일도 안 일어난 것이다.
+ * No fake progress bar, no decorative spinner. Only round trips that really
+ * happened are appended, one row each, and each row states from measurement what
+ * was read and how many characters went out. Rows appearing is the progress; no row
+ * means nothing has happened yet.
  *
- * 높이는 1행 고정이다 — 답이 와도 위 내용이 밀리지 않는다(치수 규칙성).
+ * The height is fixed at one row — an arriving answer does not push the content
+ * above it (dimension regularity).
  */
 export function AgentToolLine({
   call,

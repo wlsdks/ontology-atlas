@@ -4,42 +4,44 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Dialog 채택 래칫 — **프리미티브 밖의 `role="dialog"` 는 장부를 넘지 못한다.**
+ * Dialog adoption ratchet — **`role="dialog"` outside the primitive can never
+ * exceed the ledger.**
  *
- * ## 왜 (2026-08-15 「체계」석 비준, docs/DECISIONS.md)
+ * **Why** (ratified by the 체계 (design-systems) seat 2026-08-15,
+ * docs/DECISIONS.md). 26 places across 23 files were each assembling modality
+ * themselves: 5 different scrim tokens, 8 hardcoded widths, a focus trap actually
+ * present in only 8 of 20 places declaring aria-modal, and 2 aria-modals with
+ * neither scrim nor trap. The answer is `src/shared/ui/dialog.tsx`. This ratchet
+ * makes **new files use the primitive from day one** and holds existing debt so
+ * it can only fall.
  *
- * `role="dialog"` 26곳/23파일이 모달성을 각자 조립하고 있었다 — 스크림 토큰
- * 5갈래 · 폭 하드코딩 8종 · aria-modal 선언 대비 트랩 실재 8/20 · 스크림도
- * 트랩도 없는 aria-modal(2곳). 그 답이 `src/shared/ui/dialog.tsx` 다. 이
- * 래칫은 **새 파일이 첫날부터 프리미티브를 쓰게** 만들고, 기존 부채는 줄기만
- * 하게 붙든다.
+ * **Why a contract test and not lint.** The verdict is "how many across the whole
+ * repository", which no single-file AST selector can count — exactly the ratchet
+ * row in design.md's "layer lint cannot see". And it **walks all of src/** rather
+ * than a hand-written file list, because a hand list is the path that let
+ * surface-motion-ratchet sit green on an empty list.
  *
- * ## 왜 lint 가 아니라 계약 테스트인가
+ * **The scanner's reach.**
  *
- * 판정이 「저장소 전체의 개수」라 파일 하나의 AST 셀렉터로는 셀 수 없다 —
- * design.md 「lint 가 못 보는 층」의 래칫 행 그대로다. 그리고 손으로 적은
- * 파일 목록을 걷는 것이 아니라 **src/ 전수를 워킹**한다 — 손 목록은
- * surface-motion-ratchet 이 빈 목록 위에서 초록이던 사고의 재발 경로다.
- *
- * ## 스캐너의 사정거리
- *
- * - 주석은 지우고 센다(아이콘 래칫이 산문 주석을 값으로 세던 결함의 회피).
- * - `[role="dialog"]` 처럼 **셀렉터 문자열 안**의 것은 마크업이 아니다 —
- *   여닫는 표면이 아니라 그것을 찾는 코드다(route-focus-manager).
- * - `src/shared/ui/dialog.tsx` 자신은 정본이라 제외한다.
+ * - Comments are stripped before counting (avoiding the icon ratchet's defect of
+ *   counting prose comments as values).
+ * - Occurrences **inside a selector string** such as `[role="dialog"]` are not
+ *   markup — that is code looking for the surface, not the surface itself
+ *   (route-focus-manager).
+ * - `src/shared/ui/dialog.tsx` itself is the source of truth and is excluded.
  */
 
 const ROOT = process.cwd();
 const PRIMITIVE = "src/shared/ui/dialog.tsx";
 
-/** 주석 제거 — 줄 수 보존. (블록 주석 가운데 줄을 코드로 세던 계보의 회피.) */
+/** Strips comments while preserving line count (avoiding the lineage that counted block-comment interiors as code). */
 function stripComments(source: string): string {
   return source
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
-/** 셀렉터 문자열(`[role="dialog"]`)이 아닌 **마크업** role="dialog" 만 센다. */
+/** Counts only **markup** role="dialog", not selector strings like `[role="dialog"]`. */
 function countDialogMarkup(source: string): number {
   const stripped = stripComments(source);
   let count = 0;
@@ -72,8 +74,9 @@ function scanProduction(): Map<string, number> {
 }
 
 /**
- * **등재** — 원리적으로 포털 프리미티브로 못 옮기는 자리. 부채가 아니라
- * 근거를 가진 예외이고, 늘리려면 이 diff 에 「왜」를 적어야 한다.
+ * **Registered** — places that cannot in principle move to the portal primitive.
+ * Not debt but an exception with evidence; growing this list requires writing the
+ * "why" into the same diff.
  */
 const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: string]> = [
   [
@@ -84,19 +87,22 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
 ];
 
 /**
- * **부채** — 갚을 대상. 수가 늘면 빨개지고 0 이 되면 줄을 지운다. 상환
- * 우선순위(체계석 처방): ProjectDrawer(유일한 현행 modal-without-modality)
- * → backdrop-medium 7파일(스크림 수렴 = 위계석 승인 후) → 팔레트 3
- * (`variant="palette"` 등재와 함께).
+ * **Debt** — to be repaid. It turns red if the count rises, and the row is
+ * deleted when it reaches 0. Repayment order (the 체계 seat's prescription):
+ * ProjectDrawer (the only remaining modal-without-modality) → the 7
+ * backdrop-medium files (scrim convergence, after the 위계 seat approves) → the 3
+ * palettes (together with registering `variant="palette"`).
  *
- * 2026-08-15 창립 census: 26곳/23파일 중 첫 소비자 3파일(NewDocKindDialog ·
- * StudioMaterializeDialog · StudioPracticeCleanup)이 같은 PR 에서 이주해
- * 남은 부채가 아래 17파일/17곳이다(+ 스캐너 시야 밖 Radix 1).
+ * Founding inventory 2026-08-15: of 26 places across 23 files, the first three
+ * consumers (NewDocKindDialog, StudioMaterializeDialog, StudioPracticeCleanup)
+ * migrated in the same PR, leaving the 17 files / 17 places below (plus 1 Radix
+ * case outside the scanner's view).
  */
 /*
- * GlobalSearch 는 여기 없다 — 모달성이 Radix 합성이라 `role="dialog"` 마크업
- * 문자열이 소스에 없고, 이 스캐너의 시야 밖이다(과소 계상 방향). 그 부채는
- * `variant="palette"` 등재 라운드에서 이주로 갚는다.
+ * GlobalSearch is absent here — its modality is composed by Radix, so no
+ * `role="dialog"` markup string exists in the source and it is outside this
+ * scanner's view (an error in the under-counting direction). That debt is repaid
+ * by migration in the `variant="palette"` registration round.
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/guided-tour/ui/GuidedTourCard.tsx", 1],
@@ -108,9 +114,9 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx", 1],
   ["src/widgets/topology-map-v2/ui/TopologyV2EdgePanel.tsx", 1],
   ["src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx", 1],
-  // 2026-08-21 — 그 시트는 은퇴했다(원장 90 · 붙이는 일이 목적지가 됐다).
-  // 회수분은 장부에서 지운다: 실재하지 않는 파일을 들고 있으면 「감소」가
-  // 이사·개명만으로도 성립해 래칫이 헐거워진다.
+  // 2026-08-21 — that sheet was retired (ledger entry 90). Recovered rows are
+  // deleted from the ledger: holding a file that no longer exists lets a "decrease"
+  // be achieved by a move or rename alone, which loosens the ratchet.
   ["src/widgets/docs-vault/ui/DocsVaultUnifiedPalette.tsx", 1],
   ["src/widgets/search-palette/ui/SearchPalette.tsx", 1],
   ["src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx", 1],
@@ -126,10 +132,10 @@ describe("Dialog 채택 래칫", () => {
   ]);
 
   it("탐지기가 공회전하지 않는다 — 프리미티브 자신이 마크업을 갖고, 장부 파일이 실재한다", () => {
-    // 정본이 사라지면(이름 변경 등) 이 래칫 전체가 대상을 잃는다.
+    // If the source of truth disappears (a rename, say), this whole ratchet loses its target.
     const primitive = readFileSync(path.join(ROOT, PRIMITIVE), "utf8");
     expect(countDialogMarkup(primitive), "프리미티브에서 role=dialog 마크업을 못 찾았다").toBeGreaterThan(0);
-    // 부채 장부가 실재하지 않는 파일을 들고 있으면 「감소」가 이사·개명으로도 성립한다.
+    // A debt ledger holding non-existent files lets a "decrease" be achieved by a move or rename.
     for (const [file] of [...REGISTERED, ...DEBT]) {
       expect(statSync(path.join(ROOT, file)).isFile(), `${file} 이 실재하지 않는다`).toBe(true);
     }
@@ -159,7 +165,7 @@ describe("Dialog 채택 래칫", () => {
   });
 
   /*
-   * ── 상주 프로브 — 탐지기 자신이 살아 있는지 (/gate-probe: 통과는 증거가 아니다).
+   * ── Resident probe — is the detector itself alive (/gate-probe: passing is not evidence).
    */
   it("프로브: 마크업은 잡히고, 셀렉터 문자열과 주석은 잡히지 않는다", () => {
     expect(countDialogMarkup('<div role="dialog" aria-modal="true" />')).toBe(1);

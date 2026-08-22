@@ -3,15 +3,14 @@ import { pickLastEditSubject, type LastEditSubjectFact } from "@/shared/lib/last
 import { hasUnaccountedMtimeChange } from "@/shared/lib/mtime-conflict";
 
 /**
- * rank7 (design-council B5) — resolves the "마지막 편집 · 사람/AI" fact for
- * `TopologyV2DetailPanel`/`FullDetailA1`, the graph-node counterparts of
- * `resolveDocLastEditSubject` (docs-vault). Same two real sources, adapted
- * to the graph's own id shape:
+ * Resolves the "last edited by human/AI" fact for `TopologyV2DetailPanel` and
+ * `FullDetailA1`, the graph-node counterparts of `resolveDocLastEditSubject`
+ * (docs-vault). Same two real sources, adapted to the graph's own id shape:
  *
  * - **AI agent**: a fresh heartbeat whose focus resolves (via the existing
- *   `resolveAgentFocusNodeId`, W6) to THIS node id — reused as a param
- *   rather than re-derived here, so both P4b's "에이전트가 방금" badge and
- *   this fact always agree on which node the agent is looking at.
+ *   `resolveAgentFocusNodeId`) to THIS node id — passed in as a param rather
+ *   than re-derived here, so the "agent just now" badge and this fact always
+ *   agree on which node the agent is looking at.
  * - **Human**: `selfEditTimestamps` keyed by vault slug (`sourceSlug`) —
  *   the same cross-page self-write record `resolveDocLastEditSubject`
  *   reads, shared via the `LocalVaultProvider` singleton so an edit made on
@@ -40,10 +39,11 @@ export function resolveNodeLastEditSubject(params: {
 }
 
 /**
- * expected_mtime 충돌 배지 — 이 노드의 근거 문서 freshness(ISO, mtime 파생)
- * 가 패널을 연 시점의 baseline 과 달라졌고, 그 차이가 자기 쓰기로 설명되지
- * 않을 때만 true. `hasUnaccountedMtimeChange`(shared) 재사용 — docs-vault
- * 쪽의 numeric-mtime 버전과 같은 규칙.
+ * The `expected_mtime` conflict badge: true only when this node's source
+ * document freshness (ISO, derived from mtime) has moved away from the baseline
+ * taken when the panel opened, and the difference is not explained by our own
+ * write. Reuses shared `hasUnaccountedMtimeChange` — the same rule as
+ * docs-vault's numeric-mtime version.
  */
 export function hasNodeMtimeConflict(params: {
   sourceSlug: string | null;

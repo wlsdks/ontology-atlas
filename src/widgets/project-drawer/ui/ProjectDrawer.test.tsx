@@ -6,21 +6,22 @@ import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
 import { ProjectDrawer } from "./ProjectDrawer";
 
-// jsdom 은 Element.scrollTo 를 구현하지 않는다 — 모드 전환/details 열기 경로가
-// aside ref 에서 호출하므로 no-op 으로 stub(환경 갭, 구현 결함 아님).
+// jsdom does not implement Element.scrollTo — the mode-switch and details-open paths
+// call it from the aside ref, so it is stubbed as a no-op (an environment gap, not an
+// implementation defect).
 if (!Element.prototype.scrollTo) {
   Element.prototype.scrollTo = function scrollTo() {};
 }
 
 /**
- * design-council B6 rank16 회귀 가드 — ProjectDrawer 임팩트 모드 4필이
- * 서로 다른 그래프 연산을 트리거하는데 도움말이 항상 같은 한 줄이었다.
- * 여기서는 (1) 모드별 도움말이 서로 다르게 렌더되는지, (2) 각 필의
- * title/aria-label 이 개별화됐는지(터치·VoiceOver 도달)를 고정한다.
+ * design-council B6 rank16 regression guard — ProjectDrawer's 4 impact-mode pills
+ * trigger different graph operations while the help text was always the same line.
+ * This pins (1) that the per-mode help renders differently and (2) that each pill's
+ * title/aria-label is individualised (reaching touch and VoiceOver).
  */
 
-// jsdom 은 matchMedia 미구현 — framer-motion 의 useReducedMotion() 이 내부적으로
-// window.matchMedia 를 호출해 throw 한다 (HubRail.a11y.test.tsx 와 동일 stub).
+// jsdom does not implement matchMedia — framer-motion's useReducedMotion() calls
+// window.matchMedia internally and throws (the same stub as HubRail.a11y.test.tsx).
 if (typeof window.matchMedia !== "function") {
   window.matchMedia = ((query: string) => ({
     matches: false,
@@ -88,9 +89,9 @@ function renderDrawer(
       </TaxonomyProvider>
     </NextIntlClientProvider>,
   );
-  // 임팩트 모드 필은 "기본 정보 더 보기" <details> 안에 있다 — native
-  // <details> 는 닫힌 동안 브라우저가 내부적으로 콘텐츠를 접근성 트리에서
-  // 숨기므로, role 쿼리 전에 명시적으로 펼친다.
+  // The impact-mode pills sit inside the "기본 정보 더 보기" (show more basic info)
+  // <details>. A native <details> hides its content from the accessibility tree while
+  // closed, so it is expanded explicitly before any role query.
   fireEvent.click(screen.getByTestId("project-drawer-more-info-summary"));
   return result;
 }
@@ -107,7 +108,7 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     const titles = [none, upstream, downstream, network].map((btn) =>
       btn.getAttribute("title"),
     );
-    // 4개 모두 값이 있고, 서로 겹치지 않는다 — 이전엔 title 자체가 없었다.
+    // All four have a value and none overlap — previously there was no title at all.
     expect(titles.every((title) => Boolean(title))).toBe(true);
     expect(new Set(titles).size).toBe(4);
   });
@@ -123,9 +124,10 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
   });
 
   it("모드 필 클릭은 콜백을 부르고, 각 모드는 자기 도움말 문구를 보인다", () => {
-    // controlled 컴포넌트(impactMode=prop) + AnimatePresence 교체는 jsdom 에서
-    // 비결정적이라, 같은 인스턴스를 rerender 하지 않고 모드별 fresh 마운트로
-    // 각 도움말을 결정론적으로 고정한다(클릭→콜백 배선은 별도 검증).
+    // A controlled component (impactMode=prop) plus an AnimatePresence swap is
+    // non-deterministic in jsdom, so each help text is pinned deterministically with a
+    // fresh mount per mode rather than re-rendering one instance (the click → callback
+    // wiring is verified separately).
     const onChangeImpactMode = vi.fn();
     const first = renderDrawer({ impactMode: "none", onChangeImpactMode });
     expect(

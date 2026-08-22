@@ -22,7 +22,7 @@ function makeFileHandle(name: string, file: FakeFile): FileSystemFileHandle {
 }
 
 function makeRoot(files: Record<string, FakeFile>): FileSystemDirectoryHandle {
-  // 가장 단순한 구조 — flat 디렉터리. 키 = 'foo.md' 또는 'sub/bar.md'.
+  // The simplest shape — a flat directory. Keys are 'foo.md' or 'sub/bar.md'.
   const groups: Record<string, Record<string, FakeFile>> = {};
   for (const [path, file] of Object.entries(files)) {
     const parts = path.split('/');

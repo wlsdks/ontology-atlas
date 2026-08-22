@@ -2,8 +2,8 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useHomeRouteState } from "./use-home-route-state";
 
-// 이 훅은 `useSearchParams` 를 re-render 트리거로만 쓴다 — 값의 진실원은
-// window.location 이라 URL 을 그대로 되돌려주는 최소 stub 이면 충분하다.
+// The hook uses `useSearchParams` only as a re-render trigger; window.location
+// is the source of truth, so a minimal stub echoing the URL is enough.
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -19,9 +19,10 @@ describe("useHomeRouteState — 히스토리 계약", () => {
   });
 
   /**
-   * F3 회귀 — 프로젝트 상세의 "지도에서 보기"로 착지하면 히스토리가 두 칸
-   * 쌓여(실측 2→4) 뒤로가기 첫 번째가 화면을 하나도 바꾸지 못했다. 착지 직후
-   * 도는 정규화 이펙트가 **같은 URL 로 귀결되는데도** pushState 를 부른 탓이다.
+   * Regression: landing from the project detail's "view on the map" stacked
+   * two history entries (measured 2→4), so the first Back changed nothing on
+   * screen. Cause: normalisation effects running right after landing called
+   * pushState **even though they resolved to the same URL**.
    */
   it("결과 URL 이 지금과 같으면 히스토리에 칸을 만들지 않는다", () => {
     const { result } = renderHook(() => useHomeRouteState());

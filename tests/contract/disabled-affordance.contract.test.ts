@@ -6,39 +6,42 @@ import { describe, expect, it } from 'vitest';
 import { CONTROL_DISABLED_CLASS } from '@/shared/ui/control-class';
 
 /**
- * **누를 수 없으면 누를 수 없어 보여야 한다.**
+ * **If it cannot be pressed, it must not look pressable.**
  *
- * ## 이 게이트가 왜 생겼나
+ * ## Why this gate exists
  *
- * 2026-08-03 소유자 실보고: *"'최근 변경' 누르니까 아무런 반응이 없는데?"*.
- * 그 칩은 `disabled` 였고 코드 주석은 「자리는 남기고 이유는 툴팁이 말한다」고
- * 적혀 있었다. 그런데 실측하니 **계산된 스타일이 옆의 활성 칩 셋과 완전히
- * 동일**했다 — color · bg · border · opacity · cursor 전부 같은 값.
+ * Owner report, 2026-08-03: *"'최근 변경' 누르니까 아무런 반응이 없는데?"*
+ * (I press "recent changes" and nothing happens).
+ * That chip was `disabled`, and a code comment said the slot stays and a tooltip
+ * gives the reason. Measured, its **computed style was completely identical to the
+ * three active chips beside it** — color, bg, border, opacity, and cursor all the
+ * same.
  *
- * | 칩 | disabled | opacity | cursor |
+ * | Chip | disabled | opacity | cursor |
  * |---|---|---|---|
  * | 자동 정렬 | false | 1 | default |
  * | 검색 | false | 1 | default |
  * | 내 데이터로 전환 | false | 1 | default |
  * | **최근 변경** | **true** | **1** | **default** |
  *
- * `ChromeChip` 에 `disabled:` 처리가 **아예 없었고**, 공유 프리미티브라 **모든
- * 칩이 같은 구멍**을 갖고 있었다. 툴팁은 호버하고 기다려야 나오므로 **누르는
- * 사람에게는 침묵**이었다.
+ * `ChromeChip` had **no `disabled:` handling at all**, and being a shared primitive
+ * meant **every chip carried the same hole**. The tooltip requires hovering and
+ * waiting, so **for someone pressing it there was only silence.**
  *
- * 이 저장소의 반복 교훈 그대로다: **주석에만 있는 규격은 화면에 없다.**
- * lint 는 못 잡는다 — 값 규칙이 아니라 «이 상태에 대한 처리가 존재하는가» 라서다.
+ * This repository's recurring lesson: **a spec that exists only in a comment does
+ * not exist on screen.** Lint cannot catch it — the question is not a value rule but
+ * whether handling for this state exists at all.
  */
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
 
 /**
- * 값의 정본 — `control-class.ts` 의 `CONTROL_DISABLED_CLASS`. 이 테스트는
- * **소스의 클래스 문자열이 아니라 값을 묻는다** (2026-08-06 재작성): 종전에는
- * 파일마다 `disabled:opacity-` 리터럴이 있기를 요구해서, 값 층 상수로 옮기는
- * 정확히 올바른 리팩터링이 이 게이트를 깨뜨렸다. 지금은 「그 파일이 비활성
- * 처리를 어디서 받는가」(상수 조합 또는 자기 리터럴)와 「모든 경로의 값이
- * 하나인가」만 묻는다.
+ * The value authority is `CONTROL_DISABLED_CLASS` in `control-class.ts`. This test
+ * asks about **the value, not the class string in the source** (rewritten
+ * 2026-08-06): it used to require a `disabled:opacity-` literal in every file, so
+ * exactly the right refactor — moving to a value-layer constant — broke the gate. It
+ * now asks only where a file receives its disabled handling from (composing the
+ * constant or its own literal) and whether every path yields one value.
  */
 const DISABLED_STEP = (() => {
   const m = CONTROL_DISABLED_CLASS.match(/disabled:opacity-(\d+)/);
@@ -47,10 +50,10 @@ const DISABLED_STEP = (() => {
 })();
 
 /**
- * 눌리는 공유 프리미티브. **여기 하나를 더할 때 이 목록도 늘린다** — 목록이 곧
- * 이 게이트의 사정거리이고, 빠진 프리미티브는 게이트가 없는 것과 같다.
- * `Chip`/`IconButton`/`RowButton` 은 값 층(`control-class.ts`)에서 받으므로
- * 등재 대상은 그 값을 내는 파일이다.
+ * Pressable shared primitives. **Adding one means adding a row here** — this list is
+ * the gate's range, and a missing primitive is the same as no gate.
+ * `Chip`, `IconButton`, and `RowButton` receive theirs from the value layer
+ * (`control-class.ts`), so what is registered is the file that emits the value.
  */
 const PRESSABLE_PRIMITIVES = [
   'src/shared/ui/button.tsx',
@@ -60,13 +63,14 @@ const PRESSABLE_PRIMITIVES = [
   'src/shared/ui/control-class.ts',
 ] as const;
 
-/** 상수를 조합하면 그 자체로 네 처리(흐림·커서·그림자·호버 무력화)를 다 받는다. */
+/** Composing the constant brings all four treatments at once: dimming, cursor, shadow, and hover suppression. */
 const composesConstant = (source: string) => source.includes('CONTROL_DISABLED_CLASS');
 
 describe('비활성 어포던스 — 값 층', () => {
   it('CONTROL_DISABLED_CLASS 가 네 처리를 한 세트로 싣는다', () => {
-    // 흐림만 있으면 마우스 사용자가 누르기 전까지 모르고, 커서만 있으면 터치에서
-    // 신호가 0이고, 호버가 살아 있으면 «눌러도 되는 것» 이라고 손이 먼저 판단한다.
+    // Dimming alone leaves a mouse user unaware until they click; a cursor alone gives
+    // touch users no signal at all; and a live hover makes the hand conclude it is
+    // pressable before the eye does.
     expect(CONTROL_DISABLED_CLASS).toMatch(/disabled:opacity-\d+/);
     expect(CONTROL_DISABLED_CLASS).toContain('disabled:cursor-not-allowed');
     expect(CONTROL_DISABLED_CLASS).toContain('disabled:shadow-none');
@@ -75,14 +79,14 @@ describe('비활성 어포던스 — 값 층', () => {
 
   it.each(PRESSABLE_PRIMITIVES)('%s — 비활성 처리를 값 층 또는 자기 리터럴로 받는다', (path) => {
     const source = read(path);
-    if (composesConstant(source)) return; // 값 층 한 세트를 통째로 받는다
+    if (composesConstant(source)) return; // Receives the whole value-layer set
     expect(source, `${path}: 비활성 흐림 처리가 없다`).toMatch(/disabled:opacity-/);
     expect(source, `${path}: 비활성 커서 처리가 없다`).toContain('disabled:cursor-not-allowed');
     expect(source, `${path}: 비활성 호버 무력화가 없다`).toMatch(/disabled:hover:/);
   });
 
   it('비활성 흐림 값이 경로마다 갈리지 않는다', () => {
-    // 같은 상태를 두 값으로 그리면 그건 시스템이 아니라 우연이다.
+    // Drawing one state with two values is coincidence, not a system.
     const values = new Set(
       PRESSABLE_PRIMITIVES.flatMap((p) => [...read(p).matchAll(/disabled:opacity-(\d+)/g)].map((m) => m[1])),
     );
@@ -91,11 +95,11 @@ describe('비활성 어포던스 — 값 층', () => {
   });
 
   it('lint 게이트가 허용하는 값과 값 층의 값이 같다', () => {
-    // eslint 의 disabledAffordanceSelectors 는 «55 가 아닌 값만 금지» 형태라
-    // 55 라는 숫자가 lint 에도 적힌다 — 값 층이 이사하면 여기가 빨개져서
-    // 둘이 같이 이사하게 만든다. (파일 면제 블록 대신 이 대조를 골랐다:
-    // 이 config 는 면제 블록이 셀렉터 배열을 다시 싣는 걸 잊는 사고를 세 번
-    // 겪었다.)
+    // eslint's disabledAffordanceSelectors take the form "forbid anything but 55", so
+    // the number 55 is written in the lint config too. When the value layer moves, this
+    // turns red and forces both to move together. (This comparison was chosen over a
+    // file exemption block: this config has three times suffered a block forgetting to
+    // re-spread the selector array.)
     const eslintConfig = read('eslint.config.mjs');
     const gates = [...eslintConfig.matchAll(/disabled\):opacity-\(\?!(\d+)/g)].map((m) => m[1]);
     expect(gates.length, 'disabledAffordanceSelectors 가 eslint.config.mjs 에 없다').toBeGreaterThanOrEqual(2);
@@ -107,9 +111,10 @@ describe('최근 변경 칩 — 못 쓰는 이유를 모드별로 말한다', ()
   const HOME = read('src/views/home/ui/HomePage.tsx');
 
   it('샘플과 내 폴더의 사유를 다른 문장으로 낸다', () => {
-    // 샘플을 보는 사람에게 「문서를 고치면」은 **고칠 문서가 있다는 전제**다.
-    // 실제 이유는 다르다 — 샘플의 날짜는 이 저장소가 픽스처를 마지막으로 건드린
-    // 시각이라 사용자와 무관하고, 폴더를 열기 전에는 이 기능이 뜻을 못 가진다.
+    // Telling someone viewing the sample to "edit a document" **presumes they have a
+    // document to edit.** The real reason is different: the sample's date is when this
+    // repository last touched the fixture, which has nothing to do with the user, and
+    // the feature has no meaning until they open a folder.
     expect(HOME).toContain('spotlightSampleTooltip');
     expect(HOME).toContain('spotlightEmptyTooltip');
   });
@@ -118,8 +123,8 @@ describe('최근 변경 칩 — 못 쓰는 이유를 모드별로 말한다', ()
     const messages = JSON.parse(read(`messages/${locale}.json`));
     const text: string = messages.topology.controls.spotlightSampleTooltip;
     expect(text, `${locale}: 샘플 사유 문구가 없다`).toBeTruthy();
-    // 「무엇을 하면 되는지」가 없으면 그건 사과문이지 안내가 아니다 —
-    // `surfaces.md` 의 강등 계약(왜 + 어디서)과 같은 규율.
+    // Without "what to do next" it is an apology, not guidance — the same discipline as
+    // the degradation contract in `surfaces.md` (why plus where).
     expect(text, `${locale}: 다음 행동(폴더)을 안 말한다`).toMatch(locale === 'ko' ? /폴더/ : /folder/i);
   });
 });

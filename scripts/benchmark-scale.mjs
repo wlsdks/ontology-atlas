@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // R13 #60 — vault size scaling measurement.
 //
-// Question: 23-node dogfood vault 의 MCP effect (Cat A hallucinations 9→0,
-// tool calls 7→1.67) 가 *더 큰 vault* 에서도 holds? 또는 saturate / 약화?
+// Question: does the MCP effect measured on the 23-node dogfood vault (Cat A
+// hallucinations 9→0, tool calls 7→1.67) hold on a *larger vault*, or does it
+// saturate or weaken?
 //
-// Method: 100-node tmp vault 생성 (perf-vault.mjs 패턴) + 1 high-MCP-advantage
+// Method: generate a 100-node tmp vault (the perf-vault.mjs pattern) + 1 high-MCP-advantage
 // task (find_backlinks of a known popular slug) × 2 mode × Codex.
 //
-// 4 cell × ~30s = ~2 min. Scope minimal — 더 큰 측정은 D 결과 보고 결정.
+// 4 cells × ~30s = ~2 min. Scope is deliberately minimal; a larger measurement waits on D's results.
 //
 // Usage:
 //   node scripts/benchmark-scale.mjs --bypass

@@ -3,27 +3,28 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **폴더 감시 브리지가 양쪽에 다 살아 있는지** 지키는 게이트.
+ * Gate keeping **the folder-watch bridge alive on both surfaces.**
  *
- * ## 왜 생겼나
+ * ## Why it exists
  *
- * 2026-07-29 시연 영상 시나리오 판정에서 나온 실측: *"고치면 지도가 즉시
- * 따라온다"* 의 **즉시성 자체가 데스크톱 전용 능력**이다(앱 = OS 워처 500ms
- * 디바운스, 웹 = 적응형 폴링). 그 영상이 파는 능력인데, 능력 브리지 표
- * (`.claude/rules/surfaces.md`)에 **등재돼 있지 않았다** — 다섯 개만 있고
- * 이건 여섯 번째였다.
+ * Measured while judging the demo video's scenario on 2026-07-29: the *immediacy* in
+ * "edit a file and the map follows instantly" **is itself a desktop-only
+ * capability** (the app uses an OS watcher with a 500ms debounce; the web uses
+ * adaptive polling). The video sells that capability, and it was **not registered**
+ * in the capability bridge table (`.claude/rules/surfaces.md`) — that table had five
+ * rows and this was the sixth.
  *
- * 등재하지 않은 능력은 아무도 지키지 않는다. 워처가 조용히 끊겨도 앱은
- * 폴링 없이 **아무것도 안 하게** 되고(웹과 달리 앱에는 폴백이 없다), 그
- * 사이 영상은 계속 그 능력을 판다.
+ * An unregistered capability is protected by nobody. If the watcher silently breaks,
+ * the app **does nothing at all** (unlike the web it has no polling fallback), while
+ * the video keeps selling the capability.
  *
- * ## 왜 `DEGRADED_SURFACES` 가 아닌가
+ * ## Why not `DEGRADED_SURFACES`
  *
- * 그 등록부의 각 행은 *"브라우저는 원리적으로 이걸 못 한다 → 유일한 목적지는
- * `/download/`"* 를 주장한다. 폴더 감시는 그 주장이 **거짓**이다 — 웹도 결국
- * 따라오고, 다른 것은 *언제* 다. 넣으면 다음 감사자가 "웹은 파일 변화를 못
- * 본다"로 읽는다. 강등이 아니라 **지연**이라 축이 다르고, 축이 다르면 게이트도
- * 다르다.
+ * Every row in that registry claims *"a browser cannot do this in principle → the
+ * only destination is `/download/`"*. For folder watching that claim is **false**:
+ * the web catches up eventually, and what differs is *when*. Adding it there makes
+ * the next auditor read "the web cannot see file changes". This is **latency, not
+ * degradation** — a different axis, and a different axis means a different gate.
  */
 
 function read(relative: string): string {
@@ -66,15 +67,18 @@ describe("폴더 감시 브리지", () => {
   it("등록부에 여섯 번째 브리지로 적혀 있다", () => {
     const rules = read(".claude/rules/surfaces.md");
     /**
-     * ⚠️ **표의 `행`을 겨눈다 — 단어가 아니라.**
+     * ⚠️ **Aim at the table's row, not at a word.**
      *
-     * 처음엔 `toContain("폴더 감시")` 였는데, 그 문자열이 바로 아래 산문 제목
-     * ("폴더 감시는 「강등」이 아니라 「지연」이다")에도 있어서 **표에서 행을
-     * 통째로 빼도 통과했다**(프로브 실측 2026-07-29). 게이트가 지키려던 것은
-     * 설명이 아니라 **등재**인데, 설명만 있어도 만족되고 있었다.
+     * This began as `toContain("폴더 감시")`, but that string also appears in the prose
+     * heading immediately below it (「폴더 감시는 「강등」이 아니라 「지연」이다」 —
+     * folder watching is latency, not degradation), so **deleting the row from the table
+     * entirely still passed** (probe measured 2026-07-29). What the gate meant to protect
+     * was **the registration**, not the explanation, yet the explanation alone satisfied
+     * it.
      *
-     * 그래서 행의 구조를 본다: 파이프로 시작하고 · 능력 이름을 담고 ·
-     * 구현 파일을 가리키는 한 줄. 산문은 이 모양이 될 수 없다.
+     * So it matches the row's structure: one line that begins with a pipe, contains the
+     * capability name, and points at the implementation file. Prose cannot take that
+     * shape.
      */
     const bridgeRow = rules
       .split("\n")

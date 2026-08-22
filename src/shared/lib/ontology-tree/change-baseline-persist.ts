@@ -2,16 +2,19 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { OntologySnapshot } from "./ontology-changeset";
 
 /**
- * 변경 baseline 스냅샷의 localStorage 영속화 + 복원-스코프 가드 (Self-Drawing Diff #5
- * 기반). baseline 이 reload 를 넘어 살아남아야 (1) push-move #1 의 "리뷰함" 승인이
- * 보존되고 (2) "자리 비운 사이 무엇이 바뀌었나"(persisted baseline vs 현재 디스크 상태)
- * 를 보여줄 수 있다.
+ * Persists the change baseline snapshot to localStorage, plus the guard that decides whether
+ * it may be restored. The baseline has to survive a reload so that (1) "reviewed"
+ * acknowledgements are preserved and (2) the app can show what changed while you were away
+ * (persisted baseline vs the current state on disk).
  *
- * **스코프 = content-overlap 가드** (vault-key 스레딩 회피 — FSD 경계상 store 에
- * vault 식별자를 깔끔히 주입하기 어렵다). 단일 baseline 을 영속하되, 복원 시 그
- * baseline 의 노드 집합이 *현재 그래프와 충분히 겹칠 때만* 적용한다. 다른 vault 를
- * 로드하면 겹침 ~0 → 폐기(garbage diff 방지). 같은 vault 면 (에이전트가 추가/일부
- * 변경해도) 겹침 높음 → 복원. 순수 함수 — IO 없음(store 가 localStorage 를 호출).
+ * **The scope check is a content-overlap guard.** Threading a vault key through would be the
+ * obvious approach, but the FSD boundaries make it awkward to inject a vault identifier into
+ * the store cleanly. Instead a single baseline is persisted and applied on restore only when
+ * its node set *overlaps the current graph enough*. Loading a different vault gives ~0
+ * overlap and the baseline is discarded, so no garbage diff appears; the same vault (even
+ * after an agent added or changed nodes) gives high overlap and restores.
+ *
+ * Pure functions, no IO — the store owns the localStorage calls.
  */
 
 interface SerializedSnapshot {
@@ -33,7 +36,7 @@ export function serializeSnapshot(snap: OntologySnapshot): string {
   return JSON.stringify(payload);
 }
 
-/** 역직렬화. 형식이 안 맞으면 null (손상/구버전 → 조용히 무시). */
+/** Deserialize; returns null on any shape mismatch, so corrupt or older payloads are ignored. */
 export function deserializeSnapshot(raw: string | null): OntologySnapshot | null {
   if (!raw) return null;
   let parsed: unknown;
@@ -66,13 +69,16 @@ export function deserializeSnapshot(raw: string | null): OntologySnapshot | null
 }
 
 /**
- * 영속 baseline 을 현재 그래프에 적용해도 되는지 — content-overlap 스코프 가드.
- * baseline 의 노드 중 *현재 그래프에 여전히 존재하는 비율* 이 threshold 이상이면 true.
+ * May the persisted baseline be applied to the current graph — the content-overlap guard.
+ * True when the fraction of baseline nodes *still present in the current graph* meets the
+ * threshold.
  *
- * - 다른 vault 로드: baseline 노드가 현재에 거의 없음 → 비율 ~0 → false(폐기, garbage 방지).
- * - 같은 vault(+에이전트 추가/일부 변경): baseline 노드 대부분 존재 → 비율 높음 → true.
- *   (추가된 노드는 비율 분모(baseline 크기)에 안 들어가므로 추가가 많아도 영향 없음.)
- * - 빈 baseline → false(맞출 게 없음).
+ * - A different vault: almost no baseline node is present, so the ratio is ~0 and the
+ *   baseline is discarded rather than producing a garbage diff.
+ * - The same vault, even after an agent added or changed nodes: most baseline nodes are
+ *   present, so the ratio is high and it restores. Added nodes do not enter the denominator
+ *   (which is the baseline size), so any number of additions is harmless.
+ * - An empty baseline: false, there is nothing to match against.
  */
 export function snapshotMatchesGraph(
   snap: OntologySnapshot,

@@ -7,13 +7,14 @@ import { AcpChatResizeHandle } from './AcpChatResizeHandle';
 import { CHAT_WIDTH_DEFAULT, CHAT_WIDTH_STEP } from '../model/panel-width';
 
 /**
- * 끄는 것은 **화면에서 확인할 수 없었다.** 접근성 계층으로 보낸 합성 드래그는
- * 「성공」이라고 답하면서 폭을 1px 도 안 바꿨다(2026-08-16 실측) — 포인터 캡처를
- * 타는 경로라 그렇다. 눈으로도 못 보고 자동화로도 못 재는 것은, 다음 사람이
- * 조용히 깨뜨려도 아무도 모른다는 뜻이다. 그래서 여기서 잰다.
+ * Dragging **could not be verified on screen.** A synthetic drag sent through the
+ * accessibility layer answered "success" while changing the width by 0px (measured
+ * 2026-08-16) — the real path goes through pointer capture. Something invisible to
+ * the eye and unmeasurable by automation means the next person can break it
+ * silently. So it is measured here.
  */
 beforeAll(() => {
-  // jsdom 에는 포인터 캡처가 없다 — 있는 척만 해 주면 핸들러가 그대로 돈다.
+  // jsdom has no pointer capture — pretending it does is enough for the handlers to run.
   Object.assign(HTMLElement.prototype, {
     setPointerCapture: vi.fn(),
     releasePointerCapture: vi.fn(),
@@ -107,7 +108,7 @@ describe('대화 칸 너비 — 보조기술에 무엇이라고 말하나', () =
     expect(handle.getAttribute('aria-orientation')).toBe('vertical');
     expect(handle.getAttribute('aria-valuenow')).toBe('465');
     expect(handle.getAttribute('tabindex')).toBe('0');
-    // 이름이 없으면 「분할자」로만 읽힌다.
+    // Without a name it reads only as "separator".
     expect(handle.getAttribute('aria-label')).toBeTruthy();
   });
 });

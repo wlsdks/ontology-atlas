@@ -12,10 +12,10 @@ import { TopologyIndexPanel } from "./TopologyIndexPanel";
 
 // `@/i18n/navigation`'s Link needs an IntlProvider context this file doesn't
 // stand up (established pattern, see `DocsVaultViewer.test.tsx`) — mocked to
-// a plain anchor so href/click assertions still work (P4-② agent-activity
-// deep link).
-// 이 위젯은 라벨을 prop 으로 받지만 하위 행이 화면 언어를 읽는다
-// (라틴 아이브로를 한글에 얹지 않기 위한 판정, `shared/lib/latin-eyebrow`).
+// a plain anchor so href/click assertions still work (the agent-activity deep link).
+// This widget receives labels as props, but the rows below it read the screen's
+// language (the decision that keeps a Latin eyebrow off Hangul,
+// `shared/lib/latin-eyebrow`).
 vi.mock("next-intl", () => ({
   useLocale: () => "ko",
   useTranslations: () => (key: string) => key,
@@ -30,7 +30,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 // TopologyIndexPanel's own tests exercise the tree/search/census — the
-// root-first-open "시작하기" module it mounts at the top needs a
+// root-first-open "get started" module it mounts at the top needs a
 // LocalVaultProvider + i18n context it doesn't stand up here, and its
 // visibility logic is unit-tested separately
 // (`@/features/first-run-starter/ui/FirstRunStarterModule.test.tsx`). Stub
@@ -38,18 +38,18 @@ vi.mock("@/i18n/navigation", () => ({
 // props without pulling in vault/i18n providers.
 const firstRunStarterProps = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("@/features/first-run-starter", () => ({
-  // 2026-07-24 구조 개편 — 모듈이 INDEX 본문(children)을 감싸고 가이드와
-  // 배타적으로 그린다. 스텁은 "가이드 없음" 상태(=children 그대로)를 흉내
-  // 내 이 파일이 INDEX 동작만 검증하게 한다.
+  // The 2026-07-24 restructure — the module wraps the INDEX body (children) and
+  // draws exclusively against the guide. The stub imitates the "no guide" state
+  // (children as-is) so this file verifies INDEX behaviour alone.
   FirstRunStarterModule: (props: { children?: React.ReactNode }) => {
     firstRunStarterProps.current = props;
     return <>{props.children}</>;
   },
 }));
 
-// 온톨로지 블록 "가져오기" 모듈도 같은 이유(자체 vault/i18n 컨텍스트 필요,
-// 동작은 `BlockImportModule.test.tsx` 가 단위 검증)로 스텁 — 이 파일은
-// 패널이 모듈을 mount 한다는 사실만 본다.
+// The ontology block "import" module is stubbed for the same reason (it needs its own
+// vault and i18n context, and its behaviour is unit-verified by
+// `BlockImportModule.test.tsx`) — this file only checks that the panel mounts it.
 const blockImportMounted = vi.hoisted(() => ({ current: 0 }));
 vi.mock("@/features/ontology-blocks", () => ({
   BlockImportModule: () => {
@@ -129,12 +129,14 @@ function buildFixtureTree() {
 
 describe("TopologyIndexPanel", () => {
   /**
-   * 「다른 폴더에서 노드 가져오기」는 **INDEX 에 없다** (2026-08-02 이관, 소유자:
-   * *"이건 뭐임? 이 문구가 왜 있는거지..?"*).
+   * 「다른 폴더에서 노드 가져오기」 (import nodes from another folder) is **not in
+   * INDEX** (moved 2026-08-02, owner: *"이건 뭐임? 이 문구가 왜 있는거지..?"* — what is
+   * this? why is this text here?).
    *
-   * 평생 한두 번 쓸 일이 지도를 읽는 화면에 상시 버튼으로 서 있었다. 지금 자리는
-   * 설정 → 작업 공간이다(`AppSettingsMenu`). 이 케이스는 **되돌아오는 것**을
-   * 막는다 — 자립 모듈이라 여기 한 줄만 다시 넣으면 조용히 부활한다.
+   * Something used once or twice in a lifetime stood as a permanent button on the
+   * screen for reading the map. Its home is now settings → workspace
+   * (`AppSettingsMenu`). This case stops it **coming back** — it is a self-contained
+   * module, so putting one line back here revives it silently.
    */
   it("블록 가져오기 모듈을 INDEX 에 싣지 않는다 — 설정으로 옮겼다", () => {
     blockImportMounted.current = 0;
@@ -181,7 +183,7 @@ describe("TopologyIndexPanel", () => {
   });
 
   it("INDEX tree is a single Tab stop — roving tabindex + Arrow/Home/End move the roving focus (P0)", () => {
-    // Regression (H3 접근성 감사 P0): every treeitem used to carry tabIndex=0,
+    // Regression (accessibility audit P0): every treeitem used to carry tabIndex=0,
     // so expanding a domain added +N Tab stops and a keyboard user had to Tab
     // through the whole tree. WAI-ARIA `tree` requires exactly ONE Tab entry
     // point (the active row), with Arrow keys walking siblings.
@@ -427,8 +429,8 @@ describe("TopologyIndexPanel", () => {
       concepts: 102,
       relations: 478,
       domains: 6,
-      // 2026-07-24 온보딩 라운드 — 투어/일반 모드 콜백은 HomePage 가 줄 때만
-      // 정의된다(이 테스트는 미전달 → undefined 통과 확인).
+      // The tour and plain-mode callbacks are defined only when HomePage supplies them
+      // (this test passes neither — confirming undefined passes through).
       onStartTour: undefined,
       onEnablePlainMode: undefined,
       audiencePlain: false,
@@ -496,8 +498,9 @@ describe("TopologyIndexPanel", () => {
     fireEvent.click(screen.getByTestId("topology-index-segment-recent"));
     fireEvent.click(screen.getByTestId("topology-index-segment-all"));
 
-    // 접힌 가지는 펼침 전이(`.ai-row-disclosure`)가 끝난 뒤 언마운트된다 —
-    // "툭 사라짐" 을 없앤 대가로 한 박자 늦게 사라진다.
+    // A collapsed branch unmounts after the expansion transition
+    // (`.ai-row-disclosure`) finishes — the price of removing the "sudden vanish" is
+    // that it disappears one beat later.
     await waitForElementToBeRemoved(() => screen.queryByText("CLI Developer Entry"));
     const domainRow = screen.getByText("Onboarding & UX").closest('[data-index-row]')!;
     fireEvent.click(domainRow.querySelector("button")!);
@@ -601,12 +604,12 @@ describe("TopologyIndexPanel", () => {
     );
     const fold = screen.getByTestId("topology-index-fold");
     expect(fold.textContent).not.toMatch(/\d/);
-    // sr-only census 는 남아 있다
+    // The sr-only census remains.
     expect(screen.getByTestId("topology-index-census")).toBeInTheDocument();
   });
 
-  // P4-② (2026-07-21 리텐션 라운드) — 푸터의 "Updated with AI" 가 이미
-  // 연결된 2일차 사용자를 등록 모달로 되돌려 보내는 막다른 길이었다.
+  // The footer's "Updated with AI" was a dead end that sent an already-connected
+  // second-day user back to the registration modal.
   describe("footer agent-connect control (P4-②)", () => {
     it("opens the agent-connect sheet (button) when there is no agentActivityHref", () => {
       const onOpenAgentConnect = vi.fn();
@@ -699,10 +702,10 @@ describe("TopologyIndexPanel", () => {
     });
   });
 
-  // P1 결함①a (사용성 전수 검수 2026-07-23) — 일반(비개발) 모드는
-  // element 행을 트리에서 제외하는데(호출자의 filterTreeExcludeKind), 그
-  // 사실을 설명하는 텍스트가 어디에도 없어 "역량 2 · 요소 7"인데 펼치면
-  // 2행만 보이는 정합성 결함으로 읽혔다.
+  // Plain (non-developer) mode excludes element rows from the tree (through the
+  // caller's filterTreeExcludeKind), and nothing anywhere explained that, so it read
+  // as a consistency defect: "capabilities 2 · elements 7" that expanded to show only
+  // 2 rows.
   describe("plainMode hint (P1 결함①a)", () => {
     it("renders the quiet plain-mode hint when plainMode is true and the label is provided", () => {
       render(
@@ -760,11 +763,12 @@ describe("TopologyIndexPanel", () => {
     });
   });
 
-  // 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) — vault 미연결
-  // (정적 샘플) 상태에서 "먼지 앉은 노드"/"인계" 같은 유지보수·에이전트
-  // 컨트롤은 첫 방문자에게 노출하지 않는다. 실 데이터(dustyNodeCount,
-  // agentHandoff)는 그대로 받되 `vaultLoaded=false`면 렌더만 억제하고,
-  // `vaultLoaded=true`(또는 생략 — 하위호환 기본값)면 그대로 나타나야 한다.
+  // Unifying the overview left rail's attention winner (2026-07-24) — with no vault
+  // connected (the static sample), maintenance and agent controls such as "dusty
+  // nodes" and 「인계」 (handoff) are not exposed to a first-time visitor. The real data
+  // (dustyNodeCount, agentHandoff) still arrives, but `vaultLoaded=false` suppresses
+  // only the render, and `vaultLoaded=true` (or omitted — the backwards-compatible
+  // default) must show them as before.
   describe("vault-connected gate for maintenance/agent controls (P1 오버뷰 레일)", () => {
     const agentHandoffProp = {
       briefText: "brief",
@@ -838,10 +842,11 @@ describe("TopologyIndexPanel", () => {
 
     it("surfaces the unbound-code-folder fact without anyone clicking the project node", () => {
       /*
-       * 이 행이 왜 있는가 — 실측(2026-08-04): 「이 프로젝트에 연결된 코드 폴더가
-       * 없습니다」는 첫 화면에 **0회** 나타나고, 프로젝트 노드를 정확히 그 하나
-       * 클릭해야만 보였다(픽스처 15노드 · 도그푸드 100+ 노드). 진단이 안 보이면
-       * 처방은 있으나 마나다.
+       * Why this row exists — measured 2026-08-04: 「이 프로젝트에 연결된 코드 폴더가
+       * 없습니다」 (this project has no code folder attached) appeared **0 times** on the
+       * first screen and was visible only after clicking that one exact project node
+       * (a 15-node fixture; 100+ nodes in dogfood). A prescription is worthless if the
+       * diagnosis is never seen.
        */
       const onSelect = vi.fn();
       render(
@@ -861,7 +866,7 @@ describe("TopologyIndexPanel", () => {
       );
       const row = screen.getByTestId("topology-index-source-unbound");
       expect(row).toHaveTextContent("1 project with no code folder");
-      // 이 행은 폴더 선택기를 열지 않는다 — 처방은 한 곳(프로젝트 패널)에만 산다.
+      // This row does not open the folder picker — the prescription lives in exactly one place, the project panel.
       fireEvent.click(row);
       expect(onSelect).toHaveBeenCalledWith("project:root");
     });
@@ -907,8 +912,8 @@ describe("TopologyIndexPanel", () => {
   });
 });
 
-// 소유자 실사용 지적 (2026-07-24) — 셰브론을 정확히 눌러야만 펼쳐지던
-// 민감함 해소: 자식 있는 행은 클릭 한 번이 선택 + 펼침을 함께 한다.
+// Owner report from real use (2026-07-24) — resolving the sensitivity of expanding
+// only on an exact chevron hit: a row with children now does select and expand in one click.
 describe("TopologyIndexPanel — 행 클릭 펼침", () => {
   it("자식이 있는 행을 클릭하면 선택과 동시에 자식이 열린다", () => {
     const onSelect = vi.fn();

@@ -1,26 +1,25 @@
 /**
- * "내 문서에서 온톨로지 시작하기" — 이미 스캔한 vault 매니페스트에서
- * 결정론적으로 온톨로지 후보를 파생한다 (AI 없음, 전송 없음, 부수효과 없음).
+ * "Start an ontology from my documents" — derives ontology candidates deterministically from an
+ * already-scanned vault manifest (no AI, nothing transmitted, no side effects).
  *
- * PO 근거 (.qa-scratch/ontology-onboarding-2026-07/discovery.md): 스타터
- * 시드는 빈 폴더에서만 발동해, 기존 .md 를 가진 타겟 사용자(테크리드)는
- * "0 개념" 막다른 골목에 떨어진다 (F1~F6). 이 모듈은 그 순간(md ≥ 1 &&
- * 온톨로지 노드 0)에 사용자의 문서로 첫 그래프 후보를 만든다 — CLI
- * `bootstrap` / MCP `analyze_repo_structure` 의 브라우저 등가.
+ * **Why it exists**: the starter seed fires only in an empty folder, so a target user who already
+ * has `.md` files lands in a "0 concepts" dead end. This module catches that moment (md ≥ 1 and
+ * ontology nodes = 0) and builds a first graph from the user's own documents — the browser
+ * equivalent of the CLI's `bootstrap` and MCP's `analyze_repo_structure`.
  *
- * 후보 규칙 (단순화가 의도 — kind 3종, 관계는 containment 만):
- * - 루트 README → project 제목 소스 (파일 자체는 손대지 않는다 — GitHub
- *   렌더링에 frontmatter 표가 노출되는 것을 피한다)
- * - 1뎁스 폴더 → domain 후보 (md 를 1개 이상 담은 폴더만)
- * - 그 외 모든 .md → element 후보, `domain:` = 자기 최상위 폴더
- * - 루트 레벨 .md (README 제외) → domain 없는 element. project.md 의
- *   `elements:` 배열이 직접 연결한다 (derive-ontology 의 elements[] 규칙)
+ * Candidate rules (the simplicity is deliberate — three kinds, containment relations only):
+ * - the root README sources the project title (the file itself is never touched, to avoid exposing
+ *   a frontmatter table in GitHub's rendering)
+ * - a one-deep folder → domain candidate (only folders holding at least one md)
+ * - every other `.md` → element candidate, with `domain:` set to its own top-level folder
+ * - a root-level `.md` (README excepted) → an element with no domain, linked directly by
+ *   project.md's `elements:` array (derive-ontology's elements[] rule)
  *
- * 그래프 연결 계약 (derive-ontology-from-vault.ts 와 정합):
- * - element 의 `domain: <이름>` → `domain:slugifyName(이름)` 스텁 노드 +
- *   domain→element contains 엣지
- * - project 의 `domains: [<이름>...]` → 같은 id 로 resolve → project→domain
- * - 두 경로의 slug 가 일치해야 그래프가 이어진다 — 같은 원문 이름을 쓴다.
+ * Graph-linking contract (consistent with derive-ontology-from-vault.ts):
+ * - an element's `domain: <name>` → a `domain:slugifyName(name)` stub node plus a domain→element
+ *   contains edge
+ * - a project's `domains: [<name>...]` → resolves to the same id → project→domain
+ * - the two paths' slugs must agree for the graph to connect, so both use the same original name.
  */
 
 import { generateNodeUid, slugifyName } from '@/entities/docs-vault';
@@ -28,14 +27,14 @@ import { generateNodeUid, slugifyName } from '@/entities/docs-vault';
 export interface BootstrapDocInput {
   slug: string;
   title: string;
-  /** frontmatter — 이미 `kind:` 를 가진 문서는 후보에서 제외하기 위해. */
+  /** frontmatter — used to exclude documents that already carry a `kind:`. */
   frontmatter: Record<string, unknown>;
 }
 
 export interface BootstrapElementCandidate {
   slug: string;
   title: string;
-  /** 최상위 폴더 이름 — 루트 문서는 null (project.md 가 직접 연결). */
+  /** Top-level folder name; null for a root document (project.md links it directly). */
   domain: string | null;
 }
 
@@ -46,19 +45,19 @@ export interface BootstrapDomainCandidate {
 
 export interface BootstrapPlan {
   projectTitle: string;
-  /** 생성할 project 문서의 slug — 기존 파일과 충돌하면 대체 slug. */
+  /** Slug of the project document to create; an alternative slug when it collides with an existing file. */
   projectSlug: string;
   /**
-   * 재검 마찰 A — vault 에 이미 `kind: project` 문서가 있으면 그 slug.
-   * 이때 새 project 파일을 만들지 않고(이중 프로젝트 방지) 기존 문서의
-   * `domains:` 에 승인 도메인을 덧붙인다.
+   * The slug of an existing `kind: project` document, when the vault already has one. In that case
+   * no new project file is created (avoiding two projects) and the approved domains are appended to
+   * the existing document's `domains:`.
    */
   existingProjectSlug: string | null;
   domains: BootstrapDomainCandidate[];
   elements: BootstrapElementCandidate[];
-  /** 이미 kind: 를 가진 문서 수 — "부분 구축" vault 안내용. */
+  /** How many documents already carry a `kind:` — used to explain a partially built vault. */
   alreadyTypedCount: number;
-  /** 런타임 소유 `SKILL.md` 라서 후보에서 뺀 수 — 화면이 「왜 빠졌는지」를 말할 수 있게. */
+  /** How many were excluded as runtime-owned `SKILL.md` — so the screen can say **why** they are missing. */
   runtimeOwnedSkipped: number;
 }
 
@@ -71,32 +70,30 @@ function isRootReadme(slug: string): boolean {
 }
 
 /**
- * **에이전트 런타임이 소유한 파일인가** — 그렇다면 우리는 쓰지 않는다.
+ * **Is this file owned by an agent runtime?** If so, we do not write to it.
  *
- * ## 무엇이 났나 (2026-08-09, PO 카운슬에서 발견)
+ * **What happened** (found in the PO council, 2026-08-09). "Build a map from my documents" treats
+ * **any slug** in `manifest.docs` as a candidate and, on approval, writes `uid`, `kind`, and
+ * `title` into that file's frontmatter. But when a user opens a skills folder
+ * (`~/.claude/skills`, a plugin folder) as their document store, **the `SKILL.md` files come
+ * straight into that list** — measured: opening one marketplace folder produced 105 candidates,
+ * all of them `SKILL.md`.
  *
- * 「내 문서로 지도 만들기」는 `manifest.docs` 에 든 **어떤 슬러그든** 후보로
- * 삼아 승인 시 `uid`·`kind`·`title` 을 그 파일 frontmatter 에 쓴다. 그런데
- * 사용자가 스킬 폴더(`~/.claude/skills` · 플러그인 폴더)를 문서함으로 열면
- * 그 목록에 **`SKILL.md` 들이 그대로 들어온다** — 실측: 마켓플레이스 폴더
- * 하나를 열었을 때 후보 105개가 전부 `SKILL.md` 였다.
+ * Those files are **owned by the Claude runtime and the marketplace.** Their spec has only `name`
+ * and `description`; `kind` is ours. Writing our keys there means:
  *
- * 그 파일들은 **Claude 런타임과 마켓플레이스가 소유한다.** 규격상 `name` 과
- * `description` 만 있고 `kind` 는 우리 것이다. 거기에 우리 키를 쓰면:
+ * - reinstalling the plugin **erases** what we wrote (that folder is a git checkout and an update
+ *   overwrites it — confirmed by measurement),
+ * - **we** break trust-charter promise ④, that the data is always plain markdown you can carry away,
+ * - and the screen calls that action "raising", not writing.
  *
- * - 플러그인을 다시 설치하는 순간 우리가 쓴 것이 **지워진다**(그 폴더는 git
- *   체크아웃이고 업데이트가 덮어쓴다 — 실측 확인),
- * - 「데이터는 언제나 평범한 마크다운이라 그대로 들고 나갈 수 있다」는 신뢰
- *   헌장 ④를 **우리가** 깬다,
- * - 화면은 그 행동을 「올리기」라고 부른다 — 쓰기라고 말하지 않는다.
+ * The 2026-07-29 council blocked a "skill editor", but **this path shipped unblocked.** Whichever
+ * way the verdict went, this is a defect.
  *
- * 2026-07-29 카운슬이 「스킬 편집기」를 막았는데 **이 경로는 막히지 않은 채로
- * 배포돼 있었다.** 판정 방향이 무엇이든 이건 결함이다.
- *
- * 판정 기준은 규격 그대로다(공식 문서): 파일 이름이 `SKILL.md` 이고,
- * frontmatter 에 필수 두 키(`name`·`description`)가 있고, `kind` 가 없다.
- * 셋을 다 만족할 때만 제외한다 — 사용자가 자기 볼트에서 직접 만든
- * `SKILL.md` 라도 이 모양이면 런타임이 읽는 스킬이므로 같은 판단이 옳다.
+ * The test follows the official spec exactly: the file is named `SKILL.md`, its frontmatter has both
+ * required keys (`name`, `description`), and it has no `kind`. Only all three together exclude it —
+ * a `SKILL.md` a user wrote in their own vault is still read by the runtime if it has this shape, so
+ * the same judgement is correct there.
  */
 export function isRuntimeOwnedSkill(slug: string, fm: Record<string, unknown>): boolean {
   const fileName = slug.split('/').pop() ?? '';
@@ -107,9 +104,9 @@ export function isRuntimeOwnedSkill(slug: string, fm: Record<string, unknown>): 
 }
 
 /**
- * 매니페스트 문서 목록 → 부트스트랩 계획. 입력이 이미 온톨로지 노드를
- * 가진 문서를 포함해도 안전하다 (그 문서들은 후보에서 빠지고
- * `alreadyTypedCount` 로만 집계).
+ * Manifest document list → a bootstrap plan. Safe even when the input already contains documents
+ * with ontology nodes (those drop out of the candidates and are only tallied into
+ * `alreadyTypedCount`).
  */
 export function deriveBootstrapPlan(
   docs: readonly BootstrapDocInput[],
@@ -131,7 +128,7 @@ export function deriveBootstrapPlan(
       continue;
     }
     if (isRuntimeOwnedSkill(doc.slug, doc.frontmatter)) {
-      // 남의 파일이다 — 후보에 넣지 않고, 몇 개를 뺐는지 화면이 말할 수 있게 센다.
+      // Someone else's file — excluded from the candidates, and counted so the screen can say how many.
       runtimeOwnedSkipped += 1;
       continue;
     }
@@ -166,7 +163,7 @@ export function deriveBootstrapPlan(
   };
 }
 
-/** 선택 상태를 반영해 실제로 기록될 요소 목록을 계산한다. */
+/** Computes the elements that will actually be written, given the current selection. */
 export function selectedElements(
   plan: BootstrapPlan,
   acceptedDomains: ReadonlySet<string>,
@@ -175,14 +172,8 @@ export function selectedElements(
 }
 
 /**
- * 생성할 project.md 본문. `domains:` 는 승인된 도메인만, `elements:` 는
- * 루트 레벨 문서의 마지막 세그먼트(derive 의 elements[] 가 element 노드
- * id 로 resolve 하는 형태)만 노출한다.
- */
-/**
- * 재검 마찰 D — 승격 시 도메인을 스텁이 아닌 실제 .md 로 만든다.
- * 파일 tail 은 derive 의 `domain:slugifyName(name)` ref 와 일치해야
- * 그래프가 이어진다 (같은 slugify 규칙 import).
+ * Promotion writes a domain as a real `.md` rather than a stub. The file tail must match derive's
+ * `domain:slugifyName(name)` ref for the graph to connect (the same slugify rule is imported).
  */
 export function domainDocSlug(name: string): string {
   const tail = slugifyName(name);

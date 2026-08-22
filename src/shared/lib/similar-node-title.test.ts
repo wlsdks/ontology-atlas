@@ -31,8 +31,8 @@ describe('findSimilarNodeByTitle', () => {
   });
 
   it('does not flag loosely-related titles below the token-overlap threshold', () => {
-    // "인증" 한 토큰만 겹치고 나머지는 갈린다 — 다른 개념(auth-login vs
-    // auth-logout 급 오경보) 취급을 피해야 한다.
+    // Only one token ("인증") overlaps and the rest differ, so these must be treated
+    // as different concepts — the auth-login vs auth-logout class of false alarm.
     const match = findSimilarNodeByTitle('인증 실패 알림', 'capability', candidates);
     expect(match).toBeNull();
   });
@@ -50,7 +50,7 @@ describe('findSimilarNodeByTitle', () => {
   });
 
   it('respects a custom minScore threshold', () => {
-    // 토큰 1/3 겹침(0.33) — 기본 임계(0.6)에선 탈락하지만 낮춘 임계에선 매치.
+    // One third of the tokens overlap (0.33): below the default threshold (0.6), a match under a lowered one.
     const belowDefault = findSimilarNodeByTitle('사용자 데이터 내보내기', 'capability', candidates);
     expect(belowDefault).toBeNull();
     const withLowerThreshold = findSimilarNodeByTitle(

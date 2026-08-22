@@ -7,13 +7,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
 
-// 탭 상태가 **URL 에 산다**(#87) — 공유·에이전트 재현을 위해. 실앱에서는
-// `router.replace` 가 리렌더를 일으켜 `useSearchParams` 가 새 값을 준다.
-// 테스트에서 둘 다 목이면 그 루프가 끊기므로, 여기서 이어 붙인다.
+// The tab state **lives in the URL** so it can be shared and reproduced by an agent. In the real app
+// `router.replace` triggers a re-render and `useSearchParams` yields the new value. Mocking both breaks
+// that loop, so it is reconnected here.
 const nav = vi.hoisted(() => ({ search: "", version: 0 }));
 
 vi.mock("next/navigation", () => ({
-  // `version` 을 읽어 replace 후 리렌더 시 새 인스턴스를 만든다.
+  // Reading `version` produces a new instance on the re-render after a replace.
   useSearchParams: () => new URLSearchParams(nav.search),
 }));
 
@@ -199,9 +199,8 @@ function baseProject() {
 }
 
 /**
- * 렌더 하네스는 **하나**다. 예전에는 이 함수 말고도 같은 트리를 손으로 두 번
- * 더 적어 뒀는데, provider 를 하나 더할 일이 생기자 그 둘만 빠졌다 —
- * 사본이 있는 곳이 어긋나는 곳이다.
+ * There is **one** render harness. The same tree used to be written out twice more by hand, and when a
+ * provider had to be added those two were missed — wherever there is a copy is where things drift.
  */
 function renderPage(
   overrides: {
@@ -210,8 +209,8 @@ function renderPage(
   } = {},
 ) {
   return render(
-    // 이 화면은 「보기 전용」 배지 옆에 폴더 여는 길을 놓는다 — 그 부품이
-    // 볼트 컨텍스트를 읽으므로 provider 가 필요하다(2026-08-07 막다른 CTA).
+    // This screen puts the folder-opening path beside the "read only" badge, and that component reads
+    // vault context, so the provider is required (the 2026-08-07 dead-CTA fix).
     <NextIntlClientProvider locale="en" messages={enMessages}>
       <LocalVaultProvider>
       <ProjectDetailPage
@@ -226,7 +225,7 @@ function renderPage(
 
 describe("ProjectDetailPage", () => {
   beforeEach(() => {
-    // 탭은 URL 상태라 테스트 간에 새지 않게 초기화한다.
+    // The tab is URL state, so it is reset between tests to stop it leaking.
     nav.search = "";
     mocks.vaultBody = null;
     mocks.projects = [];
@@ -305,27 +304,27 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     // domains=1, capabilities=1, elements=2, documents=1
-    // 온톨로지 위계(도메인 ⊃ 역량 ⊃ 요소)만 칩이다 — 라벨 다음에 값이 붙는다.
+    // Only the ontology hierarchy (domain ⊃ capability ⊃ element) becomes chips — the value follows the label.
     expect(screen.getByText("Domains").nextElementSibling).toHaveTextContent("1");
     expect(screen.getByText("Capabilities").nextElementSibling).toHaveTextContent("1");
     expect(screen.getByText("Elements").nextElementSibling).toHaveTextContent("2");
   });
 
-  // 5개를 같은 무게로 두면 "다 중요하다 = 다 안 중요하다" 가 된다. 메타 수치는
-  // 종류가 달라 칩이 아니라 평문으로 내려간다 — 이 위계가 무너지지 않게 고정.
+  // Five at the same weight reads as "everything matters, so nothing does". Meta figures are a different
+  // kind and drop from chips to plain text — pinned so that hierarchy cannot collapse.
   it("메타 수치(문서·관계)는 칩이 아니라 평문으로 강등된다", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     renderPage();
 
-    // 칩이었다면 라벨과 값이 별 엘리먼트라 "Documents" 단독 노드가 잡힌다.
+    // As a chip, the label and value would be separate elements and "Documents" would match as its own node.
     expect(screen.queryByText("Documents")).not.toBeInTheDocument();
     expect(screen.getByText(/Documents\s+1/)).toBeInTheDocument();
   });
 
-  // 히어로 수치는 이 프로젝트 몫이고 상단 census 는 볼트 전체다. 같은 화면에
-  // 다른 두 수가 있으면 하나가 틀린 것처럼 읽히므로 스코프를 말로 밝힌다.
+  // The hero figures are this project's while the census at the top is the whole vault. Two different
+  // numbers on one screen reads as one of them being wrong, so the scope is stated in words.
   it("히어로 지표에 스코프 캡션이 붙는다", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -339,14 +338,14 @@ describe("ProjectDetailPage", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
-    // #87 — 구성은 탭 뒤에 있고 탭 상태는 URL 이 진실원이다. 렌더 계약과
-    // 클릭 계약을 나눠 검사한다: 여기서는 "URL 이 구성이면 행이 그려진다".
-    // (클릭 → URL 이동은 Next 의 일이라 아래 별 테스트가 URL 기록만 본다.)
+    // Composition sits behind a tab and the URL is the tab state's source of truth. The render contract
+    // and the click contract are checked separately: here, "if the URL says composition, the rows are
+    // drawn". (Click → URL navigation is Next's job, and the separate test below only checks the URL record.)
     nav.search = "tab=composition";
     renderPage();
 
-    // 카드 격자가 지고 행 목록이 그 자리를 받았다 — 지도로 가는 문은 카드
-    // 전체가 아니라 **펼친 안**의 링크 하나다(2026-08-12, B안).
+    // The card grid lost and the row list took its place — the door to the map is not the whole card but a
+    // single link **inside the expanded row** (2026-08-12, option B).
     const row = screen.getByTestId("project-detail-domain-row-toggle");
     expect(row).toHaveTextContent("Views");
     fireEvent.click(row);
@@ -356,10 +355,10 @@ describe("ProjectDetailPage", () => {
     );
   });
 
-  // 히어로의 방사 지도는 「많이 담긴 도메인이 더 크게」라고 약속했지만 실측
-  // 폭 차이가 17개 대 6개에서 4.7px(17대16 은 0.3px)이었고 선이 글자를
-  // 관통했다. 못 지키는 약속은 잉크가 아니라 오해다 — 그 자리에 다른 그림을
-  // 덧대는 대신, 판정 가능한 형식(행+막대)의 목록을 **한 곳**에만 둔다.
+  // The hero's radial map promised "the fuller a domain, the larger it is", but the measured width
+  // difference between 17 and 6 was 4.7px (17 against 16 was 0.3px) and the lines ran through the label.
+  // A promise that cannot be kept is a misunderstanding, not ink — instead of layering another picture
+  // there, the list lives in a judgeable form (rows plus bars) in **one place only**.
   it("히어로에 방사 도메인 지도가 없다 — 도메인 목록은 구성 탭 한 곳에만 있다", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -368,9 +367,8 @@ describe("ProjectDetailPage", () => {
     const header = container.querySelector("header")!;
 
     /*
-     * **부재를 재는 단언은 셀렉터가 틀리면 영원히 통과한다** — 그래서 먼저 이
-     * 셀렉터가 실제로 그런 SVG 를 잡는지 확인한다(`/gate-probe`: 검사가 빈
-     * 집합에서 헛돌고 있지 않은가).
+     * **An assertion measuring an absence passes forever if the selector is wrong** — so first confirm
+     * this selector really does catch such an SVG (`/gate-probe`: is the check idling on an empty set?).
      */
     const probe = document.createElement("div");
     probe.innerHTML = '<svg role="img" aria-label="probe"></svg>';
@@ -379,17 +377,17 @@ describe("ProjectDetailPage", () => {
     probe.remove();
 
     expect(header.querySelector("svg[role='img']")).toBeNull();
-    // 히어로에 도메인 행이 없다(같은 아홉 줄을 한 화면에 두 번 그리지 않는다).
+    // The hero has no domain rows (the same nine lines are not drawn twice on one screen).
     expect(header.querySelector("[data-testid='domain-capacity-bar-row']")).toBeNull();
   });
 
-  // 같은 문장을 두 번 말하지 않는다 — 각주는 목록이 있는 자리에 한 번.
+  // The same sentence is not said twice — the footnote appears once, where the list is.
   it("겹침 각주는 목록과 같은 자리에 한 번만 나온다", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
-    // 탭 상태는 URL 이 진실원이다 — 이 하네스에서 탭 클릭은 URL 만 기록하고
-    // 리렌더는 실앱의 라우터가 한다. 그래서 두 상태를 각각 그려서 본다.
+    // The tab state's source of truth is the URL — in this harness a tab click only records the URL and
+    // the real app's router does the re-render. So the two states are rendered separately.
     const { unmount } = renderPage();
     expect(screen.queryByTestId("project-detail-domain-overlap-note")).not.toBeInTheDocument();
     unmount();
@@ -410,7 +408,7 @@ describe("ProjectDetailPage", () => {
   });
 
   it("기본 탭으로 돌아가면 URL 에서 파라미터가 사라진다 (#87)", () => {
-    // 공유 링크가 짧아야 붙여넣기 쉽다 — `?tab=overview` 는 없어도 될 소음이다.
+    // A short share link is easy to paste — `?tab=overview` is noise that need not be there.
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -427,14 +425,14 @@ describe("ProjectDetailPage", () => {
     mocks.canEdit = false;
     renderPage();
 
-    // 소유자: "스크롤로 모든거 보여주려 안해도 되니까?" — project.md 본문이
-    // 수천 px 라 구성과 같은 스크롤에 두면 구성을 스캔할 방법이 없었다.
+    // Owner: "you don't have to show everything by scrolling" — the project.md body runs to thousands of
+    // px, so putting it in the same scroll as composition left no way to scan composition.
     expect(screen.queryByTestId("project-detail-domain-rows")).not.toBeInTheDocument();
   });
 
   it("연결된 프로젝트는 탭 밖에 있다 — 어느 탭에서든 보인다 (#87)", () => {
-    // 프로젝트 간 관계를 온톨로지로 다루는 방향의 첫 표면이라 탭 뒤에 숨기면
-    // 안 된다. 구성 탭으로 옮겨도 그대로 있어야 한다.
+    // It is the first surface of treating project-to-project relations as ontology, so it must not be
+    // hidden behind a tab. It has to stay when switching to the composition tab too.
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -478,8 +476,8 @@ describe("ProjectDetailPage", () => {
 
     expect(screen.getByText("Sibling Project")).toBeInTheDocument();
     expect(screen.queryByTestId("project-detail-connected-empty")).not.toBeInTheDocument();
-    // 앱 안에서 이동하는 링크에 장식 화살표를 붙이지 않는다 — 어디로 가는지는
-    // 라벨이, 누를 수 있다는 건 컨트롤이 이미 말한다.
+    // No decorative arrow on a link that navigates inside the app — where it goes is said by the label,
+    // and that it is pressable is said by the control.
     expect(screen.getByTestId("project-detail-connected").textContent).not.toContain("↗");
   });
 

@@ -1,25 +1,28 @@
 #!/usr/bin/env node
 //
-// **이 파일의 판별 기준 (2026-08-01, 소유자 확정 — `docs/DECISIONS.md`)**
+// **This file's criterion** (2026-08-01, owner's decision — `docs/DECISIONS.md`):
 //
-//   기계가 만들 수 있는 것만 검사한다. 사람이 판단해서 쓴 문장은 검사하지 않는다.
+//   Check only what a machine can generate. Never check a sentence a human wrote.
 //
-// 종전 판은 3,419줄 · 단언 2,126개였고 그중 1,915개(90%)가 「README 에 이
-// 문장이 있는가」였다. 그 핀들은 **잡아야 할 것을 못 잡았다** — 도구 동작이
-// 바뀌고 문서가 안 바뀌면 문장은 그대로라 통과했다 — 그리고 **개선을 막았다**:
-// 문서를 더 나은 말로 고치면 빨개졌다. 실제로 이 파일 자신이 「게이트가 틀리고
-// 문서가 옳았다」는 주석을 여러 번 달고 있었다.
+// The previous version was 3,419 lines with 2,126 assertions, of which 1,915 (90%)
+// asked "does the README contain this sentence". Those pins **failed to catch what
+// they were for** — when a tool's behaviour changed and the docs did not, the
+// sentence was unchanged and it passed — and they **blocked improvement**: rewriting
+// a document in better words turned it red. This file itself repeatedly carried
+// comments saying the gate was wrong and the document was right.
 //
-// 지금 남은 것은 셋뿐이다:
-//   1. 코드에서 유도한 값과의 대조 (enum · 카운트 · 버전 · 계산된 요약 문자열)
-//   2. 참조 무결성 (문서가 부르는 `pnpm ...` 가 실재하나, 볼트 README 가 부르는
-//      노드가 실재하나, 글롭이 디스크를 전부 덮나)
-//   3. 실행 가능성 (스크립트가 정말로 도나) + 패키지 구조 (tarball · 진입점)
+// Only three kinds remain:
+//   1. Comparison against values derived from code (enums, counts, versions,
+//      computed summary strings)
+//   2. Referential integrity (does a `pnpm ...` a document names exist, does a node
+//      the vault README names exist, does a glob cover everything on disk)
+//   3. Executability (does the script actually run) + package structure (tarball,
+//      entry points)
 //
-// 산문이 "무엇을 설명하는지" 는 이제 두 그물이 대신 본다:
-//   - `pnpm docs:surface:check` — 레지스트리에서 표면을 재생성해 diff 하고,
-//     등록된 도구/커맨드 이름이 README 에 나오는지 본다.
-//   - `pnpm docs:links` — 깨진 링크와 존재하지 않는 파일 인용.
+// What the prose *describes* is now covered by two other nets:
+//   - `pnpm docs:surface:check` — regenerates the surface from the registry and
+//     diffs it, then checks the registered tool/command names appear in the README.
+//   - `pnpm docs:links` — broken links and citations of files that do not exist.
 //
 import assert from 'node:assert/strict';
 import { execSync, spawnSync } from 'node:child_process';
@@ -94,13 +97,14 @@ function generatedSurface() {
 
 describe('package contract helpers', () => {
   /**
-   * **참조 무결성 — 문서가 부르는 `pnpm ...` 가 실재하나.**
+   * **Referential integrity — does a `pnpm ...` a document names exist?**
    *
-   * 이것은 산문 핀이 아니다: 기대값이 산문이 아니라 `package.json` 의 스크립트
-   * 목록이라 기계가 만든다. 종전 판은 이 단언 옆에 스크립트 본문을 글자
-   * 그대로 복제한 `assert.equal(pkg.scripts[x], '...')` 를 150여 개 두고
-   * 있었는데, 그건 계약이 아니라 **거울**이었다 — 사람이 정한 문자열을 두
-   * 곳에 적어 두고 한쪽이 바뀌면 다른 쪽을 고치게 만들 뿐이다.
+   * This is not a prose pin: the expectation is `package.json`'s script list, which a
+   * machine produces. The previous version kept about 150
+   * `assert.equal(pkg.scripts[x], '...')` assertions beside this one, duplicating each
+   * script body verbatim. That was not a contract but a **mirror** — a
+   * human-authored string written in two places, so changing one only forces you to
+   * change the other.
    */
   it('keeps every pnpm command named in the docs resolvable to a real root script', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
@@ -128,17 +132,18 @@ describe('package contract helpers', () => {
       .join('\n');
 
     assertPnpmScriptsExist(docs, pkg.scripts, { filteredScripts: { './mcp': mcpPkg.scripts } });
-    // 스크립트끼리 서로 부르는 `pnpm ...` 도 같은 무결성을 지켜야 한다.
+    // A `pnpm ...` one script calls from another must hold the same integrity.
     assertPnpmScriptsExist(Object.values(pkg.scripts).join('\n'), pkg.scripts);
   });
 
   /**
-   * 발견이 **실제로 전부를 덮는지** 잰다 — 스크립트 문자열이 글롭처럼 생긴
-   * 것과 그 글롭이 디스크의 모든 파일을 잡는 것은 다른 주장이다.
+   * Measures whether discovery **actually covers everything** — "the script string
+   * looks like a glob" and "that glob matches every file on disk" are different
+   * claims.
    *
-   * 이 검사가 없었다면 `test:mcp:unit` 이 21개를 적어 두고 27개 중 6개를
-   * 조용히 빼는 상태가 그대로 통과했다(그중 `verify-script.test.mjs` 는
-   * 실제로 실패 중이었고, 어느 워크플로도 MCP 를 안 돌려서 아무도 못 봤다).
+   * Without this check, `test:mcp:unit` listing 21 files while silently omitting 6 of
+   * 27 would have passed (one of the omitted, `verify-script.test.mjs`, was actually
+   * failing, and no workflow ran MCP so nobody saw it).
    */
   it('MCP unit script reaches every unit test file on disk', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
@@ -182,7 +187,7 @@ describe('package contract helpers', () => {
     assert.equal(check.stderr, '');
   });
 
-  /** 생성 후 diff 그물 자신도 소스 체크아웃에서 실제로 돌아야 한다. */
+  /** The regenerate-and-diff net itself must actually run from a source checkout. */
   it('keeps the generated docs surface check executable from source checkout', () => {
     const help = runNodeScript(['scripts/build-docs-surface.mjs', '--help']);
     assert.equal(help.status, 0);
@@ -215,13 +220,13 @@ describe('package contract helpers', () => {
   });
 
   /**
-   * README 가 광고하는 지름길이 **정말 도는지** 본다. 도움말의 각 줄을 글자로
-   * 고정하던 30여 개 단언은 걷었다 — 도움말 문구는 사람이 쓴 산문이고, 그것을
-   * 고정하면 더 나은 문구로 고칠 때 게이트가 깨진다.
+   * Checks that the shortcuts the README advertises **actually run**. The 30-odd
+   * assertions pinning each help line verbatim were removed — help text is prose a
+   * human wrote, and pinning it breaks the gate when the wording improves.
    *
-   * 잃은 것: 도움말이 실재하지 않는 지름길을 나열해도 여기서는 안 걸린다.
-   * 그 자리는 `assertPnpmScriptsExist` 가 (도움말 텍스트를 대상으로 도는
-   * `pnpm test:dogfood:script-refs` 를 통해) 대신 지킨다.
+   * What that gives up: a help text listing a shortcut that does not exist is not
+   * caught here. `assertPnpmScriptsExist` covers that instead, via
+   * `pnpm test:dogfood:script-refs`, which runs against the help text.
    */
   it('keeps the root README mcp-verify shortcut executable from source checkout', () => {
     const result = runNodeScript(['cli/src/index.mjs', 'mcp-verify', '--help']);
@@ -260,9 +265,10 @@ describe('package contract helpers', () => {
   });
 
   /**
-   * **열거형은 코드가 가진 값이 전부다.** 기대 문자열을 엔진의 배열에서
-   * 만들어 붙이므로, 값을 하나 더하면 문서가 따라오지 않는 한 여기서 걸린다 —
-   * 이것이 「인자/열거값 정합」 부류이고 산문 핀과 성격이 다르다.
+   * **An enum is exactly the values the code holds.** The expected string is built
+   * from the engine's array, so adding a value fails here unless the docs follow —
+   * this is the argument/enum-consistency kind, categorically different from a prose
+   * pin.
    */
   it('keeps every relation and maintenance enum value documented from the engine', () => {
     const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
@@ -294,9 +300,9 @@ describe('package contract helpers', () => {
   });
 
   /**
-   * 튜닝된 브리프/진단의 **스코프 요약 문자열은 verify 가 계산한다** — README
-   * 트랜스크립트가 그 계산 결과를 그대로 담고 있어야 한다. 볼트가 자라도
-   * 안 바뀌므로 썩지 않는다.
+   * The **scope summary strings of the tuned brief/diagnostic are computed by
+   * verify** — the README transcript must contain that computed result verbatim. It
+   * does not change as the vault grows, so it cannot rot.
    */
   it('keeps the MCP verify README quoting the tuned-scope summaries the code computes', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
@@ -308,8 +314,9 @@ describe('package contract helpers', () => {
   });
 
   /**
-   * **공개 계약의 수** — 도구 인벤토리와 annotation 인구 조사. 도구를 등록하거나
-   * 지워야만 바뀌고, 그 변경은 의도적이라 문서/스모크가 따라오는 것이 맞다.
+   * **Counts on the public contract** — the tool inventory and the annotation census.
+   * These change only when a tool is registered or removed, and that change is
+   * deliberate, so docs and smoke tests should follow it.
    */
   it('keeps the tools/list annotation census on its published contract', () => {
     assert.equal(
@@ -319,10 +326,10 @@ describe('package contract helpers', () => {
   });
 
   /**
-   * `mcp/package.json` 의 description 은 런치 문서 게이트
-   * (`src/shared/lib/launch-docs-current.test.ts`)가 「현행 도구 수」를 파생하는
-   * 출처다. 그 문자열은 사람이 쓴다 — 여기서 **레지스트리와 묶지 않으면**
-   * 파생 게이트 전체가 낡은 수를 진실로 삼아 조용히 통과한다.
+   * `mcp/package.json`'s description is the source from which the launch-docs gate
+   * (`src/shared/lib/launch-docs-current.test.ts`) derives the current tool count.
+   * That string is human-written, so **without tying it to the registry here** the
+   * whole derived gate silently passes with a stale number as its truth.
    */
   it('keeps the MCP package description counts anchored to the generated registry surface', () => {
     const surface = generatedSurface();
@@ -341,17 +348,18 @@ describe('package contract helpers', () => {
     const agentImports = [...claude.matchAll(/^@AGENTS\.md$/gm)];
 
     assert.equal(agentImports.length, 1);
-    // 문구가 아니라 «CLAUDE.md 가 AGENTS.md 의 절을 복제하지 않는다» 는 구조
-    // 불변식이라 산문을 다시 써도 유효하다. 임포트 브리지 자체는
-    // `pnpm agents:check` 가 별도로 지킨다.
+    // This is the structural invariant "CLAUDE.md does not duplicate AGENTS.md's
+    // sections", not a wording pin, so it survives a rewrite of the prose. The import
+    // bridge itself is guarded separately by `pnpm agents:check`.
     assert.doesNotMatch(claude, /## Project overview/);
     assert.doesNotMatch(claude, /## 프로젝트 개요/);
   });
 
   /**
-   * **볼트 README 의 참조 무결성.** 종전 게이트는 이 문서가 특정 문장을
-   * 담도록 요구했는데(산문 핀), 정작 잡고 싶었던 사고는 「볼트를 재생성했더니
-   * README 가 사라진 노드를 가리킨다」였다. 그건 기계가 판정할 수 있다.
+   * **Referential integrity of the vault README.** The previous gate required this
+   * document to contain particular sentences (a prose pin), while the incident it
+   * actually wanted to catch was "the vault was regenerated and the README now points
+   * at a node that is gone". A machine can decide that.
    */
   it('keeps the self-ontology README naming nodes that exist without freezing surface counts', () => {
     const readme = readFileSync('docs/ontology/README.md', 'utf-8');

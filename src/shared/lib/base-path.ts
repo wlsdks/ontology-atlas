@@ -1,11 +1,10 @@
 /**
- * 정적 export 를 서브패스(예: GitHub Pages 프로젝트 사이트 `/ontology-atlas`)에
- * 배포할 때의 base path. 빌드 타임에 `NEXT_PUBLIC_BASE_PATH` 로 주입되며,
- * 루트 배포(로컬 dev)에서는 빈 문자열이다.
+ * Base path for a static export served from a subpath (a GitHub Pages project
+ * site, for instance). Injected at build time; empty for a root deployment.
  *
- * next/link · next/router 는 next.config 의 `basePath` 가 자동 처리하지만,
- * raw `<a href>` · next/image `src` · metadata 링크 · 수동 fetch URL 은
- * 자동 프리픽스가 없어 이 헬퍼를 거쳐야 한다.
+ * `next/link` and the router get this from `basePath` in `next.config`, but raw
+ * `<a href>`, `next/image` `src`, metadata links and hand-built fetch URLs are
+ * not prefixed automatically and must go through this helper.
  */
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 

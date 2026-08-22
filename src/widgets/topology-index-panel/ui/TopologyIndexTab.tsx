@@ -40,7 +40,7 @@ export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexT
       >
         Index
       </span>
-      {/* 수렴 판정 ④: 9px 텍스트 › → ChevronRight 13 — 펼침 ‹ 와 대칭쌍. */}
+      {/* ChevronRight 13 rather than 9px `›` text — the symmetric pair of the expanded `‹`. */}
       <span aria-hidden="true" className="inline-flex text-[color:var(--topology-v2-panel-text-quaternary)]">
         <ChevronRight size={ICON_SIZE.sm} aria-hidden="true" />
       </span>

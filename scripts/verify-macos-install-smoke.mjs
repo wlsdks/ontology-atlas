@@ -60,23 +60,25 @@ export function buildInstalledAppVerifyArgs(installedApp, holdMs) {
 }
 
 /**
- * 실행만으로는 이 결함을 못 잡는다 — 그게 v1.0.0 draft 가 여기를 통과한 이유다.
+ * Launching alone cannot catch this defect — which is why the v1.0.0 draft passed
+ * here.
  *
- * 이 검증은 앱을 복사해서 띄워보는데, **복사본에는 quarantine 속성이 없다.**
- * Gatekeeper 는 quarantine 이 붙은 것만 평가하므로, 이 경로에서는 애초에
- * 평가가 일어나지 않는다. 그래서 서명이 구조적으로 깨진 번들도 조용히 실행되고
- * 검증은 초록불을 준다. 정작 사용자가 브라우저로 받은 DMG 에는 quarantine 이
- * 붙고, 거기서 처음으로 판정이 내려진다.
+ * This verification copies the app and launches it, and **a copy carries no
+ * quarantine attribute.** Gatekeeper only evaluates quarantined items, so on this
+ * path no evaluation happens at all: a bundle with a structurally broken signature
+ * runs quietly and the verification goes green. The DMG a user downloads in a
+ * browser *is* quarantined, and that is where the verdict first lands.
  *
- * 실측(2026-07-27, v1.0.0 draft): Tauri 번들은 `_CodeSignature` 가 없어
- * `codesign --verify` 가 "code has no resources but signature indicates they
- * must be present" 로 거절한다. 그건 "확인되지 않은 개발자"(→ 시스템 설정에
- * **"확인 없이 열기"** 가 뜨는, 우리 다운로드 페이지가 안내하는 경로)가
- * 아니라 **"손상되었습니다"**(그 버튼이 없는 경로)다.
+ * Measured 2026-07-27 on the v1.0.0 draft: the Tauri bundle has no
+ * `_CodeSignature`, so `codesign --verify` rejects it with "code has no resources
+ * but signature indicates they must be present". That is **"is damaged"** (no
+ * button) rather than "unidentified developer" (→ System Settings offers
+ * **"Open Anyway"**, the path our download page documents).
  *
- * 그래서 실행 전에 서명 자체의 구조를 본다. 신원(Developer ID)은 요구하지
- * 않는다 — 미서명 릴리스에서는 ad-hoc 서명이 정답이고, 여기서 막아야 하는
- * 것은 "신원 없음" 이 아니라 **"구조가 깨짐"** 이다.
+ * So the structure of the signature itself is checked before launching. An identity
+ * (Developer ID) is not required — on an unsigned release an ad-hoc signature is
+ * the correct answer, and what must be blocked here is **a broken structure**, not
+ * a missing identity.
  */
 export function verifyBundleSignature(appPath, { label = appBundleName } = {}) {
   const verified = spawnSync("codesign", ["--verify", "--deep", "--strict", "--verbose=2", appPath], {

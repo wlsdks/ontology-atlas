@@ -67,7 +67,7 @@ const cam = (x: number, y: number, scale: number): CameraAxes => ({
 
 const KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
 
-/** 작은 결정론 볼트 — project 1 · domain 2 · capability 3 · element 3. */
+/** Small deterministic vault — 1 project · 2 domains · 3 capabilities · 3 elements. */
 const NODES: readonly DomeInputNode[] = [
   { id: "atlas", kind: "project", x: 10, y: -20, parentId: null },
   { id: "dom-a", kind: "domain", x: -300, y: 40, parentId: "atlas" },
@@ -111,10 +111,10 @@ describe("dome-view — 높이·각도는 타입 사실을 나른다", () => {
     for (const [id, coord] of a.coords) {
       expect(b.coords.get(id)).toEqual(coord);
     }
-    // 단일 project 는 꼭짓점(축) 위.
+    // A lone project sits on the apex (the axis).
     expect(a.coords.get("atlas")).toEqual({ px: 0, py: DOME_PLANE.project.y, pz: 0 });
-    // capability 는 부모 domain 각도의 부채꼴 안 — 같은 부모의 자식들이
-    // 반대편 부모의 자식들보다 자기 부모에 각도상 가깝다.
+    // Capabilities stay inside their parent domain's arc — children of one parent
+    // are angularly closer to it than to the opposite parent's children.
     const angleOf = (id: string) => {
       const c = a.coords.get(id)!;
       return Math.atan2(c.pz, c.px);
@@ -125,7 +125,7 @@ describe("dome-view — 높이·각도는 타입 사실을 나른다", () => {
     };
     expect(angDist(angleOf("cap-a1"), angleOf("dom-a"))).toBeLessThan(angDist(angleOf("cap-a1"), angleOf("dom-b")));
     expect(angDist(angleOf("el-2"), angleOf("cap-b1"))).toBeLessThan(angDist(angleOf("el-2"), angleOf("cap-a1")));
-    // 모든 노드가 자기 kind 의 링 높이를 갖는다.
+    // Every node carries the ring height of its own kind.
     for (const n of NODES) {
       expect(a.coords.get(n.id)!.py).toBe(DOME_PLANE[n.kind].y);
     }
@@ -140,10 +140,11 @@ describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/
     runtime.yaw = 1.234;
     runtime.pitch = 0.4;
     /*
-     * 진입 스윕을 끈다 — 이 시험의 주장은 «프레임 맵이 **그린 자세**의 투영과
-     * 같다» 이지 «raw yaw/pitch 의 투영과 같다» 가 아니다. 스윕이 살아 있으면
-     * 두 자세가 갈리고, 그 갈림 자체는 정상이다(`runtime.drawYaw/drawPitch` 가
-     * 그린 자세의 단일 출처다 — 아래 별도 시험이 그 계약을 잡는다).
+     * Turn the entry sweep off. This test's claim is that the frame map equals
+     * the projection of the **drawn** pose, not of the raw yaw/pitch. While the
+     * sweep is live the two poses differ, and that difference is correct
+     * (`runtime.drawYaw/drawPitch` is the single source of the drawn pose — a
+     * separate test below pins that contract).
      */
     runtime.entryArmed = false;
     const BASE_R = 10;
@@ -156,8 +157,9 @@ describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/
       const want = worldToScreen(camera, 1512, 900, direct.wx, direct.wy);
       expect(via.x).toBeCloseTo(want.x, 9);
       expect(via.y).toBeCloseTo(want.y, 9);
-      // s 는 반지름 배수 — base × s = 히어로 점 반지름(NODE_R × 2.1 × unit × 원근).
-      // project 는 나침 십자 글리프가 화면을 가로지르지 않게 1.1× 로 잠근다.
+      // s is a radius multiplier — base × s = the hero dot radius
+      // (NODE_R × 2.1 × unit × perspective). The project is clamped to 1.1× so its
+      // compass-cross glyph does not span the screen.
       const expected =
         n.kind === "project"
           ? Math.min(DOME_NODE_R[n.kind] * 2.1 * model.unit * direct.s, 1.1 * BASE_R)
@@ -213,9 +215,10 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
   });
 
   it("아래 시점(음수 pitch)에서도 solve(project(p)) 가 자기 평면 좌표로 돌아온다", () => {
-    // pitch 전각 개방(2026-08-18 2차)의 좌표 계약 — 분모의 정상 부호가 음수로
-    // 뒤집히는 저면 시점에서 예전의 «무조건 양의 하한» 잠금은 모든 드래그를
-    // 하한 상수에 붙였다. 시점이 기대 부호를 정한다(`solveDomePlanePoint`).
+    // The coordinate contract of opening pitch to the full range (2026-08-18,
+    // second round). From below, the denominator's normal sign flips negative,
+    // and the old unconditional positive floor pinned every drag to that floor
+    // constant. The viewpoint decides the expected sign (`solveDomePlanePoint`).
     const model = buildDomeModel(NODES);
     for (const [yaw, pitch] of [
       [0.55, -DOME_PITCH_DEFAULT],
@@ -241,11 +244,13 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
   });
 
   it("수평선 퇴화 — 포인터가 평면 수평선을 넘어도 얼지 않고 반경 상한 안의 유한한 점을 낸다", () => {
-    // 2026-08-18 소유자 실보고("클릭해도 제대로 안움직여지는 것도 있고")의
-    // 재현 조건: 낮은 pitch(옆면 시점)에서 노드를 위로 끌면 분모가 0 을
-    // 지나며 종전 코드는 null(그 프레임 이동 폐기 = 노드 동결) 또는 카메라
-    // 뒤 해(비행)를 냈다. 계약: 화면 세로 전 구간을 훑어도 항상 비-null,
-    // 항상 유한, 항상 반경 상한 안.
+    // Reproduces the owner report of 2026-08-18: "클릭해도 제대로 안움직여지는
+    // 것도 있고" (some of them don't move properly even when clicked). At low
+    // pitch (side-on) dragging a node upward takes the denominator through 0, and
+    // the earlier code returned either null (discarding that frame's move — the
+    // node freezes) or a solution behind the camera (it flies off). Contract:
+    // sweeping the full screen height always yields non-null, always finite,
+    // always inside the radius cap.
     const model = buildDomeModel(NODES);
     for (const pitch of [DOME_PITCH_MIN, DOME_PITCH_DEFAULT, DOME_PITCH_MAX]) {
       for (const planeY of [DOME_PLANE.project.y, DOME_PLANE.domain.y, DOME_PLANE.element.y]) {
@@ -265,7 +270,7 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
     const pitch = DOME_PITCH_MIN;
     const cp = Math.cos(pitch);
     const sp = Math.sin(pitch);
-    // denom = F·sp + uy·cp = 0 이 되는 uy 를 역산해 정확히 그 자리를 찌른다.
+    // Solve for the uy where denom = F·sp + uy·cp = 0 and hit exactly that spot.
     const uy = (-DOME_FOCAL * sp) / cp;
     const wy = model.centerY + uy * model.unit;
     const solved = solveDomePlanePoint(model, DOME_PLANE.domain.y, model.centerX + 50, wy, 0.55, pitch);
@@ -275,9 +280,10 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
   });
 
   it("수평선 횡단 연속성 — 한 픽셀 옮겼는데 반대편 림으로 순간이동하지 않는다 (종전: 부호 뒤집힘)", () => {
-    // 분모가 0− 로 넘어가면 해가 카메라 뒤로 뒤집혀 정반대 방위의 림으로
-    // 튀었다 — 화면에서는 드래그하던 노드가 돔 반대편으로 순간이동한다.
-    // 계약: 포인터 1 유닛 스텝에 해는 최대 «림 위 한 걸음» 이상 못 간다.
+    // Once the denominator crossed to 0−, the solution flipped behind the camera
+    // and jumped to the rim at the opposite bearing — on screen, the node being
+    // dragged teleports to the far side of the dome. Contract: a one-unit pointer
+    // step may move the solution by at most one step along the rim.
     const model = buildDomeModel(NODES);
     const pitch = DOME_PITCH_MIN;
     const cp = Math.cos(pitch);
@@ -302,7 +308,7 @@ describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
     let v = 0.002;
     for (let i = 0; i < 600; i++) v = decayOrbitVelocity(v, 16.7);
     expect(v).toBe(0);
-    // dt 불변 — 같은 총 시간이면 프레임 분할과 무관하게 같은 값.
+    // dt-invariant — the same total time gives the same value regardless of how it is split into frames.
     const oneStep = decayOrbitVelocity(0.002, 100);
     let split = 0.002;
     for (let i = 0; i < 10; i++) split = decayOrbitVelocity(split, 10);
@@ -310,8 +316,9 @@ describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
   });
 
   it("pitch 는 극점 직전까지 전각이다 — 옆면(0)·아래 시점(음수)이 열려 있다", () => {
-    // 2026-08-18 소유자 실보고 *"밑에서 위로는 안되던데"* — 히어로에서 물려받은
-    // 0.12–0.72 는 폐기됐다. 남은 벽은 화면의 위가 뒤집히는 극점(±π/2)뿐이다.
+    // Owner report, 2026-08-18: *"밑에서 위로는 안되던데"* (looking up from below
+    // doesn't work). The 0.12–0.72 range inherited from the hero was dropped. The
+    // only wall left is the pole (±π/2), where the screen's up direction flips.
     expect(DOME_PITCH_MAX).toBeCloseTo(Math.PI / 2 - 0.12, 12);
     expect(DOME_PITCH_MIN).toBeCloseTo(-(Math.PI / 2 - 0.12), 12);
     expect(clampDomePitch(0)).toBe(0); // 옆면 통과 — 잠기지 않는다
@@ -323,7 +330,7 @@ describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
   it("pitch 러버밴드 — 1/4 저항이되 오버슛은 상한에서 멎는다(극점 뒤집힘 방지)", () => {
     expect(resistDomePitch(DOME_PITCH_MAX + 0.2)).toBeCloseTo(DOME_PITCH_MAX + 0.05, 12);
     expect(resistDomePitch(DOME_PITCH_MIN - 0.2)).toBeCloseTo(DOME_PITCH_MIN - 0.05, 12);
-    // 아무리 세게 끌어도 눌림은 상한(0.09)까지 — 눌린 채로도 π/2 를 넘지 않는다.
+    // However hard you pull, the squash stops at 0.09 — even squashed it never passes π/2.
     expect(resistDomePitch(DOME_PITCH_MAX + 40)).toBeCloseTo(DOME_PITCH_MAX + 0.09, 12);
     expect(resistDomePitch(DOME_PITCH_MAX + 40)).toBeLessThan(Math.PI / 2);
     expect(resistDomePitch(DOME_PITCH_MIN - 40)).toBeCloseTo(DOME_PITCH_MIN - 0.09, 12);
@@ -376,7 +383,7 @@ describe("dome-view — 선택 리프레임·자율 회전 무장 (2026-08-18 2�
     expect(domeNearestYawTurn(0.55, 0.6)).toBeCloseTo(0.55, 12);
     expect(domeNearestYawTurn(0.55, 6.6)).toBeCloseTo(0.55 + TAU, 12);
     expect(domeNearestYawTurn(0.55, -5.5)).toBeCloseTo(0.55 - TAU, 12);
-    // 반 바퀴 이상 돌지 않는다.
+    // Never turns more than half a revolution.
     for (const cur of [-9, -2.2, 0, 3.3, 14]) {
       expect(Math.abs(domeNearestYawTurn(0.55, cur) - cur)).toBeLessThanOrEqual(Math.PI + 1e-9);
     }
@@ -388,14 +395,14 @@ describe("dome-view — 선택 리프레임·자율 회전 무장 (2026-08-18 2�
       const coord = model.coords.get(id)!;
       const yaw = domeFocusYaw(coord, 0.9);
       const at = projectDomeCoord(model, coord, yaw, DOME_PITCH_DEFAULT);
-      // 깊이의 이론 최솟값은 −r·cos(pitch) − py·sin(pitch).
+      // The theoretical minimum depth is −r·cos(pitch) − py·sin(pitch).
       const r = Math.hypot(coord.px, coord.pz);
       const zMin = -r * Math.cos(DOME_PITCH_DEFAULT) - coord.py * Math.sin(DOME_PITCH_DEFAULT);
       expect(at.z).toBeCloseTo(zMin, 6);
-      // 등가각 규칙 — 현재 yaw 에서 반 바퀴 이상 돌지 않는다.
+      // Equivalent-angle rule — never more than half a revolution from the current yaw.
       expect(Math.abs(yaw - 0.9)).toBeLessThanOrEqual(Math.PI + 1e-9);
     }
-    // 축 위(단일 project 꼭짓점)는 회전할 이유가 없다 — 현재 yaw 그대로.
+    // A node on the axis (a lone project apex) gives no reason to rotate — the current yaw stands.
     const apex = model.coords.get("atlas")!;
     expect(domeFocusYaw(apex, 1.23)).toBe(1.23);
   });
@@ -410,8 +417,9 @@ describe("dome-view — 선택 리프레임·자율 회전 무장 (2026-08-18 2�
   });
 
   it("새 런타임은 회전 무장 상태로, 자세 이동 없이 시작한다", () => {
-    // 시선 끌기(attract) 회전은 «아직 만지지 않은 화면»의 기본값이고, 개입
-    // (궤도·줌·핀치·노드 드래그·선택)이 내리는 쪽은 루프·포인터 핸들러 계약.
+    // The attract rotation is the default for a screen nobody has touched yet.
+    // Disarming it on intervention (orbit, zoom, pinch, node drag, selection) is
+    // the loop's and the pointer handlers' contract, not this one's.
     const runtime = createDomeRuntime(buildDomeModel(NODES));
     expect(runtime.spinArmed).toBe(true);
     expect(runtime.poseTween).toBeNull();
@@ -428,7 +436,7 @@ describe("worldToScreen — 깊이 항이 없으면 출력이 종전과 동일�
       [99999, -99999],
     ]) {
       const p = worldToScreen(camera, 1512, 900, wx, wy);
-      // 리터럴로 같은 식을 적는다 — 함수 몸이 바뀌면 여기서 걸린다.
+      // The same formula written out literally — a change to the function body is caught here.
       expect(p.x).toBe((wx - 37.5) * 0.85 + 1512 / 2);
       expect(p.y).toBe((wy - -18.25) * 0.85 + 900 / 2);
     }
@@ -443,7 +451,7 @@ describe("worldToScreen — 깊이 항이 없으면 출력이 종전과 동일�
   });
 });
 
-/* ── 3D 품질 층: 껍질 · 자오선 · 헤일로 · 위도 링 ─────────────────────────── */
+/* ── 3D quality layer: shell · meridians · halo · latitude rings ─────────── */
 
 describe("돔 껍질 옆모습 — 볼록해야 자오선이 생긴다", () => {
   it("꼭짓점 높이에서 0, 바닥 링 높이에서 바닥 반지름", () => {
@@ -466,11 +474,12 @@ describe("돔 껍질 옆모습 — 볼록해야 자오선이 생긴다", () => {
   });
 
   /*
-   * `/gate-probe` — **첫 구현이 정확히 여기서 죽었다.** 껍질을 링 넷의 선형
-   * 보간으로 두면 반지름 방향 현의 중점이 이미 껍질 위에 있어 휨이 0 이 되고,
-   * 화면은 돔이 아니라 천막으로 남는다. 그때 이 단언은 초록이었을 것이다 —
-   * 「단조 증가」도 「양 끝 값」도 선형 보간이 다 만족하기 때문이다.
-   * 볼록성만이 그 실패를 잡는다.
+   * `/gate-probe` — **the first implementation died exactly here.** With the
+   * shell as a linear interpolation between the four rings, the midpoint of a
+   * radial chord already lies on the shell, so the bulge is 0 and the screen
+   * shows a tent rather than a dome. The other assertions would have been green
+   * through that: linear interpolation satisfies both monotonic increase and the
+   * two endpoint values. Only convexity catches that failure.
    */
   it("링 사이에서 링 반지름보다 바깥에 있다 — 볼록(= 선형 보간이 아니다)", () => {
     expect(domeShellRadiusAtY(DOME_PLANE.domain.y)).toBeGreaterThan(DOME_PLANE.domain.r);
@@ -500,7 +509,7 @@ describe("자오선 제어점 — 관계선이 돔 속을 가로지르지 않는
 
   it("2차 베지어의 중점이 껍질에 닿는다 — 제어점을 2배로 미는 계약", () => {
     const control = domeEdgeControl(model, "apex", "ring")!;
-    // t=0.5 에서 (A + 2C + B)/4.
+    // At t=0.5 this is (A + 2C + B)/4.
     const midX = (0 + 2 * control.px + DOME_PLANE.domain.r) / 4;
     const midZ = (0 + 2 * control.pz + 0) / 4;
     const midY = (DOME_PLANE.project.y + 2 * control.py + DOME_PLANE.domain.y) / 4;
@@ -510,7 +519,7 @@ describe("자오선 제어점 — 관계선이 돔 속을 가로지르지 않는
   it("마주 본 두 노드는 축을 관통하지 않는다 — 방위 합이 0 이면 휘지 않는다", () => {
     const control = domeEdgeControl(model, "ring", "ringOpposite");
     expect(control).not.toBeNull();
-    // 완전한 대척점이라 밀 방향이 없다 → 현 중점 그대로(임의 방향을 고르지 않는다).
+    // Exact antipodes give no push direction → the chord midpoint stands; no arbitrary direction is picked.
     expect(control!.px).toBeCloseTo(0, 6);
     expect(control!.pz).toBeCloseTo(0, 6);
   });
@@ -579,7 +588,7 @@ describe("위도 링 — 좌표계이지 데이터가 아니다", () => {
     updateDomeFrame(runtime, nodes, () => 10);
     const us = runtime.rings[0].points.map((point) => point.u);
     expect(Math.max(...us) - Math.min(...us)).toBeGreaterThan(0.2);
-    // 노드 프레임과 같은 척도로 클램프돼 있어야 안개가 둘에 같게 걸린다.
+    // Must be clamped on the same scale as the node frame, or the fog falls differently on the two.
     for (const u of us) {
       expect(u).toBeGreaterThanOrEqual(0);
       expect(u).toBeLessThanOrEqual(1);
@@ -620,10 +629,11 @@ describe("티어 비틀림 — 손과 프로그램이 같은 함수를 쓴다", 
   });
 
   /*
-   * `/gate-probe` — **2026-08-18 3차 이전에는 이 단언이 빨갰다.** 비틀림은 손
-   * 드래그 경로에만 있었고, 프로그램 자세 이동(클릭 리프레임 · 「제자리로」)은
-   * 네 링을 한 덩어리로 굳혀 돌렸다. 같은 회전이 누가 돌렸느냐에 따라 다른
-   * 물건처럼 움직이는 것이 「JS 애니메이션」의 인상이다.
+   * `/gate-probe` — **this assertion was red before the third round of
+   * 2026-08-18.** The twist existed only on the hand-drag path; programmatic pose
+   * moves (click-to-reframe, 「제자리로」 — recentre) rotated the four rings as one
+   * frozen block. The same rotation behaving like a different object depending on
+   * who started it is exactly what reads as "a JS animation".
    */
   it("프로그램 이동도 비틀림을 만든다 — 다만 손보다 약하게", () => {
     const hand = zero();
@@ -661,10 +671,11 @@ describe("돔 손잡이 — 어디를 끌면 돌리고 어디를 끌면 옮기�
   });
 
   /*
-   * `/gate-probe` — **이 단언이 이 규칙의 존재 이유다.** bbox 로 판정하면 네
-   * 모서리가 «물체 위»가 된다: 화면에는 아무것도 없는 검은 자리인데 끌면
-   * 회전한다(소유자가 가리킨 바로 그 자리). 타원이어야 눈에 보이는 것과
-   * 판정이 같다. 사각형 판정으로 되돌리면 여기가 빨개진다.
+   * `/gate-probe` — **this assertion is why the rule exists.** Testing against
+   * the bbox makes the four corners count as "on the object": empty black screen
+   * that rotates when you drag it — the exact spot the owner pointed at. Only an
+   * ellipse makes the test match what the eye sees. Reverting to a rectangular
+   * test turns this red.
    */
   it("bbox 모서리는 손잡이 **밖**이다 — 거기서 끌면 지도가 따라온다", () => {
     expect(isInsideDomeGrip(bounds, 100, 50)).toBe(false);
@@ -672,7 +683,7 @@ describe("돔 손잡이 — 어디를 끌면 돌리고 어디를 끌면 옮기�
   });
 
   it("축 위 가장자리는 여백만큼 안이다 — 돔 테두리를 잡았는데 지도가 밀리면 안 된다", () => {
-    // margin 1.08 이므로 반축의 100% 지점은 아직 안, 108% 를 넘으면 밖.
+    // With margin 1.08, 100% of the semi-axis is still inside; past 108% is outside.
     expect(isInsideDomeGrip(bounds, 100, 0)).toBe(true);
     expect(isInsideDomeGrip(bounds, 100 * DOME_GRIP_MARGIN + 1, 0)).toBe(false);
   });
@@ -687,7 +698,7 @@ describe("돔 손잡이 — 어디를 끌면 돌리고 어디를 끌면 옮기�
   });
 
   it("납작한 돔에서도 세로 판정이 가로를 따라가지 않는다 — 축마다 자기 반지름", () => {
-    // 세로로 매우 납작한 bbox: 가로로 멀어도 안, 세로로 조금만 벗어나도 밖.
+    // A vertically very flat bbox: far horizontally is still inside, slightly off vertically is outside.
     const flat = { minX: -200, minY: -10, maxX: 200, maxY: 10 };
     expect(isInsideDomeGrip(flat, 150, 0)).toBe(true);
     expect(isInsideDomeGrip(flat, 0, 30)).toBe(false);
@@ -728,10 +739,11 @@ describe("진입 스윕 — 그린 자세의 단일 출처", () => {
   });
 
   /*
-   * `/gate-probe` — 그냥 `entryArmed = false` 로 끄면 그리는 자세가 한 프레임에
-   * 튄다. 사용자가 손을 대는 그 순간 화면이 점프하는 것이라, 이 저장소가
-   * 카메라·궤도·자세 이동에서 일관되게 지키는 «제스처는 지금 자리를 이어받는다»
-   * 계약을 정확히 어긴다. 이 단언이 그 점프를 잡는다.
+   * `/gate-probe` — simply setting `entryArmed = false` makes the drawn pose jump
+   * in one frame: the screen jumps at the very moment the user touches it, which
+   * breaks the contract this repo keeps consistently across camera, orbit, and
+   * pose moves — a gesture takes over from where things are right now. This
+   * assertion catches that jump.
    */
   it("손이 닿을 때 자세로 개어 넣는다 — 그린 자세가 바이트 그대로 유지된다", () => {
     const model = buildDomeModel(nodes);
@@ -749,7 +761,7 @@ describe("진입 스윕 — 그린 자세의 단일 출처", () => {
     expect(runtime.entryArmed).toBe(false);
     expect(runtime.drawYaw).toBeCloseTo(beforeYaw, 9);
     expect(runtime.drawPitch).toBeCloseTo(beforePitch, 9);
-    // 목표도 함께 옮겨야 스무딩이 옛 목표로 도로 끌어당기지 않는다.
+    // The target must move too, or smoothing drags back toward the old one.
     expect(runtime.yawTarget).toBeCloseTo(runtime.yaw, 9);
     expect(runtime.pitchTarget).toBeCloseTo(runtime.pitch, 9);
   });
@@ -769,7 +781,7 @@ describe("진입 스윕 — 그린 자세의 단일 출처", () => {
 
 describe("릴리스 투영 — 관성이 의미 있는 자리에 착지한다", () => {
   it("투영 거리는 감쇠 상수에서 나온다 — 속도 × 총 이동 계수", () => {
-    // Σ v·d^t dt = v / (−ln d). 감쇠를 바꾸면 이 값이 따라 움직여야 한다.
+    // Σ v·d^t dt = v / (−ln d). Change the damping and this value must follow.
     expect(ORBIT_DECAY_TRAVEL_MS).toBeGreaterThan(400);
     expect(ORBIT_DECAY_TRAVEL_MS).toBeLessThan(600);
     expect(projectOrbitLanding(1, 0.002)).toBeCloseTo(1 + 0.002 * ORBIT_DECAY_TRAVEL_MS, 9);
@@ -786,15 +798,15 @@ describe("릴리스 투영 — 관성이 의미 있는 자리에 착지한다", 
     const model = buildDomeModel(nodes);
     const yaws = domeFacingYaws(model);
     expect(yaws).toHaveLength(3);
-    // 각 후보 yaw 에서 어떤 도메인이 실제로 가장 가까운지 확인한다 — 유도식
-    // (yaw = −π/2 − θ)이 틀리면 여기가 빨개진다.
+    // Check which domain is actually nearest at each candidate yaw — if the
+    // derivation (yaw = −π/2 − θ) is wrong, this turns red.
     for (const yaw of yaws) {
       let minZ = Infinity;
       for (const id of ["d1", "d2", "d3"]) {
         const p = projectDomeCoord(model, model.coords.get(id)!, yaw, DOME_PITCH_DEFAULT);
         if (p.z < minZ) minZ = p.z;
       }
-      // 정면에 선 노드의 깊이는 링 반지름만큼 카메라 쪽으로 나와 있어야 한다.
+      // A node standing front-on must be a full ring radius toward the camera in depth.
       expect(minZ).toBeLessThan(0);
     }
   });
@@ -816,9 +828,10 @@ describe("릴리스 투영 — 관성이 의미 있는 자리에 착지한다", 
   });
 
   /*
-   * `/gate-probe` — τ 를 릴리스 속도에서 역산하는 것이 이 기능의 «속도 연속»
-   * 이다. 고정 τ 로 되돌리면 손을 뗀 프레임에 속도가 튄다. 이 단언이 그
-   * 역산을 잡는다: 같은 거리라도 빠르게 놓으면 τ 가 짧아야 한다.
+   * `/gate-probe` — solving τ back out of the release velocity is what makes this
+   * feature velocity-continuous. Revert to a fixed τ and the speed jumps on the
+   * frame the hand lifts. This assertion pins the derivation: over the same
+   * distance, a faster release must give a shorter τ.
    */
   it("τ 를 릴리스 속도에서 역산한다 — 빠르게 놓을수록 짧다", () => {
     const slow = orbitSnapTauMs(0.2, 0.0005);
@@ -829,23 +842,23 @@ describe("릴리스 투영 — 관성이 의미 있는 자리에 착지한다", 
 
   it("도착 임계가 1px 보다 작다 — 그리고 0 이 아니다(지수 접근은 도달하지 않는다)", () => {
     expect(ORBIT_SNAP_ARRIVE_RAD).toBeGreaterThan(0);
-    // 바깥 링 1px ≈ 0.008rad (독블록의 실측 환산).
+    // 1px on the outer ring ≈ 0.008rad (the measured conversion in the doc-block).
     expect(ORBIT_SNAP_ARRIVE_RAD).toBeLessThan(0.008);
   });
 
   it("τ 를 범위 안으로 잠근다 — 순간이동도, 영원히 안 멎는 것도 막는다", () => {
     expect(orbitSnapTauMs(0.001, 1)).toBe(ORBIT_SNAP_TAU_MIN_MS);
     expect(orbitSnapTauMs(10, 0.00001)).toBe(ORBIT_SNAP_TAU_MAX_MS);
-    // 부호가 반대(목표가 진행 방향 뒤)면 역산이 음수라 상한으로 떨어진다.
+    // With the opposite sign (target behind the direction of travel) the derivation is negative and falls to the cap.
     expect(orbitSnapTauMs(-0.2, 0.002)).toBe(ORBIT_SNAP_TAU_MAX_MS);
     expect(orbitSnapTauMs(0.2, 0)).toBe(ORBIT_SNAP_TAU_MAX_MS);
   });
 });
 
-/* ── 배치 기준: 소유(돔) vs 결합(구름) ──────────────────────────────────── */
+/* ── Placement basis: containment (dome) vs connection (cloud) ───────────── */
 
 describe("결합 구름 — 관계가 자리를 정한다", () => {
-  /** 두 무리가 각각 안에서만 이어지고 둘 사이는 다리 하나로 붙은 그래프. */
+  /** Two groups linked only internally, joined to each other by a single bridge. */
   const nodes: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "a1", kind: "domain", x: 10, y: 0, parentId: "p" },
@@ -876,10 +889,11 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
   });
 
   /*
-   * `/gate-probe` — **첫 구현이 여기서 죽었다.** 티어 높이를 고정한 채 방위만
-   * 완화했더니 소유자 판정이 *"내가 원한건 … 아예 다른 모양"* 이었다. 구름은
-   * 높이까지 관계가 정해야 돔과 다른 읽기가 된다. 티어를 다시 붙잡으면 이
-   * 단언이 빨개진다.
+   * `/gate-probe` — **the first implementation died here.** Relaxing only the
+   * bearing while pinning tier height drew the owner's verdict *"내가 원한건 …
+   * 아예 다른 모양"* (what I wanted was a completely different shape). The cloud
+   * only reads differently from the dome if connection decides height as well.
+   * Pin the tiers again and this assertion turns red.
    */
   it("높이가 kind 평면에서 풀린다 — 이게 돔과 다른 모양이 되는 지점이다", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });

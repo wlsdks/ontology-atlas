@@ -107,9 +107,9 @@ describe("useUnboundProjectSource", () => {
 
   it("stays silent once that project has a binding", async () => {
     /*
-     * ⚠️ 「null 이다」만 단언하면 **아직 안 읽은 첫 프레임**도 통과한다 — 그건
-     * 제품에 대한 참이 아니라 초기값에 대한 참이다. 그래서 읽기가 실제로
-     * 일어났다는 것을 먼저 확인하고, 그다음에 null 을 단언한다.
+     * ⚠️ Asserting only "it is null" also passes on the **first frame, before
+     * any read** — a truth about the initial value, not about the product. So
+     * the read is confirmed to have happened first, and null is asserted after.
      */
     let reads = 0;
     const { result } = renderHook(() =>
@@ -137,8 +137,8 @@ describe("useUnboundProjectSource", () => {
   });
 
   /**
-   * 사이드카를 못 읽는 것은 「폴더가 없다」와 다른 사실이다. 지도 옆 조용한 한
-   * 줄이 그 둘을 뭉뚱그리면, 이 행이 곧바로 거짓말을 하기 시작한다.
+   * Failing to read the sidecar is a different fact from "there is no folder".
+   * If the quiet line beside the map conflates them, the row starts lying.
    */
   it("does not claim 'no folder' when the sidecar itself is unreadable", async () => {
     const { result } = renderHook(() =>

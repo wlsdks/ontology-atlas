@@ -6,34 +6,42 @@ import { describe, expect, it } from 'vitest';
 import { fieldClass, type FieldFrame, type FieldSize } from '@/shared/ui/control-class';
 
 /**
- * `fieldClass` 의 계약 — 폼 필드의 값 층.
+ * The `fieldClass` contract — the value layer for form fields.
  *
- * ## 왜 별도 cva 이고 아홉째 `shape` 가 아닌가
+ * ## Why a separate cva rather than a ninth `shape`
  *
- * 2026-08-06 디자인 카운슬(「체계」+「위계」)의 판정이다. 셋 다 값 층 자신의
- * 규율에서 나왔다:
+ * The 2026-08-06 design council's verdict (체계 + 위계 — the design-systems and
+ * lead seats). All three reasons come from the value layer's own discipline:
  *
- * 1. 모양 여덟의 근거는 `<button>` **419 전수**인데 필드는 **다른 모집단**(폼 63)이다
- * 2. `tone` 10단 중 필드에 뜻이 있는 것이 사실상 0이라 **죽은 조합**이 대부분이 된다
- * 3. 산수 — 아홉째 모양은 `control-class.contract` 전수를 **+320** 만들고,
- *    별도 cva 는 **16**(frame 2 × size 4 × multiline 2)으로 끝난다
+ * 1. The eight shapes were justified by an exhaustive count of **419 `<button>`s**;
+ *    fields are a **different population** (63 form elements).
+ * 2. Essentially none of the 10 `tone` steps mean anything for a field, so most
+ *    combinations would be **dead**.
+ * 3. Arithmetic — a ninth shape adds **+320** cases to the
+ *    `control-class.contract` sweep, while a separate cva ends at **16**
+ *    (frame 2 × size 4 × multiline 2).
  *
- * ## 축이 셋인 근거 — 두 자리가 독립적으로 같은 선을 그었다
+ * ## Why three axes — two seats drew the same line independently
  *
- * 「위계」석이 실물을 열고 폼을 셋으로 갈랐다 — **기록**(값이 디스크에 남는다,
- * 눈은 입력에) · **조회**(있는 것에 도착한다, 눈은 **결과**에) · **무대**(카드에
- * 쓰일 글자를 그 자리에서 쓴다). 앞의 둘이 `frame` 축이고, 합치면 안 되는
- * 이유가 그 자리에서 나왔다: 기록을 투명하게 하면 폼이 사라지고, 조회를 무겁게
- * 하면 **입력이 결과를 이긴다**.
+ * The 위계 (lead) seat opened the real product and split forms into three:
+ * **recording** (the value lands on disk; the eye is on the input) · **lookup**
+ * (you arrive at something that already exists; the eye is on the **result**) ·
+ * **stage** (writing, in place, the text a card will show). The first two are the
+ * `frame` axis, and the reason they cannot be merged came from that same reading:
+ * make recording transparent and the form disappears; make lookup heavy and **the
+ * input beats the result**.
  *
- * ## ⚠️ 이 파일에서 가장 중요한 단언 — 「어휘 안인가」로 쓰면 안 된다
+ * ## ⚠️ The most important assertion in this file — do not write it as "is it in
+ * the vocabulary"
  *
- * 「체계」의 음성 프로브 넷 중 하나가 **초록으로 새어 나갔다**: 「한 줄 `md` 를
- * `h-9`(36)으로」. 36 이 높이 어휘 안에 있으니 어휘 검사는 통과시킨 것이다.
+ * One of 체계's four negative probes **leaked through green**: "single-line `md`
+ * at `h-9` (36)". 36 is inside the height vocabulary, so a vocabulary check passed
+ * it.
  *
- * 그래서 이 계약은 **단↔토큰 1:1** 로 쓴다 — `globals.css` 에서
- * `--control-h-{sm,md,lg}` 의 px 를 **읽어서** 각 단이 그 값을 내는지 대조한다.
- * 값을 여기 베껴 두면 그 사본이 램프와 어긋나는 순간 검사가 못 보는 구멍이 된다.
+ * So this contract is written as a **step ↔ token 1:1 mapping** — it **reads** the
+ * px values of `--control-h-{sm,md,lg}` from `globals.css` and checks each step
+ * emits that value. Copying the values here would create a blind spot the moment
+ * the copy drifted from the ramp.
  */
 
 const ROOT = join(__dirname, '..', '..');
@@ -43,11 +51,11 @@ const FRAMES: FieldFrame[] = ['boxed', 'bare'];
 const SIZES: FieldSize[] = ['xs', 'sm', 'md', 'lg'];
 const MULTILINE = [false, true] as const;
 
-/** Tailwind 의 `h-N`/`min-h-N` 은 0.25rem 단위. */
+/** Tailwind's `h-N`/`min-h-N` are in 0.25rem units. */
 const STEP_PX = 4;
 
 function tokenPx(token: string): number | null {
-  // coarse 블록의 재선언(`max(...)`)이 아니라 **기본 선언**을 읽는다.
+  // Reads the **base declaration**, not the coarse block's `max(...)` redeclaration.
   for (const m of GLOBALS.matchAll(new RegExp(`${token}\\s*:\\s*([^;]+);`, 'g'))) {
     const raw = m[1].trim();
     const plain = raw.match(/^(\d+(?:\.\d+)?)px$/);
@@ -94,7 +102,8 @@ describe('fieldClass — 전수 16조합', () => {
 });
 
 /**
- * **단↔토큰 1:1.** 이 파일의 핵심 단언 — 위 머리말의 `h-9` 사고를 막는다.
+ * **Step ↔ token 1:1.** This file's central assertion — it prevents the `h-9`
+ * accident described in the preamble.
  */
 describe('높이 단이 `--control-h-*` 와 1:1 이다', () => {
   const MAP: Array<[FieldSize, string]> = [
@@ -118,9 +127,10 @@ describe('높이 단이 `--control-h-*` 와 1:1 이다', () => {
   });
 
   /**
-   * `xs` 는 **높이 단이 아니다** — 반경만 한 층 내리는 티어라 높이는 `sm` 과 같다
-   * (위 `chip` 의 `xs` 가 쓰는 문법 그대로). 이 단언이 없으면 누군가 `xs` 에
-   * 네 번째 높이를 붙여도 아무도 모른다.
+   * `xs` is **not a height step** — it is a tier that only drops the radius one
+   * level, so its height equals `sm` (the same grammar `chip`'s `xs` uses above).
+   * Without this assertion, somebody could attach a fourth height to `xs` and nobody
+   * would know.
    */
   it('xs 는 sm 과 같은 높이이고 반경만 한 층 낮다', () => {
     const xs = fieldClass({ frame: 'boxed', size: 'xs' });
@@ -150,9 +160,10 @@ describe('frame — 누가 상자를 내는가', () => {
   });
 
   /**
-   * **bare 는 상자를 내면 안 된다.** 부모가 이미 냈고, 여기서 또 내면 그 상자를
-   * 안쪽에서 밀어낸다. 「위계」석 판정: 조회 10곳은 전부 **결과가 주목 승자**인
-   * 자리라, 입력이 어포던스를 지면 결과를 이긴다.
+   * **`bare` must not emit a box.** The parent already emitted one, and a second
+   * box pushes that one outward from the inside. The 위계 seat's verdict: all 10
+   * lookup places are ones where **the result is the attention winner**, so an input
+   * carrying an affordance beats the result.
    */
   it.each(SIZES.flatMap((s) => MULTILINE.map((m) => [`${s}/multiline=${m}`, s, m] as const)))(
     'bare/%s 는 치수·보더·반경·터치 바닥을 하나도 내지 않는다',
@@ -173,21 +184,22 @@ describe('frame — 누가 상자를 내는가', () => {
         MULTILINE.map((multiline) => fieldClass({ frame: 'bare', size, multiline: multiline })),
       ),
     );
-    // multiline 만 `resize-none` 을 더하므로 정확히 둘이어야 한다.
+    // Only multiline adds `resize-none`, so there must be exactly two.
     expect([...variants].length, `실제: ${[...variants].join(' | ')}`).toBe(2);
   });
 });
 
 describe('base — 모든 필드가 공유하는 것', () => {
   /**
-   * ⚠️ **`toContain('text-body')` 로 쓰면 안 된다** — `text-body-lg` 가 그것을
-   * 부분 문자열로 포함해서, 규칙이 바뀌었는데도 **헛통과한다**. 실제로 타입을
-   * 크기와 짝지은 직후 이 단언이 그대로 초록이었다.
+   * ⚠️ **Do not write this as `toContain('text-body')`** — `text-body-lg` contains
+   * it as a substring, so it **passes falsely** even after the rule changes. That
+   * assertion really did stay green right after type was paired with size.
    *
-   * 규칙: **넓은 칸(md·lg)은 `text-body-lg`(14) · 촘촘한 칸(xs·sm)과 `bare` 는
-   * `text-body`(12.5).** 근거는 화면이다 — `/project/new` 를 12.5px 로 내려
-   * 보니 **사용자가 입력한 값이 앱이 쓴 라벨(11px)과 거의 같은 급**이 됐다.
-   * 폼에서 가장 잘 읽혀야 하는 것은 사용자가 넣은 값이다.
+   * The rule: **wide fields (md, lg) use `text-body-lg` (14); dense fields (xs, sm)
+   * and `bare` use `text-body` (12.5).** The evidence is on screen — dropping
+   * `/project/new` to 12.5px made **the value the user typed nearly the same rank as
+   * the label the app wrote (11px)**. In a form, the most readable thing must be
+   * what the user entered.
    */
   it.each(all.map((c) => [`${c.frame}/${c.size}`, c] as const))(
     '%s — 타입이 크기와 짝이다 (md·lg=body-lg · xs·sm·bare=body)',
@@ -217,9 +229,10 @@ describe('base — 모든 필드가 공유하는 것', () => {
   });
 
   /**
-   * **폭은 값 층의 몫이 아니다.** 소비처가 갈린다(`w-full` 쓰는 곳 · 부모 grid 가
-   * 폭을 주는 곳). base 가 폭을 내면 후자에서 0px 전환이 아니게 된다 — 실제로
-   * 첫 구현에서 `boxed` 에 `w-full` 을 넣었다가 이 이유로 뺐다.
+   * **Width is not the value layer's share.** Consumers differ (some use `w-full`,
+   * others get their width from a parent grid). If the base emitted a width, the
+   * latter would no longer be a 0px migration — the first implementation did put
+   * `w-full` on `boxed` and removed it for exactly this reason.
    */
   it('폭을 내지 않는다', () => {
     for (const c of all) {
@@ -230,8 +243,9 @@ describe('base — 모든 필드가 공유하는 것', () => {
 });
 
 /**
- * 손가락 바닥. `boxed` 는 자기 상자를 내므로 44px 로 커져도 이웃을 밀어낼 뿐이고,
- * `bare` 는 부모 상자 안이라 커지면 그 상자를 안쪽에서 밀어낸다.
+ * The touch floor. `boxed` emits its own box, so growing to 44px only pushes its
+ * neighbours; `bare` sits inside the parent's box, so growing pushes that box
+ * outward from the inside.
  */
 describe('터치 바닥', () => {
   it('boxed 는 coarse 바닥을 받고 bare 는 받지 않는다', () => {

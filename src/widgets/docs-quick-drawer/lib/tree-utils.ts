@@ -1,9 +1,9 @@
-// DocsQuickDrawer 가 사용하는 순수 트리 조작 헬퍼. React 독립이라 unit test
-// 하기 쉽게 분리.
+// Pure tree helpers used by DocsQuickDrawer. Split out from React so they are easy
+// to unit test.
 
 import type { VaultTreeNode } from "@/entities/docs-vault";
 
-/** 트리를 pre-order 로 walk 하며 doc 타입 노드만 배열에 append. */
+/** Walk the tree pre-order, appending only doc-type nodes. */
 export function flattenDocs(
   node: VaultTreeNode,
   out: VaultTreeNode[] = [],
@@ -13,7 +13,7 @@ export function flattenDocs(
   return out;
 }
 
-/** pre-order 순회 중 처음 만나는 doc 의 slug. 트리가 비어 있으면 null. */
+/** The slug of the first doc met in pre-order. null for an empty tree. */
 export function firstDocSlug(node: VaultTreeNode | null): string | null {
   if (!node) return null;
   if (node.type === "doc" && node.slug) return node.slug;
@@ -25,7 +25,7 @@ export function firstDocSlug(node: VaultTreeNode | null): string | null {
   return null;
 }
 
-/** pre-order 순회하며 doc slug 만 평면 배열로. 키보드 nav 대상 리스트. */
+/** Doc slugs alone, flattened in pre-order — the list keyboard nav walks. */
 export function flattenTreeSlugs(
   node: VaultTreeNode | null,
   out: string[] = [],
@@ -37,10 +37,11 @@ export function flattenTreeSlugs(
 }
 
 /**
- * needle (소문자) 과 tagSlugs (null = 제한 없음) 로 트리를 필터.
- * - doc: tag 제한 실패 시 바로 null, 이후 needle 이 title 또는 path 에 포함되면 유지
- * - dir: 자식 중 하나라도 유지되면 dir 유지 (children 배열 교체)
- * 원본 노드는 mutate 하지 않는다.
+ * Filter the tree by needle (lowercase) and tagSlugs (null = unrestricted).
+ * - doc: null immediately if the tag restriction fails, otherwise kept when the
+ *   needle is in the title or the path
+ * - dir: kept if any child is kept (with the children array replaced)
+ * The source nodes are never mutated.
  */
 export function filterTree(
   node: VaultTreeNode,

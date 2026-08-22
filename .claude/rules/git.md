@@ -58,12 +58,12 @@
 
 ## 함부로 하지 말 것
 
-- `--no-verify` 로 hook 을 건너뛰지 말 것. **이 저장소의 hook 은 실제로 돌아간다**
-  — `pnpm install` 이 git 의 hook 위치를 `.githooks/` 로 바꿔 두고, `pre-commit`
-  이 "생성된 파일이 원본과 어긋난 채 커밋되는 것"을, `pre-push` 가 "`checks:changed`
-  가 지목한 검사가 빨간 채 푸시되는 것"을 그 자리에서 막는다. 예전에는 둘 다
-  CI 에서야 터졌다 (`docs/DEVELOPMENT-CHECKS.md`). 막히면 hook 이 시키는 명령을
-  그대로 돌린다.
+- **푸시 전에 `pnpm checks:changed -- --run` 은 네가 돌린다.** 대신 돌려 주는
+  것은 없다 — `pre-push` 훅은 2026-08-22 에 없앴다(너무 느려 끄게 만들었다.
+  근거·진 반대: `docs/DECISIONS.md` (94)). 판정은 CI 이고 8분이다. **목록에서
+  골라 돌리지 마라** — 여기서 탄 CI 라운드는 전부 고른 데서 났다.
+- `--no-verify` 로 남은 hook(`pre-commit`)을 건너뛰지 말 것. 몇 초이고, 생성물이
+  입력과 어긋난 채 커밋되는 것을 막는다. 막히면 시키는 명령을 그대로 돌린다.
 - `git reset --hard` / `git push --force` 는 사용자가 직접 시켰을 때만.
 - main 에 force push 절대 금지.
 - **자동 생성된 JSON 의 충돌을 손으로 고치지 말 것.** `src/entities/docs-vault/data/*`

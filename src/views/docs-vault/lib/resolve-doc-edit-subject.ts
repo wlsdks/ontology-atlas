@@ -3,29 +3,27 @@ import { pickLastEditSubject, type LastEditSubjectFact } from "@/shared/lib/last
 import { hasUnaccountedMtimeChange } from "@/shared/lib/mtime-conflict";
 
 /**
- * rank7 (design-council B5) — resolves `DocFrontmatterBlock`'s "마지막
- * 편집 · 사람/AI" fact from the ONLY two real data sources this surface has:
+ * Resolves `DocFrontmatterBlock`'s "last edited · person/AI" fact from the ONLY two real data
+ * sources this surface has:
  *
- * - **AI agent**: a fresh (valid, non-stale) activity heartbeat whose
- *   `focus` names THIS doc — `ontologySlug` may be a folder-prefixed vault
- *   path ("capabilities/foo"), a bare slug ("foo"), or already canonical,
- *   matched the same permissive bare-slug-suffix way
- *   `resolveAgentFocusNodeId` (home) matches graph node ids, just against
- *   the doc's own slug/path instead of a graph id.
- * - **Human**: `selfEditTimestamps` — the real record of THIS browser
- *   session actually writing this exact slug through the local vault (see
- *   `markSelfWrite` in `use-local-vault.ts`). Never inferred from mtime
- *   alone — an mtime change could come from a git checkout, another
- *   editor, or a different AI agent session with no heartbeat, none of
- *   which is "me".
+ * - **AI agent**: a fresh (valid, non-stale) activity heartbeat whose `focus` names THIS doc.
+ *   `ontologySlug` may be a folder-prefixed vault path ("capabilities/foo"), a bare slug ("foo"),
+ *   or already canonical, matched the same permissive bare-slug-suffix way
+ *   `resolveAgentFocusNodeId` (home) matches graph node ids, just against the doc's own slug or
+ *   path instead of a graph id.
+ * - **Human**: `selfEditTimestamps` — the real record of THIS browser session actually writing
+ *   this exact slug through the local vault (see `markSelfWrite` in `use-local-vault.ts`). Never
+ *   inferred from mtime alone — an mtime change could come from a git checkout, another editor, or
+ *   a different AI agent session with no heartbeat, none of which is "me".
  *
- * When neither source has evidence for this doc, returns null — the caller
- * renders nothing rather than guessing a subject.
+ * When neither source has evidence for this doc, it returns null and the caller renders nothing
+ * rather than guessing a subject.
  */
 export function resolveDocLastEditSubject(params: {
   doc: { slug: string; path: string };
-  /** null — 호출자가 heartbeat 출처를 아예 못 받은 표면(서버/샘플 볼트).
-   *  agent 후보는 자동으로 근거 없음 처리, human 후보는 그대로 평가한다. */
+  /** null — a surface where the caller receives no heartbeat source at all (a server or sample
+   *  vault). The agent candidate is automatically treated as unevidenced; the human candidate is
+   *  still evaluated. */
   agentActivityStatus: AgentActivityStatus | null;
   selfEditTimestamps: ReadonlyMap<string, number>;
 }): LastEditSubjectFact | null {
@@ -63,10 +61,10 @@ function doesHeartbeatFocusMatchDoc(
 }
 
 /**
- * expected_mtime 충돌 배지 — `doc.mtime`(R11 #15) 이 `baselineMtime`(문서를
- * 연 시점의 값) 과 달라졌고, 그 차이가 이번 세션의 자기 쓰기로 설명되지
- * 않을 때만 true. 판정 자체는 `hasUnaccountedMtimeChange`(shared) 재사용 —
- * 토폴로지 패널의 freshness-ISO 버전과 같은 규칙.
+ * The expected_mtime conflict badge — true only when `doc.mtime` differs from `baselineMtime` (its
+ * value when the document was opened) AND that difference is not explained by a self-write this
+ * session. The verdict itself reuses the shared `hasUnaccountedMtimeChange` — the same rule as the
+ * topology panel's freshness-ISO version.
  */
 export function hasDocMtimeConflict(params: {
   doc: { slug: string; mtime?: number };

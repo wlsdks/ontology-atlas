@@ -3,17 +3,17 @@ import type { Project } from "./types";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface DetectStaleOptions {
-  /** 기준 "지금" — 테스트 주입용. 런타임에선 new Date(). */
+  /** The reference "now"; injected by tests, `new Date()` at runtime. */
   now: Date;
-  /** 이 일수를 초과(strict `>`) 해야 stale 로 판정. */
+  /** Stale requires strictly more days than this (`>`). */
   daysThreshold: number;
-  /** 상위 N개로 잘라 반환. 미지정 시 전체. */
+  /** Truncate to the top N. Unset returns everything. */
   limit?: number;
 }
 
 /**
- * 정한 일수 이상 수정되지 않은 프로젝트를 가장 오래된 것부터 반환한다.
- * "수리 대기 목록" 시각화용.
+ * Projects untouched for at least the given number of days, oldest first — the
+ * repair backlog.
  */
 export function detectStaleProjects(
   projects: readonly Project[],
@@ -28,8 +28,8 @@ export function detectStaleProjects(
 }
 
 /**
- * 들어오는 참조도 나가는 의존도 모두 0 인 "고립" 프로젝트를 반환한다.
- * 허브는 허브 자체로 의미가 있으니 제외. 이름순 정렬.
+ * "Orphan" projects with zero incoming references and zero outgoing dependencies.
+ * Hubs are excluded because a hub is meaningful on its own. Sorted by name.
  */
 export function detectOrphanProjects(projects: readonly Project[]): Project[] {
   const referencedSlugs = new Set<string>();
@@ -51,9 +51,9 @@ export function detectOrphanProjects(projects: readonly Project[]): Project[] {
 }
 
 export interface DetectPromotionOptions {
-  /** isHub=false 인 프로젝트가 이 수 이상 참조되면 허브 승격 후보. */
+  /** A non-hub project referenced at least this many times is a promotion candidate. */
   minFanIn: number;
-  /** 상위 N개만. 미지정 시 전체. */
+  /** Top N only. Unset returns everything. */
   limit?: number;
 }
 
@@ -62,8 +62,8 @@ export interface PromotionCandidate extends Project {
 }
 
 /**
- * 비허브인데 실질적으로 많이 참조되고 있는 노드 — `isHub` 플래그를 빠뜨렸을
- * 가능성이 큰 승격 후보. fan-in 내림차순 정렬.
+ * Non-hub nodes that are in fact heavily referenced — likely candidates whose
+ * `isHub` flag was simply never set. Sorted by fan-in descending.
  */
 export function detectPromotionCandidates(
   projects: readonly Project[],

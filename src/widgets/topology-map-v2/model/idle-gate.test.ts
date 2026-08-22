@@ -50,22 +50,23 @@ describe("shouldSkipFrame", () => {
 });
 
 describe("focusFadeSettling (deselect 링 잔류 회귀)", () => {
-  // 회귀 재현: 라이브 포커스(노드/엣지)는 없는데 retained colorFocus 가 남아
-  // focus 램프가 감쇠 중인 구간. 램프 감쇠·colorFocus 클리어는 rAF 프레임
-  // 바디 안에서만 일어나므로, 이 구간에 우발 활동(코멧/카메라)이 없으면
-  // 유휴 게이트가 프레임을 스킵해 램프가 얼고 선택 링이 풀 opacity 로 남는다.
-  // 이 플래그가 그 구간을 활동으로 쳐 페이드가 끝날 때까지 루프를 깨워 둔다.
+  // Reproduces the regression: no live focus (node or edge) remains, but the
+  // retained colorFocus is still there while the focus ramp decays. Both the ramp
+  // decay and the colorFocus clear happen only inside the rAF frame body, so with
+  // no incidental activity (a comet, the camera) the idle skip drops the frame,
+  // the ramp freezes, and the selection ring stays at full opacity. This flag
+  // counts the window as activity and keeps the loop awake until the fade ends.
   const TAU = 0.16; // --topology-v2-focus-dim-tau
-  const CLEAR_THRESHOLD = 0.02; // use-topology-loop 의 colorFocus 클리어 문턱
+  const CLEAR_THRESHOLD = 0.02; // the colorFocus clear threshold in use-topology-loop
 
   it("retained colorFocus 페이드 구간은 다른 활동이 전무해도 활성이다", () => {
-    // 우발 활동(코멧·카메라·호버) 전부 꺼진 순수 유휴 + 페이드만 진행 중.
+    // Every incidental source (comet, camera, hover) is off — pure idle, fade only.
     expect(isCanvasActive({ ...IDLE, focusFadeSettling: true })).toBe(true);
   });
 
-  // use-topology-loop 이 매 프레임 refs 에서 계산하는 focusFadeSettling 판정을
-  // 순수 함수로 미러 — 세 deselect 경로가 모두 이 동일 상태(라이브 포커스 없음 +
-  // retained colorFocus)로 수렴함을 검증한다.
+  // Mirrors, as a pure function, the focusFadeSettling decision use-topology-loop
+  // computes from refs each frame — proving all three deselect paths converge on
+  // the same state: no live focus, colorFocus retained.
   const focusFadeSettlingFrom = (refs: {
     colorFocus: string | null;
     focusedSlug: string | null;
@@ -73,41 +74,42 @@ describe("focusFadeSettling (deselect 링 잔류 회귀)", () => {
   }): boolean => refs.colorFocus !== null && refs.focusedSlug === null && refs.selectedEdge === null;
 
   it("세 deselect 경로(빈-클릭·Escape·패널 X-close)는 동일 프레임 상태로 수렴해 활성이다", () => {
-    // 셋 다 handleClose 를 거쳐 focusedSlug→null 로 만들지만 retained colorFocus 는
-    // 남는다(색 페이드 타깃). 이벤트 출처와 무관하게 게이트가 그 상태를 활동으로
-    // 봐야 링이 얼지 않는다 — 경로별로 다르게 처리하면 X-close 만 얼어붙는다.
+    // All three run through handleClose and set focusedSlug to null, but the
+    // retained colorFocus stays as the color fade target. The state must count as
+    // activity regardless of which event produced it, or the ring freezes —
+    // handling the paths separately is exactly how only X-close froze.
     const deselected = { colorFocus: "domain:views", focusedSlug: null, selectedEdge: null };
     for (const _path of ["empty-click", "escape", "panel-x-close"]) {
       expect(focusFadeSettlingFrom(deselected)).toBe(true);
       expect(isCanvasActive({ ...IDLE, focusFadeSettling: focusFadeSettlingFrom(deselected) })).toBe(true);
     }
-    // 라이브 포커스가 아직 있으면(정적 선택 유지) 페이드 대상이 아니다 → 유휴 허용.
+    // A live focus still held (a static selection) is not fading, so idle is allowed.
     expect(focusFadeSettlingFrom({ colorFocus: "domain:views", focusedSlug: "domain:views", selectedEdge: null })).toBe(false);
-    // 엣지 페어 선택이 살아 있어도 페이드 아님.
+    // A live edge-pair selection is not a fade either.
     expect(focusFadeSettlingFrom({ colorFocus: null, focusedSlug: null, selectedEdge: { a: 1 } })).toBe(false);
   });
 
   it("페이드가 문턱 아래로 감쇠해 colorFocus 가 클리어되면 다시 유휴로 돌아간다", () => {
-    // deselect 직후: 램프 1 에서 시작해 focusActive=false 로 매 프레임 감쇠.
+    // Just after deselect: the ramp starts at 1 and decays each frame with focusActive=false.
     let ramp = 1;
     let colorFocusRetained = true;
     let frames = 0;
     const dt = 1 / 60;
 
-    // 페이드가 진행되는 한 게이트는 절대 스킵하지 않아야 한다(프레임이 돌아야
-    // 램프가 감쇠하므로 — 얼면 영원히 안 끝난다).
+    // While the fade runs, frames must never be skipped: the ramp decays only
+    // inside a frame, so freezing it means the fade never finishes.
     while (colorFocusRetained) {
-      const focusFadeSettling = colorFocusRetained; // 라이브 포커스 없음 + retained
+      const focusFadeSettling = colorFocusRetained; // no live focus, colorFocus retained
       expect(isCanvasActive({ ...IDLE, focusFadeSettling })).toBe(true);
       ramp = stepFocusRamp(ramp, false, dt, TAU);
-      if (ramp < CLEAR_THRESHOLD) colorFocusRetained = false; // use-topology-loop 클리어 조건
+      if (ramp < CLEAR_THRESHOLD) colorFocusRetained = false; // the clear condition in use-topology-loop
       frames += 1;
       if (frames > 600) throw new Error("페이드가 수렴하지 않음");
     }
 
-    // 감쇠는 바운드된 시간 안에 끝난다(~4τ ≈ 0.64s @ 60fps ≈ 39 프레임).
+    // The decay finishes in bounded time: ~4τ ≈ 0.64 s at 60 fps ≈ 39 frames.
     expect(frames).toBeLessThan(60);
-    // 클리어 후 다른 활동이 없으면 캔버스는 유휴로 복귀(무한 재도색 방지).
+    // Once cleared and with nothing else active, the canvas returns to idle rather than repainting forever.
     expect(isCanvasActive({ ...IDLE, focusFadeSettling: false })).toBe(false);
   });
 });
@@ -120,8 +122,8 @@ describe("isCameraUnsettled (M-1 — 유휴 중 휠 줌 사망 회귀)", () => {
   });
 
   it("휠이 스케일 타깃만 바꿔도 활동으로 판정한다 — 값 이동 없이도", () => {
-    // 유휴 스킵 중엔 물리 스텝이 안 돌아 value 는 그대로다. 이때 타깃만
-    // 바뀐 상태를 활동으로 못 치면 게이트가 영원히 안 깨어난다.
+    // While frames are skipped the physics step does not run, so the value cannot
+    // move. If a changed target alone is not activity, nothing ever wakes the loop.
     expect(isCameraUnsettled(settled, { tx: 100, ty: 50, tscale: 1.4 })).toBe(true);
   });
 
@@ -135,7 +137,7 @@ describe("isCameraUnsettled (M-1 — 유휴 중 휠 줌 사망 회귀)", () => {
 });
 
 describe("isEgoTailAnimating — 앰비언트 휴면이 세 갈래 전부에 걸리는가", () => {
-  // 깨어 있고, depends 혜성이 흐르고, 노드 하나가 선택돼 있는 상태.
+  // Awake, depends comets flowing, one node selected.
   const AWAKE_FOCUSED: EgoTailActivityInput = {
     reducedMotion: false,
     ambientAsleep: false,
@@ -151,9 +153,10 @@ describe("isEgoTailAnimating — 앰비언트 휴면이 세 갈래 전부에 걸
   });
 
   /**
-   * 이 저장소의 회귀. 앰비언트 휴면이 depends 갈래에만 걸려 있어서, **노드를
-   * 선택해 둔 채 손을 놓으면** contains 갈래가 게이트를 영원히 열어 뒀다.
-   * 화면은 이미 정지해 있었으므로(모든 혜성 속도 × 계수 0) 순수 낭비 래스터다.
+   * A regression this repository actually had: ambient sleep was applied to the
+   * depends branch only, so **leaving a node selected and taking your hands off**
+   * left the contains branch holding the condition open forever. The screen had
+   * already stopped (every comet speed × factor 0), so it was pure wasted raster.
    */
   it("잠들면 선택 상태에서도 비활동 — 데이터시트 열어 두고 떠나도 잠든다", () => {
     expect(isEgoTailAnimating({ ...AWAKE_FOCUSED, ambientAsleep: true })).toBe(false);
@@ -176,9 +179,10 @@ describe("isEgoTailAnimating — 앰비언트 휴면이 세 갈래 전부에 걸
   });
 
   /**
-   * 펄스는 일부러 게이트 밖이다 — 호버가 낳고 420ms 에 만료되는 일회성 신호이고,
-   * 호버는 입력이라 그 순간 이미 각성이다. 게이트를 걸면 "발사됐는데 안 그려지는"
-   * 실패 모드만 생긴다.
+   * The pulse is deliberately outside the condition: it is a one-shot signal born
+   * from hover that expires after 420 ms, and hover is input, so the app is already
+   * awake at that moment. Gating it would only add a "fired but never drawn"
+   * failure mode.
    */
   it("살아있는 호버 펄스는 잠든 상태에서도 그려야 한다", () => {
     expect(
@@ -204,12 +208,13 @@ describe("isEgoTailAnimating — 앰비언트 휴면이 세 갈래 전부에 걸
 });
 
 /**
- * 3D 돔 자율 회전 — 앰비언트 모션 계약.
+ * The 3D dome's autonomous spin under the ambient-motion contract.
  *
- * 이 블록이 존재하는 이유는 2026-08-19 실측이다. 자율 회전만 `ambient-sleep`
- * 계약 밖에 있어서 3D 는 무입력 45초가 지나도 잠들지 않았고, 2,000 노드에서
- * 초당 520ms(코어 절반)를 영구히 태웠다 — 같은 상태의 2D 는 3ms/s.
- * `isEgoTailAnimating` 때와 같은 실패라, 같은 자리에 같은 모양의 게이트를 둔다.
+ * Measured 2026-08-19: the spin alone sat outside the `ambient-sleep` contract,
+ * so 3D would not sleep even 45 s after the last input, permanently burning
+ * 520 ms per second (half a core) at 2,000 nodes where the same state in 2D cost
+ * 3 ms/s. Same failure as `isEgoTailAnimating`, so the same condition sits in the
+ * same place.
  */
 describe("isDomeSpinAnimating", () => {
   const SPINNING: DomeSpinInput = {
@@ -225,7 +230,7 @@ describe("isDomeSpinAnimating", () => {
     expect(isDomeSpinAnimating(SPINNING)).toBe(true);
   });
 
-  /** ★ 이 한 줄이 이 파일에서 가장 비싼 회귀를 막는다. */
+  /** This one line guards the most expensive regression in the file. */
   it("앰비언트 휴면에 들면 자율 회전은 활동이 아니다", () => {
     expect(isDomeSpinAnimating({ ...SPINNING, ambientAsleep: true })).toBe(false);
   });

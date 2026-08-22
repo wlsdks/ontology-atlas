@@ -3,9 +3,7 @@ import type {
   KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 
-/**
- * edge type 별 카운트. 입력 순서 보존 — UI 가 KNOWLEDGE_EDGE_TYPES 정렬 적용 가능.
- */
+/** Count per edge type, in input order so the UI can apply KNOWLEDGE_EDGE_TYPES ordering. */
 export function computeEdgeTypeDistribution(
   edges: readonly KnowledgeGraphEdge[],
 ): Map<string, number> {
@@ -17,11 +15,9 @@ export function computeEdgeTypeDistribution(
 }
 
 /**
- * 두 노드의 projectIds 가 교집합 0 이면 cross-project. 한 쪽이라도 빈
- * 배열이면 false (정보 부족 시 안전 폴백 — 같은 프로젝트로 가정).
- *
- * 외부 호출자 없음 — countCrossProjectEdges 의 내부 helper. 외부 노출
- * 필요해지면 export 재추가 후 index.ts barrel 도 같이 갱신.
+ * Cross-project means the two nodes' `projectIds` are disjoint. An empty array on either
+ * side returns false — with too little information, assume the same project rather than
+ * claim a boundary that may not exist.
  */
 function isCrossProjectEdgeProjects(
   fromProjects: ReadonlyArray<string> | undefined,
@@ -36,10 +32,7 @@ function isCrossProjectEdgeProjects(
   return true;
 }
 
-/**
- * 전체 edges 중 cross-project (양 끝 노드의 projectIds 가 disjoint) 개수.
- * 인사이트 카드의 카운트 입력.
- */
+/** How many edges cross a project boundary. Feeds the count on the insights card. */
 export function countCrossProjectEdges(
   edges: readonly KnowledgeGraphEdge[],
   nodes: readonly KnowledgeGraphNode[],
@@ -60,41 +53,41 @@ export function countCrossProjectEdges(
   return count;
 }
 
-/** 구조(containment) 관계 타입 — domain 계층(project→domain→capability→element). */
+/** Containment relation types — the domain hierarchy (project→domain→capability→element). */
 const CONTAINMENT_RELATION_TYPES = new Set(["contains", "belongs_to"]);
 
 /**
- * edge type 이 구조(containment) edge 인가 — `contains` / `belongs_to`.
- * 의존(dependency)·연관(soft) edge 와 구별해 다뤄야 하는 곳(coupling 제외,
- * projectIds BFS, 토폴로지 edge kind, 시각그래프 필터)의 단일 source. 이전엔
- * `type === 'contains' || type === 'belongs_to'` 가 4곳에 흩어져 있어 새 구조
- * 타입 추가 시 누락 위험이 있었다.
+ * Is this edge type a containment edge (`contains` / `belongs_to`). Single source for every
+ * place that must treat containment differently from dependency and soft relations —
+ * coupling exclusion, projectIds BFS, topology edge kind, visual graph filters. The literal
+ * `type === 'contains' || type === 'belongs_to'` used to be duplicated in four places, so a
+ * new containment type would have been missed in some of them.
  */
 export function isContainmentRelation(type: string): boolean {
   return CONTAINMENT_RELATION_TYPES.has(type);
 }
 
 /**
- * 방향이 **없는**(대칭) 관계 타입 — "비슷한 것" 처럼 양끝이 대등하다.
+ * Symmetric relation types — both ends are peers, as in "related to".
  *
- * `derive-ontology-from-vault.ts` 는 프론트매터 `relates:` 를 `related_to` 로
- * 내고, MCP/스키마 쪽은 키 이름 `relates` 를 그대로 쓴다. 두 철자를 모두 담아
- * 어느 경로로 들어와도 같은 판정을 받게 한다.
+ * `derive-ontology-from-vault.ts` emits frontmatter `relates:` as `related_to`, while the
+ * MCP and schema side keeps the key name `relates`. Both spellings are listed so either
+ * ingress path gets the same verdict.
  */
 const SYMMETRIC_RELATION_TYPES = new Set(["related_to", "relates"]);
 
 /**
- * 이 관계에 **방향이 있는가** — 지도가 방향 테이퍼(source 굵 → target 얇)를
- * 그려도 되는가의 단일 출처.
+ * Does this relation **have a direction** — the single source for whether the map may draw
+ * the directional taper (thick at the source, thin at the target).
  *
- * 왜 필요한가: 토폴로지 어댑터가 `isContainmentRelation ? "contains" :
- * "depends"` 로 2치 분류를 하는데, 그 "depends" 에 `related_to`(대칭)까지
- * 섞여 들어와 **없는 방향을 그리고 있었다**. dogfood 실측(2026-07-31):
- * containment 밖 관계 89개 중 `related_to` 가 **62개(70%)** — 관계선의
- * 대다수가 거짓 인과를 주장한 셈이다.
+ * Why it is needed: the topology adapter classifies edges as
+ * `isContainmentRelation ? "contains" : "depends"`, and the symmetric `related_to` fell into
+ * that "depends" bucket, so the map **drew a direction that does not exist**. Measured on
+ * the dogfood vault (2026-07-31): of 89 non-containment relations, **62 (70%) were
+ * `related_to`** — most relation lines were asserting a false causality.
  *
- * 기본값은 "방향 있음" 이다 — 모르는 타입은 종전 렌더를 유지해, 새 관계
- * 타입이 생겨도 조용히 대칭으로 강등되지 않는다.
+ * The default is "directional": an unknown type keeps its previous rendering, so a newly
+ * introduced relation type is never silently demoted to symmetric.
  */
 export function isDirectionalRelation(type: string): boolean {
   return !SYMMETRIC_RELATION_TYPES.has(type);

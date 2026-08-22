@@ -1,7 +1,9 @@
 /**
- * Node pin-drag world-coordinate math — the headline fix for the owner's
- * "노드를 클릭 드래그하면 그 노드가 force graph처럼 움직여야 하는데 통으로
- * 화면만 이동된다" report. Grabbing a node pins it 1:1 to the cursor in *world*
+ * Node pin-drag world-coordinate math — the headline fix for the owner's report
+ * *"노드를 클릭 드래그하면 그 노드가 force graph처럼 움직여야 하는데 통으로
+ * 화면만 이동된다"* (click-dragging a node should move that node the way a force
+ * graph does, but instead the whole screen just pans). Grabbing a node pins it 1:1
+ * to the cursor in *world*
  * space (respecting where inside the node you grabbed), and the force sim
  * (`model/force-layout.ts`) reflows its neighbors around the pinned position.
  *
@@ -11,7 +13,8 @@
  *
  * The grab offset (node position − pointer world position at grab time) is the
  * "respect the grab point, no center-snap" rule from `docs/INTERACTION-DESIGN.md`
- * §1 ("잡은 지점의 offset을 존중 (중심 스냅 금지)").
+ * §1 (「잡은 지점의 offset을 존중 (중심 스냅 금지)」 — respect the grab point's
+ * offset, no centre snap).
  */
 
 export interface WorldOffset {

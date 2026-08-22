@@ -25,11 +25,11 @@ export interface ProjectCompletenessInsight {
 export type ProjectFreshnessLevel = "fresh" | "active" | "stale";
 
 /**
- * 신선도 판정은 **등급만** 돌려준다 — 라벨은 화면이 정한다.
+ * The freshness verdict returns **a grade only** — the screen decides the label.
  *
- * 2026-07-28 이전에는 여기서 한국어 문자열(`"이번 주 업데이트"`)을 같이
- * 돌려줬고, 그게 영문 화면(`/en/project/new` 카드 미리보기)에 그대로
- * 그려졌다. 순수 모델은 사람 말을 쥐지 않는다.
+ * Before 2026-07-28 it returned the Korean string (`"이번 주 업데이트"`) with the
+ * grade, and that string rendered verbatim on English screens (the card preview on
+ * `/en/project/new`). A pure model does not hold human words.
  */
 export interface ProjectFreshnessInsight {
   level: ProjectFreshnessLevel;

@@ -24,32 +24,34 @@ export function TopologyEmptyState({
 }: {
   projectCount: number;
   reason?: 'no-projects' | 'no-relations';
-  /** S6 — writable 로컬 vault 면 "첫 노드를 토폴로지에서" 가 1차 진입. */
+  /** With a writable local vault, "create the first node from the topology" is the primary entry. */
   canCreateNode?: boolean;
   onCreateNode?: () => void;
   /**
-   * 부트스트랩 게이트 (discovery.md F1/F2): 열린 vault 에 .md 는 있는데
-   * 지도 노드가 0 일 때 — 사용자의 문서 존재를 먼저 인정하고("N개를
-   * 찾았어요") "내 문서로 지도 만들기"를 1차 CTA 로 세운다. 이 브랜치가
-   * 켜지면 기존 macOS 다운로드 안내(방금 vault 를 연 사람에게 앱 설치를
-   * 권하던 오안내)는 내려간다.
+   * The bootstrap gate (discovery.md F1/F2): the open vault has `.md` files but zero
+   * map nodes. It acknowledges the user's documents first ("we found N") and makes
+   * "build a map from my documents" the primary CTA. With this branch on, the old
+   * macOS download guidance — misdirection that offered an app install to someone who
+   * had just opened a vault — steps down.
    */
   docsFoundCount?: number;
   onStartFromDocs?: () => void;
   /**
-   * **능력이 가른다 — 런타임도, 「이미 열었나」도 아니다** (2026-08-08 카운슬).
+   * **Capability decides — not the runtime, and not "have they already opened one"**
+   * (2026-08-08 council).
    *
-   * 종전 판정은 `isTauriVaultRuntime() || hasOpenVault` 였다. 그 둘 다 아닌
-   * 사람 — **FSA 를 지원하는 브라우저로 처음 온 웹 방문자** — 에게 이 패널이
-   * 「macOS 앱을 설치하세요」로 답했다. 그 사람의 브라우저는 지금 이 자리에서
-   * 폴더를 열 수 있다. 되는 것을 안 된다고 쓰는 것이고(`surfaces.md`),
-   * 2026-08-07 슬라이스가 세 자리에서 고친 것과 같은 병이 여기 남아 있었다.
+   * The old decision was `isTauriVaultRuntime() || hasOpenVault`. Someone who is
+   * neither — **a first-time web visitor on an FSA-capable browser** — got this panel
+   * answering 「install the macOS app」. That person's browser can open a folder right
+   * here, right now. Writing "you can't" where you can (`surfaces.md`) is the same
+   * illness the 2026-08-07 slice fixed in three places, still surviving here.
    *
-   * 판정의 단일 출처는 `OpenVaultCta` 와 같다: `vault.status !== 'unsupported'`.
-   * 그 `status` 는 `isSupported()` 안에서 이미 Tauri 런타임을 포함하므로,
-   * 이 한 값이 옛 두 조건을 **덮으면서** 웹 방문자까지 맞게 가른다. 값을 넘기는
-   * 쪽은 `useLocalVault()` 를 이미 들고 있는 `HomePage` 다 — 이 위젯이 provider
-   * 에 묶이면 단위 시험이 provider 없이는 못 도는 것도 함께 막는다.
+   * The decision's single source is the same as `OpenVaultCta`'s:
+   * `vault.status !== 'unsupported'`. That `status` already includes the Tauri runtime
+   * inside `isSupported()`, so this one value **covers** both old conditions while
+   * also splitting web visitors correctly. It is passed in by `HomePage`, which
+   * already holds `useLocalVault()` — that also keeps this widget from being bound to
+   * a provider, which would stop its unit tests running without one.
    */
   canPickFolder?: boolean;
 }) {
@@ -64,17 +66,19 @@ export function TopologyEmptyState({
       : t('kickerNoDeps', { count: projectCount });
 
   /*
-   * ── 행동은 **한 벌로 보인다** (2026-08-03, 소유자 지적: *"버튼 삐뚤한거
-   * 싫어서"*) ────────────────────────────────────────────────────────────────
+   * ── The actions **read as one set** (2026-08-03, owner: *"버튼 삐뚤한거 싫어서"* —
+   * because I don't like crooked buttons) ──────────────────────────────────────
    *
-   * 종전은 `flex-wrap justify-center` 였다. 그러면 각 버튼의 폭이 **글자 수로**
-   * 정해지고 줄바꿈 자리도 글자 수가 정한다 — 넷이 1·2·1 로 앉아 가운데 줄만
-   * 튀어나온 계단이 됐다. 이건 취향 문제가 아니라 이 저장소가 이미 이름 붙인
-   * 규율의 위반이다: **치수 규칙성** — 반복되는 세트의 치수는 설계 결정이지
-   * 내용물의 부산물이 아니다(`design.md`).
+   * It used to be `flex-wrap justify-center`. Then each button's width is set **by its
+   * character count** and so is the wrap point — four buttons sat 1·2·1, a staircase
+   * with only the middle row sticking out. This is not a matter of taste but a
+   * violation of a discipline this repository has already named: **dimension
+   * regularity** — a repeated set's dimensions are a design decision, not a by-product
+   * of its content (`design.md`).
    *
-   * 그래서 세로 한 벌로 세운다. 폭이 전부 같고 줄바꿈 자리가 없다. 위계는
-   * 폭이 아니라 **채움**이 진다(주 행동만 인디고 면).
+   * So they stand as one vertical set. Every width matches and there is no wrap point.
+   * Hierarchy is carried by **fill** rather than width (only the primary action gets
+   * an indigo surface).
    */
   const ACTION =
     "w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]";
@@ -99,8 +103,8 @@ export function TopologyEmptyState({
         aria-label={isNoProjects ? t('titleNoProjects') : t('titleNoDeps')}
         aria-live="polite"
       >
-        {/* 산문은 **왼쪽 맞춤**이다. 380px 상자에서 3줄짜리 문단을 가운데
-            맞추면 양끝이 다 들쭉날쭉해지고, 그건 버튼 계단과 같은 병이다. */}
+        {/* Prose is **left-aligned**. Centring a three-line paragraph in a 380px box
+            makes both edges ragged, which is the same illness as the button staircase. */}
         <p className="font-mono text-caption tracking-[var(--tracking-caps-14)] uppercase text-[color:var(--color-text-quaternary)]">
           {kicker}
         </p>

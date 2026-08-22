@@ -49,14 +49,15 @@ test("a real runtime change still wins even when bundled with prose", () => {
 });
 
 /*
- * ⚠️ 이 시험의 예전 이름은 「fails open — an empty or unknown diff never
- * silently disables CI」였는데, 단언은 **정확히 그 반대**를 못박고 있었다:
- * 빈 diff → 전부 생략. 이름이 주장하는 성질을 단언이 부정한 것이다.
+ * ⚠️ This test used to be named "fails open — an empty or unknown diff never silently
+ * disables CI", while its assertion pinned **exactly the opposite**: empty diff → skip
+ * everything. The assertion denied the property the name claimed.
  *
- * `classify` 는 경로를 맞춰 보는 층이라 빈 목록에 대해 «맞는 것 없음» 을
- * 돌려주는 것이 맞다. 「비교할 수 없으면 전부 돌린다」는 판정은 `decide` 의
- * 몫이고, 그 판정이 없던 동안 main 에서 전체 Playwright 가 통째로 생략됐다.
- * 그래서 이름을 사실대로 바꾸고, 성질은 아래 `decide` 시험이 지킨다.
+ * `classify` is the path-matching layer, so returning "nothing matched" for an empty
+ * list is correct. The verdict "if it cannot be compared, run everything" belongs to
+ * `decide`, and while that verdict was missing, the full Playwright suite was skipped
+ * wholesale on main. So the name now states the fact, and the property is guarded by
+ * the `decide` tests below.
  */
 test("classify — 경로가 하나도 안 맞으면 빠른 게이트만 (판정층이 아니다)", () => {
   assert.deepEqual({ runtime: false, browser: false }, pick(classify([])));
@@ -66,12 +67,12 @@ test("classify — 경로가 하나도 안 맞으면 빠른 게이트만 (판정
 });
 
 /*
- * **여기가 그 사고를 막는 자리다.**
+ * **This is where that accident is blocked.**
  *
- * 실측(2026-08-08): main 런 넷이 전부 `no files changed` 로 전체 Playwright 를
- * 생략했고 47초에 초록으로 끝났다. `merge-base HEAD origin/main` 이 main 푸시
- * 에서는 HEAD 자신이라 `HEAD...HEAD` diff 가 비었기 때문이다. 그 초록이 실제
- * 파손(#987 이 깬 e2e 스펙 둘)을 태우고 갔다.
+ * Measured 2026-08-08: four main runs all reported `no files changed`, skipped the
+ * full Playwright suite, and finished green in 47 seconds — because on a push to main
+ * `merge-base HEAD origin/main` is HEAD itself, so the `HEAD...HEAD` diff is empty.
+ * That green carried real breakage past (the two e2e specs #987 broke).
  */
 test("decide — base 가 HEAD 자신이면 전부 돌린다 (main 푸시)", () => {
   const sha = "b85e4eaa9c0ffee0000000000000000000000000";
@@ -89,10 +90,10 @@ test("decide — 비교할 base 가 없으면 전부 돌린다", () => {
 });
 
 /*
- * 공회전 차단 — 위 둘이 「전부 돌린다」를 말할 때, `decide` 가 **무엇이든**
- * 전부 돌리는 상태가 아닌지 확인한다. base 가 HEAD 와 다르고 걸릴 경로가
- * 없으면 여전히 빠른 게이트만이어야 한다. 이 단언이 없으면 위의 두 초록은
- * 「고쳤다」가 아니라 「전부 켜 놓고 잊었다」와 구별되지 않는다.
+ * Idling guard — when the two above say "run everything", confirm `decide` is not
+ * simply running everything for **any** input. With a base different from HEAD and no
+ * matching paths it must still be the fast gate only. Without this assertion the two
+ * greens above are indistinguishable from "switched everything on and forgot".
  */
 test("decide — 계기가 살아 있다: 진짜 산문 변경은 여전히 빠른 게이트만", () => {
   assert.deepEqual(
@@ -103,7 +104,7 @@ test("decide — 계기가 살아 있다: 진짜 산문 변경은 여전히 빠�
     { runtime: false, browser: false },
     pick(decide({ base: "aaa", head: "bbb", files: [] })),
   );
-  // 그리고 브라우저 경로는 base 가 달라도 제대로 잡힌다.
+  // And browser paths are still caught correctly with a different base.
   assert.deepEqual(
     { runtime: true, browser: true },
     pick(decide({ base: "aaa", head: "bbb", files: ["src/app/providers.tsx"] })),
@@ -111,14 +112,14 @@ test("decide — 계기가 살아 있다: 진짜 산문 변경은 여전히 빠�
 });
 
 /*
- * e2e — 스펙이나 Playwright 설정을 고친 PR 은 **그 PR 에서** 전체 스위트를
- * 본다. 머지 후 스위프로 미룬 스펙(post-merge 프로젝트)을 고치면서 자기
- * 빨강을 못 보는 구멍을 막는 출력이다.
+ * e2e — a PR editing a spec or the Playwright config sees the full suite **in that
+ * PR**. This output closes the hole where someone edits a spec deferred to the
+ * post-merge sweep and never sees their own red.
  */
 test("classify — e2e 인프라 변경은 e2e=true, 그 밖은 false", () => {
   assert.equal(classify(["tests/e2e/nav-yield-map-frames.spec.ts"]).e2e, true);
   assert.equal(classify(["playwright.config.ts"]).e2e, true);
-  // 렌더 코드는 browser=true 지만 e2e 인프라는 아니다 — PR 게이트(smoke)로 충분.
+  // Render code is browser=true but is not e2e infrastructure — the PR gate (smoke) suffices.
   assert.equal(classify(["src/app/providers.tsx"]).e2e, false);
   assert.equal(classify(["tests/contract/po-council.contract.test.ts"]).e2e, false);
 });

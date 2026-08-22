@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { linkSlugs } from './link-slugs';
 
 /**
- * 채팅 글에서 **실재하는 노드 이름만** 집어낸다.
+ * Picks **only names of nodes that really exist** out of chat text.
  *
- * 무엇이든 `a/b` 모양이면 링크로 만드는 흔한 방식은 여기서 못 쓴다 — 에이전트의
- * 답에는 파일 경로(`src/features/acp-session/model/x.ts`) · URL · 날짜가 널려
- * 있고, 그걸 전부 노드로 만들면 눌러도 아무 데도 안 가는 링크가 글자마다
- * 생긴다. **우리는 그래프를 아니까** 아는 이름만 집는다.
+ * The common approach of linking anything shaped like `a/b` cannot be used here — an agent's answers
+ * are full of file paths (`src/features/acp-session/model/x.ts`), URLs, and dates, and turning all of
+ * them into nodes creates a link on every other word that goes nowhere when pressed. **Because we
+ * have the graph**, only known names are picked.
  */
 
 const known = new Set([
@@ -33,14 +33,14 @@ describe('아는 이름만 집는다', () => {
   });
 
   it('파일 경로 안에 아는 이름이 들어 있어도 집지 않는다 — 그건 그 노드가 아니다', () => {
-    // `docs/ontology/capabilities/invoice.md` 는 파일이지 노드 참조가 아니다.
+    // `docs/ontology/capabilities/invoice.md` is a file, not a reference to that node.
     const out = linkSlugs('docs/ontology/capabilities/invoice.md 를 열었어요', known);
     expect(out.some((s) => 'slug' in s)).toBe(false);
   });
 
   it('꼬리만 붙은 파일 이름도 집지 않는다 — 앞이 아니라 **뒤**가 가르는 경우', () => {
-    // 앞에 경로가 없으면 앞쪽 경계 검사는 통과한다. 이걸 잡는 것은 뒤쪽
-    // 규칙뿐이라, 이 사례가 없으면 그 규칙을 지워도 아무도 모른다.
+    // With no path in front, the leading boundary check passes. Only the trailing rule catches this,
+    // so without this case that rule could be deleted unnoticed.
     const out = linkSlugs('capabilities/invoice.md 를 열었어요', known);
     expect(out.some((s) => 'slug' in s)).toBe(false);
   });

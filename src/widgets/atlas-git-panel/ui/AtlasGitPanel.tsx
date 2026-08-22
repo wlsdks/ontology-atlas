@@ -4,10 +4,11 @@ import { Fragment, useCallback, useEffect, useMemo, useState, useSyncExternalSto
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useTranslations } from "next-intl";
-// `History as HistoryIcon` — 사용성 검수 P0 (2026-07-23): 특정 HMR/번들 상태에서
-// bare `History` 식별자가 전역 DOM History 생성자로 해석돼 `<History>` JSX 가
-// "Illegal constructor" 로 화면 전체를 에러 바운더리로 추락시켰다(스택 확보,
-// 간헐). 전역과 절대 충돌하지 않는 별칭으로 원천 차단.
+// `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
+// HMR/bundle states the bare `History` identifier resolved to the global DOM
+// History constructor, and `<History>` JSX dropped the whole screen into the
+// error boundary with "Illegal constructor" (intermittent, stack captured). An
+// alias can never collide with a global.
 import {
   Check,
   ChevronRight,
@@ -62,147 +63,168 @@ import { cn } from "@/shared/lib/cn";
 import { fieldClass } from '@/shared/ui/control-class';
 
 /**
- * Atlas Git — 기록 목적지 본체.
+ * Atlas Git — the body of the history destination.
  *
- * ## 이 표면의 일 (2026-07-26 재설계)
+ * ## What this surface is for (2026-07-26 redesign)
  *
- * 소유자 판정: *"이 페이지에서는 깃 연결을 빠르게 가능하게 해주고 그래야하는데"*.
- * 그래서 이 표면은 **상태를 알리는 대시보드가 아니라, 자기 일을 할 수 있게
- * 만드는 화면**이다. 화면 모양은 딱 하나의 질문으로 갈린다:
+ * Owner: *"이 페이지에서는 깃 연결을 빠르게 가능하게 해주고 그래야하는데"*
+ * (this page should make connecting git fast). So this is **not a dashboard that
+ * reports state — it is a screen that makes the user able to do their job**. One
+ * question decides its shape:
  *
- * > **지금 이 화면이 자기 일(기록)을 할 수 있는가?**
+ * > **Can this screen do its job (record) right now?**
  *
- * - **못 한다 → 셋업 모드.** 과업이 하나뿐이므로 화면도 하나만 말한다. 단일
- *   컬럼(`--git-setup-measure`)을 프레임 정중앙에 세우고, 주 동작 하나를
- *   실체 있는 버튼으로 둔다. 어디쯤 왔는지는 3걸음 사다리(`ConnectLadder`)가
- *   한 줄로 말한다.
- * - **할 수 있다 → 작업대 모드.** 좌: 무엇을 남길까 / 우: 그 증거.
+ * - **No → setup mode.** One task, so the screen says one thing: a single column
+ *   (`--git-setup-measure`) centred in the frame, with one primary action as a
+ *   real button. Progress is one line from the three-step connect flow
+ *   (`ConnectLadder`).
+ * - **Yes → workbench mode.** Left: what to record. Right: the evidence.
  *
- * 어텐션 승자가 상태에 따라 바뀌는 것이 **의도**다. 셋업에서는 사용자의 일이
- * "연결"이고 작업대에서는 "무엇을 남길까"라서, 두 순간의 승자가 같을 수 없다.
- * (Toss 공개 발표 — 한 화면에 한 가지 / Apple HIG — clarity·hierarchy.)
+ * The attention winner changing with state is **intended** — in setup the user's
+ * job is "connect" and on the workbench it is "what do I record", and those two
+ * moments cannot share a winner. (Toss public talks — one thing per screen;
+ * Apple HIG — clarity and hierarchy.)
  *
- * ## 작업대 재설계 (2026-07-27) — 이 화면의 일 한 문장
+ * ## Workbench redesign (2026-07-27) — this screen's job in one sentence
  *
- * 소유자 판정: *"이 기록 페이지도 너무 AI느낌나"*. 감이 아니라 실측 가능한
- * 여섯 가지였고, 전부 **이 화면의 일을 정하지 않은 데서** 나왔다. 정하면
- * 이렇다:
+ * Owner: *"이 기록 페이지도 너무 AI느낌나"* (this history page feels too much like
+ * AI output). That was not a vibe but six measurable defects, and every one came
+ * from never deciding what the screen is for. Decided, it reads:
  *
- * > **바뀐 내 개념을 확인하고, 지금 걸음으로 남길지 정한다.**
+ * > **Check which of my concepts changed, and decide whether to record them as
+ * > this step.**
  *
- * 그 한 문장에서 위계가 따라 나온다. 주목 승자는 **바뀐 개념 목록 + 남기기**
- * 한 쌍이다(목록이 주어, 버튼이 동사 — 둘은 한 덩이다). 증거(바뀐 줄 ·
- * 지난 걸음)는 요청 시 근거이고, 위치·보낼 곳은 크롬 단 상태다.
+ * The hierarchy follows from that sentence. The attention winner is the pair
+ * **changed-concept list + record** (the list is the subject, the button the
+ * verb — one unit). Evidence (changed lines, past steps) is on-demand backing,
+ * and location and remote are chrome-level state.
  *
- * 그래서 작업대는 **한 모양이 아니라 두 모양**이다 — 판단할 것이 있는지로
- * 갈린다(`data-shape`):
+ * So the workbench is **two shapes, not one**, split by whether there is
+ * anything to decide (`data-shape`):
  *
- * - `decide` (남기지 않은 변경 있음) — 좌 목록 + 하단 도크, 우 증거.
- * - `recall` (모두 남겼음) — 이 순간의 일은 "되짚기" 하나뿐이라 **단일 기둥**
- *   이고 지난 걸음이 본문을 차지한다. 구 코드는 이 상태에서도 2열을 선언해
- *   우측 열이 한 줄만 담긴 채 **세로 구분선만 화면 끝까지** 그어져 있었다
- *   (1512×950 실측: 우측 유효 잉크 1행 / 빈 높이 1,010px). 빈 열은 설계처럼
- *   보이는 것이 문제였다 — 열을 안 만드는 것이 답이다.
+ * - `decide` (unrecorded changes exist) — list plus bottom dock on the left,
+ *   evidence on the right.
+ * - `recall` (everything recorded) — the only job left is looking back, so it is
+ *   a **single column** and past steps take the body. The old code declared two
+ *   columns even here, leaving the right column holding one row with a
+ *   **vertical divider running the full height** (measured 1512×950: 1 row of
+ *   real ink on the right, 1,010px of empty height). The problem was that an
+ *   empty column looks deliberate — the answer is not to make the column.
  *
- * 증거 열은 **보여줄 것이 있을 때만** 렌더한다(`showEvidence`). 열의 존재가
- * 내용의 존재를 약속하므로, 약속을 지킬 수 없으면 열을 만들지 않는다.
+ * The evidence column renders **only when it has something to show**
+ * (`showEvidence`): a column's existence promises content, so it is not created
+ * when the promise cannot be kept.
  *
- * 걷어낸 "AI 느낌" 여섯 (각각의 처방은 해당 컴포넌트 주석에):
- * ① 좌측 앰버 악센트 레일이 붙은 둥근 콜아웃 카드 → 크롬 한 줄 + 온디맨드
- *    입력(헌장: 그 레일은 금지 패턴이고 앰버는 이 표면의 예외가 아니다).
- * ② 아무것도 안 하는 2열 → 두 모양 + 조건부 증거 열.
- * ③ 균일한 회색 목록(빌드 로그) → kind 그룹 + 상태 글리프 + 개념/그 밖의
- *    파일 분리 + 선택 가능한 행.
- * ④ 주 동작이 가장 약함 → 하단 도크의 채운 인디고 버튼.
- * ⑤ 모션 0 → `.git-fade-in` 하나(등장 · 계단 · 교체), reduced-motion 동등물.
- * ⑥ 낯선 말 / 신뢰 문구의 위계 역전 → `최근 기록`→`지난 걸음`(페이지 제목
- *    `기록` 과의 충돌 제거), 기록 범위 고지를 **쓰기가 일어나는 자리**로.
+ * The six "AI-feel" defects that were removed (each prescription sits on its own
+ * component):
+ * ① A rounded callout card with a left amber accent rail → one chrome line plus
+ *    on-demand input (charter: that rail is a forbidden pattern, and amber is
+ *    not excepted on this surface).
+ * ② Two columns doing nothing → two shapes plus a conditional evidence column.
+ * ③ A uniformly grey list reading as a build log → kind groups, status glyphs,
+ *    concepts split from other files, selectable rows.
+ * ④ The primary action being the weakest thing on screen → a filled indigo
+ *    button in the bottom dock.
+ * ⑤ Zero motion → one `.git-fade-in` (appear, stagger, swap) with a
+ *    reduced-motion equivalent.
+ * ⑥ Unfamiliar words and an inverted trust-copy hierarchy → 「최근 기록」 became
+ *    「지난 걸음」 (removing the clash with the page title 「기록」), and the
+ *    recording-scope notice moved to **where the write happens**.
  *
- * 그리고 이 화면에서 가장 큰 배관 누출도 같이 걷었다: 증거 열이 `diff --git`
- * `index 4a1c0de..8b71f92` `@@ -12,6 +12,9 @@` 를 그대로 쏟고 있었고, 지난
- * 걸음은 우리가 만든 영문 커밋 제목(`ontology snapshot: +3 concepts, …`)을
- * 한국어 화면에서 원문으로 읽히고 있었다. 둘 다 `atlas-git-record.ts` 가
- * 사람의 말로 되읽는다(원문은 펼침 상세에 그대로 남는다 — 감사 흔적).
+ * The largest plumbing leak on this screen went with them: the evidence column
+ * was dumping `diff --git`, `index 4a1c0de..8b71f92` and `@@ -12,6 +12,9 @@`
+ * verbatim, and past steps rendered our own English commit subjects
+ * (`ontology snapshot: +3 concepts, …`) raw on a Korean screen. Both are now
+ * read back in human language by `atlas-git-record.ts`; the raw text survives in
+ * the expanded detail as the audit trail.
  *
- * ## 왜 스테퍼 위젯이 아니라 한 줄인가
+ * ## Why one line instead of a stepper widget
  *
- * 원형+커넥터 스테퍼는 "빈 화면을 채우려고 넣은 컴포넌트"로 읽히고, 무엇보다
- * **거짓말이 된다** — 보낼 곳(원격) 등록은 선택이고, 이 컴퓨터에만 쌓는 것도
- * 정당한 종착지다. 그래서 사다리는 ① 앱에서 열기 ② 폴더 고르기 ③ 기록 시작
- * 셋으로 끝나고(원격은 걸음이 아니다), 크롬 없이 11px 텍스트 한 줄로만 산다.
+ * A circle-and-connector stepper reads as a component added to fill empty space,
+ * and above all it **lies**: registering a remote is optional, and piling steps
+ * up on this machine alone is a legitimate end state. So the connect flow ends
+ * at three steps — ① open in the app ② choose a folder ③ start recording (a
+ * remote is not a step) — and lives as one line of 11px text with no chrome.
  *
- * ## 런타임별 분기
+ * ## Runtime split
  *
- * 데스크톱(Tauri): `src-tauri/src/git.rs` 7 command 를 `tauri-git.ts` 브리지로
- * 소비한다 — ① vault 변경 요약(kind별 A/M/D + 대표 슬러그, CLI
- * `buildChangeSummary` 와 같은 산식) ② 남기기(명시 클릭 → 확인 스텝 →
- * `git_snapshot`; 보내기는 별도 opt-in 체크박스, 기본 off) ③ 최근 발자취
- * ④ 아직 남기지 않은 변경의 바뀐 줄 ⑤ 기록 시작(`git_init`) ⑥ 보낼 곳
- * 등록(`git_set_remote`).
+ * Desktop (Tauri): the 7 commands in `src-tauri/src/git.rs`, consumed through
+ * the `tauri-git.ts` bridge — ① vault change summary (A/M/D per kind plus a
+ * representative slug, the same formula as the CLI's `buildChangeSummary`)
+ * ② record (explicit click → confirm step → `git_snapshot`; pushing is a
+ * separate opt-in checkbox, off by default) ③ recent trail ④ changed lines of
+ * not-yet-recorded work ⑤ start recording (`git_init`) ⑥ register a remote
+ * (`git_set_remote`).
  *
- * 웹(브라우저 vault): 브라우저는 프로세스를 띄울 수 없으므로 정직하게 강등 —
- * 이건 고칠 수 있는 결함이 아니라 표면의 성질이다. 다만 **"안 된다"로 끝나지
- * 않는다**: 브라우저에서 이 표면의 유일한 진짜 다음 걸음이 앱을 받는 것이므로
- * `앱 받기`가 주 버튼이고, 터미널 경로(CLI 복사)는 그 아래 보조 탈출구다.
- * 이전 화면은 정반대였다 — 복사 버튼이 앱 받기 링크보다 컸다.
+ * Web (browser vault): a browser cannot spawn a process, so it degrades honestly
+ * — a property of the surface, not a fixable defect. But it **does not stop at
+ * "you can't"**: in a browser the only real next step on this surface is getting
+ * the app, so `앱 받기` is the primary button and the terminal path (copy the
+ * CLI) is a secondary escape below it. The previous screen had it exactly
+ * backwards — the copy button was larger than the get-the-app link.
  *
- * 신뢰 헌장 준수: **쓰기 명령은 사용자 클릭 뒤에만** 일어난다 — 마운트 시
- * 조회는 읽기 전용(status/diff/history)뿐이고, `git_init`/`git_set_remote`/
- * `git_snapshot` 은 각각의 버튼 onClick 에서만 호출된다(테스트가 이 계약을
- * 고정한다).
+ * Trust charter: **a write command only ever happens after a user click.** The
+ * mount-time queries are read-only (status/diff/history), and
+ * `git_init`/`git_set_remote`/`git_snapshot` are called only from their own
+ * button's onClick. Tests pin that contract.
  */
 
 export interface AtlasGitPanelProps {
   /**
-   * Tauri 데스크톱 vault 의 절대 경로 — `getTauriVaultRootPath(vault.handle)`
-   * 로 얻는다. null/undefined 면 웹 강등 렌더.
+   * Absolute path of the Tauri desktop vault, from
+   * `getTauriVaultRootPath(vault.handle)`. null/undefined renders the web
+   * degradation.
    */
   vaultPath?: string | null;
-  /** 웹 강등 요약에 쓸 세션 changeset — HomePage 의 `ontologyChangeset`. */
+  /** Session changeset for the web degradation summary — HomePage's `ontologyChangeset`. */
   sessionChangeset?: OntologyChangeset | null;
   /**
-   * 볼트 그래프 — 걸음이 바꾼 파일을 **개념**으로 옮기는 데 쓴다.
+   * The vault graph — used to move a step's files onto **concepts**.
    *
-   * 훅으로 안에서 읽지 않고 **밖에서 받는다**. `useOntologyInsight` 는 안에서
-   * `useLocalVault` 를 부르는데, 위젯이 그걸 직접 부르면 이 컴포넌트를 그리는
-   * 모든 테스트가 프로바이더를 요구하게 된다(실측: 33개가 한 번에 터졌다).
-   * 데이터를 밖에서 넣으면 위젯은 순수하게 남고 호출부가 그 결정을 진다 —
-   * `sessionChangeset` 이 이미 그 관례다.
+   * Passed in from outside rather than read through a hook. `useOntologyInsight`
+   * calls `useLocalVault` internally, so a widget calling it directly would make
+   * every test that renders this component require a provider (measured: 33
+   * broke at once). Injecting the data keeps the widget pure and leaves the
+   * decision with the caller — `sessionChangeset` already set that precedent.
    */
   graph?: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
   className?: string;
 }
 
-/** S1 보조 탈출구 — 터미널에서 직접 하려는 사용자용. git 용어는 여기서만 노출. */
+/** S1's secondary escape, for users who prefer the terminal. Git vocabulary is exposed only here. */
 const INIT_CLI_COMMAND = "git init";
 
 /**
- * 주 동작 — 이 화면이 사용자에게 시키는 **단 하나**의 일. 셋업의 「앱 받기 /
- * 폴더 고르기 / 기록 시작」과 작업대의 「N개 남기기」가 같은 무게를 쓴다:
- * 같은 지위의 동작은 같게 보여야 한다.
+ * The primary action — the **one** thing this screen asks of the user. Setup's
+ * 「앱 받기 / 폴더 고르기 / 기록 시작」 and the workbench's 「N개 남기기」 all use the
+ * same weight: actions of equal standing must look equal.
  *
- * 높이는 `--git-setup-action-height` (데스크톱 36px = 고정 스케일 계약의 크롬
- * 타일과 같은 단, coarse 포인터에서 44px 로 승격). 램프는 `text-body`(12.5px)
- * — 구 11px 링크/버튼은 페이지 주 동작으로 읽히지 않았다(소유자 실측: 웹
- * 강등에서 유일한 진짜 다음 걸음이 복사 버튼보다 작았다).
+ * Height is `--git-setup-action-height` (36px on desktop, the same step as the
+ * chrome tiles under the locked-scale contract, promoted to 44px on a coarse
+ * pointer). The ramp step is `text-body` (12.5px) — the old 11px link/button did
+ * not read as a page's primary action (owner measurement: in the web degradation
+ * the only real next step was smaller than the copy button).
  */
 const PRIMARY_ACTION_CLASS =
-  // 비활성 처리는 값 층 한 세트로 받는다(흐림 55 · 커서 · 호버 무력화). 채운
-  // 컨트롤이라 호버 무력화의 `bg-inherit` 가 채움을 지우므로 기본 채움으로
-  // 다시 고정한다 — 소비처가 cn(twMerge)을 거치므로 뒤의 것이 이긴다.
+  // Disabled styling arrives as one value-layer set (55 dim, cursor, hover
+  // neutralised). This is a filled control, so the hover-neutralising
+  // `bg-inherit` would erase the fill; the base fill is pinned again after it,
+  // and consumers go through cn(twMerge), so the later declaration wins.
   `inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] ${CONTROL_DISABLED_CLASS} disabled:hover:bg-[color:var(--color-indigo-brand)]`;
 
-/** 보조 탈출구 — 있지만 주 동작과 경쟁하지 않는 무게. */
+/** Secondary escape — present, but never competing with the primary action. */
 const SECONDARY_ACTION_CLASS =
   "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] px-3.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]";
 
 /**
- * 남길 것이 없을 때의 주 동작 자리 — **비활성이지 사라지지 않는다**.
+ * The primary action's slot when there is nothing to record — **disabled, not
+ * gone**.
  *
- * 동사의 집이 상태에 따라 없어지면 사용자는 다음에 어디를 봐야 할지 매번 다시
- * 배워야 한다(Apple HIG — 컨트롤은 안정된 자리에). 다만 채운 인디고를 60%
- * 불투명도로 두면 "고장난 주 버튼" 으로 읽히므로, 이 상태에서는 완료를 말하는
- * 조용한 형태로 바뀐다. 화면의 주목 승자는 그때 지난 걸음으로 넘어간다.
+ * If the verb's home disappears with state, the user relearns where to look
+ * every time (Apple HIG — controls keep stable positions). But a filled indigo
+ * at 60% opacity reads as a broken primary button, so in this state it becomes a
+ * quiet shape that says "done". The screen's attention winner moves to past
+ * steps then.
  */
 const DOCK_INERT_CLASS =
   "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] px-3.5 text-body text-[color:var(--color-text-quaternary)]";
@@ -210,17 +232,18 @@ const DOCK_INERT_CLASS =
 const noopSubscribe = () => () => {};
 
 /**
- * 섹션 라벨.
+ * Section label.
  *
- * 2026-07-26 — mono + `uppercase` + 0.12em 트래킹 eyebrow 문법을 걷어냈다.
- * 그 조합은 **라틴 전용 장치**다: JetBrains Mono 에는 한글 글리프가 없어
- * "이번에 바뀐 것" 이 시스템 폰트로 통째 폴백하고, 그 위에 얹힌 0.12em
- * 트래킹은 한글에서 자간이 아니라 **띄어쓰기가 깨진 것**으로 읽힌다(1920
- * 실측에서 "이번에  바뀐  것" 으로 보였다). `uppercase` 는 한글에 아무 일도
- * 하지 않으므로 순수 부작용만 남는다.
+ * 2026-07-26 — the mono + `uppercase` + 0.12em-tracking eyebrow grammar was
+ * removed. That combination is a **Latin-only device**: JetBrains Mono has no
+ * Hangul glyphs, so "이번에 바뀐 것" fell back wholesale to the system font, and
+ * 0.12em tracking on top of it reads in Hangul not as letter-spacing but as
+ * **broken word spacing** (at 1920 it looked like "이번에  바뀐  것").
+ * `uppercase` does nothing at all to Hangul, so only its side effects remain.
  *
- * 대신 본문 스택(Pretendard) + 램프 `--text-label` + quaternary 로 위계를
- * 만든다 — 라벨은 색과 크기로 낮추는 것이지 자간으로 낮추는 게 아니다.
+ * Hierarchy comes instead from the body stack (Pretendard) plus the
+ * `--text-label` ramp step and quaternary ink — a label is demoted with colour
+ * and size, not with tracking.
  */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -231,16 +254,16 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * 화면이 자기 일을 할 수 있는지로 갈리는 단계.
+ * The stage, split by whether the screen can do its job.
  *
- * `workbench` 만 "할 수 있다" 이고 나머지는 전부 셋업이다. `loading`/`error`
- * 도 셋업 프레임을 쓰는 이유: 그 순간에도 사용자가 할 수 있는 건 기다리거나
- * 다시 확인하는 것 하나뿐이라, 전폭 상단 정렬로 두면 "내용이 안 나온 페이지"
- * 로 읽힌다.
+ * Only `workbench` means "yes"; everything else is setup. `loading` and `error`
+ * use the setup frame too, because in those moments the only thing the user can
+ * do is wait or re-check, and full-width top alignment would read as "a page
+ * whose content failed to appear".
  */
 /**
- * 작업대에서 지금 보고 있는 것. `pending` = 아직 커밋 안 한 변경,
- * `commit` = 그 해시의 커밋.
+ * What the workbench is currently showing. `pending` = changes not yet
+ * committed, `commit` = the commit at that hash.
  */
 export type WorkbenchSelection = { kind: "pending" } | { kind: "commit"; hash: string };
 
@@ -256,8 +279,8 @@ export function AtlasGitPanel({
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
   /*
-   * 종류 이름은 `kinds` 네임스페이스가 진실원이다 — 이 화면이 자기 키를 새로
-   * 만들면 같은 사실이 두 곳에 적히고 그 순간부터 드리프트가 시작된다.
+   * Kind names have one source of truth: the `kinds` namespace. A key minted
+   * here would write the same fact in two places, and drift starts there.
    */
   const tKinds = useTranslations("kinds");
   const kindLabel = useCallback(
@@ -268,8 +291,8 @@ export function AtlasGitPanel({
     [tKinds],
   );
 
-  // SSR/hydration 안전한 런타임 판별 — 서버 스냅샷은 false(웹), 클라이언트에서
-  // Tauri 면 true 로 재렌더된다 (uSES 가 mismatch 를 스스로 정리).
+  // SSR/hydration-safe runtime detection — the server snapshot is false (web),
+  // and the client re-renders to true under Tauri (uSES resolves the mismatch).
   const bridgeAvailable = useSyncExternalStore(
     noopSubscribe,
     () => isGitBridgeAvailable(),
@@ -283,15 +306,17 @@ export function AtlasGitPanel({
   const [history, setHistory] = useState<GitCommitInfo[]>([]);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   /*
-   * git 설치 여부 — `null` 은 「아직 모름」이다(확인 전에 없다고 단정하지 않는다).
-   * 읽기 전용 감지라 자동 호출이 헌장의 「자동 실행 금지」와 충돌하지 않는다:
-   * `git_probe` 는 아무것도 설치하지 않고 실행 가능 여부만 본다.
+   * Whether git is installed — `null` means **not known yet**; absence is never
+   * assumed before checking. This is read-only detection, so calling it
+   * automatically does not conflict with the charter's ban on automatic
+   * execution: `git_probe` installs nothing and only tests for an executable.
    */
   /*
-   * 걸음마다 「바꾼 개념」. 종전에는 커밋 **제목 문자열을 파싱해서 추측**했는데
-   * (`describeSnapshotSubject`), 그건 우리 도구가 쓴 제목에만 맞고 사람이 쓴
-   * 커밋에는 안 맞았다. #842 가 커밋별 파일 + kind/slug 를 실어 보내므로 이제
-   * 추측하지 않는다 — 볼트의 개념 노드에 실제로 맞는 것만 센다.
+   * The concepts each step changed. This used to **guess by parsing the commit
+   * subject** (`describeSnapshotSubject`), which only ever fit subjects our own
+   * tool wrote and never fit human commits. #842 ships per-commit files with
+   * kind/slug, so nothing is guessed any more — only what actually matches a
+   * concept node in the vault is counted.
    */
   const conceptsByHash = useMemo(() => {
     const nodes = graph?.nodes ?? [];
@@ -317,32 +342,35 @@ export function AtlasGitPanel({
       graph ? buildConceptEgo(nodeId, graph.nodes, graph.edges) : null,
     [graph],
   );
-  /** 펼친 걸음 안에서 지금 보고 있는 개념. 걸음을 접으면 풀린다. */
+  /** The concept being viewed inside an expanded step. Collapsing the step clears it. */
   const [focusedConceptId, setFocusedConceptId] = useState<string | null>(null);
 
   const [gitInstalled, setGitInstalled] = useState<boolean | null>(null);
   const probeGit = useCallback(async () => {
     try {
       const probe = await gitProbe();
-      // 브리지가 없으면(`null`) 웹 경로이고, 그건 이 상태가 판정할 일이 아니다.
+      // No bridge (`null`) means the web path, which is not this state's call to make.
       setGitInstalled(probe === null ? null : probe.installed);
     } catch {
       /*
-       * 확인에 실패한 것은 **없다는 뜻이 아니다.** `null`(모름)로 두면 화면은
-       * 설치 안내가 아니라 평소 경로를 그린다 — 있는 git 을 없다고 말하는 쪽이
-       * 모른다고 두는 쪽보다 나쁘다. 잡지 않으면 unhandled rejection 이 된다.
+       * A failed probe **does not mean absent.** Left as `null` (unknown), the
+       * screen draws the normal path rather than install guidance — telling a
+       * user their git is missing is worse than admitting you do not know.
+       * Uncaught, this would become an unhandled rejection.
        */
       setGitInstalled(null);
     }
   }, []);
   /*
-   * **폴더를 고른 뒤에만** 부른다 (2026-08-02, 계약 테스트가 잡았다: 「앱 안에서
-   * 폴더가 없으면 … 아무 IPC 도 안 부른다」).
+   * Called **only after a folder is chosen** (2026-08-02, caught by a contract
+   * test: 「앱 안에서 폴더가 없으면 … 아무 IPC 도 안 부른다」 — inside the app with
+   * no folder, no IPC at all).
    *
-   * 이유가 둘이다. ① 폴더가 없으면 git 이 있든 없든 이 화면이 할 일이 없다 —
-   * 안 쓸 답을 미리 물을 이유가 없다. ② macOS 는 명령어 도구가 없을 때 git 을
-   * 부르면 **시스템 설치 다이얼로그**를 띄운다 — 사용자가 「기록」을 열지도
-   * 않았는데 OS 창이 뜨면 그건 우리가 부른 적 없는 화면이다.
+   * Two reasons. ① With no folder this screen has nothing to do whether or not
+   * git exists, so there is no point asking a question whose answer goes unused.
+   * ② macOS pops the **system install dialog** when git is invoked without the
+   * command line tools — an OS window the user never asked for, on a screen they
+   * have not even opened.
    */
   useEffect(() => {
     if (!vaultPath) return;
@@ -357,39 +385,43 @@ export function AtlasGitPanel({
   const [snapshotError, setSnapshotError] = useState<string | null>(null);
 
   /**
-   * 증거 pane 탭 — 바뀐 줄 / 지난 걸음. 목록 좌 · 증거 우(#85).
+   * Evidence pane tabs — changed lines / past steps. List left, evidence right
+   * (#85).
    *
-   * `null` = **아직 사용자가 고르지 않음**. 이때 탭은 상태를 따라간다: 보여줄
-   * 바뀐 줄이 있으면 `바뀐 줄`, 없으면 `지난 걸음`. 판정 기준이 "변경 수" 가
-   * 아니라 **파싱된 diff 파일 수** 인 이유: 새로 만든 문서만 바뀐 순간에는
-   * 변경이 있어도 비교할 예전 내용이 없어서, 변경 수로 판정하면 사용자가
-   * 요청하지도 않은 빈 칸에 착지한다(소유자 스크린샷의 그 한 줄).
+   * `null` = **the user has not chosen yet**, and the tab then follows state: if
+   * there are changed lines to show, 「바뀐 줄」, otherwise 「지난 걸음」. The test
+   * is the number of **parsed diff files**, not the number of changes: when only
+   * newly created documents changed there is nothing prior to compare against,
+   * so deciding on change count lands the user in an empty pane they never asked
+   * for (the line in the owner's screenshot).
    */
   /*
-   * 작업대의 선택 — **탭을 대신하는 축**이다.
+   * The workbench selection — **an axis that replaces tabs**.
    *
-   * 종전에는 오른쪽 열이 「변경 내용 / 커밋 이력」 탭으로 갈렸는데, 그 둘은
-   * 사실 *"아직 커밋 안 된 것 vs 된 것"* 이라 **목록의 위치**가 이미 말한다
-   * (맨 위가 안 된 것, 아래가 된 것 — 시간순이니 자연스럽다). 탭이 있으면
-   * 커밋 이력이 그 뒤에 숨어서, 실제로 소유자가 새 화면을 못 봤다.
+   * The right column used to split into 「변경 내용 / 커밋 이력」 tabs, but those
+   * two are really *"not yet committed vs committed"*, which **the list's
+   * position already states** (uncommitted at the top, committed below, in time
+   * order). With tabs, commit history hid behind one — and the owner genuinely
+   * never saw the new screen.
    *
-   * `null` = 아직 안 골랐음 → 아래 `selection` 이 상태를 보고 정한다.
+   * `null` = not chosen yet → `selection` below decides from state.
    */
   const [selectionChoice, setSelectionChoice] = useState<WorkbenchSelection | null>(null);
 
   /**
-   * 목록에서 고른 문서의 경로. `null` = 안 골랐음 → 증거 열은 바뀐 개념
-   * **전체**를 보여준다. 구 화면은 아무것도 안 고른 상태에서 우측이 "왼쪽에서
-   * 문서를 고르면…" 한 줄로 비어 있었는데, 그건 아무도 요청하지 않은 빈 칸이다
-   * — 고르기 전 기본값은 "전부" 여야 한다(Shneiderman: overview first).
+   * Path of the document chosen in the list. `null` = nothing chosen, so the
+   * evidence column shows **all** changed concepts. The old screen left the right
+   * side holding one line — "choose a document on the left…" — which is an empty
+   * pane nobody asked for. The default before choosing has to be "everything"
+   * (Shneiderman: overview first).
    */
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  /** 보낼 곳 입력 — 위치 줄의 버튼으로만 열린다(카드로 상주하지 않는다). */
+  /** The remote input — opened only from the location line's button; it never sits there as a card. */
   const [remoteOpen, setRemoteOpen] = useState(false);
-  /** 개념이 아닌 파일 — 기본 접힘. 함께 남지만 판단 대상이 아니다. */
+  /** Non-concept files, collapsed by default. Recorded along with the rest, but not what the user judges. */
   const [othersOpen, setOthersOpen] = useState(false);
 
-  // S1 (기록 시작) · S4 (보낼 곳 등록) 상태.
+  // State for S1 (start recording) and S4 (register a remote).
   const [initRunning, setInitRunning] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [remoteUrl, setRemoteUrl] = useState("");
@@ -397,11 +429,12 @@ export function AtlasGitPanel({
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [remoteNotice, setRemoteNotice] = useState<string | null>(null);
 
-  // 읽기 전용 조회(status/diff/history)만 — 쓰기(git_snapshot)는 절대 여기서 안 한다.
+  // Read-only queries (status/diff/history) only — a write (git_snapshot) never happens here.
   const refresh = useCallback(async () => {
     if (!vaultPath) return;
-    // 첫 await 이전의 동기 setState 금지 (react-hooks/set-state-in-effect —
-    // effect 가 이 함수를 직접 호출한다). 초기 loadState 가 이미 "loading".
+    // No synchronous setState before the first await (react-hooks/
+    // set-state-in-effect — an effect calls this directly). The initial
+    // loadState is already "loading".
     try {
       const nextStatus = await gitStatus(vaultPath);
       if (!nextStatus) return;
@@ -431,24 +464,27 @@ export function AtlasGitPanel({
     if (desktop) void refresh();
   }, [desktop, refresh]);
 
-  // 판단 대상(개념)과 동반 파일을 가른다 — 사용자가 이 화면에서 읽어야 하는
-  // 것은 "내 개념이 뭐가 바뀌었나" 이고, `.gitignore`/`package.json` 은 함께
-  // 남지만 읽을 것이 아니다. 커밋 산식은 여전히 **전체**를 대상으로 한다.
+  // Split what the user judges (concepts) from the files that ride along. What
+  // they have to read here is "which of my concepts changed"; `.gitignore` and
+  // `package.json` are recorded too but are not for reading. The commit formula
+  // still covers **everything**.
   const { concepts, others } = useMemo(() => splitConceptChanges(changes), [changes]);
   const kindGroups = useMemo(() => groupChangesByKind(concepts), [concepts]);
   const statusCounts = useMemo(() => countChangesByStatus(changes), [changes]);
   const predictedSubject = useMemo(() => formatSnapshotSummary(changes), [changes]);
   const hasChanges = changes.length > 0;
 
-  // git 배관을 걷어낸 파일별 diff. 여기서 계산하는 이유: 기본 탭 판정과
-  // 행별 줄 증감이 둘 다 이 값을 봐야 하는데, 자식에서 두 번 계산하면
-  // 화면의 두 곳이 서로 다른 사실을 말할 수 있다.
+  // Per-file diffs with the git plumbing stripped. Computed here because the
+  // default-tab decision and the per-row line counts both need this value, and
+  // computing it twice in children would let two places on screen state
+  // different facts.
   const diffFiles = useMemo(() => parseUnifiedDiff(diffText), [diffText]);
   /*
-   * 고르기 전 기본값: 아직 커밋 안 한 변경이 있으면 그것, 없으면 최근 커밋.
-   * 판정 기준이 "변경 수" 가 아니라 **파싱된 diff 파일 수** 인 이유는 종전
-   * 탭 판정과 같다 — 새로 만든 문서만 바뀐 순간에는 변경이 있어도 비교할
-   * 예전 내용이 없어서, 변경 수로 판정하면 요청하지도 않은 빈 칸에 착지한다.
+   * Default before choosing: uncommitted changes if there are any, otherwise the
+   * most recent commit. The test is the number of **parsed diff files**, not the
+   * number of changes, for the same reason as the old tab decision — when only
+   * newly created documents changed there is nothing to compare against, and
+   * deciding on change count lands the user in an empty pane they never asked for.
    */
   const selection: WorkbenchSelection =
     selectionChoice ??
@@ -459,10 +495,11 @@ export function AtlasGitPanel({
         : { kind: "pending" });
 
   /*
-   * 고른 걸음의 patch. **선택이 바뀔 때만** 읽는다 — 목록을 그릴 때 전부
-   * 미리 읽으면 걸음 하나당 `git show` 한 번씩이라, 화면에 안 보이는 것에
-   * 값을 선불로 낸다(`architecture.md` "화면에 없는 표면의 모델은 만들지
-   * 않는다"). `null` 은 「아직 모름」이고 `""` 는 「없음」이다.
+   * The chosen step's patch, read **only when the selection changes**. Reading
+   * them all up front while drawing the list would be one `git show` per step —
+   * paying in advance for what is not on screen (`architecture.md`
+   * 「화면에 없는 표면의 모델은 만들지 않는다」 — do not build the model of a surface
+   * that is not drawn). `null` means "not known yet"; `""` means "none".
    */
   const [commitDiff, setCommitDiff] = useState<string | null>(null);
   const diffHash = selection.kind === "commit" ? selection.hash : null;
@@ -477,7 +514,7 @@ export function AtlasGitPanel({
       .then((result) => {
         if (!cancelled) setCommitDiff(result?.diff ?? "");
       })
-      // 읽기 실패는 화면을 무너뜨리지 않는다 — 그 구획만 「없음」으로 는다.
+      // A failed read does not bring the screen down — that section just says "none".
       .catch(() => {
         if (!cancelled) setCommitDiff("");
       });
@@ -491,16 +528,17 @@ export function AtlasGitPanel({
     : !vaultPath
       ? "no-vault"
       /*
-       * git 이 아예 없는 것을 「오류」와 **가른다** (2026-08-02).
+       * git being absent entirely is **separated from an error** (2026-08-02).
        *
-       * 종전에는 미설치가 `loadState === "error"` 로 떨어져 원시 스폰 실패
-       * 문자열만 보였다. 그런데 이 저장소에는 **설치 안내가 이미 다 있다** —
-       * `git_probe`(Rust) · `gitProbe()`(브리지) · `gitInstallGuide()`(플랫폼별
-       * 명령 + 다운로드 링크, 테스트까지) · 문구 13종(`atlasGit.install.*`).
-       * 화면이 그걸 부르지 않았을 뿐이다. **문을 다 지어놓고 안 뚫은 상태**였다.
+       * It used to fall into `loadState === "error"`, showing only a raw spawn
+       * failure string. Yet **the install guidance already exists in this
+       * repository** — `git_probe` (Rust), `gitProbe()` (bridge),
+       * `gitInstallGuide()` (per-platform command plus download link, tests
+       * included) and 13 strings (`atlasGit.install.*`). The screen simply never
+       * called them: **every door was built and none was cut open**.
        *
-       * `surfaces.md` 의 강등 카드 계약(왜 안 되는지 + 어디서 되는지 + 여기서
-       * 되는 것)을 이 자리에 적용하는 데 **새로 쓸 문장이 하나도 없다.**
+       * Applying `surfaces.md`'s degradation-card contract (why it does not work ·
+       * where it does · what works here) needed **not one new sentence**.
        */
       : gitInstalled === false
         ? "not-installed"
@@ -513,12 +551,14 @@ export function AtlasGitPanel({
             : "not-initialized";
 
   /**
-   * 사용자가 직접 쓴 커밋 제목. **빈 문자열이면 자동 문구**를 쓴다 —
-   * Rust 의 `git_snapshot(message: Option<String>)` 이 이미 그렇게 갈린다.
+   * A commit subject the user wrote. **An empty string means the automatic
+   * subject** — Rust's `git_snapshot(message: Option<String>)` already splits on
+   * exactly that.
    *
-   * 종전엔 자동 문구만 가능했다. 그 문구는 「무엇이 바뀌었나」는 잘 말하지만
-   * **왜 바꿨나**는 못 말하고, 그건 나중에 이력을 읽는 사람이 실제로 찾는
-   * 것이다(소유자: *"수동으로 커밋도 할 수도 있잖아"*).
+   * Only the automatic subject was possible before. It says what changed well,
+   * but never **why**, and why is what someone reading the history later actually
+   * looks for (owner: *"수동으로 커밋도 할 수도 있잖아"* — you should be able to
+   * commit manually too).
    */
   const [snapshotMessage, setSnapshotMessage] = useState("");
 
@@ -537,9 +577,10 @@ export function AtlasGitPanel({
       setPushOptIn(false);
       setSnapshotMessage("");
       /*
-       * 사용자의 명시 선택을 지운다 — 커밋 직후 화면은 기본값으로 돌아간다.
-       * 남은 변경이 있으면 계속 「아직 커밋 안 한 변경」, 없으면 방금 만든
-       * 커밋이 열린다. 방금 한 일의 결과를 보여주는 쪽이 옳다.
+       * Clear the user's explicit selection so the screen returns to its default
+       * right after a commit: remaining changes keep the uncommitted row
+       * selected, otherwise the commit just created opens. Showing the result of
+       * what you just did is the right answer.
        */
       setSelectionChoice(null);
       setSelectedPath(null);
@@ -552,14 +593,14 @@ export function AtlasGitPanel({
   }, [vaultPath, pushOptIn, snapshotMessage, refresh]);
 
   /**
-   * 복사 결과는 **성공도 실패도** 말한다 (2026-07-28 QA).
+   * A copy reports **both success and failure** (2026-07-28 QA).
    *
-   * 종전 형태는 `if (await copyText(...)) { 성공 표시 }` 였다. 클립보드 권한은
-   * **조용히 거절될 수 있고**, 그때 화면은 아무 말도 하지 않는다 — 사용자는
-   * 복사됐다고 믿고 붙여넣기에서 처음 안다. 침묵은 성공처럼 읽힌다.
+   * The old shape was `if (await copyText(...)) { show success }`. Clipboard
+   * permission **can be denied silently**, and the screen then says nothing — the
+   * user believes it copied and finds out at paste time. Silence reads as success.
    *
-   * 공용 `useCopyFeedback` 이 이미 `idle | copied | failed` 3-상태를 갖고 있다.
-   * 새 기제를 만들지 않고 그것을 쓴다.
+   * The shared `useCopyFeedback` already has the three states
+   * `idle | copied | failed`; use it rather than inventing a mechanism.
    */
   const { state: initCopyState, copy: copyInitCommandText } = useCopyFeedback(1600);
   const copyInitCommand = useCallback(
@@ -568,9 +609,10 @@ export function AtlasGitPanel({
   );
 
   /**
-   * 기록 시작 — **이 함수는 버튼 onClick 에서만 호출된다.** 마운트/포커스/
-   * 자동 갱신 경로에서 절대 호출하지 말 것(신뢰 헌장: 자동 실행 0). init 은
-   * 커밋으로 연쇄하지 않으므로 성공 후 상태는 "아직 남기지 않은 변경 N건" 이다.
+   * Start recording — **this function is called only from a button's onClick.**
+   * Never call it from mount, focus or refresh paths (trust charter: zero
+   * automatic execution). init does not chain into a commit, so the state after
+   * success is "N changes not yet recorded".
    */
   const startTracking = useCallback(async () => {
     if (!vaultPath) return;
@@ -587,14 +629,16 @@ export function AtlasGitPanel({
   }, [vaultPath, refresh]);
 
   /*
-   * 원격 세 동작 — Fetch · Pull · Push.
+   * The three remote actions — Fetch, Pull, Push.
    *
-   * 이 화면에는 **Pull 이 아예 없었고**(브리지에도 Rust 에도 있는데 호출부가
-   * 없었다), Push 는 「남기기」 확인 단계의 체크박스 안에만 있었다. 그래서
-   * 남길 변경이 0 이면 이미 쌓인 걸음을 보낼 방법이 화면에 없다 — 원격보다
-   * 앞서 있어도 그렇다(소유자 실측: ↑2 인데 보낼 길이 없었다).
+   * Pull was **entirely absent** from this screen (present in both the bridge and
+   * Rust, with no caller), and Push lived only inside a checkbox on the record
+   * confirm step. So with zero changes to record there was no way on screen to
+   * send steps already piled up, even while ahead of the remote (owner
+   * measurement: ↑2 with nowhere to send).
    *
-   * 셋 다 **명시 클릭 뒤에만** 돈다. 자동 호출 0 — 신뢰 헌장 그대로다.
+   * All three run **only after an explicit click**. Zero automatic calls, exactly
+   * as the trust charter requires.
    */
   const [remoteBusy, setRemoteBusy] = useState<null | "fetch" | "pull" | "push">(null);
   const [remoteActionNotice, setRemoteActionNotice] = useState<string | null>(null);
@@ -614,10 +658,11 @@ export function AtlasGitPanel({
           if (r) setRemoteActionNotice(t("remoteDonePull", { summary: r.summary }));
         } else {
           /*
-           * Push 는 전용 명령이 없다 — `git_snapshot(push:true)` 가 그 일을
-           * 한다. 남길 변경이 0 이면 `committed:false/no-changes` 로 돌아오고
-           * **이미 쌓인 걸음만 전송된다**. 그래서 「남길 게 없어도 보낼 수
-           * 있다」가 성립한다.
+           * Push has no dedicated command — `git_snapshot(push:true)` does that
+           * job. With zero changes to record it returns
+           * `committed:false/no-changes` and **only the already-piled steps are
+           * sent**, which is what makes "you can push with nothing to commit"
+           * true.
            */
           const r = await gitSnapshot(vaultPath, { push: true });
           if (r?.push?.pushed) setRemoteActionNotice(t("remoteDonePush"));
@@ -635,8 +680,9 @@ export function AtlasGitPanel({
   );
 
   /**
-   * 보낼 곳 등록 — 주소만 등록하고 **보내지 않는다**. 전송은 사용자가 스냅샷
-   * 화면에서 따로 눌러야 한다("누를 때만 나가요" 를 호출 경계에서 지킨다).
+   * Register a remote — it stores the address and **does not send**. Sending is a
+   * separate press on the snapshot screen; "it only goes out when you press" is
+   * kept at the call boundary.
    */
   const submitRemote = useCallback(async () => {
     if (!vaultPath) return;
@@ -666,26 +712,31 @@ export function AtlasGitPanel({
       aria-label={t("title")}
       data-testid="atlas-git-panel"
       data-stage={stage}
-      // 시트 골격은 호스트(HomePage 의 scrim+카드 셸)가 소유한다 — 여기서
-      // 보더/배경을 또 얹으면 이중 카드가 된다(소유자 실보고 2026-07-23
-      // "보기 안 좋고"). AgentConnectSheet 와 같은 역할 분담: 패널은 내용만.
+      // The sheet's skeleton belongs to the host (HomePage's scrim + card shell).
+      // Adding a border or background here produces a double card (owner report
+      // 2026-07-23: "보기 안 좋고" — it does not look good). Same division of
+      // labour as AgentConnectSheet: the panel carries content only.
       className={cn("flex w-full min-h-0 flex-col", className)}
     >
-      {/* 스크롤 프레임.
-          - 셋업: 단일 기둥이 `m-auto` 로 프레임 정중앙에 선다 (`justify-center`
-            대신 auto margin — 내용이 길어지면 0 으로 접혀 위쪽이 안 잘린다).
-          - 작업대(lg+): 스크롤을 **열이 각자** 가진다. 프레임이 스크롤하면
-            하단 도크(주 동작)가 화면 밖으로 밀려나 이 페이지가 시키는 유일한
-            일이 스크롤 뒤에 숨는다. `<lg` 에서는 두 열이 세로로 쌓이므로
-            페이지 스크롤이 맞고, 도크는 탭바 예약고 위에 선다.
-          - 헤더는 작업대에서 **모양이 자기 폭 안에** 그린다: 전폭 구분선 아래
-            920px 기둥이 놓이면 선이 약속한 폭과 내용의 폭이 어긋난다. */}
+      {/* Scroll frame.
+          - Setup: the single column stands centred via `m-auto` (auto margin
+            rather than `justify-center`, so it collapses to 0 when the content
+            grows and the top is never clipped).
+          - Workbench (lg+): **each column owns its scroll**. If the frame
+            scrolled, the bottom dock — the primary action — would be pushed off
+            screen and the one thing this page asks for would hide behind a
+            scroll. Below `lg` the two columns stack, so page scroll is right and
+            the dock sits above the tab bar reserve.
+          - The header draws **inside its own width** on the workbench: a
+            full-width divider above a 920px column makes the line's promised
+            width disagree with the content's. */}
       <div
         className={cn(
           "flex min-h-0 flex-1 flex-col overflow-y-auto px-5",
           stage === "workbench"
-            ? // `<lg` 은 두 열이 세로로 쌓여 페이지가 스크롤한다 — 마지막 표면이
-              // 하단 탭바 뒤로 파고들지 않게 예약고를 계약한다(design.md 터치 계약).
+            ? // Below `lg` the two columns stack and the page scrolls, so the
+              // last surface reserves space rather than sliding under the bottom
+              // tab bar (design.md touch contract).
               "py-5 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)] xl:overflow-hidden"
             : "py-6",
         )}
@@ -776,21 +827,25 @@ export function AtlasGitPanel({
 type Translator = ReturnType<typeof useTranslations<"atlasGit">>;
 
 /**
- * 목적지 헤드라인 (2026-07-25 목적지 승격 후속). 모달이 삭제되면서 이 패널의
- * 유일한 소비자가 `/git/` 목적지가 됐는데, 헤더는 여전히 모달 문법(11px 인디고
- * mono eyebrow + 닫기 X)이었다 — 페이지 제목으로는 너무 작고, 목적지에는
- * "닫기" 라는 개념이 없다(레일로 다른 곳에 가면 그게 나가기다). 램프 한 단이
- * 아니라 **목적지 헤드라인**(`--text-display`)으로 올렸다.
+ * The destination headline (follow-up to the 2026-07-25 promotion to a
+ * destination). When the modal was deleted this panel's only consumer became the
+ * `/git/` destination, but the header was still modal grammar — an 11px indigo
+ * mono eyebrow plus a close X. That is too small for a page title, and a
+ * destination has no concept of "close" (leaving is going elsewhere on the rail).
+ * It moved up to a **destination headline** (`--text-display`), not one ramp step.
  *
- * `inColumn` = 기둥(셋업 측정폭 · 작업대 모양) 안에 놓인 형태. 전폭 구분선을
- * 떼고 좌우 패딩을 기둥에 맡긴다 — 선의 폭과 내용의 폭이 어긋나지 않게.
+ * `inColumn` = placed inside a column (setup's measure, the workbench's shape).
+ * It drops the full-width divider and leaves horizontal padding to the column, so
+ * the line's width and the content's width agree.
  *
- * `trailing` = 헤더 오른쪽의 상태(작업대의 위치 줄). 정체는 왼쪽, 상태는
- * 오른쪽, 한 줄 — 상태를 콘텐츠 위의 카드로 올리면 그게 첫 인상이 된다.
+ * `trailing` = state at the header's right (the workbench's location line).
+ * Identity left, state right, one row — promoting state to a card above the
+ * content would make it the first impression.
  *
- * `showScope` = 기록 범위 고지를 여기서 말할지. 작업대에서는 **쓰기가
- * 일어나는 자리**(하단 도크)로 옮긴다 — 신뢰 문구는 페이지 장식이 아니라
- * 결정 지점의 약속이고, 여기서는 눈에 안 띄는 회색 캡션이었다.
+ * `showScope` = whether the recording-scope notice is said here. On the workbench
+ * it moves to **where the write happens** (the bottom dock): trust copy is a
+ * promise made at the decision point, not page decoration, and here it was an
+ * unnoticed grey caption.
  */
 function PageHeader({
   t,
@@ -811,18 +866,20 @@ function PageHeader({
       )}
     >
       <div className="flex min-w-0 flex-col gap-1.5">
-        {/* 넓은 폭에서 헤드라인 단을 올릴 때도 램프 유틸리티를 쓴다. 램프 토큰을
-            arbitrary length 로 우회 참조하면 글자 크기만 올라가고 그 단이 싣는
-            행간은 아래 단 것이 그대로 남아, 아무도 고른 적 없는 비율이 만들어진다
-            — 여기가 그랬다(23px 글자에 title 짝인 24px 행간, 1.04). */}
+        {/* Use the ramp utility even when raising the headline step at wide
+            widths. Referencing a ramp token through an arbitrary length raises
+            only the font size while the line-height of the step below stays, so a
+            ratio nobody chose gets created — which is what happened here (23px
+            text on title's 24px leading, 1.04). */}
         <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
           <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
-        {/* 구 `subtitle`("vault 의 변경을 git 스냅샷으로 남깁니다")은 12글자에
-            시스템 용어가 3개(vault·git·스냅샷)라 삭제했다. 그 자리를 스코프
-            고지가 대신한다 — 사용자가 두 번째로 확인해야 하는 건 제품 설명이
-            아니라 "내 폴더 밖은 안 건드린다" 다. */}
+        {/* The old `subtitle` ("vault 의 변경을 git 스냅샷으로 남깁니다") was
+            deleted: 12 characters carrying three system terms (vault, git,
+            snapshot). The scope notice takes its place — the second thing a user
+            needs confirmed is not a product description but "nothing outside my
+            folder is touched". */}
         {showScope ? (
           <p className="flex items-center gap-1.5 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
@@ -836,24 +893,27 @@ function PageHeader({
 }
 
 /**
- * 연결 사다리 — "지금 어디이고 무엇이 남았나".
+ * The connect flow — "where am I and what is left".
  *
- * 원형+커넥터 **스테퍼 위젯**은 여전히 반려다: 그건 걸음 수를 부풀린다 —
- * 보낼 곳 등록은 **선택**이므로 사다리에 없다. 이 컴퓨터에만 쌓는 것도 정당한
- * 종착지고, 그걸 "미완료" 로 그리면 거짓말이다. 그래서 걸음은 여전히 셋이다.
+ * A circle-and-connector **stepper widget** is still rejected: it inflates the
+ * step count. Registering a remote is **optional**, so it is not in the flow;
+ * piling steps up on this machine alone is a legitimate end state, and drawing
+ * that as "incomplete" is a lie. So there are still three steps.
  *
- * 2026-08-02 — **한 줄에서 세 행으로.** 종전 형태는 11px 한 줄이었고, 실측하면
- * 높이 16px 에 세 걸음이 다 들어간 화면에서 **가장 작은 원소**였다. 그런데 이
- * 화면에서 사용자가 가장 알고 싶은 것이 바로 이것(내가 어디쯤인가)이다 —
- * Tufte 의 "잉크는 데이터에" 는 잉크를 아끼라는 말이 아니라 **데이터에 쓰라는
- * 말**이다. 지금은 각 걸음이 이름(`text-body`) + 설명(`text-label`) 두 줄을
- * 갖고, 왼쪽 헤어라인 레일이 진행을 잇는다.
+ * 2026-08-02 — **from one line to three rows.** The old form was a single 11px
+ * line, and measured, it was the **smallest element** on a screen 16px tall that
+ * held all three steps — while being exactly what the user most wants to know
+ * here (where am I). Tufte's "ink to the data" is not an instruction to save ink
+ * but to **spend it on data**. Each step now carries two rows, name
+ * (`text-body`) and description (`text-label`), with a left hairline rail
+ * carrying progress.
  *
- * 채색은 그대로 인디고 하나다: 완료=인디고 테두리 체크, 지금=인디고 채운 마크
- * + 레일 하이라이트 + primary 라벨, 이후=중립 테두리 + tertiary 라벨.
+ * Colour is still one indigo: done = indigo-outlined check, current = filled
+ * indigo mark plus rail highlight plus primary label, later = neutral border plus
+ * tertiary label.
  *
- * 치수 규칙성: 세 행 모두 두 줄을 쓴다(설명이 없는 걸음이 없다) — 행 높이가
- * 내용의 유무로 흔들리지 않는다.
+ * Dimension regularity: all three rows use two lines (no step lacks a
+ * description), so row height never shifts with content.
  */
 const LADDER_NOTE_KEY = ["stepAppNote", "stepFolderNote", "stepStartNote"] as const;
 
@@ -875,9 +935,9 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
             aria-current={active ? "step" : undefined}
             className="relative grid grid-cols-[24px_minmax(0,1fr)] items-start gap-3 py-2 pl-4"
           >
-            {/* 진행 레일 — 지금 걸음만 부모 헤어라인 위에 인디고를 덮는다.
-                커넥터 도형이 아니라 이미 있는 선의 **한 구간**이라 새 잉크가
-                아니다. */}
+            {/* Progress rail — only the current step paints indigo over the
+                parent hairline. It is a **segment of a line that already
+                exists**, not a connector shape, so it is not new ink. */}
             {active ? (
               <span
                 aria-hidden
@@ -887,9 +947,10 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
             <span
               aria-hidden
               className={cn(
-                // 숫자는 `text-label`(11px) — `text-caption`(9.5px) 인디고는
-                // 캔버스 위 4.55:1 로 AA 문턱에 붙는다(실측). 24px 원 안에서
-                // 11px 은 여유가 있고, 램프 스텝이라 새 값이 아니다.
+                // The number is `text-label` (11px). `text-caption` (9.5px)
+                // indigo measures 4.55:1 on the canvas, right at the AA
+                // threshold (measured). Inside a 24px circle 11px has room, and
+                // it is a ramp step, so it is not a new value.
                 "grid size-6 shrink-0 place-items-center rounded-full border text-label tabular-nums",
                 done
                   ? "border-[color:var(--color-indigo-a46)] text-[color:var(--color-indigo-text-soft)]"
@@ -924,23 +985,25 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
 }
 
 /**
- * 미리보기 — **연결이 끝나면 이 화면이 무엇이 되는가**.
+ * Preview — **what this screen becomes once connected**.
  *
- * 왜 이것이 장식이 아닌가: 이 상태의 화면은 사용자에게 한 가지를 시킨다
- * ("앱을 받으세요" / "폴더를 고르세요"). 그런데 **무엇을 얻는지 말하지 않으면
- * 그건 명령이지 제안이 아니다.** 처음 온 사람은 「기록」이라는 이름만으로
- * 도착지를 상상할 수 없다. 그래서 도착지의 골격 — 왼쪽 시간축, 오른쪽 고른
- * 걸음의 개념과 이웃 — 을 축소해 보여준다. 이 화면이 파는 것의 실물이다.
+ * Why this is not decoration: in this state the screen asks the user for one
+ * thing ("get the app" / "choose a folder"). **Without saying what they get, that
+ * is an order rather than an offer.** A first-time visitor cannot imagine the
+ * destination from the word 「기록」 alone. So the destination's skeleton —
+ * timeline on the left, the chosen step's concepts and neighbours on the right —
+ * is shown in miniature. It is the thing this screen is selling.
  *
- * **없는 데이터를 지어내지 않는다.** 이 순간 볼트는 없고, 그래서 여기에 가짜
- * 개념 이름을 쓰면 화면이 거짓말을 한다. 이름 자리는 **가림 막대**로 두고,
- * 정체를 나르는 자리(칩)만 실제 제품 어휘(`kinds` 네임스페이스)와 실제 글리프
- * (`TopologyV2KindGlyph` — 단일 게이트웨이)를 쓴다. 도형은 kind→실루엣 계약을
- * 그대로 따르므로 세 번째 도형 출처가 생기지 않는다.
+ * **No data is invented.** There is no vault at this moment, so writing fake
+ * concept names here would make the screen lie. Name positions are **redaction
+ * bars**; only the positions carrying identity (the chips) use real product
+ * vocabulary (the `kinds` namespace) and the real glyph (`TopologyV2KindGlyph`,
+ * the single facade). The shapes follow the kind→silhouette contract, so no
+ * third source of shapes appears.
  *
- * 무게: `opacity-45` + `aria-hidden` — 아직 당신의 것이 아니라는 뜻이고,
- * 보조기술과 키보드는 여기에 착지하지 않는다. `filter: saturate()` 같은 두
- * 번째 채널은 쓰지 않는다(무채색 + 인디고 하나).
+ * Weight: `opacity-45` plus `aria-hidden` — it is not yours yet, and assistive
+ * technology and the keyboard do not land here. No second channel such as
+ * `filter: saturate()` (neutrals plus one indigo).
  */
 const PREVIEW_ROW_KINDS = [
   "capability",
@@ -951,10 +1014,11 @@ const PREVIEW_ROW_KINDS = [
   "capability",
 ] as const;
 /**
- * 이웃 스케치의 위성 좌표(%) — **네 방위**다. 임의의 별자리가 아니라
- * `EGO_BEARINGS`(속한 곳 · 담고 있는 것 · 기대는 곳 · 이곳을 쓰는 곳)와 공방의
- * 고정 방위(UP/DOWN/RIGHT/LEFT)가 이미 쓰는 문법이라, 이 그림이 도착지의 실제
- * 배치를 말한다. 대각선 네 개는 큰 X 로 읽혀 아무 뜻도 없었다(첫 시안 실측).
+ * Satellite coordinates (%) for the neighbour sketch — **four bearings**, not an
+ * arbitrary constellation. `EGO_BEARINGS` (belongs to · contains · depends on ·
+ * used by) and the studio's fixed bearings (UP/DOWN/RIGHT/LEFT) already use this
+ * grammar, so the drawing states the destination's real layout. Four diagonals
+ * read as a large X and meant nothing (measured on the first mockup).
  */
 const PREVIEW_SATELLITES = [
   { x: 50, y: 14, kind: "domain" },
@@ -971,15 +1035,15 @@ function SetupPreview({ t }: { t: Translator }) {
         data-testid="atlas-git-setup-preview"
         className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] opacity-45"
       >
-        {/* 위치 줄 */}
+        {/* Location line */}
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
           <span className="h-1.5 w-24 rounded-full bg-[color:var(--color-overlay-3)]" />
           <span className="ml-auto h-4 w-10 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)]" />
         </div>
-        {/* `lg`~`xl` 에서는 시간축만 남는다 — 좁은 폭에 두 칸을 욱여넣으면
-            축소된 도해가 아니라 뭉갠 도해가 된다. */}
+        {/* Between `lg` and `xl` only the timeline survives — forcing two cells
+            into a narrow width gives a mangled diagram, not a smaller one. */}
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-          {/* 시간축 */}
+          {/* Timeline */}
           <div className="flex flex-col py-1.5 xl:border-r xl:border-[color:var(--color-divider)]">
             <span className="flex h-[var(--git-row-h)] items-center gap-2 border-l-2 border-dashed border-l-[color:var(--color-indigo-a46)] pr-3 pl-2.5">
               <span className="h-1.5 w-8 rounded-full bg-[color:var(--color-overlay-2)]" />
@@ -1004,18 +1068,19 @@ function SetupPreview({ t }: { t: Translator }) {
               </span>
             ))}
           </div>
-          {/* 고른 걸음의 상세 */}
+          {/* The chosen step's detail */}
           <div className="hidden min-w-0 flex-col gap-2.5 p-3 xl:flex">
             <span className="h-1.5 w-2/3 rounded-full bg-[color:var(--color-overlay-3)]" />
-            {/* 이 스케치의 문법은 **글자 대신 회색 막대**다 — 나머지 스무 남짓
-                자리가 전부 그렇다. 이 두 칩만 진짜 낱말(`역량`·`요소`)을 들고
-                있었고, 그래서 `opacity-45` 아래에서 **2.09:1** 로 읽혔다.
-                잉크로는 못 고친다: 이 불투명도에서 램프의 가장 밝은 잉크
-                (`--color-text-primary`)도 4.30 이라 AA 에 못 미친다(순백이
-                정확히 4.50). 고칠 수 있는 축은 색이 아니라 **글자의 존재**이고,
-                막대로 바꾸면 스케치가 자기 문법과 같아진다. 종류는 글리프가
-                이미 말하고, 무엇을 보는 그림인지는 아래 캡션이 말한다.
-                `text-caption` 은 남긴다 — 칩의 높이를 그 행간이 잡고 있다. */}
+            {/* This sketch's grammar is **grey bars instead of text** — all
+                twenty-odd other positions are. These two chips were the only ones
+                holding real words (`역량`, `요소`), and under `opacity-45` they
+                measured **2.09:1**. Ink cannot fix it: at this opacity even the
+                ramp's brightest ink (`--color-text-primary`) is 4.30, short of AA
+                (pure white is exactly 4.50). The fixable axis is not colour but
+                **the presence of text**, and bars make the sketch match its own
+                grammar. The glyph already states the kind, and the caption below
+                states what the drawing is.
+                `text-caption` stays — its leading is what sets the chip height. */}
             <div className="flex flex-wrap gap-1.5">
               {(["capability", "element"] as const).map((kind) => (
                 <span
@@ -1070,39 +1135,43 @@ function SetupPreview({ t }: { t: Translator }) {
 }
 
 /**
- * 셋업 무대 — "아직 자기 일을 못 하는" 모든 상태가 **같은 몸**을 쓴다.
+ * The setup stage — every "cannot do its job yet" state uses the **same body**.
  *
- * ## 2026-08-02 재설계 — 기둥 하나에서 두 칸 무대로
+ * ## 2026-08-02 redesign — from one column to a two-cell stage
  *
- * 소유자 판정: *"상단에 왜이렇게 붙어있고 내용도 작고 구성도 별로야"* →
- * *"되돌리는 정도가 아니라 디자인 자체를 다시해줘"*.
+ * Owner: *"상단에 왜이렇게 붙어있고 내용도 작고 구성도 별로야"* (why is it stuck to
+ * the top, the content is small and the composition is poor) →
+ * *"되돌리는 정도가 아니라 디자인 자체를 다시해줘"* (don't revert it — redesign it).
  *
- * 실측이 그 판정을 그대로 설명한다(1512×806, `/ko/git/`): 520px 기둥이
- * 520×464 = 화면의 **19.8%** 만 쓰고, 좌우로 348px 씩(패널 폭의 **57.2%**),
- * 아래로 298px 이 아무것도 나르지 않았다. 그 안에서 가장 큰 시각 덩어리는
- * **주 동작이 아니라** 터미널 탈출구였다 — 앱 받기 버튼 86×36 = 3,096px²,
- * CLI 명령 상자 520×46 = 23,920px². 보조가 주보다 **7.7배** 컸다(Tufte
- * data-ink 역전). 위 정렬이냐 가운데 정렬이냐는 이 결함의 **결과**였지 원인이
- * 아니라서, 되돌리는 것도 유지하는 것도 답이 아니다.
+ * The measurements explain that verdict exactly (1512×806, `/ko/git/`): a 520px
+ * column used 520×464 = **19.8%** of the screen, leaving 348px on each side
+ * (**57.2%** of the panel width) and 298px below carrying nothing. Inside it the
+ * largest visual mass was **not the primary action** but the terminal escape —
+ * the get-the-app button at 86×36 = 3,096px² against the CLI command box at
+ * 520×46 = 23,920px². The secondary was **7.7×** the primary (a Tufte data-ink
+ * inversion). Top versus centre alignment was a **consequence** of that defect,
+ * not its cause, so neither reverting nor keeping it was the answer.
  *
- * 그래서 무대는 두 칸이다:
+ * So the stage has two cells:
  *
- * - **왼쪽(말하는 칸, `--git-setup-measure` 520px)** — 지금 뭘 해야 하는지.
- *   제목이 `text-title`(16px)에서 `text-display`(23px)로 올라가고 「기록」은
- *   눈썹 한 줄로 내려간다: 이 화면의 제목은 "기록" 이 아니라 **"먼저 폴더를
- *   고르세요"** 다(Toss 공개 발표 — 한 화면에 한 가지). 본문은
- *   `text-body`(12.5)에서 `text-body-lg`(14)로 한 단 — "내용도 작고" 의 실체다.
- * - **오른쪽(보여주는 칸, `1fr`)** — 연결되면 이 화면이 무엇이 되는지
- *   (`SetupPreview`). 명령을 약속으로 바꾸는 자리다.
+ * - **Left (the telling cell, `--git-setup-measure` 520px)** — what to do now.
+ *   The title rises from `text-title` (16px) to `text-display` (23px) and 「기록」
+ *   drops to a one-line eyebrow: this screen's title is not "기록" but **"choose
+ *   a folder first"** (Toss public talks — one thing per screen). Body text goes
+ *   one step from `text-body` (12.5) to `text-body-lg` (14) — the substance of
+ *   "the content is small".
+ * - **Right (the showing cell, `1fr`)** — what the screen becomes once connected
+ *   (`SetupPreview`). This is where an order turns into a promise.
  *
- * 세로는 가운데다. 이제 무대가 폭을 다 쓰므로, 가운데 정렬이 "떠 있는 대화
- * 상자" 가 아니라 "이 화면의 내용" 으로 읽힌다. `xl` 미만에서는 미리보기가
- * 빠지고 말하는 칸만 남는다(좁은 폭에서 축소된 도해는 도해가 아니다).
+ * Vertically it is centred. Now that the stage uses the full width, centring
+ * reads as "this screen's content" rather than "a floating dialog". Below `xl`
+ * the preview drops and only the telling cell remains (a shrunken diagram in a
+ * narrow width is not a diagram).
  *
- * 등장 모션은 기존 `.topology-chrome-in` 재사용 —
- * `--topology-motion-panel-duration`(180ms) + `--topology-motion-ease-out`.
- * 새 duration/easing 0. `prefers-reduced-motion` 은 globals base 레이어가
- * 흔들리는 축만 걷어낸 동등물로 강등한다.
+ * Appearance motion reuses the existing `.topology-chrome-in` —
+ * `--topology-motion-panel-duration` (180ms) plus `--topology-motion-ease-out`.
+ * Zero new durations or easings. `prefers-reduced-motion` degrades through the
+ * globals base layer's equivalent, which removes only the moving axis.
  */
 function SetupFrame({
   t,
@@ -1114,15 +1183,16 @@ function SetupFrame({
   children,
 }: {
   t: Translator;
-  /** null 이면 사다리를 그리지 않는다 (로딩·오류 — 걸음이 아니라 사건이다). */
+  /** `null` skips the connect flow (loading and error are events, not steps). */
   step: SetupStep | null;
   state: string;
-  /** 이 순간의 과업 한 문장 — 이 화면의 h1 이다. */
+  /** This moment's task in one sentence — the screen's h1. */
   title: string;
   body?: string;
   /**
-   * 마지막 줄의 약속. 기본값은 기록 범위 고지 — 처음 쓰는 사람이 가장 걱정하는
-   * 것이 "내 폴더 밖을 건드리나" 이고, 그 답은 행동 **직전**에 있어야 한다.
+   * The promise on the last line. It defaults to the recording-scope notice: a
+   * first-time user's biggest worry is "does it touch anything outside my
+   * folder", and that answer belongs **immediately before** the action.
    */
   note?: string;
   children?: React.ReactNode;
@@ -1133,13 +1203,15 @@ function SetupFrame({
       data-setup-state={state}
       className="topology-chrome-in grid w-full flex-1 grid-cols-1 content-center items-center gap-9 py-[var(--git-setup-top)] lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,var(--git-setup-preview-max))] lg:justify-center lg:gap-10 xl:gap-14"
     >
-      {/* 말하는 칸은 **어느 폭에서도** 산문 측정폭을 넘지 않는다. 두 칸이
-          접히는 `<lg` 에서 이 상한이 없으면 구분선과 CLI 줄이 1,012px 까지
-          늘어나 `justify-between` 이 양끝을 700px 벌린다 — 설정 시트가 같은
-          병으로 한 번 앓았던 자리다(`--settings-content-measure` 주석). */}
+      {/* The telling cell never exceeds the prose measure **at any width**.
+          Without that cap, below `lg` where the two cells fold, the divider and
+          the CLI line stretch to 1,012px and `justify-between` pushes the ends
+          700px apart — the settings sheet had the same illness once (see the
+          `--settings-content-measure` comment). */}
       <div className="flex min-w-0 max-w-[var(--git-setup-measure)] flex-col gap-5">
-        {/* 「기록」은 이 화면의 제목이 아니라 **어디에 있는지**다 — 목적지
-            이름은 눈썹으로 내리고, h1 은 지금 해야 할 일이 가진다. */}
+        {/* 「기록」 is not this screen's title but **where you are** — the
+            destination name drops to an eyebrow and the h1 belongs to the task at
+            hand. */}
         <p className="flex items-center gap-2 text-label text-[color:var(--color-text-quaternary)]">
           <HistoryIcon size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
@@ -1169,22 +1241,25 @@ function SetupFrame({
 }
 
 /**
- * S0 — 브라우저. 브라우저가 git 을 못 돌리는 건 사실이고 그 사실은 그대로
- * 둔다. 바뀐 건 **무게 순서**다: 이전 화면에서 이 표면의 유일한 진짜 다음
- * 걸음(`앱 받기`)은 11px 텍스트 링크였고 그 위의 복사 버튼보다 작았다.
- * 지금은 앱 받기가 주 버튼이고, 터미널 경로는 아래 보조 탈출구다.
+ * S0 — the browser. A browser cannot run git, and that fact stays as it is. What
+ * changed is the **order of weight**: on the previous screen this surface's only
+ * real next step (`앱 받기`) was an 11px text link, smaller than the copy button
+ * above it. Now get-the-app is the primary button and the terminal path is a
+ * secondary escape below it.
  */
 
 /**
- * 이번 세션에 바뀐 것 — **git 과 무관하게** 안다.
+ * What changed this session — known **independently of git**.
  *
- * `change-baseline-store` 가 볼트별 기준점을 들고 있고 `computeOntologyChangeset`
- * 이 그 기준 대비 추가·수정·삭제를 센다. 새로고침을 넘어 살아남는다.
+ * `change-baseline-store` holds a per-vault baseline and
+ * `computeOntologyChangeset` counts additions, edits and deletions against it. It
+ * survives a reload.
  *
- * 종전에는 이 요약을 **웹 강등에서만** 그렸다. 그래서 git 을 아직 안 켠
- * 데스크톱 사용자는 「기록 시작하기」만 권유받고 *지금 무엇이 바뀌었는지*는
- * 한 글자도 못 봤다 — 웹보다 못한 상태였다(소유자 지적 2026-08-02).
- * 아는 것을 안 보여주는 것은 강등이 아니라 누락이다.
+ * This summary used to be drawn **only in the web degradation**, so a desktop
+ * user who had not turned git on was offered 「기록 시작하기」 and shown not one
+ * character of *what actually changed* — a worse state than the web (owner,
+ * 2026-08-02). Withholding what you already know is an omission, not a
+ * degradation.
  */
 function SessionChangeSummary({
   t,
@@ -1193,7 +1268,7 @@ function SessionChangeSummary({
 }: {
   t: Translator;
   changeset: OntologyChangeset | null;
-  /** 절 제목 — 웹과 데스크톱이 서로 다른 말을 쓴다. */
+  /** Section title — web and desktop use different wording. */
   title: string;
 }) {
   const rows = changeset
@@ -1256,39 +1331,44 @@ function WebSetup({
         {t("webGetApp")}
       </Link>
 
-      {/* 이번에 바뀐 것 — 행동의 **근거**라 주 동작 아래에 온다. */}
+      {/* What changed this time — the **basis** for the action, so it sits below the primary action. */}
       <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
 
       {/*
-       * ⚠️ **터미널 탈출구를 걷어냈다** (2026-08-09, 소유자 지적: *"이런건 필요할까?
-       * 내용이..? 별 필요없어보여서"*).
+       * ⚠️ **The terminal escape was removed** (2026-08-09, owner: *"이런건
+       * 필요할까? 내용이..? 별 필요없어보여서"* — is this even needed? it doesn't
+       * look necessary).
        *
-       * 그 자리에 있던 것은 `node $ATLAS/cli/src/index.mjs snapshot` 한 줄 + 복사
-       * 버튼 + 「먼저 한 번만 `export ATLAS=…`」 각주였다. 지운 이유 둘:
+       * What stood here was one `node $ATLAS/cli/src/index.mjs snapshot` line plus
+       * a copy button plus the footnote 「먼저 한 번만 `export ATLAS=…`」. Two
+       * reasons it went:
        *
-       * ① **쓸 수 있는 사람이 거의 없다.** `$ATLAS` 는 이 저장소의 **소스 폴더**를
-       *    가리켜야 한다 — 즉 clone 한 사람 전용이다. 각주가 그것을 스스로 실토하고
-       *    있었다: *"npm 패키지는 없어요."* 제품 화면이 「우리 패키지는 존재하지
-       *    않는다」를 설명하는 자리가 돼 있었다.
-       * ② **필요하지도 않다.** 볼트가 git 저장소면 그냥 `git commit` 이면 된다.
-       *    우리 CLI 래퍼를 거칠 이유가 없으므로, 이건 탈출구가 아니라 **우리 도구
-       *    홍보**였다.
+       * ① **Almost nobody could use it.** `$ATLAS` has to point at this
+       *    repository's **source folder** — that is, clone-only. The footnote
+       *    admitted as much itself: *"npm 패키지는 없어요."* A product screen had
+       *    become the place where we explain that our package does not exist.
+       * ② **It was not needed either.** If the vault is a git repository, plain
+       *    `git commit` does the job. There is no reason to go through our CLI
+       *    wrapper, so this was not an escape hatch but **promotion of our own
+       *    tool**.
        *
-       * 강등 카드 계약(`surfaces.md`: 왜 · 어디서 되나 · 여기서도 되는 것)은 그대로
-       * 지킨다 — 「왜」는 프레임 본문이, 「어디서」는 위의 `/download` 가, 「여기서도
-       * 되는 것」은 아래 세션 요약이 진다. 터미널은 «이 화면»이 아니다.
+       * The degradation-card contract (`surfaces.md`: why · where it works · what
+       * works here) still holds — "why" is carried by the frame body, "where" by
+       * the `/download` above, and "what works here" by the session summary below.
+       * The terminal is not *this* screen.
        */}
     </SetupFrame>
   );
 }
 
 /**
- * S1 — 앱은 열렸는데 폴더가 없다.
+ * S1 — the app is open but there is no folder.
  *
- * 이전엔 이 상태가 웹 강등 화면으로 떨어졌다: 데스크톱 앱 안에서 "브라우저는
- * git 을 실행할 권한이 없어요 / 앱 받기" 를 보여줬다는 뜻이다 — 이미 앱을
- * 쓰는 사용자에게 앱을 받으라고 하는 **거짓 안내**였다. 이 걸음의 진짜 다음
- * 동작은 폴더를 고르는 것이고, 그 장소는 문서함이다.
+ * This state used to fall through to the web degradation screen, meaning that
+ * inside the desktop app it showed "the browser has no permission to run git /
+ * get the app" — **false guidance** telling someone already using the app to get
+ * the app. This step's real next action is choosing a folder, and that lives in
+ * the docs vault.
  */
 function NoVaultSetup({ t }: { t: Translator }) {
   return (
@@ -1314,19 +1394,22 @@ function NoVaultSetup({ t }: { t: Translator }) {
 
 
 /**
- * 위치 줄 — 이 폴더의 걸음이 **어디에 쌓이는가**. 헤더 오른쪽, 한 줄.
+ * The location line — **where this folder's steps pile up**. Header right, one row.
  *
- * 이 자리가 구 화면의 결함 ① 이었다: 같은 사실("지금은 이 컴퓨터에만 쌓이고
- * 있어요")을 **둥근 카드 + 좌측 앰버 풀하이트 레일 + 제목 + 본문 + 입력칸 +
- * 도움말**로 콘텐츠 위에 올려, 기록을 보러 온 사용자의 첫 인상이 설정 권유가
- * 됐다. 게다가 그 형태는 `design.md` 가 이름을 붙여 금지한 패턴이고(카드
- * 내부의 full-height colored rail = AI SaaS callout), 앰버는 허브 노드/Layer 0
- * 컨테이너와 명문 예외 2건 밖에서는 결함이다 — 이 카드는 예외가 아니었다.
+ * This spot was defect ① of the old screen: the same fact ("right now they only
+ * pile up on this computer") was lifted above the content as a **rounded card
+ * with a full-height left amber rail, a title, body text, an input and help
+ * text**, so a user who came to look at history got a settings pitch as their
+ * first impression. That form is also a pattern `design.md` forbids by name (a
+ * full-height coloured rail inside a card = AI SaaS callout), and amber is a
+ * defect outside the hub node / Layer 0 container and the two written exceptions
+ * — this card was not one of them.
  *
- * 그래서 **사실은 남기고 형태를 없앴다**: 사실은 크롬 한 줄(11px quaternary),
- * 행동은 그 옆의 조용한 버튼 하나. 입력칸은 누를 때만 온다.
+ * So **the fact stayed and the form went**: the fact is one chrome line (11px
+ * quaternary), the action a quiet button beside it. The input arrives only when
+ * pressed.
  */
-/** 원격 동작 한 알 — 라벨은 원어, 무엇을 하는지는 툴팁이 진다. */
+/** One remote action — the label keeps the original term, and the tooltip carries what it does. */
 function RemoteActionButton({
   id,
   label,
@@ -1350,16 +1433,17 @@ function RemoteActionButton({
       disabled={disabled}
       onClick={() => onClick(id)}
       /*
-       * **누를 수 있게 생겨야 한다** (소유자 지적 2026-08-02: *"너무 작아서
-       * 누르는 버튼인지도 모르겠음"*).
+       * **It has to look pressable** (owner, 2026-08-02: *"너무 작아서 누르는
+       * 버튼인지도 모르겠음"* — it is so small I cannot even tell it is a button).
        *
-       * 종전은 24px 높이 · 투명 바탕 · quaternary 급 잉크였다. 24px 은 WCAG
-       * 2.2 §2.5.8 의 **최소**이지 «주 동작의 치수»가 아니고, 바탕이 없으면
-       * 테두리 하나만 남아 «칩(읽는 것)»과 구별이 안 된다 — 이 셋은 원격으로
-       * 나가는 동작이라 화면에서 가장 되돌리기 어려운 버튼들이다.
+       * It used to be 24px tall, transparent, with quaternary-grade ink. 24px is
+       * WCAG 2.2 §2.5.8's **minimum**, not a primary action's dimension, and with
+       * no background only a border remains, which is indistinguishable from a
+       * chip (something you read) — while these three are the hardest actions on
+       * the screen to undo, since they reach a remote.
        *
-       * 그래서 셋을 다: 높이 28px · `elevated` 바탕 · secondary 잉크. 새 값
-       * 0개(전부 램프·토큰).
+       * So all three changed: 28px tall, `elevated` background, secondary ink.
+       * Zero new values (all ramp and token).
        */
       className={controlClass({
         shape: "chip",
@@ -1388,7 +1472,7 @@ function LocationLine({
   t: Translator;
   branch: string | null;
   upstream: string | null;
-  /** upstream 이 없으면 둘 다 null — 0 이 아니라 「모름」이다. */
+  /** With no upstream both are null — that is "unknown", not 0. */
   ahead: number | null;
   behind: number | null;
   remoteOpen: boolean;
@@ -1404,28 +1488,27 @@ function LocationLine({
       data-testid="atlas-git-location"
       className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--color-text-quaternary)]"
     >
-      {/* 브랜치·원격 이름은 사용자가 정한 고유명사라 번역하지 않는다 —
-          터미널·저장소 페이지에서 그대로 다시 마주치는 문자열이다. 구
-          `branchLabel`("브랜치") 라벨은 삭제: `main → origin/main` 이 이미
-          무엇인지 말한다. */}
       {/*
-        브랜치·원격 이름은 사용자가 정한 고유명사라 번역하지 않는다 — 터미널·
-        저장소 페이지에서 그대로 다시 마주치는 문자열이다.
+        Branch and remote names are proper nouns the user chose, so they are not
+        translated — they are the same strings the user meets again in the
+        terminal and on the repository page. The old `branchLabel` ("브랜치") label
+        was deleted: `main → origin/main` already says what it is.
 
-        **넷이 따로 떠 있던 것을 셋으로 줄였다** (소유자 지적 2026-08-02:
-        *"브랜치 표기 방식도 좀 별로"*). 종전엔 `main → origin/main` 옆에
-        「↑2 ↓0」 칩이 따로 앉아 있었는데, 그 숫자가 하는 일은 **어느 버튼을
-        누를지 정해 주는 것** 하나였다. 그러면 숫자는 버튼 위에 있어야 한다 —
-        읽고 나서 눈을 다시 옮길 이유가 없다.
+        **Four floating pieces became three** (owner, 2026-08-02: *"브랜치 표기
+        방식도 좀 별로"* — the branch notation is not great). A separate 「↑2 ↓0」
+        chip used to sit next to `main → origin/main`, and the only job those
+        numbers did was **tell you which button to press**. Then the numbers
+        belong on the buttons — there is no reason to read them and move your eyes
+        again.
 
-        그래서 칩을 없애고 `Push 2` · `Pull 3` 으로 옮겼다. 남은 것은
-        「지금 어디」(브랜치)와 「무엇을 할 수 있나」(동작 셋)뿐이다.
+        So the chip went and became `Push 2` · `Pull 3`. What remains is "where am
+        I" (the branch) and "what can I do" (the three actions).
       */}
       <span className="flex min-w-0 items-center gap-1.5 font-mono">
         <span className="truncate text-[color:var(--color-text-secondary)]">{branch}</span>
         {upstream ? (
           <>
-            {/* 화살표는 장식이 아니라 **추적 관계**다 — 왼쪽이 오른쪽을 따라간다. */}
+            {/* The arrow is not decoration but a **tracking relation** — the left follows the right. */}
             <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
               →
             </span>
@@ -1437,7 +1520,7 @@ function LocationLine({
       </span>
       {upstream ? (
         <>
-          {/* 「같음」은 숫자가 없을 때만 뜬다 — 버튼 둘이 비활성인 이유를 말한다. */}
+          {/* 「같음」 appears only when there are no numbers — it says why both buttons are disabled. */}
           {same ? (
             <span
               data-testid="atlas-git-divergence"
@@ -1452,8 +1535,8 @@ function LocationLine({
               {t("divergeBehind", { behind: behind ?? 0 })}
             </span>
           )}
-          {/* Fetch·Pull·Push 는 **원어**로 둔다. 번역하면 무슨 일이 일어나는지가
-              오히려 흐려진다(소유자 판정 2026-08-02). */}
+          {/* Fetch, Pull and Push keep **the original terms**. Translating them
+              makes what happens less clear, not more (owner call, 2026-08-02). */}
           <RemoteActionButton
             id="fetch"
             label={t("remoteFetch")}
@@ -1504,12 +1587,15 @@ function LocationLine({
 }
 
 /**
- * 원격 동작의 결과 한 줄 — 성공도 실패도 **같은 자리**에서 말한다.
+ * A one-line result for a remote action — success and failure speak from the
+ * **same place**.
  *
- * 상단 바 **밖**에 있는 이유: 바 안에서 줄바꿈으로 붙이면 새 줄이 생기는 순간
- * 바가 높아지고 Fetch·Pull·Push 세 버튼이 통째로 내려앉는다(소유자 지적
- * 2026-08-03: *"fetch 누르니까 위치 이상하게 변경되고"*). 방금 누른 버튼이
- * 손가락 밑에서 도망가는 것은 결과 표시의 부작용이 아니라 결함이다.
+ * It lives **outside** the top bar, because attaching it inside as a wrapped line
+ * makes the bar taller the moment a new line appears, dropping all three of
+ * Fetch/Pull/Push down with it (owner, 2026-08-03: *"fetch 누르니까 위치
+ * 이상하게 변경되고"* — pressing fetch moves things around). A button escaping from
+ * under the finger that just pressed it is a defect, not a side effect of showing
+ * a result.
  */
 function RemoteResultLine({
   notice,
@@ -1535,17 +1621,18 @@ function RemoteResultLine({
 }
 
 /**
- * 보낼 곳(원격) 등록. **실패 지점에서 바로 해결한다**: push 가 "upstream 없어
- * 전송 불가" 로 끝나면 사용자는 무엇을 해야 할지 모른다.
+ * Registering a remote. **Solved at the point of failure**: when a push ends with
+ * "no upstream, cannot send", the user has no idea what to do.
  *
- * 주소는 사용자가 입력한 것만 쓴다 — 우리가 제안·추측·자동탐지하지 않는다
- * (신뢰 헌장). 등록은 전송이 아니다: 여기서는 주소만 저장하고, 보내기는
- * 사용자가 따로 눌러야 한다.
+ * Only the address the user typed is used — we never suggest, guess or autodetect
+ * one (trust charter). Registering is not sending: this stores the address, and
+ * the user has to press send separately.
  *
- * 이건 연결 사다리의 걸음이 **아니다** — 선택이고, 이 컴퓨터에만 쌓는 것도
- * 정당한 종착지다. 그래서 **상주하지 않는다**: 위치 줄의 버튼으로 열린다.
- * 앰버 좌측 레일은 걷어냈다(헌장 금지 패턴 + 앰버 확장). 남은 것은 중립
- * surface 위의 입력 한 벌뿐이고, 무엇을 하는 자리인지는 위치 줄이 이미 말했다.
+ * This is **not** a step in the connect flow — it is optional, and piling steps up
+ * on this machine alone is a legitimate end state. So it **does not sit there**:
+ * it opens from the location line's button. The amber left rail is gone (a
+ * charter-forbidden pattern plus amber creep). What remains is one set of inputs
+ * on a neutral surface, and the location line already said what this is for.
  */
 function RemoteSetup({
   t,
@@ -1598,7 +1685,7 @@ function RemoteSetup({
       {remoteError ? (
         <div className="git-fade-in flex flex-col gap-0.5" data-testid="atlas-git-remote-error">
           <p className="text-label text-[color:var(--color-danger-text)]">{remoteError}</p>
-          {/* 실패해도 데이터가 안전함을 매번 말한다. */}
+          {/* Say every time that the data is safe even on failure. */}
           <p className="text-caption text-[color:var(--color-text-quaternary)]">
             {t("remoteFailedSafe")}
           </p>
@@ -1617,7 +1704,7 @@ function RemoteSetup({
   );
 }
 
-/** 계단 상한 — 8행까지만 순서대로 도착하고 그 뒤는 같은 프레임이다. */
+/** Stagger cap — the first 8 rows arrive in order and everything after shares one frame. */
 const MAX_STAGGER_INDEX = 8;
 
 function staggerStyle(index: number): React.CSSProperties {
@@ -1639,11 +1726,13 @@ const STATUS_HINT_KEY = {
 } as const;
 
 /**
- * 상태를 **휘도**로 나른다 — 새로 생긴 것이 가장 밝고, 지운 것이 가장 옅다.
+ * Status is carried by **luminance** — newly created is brightest, deleted
+ * faintest.
  *
- * 색을 쓰지 않는 이유는 둘이다: ① 헌장(무채색 + 단일 인디고)이고 ② 추가/삭제를
- * 초록/빨강으로 가르는 축은 적록 색약(남성 약 8%)이 가장 못 가르는 축인데,
- * 여기서 색은 글리프(`+ ~ − →`)가 이미 나르는 정보의 **중복 잉크**다.
+ * Two reasons not to use colour: ① the charter (neutrals plus a single indigo),
+ * and ② splitting add from delete along green/red is the axis red-green colour
+ * blindness (about 8% of men) separates worst, while here colour would be
+ * **duplicate ink** for what the glyphs (`+ ~ − →`) already carry.
  */
 const STATUS_TONE: Record<string, string> = {
   added: "text-[color:var(--color-text-primary)]",
@@ -1668,20 +1757,22 @@ function StatusMark({ t, status }: { t: Translator; status: string }) {
 }
 
 /**
- * 변경 행 — 구 화면의 결함 ③ 을 고치는 자리.
+ * A change row — where defect ③ of the old screen is fixed.
  *
- * 이전에는 `capability · 추가 1 · 수정 2` 한 줄과 그 아래 mono 슬러그 나열이
- * kind 마다 반복됐다. 위계도 없고 항목도 없어서 **빌드 로그**로 읽혔고,
- * 무엇보다 **누를 수 없었다** — 열넷이 바뀌었는데 그중 하나의 근거를 볼
- * 방법이 화면에 없었다.
+ * It used to be one line of `capability · 추가 1 · 수정 2` with a list of mono
+ * slugs beneath it, repeated per kind. With no hierarchy and no items it read as
+ * a **build log**, and above all it **could not be pressed** — fourteen things had
+ * changed and the screen offered no way to see the evidence for any one of them.
  *
- * 그래서 행은 항목이 되고, 누르면 그 문서의 바뀐 줄이 증거 열에 온다.
- * 경로는 지운 게 아니라 **쪼갰다**: 자리(`capabilities/`)는 quaternary,
- * 이름(`git-record`)은 primary — 같은 문자열이 위계를 얻는다(에이전트
- * 인계용 슬러그는 그대로 화면에 남아야 한다).
+ * So a row is an item, and pressing it brings that document's changed lines into
+ * the evidence column. The path was not removed but **split**: the location
+ * (`capabilities/`) is quaternary and the name (`git-record`) is primary — the
+ * same string gains hierarchy (the slug an agent needs for handoff has to stay on
+ * screen).
  *
- * 치수 규칙성: 높이는 `--git-row-h` 고정, 이름은 클램프, 줄 증감은 오른쪽
- * 고정 열(값이 없어도 자리를 지킨다). 내용 길이가 격자 리듬을 정하지 못한다.
+ * Dimension regularity: height is fixed at `--git-row-h`, the name clamps, and
+ * line counts sit in a fixed right column that holds its place even with no
+ * value. Content length never decides the grid's rhythm.
  */
 function ChangeRow({
   t,
@@ -1702,7 +1793,7 @@ function ChangeRow({
   selected: boolean;
   onSelect: (path: string | null) => void;
   delta: { added: number; removed: number } | null;
-  /** 개념이 아닌 파일 — 같은 문법, 한 단 낮은 무게. */
+  /** Non-concept files — same grammar, one step lower in weight. */
   muted?: boolean;
 }) {
   const { name, place } = describeChangePath(slug, { isConcept: !muted });
@@ -1725,14 +1816,15 @@ function ChangeRow({
         <StatusMark t={t} status={status} />
         <span className="min-w-0 flex-1 truncate font-mono text-label">
           {/*
-           * tertiary 이지 quaternary 가 아니다 — **누를 수 있는 행 위의 글자는
-           * 평면 토큰을 쓸 수 없다** (2026-08-02 실측, 알파 합성 기준 ·
-           * 2026-08-03 quaternary #82828a 상향 후 재실측).
-           * quaternary(#82828a)는 `--color-panel` 위 5.00:1, hover
-           * (`--color-overlay-1` 합성) 4.81:1 까지는 넘지만, 선택
-           * (`--color-overlay-2` 합성)에서 **4.36:1 로 여전히 기준 미달**이다.
-           * 값 상향은 정지 표면 네 단을 통과시켰을 뿐, 이 규칙은 안 바뀌었다.
-           * tertiary(#8a8f98)는 같은 두 바탕에서 5.64 / 5.12 로 여유가 있다.
+           * tertiary, not quaternary — **text on a pressable row cannot use the
+           * flat token** (measured 2026-08-02 against alpha compositing, and
+           * re-measured 2026-08-03 after quaternary was raised to #82828a).
+           * quaternary (#82828a) clears 5.00:1 on `--color-panel` and 4.81:1 on
+           * hover (composited with `--color-overlay-1`), but on selection
+           * (composited with `--color-overlay-2`) it is **4.36:1, still below the
+           * threshold**. Raising the value only got four static surfaces through;
+           * this rule did not change. tertiary (#8a8f98) has room on the same two
+           * backgrounds at 5.64 and 5.12.
            */}
           {place ? (
             <span className="text-[color:var(--color-text-tertiary)]">{place}/</span>
@@ -1759,15 +1851,18 @@ function ChangeRow({
 }
 
 /**
- * 변경 목록. **개념이 먼저, kind 로 묶여서, 항목으로.** 그 밖의 파일은 접힌다.
+ * The change list. **Concepts first, grouped by kind, as items.** Other files
+ * collapse.
  *
- * 소유자 판정: *"사용자가 판단해야 할 건 «내 개념이 뭐가 바뀌었나» 이지 파일
- * 목록이 아니다"*. `.codex/config.toml`·`.gitignore` 는 함께 남지만 읽을
- * 것이 아니므로 기본 접힘이고, 접힌 줄이 개수를 말한다(숨기는 게 아니다).
+ * Owner: *"사용자가 판단해야 할 건 «내 개념이 뭐가 바뀌었나» 이지 파일 목록이
+ * 아니다"* (what the user has to judge is which of my concepts changed, not a file
+ * list). `.codex/config.toml` and `.gitignore` are recorded along with the rest
+ * but are not for reading, so they collapse by default and the collapsed row
+ * states the count — nothing is hidden.
  *
- * 숫자는 화면에 **한 번만** 나온다: 상태별 합계는 섹션 머리, 항목 수는 kind
- * 그룹 머리, 줄 증감은 행. 같은 숫자를 두 곳에 쓰면 어느 쪽이 진실인지
- * 사용자가 판단해야 한다.
+ * Each number appears on screen **exactly once**: per-status totals in the section
+ * head, item counts in the kind group head, line counts in the row. The same
+ * number in two places forces the user to decide which one is true.
  */
 function ChangeList({
   t,
@@ -1803,11 +1898,11 @@ function ChangeList({
 
   return (
     <div data-testid="atlas-git-change-groups" className="flex min-w-0 shrink-0 flex-col gap-2">
-      {/* 이 줄이 이 블록의 **유일한** 제목이다. 종전에는 증거 열 머리에도
-          같은 `changesTitle` 이 있어서 화면에 같은 문자열이 32px 간격으로
-          두 번(왼쪽 시간축의 「지금」 행까지 세면 세 번) 떴다 — 어느 쪽이
-          진실인지 사용자가 판단해야 했다. 고른 문서 경로는 이 줄의 오른쪽
-          끝으로 합쳤다. */}
+      {/* This line is this block's **only** title. The evidence column head
+          carried the same `changesTitle`, so the identical string appeared twice
+          32px apart — three times counting the 「지금」 row on the left timeline —
+          and the user had to decide which was true. The chosen document's path
+          was folded into this line's right end. */}
       <div className="flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <SectionLabel>{t("changesTitle")}</SectionLabel>
         <span className="text-label text-[color:var(--color-text-secondary)]">
@@ -1905,16 +2000,17 @@ function ChangeList({
 }
 
 /**
- * 바뀐 줄 — git 배관을 걷어낸 증거.
+ * Changed lines — evidence with the git plumbing removed.
  *
- * 구 화면은 `git diff` 원문을 `<pre>` 에 그대로 쏟았다: `diff --git a/… b/…`,
- * `index 4a1c0de..8b71f92 100644`, `--- a/…`, `+++ b/…`, `@@ -12,6 +12,9 @@`.
- * 그중 사람이 판단에 쓰는 것은 **늘어난 줄과 줄어든 줄** 둘뿐이고, 나머지는
- * 도구가 도구에게 하는 말이다. 파일 정체는 목록 행이 이미 말했다.
+ * The old screen dumped raw `git diff` into a `<pre>`: `diff --git a/… b/…`,
+ * `index 4a1c0de..8b71f92 100644`, `--- a/…`, `+++ b/…`, `@@ -12,6 +12,9 @@`. Of
+ * that, only **the added and removed lines** are what a person judges by; the rest
+ * is a tool talking to a tool, and the file's identity was already stated by the
+ * list row.
  *
- * `@@` 는 버리지 않고 **파선 한 줄**로 바꾼다 — "여기 사이에 안 보여준 줄이
- * 있다" 는 사실은 사용자가 알아야 하고(생략을 숨기면 diff 가 거짓말이 된다),
- * 그 좌표는 아니다.
+ * `@@` is not discarded but turned into **a single dashed line** — the user has to
+ * know there are lines in between that are not shown (hiding the elision makes the
+ * diff lie), but not its coordinates.
  */
 function DiffView({
   t,
@@ -1928,9 +2024,10 @@ function DiffView({
   return (
     <div
       data-testid="atlas-git-diff-pre"
-      // `<xl` 은 증거가 목록 아래로 쌓이므로 자기 상한 안에서 스크롤한다.
-      // `xl` 에서는 **증거 열 하나가 스크롤 주체**라 여기서 또 자르지 않는다
-      // (자르면 그 안의 줄이 조용히 사라진다 — 위 열 주석의 실측 사고).
+      // Below `xl` evidence stacks under the list, so it scrolls inside its own
+      // cap. At `xl` the **evidence column is the single scroll owner**, so
+      // nothing is clipped again here (clipping would silently swallow rows — the
+      // measured accident described in the column comment above).
       className="git-fade-in flex shrink-0 flex-col gap-3 pr-1 max-xl:max-h-[var(--git-evidence-stack-max)] max-xl:overflow-auto"
     >
       {files.map((file) => {
@@ -1974,10 +2071,11 @@ function DiffView({
                       line.kind === "added"
                         ? "border-l-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
                         : line.kind === "removed"
-                          ? // 지운 줄은 가장 옅지만 **읽혀야 한다** — 실측
-                            // 4.37:1(quaternary on overlay-1)로 AA 미달이라
-                            // tertiary(5.86:1)로 올렸다. 휘도 순서(추가 >
-                            // 수정 > 이름 > 삭제)는 그대로 지켜진다.
+                          ? // A deleted row is faintest but **must stay
+                            // readable** — measured 4.37:1 (quaternary on
+                            // overlay-1) fails AA, so it was raised to tertiary
+                            // (5.86:1). The luminance order (added > modified >
+                            // renamed > deleted) still holds.
                             "border-l-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)]"
                           : "border-l-transparent text-[color:var(--color-text-tertiary)]",
                     )}
@@ -2000,36 +2098,40 @@ function DiffView({
 }
 
 /**
- * 지난 걸음 — "언제 무슨 의미가 바뀌었나".
+ * Past steps — "when did which meaning change".
  *
- * 구 화면은 커밋 제목을 원문으로 그렸다: `ontology snapshot: +3 concepts,
- * ~2 updated (capabilities/map-label-budget, domains/topology, …)`. 그런데 그
- * 문자열은 **우리가 만든 것**이고, 한국어 화면에서 그걸 그대로 읽히는 것은
- * 우리가 만든 문자열을 우리가 번역하지 않은 것이다. 사람이 쓴 커밋과 다른
- * 도구의 커밋은 원문이 곧 사람의 말이라 손대지 않는다(`matched:false`).
+ * The old screen drew commit subjects raw: `ontology snapshot: +3 concepts,
+ * ~2 updated (capabilities/map-label-budget, domains/topology, …)`. But that
+ * string is **ours**, and letting it be read raw on a Korean screen means we did
+ * not translate a string we wrote ourselves. Human commits and other tools'
+ * commits are left untouched, because there the raw text *is* the person's words
+ * (`matched:false`).
  *
- * 원문은 사라지지 않는다 — 펼침 상세에 전체 해시·시각과 함께 남는다.
- * 그게 감사 흔적이고, 터미널에서 다시 마주칠 문자열이다.
+ * The raw text does not disappear — it stays in the expanded detail with the full
+ * hash and timestamp. That is the audit trail, and the string the user will meet
+ * again in the terminal.
  *
- * 치수 규칙성: 시각은 고정 폭 열, 요약과 이름은 각각 한 줄로 클램프되고
- * 이름이 없는 걸음도 그 줄의 자리를 지킨다(높이 `--git-step-h`).
+ * Dimension regularity: the time is a fixed-width column, the summary and names
+ * each clamp to one line, and a step with no names still holds that line's place
+ * (height `--git-step-h`).
  */
 /**
- * 한 걸음 행에 이름을 몇 개까지 보일까. **고정 개수 + 나머지 캡션**이다 —
- * "들어가는 만큼" 은 반복 세트의 리듬을 내용 길이가 정하게 만든다(치수 규칙성).
+ * How many names one step row shows. **A fixed count plus a remainder caption** —
+ * "as many as fit" would let content length set a repeated set's rhythm
+ * (dimension regularity).
  */
 const STEP_CONCEPT_SLOTS = 2;
 
 /**
- * 목록 행 하나의 문법 — **전폭 표의 한 줄**이지 카드가 아니다.
+ * One list row's grammar — **a row in a full-width table**, not a card.
  *
- * 종전엔 `rounded-chip` 카드에 좌측 2px 인디고 막대를 붙였는데, 그건
- * `design.md` 가 이름 붙여 금지한 «카드 안 full-height colored rail» 이다
- * (AI SaaS callout 처럼 읽힌다 — 소유자 지적 2026-08-02). 같은 2px 이
- * **컬럼 끝까지 닿는 행**에 붙으면 표의 선택 마커로 읽힌다. 달라진 것은
- * 값이 아니라 **그 값이 앉은 자리**다.
+ * It used to be a `rounded-chip` card with a 2px indigo bar on its left, which is
+ * the «full-height coloured rail inside a card» `design.md` forbids by name (it
+ * reads as an AI SaaS callout — owner, 2026-08-02). The same 2px on a **row that
+ * reaches the column's edge** reads as a table's selection marker. What changed is
+ * not the value but **where the value sits**.
  *
- * 3열(시각 · 이름 · 왜)은 시안 실측 그대로다.
+ * The three columns (time · name · why) are exactly as measured on the mockup.
  */
 const STEP_ROW =
   "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]";
@@ -2050,22 +2152,22 @@ function StepList({
   t: Translator;
   history: GitCommitInfo[];
   /**
-   * 걸음 해시 → 그 걸음이 바꾼 **볼트 개념**. 커밋 제목을 파싱한 추측이
-   * 아니라 #842 가 실어 보낸 kind/slug 를 그래프에 맞춘 결과다.
+   * Step hash → the **vault concepts** that step changed. Not a guess parsed from
+   * the commit subject, but the kind/slug shipped by #842 matched against the graph.
    */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
-  /** 방금 남긴 커밋의 해시 — 그 한 줄만 확정 램프로 정착시킨다. */
+  /** Hash of the commit just recorded — only that one row gets the settle ramp. */
   settledHash?: string | null;
   /**
-   * 아직 커밋 안 한 변경 수. 0 이면 그 줄을 안 그린다 — 없는 것을 자리로
-   * 남겨 두면 목록이 "무언가 비어 있다" 로 읽힌다.
+   * Number of not-yet-committed changes. At 0 the row is not drawn — leaving a
+   * slot for something absent makes the list read as "something is missing".
    */
   pendingCount: number;
   selection: WorkbenchSelection;
   setSelection: (v: WorkbenchSelection) => void;
-  /** 아직 안 보낸 걸음 수 — 목록 맨 위 N 개가 그것이다. */
+  /** Number of steps not yet pushed — they are the top N of the list. */
   ahead: number | null;
-  /** 원격에만 있는 걸음 수. 로컬 이력에 없으므로 **행이 아니라 안내**다. */
+  /** Steps that exist only on the remote. They are not in local history, so this is **guidance, not a row**. */
   behind: number | null;
   upstream: string | null;
   onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
@@ -2082,18 +2184,19 @@ function StepList({
   }
 
   /*
-   * **탭을 쓰지 않는다.** 「아직 안 보냄」·「받을 것」·「커밋 안 함」을 탭으로
-   * 가르면 각 탭이 나머지를 숨기고, 이 저장소에는 그러지 말자는 결정과 그것을
-   * 지키는 테스트가 이미 있다(「커밋 이력이 탭 뒤에 숨지 않는다」). 세 상태는
-   * **한 시간축 위의 서로 다른 구간**이라 순서가 이미 관계를 말한다 — 필요한
-   * 것은 칸막이가 아니라 **경계선**이다.
+   * **No tabs.** Splitting 「아직 안 보냄」, 「받을 것」 and 「커밋 안 함」 into tabs
+   * makes each tab hide the others, and this repository already has a decision
+   * against that plus a test that holds it (「커밋 이력이 탭 뒤에 숨지 않는다」 —
+   * commit history never hides behind a tab). The three states are **different
+   * stretches of one timeline**, so order already states the relation; what is
+   * needed is a boundary, not a partition.
    *
-   *   [원격에만 있음 ↓N]  ← 로컬에 없으니 행이 아니라 안내 + 받기
-   *   [지금 · 커밋 안 함]  ← 이름이 아직 없는 변경 묶음
-   *   ── 아직 안 보냄 N ──
-   *     걸음 · 걸음
-   *   ── origin/main 과 같은 지점 ──
-   *     걸음 · 걸음 …
+   *   [remote only ↓N]     ← not local, so guidance plus fetch rather than a row
+   *   [now · uncommitted]  ← a change bundle that has no name yet
+   *   ── not yet pushed N ──
+   *     step · step
+   *   ── level with origin/main ──
+   *     step · step …
    */
   const unpushed = Math.max(0, Math.min(ahead ?? 0, history.length));
 
@@ -2120,9 +2223,10 @@ function StepList({
         </li>
       ) : null}
       {/*
-        아직 커밋 안 한 변경도 **변경 묶음**이라는 점에서 커밋과 같다. 다른
-        것은 아직 이름이 안 붙었다는 것뿐이라, 같은 행 문법을 쓰고 구별은
-        선 스타일(점선)과 시각(「지금」)이 진다. 새 색은 안 쓴다.
+        Uncommitted changes are like a commit in that they are also a **change
+        bundle**; the only difference is that they have no name yet. So they use
+        the same row grammar, and the distinction is carried by line style
+        (dashed) and the time (「지금」). No new colour.
       */}
       {pendingCount > 0 ? (
         <li>
@@ -2130,11 +2234,12 @@ function StepList({
             type="button"
             data-testid="atlas-git-pending-row"
             /*
-             * **`aria-current` 이지 `aria-pressed` 가 아니다** (2026-08-15 (8)).
-             * 이 행은 마스터-디테일 목록에서 「지금 보고 있는 것」을 가리킨다 —
-             * 눌린 버튼이 아니다. 형제 커밋 행들이 이미 `aria-expanded` 를 쓰고
-             * 있어서, 여기에 pressed 를 두면 **한 목록이 어휘 둘로 갈린다.**
-             * radiogroup 을 심는 것도 답이 아니다(그러면 셋이 된다).
+             * **`aria-current`, not `aria-pressed`** (2026-08-15 (8)). This row
+             * points at "what I am currently looking at" in a master-detail list;
+             * it is not a pressed button. The sibling commit rows already use
+             * `aria-expanded`, so pressed here would **split one list across two
+             * vocabularies**. Planting a radiogroup is not the answer either
+             * (that makes three).
              */
             aria-current={selection.kind === "pending" ? "true" : undefined}
             onClick={() => setSelection({ kind: "pending" })}
@@ -2146,8 +2251,9 @@ function StepList({
             <span className="truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t("changesTitle")}
             </span>
-            {/* 누를 수 있는 행 = tertiary (위 `ChangeRow` 주석의 알파 합성
-                근거). 이 줄은 선택 시 overlay-2 위에 올라 3.97:1 이었다. */}
+            {/* A pressable row means tertiary (the alpha-compositing rationale in
+                the `ChangeRow` comment above). Selected, this line sat on
+                overlay-2 at 3.97:1. */}
             <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
               {t("pendingHint", { count: pendingCount })}
             </span>
@@ -2171,7 +2277,7 @@ function StepList({
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
         const expanded = selection.kind === "commit" && selection.hash === commit.hash;
-        // 경계는 **두 곳**: 안 보낸 구간의 머리와, 원격과 같아지는 지점.
+        // There are **two** boundaries: the head of the unpushed stretch, and the point it draws level with the remote.
         const boundary =
           unpushed > 0 && index === 0
             ? t("sectionUnpushed", { count: unpushed })
@@ -2191,8 +2297,8 @@ function StepList({
             </li>
           ) : null}
           <li
-            // 방금 남긴 줄만 확정 서명을 받는다 — 이미 있던 역사가 다시
-            // 태어나면 "무엇이 방금 일어났나" 라는 정보가 흐려진다.
+            // Only the row just recorded gets the settle signature — re-birthing
+            // history that was already there blurs what just happened.
             className={stepRowMotionClass(commit.hash, settledHash)}
             style={stepRowUsesStagger(commit.hash, settledHash) ? staggerStyle(index) : undefined}
           >
@@ -2207,8 +2313,9 @@ function StepList({
               <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
                 {commit.relativeTime}
               </span>
-              {/* 주어는 **개념**이다. 개념을 안 건드린 걸음만 요약/원문이
-                  그 자리를 대신한다 — 빈 줄로 두면 무슨 걸음인지 알 수 없다. */}
+              {/* The subject is the **concept**. Only a step that touched no
+                  concepts falls back to the summary or the raw subject — leaving
+                  the line blank makes the step unidentifiable. */}
               <span className="flex min-w-0 items-center gap-2.5 truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {stepConcepts.length > 0 ? (
                   <>
@@ -2228,9 +2335,10 @@ function StepList({
                   <span className="truncate">{headline}</span>
                 )}
               </span>
-              {/* 세 번째 열은 **왜**다. 두 줄로 쌓지 않는 이유: 목록의 일은
-                  훑는 것이고, 한 줄 3열이면 시각·이름·이유가 세로로 정렬돼
-                  눈이 열을 따라 내려간다(시안 실측 행높이 36px). */}
+              {/* The third column is **why**. It is not stacked into two lines
+                  because a list's job is scanning, and with one row of three
+                  columns time, name and reason align vertically so the eye runs
+                  down each column (mockup row height measured at 36px). */}
               <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
                 {stepConcepts.length > 0
                   ? commit.subject
@@ -2248,15 +2356,17 @@ function StepList({
 }
 
 /**
- * 남기기 결과 한 줄.
+ * A one-line result for recording.
  *
- * ICU 인자 정정 (2026-07-26) — 카피 시트는 `{count}`/`{upstream}`/`{remote}` 를
- * 요구하는데 호출부가 `{subject}` 하나만 넘기거나 아무것도 안 넘겼다. next-intl
- * 은 인자가 빠지면 문장 대신 **키 경로**(`atlasGit.snapshotDone`)를 그리므로,
- * 남기기에 성공한 그 순간 사용자가 개발자 문자열을 보고 있었다.
+ * ICU argument fix (2026-07-26) — the copy sheet wants
+ * `{count}`/`{upstream}`/`{remote}`, while the caller passed only `{subject}` or
+ * nothing at all. next-intl renders the **key path** (`atlasGit.snapshotDone`)
+ * instead of the sentence when arguments are missing, so at the very moment a
+ * record succeeded the user was reading a developer string.
  *
- * `counts` 는 Rust 페이로드라 필드 누락 시 렌더 전체가 죽는다 — 결과 문장 하나
- * 때문에 화면이 무너지면 안 되므로 목록 개수로 폴백한다.
+ * `counts` is a Rust payload, so a missing field kills the whole render. One
+ * result sentence must not bring the screen down, hence the fallback to the
+ * list's counts.
  */
 function SnapshotResultLine({
   t,
@@ -2287,18 +2397,23 @@ function SnapshotResultLine({
 }
 
 /**
- * 하단 도크 — 이 화면의 **동사**가 사는 자리 (결함 ④ 의 처방).
+ * The bottom dock — where this screen's **verb** lives (the prescription for
+ * defect ④).
  *
- * 구 화면에서 `14개 남기기` 는 목록 끝에 홀로 뜬 11px 고스트 아웃라인
- * 버튼이었다. 이 페이지에 온 사람이 내리는 **유일한 결정**인데 화면에서 가장
- * 조용했다. 지금은 열 바닥에 고정되어(`mt-auto`) 목록이 아무리 길어도 늘 같은
- * 자리에 있고, 채운 인디고 + `text-body` 로 이 표면의 최대 무게를 갖는다.
+ * On the old screen `14개 남기기` was an 11px ghost-outline button floating at the
+ * end of the list. It is the **only decision** anyone comes to this page to make,
+ * and it was the quietest thing on screen. Now it is pinned to the bottom of the
+ * column (`mt-auto`), so it stays in the same place however long the list gets,
+ * and it carries this surface's maximum weight with a filled indigo and
+ * `text-body`.
  *
- * 기록 범위 고지가 여기로 내려온 것도 같은 이유다 — 신뢰 문구는 **결정
- * 지점**에서 읽혀야 하는 약속이지, 페이지 제목 밑의 장식이 아니다.
+ * The recording-scope notice moved down here for the same reason — trust copy is
+ * a promise that has to be read **at the decision point**, not decoration under a
+ * page title.
  *
- * 확인 스텝의 mono 한 줄은 남는다: 그 자리에서만은 사용자가 **실제로 기록될
- * 문자열**을 봐야 하기 때문이다(그래서 여기의 영문은 배관 누출이 아니라 값이다).
+ * The mono line on the confirm step stays: that is the one place the user has to
+ * see **the string that will actually be recorded**, so the English there is a
+ * value, not a plumbing leak.
  */
 function ActionDock({
   t,
@@ -2319,7 +2434,7 @@ function ActionDock({
   setSnapshotMessage,
 }: {
   t: Translator;
-  /** 원격이 없을 때 도크 마지막 줄이 여는 입력. */
+  /** The input the dock's last line opens when there is no remote. */
   onConnectRemote: () => void;
   hasChanges: boolean;
   changeCount: number;
@@ -2333,7 +2448,7 @@ function ActionDock({
   snapshotError: string | null;
   confirmSnapshot: () => void;
   upstream: string | null;
-  /** 사용자가 직접 쓴 제목. 비면 자동 문구를 쓴다. */
+  /** A subject the user typed. Empty falls back to the automatic wording. */
   snapshotMessage: string;
   setSnapshotMessage: (v: string) => void;
 }) {
@@ -2346,10 +2461,11 @@ function ActionDock({
         <div className="git-fade-in flex flex-col gap-2" data-testid="atlas-git-confirm-step">
           <p className="text-caption text-[color:var(--color-text-tertiary)]">{t("confirmBody")}</p>
           {/*
-            제목은 **고칠 수 있다.** 자동 문구는 「무엇이 바뀌었나」를 잘 말하지만
-            「왜 바꿨나」는 못 말하고, 나중에 이력을 읽는 사람이 찾는 것은 후자다.
-            비워 두면 종전대로 자동 문구가 들어가므로 아무것도 안 하던 사람의
-            경로는 그대로다(placeholder 가 그 값을 그대로 보여 준다).
+            The subject is **editable.** The automatic wording says what changed
+            well but never why, and why is what someone reading the history later
+            looks for. Leaving it empty keeps the automatic wording as before, so
+            the path for someone who did nothing is unchanged (the placeholder
+            shows that exact value).
           */}
           <input
             type="text"
@@ -2417,12 +2533,14 @@ function ActionDock({
       ) : null}
 
       {/*
-        쓰기 자리의 마지막 줄은 **지금 상태에서 다음 걸음**을 말한다.
+        The last line of the write position states **the next step from the
+        current state**.
 
-        원격이 없으면 남긴 걸음은 이 컴퓨터에만 있다 — 그게 지금 알아야 할
-        사실이고, 다음 걸음은 연결이다. 종전에는 이 자리가 언제나 범위 고지
-        하나였는데, 그 문장은 헤더에도 같이 떠서 같은 말이 두 번 나왔고
-        (소유자 지적) 정작 "그래서 이제 뭘 하나" 는 아무 데도 없었다.
+        With no remote, recorded steps live only on this computer — that is the
+        fact to know now, and the next step is connecting. This position used to
+        always hold the scope notice alone, which also appeared in the header, so
+        the same sentence appeared twice (owner) while "so what do I do now" was
+        nowhere.
       */}
       {upstream ? (
         <p className="flex items-center gap-1.5 text-caption leading-label text-[color:var(--color-text-quaternary)]">
@@ -2514,11 +2632,11 @@ function DesktopBody({
 }: {
   snapshotMessage: string;
   setSnapshotMessage: (v: string) => void;
-  /** 고른 걸음의 patch — `null` 은 「아직 모름」, `""` 는 「없음」. */
+  /** The chosen step's patch — `null` is "not known yet", `""` is "none". */
   commitDiff: string | null;
-  /** `navigator.platform ?? userAgent` — 설치 안내를 플랫폼별로 고르는 힌트. */
+  /** `navigator.platform ?? userAgent` — the hint that picks per-platform install guidance. */
   hostPlatformHint: string;
-  /** 「다시 확인하기」 — git 을 방금 깐 사람이 앱을 안 껐다 켜도 되게. */
+  /** 「다시 확인하기」 (re-check) — so someone who just installed git need not restart the app. */
   onRecheckGit: () => void;
   t: Translator;
   stage: Extract<GitStage, "loading" | "not-installed" | "error" | "not-initialized" | "workbench">;
@@ -2565,7 +2683,7 @@ function DesktopBody({
   remoteActionNotice: string | null;
   remoteActionError: string | null;
   sessionChangeset: OntologyChangeset | null;
-  /** 걸음 해시 → 그 걸음이 바꾼 볼트 개념. */
+  /** Step hash → the vault concepts that step changed. */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
   egoFor: (nodeId: string) => ConceptEgo | null;
   kindLabel: (kind: string) => string;
@@ -2573,14 +2691,15 @@ function DesktopBody({
   setFocusedConceptId: (id: string) => void;
 }) {
   /**
-   * 방금 남긴 커밋의 해시 — 지난 걸음 목록에서 **그 한 줄만** 확정 램프로
-   * 정착시킨다(`--motion-settle`). 이 표면 최대의 확정인데 종전에는 결과 한
-   * 줄만 120ms 페이드로 왔고, "썼다" 는 알겠는데 **어디에 박혔는지**를
-   * 아무것도 안 보여줬다.
+   * Hash of the commit just recorded — **only that one row** in the past-steps
+   * list settles with the confirmation ramp (`--motion-settle`). It is the largest
+   * confirmation on this surface, and before this only a one-line result arrived
+   * on a 120ms fade: you could tell something was written, but nothing showed
+   * **where it landed**.
    *
-   * 나머지 행은 손대지 않는다 — 이미 있던 역사가 다시 태어나면 "무엇이 방금
-   * 일어났나" 라는 정보가 흐려진다. key 가 커밋 해시라 기존 행의 DOM 은
-   * 재사용되고 애니메이션도 재생되지 않는다.
+   * Every other row is untouched — re-birthing history that was already there
+   * blurs what just happened. The key is the commit hash, so existing rows reuse
+   * their DOM and the animation does not replay.
    */
   const settledHash = snapshotResult?.commitHash ?? null;
 
@@ -2597,13 +2716,16 @@ function DesktopBody({
   }
   if (stage === "not-installed") {
     /*
-     * 강등 카드 3요소를 그대로 채운다 (`surfaces.md`) — **새 문구 0개**.
-     * ① 왜: `install.title` / `install.body`
-     * ② 어디서: `gitInstallGuide(platform)` 의 플랫폼별 명령(복사) + 다운로드 링크
-     * ③ 다시 확인: `install.recheck`
+     * Fill the degradation card's three elements exactly (`surfaces.md`) —
+     * **zero new strings**.
+     * ① why: `install.title` / `install.body`
+     * ② where: the per-platform command (copyable) plus download link from
+     *    `gitInstallGuide(platform)`
+     * ③ re-check: `install.recheck`
      *
-     * 「곧 됩니다」를 쓰지 않는다 — 오늘 안 되는 것은 안 된다고 쓰고, 대신 갈
-     * 곳을 준다. 외부 링크는 클릭 전 경고로 선행 `↗` 를 단다(design.md).
+     * Never write "coming soon" — what does not work today is stated as not
+     * working, with somewhere to go instead. External links carry a leading `↗` as
+     * a pre-click warning (design.md).
      */
     const guide = gitInstallGuide(gitHostPlatformFrom(hostPlatformHint));
     const options = [guide.primary, ...guide.alternatives];
@@ -2658,8 +2780,8 @@ function DesktopBody({
   }
 
   if (stage === "error") {
-    // 오류도 막다른 길이 아니어야 한다 — 폴더가 되돌아왔을 때 사용자가 앱을
-    // 떠나지 않고 다시 확인할 수 있는 버튼을 같은 자리에 둔다.
+    // An error must not be a dead end either — a re-check button sits in the same
+    // place, so the user can recover without leaving the app once the folder is back.
     return (
       <SetupFrame
         t={t}
@@ -2684,17 +2806,18 @@ function DesktopBody({
     );
   }
   if (stage === "not-initialized") {
-    // S2 — 소유자가 막혔던 dead-end 를 여는 화면 (2026-07-25).
+    // S2 — the screen that opens the dead end the owner hit (2026-07-25).
     //
-    // 이전 코드는 "Atlas 는 자동으로 git init 하지 않아요 — 터미널에서 직접
-    // 실행하세요" 로 끝났고, 누를 것이 없어 사용자는 앱을 떠나야 했다. 헌장이
-    // 금지한 건 **자동** 실행이지, 사용자가 자기가 고른 폴더에서 버튼을 누르는
-    // 것이 아니다(소유자 결정 + Guardian 판정). 자동 실행은 여전히 0 —
-    // `onInit` 은 이 버튼의 onClick 에서만 호출되고, init 은 커밋으로 연쇄하지
-    // 않는다(빈 저장소 → "아직 남기지 않은 변경 N건" 상태로 착지).
+    // The old code ended at "Atlas does not run git init for you — run it in the
+    // terminal", with nothing to press, so the user had to leave the app. What the
+    // charter forbids is **automatic** execution, not a user pressing a button in a
+    // folder they chose themselves (owner decision plus a Guardian ruling).
+    // Automatic execution is still zero — `onInit` is called only from this
+    // button's onClick, and init does not chain into a commit (an empty repository
+    // lands on "N changes not yet recorded").
     //
-    // 2026-07-26 — 좌상단 정렬 전폭에서 셋업 프레임으로. 이 순간 사용자의 일은
-    // 하나뿐이고, 화면도 하나만 말해야 한다.
+    // 2026-07-26 — from full-width top-left alignment to the setup frame. The user
+    // has one job in this moment, and the screen must say one thing.
     return (
       <SetupFrame
         t={t}
@@ -2705,7 +2828,7 @@ function DesktopBody({
         note={t("initEscape")}
       >
         <div className="flex flex-col gap-4" data-testid="atlas-git-not-initialized">
-          {/* 무엇이 만들어지는지 **누르기 전에** 말한다. */}
+          {/* Say what will be created **before** it is pressed. */}
           <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("initWhatHappens")}
           </p>
@@ -2743,16 +2866,17 @@ function DesktopBody({
               {initError}
             </p>
           ) : null}
-          {/* 되돌리는 방법(`initEscape`)은 무대의 마지막 줄(`note`)이 진다 —
-              처음 겪는 사용자가 가장 겁내는 지점이라 행동 **직전**에 있어야
-              하고, 여기서 또 쓰면 같은 말이 두 번 나온다. */}
+          {/* How to undo it (`initEscape`) belongs to the stage's last line
+              (`note`) — it is what a first-time user fears most, so it has to be
+              **immediately before** the action, and repeating it here would say
+              the same thing twice. */}
 
           {/*
-           * git 이 없어도 **이번에 바뀐 것은 안다.** 볼트별 기준점이 새로고침을
-           * 넘어 살아 있기 때문이다. 종전에는 이 요약을 웹 강등에서만 그려서,
-           * 아직 git 을 안 켠 사람은 「시작하기」만 권유받고 지금 무엇이
-           * 바뀌었는지는 못 봤다 — 아는 것을 안 보여주는 건 강등이 아니라
-           * 누락이다(소유자 지적 2026-08-02).
+           * Even without git, **what changed this time is known** — the per-vault
+           * baseline survives a reload. This summary used to be drawn only in the
+           * web degradation, so someone who had not turned git on was offered
+           * 「시작하기」 and never saw what had changed. Withholding what you already
+           * know is an omission, not a degradation (owner, 2026-08-02).
            */}
           <SessionChangeSummary
             t={t}
@@ -2764,7 +2888,7 @@ function DesktopBody({
     );
   }
 
-  // ── 작업대 ─────────────────────────────────────────────────────────────
+  // ── Workbench ──────────────────────────────────────────────────────────
   const upstream = status?.upstream ?? null;
   const showRemoteSetup = remoteOpen && !upstream;
   const deltaByPath = new Map(
@@ -2822,27 +2946,34 @@ function DesktopBody({
   ) : null;
 
   /*
-   * 구 `recall` 갈래(남길 것이 없으면 단일 기둥)를 제거했다.
+   * The old `recall` branch (a single column when there is nothing to record) was
+   * removed.
    *
-   * 그 갈래는 **2단 전환 전의 판단**이었다 — 그때는 오른쪽이 「증거」라서
-   * 미커밋이 0이면 정말 보여줄 게 없었다. 지금은 오른쪽이 **고른 것의 상세**
-   * 이고 커밋을 고르면 바뀐 개념·ego 그림·변경 내용이 찬다. 그래서 이 갈래가
-   * 남아 있는 동안, 커밋이 4개나 쌓인 볼트에서 화면 절반이 통째로 사라지고
-   * 시안과 완전히 다른 모양이 됐다(소유자 실측 2026-08-02).
+   * That branch was **a judgement made before the two-column switch**: back then
+   * the right side was 「증거」 (evidence), so with zero uncommitted changes there
+   * really was nothing to show. Now the right side is **the detail of what is
+   * selected**, and choosing a commit fills it with changed concepts, the ego
+   * drawing and the changed content. While the branch survived, a vault with four
+   * commits lost half the screen outright and looked nothing like the mockup
+   * (owner measurement, 2026-08-02).
    *
-   * 모양은 하나다. 미커밋 유무는 **목록 맨 윗줄의 유무**로만 드러난다.
+   * There is one shape. Whether anything is uncommitted shows up only as the
+   * presence or absence of the list's top row.
    */
-  // `decide` — 남길 것이 있다. 좌: 무엇이 바뀌었고 무엇을 남길까 / 우: 그 증거.
-  // 증거 열 최소 폭이 `--git-evidence-min`(600px)인 이유: 11px mono 80칼럼
-  // ≈ 528px + gutter + padding. 시안 v1 의 420px 는 모든 줄을 잘랐고 **잘린
-  // diff 는 증거가 아니다**. `lg` 미만은 세로로 쌓인다(증거가 목록 아래).
+  // `decide` — there is something to record. Left: what changed and what to
+  // record. Right: the evidence. The evidence column's minimum width is
+  // `--git-evidence-min` (600px) because 80 columns of 11px mono ≈ 528px plus
+  // gutter and padding. Mockup v1's 420px clipped every line, and **a clipped diff
+  // is not evidence**. Below `lg` the two stack (evidence under the list).
   /*
-   * 오른쪽 열은 이제 「증거」가 아니라 **고른 것의 상세**다. 그래서 존재
-   * 조건도 바뀐다 — 종전에는 "보여줄 diff 나 이력이 있는가" 였는데, 지금은
-   * 변경 목록도 이 열에 살기 때문에 **커밋할 것이 있으면** 열이 있어야 한다.
+   * The right column is no longer 「증거」 but **the detail of what is selected**,
+   * so its existence condition changed too: it used to be "is there a diff or
+   * history to show", and now the change list lives in this column as well, so the
+   * column has to exist **whenever there is something to commit**.
    *
-   * 구 규칙(`diffFiles.length > 0`)을 그대로 두면 새로 만든 문서만 바뀐
-   * 순간(비교할 예전 내용이 없어 diff 가 0줄)에 변경 목록이 통째로 사라진다.
+   * Keeping the old rule (`diffFiles.length > 0`) makes the change list vanish
+   * entirely the moment only newly created documents changed, because there is
+   * nothing prior to compare and the diff is 0 lines.
    */
   const showEvidence = statusCounts.total > 0 || diffFiles.length > 0 || history.length > 0;
 
@@ -2853,17 +2984,19 @@ function DesktopBody({
       className="git-fade-in flex min-h-0 flex-1 flex-col"
     >
       {/*
-        시안 구조로 재구성(2026-08-02). 실측 대조에서 셋이 달랐다:
+        Rebuilt to the mockup's structure (2026-08-02). Three things differed when
+        measured against it:
 
-        ① **카드 껍데기가 있었다.** 시안은 0개인데 실제는 작업면을
-           `border + surface + p-4` 로 감쌌다. 라우트 하나가 통째로 한 표면일
-           때 그 테두리는 경계가 아니라 **잉크**다 — 화면 안에 화면이 하나 더
-           있는 것으로 읽힌다.
-        ② **높이가 내용만큼만이었다.** 시안 본문은 749px(바닥까지)인데 실제는
-           목록이 짧으면 화면 절반이 통째로 비었다. 작업대는 **자리를 잡는**
-           표면이라 뷰포트를 채우고 안에서 스크롤한다.
-        ③ **헤더가 별도 블록이었다.** 시안은 높이 57px 한 줄 상단 바(제목 ·
-           위치 · 동작)이고 아래 구분선 하나로 본문과 갈린다.
+        ① **There was a card shell.** The mockup has none, while the real work
+           surface was wrapped in `border + surface + p-4`. When one route is a
+           whole surface, that border is not a boundary but **ink** — it reads as a
+           screen inside a screen.
+        ② **Height matched content only.** The mockup's body is 749px (to the
+           floor), while in practice a short list left half the screen empty. The
+           workbench is a surface that **holds position**, so it fills the viewport
+           and scrolls inside.
+        ③ **The header was a separate block.** The mockup is a single 57px top bar
+           (title · location · actions), separated from the body by one divider.
       */}
       <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-divider)] px-1 pb-3">
         <PageHeader t={t} inColumn showScope={false} />
@@ -2871,7 +3004,7 @@ function DesktopBody({
       </div>
       <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />
 
-      {/* 본문 — 바닥까지. 두 열은 구분선으로 갈리고 각자 스크롤한다. */}
+      {/* Body — down to the floor. The two columns are separated by a divider and scroll independently. */}
       <div
         className={cn(
           "grid min-h-0 flex-1 grid-cols-1",
@@ -2882,9 +3015,9 @@ function DesktopBody({
       >
         <div className="flex min-w-0 flex-col xl:min-h-0 xl:border-r xl:border-[color:var(--color-divider)]">
           {remotePanel ? <div className="flex-none px-4 pt-3">{remotePanel}</div> : null}
-          {/* 목록 머리 — 시안의 `lhead`. 커밋할 게 없을 때 「모두 커밋했어요」
-              (도크)와 같은 말을 반복하지 않고 **그래서 지금 무슨 상태냐**를
-              말한다. */}
+          {/* List head — the mockup's `lhead`. With nothing to commit it does not
+              repeat what the dock says (「모두 커밋했어요」) but states **what the
+              current state actually is**. */}
           {!hasChanges ? (
             <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">
               {t("noChangesHint")}
@@ -2912,24 +3045,26 @@ function DesktopBody({
           <div
             data-testid="atlas-git-evidence"
             /*
-             * 스크롤 영역은 **이 열 하나**다 (2026-08-02 실측 정정).
+             * **This one column is the scroll region** (measurement correction,
+             * 2026-08-02).
              *
-             * 종전에는 변경 목록과 바뀐 줄이 각각 `flex-1` 이라 열 높이를
-             * 내용과 무관하게 반씩 갈랐다. 1512×806 실측: 목록 내용 208px 가
-             * 180px 창에 들어가 **52px 이 조용히 잘렸고**, 잘린 것이 하필
-             * `domain` 그룹의 유일한 행과 「그 밖의 파일 N개」 토글이었다 —
-             * 화면은 "domain 1" 이라고 써 놓고 그 1을 안 보여줬고, 개념이
-             * 아닌 파일로 가는 유일한 문은 아예 없는 것이 됐다.
+             * The change list and the changed lines were each `flex-1`, which split
+             * the column's height in half regardless of content. Measured at
+             * 1512×806: 208px of list content in a 180px window meant **52px was
+             * silently clipped**, and what got clipped happened to be the `domain`
+             * group's only row and the 「그 밖의 파일 N개」 toggle — the screen said
+             * "domain 1" and did not show that 1, and the only door to non-concept
+             * files ceased to exist.
              *
-             * 조용한 잘림은 빈 칸보다 나쁘다(사용자가 잃은 줄을 모른다).
-             * 한 열 = 한 스크롤이면 잘릴 곳이 없다.
+             * A silent clip is worse than a gap (the user cannot tell which rows
+             * they lost). One column, one scroll, and there is nowhere to clip.
              */
             className="flex min-w-0 flex-col xl:min-h-0 xl:overflow-y-auto"
           >
             {/*
-              오른쪽은 **왼쪽에서 고른 것 하나**를 그린다. 탭이 아니라 선택이
-              무엇을 보여줄지 정한다 — 구조가 "지금 무엇을 보고 있나" 를 스스로
-              말하므로 탭 라벨을 읽어 알아낼 필요가 없다.
+              The right side draws **the one thing chosen on the left**. Selection,
+              not a tab, decides what is shown — the structure states "what am I
+              looking at" by itself, so no tab label has to be read to find out.
             */}
             {selection.kind === "pending" ? (
               <>

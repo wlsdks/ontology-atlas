@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import { filterOntologyConnectedOrphans } from "./topology-health";
 
 /**
- * 정리 칩 신호 품질 (기획자 감사 ⑦-a):
- * project-deps 렌즈의 orphan 판정은 ontology containment 를 못 본다 —
- * `contains` 로 도메인/역량을 거느린 프로젝트 루트가 "소속 미정" 오탐이
- * 되면 첫 클릭에 칩 신뢰가 무너진다. ontology 엣지에 어느 방향으로든
- * 참여하는 프로젝트는 orphan 에서 제외한다 (bare slug 와 `project:` prefix
- * 두 표기 모두).
+ * Health-chip signal quality: the project-deps lens cannot see ontology
+ * containment, so a project root that owns domains and capabilities through
+ * `contains` becomes a false "unattached" positive and destroys trust in the
+ * chip on the first click. Projects taking part in an ontology edge in either
+ * direction are excluded from orphans, under both spellings (bare slug and
+ * `project:` prefix).
  */
 const project = (slug: string) => ({ slug }) as { slug: string };
 

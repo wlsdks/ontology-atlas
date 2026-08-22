@@ -67,15 +67,17 @@ describe('tauri-llm 웹 강등', () => {
         vaultChars: 1020,
         tools: [{ name: 'get_concept', target: 'capabilities/payment' }],
       },
-      // 주소 갈래가 아니면 null — 명명 벤더의 대화가 임의 호스트로 갈 수 있는
-      // 자리를 남기지 않는다(Rust 가 값이 오면 거절한다).
+      // `null` unless this is the custom-endpoint branch, so a named vendor's
+      // conversation can never be routed to an arbitrary host (Rust rejects a
+      // value if one arrives).
       baseUrl: null,
     });
   });
 
   it('이 파일에는 키를 담는 타입도 인자도 없다', () => {
-    // 키는 Rust 안에서만 흐른다 — 브리지가 키를 만지면 그 계약이 깨진다.
-    // `tauri-secrets.ts` 의 소스-리플렉션 계약과 같은 규율이다.
+    // Keys flow only inside Rust; the contract breaks the moment the bridge
+    // touches one. Same discipline as the source-reflection contract in
+    // `tauri-secrets.ts`.
     const source = readFileSync(join(__dirname, 'tauri-llm.ts'), 'utf-8');
     expect(source).not.toMatch(/\bsecret\s*:/);
     expect(source).not.toMatch(/apiKey|api_key/);

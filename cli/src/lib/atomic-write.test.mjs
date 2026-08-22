@@ -7,13 +7,14 @@ import { tmpdir } from 'node:os';
 import { readFileRevision, writeFileAtomically } from './atomic-write.mjs';
 
 /**
- * **원본을 먼저 비우지 않는다.**
+ * **The original is never truncated first.**
  *
- * 2026-08-16 검수가 실제 쓰기 도중에 바깥에서 파일 크기를 재서 그 순간을 잡았다:
- * `FULL_SIZE 420000102 · MIN_OBSERVED_DURING_WRITE 0`. 그 사이에 프로세스가
- * 죽으면 사용자의 마크다운이 0바이트로 남는다.
+ * The 2026-08-16 review caught that moment by measuring the file size from outside
+ * during a real write: `FULL_SIZE 420000102 · MIN_OBSERVED_DURING_WRITE 0`. If the
+ * process dies in that window, the user's markdown is left at zero bytes.
  *
- * 결과만 보면 두 구현이 구별되지 않으므로, **원본이 언제 사라지는가**를 잰다.
+ * The two implementations are indistinguishable by their end result, so what is
+ * measured here is **when the original disappears**.
  */
 test('쓰는 도중에도 원본이 0바이트가 되지 않는다', () => {
   const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-'));
@@ -22,9 +23,10 @@ test('쓰는 도중에도 원본이 0바이트가 되지 않는다', () => {
   writeFileSync(target, original, 'utf-8');
 
   /*
-   * 관찰자: 쓰는 동안 파일 크기를 계속 잰다. 동기 쓰기라 같은 스레드에서는
-   * 못 끼어드니, **디스크에 남은 흔적**으로 판정한다 — 임시 파일을 거쳐 갔다면
-   * 원본은 rename 되는 순간까지 옛 내용 그대로다.
+   * The observer measures the file size throughout the write. The write is
+   * synchronous, so nothing on this thread can interleave with it; the verdict
+   * comes from **the trace left on disk** instead — if it went through a temp file,
+   * the original holds its old content right up to the rename.
    */
   const before = statSync(target).size;
   assert.equal(before, original.length);
@@ -33,7 +35,7 @@ test('쓰는 도중에도 원본이 0바이트가 되지 않는다', () => {
 
   assert.equal(readFileSync(target, 'utf-8')[0], 'y');
   assert.equal(statSync(target).size, 300_000);
-  // 임시 파일이 남으면 다음 쓰기가 `wx` 에서 걸린다.
+  // A leftover temp file makes the next write fail at `wx`.
   assert.deepEqual(
     readdirSync(dir).filter((n) => n.includes('oatlas-tmp')),
     [],
@@ -43,7 +45,7 @@ test('쓰는 도중에도 원본이 0바이트가 되지 않는다', () => {
 
 test('쓰다 실패해도 원본이 그대로 남는다', () => {
   const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-fail-'));
-  // 디렉터리를 대상으로 주면 rename 이 실패한다.
+  // Targeting a directory makes the rename fail.
   const target = join(dir, 'as-dir');
   mkdirSync(target);
 

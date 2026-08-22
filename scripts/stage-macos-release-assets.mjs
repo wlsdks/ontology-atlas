@@ -1,55 +1,56 @@
 #!/usr/bin/env node
 /**
- * 릴리스에 올라갈 자산 넷을 한 폴더에 모은다 — **아티팩트의 루트를 우리가 정하기
- * 위해서다.**
+ * Collects the four release assets into one folder — **so that we decide the
+ * artifact's root.**
  *
- * ## 왜 이 단계가 있나
+ * **Why this step exists.** Giving `actions/upload-artifact` several paths makes
+ * the root their **lowest common ancestor**. Passing `bundle/dmg/*` and
+ * `bundle/macos/*` together makes the root `bundle/`, adding an extra `dmg/` /
+ * `macos/` layer inside the artifact that the downloading side never chose and
+ * cannot know about. v1.0.0-rc.1 stalled there three times — build, signing, and
+ * notarisation all passed while the manifest ended with "architectures with no
+ * updater artifact: aarch64, x64".
  *
- * `actions/upload-artifact` 에 경로를 여럿 주면 루트가 그 경로들의
- * **최소공통조상**으로 정해진다. `bundle/dmg/*` 와 `bundle/macos/*` 를 같이 주면
- * 루트가 `bundle/` 이 되어 아티팩트 안에 `dmg/` · `macos/` 한 겹이 더 생기는데,
- * 내려받는 쪽은 그 깊이를 고른 적이 없으므로 알 수도 없다. v1.0.0-rc.1 이 세 번
- * 그 자리에서 멈췄다 — 빌드·서명·공증은 전부 통과했는데 매니페스트가
- * "업데이터 아티팩트가 없는 아키텍처: aarch64, x64" 로 끝났다.
+ * Uploading **one** path makes that folder the root. So the assets are gathered
+ * here: the producing side declares the layout, and the consuming side (manifest
+ * builder, release upload glob) knows only that.
  *
- * 경로를 **하나**만 올리면 그 폴더가 곧 루트다. 그래서 여기서 모은다. 생산 측이
- * 레이아웃을 선언하고, 소비 측(매니페스트 빌더 · 릴리스 업로드 글롭)은 그것만
- * 안다.
+ * **Why the updater archive is renamed.** Tauri emits it as
+ * `<product name>.app.tar.gz` — **the same name for both architectures**, and
+ * containing a **space**. Left alone there are two ways to fail silently:
  *
- * ## 왜 업데이터 아카이브의 이름을 바꾸나
+ * 1. Both architectures upload under the same name into one release and one
+ *    overwrites the other. Users on the overwritten side either get the app for
+ *    another architecture or fail signature verification and never receive an
+ *    update again.
+ * 2. GitHub converts spaces in asset names to dots. The URL recorded in
+ *    `latest.json` still has the space, so it no longer matches the real asset,
+ *    and the installed app shows the 404 as "no update available".
  *
- * Tauri 는 업데이터 아카이브를 `<제품명>.app.tar.gz` 로 낸다 — 두 아치가 **같은
- * 이름**이고 그 안에 **공백**이 있다. 이대로 두면 조용히 실패하는 길이 둘이다:
- *
- * 1. 같은 릴리스에 같은 이름으로 올라가 한 아치가 다른 아치를 덮는다. 덮인 쪽
- *    사용자는 다른 아키텍처의 앱을 받거나, 서명 검증에 실패해 영영 갱신을 못
- *    받는다.
- * 2. GitHub 은 자산 이름의 공백을 점으로 바꾼다. `latest.json` 이 적어 둔 URL 은
- *    공백 그대로라 실제 자산과 어긋나고, 설치된 앱은 404 를 "갱신 없음" 으로
- *    표시한다.
- *
- * 그래서 DMG 와 같은 규칙(`ontology-atlas_<버전>_<아치>`)으로 다시 붙인다.
- * 버전과 아치는 **DMG 파일 이름에서 읽는다** — 사용자가 실제로 내려받는 자산이
- * 이미 그 규칙을 진실원으로 쓰고 있고(`check-macos-download-release.mjs` 가 그
- * 이름을 검사한다), 따로 계산하면 둘이 어긋날 자리가 생긴다.
+ * So it is renamed under the same rule as the DMG
+ * (`ontology-atlas_<version>_<arch>`). Version and architecture are **read from
+ * the DMG file name** — the asset users actually download already treats that
+ * rule as the source of truth (`check-macos-download-release.mjs` checks the
+ * name), and recomputing them separately creates a place for the two to
+ * diverge.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-/** CI 가 아티팩트를 만드는 폴더. 경로 하나 = 예측 가능한 루트. */
+/** The folder CI builds the artifact from. One path = a predictable root. */
 export const STAGING_DIR = "release-upload";
 
-/** Tauri 가 산출물을 두는 폴더. */
+/** Where Tauri puts its output. */
 export const DEFAULT_BUNDLE_DIR = "src-tauri/target/release/bundle";
 
-/** 다운로드 시 아치를 나르는 것은 폴더뿐이다 — 그 폴더 이름이 아티팩트 이름이다. */
+/** On download the folder is the only thing carrying the architecture, so the folder name is the artifact name. */
 export function artifactNameForArch(arch) {
   return `ontology-atlas-macos-${arch}`;
 }
 
-/** DMG 와 같은 규칙. 아치가 이름에 있어야 한 릴리스에 둘 다 올라간다. */
+/** Same rule as the DMG. The architecture must be in the name for both to survive one release. */
 export function updaterArchiveName(version, arch) {
   return `ontology-atlas_${version}_${arch}.app.tar.gz`;
 }
@@ -80,10 +81,12 @@ function exactlyOneFile(dir, matches, label) {
 }
 
 /**
- * 자산 넷을 `outDir` 에 평평하게 모으고, 올라갈 파일 이름을 돌려준다.
+ * Gathers the four assets flat into `outDir` and returns the names that will be
+ * uploaded.
  *
- * `expectArch` 를 주면 DMG 가 말하는 아치와 대조한다 — 매트릭스가 말하는 아치와
- * 산출물이 다르면 여기서 멈춘다. 통과시키면 사용자가 다른 아키텍처의 앱을 받는다.
+ * Passing `expectArch` cross-checks the architecture the DMG names — if the build
+ * output disagrees with the matrix, it stops here. Letting it through ships users
+ * the app for another architecture.
  */
 export function stageReleaseAssets({ bundleDir, outDir, expectArch } = {}) {
   const bundle = bundleDir ?? DEFAULT_BUNDLE_DIR;
@@ -130,7 +133,7 @@ export function stageReleaseAssets({ bundleDir, outDir, expectArch } = {}) {
     [path.join(macosDir, signature), `${stagedArchive}.sig`],
   ];
 
-  // 이전 실행이 남긴 파일이 섞이면 릴리스에 남의 버전이 따라 올라간다.
+  // Leftovers from a previous run would ride along and publish another version into the release.
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
   for (const [from, to] of copies) {

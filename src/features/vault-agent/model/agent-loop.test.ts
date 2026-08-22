@@ -1,4 +1,4 @@
-// 턴 상태 기계 — 즉각성 · 중단 가능성 · 상한이 계약이다.
+// The turn state machine — immediacy, interruptibility, and the cap are the contract.
 import { describe, expect, it, vi } from 'vitest';
 
 import type { LlmChatEcho } from '@/shared/lib/tauri-llm';
@@ -115,7 +115,7 @@ describe('startTurn — 누른 프레임에 반응한다', () => {
     expect(turn.status).toBe('sending');
     expect(turn.events).toHaveLength(1);
     expect(turn.events[0]).toMatchObject({ kind: 'user', text: '이 노드 고쳐줘' });
-    // 화면 문맥은 말풍선에 에코된다 — 에이전트가 본 것이 항상 화면에 남는다.
+    // Screen context is echoed into the bubble — what the agent saw always stays on screen.
     expect(turn.events[0]).toHaveProperty('screenContext');
   });
 });
@@ -245,14 +245,14 @@ describe('runTurn', () => {
   });
 
   it('왕복 상한(6)을 넘지 않고 마무리 1회를 더한다', async () => {
-    // 도구를 끝없이 부르는 모델에 대한 구조적 상한.
+    // The structural cap against a model that calls tools endlessly.
     const send = vi.fn<Send>(async () => echo(TOOL_CALL));
     const d = deps({ send });
     const result = await runTurn(d, startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }), {
       signal: new AbortController().signal,
     });
     expect(result.turn.roundsUsed).toBe(AGENT_ROUND_CAP);
-    // 상한 왕복 + 마무리 1회.
+    // The capped round trips plus one wrap-up.
     expect(send).toHaveBeenCalledTimes(AGENT_ROUND_CAP + 1);
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'round-cap' });
   });
@@ -299,7 +299,7 @@ describe('runTurn', () => {
     });
     expect(result.turn.status).toBe('aborted');
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'aborted' });
-    // 중단 후 새 왕복이 일어나지 않는다 — 백그라운드 계속 없음.
+    // No new round trip occurs after an abort — nothing continues in the background.
     expect(send).toHaveBeenCalledTimes(1);
   });
 
@@ -315,7 +315,7 @@ describe('runTurn', () => {
   });
 
   it('도구 행은 왕복이 끝난 뒤에만 확정된다', async () => {
-    // 전송 전에 "읽음" 으로 찍으면 화면이 아직 일어나지 않은 일을 말한다.
+    // Marking something "read" before it is sent makes the screen state what has not happened yet.
     const progress: string[] = [];
     let call = 0;
     const send = vi.fn<Send>(async () => {
@@ -328,7 +328,7 @@ describe('runTurn', () => {
         progress.push(turn.events.map((event) => event.kind).join(','));
       },
     });
-    // 첫 진행 스냅샷에는 사용자 말풍선만 있고 도구 행이 없다.
+    // The first progress snapshot has only the user's bubble and no tool row.
     expect(progress[0]).toBe('user');
     expect(progress.some((line) => line.includes('toolLine'))).toBe(true);
   });
@@ -440,9 +440,10 @@ describe('runTurn', () => {
   });
 
   /**
-   * 2026-08-02 — 이 분기는 아무 알림 없이 `status: 'done'` 으로 접수됐다.
-   * 상한 도달은 `round-cap` 을 띄우는데 조기 종료는 조용해서, 화면이 정상
-   * 완료와 구별되지 않았다(실측 감사 로그의 `agent ok tools=[]` 턴들).
+   * 2026-08-02 — this branch was accepted as `status: 'done'` with no notice at all.
+   * Reaching the cap raises `round-cap` while an early exit stayed silent, so the
+   * screen was indistinguishable from a normal completion (the `agent ok tools=[]`
+   * turns in the measured audit log).
    */
   it('도구를 한 번도 안 부르고 멈춘 턴은 상한 도달과 대칭인 알림을 남긴다', async () => {
     const send = vi.fn<Send>(async () =>
@@ -459,7 +460,7 @@ describe('runTurn', () => {
   });
 
   it('도구를 쓴 뒤 마무리하는 정상 종료에는 그 알림이 붙지 않는다', async () => {
-    // ①에 붙이면 모든 정상 턴에 벽지가 하나 는다.
+    // Attaching it to ① would add wallpaper to every normal turn.
     const send = vi
       .fn<Send>()
       .mockResolvedValueOnce(echo(TOOL_CALL))

@@ -12,8 +12,8 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-// agent readiness 계기·수리 큐는 "할 일" 탭(DoNextTab)이 소유한다. 여기는
-// "뭐가 중심인가" 질문만 — 관계 타입 분포와 허브.
+// The agent-readiness meter and the repair queue are owned by the "to do" tab (DoNextTab). This one
+// answers only "what is central" — the relation type distribution and the hubs.
 const labels: ConnectionsTabLabels = {
   relationTypesTitle: "Relation types",
   relationTypesCaption: "What kind of relations you have.",
@@ -33,8 +33,8 @@ const hubLink = {
   ariaLabel: (title: string) => `${title} — view on the map`,
 };
 
-// 영향 랭킹은 같은 탭의 두 번째 밴드 — 여기서는 존재/빈 상태만 확인하고
-// 계산·행 렌더는 ImpactRankingCard.test.tsx 가 본다.
+// The impact ranking is this tab's second band — only its presence and empty state are checked
+// here; the computation and row rendering are covered by ImpactRankingCard.test.tsx.
 const impactLabels: ImpactRankingLabels = {
   title: "Widest ripple when changed",
   caption: "How far a change travels.",
@@ -134,14 +134,14 @@ describe("ConnectionsTab", () => {
       />,
     );
 
-    // 여기서 순서를 바꾸면 "지금 뭐가 중심인가"의 답 자체가 틀려진다 —
-    // 실제로 연결이 많은 행은 위에 남고, 문서 유무만 조용히 밝힌다.
+    // Reordering here makes the answer to "what is central right now" itself wrong — a row that
+    // genuinely has many connections stays on top, and only the absence of a document is quietly stated.
     expect(screen.getByTestId("insights-hub-row-link")).toHaveTextContent("Integration Test");
     expect(screen.getByTestId("evidence-only-badge")).toHaveTextContent("No document");
   });
 
-  // 잉크 삭감 회귀 가드 — 에고 썸네일은 6행이 모두 같은 바퀴 모양이라
-  // 구분 정보가 숫자에만 있었다. 다시 들어오면 행 높이가 두 배가 된다.
+  // An ink-reduction regression guard — the ego thumbnails were all the same wheel shape across six
+  // rows, so the distinguishing information lived only in the number. Bringing them back doubles the row height.
   it("허브 행에 에고 썸네일을 그리지 않는다", () => {
     const { container } = render(
       <ConnectionsTab

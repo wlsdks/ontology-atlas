@@ -9,12 +9,12 @@ import {
 } from '@/shared/lib/data-source-mode';
 
 /**
- * 현재 운영 모드 (`'static' | 'local'`) 를 React 상태로 노출.
+ * Exposes the current operating mode (`'static' | 'local'`) as React state.
  *
- * - **local**: vault 선택됨, 사용자 디스크가 진실원
- * - **static**: vault 미선택, 빌드타임 dogfood 매니페스트
+ * - **local**: a vault is chosen and the user's disk is the source of truth
+ * - **static**: no vault chosen; the build-time dogfood manifest
  *
- * 부수 효과: `window.__ohMyOntologyMode` 에 현재 mode 발행 (디버그 전용).
+ * Side effect: publishes the current mode on `window.__ohMyOntologyMode` (debug only).
  */
 export function useDataSourceMode(): DataSourceMode {
   const { status: vaultStatus, manifest } = useLocalVault();
@@ -22,9 +22,10 @@ export function useDataSourceMode(): DataSourceMode {
   const mode = useMemo<DataSourceMode>(
     () =>
       getDataSourceMode({
-        // write/poll 뒤 증분 rebuild는 마지막으로 검증된 manifest를 보존한다.
-        // 이 짧은 loading 동안 static dogfood로 source를 바꾸면 local slug
-        // 상세·편집이 not-found로 굳는다. 첫 로드(manifest 없음)만 static.
+        // An incremental rebuild after a write or a poll preserves the last validated
+        // manifest. Switching the source to static dogfood during that brief loading window
+        // freezes local slug detail and edit pages as not-found. Only the first load (no
+        // manifest) is static.
         vaultLoaded: vaultStatus === 'loaded' || Boolean(manifest),
       }),
     [manifest, vaultStatus],

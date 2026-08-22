@@ -25,61 +25,61 @@ import {
 } from '../model/acp-doctor';
 
 /**
- * 연동 점검 — **왜 안 되는지 단계별로 재고, 고칠 수 있는 것은 여기서 고친다.**
+ * The connection check — **measure step by step why it does not work, and fix here what can be fixed.**
  *
- * ## 왜 이 자리에 있나 (2026-08-20 소유자 지시)
+ * Why it sits here (owner instruction, 2026-08-20): *"연동이 안 되면 사실상 못 쓰는 거잖아"*
+ * (if the connection fails, it is effectively unusable). It goes where someone who is stuck is
+ * already looking — a check buried somewhere deep has to be hunted for, and mostly is not.
  *
- * *"연동이 안 되면 사실상 못 쓰는 거잖아."* 막힌 사람이 이미 보고 있는 자리에
- * 둔다 — 점검을 어딘가 깊이 두면 막힌 사람은 찾으러 가야 하고, 대개 안 간다.
+ * ## ⚠️ The owner rejected the first version (2026-08-20): *"디자인적으로 많이 아쉬운데"*
+ * (design-wise this leaves a lot to be desired)
  *
- * ## ⚠️ 첫 판을 소유자가 반려했다 (2026-08-20): *"디자인적으로 많이 아쉬운데"*
+ * Putting the result list in as the row's **fourth flex child** broke three things at once.
  *
- * 결과 목록을 행의 **네 번째 플렉스 자식**으로 넣었더니 셋이 한꺼번에 무너졌다.
+ * ① **The hierarchy inverted.** That row's job is "this tool exists, open a conversation here",
+ *    yet seven lines of secondary diagnosis ate the row's right half and pushed the "ready" badge
+ *    off the end. What the eye should land on first is the name and the button, and the diagnosis won.
+ * ② **A void opened between name and button.** Wedging a large block into a single
+ *    `justify-between` row sends all the remaining width into that gap.
+ * ③ **"Everything is fine" was seven lines long.** That very file (`AcpRuntimeSettings.tsx`)
+ *    already recorded the failure *"18 of 20 lines were the same sentence, so half the screen was a
+ *    copy"* — and the same failure was made again.
  *
- * ① **위계가 뒤집혔다.** 그 행의 일은 「이 도구가 있고, 여기서 대화를 연다」인데,
- *    부차적인 진단 7줄이 행의 오른쪽 절반을 먹고 「준비됨」 배지를 끝으로 밀어
- *    냈다. 눈이 먼저 닿아야 할 것이 이름과 버튼인데 진단이 이겼다.
- * ② **이름과 버튼 사이가 텅 비었다.** `justify-between` 한 줄에 큰 덩어리를
- *    끼우면 남는 폭이 전부 그 틈으로 간다.
- * ③ **「괜찮아요」가 7줄이었다.** 바로 그 파일(`AcpRuntimeSettings.tsx`)이
- *    *"20줄 중 18줄이 같은 문장이라 화면의 절반이 사본이었다"* 는 실패를 이미
- *    적어 두었는데, 같은 실패를 다시 했다.
+ * So all three were fixed: **the button sits beside the row's other controls**, **the results go
+ * full width beneath the row** (making the row a single line again), and **when everything is fine
+ * it folds to one line** — the lines unfold only when something is blocked. The facts are still on
+ * screen (the summary gives the count); only the duplication goes quiet.
  *
- * 그래서 셋을 고쳤다. **버튼은 행 안의 다른 컨트롤 옆에**, **결과는 행 아래
- * 전폭**(행은 다시 한 줄이 된다), 그리고 **다 괜찮으면 한 줄로 접는다** —
- * 막힌 것이 있을 때만 그 줄들을 편다. 사실은 그대로 화면에 있고(요약이 개수를
- * 댄다), 조용해지는 것은 사본뿐이다.
+ * ## Two things this screen keeps
  *
- * ## 화면이 지키는 것 둘
- *
- * 1. **모르는 것을 초록으로 그리지 않는다.** 상태는 셋이고 `unknown` 은
- *    「확인할 방법이 없었다」다.
- * 2. **고쳤다고 말하지 않고 다시 잰 값을 보여 준다.** `acp_repair` 가 고친 뒤
- *    상태를 다시 재서 돌려준다.
+ * 1. **Never draw the unknown as green.** There are three states, and `unknown` means "there was no
+ *    way to check".
+ * 2. **Do not claim it was fixed; show the value measured again.** `acp_repair` re-measures the
+ *    state after fixing and returns that.
  */
 /**
- * 점검 버튼과 결과를 **따로** 내주는 훅.
+ * A hook that hands back the check button and the results **separately**.
  *
- * 하나의 컴포넌트가 둘 다 그리면 호출부가 그 둘을 갈라 놓을 수 없다 — 버튼은
- * 행 안에, 결과는 행 아래여야 하는데 한 덩어리면 그게 불가능하다. 그게 첫 판이
- * 무너진 구조적 이유다.
+ * One component drawing both leaves the caller unable to separate them — the button must be inside
+ * the row and the results beneath it, which is impossible as one block. That is the structural
+ * reason the first version broke.
  */
 /**
- * 사람이 할 일을 적어 둔 검사. 앱이 못 고치는 문제에만 뜻이 있다.
+ * Checks with a written next step for the person. Meaningful only for problems the app cannot fix.
  *
- * 여기 없는 id 는 문구도 없으므로 아무것도 안 그린다 — 없는 문구를 부르면
- * 화면에 키가 그대로 찍힌다.
+ * An id absent here has no copy either, so nothing is drawn — calling for copy that does not exist
+ * prints the key onto the screen.
  */
 const NEXT_STEP = new Set(['cli', 'launcher', 'login', 'gate']);
 
 export function useAgentDoctor(
   runtimeId: string,
   /**
-   * 앱이 뭔가 바꿨을 때 부르는 것 — 목록을 다시 재게 한다.
+   * Called when the app changed something, to have the list re-measured.
    *
-   * 없으면 설치·수리 직후에 **위의 배지가 옛말을 하고 바로 아래 진단이 새 말을
-   * 한다.** 한 화면에서 두 문장이 어긋나는 것이 이 라운드 내내 고쳐 온 결함
-   * 그 자체라, 여기서 다시 만들지 않는다.
+   * Without it, right after an install or repair **the badge above states the old fact while the
+   * diagnosis right below states the new one.** Two sentences disagreeing on one screen is the very
+   * defect this round has been fixing throughout, so it is not recreated here.
    */
   onChanged?: () => void,
 ) {
@@ -88,15 +88,15 @@ export function useAgentDoctor(
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   /*
-   * **설치가 어디까지 왔나.** `null` 이면 그린 적이 없다는 뜻이고, 아무것도
-   * 안 그린다 — 시작하지 않은 일에 0% 막대를 세우지 않는다.
+   * **How far the install has got.** `null` means it has never been drawn, and nothing is drawn —
+   * no 0% bar is raised for work that has not started.
    */
   const [progress, setProgress] = useState<AcpInstallProgress | null>(null);
 
   /*
-   * 구독은 **한 번만** 붙인다. 설치를 누를 때마다 붙였다 떼면 Rust 가 먼저 낸
-   * 첫 이벤트를 놓친다 — 이 파일 위쪽의 `acp://exit` 배선이 같은 이유로 스레드로
-   * 옮겨진 적이 있다.
+   * The subscription attaches **once**. Attaching and detaching on every install press misses the
+   * first event Rust emits ahead of it — the `acp://exit` wiring above in this file was moved onto a
+   * thread for the same reason.
    */
   useEffect(() => {
     let alive = true;
@@ -108,15 +108,15 @@ export function useAgentDoctor(
       else unlisten();
     });
     /*
-     * **닫아 둔 사이에 지나간 것을 받아 온다.**
+     * **Fetch what went past while it was closed.**
      *
-     * 이 시트는 닫히면 통째로 언마운트되므로(`AppSettingsMenu.tsx` 의 조건부
-     * 포털) 여기 상태가 전부 사라진다. Node 내려받기는 250ms 주기라 곧 다음
-     * 이벤트가 와서 스스로 되살아나지만, **완료는 단발**이라 그 사이에 지나가면
-     * 영영 못 본다 — 소유자가 이 라운드에 요구한 바로 그 표시가 그것이다.
+     * This sheet unmounts entirely when closed (the conditional portal in `AppSettingsMenu.tsx`), so
+     * all state here disappears. The Node download ticks every 250ms and revives itself from the next
+     * event, but **completion is a single event** and going past while closed means it is **never
+     * seen** — which is exactly the indicator the owner asked for this round.
      *
-     * 이미 온 것이 있으면 덮지 않는다: 구독이 먼저 답할 수도 있고, 그때는 그쪽이
-     * 더 새 값이다.
+     * Anything already received is not overwritten: the subscription may answer first, and then that
+     * value is the newer one.
      */
     void lastInstallProgress(runtimeId).then((last) => {
       if (alive && last) setProgress((current) => current ?? last);
@@ -130,8 +130,8 @@ export function useAgentDoctor(
   const run = useCallback(async () => {
     setBusy('scan');
     setFailed(false);
-    // 다시 재기 시작하면 **지난 설치의 결과 줄은 지운다** — 방금 한 일이
-    // 아닌 것을 「방금 됐어요」처럼 남겨 두지 않는다.
+    // Starting a re-measure **clears the previous install's result line** — something that is not
+    // what was just done must not be left looking like "just finished".
     setProgress(null);
     try {
       setChecks(await diagnoseAgent(runtimeId));
@@ -172,14 +172,14 @@ export function useAgentDoctor(
   }, [runtimeId, onChanged]);
 
   /**
-   * 앞 단계가 막혔나 — 그러면 「연결 다시 맺기」도 소용없다. 도구가 없는데
-   * 설정 폴더를 다시 만들어 봐야 대화는 안 열린다(2026-08-20 워크스루).
+   * Is an earlier step blocked? Then "reconnect" is useless too. Rebuilding the config folder when
+   * the tool is missing does not open a conversation (walkthrough 2026-08-20).
    */
   /**
-   * **명령 원문을 먼저 보여 준다** — 원장 2026-08-20 (88) 의 조건 ②.
+   * **Show the command text first** — condition ② of ledger entry 2026-08-20 (88).
    *
-   * 점검에서 「도구가 없다」가 나왔을 때만 물어본다. 멀쩡한 사람에게 설치
-   * 제안을 상시로 보여 주면 그건 안내가 아니라 광고다.
+   * Asked only when the check reported "the tool is missing". Showing an install offer permanently
+   * to someone with no problem is advertising, not guidance.
    */
   const [installPlan, setInstallPlan] = useState<string | null>(null);
   const toolMissing = useMemo(
@@ -187,9 +187,9 @@ export function useAgentDoctor(
     [checks],
   );
   useEffect(() => {
-    // effect 본문에서 동기로 setState 하지 않는다(래칫이 잡는다) — 「도구가
-    // 멀쩡할 때 안 보인다」는 상태를 지우는 것이 아니라 **그리지 않는 것**으로
-    // 지킨다. 아래 렌더 조건이 `toolMissing` 을 함께 본다.
+    // No synchronous setState in the effect body (a ratchet catches it) — "invisible when the tool is
+    // fine" is kept by **not drawing it**, not by clearing state. The render condition below reads
+    // `toolMissing` alongside.
     if (!toolMissing) return;
     let alive = true;
     void agentInstallPlan(runtimeId).then((plan) => {
@@ -201,9 +201,8 @@ export function useAgentDoctor(
   }, [toolMissing, runtimeId]);
 
   /**
-   * **Node 도 앱이 받아 줄 수 있다** — 원장 (89). 「도구를 띄울 수 있나」가
-   * 막혔을 때만 물어본다. 이것이 도구가 하나도 없는 사람의 마지막 막다른
-   * 길이었다.
+   * **The app can fetch Node too** — ledger entry (89). Asked only when "can the tool be launched"
+   * is blocked. That was the final dead end for someone with no tooling at all.
    */
   const [nodePlan, setNodePlan] = useState<string | null>(null);
   const launcherMissing = useMemo(
@@ -260,10 +259,10 @@ export function useAgentDoctor(
   const scanButton = (
     <>
     {/*
-      ⚠️ **프리미티브로 쓴다** (2026-08-20 소유자: *"버튼은 사이즈 통일좀"*).
-      손으로 쓴 `<button>` + `controlClass` 는 크기 클래스가 같아도 옆의
-      `Chip`(아이콘을 안고 있다)과 **다른 물건으로 읽힌다** — 그리고 이
-      저장소에는 손으로 쓴 컨트롤을 늘리지 못하게 하는 래칫이 이미 있다.
+      ⚠️ **Use the primitive** (owner, 2026-08-20: *"버튼은 사이즈 통일좀"* — please unify the
+      button sizes). A hand-written `<button>` plus `controlClass` **reads as a different object**
+      from the `Chip` beside it (which carries an icon) even with identical size classes — and this
+      repository already has a ratchet preventing hand-written controls from growing.
     */}
     <Chip
       size="sm"
@@ -278,12 +277,12 @@ export function useAgentDoctor(
       {busy === 'scan' ? t('scanning') : t('scan')}
     </Chip>
     {/*
-      **「로그아웃」이 아니라 「다시 맺기」다.** 이 앱에는 앱 몫 로그인이 없어서
-      로그아웃을 내주면 남의 로그인을 지우거나 그런 척하게 된다. 앱이 만든 것만
-      지우고 다시 만드는 것이 이 구조에서 「재연동」의 정확한 뜻이다.
+      **This is "reconnect", not "log out".** This app has no login of its own, so offering a logout
+      would either erase someone else's login or pretend to. Deleting only what the app created and
+      recreating it is the precise meaning of "reconnect" in this structure.
 
-      **점검 결과를 본 뒤에만 낸다.** 아무 문제 없는 사람에게 「다시 맺기」를
-      상시로 보여 주면, 그건 뭔가 잘못됐다는 신호로 읽힌다.
+      **Offered only after the check results.** Showing "reconnect" permanently to someone with no
+      problem at all reads as a signal that something is wrong.
     */}
     {checks && !prerequisiteBlocked ? (
       <Chip
@@ -303,17 +302,17 @@ export function useAgentDoctor(
   );
 
   /**
-   * **설치가 도는 동안 화면이 말을 한다.**
+   * **The screen speaks while the install runs.**
    *
-   * 규율 셋:
+   * Three rules:
    *
-   * ① **모르는 퍼센트를 그리지 않는다.** 분모가 있는 것은 Node 내려받기뿐이고,
-   *    npm 은 분모가 없으므로 막대 대신 **그 도구가 실제로 뱉은 줄**을 보여
-   *    준다. 이 앱의 갱신 토스트가 이미 같은 규율을 따른다.
-   * ② **끝났다는 것을 남긴다.** 소유자가 물은 「완료된것도 체크해주고 하나」의
-   *    답이 이 줄이다 — 목록이 조용히 초록으로 바뀌는 것만으로는 방금 누른
-   *    것이 됐는지 알 수 없다.
-   * ③ **장식이 없다.** 무채색 트랙 + 인디고 한 색. 이 저장소의 헌장 그대로다.
+   * ① **Never draw a percentage that is unknown.** Only the Node download has a denominator; npm
+   *    does not, so instead of a bar it shows **the line that tool actually emitted**. This app's
+   *    update toast already follows the same rule.
+   * ② **Record that it finished.** This line is the answer to the owner's question about checking
+   *    off what completed — a list quietly turning green does not tell you whether what you just
+   *    pressed succeeded.
+   * ③ **No decoration.** A neutral track plus one indigo. Exactly the repository's charter.
    */
   const percent =
     progress && progress.received !== null
@@ -352,7 +351,7 @@ export function useAgentDoctor(
         </span>
       </p>
       {percent ? (
-        /* 분모를 아는 동안에만 막대를 세운다. 모르면 막대 자체가 거짓말이다. */
+        /* Raise a bar only while the denominator is known. Unknown, the bar itself is a lie. */
         <span
           data-testid="agent-doctor-progress-bar"
           aria-hidden
@@ -365,8 +364,8 @@ export function useAgentDoctor(
         </span>
       ) : progress.note ? (
         /*
-         * 퍼센트가 없을 때 보여 주는 것은 **그 도구가 뱉은 줄 그대로**다.
-         * 한 줄로 자른다 — npm 은 수백 줄을 뱉고, 그걸 다 부으면 안내가 아니다.
+         * With no percentage, what is shown is **the line that tool emitted, verbatim**. It is cut to
+         * one line — npm emits hundreds, and pouring all of it out is not guidance.
          */
         <code
           data-testid="agent-doctor-progress-note"
@@ -387,17 +386,16 @@ export function useAgentDoctor(
       >
         {progressRow}
         {/*
-          ⚠️ **`checks` 가 없다는 것은 「괜찮다」가 아니라 「안 쟀다」다.**
+          ⚠️ **No `checks` means "not measured", not "fine".**
 
-          #1175 로 진행 상태만 있어도 이 블록이 그려지게 되면서, 점검을 한 번도
-          안 돌린 화면이 `blocked.length === 0` 을 타고 「지금은 문제 없어요」를
-          말하게 됐다 — 재지도 않고 초록을 그리는 것이고, 이 화면이 지키기로 한
-          두 규율 중 첫째("모르는 것을 초록으로 그리지 않는다")를 정면으로 어긴다.
-          (2026-08-20 설치 앱 스크린샷에서 「설치 필요」 배지 바로 아래
-          「지금은 문제 없어요」가 같이 서 있는 것으로 드러났다.)
+          Once progress alone was enough to render this block, a screen that had never run a check
+          could ride `blocked.length === 0` into saying "no problems right now" — drawing green
+          without measuring, in direct violation of the first of this screen's two rules ("never draw
+          the unknown as green"). (Revealed in a 2026-08-20 installed-app screenshot where "install
+          required" stood directly above "no problems right now".)
 
-          그래서 판정 문장은 **잰 것이 있을 때만** 낸다. 진행 줄은 위에 그대로
-          남으므로 완료 표시는 잃지 않는다.
+          So the verdict sentence is emitted **only when there is something measured**. The progress
+          line stays above, so the completion indicator is not lost.
         */}
         {failed ? (
           <p
@@ -408,22 +406,21 @@ export function useAgentDoctor(
           </p>
         ) : !checks ? null : blocked.length === 0 ? (
           /*
-           * **다 괜찮으면 한 줄이다.** 같은 문장 일곱 개는 정보가 아니라 사본이고,
-           * 이 화면은 그 실패를 이미 한 번 겪었다.
+           * **When everything is fine it is one line.** Seven copies of the same sentence are
+           * duplication, not information, and this screen has already suffered that failure once.
            *
-           * ⚠️ **개수를 세어 주는 것도 반려됐다** (2026-08-20, 소유자:
-           * *"3단계 괜찮아요 이런 말 뭔지 알아듣지를 못하겠어"*). 「단계」는
-           * 우리 내부 말이고, 게다가 도구마다 검사 수가 달라서(Claude 7 ·
-           * Codex 3) **사용자가 알 수 없는 이유로 숫자가 달라 보인다** — 그
-           * 숫자는 정보가 아니라 우리 구현이 새어 나온 것이었다.
+           * ⚠️ **Counting them was rejected too** (2026-08-20, owner: *"3단계 괜찮아요 이런 말 뭔지
+           * 알아듣지를 못하겠어"* — "3 steps are fine" and the like, I cannot make out what it
+           * means). "Step" is our internal word, and the check count differs per tool (Claude 7,
+           * Codex 3), so **the number looks different for reasons the user cannot know** — it was our
+           * implementation leaking out rather than information.
            *
-           * 그래서 상태는 사람 말로 한 줄만 하고, 무엇을 봤는지는 **접어 둔다.**
-           * 궁금한 사람은 펴 보면 되고, 아닌 사람에게는 한 줄이다.
+           * So the status is one sentence in plain language, and what was examined is **folded away**.
+           * Anyone curious unfolds it; for everyone else it is one line.
            *
-           * ⚠️ **누를 수 있다는 것이 보여야 한다** (2026-08-20 소유자:
-           * *"이게 열었다 닫았다가 가능한건지?"*). 글자만 두면 `<details>` 여도
-           * 아무도 그것을 모른다. 이 화면이 이미 쓰는 표시를 그대로 쓴다 —
-           * 열리면 도는 갈매기표.
+           * ⚠️ **It must look pressable** (owner, 2026-08-20: *"이게 열었다 닫았다가 가능한건지?"* —
+           * can this be opened and closed?). Text alone leaves nobody aware it is a `<details>`. It
+           * uses the indicator this screen already uses — a chevron that rotates when open.
            */
           <details data-testid="agent-doctor-all-clear" className="group">
             <summary
@@ -469,8 +466,8 @@ export function useAgentDoctor(
                 className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1 break-keep text-label leading-prose"
               >
                 {/*
-                  점 하나로 상태를 말하되 **색만으로 구분하지 않는다** — 바로 옆
-                  문구가 같은 것을 글자로도 말한다.
+                  One dot states the status, but **colour is not the only channel** — the copy right
+                  beside it says the same thing in words.
                 */}
                 <span
                   aria-hidden
@@ -487,9 +484,9 @@ export function useAgentDoctor(
                   </span>
                 </span>
                 {/*
-                  **앱이 못 고치는 것에는 사람이 할 일을 적는다.** 이 저장소가
-                  강등 카드에 대해 정해 둔 것과 같은 규율이다 — 왜 안 되는지만
-                  말하고 어디로 가면 되는지를 안 말하면, 그건 막다른 길이다.
+                  **Where the app cannot fix it, write what the person should do.** The same rule this
+                  repository set for degraded cards — saying only why something does not work, without
+                  saying where to go, is a dead end.
                 */}
                 {check.state === 'problem' && check.fixable ? (
                   <Chip
@@ -505,8 +502,8 @@ export function useAgentDoctor(
                 ) : null}
                 {check.id === 'cli' && check.state === 'problem' && toolMissing && installPlan ? (
                   /*
-                    조건 ②④ 가 화면에 보인다: 무엇을 실행하는지 원문 그대로,
-                    그리고 어디에만 깔리는지. 누르기 전에 둘 다 읽을 수 있다.
+                    Conditions ② and ④ are visible on screen: exactly what will be run, and where alone
+                    it will be installed. Both readable before pressing.
                   */
                   <span
                     data-testid="agent-doctor-install-plan"
@@ -516,16 +513,16 @@ export function useAgentDoctor(
                       {t('installPlanTitle')}
                     </span>
                     {/*
-                      ⚠️ **한 줄로 고정하지 않는다** (2026-08-20 소유자: *"이거 왜이래
-                      디자인"*). 실측: 이 명령은 **142자**이고 caption(11px) 기준 약
-                      900px 인데, 설정 시트의 오른쪽 칸은 **698px**(880 − LNB 180)
-                      이다. 종전에는 `whitespace-pre` 로 한 줄에 묶고 넘치는 1/3 을
-                      가로 스크롤 뒤에 뒀는데, **가로 스크롤은 아무도 발견하지
-                      못한다** — 즉 조건 ②(무엇을 실행하는지 먼저 보여 준다)를
-                      화면이 실제로는 안 지키고 있었다.
+                      ⚠️ **Not pinned to one line** (owner, 2026-08-20: *"이거 왜이래 디자인"* — what is
+                      going on with this design). Measured: this command is **142 characters**, roughly
+                      900px at caption size (11px), while the settings sheet's right pane is **698px**
+                      (880 − 180 for the LNB). It used to be bound to one line with `whitespace-pre`,
+                      putting the overflowing third behind a horizontal scroll — and **nobody ever
+                      discovers a horizontal scroll**, so the screen was not actually keeping condition
+                      ② (show what will be run, first).
 
-                      경로에는 공백이 있으므로(`Application Support`) 단어 경계로만
-                      접으면 여전히 넘친다. `break-all` 이 어디서든 접게 한다.
+                      The path contains a space (`Application Support`), so wrapping only at word
+                      boundaries still overflows. `break-all` lets it wrap anywhere.
                     */}
                     <code className="mt-1 block min-w-0 break-all whitespace-pre-wrap text-caption leading-caption text-[color:var(--color-text-secondary)]">
                       {installPlan}
@@ -576,15 +573,15 @@ export function useAgentDoctor(
                   </span>
                 ) : null}
                 {/*
-                  ⚠️ **앱이 대신 해 줄 수 있으면 「직접 하세요」를 말하지 않는다.**
+                  ⚠️ **When the app can do it for you, do not say "do it yourself".**
 
-                  2026-08-20 스크린샷에서 두 문장이 한 화면에 같이 서 있었다:
-                  바로 위 「이 앱에 설치」 버튼과, 그 아래 *"이 목록에서 그 도구의
-                  「설치 방법」을 눌러 설치한 뒤, 위의 「다시 확인」을 눌러 주세요"*.
-                  앱이 해 주겠다고 해 놓고 같은 자리에서 직접 하라고 시키는 것은
-                  안내가 아니라 **모순**이고, 사용자는 둘 중 무엇이 진짜인지 모른다.
+                  In a 2026-08-20 screenshot two sentences stood on one screen: the "install into this
+                  app" button directly above, and beneath it *"press 「install instructions」 for that
+                  tool in this list, install it, then press 「check again」 above"*. Offering to do it
+                  and instructing the user to do it themselves in the same place is not guidance but a
+                  **contradiction**, and the user cannot tell which is real.
 
-                  그래서 이 자리는 **앱이 내줄 길이 없을 때만** 말한다.
+                  So this slot speaks **only when the app has no path to offer**.
                 */}
                 {check.state === 'problem' &&
                 !check.fixable &&
@@ -600,7 +597,7 @@ export function useAgentDoctor(
                 ) : null}
               </li>
             ))}
-            {/* 통과한 것도 개수로는 남는다 — 「무엇을 안 쟀나」가 안 보이면 안 된다. */}
+            {/* Passing checks remain as a count — "what was not measured" must not be invisible. */}
             {(checks?.length ?? 0) > blocked.length ? (
               <li
                 data-testid="agent-doctor-rest"

@@ -1,12 +1,13 @@
 /**
- * rank7 (design-council B5) — minute-granularity "ago" ladder for
- * edit-provenance timestamps (agent heartbeats and same-session self-edits
- * both resolve to minutes/seconds). The day-granularity `computeUpdatedAgo`
- * ladder used elsewhere for vault-doc freshness (`views/home/lib/format-
- * updated-ago.ts`) collapses every within-a-day edit to "오늘" — fine for
- * "when was this doc last touched at all", too coarse for "AI agent · 3분
- * 전". This ladder covers minutes/hours, then falls back to the same
- * day/week/month buckets so long-idle facts still read naturally.
+ * Minute-granularity "ago" ladder for edit-provenance timestamps (agent
+ * heartbeats and same-session self-edits both resolve to minutes or seconds).
+ *
+ * The day-granularity `computeUpdatedAgo` ladder used elsewhere for vault-doc
+ * freshness (`views/home/lib/format-updated-ago.ts`) collapses every edit within
+ * a day to 「오늘」 (today) — fine for "when was this doc last touched at all",
+ * too coarse for 「AI agent · 3분 전」 (AI agent, 3 minutes ago). This ladder
+ * covers minutes and hours, then falls back to the same day/week/month buckets so
+ * long-idle facts still read naturally.
  */
 
 export type EditAgeKey =

@@ -5,7 +5,7 @@
  * `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` lists when a council is required,
  * and `.claude/skills/po-council/SKILL.md` repeats it — but a trigger list
  * written in prose is enforced by whoever happens to remember it. The founding
- * incident (2026-07-27) was exactly that: a pass wrote "없음" into two rubric
+ * incident (2026-07-27) was exactly that: a pass wrote "없음" (none) into two rubric
  * rows the doc calls fatal, self-certified, and shipped.
  *
  * Most of that trigger list is semantic ("positioning", "the words a stranger
@@ -14,26 +14,27 @@
  *
  *   1. a user-facing route is added or removed  → "new or removed surface"
  *   2. the MCP tool set or CLI command set changes → "public contract change"
- *   3. the design system's vocabulary or ramps move → "규격 변경"
+ *   3. the design system's vocabulary or ramps move → "spec change"
  *
  * When any fires, the same change must append to `docs/DECISIONS.md`. The
  * gate does not judge the record's quality — it makes the decision *exist*,
  * with its dissent and falsifier, where the next pass will read it.
  *
- * Same idea as this repo's lint rules: 룰 없는 규격은 지켜지지 않는다.
+ * Same idea as this repo's lint rules: a spec with no rule is not upheld.
  *
- * ## 3번은 2026-08-03 에 추가됐다 — 「문서에만 있는 규칙」이었다
+ * ## Row 3 was added on 2026-08-03 — it had been a rule that lived only in a document
  *
- * `docs/DESIGN-SYSTEM.md` 의 「시스템을 늘리는 규칙」 3번(*규격을 바꾸려면
- * 「체계」를 부른다*)과 그 트리거 목록(`.claude/rules/design.md`)은 있었는데
- * **강제가 없었다.** 실측: 값 층 램프를 넓힌 커밋 다섯 중 자기 원장 기록이
- * 있는 것은 하나뿐이었다. 이 저장소가 반복해서 실패한 바로 그 모양이다.
+ * Rule 3 of 「시스템을 늘리는 규칙」 (rules for growing the system) in
+ * `docs/DESIGN-SYSTEM.md` — *changing a spec means convening the design-systems
+ * seat* — existed along with its trigger list (`.claude/rules/design.md`), but
+ * **nothing enforced it.** Measured: of five commits that widened a value-layer ramp,
+ * one had a ledger record. The shape this repository keeps failing in.
  *
- * 판정은 파일 이름이 아니라 **센서스**로 한다 —
- * `scripts/lib/design-spec-census.mjs` 가 왜 그렇게 좁혔는지를 설명한다.
- * 요약: 트리거 파일들은 이 저장소에서 가장 자주 만져지는 축에 들어서(최근 300
- * 커밋 중 79개가 건드렸다) 「diff 에 있으면 원장」은 오탐 63건을 만든다. 어휘와
- * 램프 값만 보면 그 79 중 16 만 남는다.
+ * The judgement uses an **inventory**, not file names —
+ * `scripts/lib/design-spec-census.mjs` explains why it is narrowed that way. In
+ * short: the trigger files are among the most frequently touched in this repository
+ * (79 of the last 300 commits touched one), so "in the diff means ledger" produces 63
+ * false positives. Looking only at vocabulary and ramp values leaves 16 of those 79.
  */
 
 import { readFileSync } from "node:fs";
@@ -137,18 +138,19 @@ const contractChanges = entries
   .map((entry) => `공개 계약 변경: ${entry.path}`);
 
 /**
- * 디자인 규격 — **파일이 만져졌는가가 아니라 규격이 움직였는가**를 본다.
+ * Design spec — looks at **whether the spec moved, not whether a file was touched.**
  *
- * 트리거 파일 목록은 `.claude/rules/design.md` 에서 읽는다. HEAD 쪽 문서를 쓰는
- * 이유: 이번 변경이 목록에 파일을 **더했다면** 그 파일도 이번부터 감시 대상이다.
+ * The trigger file list is read from `.claude/rules/design.md`. The HEAD version of
+ * that document is used because if this change **adds** a file to the list, that file
+ * is watched from this change onward.
  */
 function designSpecChanges() {
   let triggerFiles;
   try {
     triggerFiles = parseTriggerFiles(readFileSync(SPEC_RULE_DOC, "utf8"));
   } catch (error) {
-    // 목록을 못 읽으면 조용히 통과시키지 않는다 — 침묵하는 게이트가 이 규칙이
-    // 생긴 이유 그 자체다.
+    // An unreadable list must not pass silently — a silent gate is the very reason this
+    // rule exists.
     console.error(`[decisions] ${error.message}`);
     process.exit(1);
   }
@@ -160,7 +162,7 @@ function designSpecChanges() {
         stdio: ["ignore", "pipe", "ignore"],
       });
     } catch {
-      return null; // 그 시점에 없던 파일 = 빈 센서스
+      return null; // A file that did not exist at that point = an empty inventory
     }
   };
 

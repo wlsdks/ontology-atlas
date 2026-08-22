@@ -144,15 +144,15 @@ export function computeVaultFreshnessDrift({ docs, changedFiles, vaultDir }) {
 }
 
 // Stable marker so the Action can find-and-update its own comment instead of
-// spamming a new one on every push (spec — "기존 코멘트 업데이트 방식 —
-// 스팸 금지").
+// spamming a new one on every push (spec: update the existing comment, never
+// spam).
 export const FRESHNESS_COMMENT_MARKER = "<!-- ontology-atlas-vault-freshness -->";
 
 /**
  * Builds the PR comment body for a set of stale nodes. Returns `null` when
  * there are none — the caller (Action) should then delete any previous
- * comment instead of posting an empty one (spec — "감지 0건이면 코멘트 안
- * 남김").
+ * comment instead of posting an empty one (spec: post nothing when nothing was
+ * detected).
  *
  * @param {Array} staleNodes  from computeVaultFreshnessDrift().staleNodes
  * @returns {string | null}

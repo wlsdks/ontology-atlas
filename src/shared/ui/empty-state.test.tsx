@@ -115,22 +115,24 @@ describe('EmptyState — size variant', () => {
 });
 
 /**
- * **본문이 이 카드 하나뿐인 페이지는 제목을 갖는다.**
+ * **A page whose entire content is this one card still needs a heading.**
  *
- * ## 왜 이 검사가 생겼나 (2026-07-29 좁은 폭 실측)
+ * **Why this check exists** (measured at narrow widths, 2026-07-29). Below
+ * 1024px the studio turns into an honest degradation card, and that route then
+ * had **zero** heading elements. The screen showed 「공방은 넓은 화면에서
+ * 열려요」 (the studio opens on a wider screen) in large type, but the document
+ * had no heading at all, so a screen-reader user could learn from the headings
+ * neither what the page was nor why the studio had not opened.
  *
- * 1024px 미만에서 공방이 정직 강등 카드로 바뀌면 그 라우트의 heading 요소가
- * **0개**가 됐다. 화면에는 「공방은 넓은 화면에서 열려요」가 큼직하게 보이지만
- * 문서에는 제목이 하나도 없어서, 스크린리더 사용자는 이 페이지가 무엇인지도
- * 왜 공방이 안 열렸는지도 제목으로는 알 수 없었다.
+ * A degradation card's contract is "why, and where to instead"
+ * (`.claude/rules/surfaces.md`). **If the "why" cannot be read, the contract is
+ * not met.**
  *
- * 강등 카드의 계약은 「왜 + 어디로」다(`surfaces.md`). **그 「왜」를 못 읽으면
- * 계약이 지켜진 것이 아니다.**
- *
- * 원인은 이 카드 하나가 아니라 공용 프리미티브였다 — `EmptyState` 가 제목을
- * 언제나 `<p>` 로 냈다. 그래서 고침도 프리미티브에서 했고, 이 검사가 그
- * 프리미티브의 두 갈래를 함께 고정한다: **기본은 `p`**(목록 안 빈 상태는
- * 문서 구획이 아니다), **페이지 본문이면 호출부가 `h1` 을 고른다.**
+ * The cause was not this one card but the shared primitive: `EmptyState` always
+ * emitted its title as a `<p>`. The fix went into the primitive, and this check
+ * pins both of its branches — **`p` by default** (an empty state inside a list
+ * is not a document section) and **`h1` chosen by the caller when the card is
+ * the page's content**.
  */
 describe("EmptyState — 제목 태그", () => {
   it("기본은 p 다 — 목록/섹션 안의 빈 상태는 문서 구획이 아니다", () => {
@@ -147,9 +149,9 @@ describe("EmptyState — 제목 태그", () => {
   });
 
   /**
-   * 시각 변화 0 이 이 교체의 전제다 — Tailwind preflight 가 heading 의
-   * 크기·굵기를 `inherit` 로 되돌리므로, 클래스가 계속 결정한다. 클래스가
-   * 유실되면 제목이 브라우저 기본 h1 크기로 튄다.
+   * Zero visual change is the premise of the swap: Tailwind preflight resets a
+   * heading's size and weight to `inherit`, so the classes keep deciding. Lose
+   * the classes and the title jumps to the browser's default h1 size.
    */
   it("태그가 바뀌어도 같은 클래스를 싣는다", () => {
     const { unmount } = render(<EmptyState title="X" />);

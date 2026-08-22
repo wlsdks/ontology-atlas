@@ -139,7 +139,7 @@ describe('최근 수정순', () => {
   it('최근 수정순에서도 폴더 묶음이 먼저 적용된다', () => {
     const folder = dir('archive');
     const withFolder = new Map(recency);
-    // 폴더가 가장 오래됐어도 "폴더 먼저" 는 유지된다 — 두 축은 독립이다.
+    // "Folders first" holds even when the folder is the oldest — the two axes are independent.
     withFolder.set(folder.path, Date.parse('2020-01-01T00:00:00Z'));
     expect(
       labels(

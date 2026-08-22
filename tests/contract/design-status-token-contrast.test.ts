@@ -3,11 +3,11 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * 디자인 토큰 가드 — status 신호색이 다크 캔버스 위에서 WCAG AA(>=4.5:1)
- * 대비를 만족하는지 검증. 앱이 다크 단일이 된 뒤(2026-07-19, 라이트 모드
- * 전면 폐기)에도 status 텍스트 색이 캔버스 위에서 읽히지 않는 회귀를 막는다.
+ * Design-token gate — verifies the status signal colours meet WCAG AA (>= 4.5:1) on
+ * the dark canvas. Since the app became dark-only (2026-07-19, light mode retired
+ * entirely), this blocks a regression where status text is unreadable on the canvas.
  *
- * globals.css 의 `@theme` 블록을 파싱해 실제 다크 토큰 값으로 검사.
+ * Parses the `@theme` block in globals.css and checks the real dark token values.
  */
 
 const GLOBALS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
@@ -19,11 +19,11 @@ const STATUS_TOKENS = [
   '--color-status-danger',
 ];
 
-// AA normal text. status 토큰은 대부분 작은 text 로 쓰여 4.5 기준 적용.
+// AA normal text: status tokens are mostly used at small sizes, so the 4.5 threshold applies.
 const AA_TEXT = 4.5;
 
 function themeBlock(): string {
-  // @theme 블록엔 중첩 중괄호가 없어 첫 `}` 가 블록 끝.
+  // The @theme block has no nested braces, so the first `}` ends it.
   const m = GLOBALS.match(/@theme\s*\{([^}]*)\}/);
   if (!m) throw new Error('@theme block not found in globals.css');
   return m[1];

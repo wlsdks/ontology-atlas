@@ -221,7 +221,7 @@ describe("resolveTrailLensNodeEgoState (걸어온 길 렌즈)", () => {
   });
 
   it("이웃(관계)은 더 이상 keep-set 이 아니다 — 방문하지 않았으면 dim", () => {
-    // 렌즈의 핵심: keep-set 이 "1-hop 이웃"에서 "방문 노드"로 통째로 바뀐다.
+    // The point of the lens: the keep-set swaps wholesale from 1-hop neighbours to visited nodes.
     expect(resolveTrailLensNodeEgoState("capability:neighbor-of-y", "element:y", trail)).toBe("dim");
   });
 
@@ -238,17 +238,17 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
       { id: "cap-hi", kind: "capability", degree: 5 },
       { id: "cap-lo", kind: "capability", degree: 2 },
       { id: "dom", kind: "domain", degree: 1 },
-      { id: "el-a", kind: "element", degree: 9 }, // degree 동률 → slug 사전순 el-a < el-b
+      { id: "el-a", kind: "element", degree: 9 }, // equal degree → slug order, el-a < el-b
     ];
     const ranked = rankEgoNeighborsByDOI(neighbors);
     expect(ranked).toEqual(["dom", "cap-hi", "cap-lo", "el-a", "el-b"]);
-    // 결정론: 재실행해도 동일.
+    // Deterministic: rerunning gives the same order.
     expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
   });
 
   it("같은 kind·같은 degree 면 관계 타입 위계가 가른다 — contains > depends > relates", () => {
-    // slug 를 관계 위계와 **역순**으로 배치 — slug 사전순만으로는 이 기대
-    // 순서가 절대 안 나오게 해 관계 가중치 자체를 못박는다.
+    // Slugs are laid out in **reverse** of the relation hierarchy, so slug order
+    // alone can never produce the expected result — that pins the relation weight.
     const neighbors: EgoNeighborRankEntry[] = [
       { id: "el-a", kind: "element", degree: 4, relationType: "relates" },
       { id: "el-b", kind: "element", degree: 4, relationType: "depends_on" },
@@ -256,9 +256,9 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
       { id: "el-d", kind: "element", degree: 4, relationType: "belongs_to" },
     ];
     const ranked = rankEgoNeighborsByDOI(neighbors);
-    // contains/belongs_to(3, 동가중치 → slug 사전순) > depends_on(2) > relates(1).
+    // contains/belongs_to (weight 3, tie broken by slug) > depends_on (2) > relates (1).
     expect(ranked).toEqual(["el-c", "el-d", "el-b", "el-a"]);
-    // 결정론: 입력 순서 무관.
+    // Deterministic: input order does not matter.
     expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
   });
 
@@ -285,7 +285,7 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
       { id: "el-relates", kind: "element", degree: 4, relationType: "relates" },
       { id: "el-exotic", kind: "element", degree: 4, relationType: "describes" },
     ];
-    // 셋 다 가중치 1 → degree 동률 → slug 사전순.
+    // All three weigh 1, degrees tie, so slug order decides.
     expect(rankEgoNeighborsByDOI(neighbors)).toEqual(["el-exotic", "el-relates", "el-unknown"]);
   });
 });

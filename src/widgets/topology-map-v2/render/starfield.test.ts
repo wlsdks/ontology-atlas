@@ -26,7 +26,7 @@ describe("computeStarDustCount", () => {
   });
 });
 
-/** S8 결함 6 — 결계 안 우주 도트: 결정론 + 두 깊이 레이어(0.3/0.6) + 알파 ≤0.12. */
+/** Cosmos dots inside the ward: deterministic, two depth layers (0.3/0.6), alpha ≤ 0.12. */
 describe("buildRealmCosmosPoints", () => {
   it("두 번 생성해도 동일하다 (seed 결정론)", () => {
     const a = buildRealmCosmosPoints(800, 600, 40);
@@ -45,13 +45,13 @@ describe("buildRealmCosmosPoints", () => {
       expect(p.y).toBeGreaterThanOrEqual(0);
       expect(p.y).toBeLessThanOrEqual(600);
     }
-    // 두 깊이 레이어가 모두 존재한다.
+    // Both depth layers are present.
     const depths = new Set(points.map((p) => p.depth));
     expect(depths).toEqual(new Set([0.3, 0.6]));
   });
 });
 
-/** C-1 (Guardian 총괄) — depth 도 seed 결정론: 같은 입력 = 같은 dust. */
+/** depth is seeded too, so the same input yields the same dust. */
 describe("buildDustPoints depth determinism", () => {
   it("두 번 생성해도 depth 까지 동일하고 범위 안이다", () => {
     const a = buildDustPoints(800, 600, 24, 0.15, 0.45);

@@ -26,98 +26,109 @@ import {
 } from "../model/vault-guide-auto-open";
 
 /**
- * P1a-2 승격 (design-council B6 rank17, 2026-07) — 도메인/역량/요소의
- * 유일한 평문 정의(`searchWidgets.shortcuts.glossary.*`)가 "?" 단축키
- * 모달 footer 에만 있어 비개발자 첫 접촉에서 안 보였다(진입 마찰). 새
- * 카피를 쓰지 않고 같은 i18n 키를 여기 INDEX 첫실행 카드에서도 읽어
- * 항상 보이게 승격한다 — 카드와 ShortcutSheet(`src/widgets/shortcut-sheet`)
- * 가 같은 메시지 키를 참조하므로 drift 가 나면 두 표면이 동시에 틀어져
- * 바로 드러난다. 순서 배열은 지도 계층 순서(도메인 → 역량 → 요소)와
- * 같게 로컬로 한 번 더 선언 — features 는 widgets 를 import 할 수 없어
- * (FSD 역방향 금지) ShortcutSheet 의 상수를 그대로 가져올 수 없다.
+ * The only plain-language definitions of domain / capability / element
+ * (`searchWidgets.shortcuts.glossary.*`) used to live in the "?" shortcut modal's
+ * footer, where a non-developer never saw them on first contact. Rather than
+ * writing new copy, this card reads the same i18n keys so they are always
+ * visible — the card and `src/widgets/shortcut-sheet` share the keys, so drift
+ * breaks both surfaces at once and shows up immediately.
+ *
+ * The order matches the map's hierarchy (domain → capability → element) and is
+ * redeclared locally because `features` cannot import from `widgets` (FSD
+ * forbids the reverse direction).
  */
 const GLOSSARY_TERMS = ["domain", "capability", "element"] as const;
 
 export interface FirstRunStarterModuleProps {
-  /** 실데이터 census — TopologyIndexPanel 이 이미 받는 값 그대로 전달. */
+  /** Real census — passed straight through from what TopologyIndexPanel already receives. */
   concepts: number;
   relations: number;
   domains: number;
   /**
-   * 2026-07-24 온보딩 라운드 — "2분 구경하기" 투어 CTA. 투어 상태기계는
-   * HomePage(view) 소유라 콜백만 받는다(FSD: feature 는 view 를 모른다).
-   * 생략하면 CTA 를 렌더하지 않는다.
+   * The "take a two-minute tour" CTA. The tour state machine is owned by
+   * HomePage (a view), so this only takes a callback — a feature does not know
+   * about views. Omitted, the CTA is not rendered.
    */
   onStartTour?: () => void;
   /**
-   * 2026-07-24 온보딩 라운드 — 톱니 메뉴 안에만 있던 '일반(쉬운 말)' 보기를
-   * 첫 실행 카드에서 1클릭으로 켠다. 콜백이 있으면 힌트 문장 대신 토글
-   * 버튼을 렌더하고, 이미 켜져 있으면(audiencePlain) 아무것도 안 보여준다.
+   * Turns on plain-language mode in one click. It used to live only inside the
+   * gear menu. With a callback present this renders a toggle button instead of
+   * the hint sentence; when plain mode is already on it renders nothing.
    */
   onEnablePlainMode?: () => void;
   audiencePlain?: boolean;
   /**
-   * INDEX 본문 (2026-07-24 구조 개편) — 가이드 카드와 **배타적으로** 그린다.
-   * 카드가 펼쳐져 있으면 children 을 렌더하지 않아 패널 스크롤이 항상 1개다
-   * (소유자 지적: "상단 스크롤 따로 하단 스크롤 따로"). 사용자가 선택하면
-   * 카드가 접히고 children(INDEX)이 열린다.
+   * The INDEX body, drawn **exclusively** with the guide card. While the card is
+   * expanded, children are not rendered, so the panel always has exactly one
+   * scroller (owner report: "상단 스크롤 따로 하단 스크롤 따로" — separate
+   * scrollbars top and bottom). Once the user chooses, the card collapses and
+   * the INDEX opens.
    */
   /**
-   * 「최근 변경」 렌즈가 켜졌나 (2026-08-02, 소유자 실보고: *"시작 안내 패널이
-   * 열린 상태에서 최근 변경 버튼 누르면 왼쪽 패널이 안바뀌는 오류"*).
+   * Is the "recent changes" lens on? (2026-08-02, owner report: *"시작 안내
+   * 패널이 열린 상태에서 최근 변경 버튼 누르면 왼쪽 패널이 안바뀌는 오류"* —
+   * pressing the recent-changes button while the starter panel is open leaves
+   * the left panel unchanged.)
    *
-   * 카드와 INDEX 가 **배타적 두 상태**라, 카드가 펼쳐져 있으면 INDEX 의
-   * 세그먼트·기간 칩이 아예 렌더되지 않는다. 그래서 렌즈를 켜면 URL 도 지도도
-   * 바뀌는데 왼쪽만 그대로였다 — 버그가 아니라 그 설계가 이 경우를 못 봤다.
+   * The card and the INDEX are **two exclusive states**, so while the card is
+   * expanded the INDEX's segment and period chips are not rendered at all.
+   * Turning the lens on changed the URL and the map while the left side stayed
+   * put — not a bug so much as a design that had not seen this case.
    *
-   * 렌즈를 켠 것도 아래 `collapsed` 주석이 말하는 **「무엇을 볼지 골랐다」**의 한
-   * 형태다. 그래서 새 상태를 만들지 않고 같은 접힘 경로를 탄다.
+   * Turning on the lens is another form of "the user chose what to look at" (see
+   * the `collapsed` comment below), so it takes the same collapse path rather
+   * than introducing a new state.
    */
   lensActive?: boolean;
   /**
-   * 지도에서 노드를 하나라도 골랐나 — 골랐으면 이 카드는 **할 일을 마쳤다**.
+   * Has the user selected any node on the map? If so this card has **done its job**.
    *
-   * 왜 접나 (2026-08-19 소유자: *"좌측에 이게 계속 떠있어서 보기 안좋으니"*):
-   * 이 카드는 «무엇부터 하면 되나»를 말하는 안내인데, 노드를 고른 사람은 이미
-   * 지도를 쓰고 있다. 그때부터 카드는 안내가 아니라 화면의 3분의 1을 차지한
-   * 가림막이다. 예시 전환·렌즈 켜기가 이미 같은 신호로 접히고 있었고(위 두
-   * 블록), 노드 선택은 그중 가장 분명한 신호다.
+   * Why it collapses (owner, 2026-08-19: *"좌측에 이게 계속 떠있어서 보기
+   * 안좋으니"* — it looks bad with this stuck on the left the whole time): the
+   * card says «what to do first», but someone who has selected a node is already
+   * using the map. From then on it is not guidance, it is a blind covering a
+   * third of the screen. Switching samples and turning on the lens already
+   * collapse it on the same signal, and node selection is the clearest of the three.
    *
-   * 사라지는 게 아니라 접히는 것이고, 「되돌아오기」 행으로 언제든 다시 연다.
+   * It collapses rather than disappearing, and the "back to the guide" row
+   * reopens it at any time.
    */
   nodeSelected?: boolean;
   children?: ReactNode;
 }
 
 /**
- * P1-① (2026-07-21 리텐션 라운드) — 코드베이스 자동 부트스트랩
- * (`node $ATLAS/cli/src/index.mjs bootstrap` = analyze_repo_structure + infer_imports 를
- * agent 없이 한 줄로) 은 실존하고 정확히 테크리드 페르소나가 원하던
- * 기능인데, 웹 첫 화면 어디에도 그 경로 안내가 없었다 — CLI/에이전트
- * 전용으로만 숨어 있어 "나중에"로 미뤄지고 재방문이 끊겼다. 새 표면을
- * 만들지 않고 이 카드 안에 명령 복사 한 줄만 추가한다.
+ * Automatic codebase bootstrap (`node $ATLAS/cli/src/index.mjs bootstrap` =
+ * analyze_repo_structure + infer_imports in one line, no agent) exists and is
+ * exactly what the tech-lead persona wanted, but the web's first screen carried
+ * no route to it — hidden behind CLI/agent use only, it got deferred and
+ * revisits stopped. Rather than adding a surface, this card gains one copyable
+ * command line.
  */
-// CLI 는 npm 으로 배포하지 않는다 (docs/DECISIONS.md 2026-07-27) — 이 명령은
-// ontology-atlas 소스 체크아웃 안에서 돈다. "언젠가 npx 가 된다"는 분기를
-//남겨 두면 그건 영원히 안 오는 미래 시제고, 읽는 사람에게는 거짓말이다.
+// The CLI is not published to npm (docs/DECISIONS.md 2026-07-27) — this command
+// runs inside an ontology-atlas source checkout. Leaving a "someday npx will
+// work" branch would be a future tense that never arrives, and a lie to whoever
+// reads it.
 const CLI_BOOTSTRAP_COMMAND =
   "node cli/src/index.mjs init && node cli/src/index.mjs bootstrap";
 
-/** 플랫폼은 세션 중 바뀌지 않는다 — 구독할 것이 없다. */
+/** The platform does not change during a session — nothing to subscribe to. */
 const subscribeNever = () => () => {};
 const readApplePlatform = () =>
   /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 const readApplePlatformOnServer = () => false;
 
 /**
- * INDEX 패널(TopologyIndexPanel) 맨 위에 통합되는 "시작하기" 모듈 —
- * 승인 계약: `docs/prototypes/first-run-v3-flagship.html` (2026-07-18,
- * "관제탑 첫 기동" v3). 플로팅 표면 0개 — 중앙 카드(반려)와 하단 커맨드독
- * (중간 반려) 둘 다 폐기하고 기존 INDEX 패널 안에 자리를 잡는다.
+ * The "get started" module that sits at the top of the INDEX panel
+ * (TopologyIndexPanel). Approved contract:
+ * `docs/prototypes/first-run-v3-flagship.html` (2026-07-18). Zero floating
+ * surfaces — both the centre card (rejected) and the bottom command dock
+ * (rejected mid-review) were dropped in favour of a place inside the existing
+ * INDEX panel.
  *
- * vault 미선택 + 정적 모드 + 세션 내 미dismiss 일 때만 렌더(`visible`,
- * `useFirstRunStarter`). 그 외엔 null — INDEX 는 원래 모습(검색 + 트리)
- * 그대로.
+ * Rendered only when no vault is selected, the mode is static, and it has not
+ * been dismissed this session (`visible`, `useFirstRunStarter`). Otherwise null,
+ * and the INDEX keeps its usual shape (search plus tree).
  */
 export function FirstRunStarterModule({
   concepts,
@@ -131,8 +142,8 @@ export function FirstRunStarterModule({
   children,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
-  // rank17 — ShortcutSheet 와 같은 i18n 네임스페이스를 그대로 재사용
-  // (`searchWidgets.shortcuts.glossary.*`). 새 카피 0, 단일 출처.
+  // Reuses ShortcutSheet's i18n namespace verbatim
+  // (`searchWidgets.shortcuts.glossary.*`). Zero new copy, one source.
   const glossary = useTranslations("searchWidgets.shortcuts.glossary");
   const {
     visible,
@@ -148,41 +159,46 @@ export function FirstRunStarterModule({
     fsaUnsupported,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
-  // 진입 검수 E-10 — 「첫  실행」·「지금은  샘플」·「지도에서  쓰는  말」. i18n
-  // 문자열의 공백은 하나였다. 벌어진 것은 라틴 전용 장식(mono + uppercase +
-  // wide tracking)을 한글에 얹은 자리의 공백 글리프다(실측 자간 1.36~2.09px).
+  // 「첫  실행」·「지금은  샘플」·「지도에서  쓰는  말」 rendered with doubled
+  // spaces. The i18n strings had single spaces — what widened was the space
+  // glyph under latin-only decoration (mono + uppercase + wide tracking) applied
+  // to Korean (measured tracking 1.36–2.09px).
   const eyebrowWide = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
   const eyebrowTight = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
-  // P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자기 설명)
-  // 대신 즉시 알아볼 수 있는 예시 비즈니스를 고를 수 있는 첫 실행 선택.
-  // static 모드에서만 소비(local 모드는 useOntologyInsight 가 이 값을
-  // 무시한다).
+  // The empathetic sample vault: the dogfood vault (this tool describing itself)
+  // does not land with a non-developer, so first run offers an instantly
+  // recognizable example business instead. Consumed only in static mode — in
+  // local mode `useOntologyInsight` ignores this value.
   const [sampleSource, setSampleSource] = useSampleSource();
-  // 온보딩 디자이너 지적 — npx 명령 블록이 비개발자(기획/마케팅/리더십)
-  // 첫 화면에 상시 노출돼 시선을 뺏었다. 기본 접힘 disclosure 뒤로 보내
-  // 개발자만 펼쳐 보게 한다. 카드가 리마운트될 때까지 세션 내 상태.
+  // The npx command block sat permanently on a non-developer's first screen
+  // (planning, marketing, leadership) and stole attention. It moves behind a
+  // disclosure that is collapsed by default, so only developers expand it.
+  // Session state until the card remounts.
   const [cliOpen, setCliOpen] = useState(false);
-  // 2026-07-24 온보딩 라운드 — 폴더 CTA 가 사전 설명 0으로 OS 선택창을
-  // 직행해 첫 사용자가 무엇을 골라야 하는지 몰랐다. 두 CTA 모두 안내
-  // 시트를 먼저 거친다(이 카드는 vault 미선택 신규 사용자에게만 렌더
-  // 되므로 숙련 사용자에게 시트를 강요하는 문제가 없다).
+  // The folder CTA used to go straight to the OS picker with zero explanation,
+  // so a first-time user did not know what to choose. Both CTAs now pass through
+  // a guidance sheet first (this card renders only for a new user with no vault,
+  // so no experienced user is forced through the sheet).
   const [guideOpen, setGuideOpen] = useState(false);
-  // 접힘 상태 (2026-07-24 구조 개편) — 카드가 패널을 차지할지, 접혀서
-  // INDEX 에 자리를 넘길지. 사용자가 "무엇을 볼지" 를 고른 순간(샘플 전환)
-  // 접어 데이터로 넘긴다. dismiss 는 세션 영구, 이건 세션 내 토글.
+  // Whether the card occupies the panel or collapses and hands the space to the
+  // INDEX. The moment the user chooses "what to look at" (switching samples), it
+  // collapses and hands over to data. `dismiss` lasts the session; this is a
+  // within-session toggle.
   const [collapsed, setCollapsed] = useState(false);
 
   /*
-   * 예시 출처 — **배타 단일선택**이다. 2026-08-02 PO 카운슬이 `role="tab"` 을
-   * 반납하고 `aria-pressed` 로 바로잡았는데, **그때 검토한 대안이 tablist 였지
-   * radiogroup 이 아니었다.** 형제에 pressed 를 나란히 걸면 배타성이 접근성
-   * 트리에 안 실린다(2026-08-15 (3)). 「같은 선택의 재클릭은 아무 일도 하지
-   * 않는다」는 그때의 계약은 훅이 그대로 지킨다 — 값이 실제로 바뀔 때만
-   * `onChange` 가 불린다.
+   * The sample source is an **exclusive single selection**. A 2026-08-02 PO
+   * council pass gave back `role="tab"` for `aria-pressed`, but **the
+   * alternative considered then was tablist, not radiogroup.** Putting
+   * `pressed` on siblings side by side never puts the exclusivity into the
+   * accessibility tree. The contract from that pass — "re-clicking the current
+   * selection does nothing" — is kept by the hook: `onChange` fires only when
+   * the value actually changes.
    *
-   * ⚠️ 그릇은 자리에 남는다 — 비활성 세그먼트가 값 층에 없는 hover 잉크
-   * (`--topology-v2-panel-text-primary`)를 진다. 이주하면 그 피드백이 사라진다.
+   * ⚠️ The container stays in place — an inactive segment carries hover ink
+   * (`--topology-v2-panel-text-primary`) that is not in the value layer.
+   * Migrating away loses that feedback.
    */
   const sampleSourceGroup = useRovingRadioGroup<"storefront" | "dogfood">({
     value: sampleSource,
@@ -193,14 +209,17 @@ export function FirstRunStarterModule({
     },
   });
   /*
-   * 렌즈가 켜지면 카드를 접어 INDEX 에 자리를 넘긴다(위 `lensActive` 주석).
+   * Turning the lens on collapses the card and hands the space to the INDEX (see
+   * the `lensActive` comment above).
    *
-   * **끌 때 되돌리지 않는다.** 접힘은 「사용자가 이미 무엇을 볼지 골랐다」는
-   * 사실이고, 렌즈를 껐다고 그 사실이 취소되지는 않는다 — 되돌리면 방금 보던
-   * 트리가 눈앞에서 사라진다. 카드는 「되돌아오기」 행으로 언제든 다시 연다.
+   * **Turning it off does not restore it.** Collapsing records that «the user
+   * has already chosen what to look at», and switching the lens off does not
+   * cancel that fact — restoring would make the tree they were just reading
+   * vanish. The "back to the guide" row reopens the card at any time.
    *
-   * 렌더 중 setState 대신 ref 로 **한 번만** 트리거하는 이유: 렌즈가 켜진 동안
-   * 매 렌더마다 접기를 시도하면 사용자가 카드를 다시 열어도 즉시 다시 접힌다.
+   * A ref triggers this **once** rather than setState during render: retrying on
+   * every render while the lens is on would re-collapse the card the instant the
+   * user reopened it.
    */
   const lensCollapsedRef = useRef(false);
   useEffect(() => {
@@ -213,10 +232,10 @@ export function FirstRunStarterModule({
     setCollapsed(true);
   }, [lensActive]);
   /*
-   * 첫 노드 선택에 접는다 — 렌즈와 **같은 한 번만** 문법이다(ref 로 잠근다).
-   * 매 렌더마다 시도하면 사용자가 카드를 다시 열어도 즉시 다시 접힌다.
-   * 선택을 풀어도 되돌리지 않는다: 「이미 지도를 써 봤다」는 사실은 선택을
-   * 해제한다고 취소되지 않는다.
+   * Collapses on the first node selection — the same **once only** grammar as
+   * the lens, locked by a ref. Retrying every render would re-collapse the card
+   * the instant the user reopened it. Deselecting does not restore it: "I have
+   * already used the map" is not cancelled by clearing a selection.
    */
   const selectionCollapsedRef = useRef(false);
   useEffect(() => {
@@ -224,28 +243,32 @@ export function FirstRunStarterModule({
     selectionCollapsedRef.current = true;
     setCollapsed(true);
   }, [nodeSelected]);
-  // PO 카운슬 2026-08-02 — `⌘O` 배지는 **맥에서만** 참이다. 이 앱의 폴더 열기
-  // 단축키는 `{ key: "o", meta: true }` 하나뿐이고(HomePage 단축키 표) 대응
-  // 하는 Ctrl+O 바인딩이 없다. 웹 관문의 핵심 청중이 Windows/Linux 인데 없는
-  // 키를 광고하면 그건 힌트가 아니라 거짓 글리프다.
+  // The `⌘O` badge is true **only on Mac**. This app's open-folder shortcut is
+  // `{ key: "o", meta: true }` alone (the HomePage shortcut table) with no
+  // matching Ctrl+O binding. The web gateway's core audience is on
+  // Windows/Linux, and advertising a key that does not exist is a false glyph,
+  // not a hint.
   //
-  // 정적 export 는 서버에서 플랫폼을 모르므로 서버 스냅샷은 항상 `false`(배지
-  // 없음)다 — `useEffect` + `setState` 대신 `useSyncExternalStore` 를 쓰는
-  // 이유가 그것이다. 값이 바뀌지 않는 읽기라 구독은 no-op 이고, 하이드레이션
-  // 불일치 없이 첫 클라이언트 렌더에서 정답이 나온다.
+  // Static export does not know the platform on the server, so the server
+  // snapshot is always `false` (no badge) — which is why this uses
+  // `useSyncExternalStore` rather than `useEffect` + `setState`. The read never
+  // changes, so the subscription is a no-op, and the first client render is
+  // correct with no hydration mismatch.
   const applePlatform = useSyncExternalStore(
     subscribeNever,
     readApplePlatform,
     readApplePlatformOnServer,
   );
 
-  // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
-  // 지정 유도(시트)가 첫 액션이 된다. "다음에"로 건너뛰면 자동 투어가
-  // 이어받는다(투어 가드가 시트 열림 동안 발화를 미룸). 1회 한정.
-  // 진입 검수 E-1 — File System Access 미지원 브라우저에서는 이 시트를 자동으로
-  // 열지 않는다. 시트의 존재 이유는 "OS 선택창이 뜨기 전에 미리 설명하는 것"인데
-  // 그 창이 오지 않으므로, 첫 화면을 여는 순간 못 하는 일을 권하는 모달이 된다.
-  // 이 상태의 안내는 카드 안 인라인 고지(unsupportedNotice + macOS 앱)가 맡는다.
+  // Folder-first first visit (owner instruction 2026-07-24) — opening the first
+  // screen makes choosing a folder the first action. Skipping with "later" hands
+  // over to the automatic tour (the tour guard defers while the sheet is open).
+  // Once only.
+  // Not auto-opened in browsers without File System Access. The sheet exists to
+  // "explain before the OS picker appears", and that picker never comes, so it
+  // would be a modal recommending something impossible the moment the first
+  // screen opens. Guidance for that state is the inline notice inside the card
+  // (unsupportedNotice plus the macOS app).
   useEffect(() => {
     if (!visible || fsaUnsupported || readVaultGuideAutoOpened()) return undefined;
     const id = window.setTimeout(() => {
@@ -255,22 +278,25 @@ export function FirstRunStarterModule({
     return () => window.clearTimeout(id);
   }, [visible, fsaUnsupported]);
 
-  // 되돌아오기 (소유자 실사용 지적 2026-07-24) — "여기서 둘러볼게요"로
-  // 카드를 닫고 예시 비즈니스를 구경하다 보면 세션 내 처음으로 돌아갈
-  // 길이 없었다. 카드가 있던 자리에 조용한 1행을 남긴다.
+  // Back to the guide (owner report from real use, 2026-07-24) — closing the
+  // card with "I'll look around here" and browsing the example business left no
+  // way back to the start within the session. A quiet single row stays where the
+  // card was.
   /*
-   * **상태 신호는 카드가 아니라 연결 상태를 따라 산다** (PO 카운슬 평결 ③,
-   * 2026-08-03). 종전엔 「지금은 샘플」이 카드 **안에만** 있어서, 샘플 소스 탭을
-   * 누르면(`setCollapsed(true)`) 카드와 함께 사라졌다. 그 순간 화면은 실제로
-   * 볼트를 연 상태와 **레이아웃·라벨·카운트가 구조적으로 구분 불가**가 됐고,
-   * 소유자가 「이 앱의 코드」 탭을 **연결의 증거로 읽는** 사고가 났다.
+   * **The status signal lives with the connection state, not with the card**
+   * (PO council verdict ③, 2026-08-03). "지금은 샘플" used to live **inside** the
+   * card only, so pressing a sample source tab (`setCollapsed(true)`) removed it
+   * along with the card. At that moment the screen became **structurally
+   * indistinguishable in layout, labels, and counts** from having a real vault
+   * open, and the owner read the "이 앱의 코드" tab as evidence of a connection.
    *
-   * 이 모듈 자체가 `sampleModeSettled` 일 때만 렌더되므로, 이 행에 신호를 두면
-   * 신호의 수명이 곧 **샘플 모드의 수명**이 된다 — 카드를 접든 dismiss 하든
-   * 샘플인 동안은 남고, 폴더를 열면 모듈과 함께 사라진다.
+   * This module renders only while `sampleModeSettled`, so putting the signal on
+   * this row makes the signal's lifetime **the lifetime of sample mode** — it
+   * survives collapsing and dismissing, and disappears with the module when a
+   * folder is opened.
    *
-   * 새 문자열 0 — 카드가 쓰던 `sampleLabel` 과 같은 앰버 점 클러스터를 그대로
-   * 재사용한다. 한 화면에서 같은 사실을 두 문법으로 말하지 않는다.
+   * Zero new strings — it reuses the same amber dot cluster and `sampleLabel`
+   * the card used. One screen does not state one fact in two grammars.
    */
   const reopenRow = (
     <div className="flex shrink-0 items-center gap-2 border-b border-[color:var(--topology-v2-panel-divider)] px-4 py-2">
@@ -304,9 +330,9 @@ export function FirstRunStarterModule({
     </div>
   );
 
-  // 가이드가 없는 상태(로컬 vault 등) — INDEX 만.
+  // No guide available (a local vault, say) — INDEX only.
   if (!visible && !(sampleModeSettled && dismissed)) return <>{children}</>;
-  // 가이드를 닫았거나 접은 상태 — 되돌아오기 1행 + INDEX.
+  // The guide was closed or collapsed — the single "back" row plus the INDEX.
   if (!visible || collapsed) {
     return (
       <>
@@ -319,38 +345,40 @@ export function FirstRunStarterModule({
   return (
     <div
       data-testid="first-run-starter"
-      // min-h-0 + overflow-y-auto (소유자 실보고 2026-07-24) — 카드는 INDEX
-      // 패널(flex-col h-full)의 고정 블록이라, 낮은 창에서는 카드가 공간을
-      // 다 먹고 아래(검색·트리)로 갈 방법이 없었다. 공간이 부족하면 카드가
-      // 줄어들며 내부 스크롤로 전환된다(충분하면 종전과 동일).
+      // min-h-0 + overflow-y-auto (owner report 2026-07-24) — the card is a
+      // fixed block inside the INDEX panel (flex-col h-full), so on a short
+      // window it ate all the space and there was no way to reach search and the
+      // tree below. When space runs short the card shrinks and switches to an
+      // internal scroll (unchanged when there is room).
       className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
     >
-      {/* PO 카운슬 2026-08-02 — 실측 하단 공백이 806px 창에서 25.4%(982px
-          풀스크린 환산 ≈38%) 였다. 위는 빽빽하고 아래가 빈다. 이 래퍼가
-          `min-h-full` 로 패널 높이를 채우고 참조 블록(용어사전 + 개발자
-          disclosure)이 `mt-auto` 로 바닥에 서면, 그 여백은 카드의 꼬리가
-          아니라 **행동층과 참조층 사이의 설계된 간격**이 된다.
-          래퍼가 필요한 이유: 루트는 스크롤 컨테이너(`overflow-y-auto`)라
-          여기에 flex 를 얹으면 낮은 창에서 자식들이 눌린다. 높이가 자동인
-          내부 래퍼에 `min-h-full` 을 주면 내용이 길 때는 그대로 자라고,
-          짧을 때만 바닥 정렬이 작동한다. */}
+      {/* Measured bottom whitespace was 25.4% in an 806px window (≈38% scaled to
+          a 982px fullscreen). The top was dense and the bottom empty. With this
+          wrapper filling the panel height (`min-h-full`) and the reference block
+          (glossary plus developer disclosure) standing at the bottom via
+          `mt-auto`, that whitespace becomes **a designed gap between the action
+          layer and the reference layer** rather than the card's tail.
+          Why a wrapper: the root is the scroll container (`overflow-y-auto`), so
+          putting flex on it squashes the children in a short window. An inner
+          wrapper with automatic height plus `min-h-full` grows normally when the
+          content is long and bottom-aligns only when it is short. */}
       <div className="flex min-h-full flex-col">
-      {/* 페르소나 재조사 개선 후보 2 (2026-07-23) — 첫 실행 카드가 "이
-          화면이 뭘 하는지"만 말하고 "이 제품이 뭔지"(이름)는 말하지
-          않아 완전 초심자에게 정체성 공백이 있었다. 로고 마크 없이
-          텍스트 워드마크 한 줄만 더한다 — 기존 미션 문장(contextBold)이
-          이미 "지도"라는 개념을 설명하므로 별도 미션 반 문장은 중복이라
-          판단해 넣지 않는다. */}
+      {/* The first-run card said only "what this screen does" and never "what
+          this product is" (its name), leaving a complete beginner with an
+          identity gap. One text wordmark line is added, with no logo mark — the
+          existing mission sentence (contextBold) already explains the concept of
+          a map, so a separate half-sentence of mission would be redundant. */}
       <p
         data-testid="first-run-starter-brand"
         className="mb-1 text-caption font-[var(--font-weight-signature)] tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-text-quaternary)]"
       >
         {t("brand")}
       </p>
-      {/* 상태 신호는 둘이다 (PO 카운슬 2026-08-02) — 「첫 실행」(언제인가)과
-          「지금은 샘플」(누구의 데이터인가). 앰버 점은 전에 왼쪽 「첫 실행」
-          옆에 있어 색이 홀로 세 번째 신호처럼 읽혔다. 점을 자기 문장 옆으로
-          옮겨 **한 클러스터**로 묶는다 — 색과 말이 같은 것을 가리킨다. */}
+      {/* There are two status signals — "첫 실행" (when) and "지금은 샘플"
+          (whose data). The amber dot used to sit beside "첫 실행" on the left,
+          where the colour read as a lone third signal. Moving the dot next to
+          its own sentence binds them into **one cluster** — the colour and the
+          words point at the same thing. */}
       <p
         className={`mb-3 flex items-center gap-2 text-caption text-[color:var(--topology-v2-panel-text-secondary)] ${eyebrowWide}`}
       >
@@ -370,48 +398,54 @@ export function FirstRunStarterModule({
         data-testid="first-run-starter-context"
         className="mb-4 text-body leading-body text-[color:var(--topology-v2-panel-text-tertiary)]"
       >
-        {/* 계기를 강등하면 카드의 최대 활자가 리드와 CTA 라벨로 **동률**이
-            된다(둘 다 12.5px semibold). 주목 승자는 하나여야 하므로 리드만
-            램프 한 단 위(`text-body-lg` 14px)로 올린다 — 짝 행간을 같이
-            싣지 않으면 12.5px 단의 20px 행간이 남으므로 명시한다
-            (`design.md` "크기 스텝이 자기 행간을 싣는다"). 새 토큰 0개.
+        {/* Demoting the instrument block leaves the card's largest type **tied**
+            between the lead and the CTA labels (both 12.5px semibold). There
+            must be one attention winner, so only the lead moves one step up the
+            ramp (`text-body-lg`, 14px) — and its paired line-height must be
+            stated explicitly or the 20px leading of the 12.5px step remains
+            (`.claude/rules/design.md`, "a size step carries its own leading").
+            Zero new tokens.
 
-            `block` 인 이유는 실측 결함이다: 인라인으로 두면 크기 전환이
-            **문장 중간**에서 일어나 리드의 마지막 음절이 다음 줄로 떨어지고
-            그 뒤에 작은 활자가 곧바로 붙었다("…보는 지도예 / 요. 내 마크다운
-            폴더를…"). 한 줄 안에서 두 크기와 두 행간이 겹치는 자리다. 크기
-            전환은 줄 경계에서만 일어나게 한다. */}
+            `block` is there because of a measured defect: left inline, the size
+            change happened **mid-sentence**, dropping the lead's last syllable
+            onto the next line with the smaller type running straight on after it
+            ("…보는 지도예 / 요. 내 마크다운 폴더를…"). That is a spot where two
+            sizes and two line-heights overlap within one line. A size change may
+            happen only at a line boundary. */}
         <b className="mb-1.5 block text-body-lg font-[var(--font-weight-strong)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]">
           {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
         </b>
         {t(sampleSource === "storefront" ? "contextStorefrontRest" : "contextRest")}{" "}
-        {/* PO 카운슬 2026-08-02 — 이 카드의 33개 문자열에 「에이전트」·「MCP」·
-            「AI」가 0회였다. 앱 전체는 179곳이 쓰는데 **첫 접점만** 정체성
-            선언이 비어, 굵은 리드가 다른 마크다운 지도 도구와 구분되지 않았다.
-            새 개념을 도입하지 않고 투어 4단계가 이미 쓰는 어휘로 한 문장. */}
+        {/* This card's 33 strings contained 「에이전트」, 「MCP」, and 「AI」 zero
+            times, while the rest of the app used them in 179 places — so the
+            first point of contact alone had no identity statement, and the bold
+            lead did not distinguish this from any other markdown map tool. One
+            sentence, using vocabulary tour step 4 already uses; no new concept. */}
         <span data-testid="first-run-starter-agent-clause">{t("agentClause")}</span>
       </p>
 
-      {/* P0 공감형 샘플 vault — dogfood(이 도구 자기 설명) 는 비개발자에게
-          와닿지 않는다는 실측 문제의 완화책. 즉시 알아볼 수 있는 예시
-          비즈니스("온라인 쇼핑몰")로 한 클릭 전환. 기존 "전체 | 최근 변경"
-          세그먼트(TopologyIndexPanel)와 같은 토큰/구조를 재사용.
+      {/* The empathetic sample vault. The dogfood vault (this tool describing
+          itself) does not land with a non-developer, so one click switches to an
+          instantly recognizable example business ("온라인 쇼핑몰"). Reuses the
+          same tokens and structure as the existing "전체 | 최근 변경" segment in
+          TopologyIndexPanel.
 
-          semantics 정정 (PO 카운슬 2026-08-02): `role="tab"` 이었는데 클릭이
-          탭 패널을 바꾸는 게 아니라 **카드를 접었다** — 이미 선택된 탭을
-          눌러도 접혔다. 탭이 자기 화면을 없애는 것은 tablist 계약이 아니다.
-          전환 시 접히는 동작(2026-07-24 핸드오프 설계)은 유지하되 semantics
-          를 선택 컨트롤(`aria-pressed`)로 바로잡고, 같은 선택의 재클릭은
-          아무 일도 하지 않는다. */}
+          Semantics correction (PO council 2026-08-02): it was `role="tab"`, but
+          clicking did not change a tab panel — it **collapsed the card**, even
+          when pressing the already-selected tab. A tab removing its own screen
+          is not the tablist contract. The collapse-on-switch behaviour is kept
+          while the semantics become a selection control (`aria-pressed`), and
+          re-clicking the current selection does nothing. */}
       <div
         {...sampleSourceGroup.groupProps}
         aria-label={t("sampleSourceAria")}
         data-testid="first-run-starter-sample-source"
         className="mb-2 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
       >
-        {/* 순서가 곧 기본값이다 — 처음 온 사람은 왼쪽을 먼저 읽는다. 그래서
-            예시 비즈니스가 앞, 이 앱 자신의 코드가 뒤다. 두 버튼이 글자만
-            다르고 나머지가 같아 데이터로 돌린다(둘 중 하나만 고치는 drift 방지). */}
+        {/* Order is the default — a newcomer reads the left one first. Hence the
+            example business first and this app's own code second. The two
+            buttons differ only in their text, so they are driven from data
+            (which prevents fixing only one of them). */}
         {(
           [
             { source: "storefront", label: "sampleSourceStorefront", tip: "sampleSourceStorefrontTip" },
@@ -424,9 +458,9 @@ export function FirstRunStarterModule({
             type="button"
             title={t(tip)}
             data-testid={`first-run-starter-sample-source-${source}`}
-            /* 보더 없는 인셋 + 패널 잉크 + 말줄임 — 축 셋이 이 한 자리에서
-               정확히 맞는다. `--chrome-radius-inner` 는 `--radius-chip` 의
-               별칭이라 반경도 그대로다(픽셀 변화 0). */
+            /* Borderless inset plus panel ink plus ellipsis — the three axes line
+               up exactly for this one slot. `--chrome-radius-inner` is an alias
+               of `--radius-chip`, so the radius is unchanged (zero pixel change). */
             className={controlClass({
               shape: "segment",
               scope: "panel",
@@ -444,22 +478,25 @@ export function FirstRunStarterModule({
         ))}
       </div>
 
-      {/* 계기 강등 (PO 카운슬 2026-08-02) — 개념/관계/도메인 수는 3분할 인셋
-          계기 블록(19px mono semibold)이었고, 실측상 **카드 안 최대 활자이자
-          최고 휘도**였다. 계기 대접은 사용자 **자신의** 볼트가 열렸을 때의
-          것이다. 이 카드는 그 전에만 렌더되므로 여기서 가장 센 잉크가 남의
-          샘플 크기인 것은 「지금은 샘플」을 네 번 말하는 화면의 자기모순이다.
-          숫자의 출처는 그대로다 — `topologyCanonicalCensus` 파생이 props 로
-          들어오고, 고정 숫자 금지(2026-08-01 원장)는 여전히 지켜진다. */}
+      {/* Instrument demotion (PO council 2026-08-02) — the concept, relation, and
+          domain counts were a three-way inset instrument block (19px mono
+          semibold), measured as **the largest type and highest luminance in the
+          card**. Instrument treatment belongs to the moment the user's **own**
+          vault is open. This card renders only before that, so the strongest ink
+          here being someone else's sample size contradicts a screen that says
+          "지금은 샘플" four times. The numbers' source is unchanged — a
+          `topologyCanonicalCensus` derivation arrives as props, and the ban on
+          hardcoded numbers (2026-08-01 ledger) still holds. */}
       <p
         data-testid="first-run-starter-sample-scale"
         className="mb-4 text-label leading-label text-[color:var(--topology-v2-panel-text-tertiary)]"
       >
         {t("sampleScale", { concepts, relations, domains })}
-        {/* 집계 셋보다 실제 엣지 하나가 「관계」를 더 가르친다(지킴이). 다만
-            질의된 사실인 척하지 않는다 — 배선 0, 예시 어법의 정적 문장이다.
-            쇼핑몰 샘플에는 실제로 `domains/order` relates `domains/fulfillment`
-            가 있다. dogfood 는 억지 대칭을 만들지 않고 비운다. */}
+        {/* One real edge teaches "relation" better than three aggregates. It does
+            not pretend to be a queried fact, though — zero wiring, a static
+            sentence in the grammar of an example. The storefront sample really
+            does have `domains/order` relates `domains/fulfillment`. The dogfood
+            vault is left empty rather than forcing a symmetry. */}
         {sampleSource === "storefront" ? (
           <span className="block text-[color:var(--topology-v2-panel-text-quaternary)]">
             {t("sampleRelationExample")}
@@ -468,10 +505,11 @@ export function FirstRunStarterModule({
       </p>
 
       {fsaUnsupported ? (
-        /* ease-of-use G1 (2026-07-23) — Safari/Firefox 는 File System Access
-           API 가 없어 폴더 열기·새 vault 만들기 둘 다 눌러야만 실패했다(가장
-           눈에 띄는 인디고 버튼이 에러 한 줄로 끝나는 첫인상). 사전에 정직하게
-           강등: 미지원 고지 한 줄 + macOS 앱(/download) 링크로 치환. */
+        /* Safari and Firefox have no File System Access API, so both "open
+           folder" and "create a new vault" failed only after being pressed (the
+           most prominent indigo button ending in one line of error as a first
+           impression). Degrade honestly up front: one line of unsupported notice
+           plus a link to the macOS app (/download). */
         <div
           data-testid="first-run-starter-unsupported"
           className="rounded-card border border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--topology-v2-panel-recess-a45)] px-3 py-2.5"
@@ -505,9 +543,10 @@ export function FirstRunStarterModule({
         </button>
       )}
 
-      {/* 2026-07-24 온보딩 라운드 — 투어 진입점이 우측 레일 아이콘 하나뿐
-          이라 비개발자가 발견하지 못했다(라이브 답사 실측). 폴더 열기(1차
-          CTA) 바로 아래 2차 CTA 로 승격 — "열기 전에 구경부터" 경로. */}
+      {/* The tour's only entry point was a single icon in the right rail, and
+          non-developers did not find it (measured in a live walkthrough).
+          Promoted to a secondary CTA directly beneath the folder CTA — the "look
+          around before opening" path. */}
       {onStartTour ? (
         <button
           type="button"
@@ -553,18 +592,19 @@ export function FirstRunStarterModule({
         </button>
       </p>
 
-      {/* P2 결함③ (사용성 전수 검수 2026-07-23) — 비개발자가 기어 속 "보기
-          모드" 토글의 존재를 알 방법이 0 이었다. 2026-07-24 온보딩 라운드:
-          콜백이 오면 힌트 문장을 1클릭 토글 버튼으로 승격("톱니에서 켜세요"
-          라는 원거리 안내 자체가 마찰이었다). 콜백이 없으면 종전 힌트 유지. */}
+      {/* A non-developer had no way to discover the "view mode" toggle inside the
+          gear menu. When the callback is supplied, the hint sentence is promoted
+          to a one-click toggle button — telling someone to "turn it on in the
+          gear menu" was itself the friction. Without the callback the old hint stays. */}
       {onEnablePlainMode ? (
         audiencePlain ? null : (
           <button
             type="button"
             data-testid="first-run-plain-toggle"
             onClick={onEnablePlainMode}
-            /* 램프 바닥 24(`min-h-6`) + coarse 히트는 `touch-hit-expand` —
-               44 를 상자 높이로 실으면 이 카드가 세로로 44px 씩 벌어진다. */
+            /* Ramp floor 24 (`min-h-6`) with the coarse hit area from
+               `touch-hit-expand` — putting 44 in the box height would open this
+               card up by 44px vertically. */
             className={controlClass({
               shape: "link",
               tone: "accent",
@@ -583,13 +623,14 @@ export function FirstRunStarterModule({
         </p>
       )}
 
-      {/* 진입 검수 E-1 — 이전에는 브라우저 원문 문자열(`errorText`)이 사용자
-          문구 자리를 통째로 차지했다. `window.showDirectoryPicker is not a
-          function` 은 사람이 읽고 다음 행동을 고를 수 있는 문장이 아니다.
-          이제 사람 말 한 줄이 먼저 서고, 원인 문자열은 그 아래 조용한 단서로
-          남는다 — 원인을 버리지 않으면서 읽는 순서를 뒤집었다.
-          2026-08-02 — 참조 블록이 바닥으로 내려가면서 이 경고가 카드 끝까지
-          밀려나 자기가 설명하는 버튼과 멀어졌다. 행동층 안에 둔다. */}
+      {/* The raw browser string (`errorText`) used to occupy the whole
+          user-facing slot. `window.showDirectoryPicker is not a function` is not
+          a sentence a person can read and choose a next action from. Now one
+          human sentence comes first and the cause string stays beneath it as a
+          quiet clue — the cause is kept while the reading order is inverted.
+          2026-08-02 — when the reference block moved to the bottom, this warning
+          was pushed to the end of the card, far from the button it explains. It
+          stays inside the action layer. */}
       {errorText !== null ? (
         <div role="alert" className="mt-2">
           <p className="text-label text-[color:var(--color-status-danger)]">
@@ -606,15 +647,17 @@ export function FirstRunStarterModule({
         </div>
       ) : null}
 
-      {/* 참조층 (PO 카운슬 2026-08-02) — 용어사전과 개발자 disclosure 는
-          "지금 할 일"이 아니라 "필요할 때 보는 것"이다. `mt-auto` 로 바닥에
-          세워 행동층과 사이에 간격을 만든다. 빈 자리는 그대로 둔다 —
-          채우라는 처방이 아니라 층을 가르라는 처방이다. */}
+      {/* The reference layer (PO council 2026-08-02) — the glossary and the
+          developer disclosure are "look at when needed", not "do now". `mt-auto`
+          stands them at the bottom, creating a gap from the action layer. The
+          empty space is left as is — the prescription is to separate the layers,
+          not to fill it. */}
       <div className="mt-auto">
-      {/* rank17 (design-council B6) — 도메인/역량/요소 3-용어 정의를 "?"
-          단축키 모달에서 이 첫실행 카드로 승격. disclosure 뒤에 숨기지
-          않고 항상 보이는 3줄 — 완전 초심자가 지도를 처음 열자마자 세
-          단어의 뜻을 알 수 있어야 하는 표면이라 접힘 대상이 아니다. */}
+      {/* The three-term definitions (domain / capability / element) were promoted
+          from the "?" shortcut modal to this first-run card. They are three
+          always-visible lines rather than hidden behind a disclosure — this is
+          the surface where a complete beginner must learn what the three words
+          mean the moment they first open the map, so it is not something to fold. */}
       <div className="mt-4 border-t border-[color:var(--topology-v2-panel-divider)] pt-3">
         <p
           className={`mb-1.5 text-caption text-[color:var(--topology-v2-panel-text-quaternary)] ${eyebrow}`}
@@ -622,37 +665,41 @@ export function FirstRunStarterModule({
           {glossary("title")}
         </p>
         {/**
-         * **용어 칸의 폭은 설계 결정이지 단어 길이의 부산물이 아니다**
-         * (2026-07-29 도그푸딩, 영어 화면 실측).
+         * **The term column's width is a design decision, not a by-product of
+         * word length** (dogfooding 2026-07-29, measured on the English screen).
          *
-         * 초안은 `flex flex-wrap` 이라 정의가 용어 **바로 뒤**에 붙었다. 한국어는
-         * 용어가 2~3자로 고르니 `=` 가 우연히 줄맞춤돼 보였지만, 영어에서는
-         * 용어 길이가 제각각(Domain 38px · Capability 50px · Element 41px)이라
-         * `=` 가 173.9 / 186 / … 로 흩어졌고, **세 번째 줄은 정의가 통째로 다음
-         * 줄로 떨어져** 용어 칸 왼쪽 끝에서 다시 시작했다:
+         * The draft used `flex flex-wrap`, so each definition sat directly after
+         * its term. Korean terms are a uniform two or three characters, so the
+         * `=` lined up by coincidence; in English the terms differ (Domain 38px,
+         * Capability 50px, Element 41px) and the `=` scattered across
+         * 173.9 / 186 / …, and **the third row's definition dropped entirely to
+         * the next line**, restarting at the left edge of the term column:
          *
          *     Element =
          *     A piece of code or a doc that implements it
          *
-         * 두 줄은 `용어 = 정의` 로 읽히는데 한 줄만 다른 문법이 된다.
+         * Two rows read as `term = definition` while one row reads as different
+         * grammar.
          *
-         * 2열 그리드로 바꾼다 — 용어 열은 가장 긴 용어에 맞춰 한 번 정해지고
-         * (`auto`), 정의 열이 나머지를 받는다. 정의가 길어 두 줄이 돼도 용어
-         * 열 안에 머무르지 않고 자기 열에서만 접힌다. 어느 언어에서도 `=` 가
-         * 한 줄에 선다.
+         * A two-column grid fixes it — the term column is sized once against the
+         * longest term (`auto`) and the definition column takes the rest. A long
+         * definition wraps within its own column instead of under the term. The
+         * `=` stands on one line in every language.
          */}
         {/**
-         * 열 정의를 **인라인 스타일로 쓴다.** `grid-cols-[auto_auto_1fr]` 로
-         * 먼저 썼더니 Tailwind 가 그 유틸리티를 **생성하지 않았고**, 클래스는
-         * 문자열로 남은 채 `grid-template-columns` 가 `none` 이 돼서 세 칸이
-         * 한 열로 쌓였다 — 화면은 조용히 더 나빠졌는데 타입·lint·계약 테스트가
-         * 전부 통과했다. `design.md` 가 타입 램프에서 적어 둔 *"미정의 스텝은
-         * 침묵한다 — 존재하지 않는 것은 리터럴도 남기지 않으므로 하드코딩
-         * 검사의 시야 밖"* 이 유틸리티 계열만 바꿔 그대로 재현된 것이다.
+         * The columns are declared **as an inline style.** Written first as
+         * `grid-cols-[auto_auto_1fr]`, Tailwind **did not generate** that
+         * utility: the class stayed as a string, `grid-template-columns` became
+         * `none`, and the three cells stacked into one column — the screen got
+         * quietly worse while types, lint, and contract tests all passed. This is
+         * the same failure `.claude/rules/design.md` records for the type ramp
+         * (*"an undefined step is silent — something that does not exist leaves no
+         * literal, so it is outside the reach of hardcoding checks"*), reproduced
+         * on a different utility family.
          *
-         * 인라인 값은 존재하지 않을 수가 없다. `minmax(0, 1fr)` 는 정의 열이
-         * 긴 문장 때문에 자기 최소 폭 아래로 안 줄어드는 것을 막는다(grid 의
-         * 기본 `min-width: auto` 가 오버플로를 만든다).
+         * An inline value cannot fail to exist. `minmax(0, 1fr)` stops the
+         * definition column from refusing to shrink below its own minimum on a
+         * long sentence (grid's default `min-width: auto` causes overflow).
          */}
         <dl
           data-testid="first-run-starter-glossary"
@@ -678,18 +725,20 @@ export function FirstRunStarterModule({
         </dl>
       </div>
 
-      {/* P1-① — 코드베이스 자동 부트스트랩(CLI/에이전트 전용)으로 가는 다리.
-          위 두 버튼(폴더 열기 / 새 vault 만들기)은 빈 vault 를 여는 경로일
-          뿐, "내 리포를 분석해서 채워줘"에는 답하지 못한다 — 그 답은
-          `node $ATLAS/cli/src/index.mjs bootstrap` 인데 웹 첫 화면엔 안내가 전혀 없었다.
-          온보딩 디자이너 지적: 기본 접힘 disclosure 로 감춰 비개발자 시선에서
-          제거하고, 펼친 사람만 명령을 본다.
-          문구 정정 (PO 카운슬 2026-08-02): 라벨이 「코드베이스에서 자동으로
-          시작하려면」(= 내 리포)이었는데 명령은 상대 경로라 **실행한 그 폴더**
-          를 훑는다 — 소스 체크아웃 안에서 돌리면 atlas 자신을 부트스트랩한다.
-          명령 자체는 CLI 공개 계약이라 이번 슬라이스 밖이고, 여기서는 문구를
-          명령이 실제로 하는 일로 좁힌다(`cliBridgeSourceOnly` 의 정직한 고지와
-          모순되지 않게). 토글도 직군 호명("개발자라면")에서 행위 호명으로. */}
+      {/* The bridge to automatic codebase bootstrap (CLI/agent only). The two
+          buttons above (open folder / create a new vault) only open an empty
+          vault; they do not answer "analyze my repo and fill it in" — that answer
+          is `node $ATLAS/cli/src/index.mjs bootstrap`, and the web's first screen
+          had no pointer to it at all. It is hidden behind a collapsed disclosure
+          so it is out of a non-developer's line of sight and only whoever expands
+          it sees the command.
+          Copy correction (PO council 2026-08-02): the label said "코드베이스에서
+          자동으로 시작하려면" (= my repo), but the command takes a relative path
+          and therefore scans **the folder it runs in** — inside a source checkout
+          it bootstraps atlas itself. The command is the CLI's public contract and
+          out of scope here, so the copy is narrowed to what the command actually
+          does (consistent with `cliBridgeSourceOnly`'s honest notice). The toggle
+          also moves from addressing a role ("개발자라면") to addressing an action. */}
       <div className="mt-3">
         <button
           type="button"
@@ -715,10 +764,11 @@ export function FirstRunStarterModule({
           {t("cliBridgeToggle")}
         </button>
         {cliOpen ? (
-          /* 소유자 실보고 2026-07-23 — 라벨·명령·복사 버튼이 한 행을 3분할해
-             명령이 중간-단어 말줄임("npx ontology-atlas i…")으로 잘렸다.
-             헤더행(라벨 + 복사)과 전폭 코드 라인(단어 경계 줄바꿈)으로 분리 —
-             복사할 명령 전문이 항상 보인다. */
+          /* Owner report 2026-07-23 — the label, command, and copy button split
+             one row three ways, truncating the command mid-word
+             ("npx ontology-atlas i…"). Split into a header row (label plus copy)
+             and a full-width code line that wraps at word boundaries, so the full
+             command is always visible. */
           <div
             id="first-run-starter-cli-bridge"
             data-testid="first-run-starter-cli-bridge"

@@ -44,40 +44,39 @@ import {
 import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 /**
- * 「지금 내 폴더에서 뭐가 벌어지고 있나」 한 곳 — 상태 칩과 알림함이 **같은
- * 파생**을 본다. 두 표면이 각자 파생하면 하나는 「작업 중」인데 다른 하나는
- * 조용한 순간이 반드시 생긴다.
+ * One place for "what is happening in my folder right now" — the status chip and the notification box
+ * read the **same derivation**. Two surfaces deriving separately guarantees a moment where one says
+ * "working" and the other is silent.
  *
- * 세 진실원:
- *  - `activity.jsonl`(볼트 안) → 작업의 시작·끝. **새로고침해도 살아남는다.**
- *  - 매니페스트 스냅숏 → 도메인·브릿지. 배치 쓰기(`(batch)`)도 놓치지 않는다.
- *  - `computeVaultHealth` → 허공 참조·순환.
+ * Three sources of truth:
+ *  - `activity.jsonl` (inside the vault) → the start and end of work. **Survives a refresh.**
+ *  - the manifest snapshot → domains and bridges, so a batch write (`(batch)`) is not missed either.
+ *  - `computeVaultHealth` → dangling references and cycles.
  *
- * ## 비싼 것은 작업 경계에서만 돈다
+ * **The expensive one runs only at work boundaries.** `computeVaultHealth` compiles every document.
+ * Running it per poll on the map (the main screen) would be the same class of defect as "building the
+ * model of a surface that is not on screen" (`.claude/rules/architecture.md`). It is also wrong by
+ * meaning: a vault **mid**-work is unfinished and is no place to say "it got sicker". So it measures
+ * only when work ends — measured, work happens once every few minutes.
  *
- * `computeVaultHealth` 는 전 문서 컴파일이다. 지도(주 화면)에서 폴링마다
- * 돌리면 「화면에 없는 표면의 모델을 미리 만든다」(architecture.md D4)와 같은
- * 부류의 결함이 된다. 의미상으로도 작업 **중간**의 볼트는 아직 안 끝난
- * 상태라 「아파졌다」고 말할 자리가 아니다. 그래서 작업이 끝날 때만 잰다 —
- * 실측상 작업은 몇 분에 한 번이다.
- *
- * 첫 작업은 비교 기준이 없어 **문제 알림을 내지 않는다**(그때 기준을 세운다).
- * 볼트를 여는 순간 전 문서를 컴파일해 기준을 만드는 쪽이 더 비싸고, 그 비용은
- * 아무 일도 안 일어난 사람에게도 청구된다.
+ * The first piece of work has no baseline to compare against and therefore **raises no problem
+ * notification** (it establishes the baseline instead). Compiling every document the moment a vault
+ * opens, to build that baseline, is more expensive — and that cost is billed to people for whom
+ * nothing happened at all.
  */
 
-/** 시계 눈금 — 「N분 전」과 창 만료를 이 주기로 다시 판정한다. */
+/** The clock tick — "N minutes ago" and window expiry are re-decided on this period. */
 const TICK_MS = 30_000;
 
 /**
- * 「여기까지 봤다」 하나. 알림마다 읽음 플래그를 두면 볼트 밖에 상태가 쌓이는데,
- * 이 앱에서 진실원은 볼트다. 외부 저장소 구독 문법(`appearance-preferences` 와
- * 같은 계열)을 쓰는 이유: 렌더 중에 localStorage 를 읽으면 프리렌더와 클라이언트가
- * 다른 값을 내 hydration 이 어긋난다.
+ * A single "seen up to here". A read flag per notification would accumulate state outside the vault,
+ * and in this app the vault is the source of truth. The external-store subscription grammar (same
+ * family as `appearance-preferences`) is used because reading localStorage during render gives the
+ * prerender and the client different values and breaks hydration.
  *
- * **자리 산출(볼트별 키)은 별도 모듈이다** — 훅 안에 두면 되돌려도 아무 시험이
- * 빨개지지 않는다(`./read-at-storage.ts` 머리말). 여기서는 그 순수 함수를
- * 구독 문법에 잇기만 한다.
+ * **Computing the slot (the per-vault key) is a separate module** — inside the hook, reverting it
+ * turns no test red (see the preamble of `./read-at-storage.ts`). Here it is only wired to the
+ * subscription grammar.
  */
 const READ_AT_EVENT = 'ontology-atlas:agent-activity-read';
 
@@ -91,27 +90,27 @@ function subscribeReadAt(onChange: () => void): () => void {
   };
 }
 
-/** 프리렌더에서는 0 — 「아직 아무것도 안 읽었다」가 서버가 알 수 있는 전부다. */
+/** Zero in the prerender — "nothing has been read yet" is all the server can know. */
 const readAtServerSnapshot = () => 0;
 
 export interface AgentActivityFeed {
-  /** 상태 칩을 그릴 자격 — 설정이 켜져 있고 24시간 안의 활동이 있다. */
+  /** Eligibility to draw the status chip: the setting is on and there is activity within 24 hours. */
   showStatus: boolean;
-  /** 화면이 「N분 전」을 계산할 기준 시각. 렌더 중 `Date.now()` 를 부르지 않기 위해. */
+  /** The reference time the screen computes "N minutes ago" from, so render never calls `Date.now()`. */
   nowMs: number;
-  /** fresh heartbeat가 실제 진행 중이라고 밝히는가. */
+  /** Does a fresh heartbeat declare work actually in progress? */
   writing: boolean;
-  /** heartbeat와 쓰기 로그를 거짓 진행형 없이 합친 현재 작업 판독. */
+  /** The current work readout, combining heartbeat and the write log with no false progress. */
   work: AgentWorkProjection;
   lastAt: number | null;
   /**
-   * 마지막 작업에서 이름을 밝힌 에이전트의 사람용 제품명. 원본 client/runtime
-   * id는 `work.rawAgentName`에 남고, 모르면 null이다.
+   * The human-facing product name of the agent that identified itself in the last piece of work. The
+   * raw client/runtime id stays in `work.rawAgentName`, and it is null when unknown.
    */
   agentName: string | null;
-  /** 마지막 대상 — **매니페스트에 실재하는 슬러그일 때만** 채워진다. */
+  /** The last target — filled **only when the slug really exists in the manifest.** */
   lastNode: VaultShapeNode | null;
-  /** 대상이 배치·문서 흡수라 이름이 없거나, 볼트에서 사라졌다. */
+  /** The target is a batch or a document absorb and so has no name, or it vanished from the vault. */
   lastTargetUnnamed: boolean;
   notifications: AgentNotification[];
   /** Human allow/reject decisions made in the in-app ACP workbench. */
@@ -136,10 +135,10 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
     readReadAtForVault,
     readAtServerSnapshot,
   );
-  // 볼트를 모르던 시절의 전역 키를 한 번 치운다 — 아무도 안 읽으므로 무해하지만,
-  // 남겨 두면 다음 사람이 "이건 뭐지" 를 다시 조사하게 된다.
+  // Clears the global key from before vaults were scoped, once. Nobody reads it so it is harmless, but
+  // leaving it makes the next person investigate "what is this" all over again.
   useEffect(forgetLegacyUnscopedReadAt, []);
-  /** 폴링 중에만 관측되는 사건 — 로그에 안 남으므로 세션 메모리다. */
+  /** Events observed only while polling — not in the log, so this is session memory. */
   const [liveEvents, setLiveEvents] = useState<readonly AgentNotification[]>([]);
 
   useEffect(() => {
@@ -157,12 +156,12 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
   );
   const last = sessions[sessions.length - 1] ?? null;
   const busy = Boolean(activeSession(sessions));
-  /** 방금 **끝난** 작업의 id — 이 값이 바뀌는 순간이 뼈대·건강을 잴 자리다. */
+  /** The id of the work that just **finished** — the moment this value changes is where shape and health are measured. */
   const settledId = last && last.done ? last.id : null;
   const settledEndAt = last && last.done ? last.endAt : null;
 
   const docs = status === 'loaded' ? manifest?.docs : undefined;
-  /** 매니페스트 한 번 순회 — 이름표(링크 관문)와 뼈대 비교가 같은 스냅숏을 쓴다. */
+  /** One pass over the manifest, so the name gate (link check) and the shape comparison share one snapshot. */
   const snapshot = useMemo(
     () => (docs ? snapshotVaultShape(docs, locale) : null),
     [docs, locale],
@@ -173,8 +172,8 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
   const healthBaselineRef = useRef<{ unresolvedEdges: number; dependencyCycles: number } | null>(null);
   const reportedSessionRef = useRef<string | null>(null);
 
-  // 작업이 도는 동안은 **작업 직전 스냅숏을 얼린다** — 지금 매니페스트는 이미
-  // 그 작업의 결과를 일부 담고 있어 비교 기준이 못 된다.
+  // While work is running it **freezes the snapshot from just before** — the current manifest already
+  // holds part of that work's result and cannot serve as the comparison basis.
   useEffect(() => {
     if (!snapshot) return;
     if (busy) {
@@ -205,7 +204,7 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
         produced.push({ id: `${settledId}:domain-added:${node.slug}`, kind: 'domain-added', at: settledEndAt, node });
       }
       for (const node of shape.domainsRemoved) {
-        // 사라진 노드로는 날아갈 수 없다 — 이름만 말하고 링크는 걸지 않는다.
+        // You cannot fly to a node that is gone — state the name only, with no link.
         produced.push({
           id: `${settledId}:domain-removed:${node.slug}`,
           kind: 'domain-removed',
@@ -224,8 +223,8 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
         });
       }
     }
-    // 「아파졌다」는 **늘었을 때만** 말한다. 원래 아팠던 볼트를 작업이 끝날
-    // 때마다 다시 나무라면 그건 알림이 아니라 잔소리다.
+    // "It got sicker" is stated **only when the count rose.** Scolding an already-unhealthy vault at
+    // the end of every piece of work is nagging, not notification.
     if (baseline) {
       const unresolvedEdges = health.unresolvedEdges - baseline.unresolvedEdges;
       const dependencyCycles = health.dependencyCycles - baseline.dependencyCycles;
@@ -243,10 +242,10 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
       }
     }
     if (produced.length > 0) {
-      // 이 이펙트는 정확히 「외부 시스템(디스크의 볼트) → React 상태」 동기화다.
-      // 관측 시점이 폴링이라 렌더 경로에서는 알 수 없고, 파생 값도 아니다
-      // (직전 스냅숏이라는 상태가 필요하다). 연쇄 렌더는 작업이 끝나는 순간
-      // 한 번뿐이다 — 실측상 몇 분에 한 번.
+      // This effect is precisely "external system (the vault on disk) → React state" synchronization.
+      // The observation point is a poll, so the render path cannot know it, and it is not a derived
+      // value either (it needs the previous snapshot as state). The cascading render happens once, when
+      // work ends — measured, once every few minutes.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLiveEvents((current) => mergeNotifications(produced, current));
     }
@@ -255,7 +254,7 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
   const lastAt = work.updatedAt;
   const fresh = lastAt !== null && nowMs - lastAt <= AGENT_TASK_VISIBLE_WINDOW_MS;
   const lastSlug = work.targetSlug;
-  // 죽은 링크를 만들지 않는 마지막 관문 — 매니페스트에 없으면 링크가 아니다.
+  // The last gate against dead links — not in the manifest means not a link.
   const lastNode = lastSlug ? (snapshot?.nodes.get(lastSlug) ?? null) : null;
 
   const notifications = useMemo(() => {
@@ -266,7 +265,7 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
     return filterNotifications(merged, enabled).map((item) => {
       if (!item.node) return item;
       const resolved = snapshot?.nodes.get(item.node.slug) ?? null;
-      // 알림함의 대상도 상태 칩과 **같은 관문**을 지난다.
+      // The notification box's target passes the **same gate** as the status chip.
       return resolved ? { ...item, node: resolved } : { ...item, node: null, label: item.label };
     });
   }, [sessions, liveEvents, mutedKinds, snapshot]);
@@ -275,7 +274,7 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
     try {
       writeReadAt(vaultScope, Date.now());
     } catch {
-      // 저장이 막혀도 이벤트로 현재 세션은 읽음이 된다.
+      // Even if storing is blocked, the event marks it read for the current session.
     }
     window.dispatchEvent(new CustomEvent(READ_AT_EVENT));
   }, [vaultScope]);

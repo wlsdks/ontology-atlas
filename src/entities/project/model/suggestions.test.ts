@@ -101,7 +101,7 @@ describe("computeSuggestedDependencies", () => {
       description: "We use Stripe for payments.",
     });
     const candidates: Project[] = [
-      // "Strip" 이 Stripe 안에 포함돼도 매칭되면 안 됨
+      // "Strip" must not match just because it is contained in "Stripe".
       makeProject({ slug: "strip", name: "Strip" }),
       makeProject({ slug: "stripe", name: "Stripe" }),
     ];

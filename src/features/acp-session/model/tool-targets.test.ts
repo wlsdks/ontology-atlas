@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { readToolTargets } from './tool-targets';
 
 /**
- * 도구 줄이 **어느 노드를 만졌는지** 말하게 한다.
+ * Makes the tool row state **which node it touched.**
  *
- * 지금까지 화면에는 「개념을 읽었어요」만 있고 어느 개념인지가 없었다. 값은
- * 오고 있었는데(`rawInput`) 버리고 있었다.
+ * Until now the screen said only "read a concept" with no mention of which. The value was arriving
+ * (`rawInput`) and being discarded.
  */
 
 const known = new Set(['capabilities/invoice', 'domains/payment', 'capabilities/refund']);
@@ -25,7 +25,7 @@ describe('도구가 만진 노드를 집는다', () => {
   });
 
   it('이름을 바꿀 때는 옛 이름과 새 이름을 다 본다 — 다만 **아는 것만** 남는다', () => {
-    // 새 이름은 아직 볼트에 없다(그래서 못 집는 것이 맞다). 옛 이름은 있다.
+    // The new name is not in the vault yet (so failing to pick it is correct). The old name is.
     expect(
       readToolTargets({ oldSlug: 'capabilities/invoice', newSlug: 'capabilities/bill' }, known),
     ).toEqual(['capabilities/invoice']);

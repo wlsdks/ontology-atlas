@@ -7,21 +7,23 @@ import {
 } from "@/widgets/topology-map-v2/model/tier-visibility";
 
 /**
- * **드로우와 히트가 같은 값을 본다**는 계약.
+ * The contract that **draw and hit read the same value**.
  *
- * 배경(2026-07-31 전수 검사): 티어를 관통하는 면제 채널이 드로우에는 넷인데
- * (엣지 선택 · 발자국 렌즈 · ego 포커스 · 최근변경 스포트라이트) 히트에는
- * **ego 하나뿐**이었다 — 그래서 발자국 렌즈로 떠오른 노드가 **보이는데 안
- * 눌렸다**. 그런데 드로우 쪽 주석은 *"같은 관통이 히트테스트에도 걸려 지도에서
- * 바로 다시 클릭할 수 있다"* 고 말한다. **주석이 고치려던 바로 그 경우가 안
- * 고쳐져 있었다** — 드로우만 보고 쓰인 주석이다.
+ * Background (exhaustive check 2026-07-31): draw had four channels that pierce
+ * the tier gate (edge selection, footprint lens, ego focus, recent-change
+ * spotlight) while hit had **only ego** — so a node surfaced by the footprint lens
+ * was **visible but unclickable**. Meanwhile the draw-side comment claimed *"the
+ * same piercing applies to hit testing, so it can be clicked again straight from
+ * the map"*. **The very case the comment set out to fix was not fixed** — it was
+ * written from the draw side alone.
  *
- * 고치는 방식이 중요하다: 인자를 하나씩 더 넘기면 **다음에 채널이 늘 때 또
- * 어긋난다**(오늘 이 결함이 생긴 그 방식). 드로우가 이미 만드는 알파 맵을
- * 히트가 읽으면 구조적으로 못 어긋난다.
+ * How it is fixed matters: passing one more argument each time means **it drifts
+ * again the next time a channel is added** (which is how this defect arose). If
+ * hit reads the alpha map draw already builds, they cannot drift structurally.
  *
- * ⚠️ 계약의 정확한 문구는 「그려지면 잡힌다」가 아니라 **「절반 이상 드러났으면
- * 잡힌다」**다 — 0.02~0.5 는 의도된 "보이지만 안 잡히는" 구간이다.
+ * ⚠️ The contract's exact wording is not "if it is drawn it is hittable" but
+ * **"if it is at least half revealed it is hittable"** — 0.02–0.5 is the intended
+ * "visible but not hittable" band.
  */
 
 const node = (id: string, kind: HittableNodeInput["kind"] = "element"): HittableNodeInput => ({
@@ -30,14 +32,14 @@ const node = (id: string, kind: HittableNodeInput["kind"] = "element"): Hittable
   isHub: false,
 });
 
-/** 개요 진입 배율 — element/capability 티어가 아직 안 열린 상태. */
+/** Overview-entry zoom — the element/capability tiers are not open yet. */
 const OVERVIEW_ZOOM = 1;
 
 describe("draw/hit lockstep contract", () => {
   it("드로우가 관통시킨 노드는 **채널이 무엇이든** 잡힌다", () => {
-    // 채널 이름을 열거하지 않는 것이 요점이다 — 맵에 값이 있으면 그걸로 끝.
-    // 새 채널(6번째, 7번째…)이 생겨도 이 테스트를 고칠 필요가 없고, 그것이
-    // 곧 "구조적으로 못 어긋난다"의 증거다.
+    // Not enumerating channel names is the point — a value in the map is enough. A
+    // sixth or seventh channel needs no edit here, and that is the evidence for
+    // "cannot drift structurally".
     for (const alpha of [0.5, 0.75, 1]) {
       const drawn = new Map([["n", alpha]]);
       expect(
@@ -48,9 +50,9 @@ describe("draw/hit lockstep contract", () => {
   });
 
   it("**바닥은 0.5** — 드로우의 0.02 로 갈아타지 않는다", () => {
-    // 0.02~0.5 는 "그려지지만 안 잡히는" 의도된 구간. 거의 투명한 것을 잡게
-    // 하면 오클릭이 나고, `computeLabelAlpha` 의 "잡을 수 있으면 읽을 수
-    // 있다" 규율과도 어긋난다.
+    // 0.02–0.5 is the intended "drawn but not hittable" band. Making
+    // near-transparent marks hittable produces misclicks and contradicts
+    // `computeLabelAlpha`'s rule that anything hittable must be readable.
     for (const alpha of [0.03, 0.2, 0.49]) {
       const drawn = new Map([["n", alpha]]);
       expect(
@@ -78,14 +80,14 @@ describe("draw/hit lockstep contract", () => {
   });
 
   it("맵이 비면 종전 계산으로 떨어진다 — 첫 프레임 방어", () => {
-    // 페인트 전에는 맵이 비어 있다. 그 한 프레임은 오늘 동작과 같아야 하고,
-    // 그건 회귀가 아니라 방어다(사용자는 페인트 전에 클릭할 수 없다).
+    // Before the first paint the map is empty. That one frame must behave as it does
+    // today — a defence, not a regression (a user cannot click before paint).
     const empty = new Map<string, number>();
-    // 개요에서 element 는 티어가 닫혀 있다 → 안 잡힌다(종전 규칙).
+    // In overview the element tier is closed → not hittable (the pre-existing rule).
     expect(
       isNodeHittable(node("n"), OVERVIEW_ZOOM, null, undefined, undefined, undefined, null, empty),
     ).toBe(false);
-    // 그런데 ego 면 종전 규칙으로도 잡힌다.
+    // But ego makes it hittable even under the pre-existing rule.
     expect(
       isNodeHittable(node("n"), OVERVIEW_ZOOM, "n", undefined, undefined, undefined, null, empty),
     ).toBe(true);
@@ -94,7 +96,7 @@ describe("draw/hit lockstep contract", () => {
   it("맵을 아예 안 넘기면 종전 시그니처와 동작이 같다 — 호출부 회귀 0", () => {
     expect(isNodeHittable(node("n"), OVERVIEW_ZOOM, "n", undefined)).toBe(true);
     expect(isNodeHittable(node("n"), OVERVIEW_ZOOM, null, undefined)).toBe(false);
-    // spine 은 티어가 항상 열려 있다.
+    // The spine tier is always open.
     expect(isNodeHittable(node("d", "domain"), OVERVIEW_ZOOM, null, undefined)).toBe(true);
   });
 });

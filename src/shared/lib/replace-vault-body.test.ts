@@ -42,15 +42,16 @@ describe("replaceVaultBody", () => {
 });
 
 /**
- * BOM·CRLF 파일에서 **frontmatter 를 잃지 않는다** (2026-07-28).
+ * **Frontmatter must survive** in BOM and CRLF files (2026-07-28).
  *
- * 파서가 BOM/CRLF 를 읽게 되면서 그 문서가 처음으로 그래프의 노드가 됐고,
- * 그래서 이 쓰기 경로가 처음으로 도달 가능해졌다. 종전 코드는 BOM 이 붙으면
- * `raw.startsWith("---")` 가 false 라 **frontmatter 블록 전체를 버리고** 본문만
- * 저장했다 — kind·관계가 통째로 사라지는 파괴적 경로다.
+ * Once the parser learned to read BOM/CRLF, such a document became a graph node
+ * for the first time, which made this write path reachable for the first time.
+ * The old code saw `raw.startsWith("---")` return false with a BOM present and
+ * therefore **discarded the entire frontmatter block**, saving only the body — a
+ * destructive path that wiped the kind and every relation.
  *
- * 동시에 원래 파일의 줄바꿈·BOM 은 되돌린다. 읽기 편의 때문에 남의 파일
- * 전체를 diff 로 만들지 않는다.
+ * The original file's line endings and BOM are also restored: reading convenience
+ * is not a reason to turn someone else's whole file into a diff.
  */
 describe("BOM·CRLF 원본", () => {
   it("BOM 이 있어도 frontmatter 를 보존한다", () => {

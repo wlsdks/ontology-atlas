@@ -359,7 +359,7 @@ describe("formatTopologyHealthBrief", () => {
     expect(buildTopologyHealthRepairHref("domain:views")).toBe(
       "/topology/?p=domain%3Aviews&workbench=edit",
     );
-    // 복수-슬래시 레거시 입력도 canonical 로 승격해 발신.
+    // Legacy multi-slash input is promoted to canonical form before it is emitted.
     expect(buildTopologyHealthRepairHref("capabilities/topology-analysis-modes")).toBe(
       "/topology/?p=capability%3Atopology-analysis-modes&workbench=edit",
     );

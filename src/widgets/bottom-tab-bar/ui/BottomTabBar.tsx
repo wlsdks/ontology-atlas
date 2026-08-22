@@ -11,9 +11,9 @@ import { shouldHideBottomTabBar } from '../lib/is-tab-active';
 import { shouldShowGetAppTile } from '@/shared/lib/show-get-app-tile';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 
-/** 런타임은 로드 뒤 바뀌지 않는다 — 구독은 형식상 필요할 뿐이라 no-op. */
+/** The runtime never changes after load, so subscribing is a formality. */
 const subscribeToRuntime = () => () => {};
-/** 서버(프리렌더)에서는 창이 없어 **모른다**. `false`(=웹)로 단정하지 않는다. */
+/** Prerender has no window, so the answer is **unknown** — never assume `false` (web). */
 const getServerRuntimeSnapshot = (): boolean | null => null;
 
 interface TabItem {
@@ -25,11 +25,9 @@ interface TabItem {
   icon: typeof MapIcon;
 }
 
-// 모바일 한정 하단 탭바 — 데스크톱 `AppNavRail` (lg+) 의 코어 4목적지를 공유한다
-// (feat/rail-rollout, 3-체계 → 1-체계 통합). 공방은 몰입형 쓰기 표면이라
-// 데스크톱 레일 전용이고, 은퇴한 ERD 빌더 탭은 제거됐다(2026-07-24, 공방이
-// 흡수). active 판정도 `resolveActiveNavDestination` 을 공유해 두 위젯이 절대
-// 갈라지지 않는다.
+// Mobile-only bottom tab bar — it shares the four core destinations of the
+// desktop `AppNavRail` (lg+) and decides active state through the same
+// `resolveActiveNavDestination`, so the two widgets cannot drift apart.
 const TABS: ReadonlyArray<TabItem> = [
   { id: 'map', href: '/topology/', labelKey: 'map', icon: MapIcon },
   { id: 'docs', href: '/docs/', labelKey: 'docs', icon: BookOpen },
@@ -44,19 +42,19 @@ export function BottomTabBar() {
   const vault = useLocalVault();
 
   /**
-   * 「앱 받기」 — `<lg` 웹의 유일한 다운로드 경로.
+   * "Get the app" — the only download path on web below `lg`.
    *
-   * 실측(2026-07-28): 레일이 `lg:flex` 라 390·768 에서 보이는 `/download` 링크가
-   * **0개**였다. 모바일·태블릿 웹 방문자는 다운로드로 갈 길이 아예 없었다.
-   * 소유자 결정으로 탭바의 다섯 번째 자리를 내준다.
+   * Measured 2026-07-28: the rail is `lg:flex`, so the number of `/download`
+   * links visible at 390 and 768 was **zero** — mobile and tablet web visitors
+   * had no route to the download at all. The owner gave it the fifth slot.
    *
-   * 목적지가 아니라 **유틸리티**라 `TABS` 배열 밖에 둔다 — 활성 판정
-   * (`resolveActiveNavDestination`)은 손대지 않는다. `/download` 는 탭바를
-   * 숨기는 라우트라(`shouldHideBottomTabBar`) 이 항목이 활성이 되는 상태는
-   * 애초에 존재하지 않는다.
+   * It is a **utility, not a destination**, so it lives outside the `TABS`
+   * array and never touches `resolveActiveNavDestination`. `/download` hides
+   * the tab bar (`shouldHideBottomTabBar`), so an active state for this item
+   * cannot occur in the first place.
    *
-   * **훅은 조기 반환 위**에 둔다 — 탭바는 라우트에 따라 `null` 을 돌려주므로,
-   * 아래에 두면 렌더마다 훅 순서가 달라진다.
+   * **The hook sits above the early return.** The bar returns `null` on some
+   * routes, and below the return the hook order would differ between renders.
    */
   const desktopRuntime = useSyncExternalStore(
     subscribeToRuntime,
@@ -103,11 +101,11 @@ export function BottomTabBar() {
             {active ? (
               <span
                 aria-hidden
-                // 글로우 없음 — 인디고 선 자체가 트랙 위에서 3:1 을 넘는다.
-                // 종전의 `0 0 12px` 인디고 헤일로는 헌장이 이름으로 금지한
-                // 「glow-like boxShadow 0 0 ring」이었는데, 값 안에 `var(` 가
-                // 있어서 그림자 lint 의 사정거리 밖에 있었다(같은 PR 에서 룰을
-                // 좁혀 색 있는 헤일로만 잡게 했다).
+                // No glow — the indigo line alone clears 3:1 against the track.
+                // The former `0 0 12px` indigo halo was exactly the "glow-like
+                // boxShadow 0 0 ring" the charter forbids by name, but its value
+                // contained `var(`, which put it outside the shadow lint's reach.
+                // The same PR narrowed that rule to catch coloured halos.
                 className="absolute top-1 h-0.5 w-6 rounded-full bg-[color:var(--color-indigo-line-a90)]"
                 data-active-indicator="true"
               />
@@ -128,13 +126,11 @@ export function BottomTabBar() {
       })}
 
       {/*
-        다섯 번째 자리 — 목적지가 아니라 **웹 전용 유틸리티**다. `TABS` 배열
-        밖에 두어 활성 판정을 손대지 않는다. 라벨과 아이콘은 레일의 같은
-        타일과 한 문법을 쓴다 — 폭이 달라도 사용자가 배우는 것은 하나다.
-
-        터치 타깃은 형제 탭과 같은 클래스를 그대로 받는다(`--topology-bottom-tab-
-        min-height` + coarse 포인터 계약) — 유틸리티라고 작게 만들면 그게
-        `<lg` 에서 가장 누르기 어려운 항목이 된다.
+        Fifth slot — a web-only utility, not a destination, so it stays outside
+        the `TABS` array and the active decision is untouched. It reuses the
+        sibling tabs' touch-target classes (`--topology-bottom-tab-min-height`
+        plus the coarse-pointer contract): shrinking it because it is "only" a
+        utility would make it the hardest item to hit below `lg`.
       */}
       {showGetApp ? (
         <Link

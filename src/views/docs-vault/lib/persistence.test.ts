@@ -21,8 +21,8 @@ import {
 } from "./persistence";
 
 describe("parseDocsVaultView", () => {
-  // P5a — folder-topology 제거 이후 'doc' 이 유일 view. 알 수 없는 값도
-  // 항상 'doc' 로 정규화된다.
+  // Since folder-topology was removed, 'doc' is the only view. An unknown value is always
+  // normalized to 'doc' too.
   it("항상 'doc' 반환", () => {
     expect(parseDocsVaultView("doc")).toBe("doc");
     expect(parseDocsVaultView(null)).toBe("doc");
@@ -42,10 +42,10 @@ describe("parseDocsVaultSource", () => {
 });
 
 describe("persistEditorSave", () => {
-  // 데이터 손실 회귀 가드: 에디터 onSave 가 VaultConflictError 를 swallow 하면
-  // (구버전) doSave 가 buffer 를 phantom-clean 하고 "저장됨" 을 띄운 뒤, 다음
-  // poll re-fetch 가 미저장 편집을 덮어쓴다. persistEditorSave 는 conflict 를
-  // 절대 swallow 하지 않고 re-throw 해 에디터가 dirty 를 유지하게 한다.
+  // Data-loss regression guard: if the editor's onSave swallows `VaultConflictError` (as an older
+  // version did), `doSave` marks the buffer phantom-clean, shows "saved", and the next poll
+  // re-fetch overwrites the unsaved edit. `persistEditorSave` never swallows a conflict; it
+  // re-throws so the editor keeps the buffer dirty.
   it("성공 시 resolve, onConflict 미호출", async () => {
     const saveDoc = vi.fn().mockResolvedValue(undefined);
     const onConflict = vi.fn();
@@ -174,9 +174,9 @@ describe("doc list collapse storage", () => {
   });
 });
 
-// P1b (N1) 계약 변경: 게이트는 런타임이 아니라 능력(FSA 지원)만 본다 —
-// 같은 웹 세션에서 빌더는 vault 쓰기가 되는데 문서함만 macOS 잠금이던
-// 표면 간 모순 해소.
+// Contract change: the gate looks only at capability (FSA support), not the runtime — resolving the
+// contradiction where the map could write to the vault in the same web session while only the docs
+// surface was locked behind macOS.
 describe("capability-gated local vault source", () => {
   it("honors ?intent=local in every runtime (web included — builder parity)", () => {
     expect(shouldHonorLocalIntent("local", true)).toBe(true);
@@ -325,7 +325,7 @@ describe("capability-gated local vault source", () => {
         hasLocalManifest: true,
       }),
     ).toBe(false);
-    // P1b — 웹 세션도 welcome(열기 CTA)을 받는다 (능력 기준 계약).
+    // A web session gets the welcome (with its open CTA) too, under the capability contract.
     expect(
       shouldShowDesktopVaultWelcome({
         isDesktopRuntime: false,

@@ -1,16 +1,18 @@
 /**
- * MCP 도구 입력 validation helpers.
+ * Input validation helpers for the MCP tools.
  *
- * UI 와 parity 유지: src/views/ontology-edit/lib/is-untitled-title.ts 의
- * Inspector 검증과 같은 룰 — 비-empty, trim 후 비-empty 강제. AI agent 가
- * silent pollution (untitled / blank-title 노드) 만들지 못하게.
+ * Kept at parity with the UI: the same rule as the Inspector check in
+ * `src/views/ontology-edit/lib/is-untitled-title.ts` — non-empty, and still
+ * non-empty after trimming — so an agent cannot create silent pollution
+ * (untitled or blank-title nodes).
  */
 
 /**
- * vault frontmatter 의 title 으로 안전한 값인지 판정.
- * 비-string, undefined, null, 빈 문자열, 공백-only 모두 reject.
+ * Whether a value is safe as a vault frontmatter `title`. Rejects non-strings,
+ * undefined, null, the empty string, and whitespace-only values.
  *
- * 사용처: addConcept (필수 입력), patchConcept (frontmatter 에 title 포함 시).
+ * Used by addConcept (required input) and patchConcept (when the frontmatter
+ * carries `title`).
  *
  * @param {unknown} value
  * @returns {value is string}
@@ -23,16 +25,16 @@ import { parseFrontmatter } from './parser.mjs';
 import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema.mjs';
 
 /**
- * R11 #23 — vault frontmatter silent corruption 검출. src/shared/lib/
- * validate-vault-document.ts 와 같은 issue codes 보장 (drift 시 contract
- * test 가 차단). raw 까지 보고 unclosed/parse-zero 검출.
+ * Detects silent corruption in vault frontmatter. Guarantees the same issue codes
+ * as `src/shared/lib/validate-vault-document.ts` (a contract test blocks drift),
+ * and reads the raw text too so unclosed blocks and zero-key parses are caught.
  *
  * issue codes:
  *  - unclosed-frontmatter (error)
  *  - empty-kind (error)
  *  - missing-kind (warning)
  *  - unknown-kind (warning)
- *  - missing-expected-field (warning) — R14
+ *  - missing-expected-field (warning)
  *  - non-canonical-graph-array (warning)
  *  - parse-zero-keys (warning)
  *  - malformed-frontmatter-line (error)
@@ -55,8 +57,8 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'missing-expected-field',
   'non-canonical-graph-array',
   'dangling-graph-reference',
-  // 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
-  // 파일 단위 검사로는 원리적으로 못 잡는다 — 한 파일만 보면 완벽히 정상이다.
+  // Two documents claiming the same canonical slug (measured 2026-07-29).
+  // A per-file check cannot catch it in principle — either file alone looks perfect.
   'duplicate-slug',
   'duplicate-uid',
 ]);
@@ -138,8 +140,9 @@ export function validateVaultDocument(raw) {
       message: `\`kind: ${rawKind.trim()}\` 는 인식되지 않는 값입니다.`,
     });
   } else {
-    // R14 — kind 별 expected 필드 누락 (capability/element 의 domain) advisory.
-    // schema.mjs 가 single source — UI/CLI/MCP 셋이 같은 dict 사용.
+    // Advisory for a kind's expected field being absent (a capability's or
+    // element's `domain`). schema.mjs is the single source, so UI, CLI, and MCP
+    // all read the same dictionary.
     const trimmedKind = rawKind.trim();
     for (const key of missingExpectedFields(trimmedKind, frontmatter)) {
       issues.push({
@@ -164,36 +167,36 @@ export function validateVaultDocument(raw) {
 }
 
 /**
- * **이유 하나가 다음 이유들을 통째로 삼킨 자국**을 찾는다.
+ * Finds **the mark left when one reason swallowed the reasons after it**.
  *
- * ## 왜 (2026-08-16 검수 — 우리 볼트에서 실제로 발견)
- *
- * `domains/agent-integration.md` 는 관계 이유를 셋 선언해 뒀는데 읽어 보면
- * **하나**였다. 나머지 둘이 첫 값 안으로 글자로 삼켜져 있었다:
+ * **Why** (review 2026-08-16 — found in our own vault):
+ * `domains/agent-integration.md` declared three relation reasons, but reading it
+ * there was **one**. The other two had been swallowed as text inside the first value:
  *
  * ```
  * capabilities/acp-runtime: "…permission gate., capabilities/skill-process-handoff: …"
  * ```
  *
- * 원인은 값 안의 **작은따옴표 한 개**(`user's`)였다. 값이 따옴표로 안 감싸여
- * 있으면 그 한 글자가 따옴표 상태를 열고, 그 뒤의 쉼표는 더 이상 구분자로
- * 안 읽힌다. 쓰는 쪽 규칙은 같은 날 고쳤지만(작은따옴표도 감싸게), **이미
- * 생긴 자국은 그대로 남는다.**
+ * The cause was **a single apostrophe** inside the value (`user's`). When a value
+ * is not wrapped in quotes, that one character opens a quote state and the commas
+ * after it stop reading as separators. The writing rule was fixed the same day
+ * (apostrophes now force wrapping), but **marks already made stay**.
  *
- * 그리고 그때 `validate` 는 **`issue 0`** 이라고 답했다 — 관계 배열은 멀쩡해서
- * 그래프는 정상이고, 사라진 것은 이유뿐이라 아무 검사도 볼 것이 없었다.
- * 「왜 그렇게 이었는지」는 이 제품이 가장 중요하게 여기는 기록인데, 그것이
- * 조용히 사라지는 길이 열려 있었던 것이다.
+ * And at that moment `validate` answered **`issue 0`** — the relation arrays were
+ * intact so the graph was fine, and only the reasons were gone, which no check
+ * looked at. «Why it was connected this way» is the record this product values
+ * most, and the path for it to vanish silently was open.
  *
- * 판정: 어떤 이유 값 안에 **이 노드가 실제로 선언한 다른 관계 대상**이
- * `대상: ` 꼴로 들어 있으면, 그건 문장이 아니라 삼켜진 항목이다. 이 조건은
- * 좁다 — 우연히 자기 이웃의 슬러그를 콜론까지 붙여 인용하는 문장은 없다.
+ * The test: if a reason value contains **another relation target this node
+ * actually declared**, in `target: ` form, that is a swallowed entry rather than a
+ * sentence. The condition is narrow — no sentence coincidentally quotes its own
+ * neighbour's slug down to the colon.
  */
 function pushSwallowedRelationNoteIssues(frontmatter, issues) {
   const notes = frontmatter.relation_notes;
   if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return;
 
-  // 이 노드가 어디로 이어져 있다고 선언했는지 — 삼켜졌다면 그중 하나가 값 안에 있다.
+  // Where this node declared it connects to — if something was swallowed, one of these is inside a value.
   const targets = new Set();
   for (const value of Object.values(frontmatter)) {
     if (!Array.isArray(value)) continue;
@@ -280,14 +283,16 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
 }
 
 /**
- * **포함이 세워 준 부모** — 다른 노드가 이 슬러그를 담고 있으면 트리에서 부모가 있다.
+ * **A parent established by containment** — when another node contains this slug,
+ * it has a parent in the tree.
  *
- * 2026-08-11: 북극성 여정을 걸어 보다 나왔다. `init --quick-start` 가 만든 볼트가
- * 자기 검사기를 통과하지 못했는데, 경고는 하나(`missing-expected-field: domain`)였고
- * 그 하나가 `health` · `mcp-verify` · `agent-brief` 셋을 빨갛게 만들었다. 그런데 그
- * 경고의 문구가 *"트리에서 부모를 찾을 수 있습니다"* 이고, 정작 그 볼트의 프로젝트
- * 노드는 이미 `contains:` 로 그 역량들을 담고 있었다 — **부모가 있는데 없다고 말한
- * 것이다.** 검사기가 파일 하나만 보기 때문이고, 그래서 볼트 단위에서 좁힌다.
+ * 2026-08-11, found walking the north-star journey: a vault created by
+ * `init --quick-start` failed its own gate. There was a single warning
+ * (`missing-expected-field: domain`), and that one warning turned `health`,
+ * `mcp-verify`, and `agent-brief` red. But the warning's wording was *"a parent
+ * can be found in the tree"*, and that vault's project node already held those
+ * capabilities under `contains:` — **it said there was no parent when there was
+ * one.** The gate sees one file at a time, so the narrowing happens at vault level.
  */
 export function parentedSlugs(docs) {
   const parented = new Set();
@@ -305,15 +310,16 @@ export function parentedSlugs(docs) {
   return parented;
 }
 
-/** 포함이 부모를 세워 주는 키들 — 프로젝트/도메인이 아래를 담는 방향만 본다. */
+/** The keys through which containment establishes a parent — only the downward direction, a project or domain holding what is below it. */
 const CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
 
 /**
- * 부모가 이미 있는 노드에서 **`domain:` 누락 경고만** 지운다.
+ * Clears **only the missing-`domain:` warning** on a node that already has a parent.
  *
- * ⚠️ 없애는 것이 아니라 **좁히는 것**이다 — 아무도 안 담은 노드에는 그대로 남고,
- * 그때는 진짜로 부모가 없다. 다른 코드의 경고와 `domain` 이 아닌 기대 필드는
- * 건드리지 않는다(포함이 세워 주는 것은 부모뿐이다).
+ * ⚠️ This **narrows** rather than removes — a node nothing contains keeps the
+ * warning, and there the parent really is absent. Warnings with other codes and
+ * expected fields other than `domain` are untouched: containment establishes a
+ * parent, nothing more.
  */
 export function suppressParentedExpectedFieldIssues(issuesBySlug, docs) {
   const parented = parentedSlugs(docs);

@@ -3,9 +3,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { useSampleSource } from './use-sample-source';
 import { writeSampleSourcePreference } from '@/shared/lib/sample-source';
 
-// 두 독립 컴포넌트가 각자 useSampleSource 를 호출한다 — 하나(카드)가 값을
-// 바꾸면 다른 하나(insight)도 리로드 없이 즉시 재렌더되어야 한다. 이게
-// 안 되던 게 2026-07 실측 결함(독립 useState → 지도 안 바뀜)이었다.
+// Two independent components each call `useSampleSource` — when one (the card) changes the
+// value, the other (insight) must re-render immediately without a reload. Not doing so was
+// the defect measured in 2026-07 (independent `useState`, so the map never changed).
 function Writer() {
   const [, setSource] = useSampleSource();
   return (
@@ -22,7 +22,7 @@ function Reader() {
 
 describe('useSampleSource — 공유 반응 스토어', () => {
   afterEach(() => {
-    // 다음 테스트 격리 — 스토어 + localStorage 를 기본값(storefront)으로.
+    // Isolate the next test — reset the store and localStorage to the default (storefront).
     writeSampleSourcePreference('storefront');
   });
 
@@ -39,7 +39,7 @@ describe('useSampleSource — 공유 반응 스토어', () => {
       screen.getByRole('button', { name: 'switch' }).click();
     });
 
-    // 리로드 없이 Reader 가 dogfood 로 갱신 — 스토어 구독 덕분.
+    // Reader updates to dogfood without a reload, thanks to the store subscription.
     expect(screen.getByTestId('reader')).toHaveTextContent('dogfood');
   });
 

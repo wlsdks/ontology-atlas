@@ -124,8 +124,9 @@ export function webviewVerifyEnvPatch({
       ? { [WEBVIEW_VERIFY_VAULT_ENV]: webviewFixtureVaultPath }
       : {}),
     ...(verifyAiSettings ? { [WEBVIEW_VERIFY_AI_SETTINGS_ENV]: "1" } : {}),
-    // 주소는 **검증기가 정한다**. 앱이 기본값으로 되메우면 "무엇을 실제로 넣고
-    // 눌렀나" 가 두 곳에서 정해져, 필드 값 대조가 대조가 아니게 된다.
+    // **The verifier decides the address.** If the app backfills a default, "what was
+    // actually typed and pressed" is decided in two places and the field comparison stops
+    // being a comparison.
     ...(verifyAiSettings && aiSettingsBaseUrl
       ? { [WEBVIEW_VERIFY_AI_BASE_URL_ENV]: aiSettingsBaseUrl }
       : {}),

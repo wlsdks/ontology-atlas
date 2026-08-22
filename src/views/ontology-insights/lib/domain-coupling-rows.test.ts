@@ -46,8 +46,8 @@ describe("buildDomainCouplingSummary", () => {
     expect(summary.isColdStart).toBe(false);
     expect(summary.domainCount).toBe(2);
     expect(summary.crossDomainEdgeCount).toBe(2);
-    // auth→billing (depends_on) 과 billing→auth (related_to) 는 방향이 달라
-    // 별개 pair — 둘 다 count 1 이라 from 도메인 title asc(Auth < Billing).
+    // auth→billing (depends_on) and billing→auth (related_to) run in different directions and are
+    // separate pairs — both have count 1, so they sort by the `from` domain title (Auth < Billing).
     expect(summary.pairs).toHaveLength(2);
     expect(summary.pairs[0]).toMatchObject({
       fromId: "domain:auth",
@@ -91,7 +91,7 @@ describe("buildDomainCouplingSummary", () => {
     const edges: KnowledgeGraphEdge[] = [
       edge("c1", "domain:auth", "capability:login", "contains"),
       edge("c2", "domain:billing", "capability:invoice", "contains"),
-      // 같은 도메인 안쪽 edge 만 — cross 없음.
+    // Only edges inside one domain — no crossings.
       edge("e1", "capability:login", "capability:login", "depends_on"),
     ];
 
@@ -124,10 +124,10 @@ describe("buildDomainCouplingSummary", () => {
     const authIndex = grid.domains.findIndex((d) => d.id === "domain:auth");
     const billingIndex = grid.domains.findIndex((d) => d.id === "domain:billing");
     expect(grid.domains).toHaveLength(2);
-    // 대각선 = 같은 도메인 안 연결.
+    // The diagonal is a connection inside one domain.
     expect(grid.cells[authIndex][authIndex]).toBe(1);
     expect(grid.cells[billingIndex][billingIndex]).toBe(0);
-    // 교차는 방향이 있다 — auth → billing 2건, 반대 방향은 0건.
+    // A crossing has direction — two from auth → billing, zero the other way.
     expect(grid.cells[authIndex][billingIndex]).toBe(2);
     expect(grid.cells[billingIndex][authIndex]).toBe(0);
     expect(grid.maxCross).toBe(2);
@@ -148,7 +148,7 @@ describe("buildDomainCouplingSummary", () => {
       edge("c1", "domain:a", "capability:a1", "contains"),
       edge("c2", "domain:b", "capability:b1", "contains"),
       edge("c3", "domain:c", "capability:c1", "contains"),
-      // A↔B 는 두 건, C 는 한 건만 걸린다 — 상한 2면 C 가 잘린다.
+    // A↔B accounts for two, C for only one — with a limit of 2, C is truncated.
       edge("x1", "capability:a1", "capability:b1", "depends_on"),
       edge("x2", "capability:b1", "capability:a1", "depends_on"),
       edge("x3", "capability:a1", "capability:c1", "depends_on"),
@@ -158,7 +158,7 @@ describe("buildDomainCouplingSummary", () => {
 
     expect(grid.domains.map((d) => d.id)).toEqual(["domain:a", "domain:b"]);
     expect(grid.totalDomainCount).toBe(3);
-    // 조용히 줄이지 않는다 — 격자 밖으로 밀린 교차는 수로 남는다.
+    // Nothing is quietly reduced — crossings pushed outside the grid remain as a count.
     expect(grid.hiddenCrossEdgeCount).toBe(1);
   });
 
@@ -206,9 +206,9 @@ describe("buildDomainCouplingSummary", () => {
   });
 
   it("boundary row 는 교차 비중 내림차순이다 — 카드 캡션이 읽으라고 하는 순서", () => {
-    // leaky: 안쪽 0 · 교차 2 → 비중 100%, 총량 2 (작다)
-    // busy:  안쪽 3 · 교차 3 → 비중 50%,  총량 6 (크다)
-    // 총량 순으로 세우면 busy 가 먼저 온다 — 캡션과 반대 순서.
+    // leaky: 0 inside, 2 crossing → 100% share, total 2 (small)
+    // busy:  3 inside, 3 crossing → 50% share,  total 6 (large)
+    // Ordered by total, busy comes first — the opposite of what the caption says.
     const nodes = [
       node("domain:leaky", "domain", "Leaky"),
       node("domain:busy", "domain", "Busy"),
@@ -224,11 +224,11 @@ describe("buildDomainCouplingSummary", () => {
       edge("c3", "domain:busy", "capability:b2", "contains"),
       edge("c4", "domain:busy", "capability:b3", "contains"),
       edge("c5", "domain:busy", "capability:b4", "contains"),
-      // busy 안쪽 3건.
+    // Three edges inside busy.
       edge("s1", "capability:b1", "capability:b2", "depends_on"),
       edge("s2", "capability:b2", "capability:b3", "depends_on"),
       edge("s3", "capability:b3", "capability:b4", "depends_on"),
-      // 교차 2건(양쪽 다 이 두 건이 교차로 잡힌다).
+    // Two crossings (both are counted as crossings from either side).
       edge("x1", "capability:l1", "capability:b1", "depends_on"),
       edge("x2", "capability:b2", "capability:l1", "depends_on"),
     ];
@@ -277,7 +277,7 @@ describe("buildDomainCouplingSummary", () => {
       edge("c2", "domain:auth", "capability:session", "contains"),
       edge("c3", "domain:auth", "capability:token", "contains"),
       edge("c4", "domain:billing", "capability:invoice", "contains"),
-      // auth 안쪽 3건 — 교차(1건)보다 훨씬 크다.
+    // Three edges inside auth — far more than the single crossing.
       edge("s1", "capability:login", "capability:session", "depends_on"),
       edge("s2", "capability:session", "capability:token", "depends_on"),
       edge("s3", "capability:token", "capability:login", "depends_on"),

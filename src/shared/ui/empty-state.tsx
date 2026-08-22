@@ -2,58 +2,45 @@ import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 
 interface EmptyStateProps {
-  /**
-   * 큰 제목 — empty 상황 한 줄 요약. ReactNode 라 안에 inline link 등을
-   * 넣어도 된다 (페이지 본문 통째 비어 한 문장만 띄울 때 흔한 패턴).
-   */
+  /** One-line summary of the empty situation; a node, so it may contain a link. */
   title: ReactNode;
   /**
-   * 제목을 낼 태그. 기본은 `p` — 목록/섹션 안의 빈 상태는 문서 구획이 아니다.
+   * `p` by default: an empty state inside a list or section is not a document
+   * division.
    *
-   * **페이지 본문 전체가 이 카드 하나인 자리는 `h1` 로 부른다** (2026-07-29
-   * 도그푸딩 실측). 좁은 폭에서 공방이 정직 강등 카드로 바뀌면 그 라우트의
-   * heading 요소가 **0개**가 됐다 — 스크린리더 사용자에게는 이 페이지가
-   * 무엇인지, 왜 공방이 안 열렸는지 말해 주는 제목이 아예 없는 화면이다.
-   * 강등 카드의 계약이 「왜 + 어디로」인데, 그 「왜」를 못 읽으면 계약이
-   * 지켜진 게 아니다.
+   * **Pass `h1` where this card *is* the whole page body.** Measured while
+   * dogfooding, 2026-07-29: a route that degraded to a single fallback card at
+   * narrow widths ended up with **zero** heading elements, leaving a screen
+   * reader user no way to hear what the page was or why the real surface did not
+   * open. A degradation card promises "why, and where to go next"; if the "why"
+   * cannot be read, that promise is not kept.
    *
-   * 태그만 바뀌고 **보이는 것은 그대로다** — Tailwind preflight 가 heading 의
-   * 크기·굵기를 `inherit` 로 리셋하므로 아래 클래스가 계속 결정한다.
+   * Only the tag changes — Tailwind preflight resets heading size and weight to
+   * `inherit`, so the classes below still decide the appearance.
    */
   titleAs?: 'p' | 'h1' | 'h2';
-  /** 부연 설명, 다음 행동 안내. ReactNode 라 안에 Link 등을 넣을 수 있다. */
+  /** Supporting text or the next action; a node, so it may contain a link. */
   description?: ReactNode;
-  /**
-   * 라인아트 글리프 슬롯 (lucide 아이콘 등). muted 라운드 사각 안에 담겨
-   * "여기에 무엇이 올 자리" 를 조용히 알린다. align=center 에서는 title 위,
-   * 그 외에는 title 왼쪽에 놓인다.
-   */
+  /** Line-art glyph, framed in a muted rounded square. Above the title when centred, left of it otherwise. */
   icon?: ReactNode;
   /**
-   * 자리표시 스켈레톤. `true` 면 기본 muted 막대 3줄(리스트/차트 형태 암시),
-   * ReactNode 면 그 모양을 그대로 그린다. 빈 차트/목록이 "긴 공백" 대신
-   * 채워질 형태를 먼저 보여주게 한다 (디자인 전면 정비 #16). 순수 장식 —
-   * `aria-hidden`.
+   * `true` draws three muted bars; a node draws that shape instead. Shows an
+   * empty chart or list the shape it will take rather than a long blank.
+   * Decorative, hence `aria-hidden`.
    */
   skeleton?: boolean | ReactNode;
-  /** 우하단/하단 primary 액션 (버튼, 링크 등) */
+  /** Primary action at the bottom. */
   action?: ReactNode;
-  /** 조금 더 크게 full-bleed 로 보여야 할 때 */
+  /** `regular` when the card needs more room. */
   size?: 'compact' | 'regular';
-  /**
-   * 보더 톤. 기본 `dashed` 는 "여긴 채울 자리야" 신호 (목록 / 카드 영역).
-   * `solid` 는 페이지 전체가 비어 있는 상황 (페이지 본문 한복판) 에 더 어울림.
-   */
+  /** `dashed` signals "something belongs here"; `solid` suits a whole empty page. */
   tone?: 'dashed' | 'solid';
-  /**
-   * 정렬. `left` (기본) 는 카드 / 목록 안의 일관된 흐름. `center` 는
-   * 페이지 본문이 통째로 비어 단 한 문장만 보여줄 때.
-   */
+  /** `center` is for a page body that is empty apart from one sentence. */
   align?: 'left' | 'center';
   className?: string;
 }
 
-/** 기본 스켈레톤 — muted 막대 3줄. 리스트/차트가 채워질 형태를 암시. */
+/** Three muted bars, hinting at the shape a list or chart will take. */
 function DefaultSkeleton({ align }: { align: 'left' | 'center' }) {
   const widths = ['72%', '52%', '38%'];
   return (
@@ -74,10 +61,8 @@ function DefaultSkeleton({ align }: { align: 'left' | 'center' }) {
 }
 
 /**
- * 리스트/섹션이 비어 있을 때 공통 UX 를 제공. 기본 톤은 dashed border ·
- * subdued bg · 좌측 정렬 · (선택)스켈레톤 + 아이콘 + title + description +
- * action. 페이지 전체가 비어 있는 surface 는 `tone="solid"` + `align="center"`
- * 로 한 문장만 가운데에 띄우는 패턴으로 호출.
+ * Shared empty state for lists and sections. A whole empty page calls it with
+ * `tone="solid"` + `align="center"` to show one centred sentence.
  */
 export function EmptyState({
   title,
@@ -96,7 +81,6 @@ export function EmptyState({
       ? 'border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)]'
       : 'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)]';
   const padClass = size === 'compact' ? 'px-4 py-4' : 'px-5 py-6';
-  // align=center 는 페이지 본문 통째로 비어 한 문장만 띄울 때 — 패딩 키움.
   const centerPadOverride = align === 'center' ? 'px-6 py-10' : null;
   const isCenter = align === 'center';
 
@@ -106,7 +90,7 @@ export function EmptyState({
       className={cn(
         'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
         size === 'compact' ? 'text-body-lg' : 'text-title',
-        // align=center 한 문장 패턴 — 본문 톤 (h1 무게 없이 secondary 색).
+        // The one-sentence centred pattern reads as body text, not a heading.
         isCenter && 'font-normal text-body-lg text-[color:var(--color-text-tertiary)]',
       )}
     >
@@ -145,7 +129,6 @@ export function EmptyState({
         )
     : null;
 
-  // 텍스트 블록 — center 면 아이콘이 위, 아니면 왼쪽에 놓인다.
   const textBlock = (
     <div className="min-w-0">
       {titleEl}

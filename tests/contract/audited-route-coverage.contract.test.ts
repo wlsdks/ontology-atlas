@@ -5,26 +5,26 @@ import { describe, expect, it } from "vitest";
 import { AUDITED_ROUTES, EXCLUDED_ROUTES } from "../e2e/audited-routes";
 
 /**
- * **접근성 게이트가 라우트를 놓치지 못하게 한다.**
+ * **Stops the accessibility gates from missing a route.**
  *
- * 이 계약이 있는 이유는 실제 사고다. 두 래칫(`a11y-ratchet` · `contrast-ratchet`)
- * 이 각자 손으로 쓴 라우트 배열을 갖고 있었고 — 8개와 5개 — 당시 정본은 17개였다.
- * 어느 목록도 왜 그만큼인지 안 적었고, 빠진 자리에 **404 두 페이지의 AA 미달
- * (4.42:1)** 이 숨어 있었다. 기준선이 전부 0 이 됐지만 그 0 은 «8개 라우트의 0»
- * 이었다.
+ * This contract exists because of a real incident. Two ratchets (`a11y-ratchet`
+ * and `contrast-ratchet`) each carried a hand-written route array — 8 and 5 —
+ * while the authoritative count at the time was 17. Neither list recorded why it
+ * had that many, and hidden in the gap was **the two 404 pages' AA failure
+ * (4.42:1)**. Every baseline reached 0, but that 0 was "0 across 8 routes".
  *
- * 그래서 여기서 막는 것은 «위반» 이 아니라 **«분류되지 않은 라우트»** 다.
- * 라우트를 새로 만든 사람은 재든 빼든 **둘 중 하나를 고르게** 된다. 빼는 것도
- * 정당한 선택이고, 다만 이유를 `EXCLUDED_ROUTES` 에 남겨야 한다.
+ * So what is blocked here is not a **violation** but an **unclassified route**.
+ * Whoever adds a route must **choose**: measure it or exclude it. Excluding is a
+ * legitimate choice, provided the reason is recorded in `EXCLUDED_ROUTES`.
  *
- * ⚠️ 이 검사는 **파일 시스템을 읽는다.** 라우트 목록을 여기 복제하면 그
- * 복제본이 정본과 드리프트하는 순간 게이트가 사각지대를 만든다 — 그게 애초에
- * 이 파일이 존재하게 만든 그 병이다.
+ * ⚠️ This check **reads the filesystem.** Duplicating the route list here would
+ * create a blind spot the moment the copy drifts from the source — which is the
+ * very disease that made this file necessary.
  */
 
 const APP_LOCALE_DIR = path.resolve(__dirname, "../../app/[locale]");
 
-/** `app/[locale]/**` 를 걸어 라우트 패턴을 뽑는다 — `page.tsx` 가 있는 디렉터리. */
+/** Walks `app/[locale]/**` for route patterns — directories containing a `page.tsx`. */
 function discoverRoutes(dir: string, prefix = ""): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir)) {
@@ -38,8 +38,8 @@ function discoverRoutes(dir: string, prefix = ""): string[] {
 }
 
 /**
- * 라우트 패턴 → 래칫이 여는 URL 로 맞춰 본다. 동적 마디(`[slug]`)는 실제 값으로
- * 열리므로 문자 비교가 아니라 **모양 비교**를 한다.
+ * Matches a route pattern against the URL a ratchet opens. A dynamic segment
+ * (`[slug]`) is opened with a real value, so this compares **shape**, not text.
  */
 function matchesAuditedUrl(routePattern: string, url: string): boolean {
   const patternParts = `/ko${routePattern}`.split("/").filter(Boolean);
@@ -54,8 +54,9 @@ describe("접근성 래칫의 라우트 커버리지", () => {
   const routes = ["/", ...discoverRoutes(APP_LOCALE_DIR)];
 
   it("정본 인벤토리를 실제로 찾아낸다 — 탐지기가 빈 집합 위에서 놀지 않는다", () => {
-    // 이 단언이 없으면 `discoverRoutes` 가 0개를 돌려줘도 아래 검사가 전부
-    // 초록이다(빈 집합은 모든 全稱 명제를 만족한다). 현재 정본은 18개다.
+    // Without this assertion, `discoverRoutes` returning 0 would leave every check
+    // below green (an empty set satisfies any universal statement). The current
+    // authoritative count is 18.
     expect(routes.length).toBeGreaterThanOrEqual(18);
     expect(routes).toContain("/topology");
     expect(routes).toContain("/git");
@@ -91,11 +92,11 @@ describe("접근성 래칫의 라우트 커버리지", () => {
   });
 
   it("404 를 로케일 안팎 두 주소에서 잰다", () => {
-    // 2026-08-03 라운드가 AA 미달을 찾은 자리이고, 그때 래칫은 이 화면을 한 번도
-    // 안 보고 있었다. 오늘 두 주소는 **같은 파일**(`app/not-found.tsx`)로 떨어진다
-    // — 프로브로 확인했고 `audited-routes.ts` 에 근거가 있다. 그래도 둘 다 두는
-    // 것은 not-found 배선이 바뀌었을 때 감사 안 된 표면이 조용히 들어오는 것을
-    // 막기 위해서다.
+    // This is where the 2026-08-03 round found the AA failure, and at the time the
+    // ratchet had never once looked at this screen. Today both addresses resolve to
+    // **the same file** (`app/not-found.tsx`) — confirmed by probe, with the evidence
+    // in `audited-routes.ts`. Both are kept anyway so that a change to the not-found
+    // wiring cannot slip an unaudited surface back in.
     expect(AUDITED_ROUTES.some((url) => /^\/ko\/.*does-not-exist/.test(url))).toBe(true);
     expect(AUDITED_ROUTES.some((url) => /^\/[^/]*does-not-exist/.test(url))).toBe(true);
   });

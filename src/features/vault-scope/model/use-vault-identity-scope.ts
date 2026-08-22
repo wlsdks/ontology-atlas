@@ -6,24 +6,24 @@ import { useLocalVault } from '@/features/docs-vault-local';
 import { useSampleSource } from '@/features/vault-sample-source';
 
 /**
- * **지금 화면이 보고 있는 볼트가 무엇인가** — 한 문자열.
+ * **Which vault the screen is currently looking at**, as one string.
  *
- * 이 값이 바뀌면 *그 볼트 안에서만 뜻이 있던 상태*(주소의 노드 슬러그, 볼트별
- * 저장 상태)는 의미를 잃는다. 「범위를 넘긴 상태」 부류의 결함은 전부 그
- * 순간에 아무도 걷어내지 않아 생긴다 — 낡은 값이 살아남아 **거짓 판정의
- * 입력**이 된다.
+ * When this value changes, state that only meant something *inside that vault* (the node
+ * slug in the address, per-vault stored state) loses its meaning. Every defect of the
+ * "state that outlived its scope" family comes from that moment passing with nobody
+ * clearing it — a stale value survives and becomes **the input to a false verdict**.
  *
- * 산출식의 단일 출처는 `vaultIdentityScope`(entities). 이 훅은 그 함수에 앱의
- * 세 신호를 모아 넣을 뿐이다:
+ * The single source for the derivation is `vaultIdentityScope` (entities). This hook only
+ * gathers the app's three signals into that function:
  *
- * - `useDataSourceMode()` — 사용자 볼트를 보고 있나, 번들 샘플을 보고 있나
- * - `useLocalVault().handle?.name` — 로컬이면 어느 폴더인가
- * - `useSampleSource()` — 샘플이면 어느 샘플인가 (**이 축이 빠지면 샘플↔샘플
- *   전환이 변화로 안 잡힌다**)
+ * - `useDataSourceMode()` — is this the user's vault or a bundled sample?
+ * - `useLocalVault().handle?.name` — if local, which folder?
+ * - `useSampleSource()` — if a sample, which one? (**without this axis a sample↔sample
+ *   switch is not seen as a change**)
  *
- * ⚠️ 핀·최근·열린 탭이 쓰는 `vaultScopeKey` 와 **다른 값**이다. 그쪽은 이미
- * 배포된 저장 자리의 이름이라 샘플 둘을 하나로 본다 — 이유는
- * `entities/docs-vault/lib/vault-scope-key.ts` 의 표에 있다.
+ * ⚠️ This is a **different value** from the `vaultScopeKey` used by pins, recents, and open
+ * tabs. That one names already-shipped storage locations and treats both samples as one —
+ * the reasoning is in the table in `entities/docs-vault/lib/vault-scope-key.ts`.
  */
 export function useVaultIdentityScope(): VaultIdentityScope {
   const mode = useDataSourceMode();

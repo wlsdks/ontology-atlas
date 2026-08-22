@@ -71,13 +71,13 @@ describe("TopologyEmptyState", () => {
     );
   });
 
-  // 2026-07-24 온보딩 라운드 — 방금 로컬 vault 를 연 사용자에게 "macOS 앱을
-  // 설치하고…" 다운로드 카피는 오안내다.
+  // For a user who just opened a local vault, download copy saying "install the macOS
+  // app…" is misdirection.
   //
-  // 2026-08-08 카운슬 — 판정을 **능력**으로 넓혔다. 종전 조건
-  // (`isTauriVaultRuntime() || hasOpenVault`)은 둘 다 아닌 사람, 즉 FSA 를
-  // 지원하는 브라우저로 **처음 온 웹 방문자**에게 「앱을 설치하세요」로
-  // 답했다 — 그 브라우저는 지금 폴더를 열 수 있다.
+  // 2026-08-08 council — the decision was widened to **capability**. The old condition
+  // (`isTauriVaultRuntime() || hasOpenVault`) answered someone who is neither — a
+  // **first-time web visitor on an FSA-capable browser** — with 「install the app」,
+  // when that browser can open a folder right now.
   it("폴더를 열 수 있으면 다운로드 오안내 대신 picker 카피를 쓴다", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -91,8 +91,9 @@ describe("TopologyEmptyState", () => {
     expect(links).not.toContain("/download/");
   });
 
-  // 음성 대조군 — 능력이 없으면(Firefox 등) **여전히** 내려받기로 강등된다.
-  // 이게 없으면 위 시험은 「언제나 picker 카피」여도 초록이다.
+  // The negative control — without the capability (Firefox and the like) it **still**
+  // degrades to the download. Without this, the test above stays green even if the
+  // picker copy were used unconditionally.
   it("폴더를 열 수 없으면 내려받기로 강등된다", () => {
     renderEmpty(0, "no-projects");
     const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
@@ -118,9 +119,9 @@ describe("TopologyEmptyState", () => {
   it("빈 상태 패널은 큰 카드 대신 작은 상태 패널로 렌더", () => {
     renderEmpty(0);
     const panel = screen.getByRole("status");
-    // 반지름은 **램프 토큰**이 정한다. 종전엔 `rounded-lg`(Tailwind 기본)를
-    // 못박고 있었는데, 그건 이 저장소의 radius 램프 밖 값이라 규격을 지키는
-    // 것처럼 보이면서 실제로는 램프를 벗어난 자리를 고정하고 있었다.
+    // The radius is decided by a **ramp token**. It used to pin `rounded-lg`
+    // (Tailwind's default), a value outside this repository's radius ramp — so it
+    // looked like conformance while actually fixing a position off the ramp.
     expect(panel.className).toContain("rounded-[var(--radius-panel)]");
     expect(panel.className).not.toContain("rounded-2xl");
     expect(panel.className).not.toContain("p-8");
@@ -128,9 +129,9 @@ describe("TopologyEmptyState", () => {
 
   it("복구 행동은 폭이 전부 같다 — 글자 수가 치수를 정하지 않는다", () => {
     /*
-     * 종전은 `flex-wrap justify-center` 라 버튼 폭이 글자 수로 정해지고
-     * 줄바꿈 자리도 글자 수가 정했다(넷이 1·2·1 계단). 치수 규칙성 위반이고,
-     * 되돌리면 여기가 터진다.
+     * It used to be `flex-wrap justify-center`, so a button's width was set by its
+     * character count and so was the wrap point (four buttons stepping 1·2·1). That
+     * violates dimension regularity, and reverting it breaks here.
      */
     renderEmpty(0);
     const actions = [...screen.queryAllByRole("link"), ...screen.queryAllByRole("button")];
@@ -142,7 +143,7 @@ describe("TopologyEmptyState", () => {
 
   it("모든 복구 CTA 는 키보드 focus 링을 가진다 (focus-visible, WCAG 2.4.7)", () => {
     renderEmpty(0);
-    // 키보드 사용자가 어떤 복구 액션에 focus 했는지 보이지 않던 회귀 가드.
+    // Guards the regression where a keyboard user could not see which recovery action had focus.
     for (const link of screen.getAllByRole("link")) {
       expect(link.className).toContain("focus-visible:ring-2");
       expect(link.className).toContain("focus-visible:outline-none");
@@ -176,9 +177,9 @@ describe("TopologyEmptyState", () => {
     );
     const btn = screen.getByTestId("empty-start-from-docs");
     expect(btn).toHaveTextContent("내 문서로 지도 만들기");
-    // 방금 vault 를 연 사용자에게 앱 설치를 권하던 오안내가 이 브랜치에서 사라진다
+    // The misdirection that offered an app install to someone who just opened a vault disappears on this branch.
     expect(screen.queryByText(/macOS/)).not.toBeInTheDocument();
-    // 사용자의 문서 존재를 먼저 인정한다 (kicker + 본문 양쪽)
+    // The user's documents are acknowledged first (both the kicker and the body).
     expect(screen.getAllByText(/4개/).length).toBeGreaterThanOrEqual(1);
     btn.click();
     expect(onStartFromDocs).toHaveBeenCalledTimes(1);

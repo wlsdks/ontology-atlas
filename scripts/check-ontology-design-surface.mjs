@@ -160,17 +160,10 @@ export function blankComments(source) {
 }
 
 export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
-  // [삭제, 2026-07-18] "browse-workbench-loop" / "browse-tree-row-graph-handle"
-  // 체크 — B3 "허브가 곧 지도" 로 `/ontology` 의 트리/ego 허브
-  // (`OntologyViewPage.tsx` + `ontology-tree-view` widget) 가 통째로
-  // retire 되고 `/topology` (지도 + INDEX 패널 + 데이터시트) 로 수렴했다.
-  // Browse/Write/Query 루프 자체는 없어지지 않았다 — INDEX 패널의 트리 +
-  // `?p=` 선택 + 데이터시트 "전체 상세 →" 가 같은 역할을 지도 위에서 한다.
   {
-    // docs-chrome-round (2026-07): 점검 밴드가 중앙 모달로 승격되며
-    // `DocsVaultSourceContractBar` → `DocsVaultAuditModal` (별도 파일) 로
-    // 이동했다 — 마커는 파일 묶음 전체에서 존재를 본다(builder-write-verify-loop
-    // 와 동일 패턴).
+    // The audit band was promoted to a centred modal and moved from
+    // `DocsVaultSourceContractBar` to `DocsVaultAuditModal` (a separate file), so the
+    // marker checks for presence across the whole file bundle.
     id: "source-vault-execution-contract",
     files: [
       "src/views/docs-vault/ui/DocsVaultPage.tsx",
@@ -216,11 +209,12 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "Map and ACP writes must both stop on a typed pre-write change review; the map must preview the proposed relation without mutating layout, and ontology writes must never expose allow-always.",
   },
-  // [교체, 2026-07-27] 구 3탭 "insights-tabbed-handoff" 체크 — current
-  // Insights는 다섯 사용자 질문(할 일/구성/연결/경계/신선도)을 한 탭에 하나씩
-  // 답하는 정비 보드다. 고정 3탭이나 census hero 하나를 제품 계약으로 보지
-  // 않는다. URL로 복원되는 정확한 5탭 집합, 한 번에 한 active tabpanel,
-  // 그리고 현재 질문에 맞는 agent handoff가 함께 남아 있어야 한다.
+  // Replaced the old three-tab "insights-tabbed-handoff" check (2026-07-27). Insights
+  // is a maintenance board answering five user questions (do next / composition /
+  // connections / boundaries / freshness), one per tab. Neither a fixed three tabs nor
+  // a single inventory hero is treated as a product contract. What must hold together
+  // is the exact five-tab set restorable from the URL, one active tabpanel at a time,
+  // and an agent handoff matching the current question.
   {
     id: "insights-maintenance-board",
     files: [
@@ -249,10 +243,6 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "/ontology/insights must keep five URL-restorable question tabs, one active maintenance panel, and a tab-scoped copyable agent handoff.",
   },
-  // [삭제, 2026-07-18] "topology-kind-legend-role-copy" 체크 — 대상 파일
-  // `SigmaTopology.tsx` 가 #344 (retire-sigma-topology) 로 삭제됐고, 검증하던
-  // i18n 키(kindLegend*Role)도 다른 어떤 컴포넌트도 소비하지 않아 함께 제거.
-  // 이 UI(노드 kind 역할 legend)는 topology-map-v2 에 재구현되지 않았다.
   {
     id: "product-design-operating-system",
     files: ["docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md"],

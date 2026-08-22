@@ -6,12 +6,13 @@ import koMessages from '../../../../messages/ko.json';
 import { AcpPermissionCard } from './AcpPermissionCard';
 
 /**
- * 이 카드는 이 제품에서 **가장 값비싼 한 번의 결정**이 일어나는 자리다:
- * 에이전트가 폴더 밖을 건드리려 하고, 사람이 허락할지 정한다.
+ * This card is where **the most expensive single decision** in this product happens:
+ * the agent wants to touch something outside the folder, and the person decides
+ * whether to allow it.
  *
- * 2026-08-17 실측: 카드가 **어디**만 보여 주고 **무엇을 하려는지**는 어디에도
- * 없었다. `/etc/hosts` 를 읽겠다와 지우겠다가 화면에서 똑같았다. 값은
- * `toolKind` 로 오고 있었는데 화면이 안 읽었다.
+ * Measured 2026-08-17: the card showed only **where** and nowhere **what it was
+ * trying to do**. Reading `/etc/hosts` and deleting it looked identical on screen.
+ * The value was arriving as `toolKind` and the screen was not reading it.
  */
 
 function card(
@@ -44,7 +45,7 @@ function card(
   );
 }
 
-/** 어댑터가 「계속 허용」에 딸려 보내는 실측 모양. */
+/** The measured shape the adapter sends along with 「계속 허용」 (keep allowing). */
 const alwaysWith = (targets: unknown[]) => [
   {
     optionId: 'always',
@@ -105,8 +106,8 @@ describe('계속 허용 — 어댑터가 말한 범위만 적는다', () => {
   });
 
   it('범위를 안 알려 주면 **폴더라고 단정하지 않는다**', () => {
-    // 종전 문구는 "위 경로가 있는 폴더 전체" 라고 단정했다. 우리가 정하는
-    // 범위가 아니므로, 모르면 한 번만 허용하는 쪽을 권한다.
+    // The old copy asserted "the whole folder containing the path above". That scope
+    // is not ours to decide, so when it is unknown, allowing once is what is offered.
     render(card('edit', '/etc/hosts', alwaysWith([])));
     const scope = screen.getByTestId('acp-permission-scope');
     expect(scope.getAttribute('data-scope')).toBe('unknown');

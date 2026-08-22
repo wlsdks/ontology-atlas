@@ -4,17 +4,17 @@ import { useLocale } from "next-intl";
 import { IconButton, controlClass } from "@/shared/ui";
 
 export interface SampleWelcomeNoteProps {
-  /** P1b — FSA 지원이면 웹에서도 폴더 열기(SampleNotice 와 동일 능력 계약). */
+  /** With FSA support a folder can be opened on the web too (the same capability contract as `SampleNotice`). */
   canOpenLocalVault: boolean;
   onOpenFolder: () => void;
   onDismiss: () => void;
 }
 
-// Toss D1 정리(2026-07) — 이 카피는 `src/views/docs-vault/` 파일 소유권
-// 제약 때문에 공유 `messages/ko.json` / `messages/en.json` 카탈로그에
-// 등록하지 못했다(다른 worktree 와 동시 편집 충돌 회피). 대신 이 컴포넌트
-// 안에서 로케일별 리터럴을 직접 스위치한다 — next-intl 관례에서 벗어난
-// 의도적 예외이며, 후속 정리에서 정식 메시지 키로 승격해야 한다.
+// This copy could not be registered in the shared `messages/ko.json` / `messages/en.json`
+// catalogues because of file-ownership constraints on `src/views/docs-vault/` (avoiding a
+// simultaneous-edit conflict with another worktree). Per-locale literals are switched inside this
+// component instead — a deliberate exception to the next-intl convention that should be promoted to
+// real message keys in a follow-up.
 const COPY = {
   ko: {
     title: "이 문서함은 무엇인가요?",
@@ -31,15 +31,14 @@ const COPY = {
 } as const;
 
 /**
- * 샘플(vault 미선택) 모드에서 명시적 딥링크 없이 착지했을 때 첫 화면에
- * 보이는 소개 노트 — "이 문서함은 무엇이고 어떻게 쓰나" 를 평문으로.
+ * The introduction note shown on the first screen when landing in sample mode (no vault chosen)
+ * without an explicit deeplink — "what is this docs surface and how do I use it", in plain language.
  *
- * 기존 기본 선택 로직(`README`/`FEATURES`/…)은 여전히 100% 영어 개발
- * 문서를 고르지만, 이 노트가 그 위에서 먼저 맥락을 줘 비개발자 방문자가
- * 첫 화면에서 곧장 이탈하지 않게 한다(po-pass Toss D1). 표시 조건은
- * caller(`shouldShowSampleWelcomeNote`)가 판단 — 이 컴포넌트는 항상
- * 렌더된 것을 전제로 한 순수 표시. `SampleNotice`(왜 읽기 전용인지) 와는
- * 다른 관심사라 별도 표면으로 유지한다.
+ * The existing default selection logic (`README`/`FEATURES`/…) still picks a 100% English developer
+ * document, so this note gives context above it first and keeps a non-developer visitor from
+ * bouncing on the first screen. The visibility condition is decided by the caller
+ * (`shouldShowSampleWelcomeNote`); this component is a pure display assuming it was rendered. It
+ * stays a separate surface from `SampleNotice` (why it is read-only), which is a different concern.
  */
 export function SampleWelcomeNote({
   canOpenLocalVault,

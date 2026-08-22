@@ -3,26 +3,28 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 라벨 끝에 붙은 장식 화살표를 막는 게이트.
+ * Blocks decorative arrows attached to the end of a label.
  *
- * 소유자 판정(2026-07-26), `지도에서 열기 →` 를 보고:
+ * Owner verdict (2026-07-26), on seeing `지도에서 열기 →`:
  *
  * > *"나는 이런 글 옆에 화살표 있는거 싫어하거든? AI느낌이라?"*
+ * > (I dislike arrows next to text like this — it feels AI-generated)
  *
- * 라벨 뒤의 화살표는 정보를 하나도 더하지 않는다 — 어디로 가는지는 라벨이
- * 이미 말했고, 누를 수 있다는 건 컨트롤 생김새가 이미 말한다. 남는 신호는
- * "생성된 랜딩 페이지" 의 결이고, 워크벤치처럼 같은 라벨이 열두 번 나오는
- * 화면에서는 소음도 열두 번 반복된다.
+ * An arrow after a label adds no information: the label already says where it goes,
+ * and the control's appearance already says it is pressable. What remains is the
+ * texture of a generated landing page, and on a screen like the workbench where the
+ * same label appears twelve times, the noise repeats twelve times too.
  *
- * **화살표 자체를 금지하는 게 아니다.** 문장 가운데의 화살표는 대개 데이터다:
- * `{source} → {target}`(경로), `오래된 → 최근`(순서), `설정 → Developer`(메뉴
- * 경로), `목차 클릭 → 해당 위치로`(인과). 그래서 이 게이트는 **문자열 끝**만
- * 본다. 판별법: 화살표를 지우고 라벨을 소리 내어 읽어라. 잃은 게 없으면 장식이었다.
+ * **Arrows themselves are not banned.** An arrow mid-sentence is usually data:
+ * `{source} → {target}` (a path), `오래된 → 최근` (order), `설정 → Developer` (a
+ * menu path), `목차 클릭 → 해당 위치로` (causation). So this gate looks only at
+ * **the end of a string**. The test: delete the arrow and read the label aloud. If
+ * nothing was lost, it was decoration.
  *
- * 전문: `docs/DESIGN-SYSTEM.md` "Arrows carry information or they don't ship".
+ * Full text: `docs/DESIGN-SYSTEM.md` "Arrows carry information or they don't ship".
  */
 
-/** 라벨 끝의 장식 화살표. 문장 중간은 대상이 아니다. */
+/** A decorative arrow at the end of a label. Mid-sentence is not in scope. */
 const TRAILING_ARROW = /[→↗➜⟶»]\s*$/;
 
 const LOCALES = ["ko", "en"] as const;
@@ -61,9 +63,9 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
       }
     }
 
-    // 게이트가 스스로 살아있음을 증명한다 — 파싱이 깨져 0건을 읽으면 "위반
-    // 없음" 이 아니라 이 단언이 먼저 터진다. (2026-07 에 같은 종류의 게이트가
-    // 외부 프로세스 실패로 조용히 전부 통과시킨 사고가 있었다.)
+    // The gate proves itself alive — if parsing breaks and reads 0 items, this
+    // assertion fails first rather than reporting "no violations". (In 2026-07 a gate
+    // of the same kind silently passed everything after an external process failed.)
     expect(scanned).toBeGreaterThan(1000);
 
     const report = offences
@@ -79,53 +81,57 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
   });
 
   it("게이트가 실제로 위반을 잡는다", () => {
-    // 이 정규식이 무력화되면 위 테스트는 영원히 통과한다. 판정 자체를 고정한다.
+    // If this regex is neutered the test above passes forever, so the predicate itself
+    // is pinned.
     expect(TRAILING_ARROW.test("지도에서 열기 →")).toBe(true);
     expect(TRAILING_ARROW.test("Open →")).toBe(true);
     expect(TRAILING_ARROW.test("열기 ↗")).toBe(true);
-    // 문장 가운데는 데이터 — 잡으면 안 된다.
+    // Mid-sentence is data — it must not be caught.
     expect(TRAILING_ARROW.test("{source} → {target}")).toBe(false);
     expect(TRAILING_ARROW.test("오래된 → 최근 순")).toBe(false);
     expect(TRAILING_ARROW.test("설정 → Developer 에서 등록")).toBe(false);
   });
 
   /**
-   * ── 게이트 구멍 (2026-07-26 실측) ──────────────────────────────────
+   * ── The gate's hole (measured 2026-07-26) ─────────────────────────────
    *
-   * 위 검사는 `messages/*.json` 만 본다. 그런데 실제로 살아남은 위반은 **JSX
-   * 글리프**였다 — `ProjectDetailPage` 의 앱-내 `<Link>` 끝에 `↗` 가 span 으로
-   * 박혀 있었고, 하필 그 파일은 이 규칙을 등재한 PR 이 같은 날 재설계한
-   * 파일이다. 번역 문자열만 지키는 게이트는 마크업으로 새는 걸 못 본다.
+   * The check above reads `messages/*.json` only. The violation that actually survived
+   * was a **JSX glyph** — a `↗` in a span at the end of an in-app `<Link>` in
+   * `ProjectDetailPage`, in the very file the PR that registered this rule had
+   * redesigned the same day. A gate that guards only translation strings cannot see
+   * leakage through markup.
    *
-   * `↗` 는 용도가 하나뿐이다 — **앱을 떠나는 링크의 선행 경고**. 그래서 이
-   * 글리프는 쓰는 자리에서 스스로를 선언하게 한다(`data-external-link-marker`).
-   * 선언 없는 `↗` 는 장식이라고 본다.
+   * `↗` has exactly one use — **a leading warning on a link that leaves the app**. So
+   * the glyph must declare itself where it is used (`data-external-link-marker`). An
+   * undeclared `↗` is treated as decoration.
    *
-   * ── 사정거리가 짧았다 (2026-07-27 실측) ────────────────────────────────
+   * ── The reach was too short (measured 2026-07-27) ──────────────────────
    *
-   * 위 문단은 원래 "`→` 는 대상이 아니다 — 이 코드베이스에서 홀로 선 `→` 는
-   * 전부 중위 데이터 화살표다" 라고 적어 두고 `→` 를 통째로 면제했다. 그
-   * 면제 아래에서 공방의 **주 저장 버튼**이 `확인하고 저장 <span>→</span>`
-   * 로 살아 있었다. 규칙을 등재한 다음 날, 규칙을 등재한 저장소가 스스로
-   * 어긴 것이다. **룰이 있어도 사정거리가 짧으면 룰이 없는 것과 같다.**
+   * The paragraph above used to say "`→` is out of scope — every standalone `→` in
+   * this codebase is a mid-sentence data arrow" and exempted `→` wholesale. Under that
+   * exemption the studio's **primary save button** lived as
+   * `확인하고 저장 <span>→</span>`. The day after registering the rule, the repository
+   * that registered it broke it. **A rule whose reach is too short is the same as no
+   * rule.**
    *
-   * 면제를 걷되 중위 데이터 화살표는 그대로 통과해야 한다. 둘을 가르는 것은
-   * 글리프가 아니라 **뒤에 무엇이 오는가** 다:
+   * The exemption is removed, but mid-sentence data arrows must still pass. What
+   * separates them is not the glyph but **what follows it**:
    *
-   * - `{a} <span>→</span> {b}` — 뒤에 형제가 온다 → 중위, 데이터.
-   * - `{labels.save} <span>→</span></button>` — 뒤가 부모의 닫는 태그다 →
-   *   라벨 끝, 장식. 지우고 읽어도 잃는 게 없다.
+   * - `{a} <span>→</span> {b}` — a sibling follows → mid-sentence, data.
+   * - `{labels.save} <span>→</span></button>` — the parent's closing tag follows →
+   *   end of label, decoration. Delete it and nothing is lost.
    *
-   * 켜기 전 전수 측정(2026-07-27, `src`+`app` 의 .tsx 전부): 끝자리 3건
-   * (전부 공방 저장 버튼 계열) · 중위 7건. 한 PR 로 치울 수 있는 규모라
-   * 켰다 — `design.md` "룰을 켜기 전 반드시 측정한다" 절차.
+   * Inventory before switching it on (2026-07-27, every .tsx in `src` and `app`): 3
+   * trailing (all in the studio save-button family) and 7 mid-sentence. Small enough
+   * to clear in one PR, so it was switched on — the .claude/rules/design.md procedure
+   * "always measure before switching a rule on".
    */
   const DECORATIVE_GLYPH_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*[↗➜⟶»]\s*</g;
-  /** 한 요소의 내용이 화살표 하나뿐인 자리 — 중위인지 끝자리인지는 뒤가 정한다. */
+  /** An element whose entire content is a single arrow — what follows decides whether it is mid-sentence or trailing. */
   const LONE_ARROW_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*([→↗➜⟶»])\s*<\/\1\s*>/g;
   const EXTERNAL_MARKER = "data-external-link-marker";
 
-  /** 뒤따르는 첫 비-공백이 부모의 닫는 태그면 그 화살표는 라벨 끝이다. */
+  /** If the first non-whitespace that follows is the parent's closing tag, the arrow is at the end of a label. */
   function isTrailingArrow(source: string, endIndex: number): boolean {
     return source.slice(endIndex).replace(/^\s+/, "").startsWith("</");
   }
@@ -148,7 +154,7 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
     const files: string[] = [];
     for (const root of ["src", "app"]) collectSourceFiles(join(process.cwd(), root), files);
 
-    // 게이트 생존 확인 — 스캔이 0개 파일을 읽으면 "위반 없음" 이 아니라 결함이다.
+    // Gate liveness — a scan reading 0 files is a defect, not "no violations".
     expect(files.length).toBeGreaterThan(100);
 
     const offences: string[] = [];
@@ -199,25 +205,27 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
   });
 
   /**
-   * ── 허용 열을 죽은 코드가 떠받치고 있었다 (2026-08-03 실측) ──────────────
+   * ── Dead code was holding up the allowance clause (measured 2026-08-03) ──
    *
-   * 이 시험은 원래 `expect(declared.length).toBeGreaterThan(0)` 로 시작했다 —
-   * *"표식이 사라지면 허용 열이 검증되지 않은 채 남는다"* 는 이유였다. 그런데
-   * 실측하니 그 표식을 가진 `.tsx` 는 **`shared/ui/link-list-editor.tsx` 하나뿐**
-   * 이었고, 그 파일은 **프로덕션 소비처가 0인 죽은 프리미티브**였다. 프로덕션에서
-   * `target="_blank"` 를 쓰는 파일 13개 중 표식을 쓰는 건 0개. 즉 **아무도
-   * 렌더하지 않는 컴포넌트가 규칙의 허용 조항을 떠받치고** 있었고, 그 파일을
-   * 지우는 순간 이 단언이 빨개진다 — 규칙과 무관한 이유로.
+   * This test used to start with `expect(declared.length).toBeGreaterThan(0)`, on the
+   * grounds that *"if the marker disappears, the allowance clause stays unverified"*.
+   * Measurement showed the only `.tsx` carrying that marker was
+   * **`shared/ui/link-list-editor.tsx`**, a **dead primitive with zero production
+   * consumers**. Of the 13 production files using `target="_blank"`, zero used the
+   * marker. **A component nobody rendered was holding up the rule's allowance
+   * clause**, and deleting that file would turn this assertion red for a reason
+   * unrelated to the rule.
    *
-   * 진단: 공회전 방지의 대상을 잘못 골랐다. **비어 있으면 안 되는 집합은
-   * 「스캔한 파일」이지 「예외를 쓴 파일」이 아니다.** 스캔 집합은 위 두 시험이
-   * `files.length > 100` 으로 이미 잠그고, 탐지기가 실제로 작동하는지는 아래
-   * 합성 프로브가 잠근다. 소비처 0인 조건부 규칙은 **고장난 게이트가 아니라
-   * 첫 사례를 기다리는 규칙**이다.
+   * Diagnosis: the idling guard was aimed at the wrong set. **The set that must not be
+   * empty is "files scanned", not "files using the exception".** The scanned set is
+   * already locked by the two tests above with `files.length > 100`, and whether the
+   * detector works is locked by the synthetic probes below. A conditional rule with
+   * zero consumers is **a rule waiting for its first case, not a broken gate.**
    *
-   * 판정과 반증 조건: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」.
+   * Verdict and falsifier: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」 (two
+   * dead primitives).
    */
-  /** 파일 단위 판정 — 선언이 없으면 이 규칙의 대상이 아니라 통과다. */
+  /** Per-file verdict — a file with no declaration is out of scope for this rule, so it passes. */
   function externalMarkerSitsOnExternalLink(source: string): boolean {
     if (!source.includes(EXTERNAL_MARKER)) return true;
     return source.includes('target="_blank"');
@@ -226,7 +234,8 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
   it("선언된 외부 링크 표식은 실제로 앱을 떠나는 링크 위에만 있다", () => {
     const files: string[] = [];
     for (const root of ["src", "app"]) collectSourceFiles(join(process.cwd(), root), files);
-    // 공회전 차단은 **스캔 집합**에 건다 — 예외 사용자가 0인 것은 결함이 아니다.
+    // The idling guard is applied to the **scanned set** — zero users of the exception
+    // is not a defect.
     expect(files.length).toBeGreaterThan(100);
 
     const offences = files.filter((file) => !externalMarkerSitsOnExternalLink(readFileSync(file, "utf8")));
@@ -237,15 +246,16 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
   });
 
   it("표식 범위 게이트가 실제로 위반을 잡는다 — 소비처가 0이어도 탐지기는 살아 있다", () => {
-    // 위반 — 앱 안에서 이동하는 링크에 표식을 달아 장식 화살표를 통과시키려 한다.
+    // Violation — attaching the marker to an in-app link to sneak a decorative arrow
+    // through.
     expect(
       externalMarkerSitsOnExternalLink('<Link href="/topology"><span data-external-link-marker>↗</span>{label}</Link>'),
     ).toBe(false);
-    // 정상 — 앱을 떠나는 링크.
+    // Clean — a link that leaves the app.
     expect(
       externalMarkerSitsOnExternalLink('<a href="https://x" target="_blank"><span data-external-link-marker>↗</span>{label}</a>'),
     ).toBe(true);
-    // 표식을 아예 안 쓰는 파일은 이 규칙의 대상이 아니다.
+    // A file that never uses the marker is out of scope for this rule.
     expect(externalMarkerSitsOnExternalLink('<Link href="/topology">{label}</Link>')).toBe(true);
   });
 
@@ -259,24 +269,26 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
     ].join("\n");
 
     const hits = [...probe.matchAll(DECORATIVE_GLYPH_NODE)];
-    // 선언 없는 ↗ 1건만 잡고, 선언된 ↗ 와 중위 데이터 화살표 → 는 통과.
+    // Catches only the one undeclared ↗; a declared ↗ and a mid-sentence data arrow →
+    // both pass.
     expect(hits).toHaveLength(2);
     expect(hits.filter((hit) => !hit[2].includes(EXTERNAL_MARKER))).toHaveLength(1);
   });
 
   /**
-   * 프로브 — 넓힌 사정거리가 실제로 잡는지 위반 1줄 + 정상 1줄로 증명한다.
-   * 이 단언이 통과해야 위 스캔의 0건이 "위반 없음" 이라는 뜻이 된다.
+   * Probe — proves the widened reach actually catches, with one violating line and
+   * one clean line. Only when this passes does the scan's 0 above mean "no
+   * violations".
    */
   it("끝자리 게이트가 실제로 위반을 잡고 중위는 놓아 준다", () => {
-    // 위반 — 공방 저장 버튼이 실제로 이 모양이었다.
+    // Violation — the studio save button really had this shape.
     const violation = [
       "<button>",
       "  {labels.save}",
       '  <span className="opacity-75">→</span>',
       "</button>",
     ].join("\n");
-    // 정상 — 경로를 나르는 중위 화살표.
+    // Clean — a mid-sentence arrow carrying a path.
     const legit = [
       "<span>",
       "  {pair.fromTitle}",
@@ -292,7 +304,8 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
 
     expect(trailingHits(violation)).toHaveLength(1);
     expect(trailingHits(legit)).toHaveLength(0);
-    // 선언된 외부 링크 표식은 끝자리여도 통과한다(라벨 앞 규칙은 위 게이트 담당).
+    // A declared external-link marker passes even in trailing position (the
+    // leading-position rule belongs to the gate above).
     expect(
       trailingHits('<a>{label}<span data-external-link-marker>↗</span></a>').filter(
         (hit) => !hit[2].includes(EXTERNAL_MARKER),

@@ -48,8 +48,8 @@ export function parseVerifyAppLaunchArgs(argv, {
       : null,
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     verifyAiSettings: argv.includes("--verify-ai-settings"),
-    // 기본값을 여기서 채운다 — 앱이 아니라 검증기가 주소를 정해야 "필드에 이
-    // 값이 들어갔다" 는 대조가 성립한다.
+    // Defaults are filled in here: the verifier, not the app, must decide the
+    // address, otherwise "this value reached the field" is not a comparison.
     aiSettingsBaseUrl: aiSettingsBaseUrlArg
       ? aiSettingsBaseUrlArg.slice("--ai-settings-base-url=".length).trim() || null
       : AI_SETTINGS_DEFAULT_BASE_URL,

@@ -96,7 +96,7 @@ describe('parseFrontmatter — objects (T16)', () => {
   });
 
   it('list takes precedence when both indented dash and key:value follow', () => {
-    // 들여쓰기 다음 줄이 dash 인 경우 list 가 먼저 매치.
+    // When the line after the indent starts with a dash, the list matches first.
     const raw = [
       '---',
       'items:',
@@ -151,7 +151,7 @@ describe('buildExcerpt — markdown is flattened to readable prose', () => {
   });
 
   it('respects the max length (잘릴 땐 말줄임표 포함 max+1 이내)', () => {
-    // 공백 없는 초장문(잘라도 어절 경계 없음) → max 에서 자르고 … 부착.
+    // Very long text with no spaces (no word boundary to cut at) — cut at max and append the ellipsis.
     expect(buildExcerpt('x'.repeat(500)).length).toBeLessThanOrEqual(321);
     expect(buildExcerpt('x'.repeat(500)).endsWith('…')).toBe(true);
     expect(buildExcerpt('x'.repeat(500), 50).length).toBeLessThanOrEqual(51);
@@ -161,23 +161,23 @@ describe('buildExcerpt — markdown is flattened to readable prose', () => {
     const prose = '이 프로젝트의 ontology 는 비즈니스 핵심과 구현 근거를 잇는다 '.repeat(20);
     const out = buildExcerpt(prose, 60);
     expect(out.endsWith('…')).toBe(true);
-    // 마지막 조각이 완전한 어절이어야 함(공백 뒤 절단 없음)
+    // The final fragment must be a whole word — never cut right after a space.
     const body = out.slice(0, -1);
     expect(prose.includes(body)).toBe(true);
     expect(body.endsWith(' ')).toBe(false);
-    // 짧은 입력은 그대로
+    // Short input passes through unchanged.
     expect(buildExcerpt('짧은 문장', 320)).toBe('짧은 문장');
   });
 });
 
 describe('extractOutLinksWithContext — wikilinks inside the nested ontology/ vault', () => {
-  // persona QA (fix/persona-findings ③): docs/ontology/ 는 이 프로젝트가
-  // dogfood 하는 중첩 MCP vault — 그 안의 위키링크(`[[capabilities/x]]`)는
-  // ontology-vault-루트 기준 slug 를 쓰지만, 실제 문서 slug 는
-  // `ontology/` 접두사가 붙는다. 접두사 보정 없이는 실제 역참조가 있어도
-  // backlinksDetail 조회가 항상 빗나가 `/docs` 하단 backlinks strip 이
-  // 절대 렌더되지 않았다 (예: docs/ontology/elements/sigma-graphology.md
-  // 의 `[[capabilities/topology-canvas-render]]`).
+  // `docs/ontology/` is the nested MCP vault this project dogfoods. Wikilinks
+  // inside it (`[[capabilities/x]]`) use slugs relative to that vault root, while
+  // the real document slug carries an `ontology/` prefix. Without the prefix
+  // correction, `backlinksDetail` lookups always missed even where real backlinks
+  // existed, so the backlinks strip at the bottom of `/docs` never rendered — e.g.
+  // a `[[capabilities/topology-canvas-render]]` link written inside an
+  // `ontology/elements/*` document.
   it('ontology/ 문서 안의 위키링크는 ontology/ 접두사를 붙여 정규화한다', () => {
     const body = '같은 캔버스 엔진 얘기는 [[capabilities/topology-canvas-render]] 참고.';
     const { contexts } = extractOutLinksWithContext(

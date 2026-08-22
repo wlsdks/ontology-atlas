@@ -16,27 +16,28 @@ import { useGuidedTour } from "../model/use-guided-tour";
 import { GuidedTourOverlay } from "./GuidedTourOverlay";
 
 export interface DestinationGuideProps {
-  /** 지금 화면의 목적지. 지도(`map`)와 그 밖의 라우트는 `null` — 지도는 자기
-   *  8단계 여정을 직접 소유한다. */
+  /** The current screen's destination. The map (`map`) and other routes are `null` —
+   *  the map owns its own eight-step journey. */
   destination: DestinationTourId | null;
 }
 
 const NO_STEPS = Object.freeze([]) as readonly never[];
 
-/** 차단 표면이 물러나기를 기다리는 재시도 간격 · 상한 (≈30초). */
+/** Retry interval and cap while waiting for a blocking surface to withdraw (≈30 seconds). */
 const RETRY_MS = 1500;
 const MAX_AUTO_START_ATTEMPTS = 20;
 
 /**
- * 문서함·공방·인사이트·프로젝트·기록의 첫 방문 안내.
+ * First-visit guidance for docs, workshop, insights, projects, and history.
  *
- * 지도가 쓰던 것과 **같은 투어 기제**(카드·스크림·컷아웃·진행 점·건너뛰기)를
- * 목적지별 스텝 배열만 갈아끼워 재사용한다. 셸에 상주하며 목적지가 바뀔 때
- * `key` 로 remount 되므로(=투어 상태 초기화) 이동 중 이전 화면의 카드가 남지
- * 않는다.
+ * Reuses **the same tour mechanism** the map used (card, scrim, cutout, progress
+ * dots, skip) with only the per-destination step array swapped in. It lives in the
+ * shell and remounts via `key` when the destination changes (resetting tour
+ * state), so no card from the previous screen survives a navigation.
  *
- * 방해 금지 계약: 목적지마다 따로 "봤음"을 기록하고(`guided-tour:<id>:v1`),
- * 기록이 있으면 다시 자동으로 뜨지 않는다. 다시 보려면 설정 메뉴의 행.
+ * Do-not-disturb contract: "seen" is recorded per destination
+ * (`guided-tour:<id>:v1`), and with a record present it never auto-opens again.
+ * Replaying it is a row in the settings menu.
  */
 export function DestinationGuide({ destination }: DestinationGuideProps) {
   const steps = useMemo(
@@ -45,7 +46,7 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
   );
   const storageKey = destinationTourStatusKey(destination ?? "none");
 
-  // 목적지 안내는 DOM(testid) 앵커만 쓴다 — 캔버스 노드 앵커는 지도 전용.
+  // Destination guides use DOM (testid) anchors only — canvas node anchors are map-only.
   const canResolveAnchor = useCallback((anchor: TourAnchor) => {
     if (anchor === null) return true;
     if (anchor.type !== "testid") return false;
@@ -67,28 +68,31 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
 
   useRegisterGuideReplay(destination ? () => startRef.current() : null);
 
-  // 첫 방문 자동 시작. 지도(HomePage)와 같은 리듬 — 레이아웃이 앉은 뒤에 열고,
-  // 그 순간 모달/차단 표면이 떠 있거나 문서 포커스가 나가 있으면(백그라운드 탭
-  // 로드) 겹쳐 쏘지 않고 잠시 뒤 다시 본다.
+  // First-visit auto-start, at the same rhythm as the map (HomePage): open after
+  // layout settles, and if at that moment a modal or blocking surface is up, or
+  // document focus is elsewhere (a background tab load), do not stack — look again
+  // shortly.
   //
-  // 재시도 상한이 지도보다 긴 이유: 공방은 도착하자마자 **사용자의 결정**(진입
-  // 선택)이 먼저 서는 화면이다. 차단 표면이 물러나기를 기다리는 시간이 로딩
-  // 지연이 아니라 사람의 판단 시간이라, 8초 상한이면 공방만 안내를 못 받는다.
+  // The retry cap is longer than the map's because the workshop is a screen where
+  // **the user's decision** (the entry choice) stands first on arrival. The wait for
+  // a blocking surface to withdraw is a person's deliberation time rather than a
+  // loading delay, so an 8-second cap would leave the workshop alone unguided.
   //
-  // 그 대기 창(700ms + 1.5초 × 20 ≈ 30초)이 곧 결함의 자리였다 — 지도는
-  // 2026-07-26 에 「대기 중 사용자가 먼저 실질 상호작용을 하면 발화 자체를
-  // 취소」하는 가드를 받았는데(`watchGuidedTourAutoStartCancel`), 목적지
-  // 다섯 화면은 그 가드를 못 받아 이미 문서를 열고 읽기 시작한 사람 위로
-  // 뒤늦게 1/2 카드가 떴다. 스스로 탐색을 시작한 사람에게 "여기가 문서함
-  // 이에요"는 안내가 아니라 방해다 — 지도에서 결함으로 판정하고 고친 것과
-  // 같은 상황이므로 같은 가드를 그대로 쓴다(새 기제 0).
+  // That waiting window (700ms + 1.5s × 20 ≈ 30s) was itself the site of a defect —
+  // the map received a guard on 2026-07-26 that cancels the firing outright if the
+  // user makes a substantive interaction first
+  // (`watchGuidedTourAutoStartCancel`), but the five destination screens did not,
+  // so a 1/2 card appeared belatedly over someone who had already opened a document
+  // and started reading. To someone who began exploring on their own, "this is the
+  // docs surface" is interference rather than guidance — the same situation the map
+  // judged a defect and fixed, so the same guard is reused verbatim (zero new mechanisms).
   //
-  // 취소해도 길은 막히지 않는다: 기록을 남기지 않으므로 다음 방문에서 다시
-  // 기회가 오고, 설정 › 화면 안내 › 다시 보기가 언제든 같은 투어를 연다.
+  // Cancelling blocks no path: no record is written, so the next visit brings the
+  // chance again, and Settings › screen guidance › replay opens the same tour at any time.
   useEffect(() => {
     if (!destination) return undefined;
     if (readGuidedTourStatus(storageKey) !== null) return undefined;
-    // 지도와 같은 전역 스위치 — 여섯 안내가 한 곳에서 꺼진다.
+  // The same global switch as the map — all six guides turn off in one place.
     if (!readGuideAutoStart()) return undefined;
     let timerId = 0;
     let attempts = 0;
@@ -115,9 +119,9 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
     };
   }, [destination, storageKey]);
 
-  // Esc 로 닫기 — 화면을 덮는 표면은 Esc 로 물러나야 한다. 지도는 자체 Esc
-  // 래더가 투어를 포함하므로 여기서만 건다(이중 반응 방지). 닫힘은 '건너뛰기'
-  // 와 같은 취급 — 다시 자동으로 뜨지 않는다.
+  // Close on Escape — a surface covering the screen must withdraw on Escape. The map's
+  // own Escape ladder already includes the tour, so this is bound only here (avoiding a
+  // double reaction). Closing is treated as 'skip' — it does not auto-open again.
   const open = tour.open;
   const skip = tour.skip;
   useEffect(() => {
@@ -133,7 +137,7 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
   }, [open, skip]);
 
   if (!destination) return null;
-  // 막힌 자리를 누르면 안내가 물러난다 — 마우스로 온 사람에게도 Esc 와 같은
-  // 문을 준다. 한 번 더 누르면 원래 가려던 곳으로 간다.
+  // Pressing a blocked spot withdraws the guidance — giving someone who arrived with a
+  // mouse the same door as Escape. A second press goes where they were headed.
   return <GuidedTourOverlay tour={tour} onBlockedInteraction={skip} />;
 }

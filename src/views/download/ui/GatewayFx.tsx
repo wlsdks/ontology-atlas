@@ -5,36 +5,34 @@ import { useEffect, useRef } from 'react';
 import { registerGatewayFrameClient } from '../lib/gateway-frame-loop';
 
 /**
- * 관문 랜딩의 효과층 — **전류장(field) · 그레인 · 커스텀 커서 링.**
+ * The gateway's effect layer — **the current field, the grain, and the custom cursor ring.**
  *
- * 헌장의 「움직이는 그라디언트 배경」 금지에 대한 명문 예외 1건이다
- * (`.claude/rules/forbidden.md` 「디자인」절 — 발자국 번짐과 같은 형식).
- * 조건 넷: ① `.gateway-fx-stage`(관문 랜딩) 안에서만 산다 ② 알파 상한이
- * `--gateway-fx-*` 토큰으로 잠겨 있다(광원 0.14 · 그레인 0.05 · 성진 0.28)
- * ③ 첫 1초는 정지 상태로 페인트하고 그 뒤에야 분위기 모션이 개입한다
- * (첫 3초 규칙 — 배경은 헤드라인의 등장을 방해하지 않는다) ④ reduced-motion
- * 에서는 rAF 루프 자체를 돌리지 않는다(정지 1프레임).
+ * This is the one explicit exception to the charter's ban on animated gradient backgrounds
+ * (`.claude/rules/forbidden.md`, the design section — same form as the footprint bloom). Four
+ * conditions: ① it lives only inside `.gateway-fx-stage` (the gateway) ② its alpha ceilings are
+ * locked by `--gateway-fx-*` tokens (light 0.14, grain 0.05, motes 0.28) ③ the first second paints
+ * in a still state and only then does ambient motion begin (the first-three-seconds rule — the
+ * background must not disturb the headline's entrance) ④ under reduced-motion the rAF loop does
+ * not run at all (one still frame).
  *
- * 프레임은 관문 공용 루프(`gateway-frame-loop.ts`)가 공급한다 — 히어로
- * 오브젝트와 같은 rAF 하나이고, 무입력 30s 뒤 2s 램프로 감속해 잠든다
- * (지도의 `ambient-sleep.ts` 계약 그대로). 어떤 입력이든 다음 프레임에
- * 복귀한다.
- * 게이트: `tests/contract/gateway-fx-exception.contract.test.ts` +
- * `eslint.config.mjs` 의 gateway-fx 스코프 셀렉터.
+ * Frames come from the gateway's shared loop (`gateway-frame-loop.ts`) — the same single rAF as
+ * the hero object, decelerating over a 2s ramp and sleeping after 30s of no input (the map's
+ * `ambient-sleep.ts` contract verbatim). Any input restores it on the next frame.
+ * Gates: `tests/contract/gateway-fx-exception.contract.test.ts` plus the gateway-fx scope selector
+ * in `eslint.config.mjs`.
  *
- * ## 커서 링
+ * ## The cursor ring
  *
- * 네이티브 커서를 **지우지 않는다** — `cursor: none` 없음, pointer 어포던스
- * 계약(`tests/e2e/cursor-affordance.spec.ts`)은 그대로다. 링이 나르는 정보
- * 하나: 「확장 + 악센트 착색 = 포인터 아래가 지금 눌리는 대상」. 쉼 28px →
- * 상호작용 위 44px. `pointer: coarse` 에서는 CSS 가 통째로 숨긴다(손가락에는
- * 커서가 없다). reduced-motion 에서는 지연 추종(lerp) 없이 즉시 붙는다.
+ * It **does not remove** the native cursor — there is no `cursor: none`, and the pointer
+ * affordance contract (`tests/e2e/cursor-affordance.spec.ts`) is untouched. The ring carries one
+ * piece of information: "expanded plus accent tint = what is under the pointer is pressable".
+ * 28px at rest, 44px over an interactive target. Under `pointer: coarse` CSS hides it entirely (a
+ * finger has no cursor). Under reduced-motion it attaches instantly with no lerp.
  *
- * ## 악센트
+ * ## The accent
  *
- * 광원 색은 마운트 시점에 `--color-indigo-brand` 계산값을 읽는다 — 토큰
- * 이름은 indigo 지만 값은 악센트 전환(인디고 ↔ 엠버)을 따라간다. hex 를
- * 코드에 박지 않는다.
+ * The light's colour reads the computed `--color-indigo-brand` at mount — the token is named
+ * indigo but its value follows the accent switch (indigo ↔ amber). No hex is written into the code.
  */
 export function GatewayFx() {
   const fieldRef = useRef<HTMLCanvasElement | null>(null);
@@ -71,11 +69,11 @@ export function GatewayFx() {
     const dustInk = dustRaw.startsWith('#') ? hexRgb(dustRaw) : ([236, 236, 240] as const);
 
     /**
-     * 저해상 버퍼 (0.5×, dpr 1 고정) — 이 층의 잉크는 **본질적으로 흐린
-     * 라디얼 광원**이라 화소 밀도가 정보를 더하지 않는다. 전체 해상도로 매
-     * 프레임 그리면 GPU 없는 환경(헤드리스 e2e · 저사양)에서 합성 비용이
-     * 페이지 전체를 굼뜨게 만든다(실측: hover 감사가 60s 타임아웃에 닿았다).
-     * 성진(1~3px)은 업스케일로 살짝 부드러워지는데, 그게 오히려 성진답다.
+     * A low-resolution buffer (0.5×, dpr pinned to 1) — this layer's ink is **inherently blurred
+     * radial light**, so pixel density adds no information. Drawing at full resolution every frame
+     * makes compositing cost slow the whole page where there is no GPU (headless e2e, low-end
+     * machines) — measured, the hover audit hit a 60s timeout. The motes (1–3px) soften slightly
+     * under upscaling, which if anything makes them more mote-like.
      */
     const BUFFER_SCALE = 0.5;
     let W = 0;
@@ -91,7 +89,7 @@ export function GatewayFx() {
     }
     size();
 
-    // 저휘도 광원 3 — 상대 무게(1 / .64 / .5)에 상한 알파를 곱해서만 쓴다.
+    // Three low-luminance lights — relative weights (1 / .64 / .5) used only multiplied by the alpha ceiling.
     const blobs = [
       { w: 1, r: 0.46, cx: 0.26, cy: 0.34, sp: 1.0, ph: 0 },
       { w: 0.64, r: 0.52, cx: 0.76, cy: 0.22, sp: 0.66, ph: 2.2 },
@@ -101,21 +99,21 @@ export function GatewayFx() {
       x: Math.random(),
       y: Math.random(),
       s: 0.3 + Math.random() * 1.1,
-      a: 0.2 + Math.random() * 0.8, // 상대 무게 — 상한 알파를 곱해서만 쓴다.
+      a: 0.2 + Math.random() * 0.8, // relative weight — used only multiplied by the alpha ceiling
       vx: -0.008 - Math.random() * 0.012,
       vy: -0.004 - Math.random() * 0.01,
       tw: Math.random() * 6.28,
     }));
-    // 절별 목표 세기 — 히어로에서 밝고 본문에서 가라앉고 다운로드 절에서 다시 조금.
+    // Target intensity per section — bright in the hero, subdued in the body, up slightly again lower down.
     const KEY = [1, 0.42, 0.3, 0.36, 0.55];
     let intensity = 1;
-    let ambient = 0; // 1000ms 뒤 0→1 (첫 3초 규칙)
+    let ambient = 0; // 0→1 after 1000ms (the first-three-seconds rule)
 
     /**
-     * 이 페이지의 스크롤러는 window 가 아니라 **앱 셸의 본문 슬롯**(overflow-y:
-     * auto div)이다 — `scrollY` 를 읽으면 언제나 0 이라 절별 세기가 히어로
-     * 값에 붙박인다(2026-08-18 실측). 캔버스의 스크롤 조상을 한 번 찾아 두고,
-     * 없으면(구조가 바뀌면) window 로 떨어진다.
+     * This page's scroller is not `window` but **the app shell's body slot** (an `overflow-y: auto`
+     * div) — reading `scrollY` always gives 0, pinning the per-section intensity at the hero's value
+     * (measured 2026-08-18). The canvas's scrolling ancestor is found once, falling back to `window`
+     * if the structure changes.
      */
     let scrollHost: HTMLElement | null | undefined;
     const readScrollTop = (): number => {
@@ -184,34 +182,34 @@ export function GatewayFx() {
     addEventListener('resize', onResize);
 
     if (reduced) {
-      draw(0); // 배경은 있되 영구 정지.
+      draw(0); // a background, but permanently still
     } else {
-      draw(0); // 0~150ms: 정지 상태로 페인트.
+      draw(0); // 0–150ms: paint in the still state
       startTimer = window.setTimeout(() => {
         let ampTime = 0;
         let lastPaint = 0;
-        // 관문 공용 루프에 탑승한다 — 히어로 오브젝트와 같은 rAF 하나이고,
-        // 앰비언트 휴면(무입력 30s 후 2s 램프로 감속 → 정지 → 프레임 스킵)은
-        // 드라이버가 소유한다. `gateway-frame-loop.ts` 독블록.
+        // Ride the gateway's shared loop — the same single rAF as the hero object. Ambient sleep
+        // (after 30s of no input, decelerate over a 2s ramp → stop → skip frames) is owned by the
+        // driver. See the `gateway-frame-loop.ts` doc-block.
         unregisterFrame = registerGatewayFrameClient(({ t, dtMs, factor }) => {
           if (disposed) return;
           ambient = Math.min(ambient + dtMs / 1500, 1); // 1.5s ease-in
-          // 위상 점프 없는 누적 시계 — 휴면 계수가 «속도»에 곱해지므로 표류·
-          // 트윙클이 감속으로 멎고, 어떤 입력이든 다음 프레임에 1 로 돌아온다.
+          // An accumulated clock with no phase jump — the sleep factor multiplies «speed», so drift
+          // and twinkle decelerate to a stop and any input returns the factor to 1 on the next frame.
           ampTime += dtMs * ambient * factor;
           fxLoopLive = true;
-          // 분위기층은 30fps 면 충분하다 — 수십 초 주기의 표류에 60fps 는
-          // 정보가 아니라 전력이다. 커서 추종만 매 프레임(그건 손의 일이다).
+          // 30fps is enough for the ambient layer — for drift with a period of tens of seconds,
+          // 60fps is power rather than information. Only the cursor follows every frame (that is the hand's work).
           if (t - lastPaint >= 33) {
             lastPaint = t;
             draw(ampTime);
           }
-          cursorTick?.(); // 커서 지연 추종 — 같은 rAF (별도 루프 없음)
+          cursorTick?.(); // cursor lerp — the same rAF, no separate loop
         });
-      }, 1000); // 1000ms: 분위기 모션이 서서히 개입 (첫 3초 규칙)
+      }, 1000); // 1000ms: ambient motion eases in (the first-three-seconds rule)
     }
 
-    // ── 커서 링 — pointer: fine 전용, blur/이탈 시 숨김, translate3d 만. ──
+    // ── The cursor ring — pointer: fine only, hidden on blur or leave, translate3d only ──
     const cur = cursorRef.current;
     let cleanupCursor: (() => void) | null = null;
     if (cur && typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches) {
@@ -229,8 +227,8 @@ export function GatewayFx() {
       const onPointerMove = (e: PointerEvent): void => {
         tx = e.clientX;
         ty = e.clientY;
-        // 루프가 없거나(reduced-motion · 첫 1초) 아직 안 돌면 즉시 붙는다 —
-        // 감속 사용자에게 랙 있는 커서는 동등물이 아니라 결함이다.
+        // With no loop (reduced-motion, or the first second) or before it starts, it attaches
+        // instantly — a laggy cursor is not an equivalent for a reduced-motion user, it is a defect.
         if (!fxLoopLive || reduced) {
           cx = tx;
           cy = ty;

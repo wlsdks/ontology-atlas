@@ -72,9 +72,10 @@ export async function runInferImports(args) {
     return 2;
   }
 
-  // R+ — --threshold N 필터 (count >= N). 큰 codebase 의 약한 import (count=1
-  // accidental) 가 ontology 에 노이즈 들어가는 걸 차단. moduleEdges 만 적용
-  // (file-level edges/external/unresolved 는 그대로 — agent diagnostic 용).
+  // --threshold N filter (count >= N). Stops a large codebase's weak imports
+  // (count=1, accidental) becoming noise in the ontology. Applied to moduleEdges
+  // only — file-level edges, external, and unresolved stay as they are, for agent
+  // diagnostics.
   let filteredOut = 0;
   if (threshold && threshold > 1 && Array.isArray(result.moduleEdges)) {
     const before = result.moduleEdges.length;

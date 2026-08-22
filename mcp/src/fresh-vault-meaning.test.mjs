@@ -1,19 +1,17 @@
-// 갓 만든 볼트는 자기가 고장 났다고 말하지 않는다.
+// A freshly created vault does not report itself as faulty.
 //
-// ## 왜 (2026-08-17 실측)
-//
-// `init` 한 직후 `health` 를 돌리면 이랬다:
+// Why (measured 2026-08-17): running `health` right after `init` gave:
 //
 //   ⚠ meaning_assessment  … first project: invalid (assessment_input_invalid)
 //
-// 사용자는 아무것도 안 했는데 도구가 「입력이 잘못됐다」고 말한다. 원인은
-// 「아직 확정 안 함」과 「망가짐」이 같은 갈래를 탔던 것이다
-// (`readProjectMeaningAssessment` 의 영수증 부재 분기가 `invalidAssessment`
-// 로 갔다).
+// The user had done nothing, and the tool said "the input is wrong". The cause was
+// "not finalised yet" and "broken" taking the same branch (the missing-receipt
+// branch of `readProjectMeaningAssessment` fell through to `invalidAssessment`).
 //
-// 이 시험은 **첫인상**을 잠근다. 앞의 두 검사(`meaning-not-authored`)가
-// 평가기 자체를 보고, 여기서는 그 평가기까지 가는 길이 안 끊겼는지 본다 —
-// 실제로 끊겨 있었고, 평가기만 고쳤을 때는 화면이 그대로였다.
+// This test locks the **first impression**. The two checks before it
+// (`meaning-not-authored`) cover the evaluator itself; this one covers whether the
+// path *to* that evaluator is intact — it was broken, and fixing only the evaluator
+// left the screen unchanged.
 
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -60,7 +58,7 @@ test('무엇을 하면 되는지 같이 준다', () => {
 });
 
 test('볼트 경로 자체가 없는 것은 여전히 「입력이 잘못됐다」다', () => {
-  // 이걸 같이 뭉개면 고친 의미가 없다 — 진짜 잘못된 입력은 그렇게 불러야 한다.
+  // Collapsing this back together undoes the fix — genuinely wrong input must still be called that.
   const assessment = readProjectMeaningAssessment({ ...input(freshVault()), vaultRoot: '' });
   assert.equal(assessment.topGap.id, 'assessment_input_invalid');
 });

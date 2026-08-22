@@ -24,9 +24,10 @@ export interface TopologyIndexAgentHandoffLabels {
 }
 
 export interface TopologyIndexAgentHandoffProps {
-  /** 이미 포맷된 3종 핸드오프 텍스트 — 실제 문자열 조립(vault 요약/재분석
-   *  지시/포스트체인지 동기화 게이트)은 `views/home/lib/topology-analysis.ts`
-   *  + `shared/lib/ontology-tree` 가 소유, 이 위젯은 클립보드 복사만 담당한다. */
+  /** The three already-formatted handoff texts. Assembling the strings (vault
+   *  summary / re-analysis instruction / post-change sync gate) is owned by
+   *  `views/home/lib/topology-analysis.ts` plus `shared/lib/ontology-tree`; this
+   *  widget only copies to the clipboard. */
   briefText: string;
   reanalyzeText: string;
   syncText: string;
@@ -34,11 +35,11 @@ export interface TopologyIndexAgentHandoffProps {
 }
 
 /**
- * INDEX 패널 푸터의 "인계" 메뉴 — brief/reanalysis/sync 3종 agent 핸드오프
- * 복사를 단일 버튼 뒤 컴팩트 disclosure 로 묶는다 (W3 분석 보기 은퇴 —
- * 이전엔 `TopologyAnalysisBar` overview 모드의 접힌 보조 액션이었다. INDEX
- * 폭(`--topology-index-width`, 300px) 안에서 3버튼을 나란히 두면 라벨이
- * 다 잘려 단일 진입점 + 위로 열리는 메뉴로 압축했다).
+ * The 「인계」 (handoff) menu in the INDEX panel's footer — it groups the three
+ * agent-handoff copies (brief / reanalysis / sync) behind one button as a
+ * compact disclosure. Three buttons side by side inside the INDEX width
+ * (`--topology-index-width`, 300px) truncated every label, so it was compressed
+ * to a single entry point with a menu that opens upward.
  */
 export function TopologyIndexAgentHandoff({
   briefText,

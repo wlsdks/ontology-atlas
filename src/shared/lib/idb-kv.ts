@@ -1,6 +1,7 @@
-// 아주 얇은 IndexedDB key-value 헬퍼. FileSystemDirectoryHandle 처럼
-// structured-cloneable 객체를 저장·복원하는 데 쓴다. 외부 의존성 없이 native
-// IDB 호출. 브라우저 전용 (typeof window === 'undefined' 에서 safe stub).
+// A very thin IndexedDB key-value helper, used to store and restore
+// structured-cloneable objects such as a FileSystemDirectoryHandle. Native IDB
+// calls with no external dependency. Browser only — a safe stub when
+// `typeof window === 'undefined'`.
 
 const DB_NAME = 'demo-kv';
 const DB_VERSION = 1;

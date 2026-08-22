@@ -47,7 +47,7 @@ describe("computeHoverShimmer", () => {
   });
 
   it("now=0 → offset 0(위상 시작점)", () => {
-    // -0*perimeter === -0 — Object.is 는 -0 !== 0 으로 보므로 toBeCloseTo 사용.
+    // -0*perimeter === -0, and Object.is treats -0 !== 0, so use toBeCloseTo.
     expect(computeHoverShimmer(0, PERIOD, PERIMETER, 0.16).offset).toBeCloseTo(0, 9);
   });
 

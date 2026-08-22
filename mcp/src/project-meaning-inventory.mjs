@@ -3,7 +3,7 @@ import {
 } from './meaning-assessment.mjs';
 import { WRITE_RELATION_TYPE_VALUES } from './ontology-engine.mjs';
 import { extractProjectMeaningEvidencePaths } from './project-meaning-evidence.mjs';
-// 같은 낱말을 두 번 선언하지 않는다 (2026-08-17) — 위 파일 주석 참고.
+// The vocabulary is declared once — see the file comment there (2026-08-17).
 import {
   PROJECT_SOURCE_ACTION_IDS as SOURCE_ACTION_IDS,
   PROJECT_SOURCE_GAP_IDS as SOURCE_GAP_IDS,

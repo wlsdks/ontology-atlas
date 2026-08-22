@@ -5,17 +5,18 @@ import { describe, it, expect } from 'vitest';
 import { cn, LEADING_RAMP_STEPS, RADIUS_RAMP_STEPS, TYPE_RAMP_STEPS } from './cn';
 
 /**
- * `app/globals.css` 에 실제로 선언된 램프 스텝을 읽는다.
+ * Reads the ramp steps actually declared in `app/globals.css`.
  *
- * **왜 하드코딩하지 않는가** — 이 파일은 `cn.ts` 주석과 `.claude/rules/design.md`
- * 가 **이름으로 지목한 가드**다. 그런데 2026-07-31 감사 전까지 스텝 7개를
- * 손으로 적어 두고 있었고, 그 사이 `hero-lg` 가 램프에 추가됐는데 목록에는 안
- * 들어갔다 — **가드가 지킨다고 적힌 바로 그 사고(2026-07-23 크롬 16px: 스텝
- * 추가 후 등록 누락)가 이 파일 안에서 이미 일어나 있었다.**
+ * **Why not a hardcoded list.** This gate is named by `cn.ts` and by
+ * `.claude/rules/design.md`, yet until the 2026-07-31 audit it held seven
+ * hand-written steps — and `hero-lg` had been added to the ramp without being
+ * added here. The exact accident this gate claims to prevent (2026-07-23: a step
+ * added, its registration missed, chrome rendering at 16px) had already happened
+ * inside the gate itself.
  *
- * 하드코딩 목록은 "검사한 것만 검사한다". 램프에서 파생하면 스텝을 더하는
- * 순간 자동으로 검사 대상이 되고, 등록을 빠뜨리면 **여기서 먼저 터진다.**
- * `--text-body--line-height` 류 companion 은 스텝이 아니라 짝이라 제외한다.
+ * A hardcoded list only checks what it already lists. Derived from the ramp, a
+ * new step is in scope the moment it exists and a missing registration fails
+ * here first. `--text-body--line-height` companions are pairs, not steps.
  */
 function rampStepsFromCss(prefix: 'text' | 'leading' | 'radius'): string[] {
   const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
@@ -48,22 +49,21 @@ describe('cn', () => {
 });
 
 /**
- * 타입 램프 × tailwind-merge 오분류 회귀 가드 (2026-07-23 소유자 실보고).
- * 커스텀 램프 스텝이 색상으로 분류되면 `text-[color:...]` 와 충돌해 크기가
- * 조용히 드롭된다 — 크롬 필이 루트 16px 로 렌더되던 근본 원인.
+ * Regression gate for the 2026-07-23 owner report: a custom ramp step classified
+ * as a colour conflicts with `text-[color:…]` and the size is dropped silently —
+ * why chrome pills were rendering at the root 16px.
  */
 describe('cn — 타입 램프와 색상 유틸 공존', () => {
   it('**등록 목록이 램프와 일치한다** — 누락은 조용한 크기 드롭이 된다', () => {
-    // 이 한 줄이 이 파일의 존재 이유다. `globals.css` 에 스텝을 더하고
-    // `TYPE_RAMP_STEPS` 등록을 빠뜨리면 tailwind-merge 가 그 스텝을 **색상으로
-    // 오분류**해, 뒤따르는 `text-[color:…]` 와 충돌시켜 크기를 지운다. 화면은
-    // 루트 16px 로 렌더되고 클래스 문자열은 멀쩡해 보인다.
+    // Add a step to `globals.css` without registering it here and
+    // tailwind-merge misclassifies it as a colour, dropping the size against a
+    // following `text-[color:…]`. The class string still looks correct.
     expect([...TYPE_RAMP_STEPS].sort()).toEqual(rampStepsFromCss('text'));
   });
 
   it('램프를 실제로 읽는다 — 스캔이 비면 통과가 아니라 결함이다', () => {
-    // globals.css 경로가 바뀌거나 정규식이 어긋나면 위 비교가 `[] === []` 로
-    // 조용히 통과할 수 있다. 빈 스캔은 통과가 아니다.
+    // If the path or the regex drifts, the comparison above passes as
+    // `[] === []`. An empty scan is a failure, not a pass.
     expect(rampStepsFromCss('text').length).toBeGreaterThanOrEqual(8);
     expect(rampStepsFromCss('leading').length).toBeGreaterThanOrEqual(8);
   });
@@ -87,17 +87,13 @@ describe('cn — 타입 램프와 색상 유틸 공존', () => {
 });
 
 /**
- * 행간 램프 × tailwind-merge 병합 가드.
- *
- * 실패 모드가 타입 램프와 다르다. 미등록 `leading-*` 스텝은 드롭되지 않고
- * **둘 다 살아남는다** — 조건부로 덮어쓴 값이 CSS 소스 순서에 따라 지거나
- * 이기는 비결정성이 된다. 크기 드롭보다 조용해서 화면을 봐도 원인을 못 찾는다.
+ * Different failure mode from the type ramp: an unregistered `leading-*` step is
+ * not dropped, both survive, and CSS source order decides — a conditional
+ * override losing non-deterministically. Quieter than a dropped size, and not
+ * diagnosable by looking at the screen.
  */
 describe('cn — 행간 램프 충돌 병합', () => {
   it('**등록 목록이 램프와 일치한다** — 누락은 충돌 병합 실패가 된다', () => {
-    // 실패 모드가 크기와 다르다. 미등록 `leading-*` 은 드롭되지 않고 **둘 다
-    // 살아남아** CSS 소스 순서가 승자를 정한다 — 조건부로 덮어쓴 값이 지는
-    // 비결정성이라 크기 드롭보다 조용하다.
     expect([...LEADING_RAMP_STEPS].sort()).toEqual(rampStepsFromCss('leading'));
   });
 
@@ -116,14 +112,14 @@ describe('cn — 행간 램프 충돌 병합', () => {
   });
 
   /*
-   * 이 셋은 **일부러 이름 유틸리티를 쓴다.** 2026-08-17 에 그 유틸리티를 lint 로
-   * 금지했지만(제품 코드 실사용 0건이라 소음 없이 닫혔다), 여기는 「금지된 그것이
-   * 들어와도 `cn` 이 올바르게 병합하는가」를 지키는 자리다 — 남의 코드나 옛
-   * 문자열이 흘러들어도 크기·행간이 조용히 뒤섞이지 않게 하는 마지막 보루라서,
-   * 금지했다고 시험까지 지우면 그 보루가 사라진다.
+   * These deliberately use the named utilities that lint forbade on 2026-08-17
+   * (closed with zero product usage, so no noise). The point here is that `cn`
+   * still merges correctly *if* a forbidden one arrives — from third-party code
+   * or an old string. Deleting the test because the rule exists would remove the
+   * last line of defence against sizes and line-heights blending silently.
    *
-   * 파일 단위 면제는 형제 램프 룰(크기·무게·자간)이 이미 쓰는 것과 같다 —
-   * 테스트는 렌더된 className 문자열을 단언하는 자리다(`codexTestIgnores`).
+   * The file-level exemption matches the sibling ramp rules (size, weight,
+   * tracking): tests assert rendered className strings (`codexTestIgnores`).
    */
   it('기존 named 행간 유틸리티와의 병합도 유지된다', () => {
     expect(cn('leading-4', 'leading-label')).toBe('leading-label');
@@ -136,23 +132,9 @@ describe('cn — 행간 램프 충돌 병합', () => {
 });
 
 /**
- * companion 결합(B2) 이후의 병합 모델 가드.
- *
- * tailwind-merge 는 기본적으로 "크기 유틸리티가 행간도 정한다" 고 본다 —
- * 그래서 **뒤에 오는** `text-<스텝>` 이 앞선 `leading-*` 을 지운다. 결합 전엔
- * 이 가정이 우리 램프에 대해 **거짓**이었다: 지워진 자리를 아무도 채우지 않아
- * 그 원소는 상속 1.5 로 떨어졌다(조용한 손실). 결합 후에는 지운 쪽이 자기 짝을
- * 싣고 오므로 가정이 참이 된다.
- *
- * 이 테스트는 그 정합을 고정한다 — companion 을 되돌리면 여기서 먼저 깨진다.
- */
-/**
- * 반경 램프 × tailwind-merge 충돌 병합 가드 (2026-08-03 `--radius-micro` 등재).
- *
- * 실패 모드는 행간과 같은 부류다: tailwind-merge 가 커스텀 `rounded-<step>` 을
- * radius 그룹으로 인식하지 못하면 `cn('rounded-chip', 'rounded-micro')` 에서
- * **둘 다 살아남아** CSS 소스 순서가 승자를 정한다. 값 층이 chip/xs 에서
- * 모양 기본 반경을 컴파운드로 덮으면서 이 병합이 실제 경로가 됐다.
+ * Same failure mode as the leading ramp, for radii (`--radius-micro`, added
+ * 2026-08-03). It became a live path when the value layer started compounding a
+ * size radius over a shape's base radius at chip/xs.
  */
 describe('cn — 반경 램프 충돌 병합', () => {
   it('**등록 목록이 램프와 일치한다** — 누락은 충돌 병합 실패가 된다', () => {
@@ -172,12 +154,21 @@ describe('cn — 반경 램프 충돌 병합', () => {
   });
 
   it('기본 스케일 유틸리티와도 한 그룹으로 병합된다', () => {
-    // 소비처가 `rounded-full` 로 필화(化)하는 관용 오버라이드가 실제로 이긴다.
+    // The idiomatic override — a consumer forcing a pill with `rounded-full` —
+    // has to actually win.
     expect(cn('rounded-chip', 'rounded-full')).toBe('rounded-full');
     expect(cn('rounded-full', 'rounded-micro')).toBe('rounded-micro');
   });
 });
 
+/**
+ * tailwind-merge assumes a size utility also sets line-height, so a **later**
+ * `text-<step>` erases an earlier `leading-*`. Before the companion pairing that
+ * assumption was false for our ramp: nothing refilled the erased value and the
+ * element fell back to an inherited 1.5 — a silent loss. With companions, the
+ * utility that erases carries its own pair, making the assumption true. Reverting
+ * the companions breaks here first.
+ */
 describe('cn — 크기 뒤에 오면 행간을 흡수한다 (companion 결합 전제)', () => {
   it('뒤따르는 램프 크기가 앞선 램프 행간을 흡수한다', () => {
     expect(cn('leading-body', 'text-body')).toBe('text-body');

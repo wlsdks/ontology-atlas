@@ -1,55 +1,61 @@
 /**
- * 게이트가 **볼트를 물린 채** 재기 위한 픽스처 볼트.
+ * The fixture vault gates use to measure **with a vault mounted**.
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 어떤 볼트로 잴 것인가 — 이 라운드의 판정 (2026-08-04)
+ * ## Which vault to measure with — this round's verdict (2026-08-04)
  * ════════════════════════════════════════════════════════════════════
  *
- * 후보가 셋이었고, 셋 다 값과 대가가 있다.
+ * There were three candidates, each with a benefit and a cost.
  *
- * | 후보 | 얻는 것 | 잃는 것 |
+ * | Candidate | Gains | Loses |
  * |---|---|---|
- * | 도그푸드 `docs/ontology/` | 가장 현실적 | **입력이 매주 움직인다** — `/ontology-sync` 가 노드를 더할 때마다 게이트가 흔들리고, 실패가 이번 변경 때문인지 볼트가 바뀐 탓인지 구별 안 됨. 100+ 파일을 OPFS 로 매 실행 씀 |
- * | 배포되는 샘플 `samples/storefront/` | 실제 첫 방문자가 보는 그 데이터 · 이미 저장소가 관리 | **볼트를 안 물려도 이미 그게 기본 데이터 소스다** — 물린 채 재면 같은 DOM 을 두 번 재는 셈. 그리고 이 볼트가 바로 밀집 행 결함을 숨긴 그 볼트다(교차 도메인 엣지 0) |
- * | 픽스처(여기) | 샘플이 구조적으로 못 내는 모양을 **의도적으로** 만든다 · 결정적 | **현실의 모양을 놓칠 수 있다** — 밀집 행이 정확히 그렇게 숨었다 |
+ * | dogfood `docs/ontology/` | most realistic | **the input moves weekly** — every node `/ontology-sync` adds shakes the gate, and a failure cannot be told apart from a vault change. Writes 100+ files to OPFS on every run |
+ * | the shipped sample `samples/storefront/` | exactly the data a first visitor sees, already maintained by the repo | **it is already the default data source without mounting a vault** — measuring it mounted measures the same DOM twice. And it is the very vault that hid the dense-row defect (0 cross-domain edges) |
+ * | a fixture (here) | **deliberately** produces shapes the sample structurally cannot, and is deterministic | **it can miss real-world shapes** — which is exactly how the dense rows hid |
  *
- * **고른 것: 픽스처. 단, 커버리지를 믿지 않고 단언한다.**
+ * **Chosen: the fixture, but with coverage asserted rather than assumed.**
  *
- * 픽스처의 알려진 약점(모양을 놓친다)은 이 라운드가 고치려는 결함 그 자체다.
- * 그래서 이 볼트를 «현실적이니까 괜찮겠지» 로 쓰지 않는다 —
- * `a11y-vault-backed.spec.ts` 가 상태마다 **그 모양이 실제로 렌더됐다는 증거**를
- * 요구한다(교차 도메인 격자가 보인다 · 예시 링크가 세로로 쌓였다 · `<main>` 안
- * 요소 바닥). 커버리지가 단언된 픽스처는 **시끄럽게** 퇴화하고, 단언되지 않은
- * 현실 볼트는 **조용히** 퇴화한다. 그 차이가 이 선택의 전부다.
+ * The fixture's known weakness (missing shapes) is the very defect this round is
+ * fixing, so this vault is not used on the basis of "it is realistic enough" —
+ * `a11y-vault-backed.spec.ts` requires **evidence that the shape really rendered** for
+ * each state (the cross-domain grid is visible, example links are stacked vertically,
+ * the element floor inside `<main>`). A fixture with asserted coverage degrades
+ * **loudly**; an unasserted real vault degrades **quietly**. That difference is the
+ * whole of this choice.
  *
- * 그리고 두 상태를 **둘 다** 잰다:
- *   - 볼트 없음 = 샘플 = 첫 방문자가 보는 화면 → 기존 `a11y-ratchet`/`contrast-ratchet`
- *   - 볼트 있음 = 이 픽스처 = 샘플이 못 내는 모양 → `a11y-vault-backed`
+ * And **both** states are measured:
+ *   - no vault = the sample = what a first visitor sees → the existing
+ *     `a11y-ratchet` / `contrast-ratchet`
+ *   - vault mounted = this fixture = shapes the sample cannot produce →
+ *     `a11y-vault-backed`
  *
- * ⚠️ **이 픽스처가 놓치는 것 (다음 사람에게 남기는 목록)**
- *   1. **분량의 극단** — 실제 볼트의 긴 본문·깊은 heading 트리·수백 노드.
- *      텍스트 맞춤/오버플로 결함은 여기서 안 난다(`overflow-sweep` 계열의 일).
- *   2. **여기서 안 쓰는 frontmatter 키** — `screenshots` · `evidence` ·
- *      `merged_uids` 등. 그 키가 그리는 자리는 여전히 미측정이다.
- *   3. **여러 프로젝트** — 지금은 하나다. 프로젝트 간 관계(`dependencies`)가
- *      그리는 「연결된 프로젝트」 카드는 빈 상태로만 렌더된다.
- *   4. **한국어 아닌 로케일** — `/en` 쪽 폭·줄바꿈.
+ * ⚠️ **What this fixture misses (a list for the next person)**
+ *   1. **Extremes of volume** — a real vault's long bodies, deep heading trees,
+ *      hundreds of nodes. Text-fit and overflow defects do not appear here (that is the
+ *      `overflow-sweep` family's job).
+ *   2. **frontmatter keys not used here** — `screenshots`, `evidence`, `merged_uids`
+ *      and so on. The places those keys render remain unmeasured.
+ *   3. **Multiple projects** — there is one today. The "connected projects" card that
+ *      inter-project relations (`dependencies`) render only ever appears empty.
+ *   4. **Non-Korean locales** — widths and wrapping on the `/en` side.
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 왜 이 모양인가
+ * ## Why this shape
  * ════════════════════════════════════════════════════════════════════
  *
- * - **교차 도메인 엣지** — 주문→정산 3갈래, 주문→카탈로그 3갈래, 카탈로그→정산
- *   1갈래. 인사이트 「경계」 탭의 결합 격자는 이게 없으면 **칸 자체가 안 생긴다**
- *   (PR #918 이 그 자리를 처음 렌더했다). 쌍마다 예시가 여럿이어야 밀집 행이
- *   태어나므로 한 갈래로는 부족하다.
- * - **`relates` 를 쓴다** — 웹 파생기(`derive-ontology-from-vault`)가 역량의 교차
- *   엣지로 읽는 키가 그것이다. 역량에 `depends_on` 을 적으면 엣지가 **조용히
- *   0개**가 된다(#918 실측).
- * - **슬러그 `storefront`** — 정적 export 는 빌드 시점에 아는 슬러그만 라우트로
- *   낸다. 픽스처 프로젝트가 `/ko/project/<slug>/` 에서 열리려면 그중 하나여야
- *   한다.
- * - **요소 노드에 `path`** — 구현 근거 줄이 그려지는 조건이다.
+ * - **Cross-domain edges** — 3 from orders to settlement, 3 from orders to catalogue,
+ *   1 from catalogue to settlement. Without them the coupling grid on the insights
+ *   "boundaries" tab has **no cells at all** (PR #918 first rendered that site).
+ *   Several examples per pair are needed for dense rows to appear, so one branch is
+ *   not enough.
+ * - **It uses `relates`** — that is the key the web deriver
+ *   (`derive-ontology-from-vault`) reads as a capability's cross edge. Writing
+ *   `depends_on` on a capability yields **silently zero edges** (measured in #918).
+ * - **The slug `storefront`** — a static export emits routes only for slugs known at
+ *   build time, so the fixture project must be one of them to open at
+ *   `/ko/project/<slug>/`.
+ * - **`path` on element nodes** — the condition for the implementation evidence line
+ *   to render.
  */
 
 interface CapabilityOptions {
@@ -59,7 +65,7 @@ interface CapabilityOptions {
   readonly desc?: string;
 }
 
-/** 슬러그마다 고정된 UUIDv4 — 픽스처도 실제 writer의 신원 가드를 통과해야 한다. */
+/** A fixed UUIDv4 per slug — the fixture must pass the real writer's identity guard too. */
 function fixtureUid(identity: string): string {
   const hex = createHash("sha256").update(identity).digest("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
@@ -192,11 +198,12 @@ export const FIXTURE_VAULT: Readonly<Record<string, string>> = {
     dependencies: ["invoice"],
   }),
   "capabilities/tax-report.md": capability("tax-report", "세금 신고 자료", "settlement"),
-  // ⚠️ **배포 샘플 볼트에 절대 없는 슬러그** — 딥링크 시험의 표적. `checkout`
-  // 같은 쇼핑몰 어휘는 배포 샘플(sample-storefront, 112 노드)에도 있어서,
-  // 「어느 볼트가 이 문서를 열었나」를 시험이 가를 수 없었다(2026-08-08 —
-  // 부팅 경주 결함이 샘플 겹침 뒤에 숨어 초록이었다). 이 이름이 샘플에
-  // 생기면 그 시험들이 다시 눈이 먼다 — 샘플에 넣지 말 것.
+  // ⚠️ **A slug that never exists in the shipped sample vault** — the target of the
+  // deep-link tests. Storefront vocabulary such as `checkout` also exists in the shipped
+  // sample (sample-storefront, 112 nodes), so the tests could not tell which vault
+  // opened the document (2026-08-08 — a boot race defect hid behind that overlap and
+  // stayed green). If this name ever appears in the sample those tests go blind again —
+  // do not add it there.
   "capabilities/deeplink-probe.md": capability("deeplink-probe", "딥링크 표적 문서", "settlement", {
     desc: "픽스처 볼트에만 존재해, 열린 문서가 어느 볼트에서 왔는지를 시험이 가른다.",
   }),
@@ -241,6 +248,6 @@ export const FIXTURE_VAULT: Readonly<Record<string, string>> = {
   ),
 };
 
-/** 픽스처가 실제로 담고 있는 노드 수 — 스펙이 「빈 볼트를 물렸다」와 구별할 때 쓴다. */
+/** How many nodes the fixture really contains — specs use it to tell this apart from mounting an empty vault. */
 export const FIXTURE_VAULT_NODE_COUNT = Object.keys(FIXTURE_VAULT).length;
 import { createHash } from "node:crypto";

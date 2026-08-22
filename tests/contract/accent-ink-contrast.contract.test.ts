@@ -7,33 +7,53 @@ import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast
 import { controlClass } from "../../src/shared/ui/control-class";
 
 /**
- * 인디고 잉크 2단의 **라이선스 계약** (2026-08-03 체계석 판정, PR #886 후속).
+ * Blank out comments before scanning, preserving line numbers so reported
+ * locations stay right.
  *
- * ## 무엇을 잠그나
+ * **Why (measured 2026-08-22).** This gate looks for class-like literals in the
+ * source. A comment is not a class literal — nothing in a comment ever renders —
+ * but the scan read the raw file, so prose could trip it. Translating the
+ * repository's comments to English made that live: `text-width` written inside a
+ * sentence in `DomainCapacityBar.tsx` was reported as an undefined `text-*` ramp
+ * step, and token names mentioned in prose were counted as ink/fill pairings.
  *
- * 이 앱에는 인디고 잉크의 해가 둘이다:
+ * Korean prose rarely contains hyphenated Latin compounds, which is why the hole
+ * stayed closed for as long as the comments were Korean.
+ */
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+}
+
+
+/**
+ * The **licence contract** for the two indigo ink steps (체계 seat verdict
+ * 2026-08-03, follow-up to PR #886).
  *
- * | 톤 | 토큰 | 라이선스 |
+ * **What it locks.** This app has two solutions for indigo ink:
+ *
+ * | Tone | Token | Licence |
  * |---|---|---|
- * | `accent` | `--color-indigo-accent`(#7170ff) | **맨 어두운 바탕만** (canvas/panel/elevated) |
- * | `accentOnTint` | `--color-indigo-text-soft` | 어디서나 — 틴트 채움·호버 채움 포함 |
+ * | `accent` | `--color-indigo-accent`(#7170ff) | **darkest backgrounds only** (canvas/panel/elevated) |
+ * | `accentOnTint` | `--color-indigo-text-soft` | anywhere — including tint fills and hover fills |
  *
- * 판정은 이름이 아니라 **합성 대비 실측**이다: 여기서 `app/globals.css` 의
- * 실제 토큰 값을 읽어 WCAG 2.2 §1.4.3(AA 4.5:1)을 계산한다. 토큰 값이
- * 움직이면 이 시험이 그 순간의 진실을 다시 계산한다 — 상수 복제가 아니라서
- * 드리프트가 없다.
+ * The verdict is **measured composite contrast**, not a name: this file reads the
+ * real token values from `app/globals.css` and computes WCAG 2.2 §1.4.3
+ * (AA 4.5:1). If a token value moves, the test recomputes the truth of that moment
+ * — no constants are copied, so there is nothing to drift.
  *
- * ## 왜 lint 만으로 안 되나
- *
- * eslint 페어링 셀렉터(`accentTintPairingSelectors`)는 **같은 호출/원소 안의
- * 리터럴**만 본다. `INDIGO_CHIP` 같은 파일 상수로 우회된 className 은 AST
- * 셀렉터 하나에 안 담긴다 — 그 층을 여기 소스 스캔(상수 해석 포함)이 맡는다.
- * (`design.md` "lint 가 못 보는 층은 계약 테스트가 맡는다".)
+ * **Why lint alone is not enough.** The eslint pairing selectors
+ * (`accentTintPairingSelectors`) see only **literals within the same call or
+ * element**. A className routed through a file constant such as `INDIGO_CHIP` does
+ * not fit in one AST selector — this source scan (which resolves constants) covers
+ * that layer. (.claude/rules/design.md: layers lint cannot see belong to contract
+ * tests.)
  */
 
 const read = (rel: string) => readFileSync(join(process.cwd(), rel), "utf8");
 
-/** `app/globals.css` 첫 정의 우선으로 토큰 값을 꺼낸다. */
+/** Reads a token value from `app/globals.css`, first definition wins. */
 type Rgba = readonly number[];
 
 function cssToken(css: string, name: string): Rgba {
@@ -48,7 +68,7 @@ function cssToken(css: string, name: string): Rgba {
 
 const css = read("app/globals.css");
 
-/** 앱의 맨 바탕 3단 — 모든 컨트롤 호스트의 바닥. */
+/** The app's three base backgrounds — the floor under every control host. */
 const BASES = {
   canvas: cssToken(css, "--color-canvas"),
   panel: cssToken(css, "--color-panel"),
@@ -56,8 +76,9 @@ const BASES = {
 };
 
 /**
- * 이관 전수(29곳)가 실제로 딛고 있던 틴트들. 여기 없는 새 틴트 위에 accent 를
- * 올리려면 이 목록을 넓히고 아래 라이선스로 증명해야 한다.
+ * The tints the 29 migrated places actually stood on. Putting accent on a new tint
+ * not listed here requires widening this list and proving it under the licence
+ * below.
  */
 const TINTS = {
   "indigo-a06": cssToken(css, "--color-indigo-a06"),
@@ -85,10 +106,11 @@ describe("인디고 잉크 라이선스 — 값이 아니라 대비가 판정한
 
   it("톤 → 토큰 매핑이 서 있다 — accent 는 표식 인디고, accentOnTint 는 글자 인디고", () => {
     /*
-     * 대비만으로는 이 매핑을 못 잠근다: soft 는 맨 바탕도 통과하므로
-     * `accent` 잉크를 soft 로 바꿔치기해도 아래 라이선스는 초록이다.
-     * 하지만 그 순간 앱 전역 99줄의 손글씨 `--color-indigo-accent` 텍스트와
-     * 램프가 두 방언이 된다 — 그 정합이 이 매핑의 존재 이유다.
+     * Contrast alone cannot lock this mapping: soft also passes on the base
+     * backgrounds, so swapping `accent` ink for soft keeps the licence below green.
+     * But at that moment the ramp and the 99 hand-written `--color-indigo-accent`
+     * text lines across the app become two dialects — keeping them consistent is why
+     * this mapping exists.
      */
     expect(controlClass({ tone: "accent" })).toContain("text-[color:var(--color-indigo-accent)]");
     expect(controlClass({ tone: "accentOnTint" })).toContain(
@@ -116,10 +138,10 @@ describe("인디고 잉크 라이선스 — 값이 아니라 대비가 판정한
 
   it("분리의 근거가 아직 실재한다 — accent 는 틴트 위에서 실제로 AA 를 깬다", () => {
     /*
-     * `/gate-probe`: 빈 집합 위에서 공회전하는 검출기를 금지한다. 이 단언이
-     * 빨개지는 날은 토큰이 수렴해 accent 가 어디서나 통과하게 된 날이고,
-     * 그날 이 두 톤은 하나로 접을 수 있다 — scope 축의 「두 램프가 실제로
-     * 다르다」 게이트와 같은 문법이다.
+     * `/gate-probe`: no detector may idle on an empty set. The day this assertion
+     * turns red is the day the tokens converged and accent passes everywhere, and on
+     * that day the two tones can be folded into one — the same grammar as the scope
+     * axis's "the two ramps really differ" gate.
      */
     expect(
       ratioOn(accent, composite(TINTS["indigo-a24"], BASES.canvas)),
@@ -130,12 +152,13 @@ describe("인디고 잉크 라이선스 — 값이 아니라 대비가 판정한
 });
 
 /**
- * 소스 스캔 — `tone accent` 가 틴트 채움과 **한 컨트롤에서** 짝지어지지 않는다.
+ * Source scan — `tone accent` is never paired with a tint fill **in one control**.
  *
- * 창 휴리스틱: tone 표기 앞뒤 12줄에서 틴트 배경 리터럴과, className 에 얹힌
- * 파일 상수(`const NAME = '…'`)를 해석해 본다. 오늘 잔류 accent 3곳은 전부
- * 맨 바탕 위 `link` 라 창 안에 틴트가 없다 — 새로 생기면 여기가 빨개지고,
- * 처방은 금지가 아니라 `accentOnTint` 다.
+ * Window heuristic: within 12 lines either side of a tone declaration, it resolves
+ * tint background literals and file constants (`const NAME = '…'`) applied to
+ * className. The 3 remaining accent places today are all `link` on a base
+ * background, so no tint falls inside the window — a new one turns this red, and
+ * the prescription is `accentOnTint`, not a ban.
  */
 describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우회까지", () => {
   const TINT_RE = /bg-\[color:var\(--color-(indigo|amber)/;
@@ -151,42 +174,45 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
   };
 
   /**
-   * ## 손글씨 층 — 이 게이트가 못 보던 자리 (2026-08-04)
+   * **The hand-written layer — where this gate could not see (2026-08-04).**
    *
-   * 위 스캔은 **값 층의 `tone` 표기**를 찾는다. 그래서 `tone` 을 아예 안 쓰고
-   * 잉크와 틴트를 **손으로 나란히 쓴** 자리는 통째로 시야 밖이었다:
+   * The scan above looks for **the value layer's `tone` declarations**. Places that
+   * use no `tone` at all and instead write ink and tint **side by side by hand** were
+   * entirely out of view:
    *
    * ```
    * className="… bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-accent)]"
    * ```
    *
-   * 2026-08-04 시스템 감사가 그런 자리 하나(에이전트 연결 단계 번호 배지)를
-   * **4.27:1** 로 실측했는데, 이 파일도 `a11y-ratchet` 도 그것을 본 적이 없다 —
-   * 전자는 `tone` 만 봤고 후자는 첫 화면만 쟀으며, 게다가 그 배지는
-   * `aria-hidden` 이라 axe 의 `color-contrast` 는 원리적으로 건너뛴다.
-   * **자동 검사 셋의 사각지대가 한 자리에서 겹쳤다.**
+   * The 2026-08-04 system audit measured one such place (the step-number badge in
+   * agent connect) at **4.27:1**, and neither this file nor `a11y-ratchet` had ever
+   * seen it — the former looked only at `tone`, the latter measured only the first
+   * screen, and on top of that the badge is `aria-hidden`, so axe's `color-contrast`
+   * skips it in principle. **Three automated checks had blind spots that overlapped
+   * on one element.**
    *
-   * ### 왜 0 이 아니라 래칫인가
+   * **Why a ratchet and not 0.** Inventory before switching it on: **24 places**.
+   * Changing ink changes pixels, and pixel decisions belong to the design gate, not a
+   * value rule (.claude/rules/design.md). Also the verdict **depends on the host
+   * background** — accent is 4.27 (fail) on `a16`/panel but 4.55 (pass) on
+   * `a16`/canvas, and a static scan does not know which background a place is drawn
+   * on. So this only locks the count against **growth**, and the real verdict is left
+   * to the runtime instrument that opens the surfaces (`a11y-ratchet`).
    *
-   * 켜기 전 전수: **24곳**. 잉크를 바꾸면 픽셀이 바뀌고, 픽셀을 바꾸는 결정은
-   * 값 규칙이 아니라 디자인 게이트의 일이다(`design.md`). 게다가 판정이
-   * **호스트 배경에 달렸다** — accent 는 `a16`/panel 에서 4.27(미달)이지만
-   * `a16`/canvas 에서는 4.55(통과)다. 정적 스캔은 그 자리가 어느 바탕 위에
-   * 그려지는지 모른다. 그래서 여기서는 **늘지 못하게만** 잠그고, 실제 판정은
-   * 열린 표면을 여는 런타임 계기(`a11y-ratchet`)가 맡는다.
-   *
-   * 감사가 지목한 1건은 그 라운드에서 갚았고(`StepRow`, 8.39:1), 남은 23은
-   * 2026-08-04 「체계」 잉크 라운드(열린 표면 오버레이 대비)가 전수 이관했다 —
-   * 잉크만 `--color-indigo-text-soft` 로 바뀌었고 치수·보더 변화 0. 이관 후
-   * 전 자리 합성 대비 6.30:1 이상(최저는 a32/elevated). 그래서 기준선이 0 이다:
-   * 이제 이 층의 라이선스는 「틴트를 지는 잉크는 soft」 하나이고, 새 위반은
-   * 첫 건부터 빨갛다. 탐지기 자체는 아래 프로브 시험이 계속 증명한다.
+   * The 1 place the audit named was repaid in that round (`StepRow`, 8.39:1), and the
+   * other 23 were migrated exhaustively by the 2026-08-04 체계 ink round (open-surface
+   * overlay contrast) — only the ink changed to `--color-indigo-text-soft`, with zero
+   * change to dimensions or borders. After migration every place measures at least
+   * 6.30:1 composite (the lowest being a32/elevated). Hence a baseline of 0: this
+   * layer's licence is now the single rule "ink on a tint is soft", and a new
+   * violation is red from the first one. The detector itself is kept honest by the
+   * probe tests below.
    */
   const HAND_WRITTEN_INK = /text-\[color:var\(--color-indigo-accent\)\]/;
   const HAND_WRITTEN_TINT = /bg-\[color:var\(--color-(indigo|amber)[a-z-]*-a\d+\)\]/;
   const BASELINE_HAND_WRITTEN_ACCENT_ON_TINT = 0;
 
-  /** 여는 태그를 **중괄호 깊이**로 끊는다 — `onClick={() => …}` 의 `=>` 가 태그 끝이 아니다. */
+  /** Terminates an opening tag by **brace depth** — the `=>` in `onClick={() => …}` is not the end of the tag. */
   const openingTags = (src: string): string[] => {
     const tags: string[] = [];
     for (const m of src.matchAll(/<[A-Za-z][\w.]*/g)) {
@@ -208,8 +234,9 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
           break;
         }
       }
-      // ★ 닫히지 않은 것은 태그가 아니다. 이 가드 없이 파일 끝까지 슬라이스하면
-      //   «태그» 안에 뒤따르는 원소 전부가 들어와 30 을 세게 된다(실측 24 → 30).
+      // Something that never closes is not a tag. Without this guard the slice runs to
+      // end of file and every following element lands inside the "tag", counting 30
+      // instead of 24 (measured).
       if (closed) tags.push(src.slice(m.index!, i));
     }
     return tags;
@@ -218,7 +245,7 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
   const handWritten = (): string[] => {
     const hits: string[] = [];
     for (const file of walk(join(process.cwd(), "src"))) {
-      const src = readFileSync(file, "utf8");
+      const src = stripComments(readFileSync(file, "utf8"));
       if (!HAND_WRITTEN_INK.test(src)) continue;
       for (const tag of openingTags(src)) {
         if (HAND_WRITTEN_INK.test(tag) && HAND_WRITTEN_TINT.test(tag)) {
@@ -255,7 +282,7 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
     expect(hit(offender), "일부러 만든 위반을 못 잡는다 — 탐지기가 죽었다").toBe(true);
     expect(hit(fixed), "고친 짝을 위반으로 센다 — 그러면 고칠 이유가 사라진다").toBe(false);
     expect(hit(bare), "맨 바탕 위 accent 는 라이선스 안이다").toBe(false);
-    // 감사가 지목한 그 자리는 실제로 갚였다.
+    // The place the audit named really was repaid.
     expect(
       readFileSync(join(process.cwd(), "src/features/docs-vault-local/ui/StepRow.tsx"), "utf8"),
     ).toContain("--color-indigo-text-soft");
@@ -264,10 +291,10 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
   it("위반 0 — 틴트를 지는 주 행동 잉크는 accentOnTint 다", () => {
     const offenders: string[] = [];
     for (const file of walk(join(process.cwd(), "src"))) {
-      const src = readFileSync(file, "utf8");
+      const src = stripComments(readFileSync(file, "utf8"));
       if (!TONE_RE.test(src)) continue;
       const lines = src.split("\n");
-      // 같은 파일의 문자열 상수(예: INDIGO_CHIP)를 값으로 해석한다.
+      // Resolve string constants declared in the same file (e.g. INDIGO_CHIP).
       const consts = new Map<string, string>();
       for (const m of src.matchAll(/const\s+([A-Z0-9_]+)\s*=\s*\n?\s*["'`]([^"'`]+)["'`]/g)) {
         consts.set(m[1], m[2]);

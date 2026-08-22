@@ -9,27 +9,28 @@ import type { Project } from "@/entities/project";
 import { ProjectForm } from "./ProjectForm";
 
 /**
- * 저장이 거절되면 **그 이유가 눌린 사람 눈에 들어와야 한다.**
+ * When a save is rejected, **the reason must reach the eye of the person who pressed it.**
  *
- * ## 왜 이 시험이 생겼나 (2026-08-07 실측)
+ * ## Why this test exists (measured 2026-08-07)
  *
- * 편집 화면에서 저장을 누르니 거절 알림이 **390×844 에서 top 802 · bottom
- * 872** 에 떴다 — 뷰포트가 844 라 위아래로 잘린 채 하단 탭바 뒤에 걸렸다.
- * 1512×900 에서는 628–676 으로 멀쩡히 보였다. **폼이 길수록, 화면이 짧을수록
- * 어긋난다** — 즉 넓은 화면에서만 확인하면 영원히 안 보이는 결함이다.
+ * Pressing save on the edit screen put the rejection notice at **top 802 · bottom 872 at
+ * 390×844** — with a viewport of 844 it was clipped at both ends and caught behind the
+ * bottom tab bar. At 1512×900 it was perfectly visible at 628–676. **The longer the form
+ * and the shorter the screen, the worse the mismatch** — that is, a defect invisible
+ * forever if you only check on a wide screen.
  *
- * 그 자리의 원인(볼트 없이 저장을 누를 수 있었던 것)은 이제 버튼을 미리
- * 잠가서 막았다. 그러나 **칸이 없는 오류**는 남는다 — 저장 실패, 쓰기 충돌.
- * 검증 오류는 `focusField` 가 그 칸으로 데려가지만 그런 오류는 데려갈 곳이
- * 이 배너뿐이다.
+ * The cause in that instance (being able to press save with no vault) is now prevented by
+ * disabling the button up front. But errors **with no field** remain — a failed save, a
+ * write conflict. `focusField` takes validation errors to their field; those errors have
+ * nowhere to go but this banner.
  *
- * ## 왜 픽셀이 아니라 초점을 재나
+ * ## Why focus is measured rather than pixels
  *
- * 「보이는 자리에 있는가」는 폼 길이·뷰포트·번역 길이에 따라 달라져서, 어느
- * 한 조합을 못박으면 다른 조합에서 조용히 틀린다. **초점이 그 배너에 있는가**
- * 는 그 전부에서 같은 뜻이고, 화면을 못 보는 사람에게도 같은 값을 준다.
- * 스크롤은 그 초점 이동에 브라우저가 딸려 주는 것이다(jsdom 은 `scrollIntoView`
- * 를 구현하지 않으므로 여기서는 초점만 판정한다 — `focusField` 와 같은 규율).
+ * "Is it in a visible position" varies with form length, viewport, and translation length,
+ * so pinning one combination goes quietly wrong in another. **Is focus on that banner**
+ * means the same thing across all of them, and gives the same value to someone who cannot
+ * see the screen. Scrolling is what the browser adds to that focus move (jsdom does not
+ * implement `scrollIntoView`, so only focus is asserted here — the same discipline as `focusField`).
  */
 
 const project: Project = {
@@ -73,7 +74,8 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
       fireEvent.click(save);
     });
 
-    // 공회전 차단 — 제출이 안 됐으면 아래 단언은 「맞아서」가 아니라 「안 일어나서」다.
+    // Guard against a no-op run: if submit never happened, the assertions below pass
+    // because nothing occurred rather than because they are true.
     expect(onSubmit, "저장이 호출되지 않았다 — 이 시험이 헛돈다").toHaveBeenCalledTimes(1);
 
     const banner = await screen.findByTestId("project-error-banner");

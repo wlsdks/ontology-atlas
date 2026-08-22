@@ -1,10 +1,11 @@
 /**
- * ⚠️ 색 게이트 예외 (`scripts/check-no-raw-color.mjs` 의 `ALLOWLIST`, 2026-08-04).
- * 이 파일의 `rgba(236,236,240,…)` 는 `ctx.fillStyle` 이 직접 먹는 문자열이다 —
- * 캔버스 2D 컨텍스트에는 캐스케이드가 없어서 `var(--…)` 를 해석하지 못하고,
- * 알파는 별마다 프레임마다 계산되므로 토큰 하나로 접히지도 않는다. 값이 눈에는
- * 흰색이지만 정확히 r=g=b 가 아니라 자동 무채색 면제에도 안 걸린다. 새 색을
- * 여기 더하지 말 것 — 더해야 하면 그 이유를 여기에 같이 적는다.
+ * ⚠️ Colour-gate exemption (the `ALLOWLIST` in `scripts/check-no-raw-color.mjs`,
+ * 2026-08-04). This file's `rgba(236,236,240,…)` is a string consumed directly by
+ * `ctx.fillStyle`: a canvas 2D context has no cascade, so it cannot resolve
+ * `var(--…)`, and the alpha is recomputed per star per frame, so it cannot fold
+ * into one token either. It looks white but is not exactly r=g=b, so it misses
+ * the automatic greyscale exemption too. Do not add new colours here — if one is
+ * unavoidable, record why alongside it.
  *
  * Far-field star-dust texture + diffraction spikes — ported from the B2+
  * prototype's `buildStarDust()`/`drawSpike()`
@@ -25,9 +26,9 @@
 
 export interface DustPoint {
   /**
-   * B3 잔여 — 시차 깊이 [dustParallaxMin, dustParallaxMax]. 그리드(1:1)보다
-   * 느리게 흐르는 순수 기하학적 깊이 단서 — glow/blur 없이 "월드 위를
-   * 움직인다"는 감각의 두 번째 레이어.
+   * Parallax depth in [dustParallaxMin, dustParallaxMax]. A purely geometric
+   * depth cue that drifts slower than the grid's 1:1 — a second layer of "moving
+   * over a world", with no glow or blur.
    */
   depth: number;
   x: number;
@@ -79,7 +80,7 @@ export function buildDustPoints(
       y: rng() * viewportHeight,
       r: 0.4 + rng() * 0.7,
       alpha: 0.02 + rng() * 0.04,
-      // C-1 (Guardian) — depth 도 같은 seed rng: 이 함수의 결정론 계약 유지.
+      // depth draws from the same seeded rng, preserving this function's determinism.
       depth: depthMin + rng() * (depthMax - depthMin),
     });
   }
@@ -87,10 +88,12 @@ export function buildDustPoints(
 }
 
 /**
- * S8 결함 6 — "영역 전개" active 중 결계 **안**을 우주로 만드는 밀도 상승 도트
- * 레이어 2장(깊이 0.3 / 0.6). dust 보다 촘촘하고, 알파는 ≤0.12(무채) — glow/blur
- * 없이 순수 도트로만 깊이감을 만든다. depth 를 두 값으로 고정해 카메라 팬/줌 시
- * 두 평면이 서로 다른 속도로 흘러 시차(입력 반응)를 만든다. 결정론(seed 고정).
+ * Two denser dot layers (depths 0.3 and 0.6) that turn the space **inside** the
+ * ward into cosmos while 「영역 전개」 (realm expansion) is active. Denser than the
+ * dust and capped at alpha 0.12, greyscale — depth comes from plain dots, never
+ * glow or blur. Fixing depth to exactly two values makes the two planes drift at
+ * different speeds under camera pan/zoom, so the parallax responds to input.
+ * Deterministic (fixed seed).
  */
 export function buildRealmCosmosPoints(
   viewportWidth: number,
@@ -104,9 +107,9 @@ export function buildRealmCosmosPoints(
       x: rng() * viewportWidth,
       y: rng() * viewportHeight,
       r: 0.4 + rng() * 0.7,
-      // 알파 상한 0.12(헌장: 어지럽지 않게) — [0.04, 0.12).
+      // Alpha ceiling 0.12 — the charter's "never busy". Range [0.04, 0.12).
       alpha: 0.04 + rng() * 0.08,
-      // 두 깊이 레이어(0.3 / 0.6) — 시차 평면 2장.
+      // Two depth layers (0.3 / 0.6) — two parallax planes.
       depth: i % 2 === 0 ? 0.3 : 0.6,
     });
   }
@@ -115,22 +118,24 @@ export function buildRealmCosmosPoints(
 
 export interface RealmCosmosDrawState {
   points: readonly DustPoint[];
-  /** 카메라 원점의 스크린 좌표 — dust 와 동일한 시차 소스(깊이 비례 흐름). */
+  /** Screen coordinates of the camera origin — the same parallax source the dust uses. */
   originX: number;
   originY: number;
-  /** 결계 원(스크린 스페이스). 이 원 **안**에만 도트를 그린다 — 밖은 우주 아님. */
+  /** The ward circle in screen space. Dots are drawn **inside** it only. */
   clip: { cx: number; cy: number; radius: number };
   devicePixelRatio: number;
-  /** S4 전개 순간의 방사 시차 낙하 0..1(유지). 정지 시 0. */
+  /** Radial parallax fall at the moment of expansion, 0..1; 0 at rest. */
   radialParallax?: number;
-  /** reduced-motion: 시차 0(원점/방사 오프셋 미적용) — 정적 밀도만. */
+  /** reduced-motion: zero parallax (no origin or radial offset) — static density only. */
   reducedMotion?: boolean;
 }
 
 /**
- * 결계 안 우주 도트 — 결계 원으로 클립하고, 카메라 원점 기반 깊이 시차로
- * 두 레이어가 서로 다른 속도로 흐른다. 지속 애니메이션 없음(원점이 안 바뀌면
- * 도트도 안 움직인다 → idle gate 유지). farT 게이트 없음(영역은 circuit 고도).
+ * The cosmos dots inside the ward — clipped to the ward circle, with the two
+ * layers drifting at different speeds via camera-origin depth parallax. No
+ * continuous animation: an unchanged origin means unmoving dots, which is what
+ * keeps the idle condition satisfied. No farT condition either, since the realm
+ * lives at circuit altitude.
  */
 export function drawRealmCosmos(ctx: CanvasRenderingContext2D, state: RealmCosmosDrawState): void {
   const { points, clip, devicePixelRatio } = state;
@@ -143,7 +148,7 @@ export function drawRealmCosmos(ctx: CanvasRenderingContext2D, state: RealmCosmo
   const rp = reduced ? 0 : state.radialParallax ?? 0;
   const maxShift = Math.min(w, h) * 0.03;
   ctx.save();
-  // 결계 원 클립 — 결계 안만 우주("여긴 다른 공간" 독법).
+  // Clip to the ward circle — cosmos inside only, so it reads as a different space.
   ctx.beginPath();
   ctx.arc(clip.cx * devicePixelRatio, clip.cy * devicePixelRatio, clip.radius * devicePixelRatio, 0, Math.PI * 2);
   ctx.clip();
@@ -168,25 +173,28 @@ export function drawRealmCosmos(ctx: CanvasRenderingContext2D, state: RealmCosmo
 
 export interface StarDustDrawState {
   points: readonly DustPoint[];
-  /** 카메라 원점의 스크린 좌표 — 시차 오프셋의 기준 (grid 와 동일 소스). */
+  /** Screen coordinates of the camera origin — the parallax reference, same source as the grid. */
   originX?: number;
   originY?: number;
   farT: number;
   devicePixelRatio: number;
   /**
-   * S4 영역 전개 순간의 방사 시차 낙하 0..1 — 각 점이 화면 중심에서 depth
-   * 비례로 바깥으로 밀리며 "우주를 통과하는" 깊이감을 만든다. 이동량은
-   * 화면의 3% 이내(헌장: 어지럽지 않게), 전환 후 0 으로 복귀(지속 금지).
+   * Radial parallax fall at the moment of realm expansion, 0..1 — each point is
+   * pushed outward from screen centre in proportion to its depth, reading as
+   * movement through space. Displacement stays within 3% of the screen (the
+   * charter's "never busy") and returns to 0 after the transition; it never
+   * persists.
    */
   radialParallax?: number;
 }
 
 /*
- * perf 2026-08-19 — 점별 fillStyle 문자열 캐시. 알파는 점마다 다르지만
- * (`point.alpha * farT`) **같은 점 배열·같은 farT** 인 동안은 프레임마다
- * 같은 문자열을 다시 만들고 있었다 — 뷰포트 한 장에 수백 점 × 60fps 의
- * 문자열 할당·파싱이다. 배열 참조나 farT 가 바뀌면 통째로 다시 만든다
- * (문자열 값이 같으니 픽셀도 같다).
+ * perf 2026-08-19 — per-point fillStyle string cache. The alpha differs per point
+ * (`point.alpha * farT`), but for the **same point array and the same farT** the
+ * identical strings were being rebuilt every frame — hundreds of points per
+ * viewport × 60fps of string allocation and parsing. A change to the array
+ * reference or to farT rebuilds the whole cache; the string values are identical,
+ * so the pixels are too.
  */
 let dustStyleSourcePoints: readonly DustPoint[] | null = null;
 let dustStyleFarT = -1;
@@ -198,8 +206,9 @@ export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawS
   const { points, farT, devicePixelRatio } = state;
   const ox = state.originX ?? 0;
   const oy = state.originY ?? 0;
-  // 시차: 각 점이 depth 비율만큼 카메라를 따라 흐른다 (그리드=1.0 보다
-  // 느림). 뷰포트 래핑으로 커버리지 유지 — 멀리 패닝해도 먼지는 남는다.
+  // Parallax: each point follows the camera in proportion to its depth, slower
+  // than the grid's 1.0. Viewport wrapping keeps coverage, so the dust survives a
+  // long pan.
   const w = ctx.canvas.width / devicePixelRatio;
   const h = ctx.canvas.height / devicePixelRatio;
   const rp = state.radialParallax ?? 0;

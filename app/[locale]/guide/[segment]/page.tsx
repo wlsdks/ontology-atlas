@@ -5,8 +5,8 @@ import { buildPageMetadata } from '@/shared/lib/page-metadata';
 import { routing } from '@/i18n/routing';
 
 /**
- * 정적 export 라 경로를 전부 미리 만든다 — 목록의 단일 진실원이 `GUIDE_PAGES` 다.
- * 장을 하나 더하면 라우트·사이드바·이전다음이 **한 곳에서** 같이 늘어난다.
+ * Static export means every path is generated ahead of time, and the single source for the list is
+ * `GUIDE_PAGES`. Adding a chapter grows the routes, the sidebar, and prev/next **from one place**.
  */
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
@@ -46,9 +46,10 @@ export default async function Page({
       title={t(`guidePages.${page.titleKey}`)}
       {...(page.segment === GUIDE_ENTRY_PAGE.segment ? { lead: t('guideLead') } : {})}
       /*
-       * 모르는 세그먼트에는 첫 장을 그리되 **대체했다고 말한다** — 말없는
-       * 폴백은 그 주소의 문서인 척하는 오배송이다(2026-08-14 걷기 실측:
-       * 본문의 상대 `.md` 링크가 여기로 떨어져 1장이 명세 행세를 했다).
+       * An unknown segment renders the first chapter but **says it substituted** — a silent fallback
+       * is a misdelivery pretending to be that address's document (measured in a 2026-08-14
+       * walkthrough: relative `.md` links in the body landed here and chapter 1 masqueraded as the
+       * specification).
        */
       {...(matched ? {} : { notice: t('guideUnknownSegment') })}
       sourcePath={`docs/${page.slug}.md`}

@@ -1,10 +1,10 @@
 /**
- * rank7 (design-council B5) — "마지막 편집 · 사람/AI" 사실의 중립 선택기.
- * 사람/AI 는 hue 가 아니라 glyph+라벨로만 구분한다는 결정 원칙을 코드
- * 레벨에서도 지킨다: 이 함수는 어느 kind 도 우대하지 않고, 오직 각
- * 후보의 `atMs`(실측 근거가 있을 때만 non-null — 호출자 책임) 중 가장
- * 최근 것을 고른다. 모든 후보가 `atMs: null` 이면(= 실데이터 근거 0)
- * null 을 반환 — 절대 추측해서 하나를 지어내지 않는다.
+ * Neutral selector for the "last edited by human / by AI" fact.
+ *
+ * The design decision that human and AI are distinguished by glyph and label,
+ * never by hue, is enforced here too: this function favours no kind and simply
+ * picks the most recent `atMs`. With every candidate at `atMs: null` — no
+ * evidence at all — it returns null rather than inventing one.
  */
 
 export type LastEditSubjectKind = "agent" | "human";
@@ -16,7 +16,7 @@ export interface LastEditSubjectFact {
 
 export interface LastEditSubjectCandidate {
   kind: LastEditSubjectKind;
-  /** null = 이 kind 에 대한 실데이터 근거가 없음(추측 금지). */
+  /** null means no evidence for this kind. Callers must not guess a value. */
   atMs: number | null;
 }
 

@@ -3,29 +3,31 @@ import { slugify } from '@/shared/lib/slugify';
 import type { BlockManifest } from './block-manifest';
 
 /**
- * 블록 import 병합 계획 — **순수 dry-run**. 이 모듈은 vault 를 절대 만지지
- * 않는다: 입력(.md raw 들 + 기존 slug 집합)을 받아 "무엇을 어떤 slug 로 쓸
- * 것인가"를 데이터로만 반환하고, 실제 쓰기는 사용자가 다이얼로그에서 승인한
- * 뒤 UI 가 기존 vault 쓰기 경로(`createDoc`)로 수행한다. 승인 전 쓰기 0 이
- * 절대 계약이다.
+ * The merge plan for a block import — **a pure dry run**. This module never touches the
+ * vault: it takes the inputs (raw `.md` files plus the set of existing slugs) and returns,
+ * as data only, "what will be written under which slug". The actual write happens after
+ * the user approves in the dialog, through the existing vault write path (`createDoc`).
+ * Zero writes before approval is an absolute contract.
  *
- * CLI `node $ATLAS/cli/src/index.mjs import` (`cli/src/commands/import.mjs`) 와의 정합:
- * - kind: frontmatter `kind:` 만 신뢰, 없으면 kindless skip (동일).
- * - slug: frontmatter `slug:` 우선, 없으면 파일 경로(.md 제거) (동일 —
- *   export 가 폴더 구조를 보존하므로 CLI 의 kind-folder auto-prefix 는 불요).
- * - 배치 내 중복 slug 도 충돌로 취급 (동일 — claimedSlugs).
- * - 충돌 회피 실패 시 `-2`/`-3` suffix (동일 — nextFreeSlug).
- * - 다른 점 하나(의도적): CLI `--rename` 은 리네임 후 위키링크를 다시 쓰지
- *   않지만, 블록은 "서로 참조하는 서브그래프 묶음"이라 사용자가 접두사
- *   해소를 골랐다면 블록 *내부* 파일들의 `[[old]]` / `(...old.md)` 참조도
- *   새 slug 를 따라간다 — 앱의 `renameDoc(rewriteBacklinks)` 와 같은 regex
- *   계약. vault 쪽 기존 문서는 건드리지 않는다(기존 slug 는 그대로 존재).
+ * Consistency with the CLI's `node $ATLAS/cli/src/index.mjs import`
+ * (`cli/src/commands/import.mjs`):
+ * - kind: only frontmatter `kind:` is trusted; kindless files are skipped (identical).
+ * - slug: frontmatter `slug:` wins, otherwise the file path with `.md` removed (identical —
+ *   export preserves the folder structure, so the CLI's kind-folder auto-prefix is unnecessary).
+ * - Duplicate slugs within one batch also count as conflicts (identical — `claimedSlugs`).
+ * - A `-2`/`-3` suffix when conflict avoidance fails (identical — `nextFreeSlug`).
+ * - One deliberate difference: the CLI's `--rename` does not rewrite wiki links after a
+ *   rename, but a block is "a bundle of a subgraph that references itself", so when the
+ *   user chooses prefix resolution the `[[old]]` and `(...old.md)` references *inside* the
+ *   block follow the new slug too — the same regex contract as the app's
+ *   `renameDoc(rewriteBacklinks)`. Existing documents in the vault are untouched (their
+ *   slugs still exist).
  */
 
 export type BlockConflictResolution = 'skip' | 'prefix';
 
 export interface BlockImportFile {
-  /** 블록 폴더 루트 기준 상대 경로 (e.g. `capabilities/login.md`). */
+  /** Path relative to the block folder root (e.g. `capabilities/login.md`). */
   path: string;
   raw: string;
 }
@@ -38,7 +40,7 @@ export type BlockImportEntryStatus =
 
 export interface BlockImportEntry {
   originalSlug: string;
-  /** null = 쓰지 않음 (skip / kindless). */
+  /** null = not written (skipped, or kindless). */
   finalSlug: string | null;
   kind: string | null;
   title: string;
@@ -52,7 +54,7 @@ export interface BlockImportWrite {
 
 export interface BlockImportPlan {
   entries: BlockImportEntry[];
-  /** 승인 시 이대로 vault 에 기록될 파일들 — plan 단계에선 데이터일 뿐. */
+  /** The files that will be written to the vault on approval — data only at the plan stage. */
   writes: BlockImportWrite[];
   newCount: number;
   conflictCount: number;
@@ -71,7 +73,7 @@ export interface BlockImportPlanOptions {
 const NODE_UID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-/** `capabilities/login` + `auth-block` → `capabilities/auth-block-login`. 이미 접두사면 그대로. */
+/** `capabilities/login` + `auth-block` → `capabilities/auth-block-login`. Already prefixed stays as is. */
 export function prefixBlockSlug(slug: string, blockPrefix: string): string {
   const idx = slug.lastIndexOf('/');
   const dir = idx === -1 ? '' : slug.slice(0, idx + 1);
@@ -80,7 +82,7 @@ export function prefixBlockSlug(slug: string, blockPrefix: string): string {
   return `${dir}${blockPrefix}-${tail}`;
 }
 
-/** 본문 끝에 provenance 인용 한 줄 — import 감사 흔적 (스펙 리터럴 계약). */
+/** One provenance citation appended to the body — the import audit trail (a literal spec contract). */
 export function appendProvenance(
   raw: string,
   blockName: string,
@@ -90,7 +92,7 @@ export function appendProvenance(
   return `${raw.replace(/\n*$/, '')}\n\n${line}\n`;
 }
 
-/** frontmatter 블록 안의 `slug:` 라인만 새 값으로 교체 (없으면 그대로 — slug 는 경로가 진실원). */
+/** Replaces only the `slug:` line inside the frontmatter block (absent, it stays — the path is the source of truth). */
 function setFrontmatterSlug(raw: string, newSlug: string): string {
   if (!raw.startsWith('---')) return raw;
   const end = raw.indexOf('\n---', 3);
@@ -157,7 +159,7 @@ function validatedIdentityClaims(
   return { uid, claims: [...(uid ? [uid] : []), ...canonicalMergedUids] };
 }
 
-/** renameDoc(rewriteBacklinks) 과 같은 두 regex — [[old]] 계열 + (...old.md). */
+/** The same two regexes as `renameDoc(rewriteBacklinks)` — the `[[old]]` family plus `(...old.md)`. */
 function rewriteSlugRefs(raw: string, oldSlug: string, newSlug: string): string {
   const escaped = oldSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const wikiRe = new RegExp(`(\\[\\[)(${escaped})(\\||#|\\]\\])`, 'g');
@@ -274,7 +276,7 @@ export function planBlockImport(
       continue;
     }
 
-    // prefix 해소 — 접두사로도 막히면 CLI --rename 정합의 -2/-3.
+    // Resolve by prefix — if the prefix also collides, fall back to the CLI's -2/-3.
     let renamedSlug = prefixBlockSlug(baseSlug, blockPrefix);
     if (taken(renamedSlug)) renamedSlug = nextFreeSlug(renamedSlug, taken);
     claimed.add(renamedSlug);

@@ -1,26 +1,28 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 인사이트 「할 일」 — **한 화면이 같은 일을 두 수로 세지 않는다.**
+ * Insights "to do" — **one screen must not count the same thing as two numbers.**
  *
- * ## 무엇이 있었나 (2026-08-07 실측 · 샘플 볼트)
+ * ## What happened (measured 2026-08-07, sample vault)
  *
- * 탭 배지가 「할 일 **7**」이고 **바로 아래** 묶음 머리가 「**8**」이었다. 차이는
- * 중복 쌍 1건 — 두 수가 각자 **손으로 관리하는 섹션 목록**에서 나왔고, 중복이
- * 판정 쪽에만 빠져 있었다.
+ * The tab badge read "to do **7**" while the group heading **immediately below** read
+ * **8**. The difference was one duplicate pair: the two numbers each came from their
+ * own **hand-maintained section list**, and duplicates were missing from only one.
  *
- * 이 화면의 판정 모듈은 자기 머리말에 이미 같은 사고를 적어 두고 있었다(#63:
- * 「할 일 0」 + "그래프가 건강합니다" + 「누락된 연결 1」이 동시에 떴다). 그때
- * `meaningGaps` 를 끼워 넣어 값을 맞췄지만 **목록이 둘이라는 구조는 그대로**
- * 였고, 다음 섹션(중복)에서 같은 병이 다시 났다.
+ * This screen's judgement module had already recorded the same accident in its own
+ * preamble (#63: "to do 0" + "the graph is healthy" + "missing connections 1" all
+ * showing at once). That fix inserted `meaningGaps` to make the values agree but
+ * **left the two-list structure in place**, and the same disease returned at the next
+ * section (duplicates).
  *
- * ## 무엇이 이 검사를 대신할 수 없나
+ * ## What cannot replace this check
  *
- * 값은 이제 `Record<QueueSectionKey, number>` 하나에서 갈라져 나가므로
- * **섹션을 더하면 타입 검사가 먼저 막는다.** 그게 1차 방어다. 이 검사가 맡는
- * 것은 그다음 — **화면에 실제로 같은 수가 찍히는가**. 배지가 어느 값을 읽는지,
- * 어느 조건에서 0으로 덮이는지는 렌더에서만 드러난다(실제로 「개념이 0이면
- * 배지도 0」 같은 분기가 이 화면에 있다).
+ * The values now branch from a single `Record<QueueSectionKey, number>`, so
+ * **adding a section is blocked by the type checker first.** That is the primary
+ * defence. This check covers what comes after — **whether the same number is
+ * actually painted on screen**. Which value a badge reads, and the conditions under
+ * which it is overridden to 0, are visible only in the render (this screen really
+ * does have branches such as "0 concepts means a 0 badge").
  */
 
 test.describe("인사이트 할 일 — 탭 배지와 묶음 배지가 같은 수를 말한다", () => {
@@ -43,14 +45,14 @@ test.describe("인사이트 할 일 — 탭 배지와 묶음 배지가 같은 �
         .filter((el) => (el.getAttribute("data-testid") ?? "").endsWith("-count"))
         .map((el) => num(text(el)) ?? 0);
 
-      // 수리 큐의 차단 신호(분리된 섬 · 누락된 연결)는 큐 섹션이 아니라 별도
-      // 신호라, 탭 배지에는 들어가고 묶음 배지에는 안 들어간다. 화면에서 그
-      // 둘을 읽어 식의 양변을 맞춘다.
+      // The repair queue's blocking signals (isolated islands, missing connections) are
+      // separate signals rather than queue sections, so they enter the tab badge but not
+      // the group badge. Both are read from the screen to balance the equation.
       //
-      // ⚠️ **`num(부모 텍스트)` 로 읽으면 안 된다** — 첫 시도가 그랬고, 더 위
-      // 컨테이너를 잡아 개념 수 **112** 를 차단 신호로 읽었다. 칩 하나의 모양
-      // (`"0 분리된 섬"`)을 통째로 맞춰서, 못 맞추면 **조용히 0** 이 아니라
-      // 아래 개수 단언에서 빨개지게 한다.
+      // ⚠️ **Do not read this as `num(parent text)`** — the first attempt did, grabbed a
+      // container further up, and read the concept count **112** as a blocking signal.
+      // Match a whole chip's shape (`"0 분리된 섬"`) instead, so a failed match turns the
+      // count assertion below red rather than **silently yielding 0**.
       const CHIP = /^(\d+)\s*(분리된 섬|누락된 연결)$/;
       const repair = [...document.querySelectorAll("*")]
         .filter((el) => el.childElementCount === 0 && /분리된 섬|누락된 연결/.test(text(el)))
@@ -61,11 +63,11 @@ test.describe("인사이트 할 일 — 탭 배지와 묶음 배지가 같은 �
       return { tab: num(text(tab ?? null)), groups, repair };
     });
 
-    // 공회전 차단 — 배지를 못 읽었으면 아래 등식은 「맞아서」가 아니라 「안 봐서」다.
+    // Idling guard — an unread badge makes the equation below hold because nothing was looked at.
     expect(seen.tab, "탭 배지를 못 읽었다 — 셀렉터가 낡았다").not.toBeNull();
     expect(seen.groups.length, "묶음 배지를 하나도 못 찾았다").toBeGreaterThan(0);
     expect(seen.tab, "샘플 볼트인데 할 일이 0이다 — 이 검사가 헛돈다").toBeGreaterThan(0);
-    // 차단 신호 칩 둘을 못 읽으면 아래 등식의 오른변이 조용히 작아진다.
+    // Failing to read the two blocking-signal chips silently shrinks the right-hand side.
     expect(seen.repair.length, "수리 큐의 차단 칩(분리된 섬 · 누락된 연결)을 못 읽었다").toBe(2);
 
     const groupSum = seen.groups.reduce((a, b) => a + b, 0);
@@ -81,19 +83,22 @@ test.describe("인사이트 할 일 — 탭 배지와 묶음 배지가 같은 �
 });
 
 /**
- * **큰 숫자도 같은 폴더를 센다** (2026-08-12 실측 회귀).
+ * **The large numbers count the same folder** (regression measured 2026-08-12).
  *
- * 구성 탭의 대형 숫자(개념·관계)가 상단 칩과 **다른 수**를 말했다 — 칩은 사용자
- * 볼트(5 개념 · 4 관계), 큰 숫자는 내장 견본(125 · 258). 원인은 카운트업 인트로:
- * 첫 렌더가 견본으로 그려지며 0→125 로 세기 시작하고, 사용자 볼트가 그 400ms
- * **안에** 도착하면 동기화 스냅을 다음 프레임이 되덮은 뒤 125 에 영구 정착했다.
- * 그 화면의 부제가 "모든 숫자는 문서에서 자동으로 계산돼요" 인데, 숫자가 견본을
- * 세고 있었다.
+ * The composition tab's large numbers (concepts, relations) reported **different
+ * values** from the chips above — the chips showed the user's vault (5 concepts, 4
+ * relations) while the large numbers showed the bundled sample (125, 258). The cause
+ * was the count-up intro: the first render drew the sample and started counting
+ * 0→125, and if the user's vault arrived **within** that 400ms the synchronising snap
+ * was overwritten by the next frame and it settled permanently on 125. That screen's
+ * subtitle says every number is computed from your documents, while the numbers were
+ * counting the sample.
  *
- * 기전은 `use-count-up.test.ts` 가 잠근다. 이 시험이 맡는 것은 그 위 —
- * **화면에 실제로 같은 수가 찍히는가.** 볼트를 물리고(스텁 피커) 인트로가 끝난
- * 뒤 큰 숫자와 상단 칩을 함께 읽는다. 시간이 아니라 값의 일치를 단언하므로
- * 기계 속도와 무관하다.
+ * The mechanism is locked by `use-count-up.test.ts`. This test covers the layer above
+ * — **whether the same number is actually painted on screen.** It attaches a vault
+ * (stubbed picker), waits for the intro to finish, and reads the large numbers and
+ * the chips together. It asserts value agreement rather than timing, so it is
+ * independent of machine speed.
  */
 test.describe("인사이트 구성 — 큰 숫자와 상단 칩이 같은 폴더를 센다", () => {
   test.use({ viewport: { width: 1512, height: 900 } });
@@ -139,7 +144,7 @@ test.describe("인사이트 구성 — 큰 숫자와 상단 칩이 같은 폴더
     await page.goto("/ko/ontology/insights/?guides=off&tab=composition", {
       waitUntil: "domcontentloaded",
     });
-    // 인트로(400ms)가 끝나고도 남을 만큼 — 그리고 견본→볼트 교체가 이 안에 있다.
+    // Long enough to outlast the 400ms intro — and the sample→vault swap falls inside it.
     await page.waitForTimeout(2_000);
 
     const seen = await page.evaluate(() => {
@@ -156,7 +161,7 @@ test.describe("인사이트 구성 — 큰 숫자와 상단 칩이 같은 폴더
     const chipRelations = Number(/(\d+)\s*관계/.exec(seen.chip!)?.[1]);
     console.log(`[census-agreement] 칩 ${seen.chip} · 대형 숫자 ${seen.bignums.join(", ")}`);
 
-    // 공회전 차단: 대형 숫자가 하나도 없으면 아무것도 안 잰 것이다.
+    // Idling guard: with no large numbers present, nothing was measured.
     expect(seen.bignums.length, "대형 숫자를 하나도 못 찾았다").toBeGreaterThanOrEqual(2);
     expect(seen.bignums[0], `개념 대형 숫자가 칩(${chipConcepts})과 다른 폴더를 센다`).toBe(chipConcepts);
     expect(seen.bignums[1], `관계 대형 숫자가 칩(${chipRelations})과 다른 폴더를 센다`).toBe(chipRelations);

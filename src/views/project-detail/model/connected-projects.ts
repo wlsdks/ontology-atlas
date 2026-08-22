@@ -2,13 +2,13 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import type { Project } from "@/entities/project";
 
 /**
- * "연결된 프로젝트" 요약 레일이 쓰는 project slug 목록 — ontology graph 의
- * `relates:` frontmatter (edge type `related_to`) 로 다른 project 노드와
- * 이어진 경우만. `project:<slug>` id 컨벤션은 derive-ontology-from-vault 의
- * kind:slug 규칙 (`buildOntologyDeeplinkForDoc` 과 동일 근거).
+ * The project slugs the "connected projects" summary rail uses — only those joined to another project
+ * node through the ontology graph's `relates:` frontmatter (edge type `related_to`). The
+ * `project:<slug>` id convention comes from derive-ontology-from-vault's kind:slug rule (the same basis
+ * as `buildOntologyDeeplinkForDoc`).
  *
- * 이 프로젝트 자신의 project 노드가 vault 에 없으면(= ontology 미기재) 빈
- * 배열 — dogfood vault 처럼 project 문서가 1개뿐이면 자연히 항상 빈 결과.
+ * An empty array when this project has no project node in the vault (i.e. it is not in the ontology) —
+ * in a vault like dogfood with a single project document, the result is naturally always empty.
  */
 export function findRelatesGraphProjectSlugs(
   nodes: readonly KnowledgeGraphNode[],
@@ -38,16 +38,15 @@ export function findRelatesGraphProjectSlugs(
 }
 
 /**
- * 프로젝트 상세 요약 레일의 "연결된 프로젝트" 목록 — 세 원천의 union, self
- * 제외 + slug 기준 dedup:
+ * The "connected projects" list for the project detail's summary rail — the union of three sources,
+ * excluding self and deduplicated by slug:
  *
- *  1. `project.dependencies` — 이 프로젝트가 기대는 다른 프로젝트 (기존 로직).
- *  2. referencedBy — 다른 프로젝트의 `dependencies` 가 이 프로젝트를 가리킴.
- *  3. relates-graph — ontology `relates:` (related_to edge) 로 이어진 project.
+ *  1. `project.dependencies` — other projects this one depends on.
+ *  2. referencedBy — another project's `dependencies` pointing at this one.
+ *  3. relates-graph — projects joined through the ontology's `relates:` (a related_to edge).
  *
- * (2), (1) 은 R+ 이전부터 있던 동작이라 유지 — vault 가 이미 `dependencies:`
- * 로 프로젝트를 이어둔 경우 회귀 없이 계속 보인다. (3) 은 새 mockup 이 명시한
- * `relates` 경로 추가.
+ * (1) and (2) predate this rail and are kept, so a vault that already linked projects with
+ * `dependencies:` keeps showing them without regression. (3) is the `relates` path the newer design added.
  */
 export function buildConnectedProjects(
   project: Project,

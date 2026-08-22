@@ -79,7 +79,7 @@ describe("buildDuplicatePairs", () => {
     expect(rows[0].dissolveSlug).toBe("elements/node-drawer-model");
     expect(rows[0].kind).toBe("element");
     expect(rows[0].score).toBeGreaterThan(0.6);
-    // 근거는 사람이 읽을 낱말 — 같은 폴더에 있다는 사실(elements)은 뺀다.
+    // The evidence is words a person reads — the fact of sharing a folder (`elements`) is removed.
     expect(rows[0].sharedTokens).toEqual(["drawer", "node"]);
   });
 
@@ -90,9 +90,9 @@ describe("buildDuplicatePairs", () => {
   });
 
   it("자기 문서가 없는 노드는 후보에서 뺀다 — 합칠 파일이 없기 때문", () => {
-    // 다른 문서의 `elements:` 에 적힌 코드 경로에서 태어난 노드 — 근거 slug 가
-    // 자기 것이 아니라 자기를 부른 문서의 것이다. 원본과 그 테스트 파일은
-    // 이름이 거의 같아 그냥 두면 중복 1위로 올라온다.
+    // A node born from a code path written in another document's `elements:` — its evidence slug
+    // belongs not to itself but to the document that named it. A source file and its test file have
+    // near-identical names, so left alone they rise to the top as the leading duplicate.
     const derived = [
       ...nodes,
       {
@@ -113,9 +113,9 @@ describe("buildDuplicatePairs", () => {
   });
 
   it("id 꼬리가 파일 이름과 달라도 문서가 있으면 후보다 — 프로젝트 노드", () => {
-    // 프로젝트 id 는 frontmatter `slug:` 로 만들어져(`ontology/project.md` →
-    // `project:ontology-atlas`) 파일 이름 꼬리와 다르다. 화면이 "id 꼬리 ==
-    // 문서 slug 꼬리" 로 자기 문서를 추정하던 동안 이 노드가 조용히 빠졌다.
+    // A project id is built from frontmatter `slug:` (`ontology/project.md` →
+    // `project:ontology-atlas`) and differs from the filename tail. While the screen inferred its
+    // own document as "id tail == document slug tail", this node was silently missed.
     const project: KnowledgeGraphNode = {
       ...node("project:ontology-atlas", "project", "Ontology Atlas"),
       evidenceIds: ["ontology/project"],
@@ -137,8 +137,8 @@ describe("buildDuplicatePairs", () => {
   });
 
   it("임계값이 이름 없이 도달 가능한 상한보다 낮으면 전수 비교로 되돌린다", () => {
-    // 종류(0.1) + 소속(0.1) 만으로 0.2 — 낱말이 하나도 안 겹치는 쌍도
-    // 이 임계값에서는 후보다. 역색인으로 좁히면 놓친다.
+    // Kind (0.1) plus parent (0.1) gives 0.2 — at this threshold even a pair sharing no words is a
+    // candidate. Narrowing with the inverted index would miss it.
     const { rows } = buildDuplicatePairs(nodes, edges, 20, 0.2);
     expect(rows.some((row) => row.sharedTokens.length === 0)).toBe(true);
   });

@@ -1,27 +1,32 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * T-09. 라우트별로 접근성 적합하지 않은 인터랙티브 요소를 탐지해 회귀 방지.
- *   - <button>이 aria-label도, 내부 텍스트도 없는 경우 — 스크린리더가 읽을 수 없음.
- *   - <a>도 동일 규칙.
- *   - 장식용 aria-hidden="true"는 예외.
+ * Detects interactive elements that are not accessible, per route.
+ *   - A <button> with neither an aria-label nor inner text — a screen reader cannot
+ *     announce it.
+ *   - The same rule for <a>.
+ *   - Decorative aria-hidden="true" is exempt.
  *
- * 발견 시 spec 실패 — 신규 인터랙티브가 라벨 없이 들어오면 자동 감지.
+ * A find fails the spec, so a new interactive element arriving unlabelled is caught
+ * automatically.
  */
 
 /*
- * ⚠️ **마지막 줄의 슬러그는 실재해야 한다** (2026-08-17 검사 전수조사).
+ * ⚠️ **The slug on the last row must exist** (found in the 2026-08-17 audit of the
+ * checks themselves).
  *
- * 종전 값 `capability:agent-config-onboarding` 은 이 볼트에도 샘플에도 **없는**
- * 이름이었다(저장소 전체에서 이 줄에만 있었다). 초점 화면을 감사하려고 넣은
- * 줄인데 초점이 서지 않았으니, 이 검사는 **그 화면을 한 번도 본 적이 없다.**
+ * The previous value, `capability:agent-config-onboarding`, was a name present in
+ * **neither** this vault nor the sample (it appeared nowhere in the repository except
+ * this line). The row was added to audit the focused screen, and since focus never
+ * engaged, this check **had never once seen that screen.**
  *
- * 실재하는 이름으로 바꾸고, 아래에서 「초점이 실제로 섰나」를 함께 단언한다 —
- * 이름이 또 사라지면 조용히 넘어가지 않고 여기서 터진다.
+ * It now uses a real name, and the assertion below also checks whether focus actually
+ * engaged — so if the name disappears again this breaks here instead of passing
+ * quietly.
  *
- * ⚠️ **볼트를 안 고른 이 화면이 그리는 것은 「샘플」 볼트다** — 이 저장소의
- * 도그푸드 볼트가 아니다. 그래서 `capability:mcp-server` 같은 도그푸드 이름을
- * 쓰면 여기서도 초점이 안 선다(실측). 계기로 읽은 실제 노드 이름을 쓴다.
+ * ⚠️ **With no vault chosen, this screen renders the *sample* vault**, not this
+ * repository's dogfood vault. So a dogfood name like `capability:mcp-server` also
+ * fails to focus here (measured). Use a real node name read from the instrument.
  */
 const FOCUS_NODE_ID = "capability:cart";
 
@@ -34,26 +39,28 @@ const ROUTES = [
 ];
 
 /**
- * 각 화면에서 **최소 이만큼은 훑었어야** 한다.
+ * The minimum each screen must have scanned.
  *
- * 이 검사의 판정은 「위반 목록이 비었나」인데, 하이드레이션 전이거나 화면이
- * 안 떴으면 버튼이 0개라 목록도 비고 **자동으로 통과**한다. 실제로 이 검사는
- * 고정 600ms 대기 뒤에 훑고 있었다 — 느린 기계에서는 아무것도 못 본 채
- * 초록이었다는 뜻이다. 그래서 「몇 개를 봤나」를 함께 단언한다.
+ * This check's verdict is "is the violation list empty", and before hydration or on a
+ * screen that never mounted there are 0 buttons, so the list is empty and it **passes
+ * automatically**. This check really did scan after a fixed 600 ms wait — meaning on a
+ * slow machine it was green having seen nothing. So "how many were seen" is asserted
+ * alongside.
  */
 const MIN_SCANNED_PER_ROUTE = 5;
 
 test("접근성 없는 버튼·링크 탐지", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const findings: string[] = [];
-  /** 화면마다 몇 개를 훑었나 — 「0개를 보고 통과」를 막는 분모. */
+  /** How many were scanned per screen — the denominator that blocks "passed having seen 0". */
   const scannedPerRoute: string[] = [];
 
   for (const url of ROUTES) {
     await page.goto(url, { waitUntil: "domcontentloaded" });
     /*
-     * 고정 대기 대신 **볼 것이 생겼는지**로 기다린다 — 600ms 는 빠른 기계의
-     * 값이고, 느린 기계에서는 훑을 것이 0개라 위반 목록도 비어 통과했다.
+     * Wait on **something existing to look at** rather than a fixed delay — 600 ms is a
+     * fast machine's number, and on a slow one there was nothing to scan, so the
+     * violation list was empty and it passed.
      */
     await expect
       .poll(
@@ -121,10 +128,11 @@ test("접근성 없는 버튼·링크 탐지", async ({ page }) => {
   }
 
   /*
-   * 초점 화면을 정말 열었나 — 이름이 또 사라지면 여기서 터진다.
-   * 지도는 캔버스라 DOM 으로 물을 수 없어 계기(`__atlasMap`)를 쓰는데,
-   * 그 창구는 `?e2e=1` 이 붙은 페이지에서만 열린다(`atlas-map-probe.ts`).
-   * 그래서 감사용 주소가 아니라 계기용 주소로 한 번 더 연다.
+   * Did the focused screen really open? If the name disappears again this breaks here.
+   * The map is a canvas so the DOM cannot be asked, and the instrument (`__atlasMap`) is
+   * used instead — but that window opens only on pages carrying `?e2e=1`
+   * (`atlas-map-probe.ts`). So the page is opened once more at the instrument address
+   * rather than the audit address.
    */
   await page.goto(`/ko/topology/?e2e=1&mode=focus&p=${encodeURIComponent(FOCUS_NODE_ID)}`, {
     waitUntil: "domcontentloaded",

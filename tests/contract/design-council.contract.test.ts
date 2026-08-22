@@ -41,23 +41,28 @@ const DECIDER_AGENT = 'design-guardian';
 const ALWAYS_ATTENDING = ['design-lead', 'design-system'];
 
 /**
- * 티어는 기본값이 아니라 결정이다. haiku 는 어디에도 없다 — 카운슬은 판정 기구이고
- * haiku 자리는 평결처럼 읽히는 체크리스트 앵무새를 낸다(부재보다 나쁘다).
+ * A tier is a decision, not a default. haiku appears nowhere — a council is a
+ * judging body, and a haiku seat produces checklist parroting that reads like a
+ * verdict (worse than an absent seat).
  *
- * **2026-08-03 개정 — 소유자 지시** *"다 opus가 해도됨! 가장 높은 결정 필요한건
- * fable로"*. 그 지시는 PO 5석에만 적용되고 디자인 벤치는 8석 중 6석이 sonnet 으로
- * 남아 있었다. 같은 규칙으로 맞춘다.
+ * **Revised 2026-08-03, owner's instruction**: *"다 opus가 해도됨! 가장 높은 결정
+ * 필요한건 fable로"* (opus can do all of it; use fable where the highest-stakes
+ * decision is needed). That instruction had only been applied to the 5 PO seats,
+ * leaving 6 of the design bench's 8 on sonnet. This aligns them under the same
+ * rule.
  *
- * **fable 은 「항상 참석하는 두 자리」다.** 스킬이 *위계와 체계는 빠질 수 없다* 고
- * 못박은 그 둘이고, 이유가 티어와 같다 — 「위계」는 **무엇이 주목을 이기는가**를
- * 정하고 나머지 판정이 전부 그 뒤에 온다. 「체계」는 결정을 **토큰·lint·계약
- * 테스트**로 굳혀서 되돌리기가 가장 비싸다. PO 가 5석 중 2석에 fable 을 둔 것과
- * 같은 비율이고 같은 논거다.
+ * **fable goes to the two seats that always attend** — the two the skill pins as
+ * unable to be skipped, and the reason is the same as the tier: 위계 (hierarchy)
+ * decides **what wins attention**, and every other verdict comes after it; 체계
+ * (the design system) hardens a decision into **tokens, lint, and contract
+ * tests**, making it the most expensive to reverse. Same ratio and same argument as
+ * the PO council putting fable on 2 of 5 seats.
  *
- * ⚠️ **단일 계열로 되돌리지 않는다.** PO 쪽 실측이 여기에도 적용된다 — 원장 7회 ·
- * 좌석 판정 35건에서 평균 쌍별 일치율 65.7%(우연 기대 36.8%). 한 계열로 통일하면
- * 여덟 자리가 아니라 「여덟 번 다르게 프롬프트한 심판 하나」다
- * (Verga et al. arXiv:2404.18796 · Panickssery et al. NeurIPS 2024).
+ * ⚠️ **Do not collapse back to a single model family.** The PO-side measurement
+ * applies here too — across 7 ledger entries and 35 seat verdicts, mean pairwise
+ * agreement was 65.7% (chance expectation 36.8%). Unified on one family this is not
+ * eight seats but one judge prompted eight different ways (Verga et al.
+ * arXiv:2404.18796 · Panickssery et al. NeurIPS 2024).
  */
 const TIERS: Record<string, string> = {
   'design-lead': 'fable',
@@ -70,23 +75,26 @@ const TIERS: Record<string, string> = {
   'design-handoff': 'opus',
 };
 
-/** 계열이 최소 둘 — 위 ⚠️. 없으면 다음 사람이 「일관성」을 이유로 통일해 버린다. */
+/** At least two model families — see the ⚠️ above. Without this, the next person unifies them for "consistency". */
 const MIN_MODEL_FAMILIES = 2;
 
 /** Measuring seats must run their instrument; the skill has to say so. */
 const INSTRUMENTS = ['motion-verify', 'responsive-sweep', 'design-audit'];
 
 /**
- * 반려 근거로 쓰면 안 되는 원칙, 그리고 그 자리를 대신하는 것.
+ * The principle that must not be used as grounds for rejection, and what replaces
+ * it.
  *
- * data-ink 는 이 벤치에서 오랫동안 「이 잉크는 데이터가 아니다 → 반려」 로 쓰였다.
- * 그런데 그 규칙은 실험이 안 받쳐 준다 — Inbar 외(ECCE 2007)의 87명은 Tufte
- * 미니멀 판보다 표준 막대를 뚜렷이 선호했고, Bateman 외(CHI 2010)의 장식 차트는
- * 서술 정확도가 안 떨어지고 2~3주 뒤 회상은 오히려 유의하게 나았다.
+ * data-ink was long used on this bench as "this ink is not data → reject". The
+ * experiments do not support that rule: Inbar et al. (ECCE 2007), n=87, clearly
+ * preferred standard bars over Tufte-minimal versions, and Bateman et al.
+ * (CHI 2010) found decorated charts no worse on description accuracy and
+ * significantly better on recall after 2–3 weeks.
  *
- * 이 저장소가 **실제로 쓰던 규칙**은 처음부터 Mackinlay expressiveness 였다
- * (「마크 → 사실 대응표」가 정확히 그 판정이다). 인용만 틀렸던 것이다.
- * 그래픽 정직성과 직접 라벨링은 저 두 논문이 건드리지 않았으므로 Tufte 로 남는다.
+ * The rule this repository was **actually applying** was Mackinlay expressiveness
+ * all along (the "mark → fact" mapping table is exactly that verdict) — only the
+ * citation was wrong. Graphical integrity and direct labelling were untouched by
+ * those two papers, so they stay with Tufte.
  */
 const REFUTED_RULE = 'data-ink';
 const REPLACEMENT_RULE = 'Mackinlay';
@@ -276,18 +284,18 @@ describe('Design council wiring', () => {
   });
 
   /**
-   * 바이트 동일만으로는 부족하다 — 두 도구가 **같은 파일**을 읽어도, 그 파일이
-   * 자리 브리프를 이름으로만 부르면 Codex 는 부를 수도 읽을 수도 없는 이름을
-   * 받는다(`.claude/agents/` 는 Codex 가 자동 로드하지 않는다). 사본을 만드는
-   * 것은 답이 아니다. 정본이 하나임을 밝히고 명시적으로 열라고 적는 것이 답이고,
-   * 계측 자리가 브라우저를 못 여는 런타임에서 **눈으로 때우지 말고 보류**해야
-   * 한다는 것도 같이 적혀야 한다.
+   * Byte-identical is not enough. Both tools read the **same file**, but if that
+   * file names the seat briefs by name only, a Codex session receives names it can
+   * neither invoke nor read (`.claude/agents/` is not auto-loaded there). Making a
+   * third copy is not the answer: the answer is stating that there is one source and
+   * telling the reader to open it explicitly — and stating that a measuring seat on a
+   * runtime that cannot open a browser must **defer rather than judge by eye**.
    */
   it('locates the seat briefs by a relative path that resolves inside each tool tree', () => {
     for (const path of [SKILL_PATH, SKILL_MIRROR_PATH]) {
       const skill = read(path).replace(/\s+/g, ' ');
-      // `.claude/skills/design-council/` 과 `.agents/skills/design-council/`
-      // 둘 다에서 `../../agents/` 는 그 트리의 자리 폴더로 풀린다.
+      // From both `.claude/skills/design-council/` and `.agents/skills/design-council/`,
+      // `../../agents/` resolves to that tree's own seat folder.
       expect(skill, `${path} 가 자리 브리프의 상대 경로를 밝히지 않는다`).toContain(
         '../../agents/design-*.md',
       );
@@ -304,9 +312,10 @@ describe('Design council wiring', () => {
   });
 
   /**
-   * 도구 이름으로 분기하면 사본마다 다른 경로가 필요해지는데, 이 스킬은 두 벌이
-   * 바이트 동일해야 한다. 상대 경로 + 능력 기준 분기면 이름이 필요 없다 —
-   * 그리고 새 도구가 생겨도 문장이 안 늘어난다.
+   * Branching on tool brand names would need a different path per copy, but the two
+   * copies of this skill must be byte-identical. A relative path plus a
+   * capability-based branch needs no names — and does not grow when a new tool
+   * appears.
    */
   it('branches on capability, not on tool brand names', () => {
     for (const path of [SKILL_PATH, SKILL_MIRROR_PATH]) {
@@ -329,8 +338,8 @@ describe('Design council wiring', () => {
 });
 
 /**
- * 평문 요약 규율을 실은 파일들 — 두 스킬의 양쪽 사본과, 기록을 쓰는 chief.
- * 목록이 곧 사정거리다: 새 카운슬을 만들면 여기 한 줄을 더한다.
+ * The files carrying the plain-summary discipline — both copies of the skills, and
+ * chief, which writes the record. The list is the reach: a new council adds a row.
  */
 const PLAIN_SUMMARY_FILES = [
   SKILL_PATH,
@@ -339,39 +348,42 @@ const PLAIN_SUMMARY_FILES = [
 ] as const;
 
 /**
- * 카운슬 산출물은 **평문 요약으로 시작한다.**
+ * Council output **opens with a plain-language summary.**
  *
- * 이 저장소가 실측으로 배운 것(2026-07-29): 평결 블록을 그대로 소유자에게
- * 전달했더니 되물었다 — *"뭔 서명?"*. 카운슬 어휘(자리 이름 · 루브릭 · 반증
- * 조건 · 서명)는 다음 에이전트와 원장을 위한 것이지 결과를 받는 사람을 위한
- * 것이 아니다. 읽는 쪽이 사전을 먼저 배워야 하는 보고는 보고가 아니다.
+ * Measured 2026-07-29: a verdict block was relayed to the owner verbatim and the
+ * reply was *"뭔 서명?"* ("what signature?"). Council vocabulary — seat names,
+ * rubric, falsifier, signature — is for the next agent and for the ledger, not for
+ * the person receiving the result. A report whose reader must first learn a
+ * dictionary is not a report.
  *
- * 이 테스트가 없으면 그 규율은 산문으로만 남고, 이 저장소가 반복해 배운 대로
- * **문서에만 있는 규격은 지켜지지 않는다.**
+ * Without this test the discipline lives only in prose, and as this repository has
+ * repeatedly learned, **a spec that exists only in a document is not followed.**
  */
 describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
-  /** 세 줄은 협상 대상이 아니다 — 하나라도 빠지면 소유자가 물어봐야 한다. */
+  /** The three lines are not negotiable — drop any one and the owner has to ask. */
   const REQUIRED_LINES = ['정한 것', '네 말과 다르게 한 것', '네가 할 일'];
 
   /**
-   * 평문 절 안에서 쓰지 않는 말. **아래 평결 블록에서는 정확히 이 단어들이어야
-   * 하므로** 금지는 절 단위이지 문서 단위가 아니다.
+   * Words not used inside the plain section. The ban is per section, not per
+   * document, **because the verdict block below must use exactly these words.**
    */
   const BANNED_SAMPLE = ['루브릭', '반증 조건', '서명', 'appetite'];
 
   /**
-   * ⚠️ 판정 대상은 **템플릿 코드 펜스 안**이다. 파일 전체에서 문구를 찾으면,
-   * 같은 말이 설명 산문에도 있어서 **템플릿에서 지워도 통과한다** — 이 게이트를
-   * 처음 쓸 때 실제로 그렇게 새어나갔다(프로브로 발견). 문서 어딘가에 단어가
-   * 있다는 것과 산출물 형식이 그 줄을 요구한다는 것은 다른 주장이다.
+   * ⚠️ The subject of judgement is **inside the template code fence**. Searching the
+   * whole file finds the same words in the explanatory prose, so **deleting them from
+   * the template still passes** — which is how this gate leaked when it was first
+   * written (found by probe). "The word appears somewhere in the document" and "the
+   * output format requires that line" are different claims.
    */
   const templateOf = (path: string): string => {
     const text = read(path);
     const anchor = text.indexOf('먼저 — 세 줄');
     expect(anchor, `${path} must carry the plain-summary template`).toBeGreaterThan(-1);
-    // 앵커는 펜스 **안**에 있다(`### 먼저 — 세 줄` 이 템플릿의 첫 줄이므로).
-    // 앞으로 뒤져 여는 펜스를, 뒤로 뒤져 닫는 펜스를 찾는다 — 앵커 뒤에서만
-    // 찾으면 닫는 펜스를 여는 펜스로 오인해 빈 문자열을 검사하게 된다.
+    // The anchor sits **inside** the fence (`### 먼저 — 세 줄` is the template's first
+    // line). Search backwards for the opening fence and forwards for the closing one —
+    // searching only after the anchor mistakes the closing fence for the opening one
+    // and ends up checking an empty string.
     const open = text.lastIndexOf('```', anchor);
     const close = text.indexOf('```', anchor);
     expect(open, `${path}의 평문 템플릿 여는 펜스가 없다`).toBeGreaterThan(-1);
@@ -398,11 +410,13 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
   });
 
   /**
-   * 2026-08-03: 위 단언들은 **전부 통과하는 중에** 사고가 났다(PO 카운슬에서
-   * 났지만 이 절의 문장은 두 카운슬이 공유하므로 구멍도 공유였다). 소집자는 세
-   * 줄 요약을 정확히 썼고 그 아래 평결 블록을 통째로 붙였으며, 소유자는 두 번
-   * 되물었다. 절의 존재만 검사하는 게이트는 **표지를 얹는 것과 번역하는 것을
-   * 구별하지 못한다.** 그래서 구멍을 막은 세 규칙을 각각 못박는다.
+   * 2026-08-03: the incident happened **while every assertion above passed**. (It
+   * happened in the PO council, but the two councils share this section's text, so
+   * the hole was shared too.) The convener wrote the three-line summary correctly and
+   * then pasted the whole verdict block underneath, and the owner had to ask twice. A
+   * gate that only checks the section exists **cannot distinguish adding a cover page
+   * from translating.** So each of the three hole-closing rules is pinned
+   * separately.
    */
   const HOLE_CLOSING_RULES = [
     ['대화창이 아니다', '평결 블록의 목적지가 파일임을 못박는 문장'],
@@ -418,8 +432,9 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
   });
 
   /**
-   * 요청보다 좁히거나 넓혔으면 그 줄이 **반드시** 있다. 그 줄 없는 축소는
-   * 축소가 아니라 조용한 무시이고, 소유자가 나중에 화면에서 발견하게 된다.
+   * If the work was narrowed or widened relative to the request, that line **must**
+   * be present. A reduction without it is not a reduction but silent disregard, and
+   * the owner finds out later, on screen.
    */
   it.each(PLAIN_SUMMARY_FILES)('%s 가 "다르게 한 것" 줄을 생략 불가로 못박는다', (path) => {
     expect(read(path).replace(/\s+/g, ' ')).toMatch(/생략할 수 없다/);
@@ -427,15 +442,17 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
 });
 
 /**
- * 발산 단계 (`/design-directions`, 2026-08-03).
+ * The divergence stage (`/design-directions`, 2026-08-03).
  *
- * 카운슬은 **serial** 이다 — R1 비평 → R2 교차비평 → R3 평결이 전부 이미
- * 만들어진 하나를 평가한다. Dow et al.(ACM TOCHI 2010)이 실험으로 보인 것은
- * 그 반대다: 여러 개를 만든 뒤 피드백을 받는 쪽이 결과 품질·발산·자기효능감
- * **셋 다** 우월했다. 그 발산 단계가 통째로 없었다.
+ * The council is **serial**: R1 critique → R2 cross-critique → R3 verdict, all
+ * evaluating one thing that was already built. Dow et al. (ACM TOCHI 2010) showed
+ * experimentally the opposite — producing several and then taking feedback was
+ * superior on **all three** of outcome quality, divergence, and self-efficacy. That
+ * divergence stage was missing entirely.
  *
- * 이 게이트가 지키는 것은 스킬의 **문장이 아니라 세 가지 구조**다 — 근거가
- * 붙어 있는가, 발산 소유자가 짓는 쪽이 아닌가, 현행이 후보에 들어가는가.
+ * What this gate guards is not the skill's **sentences but three structures**: is
+ * the evidence attached, is the divergence owner someone other than the builder,
+ * and is the status quo among the candidates.
  */
 describe('발산 단계 — /design-directions', () => {
   const DIRECTIONS_SKILL = '.claude/skills/design-directions/SKILL.md';
@@ -447,21 +464,23 @@ describe('발산 단계 — /design-directions', () => {
 
   it('학술 근거를 달고 있다 — 취향이 아니라 실험 결과다', () => {
     const skill = read(DIRECTIONS_SKILL).replace(/\s+/g, ' ');
-    // 저자 목록 길이에 걸리지 않게 **두 사실을 따로** 본다 — 인용 형식이 바뀌어도
-    // 근거가 남아 있으면 통과해야 한다(문장 핀을 만들지 않는다).
+    // Check **two facts separately** so the assertion does not depend on the length of
+    // the author list — a changed citation format must still pass while the evidence
+    // remains (do not pin sentences).
     expect(skill, '저자를 밝혀야 한다').toContain('Dow');
     expect(skill, '발행처와 연도를 밝혀야 한다').toContain('TOCHI 2010');
     expect(skill, 'serial 과 대비해야 근거가 우리 프로토콜에 붙는다').toContain('serial');
   });
 
   /*
-   * 이 단언이 이 파일에서 가장 중요하다. 만들 사람이 선택지를 만들면
-   * 나머지 갈래가 허수아비가 되고, 그 순간 발산은 변경을 정당화하는 의식이 된다
-   * — 카운슬을 만든 이유와 같은 실패다.
+   * The most important assertion in this file. When the builder authors the options,
+   * the other directions become straw men and divergence turns into a ritual that
+   * justifies the change — the same failure the council exists to prevent.
    */
   it('벤치가 한 모델 계열로 수렴하지 않는다', () => {
-    // 이 단언이 없으면 다음 사람이 「일관성」을 이유로 한 줄씩 통일해 이질성이
-    // 조용히 사라진다 — PO 카운슬에서 실제로 그렇게 될 뻔했다.
+    // Without this assertion the next person unifies the rows one at a time for
+    // "consistency" and the heterogeneity quietly disappears — which nearly happened
+    // in the PO council.
     expect(
       new Set(Object.values(TIERS)).size,
       '여덟 자리가 한 계열이면 배심원 여덟이 아니라 여덟 번 다르게 프롬프트한 심판 하나다 ' +
@@ -480,14 +499,14 @@ describe('발산 단계 — /design-directions', () => {
   });
 
   it('현행이 후보에 들어가는 것을 규율로 못박는다', () => {
-    // 현행이 없으면 「바꾸지 않는다」가 이길 수 없고, 그러면 절차가 아니라 의식이다.
+    // Without the status quo, "change nothing" cannot win, and then it is a ritual rather than a procedure.
     expect(read(DIRECTIONS_SKILL).replace(/\s+/g, ' ')).toMatch(
       /하나는 [「"']?지금 그대로[」"']?/,
     );
   });
 
   it('카운슬 스킬이 이 단계를 자기 앞 순서로 가리킨다', () => {
-    // 순서가 뒤집히면 카운슬이 갈래 탐색을 대신하게 된다 — 2026-08-03 에 실제로 그랬다.
+    // Reverse the order and the council ends up doing the exploration itself — which is what happened on 2026-08-03.
     expect(read(SKILL_PATH), 'design-council 이 발산 단계를 앞 순서로 가리켜야 한다').toContain(
       'design-directions',
     );
@@ -495,12 +514,13 @@ describe('발산 단계 — /design-directions', () => {
 });
 
 /**
- * 근거의 무결성 — **반박된 규칙이 반려 근거로 돌아오는 것**을 막는다.
+ * Evidence integrity — stops **a refuted rule returning as grounds for rejection.**
  *
- * 이 게이트가 없으면 다음 사람이 "Tufte data-ink → 반려" 를 아무 저항 없이 다시
- * 쓴다. 그게 더 익숙한 문장이고, 반박이 문서 한 곳에만 적혀 있으면 그 문서를 안
- * 읽은 사람에게는 존재하지 않기 때문이다. 이 저장소의 반복 교훈: **문서에만 있는
- * 규격은 지켜지지 않는다.**
+ * Without this gate the next person writes "Tufte data-ink → reject" again with no
+ * resistance: it is the more familiar sentence, and a refutation recorded in one
+ * document does not exist for anyone who has not read that document. This
+ * repository's recurring lesson: **a spec that exists only in a document is not
+ * followed.**
  */
 describe('근거 무결성 — data-ink 는 반려 근거가 아니다', () => {
   const CITING_FILES = [
@@ -512,15 +532,16 @@ describe('근거 무결성 — data-ink 는 반려 근거가 아니다', () => {
   ];
 
   /**
-   * ★ 판정은 **줄 단위**여야 한다.
+   * The verdict must be **per line**.
    *
-   * 첫 판은 「파일이 data-ink 를 언급하면 파일 어딘가에 Mackinlay 도 있어야 한다」
-   * 였는데, 프로브를 걸어 보니 **빨개지지 않았다** — 출처 목록에 이름만 남기고
-   * 규칙은 옛것으로 되돌리면 그대로 통과했다. 이 저장소가 이미 이름 붙여 둔
-   * 실패다: **면제는 방향이 있다.** 「정상 사용을 살린다」는 면제가 「비정상
-   * 사용도 살린다」가 되는지 켤 때 함께 물어야 한다.
+   * The first version was "if a file mentions data-ink, Mackinlay must appear
+   * somewhere in the file", and a probe showed it **did not turn red**: leaving the
+   * name in a source list while reverting the rule to the old one passed. That is a
+   * failure this repository has already named: **an exemption has a direction.** When
+   * switching one on, ask whether "keep legitimate use alive" also becomes "keep
+   * illegitimate use alive".
    *
-   * 그래서 지금은 **data-ink 가 등장하는 줄 자체**가 그것을 부정해야 한다.
+   * So now **the line where data-ink appears** must itself negate it.
    */
   const NEGATION = /반박|쓰지 마라|아니다|\bnot\b|\bNot\b/;
 
@@ -538,22 +559,24 @@ describe('근거 무결성 — data-ink 는 반려 근거가 아니다', () => {
   });
 
   it('FOUNDATIONS 가 반박 근거를 인용으로 들고 있다', () => {
-    // 반박이 «우리 의견» 이면 다음 소집에서 취향 다툼이 된다. 논문이어야 끝난다.
+    // If the refutation is "our opinion" the next convening turns into a taste
+    // argument. Only a paper ends it.
     const foundations = read('docs/FOUNDATIONS.md');
     expect(foundations, 'Inbar 외(ECCE 2007) — data-ink 선호가 재현되지 않았다').toContain('Inbar');
     expect(foundations, 'Bateman 외(CHI 2010) — 장식이 회상을 오히려 높였다').toContain('Bateman');
     expect(foundations, '대체 규칙의 원전').toContain(REPLACEMENT_RULE);
-    // 그래픽 정직성과 직접 라벨링은 반박되지 않았다 — 통째로 버리면 그것도 틀렸다.
+    // Graphical integrity and direct labelling were not refuted — discarding Tufte wholesale is equally wrong.
     expect(foundations, 'Tufte 를 통째로 버리지 않는다').toContain('graphical integrity');
   });
 
   it('도해석이 반려 근거로 대체 규칙을 지목한다', () => {
-    // 이 자리가 마크를 반려하는 유일한 자리다. 여기가 옛 근거를 쓰면 나머지는 무의미하다.
+    // This is the only seat that rejects a mark. If it cites the old rule, the rest is moot.
     const seat = agentFile('design-infoviz').replace(/\s+/g, ' ');
     expect(seat).toMatch(/반려할 때 대는 근거/);
     expect(seat).toContain(REPLACEMENT_RULE);
-    // 그리고 옛 근거를 **금지**로 못박는다. 위 줄 단위 검사만으로는 부족하다 —
-    // 반박 문단 안에서 「쓰지 마라」만 「쓴다」로 뒤집는 반쪽 편집이 통과했다(프로브 실측).
+    // And pin the old rule as **forbidden**. The per-line check above is not enough: a
+    // half edit that flips only "쓰지 마라" to "쓴다" inside the refutation paragraph
+    // passed (measured by probe).
     expect(seat, '도해석은 data-ink 를 반려 근거로 쓰지 말라고 명시해야 한다').toMatch(
       new RegExp(`${REFUTED_RULE}[^.]{0,40}반려 근거로 쓰지 마라`),
     );
@@ -561,15 +584,16 @@ describe('근거 무결성 — data-ink 는 반려 근거가 아니다', () => {
 });
 
 /**
- * 규격 변경 트리거 — **「체계」를 부르는 조건이 문서에 살아 있는가.**
+ * Spec-change trigger — **is the condition for convening 체계 still in the docs?**
  *
- * 2026-08-03: 컨트롤 244개를 정규화하는 동안 `design-system` 이 한 번도 소집되지
- * 않았다. 값 층 설계를 짓는 쪽이 단독으로 정했고, 결과가 화면에 나왔다 — 칩 크기
- * 50종을 3종으로 줄였는데 한 화면에 컨트롤 높이가 8~9종이다.
+ * 2026-08-03: across the normalisation of 244 controls, `design-system` was never
+ * convened once. The builder decided the value-layer design alone, and the result
+ * reached the screen — chip sizes went from 50 variants to 3, yet one screen
+ * carries 8–9 distinct control heights.
  *
- * ⚠️ **「소집했는가」는 기계가 못 본다.** 이 게이트가 잡는 것은 규칙이 존재하고
- * 그 자리를 이름으로 가리키는가뿐이다. 그것만으로도 값이 있다 — 규칙이 사라지면
- * 다음 사람은 규칙이 있었다는 사실조차 모른다.
+ * ⚠️ **A machine cannot see whether the seat was convened.** All this gate catches
+ * is whether the rule exists and names that seat. That alone is worth having: once
+ * the rule disappears, the next person does not even know there was one.
  */
 describe('규격 변경은 「체계」를 부른다', () => {
   const TRIGGER_FILES = [

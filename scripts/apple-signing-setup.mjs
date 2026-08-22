@@ -1,34 +1,31 @@
 #!/usr/bin/env node
 /**
- * Developer ID 서명 자격증명을 준비하고, protected GitHub environment에 넣을
- * 명령을 출력하는 경로.
+ * Prepares the Developer ID signing credentials and prints the commands for
+ * loading them into the protected GitHub environment.
  *
- * 왜 스크립트인가 — 이 절차는 5년에 한 번 한다(Developer ID 인증서 유효기간).
- * 그때의 나는 지금의 나가 아니고, 산문으로 적어 둔 절차는 그 사이에 반드시
- * 낡는다. 실행 가능한 형태여야 "한치의 오차 없이" 가 성립한다.
+ * **Why a script and not prose**: this procedure runs once every five years (the
+ * Developer ID certificate lifetime), and prose written for that occasion is
+ * guaranteed to be stale by the time it is needed. Only an executable form stays
+ * exact.
  *
- * ## 무엇을 자동화하고 무엇을 사람에게 남기는가
+ * **What stays manual**: the App Store Connect API key/issuer and the updater key
+ * material. Everything else — key pair generation, CSR, `.p12` assembly and
+ * verification — is here. GitHub changes are reviewed and run by a person.
  *
- * 사람이 직접 다루는 것은 App Store Connect API key/issuer와 updater key
- * material이다. 나머지 — 키쌍 생성, CSR 작성, `.p12` 조립과
- * 검증 — 은 전부 여기 있다. GitHub 변경은 사람이 명령을 검토하고 직접 실행한다.
+ * **Why not the Keychain Access GUI.** The common instructions say to make a CSR
+ * in Keychain Access, install the certificate, and export a `.p12`. That path has
+ * a silent trap: **exporting from the "Certificates" category instead of "My
+ * Certificates" drops the private key**, and the file is still produced
+ * successfully. The failure first surfaces minutes later in CI's codesign step.
+ * Here we generate and hold the private key ourselves, so that mistake is
+ * **structurally impossible** — the `.p12` always contains both key and
+ * certificate.
  *
- * ## 왜 Keychain Access GUI 를 쓰지 않는가
- *
- * 흔한 안내는 키체인 접근에서 CSR 을 만들고 인증서를 설치한 뒤 `.p12` 로
- * 내보내라고 한다. 그 경로에는 조용한 함정이 있다 — **"나의 인증서" 가 아니라
- * "인증서" 카테고리에서 내보내면 개인키가 빠지고**, 그래도 파일은 멀쩡히
- * 만들어진다. 실패는 몇 분 뒤 CI 의 codesign 에서 처음 드러난다.
- *
- * 여기서는 개인키를 우리가 만들고 우리가 들고 있으므로 그 실수가 **구조적으로
- * 불가능하다**. `.p12` 는 항상 키와 인증서를 함께 담는다.
- *
- * ## 비밀 값을 화면에 찍지 않는다
- *
- * `.p12` 내보내기 비밀번호는 여기서 무작위로 만들고 **아무도 보지 않는다** —
- * 사람도, 로그도, 모델도. 그 비밀번호의 유일한 용도는 GitHub 으로 가는 동안
- * 파일을 감싸는 것이고, 받는 쪽(CI)은 secret 으로 같은 값을 받는다. 사람이
- * 기억할 이유가 없는 값을 사람에게 보여주는 것은 유출 경로만 늘린다.
+ * **Secrets are never printed.** The `.p12` export password is generated here and
+ * **nobody sees it** — not a person, not the log, not a model. Its only job is to
+ * wrap the file on its way to GitHub, and the receiving side (CI) gets the same
+ * value as a secret. Showing a person a value they have no reason to remember
+ * only adds a leak path.
  */
 
 import { spawnSync, execFileSync } from "node:child_process";
@@ -38,19 +35,19 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-/** 저장소 밖. 개인키는 어떤 경우에도 작업 트리에 두지 않는다. */
+/** Outside the repository. The private key never enters the working tree. */
 export const DEFAULT_DIR = path.join(os.homedir(), ".ontology-atlas-signing");
 
 export const REPO = "wlsdks/ontology-atlas";
 export const SIGNING_ENVIRONMENT = "release-signing";
 
-/** CI 안에서 매번 만들고 버리는 값. GitHub secret이 아니라 local/CI 값이다. */
+/** Created and discarded inside CI on each run. A local/CI value, not a GitHub secret. */
 export const LOCAL_ONLY_VALUES = ["APPLE_KEYCHAIN_PASSWORD", "APPLE_SIGNING_IDENTITY"];
 
 /**
- * `release-macos.yml` 이 protected environment에서 실제로 받는 7개.
- * Apple 5개와 Tauri updater 2개만 hosted secret이고, local-only 값은 여기에
- * 들어오지 않는다.
+ * The 7 that `release-macos.yml` actually reads from the protected environment.
+ * Only the 5 Apple values and 2 Tauri updater values are hosted secrets;
+ * local-only values never appear here.
  */
 export const ENVIRONMENT_SECRETS = [
   "APPLE_API_KEY_P8_BASE64",
@@ -70,7 +67,7 @@ export const OBSOLETE_REPOSITORY_SECRETS = [
 ];
 export const REQUIRED_SECRETS = [...ENVIRONMENT_SECRETS, ...REPOSITORY_SECRETS];
 
-/** helper가 생성하지 않는 Apple/Tauri 자격증명은 사람이 직접 넣는다. */
+/** Apple/Tauri credentials the helper does not generate are entered by a person. */
 export const OWNER_ENTERED_SECRETS = [
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
@@ -164,7 +161,7 @@ APPLE_KEYCHAIN_PASSWORD와 APPLE_SIGNING_IDENTITY는 CI/local keychain에서만
 생성·유도되는 값이므로 GitHub secret으로 등록하지 않는다.`);
 }
 
-/** 1단계 — 키쌍과 CSR. 자격증명이 필요 없으므로 전부 자동이다. */
+/** Step 1 — key pair and CSR. Needs no credentials, so it is fully automatic. */
 export function commandCsr({ dir, name, email }) {
   if (!name || !email) {
     fail(
@@ -185,16 +182,17 @@ export function commandCsr({ dir, name, email }) {
     );
   }
 
-  // Apple 이 요구하는 것은 2048-bit RSA 다.
+  // Apple requires 2048-bit RSA.
   //
-  // `-nodes`(잠그지 않음)를 **쓰지 않는다.** 이 개인키는 언젠가 디스크 밖으로
-  // 백업된다 — 잃어버리면 인증서가 무용지물이므로 백업하지 않을 수 없다. 그런데
-  // 잠기지 않은 개인키 파일은 **그 파일을 얻은 사람이 곧 서명 권한을 갖는다**:
-  // 소유자 실명으로 앱에 서명할 수 있다는 뜻이다.
+  // **Do not use `-nodes`** (leave unencrypted). This private key will eventually
+  // be backed up off this disk — losing it makes the certificate useless, so a
+  // backup is unavoidable. An unencrypted private key file means **whoever obtains
+  // the file holds the signing authority**: they can sign apps under the owner's
+  // real name.
   //
-  // 그래서 openssl 이 비밀번호를 직접 묻게 둔다. 비밀번호는 **사람만 안다** —
-  // 스크립트가 정하면 사람이 모르게 되고, 그러면 백업 파일이 있어도 못 쓴다.
-  // 그 때문에 이 호출만 `stdio: inherit` 다.
+  // So openssl asks for the passphrase itself. **Only the person knows it** — if
+  // the script chose it, the person would not, and the backup would be unusable.
+  // That is why only this call uses `stdio: inherit`.
   console.log("[apple-signing] 개인키를 보호할 비밀번호를 입력하라 (화면에 표시되지 않는다).");
   run("openssl", ["req", "-new", "-newkey", "rsa:2048",
     "-keyout", keyPath,
@@ -217,7 +215,7 @@ export function commandCsr({ dir, name, email }) {
 [apple-signing] 개인키를 잃어버리면 그 인증서는 못 쓴다. 이 폴더를 지우지 마라.`);
 }
 
-/** 2단계 — .cer + 키 → .p12 + local secret files. GitHub는 변경하지 않는다. */
+/** Step 2 — .cer + key → .p12 + local secret files. Changes nothing on GitHub. */
 export function commandBundle({ dir, cer, repo }) {
   if (!cer) fail("bundle 에는 --cer=<Apple 이 준 .cer 경로> 가 필요하다.");
 
@@ -231,16 +229,17 @@ export function commandBundle({ dir, cer, repo }) {
   const p12Path = path.join(tempDir, "developer-id.p12");
 
   try {
-    // Apple 이 주는 .cer 은 DER 이다. openssl pkcs12 는 PEM 을 원한다.
+    // Apple hands back a DER .cer; openssl pkcs12 wants PEM.
     run("openssl", ["x509", "-inform", "DER", "-in", cerPath, "-out", pemPath]);
 
-    // 이 비밀번호는 여기서 나고 GitHub 에서만 쓰인다. 아무도 보지 않는다.
+    // This password is born here and used only by GitHub. Nobody sees it.
     const password = randomBytes(24).toString("base64");
 
-    // 개인키가 잠겨 있으므로 openssl 이 그 비밀번호를 묻는다 — 프롬프트가
-    // 사람에게 닿아야 하니 이 호출은 `stdio: inherit` 다. 반면 `.p12` 를 감쌀
-    // 비밀번호(`-passout`)는 우리가 만든 무작위 값이라 파일로 넘긴다. 두
-    // 비밀번호는 다른 것이고, 섞이면 진단이 어려워진다.
+    // The private key is encrypted, so openssl prompts for its passphrase — the
+    // prompt has to reach the person, hence `stdio: inherit`. The password wrapping
+    // the `.p12` (`-passout`) is the random value we generated, so it is passed via
+    // a file. The two passwords are different, and confusing them makes diagnosis
+    // hard.
     const passOutPath = path.join(tempDir, "p12-pass");
     fs.writeFileSync(passOutPath, password, { mode: 0o600 });
     console.log("[apple-signing] 개인키 비밀번호를 입력하라 (csr 단계에서 정한 것).");
@@ -273,7 +272,7 @@ export function commandBundle({ dir, cer, repo }) {
   }
 }
 
-/** 어떤 이름이 등록됐는지만 본다 — 값은 GitHub 도 돌려주지 않는다. */
+/** Only which names are registered — GitHub never returns the values either. */
 export function listedSecretNames(listOutput) {
   return new Set(
     listOutput

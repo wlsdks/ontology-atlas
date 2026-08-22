@@ -10,31 +10,32 @@ import {
 } from './panel-width';
 
 /**
- * 대화 패널의 폭을 **기억한다.**
+ * **Remember** the chat panel's width.
  *
- * ## 왜 `useState` + `useEffect` 가 아닌가
+ * ## Why not `useState` plus `useEffect`
  *
- * 저장된 폭은 리액트 밖에 있는 값이다(디스크의 `localStorage`). 그것을 마운트
- * 뒤에 `setState` 로 끌어오면 첫 그림이 한 번 기본 폭으로 섰다가 다시 그려지고,
- * 리액트도 그 패턴을 경고한다. 리액트가 **바깥 값**을 위해 따로 마련해 둔 문이
- * `useSyncExternalStore` 이고, 이 문에는 서버용 답을 따로 줄 수 있어서 정적
- * export 의 첫 HTML 과도 어긋나지 않는다.
+ * The stored width is a value outside React (`localStorage` on disk). Pulling it in
+ * with `setState` after mount makes the first paint stand at the default width and
+ * then re-render, and React warns about that pattern too. `useSyncExternalStore` is
+ * the door React provides for **external values**, and it takes a separate server
+ * answer, so it does not disagree with static export's first HTML either.
  *
- * ## 끄는 동안의 폭은 왜 따로 있나
+ * ## Why the width during a drag is held separately
  *
- * 끌 때마다 디스크에 쓰면 초당 수십 번이다. 그래서 **끄는 동안의 폭만** 리액트
- * 상태로 들고 있다가, 손을 뗄 때 한 번 쓴다. 쓴 뒤에는 이 임시 값을 버리므로
- * 정답은 언제나 저장된 값 하나다(같은 값을 두 곳에 두지 않는다).
+ * Writing to disk on every drag frame is dozens of writes per second. So **only the
+ * width during the drag** is held in React state, and it is written once on
+ * release. The temporary value is discarded afterwards, so the truth is always the
+ * single stored value (the same value is never kept in two places).
  */
 
-/** 저장된 폭이 바뀌었다고 알리는 자리 — 같은 화면 안의 구독자들에게 보낸다. */
+/** Where a stored-width change is announced — sent to subscribers on the same screen. */
 const listeners = new Set<() => void>();
 
 function subscribe(onChange: () => void): () => void {
   listeners.add(onChange);
-  // 창이 좁아지면 저장된 폭이 이 화면에서는 상한을 넘는다 — 그때 다시 접는다.
+  // When the window narrows, the stored width exceeds this screen's upper bound — fold it again.
   window.addEventListener('resize', onChange);
-  // 다른 창에서 폭을 바꿨을 때도 따라간다.
+  // Follow along when another window changes the width too.
   window.addEventListener('storage', onChange);
   return () => {
     listeners.delete(onChange);
@@ -50,16 +51,16 @@ function snapshot(): number {
   );
 }
 
-/** 서버에는 저장소도 창도 없다 — 기본 폭으로 그린다. */
+/** The server has neither storage nor a window — draw at the default width. */
 function serverSnapshot(): number {
   return CHAT_WIDTH_DEFAULT;
 }
 
 export function useChatWidth(): {
   width: number;
-  /** 끄는 중에 부른다 — 저장하지 않는다. */
+  /** Called during a drag — it does not store. */
   setWidth: (width: number) => void;
-  /** 손을 뗐을 때 부른다 — 그때 한 번 저장한다. */
+  /** Called on release — that is when it stores, once. */
   commitWidth: (width: number) => void;
 } {
   const stored = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
@@ -71,7 +72,7 @@ export function useChatWidth(): {
 
   const commitWidth = useCallback((next: number) => {
     writeStoredChatWidth(window.localStorage, clampChatWidth(next, window.innerWidth));
-    // 임시 값을 버리고 저장된 값으로 돌아간다 — 같은 사건이라 한 번에 그려진다.
+    // Discard the temporary value and return to the stored one — one event, so it paints once.
     setDragging(null);
     for (const listener of listeners) listener();
   }, []);

@@ -4,11 +4,12 @@ import { resolveDocLink } from './resolve-doc-link';
 import { buildDocLinkMarkdown, relativeDocPath } from './relative-doc-path';
 
 /**
- * 이 시험의 핵심은 «경로 문자열이 예쁜가» 가 아니다 — **뷰어가 그 링크를 다시
- * 그 문서로 풀어내는가** 다. 그래서 만드는 쪽(`relativeDocPath`)과 푸는 쪽
- * (`resolveDocLink`)을 **왕복**으로 잰다. 한쪽만 재면 둘이 어긋난 채로 초록이
- * 될 수 있고, 실제로 그게 이 기능에서 났던 사고다(파서가 URL 을 인코딩해
- * 넘기는 것을 푸는 쪽이 몰랐다).
+ * The point of this test is not «is the path string pretty» but **does the viewer
+ * resolve that link back to the same document**. So the producing side
+ * (`relativeDocPath`) and the resolving side (`resolveDocLink`) are measured as a
+ * **round trip**. Measuring one side alone can go green while the two disagree,
+ * and that is exactly the accident this feature had (the parser passed an encoded
+ * URL and the resolving side did not know).
  */
 
 const VAULT = new Set([
@@ -20,7 +21,7 @@ const VAULT = new Set([
   'guides/deep/nested-note',
 ]);
 
-/** 왕복 — 만든 링크를 뷰어의 해소기에 넣어 원래 슬러그가 나오는지 본다. */
+/** Round trip — feed the built link to the viewer's resolver and check the original slug comes back. */
 function roundTrip(fromSlug: string, toSlug: string) {
   const href = relativeDocPath(fromSlug, toSlug);
   return resolveDocLink({ href, fromSlug, vaultSlugs: VAULT });
@@ -63,19 +64,20 @@ describe('relativeDocPath — 만든 링크를 뷰어가 다시 푼다', () => {
   });
 
   /**
-   * 한글 슬러그가 이 기능의 급소다. 위키링크 쪽에서 같은 결함이 났다 — 마크다운
-   * 파서가 URL 을 퍼센트 인코딩해서 넘기는데 푸는 쪽이 디코드를 안 했다.
-   * **영문 슬러그는 인코딩할 것이 없어 멀쩡하므로 한글 볼트에서만 보인다.**
+   * A Hangul slug is this feature's weak spot. The wikilink side had the same
+   * defect — the markdown parser passes URLs percent-encoded and the resolving side
+   * did not decode. **An ASCII slug has nothing to encode, so it stays fine and the
+   * defect appears only in a Hangul vault.**
    */
   it('한글 슬러그도 왕복한다 — 인코딩되어 도착해도', () => {
     const href = relativeDocPath('domains/typed-api', 'capabilities/스윕-검증-절차');
     expect(href).toBe('../capabilities/스윕-검증-절차.md');
-    // 그대로 넣었을 때
+    // Passed through as is
     expect(roundTrip('domains/typed-api', 'capabilities/스윕-검증-절차')).toMatchObject({
       kind: 'internal',
       slug: 'capabilities/스윕-검증-절차',
     });
-    // **파서가 인코딩해 넘긴 형태**로 넣었을 때 — 실제로 이렇게 도착한다.
+    // Passed through **in the form the parser encodes** — which is how it really arrives.
     expect(
       resolveDocLink({
         href: encodeURI(href),
@@ -115,7 +117,7 @@ describe('buildDocLinkMarkdown — 링크 문법이 라벨에 깨지지 않는�
     ).toBe('[capabilities/fixtures](capabilities/fixtures.md)');
   });
 
-  /** 제목은 사람이 쓴 값이다 — 대괄호가 들어오면 링크가 그 자리에서 끊긴다. */
+  /** A title is a human-written value — a bracket in it breaks the link on the spot. */
   it('라벨의 대괄호를 이스케이프한다', () => {
     const md = buildDocLinkMarkdown({
       fromSlug: 'README',

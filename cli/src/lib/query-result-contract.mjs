@@ -303,8 +303,8 @@ export function assertAgentBriefShape(result) {
   if (!validAgentHandoffPrompt(result.handoffPrompt)) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
-  // 브리프가 자기 안에서 모순이면 여기서 막는다 — 읽는 쪽이 에이전트라
-  // 머리글 숫자를 믿고 나머지를 안 세어 볼 수 있다 (2026-08-17 실측).
+  // Stop a brief that contradicts itself here: the reader is an agent, and it can
+  // trust the headline number without counting the rest (measured 2026-08-17).
   assertBriefCountsAgree(result);
   if (!validAgentCliFallbackCommands(result.cliFallbackCommands)) {
     throw new Error('agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands');
@@ -1713,15 +1713,16 @@ function validAgentModeComparison(value) {
 }
 
 /**
- * 「MCP 가 없을 때 이걸 쓰세요」 줄이 **실행 가능한 모양**인가.
+ * Is the "use this when MCP is unavailable" line **in a runnable shape**?
  *
- * ⚠️ 종전 검사는 `^ontology-atlas\s` 를 **요구**했다 — 그 이름의 전역 명령은
- * 없는데(레지스트리 발행 폐기, 2026-07-27 원장), 그러니 이 검사는 거짓말을
- * 막는 게 아니라 **강제하고 있었다.** 실제로 붙여넣으면 `command not found` 다
- * (2026-08-17 실측).
+ * ⚠️ The old check **required** `^ontology-atlas\s` — but no global command by
+ * that name exists (registry publishing was abandoned; decision ledger
+ * 2026-07-27), so the check was not preventing a lie, it was **enforcing** one.
+ * Pasted verbatim it gives `command not found` (measured 2026-08-17).
  *
- * 지금 받는 것은 실행되는 모양(`node <…>/cli/src/index.mjs <sub> …`)이다.
- * 옛 모양은 **거절한다** — 받아 주면 그 거짓말이 다시 돌아온다.
+ * What is accepted now is the shape that actually runs
+ * (`node <…>/cli/src/index.mjs <sub> …`). The old shape is **rejected** —
+ * accepting it would let the lie back in.
  */
 function validAgentCliFallbackCommands(commands) {
   return Array.isArray(commands)
@@ -2102,26 +2103,27 @@ function validAllPathsSuggestedQuery(query) {
 }
 
 /**
- * 백링크 한 행 — **근거는 둘 중 하나면 된다.**
+ * One backlink row — **either kind of evidence is enough.**
  *
- * 종전엔 `matchedKeys` 를 무조건 요구했다. 그런데 서버는 본문 링크
- * (`[[slug]]` · `(slug.md)` · `/slug.md`)로만 걸린 행에 `matchedKeys` 를
- * **넣지 않고** `matchedInBody: true` 를 넣는다(`mcp/src/vault.mjs:1419-1420`,
- * outputSchema 의 `required` 도 `slug·kind·title·mtime` 넷뿐이다). 그래서 CLI
- * 검증기가 서버보다 **엄격해져** 정상 응답을 거부했다.
+ * `matchedKeys` used to be required unconditionally. But for a row matched only
+ * through a body link (`[[slug]]`, `(slug.md)`, `/slug.md`) the server does
+ * **not** send `matchedKeys`; it sends `matchedInBody: true` (see
+ * `mcp/src/vault.mjs`, and the outputSchema's `required` is only
+ * `slug·kind·title·mtime`). So the CLI validator was **stricter than the server**
+ * and rejected a valid response.
  *
- * 증상은 조용하지 않았다 — `init` 직후 3번째 명령에서 종료 코드 2 와
- * "invalid backlink shape" 라는 내부 계약 문구가 나왔다. 게다가 스타터
- * 문서(`domains/example-domain.md`)가 스스로 `domains/auth.md` 를 안내하므로,
- * 안내대로 따른 사람이 정확히 이 경로를 밟는다.
+ * The symptom was not quiet: exit code 2 on the third command after `init`, with
+ * the internal contract phrase "invalid backlink shape". And since the starter
+ * document (`domains/example-domain.md`) points at `domains/auth.md` itself,
+ * anyone following the instructions walks exactly this path.
  *
- * **왜 dogfood 볼트가 못 잡았나**: 이 저장소의 볼트는 참조가 전부 frontmatter
- * 로 배선돼 있어 `matchedKeys` 가 항상 찬다. 본문 링크만으로 걸리는 행은
- * `cli/` 아래 어떤 픽스처에도 없었다 — 그래서 통과했다.
+ * **Why the dogfood vault did not catch it**: every reference in this
+ * repository's vault is wired through frontmatter, so `matchedKeys` is always
+ * populated. No fixture under `cli/` had a row matched by a body link alone.
  *
- * 규칙의 정본은 `mcp/scripts/verify.mjs:5047` 이고 여기 옮긴 것이다:
- * 근거가 **하나도 없는** 행은 여전히 거부한다(왜 걸렸는지 못 말하는 백링크는
- * 백링크가 아니다).
+ * The rule's authority is `mcp/scripts/verify.mjs`; this is a copy of it. A row with
+ * **no** evidence at all is still rejected — a backlink that cannot say why it
+ * matched is not a backlink.
  */
 function validBacklinkRow(row) {
   if (!validNodeSummary(row)) return false;
@@ -2696,18 +2698,17 @@ function validCount(value) {
 }
 
 /**
- * 브리프가 **자기가 싣고 있는 것과 같은 수**를 말하는가.
+ * Does the brief state **the same number it is carrying**?
  *
- * ## 왜 (2026-08-17 실측)
+ * **Why** (measured 2026-08-17): in one `agent-brief` response
+ * `readiness.healthChecks` was 7 while `health.checks` held 8. The headline said
+ * "7 health checks" and the same payload carried eight, because the eighth
+ * (`meaning_assessment`) is attached **after** the count is taken.
  *
- * `agent-brief` 한 응답 안에서 `readiness.healthChecks` 는 7, `health.checks`
- * 는 8이었다. 머리글이 「7 health checks」라고 적는데 같은 payload 가 8개를
- * 싣고 있었다 — 8번째(`meaning_assessment`)가 **수를 센 뒤에** 붙기 때문이다.
- *
- * 이 문서를 읽는 쪽은 에이전트이고, 머리글 숫자를 믿고 나머지를 안 세어 볼 수
- * 있다. 이 저장소에는 같은 규율이 이미 있다 — 관문 캡션이 자기가 그리는
- * 그래프와 같은 수를 말하게 하는 검사. **숫자를 못박지 않고 두 값이 같은지만
- * 본다**: 볼트가 바뀌어도 안 썩는다.
+ * The reader here is an agent, and it can trust the headline without counting the
+ * rest. This repository already has the same discipline elsewhere — the check that
+ * makes the gateway caption state the same number as the graph it draws. **Pin
+ * nothing; only assert the two values agree**, so it does not rot as the vault changes.
  */
 export function assertBriefCountsAgree(result) {
   const stated = result?.readiness?.healthChecks;

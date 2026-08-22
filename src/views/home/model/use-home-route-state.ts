@@ -9,7 +9,7 @@ import {
   type HomeRouteState,
 } from './url-state';
 
-/** history.pushState 직후 dispatch 하는 커스텀 이벤트 이름. */
+/** Custom event dispatched right after history.pushState. */
 const HOME_URL_CHANGE_EVENT = 'app:urlchange';
 
 function readHomeSearch() {
@@ -18,21 +18,21 @@ function readHomeSearch() {
 }
 
 /**
- * 홈 페이지의 라우트 state (selectedSlug, activeCategory, featuredPathId 등) 를
- * URL 쿼리 파라미터에 직렬화·복원하는 훅.
+ * Serialises the home page's route state into URL query parameters and reads
+ * it back.
  *
- * 이중 구독: (1) useSyncExternalStore 로 popstate + 앱 내 pushState 이벤트 ,
- * (2) Next.js `useSearchParams` 로 app-router 네비게이션. 이전엔 (1) 만 구독해
- * Next.js `<Link>` 로 이동하는 "← 워크스페이스 지도" 버튼이 URL 은 바꾸지만
- * route state 갱신을 못 시키는 버그. 둘 다 구독해서 어느 경로로 바뀌든 즉시
- * 반영. window.location 을 fresh read 해서 최신값 보장.
+ * It subscribes **twice**: (1) `useSyncExternalStore` for popstate plus the
+ * in-app pushState event, and (2) Next.js `useSearchParams` for app-router
+ * navigation. Subscribing only to (1) meant a button navigating with a Next.js
+ * `<Link>` changed the URL without refreshing route state. `window.location`
+ * is always read fresh so the value is current whichever path changed it.
  */
 export interface HomeRouteStateUpdateOptions {
   /**
-   * 히스토리에 새 칸을 만들지 않고 현재 칸을 덮어쓴다. 사용자의 이동이 아니라
-   * *도착한 URL 을 정규화* 하는 쓰기(딥링크가 요구한 조상 펼침 등)에 쓴다 —
-   * 그런 쓰기가 push 로 나가면 사용자는 자기가 가지 않은 칸을 뒤로가기로
-   * 되짚게 된다.
+   * Overwrite the current history entry instead of adding one. For writes that
+   * *normalise the URL that was arrived at* (expanding the ancestors a deep
+   * link needs, say) rather than user navigation — pushing those makes Back
+   * walk through entries the user never visited.
    */
   replace?: boolean;
 }
@@ -51,9 +51,9 @@ export function useHomeRouteState(): [
     () => true,
     () => false,
   );
-  // useSearchParams 는 app-router 변화를 구독 — Link/router.push 시 trigger.
-  // 값 자체는 window.location 과 동기화되므로 아래 routeState 계산에 직접
-  // 사용하지 않고 "re-render 트리거" 용으로만 참조.
+  // useSearchParams subscribes to app-router changes (Link / router.push). Its
+  // value tracks window.location, so it is referenced only as a re-render
+  // trigger and never feeds the routeState computation below.
   const routerSearchParams = useSearchParams();
   const search = useSyncExternalStore(
     (onStoreChange) => {
@@ -69,12 +69,12 @@ export function useHomeRouteState(): [
     () => '',
   );
 
-  // routerSearchParams 가 바뀌어도 useMemo 가 재실행되도록 deps 에 포함.
-  // 값 자체는 window.location.search 가 진실원. eslint react-hooks rule 이
-  // deps 추론을 못 해 명시적으로 .toString() 값을 변수로 뽑아 dep 에 넣는다.
+  // In deps so the useMemo re-runs when routerSearchParams changes;
+  // window.location.search remains the source of truth. The react-hooks lint
+  // rule cannot infer the dependency, hence the explicit .toString() variable.
   const routerSearchKey = routerSearchParams?.toString() ?? '';
   const routeState = useMemo(() => {
-    // routerSearchKey 는 re-run trigger 용으로만 dep 에 포함.
+    // routerSearchKey is a dependency purely to trigger a re-run.
     void routerSearchKey;
     if (!hydrated) return DEFAULT_HOME_ROUTE_STATE;
     const currentSearch =
@@ -104,17 +104,19 @@ export function useHomeRouteState(): [
         next,
       );
       const query = params.toString();
-      // 경로는 *실제 브라우저 경로* 그대로 — next-intl 의 usePathname 은
-      // locale-제거 경로(`/topology`)라 그걸 쓰면 URL 에서 `/ko` 가 사라지고,
-      // 그 URL 을 새로고침하면 static export 의 [locale] 라우트가 깨진다
-      // (사용자 보고: "새로고침하면 화면 로딩이 안 됨").
+      // Use the *actual browser path*. next-intl's usePathname returns the
+      // locale-stripped path (`/topology`), which drops `/ko` from the URL, and
+      // reloading that URL breaks the static export's [locale] route. User
+      // report: "새로고침하면 화면 로딩이 안 됨" (reloading leaves the screen
+      // stuck loading).
       const browserPath = window.location.pathname;
       const nextUrl = query ? `${browserPath}?${query}` : browserPath;
-      // 결과가 지금 주소와 똑같으면 기록할 변화가 없다. 그래도 pushState 를
-      // 하면 **같은 주소**가 히스토리에 한 칸 더 쌓이고, 뒤로가기 첫 번째가
-      // 화면을 하나도 바꾸지 못한다 — 사용자에겐 "뒤로가기가 안 먹는" 것으로
-      // 읽힌다(프로젝트 상세 → 지도 착지에서 실측: 히스토리 2→4, Back 1회
-      // 화면 변화 0). 착지 직후 도는 정규화 이펙트들이 대부분 이 no-op 이다.
+      // An identical result means there is no change to record. Pushing anyway
+      // stacks **the same address** as another history entry, and the first
+      // Back then changes nothing on screen — which reads as "Back is broken".
+      // Measured on the project detail → map landing: history 2→4, and one Back
+      // produced zero visible change. Most normalisation effects that run right
+      // after landing are exactly this no-op.
       if (nextUrl === `${window.location.pathname}${window.location.search}`) {
         return;
       }

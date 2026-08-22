@@ -2,10 +2,10 @@ import { BLOCK_MANIFEST_FILENAME } from './block-manifest';
 import type { BlockImportFile } from './merge-plan';
 
 /**
- * 블록 폴더 IO — File System Access API 의 구조적 최소 표면만 의존해
- * jsdom 테스트에서 메모리 fake 로 검증 가능하게 한다. 실제 호출부는
- * `showDirectoryPicker()` 가 준 진짜 FileSystemDirectoryHandle 을 그대로
- * 넘긴다 (TS DOM lib 의 iterator 선언 편차를 구조 타입으로 흡수).
+ * Block folder IO. It depends only on the structural minimum of the File System Access API,
+ * so jsdom tests can verify it against an in-memory fake. Real call sites pass the genuine
+ * `FileSystemDirectoryHandle` from `showDirectoryPicker()` straight through (structural
+ * typing absorbs the iterator declaration differences across TS DOM libs).
  */
 
 export interface BlockFileLike {
@@ -37,11 +37,11 @@ export interface BlockDirectoryHandleLike {
 
 export interface BlockDirectoryReadResult {
   files: BlockImportFile[];
-  /** 루트의 block-manifest.json raw — 없으면 null (매니페스트는 명함일 뿐, 필수 아님). */
+  /** The root's raw block-manifest.json, or null — the manifest is a calling card, not a requirement. */
   manifestRaw: string | null;
 }
 
-/** 재귀 walk — dotfile 디렉터리/파일과 node_modules 는 CLI import 와 동일하게 skip. */
+/** Recursive walk. Dotfile directories and files, and node_modules, are skipped exactly as in the CLI import. */
 export async function readBlockDirectory(
   dir: BlockDirectoryHandleLike,
 ): Promise<BlockDirectoryReadResult> {
@@ -88,7 +88,7 @@ async function writeFileAtPath(
   await writable.close();
 }
 
-/** export — 원본 .md 를 slug 경로 그대로 복사 + 매니페스트 JSON 기록. */
+/** Export — copies the original `.md` at its slug path and writes the manifest JSON. */
 export async function writeBlockToDirectory(
   target: BlockDirectoryHandleLike,
   docs: readonly { slug: string; content: string }[],

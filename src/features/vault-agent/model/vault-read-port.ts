@@ -1,15 +1,16 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 
 /**
- * 실행기가 볼트를 보는 **유일한 창.**
+ * The executor's **only window onto the vault.**
  *
- * 이 타입에 **쓰기 메서드가 없다는 것**이 "모델의 write 호출은 디스크에 닿지
- * 않는다" 의 구조적 증명이다. 실행기는 이 포트만 주입받으므로, 실수로 쓰기를
- * 부르려 해도 부를 함수 자체가 없다. 적용은 별도 모듈(`proposal-applier`)이
- * 동의 카드 핸들러에서만 한다.
+ * **The absence of a write method on this type** is the structural proof of "a
+ * model's write call never reaches the disk". The executor is injected with this
+ * port alone, so even trying to call a write by mistake finds no such function.
+ * Applying belongs to a separate module (`proposal-applier`), called only from the
+ * consent card's handler.
  *
- * 새 메서드를 더할 때 여기에 쓰기를 넣지 마라 — 넣는 순간 그 증명이 사라지고
- * `tool-executor.test.ts` 의 타입 수준 단언이 깨진다.
+ * When adding a method, do not put a write here — the moment you do, that proof is
+ * gone and the type-level assertion in `tool-executor.test.ts` breaks.
  */
 export interface VaultReadDoc {
   slug: string;
@@ -18,18 +19,18 @@ export interface VaultReadDoc {
   kind: string;
   domain?: string;
   frontmatter: Record<string, unknown>;
-  /** 본문 첫 단락 발췌 (200자 안). */
+  /** An excerpt of the first body paragraph (within 200 characters). */
   excerpt: string;
-  /** 파일 mtime(ms). 없으면 undefined — 동시 수정 가드를 걸 수 없다는 사실. */
+  /** File mtime (ms). Undefined when absent — meaning no concurrent-edit guard can be applied. */
   mtime?: number;
 }
 
 export interface VaultReadPort {
-  /** 문서를 가진 개념들 + 다른 문서에서 이름만 불린 개념들. */
+  /** Concepts that have documents, plus concepts merely named by another document. */
   readonly nodes: readonly KnowledgeGraphNode[];
   readonly edges: readonly KnowledgeGraphEdge[];
-  /** 실제 `.md` 문서만. 이름만 불린 개념은 여기 없다. */
+  /** Real `.md` documents only. A merely-named concept is not here. */
   readonly docs: readonly VaultReadDoc[];
-  /** 문서 전문. 없으면 null. */
+  /** The document's full text. Null when absent. */
   readDocText(slug: string): Promise<string | null>;
 }

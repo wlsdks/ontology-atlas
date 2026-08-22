@@ -57,8 +57,8 @@ describe("buildOntologyHealthSignals", () => {
     );
 
     expect(signals.orphan).toEqual([{ slug: "elements/orphan", name: "Orphan" }]);
-    // fanIn 은 promotion 후보의 근거 수치(들어오는 참조 수) — 할 일 큐가
-    // "참조 N개"로 노출한다. 이 fixture 에서 Shared 는 참조 4개.
+    // `fanIn` is the evidence behind a promotion candidate (incoming reference count),
+    // shown by the to-do queue as "N references". In this fixture Shared has 4.
     expect(signals.promotion).toEqual([
       { slug: "capabilities/shared", name: "Shared", fanIn: 4 },
     ]);

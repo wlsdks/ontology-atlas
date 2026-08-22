@@ -9,28 +9,28 @@ export class VaultRootError extends Error {
 }
 
 /**
- * Vault root 결정 우선순위 — graph-level read 명령 (list / query / path /
- * orphans / backlinks / find / validate) 공유.
+ * **Vault root resolution order**, shared by the graph-level read commands
+ * (list / query / path / orphans / backlinks / find / validate).
  *
- *  1. 호출자가 명시한 `explicit` (positional 인자 또는 `--vault path`) 가 있고
- *     기본값 (`.` 또는 빈 문자열) 이 아니면 → 그대로 사용
- *  2. 환경 변수 `OATLAS_VAULT` 설정되어 있으면 → 그 경로
- *  3. cwd 에 `docs/ontology/` 디렉토리 있으면 → 그쪽 (자기 repo dogfood 대응
- *     — 빌드 미러 `public/docs-vault/` 나 `cli/templates/` 가 cwd 안에 있어도
- *     의도된 canonical vault 가 우선)
- *  4. 마지막 fallback: cwd
+ *  1. an `explicit` value from the caller (positional argument or `--vault path`)
+ *     that is not the default (`.` or empty) → use it as given
+ *  2. the `OATLAS_VAULT` environment variable, when set → that path
+ *  3. a `docs/ontology/` directory in cwd → that, so a repository dogfooding
+ *     itself resolves to its canonical vault even when a build mirror
+ *     (`public/docs-vault/`) or `cli/templates/` also sits under cwd
+ *  4. final fallback: cwd
  *
- * 항상 절대 경로 반환.
+ * Always returns an absolute path.
  */
 export function resolveVaultRoot(explicit) {
-  // 1) 명시적 사용자 지정 — 우선
+  // 1) explicit user choice wins
   if (typeof explicit === 'string' && explicit && explicit !== '.') {
     const root = resolve(process.cwd(), explicit);
     assertVaultDirectory(root);
     return root;
   }
 
-  // 2) OATLAS_VAULT env (MCP 서버 규약과 동일)
+  // 2) OATLAS_VAULT env — same convention as the MCP server
   const env = process.env.OATLAS_VAULT;
   if (typeof env === 'string' && env.length > 0) {
     const root = resolve(process.cwd(), env);
@@ -38,7 +38,7 @@ export function resolveVaultRoot(explicit) {
     return root;
   }
 
-  // 3) cwd 의 docs/ontology 디렉토리 — repo dogfood 자동 감지
+  // 3) a docs/ontology directory in cwd — auto-detects a repository dogfooding itself
   const candidate = resolve(process.cwd(), 'docs/ontology');
   if (isDirectory(candidate)) return candidate;
 

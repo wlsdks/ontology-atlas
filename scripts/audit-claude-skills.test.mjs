@@ -9,23 +9,25 @@ import {
 } from './audit-claude-skills.mjs';
 
 /**
- * 스킬 무결성 계기가 **정말 무언가를 보고 있는지** 잠근다.
+ * Locks in that the skill-integrity instrument **is really looking at something.**
  *
- * 이 도구는 발견용이라 게이트가 아니다. 그러나 발견 도구도 틀리면 엉뚱한 것을
- * 고치게 만든다 — 이번 라운드에 **두 번** 그랬다.
+ * This tool is for discovery, not a gate. But a discovery tool that is wrong makes
+ * people fix the wrong thing — which happened **twice** in one round.
  *
- * **① 참조를 한 덩어리로 셌다.** 죽은 참조 700건 중 666건은 「프로젝트에 있으면
- * 읽어라」식 조건부라 결함이 아니었다.
+ * **① References counted as one lump.** Of 700 dead references, 666 were conditional
+ * ("read this if the project has it") and not defects.
  *
- * **② 로드되지 않는 파일을 셌다(더 컸다).** `~/.claude/plugins` 를 통째로 훑어
- * **207개**를 보고했는데, 정본은 `installed_plugins.json`(플러그인당 installPath
- * 하나)이고 실제 로드는 **60개**였다. 나머지는 버전별 다운로드 캐시와 설치도
- * 안 한 카탈로그 클론이었다. 좁히니 이름 충돌 38→**2**, 강한 겹침 41→**1쌍**,
- * 깨진 자기참조 37→**0**(7건 전부 저장소 루트에 실재하는 오탐)이 됐다.
+ * **② Counting files that never load (the larger error).** Sweeping all of
+ * `~/.claude/plugins` reported **207**, while the authority is
+ * `installed_plugins.json` (one installPath per plugin) and the real load was **60**.
+ * The rest were per-version download caches and catalogue clones never installed.
+ * After narrowing: name collisions 38→**2**, strong overlap 41→**1 pair**, broken
+ * self-references 37→**0** (all 7 were false positives that exist at the repository
+ * root).
  *
- * 그 잘못된 숫자로 카운슬 브리프를 썼고, 다섯 자리 중 셋이 그것을 근거로 판정한
- * 뒤 한 자리가 잡아냈다. **분모를 틀리면 결론이 틀린다** — 이 시험이 잠그는 것이
- * 그 분모다.
+ * A council brief was written from those wrong numbers, and three of five seats had
+ * judged on that basis before one seat caught it. **A wrong denominator makes a wrong
+ * conclusion** — that denominator is what this test locks.
  */
 
 const SKILL = (name, description, body = '') =>
@@ -109,8 +111,8 @@ test('auditSkills — 이름이 같은 쌍은 겹침으로 두 번 세지 않는
 });
 
 /**
- * 이 시험이 지키는 핵심 — **조건부 참조를 결함으로 세지 않는다.** 여기가
- * 무너지면 「고쳐야 할 것 700건」이라는 소음이 돌아온다.
+ * The core this test protects — **conditional references are not counted as
+ * defects.** If this collapses, the noise of "700 things to fix" returns.
  */
 test('auditSkills — 없는 조건부 참조는 결함으로 세지 않고, 없는 자기 폴더 참조만 센다', () => {
   const skills = [
@@ -174,8 +176,8 @@ test('installedPluginRoots — 정본을 못 읽으면 빈 목록 (부풀린 숫
 });
 
 /**
- * 저장소 루트에서 찾은 참조는 결함이 아니다 — 이 확인이 없을 때 우리 스킬 7건이
- * 전부 「깨진 참조」로 보고됐고 일곱 다 실재했다.
+ * A reference found at the repository root is not a defect — without this check all 7
+ * of our skills were reported as broken references, and all 7 existed.
  */
 test('auditSkills — 저장소 루트에 있는 참조는 깨진 것으로 세지 않는다', async () => {
   const { auditSkills } = await import('./audit-claude-skills.mjs');

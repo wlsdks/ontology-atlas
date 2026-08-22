@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Vault validator CLI — frontmatter silent corruption 가시화.
+// Vault validator CLI — makes silent frontmatter corruption visible.
 //
-// 사용법:
+// Usage:
 //   node scripts/validate-vault.mjs [vaultDir]
 //   node scripts/validate-vault.mjs --help
 //   pnpm vault:validate
 //
-// 기본 vaultDir = docs/ontology (이 프로젝트의 dogfood vault).
-// error 가 한 건이라도 있으면 exit 1, warning 만 있으면 exit 0.
+// Default vaultDir = docs/ontology (this project's dogfood vault).
+// Exits 1 if there is any error; exits 0 when only warnings were found.
 
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
@@ -36,10 +36,11 @@ const GRAPH_ARRAY_KEYS = [
   "relates",
   "contains",
   "describes",
-  // `broader` (is_a / SKOS) — 공방과 함께 도입됐는데 이 리스트에서 빠져
-  // 있었다(감사 2026-07-25). 이 리스트는 canonical 정렬 검사와 dangling ref
-  // 검사를 **동시에** 구동하므로, 누락은 "에이전트가 broader 에 오타 슬러그를
-  // 써도 CI 는 green" 을 뜻했다. contract fixture 가 이 drift 를 고정한다.
+  // `broader` (is_a / SKOS) was introduced alongside the studio but was missing
+  // from this list (audit, 2026-07-25). This list drives **both** the canonical
+  // ordering check and the dangling-reference check, so the omission meant "an
+  // agent can put a typo slug in broader and CI stays green". A contract fixture
+  // pins this drift.
   "broader",
 ];
 
@@ -297,7 +298,7 @@ export async function main({ argv = process.argv, cwd = process.cwd() } = {}) {
   for (const file of files) {
     const raw = await readFile(file, "utf8");
     const { frontmatter } = parseFrontmatter(raw);
-    // NFC — `pathToSlug` 와 같은 식별자 규칙.
+    // NFC — the same identifier rule as `pathToSlug`.
     const slug = path
       .relative(vaultDir, file)
       .replace(/\\/g, "/")
@@ -375,19 +376,22 @@ function collectGraphRefs(frontmatter) {
 }
 
 /**
- * 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
+ * Two documents claiming the same canonical slug (measured 2026-07-29).
  *
- * **파일 단위 검사로는 원리적으로 못 잡는다** — 한 파일만 보면 완벽히
- * 정상이기 때문이다. 그래서 dangling 검사와 같은 자리(볼트 전수 패스)에 산다.
+ * **A per-file check cannot catch this in principle** — each file on its own is
+ * perfectly valid. So it lives in the same place as the dangling check: the
+ * whole-vault pass.
  *
- * 어떻게 생기나: `patch_concept` 이 `frontmatter.slug` 를 다른 노드가 이미
- * 가진 값으로 덮어써도 막지 않는다(`add_concept` 은 막고 `rename_concept` 은
- * `overwrite:true` 를 요구하는데 이 경로만 열려 있다). 그러면 두 파일이 같은
- * 이름을 주장하고, 그 이름을 가리키는 모든 관계가 **어느 쪽을 뜻하는지 알 수
- * 없게** 된다 — 컴파일러는 `ambiguous-alias` 로 보는데 `validate` 는 조용했다.
+ * How it happens: `patch_concept` does not block overwriting `frontmatter.slug`
+ * with a value another node already holds (`add_concept` blocks it and
+ * `rename_concept` requires `overwrite:true`; only this path is open). Two files
+ * then claim the same name and every relation pointing at that name becomes
+ * **ambiguous** — the compiler sees `ambiguous-alias` while `validate` stayed
+ * silent.
  *
- * error 로 올린다. dangling 은 "아직 안 만든 것" 일 수 있어 warning 이지만,
- * 중복 slug 는 **이미 있는 두 문서 사이의 모순**이라 그래프가 성립하지 않는다.
+ * Raised as an error. A dangling reference may just be "not created yet", hence a
+ * warning; a duplicate slug is **a contradiction between two documents that both
+ * exist**, so the graph does not hold.
  */
 function findDuplicateSlugIssues(entries) {
   const byDeclared = new Map();
@@ -467,7 +471,7 @@ function findDanglingGraphReferenceIssues(entries) {
   }
   const resolveRef = (rawRef) => {
     if (typeof rawRef !== "string") return null;
-    // 참조도 NFC 로 맞춘다 — 슬러그는 `pathToSlug` 가 이미 NFC 다.
+    // References are normalised to NFC too — slugs are already NFC via `pathToSlug`.
     const ref = rawRef.normalize("NFC");
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);

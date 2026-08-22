@@ -3,23 +3,23 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 커밋 훅이 **실재하고 연결돼 있는가**를 지키는 게이트.
+ * The gate that keeps the commit hook **present and wired.**
  *
- * `.githooks/pre-commit` 은 볼트 생성물 드리프트를 커밋 자리에서 막는다
- * (2026-08-02 — 같은 실패가 #826 · #828 · #831 로 이틀에 세 번 났다).
- * 그런데 이 훅에는 다른 게이트에 없는 **조용한 소멸 경로**가 둘 있다:
+ * `.githooks/pre-commit` blocks vault-artifact drift at commit time (2026-08-02 — the
+ * same failure happened three times in two days as #826, #828, and #831). This hook
+ * has two **quiet disappearance paths** that other gates do not:
  *
- * 1. `core.hooksPath` 가 가리키는 디렉터리가 **없으면 git 은 아무 말도 안 한다.**
- *    훅이 없는 게 아니라 훅이 있었다는 사실 자체가 화면에서 사라진다. 실측:
- *    이 브랜치를 만들기 전 모든 워크트리에서 `.githooks/` 가 없었고, git 은
- *    경고 한 줄 없이 커밋을 통과시켰다.
- * 2. 실행 비트가 빠지면 git 은 훅을 **건너뛴다.** 파일은 그대로 보이는데
- *    게이트만 없어진다 — 리뷰에서 가장 안 보이는 형태의 회귀다.
+ * 1. If the directory `core.hooksPath` points at **does not exist, git says nothing.**
+ *    It is not that the hook is missing — the fact that a hook ever existed vanishes
+ *    from view. Measured: before this branch, `.githooks/` was missing in every
+ *    worktree and git passed commits without a single warning.
+ * 2. Without the executable bit git **skips** the hook. The file is still visible while
+ *    only the gate is gone — the least visible form of regression in review.
  *
- * 그래서 여기서 재는 것은 훅의 *판정*이 아니라 훅의 *존재*다. 판정은 훅
- * 자신이 매 커밋마다 증명하고, 이 테스트는 그 훅이 매 커밋에 실제로 불릴
- * 배선인지를 증명한다. 「통과만 하는 게이트는 게이트가 아니다」의 한 단계
- * 앞 — **불리지도 않는 게이트**를 막는다.
+ * So what is measured here is not the hook's *verdict* but its *existence*. The hook
+ * proves its verdict on every commit; this test proves the hook is wired to actually
+ * be called on every commit. One step before "a gate that only ever passes is not a
+ * gate" — this blocks **a gate that is never even called.**
  */
 
 const ROOT = join(__dirname, "..", "..");
@@ -40,22 +40,23 @@ describe("pre-commit 훅 배선", () => {
   it("훅이 재생성기를 --check 로 부른다 — 고치지 않고 막기만 한다", () => {
     const source = readFileSync(HOOK, "utf-8");
     expect(source).toContain("scripts/build-docs-vault.mjs --check");
-    // 훅이 스테이지를 말없이 바꾸면 사람이 안 쓴 바이트가 사람 이름으로
-    // 커밋된다. 그래서 훅 안에서의 `git add` 는 금지다.
+    // A hook that silently changes the stage commits bytes nobody wrote under a person's
+    // name. So `git add` inside the hook is forbidden.
     expect(source).not.toMatch(/^\s*git add/m);
   });
 
   /**
-   * 이 훅의 첫 판은 **작업본**에서 `--check` 를 돌렸고, 그래서 자기 자신을
-   * 담은 PR(#834)을 통과시켰다 — 재생성은 했는데 산출물을 스테이지하지 않은
-   * 커밋이었고, 작업본은 깨끗했으므로 훅은 초록을 봤다. CI 는 커밋된 트리를
-   * 보므로 빨개졌다. 커밋이 남기는 것은 인덱스이니 인덱스를 재야 한다.
+   * The hook's first version ran `--check` against the **working tree**, and so passed
+   * the very PR containing it (#834): a commit that had regenerated the artifacts
+   * without staging them. The working tree was clean, so the hook saw green; CI looks at
+   * the committed tree and went red. What a commit leaves behind is the index, so the
+   * index is what must be measured.
    */
   it("작업본이 아니라 인덱스를 잰다", () => {
     const source = readFileSync(HOOK, "utf-8");
     expect(source).toContain("git checkout-index");
-    // 인덱스를 펼친 곳에서 검사기가 돌아야 의미가 있다 — 저장소 루트에서
-    // 돌리면 다시 작업본을 재는 것이다.
+    // The checker only means something when run where the index was expanded — running
+    // it at the repository root measures the working tree again.
     expect(source).toMatch(/cd "\$staging_tree"[\s\S]*build-docs-vault\.mjs --check/);
   });
 

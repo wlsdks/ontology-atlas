@@ -27,21 +27,24 @@ import { VAULT_CREATED_BY_HUMAN } from "@/entities/docs-vault";
 const TEST_UID = "01890f3e-7b5d-4c0a-8f14-123456789abc";
 
 /**
- * 노드 저작 출처(`created_by`) 계약 — 2026-07-31 원장
- * 「사람이 만든 노드 표기: 소급 출처는 존재하지 않는다」.
+ * Node authorship provenance (`created_by`) contract — ledger 2026-07-31,
+ * 「사람이 만든 노드 표기: 소급 출처는 존재하지 않는다」 (marking human-authored
+ * nodes: retroactive provenance does not exist).
  *
- * 이 파일이 지키는 불변 조건 넷:
- *   ① 값 규약은 `human` | `agent:<name>` 하나뿐이고 mcp/cli/web 이 같은 상수를 쓴다
- *   ② 정규화는 값을 **보존**하되 없는 노드에 **만들어내지 않는다**
- *   ③ 부재는 결함이 아니라 unknown — 어떤 검증 경고도, 어떤 기본값도 붙지 않는다
- *   ④ 「사람이 만든 것만 모아보기」가 질의 필터로 성립한다
+ * Four invariants held here:
+ *   ① The value convention is `human` | `agent:<name>` and nothing else, and
+ *      mcp/cli/web share the same constant.
+ *   ② Normalisation **preserves** a value but never **invents** one for a node that
+ *      lacks it.
+ *   ③ Absence is unknown, not a defect — no validation warning and no default.
+ *   ④ "show only what a human made" works as a query filter.
  *
- * MCP 쓰기 경로(add_concept / add_concepts / absorb_document)가 실제로 찍는지,
- * patch_concept 가 보존하는지는 서버를 띄워야 관측되므로
- * `mcp/src/integration.test.mjs` 가 맡는다.
+ * Whether the MCP write paths (add_concept / add_concepts / absorb_document) really
+ * stamp it, and whether patch_concept preserves it, is only observable with the
+ * server running and is owned by `mcp/src/integration.test.mjs`.
  */
 
-/** `.mjs` 스키마는 타입이 없다 — 인덱싱 자리에서만 좁혀 쓴다. */
+/** The `.mjs` schema is untyped — narrowed only at the indexing site. */
 function schemaFor(schema: unknown, kind: string): { optional: string[] } {
   return (schema as Record<string, { optional: string[] }>)[kind];
 }
@@ -65,8 +68,8 @@ describe("created_by 값 규약 — 세 패키지가 같은 상수를 쓴다", (
   });
 
   it("이름을 모르면 human 이 아니라 agent:unknown 으로 떨어진다", () => {
-    // 경로는 「에이전트가 썼다」를 증명하지만 이름은 증명하지 못한다.
-    // 그 경우에도 human 으로 내려가는 길은 존재하지 않아야 한다.
+    // The path proves an agent wrote it but not which agent. Even then there must be no
+    // route that falls back to human.
     for (const noName of [null, undefined, "", "   "]) {
       expect(agentMcp(noName)).toBe(UNKNOWN_MCP);
       expect(agentCli(noName)).toBe(UNKNOWN_CLI);
@@ -190,7 +193,7 @@ describe("내부 채팅 패널 적용 — 초안 저작자는 에이전트다", 
     });
     const after = proposal?.changes[0]?.files[0]?.after ?? "";
     expect(after).toContain('created_by: "agent:anthropic"');
-    // 사람의 「적용」 클릭은 승인이지 저작이 아니다 — human 으로 뒤집히지 않는다.
+    // A person clicking "apply" is approval, not authorship — it does not flip to human.
     expect(after).not.toContain("created_by: human");
   });
 

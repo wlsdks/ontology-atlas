@@ -9,24 +9,26 @@ import {
 } from "@/shared/lib/project-source-store";
 
 /**
- * **「연결된 코드 폴더가 없다」를 노드 하나를 클릭해야만 볼 수 있던 것**을 지도
- * 옆 INDEX 로 끌어올리기 위한 최소 판정.
+ * The minimum verdict needed to lift "no code folder connected" out of a
+ * single node click and into the INDEX beside the map.
  *
- * 실측(2026-08-04): 첫 화면에 그 문장은 0회 나타나고, 프로젝트 노드를 **정확히
- * 그 하나** 클릭해야(픽스처 15노드 · 도그푸드 100+ 노드 중 하나) 비로소 보였다.
- * 진단이 보이지 않으면 처방이 아무리 좋아도 닿지 않는다.
+ * Measured 2026-08-04: that sentence appeared 0 times on the first screen and
+ * showed up only after clicking **exactly the one** project node (one of 15
+ * fixture nodes, one of 100+ in the dogfood vault). An invisible diagnosis
+ * never reaches anyone, however good the prescription.
  *
- * ⚠️ **`useProjectSourceModel` 을 하나 더 띄우지 않는다.** 그 훅은 그래프 해시와
- * 증인 목록을 만들고, 설치 앱에서는 폴더를 통째로 훑는 실측(`inspect`)까지 부른다
- * — 선택과 무관하게 상시 도는 자리에 그걸 걸면 **아직 열지도 않은 화면의 계산을
- * 가장 잦은 상호작용이 대신 내는** 그 패턴이 된다(`architecture.md` D4).
- * 여기서 필요한 사실은 하나뿐이다: **이 프로젝트에 묶인 폴더가 0개인가.**
- * 그래서 사이드카 파일 한 번 읽기로 끝난다.
+ * ⚠️ **Do not mount a second `useProjectSourceModel`.** That hook builds the
+ * graph hash and the witness list, and in the installed app it also calls
+ * `inspect`, which walks the whole folder — putting that in a place that runs
+ * constantly, regardless of selection, is exactly the pattern where the most
+ * frequent interaction pays for a screen nobody has opened
+ * (`.claude/rules/architecture.md`). Only one fact is needed here: **does this
+ * project have zero bound folders?** One sidecar read answers it.
  */
 export interface UnboundProjectSource {
-  /** 폴더가 하나도 안 묶인 프로젝트 노드의 그래프 id — 클릭하면 그 노드가 열린다. */
+  /** Graph id of a project node with no bound folder — clicking opens that node. */
   nodeId: string;
-  /** 그런 프로젝트가 여럿이면 그 수. 행 문구가 단수/복수를 가른다. */
+  /** How many such projects there are; the row's wording picks singular or plural. */
   count: number;
 }
 
@@ -45,7 +47,7 @@ export interface ProjectSourceReadiness {
 export function useProjectSourceReadiness(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
-  /** 테스트용 주입구. 미지정이면 볼트 파일 사이드카를 읽는다. */
+  /** Injection point for tests. Unset, it reads the vault file sidecar. */
   createStore?: (handle: FileSystemDirectoryHandle) => ProjectSourceStore;
   /** A completed bind/measure transition invalidates the sidecar read in this mounted view. */
   refreshToken?: string | number | null;
@@ -62,9 +64,10 @@ export function useProjectSourceReadiness(input: {
   );
   const projectKey = projects.map((p) => p.slug).join(" ");
   /*
-   * 읽은 값에 **무엇을 읽고 나온 값인지**(`key`)를 함께 담는다. 볼트를 갈아탄
-   * 직후 한 프레임 동안 남의 볼트 답이 그려지지 않고, 「아직 안 읽음」을
-   * 지우려고 효과 안에서 곧바로 상태를 바꿀 일도 없어진다.
+   * The read value carries the `key` of **what it was read from**. That keeps
+   * another vault's answer off screen for the frame right after switching
+   * vaults, and removes the need to setState inside the effect just to clear a
+   * "not read yet" state.
    */
   const [read, setRead] = useState<{
     key: string;
@@ -81,10 +84,11 @@ export function useProjectSourceReadiness(input: {
     const store = (input.createStore ?? createVaultFileProjectSourceStore)(input.vaultHandle);
     void store.read().then((result) => {
       /*
-       * 읽을 수 없는 상태(`malformed`/`unavailable`)는 **조용히 넘긴다.** 여기는
-       * 지도 옆의 조용한 한 줄이라, 파일이 깨졌다는 진단을 낼 자리가 아니다 —
-       * 그건 프로젝트를 열었을 때 패널이 제 이름으로 말한다. 잘못 읽은 것을
-       * 「폴더 없음」으로 그리면 이 행이 거짓말을 시작한다.
+       * Unreadable states (`malformed`/`unavailable`) are **passed over
+       * silently.** This is one quiet line beside the map, not the place to
+       * diagnose a broken file — the panel says that in its own name when the
+       * project is opened. Drawing a failed read as "no folder" would make this
+       * row start lying.
        */
       if (result.status === "malformed" || result.status === "unavailable") {
         settle({ state: "unavailable", unbound: null });
@@ -100,8 +104,8 @@ export function useProjectSourceReadiness(input: {
         : { state: "bound", unbound: null });
     }, () => settle({ state: "unavailable", unbound: null }));
     return () => { cancelled = true; };
-    // `projects` 는 매 렌더 새 배열이라 그대로 넣으면 사이드카를 매 렌더 읽는다.
-    // 실제로 달라졌는지는 슬러그 목록이 정한다.
+    // `projects` is a new array every render, so depending on it directly would
+    // read the sidecar every render. The slug list decides what actually changed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input.vaultHandle, input.createStore, input.refreshToken, projectKey]);
 

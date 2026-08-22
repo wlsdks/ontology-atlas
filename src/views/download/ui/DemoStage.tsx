@@ -7,72 +7,72 @@ import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../m
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 첫 페이지 시연 절 — **한 클립 · 무컷 · 루프 없음 · 무음.**
+ * The front-page demo section — **one clip, no cuts, no loop, no sound.**
  *
- * 이 컴포넌트는 시나리오의 **재생 계약**만 구현한다. 무엇을 찍는지는 촬영이,
- * 어떤 자산이 붙었는지는 `model/demo-clips.ts` 가 정한다.
+ * This component implements only the scenario's **playback contract**. What is filmed is decided
+ * by the shoot, and which assets are attached by `model/demo-clips.ts`.
  *
- * ## 2026-08-03 개정 — 탭과 자막을 걷어냈다
+ * ## Revised 2026-08-03 — tabs and captions were removed
  *
- * **탭이 사라진 이유**: 클립이 하나다. 첫인상 자리에서 «무엇을 볼지 고르기»는
- * 비용이지 값이 아니고, 대부분은 첫 탭만 보고 떠나므로 두 번째 클립은 만들었지만
- * 아무도 안 보는 것이 된다(소유자 확정).
+ * **Why tabs went**: there is one clip. In the first-impression slot, «choosing what to watch» is
+ * a cost rather than a value, and since most people watch only the first tab the second clip
+ * becomes something made but never watched (owner-confirmed).
  *
- * **자막이 사라진 이유**: 로케일별 영상을 따로 찍는다 — 화면 안의 글자가 이미
- * 그 언어다. 자막이 더할 정보가 없는데 `.vtt` 배관을 남겨 두면 빈 트랙과 빈
- * 자리(`min-h-[2.5rem]`)만 남는다. 종전 구조는 «한 마스터 + 언어별 자막»이라
- * 그 배관이 옳았고, **전제가 바뀌었으므로 배관도 바뀐다.**
+ * **Why captions went**: each locale is filmed separately — the text inside the frame is already
+ * in that language. Captions add no information, and leaving the `.vtt` plumbing behind leaves an
+ * empty track and an empty slot (`min-h-[2.5rem]`). The previous structure was «one master plus
+ * per-language captions», where that plumbing was right; **the premise changed, so the plumbing changes.**
  *
- * ## reduced-motion 은 빈 자리가 아니다
+ * ## reduced-motion is not an empty slot
  *
- * 영상을 죽이고 **포스터를 남긴다** — 재생 버튼으로 사람이 시작한다. 자동재생만
- * 끄고 내용을 빼앗지 않는 것이 감속의 뜻이다.
+ * The video is disabled and **the poster stays** — a person starts it with the play button.
+ * Reduced motion means switching off autoplay, not taking away the content.
  *
- * ## [개정 2026-08-19] 무대는 48rem 에서 멈추고 가운데 선다
+ * ## [Revised 2026-08-19] The stage stops at 48rem and centres
  *
- * 소유자: *"'설치 없이, 움직이는 것부터 봅니다' 이 부분 동영상도 지금 너무 커"*.
+ * Owner: *"'설치 없이, 움직이는 것부터 봅니다' 이 부분 동영상도 지금 너무 커"* (the video in the
+ * "see it move before installing" part is too big right now).
  *
- * 2026-07-30 판은 절의 열을 그대로 써서 상한도 가운데 정렬도 없었고, 그 근거는
- * 「제목과 영상이 같은 x 에서 시작해 같은 x 에서 끝난다」였다. 그 정렬은 실제로
- * 지켜졌지만 **크기**의 대가를 안 셌다: 컬럼이 당시 상한(`--page-max` 1600,
- * 지금은 `--gateway-page-max` 1920)까지 자라므로
- * 클립(1512×918, 1.65:1)이 컬럼 전폭을 먹으면 높이가 이렇게 된다 —
- * 1512 뷰포트에서 컬럼 1112 → **675px**, 1920 에서 1520 → **923px**,
- * 2560 에서 1600 → **971px**. 첫인상 자리를 통째로 먹는 치수다. 시연은 무엇을
- * 만드는 물건인지 보여 주는 **한 장면**이지 그 자체가 화면이 아니다.
+ * The 2026-07-30 version used the section's column with no cap and no centring, on the grounds
+ * that "the title and the video start at the same x and end at the same x". That alignment did
+ * hold, but it never counted the cost in **size**: the column grows to the cap (`--page-max` 1600
+ * then, `--gateway-page-max` 1920 now), so a 1512×918 clip (1.65:1) filling the column gives
+ * these heights — at a 1512 viewport, column 1112 → **675px**; at 1920, 1520 → **923px**; at 2560,
+ * 1600 → **971px**. That is a dimension that eats the entire first-impression slot. The demo is
+ * **one scene** showing what is being built, not the screen itself.
  *
- * 실측(2026-08-19, dev · `/ko/download/`): 무대 768 · 영상 **766×465**, 세 폭
- * 전부 같다.
+ * Measured 2026-08-19 (dev, `/ko/download/`): stage 768, video **766×465**, identical at all three widths.
  *
- * 상한 값은 새로 만들지 않았다 — 바로 아래 에이전트 절의 장면(`AcpChatScene`)이
- * 이미 쓰는 `48rem` 이다. 두 장면이 같은 폭이면 페이지가 「이만큼이 무대다」를
- * 한 번만 말한다. 가운데 정렬은 소유자 지시이고, 2026-07-30 이 기각했던
- * `mx-auto` 를 그 지시로 되살린 것이다(`docs/DECISIONS.md` 2026-08-19).
+ * The cap value was not newly invented — it is the `48rem` the agent section's scene
+ * (`AcpChatScene`) directly below already uses. Two scenes at one width means the page says "this
+ * much is the stage" only once. The centring is an owner instruction, reviving the `mx-auto` that
+ * 2026-07-30 had rejected (`docs/DECISIONS.md` 2026-08-19).
  *
- * ⚠️ 상한은 **절이 소유한다** — 영상에만 걸고 캡션을 컬럼에 두면 두 오른끝이
- * 갈려서 2026-07-30 이 막으려던 「한 절 두 그리드」가 그대로 돌아온다.
+ * ⚠️ The cap is **owned by the section** — applying it to the video while leaving the caption in
+ * the column splits their right edges and brings back the "one section, two grids" that 2026-07-30
+ * existed to stop.
  *
- * ## [개정 2026-08-19 저녁] 상한이 넓은 폭에서 비례로 자란다
+ * ## [Revised evening 2026-08-19] The cap grows proportionally at wide widths
  *
- * 소유자가 2560 스크린샷에서 화면이 비어 보인다고 지적했다. 위 48rem 결정이
- * 지킨 것은 「무대가 첫인상을 먹지 않는 비례」였는데 절대 px 로 굳혀서 넓은
- * 폭에서 반대 방향으로 틀렸다 — 2560 실측에서 무대가 뷰포트의 30%(768/2560).
- * 그래서 상한의 진실원을 `--gateway-stage-max`(`clamp(48rem, 40vw, 80rem)`)로
- * 올렸다. **1920 이하에서는 종전과 같은 768px 다**(40vw 가 48rem 에 닿는 폭이
- * 정확히 1920 이라 바닥이 이긴다) — 세 값의 근거와 게이트는 토큰 독블록
- * (`app/globals.css`)에 있다. 에이전트 절 장면도 같은 토큰을 먹으므로
- * 「이만큼이 무대다」는 여전히 한 번만 말해진다.
+ * The owner noted the screen looked empty in a 2560 screenshot. The 48rem decision above protected
+ * "a proportion where the stage does not eat the first impression", but freezing it in absolute px
+ * made it wrong in the other direction at wide widths — measured at 2560 the stage was 30% of the
+ * viewport (768/2560). So the cap's source of truth moved up to `--gateway-stage-max`
+ * (`clamp(48rem, 40vw, 80rem)`). **At 1920 and below it is the same 768px as before** (40vw meets
+ * 48rem at exactly 1920, so the floor wins) — the rationale for all three values and the gate are
+ * in the token doc-block (`app/globals.css`). The agent section's scene consumes the same token,
+ * so "this much is the stage" is still said only once.
  */
 export function DemoStage({ available }: { available?: readonly DemoClip['id'][] }) {
   const t = useTranslations('download');
   const clip = availableDemoClips(available)[0];
 
-  // 자산이 없으면 절 자체가 없다 — 재생할 것 없는 플레이어는 죽은 UI 다.
+  // With no asset there is no section — a player with nothing to play is dead UI.
   if (!clip) return null;
 
   return (
-    /* 제목은 리메이크(2026-08-18)에서 절 머리(`SectionIntro`)로 올라갔다 —
-       한 절에 헤딩이 둘이면 위계가 아니라 목록이다. 이름은 aria 로 남긴다. */
+    /* The title moved up into the section head (`SectionIntro`) in the 2026-08-18 remake — two
+       headings in one section is a list, not a hierarchy. The name stays as aria. */
     <section
       data-testid="demo-stage"
       aria-label={t('demoHeading')}
@@ -80,19 +80,18 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
     >
       <DemoPlayer clip={clip} />
       {/*
-       * **지금 붙은 클립이 무엇인지 화면이 정직하게 말한다** (2026-08-18).
+       * **The screen states honestly what clip is currently attached** (2026-08-18).
        *
-       * ⚠️ **이 문장은 실제로 한 번 거짓이 됐다** (2026-08-20). 「폴더
-       * 고르기부터」라고 적혀 있었는데, 프라이버시 때문에 볼트를 미리 지정해
-       * 두고 찍기로 바꾸면서 그 장면이 영상에서 사라졌다. 자산만 갈아 끼우고
-       * 이 줄을 안 고쳐서, 첫인상 자리가 없는 장면을 있다고 말하고 있었다.
-       * **자산을 교체할 때는 `seconds` 만이 아니라 이 문장도 같이 읽는다** —
-       * 길이는 게이트가 잡지만(`demo-clip-assets.contract`) 무엇이 찍혔는지는
-       * 사람만 안다.
+       * ⚠️ **This sentence really did become false once** (2026-08-20). It said "starting from
+       * choosing a folder", but when the shoot changed to pre-selecting the vault for privacy, that
+       * scene disappeared from the video. Only the asset was swapped and this line was left, so the
+       * first-impression slot was claiming a scene that does not exist.
+       * **When replacing an asset, read this sentence as well as `seconds`** — the length is caught
+       * by a gate (`demo-clip-assets.contract`), but only a person knows what was filmed.
        *
-       * 두 로케일 자산은 아직 바이트 동일한 한국어 UI 녹화이고, 언어별
-       * 촬영본(`docs/DEMO-SCENARIO.md`)이 나오면 파일 교체 + `seconds` 갱신 +
-       * 이 문장의 마지막 절 삭제로 끝난다 — 마크업은 손대지 않는다.
+       * The two locale assets are still byte-identical recordings of the Korean UI; when
+       * per-language footage arrives (`docs/DEMO-SCENARIO.md`) it is a file swap plus a `seconds`
+       * update plus deleting this sentence's last clause — the markup is untouched.
        */}
       <p
         data-testid="demo-provisional-note"
@@ -112,8 +111,8 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
   const reduced = usePrefersReducedMotion();
 
   const play = useCallback(() => {
-    // `play()` 가 Promise 를 안 돌려줄 수 있다 — jsdom 이 그렇고(처리되지 않은
-    // 예외로 새어 CI 를 빨갛게 만들었다), 구형 브라우저도 그랬다.
+    // `play()` may not return a Promise — jsdom does not (it leaked as an unhandled rejection and
+    // turned CI red), and neither did older browsers.
     void videoRef.current
       ?.play()
       ?.then(() => setStarted(true))
@@ -121,12 +120,12 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
   }, []);
 
   /**
-   * **뷰포트에 들어오면 스스로 재생, 나가면 정지** (리메이크 2026-08-18,
-   * 소유자: 시연은 버튼 뒤에 숨기지 않는다). 종전 `autoPlay` 속성은 절이
-   * 스크롤 아래로 내려간 지금 「아무도 안 보는 동안 재생을 소진」하는 형태라
-   * IO 로 바꿨다. 감속 사용자는 종전대로 포스터 + 재생 버튼으로 직접 시작한다.
-   * IO 가 없는 환경(jsdom)에서는 자동재생하지 않는다 — 시험이 재는 것은 재생
-   * 계약(무음·무루프·미리받지 않음)이지 자동재생이 아니다.
+   * **Plays itself on entering the viewport and pauses on leaving** (remake 2026-08-18, owner: the
+   * demo is not hidden behind a button). The old `autoPlay` attribute, now that the section is
+   * below the fold, would spend the playback "while nobody is watching", so it became an
+   * IntersectionObserver. Reduced-motion users still start it themselves from the poster and play
+   * button. Where IO is unavailable (jsdom) it does not autoplay — the tests measure the playback
+   * contract (muted, no loop, no preload), not autoplay.
    */
   useEffect(() => {
     const video = videoRef.current;
@@ -148,31 +147,30 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
   return (
     <div
       data-testid={`demo-panel-${clip.id}`}
-      /* 폭·정렬은 절(`DemoStage`)이 소유한다 — 여기서 다시 상한을 두면
-         영상과 캡션의 오른끝이 갈린다. */
+      /* Width and alignment are owned by the section (`DemoStage`) — capping again here splits the
+         right edges of the video and the caption. */
       className="mt-4 min-w-0"
     >
       <div className="relative min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">
         {/*
-         * `preload="none"` — 관문의 첫 바이트는 지도와 받기 버튼의 것이다.
-         * `muted` + `playsInline` 은 무음 자동재생의 조건이고, 소리는 **BGM 포함
-         * 0** 이다. 재생이 시작된 뒤에만 `controls` 를 켠다: 클립이 45초라 되감아
-         * 다시 보고 싶은 구간이 생기지만, 시작 전 포스터 위에 컨트롤 바가 얹히면
-         * 그게 첫인상의 잉크를 가져간다.
+         * `preload="none"` — the gateway's first bytes belong to the map and the download button.
+         * `muted` + `playsInline` are the conditions for silent autoplay, and the sound is **zero,
+         * including any BGM**. `controls` is enabled only after playback starts: the clip runs long
+         * enough that people want to scrub back, but a control bar over the poster before it starts
+         * takes ink from the first impression.
          */}
         {/*
-         * `key={locale}` 이 없으면 **한국어 페이지가 영어 영상을 튼다.**
-         * 이 컴포넌트의 로케일은 `document.documentElement.lang` 에서 오는데
-         * 서버 스냅숏이 `'en'` 이라, 첫 그림은 항상 영어 자산으로 나가고
-         * 수화(hydration) 때 `ko` 로 바뀐다. 그때 React 는 `poster` 속성과
-         * `<source>` 자식을 새 값으로 갈아 주지만 — **`<video>` 는 자식이
-         * 바뀌었다고 소스를 다시 고르지 않는다**(재선택은 `load()` 나 재마운트
-         * 때만 일어난다). 결과는 포스터만 한국어이고 재생되는 것은 영어인
-         * 어긋난 상태다. 지금은 두 로케일이 같은 녹화를 가리켜 눈에 안 보이지만,
-         * 영어 촬영본이 붙는 순간 그대로 드러난다(2026-08-20, 재생 계측으로 발견:
-         * `/ko/` 에서 `currentSrc` 가 `.en.webm`, `poster` 가 `.ko-poster.png`).
-         * key 를 로케일에 걸어 두면 로케일이 정해질 때 요소가 새로 마운트되어
-         * 소스 선택이 처음부터 다시 일어난다.
+         * Without `key={locale}`, **a Korean page plays the English video.**
+         * This component's locale comes from `document.documentElement.lang`, and the server
+         * snapshot is `'en'`, so the first paint always ships the English asset and switches to
+         * `ko` on hydration. React then swaps the `poster` attribute and the `<source>` children to
+         * the new values — but **a `<video>` does not re-select its source because its children
+         * changed** (re-selection happens only on `load()` or a remount). The result is a mismatch
+         * where only the poster is Korean while what plays is English. Both locales point at the
+         * same recording today so it is invisible, but it surfaces the moment English footage is
+         * attached (found 2026-08-20 by instrumenting playback: on `/ko/`, `currentSrc` was
+         * `.en.webm` while `poster` was `.ko-poster.png`). Keying on the locale remounts the
+         * element when the locale is decided, so source selection starts over.
          */}
         <video
           key={locale}
@@ -192,11 +190,11 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
           ))}
         </video>
 
-        {/* 감속 사용자와 자동재생이 막힌 브라우저는 사람이 시작한다.
-            언마운트가 아니라 `hidden` — 재생이 시작되는 순간 DOM 에서 컨트롤이
-            사라지면, 페이지의 컨트롤을 스냅숏으로 잡고 걷는 감사(hover-contrast
-            등)가 인덱스를 잃고 30초 프로토콜 대기에 걸린다(2026-08-18 실측).
-            `hidden` 은 rect 0 이라 모든 감사가 정상적으로 건너뛴다. */}
+        {/* Reduced-motion users and browsers that block autoplay start it themselves.
+            `hidden` rather than unmounting — if the control vanished from the DOM the moment
+            playback starts, an audit that snapshots the page's controls and walks them (hover
+            contrast and the like) loses its index and hangs on a 30-second protocol wait (measured
+            2026-08-18). `hidden` gives rect 0, so every audit skips it normally. */}
         <button
           type="button"
           hidden={started}
@@ -214,21 +212,20 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
 }
 
 /**
- * 로케일은 `<html lang>` 에서 읽는다 — 이 컴포넌트가 라우터에 매이지 않게.
+ * The locale is read from `<html lang>` so this component is not tied to the router.
  *
- * `useSyncExternalStore` 인 이유는 lint 회피가 아니라 **서버 스냅샷이 명시된다**는
- * 것이다: 정적 export 의 첫 HTML 은 항상 `en` 으로 굳고, 하이드레이트에서 실제
- * `lang` 으로 한 번 정정된다.
+ * `useSyncExternalStore` is used not to dodge lint but because **the server snapshot is explicit**:
+ * static export's first HTML always freezes as `en` and is corrected once to the real `lang` on hydration.
  */
 function useDocumentLocale(): string {
   return useSyncExternalStore(
-    () => () => undefined, // `lang` 은 리마운트 없이 바뀌지 않는다 — 구독할 것이 없다.
+    () => () => undefined, // `lang` does not change without a remount — nothing to subscribe to
     () => document.documentElement.lang || 'en',
     () => 'en',
   );
 }
 
-/** 같은 이유로 외부 스토어 — 서버에서는 "줄이지 않음"(false)이 유일하게 옳은 값이다. */
+/** An external store for the same reason — on the server, "not reduced" (false) is the only correct value. */
 function usePrefersReducedMotion(): boolean {
   return useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => false);
 }

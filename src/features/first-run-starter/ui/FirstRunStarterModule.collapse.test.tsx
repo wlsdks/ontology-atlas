@@ -6,15 +6,17 @@ import koMessages from "../../../../messages/ko.json";
 import { FirstRunStarterModule } from "./FirstRunStarterModule";
 
 /**
- * 첫 실행 카드는 **지도를 쓰기 시작하면 접힌다** (2026-08-19 소유자:
- * *"좌측에 이게 계속 떠있어서 보기 안좋으니 개선이 필요함"*).
+ * The first-run card **collapses once the map is being used** (owner, 2026-08-19:
+ * *"좌측에 이게 계속 떠있어서 보기 안좋으니 개선이 필요함"* — it looks bad with
+ * this stuck on the left the whole time; it needs improving).
  *
- * 이 검사가 지키는 것은 「접힌다」가 아니라 **「접히고 되돌아올 수 있다」** 다.
- * 접기만 하고 돌아올 길이 없으면 그건 개선이 아니라 기능 삭제다. 그래서 두
- * 방향을 다 잰다 — 안 고른 상태에서 펼쳐져 있는 것까지.
+ * What this check protects is not "it collapses" but **"it collapses and can be
+ * brought back"**. Collapsing with no way back is not an improvement, it is deleting
+ * a feature. So both directions are measured — including that it stays expanded while
+ * nothing has been selected.
  *
- * 프로바이더 대신 목을 쓰는 이유와 방식은 형제 파일
- * (`FirstRunStarterModule.glossary.test.tsx`)의 관용구를 그대로 따른다.
+ * Why mocks rather than providers, and how, follows the idiom of its sibling file
+ * (`FirstRunStarterModule.glossary.test.tsx`).
  */
 const mocks = vi.hoisted(() => ({
   vault: {

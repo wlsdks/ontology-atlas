@@ -10,7 +10,7 @@ import {
   updaterArchiveName,
 } from "./stage-macos-release-assets.mjs";
 
-/** Tauri 가 실제로 내는 이름 그대로 만든다 — 공백과 아치 없음까지 포함해서. */
+/** Reproduces exactly the names Tauri emits — including the space and the missing architecture. */
 function fakeBundle(version, arch) {
   const root = mkdtempSync(join(tmpdir(), "oa-stage-"));
   const dmgDir = join(root, "bundle", "dmg");
@@ -20,7 +20,7 @@ function fakeBundle(version, arch) {
   const dmg = `ontology-atlas_${version}_${arch}.dmg`;
   writeFileSync(join(dmgDir, dmg), "dmg");
   writeFileSync(join(dmgDir, `${dmg}.sha256`), `abc  ${dmg}\n`);
-  // `.app` 은 폴더다. 파일만 골라야 아카이브로 오인하지 않는다.
+  // `.app` is a directory. Only files must be selected, or it is mistaken for the archive.
   mkdirSync(join(macosDir, "Ontology Atlas.app"), { recursive: true });
   writeFileSync(join(macosDir, "Ontology Atlas.app.tar.gz"), "archive");
   writeFileSync(join(macosDir, "Ontology Atlas.app.tar.gz.sig"), "sig\n");
@@ -33,8 +33,8 @@ test("stages exactly the four release assets, flat", () => {
     const staged = stageReleaseAssets({ bundleDir, outDir, expectArch: "aarch64" });
     assert.deepEqual(readdirSync(outDir).sort(), staged.files.slice().sort());
     assert.equal(staged.files.length, 4);
-    // 평평해야 아티팩트 루트가 예측 가능하다. 하위 폴더가 하나라도 생기면
-    // 내려받는 쪽이 다시 깊이를 추측하게 된다.
+    // Flat is what makes the artifact root predictable. One subfolder and the
+    // downloading side is guessing at depth again.
     for (const file of staged.files) {
       assert.ok(!file.includes("/"), `${file} 은 하위 폴더에 있다`);
     }
@@ -45,9 +45,10 @@ test("stages exactly the four release assets, flat", () => {
 });
 
 test("renames the updater archive so both architectures survive one release", () => {
-  // Tauri 는 두 아치 모두 `Ontology Atlas.app.tar.gz` 로 낸다. 그대로 올리면
-  // 하나가 다른 하나를 덮고, 이름의 공백은 GitHub 이 점으로 바꿔 latest.json 의
-  // URL 과도 어긋난다 — 둘 다 오류 없이 "갱신 없음" 으로 보인다.
+  // Tauri emits `Ontology Atlas.app.tar.gz` for both architectures. Uploaded as
+  // is, one overwrites the other, and GitHub turns the space into a dot so the URL
+  // in latest.json no longer matches — both failures surface as "no update
+  // available" with no error.
   const a = fakeBundle("1.0.0-rc.2", "aarch64");
   const b = fakeBundle("1.0.0-rc.2", "x64");
   try {
@@ -72,8 +73,9 @@ test("renames the updater archive so both architectures survive one release", ()
 });
 
 test("version and arch come from the DMG name, never recomputed", () => {
-  // 사용자가 실제로 내려받는 자산이 그 규칙을 이미 진실원으로 쓴다. 따로
-  // 계산하면 latest.json 과 DMG 가 어긋날 자리가 생긴다.
+  // The asset users actually download already treats that rule as the source of
+  // truth. Recomputing separately creates a place for latest.json and the DMG to
+  // diverge.
   const { root, bundleDir, outDir } = fakeBundle("2.3.4", "x64");
   try {
     const staged = stageReleaseAssets({ bundleDir, outDir });
@@ -140,7 +142,7 @@ test("stale files from a previous run never ride along", () => {
 });
 
 test("the artifact folder name carries the architecture", () => {
-  // 다운로드 시 아치를 나르는 것은 폴더뿐이다.
+  // On download the folder is the only thing carrying the architecture.
   assert.equal(artifactNameForArch("aarch64"), "ontology-atlas-macos-aarch64");
   assert.equal(artifactNameForArch("x64"), "ontology-atlas-macos-x64");
   assert.deepEqual(parseDmgName("ontology-atlas_1.0.0-rc.2_x64.dmg"), {

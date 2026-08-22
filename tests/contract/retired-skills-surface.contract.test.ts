@@ -11,10 +11,11 @@ import { resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 const ROOT = process.cwd();
 
 /**
- * `/skills` 는 2026-08-21 소유자 결정으로 완전히 은퇴했다.
+ * `/skills` was retired entirely by owner decision on 2026-08-21.
  *
- * 실제 Agent Skills, 문서함의 사본 일치 검사, CLI `agent-files` 는 별개다. 이
- * 계약은 그 기능들을 지키면서 독립 Skills 제품 표면만 되살아나지 못하게 한다.
+ * Real Agent Skills, the docs library's copy-parity check, and the CLI `agent-files`
+ * are separate. This contract preserves those capabilities while preventing the
+ * standalone Skills product surface from coming back.
  */
 describe("retired Skills product surface", () => {
   it("keeps the primary destination set exact and Skills-free", () => {

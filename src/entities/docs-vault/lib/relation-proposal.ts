@@ -247,8 +247,8 @@ function findUndirectedPath(
   }
 
   const queue = [sourceSlug];
-  // head pointer 로 dequeue O(1) — `Array.shift()` 는 O(n) 이라 큰 vault 에서
-  // 최단경로 BFS 가 O(n²) (depth.ts / reachability.ts 와 동일 패턴).
+  // Head pointer for O(1) dequeue — `Array.shift()` is O(n), which would make the
+  // shortest-path BFS O(n²) on a large vault (same pattern as depth.ts / reachability.ts).
   let head = 0;
   const previous = new Map<string, string | null>([[sourceSlug, null]]);
   while (head < queue.length) {

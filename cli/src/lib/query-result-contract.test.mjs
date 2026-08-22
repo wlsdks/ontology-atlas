@@ -326,7 +326,7 @@ describe('query-result-contract', () => {
         ...valid,
         followUp: {
           ...valid.followUp,
-          // 2026-08-17: 계약이 뒤집혔다 — 이제 **맨몸 이름**이 거절된다(실행 불가).
+          // 2026-08-17: the contract inverted — the **bare name** is now rejected (it cannot run).
           cliFallbackCommands: ['ontology-atlas node capabilities/login'],
         },
       }),
@@ -1225,9 +1225,9 @@ describe('query-result-contract', () => {
       /agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands/,
     );
     /*
-     * 2026-08-17: 계약이 뒤집혔다. 종전에는 **실행 가능한** 형태를 거절하고
-     * 맨몸 `ontology-atlas` 를 요구했다 — 그 이름의 전역 명령은 없으므로
-     * 그 검사는 거짓말을 막는 게 아니라 강제하고 있었다.
+     * 2026-08-17: the contract inverted. It used to reject the **runnable** form
+     * and require a bare `ontology-atlas` — and since no global command by that
+     * name exists, the check was enforcing a lie rather than preventing one.
      */
     assert.throws(
       () => assertAgentBriefShape({ ...valid, cliFallbackCommands: ['ontology-atlas health'] }),
@@ -2075,13 +2075,13 @@ describe('query-result-contract', () => {
     assert.equal(assertBacklinksShape({ target: 'capabilities/foo', matches: [] }).total, undefined);
 
     /**
-     * **본문 링크로만 걸린 행** — 서버가 실제로 내는 두 번째 모양이다
-     * (`mcp/src/vault.mjs`: `matchedKeys` 는 `undefined`, `matchedInBody: true`).
+     * **A row matched by a body link alone** — the second shape the server really
+     * emits (`mcp/src/vault.mjs`: `matchedKeys` is `undefined`, `matchedInBody: true`).
      *
-     * 이 픽스처가 없어서 회귀가 통과했다. dogfood 볼트는 참조가 전부
-     * frontmatter 라 이 모양이 한 번도 안 나왔고, `init` 직후의 스타터 볼트
-     * (본문이 `domains/auth.md` 를 안내한다)에서만 나왔다 — 즉 **우리가 안
-     * 쓰는 경로에서만** 터졌다.
+     * The regression passed because this fixture did not exist. Every reference in
+     * the dogfood vault is wired through frontmatter, so this shape never appeared;
+     * it appears only in the starter vault right after `init`, whose body points at
+     * `domains/auth.md`. It broke **only on the path we do not walk ourselves**.
      */
     const bodyOnly = {
       target: 'domains/auth',
@@ -2098,8 +2098,8 @@ describe('query-result-contract', () => {
     };
     assert.equal(assertBacklinksShape(bodyOnly), bodyOnly);
 
-    // 근거가 하나도 없는 행은 여전히 거부한다 — 왜 걸렸는지 못 말하는
-    // 백링크는 백링크가 아니다(정본: `mcp/scripts/verify.mjs`).
+    // A row with no evidence at all is still rejected — a backlink that cannot say
+    // why it matched is not a backlink (authority: `mcp/scripts/verify.mjs`).
     assert.throws(
       () =>
         assertBacklinksShape({

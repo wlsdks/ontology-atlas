@@ -23,7 +23,7 @@ describe('resolveDocLink', () => {
         ...serverCfg,
       }),
     ).toEqual({ kind: 'internal', slug: 'ontology/README', anchor: undefined });
-    // 앵커 보존
+    // Anchor preserved
     expect(
       resolveDocLink({
         href: '../guides/setup.md#install',
@@ -35,7 +35,7 @@ describe('resolveDocLink', () => {
   });
 
   it('vault root 를 벗어나는 상대 링크 → external GitHub blob (회귀: mcp/README 404)', () => {
-    // docs/README.md 의 `../mcp/README.md` → repo 루트 mcp/README.md
+    // `../mcp/README.md` in docs/README.md → mcp/README.md at the repo root
     expect(
       resolveDocLink({
         href: '../mcp/README.md',
@@ -47,7 +47,7 @@ describe('resolveDocLink', () => {
       kind: 'external',
       url: 'https://github.com/wlsdks/ontology-atlas/blob/main/mcp/README.md',
     });
-    // 앵커도 external URL 에 유지
+    // Anchors are kept on an external URL too
     expect(
       resolveDocLink({
         href: '../mcp/README.md#tools',
@@ -62,7 +62,7 @@ describe('resolveDocLink', () => {
   });
 
   it('중첩 문서에서 vault 를 벗어나는 링크도 repo 루트로 정규화', () => {
-    // docs/ontology/project.md 의 `../../cli/README.md` → cli/README.md
+    // `../../cli/README.md` in docs/ontology/project.md → cli/README.md
     expect(
       resolveDocLink({
         href: '../../cli/README.md',
@@ -111,7 +111,7 @@ describe('resolveDocLink', () => {
         vaultSlugs: vault,
       }),
     ).toEqual({ kind: 'unresolved' });
-    // 내부지만 알 수 없는 slug 도 로컬에선 unresolved
+    // Internal but unknown slugs are also unresolved locally
     expect(
       resolveDocLink({
         href: './missing-doc.md',

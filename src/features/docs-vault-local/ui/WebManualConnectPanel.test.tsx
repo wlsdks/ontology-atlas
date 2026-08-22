@@ -1,12 +1,12 @@
 /**
- * 웹 세션의 「연결」이 **그 자리에서 끝나는지** 잠근다.
+ * Locks that "connect" in a web session **finishes in place**.
  *
- * 종전 결함 둘을 각각 겨눈다:
- * ① 카드가 「이 화면에서는 연결할 수 없어요」라고 능력을 실제보다 좁게 말했다.
- * ② 유일한 대안이 문서 링크라 연결하려던 사람이 시트를 잃었다.
+ * It targets the two previous defects:
+ * ① the card understated the capability, saying "you cannot connect from this screen"
+ * ② the only alternative was a documentation link, so someone trying to connect lost the sheet
  *
- * 그래서 여기서 지키는 것은 "입력칸이 있다" 가 아니라 **복사한 것이 그대로
- * 실행 가능한가** 다 — 자리표시자가 남은 설정은 복사되지 않아야 한다.
+ * So what is protected here is not "there is an input box" but **whether what was copied is directly
+ * runnable** — a config still holding a placeholder must not be copyable.
  */
 import { describe, expect, it } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -97,9 +97,15 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
   });
 
   it('확인했다고 말하지 않는다 — 모양만 본다고 화면이 먼저 말한다', () => {
+    /*
+     * Assert against the message itself, not a hand-typed excerpt of it. The old
+     * regex pinned two fragments of the sentence, so rewording the copy — even into
+     * plainer Korean that says exactly the same thing — turned this red while the
+     * screen was fine. `documentation.md`: never pin a sentence a human wrote.
+     */
     renderPanel();
-    expect(screen.getByTestId('web-manual-connect-shape-only').textContent).toMatch(
-      /경로의 모양만[\s\S]*같은 폴더인지 증명할 수 없어요/,
+    expect(screen.getByTestId('web-manual-connect-shape-only').textContent).toContain(
+      ko.agentConnect.manualShapeOnlyNote,
     );
   });
 });
@@ -120,11 +126,11 @@ describe('AgentClientButtons — 웹 강등이 막다른 길이 아니다', () =
     );
     const card = screen.getByTestId('agent-server-unavailable');
     expect(card.textContent).not.toMatch(/연결할 수 없어요/);
-    // 못 하는 것은 「자동 저장」 하나라고 정확히 말한다.
+    // It names precisely one thing as impossible: saving the file automatically.
     expect(card.textContent).toMatch(/설정 파일을 대신 저장하지 못합니다/);
-    // 앱은 더 쉬운 길로 남는다 — 웹이 막혔다고 말하지 않을 뿐이다.
+    // The app remains the easier path — it simply no longer says the web is blocked.
     expect(screen.getByTestId('agent-connect-web-get-app')).toBeInTheDocument();
-    // 주 경로는 이 자리다.
+    // The primary path is this slot.
     expect(screen.getByTestId('web-manual-connect')).toBeInTheDocument();
   });
 });

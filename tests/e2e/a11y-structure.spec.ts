@@ -1,26 +1,24 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * 주요 라우트의 heading 계층과 landmark 를 잰다.
- *   - 페이지당 `h1` 이 정확히 1개
- *   - `main` 랜드마크가 있다
- *   - "메인 콘텐츠로 건너뛰기" skip link 가 있다
+ * Measures heading hierarchy and landmarks on the main routes:
+ *   - exactly one `h1` per page
+ *   - a `main` landmark is present
+ *   - a "skip to main content" link is present
  *
- * ## 2026-07-29 — 재는 것에서 **막는 것**으로
+ * **2026-07-29 — from measuring to blocking.** For a long time this spec only printed
+ * its results with `console.log` and contained **no assertions at all**, so it passed
+ * green whatever it found — a report shaped like a gate. It is what this repository
+ * keeps writing down ("a spec with no rule is not kept") happening to a test itself.
  *
- * 이 스펙은 오랫동안 결과를 `console.log` 로 뿌리기만 하고 **단언이 하나도
- * 없었다.** 즉 무엇을 발견하든 초록으로 통과했다 — 게이트처럼 생긴 보고서다.
- * 이 저장소가 반복해 적어 온 "룰 없는 규격은 지켜지지 않는다" 가 테스트
- * 자신에게 일어난 형태다.
+ * An exhaustive measurement before switching it on: **findings=0** across 6 routes at
+ * 1440px. So enabling the assertions exposes no existing debt and blocks only future
+ * inflow.
  *
- * 켜기 전에 전수 측정했다: 6개 라우트 × 1440px 에서 **findings=0**. 그래서
- * 단언을 켜도 기존 부채가 드러나지 않고, 앞으로 유입만 막는다.
- *
- * ## 왜 폭을 둘 도나
- *
- * 같은 라우트가 폭에 따라 **다른 컴포넌트를 그린다.** 넓은 폭만 재면 좁은 폭의
- * 강등·재배치 분기를 한 번도 보지 못한다. 제목이 사라지면 그 이유와 다음 길을
- * 제목으로 훑는 사용자는 읽을 수 없다.
+ * **Why two widths.** The same route **draws different components** by width.
+ * Measuring only the wide width never sees the narrow width's demotion and
+ * rearrangement branches. If a heading disappears, users who scan by heading cannot
+ * read the reason or the next step.
  */
 
 const ROUTES = [
@@ -30,12 +28,13 @@ const ROUTES = [
   "/en/topology/",
   "/en/ontology/",
   "/en/projects/",
-  // 폭에 따라 본문 컴포넌트가 갈리는 라우트 — 좁은 쪽 분기가 이 스펙의
-  // 사각지대였다. Studio 호환 주소는 자기 화면이 없어 감사하지 않는다.
+  // Routes whose body component splits by width — the narrow branch was this spec's
+  // blind spot. Studio compatibility addresses have no screen of their own and are not
+  // audited.
   "/en/ontology/insights/",
 ] as const;
 
-/** 넓은 쪽(워크벤치)과 좁은 쪽 재배치 분기. */
+/** The wide (workbench) branch and the narrow rearrangement branch. */
 const WIDTHS = [
   { label: "1440", width: 1440, height: 900 },
   { label: "900", width: 900, height: 900 },

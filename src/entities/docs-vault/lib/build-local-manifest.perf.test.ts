@@ -5,20 +5,20 @@ import {
 } from './build-local-manifest';
 
 /**
- * 성능 회귀 차단 — large vault sanity.
+ * Performance regression guard on a large vault.
  *
- * jsdom 환경이라 절대값은 실 브라우저보다 느리지만 *상대 비율* 은 의미
- * 있다. fingerprint 가 build 보다 *유의미하게 빨라야* 한다는 게 핵심
- * (content read + parse 가 빠진 만큼). 임계 ratio 는 환경 noise 고려해
- * 0.85 로 lenient — fingerprint 가 build 의 85% 미만이면 OK.
+ * jsdom is slower than a real browser, so absolute numbers mean little but the
+ * *ratio* does: fingerprinting must be meaningfully faster than a build, since it
+ * skips content reads and parsing. The threshold is a lenient 0.85 to absorb
+ * environment noise — fingerprint under 85% of build passes.
  *
- * 절대 시간은 정보 출력만 (console.log) — 테스트 실패 조건 아님.
+ * Absolute times are logged for information only and are not a failure condition.
  */
 
 const FILE_COUNT = 200;
 
 function makeFileHandle(name: string, mtime: number): FileSystemFileHandle {
-  // 본문은 의도적으로 평균 길이 — frontmatter 1 + heading 1 + 본문 5 줄.
+  // Deliberately average-length bodies — 1 frontmatter, 1 heading, 5 body lines.
   const body = [
     '---',
     `title: ${name}`,
@@ -79,8 +79,7 @@ describe('large vault perf', () => {
       `[perf] ${FILE_COUNT} files — build: ${buildMs.toFixed(1)}ms, fingerprint: ${fingerprintMs.toFixed(1)}ms, ratio: ${(fingerprintMs / buildMs).toFixed(2)}`,
     );
 
-    // ratio gate — fingerprint 가 build 의 85% 미만이어야. jsdom noise
-    // 흡수용 lenient 임계.
+    // Ratio gate: fingerprint must stay under 85% of build. Lenient to absorb jsdom noise.
     expect(fingerprintMs).toBeLessThan(buildMs * 0.85);
   });
 

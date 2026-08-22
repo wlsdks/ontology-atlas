@@ -66,9 +66,9 @@ describe("useOpenDocTabs", () => {
   });
 
   it("keeps the stored tabs when a document opens before hydration settles", () => {
-    // 회귀 가드: 마운트 시 문서 선택 effect(openTab)가 하이드레이션
-    // 마이크로태스크보다 먼저 돈다. 빈 state 를 기준으로 저장하면 이전
-    // 세션 탭이 통째로 지워졌다 (소유자 계약 "앱을 다시 켜도 그대로" 위반).
+    // Regression guard: at mount the document-selection effect (openTab) runs before the hydration
+    // microtask. Saving against empty state wiped the previous session's tabs entirely, breaking the
+    // owner's contract "still there after restarting the app".
     seed(["a", "b", "c"]);
     const deferred: Array<() => void> = [];
     vi.spyOn(globalThis, "queueMicrotask").mockImplementation((fn) => {
@@ -81,7 +81,7 @@ describe("useOpenDocTabs", () => {
         validSlugs: new Set(["a", "b", "c", "d"]),
       }),
     );
-    // 아직 하이드레이션 전 — state 는 비어 있다.
+    // Not hydrated yet — state is empty.
     expect(result.current.tabs).toEqual([]);
 
     act(() => {
@@ -122,8 +122,8 @@ describe("useOpenDocTabs", () => {
     expect(result.current.tabs.map((tab) => tab.slug)).toEqual(["a", "b"]);
 
     rerender({ sourceKey: "local:my-vault" });
-    // 하이드레이션 전에 새 vault 문서가 열리는 구간 — 이전 vault 탭이
-    // 새 vault 저장소로 새면 안 된다.
+    // The window where a document from a new vault is opened before hydration — the previous
+    // vault's tabs must not leak into the new vault's storage.
     act(() => {
       result.current.openTab("y", "Y");
     });

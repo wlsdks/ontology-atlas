@@ -49,7 +49,7 @@ describe("GitStatusTile — 웹(브리지 없음)", () => {
     expect(onActivate).toHaveBeenCalledTimes(1);
   });
 
-  // 소유자 실보고 2026-07-23 — 유틸 티어 아이콘 사다리(활동 타일과 동일 토큰).
+  // Owner report 2026-07-23 — the utility tier's icon size order (the same token as the activity tile).
   it("keeps the History icon on the utility ladder (--app-nav-rail-utility-icon-size)", () => {
     renderTile(<GitStatusTile onActivate={() => {}} />);
     const icon = screen.getByTestId("app-nav-rail-git-tile").querySelector("svg");
@@ -98,7 +98,7 @@ describe("GitStatusTile — 데스크톱(Tauri)", () => {
       window.dispatchEvent(new Event("focus"));
     });
     await waitFor(() => expect(tauriApiMock.invoke).toHaveBeenCalledTimes(2));
-    // focus 이벤트 없이 시간이 지나도 추가 조회는 없다 (폴링 0).
+    // No extra query as time passes without a focus event (zero polling).
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 50));
     expect(tauriApiMock.invoke).toHaveBeenCalledTimes(2);
   });
@@ -116,7 +116,7 @@ describe("GitStatusTile — 데스크톱(Tauri)", () => {
 
     renderTile(<GitStatusTile onActivate={() => {}} vaultPath="/repo/vault" sessionDirty />);
     await waitFor(() => expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1));
-    // git_status 결과(깨끗함)가 sessionDirty 폴백보다 우선한다.
+    // A git_status result (clean) wins over the sessionDirty fallback.
     expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument();
   });
 });

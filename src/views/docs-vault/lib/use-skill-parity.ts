@@ -7,14 +7,15 @@ import { readDesktopSkillTrees } from './read-desktop-skill-trees';
 import { buildSkillParityModel, type SkillParityModel } from './skill-parity';
 
 /**
- * 스킬 사본 일치 판정 — **데스크톱 앱에서 볼트 루트를 알 때만.**
+ * The skill-copy parity verdict — **only in the desktop app, when the vault root is known.**
  *
- * `null` 은 "이 자리에 아무것도 그리지 않는다" 이고, `rows` 가 빈 모델은
- * "스킬 트리가 없는 볼트" 다. 둘은 다른 사실이라 같은 값으로 뭉개지 않는다 —
- * 전자는 능력이 없는 것이고 후자는 볼 것이 없는 것이다.
+ * `null` means "draw nothing in this slot", while a model with empty `rows` means "a vault with no
+ * skill tree". These are different facts and are not collapsed into one value — the first is a
+ * missing capability, the second is nothing to see.
  *
- * 웹에는 이 훅이 켜지지 않는다. FSA 핸들에 절대 경로가 없어 `.claude/` 를 볼
- * 방법이 원리적으로 없고, 그래서 웹 동등물을 짓지 않는다(`surfaces.md`).
+ * This hook never switches on for the web. An FSA handle has no absolute path, so there is no way
+ * in principle to see `.claude/`, and no web equivalent is built
+ * (`.claude/rules/surfaces.md`).
  */
 export function useSkillParity(vaultRootPath: string | null): SkillParityModel | null {
   const [model, setModel] = useState<SkillParityModel | null>(null);
@@ -38,8 +39,8 @@ export function useSkillParity(vaultRootPath: string | null): SkillParityModel |
         });
         setModel(buildSkillParityModel(analysis));
       } catch {
-        // 읽기 실패는 **판정 아님**으로 강등한다. 못 읽은 것을 "일치" 라고
-        // 말하면 화면이 확인하지 않은 것을 확인했다고 주장하게 된다.
+        // A read failure is demoted to **no verdict**. Calling what could not be read "agreed"
+        // would have the screen claim it checked something it did not.
         if (!cancelled) setModel(null);
       }
     })();

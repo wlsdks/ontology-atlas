@@ -30,7 +30,7 @@ describe("VaultOpenGuideSheet", () => {
       />,
     );
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    // 안심 3줄 — 아무 폴더나 / 로컬 유지 / 빈 폴더 스캐폴드
+    // The three reassurance lines — any folder / stays local / empty-folder scaffold.
     expect(screen.getByText("bulletAnyFolder")).toBeInTheDocument();
     expect(screen.getByText("bulletLocal")).toBeInTheDocument();
     expect(screen.getByText("bulletStarter")).toBeInTheDocument();
@@ -110,13 +110,13 @@ describe("VaultOpenGuideSheet", () => {
     opener.remove();
   });
 
-  // 진입 검수 E-1 — 미지원 브라우저(Safari·Firefox)에서 두 CTA 는 눌러도
-  // 아무 일이 없었고, 시트만 닫혀 왜 안 되는지도 어디로 가야 하는지도 사라졌다.
+  // In an unsupported browser (Safari, Firefox) both CTAs did nothing when pressed, and the sheet
+  // simply closed, taking away both why it failed and where to go.
   it("unsupported 면 두 FSA CTA 를 걷고 macOS 앱 경로만 남긴다", () => {
     render(<VaultOpenGuideSheet open unsupported onClose={vi.fn()} />);
     expect(screen.getByTestId("vault-guide-pick-existing")).not.toBeVisible();
     expect(screen.getByTestId("vault-guide-create-new")).not.toBeVisible();
-    // 오지 않을 OS 선택창을 예고하는 부제 대신 왜 안 되는지가 그 자리에 온다.
+    // Instead of a subtitle announcing an OS picker that will never come, the reason takes that slot.
     expect(screen.queryByText("subtitle")).not.toBeInTheDocument();
     expect(screen.getByText("unsupportedNotice")).toBeInTheDocument();
     expect(screen.getByTestId("vault-guide-unsupported-cta")).toHaveAttribute(

@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
-// `useSearchParams` 는 locale-agnostic 이라 raw next/navigation 에서 가져온다
-// (`architecture.md` i18n 라우팅 가드).
+// `useSearchParams` is locale-agnostic, so it comes from raw next/navigation
+// (`.claude/rules/architecture.md`, the i18n routing guard).
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
@@ -76,12 +76,11 @@ interface Props {
 function ProjectDetailShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-full w-full">
-      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
-      {/* 하단 예약고는 base pb + lg:pb 오버라이드 — `max-lg:pb-[...]` 는
-          `md:py-14` 보다 스타일시트 앞에 emit 되어 768–1023 에서 조용히 패배,
-          콘텐츠 끝이 탭바 top(967)과 1px 차로 맞닿았다(768×1024 실측 968.1).
-          변형 순서에 기대지 않는 결정론적 구성으로 교체 (빌더 main 과 동일
-          처방, 겹침 소탕 2026-07-23). */}
+      {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
+      {/* The bottom reserve is a base `pb` plus an `lg:` override — `max-lg:pb-[...]` is emitted
+          before `md:py-14` in the stylesheet and silently lost between 768 and 1023, leaving the
+          content end 1px from the tab bar's top (measured 968.1 against a top of 967 at 768×1024).
+          Replaced with a deterministic composition that does not depend on variant order. */}
       <main id="main" tabIndex={-1} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10 md:pt-12 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))] xl:px-12">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -107,24 +106,23 @@ function ProjectDetailTopBar({
 }) {
   const t = useTranslations("projectPages.detail");
   /**
-   * 라벨이 「지도」(`topBarWorkspaceFallback`)이고 aria 가 「지도로 돌아가기」인
-   * 링크다. 그러니 목적지는 **지도의 주소**여야 한다.
+   * This link's label is "map" (`topBarWorkspaceFallback`) and its aria is "back to the map", so its
+   * destination must be **the map's address**.
    *
-   * 종전엔 `/` 였다. 그건 2026-07-30 에 `/` 가 관문(마케팅)으로 갈리기 전의
-   * 값이고, 그 뒤로 이 링크는 지도라고 적어 놓고 다운로드 페이지로 보내고
-   * 있었다 — 실측(2026-08-01 rc.5 검수): 눌러서 도착한 화면에
-   * `download-primary-cta` 가 있고 지도 캔버스는 0개.
+   * It used to be `/`. That was the value from before 2026-07-30, when `/` split off into the
+   * gateway (marketing); after that this link said map and sent people to the download page —
+   * measured in the rc.5 review (2026-08-01): the screen it landed on contained
+   * `download-primary-cta` and zero map canvases.
    *
-   * 하필 이 페이지가 제품의 유일한 공개 데모 주소(`/project/storefront/`)다.
+   * And this page happens to be the product's only public demo address (`/project/storefront/`).
    */
   const workspaceHref = '/topology/';
   const projectsListHref = '/projects/';
   const docsVaultHref = '/docs/';
   return (
-    /* 구분자 `▸` 에 크기 클래스가 없으면 루트 16px 을 상속해 옆 링크(12.5px)·
-       라벨(11px)보다 33~45% 크게 렌더된다 — 잉크가 데이터보다 무거워지는
-       역전이다. 브레드크럼 전체를 타입 램프 토큰으로 못박고, 구분자는 가장
-       조용한 단(`text-label`)에 둔다. */
+    /* Without a size class the `▸` separator inherits the root 16px and renders 33–45% larger than
+       the link beside it (12.5px) and the label (11px) — ink outweighing data. The whole breadcrumb
+       is pinned to type-ramp tokens, and the separator sits at the quietest step (`text-label`). */
     <nav className="flex flex-wrap items-center gap-3">
       <Link
         href={workspaceHref}
@@ -194,11 +192,10 @@ function ProjectDetailState({
     <ProjectDetailShell>
       <ProjectDetailTopBar slug={slug} />
       {/*
-        예전엔 이 자리에 전용 카드를 따로 짰다 — 폭 전체를 쓰는 큰 상자에 글이
-        왼쪽 위에 몰려 허공이 대부분이었다. 이 앱엔 이미 "페이지 본문이 통째로
-        비었을 때" 를 위해 만든 `EmptyState`(tone=solid + align=center)가 있는데
-        이 화면만 그걸 안 썼다. 표면마다 빈 상태의 생김새가 다르면 그게 곧
-        어긋남이다 — 공용 프리미티브로 되돌린다.
+        This slot used to have its own bespoke card — a full-width box with the text bunched at the
+        top left and mostly empty space. The app already has `EmptyState` (tone=solid, align=center)
+        for "the page body is entirely empty", and only this screen did not use it. An empty state
+        that looks different per surface is itself the drift, so it goes back to the shared primitive.
       */}
       <div className="mx-auto mt-16 w-full max-w-lg">
         <EmptyState
@@ -210,13 +207,13 @@ function ProjectDetailState({
           description={description}
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {/* 목록이 먼저다 — 여기 온 사람이 원하는 건 "다른 프로젝트 고르기" 다. */}
+              {/* The list comes first — what someone who lands here wants is to pick another project. */}
               <Link href={'/projects/'}>
                 <Button type="button" variant="primary" size="sm">
                   {t("stateBackToWorkspace")}
                 </Button>
               </Link>
-              {/* 라벨이 「지도 열기」다 — `/` 는 관문이지 지도가 아니다. */}
+              {/* The label says "open the map" — `/` is the gateway, not the map. */}
               <Link href={'/topology/'}>
                 <Button type="button" variant="ghost" size="sm">
                   {t("stateBackToMap")}
@@ -238,8 +235,8 @@ export function ProjectDetailPage({
   const t = useTranslations("projectPages.detail");
   const router = useRouter();
   const constructionReview = useConstructionReviewSession(slug);
-  // 탭은 URL 에 산다 (#87) — 공유 가능하고 에이전트가 재현할 수 있어야 한다.
-  // 숨은 상태로 두면 핸드오프 패킷에서 "어느 탭을 보던 중" 이 사라진다.
+  // The tab lives in the URL — it has to be shareable and reproducible by an agent. Left as hidden
+  // state, "which tab they were on" disappears from the handoff packet.
   const searchParams = useSearchParams();
   const activeTab = parseProjectDetailTab(searchParams.get("tab"));
   const selectTab = useCallback(
@@ -249,7 +246,7 @@ export function ProjectDetailPage({
       if (next) params.set("tab", next);
       else params.delete("tab");
       const query = params.toString();
-      // `replace` — 탭 전환은 뒤로가기 이력을 쌓을 만한 이동이 아니다.
+      // `replace` — switching tabs is not a move worth a back-history entry.
       router.replace(query ? `?${query}` : "?", { scroll: false });
     },
     [router, searchParams],
@@ -265,14 +262,13 @@ export function ProjectDetailPage({
     !slug || Boolean(initialProject),
   );
   const { statusLabel: rawStatusLabel } = useTaxonomy();
-  // R15 (Concern 1) — derive 가 honest 가 되어 frontmatter 누락 시 undefined.
-  // 'active' 는 form-local fallback (to-input.ts) 이라 legacy id 그대로
-  // 유지 — 친화 라벨로 변환.
+  // Derivation is honest, so a missing frontmatter value is undefined. 'active' is the form-local
+  // fallback (to-input.ts), whose legacy id is kept as-is and converted to a friendly label here.
   const statusLabel = (id: string | undefined): string =>
     id === "active" ? t("statusActive") : rawStatusLabel(id);
 
-  // 상세에서 Cmd+K · ? 는 모두 현재 페이지 내 오버레이로 열린다 — 홈으로
-  // 튕기면 오버레이가 사라져 \"지금 여기\" 맥락을 잃기 때문.
+  // On the detail page, Cmd+K and ? both open as overlays on the current page — bouncing to home
+  // would dismiss the overlay and lose the "you are here" context.
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   useTypingShortcuts([
@@ -294,8 +290,8 @@ export function ProjectDetailPage({
     [router, slug],
   );
 
-  // 클라이언트 사이드 동적 타이틀. 정적 export metadata 는 slug 단위로
-  // 미리 빌드되지만 사용자 컨텍스트 (project.name) 는 클라이언트에서만.
+  // Client-side dynamic title. Static export metadata is prebuilt per slug, but user context
+  // (project.name) exists only on the client.
   useDocumentTitle(
     Array.from(
       new Set(
@@ -306,25 +302,24 @@ export function ProjectDetailPage({
     ).join(" · ") || null,
   );
 
-  // mode-aware projects read — vault (local) 또는 빌드타임 dogfood (static).
-  // 단일 hook 이 항상 최신 snapshot 을 들고 있어 list/subscribe race 없음.
+  // Mode-aware project read — the local vault or the build-time dogfood manifest. One hook always
+  // holds the latest snapshot, so there is no list/subscribe race.
   const projectsQuery = useProjects();
   const projectMutations = useProjectMutations();
-  // 본문(project.md) lazy load — R+ "본문이 절대 표시되지 않음" 정정.
-  // project.detail 은 에디터 폼의 별도 frontmatter `detail:` 필드라 대부분의
-  // 실제 vault 문서엔 없다 — 진짜 본문은 vault 파일에서 별도로 읽어야 한다.
-  // fallback 순서: 명시적 detail 필드 > 실제 project.md 본문.
+  // Lazy-loads the body (project.md). `project.detail` is the editor form's separate frontmatter
+  // `detail:` field and is absent from most real vault documents — the actual body has to be read
+  // from the vault file separately. Fallback order: an explicit `detail` field, then the real
+  // project.md body.
   const { body: vaultBody } = useProjectBody(project?.slug ?? null);
   const bodyContent = project?.detail ?? vaultBody ?? null;
   useEffect(() => {
     if (!slug) return;
     let cancelled = false;
-    // #74 — 정적 모드 fallback 이 `SEED_PROJECTS` 15건을 들고 있었는데, 그 내용이
-    // Firebase Hosting · Sigma/WebGL · 화이트리스트 어드민처럼 **이미 제거된
-    // 기능을 사실처럼** 서술했다. 게다가 `/project/[slug]` 라우트는 vault 에서
-    // 생성되므로 그 slug 들은 애초에 도달 불가였다 — 없는 제품을 설명하는
-    // 도달 불가 데이터라 삭제했다. 프로젝트가 없으면 아래 not-found 상태가
-    // 정직하게 그 사실을 말한다.
+    // The static-mode fallback used to carry 15 `SEED_PROJECTS`, and their content described
+    // **already-removed features as fact** (Firebase Hosting, Sigma/WebGL, a whitelist admin). The
+    // `/project/[slug]` routes are generated from the vault, so those slugs were unreachable to begin
+    // with — unreachable data describing a product that does not exist, so it was deleted. With no
+    // project, the not-found state below states that honestly.
     const { next, related: nextRelated } = resolveSubscribeUpdate(
       projectsQuery.projects,
       slug,
@@ -334,8 +329,8 @@ export function ProjectDetailPage({
       if (next) {
         setProject(next);
       } else if (projectsQuery.loaded || projectsQuery.error !== null) {
-        // local source가 확정됐는데 slug가 없으면 canonical static fact를
-        // 잔존시키지 않는다. 같은 slug라도 현재 vault가 유일한 진실원이다.
+        // Once the local source is settled, a missing slug must not leave a canonical static fact
+        // behind. Even for the same slug, the current vault is the only source of truth.
         setProject(null);
       }
       setRelated(nextRelated);
@@ -351,10 +346,10 @@ export function ProjectDetailPage({
     slug,
   ]);
 
-  // 이 프로젝트의 ontology 노드/관계 — 히어로 메트릭 스트립·미니 도메인
-  // 지도·도메인 구성 3×2·연결된 프로젝트(relates) 가 전부 여기서 파생.
-  // vault(local) > 빌드타임 dogfood(static) 우선순위는 useOntologyInsight
-  // 가 이미 처리 — mode 분기는 이 컴포넌트가 신경 쓸 필요 없음.
+  // This project's ontology nodes and relations — the hero metric strip, the mini domain map, the
+  // domain composition rows, and connected projects (relates) all derive from here. The
+  // vault (local) over build-time dogfood (static) precedence is already handled by
+  // `useOntologyInsight`, so this component needs no mode branch.
   const { insight } = useOntologyInsight();
   const insightNodes = insight?.nodes ?? [];
   const insightEdges = insight?.edges ?? [];
@@ -427,15 +422,14 @@ export function ProjectDetailPage({
     }
   };
 
-  // statusLabel(undefined) 는 "—" 를 반환(placeholder 의미 명시) — truthy 라
-  // .filter(Boolean) 로 안 걸러진다. project.status 자체가 있을 때만 라인에
-  // 넣어야 "개별 프로젝트 · —" 같은 대시 콜리전이 안 생긴다.
-  // 히어로는 개관, 본문은 상세 — 발췌 원문을 그대로 흘리면 어절 한가운데서
-  // 끊긴다(`project-tagline.ts` 참고). 편집 중이던 값이 있으면 그건 사용자
-  // 입력이라 손대지 않는다.
+  // `statusLabel(undefined)` returns "—" to mark a placeholder, and being truthy it survives
+  // `.filter(Boolean)` — so the line is only populated when `project.status` itself exists, avoiding
+  // a dash collision like "individual project · —".
+  // The hero is an overview and the body is the detail: passing the raw excerpt through cuts mid-word
+  // (see `project-tagline.ts`). A value the user was editing is their input and is left alone.
   const heroTagline = resolveProjectTagline({ description: project.description });
-  // 본문 맨 위 `# 프로젝트명` 은 히어로 제목과 같은 문장이다 — 파일 단독으로
-  // 읽힐 땐 옳지만 이 화면에서는 같은 잉크를 두 번 쓰는 것이다.
+  // The body's leading `# project name` is the same sentence as the hero title — right when the file
+  // is read on its own, but on this screen it spends the same ink twice.
   const dedupedBodyContent = stripDuplicateHeading(bodyContent, project.name);
   const heroMeta = [
     project.isHub ? t("heroLabelHub") : t("heroLabel"),
@@ -444,17 +438,17 @@ export function ProjectDetailPage({
     .filter(Boolean)
     .join(" · ");
   /*
-    "그냥 글자 나열같다" 는 지적의 원인은 넷이었다: ① 문단 간격(10px)이 행간
-    (23.6px)보다 좁아 문단 경계가 사라졌고 ② 헤딩에 아래 여백이 아예 없어
-    제목이 뒤 문단에 달라붙었고 ③ 넓은 카드에 짧은 행이 걸려 읽는 눈이 갈
-    곳을 잃었고 ④ 인용·코드블록·표에 스타일이 없어 전부 같은 회색 글이었다.
+    "It just looks like a run of characters" had four causes: ① the paragraph gap (10px) was narrower
+    than the line height (23.6px), so paragraph boundaries vanished ② headings had no bottom margin
+    at all, sticking the title to the paragraph after it ③ short lines strung across a wide card left
+    the reading eye nowhere to go ④ quotes, code blocks, and tables had no styling, so everything was
+    the same grey text.
 
-    위계는 **크기 도약이 아니라 무게(650) + 상하 공간(36/12)** 으로 만든다 —
-    무채색 단일 인디고 헌장에서 크기를 키우는 건 값싼 해법이고, 새 램프 스텝을
-    만들면 `TYPE_RAMP_STEPS` 등록 부채까지 생긴다. 여기 쓰인 값은 전부 기존
-    램프 안이다.
+    Hierarchy is built from **weight (650) plus vertical space (36/12), not a size jump** — enlarging
+    is the cheap answer under a neutrals-plus-one-indigo charter, and a new ramp step would incur
+    `TYPE_RAMP_STEPS` registration debt. Every value used here is inside the existing ramp.
 
-    measure(70ch)는 한 행이 눈으로 좇을 수 있는 길이의 상한이다.
+    The measure (70ch) is the upper bound on a line the eye can follow.
   */
   const storyMarkdownClassName =
     "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
@@ -462,13 +456,13 @@ export function ProjectDetailPage({
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
 
-  // 온톨로지 자체의 위계(도메인 ⊃ 역량 ⊃ 요소)만 칩으로 세운다.
+  // Only the ontology's own hierarchy (domain ⊃ capability ⊃ element) becomes chips.
   const primaryMetrics: Array<{ label: string; value: number }> = [
     { label: t("metricDomains"), value: metrics.domains },
     { label: t("metricCapabilities"), value: metrics.capabilities },
     { label: t("metricElements"), value: metrics.elements },
   ];
-  // 메타 수치는 종류가 달라 같은 무게를 줄 이유가 없다 — 평문으로 내린다.
+  // The meta figures are a different kind and have no reason to carry the same weight — demoted to plain text.
   const secondaryMetrics: Array<{ label: string; value: number }> = [
     { label: t("metricDocuments"), value: metrics.documents },
     { label: t("metricRelations"), value: metrics.relations },
@@ -492,9 +486,9 @@ export function ProjectDetailPage({
         census={{ concepts: insightNodes.length, relations: insightEdges.length }}
       />
 
-      {/* zone 1 — hero band: 글리프+타이틀+설명 + 음각 메트릭 스트립 +
-          topology/편집 액션. **오른쪽 열은 비웠다** — 아래 「방사 지도를 내렸다」
-          주석 참고. */}
+      {/* zone 1 — hero band: glyph, title, and description plus the engraved metric strip and the
+          topology/edit actions. **The right column is deliberately empty** — see the comment below
+          about removing the radial map. */}
       <header className="mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:p-[18px_26px]">
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-start gap-3.5 sm:flex-nowrap">
@@ -509,10 +503,10 @@ export function ProjectDetailPage({
                 className="text-display leading-display-tight font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-pretty text-[color:var(--color-text-primary)]"
               />
               {/*
-                메타 행은 여기서 끝난다. 예전엔 설명이 이 점-행 **안으로**
-                흘러들어, 문단 길이의 글이 13px tertiary 메타 취급을 받았다 —
-                "답답하다" 는 인상의 절반이 그것이었다. 정의는 메타보다 중요하니
-                한 단계 위 톤(secondary)으로 독립 블록에 둔다.
+                The meta row ends here. The description used to flow **into** this dot row, so a
+                paragraph-length text was treated as 13px tertiary meta — half of the "it feels
+                cramped" impression was that. A definition matters more than meta, so it sits in its
+                own block one tone up (secondary).
               */}
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-[color:var(--color-text-tertiary)]">
                 <span>{heroMeta}</span>
@@ -530,13 +524,13 @@ export function ProjectDetailPage({
                 ariaLabel={t("inlineDescriptionAria")}
                 placeholder={t("inlineDescriptionPlaceholder")}
                 dataTestId="project-detail-description"
-                // `break-keep` — 이 설명이 576px 에서 「아|홉」으로 단어 중간
-                // 끊김 (2026-08-15 korean-word-break 실측, main 나흘 적화의 하나).
+                // `break-keep` — this description broke mid-word as 「아|홉」 at 576px (measured
+                // 2026-08-15 by the korean-word-break instrument).
                 className="mt-2.5 max-w-[64ch] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
               />
             </div>
-            {/* flex-none 은 읽기전용 배지(+액션)가 390px 뷰포트를 밀어내는
-                가로 overflow 를 만들었다 — min-w-0 수축 허용 + wrap. */}
+            {/* `flex-none` created horizontal overflow at a 390px viewport, the read-only badge and
+                its actions pushing the page out — allow shrinking with `min-w-0` and wrap instead. */}
             <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
               <input
                 {...constructionReview.inputProps}
@@ -564,20 +558,20 @@ export function ProjectDetailPage({
               {canManageProject ? (
                 <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} />
               ) : (
-                // [P-7] vault 미선택(static/dogfood) 상태엔 편집 진입점이
-                // 전무해 "왜 안 되는지" 안내가 없었다 — 왜 + 다음 행동을
-                // 한 줄로 밝히는 배지. 액션은 아니고 상태 typed fact.
+                // With no vault chosen (static/dogfood) there was no edit entry point at all and
+                // nothing explaining why — this badge states the reason and the next action in one
+                // line. It is not an action but a typed fact about state.
                 //
-                // 2026-08-07: 그 「다음 행동」이 **말로만** 있었다. 배지는
-                // *"폴더를 열면 편집"* 이라 말하는데 이 화면에서 폴더를 여는
-                // 컨트롤이 0개였다(전수 측정) — 막다른 CTA 다. 배지는 상태
-                // 그대로 두고, 그 일을 하는 길을 옆에 놓는다. 상태와 행동을
-                // 한 원소에 겹치지 않는 것은 종전 주석의 판단을 지킨 것이다.
+                // 2026-08-07: that "next action" existed **only as words**. The badge said *"open a
+                // folder to edit"* while this screen had zero controls that open a folder (measured
+                // exhaustively) — a dead CTA. The badge keeps stating the state, and the path that
+                // does the job is placed beside it. Not overlaying state and action on one element
+                // preserves the earlier comment's judgement.
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <span
                     data-testid="project-detail-readonly-badge"
-                    // flex-none 은 390px 에서 페이지 가로 overflow 를 만들었다
-                    // (overflow-sweep 회귀) — 좁으면 배지 텍스트가 줄바꿈된다.
+                    // `flex-none` created horizontal page overflow at 390px (an overflow-sweep
+                    // regression) — when narrow, the badge text wraps instead.
                     className="inline-flex min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
                   >
                     {t("readOnlyBadge")}
@@ -589,18 +583,18 @@ export function ProjectDetailPage({
           </div>
 
           {/*
-            통계는 거대한 숫자 대신 조용한 칩 — 스캔은 쉽되 타이틀의 주목도를
-            빼앗지 않는다. 다만 5개를 같은 무게로 두면 "다 중요하다 = 다 안
-            중요하다" 가 된다. 온톨로지 자체의 위계(도메인 ⊃ 역량 ⊃ 요소)와
-            메타 수치(문서·관계)는 다른 종류라, 앞 셋만 칩으로 남기고 뒤 둘은
-            평문으로 강등했다.
+            Statistics are quiet chips rather than huge numbers — easy to scan without stealing
+            attention from the title. But five at the same weight reads as "everything matters, so
+            nothing does". The ontology's own hierarchy (domain ⊃ capability ⊃ element) and the meta
+            figures (documents, relations) are different kinds, so only the first three stay chips and
+            the last two are demoted to plain text.
 
-            맨 앞의 스코프 캡션은 상단 census(볼트 전체)와의 혼동을 끊는다 —
-            같은 화면에 440 과 453 이 함께 있으면 둘 중 하나가 틀린 것처럼
-            읽힌다. 실제로는 스코프가 다를 뿐이다.
+            The scope caption at the front breaks the confusion with the census at the top (the whole
+            vault) — 440 and 453 on one screen reads as one of them being wrong, when in fact only the
+            scope differs.
 
-            `pb-5` 는 설명 블록과 이 구분선 사이의 숨 — 예전엔 0px 이라 글자
-            바로 밑에 선이 붙어 있었다.
+            `pb-5` is the breathing room between the description block and this rule — it used to be
+            0px, with the line sitting directly under the text.
           */}
           <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[color:var(--color-border-soft)] pt-3.5">
             <span className="text-caption uppercase tracking-caption text-[color:var(--color-text-quaternary)]">
@@ -630,32 +624,30 @@ export function ProjectDetailPage({
         </div>
 
         {/*
-          ## 방사 도메인 지도를 내렸다 (2026-08-12, 소유자 선택 B안)
+          ## The radial domain map was removed (2026-08-12, owner chose option B)
 
-          여기에는 프로젝트 육각형 하나에서 도메인 사각형 아홉 개로 선이 뻗는
-          SVG 가 있었고, 캡션이 **「많이 담긴 도메인이 더 크게」** 라고 약속했다.
-          그 약속을 재 봤다(storefront, 1512 폭):
+          This slot held an SVG with lines radiating from one project hexagon to nine domain squares,
+          captioned with the promise **"the fuller a domain, the larger it is"**. That promise was
+          measured (storefront, 1512 wide):
 
-          - 17개 도메인과 6개 도메인의 사각형 폭 차이가 **4.7px** — 17 대 16 은
-            **0.3px** 다. 「더 크게」를 눈으로 판정할 수 없었다.
-          - 방사선 2개가 **가운데 글자를 관통**했다.
+          - the square width difference between a 17-domain and a 6-domain was **4.7px** — between 17
+            and 16 it was **0.3px**. "Larger" could not be judged by eye.
+          - two of the radial lines **ran straight through the centre label**.
 
-          못 지키는 약속은 잉크가 아니라 오해다. 그래서 같은 사실을 판정 가능한
-          형식(행 + 비율 막대 + 숫자 열)으로 옮겼고, 그 목록이 사는 자리는
-          **「구성」 탭 한 곳**이다.
+          A promise that cannot be kept is not ink but a misunderstanding. So the same fact moved to a
+          judgeable form (rows plus a proportional bar plus a numeric column), and that list lives in
+          **exactly one place, the composition tab**.
 
-          ⚠️ **왜 이 자리에 그 목록을 두지 않았나 — 실측이 갈랐다.** 처음에는
-          지시대로 여기(오른쪽 열)에 9행을 넣어 보고 쟀다. 행 자체는 문제가
-          없었다(9행 전부 42.00px · 겹침 0). 그런데 밴드가 **206 → 495px**
-          (1512×982 뷰포트의 50%)로 커지면서 왼쪽 열에 **290px 짜리 빈 띠**가
-          생기고, 무엇보다 「구성」 탭을 열면 **같은 아홉 줄의 같은 숫자가 한
-          화면에 두 번** 그려졌다(마케팅 17 · 상품 16 …). 그건 이 개편이 없애려던
-          바로 그 결함이라, 목록은 **한 곳만** 갖는다. 되돌리려면
-          `DomainCompositionRows` 를 이 자리에 두면 되지만, 그때는 탭의 목록을
-          지워야 한다. 증거: `/private/tmp/guardian-b-variantA-*.png`.
+          ⚠️ **Why the list was not put here — the measurement decided it.** The first attempt put the
+          nine rows here (the right column) as instructed and measured them. The rows themselves were
+          fine (all nine at 42.00px, zero overlap). But the band grew from **206 to 495px** (50% of a
+          1512×982 viewport), leaving a **290px empty strip** in the left column — and above all,
+          opening the composition tab drew **the same nine rows with the same numbers twice on one
+          screen**. That is the very defect this rework removed, so the list has **only one home**. To
+          revert, put `DomainCompositionRows` here — but then the tab's list must be deleted.
 
-          (여기 있던 「지도에서 보기」 링크는 그 전에 이미 지웠다 — 히어로 주
-          액션 버튼과 라벨·목적지가 같았다.)
+          (The "view on the map" link that used to be here was removed earlier — it duplicated the
+          label and destination of the hero's primary action button.)
         */}
       </header>
 
@@ -681,20 +673,18 @@ export function ProjectDetailPage({
         </section>
       ) : null}
 
-      {/* 탭 (#87) — "정보 종류" 가 아니라 **답하는 질문**으로 가른다.
-          개요 = 이게 무엇인가(본문) · 구성 = 무엇으로 이루어졌나.
-          project.md 본문이 dogfood 기준 수천 px 라 한 스크롤에 같이 두면
-          "무엇으로 이루어졌나" 를 스캔할 방법이 없었다(소유자: "스크롤로
-          모든거 보여주려 안해도 되니까?").
+      {/* Tabs split by **the question they answer**, not by "kind of information": overview = what is
+          this (the body), composition = what is it made of. The project.md body runs to thousands of
+          px in the dogfood vault, so keeping both in one scroll left no way to scan "what is it made
+          of" (owner: "you don't have to show everything by scrolling").
 
-          컴포넌트는 앱의 유일한 탭바(`shared/ui/tab-bar`)를 재사용한다 —
-          인사이트·기록 증거 pane 과 같은 문법이라 새 관용구가 안 생긴다. */}
+          The component reuses the app's single tab bar (`shared/ui/tab-bar`) — the same grammar as the
+          insights and history evidence panes, so no new idiom appears. */}
       <div className="mt-[var(--section-gap)]">
         <TabBar
-          /* 이 탭바는 인사이트와 **공유**한다. 접두사를 안 주면 `aria-controls`
-             가 인사이트의 패널 id 를 가리켜 여기서는 해석되지 않는다 — 실측
-             위반(axe `aria-valid-attr-value`)이었고, 아래 두 패널이 이 접두사로
-             `role="tabpanel"` 을 그린다. */
+          /* This tab bar is **shared** with insights. Without a prefix, `aria-controls` points at
+             insights' panel ids, which do not resolve here — a measured violation (axe
+             `aria-valid-attr-value`). The two panels below draw `role="tabpanel"` under this prefix. */
           idPrefix="project-detail"
           ariaLabel={t("tabs.ariaLabel")}
           activeKey={activeTab}
@@ -710,20 +700,17 @@ export function ProjectDetailPage({
         />
       </div>
 
-      {/* zone 3 — 본문(project.md) + 요약 레일(연결된 프로젝트 · 에이전트
-          핸드오프). Connection map 제거(c84ecb25e) 이후의 left-column-void
-          결함은 이 3존 재배치로 구조적으로 해소된다 — 좌측이 항상 도메인
-          구성/본문으로 채워진다. */}
-      {/* zone 3 — 좌: 본문(개요 탭 전용) / 우: 연결된 프로젝트 + 에이전트 핸드오프.
-          **우측 레일은 탭 밖에 둔다** — 어느 탭에서 보든 유효한 cross-tab
-          맥락이고, 특히 "연결된 프로젝트" 는 프로젝트 간 관계를 온톨로지로
-          다루는 방향의 첫 표면이라 탭 뒤에 숨기면 안 된다(기록 목적지의
-          좌/우 분할과 같은 문법). */}
+      {/* zone 3 — left: the body (overview tab only) / right: connected projects plus the agent
+          handoff.
+          **The right rail sits outside the tabs** — it is cross-tab context valid from any tab, and
+          "connected projects" in particular is the first surface of treating project-to-project
+          relations as ontology, so it must not be hidden behind a tab (the same grammar as the
+          left/right split of the history destination). */}
       <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] lg:grid-cols-[minmax(0,1fr)_400px]">
-        {/* 좌측 = **탭 본문**. 구성을 별 섹션으로 두고 `hidden` 으로 감췄더니
-            grid 첫 트랙이 `display:none` 으로 사라져 400px 우측 레일이 1fr
-            트랙으로 당겨져 늘어났다(실측 결함). 좌측이 **항상 무언가를 그리면**
-            트랙이 무너질 수 없다. */}
+        {/* The left column is **the tab body**. Putting composition in its own section and hiding it
+            with `hidden` made the grid's first track vanish under `display:none`, pulling the 400px
+            right rail into the 1fr track and stretching it (a measured defect). If the left **always
+            draws something**, the track cannot collapse. */}
         {activeTab === "composition" ? (
           <section
             data-tab-panel="composition"
@@ -735,14 +722,14 @@ export function ProjectDetailPage({
           >
             {domainComposition.domains.length > 0 ? (
               /*
-                섹션 헤더("도메인 구성 · 포함 · 6")를 뺐다. 탭 라벨이 이미
-                "구성 6" 이라 제목도 카운트도 중복이었고, 좌측에만 33px 짜리
-                헤더가 있으니 우측 레일 첫 카드와 시작 모서리가 어긋나 격자
-                전체가 삐뚤어 보였다.
+                The section header ("domain composition · contains · 6") was removed. The tab label
+                already reads "composition 6", so both the title and the count were duplicates, and a
+                33px header on the left alone misaligned the starting edge against the right rail's
+                first card, making the whole grid look crooked.
 
-                각주(`domainOverlapNote`)도 여기서 빼서 히어로 행 아래 한 곳으로
-                모았다 — 그 문장은 「히어로 칩 합 ≠ 행 합」을 설명하는 것이고,
-                두 수가 함께 보이는 자리는 히어로다.
+                The footnote (`domainOverlapNote`) was pulled out of here too and gathered in one place
+                under the hero row — that sentence explains "the hero chip sum ≠ the row sum", and the
+                hero is where both numbers are visible together.
               */
               <DomainCompositionRows
                 domains={domainComposition.domains}
@@ -764,7 +751,7 @@ export function ProjectDetailPage({
                 }}
               />
             ) : (
-              // 도메인 0이어도 탭은 남는다(공간 기억) — 대신 여기서 다음 걸음을 준다.
+              // The tab remains even at zero domains (spatial memory) — instead, the next step is offered here.
               <div data-testid="project-detail-composition-empty">
                 <EmptyState
                   size="compact"
@@ -793,10 +780,9 @@ export function ProjectDetailPage({
             </span>
           </div>
           {bodyContent ? (
-            // #10 — 본문은 읽기 좋은 가로폭(measure)으로 제한한다.
-            // `break-keep` — 한국어 본문이 584px 에서 「장바|구니」처럼 단어
-            // 중간에 끊겼다 (2026-08-12 실측). word-break 는 상속되므로 이
-            // 래퍼 한 곳이 마크다운 문단 전부를 덮는다.
+            // The body is limited to a readable measure.
+            // `break-keep` — the Korean body broke mid-word as 「장바|구니」 at 584px (measured
+            // 2026-08-12). `word-break` inherits, so this one wrapper covers every markdown paragraph.
             <div
               className={`${storyMarkdownClassName} max-w-[var(--measure-prose)] break-keep`}
               data-testid="project-detail-body-content"
@@ -815,9 +801,9 @@ export function ProjectDetailPage({
         </article>
         )}
 
-        {/* 우측 레일은 **탭 밖**이다 (#87) — 어느 탭에서 보든 유효한 맥락이고,
-            "연결된 프로젝트" 는 프로젝트 간 관계를 온톨로지로 다루는 방향의
-            첫 표면이라 탭 뒤에 숨기면 안 된다. */}
+        {/* The right rail sits **outside the tabs** — it is context valid from any tab, and "connected
+            projects" is the first surface of treating project-to-project relations as ontology, so it
+            must not be hidden behind a tab. */}
         <aside data-testid="project-detail-connected" className="flex flex-col gap-[var(--card-gap)]">
           <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             <div className="mb-2.5 flex items-baseline gap-2">
@@ -837,11 +823,11 @@ export function ProjectDetailPage({
                     href={getProjectRuntimeDetailHref(candidate.slug)}
                     className={controlClass({ shape: "card", size: "lg", tone: "secondary", className: "gap-3 px-3 py-3 text-body-lg hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)]" })}
                   >
-                    {/* 라벨 뒤 장식 화살표 금지 — 이 링크는 앱 안에서 이동한다
-                        (`target="_blank"` 아님). `↗` 는 앱을 **떠나는** 링크의
-                        선행 경고로만 쓰고, 누를 수 있다는 사실은 보더·hover 가
-                        이미 말한다. 함께 있던 hover translate 도 정보가 없어
-                        걷어냈다. */}
+                    {/* No decorative arrow after a label — this link navigates inside the app (it is
+                        not `target="_blank"`). `↗` is used only as a leading warning on links that
+                        **leave** the app, and that something is pressable is already said by the
+                        border and hover. The hover translate that accompanied it carried no
+                        information and was removed too. */}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {candidate.name}
@@ -865,9 +851,9 @@ export function ProjectDetailPage({
                   icon={<Waypoints size={ICON_SIZE.lg} aria-hidden />}
                   title={t("connectedEmpty")}
                   /*
-                   * `break-keep` — 이 설명이 280px 에서 「여기 나타|납니다」로 단어
-                   * 중간에 끊겼다 (2026-08-12 실측, 같은 계기). EmptyState 의 설명
-                   * `<p>` 는 공용이라 여기서 감싼 span 으로만 좁게 건다.
+                   * `break-keep` — this description broke mid-word as 「여기 나타|납니다」 at 280px
+                   * (measured 2026-08-12, same instrument). `EmptyState`'s description `<p>` is shared,
+                   * so the rule is applied narrowly through the span wrapped here.
                    */
                   description={<span className="break-keep">{t("connectedEmptyHint")}</span>}
                 />
@@ -877,15 +863,14 @@ export function ProjectDetailPage({
 
           <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             {/*
-              이 카드가 실제로 하는 일은 "내 AI 에게 이 프로젝트를 이어서 읽힐
-              시작 프롬프트 복사" 다. 그런데 이름이 "에이전트 핸드오프", 캡션이
-              "사람은 안 읽어도 됩니다 — AI 에이전트용" 이었다. 소유자 판정:
-              *"너무 AI같음"*. 둘 다 맞다 — 내부어인 데다, 부정 화법("안 읽어도
-              됩니다")은 읽는 사람을 밀어내면서 정작 무엇을 하는 건지는 끝내
-              말해주지 않는다.
+              What this card actually does is "copy a starting prompt so my AI can pick up reading this
+              project". Yet it was named "agent handoff" with the caption "a person does not need to
+              read this — it is for an AI agent". Owner's verdict: *"너무 AI같음"* (too AI-ish). Both
+              were right — it is internal jargon, and a negative framing ("you don't need to read this")
+              pushes the reader away while never actually saying what it does.
 
-              이제 순서가 설명 → 버튼 → (접힘)미리보기 다. 무엇을 하는지 먼저
-              말하고, 코드는 보고 싶은 사람만 편다.
+              The order is now explanation → button → (collapsed) preview. Say what it does first, and
+              let whoever wants the code expand it.
             */}
             <div className="mb-2">
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
@@ -893,12 +878,12 @@ export function ProjectDetailPage({
               </span>
             </div>
             {/*
-             * `break-keep` — **한국어는 단어 중간에서 끊기면 읽다가 걸린다** (2026-08-12 실측).
+             * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
              *
-             * 이 문단이 400px 레일(실폭 362px)에서 「이 프로젝|트의 지도를」로 끊겼다
-             * (계기: 글자마다 Range 를 재서 줄이 바뀐 자리의 앞뒤 글자를 본다 — 둘 다
-             * 한글이고 공백이 없으면 단어 중간이다). 원인은 `word-break: normal` 이고,
-             * 이 저장소는 이미 다른 자리에서 `break-keep` 을 쓰고 있었다.
+             * This paragraph broke as 「이 프로젝|트의 지도를」 in the 400px rail (362px real width).
+             * Instrument: a `Range` per character reveals the characters on either side of the line
+             * break — both Korean with no space means mid-word. The cause is `word-break: normal`, and
+             * this repository already used `break-keep` elsewhere.
              */}
             <p className="mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
               {t("handoffDesc")}

@@ -3,32 +3,30 @@ import { withBasePath } from '@/shared/lib/base-path';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 루트 `/` 의 서버 렌더 표면 — **관문 버전**.
+ * The server-rendered surface for the root `/` — **the gateway version**.
  *
- * ## 왜 `MapEntryFallback` 이 아닌가
+ * **Why not `MapEntryFallback`.** Under static export this route's HTML body is
+ * nothing but the Suspense fallback, so this component *is* the entire page content
+ * as seen by anything that does not run JS: link preview cards and crawlers.
  *
- * 정적 export 에서 이 라우트의 HTML 본문은 Suspense fallback 이 전부다. 즉
- * **JS 를 실행하지 않는 것들**(링크 미리보기 카드, 크롤러)이 보는 페이지 내용이
- * 통째로 이 컴포넌트다.
+ * The owner's 2026-07-29 sign-off made `/` the face shown to web visitors (ledger:
+ * the reversal of 「root-first-open」). The fallback still described the map, which
+ * meant sharing this product's headline URL produced a preview saying something
+ * **different from the screen that actually opens**. `MapEntryFallback` stays where
+ * that description is true (`/topology`).
  *
- * 2026-07-29 소유자 서명으로 `/` 는 웹 방문자의 얼굴이 됐다(원장:
- * 「root-first-open」 뒤집기). 그런데 fallback 은 여전히 지도를 설명하고
- * 있었다 — 그러면 이 제품의 대표 주소를 공유했을 때 미리보기에 뜨는 글이
- * **실제로 열리는 화면과 다른 것**을 말한다. `MapEntryFallback` 은 그 설명이
- * 맞는 자리(`/topology`)에 그대로 남는다.
+ * **No new copy is written here.** The headline and lead reuse the sentences the
+ * gateway page already uses (`download.heroTitleLine1/2` and `heroLead`, the
+ * monument headline from the 2026-08-18 gateway remake). Inventing positioning here
+ * would be a PO-council trigger, and above all **a fallback saying something other
+ * than the real screen** is precisely the defect this fixes.
  *
- * ## 문구를 새로 쓰지 않는다
+ * (The old `stageTitle`/`stageLead` left the catalogue during that remake while this
+ * shared component kept requesting them, so `/ko/` printed MISSING_MESSAGE — owner
+ * observation, 2026-08-18. Deleting a copy key starts with grepping every consumer.)
  *
- * 헤드라인·리드는 관문 페이지가 이미 쓰는 문장(`download.heroTitleLine1/2` /
- * `heroLead` — 2026-08-18 랜딩 리메이크의 기념비 헤드라인)을 그대로 가져온다.
- * 이 자리에서 포지셔닝을 새로 만드는 것은 PO 카운슬 트리거이고, 무엇보다
- * **fallback 과 실제 화면이 다른 말을 하면** 그게 고치려던 결함 그 자체다.
- * (구 `stageTitle`/`stageLead` 는 리메이크에서 카탈로그를 떠났는데 이 공용
- * 컴포넌트가 계속 불러서 `/ko/` 가 MISSING_MESSAGE 를 찍었다 — 2026-08-18
- * 소유자 관측. 문구 키를 지울 때는 소비처 전수 grep 이 먼저다.)
- *
- * 링크 둘은 실제 목적지다 — 받는 곳과 설치 없이 보는 곳. JS 가 없어도 살아
- * 있어야 관문이다.
+ * The two links are real destinations — where to download and where to look without
+ * installing. A gateway has to stay alive with no JS.
  */
 export async function GatewayEntryFallback({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: 'download' });
@@ -47,7 +45,7 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
           {t('eyebrow')}
         </p>
         <h1 className="mt-3 text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] break-keep text-[color:var(--color-text-primary)]">
-          {/* 실제 화면과 같은 두 줄 — 문장 = 줄 (기념비 계약의 축소판). */}
+          {/* The same two lines as the real screen: one sentence per line, the monument contract in miniature. */}
           <span className="block">{t('heroTitleLine1')}</span>
           <span className="block">{t('heroTitleLine2')}</span>
         </h1>
@@ -57,7 +55,7 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
       </div>
 
       <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-body leading-body">
-        {/* link/lg = text-body(부모 p 와 동일) + min-h-6(2.5.8 바닥 — 종전 18px 글줄 상자). */}
+        {/* link/lg = text-body (matching the parent p) + min-h-6, the WCAG 2.5.8 floor; it used to be an 18px line box. */}
         <a
           className={controlClass({ shape: 'link', size: 'lg', tone: 'accent', className: 'touch-hit-expand' })}
           href={withBasePath(`/${locale}/download/`)}

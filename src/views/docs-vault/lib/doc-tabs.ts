@@ -1,15 +1,14 @@
 /**
- * 열린 문서 탭 — 순수 상태 로직 + localStorage 영속화.
+ * Open document tabs — pure state logic plus localStorage persistence.
  *
- * docs-chrome-round 슬라이스 B(열린 문서 탭 스트립)의 모델 레이어. 탭은
- * "워킹셋" 이지 "모드" 가 아니다 — 활성 탭의 진실원은 URL `?slug=` 이고
- * (`persistence.ts` 의 다른 UI state 와 같은 원칙), 이 모듈은 열린 슬러그
- * 목록 + 각 탭의 최근 활성화 시각만 관리한다. `DocsVaultPage` 가 `selectedSlug`
- * 변화를 관찰해 `openOrActivateDocTab` 을 호출하는 방식으로 연결된다 — URL 과
- * 싸우지 않는다.
+ * A tab is a "working set", not a "mode": the source of truth for the active tab is the URL
+ * `?slug=` (the same principle as the other UI state in `persistence.ts`), and this module
+ * manages only the list of open slugs plus each tab's last activation time. `DocsVaultPage`
+ * wires it by observing `selectedSlug` changes and calling `openOrActivateDocTab` — it never
+ * fights the URL.
  *
- * **소유자 확정 (2026-07):** 탭 수명은 localStorage 영구 — "macOS 앱을 다시
- * 켜도 그대로" (docs-chrome-round 초안 계약의 sessionStorage 안을 override).
+ * **Owner decision (2026-07):** tab lifetime is permanent in localStorage — "still there after
+ * restarting the macOS app" (overriding the draft contract's sessionStorage proposal).
  */
 
 export interface DocTab {
@@ -18,13 +17,13 @@ export interface DocTab {
   lastActivatedAt: number;
 }
 
-/** 탭 상한 — 증식 가드(소유자 우려: "상위 모드 탭 증식"). 초과 시 LRU 축출. */
+/** The tab ceiling — a proliferation guard (owner's concern: "top-level mode tabs multiplying"). Over it, LRU evicts. */
 export const DOC_TABS_MAX = 8;
 
 const DOC_TABS_KEY_PREFIX = "docsVault:openTabs:";
 const DOC_ACTIVE_TAB_KEY_PREFIX = "docsVault:activeTab:";
 
-/** vault(sourceKey) 별로 키를 분리 — 샘플 탭이 로컬 vault 로 새지 않는다. */
+/** Keys are separated per vault (sourceKey), so sample tabs never leak into a local vault. */
 export function docTabsStorageKey(sourceKey: string): string {
   return `${DOC_TABS_KEY_PREFIX}${sourceKey}`;
 }
@@ -43,7 +42,7 @@ function isDocTab(value: unknown): value is DocTab {
   );
 }
 
-/** localStorage 에서 sourceKey 의 탭 목록을 읽는다. 손상/미존재 시 []. */
+/** Reads the tab list for a sourceKey from localStorage. Corrupt or absent yields []. */
 export function readStoredDocTabs(sourceKey: string): DocTab[] {
   if (typeof window === "undefined") return [];
   try {
@@ -62,7 +61,7 @@ export function storeDocTabs(sourceKey: string, tabs: DocTab[]): void {
   try {
     window.localStorage.setItem(docTabsStorageKey(sourceKey), JSON.stringify(tabs));
   } catch {
-    /* private mode / quota — skip, 다음 세션은 그냥 다시 채워진다 */
+    /* private mode / quota — skip; the next session simply refills it */
   }
 }
 
@@ -81,14 +80,13 @@ export function storeActiveDocSlug(sourceKey: string, slug: string): void {
   try {
     window.localStorage.setItem(activeDocTabStorageKey(sourceKey), slug);
   } catch {
-    /* private mode / quota — 탭 목록의 lastActivatedAt fallback 사용 */
+    /* private mode / quota — fall back to the tab list's lastActivatedAt */
   }
 }
 
 /**
- * 존재하지 않는 slug(rename/delete 로 사라진 문서)가 복원되면 조용히
- * 목록에서 제거. 아무것도 제거되지 않으면 원본 참조를 그대로 반환(불필요한
- * re-render 방지).
+ * Silently drops restored tabs whose slug no longer exists (renamed or deleted documents). When
+ * nothing is removed the original reference is returned as-is, avoiding a needless re-render.
  */
 export function pruneMissingDocTabs(
   tabs: DocTab[],
@@ -99,9 +97,9 @@ export function pruneMissingDocTabs(
 }
 
 /**
- * 앱 재실행/볼트 전환에서 URL 딥링크가 없을 때만 직전 활성 문서를 복원한다.
- * 명시적 선택으로 저장한 active slug를 우선하고, 저장값이 없거나 현재
- * vault에서 사라졌으면 탭의 `lastActivatedAt`을 안전한 fallback으로 쓴다.
+ * Restores the previously active document only when an app restart or vault switch has no URL
+ * deeplink. The active slug saved from an explicit selection wins; if there is none, or it no
+ * longer exists in the current vault, the tabs' `lastActivatedAt` is the safe fallback.
  */
 export function resolveRestoredActiveDocSlug({
   tabs,
@@ -126,7 +124,7 @@ export function resolveRestoredActiveDocSlug({
   return latest?.slug ?? null;
 }
 
-/** 8개 초과 시 가장 오래 activate 되지 않은 탭부터 축출(LRU). */
+/** Past eight, evict from the least recently activated tab (LRU). */
 function evictLru(tabs: DocTab[], max: number): DocTab[] {
   if (tabs.length <= max) return tabs;
   const next = tabs.slice();
@@ -143,10 +141,9 @@ function evictLru(tabs: DocTab[], max: number): DocTab[] {
 }
 
 /**
- * 문서 선택 부수효과 — 이미 열려 있으면 activate(+title 갱신)만, 없으면
- * 새 탭을 뒤에 추가한 뒤 상한(`DOC_TABS_MAX`) 초과분을 LRU 로 축출한다.
- * 새로 열리거나 activate 된 탭은 항상 최신 시각을 가지므로 같은 호출로는
- * 절대 축출되지 않는다.
+ * The side effect of selecting a document — already open means activate (and refresh the title);
+ * otherwise append a new tab and evict past the `DOC_TABS_MAX` ceiling by LRU. A newly opened or
+ * activated tab always carries the newest timestamp, so it can never be evicted by the same call.
  */
 export function openOrActivateDocTab(
   tabs: DocTab[],
@@ -165,17 +162,17 @@ export function openOrActivateDocTab(
 
 export interface CloseDocTabResult {
   tabs: DocTab[];
-  /** null = 탭이 0개가 됨 — 호출부가 "목록 첫 문서 또는 README" 로 폴백. */
+  /** null = there are zero tabs — the caller falls back to "the first document in the list, or README". */
   nextActiveSlug: string | null;
 }
 
 /**
- * 탭 닫기.
- * - 닫는 탭이 활성 탭이 아니면 활성 선택은 그대로 유지.
- * - 활성 탭을 닫으면 인접 탭으로 이동 — **왼쪽 우선**, 왼쪽이 없으면(맨 왼쪽
- *   탭을 닫은 경우) 오른쪽.
- * - 마지막 남은 탭을 닫으면 `nextActiveSlug: null` — 폴백은 호출부 책임
- *   (목록 첫 문서 또는 README).
+ * Closes a tab.
+ * - Closing a non-active tab leaves the active selection untouched.
+ * - Closing the active tab moves to an adjacent one — **left first**, or right when there is no
+ *   left (the leftmost tab was closed).
+ * - Closing the last remaining tab yields `nextActiveSlug: null`; the fallback (the first
+ *   document in the list, or README) is the caller's responsibility.
  */
 export function closeDocTab(
   tabs: DocTab[],

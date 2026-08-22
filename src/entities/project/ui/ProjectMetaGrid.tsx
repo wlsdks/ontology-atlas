@@ -14,7 +14,7 @@ interface Props {
 }
 
 /**
- * 드로어와 상세 페이지가 같은 메타 요약 리듬을 유지하도록 공통 그리드로 묶는다.
+ * One shared grid so the drawer and the detail page keep the same meta-summary rhythm.
  */
 export function ProjectMetaGrid({
   items,

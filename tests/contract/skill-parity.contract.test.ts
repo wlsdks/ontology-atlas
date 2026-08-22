@@ -6,19 +6,20 @@ import { analyzeAgentFiles as analyzeCli } from '../../cli/src/lib/agent-files.m
 import { CASES as FIXTURE_CASES } from '../fixtures/agent-files-cases.mjs';
 
 /**
- * **화면의 스킬 사본 판정이 CLI 와 같은 사실을 말하는가.**
+ * **Does the screen's skill-copy verdict state the same facts as the CLI?**
  *
- * `tests/contract/agent-files.contract.test.ts` 는 두 구현이 같은 **파일 단위
- * finding** 을 내는지 지킨다. 이 파일은 그 위층이다 — 화면이 사람에게 보여
- * 주려고 **스킬 단위로 접은** 결과가 CLI 의 집계와 어긋나지 않는지.
+ * `tests/contract/agent-files.contract.test.ts` keeps the two implementations
+ * producing the same **per-file findings**. This file is the layer above: whether
+ * the result the screen **folds per skill** for a human matches the CLI's totals.
  *
- * 왜 따로 필요한가: 접기는 화면에만 있는 단계라 기존 계약의 사정거리 밖이다.
- * 그런데 사용자가 읽는 숫자는 접힌 쪽이다. "CLI 는 3건이라는데 화면은 2건"
- * 이면 둘 중 하나는 거짓말이고, 그때 신뢰를 잃는 것은 **화면**이다.
+ * Why it is needed separately: the folding step exists only on the screen, outside
+ * the existing contract's reach — yet the number a user reads is the folded one.
+ * "The CLI says 3 but the screen says 2" means one of them is lying, and the one
+ * that loses trust is **the screen**.
  *
- * 스킬 트리가 없는 케이스(`not-applicable`)에서 모델이 **비어야** 한다는 것도
- * 같은 이유로 잠근다 — 없는 것을 0건 일치로 그리면 확인한 적 없는 것을
- * 확인했다고 주장하게 된다.
+ * For the same reason it locks that the model must be **empty** in the
+ * `not-applicable` case (no skill tree) — drawing something that does not exist as
+ * "0 findings, matching" would claim verification that never happened.
  */
 
 interface FixtureCase {
@@ -31,32 +32,32 @@ const CASES = FIXTURE_CASES as unknown as FixtureCase[];
 describe('스킬 사본 — 화면의 접기가 CLI 집계와 같은 사실을 말한다', () => {
   it.each(CASES.map((c) => [c.name, c] as const))('%s', (_name, testCase) => {
     const web = analyzeWeb(testCase.input);
-    // CLI 는 타입 선언 없는 순수 JS 패키지라 시그니처가 추론으로 좁게 잡힌다.
+    // The CLI is a plain JS package with no type declarations, so its signature is inferred narrowly.
     const cli = (analyzeCli as unknown as typeof analyzeWeb)(testCase.input);
 
-    // 전제: 두 분석이 같은 사실을 낸다(기존 계약이 지키는 것 — 여기서 재확인).
+    // Premise: the two analyses produce the same facts (kept by the existing contract, re-confirmed here).
     expect(web.checks.skillCopy.status).toBe(cli.checks.skillCopy.status);
 
     const model = buildSkillParityModel(web);
 
     if (web.checks.skillCopy.status === 'not-applicable') {
-      // 스킬 트리가 없으면 보여 줄 줄도 없다.
+      // With no skill tree there is nothing to show.
       expect(model.rows).toEqual([]);
       expect(model.disagreeing).toBe(0);
       return;
     }
 
-    // 접힌 줄 수는 CLI 가 본 스킬 전체(공유 + 한쪽만)와 같아야 한다.
+    // The number of folded rows must equal every skill the CLI saw (shared + one-sided).
     const cliSkillCount =
       cli.checks.skillCopy.sharedSkills.length +
       cli.checks.skillCopy.claudeOnlySkills.length +
       cli.checks.skillCopy.agentsOnlySkills.length;
     expect(model.rows).toHaveLength(cliSkillCount);
 
-    // 어긋남이 있으면 화면도 어긋남이라 말해야 한다 — 부호가 같아야 한다.
+    // If there is a mismatch the screen must say so too — the signs must agree.
     expect(model.disagreeing > 0).toBe(cli.checks.skillCopy.status === 'drift');
 
-    // 한쪽에만 있는 스킬은 반드시 one-sided 로 접힌다.
+    // A skill present on only one side must always fold as one-sided.
     for (const name of [
       ...cli.checks.skillCopy.claudeOnlySkills,
       ...cli.checks.skillCopy.agentsOnlySkills,

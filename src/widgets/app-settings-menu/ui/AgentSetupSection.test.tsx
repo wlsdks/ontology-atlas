@@ -5,11 +5,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { AgentSetupSection } from './AgentSetupSection';
 
 /**
- * 「MCP 연결」 칸 — **2026-08-21 에 설정 시트에서 옮겨 왔다**(원장 90).
+ * The 「MCP 연결」 pane — **moved out of the settings sheet on 2026-08-21**
+ * (ledger 90).
  *
- * 여기 있는 두 검사는 `AppSettingsMenu.test.tsx` 에서 **따라온 것**이다. 그 화면이
- * 시트를 떠났으니 검사도 따라와야 한다 — 옛 자리에 두면 시트가 안 그리는 것을
- * 계속 재게 되고, 그건 초록인 채로 아무것도 안 지키는 검사가 된다.
+ * The two checks here **came along** from `AppSettingsMenu.test.tsx`. The screen
+ * left the sheet, so the checks have to follow — left in the old place they would go
+ * on measuring something the sheet no longer draws, which is a check that stays
+ * green while enforcing nothing.
  */
 
 const vaultStatus = { current: 'idle' as 'idle' | 'loaded' };
@@ -46,11 +48,13 @@ describe('MCP 연결 칸', () => {
   });
 
   /**
-   * **요구하는 행동을 그 자리에서 할 수 있어야 한다** (2026-08-11 북극성 워크스루,
-   * 2026-08-21 e2e `open-vault-cta` 가 이관 직후 같은 결함을 다시 잡았다).
+   * **The action being asked for has to be possible right there** (north-star
+   * walkthrough 2026-08-11; the e2e `open-vault-cta` caught the same defect again
+   * right after the move, 2026-08-21).
    *
-   * 이 카드는 「폴더를 열면 …」이라고 말한다. 여는 길이 같은 자리에 없으면
-   * 이 저장소가 이름 붙여 금지한 **막다른 CTA** 다.
+   * This card says 「폴더를 열면 …」 (once you open the folder …). Without the way to
+   * open it in the same place, it is the **dead-end CTA** this repository forbids by
+   * name.
    */
   it('폴더를 열라고 말한 자리에서 폴더를 열 수 있다', () => {
     vaultStatus.current = 'idle';
@@ -62,7 +66,7 @@ describe('MCP 연결 칸', () => {
     vaultStatus.current = 'loaded';
     renderSection();
     expect(screen.getByTestId('vault-agent-setup-panel')).toBeInTheDocument();
-    // 표면은 옮겨도 **핸드오프는 산다** — 이관 중 이 버튼이 사라질 뻔했다.
+    // The surface may move, but **the handoff lives** — this button nearly disappeared during the move.
     expect(screen.getByTestId('agents-mcp-proof-copy')).toBeInTheDocument();
   });
 });

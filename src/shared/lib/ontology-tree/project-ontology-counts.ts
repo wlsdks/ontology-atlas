@@ -6,10 +6,10 @@ import {
 } from "./kind-stats";
 
 /**
- * 한 project slug 에 매달린 ontology 노드의 kind 분포.
+ * Kind distribution of the ontology nodes under one project slug.
  *
- * `total` 은 4 kind 합. `byKind` 는 dense — 0 도 포함해서 surface 가
- * 안전하게 읽을 수 있다.
+ * `byKind` is dense — zeroes included — so a consumer can read any kind without
+ * guarding.
  */
 export interface OntologyCountsForProject {
   byKind: Record<MeaningfulOntologyKind, number>;
@@ -17,16 +17,14 @@ export interface OntologyCountsForProject {
 }
 
 /**
- * 노드 list 를 project slug → kind 카운트 map 으로 집계.
+ * Aggregates nodes into project slug → kind counts.
  *
- * - project / document kind 는 메타라 집계 제외 (`MEANINGFUL_ONTOLOGY_KINDS`
- *   = domain / capability / element / unknown).
- * - 한 노드의 `projectIds` 가 N 개면 각 project 에 sum 으로 1씩 카운트.
- *   (한 노드가 다중 project 에 속하는 경우 — 진안이 측정 후 unique 카운트가
- *   필요하다고 피드백 주면 별도 함수로 추가.)
+ * The `project` and `document` kinds are metadata and excluded
+ * (`MEANINGFUL_ONTOLOGY_KINDS`). A node belonging to several projects counts once
+ * in each; a unique count would be a separate function if one is ever needed.
  *
- * 반환되는 Map 의 key 는 입력 nodes 에서 발견된 project slug 만 — 없는 slug
- * 호출자는 fallback (모두 0) 이 필요하면 `undefined` 체크 후 별도 처리.
+ * Keys cover only the slugs seen in the input, so a caller wanting an all-zero
+ * fallback must handle `undefined` itself.
  */
 export function buildProjectOntologyCounts(
   nodes: readonly KnowledgeGraphNode[],
@@ -62,14 +60,14 @@ function createZeroCounts(): OntologyCountsForProject {
 }
 
 /**
- * 한 project 의 카운트에서 "도미넌트 kind" 결정 — sigma border tone 매핑의
- * 1차 입력. 동률이면 `MEANINGFUL_ONTOLOGY_KINDS` 순서 (domain → capability →
- * element → unknown) 로 결정 — 안정 정렬 + spec 의 4-layer 자연 순서.
+ * The dominant kind for a project, the first input to its border tone. Ties break
+ * in `MEANINGFUL_ONTOLOGY_KINDS` order (domain → capability → element → unknown),
+ * which is both a stable sort and the spec's natural layer order.
  *
- * `unknown` 은 1 이상이면 stub 검수 신호라 다른 kind 보다 우선 — surface 가
- * amber 톤으로 검수 필요를 신호하기 위함.
+ * A single `unknown` outranks every other kind: it means a stub needs review, and
+ * the consuming surface signals that in amber.
  *
- * total 0 은 `null` 반환 — 호출자가 무채색 fallback.
+ * `null` for an empty count — the caller falls back to a neutral tone.
  */
 export function pickDominantOntologyKind(
   counts: OntologyCountsForProject | undefined,

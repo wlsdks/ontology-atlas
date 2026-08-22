@@ -14,8 +14,8 @@ const STORAGE_KEY = "demo:gesture-hint:dismissed:v1";
 export function GestureHint({ disabled = false }: { disabled?: boolean }) {
   const t = useTranslations("searchWidgets.gestureHint");
   const [visible, setVisible] = useState(false);
-  // 터치 환경에서만 보여준다. SSR 호환 — initializeWithValue:false 로
-  // hydration mismatch 회피 (정적 export 호환).
+  // Shown on touch environments only. SSR compatible — initializeWithValue:false
+  // avoids a hydration mismatch (static export compatible).
   const isCoarsePointer = useMediaQuery("(pointer: coarse)", {
     initializeWithValue: false,
   });
@@ -34,13 +34,13 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, "1");
     } catch {
-      // storage 실패해도 UX 를 막지 않음.
+      // A storage failure must not block the UX.
     }
   };
 
   useEffect(() => {
     if (!visible) return;
-    // 10 초 후 자동 해제 — "읽고 사라짐" 경험.
+    // Auto-dismiss after 10 seconds — a "read it and it's gone" experience.
     const id = window.setTimeout(dismiss, 10_000);
     return () => window.clearTimeout(id);
   }, [visible]);

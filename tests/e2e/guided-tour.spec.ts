@@ -12,11 +12,12 @@ import { seedFirstRunSeen } from "./first-run-seed";
  */
 
 async function gotoAndSettle(page: import("@playwright/test").Page, url: string) {
-  // 이 spec 은 투어를 **수동으로** 열어 검증한다. 첫 방문 자동 표면(폴더-우선
-  // 안내 시트 + 자동 투어)을 시드로 억제하지 않으면 900ms 발화가 수동 클릭과
-  // 경합해 느린 CI 에서 tour-button 이 오버레이에 가려 클릭이 타임아웃난다
-  // (2026-07-24 CI flake 원인). done 시드는 재실행을 막지 않는다 —
-  // tour-button 은 저장 상태와 무관하게 항상 tour.start() 를 부른다.
+  // This spec opens the tour **manually**. Without seeding away the first-visit
+  // automatic surfaces (the folder-first guidance sheet and the auto tour), the 900ms
+  // trigger races the manual click and on a slow CI runner the tour button is covered
+  // by the overlay and the click times out (the cause of the 2026-07-24 CI flake).
+  // Seeding "done" does not prevent a rerun — the tour button always calls
+  // tour.start() regardless of stored state.
   await seedFirstRunSeen(page);
   await page.goto(url);
   await page.waitForLoadState("networkidle");
@@ -26,7 +27,7 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test("all 8 steps render a resolvable anchor + card", async ({ page }, testInfo) => {
-    // 투어는 지도 위에서 돈다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    // The tour runs on the map — since 2026-07-30 `/` is the gateway.
     await gotoAndSettle(page, "/en/topology/");
 
     const tourButton = page.getByTestId("topology-tour-button");
@@ -100,13 +101,13 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
     await expect(overlay).toHaveCount(0);
   });
 
-  // 2026-07-24 라이브 결함 회귀 — 4단계(try-click)에서 스포트라이트 구멍이
-  // 그려진 노드와 어긋나면 사용자가 밝은 노드를 눌러도 4-스트립 blocker 가
-  // 클릭을 삼켜 투어가 영구 정지한다. 프로브(topology-tour-anchor)는 엔진의
-  // worldToScreen 실좌표이므로 "프로브 중심 = 항상 클릭 통과" 를 계약으로
-  // 고정한다.
+  // Regression for the 2026-07-24 live defect: at step 4 (try-click), if the
+  // spotlight hole is misaligned with the drawn node, the four-strip blocker swallows
+  // the click even when the user presses the lit node and the tour stalls forever. The
+  // probe (topology-tour-anchor) reports the engine's real worldToScreen coordinates,
+  // so "the probe centre always passes clicks through" is pinned as a contract.
   test("step 4: probe center is click-passable and advances the tour", async ({ page }) => {
-    // 투어는 지도 위에서 돈다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    // The tour runs on the map — since 2026-07-30 `/` is the gateway.
     await gotoAndSettle(page, "/en/topology/");
 
     const tourButton = page.getByTestId("topology-tour-button");
@@ -130,8 +131,8 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
     const cx = box!.x + box!.width / 2;
     const cy = box!.y + box!.height / 2;
 
-    // 구멍-프로브 정합: 프로브 중심의 최상단 요소가 blocker 스트립이 아니라
-    // 캔버스여야 한다 (스트립이면 클릭이 캔버스에 도달하지 못한다).
+    // Hole/probe alignment: the topmost element at the probe centre must be the canvas,
+    // not a blocker strip (a strip means the click never reaches the canvas).
     const hitTag = await page.evaluate(
       ([x, y]) => document.elementFromPoint(x as number, y as number)?.tagName ?? "NONE",
       [cx, cy],

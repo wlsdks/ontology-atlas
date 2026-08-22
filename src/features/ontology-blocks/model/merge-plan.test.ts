@@ -49,7 +49,7 @@ describe('planBlockImport — dry-run contract', () => {
 
     const plan = planBlockImport(files, existing, OPTS);
 
-    // 입력 미변경 — dry-run 은 데이터만 반환한다.
+    // Input unchanged — a dry run returns data only.
     expect(files.map((f) => f.raw)).toEqual(rawBefore);
     expect(existing.size).toBe(0);
     expect(plan.newCount).toBe(2);
@@ -275,7 +275,7 @@ describe('planBlockImport — prefix resolution', () => {
       PREFIX_OPTS,
     );
 
-    // session 이 리네임됐으니 login 본문의 [[capabilities/session]] 도 따라간다.
+    // `session` was renamed, so `[[capabilities/session]]` in login's body follows it.
     const login = plan.writes.find((w) => w.slug === 'capabilities/login');
     expect(login?.content).toContain('[[capabilities/auth-block-session]]');
     const session = plan.writes.find((w) => w.slug === 'capabilities/auth-block-session');

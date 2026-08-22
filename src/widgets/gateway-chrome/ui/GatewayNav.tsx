@@ -13,14 +13,16 @@ import { XMark } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 관문 표면들이 공유하는 상단 크롬.
+ * The top chrome shared by the gateway surfaces.
  *
- * **네 주소에 산다** — `/`(웹 방문자의 얼굴) · `/download`(설치 딥링크) ·
- * `/guide` · `/changelog`. 같은 크롬이지만 두 조각이 주소에 따라 달라진다:
- * 루트에서는 ① 빵부스러기의 현재 마디를 지우고(그 주소가 아니다) ②
- * 「지도로 돌아가기」를 지운다 — 여기로 온 사람은 지도에서 온 게 아니고,
- * 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」가 이미 낸다.
- * 같은 일을 하는 링크를 크롬과 판에 둘 다 두면 둘 중 하나가 죽은 약속이 된다.
+ * **It lives at four addresses** — `/` (a web visitor's first face) · `/download`
+ * (the install deep link) · `/guide` · `/changelog`. The chrome is the same, but two
+ * pieces differ by address: at the root it ① drops the breadcrumb's current node
+ * (that is not the address) and ② drops 「지도로 돌아가기」 (back to the map) — someone
+ * who arrived here did not come from the map, and the route to the map is already
+ * offered by 「설치 없이 브라우저에서 써보기」 (try it in the browser without
+ * installing) inside the page. Putting the same link in both the chrome and the page
+ * makes one of the two a dead promise.
  */
 export function GatewayNav() {
   const t = useTranslations('download');
@@ -29,10 +31,11 @@ export function GatewayNav() {
   const atRoot = path === '/';
 
   /**
-   * 현재 마디의 이름. 루트면 없다(빵부스러기를 안 그린다).
+   * The current node's name. Absent at the root (no breadcrumb is drawn).
    *
-   * ⚠️ 라벨을 여기서 정하는 이유: 각 페이지가 자기 이름을 크롬에 주입하면
-   * 같은 이름이 두 곳에 살고 한쪽만 바뀐다. 주소가 진실원이다.
+   * ⚠️ Why the label is decided here: if each page injected its own name into the
+   * chrome, the same name would live in two places and only one would change. The
+   * address is the source of truth.
    */
   const crumb = atRoot
     ? null
@@ -52,10 +55,11 @@ export function GatewayNav() {
         'sticky top-0 z-30 w-full shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]',
       )}
     >
-      {/* `flex-wrap` 을 뺀 이유: 좁은 폭에서 줄바꿈이 일어나면 관문의 얼굴이
-          97px 짜리 두 줄이 되어 무대를 먹는다(실측 390px). 대신 접히는 것은
-          **빵부스러기와 절 링크**다 — 이 라우트가 어디인지는 좁은 화면에서도
-          제목이 말하고, 로고와 언어 전환은 어느 폭에서도 남아야 한다. */}
+      {/* Why `flex-wrap` was removed: wrapping at narrow widths turns the gateway's
+          face into two 97px rows that eat the stage (measured at 390px). What collapses
+          instead is **the breadcrumb and the section links** — the title states which
+          route this is even on a narrow screen, while the logo and the locale switch
+          have to survive at any width. */}
       <div
         className={cn(
           PAGE_COLUMN,
@@ -87,16 +91,18 @@ export function GatewayNav() {
           </>
         ) : null}
 
-        {/* 이 그룹의 **오른끝**이 곧 원점의 거울이다 — `vw − 원점` 에서 멈춰야
-            상단 바가 아래 밴드와 같은 프레임 안에 산다. 소유자 지적
-            *"공백이 길고 왜이러지?"* 가 정확히 이 끝과 화면 끝 사이였다
-            (실측 1920: 256px · 2560: 864px). 게이트가 이 testid 로 잰다. */}
+        {/* This group's **right edge** is the mirror of the origin — it has to stop at
+            `vw − origin` for the top bar to live in the same frame as the band below.
+            The owner's report *"공백이 길고 왜이러지?"* (why is there such a long gap?)
+            was exactly this edge against the screen edge (measured 1920: 256px · 2560:
+            864px). The gate measures it through this testid. */}
         <span
           data-testid="download-gnb-actions"
           className="ml-auto flex shrink-0 items-center gap-3"
         >
-          {/* 읽을거리 둘. `<sm` 에서 접는다 — 좁은 폭의 첫 화면은 헤드라인과
-              받기 버튼의 것이고, 이 둘은 스크롤하면 푸터에서 다시 만난다. */}
+          {/* The two reading links. Collapsed below `sm` — a narrow first screen belongs
+              to the headline and the download button, and these two are met again in the
+              footer on scroll. */}
           <span className="hidden items-center gap-3 sm:flex">
             <GatewayNavLink href="/guide" active={path.startsWith('/guide')}>
               {tNav('guide')}
@@ -107,12 +113,13 @@ export function GatewayNav() {
           </span>
 
           {/*
-           * X — 자리는 있고 목적지는 아직 없다(`X_HANDLE` 이 비었다).
+           * X — the position exists and the destination does not yet (`X_HANDLE` is
+           * empty).
            *
-           * 비활성으로 그리는 것이 링크로 그리는 것보다 정직하다: 누를 수
-           * 있어 보이는데 아무 데도 안 가는 것이 「죽은 CTA」이고, 이건
-           * 누를 수 없어 보이며 `title` 이 왜인지 말한다. 핸들을 채우면
-           * 이 분기가 저절로 링크 쪽으로 넘어간다.
+           * Drawing it disabled is more honest than drawing it as a link: something
+           * that looks pressable and goes nowhere is a 「dead CTA」, while this looks
+           * unpressable and its `title` says why. Filling in the handle moves this
+           * branch to the link side by itself.
            */}
           {xHref ? (
             <a
@@ -126,11 +133,12 @@ export function GatewayNav() {
               <XMark size={14} aria-hidden />
             </a>
           ) : (
-            /* ⚠️ **`opacity-50` 을 뺀 것이 이 자리의 수정이다** (2026-07-30).
-               그전엔 quaternary(4.76:1)에 투명도 0.5 가 겹쳐 실효 대비가 WCAG
-               비텍스트 기준(1.4.11, 3:1) 아래로 내려갔다 — 소유자 관측
-               *"잘 안보이고"*. 비활성은 **흐림이 아니라 형태**로 말한다:
-               테두리 없음 + `cursor-not-allowed` + `aria-disabled` + 툴팁. */
+            /* ⚠️ **Removing `opacity-50` is the fix at this position** (2026-07-30).
+               Before that, quaternary (4.76:1) with 0.5 opacity on top dropped the
+               effective contrast below the WCAG non-text threshold (1.4.11, 3:1) —
+               owner observation *"잘 안보이고"* (hard to see). Disabled speaks through
+               **shape, not dimming**: no border, `cursor-not-allowed`, `aria-disabled`
+               and a tooltip. */
             <span
               data-testid="gateway-x-placeholder"
               aria-disabled="true"
@@ -143,17 +151,18 @@ export function GatewayNav() {
           )}
 
           {/*
-           * ⚠️ **「지도로 돌아가기」는 없다** (2026-07-31, 소유자: *"이건 홍보
-           * 페이지라 메인 화면에서만 이동 가능하게"*).
+           * ⚠️ **There is no 「지도로 돌아가기」** (2026-07-31, owner: *"이건 홍보
+           * 페이지라 메인 화면에서만 이동 가능하게"* — this is a promotional page, so
+           * make it navigable only from the main screen).
            *
-           * 관문은 설치 전 방문자가 읽는 자리다. 워크벤치로 가는 길을 크롬에
-           * 두면 아직 볼트도 없는 사람에게 작업 표면을 권하게 되고, 볼트가 있는
-           * 사람은 애초에 `/` 에서 지도로 간다(`isGatewaySurface()`). 어느 쪽에도
-           * 쓰이지 않는 링크였다.
+           * The gateway is what a visitor reads before installing. Putting a route to
+           * the workbench in the chrome recommends a working surface to someone who has
+           * no vault yet, while someone who does have one goes to the map from `/`
+           * anyway (`isGatewaySurface()`). It was a link neither of them used.
            *
-           * 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」가 낸다 —
-           * 그 하나가 남아 `map-destination-route.contract.test.ts` 의 감시를
-           * 계속 받는다.
+           * The route to the map is offered by 「설치 없이 브라우저에서 써보기」 inside
+           * the page — that single one remains and stays under the watch of
+           * `map-destination-route.contract.test.ts`.
            */}
           <LocaleSwitch />
         </span>
@@ -163,23 +172,25 @@ export function GatewayNav() {
 }
 
 /**
- * 관문 크롬의 읽을거리 링크 — **칩으로 그린다**.
+ * The gateway chrome's reading links — **drawn as chips**.
  *
- * ## 왜 맨 글자가 아닌가 (2026-07-30, 소유자: *"버튼도 아니고 잘 안보이고"*)
+ * ## Why not bare text (2026-07-30, owner: *"버튼도 아니고 잘 안보이고"* — it isn't a
+ * button and it's hard to see)
  *
- * 대비는 원래도 문제가 아니었다 — 실측 **6.13:1** 로 본문 기준을 넉넉히 넘는다.
- * 문제는 **같은 줄의 이웃**이었다: EN/KO 로케일 전환은 32×32 칩인데 이 둘만
- * 맨 글자(32×20 · 46×20, 배경도 테두리도 없음)라, 나란히 놓이면 하나는 컨트롤로
- * 다른 하나는 라벨로 읽힌다. **어포던스는 절대값이 아니라 이웃과의 관계다.**
+ * Contrast was never the problem — measured at **6.13:1**, comfortably over the body
+ * threshold. The problem was **the neighbours on the same row**: the EN/KO locale
+ * switch is a 32×32 chip, while these two alone were bare text (32×20 and 46×20, with
+ * no background and no border), so side by side one reads as a control and the other
+ * as a label. **Affordance is relative to its neighbours, not an absolute value.**
  *
- * 그래서 색을 올리는 대신 **형태를 맞췄다**. 배경 + 테두리 + 같은 높이를 주면
- * 셋이 한 종류의 물건으로 읽힌다.
+ * So instead of raising the colour, **the shape was matched**. A background, a border
+ * and the same height make all three read as one kind of object.
  *
- * ## 활성 상태는 색이 아니라 면으로 구분한다
+ * ## The active state is distinguished by surface, not colour
  *
- * 현재 페이지는 채워진 면(`--color-elevated`)을 갖고, 나머지는 비어 있다가
- * 호버에서 그 면을 얻는다. 무채색 안에서 「지금 여기」를 말하는 방법이라
- * 새 색을 열지 않는다(`design.md` — 채색은 인디고 하나).
+ * The current page has a filled surface (`--color-elevated`) and the others are empty
+ * until hover gives them that surface. It is how «you are here» is said within
+ * neutrals, and it opens no new colour (`design.md` — one indigo).
  */
 function GatewayNavLink({
   href,
@@ -196,16 +207,18 @@ function GatewayNavLink({
       data-testid={`gateway-nav-${href.slice(1)}`}
       aria-current={active ? 'page' : undefined}
       className={controlClass({ shape: 'chip', size: 'md', className: cn(
-        // ⚠️ `touch-hit-expand` 는 **칩이 되면서 더 필요해졌다.** 맨 글자였을
-        // 때부터 달려 있던 것을 칩으로 바꾸며 떨어뜨렸고, 터치 계약이 32px 높이를
-        // 잡았다(coarse 포인터 44px). 보이는 상자는 그대로 두고 히트 영역만
-        // 의사요소로 넓히므로 이 줄의 레이아웃은 1px 도 안 바뀐다.
+        // ⚠️ `touch-hit-expand` became **more** necessary once these were chips. It had
+        // been there since they were bare text and was dropped in the conversion, and
+        // the touch contract caught the 32px height (44px on a coarse pointer). The
+        // visible box is untouched and only the hit area widens through a pseudo
+        // element, so this row's layout does not change by a pixel.
         'touch-hit-expand h-8 whitespace-nowrap px-2.5',
         'text-body leading-body',
-        // ⚠️ **쉴 때부터 테두리를 준다.** 처음엔 비활성을 `border-transparent`
-        // 로 두고 호버에서만 칩이 나타나게 했는데, 그러면 소유자가 짚은 상태
-        // (*"버튼도 아니고"*)가 **평상시 화면에서 그대로**다 — 호버는 이미
-        // 컨트롤이라고 믿은 사람만 발견한다. 어포던스는 손이 오기 전에 있어야 한다.
+        // ⚠️ **The border is there at rest.** At first the inactive state was
+        // `border-transparent` with the chip appearing only on hover, but then the
+        // state the owner named (*"버튼도 아니고"* — it isn't even a button) is **exactly
+        // what the screen shows at rest** — hover is discovered only by someone who
+        // already believed it was a control. Affordance has to exist before the hand arrives.
         active
           ? 'border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]'
           : 'border-[color:var(--color-border-strong)] text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-elevated)] hover:text-[color:var(--color-text-primary)]',

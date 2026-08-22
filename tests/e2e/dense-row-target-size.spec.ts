@@ -3,45 +3,45 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * 밀집 행의 타깃 크기 — **데이터가 있어야만 존재하는 자리**를 WCAG 2.5.8 로 잰다.
+ * Target size in dense rows — measures WCAG 2.5.8 on **a site that only exists when
+ * the data does**.
  *
- * ## 왜 접근성 래칫이 이 위반을 한 번도 못 봤나
+ * **Why the accessibility ratchet never saw this violation.** `a11y-ratchet` opens 17
+ * routes and runs axe. Its `target-size` baseline is **0** and really was 0 — but not
+ * because there were no violations: **that site had never rendered**. The domain
+ * coupling detail on the "boundaries" tab (a row of paired example links) appears only
+ * when both conditions hold:
  *
- * `a11y-ratchet` 은 17 라우트를 열고 axe 를 돌린다. 그 게이트의 `target-size`
- * 기준선은 **0** 이고 실제로 0 이었다 — 그런데 그건 위반이 없어서가 아니라
- * **그 자리가 렌더된 적이 없어서**다. 「경계」 탭의 도메인 결합 상세(짝을 이룬
- * 예시 링크 줄)는 두 조건을 모두 만족해야 화면에 나온다:
+ *   ① the vault must have **cross-domain edges** for the grid to have pressable cells,
+ *   ② a person must **press** a cell for the detail to expand.
  *
- *   ① 볼트에 **교차 도메인 엣지**가 있어야 격자에 누를 수 있는 칸이 생기고,
- *   ② 사람이 그 칸을 **눌러야** 상세가 펼쳐진다.
+ * The default sample vault lacks ①. So axe had never seen that DOM and the gate was
+ * **green over an empty set**. This is a class of problem rather than one site — *a
+ * gate whose eyes close depending on the data*.
  *
- * 기본 샘플 볼트에는 ①이 없다. 그래서 axe 는 그 DOM 을 한 번도 본 적이 없고,
- * 게이트는 **빈 집합 위에서 초록**이었다. 이건 이 한 자리의 문제가 아니라
- * 부류의 문제다 — *데이터에 의존해 눈이 감기는 게이트*.
+ * So this spec **reproduces** the violation: it mounts a vault with cross-domain edges
+ * through the OPFS stub picker, presses a cell to actually render the row, and then
+ * measures rects.
  *
- * 그래서 이 스펙은 위반을 **재현**한다: OPFS 스텁 픽커로 교차 도메인 엣지가
- * 있는 볼트를 물리고, 칸을 눌러 그 행을 실제로 그린 다음 rect 를 잰다.
+ * **What is measured — WCAG 2.5.8 Target Size (Minimum), AA.** Either condition
+ * passes (both must fail for a violation):
+ *   - **The rule**: the target is at least 24×24 CSS px.
+ *   - **The spacing exception**: a 24-diameter circle centred on the target meets no
+ *     other target's circle → centre-to-centre distance ≥ 24.
+ * (The inline exception applies only to links inside sentence flow. A list row is a
+ * block occupying its own line, so it does not apply — measurement confirmed
+ * `display: block`.)
  *
- * ## 무엇을 재는가 — WCAG 2.5.8 Target Size (Minimum), AA
- *
- * 통과 조건은 둘 중 하나다(둘 다 실패해야 위반):
- *   - **본칙**: 타깃이 24×24 CSS px 이상이다.
- *   - **Spacing 예외**: 타깃 중심의 지름 24 원이 다른 어떤 타깃의 원과도 만나지
- *     않는다 → 중심 간 거리 ≥ 24.
- * (Inline 예외는 문장 흐름 안의 링크에만 붙는다. 목록 행은 자기 줄을 차지하는
- * 블록이라 해당 없음 — 실측에서도 `display: block` 이었다.)
- *
- * ## 히트 확장(`.touch-hit-expand`)으로는 못 고친다
- *
- * 행 피치가 21px 인 자리에 44px 히트 영역을 붙이면 이웃과 16px 겹치고, DOM
- * 순서상 **뒤 행이 앞 행의 탭을 훔친다.** 「작아서 못 누름」이 「눌렀는데 다른
- * 게 열림」이 되는 것은 개선이 아니다. 그래서 이 자리의 처방은 값 층(행 간격)
- * 이고, 이 스펙은 보이는 rect 를 잰다.
+ * **Hit expansion (`.touch-hit-expand`) cannot fix it.** Attaching a 44px hit area
+ * where the row pitch is 21px overlaps neighbours by 16px, and in DOM order **a later
+ * row steals an earlier row's tap.** Turning "too small to press" into "pressed and
+ * something else opened" is not an improvement. So the prescription here is the value
+ * layer (row spacing), and this spec measures the visible rects.
  */
 
 const MIN_TARGET = 24;
 
-/** 교차 도메인 엣지가 있는 볼트 — 이게 없으면 검사 대상 DOM 이 태어나지 않는다. */
+/** A vault with cross-domain edges — without it the DOM under test is never born. */
 const CROSS_DOMAIN_VAULT: Record<string, string> = {
   "project.md": [
     "---",
@@ -90,8 +90,9 @@ const CROSS_DOMAIN_VAULT: Record<string, string> = {
     "정산 도메인.",
     "",
   ].join("\n"),
-  // 주문 → 정산 세 갈래. `insights.ts` 가 쌍마다 예시를 3개까지 모으므로
-  // 이 셋이 그대로 세로로 쌓인 세 줄이 된다 — 재현하려는 밀집 행이 그것이다.
+  // Three branches from orders to settlement. `insights.ts` collects up to 3 examples
+  // per pair, so these three become three vertically stacked rows — the dense rows this
+  // spec reproduces.
   "capabilities/checkout.md": capability("coupling-checkout", "Checkout", "coupling-orders", [
     "coupling-invoice",
   ]),
@@ -123,11 +124,11 @@ const CROSS_DOMAIN_VAULT: Record<string, string> = {
 };
 
 /**
- * `relates` 를 쓰는 이유 — 웹 파생기(`derive-ontology-from-vault`)가 역량의
- * 교차 엣지로 읽는 키가 그것이다. `depends_on` 은 스키마의 역량 키지만 이
- * 파생기가 읽는 것은 `dependencies`(프로젝트 키)라, 역량에 `depends_on` 을
- * 적으면 **엣지가 조용히 0개**가 된다(실측: 관계 8 = 컨테인먼트뿐, 격자 없음).
- * 이 스펙의 주제가 아니므로 여기서는 실제로 엣지가 되는 키를 쓴다.
+ * Why `relates`: it is the key the web deriver (`derive-ontology-from-vault`) reads as
+ * a capability's cross edge. `depends_on` is the schema's capability key, but this
+ * deriver reads `dependencies` (a project key), so writing `depends_on` on a capability
+ * yields **silently zero edges** (measured: 8 relations, all containment, no grid).
+ * That is not this spec's subject, so it uses the key that really becomes an edge.
  */
 function capability(slug: string, title: string, domain: string, relates: string[]): string {
   return [
@@ -155,7 +156,7 @@ interface Target {
   isExampleLink: boolean;
 }
 
-/** 볼트를 물리고 「경계」 탭의 상세를 펼친 뒤, 그 화면의 타깃 전수를 돌려준다. */
+/** Mounts the vault, expands the detail on the "boundaries" tab, and returns every target on that screen. */
 async function openCouplingDetail(page: Page): Promise<Target[]> {
   await stubDirectoryPicker(page, CROSS_DOMAIN_VAULT);
   await seedFirstRunSeen(page);
@@ -170,7 +171,8 @@ async function openCouplingDetail(page: Page): Promise<Target[]> {
   await page.goto("/ko/ontology/insights/?tab=boundaries&guides=off");
   await page.waitForLoadState("networkidle");
 
-  // 콜드스타트 카드가 떴다면 볼트가 안 실린 것이다 — 아래 단언이 그 자리에서 터진다.
+  // A cold-start card means the vault did not load — the assertion below fails right
+  // there.
   await expect(page.getByTestId("domain-coupling-grid")).toBeVisible({ timeout: 20_000 });
   await page.getByTestId("domain-coupling-cell").first().click();
   await expect(page.getByTestId("domain-coupling-pair")).toBeVisible();
@@ -213,15 +215,17 @@ test.describe("밀집 행 타깃 크기 (WCAG 2.5.8 AA)", () => {
     const targets = await openCouplingDetail(page);
     const examples = targets.filter((t) => t.isExampleLink);
 
-    // ★ 빈 집합 위에서 놀지 않는다는 증거 ① — 잴 것이 실제로 렌더됐는가.
-    //   이 게이트가 태어난 이유가 «그 행이 안 뜨면 조용히 통과» 였다.
+    // Evidence ① that it is not idling on an empty set — did the thing being measured
+    // actually render? This gate exists because "if that row does not appear, pass
+    // quietly" was the previous behaviour.
     expect(
       examples.length,
       "예시 링크가 없다 — 볼트가 안 실렸거나 칸이 안 펼쳐졌다. 위반이 없는 게 아니라 미측정이다.",
     ).toBeGreaterThanOrEqual(4);
 
-    // ★ 증거 ② — 그중 **세로로 겹쳐 쌓인 이웃**이 실제로 있는가. 밀집 행이
-    //   한 줄로 펴지면(예: 예시가 1건뿐인 볼트) 이 검사는 아무것도 안 본다.
+    // Evidence ② — do **vertically stacked neighbours** really exist among them? If the
+    // dense rows flatten to a single line (a vault with only one example, say), this check
+    // sees nothing.
     const stacked = examples.some((a) =>
       examples.some(
         (b) =>

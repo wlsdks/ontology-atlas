@@ -48,8 +48,9 @@ const EDGES = [
 
 describe("buildConceptEgo — 방향이 관계의 절반이다", () => {
   /*
-   * 시안 배선에서 들어오는 `contains` 를 「담고 있는 것」에 넣었더니 도메인
-   * 노드에서 ↑17 과 ↓16 이 거의 같은 집합이 됐다. 그 회귀를 여기서 잡는다.
+   * The mockup wiring filed an incoming `contains` under "what I contain", which
+   * made a domain node's ↑17 and ↓16 nearly the same set. This catches that
+   * regression.
    */
   it("들어오는 contains 는 「나를 담은 곳」이지 「내가 담은 것」이 아니다", () => {
     const ego = buildConceptEgo("element:rail", NODES, EDGES);
@@ -83,7 +84,7 @@ describe("buildConceptEgo — 방향이 관계의 절반이다", () => {
 
   it("도메인 이름은 belongsTo 의 도메인 이웃에서 온다", () => {
     expect(buildConceptEgo("element:rail", NODES, EDGES)!.domainLabel).toBe("온보딩·배포·앱 셸");
-    // 도메인 자신에게는 상위 도메인이 없다 — 빈 칸이 정답이다.
+    // A domain has no parent domain of its own — an empty cell is the right answer.
     expect(buildConceptEgo("domain:shell", NODES, EDGES)!.domainLabel).toBeNull();
   });
 
@@ -94,9 +95,9 @@ describe("buildConceptEgo — 방향이 관계의 절반이다", () => {
 
 describe("matchNodeId — 커밋이 건드린 파일을 그래프 노드에 맞춘다", () => {
   /*
-   * Rust 는 frontmatter 의 slug 를(#842), 파생은 `<kind>:<꼬리>` 를 쓴다.
-   * 문자열이 그대로 안 맞으므로 이 다리가 없으면 **모든 걸음이 「개념 밖」**
-   * 으로 보이고 아무 에러도 안 난다.
+   * Rust uses the frontmatter slug (#842); the derivation uses `<kind>:<tail>`.
+   * The strings do not match outright, so without this bridge **every step looks
+   * like it touched nothing in the graph** — and nothing errors.
    */
   it("frontmatter slug 로 맞춘다", () => {
     expect(matchNodeId({ slug: "capabilities/mcp-server", kind: "capability" }, NODES)).toBe(

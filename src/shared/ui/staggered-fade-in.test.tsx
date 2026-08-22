@@ -59,9 +59,9 @@ describe('StaggeredFadeIn', () => {
         ))}
       </StaggeredFadeIn>,
     );
-    // 상한 이내(index 2) → 2*60 = 120ms
+    // Within the cap (index 2) → 2*60 = 120ms.
     expect(screen.getByTestId('c2').getAttribute('style')).toContain('120ms');
-    // 상한 초과(index 11) → 12초가 아니라 8*60 = 480ms 로 cap (660ms 아님)
+    // Past the cap (index 11) → capped at 8*60 = 480ms, not 660ms.
     const capped = screen.getByTestId('c11').getAttribute('style') ?? '';
     expect(capped).toContain('480ms');
     expect(capped).not.toContain('660ms');

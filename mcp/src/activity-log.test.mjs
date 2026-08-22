@@ -1,4 +1,4 @@
-// B3 — 활동 로그 계약: append/로테이션/tail 읽기/heartbeat agent 복사.
+// Activity log contract: append, rotation, tail read, heartbeat agent copy.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import {
@@ -121,14 +121,16 @@ describe('activity-log (B3 — 로컬 감사 로그)', () => {
 
 describe('resolveAgentName — 연결 인사의 클라이언트 이름 자동 기록 (2026-08-13)', () => {
   /**
-   * 실시간 에이전트 표시의 1번 조각. 종전에는 agent 이름이 하트비트 파일(CLI 로
-   * 직접 등록)에서만 왔다 — 등록을 안 한 에이전트의 활동은 전부 agent: null 로
-   * 쌓였다. 그런데 MCP initialize 인사에는 clientInfo.name("claude-code" 등)이
-   * **이미 실려 온다.** 서버가 아는 사실을 버리지 않는다.
+   * Agent names used to come only from the heartbeat file (registered explicitly
+   * through the CLI), so activity from an unregistered agent all piled up as
+   * `agent: null`. But the MCP initialize greeting **already carries**
+   * `clientInfo.name` ("claude-code" and friends). Do not discard a fact the server
+   * already knows.
    *
-   * 우선순위: 하트비트(사람/에이전트가 일부러 등록한 정체) > 인사의 이름(자동)
-   * > null. 하트비트가 있는데 인사가 다른 이름을 말하면 하트비트가 이긴다 —
-   * 등록은 의도이고 인사는 기본값이다.
+   * Priority: heartbeat (an identity a person or agent registered on purpose) >
+   * the greeting's name (automatic) > null. When a heartbeat exists and the
+   * greeting says a different name, the heartbeat wins — registration is intent,
+   * the greeting is a default.
    */
   it('하트비트가 있으면 하트비트가 이긴다', () => {
     const root = tmpVault();

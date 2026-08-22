@@ -9,43 +9,52 @@ import { RowButton } from '@/shared/ui/controls';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 
 /**
- * 「내 에이전트 연결」의 한 단계 — **한 번에 하나만 펼친다.**
+ * One step of 「내 에이전트 연결」 — **only one expands at a time.**
  *
- * ## 왜 이 컴포넌트가 생겼나 (2026-08-04, 소유자 지시)
+ * ## Why this component exists (2026-08-04, owner instruction)
  *
- * 소유자: *"지금은 이상해 푸른 박스에 너무 길고 보기 안좋고 분리를 하든 차라리"*.
- * 실측이 그 말을 숫자로 갖는다 — 고급 접기를 펴면 이 탭의 내용이 **2,581px**
- * (617px 창의 **4.18장**)이었고, 「연결하기」·「제대로 됐나」·「고장 났을 때」·
- * 「고급 검증」이 전부 **같은 무게로 평평하게** 쌓여 있었다.
+ * Owner: *"지금은 이상해 푸른 박스에 너무 길고 보기 안좋고 분리를 하든 차라리"*
+ * (this is odd — a blue box, far too long, hard to look at; split it up). The
+ * measurement puts numbers on that: with the advanced fold open, this tab's
+ * content was **2,581px** (**4.18 screenfuls** of a 617px window), and
+ * 「연결하기」·「제대로 됐나」·「고장 났을 때」·「고급 검증」 were all stacked
+ * **flat, at the same weight**.
  *
- * 갈래는 소유자가 골랐다(B — 단계 진행형): 지금 단계만 펼치고, 끝난 단계는
- * 한 줄로 접고, 안 온 단계는 물러난다. **접는 것이지 지우는 것이 아니다** —
- * 접힌 것에는 전부 도달할 수 있어야 한다.
+ * The owner picked the approach (B — stepwise progression): expand only the
+ * current step, collapse finished ones to a line, and recede the ones not reached
+ * yet. **Collapsing, not deleting** — everything collapsed must remain reachable.
  *
- * ## 왜 `StepRow`(features)를 안 쓰나
+ * ## Why not `StepRow` (features)
  *
- * `StepRow` 는 **항상 펼쳐진** 문법이다. 지도 시트는 세 단계가 한 화면에 다
- * 보이는 것이 맞고(거기서는 그게 전부다), 여기는 그 셋 뒤에 검증·수리·명령이
- * 더 붙어서 같은 문법이면 4장이 된다. 같은 이름 아래 두 행동을 넣는 대신 —
- * 그게 `StepCard`/`StepRow` 가 갈라졌던 원인이다 — 소비처가 하나인 이 문법은
- * 소비처 옆에 둔다. 두 번째 소비처가 생기면 그때 `features` 로 내린다.
+ * `StepRow` is an **always-expanded** grammar. The map sheet is right to show all
+ * three steps at once (there, that is everything), while here verification, repair
+ * and commands follow those three, so the same grammar becomes four screenfuls.
+ * Rather than putting two behaviours under one name — which is what split
+ * `StepCard`/`StepRow` in the first place — this single-consumer grammar lives next
+ * to its consumer. It drops to `features` when a second consumer appears.
  *
- * ## 접히고 펴지는 것은 목록 행 펼침 문법(`.ai-row-disclosure`)이다
+ * ## What collapses and expands is the list-row disclosure grammar (`.ai-row-disclosure`)
  *
- * 첫 판(2026-08-04 오전)은 `Surface`(chrome 문법)로 감쌌고, **그날 저녁 소유자가 설치
- * 앱에서 결함을 잡았다** — *"버벅이면서 이상하게 열리는데?"*. 프레임 실측:
- * 1단계에서 3단계로 옮길 때 아래 형제가 **+254px 을 1프레임에** 밀렸다가
- * (여는 본문이 즉시 전고 마운트) 140ms 뒤 **−352px 을 또 1프레임에** 튀었다
- * (닫히는 본문이 퇴장 창 동안 자리를 점유하다 한 번에 소멸). 전환 프레임 0장.
+ * The first version (morning of 2026-08-04) wrapped it in `Surface` (chrome
+ * grammar), and **that evening the owner caught the defect in the installed app** —
+ * *"버벅이면서 이상하게 열리는데?"* (it stutters and opens strangely). Frame
+ * measurement: moving from step 1 to step 3, the siblings below were pushed
+ * **+254px in one frame** (the opening body mounts at full height immediately) and
+ * then, 140ms later, snapped back **−352px in another single frame** (the closing
+ * body holds its space through the exit window and then vanishes at once). Zero
+ * transition frames.
  *
- * 원인은 문법 선택이다. `Surface(chrome)` 는 **떠서 아래를 가리는 표면**의
- * 것이라(스케일+페이드, 퇴장 창 동안 레이아웃 점유) 흐름 안 원소에 입히면
- * 주변이 두 번 튄다. 흐름 안 접기의 문법은 앱에 이미 있다 —
- * `.ai-row-disclosure`(높이 전이, `--motion-base`) + `useRowDisclosure`.
- * 형제가 자리를 **연속으로** 내주고 받는 것까지가 그 문법의 일이다.
- * 새 키프레임 0 · 새 토큰 0. 하드컷 래칫(`surface-motion-ratchet`) 기준선
- * 0 은 그대로다: 상자는 늘 그려 두고 내용만 접힘에서 빠지므로 조건부 등장
- * 표면 자체가 아니다(`AgentSetupStep.test.tsx` 가 문법을 계약으로 고정).
+ * The cause is the choice of grammar. `Surface(chrome)` belongs to **a surface that
+ * floats and covers what is below** (scale plus fade, holding layout through the
+ * exit window), so applying it to an in-flow element makes the surroundings jump
+ * twice. The grammar for in-flow collapsing already exists in the app:
+ * `.ai-row-disclosure` (height transition, `--motion-base`) plus
+ * `useRowDisclosure`. Siblings yielding and reclaiming space **continuously** is
+ * part of that grammar's job. Zero new keyframes, zero new tokens. The hard-cut
+ * ratchet's (`surface-motion-ratchet`) baseline of 0 is unchanged: the box is
+ * always drawn and only the content drops out of the collapse, so it is not a
+ * conditionally appearing surface at all (`AgentSetupStep.test.tsx` pins the
+ * grammar as a contract).
  */
 
 export type AgentSetupStepState = 'done' | 'now' | 'todo';
@@ -53,10 +62,10 @@ export type AgentSetupStepState = 'done' | 'now' | 'todo';
 export interface AgentSetupStepProps {
   n: number;
   title: string;
-  /** 펼쳤을 때만 보이는 한 줄 설명. */
+  /** The one-line description, visible only when expanded. */
   desc?: string;
   state: AgentSetupStepState;
-  /** 접힌 줄의 오른쪽 — 이 단계가 지금 무엇인지 한 마디. */
+  /** The collapsed row's right side — one phrase for what this step is right now. */
   trailing?: string;
   open: boolean;
   onToggle: () => void;
@@ -65,22 +74,24 @@ export interface AgentSetupStepProps {
 }
 
 /**
- * 번호 배지의 채움이 상태를 진다 — **글리프를 바꾸지 않는다.**
+ * The number badge's fill carries state — **the glyph does not change.**
  *
- * 완료에서 번호를 체크 글리프로 갈아끼우면 「지금 몇 번째인가」를 세는 축이
- * 중간에 끊긴다. 이 화면에는 한때 번호 체계가 **네 벌**(단계 3 · 흐름 6 ·
- * 증거 4 · 명령 6) 있었고 그래서 아무 번호도 「지금 할 일」을 못 가리켰다.
- * 번호는 한 벌만 남기고, 그 한 벌은 끝까지 번호로 남는다.
+ * Swapping the number for a check glyph on completion breaks the axis that counts
+ * "which one am I on" halfway through. This screen once carried **four** numbering
+ * systems (3 steps · 6 flow · 4 evidence · 6 commands), so no number pointed at
+ * "what to do now". One numbering survives, and that one stays numbers to the end.
  *
- * ## 사실과 상호작용은 채널을 나눠 갖는다 (2026-08-04 설치 앱 실측)
+ * ## Fact and interaction get separate channels (installed-app measurement, 2026-08-04)
  *
- * 배지 채움은 **흐름의 사실**(done/now/todo)만 진다. 그래서 사용자가 3단계를
- * 미리 열면 「지금」 배지는 1단계에, 펼친 본문은 3단계에 있게 되는데 — 종전에는
- * 펼친 행의 머리에 아무 신호가 없어 두 행이 서로 다른 주장을 하는 것으로
- * 읽혔다(소유자 첨부 화면). 처방은 배지를 따라가게 하는 것이 아니라(사실이
- * 상호작용에 오염된다) **펼침에 자기 채널을 주는 것**이다: 행 오른끝의 셰브론
- * 회전 — 바로 아래 「잘 안 되나요?」 토글이 이미 쓰는 그 채널이라 새 문법이
- * 아니다. 회전은 상태 확인이므로 기본 전이(`--motion-fast`)를 그대로 탄다.
+ * The badge fill carries **the flow's fact** (done/now/todo) only. So when the user
+ * opens step 3 early, the 「지금」 badge is on step 1 while the expanded body is on
+ * step 3 — and previously the expanded row's head carried no signal at all, so the
+ * two rows read as making conflicting claims (owner's attached screenshot). The
+ * prescription is not to make the badge follow (that pollutes fact with
+ * interaction) but **to give expansion its own channel**: the chevron rotation at
+ * the row's right end — the channel the 「잘 안 되나요?」 toggle directly below
+ * already uses, so it is not a new grammar. Rotation is a state confirmation, so it
+ * rides the default transition (`--motion-fast`).
  */
 const BADGE: Record<AgentSetupStepState, string> = {
   done: 'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]',
@@ -112,23 +123,25 @@ export function AgentSetupStep({
       <RowButton
         size="md"
         /*
-         * 물러나는 것은 **안 온 단계 중 접혀 있는 것**까지다 (2026-08-04 설치 앱
-         * 실측 정정). 종전 식은 `state === 'todo'` 만 봐서, 사용자가 아직 안 온
-         * 단계를 직접 열면 **펼친 행이 그 화면에서 가장 흐린 줄**이 됐다 —
-         * 앱에서 잰 값으로 3단계를 펼친 순간 그 제목이 `quaternary`
-         * rgb(130,130,137), 접힌 1단계 제목이 `primary` rgb(247,248,248) 이었다.
-         * 읽고 있는 것이 안 읽는 것보다 흐린 것은 위계가 뒤집힌 것이다.
+         * What recedes is **an unreached step that is also collapsed** (measurement
+         * correction from the installed app, 2026-08-04). The old expression looked
+         * only at `state === 'todo'`, so when a user opened a step they had not
+         * reached, **the expanded row became the dimmest line on screen** — measured
+         * in the app, opening step 3 made its title `quaternary`
+         * rgb(130,130,137) while the collapsed step 1 title was `primary`
+         * rgb(247,248,248). What you are reading being dimmer than what you are not
+         * is an inverted hierarchy.
          *
-         * 배지는 그대로 흐름의 사실만 진다(위 `BADGE` 주석) — 여기서 바뀌는
-         * 것은 **펼침이 이미 가진 채널**(셰브론 회전)에 잉크를 한 단 얹는 것뿐이라
-         * 새 채널도 새 톤도 늘지 않는다.
+         * The badge still carries the flow's fact only (see the `BADGE` comment
+         * above) — what changes here is one step of ink on **the channel expansion
+         * already owns** (the chevron rotation), so no new channel and no new tone.
          */
         tone={state === 'todo' && !open ? 'muted' : 'strong'}
         data-testid={`${testId}-toggle`}
         aria-expanded={open}
         aria-controls={bodyId}
         onClick={onToggle}
-        /* 전폭 행이라 반경을 뺀다 — 목록 컨테이너가 이미 자기 반경을 갖는다. */
+        /* A full-width row, so the radius is removed — the list container already has its own. */
         className="gap-2.5 rounded-none"
       >
         <span
@@ -141,7 +154,7 @@ export function AgentSetupStep({
         {trailing ? (
           <span className={`shrink-0 text-label ${TRAILING_INK[state]}`}>{trailing}</span>
         ) : null}
-        {/* 펼침 채널 — 색은 행 톤을 상속한다(새 잉크 결정 0). */}
+        {/* The expansion channel — colour inherits the row's tone (zero new ink decisions). */}
         <ChevronDown
           size={ICON_SIZE.sm}
           aria-hidden
@@ -149,10 +162,11 @@ export function AgentSetupStep({
           style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
         />
       </RowButton>
-      {/* 상자는 늘 그려 둔다 — 열릴 때 마운트하면 전이의 출발 높이가 없어
-          하드컷이 된다. 내용만 접힘에서 빠져 스크린 리더·탭 순서에 남지
-          않는다(`TopologyIndexTreeRow` 와 같은 계약). `id` 가 상자에 있어
-          `aria-controls` 대상이 접힘 중에도 실재한다. */}
+      {/* The box is always drawn — mounting it on open leaves the transition no
+          starting height and produces a hard cut. Only the content drops out of the
+          collapse, so it does not remain in the screen reader or tab order (the same
+          contract as `TopologyIndexTreeRow`). The `id` lives on the box, so the
+          `aria-controls` target exists even mid-collapse. */}
       <div
         ref={boxRef}
         id={bodyId}

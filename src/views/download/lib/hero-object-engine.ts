@@ -1,32 +1,30 @@
 /**
- * 히어로 오브젝트 엔진 — **실제 볼트 그래프의 심도 투영** (canvas 2D 전용).
+ * The hero object engine — **a depth projection of the real vault graph** (canvas 2D only).
  *
- * 논지: 히어로 오브젝트가 곧 제품이다. 저작 가능한 네 kind 가 z 축의 평면으로
- * 쌓이고(project / domain / capability / element), `contains` 엣지가 평면
- * 사이를 가로지르고, `depends` 엣지가 capability 평면 위에서 호를 그린다.
- * 모든 노드가 `docs/ontology` 에서 온다 — 계기 스트립·캡션이 세는 그래프와
- * **같은 객체**다(관문의 정직성 계약).
+ * The argument: the hero object *is* the product. The four authorable kinds stack as planes on
+ * the z axis (project / domain / capability / element), `contains` edges cross between planes,
+ * and `depends` edges arc across the capability plane. Every node comes from `docs/ontology` —
+ * **the same object** the instrument strip and caption count (the gateway's honesty contract).
  *
- * 심도 문법 (3D 라이브러리 없음):
- *   - 약한 원근 나눗셈  s = f / (f + z)
- *   - 깊이에 따른 잉크 감쇠(먼 평면이 물러난다)
- *   - 선 굵기 감쇠
- *   - 화가의 순서: 먼 것 → 가까운 것, 엣지는 노드 아래
+ * Depth grammar (no 3D library):
+ *   - weak perspective division  s = f / (f + z)
+ *   - ink attenuation by depth (far planes recede)
+ *   - line-width attenuation
+ *   - painter's order: far → near, edges beneath nodes
  *
- * 색은 마운트 시점에 CSS 커스텀 프로퍼티에서 읽는다 — 악센트 토큰이 바뀌면
- * (인디고 ↔ 엠버 전환) 오브젝트가 자동으로 따라간다. hex 를 코드에 박지 않는다.
+ * Colours are read from CSS custom properties at mount, so the object follows automatically when
+ * the accent token changes (indigo ↔ amber). No hex is written into the code.
  *
- * 모션 예산: 48s/1회전 자율 요(yaw) + 드래그 관성(평면별 비틀림 스프링).
- * reduced-motion 에서는 조립이 끝난 정지 1프레임만 그린다 — 드래그(사용자
- * 개시 이동, WCAG 2.3.3 예외)만 다시 그린다.
+ * Motion budget: an autonomous yaw of one revolution per 48s plus drag inertia (a torsion spring
+ * per plane). Under reduced-motion it draws a single still frame of the finished assembly —
+ * only dragging (user-initiated movement, the WCAG 2.3.3 exception) redraws.
  *
- * 프레임은 관문 공용 루프(`gateway-frame-loop.ts`)가 공급한다 — 전류장과
- * 같은 rAF 하나이고, 무입력 30s 뒤 2s 램프로 감속해 잠든다(지도의
- * `ambient-sleep.ts` 계약 그대로). 어떤 입력이든 다음 프레임에 복귀한다.
+ * Frames are supplied by the gateway's shared loop (`gateway-frame-loop.ts`) — the same single
+ * rAF as the current field, decelerating over a 2s ramp and sleeping after 30s of no input (the
+ * map's `ambient-sleep.ts` contract verbatim). Any input restores it on the next frame.
  *
- * 목업 실측(scratchpad `hero-engine.js`, 2026-08-18): draw p50 0.4ms /
- * p95 0.5ms, 프레임 드랍 0. 이 포트는 그 코드의 타입판이고 시각 문법을
- * 바꾸지 않는다.
+ * Mockup measurements (scratchpad `hero-engine.js`, 2026-08-18): draw p50 0.4ms / p95 0.5ms,
+ * zero dropped frames. This port is the typed version of that code and changes no visual grammar.
  */
 
 import { registerGatewayFrameClient } from './gateway-frame-loop';
@@ -34,10 +32,10 @@ import { registerGatewayFrameClient } from './gateway-frame-loop';
 const TAU = Math.PI * 2;
 
 export interface HeroGraphNode {
-  /** slug — 안정 정렬·지터 시드로만 쓴다. */
+  /** slug — used only as a stable sort key and jitter seed. */
   s: string;
   k: 'project' | 'domain' | 'capability' | 'element';
-  /** 레이아웃이 채운다(월드 좌표). */
+  /** Filled in by layout (world coordinates). */
   px?: number;
   py?: number;
   pz?: number;
@@ -55,15 +53,15 @@ export interface HeroGraphData {
 }
 
 export interface HeroEngineOptions {
-  /** CSS 토큰을 읽을 원소 — 기본 document.documentElement. */
+  /** Element to read CSS tokens from; defaults to document.documentElement. */
   tokenEl?: Element;
-  /** 한 바퀴(ms). 기본 48000 — 응시용 자전이지 회전목마가 아니다. */
+  /** One revolution in ms. Default 48000 — a rotation to gaze at, not a carousel. */
   periodMs?: number;
-  /** 전체 잉크 배율(무대 위 겹침 보정). */
+  /** Overall ink multiplier (compensating for overlap on the stage). */
   inkScale?: number;
-  /** 월드가 이 px 안에 맞는다(짧은 변 기준). */
+  /** The world fits within this many px (measured on the shorter side). */
   fitPx?: number;
-  /** reduced-motion 강제(테스트용). 기본은 matchMedia. */
+  /** Force reduced-motion (for tests). Defaults to matchMedia. */
   forceReduced?: boolean;
 }
 
@@ -71,7 +69,7 @@ export interface HeroEngineHandle {
   dispose: () => void;
 }
 
-/** 결정적 해시 → [0,1) — 노드별 안정 지터. */
+/** Deterministic hash → [0,1) — stable per-node jitter. */
 function hash01(str: string): number {
   let h = 2166136261;
   for (let i = 0; i < str.length; i += 1) {
@@ -103,15 +101,16 @@ interface PlaneSpec {
 
 const PLANE: Record<HeroGraphNode['k'], PlaneSpec> = {
   /**
-   * project 꼭짓점 y: 148 → 104 (2026-08-18 소유자: *"윗공백이 너무 심한데"*).
+   * The project apex y: 148 → 104 (owner, 2026-08-18: *"윗공백이 너무 심한데"* — too much space
+   * at the top).
    *
-   * 실측(1512, 캔버스 303px): 잉크 상단 1/3(95px)이 전체 잉크의 25%만 들고
-   * 있었다 — 꼭짓점에서 돔까지 내려가는 원뿔이 가는 스파인뿐이라, bbox 는
-   * 정중앙에 앉아 있는데(상하 여백 12px 씩) 눈에는 「위가 비고 돔이 아래로
-   * 몰린」 물체였다. 원인은 배치도 투영도 아니고 **형상의 헛공간**이므로
-   * 꼭짓점을 돔 쪽으로 44 유닛 내려 원뿔을 조인다. 봉투가 짧아진 만큼
-   * 클램프가 배율을 키워 돔 자체가 커진다(잉크 폭 290→324px 실측) — 문법
-   * (꼭짓점·링·부챗살·돔)은 그대로다.
+   * Measured (1512, a 303px canvas): the top third of the ink (95px) held only 25% of the total —
+   * the cone descending from the apex to the dome is only a thin spine, so although the bbox sat
+   * dead centre (12px of margin above and below), to the eye it was an object "empty at the top
+   * with the dome pushed down". The cause was neither placement nor projection but **dead space
+   * in the shape**, so the apex drops 44 units toward the dome to tighten the cone. With a shorter
+   * envelope the clamp raises the scale and the dome itself grows (ink width 290→324px measured) —
+   * the grammar (apex, rings, spokes, dome) is unchanged.
    */
   project: { y: 104, r: 0 },
   domain: { y: 56, r: 148 },
@@ -125,7 +124,7 @@ interface HeroModel {
   bySlug: Map<string, HeroGraphNode>;
 }
 
-/** kind → 평면, 자식은 부모의 각 구간 아래로 부챗살. */
+/** kind → plane; children fan out beneath their parent's angular slice. */
 export function layoutHeroGraph(data: HeroGraphData): HeroModel {
   const nodes = data.nodes;
   const edges = data.edges;
@@ -147,7 +146,7 @@ export function layoutHeroGraph(data: HeroGraphData): HeroModel {
     const parent = bySlug.get(e.a);
     const child = bySlug.get(e.b);
     if (!parent || !child) continue;
-    // element 는 capability 부모를 우선한다(부챗살이 더 촘촘해진다).
+    // An element prefers a capability parent (the fan comes out denser).
     if (child.k === 'element') {
       const prior = parentOf.get(e.b);
       if (prior && bySlug.get(prior)?.k === 'capability') continue;
@@ -179,7 +178,7 @@ export function layoutHeroGraph(data: HeroGraphData): HeroModel {
       g.forEach((k, i) => {
         const t = g.length === 1 ? 0 : i / (g.length - 1) - 0.5;
         const a = a0 + t * sectorW;
-        // 붐비는 부챗살은 보조 링 둘로 갈라 앉힌다.
+        // A crowded fan is split across two secondary rings.
         const r =
           ringR + (g.length > 4 ? (i % 2 ? 26 : -12) : 0) + (hash01(k.s) - 0.5) * 10;
         angle.set(k.s, a);
@@ -230,7 +229,7 @@ const KINDS: readonly HeroGraphNode['k'][] = [
   'element',
 ];
 
-/** 드래그 시 깊은 평면일수록 살짝 늦게 따라온다(탄성 비틀림) — 그리고 복원된다. */
+/** While dragging, deeper planes follow slightly late (elastic torsion) — and then recover. */
 const LAG_WEIGHT: Record<HeroGraphNode['k'], number> = {
   project: 0,
   domain: -0.1,
@@ -244,7 +243,7 @@ export function mountHeroObject(
   opts: HeroEngineOptions = {},
 ): HeroEngineHandle | null {
   const ctx = canvas.getContext('2d');
-  if (!ctx) return null; // jsdom · 컨텍스트 고갈 — 무대만 비워 둔다.
+  if (!ctx) return null; // jsdom or context exhaustion — leave the stage empty.
 
   const reduced =
     opts.forceReduced ??
@@ -253,7 +252,7 @@ export function mountHeroObject(
   const model = layoutHeroGraph(data);
 
   const rootEl = opts.tokenEl ?? document.documentElement;
-  // 악센트는 토큰으로만 — 이름은 indigo 지만 값은 전환을 따라간다.
+  // The accent comes only from a token — the name says indigo but the value follows the switch.
   const accent = hexRgb(cssVar(rootEl, '--color-indigo-brand', '#5e6ad2'));
   const accent2 = hexRgb(cssVar(rootEl, '--color-indigo-accent', '#7170ff'));
   const ink = hexRgb(cssVar(rootEl, '--color-text-primary', '#f7f8f8'));
@@ -269,16 +268,18 @@ export function mountHeroObject(
   const sinP0 = Math.sin(PITCH);
 
   /**
-   * 잉크 봉투(단위 공간) — `scaleFit` 을 곱하기 **전**의 투영 좌표 범위.
+   * The ink envelope (unit space) — the range of projected coordinates **before** multiplying by
+   * `scaleFit`.
    *
-   * 왜 필요한가 (2026-08-18 소유자: *"밑에 가려지는 부분 개선해야하고"*):
-   * 종전에는 무대 중앙(H/2)에 월드 원점을 놓았는데, 이 오브젝트의 잉크 질량은
-   * 원점 대칭이 아니다 — project 꼭짓점(y=148)보다 element 돔(y=-150 · r=224)이
-   * 훨씬 넓어서, 실측(1512)에서 위 39px 이 비고 **아래는 0px**, 돔 하단이
-   * 계기 괘선에 잘렸다. 요(yaw)를 한 바퀴 샘플링해 회전·드래그 어느 각도에서도
-   * 성립하는 봉투를 얻고, ① 세로 중심을 봉투 중심으로 옮기고 ② 봉투가 상자를
-   * 넘으면 `fitPx` 가 아니라 봉투가 배율을 정한다(클램프). depends 호의 들림
-   * (+46)은 capability 평면과 project 꼭짓점 사이라 봉투 안이다.
+   * Why it exists (owner, 2026-08-18: *"밑에 가려지는 부분 개선해야하고"* — the part cut off at
+   * the bottom needs fixing): the world origin used to sit at the stage centre (H/2), but this
+   * object's ink mass is not symmetric about the origin — the element dome (y=-150, r=224) is far
+   * wider than the project apex (y=148), so measured at 1512 there were 39px of space above and
+   * **0px below**, with the dome's bottom clipped by the instrument rule. Sampling a full
+   * revolution of yaw gives an envelope that holds at every rotation and drag angle; then ① the
+   * vertical centre moves to the envelope's centre and ② when the envelope exceeds the box, the
+   * envelope rather than `fitPx` decides the scale (a clamp). The depends arc's lift (+46) sits
+   * between the capability plane and the project apex, so it is inside the envelope.
    */
   const envelope = (() => {
     let x0 = Infinity;
@@ -307,7 +308,7 @@ export function mountHeroObject(
       for (const n of model.nodes) {
         consider(n.px ?? 0, n.py ?? 0, n.pz ?? 0, cy, sy, NODE_R[n.k] * 2.1);
       }
-      // 평면 원반 테 — 노드가 안 앉은 각도에서도 링 선이 그려진다.
+      // The plane disc's rim — the ring line is drawn even at angles where no node sits.
       for (const kind of ['element', 'capability', 'domain'] as const) {
         const P = PLANE[kind];
         for (let i = 0; i < 24; i += 1) {
@@ -333,8 +334,8 @@ export function mountHeroObject(
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // `fitPx` 는 «원하는 크기», 아래 클램프는 «잘리지 않음» — 봉투가 상자를
-    // 넘는 배율은 여백 4% 를 남기고 잘라낸다(위 봉투 독블록).
+    // `fitPx` is «the size we want», the clamp below is «not clipped» — a scale where the
+    // envelope exceeds the box is cut back, leaving 4% margin (see the envelope doc-block).
     const MARGIN = 0.04;
     const envW = Math.max(1, envelope.x1 - envelope.x0);
     const envH = Math.max(1, envelope.y1 - envelope.y0);
@@ -343,7 +344,7 @@ export function mountHeroObject(
       (W * (1 - MARGIN * 2)) / envW,
       (H * (1 - MARGIN * 2)) / envH,
     );
-    // 무대 중앙에 놓는 것은 월드 원점이 아니라 **잉크 봉투의 중심**이다.
+    // What is centred on the stage is not the world origin but **the ink envelope's centre**.
     centerX = W / 2 - ((envelope.x0 + envelope.x1) / 2) * scaleFit;
     centerY = H / 2 - ((envelope.y0 + envelope.y1) / 2) * scaleFit;
   }
@@ -375,7 +376,7 @@ export function mountHeroObject(
     userYaw += d;
     userVel = d;
     for (const k of KINDS) lag[k] += d * LAG_WEIGHT[k];
-    if (reduced) drawAt(lastT); // 사용자 개시 이동만 다시 그린다.
+    if (reduced) drawAt(lastT); // only user-initiated movement redraws
   };
   const onPointerUp = (): void => {
     dragging = false;
@@ -407,7 +408,7 @@ export function mountHeroObject(
     const y2 = py * cosP + z * sinP;
     const z2 = -py * sinP + z * cosP;
     const s = F / (F + z2);
-    // W/2·H/2 가 아니라 봉투 중심(`size()` 의 centerX/centerY) — 위 독블록.
+    // Not W/2 · H/2 but the envelope centre (`size()`'s centerX/centerY) — see the doc-block above.
     return { x: x * s * scaleFit + centerX, y: -y2 * s * scaleFit + centerY, s, z: z2 };
   }
 
@@ -445,7 +446,7 @@ export function mountHeroObject(
     }
     const [cy, sy] = trig.capability;
 
-    // 전부 먼저 투영하고 프레임마다 깊이를 정규화 — 안개가 정직해진다.
+    // Project everything first and normalize depth per frame — that makes the fog honest.
     const projected = new Map<string, Projected>();
     let zMin = Infinity;
     let zMax = -Infinity;
@@ -456,7 +457,7 @@ export function mountHeroObject(
       if (p.z > zMax) zMax = p.z;
     }
     const zSpan = Math.max(1, zMax - zMin);
-    // 가까움 → 1, 멂 → 0.09 (2제곱 계열) — 이 대비가 곧 3D 다.
+    // Near → 1, far → 0.09 (a squared family) — this contrast is what reads as 3D.
     const fog = (z: number): number => {
       const u = (z - zMin) / zSpan;
       return 0.09 + 0.91 * (1 - u) ** 1.8;
@@ -466,7 +467,7 @@ export function mountHeroObject(
       return 0.45 + 1.15 * (1 - u);
     };
 
-    // 1 · 평면 원반 + 깊이 음영 테 — 스택의 재질.
+    // 1 · plane discs plus a depth-shaded rim — the material of the stack.
     for (const kind of ['element', 'capability', 'domain'] as const) {
       const P = PLANE[kind];
       const a = tierAlpha(kind, t);
@@ -491,7 +492,7 @@ export function mountHeroObject(
       ctx!.beginPath();
       pts.forEach((p, i) => (i ? ctx!.lineTo(p.x, p.y) : ctx!.moveTo(p.x, p.y)));
       ctx!.closePath();
-      const lg = ctx!.createLinearGradient(x0, y0, x1, y1); // 좌상단 광원
+      const lg = ctx!.createLinearGradient(x0, y0, x1, y1); // light source at the top left
       lg.addColorStop(0, `rgba(${ink[0]},${ink[1]},${ink[2]},${0.034 * a})`);
       lg.addColorStop(1, `rgba(${ink[0]},${ink[1]},${ink[2]},${0.004 * a})`);
       ctx!.fillStyle = lg;
@@ -509,7 +510,7 @@ export function mountHeroObject(
       }
     }
 
-    // 2 · contains 엣지, 먼 것 → 가까운 것.
+    // 2 · contains edges, far → near.
     const eSorted = containsEdges
       .map((e) => {
         const A = projected.get(e.a)!;
@@ -534,8 +535,8 @@ export function mountHeroObject(
       ctx!.stroke();
     }
 
-    // 3 · depends 엣지 — capability 평면 위로 들린 악센트 호 + 느린 대시 전류
-    //     (지도 절의 .flow 펄스와 같은 문법 — glow 가 아니라 대시 이동이다).
+    // 3 · depends edges — an accent arc lifted above the capability plane with a slow dash
+    //     current (the same grammar as the map section's .flow pulse: dash motion, not glow).
     for (const e of dependsEdges) {
       const na = model.bySlug.get(e.a);
       const nb = model.bySlug.get(e.b);
@@ -574,7 +575,7 @@ export function mountHeroObject(
       }
     }
 
-    // 4 · 노드, 먼 것 → 가까운 것.
+    // 4 · nodes, far → near.
     const nSorted = model.nodes
       .slice()
       .sort((a, b) => projected.get(b.s)!.z - projected.get(a.s)!.z);
@@ -585,7 +586,7 @@ export function mountHeroObject(
       const f = fog(p.z);
       const r = NODE_R[n.k] * p.s * scaleFit * 2.1;
       if (n.k === 'project') {
-        // 악센트 스트로크 육각형 — 지도 절과 같은 어휘.
+    // An accent-stroked hexagon — the same vocabulary as the map section.
         ctx!.beginPath();
         for (let i = 0; i < 6; i += 1) {
           const ang = (i / 6) * TAU - Math.PI / 2;
@@ -618,12 +619,13 @@ export function mountHeroObject(
   }
 
   if (reduced) {
-    drawAt(ASSEMBLE + 601); // 조립이 끝난 정지 1프레임.
+    drawAt(ASSEMBLE + 601); // one still frame of the finished assembly
   } else {
-    // 관문 공용 루프에 탑승한다 — 전류장과 같은 rAF 하나. 자율 요(yaw)는
-    // 누적 시계에 휴면 계수를 곱해 전진하므로, 무입력 30s 뒤 2s 램프로
-    // 감속해 멎고(스텝 컷 없음) 잠들면 프레임 자체가 스킵된다. 드래그·관성은
-    // 입력 직후라 계수가 항상 1 인 구간에 산다. `gateway-frame-loop.ts` 독블록.
+    // Ride the gateway's shared loop — the same single rAF as the current field. The autonomous
+    // yaw advances by an accumulated clock multiplied by the sleep factor, so after 30s of no
+    // input it decelerates over a 2s ramp and stops (no step cut), and once asleep the frame
+    // itself is skipped. Drag and inertia live where the factor is always 1, right after input.
+    // See the `gateway-frame-loop.ts` doc-block.
     let animT = 0;
     unregisterFrame = registerGatewayFrameClient(({ dtMs, factor }) => {
       if (disposed) return;

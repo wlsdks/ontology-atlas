@@ -1,41 +1,40 @@
 /**
- * **다음 한 걸음** — 한 건 고치고 대화가 멎지 않게 하는 한 줄.
+ * **The next single step** — the one line that keeps the conversation from stopping
+ * after one fix.
  *
- * ## 왜 추가 호출이 없는가
+ * **Why there is no extra call.** Today, applying one proposal is the end — that is
+ * precisely where the sense of "building something" disappears. So the next
+ * candidate is taken **from within the same turn's response, where the model is
+ * already saying it**: the system prompt requires that after proposing a write, the
+ * last line names one next gap with `NEXT:`, and this only splits that line off.
+ * Calling the model again to obtain a next step would be a transmission the user did
+ * not press, and one more use of someone else's money (BYOK billing).
  *
- * 지금은 제안 하나를 적용하면 거기서 끝난다 — "만들어 나가는" 감각이 사라지는
- * 지점이 정확히 여기다. 그래서 다음 후보를 **모델이 이미 말하고 있는 그 턴의
- * 응답 안에서** 받는다: 시스템 프롬프트가 "쓰기를 제안했으면 마지막 줄에
- * `NEXT:` 로 다음 빈 곳 하나를 적으라" 고 요구하고, 여기서 그 줄만 떼어낸다.
- * 다음 걸음을 얻으려고 모델을 한 번 더 부르면 그건 사용자가 누르지 않은
- * 전송이고, 남의 돈(BYOK 요금)을 한 번 더 쓰는 일이다.
- *
- * ## 다음 걸음은 **말**이지 pending 카드가 아니다
- *
- * 이 줄에서 파생되는 것은 칩 하나뿐이고, 칩은 프리필이다. 살아 있는 제안이
- * 둘이 되는 순간 "뭘 승인했는지" 가 흐려지므로, 다음 걸음이 카드를 만드는
- * 구현은 계약 위반이다.
+ * **The next step is a sentence, not a pending card.** All that derives from this
+ * line is one chip, and a chip is a prefill. The moment there are two live
+ * proposals, "what did I approve" becomes blurred, so an implementation where the
+ * next step creates a card is a contract violation.
  */
 
-/** 모델이 다음 걸음을 표시하는 표지. 화면에 그대로 보이지 않는다. */
+/** The marker the model uses for the next step. It is never shown on screen. */
 export const NEXT_STEP_MARKER = 'NEXT:';
 
-/** 칩 한 줄에 앉힐 수 있는 길이. 넘치면 잘라 낸다 — 칩은 문단이 아니다. */
+/** How much fits on one chip line. Anything longer is trimmed — a chip is not a paragraph. */
 export const NEXT_STEP_MAX_CHARS = 140;
 
 export interface NextStepSplit {
-  /** 화면에 그려질 본문. `NEXT:` 줄은 빠져 있다. */
+  /** The body to be rendered. The `NEXT:` line is removed. */
   body: string;
-  /** 칩이 될 한 문장. 없으면 null. */
+  /** The one sentence that becomes a chip. Null when absent. */
   nextStep: string | null;
 }
 
 /**
- * 응답 본문에서 마지막 `NEXT:` 줄을 떼어낸다.
+ * Splits the last `NEXT:` line off the response body.
  *
- * 왜 마지막 줄만인가: 본문 가운데의 `NEXT:` 는 모델이 인용하거나 설명하는
- * 경우가 있고, 그것까지 칩으로 만들면 사용자가 시키지 않은 말이 컨트롤이
- * 된다. 표지는 줄 맨 앞에 있을 때만 표지다.
+ * Why only the last line: a `NEXT:` in the middle of the body may be the model
+ * quoting or explaining, and turning that into a chip makes a control out of
+ * something the user never asked for. The marker is a marker only at the start of a line.
  */
 export function splitNextStep(text: string): NextStepSplit {
   const lines = text.split('\n');
@@ -51,9 +50,9 @@ export function splitNextStep(text: string): NextStepSplit {
 }
 
 /**
- * 칩에 앉을 문장으로 다듬는다. `[[slug]]` 표기는 사람이 입력칸에서 읽고 고칠
- * 글이 아니므로 이름만 남긴다 — 인용 칩은 대화 본문의 문법이지 입력칸의
- * 문법이 아니다.
+ * Trims it into a sentence fit for a chip. `[[slug]]` notation is not text a person
+ * reads and edits in an input box, so only the name survives — the citation chip is
+ * the grammar of the conversation body, not of the input box.
  */
 function normalizeNextStep(raw: string): string {
   const plain = raw

@@ -1,41 +1,43 @@
 /**
- * 볼트 에이전트의 데이터 모양 — 화면·실행기·디스크가 공유하는 계약.
+ * The vault agent's data shapes — the contract shared by the screen, the runner,
+ * and the disk.
  *
- * 핵심 계약 하나: `ProposedFileChange.before/after` 가 **diff 카드와
- * 적용기의 공유 진실원**이다. 카드가 그린 문자열과 디스크에 쓰이는 문자열이
- * 같아야 "본 것과 쓰이는 것이 같다" 가 참이 된다 (전송의 미리보기===전송과
- * 같은 철학).
+ * One contract matters most: `ProposedFileChange.before/after` is **the shared
+ * source of truth for the diff card and the applier**. The string the card drew
+ * and the string written to disk must be the same for "what you saw is what gets
+ * written" to be true.
  */
 
 /**
- * 이 답이 무엇에 기대고 있는가. 화면의 문구·컨트롤이 여기서 갈린다.
- * 판정은 `citation.ts` 가 하고, 갈래의 뜻은 그 파일의 머리주석에 있다.
+ * What this answer rests on. The screen's copy and controls branch on it. The
+ * verdict is made by `citation.ts`, and the meaning of each variant is in that
+ * file's header comment.
  */
 export type AnswerGrounding =
-  /** `[[slug]]` 인용이 하나 이상 — 문장이 스스로 근거를 가리킨다. */
+  /** At least one `[[slug]]` citation — the sentence points at its own evidence. */
   | 'grounded'
-  /** 이 턴에 읽기는 했는데 인용 표기가 없다. 화면이 읽은 목록으로 보정한다. */
+  /** Something was read this turn but no citation was written. The screen compensates with the read list. */
   | 'uncited'
-  /** 이 턴에 읽은 것이 없다. 근거 없이 말한 답이다. */
+  /** Nothing was read this turn. The answer was given with no evidence. */
   | 'unread';
 
-/** 이 왕복에 실린 도구 호출 한 건의 실측 기록. */
+  /** The measured record of one tool call carried in this round trip. */
 export interface ToolCallRecord {
-  /** 벤더가 준 id. Gemini 는 주지 않아 실행기가 합성한다. */
+  /** The id the vendor gave. Gemini gives none, so the runner synthesizes one. */
   id: string;
-  /** MCP 와 동일한 이름만. 목록 밖 이름은 실행 0 + 오류 반환. */
+  /** Only names identical to MCP's. A name outside the list executes zero times and returns an error. */
   name: string;
   args: unknown;
-  /** 화면 행 표기용 대상 (노드 slug 등). 없으면 빈 문자열. */
+  /** The target shown in the screen's row (a node slug and the like). Empty string when absent. */
   target: string;
-  /** 이 왕복에 실려나간 실측 글자수. 추정치를 넣지 않는다. */
+  /** The measured character count actually sent in this round trip. No estimates. */
   sentChars: number;
   outcome: 'ok' | 'error' | 'blocked-write' | 'unknown-tool' | 'args-invalid';
-  /** 화면 행의 한 줄 요약 (평문). */
+  /** A one-line plain-language summary for the screen's row. */
   summary: string;
 }
 
-/** 인용이 붙은 문단. `citations` 는 이 턴에 실제로 읽은 slug 만 남는다. */
+  /** A paragraph with citations. `citations` keeps only slugs actually read this turn. */
 export interface CitedParagraph {
   text: string;
   citations: string[];
@@ -44,9 +46,9 @@ export interface CitedParagraph {
 export interface ProposedFileChange {
   path: string;
   kind: 'create' | 'modify';
-  /** modify: 제안 시점의 파일 전문. create 는 null. */
+  /** modify: the full file at proposal time. Null for create. */
   before: string | null;
-  /** 적용 시 이 문자열을 그대로 쓴다. */
+  /** On apply, this exact string is written. */
   after: string;
 }
 
@@ -60,24 +62,25 @@ export type ProposalToolName =
 export interface ProposalChange {
   id: string;
   tool: ProposalToolName;
-  /** "고치기 capabilities/payment.md — 기대는 곳에 refund 추가" 같은 한 줄. */
+  /** One line such as "edit capabilities/payment.md — add refund to its dependencies". */
   summary: string;
   files: ProposedFileChange[];
   selected: boolean;
-  /** patch 계열 필수 — 제안 시점의 mtime. 적용 시 달라지면 쓰지 않는다. */
+  /** Required for the patch family — the mtime at proposal time. If it differs on apply, nothing is written. */
   expectedMtime?: number;
 }
 
 export type ProposalStatus =
   | 'pending'
   /**
-   * 쓰기가 **도는 중**. 초안에는 이 값이 없어서 `await` 동안 상태가 `pending`
-   * 으로 남았고, 「적용」을 두 번 누르면 **볼트 쓰기가 두 번 동시에** 들어갔다.
-   * 취소도 그 사이 눌렸다. 화면에도 "적용 중" 이라는 구별이 0이었다
-   * (디자인 카운슬 「상호작용」 반려 사유, 2026-07-29).
+   * The write is **in flight**. The draft had no such value, so the state stayed
+   * `pending` during the `await` and pressing [apply] twice sent **two concurrent
+   * vault writes**. Cancel could be pressed in between too. And the screen drew
+   * zero distinction for "applying" (the interaction seat's rejection reason,
+   * 2026-07-29).
    *
-   * 이 값이 있으면 재진입 가드와 버튼 잠금이 **같은 사실**을 본다 — 마무리
-   * 대화상자의 `busy` 와 같은 문법이다.
+   * With this value, the reentrancy guard and the button lock look at **the same
+   * fact** — the same grammar as the finish dialog's `busy`.
    */
   | 'applying'
   | 'applied'
@@ -89,36 +92,39 @@ export interface AgentProposal {
   id: string;
   status: ProposalStatus;
   changes: ProposalChange[];
-  /** 볼트가 git 이면 기본 true. */
+  /** Defaults to true when the vault is a git repository. */
   snapshotRequested: boolean;
   appliedSnapshotSha?: string;
   /**
-   * 이 턴에 실제로 읽은 노드 slug 들. 여기 없는 파일을 고치는 제안에는
-   * 카드가 경고 행을 단다 — 인젝션이 동의를 세탁하는 길을 좁힌다.
+   * The node slugs actually read this turn. A proposal editing a file that is not
+   * here gets a warning row on the card — narrowing the path by which an injection
+   * launders consent.
    */
   readNodesThisTurn: string[];
 }
 
-/** 화면이 에이전트에게 넘긴 문맥. 사용자 말풍선에 그대로 에코된다. */
+  /** The context the screen handed the agent. Echoed verbatim into the user bubble. */
 export interface ScreenContextSnapshot {
-  /** 보고 있는 노드 (있을 때만). */
+  /** The node being viewed (only when there is one). */
   focusedSlug: string | null;
   focusedTitle: string | null;
   focusedKind: string | null;
-  /** 켜져 있는 렌즈 이름들 (평문). */
+  /** The names of the active lenses (plain language). */
   lenses: string[];
-  /** 프로젝트 스코프 제목. */
+  /** The project scope's title. */
   projectTitle: string | null;
-  /** 지도에 지금 그려진 개념 수. */
+  /** How many concepts are drawn on the map right now. */
   visibleNodeCount: number;
   /**
-   * 이 폴더의 **최근 적용된 변경** (git 이력의 커밋 제목, 최신 순).
+   * This folder's **recently applied changes** (commit subjects from git history,
+   * newest first).
    *
-   * 대화를 저장하지 않고도 작업이 이어지게 하는 자리다 — 지난 세션의 쓰기는
-   * frontmatter 와 git 에 남았고, 새 대화는 그것을 읽어 "지난번에 여기까지
-   * 했으니 다음은" 을 스스로 구성한다. 볼트 밖 제2 진실원(대화 저장소)이
-   * 필요 없는 이유가 이것이다. git 이 아니거나 이력이 없으면 비어 있고,
-   * 그때는 블록 자체가 나가지 않는다.
+   * This is what lets work continue without storing the conversation — the
+   * previous session's writes stayed in frontmatter and in git, and a new
+   * conversation reads them to construct "we got this far last time, so next…"
+   * for itself. That is why no second source of truth outside the vault (a
+   * conversation store) is needed. Empty when this is not a git repository or has
+   * no history, and then the block is not sent at all.
    */
   recentChanges?: readonly string[];
 }
@@ -130,12 +136,13 @@ export type NoticeCode =
   | 'rejected'
   | 'round-cap'
   /**
-   * **도구를 한 번도 안 부르고 멈춘 턴** (2026-08-02).
+   * **A turn that stopped without calling a single tool** (2026-08-02).
    *
-   * 라운드 상한 분기는 `round-cap` 을 명시적으로 띄우는데, 조기 종료 분기는
-   * 아무 알림도 없이 `status: 'done'` 으로 접수됐다 — 화면은 정상 완료와
-   * 똑같이 입력칸을 되돌려 줬고, 사용자는 볼트를 아예 안 본 답을 읽은 답과
-   * 구별할 수 없었다. 두 분기가 대칭이 되도록 이 코드가 있다.
+   * The round-cap branch raises `round-cap` explicitly, but the early-exit branch
+   * was accepted as `status: 'done'` with no notice at all — the screen returned
+   * the input box exactly as it does on a normal completion, and the user could
+   * not distinguish an answer that never looked at the vault from one that read
+   * it. This code exists so the two branches are symmetric.
    */
   | 'no-tool-call'
   | 'aborted'
@@ -151,21 +158,22 @@ export type AgentEvent =
       kind: 'assistant';
       paragraphs: CitedParagraph[];
       /**
-       * 이 답이 무엇에 기대고 있는가 — `citation.ts` 의 두 갈래 판정.
-       * 구 `demoted: boolean` 은 인용 **표기** 개수만 보느라, 볼트를 읽고
-       * 답한 턴에도 「읽은 근거 없이 답했어요」를 띄웠다.
+       * What this answer rests on — `citation.ts`'s two-way verdict. The old
+       * `demoted: boolean` counted only citation **markers**, so a turn that read
+       * the vault and answered from it still showed "answered with no evidence read".
        */
       grounding: AnswerGrounding;
       /**
-       * 이 턴에 실제로 읽은 노드들. `uncited` 갈래에서 화면이 「참고한 자료」
-       * 칩으로 **기계적으로 보정**하는 재료다 — 모델이 표기를 지켰는지에
-       * 기대지 않는다.
+       * The nodes actually read this turn. The material with which the screen
+       * **mechanically compensates** in the `uncited` case, showing them as
+       * "sources consulted" chips — it does not rely on the model honouring the
+       * citation notation.
        */
       sources?: string[];
       /**
-       * 같은 응답의 마지막 줄에서 떼어낸 **다음 한 걸음**. 추가 호출로 얻은
-       * 것이 아니라 이 턴이 이미 말한 것이다. 칩 하나가 되고, 칩은 프리필이지
-       * 전송도 pending 카드도 아니다.
+       * The **next single step**, taken from the last line of the same response.
+       * It was not obtained by an extra call; this turn already said it. It becomes
+       * one chip, and a chip is a prefill — not a send, and not a pending card.
        */
       nextStep?: string | null;
     }
@@ -184,22 +192,22 @@ export interface AgentTurn {
   events: AgentEvent[];
   /** ≤ ROUND_CAP */
   roundsUsed: number;
-  /** 푸터 누계 — 실측 글자수만. */
+  /** The footer running total — measured character counts only. */
   sentChars: number;
-  /** 남긴 감사 줄 수 = 성공한 왕복 수. */
+  /** Audit lines written = successful round trips. */
   auditCount: number;
   status: AgentTurnStatus;
 }
 
-/** 도구 왕복 상한. 자율 폭주의 구조적 상한이다. */
+  /** The tool round-trip cap. The structural ceiling on autonomous runaway. */
 export const AGENT_ROUND_CAP = 6;
 
 /**
- * 한 왕복에 실어 보낼 도구 결과의 글자수 상한. 넘으면 잘라내고 모델에게
- * "좁혀서 다시 물어보라" 고 알린다 — 사용자 비용(BYOK 요금)이 조용히
- * 커지는 길을 막는다.
+ * The character cap on tool results carried in one round trip. Beyond it the
+ * result is truncated and the model is told to "narrow it and ask again" —
+ * blocking the path by which the user's cost (BYOK billing) grows quietly.
  */
 export const AGENT_TOOL_RESULT_CHAR_CAP = 6_000;
 
-/** 한 턴에 실어 보낼 볼트 발췌 총량 상한. */
+/** The cap on total vault excerpt volume carried in one turn. */
 export const AGENT_TURN_VAULT_CHAR_CAP = 40_000;

@@ -4,12 +4,12 @@ import { getTranslations } from "next-intl/server";
 import { ProjectFallbackClient } from "./ProjectFallbackClient";
 import { RouteLoadingFallback } from "@/shared/ui";
 
-// 정적 export 환경에서 빌드 시점에 알 수 없는 로컬 vault slug도 query로
-// 받아 ProjectDetailPage 또는 ProjectEditorPage를 렌더한다. R10 이전
-// Firebase Hosting rewrite pathname도 하위 호환으로 계속 해석한다.
+// Under static export, a local vault slug that cannot be known at build time is received as a query
+// and renders `ProjectDetailPage` or `ProjectEditorPage`. The pre-R10 Firebase Hosting rewrite
+// pathname is still interpreted for backwards compatibility.
 //
-// 빌드 타임에 알려진 공개 slug의 /project/[slug]/ canonical은 그대로 두고,
-// 앱 내부 이동은 이 정적 파일 하나를 사용해 임의 slug 404를 피한다.
+// The `/project/[slug]/` canonical for public slugs known at build time is left as it is; in-app
+// navigation uses this one static file to avoid 404s on arbitrary slugs.
 export async function generateMetadata({
   params,
 }: {
@@ -20,9 +20,8 @@ export async function generateMetadata({
     locale,
     namespace: "projectPages.detail",
   });
-  // Korean i18n 의 topBarProjectFallback 가 "Project" 영어로 남아있어서
-  // (project breadcrumb 영문 의도) 별도 topBarProjectsLabel 을 사용 —
-  // ko: "프로젝트" / en: "Projects" 로 정확히 localized 됨.
+  // The Korean i18n `topBarProjectFallback` is deliberately the English "Project" (the breadcrumb is
+  // English by intent), so a separate `topBarProjectsLabel` is used, localized properly for each locale.
   return {
     title: t("topBarProjectsLabel"),
   };

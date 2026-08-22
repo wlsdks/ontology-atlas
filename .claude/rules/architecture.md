@@ -115,7 +115,7 @@ src/
 
 - firebase / 백엔드 SDK 는 R10b 에서 의존성 자체가 제거됐다 — local-first 정적
   export 는 어떤 cloud SDK 도 번들에 넣지 않는다. SDK 재도입 금지 원칙은
-  `forbidden.md` 가 유지한다 (구 번들 청크 가드 `check-bundle.mjs` 는 웹 호스팅이
+  `forbidden.md` 가 유지한다 (구 번들 청크 게이트 `check-bundle.mjs` 는 웹 호스팅이
   GitHub Pages 단일로 정리되면서 제거됨).
 - ESLint 에 entity 의 barrel 파일과 api 폴더를 분리하라는 옛 룰이 일부 남아 있다.
   지금은 api 폴더 자체가 없어서 아무것도 안 걸리지만, 나중에 cloud collab 단계에서

@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   changedPathsFromGit,
+  collapsePlaywrightCommands,
   runFocusedChecks,
   runSuggestFocusedChecks,
   stripLeadingSeparator,
@@ -84,7 +85,8 @@ describe('focused check suggestion CLI', () => {
     const calls = [];
     assert.deepEqual(
       changedPathsFromGit({
-        // 이 시험이 재는 것은 **중복 제거와 순서**다 — 실재 판정은 옆 시험이 잰다.
+        // This test measures **de-duplication and ordering**; the existence predicate is
+        // measured by the test beside it.
         exists: () => true,
         spawn(command, args) {
           calls.push(args);
@@ -123,11 +125,11 @@ describe('focused check suggestion CLI', () => {
 });
 
 /**
- * `--run` — **추천을 그대로 실행한다.**
+ * `--run` — **executes the recommendations as given.**
  *
- * 2026-08-21 에 생겼다. 이 도구는 무엇을 돌릴지 정확히 지목해 왔는데, 사람과
- * 에이전트가 그 목록을 받아 **일부만 골라 돌렸다.** 08-20 하루에 CI 두 라운드가
- * 그렇게 탔다. 그래서 고르는 여지를 없앤다.
+ * Added 2026-08-21. This tool has always named exactly what to run, and people and
+ * agents took that list and **ran only part of it.** Two CI rounds burned that way in
+ * one day on 08-20. So the room to pick is removed.
  */
 describe('focused checks --run', () => {
   it('추천을 순서대로 다 돌린다', () => {
@@ -154,7 +156,7 @@ describe('focused checks --run', () => {
         return { status: command === 'bad' ? 3 : 0 };
       },
     });
-    // 뒤의 검사는 대개 같은 원인으로 무너진다 — 고칠 것 하나를 정확히 준다.
+    // Later checks usually collapse from the same cause — this gives exactly one thing to fix.
     assert.equal(code, 3);
     assert.deepEqual(ran, ['ok', 'bad']);
   });
@@ -173,13 +175,13 @@ describe('focused checks --run', () => {
   });
 
   it('`--run` 은 경로로 새지 않는다', () => {
-    // 안 걸러내면 그 문자열이 「바뀐 파일」로 취급돼 추천이 통째로 달라진다.
+    // Without filtering, that string is treated as a changed file and the recommendations change entirely.
     const ran = [];
     runSuggestFocusedChecks({
       argv: ['--', '--run', 'src/shared/lib/cn.ts'],
       stdout: { write() {} },
       spawn(command, options) {
-        // git 호출은 여기 오지 않는다(경로를 인자로 줬으므로).
+        // No git call reaches here, since the paths were given as arguments.
         ran.push({ command, shell: options?.shell === true });
         return { status: 0 };
       },
@@ -210,11 +212,11 @@ describe('focused checks --run', () => {
 });
 
 /**
- * **지워진 파일은 검사 대상이 아니다.**
+ * **A deleted file is not a check subject.**
  *
- * 2026-08-21 실측: `git diff --name-only` 는 삭제된 경로도 준다. 그것을 그대로
- * 넘기면 `eslint <지워진 파일>` 이 만들어지고 그 명령이 죽는다 — 연결 시트를
- * 은퇴시킨 푸시가 정확히 그렇게 막혔다.
+ * Measured 2026-08-21: `git diff --name-only` also returns deleted paths. Passing them
+ * through builds `eslint <deleted file>` and that command dies — which is exactly how
+ * the push retiring the connect sheet was blocked.
  */
 describe('deleted paths', () => {
   it('git 이 준 목록에서 실재하지 않는 경로를 뺀다', () => {
@@ -233,8 +235,8 @@ describe('deleted paths', () => {
   });
 
   it('손으로 준 경로는 거르지 않는다 — 아직 없는 파일 세트를 미리 물어볼 수 있다', () => {
-    // `pnpm checks:changed -- <path...>` 는 **계획 중인** 파일에 대해 묻는 용도가
-    // 문서에 있다. 거기까지 실재를 요구하면 그 용도가 죽는다.
+    // The docs describe `pnpm checks:changed -- <path...>` as a way to ask about files
+    // you are **planning** to touch. Requiring existence there would kill that use.
     const output = [];
     runSuggestFocusedChecks({
       argv: ['--', 'src/views/not-yet/NewPage.tsx'],
@@ -243,4 +245,47 @@ describe('deleted paths', () => {
     });
     assert.match(output.join(''), /1 changed path/);
   });
+});
+
+describe('collapsePlaywrightCommands', () => {
+  it('collapsePlaywrightCommands merges every spec into one invocation, keeping order', () => {
+  /*
+   * Measured 2026-08-22: a 1,536-file branch produced 657 checks, most of them one
+   * `playwright test <single spec>` each. Serially that ran past twelve hours while
+   * CI finished the same specs in about eight minutes. The fix must not drop a spec —
+   * this repository's whole reason for `--run` is that picking a subset burns CI.
+   */
+  const merged = collapsePlaywrightCommands([
+    { command: 'pnpm exec tsc --noEmit' },
+    { command: 'pnpm exec playwright test tests/e2e/a.spec.ts' },
+    { command: 'pnpm exec playwright test tests/e2e/b.spec.ts tests/e2e/c.spec.ts' },
+    { command: 'pnpm lint' },
+    { command: 'pnpm exec playwright test tests/e2e/a.spec.ts' },
+  ]);
+  assert.deepEqual(
+    merged.map((c) => c.command),
+    [
+      'pnpm exec tsc --noEmit',
+      'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts',
+      'pnpm lint',
+    ],
+  );
+});
+
+  it('collapsePlaywrightCommands leaves a single Playwright command alone', () => {
+  const one = [
+    { command: 'pnpm exec tsc --noEmit' },
+    { command: 'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts' },
+  ];
+  assert.deepEqual(collapsePlaywrightCommands(one), one);
+});
+
+  it('collapsePlaywrightCommands loses no spec — the union is exactly preserved', () => {
+  const specs = Array.from({ length: 40 }, (_, i) => `tests/e2e/s${i}.spec.ts`);
+  const commands = specs.map((s) => ({ command: `pnpm exec playwright test ${s}` }));
+  const merged = collapsePlaywrightCommands(commands);
+  assert.equal(merged.length, 1);
+  const kept = merged[0].command.replace('pnpm exec playwright test ', '').split(' ');
+  assert.deepEqual(kept.sort(), specs.slice().sort());
+});
 });

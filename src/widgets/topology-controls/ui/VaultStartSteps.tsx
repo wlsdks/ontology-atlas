@@ -16,67 +16,75 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Chip } from "@/shared/ui";
 
 /**
- * 폴더를 연 직후의 **첫 걸음 셋** — 한 번에 하나씩, 설명을 갖고.
+ * The **first three steps** right after a folder is opened — one at a time, each with
+ * an explanation.
  *
- * ## 왜 체크리스트를 그만뒀나 (2026-08-16 소유자 실보고)
+ * ## Why the checklist was abandoned (owner report from real use, 2026-08-16)
  *
- * 종전은 세 줄짜리 체크리스트였다. 화면에 셋이 동시에 있으니 각 줄이 가질 수
- * 있는 것은 **제목 한 줄**뿐이었고, 그래서 소유자가 실제로 겪은 것이 이것이다:
+ * It used to be a three-row checklist. With all three on screen at once, each row
+ * could hold only **a one-line title**, and this is what the owner actually hit:
  *
- * - *"두번짼 뭔지도 모르겠고"* — 「AI가 이 코드를 읽고 지도 초안을 그리게 하기」는
- *   제목이지 설명이 아니다. 무엇이 일어나는지, 내 폴더에 뭘 쓰는지, 승인이
- *   필요한지가 어디에도 없었다
- * - *"복사해도 완료 체크도 안됨"* — 완료 판정이 **관계 수**였다. 사용자가 시킨
- *   대로 눌렀는데 화면은 아무 일도 안 일어난 것처럼 굴었다. 눌린 것을 안 세는
- *   진행 표시는 진행 표시가 아니다
- * - *"만들어 주기"* — 버튼 이름이 **무엇을** 만드는지 말하지 않았다
- * - *"첫번째는 에이전트 연결 안해도 사용은 가능해야하니 스킵하기 버튼"* —
- *   맞다. 1단은 권유이지 관문이 아닌데, 체크리스트에는 지나갈 문이 없었다
+ * - *"두번짼 뭔지도 모르겠고"* (I can't even tell what the second one is) — 「AI가 이
+ *   코드를 읽고 지도 초안을 그리게 하기」 is a title, not an explanation. What
+ *   happens, what gets written into my folder, and whether approval is needed were
+ *   nowhere.
+ * - *"복사해도 완료 체크도 안됨"* (copying doesn't even tick it off) — completion was
+ *   decided by **the relation count**. The user pressed what they were told to and
+ *   the screen behaved as though nothing had happened. A progress indicator that does
+ *   not count a press is not a progress indicator.
+ * - *"만들어 주기"* (create it for me) — the button's name never said **what** it creates.
+ * - *"첫번째는 에이전트 연결 안해도 사용은 가능해야하니 스킵하기 버튼"* (the first one
+ *   should be usable without connecting an agent, so it needs a skip button) — right.
+ *   Step one is an invitation, not a gate, and the checklist had no door to pass through.
  *
- * 그래서 **한 번에 한 걸음**으로 바꾼다. 한 걸음이 화면을 독차지하면 설명할
- * 자리가 생기고, 「다음」과 「건너뛰기」가 생기면 지나갈 길이 생긴다.
+ * So it became **one step at a time**. A step that owns the screen has room to
+ * explain, and 「다음」 (next) plus 「건너뛰기」 (skip) create a way past.
  *
- * ## 지키는 것
+ * ## What it holds to
  *
- * - **막지 않는다.** 모든 걸음에 건너뛰기가 있고, 마지막을 지나면 카드가 끝난다
- * - **누른 것은 진행이다.** 세상이 바뀌길 기다리지 않고, 사용자가 그 걸음을
- *   했으면 다음으로 간다
- * - **높이가 걸음마다 튀지 않는다.** 설명 자리를 세 줄로 미리 잡아 둔다 —
- *   이 저장소의 「치수는 우리가 정하지 내용물이 정하지 않는다」 규율이다
+ * - **It blocks nothing.** Every step has a skip, and passing the last one ends the card.
+ * - **A press is progress.** It does not wait for the world to change; if the user did
+ *   that step, it moves on.
+ * - **Height does not jump between steps.** The explanation area is reserved at three
+ *   lines — this repository's discipline that dimensions are ours to decide, not the
+ *   content's.
  */
 
 export type StartStepId = "docs" | "agent" | "analyze" | "starter" | "manual";
 
 export interface VaultStartStepsProps {
-  /** 에이전트 heartbeat 연결 여부 (HomePage `useAgentConnectLauncher` 상태). */
+  /** Whether an agent heartbeat is connected (HomePage's `useAgentConnectLauncher` state). */
   agentConnected?: boolean;
   /**
-   * 이 기기에서 **바로 쓸 수 있는** 실행기의 이름 (없으면 null). 앱이 이미
-   * 아는 사실을 설정 안에 숨겨 두면 그 사실은 찾아 들어간 사람에게만 존재한다.
+   * The name of a runner **immediately usable** on this machine (null if none).
+   * Hiding a fact the app already knows inside settings makes that fact exist only
+   * for whoever went looking.
    */
   acpRuntimeLabel?: string | null;
-  /** 대화를 여는 문(실행기가 있을 때) 또는 도구를 고르는 화면(없을 때). */
+  /** The door that opens a conversation (when a runner exists), or the screen for picking a tool (when none does). */
   onOpenAgentConnect?: (() => void) | null;
   /**
-   * 분석 지시를 **에이전트 작성 칸에 앉힌다** — 실행기가 있을 때만 넘어온다.
-   * 있으면 복사-붙여넣기를 시키지 않는다: 붙여넣을 곳이 이 앱 안에 있다.
+   * **Drop the analysis instruction into the agent's compose field** — supplied only
+   * when a runner exists. With it, nobody is made to copy and paste: the place to
+   * paste is inside this app.
    */
   onSendAnalyzeToAgent?: (() => void) | null;
-  /** ② 지시문 — 붙여넣을 곳이 밖에 있는 사람을 위한 복사본. */
+  /** The instruction text — a copy for people whose paste target is outside. */
   analyzePrompt: string;
-  /** ③ 빈 폴더에 뼈대 문서 + 연결 설정을 만든다. 이미 문서가 있으면 null. */
+  /** Create skeleton documents plus the connection config in an empty folder. null when documents already exist. */
   onScaffoldStarter?: (() => void) | null;
   scaffolding?: boolean;
-  /** ③ 대안 — 손으로 첫 노드를 만든다. */
+  /** The alternative — create the first node by hand. */
   onCreateNode: (kind: "project" | "domain") => void;
-  /** 이 폴더에서 찾은, 아직 지도에 없는 문서 수. 0 보다 크면 걸음이 하나 는다. */
+  /** How many documents were found in this folder that are not yet on the map. Above 0, a step is added. */
   docsFoundCount?: number;
   onStartFromDocs?: (() => void) | null;
-  /** 마지막 걸음을 지났다 — 카드를 거둔다. */
+  /** The last step has been passed — dismiss the card. */
   onFinish?: () => void;
   /**
-   * INDEX 패널이 펼쳐져 있는가. INDEX 는 지도 칼럼 **위에 뜨므로**(오른쪽
-   * 패널은 flex 형제라 칼럼을 실제로 줄인다) 중앙 계산에서 혼자 빠진다.
+   * Whether the INDEX panel is expanded. INDEX **floats over** the map column (the
+   * right panel is a flex sibling and really does shrink the column), so it alone is
+   * excluded from the centring calculation.
    */
   indexExpanded?: boolean;
 }
@@ -99,9 +107,10 @@ export function VaultStartSteps({
   const { state: copyState, copy: copyPrompt } = useCopyFeedback();
   const [index, setIndex] = useState(0);
   /**
-   * 사용자가 **실제로 한** 걸음. 세상이 바뀌길 기다려서 판정하면, 시킨 대로
-   * 눌렀는데 화면이 가만히 있는 그 순간이 생긴다(소유자: *"복사해도 완료
-   * 체크도 안됨"*). 누른 것은 누른 것으로 센다.
+   * The steps the user **actually took**. Deciding by waiting for the world to change
+   * creates the moment where they pressed what they were told to and the screen sat
+   * still (owner: *"복사해도 완료 체크도 안됨"* — copying doesn't even tick it off). A
+   * press counts as a press.
    */
   const [acted, setActed] = useState<ReadonlySet<StartStepId>>(new Set());
 
@@ -109,9 +118,9 @@ export function VaultStartSteps({
   const hasDocs = docsFoundCount > 0 && onStartFromDocs !== null;
 
   /**
-   * 걸음의 **차례**. 문서가 있으면 그것이 첫 걸음이다 — 빈 폴더의 1순위(에이전트
-   * 연결)는 빈 폴더 맥락의 순서였고, 이미 가진 것이 있는 사람에게 첫 걸음은
-   * 그 가진 것이다.
+   * The **order** of the steps. With documents present, that is the first step — an
+   * empty folder's priority (connecting an agent) was the order for an empty folder's
+   * context, and for someone who already has something, the first step is what they have.
    */
   const steps = useMemo<StartStepId[]>(
     () => [
@@ -126,7 +135,7 @@ export function VaultStartSteps({
   const current = steps[Math.min(index, steps.length - 1)];
   const isLast = index >= steps.length - 1;
 
-  /** 다음으로. 마지막을 지나면 이 카드는 할 일을 다 한 것이다. */
+  /** Move on. Passing the last one means this card has done its job. */
   const advance = () => {
     if (isLast) {
       onFinish?.();
@@ -136,9 +145,9 @@ export function VaultStartSteps({
   };
 
   /**
-   * 이 걸음은 **이미 된 것인가** — 그러면 보조 버튼은 「건너뛰기」가 아니라
-   * 「다음」이다. 건너뛴다는 말은 안 한 것을 두고 갈 때 쓰는 말이라, 이미 한
-   * 걸음에서 그 단어를 쓰면 방금 한 일이 없던 일이 된다.
+   * Is this step **already done** — then the secondary button is 「다음」 (next), not
+   * 「건너뛰기」 (skip). "Skip" is the word for leaving something undone behind, so
+   * using it on a step already taken erases what was just done.
    */
   const currentDone = current === "agent" ? agentReady : acted.has(current);
 
@@ -169,9 +178,10 @@ export function VaultStartSteps({
             : t("manual.title");
 
   /**
-   * 주 행동 — **누르면 일어날 일**을 이름으로 쓴다. 그리고 누르면 다음 걸음으로
-   * 간다: 사용자가 그 걸음을 했는데 화면이 가만히 있으면, 그게 소유자가 겪은
-   * *"복사해도 완료 체크도 안 됨"* 이다.
+   * The primary action — its name states **what will happen when pressed**. And
+   * pressing it moves to the next step: if the user did that step and the screen sat
+   * still, that is the owner's *"복사해도 완료 체크도 안 됨"* (copying doesn't even
+   * tick it off).
    */
   const primary = (() => {
     if (current === "docs") {
@@ -189,10 +199,11 @@ export function VaultStartSteps({
     if (current === "agent") {
       return {
         /*
-         * 이 걸음의 이름은 **연결**이고, 연결이 사는 곳은 설정의 Agents 칸
-         * 하나다 — 무엇이 잡혔는지 보고 무엇을 쓸지 고르는 자리(2026-08-16
-         * 소유자 지적). 잡힌 것이 있고 없고에 따라 **다른 데로 보내지 않는다**:
-         * 이름이 「연결」인데 대화가 열리면 이름과 한 일이 어긋난다.
+         * This step's name is **connect**, and connecting lives in exactly one place,
+         * the settings' Agents pane — where you see what was detected and choose what
+         * to use (owner report, 2026-08-16). It does **not** send you somewhere else
+         * depending on whether something was detected: with a name of 「연결」 (connect),
+         * opening a conversation makes the name and the action disagree.
          */
         label: t("agent.cta"),
         icon: <Cable size={ICON_SIZE.sm} aria-hidden />,
@@ -218,8 +229,8 @@ export function VaultStartSteps({
         };
       }
       return {
-        // 복사는 **실패할 수 있다**(클립보드 권한). 침묵은 성공처럼 읽히므로
-        // 실패도 버튼이 말한다. 실패했으면 다음으로 넘기지 않는다.
+        // A copy **can fail** (clipboard permission). Silence reads as success, so the
+        // button reports failure too — and on failure it does not advance.
         label:
           copyState === "failed"
             ? t("analyze.ctaFailed")
@@ -235,9 +246,10 @@ export function VaultStartSteps({
         testId: "start-step-cta-analyze",
         disabled: false,
         /*
-         * 여기만 **다음으로 안 넘어간다.** 복사한 사람은 이 앱을 떠나 다른 도구에
-         * 붙여넣어야 하므로, 「복사됐다」를 눈으로 확인할 한 박자가 필요하다.
-         * 대신 아래 보조 버튼이 「건너뛰기」에서 「다음」으로 바뀐다.
+         * This is the only step that **does not advance.** Whoever copied has to leave
+         * this app and paste into another tool, so they need a beat to see 「복사됐다」
+         * (copied). Instead, the secondary button below changes from 「건너뛰기」 (skip)
+         * to 「다음」 (next).
          */
         run: () => {
           void copyPrompt(analyzePrompt).then((ok) => {
@@ -291,9 +303,10 @@ export function VaultStartSteps({
         className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[var(--shadow-elevation-1)]"
       >
         {/*
-          제목이 **걸음의 제목**이다. 종전에는 카드 제목(「시작 체크리스트」)과
-          줄 제목이 따로 있어서 눈이 둘 사이에서 갈렸다 — 지금 이 카드가 말하는
-          것은 하나뿐이므로 제목도 하나다. 진행은 그 곁다리라 옆에 둔다.
+          The title **is the step's title**. There used to be a card title
+          (「시작 체크리스트」 — the getting-started checklist) and a row title separately,
+          so the eye split between the two. This card now says exactly one thing, so it
+          has one title. Progress is incidental to it, so it sits beside it.
         */}
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="min-w-0 break-keep text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -307,13 +320,15 @@ export function VaultStartSteps({
           </span>
         </div>
         {/*
-          설명 자리는 **세 줄로 고정**한다. 걸음마다 글이 짧고 길어서 그대로 두면
-          카드가 걸음마다 위아래로 뛴다 — 같은 자리에서 내용만 바뀌는 화면에서
-          그 흔들림은 「다른 카드가 왔다」로 읽힌다.
+          The explanation area is **fixed at three lines**. Copy is short in some steps
+          and long in others, so left alone the card jumps up and down step by step —
+          and on a screen where only the content changes in the same place, that wobble
+          reads as 「a different card arrived」.
 
-          `min-h-15` = 60px = 20px 짜리 세 줄. 종전에는 `calc(3*var(--leading-body))`
-          로 적었는데, 램프 토큰을 대괄호 안에서 길이로 **돌려 참조**하는 것은
-          이 저장소가 금지한 모양이다(2026-08-16 검수). 값은 픽셀까지 같다.
+          `min-h-15` = 60px = three 20px lines. It used to be written as
+          `calc(3*var(--leading-body))`, but **indirectly referencing a ramp token as a
+          length inside brackets** is a shape this repository forbids (review
+          2026-08-16). The value is identical to the pixel.
         */}
         <p
           data-testid="start-step-body"
@@ -322,7 +337,7 @@ export function VaultStartSteps({
           {body}
         </p>
         <div className="mt-4 flex items-center justify-between gap-2">
-          {/* 되돌아갈 길 — 첫 걸음에는 갈 데가 없으므로 자리만 지킨다. */}
+          {/* The way back — the first step has nowhere to go, so it only holds the space. */}
           {index > 0 ? (
             <Chip
               size="md"
@@ -339,9 +354,10 @@ export function VaultStartSteps({
           )}
           <span className="flex shrink-0 items-center gap-2">
             {/*
-              **건너뛰기는 모든 걸음에 있다.** 1단(에이전트 연결)은 권유이지
-              관문이 아니고, 나머지도 마찬가지다 — 이 카드가 막는 것은 하나도
-              없어야 한다(소유자: *"에이전트 연결 안해도 사용은 가능해야 하니"*).
+              **Every step has a skip.** Step one (connecting an agent) is an invitation
+              rather than a gate, and so are the rest — this card must block nothing
+              (owner: *"에이전트 연결 안해도 사용은 가능해야 하니"* — it has to be usable
+              without connecting an agent).
             */}
             <Chip
               size="md"
@@ -354,13 +370,14 @@ export function VaultStartSteps({
               {currentDone ? t("next") : t("skip")}
             </Chip>
             {/*
-              채움은 **한 화면에 하나**다 — 이 카드에서 인디고 면을 갖는 것은
-              지금 걸음의 주 행동뿐이다.
+              Fill is **one per screen** — the only thing with an indigo surface on this
+              card is the current step's primary action.
 
-              호버를 손으로 쓴 이유: 값 층의 `hoverSurface` 축은 무채색 `lift`
-              한 단만 갖는다. 인디고 틴트를 한 단 올리는 것은 값이 아니라
-              **위계 판정**이라 축이 일부러 안 가진다(실측에 다수파가 없었다) —
-              그래서 이 자리에 남기고 그 근거를 여기 적는다.
+              Why the hover is hand-written: the value layer's `hoverSurface` axis has
+              only the one neutral `lift` step. Raising an indigo tint by a step is not
+              a value but **a hierarchy decision**, which the axis deliberately does not
+              carry (the inventory found no majority) — so it stays here, with its
+              rationale recorded here.
             */}
             <Chip
               size="lg"

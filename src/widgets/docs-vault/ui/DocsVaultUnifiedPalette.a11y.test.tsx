@@ -6,8 +6,8 @@ import koMessages from '../../../../messages/ko.json';
 import { DocsVaultUnifiedPalette } from './DocsVaultUnifiedPalette';
 import type { VaultDoc } from '@/entities/docs-vault';
 
-// next-intl 의 navigation 래퍼는 vitest 환경에서 next/navigation 해석을 못 해
-// 다른 위젯 테스트들과 동일하게 Link 를 평범한 <a> 로 mock.
+// next-intl's navigation wrapper cannot resolve next/navigation under vitest, so
+// Link is mocked as a plain <a>, as in the other widget tests.
 vi.mock('@/i18n/navigation', () => ({
   Link: ({
     href,
@@ -25,8 +25,8 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-// jsdom 은 scrollIntoView 를 구현하지 않는다 — 활성 옵션 스크롤 효과가 throw
-// 하지 않도록 stub.
+// jsdom does not implement scrollIntoView — stubbed so the active-option scroll
+// effect does not throw.
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = vi.fn();
 }
@@ -60,7 +60,7 @@ function renderPalette(initialQuery = '') {
     <DocsVaultUnifiedPalette
       onClose={() => {}}
       docs={docs}
-      // 빈 쿼리 모드에서 '최근' 섹션이 2개 옵션을 만들도록 — listbox 옵션 확보.
+      // So the '최근' section produces 2 options in empty-query mode — securing listbox options.
       recentSlugs={['alpha', 'beta']}
       pinnedSlugs={[]}
       commands={[]}
@@ -73,9 +73,10 @@ function renderPalette(initialQuery = '') {
 }
 
 /**
- * 통합 팔레트 a11y — WAI-ARIA combobox 패턴. 방향키로 활성 옵션이 바뀔 때
- * 스크린리더가 읽을 수 있도록 입력이 aria-activedescendant 로 활성 option 의
- * id 를 가리켜야 한다 (기존엔 aria-selected 만 있어 AT 가 이동을 못 읽었다).
+ * Unified palette a11y — the WAI-ARIA combobox pattern. For a screen reader to
+ * follow arrow-key movement, the input has to point at the active option's id
+ * through aria-activedescendant (previously only aria-selected was present, so AT
+ * could not read the movement).
  */
 describe('DocsVaultUnifiedPalette — combobox a11y', () => {
   it('입력이 combobox 역할 + listbox 를 aria-controls 로 연결', () => {
@@ -93,12 +94,12 @@ describe('DocsVaultUnifiedPalette — combobox a11y', () => {
 
     const first = input.getAttribute('aria-activedescendant');
     expect(first).toBeTruthy();
-    // 가리키는 id 의 실제 요소가 role=option 이고 선택 상태.
+    // The element with that id really is role=option and is selected.
     const firstOption = document.getElementById(first!);
     expect(firstOption).toHaveAttribute('role', 'option');
     expect(firstOption).toHaveAttribute('aria-selected', 'true');
 
-    // 방향키 ↓ → activedescendant 가 다음 option 으로 이동.
+    // ArrowDown → activedescendant moves to the next option.
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     const second = input.getAttribute('aria-activedescendant');
     expect(second).toBeTruthy();
@@ -112,8 +113,8 @@ describe('DocsVaultUnifiedPalette — combobox a11y', () => {
     expect(input).not.toHaveAttribute('aria-activedescendant');
   });
 
-  // aria-activedescendant 만으로는 "몇 건 나왔는지" 가 AT 에 전달 안 됨 →
-  // polite live-region 으로 결과 수를 announce (combobox 표준 관행).
+  // aria-activedescendant alone does not convey "how many results" to AT → announce
+  // the count through a polite live region (standard combobox practice).
   it('검색어가 있으면 결과 수를 live-region 으로 알린다', () => {
     renderPalette('alpha');
     expect(screen.getByRole('status')).toHaveTextContent(/결과 1개/);

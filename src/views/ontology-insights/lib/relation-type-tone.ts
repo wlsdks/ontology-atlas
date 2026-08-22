@@ -1,19 +1,16 @@
 import { indigoRgba } from "@/shared/config/indigo-tokens";
 
 /**
- * Indigo-intensity scale for relation TYPE distribution (탭2 관계 — insights
- * visual diversity pass). Same hue as `--color-indigo-brand` (#5e6ad2 =
- * rgb(94,106,210)), alpha only varies per type — identical "same hue, alpha
- * only" precedent already used by `--topology-v2-selection-ring-hairline` /
- * `--topology-v2-hover-ring` in `app/globals.css` ("둘 이상의 채색 시스템
- * 금지 위반 아님(단일 인디고 유지)"). This does not add a second coloring
- * system; it reuses the one indigo the design charter allows.
+ * Indigo-intensity scale for the relation TYPE distribution. The same hue as
+ * `--color-indigo-brand` (#5e6ad2 = rgb(94,106,210)); only the alpha varies per type — the same
+ * "one hue, alpha only" precedent already used by `--topology-v2-selection-ring-hairline` and
+ * `--topology-v2-hover-ring` in `app/globals.css`. This does not add a second colouring system; it
+ * reuses the one indigo the design charter allows.
  *
- * Containment relations (contains/belongs_to) get the strongest alpha to
- * match `TopologyV2TraceMark`'s solid-line = containment convention;
- * depends_on is next-strongest (dashed in the trace mark); everything else
- * fades toward a neutral-ish floor so unknown/rare types stay legible
- * without competing for attention.
+ * Containment relations (contains/belongs_to) get the strongest alpha, matching
+ * `TopologyV2TraceMark`'s solid-line = containment convention; depends_on is next strongest (dashed
+ * in the trace mark); everything else fades toward a neutral-ish floor so unknown and rare types
+ * stay legible without competing for attention.
  */
 const RELATION_TYPE_ALPHA: Readonly<Record<string, number>> = {
   contains: 0.85,
@@ -36,11 +33,12 @@ export function relationTypeAlpha(type: string): number {
 }
 
 /**
- * 관계 종류별 인디고 — 색조는 브랜드 인디고 고정, 알파만 종류가 정한다.
+ * The indigo for a relation kind — the hue is fixed to the brand indigo and only the alpha is
+ * decided by the kind.
  *
- * rgb 삼중항을 여기 손으로 적지 않는다. 값의 단일 진실원은
- * `shared/config/indigo-tokens.ts` 이고, 여기서 베끼면 브랜드 색이 움직일 때
- * 이 파일만 안 따라간다(2026-08-04 감사: 색 게이트가 이 줄을 못 보고 있었다).
+ * The rgb triplet is not written by hand here. The single source of truth for the value is
+ * `shared/config/indigo-tokens.ts`, and copying it here means this file alone fails to follow when
+ * the brand colour moves (audit 2026-08-04: the colour gate could not see this line).
  */
 export function relationTypeIndigo(type: string): string {
   return indigoRgba("brand", relationTypeAlpha(type));

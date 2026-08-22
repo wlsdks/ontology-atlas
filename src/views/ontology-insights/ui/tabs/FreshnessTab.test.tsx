@@ -43,8 +43,8 @@ const recentLink = {
 };
 
 describe("FreshnessTab", () => {
-  // P4-③ 회귀: "Recent updates" 행이 UTC 가 아니라 사용자 로컬 타임존
-  // 기준으로 날짜를 렌더하는지 고정 TZ 로 검증.
+  // Regression guard: verifies with a fixed TZ that "Recent updates" rows render the date in the
+  // user's local timezone rather than UTC.
   let originalTz: string | undefined;
   beforeAll(() => {
     originalTz = process.env.TZ;
@@ -143,7 +143,7 @@ describe("FreshnessTab", () => {
 
     const row = screen.getByTestId("insights-freshness-domain-row");
     const cells = row.querySelectorAll("i[title]");
-    // 12개 셀 전부 툴팁 — 마지막(우측)이 이번 주, 그 앞은 "N주 전".
+    // All 12 cells have tooltips — the last (rightmost) is this week, the ones before are "N weeks ago".
     expect(cells).toHaveLength(12);
     expect(cells[11]).toHaveAttribute("title", "This week · 2 updates");
     expect(cells[9]).toHaveAttribute("title", "2w ago · 1 updates");
@@ -208,10 +208,10 @@ describe("FreshnessTab", () => {
       />,
     );
 
-    // 접힘이 기본 — 파생 이름이 1계층에 앉아 있지 않다.
+    // Collapsed by default — derived names do not sit in the first layer.
     expect(screen.queryByTestId("insights-freshness-evidence-row-link")).toBeNull();
     const toggle = screen.getByTestId("insights-freshness-evidence-toggle");
-    // 규모는 라벨이 그대로 말한다 — 숨기기가 아니라 계층화다.
+    // The scale is stated verbatim by the label — this is layering, not hiding.
     expect(toggle).toHaveTextContent("Show 193 names without a document");
 
     fireEvent.click(toggle);
@@ -221,7 +221,7 @@ describe("FreshnessTab", () => {
     expect(rows[0]).toHaveTextContent(".claude/hooks/inject-ontology-summary.sh");
     expect(rows[1]).toHaveTextContent(".codex/hooks/inject-ontology-summary.sh");
     expect(screen.getAllByTestId("evidence-only-badge")).toHaveLength(2);
-    // 날짜의 주인이 누구인지 캡션이 말한다.
+    // The caption says whose date this is.
     expect(
       screen.getByText(/date belongs to the document that wrote the name down/),
     ).toBeInTheDocument();

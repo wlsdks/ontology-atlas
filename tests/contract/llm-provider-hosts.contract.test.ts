@@ -1,14 +1,16 @@
-// 명명 벤더의 목적지 — Rust(전송) ↔ 웹(화면 문구) drift 차단.
+// Named vendors' destinations — blocks drift between Rust (which sends) and the web
+// (which words the screen).
 //
-// 화면은 사용자가 [연결 확인]을 누르기 **전에** "이 요청이 어디로 가는가" 를
-// 호스트 이름으로 말한다. 그 문장이 실제 목적지와 다르면 그건 오탈자가 아니라
-// 거짓 보안 주장이다(신뢰 헌장 ⑥ — 우리가 증명할 수 있는 만큼만 말한다).
+// The screen names the host "where this request goes" **before** the user presses
+// [check connection]. A sentence that differs from the real destination is not a typo
+// but a false security claim (trust charter ⑥ — we say only what we can prove).
 //
-// 진실원은 `src-tauri/src/llm.rs` 의 확인 URL 이라 같은 프로세스에서 import 할
-// 수 없다. 그래서 감사 로그와 같은 패턴을 쓴다: **양쪽이 같은 픽스처를 본다.**
-// Rust 쪽 `the_hosts_match_the_shared_fixture_the_screen_promises` 가 "내가
-// 실제로 부르는 호스트 == 이 픽스처" 를 증명하고, 이 테스트가 "이 픽스처 ==
-// 화면이 약속하는 호스트" 를 증명한다.
+// The source of truth is the check URL in `src-tauri/src/llm.rs`, which cannot be
+// imported into the same process. So this uses the same pattern as the audit log:
+// **both sides read the same fixture.** On the Rust side
+// `the_hosts_match_the_shared_fixture_the_screen_promises` proves "the host I
+// actually call == this fixture", and this test proves "this fixture == the host the
+// screen promises".
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -33,8 +35,9 @@ describe('명명 벤더 목적지 계약 (Rust 전송 ↔ 웹 문구)', () => {
   });
 
   it('명명 벤더는 3에서 동결돼 있다', () => {
-    // 4번째는 "Bearer 호환으로 흡수 불가 + 수요 증거" 둘 다일 때만이다.
-    // 근거 전문은 `src-tauri/src/secrets.rs` 의 PROVIDERS 주석.
+    // A fourth is added only when both hold: it cannot be absorbed through Bearer
+    // compatibility, and there is evidence of demand. Full rationale: the PROVIDERS
+    // comment in `src-tauri/src/secrets.rs`.
     expect(SECRET_PROVIDERS).toHaveLength(3);
   });
 });

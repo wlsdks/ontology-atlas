@@ -1,10 +1,11 @@
 /**
- * `.mcp.json` 병합 — **앱과 CLI 가 같은 답을 내야 한다.**
+ * `.mcp.json` merge — **the app and the CLI must produce the same answer.**
  *
- * 2026-08-16 검수: 같은 파일에 대해 CLI 는 우리 항목만 갈아 끼우고 나머지를
- * 보존했는데, 앱은 **처음부터 새로 지어 통째로 덮어썼다.** 사용자가 등록해 둔
- * 다른 MCP 서버가 한 번의 클릭으로 사라졌다. 같은 파일에 두 표면이 반대 방향의
- * 안전을 갖고 있었고, 그것을 확인하는 검사는 없었다.
+ * Reviewed 2026-08-16: for the same file the CLI replaced only our entry and
+ * preserved the rest, while the app **rebuilt from scratch and overwrote the
+ * whole file.** Other MCP servers a user had registered disappeared in one
+ * click. Two surfaces held opposite safety guarantees over one file, and no
+ * check compared them.
  */
 
 const OURS = {

@@ -7,19 +7,19 @@ export interface SearchResult {
 }
 
 /**
- * 간단한 다중 필드 검색 — 의존성 추가 없이 프로젝트 20-200개 규모에 충분.
+ * Simple multi-field search — enough for 20–200 projects without adding a dependency.
  *
- * 점수 체계:
- * - name 완전 일치 100
- * - name 시작 일치 80
- * - name 포함 60
- * - nameEn 포함 55
- * - slug 포함 50
- * - tag 포함 40
- * - stack 포함 35
- * - description 포함 20
+ * Scoring:
+ * - exact name match 100
+ * - name prefix match 80
+ * - name contains 60
+ * - nameEn contains 55
+ * - slug contains 50
+ * - tag contains 40
+ * - stack contains 35
+ * - description contains 20
  *
- * 복수 필드 매치 시 최고 점수 적용.
+ * With several fields matching, the highest score applies.
  */
 export function searchProjects(projects: Project[], rawQuery: string): SearchResult[] {
   const query = rawQuery.trim().toLowerCase();

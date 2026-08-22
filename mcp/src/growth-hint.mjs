@@ -1,16 +1,16 @@
-// growth-hint.mjs — Ask-to-Grow (과제 ⑧).
+// growth-hint.mjs — Ask-to-Grow.
 //
 // A read tool that resolves to nothing (no path, no slug, 0 rows, 0 hits)
-// currently just returns an empty result — the "unanswerable question" is
-// exactly where the vault should grow, but the signal is thrown away. These
-// pure helpers turn that empty result into a small, machine-consumable
-// `growthHint` the caller (index.js / ontology-engine.mjs) attaches to the
-// response only when it is empty/unresolved — never on success.
+// otherwise just returns an empty result — the "unanswerable question" is exactly
+// where the vault should grow, and the signal was being thrown away. These pure
+// helpers turn that empty result into a small, machine-consumable `growthHint`
+// which the caller (index.js / ontology-engine.mjs) attaches only when the result
+// is empty or unresolved — never on success.
 //
-// Every hint is derived from data the caller already has (vault census,
-// near-slug/near-title candidates computed from real docs) — nothing here
-// invents a node. When no real candidate exists, the hint falls back to a
-// generic add_concept scaffold example, not a guessed concrete node.
+// Every hint is derived from data the caller already has (vault inventory,
+// near-slug/near-title candidates computed from real docs) — nothing here invents
+// a node. With no real candidate, the hint falls back to a generic add_concept
+// scaffold example rather than a guessed concrete node.
 
 const TOKEN_RE = /[a-z0-9]+/g;
 
@@ -26,19 +26,19 @@ function titleCaseFromSlug(slug) {
 }
 
 /**
- * 성장 힌트가 에이전트에게 제안할 슬러그.
+ * The slug a growth hint suggests to the agent.
  *
- * 감사 2026-07-25 — 이 함수만 `[^a-z0-9]` 로 치환해 **한글 제목이 통째로
- * 지워지고 `untitled` 가 나왔다**. 다른 4개 구현(`shared/lib/slugify.ts` ·
- * `derive-ontology-from-vault.ts` · `analyze.mjs` · `absorb.mjs`)은 전부
- * `가-힣` 을 보존한다. `init --locale=ko` 가 기본 지원하는 경로라 한글 vault
- * 사용자에게는 에이전트가 `untitled.md` 생성을 지시하고, 두 번째 한글 개념에서
- * 슬러그가 충돌했다.
+ * Audit 2026-07-25 — this function alone substituted on `[^a-z0-9]`, so **a
+ * Korean title was erased entirely and came out as `untitled`**. The other four
+ * implementations (`shared/lib/slugify.ts`, `derive-ontology-from-vault.ts`,
+ * `analyze.mjs`, `absorb.mjs`) all preserve `가-힣`. Since `init --locale=ko` is a
+ * supported path, agents were instructing Korean-vault users to create
+ * `untitled.md`, and the slug collided on their second Korean concept.
  *
- * 여기서 고치는 것은 **한글 소실 하나**다 — `/` 를 구분자로 남기는 이 함수 고유
- * 동작(`Payment/Billing` → `payment-billing`)은 그대로 둔다. 5개 구현을 하나로
- * 합치는 건 별 작업이고, 그걸 이 버그 수정에 끼워 넣으면 다른 방향의 회귀를
- * 부른다.
+ * Only **the Korean loss** is fixed here. This function's own behaviour of keeping
+ * `/` as a separator (`Payment/Billing` → `payment-billing`) is left alone.
+ * Collapsing the five implementations into one is separate work, and folding it
+ * into this bug fix would invite a regression in the other direction.
  */
 function slugify(text) {
   const slug = String(text ?? '')
@@ -92,10 +92,11 @@ export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
  * the real vault slug set).
  */
 export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referencedBy = [] }) {
-  // 볼트가 이 이름을 **이미 알고 있는** 경우 — 문서만 없다. 지도/인사이트가
-  // 개념으로 세는 노드의 대부분(도그푸드 289 중 193)이 여기 해당한다. "없다"
-  // 로 끝내면 화면과 에이전트가 서로 다른 우주를 말하게 되므로, 누가 어떤 키로
-  // 이 이름을 적었는지 밝히고 실체화하는 한 수를 준다.
+  // The vault **already knows** this name — only the document is missing. Most of
+  // what the map and insights count as concepts falls here (193 of 289 in the
+  // dogfood vault). Ending at "not found" makes the screen and the agent describe
+  // different universes, so name who wrote it under which key, and give the one
+  // move that materialises it.
   if (referencedBy.length > 0) {
     const cited = referencedBy
       .slice(0, 3)

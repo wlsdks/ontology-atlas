@@ -70,8 +70,9 @@ describe("parseHomeRouteState", () => {
     });
   });
 
-  // 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — `?recent=` 은 지도
-  // 침강과 INDEX 렌즈를 동시에 구동하는 단일 진실원이라 파싱 계약을 고정한다.
+  // Recent-change spotlight (council design 2026-07-23). `?recent=` is the
+  // single source driving both the map's sinking and the INDEX lens, so the
+  // parsing contract is pinned here.
   it("reads ?recent= as the spotlight window — auto or 1/7/30 presets", () => {
     expect(parseHomeRouteState(new URLSearchParams("recent=auto"))).toMatchObject({
       recentWindow: "auto",
@@ -116,9 +117,9 @@ describe("parseHomeRouteState", () => {
   });
 
   it("treats a selected-node link without an explicit mode as overview, so the click renders a 1-hop ego focus (not the 2-hop focus neighborhood)", () => {
-    // selectedSlug → "focus" 자동 승격은 depthLimit 2(2-hop)를 걸어 1-hop
-    // applyFocusOverlay 를 우회시킨다. selectedSlug 만으로는 overview 를 유지하고,
-    // "초점" 2-hop 은 명시적 mode=focus 일 때만.
+    // Auto-promoting selectedSlug to "focus" would set depthLimit 2 (2-hop)
+    // and bypass the 1-hop applyFocusOverlay. selectedSlug alone stays
+    // overview; the 2-hop focus needs an explicit mode=focus.
     const params = new URLSearchParams("p=capabilities/topology-analysis-modes");
 
     expect(parseHomeRouteState(params)).toMatchObject({
@@ -139,8 +140,8 @@ describe("parseHomeRouteState", () => {
   });
 
   it("falls back to overview for the removed live-graph mode (#19)", () => {
-    // 살아있는 그래프(물리) 토글 제거 후 mode=graph 는 더는 유효 모드가
-    // 아니다 — 옛 공유 링크는 조용히 overview 로 강등된다.
+    // With the live-graph (physics) toggle removed, mode=graph is no longer a
+    // valid mode — old shared links are demoted quietly to overview.
     const params = new URLSearchParams("mode=graph");
 
     expect(parseHomeRouteState(params)).toMatchObject({
@@ -150,8 +151,10 @@ describe("parseHomeRouteState", () => {
   });
 
   it("keeps overview on node click — selection must not expand the map (explicit focus entry only)", () => {
-    // R+ 소유자 피드백: "클릭하면 그냥 [확장+재배치]돼서 헷갈린다".
-    // 클릭 = 선택(안전한 탐색), 확장(초점)은 배지/더블클릭/딥링크의 명시적 의도.
+    // Owner: "클릭하면 그냥 [확장+재배치]돼서 헷갈린다" (a click just
+    // expands and relayouts, which is confusing). Click = selection (safe
+    // navigation); expansion (focus) needs the explicit intent of a badge,
+    // double click, or deep link.
     const state = parseHomeRouteState(new URLSearchParams(""));
     expect(selectTopologyNodeRouteState(state, "domain:views")).toMatchObject({
       selectedSlug: "domain:views",
@@ -342,7 +345,7 @@ describe("applyHomeRouteState", () => {
     );
   });
 
-  // 스포트라이트 왕복 안정 — 공유 링크/에이전트 판독 계약.
+  // Spotlight round-trip stability — the shared-link / agent-readable contract.
   it("serializes ?recent= for auto and numeric windows, omits it when off", () => {
     const auto = applyHomeRouteState(new URLSearchParams(), {
       ...DEFAULT_HOME_ROUTE_STATE,
@@ -389,8 +392,9 @@ describe("applyHomeRouteState", () => {
 
 describe("selectTopologyNodeRouteState", () => {
   it("keeps the analysis mode unchanged on node selection across all modes", () => {
-    // 구계약(overview 클릭 → focus 승격)은 클릭 한 번에 지형 재배치까지
-    // 겹쳐 폐기됐다 — 클릭은 어느 모드에서든 선택만 바꾼다.
+    // The old contract (overview click → focus promotion) stacked a terrain
+    // relayout onto a single click and was dropped — a click changes only the
+    // selection, in every mode.
     for (const mode of ["overview", "focus", "health"] as const) {
       const state = { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: mode };
       expect(selectTopologyNodeRouteState(state, "domain:views")).toMatchObject({
@@ -480,10 +484,10 @@ describe("selectTopologyPathRouteState", () => {
 });
 
 describe("resolveTopologyNodeClickRouteState", () => {
-  // persona QA (fix/persona-findings ②): 두 번째 노드 클릭으로 캔버스는
-  // A→B 를 그리지만 칩 문구가 "대상 선택" 에 고정되고 경로 패킷 복사
-  // 버튼도 나타나지 않던 회귀 — `HomePage.tsx` 의 클릭 핸들러가
-  // analysisMode 를 보지 않고 항상 일반 선택 경로로만 흘렀던 게 원인.
+  // Persona QA regression: a second node click drew A→B on the canvas, yet the
+  // chip stayed pinned to "pick a target" and the path packet copy button never
+  // appeared. Cause: `HomePage.tsx`'s click handler ignored analysisMode and
+  // always took the ordinary-selection route.
   it("일반 모드에서는 selectTopologyNodeRouteState 와 동일하게 동작한다", () => {
     for (const mode of ["overview", "focus", "health"] as const) {
       const state = { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: mode };
@@ -569,7 +573,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
       insightsReturnReviewId: null,
       askIntent: null,
     });
-    // 탭 없는 접두어만으로는 복귀 목적지가 없다 — 칩 미렌더.
+    // The prefix without a tab names no return destination — no chip.
     expect(
       parseHomeRouteState(
         new URLSearchParams("via=insights&review=promotion:element:x"),
@@ -587,7 +591,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
     );
     const state = parseHomeRouteState(params);
 
-    // 노드 클릭(선택) 후에도 마커 유지 — 칩은 지도 탐색 중 사라지지 않는다.
+    // The marker survives a node click — the chip does not vanish mid-navigation.
     const afterClick = resolveTopologyNodeClickRouteState(state, "domain:views");
     expect(afterClick.insightsReturnTab).toBe("do-next");
     expect(applyHomeRouteState(params, afterClick).get("via")).toBe(
@@ -597,7 +601,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
       "promotion:element:x",
     );
 
-    // 명시 dismiss(칩의 X) 만 마커를 지운다.
+    // Only an explicit dismiss (the chip's X) clears the marker.
     const dismissed = applyHomeRouteState(params, {
       ...afterClick,
       insightsReturnTab: null,
@@ -624,12 +628,12 @@ describe("밀도 게이트 확장 상태 (?open=)", () => {
     const state = parseHomeRouteState(
       new URLSearchParams("p=pick&open=,a,,a, b ,&mode=health"),
     );
-    // 빈 항목/중복 제거, 트림. b 는 트림돼 살아남는다.
+    // Empty entries and duplicates dropped, values trimmed: b survives trimming.
     expect(state.expandedParents).toEqual(["a", "b"]);
-    // open 파싱이 나머지 라우트 상태를 오염시키지 않는다.
+    // Parsing open does not pollute the rest of the route state.
     expect(state.selectedSlug).toBe("pick");
     expect(state.analysisMode).toBe("health");
-    // open 미지정이면 빈 배열(왕복 안전).
+    // Absent open means an empty array (round-trip safe).
     expect(parseHomeRouteState(new URLSearchParams("p=pick")).expandedParents).toEqual([]);
   });
 
@@ -637,14 +641,14 @@ describe("밀도 게이트 확장 상태 (?open=)", () => {
     const params = new URLSearchParams("open=domain:onboarding");
     const state = parseHomeRouteState(params);
 
-    // 노드 클릭(선택) 후에도 확장 상태 유지 — 탐색이 접힘을 리셋하지 않는다.
+    // Expansion survives a node click — navigating does not reset the folding.
     const afterClick = resolveTopologyNodeClickRouteState(state, "domain:views");
     expect(afterClick.expandedParents).toEqual(["domain:onboarding"]);
     expect(applyHomeRouteState(params, afterClick).get("open")).toBe(
       "domain:onboarding",
     );
 
-    // 토글 헬퍼로 부모 추가 → URL 왕복.
+    // Add a parent through the toggle helper, then round-trip the URL.
     const toggled = {
       ...afterClick,
       expandedParents: toggleExpandedParent(afterClick.expandedParents, "capability:huge"),
@@ -653,7 +657,7 @@ describe("밀도 게이트 확장 상태 (?open=)", () => {
       "domain:onboarding,capability:huge",
     );
 
-    // 같은 부모 재토글 → 제거 → 마지막 하나 사라지면 open 파라미터 자체 삭제.
+    // Re-toggling removes it; losing the last one deletes the open parameter.
     const collapsed = {
       ...state,
       expandedParents: toggleExpandedParent(state.expandedParents, "domain:onboarding"),
@@ -713,7 +717,7 @@ describe("resolveRealmNodeId (패널3-S7 slug alias)", () => {
   });
 
   it("kind prefix 없는 bare slug 를 <kind>:<slug> canonical id 로 승격한다", () => {
-    // 사용자가 손으로 친 `?realm=ai-agent-partner` — 예전엔 raw 칩 + 전체 지도.
+    // A hand-typed `?realm=ai-agent-partner` used to render a raw chip over the whole map.
     expect(resolveRealmNodeId("ai-agent-partner", nodeIds)).toBe(
       "capability:ai-agent-partner",
     );
@@ -722,7 +726,7 @@ describe("resolveRealmNodeId (패널3-S7 slug alias)", () => {
 
   it("어떤 노드와도 안 맞으면 null — 칩 미표시 계약", () => {
     expect(resolveRealmNodeId("does-not-exist", nodeIds)).toBeNull();
-    // kind prefix 가 붙었지만 kind 가 틀린 경우도 미해석(정확 일치만 인정).
+    // A wrong kind prefix stays unresolved too — only an exact match counts.
     expect(resolveRealmNodeId("domain:ai-agent-partner", nodeIds)).toBeNull();
   });
 
@@ -732,10 +736,10 @@ describe("resolveRealmNodeId (패널3-S7 slug alias)", () => {
   });
 
   it("정확 일치가 bare 별칭보다 우선한다", () => {
-    // 같은 tail slug 를 가진 두 노드가 있어도, 정확 일치 id 가 있으면 그것.
+    // With two nodes sharing a tail slug, an exact id match still wins.
     const ids = ["capability:parser", "element:parser"];
     expect(resolveRealmNodeId("element:parser", ids)).toBe("element:parser");
-    // bare `parser` 는 등장 순서상 첫 매치(capability:parser).
+    // Bare `parser` takes the first match in iteration order (capability:parser).
     expect(resolveRealmNodeId("parser", ids)).toBe("capability:parser");
   });
 });
@@ -810,16 +814,16 @@ describe("deriveDeeplinkAncestorExpansion", () => {
 });
 
 /**
- * **펼침에는 전체 상한이 있다.**
+ * **Expansion has an overall cap.**
  *
- * 부모 **하나**의 자식 수는 이미 제한돼 있었다(배치 24 + `+N 더보기`). 그런데
- * **펼친 부모의 수**에 제한이 없어서 `?open=` 에 쌓이는 만큼 화면 위 노드가
- * 곱해졌다 — 소유자 실측(2026-07-31): 부모 5개를 펼치자 노드 약 150개에
- * **이름표가 2개** 남았다.
+ * The child count of **one** parent was already limited (a batch of 24 plus
+ * `+N more`), but the number of *expanded parents* was not, so nodes on screen
+ * multiplied with everything piled into `?open=`. Owner measurement
+ * (2026-07-31): expanding 5 parents left ~150 nodes carrying **2 labels**.
  *
- * 재는 것 셋: ① 상한을 넘으면 가장 오래된 것이 닫힌다 ② 접기는 언제나 된다
- * ③ 딥링크도 같은 상한을 받는다(링크로 우회하면 받은 사람이 더 나쁜 화면을
- * 본다).
+ * Three things are measured here: (1) past the cap the oldest closes,
+ * (2) collapsing always works, (3) a deep link gets the same cap — bypassing
+ * it by link would give the recipient a worse screen.
  */
 describe("펼침 부모 상한", () => {
   it("상한 안에서는 그냥 쌓인다", () => {
@@ -834,7 +838,7 @@ describe("펼침 부모 상한", () => {
     for (const id of ["a", "b", "c", "d"]) open = toggleExpandedParent(open, id);
     expect(open).toHaveLength(MAX_EXPANDED_PARENTS);
     expect(open).toEqual(["b", "c", "d"]);
-    // 누른 것은 **반드시** 열려 있어야 한다 — 이게 "무시하지 않는다"의 정의다.
+    // What was pressed **must** be open — that is what "not ignored" means.
     expect(open).toContain("d");
     expect(open).not.toContain("a");
   });
@@ -853,7 +857,7 @@ describe("펼침 부모 상한", () => {
   });
 
   it("이미 열린 것을 다시 눌러도 다른 것이 닫히지 않는다", () => {
-    // 토글이 "닫기"로 해석되므로 축출이 일어날 자리가 없다.
+    // The toggle reads as "close", so there is no place for an eviction.
     const open = toggleExpandedParent(["a", "b", "c"], "a");
     expect(open).toEqual(["b", "c"]);
   });
@@ -861,27 +865,30 @@ describe("펼침 부모 상한", () => {
   it("딥링크도 같은 상한을 받는다 — 링크로 우회할 수 없다", () => {
     const parsed = parseExpandedParentsParam("a,b,c,d,e");
     expect(parsed).toHaveLength(MAX_EXPANDED_PARENTS);
-    // 뒤쪽을 남긴다 — 나중에 적힌 것이 더 최근 의도다(토글의 축출과 같은 방향).
+    // The tail is kept — what was written later is the more recent intent
+    // (same direction as the toggle's eviction).
     expect(parsed).toEqual(["c", "d", "e"]);
   });
 
   it("딥링크의 중복 제거가 상한보다 먼저 일어난다", () => {
-    // "a,a,a,b" 는 실질 2개다 — 중복 때문에 멀쩡한 항목이 잘리면 안 된다.
+    // "a,a,a,b" is really 2 entries — duplicates must not cut a valid one.
     expect(parseExpandedParentsParam("a,a,a,b")).toEqual(["a", "b"]);
   });
 });
 
 /**
- * **볼트가 바뀌면 볼트 전용 주소 상태가 살아남지 않는다** — 「범위를 넘긴
- * 상태」의 원인 치료 (2026-08-01). 이 시험이 잠그는 것은 미관이 아니라, 없는
- * 노드를 가리킨 주소가 지도를 통째로 흐리고 경로 칩이 거짓을 단언하던 경로다.
+ * **Vault-scoped address state must not survive a vault change** — the cause
+ * fix for out-of-scope state (2026-08-01). What this pins down is not
+ * cosmetics: an address pointing at a node that does not exist dimmed the
+ * whole map and made the path chip assert a falsehood.
  */
 describe("clearVaultScopedRouteState", () => {
   /**
-   * ⚠️ 픽스처에 `mode=path` + 끝점 둘을 같이 넣으면 **파서가 이미 `p` 를 null 로
-   * 내린다**(경로 성립 시 선택 해제). 그 상태로 단언하면 정리를 통째로 지워도
-   * 시험이 초록이다 — 실제로 한 번 그랬다(2026-08-01 리버트 프로브). 그래서
-   * 선택 축과 경로 축을 **다른 픽스처로** 나눈다.
+   * ⚠️ A fixture carrying `mode=path` plus both endpoints has **`p` already
+   * nulled by the parser** (a complete path clears the selection). Asserting
+   * against that state stays green even with the whole clearing removed — it
+   * did once (2026-08-01 revert probe). Hence the selection axis and the path
+   * axis use **separate fixtures**.
    */
   const SELECTION_SEARCH =
     "p=capability:alpha&c=cat&hub=domain:h&open=domain:x,domain:y&realm=domain:r" +
@@ -890,7 +897,7 @@ describe("clearVaultScopedRouteState", () => {
 
   it("볼트 이름을 담은 선택 상태를 걷어내고 열거값 키는 지킨다", () => {
     const current = parseHomeRouteState(new URLSearchParams(SELECTION_SEARCH));
-    expect(current.selectedSlug).toBe("capability:alpha"); // 픽스처가 유효한지 먼저 본다
+    expect(current.selectedSlug).toBe("capability:alpha"); // the fixture itself must be valid first
 
     const next = clearVaultScopedRouteState(current);
 
@@ -899,7 +906,7 @@ describe("clearVaultScopedRouteState", () => {
     expect(next.focusedHubSlug).toBeNull();
     expect(next.expandedParents).toEqual([]);
     expect(next.realmSlug).toBeNull();
-    // 열거값은 어느 볼트에서나 같은 뜻이라 살아남는다.
+    // Enumerated values mean the same in any vault, so they survive.
     expect(next.impactMode).toBe("upstream");
     expect(next.pulseMode).toBe("7d");
     expect(next.recentWindow).toBe(7);
@@ -947,9 +954,9 @@ describe("clearVaultScopedRouteState", () => {
 });
 
 /**
- * 등록부의 두 축이 어긋나지 않게 — 볼트 전용 키는 전부 실재하는 쿼리 키여야
- * 한다. (전수 등록 여부는 `tests/contract/scope-registry.contract.test.ts` 가
- * 본다.)
+ * Keeps the registry's two axes aligned: every vault-scoped key must be a real
+ * query key. Whether every key is registered at all is checked by
+ * `tests/contract/scope-registry.contract.test.ts`.
  */
 describe("VAULT_SCOPED_HOME_QUERY_KEYS", () => {
   it("모두 실제 쿼리 키다", () => {

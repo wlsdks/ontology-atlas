@@ -32,14 +32,15 @@ export interface PhysicsStepInput {
   overviewScale: number;
   tokens: TopologyV2Tokens;
   /**
-   * Dive-zoom fix (owner: "줌 인/아웃이 느림") — which of the two split spring
-   * tokens (`--topology-v2-camera-spring-angfreq-interactive/-transition`) this
-   * frame's camera step uses. The caller (`use-topology-loop.ts`) tracks the
-   * mode: interactive while a wheel gesture is live (crisp scale + pan), reset
-   * to transition on every programmatic camera move (focus dive, deselect
-   * return, Auto-arrange, fit-view — cinematic but snappier than the old
-   * shared value). Threaded in rather than read from `tokens` directly so this
-   * function stays a pure function of its inputs.
+   * Dive-zoom fix (owner: *"줌 인/아웃이 느림"* — zoom in/out is slow) — which of
+   * the two split spring tokens
+   * (`--topology-v2-camera-spring-angfreq-interactive/-transition`) this frame's
+   * camera step uses. The caller (`use-topology-loop.ts`) tracks the mode:
+   * interactive while a wheel gesture is live (crisp scale + pan), reset to
+   * transition on every programmatic camera move (focus dive, deselect return,
+   * Auto-arrange, fit-view — cinematic but snappier than the old shared value).
+   * Threaded in rather than read from `tokens` directly so this function stays a
+   * pure function of its inputs.
    */
   cameraAngularFrequency: number;
   dt: number;
@@ -49,42 +50,45 @@ export interface PhysicsStepInput {
    * True while an edge-pair focus is live (`selectedEdge !== null`) with no node
    * focus — the click-focus dim ramp treats edge selection as "the scene is
    * focused" too, so selecting/deselecting a line ramps the same normal↔dim
-   * transition instead of snapping (⑨ 엣지 선택 dim 스냅 제거). Only the ramp
-   * gate uses it; the ego/pair CLASSIFICATION still lives in the draw pass.
+   * transition instead of snapping (⑨ removing the edge-selection dim snap). Only
+   * the ramp gate uses it; the ego/pair CLASSIFICATION still lives in the draw pass.
    */
   pairFocusActive: boolean;
   hoveredNodeId: string | null;
   /**
-   * The one neighbor the user is hovering in the detail panel's "연결된 노드"
-   * list, or null. Under focus (hover suppressed) this node still ramps its
-   * emphasis so the panel row and the on-canvas node/edge light up together
-   * ("emphasis ripple" linkage, lead spec §4). Null until the panel-hover API
-   * feeds it in.
+   * The one neighbour the user is hovering in the detail panel's 「연결된 노드」
+   * (connected nodes) list, or null. Under focus (hover suppressed) this node still
+   * ramps its emphasis so the panel row and the on-canvas node/edge light up
+   * together ("emphasis ripple" linkage, lead spec §4). Null until the panel-hover
+   * API feeds it in.
    */
   panelEmphasisNodeId: string | null;
   /** True while the pointer is actively dragging — suppresses the elastic pan-bounds clamp (see `engine/camera.ts`). */
   isDragging: boolean;
   /**
-   * 3D 돔 보기 (2026-08-18) — **그려지는** 노드들의 월드 bbox. 돔은 2D 레이아웃
-   * 과 다른 자리(투영 중심·회전 자세)에 앉으므로, 팬 리쉬 앵커를 2D
-   * `world.bounds` 로 잡으면 첫 휠 줌/궤도 프레임에 탄성 클램프가 카메라를 2D
-   * 중심으로 끌어가 커서 앵커가 175 월드 유닛 이탈했다(실측). 돔이 켜진 동안
-   * 루프가 `DomeRuntime.drawnBounds` 를 넘긴다. null/생략 = 종전 그대로.
+   * 3D dome view (2026-08-18) — the world bbox of the nodes actually **drawn**. The
+   * dome sits somewhere other than the 2D layout (its own projection centre and
+   * rotation pose), so anchoring the pan leash to the 2D `world.bounds` let the
+   * elastic clamp drag the camera towards the 2D centre on the first wheel-zoom or
+   * orbit frame, throwing the cursor anchor 175 world units off (measured). While the
+   * dome is on, the loop passes `DomeRuntime.drawnBounds`. null/omitted keeps the
+   * previous behaviour.
    */
   worldBoundsOverride?: { minX: number; minY: number; maxX: number; maxY: number } | null;
   /**
-   * 3D 돔 보기 — 포커스된 노드가 **그려진** 자리(월드). 포커스 팬 리쉬는 노드
-   * 의 2D 좌표(`node.x/y`)에 카메라를 묶는데, 돔에서는 그 노드가 프레임
-   * 오프셋만큼 다른 곳에 그려져 있어 리쉬가 빈 곳을 지키게 된다. null/생략 =
-   * 종전 그대로.
+   * 3D dome view — where the focused node is **drawn** (world). The focus pan leash
+   * binds the camera to the node's 2D coordinates (`node.x/y`), but in the dome that
+   * node is drawn a frame offset away, so the leash ends up guarding empty space.
+   * null/omitted keeps the previous behaviour.
    */
   focusAnchorOverride?: { x: number; y: number } | null;
   /**
-   * 3D 돔 보기 — 카메라 배율 하한 덮어쓰기(`DomeRuntime.fitScale`). 돔의 투영
-   * bbox 는 2D 스파인 bbox 보다 넓어 핏 배율이 2D 앵커 기준 하한보다 낮을 수
-   * 있다 — 하한을 안 내리면 핏 목표가 도달 불가(목표≠값)가 되고 휠 앵커가
-   * 허구의 목표 배율로 계산돼 화면이 옆으로 튄다(2026-08-18 실측 175 유닛).
-   * null/생략 = 종전 그대로.
+   * 3D dome view — overrides the camera's minimum zoom (`DomeRuntime.fitScale`). The
+   * dome's projected bbox is wider than the 2D spine bbox, so its fit zoom can sit
+   * below the 2D anchor-based minimum — without lowering the minimum the fit target
+   * becomes unreachable (target ≠ value) and the wheel anchor computes against a
+   * fictional target zoom, throwing the screen sideways (measured 175 units,
+   * 2026-08-18). null/omitted keeps the previous behaviour.
    */
   scaleMinOverride?: number | null;
   /**
@@ -94,14 +98,15 @@ export interface PhysicsStepInput {
    */
   reducedMotion: boolean;
   /**
-   * 앰비언트 휴면 계수 [0,1] (2026-07-28 카운슬 「작업대」 P0).
+   * The ambient sleep factor, [0,1] (council 「작업대」 (workbench) P0, 2026-07-28).
    *
-   * 상시 혜성의 위상 전진 속도에 곱한다. 1 = 각성(종전과 동일), 0 = 잠듦.
-   * 램프 구간(1→0)이 있어야 입자가 궤도 중간에서 **멎지** 않고 흐르다 서서히
-   * 선다 — 정지한 입자는 "고장났나" 로 읽힌다.
+   * Multiplied into the phase-advance speed of the permanent comets. 1 = awake
+   * (identical to before), 0 = asleep. The ramp (1→0) is what keeps particles from
+   * **stopping dead** mid-orbit: they flow and then gradually come to rest, because a
+   * frozen particle reads as "is it broken?".
    *
-   * 생략하면 1(각성) — 이 파라미터를 모르는 기존 호출부/테스트는 종전 동작
-   * 그대로다.
+   * Omitted means 1 (awake) — an existing caller or test that does not know this
+   * parameter behaves exactly as before.
    */
   ambientFactor?: number;
   /**
@@ -121,7 +126,7 @@ export interface PhysicsStepInput {
    */
   userDrivenCamera?: boolean;
   /**
-   * S3 마감 폴리시 (fable 설계) — when true the camera is being driven
+   * S3 finishing polish (fable's design) — when true the camera is being driven
    * externally by the cubic transition tween (`model/camera-easing.ts`, owned
    * by `use-topology-loop.ts`): the spring step + pan-bounds clamp + reduced-
    * motion snap are all skipped and `camera` is used verbatim as this frame's
@@ -134,21 +139,23 @@ export interface PhysicsStepInput {
    */
   freezeCamera?: boolean;
   /**
-   * 밀도 게이트로 접혀 **그려지지 않는** 노드들 (칩 하나로 대체된 서브트리).
+   * Nodes the density gate collapsed and therefore **does not draw** (a subtree
+   * replaced by a single chip).
    *
-   * 주면 아래 램프 넷을 이들에게서 돌리지 않는다 — 화면에 없는 노드의 강조·
-   * ego 공개·포커스 dim·등장 램프는 아무 데도 나타나지 않는다. 실측(synth=3000)
-   * 은 3000 중 **2820개(94%)가 접혀 있고**, 그 94% 에 프레임당 맵 연산 약
-   * 24,000 회가 나가고 있었다 — 드래그가 아닌 평상시에도 상시로.
+   * Given this, the four ramps below are not run for them — the emphasis, ego-reveal,
+   * focus-dim and entry ramps of a node that is not on screen appear nowhere.
+   * Measured (synth=3000): **2,820 of 3,000 (94%) were collapsed**, and roughly
+   * 24,000 map operations per frame were going to that 94% — permanently, not only
+   * while dragging.
    *
-   * ⚠️ **건너뛰면서 값을 남기면 안 된다.** 남은 값은 그 노드가 칩에서 펼쳐지는
-   * 순간 «과거의 상태» 로 되살아나, 포커스 중에 펼친 노드가 dim 으로 **스냅**한다.
-   * 그래서 건너뛸 때 해당 항목을 지운다 — 소비처가 전부 `?? 0`(강조·ego·포커스)
-   * / `?? 1`(등장) 기본값을 갖고 있어, 지운 항목은 «처음부터 램프 인» 이라는
-   * 이미 있는 계약으로 되돌아간다.
+   * ⚠️ **Skipping must not leave the value behind.** A leftover value revives as «its
+   * past state» the instant that node is expanded out of the chip, so a node expanded
+   * while focused **snaps** to dim. So the entry is deleted when skipped — every
+   * consumer has a `?? 0` (emphasis, ego, focus) or `?? 1` (entry) default, so a
+   * deleted entry falls back to the existing contract of «ramping in from scratch».
    *
-   * 생략하면 전 노드가 대상 — 이 인자를 모르는 기존 호출부/테스트는 종전 동작
-   * 그대로다.
+   * Omitted means every node is in scope — an existing caller or test that does not
+   * know this argument behaves exactly as before.
    */
   clusteredIds?: ReadonlySet<string> | null;
   /** Mutated in place — the hook owns this map's lifetime across frames. */
@@ -187,9 +194,9 @@ export interface PhysicsStepInput {
    */
   appearById: Map<string, number>;
   /**
-   * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config. 생략 시
-   * `DEFAULT_TIER_REVEAL`. 팬-클램프의 spine-only 판정이 드로우/히트와 같은
-   * config 를 봐야 한다.
+   * Slice C (the dev/non-dev mode toggle) — the tier gate config. Omitted defaults to
+   * `DEFAULT_TIER_REVEAL`. The pan clamp's spine-only decision has to see the same
+   * config as the draw and the hit test.
    */
   tierReveal?: TierRevealConfig;
 }
@@ -254,21 +261,24 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // (Obsidian feel). Clamping to the focused node's own point (not the whole ego
   // bbox) is what keeps the subject on screen: a wide ego bbox + margin would let
   // the camera reach the cluster's far corner and slide the focused node off the
-  // opposite edge. The zoom gate is essential: "지도 전체 맞추기"/fit-view keeps the
-  // node selected (focusedNodeId stays set) while springing OUT to the overview;
-  // once the camera scale drops below the overview fit scale the clamp reverts to
-  // the full world bounds, so fit-view/close-focus recovery is never fought.
+  // opposite edge. The zoom gate is essential: 「지도 전체 맞추기」 (fit the whole map)
+  // / fit-view keeps the node selected (focusedNodeId stays set) while springing OUT
+  // to the overview; once the camera scale drops below the overview fit scale the
+  // clamp reverts to the full world bounds, so fit-view/close-focus recovery is
+  // never fought.
   const focusNode = focusedNodeId !== null && camera.scale.value > overviewScale
     ? world.nodeById.get(focusedNodeId)
     : undefined;
   // Unfocused clamp source = the VISIBLE tier's bounds. At spine-only zoom the
   // full-graph bounds cover the vast legal-but-empty de-pileup fan (only the
   // ~8-node spine draws), so the elastic clamp would happily leave the camera
-  // stranded over nothing (owner's "캔버스가 사라져버림", QA 소실 A). Uses the
-  // pre-step camera scale — one frame of lag is imperceptible at spring speeds.
+  // stranded over nothing (owner's *"캔버스가 사라져버림"* — the canvas disappeared;
+  // QA loss A). Uses the pre-step camera scale — one frame of lag is imperceptible
+  // at spring speeds.
   const preStepZoomRatio = computeZoomRatio(camera.scale.value, overviewScale * tokens.overviewEntryRatio);
-  // 3D 돔 — 리쉬 앵커는 «그려진» 자리를 따른다(JSDoc 위 두 override 참고).
-  // 돔은 모든 티어를 항상 그리므로 spine-only 특례도 override 가 대신한다.
+  // 3D dome — the leash anchor follows where the node is «drawn» (see the two
+  // overrides' JSDoc above). The dome always draws every tier, so the override
+  // replaces the spine-only special case too.
   const focusAnchor = focusNode ? (focusAnchorOverride ?? { x: focusNode.x, y: focusNode.y }) : null;
   const panBounds = focusAnchor
     ? computePanBounds(
@@ -288,7 +298,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
   const effectiveScaleMin = Math.min(
     computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin),
-    // 3D 돔 — 돔 핏 배율이 2D 하한 밑이면 거기까지 내린다(`DomeRuntime.fitScale`).
+    // 3D dome — if the dome's fit zoom sits below the 2D minimum, drop that far (`DomeRuntime.fitScale`).
     scaleMinOverride ?? Infinity,
   );
   // freezeCamera: the cubic transition tween owns the camera this frame — use
@@ -336,8 +346,9 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   const focusActive = focusedNodeId !== null || pairFocusActive;
   for (const node of world.nodes) {
     if (clusteredIds?.has(node.id)) {
-      // 접혀서 화면에 없다 — 램프를 태우지 않고, **남은 값도 지운다**.
-      // 남기면 이 노드가 칩에서 펼쳐질 때 과거 상태로 되살아나 스냅한다.
+      // Collapsed, so not on screen — the ramp is not run and **the leftover value is
+      // deleted too**. Left behind, it revives as a past state and snaps when this node
+      // is expanded out of the chip.
       emphasisById.delete(node.id);
       egoRevealById.delete(node.id);
       focusRampById.delete(node.id);
@@ -395,13 +406,14 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     );
   }
 
-  // Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지도 코멧
-  // 흐름을 태운다. 포커스 노드에 물린 contains 엣지만 후보(= "인시던트"), 그
-  // 중 seed 순 상위 24개만 실제로 전진(`selectEgoContainsComets` 캡 — 팬아웃
-  // 큰 노드가 파티클 다발이 되지 않게). `render/traces.ts`의 드로우 게이트도
-  // 같은 캡 판정을 써야 하므로 이 Set 은 프레임 드로우(`topology-frame-draw.ts`)
-  // 에서 동일 로직으로 재계산한다(둘 다 결정론이라 같은 프레임 안에서 값이
-  // 일치 — 상태 공유 없이도 drift 없음).
+  // Design Guardian's approved prescription E — on selection (ego) the incident
+  // `contains` edges carry comet flow too. Only `contains` edges attached to the
+  // focused node are candidates (= "incident"), and only the top 24 by seed actually
+  // advance (`selectEgoContainsComets`'s cap, so a high-fanout node does not become a
+  // bundle of particles). `render/traces.ts`'s draw gate has to use the same cap
+  // decision, so this Set is recomputed with identical logic in the frame draw
+  // (`topology-frame-draw.ts`) — both are deterministic, so the values agree within a
+  // frame with no shared state and no drift.
   const egoContainsComets =
     focusedNodeId === null
       ? EMPTY_EGO_CONTAINS_COMETS
@@ -411,13 +423,15 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
           ),
         );
 
-  // R6 상시 혜성 — depends 엣지의 코멧 위상을 항상 전진시킨다(`updateParticles`,
-  // 순수 모델 `render/edge-fireflies.ts`). ambient(edgePulseSpeed)로 포커스와
-  // 무관하게 흐르되, 포커스 서브그래프에 물린 엣지는 "전류가 더 흐른다"고
-  // 가속(edgePulseSpeedEgo, `resolveEdgePulseSpeed`, lead spec §2). reduced-motion
-  // 이면 updateParticles 가 전진을 건너뛰어(정지) 유휴 게이트가 성립한다.
-  // 앰비언트 휴면(2026-07-28) — 사람이 손을 놓고 한참 지나면 이 계수가 0 으로
-  // 램프해 혜성이 흐르다 선다. 각성 중에는 1 이라 종전과 1픽셀도 다르지 않다.
+  // R6 permanent comets — the comet phase of `depends` edges always advances
+  // (`updateParticles`, the pure model `render/edge-fireflies.ts`). It flows on
+  // ambient (edgePulseSpeed) regardless of focus, while edges attached to the focus
+  // subgraph accelerate as "more current is flowing" (edgePulseSpeedEgo,
+  // `resolveEdgePulseSpeed`, lead spec §2). Under reduced-motion `updateParticles`
+  // skips the advance (still), which is what makes the idle gate hold.
+  // Ambient sleep (2026-07-28) — long after the user's hands leave, this factor ramps
+  // to 0 and the comets flow to a stop. While awake it is 1, so nothing differs from
+  // before by a single pixel.
   const ambient = ambientFactor ?? 1;
   updateParticles(
     world.edges,

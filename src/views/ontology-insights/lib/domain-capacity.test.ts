@@ -18,7 +18,7 @@ function edge(from: string, to: string, type = "contains"): KnowledgeGraphEdge {
   return { from, to, type } as KnowledgeGraphEdge;
 }
 
-// Guardian I-1 — 그래프 BFS 진실원 계약 (구 tree-roots 워크 시그니처는 은퇴).
+// The graph-BFS source-of-truth contract (the old tree-roots walk signature is retired).
 describe("computeDomainCapacityRows", () => {
   it("counts capability + element descendants per domain, sorted by total desc", () => {
     const nodes = [

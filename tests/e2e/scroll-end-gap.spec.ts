@@ -3,80 +3,83 @@ import { AUDITED_ROUTES } from "./audited-routes";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * 스크롤 끝에서 하단 여백이 살아 있는지 — 셸 본문 슬롯의 압축 금지 계약.
+ * Whether the bottom gap survives at the end of a scroll — the shell body slot's
+ * no-compression contract.
  *
- * ## 무엇을 지키나
+ * **What it guards.** The shell body slot (`AppShell`'s `overflow-y-auto` column)
+ * is the scroll container. The page root uses `min-h-full` to fill the slot, and
+ * that explicit min-height overrides a flex item's automatic minimum size (its
+ * content height). So when content grew taller than the viewport, flex
+ * **compressed** the page box down to the viewport height; the content spilled out
+ * as visible overflow so scrolling still worked, but the bottom reservation the
+ * page declared clung to the bottom of the shrunken box and vanished at the end of
+ * the scroll.
  *
- * 셸 본문 슬롯(`AppShell` 의 `overflow-y-auto` 칼럼)은 스크롤 컨테이너다.
- * 페이지 루트는 슬롯을 채우려고 `min-h-full` 을 쓰는데, 그 명시적 min-height 는
- * flex 아이템의 자동 최소 크기(내용 높이)를 덮어쓴다. 그래서 예전에는 내용이
- * 뷰포트보다 길어지면 flex 가 페이지 박스를 뷰포트 높이까지 **압축**했고,
- * 내용은 visible overflow 로 삐져나와 스크롤은 되지만 페이지가 선언한 하단
- * 예약고가 줄어든 박스 바닥에 붙어 스크롤 끝에서 사라졌다.
+ * Measured at 1512×950 at the time of the defect: on the download page the last
+ * line of text sat **flush against** the bottom of the viewport (0px gap), and at
+ * 768 the last line of the project detail was **17px behind** the bottom tab bar.
+ * Per the touch contract in `.claude/rules/design.md`, being hidden behind the tab
+ * bar is a defect.
  *
- * 1512×950 실측(결함 당시): 다운로드는 마지막 글줄이 뷰포트 바닥에 **딱 붙고**
- * (여백 0px), 768 에서는 프로젝트 상세의 마지막 줄이 하단 탭바 **뒤로 17px
- * 들어가** 가려졌다. `.claude/rules/design.md` 의 터치 계약대로 "탭바 뒤로
- * 가려짐" 은 결함이다.
- *
- * ## 왜 단위 테스트가 아니라 e2e 인가
- *
- * 이 결함은 **레이아웃 계산의 결과**다. jsdom 은 레이아웃을 하지 않아 압축도
- * 스크롤 끝 여백도 재현할 수 없다 — 클래스 문자열 단언(`AppShell.test.tsx`)은
- * 처방이 제자리에 있는지만 보고, 그 처방이 실제로 픽셀을 되찾는지는 못 본다.
- * 두 층을 같이 둔다.
+ * **Why e2e and not a unit test.** This defect is **the result of layout
+ * computation**. jsdom performs no layout and can reproduce neither the
+ * compression nor the scroll-end gap — a class-string assertion
+ * (`AppShell.test.tsx`) only checks the prescription is in place, not that it
+ * actually recovers pixels. Both layers are kept.
  */
 
-/** 실측 최소 예약고는 40px(`lg:pb-10`)다. 24 는 서브픽셀 흔들림만 흡수한다. */
+/** The measured minimum reservation is 40px (`lg:pb-10`). 24 only absorbs subpixel jitter. */
 const MIN_GAP = 24;
 
 /**
- * 감사 라우트 **정본**을 그대로 쓴다 (2026-08-06).
+ * Uses the **canonical** audited-route list as is (2026-08-06).
  *
- * ## 왜 손으로 고른 5개에서 갈아탔나
+ * **Why it moved off a hand-picked five.** The previous list was five hand-written
+ * lines and **nobody had recorded why those five**. That blind spot hid a real
+ * defect: `/` (the gateway) was not on the list, and there the last line sat
+ * **17px** behind the bottom tab bar (at both 390 and 768, re-confirmed against the
+ * production static export).
  *
- * 종전 목록은 손으로 고른 다섯 줄이었고 **그 다섯이 왜 그 다섯인지 아무도 적어
- * 두지 않았다.** 그 사각지대가 실제 결함을 숨겼다 — `/`(관문)가 목록에 없었고,
- * 거기서 마지막 줄이 하단 탭바 뒤로 **17px** 들어가 있었다(390·768 양쪽에서,
- * 프로덕션 정적 export 로 재확인).
+ * Worse is **why it was not caught**. `/` and `/download` render the same gateway
+ * view, but the tab bar stands only on `/` (`shouldHideBottomTabBar` hides it on
+ * `/download` alone). What was on the list was the side **without** the tab bar,
+ * and with no tab bar `tabClearance` is `null` and check ③ below is **silently
+ * skipped**. The same screen was being measured only from the side where the check
+ * is disabled.
  *
- * 더 나쁜 것은 **왜 안 걸렸나** 다. `/` 와 `/download` 는 같은 관문 뷰를 그리는데
- * 탭바는 `/` 에만 선다(`shouldHideBottomTabBar` 가 `/download` 만 숨긴다). 목록에
- * 있던 것은 탭바가 **없는** 쪽이고, 탭바가 없으면 `tabClearance` 가 `null` 이라
- * 아래 ③ 검사가 **조용히 건너뛰어진다.** 즉 같은 화면을 「검사가 무력화되는
- * 쪽에서만」 재고 있었다.
- *
- * 그래서 셋을 함께 고친다: 목록을 정본으로 · 폰 폭을 매트릭스에 · ③ 이 한 번도
- * 안 돌았으면 실패하게(아래 `tabMeasured`). 라우트를 새로 만들면 정본에 등재하는
- * 것을 `audited-route-coverage.contract.test.ts` 가 이미 강제하므로 이 게이트도
- * 자동으로 따라온다 — 손으로 관리하는 목록이 하나 줄었다.
+ * So three things were fixed together: the list became canonical, phone width
+ * joined the matrix, and ③ now fails if it never ran (`tabMeasured` below). Since
+ * `audited-route-coverage.contract.test.ts` already forces a new route into the
+ * canonical list, this gate follows automatically — one fewer hand-maintained
+ * list.
  */
 const ROUTES = AUDITED_ROUTES.map((url) => [url, url] as const);
 
-/** 하단 탭바가 서는 폭 — `BottomTabBar` 는 `lg:hidden` 이라 1024 미만이다. */
+/** The width where the bottom tab bar stands — `BottomTabBar` is `lg:hidden`, so below 1024. */
 const BOTTOM_TAB_BAR_MAX_WIDTH = 1024;
 
 /**
- * 셸 본문 슬롯이 **없는 것이 정상**인 라우트.
+ * Routes where **having no shell body slot is correct**.
  *
- * 404 는 루트 `app/not-found.tsx` 가 셸 **밖에서** 그린다(그 사실은
- * `audited-routes.ts` 가 실측으로 기록해 뒀다). 그러니 여기서 슬롯이 없는 것은
- * 결함이 아니다 — 스크롤 계약 자체가 적용되지 않는다.
+ * The 404 is rendered by the root `app/not-found.tsx` **outside** the shell (a fact
+ * `audited-routes.ts` records from measurement). So a missing slot here is not a
+ * defect — the scroll contract simply does not apply.
  *
- * ⚠️ 이 집합에 **없는** 라우트에서 슬롯이 사라지면 셸 구조가 바뀐 것이므로
- * 아래 단언이 그대로 터진다. 「슬롯 없으면 건너뛴다」로 뭉개면 셸이 통째로
- * 바뀌어도 이 게이트가 조용히 전부 건너뛰고 초록이 된다.
+ * ⚠️ If the slot disappears on a route **not** in this set, the shell structure has
+ * changed and the assertion below fails. Collapsing it into "skip when there is no
+ * slot" would let the gate silently skip everything and go green even when the
+ * whole shell changed.
  */
 const SLOTLESS_ROUTES = new Set(
   AUDITED_ROUTES.filter((url) => url.includes("this-route-does-not-exist")),
 );
 
 const VIEWPORTS = [
-  // 다섯 라우트가 모두 스크롤되는 조합 — 압축 재현에 필요한 "내용 > 뷰포트".
+  // A combination where all routes scroll — the "content > viewport" needed to reproduce compression.
   { label: "desktop-1280x700", w: 1280, h: 700 },
-  // `<lg` — 하단 탭바가 서고 페이지가 그 예약고를 계약하는 폭.
+  // `<lg` — the width where the bottom tab bar stands and the page contracts its reservation.
   { label: "tablet-768x950", w: 768, h: 950 },
-  // 폰. 종전 매트릭스에 없어서 **탭바가 서는 가장 좁은 폭**이 미측정이었다.
+  // Phone. Absent from the previous matrix, leaving **the narrowest width with a tab bar** unmeasured.
   { label: "phone-390x844", w: 390, h: 844 },
 ] as const;
 
@@ -86,15 +89,16 @@ type Measured = {
   rootHeight: number;
   scrollHeight: number;
   /**
-   * 스크롤 끝에서 마지막 "잉크" 아래 남은 여백.
+   * The gap remaining below the last "ink" at the end of a scroll.
    *
-   * **잉크를 하나도 못 찾으면 `null`** 이다 — 종전에는 그 경우도 `0` 을 돌려줬고,
-   * `0 < MIN_GAP` 이라 **계측 실패가 「여백 0px 위반」으로 보고**됐다(실측
-   * 2026-08-06: `/ko/project/storefront/`). 못 잰 것은 통과도 실패도 아니라
-   * **계측 실패**이므로, 부르는 쪽이 그 사실을 그대로 말해야 한다.
+   * **`null` when no ink is found at all.** This used to return `0` in that case,
+   * and since `0 < MIN_GAP` **a measurement failure was reported as a "0px gap
+   * violation"** (measured 2026-08-06 on `/ko/project/storefront/`). Failing to
+   * measure is neither a pass nor a failure but **a measurement failure**, and the
+   * caller must say so.
    */
   gap: number | null;
-  /** 하단 고정 탭바가 있으면 마지막 잉크가 그 위로 얼마나 떨어져 있나. */
+  /** When a fixed bottom tab bar exists, how far the last ink sits above it. */
   tabClearance: number | null;
 };
 
@@ -109,13 +113,13 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
       return { slot: false, scrollable: false, rootHeight: 0, scrollHeight: 0, gap: null, tabClearance: null };
     }
     /**
-     * 페이지 루트 — **첫 자식이 아니다.**
+     * The page root — **not the first child.**
      *
-     * Next 는 이 슬롯 안에도 `<script>` 를 주입하고, 그것이 첫 자식이면 종전
-     * 코드는 높이 0 짜리 노드를 페이지 루트로 삼아 **잉크를 하나도 못 찾았다**
-     * (실측 2026-08-06 `/ko/project/storefront/`: 슬롯 자식이
-     * `[SCRIPT, SCRIPT, DIV(1004px)]` — `rootHeight 0`, 잉크 0건).
-     * 박스를 가진 첫 자식을 고른다.
+     * Next injects `<script>` inside this slot too, and when that is the first child
+     * the previous code took a zero-height node as the page root and **found no ink at
+     * all** (measured 2026-08-06 on `/ko/project/storefront/`: the slot's children were
+     * `[SCRIPT, SCRIPT, DIV(1004px)]` — `rootHeight 0`, 0 ink). Pick the first child
+     * that has a box.
      */
     const root = ([...slot.children] as HTMLElement[]).find(
       (el) => el.getBoundingClientRect().height > 0,
@@ -123,25 +127,27 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
     slot.scrollTop = slot.scrollHeight;
 
     /**
-     * 조상이 잘라 낸 것은 **이 페이지의 잉크가 아니다.**
+     * Anything an ancestor clipped is **not this page's ink.**
      *
-     * `/ko/changelog/` 의 데스크톱 목차는 자기 스크롤을 가진 sticky 사이드바
-     * (`max-h-[…] overflow-y-auto`)라, 그 안의 항목 rect 가 사이드바 밖으로
-     * 한참 뻗어 있다. 종전 코드는 그것을 페이지의 마지막 잉크로 세어
-     * **`gap −184px` 라는 거짓 위반**을 냈다(실측 2026-08-06, 1280×700 —
-     * 사이드바는 63.8~619.8 인데 잡힌 잉크는 883.8).
+     * The desktop table of contents on `/ko/changelog/` is a sticky sidebar with its
+     * own scroll (`max-h-[…] overflow-y-auto`), so its item rects extend far outside
+     * the sidebar. The previous code counted one as the page's last ink and produced a
+     * **false violation of `gap −184px`** (measured 2026-08-06 at 1280×700 — the
+     * sidebar spans 63.8–619.8 while the ink found was at 883.8).
      *
-     * 슬롯 자신은 검사하지 않는다 — 슬롯은 우리가 끝까지 스크롤한 컨테이너이고,
-     * 그 안에서 아래에 있는 것이야말로 재려는 대상이다.
+     * The slot itself is not inspected — the slot is the container we scrolled to the
+     * end, and what sits lowest inside it is exactly what we want to measure.
      */
     /**
-     * 조상의 클리핑을 반영한 **보이는 아랫변**을 돌려준다. 완전히 밖이면 `null`.
+     * Returns the **visible bottom edge** after ancestor clipping, or `null` when
+     * fully outside.
      *
-     * ⚠️ 「완전히 밖인가」만 보면 부족하다 (2026-08-07 코드 리뷰). 클리핑 상자의
-     * 아래 모서리에 **걸친** 자식은 전부 밖이 아니라서 통과하고, 그때 잘려서
-     * 안 보이는 부분까지 포함한 `bottom` 이 그대로 쓰인다. 그러면 이 함수가
-     * 막으려던 `/ko/changelog/` 사이드바 거짓 위반이 스크롤 위치나 뷰포트만
-     * 바뀌면 그대로 재현된다. 교집합으로 **깎아서** 돌려준다.
+     * ⚠️ Checking only "is it fully outside" is not enough (code review 2026-08-07). A
+     * child **straddling** the clipping box's bottom edge is not fully outside, so it
+     * passes and its `bottom` — including the clipped, invisible part — is used as is.
+     * The `/ko/changelog/` sidebar false violation this function exists to prevent
+     * then reappears with nothing more than a different scroll position or viewport.
+     * So the value is **clamped** by intersection.
      */
     const visibleBottom = (el: Element, r: DOMRect): number | null => {
       let bottom = r.bottom;
@@ -154,7 +160,7 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
       return bottom;
     };
 
-    // 마지막 잉크 — 컨테이너의 하단 패딩은 여백이지 내용이 아니므로 잎만 본다.
+    // Last ink — a container's bottom padding is spacing, not content, so only leaves are inspected.
     let inkBottom = Number.NEGATIVE_INFINITY;
     const walk = (el: Element) => {
       for (const child of Array.from(el.children)) {
@@ -162,13 +168,14 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
         if (cs.position === "fixed" || cs.display === "none" || cs.visibility === "hidden") continue;
         if ((child.className ?? "").toString().includes("sr-only")) continue;
         /**
-         * ⚠️ **닫힌 `<details>` 의 내용은 박스는 있는데 잉크가 아니다.**
+         * ⚠️ **A closed `<details>`'s content has a box but is not ink.**
          *
-         * 최신 Chromium 은 닫힌 disclosure 를 `display: none` 이 아니라
-         * `content-visibility: hidden` 으로 감춘다(전개 애니메이션 때문에 바뀐
-         * 동작). 위 세 조건은 전부 통과하는데 화면에는 없다 — 실측 2026-07-29:
-         * `/download` 의 접힌 「받아도 되는 이유」가 561px 짜리 유령 잉크가 되어
-         * 하단 여백을 -505px 로 만들었다. `checkVisibility()` 가 표준 판별이다.
+         * Recent Chromium hides a closed disclosure with `content-visibility: hidden`
+         * rather than `display: none` (changed behaviour, for the expand animation). It
+         * passes all three conditions above while being absent from the screen — measured
+         * 2026-07-29: the collapsed trust section on `/download` became 561px of phantom
+         * ink and drove the bottom gap to −505px. `checkVisibility()` is the standard
+         * test.
          */
         if (typeof child.checkVisibility === "function" && !child.checkVisibility()) continue;
         const r = child.getBoundingClientRect();
@@ -185,12 +192,13 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
       const s = getComputedStyle(el);
       if (s.position !== "fixed") return false;
       /**
-       * 포인터를 안 받는 장식층은 바가 아니다 (2026-08-18 리메이크에서 걸림).
-       * 관문의 전류장 캔버스(`gateway-fx-field`)는 `fixed inset-0` 라 종전
-       * 판별(높이>20 · 바닥 닿음 · 폭>50%)을 전부 만족했고, top=0 이라
-       * clearance 가 -700px 대의 거짓 위반을 냈다. 진짜 바는 **바닥에 붙은
-       * 낮은 띠**다 — 화면 절반을 넘는 높이는 바가 아니라 배경이고,
-       * `pointer-events: none` 인 것은 내용을 가릴 권한 자체가 없다.
+       * A decorative layer that takes no pointer events is not a bar (caught during the
+       * 2026-08-18 remake). The gateway's field canvas (`gateway-fx-field`) is
+       * `fixed inset-0` and satisfied every previous condition (height > 20, touching the
+       * bottom, width > 50%); with top = 0 it produced a false clearance violation around
+       * −700px. A real bar is **a low strip pinned to the bottom** — anything taller than
+       * half the screen is a background, not a bar, and something with
+       * `pointer-events: none` has no authority to obscure content in the first place.
        */
       if (s.pointerEvents === "none") return false;
       const r = el.getBoundingClientRect();
@@ -224,9 +232,9 @@ for (const vp of VIEWPORTS) {
 
     const violations: string[] = [];
     let scrolledRoutes = 0;
-    /** 셸 본문 슬롯을 실제로 찾은 라우트 수. */
+    /** How many routes the shell body slot was actually found on. */
     let slotRoutes = 0;
-    /** ③ 이 실제로 판정한 라우트 수. 0 이면 그 검사는 돌지 않은 것이다. */
+    /** How many routes ③ actually judged. 0 means that check never ran. */
     let tabMeasured = 0;
 
     for (const [label, url] of ROUTES) {
@@ -244,13 +252,13 @@ for (const vp of VIEWPORTS) {
       if (!m.scrollable) continue;
       scrolledRoutes += 1;
 
-      // ① 압축 금지 — 페이지 박스가 내용 높이를 가져야 예약고가 제자리에 붙는다.
+      // ① No compression — the page box must carry the content height for the reservation to stay in place.
       if (m.rootHeight < m.scrollHeight - 1) {
         violations.push(
           `${label}: 페이지 루트가 압축됐다 (박스 ${m.rootHeight} < 내용 ${m.scrollHeight})`,
         );
       }
-      // ② 스크롤 끝에 여백이 남아야 한다. **못 잰 것은 통과가 아니다.**
+      // ② A gap must remain at the end of the scroll. **Failing to measure is not a pass.**
       if (m.gap === null) {
         violations.push(
           `${label}: 잉크를 하나도 못 찾았다 — 계측 실패이지 통과가 아니다 (슬롯 구조가 바뀌었나)`,
@@ -258,7 +266,7 @@ for (const vp of VIEWPORTS) {
       } else if (m.gap < MIN_GAP) {
         violations.push(`${label}: 스크롤 끝 하단 여백 ${m.gap}px (< ${MIN_GAP})`);
       }
-      // ③ 하단 탭바가 있으면 그 뒤로 들어가지 않아야 한다.
+      // ③ With a bottom tab bar present, nothing may slip behind it.
       if (m.tabClearance !== null) {
         tabMeasured += 1;
         if (m.tabClearance < MIN_GAP) {
@@ -267,23 +275,25 @@ for (const vp of VIEWPORTS) {
       }
     }
 
-    // 게이트 생존 확인 — 스크롤되는 라우트가 하나도 없으면 "통과" 가 아니라 결함이다.
+    // Gate liveness — no scrolling route at all is a defect, not a pass.
     expect(scrolledRoutes, "스크롤되는 라우트가 없다 — 매트릭스가 결함을 못 본다").toBeGreaterThan(1);
 
-    // 슬롯을 찾은 라우트 수는 **파생값으로** 단언한다 — 숫자를 손으로 박으면
-    // 라우트가 늘 때마다 사람이 따라 고쳐야 하고, 안 고치면 게이트가 낡는다.
+    // The slot-found route count is asserted **as a derived value** — pinning a
+    // number by hand means a person must follow every route addition, and a gate goes
+    // stale when they do not.
     expect(
       slotRoutes,
       "셸 본문 슬롯이 있어야 하는 라우트 수가 안 맞는다 — 셸 구조나 404 배선이 바뀌었다",
     ).toBe(ROUTES.length - SLOTLESS_ROUTES.size);
 
     /**
-     * ③ 이 **한 번이라도 판정했는지** 를 단언한다.
+     * Asserts that ③ **judged at least once**.
      *
-     * `tabClearance` 는 탭바를 못 찾으면 `null` 이고, `null` 이면 위 검사가 조용히
-     * 건너뛰어진다. 종전 목록은 탭바가 없는 라우트만 담고 있어서 이 검사가 **한
-     * 번도 돈 적이 없었고**, 그런데도 시험은 초록이었다 — 그게 17px 가림을 숨긴
-     * 방식이다. 탭바가 서는 폭에서는 최소 한 라우트가 실제로 판정돼야 한다.
+     * `tabClearance` is `null` when no tab bar is found, and `null` silently skips the
+     * check above. The previous list held only routes without a tab bar, so this check
+     * **never ran once** while the test stayed green — that is how the 17px occlusion
+     * stayed hidden. At widths where the tab bar stands, at least one route must
+     * actually be judged.
      */
     if (vp.w < BOTTOM_TAB_BAR_MAX_WIDTH) {
       expect(

@@ -14,41 +14,32 @@ import {
 import { useLocalVault } from './LocalVaultProvider';
 
 /**
- * R13 #71 + #72 — vault polling 결과 *시각적 알림*. polling 으로 detect 한
- * 변화를 어떤 페이지에서든 toast 로 알림.
+ * Visual notification of vault polling results — changes detected by polling are surfaced as a
+ * toast on whichever page is open.
  *
- * #71 added detection: 새로운 slug 등장 → info toast.
- * #72 modified detection: slug 같지만 mtime 변화 → success toast.
- *   사용자 / AI agent 가 IDE 에서 .md 편집한 경우.
+ * Behaviour:
+ *   - mounted inside `LocalVaultProvider`, tracking the (slug, mtime) map of `manifest.docs`
+ *   - the first mount records a baseline only (blocking false positives)
+ *   - thereafter: a new slug → added; the same slug with a newer mtime → modified
+ *   - one toast per burst (the fan-out was dropped — see the `diff-manifest.ts` comment)
+ *   - text is assembled per locale from `featuresMisc.vaultDiffToaster.*`. `diffVaultManifest` and
+ *     `planVaultDiffToasts` are pure helpers returning structure only, so the strings are finished
+ *     here with `useTranslations`
  *
- * 동작:
- *   - LocalVaultProvider 안에 mount, manifest.docs 의 (slug, mtime) Map 추적
- *   - 첫 mount 는 baseline 만 (false-positive 방지)
- *   - 이후 diff:
- *     · slug 신규 → added
- *     · slug 동일 + mtime 새로움 → modified
- *   - 버스트당 한 장(부채꼴 폐기 — `diff-manifest.ts` 주석)
- *   - 문구는 `featuresMisc.vaultDiffToaster.*` 로 로케일별 조립 — `diffVaultManifest`/
- *     `planVaultDiffToasts` 는 구조만 반환하는 pure helper라 여기서
- *     `useTranslations` 로 문자열을 완성한다(N10 — "Added: domains/refunds" 영문
- *     리터럴 ko 수리).
+ * ## A notification has to carry information (owner instruction, 2026-08-01)
  *
- * ## 알림은 정보를 날라야 한다 (2026-08-01 소유자 지시)
+ * The old text was `편집됨: capabilities/payment-authorization`. Four things were missing at once:
+ * ① `capabilities/` is a developer folder name, not words for a screen; ② a slug is not what a
+ * person calls the concept (`display_<locale>` exists, and only the toast ignored it); ③ it never
+ * said what kind of thing changed; ④ "edited" states that an event occurred, which is not information.
  *
- * 종전 문구는 `편집됨: capabilities/payment-authorization` 이었다. 네 가지가
- * 동시에 빠져 있었다 — ① `capabilities/` 는 화면에 쓸 말이 아닌 개발자 폴더
- * 이름, ② 슬러그는 사람이 그 개념을 부르는 이름이 아님(`display_<locale>` 이
- * 있는데 토스트만 안 씀), ③ 무엇이 일어났는지 종류를 말하지 않음,
- * ④ 「편집됨」은 사건이 있었다는 말이지 정보가 아님.
+ * So what reaches the screen is three parts — *kind (in plain words) + event + human name* — as in
+ * **"Capability edited — Payment authorization"**. For several at once it counts by kind:
+ * "3 capabilities · 12 elements added". **When the kind cannot be obtained it is not invented** —
+ * the text becomes "Added — name", and the digest counts them honestly as "N other".
  *
- * 그래서 화면에 나가는 것은 **「역량 편집 — 결제 승인」** 처럼 *종류(평문) +
- * 사건 + 사람 이름* 셋이다. 여러 건이면 종류별로 세어 「역량 3 · 요소 12 추가」.
- * **kind 를 못 얻으면 지어내지 않는다** — 종류 없이 「추가 — 이름」으로 쓰고,
- * 다이제스트에서는 「그 외 N」으로 정직하게 센다.
- *
- * 삭제 detection 은 일단 제외 — 사용자 명시 액션 후 toast 가 더 가치 있음
- * (delete_concept 같은 명령 자체가 toast 띄우면 됨, polling 결과로 다시
- * toast 띄우면 noise).
+ * Deletion detection is excluded here: an explicit user action is more valuable as its own toast
+ * (a command like delete_concept raises one), and repeating it from a polling result is noise.
  */
 export function VaultDiffToaster() {
   const { status, manifest, consumeSelfWrittenSlugs, agentActivityLog } = useLocalVault();
@@ -58,9 +49,9 @@ export function VaultDiffToaster() {
   const locale = useLocale();
   const prevMapRef = useRef<Map<string, number | null> | null>(null);
   /**
-   * 직전 diff 를 본 시각 — 이 창 안의 `delete_concept` 만 이번 버스트의 것이다.
-   * 렌더 중에 `Date.now()` 를 부르면 순수하지 않으므로(`react-hooks/purity`)
-   * 첫 baseline 저장 때 effect 안에서 채운다.
+   * When the previous diff was seen — only `delete_concept` entries inside this window belong to
+   * this burst. Calling `Date.now()` during render would be impure (`react-hooks/purity`), so it is
+   * filled inside the effect when the first baseline is stored.
    */
   const prevSeenAtRef = useRef<number | null>(null);
 
@@ -78,7 +69,7 @@ export function VaultDiffToaster() {
       docs.map((d) => [d.slug, d.mtime ?? null]),
     );
 
-    // 첫 load — baseline 저장만 하고 끝
+    // First load — record the baseline and stop.
     if (prevMapRef.current === null) {
       prevMapRef.current = currentMap;
       prevSeenAtRef.current = Date.now();
@@ -91,22 +82,23 @@ export function VaultDiffToaster() {
     );
     prevMapRef.current = currentMap;
 
-    // 앱 자신의 쓰기(부트스트랩·인라인 편집 등)는 액션 자체가 이미
-    // 피드백을 줬다 — 폴링 diff 로 재보고하면 토스트 연발 noise.
+    // The app's own writes (bootstrap, inline editing) already gave feedback through the action
+    // itself; re-reporting them from a polling diff is a burst of noise.
     const selfWritten = consumeSelfWrittenSlugs();
     const externalAdded = added.filter((slug) => !selfWritten.has(slug));
     const externalModified = modified.filter((slug) => !selfWritten.has(slug));
 
-    // 삭제는 매니페스트로 못 센다 — rename/merge 가 「삭제 + 추가」로 보이기
-    // 때문이다(diff-manifest.ts 주석의 실측). 도구 이름은 의도를 알고 있으므로
-    // 이 버스트 창 안의 `delete_concept` 만 센다.
+    // Deletions cannot be counted from the manifest — a rename or merge looks like "deleted +
+    // added" (measured, see the diff-manifest.ts comment). A tool name knows the intent, so only
+    // `delete_concept` entries inside this burst's window are counted.
     const removed = countRecentDeletes(agentActivityLog, prevSeenAtRef.current ?? 0);
     prevSeenAtRef.current = Date.now();
 
     if (externalAdded.length === 0 && externalModified.length === 0 && removed === 0) return;
 
-    // 슬러그를 그대로 넘기지 않는다 — 여기서 매니페스트 행(kind + display_*/title)
-    // 으로 바꿔야 화면이 폴더 경로 대신 「역량 · 결제 승인」을 말할 수 있다.
+    // Slugs are not passed straight through — converting to a manifest row here (kind plus
+    // display_*/title) is what lets the screen say "Capability · Payment authorization" instead of
+    // a folder path.
     const docBySlug = new Map(docs.map((d) => [d.slug, d]));
     const toNode = (slug: string) => toVaultDiffNode(docBySlug.get(slug) ?? { slug }, locale);
 
@@ -123,10 +115,10 @@ export function VaultDiffToaster() {
 }
 
 /**
- * 이 버스트 창(`since` 이후)에 기록된 `delete_concept` 수.
+ * How many `delete_concept` entries were recorded in this burst's window (after `since`).
  *
- * 활동 로그는 MCP 쓰기 성공 직후 서버가 append 하는 감사 로그라, 도구 이름이
- * 곧 의도다 — 매니페스트 슬러그 diff 와 달리 rename 을 삭제로 오독하지 않는다.
+ * The activity log is an audit log the server appends immediately after a successful MCP write, so
+ * the tool name *is* the intent — unlike a manifest slug diff, it never misreads a rename as a deletion.
  */
 function countRecentDeletes(
   entries: { at: string; tool: string }[] | undefined,
@@ -155,7 +147,7 @@ function formatVaultDiffToastMessage(
     case 'edited': {
       const node = planned.node;
       if (!node) return '';
-      // 종류를 아는 경우에만 종류를 말한다 — 모르면 「추가 — 이름」으로 끝낸다.
+      // The kind is stated only when it is known; otherwise it ends at "Added — name".
       return node.kind
         ? t(planned.kind === 'added' ? 'addedKind' : 'editedKind', {
             kind: kindLabel(node.kind),
@@ -166,7 +158,7 @@ function formatVaultDiffToastMessage(
     case 'digest': {
       const c = planned.counts;
       if (!c) return '';
-      // 0인 갈래는 그리지 않는다 — 「삭제 0」은 정보가 아니라 소음이다.
+      // A zero action is not drawn — "0 deleted" is noise, not information.
       const parts: string[] = [];
       if (c.added.total > 0) {
         parts.push(t('digestAdded', { breakdown: formatBreakdown(c.added, t, kindLabel) }));
@@ -183,8 +175,8 @@ function formatVaultDiffToastMessage(
 }
 
 /**
- * 「역량 3 · 요소 12」. 종류를 하나도 못 읽었으면 숫자만 낸다 — 전부 미상인데
- * 「그 외 5」라고 쓰면 있지도 않은 다른 몫을 암시한다.
+ * "3 capabilities · 12 elements". With no kind readable at all it emits numbers only — writing
+ * "5 other" when everything is unknown implies some other share that does not exist.
  */
 function formatBreakdown(count: VaultDiffActionCount, t: Translate, kindLabel: KindLabel): string {
   const rows = count.byKind;

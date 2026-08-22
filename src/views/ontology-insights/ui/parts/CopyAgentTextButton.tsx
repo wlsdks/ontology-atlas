@@ -5,11 +5,11 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 인사이트 페이지 전반에서 쓰이는 "복사" 버튼. 클립보드 복사 + 성공/실패
- * 토스트 톤 + 스크린리더 announce(별도 polite live region — 포커스된 버튼의
- * aria-label 변경은 자동 재낭독되지 않으므로). OntologyInsightsPage 모놀리스
- * 에서 분리해 추출된 패널들이 공용으로 import. 복사 상태 로직은 공용
- * useCopyFeedback 훅(16+곳 중복 제거) 사용.
+ * The "copy" button used across the insights page: clipboard copy plus a success/failure tone plus
+ * a screen-reader announcement (a separate polite live region, because changing the `aria-label` of
+ * a focused button is not automatically re-announced). Extracted from the OntologyInsightsPage
+ * monolith so the split-out panels can share it. The copy-state logic uses the shared
+ * `useCopyFeedback` hook (removing duplication across 16+ sites).
  */
 export function CopyAgentTextButton({
   label,
@@ -31,15 +31,15 @@ export function CopyAgentTextButton({
 
   const statusLabel = copyState === "copied" ? copiedLabel : copyState === "failed" ? t("agentCopyFailed") : "";
   const ariaLabel = statusLabel ? `${label} · ${statusLabel}` : label;
-  // 텍스트 색은 indigo-accent / status-danger 토큰으로 — 앱은 다크 단일이라
-  // (design.md, 2026-07-19) light-on-dark 회귀 우려 없음. border/bg 의
-  // 인디고·레드 alpha 는 은은하게 유지.
-  // 잉크가 `accent`(#7170ff)가 아니라 `accentOnTint` 계열인 이유: 이 버튼은
-  // 인디고 틴트를 지고 있고, 호버에서 틴트가 한 단 올라간다(a06 → a13).
-  // 실측 — accent 잉크는 쉴 때 4.56 으로 겨우 통과하다가 **호버에서 4.41 로
-  // AA 를 깼다**(2026-08-05). `--color-indigo-text-soft` 로 바꾸면 8.92 / 8.66.
-  // design.md 「틴트를 지는 컨트롤의 잉크는 accentOnTint 다」가 이미 처방해 둔
-  // 규칙이고, 기존 lint 셀렉터는 **쉬는 상태의 짝만** 봐서 이 자리를 못 봤다.
+  // The text colour comes from the indigo-accent / status-danger tokens — the app is dark-only
+  // (`.claude/rules/design.md`, 2026-07-19), so there is no light-on-dark regression to worry
+  // about. The indigo and red alphas on border and background stay subtle.
+  // Why the ink is the `accentOnTint` family rather than `accent` (#7170ff): this button carries an
+  // indigo tint, and hover raises that tint one step (a06 → a13). Measured — accent ink barely
+  // passed at rest with 4.56 and then **broke AA at 4.41 on hover** (2026-08-05). Switching to
+  // `--color-indigo-text-soft` gives 8.92 / 8.66. `.claude/rules/design.md`'s rule that "a control
+  // carrying a tint uses accentOnTint ink" already prescribed this, and the existing lint selector
+  // saw **only the resting pair**, so it missed this site.
   const toneClass =
     copyState === "failed"
       ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)]"
@@ -64,9 +64,9 @@ export function CopyAgentTextButton({
         {copyState === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
         {label}
       </button>
-      {/* 복사 성공/실패를 스크린리더에 announce — 포커스된 버튼의 aria-label
-          변경은 자동 재낭독되지 않으므로 별도 polite live region 사용
-          (CopyProjectLinkButton 과 동일 패턴). idle 엔 비워 reset 소음 방지. */}
+      {/* Announces copy success and failure to a screen reader — changing the `aria-label` of a
+          focused button is not automatically re-announced, so a separate polite live region is used
+          (the same pattern as CopyProjectLinkButton). It is emptied while idle to avoid reset noise. */}
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {copyState === "copied"
           ? copiedLabel

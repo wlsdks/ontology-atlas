@@ -6,24 +6,26 @@ import { describe, expect, it } from "vitest";
 import { AUDITED_ROUTES, EXCLUDED_ROUTES } from "../e2e/audited-routes";
 
 /**
- * 대비 스윕이 **접근성 래칫보다 좁아지지 못하게** 못박는다.
+ * Pins the contrast sweep so it **cannot become narrower than the accessibility
+ * ratchet**.
  *
- * ## 왜 이 계약이 생겼나 (2026-08-04 감사)
+ * **Why this contract exists** (audit, 2026-08-04). The default routes in
+ * `scripts/measure-contrast.mjs` were five lines, and the comment called them
+ * *"the surfaces people actually look at for a long time"*. Among the screens that
+ * subjective criterion left out was **`/ko/ontology/insights`** — the screen with the
+ * densest data marks in this app. Measuring it found 0 shortfalls, but **an
+ * unmeasured screen is not a passing screen.** Unmeasured green and clean green were
+ * indistinguishable.
  *
- * `scripts/measure-contrast.mjs` 의 기본 라우트가 다섯 줄이었고, 주석은 그것을
- * *"사람이 실제로 오래 보는 표면들"* 이라고 불렀다. 그 주관적 기준이 빼놓은
- * 화면 중에는 **`/ko/ontology/insights`** — 이 앱에서 데이터 마크가 가장
- * 조밀한 화면 — 이 있었다. 재 보니 미달은 0이었지만, **재지 않은 화면은
- * 통과한 화면이 아니다.** 안 잰 초록과 깨끗한 초록이 구별되지 않는 상태였다.
+ * The same failure had already happened once: the 2026-08-03 incident recorded in
+ * `audited-routes.ts`'s doc-block — two ratchets each held a hand-written subset, and
+ * the 4.42:1 hiding in that blind spot surfaced only just before a release. The
+ * answer built then was "a single source, with exclusions carrying reasons", and the
+ * contrast sweep was the one thing left outside it.
  *
- * 같은 실패가 이미 한 번 있었다: `audited-routes.ts` 의 docstring 이 기록한
- * 2026-08-03 사고 — 두 래칫이 각자 손으로 쓴 부분집합을 갖고 있었고, 그 사각에
- * 숨어 있던 4.42:1 이 릴리스 직전에야 나왔다. 그때 만든 답이 «단일 출처 +
- * 제외는 이유와 함께» 였고, 대비 스윕만 그 답 밖에 남아 있었다.
- *
- * 그래서 판정 기준은 「목록이 길다」가 아니라 **「`AUDITED_ROUTES` 를 하나도
- * 빠뜨리지 않는다」**다. 라우트가 늘면 `audited-route-coverage` 계약이 먼저
- * 터지고, 그다음 여기가 터진다.
+ * So the criterion is not "the list is long" but **"it misses nothing in
+ * `AUDITED_ROUTES`"**. When a route is added, the `audited-route-coverage` contract
+ * breaks first and this one breaks next.
  */
 const HARNESS = join(process.cwd(), "scripts/measure-contrast.mjs");
 
@@ -52,8 +54,9 @@ describe("대비 스윕 커버리지", () => {
   });
 
   /**
-   * 검출기가 **빈 집합 위에서 돌고 있지 않은지** 확인한다(`/gate-probe`).
-   * 정규식이 조용히 안 맞으면 위 두 단언은 «빠진 게 없다» 로 초록이 된다.
+   * Checks the detector is not **running on an empty set** (`/gate-probe`). If the
+   * regex silently matches nothing, both assertions above go green with "nothing is
+   * missing".
    */
   it("하네스에서 라우트를 실제로 읽어 온다", () => {
     expect(harnessRoutes().length).toBeGreaterThanOrEqual(AUDITED_ROUTES.length);

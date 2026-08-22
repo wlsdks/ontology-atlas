@@ -81,27 +81,29 @@ export function classify(files) {
 }
 
 /**
- * **「변경 없음」과 「비교할 것이 없음」은 다르다** (2026-08-08 실측).
+ * **"Nothing changed" and "there is nothing to compare against" are different**
+ * (measured 2026-08-08).
  *
- * 이 파일 아래쪽 주석은 의도를 정확히 적어 뒀다 — *"No comparable base
+ * A comment further down this file recorded the intent exactly — *"No comparable base
  * (shallow checkout, fresh clone, **push to main**) means we cannot tell what
  * changed — run everything. **Failing open would silently disable CI**, which
  * is the one outcome worse than a slow pipeline."*
  *
- * 그런데 코드는 그 반대를 했다. `resolveBase` 는 `merge-base HEAD origin/main`
- * 을 돌려주고, **main 으로 푸시하면 HEAD 가 곧 origin/main** 이라 그 merge-base
- * 는 HEAD 자신이다. `HEAD...HEAD` 의 diff 는 비고, 빈 목록이
- * `{runtime:false, browser:false}` 로 떨어져 **전부 생략**됐다.
+ * But the code did the opposite. `resolveBase` returns `merge-base HEAD origin/main`,
+ * and **on a push to main, HEAD is origin/main**, so that merge-base is HEAD itself.
+ * The `HEAD...HEAD` diff is empty, the empty list resolves to
+ * `{runtime:false, browser:false}`, and **everything was skipped.**
  *
- * 결과: 전체 Playwright 가 **main 에서 한 번도 돈 적이 없다.** 확인한 main 런
- * 넷이 모두 `[classify] runtime=false browser=false — no files changed` 였고,
- * 잡은 47초에 초록으로 끝났다(체크아웃하고 정리만 했다). 그 초록이 실제
- * 파손을 태우고 갔다 — #987 이 문서함 헤더 컨트롤을 옮기며 e2e 스펙 둘을
- * 깼는데, PR 에서는 빨갰지만 main 에서는 생략돼 초록이었다.
+ * The result: the full Playwright suite **had never once run on main.** All four main
+ * runs inspected reported
+ * `[classify] runtime=false browser=false — no files changed` and finished green in 47
+ * seconds (checkout and cleanup only). That green carried real breakage past — #987
+ * moved the docs header controls and broke two e2e specs; they were red in the PR and
+ * green on main because they were skipped.
  *
- * **생략과 통과는 화면에서 똑같이 생긴다.** 그래서 여기서 갈라 준다: base 가
- * HEAD 자신이면 그것은 「아무것도 안 바뀌었다」가 아니라 「무엇이 바뀌었는지
- * 알 수 없다」이고, 답은 전부 돌리는 것이다.
+ * **Skipped and passed look identical on screen.** So the two are separated here: if
+ * the base is HEAD itself, that is not "nothing changed" but "there is no way to know
+ * what changed", and the answer is to run everything.
  */
 export function decide({ base, head, files }) {
   if (!base) {
@@ -165,9 +167,10 @@ if (process.argv[1] && process.argv[1].endsWith("classify-change.mjs")) {
     }
   })();
 
-  // 판정은 `decide` 가 한다 — 순수 함수라 git fixture 없이 시험된다. 무엇을
-  // 「비교할 수 없음」으로 볼지가 이 게이트의 급소이고, 그 판정이 여기 인라인으로
-  // 있던 동안 main 에서 전체 Playwright 가 통째로 생략됐다(`decide` 주석).
+  // `decide` makes the verdict — a pure function, so it is testable without a git
+  // fixture. What counts as "not comparable" is this gate's weak point, and while that
+  // verdict lived inline here, the full Playwright suite was skipped wholesale on main
+  // (see `decide`'s comment).
   const files = base ? git(["diff", "--name-only", `${base}...HEAD`]).split("\n").filter(Boolean) : [];
   emit(decide({ base, head, files }));
 }

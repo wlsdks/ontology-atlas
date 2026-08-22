@@ -1,49 +1,45 @@
 /**
- * 관문 크롬이 거는 **바깥 링크의 단일 출처**.
+ * The **single source for the external links** the gateway chrome renders.
  *
- * ## 왜 상수 하나인가
+ * Owner instruction (2026-07-30): *"x는 일단 모양은 만들어두고 링크는 내가 나중에
+ * 줄게. 비활성화만 시켜두면 될듯. 일단 보이게 하고."* (build the X slot now, I'll
+ * supply the link later — just disable it, but keep it visible).
  *
- * 소유자 지시(2026-07-30): *"x는 일단 모양은 만들어두고 링크는 내가 나중에
- * 줄게. 비활성화만 시켜두면 될듯. 일단 보이게 하고."*
+ * So **the slot renders, but with no destination it is not a link.** An empty
+ * value makes the chrome render it disabled, and filling in the handle turns it
+ * into a real link without touching the component.
  *
- * 그래서 **자리는 그리되 목적지가 없으면 링크가 아니다.** 값이 비면 크롬이
- * 비활성 상태로 그리고, 핸들을 채우는 순간 진짜 링크가 된다 — 컴포넌트는
- * 건드리지 않는다. 시연 절이 `AVAILABLE_DEMO_CLIP_IDS` 하나로 켜졌던 것과
- * 같은 방식이다.
+ * **Is rendering it disabled a dead CTA?** A dead CTA **looks pressable and goes
+ * nowhere**. This is the opposite: it looks unpressable, and `aria-disabled` plus
+ * a tooltip say why. Web smoke ③ blocks the "promised but no destination" case,
+ * and this promises nothing.
  *
- * ## 비활성으로 그리는 것은 「죽은 CTA」가 아닌가
- *
- * 죽은 CTA 는 **누를 수 있어 보이는데 아무 데도 안 가는 것**이다. 여기는
- * 반대로 누를 수 없어 보이고, `aria-disabled` 와 툴팁이 왜인지 말한다.
- * 웹 스모크 ③ 이 막는 것은 "약속했는데 목적지가 없는" 경우이고, 이건
- * 약속을 하지 않는다.
- *
- * ⚠️ **비활성 자리를 「곧 공개」의 우회로 쓰지 말 것.** 이 저장소는
- * `"곧 공개" 는 강등이 아니라 거짓말이다` 를 등재해 두었다. 이 항목이
- * 정당한 이유는 계정이 **실재하고** 소유자가 URL 만 아직 안 넘겼기
- * 때문이다. 존재하지 않는 채널의 자리를 미리 그리는 데 이 패턴을 쓰면
- * 그때는 거짓말이 된다.
+ * ⚠️ **Do not use a disabled slot as a workaround for "coming soon".** This repo
+ * has recorded that "coming soon" is a lie rather than a degradation. This entry
+ * is legitimate because the account **really exists** and the owner had simply
+ * not handed over the URL yet. Pre-rendering a slot for a channel that does not
+ * exist would make the same pattern a lie.
  */
 
 /**
- * X(구 트위터) 핸들 — `@` 없이. 비어 있으면 크롬이 비활성으로 그린다.
+ * The X (formerly Twitter) handle, without the `@`. Empty renders disabled.
  *
- * 채우는 법: `'ontologyatlas'` 처럼 핸들만 쓴다. URL 전체를 쓰지 않는 이유는
- * 도메인이 또 바뀌어도(twitter.com → x.com) 여기가 안 흔들리게 하기 위해서다.
+ * Write only the handle (e.g. `'ontologyatlas'`), never a full URL, so another
+ * domain change (twitter.com → x.com) does not shake this file.
  *
- * **2026-08-08 에 소유자가 넘겼다** (`https://x.com/stark9777`). 그래서 위
- * 「비활성」 절은 이제 **이 값을 지웠을 때의 동작 설명**이고, 화면에서는 진짜
- * 링크가 그려진다 — 컴포넌트는 그때도 지금도 안 건드렸다. 이 값이 채워지면서
- * 2026-08-08 카운슬의 「위계」가 낸 지적(*목적지 없는 비활성 마크가 계정이
- * 없다는 사실을 얼굴에 광고한다*)도 함께 닫혔다: 지적은 **자리**가 아니라
- * **빈 목적지**를 겨눈 것이었다.
+ * **The owner supplied it on 2026-08-08** (`https://x.com/stark9777`), so the
+ * "disabled" section above now describes what happens if this value is cleared;
+ * on screen it is a real link, and the component was never touched. Filling it in
+ * also closed the hierarchy seat's 2026-08-08 finding (*a disabled mark with no
+ * destination advertises on our own face that the account does not exist*) — that
+ * finding targeted **the empty destination**, not the slot.
  */
 export const X_HANDLE = 'stark9777';
 
-/** 핸들이 있을 때의 실제 목적지. 없으면 `null`. */
+/** The real destination when a handle exists; `null` otherwise. */
 export function xProfileUrl(): string | null {
   return X_HANDLE ? `https://x.com/${X_HANDLE}` : null;
 }
 
-/** 이 저장소의 공개 주소 — 크롬과 관문 판이 같은 값을 쓴다. */
+/** This repo's public URL — the chrome and the gateway share this value. */
 export const GITHUB_REPO_URL = 'https://github.com/wlsdks/ontology-atlas';

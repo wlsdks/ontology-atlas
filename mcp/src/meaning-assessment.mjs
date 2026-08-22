@@ -170,16 +170,16 @@ function normalizeInventory(value) {
 
 function normalizeQuestions(competency, projectSlug) {
   /*
-   * **「아직 안 적었다」와 「망가졌다」를 가른다** (2026-08-17 실측).
+   * **Separate "not written yet" from "broken"** (measured 2026-08-17).
    *
-   * 볼트를 방금 만들고 검사하면 `assessment_input_invalid` 가 나왔다. `init`
-   * 이 역량 질문 블록을 안 만들어 두는데, 그 블록이 **없는 것**이 아래
-   * `malformed` 로 뭉개졌기 때문이다. 그래서 갓 태어난 볼트가 자기가 고장
-   * 났다고 말했고, 사용자는 자기가 뭘 깨뜨린 줄 알게 된다.
+   * Checking a freshly created vault produced `assessment_input_invalid`. `init`
+   * does not create the competency-question block, and the block being **absent**
+   * was collapsed into `malformed` below. So a newborn vault declared itself
+   * broken and the user concluded they had broken it.
    *
-   * 판정 자체는 그대로다(아직 의미가 확인되지 않은 것은 사실이다). 바뀌는
-   * 것은 **이름과 처방**이다: 안 적었으면 안 적었다고 하고 무엇을 하면
-   * 되는지 같이 준다.
+   * The verdict is unchanged (the meaning genuinely is not confirmed yet). What
+   * changes is **the name and the remedy**: say it was not written, and say what
+   * to do about it.
    */
   const absent = competency === null || competency === undefined;
   const rows = Array.isArray(competency?.questions) ? competency.questions : [];
@@ -382,8 +382,8 @@ export function deriveMeaningAssessment(input) {
     || !STRUCTURE_STATUS_NORMALIZATION.has(rawStructureStatus)
     || sourceReceiptMalformed(safeInput.source);
 
-  // 다른 것이 틀렸으면 그것을 먼저 말한다 — 「안 적었다」가 진짜 결함을 가리면
-  // 사용자는 엉뚱한 곳을 고치게 된다.
+  // If something else is wrong, say that first — "not written yet" masking a real
+  // defect sends the user to fix the wrong place.
   if (inputBroken || (normalized.malformed && !normalized.absent)) {
     return result(
       safeInput,
@@ -394,8 +394,9 @@ export function deriveMeaningAssessment(input) {
     );
   }
 
-  // 역량 답이 **아직 없다**. 망가진 게 아니라 아직 안 한 일이다 — 이름과
-  // 처방이 그렇게 말해야 갓 만든 볼트가 자기가 고장 났다고 하지 않는다.
+  // The competency answers are **not there yet**. That is work not done, not
+  // breakage, and the name and remedy must say so — otherwise a brand-new vault
+  // reports itself broken.
   if (normalized.absent) {
     return result(
       safeInput,

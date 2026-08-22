@@ -22,9 +22,10 @@ import {
   Download,
   BookOpen,
   FolderKanban,
-  // `History as HistoryIcon` — bare `History` 는 특정 HMR/번들 상태에서 전역
-  // DOM History 생성자로 해석돼 "Illegal constructor" 로 화면을 추락시킨다
-  // (AtlasGitPanel 이 같은 사고를 겪었다). 전역과 충돌 없는 별칭으로 고정.
+  // `History as HistoryIcon` — under certain HMR/bundle states the bare `History`
+  // identifier resolves to the global DOM History constructor and crashes the screen
+  // with "Illegal constructor" (AtlasGitPanel hit the same accident). An alias can
+  // never collide with a global.
   History as HistoryIcon,
   Map as MapIcon,
 } from "lucide-react";
@@ -44,46 +45,48 @@ import { shouldShowGetAppTile } from "@/shared/lib/show-get-app-tile";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { agentDisplayName } from "@/shared/lib/agent-display-name";
 
-/** 런타임은 로드 뒤 바뀌지 않는다 — 구독은 형식상 필요할 뿐이라 no-op 이다. */
+/** The runtime never changes after load, so subscribing is a formality — a no-op. */
 const subscribeToRuntime = () => () => {};
-/** 서버(프리렌더)에서는 창이 없어 **모른다**. `false`(=웹)로 단정하지 않는다. */
+/** Prerender has no window, so the answer is **unknown** — never assume `false` (web). */
 const getServerRuntimeSnapshot = (): boolean | null => null;
 import type { NavRailContextHrefs } from "../model/shell-slot-context";
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface AppNavRailProps {
-  /** 설정 트리거(`AppSettingsMenu` rail-tile 등) — 레일 하단에 꽂는 슬롯.
-   *  persistent shell의 `AppShell`이 기본 트리거를 공급하고, 페이지가
-   *  `useNavRailShellValue()`를 통해 특별한 슬롯을 등록한 경우에만
-   *  덮어쓴다. */
+  /** The settings trigger (`AppSettingsMenu` rail-tile and the like) — the slot at
+   *  the rail's bottom. The persistent shell's `AppShell` supplies the default
+   *  trigger, and a page overrides it only by registering its own slot through
+   *  `useNavRailShellValue()`. */
   settingsSlot?: ReactNode;
-  /** true 면 레일을 언마운트하지 않고 CSS 로만 숨긴다(몰입 표면 fullscreen).
-   *  레일이 layout 에 상주해 DOM identity 를 유지하는 게 perf/persistent-shell
-   *  승격의 핵심이라 조건부 렌더링 대신 이 prop 을 쓴다. */
+  /** When true the rail is hidden with CSS rather than unmounted (an immersive
+   *  fullscreen surface). Keeping the rail in the layout preserves its DOM identity,
+   *  which is the point of the persistent-shell promotion, so this prop exists
+   *  instead of conditional rendering. */
   hidden?: boolean;
-  /** 과제 ⑪ — 레일 항목 href 를 "지금 보던 것" 기준으로 바꿔 끼는 컨텍스트
-   *  오버라이드(현재는 문서함만). 지정된 키만 기본 href 를 대체하고, 나머지
-   *  항목/키 미지정 시 기존 정적 href 그대로 — `AppShell`이
-   *  `useNavRailShellValue()`로 읽은 값을 그대로 넘긴다. */
+  /** A context override that swaps a rail item's href for one based on "what you were
+   *  just looking at" (currently the docs vault only). Only the named keys replace
+   *  their default href; every other item, and any unnamed key, keeps its static href.
+   *  `AppShell` passes through what it read from `useNavRailShellValue()`. */
   contextHrefs?: NavRailContextHrefs | null;
   /**
-   * 발자취 목적지의 미커밋 변경 수 — 화면 밖 ambient 신호. `AppShell` 이
-   * `useAtlasGitContext()` 로 읽어 넘긴다(위젯이 feature 를 직접 import 하지
-   * 않게). `0` 이면 뱃지가 소멸한다.
+   * The trail destination's uncommitted change count — an ambient signal from off
+   * screen. `AppShell` reads it through `useAtlasGitContext()` and passes it in, so
+   * the widget never imports a feature directly. At `0` the badge disappears.
    */
   gitDirtyCount?: number;
   /**
-   * 설치가 끝났는데 사용자가 다른 화면에 있었던 도구 수. **종단 상태만** 센다
-   * (진행률은 여기 안 그린다 — 곁눈으로 보는 자리다).
+   * How many tools finished installing while the user was on another screen. It
+   * counts **terminal states only** — progress is not drawn here, because this is a
+   * place seen out of the corner of the eye.
    */
   agentsNoticeCount?: number;
-  /** 하단 에이전트 타일 클릭 핸들러 — `connected` 는 레일이 자신의 heartbeat
-   *  상태로 판정해 넘긴다(P4-② 분기). `AppShell` 이 연결됨→인사이트 이동,
-   *  미연결→연결 시트 열기(전역 launcher)로 라우팅한다. 미지정 시 타일은
-   *  표시 전용으로 남는다(레일이 다른 컨텍스트에서 마운트되는 경우 대비). */
+  /** Click handler for the bottom agent tile — the rail decides `connected` from its
+   *  own heartbeat state and passes it in. `AppShell` routes connected → insights and
+   *  not-connected → open the connect sheet (the global launcher). Left unset, the
+   *  tile stays display-only (for the case where the rail mounts in another context). */
   onAgentTileActivate?: ((connected: boolean) => void) | null;
-  /** 연결 시트가 현재 열려 있는지 — 타일의 `aria-expanded` 진실원(전역
-   *  launcher `wantOpen`). */
+  /** Whether the connect sheet is currently open — the source of truth for the tile's
+   *  `aria-expanded` (the global launcher's `wantOpen`). */
   className?: string;
 }
 
@@ -93,8 +96,9 @@ interface RailDestination {
   label: string;
   Icon: ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>;
   /**
-   * 우상단 카운트 뱃지(미커밋 변경 수). `0`/`undefined` 면 **소멸** — 회색화가
-   * 아니다. 화면 밖 ambient 신호라 attention 계층에 들어가지 않는다.
+   * The count badge at the top right (uncommitted changes). At `0`/`undefined` it
+   * **disappears** rather than greying out. It is an ambient signal from off screen,
+   * so it does not enter the attention hierarchy.
    */
   badgeCount?: number;
 }
@@ -113,29 +117,32 @@ function rememberRailRouteFocus(
   ) {
     return;
   }
-  // 이동이 «성사될» 클릭임이 확정된 자리다(위 가드가 새 탭·수식키·취소를
-  // 전부 걸러 냈다). 지도처럼 상시 루프를 가진 표면이 프레임 예산을 비켜
-  // 주도록 신호를 흘린다 — 실측 근거는 `shared/lib/navigation-intent.ts`.
+  // By here the click is confirmed to «go through» (the guards above filtered out new
+  // tabs, modifier keys and cancellation). Signal so a surface with a permanent loop,
+  // like the map, can yield its frame budget — measured rationale in
+  // `shared/lib/navigation-intent.ts`.
   signalNavigationIntent();
   rememberRouteFocusIntent(pathname);
 }
 
 /**
- * 좌측 64px 내비 레일 (feat/chrome-system, `docs/prototypes/chrome-rail-combined.html`
- * 소유자 최종 승인) — 전역 목적지(지도·문서함·공방·인사이트·프로젝트·발자취) +
- * 하단 에이전트 상태·설정을 전담하는 상시 chrome. #375 는 지형도(HomePage)만
- * 마운트했고, feat/rail-rollout (#377) 이 지형도 외 전 페이지(문서함·공방·
- * 인사이트·프로젝트 목록/상세/편집·다운로드)로 확장해 3-체계(OperationsNav
- * 상단 탭 + BottomTabBar + 이 레일) 내비를 1-체계로 통합했다 — 구 상단 탭
- * (`OperationsNav`)·서브탭(`OntologySubNav`)은 은퇴.
+ * The 64px left nav rail (feat/chrome-system,
+ * `docs/prototypes/chrome-rail-combined.html`, final owner approval) — permanent
+ * chrome owning the global destinations (map · docs vault · studio · insights ·
+ * projects · trail) plus the agent status and settings tiles at the bottom. #375
+ * mounted it on the topology (HomePage) only, and feat/rail-rollout (#377) extended
+ * it to every other page (docs vault, studio, insights, project list/detail/edit,
+ * download), consolidating three navigation systems (the `OperationsNav` top tabs,
+ * `BottomTabBar` and this rail) into one — the old top tabs (`OperationsNav`) and
+ * subtabs (`OntologySubNav`) were retired.
  *
- * book/network 유틸 타일과 우측 레일의 설정 기어가 여기로 흡수됐다
- * (HeroCollapsed 는 필만 남고, 우측 세로 레일은 지도 전용 3타일만). 폭이
- * 좁아(`--app-nav-rail-width`) 설정 시트 본체는 portal로 열고,
- * `LiveActivityIndicator` 같은 상세 상태는 필요한 페이지의 contextual
- * header에 둔다.
+ * The book/network utility tiles and the right rail's settings gear were absorbed
+ * here (HeroCollapsed keeps only its pill, and the right vertical rail holds the
+ * three map-only tiles). The rail is narrow (`--app-nav-rail-width`), so the settings
+ * sheet body opens through a portal, and detailed state such as
+ * `LiveActivityIndicator` lives in the contextual header of the page that needs it.
  *
- * 표시 breakpoint 는 `lg` (≥1024px) — 그 아래는 `BottomTabBar` 가 담당한다.
+ * It is shown from the `lg` breakpoint (≥1024px); below that `BottomTabBar` takes over.
  */
 export function AppNavRail({
   settingsSlot,
@@ -150,12 +157,14 @@ export function AppNavRail({
   const tLive = useTranslations("liveActivity");
   const pathname = usePathname() ?? "/";
   /**
-   * 「앱 받기」 — **웹에서만** 그리는 유일한 다운로드 유도. 판정 근거와 왜
-   * 마운트 뒤인지는 `../lib/show-get-app-tile`.
+   * 「앱 받기」 (get the app) — the only download prompt, drawn **on the web only**.
+   * How that is decided, and why it happens after mount, is in
+   * `../lib/show-get-app-tile`.
    */
-  // `useSyncExternalStore` 로 읽는 이유: 서버 스냅샷을 **`null`(아직 모름)** 로
-  // 둘 수 있어서, 프리렌더 HTML 이 "웹" 이라고 단정하지 않는다. 그래야 앱이
-  // 그 HTML 을 싣고 하이드레이션에서 타일을 걷는 깜빡임이 없다.
+  // Why it is read through `useSyncExternalStore`: the server snapshot can be
+  // **`null` (not known yet)**, so the prerendered HTML never asserts "web". That is
+  // what stops the app from loading that HTML and then flickering the tile away at
+  // hydration.
   const desktopRuntime = useSyncExternalStore(
     subscribeToRuntime,
     isTauriVaultRuntime,
@@ -169,15 +178,16 @@ export function AppNavRail({
   const activeId = resolveActiveNavRailItem(pathname);
 
   /**
-   * 활성 지표의 자리 — 활성 타일을 **재서** 정한다.
+   * Where the active indicator sits — decided by **measuring** the active tile.
    *
-   * 인덱스 × 행 높이로 계산하지 않는다: 행 높이는 레일 스케일 토큰과 라벨
-   * 줄 수에 딸려 있어서, 상수로 적어 두면 토큰이 바뀌는 날 조용히 어긋난다.
-   * 그때 화면은 "지표가 타일에서 살짝 빗나간" 모양이 되는데, 그건 사람이
-   * 눈으로는 잘 못 집는 종류다.
+   * It is not computed from index × row height: row height depends on the rail's size
+   * tokens and the label's line count, so a hard-coded constant silently diverges the
+   * day a token changes. The screen then looks like "the indicator is slightly off the
+   * tile", which is exactly the kind of thing a person does not reliably catch by eye.
    *
-   * 붙이기는 **콜백 ref** 로 한다 — 노드가 붙는 순간 불리므로 순서 문제가
-   * 원리적으로 없다(2026-07-28 공방 클램프가 `[]` deps 로 이 함정에 빠졌다).
+   * It attaches through a **callback ref** — called the moment the node attaches, so
+   * ordering problems cannot arise in principle (on 2026-07-28 the studio's clamp fell
+   * into that trap with `[]` deps).
    */
   const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null);
   const [indicatorReady, setIndicatorReady] = useState(false);
@@ -213,8 +223,9 @@ export function AppNavRail({
 
   useEffect(() => () => listObserverRef.current?.disconnect(), []);
 
-  // 활성 목적지가 바뀌면 다시 잰다. 첫 배치 이후에만 전이를 켠다 —
-  // 처음 그려질 때 미끄러져 들어오면 이동이 아니라 등장이 된다.
+  // Re-measure whenever the active destination changes. The transition is enabled only
+  // after the first placement — sliding in on the first paint would read as an entrance
+  // rather than a movement.
   useLayoutEffect(() => {
     measureIndicator();
   }, [activeId, measureIndicator]);
@@ -264,31 +275,35 @@ export function AppNavRail({
       : null;
   const agentTitle = [baseAgentTitle, lastActivitySuffix].filter(Boolean).join(" · ");
 
-  // 주소는 `shared/config/destinations` 가 정본이다 — 키보드 이동과 단축키 시트가
-  // 같은 표를 읽어야 해서 컴포넌트 밖으로 내렸다(사본이 둘이면 라우트가 어긋난다).
-  // 라벨과 아이콘은 화면의 것이라 여기 남는다.
+  // The addresses have one source of truth, `shared/config/destinations` — keyboard
+  // navigation and the shortcut sheet must read the same table, so it moved outside
+  // this component (with two copies the routes diverge). Labels and icons belong to
+  // the screen and stay here.
   const destinations: RailDestination[] = [
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
-    // 발자취 — 2026-07-25 목적지 승격. 구 "레일 하단 유틸 타일 + 560px 모달"
-    // 은 흡수됐다(입구가 둘이면 #65 계열 결함 재발). 아이콘은 History 유지 —
-    // git 3-노드 그래프 글리프는 이 레일에서 "온톨로지 그래프" 로 읽혀 지도
-    // 아이콘·브랜드 육각과 충돌한다(Design Guardian 반려).
-    // 에이전트 — 2026-08-20 목적지 신설(원장 90). 설정 시트 안의 설치·연결
-    // 화면을 여기로 뺐다.
+    // Trail — promoted to a destination on 2026-07-25. The old "rail utility tile plus
+    // a 560px modal" was absorbed (two entrances is how the #65 family of defects
+    // recurs). The icon stays History — a three-node git graph glyph reads as "the
+    // ontology graph" in this rail and collides with the map icon and the brand hexagon
+    // (rejected by the Design Guardian).
+    // Agents — a new destination on 2026-08-20 (ledger 90). The install and connect
+    // screens were pulled out of the settings sheet to here.
     //
-    // 아이콘이 `Bot` 인 이유(작업대 자리 실측): 후보였던 `SquareTerminal` 은
-    // 20px 레일에서 「마크가 든 사각」이라 `FolderKanban`(프로젝트)과 실루엣이
-    // 겹친다. `Bot` 은 이 목록에서 유일한 «머리와 귀가 있는» 윤곽이다.
+    // Why the icon is `Bot` (measured from the workbench position): the candidate
+    // `SquareTerminal` is "a square with a mark in it" at 20px on the rail and its
+    // silhouette collides with `FolderKanban` (projects). `Bot` is the only outline in
+    // this list with «a head and ears».
     {
       id: "agents",
       href: DESTINATION_HREF.agents,
       label: t("agents"),
       Icon: Bot,
-      // 설치가 끝났는데 다른 화면에 있었으면 여기 배지가 선다 — **종단 상태만**
-      // 이고 진행률은 안 그린다(곁눈으로 보는 자리라 초마다 바뀌면 못 읽는다).
+      // A badge stands here when an install finished while the user was on another
+      // screen — **terminal states only**, no progress (a place seen out of the corner
+      // of the eye cannot be read if it changes every second).
       badgeCount: agentsNoticeCount,
     },
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
@@ -320,10 +335,11 @@ export function AppNavRail({
             className="h-[var(--app-nav-rail-logo-icon-size)] w-[var(--app-nav-rail-logo-icon-size)]"
           />
         </span>
-        {/* H6 — 상시 워드마크. 육각 마크 아래 초소형 "Atlas" 텍스트로 전역
-            공통 레일에 브랜드 서명을 심는다. caption 램프 + quaternary 톤 +
-            tracking-caption 짝(법전 규율). aria-hidden — Link 의 aria-label
-            "Ontology Atlas" 와 중복 낭독 방지. */}
+        {/* H6 — the permanent wordmark. Ultra-small "Atlas" text under the hexagon puts
+            a brand signature on the globally shared rail. The caption ramp step paired
+            with a quaternary tone and tracking-caption (the code's discipline).
+            aria-hidden — avoids being read twice alongside the Link's aria-label
+            "Ontology Atlas". */}
         <span
           aria-hidden="true"
           translate="no"
@@ -334,11 +350,12 @@ export function AppNavRail({
       </Link>
 
       {/*
-        목적지 수와 창 높이·UI 배율이 바뀌어도 레일의 소유권은 같다. 목적지 칸만
-        스크롤하고(`min-h-0` 이 없으면
-        flex 자식은 안 줄어든다), 스크롤이 부모로 새지 않게 막고
-        (`overscroll-contain`), 유틸리티 층은 **절대 안 줄어든다**(`shrink-0`).
-        상한 자체는 계약이 지킨다(`destination-shortcuts.contract.test.ts`).
+        The rail's ownership is the same however the destination count, window height
+        or UI scale changes. Only the destinations pane scrolls (without `min-h-0` a
+        flex child does not shrink), scrolling does not leak to the parent
+        (`overscroll-contain`), and the utility tier **never shrinks** (`shrink-0`).
+        The cap itself is held by a contract
+        (`destination-shortcuts.contract.test.ts`).
       */}
       <nav
         aria-label={t("ariaLabel")}
@@ -346,33 +363,35 @@ export function AppNavRail({
       >
         <ul ref={attachDestinationList} className="relative flex w-full flex-col gap-0.5">
           {/*
-            활성 표시는 **하나의 원소가 옮겨 다닌다** (2026-07-28 모션 감사).
+            The active marker is **one element that moves** (motion audit, 2026-07-28).
 
-            종전에는 두 타일이 각자 색을 죽이고 켰다 — 게슈탈트 공통 운명상
-            사라졌다 나타나는 두 표시는 "두 개의 것" 으로, 이동하는 한 표시는
-            "**같은 것이 옮겨갔다**" 로 지각된다. 레일의 세로 순서는 이 앱의
-            유일한 공간 모델이고, 지표의 이동 방향·거리는 그 모델 위에서
-            "어디서 와서 어디로 갔는지" 를 나르는 **정보**다 — 끄면 그 정보를
-            잃으므로 장식이 아니다.
+            Two tiles used to kill and light their own colour — by Gestalt common fate,
+            two markers that disappear and reappear are perceived as "two things",
+            while one marker that moves is perceived as "**the same thing went
+            there**". The rail's vertical order is this app's only spatial model, and
+            the indicator's direction and distance carry **information** on that model:
+            where you came from and where you went. Turning it off loses that
+            information, so it is not decoration.
 
-            콘텐츠는 한 톨도 움직이지 않는다(라우트 전환은 fast 크로스페이드
-            뿐). 그래서 주목 예산은 사용자가 부른 목적물이 가져가고, 크롬은
-            한 점만 따라간다.
+            Not one bit of content moves (a route change is only a fast cross-fade). So
+            the attention budget goes to what the user asked for, and the chrome moves
+            a single point.
           */}
           <span
             aria-hidden
             data-testid="app-nav-rail-active-indicator"
             data-placed={indicator ? "true" : "false"}
             className={cn(
-              // 가로 중앙 정렬은 **인라인 transform 하나가** 한다. Tailwind v4 의
-              // 이동 유틸리티는 `transform` 이 아니라 **`translate` 표준 속성**을
-              // 쓰기 때문에, 클래스로 `-translate-x-1/2` 를 주고 인라인으로
-              // `transform: translate(-50%, …)` 을 주면 **둘 다 적용돼 두 번**
-              // 밀린다(실측: 타일보다 19px 왼쪽 → 레일 밖으로 잘림).
+              // Horizontal centring is done by **one inline transform**. Tailwind v4's
+              // movement utilities use the **standard `translate` property** rather
+              // than `transform`, so giving `-translate-x-1/2` as a class and
+              // `transform: translate(-50%, …)` inline applies **both and shifts
+              // twice** (measured: 19px left of the tile, clipped outside the rail).
               "pointer-events-none absolute left-1/2 z-0 rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]",
-              // 첫 배치는 전이가 아니다 — 처음 그려질 때 0 에서 미끄러져
-              // 들어오면 "이동" 이 아니라 "등장" 이 되고, 사용자가 부르지
-              // 않은 모션이 된다(`use-row-disclosure` 가 배운 것과 같다).
+              // The first placement is not a transition — sliding in from 0 on the
+              // first paint makes it an "entrance" rather than a "movement", and that
+              // is motion the user did not ask for (the same lesson `use-row-disclosure`
+              // learned).
               indicatorReady && "transition-[transform,height] duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
             )}
             style={
@@ -395,35 +414,38 @@ export function AppNavRail({
                 <Link
                   href={buildRouteFocusHref(href)}
                   onClick={(event) => rememberRailRouteFocus(event, surfacePath)}
-                  /* `title` 없음 — 라벨이 아이콘 바로 아래 **이미 보인다**.
-                     네이티브 툴팁은 그 라벨 위에 회색 상자로 덮이고, OS 가
-                     그리는 것이라 토큰도 모션도 우리 것이 아니다. 아이콘만
-                     있는 하단 유틸 타일은 여전히 `title` 을 갖는다 — 거기서는
-                     그게 유일한 이름이다. (2026-08-01 소유자 지적: 시연 영상에
-                     그 상자가 찍혔다.) */
+                  /* No `title` — the label is **already visible** right under the icon.
+                     A native tooltip covers that label with a grey box drawn by the OS,
+                     so neither its tokens nor its motion are ours. The icon-only bottom
+                     utility tiles still carry `title`; there it is the only name.
+                     (Owner report 2026-08-01: that box was caught in a demo video.) */
                   aria-current={isActive ? "page" : undefined}
                   data-testid={`app-nav-rail-item-${id}`}
                   data-active={isActive ? "true" : "false"}
-                  /* 2026-08-05: 초점 링이 없어 키보드로 오면 **OS 강조색**이
-                     그려졌다 — 헌장의 「무채색 + 인디고 하나」 밖이다. 같은
-                     파일의 하단 유틸 타일은 이미 이 링을 갖고 있었으니 형제가
-                     어긋나 있던 것이다. `rounded-card` 는 링이 라벨까지 감싸는
-                     상자를 아이콘 타일 모양과 맞추기 위한 것이고, 상자 치수는
-                     `ring-inset` 이라 한 픽셀도 안 바뀐다. */
-                  /* ⚠️ `border-0` — 이 자리가 `card` 를 빌린 이유는 위 주석 그대로
-                     **초점 링의 기하**(radius·ring 상자)뿐이다. 그런데 #961 이관 때
-                     card 모양이 싣고 다니는 1px 헤어라인까지 같이 얹혔고, 이관 전
-                     손 클래스에는 테두리가 없었다 — 소유자가 실물에서 잡았다
-                     (2026-08-08: "이거 영역에 왜 테두리가 생긴거지?"). 보이는 타일은
-                     아래 안쪽 span 이 그린다. 게이트: desktop-shell-rail.spec.ts. */
+                  /* 2026-08-05: with no focus ring, arriving by keyboard drew the **OS
+                     accent colour** — outside the charter's "neutrals plus one indigo".
+                     The bottom utility tiles in this same file already had this ring,
+                     so the siblings had diverged. `rounded-card` matches the shape of
+                     the box the ring wraps (including the label) to the icon tile, and
+                     the box's dimensions do not change by a pixel because of
+                     `ring-inset`. */
+                  /* ⚠️ `border-0` — this position borrows `card` only for **the focus
+                     ring's geometry** (radius and ring box), exactly as the comment
+                     above says. But the #961 migration also brought along the 1px
+                     hairline the card shape carries, and the hand-written classes
+                     before the migration had no border — the owner caught it on the
+                     real thing (2026-08-08: "이거 영역에 왜 테두리가 생긴거지?" — why
+                     does this area have a border now?). The visible tile is drawn by the
+                     inner span below. Gate: desktop-shell-rail.spec.ts. */
                   className={controlClass({ shape: "card", className: "group relative w-full flex-col gap-1 border-0 px-0 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]" })}
                 >
                   <span
                     className={cn(
                       "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
-                      // 활성 서피스는 이 타일이 그리지 않는다 — 위의 단일
-                      // 지표가 옮겨 와서 깔린다. 여기 남는 것은 **색**뿐이고,
-                      // 색은 이동이 아니라 확인이라 fast 램프(기본)를 탄다.
+                      // This tile does not draw the active surface — the single
+                      // indicator above moves in and lays it down. What remains here is
+                      // **colour**, and colour is confirmation rather than movement, so
+                      // it rides the fast ramp (the default).
                       isActive
                         ? "z-[1] text-[color:var(--color-indigo-accent)]"
                         : "text-[color:var(--color-text-tertiary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]",
@@ -435,11 +457,12 @@ export function AppNavRail({
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
                     {badgeCount ? (
-                      // 신호톤 warning — `--color-status-warning` 계열 알파 사다리만
-                      // 쓴다. "기록되지 않은 변경이 있다" 는 error 도 done 도 아닌
-                      // 미결/주의라 warning 정의 그대로다(GitStatusTile 이 이미
-                      // 배포한 구분의 연장 — 새 예외 아님). 3자리는 타일 지오메트리를
-                      // 깨뜨리므로 `9+` 로 막는다.
+                      // Signal tone warning — only the `--color-status-warning` alpha
+                      // ramp is used. "There are unrecorded changes" is neither an error
+                      // nor a completion but an unresolved state calling for attention,
+                      // which is warning's definition (an extension of the distinction
+                      // GitStatusTile already shipped, not a new exception). Three
+                      // digits break the tile geometry, so it caps at `9+`.
                       <span
                         data-testid={`app-nav-rail-badge-${id}`}
                         className="absolute -right-1 -top-0.5 grid h-[15px] min-w-[15px] place-items-center rounded-full border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a14)] px-[3px] text-caption font-[var(--font-weight-strong)] leading-display-tight tabular-nums text-[color:var(--color-status-warning)]"
@@ -450,10 +473,11 @@ export function AppNavRail({
                   </span>
                   <span
                     className={cn(
-                      // 크기는 레일 스케일 토큰(줌 배율이 곱해진다), 행간은
-                      // 램프의 짝을 **명시**한다 — arbitrary length 참조는
-                      // 크기만 나르고 companion 행간을 못 싣는다. 명시가 없던
-                      // 동안 상속 1.5(14.25px)로 렌더됐다 (2026-07-28 실측).
+                      // The size comes from the rail's size token (multiplied by the UI
+                      // zoom factor) and the leading **explicitly** names the ramp's
+                      // pair — an arbitrary-length reference carries only the size and
+                      // cannot bring the companion leading. While it was missing, this
+                      // rendered at an inherited 1.5 (14.25px) (measured 2026-07-28).
                       "text-[length:var(--app-nav-rail-label-size)] leading-caption",
                       isActive
                         ? "font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
@@ -469,43 +493,48 @@ export function AppNavRail({
         </ul>
       </nav>
 
-      {/* #65 — 하단 유틸 티어. 이 안의 구성(활동 · 발자취 · 설정)은 모든 화면에서
-          같아야 한다 — 셸(AppShell)이 소유하며 페이지가 등록하지 않는다. */}
+      {/* #65 — the bottom utility tier. Its composition (activity · trail · settings)
+          must be the same on every screen — the shell (AppShell) owns it and pages do
+          not register into it. */}
       <div
         data-testid="app-nav-rail-utility-tier"
         className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"
       >
-        {/* 에이전트 타일 — 클릭 가능. 연결됨: 활동 다이제스트(인사이트)로,
-            미연결/stale: 「에이전트」 목적지로 간다(AppShell 이 라우팅). */}
+        {/* Agent tile — clickable. Connected goes to the activity digest (insights);
+            not connected or stale goes to the 「에이전트」 (agents) destination (AppShell
+            routes it). */}
         <button
           type="button"
           title={agentTitle}
           aria-label={agentTitle}
           /*
-           * ⚠️ **`aria-haspopup="dialog"` 를 뗐다** (2026-08-21, 원장 90).
+           * ⚠️ **`aria-haspopup="dialog"` was removed** (2026-08-21, ledger 90).
            *
-           * 이 타일은 미연결일 때 지도 위의 연결 시트를 열었다 — 그래서 대화상자를
-           * 연다고 광고하는 것이 맞았다. 이제는 **「에이전트」 목적지로 이동한다.**
-           * 이동하는 버튼이 대화상자를 연다고 말하면 낭독기 사용자는 열리지 않을
-           * 창을 기다린다. 되는 것을 안 된다고 말하는 것만 거짓이 아니라,
-           * 하는 일을 다르게 말하는 것도 거짓이다.
+           * This tile used to open the connect sheet over the map when not connected,
+           * so advertising that it opens a dialog was correct. It now **navigates to
+           * the 「에이전트」 destination.** A button that navigates while claiming to open
+           * a dialog leaves a screen-reader user waiting for a window that never opens.
+           * Saying something works when it does not is not the only kind of lie —
+           * describing what you do as something else is one too.
            */
           onClick={onAgentTileActivate ? () => onAgentTileActivate(hasFreshHeartbeat) : undefined}
           disabled={!onAgentTileActivate}
           data-testid="app-nav-rail-agent-status"
           className={cn(
-            // 상태 안무 = 클러스터 칩(ChromeChip) 계약과 동급: rest → hover(색-웨이크)
-            // → active(1px 눌림 + overlay-3 서피스, 촉각감) → focus-visible 링.
-            // transform 을 transition 대상에 포함해 눌림 해제가 급작스럽지 않게 이완.
+            // The same state choreography as the cluster chip (ChromeChip) contract:
+            // rest → hover (colour wake) → active (1px press plus an overlay-3 surface,
+            // for tactility) → focus-visible ring. transform is included in the
+            // transition so releasing the press eases rather than snaps.
             "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
             onAgentTileActivate &&
               "enabled:hover:bg-[color:var(--color-overlay-2)] enabled:hover:text-[color:var(--color-text-primary)] enabled:active:translate-y-px enabled:active:bg-[color:var(--color-overlay-3)]",
           )}
         >
-          {/* 유틸리티 티어 아이콘 사다리(로고 26 / 목적지 24+라벨 / 유틸 18) —
-              소유자 실보고 2026-07-23: 하단 유틸 아이콘이 목적지 크기(24)를
-              그대로 써 설정 기어보다 커 보였다. 유틸 3타일(활동·발자취·설정)은
-              `--app-nav-rail-utility-icon-size` 하나로 앉는다. */}
+          {/* The utility tier's icon size order (logo 26 / destination 24 plus label /
+              utility 18) — owner report 2026-07-23: the bottom utility icons used the
+              destination size (24) and so looked larger than the settings gear. All
+              three utility tiles (activity, trail, settings) sit on the single
+              `--app-nav-rail-utility-icon-size` token. */}
           <Activity
             size={ICON_SIZE.lg}
             aria-hidden
@@ -520,14 +549,15 @@ export function AppNavRail({
           ) : null}
         </button>
         {/*
-          웹에만 있는 한 자리. 표면마다 배너를 심는 대신 크롬에 하나를 두는
-          이유는 `../lib/show-get-app-tile` 에 적었다 — 레일 유틸리티 티어는
-          모든 목적지에서 같은 자리라, 한 원소가 이미 "다양한 곳" 이다.
+          The one position that exists on the web only. Why a single tile in the chrome
+          rather than a banner planted on every surface is written in
+          `../lib/show-get-app-tile` — the rail's utility tier is in the same place on
+          every destination, so one element is already "many places".
 
-          목적지는 `/download` 다. 방문자의 OS 를 여기서 추측하지 않는다 —
-          그 화면이 macOS 파일과 "Windows 준비 중" 을 이미 정직하게 가른다.
-          레일에서 OS 를 판정하면 틀렸을 때 **막다른 CTA** 가 되는데, 그건
-          이 저장소가 이름으로 금지한 것이다.
+          The destination is `/download`. The visitor's OS is not guessed here — that
+          screen already separates the macOS file from "Windows coming" honestly.
+          Deciding the OS in the rail turns a wrong guess into a **dead-end CTA**, which
+          this repository forbids by name.
         */}
         {showGetApp ? (
           <Link

@@ -1,5 +1,5 @@
-// 고정 (pinned) 문서 slug 목록을 localStorage 에 저장. 볼트별 namespace
-// 분리 (recent-docs 와 동일 패턴). 개수 제한 없음, 순서 = 고정한 순.
+// Pinned document slugs kept in localStorage, namespaced per vault (the same
+// pattern as recent-docs). No count limit; order = the order they were pinned.
 
 import type { VaultRecentKey } from './recent-docs';
 
@@ -32,7 +32,7 @@ function writePinned(key: VaultRecentKey, list: string[]) {
   }
 }
 
-/** toggle pin. 고정 추가 시 맨 앞에 insert, 해제 시 제거. 최신 리스트 반환. */
+/** Toggle a pin. Pinning inserts at the front, unpinning removes. Returns the updated list. */
 export function togglePinnedDoc(
   key: VaultRecentKey,
   slug: string,

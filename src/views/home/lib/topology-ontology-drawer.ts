@@ -19,15 +19,6 @@ import {
  * (`topology-node-significance.ts`) — direct relations, transitive reach,
  * owning domain. `buildTopologyNodeFocus`/`buildNodeSignificance` are
  * PROJECTIONS of this model (zero recompute, so counts can't drift).
- *
- * R+ full-detail A1: this module used to ALSO back `TopologyOntologyDrawer`
- * (the rejected badge-soup full-detail surface — rich "collaborator brief"
- * markdown export, vocabulary review, MCP/CLI check-string formatters, an
- * `impactSummary`/`collaborator` field pair feeding a Meaning/Connections/
- * checks tab sidebar). That surface + its format* functions were deleted
- * (`full-detail-a1` widget replaces it); this file kept only what the
- * SURVIVING consumers (focus popover + significance line + HomePage's
- * relation-provenance classification) still read.
  */
 
 export interface TopologyOntologyDrawerRelation {
@@ -44,35 +35,26 @@ export type TopologyRelationProvenance =
 
 export interface TopologyOntologyDrawerReach {
   /**
-   * 전이 incoming closure — 이 노드를 (직접·간접) 의존으로 가진 노드 수.
-   * = "이 노드를 바꾸면 영향받는 노드" = 변경 영향 범위(blast radius).
-   * CLI `blast-radius --direction incoming` 와 같은 방향 semantics.
+   * Transitive incoming closure — nodes that depend on this one directly or
+   * indirectly, i.e. the blast radius of changing it. Same direction semantics
+   * as CLI `blast-radius --direction incoming`.
    */
   dependents: number;
-  /**
-   * 전이 outgoing closure — 이 노드가 (직접·간접) 의존하는 노드 수.
-   */
+  /** Transitive outgoing closure — nodes this one depends on, directly or indirectly. */
   dependencies: number;
 }
 
 export interface TopologyOntologyDrawerModel {
   sourceSlug: string | null;
   /**
-   * `sourceSlug` 가 **이 노드 자신의 `.md`** 일 때만 채워진다. 관계에서만
-   * 이름이 불린 파생 노드는 null — 그 노드의 `sourceSlug` 는 자기를 인용한
-   * 남의 문서라 "이 노드의 문서" 로 열면 거짓말이 된다.
+   * Set only when `sourceSlug` is this node's own `.md`. Derived nodes that are
+   * merely named by a relation stay null: their `sourceSlug` is someone else's
+   * document, so opening it as "this node's document" would be a lie.
    */
   ownDocumentSlug: string | null;
-  /**
-   * 자기 문서가 없는 노드를 **적어 둔 다른 문서**. 자기 문서가 있으면 null.
-   * 정보를 없애지 않으면서 라벨만 정직하게 만들기 위한 짝 필드.
-   */
+  /** The other document that mentions a node with no document of its own; null when it has one. */
   mentionedInSlug: string | null;
-  /**
-   * 이 노드를 소유한 domain 노드(있으면). 비즈니스 영역 context 를 read-only
-   * 로 노출. incoming 엣지 중 source 가 kind:domain 인 첫 노드(보통 contains
-   * 관계).
-   */
+  /** The owning domain node, if any — the first incoming edge whose source is `kind: domain`. */
   ownerDomain: { id: string; title: string } | null;
   incomingCount: number;
   outgoingCount: number;
@@ -81,9 +63,9 @@ export interface TopologyOntologyDrawerModel {
   relationQuality: TopologyRelationQualityBreakdown;
   previewRelations: TopologyOntologyDrawerRelation[];
   /**
-   * 1-hop degree(`incomingCount`/`outgoingCount`)가 과소평가하는 *전이* 영향
-   * 범위. graph-DB 의 reachability 질의를 노드 detail 에 바로 노출 — 사람은
-   * "이거 바꾸면 N개 영향" 을 한눈에, 에이전트는 brief 로 같은 값을 받는다.
+   * The transitive impact that 1-hop degree (`incomingCount`/`outgoingCount`)
+   * understates. A person reads "changing this affects N" at a glance and an
+   * agent gets the same number in its brief.
    */
   reach: TopologyOntologyDrawerReach;
 }
@@ -128,16 +110,16 @@ export function buildTopologyOntologyDrawerModel(
     })),
   ].slice(0, Math.max(0, previewLimit));
 
-  // 전이 reach — 기존 reachability 엔진 재사용(새 BFS 0). depth = 노드 수면
-  // 사이클·긴 체인 모두 full closure 보장(discovered set 이 중복 차단).
-  // limit:1 — summary.reachableNodes 는 limit 과 무관하게 *전체* 카운트라
-  // 가시 layer 만 1개로 줄여 할당 최소화.
-  // depends_on만 인과 영향이다. containment/domain/element는 구조 탐색에서만
-  // 사용하고 Affected/Dependencies 숫자에는 섞지 않는다.
+  // Reuses the existing reachability engine rather than adding a BFS here.
+  // depth = node count guarantees the full closure through cycles and long
+  // chains (the discovered set blocks repeats). limit:1 because
+  // `summary.reachableNodes` is the total regardless of limit, so shrinking the
+  // returned layer to one keeps allocation minimal.
+  // Only `depends_on` is causal impact — containment/domain/element are used for
+  // structural traversal and must not enter the Affected/Dependencies numbers.
   const fullDepth = Math.max(nodes.length, 1);
   const reach: TopologyOntologyDrawerReach = {
-    // dependents 는 shared computeOntologyDependents 단일 source — 변경점 diff
-    // (Self-Drawing Diff #2)가 같은 함수를 호출해 같은 수를 보장(can't drift).
+    // The change diff calls this same function, so the two counts cannot drift.
     dependents: computeOntologyDependents(node.id, nodes, edges),
     dependencies: buildOntologyReachability(node.id, nodes, edges, {
       direction: "outgoing",
@@ -147,15 +129,14 @@ export function buildTopologyOntologyDrawerModel(
     }).summary.reachableNodes,
   };
 
-  // 소유 domain — incoming 엣지의 source 중 kind:domain 첫 노드. domain 은
-  // 보통 자식을 contains 하므로 (domain → node) incoming 에서 찾는다.
+  // A domain usually contains its children, so the owner is found among the
+  // incoming edges.
   //
-  // P1-③ (retention-round-2026-07-21) — domain / project 노드 자신은 다른
-  // 도메인에 "소속" 되지 않는다. 도메인의 부모는 프로젝트지 다른 도메인이
-  // 아니다. 그런데 도메인 간 cross-relation(relates 등)의 incoming 을 그대로
-  // 집으면 "도메인 · <다른 도메인>" 같은 오귀속이 나온다(데이터시트 헤더 +
-  // 인계 패킷 `domain:` 필드까지 오염). 정직하게 domain/project 는 도메인
-  // 소속을 표기하지 않는다(null → UI 가 해당 줄 생략).
+  // domain and project nodes belong to no domain: a domain's parent is a
+  // project, not another domain. Taking incoming cross-relations (`relates` and
+  // friends) at face value produced misattributions like "domain · <another
+  // domain>", polluting both the datasheet header and the handoff packet's
+  // `domain:` field. They report null instead and the UI omits the line.
   let ownerDomain: { id: string; title: string } | null = null;
   const canBelongToDomain = node.kind !== "domain" && node.kind !== "project";
   if (canBelongToDomain) {

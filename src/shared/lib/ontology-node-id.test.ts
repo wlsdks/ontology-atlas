@@ -29,11 +29,11 @@ describe("isOntologyNodeId", () => {
 
   it("빈 / null / non-string → false (throw 안 함)", () => {
     expect(isOntologyNodeId("")).toBe(false);
-    // @ts-expect-error — runtime 가드
+    // @ts-expect-error — runtime guard
     expect(isOntologyNodeId(null)).toBe(false);
-    // @ts-expect-error — runtime 가드
+    // @ts-expect-error — runtime guard
     expect(isOntologyNodeId(undefined)).toBe(false);
-    // @ts-expect-error — runtime 가드
+    // @ts-expect-error — runtime guard
     expect(isOntologyNodeId(123)).toBe(false);
   });
 });

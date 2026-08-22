@@ -33,9 +33,10 @@ describe("resolveTopologyNodeTitle", () => {
   });
 
   /**
-   * **이 한 줄이 「화면이 명시적 거짓을 말한다」의 근원이었다.** 폴백이
-   * 슬러그를 제목인 척 돌려주면 없는 노드가 이름을 얻고, 그 위에서 경로 칩이
-   * 「경로 없음」을 단언한다. null 이 "여기 없다" 라는 **정보**다.
+   * This one line was the source of the screen stating an outright falsehood: a
+   * fallback that passes the slug off as a title gives an absent node a name,
+   * and the path chip then asserts "no path" over it. null is the information
+   * that the node is not here.
    */
   it("이 볼트에 없으면 null — 슬러그를 제목으로 위장하지 않는다", () => {
     expect(

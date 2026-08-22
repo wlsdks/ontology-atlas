@@ -27,65 +27,70 @@ import { controlClass } from '@/shared/ui/control-class';
 import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
 
 /**
- * 두 피커의 **선택 잉크** — 라디오 그룹이라 값 층의 `active` 를 쓰지 않는다.
+ * The **selection ink** for both pickers — this is a radio group, so it does not
+ * use the value layer's `active`.
  *
- * `active` 는 **눌림**(pressed)의 표현이라 테두리가 `--color-indigo-pale-a28`
- * 로 옅다. 여기 필요한 것은 눌림이 아니라 **선택**이고, 넷 중 하나를 고르는
- * 격자에서 옅은 테두리는 「어느 것이 지금 값인가」를 약하게 만든다. 값을 새로
- * 만들지 않고 지금 잉크를 그대로 둔다 — 값 층에 «선택» 축이 생기면 그때
- * 여기가 지워질 자리다.
+ * `active` expresses **pressed**, so its border is a pale
+ * `--color-indigo-pale-a28`. What is needed here is not pressed but **selected**,
+ * and in a grid where you pick one of four a pale border weakens "which one is the
+ * current value". No new value is minted; the present ink stays as it is — when
+ * the value layer gains a «selected» axis, this is what gets deleted.
  */
 const PICKER_TILE_INK = (active: boolean) =>
   active
     ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
     : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]';
 
-/** 격자 칸을 채우는 자리잡기 + 포커스 링 — 값 층이 안 내는 층. */
+/** Grid-cell placement plus focus ring — the layer the value layer does not supply. */
 const PICKER_TILE_FRAME =
   'w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 /*
- * **`size: 'md'` 인 이유 — 실측이 잡았다.**
+ * **Why `size: 'md'` — a measurement caught it.**
  *
- * 처음엔 `sm` 을 골랐다. 종전 인셋(`p-1.5`/`p-2`)에 가장 가까웠기 때문이다.
- * 그런데 빌드를 재 보니 타일의 계산된 `font-size` 가 12.5 → **9.5px** 로
- * 내려가 있었다 — `tile/sm` 이 `text-caption` 을 싣는다.
+ * `sm` was chosen at first, as the closest match to the previous inset
+ * (`p-1.5`/`p-2`). But measuring the build showed the tile's computed `font-size`
+ * had dropped from 12.5 to **9.5px** — `tile/sm` carries `text-caption`.
  *
- * 화면에 보이는 글자는 안 바뀐다(라벨 `<span>` 이 자기 `text-label` 을 갖는다).
- * 그래도 되돌린 이유는 **이 파일이 루트 시트**라서다:
- * `settings-sheet-type-dialect.contract.test.ts` 가 9.5px 을 여기서 금지하는데,
- * 그 게이트는 소스의 리터럴 `text-caption` 만 본다. 값 층을 통해 들여오면
- * **게이트를 통과하면서 규격을 어긴다.** 그건 준수가 아니라 우회다.
+ * The text on screen does not change (the label `<span>` has its own `text-label`).
+ * It was reverted anyway because **this file is the root sheet**:
+ * `settings-sheet-type-dialect.contract.test.ts` forbids 9.5px here, and that gate
+ * only sees a literal `text-caption` in the source. Bringing it in through the
+ * value layer would **break the specification while passing the gate**. That is
+ * evasion, not compliance.
  */
 
 /**
- * 개인화 피커 (Phase 5 #20/#21, `docs/plans/DESIGN-OVERHAUL-2026-07-25.md`) — 설정
- * 시트 [화면] 그룹의 캔버스 배경(3택)·노드 아이콘(2택) 선택 행.
+ * Personalisation pickers (Phase 5 #20/#21,
+ * `docs/plans/DESIGN-OVERHAUL-2026-07-25.md`) — the canvas background (3 options)
+ * and node icon (2 options) rows in the settings sheet's [screen] group.
  *
- * 미리보기는 스크린샷이 아니라 실시간 미니 스와치다: 배경은 실제 `--canvas-bg-*`/
- * grid 토큰으로 그린 작은 SVG, 아이콘 세트는 실제 `TopologyV2KindGlyph` 를
- * 세트별로 렌더한 미니 글리프 행. 현재 선택은 인디고 링. 선택하면 앱 전역
- * 스토어에 쓰고 지도 캔버스·모든 DOM 글리프가 함께 즉시 스왑된다.
+ * The previews are live mini swatches, not screenshots: the background is a small
+ * SVG drawn with the real `--canvas-bg-*` and grid tokens, and the icon set is a
+ * mini glyph row rendering the real `TopologyV2KindGlyph` per set. The current
+ * choice carries an indigo ring. Choosing writes to the app-wide store and the map
+ * canvas and every DOM glyph swap immediately with it.
  */
 
 const PREVIEW_KINDS = ['project', 'domain', 'capability', 'element'] as const;
 
 /**
- * 배경 미리보기 — 실제 배경 잉크 토큰으로 그린 정적 미니어처.
+ * Background preview — a static miniature drawn with the real background ink tokens.
  *
- * **움직이지 않는다.** 셋은 움직이는 배경이지만 스와치는 정지 그림이다:
- * 설정 시트에 네 개의 파티클 루프가 동시에 돌면 고르려는 사람이 아니라
- * 스와치가 주목을 가져간다. 미리보기는 "어떤 결인지"만 말하고, 움직임은
- * 고른 다음 지도에서 본다.
+ * **It does not move.** All three are moving backgrounds, but the swatch is a still
+ * image: four particle loops running at once in the settings sheet means the
+ * swatches, not the person choosing, take the attention. The preview says only
+ * "what texture is this", and the movement is seen on the map after choosing.
  */
 function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
   const ink = 'rgba(var(--canvas-bg-particle-rgb), 0.5)';
   const inkFaint = 'rgba(var(--canvas-bg-particle-rgb), 0.24)';
   return (
     /*
-     * viewBox 가 **카드 실제 비율**(240×56)이다. 작은 뷰박스를 늘리면 무늬가 통째로
-     * 확대돼 텍스처가 아니라 조각으로 읽힌다(실측: 48×30 을 256px 폭에 채우면 5.3배).
-     * 밀도는 보이는 크기에 맞춰 여기서 직접 정한다.
+     * The viewBox is **the card's real ratio** (240×56). Stretching a small viewBox
+     * magnifies the pattern wholesale so it reads as fragments rather than texture
+     * (measured: filling 256px of width from 48×30 is a 5.3× blow-up). Density is
+     * set directly here to match the visible size.
      */
     <svg
       viewBox="0 0 240 56"
@@ -106,7 +111,7 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
         </g>
       ) : variant === 'web' ? (
         <g>
-          {/* `fill="none"` 없이는 열린 폴리라인이 기본 검정으로 **채워져** 삼각형이 된다. */}
+          {/* Without `fill="none"` an open polyline is **filled** with the default black and becomes a triangle. */}
           <g stroke={inkFaint} strokeWidth="0.8" fill="none">
             <path d="M18 16 L52 34 L88 12 L124 30 L160 14 L196 32 L228 18" />
             <path d="M52 34 L60 50 M124 30 L136 48 M196 32 L204 47" />
@@ -122,8 +127,9 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
           </g>
         </g>
       ) : (
-        /* 깊이 도트 — 같은 점을 세 층으로. 층마다 크기·밝기가 달라 정지 화면에서도
-           깊이가 읽히고, 지도를 움직이면 층이 서로 어긋난다. */
+        /* Depth dots — the same point in three layers. Size and brightness differ per
+           layer so depth reads even in a still frame, and the layers offset against
+           each other when the map moves. */
         <g fill={ink}>
           {[
             { r: 0.9, o: 0.5, step: 33, offset: 8 },
@@ -153,10 +159,11 @@ export function CanvasBackgroundPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useCanvasBackground();
   /*
-   * 그릇이 프리미티브의 두 캐노니컬(우물·칩 줄)로 수렴하지 않는다 — 미리보기
-   * 스와치를 인 격자 타일이고, 활성 잉크가 부모/자식으로 갈라져 있어(아래
-   * 주석 게이트) `shape:'tile'` 을 유지해야 한다. 그래서 그릇은 자리에 남기고
-   * **행동만** 훅으로 받는다(2026-08-15 (8)).
+   * The container does not converge onto either of the primitive's two canonical
+   * shapes (well, chip row) — it is a grid tile holding a preview swatch, and the
+   * active ink is split across parent and child (see the gate comment below), so
+   * `shape:'tile'` has to stay. So the container stays where it is and **only the
+   * behaviour** comes from the hook (2026-08-15 (8)).
    */
   const group = useRovingRadioGroup({
     value,
@@ -165,9 +172,9 @@ export function CanvasBackgroundPicker() {
   });
   return (
     /*
-     * 자기 여백을 갖지 않는다 — 이 피커는 LNB 의 「지도 배경」 칸을 통째로 쓰므로
-     * 여백은 칸이 소유한다. 둘 다 여백을 가지면 절마다 왼쪽 시작선이 달라진다
-     * (실측: 다른 절 20px, 여기만 32px).
+     * It has no margin of its own — this picker fills the LNB's 「지도 배경」 pane
+     * entirely, so the pane owns the margin. If both had one, the left starting line
+     * would differ per section (measured: 20px in other sections, 32px only here).
      */
     <div data-testid="app-settings-canvas-background">
       <p className="text-body text-[color:var(--color-text-secondary)]">{t('canvasBgLabel')}</p>
@@ -193,11 +200,12 @@ export function CanvasBackgroundPicker() {
               <span
                 className={cn(
                   'text-label',
-                  /* 활성 타일은 부모가 line-a13 틴트를 진다 — 그 합성 위 표식
-                     인디고는 4.12:1 로 AA 미달(열린 표면 계기 실측). 틴트를
-                     지는 잉크는 soft 다. 잉크·틴트가 부모/자식으로 갈라져
-                     같은-태그 센서스가 못 보던 자리라 여기 주석이 게이트다 —
-                     런타임 판정은 a11y-open-surfaces 가 맡는다. */
+                  /* The active tile's parent carries a line-a13 tint, and marker
+                     indigo over that composite is 4.12:1 — below AA (measured with
+                     the open-surface instrument). The ink that carries the tint is
+                     soft. Ink and tint are split across parent and child, which the
+                     same-tag inventory could not see, so this comment is the gate —
+                     the runtime decision belongs to a11y-open-surfaces. */
                   active
                     ? 'text-[color:var(--color-indigo-text-soft)]'
                     : 'text-[color:var(--color-text-tertiary)]',
@@ -216,7 +224,7 @@ export function CanvasBackgroundPicker() {
 export function GlyphSetPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useGlyphSet();
-  /* 위와 같은 이유로 그릇은 자리에, 행동은 훅에. */
+  /* Container in place, behaviour in the hook, for the same reason as above. */
   const group = useRovingRadioGroup({ value, values: GLYPH_SETS, onChange: writeGlyphSet });
   return (
     <div className="px-3 py-2.5" data-testid="app-settings-glyph-set">
@@ -247,11 +255,12 @@ export function GlyphSetPicker() {
               <span
                 className={cn(
                   'text-label',
-                  /* 활성 타일은 부모가 line-a13 틴트를 진다 — 그 합성 위 표식
-                     인디고는 4.12:1 로 AA 미달(열린 표면 계기 실측). 틴트를
-                     지는 잉크는 soft 다. 잉크·틴트가 부모/자식으로 갈라져
-                     같은-태그 센서스가 못 보던 자리라 여기 주석이 게이트다 —
-                     런타임 판정은 a11y-open-surfaces 가 맡는다. */
+                  /* The active tile's parent carries a line-a13 tint, and marker
+                     indigo over that composite is 4.12:1 — below AA (measured with
+                     the open-surface instrument). The ink that carries the tint is
+                     soft. Ink and tint are split across parent and child, which the
+                     same-tag inventory could not see, so this comment is the gate —
+                     the runtime decision belongs to a11y-open-surfaces. */
                   active
                     ? 'text-[color:var(--color-indigo-text-soft)]'
                     : 'text-[color:var(--color-text-tertiary)]',
@@ -268,11 +277,12 @@ export function GlyphSetPicker() {
 }
 
 /**
- * 악센트 스와치 — 실제 토큰으로 그린 정지 미리보기.
+ * Accent swatch — a still preview drawn with the real tokens.
  *
- * `data-accent` 를 **스와치 자신에게** 걸어서, 인디고 타일은 인디고 값으로
- * 그려진다(선택하지 않아도 진짜 색이 보인다). 앱 전역 속성과 같은 이름이라
- * CSS 블록 하나가 두 자리를 다 먹인다 — 미리보기용 색을 따로 적지 않는다.
+ * `data-accent` is set **on the swatch itself**, so the indigo tile is drawn with
+ * indigo values (the real colour is visible without selecting it). The name matches
+ * the app-wide attribute, so one CSS block feeds both places — no separate
+ * preview-only colours are written.
  */
 function AccentSwatch({ variant }: { variant: Accent }) {
   return (
@@ -289,23 +299,26 @@ function AccentSwatch({ variant }: { variant: Accent }) {
 }
 
 /**
- * 악센트 피커 (2026-08-18) — 앱의 유일한 채색을 잉걸/인디고 중에서 고른다.
+ * Accent picker (2026-08-18) — choose the app's only colour between ember and
+ * indigo.
  *
- * 값과 «이 설정이 못 바꾸는 것»(구운 아이콘)의 설명은
- * `src/shared/lib/appearance-preferences.ts` 의 `Accent` 주석에 있다. 여기서는
- * 캡션 한 줄로 그 한계를 화면에도 적는다 — 안 적으면 Dock 아이콘이 안 바뀌는
- * 것을 사용자가 결함으로 읽는다.
+ * The values, and the explanation of **what this setting cannot change** (the baked
+ * icon), live in the `Accent` comment in
+ * `src/shared/lib/appearance-preferences.ts`. Here a one-line caption puts that
+ * limit on screen too — without it, a Dock icon that does not change reads as a
+ * defect.
  */
 /**
- * 배치 기준 피커 (2026-08-18) — 3D 돔의 **방위**를 무엇이 정하나.
+ * Arrangement picker (2026-08-18) — what decides the 3D dome's **bearings**.
  *
- * 이 피커의 문구가 「스타일」이 아니라 **질문 둘**인 것이 설계다. 배치를
- * 스타일로 늘어놓으면 그 순간 N개의 그저 그런 뷰가 되고, 이 저장소에는 이미
- * 「모드 증식」을 반려한 선례가 있다. 각 항목은 자기가 답하는 질문을 달고 있고,
- * 새 항목은 새 질문을 대야 들어온다.
+ * That this picker's copy is **two questions** rather than 「스타일」 is the design.
+ * Listing arrangements as styles turns them into N mediocre views on the spot, and
+ * this repository already has a precedent for rejecting «mode proliferation». Each
+ * option carries the question it answers, and a new option has to bring a new
+ * question to get in.
  *
- * 기하·결정론·기각한 계열들: `topology-map-v2/model/dome-view.ts` 의
- * `DomeArrangement` 독블록.
+ * Geometry, determinism and the rejected families: the `DomeArrangement` doc-block
+ * in `topology-map-v2/model/dome-view.ts`.
  */
 export function MapArrangementPicker() {
   const t = useTranslations('nav.settingsMenu');
@@ -350,12 +363,12 @@ export function MapArrangementPicker() {
               >
                 {t(`arrangement.${arrangement}`)}
               </span>
-              {/* 항목마다 자기가 답하는 질문을 단다 — 이 한 줄이 「스타일 메뉴」와
-                  「질문 두 개」를 가르는 것이다.
-                  `text-label`(11px)인 이유: 설정 시트의 방언은 «누르는 글자 =
-                  text-body · 설명 = text-label» 이고 `text-caption`(9.5px)은
-                  대문자 아이브로우 한 자리에만 허용된다
-                  (`settings-sheet-type-dialect` 계약). */}
+              {/* Each option carries the question it answers — this single line is
+                  what separates «a style menu» from «two questions».
+                  Why `text-label` (11px): the settings sheet's dialect is «pressable
+                  text = text-body · description = text-label», and `text-caption`
+                  (9.5px) is allowed only in the one uppercase-eyebrow position
+                  (`settings-sheet-type-dialect` contract). */}
               <span className="break-keep text-label text-[color:var(--color-text-quaternary)]">
                 {t(`arrangementHint.${arrangement}`)}
               </span>
@@ -370,7 +383,7 @@ export function MapArrangementPicker() {
 export function AccentPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useAccent();
-  /* 위 둘과 같은 이유로 그릇은 자리에, 행동은 훅에. */
+  /* Container in place, behaviour in the hook, for the same reason as the two above. */
   const group = useRovingRadioGroup({ value, values: ACCENTS, onChange: writeAccent });
   return (
     <div className="px-3 py-2.5" data-testid="app-settings-accent">
@@ -397,7 +410,7 @@ export function AccentPicker() {
               <span
                 className={cn(
                   'text-label',
-                  /* 위 두 피커와 같은 이유 — 활성 타일의 틴트 위에서는 soft 다. */
+                  /* Same reason as the two pickers above — soft over the active tile's tint. */
                   active
                     ? 'text-[color:var(--color-indigo-text-soft)]'
                     : 'text-[color:var(--color-text-tertiary)]',

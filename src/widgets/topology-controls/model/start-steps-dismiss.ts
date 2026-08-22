@@ -1,12 +1,13 @@
 /**
- * 첫 걸음 카드를 **거둔 상태** — 세션 단위.
+ * Whether the first-steps card has been **dismissed** — per session.
  *
- * `localStorage` 를 안 쓰는 이유는 옆 카드(`first-run-starter`)와 같다:
- * 「나중에 할게요」는 지금 안 보겠다는 뜻이지 **다시는 안 보겠다**는 뜻이 아니다.
- * 앱을 새로 열면 다시 첫 걸음을 안내하는 편이 맞다 — 그때도 마지막 걸음을
- * 지나면 다시 거둬진다.
+ * `localStorage` is avoided for the same reason as the neighbouring card
+ * (`first-run-starter`): 「나중에 할게요」 (I'll do it later) means "not now", not
+ * **never again**. Reopening the app should guide the first steps again — and it is
+ * dismissed again once the last step is passed.
  *
- * 읽고 쓰는 함수는 그 카드가 이미 가진 것을 그대로 쓴다(키만 다르다) — 같은
- * 정책을 두 번 구현하면 한쪽만 고쳐지는 날이 온다.
+ * The read and write functions are exactly the ones that card already has (only the
+ * key differs) — implementing the same policy twice guarantees a day when only one
+ * of them gets fixed.
  */
 export const VAULT_START_STEPS_DISMISSED_KEY = 'demo:vault-start-steps-dismissed:v1';

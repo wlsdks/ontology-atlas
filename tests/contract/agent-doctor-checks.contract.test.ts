@@ -9,20 +9,22 @@ import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
 
 /**
- * 연동 점검 — **Rust 가 돌려주는 검사와 화면이 아는 문구가 같아야 한다.**
+ * Connection doctor — **the checks Rust returns and the copy the screen knows
+ * must match.**
  *
- * 이 자리의 실패 모양은 조용하다. Rust 에 검사를 하나 더하고 문구를 안 넣으면
- * 화면에는 **빈 줄 하나**가 생기고, 아무 에러도 안 난다. 반대로 검사를 지우고
- * 문구를 남기면 죽은 문구가 번역까지 되어 남는다. 둘 다 다음 사람이 못 본다.
+ * Failure here is silent. Add a check in Rust without copy and the screen gains
+ * **one blank row** with no error. Delete a check but keep the copy and dead
+ * strings survive, translated. Neither is visible to the next person.
  *
- * 그리고 **고칠 수 있다고 말해 놓고 누르면 아무 일도 안 나는 것**이 이 기능에서
- * 가장 나쁜 결함이다. 화면은 사실을 말했다고 믿게 되고, 사용자는 두 번 속는다.
- * 그래서 `REPAIRABLE_IDS` 가 `CHECK_IDS` 의 부분집합인지도 여기서 본다.
+ * And the worst defect in this feature is **claiming something is repairable and
+ * then doing nothing when pressed**: the screen is believed to have stated a
+ * fact, and the user is misled twice. So this also checks that `REPAIRABLE_IDS`
+ * is a subset of `CHECK_IDS`.
  */
 
 const DOCTOR_RS = readFileSync(join(process.cwd(), 'src-tauri', 'src', 'acp_doctor.rs'), 'utf8');
 
-/** `pub(crate) const <NAME>: &[&str] = &[ "a", "b" ];` 에서 문자열만 뽑는다. */
+/** Pulls just the strings out of `pub(crate) const <NAME>: &[&str] = &[ "a", "b" ];`. */
 function constList(name: string): string[] {
   const block = new RegExp(`const ${name}: &\\[&str\\] = &\\[([^\\]]*)\\]`).exec(DOCTOR_RS);
   if (!block) throw new Error(`${name} 를 acp_doctor.rs 에서 못 찾았다`);
@@ -32,7 +34,7 @@ function constList(name: string): string[] {
 const CHECK_IDS = constList('CHECK_IDS');
 const REPAIRABLE_IDS = constList('REPAIRABLE_IDS');
 
-/** Rust `SESSION_MODE_GATE` 의 실행기 id — `&[("codex-acp", "read-only")]` 꼴. */
+/** Launcher ids from Rust's `SESSION_MODE_GATE`, shaped `&[("codex-acp", "read-only")]`. */
 const RUST_SESSION_MODE_GATE = [
   ...(/const SESSION_MODE_GATE: &\[\(&str, &str\)\] = &\[([^\]]*)\]/
     .exec(DOCTOR_RS)?.[1] ?? '')
@@ -43,7 +45,7 @@ const locales = { ko, en } as const;
 
 describe('연동 점검 — 검사와 문구', () => {
   it('놀고 있지 않다 — 검사 목록을 실제로 읽었다', () => {
-    // 정규식이 빗나가면 아래 검사들이 빈 배열로 전부 통과한다.
+    // If the regex misses, every check below passes on an empty array.
     expect(CHECK_IDS.length, 'CHECK_IDS 를 하나도 못 읽었다').toBeGreaterThanOrEqual(5);
     expect(REPAIRABLE_IDS.length).toBeGreaterThanOrEqual(1);
     expect(CHECK_IDS).toContain('login');
@@ -56,11 +58,11 @@ describe('연동 점검 — 검사와 문구', () => {
   });
 
   /**
-   * **관문 표가 둘이고 갈라지면 안 된다.**
+   * **There are two gate tables and they must not diverge.**
    *
-   * 세션을 여는 것은 화면(`GATED_SESSION_MODE`)이고 진단하는 것은 Rust 다.
-   * 어긋나면 닥터가 「관문 없음」이라고 말하는데 화면은 대화를 열어 주거나,
-   * 그 반대가 된다. 둘 다 사용자가 알 수 없는 거짓말이다.
+   * The screen opens the session (`GATED_SESSION_MODE`) while Rust diagnoses it. If
+   * they disagree, the doctor reports "no gate" while the screen opens a
+   * conversation, or the reverse. Both are lies the user cannot detect.
    */
   it('세션 모드 관문 표가 화면과 Rust 에서 같다', () => {
     expect(RUST_SESSION_MODE_GATE.length, 'Rust 표를 하나도 못 읽었다').toBeGreaterThan(0);
@@ -85,19 +87,19 @@ describe('연동 점검 — 검사와 문구', () => {
 
     it(`${tag}: 상태 셋을 모두 말할 수 있다`, () => {
       const state = doctor.state as Record<string, string>;
-      // `unknown` 이 빠지면 화면이 「모른다」를 그릴 말이 없어서 초록이나
-      // 빨강 중 하나로 뭉개게 된다. 그게 이 저장소가 실행기 배지에서 이미
-      // 한 번 고친 결함이다.
+      // Without `unknown` the screen has no wording for "we don't know" and collapses
+      // it into either green or red. That is the defect this repository already fixed
+      // once on the launcher badge.
       for (const key of ['ok', 'problem', 'unknown']) {
         expect(state[key], `state.${key} 가 없다`).toBeTruthy();
       }
     });
 
     /**
-     * **앱이 못 고치는 문제에는 사람이 할 일이 적혀 있어야 한다.**
+     * **A problem the app cannot fix must state what the person should do.**
      *
-     * 이 저장소가 강등 카드에 대해 정해 둔 것과 같은 규율이다 — 왜 안 되는지만
-     * 말하고 어디로 가면 되는지를 안 말하면 그건 막다른 길이다.
+     * The same discipline this repository set for degradation cards: saying only why
+     * something does not work, without saying where to go, is a dead end.
      */
     it(`${tag}: 앱이 못 고치는 검사에는 다음 할 일이 있다`, () => {
       const next = doctor.next as Record<string, string>;

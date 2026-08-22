@@ -7,7 +7,7 @@ import {
   type AcpTransport,
 } from './acp-client';
 
-/** 줄을 오갈 수 있는 가짜 통로. 진짜 프로세스 없이 프로토콜을 잰다. */
+/** A fake channel that can carry lines. Measures the protocol with no real process. */
 function fakeTransport() {
   const sent: Array<Record<string, unknown>> = [];
   let listener: ((line: string) => void) | null = null;
@@ -25,14 +25,14 @@ function fakeTransport() {
   return {
     transport,
     sent,
-    /** 에이전트가 우리에게 보낸 줄. */
+    /** A line the agent sent to us. */
     emit(payload: unknown) {
       listener?.(JSON.stringify(payload));
     },
     emitRaw(line: string) {
       listener?.(line);
     },
-    /** 우리가 보낸 마지막 요청에 답한다. */
+    /** Answers the last request we sent. */
     reply(result: unknown) {
       const last = [...sent].reverse().find((m) => typeof m.id === 'number');
       listener?.(JSON.stringify({ jsonrpc: '2.0', id: last?.id, result }));
@@ -40,7 +40,7 @@ function fakeTransport() {
   };
 }
 
-/** WebView가 내려가는 경합처럼 모든 IPC 전송이 거절되는 통로. */
+/** A channel where every IPC send is rejected, as in the race while the WebView goes down. */
 function rejectingTransport() {
   let listener: ((line: string) => void) | null = null;
   const transport: AcpTransport = {
@@ -60,7 +60,7 @@ function rejectingTransport() {
   };
 }
 
-/** 실측(2026-08-16)에서 실제로 받은 권한 요청의 모양. */
+/** The shape of a permission request as actually received in measurement (2026-08-16). */
 function permissionRequest(filePath: string, id = 7) {
   return {
     jsonrpc: '2.0',
@@ -108,7 +108,7 @@ const alwaysAsk = async () => 'ask' as const;
 
 describe('ACP 클라이언트 — 우리가 선언한 것만 답한다', () => {
   it('선언하지 않은 능력이 오면 침묵하지 않고 「없다」고 답한다', async () => {
-    // 침묵하면 상대가 영원히 기다린다. 그 증상은 사용자에게 「멈췄다」로만 보인다.
+    // Staying silent leaves the other side waiting forever, and to the user that looks only like "it froze".
     const t = fakeTransport();
     const notices: string[] = [];
     createAcpClient(t.transport, {
@@ -151,9 +151,9 @@ describe('ACP 클라이언트 — 권한 정책', () => {
 
   it('판정이 실패해도 **답은 나간다** — 상대를 영원히 기다리게 하지 않는다', async () => {
     /*
-     * 2026-08-16 검수에서 적발. 판정 IPC 가 거절되면(창이 내려가는 중 · 브리지
-     * 오류) 이 요청에 아무 답도 안 나갔고, 어댑터는 영원히 멈춰 있었다.
-     * 카드도 오류도 없이 대화가 죽는 모양이라 원인을 알 길도 없었다.
+     * Caught in the 2026-08-16 review. When the verdict IPC was rejected (the window closing, a bridge
+     * error) no answer went out for this request and the adapter stalled forever. The conversation died
+     * with neither a card nor an error, leaving no way to learn the cause.
      */
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
@@ -169,7 +169,7 @@ describe('ACP 클라이언트 — 권한 정책', () => {
     t.emit(permissionRequest('/vault/notes.md'));
     await vi.waitFor(() => expect(outcomeOf(t.sent, 7)).toBeTruthy());
 
-    // 못 정하면 묻는 쪽으로 떨어지고, 사용자가 답을 안 했으므로 거절이다.
+    // Undecidable falls through to asking, and since the user gave no answer it is a rejection.
     expect(askUser).toHaveBeenCalledTimes(1);
     expect(outcomeOf(t.sent, 7)).toEqual({ outcome: 'selected', optionId: 'reject' });
     expect(notices.some((m) => m.startsWith('verdict-failed'))).toBe(true);
@@ -217,8 +217,8 @@ describe('ACP 클라이언트 — 권한 정책', () => {
 
   it('앱이 `allow_always` 를 대신 고르지 않는다', async () => {
     /*
-     * 실측: 그 선택지의 `_meta.permission` 에 「이 디렉터리 전체를 세션 내내
-     * 허용」하는 규칙이 딸려 온다. 경계를 넓히는 결정은 사용자만 한다.
+     * Measured: that option's `_meta.permission` carries a rule granting "this entire directory for the
+     * whole session". Widening the boundary is the user's decision alone.
      */
     const t = fakeTransport();
     createAcpClient(t.transport, { verdict: insideVault, askUser: async () => null });
@@ -229,7 +229,7 @@ describe('ACP 클라이언트 — 권한 정책', () => {
   });
 
   it('화면이 그 요청에 없는 선택지를 돌려주면 거절로 떨어진다', async () => {
-    // 낡은 요청의 값을 돌려주는 화면 버그가 엉뚱한 것을 허용하게 두지 않는다.
+    // A screen bug returning a stale request's value must not be allowed to permit the wrong thing.
     const t = fakeTransport();
     createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => 'not-an-option' });
 
@@ -241,7 +241,7 @@ describe('ACP 클라이언트 — 권한 정책', () => {
   it('경로를 모르면 묻는다 — 판단할 수 없는 것을 통과시키지 않는다', async () => {
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
-    // 볼트 안이라고 답하는 판정을 줘도, 경로가 없으면 판정 자체가 무의미하다.
+    // Even given a verdict that answers "inside the vault", the verdict itself is meaningless with no path.
     createAcpClient(t.transport, {
       verdict: async (filePath) => (filePath ? 'allow-inside-vault' : 'ask'),
       askUser,
@@ -250,7 +250,7 @@ describe('ACP 클라이언트 — 권한 정책', () => {
     const request = permissionRequest('/vault/notes.md', 11) as {
       params: { toolCall: { rawInput: Record<string, unknown> } };
     };
-    request.params.toolCall.rawInput = {}; // 경로 없음
+    request.params.toolCall.rawInput = {}; // no path
     t.emit(request);
 
     await vi.waitFor(() => expect(askUser).toHaveBeenCalled());
@@ -396,18 +396,18 @@ describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => 
 
   it('악수에 답이 없으면 시간이 지나 실패한다 — 「켜는 중」에 붙박이지 않는다', async () => {
     /*
-     * 2026-08-16 검수에서 적발. 어댑터가 뜨긴 했는데 답을 안 하는 상태(잘못된
-     * 바이너리 · npx 가 무언가를 기다리는 중)에서 상태가 「켜는 중」에 붙박였고,
-     * 그 상태에서는 「새 대화」도 잠겨 있어 패널을 닫는 것 말고 길이 없었다.
+     * Caught in the 2026-08-16 review. With the adapter up but not answering (a wrong binary, or npx
+     * waiting on something), the status stuck at "starting", and in that state "new conversation" was
+     * locked too, leaving no way out but closing the panel.
      */
     vi.useFakeTimers();
     try {
       const t = fakeTransport();
       const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
-      // 타이머를 움직이기 전에 거절 관찰자를 붙인다. 늦게 붙이면 동작은 맞아도
-      // Vitest가 그 사이의 거절을 unhandled rejection으로 판정한다.
+      // Attach the rejection observer before advancing the timers. Attached late, the behaviour is
+      // still right but Vitest judges the rejection in between as unhandled.
       const timedOut = expect(client.initialize()).rejects.toThrow(/acp-timeout/);
-      // 답을 한 줄도 안 준다.
+      // Not one line of answer is given.
       await vi.advanceTimersByTimeAsync(60_000);
       await timedOut;
     } finally {
@@ -443,8 +443,8 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
     const parsed = toPermissionRequest({
       options: [
         { kind: 'allow_once', optionId: 'a', name: 'Allow' },
-        { kind: 'reject_once' }, // optionId 없음 — 못 쓴다
-        { optionId: 'x' }, // kind 없음 — 못 쓴다
+        { kind: 'reject_once' }, // no optionId — unusable
+        { optionId: 'x' }, // no kind — unusable
       ],
       toolCall: {
         toolCallId: 'tool-write-notes',
@@ -465,7 +465,7 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
     expect(toPermissionRequest({})).toEqual({
       title: null,
       toolCallId: null,
-      // 도구 이름도 모르면 null 이다 — MCP 도구 자동 허용 판정이 이 값을 본다.
+      // Null when even the tool name is unknown — the MCP auto-allow verdict reads this value.
       toolName: null,
       toolKind: null,
       filePath: null,

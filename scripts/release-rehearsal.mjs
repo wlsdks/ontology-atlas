@@ -1,45 +1,42 @@
 #!/usr/bin/env node
 /**
- * 태그를 찍기 **전에** 릴리스 러너의 단계를 이 기계에서 순서대로 밟아 본다.
+ * Walks the release runner's steps on this machine, in order, **before** a tag is
+ * pushed.
  *
- * ## 왜 이 스크립트가 있나
+ * **Why this exists.** `v1.0.0-rc.2` was tagged four times and stopped in the build
+ * all four times. Each fix moved the failure to **the very next step**:
  *
- * `v1.0.0-rc.2` 는 네 번 찍혔고 네 번 다 빌드에서 멈췄다. 매번 하나 고치면
- * **바로 다음 칸**에서 멈췄다:
+ *   1st  Desktop readiness            gate demanded yesterday's doc sentence (#743)
+ *   2nd  Native vault bridge tests    externalBin sidecar built too late      (#744)
+ *   3rd  Build bundled MCP sidecar    bun, the build tool, absent on runner   (#745)
+ *   4th  Build bundled MCP sidecar    mcp/ dependencies absent on runner      (#746)
  *
- *   1차  Desktop readiness            게이트가 어제의 문서 문장을 요구  (#743)
- *   2차  Native vault bridge tests    externalBin 사이드카를 나중에 만듦 (#744)
- *   3차  Build bundled MCP sidecar    굽는 도구 bun 이 러너에 없음       (#745)
- *   4차  Build bundled MCP sidecar    mcp/ 의존이 러너에 없음            (#746)
+ * All four **passed locally**, because a person's machine already has everything.
+ * And these steps are wired nowhere outside
+ * `.github/workflows/release-macos.yml` — neither `checks.yml` nor
+ * `deploy-pages.yml` runs `desktop:check` / `desktop:smoke` / `mcp:build-binary` /
+ * `test:desktop:bridge`. So these steps **are first executed only by pushing a
+ * tag**, and you learn one failure per round trip, at roughly 20 minutes of human
+ * time each.
  *
- * 넷 다 **로컬에서는 통과했다.** 사람 머신에는 이미 다 있기 때문이다. 그리고
- * 이 단계들은 `.github/workflows/release-macos.yml` 밖 어디에도 걸려 있지
- * 않다 — `checks.yml` 도 `deploy-pages.yml` 도 `desktop:check` /
- * `desktop:smoke` / `mcp:build-binary` / `test:desktop:bridge` 를 돌리지 않는다.
- * 그래서 이 칸들은 **태그를 찍어야만 처음 밟히고**, 한 번에 하나씩만 배우게
- * 된다. 왕복 한 번에 사람 시간이 20분씩 든다.
+ * This script moves that round trip to before the tag.
  *
- * 이 스크립트는 그 왕복을 태그 전으로 옮긴다.
+ * **Why it reads the workflow file.** Copying the step list in here means this file
+ * goes quietly stale when the workflow changes — a failure mode this repository has
+ * hit repeatedly (a gate verifying its own constants). So the list is not written
+ * down; it is **read straight from the workflow's `build-macos` job**, and a new
+ * step in the workflow is picked up by the next rehearsal automatically. Both the
+ * protected `admit-release` and `build-macos` are covered.
  *
- * ## 왜 워크플로 파일을 읽나
+ * **It says what it cannot do.** Signing and notarisation need Apple secrets; the
+ * release slot and draft verification need a real tag. Such steps are not skipped
+ * quietly — they are **listed as `SKIP` with the reason**. If green came to mean
+ * "everything was checked", this script would be reassurance rather than a gate.
  *
- * 단계 목록을 여기 베껴 두면 워크플로가 바뀔 때 이 파일이 조용히 낡는다 —
- * 그건 이 저장소가 이미 여러 번 당한 실패 모드다(게이트가 자기 상수를
- * 확인하는 것). 그래서 목록을 적지 않고 **워크플로의 `build-macos` 잡에서
- * 직접 읽는다.** 새 단계가 워크플로에 들어오면 다음 리허설에 저절로 따라온다.
- * 보호된 `admit-release` 와 `build-macos` 둘 다 대상이다.
- *
- * ## 못 하는 것을 스스로 말한다
- *
- * 서명·공증은 Apple 시크릿이 있어야 하고 릴리스 슬롯·초안 검증은 실제 태그가
- * 있어야 한다. 그런 단계는 조용히 건너뛰지 않고 **`SKIP` 으로 세워 두고 이유를
- * 적는다.** 초록이 "전부 확인했다" 는 뜻이 되면 이 스크립트도 게이트가 아니라
- * 위안이 된다.
- *
- *   node scripts/release-rehearsal.mjs            # 빌드까지 전부
- *   node scripts/release-rehearsal.mjs --fast     # 앱 컴파일/DMG 전 단계까지
- *   node scripts/release-rehearsal.mjs --list     # 무엇을 돌릴지만 보여준다
- *   node scripts/release-rehearsal.mjs --tag=vX.Y.Z # 기존 태그 admission도 함께
+ *   node scripts/release-rehearsal.mjs            # everything through the build
+ *   node scripts/release-rehearsal.mjs --fast     # stop before app compile / DMG
+ *   node scripts/release-rehearsal.mjs --list     # only show what would run
+ *   node scripts/release-rehearsal.mjs --tag=vX.Y.Z # also admit an existing tag
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -51,10 +48,10 @@ export const RELEASE_WORKFLOW_PATH = ".github/workflows/release-macos.yml";
 const FULL_SHA = /^[0-9a-f]{40}$/i;
 
 /**
- * 시크릿·실제 태그·GitHub 상태가 있어야만 성립하는 단계.
+ * Steps that only hold with secrets, a real tag, or GitHub state.
  *
- * 키는 워크플로의 `name:` 이다. 값은 **왜 여기서 못 도는지**다 — 사람이 "그럼
- * 어디서 확인하지" 를 바로 답할 수 있어야 한다.
+ * The key is the workflow's `name:`. The value is **why it cannot run here** — a
+ * person must be able to answer "then where do I check it" immediately.
  */
 export const REHEARSAL_SKIPS = {
   "Require protected main dispatch context":
@@ -80,10 +77,12 @@ export const REHEARSAL_SKIPS = {
 };
 
 /**
- * 러너의 명령을 그대로 못 쓰는 단계에 **대신 돌 것**을 준다.
+ * Gives **something to run instead** for steps whose runner command cannot be used
+ * verbatim.
  *
- * 건너뛰는 것과 대신 확인하는 것은 다르다. 태그 버전 정합은 태그 이름 없이도
- * 세 파일끼리 확인할 수 있고, 서명 경로의 빌드는 미서명 경로로 대부분 증명된다.
+ * Skipping and checking by proxy are different things. Tag/version consistency can
+ * be checked among the three files without a tag name, and the signed build path is
+ * mostly proven by the unsigned one.
  */
 export const REHEARSAL_SUBSTITUTES = {
   "Verify release tag version": {
@@ -96,49 +95,51 @@ export const REHEARSAL_SUBSTITUTES = {
   },
 };
 
-/** 앱 컴파일·DMG·설치 스모크는 오래 걸린다 — `--fast` 는 여기서 멈춘다. */
+/** App compile, DMG, and install smoke are slow — `--fast` stops here. */
 export const REHEARSAL_SLOW_STEPS = new Set([
   "Build signed and notarized release artifact",
 ]);
 
 /**
- * `build-macos` 잡의 `run:` 단계를 **파일에 적힌 순서 그대로** 뽑는다.
+ * Extracts the `build-macos` job's `run:` steps **in the order the file lists
+ * them**.
  *
- * YAML 파서를 새로 들이지 않는다 — 이 워크플로의 단계 모양은 고정돼 있고
- * (`- name:` 다음 `run:`), 의존 하나를 더 지는 것보다 이 파일이 스스로
- * 설명되는 편이 낫다. 뽑히는 단계 수는 계약 테스트가 지킨다.
+ * No YAML parser is added: this workflow's step shape is fixed (`- name:` followed
+ * by `run:`), and being self-explanatory beats carrying another dependency. The
+ * number of steps extracted is guarded by a contract test.
  */
 /**
- * 도구 확인에 두는 상한(ms).
+ * Timeout for a tool probe, in ms.
  *
- * ## 왜 상한이 필요했나 (2026-08-21)
+ * **Why a timeout was needed (2026-08-21).** `--list` shows what would run and what
+ * does not work on this machine (`docs/DEPLOYMENT.md`), so it really invokes four
+ * tools — that part is right. What was missing was **any bound**.
  *
- * `--list` 는 「무엇이 돌 것이고, 이 기계에서 무엇이 안 되나」를 보여 준다
- * (`docs/DEPLOYMENT.md`). 그래서 도구 넷을 실제로 불러 본다 — 그 자체는 옳다.
- * 문제는 **상한이 없었다**는 것이다.
+ * Measured: **0.18 s** on this machine, **9.75 s** on the CI runner. On the runner
+ * `cargo`/`rustc` start through rustup shims, so the first call is slow. Those
+ * 9.75 s exceeded vitest's default 5 s test timeout and **turned one contract red
+ * at random** (observed in `#1178`, 2026-08-21 → passed on re-run).
  *
- * 실측: 이 기계 **0.18초**, CI 러너 **9.75초**. 러너에서 `cargo`/`rustc` 는
- * rustup 심을 거쳐 뜨느라 첫 호출이 느리다. 그리고 그 9.75초가
- * vitest 의 기본 시험 상한(5초)을 넘겨, **계약 하나가 무작위로 빨개졌다**
- * (2026-08-21 `#1178` 에서 관측 → 재실행하니 통과).
+ * This repository's rule applies: **a gate bound to machine speed is not a gate**
+ * (`.claude/rules/architecture.md`). A slow tool is not the question this check
+ * answers, so when it cannot wait it **says it could not wait** and moves on.
  *
- * 이 저장소의 규율 그대로다: **기계 속도에 매인 게이트는 게이트가 아니다**
- * (`.claude/rules/architecture.md`). 도구가 느린 것은 이 검사가 답할 질문이
- * 아니므로, 못 기다린 것은 **못 기다렸다고** 말하고 넘어간다.
- *
- * 시험이 이 값을 낮춰 세 번째 상태를 실제로 만들 수 있어야 해서 env 로 연다 —
- * 만들 수 없는 상태는 검사할 수 없고, 검사 못 하는 분기는 조용히 썩는다.
+ * It is opened via env so a test can lower it and actually produce the third state
+ * — a state you cannot produce is a state you cannot check, and an uncheckable
+ * branch rots quietly.
  */
 export const PROBE_TIMEOUT_MS = Number(process.env.RELEASE_REHEARSAL_PROBE_TIMEOUT_MS) || 5_000;
 
 /**
- * 도구 하나를 불러 본다. **셋 중 하나**를 돌려준다 — `ok` · `missing` ·
- * `unknown`(상한에 걸림). 「모른다」를 「없다」로 접지 않는 것이 이 함수의 요점이다.
+ * Probes one tool. Returns **one of three** results — `ok`, `missing`, or
+ * `unknown` (hit the timeout). Not folding "unknown" into "missing" is the point of
+ * this function.
  *
- * ⚠️ `spawn` 의 타입을 **이 함수가 실제로 읽는 네 자리로만** 좁혀 둔다.
- * `typeof spawnSync` 로 두면 시험이 스텁을 넣을 때 `pid`·`output`·`stderr`
- * 처럼 **여기서 안 보는 필드까지** 채워야 하고, 그러면 스텁이 사실이 아닌 값을
- * 지어내게 된다. 이음매는 그것을 쓰는 쪽의 실제 요구만큼만 넓은 것이 맞다.
+ * ⚠️ `spawn`'s type is narrowed to **only the four fields this function actually
+ * reads**. With `typeof spawnSync` a test stub would have to fill in `pid`,
+ * `output`, `stderr` and other fields **nothing here looks at**, which makes the
+ * stub invent values that are not facts. A seam should be exactly as wide as its
+ * consumer really requires.
  *
  * @param {string} tool
  * @param {string[]} args
@@ -157,8 +158,8 @@ export function probeTool(tool, args, { spawn = spawnSync, timeout = PROBE_TIMEO
   if (probe.status === 0) {
     return { state: "ok", version: String(probe.stdout ?? "").trim().split("\n")[0] };
   }
-  // Node 는 상한에 걸리면 자식을 신호로 죽인다(`SIGTERM`). 실행 파일이 아예
-  // 없을 때는 `error.code === 'ENOENT'` 다 — 둘은 다른 사실이다.
+  // On timeout Node kills the child with a signal (`SIGTERM`). When the executable
+  // is absent entirely it is `error.code === 'ENOENT'` — two different facts.
   const timedOut = probe.signal != null || probe.error?.code === "ETIMEDOUT";
   return { state: timedOut ? "unknown" : "missing" };
 }
@@ -166,7 +167,7 @@ export function probeTool(tool, args, { spawn = spawnSync, timeout = PROBE_TIMEO
 export function parseReleaseJobSteps(workflow, jobName) {
   const jobStart = workflow.indexOf(`\n  ${jobName}:`);
   if (jobStart < 0) throw new Error(`release-macos.yml 에 ${jobName} 잡이 없다.`);
-  // 다음 잡(들여쓰기 2칸의 다른 키)까지가 이 잡의 범위다.
+  // This job extends up to the next job (another key at 2-space indent).
   const rest = workflow.slice(jobStart + 1);
   const nextJob = rest.slice(1).search(/\n {2}[a-z][a-z0-9-]*:\n/);
   const job = nextJob < 0 ? rest : rest.slice(0, nextJob + 1);
@@ -179,7 +180,7 @@ export function parseReleaseJobSteps(workflow, jobName) {
     const end = body.search(/^ {6}- name: /m);
     const block = end < 0 ? body : body.slice(0, end);
     const uses = block.match(/^ {8}uses: (.+)$/m)?.[1]?.trim() ?? null;
-    // `run: |` 블록도, 한 줄 `run:` 도 받는다.
+    // Accepts both a `run: |` block and a single-line `run:`.
     const runInline = block.match(/^ {8}run: (?!\|)(.+)$/m)?.[1]?.trim() ?? null;
     const runBlock = /^ {8}run: \|/m.test(block);
     steps.push({ name, uses, run: runInline, isRunBlock: runBlock });
@@ -195,14 +196,14 @@ export function parseBuildMacosSteps(workflow) {
   return parseReleaseJobSteps(workflow, "build-macos");
 }
 
-/** 워크플로의 `run:` 한 줄을 이 기계에서 돌 수 있는 argv 로 옮긴다. */
+/** Translates one workflow `run:` line into argv runnable on this machine. */
 export function localCommandFor(step, { arch = hostArch() } = {}) {
   const substitute = REHEARSAL_SUBSTITUTES[step.name];
   if (substitute) return substitute.argv;
   if (!step.run) return null;
-  // `${GITHUB_SHA}` 같은 러너 변수가 든 줄은 여기서 성립할 수 없다.
+  // A line containing runner variables such as `${GITHUB_SHA}` cannot hold here.
   if (/\$\{?GITHUB_/.test(step.run)) return null;
-  // `TAURI_ARCH` 는 매트릭스가 정하는 값이고, 이 기계에서는 호스트 아키텍처다.
+  // `TAURI_ARCH` is set by the matrix; on this machine it is the host architecture.
   const command = step.run
     .replace(/\$\{TAURI_ARCH\}/g, arch)
     .replace(/"/g, "")
@@ -216,7 +217,7 @@ export function hostArch() {
   return process.arch === "arm64" ? "aarch64" : "x64";
 }
 
-/** 현재 checkout의 commit을 축약하지 않은 SHA로만 돌려준다. */
+/** Returns the current checkout's commit as a full, unabbreviated SHA. */
 export function currentHeadSha(root = process.cwd()) {
   const result = spawnSync("git", ["rev-parse", "--verify", "HEAD^{commit}"], {
     cwd: root,
@@ -231,7 +232,7 @@ export function currentHeadSha(root = process.cwd()) {
   return sha;
 }
 
-/** 태그가 있을 때만 admit-release의 두 실제 검사를 로컬 명령으로 만든다. */
+/** Builds local commands for admit-release's two real checks, only when a tag is given. */
 export function admissionCheckCommands(tag, sha) {
   if (!tag) return [];
   if (!FULL_SHA.test(sha)) throw new Error("admission에는 전체 40자 commit SHA가 필요하다.");
@@ -254,7 +255,7 @@ export function admissionCheckCommands(tag, sha) {
   ];
 }
 
-/** 태그 이름 없이 확인할 수 있는 것: 세 버전이 서로 맞는가. */
+/** What can be checked without a tag name: whether the three versions agree. */
 export function checkVersionsAgree(root = process.cwd()) {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
   const tauri = JSON.parse(
@@ -280,13 +281,13 @@ function run(argv, { cwd, env }) {
 }
 
 /**
- * 업데이터 아카이브 재포장은 minisign 키 없이는 fail-closed 다 — 서명 없는
- * 갱신 패키지는 앱이 조용히 거부하므로 그게 옳다. 그런데 **그 키는 시크릿에만
- * 있다.** 그대로 두면 리허설은 CI 가 통과할 자리에서 멈춘다.
+ * Repacking the updater archive is fail-closed without a minisign key — correct,
+ * since the app silently refuses an unsigned update package. But **that key exists
+ * only in secrets**, so left alone the rehearsal stops where CI would pass.
  *
- * 그래서 리허설은 **버리는 키**를 하나 만들어 그 단계를 밟게 한다. 증명되는
- * 것은 "아카이브가 서명된 앱으로 다시 만들어지고 서명이 붙는가" 이지 "우리
- * 키로 서명됐는가" 가 아니다 — 후자는 실제 태그에서만 참이 된다.
+ * So the rehearsal mints a **throwaway key** to walk that step. What is proven is
+ * "the archive is rebuilt from the signed app and a signature is attached", not
+ * "it was signed with our key" — the latter is only true on a real tag.
  *
  * @param {string} root
  * @param {{
@@ -459,8 +460,9 @@ function main() {
     });
   }
 
-  // 러너에는 있고 여기에는 없을 수 있는(그 반대도) 도구. 3·4차 실패가 정확히
-  // 여기였다 — 순서를 다 맞춰도 부를 도구가 없으면 같은 자리에서 멈춘다.
+  // Tools that may exist on the runner but not here, or the reverse. The 3rd and
+  // 4th failures were exactly this — with the order fully correct, a missing tool
+  // still stops you in the same place.
   const tools = [
     ["pnpm", ["--version"]],
     ["bun", ["--version"]],
@@ -475,9 +477,9 @@ function main() {
     if (probe.state === "ok") {
       console.log(`${color(32, "  tool ok  ")} ${tool} — ${probe.version}`);
     } else if (probe.state === "unknown") {
-      // **모르는 것을 없다고 말하지 않는다.** 상한에 걸린 것은 「이 기계에 없다」가
-      // 아니라 「제때 답을 못 받았다」다. 둘을 같은 말로 쓰면 다음 사람이 멀쩡한
-      // 도구를 설치하러 간다.
+      // **Do not report unknown as missing.** Hitting the timeout means "no answer in
+      // time", not "absent on this machine". Calling both the same thing sends the next
+      // person off to install a tool that is already there.
       console.log(
         `${color(33, "  tool ?    ")} ${tool} — ${PROBE_TIMEOUT_MS}ms 안에 답이 없어 확인 못 했다(없다는 뜻이 아니다).`,
       );

@@ -15,7 +15,7 @@ import {
   resolveRouteText,
 } from "./desktop-smoke.mjs";
 
-/** 카탈로그에서 편 실제 기대 문구 — 픽스처도 게이트와 같은 출처를 쓴다. */
+/** The expected copy expanded from the catalogue — the fixture uses the same source as the gate. */
 const ROUTE_TEXT = resolveRouteText();
 
 function makeOutDir() {
@@ -82,8 +82,8 @@ test("desktop smoke inventory covers the current packaged workbench", () => {
   ]);
   assert.deepEqual(DESKTOP_SMOKE_DOCS, [
     "docs-vault/DESKTOP-MACOS.md",
-    // 볼트 재생성에도 살아남는 표본이어야 한다 — 개념 노드가 아니라
-    // 생성기가 항상 만드는 `vault-readme`.
+    // The sample must survive a vault rebuild — not a concept node but the
+    // `vault-readme` the generator always produces.
     "docs-vault/ontology/README.md",
   ]);
 });
@@ -110,15 +110,15 @@ test("desktop smoke titles follow current metadata and do not revive retired sur
 });
 
 /**
- * 이 테스트는 예전에 **상수가 자기 리터럴과 같은지**만 봤다. 그래서 #730 이
- * 다운로드 화면의 문장을 걷어냈을 때도 249개 테스트가 전부 초록이었고, 결함은
- * `pnpm build` 뒤에 `desktop:smoke` 를 실제로 돌리는 유일한 곳 — **태그를 찍은
- * 뒤의 릴리스 빌드** — 에서만 드러났다. 자기 자신을 확인하는 게이트는 게이트가
- * 아니다.
+ * This test used to check only **whether a constant equalled its own literal**. So
+ * when #730 removed the download screen's sentences all 249 tests stayed green, and
+ * the defect surfaced only where `desktop:smoke` actually runs after `pnpm build` —
+ * **the release build after the tag was cut**. A gate that verifies itself is not a
+ * gate.
  *
- * 이제 문장이 아니라 **키**를 못박고, 그 키가 살아 있는 카탈로그에서 실제로
- * 풀리는지 본다. 문구가 바뀌면 게이트가 같이 따라오고, 키가 사라지면 여기서
- * 즉시 빨개진다.
+ * It now pins **keys** rather than sentences and checks that they resolve against
+ * the live catalogue. Copy changes bring the gate with them, and a deleted key turns
+ * this red immediately.
  */
 test("desktop smoke download copy is read from the live message catalog", () => {
   assert.deepEqual(Object.keys(DESKTOP_SMOKE_ROUTE_TEXT_KEYS), ["/download"]);
@@ -132,12 +132,12 @@ test("desktop smoke download copy is read from the live message catalog", () => 
     for (const fragment of fragments) {
       assert.equal(typeof fragment, "string");
       assert.ok(fragment.length > 0, `${locale} download copy fragment is empty`);
-      // ICU 플레이스홀더가 든 문구는 렌더 결과가 원문과 달라 정적 HTML 에서 못 찾는다.
+      // Copy with an ICU placeholder renders differently from its source and cannot be found in the static HTML.
       assert.doesNotMatch(fragment, /[{}]/, `${locale} "${fragment}" carries an ICU placeholder`);
     }
   }
 
-  // 두 어권이 같은 문장을 내면 한쪽 카탈로그가 번역되지 않은 것이다.
+  // Two locales producing the same sentence means one catalogue was left untranslated.
   assert.notDeepEqual(resolved["en:/download"], resolved["ko:/download"]);
 });
 
@@ -150,10 +150,10 @@ test("desktop smoke copy contract refuses a message key the catalog dropped", ()
 
 test("desktop smoke copy contract refuses a message with an ICU placeholder", () => {
   assert.throws(
-    // 살아 있으면서 플레이스홀더를 가진 키여야 한다 — 사라진 키를 쓰면 이
-    // 프로브가 "ICU 거부" 대신 "키 없음" 으로 던져서, **검사하려던 것과 다른
-    // 것을 검사하게 된다**(2026-07-29: `macosPublishedBadge` 가 관문 재설계에서
-    // 사라지며 실제로 그렇게 됐다).
+    // The key must be live and carry a placeholder — using a deleted key makes this
+    // probe throw "missing key" instead of "ICU rejected", so **it tests something
+    // other than what it was written to test** (which happened on 2026-07-29 when
+    // `macosPublishedBadge` disappeared in the gateway redesign).
     () => resolveRouteText({ keysByRoute: { "/download": ["download.trustVerifyCommand"] } }),
     /ICU placeholder/,
   );
@@ -195,30 +195,31 @@ test("desktop smoke chunks prove current route meaning", () => {
 });
 
 /**
- * **마커는 제품보다 오래 살 수 없다** (2026-08-01 신설).
+ * **A marker cannot outlive the product** (added 2026-08-01).
  *
- * 위 표는 손으로 관리되는 문자열 목록이고, 그래서 이 파일 상단이 *"오늘 무엇
- * 인지를 말해야지, 어제 무엇이었는지를 말하면 안 된다"* 고 적어 두었다. 그
- * 규율에 **강제가 없었다** — 그리고 실제로 무너졌다.
+ * The table above is a hand-maintained list of strings, which is why the top of this
+ * file says a marker *"must say what this route is today, not what it used to be"*.
+ * That discipline had **nothing enforcing it**, and it duly collapsed.
  *
- * `/topology` 의 마커 셋(`canvas-v2` · `active-relation-inspector` ·
- * `focus-path-state`)은 그 컴포넌트들이 은퇴한 뒤에도 게이트를 통과하고 있었다.
- * 통과한 이유가 문제의 핵심이다: 그 이름들이 **생성된 문서함 JSON 안의 산문**
- * (`src/entities/docs-vault/data/*`)에 남아 있었고, 그 JSON 이 페이지에 인라인
- * 되니 `html.includes(marker)` 가 참이었다. 즉 이 게이트는 토폴로지 화면이
- * 아니라 **옛 컴포넌트를 언급한 문서 한 조각이 번들에 들어갔는지**를 재고 있었다.
+ * `/topology`'s marker set (`canvas-v2` · `active-relation-inspector` ·
+ * `focus-path-state`) kept passing the gate after those components retired. Why it
+ * passed is the point: those names survived **in prose inside the generated docs
+ * JSON** (`src/entities/docs-vault/data/*`), that JSON was inlined into the page, and
+ * so `html.includes(marker)` was true. The gate was measuring whether a document
+ * fragment mentioning old components had entered the bundle, not the topology screen.
  *
- * 그래서 #806 이 볼트를 재생성해 그 산문이 사라지자 rc.5 릴리스 리허설이
- * 여기서 멈췄다 — 토폴로지는 멀쩡한데. **틀린 이유로 통과하다 무관한 변경에
- * 빨개지는 것**이 `.claude/rules/documentation.md` 가 고정 문자열 핀에 대해
- * 경고한 정확히 그 두 방향이다.
+ * So when #806 regenerated the vault and that prose disappeared, the rc.5 release
+ * rehearsal stopped here — with topology perfectly healthy. **Passing for the wrong
+ * reason and then going red on an unrelated change** are exactly the two directions
+ * `.claude/rules/documentation.md` warns about for pinned strings.
  *
- * 이 시험이 그 구멍을 막는다: 모든 마커는 **생성물 밖의 제품 소스**에 실재해야
- * 한다. 생성된 데이터에만 있는 마커는 제품이 아니라 그때의 문서를 가리킨다.
+ * This test closes that hole: every marker must exist in **product source outside
+ * generated output**. A marker present only in generated data points at that day's
+ * documentation, not at the product.
  */
 test("smoke markers must exist in product source, not only in generated data", () => {
   const repoRoot = path.resolve(import.meta.dirname, "..");
-  /** 생성물은 제외한다 — 그 안의 등장은 "제품에 있다" 는 증거가 아니다. */
+  /** Generated output is excluded — an appearance there is not evidence the product has it. */
   const GENERATED = [
     path.join("src", "entities", "docs-vault", "data"),
     path.join("public", "docs-vault"),
@@ -245,7 +246,7 @@ test("smoke markers must exist in product source, not only in generated data", (
   const orphaned = [];
   for (const [route, markers] of Object.entries(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT)) {
     for (const marker of markers) {
-      // 경로 조각(`/topology/?`)과 일반 단어(`index`)는 컴포넌트 마커가 아니다.
+      // Path fragments (`/topology/?`) and ordinary words (`index`) are not component markers.
       if (marker.startsWith("/") || !/[-.]/.test(marker)) continue;
       if (!haystack.includes(marker)) orphaned.push(`${route} → ${marker}`);
     }
@@ -347,8 +348,9 @@ test("desktop smoke detects drift in the current download handoff", () => {
   const outDir = makeCurrentOut();
   const routePath = routeIndexPath("ko", "/download");
   const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
-  // 지우는 문장도 카탈로그에서 가져온다 — 리터럴을 박으면 이 프로브 자체가
-  // 다음 리메이크에서 조용히 무의미해진다(그게 #730 이후 실제로 벌어진 일이다).
+  // The sentence being removed also comes from the catalogue — pinning a literal
+  // would make this probe itself silently meaningless at the next remake (which is
+  // exactly what happened after #730).
   const [firstFragment] = ROUTE_TEXT["ko:/download"];
   write(outDir, routePath, html.replace(firstFragment, ""));
 

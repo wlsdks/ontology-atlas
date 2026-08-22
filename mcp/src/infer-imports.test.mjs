@@ -1080,8 +1080,9 @@ test('dynamic import + require + reexport detected', () => {
 });
 
 test('module-level edge collapse (FSD features/ — capability folder slug, analyze 와 일관)', () => {
-  // features/X · entities/X 는 capabilities/X 로 맞춘다. analyze_repo_structure
-  // 후보와 같은 slug 라 semantic review에서 양쪽 개념을 정확히 대조할 수 있다.
+  // features/X and entities/X map to capabilities/X. Sharing the slug with the
+  // analyze_repo_structure candidate is what lets a semantic review line the two
+  // concepts up exactly.
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/features/auth'), { recursive: true });
     mkdirSync(join(r, 'src/features/billing'), { recursive: true });
@@ -1375,8 +1376,9 @@ test('module-level edge collapse (single-file layered repo classifies support la
 });
 
 test('module-level edge collapse (FSD widgets/ — element folder slug, analyze 와 일관)', () => {
-  // widgets/X · views/X 는 평평한 elements/<name> 슬러그 — 2026-08-01 판정,
-  // analyze 와 같은 규칙 (basename 이 레이어를 넘어 겹칠 때만 레이어 접미).
+  // widgets/X and views/X get a flat elements/<name> slug — decided 2026-08-01,
+  // the same rule as analyze (a layer suffix only when the basename collides
+  // across layers).
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/widgets/header'), { recursive: true });
     mkdirSync(join(r, 'src/widgets/footer'), { recursive: true });

@@ -21,7 +21,7 @@ describe("stripDuplicateHeading — 제목을 두 번 그리지 않는다", () =
     expect(stripDuplicateHeading(body, "이름")).toBe(body);
   });
 
-  // 중간의 같은 이름 헤딩은 그 자리에서 뜻이 있는 구획이다.
+  // A heading with the same name in the middle of the body is a meaningful section there.
   it("본문 가운데의 같은 이름 헤딩은 건드리지 않는다", () => {
     const body = "앞선 문단.\n\n# 이름\n\n뒷 문단.";
     expect(stripDuplicateHeading(body, "이름")).toBe(body);

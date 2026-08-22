@@ -4,19 +4,18 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * `/design-build` 레시피가 **실재하는 것만 가리키는지** 확인한다.
+ * Checks that the `/design-build` recipe **points only at things that exist**.
  *
- * ## 왜 이 게이트인가
+ * This repository's documentation discipline (`documentation.md`): **check only
+ * what a machine can generate; never check a sentence a person wrote.** So this
+ * file pins none of the recipe's prose — it checks **referential integrity**
+ * only: do the primitives, instruments, and gates the recipe tells you to use
+ * actually exist?
  *
- * 이 저장소의 문서 규율(`documentation.md`): **기계가 만들 수 있는 것만 검사한다.
- * 사람이 판단해 쓴 문장은 검사하지 않는다.** 그래서 이 파일은 레시피의 산문을
- * 못박지 않는다 — 대신 **참조 무결성**만 본다: 레시피가 「이걸 써라」고 말하는
- * 프리미티브·계기·게이트가 실제로 존재하는가.
- *
- * 이게 필요한 이유는 레시피의 실패 모드가 특이해서다. 프리미티브 이름이 바뀌거나
- * 게이트가 사라져도 **문서는 그대로 통과한다** — 그리고 그 문서를 읽은 다음
- * 에이전트가 없는 것을 쓰려다 실패한다. 「명령만 하면 화면이 나온다」의 신뢰가
- * 정확히 거기서 깨진다.
+ * It is needed because the recipe's failure mode is peculiar. Rename a primitive
+ * or delete a gate and **the document still passes** — then the next agent reads
+ * it, reaches for something that is not there, and fails. That is exactly where
+ * trust in "just ask and a screen appears" breaks.
  */
 
 const ROOT = process.cwd();
@@ -31,7 +30,7 @@ describe('design-build 레시피 — 참조 무결성', () => {
     expect(read(MIRROR)).toBe(recipe);
   });
 
-  /** 레시피가 「이걸 써라」고 지목하는 것들. 하나라도 없으면 레시피가 거짓말이다. */
+  /** What the recipe tells you to use. One missing entry makes the recipe a lie. */
   const PRESCRIBED_PRIMITIVES: Array<[name: string, file: string]> = [
     ['Chip', 'src/shared/ui/controls.tsx'],
     ['IconButton', 'src/shared/ui/controls.tsx'],
@@ -49,7 +48,7 @@ describe('design-build 레시피 — 참조 무결성', () => {
     );
   });
 
-  /** 레시피가 「돌려라」고 말하는 계기들. */
+  /** The instruments the recipe tells you to run. */
   const PRESCRIBED_INSTRUMENTS = [
     'scripts/measure-graph-readability.mjs',
     'scripts/measure-contrast.mjs',
@@ -65,8 +64,8 @@ describe('design-build 레시피 — 참조 무결성', () => {
   });
 
   /**
-   * 레시피가 「너를 막을 것」이라고 예고하는 게이트들. **이 목록이 어긋나면
-   * 레시피는 없는 문지기를 경고하거나 있는 문지기를 숨긴다.**
+   * The gates the recipe warns will stop you. **If this list drifts, the recipe
+   * either warns about a gatekeeper that does not exist or hides one that does.**
    */
   const ANNOUNCED_GATES = [
     ['control-adoption-ratchet', 'tests/contract/control-adoption-ratchet.contract.test.ts'],
@@ -83,7 +82,7 @@ describe('design-build 레시피 — 참조 무결성', () => {
   });
 
   it('첫 명령이 `pnpm checks:changed` 다 — 손으로 쓴 목록은 늘 좁다', () => {
-    // AGENTS.md 의 규율 그대로: 브리핑할 때 검사를 열거하지 말고 명령을 가리킨다.
+    // Straight from AGENTS.md: when briefing, point at the command rather than enumerating checks.
     expect(recipe).toContain('pnpm checks:changed');
   });
 
@@ -93,9 +92,11 @@ describe('design-build 레시피 — 참조 무결성', () => {
 
   it('새 값을 만들기 전에 이미 있는지 찾으라고 말한다', () => {
     /*
-     * 2026-08-03 의 실제 실패다 — `--control-h-*`(28/32/40)가 이미 있었는데
-     * 찾지 않고 24/30/34 를 발명했고, 그 값이 계약과 부딪히자 값을 고치는 대신
-     * 예외 축을 더했다. 규칙 여섯 개를 다 지켰어도 이 하나를 안 지켜서 났다.
+     * A real failure from 2026-08-03: `--control-h-*` (28/32/40) already existed,
+     * but nobody looked, 24/30/34 were invented instead, and when those values
+     * collided with a contract an exemption axis was added rather than the values
+     * fixed. All six other rules were followed; this one was not, and that was
+     * enough.
      */
     expect(recipe, '기존 토큰을 먼저 찾으라는 절이 있어야 한다').toContain('--control-h-');
     expect(recipe).toContain('app/globals.css');

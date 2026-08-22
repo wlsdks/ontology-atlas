@@ -25,44 +25,44 @@ import {
 } from '../lib/agent-config-contents';
 
 /**
- * 「에이전트 연결」 — 미리보기 → 승인 → 쓰기 → 자가 검증.
+ * "Connect an agent" — preview → approve → write → self-verify.
  *
- * 이 컴포넌트의 존재 이유는 **중간의 두 단계**다. 앱이 사용자 디스크에 파일을
- * 쓴다면 무엇을 쓸지 먼저 보여주고 사용자가 눌러야 한다 (신뢰 헌장: 조용한
- * 쓰기 0, git diff 로 감사 가능). 그리고 쓴 다음에는 그게 실제로 붙는지
- * 그 자리에서 증명해야 한다 — 가짜 진행바 대신 진짜 왕복 한 번.
+ * This component exists for **the two middle steps**. If the app writes files to the user's disk, it
+ * must first show what it will write and require a press (trust charter: zero silent writes,
+ * auditable by git diff). And after writing it must prove on the spot that the result actually
+ * connects — one real round trip instead of a fake progress bar.
  *
- * 실패는 숨기지 않는다. 실패 사유 문장이 곧 사용자의 다음 행동이다.
+ * Failures are not hidden. The failure sentence *is* the user's next action.
  */
 
 type Phase = 'idle' | 'planning' | 'preview' | 'writing' | 'verifying' | 'done' | 'failed';
 
 export interface AgentConnectActionProps {
-  /** vault 절대 경로. 없으면(웹) 이 컴포넌트는 아무것도 그리지 않는다. */
+  /** The vault's absolute path. Without it (the web) this component renders nothing. */
   vaultPath: string | null;
-  /** 번들 서버 실행 계약. 없으면 그리지 않는다. */
+  /** The bundled server's launch contract. Without it, nothing is rendered. */
   launch: McpServerLaunch | null;
-  /** 쓰기가 끝난 뒤 vault 상태를 다시 읽게 하는 훅 (설정 배지 갱신). */
+  /** Hook to re-read vault state after the write finishes (refreshing the settings badge). */
   onWritten?: (() => void | Promise<void>) | null;
   /**
-   * **어느 도구를 연결하는가.** 이 값이 쓰는 파일을 정한다
+   * **Which tool is being connected.** This value decides which files are written
    * (`lib/agent-clients.ts`).
    *
-   * 2026-07-30 까지 이 prop 이 없었고, 그래서 `plan.targets` 전체를 순회했다 —
-   * 「Claude Code에 연결」 한 번이 `.mcp.json` · `.mcp.json.example` ·
-   * `.codex/config.toml` 셋을 썼다. 라벨이 거짓말하는 결함이고, 안 쓰는 도구의
-   * 파일이 사용자 git diff 에 뜬다.
+   * Until 2026-07-30 this prop did not exist, so the whole of `plan.targets` was iterated — one
+   * press of "Connect to Claude Code" wrote `.mcp.json`, `.mcp.json.example`, and
+   * `.codex/config.toml`. That is a label telling a lie, and it puts an unused tool's file into the
+   * user's git diff.
    *
-   * 기본값을 두지 않는다 — 기본값이 있으면 다음에 이 컴포넌트를 쓰는 사람이
-   * 도구를 안 넘겨도 조용히 동작하고, 그게 이 결함이 생긴 방식이다.
+   * There is no default — with one, the next person to use this component could omit the tool and
+   * have it work silently, which is exactly how the defect arose.
    */
   clientId: AgentClientId;
 }
 
 /**
- * 인디고 채움 주 행동의 **면과 호버.** 값 층(`controlClass`)은 모양·크기·글자색
- * 까지만 내고 틴트/호버는 소비처에 남긴다 — 이 표면의 두 자리(미리보기 · 확인)가
- * 같은 문자열이라 한 벌로 묶는다.
+ * The face and hover of the indigo-filled primary action. The value layer (`controlClass`) emits
+ * shape, size, and text colour only, leaving tint and hover to the consumer — this surface's two
+ * slots (preview and confirm) share the string, so they are bundled as one.
  */
 const INDIGO_SOLID_SKIN =
   'w-full justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a26)]';
@@ -101,21 +101,21 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
     try {
       const vaultRelative = vaultPathRelativeToConfigRoot(plan.configRoot, plan.vaultPath);
       /**
-       * **이 도구가 선언한 파일만** 쓴다. `plan.targets` 는 앱이 쓸 수 **있는**
-       * 것의 목록이고 이 클릭이 쓸 것의 목록이 아니다 — 그 둘을 같은 것으로 읽은
-       * 것이 이 결함의 정체였다.
+       * Writes **only the files this tool declares**. `plan.targets` is the list of what the app
+       * **may** write, not the list this click will write — reading those two as the same thing was
+       * the defect itself.
        */
       const wanted = new Set(filesForClient(clientId));
       /*
-       * ⚠️ **이미 있던 것을 지우지 않는다** (2026-08-16 검수에서 적발).
+       * ⚠️ **Do not erase what was already there** (caught in review, 2026-08-16).
        *
-       * 종전에는 파일을 처음부터 새로 지어 통째로 덮어썼다. 그 저장소에 다른
-       * MCP 서버가 등록돼 있으면 **한 번의 클릭으로 전부 사라졌다.** 같은
-       * 파일에 대해 CLI 는 정확히 반대로 한다(우리 항목만 갈아 끼우고 나머지
-       * 보존) — 같은 파일, 두 표면, 반대 방향의 안전이었다.
+       * Files used to be built from scratch and overwritten wholesale. With another MCP server
+       * registered in that repository, **one click removed all of them.** For the same file the CLI
+       * does exactly the opposite (replacing only our entry and preserving the rest) — one file, two
+       * surfaces, opposite directions of safety.
        *
-       * 읽을 수 없는 파일이면 **건너뛴다.** 못 읽는 파일을 덮어쓰는 것은
-       * 지우는 것과 같다.
+       * An unreadable file is **skipped.** Overwriting a file you cannot read is the same as
+       * deleting it.
        */
       const skipped: string[] = [];
       const writes = plan.targets
@@ -127,8 +127,8 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
             vaultRelative,
             vaultAbsolute: plan.vaultPath,
           });
-          // 병합 규칙을 아는 것은 `.mcp.json` 계열뿐이다. 나머지(예시 파일 ·
-          // codex toml)는 종전대로 우리가 소유한 내용으로 쓴다.
+          // Only the `.mcp.json` family has known merge rules. The rest (the example file, the codex
+          // toml) are written with our own content as before.
           if (!target.fileName.endsWith('.mcp.json')) {
             return [{ fileName: target.fileName, contents: fresh }];
           }
@@ -195,10 +195,10 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           </p>
           <ul className="mt-1.5 flex flex-col gap-1">
             {/*
-              * **미리보기는 쓸 것만 그린다.** 오늘 아침 `confirmWrite` 만 필터하고
-              * 이 목록은 그대로 뒀더니, 화면이 5개를 약속하고 1개를 썼다 —
-              * 「See what will be written」이라는 이름이 곧 거짓이 된다.
-              * 원래 결함(라벨이 거짓말한다)의 다른 반쪽이었다.
+              * **The preview draws only what will be written.** Filtering `confirmWrite` alone and
+              * leaving this list untouched made the screen promise five and write one — which turns
+              * the name "See what will be written" into a lie. It was the other half of the original
+              * defect (the label lying).
               */}
             {plan.targets
               .filter((target) => filesForClient(clientId).includes(target.fileName))
@@ -262,18 +262,18 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
             })}
           </p>
           {/*
-           * 재시작은 **조건이지 다음 걸음이 아니다** — 한 단 낮춰 CTA 가
-           * 행동 승자로 남게 한다(위계 평결: 선행 조건은 행동보다 먼저 읽힌다).
+           * A restart is **a condition, not the next step** — kept one rung lower so the CTA remains
+           * the action winner (hierarchy verdict: a precondition is read before an action).
            */}
           <p className="mt-1 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             {t('connectVerifiedRestart')}
           </p>
           {/*
-           * 연결만 하고 끝내면 사용자는 「이제 뭘 하지」에 그대로 남는다.
-           * 카드의 마지막 줄이 다음 걸음을 손에 쥐여 준다 — 우리가 그 세션에
-           * 명령을 밀어 넣을 수는 없으므로(MCP 는 에이전트가 서버를 띄우는
-           * pull 모델이라 인바운드 채널이 없다), 붙여넣을 문장을 준다.
-           * 라벨이 「재시작한 세션에」라고 말해 선행 조건까지 나른다.
+           * Connecting and stopping leaves the user sitting on "so now what". The card's last line
+           * puts the next step in their hand — we cannot push a command into that session (MCP is a
+           * pull model where the agent spawns the server, so there is no inbound channel), so we give
+           * them a sentence to paste. The label carries the precondition by saying "in the restarted
+           * session".
            */}
           <button
             type="button"

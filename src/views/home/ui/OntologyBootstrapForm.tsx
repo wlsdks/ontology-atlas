@@ -12,15 +12,15 @@ import { controlClass, fieldClass } from "@/shared/ui/control-class";
 import { Checkbox } from "@/shared/ui";
 
 /**
- * "내 문서로 지도 만들기" — 기존 .md 폴더(frontmatter 없음)를 연 사용자의
- * 첫 그래프 부트스트랩 form (presentational). 후보 파생은
- * `features/docs-vault-local/lib/bootstrap-candidates.ts` (순수), 실제
- * vault write 는 HomePage 글루가 담당 — `CreateNodeForm` 과 같은 분업.
+ * The first-graph bootstrap form for someone who opened an existing .md folder
+ * with no frontmatter. Presentational: candidates come from
+ * `features/docs-vault-local/lib/bootstrap-candidates.ts`, and the vault write
+ * lives in the HomePage glue — the same split as `CreateNodeForm`.
  *
- * PO 근거: .qa-scratch/ontology-onboarding-2026-07/discovery.md (F1~F6).
- * 카피 원칙: "온톨로지" 전문용어 금지 — 비개발자에게 이 행위는 "지도 만들기"다.
- * 신뢰 원칙(local-first): 뭘 쓰는지 확정 전에 정확히 보여준다 — 본문 무변경,
- * frontmatter 추가 + 새 파일 1개가 전부.
+ * Two copy rules this surface exists to honour. The word "ontology" never
+ * appears: to a non-developer this action is "make a map of my documents". And
+ * local-first trust means showing exactly what will be written before confirming
+ * — bodies untouched, frontmatter added, one new file.
  */
 
 export interface OntologyBootstrapFormLabels {
@@ -181,7 +181,8 @@ export function OntologyBootstrapForm({
               {labels.alreadyTyped(plan.alreadyTypedCount)}
             </p>
           ) : null}
-          {/* 남의 파일이라 건드리지 않았다는 것을 말한다 — 안 말하면 「왜 비었지」가 된다. */}
+          {/* Say that these files were left alone because they belong to someone
+              else — unsaid, it reads as "why is this empty?". */}
           {plan.runtimeOwnedSkipped > 0 ? (
             <p
               data-testid="ontology-bootstrap-runtime-skills"

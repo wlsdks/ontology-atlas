@@ -1,25 +1,26 @@
 import { getTranslations } from 'next-intl/server';
 
 /**
- * 지도 진입 라우트(`/`, `/topology`)의 서버 렌더 표면.
+ * The server-rendered surface for the map entry routes (`/`, `/topology`).
  *
- * 왜 별도로 필요한가 — 이 라우트의 뷰는 클라이언트 컴포넌트라 정적 export 는
- * 가장 가까운 Suspense fallback 을 HTML 에 굽는다. 일반 `RouteLoadingFallback`
- * 은 "이 화면은 아직 오는 중" 한 문장만 쓰도록 **의도적으로** 설계된 표면이라
- * 다른 라우트에는 옳지만, 여기서는 그 한 문장이 **페이지 내용의 전부**가 된다.
+ * Why it exists separately: those views are client components, so static export
+ * bakes the nearest Suspense fallback into the HTML. The generic
+ * `RouteLoadingFallback` is **deliberately** designed to say only "this screen is
+ * still coming", which is right elsewhere but here becomes **the entire page
+ * content**.
  *
- * 2026-07-27 실측: 배포된 `/en/topology/` 는 193KB 를 내려주는데 사람이 읽을 수
- * 있는 글자가 142자였고 그중 핵심 문장이 "화면을 불러오는 중이에요" 였다. 이
- * URL 은 README 와 런치 자산이 가리키는 데모 주소다 — JS 를 실행하지 않는
- * 것들(링크 미리보기 카드, 크롤러)과 번들이 아직 안 온 사람이 그 페이지를
- * 그렇게 본다.
+ * Measured 2026-07-27: the deployed `/en/topology/` shipped 193KB and contained 142
+ * human-readable characters, whose central sentence was "loading the screen". That
+ * URL is the demo address the README and the launch assets point at — so that is how
+ * anything not running JS (link preview cards, crawlers) and anyone whose bundle has
+ * not arrived yet sees the page.
  *
- * 문구는 **새로 쓰지 않는다.** 헤드라인과 리드는 README 가 이미 발행한 문장이고,
- * 이 자리에서 포지셔닝을 새로 만드는 것은 PO 카운슬 트리거다. 설치 명령어도
- * 넣지 않는다 — npm 발행 전이라 그 명령은 지금 거짓말이다.
+ * **No new copy is written here.** The headline and lead are sentences the README
+ * already published; inventing positioning here is a PO-council trigger. No install
+ * command either — nothing is published to npm, so that command would be a lie.
  *
- * 지도가 하이드레이트되면 교체되므로 사람 눈에는 지금과 같고, 느린 기기에서는
- * 빈 화면 대신 읽을 것이 남는다.
+ * It is replaced once the map hydrates, so nothing changes for a human eye, and on a
+ * slow device there is something to read instead of a blank screen.
  */
 export async function MapEntryFallback({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: 'mapEntry' });
@@ -46,8 +47,8 @@ export async function MapEntryFallback({ locale }: { locale: string }) {
         {t('demoNote')}
       </p>
 
-      {/* 지도가 오는 중이라는 사실은 마지막에, 가장 조용하게. 이 문장이 페이지의
-          주인공이 되어 있던 것이 고치려던 결함이다. */}
+      {/* That the map is still loading comes last and quietest. This sentence being
+          the page's protagonist is the defect this fixes. */}
       <p role="status" className="text-label text-[color:var(--color-text-quaternary)]">
         {t('mapComing')}
       </p>

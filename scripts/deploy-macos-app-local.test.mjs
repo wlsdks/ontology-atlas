@@ -71,10 +71,10 @@ test("local macOS app deploy builds without release updater signing, installs, a
   assert.equal(options.skipBuild, false);
   assert.equal(options.leaveRunning, true);
   /*
-   * 2026-08-11 — **드래그 증명은 은퇴했다.** 프로브가 Sigma 시절 카드
-   * (`sigma-skeleton-cards` · `data-skeleton-card`)를 기다렸고 그 DOM 은 캔버스
-   * 지도로 바뀌며 사라져서, 돌리면 「waiting for selectable domain:views card」로
-   * 반드시 실패했다. CI 참조는 0개였다.
+   * 2026-08-11 — **the drag proof was retired.** Its probe waited for Sigma-era cards
+   * (`sigma-skeleton-cards` · `data-skeleton-card`), that DOM disappeared when the map
+   * became a canvas, and running it always failed with "waiting for selectable
+   * domain:views card". CI referenced it 0 times.
    */
   assert.equal(options.requireScreenshot, false);
   assert.equal(options.visualEvidence, true);
@@ -190,7 +190,7 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
     ["/tmp/build/Ontology Atlas.app", "/tmp/Ontology Atlas.app"],
   ]);
   assert.equal(plan.verify[1].includes("--leave-running"), false);
-  // 드래그 증명은 은퇴했다 — 어떤 라우트에서도 그 플래그를 넣지 않는다.
+  // The drag proof is retired — that flag is not passed on any route.
   assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/"));
   assert.ok(plan.verify[1].includes("--hold-ms=9000"));

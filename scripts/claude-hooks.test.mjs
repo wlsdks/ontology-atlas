@@ -6,16 +6,18 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, it } from 'node:test';
 
-// ⚠️ **이 표는 2026-07-31 부터 2026-08-17 까지 빨간불이었다.** 그날 훅이 둘에서
-// 넷으로 늘었는데(`block-unsafe-git` · `block-generated-edit`) 이 표는 둘인 채
-// 남았고, 아무도 이 검사를 안 돌려서 아무도 몰랐다. 그 사이 여기 적힌 명령
-// 문자열의 **모양까지** 바뀌었다(`${CLAUDE_PROJECT_DIR:-.}` 접두 + 따옴표).
+// ⚠️ **This table was red from 2026-07-31 to 2026-08-17.** The hooks grew from two
+// to four that day (`block-unsafe-git` · `block-generated-edit`) while this table
+// stayed at two, and nobody ran this check so nobody knew. In the meantime even
+// the **shape** of the command strings recorded here changed (a
+// `${CLAUDE_PROJECT_DIR:-.}` prefix plus quoting).
 //
-// > 안 돌리는 검사는 없는 검사와 같고, **빨간 채로 방치된 검사는 그보다 나쁘다** —
-// > 다음 사람이 돌렸을 때 나오는 빨간불이 진짜 결함인지 낡은 기대치인지 모른다.
+// > A check nobody runs equals no check, and **a check left red is worse** — the
+// > next person cannot tell whether the red is a real defect or a stale
+// > expectation.
 //
-// 그래서 이 표는 **실측해서** 채운다. 훅을 더하거나 빼면 여기가 먼저 터지고,
-// 그게 이 검사의 일이다.
+// So this table is filled **from measurement**. Adding or removing a hook breaks
+// here first, and that is this check's job.
 const HOOK_CONFIGS = [
   {
     name: 'Claude Code',
@@ -111,42 +113,45 @@ describe('agent hooks', () => {
 
 });
 
-// SessionStart inject hook 은 vault 요약을 agent context 에 주입한다. 두
-// agent runtime (Claude Code · Codex) 의 mirror 가 같은 출력 규약을 지키는지,
-// 그리고 "건강하면 조용·문제 있으면 첫 순간에 알린다" 계약을 양쪽에서 검증.
+// The SessionStart inject hook pushes a vault summary into the agent context.
+// These verify that the mirrors for both agent runtimes (Claude Code, Codex) keep
+// the same output convention, and that both honour the contract "silent when
+// healthy, speak at the first moment when not".
 const INJECT_HOOKS = [
   '.claude/hooks/inject-ontology-summary.sh',
   '.codex/hooks/inject-ontology-summary.sh',
 ];
 
-// ⚠️ **`uid:` 를 빼먹으면 이 픽스처들은 아무것도 안 잰다** (2026-08-17 실측).
-// R14 이후 모든 노드는 `uid:` 를 갖는다. 없으면 그래프가 통째로 컴파일 실패하고,
-// 종전 훅은 그 실패에 **침묵**했다 — 그래서 이 검사 셋은 「센서스가 나온다」를
-// 재는 대신 **빈 문자열을 빈 문자열과 비교하며** 빨간불이었다.
+// ⚠️ **Omit `uid:` and these fixtures measure nothing** (measured 2026-08-17).
+// Since R14 every node has a `uid:`. Without it the whole graph fails to compile,
+// and the old hook was **silent** on that failure — so these three checks were
+// **comparing an empty string to an empty string** instead of measuring that an
+// inventory is produced.
 const ALPHA_UID = '9b0f5a2c-7d31-4e58-b0c6-2f1a4e7d3c88';
 const BETA_UID = '4c7e1d90-6a2b-4f13-9d5e-8b0c3a6f2e41';
 
-// 깨끗한 vault — alpha 가 beta 에 의존하고 beta 가 존재 → unresolved 0.
+// Clean vault — alpha depends on beta and beta exists → 0 unresolved.
 const CLEAN_VAULT = {
   'alpha.md': `---\nkind: capability\nuid: ${ALPHA_UID}\nslug: alpha\ntitle: Alpha\ndependencies:\n  - beta\n---\n# Alpha\n`,
   'beta.md': `---\nkind: capability\nuid: ${BETA_UID}\nslug: beta\ntitle: Beta\n---\n# Beta\n`,
 };
 
-// drift 있는 vault — alpha 가 존재하지 않는 ghost 슬러그를 참조 → unresolved
-// edge 1 + compile issue 1. agent 가 session 시작 시 이를 인지해야 한다.
+// Vault with drift — alpha references a ghost slug that does not exist → 1
+// unresolved edge + 1 compile issue. The agent must notice this at session start.
 const DRIFT_VAULT = {
   'alpha.md': `---\nkind: capability\nuid: ${ALPHA_UID}\nslug: alpha\ntitle: Alpha\ndependencies:\n  - beta\n  - ghost-nonexistent\n---\n# Alpha\n`,
   'beta.md': `---\nkind: capability\nuid: ${BETA_UID}\nslug: beta\ntitle: Beta\n---\n# Beta\n`,
 };
 
-// **컴파일조차 안 되는 vault** — 손으로 노드를 하나 더한 사람이 실제로 만드는
-// 상태다(`uid:` 없음). 여기서 훅이 침묵하면 그 세션은 온톨로지 맥락을 하나도
-// 못 받은 채, 왜 조용한지도 모르는 채 시작한다.
+// **A vault that does not even compile** — the state anyone actually produces by
+// adding a node by hand (no `uid:`). If the hook is silent here, that session
+// starts with no ontology context at all and no idea why it is quiet.
 const BROKEN_VAULT = {
   'alpha.md': '---\nkind: capability\nslug: alpha\ntitle: Alpha\n---\n# Alpha\n',
 };
 
-// 요약 본문은 python3 가 만든다 — 없는 환경에선 silent 가 정상이므로 skip.
+// python3 builds the summary body, so silence is correct where it is absent —
+// skip.
 const hasPython = spawnSync('python3', ['--version']).status === 0;
 
 async function writeVault(files) {
@@ -211,10 +216,11 @@ describe('inject-ontology-summary health awareness', () => {
     }
   });
 
-  // 훅의 침묵 규약에는 구멍이 있었다: 종전 코드는 `2>/dev/null … || exit 0` 이라
-  // **도구를 못 부른 것**과 **볼트를 찾았는데 못 읽은 것**을 똑같이 침묵으로
-  // 뭉갰다. 후자는 세션이 가장 알아야 하는 순간이다 — 그리고 손으로 노드를
-  // 하나 더하면 바로 그 상태가 된다.
+  // The hook's silence convention had a hole: the old code was
+  // `2>/dev/null … || exit 0`, which flattened **could not invoke the tool** and
+  // **found the vault but could not read it** into the same silence. The latter is
+  // the moment a session most needs to hear about — and adding one node by hand puts
+  // you in exactly that state.
   it('말한다 — 볼트를 찾았는데 컴파일이 안 되면 침묵하지 않는다', async (t) => {
     if (!hasPython) {
       t.skip('python3 unavailable — hook is silent by design');
@@ -224,7 +230,7 @@ describe('inject-ontology-summary health awareness', () => {
     try {
       for (const hook of INJECT_HOOKS) {
         const result = runInjectHook(hook, dir);
-        // 세션을 막지는 않는다 — SessionStart 훅은 언제나 exit 0 이다.
+        // It never blocks the session — a SessionStart hook always exits 0.
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
         assert.match(result.stdout, /will not compile/, `${hook}: 침묵하지 않는다`);
         assert.match(result.stdout, /missing-uid/, `${hook}: 무엇이 문제인지 댄다`);
@@ -236,8 +242,9 @@ describe('inject-ontology-summary health awareness', () => {
     }
   });
 
-  // 침묵 규약 자체는 그대로여야 한다 — 볼트가 없는 저장소에 잡음을 넣지 않는
-  // 것이 이 훅의 원래 계약이다. 위 검사가 그 계약을 넓혀 버리지 않았는지 잰다.
+  // The silence convention itself must hold — adding no noise to a repository with
+  // no vault is this hook's original contract. This measures that the check above
+  // did not widen it.
   it('볼트가 아예 없으면 종전대로 조용하다', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-empty-'));
     try {
@@ -269,18 +276,19 @@ function configuredPreToolMatchers(settings) {
 }
 
 /**
- * 설정에 적힌 **명령 문자열 그대로**에서 실행될 파일을 뽑는다.
+ * Extracts the file that will run from **the command string exactly as
+ * configured**.
  *
- * 종전 구현은 `bash <경로>` 만 풀고 나머지는 문자열을 그대로 돌려줬다. 그래서
- * Claude 쪽 명령이 `"${CLAUDE_PROJECT_DIR:-.}/…"` 로 바뀐 뒤로는 존재하지도
- * 않는 경로를 검사하고 있었다. 모르는 모양이 오면 **조용히 통과시키지 않고
- * 던진다** — 검사가 무엇을 재고 있는지 모르는 채 초록불이 되는 것이 이 파일이
- * 지난 2주 겪은 일이다.
+ * The old implementation resolved only `bash <path>` and returned everything else
+ * verbatim. So once the Claude-side command became `"${CLAUDE_PROJECT_DIR:-.}/…"`
+ * it was checking a path that did not exist. An unrecognised shape now **throws
+ * rather than passing quietly** — going green without knowing what is being
+ * measured is exactly what this file did for two weeks.
  */
 function executablePathFromHookCommand(command) {
   let path = command.trim().replace(/^bash\s+/, '');
   if (path.startsWith('"') && path.endsWith('"')) path = path.slice(1, -1);
-  // 훅은 프로젝트 루트에서 돈다 — 기본값 `.` 이 곧 저장소 루트다.
+  // Hooks run from the project root, so the default `.` is the repository root.
   path = path.replace('${CLAUDE_PROJECT_DIR:-.}/', '');
   if (!/^\.(claude|codex)\/hooks\/[\w-]+\.sh$/.test(path)) {
     throw new Error(`hook command shape not recognised: ${command}`);

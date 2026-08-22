@@ -12,16 +12,18 @@ import { Button, buttonVariants } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui";
 
 /**
- * 클라이언트별 원클릭 연결 버튼 묶음 (#12, Phase 4). 지도 시트와 설정 패널이
- * **같은 컴포넌트**를 공유한다 — 4개 클라이언트 버튼(Claude Code · Cursor ·
- * VS Code · Codex) + "따로 켜둘 서버가 없다"는 핵심 평문 한 줄.
+ * The one-click connect buttons, per client — four buttons (Claude Code · Cursor ·
+ * Antigravity · Codex) plus one plain-language line saying there is no server to keep
+ * running. The map sheet and the settings panel share **this same component**.
  *
- * 강등 규칙(정직):
- * - Tauri(설치 앱): `onWriteConfigs` 로 폴더에 설정 파일을 직접 쓰고 완료 확인.
- * - 웹: 절대 경로를 모르므로 딥링크가 성립 안 함 → 설정 내용 복사 + 안내로 강등.
+ * Honest degradation:
+ * - Tauri (installed app): `onWriteConfigs` writes the config files into the folder and
+ *   confirms completion.
+ * - Web: no absolute path is available, so a deeplink cannot be formed — it degrades to
+ *   copying the config plus instructions.
  *
- * feature 레이어에 두어 두 widget(agent-connect·app-settings-menu)이
- * 동일 레이어 cross-import 없이 가져다 쓴다.
+ * It lives at the feature layer so both widgets (agent-connect, app-settings-menu) can use
+ * it without a same-layer cross-import.
  */
 
 import { AGENT_CLIENTS, type AgentClientId } from "../lib/agent-clients";
@@ -31,11 +33,11 @@ import { controlClass } from '@/shared/ui/control-class';
 type ClientId = "claudeCode" | "cursor" | "antigravity" | "codex";
 
 /**
- * 이 컴포넌트의 내부 id → 파일 계약의 도구 id.
+ * This component's internal id → the file contract's tool id.
  *
- * 두 이름 체계가 있는 것은 역사다(이쪽은 camelCase 라벨 키, 저쪽은 kebab 슬러그).
- * 합치는 것이 옳지만 그건 별개 정리라, 지금은 **한 곳에서만** 번역해 둔다 —
- * 여러 곳에서 손으로 번역하면 그중 하나가 틀린다.
+ * Two naming systems exist for historical reasons (camelCase label keys here, kebab slugs
+ * there). Merging them is right but is a separate cleanup, so for now the translation lives
+ * in **exactly one place** — translating by hand in several places means one of them is wrong.
  */
 const CLIENT_TO_ID: Record<ClientId, AgentClientId> = {
   claudeCode: "claude-code",
@@ -44,7 +46,7 @@ const CLIENT_TO_ID: Record<ClientId, AgentClientId> = {
   codex: "codex",
 };
 
-/** 역방향 — 렌더 순서를 `AGENT_CLIENTS` 에서 파생할 때 쓰는 번역. */
+/** The reverse direction, used to derive render order from `AGENT_CLIENTS`. */
 const ID_TO_CLIENT: Record<AgentClientId, ClientId> = {
   "claude-code": "claudeCode",
   cursor: "cursor",
@@ -56,51 +58,52 @@ export type AgentClientConfigState = "missing" | "invalid" | "ready";
 
 export interface AgentClientButtonsProps {
   /**
-   * 이 자리에서 서버를 띄울 방법을 아는가. 모르면(웹 세션) 실행 불가능한
-   * 설정을 만들거나 복사하지 않는다 — 붙지 않는 설정은 도움이 아니라 함정이다.
+   * Do we know how to launch a server from here? If not (a web session), no config is written
+   * or copied — a config that will not connect is a trap, not help.
    */
   serverAvailability: AgentServerAvailability;
-  /** Tauri 전용 — `.mcp.json`·`.codex/config.toml` 등을 vault 폴더에 생성. 웹은 null. */
   /**
-   * 설정 쓰기 — **어느 도구인지 함께 넘긴다.**
+   * Writes the config — **and takes which tool to write it for.**
    *
-   * 종전에는 인자가 없어서 구현이 "쓸 수 있는 것 전부"를 썼다. 그래서 어느 버튼을
-   * 눌러도 같은 결과였고, 라벨이 도구를 말하는데 동작은 도구를 몰랐다. 인자를
-   * 받는 것 자체가 그 결함의 재발을 막는다 — 구현이 도구를 무시하려면 이제
-   * **일부러** 무시해야 한다.
+   * There used to be no argument, so the implementation wrote "everything it could". Every
+   * button therefore produced the same result: the label named a tool while the action did not
+   * know one. Taking the argument is itself what stops that recurring — ignoring the tool now
+   * has to be deliberate.
+   *
+   * Tauri only (creates `.mcp.json`, `.codex/config.toml`, and the rest inside the vault
+   * folder); null on the web.
    */
   onWriteConfigs: ((client: AgentClientId) => void | Promise<void>) | null;
-  /** Cursor 딥링크(절대 경로 있을 때). 없으면 복사 강등. */
+  /** Cursor deeplink, when an absolute path exists. Without one it degrades to copying. */
   cursorDeeplink: string | null;
-  /** VS Code 딥링크. 없으면 복사 강등. */
-  /** 복사 강등용 `.mcp.json` 본문. */
+  /** The `.mcp.json` body, for the copy fallback. */
   mcpJsonSnippet: string;
-  /** invalid vault-local `.mcp.json` 교체용 본문. 보통 OATLAS_VAULT=. */
+  /** Body used to replace an invalid vault-local `.mcp.json`. Usually `OATLAS_VAULT=.`. */
   replacementMcpJsonSnippet?: string;
-  /** 복사 강등용 Codex 한 줄 등록 명령. */
+  /** The one-line Codex registration command, for the copy fallback. */
   codexCommand: string;
-  /** 이미 `.mcp.json` 이 존재하는지(설치 앱) — 확인 문구 우선 표시. */
+  /** Whether `.mcp.json` already exists (installed app) — shows the confirmation copy first. */
   mcpJsonReady?: boolean;
-  /** 존재와 유효성을 분리한 현재 `.mcp.json` 상태. */
+  /** Current `.mcp.json` state, keeping existence and validity separate. */
   mcpJsonState?: AgentClientConfigState;
-  /** 존재와 유효성을 분리한 현재 `.codex/config.toml` 상태. */
+  /** Current `.codex/config.toml` state, keeping existence and validity separate. */
   codexConfigState?: AgentClientConfigState;
-  /** invalid Codex 설정을 사용자가 검토·교체할 때 복사할 vault-local TOML. */
+  /** The vault-local TOML to copy when a user reviews and replaces an invalid Codex config. */
   codexConfigSnippet?: string;
-  /** 웹 세션(절대 경로 미상) — 딥링크 대신 복사 안내. */
+  /** A web session with no known absolute path — copy instructions instead of a deeplink. */
   needsManualPath: boolean;
   /**
-   * 네 도구를 어떻게 놓는가.
+   * How the four tools are laid out.
    *
-   * 기본 `stack` 은 지도 시트의 것이다 — 거기서는 이 열이 시트의 주 내용이라
-   * 세로 전폭이 맞다. `grid` 는 설정의 **접히는 단계 안**에서 쓴다: 넷은
-   * 「정답 하나 + 탈락 셋」이 아니라 **하나 고르는 것**인데, 세로 전폭 넷은
-   * 각각이 큰 결정처럼 읽혔다(소유자 지적 2026-08-04). 2열이면 한 벌로 읽히고
-   * 세로도 절반이다.
+   * The default `stack` belongs to the map sheet, where this column is the sheet's main content
+   * and full-width rows are right. `grid` is for **inside the collapsed step** in settings: the
+   * four are «pick one», not «one right answer and three rejects», and four full-width rows made
+   * each read as a large decision (owner report, 2026-08-04). Two columns read as one set and
+   * halve the vertical space.
    *
-   * ⚠️ 축을 «감으로» 늘린 것이 아니다. 넷은 서로 다른 파일에 쓰므로 한 사람이
-   * 둘 이상 붙이는 것이 정상이고, 그 사실은 이미 2026-08-02 라운드가 채움을
-   * 빼면서 확인했다. 여기서는 그 사실을 **배치**로도 말한다.
+   * ⚠️ The axis was not added on a hunch. The four write to different files, so one person
+   * attaching two or more is normal — a fact the 2026-08-02 round already confirmed when it
+   * removed the fill. This says that same fact through **layout** as well.
    */
   layout?: "stack" | "grid";
 }
@@ -151,8 +154,7 @@ export function AgentClientButtons({
   async function copyAndConfirm(id: ClientId, value: string) {
     const ok = await copyText(value);
     setState(id, ok ? "copied" : "failed");
-    // 인라인 라벨 전환(2초)에 더해 캐노니컬 토스트로 확실히 확인시킨다 —
-    // sonnet 최종 검수 D3 (공방 저장 흐름과 동일한 확인 문법).
+    // The inline label swap (2s) plus the canonical toast, so the confirmation is unmissable.
     if (ok) {
       toast.show(t("copiedToast"), "success");
       window.setTimeout(() => setState(id, "idle"), 2000);
@@ -161,18 +163,18 @@ export function AgentClientButtons({
 
   if (!serverAvailability.launch) {
     /**
-     * **웹 = 막다른 길이 아니다.** 종전 이 자리는 「이 화면에서는 연결할 수
-     * 없어요」 한 문장과 사람을 긴 문서로 떨구는 링크뿐이었다. 그 문장은
-     * 거짓이다 — MCP 는 Atlas 가 아니라 **폴더**에 붙고, 에이전트가 자기
-     * 세션에서 서버를 띄운다. 웹 사용자도 연결된다.
+     * **The web is not a dead end.** This slot used to hold one sentence — "you cannot connect
+     * from this screen" — and a link dropping the reader into long documentation. That sentence
+     * is false: MCP attaches to the **folder**, not to Atlas, and the agent launches the server
+     * in its own session. A web user can connect.
      *
-     * 브라우저가 못 하는 것은 **설정을 대신 써 주는 것** 하나다(FSA 는 핸들만
-     * 주고 경로를 안 준다). 그러니 능력의 범위를 실제보다 좁게 말하지 않고,
-     * 브라우저가 모르는 그 값을 **아는 사람에게 묻는다**.
+     * The one thing a browser cannot do is **write the config for you** (FSA gives a handle, not
+     * a path). So rather than understating what is possible, we **ask the person who knows** the
+     * value the browser does not.
      *
-     * 「왜 + 어디서」 계약(`.claude/rules/surfaces.md`)은 그대로다: 왜 자동이
-     * 안 되는지 말하고, 갈 곳을 준다. 달라진 것은 갈 곳이 **이 자리에도**
-     * 생겼다는 것이고, 앱(버튼 한 번)은 여전히 더 쉬운 길로 남는다.
+     * The "why plus where" contract (`.claude/rules/surfaces.md`) is unchanged: say why it cannot
+     * be automatic, and give somewhere to go. What changed is that the somewhere is now **here
+     * too**, while the app (one button) remains the easier path.
      */
     return (
       <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
@@ -202,9 +204,9 @@ export function AgentClientButtons({
                 >
                   {t("serverUnavailableGetApp")}
                 </Link>
-                {/* 더 읽고 싶은 사람만 간다 — **주 경로가 아니다.** 종전에는
-                    이것이 유일한 대안이라 연결하려던 사람이 시트를 잃고 문서
-                    한가운데에 놓였다. */}
+                {/* Only for someone who wants to read more — **not the primary path.** This used
+                    to be the only alternative, so a person trying to connect lost the sheet and
+                    landed in the middle of a document. */}
                 <Link
                   href={AGENT_GRAPH_WORKFLOW_HREF}
                   className={controlClass({ shape: "link", tone: "secondary", className: "text-label hover:text-[color:var(--color-text-secondary)]" })}
@@ -221,27 +223,26 @@ export function AgentClientButtons({
   }
 
   /**
-   * 도구별 렌더 조각 — **순서는 여기 없다.** 어제(2026-07-30 전역 스코프 탭)와
-   * 같은 시트 안에서 이 버튼 열은 Claude Code → Cursor → Antigravity → Codex 로
-   * 하드코딩돼 있었고, 전역 스코프 탭은 `AGENT_CLIENTS`(Claude Code → Codex →
-   * Cursor → Antigravity)를 그대로 썼다 — 한 시트 안에서 같은 목록이 두 순서를
-   * 가졌다(「하나의 목록, 두 진실」 부류). 렌더 순서를 그 배열에서 파생시켜
-   * 다시 갈라질 자리를 없앤다. 게이트:
-   * `AgentClientButtons.test.tsx` "render order follows AGENT_CLIENTS".
+   * The per-tool render fragments — **order is not decided here.** This button column had the
+   * order hardcoded as Claude Code → Cursor → Antigravity → Codex while the global-scope tab in
+   * the same sheet used `AGENT_CLIENTS` (Claude Code → Codex → Cursor → Antigravity): one list
+   * with two orders inside one sheet. Deriving render order from that array removes the place
+   * they can diverge again. Gate: `AgentClientButtons.test.tsx` "render order follows
+   * AGENT_CLIENTS".
    */
   const clientRenderers: Record<ClientId, () => React.ReactNode> = {
-    // Claude Code — Tauri: .mcp.json 자동 생성. 웹: 복사.
+    // Claude Code — Tauri writes `.mcp.json` automatically; the web copies it.
     //
-    // **채움을 뺐다 (2026-08-02, 디자인 카운슬 S2).** 이 갈래만 `primary` 를
-    // 무조건 참으로 하드코딩해 인디고 워시를 입었고, 나머지 셋에는 그 값을
-    // 넘기는 경로 자체가 없었다. 실측 결과 넷은 `750×38, x=407` 로 치수 분산이
-    // 0인데 하나만 채워져 있어서, 「선택지 넷」이 아니라 **「정답 하나 + 탈락
-    // 셋」**으로 읽혔다. 넷은 서로 다른 파일에 쓴다(`.mcp.json` ·
-    // `.codex/config.toml` · `.cursor/mcp.json` · `.agents/mcp_config.json`) —
-    // 한 사람이 둘 이상 붙이는 것이 정상 시나리오라 «정답» 이 있을 수 없다.
+    // **The fill was removed** (2026-08-02, design council). This branch alone hardcoded
+    // `primary` to true and wore the indigo wash, while the other three had no path to receive
+    // that value at all. Measured, all four were `750×38, x=407` with zero dimensional variance
+    // and only one filled, so it read as **«one right answer and three rejects»** rather than
+    // four options. The four write to different files (`.mcp.json`, `.codex/config.toml`,
+    // `.cursor/mcp.json`, `.agents/mcp_config.json`) — attaching more than one is a normal
+    // scenario, so there cannot be a «right answer».
     //
-    // 어느 도구를 쓰는지 아는 신호(`recommendedClientId`)는 아직 없다. 없는
-    // 신호를 있는 척 배선하는 대신 **잘못된 신호부터 끈다**.
+    // There is still no signal for which tool someone uses (`recommendedClientId`). Rather than
+    // wiring a signal that does not exist, **the wrong signal is switched off first**.
     claudeCode: () =>
       mcpJsonIsReady ? (
         <ClientStatus
@@ -282,10 +283,10 @@ export function AgentClientButtons({
         />
       ),
 
-    // Cursor — **설치 앱에서는 파일을 쓴다.** 2026-07-30 조사로 `.cursor/mcp.json`
-    // 프로젝트 스코프가 확인됐고, 딥링크는 착지 파일이 공식 문서에 명시되지 않았다.
-    // 어디에 무엇이 생기는지 모르는 편의보다, 볼트 안 한 파일이 예측 가능하다.
-    // 웹에서는 파일을 못 쓰니 딥링크가 남는다.
+    // Cursor — **the installed app writes the file.** Research on 2026-07-30 confirmed the
+    // `.cursor/mcp.json` project scope, while the deeplink's landing file is not stated in the
+    // official documentation. One predictable file inside the vault beats convenience whose
+    // destination is unknown. On the web, files cannot be written, so the deeplink remains.
     cursor: () =>
       onWriteConfigs ? (
         <ClientAction
@@ -314,12 +315,12 @@ export function AgentClientButtons({
         />
       ),
 
-    // Antigravity — 워크스페이스 `.agents/mcp_config.json`, stdio 명시, 키가
-    // `mcpServers` 라 기존 라이터로 그냥 떨어진다(2026-07-30 조사).
+    // Antigravity — the workspace `.agents/mcp_config.json`, stdio explicit, and its key is
+    // `mcpServers`, so the existing writer handles it as-is (research 2026-07-30).
     //
-    // **VS Code 가 이 자리에서 빠졌다.** `.vscode/mcp.json` 을 지원하지만 키가
-    // `mcpServers` 가 아니라 `servers` 라서 라이터를 하나 더 요구하는데, 그 값이
-    // 겹침 대비 비쌌다. 스니펫은 고급 접기의 「다른 툴」 표에 남는다.
+    // **VS Code is absent from this row.** It supports `.vscode/mcp.json` but its key is
+    // `servers` rather than `mcpServers`, which demands a second writer — too costly against the
+    // overlap. Its snippet stays in the "other tools" table under the advanced fold.
     antigravity: () =>
       onWriteConfigs ? (
         <ClientAction
@@ -341,7 +342,7 @@ export function AgentClientButtons({
         />
       ),
 
-    // Codex — Tauri: config 자동 생성. 웹: 한 줄 명령 복사.
+    // Codex — Tauri writes the config automatically; the web copies a one-line command.
     codex: () =>
       codexConfigIsReady ? (
         <ClientStatus
@@ -408,7 +409,7 @@ export function AgentClientButtons({
         </p>
       ) : null}
 
-      {/* 핵심 평문 — stdio 를 로컬-퍼스트 장점으로 */}
+      {/* The plain-language core line — stdio framed as a local-first advantage. */}
       <p
         data-testid="agent-connect-server-line"
         className="mt-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-label leading-prose text-[color:var(--color-text-tertiary)]"
@@ -420,23 +421,22 @@ export function AgentClientButtons({
 }
 
 /**
- * 이 열의 표면은 **`shared/ui/button` 이 정한다** (2026-08-02, 디자인 카운슬 S3).
+ * This column's surface is **decided by `shared/ui/button`** (2026-08-02, design council).
  *
- * 종전엔 세 조각(`ClientStatus`/`ClientButton`/`ClientLink`)이 같은 클래스
- * 문자열을 각자 손으로 다시 썼고, 그중 하나는 반투명 `--color-indigo-a24`
- * 워시로 프리미티브의 불투명 `primary`(#5e6ad2)를 흉내 냈다. 전수 결과 그
- * 워시는 24건/19파일인데 `Button` 프리미티브를 거친 곳은 **0건**이었다 —
- * 규격이 있는데 아무도 안 쓰면 그건 규격이 아니라 문서다.
+ * Three fragments (`ClientStatus` / `ClientButton` / `ClientLink`) used to rewrite the same class
+ * string by hand, and one of them imitated the primitive's opaque `primary` (#5e6ad2) with a
+ * translucent `--color-indigo-a24` wash. An inventory found that wash in 24 places across 19
+ * files while **zero** went through the `Button` primitive — a spec nobody uses is documentation,
+ * not a spec.
  *
- * 프리미티브를 쓰면 focus-visible 링도 함께 따라온다. 실측: 이 화면 버튼들만
- * `focus-visible:ring` 이 하나도 없어 브라우저 기본
- * `outline: rgb(208,214,224) auto 1px` 이 떴고, 앱 나머지 아홉 곳 이상은
- * 인디고 링 토큰을 쓰고 있었다.
+ * Using the primitive brings the focus-visible ring with it. Measured: these buttons alone had no
+ * `focus-visible:ring`, so the browser default `outline: rgb(208,214,224) auto 1px` appeared,
+ * while nine or more other places in the app used the indigo ring token.
  *
- * 이 표면의 방언 셋만 덮는다 — 전폭(`w-full`) · 이 시트의 반지름
- * (`rounded-chip`) · 설정 시트 타입 방언(`text-body`). 나머지(색 · 상태 · 눌림 ·
- * 비활성 · 포커스 링)는 프리미티브가 소유한다. `size="sm"` 의 `h-8` 이 곧
- * `--control-h-md`(32px)라 높이는 종전 값 그대로다.
+ * Only this surface's three dialects are overridden — full width (`w-full`), this sheet's radius
+ * (`rounded-chip`), and the settings-sheet type dialect (`text-body`). Everything else (colour,
+ * state, press, disabled, focus ring) is owned by the primitive. `size="sm"`'s `h-8` is exactly
+ * `--control-h-md` (32px), so the height is unchanged.
  */
 function clientControlClass(extra?: string) {
   return cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full rounded-chip text-body", extra);
@@ -455,7 +455,7 @@ function ClientStatus({
       aria-label={label}
       data-testid={testId}
       data-state="ready"
-      // 상태는 눌리지 않는다 — 프리미티브의 press 어포던스만 되돌린다.
+      // A status is not pressable — only the primitive's press affordance is reverted.
       className={clientControlClass("active:translate-y-0")}
     >
       <Check
@@ -479,7 +479,7 @@ function ClientAction({
   onClick,
 }: {
   testId: string;
-  /** 상태를 나르는 글리프만 넘긴다 — 상태 없는 장식은 자리를 안 받는다. */
+  /** Only a glyph that carries state is passed — decoration with no state gets no space. */
   icon?: React.ReactNode;
   label: string;
   feedback: Feedback;
@@ -533,8 +533,8 @@ function ClientLink({
   label: string;
   href: string;
 }) {
-  // 딥링크는 커스텀 URL 스킴이라 next Link 가 아닌 순수 anchor. 새 창 없이
-  // OS 가 클라이언트를 깨운다.
+  // A deeplink uses a custom URL scheme, so this is a plain anchor rather than a next Link. The
+  // OS wakes the client with no new window.
   return (
     <a
       href={href}

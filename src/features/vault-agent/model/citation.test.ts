@@ -16,13 +16,13 @@ describe('인용 강제', () => {
   });
 
   it('읽은 적 없는 이름은 인용이 아니라 지어낸 것이다', () => {
-    // 칩으로 그리면 누르는 순간 빈 곳으로 데려간다.
+    // Drawn as a chip, pressing it takes the user somewhere empty.
     const result = extractCitations('[[capabilities/imaginary]] 를 보세요.', [
       'capabilities/payment',
     ]);
     expect(result.paragraphs[0].citations).toEqual([]);
     expect(result.droppedCitations).toEqual(['capabilities/imaginary']);
-    // 읽기는 했으니 `unread` 가 아니다 — 표기만 무효다.
+    // Something was read, so this is not `unread` — only the notation is invalid.
     expect(result.grounding).toBe('uncited');
   });
 
@@ -32,9 +32,9 @@ describe('인용 강제', () => {
   });
 
   /**
-   * 2026-08-02 — 구 구현은 이 둘을 **같은 값**(`demoted: true`)으로 접었다.
-   * 실제로는 다음 행동이 다르다: 하나는 되돌아갈 길이 필요하고, 다른 하나는
-   * 화면이 읽은 목록으로 보정하면 끝난다.
+   * 2026-08-02 — the old implementation folded these two into **the same value**
+   * (`demoted: true`). Their next actions actually differ: one needs a way back, the
+   * other is finished once the screen compensates with the read list.
    */
   it('읽었는데 표기만 없으면 uncited — 강등이 아니라 보정 대상이다', () => {
     const result = extractCitations('제 생각에는 이렇습니다.', ['capabilities/payment']);

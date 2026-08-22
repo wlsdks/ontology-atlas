@@ -1,17 +1,18 @@
-// 최근 열어본 문서 slug 를 localStorage 에 5개까지 유지. 옵시디언 "Recent
-// files" 와 동등. 볼트별로 namespace 분리 — 서버 볼트와 로컬 볼트(폴더별)
-// 각각 독립된 리스트. slug 충돌 시 엉키는 문제 방지.
+// The slugs of up to 5 recently opened documents, kept in localStorage —
+// equivalent to Obsidian's "Recent files". Namespaced per vault so a server vault
+// and each local folder keep independent lists and slug collisions cannot tangle.
 
 export const RECENT_DOCS_STORAGE_PREFIX = 'demo:docs-vault:recent:v2:';
 const STORAGE_PREFIX = RECENT_DOCS_STORAGE_PREFIX;
 const MAX_RECENTS = 5;
 
 /**
- * 볼트 namespace key.
- *  - 서버 볼트: 'server'
- *  - 로컬 볼트: 'local:{폴더이름}'
- * 폴더 이름만으로 구분하므로 동명의 폴더를 여러 개 등록하면 섞일 수 있으나
- * 실사용에선 드문 edge case. 필요해지면 IDB key 기반 UUID 도입.
+ * Vault namespace key.
+ *  - server vault: 'server'
+ *  - local vault: 'local:{folder name}'
+ * Only the folder name distinguishes them, so registering several folders of the
+ * same name can mix them — a rare edge case in practice. Introduce an IDB-key UUID
+ * if it ever matters.
  */
 export type VaultRecentKey = 'server' | `local:${string}`;
 
@@ -49,7 +50,7 @@ export function pushRecentDoc(
   return next;
 }
 
-/** v1 에서 쓰던 단일 키를 v2 namespace 로 마이그레이트. 처음 1회만 수행. */
+/** Migrate the single key used in v1 to the v2 namespace. Runs once. */
 export function migrateLegacyRecentDocs(): void {
   if (typeof window === 'undefined') return;
   const LEGACY = 'demo:docs-vault:recent:v1';
@@ -64,8 +65,8 @@ export function migrateLegacyRecentDocs(): void {
     const slugs = parsed
       .filter((x): x is string => typeof x === 'string')
       .slice(0, MAX_RECENTS);
-    // 기존 단일 리스트는 서버 볼트용으로 간주 — 그 당시 로컬 볼트가
-    // 없었으므로 안전한 가정.
+    // The old single list is treated as the server vault's — local vaults did not
+    // exist at the time, so that is a safe assumption.
     const targetKey = storageKey('server');
     if (!window.localStorage.getItem(targetKey) && slugs.length > 0) {
       window.localStorage.setItem(targetKey, JSON.stringify(slugs));

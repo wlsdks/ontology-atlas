@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { MERGE_CASES, NEXT_CONFIG, NEXT_TEXT } from '../fixtures/mcp-merge-cases.mjs';
 import { mergeMcpServersJson } from '@/features/docs-vault-local/lib/agent-config-contents';
-// CLI 쪽 구현 — 같은 표를 두 구현에 넣고 답이 같은지 본다.
+// The CLI implementation — the same table goes through both, and the answers must match.
 import { repairMcpJsonText } from '../../cli/src/lib/agent-config.mjs';
 
 /**
- * 앱의 「에이전트 연결」과 CLI 의 `agent-setup --write` 는 **같은 파일**을 쓴다.
- * 그러니 같은 답을 내야 한다 — 2026-08-16 이전에는 정반대였다(CLI 는 보존,
- * 앱은 통째로 덮어쓰기). 이 표가 그 어긋남을 다시 못 열리게 한다.
+ * The app's "connect an agent" and the CLI's `agent-setup --write` write **the
+ * same file**, so they must produce the same answer. Before 2026-08-16 they did
+ * the opposite of each other (CLI preserved, app overwrote wholesale). This
+ * table stops that divergence reopening.
  */
 function serversOf(text: string): string[] {
   const parsed = JSON.parse(text) as { mcpServers?: Record<string, unknown> };
@@ -19,7 +20,7 @@ describe('`.mcp.json` 병합 — 앱과 CLI 가 같은 답을 낸다', () => {
   for (const testCase of MERGE_CASES) {
     it(testCase.name, () => {
       const app = mergeMcpServersJson(testCase.current, NEXT_TEXT);
-      // CLI 는 파일이 없는 경우를 호출자가 걸러서 처리한다(그때는 새로 쓴다).
+      // The CLI's caller handles the missing-file case itself (it writes a fresh file).
       const cli =
         testCase.current === null
           ? { ok: true as const, text: NEXT_TEXT }

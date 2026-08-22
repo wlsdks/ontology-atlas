@@ -7,15 +7,16 @@ import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../model/first-run-starter-dism
 import { FirstRunStarterModule } from "./FirstRunStarterModule";
 
 /**
- * design-council B6 rank17 회귀 가드 — 도메인/역량/요소 3-용어 정의가
- * "?" 단축키 모달(ShortcutSheet) 안에만 있어 완전 초심자가 지도를 처음
- * 열자마자는 볼 수 없었다. INDEX 첫실행 카드(FirstRunStarterModule)로
- * 승격했으니 (1) 항상(접힘 없이) 보이는지, (2) ShortcutSheet 와 같은
- * i18n 키를 참조해 실제 한국어/영어 문구가 정확히 일치하는지를 고정한다.
+ * Regression guard — the three-term definitions (domain / capability / element) used
+ * to live only inside the "?" shortcut modal (ShortcutSheet), where a complete
+ * beginner could not see them the moment they first opened the map. They were
+ * promoted to the INDEX first-run card (FirstRunStarterModule), so this pins that
+ * (1) they are always visible with no fold, and (2) they reference the same i18n keys
+ * as ShortcutSheet so the real Korean and English strings match exactly.
  *
- * 다른 FirstRunStarterModule.test.tsx 는 'next-intl' 전체를 identity
- * mock 으로 대체해 실제 번역 내용을 검증하지 않는다 — 이 파일만 진짜
- * NextIntlClientProvider 를 써서 실제 문구 drift 를 잡는다.
+ * The other FirstRunStarterModule.test.tsx replaces all of 'next-intl' with an
+ * identity mock and does not verify real translations — this file alone uses a real
+ * NextIntlClientProvider to catch actual copy drift.
  */
 
 interface MockVault {
@@ -23,7 +24,7 @@ interface MockVault {
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
   restoreAttempted: boolean;
-  /** 「한 번이라도 연결했나」 — 샘플 안내 대상 판정의 입력(2026-08-02). */
+  /** "Has a vault ever been connected?" — the input deciding who the sample notice targets (2026-08-02). */
   recentVaults: unknown[];
   open: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
@@ -86,10 +87,10 @@ describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
     renderWithLocale("ko");
 
     const glossary = screen.getByTestId("first-run-starter-glossary");
-    // <details> 등 접힘 컨테이너가 아니라 바로 렌더된 <dl> 이어야 한다.
+    // It must be a directly rendered <dl>, not inside a folding container such as <details>.
     expect(glossary.tagName).toBe("DL");
 
-    // title 은 <dl> 위 라벨(<p>)이라 dl 밖에서 찾는다.
+    // The title is a label (<p>) above the <dl>, so it is searched for outside the dl.
     expect(
       screen.getByText(koMessages.searchWidgets.shortcuts.glossary.title),
     ).toBeInTheDocument();

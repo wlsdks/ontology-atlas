@@ -10,93 +10,96 @@ export interface ImpactRankingRow {
   id: string;
   title: string;
   kind: string;
-  /** 바로 이어진 것 — 이 개념을 직접 가리키는 개념 수(1홉). */
+  /** Directly connected — the number of concepts pointing straight at this one (1 hop). */
   direct: number;
-  /** 바로 + 건너서 닿는 것 전부 — 이 개념을 바꾸면 다시 확인해야 하는 개념 수. */
+  /** Direct plus indirect — the number of concepts to re-check if this one changes. */
   total: number;
-  /** 근거로만 적힌 이름(자기 문서 없음)인가 — 계층 판정. */
+  /** Is this a name written only as evidence (no document of its own)? Decides the layer. */
   evidenceOnly: boolean;
   /**
-   * 볼트에 적힌 참조 원문 (`src/…/foo.test.ts`). 근거 계층 행에서만 쓴다 —
-   * 서로 다른 파일이 같은 사람 이름으로 줄어드는 경우(`cli/src/integration.test.mjs`
-   * 와 `mcp/src/integration.test.mjs` 가 둘 다 「Integration Test」)를 가른다.
+   * The reference string as written in the vault (`src/…/foo.test.ts`). Used only on evidence-layer
+   * rows — it separates different files that collapse to the same human name
+   * (`cli/src/integration.test.mjs` and `mcp/src/integration.test.mjs` are both "Integration Test").
    */
   ref?: string;
 }
 
 export interface ImpactRanking {
-  /** 사람이 frontmatter에 승인해 둔 depends_on 엣지 수. */
+  /** The number of depends_on edges a person approved in the frontmatter. */
   declaredDependencyEdges: number;
-  /** 그중 relation_notes 이유까지 함께 적힌 수. */
+  /** How many of those also carry a `relation_notes` rationale. */
   declaredWithRationaleEdges: number;
   /**
-   * **개념 계층** — 자기 `.md` 를 가진 개념만. 결정 화면의 1급 시민이고,
-   * 「바꾸면 멀리 퍼지는」이라는 위험도 질문이 성립하는 유일한 계층이다.
+   * **The concept layer** — only concepts with their own `.md`. These are first-class citizens of
+   * a decision screen, and the only layer where the risk question "what spreads furthest when
+   * changed?" holds.
    */
   rows: ImpactRankingRow[];
-  /** 개념 계층에서 파급이 1개 이상인 수 — 「상위 N / 전체 M」 절단 문구의 M. */
+  /** How many in the concept layer have a blast radius of at least 1 — the M in the "top N / M total" copy. */
   rankedCount: number;
   /**
-   * **근거 계층** — 다른 문서가 `elements:` 등에 이름만 적어 둔 파생 개념.
-   * 지우지 않고 아래로 내린다: 개발자에게는 촘촘한 추적이 값이고, 「문서
-   * 만들기」 승격 경로도 여기서만 보인다.
+   * **The evidence layer** — derived concepts whose names another document merely wrote into
+   * `elements:` and the like. Pushed down rather than deleted: dense traceability is valuable to a
+   * developer, and the "create a document" promotion path is visible only here.
    */
   evidenceRows: ImpactRankingRow[];
-  /** 근거 계층에서 참조가 1개 이상인 수. */
+  /** How many in the evidence layer have at least one citation. */
   evidenceRankedCount: number;
 }
 
 /**
- * "이걸 바꾸면 어디까지 깨지나" 랭킹 — 각 개념을 (직접·간접) 가리키는 개념
- * 수의 내림차순.
+ * The "what breaks if I change this?" ranking — concepts ordered by how many concepts point at
+ * them, directly and indirectly, descending.
  *
- * 계산을 새로 짜지 않고 `buildOntologyReachability`
- * 를 그대로 부른다. 그 함수들이 MCP `query_ontology({operation:"blast_radius",
- * direction:"incoming"})` 와 같은 의미론(역방향 전이 도달, soft association
- * 제외)의 단일 진실원이라, 화면이 말하는 수와 에이전트가 답하는 수가 갈라질
- * 수 없다 — 갈라지면 `tests/contract/impact-ranking.contract.test.ts` 가 잡는다.
+ * Rather than writing a new computation it calls `buildOntologyReachability` directly. Those
+ * functions are the single source of truth for the semantics of MCP
+ * `query_ontology({operation:"blast_radius", direction:"incoming"})` (reverse transitive
+ * reachability, excluding soft associations), so the number the screen states and the number the
+ * agent answers with cannot diverge — and if they do,
+ * `tests/contract/impact-ranking.contract.test.ts` catches it.
  *
- * `depends_on`만 포함한다. containment는 구조 탐색에는 유효하지만 변경의 인과
- * 증거가 아니므로 영향 수에 들어가지 않는다.
+ * Only `depends_on` is included. Containment is valid for structural traversal but is not causal
+ * evidence of change, so it does not enter the impact count.
  *
- * ## 계층은 계산 뒤에서 갈린다 (2026-07-26)
+ * ## The layers split *after* the computation (2026-07-26)
  *
- * 파급 수는 **전체 그래프**에서 잰다. 파생 개념을 그래프에서 빼고 재면 같은
- * 개념의 수가 화면과 에이전트에서 달라지고, 그 순간 이 카드는 의사결정
- * 자료가 아니라 소음이 된다. 그래서 수는 손대지 않고 **줄만 두 계층으로
- * 나눈다** — 실측 결과 개념 계층 상위 12행의 수는 계층 분리 전후로 동일했다.
+ * The blast radius is measured over **the whole graph**. Removing derived concepts from the graph
+ * before measuring would give one concept different numbers on screen and from the agent, and at
+ * that moment this card becomes noise rather than decision material. So the numbers are untouched
+ * and **only the rows are split into two layers** — measured, the top 12 concept-layer numbers
+ * were identical before and after the split.
  *
- * 같은 수에 두 계층이 필요한 이유가 이 카드의 핵심 결함이었다. 근거 계층의
- * 15는 "바꾸면 위험"이 아니라 "15개 개념이 이 파일을 근거로 적었다"는 뜻이고,
- * 그게 테스트 파일이면 오히려 *지켜준다*는 신호다. 계산이 맞고 말이 틀린
- * 경우라서 계산이 아니라 계층별 문구를 고쳤다(카드의 캡션 참조).
+ * Why the same number needs two layers was this card's core defect. In the evidence layer, 15 does
+ * not mean "risky to change" but "15 concepts cited this file as evidence", and if that is a test
+ * file it is a signal of protection instead. The computation was right and the words were wrong,
+ * so the per-layer copy was fixed rather than the computation (see the card's caption).
  */
 export function buildImpactRanking(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
   limit: number,
   /**
-   * 근거 계층에 펼쳐 보일 행 수.
+   * How many rows the evidence layer expands to.
    *
-   * 4인 이유는 실측이다(1512×950, 도그푸드 289개념): 6행이면 펼친 「연결」 탭이
-   * 1,151px(ko)·1,200px(en)로 스크롤 계약(1,120px)을 넘겼다. 4행이면 두 칸
-   * 격자에서 두 줄이라 들어온다. 규모는 토글 라벨과 절단 문구가 그대로 말하고
-   * 전체 목록은 지도·CLI 가 답하므로, 여기서 필요한 것은 "무엇이 강등됐는지"의
-   * 표본이다 — 강등된 계층이 원래 계층(12행)보다 길면 그건 강등이 아니다.
+   * Four is measured (1512×950, dogfood vault, 289 concepts): at six rows the expanded
+   * "connections" tab reached 1,151px (ko) and 1,200px (en), exceeding the scroll contract
+   * (1,120px). Four rows fit as two lines in the two-column grid. The scale is stated verbatim by
+   * the toggle label and the truncation copy, and the full list is answered by the map and the
+   * CLI, so what is needed here is a sample of *what got demoted* — a demoted layer longer than
+   * the original layer (12 rows) is not a demotion.
    */
   evidenceLimit = 4,
 ): ImpactRanking {
   const dependencyEdges = edges.filter((edge) => IMPACT_RELATION_TYPES.includes(edge.type));
   /*
-   * 색인을 **한 번만** 만든다 (2026-08-16 검수, 실측).
+   * Build the index **once** (reviewed and measured 2026-08-16).
    *
-   * 종전에는 노드마다 두 번 훑었고, 그 두 번이 각각 `nodeById` 맵과 인접
-   * 목록을 처음부터 다시 만들었다 — N개 노드에 대해 색인을 2N번. 잰 값:
-   * 500노드 132ms · 2,000노드 **2.37초** · 8,000노드 **51.8초**. 인사이트
-   * 화면은 셸에서 한 번 누르면 나오는 자리다.
+   * It used to walk the nodes twice, and each of those walks rebuilt the `nodeById` map and the
+   * adjacency list from scratch — 2N index builds for N nodes. Measured: 500 nodes 132ms, 2,000
+   * nodes **2.37s**, 8,000 nodes **51.8s**. The insights screen is one click away from the shell.
    *
-   * 이 색인은 아래 두 호출이 쓰는 **같은 필터**(`IMPACT_RELATION_TYPES`,
-   * 제외 없음)로 만든다 — 필터가 다르면 색인도 다른 것이 된다.
+   * The index is built with **the same filter** the two calls below use
+   * (`IMPACT_RELATION_TYPES`, no exclusions) — a different filter would make it a different index.
    */
   const index = buildReachabilityIndex(nodes, edges, { types: IMPACT_RELATION_TYPES });
   const scored: ImpactRankingRow[] = [];
@@ -109,8 +112,8 @@ export function buildImpactRanking(
       index,
     }).summary.reachableNodes;
     if (total === 0) continue;
-    // 같은 필터·같은 방향에서 깊이만 1로 잘라 "바로 이어진 것"을 얻는다 —
-    // 인접 목록을 따로 세면 두 수가 서로 다른 규칙을 쓰게 된다.
+    // Same filter, same direction, with depth cut to 1 to get "directly connected" — counting the
+    // adjacency list separately would let the two numbers follow different rules.
     const direct = buildOntologyReachability(node.id, nodes, edges, {
       direction: "incoming",
       depth: 1,

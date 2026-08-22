@@ -5,16 +5,18 @@ import ko from "../../messages/ko.json";
 import { MEASURED_MODE_IDS, modeCopyKey } from "@/features/acp-session/model/mode-copy";
 
 /**
- * 「작업 방식」 목록이 **사람 말**이어야 한다 (2026-08-17 소유자 지적).
+ * The working-mode list must be **in human words** (owner, 2026-08-17).
  *
- * 종전 화면: `Auto · 확인 안 됨` / `Manual` / `Plan Mode` / `Don't Ask · 확인 안 됨`.
- * 이름은 전부 영어이고, 설명은 우리가 아직 안 재 본 둘에만 붙어 있었다 — 정작
- * 고를 만한 둘에는 무엇이 다른지 한 글자도 없었다.
+ * The old screen: `Auto · 확인 안 됨` / `Manual` / `Plan Mode` /
+ * `Don't Ask · 확인 안 됨`. Every name was English, and descriptions were attached
+ * only to the two we had not measured — the two actually worth choosing said
+ * nothing about how they differ.
  *
- * 이 계약이 지키는 것 둘:
- * ① 옮기기로 한 id 는 두 언어에 **빠짐없이** 있다(한쪽만 채우면 다른 언어가 낡는다).
- * ② 모르는 id 는 **번역 열쇠를 안 만든다** — 지어 붙인 한 줄은 우리가 확인하지
- *    않은 약속이 된다.
+ * Two things this contract keeps:
+ * ① every id we decided to translate exists in **both** languages (filling one side
+ *    only leaves the other stale).
+ * ② an unknown id **gets no translation key** — an invented line becomes a promise
+ *    we never verified.
  */
 type Bundle = { acpChat?: { modeName?: Record<string, string>; modeHint?: Record<string, string> } };
 

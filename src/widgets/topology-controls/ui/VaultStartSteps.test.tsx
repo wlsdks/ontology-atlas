@@ -5,10 +5,11 @@ import koMessages from "../../../../messages/ko.json";
 import { VaultStartSteps, type VaultStartStepsProps } from "./VaultStartSteps";
 
 /**
- * 첫 걸음 카드 — **한 번에 하나씩, 아무것도 막지 않고, 끝이 있다.**
+ * The first-steps card — **one at a time, blocking nothing, with an end.**
  *
- * 이 파일이 지키는 것은 소유자가 실제로 걸린 자리들이다(2026-08-16):
- * 설명 없는 줄 · 눌러도 안 세는 진행 · 지나갈 수 없는 1단 · 끝나지 않는 카드.
+ * What this file holds are the places the owner actually got stuck (2026-08-16): a
+ * row with no explanation, progress that does not count a press, a first step you
+ * cannot pass, and a card that never ends.
  */
 function renderSteps(props: Partial<VaultStartStepsProps> = {}) {
   const base: VaultStartStepsProps = {
@@ -35,7 +36,7 @@ describe("첫 걸음 — 한 번에 하나씩", () => {
   it("걸음마다 **설명**이 있다 — 제목만 있던 종전이 「뭔지도 모르겠다」였다", () => {
     renderSteps({ onScaffoldStarter: vi.fn() });
     const body = screen.getByTestId("start-step-body").textContent ?? "";
-    // 한 줄짜리 라벨이 아니라 문장이어야 한다.
+    // It has to be a sentence, not a one-line label.
     expect(body.length).toBeGreaterThan(30);
   });
 
@@ -53,7 +54,7 @@ describe("첫 걸음 — 한 번에 하나씩", () => {
     fireEvent.click(screen.getByTestId("start-step-skip")); // agent → analyze
     fireEvent.click(screen.getByTestId("start-step-skip")); // analyze → starter
     expect(onFinish).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId("start-step-skip")); // starter → 끝
+    fireEvent.click(screen.getByTestId("start-step-skip")); // starter → the end
     expect(onFinish).toHaveBeenCalledTimes(1);
   });
 

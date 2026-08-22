@@ -57,171 +57,200 @@ import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
- * 단일 설정 표면 (설정 통합 2026-07-24, 소유자 지시) — 이전엔 설정이 두 곳에
- * 흩어져 있었다: ① 나브레일 톱니의 "지도 설정" 팝오버(TopologyV2SettingsGear —
- * 언어·보기 모드·INDEX 기본 상태·vault 바꾸기), ② 각 페이지 헤더 "설정" 필의
- * 5탭 "앱 설정" 모달(3탭이 사실상 링크 한 줄 + 거대한 빈 여백). 이 위젯이
- * 이제 유일한 설정의 집이다: 탭 폐지, 단일 컬럼 시트, "그룹 헤더 + 즉시 조작
- * 행" 문법(Toss 공개 발표 — 한 화면에 한 가지, 위계의 단순화).
+ * The single settings surface (settings consolidation 2026-07-24, owner
+ * instruction). Settings used to be scattered across two places: ① the nav
+ * rail gear's "map settings" popover (TopologyV2SettingsGear — language, view
+ * mode, INDEX default state, switch vault) and ② each page header's "settings"
+ * pill opening a five-tab "app settings" modal (three of the tabs were
+ * effectively one link plus a large empty area). This widget is now settings'
+ * only home: no tabs, a single-column sheet, and the "group header +
+ * immediately operable rows" grammar (Toss public talks — one thing per screen,
+ * simplified hierarchy).
  *
- * - [화면] 언어 · (호스트 주입 시) 보기 모드 · INDEX 기본 상태. 지도 화면
- *   상태(HomePage state)는 `screenControls` optional prop 으로 주입 — 미주입
- *   페이지(빌더 등)에서는 해당 행이 렌더되지 않는다.
- * - [작업공간] 현재 vault 이름/상태 1행 + 폴더 열기/바꾸기 + 문서함 링크.
- *   구 vault 탭의 LocalVaultPicker 표면 중 **경로 복사·Finder 열기**는 #72 에서
- *   이 그룹으로 복원됐다 — B2 병합 당시 "/docs vault 필이 담당" 이라고 적었지만
- *   실제로는 어느 표면도 그 컴포넌트를 렌더하지 않아 데스크톱에서 통째로
- *   유실돼 있었다(opus5 검수 2026-07-25).
- * - [내 에이전트 연결] `VaultAgentSetupPanel` — 밖의 도구(Claude Code · Codex ·
- *   Cursor · Antigravity)가 이 폴더를 읽게 하는 설정 파일. MCP 증명 장문·상태
- *   카드 그리드·판정 순서 문서는 「고급 · 자세한 검증」 접기 뒤에 있다.
- * - [앱 안 에이전트] (#80) 키 등록/연결 확인/보낸 기록. 새 라우트 0개 —
- *   설정의 집은 여기 하나다.
+ * - [screen] language · view mode (when the host injects it) · INDEX default
+ *   state. Map screen state (HomePage state) arrives through the optional
+ *   `screenControls` prop, so pages that do not inject it do not render those
+ *   rows.
+ * - [workspace] one row of current vault name and status, plus open/switch
+ *   folder and a docs-vault link. Of the old vault tab's LocalVaultPicker
+ *   surface, **copy path and reveal in Finder** were restored into this group in
+ *   #72 — the B2 merge recorded them as "handled by the /docs vault pill", but no
+ *   surface actually rendered that component, so they were lost outright on the
+ *   desktop (review 2026-07-25).
+ * - [my agent connection] `VaultAgentSetupPanel` — the config file that lets
+ *   outside tools (Claude Code · Codex · Cursor · Antigravity) read this folder.
+ *   The long MCP proof, the status card grid and the decision-order document sit
+ *   behind the 「고급 · 자세한 검증」 (advanced, detailed verification) fold.
+ * - [in-app agent] (#80) key registration, connection check, sent log. Zero new
+ *   routes — settings has one home.
  *
- * ## 드릴인 복도를 없앴다 (2026-08-02, 디자인 카운슬 A-3)
+ * ## The drill-in corridor was removed (2026-08-02, design council A-3)
  *
- * 위 둘은 한때 「AI 에이전트」라는 **한 LNB 절 안의 요약 2행**이었고, 각 행이
- * 서브뷰로 드릴인했다. 그 복도 판을 실측하니 698×617 중 잉크가 108px,
- * **빈칸 82.5%** 에 설정 항목은 0개였다 — 아무것도 고를 수 없는 칸이 한 절을
- * 통째로 쓰고 있었다. 게다가 드릴인하면 LNB 180px 이 통째로 사라져, 방금
- * 고른 목록을 잃은 채 뒤로가기 계단이 하나 생겼다.
+ * Those last two were once **two summary rows inside one LNB section** called
+ * 「AI 에이전트」, each drilling into a subview. Measuring that corridor pane gave
+ * 108px of ink out of 698×617 — **82.5% empty** with zero settings items. A pane
+ * where nothing can be chosen was consuming a whole section. Worse, drilling in
+ * removed all 180px of the LNB, so the list you had just chosen from was gone and
+ * a back step appeared.
  *
- * 그래서 **복도를 지우고 두 목적지를 LNB 로 승격**한다(6행 → 7행). 서브뷰
- * 전환 2 → 0, 뒤로가기 1 → 0, LNB 는 상시. 「AI」로 시작하는 이름 셋이 첫
- * 글자로 안 갈렸던 것도 여기서 끝난다 — 「내」 vs 「앱 안」.
+ * So **the corridor was deleted and both destinations promoted into the LNB**
+ * (6 rows → 7). Subview transitions 2 → 0, back steps 1 → 0, LNB always present.
+ * It also ended three names all starting with 「AI」 that never separated on their
+ * first character — now 「내」 versus 「앱 안」.
  *
- * P3 결함⑥ 계약 유지 — `open`/`onOpenChange` optional controlled prop, ⌘K 는
- * 팔레트에 양보(settings demote), Escape 는 이 다이얼로그가 소유하고
- * stopPropagation 으로 지도 Esc 래더에 새지 않는다.
+ * The P3 defect ⑥ contract still holds — `open`/`onOpenChange` are optional
+ * controlled props, ⌘K yields to the palette (settings demote), and Escape is
+ * owned by this dialog and stopPropagation keeps it from leaking into the map's
+ * Esc dismissal order.
  */
 
 /**
- * LNB 항목 — 왼쪽 목록의 순서와 묶음이 곧 이 배열이다.
+ * LNB items — the left list's order and grouping *is* this array.
  *
- * 「지도 배경」·「발자국」이 「화면」 밑이 아니라 **같은 단**에 있는 이유: 값이 각각
- * 4개·8개라 화면 절에 접어 넣으면 그 절이 나머지를 삼킨다. LNB 는 절을 늘리는
- * 비용이 거의 없다는 것이 드릴인 대비 장점이고, 그래서 늘렸다.
+ * 「지도 배경」 (map background) and 「발자국」 (footprints) sit at the **same
+ * level** as 「화면」 (screen) rather than under it because they carry 4 and 8
+ * values respectively, and folding them into the screen section would let that
+ * section swallow the rest. An LNB's advantage over drill-in is that adding a
+ * section is nearly free, so sections were added.
  *
- * ## 왜 묶음과 아이콘이 있나 (실측 2026-07-29)
+ * ## Why there are groups and icons (measured 2026-07-29)
  *
- * 아이콘 없는 글자만의 목록은 항목 폭 163px 에 글자가 **19~51px** 뿐이었다 —
- * 가로의 70%가 비고, 세로도 505px 중 329px(65%)이 빈 칸이었다. 그 공백은 여백이
- * 아니라 **정보가 없는 것**이다.
+ * A text-only list with no icons put **19–51px** of text into a 163px item — 70%
+ * of the width empty, and 329 of 505px (65%) empty vertically. That space is not
+ * whitespace; it is **an absence of information**.
  *
- * 아이콘은 장식이 아니라 **훑기 채널**이다(반복해 여는 목록에서 글자를 읽기 전에
- * 자리를 기억하게 한다). 묶음 제목은 다섯 항목이 왜 그 순서인지를 말한다 —
- * 앞 셋은 보이는 것, 뒤 둘은 이 앱이 무엇과 이어져 있는가다.
+ * Icons are not decoration but a **scanning channel** (in a list you reopen
+ * repeatedly they let you remember positions before reading words). The group
+ * titles say why the five items are in that order — the first three are what you
+ * see, the last two are what this app is connected to.
  *
- * ## 치수는 크롬에서 빌려오지 않는다 (2026-08-02, 소유자 *"이 LNB버튼도 작고"*)
+ * ## Dimensions are not borrowed from chrome (2026-08-02, owner: *"이 LNB버튼도 작고"*
+ * — this LNB button is small too)
  *
- * 종전 항목은 `px-2.5 py-1.5` → 높이 **32px**, 아이콘 **14px** 이었다. 32px 은
- * 나브레일 유틸리티 타일(`--app-nav-rail-tile-height`)의 값이고, 14px 은 이
- * 시트 어디에도 근거가 없는 값이다. 즉 **지도 위에 떠서 화면을 양보하는 도구
- * 막대**의 치수를 «일부러 들어와서 읽고 고르는 목적지» 가 빌려 쓰고 있었다 —
- * 「스케일 고정 계약」이 스스로 사정거리를 워크벤치 크롬으로 한정하는 바로 그
- * 이유가 여기에 반대로 적용됐다(`design.md`, `GatewayNav` 예외의 논리와 같다).
+ * Items used to be `px-2.5 py-1.5`, giving a height of **32px** with **14px**
+ * icons. 32px is the nav rail utility tile's value
+ * (`--app-nav-rail-tile-height`), and 14px has no basis anywhere in this sheet.
+ * So the dimensions of **a tool bar that floats over the map and yields screen
+ * space** were being borrowed by *a destination you deliberately enter to read
+ * and choose in* — the exact reason 「스케일 고정 계약」 (the locked-scale contract)
+ * limits its own reach to workbench chrome, applied here in reverse
+ * (`design.md`, the same logic as the `GatewayNav` exception).
  *
- * 그래서 값을 **이 시트 안에서** 끌어온다. 새 토큰은 만들지 않는다:
+ * So the values are drawn **from inside this sheet**. No new tokens:
  *
- * - `px-3 py-2` — 오른쪽 칸 `SettingsRow` 와 **같은 패딩**이다. 세로 인셋이
- *   같아지면서 높이 36px 이 파생되고, 가로 인셋이 같아지면서 왼쪽 목록과
- *   오른쪽 행의 글자 시작선이 같은 리듬을 탄다.
- * - `text-body-lg`(14px) — 이 목록은 시트가 열렸을 때 **먼저 고르게 하는
- *   자리**(주목 승자)다. 오른쪽 행 라벨(12.5px)보다 한 단 위여야 «어디로
- *   갈까»와 «무엇을 바꿀까»가 한 무게로 경쟁하지 않는다.
- * - 아이콘 16px — 14px 은 글자(14px)와 같아서 훑기 채널로 서지 못했다.
+ * - `px-3 py-2` — **the same padding** as the right pane's `SettingsRow`. Equal
+ *   vertical inset derives a height of 36px, and equal horizontal inset puts the
+ *   left list's and the right rows' text on the same rhythm.
+ * - `text-body-lg` (14px) — this list is **what you choose from first** when the
+ *   sheet opens (the attention winner). It has to be one step above the right
+ *   rows' labels (12.5px) so "where do I go" and "what do I change" do not
+ *   compete at equal weight.
+ * - 16px icons — at 14px they matched the text (14px) and never became a
+ *   scanning channel.
  */
 const SETTINGS_GROUPS = [
-  // 「확장」이 배경과 발자국 **사이**인 이유(소유자 2026-08-01: *"발자국 위에
-  // 하나 넣어주면 될듯"*): 앞의 둘은 지도가 무엇으로 그려지는가(바닥·글리프)고
-  // 「확장」은 그 위에서 무엇이 열리는가다. 발자국은 다 그린 뒤 남는 흔적이라
-  // 맨 뒤가 맞다.
-  // 「알림」이 발자국 **뒤**인 이유: 앞의 넷은 지도가 어떻게 그려지는가(바닥 ·
-  // 글리프 · 펼침 · 흔적)의 순서이고, 알림은 그 위에 앱이 말을 얹는 층이라
-  // 마지막이다. 「이어진 것」으로 내리지 않는 이유는 렌더 분기 주석에.
+  // Why 「확장」 (expand) sits **between** background and footprints (owner,
+  // 2026-08-01: *"발자국 위에 하나 넣어주면 될듯"* — put one above footprints):
+  // the first two are what the map is drawn from (ground, glyphs) and expand is
+  // what opens on top of that. Footprints are the trace left after everything is
+  // drawn, so last is right.
+  // Why 「알림」 (notify) sits **after** footprints: the first four follow how the
+  // map is drawn (ground · glyph · expand · trace), and notify is the layer where
+  // the app speaks on top of it. Why it is not moved under 「이어진 것」 is in the
+  // render-branch comment.
   { key: 'look', items: ['screen', 'background', 'expand', 'footprint', 'notify'] },
-  // 「내 에이전트 연결」·「앱 안 에이전트」가 여기 **나란히** 있는 이유: 둘은
-  // 같은 절의 두 요약 행이 아니라 서로 다른 목적지다. 하나는 밖의 도구가 이
-  // 폴더를 읽게 하는 **설정 파일**이고, 하나는 앱 안에서 말을 거는 **키**다.
+  // Why 「내 에이전트 연결」 and 「앱 안 에이전트」 sit **side by side** here: they
+  // are two different destinations, not two summary rows of one section. One is
+  // the **config file** that lets outside tools read this folder; the other is the
+  // **key** for talking to an agent inside the app.
   /*
-   * 이 셋의 이름은 **영어 그대로 둔다** (2026-08-16 소유자 확정: *"Agents 랑
-   * MCP API KEY 이렇게 3개로 분리하는 게 좋지 않을까? 한국어가 아니어도
-   * 되는데"*). 종전 이름 셋(「실행기」·「내 에이전트 연결」·「앱 안 에이전트」)은
-   * 전부 우리가 지어낸 번역어라 무슨 일을 하는 칸인지 아무것도 말하지 못했다 —
-   * 특히 「실행기」는 runtime 의 직역이라 한국어로 읽으면 뜻이 0이다.
+   * These three names **stay in English** (owner call, 2026-08-16: *"Agents 랑
+   * MCP API KEY 이렇게 3개로 분리하는 게 좋지 않을까? 한국어가 아니어도 되는데"* —
+   * splitting into Agents, MCP and API KEY seems better, and they don't have to be
+   * Korean). The three previous names (「실행기」 · 「내 에이전트 연결」 ·
+   * 「앱 안 에이전트」) were all coinages of ours that said nothing about what the
+   * pane does — 「실행기」 especially is a literal translation of "runtime" and
+   * means nothing when read in Korean.
    *
-   * Agents · MCP · API Key 는 대상 사용자가 **이미 아는 단어**이고 서로 겹치지
-   * 않는다. 각 칸이 무엇을 하는지는 그 칸 맨 위 한 줄이 평문으로 말한다 —
-   * 이름은 찾는 데 쓰고, 설명은 안에서 한다.
+   * Agents · MCP · API Key are words the target user **already knows**, and they
+   * do not overlap. What each pane does is stated in plain language by the line at
+   * its top — the name is for finding, the explanation happens inside.
    *
-   * 순서에 뜻이 있다: **「Agents」가 앞**인 것은 이 앱 안에서 바로 말을
-   * 거는 길이라서고, **API Key 가 맨 뒤**인 것은 그 경로가 동결이라 강조하지
-   * 않기로 한 결정(2026-08-16 PO 카운슬) 때문이다.
+   * The order carries meaning: **「Agents」 is first** because it is the path to
+   * talking to an agent right inside this app, and **API Key is last** because
+   * that path is frozen and was deliberately de-emphasised (2026-08-16 PO council).
    *
-   * 이름의 역사 — 세 번 오갔으니 네 번째 전에 여기부터 읽어라:
-   * ① 「Agents」·「MCP」(2026-08-16 소유자 확정) → ② 「앱에서 대화」·
-   * 「터미널에서 연결」(2026-08-17): 에이전트를 붙이려는 사람이 둘 중 뭘
-   * 눌러야 하는지 알 수 없었다 — 하나는 갈래 이름, 하나는 프로토콜 약어라
-   * 둘 다 「에이전트 연결」로 읽혔다. 그래서 **어디서 쓰는가**로 갈랐다.
-   * → ③ 「Agents」·「MCP 연결」(2026-08-19 소유자 지시): 「MCP 연결」은
-   * 08-17 의 우려 중 자기 몫(약어만으로는 무슨 행동인지 안 보인다)을
-   * 「연결」로 답하지만, 「Agents」는 여전히 앱 안 대화라는 것을 말하지
-   * 않는다 — 두 칸 맨 위 intro 한 줄이 그 구분을 대신 진다.
-   * 「Agents」 라벨은 vendor 조건이 아니다 — 목록이 `Claude Agent`(드롭다운
-   * 권장명)를 쓰므로 「Agents 로 이름 붙은 메뉴 안」이라는 조건에 기대지
-   * 않는다 (`tests/contract/vendor-naming.contract.test.ts`).
+   * Name history — it has gone back and forth three times, so read this before a
+   * fourth:
+   * ① 「Agents」·「MCP」 (owner call, 2026-08-16) → ② 「앱에서 대화」 ·
+   * 「터미널에서 연결」 (2026-08-17): someone trying to connect an agent could not
+   * tell which of the two to press — one was a category name, the other a protocol
+   * acronym, and both read as "connect an agent". So they were split by **where
+   * you use them**. → ③ 「Agents」·「MCP 연결」 (owner instruction, 2026-08-19):
+   * 「MCP 연결」 answers its half of the 08-17 concern (an acronym alone does not
+   * show what action it is) with 「연결」, but 「Agents」 still does not say that it
+   * means in-app conversation — the one-line intro at the top of each pane carries
+   * that distinction instead.
+   * The 「Agents」 label is not a vendor condition — the list uses `Claude Agent`
+   * (the recommended dropdown name), so it does not depend on being "inside a menu
+   * named Agents" (`tests/contract/vendor-naming.contract.test.ts`).
    */
   /*
-   * ⚠️ **`runtimes` 와 `agent` 는 2026-08-20 에 「에이전트」 목적지로 나갔다**
-   * (원장 90). 설정은 값을 고르는 자리이고, 도구를 받고 깔고 붙이고 고치는 것은
-   * **진행 상태가 있는 운영 작업**이라 뒤를 막는 모달이 그릇으로 맞지 않았다.
+   * ⚠️ **`runtimes` and `agent` left for the 「에이전트」 destination on
+   * 2026-08-20** (ledger 90). Settings is where you choose values, while
+   * downloading, installing, connecting and repairing tools is **operational work
+   * with progress**, and a modal that blocks what is behind it is the wrong
+   * container for that.
    *
-   * 그래서 남는 것은 「폴더」와 「키」다 — 둘 다 한 번 정하면 되는 값이다.
-   * (`ai` 는 2026-08-16 「경로 동결·비강조」가 서 있어 목적지로 안 올린다.)
+   * What remains is 「폴더」 (folder) and 「키」 (key) — both values you set once.
+   * (`ai` is not promoted to a destination because the 2026-08-16 "frozen path,
+   * de-emphasised" decision still stands.)
    *
-   * 빠져나간 자리를 찾을 사람을 위해 이 묶음 **맨 앞에 이정표 행 하나**가 선다 —
-   * 내용은 안 그리고 목적지로만 보낸다.
+   * For anyone looking for what left, **one signpost row stands at the head** of
+   * this group — it draws no content and only sends you to the destination.
    */
   { key: 'connect', items: ['workspace', 'ai'] },
   /*
-   * 「앱」이 **맨 마지막**인 이유: 앞의 두 묶음은 매일 만지는 것(지도가 어떻게
-   * 보이나 · 무엇이 이 폴더에 붙나)이고, 이 묶음은 **앱 자신**에 대한 것이라
-   * 찾을 때만 온다. macOS 의 관습(정보·갱신이 목록 끝)과도 같은 자리다.
+   * Why 「앱」 (app) is **last**: the two groups before it are things you touch
+   * daily (how the map looks · what attaches to this folder), while this group is
+   * about **the app itself** and you only come here to look something up. It is
+   * also where macOS convention puts it (about and updates at the end of a list).
    *
-   * 데스크톱에만 그린다 — 브라우저 탭은 자기를 교체할 수 없어서, 웹에서 갱신을
-   * 말하는 것은 할 수 없는 일을 제안하는 것이다. 절 자체가 없다.
+   * Desktop only — a browser tab cannot replace itself, so talking about updates
+   * on the web offers something we cannot do. The section simply does not exist.
    */
   { key: 'app', items: ['update'] },
 ] as const;
 
 type SettingsSection = (typeof SETTINGS_GROUPS)[number]['items'][number];
 
-/** 절 → 아이콘. 아이콘은 항목당 하나씩 고정이라 이 표가 단일 출처다. */
+/** Section → icon. Exactly one icon per item, so this table is the single source. */
 const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
-  // 아래로 향한 화살표 — 이 목록에서 유일하게 «받아 온다»는 실루엣이다.
+  // A downward arrow — the only «fetches something in» silhouette in this list.
   update: DownloadCloud,
   screen: Monitor,
   background: Layers,
-  // 네 방향으로 벌어지는 화살표 — 이 목록에서 유일하게 «바깥으로 퍼지는»
-  // 실루엣이라 사각(Monitor)·겹친 판(Layers)·발자국·드라이브·봇 어느 것과도
-  // 안 섞인다(아이콘은 장식이 아니라 훑기 채널이다, 위 주석).
+  // Arrows spreading in four directions — the only «expands outward» silhouette
+  // in this list, so it never blurs with the rectangle (Monitor), stacked plates
+  // (Layers), footprints, drive or bot (icons are a scanning channel, see above).
   expand: Expand,
   footprint: Footprints,
-  // 종 — 이 목록에서 유일한 «울리는» 실루엣이다. 말풍선(ai)과 헷갈릴 자리가
-  // 아닌 이유: 말풍선은 «내가 말을 건다», 종은 «앱이 나를 부른다» 이고 외곽선도
-  // 사각 대 삼각이라 훑기에서 갈린다.
+  // A bell — the only «ringing» silhouette in this list. It cannot be confused
+  // with the speech bubble (ai): a bubble means «I speak to it», a bell means «the
+  // app calls me», and their outlines separate as rectangle versus triangle.
   notify: Bell,
   workspace: HardDrive,
   ai: MessageSquare,
 };
 /**
- * LNB 행의 호버 — **한 곳에만 적는다** (2026-08-21).
+ * Hover for an LNB row — **written in one place only** (2026-08-21).
  *
- * 이정표 행이 생기면서 같은 호버가 두 벌이 됐다. 값 층의 `hoverSurface: 'lift'`
- * 는 행에 `overlay-1` 을 주는데, 이 시트의 형제 행들은 `overlay-2` 라 축을 쓰면
- * **이 행만 다르게 밝아진다.** 그래서 축으로 옮기는 대신 사본을 없앤다 —
- * 래칫이 막으려는 것이 「손으로 쓴 호버가 **느는 것**」이고, 이 상수는 그것을
- * 줄인다.
+ * The signpost row made this hover a second copy. The value layer's
+ * `hoverSurface: 'lift'` gives the row `overlay-1`, but this sheet's sibling rows
+ * use `overlay-2`, so going through the axis would make **only this row brighten
+ * differently**. So instead of moving it to the axis, the copy is deleted — what
+ * the ratchet exists to stop is hand-written hovers **increasing**, and this
+ * constant reduces them.
  */
 const SETTINGS_NAV_ROW_HOVER =
   'hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]';
@@ -232,17 +261,20 @@ const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
 const SETTINGS_LOCALE_FOCUS_MAX_AGE_MS = 10_000;
 
 /**
- * 인디고 강조 칩의 **테두리와 호버** — 값 층이 안 내는 두 층이다.
+ * The **border and hover** of the indigo emphasis chip — the two layers the value
+ * layer does not supply.
  *
- * `tone: 'accentOnTint'` 는 글자색만 낸다(그게 램프가 소유하는 것이다). 테두리 틴트와
- * 호버 색은 아직 램프 밖이라 세 자리가 같은 문자열을 손으로 들고 있었다.
- * 한 벌로 묶어 갈림을 없앤다 — 램프가 이 층을 갖게 되면 지울 자리도 하나다.
+ * `tone: 'accentOnTint'` gives only the text colour (that is what the ramp owns).
+ * The border tint and hover colour are still outside the ramp, so three places
+ * were each holding the same string by hand. One copy removes the divergence, and
+ * when the ramp gains this layer there will be one place to delete.
  */
 const INDIGO_ACTION_CHIP =
   'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]';
-// 값의 단일 출처는 `@/shared/config` 다 — 여기 다시 적으면 시트 쪽과
-// 갈라진다(그게 2026-08-01 에 실제로 일어난 일이다). 이 파일은 쓰기만 하고
-// 기존 소비처를 위해 이름만 다시 내보낸다.
+// The single source for the value is `@/shared/config` — writing it again here
+// makes it diverge from the sheet's copy, which is what actually happened on
+// 2026-08-01. This file only consumes it and re-exports the name for existing
+// consumers.
 export { AGENT_GRAPH_WORKFLOW_HREF };
 
 interface SettingsLocaleFocusIntent {
@@ -302,21 +334,23 @@ export interface AppSettingsScreenControls {
 
 export interface AppSettingsMenuProps {
   mode: 'static' | 'local';
-  /** controlled open state. 미지정 시 self-managed(기존 동작). */
+  /** Controlled open state. Unset means self-managed (the previous behaviour). */
   open?: boolean;
-  /** controlled 모드에서 open 이 바뀔 때마다 호출 — 호출자가 실제 state 를 갱신한다. */
+  /** Called whenever open changes in controlled mode — the caller updates the real state. */
   onOpenChange?: (next: boolean) => void;
   /**
-   * 지도(HomePage) 전용 화면 상태 주입 — 보기 모드(개발/일반)와 INDEX 기본
-   * 상태. 주입한 페이지에서만 [화면] 그룹에 해당 행이 나타난다.
+   * Screen state injected by the map (HomePage) only — view mode (dev/normal) and
+   * INDEX default state. Those rows appear in the [screen] group only on pages
+   * that inject them.
    */
   screenControls?: AppSettingsScreenControls;
   /**
-   * 트리거 표면 계약. `header-pill`(기본) = 페이지 헤더의 "설정" 필.
-   * `rail-tile` = 나브레일 하단 유틸 타일(활동·발자취와 같은
-   * `--app-nav-rail-tile-*` 지오메트리). `chrome-tile` = <lg 상단 유틸리티
-   * 레인의 `--chrome-tile-size` 타일. 구 TopologyV2SettingsGear 의 트리거
-   * 문법을 그대로 승계한다 — 팝오버 대신 이 시트가 열리는 것만 다르다.
+   * Trigger surface contract. `header-pill` (default) = the page header's
+   * "settings" pill. `rail-tile` = the nav rail's lower utility tile (the same
+   * `--app-nav-rail-tile-*` geometry as activity and trail). `chrome-tile` = the
+   * `--chrome-tile-size` tile in the `<lg` top utility lane. It inherits the old
+   * TopologyV2SettingsGear's trigger grammar exactly — the only difference is that
+   * this sheet opens instead of a popover.
    */
   triggerVariant?: SettingsTriggerVariant;
 }
@@ -330,16 +364,16 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
-  // #72 — 경로 복사/Finder 문구는 구 LocalVaultPicker 가 쓰던 키를 그대로
-  // 재사용한다(문구 중복 생성 없이 표면만 옮긴다).
+  // #72 — the copy-path and Finder strings reuse the keys the old
+  // LocalVaultPicker used, so only the surface moves and no copy is duplicated.
   const tPicker = useTranslations('featuresMisc.localVaultPicker');
   const locale = useLocale();
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
   const localVault = useLocalVault();
-  // 번들 MCP 서버 유무 — 설정 패널의 원클릭 성립 여부.
-  // 지금 화면이 등록한 "안내 다시 열기" — 등록이 없는 화면에서는 행 자체가
-  // 없다(빈 행/비활성 버튼을 남기지 않는다).
+  // Whether the bundled MCP server exists — decides whether one-click is possible.
+  // The guide the current screen registered for "reopen the guide". On a screen
+  // with no registration the row itself is absent (no empty rows, no dead buttons).
   const replayGuide = useGuideReplay();
   const guideAutoStart = useGuideAutoStart();
   const frameMeter = useFrameMeter();
@@ -353,7 +387,7 @@ export function AppSettingsMenu({
     },
     [isControlled, onOpenChange],
   );
-  /** 지금 보고 있는 LNB 절. 시트를 닫아도 유지된다(세션 한정) — 다시 열면 하던 자리다. */
+  /** The LNB section currently shown. It survives closing the sheet (session only) — reopening lands where you were. */
   const [section, setSection] = useState<SettingsSection>('screen');
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -365,15 +399,16 @@ export function AppSettingsMenu({
     // closePanel owns the return target so ⌘K can intentionally yield focus
     // to the command palette without the modal cleanup stealing it back.
     restoreFocus: false,
-    // ⚠️ trapTab 은 기본 true 다 — 이 시트는 2026-07-30 에 모달+딤으로
-    // 회귀했고(aria-modal="true") Tab 도 실제로 가둔다. 한때 여기 있던
-    // "도크는 비모달" 주석은 그 회귀 전의 것이라 지웠다(오정보).
+    // ⚠️ trapTab defaults to true — this sheet regressed to modal plus dim on
+    // 2026-07-30 (`aria-modal="true"`) and really does trap Tab. The "the dock is
+    // non-modal" comment that used to sit here predated that and was deleted as
+    // misinformation.
   });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
 
   const isLocalVaultLoaded = localVault.status === 'loaded';
-  // #72 — 데스크톱에서만 절대 경로를 알 수 있다(웹 FSA 핸들엔 경로가 없다).
+  // #72 — the absolute path is knowable only on the desktop (a web FSA handle has no path).
   const vaultRootPath =
     isLocalVaultLoaded && localVault.handle
       ? (getTauriVaultRootPath(localVault.handle) ?? null)
@@ -412,25 +447,26 @@ export function AppSettingsMenu({
     rememberRouteFocusIntent(vaultHref);
   };
 
-  // [앱 안 에이전트] (#80) — 시트가 닫혀 있으면 키체인도 감사 로그도 읽지
-  // 않는다(조용한 조회 0).
+  // [in-app agent] (#80) — with the sheet closed, neither the keychain nor the
+  // audit log is read (zero silent queries).
   const aiConnection = useAiConnection({
     enabled: open,
     vaultHandle: isLocalVaultLoaded ? (localVault.handle ?? null) : null,
   });
 
-  // P3 결함⑥ — controlled 모드에서 이 `<details>` 는 React state 가 곧
-  // 진실원이어야 한다. 매 렌더마다 DOM `open` 을 React 값으로 되맞춰 race 를
-  // 구조적으로 없앤다 (uncontrolled 모드에서도 같은 값이면 no-op).
+  // P3 defect ⑥ — in controlled mode React state must be the source of truth for
+  // this `<details>`. Re-aligning the DOM `open` to the React value on every render
+  // removes the race structurally (in uncontrolled mode the same value is a no-op).
   /**
-   * 퇴장 presence (2026-07-28 프레임 실측). 이 시트는 등장에 8프레임(134ms,
-   * 피크 2.15)을 쓰고 **퇴장은 단 1프레임**이었다 — 그 한 프레임의 델타가
-   * 등장 피크의 **4.7배**(10.03). `settingsPanelIn` 은 있는데 짝이 없었다:
-   * 들어온 길로 나가지 않는다.
+   * Exit presence (frame measurement, 2026-07-28). This sheet spent 8 frames
+   * (134ms, peak 2.15) entering and **exactly 1 frame** leaving — that single
+   * frame's delta was **4.7×** the entry peak (10.03). `settingsPanelIn` existed
+   * with no counterpart: it did not leave the way it came in.
    *
-   * 포커스 반환·스크롤 잠금·Esc 핸들러는 계속 `open` 을 보므로 동작은 그대로고,
-   * 늘어나는 것은 **그림뿐**이다 — 그래서 나가는 동안 `inert` + `aria-hidden`
-   * 으로 보조기술과 포인터에게서 즉시 사라진다(모달이 둘로 읽히지 않게).
+   * Focus return, scroll lock and the Esc handler still read `open`, so behaviour
+   * is unchanged and only **the drawing** is extended. That is why it becomes
+   * `inert` plus `aria-hidden` while leaving, disappearing immediately from
+   * assistive technology and the pointer so two modals are never read at once.
    */
   const settingsPresence = usePanelPresence(open);
   const settingsMounted = settingsPresence.mounted;
@@ -454,8 +490,8 @@ export function AppSettingsMenu({
       const details = detailsRef.current;
       const overlay = overlayRef.current;
       const target = event.target as Node;
-      // 오버레이는 portal(body 직속)이라 details.contains 만으로는 시트 내부
-      // 클릭을 "바깥"으로 오판한다 — 둘 다 검사.
+      // The overlay is portalled (a direct child of body), so `details.contains`
+      // alone misjudges a click inside the sheet as "outside" — check both.
       if (details?.contains(target) || overlay?.contains(target)) return;
       setOpen(false);
     };
@@ -469,7 +505,7 @@ export function AppSettingsMenu({
       window.setTimeout(() => triggerRef.current?.focus(), 0);
     }
   };
-  /** 요청받은 절로 데려가고 **그 목록 항목에 초점**을 둔다 — 어디에 왔는지가 목록에 남는다. */
+  /** Go to the requested section and **focus that list item** — the list records where you arrived. */
   const focusSection = (next: SettingsSection) => {
     setSection(next);
     window.setTimeout(() => {
@@ -479,23 +515,23 @@ export function AppSettingsMenu({
     }, 0);
   };
 
-  // 다른 표면이 "설정의 그 자리" 를 열어 달라고 보낸 요청. 지도 오른쪽 도크의
-  // 「설정에서 키 등록」이 이 경로로 들어온다 — 사용자에게 톱니 위치를 말로
-  // 알려주는 대신 문을 준다.
+  // A request from another surface to open "that place in settings". The map's
+  // right dock 「설정에서 키 등록」 (register a key in settings) comes in this way —
+  // giving the user a door instead of telling them where the gear is.
   //
-  // 이 위젯은 화면 폭에 따라 두 트리거(레일 타일 lg+ · 크롬 타일 <lg)로 두 번
-  // 마운트되지만 **보이는 쪽만** 응답한다. 시트는 portal 이라 숨은 인스턴스까지
-  // 응답하면 같은 시트가 두 겹으로 열린다. 브레이크포인트를 여기 복제하지 않고
-  // 실제 렌더 여부(`offsetParent`)로 판정한다 — 폭 계약이 바뀌어도 이 코드는
-  // 갈라지지 않는다.
+  // This widget mounts twice depending on viewport width (rail tile at lg+, chrome
+  // tile below lg) but **only the visible one responds**. The sheet is portalled,
+  // so a hidden instance responding too would open the same sheet twice over. The
+  // breakpoint is not duplicated here; the test is whether it actually renders
+  // (`offsetParent`), so this code does not diverge when the width contract changes.
   useEffect(
     () =>
       subscribeSettingsViewIntent((next) => {
         const trigger = triggerRef.current;
         if (!trigger || trigger.offsetParent === null) return;
         setOpen(true);
-        // 서브뷰가 사라졌으므로 요청은 그대로 **LNB 절**로 착지한다 —
-        // `'ai'`/`'agent'` 라는 이름은 그대로라 부르는 쪽은 아무것도 안 바뀐다.
+        // With subviews gone the request lands directly on the **LNB section** —
+        // the names `'ai'`/`'agent'` are unchanged, so callers see no difference.
         focusSection(next);
       }),
     [setOpen],
@@ -507,19 +543,19 @@ export function AppSettingsMenu({
       open={open}
       className="group relative shrink-0"
       onKeyDown={(event) => {
-        // Guardian B2 — transient 상호배제: ⌘K(팔레트)가 열리면 설정은
-        // demote (동시 스택 금지, design.md popup-soup 계약). 포커스 반환
-        // 없이 닫아 팔레트가 포커스를 가져가게 한다.
+        // Guardian B2 — transient mutual exclusion: when ⌘K (the palette) opens,
+        // settings demotes (no simultaneous stack, design.md popup-soup contract).
+        // It closes without returning focus so the palette can take it.
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
           closePanel(false);
           return;
         }
         if (event.key !== 'Escape') return;
         event.preventDefault();
-        // 지도 Esc 래더(window keydown)가 같은 keypress 에 이중으로 반응하지
-        // 않도록 이 다이얼로그가 Escape 를 소유한다 — "one overlay owns one
-        // Escape" (구 설정 기어와 같은 계약). 드릴인 서브뷰가 없어졌으므로
-        // 사다리는 한 칸이다: 이 시트가 닫힌다.
+        // This dialog owns Escape so the map's Esc dismissal order (a window
+        // keydown) does not react twice to the same keypress — "one overlay owns
+        // one Escape" (the same contract as the old settings gear). With drill-in
+        // subviews gone the order is one rung: this sheet closes.
         event.stopPropagation();
         closePanel();
       }}
@@ -538,12 +574,12 @@ export function AppSettingsMenu({
         className={cn(
           ' list-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden',
           triggerVariant === 'rail-tile'
-            ? // 나브레일 유틸리티 타일 계약 — 활동(AppNavRail)·발자취
-              // (GitStatusTile)와 같은 지오메트리·상태 안무.
+            ? // Nav rail utility tile contract — the same geometry and state
+              // choreography as activity (AppNavRail) and trail (GitStatusTile).
               'flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)]'
             : triggerVariant === 'chrome-tile'
-              ? // <lg 상단 유틸리티 레인의 ChromeTile 계약 — 같은 행 타일들과
-                // 높이·radius·표면 일치.
+              ? // The `<lg` top utility lane's ChromeTile contract — height,
+                // radius and surface matching the other tiles on that row.
                 'flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
               : 'inline-flex h-8 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
         )}
@@ -565,46 +601,47 @@ export function AppSettingsMenu({
           </span>
         ) : null}
       </summary>
-      {/* `open ||` 가 먼저다 — 여는 순간은 **같은 커밋**에 포털이 서야
-          자동 포커스/포커스 트랩이 첫 렌더에서 패널을 찾는다(effect 로 미루면
-          한 커밋 늦어 초점이 새어나간다). 뒤의 presence 는 **닫는 쪽만**
-          늘린다. */}
+      {/* `open ||` comes first — at the moment of opening the portal must stand in
+          **the same commit** so autofocus and the focus trap find the panel on the
+          first render (deferring to an effect is one commit late and focus leaks
+          out). The presence check after it extends **only the closing side**. */}
       {(open || settingsMounted) && typeof document !== 'undefined'
         ? createPortal(
       <div
         ref={overlayRef}
         /*
-         * **우측 도크 — 모달이 아니다** (카운슬 처방 2026-07-29, 소유자 지시).
+         * **The right-hand dock is gone — this is a modal** (council prescription
+         * 2026-07-29, owner instruction).
          *
-         * 종전엔 화면 가운데 모달 + scrim 이었다. 그런데 이 시트의 「지도 배경」·
-         * 「발자국」 절은 *"바꾸면 지도가 즉시 반영된다"* 가 계약인데, 정작 그
-         * 지도를 자기가 가렸다 — 설정을 만지는 동안 결과를 볼 수 없었다.
+         * ## Position and nature changed three times; this is the terminus
          *
-         * ## 자리와 성질이 세 번 바뀌었다 — 여기가 종점이다
+         * ① centre modal (original) → ② right non-modal dock → ③ centre non-modal
+         * → ④ **centre modal plus dim** (owner, 2026-07-30, referencing Claude
+         * desktop's settings).
          *
-         * ① 가운데 모달(원래) → ② 우측 비모달 도크 → ③ 가운데 비모달 →
-         * ④ **가운데 모달 + 딤**(소유자 2026-07-30, Claude 데스크톱 설정 참조).
+         * The reason for ② was *"설정 창이 지도 가리는거"* (the settings window
+         * covers the map) — the 「지도 배경」 and 「발자국」 sections promise *"change
+         * it and the map updates immediately"* while covering that very map. So the
+         * scrim was removed to keep the map visible.
          *
-         * ②로 간 이유는 *"설정 창이 지도 가리는거"* 였다 — 「지도 배경」·「발자국」
-         * 절이 *"바꾸면 지도가 즉시 반영된다"* 를 약속하는데 정작 그 지도를 자기가
-         * 가렸다. 그래서 scrim 을 없애 지도를 살려 뒀다.
+         * **That reason has gone away.** Both sections already carry a **live
+         * preview inside the panel**: `FootprintSettings`' `FootprintPreview` draws
+         * with the **same renderer** as the map, and the background swatches draw
+         * with the real `--canvas-bg-*` tokens. So seeing the result while changing
+         * a value was being solved **by the preview, not by the map**, and the dock
+         * was sacrificing position for a problem already solved.
          *
-         * **그 이유가 사라졌다.** 두 절은 이미 **패널 안에 실시간 미리보기**를
-         * 갖고 있다 — `FootprintSettings` 의 `FootprintPreview` 는 지도와 **같은
-         * 렌더러**로 그리고, 배경 스와치는 실제 `--canvas-bg-*` 토큰으로 그린다.
-         * 즉 값을 만지는 동안 결과를 보는 문제는 **지도가 아니라 미리보기가**
-         * 풀고 있었고, 도크는 이미 풀린 문제를 위해 위치를 희생하고 있었다.
+         * So the dim comes back. With no overlap there is no need for the side
+         * wiring that collapsed INDEX either (it was added once and reverted — it
+         * did the dim's job a second time).
          *
-         * 그래서 딤을 되살린다. 겹침이 사라지므로 INDEX 를 접는 곁가지 결합도
-         * 필요 없다(한 번 넣었다가 되돌렸다 — 딤이 하는 일을 두 번 하는 배선이었다).
+         * ⚠️ **With a dim, `aria-modal` becomes true.** Not setting it during ②③
+         * was not discipline but **fact** — telling assistive technology to ignore
+         * an outside that is still alive is a lie. It really does block now, so it
+         * is set again. The focus trap returns for the same reason.
          *
-         * ⚠️ **딤이 있으면 `aria-modal` 이 참이 된다.** ②③ 동안 그 속성을 걸지
-         * 않은 것은 규율이 아니라 **사실**이었다 — 바깥이 살아 있는데 없는 셈
-         * 치라고 말하면 거짓이다. 지금은 실제로 차단하므로 다시 건다. 초점 트랩도
-         * 같은 이유로 복귀한다.
-         *
-         * portal(body 직속)은 그대로 — 트리거가 어느 크롬 컨테이너에 앉아
-         * 있어도 그 stacking context 에 갇히지 않는다.
+         * The portal (a direct child of body) stays — whichever chrome container
+         * the trigger sits in, the sheet is not trapped in its stacking context.
          */
         className={`${settingsExiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-backdrop-medium)] p-3 sm:p-6`}
         aria-hidden={settingsExiting || undefined}
@@ -615,44 +652,52 @@ export function AppSettingsMenu({
         <div
           ref={panelRef}
           role="dialog"
-          // 뒤를 딤으로 덮어 실제로 차단하므로 `aria-modal` 은 **참이다**.
-          // 비모달 도크였던 동안에는 이걸 걸지 않았다 — 그때는 바깥이 살아
-          // 있었고, 살아 있는데 "없는 셈 치라"고 말하면 거짓이었다.
+          // The dim really does block what is behind, so `aria-modal` is **true**.
+          // It was not set while this was a non-modal dock — the outside was alive
+          // then, and telling anyone to "pretend it is gone" would have been a lie.
           aria-modal="true"
           aria-labelledby={titleId}
           data-surface-role="settings-dock"
           tabIndex={-1}
           /*
-           * **고정 크기다** (소유자 확정 2026-07-29: *"가로 세로 적당한 크기여야하고
-           * 고정 사이즈여야함"*). 종전엔 높이가 내용 길이를 따라가서, 절을 바꿀 때마다
-           * 창이 늘었다 줄었다 했다 — 발자국 절에서는 납작한 가로 띠가, 작업 공간
-           * 절에서는 세로로 긴 창이 됐다. 설정 창은 **머무는 자리**라 그 흔들림이
-           * 그대로 "정돈 안 됨"으로 읽힌다.
+           * **Fixed size** (owner call, 2026-07-29: *"가로 세로 적당한 크기여야하고
+           * 고정 사이즈여야함"* — it needs sensible width and height and a fixed
+           * size). The height used to follow the content length, so the window grew
+           * and shrank with every section change — a flat horizontal band in the
+           * footprints section, a tall narrow window in the workspace section. A
+           * settings window is a place you **stay**, so that wobble reads directly
+           * as "untidy".
            *
-           * 크기는 앱 최소 창(1040×720) 안에 자기 여백을 두고 들어가야 하고,
-           * 좁은 화면에서는 뷰포트에 맞춰 줄어든다(그때만 크기가 변한다). 내용이
-           * 넘치면 **오른쪽 칸이 스크롤**하지, 창이 자라지 않는다.
+           * The size has to fit inside the app's minimum window (1040×720) with its
+           * own margin, and shrinks to the viewport on narrow screens (the only case
+           * where the size changes). Overflowing content **scrolls the right pane**;
+           * the window does not grow.
            *
-           * ## 높이 640 → 672 (2026-08-02, 소유자 *"뭔가 답답해 설정내부"*)
+           * ## Height 640 → 672 (2026-08-02, owner: *"뭔가 답답해 설정내부"* — the
+           * inside of settings feels cramped)
            *
-           * 640 일 때 가장 붐비는 「화면」 절이 **41px 잘려 있었다**(내용 626 /
-           * 보이는 칸 585). 동시에 14인치 실측 뷰포트(1512×806)에서 이 패널
-           * 바깥의 **118px 이 그대로 비어 있었다** — 잘린 상자와 남는 자리가
-           * 같은 화면에 있었던 것이고, 그게 «답답» 의 기계적 형태다.
+           * At 640, the busiest section 「화면」 was **clipped by 41px** (content 626
+           * against a 585 visible pane). At the same time, on the measured 14-inch
+           * viewport (1512×806), **118px outside this panel sat empty** — a clipped
+           * box and spare room on the same screen, which is the mechanical form of
+           * "cramped".
            *
-           * 672 는 취향이 아니라 **파생값**이다: 최소 창 720 에서 오버레이
-           * 여백(`p-3`, 위아래 12px)을 뺀 696 안에, 그 여백을 **한 벌 더**
-           * 남기고 들어가는 최대 높이다(696 − 24 = 672). 그보다 크면 최소
-           * 창에서 자기가 선언한 거터를 스스로 먹는다. 폭 880 은 그대로 —
-           * 넓히면 라벨과 컨트롤 사이 빈 구간(실측 최대 541px)만 더 벌어진다.
+           * 672 is not taste but a **derived value**: within the 696 that remains
+           * after subtracting the overlay margin (`p-3`, 12px top and bottom) from
+           * the 720 minimum window, it is the tallest height that leaves **one more
+           * set** of that margin (696 − 24 = 672). Anything larger eats the gutter it
+           * declared for itself in the minimum window. The 880 width is unchanged —
+           * widening it only stretches the empty run between label and control
+           * (measured at up to 541px).
            */
           className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[672px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
-              {/* 뒤로가기 버튼이 없다 — 갈 뒤가 없다. 모든 목적지가 LNB 에
-                  상시 있으므로 제목은 언제나 이 시트의 이름 하나다. */}
+              {/* There is no back button — there is nowhere back to go. Every
+                  destination is permanently in the LNB, so the title is always this
+                  sheet's one name. */}
               <Settings
                 size={ICON_SIZE.md}
                 aria-hidden
@@ -665,11 +710,12 @@ export function AppSettingsMenu({
                 {t('title')}
               </h2>
             </div>
-            {/* 정사각 아이콘 컨트롤이라 `IconButton` 이 제자리다 — 접근 이름은
-                타입이 강제하고, 크기(h-7 w-7)·톤(3차)은 램프가 낸다. 테두리가
-                빠진 것은 이 전환의 대가다: 실측 36개의 아이콘 컨트롤에서 뽑은
-                모양에 테두리가 없다(`control-class.ts`). 호버·포커스는 규율대로
-                소비처가 낸다. */}
+            {/* A square icon control, so `IconButton` is the right home — the
+                accessible name is enforced by the type, and size (h-7 w-7) and tone
+                (tertiary) come from the ramp. The missing border is this migration's
+                price: the shape derived from the 36 measured icon controls has no
+                border (`control-class.ts`). Hover and focus come from the consumer,
+                as the discipline requires. */}
             <IconButton
               label={t('closeLabel')}
               onClick={() => closePanel()}
@@ -681,13 +727,15 @@ export function AppSettingsMenu({
 
           {
             /*
-             * LNB 2단 — 왼쪽 목록, 오른쪽 내용. 소유자 지시(2026-07-29, 재확인):
-             * *"다른 서비스 보면 LNB가 있는 팝업창 형태로 많이 구성하잖아.. 우리도
-             * 그렇게 해달라고"*. 앞선 드릴인 안(카운슬 권고)은 뒤집혔다 — 절이
-             * 다섯이라 드릴인은 매번 뒤로 나갔다 다시 들어가야 하고, 그건 값 몇
-             * 개를 비교하며 고르는 일에 맞지 않는다. 2026-08-02 에 마지막 두
-             * 드릴인(에이전트 연결 · 앱 안 에이전트)도 이 목록으로 올라오면서
-             * **이 시트에 서브뷰는 남아 있지 않다**.
+             * Two-column LNB — list left, content right. Owner instruction
+             * (2026-07-29, reconfirmed): *"다른 서비스 보면 LNB가 있는 팝업창 형태로
+             * 많이 구성하잖아.. 우리도 그렇게 해달라고"* (other services often use a
+             * popup with an LNB; do it that way). The earlier drill-in proposal (a
+             * council recommendation) was overturned — with five sections, drill-in
+             * means going back out and in again every time, which does not suit
+             * comparing a handful of values before choosing. On 2026-08-02 the last
+             * two drill-ins (agent connection · in-app agent) came up into this list
+             * as well, so **no subview remains in this sheet**.
              */
             <div key="root" className="flex min-h-0 flex-1" data-testid="app-settings-body">
               <nav
@@ -702,20 +750,25 @@ export function AppSettingsMenu({
                       {t(`sectionGroup.${group.key}`)}
                     </p>
                     {/*
-                      **이정표 행** — 「연결」 묶음 맨 앞 (2026-08-21, 원장 90 · 위계석 처방).
+                      **Signpost row** — the head of the 「연결」 group (2026-08-21,
+                      ledger 90, hierarchy seat's prescription).
 
-                      실행기와 MCP 연결이 목적지로 나가면서, 그것을 여기서 찾던
-                      사람에게 **빠져나간 자리를 말해 줄 것**이 필요해졌다.
-                      `surfaces.md` 의 「반만 막는 것이 가장 나쁘다」가 이 자리의
-                      근거다 — 내비에서 지웠으면 들어오던 길에도 답해야 한다.
+                      When the runtimes and MCP connection panes left for the
+                      destination, anyone who used to look for them here needed
+                      **to be told where they went**. `surfaces.md`'s
+                      「반만 막는 것이 가장 나쁘다」 (blocking only half is the worst
+                      option) is the basis — if it is removed from the nav, the way
+                      in has to answer too.
 
-                      위계 처방 셋을 그대로 지킨다: **인디고 0**(이 시트의 주인공이
-                      아니다. 승자는 목적지 안의 「대화 열기」다) · 컨트롤 자리엔
-                      글자 없이 **이동 글리프 하나** · 목적지 pane 을 시트 안에
-                      그리지 않고 **시트를 닫고 간다**.
+                      The three hierarchy prescriptions are kept exactly: **zero
+                      indigo** (this is not the sheet's protagonist; the winner is
+                      「대화 열기」 inside the destination) · a **single navigation
+                      glyph** with no text in the control position · and it **closes
+                      the sheet and goes** rather than drawing the destination's pane
+                      inside the sheet.
 
-                      뷰포트로 분기하지 않는다 — 같은 시트가 두 모양이 되는 것이
-                      더 비싸다(위계석 단서).
+                      No viewport branching — one sheet becoming two shapes costs
+                      more (the hierarchy seat's proviso).
                     */}
                     {group.key === 'connect' ? (
                       <button
@@ -772,13 +825,13 @@ export function AppSettingsMenu({
               </nav>
 
               <div
-                // 20px 여백은 macOS 설정 창 레이아웃 가이드의 값이다.
+                // The 20px margin is the value from the macOS settings window layout guide.
                 className="grid min-h-0 min-w-0 flex-1 content-start gap-4 overflow-y-auto p-5"
                 data-testid={`app-settings-pane-${section}`}
               >
                 {section === 'screen' ? (
                   <>
-                  {/* 절 제목을 다시 쓰지 않는다 — 왼쪽 목록이 이미 이 칸의 이름이다. */}
+                  {/* The section title is not repeated — the left list already names this pane. */}
                   <SettingsGroup>
                 <SettingsRow
                   label={t('languageTitle')}
@@ -825,22 +878,25 @@ export function AppSettingsMenu({
                     />
                   </>
                 ) : null}
-                {/* 아이콘 세트는 지도 밖(INDEX·공방·상세 글리프)에도 적용되므로
-                    지도 서브뷰가 아니라 여기 남는다. */}
+                {/* The icon set applies outside the map too (INDEX, studio, detail
+                    glyphs), so it stays here rather than in a map subview. */}
                 <GlyphSetPicker />
-                {/* 악센트도 같은 이유로 여기다 — 지도만이 아니라 앱 전역의
-                    유일한 채색이라 지도 서브뷰에 두면 «지도 설정» 으로 읽힌다. */}
+                {/* The accent is here for the same reason — it is the app's only
+                    colour, not just the map's, so putting it in a map subview would
+                    read as «map settings». */}
                 <AccentPicker />
-                {/* 화면 안내 다시 보기 (2026-07-26) — 안내는 목적지마다 한 번만
-                    자동으로 뜨므로 되돌아올 길이 필요하다. 화면마다 도움말
-                    버튼을 새로 만들면 화면별 크롬 수가 갈리므로(#65 계열),
-                    모든 화면에 이미 있는 이 메뉴 한 곳으로 모은다. 안내를 열기
-                    전에 이 팝오버를 먼저 닫는다 — 안내 카드가 설정 위에 겹치면
-                    transient 스택 금지 계약 위반이다. */}
+                {/* Replay the on-screen guide (2026-07-26) — a guide appears
+                    automatically only once per destination, so there has to be a way
+                    back. Adding a help button per screen would make the chrome count
+                    diverge screen by screen (the #65 family), so they gather here in
+                    the one menu every screen already has. This popover closes before
+                    the guide opens — a guide card stacked over settings would break
+                    the no-transient-stacking contract. */}
                 {/*
-                  자동 표시 스위치 — 안내 자체를 지우지 않는다. 끄면 저절로 안 뜰
-                  뿐이고, 아래 「다시 보기」와 지도의 나침반 타일로는 그대로 열린다.
-                  소유자: *"처음만 나오면 되거든? 아니면 클릭했을때나"*.
+                  Auto-display switch — it does not delete the guide. Off simply means
+                  it does not appear by itself; 「다시 보기」 below and the map's compass
+                  tile still open it. Owner: *"처음만 나오면 되거든? 아니면 클릭했을때나"*
+                  (it only needs to show the first time, or when clicked).
                 */}
                 <SettingsRow
                   testId="app-settings-guide-auto-start"
@@ -884,39 +940,42 @@ export function AppSettingsMenu({
                   </>
                 ) : section === 'notify' ? (
                   /*
-                   * 「알림」이 자기 칸을 갖는 이유 (2026-08-02, 소유자 지적).
+                   * Why 「알림」 (notify) gets its own pane (2026-08-02, owner report).
                    *
-                   * 이 셋은 어제까지 「화면」 절의 **바닥**에 있었고, 그 자리를
-                   * 정당화한 주석은 *"둘 다 화면이 무엇을 말하는가의 설정이다"*
-                   * 였다. 그 문장은 맞다 — 그리고 그게 바로 **자기 절이어야 하는
-                   * 근거**다. 「화면」의 나머지 여섯(언어 · 뷰 모드 · INDEX 기본 ·
-                   * 글리프 세트 · 가이드 둘)은 «지도를 어떻게 그리는가»이고, 이
-                   * 셋은 «앱이 나에게 무엇을 알리는가»다.
+                   * These three sat at the **bottom** of the 「화면」 section until
+                   * yesterday, justified by a comment saying *"both are settings for
+                   * what the screen says"*. That sentence is true — and it is exactly
+                   * **the argument for a section of their own**. The other six in
+                   * 「화면」 (language · view mode · INDEX default · glyph set · two
+                   * guides) are «how the map is drawn», while these three are «what
+                   * the app tells me».
                    *
-                   * 부피로도 그렇다 — 실측: 「화면」이 컨트롤 여섯에 더해 이 셋
-                   * (행 3개 + 칩 6개)을 함께 지고 있었다. 「받을 알림」 6칩은 접힌
-                   * 세부가 아니라 **주 컨트롤**이라, 한 절의 절반을 다른 주제가
-                   * 차지하고 있던 셈이다. 빼내도 「화면」에는 여섯이 남는다.
+                   * Volume says the same. Measured: 「화면」 carried these three (3
+                   * rows plus 6 chips) on top of its own six controls. The 6 chips of
+                   * 「받을 알림」 are **primary controls**, not collapsed detail, so
+                   * another subject was occupying half of one section. Removing them
+                   * still leaves six in 「화면」.
                    *
-                   * 「이어진 것」이 아니라 「보이는 것」에 두는 이유: 「작업 중
-                   * 표시」는 문자 그대로 **지도 위에** 뜨고, 알림도 앱이 나에게
-                   * 보여주는 것이다. 「이어진 것」은 «밖의 무엇과 연결되는가»의
-                   * 자리라 성격이 다르다.
+                   * Why they go under 「보이는 것」 rather than 「이어진 것」:
+                   * 「작업 중 표시」 literally appears **on the map**, and notifications
+                   * are also something the app shows me. 「이어진 것」 is the place for
+                   * «what outside thing this connects to», which is a different nature.
                    */
                   <AgentActivitySettings />
                 ) : section === 'background' ? (
                   <>
-                  {/* 3D 배치(돔/구름)는 여기 없다 — 지도 상단 「3D」 칩이 여는
-                      고르개 한 곳이 소유한다(`View3dMenu`). 처음에는 이 자리에
-                      뒀다가 소유자가 못 찾았다: *"구름은 어디에서 볼 수 있는거지?"*
-                      지금 보는 것을 바꾸는 컨트롤은 지금 보는 화면 위에 있어야 하고,
-                      두 곳에 두면 «한 사실에 자리 하나» 규율이 깨진다. */}
+                  {/* 3D layout (dome/cloud) is not here — the picker the map's top
+                      「3D」 chip opens owns it (`View3dMenu`). It was here at first and
+                      the owner could not find it: *"구름은 어디에서 볼 수 있는거지?"*
+                      (where can I see the cloud?). A control that changes what you are
+                      looking at belongs over what you are looking at, and two homes
+                      break the «one fact, one place» discipline. */}
                   <CanvasBackgroundPicker />
-                  {/* 프레임 계기 — 지도가 실제로 몇 프레임을 내주는지 우하단 계기
-                      스택에 띄운다. **기본은 꺼짐**이고, 꺼져 있으면 측정 루프도
-                      돌지 않는다(성능을 갉아먹는 성능계는 거짓말쟁이다).
-                      이 자리인 이유: 「지도」 칸이 캔버스가 어떻게 그려지는지를
-                      모아 둔 곳이고, 계기는 그 캔버스 위에 뜬다. */}
+                  {/* Frame meter — puts the map's real frame output in the
+                      bottom-right meter stack. **Off by default**, and while off the
+                      measurement loop does not run either (a performance meter that
+                      eats performance is a liar). Why here: the 「지도」 pane collects
+                      how the canvas is drawn, and the meter floats over that canvas. */}
                   <SettingsGroup>
                     <SettingsRow
                       testId="app-settings-frame-meter"
@@ -1017,14 +1076,15 @@ export function AppSettingsMenu({
                     }
                   />
                 ) : null}
-                {/* #72 — 선택한 vault 의 **절대 경로** + 복사/Finder 열기.
-                    B2 병합(5164f68d7)에서 `VaultToolsMenu` 가 삭제되며 이 표면을
-                    담당하던 `LocalVaultPicker` 가 아무 데도 마운트되지 않는
-                    고아가 됐고, 데스크톱 사용자는 "이 vault 가 디스크 어디에
-                    있나" 를 확인할 방법을 잃었다(에이전트에 경로를 붙여넣는
-                    고빈도 경로). 설정 시트의 [작업공간] 그룹이 이미 폴더 열기/
-                    바꾸기를 담당하므로 여기가 제자리다. 데스크톱에서 경로가
-                    실제로 알려질 때만 렌더한다 — 웹에서는 조용히 없다. */}
+                {/* #72 — the selected vault's **absolute path** plus copy and reveal
+                    in Finder. The B2 merge (5164f68d7) deleted `VaultToolsMenu`,
+                    orphaning the `LocalVaultPicker` that owned this surface so that
+                    nothing mounted it, and desktop users lost any way to see where
+                    the vault sits on disk (a high-frequency path — pasting it to an
+                    agent). The settings sheet's [workspace] group already handles
+                    open and switch folder, so this is its home. It renders only when
+                    the desktop actually knows the path — on the web it is quietly
+                    absent. */}
                 {vaultRootPath ? (
                   <SettingsRow
                     testId="app-settings-vault-path"
@@ -1059,8 +1119,8 @@ export function AppSettingsMenu({
                     }
                   />
                 ) : null}
-                {/* 최근 작업공간 — vault 가 안 열려 있을 때만(복구 경로).
-                    로드 중엔 "바꾸기"(OS 픽커)가 고빈도 경로다. */}
+                {/* Recent workspaces — only while no vault is open (the recovery
+                    path). While loading, "switch" (the OS picker) is the high-frequency path. */}
                 {showVaultManagement &&
                 !isLocalVaultLoaded &&
                 localVault.recentVaults.length > 0
@@ -1070,10 +1130,10 @@ export function AppSettingsMenu({
                         className="flex min-h-11 items-center gap-2 px-3 py-1.5"
                         data-testid="app-settings-recent-vault"
                       >
-                        {/* 목록의 한 줄 전체가 눌리는 것 = `row`(실측 39).
-                            `disabled:opacity-60` 을 지운 이유는 값 층이 이미
-                            비활성 어포던스를 싣기 때문이다 — 두 벌이면 하나는
-                            언젠가 빠진다. */}
+                        {/* A whole list row being pressable is `row` (measured 39
+                            instances). `disabled:opacity-60` was removed because the
+                            value layer already carries the disabled affordance — with
+                            two copies, one eventually falls behind. */}
                         <RowButton
                           size="sm"
                           onClick={() => void localVault.openRecent(record)}
@@ -1130,18 +1190,22 @@ export function AppSettingsMenu({
                 </Link>
                   </SettingsGroup>
                     {/*
-                      「다른 폴더에서 노드 가져오기」 (2026-08-02, INDEX 바닥에서
-                      이관 — 소유자: *"이건 뭐임? 이 문구가 왜 있는거지..? 필요없는건가"*).
+                      「다른 폴더에서 노드 가져오기」 (import nodes from another folder)
+                      — moved here from the bottom of INDEX (2026-08-02, owner:
+                      *"이건 뭐임? 이 문구가 왜 있는거지..? 필요없는건가"* — what is this?
+                      why is this text here? is it unnecessary?).
 
-                      여기가 맞는 이유: 이 일은 **이 폴더에 무엇이 들어오나**이고,
-                      그게 이 절의 주제다. 지도를 읽는 화면에 상시 버튼으로 둘 일이
-                      아니다 — 평생 한두 번 쓴다.
+                      Why here: this job is about **what comes into this folder**, and
+                      that is this section's subject. It does not belong as a permanent
+                      button on a screen for reading the map — it gets used once or
+                      twice in a lifetime.
 
-                      이름도 바꿨다. 종전 「블록 가져오기」의 「블록」은 이 앱 어디에도
-                      정의가 없어서, 처음 보는 사람에게는 무엇을 여는 버튼인지 알 길이
-                      없었다.
+                      The name changed too. 「블록」 in the old 「블록 가져오기」 is
+                      defined nowhere in this app, so a first-time reader had no way to
+                      know what the button opens.
 
-                      모듈은 자립형이라 vault 가 로드된 상태에서만 스스로 렌더한다.
+                      The module is self-contained and renders itself only while a
+                      vault is loaded.
                     */}
                     <BlockImportModule />
                     </>

@@ -1,24 +1,21 @@
 /**
- * 프로젝트 상태 도메인 모델.
- *
- * 카테고리와 달리 레이아웃에 영향이 없고, 노드 우상단 dot 의 색과 드로어/
- * 폼의 라벨만 변경한다. dot 색은 design system preset 4개 중 하나.
+ * A project status. Unlike a category it has no layout effect — it only
+ * changes the dot colour at the node's top right and the label in the drawer
+ * and the form.
  */
 
-/** Preset dot 색 — status-success / status-warning / status-paused / 무채색. */
 export type StatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
 
 export interface Status {
-  /** Stable ID. 소문자·숫자·하이픈. 예: 'live'. */
+  /** Stable ID: lowercase, digits, hyphens — e.g. 'live'. */
   id: string;
-  /** UI 라벨 (한국어). */
+  /** Korean UI label. */
   label: string;
   /**
-   * 영문 라벨. Category 와 같은 계약 — 영문 화면에서 쓴다. 없으면 `label`
-   * 로 폴백하지만, defaults 는 반드시 채운다
-   * (`tests/contract/taxonomy-locale-label.contract.test.ts` 가 강제).
+   * English label. Same contract as `Category`: used on English screens, and
+   * falls back to `label` when absent — but the defaults must always fill it
+   * (`tests/contract/taxonomy-locale-label.contract.test.ts` enforces this).
    */
   labelEn?: string;
-  /** preset dot 색. */
   dotColor: StatusDotColor;
 }

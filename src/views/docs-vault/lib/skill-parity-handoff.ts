@@ -1,36 +1,30 @@
 import type { SkillParityRow } from './skill-parity';
 
 /**
- * 어긋난 사본을 **에이전트에게 넘기는 문장.**
+ * **The sentence that hands diverged copies to an agent.**
  *
- * ## 왜 셸 명령이 아닌가
+ * **Why not a shell command.** Two reasons, both already learned here by measurement.
  *
- * 두 가지 이유가 있고 둘 다 이 저장소가 이미 실측으로 배운 것이다.
+ * **① A command that will not run is a lie, not guidance.** The `ontology-atlas <cmd>` dialect is
+ * not in the registry and 404s; the live channels are the app bundle and a source checkout only
+ * (`.claude/rules/surfaces.md`). But the vault root where the skill trees live and the Atlas CLI
+ * checkout are **generally different paths** — we do not know where the CLI is on this machine.
+ * Writing an unknown path as if we knew it is exactly the dead guidance that rule exists to stop.
  *
- * **① 실행되지 않는 명령은 안내가 아니라 거짓말이다.** `ontology-atlas <cmd>`
- * 방언은 레지스트리에 없어 404 이고, 살아있는 채널은 앱 번들과 소스 체크아웃
- * 둘뿐이다(`surfaces.md` 「배포 채널은 둘뿐이다」). 그런데 스킬 트리가 사는
- * 볼트 루트와 Atlas CLI 체크아웃은 **일반적으로 다른 경로**다 — 우리는 이
- * 컴퓨터의 CLI 가 어디 있는지 모른다. 모르는 경로를 아는 척 적으면 그게 정확히
- * 그 규칙이 막으려던 죽은 안내가 된다.
+ * **② This job does not end with a command anyway.** Which copy is newer is something the files do
+ * not know and **only reading the contents reveals**. Automatic merging can silently erase a
+ * discipline learned yesterday, so the council ruled it OUT. What is handed over is work needing
+ * judgement, and the side that judges is the agent — the person decides, the agent fixes.
  *
- * **② 이 일은 애초에 명령으로 안 끝난다.** 어느 사본이 최신인지는 파일이
- * 모르고 **내용을 읽어야 안다.** 자동 병합은 어제 배운 규율을 조용히 지울 수
- * 있어 카운슬이 OUT 으로 잘랐다. 그래서 넘기는 것은 판단이 필요한 일이고,
- * 판단하는 쪽은 에이전트다 — 사람은 판정하고 에이전트가 고친다.
+ * **The copied value is attached to the fact the screen stated.** When the screen says "3
+ * diverged", the sentence carries **those 3 by name**. Copying only the summary leaves the
+ * receiver not knowing what to open, which is a copy detached from the fact.
  *
- * ## 복사되는 값은 화면이 말한 사실과 붙어 있다
- *
- * 화면이 "3건 어긋남" 이라 말하면 문장도 **그 3건을 이름으로** 싣는다. 요약만
- * 복사하면 받는 쪽이 어디를 열어야 할지 모르고, 그건 사실과 분리된 복사다.
- *
- * ## 경로는 절대 경로여야 한다
- *
- * 붙여넣는 쪽은 대개 **다른 창의 에이전트 세션**이고, 그 세션의 작업 디렉터리가
- * 이 볼트라는 보장이 없다. 상대 경로만 주면 그 세션은 자기 cwd 기준으로 엉뚱한
- * 곳을 열고, 없다고 답하거나 — 더 나쁘게 — 같은 이름의 다른 파일을 고친다.
- * 우리는 절대 경로를 **이미 알고 있다**(데스크톱 브리지가 그것으로 읽었다).
- * 아는 것을 안 싣는 것은 정직의 문제가 아니라 게으름이다.
+ * **Paths must be absolute.** Whoever pastes this is usually **an agent session in another
+ * window**, and there is no guarantee its working directory is this vault. Given only relative
+ * paths, that session opens the wrong place against its own cwd and either reports nothing there
+ * or — worse — edits a different file with the same name. We **already know** the absolute path
+ * (the desktop bridge read with it). Withholding what we know is laziness, not honesty.
  */
 export function buildSkillParityHandoff(
   rows: SkillParityRow[],

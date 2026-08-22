@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // R13 #58 — vault path drift audit.
 //
-// dogfood vault (docs/ontology/) 의 capability/element 노드들이 실 코드
-// path 와 drift 없는지 검증. 각 노드 frontmatter 의:
-//   - `path:` (string)         — element 의 source-file path
-//   - `elements:` (string[])   — capability 가 owns 하는 source paths
-// 가 실제로 fs 에 존재하는지 확인. 못 찾는 path 는 drift.
+// Verifies that the capability/element nodes in the dogfood vault
+// (docs/ontology/) have not drifted from the real code paths. For each node's
+// frontmatter:
+//   - `path:` (string)       — the element's source-file path
+//   - `elements:` (string[]) — the source paths a capability owns
+// it checks the path exists on disk. A path that cannot be found is drift.
 //
-// 사용:
-//   node scripts/audit-vault-paths.mjs                    # 기본: docs/ontology vs cwd
-//   node scripts/audit-vault-paths.mjs <vault> <repo>     # 명시
+// Usage:
+//   node scripts/audit-vault-paths.mjs                    # default: docs/ontology vs cwd
+//   node scripts/audit-vault-paths.mjs <vault> <repo>     # explicit
 //   pnpm vault:audit                                       # package.json script
 //
 // exit 1 if drift, 0 if clean — CI gateable.

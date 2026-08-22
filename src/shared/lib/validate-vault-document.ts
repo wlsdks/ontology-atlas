@@ -1,15 +1,15 @@
 import { parseFrontmatter } from "./parse-frontmatter";
 
 /**
- * Vault frontmatter 의 silent corruption 을 가시화.
+ * Makes silent frontmatter corruption visible.
  *
- * parseFrontmatter 는 lenient by-design — `---` 닫힘이 빠져도, key 가 비어
- * 있어도 조용히 빈 frontmatter 를 돌려준다. 사용자가 .md 에 frontmatter 잘못
- * 쓰면 노드가 graph 에서 *조용히 사라지고* 왜 그런지 모른다. (R9 changelog
- * Scenario 3 가 이걸 명시적으로 deferred 처리.)
+ * `parseFrontmatter` is lenient by design: a missing closing `---` or an empty key still
+ * returns empty frontmatter rather than throwing. So malformed frontmatter makes the node
+ * *disappear from the graph without a word*, and the user has no way to learn why.
  *
- * 이 validator 는 raw .md 문자열을 보고 "사용자가 frontmatter 의도했는데
- * 망가진" 패턴만 감지한다. frontmatter 자체가 아예 없는 docs 파일은 정상.
+ * This validator reads the raw `.md` text and reports only the patterns that mean "the
+ * author intended frontmatter and it is broken". A docs file with no frontmatter at all is
+ * normal.
  */
 
 export type VaultIssueSeverity = "error" | "warning";
@@ -30,10 +30,10 @@ export type VaultIssueCode =
   | "parse-zero-keys";
 
 /**
- * R14 — kind 별 "있어야 좋은" 필드 dict. mcp/src/schema.mjs &
- * cli/src/lib/schema.mjs 의 `requiredExtras` 와 일치 — contract test 가
- * 동기화 강제. UI/Web 측에서 advisory warning 출력에 쓰인다 (hard error
- * 아님 — pre-existing vault 호환).
+ * R14 — per-kind fields that ought to be present. Matches `requiredExtras` in
+ * `mcp/src/schema.mjs` and `cli/src/lib/schema.mjs`; a contract test keeps the three in
+ * sync. These drive advisory warnings only, never hard errors, so pre-existing vaults stay
+ * valid.
  */
 export const KIND_EXPECTED_EXTRAS: Readonly<Record<string, readonly string[]>> = {
   project: [],
@@ -50,15 +50,15 @@ export interface VaultDocumentIssue {
 }
 
 export interface VaultDocumentReport {
-  /** error severity 가 0 이면 true. warning 만 있으면 ok. */
+  /** True when there are zero error-severity issues. Warnings alone are still ok. */
   ok: boolean;
   issues: VaultDocumentIssue[];
 }
 
 /**
- * vault frontmatter 의 canonical kind 값. derive-ontology-from-vault 가
- * 인식하는 5 종과 일치. unknown 은 시스템이 만드는 stub 이라 사용자가 직접
- * 쓸 일이 없으므로 validator 에서 unknown 입력은 unknown-kind warning.
+ * The canonical `kind` values for vault frontmatter — the same five that
+ * derive-ontology-from-vault recognises. `unknown` is a stub the system mints, never
+ * something a user writes, so `unknown` as input is reported as an unknown-kind warning.
  */
 export const KNOWN_VAULT_KINDS = [
   "project",
@@ -81,10 +81,10 @@ const GRAPH_ARRAY_KEYS = [
   "relates",
   "contains",
   "describes",
-  // `broader` (is_a / SKOS) — 공방과 함께 도입됐는데 이 리스트에서 빠져
-  // 있었다(감사 2026-07-25). 이 리스트는 canonical 정렬 검사와 dangling ref
-  // 검사를 **동시에** 구동하므로, 누락은 "에이전트가 broader 에 오타 슬러그를
-  // 써도 CI 는 green" 을 뜻했다. contract fixture 가 이 drift 를 고정한다.
+  // `broader` (is_a / SKOS) was introduced with the Studio surface but left out of this
+  // list (found in the 2026-07-25 audit). This list drives **both** the canonical-sort
+  // check and the dangling-ref check, so the omission meant an agent could write a typo'd
+  // slug in `broader` and CI stayed green. A contract fixture pins the list against drift.
   "broader",
 ] as const;
 
@@ -147,8 +147,8 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
       message: `\`kind: ${rawKind.trim()}\` 는 인식되지 않는 값입니다. 인식되는 값: ${KNOWN_VAULT_KINDS.join(" / ")}.`,
     });
   } else {
-    // R14 — kind 별 expected 필드 (capability/element 의 domain 등) 누락
-    // 시 advisory warning. parser 가 raw 도 봤으니 frontmatter 객체 그대로 검사.
+    // R14 — advisory warning for a missing expected field (e.g. `domain` on a capability
+    // or element). The parser already read the raw text, so check the object directly.
     const trimmedKind = rawKind.trim();
     pushMissingExpectedExtrasIssues(trimmedKind, frontmatter, issues);
   }
@@ -254,19 +254,19 @@ function issuesHaveNoErrors(issues: readonly VaultDocumentIssue[]): boolean {
 }
 
 /**
- * 이미 parsed 된 frontmatter 객체만 보고 검증. UI 측 (LocalVaultProvider 의
- * VaultManifest.docs) 가 각 .md 의 raw 를 다시 안 읽고 빠르게 검증할 수 있게.
+ * Validates an already-parsed frontmatter object, so the UI (LocalVaultProvider's
+ * `VaultManifest.docs`) can check every file without re-reading each `.md` raw.
  *
- * 정밀도 차이 (vs validateVaultDocument):
- *   - unclosed-frontmatter / parse-zero-keys 는 이미 parser 가 lenient 하게
- *     처리한 결과만 보므로 *검출 불가*. CLI (scripts/validate-vault.mjs) 가
- *     raw 측 검증을 cover — 이 함수는 fast UI path.
- *   - missing-kind / empty-kind / unknown-kind 는 그대로 검출.
+ * Precision differs from `validateVaultDocument`:
+ *   - unclosed-frontmatter and parse-zero-keys are **undetectable** here, because this only
+ *     sees what the lenient parser already produced. The CLI
+ *     (`scripts/validate-vault.mjs`) covers the raw side; this is the fast UI path.
+ *   - missing-kind / empty-kind / unknown-kind are detected as usual.
  *
- * 휴리스틱: frontmatter 가 비어있거나 (`kind` 가 없고 ontology 시그널 키도
- * 없으면) docs-only 파일로 간주해 skip — noise 회피. ontology 시그널 키:
- * `domain` / `domains` / `capabilities` / `elements` / `relates` / `dependencies`.
- * 이 중 하나라도 있는데 kind 가 없으면 missing-kind warning.
+ * Heuristic for skipping noise: frontmatter that is empty, or has neither `kind` nor any
+ * ontology signal key (`domain`, `domains`, `capabilities`, `elements`, `relates`,
+ * `dependencies`), is treated as a docs-only file. A signal key present without `kind`
+ * raises missing-kind.
  */
 const ONTOLOGY_SIGNAL_KEYS = [
   "domain",
@@ -289,7 +289,7 @@ export function validateVaultDocFrontmatter(
   const isOntologyIntent = hasKindKey || hasOntologySignal;
 
   if (!isOntologyIntent) {
-    // docs-only — 의도가 ontology 노드가 아니라 noise 회피.
+    // Docs-only: nothing here claims to be an ontology node, so staying quiet is correct.
     return { ok: true, issues };
   }
 
@@ -315,8 +315,7 @@ export function validateVaultDocFrontmatter(
       message: `\`kind: ${rawKind.trim()}\` 는 인식되지 않는 값입니다. 인식되는 값: ${KNOWN_VAULT_KINDS.join(" / ")}.`,
     });
   } else {
-    // R14 — kind 별 expected 필드 누락 시 advisory warning. parser
-    // 결과만 보는 fast path 에서도 동일 동작.
+    // R14 — same advisory warning for a missing expected field on this parsed-only path.
     const trimmedKind = rawKind.trim();
     pushMissingExpectedExtrasIssues(trimmedKind, frontmatter, issues);
   }
@@ -357,18 +356,18 @@ function pushNonCanonicalGraphArrayIssues(
 }
 
 export interface VaultValidationSummary {
-  /** error 가 0 이면 true (warning 만 있어도 ok). */
+  /** True when there are zero errors; warnings alone are still ok. */
   ok: boolean;
   total: number;
   errorCount: number;
   warningCount: number;
-  /** slug + 첫 issue. UI 가 풀 list 가 아닌 representative 표시에 사용. */
+  /** Slug plus its issues, so the UI can show a representative sample rather than the full list. */
   issuesBySlug: Array<{ slug: string; issues: VaultDocumentIssue[] }>;
 }
 
 /**
- * 여러 vault 문서의 frontmatter 를 한번에 검증하고 합산. UI 가 banner / chip
- * 에 표시할 수치를 한 번에 받을 수 있게.
+ * Validates many vault documents' frontmatter at once and aggregates the result, so the UI
+ * gets every number a banner or chip needs in one call.
  */
 export function summarizeVaultValidation(
   items: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,

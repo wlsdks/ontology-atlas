@@ -3,21 +3,16 @@
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 /**
- * R12 #26 — DocsVaultPage 의 ⌘K palette state 추출.
+ * The ⌘K palette state for `DocsVaultPage`.
  *
- * 캡슐화: paletteQuery state (string | null) + paletteOpen (derived) +
- * togglePalette (with optional seed) + closePalette.
+ * Encapsulates `paletteQuery` state (string | null), the derived `paletteOpen`, `togglePalette`
+ * (with an optional seed), and `closePalette`. A `useTypingShortcuts` call site uses it as
+ * `onFire: () => togglePalette()` or `onFire: () => togglePalette('> ')`. `setPaletteQuery` is
+ * exposed too, preserving direct setter call sites such as `DocsVaultUnifiedPalette`'s `onClose`
+ * and header clicks.
  *
- * 사용:
- *   const { paletteQuery, setPaletteQuery, paletteOpen, togglePalette, closePalette } = usePaletteState();
- *
- * useTypingShortcuts callsite 에서 \`onFire: () => togglePalette()\` 또는
- * \`onFire: () => togglePalette('> ')\` 처럼 사용. setPaletteQuery 도 외부
- * 노출 — DocsVaultUnifiedPalette 의 onClose / 헤더 click 등 직접 setter
- * 호출 사이트 보존.
- *
- * setter 들은 useCallback wrap (useAdvancedMenu 와 동일 패턴) — destructured
- * method 의 ESLint stability 추적 위해.
+ * The setters are `useCallback`-wrapped (the same pattern as `useAdvancedMenu`) so ESLint can track
+ * the stability of a destructured method.
  */
 export function usePaletteState() {
   const [paletteQuery, setPaletteQueryInternal] = useState<string | null>(null);

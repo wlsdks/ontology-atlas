@@ -11,12 +11,13 @@ interface UseDialogFocusTrapOptions {
   initialFocus?: "container" | "first" | "none";
   restoreFocus?: boolean;
   /**
-   * Tab/Shift+Tab 을 이 표면 안에 가둘 것인가. 기본 `true`(모달).
+   * Whether Tab/Shift+Tab stay inside this surface. Default `true` (modal).
    *
-   * **비모달 표면은 반드시 `false`** — 바깥이 살아 있는데 초점만 가두면
-   * 키보드 사용자만 그 바깥에 못 간다. WAI-ARIA 도 non-modal dialog 는 초점을
-   * 가두지 않는다고 못박는다. 설정 도크가 이 경우다: 지도를 보며 값을 맞추는
-   * 표면이라 지도로 Tab 해 나갈 수 있어야 한다.
+   * **A non-modal surface must pass `false`** — trapping focus while the outside
+   * is still live locks keyboard users out of what everyone else can reach.
+   * WAI-ARIA states that a non-modal dialog does not trap focus. The settings
+   * dock is this case: it exists to adjust values while watching the map, so
+   * tabbing out to the map has to work.
    */
   trapTab?: boolean;
 }
@@ -106,22 +107,23 @@ export function useDialogFocusTrap<T extends HTMLElement>({
         return;
       }
       /**
-       * **여는 컨트롤이 사라졌어도 `body` 로 떨어뜨리지 않는다**
-       * (2026-07-29 키보드 실측).
+       * **Never drop to `body` just because the opening control is gone**
+       * (measured on the keyboard, 2026-07-29).
        *
-       * 단축키 시트를 여는 버튼은 시트가 켜지면 **언마운트된다** — 시트가
-       * 세우는 `topologyBlockingOverlayActive` 가 그 버튼의 렌더 조건을
-       * 끄기 때문이다. 그래서 닫을 때 돌려줄 원소가 이미 없고, 포커스가
-       * `body` 로 갔다. 그 다음 Tab 은 문서 처음(건너뛰기 링크)부터
-       * 다시 시작한다 — 실측으로 원래 자리에서 29 정거장 뒤였다.
+       * The button that opens the shortcut sheet **unmounts when the sheet
+       * opens**: the sheet raises `topologyBlockingOverlayActive`, which turns
+       * off that button's render condition. So on close there is nothing left to
+       * restore to and focus landed on `body`, from where the next Tab restarts
+       * at the top of the document (the skip link) — measured at 29 stops before
+       * where the user had been.
        *
-       * 같은 시트를 **살아남는 원소**(자동 정렬 타일)에서 `?` 로 열면
-       * 복원이 정상이었다. 즉 이건 트랩의 결함이 아니라 "돌아갈 곳이
-       * 사라지는 경우"의 미처리다.
+       * Opening the same sheet with `?` from an element that **survives** (the
+       * auto-arrange tile) restored correctly, so this is not a defect in the
+       * trap but an unhandled case: the place to return to disappeared.
        *
-       * `<main>` 은 건너뛰기 링크 수정으로 이미 포커스를 받을 수 있다.
-       * 페이지 처음이 아니라 **본문 시작**으로 돌려주면, 사라진 트리거
-       * 근처에서 다시 시작할 수 있다.
+       * `<main>` is already focusable thanks to the skip-link fix. Returning to
+       * **the start of the content** rather than the start of the page lets the
+       * user resume near the trigger that vanished.
        */
       const main = document.querySelector<HTMLElement>("main#main");
       if (main) main.focus({ preventScroll: true });

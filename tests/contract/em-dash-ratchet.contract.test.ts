@@ -4,56 +4,61 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **작대기(`—`) 래칫 — 사용자에게 보이는 글에서 더 늘지 못하게 막는다.**
+ * **Em-dash (`—`) ratchet — it can never grow in user-facing text.**
  *
- * ## 왜 (2026-08-09 소유자 지적)
+ * **Why** (owner, 2026-08-09):
  *
  * > *"내 폴더 전체를 한눈에 — 모든 숫자는 문서에서 자동 계산됩니다 … 이거는 ai
  * > 패턴이거든? 이런거 있으면 다 변경해줘 작대기 안쓰도록"*
+ * > (that dash construction is an AI pattern; change every instance so it is not
+ * > used)
  *
- * 맞다. 「짧은 앞말 — 긴 설명」은 모델이 기본으로 쓰는 문장 모양이고, 사람이 쓴
- * 한국어 UI 문구는 대개 마침표로 끊는다.
+ * Correct. "Short lead — long explanation" is a sentence shape models reach for
+ * by default, and human-written Korean UI copy usually breaks with a full stop.
  *
- * ## 왜 지금 다 안 고쳤나 — 전수를 세어 보고 내린 판단
+ * **Why it was not all fixed at once — a judgement made after counting.**
+ * Measured: of 3,206 strings, **501** (ko 234, en 267 = 15.6%) use the dash. They
+ * split by shape and **the right answer differs per place**:
  *
- * 실측: 문자열 3,206개 중 **501개**(ko 234 · en 267, 15.6%)가 작대기를 쓴다.
- * 모양별로 갈리고 **자리마다 답이 다르다**:
- *
- * | 모양 | 수 | 무엇으로 바꾸나 |
+ * | Shape | n | Replaced with |
  * |---|---|---|
- * | 짧은 앞말 — 설명 (라벨꼴) | 282 | 마침표 · 줄바꿈 · 두 필드로 분리 |
- * | 문장 중간 1개 | 205 | 대개 마침표로 끊기 |
- * | 삽입구(2개 이상) | 11 | 문장을 다시 써야 한다 |
- * | **빈 값 표시 기호** | 2 | **건드리지 않는다** — 글이 아니라 기호다 |
+ * | Short lead — explanation (label-like) | 282 | Full stop, line break, or two separate fields |
+ * | One mid-sentence dash | 205 | Usually a full stop |
+ * | Parenthetical (two or more) | 11 | The sentence must be rewritten |
+ * | **Empty-value glyph** | 2 | **Left alone** — a symbol, not prose |
  *
- * 487개를 기계로 일괄 치환하면 글이 망가진다 — 이 저장소는 문구를 사람이 판단해서
- * 쓰는 것으로 다루고, 그래서 문서 게이트도 「사람이 쓴 문장을 못박지 않는다」를
- * 규율로 갖는다. 그래서 **화면 단위로 나눠 고치고, 그동안 늘지만 못하게** 막는다.
+ * Bulk-replacing 487 strings by machine breaks the writing: this repository
+ * treats copy as something a person judges, which is why the documentation gate
+ * also holds the rule "never pin a sentence a human wrote". So the fix proceeds
+ * **screen by screen while the count is held from growing**.
  *
- * ⚠️ **줄었으면 상한도 같이 내린다.** 안 내리면 고친 만큼이 다시 여유가 된다.
+ * ⚠️ **When it falls, lower the cap with it.** Otherwise every fix becomes new
+ * headroom.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 
 /**
- * **0 이다 — 상한이 아니라 금지다** (2026-08-09 전수 정리 완료).
+ * **Zero — a ban, not a cap** (exhaustive cleanup completed 2026-08-09).
  *
- * 시작은 상한이었다(ko 232 · en 265). 화면 단위로 나눠 고치자던 계획을 소유자가
- * *"1번부터 전부다 완벽하게"* 로 바꿨고, 그래서 **494개를 전부 치웠다**:
- * 문장이 끝난 자리는 마침표, 이어지는 자리는 콜론, 삽입구는 괄호.
+ * It started as a cap (ko 232, en 265). The owner replaced the plan of fixing
+ * screen by screen with *"1번부터 전부다 완벽하게"* (do all of it perfectly, from
+ * the first), so **all 494 were cleared**: a full stop where the sentence ends, a
+ * colon where it continues, parentheses for parentheticals.
  *
- * 기계 치환이 망가뜨린 자리 **19건은 손으로** 고쳤다(삽입구 11 + 콜론이 두 번
- * 겹친 8). 그 19건이 이 일이 왜 일괄 치환으로 안 되는지의 증거다 —
- * `downloads: with their real sizes and checksums: appear here` 처럼 문법은
- * 멀쩡한데 뜻이 깨진다.
+ * **19 places broken by machine replacement were fixed by hand** (11
+ * parentheticals + 8 where two colons collided). Those 19 are the evidence for
+ * why this cannot be a bulk replace — `downloads: with their real sizes and
+ * checksums: appear here` is grammatical but meaningless.
  *
- * **빈 값 표시용 `—` 하나는 센 데서 빠진다** — 그건 글이 아니라 기호다.
+ * **The single `—` used as an empty-value glyph is excluded** — a symbol, not
+ * prose.
  */
 const BASELINE = { ko: 0, en: 0 } as const;
 
 /**
- * **글이 아니라 기호인 자리** — 값이 없다는 뜻의 대시 하나. 여기 있는 것은
- * 문장이 아니므로 이 래칫이 세지 않는다.
+ * **A symbol, not prose** — a lone dash meaning "no value". Not a sentence, so
+ * this ratchet does not count it.
  */
 function isPlaceholderGlyph(value: string): boolean {
   return value.trim() === "—";
@@ -87,7 +92,7 @@ describe("작대기 래칫 — 사용자 문구", () => {
   for (const locale of ["ko", "en"] as const) {
     it(`${locale}: 작대기를 쓰는 문구가 늘지 않는다`, () => {
       const { strings, withDash } = countEmDash(locale);
-      // 공회전 차단 — 파일을 못 읽고 「0건」으로 통과하는 것이 가장 나쁜 실패다.
+      // Idling guard — failing to read the file and passing with "0 hits" is the worst failure here.
       expect(strings, `${locale} 문구를 하나도 못 읽었다 — 이 래칫이 헛돈다`).toBeGreaterThan(
         2_000,
       );
@@ -98,40 +103,42 @@ describe("작대기 래칫 — 사용자 문구", () => {
           "이어지면 콜론, 삽입구는 괄호를 쓴다.\n" +
           "값이 없다는 뜻의 «—» 하나만 있는 문자열은 기호라서 안 센다.",
       ).toBeLessThanOrEqual(BASELINE[locale]);
-      // 0 이므로 「줄었으면 내려라」 절이 필요 없다 — 더 내려갈 곳이 없다.
+      // At 0 the "lower the cap when it falls" clause is unnecessary — there is nowhere lower.
     });
   }
 });
 
 /**
- * **예시 볼트도 작대기를 안 쓴다** (2026-08-09).
+ * **The sample vault does not use the dash either** (2026-08-09).
  *
- * UI 문구 래칫을 걸어 두고 예시 볼트를 손보다가 **내가 그 자리에 작대기를 40개쯤
- * 새로 넣었다.** 래칫이 `messages/*.json` 만 보고 있었기 때문이다 — 그런데 사용자가
- * 읽는 글은 UI 문구만이 아니고, 예시 볼트는 **처음 온 사람이 읽는 유일한 데이터**다.
+ * With the UI-copy ratchet in place, editing the sample vault **introduced about
+ * 40 new dashes** there, because the ratchet watched only `messages/*.json` — yet
+ * UI copy is not the only text users read, and the sample vault is **the only data
+ * a first-time visitor reads**.
  *
- * 치우고 나니 0이 됐다. 0에서는 상한이 아니라 **금지**가 맞다.
+ * After cleanup the count was 0, and at 0 a **ban** is right rather than a cap.
  */
 /**
- * **화면에 그려지는 문서에도 작대기가 없다** (2026-08-09 전수 정리).
+ * **Documents rendered on screen carry no dash either** (exhaustive cleanup
+ * 2026-08-09).
  *
- * | 대상 | 어디에 그려지나 | 치운 수 |
+ * | Target | Where it renders | Removed |
  * |---|---|---|
- * | `samples/storefront/**` | 예시 볼트(처음 온 사람이 읽는 유일한 데이터) | 93 |
+ * | `samples/storefront/**` | The sample vault (the only data a first-time visitor reads) | 93 |
  * | `docs/guide/**` | `/guide` | 148 |
- * | `docs/ontology/**` | 볼트 노드 · 폴더 없는 사용자의 기본 매니페스트 | 105 |
+ * | `docs/ontology/**` | Vault nodes, and the default manifest for users with no folder | 105 |
  * | `docs/CHANGELOG.md` | `/changelog` | 1,722 |
  *
- * ## 무엇을 일부러 뺐나
+ * **What was deliberately excluded.**
  *
- * - **`docs/DECISIONS.md`** (2,158) — **덧붙이기만 하는 원장**이다. 자기 계약이
- *   「지난 기록을 고치지 않는다」라, 과거 기록의 문장을 다시 쓰는 것 자체가 규칙
- *   위반이다.
- * - **`AGENTS.md` · `DESIGN-SYSTEM.md` · `.claude/rules/**` · `FEATURES.md`** —
- *   에이전트와 우리가 읽는 문서다. 「AI 가 쓴 티가 난다」가 비용이 되는 자리는
- *   **사용자가 보는 화면**이고, 여기는 그 자리가 아니다.
+ * - **`docs/DECISIONS.md`** (2,158) — an **append-only ledger**. Its own contract
+ *   is "past entries are not edited", so rewriting old sentences is itself a rule
+ *   violation.
+ * - **`AGENTS.md`, `DESIGN-SYSTEM.md`, `.claude/rules/**`, `FEATURES.md`** —
+ *   documents agents and we read. "It reads as AI-written" costs something on
+ *   **screens users see**, and these are not that.
  *
- * 즉 이 게이트의 경계는 「마크다운이냐」가 아니라 **「사용자가 읽나」** 다.
+ * So this gate's boundary is not "is it markdown" but **"does a user read it"**.
  */
 describe("작대기 — 화면에 그려지는 문서", () => {
   const SAMPLE_ROOT = join(REPO_ROOT, "samples", "storefront");
@@ -156,22 +163,24 @@ describe("작대기 — 화면에 그려지는 문서", () => {
   it("화면에 그려지는 문서에 작대기가 없다", () => {
     const files = [...RENDERED_DOC_ROOTS.flatMap(markdownFiles), ...RENDERED_DOC_FILES];
     expect(files.length, "문서를 하나도 못 읽었다. 이 시험이 헛돈다").toBeGreaterThan(180);
-    // 각 뿌리가 실제로 파일을 냈는지 — 하나가 0이어도 총계는 넘을 수 있다.
+    // Each root really produced files — one root at 0 can still clear the total.
     for (const root of RENDERED_DOC_ROOTS) {
       expect(markdownFiles(root).length, `${root} 에서 문서를 못 읽었다`).toBeGreaterThan(5);
     }
     /**
-     * ⚠️ **코드 블록은 면제다** (2026-08-09, 이 게이트를 켠 뒤 배운 것).
+     * ⚠️ **Code blocks are exempt** (learned 2026-08-09, after switching this gate
+     * on).
      *
-     * 처음에는 파일 전체에서 작대기를 금지했다. 그런데 `docs/guide/**` 의 코드
-     * 블록에는 **CLI 가 실제로 찍는 출력**이 전사돼 있고, CLI 는 `— blast radius`
-     * 처럼 작대기를 찍는다(`cli/src/commands/blast-radius.mjs`). 그 전사를 콜론으로
-     * 바꾸는 것은 문장을 다듬는 게 아니라 **프로그램이 하지 않는 말을 적는 것**이다.
-     * 실제로 한 번 그렇게 바꿨고(16줄) 되돌렸다.
+     * At first the dash was banned across whole files. But code blocks in
+     * `docs/guide/**` transcribe **what the CLI actually prints**, and the CLI prints
+     * dashes such as `— blast radius` (`cli/src/commands/blast-radius.mjs`). Changing
+     * that transcript to a colon is not polishing a sentence but **writing down
+     * something the program does not say**. It was done once (16 lines) and reverted.
      *
-     * 그래서 판정 대상은 **산문**이다. 코드 블록 안은 사실 기록이므로 손대지 않는다.
-     * CLI 출력 자체에서 작대기를 뺄지는 별개 질문이고, 그때는 CLI 를 고치고 문서가
-     * 따라오는 순서여야 한다.
+     * So the subject of this verdict is **prose**. Inside code blocks is a record of
+     * fact and is left alone. Whether the CLI output itself should drop the dash is a
+     * separate question, and the order there must be: fix the CLI, then let the docs
+     * follow.
      */
     const proseHasDash = (text: string): boolean => {
       let inFence = false;

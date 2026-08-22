@@ -101,9 +101,9 @@ describe('local-fs-handle store', () => {
     const restored = await getLocalFsHandle();
     expect(restored?.name).toBe('OldVault');
     expect(restored?.id).toBe(CURRENT_LOCAL_FS_HANDLE_ID);
-    // legacy 키는 삭제됨
+    // The legacy key is deleted.
     expect(memory.get('docs-vault:current-handle')).toBeUndefined();
-    // 새 키는 살아있음
+    // The new key survives.
     expect(
       memory.get('docs-vault:fs-handle:current'),
     ).toBeDefined();

@@ -24,28 +24,30 @@ import { llmChat, llmChatErrorMessage } from '@/shared/lib/tauri-llm';
 import type { ConnectionProvider } from '@/shared/lib/tauri-secrets';
 
 /**
- * 패널의 상태 — 턴 목록, 진행 중 요청, pending 제안 하나.
+ * The panel's state — the turn list, the in-flight request, and one pending
+ * proposal.
  *
- * **살아 있는 제안은 항상 최대 1개다.** 새 턴을 보내면 앞의 pending 제안은
- * 자동으로 `cancelled` 가 된다(적용도 취소도 안 된 카드가 쌓이면 "뭐가
- * 반영됐지" 가 흐려진다). 미적용 제안을 위한 보관함·대기열은 만들지 않는다 —
- * 볼트 밖 제2 진실원이 된다.
+ * **There is always at most one live proposal.** Sending a new turn automatically
+ * marks the previous pending proposal `cancelled` (a pile of cards neither applied
+ * nor cancelled blurs 「what actually landed」). No inbox or queue is built for
+ * unapplied proposals — that would be a second source of truth outside the vault.
  */
 
 /**
- * 헤더 부제 자리에 앉는 **이 대화의 진전**. 자리·크기가 바뀌지 않게 두 수를
- * 항상 함께 말한다 — 숫자만 치환되므로 레이아웃이 튀지 않는다.
+ * **This conversation's progress**, seated in the header's subtitle slot. The two
+ * numbers are always stated together so position and size never change — only the
+ * digits are substituted, so the layout does not jump.
  */
 export interface AgentSessionSummary {
-  /** 만들거나 고친 개념 수. */
+  /** Concepts created or edited. */
   concepts: number;
-  /** 이은 연결 수. */
+  /** Connections made. */
   relations: number;
 }
 
 export interface VaultAgentNotices {
   roundCap: string;
-  /** 도구를 한 번도 안 부르고 멈춘 턴 — 상한 도달과 대칭인 한 줄. */
+  /** A turn that stopped without calling a tool once — the line symmetric with hitting the cap. */
   noToolCall: (args: { round: number; cap: number }) => string;
   aborted: string;
   networkFailed: string;
@@ -60,8 +62,9 @@ export interface VaultAgentNotices {
 export interface UseVaultAgentArgs {
   provider: ConnectionProvider | null;
   /**
-   * 「주소로 연결」 갈래에서만 값이 있다 — 사용자가 적은 러너 주소와 목록에서
-   * 고른 모델. 명명 벤더에서는 둘 다 null 이고, 그때 모델은 어댑터의 기본값이다.
+   * Only set on the 「주소로 연결」 (connect by address) path — the runner address the
+   * user typed and the model chosen from the list. Both are null for a named vendor,
+   * and the model is then the adapter's default.
    */
   localEndpoint: { baseUrl: string; model: string } | null;
   vaultPath: string | null;
@@ -88,12 +91,13 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
   const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  /** 세션 첫 적용은 diff 펼친 상태가 기본 — 도장 찍기 방지. */
+  /** The session's first apply defaults to an expanded diff — it prevents rubber-stamping. */
   const [hasAppliedOnce, setHasAppliedOnce] = useState(false);
   /**
-   * 이 대화에서 실제로 반영된 것 — **로컬 카운트**다. 적용이 성공한 변경만
-   * 센다(취소·충돌은 파일을 하나도 바꾸지 않았으므로 진전이 아니다).
-   * 대화가 사라져도 이 숫자가 가리키는 사실은 frontmatter 와 git 에 남는다.
+   * What this conversation actually landed — **a local count**. Only successful
+   * applies are counted (cancels and conflicts changed no file at all, so they are
+   * not progress). Even if the conversation disappears, the fact this number points
+   * at survives in frontmatter and git.
    */
   const [sessionSummary, setSessionSummary] = useState<AgentSessionSummary>({
     concepts: 0,
@@ -142,11 +146,12 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
   );
 
   /**
-   * 경과 초 — 5초 넘는 침묵부터 화면이 숫자를 말한다. 가짜 진행이 아니라
-   * **실제로 얼마나 기다렸는지**다.
+   * Elapsed seconds — the screen states a number only once the silence passes 5
+   * seconds. Not fake progress but **how long you have actually waited**.
    *
-   * 시작 시각은 [보내기] 핸들러에서 정해진다(효과가 아니라 사건에서). 효과는
-   * 타이머라는 외부 시스템을 구독할 뿐이라 렌더를 한 번 더 돌리지 않는다.
+   * The start time is set in the [보내기] (send) handler — from the event, not from an
+   * effect. The effect only subscribes to the timer as an external system, so it
+   * does not cost another render.
    */
   useEffect(() => {
     if (runStartedAt === null) return;
@@ -169,18 +174,19 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
       const provider = args.provider;
       const vaultPath = args.vaultPath;
       const adapter = provider ? resolveProviderAdapter(provider) : null;
-      // 경로만 복원된 프레임은 보낼 볼트가 있는 상태가 아니다.
-      // UI 게이트가 어긋나더라도 버튼 아래의 실행 경로에서 다시 닫는다.
+      // A frame with only the path restored is not a state that has a vault to send
+      // to. Even if the UI gate is out of step, the execution path under the button
+      // closes it again.
       if (!provider || !vaultPath || !adapter || !args.manifest) return;
 
-      // 새 턴을 보내면 살아 있던 제안은 지나간 제안이 된다.
+      // Sending a new turn makes any live proposal a past one.
       setProposal((current) =>
         current && current.status === 'pending'
           ? { ...current, status: 'cancelled' }
           : current,
       );
 
-      // 누른 그 프레임 — 네트워크를 기다리지 않는다.
+      // The frame it was pressed in — it does not wait for the network.
       const turn = startTurn({ text, screenContext: args.screenContext });
       setTurns((current) => [...current, turn]);
       setRunning(true);
@@ -196,9 +202,8 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
           adapter,
           tools: AGENT_TOOLS,
           system: systemPrompt,
-          // 주소 갈래에는 기본 모델이 없다 — 그 컴퓨터에 무엇이 설치돼
-          // 있는지는 그 컴퓨터만 알기 때문이다. 사용자가 설정에서 고른 이름이
-          // 여기로 온다.
+          // The address path has no default model — only that computer knows what is
+          // installed on it. The name the user chose in settings arrives here.
           model: args.localEndpoint?.model || adapter.defaultModel,
           notices: args.notices,
           execute,
@@ -242,9 +247,9 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
           vaultIsGit: args.vaultIsGit,
           locale: args.locale,
           labels: args.proposalLabels,
-          // 이 초안을 쓴 것은 이 제공자의 모델이다 — 화면이 웹이라고 사람이
-          // 쓴 것이 되지 않는다(2026-07-31 원장). 감사 로그가 이미 남기는
-          // 같은 이름을 그대로 넘긴다.
+          // This draft was written by this provider's model — a web screen does not
+          // make it something a person wrote (ledger 2026-07-31). The same name the
+          // audit log already records is passed straight through.
           agentName: provider,
         });
         if (built) setProposal(built);
@@ -271,14 +276,14 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
   }, []);
 
   const cancelProposal = useCallback(() => {
-    // 취소 = 파일 0개 변경. 여기서는 상태만 바뀐다.
+    // Cancel = 0 files changed. Only the state changes here.
     setProposal((current) => (current ? { ...current, status: 'cancelled' } : current));
   }, []);
 
   const apply = useCallback(async () => {
     if (!proposal || proposal.status !== 'pending') return;
-    // **먼저 잠그고 나서 쓴다.** `await` 앞에 상태를 옮기지 않으면 그 사이가
-    // 통째로 재진입 창이 된다 — 더블클릭 한 번에 볼트 쓰기가 둘이었다.
+    // **Lock first, then write.** Without moving the state before the `await`, that
+    // gap is a re-entrancy window outright — one double-click meant two vault writes.
     setProposal((current) =>
       current && current.status === 'pending' ? { ...current, status: 'applying' } : current,
     );
@@ -290,16 +295,17 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
         currentMtime: (slug) =>
           args.manifest?.docs.find((doc) => doc.slug === slug)?.mtime,
         refresh: () => vault.refresh(),
-        // git 저장점은 위젯 밖(설정/Atlas Git 표면)의 일이라 v1 에서는
-        // 잡지 않는다 — 잡을 수 없으면 없다고 말한다.
+      // A git save point is the business of surfaces outside this widget (settings,
+      // Atlas Git), so v1 does not take one — when it cannot be taken, it says so.
         snapshot: async () => null,
       },
       { snapshotLabel: args.snapshotLabel },
     );
     setHasAppliedOnce(true);
     if (outcome.status === 'applied') {
-      // 무엇이 몇 개 반영됐나 — 선택된 변경만, 도구 종류로 센다. 파일 수가
-      // 아니라 **개념/연결 수**로 세는 이유: 사용자가 세는 단위가 그것이다.
+      // What landed and how many — only the selected changes, counted by tool kind.
+      // Counted in **concepts and connections** rather than files, because that is
+      // the unit the user counts in.
       const applied = proposal.changes.filter((change) => change.selected);
       const concepts = applied.filter((change) => change.tool !== 'add_relation' && change.tool !== 'add_relations').length;
       const relations = applied.length - concepts;

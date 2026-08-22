@@ -24,9 +24,9 @@ export function useAgentFilesModel(
   fileHandles: Map<string, FileSystemFileHandle>,
 ): AgentFilesUiModel | null {
   const [model, setModel] = useState<AgentFilesUiModel | null>(null);
-  // 게이트: 로컬 vault 가 열려 있고(파일 핸들 존재) manifest 루트에
-  // CLAUDE.md/AGENTS.md 가 보일 때만. 게이트가 닫히면 state 를 지우는 대신
-  // 반환값에서 null 로 강등한다 (effect 내 동기 setState 회피).
+  // The gate: only when a local vault is open (file handles exist) and CLAUDE.md/AGENTS.md are
+  // visible at the manifest root. When the gate closes, the return value is demoted to null rather
+  // than clearing state (avoiding a synchronous setState inside an effect).
   const gate = fileHandles.size > 0 && manifestIncludesRepoRoot(manifest.docs);
 
   useEffect(() => {

@@ -1,114 +1,108 @@
 /**
- * 첫 페이지 시연 클립 등록부 — **원장 시나리오를 데이터로 옮긴 것.**
+ * The front-page demo clip registry — **the ledger's scenario moved into data.**
  *
- * 원장: `docs/DECISIONS.md` 2026-07-29 「첫 페이지 시연 영상 시나리오: 2클립
- * 2탭 · 무컷 · 루프 없음 · 무음」 + 같은 날 밤 「시연 영상은 첫 페이지로 간다」.
+ * Ledger: `docs/DECISIONS.md` 2026-07-29 "front-page demo video scenario: 2 clips, 2 tabs, no
+ * cuts, no loop, no sound", plus the same night's "the demo video goes on the front page".
  *
- * ## 왜 등록부가 따로 있나
+ * **Why a separate registry.** **While there is no footage, this section must not appear on
+ * screen.** A player with nothing to play is dead UI, and dead UI in the gateway's
+ * first-impression slot is the same defect this repository pinned as "coming soon is not a
+ * degradation, it is a lie" (`.claude/rules/surfaces.md`).
  *
- * **촬영본이 없는 동안 이 절이 화면에 나오면 안 된다.** 재생할 것 없는 플레이어는
- * 죽은 UI 이고, 관문의 첫인상 자리에 죽은 UI 를 두는 것은 이 저장소가 「곧
- * 됩니다는 강등이 아니라 거짓말」이라고 못박은 것과 같은 결함이다
- * (`.claude/rules/surfaces.md`).
+ * **Why clip A was renamed (2026-07-30).** The id and label used to be `agent-edits` /
+ * *"the map follows when the AI edits"*. When the owner redefined clip A as a **feature tour**
+ * (*"클로드 코드에 연결된것까지 보여줄 필요는 없어"* — no need to show it connected to Claude
+ * Code), that label became **false**: the footage has no scene of an AI editing. Applying the
+ * rule above ("the label is the sentence the viewer will hold when the clip ends") it became
+ * `one-folder` / *"one folder opens into six screens"*. **Attaching a sentence that differs from
+ * what was filmed is the defect this registry exists to prevent.**
  *
- * ## 클립 A 의 이름이 바뀐 이유 (2026-07-30)
+ * So whether an asset exists is decided in **one place, in data**. Before a file is attached
+ * `AVAILABLE` is empty and the section does not render. When footage arrives it is switched on by
+ * adding one line to the array below — the component is not touched.
  *
- * 종전 id/라벨은 `agent-edits` · *"AI가 고치면 지도가 따라 바뀐다"* 였다. 소유자가
- * 클립 A 를 **기능 소개 투어**로 재정의하면서(*"클로드 코드에 연결된것까지 보여줄
- * 필요는 없어"*) 그 라벨이 **거짓**이 됐다 — 촬영본에 AI 가 고치는 장면이 없다.
- * 위 규율("라벨은 클립이 끝났을 때 관객이 갖게 될 문장")을 그대로 적용해
- * `one-folder` · *"폴더 하나가 여섯 화면으로 열린다"* 로 바꿨다. **찍은 것과 다른
- * 문장을 붙이는 것이 이 등록부가 막으려던 결함이다.**
- *
- * 그래서 자산의 존재 여부가 **데이터 한 곳**에서 결정된다. 파일이 붙기 전에는
- * `AVAILABLE` 이 비어 있고 절 자체가 렌더되지 않는다. 촬영본이 들어오면 아래
- * 배열에 한 줄을 더하는 것으로 켜진다 — 컴포넌트는 건드리지 않는다.
- *
- * ## 탭 라벨은 기능명이 아니다
- *
- * 원장 확정: 라벨은 *"클립이 끝났을 때 관객이 갖게 될 문장"* 이다. 「MCP 연결」
- * 같은 기능명은 이미 아는 사람에게만 읽히고, 이 자산의 1차 관객은 **에이전트를
- * 모르는 사람까지**다.
+ * **A tab label is not a feature name.** Ledger-confirmed: the label is *"the sentence the viewer
+ * will hold when the clip ends"*. A feature name like "MCP connection" reads only to someone who
+ * already knows, and this asset's primary audience includes **people who do not know what an agent is**.
  */
 
 /**
- * 한 클립의 계약. 전달 규격(원장 「촬영 후 게이트」)이 타입에 박혀 있다.
+ * One clip's contract. The delivery spec (the ledger's "post-shoot gate") is pinned into the type.
  *
- * ## 2026-08-03 개정 — 클립 **하나**, 자막 없음, 로케일별 영상
+ * ## Revised 2026-08-03 — **one** clip, no captions, per-locale video
  *
- * 소유자 확정 셋:
+ * Three owner decisions:
  *
- * ① **둘에서 하나로.** 탭이 둘이면 관객은 «무엇을 볼지»를 먼저 골라야 하는데,
- *    첫인상 자리에서 그 선택은 비용이지 값이 아니다 — 대부분은 첫 탭만 보고
- *    떠나므로 두 번째 클립은 «만들었지만 아무도 안 보는 것»이 된다.
- * ② **자막을 굽지도 그리지도 않는다.** 로케일별 영상을 따로 찍으므로 자막이
- *    나를 정보가 없다. `.vtt` 배관을 남겨 두면 빈 트랙이 붙는다.
- * ③ **영상 자체가 로케일을 탄다** — 화면 안의 글자가 한국어/영어로 갈리기
- *    때문이다. 그래서 `basename` 이 아니라 `basenameFor(locale)` 이다.
+ * ① **From two to one.** With two tabs the viewer must first choose *what to watch*, and in the
+ *    first-impression slot that choice is a cost, not a value — most people watch only the first
+ *    tab and leave, so the second clip becomes «made but never watched».
+ * ② **Captions are neither burned in nor rendered.** Each locale is filmed separately, so
+ *    captions carry no information. Leaving the `.vtt` plumbing in place attaches an empty track.
+ * ③ **The video itself is locale-dependent** — the text inside the frame differs between Korean
+ *    and English. Hence `basenameFor(locale)` rather than `basename`.
  */
 export interface DemoClip {
   id: 'atlas-tour';
-  /** 초 단위 길이(실측). 촬영 후 게이트가 대조한다. */
+  /** Length in seconds (measured). The post-shoot gate compares against this. */
   seconds: number;
-  /** `public/demo/` 안의 파일 이름 앞부분 — 뒤에 `.ko` / `.en` 이 붙는다. */
+  /** The leading part of the filename in `public/demo/` — `.ko` / `.en` is appended. */
   basename: string;
 }
 
 /**
- * 시나리오가 정한 두 클립. **선언은 항상 여기 있다** — 촬영 전에도 이 표가 있어야
- * 「무엇을 찍어야 하는가」가 코드에 남고, 촬영 후 게이트가 대조할 대상이 생긴다.
+ * The two clips the scenario defines. **The declaration always lives here** — the table must
+ * exist before filming so that "what has to be filmed" is recorded in code and the post-shoot
+ * gate has something to compare against.
  */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  // `seconds` 는 ffprobe 실측값이다(2026-08-20 촬영본 199.13s → 반올림 199).
+  // `seconds` is measured with ffprobe (2026-08-20 footage: 199.13s → rounded to 199).
   { id: 'atlas-tour', seconds: 199, basename: 'atlas-tour' },
 ];
 
 /**
- * **실제로 붙은 촬영본.** 비어 있으면 시연 절이 렌더되지 않는다.
+ * **The footage actually attached.** When empty, the demo section does not render.
  *
- * 켜는 절차: `public/demo/<basename>.{webm,mp4}` + `<basename>-poster.png` +
- * `<basename>.ko.vtt` / `.en.vtt` 를 넣고, 그 id 를 여기 더한다. 파일만 넣고 이
- * 배열을 안 고치면 절은 계속 꺼져 있다 — **자산과 선언이 둘 다 있어야 켜진다**는
- * 것이 이 배열의 요점이다(파일 존재만으로 켜면, 반쯤 올라간 자산이 첫인상 자리에
- * 그대로 나간다).
+ * To switch it on: place `public/demo/<basename>.{webm,mp4}`, `<basename>-poster.png`, and
+ * `<basename>.ko.vtt` / `.en.vtt`, then add that id here. Adding files without editing this array
+ * leaves the section off — **both the asset and the declaration must exist**, which is the point
+ * of this array (switching on from file existence alone would put a half-uploaded asset straight
+ * into the first-impression slot).
  */
 /*
- * **지금 붙어 있는 것** (2026-08-20 촬영, 설치본 v1.0.0-rc.9 · 볼트
- * `docs/ontology` 82노드): 199.13초 한 테이크. 동선은 지도 정착 → 자동 정렬 →
- * 3D **돔** 조립 · 손으로 회전 → 3D **구름** 형성 · 회전 → 평면 복귀 →
- * **Claude Agent 를 ACP 로 붙여** 이 폴더에 도메인을 물어보고, 답을 기다리는
- * 동안 노드를 눌러 타입 있는 사실을 여는 것까지. 답은 7개 도메인을 표로 돌려
- * 주고 그래프의 비대칭 둘까지 짚는다.
+ * **What is attached now** (filmed 2026-08-20, installed build v1.0.0-rc.9, vault `docs/ontology`
+ * with 82 nodes): one 199.13-second take. The path: map settles → auto-layout → the 3D **dome**
+ * assembles and is rotated by hand → the 3D **cloud** forms and rotates → back to the plane →
+ * **a Claude Agent is attached over ACP**, asked about this folder's domains, and while the answer
+ * streams a node is pressed to open its typed facts. The answer returns seven domains as a table
+ * and points out two asymmetries in the graph.
  *
- * **죽은 시간은 잘라내지 않고 빨리 감았다** — 점프 컷이 생기면 「무컷 한
- * 테이크」라는 이 자산의 성질이 깨지기 때문이다. 실제 동작(조립 · 회전 · 답변
- * 스트리밍)은 전부 등속이고, 배속이 붙은 곳은 아무 일도 일어나지 않는
- * 구간뿐이다.
+ * **Dead time was sped up, not cut** — a jump cut would break this asset's defining property of
+ * being one uncut take. Every real action (assembly, rotation, the answer streaming) runs at normal
+ * speed; the only accelerated stretches are where nothing happens.
  *
- * ⚠️ **두 로케일이 아직 같은 마스터를 가리킨다** — 화면 글자는 한국어다.
- * 영어 촬영본은 UI 문구 폭이 달라 좌표 동선을 다시 잡아야 해서 따로 찍는다.
- * 화면이 그 사실을 `demoProvisionalNote` 로 정직하게 말한다.
+ * ⚠️ **Both locales still point at the same master** — the on-screen text is Korean. The English
+ * footage has to be filmed separately because the UI copy widths differ and the coordinate path
+ * must be re-planned. The screen states that honestly through `demoProvisionalNote`.
  *
- * 왜 등록부를 비워 두지 않나: 비우면 관문에서 시연 절이 통째로 사라지는데,
- * 그러면 첫인상이 나빠지는 것에 더해 그 아래 「설치 3단이 접히지 않는다」
- * 시험이 **조용히 무의미해진다** — 절이 없으면 페이지가 짧아져 3단이 저절로
- * 접힘 위에 오고, 아무것도 안 재면서 초록이 된다(그 시험 자신의 주석이 이
- * 함정을 이름으로 적어 두었다).
+ * Why the registry is not simply left empty: emptying it removes the demo section from the gateway
+ * entirely, which not only worsens the first impression but **silently voids the test below it**
+ * that checks the three install steps do not fold — with the section gone the page shortens, the
+ * steps end up above the fold on their own, and the test goes green while measuring nothing (that
+ * test's own comment names this trap).
  *
- * **교체 절차**: `public/demo/atlas-tour.{ko,en}.{webm,mp4}` 와
- * `atlas-tour.{ko,en}-poster.png` 를 새 촬영본으로 덮고, `seconds` 를 ffprobe
- * 실측값으로 고친다.
+ * **Replacement procedure**: overwrite `public/demo/atlas-tour.{ko,en}.{webm,mp4}` and
+ * `atlas-tour.{ko,en}-poster.png` with the new footage, and update `seconds` to the ffprobe measurement.
  */
 export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = ['atlas-tour'];
 
-/** 렌더할 클립 — 선언과 자산이 모두 있는 것만. */
+/** The clips to render — only those with both a declaration and an asset. */
 export function availableDemoClips(
   available: readonly DemoClip['id'][] = AVAILABLE_DEMO_CLIP_IDS,
 ): readonly DemoClip[] {
   return DEMO_CLIPS.filter((clip) => available.includes(clip.id));
 }
 
-/** 시연 절을 그릴지 — 클립이 하나도 없으면 절 자체가 없다. */
+/** Whether to draw the demo section — with no clips there is no section. */
 export function hasDemoClips(
   available: readonly DemoClip['id'][] = AVAILABLE_DEMO_CLIP_IDS,
 ): boolean {
@@ -116,9 +110,9 @@ export function hasDemoClips(
 }
 
 /**
- * 자산 경로. **AV1(webm) 를 먼저, MP4 를 최종 보루로** 둔다 — 원장: 이 페이지의 주
- * 방문자가 macOS(=Safari) 이고 Safari 의 AV1 은 하드웨어 지원에 따라 갈리므로
- * 떨어질 자리가 있어선 안 된다.
+ * Asset paths. **AV1 (webm) first, MP4 as the last resort** — per the ledger, this page's primary
+ * visitor is on macOS (i.e. Safari), and Safari's AV1 depends on hardware support, so there must
+ * be somewhere to fall back to.
  */
 function localeTag(locale: string): 'ko' | 'en' {
   return locale === 'ko' ? 'ko' : 'en';
