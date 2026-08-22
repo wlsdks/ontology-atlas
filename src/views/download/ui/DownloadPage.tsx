@@ -12,7 +12,7 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { buttonVariants } from '@/shared/ui';
-import { RELEASE_MIN_MACOS, RELEASE_VERSION } from '../lib/release-facts';
+import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
   MACOS_RELEASE,
   formatAssetSize,
@@ -496,7 +496,13 @@ function HeroSection({
         </div>
       </div>
 
-      <FactsStrip published={published} primaryAsset={primaryAsset} heroIn={heroIn} />
+      <FactsStrip
+        published={published}
+        primaryAsset={primaryAsset}
+        windowsAsset={windowsInstaller}
+        windowsPrimary={heroWindowsPrimary}
+        heroIn={heroIn}
+      />
     </section>
   );
 }
@@ -524,20 +530,42 @@ function HeroIntelLink() {
 }
 
 /**
- * 음각 계기 스트립 — **등장(950ms) 후 영구 정지.** 사실은 절대 움직이지 않는다:
- * 버전·날짜·최소 OS·크기·SHA-256 전부 릴리스 생성 모듈에서 온 값이고, 미게시
- * 상태에서는 정직하게 줄어든다(없는 파일의 크기·체크섬 행은 존재하지 않는다).
+ * 음각 계기 스트립 — **사실은 절대 움직이지 않는다.** 버전·날짜·최소 OS·크기·
+ * SHA-256 전부 릴리스 생성 모듈에서 온 값이고, 미게시 상태에서는 정직하게
+ * 줄어든다(없는 파일의 크기·체크섬 행은 존재하지 않는다).
  *
  * census 는 여기 없다 — 그 숫자의 캡션은 **자기가 세는 지도와 같은 절**(③)에
  * 산다(소유자 확정). 한 페이지에 같은 정의가 두 번 적히면 둘 다 각주가 된다.
+ *
+ * ## 이 레일은 **주 CTA 가 가리키는 파일**을 말한다 (2026-08-22)
+ *
+ * 그러지 않던 동안 이 페이지는 자기가 파는 것을 어겼다. Windows UA 로 열면
+ * 승자 버튼은 「Windows x64 베타 받기 · 47.8 MB」인데 바로 아래 레일이
+ * `Requires macOS 12 이상 · DMG 53.5 MB · SHA-256 c420d0b4…` 였다 — **내려받지도
+ * 않을 파일의 체크섬**이다. 체크섬은 「받은 것이 우리가 올린 것과 같은가」를
+ * 대조하라고 내미는 값이라, 다른 파일의 것을 보여 주면 값이 0 이 아니라
+ * **음수**다: 대조한 사람은 반드시 불일치를 보고, 그 순간 의심하는 대상은
+ * 자기가 받은 파일이 된다.
+ *
+ * 히어로의 CTA(`heroWindowsPrimary`)와 신뢰줄(`trustLineWindows`)은 이미 감지된
+ * 플랫폼을 따르고 있었다 — 이 레일만 `macosAssetFor` 에 묶여 빠져 있었다.
+ * 그래서 새 판정을 만들지 않고 **같은 불리언을 내려받는다**: 한 화면이 어느
+ * 파일 얘기를 하는지는 한 곳에서만 정해져야 한다.
+ *
+ * mac 분기의 값과 순서는 **1바이트도 바뀌지 않았다** — 서버 스냅숏이 언제나
+ * mac 이므로(`visitor-platform.ts`) 첫 그림도 종전과 같다.
  */
 function FactsStrip({
   published,
   primaryAsset,
+  windowsAsset: windowsInstaller,
+  windowsPrimary,
   heroIn,
 }: {
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
+  windowsAsset: ReturnType<typeof windowsAsset>;
+  windowsPrimary: boolean;
   heroIn: boolean;
 }) {
   const t = useTranslations('download');
@@ -564,15 +592,26 @@ function FactsStrip({
         releaseVersion: RELEASE_VERSION,
       })} · ${t('factUnpublished')}`;
 
+  /** 승자 파일 — 히어로 CTA 가 가리키는 바로 그것. */
+  const subject = windowsPrimary && windowsInstaller ? windowsInstaller : primaryAsset;
+  const subjectIsWindows = subject !== null && subject === windowsInstaller;
+
   const facts: { label: string; value: string }[] = [
     { label: 'Version', value: version },
-    { label: 'Requires', value: `${RELEASE_MIN_MACOS}${t('factMinOsSuffix')}` },
+    {
+      label: 'Requires',
+      value: `${subjectIsWindows ? RELEASE_MIN_WINDOWS : RELEASE_MIN_MACOS}${t('factMinOsSuffix')}`,
+    },
   ];
-  if (published && primaryAsset) {
-    facts.push({ label: 'DMG', value: formatAssetSize(primaryAsset.sizeBytes) });
+  if (published && subject) {
+    facts.push({
+      // 파일 형식이 곧 라벨이다 — 「무엇을 받는가」를 크기 옆에서 한 번 더 말한다.
+      label: subjectIsWindows ? 'EXE' : 'DMG',
+      value: formatAssetSize(subject.sizeBytes),
+    });
     facts.push({
       label: 'SHA-256',
-      value: `${primaryAsset.sha256.slice(0, 8)}…${primaryAsset.sha256.slice(-8)}`,
+      value: `${subject.sha256.slice(0, 8)}…${subject.sha256.slice(-8)}`,
     });
   }
 
