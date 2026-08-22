@@ -45,12 +45,25 @@ import { controlClass } from '@/shared/ui/control-class';
  *
  * The cap value was not newly invented — it is the `48rem` the agent section's scene
  * (`AcpChatScene`) directly below already uses. Two scenes at one width means the page says "this
- * much is the stage" only once. The centring is an owner instruction, reviving the `mx-auto` that
- * 2026-07-30 had rejected (`docs/DECISIONS.md` 2026-08-19).
+ * much is the stage" only once.
  *
  * ⚠️ The cap is **owned by the section** — applying it to the video while leaving the caption in
  * the column splits their right edges and brings back the "one section, two grids" that 2026-07-30
  * existed to stop.
+ *
+ * ## [Revised 2026-08-23] The centring is gone; the cap stays
+ *
+ * 2026-08-19 added `mx-auto` alongside the cap, on owner instruction, reviving the centring that
+ * 2026-07-30 had rejected. Keeping the size but centring it produced exactly the defect the
+ * warning above names, and it went unmeasured for four days. Measured 2026-08-23 on the published
+ * page at a 1920 viewport: all three section heads sit at **x=200**, and their stages at
+ * **200** (evidence map) and **200** (agent scene) — except this one, at **569**. One section in
+ * three, off by 369px, under a heading that starts where the other two do.
+ *
+ * So the stage is left-aligned to its own heading again. **The 2026-08-19 decision is not undone**
+ * — that decision was about *size*, the video is still capped at `--gateway-stage-max`, and the
+ * screenshot that prompted it is still answered. Only the horizontal origin changed
+ * (`docs/DECISIONS.md` 2026-08-23).
  *
  * ## [Revised evening 2026-08-19] The cap grows proportionally at wide widths
  *
@@ -76,7 +89,7 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
     <section
       data-testid="demo-stage"
       aria-label={t('demoHeading')}
-      className="mx-auto min-w-0 max-w-[var(--gateway-stage-max)]"
+      className="min-w-0 max-w-[var(--gateway-stage-max)]"
     >
       <DemoPlayer clip={clip} />
       {/*
