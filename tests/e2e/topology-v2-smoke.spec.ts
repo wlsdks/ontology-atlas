@@ -140,7 +140,10 @@ test.describe("topology-map-v2 smoke", () => {
     const detailPanel = page.getByTestId("topology-v2-detail-panel");
     await expect(detailPanel).toBeVisible({ timeout: 15_000 });
 
-    const documentAction = detailPanel.getByTestId("topology-v2-detail-panel-action-document");
+    await detailPanel.getByTestId("topology-v2-detail-panel-more-menu-trigger").click();
+    const documentAction = detailPanel
+      .getByTestId("topology-v2-detail-panel-more-menu")
+      .getByTestId("topology-v2-detail-panel-action-document");
     await expect(documentAction).toBeVisible();
     await expect(documentAction).not.toHaveAttribute("aria-disabled", "true");
     await documentAction.click();

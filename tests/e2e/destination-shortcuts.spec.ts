@@ -37,11 +37,18 @@ async function dismissBlockingSurface(page: import("@playwright/test").Page) {
   }
 }
 
+/** Move focus out of INDEX inputs without depending on a coordinate that can become a control. */
+async function focusShortcutSurface(page: import("@playwright/test").Page) {
+  await expect(page.getByTestId("topology-shortcuts-help-button")).toBeVisible({ timeout: 15_000 });
+  const main = page.locator("main").first();
+  await main.focus();
+  await expect(main).toBeFocused();
+}
+
 test.describe("목적지 이동 단축키", () => {
-  // Width is pinned. At the default 1280×720 the rail and the bottom tab bar
-  // **both** carry a settings trigger, and the map INDEX search field is not
-  // rendered at all (measured: 0 `input`s). A floating width would make this spec
-  // measure the width rather than the feature.
+  // Width is pinned so the desktop rail and expanded INDEX keep one stable shape.
+  // INDEX now includes a search input at this width; `focusShortcutSurface` moves
+  // focus to the content root before testing keys that intentionally pause while typing.
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
@@ -151,7 +158,7 @@ test.describe("목적지 이동 단축키", () => {
   test("막는 표면이 열려 있으면 이동하지 않는다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await dismissBlockingSurface(page);
-    await page.locator("main").first().click({ position: { x: 5, y: 5 } });
+    await focusShortcutSurface(page);
     await page.keyboard.press("?");
     const modal = page.locator('[aria-modal="true"]:visible').first();
     await expect(modal, "단축키 시트가 안 열렸다").toBeVisible({ timeout: 5_000 });
@@ -197,8 +204,8 @@ test.describe("목적지 이동 단축키", () => {
     await page.goto("/ko/topology/?guides=off");
     await dismissBlockingSurface(page);
     // `?` is wired by the map (HomePage) through `useTypingShortcuts`. It does not
-    // fire while an input has focus, so click the body once to move focus.
-    await page.locator("main").first().click({ position: { x: 5, y: 5 } });
+    // fire while an input has focus, so focus the content root explicitly.
+    await focusShortcutSurface(page);
     await page.keyboard.press("?");
     const sheet = page.getByTestId("shortcut-sheet-scroll");
     await expect(sheet).toBeVisible({ timeout: 5_000 });
