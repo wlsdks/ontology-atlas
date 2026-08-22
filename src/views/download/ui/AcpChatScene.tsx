@@ -54,13 +54,41 @@ function toolCallLine(why: string): string {
   return `add_relation | "${why}"`;
 }
 
-/** 도착 시각(ms) — 말풍선 → 도구 호출 → 결과. 인과가 리듬이다. */
-const STEP_AT = [250, 1050, 1750];
+/**
+ * 도착 시각(ms) — **에이전트의 두 걸음**(도구 호출 → 결과)만 도착한다.
+ *
+ * ## 사람의 문장은 등장하지 않는다 — 전제라서다 (2026-08-22)
+ *
+ * 종전 악보는 `[250, 1050, 1750]` 이고 첫 값이 말풍선의 것이었다. 그래서 절이
+ * 뷰포트에 들어온 뒤 최소 250ms, 그리고 세 줄이 다 찰 때까지 1,750ms 동안
+ * **17rem 짜리 빈 상자**가 서 있었다. 실측(1512, 스크롤 도착 직후 스크린샷):
+ * 머리글 한 줄 아래로 250px 가 통째로 비어 있었고, 5초 뒤에야 세 줄이 찼다.
+ * 테두리만 있는 빈 상자는 「연출 대기」가 아니라 **「고장났거나 로딩 중」**
+ * 으로 읽힌다.
+ *
+ * 고칠 방향은 둘이었다. ① 전체를 빠르게 — 빈 상자 시간이 줄 뿐 없어지지
+ * 않는다. ② **첫 줄을 안무에서 빼기** — 이쪽을 골랐다. 이 장면의 논증은
+ * 「사람이 말하면 에이전트가 볼트를 고친다」이고, 거기서 **움직여야 하는 것은
+ * 에이전트의 응답**이다. 사람의 문장은 그 응답이 답하는 **전제**이지 결과가
+ * 아니다 — 이미 보내진 메시지가 화면에 있고 거기에 에이전트가 반응하는 것이,
+ * 대화라는 것이 실제로 일어나는 모양이기도 하다.
+ *
+ * 그래서 상자는 **첫 프레임부터 비어 있지 않다**. 잃은 것은 말풍선이 떠오르는
+ * 장식 하나이고, 얻은 것은 「이 절이 무엇을 보여 주는지」가 도착 즉시 읽히는
+ * 것이다. design.md 의 「정보 모션만」이 정확히 이 교환을 요구한다.
+ *
+ * 남은 두 걸음의 간격(650ms)은 종전 말풍선→호출 간격(800ms)보다 짧다 — 앞의
+ * 한 걸음이 사라졌으므로 전체 길이를 그만큼 되돌려 리듬을 유지한다.
+ */
+const STEP_AT = [400, 1050];
+
+/** 첫 줄(사람의 문장)은 언제나 켜져 있다 — 안무의 시작점이 1 인 이유. */
+const PREMISE_SHOWN = 1;
 
 export function AcpChatScene() {
   const t = useTranslations('download');
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [shown, setShown] = useState(0);
+  const [shown, setShown] = useState(PREMISE_SHOWN);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -70,19 +98,20 @@ export function AcpChatScene() {
       matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let timers: number[] = [];
+    /** 되감아도 **전제까지만** 되감는다 — 빈 상자로 돌아가지 않는다. */
     const clear = (): void => {
       for (const id of timers) window.clearTimeout(id);
       timers = [];
-      setShown(0);
+      setShown(PREMISE_SHOWN);
     };
     const play = (): void => {
       clear();
       if (reduced) {
-        setShown(STEP_AT.length);
+        setShown(PREMISE_SHOWN + STEP_AT.length);
         return;
       }
       STEP_AT.forEach((at, i) => {
-        timers.push(window.setTimeout(() => setShown(i + 1), at));
+        timers.push(window.setTimeout(() => setShown(PREMISE_SHOWN + i + 1), at));
       });
     };
 

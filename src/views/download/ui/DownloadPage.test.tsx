@@ -595,6 +595,35 @@ describe('DownloadPage', () => {
   });
 
   /**
+   * **첫 프레임에 빈 상자가 없다** (회귀 2026-08-22).
+   *
+   * 종전 악무는 세 줄을 전부 타이머에 걸어서(250/1050/1750ms), 절이 뷰포트에
+   * 들어온 뒤 17rem 짜리 테두리 상자가 **아무것도 없이** 서 있었다. 실측:
+   * 스크롤 도착 직후 스크린샷에 머리글 아래 250px 가 통째로 비어 있었다.
+   * 테두리만 있는 빈 상자는 「연출 대기」가 아니라 「고장났거나 로딩 중」으로
+   * 읽힌다.
+   *
+   * 사람의 문장은 에이전트의 응답이 답하는 **전제**이지 연출의 결과가 아니다.
+   * 그래서 첫 줄은 안무에서 빠지고 처음부터 켜져 있다.
+   *
+   * 이 시험이 잠그는 것은 「몇 ms 냐」가 아니라 **「첫 그림에 글자가 있느냐」**
+   * 다 — 타이밍을 값으로 박으면 리듬을 조정할 때마다 빨개지는데, 그건 규격이
+   * 아니라 소음이다. 잠글 것은 상자가 비지 않는다는 성질 하나다.
+   */
+  it('never paints the ACP scene as an empty box — the human line is the premise', () => {
+    renderDownloadPage();
+
+    const chat = screen.getByTestId('gateway-agent-chat');
+    const lines = chat.querySelectorAll('.gateway-term-line');
+    expect(lines.length, '재연 세 줄이 있어야 이 시험이 뜻을 갖는다').toBe(3);
+
+    // 첫 줄 = 사람의 문장. 타이머가 한 번도 안 돌았어도 켜져 있다.
+    expect(lines[0].className).toContain('is-on');
+    // 그리고 그 줄에 실제로 글자가 있다 — 클래스만 켜고 비어 있으면 같은 결함이다.
+    expect((lines[0].textContent ?? '').trim().length).toBeGreaterThan(0);
+  });
+
+  /**
    * 헤드라인은 **소유자의 문장 그대로**다 — 리메이크의 고정점이라 문장으로
    * 잠근다(다듬어 고치는 순간 이 화면의 전제가 바뀐 것이고, 그건 원장을 거쳐야
    * 한다). 두 줄 + 리드까지가 한 벌이다.
