@@ -87,9 +87,17 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * **No cuts and no speed-up** — the whole nine seconds runs at capture speed, so the assembly and
  * the click take exactly as long here as they do on a real machine.
  *
- * ⚠️ **Both locales still point at the same master** — the on-screen text is Korean. The English
- * footage has to be filmed separately because the UI copy widths differ and the coordinate path
- * must be re-planned. The screen states that honestly through `demoProvisionalNote`.
+ * **Each locale is its own take** (2026-08-22). The Korean and English recordings are separate
+ * passes over the same beats, filmed after switching the app's language, so the UI text and the
+ * node names inside the frame are in the viewer's language. The layout turned out to be
+ * deterministic — the same node measured at 812,797 in Korean and 813,798 in English — so the
+ * coordinate path did not have to be re-planned after all.
+ *
+ * ⚠️ **The two assets must not become one again.** For its first two days this registry shipped a
+ * single Korean master under both names, and `demoProvisionalNote` carried a clause admitting it.
+ * Re-copying one locale over the other would restore that silently: every existing check would
+ * stay green, because both files would still exist, still be over 10KB, and still measure 9s.
+ * `demo-clip-assets.contract` now compares their bytes for exactly this reason.
  *
  * Why the registry is not simply left empty: emptying it removes the demo section from the gateway
  * entirely, which not only worsens the first impression but **silently voids the test below it**

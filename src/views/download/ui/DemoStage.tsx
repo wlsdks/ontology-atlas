@@ -89,9 +89,9 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
        * **When replacing an asset, read this sentence as well as `seconds`** — the length is caught
        * by a gate (`demo-clip-assets.contract`), but only a person knows what was filmed.
        *
-       * The two locale assets are still byte-identical recordings of the Korean UI; when
-       * per-language footage arrives (`docs/DEMO-SCENARIO.md`) it is a file swap plus a `seconds`
-       * update plus deleting this sentence's last clause — the markup is untouched.
+       * Since 2026-08-22 each locale carries its own take, so the clause admitting they shared one
+       * Korean recording is gone. That swap was a file swap plus this sentence — the markup was
+       * untouched, which is what this registry-and-copy split is for (`docs/DEMO-SCENARIO.md`).
        */}
       <p
         data-testid="demo-provisional-note"

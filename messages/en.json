@@ -582,7 +582,7 @@
     "factUnpublished": "not published yet",
     "demoTitle": "See it moving before you install anything",
     "demoSub": "Pick a folder and it becomes a map; your agent reads and writes that map. Uncut, silent.",
-    "demoProvisionalNote": "atlas-tour · a single {seconds}s take · the map draws itself from a folder already connected, then one node is pressed and only its neighbours stay, with what is under it, above it, and what evidences it · no cuts, no speed-up · both languages currently share this Korean-UI recording",
+    "demoProvisionalNote": "atlas-tour · a single {seconds}s take · the map draws itself from a folder already connected, then one node is pressed and only its neighbours stay, with what is under it, above it, and what evidences it · no cuts, no speed-up",
     "evidenceTitle": "This map is this repository itself",
     "evidenceSub": "The folder-becomes-a-graph moment happens right here, in front of you.",
     "evidenceKindsHeading": "Concepts by kind",
