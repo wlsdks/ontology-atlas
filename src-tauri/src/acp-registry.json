@@ -80,7 +80,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@augmentcode/auggie@0.35.0",
+        "package": "@augmentcode/auggie@0.36.0",
         "args": [
           "--acp"
         ]
@@ -114,7 +114,7 @@
       "cli": "cline",
       "launch": {
         "kind": "npx",
-        "package": "cline@3.0.55",
+        "package": "cline@3.0.57",
         "args": [
           "--acp"
         ]
@@ -132,7 +132,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.106.7",
+        "package": "@tencent-ai/codebuddy-code@2.137.1",
         "args": [
           "--acp"
         ]
@@ -255,7 +255,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.3.17",
+        "package": "dimcode@0.3.18",
         "args": [
           "acp"
         ]
@@ -291,7 +291,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.200.0",
+        "package": "droid@0.202.0",
         "args": [
           "exec",
           "--output-format",
@@ -370,6 +370,22 @@
       }
     },
     {
+      "id": "antigravity-acp",
+      "name": "Google Antigravity",
+      "description": "Google’s AI coding agent",
+      "website": "https://antigravity.google/docs/ide/extensions",
+      "license": "proprietary",
+      "verified": false,
+      "icon": "/acp-icons/antigravity-acp.svg",
+      "brandInk": null,
+      "cli": null,
+      "launch": {
+        "kind": "binary",
+        "command": "agy_acp_server.par",
+        "args": []
+      }
+    },
+    {
       "id": "goose",
       "name": "goose",
       "description": "A local, extensible, open source AI agent that automates engineering tasks",
@@ -399,7 +415,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.7",
+        "package": "@xai-official/grok@1.0.8",
         "args": [
           "agent",
           "stdio"
@@ -455,7 +471,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@kilocode/cli@7.4.22",
+        "package": "@kilocode/cli@7.4.23",
         "args": [
           "acp"
         ]
@@ -525,7 +541,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@compass-ai/nova@1.1.35",
+        "package": "@compass-ai/nova@1.1.37",
         "args": [
           "acp"
         ]
@@ -613,7 +629,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.21.14",
+        "package": "@qwen-code/qwen-code@0.22.0",
         "args": [
           "--acp",
           "--experimental-skills"
