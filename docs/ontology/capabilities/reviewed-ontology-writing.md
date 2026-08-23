@@ -3,6 +3,7 @@ uid: fa08540f-a6c0-4a13-8dd9-b43df420534f
 slug: capabilities/reviewed-ontology-writing
 kind: capability
 title: Reviewed Ontology Writing
+display_ko: 검토 뒤 온톨로지 쓰기
 domain: domains/graph-modeling
 elements: [elements/acp-ontology-write-review, elements/ontology-change-review, elements/ontology-meaning-editor]
 path: src/features/ontology-meaning-editor

@@ -3,6 +3,7 @@ uid: 1560e52a-f6d8-4715-8404-9143efee388c
 slug: capabilities/first-run-starter
 kind: capability
 title: First-Run Starter Vault
+display_ko: 첫 실행 예시 볼트
 domain: domains/onboarding-and-shell
 elements: [elements/first-run]
 path: src/features/first-run-starter

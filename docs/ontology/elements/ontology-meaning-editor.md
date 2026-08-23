@@ -3,6 +3,7 @@ uid: eb2a7d5e-0050-4043-b8ae-1300046d7e21
 slug: elements/ontology-meaning-editor
 kind: element
 title: Ontology Meaning Editor
+display_ko: 뜻 편집기
 domain: domains/graph-modeling
 path: src/features/ontology-meaning-editor
 created_by: "agent:unknown"

@@ -3,6 +3,7 @@ uid: 3585d1e9-a0c1-4e25-ad02-ba63d71156f2
 slug: capabilities/locale-switch
 kind: capability
 title: Locale Switching
+display_ko: 언어 전환
 domain: domains/onboarding-and-shell
 elements: []
 path: src/features/locale-switch

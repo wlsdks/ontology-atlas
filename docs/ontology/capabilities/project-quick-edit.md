@@ -3,6 +3,7 @@ uid: 6b2e10a4-b30f-405a-a02f-90ccc4d471a0
 slug: capabilities/project-quick-edit
 kind: capability
 title: Project Quick Edit Dialog
+display_ko: 프로젝트 빠른 편집
 domain: domains/project-portfolio
 elements: []
 path: src/features/project-quick-edit

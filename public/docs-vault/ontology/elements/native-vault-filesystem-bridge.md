@@ -3,6 +3,7 @@ uid: ea43fdf2-9b52-49a8-90d3-68bb9904e860
 slug: elements/native-vault-filesystem-bridge
 kind: element
 title: Native Vault Filesystem Bridge
+display_ko: 네이티브 볼트 파일시스템 브리지
 domain: domains/local-vault-management
 path: src-tauri/src/lib.rs
 created_by: "agent:unknown"

@@ -3,6 +3,7 @@ uid: b8a4b1ad-616b-4230-b206-9efa6292d217
 slug: capabilities/project-edit
 kind: capability
 title: Project Form Editing
+display_ko: 프로젝트 양식 편집
 domain: domains/project-portfolio
 elements: [elements/project-editor]
 path: src/features/project-edit

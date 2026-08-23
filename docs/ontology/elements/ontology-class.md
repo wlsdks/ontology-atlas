@@ -3,6 +3,7 @@ uid: e493e922-d415-486b-bf3e-19f2469f85e0
 slug: elements/ontology-class
 kind: element
 title: Ontology Class
+display_ko: 온톨로지 클래스
 domain: domains/graph-modeling
 path: src/entities/ontology-class
 created_by: "agent:unknown"

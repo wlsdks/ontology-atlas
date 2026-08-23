@@ -3,6 +3,7 @@ uid: 2f1761bb-5498-4675-9c45-099709bb6c2b
 slug: capabilities/docs-vault-local
 kind: capability
 title: Local Folder Mounting
+display_ko: 내 폴더 열기
 domain: domains/local-vault-management
 elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
 path: src/features/docs-vault-local

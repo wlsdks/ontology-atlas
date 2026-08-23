@@ -3,6 +3,7 @@ uid: 84789e29-bdf1-49ad-89d3-a25593009741
 slug: capabilities/taxonomy
 kind: capability
 title: Kind Taxonomy Management
+display_ko: 종류 분류 관리
 domain: domains/graph-modeling
 elements: [elements/category, elements/status]
 path: src/features/taxonomy
