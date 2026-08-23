@@ -16,13 +16,13 @@ import {
  * | | Claude | Codex |
  * |---|---|---|
  * | config isolation | works | **only the approval policy is ignored** |
- * | session mode | has no "read only" | **`read-only` works** |
+ * | session mode | has no "read only" | blocks direct files, **not Atlas MCP writes** |
  *
  * With codex, putting `approval_policy = "untrusted"` in an isolated `CODEX_HOME`
- * still produced **a file outside the vault after zero permission requests**. The
- * `model` value in the same folder was applied, so the config *is* read — only the
- * approval policy is overridden by the session mode. Switching to `read-only`
- * gave **1 permission request, no file created, and MCP tools still working**.
+ * still produced **a file outside the vault after zero permission requests**. Switching to
+ * `read-only` blocked that direct-file path, but installed-app acceptance on 2026-08-24 proved
+ * that a self-registered Atlas `add_relation` still executed with **zero**
+ * `session/request_permission` requests and changed the vault immediately.
  *
  * So the danger is **the two sides diverging**: the screen says this tool will ask
  * while the session does not set that mode, or the mode is set and the screen does
@@ -32,13 +32,8 @@ import {
 const ROOT = join(import.meta.dirname, '..', '..');
 
 describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
-  it('세션 모드로 거는 실행기는 화면에서도 「물어봐 준다」로 센다', () => {
-    for (const runtimeId of Object.keys(GATED_SESSION_MODE)) {
-      expect(
-        isGuardedRuntime(runtimeId, false),
-        `${runtimeId}: 모드를 거는데 화면은 관문이 없다고 말한다`,
-      ).toBe(true);
-    }
+  it('세션 모드만으로 안전하다고 인정한 실행기는 지금 0개다', () => {
+    expect(GATED_SESSION_MODE).toEqual({});
   });
 
   it('설정 격리가 되는 실행기도 「물어봐 준다」로 센다', () => {
@@ -46,6 +41,7 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
   });
 
   it('둘 다 아닌 실행기는 관문이 없다고 말한다 — 없는 것을 있는 척하지 않는다', () => {
+    expect(isGuardedRuntime('codex-acp', false)).toBe(false);
     expect(isGuardedRuntime('gemini', false)).toBe(false);
     expect(isGuardedRuntime('cursor', false)).toBe(false);
   });
@@ -97,8 +93,8 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
       'utf8',
     );
     expect(src).toContain('isGuardedRuntime');
-    // Judging on `isolated` alone, as before, drops codex even though it has a
-    // checkpoint.
+    // The shared predicate remains the only eligibility boundary even while the
+    // current session-mode table is intentionally empty.
     expect(
       /\.filter\(\(r\) => r\.isolated\)/.test(src),
       '`isolated` 만 보고 세면 세션 모드로 거는 실행기가 빠진다',
@@ -125,9 +121,8 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     ).toBe(true);
   });
 
-  it('codex 는 실측한 그 모드로 건다', () => {
-    // If this value changes it must be re-measured — other modes failed to establish
-    // the checkpoint (measured).
-    expect(GATED_SESSION_MODE['codex-acp']).toBe('read-only');
+  it('codex 는 Atlas MCP 쓰기 관문이 생기기 전까지 인앱 대화를 열 수 없다', () => {
+    expect(GATED_SESSION_MODE['codex-acp']).toBeUndefined();
+    expect(isGuardedRuntime('codex-acp', false)).toBe(false);
   });
 });

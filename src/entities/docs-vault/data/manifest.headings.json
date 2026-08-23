@@ -2814,6 +2814,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-24 · Codex in-app chat pauses until Atlas MCP writes have an app-owned review gate",
+      "slug": "2026-08-24-codex-in-app-chat-pauses-until-atlas-mcp-writes-have-an-app-owned-review-gate"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-23 · Selecting a node in the 3D dome lights its line to the top",
       "slug": "2026-08-23-selecting-a-node-in-the-3d-dome-lights-its-line-to-the-top"
     },
@@ -5695,6 +5700,11 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 (111) — Codex leaves in-app chat until Atlas MCP writes have an app-owned gate",
+      "slug": "2026-08-24-111-codex-leaves-in-app-chat-until-atlas-mcp-writes-have-an-app-owned-gate"
     },
     {
       "depth": 2,
@@ -11551,8 +11561,8 @@
     },
     {
       "depth": 2,
-      "text": "It is entirely local",
-      "slug": "it-is-entirely-local"
+      "text": "Local source of truth, explicit provider boundary",
+      "slug": "local-source-of-truth-explicit-provider-boundary"
     },
     {
       "depth": 2,
@@ -11566,8 +11576,8 @@
     },
     {
       "depth": 2,
-      "text": "LLM connectivity is optional",
-      "slug": "llm-connectivity-is-optional"
+      "text": "AI connectivity is optional",
+      "slug": "ai-connectivity-is-optional"
     },
     {
       "depth": 2,

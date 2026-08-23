@@ -137,7 +137,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('밖의 도구를 잇는 자리예요')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Ontology Atlas 안에서 Claude Code·Codex·Cursor 대화를 여는 게 아니에요. 연결 파일과 다시 켜는 안내, 확인 방법을 준비해 두면 각 도구가 자기 앱이나 터미널에서 이 폴더를 읽고 씁니다.',
+        '이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. Atlas 안의 관문 있는 Claude Agent 대화는 별도 화면입니다.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('더 확인하려면')).toBeInTheDocument();

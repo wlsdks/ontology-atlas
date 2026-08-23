@@ -22,7 +22,7 @@ unproven and provide no guarantee beyond static link checks.
 
 The "interactive agent in the app" mentioned here is the single vault-agent panel owned by this capability:
 it's a provider-neutral loop attaching to keys entered by users or local runners, calling only vault tools. The app
-launching coding agents (Claude Code, Codex, etc.) already installed by the user directly as ACP is a separate capability owned by `capabilities/acp-runtime`.
+launching a coding agent with a verified permission gate (currently Claude Agent) directly over ACP is a separate capability owned by `capabilities/acp-runtime`.
 That side has different layers for config isolation and permission gates, and the surface the user opens today differs with just one "executor" section in settings.
 
 ## Evidence

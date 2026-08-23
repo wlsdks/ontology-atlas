@@ -65,8 +65,9 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
      * launching codex in that default mode produced *"files written outside the working
      * folder with 0 permission requests"*. It fails the criterion above exactly.
      *
-     * So codex is left with `read-only` alone. The vault tools we inject still run in
-     * that mode, so filling the map is not blocked.
+     * The mode filter therefore leaves only `read-only`, but this does **not** make
+     * Codex eligible for in-app chat. Installed acceptance later proved an Atlas MCP
+     * write can bypass that mode; `runtime-gate.ts` owns the separate runtime boundary.
      */
     expect(kept).toEqual(['read-only']);
   });

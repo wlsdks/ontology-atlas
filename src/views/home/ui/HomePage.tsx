@@ -2508,10 +2508,10 @@ function HomePageImpl() {
    * **Only verified runtimes** are named. Recommending something we have not actually
    * measured, on the first screen, reads as a guarantee.
    *
-   * ⚠️ The condition used to be `r.isolated`, which asks "can its config be isolated".
-   * Codex does not qualify that way; it qualifies by **session mode** (measured
-   * 2026-08-16), so despite having a gate wired it fell out of the list and **nobody
-   * could choose it**. The decision now lives in one place, `isGuardedRuntime`.
+   * The decision lives in one place, `isGuardedRuntime`. A session mode once made
+   * Codex qualify here, but installed acceptance proved that mode does not stop an
+   * Atlas MCP write. Removing it from the shared predicate removes it from both
+   * this selector and the Agents destination instead of leaving one unsafe door.
    */
   const [acpRuntimes, setAcpRuntimes] = useState<Array<{ id: string; label: string }>>([]);
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);

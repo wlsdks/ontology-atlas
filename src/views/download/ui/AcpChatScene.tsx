@@ -23,7 +23,9 @@ import { HeroTypewriter } from './HeroTypewriter';
  *
  * ## Brand and terms boundaries (docs/DECISIONS.md 2026-08-16 (5))
  *
- * This section's copy stands only on "connect the agent you already use" — sentences implying we provide Claude access are forbidden, and where our runner list is described the display name is only the registry's permitted name (Claude Agent), the rule `tests/contract/vendor-naming.contract.test.ts` locks.
+ * This section's copy never implies we provide model access. It distinguishes guarded in-app
+ * Claude Agent chat from Codex's external MCP path, and uses only registry-permitted display names;
+ * `tests/contract/vendor-naming.contract.test.ts` locks that boundary.
  *
  * ## Motion
  *

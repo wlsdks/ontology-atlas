@@ -203,7 +203,7 @@
       "agentNotificationKindsLabel": "받을 알림",
       "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않습니다.",
       "runtimes": {
-        "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 앱이 대신 띄워서, 여기서 바로 대화해요.",
+        "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 찾습니다. 앱 안 관문이 검증된 도구만 지도 옆에서 대화를 열고, 나머지는 MCP 연결 설정에 계속 쓸 수 있어요.",
         "recheck": "다시 확인",
         "checking": "찾는 중이에요",
         "readyHeading": "이 컴퓨터에서 확인됐어요 ({count})",
@@ -222,9 +222,9 @@
           "cli-unknown": "확인 못 함",
           "login-needed": "로그인 필요"
         },
-        "guardedExplainer": "폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 건 지금 {names} 예요. 나머지 도구는 그 도구에 직접 해 둔 설정대로 움직여요.",
-        "guardedExplainerNone": "지금은 폴더 밖 파일을 건드릴 때 Atlas 가 대신 물어봐 줄 수 있는 도구가 없어요. 각 도구에 직접 해 둔 설정대로 움직여요.",
-        "unknownExplainer": "「확인 못 함」은 그 도구가 없다는 뜻이 아니라, 이 컴퓨터에 있는지 Atlas 가 알아볼 방법을 아직 안 갖췄다는 뜻이에요. 눌러서 띄워 보는 건 됩니다.",
+        "guardedExplainer": "Atlas가 온톨로지 쓰기를 멈춰 보여 주고 폴더 밖 접근도 대신 물어봐 줄 수 있는 건 지금 {names}예요. 나머지 도구는 연결 설정만 할 수 있고 앱 안 대화는 열리지 않아요.",
+        "guardedExplainerNone": "온톨로지 쓰기 검토와 폴더 밖 접근 관문을 모두 갖춘 도구가 아직 없어요. 감지된 도구는 연결 설정에만 쓸 수 있어요.",
+        "unknownExplainer": "「확인 못 함」은 도구가 없다는 뜻이 아니라 Atlas가 이 컴퓨터에서 찾아낼 방법을 아직 모른다는 뜻이에요. 설치 안내를 쓰거나 MCP로 연결할 수 있지만, 앱 안 대화에는 검증된 관문이 필요해요.",
         "installGuide": "설치 방법",
         "openChat": "이 도구로 대화 열기",
         "loginHint": "이 도구에 로그인이 안 돼 있어요. 터미널에서 한 번 실행해 로그인하면 여기에 나타나요.",
@@ -347,7 +347,7 @@
   "firstRun": {
     "eyebrow": "Local-first workbench",
     "title": "폴더를 열고 바로 시작하세요",
-    "subtitle": "이 Mac 의 마크다운 폴더를 가리키면 그 파일들이 곧 그래프가 됩니다. 디스크 밖으로 나가는 데이터는 없습니다.",
+    "subtitle": "이 Mac의 마크다운 폴더를 가리키면 그 파일들이 로컬 원본이 됩니다. Atlas가 업로드하지는 않지만, 나중에 연결한 코딩 에이전트는 질문과 문맥을 자기 제공자에게 보낼 수 있어요.",
     "openTitle": "내 폴더 열기",
     "openBody": "기존 마크다운 폴더를 선택해 워크스페이스로 들어갑니다.",
     "justStartTitle": "그냥 시작하기",
@@ -362,7 +362,7 @@
     "scaffolding": "시작 구조 작성 중…",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
     "errorRootRejected": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
-    "trustLine": "내 컴퓨터에만 저장돼요 · 파일은 평범한 마크다운 · 서버 없음",
+    "trustLine": "로컬 마크다운이 원본 · Atlas 백엔드 없음",
     "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
     "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요."
   },
@@ -494,7 +494,7 @@
       },
       "agentsWhat": {
         "title": "AI 코딩 도구를 여기서 붙여요",
-        "body": "이 컴퓨터에 깔린 도구를 앱이 대신 띄워서, 여기서 바로 대화해요. 없으면 여기서 받아 깔 수도 있어요. 앱 전용 자리에만 깔리고, 앱을 지우면 같이 사라져요."
+        "body": "이 컴퓨터의 코딩 도구를 찾고, 관문이 검증된 도구만 앱 안 대화를 열어요. 나머지도 MCP 연결 설정은 할 수 있고, 지원하는 설치는 앱 전용 폴더만 사용해요."
       },
       "agentsCheck": {
         "title": "안 붙으면 여기서 재 봐요",
@@ -554,7 +554,7 @@
     "webCta": "설치 없이 브라우저에서 써보기",
     "proofSigned": "Apple Developer ID 로 서명합니다",
     "trustVerifyCommand": "shasum -a 256 {file}",
-    "trustPrivacyNote": "계정도 서버도 없습니다. 고른 폴더와 그 안의 파일은 내 디스크에만 있고, 어디로도 전송되지 않습니다.",
+    "trustPrivacyNote": "Atlas 계정도 백엔드도 없습니다. 문서함은 디스크의 평문 마크다운으로 남고 Atlas가 업로드하지 않습니다. 다만 연결한 코딩 에이전트는 사용자가 요청할 때 질문과 읽은 문맥을 자기 제공자에게 보낼 수 있습니다.",
     "trustPolicyPending": "릴리스는 서명과 공증 검증을 모두 통과한 뒤에만 게시됩니다. 둘 중 하나라도 통과하지 못한 빌드는 릴리스 자산이 되지 못합니다. {tag}는 이 경로가 끝나기 전까지 내려받을 수 없습니다.",
     "trustPolicyPublished": "{tag} 는 이 경로를 통과한 뒤 게시됐습니다. 서명과 공증 검증을 통과하지 못한 빌드는 릴리스 자산이 되지 못합니다.",
     "windowsUnsignedWarning": "Windows x64 베타 · 아직 코드 서명되지 않았습니다. 실행 시 Microsoft Defender SmartScreen의 ‘알 수 없는 게시자’ 경고가 표시되며, 회사에서 관리하는 PC에서는 실행할 수 없을 수 있습니다.",
@@ -597,7 +597,7 @@
     "specimenFooter": "이런 파일이 <n>{count}</n>장 있고, 지도의 선은 전부 여기서 나옵니다.",
     "specimenOpenFile": "이 파일 열어 보기",
     "agentsTitle": "이미 쓰는 코딩 에이전트를 앱 안에서 씁니다",
-    "agentsSub": "현재 앱 안에서는 Claude Agent를 바로 띄울 수 있습니다. 새 API 키도 Atlas 계정도 필요 없습니다. 물어보면 이 폴더를 읽고 답합니다. 온톨로지 쓰기를 제안하면 Atlas가 정확한 변경안을 보여 주고, 사람이 승인하기 전에는 마크다운을 바꾸지 않습니다.",
+    "agentsSub": "Atlas는 이 컴퓨터의 Claude Agent와 Codex를 찾습니다. 관문이 있는 앱 안 대화는 현재 Claude Agent에서만 열리고, Codex는 Atlas가 MCP 쓰기를 직접 멈춰 검토할 수 있을 때까지 자기 앱이나 터미널의 MCP 연결로 계속 쓸 수 있습니다. Atlas 계정이나 새 API 키는 필요 없습니다.",
     "acpSceneTab": "앱 안 대화 · 현재 Atlas 쓰기 흐름",
     "acpUserLabel": "나",
     "acpUserMsg": "결제 기능이 사용자 인증에 기대고 있어서, 인증이 죽으면 결제도 같이 죽는다",
@@ -605,7 +605,7 @@
     "acpToolWhy": "사용자 설명: 결제 기능이 사용자 인증에 기대고 있어서,\n                인증이 죽으면 결제도 같이 죽는다 (2026-08-16)",
     "acpResultLine": "✓ 한 번 승인함 · 관계 1건이 폴더 안 마크다운 파일에 적혔습니다",
     "col1Title": "이미 쓰는 에이전트 그대로",
-    "col1Body": "현재는 Claude Agent를 지원합니다. Atlas는 어댑터를 내 기기에서 실행하고 기존 로그인을 재사용하며, 에이전트는 해당 제공자와 통신합니다.",
+    "col1Body": "관문이 있는 앱 안 대화는 Claude Agent, 외부 MCP 연결은 Codex도 지원합니다. Atlas는 로컬 어댑터나 MCP 자식을 실행하고, 코딩 에이전트 자체는 자기 제공자와 통신할 수 있습니다.",
     "col1Code": "ACP 어댑터 · 내 기기에서 실행",
     "col2Title": "Atlas 읽기는 바로, Atlas 쓰기는 확인 뒤",
     "col2Body": "고른 폴더 안의 Atlas 읽기 도구는 바로 진행됩니다. Atlas 쓰기는 정확한 변경안을 보여 주고 멈추며, 폴더 밖 접근도 먼저 묻습니다.",
@@ -1791,7 +1791,7 @@
       "connectionCheckPending": "연결 파일 {ready}/{total}개 준비됨. 1단계에서 나머지를 채우세요.",
       "connectionHint": ".mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.",
       "boundaryTitle": "밖의 도구를 잇는 자리예요",
-      "boundaryDesc": "Ontology Atlas 안에서 Claude Code·Codex·Cursor 대화를 여는 게 아니에요. 연결 파일과 다시 켜는 안내, 확인 방법을 준비해 두면 각 도구가 자기 앱이나 터미널에서 이 폴더를 읽고 씁니다.",
+      "boundaryDesc": "이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. Atlas 안의 관문 있는 Claude Agent 대화는 별도 화면입니다.",
       "validationGateAriaLabel": "폴더 상태",
       "validationGateTitle": "폴더 상태",
       "validationGateReady": "깨끗함",
@@ -2404,7 +2404,7 @@
       "agent": {
         "title": "AI 에이전트 연결",
         "bodyFound": "쓸 수 있는 AI 도구를 찾았어요: {runtime}. 앱 안에서 바로 대화하면서 이 지도를 같이 채울 수 있어요.",
-        "bodyMissing": "Claude Agent 나 Codex 를 쓰고 있다면 앱 안에서 바로 대화하며 지도를 채울 수 있어요. 연결하지 않아도 나머지는 그대로 씁니다.",
+        "bodyMissing": "Claude Agent를 쓰고 있다면 여기서 관문이 있는 대화를 열 수 있어요. Codex와 다른 MCP 클라이언트는 자기 앱이나 터미널에서 이 폴더에 연결할 수 있습니다. 연결하지 않아도 나머지는 그대로 쓸 수 있어요.",
         "cta": "에이전트 설정 열기"
       },
       "analyze": {
@@ -2899,7 +2899,7 @@
     "copyCodexCommandDone": "복사됨 · 터미널에 붙여넣기",
     "deeplinkWebNote": "Cursor 원클릭은 폴더 경로가 필요해요.",
     "deeplinkWebNoteCta": "데스크톱 앱에서 자동으로",
-    "serverLine": "따로 켜둘 서버가 없어요. 에이전트가 필요할 때 직접 실행하고, 끝나면 함께 꺼져요. 항상 도는 프로그램도 열린 포트도 없어요. 데이터가 이 컴퓨터를 떠나지 않는 이유예요.",
+    "serverLine": "Atlas MCP 서버는 데몬이 아니에요. 에이전트가 로컬 stdio 자식으로 띄우고 세션과 함께 끕니다. 포트를 열거나 네트워크 요청을 만들지 않아요. 에이전트 자체는 사용자가 요청할 때 자기 제공자와 통신할 수 있어요.",
     "copiedToast": "설정을 복사했어요. 도구에 붙여넣으면 연결돼요.",
     "serverUnavailableTitle": "설정을 대신 저장해 주는 것만 이 화면이 못 해요",
     "serverUnavailableDesc": "에이전트는 Atlas 가 아니라 폴더에 붙습니다. 자기 세션에서 MCP 서버를 띄우고 그 폴더를 읽고 써요. 다만 브라우저는 열어 둔 폴더의 실제 위치를 알 수 없어서 설정 파일을 대신 저장하지 못합니다. 경로만 알려주시면 붙는 설정을 여기서 만들어 드려요. 데스크톱 앱에서 같은 폴더를 열면 이 과정 없이 버튼 한 번입니다.",
@@ -3135,9 +3135,9 @@
     "title": "내 폴더를 지도로 켜기",
     "subtitle": "OS 폴더 선택창이 뜨기 전에, 딱 {count}가지만 알아두세요.",
     "bulletAnyFolder": "아무 마크다운 폴더나 괜찮아요. 특별한 형식이 없어도 돼요.",
-    "bulletLocal": "파일은 이 컴퓨터를 떠나지 않아요. 서버 전송이 없어요.",
+    "bulletLocal": "Atlas는 이 폴더를 로컬에서 열며 Atlas 백엔드로 업로드하지 않아요. 나중에 연결한 코딩 에이전트는 질문과 문맥을 자기 제공자에게 보낼 수 있어요.",
     "bulletStarter": "빈 폴더를 고르면 시작 문서를 자동으로 만들어 드려요.",
-    "bulletPermission": "고르고 나면 브라우저가 '허용'을 물어요. 허용해야 지도가 켜지고, 파일은 여전히 내 컴퓨터 안에만 있어요.",
+    "bulletPermission": "폴더를 고르면 브라우저가 「허용」을 물어요. 이것은 이 화면에 로컬 파일 접근을 주는 것이며 AI 제공자 연결과는 별개예요.",
     "actionPickExisting": "기존 폴더 선택",
     "actionCreateNew": "빈 폴더로 새로 시작",
     "actionCancel": "다음에"
@@ -3616,7 +3616,7 @@
   },
   "agents": {
     "title": "에이전트",
-    "lede": "이 컴퓨터의 AI 코딩 도구를 앱이 대신 띄워서, 여기서 바로 대화해요. 없으면 여기서 받아 깔 수도 있어요.",
+    "lede": "이 컴퓨터의 코딩 도구를 찾고, 앱 안에서 안전하게 열 수 있는 도구를 구분해 보여 줍니다. 나머지도 MCP 연결 설정은 할 수 있고, 지원하는 도구가 없으면 여기서 설치할 수 있어요.",
     "runtimesHeading": "이 컴퓨터의 도구",
     "mcpHeading": "MCP 연결"
   }

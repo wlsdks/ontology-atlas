@@ -2,9 +2,9 @@
 
 It involves pulling binaries from anonymous repositories onto your own computer. Therefore, we start by listing what it does not do.
 
-## It is entirely local
+## Local source of truth, explicit provider boundary
 
-Vault exists only on your disk. Nothing is transmitted silently. There are no accounts, no servers, and no features locked behind a subscription.
+The vault's canonical files remain on your disk. Atlas has no backend, account, or telemetry, and opening or editing a folder does not upload it to Atlas.
 
 ## It is plain Markdown
 
@@ -14,9 +14,9 @@ Even if you delete the app, the folder remains. Nothing gets locked. This is not
 
 It reads only the folders you choose. Dotfiles like `.env` and `.git/` are excluded from indexing. It does not look at anything else on your disk.
 
-## LLM connectivity is optional
+## AI connectivity is optional
 
-If disabled, no models are called. If enabled, **what leaves Vault is recorded in the audit log** (`.ontology-atlas/llm-audit.jsonl`). It is plain text, so you can read it directly. API keys are stored in the OS keychain, not in browser storage.
+Atlas-controlled API and runner calls state and record their destination in `.ontology-atlas/llm-audit.jsonl`. ACP and externally connected MCP agents are a separate boundary: Atlas MCP stays local over stdio, but the selected coding agent may send prompts, context, and tool results to its provider. Atlas does not claim that provider-owned traffic is recorded in its LLM audit log.
 
 ## Signing and Notarization
 

@@ -427,24 +427,6 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
 });
 
 describe('관문을 못 세웠으면 화면이 말한다', () => {
-  it('codex 모드 관문 적용 실패는 준비 완료가 아니며 띄운 프로세스를 끝낸다', async () => {
-    bridge.failSetMode = true;
-    const { result } = renderHook(() =>
-      useAcpSession({ runtimeId: 'codex-acp', vaultRoot: '/vault' }),
-    );
-    const first = result.current.start();
-    await waitFor(() => expect(bridge.starts).toBe(1));
-
-    await act(async () => {
-      bridge.release?.();
-      await first;
-    });
-
-    expect(result.current.status, '관문이 없는데 대화를 쓸 수 있게 열었다').toBe('error');
-    expect(result.current.error).toContain('gate-mode-failed:read-only');
-    expect(bridge.stopped, '관문 없이 뜬 어댑터가 살아남았다').toEqual(['acp-1']);
-  });
-
   it('`gate-off:` 로 온 알림은 접어 두지 않고 대화에 남는다', async () => {
     /*
      * Review 2026-08-16: a failure while building the isolated config was swallowed by `.ok()`, and

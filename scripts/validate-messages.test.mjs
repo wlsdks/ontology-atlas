@@ -112,10 +112,16 @@ describe('i18n message catalog', () => {
     assert.match(en.download.archHelpBody, /About This Mac/i);
     assert.match(ko.download.archHelpBody, /이 Mac에 관하여/);
 
-    // Local-first is the product's promise; a stranger about to run an
-    // unfamiliar binary needs it stated, not implied.
-    assert.match(en.download.trustPrivacyNote, /No account, no server/i);
-    assert.match(ko.download.trustPrivacyNote, /계정도 서버도 없습니다/);
+    // Local-first describes Atlas storage, not provider-owned agent traffic.
+    // The page must state both boundaries instead of promising zero network.
+    assert.match(en.download.trustPrivacyNote, /No Atlas account or backend/i);
+    assert.match(en.download.trustPrivacyNote, /does not upload/i);
+    assert.match(en.download.trustPrivacyNote, /coding agent.*provider/i);
+    assert.match(ko.download.trustPrivacyNote, /Atlas 계정도 백엔드도 없습니다/);
+    assert.match(ko.download.trustPrivacyNote, /Atlas가 업로드하지 않습니다/);
+    assert.match(ko.download.trustPrivacyNote, /코딩 에이전트.*제공자/);
+    assert.doesNotMatch(en.download.trustPrivacyNote, /never transmitted|nothing sent/i);
+    assert.doesNotMatch(ko.download.trustPrivacyNote, /어디로도 전송되지|아무것도 보내지/);
 
     // The release-notes excerpt used to be a hand-maintained Korean constant
     // rendered verbatim on the English page. Whatever replaces it must not

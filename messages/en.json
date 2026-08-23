@@ -203,7 +203,7 @@
       "agentNotificationKindsLabel": "What to receive",
       "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
       "runtimes": {
-        "intro": "Atlas launches the AI coding tools installed on this computer, so you can talk to them right here.",
+        "intro": "Atlas finds the AI coding tools installed on this computer. Tools with a verified in-app gate can open beside the map; the rest remain available for MCP connection setup.",
         "recheck": "Check again",
         "checking": "Looking…",
         "readyHeading": "Found on this computer ({count})",
@@ -222,9 +222,9 @@
           "cli-unknown": "Not checked",
           "login-needed": "Sign in needed"
         },
-        "guardedExplainer": "Atlas can ask you before a file outside this folder is touched, but only for these: {names}. Every other tool follows the settings you gave it directly.",
-        "guardedExplainerNone": "No tool here can be asked about before it touches a file outside this folder. Each one follows the settings you gave it directly.",
-        "unknownExplainer": "\"Not checked\" does not mean the tool is missing. It means Atlas does not yet know how to look for it on this computer. You can still start it.",
+        "guardedExplainer": "Atlas can pause ontology writes for review and ask before access outside this folder only for: {names}. Other tools remain available for connection setup, but cannot open in-app chat here.",
+        "guardedExplainerNone": "No detected tool currently has both the ontology-write review and outside-folder gate required for in-app chat. Each one remains available for connection setup.",
+        "unknownExplainer": "\"Not checked\" does not mean the tool is missing. Atlas does not yet know how to detect it on this computer. Use its install guide or connect it over MCP; in-app chat requires a verified gate.",
         "installGuide": "How to install",
         "openChat": "Open a chat with this tool",
         "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here.",
@@ -347,7 +347,7 @@
   "firstRun": {
     "eyebrow": "Local-first workbench",
     "title": "Open a folder to start working",
-    "subtitle": "Point Ontology Atlas at a markdown folder on this Mac. The files are the graph: nothing leaves your disk.",
+    "subtitle": "Point Ontology Atlas at a Markdown folder on this Mac. The files remain the local source of truth and Atlas does not upload them; a coding agent you later connect may send prompts and context to its own provider.",
     "openTitle": "Open my folder",
     "openBody": "Pick an existing markdown folder and enter the workspace.",
     "justStartTitle": "Just start",
@@ -362,7 +362,7 @@
     "scaffolding": "Writing starter structure…",
     "errorFallback": "Could not open the folder. Try again.",
     "errorRootRejected": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
-    "trustLine": "Stored only on your computer · plain markdown files · no server",
+    "trustLine": "Local Markdown is the source of truth · no Atlas backend",
     "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
     "errorPermission": "Atlas cannot read this folder. Pick it again to grant access."
   },
@@ -494,7 +494,7 @@
       },
       "agentsWhat": {
         "title": "Connect your AI coding tools here",
-        "body": "Atlas launches the tools installed on this computer so you can talk to them right here. If one is missing you can fetch it from here. It lands in an app-only folder and goes away with the app."
+        "body": "Atlas finds the coding tools on this computer, opens in-app chat only for tools with a verified gate, and keeps MCP setup available for the rest. Supported installs use an app-only folder."
       },
       "agentsCheck": {
         "title": "If nothing connects, measure it here",
@@ -554,7 +554,7 @@
     "webCta": "Try it in the browser, no install",
     "proofSigned": "Signed with an Apple Developer ID certificate",
     "trustVerifyCommand": "shasum -a 256 {file}",
-    "trustPrivacyNote": "No account, no server. The folder you pick and the files inside it stay on your disk and are never transmitted.",
+    "trustPrivacyNote": "No Atlas account or backend. Your vault remains plain Markdown on disk. Atlas itself does not upload it; a connected coding agent may send your prompt and the context it reads to its own provider when you ask.",
     "trustPolicyPending": "A release is published only after it clears signing and notarization verification. A build that fails either check never becomes a release asset. {tag} is not downloadable until that path finishes.",
     "trustPolicyPublished": "{tag} was published only after clearing that path: a build that fails signing or notarization verification never becomes a release asset.",
     "windowsUnsignedWarning": "Windows x64 beta · This build is not code-signed. Microsoft Defender SmartScreen may show an ‘unknown publisher’ warning, and a managed work PC may block it.",
@@ -597,7 +597,7 @@
     "specimenFooter": "There are <n>{count}</n> files like this, and every line on the map comes from them.",
     "specimenOpenFile": "Open this file",
     "agentsTitle": "Use the coding agent you already have, inside the app",
-    "agentsSub": "The app starts Claude Agent for you today. No new API key or Atlas account. Ask it something and it reads this folder to answer. When it proposes an ontology write, Atlas shows the exact change and waits for your approval before touching markdown.",
+    "agentsSub": "Atlas detects Claude Agent and Codex on this computer. Guarded in-app chat is currently available for Claude Agent; Codex remains available through MCP setup in its own app or terminal until Atlas can independently pause its MCP writes for review. No Atlas account or new API key is required.",
     "acpSceneTab": "In-app chat · current Atlas write flow",
     "acpUserLabel": "You",
     "acpUserMsg": "The payment feature leans on user auth; if auth goes down, payments go down with it",
@@ -605,7 +605,7 @@
     "acpToolWhy": "user note: the payment feature leans on user auth, so if\n                auth goes down payments go down with it (2026-08-16)",
     "acpResultLine": "✓ Approved once · one relation written into a markdown file in your folder",
     "col1Title": "The agent you already use",
-    "col1Body": "Claude Agent today. Atlas runs its adapter locally and reuses your existing sign-in; the agent still communicates with its own provider.",
+    "col1Body": "Claude Agent for guarded in-app chat; Codex for external MCP connection. Atlas runs the local adapter or MCP child, while the coding agent itself may communicate with its provider.",
     "col1Code": "ACP adapter · runs on your machine",
     "col2Title": "Atlas reads flow. Atlas writes wait.",
     "col2Body": "Atlas read tools proceed inside the selected folder. Every Atlas write pauses on an exact change review, and access outside the folder asks first.",
@@ -1791,7 +1791,7 @@
       "connectionCheckPending": "{ready}/{total} connection files ready. Fill in the rest in step 1.",
       "connectionHint": ".mcp.json.example is a template for another folder, so it is not counted as a connection file. This screen checks the launch shape and folder path; restart the agent and confirm the live connection inside each tool.",
       "boundaryTitle": "This is where outside tools get wired in",
-      "boundaryDesc": "Ontology Atlas does not open a Claude Code, Codex, or Cursor chat inside the app. It prepares the connection files, the restart guidance, and the ways to check, so each tool reads and writes this folder from its own app or terminal.",
+      "boundaryDesc": "This panel connects Claude Code, Codex, and Cursor for use in their own app or terminal; it does not open their chat here. Guarded Claude Agent chat inside Atlas is a separate surface.",
       "validationGateAriaLabel": "Folder condition",
       "validationGateTitle": "Folder condition",
       "validationGateReady": "clean",
@@ -2404,7 +2404,7 @@
       "agent": {
         "title": "Connect an AI agent",
         "bodyFound": "Found an AI tool on this machine: {runtime}. You can chat with it right here and fill in the map together.",
-        "bodyMissing": "If you use Claude Agent or Codex, you can chat with it right here and fill in the map. Everything else works without connecting.",
+        "bodyMissing": "If you use Claude Agent, you can open a guarded chat here. Codex and other MCP clients can connect to this folder from their own app or terminal. Everything else works without connecting.",
         "cta": "Open agent settings"
       },
       "analyze": {
@@ -2899,7 +2899,7 @@
     "copyCodexCommandDone": "Copied · paste in terminal",
     "deeplinkWebNote": "One-click for Cursor needs the folder path.",
     "deeplinkWebNoteCta": "Automatic in the desktop app",
-    "serverLine": "There's no server to leave running. Your agent starts it when needed and it shuts down when done: no always-on process, no open port. That's why your data never leaves this computer.",
+    "serverLine": "The Atlas MCP server is not a daemon: your agent starts it as a local stdio child and stops it with the session. It opens no port and makes no network request. The agent itself may use its provider when you ask it to.",
     "copiedToast": "Config copied: paste it into your tool to connect.",
     "serverUnavailableTitle": "Only saving the config for you is out of reach here",
     "serverUnavailableDesc": "Your agent connects to the folder, not to Atlas: it starts the MCP server in its own session and reads and writes that folder. A browser just cannot know where the folder you opened actually lives, so it cannot save the config file for you. Tell it the path and the working config is built right here. Open the same folder in the desktop app and it is one button instead.",
@@ -3135,9 +3135,9 @@
     "title": "Turn your folder into the map",
     "subtitle": "Before the OS folder picker opens, just {count} things to know.",
     "bulletAnyFolder": "Any markdown folder works: no special format required.",
-    "bulletLocal": "Files never leave this computer. Nothing is uploaded.",
+    "bulletLocal": "Atlas opens this folder locally and does not upload it to an Atlas backend. A coding agent you later connect may send prompts and context to its own provider.",
     "bulletStarter": "Pick an empty folder and we scaffold starter docs for you.",
-    "bulletPermission": "After you pick, the browser asks to Allow: approve it and your files still stay on this computer.",
+    "bulletPermission": "After you pick, the browser asks to Allow. That grants this page local file access; it is separate from any AI-provider connection.",
     "actionPickExisting": "Choose existing folder",
     "actionCreateNew": "Start fresh with an empty folder",
     "actionCancel": "Not now"
@@ -3616,7 +3616,7 @@
   },
   "agents": {
     "title": "Agents",
-    "lede": "Atlas launches the AI coding tools on this computer so you can talk to them right here. If one is missing, you can fetch it from here too.",
+    "lede": "Atlas finds coding tools on this computer, shows which can open safely inside the app, and keeps MCP setup available for the rest. If a supported tool is missing, you can install it here.",
     "runtimesHeading": "Tools on this computer",
     "mcpHeading": "MCP connection"
   }

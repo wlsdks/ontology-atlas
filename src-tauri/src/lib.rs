@@ -1198,9 +1198,9 @@ fn acp_start(
         .path()
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
-    // Honest to launch as None for those that **do not support isolation**. However,
-    // a launcher that claims to support isolation but fails preparation is a start failure. Launching in that state
-    // inherits the user's global allow list, and the screen has no promised gateway.
+    // Starting without a verified app-owned boundary is never allowed. A launcher that lacks
+    // isolation or fails its preparation is a start failure; launching in that state can inherit
+    // the user's global allow list while the screen has no enforceable gateway.
     // Shadow walking requires asking "is this item still valid," which needs the CLI's **absolute
     // path**. Launching by name depends on the PATH visible to children, but a GUI app's default PATH differs from the user's shell (measurement at the top of this file).
     let isolation_cli = acp::registry_agent(&runtime_id)
@@ -1215,7 +1215,7 @@ fn acp_start(
             );
             acp::resolve_command(name, &dirs, &probe)
         });
-    let isolation = acp::prepare_runtime_isolation(
+    let (isolation_env, isolation_dir) = acp::prepare_runtime_isolation(
         &runtime_id,
         &app_data,
         home.as_deref(),
@@ -1231,9 +1231,7 @@ fn acp_start(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     acp::apply_runtime_environment(&mut command, &runtime_id, &launch.path_env);
-    if let Some((env, dir)) = &isolation {
-        command.env(env, dir);
-    }
+    command.env(isolation_env, isolation_dir);
 
     #[cfg(unix)]
     {

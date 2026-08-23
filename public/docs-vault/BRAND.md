@@ -52,7 +52,7 @@ It represents not only the currently documented structure but also **inferable c
 
 ### Outer Hexagon — Boundary of the Codebase
 
-A boundary enclosing the entire repository/project. It also signifies **local-first** — all information resides within user-owned local Markdown and codebases, not external services.
+A boundary enclosing the entire repository/project. It signifies local-first ownership: the canonical model remains in user-owned Markdown and codebases, with no Atlas cloud store. Connected coding agents may still send prompts and context to their own providers.
 
 ### The Hexagonal Form — Structure and Scalability
 
