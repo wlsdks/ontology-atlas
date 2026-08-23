@@ -261,7 +261,7 @@ someone improved the prose. They are gone; these two nets replace them.
   slugs first (`/guide/cli` → `docs/guide/cli.md`). External URLs are **not** in
   the default gate — a third-party outage must never red our build — run
   `pnpm docs:links:external` for those. The prose-citation half skips append-only
-  history (`CHANGELOG.md`, `docs/DECISIONS.md`, `docs/archive|audits|superpowers|plans|prototypes/**`)
+  history (`CHANGELOG.md`, `docs/DECISIONS.md`, `docs/archive|audits|plans|prototypes/**`)
   because naming a deleted file is what a changelog is *for*; links are still
   checked there, since a link is a promise to open.
 - **`design-doc-token-integrity` — same category, but the target is **tokens**, not files
@@ -621,8 +621,8 @@ discussion intake copy is checked with the rest of the public agent workflow
 docs.
 CLI/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,
 because those help surfaces list root `pnpm ...` shortcuts.
-Claude Code/Codex agent rules and skills under `.claude/LOOP-PRINCIPLES.md`,
-`.claude/rules/*.md`, `.claude/skills/*/SKILL.md`, and
+Claude Code/Codex agent rules and skills under `.claude/rules/*.md`,
+`.claude/skills/*/SKILL.md`, and
 `.agents/skills/*/SKILL.md` also route to
 `pnpm test:dogfood:script-refs`, because those files contain executable
 workflow snippets that should not drift from package scripts.
@@ -688,6 +688,7 @@ committing or publishing changes.
 | `pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts` | Playwright config/webServer smoke before broader E2E |
 | `pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts` | Global CSS/PostCSS responsive overflow smoke |
 | `pnpm lint` | ESLint and FSD boundary config |
+| `pnpm knip` | JavaScript/TypeScript dead-code analyzer for frontend, scripts, CLI, and MCP scope adapters. Configuration hints and empty subject lanes are fail-closed setup errors; files, dependencies, and cycles are blockers. Exact witnessed exceptions are the only exclusions, while exports/types ratchet downward only; it never auto-fixes. Rust/Tauri remains compiler- and `cargo test`-verified rather than being claimed as Knip coverage. Runs in `Checks` → `Unit · Contract` after root and MCP installs and in the repo-wide pre-push lanes. |
 | `pnpm checks:changed` | Suggest first focused checks from changed paths |
 
 | `pnpm test:checks:changed` | Changed-path focused-check suggestion helper; use the direct `pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs` or `scripts/suggest-focused-checks.test.mjs` first when printed |

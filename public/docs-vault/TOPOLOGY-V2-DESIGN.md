@@ -8,7 +8,8 @@
 > `docs/FEATURES.md`, and current source for maintenance.
 >
 > Input: `docs/prototypes/topology-b2plus.html` (approved B2+ "Circuit × Constellation"
-> prototype) · `docs/plans/TOPOLOGY-V2-PHASE0.md` (measured bottleneck + adapter contract draft) ·
+> prototype) · the superseded Phase 0 measurement (recoverable from Git; its adapter
+> contract is preserved below) ·
 > `docs/archive/SIGMA-PLAYBOOK.md` (Sigma v3 built-in feature contract — investigated but v2 does not
 > adopt Sigma, archived) · `docs/INTERACTION-DESIGN.md`
 > (fluid interface principles) · `.claude/rules/design.md` · `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`

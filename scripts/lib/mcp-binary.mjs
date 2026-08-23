@@ -14,9 +14,6 @@
 /** The binary name used inside the bundle and in config files. */
 export const MCP_BINARY_NAME = 'ontology-atlas-mcp';
 
-/** The repo-relative path `externalBin` references (without the triple suffix). */
-export const MCP_BINARY_EXTERNAL_BIN_REF = `binaries/${MCP_BINARY_NAME}`;
-
 /** Where compile output lands (gitignored — build output). */
 export const MCP_BINARY_OUTPUT_DIR = 'src-tauri/binaries';
 

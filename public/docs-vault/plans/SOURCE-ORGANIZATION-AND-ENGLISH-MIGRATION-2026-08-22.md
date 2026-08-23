@@ -106,3 +106,24 @@ Every batch runs all commands returned by `pnpm checks:changed -- --run`. The mi
   `scripts/quality/markdown-language/` package. MCP, CLI, and broader quality
   family moves remain separate follow-up slices because they require public
   interface and affected-test proofs.
+- A deletion-first density pass removed fourteen dead code/test files (4,034
+  lines): the unreachable legacy activity surface, the pre-`/agents` config
+  writer lineage, three sole-subject contracts, and the self-only Q17
+  evaluator. The retained native vault-write helpers remain covered by Rust
+  tests.
+- The batch removed nineteen superseded authored Markdown artifacts and seven
+  generated copies. Derive the current census from Git instead of maintaining
+  another total here. `AGENTS.md` fell from 32,013 to 10,927 bytes;
+  `CLAUDE.md` fell from 5,642 to 2,187 bytes without mirror drift.
+- The test portfolio fell from 1,000 files / 218,864 lines to 992 files /
+  216,849 lines. No behavior contract was count-deleted: each removed test lost
+  its only subject, and changed ratchets were proved RED/GREEN.
+- Workstream C now measures JavaScript/TypeScript dead code across the root
+  frontend, scripts, CLI, and MCP through one analyzer interface with isolated
+  scope and lane adapters. Rust/Tauri remains compiler- and Cargo-verified.
+  Enabling the analyzer removed nine additional dead module/test files,
+  corrected the CLI package's parser dependencies, and broke two real script
+  import cycles before the gate was wired.
+  The next architecture choice remains splitting the three giant integration-test
+  implementations along their existing focused seams or deepening one measured
+  runtime module. Do not mix either choice into deletion cleanup.

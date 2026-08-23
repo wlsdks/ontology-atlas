@@ -245,9 +245,6 @@ async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
-    // superpowers/ holds internal agent plans and specs (docs/superpowers/plans·specs).
-    // Not user docs-vault content, so it is excluded to keep content.json clean.
-    if (entry.isDirectory() && entry.name === 'superpowers') continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       const nested = await walk(full);

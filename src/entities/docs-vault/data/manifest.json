@@ -81,7 +81,7 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 3784,
+      "wordCount": 3792,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "../AGENTS",
@@ -102,29 +102,6 @@
       "excerpt": "Date: 2026-05-01 (mission v2 cleanup 10 PR 머지 후) Method: 12 도메인을 Haiku 병렬 sub-agent 로 분석. 1원리 게이트 — \"X 가 없어도 사용자/AI agent 가 mission v2 를 수행할 수 있는가?\" Mission v2: \"사람과 AI agent 가 같이 저작하는 codebase 의 ontology\" - 척추: md frontmatter → ontology - AI agent (Claude Code 등) = MCP partner - frontmatter 자체가 자기-승인 - 3 view: 트리 (/) ",
       "wordCount": 3217,
       "updatedAt": "2026-06-06",
-      "linksOut": []
-    },
-    {
-      "slug": "archive/DATA-MODEL",
-      "path": "docs/archive/DATA-MODEL.md",
-      "title": "Data Model",
-      "tags": [
-        "data-model",
-        "firestore",
-        "schema"
-      ],
-      "frontmatter": {
-        "title": "Data Model",
-        "tags": [
-          "data-model",
-          "firestore",
-          "schema"
-        ]
-      },
-      "headings": [],
-      "excerpt": "This document covers the storage contracts of both the current public product and the design-approved knowledge subsystem v2. Whenever a collection schema changes, update this document first. The change process follows rules/firestore-schema.md (removed in R10). Single-user mode (current): A single logged-in user is th",
-      "wordCount": 5362,
-      "updatedAt": "2026-08-01",
       "linksOut": []
     },
     {
@@ -200,18 +177,6 @@
       "linksOut": []
     },
     {
-      "slug": "archive/LOCAL-FIRST-SYNC",
-      "path": "docs/archive/LOCAL-FIRST-SYNC.md",
-      "title": "Local-first / Firebase Sync 정책",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "Status: 부분 구현 + 활성 가이드. mode-aware adapters (PR 5/6) + useOntologyInsight (Q1=(a)) 머지로 Static / Local / Cloud 3 모드는 코드 구현 완료. Hybrid (양방향 sync) 는 v2 협업 단계. 이 문서는 로컬 디스크의 markdown 폴더 와 Firebase (Firestore + Storage) 사이의 데이터 흐름·sync·충돌 정책을 명시한다. .claude/rules/local-first.md 의 \"Notion 처럼 폴더만 선택해도 사용\" 헌장을 데이터 레이어에서 어떻게 구현하",
-      "wordCount": 1170,
-      "updatedAt": "2026-07-31",
-      "linksOut": []
-    },
-    {
       "slug": "archive/MISSION-CLEANUP-CANDIDATES",
       "path": "docs/archive/MISSION-CLEANUP-CANDIDATES.md",
       "title": "Mission Cleanup Candidates — mission v2 와 코드 정렬 (✅ ARCHIVED)",
@@ -222,46 +187,6 @@
       "wordCount": 495,
       "updatedAt": "2026-05-03",
       "linksOut": []
-    },
-    {
-      "slug": "archive/MODE-AWARE-CRUD",
-      "path": "docs/archive/MODE-AWARE-CRUD.md",
-      "title": "Mode-aware CRUD pattern",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "Status: Adopted (Phase 2-3, 2026-05-01). Why: Root cause 1 from the planner audit — no mode-aware hook existed, so every gate looked only at auth role. Non-logged-in users with an active local vault could not perform mutations. Spec location: Code-layer implementation of the .claude/rules/local-first.md charter and doc",
-      "wordCount": 1104,
-      "updatedAt": "2026-07-31",
-      "linksOut": []
-    },
-    {
-      "slug": "archive/OFFLINE-FIRST-UX-FLOW",
-      "path": "docs/archive/OFFLINE-FIRST-UX-FLOW.md",
-      "title": "Offline-first UX Flow",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "Status: 활성 가이드 (Q1=(a) 답 + useOntologyInsight 머지 완료, PR 6). 진입점 분기 확정됨 — vault 활성 시 / ontology hub 가 자동 vault 모드, vault 미활성 시 cloud / static fallback. 이 문서는 비로그인 사용자가 첫 화면에서 0 마찰로 사용 시작 하도록 라우트별 진입 동작·권한 게이트·온보딩 단계를 명시한다. .claude/rules/local-first.md 의 헌장 (\"Notion 처럼 폴더만 선택해도 사용\") 을 UI 레이어에서 어떻게 구현하는지 정의. 관련: .claude/r",
-      "wordCount": 1576,
-      "updatedAt": "2026-07-31",
-      "linksOut": []
-    },
-    {
-      "slug": "archive/ONTOLOGY-MODEL-V2-DRAFT",
-      "path": "docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md",
-      "title": "Ontology Model V2 — DRAFT (V1.x mission v2 정합 평가 완료)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "Status: Q3-Q7 답 확정 (2026-05-02, user 추천 기본 채택). V1.x roadmap 의 mission v2 정합 평가도 같이 마쳤다. 결론: V1.2-V1.4 + V2 는 cloud-first 가정 으로 설계됐는데, mission v2 가 vault-first + functions/ 폐기 (PR 27) 로 전환되며 cloud schema 진화의 기존 의미가 사라졌다. 살아남는 부분만 vault-adaptation 으로 변형 적용; 그 외는 N/A 로 닫는다. Author: 자율 루프 iter12 (2026-05-01) + 이후 update. ",
-      "wordCount": 8423,
-      "updatedAt": "2026-07-31",
-      "linksOut": [
-        "other-doc",
-        "doc:payment-spec",
-        "capability:tax"
-      ]
     },
     {
       "slug": "archive/PUBLISH-NPM",
@@ -282,9 +207,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "이 폴더는 과거 세션에서 만든 long-form 분석 문서 의 보관소다. 현재 mission / contributor 룰의 진실원은 다음 4 개: docs/PRODUCT-DIRECTION.md — mission v2 spec docs/FEATURES.md — 사용자 가시 기능 전수 docs/ARCHITECTURE.md / docs/archive/DATA-MODEL.md / docs/DESIGN-SYSTEM.md / docs/DEPLOYMENT.md — 영역별 룰 docs/CHANGELOG.md — 시간순 변화 archive 안 문서는 역사적 맥락 으로 남겨둘 뿐 co",
-      "wordCount": 276,
-      "updatedAt": "2026-07-31",
+      "excerpt": "This folder retains long-form analysis from earlier sessions. Current mission and contributor rules live in: docs/PRODUCT-DIRECTION.md docs/FEATURES.md docs/ARCHITECTURE.md, docs/DESIGN-SYSTEM.md, and docs/DEPLOYMENT.md docs/CHANGELOG.md Archived documents are historical context, not contributor guidance. Start with th",
+      "wordCount": 115,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -347,9 +272,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "판정: partial — \"라벨 붙은 그래프를 넘어선, 이름값을 실제로 획득한 경량 온톨로지지만 미완성.\" 이 문서는 온톨로지 전문가 8인 패널이 \"이 시스템이 제대로 된 온톨로지를 표현할 수 있는가\"를 심사한 전체 기록이다. 실행 가능한 공백은 docs/plans/ONTOLOGY-STUDIO-PLAN.md §1(스키마 심화)이 흡수한다. 이 문서는 근거·판정 원본을 durable 하게 보존한다. 형식 온톨로지/지식표현(Gruber) · W3C 시맨틱웹(RDF/OWL/SKOS) · 기술논리(DL)/추론 · 분류학/부분전체론(mereology) · 관계 semantic",
-      "wordCount": 997,
-      "updatedAt": "2026-07-31",
+      "excerpt": "판정: partial — \"라벨 붙은 그래프를 넘어선, 이름값을 실제로 획득한 경량 온톨로지지만 미완성.\" 이 문서는 온톨로지 전문가 8인 패널이 \"이 시스템이 제대로 된 온톨로지를 표현할 수 있는가\"를 심사한 전체 기록이다. 실행 가능한 공백은 the current docs/ONTOLOGY-ATLAS-SPEC.md supersedes the former schema plan. This document preserves the evidence and judgment 원본을 durable 하게 보존한다. 형식 온톨로지/지식표현(Gruber) · W3C 시맨틱웹(RDF/",
+      "wordCount": 1005,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -396,7 +321,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The canonical current execution order. When a user specifies a task ID, only that item is decomposed and implemented. Completion markers are first recorded in the evidence table of the active track below; the feature's current status is handled by docs/FEATURES.md, decision rationale by docs/DECISIONS.md, and user-visi",
-      "wordCount": 7084,
+      "wordCount": 7087,
       "updatedAt": "2026-08-23",
       "linksOut": []
     },
@@ -538,7 +463,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 165268,
+      "wordCount": 165764,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "slug"
@@ -632,7 +557,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 11081,
+      "wordCount": 11158,
       "updatedAt": "2026-08-23",
       "linksOut": []
     },
@@ -644,7 +569,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-22 (re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility redirect to /topology?index=expanded, /ontology/edit and /ontology/studio route to the contextual writer within th",
-      "wordCount": 22586,
+      "wordCount": 22591,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "slug",
@@ -1578,7 +1503,7 @@
       },
       "headings": [],
       "excerpt": "The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs",
-      "wordCount": 578,
+      "wordCount": 559,
       "updatedAt": "2026-08-23",
       "linksOut": []
     },
@@ -2936,18 +2861,6 @@
       "linksOut": []
     },
     {
-      "slug": "plans/ONTOLOGY-STUDIO-PLAN",
-      "path": "docs/plans/ONTOLOGY-STUDIO-PLAN.md",
-      "title": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "세션에서 소유자와 확정한 방향의 상세 설계 스펙. 로드맵 테이블이 아니라 각 슬라이스의 실제 설계 결정(스키마 의미론·소켓 편집 UX·변동 원장 모델·게임 토큰 시스템·빌더 마이그레이션)까지 담아 구현이 깊이를 잃지 않게 한다. 근거: 온톨로지 전문가 8인 심사(genuineGaps 10) · 디자인 카운슬 · 사용성 8인 · 소유자 확정 시안(node-studio-game.html·node-studio-create.html). 한 줄: 노드를 게임 아이템처럼 강화/구축하는 몰입 저작 표면. 온톨로지 관계·의미 = 소켓에 끼우는 보석. 빈 소켓(isa·정의)이 곧 채",
-      "wordCount": 1348,
-      "updatedAt": "2026-07-31",
-      "linksOut": []
-    },
-    {
       "slug": "plans/PRODUCT-PLAN-2026-07",
       "path": "docs/plans/PRODUCT-PLAN-2026-07.md",
       "title": "Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)",
@@ -2962,13 +2875,13 @@
     {
       "slug": "plans/README",
       "path": "docs/plans/README.md",
-      "title": "plans/ — 하려고 했던 것의 기록",
+      "title": "Plans",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "착수 시점의 계획만 여기 산다. 계획은 실행되면서 바뀌고, 바뀐 결과는 코드와 docs/CHANGELOG.md 가 말한다. 그래서 이 파일들은 현재 상태의 진실원이 아니다. ⚠️ 가장 흔한 오독: 계획서에 적힌 폐기된 접근을 현행 선택지로 읽는 것. 계획은 \"이렇게 하려 했다\"이지 \"이렇게 되어 있다\"가 아니다. 여기 넣는 것: 착수 계획 · 단계 정의 · 재구축 로드맵 여기 넣지 않는 것: 오늘 유효한 아키텍처(docs/ARCHITECTURE.md), 기능 목록 (docs/FEATURES.md), 결정 기록(docs/DECISIONS.md)",
-      "wordCount": 73,
-      "updatedAt": "2026-07-31",
+      "excerpt": "This folder contains point-in-time plans, not current-state authority. Code, docs/CHANGELOG.md, docs/ARCHITECTURE.md, docs/FEATURES.md, and docs/DECISIONS.md describe what is current. Do not revive a retired approach from a plan without a new decision.",
+      "wordCount": 33,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2979,20 +2892,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Make the repository's active contributor and agent instructions directly readable in English, remove proven dead code, and deepen internal modules without changing the three delivery units or their public interfaces. The delivery units remain: 1. the private root workbench and macOS application; 2. the bundled mcp/ ser",
-      "wordCount": 894,
+      "wordCount": 1099,
       "updatedAt": "2026-08-23",
-      "linksOut": []
-    },
-    {
-      "slug": "plans/TOPOLOGY-V2-PHASE0",
-      "path": "docs/plans/TOPOLOGY-V2-PHASE0.md",
-      "title": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "Historical measurement snapshot (superseded, 2026-07-27). The paths, call sites, and “alive” labels below describe the pre-migration baseline used to choose topology-map-v2. Sigma, TopologyMapCanvas, their peer-mode tabs, and the project-detail mini-map were subsequently removed. Preserve the numbers as dated evidence;",
-      "wordCount": 2076,
-      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -3067,31 +2968,10 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "This folder is a collection of technical documents used by the people building Ontology Atlas. If you came here to understand what the product is, look at the Map screen first — it shows in one image how the product is divided into domains and what belongs in each domain. The table below is an index summarizing \"which ",
-      "wordCount": 1114,
+      "excerpt": "This folder is the engineering and product record for Ontology Atlas. For the product itself, open the map; for live behavior, trust code over prose. · Need · Source · Product direction and shipping behavior · PRODUCT-DIRECTION.md, FEATURES.md, ../README.md · Product and design decisions · PRODUCT-OWNER-OPERATING-SYSTE",
+      "wordCount": 236,
       "updatedAt": "2026-08-23",
-      "linksOut": [
-        "../README",
-        "PRODUCT-OWNER-OPERATING-SYSTEM",
-        "PRODUCT-DESIGN-OPERATING-SYSTEM",
-        "PRODUCT-DIRECTION",
-        "AGENT-MEMORY-POSITIONING",
-        "AGENT-GRAPH-WORKFLOW",
-        "FEATURES",
-        "ONTOLOGY-QUALITY",
-        "ONTOLOGY-ATLAS-SPEC",
-        "guide/what-becomes-a-node",
-        "ARCHITECTURE",
-        "DEVELOPMENT-CHECKS",
-        "DESKTOP-MACOS",
-        "../mcp/README",
-        "../cli/README",
-        "DESIGN-SYSTEM",
-        "MAP-TESTABILITY",
-        "DEPLOYMENT",
-        "CHANGELOG",
-        "BACKLOG"
-      ]
+      "linksOut": []
     },
     {
       "slug": "TECH-STACK",
@@ -3142,7 +3022,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Historical implementation record (superseded, 2026-07-27). This document preserves the measurements and decisions that led to topology-map-v2; its descriptions of coexisting DOM/Sigma engines and future migration phases are not current runtime instructions. The shipped contract is one canvas-2D engine. Use docs/TECH-ST",
-      "wordCount": 4325,
+      "wordCount": 4333,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "owner-topology-taste"
@@ -3179,22 +3059,12 @@
         "fromSlug": "ARCHITECTURE",
         "context": "js` — FSD boundary rules Long-form docs: - [`AGENTS.md`](../AGENTS.md) — contributor guide (canonical for AI tools) - **[`PRODUCT-DIRECTION.md`]** — mission - [`FEATURES.md`](./FEATURES.md) — currently shipping features - [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — d",
         "linkText": "`PRODUCT-DIRECTION.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "hierarchy, graph readability, responsive behavior, macOS proof, and MCP/CLI handoff | Canonical product-design gate | | **[`PRODUCT-DIRECTION.md`]** | Product strategy, audience, launch framing, success criteria | Canonical strategy | | [`AGENT-MEMORY-POSITIONING.md`]",
-        "linkText": "`PRODUCT-DIRECTION.md`"
       }
     ],
     "FEATURES": [
       {
         "fromSlug": "ARCHITECTURE",
         "context": "/AGENTS.md) — contributor guide (canonical for AI tools) - [`PRODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission - **[`FEATURES.md`]** — currently shipping features - [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — design tokens + forbidden patterns - [`DEPLO",
-        "linkText": "`FEATURES.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "MCP-connected agents, graph-DB-style query packs, and actual verification evidence | Canonical user-facing workflow | | **[`FEATURES.md`]** | Complete inventory of shipping macOS app, CLI, MCP, and website surfaces | Canonical feature inventory | | [`ONTOLOGY",
         "linkText": "`FEATURES.md`"
       }
     ],
@@ -3203,11 +3073,6 @@
         "fromSlug": "ARCHITECTURE",
         "context": "ODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission - [`FEATURES.md`](./FEATURES.md) — currently shipping features - **[`DESIGN-SYSTEM.md`]** — design tokens + forbidden patterns - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — static export → static hosting - [`CHANGELO",
         "linkText": "`DESIGN-SYSTEM.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "./cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | **[`DESIGN-SYSTEM.md`]** | Visual language, tokens, forbidden patterns | Canonical UI style guide | | [`MAP-TESTABILITY.md`](MAP-TESTABILITY.md)",
-        "linkText": "`DESIGN-SYSTEM.md`"
       }
     ],
     "DEPLOYMENT": [
@@ -3215,22 +3080,12 @@
         "fromSlug": "ARCHITECTURE",
         "context": "RES.md) — currently shipping features - [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — design tokens + forbidden patterns - **[`DEPLOYMENT.md`]** — static export → static hosting - [`CHANGELOG.md`](./CHANGELOG.md) — chronological user-visible changes - [`docs/archi",
         "linkText": "`DEPLOYMENT.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "and the measurement discipline that a 2026-07-31 six-false-negative incident produced | Canonical map test surface | | **[`DEPLOYMENT.md`]** | Static export deployment | Current, small | | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | H",
-        "linkText": "`DEPLOYMENT.md`"
       }
     ],
     "CHANGELOG": [
       {
         "fromSlug": "ARCHITECTURE",
         "context": "SYSTEM.md) — design tokens + forbidden patterns - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — static export → static hosting - **[`CHANGELOG.md`]** — chronological user-visible changes - [`docs/archive/`](./archive/) — historical analysis docs (earlier cloud-mode des",
-        "linkText": "`CHANGELOG.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "duced | Canonical map test surface | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small | | **[`CHANGELOG.md`]** | Chronological user-visible changes | Historical ledger | | [`BACKLOG.md`](BACKLOG.md) | Working queue and deferred qu",
         "linkText": "`CHANGELOG.md`"
       }
     ],
@@ -3327,11 +3182,6 @@
         "fromSlug": "PRODUCT-DIRECTION",
         "context": "implements. The exact discriminator, `broader`/`is_a` support boundary, and non-inference contract have one authority: **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. This direction document decides why the product exists; it does not maintain a second schema glossary. ### What Atlas",
         "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
-      },
-      {
-        "fromSlug": "README",
-        "context": "udgment, analyzer bounds, and field-trial isolation | Canonical ownership map; does not duplicate code-owned values | | **[`ONTOLOGY-ATLAS-SPEC.md`]** | Public v2 Markdown/frontmatter conformance format | Public RFC; code wins on drift | | [`guide/what-becomes-a-node.md",
-        "linkText": "`ONTOLOGY-ATLAS-SPEC.md`"
       }
     ],
     "ONTOLOGY-CONSTRUCTION-QUALIFICATION": [
@@ -3346,22 +3196,12 @@
         "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
         "context": "and integration round trip are contract specimens, not evidence that Atlas has qualified three real products. `O1.5` in **[`BACKLOG.md`]** owns that independent field qualification. ## Product disclosure boundary There is no new UI in this slice. When `U1.",
         "linkText": "`BACKLOG.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "oyment | Current, small | | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | Historical ledger | | **[`BACKLOG.md`]** | Working queue and deferred questions | Operational, may be noisy | ## What Is Normative The normative product model",
-        "linkText": "`BACKLOG.md`"
       }
     ],
     "PRODUCT-OWNER-OPERATING-SYSTEM": [
       {
         "fromSlug": "PRODUCT-DESIGN-OPERATING-SYSTEM",
         "context": "# Product Design Operating System > Design gate for Ontology Atlas product work. Use this with > **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]**: > PO decides whether the slice matters; this document decides whether the slice > is designed well enough to ship. A *",
-        "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "README.md`](../README.md) | Public overview, quick start, workflows, verification promises | Canonical public entry | | **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]** | Mandatory PO gate, product decision rules, agent implementation contract | Canonical product-operating gate | | [`PRO",
         "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
       }
     ],
@@ -3370,93 +3210,6 @@
         "fromSlug": "PRODUCT-DIRECTION",
         "context": "is built on. What we promise the user is agent memory that costs less and does not go stale. Canonical internal note: **[`docs/AGENT-MEMORY-POSITIONING.md`]**. ### Required product loop This loop must work before the project is treated as launch-ready: ```text init -> bootst",
         "linkText": "`docs/AGENT-MEMORY-POSITIONING.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "TION.md`](PRODUCT-DIRECTION.md) | Product strategy, audience, launch framing, success criteria | Canonical strategy | | **[`AGENT-MEMORY-POSITIONING.md`]** | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note | | [`AGENT-GRAPH-W",
-        "linkText": "`AGENT-MEMORY-POSITIONING.md`"
-      }
-    ],
-    "../README": [
-      {
-        "fromSlug": "README",
-        "context": "health, handoff packets, or memory update diffs. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-OWNER-OPERATING",
-        "linkText": "`../README.md`"
-      }
-    ],
-    "PRODUCT-DESIGN-OPERATING-SYSTEM": [
-      {
-        "fromSlug": "README",
-        "context": "M.md) | Mandatory PO gate, product decision rules, agent implementation contract | Canonical product-operating gate | | **[`PRODUCT-DESIGN-OPERATING-SYSTEM.md`]** | Mandatory design council gate for UI hierarchy, graph readability, responsive behavior, macOS proof, and MCP/CLI hand",
-        "linkText": "`PRODUCT-DESIGN-OPERATING-SYSTEM.md`"
-      }
-    ],
-    "AGENT-GRAPH-WORKFLOW": [
-      {
-        "fromSlug": "README",
-        "context": "POSITIONING.md) | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note | | **[`AGENT-GRAPH-WORKFLOW.md`]** | How to use the local graph with CLI-only workflows, MCP-connected agents, graph-DB-style query packs, and actual veri",
-        "linkText": "`AGENT-GRAPH-WORKFLOW.md`"
-      }
-    ],
-    "ONTOLOGY-QUALITY": [
-      {
-        "fromSlug": "README",
-        "context": "ATURES.md) | Complete inventory of shipping macOS app, CLI, MCP, and website surfaces | Canonical feature inventory | | **[`ONTOLOGY-QUALITY.md`]** | Authority map for hard schema rules, advisory graph-quality signals, human judgment, analyzer bounds, and field-trial",
-        "linkText": "`ONTOLOGY-QUALITY.md`"
-      }
-    ],
-    "guide/what-becomes-a-node": [
-      {
-        "fromSlug": "README",
-        "context": "C.md`](ONTOLOGY-ATLAS-SPEC.md) | Public v2 Markdown/frontmatter conformance format | Public RFC; code wins on drift | | **[`guide/what-becomes-a-node.md`]** | Human-facing node eligibility, fan-out, hub, bridge, and evidence guidance | Canonical practical construction guide |",
-        "linkText": "`guide/what-becomes-a-node.md`"
-      }
-    ],
-    "ARCHITECTURE": [
-      {
-        "fromSlug": "README",
-        "context": "Human-facing node eligibility, fan-out, hub, bridge, and evidence guidance | Canonical practical construction guide | | **[`ARCHITECTURE.md`]** | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview | | [`DEVELOPMENT-CHECK",
-        "linkText": "`ARCHITECTURE.md`"
-      }
-    ],
-    "DEVELOPMENT-CHECKS": [
-      {
-        "fromSlug": "README",
-        "context": "`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview | | **[`DEVELOPMENT-CHECKS.md`]** | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks | | [`DESKTOP-MACOS.md`]",
-        "linkText": "`DEVELOPMENT-CHECKS.md`"
-      }
-    ],
-    "DESKTOP-MACOS": [
-      {
-        "fromSlug": "README",
-        "context": "VELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks | | **[`DESKTOP-MACOS.md`]** | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | [`../mcp/README",
-        "linkText": "`DESKTOP-MACOS.md`"
-      }
-    ],
-    "../mcp/README": [
-      {
-        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../../AGENTS.md#working-wit",
-        "linkText": "`mcp/README.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, current runtime inventory, tool contracts, verification | Canonical agent interface | | [`../cli/RE",
-        "linkText": "`../mcp/README.md`"
-      }
-    ],
-    "../cli/README": [
-      {
-        "fromSlug": "README",
-        "context": "/README.md) | MCP registration, current runtime inventory, tool contracts, verification | Canonical agent interface | | **[`../cli/README.md`]** | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | [`DESIGN-SYSTEM.",
-        "linkText": "`../cli/README.md`"
-      }
-    ],
-    "MAP-TESTABILITY": [
-      {
-        "fromSlug": "README",
-        "context": "| | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide | | **[`MAP-TESTABILITY.md`]** | Observing the canvas map from outside (`?e2e=1` → `window.__atlasMap`), and the measurement discipline that a 2026-07",
-        "linkText": "`MAP-TESTABILITY.md`"
       }
     ],
     "owner-topology-taste": [
@@ -3464,27 +3217,6 @@
         "fromSlug": "TOPOLOGY-V2-DESIGN",
         "context": "ct detail neighbor map `SigmaTopology minimal`) are already problematic from the owner's \"mode proliferation aversion\" (**[owner-topology-taste]**) perspective — one vault is drawn by three different codes. B2+’s continuous smoothstep transition (circuit ↔ constella",
         "linkText": "owner-topology-taste"
-      }
-    ],
-    "other-doc": [
-      {
-        "fromSlug": "archive/ONTOLOGY-MODEL-V2-DRAFT",
-        "context": "rontmatter 만으로* 동등한 표현이 가능해야 한다. 사용자가 자기 디스크 폴더에 .md 파일을 두고도: - `---` frontmatter 로 literal property 작성 - 본문 wikilink `**[other-doc]**` 가 relation - 별도 `_qualifiers.md` 또는 frontmatter 의 객체값으로 qualifier - `_actions.md` 가 ActionType 정의 (옵션, 클라우드 모드만) → 클라",
-        "linkText": "other-doc"
-      }
-    ],
-    "doc:payment-spec": [
-      {
-        "fromSlug": "archive/ONTOLOGY-MODEL-V2-DRAFT",
-        "context": "project:checkout kind: project title: 결제 시스템 parents: [] projects: [checkout] summary: 결제 요청부터 정산까지의 흐름 --- # 결제 시스템 **[doc:payment-spec]** 에 명시된 흐름을 구현. [[capability:tax]] 에 의존. ``` → Firestore: - `knowledgeApprovedNodes/project:checkout` ← frontmatter + su",
-        "linkText": "doc:payment-spec"
-      }
-    ],
-    "capability:tax": [
-      {
-        "fromSlug": "archive/ONTOLOGY-MODEL-V2-DRAFT",
-        "context": "le: 결제 시스템 parents: [] projects: [checkout] summary: 결제 요청부터 정산까지의 흐름 --- # 결제 시스템 [[doc:payment-spec]] 에 명시된 흐름을 구현. **[capability:tax]** 에 의존. ``` → Firestore: - `knowledgeApprovedNodes/project:checkout` ← frontmatter + summary - `knowledgeApprovedEdges/<",
-        "linkText": "capability:tax"
       }
     ],
     "../CLAUDE": [
@@ -3499,6 +3231,13 @@
         "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "context": "eeps this file consistent without a second edit). - Drift between the two is listed as a named forbidden pattern in **[`.claude/rules/forbidden.md`]**, under \"문서\" (documentation): *\"AGENTS.md 와 CLAUDE.md 가 비동기\"* — AGENTS.md and CLAUDE.md being out of sync is treated",
         "linkText": "`.claude/rules/forbidden.md`"
+      }
+    ],
+    "../mcp/README": [
+      {
+        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../../AGENTS.md#working-wit",
+        "linkText": "`mcp/README.md`"
       }
     ],
     "benchmark/tasks": [
@@ -4653,15 +4392,6 @@
     ],
     "spec": [
       "TOPOLOGY-FOCUS-AND-SCALE"
-    ],
-    "data-model": [
-      "archive/DATA-MODEL"
-    ],
-    "firestore": [
-      "archive/DATA-MODEL"
-    ],
-    "schema": [
-      "archive/DATA-MODEL"
     ]
   },
   "tree": {
@@ -4710,13 +4440,6 @@
             "title": "Atomic Audit — Mission v2 First-Principles Decomposition"
           },
           {
-            "name": "DATA-MODEL",
-            "path": "archive/DATA-MODEL",
-            "type": "doc",
-            "slug": "archive/DATA-MODEL",
-            "title": "Data Model"
-          },
-          {
             "name": "dogfood-blank-folder-mcp-2026-07-23",
             "path": "archive/dogfood-blank-folder-mcp-2026-07-23",
             "type": "doc",
@@ -4759,39 +4482,11 @@
             "title": "Dogfood — real external codebase (sanitized, 2026-05-06)"
           },
           {
-            "name": "LOCAL-FIRST-SYNC",
-            "path": "archive/LOCAL-FIRST-SYNC",
-            "type": "doc",
-            "slug": "archive/LOCAL-FIRST-SYNC",
-            "title": "Local-first / Firebase Sync 정책"
-          },
-          {
             "name": "MISSION-CLEANUP-CANDIDATES",
             "path": "archive/MISSION-CLEANUP-CANDIDATES",
             "type": "doc",
             "slug": "archive/MISSION-CLEANUP-CANDIDATES",
             "title": "Mission Cleanup Candidates — mission v2 와 코드 정렬 (✅ ARCHIVED)"
-          },
-          {
-            "name": "MODE-AWARE-CRUD",
-            "path": "archive/MODE-AWARE-CRUD",
-            "type": "doc",
-            "slug": "archive/MODE-AWARE-CRUD",
-            "title": "Mode-aware CRUD pattern"
-          },
-          {
-            "name": "OFFLINE-FIRST-UX-FLOW",
-            "path": "archive/OFFLINE-FIRST-UX-FLOW",
-            "type": "doc",
-            "slug": "archive/OFFLINE-FIRST-UX-FLOW",
-            "title": "Offline-first UX Flow"
-          },
-          {
-            "name": "ONTOLOGY-MODEL-V2-DRAFT",
-            "path": "archive/ONTOLOGY-MODEL-V2-DRAFT",
-            "type": "doc",
-            "slug": "archive/ONTOLOGY-MODEL-V2-DRAFT",
-            "title": "Ontology Model V2 — DRAFT (V1.x mission v2 정합 평가 완료)"
           },
           {
             "name": "PUBLISH-NPM",
@@ -5711,13 +5406,6 @@
             "title": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)"
           },
           {
-            "name": "ONTOLOGY-STUDIO-PLAN",
-            "path": "plans/ONTOLOGY-STUDIO-PLAN",
-            "type": "doc",
-            "slug": "plans/ONTOLOGY-STUDIO-PLAN",
-            "title": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)"
-          },
-          {
             "name": "PRODUCT-PLAN-2026-07",
             "path": "plans/PRODUCT-PLAN-2026-07",
             "type": "doc",
@@ -5729,7 +5417,7 @@
             "path": "plans/README",
             "type": "doc",
             "slug": "plans/README",
-            "title": "plans/ — 하려고 했던 것의 기록"
+            "title": "Plans"
           },
           {
             "name": "SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22",
@@ -5737,13 +5425,6 @@
             "type": "doc",
             "slug": "plans/SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22",
             "title": "Source Organization and English Migration Plan"
-          },
-          {
-            "name": "TOPOLOGY-V2-PHASE0",
-            "path": "plans/TOPOLOGY-V2-PHASE0",
-            "type": "doc",
-            "slug": "plans/TOPOLOGY-V2-PHASE0",
-            "title": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)"
           }
         ]
       },

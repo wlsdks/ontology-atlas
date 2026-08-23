@@ -199,8 +199,8 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
    * on. So this only locks the count against **growth**, and the real verdict is left
    * to the runtime instrument that opens the surfaces (`a11y-ratchet`).
    *
-   * The 1 place the audit named was repaid in that round (`StepRow`, 8.39:1), and the
-   * other 23 were migrated exhaustively by the 2026-08-04 system ink round (open-surface
+   * The audit's named place was repaid in that round (8.39:1), and the other places
+   * were migrated exhaustively by the 2026-08-04 system ink round (open-surface
    * overlay contrast) — only the ink changed to `--color-indigo-text-soft`, with zero
    * change to dimensions or borders. After migration every place measures at least
    * 6.30:1 composite (the lowest being a32/elevated). Hence a baseline of 0: this
@@ -282,10 +282,6 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
     expect(hit(offender), "일부러 만든 위반을 못 잡는다 — 탐지기가 죽었다").toBe(true);
     expect(hit(fixed), "고친 짝을 위반으로 센다 — 그러면 고칠 이유가 사라진다").toBe(false);
     expect(hit(bare), "맨 바탕 위 accent 는 라이선스 안이다").toBe(false);
-    // The place the audit named really was repaid.
-    expect(
-      readFileSync(join(process.cwd(), "src/features/docs-vault-local/ui/StepRow.tsx"), "utf8"),
-    ).toContain("--color-indigo-text-soft");
   });
 
   it("위반 0 — 틴트를 지는 주 행동 잉크는 accentOnTint 다", () => {

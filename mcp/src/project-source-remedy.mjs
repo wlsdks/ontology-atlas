@@ -11,8 +11,7 @@
  * It adds no new gap/action vocabulary. The ids come from
  * `project-source-receipt.mjs`; this only says what runs them.
  *
- * Pure. Shared with the browser through
- * `src/shared/lib/project-source-remedy.mjs`.
+ * Pure. MCP callers and contract tests consume this table directly.
  */
 
 export const PROJECT_SOURCE_REMEDY_CONTRACT = 'projectSourceRemedy:v1';

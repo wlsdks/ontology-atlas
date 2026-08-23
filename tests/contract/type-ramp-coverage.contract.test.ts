@@ -64,7 +64,7 @@ import {
  * list to 0. The record up to that point is kept here, because a rollback needs to
  * know what was how much:
  *
- *   ProjectCard 16 · ProjectMetaGrid 2 · LiveActivityIndicator 23 ·
+ *   ProjectCard 16 · ProjectMetaGrid 2 ·
  *   FirstRunPage 14 · StudioCompass 24 · ProjectEditorPage 2 · RootEntryPage 5
  *
  * ⚠️ An empty array must not make the checks below **green for free**. So when it
@@ -82,7 +82,6 @@ const EXEMPT_DEBT: ReadonlyArray<readonly [string, number]> = [];
  */
 const FORMERLY_EXEMPT = [
   "src/entities/project/ui/ProjectCard.tsx",
-  "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
   "src/views/root-entry/ui/RootEntryPage.tsx",
 ] as const;
 

@@ -24,31 +24,6 @@ export interface BundledMcpServer {
   reason: string | null;
 }
 
-export interface AgentConfigTarget {
-  absolutePath: string;
-  fileName: string;
-  exists: boolean;
-  currentContents: string | null;
-}
-
-export interface AgentConfigPlan {
-  configRoot: string;
-  /** `repo-root` is the git top level containing the vault; `vault-folder` is the vault itself. */
-  rootKind: 'repo-root' | 'vault-folder';
-  vaultPath: string;
-  targets: AgentConfigTarget[];
-}
-
-export interface AgentConfigWrite {
-  fileName: string;
-  contents: string;
-}
-
-export interface AgentConfigWriteResult {
-  configRoot: string;
-  written: string[];
-}
-
 export interface McpVerifyResult {
   ok: boolean;
   serverVersion: string | null;
@@ -69,25 +44,6 @@ export async function readBundledMcpServer(): Promise<BundledMcpServer> {
     };
   }
   return invoke<BundledMcpServer>('mcp_bundled_server');
-}
-
-/** Only computes what would be written where — touches no disk. */
-export async function planAgentConfig(vaultPath: string): Promise<AgentConfigPlan | null> {
-  const invoke = getInvoke();
-  if (!invoke) return null;
-  return invoke<AgentConfigPlan>('plan_agent_config', { vaultPath });
-}
-
-/** Runs only a plan the user has approved. */
-export async function writeAgentConfig(
-  vaultPath: string,
-  writes: readonly AgentConfigWrite[],
-): Promise<AgentConfigWriteResult> {
-  const invoke = getInvoke();
-  if (!invoke) {
-    throw new Error('Writing agent config requires the installed app.');
-  }
-  return invoke<AgentConfigWriteResult>('write_agent_config', { vaultPath, writes });
 }
 
 /** Spawns the bundled server on the spot to verify this vault is actually readable. */

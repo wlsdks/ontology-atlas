@@ -129,7 +129,7 @@ function rememberRailRouteFocus(
  * here (HeroCollapsed keeps only its pill, and the right vertical rail holds the
  * three map-only tiles). The rail is narrow (`--app-nav-rail-width`), so the settings
  * sheet body opens through a portal, and detailed state such as
- * `LiveActivityIndicator` lives in the contextual header of the page that needs it.
+ * `AgentActivityChip` lives in the contextual map controls that need it.
  *
  * It is shown from the `lg` breakpoint (≥1024px); below that `BottomTabBar` takes over.
  */

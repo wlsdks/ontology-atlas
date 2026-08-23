@@ -110,7 +110,6 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx", 1],
   ["src/features/ontology-blocks/ui/BlockImportModule.tsx", 1],
   ["src/features/vault-ontology/ui/RecentChangesNeedsVaultDialog.tsx", 1],
-  ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx", 1],
   ["src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx", 1],
   ["src/widgets/topology-map-v2/ui/TopologyV2EdgePanel.tsx", 1],
   ["src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx", 1],

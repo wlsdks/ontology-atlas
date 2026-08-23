@@ -121,6 +121,7 @@ touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
 # Repo-wide scanners: these read the whole tree, so almost any edit can move them.
 # Cheap enough (~1 min) that filtering would buy noise, not time.
 lane source_language 'pnpm source:language'
+lane dead_code 'pnpm knip'
 lane contract 'pnpm exec vitest run tests/contract/'
 lane comment_refs 'node scripts/check-comment-refs.mjs'
 lane decisions 'pnpm decisions:check'

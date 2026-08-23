@@ -2,7 +2,7 @@
 // (cycles, topological_order, lineage, containment_tree, reachability, impact,
 // blast_radius, subgraph).
 // Split out of scripts/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
-import { matchRowsFailure, numericSummaryFailure } from "./shape-validators-workspace.mjs";
+import { matchRowsFailure, numericSummaryFailure } from "./shape-validators-primitives.mjs";
 
 export function cyclesShapeFailure(result) {
   if (result.operation !== "cycles") {

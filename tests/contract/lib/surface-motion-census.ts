@@ -20,9 +20,8 @@ import { dirname, join, resolve } from 'node:path';
  * | Always rendered | Not counted | **Structurally excluded** — only conditional call sites are examined, so it is never matched |
  * | The parent already animates it | Not counted | If the alternative branch **renders something**, this is a swap, not an appearance. Places where only the content changes inside an already-mounted container (sections of the settings sheet, step branches of the connect sheet) all fall out here |
  *
- * That third row is this inventory's key discriminator. It filtered out three real
- * places: `AgentGlobalScopePanel` (the connect sheet's scope branch),
- * `VaultAgentSetupPanel`, and `ProjectQuickEditPanel` — the category the old
+ * That third row is this inventory's key discriminator. It filters out the survivor
+ * sites `VaultAgentSetupPanel` and `ProjectQuickEditPanel` — the category the old
  * registry had hand-annotated as "the parent already animates it" is now filtered
  * **mechanically**.
  *

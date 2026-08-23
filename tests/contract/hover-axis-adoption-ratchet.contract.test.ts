@@ -44,6 +44,10 @@ const ROOT = process.cwd();
  * Today's measurement. Growth turns this red; a drop turns the "lower it" test
  * below red.
  *
+ * 326 → 312 (2026-08-23): retiring the unreachable `LiveActivityIndicator`
+ * removed fourteen hand hover declarations with its dead surface. No surviving
+ * control changed class or gained an exemption.
+ *
  * 387 → 386 (2026-08-17): the notification bell moved from a hand-written
  * `controlClass({shape:'segment'})` button to the `IconButton` primitive, dropping
  * one hand hover declaration.
@@ -65,7 +69,7 @@ const ROOT = process.cwd();
  * rise; **the places disappeared**, so this decrease earns no credit — but the
  * floor still comes down.
  */
-const CEILING = 326;
+const CEILING = 312;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

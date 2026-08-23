@@ -250,6 +250,13 @@ jobs:
       - name: Install MCP dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
+      # This analyzer loads scope adapters for the root, scripts, CLI, and MCP.
+      # Keep it here, after both installs, rather than in the fast job that has
+      # no MCP dependency tree.
+      - name: Dead code
+        if: always()
+        run: pnpm knip
+
       # Run only what can actually break. Observation (2026-07-27): This suite
       # took 270 seconds, and changes in that session were almost entirely agent briefs and documents. If judgment
       # is uncertain, leave runtime=true — missed tests are shipped bugs,

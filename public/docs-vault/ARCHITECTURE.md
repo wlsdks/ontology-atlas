@@ -355,9 +355,10 @@ and Git are desktop-only. Both read the same rules in
 `src/shared/lib/nav-destination.ts`, so every route belongs to exactly one
 destination even on a screen size that deliberately hides that button. The
 retired
-`OperationsNav` and `OntologySubNav` are deleted. `AppSettingsMenu` and
-`LiveActivityIndicator` mount through the current shell/page slots rather than
-being treated as navigation destinations.
+`OperationsNav` and `OntologySubNav` are deleted. `AppSettingsMenu` mounts
+through the shell, while `AgentActivityChip` mounts in Topology's contextual map
+controls and `AgentActivitySettings` configures that current-work flow; none is
+a navigation destination.
 
 ## URL contract (query-param + node id grammar)
 

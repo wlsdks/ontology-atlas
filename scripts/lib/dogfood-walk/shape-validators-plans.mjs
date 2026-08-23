@@ -1,11 +1,11 @@
 // Response-shape validators for the dogfood MCP walk: maintenance/growth
 // planning tools (maintenance_plan, growth_plan, recommend_relations).
 // Split out of scripts/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
-import { numericSummaryFailure } from "./shape-validators-workspace.mjs";
+import { numericSummaryFailure } from "./shape-validators-primitives.mjs";
 import {
   candidateGroupShapeFailure,
-  growthCandidateRowFailure,
 } from "./shape-validators-graph-analytics.mjs";
+import { growthCandidateRowFailure } from "./shape-validators-growth.mjs";
 
 export function maintenancePlanShapeFailure(result, options = {}) {
   if (result.operation !== "maintenance_plan") {

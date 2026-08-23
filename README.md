@@ -593,6 +593,13 @@ test, configuration, and historical-prototype changes, it includes
 `pnpm source:language`. Together they keep English canonical prose and comments
 from regressing while preserving typed Korean locale data and runtime strings.
 
+Run `pnpm knip` to evaluate JavaScript/TypeScript dead files, exports, and types
+across the frontend, scripts, CLI, and MCP scopes. It is a repository-wide
+diagnostic with an
+explicit exception ledger and a shrink-only export/type ratchet. Configuration
+hints and empty subject lanes fail closed as setup errors; file, dependency, and
+cycle findings block. It never rewrites code.
+
 ### Refreshing the agent runtime catalog
 
 The list of coding agents the desktop app can launch is a committed snapshot of

@@ -1092,10 +1092,10 @@ just unmounted).
   - **Chat directly next to the app's map.** Selecting a runtime with verified isolation opens `AcpChatPanel` on the right work surface of the home page, passing the current vault as the working folder and MCP server. It is the same workspace used while viewing the map, without separate paths or new screens (`src/views/home/ui/HomePage.tsx`).
   - The selector appears only when the adapter provides a list of models/workflows. Verified workflows are hidden by removing permission checks, and unverified ones are marked with "unverified" and their meaning next to the name. The `unverified` safety judgment state is preserved through `AcpSessionChoices` to the existing `Select`.
   - Processes cannot be launched in browsers. On the web, a single line explaining why it doesn't work and where it does replaces the list.
-- The persistent shell mounts the rail settings trigger. Contextual
-  `LiveActivityIndicator` and header controls remain on the pages whose
-  workflow needs richer status or screen controls; they are not additional
-  navigation destinations.
+- The persistent shell mounts the rail settings trigger. Current agent work is
+  exposed by `AgentActivityChip` in Topology's contextual map controls, while
+  `AgentActivitySettings` controls its visibility and notifications in the
+  settings sheet; neither is a navigation destination.
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
 - 4 core destinations: Map · Docs · Insights · Projects. Workshop is the

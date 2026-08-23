@@ -57,7 +57,6 @@ const ROOT = process.cwd();
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/entities/project/ui/ProjectCard.tsx", 1],
   ["src/features/agent-activity/ui/AgentActivityChip.tsx", 1],
-  ["src/features/docs-vault-local/ui/StepRow.tsx", 1],
   ["src/features/first-run-starter/ui/FirstRunStarterModule.tsx", 1],
   ["src/features/project-edit/ui/DependencyPicker.tsx", 2],
   ["src/features/project-edit/ui/ProjectForm.tsx", 4],

@@ -42,8 +42,6 @@ export {
   type AgentClientButtonsProps,
   type AgentClientConfigState,
 } from './ui/AgentClientButtons';
-export { AgentConnectAction, type AgentConnectActionProps } from './ui/AgentConnectAction';
-export { StepRow, type StepRowProps } from './ui/StepRow';
 export {
   WebManualConnectPanel,
   type WebManualConnectPanelProps,
@@ -60,17 +58,6 @@ export {
   type ManualPathIssue,
   type ManualPathResult,
 } from './lib/manual-connect';
-export { AgentGlobalScopePanel, type AgentGlobalScopePanelProps } from './ui/AgentGlobalScopePanel';
-export {
-  globalScopeInstruction,
-  type GlobalScopeInstruction,
-  type GlobalScopeKind,
-} from './lib/agent-global-scope';
-export {
-  useAgentConfigScope,
-  setAgentConfigScope,
-  type AgentConfigScope,
-} from './lib/agent-scope-preference';
 export {
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterCliVerifyCommands,

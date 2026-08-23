@@ -10,10 +10,9 @@ const HISTORICAL_PATHS = new Set([
   'docs/CHANGELOG.md',
   'cli/CHANGELOG.md',
   'mcp/CHANGELOG.md',
-  '.claude/LOOP-PRINCIPLES.md',
 ]);
 
-const HISTORICAL_DOC_PREFIX = /^docs\/(?:archive|plans|audits|prototypes|superpowers)\//;
+const HISTORICAL_DOC_PREFIX = /^docs\/(?:archive|plans|audits|prototypes)\//;
 
 function canonicalScope(path) {
   if (
