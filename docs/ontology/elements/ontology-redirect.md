@@ -8,4 +8,4 @@ path: src/views/ontology-redirect
 created_by: "agent:unknown"
 ---
 
-/ontology → /topology?index=expanded 호환 리다이렉트.
+Compatible redirect from /ontology to /topology?index=expanded.

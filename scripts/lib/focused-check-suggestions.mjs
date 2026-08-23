@@ -17,6 +17,16 @@ const RULES = [
     matches: [/^scripts\/build-docs-vault\.(?:mjs|test\.mjs)$/],
   },
   {
+    command: 'pnpm docs:language',
+    reason: 'authored Markdown must not add unexplained Korean prose',
+    matches: [/\.md$/, /^scripts\/quality\/markdown-language\//],
+  },
+  {
+    command: 'pnpm test:docs:language',
+    reason: 'Markdown language inventory or ratchet implementation changed',
+    matches: [/^scripts\/quality\/markdown-language\//],
+  },
+  {
     // The accident this net actually catches is "a document moved or the vault was
     // regenerated but the prose citing it stayed", which only happens in a PR that
     // touched markdown — so markdown is also the trigger for the suggestion.

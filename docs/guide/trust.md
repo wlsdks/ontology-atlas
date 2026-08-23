@@ -1,35 +1,27 @@
-# 신뢰에 관하여
+# About Trust
 
-무명 저장소의 바이너리를 자기 컴퓨터에 들이는 일입니다. 그래서 무엇을 하지
-않는지부터 적습니다.
+It involves pulling binaries from anonymous repositories onto your own computer. Therefore, we start by listing what it does not do.
 
-## 로컬이 전부입니다
+## It is entirely local
 
-볼트는 여러분 디스크에만 있습니다. 조용히 전송되는 것은 없습니다. 계정도,
-서버도, 요금제 뒤에 갇힌 기능도 없습니다.
+Vault exists only on your disk. Nothing is transmitted silently. There are no accounts, no servers, and no features locked behind a subscription.
 
-## 평문 마크다운입니다
+## It is plain Markdown
 
-앱을 지워도 폴더는 그대로 남습니다. 잠기는 것이 없습니다. 이건 마케팅 문구가
-아니라 구조적 사실입니다. 저장 형식이 마크다운이라 잠글 방법이 없습니다.
+Even if you delete the app, the folder remains. Nothing gets locked. This is not marketing copy; it is a structural fact. Because the storage format is Markdown, there is no way to lock it.
 
-## 자동으로 훑지 않습니다
+## It does not scan automatically
 
-여러분이 고른 폴더만 읽습니다. `.env` 같은 dotfile 과 `.git/` 은 인덱싱에서
-제외합니다. 디스크의 다른 곳은 보지 않습니다.
+It reads only the folders you choose. Dotfiles like `.env` and `.git/` are excluded from indexing. It does not look at anything else on your disk.
 
-## LLM 연결은 선택입니다
+## LLM connectivity is optional
 
-켜지 않으면 어떤 모델도 호출되지 않습니다. 켜면 **무엇이 나갔는지 볼트 안 감사
-로그**(`.ontology-atlas/llm-audit.jsonl`)에 남습니다. 평문이라 직접 읽을 수
-있습니다. API 키는 브라우저 저장소가 아니라 OS 키체인에 둡니다.
+If disabled, no models are called. If enabled, **what leaves Vault is recorded in the audit log** (`.ontology-atlas/llm-audit.jsonl`). It is plain text, so you can read it directly. API keys are stored in the OS keychain, not in browser storage.
 
-## 서명·공증
+## Signing and Notarization
 
-macOS 앱은 Apple Developer ID 로 서명하고 공증을 받습니다. Gatekeeper 경고 없이
-열립니다.
+The macOS app is signed with Apple Developer ID and notarized. It opens without Gatekeeper warnings.
 
-## 오픈소스
+## Open Source
 
-전부 열려 있습니다. 위 문장 중 무엇이든 코드에서 확인할 수 있고, 확인할 수 없는
-주장은 여기 적지 않았습니다.
+Everything is open. You can verify any of the above statements in the code; claims that cannot be verified are not listed here.

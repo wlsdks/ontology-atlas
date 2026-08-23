@@ -9,37 +9,29 @@ path: src/features/app-update
 created_by: "agent:unknown"
 ---
 
-## 정의
-데스크톱 셸에서 새 버전을 자동 또는 수동으로 확인하고, 서명된 아카이브를
-다운로드·설치한 뒤 앱을 다시 시작하게 하는 능력. 설치 앱은 release 종류에
-따라 바뀌지 않는 Pages manifest 주소 하나만 읽는다.
+## Definition
+The ability to automatically or manually check for new versions in the desktop shell, download and install signed archives, and relaunch the app. The installed app reads only one Pages manifest URL that remains constant across release types.
 
-## 포함 / 제외
-- 포함: desktop-shell 24시간 자동 확인, 설정의 수동 확인, 버전별 dismiss,
-  다운로드 진행률, 설치 후 relaunch, 검사 실패와 설치 실패의 분리.
-- 포함: Pages 빌드가 newest non-draft GitHub Release의 `latest.json`을
-  `/update/latest.json`에 staging하는 배포 계약. release candidate도 선택한다.
-- 제외: 웹 앱 자체 업데이트, 별도 업데이트 서버·계정, 서명 검증 우회.
+## Inclusions / Exclusions
+- Inclusions: desktop-shell 24-hour automatic checks, manual checks in settings, per-version dismissal,
+  download progress, post-install relaunch, and separation of check failures from install failures.
+- Inclusions: The Pages build deployment contract that stages `latest.json` from the newest non-draft GitHub Release
+  to `/update/latest.json`. Release candidates are also included.
+- Exclusions: Web app self-updates, separate update servers/accounts, and bypassing signature verification.
 
-## 신뢰 경계
-Pages manifest는 어느 릴리스를 가리킬지 안정적으로 배포하는 포인터다. 실제 설치
-허용 여부는 Tauri updater가 각 아카이브의 번들 서명을 검증해 결정한다. 검사 실패는
-설정 행에서 한 번 말하고, 설치 실패만 우하단 복구 안내를 쓴다. updater 라이브러리의
-원시 영문 오류는 사용자 화면에 내보내지 않는다.
+## Trust Boundary
+The Pages manifest is a pointer that stably distributes which release to target. Whether actual installation is allowed is determined by the Tauri updater verifying the bundle signature of each archive. Check failures are reported once in the settings row, while only install failures display recovery instructions in the bottom-right corner. Raw English error messages from the updater library are not exposed to the user interface.
 
-## 근거
-- `src/features/app-update/model/use-app-update.ts`: 자동·수동 확인, check/install
-  실패 단계, `downloadAndInstall`, 진행 상태와 relaunch
+## Evidence
+- `src/features/app-update/model/use-app-update.ts`: automatic/manual checks, check/install failure stages, `downloadAndInstall`, progress status, and relaunch
 - `src/features/app-update/ui/UpdateToast.tsx` ·
-  `src/widgets/app-settings-menu/ui/AppUpdateSettings.tsx`: 단계별 단일 실패 표면
-- `scripts/stage-hosted-updater-manifest.mjs`: newest non-draft release 선택,
-  manifest version·서명·tag-pinned HTTPS URL 검증
-- `.github/workflows/deploy-pages.yml` · `src-tauri/tauri.conf.json`: Pages staging과
-  설치 앱의 단일 안정 endpoint
-- `scripts/check-hosted-download-surface.mjs`: 배포된 updater manifest를 함께
-  확인하는 hosted surface gate
+  `src/widgets/app-settings-menu/ui/AppUpdateSettings.tsx`: single failure surface per stage
+- `scripts/stage-hosted-updater-manifest.mjs`: selects the newest non-draft release,
+  validates manifest version, signature, and tag-pinned HTTPS URL
+- `.github/workflows/deploy-pages.yml` · `src-tauri/tauri.conf.json`: Pages staging and
+  the installed app's single stable endpoint
+- `scripts/check-hosted-download-surface.mjs`: hosted surface gate that verifies the deployed updater manifest together
 
-## 확신도
-medium-high: 상태/배포 스크립트 시험과 현재 rc.9 manifest staging은 검증했다.
-실제 새 버전 아카이브를 설치하고 재시작하는 릴리스 간 왕복은 다음 배포에서 다시
-검증해야 한다.
+## Confidence
+medium-high: State/deployment script tests and current rc.9 manifest staging have been verified.
+Round-trip testing of installing and relaunching with a real new version archive must be re-verified in the next deployment.

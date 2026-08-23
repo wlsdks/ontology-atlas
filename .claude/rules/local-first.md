@@ -1,63 +1,66 @@
 # Local-first / offline-first principle
 
-> Auto-loaded. **이 프로젝트의 가장 큰 UX 약속.**
+> Auto-loaded. This is the product's largest UX promise.
 
-## 한 줄
+## One line
 
-> **Notion / Obsidian 처럼 — 마크다운 폴더 하나만 고르면 바로 쓴다. 서버는 하나도 필요 없다.**
+> Like Obsidian: choose one Markdown folder and begin. No server is required.
 
-## [v9 개정, 2026-07-17] 제품은 두 층이다
+## Two layers (v9, 2026-07-17)
 
-이 문서의 약속은 **Layer 1 (로컬 코어 — 내 컴퓨터에서만 도는 부분)** 이 절대
-어기지 않는 약속이다. v9 계획(`docs/plans/PRODUCT-PLAN-2026-07.md`)이 그 위에
-**Layer 2 (Atlas Network — Spec 표준 · Hub 레지스트리 · 수요가 확인되면 유료로
-낼 Team Sync)** 를 얹었다. Layer 2 는 안 써도 되는 선택 사항이고, `forbidden.md`
-의 신뢰 헌장(사용자에게 한 약속 여섯 줄)을 지킬 때만 만들 수 있다. Layer 2 를
-안 쓰는 사람도 기능이 하나도 줄지 않는다. LLM 연결(자기 API 키를 넣거나 자기
-컴퓨터에서 돌리는 모델)은 ① 사용자가 직접 켜고 ② 무엇이 밖으로 나가는지 화면에
-적히고 ③ 나간 기록이 로컬에 남는다는 조건에서만 허용된다.
+This document is the inviolable promise of **Layer 1**, the local core running
+on the user's computer. The v9 plan (`docs/plans/PRODUCT-PLAN-2026-07.md`) may
+place **Layer 2, Atlas Network** above it: a specification, a hub registry, and
+paid team sync only after demand exists.
 
-## 그래서 무엇을 지킨다는 것인가 (R10 — 로그인과 클라우드 화면을 영구히 없앤 라운드. Layer 1 기준)
+Layer 2 is optional and may exist only while satisfying the six trust promises
+in `forbidden.md`. Someone who never uses it loses no Layer 1 capability. An LLM
+connection—either the user's own API key or a local model—is allowed only when
+the user opts in, the UI states what leaves the computer, and a local audit log
+records each transfer.
 
-1. **막힘 없이 시작** — `pnpm dev` 하면 첫 화면부터 바로 쓸 수 있다. 로그인이나
-   접근 검사 자체가 아예 없다 (R10).
-2. **폴더만 고르면 끝** — 사용자가 자기 디스크의 마크다운 폴더를 가리키면 곧바로
-   토폴로지·트리·빌더 화면으로 들어간다 (브라우저의 File System Access API 사용,
-   `src/features/docs-vault-local/`).
-3. **정답은 사용자 디스크에 있다** — vault 의 frontmatter 가 그대로 온톨로지다.
-   별도의 서버나 Firestore, 클라우드 저장소가 없다. 데이터는 사용자 디스크와
-   브라우저의 IndexedDB 에만 있다.
-4. **한 사람이 쓰는 도구** — v0.x 는 1인용이다. 여러 계정이나 협업은 나중에
-   클라우드 협업 단계가 열릴 때 새로 설계한다.
+## Layer 1 promises (R10)
 
-## 코드를 쓸 때 지킬 것
+1. **Start without a gate.** `pnpm dev` opens a usable first screen. R10 removed
+   login and access checks entirely.
+2. **Choose a folder and continue.** Point at a Markdown folder on disk and enter
+   the topology, tree, and editing workflow immediately. The browser path uses
+   the File System Access API through `src/features/docs-vault-local/`.
+3. **The answer lives on the user's disk.** Vault frontmatter is the ontology.
+   There is no server database, Firestore, or cloud store. Only the user's files
+   and the browser's IndexedDB hold data.
+4. **Single-person first.** v0.x is a personal tool. Accounts and collaboration
+   require a new design if the cloud-collaboration layer opens later.
 
-- 새 기능을 만들기 전에 **"vault 파일만으로 돌아가나?"** 를 먼저 묻는다.
-- 서버(Firestore / 서버 동기화 등)가 꼭 필요해 보이면 설계를 다시 한다 —
-  사용자 디스크의 마크다운으로 표현할 수 있는 모양으로 바꾼다.
-- 로컬 폴더 흐름의 시작점은 `src/features/docs-vault-local/` 다. 새 기능은 이
-  흐름과 맞물리게 만든다.
+## While writing code
 
-## 데이터 모양에서 지킬 것
+- Before adding a capability, ask: “Can this work from vault files alone?”
+- If it appears to require Firestore, server sync, or another backend, redesign
+  it as Markdown on the user's disk.
+- `src/features/docs-vault-local/` owns the local-folder entry path. New work
+  must join that path rather than bypass it.
 
-- vault 의 frontmatter 가 곧 스키마다. 별도의 store 나 컬렉션을 만들지 않는다.
-- IndexedDB 는 vault 캐시와 사용자 설정까지만 담는다 — 값이 어긋났을 때
-  IndexedDB 를 정답으로 삼아서는 안 된다.
-- 데이터 모양은 단순한 쪽을 고른다. vault 여러 개를 가로지르는 복잡한 관계를
-  강제하는 것은 나중 단계로 미룬다.
+## Data shape
 
-## 로그인
+- Vault frontmatter is the schema. Do not create a second canonical store or
+  collection.
+- IndexedDB may cache the vault handle and user preferences. It never wins a
+  disagreement with the files on disk.
+- Prefer simple shapes. Cross-vault relation systems belong to a later phase.
 
-- **로그인 화면이 하나도 없다** — login / signup / account / password reset 은
-  R10 에서 영구히 지웠다. `@/features/user-auth` / `@/features/permissions` /
-  `@/features/account-scope` 도 전부 삭제됐다. 새 라우트를 추가할 때 로그인
-  검사를 다시 넣지 않는다.
-- 나중에 클라우드 협업 단계가 열리면 로그인과 권한 모델을 그때 새로 설계한다.
+## Login
 
-## 보안
+- No login route exists. R10 permanently removed login, sign-up, account, and
+  password reset, along with `@/features/user-auth`,
+  `@/features/permissions`, and `@/features/account-scope`.
+- If cloud collaboration opens later, design its authentication and permissions
+  then. Do not pre-install them in Layer 1.
 
-- 사용자 디스크에 있는 비밀번호·인증 키 같은 파일은 절대 자동으로 훑지 않는다.
-- `.env.local` / `.git/` 같이 점으로 시작하는 파일과 시스템 폴더는 vault 를
-  읽을 때 건너뛴다.
-- vault 밖(HTTP / WebSocket / 외부 API)으로 사용자 데이터를 사용자 모르게
-  보내지 않는다.
+## Security
+
+- Never scan password, credential, or key files from the user's disk
+  automatically.
+- Skip dotfiles and system directories such as `.env.local` and `.git/` while
+  reading a vault.
+- Never send vault data over HTTP, WebSocket, or another external interface
+  without the user's knowledge.

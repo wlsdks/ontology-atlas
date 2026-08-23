@@ -26,8 +26,9 @@ out (second) → **no-basis (third)**.
 
 ## ✅ Round closed (2026-08-06) — **zero places still style controls by hand**
 
-Owner: *"판정이 끝났다는 건 뭔 말임? 고칠 게 없다는 뜻임? 그럼 종료를 선언해
-줘야지 다음에 또 안 찾지 않을까?"*
+Owner: *"What does it mean that the decision is finished? Does it mean there is
+nothing left to fix? Then shouldn't we declare it complete so we do not look for
+it again next time?"*
 (if the verdict is final and there is nothing left to fix, declare the round
 closed so the next person does not go looking again)
 
@@ -71,9 +72,9 @@ that is exactly when this file turns red.
 **Why three categories — because debt has to be able to reach 0.** Mixing
 "cannot in principle" and "nothing to emit" into debt makes a number that can
 never reach 0, and a number that cannot reach 0 is decoration, not a progress
-gauge. The owner's point was exactly this: *"할 필요가 없다는 건 디자인
-시스템으로 만들 필요가 없거나 관련 없는 부분이라는 거 아냐? 그러면 아예
-제외하는 게 맞고, 수에 포함시키면 헷갈리니."*
+gauge. The owner's point was exactly this: *"If it does not need to be done,
+doesn't that mean it does not belong in the design system or is not relevant?
+Then it should be excluded altogether; including it in the count is confusing."*
 (if a place does not need the design system it should be excluded outright;
 counting it in only confuses the number)
 
@@ -113,13 +114,13 @@ it cannot express in principle, and adding an axis would not change that:
 | `chrome-token` | A chrome token owns the dimension. The value layer's height vocabulary is **fixed steps only**, while these tokens are `clamp(38px, 4.2vh, 48px)` or get **redefined to a different value** at narrow widths / coarse pointers. A fixed-step ramp can express neither a viewport function nor a pointer promotion |
 | `stage-geometry` | The dimension comes from **JS-computed `style`**, not className (absolutely positioned stage coordinates). A ramp cannot emit style |
 | `value-layer-peer` | The value layer's **own house**. This is where a primitive declares its own spec. Forcing it through would break the contract or push colour/dimension out through `className` and neutralise the layer — a layer cannot consume itself |
-| `standard-button` *(anchors, 2026-08-04)* | **The one shape the value layer explicitly yielded.** `control-class.ts` says so in its own preamble: *"표준 버튼(`<Button>`)을 대체하지 않는다 … 겹치는 자리를 만들면 «어느 쪽이 규격인가»가 흐려진다"* (it does not replace the standard button; overlapping places blur which one is the spec). So an anchor passing through `buttonVariants()` **already went through a value layer**, and moving it to `controlClass` would violate that rule rather than comply with it |
+| `standard-button` *(anchors, 2026-08-04)* | **The one shape the value layer explicitly yielded.** `control-class.ts` says so in its own preamble: *"It does not replace the standard button (`<Button>`) … creating overlap makes it unclear which one is the specification."* So an anchor passing through `buttonVariants()` **already went through a value layer**, and moving it to `controlClass` would violate that rule rather than comply with it |
 | `no-spec` *(anchors, 2026-08-04)* | The tag declares **no shape, size, or colour at all** — either a pure `className={className}` pass-through or a single `"inline-flex"` for placement. There is nothing for the value layer to emit, and placement is the layer the value layer itself defined as `className`'s share |
 | `state-scoped` *(anchors, 2026-08-04)* | The whole spec exists **only under a variant prefix** (a `focus:` skip link — `sr-only` at rest). `controlClass()` emits a prefix-less class string, so no prefix can be attached |
 | `prose` *(anchors, 2026-08-04 link floor round)* | **Prose, not a control.** A link inside markdown body flow — its siblings are text, the parent `--leading-prose` owns the line box, and WCAG 2.5.8 exempts inline text. All eight value-layer shapes are flex-family, so **display:inline is impossible in principle** (inline-flex kills wrapping at 320px — measured rect 1 vs 2). Its destination is the `.prose-link` contract (`prose-link.contract.test.ts`) |
 
 Conversely, **"the value layer does not have that shape yet" is not grounds for
-registration.** That is a place 체계 (the design-systems seat) opens by adding a
+registration.** That is a place the Systems seat opens by adding a
 part, so it is **debt**. This distinction is the whole of this round.
 
 ### How to read the three categories — two questions per place
@@ -169,9 +170,9 @@ Each number is the measurement from the last round that counted that hole.
 
 | Hole | Last measured | What is missing |
 |---|---:|---|
-| **The size ramp binds inset and type into one step** | 9 | "Large inset + small type" really exists (5 mono micro CTAs · 2 success-tint actions · settings notification chip · `MarkdownField` tab). Moving them changes the type — this is not an axis but 체계's call on **which side is the spec** |
-| **`scope: 'panel'` opens ink only** | 7 | Border and indigo are still outside: `--topology-v2-panel-border`(#2a2a30) · `--topology-v2-panel-divider`(#23232a) · `--topology-v2-indigo-bright`(#8890e0 ≠ global #7170ff). The value layer's comment asserts *"패널 램프에 인디고는 없다"* (there is no indigo in the panel ramp) — but there is |
-| **No circular icon control** | 6 | `icon` is pinned to `rounded-chip`. Turning a 24px circle into a 6px square is not normalisation but an **identity change**, so it was not decided alone without convening 체계 |
+| **The size ramp binds inset and type into one step** | 9 | "Large inset + small type" really exists (5 mono micro CTAs · 2 success-tint actions · settings notification chip · `MarkdownField` tab). Moving them changes the type — this is not an axis but the Systems seat's call on **which side is the spec** |
+| **`scope: 'panel'` opens ink only** | 7 | Border and indigo are still outside: `--topology-v2-panel-border`(#2a2a30) · `--topology-v2-panel-divider`(#23232a) · `--topology-v2-indigo-bright`(#8890e0 ≠ global #7170ff). The value layer's comment asserts *"There is no indigo in the panel ramp"* — but there is |
+| **No circular icon control** | 6 | `icon` is pinned to `rounded-chip`. Turning a 24px circle into a 6px square is not normalisation but an **identity change**, so it was not decided alone without convening the Systems seat |
 | **Secondary controls inside dense rows / wraps** | 5 + 1 | Loading `link`'s `min-h-11` (WCAG 2.5.8) makes the row 2–3× taller. The `inline` axis exempts "inside a **sentence**" only and cannot say "inside a dense row" |
 | **Three-column grid rows** | 3 | `STEP_ROW` (visual · name · why). `row` is flex-only |
 | **`tone: 'accent'` is a marker, not ink** | 3 | There are two indigos — marker `--color-indigo-accent`(#7170ff) and text `--color-indigo-text-soft`(#bcc3ffeb). Measured on tint: accent **3.55–4.25:1 (below AA)** vs text-soft **7.09–8.37:1**. Not an unmoved place but a **latent defect in the value layer itself** |
@@ -272,7 +273,7 @@ side went from 417 to 85.
 | **[registered] `state-scoped`** | 1 | Skip link |
 | No place that emits **no** type step | 13 | All eight shapes force a size, so an anchor that must **inherit** the parent size structurally cannot enter. The button ledger counted this hole as "2"; among anchors it is **13** — the largest category of this round and first in line for the next verdict |
 | Text links in dense rows / sentences | 12 | `link`'s `min-h-11` (WCAG 2.5.8) makes top bars, in-chip links, and two-link rows 2–3× taller. The `inline` axis exempts "inside a **sentence**" only |
-| **Always-on underline + `decoration-*`** | 12 | The value layer has **no** underline/decoration axis at all. Half are markdown body links (docs 5 · gateway 2) and are therefore **prose, not controls** — whether to build an axis or remove this category from "controls" is 체계's call |
+| **Always-on underline + `decoration-*`** | 12 | The value layer has **no** underline/decoration axis at all. Half are markdown body links (docs 5 · gateway 2) and are therefore **prose, not controls** — whether to build an axis or remove this category from "controls" is the Systems seat's call |
 | Inset and type bound into one step | 9 | The hole the button ledger counted as "9". Exactly 9 among anchors too |
 | No weight axis (`font-medium`/`semibold`) | 4 | Only `onAccent` loads semibold, and it loads it fixed |
 | Borderless **vertical** tiles | 4 | 2 rail · 2 bottom tabs. `tile` requires border, radius, and inset. ⚠️ A `chrome-token` claim for the bottom tab's `--topology-bottom-tab-min-height` was **rejected** — it is a single fixed 56px declaration and the token check refuses it (a case of the gate actually blocking a registration escape) |
@@ -287,14 +288,14 @@ side went from 417 to 85.
 **Why zero new axes again**: the two largest categories (type inheritance 13 ·
 dense rows 12) are **demands in opposite directions** — one says "emit no
 size", the other says "emit a height but not 44". Both touch `link` and each
-one's fix invalidates the other's. Which side is the spec is 체계's call, not
+one's fix invalidates the other's. Which side is the spec is the Systems seat's call, not
 something this round decides alone.
 
 ### Next round's input — by recovery, with the exhaustive counts
 
 | Rank | What | Recovers | Why not this round |
 |---:|---|---:|---|
-| 1 | Verdict on `link`'s **two axes: type and target** | 25 | The only decision that opens type-inheritance 13 + dense-row 12 at once. It is a 체계 convening matter, and it is why this round did not touch that file |
+| 1 | Verdict on `link`'s **two axes: type and target** | 25 | The only decision that opens type-inheritance 13 + dense-row 12 at once. It is a Systems-seat convening matter, and it is why this round did not touch that file |
 | 2 | Underline/decoration axis — **or removing prose links from "controls"** | 12 | Half are markdown body, which may not be "things you press". Whether to add an axis or change the classification comes first |
 | 3 | Unbinding inset from type | 9 | **The same decision** as the button side's 9 — both numbers come down in one round |
 | 4 | Weight axis | 4 | Only `onAccent` loading semibold is the asymmetry today |
@@ -353,7 +354,7 @@ single axis but the bundle "mono part + tint tone + inset decomposition"
 reclassification, ≈37).** The former needs a part spec; the latter received the
 verdict below.
 
-### Verdict (체계 seat, 2026-08-04)
+### Verdict (Systems seat, 2026-08-04)
 
 ① **`link` stands on the wrong floor — a factual error.** The value layer cites
    WCAG 2.5.8 (AA, 24×24) while loading the 2.5.5 (AAA) / HIG value (44,
@@ -398,7 +399,7 @@ verdict below.
 ════════════════════════════════════════════════════════════════════
 
 The execution of the combined round's verdict ①. Ledger: docs/DECISIONS.md
-2026-08-04 「link 바닥 24」 (the link floor of 24). Two things stay in this file:
+2026-08-04 "Link Floor 24." Two things stay in this file:
 
 - **Adopted consumers measured at 40 call sites across 24 files** — the
   verdict's "43 call sites / 28 files" over-reported (re-counted with the same
@@ -539,7 +540,7 @@ even though it is a number.**
 | 144 | 4 of the primitives/views round's 35. **The output is not the number moved but "why 31 did not move"** — same layer as the value layer 6 · holes already in the ledger 21 · dead primitives that never render 4 |
 | 123 | 9 of the remainder round's 57 — chip 6 · segment 2 · icon 1. Zero new axes or values. Four moved chips landed from `h-9`(36) on **`--control-h-md`(32)** = the first measurement showing the ladder #884 restored actually works |
 | 119 | **Deleted** two dead primitives — `LinkListEditor` and `ChipListEditor` were exported and unit-tested but had **0** production consumers (exhaustive grep). Exactly those 4 |
-| 117 | Value-layer round 2 (체계 seat), 6 — the "one step below sm" that three rounds counted was filled with a **micro tier**: `--radius-micro`(4px — already the value at 96 places) + chip `size: 'xs'` + a redefined `segment/sm`. Alongside: chip/pill default border divider(0.08) → border-soft(0.06) — correcting to the majority of an exhaustive 74:18 |
+| 117 | Value-layer round 2 (Systems seat), 6 — the "one step below sm" that three rounds counted was filled with a **micro tier**: `--radius-micro`(4px — already the value at 96 places) + chip `size: 'xs'` + a redefined `segment/sm`. Alongside: chip/pill default border divider(0.08) → border-soft(0.06) — correcting to the majority of an exhaustive 74:18 |
 | **113** | Today, after the accessibility/ink round. On 2026-08-04 it split into **registered 23 + debt 90** |
 
 ### What deleting the dead primitives turned up (2026-08-03)
@@ -551,7 +552,7 @@ with *"the number of files using the marker must not be 0"*. **A component
 nobody rendered was holding up a rule's allowance clause.** The allowance stays
 (WCAG G201 — warn before opening a new window) and the gate's idling guard moved
 from "files using the exception" to "files scanned + a synthetic probe". Ledger:
-`docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」 (two dead primitives).
+`docs/DECISIONS.md` 2026-08-03 "Two Dead Primitives."
 
 ### What the value-layer round **did not build** — that is a conclusion too
 

@@ -1,76 +1,54 @@
-# 지도에서 개념과 관계 고치기
+# Correcting Concepts and Relations on the Map
 
-관계는 `.md` 맨 위 frontmatter에 적힌 한 줄이지만, 직접 YAML을 입력할 필요는
-없습니다. 이제 별도 스튜디오로 이동하지 않고 지도에서 고른 개념 곁에서 고칩니다.
+Relations are written as a single line in the frontmatter at the top of `.md` files, but you don't need to input YAML directly. You can now edit them right next to the selected concept on the map without moving to a separate studio.
 
-옛 `/ontology/studio` 주소는 없어지지 않았습니다. 기존 북마크의 `node`, `mode`,
-`edit` 값을 읽어 `/topology`의 같은 개념과 편집 상태로 옮깁니다. 다만 왼쪽 레일의
-독립 목적지는 아닙니다.
+The old `/ontology/studio` URL still works. It reads `node`, `mode`, and `edit` values from existing bookmarks and maps them to the corresponding concept and editing state in `/topology`. However, it is not an independent destination for the left rail.
 
-## 관계 하나 고치기
+## Editing a Single Relation
 
-1. 지도에서 개념을 고릅니다.
-2. 오른쪽 작은 정보창에서 「관계 편집」을 누릅니다.
-3. 관계 종류와 이어질 개념을 고르고, 왜 이어지는지 적습니다.
-4. 지도에 생긴 파선 화살표로 방향과 두 끝점을 확인합니다.
-5. 「변경안 보기」에서 바뀔 frontmatter 배열과 이유를 확인합니다.
-6. 「확인하고 쓰기」를 눌러야 비로소 파일이 바뀝니다.
+1. Select a concept on the map.
+2. Click "Edit Relations" in the small info panel on the right.
+3. Choose the relation type and the target concept, then specify why they are connected.
+4. Verify the direction and endpoints using the dashed arrow that appears on the map.
+5. Check the resulting frontmatter array and reason in "View Changes".
+6. Click "Confirm and Write" to actually update the file.
 
-기존 관계를 열었다면 「이 관계 끊기」도 같은 변경안 화면을 거칩니다. 대상을
-바꾸면 옛 대상과 옛 이유를 남기지 않고 새 대상·이유로 한 번에 교체합니다.
+If you open an existing relation, "Disconnect this Relation" also goes through the same change preview screen. If you change the target, it replaces the old target and reason with the new ones in one step, leaving no trace of the previous values.
 
-한 번에 관계 하나만 다룹니다. 작은 정보창에 예전 스튜디오의 모든 기능을 넣으면
-지도를 가리고 다시 복잡해지기 때문입니다. 다른 관계를 고치려면 첫 관계를 끝낸 뒤
-다음 관계를 엽니다.
+Only one relation is handled at a time. Putting all features from the old studio into the small info panel would obscure the map and make it complex again. To edit other relations, finish the current one before opening the next.
 
-### 네 관계
+### Four Relations
 
-| 화면 이름 | 그래프 관계 | 저장되는 키 |
+| Screen Name | Graph Relation | Stored Key |
 |---|---|---|
-| 상위 개념 | `is_a` | `broader:` |
-| 담는 것 | `contains` | `contains:` |
-| 기대는 곳 | `depends_on` | `dependencies:` |
-| 비슷한 것 | `related_to` | `relates:` |
+| Broader Concept | `is_a` | `broader:` |
+| Container | `contains` | `contains:` |
+| Dependency | `depends_on` | `dependencies:` |
+| Related | `related_to` | `relates:` |
 
-색만으로 종류나 방향을 말하지 않습니다. 편집기에는 관계 이름이 글자로 보이고,
-지도 미리보기에는 파선과 화살표가 함께 나타납니다. 확정되면 같은 선이 실선으로
-수렴합니다. 접혀 있던 대상이면 그 노드와 이름만 실제 좌표에 잠시 보여 줍니다.
-주변 노드와 배치는 바뀌지 않습니다. 편집 중에는 왼쪽 INDEX가 접혀 지도를
-확보하고, 닫으면 원래 펼침 상태로 돌아옵니다. 모션 줄이기를 켜면 위치 이동이나
-추가 대기 없이 상태만 바뀝니다.
+We do not use color alone to indicate type or direction. In the editor, relation names appear as text, and the map preview shows dashed lines with arrows. Once confirmed, these converge into solid lines. Collapsed targets briefly show only their node and name at their actual coordinates. Surrounding nodes and layout remain unchanged. During editing, the left INDEX collapses to free up map space; closing it restores the original expanded state. With motion reduction enabled, only the state changes without position movement or additional delay.
 
-## 새 개념 만들기
+## Creating New Concepts
 
-지도의 「개념 추가」는 이름·종류·도메인을 받은 뒤 곧바로 파일을 만들지 않습니다.
-먼저 생성될 slug, UID, 표시 이름, 도메인, 작성 주체를 보여 줍니다. 「확인하고
-쓰기」를 눌러야 새 `.md`가 생깁니다. 「다시 고치기」를 누르면 적던 값이 남아
-있습니다.
+The map's "Add Concept" receives the name, type, and domain but does not immediately create a file. Instead, it displays the proposed slug, UID, display name, domain, and author. You must click "Confirm and Write" to generate the new `.md` file. Clicking "Edit Again" preserves the entered values.
 
-## 에이전트에게 시킬 때
+## When Delegating to Agents
 
-앱 안 ACP 대화에서 `list_concepts`, `get_concept` 같은 읽기 도구는 대화를 멈추지
-않습니다. `add_concept`, `add_relation`, `patch_concept` 같은 쓰기 도구는 다릅니다.
-에이전트가 보낸 인자를 변경안으로 바꿔 같은 대화 안에 보여 주고 기다립니다.
+In the app's ACP conversation, read-only tools like `list_concepts` and `get_concept` do not halt the conversation. Write tools such as `add_concept`, `add_relation`, and `patch_concept` are different. The agent converts the arguments it sent into proposals, displays them within the same conversation, and waits.
 
-- 「이번만 허용」: 이 호출 한 번을 실행하고 같은 대화를 이어갑니다.
-- 「안 할래요」: 이 호출을 거절하고 파일을 바꾸지 않습니다.
-- 의미 쓰기에는 「계속 허용」이 없습니다.
+- "Allow This Once": Execute this single call and continue the same conversation.
+- "Decline": Reject this call without modifying any files.
+- There is no "Always Allow" option for write operations.
 
-읽기/쓰기 판정은 화면이 손으로 추측하지 않습니다. MCP 서버가 내놓는 현재
-`tools/list`의 읽기 표시와 자동 계약으로 맞춥니다. 새 도구를 화면이 아직 모르면
-쓰기 쪽으로 닫혀 사람에게 먼저 묻습니다.
+Read/write determination is not guessed by the screen. It aligns with the read indicators and auto-contracts provided by the MCP server's current `tools/list`. If the screen does not yet recognize a new tool, it defaults to write mode, prompting the user first.
 
-## 충돌과 정본
+## Conflicts and Canonical State
 
-변경안은 별도 데이터베이스나 검토 파일로 저장되지 않는 잠깐의 상태입니다. 확인한
-뒤 frontmatter가 쓰인 순간 그 마크다운이 정본입니다. 편집기를 연 뒤 다른 사람이나
-에이전트가 같은 파일을 먼저 고치면 `expectedMtime` 검사가 두 번째 쓰기를 막습니다.
-새 값을 조용히 덮어쓰지 않습니다.
+Proposals are transient states not stored in a separate database or review file. The moment the frontmatter is written after confirmation, that markdown becomes the canonical version. If you open the editor and another person or agent modifies the same file first, an `expectedMtime` check prevents the second write. It does not silently overwrite new values.
 
-## 정리
+## Summary
 
-- 지도와 ACP가 주 작업대입니다.
-- 수동 편집은 선택한 개념 곁에서 관계 하나씩 합니다.
-- 생성·관계 편집·ACP 쓰기는 모두 파일 쓰기 전에 변경안을 보여 줍니다.
-- `/ontology/studio`와 `/ontology/edit`은 옛 링크를 지도 작업대로 옮기는 주소만
-  남았습니다.
+- The map and ACP are the primary workspaces.
+- Manual editing involves adding relations one by one around selected concepts.
+- Creation, relation editing, and ACP writes all display proposals before file writing.
+- `/ontology/studio` and `/ontology/edit` now only redirect to the map workspace.

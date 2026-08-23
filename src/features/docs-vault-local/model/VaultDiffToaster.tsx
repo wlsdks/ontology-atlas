@@ -11,7 +11,7 @@ import {
   type VaultDiffActionCount,
   type VaultDiffToast,
 } from '../lib/diff-manifest';
-import { useLocalVault } from './LocalVaultProvider';
+import { useLocalVault } from './local-vault-context';
 
 /**
  * Visual notification of vault polling results — changes detected by polling are surfaced as a

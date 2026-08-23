@@ -1,8 +1,8 @@
-# 벤더 응답 픽스처
+# Vendor Response Fixtures
 
-벤더 3사의 실응답 모양 3종(텍스트만 · 도구 호출 · 오류)을 잠근다. 어댑터가
-이 모양을 같은 `NormalizedResponse` 로 접는지가 계약이고, 벤더 형식이
-바뀌면 픽스처와 어댑터를 **같은 PR** 에서 갱신한다.
+Locks three types of real vendor responses (text-only, tool calls, errors). The contract
+is whether the adapter folds these shapes into the same `NormalizedResponse`. If vendor
+formats change, update both fixtures and adapters in the **same PR**.
 
-응답 본문은 감사 로그에 남지 않으므로(길이만), 여기 있는 것은 공개 문서에서
-읽을 수 있는 형식 예시이지 사용자 데이터가 아니다.
+Response bodies are not logged to audit logs (only lengths), so what is here are format
+examples readable from public documentation, not user data.

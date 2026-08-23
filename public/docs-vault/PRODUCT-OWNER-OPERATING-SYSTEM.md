@@ -1,15 +1,8 @@
 # PRODUCT OWNER OPERATING SYSTEM
 
-> Purpose: keep Ontology Atlas from becoming a feature factory — a project that
-> counts what it shipped instead of asking whether anything got better. Every
-> feature, design change, graph interaction, MCP tool, CLI command, and macOS
-> workflow must pass this product-owner lens (렌즈 — 결정을 통과시키기 전에
-> 반드시 물어야 하는 고정 질문 하나) before anyone treats the implementation as
-> valuable.
+> Purpose: keep Ontology Atlas from becoming a feature factory — a project that counts what it shipped instead of asking whether anything got better. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens (lens — one fixed question to ask before passing a decision) before anyone treats the implementation as valuable.
 
-Ontology Atlas does not need a backlog clerk. It needs a product owner who
-protects the one thing no other tool can copy — this document calls it the
-**wedge** (쐐기 — 다른 도구로는 대신할 수 없는, 이 제품만의 한 가지):
+Ontology Atlas does not need a backlog clerk. It needs a product owner who protects the one thing no other tool can copy — this document calls it the **wedge** (wedge — the one unique thing this product has that no other tool can replace):
 
 > A local-first ontology workbench where people and AI agents share one
 > git-backed meaning model of a product/system.
@@ -22,39 +15,16 @@ screens, panels, and buttons.
 Atlas's PO is not a persona with taste. It is an operating role with authority.
 It combines seven jobs that famous product traditions usually split apart:
 
-1. **One accountable owner** from Scrum: one person owns value ordering. Many
-   voices can influence the backlog, but final product judgment cannot become a
-   committee average.
-2. **Problem setter** from empowered product teams: the team gets an important
-   problem and the authority to find the solution, instead of a list of UI
-   requests to ship.
-3. **Customer-back narrator** from Working Backwards: the first draft explains
-   the customer, their current pain, and the future experience in plain
-   language before naming implementation.
-4. **Discovery mapper** from continuous discovery: every solution should map to
-   an outcome, opportunity, and assumption that can be tested by dogfood
-   (도그푸드 — 우리가 만든 것을 우리가 직접 써 보는 것), user-report, screenshot,
-   or runtime evidence.
-5. **Shaper** from Shape Up: before implementation starts, this person fixes the
-   **appetite** (이 문제에 쓸 시간의 상한 — "얼마나 걸릴까"가 아니라 "얼마를 쓸
-   가치가 있나"), the **no-gos** (이번에는 건드리지 않기로 못박은 것), the
-   **rabbit holes** (파고들면 시간을 다 잡아먹는 지점), and the smallest
-   **integrated slice** (슬라이스 — 그것 하나만으로도 처음부터 끝까지 동작하는
-   가장 작은 한 덩어리. 따로 노는 조각이 아니다).
-6. **Craft bar-raiser** from Rams, Tufte, and Linear: the product should become
-   more useful, easier to understand, less noisy, richer in true information per
-   screen, and faster to operate. Visual finish is part of usefulness, not
-   decoration.
-7. **Ontology steward** unique to Atlas: the PO protects typed meaning —
-   concepts, relations, provenance (출처 — 이 사실이 어디서 왔는지), evidence,
-   strength, confidence, impact, ownership, and handoff (핸드오프 — 다음 사람이나
-   AI 에이전트가 되묻지 않고 곧바로 이어서 할 수 있는 다음 행동). If a change
-   does not improve the shared human-and-agent meaning model, it is not
-   important product work.
+1. **One accountable owner** from Scrum: one person owns value ordering. Many voices can influence the backlog, but final product judgment cannot become a committee average.
+2. **Problem setter** from empowered product teams: the team gets an important problem and the authority to find the solution, instead of a list of UI requests to ship.
+3. **Customer-back narrator** from Working Backwards: the first draft explains the customer, their current pain, and the future experience in plain language before naming implementation.
+4. **Discovery mapper** from continuous discovery: every solution should map to an outcome, opportunity, and assumption that can be tested by dogfood (dogfood — using what we built ourselves), user-report, screenshot, or runtime evidence.
+5. **Shaper** from Shape Up: before implementation starts, this person fixes the **appetite** (upper limit of time to spend on this problem — not "how long will it take" but "how much is it worth to spend"), the **no-gos** (things nailed down as off-limits this time), the **rabbit holes** (points that consume all time if dug into), and the smallest **integrated slice** (slice — the smallest chunk that works from start to finish with just that one thing. Not isolated pieces).
+6. **Craft bar-raiser** from Rams, Tufte, and Linear: the product should become more useful, easier to understand, less noisy, richer in true information per screen, and faster to operate. Visual finish is part of usefulness, not decoration.
+7. **Ontology steward** unique to Atlas: the PO protects typed meaning — concepts, relations, provenance (provenance — where this fact came from), evidence, strength, confidence, impact, ownership, and handoff (handoff — the next action the next person or AI agent can take without asking back). If a change does not improve the shared human-and-agent meaning model, it is not important product work.
 
 The result should feel stricter than a backlog process and more practical than
-strategy prose: a contributor can run the gate (게이트 — 통과해야만 다음 단계로
-갈 수 있는 검사 지점) in under two minutes, but weak work should fail
+strategy prose: a contributor can run the gate (gate — an inspection point that must be passed to proceed to the next step) in under two minutes, but weak work should fail
 immediately.
 
 ## Chief PO Standard
@@ -80,8 +50,7 @@ PO decision often looks like one of these:
 
 For Atlas, product excellence needs all four of these at once:
 
-1. **Problem insight**: the PO can name the phenomenon (현상 — 화면이나 볼트에서
-   실제로 일어나는 일. 의견이 아니라 남이 다시 확인할 수 있는 관찰) and why it
+1. **Problem insight**: the PO can name the phenomenon (phenomenon — what is actually happening on screen or in the vault, not an opinion but an observation that others can re-verify) and why it
    matters before naming the implementation.
 2. **Ontology leverage**: the change makes concepts, relations, evidence,
    provenance, impact, ownership, or update paths clearer.
@@ -134,10 +103,8 @@ For Ontology Atlas, the highest-value phenomena usually look like one of these:
 
 Before product, UX, graph, MCP, CLI, workflow, or macOS-shell work starts, the
 agent or contributor must pass the PO gate in this document. The written answer
-is called a **PO pass** (패스 — 이 문서의 질문들에 짧게 답해 적어 둔 글. 그 틀은
-아래 *Fast PO Pass* 에 있다). If the pass is weak, the contributor clarifies the
-user moment, simplifies the existing surface (표면 — 사용자가 보고 만지는 화면 ·
-패널 · 명령 하나하나), or cuts scope. Shipping a feature without this pass counts
+is called a **PO pass** (pass — a short written response to the questions in this document; the template is below under *Fast PO Pass*). If the pass is weak, the contributor clarifies the
+user moment, simplifies the existing surface (surface — each screen · panel · command the user sees and touches), or cuts scope. Shipping a feature without this pass counts
 as work nobody shaped — output, not product progress.
 
 The PO must reason in this order: **observed phenomenon -> user problem ->
@@ -166,8 +133,7 @@ before implementation. Use this protocol for requests such as "make it prettier,
 1. **Quote the request as a symptom**, not as the solution.
 2. **Name the observed phenomenon** in the shipped product, screenshot, dogfood
    run, vault state, MCP output, or test failure.
-3. **Name the target user moment** (모먼트 — 그 사람이 그 일을 하고 있는 구체적인
-   시점): planner, marketer, leadership reviewer, developer, or AI agent; first
+3. **Name the target user moment** (moment — the specific point in time when that person is doing that task): planner, marketer, leadership reviewer, developer, or AI agent; first
    contact, graph reading, relation proof, handoff, edit, or verification.
 4. **State the current substitute** and why it is insufficient: Obsidian,
    Notion, raw markdown, graph DB tools, source search, Claude/Codex context, or
@@ -295,25 +261,21 @@ ontology-to-agent workflow. Do not average the opinions into a bigger feature.
 
 Until 2026-07-27 this section was prose, and prose does not run — nothing in the
 build ever checked that anyone had used these lenses. A PO pass in this repo
-wrote "없음" into the two rubric rows this document declares fatal (Ontology
+wrote "none" into the two rubric rows this document declares fatal (Ontology
 value, Agent value), gave itself `Build and verify`, and shipped — because
-**no lens had one named owner who had to sign it** (서명 — 그 행의 점수에 자기
-이름을 걸고, 틀리면 자기 책임이 되는 것). The thirteen lenses are therefore split
+**no lens had one named owner who had to sign it** (sign — putting your own name on the score for that row, accepting responsibility if it turns out wrong). The thirteen lenses are therefore split
 across five standing agents in `.claude/agents/`, and every rubric row now has
 exactly one signer:
 
-| Agent | 이름 | Lenses carried | Rubric row signed |
+| Agent | Name | Lenses carried | Rubric row signed |
 |---|---|---|---|
-| `po-evidence` | 근거 | Customer-Problem Editor · Discovery Lead · Outcome Guard | Problem insight · User moment |
-| `po-craft` | 결 | Craft Steward · Experience Mapper | Verification |
-| `po-steward` | 지킴이 | Ontology Steward · Local-First Guardian | Ontology value · Agent value |
-| `po-wedge` | 해자 | Monopoly Strategist · DHM Strategist · First-Principles Skeptic | Differentiation |
-| `po-leverage` | 지렛대 | Prioritization Analyst · Shaper | appetite + slice boundary |
+| `po-evidence` | Evidence | Customer-Problem Editor · Discovery Lead · Outcome Guard | Problem insight · User moment |
+| `po-craft` | Craft | Craft Steward · Experience Mapper | Verification |
+| `po-steward` | Guardian | Ontology Steward · Local-First Guardian | Ontology value · Agent value |
+| `po-wedge` | Moat | Monopoly Strategist · DHM Strategist · First-Principles Skeptic | Differentiation |
+| `po-leverage` | Leverage | Prioritization Analyst · Shaper | appetite + slice boundary |
 
-자리 이름은 그 자리가 무엇을 보는지를 줄인 말이다 — **근거**(증거가 실제로
-있는가) · **결**(만들어진 물건을 열어 봤을 때 어떤가) · **지킴이**(온톨로지와
-로컬-퍼스트 약속이 지켜지는가) · **해자**(다른 도구가 따라 하기 어려워지는가) ·
-**지렛대**(지금 이걸 할 때인가, 얼마를 쓸 것인가).
+The seat names are abbreviations of what each seat examines — **Evidence** (is there actual evidence?) · **Craft** (how does the built object feel when opened?) · **Guardian** (are ontology and local-first promises kept?) · **Moat** (is it hard for other tools to follow?) · **Leverage** (should we do this now, and how much should we spend?).
 
 **Accountable Value Owner is deliberately not an agent.** It is the human owner,
 or the agent acting on their behalf. The council only tries to break the
@@ -334,18 +296,15 @@ breaks the build until an agent claims it.
 **Required** — a new or removed user-facing surface/route; a public contract
 change (MCP tool signature, CLI command, vault schema); product direction,
 positioning, or the words a stranger reads first; a first public release, or
-anything that spends a one-shot reputational resource (한 번밖에 못 쓰는 평판 —
-첫인상은 두 번 만들 수 없다); a solo pass scoring under **18/24** or carrying a
-fatal zero (치명적 0 — 아래 *PO Quality Rubric* 에서 0이 나오면 안 된다고 못박은
-행에 0을 준 것); or the owner asking.
+anything that spends a one-shot reputational resource (reputation that can only be used once — first impressions cannot be made twice); a solo pass scoring under **18/24** or carrying a
+fatal zero (fatal 0 — giving a 0 to a row marked as must-not-be-zero in the *PO Quality Rubric* below); or the owner asking.
 
 **Not required** — ordinary product work that clears 18+ with no fatal zero on a
 solo pass.
 
 **Never** — mechanical work (typos, dependency bumps, CI plumbing, test
 fixtures). These are already exempt from the PO gate, and convening a council on
-them is the process theater this document warns against (일을 실제로 낫게 하지는
-않으면서 절차를 밟았다는 모양만 내는 것).
+them is the process theater this document warns against (going through the motions of following procedure without actually making things better).
 
 Protocol, output template, and failure-mode guards live in
 `.claude/skills/po-council/SKILL.md` (mirrored at
@@ -354,13 +313,11 @@ Protocol, output template, and failure-mode guards live in
 1. The five agents write their positions at the same time, and none of them
    reads another's position first.
 2. They rebut each other exactly once. If an agent concedes a point, that
-   concession has to change its verdict (평결 — 아래 *PO Verdicts* 의 네 결론 중
-   하나); otherwise the concession was not real.
+   concession has to change its verdict (verdict — one of the four conclusions in *PO Verdicts* below); otherwise the concession was not real.
 3. One accountable person picks one of the five proposals, or something smaller
    — **never their union**, meaning never all five glued together.
 4. That person writes down the strongest losing argument together with the
-   observation that would prove it right later (반증 조건 / falsifier — 이 판단이
-   틀렸다면 나중에 무엇이 관찰될지 미리 적어 두는 문장).
+   observation that would prove it right later (falsifier — a sentence written in advance describing what would be observed if this judgment were wrong).
 
 ## Default PO Stance
 
@@ -477,8 +434,7 @@ highest-friction workflow before adding new product surface.
 
 ## PO Verdicts
 
-Every non-trivial product pass should end in one of four verdicts (평결 — 그
-패스의 결론 한 줄. 아래 넷 중 하나만 쓴다). This stops "sounds good" from quietly
+Every non-trivial product pass should end in one of four verdicts (verdict — the single-line conclusion of that pass. Write only one of the four below). This stops "sounds good" from quietly
 turning into work nobody decided to do.
 
 - **Do not build**: the problem is not real enough, not important enough, or not
@@ -517,8 +473,7 @@ from an existing workflow instead.
 
 ## PO Quality Rubric
 
-Use this rubric (루브릭 — 여섯 항목을 각각 0 · 2 · 4 기준에 대고 점수 매기는
-채점표) to judge whether a PO pass is strong enough. Score each row 0-4. A
+Use this rubric (rubric — a scoring sheet that rates each of the six items against 0, 2, or 4 criteria) to judge whether a PO pass is strong enough. Score each row 0-4. A
 buildable pass usually needs **18+ out of 24** and no zero in problem, ontology
 value, agent value, or verification.
 
@@ -633,11 +588,10 @@ the override down.
   over vague "AI relevance" scores. Scores can rank attention; they must not
   replace typed meaning.
 - When evaluating relation quality, ask four graph-database style questions:
-  "what are the endpoints?" (선이 어느 노드와 어느 노드를 잇는가), "what is the
-  typed predicate?" (그 선이 무슨 관계라고 적혀 있는가), "what properties qualify
-  this edge?" (그 관계에 붙은 속성은 무엇인가 — 출처 · 강도 · 확신도 등), and
-  "which traversal or handoff depends on it?" (이 선을 따라가는 탐색이나 핸드오프
-  중 무엇이 이 선에 기대고 있는가). If one answer is missing, the UI should
+  "what are the endpoints?" (which nodes does this line connect?), "what is the
+  typed predicate?" (what relationship is written for this line?), "what properties qualify
+  this edge?" (what attributes are attached to this relationship — source, strength, confidence, etc.), and
+  "which traversal or handoff depends on it?" (which traversal or handoff following this line relies on it?). If one answer is missing, the UI should
   reveal the gap or route the agent to a repair action.
 - Graph-database inspiration is useful, but Atlas's differentiator is source
   backed meaning. Nodes and edges may behave like property-graph objects, yet the

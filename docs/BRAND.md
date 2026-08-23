@@ -1,199 +1,167 @@
 # Brand — Ontology Atlas
 
-> 마크의 **뜻**과 자산의 **사용 규칙**. 좌표의 진실원은
-> [`src/shared/ui/brand-mark.tsx`](../src/shared/ui/brand-mark.tsx) 이고, 이 문서는
-> 그것이 무엇을 말하는지와 어디에 쓰는지를 정한다.
+> The **meaning** of the mark and the **usage rules** for assets. The source of truth for coordinates is
+> [`src/shared/ui/brand-mark.tsx`](../src/shared/ui/brand-mark.tsx), and this document defines what it says and where to use it.
 
-## 한 문장
+## One Sentence
 
-> **중앙의 개념에서 출발해 관계와 계층을 따라 전체 코드베이스를 이해하도록 돕는 지식 지도.**
+> **A knowledge map that helps you understand the entire codebase by starting from central concepts and following relationships and hierarchy.**
 
-영문 태그라인 — **Map your codebase knowledge.**
-국문 — **코드베이스의 지식을 연결하고, 구조를 탐색하는 지도.**
+English tagline — **Map your codebase knowledge.**
+Korean — **Connect the knowledge of your codebase and explore its structure.**
 
 ---
 
-## 요소별 의미
+## Meaning by Element
 
-이 마크는 장식이 아니라 **제품의 데이터 모델을 그린 그림**이다. 겹의 순서가
-`element → capability → domain → project` 와 같다.
+This mark is not decoration but **a drawing of the product's data model**. The order of layers
+matches `element → capability → domain → project`.
 
-### 중앙 육각형 — 핵심 개념
+### Central Hexagon — Core Concept
 
-프로젝트를 이해하기 위한 가장 작은 지식 단위. 하나의 도메인, 기능, 컴포넌트,
-구현 요소처럼 온톨로지에 기록되는 개념 하나를 나타낸다.
+The smallest unit of knowledge for understanding a project. It represents a single concept recorded in the ontology, such as a domain, feature, component,
+or implementation element.
 
-이 마크에서 **가장 굵은 선**(`core: 19`)인 이유가 여기 있다 — 나머지가 이것을
-둘러싼 문맥이다.
+This is why it has the **thickest line** (`core: 19`) in this mark — the rest is
+the context surrounding it.
 
-### 세 개의 원형 노드 — 주요 개념과 접점
+### Three Circular Nodes — Core Concepts and Intersections
 
-코드베이스를 구성하는 도메인·기능·구현 요소의 노드. 세 방향으로 배치해 하나의
-개념이 **여러 영역과 연결되고 확장될 수 있다**는 점을 말한다.
+Nodes representing the domain, function, and implementation elements that make up the codebase. Arranged in three directions, this illustrates that **a single concept can connect to and expand across multiple areas**.
 
-세 노드는 중간 육각형의 **꼭짓점 위에 박혀** 있다. 떠 있는 점 셋은 흔한 분자
-아이콘이 되고, 그러면 "겹과 연결" 이라는 뜻이 사라진다.
+The three nodes are **anchored at the vertices of the central hexagon**. If they were floating dots, it would become a common molecular icon, losing the meaning of "interconnected layers."
 
-### 노드를 잇는 선 — 타입이 있는 관계
+### Lines Connecting Nodes — Typed Relationships
 
-단순한 연결이 아니라 `contains` · `depends_on` · `implements` · `relates` 처럼
-**의미가 정해진** 관계다. Atlas 가 메모 도구가 아니라 **계산하고 질의할 수 있는
-그래프**라는 뜻이 이 선에 실려 있다.
+Not simple connections, but relationships with **defined semantics** like `contains`, `depends_on`, `implements`, and `relates`. These lines convey that Atlas is not just a note-taking tool, but a **computable and queryable graph**.
 
-### 중첩된 육각형 — 지식의 계층
+### Nested Hexagons — Hierarchy of Knowledge
 
-안에서 밖으로 확장되는 구조가 곧 계층이다.
+The structure expanding from inside to outside is the hierarchy itself.
 
 ```
 element  →  capability  →  domain  →  project
-  핵          중간         노드/스포크    바깥
+  Core          Middle         Node/Spoke    Outer
 ```
 
-작은 구현 증거에서 출발해 전체 프로젝트의 구조를 파악하는 흐름.
+A flow starting from small implementation evidence to grasp the structure of the entire project.
 
-### 점선 레이어 — 아직 보이지 않는 지도
+### Dashed Layer — The Invisible Map
 
-현재 문서화된 구조뿐 아니라 **추론할 수 있는 연결, 누락된 관계, 탐색 가능한
-경로**를 나타낸다. 실선이 아니라 점선인 것이 요점이다 — 완성된 경계가 아니라
-**계속 발견되고 갱신되는** 지식 지도다.
+It represents not only the currently documented structure but also **inferable connections, missing relationships, and explorable paths**. The key point is that it is dashed, not solid — a knowledge map that is **continuously discovered and updated**, rather than having a finished boundary.
 
-### 바깥 육각형 — 코드베이스의 경계
+### Outer Hexagon — Boundary of the Codebase
 
-하나의 저장소/프로젝트 전체를 감싸는 경계. 동시에 **local-first** — 모든 정보가
-외부 서비스가 아니라 사용자가 소유한 로컬 마크다운과 코드베이스 안에 있다는
-뜻이다.
+A boundary enclosing the entire repository/project. It also signifies **local-first** — all information resides within user-owned local Markdown and codebases, not external services.
 
-### 육각형이라는 형태 — 구조와 확장성
+### The Hexagonal Form — Structure and Scalability
 
-육각형은 서로 빈틈없이 맞물리는 형태라, 독립된 개념들이 모여 더 큰 시스템을
-이루는 모습을 그린다. 동시에 지도 셀·모듈·그래프 노드라는 기술적 인상을 준다.
+Hexagons interlock seamlessly, depicting how independent concepts come together to form a larger system. Simultaneously, it evokes the technical impression of map cells, modules, and graph nodes.
 
 ---
 
-## 색
+## Colors
 
-| 이름 | 값 | 어디에 |
+| Name | Value | Usage |
 |---|---|---|
-| 브랜드 잉걸(ember) | `#C14A24` | 단색 마크, 태그라인, 앱 전역 액센트 |
-| 그라디언트 시작 | `#E46238` | 브랜드 자산 마크 좌상 |
-| 그라디언트 끝 | `#A83E1D` | 브랜드 자산 마크 우하 |
-| 판(plate) | `#15182C` → `#06081A` | 앱 아이콘 배경 |
+| Brand Ember | `#C14A24` | Solid mark, tagline, global app accent |
+| Gradient Start | `#E46238` | Top-left of brand asset mark |
+| Gradient End | `#A83E1D` | Bottom-right of brand asset mark |
+| Plate | `#15182C` → `#06081A` | App icon background |
 
-**그라디언트의 사정거리는 앱 DOM 밖이다.** OS 아이콘·파비콘·og·배너에만 쓰고,
-앱 안에 그려지는 마크(`<BrandMark>`)는 `currentColor` 단색이다. 이건 취향이
-아니라 헌장이다 — `.claude/rules/forbidden.md` 「움직이는 그라디언트 배경」 절의
-명문 경계. 새 hue 나 다색 그라디언트는 브랜드 자산에서도 금지다.
+**The gradient's range is outside the app DOM.** It is used only for OS icons, favicons, og images, and banners; the mark drawn inside the app (`<BrandMark>`) is a single color via `currentColor`. This is not a preference but a charter — a strict boundary defined in the "Moving Gradient Background" section of `.claude/rules/forbidden.md`. New hues or multi-color gradients are also prohibited in brand assets.
 
 ---
 
-## 크기 사다리 — 작을수록 층을 지운다
+## Size Ladder — Layering at Smaller Sizes
 
-| 단계 | 크기 | 남기는 층 |
+| Stage | Size | Layers Retained |
 |---|---|---|
-| `full` | ≥64px | 바깥 · 점선 · 중간 · 핵 · 스포크 3 · 노드 3 |
-| `compact` | 20~48px | 바깥 · 중간 · 노드 3 |
-| `micro` | ≤18px | 바깥 · 속 채운 핵 |
+| `full` | ≥64px | Outer · Dashed · Middle · Core · 3 Spokes · 3 Nodes |
+| `compact` | 20~48px | Outer · Middle · 3 Nodes |
+| `micro` | ≤18px | Outer · Filled Core |
 
-**층을 지우는 것만으로는 부족하다.** 남긴 층의 굵기를 그 크기에서 다시 정한다 —
-획이 1 device px 아래로 내려가면 안티에일리어싱이 회색 죽으로 만들고, 잉크 사이
-간격이 1px 아래면 겹이 하나로 뭉친다. 실측 근거와 바닥값은
-`tests/contract/brand-asset-parity.contract.test.ts` 가 잠근다.
+**Simply removing layers is insufficient.** The stroke width of the retained layers must also be redefined for that size — if strokes drop below 1 device px, anti-aliasing turns them into gray mush, and if ink spacing falls below 1px, layers merge into one blob. Empirical evidence and floor values are enforced by `tests/contract/brand-asset-parity.contract.test.ts`.
 
-**마크의 크기는 뷰박스가 아니라 잉크다.** 512 뷰박스 안에서 잉크는 세로 418
-뿐이라, 뷰박스로 재면 실제로 보이는 마크는 훨씬 작다.
+**The mark's size is defined by the ink, not the viewBox.** Within the 512 viewBox, the ink occupies only 418 pixels vertically, so when scaled to the viewBox, the actually visible mark is much smaller.
 
 ---
 
-## 자산 목록 — 무엇을 언제 쓰나
+## Asset List — What and When to Use
 
-전부 `public/brand/` 아래. **손으로 만들지 않는다** — 아래 파이프라인이 찍어낸다.
+All located under `public/brand/`. **Do not create them manually** — the pipeline below generates them.
 
-### 마크 단독
+### Mark only
 
-| 파일 | 쓰는 곳 |
+| File | Use case |
 |---|---|
-| `mark.svg` | 그라디언트 마크. 문서·배너·발표자료 |
-| `mark-mono.svg` | `currentColor` — **인라인 SVG 로 삽입할 때만**. `<img>` 로 넣으면 색을 상속하지 못해 검정으로 나온다 |
-| `icon-mono-light.svg` / `.png` | 흰 판 + 검은 마크. 밝은 배경, 인쇄 |
-| `icon-mono-dark.svg` / `.png` | 검은 판 + 흰 마크. 어두운 배경, 워터마크 |
+| `mark.svg` | Gradient mark. Documentation, banners, presentations |
+| `mark-mono.svg` | `currentColor` — **only when inserting as inline SVG**. If placed via `<img>`, it won't inherit color and will appear black |
+| `icon-mono-light.svg` / `.png` | White background + black mark. Light backgrounds, print |
+| `icon-mono-dark.svg` / `.png` | Black background + white mark. Dark backgrounds, watermarks |
 
-### 가로형 로고 (lockup)
+### Horizontal lockup
 
-| 파일 | 쓰는 곳 |
+| File | Use case |
 |---|---|
-| `lockup.svg` · `lockup.png` · `lockup@2x.png` | 기본. 어두운 배경 |
-| `lockup-light.svg` · `lockup-light@2x.png` | 밝은 배경 (단색 검정) |
-| `lockup-dark.svg` · `lockup-dark@2x.png` | 어두운 배경 (단색 흰색) |
-| `lockup-compact.svg` | 태그라인 없음. **높이 48px 미만이면 이걸 쓴다** |
+| `lockup.svg` · `lockup.png` · `lockup@2x.png` | Default. Dark backgrounds |
+| `lockup-light.svg` · `lockup-light@2x.png` | Light background (solid black) |
+| `lockup-dark.svg` · `lockup-dark@2x.png` | Dark background (solid white) |
+| `lockup-compact.svg` | No tagline. **Use this if height is less than 48px** |
 
-**최소 크기**: 태그라인 있는 로크업은 **48px 높이 아래로 쓰지 않는다** — 그
-아래에서 태그라인이 읽히지 않고, 안 읽히는 글자는 잉크가 아니라 얼룩이다.
-그보다 작으면 `lockup-compact`, 24px 아래면 마크 단독.
+**Minimum size**: Lockups with taglines must not be used below **48px height**. Below that, the tagline becomes unreadable; illegible text is just ink smudge. For smaller sizes, use `lockup-compact`; below 24px, use the mark only.
 
-**여백**: 로크업 SVG 의 뷰박스는 **잉크에 딱 맞다**(광학 여백 0). 주위 여백은
-쓰는 쪽이 준다 — 최소 여백은 마크 높이의 **0.4배**.
+**Padding**: The lockup SVG's viewBox fits **exactly to the ink** (optical padding is 0). Surrounding padding is provided by the consumer — minimum padding is **0.4x the mark height**.
 
-### 앱/OS
+### App/OS
 
-| 파일 | 쓰는 곳 |
+| File | Use case |
 |---|---|
-| `app/icon.svg` | 파비콘 (micro, 단색) |
-| `app/apple-icon.png` | 애플 터치 아이콘 180 |
-| `src-tauri/icons/*` | macOS `.icns` · Windows `.ico` · 타일 |
-| `public/og-image.png` | 링크 미리보기 카드 **1200×630** — `app/layout.tsx` 선언과 같은 크기여야 한다 |
-| `public/brand-icon-512.png` | PWA 매니페스트 |
-| `public/logo.png` | 앱 안 큰 로고 |
+| `app/icon.svg` | Favicon (micro, solid color) |
+| `app/apple-icon.png` | Apple Touch Icon 180 |
+| `src-tauri/icons/*` | macOS `.icns` · Windows `.ico` · Tile |
+| `public/og-image.png` | Link preview card **1200×630** — must match the size declared in `app/layout.tsx` |
+| `public/brand-icon-512.png` | PWA manifest |
+| `public/logo.png` | Large logo within the app |
 
-### SVG 와 PNG 중 무엇을 쓰나
+### SVG vs PNG
 
-로크업 SVG 는 **살아 있는 텍스트**라 어디서나 열리고 편집되지만, Pretendard 가
-없는 환경에서는 시스템 산세리프로 내려앉아 글자 폭이 달라진다. **픽셀이
-정확해야 하는 자리(README 이미지·발표자료·외부 배포)에는 PNG 를 쓴다** — PNG 는
-브라우저가 진짜 폰트로 구운 것이라 정확하다.
+Lockup SVGs contain **live text**, so they open and edit everywhere, but in environments without Pretendard, they fall back to system sans-serif, changing character widths. **Use PNG where pixel accuracy is critical** (README images, presentations, external distribution) — PNG renders exactly as the browser bakes with the real font.
 
-글자를 아웃라인 패스로 굽지 않는 이유는 폰트 파서 의존성이 필요해서다
-(`forbidden.md` — 새 dependency 는 이유를 대야 한다). 이 자산 하나를 위해 들일
-값이 아니라고 판단했고, 대신 둘 다 낸다.
+We do not outline the glyphs because it requires a font parser dependency (`forbidden.md` — new dependencies must be justified). We deemed the cost of adding one for this single asset unacceptable, so we provide both.
 
 ---
 
-## 만드는 법 — 세 단계, 사람이 한 번 돌린다
+## How to build — three steps, run once by a human
 
 ```bash
-node scripts/build-brand-assets.mjs     # 좌표 → SVG
-node scripts/build-brand-raster.mjs     # → 브라우저로 http://127.0.0.1:8231/ 열기
-node scripts/install-brand-icons.mjs    # PNG/icns/ico 를 소비처 27곳에 설치
+node scripts/build-brand-assets.mjs     # coordinates → SVG
+node scripts/build-brand-raster.mjs     # → open http://127.0.0.1:8231/ in browser
+node scripts/install-brand-icons.mjs    # install PNG/icns/ico to 27 destinations
 ```
 
-자동 실행이 아니다. 아이콘을 바꿀 때 사람이 한 번 돌리고, 결과물이 커밋되므로
-제품 빌드는 이 스크립트들에 의존하지 않는다.
+This is not automated. A human runs it once when icons change, and the results are committed; product builds do not depend on these scripts.
 
-래스터가 브라우저를 쓰는 이유는 저장소에 이미지 의존성(sharp·resvg)을 새로
-들이지 않기 위해서다. 그리고 로크업은 **브라우저가 Pretendard 를 심고 잉크를
-재서** 뷰박스를 맞춘다 — 폰트 없이 잰 값을 상수로 박으면 조용히 틀린다.
+The rasterization uses a browser to avoid adding new image dependencies (sharp·resvg) to the repository. Also, the lockup **relies on the browser to embed Pretendard and measure the ink** to get the viewBox right — hardcoding values measured without fonts will silently break.
 
 ---
 
-## 하지 말 것
+## Do not
 
-- **마크를 다시 그리지 않는다.** 좌표를 바꿀 일이 있으면 `brand-mark.tsx` 에서
-  바꾸고 파이프라인을 다시 돌린다. 손으로 만든 자산은 다음 변경 때 반드시
-  뒤처진다 — 실제로 `logo.png` 와 `og-image.png` 가 폐기된 "A" 로고를
-  2026-07-30 까지 달고 있었고, og 는 **공유될 때마다** 그 그림이 나갔다.
-- **획의 강약을 균일화하지 않는다.** 핵 > 바깥 > 중간이 이 마크의 정체다.
-- **마크를 회전·기울임·변형하지 않는다.** 세로가 긴 정육각형 비율 고정.
-- **마크 위에 글자를 얹지 않는다.** 로크업은 가로 배치뿐이다.
-- **새 색을 넣지 않는다.** 인디고 단일 hue.
-- 앱 화면 안에서 그라디언트 마크를 쓰지 않는다 — `<BrandMark>` 는
-  `currentColor` 다.
+- **Do not redraw the mark.** If coordinates need changing, update `brand-mark.tsx` and rerun the pipeline. Hand-made assets will inevitably fall out of sync — in fact, `logo.png` and `og-image.png` carried the deprecated "A" logo until 2026-07-30, and og images were served **every time they were shared**.
+- **Do not uniformize stroke weight.** The core > outer > middle hierarchy is this mark's identity.
+- **Do not rotate, italicize, or distort the mark.** Maintain the fixed aspect ratio of the tall hexagon.
+- **Do not place text over the mark.** Lockups are horizontal only.
+- **Do not add new colors.** Indigo single hue only.
+- Do not use the gradient mark inside app screens — `<BrandMark>` uses `currentColor`.
 
 ---
 
-## 게이트
+## Gates
 
-| 규격 | 어디서 막나 |
+| Spec | Where it's enforced |
 |---|---|
-| 컴포넌트 ↔ 자산 스크립트 좌표 일치 | `tests/contract/brand-asset-parity.contract.test.ts` (**출력** 비교) |
-| 작은 크기 획/간격 바닥 | 같은 파일 |
-| 자산 파일이 전부 존재하고 최신 마크인가 | `tests/contract/brand-assets-present.contract.test.ts` |
-| 그라디언트가 앱 DOM 밖에만 | `.claude/rules/forbidden.md` + `BrandMark` 테스트 |
+| Component ↔ asset script coordinate match | `tests/contract/brand-asset-parity.contract.test.ts` (**output** comparison) |
+| Stroke/gap floor at small sizes | Same file |
+| All asset files exist and use the latest mark | `tests/contract/brand-assets-present.contract.test.ts` |
+| Gradient only outside app DOM | `.claude/rules/forbidden.md` + `BrandMark` tests |

@@ -126,6 +126,6 @@ describe("관문 FX — 헌장 예외의 사정거리", () => {
   });
 
   it("(d) 헌장 문서에 예외가 등재돼 있다", () => {
-    expect(read(".claude/rules/forbidden.md")).toMatch(/관문 전류장/);
+    expect(read(".claude/rules/forbidden.md")).toMatch(/gateway current field/i);
   });
 });

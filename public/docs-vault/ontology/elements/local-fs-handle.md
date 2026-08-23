@@ -8,4 +8,4 @@ path: src/entities/local-fs-handle
 created_by: "agent:unknown"
 ---
 
-File System Access API 핸들 엔티티. capabilities/docs-vault-local 의 구현 증거.
+File System Access API handle entity. Evidence of implementation for capabilities/docs-vault-local.

@@ -2,876 +2,876 @@
   "capabilities/account-closure": [
     {
       "depth": 1,
-      "text": "Account Closure · 회원 탈퇴",
-      "slug": "account-closure-회원-탈퇴"
+      "text": "Account Closure",
+      "slug": "account-closure"
     }
   ],
   "capabilities/address-book": [
     {
       "depth": 1,
-      "text": "Address Book · 배송지 주소록",
-      "slug": "address-book-배송지-주소록"
+      "text": "Address Book",
+      "slug": "address-book"
     }
   ],
   "capabilities/campaign-planning": [
     {
       "depth": 1,
-      "text": "Campaign Planning · 기획전",
-      "slug": "campaign-planning-기획전"
+      "text": "Campaign Planning",
+      "slug": "campaign-planning"
     }
   ],
   "capabilities/carrier-integration": [
     {
       "depth": 1,
-      "text": "Carrier Integration · 택배사 연동",
-      "slug": "carrier-integration-택배사-연동"
+      "text": "Carrier Integration",
+      "slug": "carrier-integration"
     }
   ],
   "capabilities/cart": [
     {
       "depth": 1,
-      "text": "Shopping Cart · 장바구니",
-      "slug": "shopping-cart-장바구니"
+      "text": "Shopping Cart",
+      "slug": "shopping-cart"
     }
   ],
   "capabilities/checkout": [
     {
       "depth": 1,
-      "text": "Checkout · 주문서 작성",
-      "slug": "checkout-주문서-작성"
+      "text": "Checkout",
+      "slug": "checkout"
     }
   ],
   "capabilities/coupon-issue": [
     {
       "depth": 1,
-      "text": "Coupon Issuing · 쿠폰 발급",
-      "slug": "coupon-issuing-쿠폰-발급"
+      "text": "Coupon Issuing",
+      "slug": "coupon-issuing"
     }
   ],
   "capabilities/coupon-redeem": [
     {
       "depth": 1,
-      "text": "Coupon Redemption · 쿠폰 사용",
-      "slug": "coupon-redemption-쿠폰-사용"
+      "text": "Coupon Redemption",
+      "slug": "coupon-redemption"
     }
   ],
   "capabilities/customer-messaging": [
     {
       "depth": 1,
-      "text": "Customer Messaging · 고객 메시지 발송",
-      "slug": "customer-messaging-고객-메시지-발송"
+      "text": "Customer Messaging",
+      "slug": "customer-messaging"
     }
   ],
   "capabilities/exchange-request": [
     {
       "depth": 1,
-      "text": "Exchange Request · 교환 접수",
-      "slug": "exchange-request-교환-접수"
+      "text": "Exchange Request",
+      "slug": "exchange-request"
     }
   ],
   "capabilities/expiry-policy": [
     {
       "depth": 1,
-      "text": "Expiry Policy · 소멸 정책",
-      "slug": "expiry-policy-소멸-정책"
+      "text": "Expiry Policy",
+      "slug": "expiry-policy"
     }
   ],
   "capabilities/faq": [
     {
       "depth": 1,
-      "text": "FAQ · 자주 묻는 질문",
-      "slug": "faq-자주-묻는-질문"
+      "text": "FAQ",
+      "slug": "faq"
     }
   ],
   "capabilities/flash-sale": [
     {
       "depth": 1,
-      "text": "Flash Sale · 타임세일",
-      "slug": "flash-sale-타임세일"
+      "text": "Flash Sale",
+      "slug": "flash-sale"
     }
   ],
   "capabilities/inquiry": [
     {
       "depth": 1,
-      "text": "Customer Inquiry · 1:1 문의",
-      "slug": "customer-inquiry-11-문의"
+      "text": "Customer Inquiry",
+      "slug": "customer-inquiry"
     }
   ],
   "capabilities/installment": [
     {
       "depth": 1,
-      "text": "Instalment Payment · 할부 결제",
-      "slug": "instalment-payment-할부-결제"
+      "text": "Instalment Payment",
+      "slug": "instalment-payment"
     }
   ],
   "capabilities/login": [
     {
       "depth": 1,
-      "text": "Login · 로그인",
-      "slug": "login-로그인"
+      "text": "Login",
+      "slug": "login"
     }
   ],
   "capabilities/loyalty-point": [
     {
       "depth": 1,
-      "text": "Loyalty Points · 적립금",
-      "slug": "loyalty-points-적립금"
+      "text": "Loyalty Points",
+      "slug": "loyalty-points"
     }
   ],
   "capabilities/membership-tier": [
     {
       "depth": 1,
-      "text": "Membership Tier · 회원 등급",
-      "slug": "membership-tier-회원-등급"
+      "text": "Membership Tier",
+      "slug": "membership-tier"
     }
   ],
   "capabilities/order-address-change": [
     {
       "depth": 1,
-      "text": "Delivery Address Change · 배송지 변경",
-      "slug": "delivery-address-change-배송지-변경"
+      "text": "Delivery Address Change",
+      "slug": "delivery-address-change"
     }
   ],
   "capabilities/order-cancel": [
     {
       "depth": 1,
-      "text": "Order Cancellation · 주문 취소",
-      "slug": "order-cancellation-주문-취소"
+      "text": "Order Cancellation",
+      "slug": "order-cancellation"
     }
   ],
   "capabilities/order-lookup": [
     {
       "depth": 1,
-      "text": "Order Lookup · 주문 조회",
-      "slug": "order-lookup-주문-조회"
+      "text": "Order Lookup",
+      "slug": "order-lookup"
     }
   ],
   "capabilities/order-notification": [
     {
       "depth": 1,
-      "text": "Order Status Notification · 주문 상태 알림",
-      "slug": "order-status-notification-주문-상태-알림"
+      "text": "Order Status Notification",
+      "slug": "order-status-notification"
     }
   ],
   "capabilities/order-partial-cancel": [
     {
       "depth": 1,
-      "text": "Partial Cancellation · 부분 취소",
-      "slug": "partial-cancellation-부분-취소"
+      "text": "Partial Cancellation",
+      "slug": "partial-cancellation"
     }
   ],
   "capabilities/order-placement": [
     {
       "depth": 1,
-      "text": "Order Placement · 주문 확정",
-      "slug": "order-placement-주문-확정"
+      "text": "Order Placement",
+      "slug": "order-placement"
     }
   ],
   "capabilities/payment-authorize": [
     {
       "depth": 1,
-      "text": "Payment Authorization · 결제 승인",
-      "slug": "payment-authorization-결제-승인"
+      "text": "Payment Authorization",
+      "slug": "payment-authorization"
     }
   ],
   "capabilities/payment-cancel": [
     {
       "depth": 1,
-      "text": "Payment Void · 결제 취소",
-      "slug": "payment-void-결제-취소"
+      "text": "Payment Void",
+      "slug": "payment-void"
     }
   ],
   "capabilities/points-accrual": [
     {
       "depth": 1,
-      "text": "Points Accrual · 적립",
-      "slug": "points-accrual-적립"
+      "text": "Points Accrual",
+      "slug": "points-accrual"
     }
   ],
   "capabilities/points-redemption": [
     {
       "depth": 1,
-      "text": "Points Redemption · 포인트 사용",
-      "slug": "points-redemption-포인트-사용"
+      "text": "Points Redemption",
+      "slug": "points-redemption"
     }
   ],
   "capabilities/product-category": [
     {
       "depth": 1,
-      "text": "Category Management · 카테고리 관리",
-      "slug": "category-management-카테고리-관리"
+      "text": "Category Management",
+      "slug": "category-management"
     }
   ],
   "capabilities/product-detail": [
     {
       "depth": 1,
-      "text": "Product Detail Page · 상품 상세",
-      "slug": "product-detail-page-상품-상세"
+      "text": "Product Detail Page",
+      "slug": "product-detail-page"
     }
   ],
   "capabilities/product-option": [
     {
       "depth": 1,
-      "text": "Product Options & SKUs · 상품 옵션",
-      "slug": "product-options-skus-상품-옵션"
+      "text": "Product Options & SKUs",
+      "slug": "product-options-skus"
     }
   ],
   "capabilities/product-pricing": [
     {
       "depth": 1,
-      "text": "Price Management · 판매가 관리",
-      "slug": "price-management-판매가-관리"
+      "text": "Price Management",
+      "slug": "price-management"
     }
   ],
   "capabilities/product-recommendation": [
     {
       "depth": 1,
-      "text": "Related Product Recommendation · 연관 상품 추천",
-      "slug": "related-product-recommendation-연관-상품-추천"
+      "text": "Related Product Recommendation",
+      "slug": "related-product-recommendation"
     }
   ],
   "capabilities/product-registration": [
     {
       "depth": 1,
-      "text": "Product Registration · 상품 등록",
-      "slug": "product-registration-상품-등록"
+      "text": "Product Registration",
+      "slug": "product-registration"
     }
   ],
   "capabilities/product-review": [
     {
       "depth": 1,
-      "text": "Product Reviews · 상품 리뷰",
-      "slug": "product-reviews-상품-리뷰"
+      "text": "Product Reviews",
+      "slug": "product-reviews"
     }
   ],
   "capabilities/product-search": [
     {
       "depth": 1,
-      "text": "Product Search · 상품 검색",
-      "slug": "product-search-상품-검색"
+      "text": "Product Search",
+      "slug": "product-search"
     }
   ],
   "capabilities/referral": [
     {
       "depth": 1,
-      "text": "Referral Programme · 친구 추천",
-      "slug": "referral-programme-친구-추천"
+      "text": "Referral Programme",
+      "slug": "referral-programme"
     }
   ],
   "capabilities/refund": [
     {
       "depth": 1,
-      "text": "Refund Processing · 환불 처리",
-      "slug": "refund-processing-환불-처리"
+      "text": "Refund Processing",
+      "slug": "refund-processing"
     }
   ],
   "capabilities/refund-review": [
     {
       "depth": 1,
-      "text": "Refund Review · 환불 심사",
-      "slug": "refund-review-환불-심사"
+      "text": "Refund Review",
+      "slug": "refund-review"
     }
   ],
   "capabilities/restock-alert": [
     {
       "depth": 1,
-      "text": "Restock Alert · 재입고 알림",
-      "slug": "restock-alert-재입고-알림"
+      "text": "Restock Alert",
+      "slug": "restock-alert"
     }
   ],
   "capabilities/return-pickup": [
     {
       "depth": 1,
-      "text": "Return Pickup · 반품 회수",
-      "slug": "return-pickup-반품-회수"
+      "text": "Return Pickup",
+      "slug": "return-pickup"
     }
   ],
   "capabilities/return-request": [
     {
       "depth": 1,
-      "text": "Return Request · 반품 접수",
-      "slug": "return-request-반품-접수"
+      "text": "Return Request",
+      "slug": "return-request"
     }
   ],
   "capabilities/reward-catalog": [
     {
       "depth": 1,
-      "text": "Reward Catalog · 교환 상품",
-      "slug": "reward-catalog-교환-상품"
+      "text": "Reward Catalog",
+      "slug": "reward-catalog"
     }
   ],
   "capabilities/shipment-tracking": [
     {
       "depth": 1,
-      "text": "Shipment Tracking · 배송 조회",
-      "slug": "shipment-tracking-배송-조회"
+      "text": "Shipment Tracking",
+      "slug": "shipment-tracking"
     }
   ],
   "capabilities/shipping-fee": [
     {
       "depth": 1,
-      "text": "Shipping Fee Policy · 배송비 정책",
-      "slug": "shipping-fee-policy-배송비-정책"
+      "text": "Shipping Fee Policy",
+      "slug": "shipping-fee-policy"
     }
   ],
   "capabilities/signup": [
     {
       "depth": 1,
-      "text": "Sign-up · 회원 가입",
-      "slug": "sign-up-회원-가입"
+      "text": "Sign-up",
+      "slug": "sign-up"
     }
   ],
   "capabilities/stock-receiving": [
     {
       "depth": 1,
-      "text": "Goods Receiving · 입고 처리",
-      "slug": "goods-receiving-입고-처리"
+      "text": "Goods Receiving",
+      "slug": "goods-receiving"
     }
   ],
   "capabilities/stock-reservation": [
     {
       "depth": 1,
-      "text": "Stock Reservation · 재고 선점",
-      "slug": "stock-reservation-재고-선점"
+      "text": "Stock Reservation",
+      "slug": "stock-reservation"
     }
   ],
   "capabilities/stock-tracking": [
     {
       "depth": 1,
-      "text": "Stock Level Tracking · 재고 수량 관리",
-      "slug": "stock-level-tracking-재고-수량-관리"
+      "text": "Stock Level Tracking",
+      "slug": "stock-level-tracking"
     }
   ],
   "capabilities/tax-receipt": [
     {
       "depth": 1,
-      "text": "Tax Receipt Issuing · 현금영수증 발행",
-      "slug": "tax-receipt-issuing-현금영수증-발행"
+      "text": "Tax Receipt Issuing",
+      "slug": "tax-receipt-issuing"
     }
   ],
   "capabilities/tier-evaluation": [
     {
       "depth": 1,
-      "text": "Tier Evaluation · 등급 산정",
-      "slug": "tier-evaluation-등급-산정"
+      "text": "Tier Evaluation",
+      "slug": "tier-evaluation"
     }
   ],
   "capabilities/wallet-payment": [
     {
       "depth": 1,
-      "text": "One-Tap Wallet Payment · 간편결제",
-      "slug": "one-tap-wallet-payment-간편결제"
+      "text": "One-Tap Wallet Payment",
+      "slug": "one-tap-wallet-payment"
     }
   ],
   "capabilities/warehouse-picking": [
     {
       "depth": 1,
-      "text": "Warehouse Picking · 출고 지시",
-      "slug": "warehouse-picking-출고-지시"
+      "text": "Warehouse Picking",
+      "slug": "warehouse-picking"
     }
   ],
   "capabilities/wishlist": [
     {
       "depth": 1,
-      "text": "Wishlist · 찜 목록",
-      "slug": "wishlist-찜-목록"
+      "text": "Wishlist",
+      "slug": "wishlist"
     }
   ],
   "domains/catalog": [
     {
       "depth": 1,
-      "text": "Product Catalog · 상품",
-      "slug": "product-catalog-상품"
+      "text": "Product Catalog",
+      "slug": "product-catalog"
     }
   ],
   "domains/customer": [
     {
       "depth": 1,
-      "text": "Customers · 회원",
-      "slug": "customers-회원"
+      "text": "Customers",
+      "slug": "customers"
     }
   ],
   "domains/fulfillment": [
     {
       "depth": 1,
-      "text": "Fulfillment & Delivery · 배송",
-      "slug": "fulfillment-delivery-배송"
+      "text": "Fulfillment & Delivery",
+      "slug": "fulfillment-delivery"
     }
   ],
   "domains/inventory": [
     {
       "depth": 1,
-      "text": "Inventory · 재고",
-      "slug": "inventory-재고"
+      "text": "Inventory",
+      "slug": "inventory"
     }
   ],
   "domains/loyalty": [
     {
       "depth": 1,
-      "text": "Loyalty · 적립·멤버십",
-      "slug": "loyalty-적립멤버십"
+      "text": "Loyalty",
+      "slug": "loyalty"
     }
   ],
   "domains/marketing": [
     {
       "depth": 1,
-      "text": "Marketing & Promotions · 마케팅",
-      "slug": "marketing-promotions-마케팅"
+      "text": "Marketing & Promotions",
+      "slug": "marketing-promotions"
     }
   ],
   "domains/order": [
     {
       "depth": 1,
-      "text": "Orders · 주문",
-      "slug": "orders-주문"
+      "text": "Orders",
+      "slug": "orders"
     }
   ],
   "domains/payment": [
     {
       "depth": 1,
-      "text": "Payments · 결제",
-      "slug": "payments-결제"
+      "text": "Payments",
+      "slug": "payments"
     }
   ],
   "domains/support": [
     {
       "depth": 1,
-      "text": "Customer Support · 고객지원",
-      "slug": "customer-support-고객지원"
+      "text": "Customer Support",
+      "slug": "customer-support"
     }
   ],
   "elements/address-record": [
     {
       "depth": 1,
-      "text": "Address Record · 배송지 정보",
-      "slug": "address-record-배송지-정보"
+      "text": "Address Record",
+      "slug": "address-record"
     }
   ],
   "elements/backorder-queue": [
     {
       "depth": 1,
-      "text": "Backorder Queue · 입고 대기 줄",
-      "slug": "backorder-queue-입고-대기-줄"
+      "text": "Backorder Queue",
+      "slug": "backorder-queue"
     }
   ],
   "elements/bank-transfer": [
     {
       "depth": 1,
-      "text": "Bank Transfer · 계좌이체",
-      "slug": "bank-transfer-계좌이체"
+      "text": "Bank Transfer",
+      "slug": "bank-transfer"
     }
   ],
   "elements/campaign-page": [
     {
       "depth": 1,
-      "text": "Campaign Page · 기획전 페이지",
-      "slug": "campaign-page-기획전-페이지"
+      "text": "Campaign Page",
+      "slug": "campaign-page"
     }
   ],
   "elements/card-payment": [
     {
       "depth": 1,
-      "text": "Card Payment · 카드 결제",
-      "slug": "card-payment-카드-결제"
+      "text": "Card Payment",
+      "slug": "card-payment"
     }
   ],
   "elements/cart-session": [
     {
       "depth": 1,
-      "text": "Cart Session · 장바구니 세션",
-      "slug": "cart-session-장바구니-세션"
+      "text": "Cart Session",
+      "slug": "cart-session"
     }
   ],
   "elements/category-tree": [
     {
       "depth": 1,
-      "text": "Category Tree · 카테고리 트리",
-      "slug": "category-tree-카테고리-트리"
+      "text": "Category Tree",
+      "slug": "category-tree"
     }
   ],
   "elements/checkout-draft": [
     {
       "depth": 1,
-      "text": "Checkout Draft · 주문서 초안",
-      "slug": "checkout-draft-주문서-초안"
+      "text": "Checkout Draft",
+      "slug": "checkout-draft"
     }
   ],
   "elements/cj-logistics": [
     {
       "depth": 1,
-      "text": "CJ Logistics Integration · CJ대한통운 연동",
-      "slug": "cj-logistics-integration-cj대한통운-연동"
+      "text": "CJ Logistics Integration",
+      "slug": "cj-logistics-integration"
     }
   ],
   "elements/coupon-policy": [
     {
       "depth": 1,
-      "text": "Coupon Policy · 쿠폰 정책",
-      "slug": "coupon-policy-쿠폰-정책"
+      "text": "Coupon Policy",
+      "slug": "coupon-policy"
     }
   ],
   "elements/coupon-wallet": [
     {
       "depth": 1,
-      "text": "Coupon Wallet · 보유 쿠폰함",
-      "slug": "coupon-wallet-보유-쿠폰함"
+      "text": "Coupon Wallet",
+      "slug": "coupon-wallet"
     }
   ],
   "elements/customer-account": [
     {
       "depth": 1,
-      "text": "Customer Account · 회원 계정",
-      "slug": "customer-account-회원-계정"
+      "text": "Customer Account",
+      "slug": "customer-account"
     }
   ],
   "elements/delivery-status-log": [
     {
       "depth": 1,
-      "text": "Delivery Status Log · 배송 상태 이력",
-      "slug": "delivery-status-log-배송-상태-이력"
+      "text": "Delivery Status Log",
+      "slug": "delivery-status-log"
     }
   ],
   "elements/email-sender": [
     {
       "depth": 1,
-      "text": "Email Sender · 이메일 발송기",
-      "slug": "email-sender-이메일-발송기"
+      "text": "Email Sender",
+      "slug": "email-sender"
     }
   ],
   "elements/exchange-record": [
     {
       "depth": 1,
-      "text": "Exchange Record · 교환 접수 기록",
-      "slug": "exchange-record-교환-접수-기록"
+      "text": "Exchange Record",
+      "slug": "exchange-record"
     }
   ],
   "elements/faq-article": [
     {
       "depth": 1,
-      "text": "FAQ Article · FAQ 문서",
-      "slug": "faq-article-faq-문서"
+      "text": "FAQ Article",
+      "slug": "faq-article"
     }
   ],
   "elements/hanjin-express": [
     {
       "depth": 1,
-      "text": "Hanjin Express Integration · 한진택배 연동",
-      "slug": "hanjin-express-integration-한진택배-연동"
+      "text": "Hanjin Express Integration",
+      "slug": "hanjin-express-integration"
     }
   ],
   "elements/inquiry-ticket": [
     {
       "depth": 1,
-      "text": "Inquiry Ticket · 문의 티켓",
-      "slug": "inquiry-ticket-문의-티켓"
+      "text": "Inquiry Ticket",
+      "slug": "inquiry-ticket"
     }
   ],
   "elements/kakao-alimtalk": [
     {
       "depth": 1,
-      "text": "KakaoTalk Alimtalk · 카카오 알림톡",
-      "slug": "kakaotalk-alimtalk-카카오-알림톡"
+      "text": "KakaoTalk Alimtalk",
+      "slug": "kakaotalk-alimtalk"
     }
   ],
   "elements/kakao-pay": [
     {
       "depth": 1,
-      "text": "KakaoPay Integration · 카카오페이 연동",
-      "slug": "kakaopay-integration-카카오페이-연동"
+      "text": "KakaoPay Integration",
+      "slug": "kakaopay-integration"
     }
   ],
   "elements/korea-post": [
     {
       "depth": 1,
-      "text": "Korea Post Integration · 우체국택배 연동",
-      "slug": "korea-post-integration-우체국택배-연동"
+      "text": "Korea Post Integration",
+      "slug": "korea-post-integration"
     }
   ],
   "elements/login-session": [
     {
       "depth": 1,
-      "text": "Login Session · 로그인 세션",
-      "slug": "login-session-로그인-세션"
+      "text": "Login Session",
+      "slug": "login-session"
     }
   ],
   "elements/naver-pay": [
     {
       "depth": 1,
-      "text": "NaverPay Integration · 네이버페이 연동",
-      "slug": "naverpay-integration-네이버페이-연동"
+      "text": "NaverPay Integration",
+      "slug": "naverpay-integration"
     }
   ],
   "elements/order-line-item": [
     {
       "depth": 1,
-      "text": "Order Line Item · 주문 상품 항목",
-      "slug": "order-line-item-주문-상품-항목"
+      "text": "Order Line Item",
+      "slug": "order-line-item"
     }
   ],
   "elements/order-number": [
     {
       "depth": 1,
-      "text": "Order Number · 주문번호",
-      "slug": "order-number-주문번호"
+      "text": "Order Number",
+      "slug": "order-number"
     }
   ],
   "elements/order-record": [
     {
       "depth": 1,
-      "text": "Order Record · 주문 기록",
-      "slug": "order-record-주문-기록"
+      "text": "Order Record",
+      "slug": "order-record"
     }
   ],
   "elements/order-status-log": [
     {
       "depth": 1,
-      "text": "Order Status Log · 주문 상태 이력",
-      "slug": "order-status-log-주문-상태-이력"
+      "text": "Order Status Log",
+      "slug": "order-status-log"
     }
   ],
   "elements/payment-gateway": [
     {
       "depth": 1,
-      "text": "Payment Gateway · 결제 대행사(PG)",
-      "slug": "payment-gateway-결제-대행사pg"
+      "text": "Payment Gateway",
+      "slug": "payment-gateway"
     }
   ],
   "elements/payment-transaction": [
     {
       "depth": 1,
-      "text": "Payment Transaction Record · 결제 거래 기록",
-      "slug": "payment-transaction-record-결제-거래-기록"
+      "text": "Payment Transaction Record",
+      "slug": "payment-transaction-record"
     }
   ],
   "elements/picking-list": [
     {
       "depth": 1,
-      "text": "Picking List · 피킹 리스트",
-      "slug": "picking-list-피킹-리스트"
+      "text": "Picking List",
+      "slug": "picking-list"
     }
   ],
   "elements/pickup-request": [
     {
       "depth": 1,
-      "text": "Pickup Request · 회수 요청",
-      "slug": "pickup-request-회수-요청"
+      "text": "Pickup Request",
+      "slug": "pickup-request"
     }
   ],
   "elements/point-balance": [
     {
       "depth": 1,
-      "text": "Point Balance · 포인트 잔액",
-      "slug": "point-balance-포인트-잔액"
+      "text": "Point Balance",
+      "slug": "point-balance"
     }
   ],
   "elements/point-ledger": [
     {
       "depth": 1,
-      "text": "Point Ledger · 적립금 원장",
-      "slug": "point-ledger-적립금-원장"
+      "text": "Point Ledger",
+      "slug": "point-ledger"
     }
   ],
   "elements/price-history": [
     {
       "depth": 1,
-      "text": "Price History · 가격 변경 이력",
-      "slug": "price-history-가격-변경-이력"
+      "text": "Price History",
+      "slug": "price-history"
     }
   ],
   "elements/product-image-store": [
     {
       "depth": 1,
-      "text": "Product Image Store · 상품 이미지 저장소",
-      "slug": "product-image-store-상품-이미지-저장소"
+      "text": "Product Image Store",
+      "slug": "product-image-store"
     }
   ],
   "elements/product-record": [
     {
       "depth": 1,
-      "text": "Product Record · 상품 정보",
-      "slug": "product-record-상품-정보"
+      "text": "Product Record",
+      "slug": "product-record"
     }
   ],
   "elements/purchase-order": [
     {
       "depth": 1,
-      "text": "Purchase Order · 발주서",
-      "slug": "purchase-order-발주서"
+      "text": "Purchase Order",
+      "slug": "purchase-order"
     }
   ],
   "elements/push-sender": [
     {
       "depth": 1,
-      "text": "App Push Sender · 앱 푸시 발송기",
-      "slug": "app-push-sender-앱-푸시-발송기"
+      "text": "App Push Sender",
+      "slug": "app-push-sender"
     }
   ],
   "elements/recommendation-rule": [
     {
       "depth": 1,
-      "text": "Recommendation Rule · 추천 규칙",
-      "slug": "recommendation-rule-추천-규칙"
+      "text": "Recommendation Rule",
+      "slug": "recommendation-rule"
     }
   ],
   "elements/referral-code": [
     {
       "depth": 1,
-      "text": "Referral Code · 추천인 코드",
-      "slug": "referral-code-추천인-코드"
+      "text": "Referral Code",
+      "slug": "referral-code"
     }
   ],
   "elements/refund-record": [
     {
       "depth": 1,
-      "text": "Refund Record · 환불 기록",
-      "slug": "refund-record-환불-기록"
+      "text": "Refund Record",
+      "slug": "refund-record"
     }
   ],
   "elements/restock-subscription": [
     {
       "depth": 1,
-      "text": "Restock Subscription · 재입고 신청",
-      "slug": "restock-subscription-재입고-신청"
+      "text": "Restock Subscription",
+      "slug": "restock-subscription"
     }
   ],
   "elements/return-record": [
     {
       "depth": 1,
-      "text": "Return Record · 반품 접수 기록",
-      "slug": "return-record-반품-접수-기록"
+      "text": "Return Record",
+      "slug": "return-record"
     }
   ],
   "elements/review-record": [
     {
       "depth": 1,
-      "text": "Review Record · 리뷰 기록",
-      "slug": "review-record-리뷰-기록"
+      "text": "Review Record",
+      "slug": "review-record"
     }
   ],
   "elements/sale-schedule": [
     {
       "depth": 1,
-      "text": "Sale Schedule · 세일 일정",
-      "slug": "sale-schedule-세일-일정"
+      "text": "Sale Schedule",
+      "slug": "sale-schedule"
     }
   ],
   "elements/search-index": [
     {
       "depth": 1,
-      "text": "Search Index · 상품 검색 색인",
-      "slug": "search-index-상품-검색-색인"
+      "text": "Search Index",
+      "slug": "search-index"
     }
   ],
   "elements/shelf-location": [
     {
       "depth": 1,
-      "text": "Shelf Location · 보관 위치",
-      "slug": "shelf-location-보관-위치"
+      "text": "Shelf Location",
+      "slug": "shelf-location"
     }
   ],
   "elements/shipping-fee-rule": [
     {
       "depth": 1,
-      "text": "Shipping Fee Rule · 배송비 규칙",
-      "slug": "shipping-fee-rule-배송비-규칙"
+      "text": "Shipping Fee Rule",
+      "slug": "shipping-fee-rule"
     }
   ],
   "elements/sku": [
     {
       "depth": 1,
-      "text": "SKU · 옵션 SKU",
-      "slug": "sku-옵션-sku"
+      "text": "SKU",
+      "slug": "sku"
     }
   ],
   "elements/sms-gateway": [
     {
       "depth": 1,
-      "text": "SMS Gateway · SMS 발송",
-      "slug": "sms-gateway-sms-발송"
+      "text": "SMS Gateway",
+      "slug": "sms-gateway"
     }
   ],
   "elements/stock-adjustment": [
     {
       "depth": 1,
-      "text": "Stock Adjustment · 재고 조정",
-      "slug": "stock-adjustment-재고-조정"
+      "text": "Stock Adjustment",
+      "slug": "stock-adjustment"
     }
   ],
   "elements/stock-count-sheet": [
     {
       "depth": 1,
-      "text": "Stock Count Sheet · 실사 대장",
-      "slug": "stock-count-sheet-실사-대장"
+      "text": "Stock Count Sheet",
+      "slug": "stock-count-sheet"
     }
   ],
   "elements/stock-hold": [
     {
       "depth": 1,
-      "text": "Stock Hold · 재고 홀드",
-      "slug": "stock-hold-재고-홀드"
+      "text": "Stock Hold",
+      "slug": "stock-hold"
     }
   ],
   "elements/stock-ledger": [
     {
       "depth": 1,
-      "text": "Stock Ledger · 재고 원장",
-      "slug": "stock-ledger-재고-원장"
+      "text": "Stock Ledger",
+      "slug": "stock-ledger"
     }
   ],
   "elements/stock-snapshot": [
     {
       "depth": 1,
-      "text": "Stock Snapshot · 재고 스냅숏",
-      "slug": "stock-snapshot-재고-스냅숏"
+      "text": "Stock Snapshot",
+      "slug": "stock-snapshot"
     }
   ],
   "elements/supplier-lead-time": [
     {
       "depth": 1,
-      "text": "Supplier Lead Time · 입고 소요일",
-      "slug": "supplier-lead-time-입고-소요일"
+      "text": "Supplier Lead Time",
+      "slug": "supplier-lead-time"
     }
   ],
   "elements/tier-rule": [
     {
       "depth": 1,
-      "text": "Tier Rule · 등급 산정 규칙",
-      "slug": "tier-rule-등급-산정-규칙"
+      "text": "Tier Rule",
+      "slug": "tier-rule"
     }
   ],
   "elements/toss-pay": [
     {
       "depth": 1,
-      "text": "TossPay Integration · 토스페이 연동",
-      "slug": "tosspay-integration-토스페이-연동"
+      "text": "TossPay Integration",
+      "slug": "tosspay-integration"
     }
   ],
   "elements/virtual-account": [
     {
       "depth": 1,
-      "text": "Virtual Account · 가상계좌",
-      "slug": "virtual-account-가상계좌"
+      "text": "Virtual Account",
+      "slug": "virtual-account"
     }
   ],
   "elements/waybill": [
     {
       "depth": 1,
-      "text": "Waybill · 운송장",
-      "slug": "waybill-운송장"
+      "text": "Waybill",
+      "slug": "waybill"
     }
   ],
   "elements/wishlist-entry": [
     {
       "depth": 1,
-      "text": "Wishlist Entry · 찜 항목",
-      "slug": "wishlist-entry-찜-항목"
+      "text": "Wishlist Entry",
+      "slug": "wishlist-entry"
     }
   ],
   "storefront": [
     {
       "depth": 1,
-      "text": "Online Store · 온라인 쇼핑몰",
-      "slug": "online-store-온라인-쇼핑몰"
+      "text": "Online Store",
+      "slug": "online-store"
     }
   ]
 }

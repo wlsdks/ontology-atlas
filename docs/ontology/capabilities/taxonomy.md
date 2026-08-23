@@ -9,14 +9,14 @@ path: src/features/taxonomy
 created_by: "agent:unknown"
 ---
 
-## 정의
-`project`·`domain`·`capability`·`element`·`document` 저작 kind와 도구 전용
-`vault-readme`의 경계를 일관되게 표시하고 관리하는 능력. kind 선택의 의미 판별은
-`docs/ONTOLOGY-ATLAS-SPEC.md` §2가 소유하며, 폴더·팀·워크플로 이름만으로 분류하지 않는다.
+## Definition
+Dedicated to authoring `project`·`domain`·`capability`·`element`·`document` kinds and tools.
+A capability to consistently mark and manage the boundaries of `vault-readme`. The meaning of kind selection is owned by
+`docs/ONTOLOGY-ATLAS-SPEC.md` §2; classification is not based solely on folder, team, or workflow names.
 
-## 근거
-- src/features/taxonomy (구현 증거)
-- docs/ONTOLOGY-ATLAS-SPEC.md §2 (kind 판별의 공개 정본)
+## Evidence
+- src/features/taxonomy (implementation evidence)
+- docs/ONTOLOGY-ATLAS-SPEC.md §2 (public contract for kind determination)
 
-## 확신도
-medium-high (0.85): 구현 경로와 공개 kind 계약을 교차 확인
+## Confidence
+medium-high (0.85): Cross-verified implementation path and public kind contract

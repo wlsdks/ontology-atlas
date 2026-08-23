@@ -9,19 +9,19 @@ path: src/features/project-quick-edit
 created_by: "agent:unknown"
 ---
 
-## 정의
-전체 편집기로 이동하지 않고 프로젝트 상세의 우측 다이얼로그에서 이름·설명·소유자·
-태그를 수정·적용하거나 되돌리는 능력.
+## Definition
+The ability to modify, apply, or revert name, description, owner,
+and tags in the right-side dialog of the project details without navigating to the full editor.
 
-## 포함 / 제외
-- 포함: editable 상세 화면의 네 필드, 이름 필수 검증, 적용/되돌리기, 성공·실패 상태.
-- 제외: read-only/static 모드, category·status·timeline·관계 편집, persistence 통합 보증.
+## Inclusion / Exclusion
+- Included: Four fields in the editable detail view, required name validation, apply/revert actions, success/failure states.
+- Excluded: read-only/static modes, category/status/timeline/relationship editing, persistence integration guarantees.
 
-## 근거
-- `src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx`: dialog, 네 필드,
-  patch payload와 상태 처리
-- `src/views/project-detail/ui/ProjectDetailPage.tsx`: `canEdit` 렌더 gate
-- `src/views/project-detail/ui/ProjectDetailPage.test.tsx`: 편집 가능 여부와 panel 노출 검증
+## Evidence
+- `src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx`: dialog, four fields,
+  patch payload and state handling
+- `src/views/project-detail/ui/ProjectDetailPage.tsx`: `canEdit` render gate
+- `src/views/project-detail/ui/ProjectDetailPage.test.tsx`: verification of editability and panel exposure
 
-## 확신도
-medium: 구현과 caller gate는 검증됐지만 실제 vault 기록을 포함한 전용 통합 테스트는 미확인.
+## Confidence
+medium: Implementation and caller gate are verified, but dedicated integration tests including actual vault records are unconfirmed.

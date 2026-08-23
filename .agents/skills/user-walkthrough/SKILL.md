@@ -1,143 +1,108 @@
 ---
 name: user-walkthrough
-description: Walk one complete user journey end to end against the running build, as a person with a declared knowledge state, and report where they stall. Use before shipping a surface a stranger meets first, after any change to the first-run path, or when the north-star path (link → installed app → agent citing the user's own vault nodes in under five minutes) may have regressed. Judges everything that lives in the artifact — vocabulary, discoverability, step order, what looks risky, what feels cheap — and refuses only the one claim that lives in a person: whether they would want it. Skip for surfaces reachable only mid-workflow by experienced users.
+description: Walk one complete journey against the running build with a declared knowledge state, name observable UX failure patterns, and refuse to invent whether a person would want the product.
 ---
 
-# /user-walkthrough — 과업 하나를 처음부터 끝까지 걷는다
+# User walkthrough
 
-화면 하나씩 심사하는 자리는 이미 여럿 있다. 그런데 아무도 **처음부터 끝까지 이어진
-길 전체**를 걸어 보지 않는다. 이 제품이 스스로 세운 최종 목표(이 저장소는 이걸
-「북극성」이라고 부른다) — *링크 → 설치 → 에이전트가 내 vault 노드를 인용, 5분
-이내* — 는 연속된 경험인데, 그걸 연속으로 검증하는 장치가 없었다.
+Screen reviews do not prove the continuous north-star path: link → installed app
+→ agent cites the user's own vault nodes in under five minutes. Walk that whole
+path as one task.
 
-## 이 스킬이 판정하는 범위 — 어디까지 말하고 어디서 멈추는가
+## Authority and limit
 
-기준은 하나다: **답이 만든 물건 안에 있는가, 그 사람 머릿속에 있는가.**
+Judge facts that live in the artifact: vocabulary, next-step visibility, control
+discoverability, feedback, perceived reversibility, waiting state, missing paths,
+and visible craft. Each can be proven by pointing at the screen.
 
-**물건 안에 있다 → 실제 사용자를 대하듯 엄격하게 판정한다. 봐주지 않는다.**
-이 라벨이 이 사람이 쓰는 말인가 · 이 단계에서 다음에 뭘 해야 할지 알 수 있는가 ·
-누를 수 있다는 게 보이는가 · 눌렀다는 게 보이는가 · 무엇이 무섭게 생겼는가(되돌릴
-수 없어 보이는 버튼) · 어디가 싸구려로 읽히는가 · 무엇이 빠졌는가 · 얼마나 더
-기다려야 하는지 모른 채 기다리게 되는가. **이건 전부 화면을 가리켜 증명할 수
-있다** — "이 라벨이 자기가 하는 일을 말하지 않는다"는 그 라벨을 그대로 인용하면
-증명이 끝난다.
+Do not claim facts that live in a person's mind: whether they want it, will return,
+recommend it, or pay. Simulated users mispredict real people inconsistently. “No
+observable stall” does not mean “they like it.” Demand, retention, and willingness
+come only from real people.
 
-**사람 머릿속에 있다 → 아예 주장하지 않는다.**
-이 사람이 이걸 *원할지* · 다시 올지 · 남에게 추천할지 · 돈을 낼지. 그건 물건의
-속성이 아니라 그 사람에 대한 사실이고, **아무도 관측한 적 없는 것을 관측한 것처럼
-쓰는 순간 이 보고는 근거가 아니라 창작이 된다.** 사람을 흉내 낸 가상 사용자는
-어긋나는 방향이 일정하지 않아서 보정조차 안 된다는 실증이 있다(어려운 과제는
-과소평가 · 중간 난이도 과제는 과대평가 · 실제 사람과 *다른* 곳을 실패 지점으로
-지목). 걸린 데가 하나도 없었다는 것은 **"걸려 넘어지지 않았다"** 이지
-**"마음에 들어 한다"** 가 아니다.
+## Name patterns, not emotions
 
-원한다는 증거는 여전히 실제 사람에게서만 나온다 — 설치 수 · 다시 찾아오는지 ·
-처음 보는 세 사람의 실제 반응. 이 스킬은 그 자리를 대신하지 않고, 그 사람들이
-**걸려 넘어질 지점을 미리 치워 둔다.**
+Every finding carries a reusable pattern name. “This person will feel frustrated”
+is invention; “dead-end CTA—the primary button opens an empty destination” is a
+checkable pattern.
 
-## 이 스킬의 진짜 능력 — 패턴 인식이다
+Common patterns:
 
-사용자가 **될** 필요는 없다. 이미 이름이 붙어 있는 실패 유형을 **알아보면** 된다.
-그게 이 판정의 근거이고, 동시에 지켜야 할 규율이다. (아래 표의 「CTA」는 화면에서
-가장 눌러 주기를 바라는 주 행동 버튼을 말한다.)
-
-- **"이 사람은 답답함을 느낄 것"** → 창작이다. 반박할 수도 확인할 수도 없다.
-- **"이건 막다른 CTA 다 — 누르면 빈 페이지로 간다"** → 패턴이다. 이름이 있고,
-  화면을 가리켜 증명되고, 틀렸으면 틀렸다고 말할 수 있다.
-
-**그래서 모든 지적에는 패턴 이름을 붙인다.** 이름을 못 대면 그건 직감이고, 직감은
-이 보고에 들어가지 않는다. 자주 나오는 것들:
-
-| 패턴 | 무엇인가 |
+| Pattern | Definition |
 |---|---|
-| 막다른 CTA | 화면에서 가장 눈에 띄는 버튼이 아무것도 없는 곳으로 보낸다 |
-| 내부 동작을 말하는 라벨 | 라벨이 사용자가 얻는 결과가 아니라 프로그램이 하는 일을 말한다("vault 인덱싱" vs "내 문서 읽기") |
-| 좋은 걸 보여주기 전에 세운 관문 | 무엇이 좋은지 보여주기도 전에 무언가를 먼저 요구한다 |
-| 조용한 기다림 | 뭔가 진행 중인데 진행 중이라는 표시가 없다 |
-| 되돌릴 수 있는지 모름 | 되돌릴 수 없어 보이는 행동인데 취소하는 방법이 안 보인다 |
-| 만든 쪽 용어가 새어 나옴 | 개발자끼리 쓰는 말이 사용자 화면에 그대로 있다 |
-| 다음 단계가 없음 | 방금 한 일 다음에 무엇을 하면 되는지 화면이 말해 주지 않는다 |
+| Dead-end CTA | the strongest action leads nowhere useful |
+| Implementation-language label | the label describes program work, not the user's outcome |
+| Gate before value | the product requires something before showing why it matters |
+| Silent wait | work is happening with no visible progress |
+| Unknown reversibility | a risky-looking action shows no undo or cancellation path |
+| Builder vocabulary leak | internal developer terms appear on the user surface |
+| Missing next step | the screen does not say what follows the completed action |
 
-이 표는 닫힌 목록이 아니다 — 새 패턴을 봤으면 **이름을 붙이고 그게 무엇인지 한
-줄로 정의해서** 보고한다. 이름 붙은 패턴은 다음 워크스루가 그대로 재사용하고,
-`docs/DECISIONS.md` 에서 반복해서 나오면 규칙으로 올릴 후보가 된다.
+Name and define a new repeatable pattern when needed. Repeated patterns in the
+decision ledger may deserve a product rule.
 
-## 걷는 이를 만드는 법
+## Declare the walker
 
-**무엇을 알고 있는가 + 어떤 상황인가 + 무엇을 신경 쓰는가.** 이 셋이면 충분하다.
-나이·성별 같은 인구통계와 감정 서사("민지, 32세, 좌절감을 느낀다")는 만들지
-않는다 — 판정을 하나도 바꾸지 못하면서 지어낸 티만 난다.
+Use only knowledge state, situation, and concern. Do not invent demographic or
+emotional backstory.
 
-기본 프로필 (`docs/plans/PRODUCT-PLAN-2026-07.md` 의 대상):
+Default:
 
-```
-아는 것: Claude Code 를 매일 쓴다. CLAUDE.md 를 직접 관리한다. 마크다운과 git 은
-        편하다. 그래프 DB 는 안 써봤다.
-모르는 것: Atlas 를 본 적 없다. "온톨로지"를 제품 용어로 들어본 적 없다.
-맥락: 2~10인 팀 테크리드. 지금 다른 일을 하다 링크를 받았다. 10분 뒤 회의가 있다.
-신경 쓰는 것: 에이전트가 매 세션 맥락을 잃는 것. 설치한 것이 자기 디스크를
-        건드리는 것. 나중에 빠져나올 수 있는가.
+```text
+Knows: uses Claude Code daily; maintains AGENTS/CLAUDE Markdown; comfortable with Git.
+Does not know: Atlas; product use of “ontology”; graph databases.
+Context: technical lead on a 2–10 person team, received a link while doing other work, meeting in 10 minutes.
+Cares about: agents losing context, software touching local files, and the ability to leave later.
 ```
 
-**모르는 상태는 연기로 만들지 말고 실제로 모르게 만든다.** 걷는 이는 **이 저장소에
-대해 아무것도 안 읽은 새 에이전트**로 띄운다. 그에게 주는 것은 위 프로필 + 과업 한
-문장 + 시작 URL 뿐이다 — 코드도, 문서도, 이 스킬의 내용도 주지 않는다. 다 아는
-상태로 모르는 척하면 결국 아는 사람이 가는 길을 걷게 된다.
+Make the knowledge gap real by using a fresh agent that has read none of this
+repository. Give only the profile, one task sentence, and starting URL. The
+walker records what was visible, clicked, expected, and observed; it does not
+judge the product.
 
-**걷는 이는 판정하지 않는다.** 각 단계에서 *무엇이 보였고 · 무엇을 눌렀고 · 왜
-그랬고 · 무엇이 일어날 거라 기대했고 · 실제로 뭐가 일어났는지*만 기록한다. 판정은
-이 스킬을 부른 쪽이 그 기록에 아래 네 질문을 적용해서 한다.
+## Four questions at every step
 
-## 네 질문 (각 단계마다)
+1. **Goal:** was the required action understandable?
+2. **Discovery:** was the relevant control visible?
+3. **Connection:** did its label describe the outcome in the walker's language?
+4. **Confirmation:** after action, did visible state confirm progress?
 
-1. **목표** — 이 단계에서 무엇을 하면 되는지 알 수 있었는가?
-2. **발견** — 그걸 하는 버튼이나 컨트롤이 눈에 보였는가?
-3. **연결** — 그 컨트롤이 자기가 할 일을 이 사람이 쓰는 말로 말했는가?
-4. **확인** — 누른 뒤에 뭔가 진행됐다는 것이 보였는가?
+Record `[step · screen · failed question · elapsed time · evidence]`.
 
-실패는 **몇 번째 단계에서 났는지까지 적는다**:
-`[단계 N · 화면 · 실패한 질문 · 걸린 시간 · 증거]`.
+## Two journeys
 
-## 두 여정
+**A. Agent journey is a real user measurement.** A plain coding-agent session
+with only Atlas MCP receives: “Explain this repository's structure and cite vault
+nodes.” Measure from opening the link to the first accurate citation. The tested
+population is the product's actual agent user.
 
-**A. 에이전트 여정 — 이건 흉내가 아니라 실제 측정이다.**
-이 제품 사용자의 절반은 코딩 에이전트다. Atlas MCP 만 연결한 맨 Claude Code
-세션에 그 북극성 과업을 시킨다: *"이 저장소의 구조를 vault 노드를 인용해 설명해라."*
-링크에 도달한 순간부터 처음으로 정확한 인용이 나올 때까지 시간을 잰다. **여기서
-검사 대상이 곧 실제 사용자층이므로 이건 진짜 사용자 검증이다** — 이 스킬에서 이
-경우만 그렇다.
+**B. Human journey is a usability inspection.** Use the knowledge profile and a
+running static export or installed app to complete the task end to end. It still
+cannot prove desire.
 
-**B. 사람 여정 — 검사법.** 위 프로필로 걷는 이를 띄우고, 실제로 돌아가는 빌드에서
-과업을 끝까지 걷게 한다. 빌드는 실행 중이어야 한다(정적 export 를 띄우거나 설치 앱).
+## Where results go
 
-## 결과가 가는 곳
+- Stalls become direct-use evidence for `/po-pass` and `po-evidence`.
+- Hierarchy and interaction findings become material for the design bench.
+- A clean walkthrough does not justify “Build and verify”; it proves only that
+  this journey exposed no named stall.
 
-- 걸려 넘어진 지점 목록 → `/po-pass` · `po-evidence` 에 **우리가 직접 써 보다
-  실패한 관측**으로 전달한다. 이건 발견 단계 증거 목록에서 가장 무게 있는 항목이다.
-- 디자인 벤치의 「위계」·「상호작용」 자리에는 **무엇을 덜 눈에 띄게 할지 · 라벨을
-  어떻게 고칠지 · 어떤 상태를 보여줄지**의 재료로 전달한다.
-- **이 보고만으로 「지어서 검증했다」를 정당화하지 않는다.** 걸린 데가 하나도
-  없었어도 그건 "걸려 넘어지지 않았다"까지다.
-
-## 출력 형식
+## Output
 
 ```md
-## 사용자 워크스루 — <과업>
+## User walkthrough — <task>
 
-**걷는 이**: [지식 상태 · 맥락 · 신경 쓰는 것] · **컨텍스트 격리**: [확인]
-**여정**: A 에이전트 실측 / B 사람 워크스루 / 둘 다
-**빌드**: [URL 또는 설치 앱 · 커밋]
+**Walker**: <knowledge · context · concern> · **context isolation**: confirmed
+**Journey**: A agent / B human / both
+**Build**: <URL or installed app · commit>
+**North-star time**: <link to first accurate citation, target under five minutes>
 
-**북극성 시간**: [링크 → 첫 정확 인용까지 N분 — 목표 5분] (여정 A 일 때)
+| Step | Screen | Failed question | Time | Evidence |
+|---|---|---|---:|---|
+| … | … | goal/discovery/connection/confirmation | … | screenshot or log |
 
-| 단계 | 화면 | 실패 질문 | 걸린 시간 | 증거 |
-|---|---|---|---|---|
-| … | … | 목표/발견/연결/확인 | … | 스크린샷·로그 |
-
-**막힌 지점** (심각도 순): […]
-**빠져나간 지점**: [걷는 이가 과업을 포기했다면 어디서, 무엇 때문에]
-**물건이 말하지 않은 것**: [사람 어휘가 아닌 라벨 · 없는 다음 단계 · 안 보이는 상태]
-
-**주장하지 않은 것**: 이 사람이 이걸 원할지 · 다시 올지 — 그건 실제 사람에게서만
-온다. 이 워크스루는 그 사람들이 걸려 넘어질 지점을 치웠을 뿐이다.
+**Stalls, highest severity first**: …
+**Exit point**: <where and why the task was abandoned, if any>
+**What the artifact did not say**: <internal label, missing next step, invisible state>
+**Not claimed**: whether this person wants, returns to, or recommends the product.
 ```

@@ -8,4 +8,4 @@ path: src/widgets/app-settings-menu
 created_by: "agent:unknown"
 ---
 
-앱 설정 메뉴 위젯.
+App settings menu widget.

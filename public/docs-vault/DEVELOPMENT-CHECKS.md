@@ -68,14 +68,14 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Raw colour literals (now `src/` + `app/` + `.css`) | `pnpm check:tokens` | `pnpm test:check:tokens` |
 | Demo clip declaration vs shipped asset | `pnpm exec vitest run tests/contract/demo-clip-assets.contract.test.ts` | `pnpm test:contracts` |
 | Demo clip locale (played source vs poster) | `pnpm exec playwright test tests/e2e/demo-clip-locale.spec.ts` | `pnpm exec playwright test` |
-| CI 준비 스텝의 무한 대기 | `pnpm exec vitest run tests/contract/ci-bounded-network.contract.test.ts` | `pnpm test:desktop:check` (재시도 러너 자체의 단위 테스트) |
-| 연동 점검의 검사 목록 vs 화면 문구 | `pnpm exec vitest run tests/contract/agent-doctor-checks.contract.test.ts` | `cargo test`(src-tauri) 의 `acp_doctor` 테스트 |
-| Guide in-body link targets (markdown source) | `pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts` | `pnpm exec vitest run tests/contract/schema-copy-sync.contract.test.ts` | The CLI's `schema.mjs` must stay byte-identical to the canonical `mcp/src/schema.mjs`. The two are an intentional copy (no shared package — each is baked into its own execution entrypoint), which means import-graph tools see them as unrelated files and no other check could catch drift. Siblings (absorb, parse-frontmatter, interop-format) already had sync locks; the schema was the one copy without one. On drift the failure names the first differing line and the fix direction (mcp is canonical). Carries an anti-idle floor (canonical > 10KB) so two empty files never count as "in sync" |
+| CI preparation step infinite wait | `pnpm exec vitest run tests/contract/ci-bounded-network.contract.test.ts` | `pnpm test:desktop:check` (unit test of the retry runner itself) |
+| Integration check list vs screen text | `pnpm exec vitest run tests/contract/agent-doctor-checks.contract.test.ts` | `cargo test`(src-tauri) 's `acp_doctor` test |
+| Guide in-body link targets (markdown source) | `pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts` | `pnpm exec vitest run tests/contract/schema-copy-sync.contract.test.ts` The CLI's `schema.mjs` must stay byte-identical to the canonical `mcp/src/schema.mjs`. The two are an intentional copy (no shared package — each is baked into its own execution entrypoint), which means import-graph tools see them as unrelated files and no other check could catch drift. Siblings (absorb, parse-frontmatter, interop-format) already had sync locks; the schema was the one copy without one. On drift the failure names the first differing line and the fix direction (mcp is canonical). Carries an anti-idle floor (canonical > 10KB) so two empty files never count as "in sync" |
 | `pnpm exec playwright test tests/e2e/korean-word-break.spec.ts` | Korean text must not break **mid-word**. Walks five destinations at 1512×900, takes a `Range` per character, and at every y-change (a wrap) inspects the characters on both sides: two Hangul syllables with no whitespace between them is a word split open. Wraps at spaces are normal and are not counted. lint cannot see this layer — the violation leaves **no value in the code** (a missing `break-keep` is the *absence* of a class, and absence has no selector), and the real criterion is not the class but whether it actually broke: a wide enough column wraps cleanly with `word-break: normal`. Carries an anti-idle count of multi-line Korean texts examined, because "0 breaks" is also true when nothing ever wrapped. Found two live defects the day it was written (2026-08-12): the agent-readiness hint on `/ontology/insights` and the Windows unsigned-build warning on the gateway |
-| `pnpm exec playwright test tests/e2e/guide-inbody-links.spec.ts` |
+| `pnpm exec playwright test tests/e2e/guide-inbody-links.spec.ts` | |
 | `pnpm exec playwright test tests/e2e/open-vault-cta.spec.ts` | Dead-end CTA gate, folder edition: every painted sentence that says "open your folder" across the audited routes must have a folder-opening path inside its own box, that path must **actually call the picker** (stubbed and counted, because a button that renders and does nothing passes a visibility check), and it must degrade to the app download when FSA is unavailable. Replaces the single-route check that used to live in `screen-hierarchy.spec.ts`, which only asserted the URL changed — the destination it asserted (`/`) was itself a dead end for a web visitor with no vault. Exemptions are per-route with a written reason; two liveness guards, since a green run needs both "sentences were found" and "at least one pairing was detected" |
 | `pnpm exec playwright test tests/e2e/gateway-reading-reach.spec.ts` | Can a narrow viewport still reach the reading surfaces? Walks the four gateway routes at 1512/768/390 and requires a live path to `/guide` and `/changelog`, plus **five or more distinct chapters** once you are inside the guide. Counting "links containing /guide" is not enough — the first version did that and stayed green with the chapter list deleted, because the page's own index link satisfied it. A closed disclosure is opened once before counting: hidden-until-tapped is not a dead end, missing is. Also pins the narrow chapter list equal to the wide one, so the table of contents cannot become two lists |
-| `pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts` | The insights "할 일" tab badge must equal the sum of the rendered work-group badges plus the repair queue's blocking chips. It read 7 while the group heading right below it read 8, because the verdict and the group counts each kept their own hand-maintained section list and duplicates were missing from one. The section totals now flow from a single `Record<QueueSectionKey, number>`, so adding a section fails typecheck first — this gate covers the layer after that: what the screen actually prints |
+| `pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts` | The insights "To-do" tab badge must equal the sum of the rendered work-group badges plus the repair queue's blocking chips. It read 7 while the group heading right below it read 8, because the verdict and the group counts each kept their own hand-maintained section list and duplicates were missing from one. The section totals now flow from a single `Record<QueueSectionKey, number>`, so adding a section fails typecheck first — this gate covers the layer after that: what the screen actually prints |
 | `pnpm exec playwright test tests/e2e/screen-hierarchy.spec.ts` | Screen hierarchy across every audited route: no painted text ≥ the largest painted h1 outside it, and at most one accent-filled control per screen (tokens read from `:root` at runtime, 24×44 size floor keeps 8px data-marks out). Was one route; the single-route version stayed silent on every screen built after it. Exemptions are per-route with measured values and their own tripwires — the map/docs "no painted h1" state, the studio 14px title tie, and the edit form's twin save CTAs each fail the moment they change. `HIERARCHY_PROBE=<kind>` plants violations to prove each layer still fires |
 
 ### Decision-ledger gate (`pnpm decisions:check`)
@@ -83,9 +83,9 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 Fails when a change trips a mechanical council trigger without appending to
 `docs/DECISIONS.md` in the same change. Three triggers:
 
-1. **새 표면 / 표면 제거** — `app/[locale]/**/page.tsx` added or deleted.
-2. **공개 계약 변경** — `cli/src/lib/cli-commands.mjs` or `mcp/src/index.js` edited.
-3. **규격 변경** (2026-08-03) — the design system's vocabulary or ramps moved.
+1. **New surface / surface removal** — `app/[locale]/**/page.tsx` added or deleted.
+2. **Public contract change** — `cli/src/lib/cli-commands.mjs` or `mcp/src/index.js` edited.
+3. **Specification change** (2026-08-03) — the design system's vocabulary or ramps moved.
 
 Trigger 3 does **not** fire on «the file appears in the diff». Those files are
 among the most frequently touched in the repo (79 of the last 300 commits), so a
@@ -95,8 +95,7 @@ the scale-contract numbers in `.claude/rules/design.md` — and 16 of those 79
 survive. Class-string edits, comments, whitespace and reordering do not count.
 Reasoning in full: `scripts/lib/design-spec-census.mjs`.
 
-The trigger file list lives **only** in `.claude/rules/design.md` («규격을
-바꾸려면 「체계」를 부른다»); the gate parses it from there, so adding a bullet
+The trigger file list lives **only** in `.claude/rules/design.md` («To change the spec, call the 'system'»); the gate parses it from there, so adding a bullet
 there extends the gate the same day.
 `tests/contract/design-spec-ledger.contract.test.ts` asserts the list is not
 duplicated in code, that every listed path exists, and that every listed file
@@ -180,24 +179,36 @@ node $ATLAS/cli/src/index.mjs workspace-brief ./ontology --component-limit 5 --n
 ## Docs Checks
 
 ```bash
-pnpm docs:check                  # both gates below
+pnpm docs:check                  # canonical documentation gates below
 pnpm docs:surface:check          # regenerate the MCP/CLI surface and diff it
 pnpm docs:surface:build          # refresh docs/.generated/mcp-surface.json
+pnpm docs:language               # ratchet unexplained Korean prose by document scope
 pnpm docs:links                  # broken repo links + cited file paths
 pnpm docs:comment-refs           # .md paths cited from CODE COMMENTS resolve
 pnpm docs:links:external         # opt-in: resolve http(s) links over the network
 pnpm test:docs:checks            # focused helper contracts for both scripts
+pnpm test:docs:language          # language inventory and exception contracts
 ```
 
 **One rule decides what these may check** (2026-08-01 — `docs/DECISIONS.md`):
 
-> 기계가 만들 수 있는 것만 검사한다. 사람이 판단해서 쓴 문장은 검사하지 않는다.
+> Check only facts a machine can derive. Never pin a sentence written by a person.
 
 The suite that preceded them was 3,419 lines and 2,126 assertions, **1,915 of
 which (90%) pinned a sentence in a README.** Those pins caught nothing when a
 tool's behavior changed (the sentence still matched) and went red whenever
 someone improved the prose. They are gone; these two nets replace them.
 
+- **`docs:language` — inventory, then ratchet.**
+  `scripts/quality/markdown-language/check.mjs` reads tracked and untracked Markdown
+  from Git and counts Hangul code points without pinning any prose. It scans authored
+  sources, while generated `public/docs-vault/**` and byte-mirrored `.agents/**` files
+  remain covered by their existing freshness/parity gates. Korean is allowed only in
+  the typed `display_ko` frontmatter field and the intentionally localized
+  `cli/templates/vault-ko/**` tree. Operational, current, and historical prose have
+  separate ratchets so progress in one scope cannot hide regression in another. A
+  lower count fails with an instruction to lower the baseline; zero scanned files,
+  locale fields, templates, generated files, or mirrors also fails as an idle detector.
 - **`docs:surface:check` — generate, then diff.** `scripts/build-docs-surface.mjs`
   boots the real MCP server, asks it `tools/list`, and writes every tool name,
   read/write mode, argument name, and required argument — plus the CLI command
@@ -213,7 +224,7 @@ someone improved the prose. They are gone; these two nets replace them.
   `docs/GLOSSARY.md` §6 tells authors to move long rationale into a markdown file
   and leave a one-line pointer in the comment. That trade only holds if the
   pointer keeps working. The owner named the risk before the first pointer was
-  written — *"폴더 위치 바뀌는순간 다 난리날테니"* — and he was describing a hole
+  written — *"If folder locations change, everything will break"* — and he was describing a hole
   that already existed: `docs:links` walks **markdown files only**, so every `.md`
   path cited from a `.ts`/`.mjs` comment was outside every gate's field of view.
 
@@ -242,14 +253,11 @@ someone improved the prose. They are gone; these two nets replace them.
   history (`CHANGELOG.md`, `docs/DECISIONS.md`, `docs/archive|audits|superpowers|plans|prototypes/**`)
   because naming a deleted file is what a changelog is *for*; links are still
   checked there, since a link is a promise to open.
-- **`design-doc-token-integrity` — 같은 갈래인데 대상이 파일이 아니라 **토큰**이다
-  (계약 테스트, `pnpm test:contracts` 에 포함). `docs/DESIGN-SYSTEM.md` 가 백틱이나
-  `var(...)` 안에서 인용한 `--토큰` 이 `app/globals.css` 에 실재하는지 본다.
-  **왜 생겼나**: 그 문서가 `--topology-*-hover-*` 13개를 「호버는 이미 토큰으로
-  뒷받침된다」는 근거로 나열하는데 하나도 없었다 — 그 전제로 감사를 시작하면 그
-  자체가 사각이다(2026-08-15 실측: 인용 393 중 **190개가 저장소에 없다**, 165개가
-  없어진 지도 화면의 것). `docs:links` 는 **파일 경로**만 봐서 토큰은 시야 밖이었다.
-  래칫이라 늘지 못하고, 문서를 정리해 줄이면 상한도 같이 내린다.
+- **`design-doc-token-integrity` — same category, but the target is **tokens**, not files
+  (included in contract tests, `pnpm test:contracts`). Checks whether `--token`s cited
+  in `docs/DESIGN-SYSTEM.md` inside backticks or `var(...)` actually exist in `app/globals.css`.
+  **Why it was created**: The document listed 13 `--topology-*-hover-*` items as evidence that "hover is already backed by tokens," but none existed — starting an audit on that premise would itself be a blind spot (measured on 2026-08-15: **190 out of 393** cited tokens are missing from the repo, 165 of which were removed with the map). `docs:links` only looks at **file paths**, so tokens were outside its field of view.
+  As a ratchet it cannot grow; cleaning up the document lowers the upper bound too.
 
 markdownlint is deliberately **not** wired in. Measured 2026-08-01 with default
 rules (excluding `node_modules`): ~15,700 violations, 84% of them
@@ -766,51 +774,40 @@ inflating the matched-test count.
 ## Skill Integrity (discovery instrument, not a gate)
 
 ```bash
-pnpm skills:audit          # 설치된 Claude Agent Skills 뭉치를 훑어 무결성을 잰다
-pnpm test:skills:audit     # 그 판정 로직(순수 함수)의 시험
+pnpm skills:audit          # Inspect installed Claude Agent Skills bundles to measure integrity
+pnpm test:skills:audit     # Test that judgment logic (pure functions)
 ```
 
-**게이트가 아니다** — 실패해도 CI 를 막지 않는다. 소유자 질문(*"스킬 그 자체를
-graph 화 시킬 수는 없나?"*, 2026-08-09)에 답이 있는지 **재 보려고** 만든 발견
-도구다. 제품 기능도, 공개 CLI 명령도 아니다(둘은 PO 카운슬 필수 소집 사안이다).
+**Not a gate** — failure does not block CI. It is a discovery tool created to **re-verify** whether there is an answer to the owner's question (*"Can we graph the skills themselves?"*, 2026-08-09). It is neither a product feature nor a public CLI command (both require mandatory PO Council convening).
 
-재는 셋과 그 이유:
+What is measured and why:
 
-| | 무엇을 | 왜 |
+| | What | Why |
 |---|---|---|
-| ① 이름 충돌 | 같은 이름이 여러 벌 설치됐나, **설명까지 다른가** | 이름이 겹치면 무엇이 이기는지 비결정적이다. 설명까지 다르면 발동 조건이 다른 것들이 같은 이름으로 경쟁한다 |
-| ② 트리거 겹침 | 이름이 달라도 설명이 같은 낱말을 공유하나 | 스킬 발동은 `description` 한 줄이 정한다. 겹치면 하나가 다른 하나를 가린다 |
-| ③ 자기 폴더 참조 | 「내 폴더의 이 파일을 읽어라」가 실재하나 | 점진적 공개의 3단이 조용히 비는 것을 막는다 |
+| ① Name collision | Are multiple copies with the same name installed, **with different descriptions**? | If names collide, it is non-deterministic which one wins. If descriptions also differ, items with different activation conditions compete under the same name |
+| ② Trigger overlap | Do they share words in their descriptions even if names differ? | Skill activation is determined by a single line of `description`. Overlap means one hides the other |
+| ③ Self-folder reference | Does "read this file in my folder" actually exist? | Prevents the third stage of gradual rollout from quietly going missing |
 
-### ⚠️ 무엇을 세는지가 이 도구의 전부다 — 두 번 틀렸다 (2026-08-09)
+### ⚠️ What is counted is everything about this tool — it was wrong twice (2026-08-09)
 
-**① 참조를 한 덩어리로 셌다.** 없는 파일을 가리키는 참조가 **700건**이었는데
-666건은 「프로젝트에 있으면 읽어라」식 **조건부**라 결함이 아니었다.
+**① Counted references as a single block.** There were **700** references pointing to non-existent files,
+but 666 of them were **conditional** like "read if it exists in the project," so they were not defects.
 
-**② 로드되지 않는 파일을 셌다 — 이게 더 컸다.** 첫 판은 `~/.claude/plugins` 를
-통째로 훑어 **207개**를 보고했다. 그 안에는 ⓐ `cache/` 버전별 다운로드 스냅샷
-ⓑ `marketplaces/` — **설치하지 않은 것까지** 담은 카탈로그 클론이 섞여 있다.
-정본은 `~/.claude/plugins/installed_plugins.json` 이고 플러그인당 `installPath`
-를 **하나만** 지목한다. 좁혀서 다시 세니:
+**② Counted files that are not loaded — this was bigger.** The first version scanned `~/.claude/plugins` wholesale and reported **207** items. Among them were ⓐ `cache/` version-specific download snapshots and ⓑ `marketplaces/` — a catalog clone containing **even uninstalled** items.
+The canonical source is `~/.claude/plugins/installed_plugins.json`, which points to exactly **one** `installPath` per plugin. Narrowing the scope and counting again:
 
-| | 디스크 전체 | **실제 로드** |
+| | Whole disk | **Actually loaded** |
 |---|---|---|
-| 스킬 | 209 | **60** |
-| 이름 충돌 | 38개 이름 | **2개** |
-| 강한 트리거 겹침 | 41쌍 | **1쌍** |
-| 자기 폴더 참조 없음 | 37 | **0** (7건 전부 저장소 루트에 실재하는 오탐) |
+| Skills | 209 | **60** |
+| Name collisions | 38 names | **2** |
+| Strong trigger overlap | 41 pairs | **1 pair** |
+| No self-folder references | 37 | **0** (all 7 were false positives for files actually existing in the repo root) |
 
-즉 「`frontend-design` 8벌이 경쟁한다」는 첫 보고는 **틀렸다** — 여덟 중 여섯은
-안 쓰이는 스냅샷과 카탈로그였고, 설명 차이는 한 플러그인의 **버전 간 드리프트**
-였다. 다운로드 캐시의 정상 모습이다.
+So the initial report that "eight `frontend-design` copies are competing" was **wrong** — six of the eight were unused snapshots and catalogs, and the description differences were **version drift between versions** of a single plugin. This is the normal appearance of a download cache.
 
-**기본은 로드되는 것만 센다.** 디스크 전체는 `--all` 로만 보고, 그때는 출력이
-스스로 「로드되지 않는 것을 포함한다」고 말한다.
+**The baseline counts only loaded items.** The whole disk is reported only with `--all`, at which point the output itself states "includes unloaded items."
 
-이 잘못된 숫자로 PO 카운슬 브리프를 썼고 다섯 자리 중 셋이 그것을 근거로 판정한
-뒤 한 자리가 잡아냈다(`docs/DECISIONS.md` 2026-08-09). **분모를 틀리면 결론이
-틀린다.** `audit-claude-skills.test.mjs` 가 두 분류를 다 잠근다 — 조건부가 결함
-목록에 섞이거나, 저장소 루트에 실재하는 참조를 깨진 것으로 세면 실패한다.
+This wrong number was used to write a PO Council brief, and three out of five members judged based on it before one caught it (`docs/DECISIONS.md` 2026-08-09). **If the denominator is wrong, the conclusion is wrong.** `audit-claude-skills.test.mjs` locks both classifications — it fails if conditionals are mixed into the defect list or if references actually existing in the repo root are counted as broken.
 
 ## Dogfood Shortcuts
 

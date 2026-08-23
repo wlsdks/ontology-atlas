@@ -1,36 +1,36 @@
-# 볼트의 구조
+# Vault Structure
 
-볼트는 그냥 마크다운 폴더입니다. 특별한 것은 각 파일 맨 위의 frontmatter 뿐입니다.
+A vault is simply a Markdown folder. The only special part is the frontmatter at the top of each file.
 
 ```markdown
 ---
 uid: 01890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
 slug: token-issue
-title: 토큰 발급
+title: Token Issuance
 domain: auth
 ---
 
-# 토큰 발급
+# Token Issuance
 
-로그인에 성공한 사용자에게 세션 토큰을 내준다.
+Issues a session token to users who have successfully logged in.
 ```
 
-## uid와 slug: 영구 정체성과 현재 주소
+## uid and slug: Permanent Identity and Current Address
 
-모든 노드는 두 식별자를 같이 가집니다.
+Every node has both identifiers.
 
-| 필드 | 의미 | 바꾸어도 되나 | 주로 쓰는 곳 |
+| Field | Meaning | Can it be changed? | Primary Use |
 |---|---|---|---|
-| `uid` | 그 노드 자체의 영구 정체성 | **안 됨** | MCP 정확 조회·핸드오프·출처·내보내기 URN |
-| `slug` | 사람이 읽는 현재 주소 | rename으로 바꿀 수 있음 | 파일 경로·관계값·URL·CLI 그래프 명령 |
-| `title` | 사람에게 보이는 이름 | 바꿀 수 있음 | 화면·검색·설명 |
+| `uid` | Permanent identity of the node itself | **No** | MCP precise lookup, handoff, source, export URN |
+| `slug` | Human-readable current address | Yes, via rename | File path, relationship values, URL, CLI graph commands |
+| `title` | Name displayed to humans | Yes | Display, search, description |
 
-`uid`는 작성기가 노드를 만들 때 한 번만 발급하는 **lowercase UUIDv4**입니다.
-slug·title·파일 경로로부터 계산하지 않으며, 복사해서 새 노드에 재사용하지도
-않습니다. `rename`과 `reclassify`는 UID를 보존합니다. `merge`는 남는
-노드의 UID를 보존하고 흡수된 UID를 `merged_uids`에 기록하여 예전 UID
-조회도 같은 노드로 이어지게 합니다.
+`uid` is a **lowercase UUIDv4** issued only once when the writer creates a node.
+It is not calculated from slug, title, or file path, nor is it reused for new nodes
+copied from existing ones. `rename` and `reclassify` preserve the UID. `merge` preserves
+the UID of the surviving node and records the absorbed UID in `merged_uids`, ensuring
+lookups by the old UID still point to the same node.
 
 ```markdown
 uid: 21890f3e-7b5d-4c0a-8f14-123456789abc
@@ -39,90 +39,79 @@ merged_uids:
 slug: token-issue
 ```
 
-`merged_uids`는 `merge_concepts` 전용 이력입니다. 손으로 발급하거나 일반 patch로
-고치지 마십시오. UID 중복·잘못된 형식·생존 UID의 자기 반복은 `validate`가
-하드 오류로 막습니다.
+`merged_uids` is history specific to `merge_concepts`. Do not issue it manually or fix it via general patch. `validate` blocks UID duplicates, invalid formats, and self-referential survival UIDs as hard errors.
 
-이 규격은 무작위 UUIDv4를 정의한 [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562.html)와,
-JSON-LD 노드 식별자가 IRI여야 한다는 [W3C JSON-LD 1.1](https://www.w3.org/TR/json-ld11/#node-identifiers)을
-따릅니다. 내보낼 때는 `urn:uuid:<uid>`를 쓰므로 slug를 바꿔도 외부 정체성이
-바뀌지 않습니다.
+This specification follows [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562.html), which defines random UUIDv4, and
+[W3C JSON-LD 1.1](https://www.w3.org/TR/json-ld11/#node-identifiers), which requires JSON-LD node identifiers to be IRIs. When exporting, `urn:uuid:<uid>` is used, so changing the slug does not change the external identity.
 
-### UID 없는 기존 문서함을 v2로 바꾸기
+### Converting an Existing Vault Without UIDs to v2
 
-읽는 순간 조용히 파일을 고치지 않습니다. Ontology Atlas 소스 체크아웃 루트에서
-먼저 변경 대상을 미리 봅니다.
+It does not modify files upon reading. From the Ontology Atlas source checkout root,
+first preview the changes.
 
 ```bash
 pnpm vault:migrate 2026-08-02-add-node-uids --vault /path/to/vault
 ```
 
-검토한 뒤 같은 명령에 `--write`를 붙여 적용합니다. git 안의 문서함에 commit 안 된
-Markdown이 있으면 변환을 거부하므로 먼저 commit하거나 stash해야 합니다. 올바른 기존
-UID는 보존하고, 잘못됐거나 중복된 primary/merged UID는 첫 파일을 쓰기 전에 실패합니다.
+After reviewing, apply them by adding `--write` to the same command. If there are uncommitted
+Markdown files in git, conversion will be rejected, so you must commit or stash first. Valid existing
+UIDs are preserved, but invalid or duplicate primary/merged UIDs fail before writing the first file.
 
-## kind: 그 파일이 무엇인지
+## kind: What the file is
 
-`kind` 가 그 파일이 무엇인지 정합니다. 위에서 아래로 갈수록 구체적입니다.
+`kind` defines what the file is. It becomes more specific as you go down.
 
-| kind | 뜻 | 예 |
+| kind | Meaning | Example |
 |---|---|---|
-| `project` | 최상위 산출물 | `auth-platform` |
-| `domain` | 기능 묶음 | `auth`, `billing` |
-| `capability` | 하나의 일관된 행동 | `token-issue` |
-| `element` | 역량을 실현하는 구별되는 구현 역할 | `jwt-signer` |
-| `document` | 그래프에 매인 설명 문서 | 이 가이드 |
+| `project` | Top-level artifact | `auth-platform` |
+| `domain` | Group of features | `auth`, `billing` |
+| `capability` | A single consistent behavior | `token-issue` |
+| `element` | Distinct implementation role realizing a capability | `jwt-signer` |
+| `document` | Descriptive document bound to the graph | This guide |
 
-## 관계
+## Relationships
 
-사람과 도구는 관계를 `contains` · `depends_on` · `broader` 같은 이름으로
-읽습니다. Markdown frontmatter에서 `depends_on`의 정본 저장 키는
-`dependencies:`입니다.
+People and tools read relationships with names like `contains`, `depends_on`, `broader`.
+The canonical storage key for `depends_on` in Markdown frontmatter
+is `dependencies:`.
 
 ```markdown
 ---
 uid: 11890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
 slug: token-issue
-title: 토큰 발급
+title: Token Issuance
 domain: auth
 dependencies: [jwt-signer, session-store]
 ---
 ```
 
-**프로젝트 소속은 따로 적지 않습니다.** `contains` 사슬을 타고 자동으로 정해집니다.
-`domain: auth` 라고만 써 두면 그 위의 프로젝트까지 알아서 이어집니다.
-관계값에는 UID가 아니라 slug를 쓸 수 있어, 사람이 파일만 열어도 그래프를 읽을
-수 있습니다. rename 도구가 이 관계값을 원자적으로 같이 바꿔 줍니다.
+**Project membership is not specified separately.** It is determined automatically by traversing the `contains` chain.
+Writing only `domain: auth` automatically links to the project above it.
+Relationship values can use slugs instead of UIDs, allowing people to read the graph just by opening the file. The rename tool atomically updates these relationship values as well.
 
-## 이름을 두 언어로
+## Names in Two Languages
 
-`display_ko` / `display_en` 을 쓰면 화면 언어에 맞는 이름이 지도와 목록에
-그려집니다. `title` 은 검색·매칭의 진실원이라 바뀌지 않습니다.
+Using `display_ko` / `display_en` renders the name appropriate for the screen language on maps and lists. `title` serves as the source of truth for search/matching and should not be changed.
 
-**볼트가 쓰는 언어는 전부 채웁니다**. 한쪽만 채우면 다른 언어 사용자에게 원문이
-그대로 노출됩니다.
+**Fill in all languages used by the vault.** If only one side is filled, the original text will be exposed to users of the other language.
 
-## 어디에 두는가
+## Where to Place It
 
-보통은 다루는 저장소 안에 둡니다. 그러면 코드와 의미가 같은 커밋에 실려 같이
-리뷰됩니다.
+Typically, you place it within the repository you are managing. This way, code and meaning are committed together and reviewed simultaneously.
 
 ```
 your-repo/
 ├── src/
-└── docs/ontology/     ← 볼트
+└── docs/ontology/     ← Vault
     ├── project.md
     ├── domains/
     ├── capabilities/
     └── elements/
 ```
 
-이 저장소도 그렇게 합니다. `docs/ontology/` 에 자기 자신을 적어 두고, 그 파일들로
-이 제품을 만듭니다.
+This repository does the same. It documents itself in `docs/ontology/`, and those files are used to build this product.
 
-## 진실원은 파일입니다
+## The Vault is Files
 
-frontmatter 가 진실원입니다. 별도 승인 절차도, 동기화 버튼도 없습니다. 파일을
-고치면 그게 곧 그래프입니다. 에이전트가 쓴 것도 마찬가지라 `git diff` 로 보이고,
-마음에 안 들면 손으로 고치면 됩니다.
+The frontmatter is the vault. There is no separate approval process or sync button. Editing a file updates the graph directly. Even if an agent writes it, it appears as a `git diff`, and you can manually correct it if needed.

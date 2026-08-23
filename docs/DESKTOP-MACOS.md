@@ -396,49 +396,37 @@ the image.
 
 ## Release channels — stable and RC
 
-태그가 채널을 정한다. **semver 프리릴리스는 하이픈 뒤에 온다**, 그리고 그 한
-글자가 "먼저 써볼 사람만" 과 "모두에게" 를 가른다.
+The tag determines the channel. **Semver pre-releases come after the hyphen**, and that single character separates "those who want to try first" from "everyone."
 
-| 태그 | GitHub | 받는 사람 |
+| Tag | GitHub | Recipient |
 |---|---|---|
-| `v1.1.0` | 정식 릴리스 | 모두 — `releases/latest` 가 가리킨다 |
-| `v1.1.0-rc.1` | **Pre-release** 배지 | 먼저 써보겠다고 찾아온 사람만 |
+| `v1.1.0` | Official release | Everyone — pointed to by `releases/latest` |
+| `v1.1.0-rc.1` | **Pre-release** badge | Only those who specifically seek it out to try first |
 
-RC 를 쓰는 이유는 되돌릴 수 없기 때문이다. 태그를 밀면 곧 공개고, 받아간
-사람에게서 회수할 방법은 없다. RC 는 그 사이에 **되돌릴 수 있는 한 칸**을 만든다:
+The reason for using RCs is that once a tag is pushed, it becomes public, and there is no way to retrieve it from those who have already received it. An RC creates **one reversible step** in between:
 
 ```
-v1.1.0-rc.1  →  문제 발견
-v1.1.0-rc.2  →  고쳐서 다시
-v1.1.0       →  이제 정식
+v1.1.0-rc.1  →  Issue discovered
+v1.1.0-rc.2  →  Fixed and pushed again
+v1.1.0       →  Now official
 ```
 
-절차는 정식과 **완전히 같다** — 별도 워크플로도, 별도 스크립트도 없다.
-`package.json` · `src-tauri/tauri.conf.json` · `src-tauri/Cargo.toml` 세 곳의
-버전을 `1.1.0-rc.1` 로 맞추고 같은 태그를 만든 뒤 원격에 밀면 된다. 그 다음
-`pnpm desktop:release-run -- --tag=v1.1.0-rc.1 --ref=main` 이 `main`에서
-수동 디스패치한다. 워크플로는 입력된 `RELEASE_TAG`에서 프리릴리스 여부를 읽어
-draft 단계와 발행 단계 양쪽에 적용한다. `pnpm desktop:check` 가
-이 유도를 계약으로 잠근다 — 하드코딩으로 되돌리면 실패한다.
+The procedure is **exactly the same** as for official releases — no separate workflow or script is needed. Just align the versions in `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` to `1.1.0-rc.1`, create the same tag, and push it to remote. Then manually dispatch `pnpm desktop:release-run -- --tag=v1.1.0-rc.1 --ref=main` on `main`. The workflow reads whether the input `RELEASE_TAG` is a pre-release and applies it to both the draft and publish stages. `pnpm desktop:check` locks this guidance as a contract — hardcoding it differently will cause failure.
 
-### `-rc.1` 과 CFBundleVersion — 실측 결과 (2026-07-27)
+### `-rc.1` and CFBundleVersion — Actual Results (2026-07-27)
 
-한동안 미지수로 남겨 뒀던 항목이다. **직접 재 보았고, 통과한다.**
+This was left as an unknown for a while. **I verified it directly, and it passes.**
 
-Tauri 는 세 버전 파일의 문자열을 **변환 없이 그대로** 번들에 넣는다:
+Tauri inserts the string values from the three version files into the bundle **without any conversion**:
 
-| 필드 | 값 |
+| Field | Value |
 |---|---|
 | `CFBundleShortVersionString` | `1.0.0-rc.1` |
 | `CFBundleVersion` | `1.0.0-rc.1` |
 
-`plutil -lint` 통과, Spotlight 이 `kMDItemVersion` 으로 읽고, ad-hoc 서명 후
-LaunchServices 로 띄워 창까지 확인했다.
+`plutil -lint` passed, Spotlight reads it as `kMDItemVersion`, and after ad-hoc signing, I launched it via LaunchServices and verified the window.
 
-> **다만 규격상으로는 어긋난다.** Apple 문서는 `CFBundleVersion` 을 점으로
-> 구분된 정수 문자열로 규정한다. 직접 배포(우리 경로)에서 macOS 는 관대하고
-> 실제로 문제가 없지만, **App Store 제출 경로로 가면 거부된다.** 우리는 직접
-> 배포만 하므로 지금은 성립한다 — 앱스토어를 고려하게 되면 이 표기부터 다시 본다.
+> **However, this deviates from the specification.** Apple's documentation specifies `CFBundleVersion` as a dot-separated integer string. Direct distribution (our path) is lenient in macOS and actually causes no issues, but **it will be rejected for App Store submission paths.** Since we only do direct distribution, this holds for now — if we consider the App Store, we will revisit this notation.
 
 ## Protected Release Runbook (v1.0.0)
 
@@ -513,90 +501,69 @@ exact draft DMG on a real Mac, launch it, and open a vault. Then approve the
 `release` environment. Publication rechecks the admitted source, publishes and
 verifies the Release, and refreshes the generated `/download` facts on `main`.
 
-## Developer ID 자격증명 만들기 — 실행 가능한 절차
+## Creating a Developer ID Certificate — Executable Procedure
 
-**이 절차는 5년에 한 번 한다** (Developer ID 인증서 유효기간). 그때의 사람은
-지금의 사람이 아니고, 산문으로 적어 둔 절차는 그 사이에 반드시 낡는다. 그래서
-경로를 스크립트로 박았다: `scripts/apple-signing-setup.mjs`. 아래는 그 스크립트가
-하는 일의 설명이지 별도의 절차가 아니다 — **어긋나면 스크립트가 옳다.**
+**This procedure is done once every five years** (Developer ID certificate validity period). The person doing it then is not the person doing it now, and prose procedures inevitably become outdated in between. Therefore, I embedded the path into a script: `scripts/apple-signing-setup.mjs`. The following is an explanation of what that script does, not a separate procedure — **if there is a discrepancy, the script is correct.**
 
-### 사람에게 남는 것은 두 순간뿐이다
+### What remains for humans are only two moments
 
-둘 다 **자격증명을 다루는 순간**이라 자동화하지 않는다: Apple 로그인(비밀번호 +
-2FA)과 App Store Connect API key 생성·`.p8` 1회 다운로드. 나머지 — 키쌍 생성 ·
-CSR 작성 · `.p12` 조립 · GitHub 등록 명령 생성 · 검증 — 은 스크립트 안에 있다.
+Both involve **moments of handling credentials**, so they are not automated: Apple login (password + 2FA) and App Store Connect API key generation · one-time download of `.p8`. The rest — keypair generation · CSR creation · `.p12` assembly · GitHub registration command generation · verification — is inside the script.
 
-### 왜 Keychain Access GUI 를 쓰지 않는가
+### Why not use the Keychain Access GUI?
 
-흔한 안내는 키체인 접근에서 CSR 을 만들고 인증서를 설치한 뒤 `.p12` 로
-내보내라고 한다. 그 경로에는 **조용한 함정**이 있다 — "나의 인증서" 가 아니라
-"인증서" 카테고리에서 내보내면 **개인키가 빠지는데 파일은 멀쩡히 만들어진다.**
-실패는 몇 분 뒤 CI 의 `codesign` 에서 처음 드러난다.
+Common guides say to create a CSR in Keychain Access, install the certificate, and then export it as `.p12`. That path has a **quiet trap** — if you export from the "Certificates" category instead of "My Certificates", **the private key is omitted, yet the file is created perfectly.** The failure only appears minutes later in CI's `codesign`.
 
-여기서는 개인키를 우리가 만들고 우리가 들고 있으므로 **그 실수가 구조적으로
-불가능하다.** `.p12` 는 항상 키와 인증서를 함께 담는다.
+Here, since we create and hold the private key ourselves, **that mistake is structurally impossible.** `.p12` always contains both the key and the certificate.
 
-### 1 — 키쌍과 CSR (자동)
+### 1 — Keypair and CSR (Automated)
 
 ```bash
 node scripts/apple-signing-setup.mjs csr \
-  --name="법적 실명" --email="Apple 계정 이메일"
+  --name="Legal Full Name" --email="Apple Account Email"
 ```
 
-`--name` 은 Apple 계정의 **법적 실명**이어야 한다. 별명이면 심사가 지연되거나
-거부된다. 산출물은 `~/.ontology-atlas-signing/` 에 놓인다 — 개인키는 `0600`,
-디렉토리는 `0700`, **저장소 밖**이다(작업 트리에 두면 커밋될 수 있다).
+`--name` must be the **legal full name** of the Apple account. A nickname will delay or reject the review. The output is placed in `~/.ontology-atlas-signing/` — private key permissions `0600`, directory permissions `0700`, **outside the repository** (if placed in the working tree, it could be committed).
 
-**개인키를 보호할 비밀번호를 묻는다.** 화면에 표시되지 않으니 아무것도 입력되지
-않은 것처럼 보이지만 들어가고 있다 — **그냥 Enter 를 누르면 잠기지 않은 키가
-만들어진다**(실측 2026-07-27: 그렇게 한 번 만들어졌다). 비밀번호는 **사람만
-안다**: 스크립트가 정하면 사람이 모르게 되고, 그러면 백업 파일이 있어도 못 쓴다.
+**It asks for a password to protect the private key.** It doesn't appear on screen, so it looks like nothing is being entered, but it is — **just pressing Enter creates an unprotected key** (actual result 2026-07-27: one was created this way). Only **humans know** the password: if the script sets it, humans won't know it, and then even with a backup file, it cannot be used.
 
-> **왜 잠그는가.** 이 키는 언젠가 디스크 밖으로 백업된다 — 잃어버리면 인증서가
-> 무용지물이라 백업하지 않을 수 없다. 그런데 잠기지 않은 개인키 파일은 **그
-> 파일을 얻은 사람이 곧 서명 권한을 갖는다**: 소유자 실명으로 앱에 서명할 수 있다.
+> **Why lock it.** This key will eventually be backed up off-disk — if lost, the certificate becomes useless, so you must back it up. However, an unlocked private key file means **whoever obtains it gains signing authority**: they can sign apps in your name.
 >
-> **개인키를 잃으면 그 인증서는 못 쓴다.** 이 디렉토리를 지우지 마라. 스크립트는
-> 기존 키가 있으면 덮어쓰지 않고 멈춘다.
+> **If you lose a private key, that certificate is unusable.** Do not delete this directory. The script stops if an existing key is found rather than overwriting it.
 
-**잠겼는지 확인하는 법** — 파일 첫 줄이 스스로 말한다:
+**How to check if it's locked** — the first line of the file tells you:
 
 ```
------BEGIN ENCRYPTED PRIVATE KEY-----   ← 잠김
------BEGIN PRIVATE KEY-----             ← 잠기지 않음
+-----BEGIN ENCRYPTED PRIVATE KEY-----   ← Locked
+-----BEGIN PRIVATE KEY-----             ← Unlocked
 ```
 
-업데이터 키(`tauri-updater.key`)도 같다 — 첫 줄을 base64 디코드하면
-`rsign encrypted secret key` 에 `encrypted` 가 있어야 한다.
+The updater key (`tauri-updater.key`) is the same — base64-decode the first line and it must contain `encrypted` in `rsign encrypted secret key`.
 
-### 2 — Apple 에서 인증서 발급 (사람)
+### 2 — Issuing a certificate from Apple (manual)
 
 1. https://developer.apple.com/account/resources/certificates/add
-2. 종류: **Developer ID Application** — 앱스토어 제출용이 아니라 직접 배포용이다
-3. 1단계가 만든 `.certSigningRequest` 업로드 → `.cer` 다운로드
+2. Type: **Developer ID Application** — for direct distribution, not App Store submission
+3. Upload the `.certSigningRequest` created in step 1 → download the `.cer`
 
-### 3 — `.p12` 조립과 GitHub 등록 (자동)
+### 3 — Assembling `.p12` and registering with GitHub (automated)
 
 ```bash
 node scripts/apple-signing-setup.mjs bundle --cer=~/Downloads/developerID_application.cer
 ```
 
-`.cer`(DER)을 PEM 으로 바꾸고 개인키와 합쳐 `.p12` 를 만든 뒤
-`APPLE_CERTIFICATE_P12_BASE64` 와 `APPLE_CERTIFICATE_PASSWORD` 를 등록한다.
+Convert the `.cer` (DER) to PEM, combine it with the private key to create a `.p12`, then register `APPLE_CERTIFICATE_P12_BASE64` and `APPLE_CERTIFICATE_PASSWORD`.
 
-**내보내기 비밀번호는 스크립트가 무작위로 만들고 아무도 보지 않는다** — 사람도,
-로그도, 모델도. 그 값의 유일한 용도는 GitHub 으로 가는 동안 파일을 감싸는
-것이고, 받는 쪽(CI)은 secret 으로 같은 값을 받는다. 사람이 기억할 이유가 없는
-값을 사람에게 보여주는 것은 유출 경로만 늘린다. `gh` 에는 인자가 아니라
-**stdin 으로** 넘긴다 — 인자로 주면 프로세스 목록에 뜬다.
+**The export password is generated randomly by the script and seen by no one** — not humans,
+logs, or models. Its only purpose is to wrap the file while it travels to GitHub, and the recipient (CI) receives the same value as a secret. Showing a value that humans have no reason to remember to a human only increases leakage paths. Pass it to `gh` via
+**stdin**, not as an argument — if passed as an argument, it appears in the process list.
 
-### 4 — 남은 다섯 값은 사람이 넣는다 (자격증명)
+### 4 — The remaining five values are entered by humans (credentials)
 
-| secret | 어디서 |
+| secret | Where |
 |---|---|
-| `APPLE_API_KEY_P8_BASE64` | App Store Connect에서 한 번 내려받은 `.p8` 전체를 base64로 인코딩한 값 |
-| `APPLE_API_KEY_ID` | App Store Connect API key의 Key ID |
-| `APPLE_API_ISSUER_ID` | App Store Connect Users and Access의 Issuer ID |
+| `APPLE_API_KEY_P8_BASE64` | The entire `.p8` downloaded once from App Store Connect, encoded in base64 |
+| `APPLE_API_KEY_ID` | Key ID of the App Store Connect API key |
+| `APPLE_API_ISSUER_ID` | Issuer ID from App Store Connect Users and Access |
 | `TAURI_SIGNING_PRIVATE_KEY` | `~/.ontology-atlas-signing/tauri-updater.key` |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | the password chosen for the updater key |
 
@@ -608,54 +575,45 @@ gh secret set TAURI_SIGNING_PRIVATE_KEY
 gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```
 
-인자 없이 실행하면 입력이 가려진 채로 값을 받는다.
+Running without arguments receives values with input masked.
 
-### 5 — 검증
+### 5 — Verification
 
 ```bash
 node scripts/apple-signing-setup.mjs verify
 ```
 
-무엇이 남았는지, 그리고 그것을 **사람이 넣는지 스크립트가 넣는지**까지 말한다.
-다 차면 다음 태그부터 워크플로가 자동으로 서명 경로로 간다 — 코드 수정은 없다.
+It tells you what remains and **whether humans or the script entered it**.
+Once everything is in place, the workflow automatically proceeds to the signing path from the next tag — no code changes required.
 
-### 백업해야 할 파일은 셋뿐이다
+### Only three files need to be backed up
 
-GitHub secret 은 **한 번 저장하면 아무도 못 읽는다** — 그것이 보호막이자,
-원본을 잃으면 되찾을 수 없다는 뜻이다. 원본은 `~/.ontology-atlas-signing/` 에 있고
-백업 대상은 딱 두 개다.
+GitHub secrets **cannot be read by anyone once saved** — that is the protection,
+and it also means you cannot recover them if the original is lost. The originals reside in `~/.ontology-atlas-signing/` and there are only two backup targets.
 
-| 파일 | 유출되면 | 잃어버리면 |
+| File | If leaked | If lost |
 |---|---|---|
-| `developer-id.key` | 소유자 실명으로 앱 서명 가능 | Apple 에서 폐기 후 **재발급 가능** |
-| `AuthKey_*.p8` | 소유자의 App Store Connect API 권한으로 공증 요청 가능 | 기존 key를 폐기하고 **재발급 가능** |
-| `tauri-updater.key` | 가짜 업데이트를 설치된 앱에 밀어넣을 수 있음 | **복구 불가** — 이미 설치된 사용자는 갱신을 영영 못 받는다 |
+| `developer-id.key` | App can be signed in the owner's name | **Reissuable** after revocation by Apple |
+| `AuthKey_*.p8` | Notarization requests possible with the owner's App Store Connect API permissions | **Reissuable** after revoking the existing key |
+| `tauri-updater.key` | Fake updates can be pushed to installed apps | **Irrecoverable** — users who already installed will never receive updates again |
 
-`.certSigningRequest` 는 이미 쓴 요청서고 `.pub` 은 설정 파일에 들어 있으므로
-백업 대상이 아니다.
+`.certSigningRequest` is an already-used request, and `.pub` is in the config file, so they are not backup targets.
 
-**둘 다 비밀번호로 잠근다.** 백업이 유출돼도 비밀번호 없이는 쓸 수 없어야 한다.
-그리고 **비밀번호는 파일과 다른 곳에 둔다** — 같은 곳에 있으면 잠근 의미가
-절반 사라진다.
+**Lock both with passwords.** Even if backups are leaked, they must be unusable without the password.
+And **keep passwords separate from the files** — if kept in the same place, the purpose of locking is halved.
 
-> **업데이터 키는 바꿀 수 있는 시점이 정해져 있다.** 공개키가 앱 번들에 박혀
-> 나가므로, 릴리스 이후에 키를 바꾸면 이미 설치된 사용자는 갱신을 못 받는다.
-> 잠금 여부를 재고할 수 있는 마지막 순간은 **첫 릴리스 직전**이다.
+> **There is a defined time when the updater key can be changed.** Since the public key is embedded in the app bundle,
+> changing the key after release means users who already installed it cannot receive updates.
+> The last moment you can reconsider locking is **just before the first release**.
 
-### secret 은 어디에 사는가
+### Where secrets live
 
-App Store Connect API 3개는 GitHub Actions **`release-signing` environment
-secret** 이다. Developer ID certificate 2개와 Tauri updater 2개는 복구 가능한
-원본이 없는 기존 repository secret을 유지한다. 환경 값은 워크플로가
-`release-signing` 에 도달한 뒤에만 주입되며, 저장소 설정은 이 문서의 명령으로
-확인할 수 있지만 코드가 GitHub 환경 정책을 자동으로 바꾸지는 않는다.
+The three App Store Connect API keys are GitHub Actions **`release-signing` environment
+secrets**. The two Developer ID certificates and two Tauri updater keys remain as existing repository secrets with no recoverable originals. Environment values are injected only after the workflow reaches `release-signing`, and while repository settings can be verified via commands in this document, the code does not automatically change GitHub environment policies.
 
-### 인증서가 생긴 다음에 할 일
+### What to do after obtaining certificates
 
-`docs/DECISIONS.md` 의 「v1.0.0 을 미서명 DMG 로 내고, 대신 정직하게 안내한다」가
-*"인증서가 생기면 이 결정은 자동으로 뒤집힌다 — 그때 페이지 문구도 함께
-되돌린다"* 고 적어 두었다. 다운로드 페이지의 Gatekeeper 우회 안내를 걷어내고
-신뢰 문구를 되돌린다. **자동으로 되지 않는 유일한 부분이다.**
+`docs/DECISIONS.md` states that ""v1.0.0 will be released as an unsigned DMG, and instead we will honestly guide users" — *"Once a certificate is obtained, this decision is automatically reversed — the page text at that time will also be reverted."* Remove the Gatekeeper bypass guidance from the download page and revert the trust statement. **This is the only part that does not happen automatically.**
 
 ## Release Signing and Notarization
 
@@ -666,8 +624,7 @@ Store. These are Developer ID direct-download signing/notarization credentials,
 not App Store submission credentials. The protected release workflow fails closed
 unless the following split-scope seven secrets are present:
 
-**필요한 hosted secret 은 7개다** — API 3개는 `release-signing`, certificate와
-updater identity 4개는 repository scope다.
+**Seven hosted secrets are required** — 3 for the API (`release-signing`), and 4 for the certificate and updater identity repository scope.
 
 - `APPLE_CERTIFICATE_P12_BASE64`: base64-encoded Developer ID Application
   certificate export (`.p12`).
@@ -679,13 +636,11 @@ updater identity 4개는 repository scope다.
 - `TAURI_SIGNING_PRIVATE_KEY`: Tauri updater private key.
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: password for that updater key.
 
-Apple 5개 외에 Tauri updater secret 2개도 필요하다. 반대로 둘은 **hosted
-secret이 아니라 local/CI 값**이라 등록하지 않는다 — 사람이 등록할 secret 이
-적을수록 실수도 적다.
+In addition to the five Apple secrets, two Tauri updater secrets are also needed. Conversely, these are **not hosted secrets but local/CI values**, so they are not registered — fewer secrets for humans to register means fewer mistakes.
 
-- `APPLE_KEYCHAIN_PASSWORD` — 그 키체인은 잡 안에서 만들어져 잡 안에서 지워진다.
-  워크플로가 `openssl rand -base64 24` 로 그때그때 만들고 `::add-mask::` 로
-  가린다. 사람이 기억할 이유가 없는 값이었다.
+- `APPLE_KEYCHAIN_PASSWORD` — The keychain is created and destroyed within the job.
+  The workflow generates it on-the-fly with `openssl rand -base64 24` and masks it
+  with `::add-mask::`. It was a value no human needs to remember.
 `APPLE_SIGNING_IDENTITY` is derived from the imported certificate. Neither value
 is a hosted secret.
 

@@ -7,455 +7,229 @@ paths:
   - ".claude/rules/design.md"
 ---
 
-# 디자인 게이트 고고학 — 각 게이트가 왜 그 모양인가
+# Design gate archaeology — why each gate has this shape
 
-> **조건부 로드** — 게이트를 **고칠 때**만 실린다(`eslint.config.mjs` ·
-> `tests/contract/**` · `scripts/check-*.mjs` · `design.md` 자신). 화면을
-> 쓸 때는 안 실린다.
->
-> **왜 `design.md` 에서 갈라져 나왔나 (2026-08-05).** `design.md` 는
-> `src/**/*.tsx` 를 열기만 해도 실리는데 **63.4KB** 였고, 그중 **43%(27.5KB)가
-> 이 내용**이었다 — 버튼 하나 고치는 턴마다 「그림자는 왜 `var(` 면제가 아닌가」
-> 를 통째로 싣고 있었다는 뜻이다. 규칙(**무엇이 강제되나**)은 `design.md` 에
-> 남고, 여기는 **왜 그 모양인가**만 갖는다. 분리 후 `design.md` 는 **48.8KB**
-> (형제 문서 표를 새로 더한 것까지 포함해 −23%).
->
-> ⚠️ **이 파일은 「참고」가 아니라 규율이다.** 게이트를 새로 켜거나 고칠 때
-> 여기 적힌 실패들을 다시 밟지 않는 것이 목적이고, 그래서 `/gate-probe` 스킬과
-> 짝이다. 새 게이트를 만들 때 겪은 함정은 **여기에** 적는다 — `design.md` 의
-> 표에는 「무엇이 강제되나」 한 줄만 더한다.
+> Load only while changing a gate. `design.md` owns what is enforced; this file
+> owns why the detector, scope, and exemptions look this way. Splitting the two
+> in 2026-08-05 removed 27.5 KB (43%) from every ordinary UI turn. Pair this file
+> with `/gate-probe`; add new gate failures here, not to the working rules.
 
-## 이 파일이 답하는 질문
+## Questions this file answers
 
-| 물음 | 절 |
+| Question | Relevant lesson |
 |---|---|
-| 면제를 어디까지 열어야 하나 | 그림자는 왜 기하 허용목록인가 · hex 는 왜 전면 금지가 아닌가 |
-| 어느 토큰으로 바꿔야 하나 | 값이 아니라 «자리» 가 토큰을 정한다 |
-| 같은 규격에 표기가 둘이면 | 클래스가 아니라 문법으로 빠져나간 경우 · 스캐너가 표기 하나만 보면 |
-| 룰이 조용히 죽는 경우 | flat config 다중 블록 함정 · 커버리지는 허용목록이 아니라 거부목록 |
-| 켜기 전에 무엇을 하나 | 룰을 켜기 전 반드시 측정한다 |
-| 쉬는 상태만 재고 있지 않나 | 호버 상태 대비 · 층위 사다리 |
+| How wide may an exemption be? | shadow geometry, inline syntax, and hex scope |
+| Which token is correct? | the host surface decides, not token presence |
+| What if one rule has several syntaxes? | class, inline style, JSX, and object branches all need coverage |
+| How does a gate silently die? | flat-config replacement, path allowlists, and narrow scanners |
+| What happens before enabling or removing a gate? | inventory and probes in both directions |
+| Is only the resting state measured? | hover contrast and z-index state |
 
-### 그림자는 왜 `var(` 면제가 아니라 기하 허용목록인가
+## Shadow gates allow geometry, not any `var(...)`
 
-처음 이 룰을 켤 때 `shadow-\[` 를 통째로 금지했더니 멀쩡한 토큰 사용 90여 건까지
-걸려서 lint 경고가 144 → 548 로 뛰었다. 그래서 **`var(` 가 있으면 통과**로
-좁혔고, 그 판단은 그때 옳았다(소음 0, 위반 5건 치환).
+A first ban on all `shadow-[…]` raised warnings from 144 to 548 because more than
+90 valid token references were caught. Allowing any string containing `var(`
+reduced noise to zero but opened the opposite hole: a hand-written geometry such
+as `0 28px 90px var(--color-shadow-a58)` passed because only its colour was
+tokenized.
 
-**그런데 그 면제가 반대쪽으로 샜다.** `var(` 는 *색*에만 있어도 조건을 만족하니,
-`0 28px 90px var(--color-shadow-a58)` 같은 값이 통과했다 — 색은 토큰인데
-위치·번짐 같은 모양은 손으로 적은 것이다. 2026-07-28 실측: 손으로 맞춘 그림자
-**23종**, 그 안에
+The 2026-07-28 inventory found 23 geometries, including two reversed light
+directions (`0 -16px`, `-24px 0`) and a 90px settings-sheet blur larger than the
+80px modal tier. The gate now accepts only named elevation/docking/press/surface
+tokens and inset hairlines.
 
-- **빛이 오는 방향이 뒤집힌 것 2건** — 하단 탭바 `0 -16px`(위에서 빛이 온다는
-  뜻), 우측 패널 `-24px 0`(옆에서 온다는 뜻). 이 앱의 광원은 하나이고 y 는
-  항상 양수다.
-- **높이 순서가 뒤집힌 것 1건** — 설정 시트의 번짐 90px 이 대화상자 단
-  (80px)보다 크다. 설정 메뉴가 모달보다 위에 뜬 것처럼 읽힌다.
+### Apply exemptions per layer, not per value
 
-셋 다 값 규칙은 하나도 안 어겼다. 그래서 판정 기준을 **"토큰을 썼는가" 에서
-"어느 토큰을 썼는가"** 로 바꿨다 — 허용하는 것은 사다리(elevation-*/dock-*) ·
-눌림(control-press) · 표면 전용 토큰 · inset 머리카락선(빛이 아니라 재질을
-나타낸다)뿐이다.
+The first negative lookahead tested the whole comma-separated shadow value. One
+valid inset layer therefore laundered an adjacent raw elevation layer. Four
+places escaped, including the shared button primitive used by sixteen rendered
+buttons across ten routes.
 
+Test each comma-separated layer independently. Skip prior layers, apply the
+negative lookahead only to the current layer, and require a letter or `(` so the
+numeric pieces of `rgba(...)` are not misreported as shadow layers. One valid
+member of an allowlist must never become a permit for its siblings.
 
-### 면제 판정의 **단위**가 틀리면 정상 레이어가 위반을 세탁한다 (2026-08-06)
+## The host determines the token
 
-위 절이 판정 기준을 「토큰을 썼는가」에서 「어느 토큰을 썼는가」로 바꿨다. 그
-다음에 남아 있던 구멍은 **기준이 아니라 단위**였다.
+Replacing three `text-white` uses with `--color-text-primary` would have reduced
+contrast on the solid indigo surface:
 
-두 룰(클래스·인라인)은 값 **전체**에 부정 룩어헤드를 걸었다 —
-`^(?!.*(?:허용목록)).+` 꼴이다. 허용목록에는 `inset` 이 있다(빛이 아니라 재질).
-그래서 **대괄호 안 어딘가에 정상 inset 헤어라인이 한 겹 있으면 값 전체가
-면제**됐고, 그 옆에 손으로 쓴 고도 그림자가 붙어 있어도 통과했다.
+| Ink | Contrast on `#5e6ad2` | AA 4.5 |
+|---|---:|---:|
+| `#ffffff` / `--color-text-on-accent` | 4.70 | pass |
+| `--color-text-primary` | 4.42 | fail |
+| `--color-indigo-text-soft` | 2.58 | fail |
 
-프로브가 그 차이를 그대로 보여 준다:
+Tokenization means choosing the token licensed for that host, not any token.
+The initial fix was not gated; ten days later three of four filled-brand labels
+had regressed to 4.42:1. `brand-fill-ink-license.contract.test.ts` computes the
+pair rather than allowlisting words. Neighbouring accent-tint and quaternary
+gates cannot see an opaque indigo fill.
 
-| 값 | 종전 | 지금 |
-|---|---|---|
-| 손으로 쓴 기하 한 겹 | 잡힘 | 잡힘 |
-| **같은 값 앞에 inset 한 겹을 더함** | **안 잡힘** | 잡힘 |
-| 사다리 토큰 참조 | 통과 | 통과 |
-| inset 헤어라인 + 눌림 토큰(정상 2겹) | 통과 | 통과 |
-| 거대 spread 스크림(`0 0 0 9999px var(--topology-…)`) | 통과 | 통과 |
+The first implementation parsed JSX tags and produced seven false positives:
+comparison operators looked like tag starts, and some classes lived in file
+constants rather than tags. String literals are the correct unit; class strings
+cannot legitimately contain JSX. Do not use an arbitrary length cutoff—a valid
+class constant already measured 401 characters.
 
-새어 나온 것은 **4곳**이고 그중 하나가 **공유 버튼 프리미티브**라 앱 전체 주
-버튼에 퍼져 있었다(렌더 census 16건 / 10라우트). #973 이 「손으로 스타일을 적은
-버튼이 0개가 됐다」를 달성한 그 프리미티브 안에 평행 사다리가 남아 있었던 것이다.
+## z-index has a partial ramp
 
-정규식으로 「표식 없는 레이어가 **하나라도** 있으면」을 표현하는 방법: 앞선
-레이어들을 `(?:[^\]]*,)?` 로 건너뛰고 그 자리의 레이어(`[^,\]]*`)에만 부정
-룩어헤드를 건다. `[a-zA-Z(]` 를 함께 요구하는 이유는 대괄호 안 raw
-`rgba(0,0,0,.2)` 의 숫자 조각(`0`)이 «표식 없는 레이어» 로 잡혀 엉뚱한 자리를
-가리키는 것을 막기 위해서다(그런 값은 지금 0건이고, 들어오면 잡히는 편이 맞다).
+Eleven stable tiers were measured. Tailwind's 10/20/30/40/50 steps cover sticky,
+map hints, popovers, floating chrome, and modal scrims. Named `--z-*` tokens cover
+25/60/70/75/80/100 for map scrims, dialogs, tours, tour cards, tooltips, and skip
+links. The lower five were not renamed because a token with zero consumers is
+misinformation and `unused-token-ratchet` correctly rejected that attempt.
 
-> **교훈**: 허용목록을 고쳐도 **그 목록을 적용하는 단위**가 값 전체면, 목록에
-> 있는 정상 항목 하나가 나머지 전부의 통행증이 된다. 면제에는 방향뿐 아니라
-> **범위**도 있다.
+Values below 20 remain local stacking inside one surface. Global names would
+falsely turn local context into a product-wide contract.
 
-### 값이 아니라 «자리» 가 토큰을 정한다 (2026-08-05)
+## Hover contrast must be measured in hover
 
-`text-white` 3곳을 «토큰이 아니니까» 라는 이유로 `--color-text-primary` 로
-바꿀 뻔했다. **재 보니 그게 AA 를 깨는 방향이었다** — 인디고 면(`#5e6ad2`) 위에서
+WCAG applies to interaction states. A resting-state inventory missed primary
+buttons falling from 4.70 to 3.51, 3.17, and 4.01 on hover, plus one action at
+4.41. A solid button cannot visibly brighten while keeping white ink above AA;
+its safe brightness margin is only 5.7%. Solid indigo therefore darkens to
+`--color-indigo-brand-hover` (`#5661c4`, 5.38:1). Tinted controls may still
+brighten, and tint ink uses `accentOnTint`.
 
-| 잉크 | 대비 | AA(4.5) |
-|---|---|---|
-| `#ffffff` (그때의 `text-white`) | **4.70** | 통과 |
-| `--color-text-primary` `#f7f8f8` | **4.42** | 미달 |
-| `--color-indigo-text-soft` | 2.58 | 미달 |
+`tests/e2e/hover-contrast.spec.ts` performs a real hover across seventeen routes.
+Stylesheet inference failed because it selected the last matching rule rather
+than the cascade winner. Moving the mouse to `(2,2)` also failed because that
+point hovered the left rail, corrupting the next resting measurement. A planted
+failure caught the second defect.
 
-올바른 목적지는 이미 있던 `--color-text-on-accent`(#ffffff)였다. 토큰화는
-«아무 토큰이나 넣기» 가 아니다 — **그 자리가 무엇 위에 얹혀 있는지**가 어느
-토큰인지를 정하고, 그건 재야 안다.
+## Direct-child selectors miss conditional branches
 
-#### 그리고 그때 게이트를 안 세워서 **같은 결함이 다시 났다** (2026-08-15)
+The original accent/tint selector saw only a direct literal. A value below
+`JSXExpressionContainer → ConditionalExpression` passed, leaving two live
+violations. Cover the union of direct literals and conditional branches, but not
+comparison literals under `BinaryExpression`. Probe direct JSX, JSX ternary,
+object ternary, comparison, and a ternary without tint.
 
-위 진단은 정확했고 세 자리를 고쳤는데, **잠그지는 않았다.** 열 흘 뒤 배지 색
-역할 전수가 브랜드 면 위 글자 4곳을 세었더니 **3곳이 다시
-`--color-text-primary`(4.42:1)** 였다 — 9.5px 대문자 라벨(허브 배지)이고, 나머지
-1곳만 `--color-text-on-accent`(4.70:1)로 옳았다.
+An inventory that searched only `tone={` found one syntax and missed the object
+form. Every syntax the rule supports must also appear in its pre-enable census.
 
-왜 아무 검사도 못 봤나. 인접 게이트 셋이 **한 자리에서 나란히 비켜 갔다**:
+## A second syntax needs a second detector
 
-| 게이트 | 왜 못 보나 |
+Class rules for `shadow-[…]` cannot see `style={{ boxShadow: ... }}`. Studio once
+kept eight raw shadows in three already-named roles through that path. Inline
+and class detectors now share the same allowed tokens and live in both the global
+and ramp blocks; putting the rule only in a ramp block would exempt the very debt
+file that contained the violation.
+
+The same pattern later appeared for inline `fontSize` and `borderRadius`.
+`var(...)` is valid for surface-specific tokens, but `--text-*` through inline
+style is still forbidden because it loses the line-height pair. Ternary branches
+are checked from day one. Next's reserved `opengraph-image` and `twitter-image`
+files are scoped out because their Satori canvas cannot consume CSS variables.
+
+Exemptions have direction: preserving a valid use must not preserve an invalid
+use that happens to share its file or value.
+
+## Hex is not globally forbidden
+
+The 2026-07-26 inventory found 127 hex appearances but zero product violations in
+arbitrary-value syntax. The rest were test fixtures (83), PR-number comments
+(16), Satori/viewport/standalone surfaces without CSS variables (16), token
+definitions or static SVG (7), fallbacks (3), and alpha masks (2). A global ban
+would create 27 false positives and catch nothing. The narrow rule blocks hex in
+arbitrary-value syntax, where a new violation would actually live.
+
+## Flat-config blocks replace, not merge
+
+ESLint flat config replaces a rule's option array in later blocks. Adding a
+selector to only one `no-restricted-syntax` definition silently removes it from
+another scope. Put shared selectors in one array and verify that every scoped
+block spreads it.
+
+Two scoped blocks once carried comments warning about this exact trap while
+spreading only `arbitrarySizeSelectors`; weight, tracking, palette, z-index,
+inline shadow, and cursor rules were absent in those directories. A comment is
+not a gate. Count every spread site and run a probe file through each scope.
+
+## Scanner notation coverage is its own invariant
+
+An icon ratchet matched only single-quoted `lucide-react` imports while 73% of
+the repository used double quotes. Its non-empty floor still passed because the
+visible quarter contained over 120 icons. The reported debt was 64; reality was
+230.
+
+Non-empty is not complete. Assert that every real notation variant contributes a
+non-zero count. Synthetic probes are insufficient when they share the detector's
+wrong assumption. Source inventory also does not prove rendered inventory: a
+runtime `<Icon size={17} />` escaped tag-name matching and was found only in the
+browser beside a 16px sibling.
+
+## Coverage is a denylist of debt, not an allowlist of migrated paths
+
+The old ramp gate covered only directories declared migrated. Every new directory
+was therefore outside the design system. A probe under a new view containing
+`text-[13px] rounded-[5px] leading-[1.9] duration-300` produced zero errors.
+
+Current coverage is all `src` and `app` TypeScript, with only exact debt files
+excluded. The initial forced inventory found 125 violations concentrated in
+twelve files; directory-level exclusions would have exempted future files too.
+Those exceptions reached zero on 2026-08-05 after 93 remaining type/radius uses
+moved to nearest ramp steps. Never add a debt exemption again; add a ratified
+ramp step and its lint rule.
+
+`type-ramp-coverage.contract.test.ts` runs ESLint itself over existing and not-yet-
+existing paths, probes four violations and valid ramps, rejects directory
+exemptions, checks file existence, and ratchets remaining debt. Duplicating the
+lint regex would recreate the old scanner that covered only seven of twelve
+forms.
+
+## Removing a gate requires the same discipline as enabling one
+
+A 2026-08-22 history-only audit proposed deleting several gates. Opening the
+current files disproved four claims:
+
+| Report | Current measurement |
 |---|---|
-| `accent-ink-contrast.contract` | **틴트 위 인디고 잉크**(accent/accentOnTint)만 판정한다. 잉크가 무채색이거나 바탕이 100% 불투명이면 관할 밖 |
-| `quaternary-ink-surface.contract` | 무채색 바탕의 겹침 단계를 본다. 인디고 **면**은 그 사다리에 없다 |
-| lint 값 룰 | 볼 것이 없다 — `text-primary` 도 `indigo-brand` 도 정당한 램프 토큰이다. 틀린 것은 값이 아니라 **짝** |
-
-게이트: `tests/contract/brand-fill-ink-license.contract.test.ts` — 허용목록이
-아니라 **계산**이다(토큰 값을 읽어 합성 대비를 낸다). 판정 단위는 여는 태그가
-아니라 **문자열 리터럴**인데, 그 선택 자체가 이 라운드의 실측이다:
-
-> 태그 파서를 먼저 썼더니 `AtlasGitPanel` 하나가 **잉크 40여 개를 진 「태그」**로
-> 보고됐다(오탐 7건). 원인 둘 — 코드의 비교 연산(`a < b`)이 태그 시작으로 잡혀
-> 파서가 파일 끝까지 훑었고, 애초에 그 파일의 브랜드 면은 JSX 태그가 아니라
-> **파일 상수**에 살아서 태그 단위로는 원리적으로 안 잡힌다. 리터럴은 다른
-> 원소를 삼킬 수 없다. 다만 백틱 짝짓기가 `${…}` 안에서 어긋나 5,198자짜리
-> 가짜 리터럴이 하나 나왔고, 그건 **className 리터럴에 JSX 가 들어 있을 수
-> 없다**는 성질로 버렸다(길이로 자르면 정당한 401자 상수가 같이 죽는다).
-
-**교훈**: 진단을 문서에 적는 것과 잠그는 것은 다른 일이다. `design.md` 가 이미
-*"규격을 문서에 적으면 같은 PR 에 룰도 넣는다"* 고 말하는데, **고친 결함**도
-같은 규율의 대상이다 — 고치기만 하고 안 잠그면 그 결함은 자리만 옮겨 다시 난다.
-
-### 층위(z-index)에도 사다리가 있다 — 다만 절반만 이름을 얻었다 (2026-08-05)
-
-실측: **11단이 규칙적으로 쓰이고 있는데 어느 것이 어느 것 위인지 코드 어디에도
-적혀 있지 않았다.** z-index 충돌은 «안 보이니까 숫자를 올린다» 로 번지는 대표적
-버그원이고, 이름이 없으면 다음 사람은 또 올린다.
-
-| 단 | 무엇 | 지금 |
-|---|---|---|
-| 10 · 20 · 30 · 40 · 50 | sticky · 지도 힌트 · 지도 팝오버 · 떠 있는 크롬 · 모달 뒤 막 | **Tailwind 이름 스텝** (`z-10`~`z-50`, 68곳) |
-| 25 · 60 · 70 · 75 · 80 · 100 | 지도 막 · 대화상자 · 투어 · 투어 카드 · 툴팁 · 건너뛰기 링크 | **`--z-*` 토큰** (17곳 이동, 값 그대로) |
-
-윗단만 토큰이 된 이유: 아랫단 다섯을 옮기려면 자리마다 «이 `z-40` 은 크롬인가
-셀렉트인가»를 판정해야 하는데, 소비처 없이 이름만 올리면
-`unused-token-ratchet` 이 먼저 막는다 — **정의만 있고 소비가 없는 토큰은 규격이
-아니라 오정보**이기 때문이다. 실제로 11단을 한꺼번에 올렸다가 그 게이트에 걸려
-되돌렸다.
-
-**20 미만은 사다리에 넣지 않는다.** 공방 나침 무대 안의 1~13 처럼 «한 표면
-안에서만 유효한 지역 쌓임»까지 전역 이름을 붙이면 지역 문맥이 전역 계약인 척하게
-된다. lint 도 20 이상만 본다.
-
-### 호버 상태 대비 — 관례가 접근성과 충돌한 자리 (2026-08-05, 해결)
-
-**WCAG 는 상태를 가리지 않는다.** 그런데 대비 계측은 쉬는 상태의 DOM 만 훑고
-있었고, 그 사각에서 제품의 주 CTA 들이 호버하는 동안 AA 를 깨고 있었다.
-
-| 버튼 | 쉴 때 | 호버 |
-|---|---|---|
-| Apple Silicon용 받기 | 4.70 | **3.51** |
-| 앱 받기 | 4.70 | **3.17** |
-| 기존 폴더 선택 | 4.70 | **4.01** |
-| 다음 액션 복사 | 4.61 | **4.41** |
-
-원인은 둘이고 **둘 다 관례였다**:
-
-1. **다크 UI 는 호버에서 밝아진다** — 그런데 채워진 버튼은 잉크가 흰색이라
-   면이 밝아질수록 대비가 떨어진다. 기준 `#5e6ad2` 가 이미 4.70 이라 AA 를
-   지키며 밝힐 여유가 **5.7%** 뿐이고, 그 정도로는 호버가 보이지 않는다.
-   → **채워진 버튼만** 호버에서 어두워진다(`--color-indigo-brand-hover`
-   `#5661c4`, 대비 5.38, 밝기 −16.3%). 틴트/투명 배경 컨트롤은 그대로 밝아진다 —
-   거기선 잉크가 흰색이 아니라 충돌이 없다.
-2. **틴트 위에 `accent` 잉크** — 호버에서 틴트가 한 단 오르며 4.56 → 4.41.
-   헌장이 이미 처방해 둔 `accentOnTint`(`--color-indigo-text-soft`)로 바꾸니
-   8.92 / 8.66. 기존 lint 셀렉터는 **쉬는 상태의 짝만** 봐서 이 자리를 못 봤다.
-
-게이트: `tests/e2e/hover-contrast.spec.ts` — 감사 대상 17개 라우트에서
-**실제로 마우스를 올려** 계산된 값을 읽는다.
-
-#### ⚠️ 추론은 계측이 아니다 (이 게이트를 만들며 두 번 틀렸다)
-
-- **첫 시도**: `document.styleSheets` 에서 `:hover` 규칙을 찾아 계산했다. **0건이
-  나왔다** — 캐스케이드 승자가 아니라 «마지막으로 매치된 규칙»을 골라서 호버
-  배경이 엉뚱하게 패널색으로 풀렸다. 실제로 호버해 보니 5건이었다.
-- **두 번째**: 컨트롤마다 «읽고 → 호버하고 → 마우스를 (2,2)로 치운다» 를
-  반복했는데, 그 (2,2)가 **좌측 레일 위**였다. 다음 컨트롤의 «쉬는 상태»를 이미
-  호버된 채로 읽어서 rest == hover 가 되고, «호버가 색을 안 바꾼다»로 분류돼
-  조용히 건너뛰었다. **자기검증 프로브가 그 구멍에서 실패해 잡아냈다** — 심어 둔
-  미달을 못 잡으면 이 게이트의 0건은 증거가 아니다.
-
-### 직계 결합자(`>`)는 삼항식을 못 본다 (2026-08-13)
-
-accent×틴트 짝 규칙이 `[name.name="tone"] > Literal[value="accent"]` 로 **직계
-리터럴만** 봤다. `tone={cond ? "accent" : …}` 는 리터럴이
-JSXExpressionContainer→ConditionalExpression 아래라 그냥 통과했고, 실사용 2곳이
-그 모양으로 살아 있었다 — 하나는 조건이 className 삼항과 **상관**이라 accent
-가지와 인디고 틴트 가지가 정확히 같이 켜졌다(VaultStartChecklist), 다른 하나는
-두 가지 모두 틴트 면이었다(DependencyPicker).
-
-확장 형태: 각 짝을 「직계 리터럴 ∪ `ConditionalExpression > Literal`」 로.
-가지 위치(consequent/alternate)만 잡히므로 `x === "accent"` 같은 **비교
-리터럴은 오탐하지 않는다**(BinaryExpression 아래라 `>` 에 안 걸림) — 프로브
-5종(직계 위반·JSX 삼항 위반·객체 삼항 위반·비교 리터럴 정상·틴트 없는 삼항
-정상)으로 확인했다.
-
-**켜기 전 census 의 함정**: 첫 전수는 `tone={` 만 grep 해서 JSX 삼항 1곳만
-찾았다 — 객체 표기(`tone: cond ? …`)를 안 봤고, 룰을 넓히자마자 두 번째
-현장이 걸렸다. 같은 규격에 표기가 둘이면 census 도 두 벌이어야 한다(위
-「클래스가 아니라 문법으로」와 같은 계열).
-
-### 클래스가 아니라 문법으로 빠져나간 경우 (2026-08-04)
-
-위의 기하 허용목록은 `shadow-[…]` 라는 **클래스 문자열**을 본다. 그림자를 JSX
-인라인 스타일(`style={{ boxShadow: "…" }}`)로 쓰면 클래스가 아예 안 생기므로
-셀렉터에 걸릴 것이 없다. 그 틈에서 공방(`StudioCompass.tsx`)이 **평행 사다리**를
-돌리고 있었다 — 손으로 쓴 그림자 8건, 모양 3종, 그리고 셋 다 **이미 이름이 있는
-층**이었다(하단 도킹 → `-dock-bottom` · 앵커된 팝오버 6곳 → `elevation-2` ·
-스크림 동반 중앙 모달 → `elevation-3`).
-
-두 가지가 이 사건의 교훈이다:
-
-1. **값이 아니라 문법이 게이트를 피할 수 있다.** 같은 규격을 표현하는 두 번째
-   문법이 있으면 룰도 두 벌이어야 한다.
-2. **면제 목록의 사정거리를 확인한다.** 이 셀렉터를 램프 배열에만 넣었으면
-   `rampDebtExemptions` 에 있는 `StudioCompass.tsx` — **정작 위반이 사는
-   파일** — 만 면제됐을 것이다. 그래서 전역 블록과 램프 블록 **양쪽**에 싣는다.
-
-허용 판정은 클래스 쪽과 같은 목록이다. 프로브로 확인한 것: 손으로 쓴 rgba 는
-잡히고, **색만 토큰이고 기하는 손으로 쓴 것**(`0 3px 7px var(--color-shadow-a35)`)
-도 잡히며, `var(--shadow-elevation-2)` 와 거대 spread 스크림
-(`0 0 0 9999px var(--topology-tour-scrim-surface)`)은 통과한다.
-
-교훈: **면제에는 방향이 있다.** "정상 사용을 살린다" 는 면제가 "비정상 사용까지
-살린다" 가 되는지, 룰을 켤 때 같이 물어야 한다.
-
-### hex 는 왜 "모든 hex 금지" 가 아닌가
-
-전부 세어 보니(2026-07-26) `src/`·`app/` 의 hex 127건 중 **대괄호에 값을 직접
-적는 자리(arbitrary value)에 박힌 진짜 위반은 0건**이었다. 나머지는 전부 정당한
-예외다:
-
-| 범주 | 건수 |
-|---|---|
-| 테스트용 가짜 데이터 | 83 |
-| PR 번호 주석(`#375`) — 구문 트리를 보는 룰은 주석을 안 본다 | 16 |
-| **CSS 변수가 닿지 않는 표면** — `next/og` Satori · `viewport.themeColor` · standalone HTML | 16 |
-| JS 쪽에서 토큰 값이 정의된 곳(`indigo-tokens.ts`) · 정적 SVG | 7 |
-| 토큰을 못 읽었을 때 쓰는 대체값 (`read("--color-canvas", "#08090a")`) | 3 |
-| 마스크용 알파 값(`#000`) — 눈에 보이는 색이 아님 | 2 |
-
-"모든 hex 금지" 는 **27건의 소음만 만들고 잡을 것은 0건**이다. 대괄호 안으로
-좁히면 오늘은 0건이고 앞으로 새로 들어오는 것만 막는다.
-
-### ⚠️ flat config 다중 블록 함정
-
-같은 룰을 설정 파일의 여러 블록에 나눠 적을 때 생기는 함정이다.
-`eslint.config.mjs` 는 `no-restricted-syntax` 를 여러 블록에서 다시 정의한다.
-flat config 는 룰 옵션 배열을 **합치지 않고 통째로 갈아치우므로**, 새 셀렉터를
-한 블록에만 넣으면 뒤에 오는 블록이 덮어써서 **아무 말 없이 무력화**된다.
-셀렉터는 반드시 공유 배열(`arbitrarySizeSelectors`)에 넣어 모든 블록이 그것을
-함께 펼쳐 쓰게 한다.
-
-⚠️ **공유 배열에 넣는 것만으로는 부족하다 — 스코프 블록이 그 배열을 실제로
-펼쳤는지 확인해야 한다** (2026-08-05 실측). 좁은 스코프 블록 둘
-(`footprint-glyph.ts` · `app-settings-menu/**`)이 **자기 주석에 이 함정을 정확히
-경고해 놓고** `arbitrarySizeSelectors` 까지만 실었다. 그래서 그 두 경로에서는
-무게·자간·팔레트·층위·인라인 그림자·커서가 **한 번도 강제된 적이 없다** —
-#940 이 켠 세 축이 그 디렉터리에서만 조용히 죽어 있었다.
-
-**주석은 게이트가 아니다.** 배열을 추가할 때는 그 배열을 펼치는 블록을 전부
-세고, 스코프 블록마다 **프로브 파일 한 장**으로 실제로 빨개지는지 확인한다 —
-`pnpm lint` 총계는 두 경로 다 0 error 라 아무 신호도 주지 않았다.
-
-### 스캐너가 표기 하나만 보면 그만큼 못 본다 (2026-08-05)
-
-계약 테스트가 소스를 직접 훑을 때는 **그 훑기가 전집합을 덮는지**를 따로
-증명해야 한다. 아이콘 래칫의 스캐너가 `from 'lucide-react'` **작은따옴표만**
-매칭했는데 이 저장소 파일의 **73% 가 큰따옴표**였다 — 게이트가 아이콘의 3/4 에
-대해 존재하지 않았고, 장부에 「64건」이라 적힌 부채의 실측은 **230건**이었다.
-
-**분모 단언이 이것을 못 막는다.** 그 래칫에는 이미 «세는 대상이 120개 이상»
-이라는 공회전 방지 단언이 있었지만, 작은따옴표 파일 27개만 세어도 120을 넘었다.
-
-> **공집합이 아니라는 것과 전집합을 본다는 것은 다르다.** 앞의 것만 증명하는
-> 단언을 뒤의 것으로 착각하지 마라.
-
-그래서 소스를 훑는 게이트에는 **실물 커버리지 단언**을 함께 넣는다 — 저장소에
-실재하는 표기 변종 각각에서 0이 아닌 수를 세고 있는지. 합성 프로브만으로는
-부족하다: 그 프로브 자신이 결함과 같은 가정(작은따옴표)으로 쓰여 있었다.
-**프로브가 결함과 가정을 공유하면 그 결함을 증명할 수 없다.**
-
-그리고 **소스 스캔의 0을 화면의 0으로 읽지 않는다.** 같은 라운드에서 실제
-결함 하나가 브라우저에서만 잡혔다 — 런타임 변수로 렌더되는 아이콘
-(`const Icon = item.icon; <Icon size={17} />`)은 여는 태그 이름이 import 집합에
-없어 소스 스캔의 시야 밖이고, 그 17px 이 바로 옆 형제(16px)와 **한 바 안에서**
-어긋나 있었다.
-
-### 커버리지는 허용목록이 아니라 거부목록이다 (2026-08-04 뒤집음)
-
-**종전**: 램프 셀렉터를 펼쳐 넣는 블록이 「치환이 끝난 디렉터리」 허용목록
-(`codexMigratedGlobs`)이었고, 이 절은 그것을 *"결함이 아니라 문서화된 설계"* 라고
-적어 뒀다. 빚을 한 번에 못 치우던 시절에는 맞는 말이었지만 **그 부작용이 목적을
-뒤집었다**: 목록에 없는 경로에는 램프 룰이 **아예 안 걸리고**, 새로 만든
-디렉터리는 언제나 목록에 없다.
-
-실제로 해 봤다 — 새 `src/views/<name>/ui/*.tsx` 한 줄에
-`text-[13px] rounded-[5px] leading-[1.9] duration-300` 이라고 위반 네 개를 심고
-`pnpm exec eslint` 를 돌리니 **0 errors, 0 warnings**. `calculateConfigForFile`
-로 다시 재 보니 그 경로에 걸리는 셀렉터는 **7개**(scale/gradient 5 + accent 2)
-뿐이고 램프 셀렉터는 **0개**였다. 소유자가 원한 것은 *"명령만 하면 디자인 시스템
-기반으로 화면이 나온다"* 인데, **새 화면이야말로 규격이 하나도 안 걸리는
-자리**였다.
-
-**현행**: `rampCoveredGlobs = ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}']` —
-전부 덮고, 예전부터 빚이 있는 **파일**만 `rampDebtExemptions` 로 뺀다.
-
-> **2026-08-05: 그 예외가 0이 됐다.** 마지막 7개 파일 93건(text 68 · radius 25)을
-> 램프로 옮겼다. 매핑은 최근접 스텝이고 동점은 자리의 역할이 갈랐다 — `text-[5px]`
-> 계열 칩은 `chip`, 떠 있는 패널은 `panel`, 스크림 동반 모달은 `sheet`. 그중
-> `text-[11px]`×9 와 `rounded-[18px]`×2 는 램프 값과 **바이트 동일**이라 픽셀이
-> 0으로 움직였고, 나머지는 0.5~2px(최대 −3px, `text-[26px]`→`display`) 움직였다.
-> 실측: 8개 라우트에서 문서 높이 변화 0 · testid 마크 2px 이상 이동 0 ·
-> 공방 나침 무대의 폰트(9.5/11/14/16)와 반경(6/9/12) 전부 램프 위.
->
-> ⚠️ **이 목록에 파일을 다시 넣는 것은 규격을 끄는 것이다.** 새 값이 필요하면
-> 예외가 아니라 램프에 스텝을 등재하고(「체계」 소집) 같은 PR 에 lint 도 넣는다 —
-> `--radius-micro` 가 그 선례다.
-
-- 켜기 전 전부 세기(아래 절차대로): 모든 경로에 강제로 걸어 재니 위반
-  **125건**이었고, 그 125건은 **파일 12개**에 몰려 있었다. 디렉터리 8곳이
-  검사되지 않고 있었는데 실제 빚은 파일 12개라서, 뒤집는 비용이 **예외 12줄**
-  이었다. `pnpm lint` 총계는 93 warning · 0 error 로 **그대로**였다.
-- 125건을 같은 PR 에서 안 치운 이유는 양이 아니라 **성격**이다 — 대부분이 램프에
-  없는 값(13 · 27 · 11.5px …)이라 바꾸는 순간 화면 픽셀이 바뀌고, 자리마다
-  디자인 판정이 필요하다. 그건 lint PR 이 아니라 디자인 작업의 몫이다.
-- **예외는 반드시 파일 하나 단위로 적는다.** 디렉터리로 빼면 그 안에 새로 만드는
-  파일까지 같이 빠져서 같은 구멍이 다시 열린다. 계약 테스트가 디렉터리 패턴을
-  거부한다.
-- 게이트: `tests/contract/type-ramp-coverage.contract.test.ts` 가 ① 덮는 범위가
-  「전부 덮고 예외만 뺀」 모양인지 ② **아직 존재하지 않는 경로**도 램프 셀렉터를
-  전부 받는지(`calculateConfigForFile`) ③ 그 네 줄이 실제로 빨개지고 정상 램프
-  값은 통과하는지 ④ 예외가 파일 단위이고 그 파일이 실재하는지 ⑤ 예외로 뺀 빚이
-  줄기만 하는지를 잰다. 판정 규칙을 정규식으로 베껴 두지 않고 **ESLint 자신을
-  돌린다** — 종전 래칫이 손으로 베낀 정규식은 12 종류 중 7종만 갖고
-  있었다(2026-07-28 실측).
-
-**교훈**: 허용목록으로 만든 검사는 「목록에 없는 것」에서 실패하고, 소프트웨어에서
-목록에 없는 것은 **언제나 새로 만든 것**이다. 규격이 가장 필요한 자리가 정확히
-규격이 없는 자리가 된다.
-
-### 게이트를 **끌** 때도 같은 규율이 필요하다 (2026-08-22)
-
-켜기 전에 세라는 규율은 잘 지켜졌는데, **지우기 전에 확인하라**는 짝이 없었다.
-그래서 이렇게 됐다.
-
-계약 189개를 git 이력으로 전수 조사해 「무엇이 값을 하나」를 냈다. 보고는
-정연했고 숫자도 맞았다 — 그런데 지목된 항목을 **하나씩 열어 보니 넷이 사실과
-달랐다**:
-
-| 보고 | 실측 |
-|---|---|
-| `named-offramp-ratchet` 은 eslint 에 완전 포섭, 평생 0건 | **21종 중 9종이 무방비.** 그대로 지웠으면 램프 우회가 열렸다 |
-| `static-vault-source` 는 eslint 한 줄과 중복 | eslint 에 대응 규칙이 **없다**. 게다가 디렉터리 예외를 갖는데 import 룰로는 표현 불가 |
-| 게이트가 결함을 승인하는 것 3건 | **셋 다 이미 고쳐져 있었다** (2026-08-01 · 08-16 · 08-04). 파일 주석에 수술 경위까지 적혀 있다 |
-| `construction-rules` 가 한국어 산문을 못박는다 | **정반대다** — `not.toMatch(/[가-힣]/)`, 한국어가 없어야 통과한다 |
-
-원인은 하나다 — **커밋 이력만 읽고 현재 파일을 안 열었다.** 이력은 *그때 그랬다*
-를 말하지 *지금도 그렇다*를 말하지 않는다. 이 저장소는 게이트를 자주 고치므로
-그 간극이 크다.
-
-**그래서 게이트를 지우기 전에 셋을 한다:**
-
-1. **그 파일을 연다.** 이력이 아니라 현재 상태를 읽는다.
-2. **대체재가 정말 잡는지 프로브한다.** "eslint 가 잡는다"는 문서 대조가 아니라
-   위반을 심어 빨개지는 것을 본다. 실제로 그 프로브가 9종의 구멍을 찾아냈다.
-3. **정상값이 오탐되지 않는지도 프로브한다.** 대체재를 넓히면 그쪽이 소음을 낼
-   수 있다.
-
-셋을 다 통과한 것만 지운다. 하나라도 걸리면 그것은 중복이 아니라 **유일한
-검사**다.
-
-### 룰을 켜기 전 반드시 측정한다
-
-**새 룰이 수백 건 warning 을 만들면 그건 강제가 아니라 소음이다.** 원래 읽던
-경고(현재 144건)까지 파묻혀서, 검사가 있으나 마나가 된다.
-
-실제 사례: `shadow-\[` 를 통째로 금지했더니 lint 경고가 144 → 548 로 뛰었다.
-`shadow-[var(--chrome-shadow)]` 은 Tailwind 에서 CSS 변수를 참조하는 **정상
-문법**인데 그것까지 잡은 것이다. `var(` 가 없는 것만 잡도록 좁히니 위반은 5건,
-바꾸고 나서도 144 그대로 · 소음 0 이었다. 룰을 켜기 전 절차:
-
-1. 위반을 **모양별로 분류**한다 (정상적인 토큰 사용인가, 진짜로 손으로 박은
-   값인가).
-2. 진짜 위반 수가 **한 PR 로 다 바꿀 수 있는 규모**인지 확인한다.
-3. 값을 바꾸고 → 룰을 넣고 → `pnpm lint` 총계가 이전보다 늘지 않는지 확인한다.
-4. 룰이 실제로 잡는지 **프로브 파일**(일부러 위반 한 줄과 정상 한 줄을 심어 둔
-   시험용 파일)로 증명한다.
-
-
-### 장부의 전제도 실측 대상이다 — 거짓 부채 9건 (2026-08-15)
-
-아이콘 래칫의 `UNSIZED_DEBT` 는 «크기 무지정 lucide = 기본 24px 렌더» 를
-전제로 9곳(5파일)을 부채로 들고 있었다. **9곳 전부 24px 로 렌더된 적이 없다** —
-전부 `icon={…}` 슬롯이었고 슬롯 컨테이너가 CSS 로 크기를 소유하고 있었다
-(ChromeChip `[&>svg]` 14 · ChromeTile `--chrome-icon` 16 · EmptyState 16).
-콜사이트에 `size=` 를 달아 «갚았» 다면 컨테이너가 소유한 값을 두 번째 자리에
-베끼는 것 — 고치는 행위가 회귀가 될 뻔했다.
-
-스캐너는 파일 하나만 보므로 다른 파일의 컨테이너 CSS 를 원리적으로 못 본다.
-처방은 둘을 묶는 것이다: ① `icon={` 직전의 가장 가까운 여는 태그가 **크기를
-소유한다고 등재된 프리미티브**(`SIZED_SLOT_OWNERS`)일 때만 무지정에서 빼고
-(모르는 소비자는 그대로 세인다 — 과대 방향), ② 그 등재가 이름만 믿는 빈말이
-되지 않게 **프리미티브 파일에 `[&>svg]:size-` 가 실재하는지**를 같은 테스트가
-단언한다. 슬롯 안의 램프 밖 리터럴(`size={13}`)은 여전히 잡힌다.
-
-> **교훈**: 래칫 장부는 «몇 건인가» 만이 아니라 **«그게 정말 결함인가»** 도
-> 틀릴 수 있다. 부채를 갚기 전에 렌더된 화면에서 그 결함이 실재하는지 먼저
-> 잰다 — 아니면 갚는 행위 자체가 값을 두 곳에 적는 회귀가 된다.
-
-### 같은 규격의 세 번째 문법 — 인라인 크기·반경 (2026-08-15)
-
-그림자가 밟은 길 그대로다: 클래스 램프 룰(`text-[…]`·이름 스텝)은 className
-만 보고, `style={{ fontSize }}` 는 클래스가 안 생겨 시야 밖이었다. 전수는
-1건(locale-redirect 의 `'0.875rem'` — 옆 클래스 `text-body-lg` 가 이미 같은
-크기를 실어 **중복 + 행간 짝 없음**)과 Satori 1파일 8자리였다.
-
-켤 때의 판정들: `var(` 참조는 통과(표면 전용 크기 토큰의 정당한 소비처),
-단 `--text-*` 램프 토큰의 인라인 우회는 별도 셀렉터로 막는다(클래스 쪽
-`text-[length:var(--text-` 룰과 같은 병 — 크기만 얻고 행간 짝을 잃는다).
-삼항 가지는 accent 틴트 룰의 2026-08-13 함정을 선반영해 첫날부터 잡는다.
-Satori(`opengraph-image.tsx`/`twitter-image.tsx`)는 **Next.js 예약 파일명이
-곧 표면 판정**이라 — 그 이름의 파일은 구조상 전부 CSS 변수가 닿지 않는
-빌드타임 캔버스다 — 줄마다 disable 대신 파일명 스코프 블록으로 뺐다
-(inlineSizeSelectors 만 빼고 전 셀렉터 재적재, footprint 전례).
-
-### 래칫의 「후함 검사」는 장부 저자도 잡는다 + 재는 서버가 낡으면 전부 헛측정 (2026-08-15)
-
-Dialog 채택 래칫을 만들며 둘을 실측했다.
-
-1. **손으로 쓴 창립 장부가 그 자리에서 두 건 틀렸다** — GuidedTourCard 를 grep
-   원시값(2)으로 적었는데 주석 제거 후 실측은 1이었고, GlobalSearch 는 Radix
-   합성이라 `role="dialog"` 마크업 자체가 0이었다. 「장부가 실측보다 후하면
-   빨개진다」는 양방향 검사가 켜기 전에 그것을 잡았다 — 후함 검사는 미래의
-   드리프트만이 아니라 **장부를 처음 쓰는 사람의 손**부터 잡는다.
-2. **Playwright 가 재사용한 :3100 dev 서버가 하루 전에 뜬 것이었다** — 새로 만든
-   스펙이 세 번 연속 「결함」을 보고했는데, 셋 다 내 코드가 아니라 어제 코드의
-   측정이었다(브라우저 수동 재현은 즉시 통과). `reuseExistingServer` 환경에서
-   스펙이 방금 만든 코드와 다르게 행동하면, 코드를 의심하기 전에
-   `lsof -iTCP:<port>` 로 **그 서버가 언제 떴는지**부터 본다. 격리는
-   `PLAYWRIGHT_BASE_URL` 로 전용 포트를 주면 된다(parallel-brief ①의 단독
-   작업판).
+| `named-offramp-ratchet` fully duplicated by ESLint | 9 of 21 forms were unguarded |
+| `static-vault-source` duplicated by one lint line | no equivalent rule exists; directory context is not expressible as an import rule |
+| three gates approve defects | all three defects were already fixed and documented |
+| `construction-rules` pins Korean prose | the opposite: it requires no Korean prose |
+
+Git history says what was true then, not what is true now. Before deleting a
+gate: open the current file, plant a violation and prove the replacement catches
+it, then plant a valid value and prove the replacement stays quiet. Failing any
+step means the gate is unique, not redundant.
+
+## Measure before enabling a rule
+
+Hundreds of new warnings are noise that hides existing signal. The raw shadow
+ban raised 144 warnings to 548; narrowing it to non-token geometry found five
+real violations and returned to 144.
+
+Procedure:
+
+1. classify every hit by syntax and legitimacy;
+2. confirm real violations fit one PR;
+3. fix them, add the rule, and ensure total lint signal does not grow;
+4. probe one violation and one valid form.
+
+## Ratchet assumptions must also be measured
+
+`UNSIZED_DEBT` assumed nine Lucide slots rendered at the default 24px. All nine
+were actually sized by their containers: ChromeChip 14, ChromeTile 16, and
+EmptyState 16. Adding `size=` would have duplicated the canonical value and
+created a regression.
+
+The scanner now exempts only registered slot owners whose source visibly contains
+`[&>svg]:size-`; unknown consumers remain counted in the safe direction. Literal
+off-ramp values such as `size={13}` still fail. Measure the rendered defect before
+“paying” debt; a ledger can be wrong about both count and category.
+
+## A generous ratchet catches its own author
+
+The first dialog ledger was wrong in two places: a comment inflated one count,
+and a Radix composition had no literal `role="dialog"`. The lower-bound check
+found both while the ledger was being written. A ratchet must fail when current
+debt is either above **or below** its recorded baseline.
+
+The same round measured a stale Playwright server on port 3100 three times. When
+browser behaviour contradicts current source under `reuseExistingServer`, inspect
+server age with `lsof -iTCP:<port>` before blaming code. Give parallel work an
+explicit `PLAYWRIGHT_BASE_URL` and unique port.

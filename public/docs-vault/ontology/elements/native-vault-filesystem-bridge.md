@@ -8,4 +8,4 @@ path: src-tauri/src/lib.rs
 created_by: "agent:unknown"
 ---
 
-Tauri WebView가 선택한 볼트 안의 파일·디렉터리를 읽고 쓰게 하는 네이티브 브리지. Unix mutation은 canonical root와 상대 부모를 no-follow 디렉터리 FD로 붙들고, 일반 파일은 umask 기반 임시 inode를 완성해 같은 부모 안에서 원자 교체하며 디렉터리는 안정된 부모에서 생성한다. 검사 뒤 부모 이름이 외부 symlink로 교체돼도 볼트 밖 side effect를 만들지 않는다. Windows reparse-point 경쟁은 아직 별도 잔여 경계다.
+Native bridge that allows the Tauri WebView to read and write files and directories within the selected vault. Unix mutations hold canonical roots and relative parent directories as no-follow directory file descriptors, complete regular files with umask-based temporary inodes for atomic replacement within the same parent, and create directories from stable parents. After inspection, even if the parent name is replaced by an external symlink, it does not create side effects outside the vault. Windows reparse-point race conditions remain a separate residual boundary.

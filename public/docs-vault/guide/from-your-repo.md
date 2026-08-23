@@ -1,50 +1,47 @@
-# 내 저장소에서 시작하기
+# Starting from My Repository
 
-빈 볼트에 노드를 손으로 백 개 적는 일은 아무도 하지 않습니다. 그래서 시작은
-**이미 가진 것에서 뽑아내는 것**입니다. 여러분은 이미 코드가 있고, 폴더 구조가
-있고, 아마 `CLAUDE.md` 나 `AGENTS.md` 도 있습니다.
+No one manually enters a hundred nodes into an empty Vault. So, starting means **extracting from what you already have**. You already have code, folder structure,
+and probably `CLAUDE.md` or `AGENTS.md`.
 
-세 가지 입구가 있습니다.
+There are three entry points.
 
-| 가진 것 | 입구 |
+| What you have | Entry point |
 |---|---|
-| 코드 저장소 | `init --quick-start` (아래 1·2절) |
-| 이미 쓰던 에이전트 지침 파일 | `absorb` (3절) |
-| 마크다운 문서가 든 폴더 | 앱의 「내 문서로 지도 만들기」 (4절) |
+| Code repository | `init --quick-start` (Sections 1 & 2 below) |
+| Existing agent instruction file | `absorb` (Section 3) |
+| Folder with Markdown documents | App's **Create Map from My Documents** (Section 4) |
 
-**셋 다 공통 규칙이 하나 있습니다: 제안 단계는 아무것도 쓰지 않습니다.**
-확인한 것만 볼트에 들어갑니다.
+**All three share one common rule: the proposal phase writes nothing.**
+Only what you confirm enters the Vault.
 
-## 1. 한 줄로 시작하기
+## 1. Starting with One Line
 
 ```bash
 node cli/src/index.mjs init my-vault --quick-start
 ```
 
-이 한 줄이 하는 일:
+What this one line does:
 
-1. 볼트 폴더를 만들고 시작 노드를 넣습니다.
-2. **저장소를 훑어 첫 그래프를 만듭니다** (아래 `bootstrap` 과 같은 것).
-3. 에이전트 설정 파일(`.mcp.json` · `.codex/config.toml`)을 씁니다.
-4. `CLAUDE.md` 나 `AGENTS.md` 가 있으면 **흡수를 권하는 줄만** 찍습니다.
-   자동으로 흡수하지 않습니다.
-5. 다음에 할 일 세 줄을 찍습니다.
+1. Create the vault folder and insert the start node.
+2. **Scan the repository to create the first graph** (similar to `bootstrap` below).
+3. Write the agent configuration file (`.mcp.json` · `.codex/config.toml`).
+4. If `CLAUDE.md` or `AGENTS.md` exists, output only the lines **recommended for absorption**.
+   It does not absorb automatically.
+5. Output three lines of next steps.
 
-4번이 중요합니다. 여러분이 손으로 쓴 지침 파일을 도구가 말없이 재작성하는 일은
-일어나지 않습니다.
+Step 4 is important. The tool will never silently rewrite your hand-written instruction files.
 
-## 2. 나눠서 보기: 훑기 · 확인 · 적용
+## 2. View in parts: Scan · Verify · Apply
 
-한 줄이 불안하면 세 단계로 쪼갤 수 있습니다. **첫 두 단계는 볼트를 건드리지
-않습니다.**
+If one line feels uneasy, you can split it into three steps. **The first two steps do not touch the vault.**
 
-### ① 훑기: 무엇이 후보인가
+### ① Scan: What are the candidates?
 
 ```bash
 node cli/src/index.mjs analyze . --vault my-vault
 ```
 
-이 저장소에서 돌리면 이렇게 나옵니다.
+Running this in the repository produces this output.
 
 ```
 analyze /path/to/repo (framework=fsd)
@@ -63,21 +60,17 @@ analyze /path/to/repo (framework=fsd)
     elements/knowledge-graph       Knowledge Graph     ← src/entities/knowledge-graph
 ```
 
-**오른쪽 화살표가 근거입니다.** 이 후보가 어디에서 나왔는지 한 줄마다 적혀
-있습니다.
+**The right arrow indicates the source.** Each candidate shows exactly where it came from, line by line.
 
-여기서 바로 보이는 것: 위 도메인 후보 두 개는 **README 의 제목에서 뽑힌
-것**입니다. 「In 30 seconds」 는 여러분 제품의 도메인이 아니라 문서의 소제목이죠.
-이게 이 단계가 **제안**인 이유입니다. 훑기는 구조를 보고 후보를 냅니다. 무엇이
-의미 있는지는 여러분이 압니다.
+What you can see here: The two domain candidates above were **extracted from the README title**. "In 30 seconds" is a document subheading, not your product's domain. This is why this step is a **proposal**. Scanning looks at structure and generates candidates; you know what is meaningful.
 
-### ② 의존 관계 후보
+### ② Dependency candidates
 
 ```bash
 node cli/src/index.mjs infer-imports . --vault my-vault
 ```
 
-TS/JS 의 import 그래프를 읽어 「필요한 항목」(`depends_on`) 관계 후보를 냅니다.
+Read the TS/JS import graph to generate `depends_on` relationship candidates for "required items".
 
 ```
 infer-imports /path/to/repo — 300 files / 714 edges / 273 external
@@ -87,101 +80,83 @@ infer-imports /path/to/repo — 300 files / 714 edges / 273 external
     capabilities/first-run-starter —depends_on→ capabilities/docs-vault-local × 6
 ```
 
-`× 11` 은 그 방향으로 실제 import 가 열한 번 있었다는 뜻입니다. 약한 후보를
-빼려면 `--threshold N` 을 씁니다.
+`× 11` means there were actually eleven imports in that direction. Use `--threshold N` to filter out weak candidates.
 
-### ③ 적용
+### ③ Apply
 
-읽어 보고 마음에 들면 `--apply` 를 붙입니다. 둘을 한 번에 하려면:
+Review it, and if you're satisfied, add `--apply`. To do both at once:
 
 ```bash
 node cli/src/index.mjs bootstrap . --vault my-vault
 ```
 
-`bootstrap` 은 훑기와 import 추론을 순서대로 적용한 것뿐입니다. 새로운 마법이
-아닙니다. `--skip-imports` 로 노드만 만들 수도 있습니다.
+`bootstrap` is simply scanning followed by import inference. It's no new magic. You can also create only nodes with `--skip-imports`.
 
-## 3. 이미 쓰던 지침 파일 흡수하기
+## 3. Absorbing existing instruction files
 
-`CLAUDE.md` · `AGENTS.md` 같은 파일을 이미 유지하고 있다면, 그 안에는 이미
-정책과 결정이 문장으로 들어 있습니다. 그걸 두 벌로 관리할 이유가 없습니다.
+If you already maintain files like `CLAUDE.md` · `AGENTS.md`, they already contain policies and decisions in text form. There is no reason to manage them as duplicates.
 
 ```bash
 node cli/src/index.mjs absorb AGENTS.md --vault my-vault
 ```
 
-**기본이 dry-run 입니다.** 계획만 찍고 파일은 하나도 건드리지 않습니다.
+**The default is dry-run.** It only outputs the plan without touching any files.
 
-`--write` 를 붙이면:
+Add `--write` to:
 
-- 규칙·정책·결정 절 → `kind: document` 노드가 됩니다.
-- **아키텍처·구성요소 절은 제안으로만 남습니다**. 역량인지 요소인지 도메인인지는
-  사람이 정해야 하는 판단이라 자동으로 쓰지 않습니다.
-- 주입이 의심되는 절은 분류와 무관하게 흡수에서 제외됩니다.
-- 원본은 `<파일>.pre-absorb.bak` 으로 백업된 뒤, **흡수되지 않은 절을 그대로
-  보존한 얇은 포인터**로 재작성됩니다.
+- Rules · policies · decision clauses → become `kind: document` nodes.
+- **Architecture · component clauses remain as proposals only**. Determining whether something is a capability, element, or domain requires human judgment, so it is not written automatically.
+- Clauses suspected of injection are excluded from absorption regardless of classification.
+- The original is backed up as `<file>.pre-absorb.bak`, then rewritten as a **thin pointer preserving the unabsorbed clauses exactly**.
 
-마지막 줄이 이 명령의 계약입니다. **내용은 절대 파괴되지 않습니다.**
+The last line is this command's contract. **Content is never destroyed.**
 
-## 4. 앱에서: 문서가 이미 있는 폴더
+## 4. In apps: Folders that already have documents
 
-`kind:` frontmatter 는 없지만 마크다운이 든 폴더를 열면, 지도는 「0 개념」이라고
-말하는 대신 **찾은 문서 수**를 말하고 「내 문서로 지도 만들기」 를 제안합니다.
+Even without `kind:` frontmatter, opening a folder containing markdown causes the map to report the **number of documents found** instead of saying "0 concepts," and proposes "Create map from my documents."
 
-누르면 이미 훑어 둔 목록에서 후보를 냅니다.
+Clicking it generates candidates from the already-scanned list.
 
-| 찾은 것 | 후보 |
+| Found | Candidate |
 |---|---|
-| 루트 `README` | 프로젝트 이름 |
-| 1단계 하위 폴더 | 도메인 |
-| 각 문서 | `domain:` 이 달린 요소 |
+| Root `README` | Project name |
+| Step 1 subfolder | Domain |
+| Each document | Element with `domain:` |
 
-승인하면 **승인한 문서에만 frontmatter 를 쓰고**, 본문은 손대지 않습니다. 여기에
-`project.md` 하나가 새로 생깁니다. 그게 전부입니다.
+Upon approval, **only the approved documents get frontmatter**; the body remains untouched. This creates a single new `project.md`. That's all.
 
-## 5. AI 에이전트에게 시키기
+## 5. Let an AI Agent Do It
 
-에이전트를 이미 붙였다면([AI 에이전트 연결하기](/guide/connect-agent)) 말로
-시켜도 됩니다. 에이전트가 쓰는 도구는 CLI 와 **같은 것**입니다.
+If you've already connected an agent ([Connect an AI Agent](/guide/connect-agent)), you can just tell it what to do. The tools the agent uses are **the same** as the CLI.
 
-- `analyze_repo_structure`: 저장소를 훑어 후보를 냅니다.
-- `infer_imports`: import 그래프에서 「필요한 항목」 후보를 냅니다.
-- `index_project`: 위 둘에 검증까지 묶은 계획을 냅니다.
+- `analyze_repo_structure`: Scans the repository to propose candidates.
+- `infer_imports`: Proposes "required items" from the import graph.
+- `index_project`: Combines both into a plan with verification.
 
-에이전트가 유리한 점은 훑기 다음입니다. 「이 폴더가 무엇을 하는 곳인지」 는
-폴더 이름이 아니라 코드를 읽어야 알 수 있고, 에이전트는 읽을 수 있습니다.
-그래서 `Locale Switch` 같은 폴더명 그대로의 이름 대신 역할을 적은 이름이
-나옵니다.
+The agent's advantage comes next. To know "what this folder does," you must read
+the code, not just the folder name. Agents can read code, so they produce names
+that describe the role rather than literal folder names like `Locale Switch`.
 
-## 6. 자동으로 생긴 것은 뼈대일 뿐이다
+## 6. Auto-generated Items Are Just Skeletons
 
-훑기의 결과물을 그대로 두면 **폴더 구조를 마크다운으로 옮겨 적은 것**밖에 되지
-않습니다. 그건 지도가 아니라 `tree` 출력입니다. 시작한 다음 반드시 하는 일:
+Leaving the scan results as-is means you've only **transcribed the folder structure into Markdown**. That's not a map; it's a `tree` output. The essential next steps:
 
-1. **이름을 역할로 고칩니다.** `Docs Vault Local` 은 폴더 이름이지 그것이 하는
-   일이 아닙니다.
-2. **근거를 붙입니다.** 역량의 `path:` 에 낯선 에이전트가 먼저 열 구현 진입점
-   하나를 넣습니다. `elements:`에는 파일 경로가 아니라 역할이 서로 다른 실제
-   element node slug만 넣습니다.
-3. **의미 관계를 얹습니다.** 담김만 있으면 트리이고, `relates` · `dependencies`
-   가 붙어야 그래프입니다.
-4. **덜 된 곳을 확인합니다.**
+1. **Rename by role.** `Docs Vault Local` is a folder name, not what it does.
+2. **Add evidence.** For capabilities, the `path:` initially points to an implementation entry point unfamiliar to the agent. The `elements:` field should contain only actual element node slugs with distinct roles, not file paths.
+3. **Add semantic relations.** Mere containment is a tree; you need `relates` and `dependencies` for a graph.
+4. **Check incomplete areas.**
 
 ```bash
 node cli/src/index.mjs maintenance my-vault
 node cli/src/index.mjs health my-vault
 ```
 
-무엇을 노드로 만들고 무엇을 만들지 않을지는
-[무엇을 노드로 만드나](/guide/what-becomes-a-node) 가, 볼트가 자란 다음의
-정리는 [폴더가 자란 뒤](/guide/growing-vault) 가 다룹니다.
+[What Becomes a Node](/guide/what-becomes-a-node) covers what to make into nodes and what not to; [After the Vault Grows](/guide/growing-vault) handles the cleanup after growth.
 
-## 정리
+## Summary
 
-- 시작은 **가진 것에서 뽑아내는 것**입니다. 손으로 백 개 적지 않습니다.
-- `analyze` 와 `infer-imports` 는 **볼트를 건드리지 않습니다.** 읽고 나서
-  `--apply`.
-- 후보 옆의 화살표가 **근거**입니다. 근거가 이상하면 그 후보도 이상합니다.
-- `absorb` 는 dry-run 이 기본이고, `--write` 도 원본을 백업한 뒤 내용을 보존합니다.
-- **자동 생성물은 뼈대입니다.** 이름·근거·의미 관계는 그다음에 사람이(또는
-  에이전트가) 채웁니다.
+- Start by **extracting from what you have**. You don't need to manually list a hundred items.
+- `analyze` and `infer-imports` **do not touch the vault**. Read first, then `--apply`.
+- The arrow next to the candidate is the **evidence**. If the evidence is off, so is the candidate.
+- `absorb` defaults to dry-run; `--write` also preserves content after backing up the original.
+- **Auto-generated items are skeletons.** Names, evidence, and semantic relations are filled in later by humans (or agents).

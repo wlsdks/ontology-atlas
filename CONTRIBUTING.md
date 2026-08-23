@@ -22,7 +22,8 @@ pnpm lint
 pnpm build                        # static export
 ```
 
-> 🇰🇷 한국어로 기여하셔도 됩니다. AGENTS.md 와 docs/* 가 한국어 + 영문 혼용입니다.
+> Contributor-facing repository guidance is canonical in English. Localized
+> product data remains in its locale-specific fields and templates.
 
 ## Ways to contribute (no code required)
 
@@ -77,9 +78,8 @@ full picture and for how to report a vulnerability.
 
 - Branch: `feat/...`, `fix/...`, `refactor/...`, `chore/...`, `docs/...`.
   Don't push to `main`.
-- Commits: English `feat:` / `fix:` / `refactor:` prefix, body in Korean
-  or English. Explain the *why* — the diff explains the *what*. Korean
-  prefixes (`정리`, `구조`, `루프`) are not used.
+- Commits: conventional English prefix and English body. Explain the *why* —
+  the diff explains the *what*. Do not invent custom prefixes.
 - Don't bypass git hooks (`--no-verify`).
 
 ### Verification before PR

@@ -7,16 +7,18 @@
 
 ---
 
-## 2026-08-23 · 증거 절이 개수 대신 실제 파일 한 장을 보여 줍니다
+## 2026-08-23 · The evidence section shows one real file instead of counts
 
-- 다운로드 페이지 증거 절의 오른쪽이 **저장소에 실제로 있는 파일 한 장**과, 에이전트가
-  그 파일에서 읽어 가는 것으로 바뀌었습니다. 종류별 개수와 관계 표본 목록은 걷었습니다.
-  「저장소에서 열기」 링크가 있어 그 파일을 바로 확인할 수 있습니다.
-- 화면의 값은 하나도 손으로 적지 않습니다. 볼트에서 생성하고, 볼트와 어긋나면 검사가
-  실패합니다.
-- 제목을 「이 지도는 이 저장소 자신입니다」에서 「파일 맨 위 몇 줄이 지도가 됩니다」로
-  바꿨습니다.
-- 에이전트 절 아래의 「에이전트가 쓴 것도 결국 파일 한 줄입니다」 문구를 걷었습니다.
+- The right half of the download page's evidence section is now **one file that
+  actually exists in this repository**, together with what an agent reads out of
+  it. The kind counts and the sampled relation list are gone. A link opens that
+  file on GitHub so the claim can be checked.
+- None of those values are hand-typed: they are derived from the vault, and a
+  check fails when the committed copy and the vault disagree.
+- The section heading changed from claiming the map *is* this repository to naming
+  what actually happens: a few lines at the top of a file become the map.
+- Removed the caption under the agents section about agent writes ending up as a
+  line in a file.
 
 ## 2026-08-23 · 시연 절이 가운데로 서고, 설명 문구가 실제 영상을 말합니다
 

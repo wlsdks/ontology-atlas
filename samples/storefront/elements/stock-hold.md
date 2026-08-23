@@ -5,12 +5,10 @@ kind: element
 title: Stock Hold
 display_ko: 재고 홀드
 display_en: Stock Hold
-description: "진행 중인 주문 몫으로 잠시 잡아 둔 재고 예약이며, 주문이 끝내 성립하지 않으면 기한이 지나 스스로 풀리는 조각입니다."
+description: "A short-lived claim on units for an order in progress; it expires by itself if the order never lands."
 domain: domains/inventory
 ---
 
-# Stock Hold · 재고 홀드
-
-진행 중인 주문 몫으로 잡아 둔 짧은 예약이며, 주문이 성립하지 않으면 스스로 풀립니다.
+# Stock Hold
 
 A short-lived claim on units for an order in progress; it expires by itself if the order never lands.

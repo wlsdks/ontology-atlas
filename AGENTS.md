@@ -161,22 +161,22 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   the founding failure actually took: read the ledger, separate phenomenon from problem
   with three discrimination tests, self-score the six rubric rows quoting their anchors,
   and escalate to `/po-council` mechanically when the total is under 18, a fatal zero
-  appears, or a trigger is hit. Declaring "해당 없음" on ontology or agent value is **not
+  appears, or a trigger is hit. Declaring ontology or agent value "not applicable" is **not
   an exemption the author may grant** — that is the steward's review, and it requires the
   council. `pnpm decisions:check` fails any PR that adds or removes a route, edits the
   MCP/CLI public contract, or moves a design-system axis/ramp, without appending to the
   ledger in the same change.
 - **User walkthrough** — `@.claude/skills/user-walkthrough/SKILL.md` walks one journey end
   to end against the running build. Its authority is **pattern recognition**, and its
-  discipline is naming the pattern — "이 사람은 답답할 것" is invention, "이건 막다른
-  CTA 다" is checkable. It judges everything that lives in the artifact and refuses the one
+  discipline is naming the pattern — "this person will feel frustrated" is invention;
+  "this is a dead-end CTA" is checkable. It judges everything in the artifact and refuses the one
   claim that lives in a person: whether they would want it. The agent journey (a plain
   Claude Code session with only Atlas MCP, timed to the north star) is not a simulation —
   that population *is* the user.
 - **PO Council** — `@.claude/skills/po-council/SKILL.md` runs five standing product owners
-  (`po-evidence` 근거=관찰된 증거 · `po-craft` 결=만들어진 물건의 완성도 ·
-  `po-steward` 지킴이=온톨로지·로컬 우선 약속 · `po-wedge` 해자=대체 불가능성 ·
-  `po-leverage` 지렛대=기회비용) that carry the PO OS's thirteen lenses between them, with
+  (`po-evidence` = observed evidence · `po-craft` = artifact quality ·
+  `po-steward` = ontology and local-first promises · `po-wedge` = defensibility ·
+  `po-leverage` = opportunity cost) that carry the PO OS's thirteen lenses between them, with
   **every rubric row signed by exactly one of them**. Convene it before expensive or
   hard-to-reverse work — a new or removed surface, a public MCP/CLI/schema contract
   change, direction or positioning, a first public release — or whenever a solo pass
@@ -192,12 +192,11 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   code** — this repo's past failure was that whoever built a change also approved it.
   The record is only a recommendation; the human owner makes the final call.
 - **Design Council** — `@.claude/skills/design-council/SKILL.md` convenes the eight-seat
-  Atlas Designer Bench as callable agents (`design-lead` 위계=무엇이 먼저 눈에 들어오나 ·
-  `design-system` 체계=결정을 토큰·lint·테스트로 굳힘 · `design-interaction` 상호작용 ·
-  `design-motion` 모션 · `design-infoviz` 도해=그래프가 읽히나 ·
-  `design-workbench` 작업대=macOS 앱 창 · `design-responsive` 반응형 ·
-  `design-handoff` 핸드오프=에이전트가 다음에 할 일). Convene only the seats a change
-  touches; **위계 and 체계 always attend** — one names what the eye must land on first,
+  Atlas Designer Bench as callable agents (`design-lead` = visual hierarchy ·
+  `design-system` = tokens, lint, and tests · `design-interaction` · `design-motion` ·
+  `design-infoviz` = graph readability · `design-workbench` = the macOS window ·
+  `design-responsive` · `design-handoff` = the agent's next action). Convene only the seats a change
+  touches; **hierarchy and system always attend** — one names what the eye must land on first,
   the other turns the decision into tokens, lint rules, and contract tests, because a decision that
   never lands in the design system is one the next person re-makes. Every seat must open
   the built surface rather than judge a diff, cites published principles only, never
@@ -231,7 +230,7 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   "looks fine" is not a verification.
 - **Design system audit** — `@.claude/skills/design-system-audit/SKILL.md` asks whether
   the system is **enforced**, not whether one change conforms. Run it before a release or
-  when "왜 이 화면만 다르지" comes up. Its primary output is closed gates: 2026-08-03 found
+  when "why does only this screen look different?" comes up. Its primary output is closed gates: 2026-08-03 found
   300+ off-ramp values, and every one of them came through four holes — a lint selector that
   only saw bracket syntax (so `text-sm`/`rounded-md` bypassed the ramp entirely, 268 cases),
   two central surfaces sitting at `warn` with no `--max-warnings`, a colour checker skipping
@@ -240,14 +239,13 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   and prove each with a probe.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
-  **규격은 문서가 아니라 lint 가 지킨다** (`eslint.config.mjs` 의
-  `no-restricted-syntax`) — 새 규격을 문서에 적으면 같은 PR 에 lint 룰도 넣는다.
-  단 **룰을 켜기 전에 지금 어기고 있는 곳이 몇 군데인지 전부 세어 본다**: 한 PR 로
-  다 못 고칠 만큼 많으면 그 룰은 규칙이 아니라 경고 소음이 되고 원래 잡던 문제까지
-  묻힌다. 절차와 실제 측정값, 그리고 **각 게이트가 왜 그 모양인지**(면제 범위 ·
-  룰이 조용히 죽은 사례)는 `@.claude/rules/design-gates.md` — 게이트를 고칠 때만
-  읽는다. **값의 정본은 `DESIGN-SYSTEM.md` 하나**이고 나머지는 가리키기만 한다;
-  통째로 읽지 말고 그 문서 맨 위 목차에서 절을 골라 grep 해서 그 줄부터 읽는다.
+  **Lint, not prose, enforces the specification** through `eslint.config.mjs`
+  `no-restricted-syntax`; document a new rule and add its lint enforcement in the same PR.
+  Before enabling it, inventory every current violation. If one PR cannot clear them,
+  the rule becomes warning noise that hides existing signal. Read the procedure, measurements,
+  exemptions, and past silent failures in `@.claude/rules/design-gates.md` only when changing
+  a gate. `DESIGN-SYSTEM.md` alone owns values; use its table of contents and open only the
+  relevant section.
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
 - **Local-first** — vault folder only, no backend — `@.claude/rules/local-first.md`
@@ -421,8 +419,8 @@ A capability's `path:` is one canonical repo-relative implementation entrypoint;
 `elements:` contains only real element-node slugs, never raw file paths. Create an
 element only when its implementation role has ontology meaning beyond its location.
 
-다른 언어 이름은 `display_<locale>` 키(MCP 에서는 `labels`)로 넣는다.
-`title` 은 검색이 기준으로 삼는 단 하나의 이름이다. 세부 규칙: `mcp/README.md`.
+Put localized names in `display_<locale>` keys (`labels` in MCP).
+`title` is the sole canonical search name. Details: `mcp/README.md`.
 
 Bulk ingestion is `ontology-atlas import <path...>`; it uses the same schema as
 `add_concept`/`add`. Options and precedence: `cli/README.md`.

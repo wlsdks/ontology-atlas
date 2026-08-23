@@ -40,67 +40,169 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
-## 2026-08-23 (101) — 증거 절은 목록을 세지 않고 변환 하나를 보여 준다
+## 2026-08-23 (103) — The evidence section shows one transformation, not an inventory
 
-**소집**: 단독 PO 패스. · **트리거**: 소유자가 증거 절 오른쪽 칸을 보고
-*"오픈소스 설명에 넣기엔 좀 별로"*, 제목도 *"별로"*, 그리고
-*"아예 다른 느낌으로 재설계좀 해줘봐.. 다른 오픈소스들 살펴보고 와서! 꼭 지도가
-아니어도 되니"*.
+**Trigger**: looking at the shipped page the owner rejected the evidence rail
+(too weak, in the owner's words, to sit in an open-source description), the
+heading with it, and asked for a redesign after surveying other products, adding
+that it need not stay a map.
 
-**선행 결정 관계**: 2026-08-18 「오른쪽 반을 데이터로 채운다」의 **채우는 내용**을
-바꾼다. 반을 자르고 오른쪽에 무언가를 둔다는 배치는 그대로 유효하다.
+**Prior decision**: this changes *what fills* the right half that 2026-08-18
+created. That layout decision (cut the section in half, put something real on the
+right) still stands.
 
-**관찰된 현상**:
+**Observed**:
 
-1. **화면에 우리 프로젝트 속살이 그대로 나왔다.** 「가장 흔한 관계 3종 → 각각
-   슬러그 알파벳순 첫 번째」라는 규칙은 **볼트를 대표하기엔 맞지만 처음 온 사람이
-   읽기 좋은 예를 고르는 규칙이 아니다.** 결과가
-   `온톨로지 구축 검수 --contains--> Project Detail` 이었다 — 한 줄 안에 한국어와
-   영어가 섞이고, `--contains-->` 라는 날것 문법이 붙어 있다.
-2. **볼트 노드 83개 중 63개(75%)에 한국어 이름이 없다.** 그래서 한국어 페이지의
-   지도 라벨 상당수가 영어다. 오른쪽 칸만의 문제가 아니었다.
-3. **레퍼런스 9곳 실측** (Biome · Linear · Raycast · Cursor · Logseq · Ghostty ·
-   Tauri · Cap · AppFlowy). 잘 되는 곳들의 공통점은 하나였다 — **목록이 아니라
-   구체적인 한 장면을 보여 준다.** Biome 은 엉망인 코드 옆에 정리된 결과를 놓고
-   실측 숫자와 그 조건을 적는다. Raycast 는 짧은 주장 넷에 숫자를 하나씩만 붙인다.
-   그래프로 유명한 Logseq 조차 그래프가 아니라 **실제로 쓰는 노트**를 앞세운다.
-   Ghostty · Tauri · Cap 은 아예 아무것도 안 보여준다.
+1. **The screen showed this project's internals.** The rail picked "the three
+   most common relation types, and from each the alphabetically first edge by
+   slug" — a rule that represents the vault faithfully and selects for legibility
+   not at all. What reached the screen was
+   a Korean-named node joined to an English-named one by `--contains-->`: one line
+   mixing both languages and raw relation syntax.
+2. **63 of 83 vault nodes (75%) have no Korean name**, so much of the Korean
+   page's map is labelled in English. The rail was not the whole problem.
+3. **Nine references measured** (Biome, Linear, Raycast, Cursor, Logseq, Ghostty,
+   Tauri, Cap, AppFlowy). The ones that work share exactly one property: **they
+   show a single concrete moment, never an inventory.** Biome puts messy code
+   beside the formatted result with one measured number and its conditions.
+   Raycast gives four short claims with at most one number each. Logseq — famous
+   for its graph — leads with the notes you actually write. Ghostty, Tauri and Cap
+   show nothing at all.
 
-**결정**:
+**Decision**:
 
-- **세는 것을 그만두고 변환 하나를 보여 준다.** 왼쪽은 저장소에 실제로 있는 파일,
-  오른쪽은 에이전트가 그 파일에서 읽어 가는 것. 이 제품의 주장이 「프론트매터가 곧
-  그래프」이므로, 그 주장 자체를 화면에 놓는다.
-- **화면의 값은 하나도 손으로 적지 않는다.** `scripts/generate-evidence-specimen.mjs`
-  가 볼트에서 생성하고 CI 가 대조한다. 손으로 베낀 사본은 파일이 바뀌는 순간
-  거짓이 되고 아무 말도 안 한다 — 같은 날 시연 절에서 두 번 겪은 그 실패다.
-- **지도는 남긴다.** *"꼭 지도가 아니어도 되니"* 는 허락이지 지시가 아니었고,
-  재 보니 이 지도가 관문에서 **유일하게 손으로 만져지는 것**이다(`StageMap` 사용처
-  1곳). 없애면 방문자가 설치 전에 살아 있는 지도를 만질 자리가 사라진다.
-- **파일 옆에 「저장소에서 열기」 링크를 둔다.** 오픈소스에서 가장 강한 증거는
-  「가서 직접 봐라」다.
+- **Stop counting; show one transformation.** Left: a file that exists in this
+  repository. Right: what an agent reads out of it. The product's claim is that
+  the frontmatter *is* the graph, so put that claim itself on screen.
+- **Hand-type none of it.** `scripts/generate-evidence-specimen.mjs` derives the
+  panel from the vault and CI diffs it. A hand-copied file becomes false the
+  moment the file changes and says nothing when it does — the failure this page
+  hit twice on this same day.
+- **Keep the map.** "It need not stay a map" was permission, not instruction, and
+  measurement showed `StageMap` has exactly one consumer: this is the gateway's
+  only touchable thing. Removing it leaves a visitor no live map before install.
+- **Link to the file on GitHub.** In open source the strongest evidence is "go
+  and look".
 
-**진 반대 의견**:
+**Recorded dissent**:
 
-> 왼쪽 지도까지 지우고 파일과 사실만 좌우로 놓으면 Biome 의 모양에 더 가깝고
-> 한 절이 한 생각만 말하게 된다.
+> Dropping the map too and putting file and facts side by side would match
+> Biome's shape more closely and leave the section saying one thing.
 
-기각한 근거: 위의 실측 — 지도는 이 페이지에서 유일한 인터랙션이다. 다만 **이
-반대가 옳았다는 신호**는 정해 둔다(아래).
+Rejected on the measurement above: the map is the page's only interaction. The
+signal that this dissent was right is defined below.
 
-**반증 조건**:
+**Falsifiers**:
 
-- 이 절에서 지도를 만지는 사람이 관측되지 않으면 진 반대 의견이 옳았다. 지도를
-  빼고 파일·사실 두 판으로 간다.
-- 표본 파일이 방문자에게 안 읽힌다는 지적이 나오면 표본을 바꾼다. **장치가 아니라
-  `SPECIMEN_SLUG` 한 줄을 바꾼다** — 그러라고 핀으로 박아 뒀다.
+- If nobody is observed touching the map in this section, the dissent was right;
+  drop it and run file and facts as two panels.
+- If the specimen file reads as opaque to visitors, change the specimen. **Change
+  `SPECIMEN_SLUG`, not the device** — it is pinned for exactly this.
 
-**남은 것**: 한국어 이름이 없는 노드 62개. 이번에는 표본이 쓰는 1개만 채웠다.
-나머지는 이름을 정하는 일이라 소유자 확인을 받고 따로 한다.
+**Left open**: 62 nodes still have no Korean name. Only the one the specimen needs
+was filled here; the rest is naming work and needs the owner's review.
 
-**재검토**: 위 반증 조건이 관측될 때
+**Review**: when a falsifier above is observed
 
-**상태**: 유효
+**Status**: active
+
+---
+
+## 2026-08-23 (102) — Make all active authored Markdown English; retain only typed locale data and immutable history
+
+**Trigger**: after the operational control plane reached English-only status,
+the owner explicitly clarified that the audit must include every Markdown file,
+not only startup instructions.
+
+**Prior decision**: decision (101) correctly protected typed locale data and
+append-only history, but its deferral of current ontology and sample bodies is
+overturned. The owner accepted English as the canonical body language for active
+repository documentation. Korean display names remain available through
+`display_ko`; a future localized-body schema may restore translated long-form
+bodies without making the canonical source bilingual.
+
+**Decision (accountable: Jinan, implemented by Codex)**: require zero Hangul in
+operational and current authored Markdown. Keep `display_ko` inside leading
+frontmatter and `cli/templates/vault-ko/**` as explicit locale data. Generated
+`public/docs-vault/**` and `.agents/**` mirrors inherit their authored
+sources. Preserve prior entries in `docs/DECISIONS.md`,
+`docs/CHANGELOG.md`, package changelogs, archives, audits, completed plans,
+prototypes, and superseded loop records as historical evidence.
+
+**Verification contract**: the repository language gate ratchets both unexpected
+file count and Hangul code-point count to zero for operational and current
+scopes, validates non-empty locale exceptions, and remains wired into focused
+checks, pre-push, and CI. The dogfood ontology must still pass schema/reference
+validation after translation, and the generated docs vault must be rebuilt.
+
+**Recorded dissent**: the Korean locale's long-form ontology body now falls back
+to canonical English because the schema has localized labels but no localized
+body field. **Falsifier**: Korean-locale walkthroughs show that this blocks a
+core task rather than merely presenting English technical documentation.
+**Revisit**: when that observation exists or a localized-body schema is proposed.
+
+**Status**: valid; explicitly overturns only the current-body deferral in (101)
+
+---
+
+## 2026-08-23 (101) — Englishify the operational agent control plane first; preserve localized and append-only Markdown
+
+**Convened because**: the owner asked to make every Markdown file and every
+Claude skill English. This changes the words a new contributor or agent reads
+first and conflicts with the standing exceptions for localized data and
+append-only history.
+
+**Prior decisions**: `docs/GLOSSARY.md` still correctly makes English canonical
+for code comments and developer documentation. The measured 1,532-file comment
+translation also remains valid evidence that a repository-wide language rewrite
+creates more follow-on cost than bounded, verified batches. This record narrows
+the order of work; it does not weaken the English-canonical direction.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Shape a slice | Problem insight 2 · User moment 2 |
+| Craft | Shape a slice | Verification 2 |
+| Steward | Shape a slice | Ontology value 4 · Agent value 4 |
+| Wedge | Shape a slice | Differentiation 2 |
+| Leverage | Shape a slice | appetite: two focused days for the first integrated batch |
+
+**Rubric total**: 16/24 (threshold 18, fatal zeros: none). The static language
+mismatch is proven; a language-caused agent handoff failure is not yet observed,
+so the first batch must include a source-hidden English-agent comparison rather
+than claiming success from file counts alone.
+
+**The decisive disagreement**: a literal Hangul-zero rewrite would satisfy the
+broadest reading of the request, but it would also erase functional
+`display_ko` values, the Korean vault template, and provenance in append-only
+records. The ontology body is one raw Markdown surface for both locales, so
+replacing it with English would make the `/ko` meaning view English until
+localized bodies exist.
+
+**Decision (accountable: Jinan, implemented by Codex)**: translate the
+operational agent control plane first: `AGENTS.md`, `CLAUDE.md`,
+`.claude/rules/**`, canonical `.claude/skills/**`, and canonical
+`.claude/agents/**`; update `.agents` mirrors byte-for-byte. Preserve
+functional Korean locale data, generated copies, and prior append-only records.
+Translate current normative product documentation in later bounded batches. Do
+not translate ontology or sample bodies to English-only until the shared-body
+locale contract is resolved.
+
+**Recorded dissent**: the owner said “all Markdown”; staging can become a
+permanent excuse that leaves English contributors blocked by Korean current-state
+or historical context. **Falsifier**: an English-only source-hidden agent still
+needs translation to identify a standing rule, current product meaning, or
+required next action after the operational batch. **Revisit**: immediately after
+that comparison, or when a current normative document blocks an English
+contribution.
+
+**Slice**: IN operational control plane translation, mirror parity, a language
+inventory gate with structural locale exceptions, generated/link checks, and a
+source-hidden English-agent comparison · OUT prior
+`DECISIONS.md`/`CHANGELOG.md` entries, archives, completed plans/audits,
+`display_ko`, `cli/templates/vault-ko/**`, samples, and ontology body
+translation · appetite two focused days.
+
+**Status**: partially superseded by (102), only for the current-body deferral
 
 ---
 

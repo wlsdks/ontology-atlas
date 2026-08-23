@@ -9,104 +9,87 @@ capabilities: [capabilities/control-primitives, capabilities/design-build-handof
 created_by: "agent:unknown"
 ---
 
-## 정의
-사람과 AI 에이전트가 화면을 만들 때 **고를 수 있는 값과 부품을 미리 정하고, 그
-밖으로 나가면 자동으로 실패하게 만드는** 책임 영역. 값(토큰 램프) · 부품(컨트롤
-프리미티브) · 강제(lint 셀렉터·계약 테스트·래칫) · 조립 순서(핸드오프) 넷으로
-이루어진다.
+## Definition
+The responsibility area that **pre-defines selectable values and components for humans and AI agents when building screens, and automatically fails if they deviate**. It consists of four elements: values (token ramps), components (control primitives), enforcement (lint selectors, contract tests, ratchets), and assembly order (handoff).
 
-이 도메인이 다른 곳과 구별되는 지점: **문서가 아니라 게이트가 규격을 지킨다.**
-2026-08-03 전수 실측이 그 근거다: 디자인 시스템 문서가 이미 있는 상태에서 생
-`<button>` 419개 중 프리미티브가 덮던 것은 1개, 칩 하나의 크기 조합이 50종이었다.
-게이트를 켠 뒤 손으로 쓴 버튼 74 · 링크 67 · 폼 63 이 전부 0이 됐다.
+The distinguishing point of this domain from others: **gates enforce the spec, not documentation.**
+Full-scale measurement on 2026-08-03 provides the evidence: with design system documentation already in place, among 419 generated `<button>` elements, only 1 was overridden by primitives, and there were 50 combinations of single-chip sizes.
+After enabling gates, manually written buttons (74), links (67), and forms (63) all became 0.
 
-## 근거
-- `docs/DESIGN-SYSTEM.md`: 값과 근거의 정본(토큰 · 노드 규격 · 컨트롤 인벤토리)
-- `.claude/rules/design.md`: 작업 중 판단 + 무엇이 lint 로 강제되는지의 표
-- `.claude/rules/design-gates.md`: 각 게이트가 **왜 그 모양인지**의 사고 기록
-- `docs/DECISIONS.md` 2026-08-15 (1)(2)(3): Dialog · 폼 행동 층 · SegmentedControl 비준
+## Evidence
+- `docs/DESIGN-SYSTEM.md`: The authoritative source for values and evidence (token · node specs · control inventory)
+- `.claude/rules/design.md`: Table of judgment during work + what is enforced by lint
+- `.claude/rules/design-gates.md`: Thought records explaining **why each gate has its shape**
+- `docs/DECISIONS.md` 2026-08-15 (1)(2)(3): Approval for Dialog · form behavior layer · SegmentedControl
 
-## 포함 / 제외
-- 포함: 토큰 램프와 그 소비 규칙, 컨트롤/폼/모달/선택 프리미티브, 규격을 강제하는
-  lint·계약·래칫, 에이전트가 읽는 조립 순서
-- 제외: 지도(토폴로지) 캔버스의 렌더링 규격: 그건 `domains/topology-navigation`
-  의 것이고, 이 도메인은 그 표면이 쓰는 **값의 출처**까지만 소유한다
+## Inclusion / Exclusion
+- Included: Token ramps and their consumption rules, control/form/modal/select primitives, enforcement via lint/contract/ratchet, assembly order read by agents
+- Excluded: Rendering specs for the map (topology) canvas: that belongs to `domains/topology-navigation`; this domain only owns up to the **source of values** used by its surface
 
-## 추출 경계 (2026-08-15 PO 카운슬)
-이 도메인의 네 역량은 **별도 저장소로 옮길 수 있는지**가 서로 다르다. 각 역량
-노드의 「추출 경계」 절이 정본이고, 요약하면:
+## Extraction Boundaries (2026-08-15 PO Council)
+The four capabilities of this domain differ in **whether they can be moved to a separate repository**. The "Extraction Boundary" section of each capability node is authoritative; summarized:
 
-| 역량 | 경계 |
+| Capability | Boundary |
 |---|---|
-| control-primitives | **혼합**: 범용 부품과 Atlas 도메인 부품(11개)이 같은 배럴에 있다 |
-| design-token-ramps | **혼합**: 고유 토큰 580 중 topology 결박 269(46%) |
-| design-gate-ratchets | **atlas-bound**: 래칫이 이 저장소의 census 수치에 묶여 있다 |
-| design-build-handoff | **extractable**: 앱 고유어 3회뿐 |
+| control-primitives | **Mixed**: General-purpose components and Atlas domain components (11) are in the same barrel |
+| design-token-ramps | **Mixed**: Of 580 unique tokens, 269 (46%) are topology-bound |
+| design-gate-ratchets | **atlas-bound**: Ratchets are tied to this repository's census metrics |
+| design-build-handoff | **extractable**: Only 3 app-specific terms |
 
-별도 공개 저장소 생성은 2026-08-15 PO 카운슬에서 **보류**됐다(재진입 조건: 외부
-실요청 1건 또는 소유자가 공개 시점 확정). 이 노드들의 목적은 그때를 위해 경계를
-**손으로 세지 않고 그래프로 계산**할 수 있게 두는 것이다.
+Creation of a separate public repository was **deferred** by the 2026-08-15 PO Council (re-entry condition: one external real request or owner confirmation of publication timing). The purpose of these nodes is to enable calculating boundaries **via graph rather than manually** for that time.
 
-## 추출 명세: 시험 A 실측 (2026-08-15)
+## Extraction Spec: Test A Measurement (2026-08-15)
 
-「완벽해야 한다」에는 정지 조건이 없다. 그래서 **재서 목록으로 바꿨다**: 이
-저장소를 모르는 에이전트에게 꾸러미(토큰 + 부품 48 + 안내서 + 게이트)만 주고
-화면 셋(폼 대화상자 · 설정 목록 · 목록+빈 상태)을 짓게 했다.
+"Must be perfect" has no stopping condition. So I **changed it to a checklist**: I gave an agent unfamiliar with this repo only the package (tokens + 48 components + guide + gates) and had it build three screen sets (form dialog · settings list · list+empty state).
 
-**결과: 지어냈다.** `Dialog` · `Input` · `Textarea` · `Checkbox` ·
-`SegmentedControl` · `Select` · `Button` · `EmptyState` 를 스스로 찾아 썼다.
-다만 **안내서가 아니라 `ui/` 소스 12개를 직접 열어서** 찾았다.
+**Result: It built them.** It independently found and used `Dialog` · `Input` · `Textarea` · `Checkbox` ·
+`SegmentedControl` · `Select` · `Button` · `EmptyState`.
+However, it did so by **opening 12 `ui/` source files directly** rather than following the guide.
 
-남은 구멍: 이것이 추출 전에 닫아야 할 목록이다:
+Remaining gaps: This is the list that must be closed before extraction:
 
-| # | 구멍 | 상태 |
+| # | Gap | Status |
 |---|---|---|
-| 1 | 안내서 라우팅 표에 폼 부품 5종이 없다 | **닫힘**: 표에 「값을 받는 것」 절 추가 + `design-build-primitive-routing` 게이트 |
-| 2 | 표준 버튼이 폼 안에서 submit 된다(형제 부품은 막는데) | **닫힘**: `type="button"` 기본값 |
-| 3 | 코어 부품이 앱 번역을 직접 읽는다(`toast.tsx`) | **닫힘**: prop 주입 + `design-system-extraction-boundary` 게이트 |
-| 4 | 색 헌장의 근거가 아무도 못 여는 파일을 가리킨다 | **닫힘**: 자립 문장 + `docs:links` 유령 인용 검사 |
-| 5 | **비대화형 표면에 부품도 규격도 없다**: 목록 행 · 배지 · 섹션 카드 · 설정 행 | 열림 |
-| 6 | 다이얼로그 해부도가 없다: 제목 단 · 푸터 버튼 순서·정렬·크기 · 간격 | 열림 |
-| 7 | `fieldClass` 의 폭 서술이 자기모순(docstring ↔ 변형 주석) | 열림 |
-| 8 | `fieldClass`/`fieldLabel`/`CONTROL_DISABLED_CLASS` 가 공개 배럴에 없다 | 열림 |
-| 9 | 필수 입력 표시(`*`)의 규격이 없다 | 열림 |
-| 10 | 부품 목록이 세 곳(배럴 · 안내서 · 인벤토리)에서 **서로 다른 집합**을 보여 준다 | 부분: 안내서↔부품은 게이트가 잡는다 |
+| 1 | Form components (5 types) missing from guide routing table | **Closed**: Added "Receiving Values" section to table + `design-build-primitive-routing` gate |
+| 2 | Standard buttons submit within forms (siblings blocked) | **Closed**: Default `type="button"` |
+| 3 | Core components read app translations directly (`toast.tsx`) | **Closed**: Prop injection + `design-system-extraction-boundary` gate |
+| 4 | Color charter references files no one can open | **Closed**: Self-contained sentence + `docs:links` ghost citation check |
+| 5 | **Non-interactive surfaces lack both components and specs**: list rows · badges · section cards · setting rows | Open |
+| 6 | No dialog anatomy spec: title unit, footer button order/alignment/size, spacing | Open |
+| 7 | `fieldClass` width description is self-contradictory (docstring ↔ variant comment) | Open |
+| 8 | `fieldClass`/`fieldLabel`/`CONTROL_DISABLED_CLASS` not in public barrel | Open |
+| 9 | No spec for required input indicator (`*`) | Open |
+| 10 | Component list shows **different sets** in three places (barrel · guide · inventory) | Partial: Guide↔Components gated |
 
-### 시험 B: 수리 후 재측정 (같은 날)
+### Test B: Re-measurement after fixes (same day)
 
-구멍 1~4 를 닫고 **같은 과제를 다시** 시켰다. 델타:
+Closed gaps 1–4 and **re-ran the same task**. Delta:
 
-| | 시험 A | 시험 B |
+| | Test A | Test B |
 |---|---|---|
-| 부품을 스스로 찾았나 | 찾았다(소스에서) | 찾았다(**안내판 1·2절이 실제 결정 경로**) |
-| 연 `ui/` 소스 | 12개 | 12개 (**개선 없음**) |
-| 폼에서 정지했나 | 안내판이 정지 신호 | 아니오 |
-| `type="button"` 손질 | 필요했다 | 불필요(기본값) |
+| Found components independently? | Yes (from source) | Yes (**Guide Sections 1–2 are the actual decision path**) |
+| `ui/` sources accessed | 12 | 12 (**No improvement**) |
+| Stopped in form? | Guide sent stop signal | No |
+| `type="button"` fix needed? | Yes | No (default) |
 
-**소스 12개는 그대로다. 다만 이유가 바뀌었다**: A 는 「부품을 못 찾아서」,
-B 는 「**사용 예제가 0건이라 호출 모양을 타입에서 역산**해야 해서」다. 그래서
-안내판에 폼 한 장을 통째로 넣었다(구멍 11).
+**The 12 sources remain unchanged. Only the reason changed**: In A, it was "couldn't find components";
+in B, it was "**had to reverse-engineer call shapes from types because usage examples are 0**". So
+I added a full form page to the guide (gap 11).
 
-그리고 **내 수리가 새 모순 둘을 만들었다**: 정직하게 적는다:
+And **my fixes created two new contradictions**: I'll write this honestly:
 
-| # | 새로 생긴 구멍 | 상태 |
+| # | New Gap | Status |
 |---|---|---|
-| 11 | 부품 사용 예제가 0건: 호출 모양을 타입에서 역산해야 한다 | **닫힘**: 안내판에 폼 한 장 |
-| 12 | 표 안에서 `Checkbox` 와 `SegmentedControl` 이 동시에 해당돼 못 고른다(조정 규칙이 소스 헤더에만 있었다) | **닫힘**: 「라벨이 무엇의 이름인가」 규칙을 안내판으로 |
-| 13 | 「폭은 `className`」 문장이 오해를 부른다(래퍼로 간다고 해 놓고 `w-full` 을 시킨다) | **닫힘**: 왜 되는지까지 적었다 |
-| 14 | 다이얼로그 푸터 규격 없음: 취소 variant · 버튼 순서를 짐작했다 | **닫힘**: 실측 관례를 예제에 명문화 |
-| 15 | 다이얼로그 제목 규격을 **eslint 메시지에서 역산**했다 | 부분: 예제가 보여 주지만 규격 절은 없다 |
+| 11 | 0 component usage examples: must reverse-engineer call shapes from types | **Closed**: Added full form to guide |
+| 12 | `Checkbox` and `SegmentedControl` both match in tables, causing selection ambiguity (adjustment rules only in source headers) | **Closed**: Moved "What does the label name?" rule to guide |
+| 13 | "Width is `className`" sentence causes confusion (says it's a wrapper but instructs `w-full`) | **Closed**: Explained why it works |
+| 14 | No dialog footer spec: guessed cancel variant · button order | **Closed**: Documented measured conventions in examples |
+| 15 | Dialog title spec **reverse-engineered from eslint messages** | Partial: Examples show it, but no spec section exists |
 
-**가장 큰 것은 5번이다.** 컨트롤은 419개를 전수해 8모양으로 잠갔는데, 화면
-면적의 대부분을 차지하는 **눌리지 않는 표면**에는 프리미티브도 규격 표도 없다.
-시험에서 에이전트가 값을 손으로 고른 곳은 **전부 그쪽**이었다: 이 시스템이
-가장 강한 지점과 낯선 사람이 가장 흔들리는 지점이 어긋나 있다.
+**The biggest issue is #5.** I audited all 419 controls and locked them into 8 shapes, but the **non-pressable surfaces** that occupy most of the screen area have neither primitives nor spec tables.
+Where agents manually picked values in tests was **entirely these areas**: this system's strongest point diverges from where newcomers struggle most.
 
-그리고 문서의 성질에 대한 관측 하나: *"문서가 압도적으로 「왜 이렇게 됐나」이고
-「그래서 어떻게 쓰나」가 아니다"*. 폐기된 축과 삭제된 부품의 사연이 현행 규격과
-같은 파일에 섞여 있어, 처음 읽는 사람은 **무엇이 살아 있는 규격인지 매번
-판별**해야 한다. 사연은 이 시스템의 차별점이므로 지우지 않는다: **자리를
-옮기는 것**이 처방이다.
+And one observation on the nature of documentation: *"Documentation overwhelmingly covers "why it became this way" rather than "how to use it.""* Stories of deprecated axes and deleted components are mixed with current specs in the same files, forcing first-time readers to **determine what constitutes living spec each time**. These stories are this system's differentiator, so I won't delete them: **moving them elsewhere** is the remedy.
 
-## 확신도
-high (0.9): 게이트·토큰·부품 전수 실측 + 세 라운드의 결정 기록 + 이식성 시험 1회
+## Confidence
+high (0.9): Full measurement of gates, tokens, and components + decision records from three rounds + one portability test

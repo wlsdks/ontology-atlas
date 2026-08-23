@@ -13,8 +13,7 @@ agents can read or write through MCP when they are connected.
 > `ontology-atlas-mcp` package to install, and there never will be. Two live
 > paths instead:
 >
-> - **Installed app** — open the vault folder and press **에이전트 연결 /
->   Connect agent**. The app carries a compiled MCP server in its own bundle,
+> - **Installed app** — open the vault folder and press **Connect agent**. The app carries a compiled MCP server in its own bundle,
 >   shows you the config it is about to write, writes it, then spawns the
 >   server and round-trips `get_concept` before reporting success.
 > - **Source checkout** — register the server as
@@ -97,7 +96,7 @@ between them does not migrate data.
 | Setup is unclear or you opened the agent from another codebase root | Agent setup gate | Config repair commands, restart guidance, JSON readiness checks, and fallback timing before edits |
 
 The installed app *does* claim a one-click agent connection, because it carries
-the server it is connecting you to. Press **에이전트 연결 / Connect agent**: the
+the server it is connecting you to. Press **Connect agent**: the
 app shows the config it is about to write, writes it after you approve, then
 spawns the bundled binary and round-trips `get_concept` — a green light means
 your vault is readable, not that a process started. Source-checkout contributors

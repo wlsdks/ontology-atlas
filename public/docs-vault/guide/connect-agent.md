@@ -1,163 +1,131 @@
-# AI 에이전트 연결하기
+# Connecting an AI Agent
 
-앱의 **「에이전트 연결」** 버튼 한 번이면 됩니다. 지금 쓰는 도구를 고르면 그
-도구의 설정 파일에 **볼트의 실제 절대 경로**가 박힌 설정을 써 줍니다.
+It’s just one click on the app's **"Connect Agent"** button. Once you select the tool you're using, it writes a configuration file for that tool containing the **actual absolute path of the vault**.
 
-| 도구 | 쓰는 파일 |
+| Tool | File used |
 |---|---|
 | Claude Code | `.mcp.json` |
 | Codex | `.codex/config.toml` |
 | Cursor | `.cursor/mcp.json` |
 | Antigravity | `.agents/mcp_config.json` |
 
-버튼 하나가 파일 하나를 씁니다. 고르지 않은 도구의 파일은 만들지 않습니다.
+One button writes one file. It does not create files for unselected tools.
 
-## 무엇이 무엇에 붙는 건가
+## What connects to what
 
-여기서 한 번 헷갈리면 나머지가 다 이상해집니다.
+If you get confused here, everything else will seem wrong.
 
-> **에이전트는 Atlas 앱에 붙는 게 아니라 폴더에 붙습니다.**
+> **The agent connects to the folder, not to the Atlas app.**
 
-에이전트가 자기 세션 안에서 작은 서버(MCP 서버)를 띄우고, 그 서버가 디스크의
-볼트 폴더를 직접 읽고 씁니다. Atlas 앱은 **같은 폴더를 보는 또 하나의
-독자**입니다. 그래서:
+The agent starts a small server (MCP server) within its own session, and that server reads and writes directly to the vault folder on disk. The Atlas app is **another reader viewing the same folder**. Therefore:
 
-- 앱이 켜져 있지 않아도 에이전트는 볼트를 읽습니다.
-- 에이전트가 쓴 것이 앱 화면에 나타납니다 (폴더가 바뀌었으니까).
-- **웹으로 쓰는 사람도 연결됩니다.**
+- The agent can read the vault even if the app is not running.
+- Changes made by the agent appear on the app screen (because the folder has changed).
+- **Web users are also connected.**
 
-## 웹에서 연결하기
+## Connecting via the web
 
-웹이 못 하는 건 딱 하나: **설정 파일을 대신 저장해 주는 것**입니다. 브라우저는
-여러분 디스크의 절대 경로를 모르기 때문입니다. 하지만 여러분은 압니다.
+The only thing the web cannot do is **save the configuration file for you**, because the browser does not know your disk's absolute paths. But you do.
 
-그래서 시트가 두 경로를 묻습니다.
+So the sheet asks for two paths.
 
-1. 볼트 폴더의 절대 경로
-2. Atlas 소스 체크아웃의 절대 경로
+1. The absolute path of the vault folder
+2. The absolute path of the Atlas source checkout
 
-그 자리에서 도구별 설정 텍스트와 확인 명령을 만들어 줍니다. **파일은 쓰지
-않고, 경로는 화면 밖으로 나가지 않습니다**. 전송도 저장도 없습니다. 만들어진
-텍스트를 여러분이 그 파일에 붙여넣으면 끝입니다.
+It generates the tool-specific configuration text and verification command right there. **It does not write any files, nor do the paths leave the screen.** Nothing is transmitted or saved. You just paste the generated text into your file, and you're done.
 
-덜 채운 설정은 복사되지 않습니다. 붙지 않는 설정은 도움이 아니라 함정이라서요.
+Incomplete configurations are not copied. Unconnected settings are a trap, not a help.
 
-## 적용 범위: 이 폴더 / 이 컴퓨터 전체
+## Scope: This folder / Entire computer
 
-「이 폴더」는 저장소 안 설정 파일에 씁니다. `git diff` 에 남고 팀이 같이 씁니다.
+"This folder" writes to the repository's config file. It persists in `git diff` and is shared by the team.
 
-「이 컴퓨터 전체」는 홈 폴더의 설정인데, **앱이 직접 쓰지 않습니다.** 그 파일은
-도구가 런타임에 갱신하는 상태 저장소라 제3자가 쓰면 조용한 데이터 손실이 됩니다.
-대신 볼트 절대 경로가 이미 박힌 명령 한 줄을 드리고, 그 도구가 자기 것을 쓰게
-합니다. 홈 폴더의 변경은 `git diff` 에 안 나타난다는 것도 화면이 그대로
-말합니다.
+"Entire computer" refers to settings in the home folder, which **the app does not use directly**. That file is a state store updated by tools at runtime; if a third party modifies it, silent data loss occurs. Instead, provide a single command with the Vault absolute path already embedded, letting the tool use its own copy. The fact that changes to the home folder do not appear in `git diff` is also evident from the screen.
 
-## 붙었는지 확인하기
+## Verifying Connection
 
-**설정을 쓴 다음 그 도구를 재시작해야 합니다.** MCP 서버 목록은 세션 시작에
-읽힙니다.
+**You must restart the tool after writing the configuration.** The MCP server list is read at session start.
 
-붙었으면 에이전트에게 이렇게 물어보십시오.
+Once connected, ask the agent this:
 
-> 지금 어떤 볼트에 연결돼 있어?
+> Which vault are you currently connected to?
 
-에이전트가 `connection_info` 를 불러 **해석된 볼트 경로와 저장소 경로**를
-말합니다. 여러분이 기대한 폴더가 아니면 거기서 잡으십시오: 그 상태로 쓰기를
-시키면 엉뚱한 폴더가 바뀝니다.
+The agent calls `connection_info` and reports the **parsed vault path and repository path**. If it is not the folder you expected, verify it there: proceeding with writes in this state will modify the wrong folder.
 
-터미널에서 확인하려면:
+To verify via terminal:
 
 ```bash
 node cli/src/index.mjs mcp-verify my-vault
 ```
 
-서버가 뜨는지, 도구 목록이 나오는지, 실제 질의가 되는지까지 한 번에 봅니다.
+This checks if the server is running, lists tools, and confirms actual queries work.
 
-기존 저장소의 설정만 손보려면:
+To modify only an existing repository's configuration:
 
 ```bash
 node cli/src/index.mjs agent-setup my-vault --write
 ```
 
-시작 파일은 건드리지 않고 에이전트 설정만 고칩니다. 기존 설정을 해석할 수 있으면
-다른 MCP 서버와 TOML 섹션은 그대로 두고 `ontology-atlas` 항목 하나만 이 볼트로
-원자적으로 바꿉니다. JSON이 깨졌거나 Atlas 섹션이 중복돼 있으면 원본을 건드리지
-않고 예제와 nonzero review 상태를 돌려줍니다. 기존 예제도 해석할 수 있으면 Atlas
-항목만 바꾸고 나머지를 보존합니다. 예제 자체가 깨졌다면 원본 예제는 그대로 두고
-현재 연결만 담은 `.ontology-atlas-current.example` sidecar를 만듭니다. 같은
-codebase 폴더에서 새 볼트를
-다시 만들었을 때는 에이전트를 재시작한 뒤 `connection_info`의 `vaultRoot`까지
-확인해야 실제 전환이 끝납니다.
+Do not touch the start file; only adjust agent settings. If the existing config can be parsed, keep other MCP servers and TOML sections intact, and atomically replace only the `ontology-atlas` entry with this vault. If JSON is broken or Atlas sections are duplicated, do not modify the original; instead, restore the example and nonzero review status. If the existing example can be parsed, change only the Atlas item and preserve the rest. If the example itself is broken, leave the original example as-is and create a `.ontology-atlas-current.example` sidecar containing only the current connection. When recreating a new vault in the same codebase folder, restart the agent and verify `vaultRoot` in `connection_info` to confirm the switch is complete.
 
-Codex의 프로젝트 설정은 그 폴더를 **trusted**로 승인한 뒤에만 읽힙니다. 승인
-전에는 `.codex/config.toml`이 올바르게 보여도 `codex mcp list`에는 Atlas가
-나오지 않습니다. 폴더를 신뢰한 다음 그 폴더에서 `codex mcp list`를 실행해
-`ontology-atlas`가 보이는 것과 `connection_info`의 경로를 차례로 확인하십시오.
+Codex reads project settings only after approving the folder as **trusted**. Before approval, even if `.codex/config.toml` looks correct, `codex mcp list` will not show Atlas. After trusting the folder, run `codex mcp list` in that folder and sequentially verify that `ontology-atlas` appears and matches the path in `connection_info`.
 
-## 연결되면 무엇이 달라지나
+## What Changes When Connected
 
-**작업 시작 전**: 에이전트가 건드릴 개념과 이웃을 먼저 읽습니다.
+**Before starting work**: The agent first reads the concepts and neighbors it will touch.
 
-- `get_concept({ slug })` 또는 `get_concept({ uid })`: 현재 주소나 영구 정체성으로 노드와 이웃을 한 번에
-- `find_backlinks(slug)`: 이름을 바꾸기 전에 누가 기대고 있는지
-- `find_path(from, to)`: 이미 관계가 있는지
+- `get_concept({ slug })` or `get_concept({ uid })`: Fetches nodes and neighbors at once using current address or permanent identity
+- `find_backlinks(slug)`: Checks who relies on the name before renaming
+- `find_path(from, to)`: Checks if a relationship already exists
 
-**작업 후**: 새로 생긴 것을 남깁니다.
+**After work**: Records newly created items.
 
-- `add_concept(...)`: 새 역량·요소
-- `rename_concept(...)`: 이름이 바뀌면 백링크를 전부 다시 씀
-- `merge_concepts(...)`: 거의 같은 노드 둘을 접음
-- `finalize_project_meaning(...)`: 승인된 쓰기·검증·전체 컴파일 뒤 프로젝트 의미 영수증을 남김. 원문 답변이나 비공개 소스 루트는 저장하지 않으며, `ok: true`는 영수증 기록 성공이지 의미 검증 완료가 아닙니다
+- `add_concept(...)`: New capabilities/elements
+- `rename_concept(...)`: Rewrites all backlinks if the name changes
+- `merge_concepts(...)`: Merges two nearly identical nodes
+- `finalize_project_meaning(...)`: Leaves a project meaning receipt after approved writes, verification, and full compilation. It does not store original answers or private source roots; `ok: true` indicates successful receipt recording, not completion of meaning verification
 
-정확한 현재 읽기·쓰기 도구 목록은 실행 중인 서버의 `tools/list`가 알려 줍니다.
-`mcp-verify`는 그 목록과 초기 안내가 일치하고 이 볼트를 실제로 읽는지 확인합니다.
+The exact current list of read/write tools is provided by the running server's `tools/list`. `mcp-verify` confirms that this list matches the initial instructions and that the vault is actually readable.
 
-### 에이전트가 UID와 slug를 쓰는 법
+### How the Agent Uses UID and Slug
 
-읽기 응답의 노드는 항상 `{ uid, slug }`를 같이 줍니다. 에이전트가 오래
-유지할 핸드오프·작업 대상·출처에는 `uid`를, 사람에게 보여 주거나 관계·URL·CLI
-명령을 만들 때는 `slug`를 쓸 수 있습니다.
+Node responses always include both `{ uid, slug }`. The agent uses `uid` for long-lived handoffs, work targets, and sources; use `slug` when displaying to humans or creating relationships/URLs/CLI commands.
 
-- UID로 조회하면 rename 후에도 같은 노드를 찾습니다.
-- slug로 조회하면 현재 볼트에서 읽기 좋은 주소를 쓸 수 있습니다.
-- `uid`를 관계 배열이나 URL에 복사하지 마십시오. 그 표면의 주소 규격은 계속 slug입니다.
+- Querying by UID finds the same node even after renaming.
+- Querying by slug allows using a readable address from the current vault.
+- Do not copy `uid` into relationship arrays or URLs; their surface address specification remains slug.
 
-## 첫 대화: 무엇을 물어볼까
+## First Conversation: What to Ask
 
-붙이고 나서 무슨 말을 해야 할지 몰라 멈추는 자리가 여기입니다. 실제로 답이
-나오는 질문들:
+This is where you might pause, unsure what to say after connecting. Here are questions that actually yield answers:
 
-- 「이 폴더의 지도에서 인증 쪽이 무엇에 기대고 있어?」
-- 「`토큰 발급` 을 고치면 뭐가 같이 흔들려?」 → 영향 범위
-- 「이 지도에서 지금 제일 이상한 곳이 어디야?」 → 정리 큐
-- 「방금 만든 이 기능을 지도에 반영해 줘」 → 노드·관계 쓰기. 결과는 `.md` 한 줄
-  diff 로 남습니다
+- "What does the authentication side of this folder's map rely on?"
+- "What breaks if I fix `token issuance`?" → Impact scope
+- "Where is the strangest part of this map right now?" → Triage queue
+- "Reflect this newly created feature in the map." → Write nodes/relationships. The result remains as one line in `.md`
+  diff.
 
-**핵심은 매 세션 배경 설명을 다시 붙여넣지 않는 것**입니다. 에이전트가 물어보면
-되니까요.
+**The key is not to re-paste the session background explanation.** You can ask the agent if needed.
 
-## 세션을 새로 시작할 때: 핸드오프
+## Starting a New Session: Handoff
 
-새 세션에 배경을 한 번에 넘기려면:
+To pass the background to a new session all at once:
 
 ```bash
 node cli/src/index.mjs agent-brief my-vault
 ```
 
-프로젝트가 여러 개라면 `--project SLUG`로 하나를 고릅니다. 출력의
-`meaningAssessment`는 `verified_current` / `review_required` /
-`needs_evidence` / `invalid` 중 하나이며, 근거를 확인할 수 없을 때는
-추정하지 않고 fail-closed 상태를 반환합니다.
+If there are multiple projects, select one with `--project SLUG`. The output's
+`meaningAssessment` will be one of `verified_current`, `review_required`,
+`needs_evidence`, or `invalid`. When evidence cannot be confirmed,
+it returns a fail-closed state without guessing.
 
-**종료코드 1은 실패가 아닙니다.** 이 명령의 1은 「그래프가 아직 덜 여물었다」는
-신호예요. 갓 만든 볼트는 노드가 적어서 대개 1이 나옵니다. 명령 자체는 정상으로
-끝났고 출력도 유효합니다. `agent-brief && 다음명령`처럼 이어 쓰면 그 1에서 멈추니,
-`--exit-zero`를 주고 출력의 `status`/`readiness`를 직접 읽으세요.
+**Exit code 1 is not a failure.** The `1` in this command signals that "the graph is still maturing." Newly created vaults usually return `1` because they have few nodes. The command itself completed successfully, and the output is valid. If you chain it like `agent-brief && next-command`, it will stop at that `1`. Instead, use `--exit-zero` and read the `status`/`readiness` from the output directly.
 
 ```
-agent brief healthy — readiness ready 100/100 · 70 노드 · 152 관계 · 6 health checks
+agent brief healthy — readiness ready 100/100 · 70 nodes · 152 relations · 6 health checks
 
-ENTRYPOINTS (agent가 먼저 볼 고연결 노드)
+ENTRYPOINTS (highly connected nodes the agent sees first)
    1 domains/onboarding-and-shell   — Onboarding, Distribution & App Shell  deg 33
    2 domains/topology-navigation    — Topology Map Navigation               deg 25
 
@@ -169,17 +137,12 @@ CLI FALLBACKS (MCP connector unavailable)
   ontology-atlas workspace-brief [vault] --limit 5
 ```
 
-**입구 노드**(가장 많이 연결된 곳)와 **첫 호출**을 같이 줍니다. MCP 가 아직 안
-붙은 에이전트에게는 같은 것을 CLI 로 하는 줄까지 붙습니다.
+It provides both the **entry node** (most connected) and the **first call**. For agents that haven't yet attached to MCP, it also includes the equivalent CLI commands.
 
-지도 화면에서도 노드마다 「AI 요약 복사」 가 있어서, 그 개념 하나의 맥락만 떼어
-붙여넣을 수 있습니다.
+The map view also has an "AI Summary Copy" button for each node, allowing you to copy and paste just the context of that single concept.
 
-## 사람이 심판입니다
+## Humans Are the Judges
 
-에이전트가 쓴 것도 그냥 마크다운입니다. `git diff` 로 보이고, 틀렸으면 손으로
-고치면 됩니다. 이것이 「에이전트 전용 메모리」와 갈리는 지점입니다. 사람이 볼 수
-없는 저장소는 사람이 믿을 수도 없습니다.
+What the agent writes is just Markdown. It appears in `git diff`, and if it's wrong, you fix it manually. This is where it differs from "agent-only memory." A repository that humans cannot see is one they cannot trust.
 
-사람과 에이전트가 같은 파일을 동시에 고칠 때 한쪽이 조용히 사라지는 것도
-막혀 있습니다 ([폴더가 자란 뒤](/guide/growing-vault) 6절).
+It also prevents one party from silently overwriting changes when humans and agents edit the same file simultaneously ([after the folder grows](/guide/growing-vault), Section 6).

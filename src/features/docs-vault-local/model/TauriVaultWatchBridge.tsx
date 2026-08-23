@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
-import { useLocalVault } from "./LocalVaultProvider";
+import { useLocalVault } from "./local-vault-context";
 
 /**
  * The JS side of the live desktop watch — once a vault loads under Tauri, it starts the Rust file

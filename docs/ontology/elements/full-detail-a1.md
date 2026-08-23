@@ -8,4 +8,4 @@ path: src/widgets/full-detail-a1
 created_by: "agent:unknown"
 ---
 
-노드 전체 상세 opt-in 패널 위젯.
+Full node detail opt-in panel widget.

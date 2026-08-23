@@ -16,16 +16,9 @@ pointers still resolve.
 
 Two measurements, both taken 2026-08-22.
 
-**One.** The owner read a screen and an explanation of it and said: *"이런거 니가
-말하는거 보는 내가 알아들을수있는게 하나도없음!"* — "I can't understand a single
-thing you're saying." A sweep of the 3,130 user-facing strings found **34**
-written in code vocabulary (`frontmatter`, `엣지`, `핸들`, `파싱`, `렌더링`,
-`쿼리`, `계약`, `인덱스`, `메타데이터`), plus an English screen instructing users
-to run `pnpm folder:validate` — **a script that does not exist**.
+**One.** The owner read a screen and an explanation of it and said: *"I can't understand a single thing you're saying!"* — "I can't understand a single thing you're saying." A sweep of the 3,130 user-facing strings found **34** written in code vocabulary (`frontmatter`, `edge`, `handle`, `parsing`, `rendering`, `query`, `contract`, `index`, `metadata`), plus an English screen instructing users to run `pnpm folder:validate` — **a script that does not exist**.
 
-**Two.** The same sweep found one thing carrying several names. Frontmatter
-appeared on screen as 프론트매터 / 문서 상단 속성 / 문서 속성. CI checks were
-게이트 / 가드 / 검사기 / 체커. Value lists were 램프 / 사다리 / 스케일.
+**Two.** The same sweep found one thing carrying several names. Frontmatter appeared on screen as frontmatter / document top attributes / document attributes. CI checks were gate / guard / checker / validator. Value lists were lamp / ladder / scale.
 
 Renaming **drifts unless one table decides it**, because each person picks a
 different word. So the table is the source of truth, not the individual fixes.
@@ -51,16 +44,16 @@ chose among several possible words, the reason is given.
 
 | Term | Meaning | Korean | Why this word |
 |---|---|---|---|
-| **vault** | The markdown folder the user picked. Its files *are* the graph | 볼트 | Obsidian established this word for "a local folder of markdown you own", and our users come from that world |
+| **vault** | The markdown folder the user picked. Its files *are* the graph | vault | Obsidian established this word for "a local folder of markdown you own", and our users come from that world |
 | **frontmatter** | The YAML block at the top of a markdown file | frontmatter | Standard across Jekyll, Hugo, Astro, Obsidian. Never transliterate it |
-| **node** | One document in the vault, drawn as one mark on the map | 노드 | Graph-theory standard |
-| **edge** | A typed relation between two nodes | 엣지 | Graph-theory standard. On screen say **connection** |
+| **node** | One document in the vault, drawn as one mark on the map | node | Graph-theory standard |
+| **edge** | A typed relation between two nodes | edge | Graph-theory standard. On screen say **connection** |
 | **kind** | A node's type: `project`, `domain`, `capability`, `element`, `decision` | kind | It is the literal frontmatter key. Never say "type" in prose — `type` belongs to TypeScript |
 | **slug** | A node's readable, mutable address | slug | Web standard |
 | **uid** | A node's permanent UUIDv4 identity, minted once at creation | uid | Survives rename; `slug` does not |
 | **ego graph** | A node plus its direct neighbours | ego | Standard in social-network analysis ("ego network") |
-| **spine / circuit / element** | The map's three zoom tiers, outermost to innermost | 스파인 / 서킷 / 엘리먼트 | Repo-specific. Defined in `docs/TOPOLOGY-V2-DESIGN.md` |
-| **dome** | The map's 3D projection mode | 돔 | Repo-specific |
+| **spine / circuit / element** | The map's three zoom tiers, outermost to innermost | spine / circuit / element | Repo-specific. Defined in `docs/TOPOLOGY-V2-DESIGN.md` |
+| **dome** | The map's 3D projection mode | dome | Repo-specific |
 | **ACP** | Agent Client Protocol — how a coding agent talks to the app | ACP | Upstream protocol name |
 
 ---
@@ -108,22 +101,22 @@ On screen, use the plain column.
 `tests/contract/ui-copy-glossary.contract.test.ts` enforces this against
 `messages/*.json`.
 
-| Internal | Korean screen | English screen |
+| Internal | Plain concept | English screen |
 |---|---|---|
-| frontmatter | 파일 맨 위 정보칸 | the info block at the top of the file |
-| node | 동그라미 (on the map) · 문서 (as a file) | dot · document |
-| edge | 연결 | connection |
-| graph | 지도 | map |
-| render | 화면에 그리다 | draw · show |
-| parse | 읽어 들이다 | read |
-| query | 검색어 | search text |
-| index (body) | 검색 준비 | search prep |
-| metadata | 기본 정보 | basic info |
-| handle (filesystem) | "브라우저가 연 폴더" | "the folder your browser opened" |
-| contract | 어떻게 돌고 있나 · 원본 정보 | where this reads from |
-| schema | 형식 | format |
-| vault | 폴더 · 문서함 | folder · workspace |
-| ontology | 온톨로지 | ontology |
+| frontmatter | file top info block | the info block at the top of the file |
+| node | circle (on the map) · document (as a file) | dot · document |
+| edge | connection | connection |
+| graph | map | map |
+| render | draw on screen | draw · show |
+| parse | read in | read |
+| query | search text | search text |
+| index (body) | search prep | search prep |
+| metadata | basic info | basic info |
+| handle (filesystem) | "folder opened by browser" | "the folder your browser opened" |
+| contract | how it runs · original info | where this reads from |
+| schema | format | format |
+| vault | folder · workspace | folder · workspace |
+| ontology | ontology | ontology |
 
 `ontology` keeps its name. `.claude/rules/design.md` already restricts it to
 brand positions and to sentences that define the word.
@@ -133,9 +126,9 @@ brand positions and to sentences that define the word.
 Some technical words cannot simply be deleted — a user who hits an error needs
 the searchable term.
 
-- **Explaining** → plain words only: `파일 맨 위 정보칸이 그대로 지도가 됩니다`
+- **Explaining** → plain words only: `the file top info block becomes the map as is`
 - **The user must find or search the word** (error text, examples) → plain words
-  plus one parenthesis: `파일 맨 위 정보칸(frontmatter)이 닫히지 않았어요`
+  plus one parenthesis: `the file top info block (frontmatter) is not closed`
 - **The user types it verbatim** → leave it. `kind: project` is code
 
 One parenthesis per screen; after that, plain words only.
@@ -185,7 +178,7 @@ What to compress, in order:
 
 1. **Section headings in short files.** Three `##` headings above a 40-line file
    is scaffolding for an essay nobody is reading. Fold them into one bold lead.
-2. **Connective narrative** — "그래서 … 그런데 … 그러니" chains that walk the
+2. **Connective narrative** — "so … but … therefore" chains that walk the
    reader to a conclusion the next sentence states outright.
 3. **Restatement.** The same point made once in the summary and again in the body.
 4. **Dead history** — a rationale for a rule that no longer exists, a fact about a
@@ -222,14 +215,14 @@ Three kinds of Korean survive translation, all for the same reason: the Korean
 2. **Korean doc section titles in `「 」`** — those headings are still Korean, so
    an English rendering no longer matches the heading it cites.
 3. **On-screen strings quoted as evidence.** Measured 2026-08-22: a pass rendered
-   `「이 폴더 맞나요?」` and `「코드 위치」` into English inside comments. Both are
+   `"Is this the right folder?"` and `"Code location"` into English inside comments. Both are
    live strings in `messages/ko.json`, so anyone grepping the screen text to find
    the code behind it would no longer hit those comments. Restored.
 
 In every case: keep the Korean, add a short English gloss.
 
 ```ts
-// Owner, 2026-08-18: "처음 로딩될때 … 너무 아래임.. 딱 중앙이었음해"
+// Owner, 2026-08-18: "When first loading … it's too low.. It should be exactly centered"
 // (the map sat too low on first load; it should be centred)
 ```
 

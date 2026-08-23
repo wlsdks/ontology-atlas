@@ -1,42 +1,29 @@
 ---
 name: design-system-audit
-description: Find the parts of the product that were built outside the design system — off-ramp values, parallel token systems, and above all the gate holes that let them in. Run before a release, after absorbing a large surface, or whenever "왜 이 화면만 다르지" comes up. This is not /design-audit (which measures one finished change in the rendered DOM) and not /responsive-sweep (which measures breakpoints): this one asks whether the system is enforced at all, and its primary output is closed gates, not fixed values.
+description: Audit whether the design system is enforced at all: off-ramp values, parallel token systems, syntax and path blind spots, warning-only rules, and missing probes.
 ---
 
-# /design-system-audit — 잘못된 값이 아니라 **그 값이 들어온 구멍**을 찾는다
+# Audit the system, not one screen
 
-## 왜 값부터 세면 안 되나
+A **ramp** is the allowed value ladder; an **off-ramp value** is hand-selected
+outside it; a **gate** is automated enforcement. A 2026-08-03 inventory found
+300+ off-ramp values, but their cause was four gate holes:
 
-먼저 이 문서에 계속 나오는 말 셋:
-
-- **램프(ramp)** — 글자 크기·반경·간격 같은 값을 미리 몇 단계로 정해 둔 사다리.
-- **램프 밖 값(이탈 값)** — 그 램프에 없는 값을 그 자리에서 손으로 써 버린 것.
-- **게이트** — 안 지키면 실패하게 만들어 둔 자동 검사(lint 룰 · 계약 테스트 · CI 스텝).
-
-2026-08-03 전수조사가 이 스킬을 낳았다. 세 감사자가 화면을 나눠 재고 서로 상의
-없이 같은 결론에 도달했다: **램프 밖 값 300여 건은 증상이고, 원인은 게이트에
-난 구멍 넷이었다.**
-
-그날 실측:
-
-| 구멍 | 결과 |
+| Hole | Effect |
 |---|---|
-| lint 룰이 `text-[13px]` 처럼 **대괄호로 쓴 값만** 봤다 | `text-sm`·`rounded-md` 처럼 Tailwind 가 기본으로 주는 이름 있는 값 **268건**이 어떤 룰도 안 거치고 화면에 그려졌다 |
-| 제품의 **중심 화면 둘**이 경고(warn)로만 취급됐고, `pnpm lint` 에 경고 상한(`--max-warnings`)이 없었다 | 그 둘의 램프 밖 값 66건이 아무것도 실패시키지 않았다 |
-| 색을 직접 쓴 것을 잡는 게이트가 한 디렉터리를 **통째로** 건너뛰었다 | 그 안에 손으로 쓴 색 값은 검사받은 적이 없다 |
-| 한 화면이 앱 전체 램프와 **따로 노는 4단 램프**를 자기 혼자 정의하고 주석으로 문서화까지 해 뒀다 | 그 화면의 요소 33개 중 17개가 램프 밖 |
+| lint saw bracket values only | 268 named Tailwind steps such as `text-sm` and `rounded-md` bypassed the ramp |
+| two central surfaces were warning-only with no warning cap | 66 violations blocked nothing |
+| a colour checker skipped a directory | raw colours had never been checked there |
+| one screen owned a parallel four-step ramp | 17 of 33 elements sat off the app-wide ramp |
 
-**값만 고치면 반년 뒤 그대로 되돌아온다.** 값이 들어온 구멍이 열려 있으면 다시
-들어오기 때문이다.
+Fixing values without closing entry holes guarantees recurrence. `/design-audit`
+measures one finished DOM change; `/responsive-sweep` measures breakpoint bands;
+this skill asks whether the system is enforceable.
 
-그리고 이 스킬은 비슷한 스킬 둘과 하는 일이 다르다 — `/design-audit` 은 *끝낸
-변경 하나*를 실제로 그려진 화면에서 재고, `/responsive-sweep` 은 *화면 폭이 바뀔
-때*를 잰다. 이 스킬은 **시스템이 실제로 강제되고 있는가**를 묻는다.
+## 0. Read actual ramps
 
-## 0. 램프를 먼저 읽는다 — 기억에 의존해 감사하지 않는다
-
-`app/globals.css` 의 `@theme`/`:root` 에서 **실제로 정의돼 있는 값**을 뽑는다.
-`docs/DESIGN-SYSTEM.md` 는 그것을 설명하는 문서일 뿐, 값의 출처가 아니다.
+Extract values from `app/globals.css`; do not audit from memory or a stale prose
+copy.
 
 ```bash
 grep -oE "\-\-text-[a-z-]+:\s*[0-9.]+px" app/globals.css | sort -u
@@ -45,167 +32,86 @@ grep -oE "\-\-leading-[a-z-]+:" app/globals.css | sort -u
 grep -oE "\-\-shadow-elevation-[a-z0-9-]+:" app/globals.css | sort -u
 ```
 
-## 1. 게이트가 어디까지 보고 있는지 잰다 (이 절이 이 스킬의 핵심)
+## 1. Measure gate reach
 
-규격 하나하나에 대해 **그 룰이 무엇을 못 보는지**를 묻는다. 「룰이 있다」는 답이
-아니다.
+For every specification, ask what the detector cannot see.
 
-1. **문법 사각지대** — 룰이 한 가지 표기법만 보고 있지 않은가?
-   - 대괄호(`text-[13px]`)만 보고 **이름 붙은 값**(`text-sm`)은 놓치는가
-   - `#hex` 만 보고 `rgba(...)` 는 놓치는가
-   - JSX 의 class 문자열만 보고 `style={{ boxShadow }}` 처럼 직접 쓴 것은 놓치는가
-   - `motion-safe:active:scale-` 처럼 앞에 조건이 겹쳐 붙으면 룰의 기준점을
-     빠져나가는가
-   - 화살표 글자(`→`)만 보고 아이콘 컴포넌트(`<ArrowUpRight />`)는 놓치는가
-2. **경로 사각지대** — 룰이 검사하는 파일 패턴(글롭) 밖에 무엇이 있나?
-   ```bash
-   # 위반이 있는데 eslint 는 조용한 파일 = 경로 사각지대
-   pnpm exec eslint <파일> ; grep -c "text-\[" <파일>
-   ```
-   `app/**` 이 검사 대상에서 빠져 있어서, 경계 페이지 넷의 램프 밖 값 22줄이 아무
-   소리 없이 통과한 실측이 있다.
-3. **레벨 사각지대** — 경고(`warn`)로만 잡는데 경고 상한(`--max-warnings`)이
-   없으면 **아무것도 실패시키지 않으니 게이트가 아니다**. `package.json` 의 lint
-   스크립트와, 어떤 룰을 경고로 낮춰 뒀는지 목록을 함께 본다.
-4. **면제 사각지대** — 검사 스크립트의 `shouldSkip*`/`ALLOWLIST`/`ignores` 를 열어
-   **디렉터리를 통째로 빼 준 곳**이 있는지 본다. 이 저장소의 규격은 파일 하나
-   단위로 빼 주고 그 옆에 사유를 주석으로 적는 것이다.
-5. **따로 노는 두 번째 시스템** — 어떤 화면이 자기만의 램프를 따로 정의하고 있지
-   않은가. 징후는 그 화면 전용 토큰 이름(`--chrome-*`, `--topology-*`)과, **그
-   값이 앱 전체 램프와 1~4px 어긋나 있는 것**이다.
-6. **규격이 아니라 글자 모양을 붙들고 있는 게이트** — 게이트가 규격 대신 옆에 붙은
-   클래스 이름이나 따옴표 종류를 못박고 있지 않은가. 그런 게이트는 규격을 더 좋게
-   바꿀 때 실패하고, 그러면 다음 사람이 게이트 대신 **규격 쪽을 되돌려 버린다**.
-   실측 2건(`rounded-xl` 못박기, `"/download/"` 따옴표).
+1. **Syntax:** bracket versus named utility, hex versus rgba, class versus inline
+   style, prefixed variants, text arrow versus icon, direct value versus ternary.
+2. **Path:** lint the file directly and compare with an independent source search.
+   Four app boundary pages once held 22 silent off-ramp lines outside scope.
+3. **Level:** a warning with no `--max-warnings` is not a gate.
+4. **Exemption:** inspect `shouldSkip*`, allowlists, and ignores. Exempt exact files
+   with reasons, never whole directories.
+5. **Parallel system:** look for surface-local ramps differing from global steps by
+   1–4px.
+6. **Letterform pin:** reject gates that freeze an adjacent class or quote style
+   rather than the property; they fail on legitimate rewrites.
 
-## 2. 실제로 그려진 화면에서 센다 — 소스가 아니라 화면이 사실이다
+## 2. Measure rendered output
 
-소스를 grep 하면 «코드에 쓰였나»를 알 수 있고, 브라우저의 computed style 을 읽으면
-«실제로 그렇게 그려졌나»를 알 수 있다. 둘은 다르다 — 토큰 자체가 램프 밖 값을 담고
-있으면 소스는 깨끗한데 화면은 어긋난다.
+Source says what was requested; computed style says what was drawn. Fill allowed
+sets from step 0, then inventory visible rects and computed font, radius, and
+shadow values. A token itself may hold an off-ramp value while source appears
+clean.
 
-```js
-// chrome-devtools evaluate_script — 한 화면의 램프 이탈 census
-() => {
-  const RADII = new Set(["0px","6px","9px","12px","9999px","50%"]);
-  const SIZES = new Set(["9.5px","11px","12.5px","14px","16px","23px","30px","34px"]);
-  const badR = {}, badS = {};
-  for (const el of document.querySelectorAll("*")) {
-    const r = el.getBoundingClientRect();
-    if (r.width < 4 || r.height < 4) continue;      // 안 보이는 것은 안 센다
-    const cs = getComputedStyle(el);
-    const br = cs.borderTopLeftRadius;
-    if (br && !RADII.has(br) && !br.includes("%") && parseFloat(br) < 1000) {
-      badR[br] = (badR[br] || 0) + 1;
-    }
-    if (el.childElementCount === 0 && el.textContent?.trim() && !SIZES.has(cs.fontSize)) {
-      badS[cs.fontSize] = (badS[cs.fontSize] || 0) + 1;
-    }
-  }
-  return { radius: badR, font: badS };
-}
-```
+Also group `boxShadow` values. Under one light source, higher elevation should
+spread and strengthen consistently; reversed pairs imply different lighting
+models.
 
-**위 집합은 §0 에서 직접 뽑은 값으로 채운다** — 여기 적힌 목록을 그대로 베껴
-쓰지 마라. 램프가 바뀌면 이 스킬이 아무 신호 없이 틀린 답을 낸다.
+## 3. Repair order is a contract
 
-그림자도 같이 센다(`cs.boxShadow` 값별 개수). **빛이 한 방향에서 온다고 가정하면,
-더 위에 떠 있는 것일수록 그림자가 더 짙고 더 넓게 퍼져야 한다** — 그림자를 멀리
-드리웠는데 색은 더 옅은 짝이 나오면, 나란히 있는 두 요소가 서로 다른 방향의 빛을
-가정하고 있다는 뜻이다(실측 1건).
+1. **Zero-pixel changes:** map identical named values, such as `rounded-md` to the
+   6px chip or `text-sm` to the 14px body-lg step. Point surface tokens at existing
+   ramp tokens without editing consumers.
+2. **0.5–1px changes:** compare before/after screenshots.
+3. **Visible changes:** require a design decision; ratchet residual debt if one PR
+   cannot close it.
+4. **Enable the gate last.** Reversing this order creates warning noise.
 
-## 3. 고치는 **순서**가 계약이다
+## 4. Inventory and probe
 
-값을 한 번에 다 고치면 무엇 때문에 화면이 달라졌는지 아무도 못 가른다.
+Classify every hit before enabling. Plant one violating and one valid line and run
+the actual gate. Use `apply_patch` for temporary probes; never leave scratch under
+the repo.
 
-1. **화면이 1픽셀도 안 변하는 것** — 값은 이미 같은데 이름만 Tailwind 기본 이름인
-   경우(`rounded-md`=chip 6px · `rounded-xl`=panel 12px · `text-sm`=body-lg 14px).
-   토큰이 램프 토큰을 가리키게만 바꾸는 것(`--chrome-radius: var(--radius-card)`)도
-   여기다 — **그 토큰을 쓰는 쪽 코드는 하나도 안 고치고** 수십 곳이 램프 위로
-   올라온다.
-2. **0.5~1px 움직이는 것** — `text-xs`→body · `rounded-lg`→card. 전후 스크린샷을
-   나란히 놓고 대조한다.
-3. **눈에 띄게 움직이는 것** — 램프에 아예 없는 값(예: 16px·20px — §0 실측 기준으로 판정). 여기부터는
-   **디자인 판단이 필요한 영역**이고, 한 PR 로 못 치우면 래칫(한 번 좋아진 수치가
-   다시 나빠지지 못하게 상한을 박아 두는 검사)에 올려 두고 넘긴다.
-4. **게이트를 켠다** — 1~3 이 끝난 뒤에. 순서를 뒤집으면 소음이 신호를 덮는다.
+A zero count is not evidence until a planted violation turns red.
 
-## 4. 켜기 전에 전부 세고, 켠 뒤에 일부러 틀린 것을 넣어 본다 (`/gate-probe` 와 같은 규율)
+### The scanner writes the ledger
 
-- 켜기 전: 걸린 것을 **패턴별로 분류**하고 한 PR 로 치울 규모인지 판단한다. 아니면
-  룰이 보는 범위를 좁히고 나머지는 래칫에 올려 둔다 — 그것은 후퇴가 아니라 설계다.
-- 켠 뒤: **위반 1줄 + 정상 1줄**짜리 시험용 파일을 넣어 실제로 잡는지 증명한다.
-  ```bash
-  printf 'export const A = "text-sm rounded-md";\nexport const B = "text-body rounded-chip";\n' > src/shared/ui/__probe.tsx
-  pnpm exec eslint src/shared/ui/__probe.tsx   # 잡히는가?
-  rm src/shared/ui/__probe.tsx
-  ```
-- **절대로 실패할 수 없는 게이트를 만들지 마라.** 켤 때 위반이 0건이면, 그 0이
-  「정말 깨끗해서 0」인지 「아무것도 안 보고 있어서 0」인지를 일부러 틀린 것을
-  넣어 갈라야 한다.
+Hand-authored baselines were wrong four times in one day, in both directions.
+Write the census function first, paste its output without hand correction, and
+make the ratchet fail when debt rises **or falls**. A lower actual count must force
+the baseline down.
 
-### ⚠️ 장부는 **스캐너가 뽑고**, 사람이 적지 않는다 (2026-08-15, 하루에 네 번 틀렸다)
+Measure whether an item is truly debt before paying it. Nine supposedly unsized
+icons were already sized by slot containers; adding call-site values would have
+duplicated the specification.
 
-래칫의 부채 장부(파일별 상한)를 눈으로 세어 적으면 **거의 항상 틀린다.** 같은 날
-같은 실패가 네 번 났다:
+## 5. New tokens default to no
 
-| 무엇 | 손으로 적은 값 | 스캐너 실측 |
-|---|---|---|
-| 무지정 아이콘 부채 | 9곳(5파일) | **0** — 전부 슬롯 컨테이너가 크기를 소유했다(거짓 부채) |
-| 폼 값 층 미경유 | 3파일 | **0** — 셋 다 sr-only 프록시·체크박스·range 였다 |
-| shared/ui 앱 결박 | 8파일(하루치 작업) | **1** — 2개는 주석뿐, 5개는 앱 전용이라 결박이 정상 |
-| 정적 배지 부채 | 20파일 | **31파일** — 21곳이 어긋났다 |
+A new token needs name, value, consumers, and a reason existing steps cannot work.
+One consumer is insufficient; name it when the second real consumer appears.
+Unused tokens are misinformation and fail `unused-token-ratchet`.
 
-네 번 다 방향이 달랐다(둘은 과대, 둘은 과소). 즉 감으로 보정할 수 있는 편향이
-아니다. 그래서 절차로 만든다:
-
-1. **census 스크립트를 먼저 쓴다.** 그 스크립트가 곧 래칫의 스캐너가 된다 —
-   장부와 게이트가 **같은 함수**로 세어야 「장부가 실측보다 후하다」는 검사가
-   의미를 갖는다.
-2. **그 출력을 그대로 붙여 넣는다.** 손으로 다듬지 않는다.
-3. 래칫에는 **양방향 검사**를 넣는다: 늘면 빨강 + **줄어도 빨강**(장부를
-   내리라고 말한다). 한쪽만 있으면 장부가 조용히 헐거워진다.
-
-> **부채를 갚기 전에 그게 정말 부채인지 먼저 잰다.** 갚는 행위 자체가 회귀가
-> 되는 경우가 위 표에서 둘이었다 — 슬롯이 소유한 값을 콜사이트에 한 번 더
-> 적는 것, 앱 전용 부품에서 정당한 결박을 떼는 것.
-
-## 5. 새 토큰(색·크기 같은 값에 이름을 붙여 한곳에 모아 둔 것)을 만들 때
-
-**기본은 안 만드는 것이다.** 만들려면 셋을 함께 쓴다: 이름 · 값 · **어디서 쓸
-것인지**. 그리고 *왜 기존 단계로는 안 되는지*를 대야 한다.
-
-- 쓸 곳이 **한 곳**뿐이면 만들지 않는다 — 이 저장소의 선례는 「두 번째로 쓸 곳이
-  생기는 순간이 그 값에 이름을 붙일 때」다.
-- 아무도 안 쓰는 토큰은 규격이 아니라 **틀린 정보**다(`unused-token-ratchet` 이
-  잡는다). 쓸 곳과 함께 넣거나, 안 쓸 거면 넣지 마라.
-- 같은 값이 두 곳에 적히면 그 순간부터 둘이 어긋나기 시작한다(Carbon).
-
-## 출력 형식
+## Report
 
 ```md
-## 디자인 시스템 감사 — <범위> · <날짜>
+## Design-system audit — <scope> · <date>
 
-### 게이트 (먼저 온다)
-| 구멍 | 무엇을 못 보나 | 그래서 몇 건이 샜나 | 처방 |
+### Gates first
+| Hole | Blind spot | Escaped count | Prescription |
 
-### 이탈 census — 실물 계측
-| 항목 | 램프 안 | 램프 밖 | 대표 값 |
-(항목별로 **0건이면 "0건"이라고 쓴다** — 안 쟀는지 재고 0인지 구별돼야 한다)
+### Rendered inventory
+| Item | On ramp | Off ramp | Representative values |
 
-### 수정 순서
-1. 픽셀 0 변화 (N건) · 2. 0.5~1px (N건) · 3. 디자인 판정 필요 (N건) · 4. 게이트
+### Repair order
+1. zero-pixel N · 2. 0.5–1px N · 3. design decision N · 4. gate
 
-### 새 토큰
-없음 / <이름 · 값 · 소비처 N곳 · 기존 스텝으로 안 되는 이유>
+### New tokens
+none / <name · value · N consumers · why existing steps fail>
 ```
 
-## 하지 말 것
-
-- **값만 고치고 끝내기.** 값이 들어온 구멍이 열려 있으면 그대로 다시 들어온다.
-- **소스 grep 만 보고 판정하기.** 토큰 자체가 램프 밖 값을 담고 있으면 소스는
-  깨끗해 보인다.
-- **전부 한 번에 바꾸기.** 무엇 때문에 화면이 달라졌는지 못 가른다.
-- **위반이 수백 건 나오는 룰을 그냥 켜기.** 소음이 기존 신호까지 덮는다.
-- **테스트 파일에 있는 것을 위반으로 세기.** 거기는 그려진 className 이 맞는지
-  확인하는 자리다.
+Never stop after value replacement, judge from source search alone, change every
+value at once, enable hundreds of warnings, or count test fixture classes as
+rendered product violations.

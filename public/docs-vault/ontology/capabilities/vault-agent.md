@@ -9,38 +9,34 @@ path: src/features/vault-agent
 created_by: human
 ---
 
-## 정의
-AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용한다. 필수 읽기, 상세 payload에 남은 정확한 인용, 한국어 질문의 한국어 응답 중 하나를 생략하면 한 번 교정하고, 두 번째에도 따르지 않은 답은 사용자에게 싣지 않는다. 구조 감사는 census 후 `domain` 후보를 고르고 최대 8개의 정확한 slug를 모두 상세 읽는 인자 계약까지 검증한다. 모델이 project 루트 하나만 고르거나 census가 존재한다고 확인한 capability·element를 없다고 합성하면 응답을 거부한다. 마지막 합성은 개수나 fan-out을 결함·권장 노드 수·브릿지 근거로 쓰지 않고 확인한 범위의 불완전성을 보존한다. 배치 상세 읽기가 글자 상한을 넘으면 첫 행만 남기는 대신 모든 후보를 정의 발췌·관계 개수·해소된 이웃의 같은 모양으로 먼저 압축하고, 실제 payload에 남은 slug와 본문 글자만 읽기 범위로 기록한다. 각 `*Info` 필드는 무엇이 잘렸는지 보존하며 편집 전 단일 개념 재읽기를 요구한다. 이 표면은 소스 코드를 볼 수 없는 vault-only curator이므로 project의 `## Competency answers`를 직접 만들거나 고치지 않는다. system prompt와 write-intent, 최종 apply 경계가 모두 이를 막고 source-backed 자격은 repository를 읽는 Atlas MCP builder로 넘긴다.
+## Definition
+The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs in the vault point to a single source. Local runners apply limited read order and round-trip time limits. One correction is issued if any of mandatory reads, detailed payload remaining exact citations, or Korean responses to Korean questions are omitted; answers not followed on the second attempt are not loaded for the user. Structure audits verify from selecting `domain` candidates after census up to argument contracts reading details of all 8 max exact slugs. The model rejects responses if it synthesizes capabilities/elements as non-existent when only one project root is selected or census confirms existence. Final synthesis preserves incompleteness of the verified scope without using count, fan-out, recommended node counts, or bridge evidence as defects. If batch detail reading exceeds character limits, instead of keeping only the first line, all candidates are first compressed into the same shape of definition excerpt, relationship count, and resolved neighbors, recording only remaining slugs and body text characters in the actual payload as the read scope. Each `*Info` field preserves what was truncated and requires a single concept re-read before editing. This surface is for vault-only curators who cannot see source code, so it does not directly create or edit project's `## Competency answers`. System prompt, write-intent, and final apply boundaries all prevent this, passing source-backed credentials to the repository-reading Atlas MCP builder.
 
-App Settings의 agent config 상태는 실제 client config 두 개만 세며 example template을
-연결로 가장하지 않는다. source-checkout과 app-bundled launch shape, 현재 vault 좌표가
-맞아야 ready이고, live stdio 연결과 tool inventory는 별도 `mcp-verify`가 증명한다.
-Unix의 승인된 agent config 쓰기는 설정 루트와 부모를 조각별 no-follow 디렉터리
-FD로 붙들고 새 inode를 완성한 뒤 링크 수를 쓰기 전·commit 직전에 확인하고\n원자적으로 이름을 교체한다. 따라서 허용된
-파일명이 볼트 밖 inode의 하드링크이거나 검사 뒤 부모 이름이 외부 심볼릭 링크로
-바뀌어도 밖의 파일을 수정하지 않는다. Windows reparse-point 경쟁은 아직
-증명되지 않았으며 정적 링크 검사 이상의 보장을 하지 않는다.
+The agent config state in App Settings counts only two actual client configs, not disguising example templates as connections. Source-checkout and app-bundled launch shape, current vault coordinates
+must match to be ready, and live stdio connection and tool inventory are proven by separate `mcp-verify`.
+Unix's approved agent config writing holds the setting root and parent in piece-by-piece no-follow directory
+FDs, completes a new inode, checks link count before writing and right before commit,\nand atomically renames. Thus, allowed
+filenames being hardlinks to inodes outside the vault or parent names changing to external symbolic links after inspection do not modify files outside. Windows reparse-point races are still
+unproven and provide no guarantee beyond static link checks.
 
-여기서 말하는 「앱 안의 대화형 에이전트」는 이 능력이 소유하는 vault-agent 패널
-하나다: 사용자가 넣은 키나 로컬 러너에 붙는 제공자 중립 루프이고, 볼트 도구만
-부른다. 사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이
-ACP 로 직접 띄우는 것은 별개 능력이며 `capabilities/acp-runtime`이 소유한다.
-그쪽은 설정 격리와 권한 관문이 다른 층에 있고, 오늘 사용자가 여는 표면도 설정의
-「실행기」 절 하나로 다르다.
+The "interactive agent in the app" mentioned here is the single vault-agent panel owned by this capability:
+it's a provider-neutral loop attaching to keys entered by users or local runners, calling only vault tools. The app
+launching coding agents (Claude Code, Codex, etc.) already installed by the user directly as ACP is a separate capability owned by `capabilities/acp-runtime`.
+That side has different layers for config isolation and permission gates, and the surface the user opens today differs with just one "executor" section in settings.
 
-## 근거
-- src/features/vault-agent: 제공자 중립 에이전트 루프, 도구 실행, 근거 인용
-- src-tauri/src/llm.rs: 로컬/원격 전송, 감사 로그, 분리된 timeout
-- src-tauri/src/llm_audit.rs: log-before-send 예약·확정, Unix openat/O_NOFOLLOW·link-count 경계, 볼트별 배타 잠금과 예약 꼬리 검증
-- src-tauri/src/agent_setup.rs: 승인된 MCP 설정의 Unix dirfd/no-follow 탐색과 새 inode 원자 교체
-- src/widgets/vault-agent-panel: 사용자가 읽기·실패·제안을 판정하는 패널
+## Evidence
+- src/features/vault-agent: provider-neutral agent loop, tool execution, evidence citation
+- src-tauri/src/llm.rs: local/remote transport, audit logs, isolated timeout
+- src-tauri/src/llm_audit.rs: log-before-send scheduling/commitment, Unix openat/O_NOFOLLOW·link-count boundaries, vault-specific exclusive locking and reservation tail verification
+- src-tauri/src/agent_setup.rs: Unix dirfd/no-follow traversal for approved MCP configs and atomic replacement of new inodes
+- src/widgets/vault-agent-panel: panel where users judge read/failure/proposal
 - src/shared/config/mcp-server-launch.ts · src/features/docs-vault-local/model/use-local-vault.ts
-  : JSON/TOML launch shape와 vault readiness의 공유 판정
-- src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx: 활성 config 2개와
-  template 역할을 숨기지 않는 Settings 표면
-- src/features/vault-agent/model/competency-qualification-boundary.ts: vault-only
-  proposal/apply가 source-backed 자격을 우회하지 못하게 하는 공유 경계
-- scripts/deploy-macos-app-local.mjs: 최신 설치 앱 자산을 dogfood 하는 로컬 배포 계약
+  : shared judgment of JSON/TOML launch shape and vault readiness
+- src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx: active config with two
+  Settings surfaces that do not hide template roles
+- src/features/vault-agent/model/competency-qualification-boundary.ts: shared boundary preventing vault-only
+  proposal/apply from bypassing source-backed qualifications
+- scripts/deploy-macos-app-local.mjs: local deployment contract dogfooding latest installed app assets
 
-## 확신도
+## Confidence
 high (0.92)

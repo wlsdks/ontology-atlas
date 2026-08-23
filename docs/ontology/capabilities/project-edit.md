@@ -9,21 +9,21 @@ path: src/features/project-edit
 created_by: "agent:unknown"
 ---
 
-## 정의
-project의 주요 필드를 검증해 생성·수정·복제·삭제하고, 새 프로젝트나 분류 변경 때
-category 경계와 겹침을 고려해 위치를 자동 배치하는 폼 편집 능력.
+## Definition
+Form editing capability that validates project main fields to create/update/duplicate/delete, and automatically places
+the position considering category boundaries and overlaps when creating a new project or changing categories.
 
-## 포함 / 제외
-- 포함: 폼 검증·직렬화, 일정과 taxonomy 보존, 생성/수정/복제/삭제, 자동 배치.
-- 제외: 수동 position·containment 편집, screenshot upload, MCP/agent 쓰기 경로.
+## Included / Excluded
+- Included: Form validation/serialization, schedule and taxonomy preservation, create/update/duplicate/delete, automatic placement.
+- Excluded: Manual position/containment editing, screenshot upload, MCP/agent write paths.
 
-## 근거
-- `src/features/project-edit/ui/ProjectForm.tsx`: 검증·직렬화·submit 흐름
-- `src/features/project-edit/model/schema.ts`와 `schema.test.ts`: 필드·일정 직렬화와
-  누락 taxonomy 보존
-- `src/features/project-edit/model/placement.ts`와 `placement.test.ts`: category 경계,
-  겹침, 수리 배치
-- `src/views/project-editor/ui/ProjectEditorPage.tsx`: 생성·수정·복제·삭제 연결
+## Basis
+- `src/features/project-edit/ui/ProjectForm.tsx`: Validation/serialization/submit flow.
+- `src/features/project-edit/model/schema.ts` and `schema.test.ts`: Field/schedule serialization and
+  missing taxonomy preservation.
+- `src/features/project-edit/model/placement.ts` and `placement.test.ts`: Category boundaries,
+  overlaps, repair placement.
+- `src/views/project-editor/ui/ProjectEditorPage.tsx`: Create/update/duplicate/delete connections.
 
-## 확신도
-medium: 폼·schema·배치 단위 근거는 있으나 실제 hook→vault 통합 E2E는 미검증.
+## Confidence
+medium: Form/schema/batch-level evidence exists, but actual hook→vault integration E2E is unverified.

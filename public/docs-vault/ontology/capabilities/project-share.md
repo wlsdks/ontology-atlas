@@ -9,21 +9,21 @@ path: src/features/project-share
 created_by: "agent:unknown"
 ---
 
-## 정의
-프로젝트 상세 상단바나 드로어에서 현재 locale·basePath를 반영한 상세 URL을 만들어
-클립보드에 복사하고 성공·실패 피드백을 주는 능력.
+## Definition
+The ability to generate a detail URL reflecting the current locale and basePath from the project details top bar or drawer,
+copy it to the clipboard, and provide success/failure feedback.
 
-## 포함 / 제외
-- 포함: 프로젝트 상세 URL 생성, clipboard 복사, 상태/토스트/aria-live 피드백,
-  상세 상단바와 프로젝트 드로어 진입점.
-- 제외: 권한·초대·만료·서버 저장·협업 공유, 목적지 접근성의 E2E 보증.
+## Inclusion / Exclusion
+- Included: Project detail URL generation, clipboard copy, state/toast/aria-live feedback,
+  project details top bar and project drawer entry points.
+- Excluded: permissions/invitations/expiry/server storage/collaborative sharing, E2E guarantees for destination accessibility.
 
-## 근거
-- `src/features/project-share/ui/CopyProjectLinkButton.tsx`: URL 생성·복사·피드백
+## Evidence
+- `src/features/project-share/ui/CopyProjectLinkButton.tsx`: URL generation/copy/feedback
 - `src/features/project-share/ui/CopyProjectLinkButton.test.tsx`: locale URL,
-  slug 직렬화와 copy 호출 검증
-- `src/views/project-detail/ui/ProjectDetailPage.tsx`와
-  `src/widgets/project-drawer/ui/ProjectDrawer.tsx`: 두 사용자 진입점
+  slug serialization and copy call verification
+- `src/views/project-detail/ui/ProjectDetailPage.tsx` and
+  `src/widgets/project-drawer/ui/ProjectDrawer.tsx`: two user entry points
 
-## 확신도
-medium: 핵심 URL·복사 단위 흐름은 검증됐지만 실제 clipboard/목적지 E2E는 미검증.
+## Confidence
+medium: Core URL/copy unit flows are verified, but actual clipboard/destination E2E is unverified.

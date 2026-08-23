@@ -1,15 +1,14 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-22 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속,
-> 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시
-> 확인했다 — `/ontology` 는 `/topology?index=expanded` 로, `/ontology/edit` 과
-> `/ontology/studio` 는 지도 안 contextual writer로 보내는 호환 redirect 이고, Insights 는
-> 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 질문 탭으로 된 정비 화면이다.
-> 데스크톱 정적 스모크 테스트와 설치한 앱 검증기/Computer Use 가 같은 것을
-> 확인했다 — 자세한 것은 §2 의 각 라우트 절에).
-> Earlier (2026-07-18): 승인된 시안을 기준으로 모든 페이지를 다시 만든 라운드,
-> PR #355~#366.
+> Last updated: 2026-08-22 (re-verified current routes, installed app commitments,
+> and project meaning receipts — `/ontology` is a compatibility redirect to
+> `/topology?index=expanded`, `/ontology/edit` and
+> `/ontology/studio` route to the contextual writer within the map; Insights is
+> a maintenance screen with five question tabs: tasks · configuration · connections · boundaries · freshness.
+> Desktop static smoke tests and the installed app verifier/Computer Use confirmed the same — see §2 for each route section).
+> Earlier (2026-07-18): round where all pages were rebuilt based on approved drafts,
+> PRs #355–#366.
 > Earlier
 > (2026-05-31): real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation. Earlier still (2026-05-28): graph DB health gate and the now-retired Browse / Builder / Query loop; those historical surfaces are not current route guidance.
 > Routes section UI detail remains a maintained product snapshot. When route
@@ -76,7 +75,7 @@ work here, and where it can.
 | Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
 | Work offline | ❌ | ✅ | |
 | Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
-| API keys / in-app 「에이전트」 chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
+| API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
 | In-app updates | ❌ | ✅ | |
 
@@ -102,15 +101,14 @@ the web still does not offer BYOK or MCP registration.
 **Bootstrap from existing docs (2026-07-20, Slice 1)**: opening a folder that
 already has markdown but no `kind:` frontmatter used to strand the user on a
 "0 concepts" map with misdirected copy. Now the topology empty state
-acknowledges the found documents ("문서 N개를 찾았어요") and offers **내 문서로
-지도 만들기** — a blocking dialog that proposes candidates from the already
+acknowledges the found documents ("Found N documents") and offers **Create map from my docs** — a blocking dialog that proposes candidates from the already
 scanned manifest (root README → project title · 1-depth folders → domains ·
 each doc → element with `domain:`), and on confirm writes ONLY frontmatter to
 the accepted docs (bodies untouched) plus one new `project.md`. Pure candidate
 derivation: `src/features/docs-vault-local/lib/bootstrap-candidates.ts` — the
 browser equivalent of CLI `bootstrap` / MCP `analyze_repo_structure`, so all
 three ingress paths converge on the same shape. Plain-language copy: the
-dialog never says "온톨로지" (map-building framing for non-experts).
+dialog never says "ontology" (map-building framing for non-experts).
 
 **Meaning & time surfaces (2026-07-21 execution run, PRs #425–#449)**:
 - **Edge popover** — edges are first-class clickable objects on the map: a
@@ -142,12 +140,12 @@ dialog never says "온톨로지" (map-building framing for non-experts).
 - **Magnitude & type scale** — domain/capability radii encode descendant
   count (log-compressed); labels/engraved numerals scale sub-linearly with
   zoom (widthCache keys include quantized font size).
-- **First-map reveal** — after "내 문서로 지도 만들기", nodes assemble out
+- **First-map reveal** — after "Create map from my docs", nodes assemble out
   of the project position and spring-settle into place (reduced-motion
   arrives instantly).
 - **Idle frame gate** — the canvas stops physics+paint after 1.2s of true
   idle (rAF stays alive; any state change resumes next frame).
-- **Canonical census** — every surface that says "개념 N" uses one
+- **Canonical census** — every surface that says "N concepts" uses one
   derivation (`computeCanonicalCensus`). Topology, Docs, Workshop, Insights,
   and Projects read the same file-backed scope; a surface-specific subset is
   labeled as a subset rather than silently presenting it as the vault total.
@@ -157,7 +155,7 @@ dialog never says "온톨로지" (map-building framing for non-experts).
   library.
 - **Relation vocabulary** — one dictionary (formal/plain × 7 types × ko/en)
   feeds the map legend, Insights, Workshop, and datasheet (contract-tested);
-  the "?" sheet footer defines 도메인/역량/요소 in plain language.
+  the "?" sheet footer defines domain/capability/element in plain language.
 
 **Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `HomePage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
 
@@ -194,25 +192,14 @@ marketing landing page at all — with no vault selected it renders `HomePage`
 sample, read-only, plus a **first-run starter module** integrated into the
 INDEX panel itself (no floating card/dock — `FirstRunStarterModule`,
 `src/features/first-run-starter/`): census meters (concepts/relations/
-domains, real data — 화면 언어가 한국어면 라벨도 개념/관계/도메인) +
+domains, real data — if screen language is Korean, labels are also concepts/relations/domains) +
 "open my markdown folder" + "create a new vault" + "just looking around"
 dismiss (sessionStorage — reappears next session, not on reload).
-2026-07-24 첫 사용 흐름 손질: 폴더를 여는 두 버튼은 OS 파일 선택창을 곧바로
-띄우지 않고 **미리 알려 주는 시트**(`VaultOpenGuideSheet`,
-`src/features/docs-vault-local/`)를 먼저 연다 — 걱정을 덜어 주는 세 줄(아무
-마크다운 폴더나 괜찮다 / 파일은 이 컴퓨터에만 남는다 / 빈 폴더면 시작 문서를
-자동으로 만들어 준다)과, 기존 폴더를 고를지 빈 폴더로 새로 시작할지 고르는
-갈래가 들어 있다. 카드에는 "2분 구경하기" 투어 버튼과 "쉬운 말로 보기 켜기"
-토글(톱니 메뉴 안에 있던 '일반' 모드를 카드로 끌어올린 것)도 넣었다.
-빈 vault 를 연 직후에는 더 할 일이 없어 보이는 문구 대신 **시작 체크리스트**
-(`VaultStartChecklist`, `src/widgets/topology-controls/`)가 선다 — 소유자
-지시(2026-07-24 2차)에 따라 **AI 에이전트를 먼저 붙이는 3단계**다: AI 에이전트
-연결(heartbeat 파일로 실제 연결됐는지 판정) → 첫 분석 맡기기(에이전트에
-붙여넣을 지시문 복사) → 직접 만들기(선택 사항, project 종류 프리셋 작성기).
-웹에서 macOS 설치를 권하던 잘못된 안내 갈래는 없앴다. 첫 방문에는 폴더 안내
-시트가 자동으로 먼저 열리고(한 번만, 건너뛰기 있음), 이 세션에서 사용자가
-직접 폴더를 열면 AI 에이전트 연결 시트가 한 번 자동으로 이어진다. A brand-pill
-`SAMPLE` badge and a bottom-right map readout ("N project · N domains ·
+2026-07-24 first-use flow refinement: the two buttons to open a folder do not
+immediately open the OS file picker but instead open a **pre-informative sheet** (`VaultOpenGuideSheet`,
+`src/features/docs-vault-local/`) first — three lines to ease concerns (any markdown folder is fine / files stay only on this computer / if empty, starter docs are created automatically) and a branch to choose an existing folder or start fresh with an empty one. The card also includes a "2-minute tour" button and a "Show plain language" toggle (bringing the 'normal' mode from the gear menu into the card).
+Immediately after opening an empty vault, instead of text suggesting there's nothing more to do, a **start checklist** (`VaultStartChecklist`, `src/widgets/topology-controls/`) appears — per owner instruction (2026-07-24 2nd round), it's a **3-step process to attach AI agent first**: connect AI agent (determine actual connection via heartbeat file) → hand over first analysis (copy instructions to paste into the agent) → create directly (optional, project type preset writer).
+The incorrect guidance branch recommending macOS installation on the web has been removed. On first visit, the folder guide sheet opens automatically first (once only, with a skip option); if the user opens a folder directly in this session, the AI agent connection sheet follows automatically once. A brand-pill `SAMPLE` badge and a bottom-right map readout ("N project · N domains ·
 Spine view · zoom in to reveal elements") stay visible for the whole static
 session regardless of whether the starter module was dismissed. The former
 `LandingPage` and its hero/value-chain/evidence-instrument content moved to
@@ -229,10 +216,10 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 
 ### `/` — Smart entry
 
-- **Hosted web, no vault** → the **gateway face** — headline, download, and "open it in the browser" — the same view `/download` renders (2026-07-30 — 루트에서 곧바로 지도를 열어 주던 이전 결정을 뒤집었다). Judged by `isGatewaySurface()`. A web user who *has* a vault still gets `HomePage` with the dogfood sample and the INDEX-panel first-run starter
+- **Hosted web, no vault** → the **gateway face** — headline, download, and "open it in the browser" — the same view `/download` renders (2026-07-30 — reversed the previous decision to open the map directly from the root). Judged by `isGatewaySurface()`. A web user who *has* a vault still gets `HomePage` with the dogfood sample and the INDEX-panel first-run starter
 - **Desktop app, no restored vault** → `FirstRunPage` (just start / open / create / browse demo), not the hosted intro
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
-- **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 결정 「허브를 따로 두지 않고 지도가 그 자리를 한다」 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
+- **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 decision ["Don't keep a separate hub; the map takes its place"] — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
 - **Switch vault mid-session**: the topology settings gear (⚙, top-right utility rail) has a "switch vault" row → `/docs/?intent=local`, alongside the `/docs` vault pill's own "swap" control
 
 ### `/download` — the install decision (remade 2026-07-27)
@@ -263,13 +250,13 @@ had become false).
 Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-link target, `/topology` = explicit deep-link namespace).
 
 #### Analysis modes + workflow entry points
-- **개요 (overview, default)** — the canvas-2D Topology map with deterministic
+- **Overview (default)** — the canvas-2D Topology map with deterministic
   project/domain/hub structure and bounded ForceAtlas2 settling: the read-first
   decision surface.
-- 초점/경로/상태 are **not separate canvases**:
-  - **초점 (focus)** — enters via node click on the map (selection state); `mode=focus` deep links preserved
-  - **경로 (path)** — enters via shift-click of 2 nodes or `mode=path` deep links
-  - **상태 (health)** — enters via the 정리 queue count chip on the view rail; `mode=health` deep links preserved
+- Focus/path/health are **not separate canvases**:
+  - **Focus** — enters via node click on the map (selection state); `mode=focus` deep links preserved
+  - **Path** — enters via shift-click of 2 nodes or `mode=path` deep links
+  - **Health** — enters via the maintenance queue count chip on the view rail; `mode=health` deep links preserved
 
 #### Canvas (`topology-map-v2` — custom canvas-2D engine + Graphology ForceAtlas2 physics)
 - **Click node** → right-side panel opens (`ProjectDrawer` for project nodes, the 352px node datasheet for domain/capability/element nodes — see "Node datasheet" below)
@@ -283,19 +270,13 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   saved default; pressing it again collapses the batch. A route arriving with
   existing `?open=` parents also uses full-bounds fitting on its first frame so
   already-open nodes do not begin off screen.
-- **How the chip looks and where children land is a setting** (설정 › 확장, 2026-08-01 — ported from the `.qa-scratch/proto-expand.html` measurement prototype). Five values: the open control (`뜬 알약` · **`머리 위 막대`, default** · `어깨 배지`), the child layout (`나선 원반`, default · `부챗살` · `고리` · `기둥`), and three numbers — how many open at once (4–24, default 24), how many names are attempted per parent (3–40, default 8), and how many parents stay open at once (1–6, default 3). The default control is the bar docked directly above the **selected** node: nothing shows until you select a node, and the folded count keeps living on the node body. Rationale and the observation that would reverse it: `docs/DECISIONS.md`.
-- **Expand realm (영역 전개)** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **영역: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
-- **Ontology block exchange** — 개념 묶음을 폴더째 주고받는 기능이다. INDEX 의
-  **블록 가져오기**는 `.md` 폴더와, 있으면 `block-manifest.json` 을 읽어 무엇이
-  새로 들어오고 무엇이 기존 파일과 부딪히는지 **먼저 보여 주기만 한다**
-  (dry-run — 시험 삼아 돌려 보되 아무것도 쓰지 않는 것). 그다음 사람이 승인한
-  파일만 지금 vault 가 이미 쓰고 있는 `createDoc` 경로로 쓴다. 영역 전개 화면의
-  **이 영역의 원본 .md 를 블록 폴더로 내보내기**는 그 영역이 담고 있는 하위
-  노드들의 원본 파일만 복사한다. 폴더를 고르는 창은 웹에서는
-  `showDirectoryPicker()`, 설치한 앱에서는 같은 `FileSystemDirectoryHandle`
-  규약을 따르는 Tauri 자체 선택창이다. 사용자가 그 창을 취소한 것은 오류도
-  아니고 쓰기도 아니다. 터미널에서만 하려면 `ontology-atlas import <path...>`
-  를 쓴다.
+- **How the chip looks and where children land is a setting** (Settings › Expand, 2026-08-01 — ported from the `.qa-scratch/proto-expand.html` measurement prototype). Five values: the open control (`floating pill` · **`bar above`, default** · `shoulder badge`), the child layout (`spiral disk`, default · `fan` · `ring` · `column`), and three numbers — how many open at once (4–24, default 24), how many names are attempted per parent (3–40, default 8), and how many parents stay open at once (1–6, default 3). The default control is the bar docked directly above the **selected** node: nothing shows until you select a node, and the folded count keeps living on the node body. Rationale and the observation that would reverse it: `docs/DECISIONS.md`.
+- **Expand realm** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **Realm: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
+- **Ontology block exchange** — feature to exchange concept bundles folder-by-folder. INDEX's
+  **Import Block** reads `.md` folders and, if present, `block-manifest.json`, showing **only what is coming in and what conflicts with existing files first**
+  (dry-run — running it tentatively without writing anything). Then only the files approved by the person are written via the vault's existing `createDoc` path. **Export this realm's source .mds as a block folder** on the realm expansion screen copies only the source files of the child nodes contained in that realm. The folder picker window uses
+  `showDirectoryPicker()` on the web, and Tauri's own picker following the same `FileSystemDirectoryHandle`
+  protocol on the installed app. Canceling that window is neither an error nor a write. For terminal-only use, run `ontology-atlas import <path...>`.
 - **Tab** → keyboard cycle to neighbor hub
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` explains whether the
   vault lacks projects or relations, then offers the applicable next actions:
@@ -315,7 +296,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 #### Top-right buttons
 - **Source button** (`D`) → `DocsQuickDrawer` overlay with pinned/recent markdown source preview
 - **Shortcuts button** (`?`) → `ShortcutSheet`
-- **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: 언어 (`LocaleSwitch`) · 테마 (`ThemeToggle`) · INDEX 기본 상태 (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
+- **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: language (`LocaleSwitch`) · theme (`ThemeToggle`) · INDEX default state (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
 
 #### Node detail actions
 - The detail panel has one primary outcome: **Ask the agent** in the installed app,
@@ -327,146 +308,92 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   map corner no longer carries a persistent legend, and INDEX no longer repeats
   agent/growth/handoff controls below the tree.
 
-#### 에이전트 패널 — 처음 무슨 말을 걸지부터 다음 할 일까지 (2026-07-27, 데스크톱 앱 전용)
-- 화면 위쪽 도구 줄의 **「에이전트」** 버튼을 누르면 지도 오른쪽에 세로로 긴 패널이 열린다. 패널이 열리면 지도와 노드 정보 칸이 함께 밀려나며 폭을 다시 잡는다. 데스크톱 앱에서만 쓸 수 있다 — 브라우저에는 API 키를 안전하게 둘 곳도, 요청을 보낼 경로도 없어서, 눌러도 아무 일이 일어나지 않을 버튼은 아예 그리지 않는다
-- 바깥 도크는 계속 지도 폭을 양보하지만 실제 대화 표면은 위·아래·오른쪽을
-  12px 띄운 패널로 선다. 네 면의 테두리·radius·그림자는 INDEX와 노드 상세이
-  쓰는 기존 패널 토큰을 공유하며, ACP와 API-key 대화 갈래가 같은 형태다.
-  패널 왼쪽의 상단·세로 지도 컨트롤은 seam 양쪽 12px씩, 총 24px 간격으로 붙어
-  도크와 같은 시간·곡선으로 이동한다
-- 패널을 여는 첫 프레임부터 헤더·빈 대화 안내·현재 폴더 추천·작성 칸이 모두
-  최종 위치에 보인다. 연결을 기다리는 동안은 헤더의 작은 spinner와 「연결 중」
-  상태만 움직이고, 준비되면 같은 자리의 글자만 「준비됨」으로 바뀐다. 세션 시작은
-  도크 폭 이동과 카메라의 마지막 착지가 끝난 뒤 진행해 지도 모션과 프로세스
-  부팅이 같은 프레임을 다투지 않는다.
-- 에이전트 패널이 열리는 동안 왼쪽 INDEX는 저장된 기본 상태를 바꾸지 않고 잠시 접혀 지도 폭을 내준다. 대화를 닫으면 원래 INDEX 선호가 복구되고, 접힌 INDEX 탭을 직접 열면 에이전트 패널이 닫혀 두 보조 패널이 동시에 지도를 압축하지 않는다
-- 사용자의 말 한 차례에서 생긴 생각 조각과 도구 호출은 기본 접힌 **「작업 과정 · N단계」** 한 줄로 모인다. 실행 중에는 인디고 점과 단계 수만 갱신하고, 에이전트 답변은 별도 본문으로 읽힌다. 필요할 때 펼치면 기존 순서와 대상 노드를 모두 볼 수 있고, 생각의 Markdown도 실제 굵게·코드·목록으로 렌더된다
-- 에이전트 답변의 GFM 표는 헤더·행 구분·셀 여백이 있는 실제 표로 보인다. 긴 표는
-  대화 도크 전체를 넓히지 않고 표 안에서만 가로로 스크롤한다.
-- `get_concept`의 현재 볼트 slug는 그 노드를 지도에서 바로 선택한다.
-  `find_path`의 두 slug는 정확한 최단 경로 노드와 관계선을 밝힌다. 같은 턴의
-  typed Atlas read tool만 입력으로 쓰며, 답변 문장이나 존재하지 않는 이름은
-  지도 이동 근거로 쓰지 않는다. 초기 `tool_call` 뒤 streamed input을 완성하는
-  `tool_call_update.rawInput`도 같은 도구 행으로 병합한다.
-- starter vault에 연결된 project source가 없으면 「코드 훑기」를 먼저 실행하지
-  않는다. 「먼저 코드 폴더 연결하기」가 project 데이터시트로 이동하고, 연결을
-  같은 화면에서 다시 읽은 뒤에만 source-evidence-first 구축 prompt가 나타난다.
-- **처음 걸 말 3개** (`buildFirstWords`) — 대화가 비어 있을 때, 이 폴더의 실제 상태에서 뽑은 문장이 최대 3개 뜬다: ① 지금 보고 있는 개념에서 가장 크게 빠진 것 ② 「할 일」 목록이 첫 번째로 지목한 개념(판정에 쓰는 함수는 같은 `detectMeaningGaps`) ③ 언제나 뜨는 「이 지도에서 지금 제일 이상한 곳이 어디야?」
-- **이 문장을 만들 때 모델 호출은 0이다** — 이 문장들은 사용자가 [보내기]를 누르기 *전에* 이미 화면에 그려진다. 그러니 문장을 만들려고 밖으로 요청을 보내면 그것은 동의 없는 전송이고, 사용자 본인이 내는 API 요금(BYOK)을 허락 없이 쓰는 일이다. 문장을 만드는 코드는 순수 함수라서 전송 코드를 아예 import 하지 않는다 (`tests/contract/agent-first-words-local.contract.test.ts`)
-- **누르면 입력칸에 채워질 뿐, 보내지지 않는다** — 누르면 그 문장이 입력칸에 들어가고 전체 선택 + 포커스가 된다. 고쳐서 보내도 되고 지워도 된다. 눌러도 그 버튼은 사라지지 않는다
-- **억지로 3개를 채우지 않는다** — 빈 폴더에서는 1개(「무엇을 만드는 제품인지부터 같이 정리해 줘」), 보고 있는 개념이 없으면 ①번이 빠지고, 고칠 것이 없는 폴더에서는 ③번만 남는다. 문장 길이와 상관없이 **버튼 하나의 높이는 항상 같다**(1512×950 실측: 1개든 3개든 모두 44px, 입력칸 위치도 그대로)
-- **키나 폴더가 없을 때 보여 주는 「이런 걸 시킬 수 있어요」도 같은 코드가 만든다** — 문장은 똑같고 겉모습만 다르다(버튼이 아니라 평범한 목록). 지금 끝까지 실행할 수 없는 일에 대해서는 누를 수 있는 버튼을 만들지 않는다
-- **다음 한 걸음** — 모델이 문서를 고치자고 제안한 **바로 그 응답 안에서** 다음으로 빈 곳 하나를 같이 말하게 한다(시스템 프롬프트의 `NEXT:` 한 줄). 그 줄이 버튼 하나가 된다. **LLM 을 한 번 더 부르지 않고**, 입력칸에 채워 넣는 방식이라 진행 중인 제안이 둘로 늘어나지 않는다
-- **대화가 끊겨도 이어진다** — 새 대화를 시작하면 이 폴더에 **최근 실제로 적용된 변경**(git 이력 최대 5줄, 한 줄 120자까지)을 문맥으로 같이 넣는다. 대화 내용 자체는 저장하지 않는다 — 바뀐 내용은 frontmatter 와 git 에 남고, 그것이 다음 대화의 문맥이 된다
-- **이번 대화 요약** — 헤더 부제목 자리의 한 줄이 「이 대화에서 개념 N개 · 연결 M개」로 바뀐다(실제로 저장에 성공한 것만 센다). 글자만 바뀌고 줄의 위치와 크기는 그대로다
-- **다른 화면에서 넘어와도 같은 문장** — 노드 상세의 **「말로 시키기」** 버튼과 인사이트 목록 행의 `⋮` 메뉴 안 **「에이전트에게 말로 시키기」** 는 위 버튼들과 **같은 코드로 만든 같은 문장**을 쓴다. 인사이트에서 넘어올 때 주소(`?ask=missing-definition|missing-domain|missing-relations`)가 나르는 것은 **어떤 종류의 요청인지**뿐이고, 실제 문장은 도착한 화면이 그 화면의 언어로 만든다. 주소가 곧 상태라서 뒤로가기를 누르면 같은 문맥이 되살아나고, 패널을 닫으면 그 요청도 함께 사라진다
-- **겹치지 않게** — 패널이 열려 있는 동안 선택한 노드의 정보 칸은 패널 폭만큼 안쪽으로 옮겨 선다(둘은 같이 읽어야 하는 한 쌍이다). 옮겨 가는 시간과 가속 곡선은 패널이 열리는 것과 똑같이 맞춘다
-- **14인치 상단 크롬도 같은 폭을 양보한다** — 선택한 노드 정보 칸이 있으면
-  상단 지도 도구는 그 칸을 제외한 남은 지도 중앙으로 이동한다. 에이전트 도크가
-  열리면 중앙·우측 버튼 라벨은 아이콘 밀도로 접혀 두 절대 레인이 겹치지 않는다.
-- **지도 카메라도 남은 폭을 같은 클럭으로 읽는다** — 에이전트 도크의 폭이
-  변하는 매 프레임에 전체·선택 노드·영역·경로/전체 렌즈 중 현재 보기를 새 가용
-  영역으로 따라가고 마지막 프레임에 목표·속도를 함께 확정한다. 그래서 도크 뒤에
-  카메라가 따로 출발하거나 되튕기지 않으며, 직접 팬·줌한 화면은 빼앗지 않는다.
-  노드 상세을 닫을 때도 퇴장 중인 패널 폭을 최종 overview 안전영역으로 잘못
-  남기지 않는다.
-- **작업 상태와 알림은 같은 사실을 다른 문으로 열지 않는다** — 작업 상태 행은
-  현재 에이전트·단계·대상만 열고, 우상단 도구줄 맨 오른쪽의 독립 종은 알림과
-  작업 영수증만 연다. 안 읽은 수는 종 안의 겹침 배지라 정사각 타일 폭을 늘리지
-  않는다. 알림함은 `--topology-v2-panel-width`를 써 352px까지 읽기 폭을 확보한다.
-  상태 행 자체는 짧은 도구줄 폭이 아니라 내용의 자연 폭을 쓰고 520px에서만
-  멈춰, 에이전트 이름과 마지막 작업 시각이 먼저 잘리지 않는다.
-- **에이전트 목적지에서 바로 대화를 시작한다** — 준비된 실행기의 큰 「이 도구로
-  대화 열기」 버튼은 runtime id를 세션 한정으로 큐에 넣고 `/topology`로 이동한다.
-  지도는 실행기 탐지가 끝나 같은 id가 준비됐을 때만 큐를 한 번 소비해 도크를 연다.
-- **위아래 여백에 뜻을 준다 (2026-07-28)** — 아직 키를 연결하지 않은 상태에서는 **위**가 "무엇을 시킬 수 있나", **아래**가 "무엇이 필요한가 + 그것을 하는 버튼", **가운데**가 대화가 생길 자리다(보내면 실제로 거기에 답이 나타난다). 대화 중이거나 동의를 묻는 중일 때는 아래쪽부터 내용이 자라서, 답과 누를 버튼이 가까이 붙는다. 1512×950 실측: 뜻 없이 비어 있던 두 여백(위 361px · 아래 361px)을 뜻 있는 하나로 합쳤고, 대화 중 여백은 639 → 512px 로 줄었다
-- **바닥은 입력칸 하나만 남긴다 (2026-07-28)** — 지침 보기와 터미널로 넘기기는 항상 떠 있지 않고, 입력칸 아래 **한 줄**을 눌러 폈다 접었다 한다(펼쳐지는 영역은 한 번에 하나만 — 임시 화면을 여러 겹 쌓지 않는다). "코드까지 봐야 하는 일은 터미널의 AI 가 낫다" 는 안내 문장도 그 접히는 영역 안으로 내렸다. 바닥에 상시로 차지하던 높이가 176 → 104px 로 줄었다
-- **저장 전에 물어본다는 약속을, 정하는 화면에서 읽게 한다 (2026-07-28)** — "문서를 고칠 일이 생기면 바뀔 내용을 먼저 보여주고, 확인해야 저장돼요" 라는 문장이 API 키를 맡길지 정하는 화면과 동의를 묻는 시트 **양쪽 모두**에 나온다. 예전에는 제안 카드가 뜨기 전까지 화면 어디에도 이 말이 없었다
-- **"확인 안 된 말" 경고는 그 턴의 최종 답변에만 (2026-07-28)** — 도구를 부르기 전에 모델이 하는 중간 말("먼저 읽어볼게요")은 볼트 내용에 대한 주장이 아니다. 그래서 한 턴에 세 번씩 반복되던 최고 수위 경고를 한 번으로 줄였다
-- **실패했을 때 돌아갈 길 (2026-07-28)** — 실패 알림을 본문과 같은 무게로 그린다(예전에는 화면에서 가장 눈에 안 띄는 줄이었다). 그리고 방금 보낸 말을 입력칸에 다시 넣어 주는 버튼이 함께 붙는다 — 넣어 주기만 하고 보내지는 않는다
+#### Agent Panel — From What to Say First to Next Steps (2026-07-27, Desktop App Only)
+- Clicking the **「Agent」** button in the top toolbar opens a tall vertical panel on the right side of the map. When the panel opens, the map and node info areas shift together to adjust their width. This feature is exclusive to the desktop app — browsers lack a secure place to store API keys and a valid path for requests, so the button is not rendered at all if it would do nothing.
+- The outer dock continues to yield space to the map width, but the actual conversation surface stands as a panel with 12px spacing on the top, bottom, and right sides. Its borders, radius, and shadows share existing panel tokens used by INDEX and node details, with ACP and API-key conversations sharing the same form. The top and vertical map controls on the left side of the panel are attached 12px from each side of the seam, totaling a 24px gap, moving in sync with the dock's timing and curvature.
+- From the first frame of opening the panel, the header, empty conversation prompt, current folder recommendations, and input box are all visible in their final positions. While waiting for connection, only the small spinner and "Connecting" status in the header move; when ready, only the text changes to "Ready." Session start occurs after the dock width movement and camera's final landing complete, ensuring map motion and process booting do not compete for the same frame.
+- While the agent panel is open, the left INDEX temporarily collapses without changing its saved default state, yielding map width. Closing the conversation restores the original INDEX preference; opening the collapsed INDEX tab directly closes the agent panel so both auxiliary panels do not compress the map simultaneously.
+- Thought fragments and tool calls generated from a single user message are collected into a single line of the default-collapsed **「Process · N steps」**. During execution, only the indigo dot and step count update, while the agent's response is read in a separate body. Expanding it when needed reveals both the original order and target nodes, with thought Markdown rendered as actual bold, code, and lists.
+- GFM tables in agent responses appear as real tables with headers, row dividers, and cell padding. Long tables scroll horizontally only within the table itself, without widening the entire conversation dock.
+- The current vault slug from `get_concept` directly selects that node on the map. The two slugs from `find_path` reveal the exact shortest path nodes and relationship lines. Only typed Atlas read tools in the same turn are used as input; response sentences or non-existent names are not used as basis for map movement. The streamed input completing the initial `tool_call` via `tool_call_update.rawInput` is also merged into the same tool row.
+- If there is no project source connected to the starter vault, "Code Scan" is not executed first. "Connect Code Folder First" navigates to the project data sheet, and only after re-reading the connection on the same screen does the source-evidence-first build prompt appear.
+- **First 3 words** (`buildFirstWords`) — When the conversation is empty, up to three sentences extracted from the actual state of this folder appear: ① The biggest gap in the currently viewed concept ② The concept first pointed out by the "To-do" list (the function used for judgment is the same `detectMeaningGaps`) ③ The ever-present "Where is the strangest place on this map right now?"
+- **Zero model calls to create these sentences** — These sentences are already drawn on screen *before* the user clicks [Send]. Therefore, sending a request to create them would be an unauthorized transmission, using the user's own API costs (BYOK) without permission. The code creating these sentences is pure and does not import any transmission code (`tests/contract/agent-first-words-local.contract.test.ts`).
+- **Clicking only fills the input box; it does not send** — Clicking places that sentence into the input box, selecting all text and focusing it. You can edit and send it or delete it. The button does not disappear even after clicking.
+- **Does not force-fill 3 items** — In an empty folder, only one appears ("Let's organize what product we're making from scratch"); if there is no concept being viewed, ① is omitted; in a folder with nothing to fix, only ③ remains. Regardless of sentence length, **the height of one button is always the same** (measured at 1512×950: 44px for both 1 and 3 items, input box position remains unchanged).
+- **"You can ask things like this" shown when no key or folder exists is also created by the same code** — The sentences are identical, differing only in appearance (a plain list instead of buttons). No clickable buttons are created for tasks that cannot be executed to completion.
+- **Next step** — Makes the model mention one empty spot next to it **within the very response** where it suggests fixing the document (the `NEXT:` line in the system prompt). This line becomes a single button. By filling the input box **without calling the LLM again**, it prevents the ongoing suggestion from doubling.
+- **Continues even if the conversation disconnects** — Starting a new conversation includes the **most recently applied changes** to this folder (git history up to 5 lines, max 120 characters per line) as context. Conversation content itself is not saved — changed content remains in frontmatter and git, becoming the context for the next conversation.
+- **Summary of this conversation** — The subtitle in the header changes to "N concepts · M connections in this conversation" (counting only those successfully saved). Only the text changes; the line's position and size remain the same.
+- **Same sentences even when coming from another screen** — The "Ask by Voice" button in node details and "Agent by Voice" in the `⋮` menu of insight list rows use **the same sentences created by the same code** as the buttons above. What the address (`?ask=missing-definition|missing-domain|missing-relations`) carries when coming from insights is **only the type of request**; the actual sentence is created by the arriving screen in its language. Since the address is the state, pressing back restores the same context, and closing the panel removes the request along with it.
+- **Non-overlapping** — While the panel is open, the info area of the selected node shifts inward by the panel's width (they are a pair meant to be read together). The timing and acceleration curve of this shift match exactly how the panel opens.
+- **14-inch top chrome also yields the same width** — If there is a selected node info area, the top map tools move to the remaining center of the map excluding that area. When the agent dock opens, central/right button labels collapse into icons by density so two absolute lanes do not overlap.
+- **Map camera also reads remaining width in the same clock** — On every frame where the agent dock's width changes, the current view among full/selected node/area/path/full lens follows the new available area, confirming target and speed together on the last frame. Thus, the camera does not start separately or bounce behind the dock, and manually panned/zoomed screens are not taken away. When closing node details, it does not incorrectly leave the exiting panel's width as the final overview safe zone.
+- **Work status and notifications do not open separate windows for the same fact** — The work status row opens only current agent/steps/target; the independent bell in the top-right toolbar opens only notifications and work receipts. Unread counts are overlapping badges within the bell, not increasing the square tile width. The notification panel uses `--topology-v2-panel-width` to secure a reading width up to 352px. The status row itself uses natural content width rather than short toolbar width, stopping only at 520px, so agent name and last work time are not cut off first.
+- **Start conversation directly from the agent destination** — The large "Open Conversation with this Tool" button of the prepared executor places the runtime id in the queue for the session only and navigates to `/topology`. The map consumes the queue once to open the dock only when executor detection ends and the same id is ready.
+- **Give meaning to top/bottom margins (2026-07-28)** — While keys are not yet connected, **top** means "what can be asked," **bottom** means "what is needed + buttons to do it," and **center** is where the conversation will appear (answers actually appear there upon sending). During conversation or when asking for consent, content grows from the bottom, bringing answers and clickable buttons closer. Measured at 1512×950: The two previously meaningless empty margins (top 361px · bottom 361px) were merged into one meaningful space, and during conversation, the margin reduced from 639 → 512px.
+- **Bottom leaves only one input box (2026-07-28)** — View instructions and send to terminal are not always visible; you press a single line below the input box to expand/collapse it (only one area expands at a time — no stacking multiple temporary screens). The guidance sentence "AI in the terminal is better for tasks requiring code review" also moved into this collapsible area. The height permanently occupied at the bottom reduced from 176 → 104px.
+- **Make the promise to ask before saving readable on the decision screen (2026-07-28)** — The sentence "If a document needs fixing, show the changes first; confirmation is required for saving" appears on **both** the screen deciding whether to entrust the API key and the consent sheet. Previously, this sentence was nowhere on screen until the suggestion card appeared.
+- **"Unconfirmed words" warning only applies to the final answer of that turn (2026-07-28)** — Intermediate speech by the model before calling tools ("I'll read first") is not a claim about vault content. Thus, the highest-level warning repeated three times per turn was reduced to once.
+- **Way back when failing (2026-07-28)** — Failure notifications are drawn with the same weight as the body (previously the least noticeable line on screen). A button is also attached that puts the just-sent message back into the input box — it only puts it there; it does not send it.
 
 #### Agent work visibility
 
-- 지도 utility lane의 상태 줄은 raw transport 이름을 그대로 노출하지 않는다.
-  감사용 `codex-mcp-client`/`codex-acp`는 로그에 보존하고 화면에서는 `Codex`로,
-  Claude/Cursor/기타는 각 제품·에이전트 이름으로 표시한다.
-- **fresh valid heartbeat만 live다.** live 상태는 planning/editing/verifying/blocked를
-  계획 중/편집 중/검증 중/승인 기다림으로 보여 준다. 성공 쓰기 로그만 최근이면
-  `변경 감지`, 작업이 닫혔으면 `마지막 작업`이므로 조용한 로그를 현재 실행으로
-  추측하지 않는다.
-- 상태 줄을 누르면 actor, phase, 요청 summary, 실재 target, next step, last tool을
-  먼저 보여 주고 작업 단위 알림 기록을 그 아래에 둔다. 알림은 종전처럼 task와
-  구조 변화 단위로 집계하며 raw tool-call stream을 그리지 않는다. anchored surface는
-  오른쪽 지도 도구 열에서 `--chrome-tile-size + 8px`만큼 떨어져, 반투명 표면 뒤의
-  도구 아이콘이 작업 행과 섞이지 않는다.
-- 대상 링크는 `현재 대상:`/`마지막 변경:` 역할을 눈에 보이게 말하고
-  이미 지도 위에서는 `HomePage`의 node selection을 직접 갱신한다. route remount로
-  현재 볼트가 sample graph로 잠깐 바뀌지 않으며, 독립 소비처만
-  `/topology?mode=focus&p=…` fallback을 쓴다. heartbeat/tool input이 현재 볼트의
-  실재 slug를 밝힌 경우에만 기존 amber agent-focus ring을 그린다.
-- 앱 안 ontology 쓰기의 허용·거절과 최종 상태는 볼트 안
-  `.ontology-atlas/acp-work.jsonl`에 제한된 작업 영수증으로 남는다. 전체 대화·thought·
-  tool output·절대 경로는 저장하지 않는다. activity popover에서 최근 영수증을
-  접어 보고 요청·agent·도구·결정·결과·typed 변경 항목을 다시 확인할 수 있다.
-- `created_by`는 query 가능한 provenance 데이터지만 검토 상태가 아니다. 따라서
-  사람 저작 INDEX lens와 red review ring은 없다. `vault-readme`는 Docs reader guide로
-  읽히지만 topology adapter, INDEX, canonical concept census, editor target에서는
-  제외된다.
+- The status line in the map utility lane does not expose raw transport names directly.
+  Audit `codex-mcp-client`/`codex-acp` are preserved in logs and displayed as `Codex` on screen,
+  Claude/Cursor/others are shown by each product/agent name.
+- **Only fresh valid heartbeats are live.** Live status shows planning/editing/verifying/blocked
+  as Planning/Editing/Verifying/Awaiting Approval. Only successful write logs being recent
+  means `Change Detected`, work closed means `Last Work`, so quiet logs are not guessed as current execution.
+- Clicking the status line first shows actor, phase, request summary, actual target, next step, last tool,
+  and places work-unit notification records below. Notifications aggregate by task and structure changes as before, not drawing raw tool-call streams. The anchored surface
+  is positioned `--chrome-tile-size + 8px` away from the right map tool column, so tool icons behind the translucent surface do not mix with the work row.
+- Target links visibly state `Current Target:`/`Last Change:`
+  and directly update node selection for `HomePage` on the map already. Route remount
+  does not temporarily switch current vault to sample graph; independent consumers only
+  use `/topology?mode=focus&p=…` fallback. Heartbeat/tool input reveals current vault's
+  actual slug only then drawing the existing amber agent-focus ring.
+- App ontology write allow/deny and final state remain in the vault as limited work receipts in
+  `.ontology-atlas/acp-work.jsonl`. Full conversation/thought/
+  tool output/absolute paths are not saved. Recent receipts can be viewed collapsed in the activity popover,
+  allowing re-check of request/agent/tool/decision/result/typed change items.
+- `created_by` is queryable provenance data but not review status. Thus
+  there is no human authorship INDEX lens or red review ring. `vault-readme` is read as Docs reader guide
+  but excluded from topology adapter, INDEX, canonical concept census, editor target.
 
-#### 어권별 노드 이름 (`display_<locale>`, 2026-07-24)
-- 한 노드에 언어마다 다른 이름을 달아 두는 기능이다. frontmatter 의 `display_ko` / `display_en` 에 적은 이름을 지도 라벨 · INDEX · 팝오버가 화면 언어에 맞춰 그린다. 그 언어의 이름이 없으면 다음 순서로 찾아 내려간다: `display_<화면 언어>` → `display` → `title`. 검색과 이름 대조는 언제나 `title` 전체를 쓴다 — 라벨을 붙였다고 검색되는 범위가 좁아지지는 않는다
-- 이름을 적어 넣는 길은 셋이다: MCP `add_concept`/`add_concepts` 의 `labels: { ko, en }` · `patch_concept` 로 키를 직접 쓰기 · 지도의 노드 작성기에 있는 언어별 이름 칸
-- 한쪽 언어만 채우는 사고를 막는다 — MCP 는 한 언어만 들어오면 경고를 함께 돌려주고(저장 자체를 막지는 않는다), 사람이 쓰는 폼은 **지금 화면 언어의 칸을 필수**로 두어 다른 언어만 채우면 저장을 막고 그 이유를 그 자리에 적는다(모달을 띄우지 않는다)
+#### Locale-specific Node Names (`display_<locale>`, 2026-07-24)
+- A feature to assign different names per language to a single node. The map labels, INDEX, and popovers draw names from `display_ko` / `display_en` in frontmatter according to the screen language. If no name for that language exists, it searches down the order: `display_<screen language>` → `display` → `title`. Search and name comparison always use the full `title` — attaching a label does not narrow the search scope.
+- There are three ways to enter names: MCP `add_concept`/`add_concepts`'s `labels: { ko, en }` · writing keys directly via `patch_concept` · language-specific name fields in the map's node composer.
+- Prevents filling only one language — MCP returns a warning if only one language arrives (does not block saving itself), and the human form **makes the current screen language's field required**, blocking save if only other languages are filled and writing the reason there (no modal).
 
 #### Guided tour (`topology-tour-button`, 2026-07-23, `src/features/guided-tour`)
-- **Compass** 타일, "?" 타일 바로 위 — 지도 화면만 다루는 안내 투어로, 이 화면의 그림이 무엇을 뜻하는지 읽는 법을 알려 준다. `md` 폭 이상에서만 뜬다(`hidden md:flex`, 폰에서는 안 뜬다)
-- **첫 방문에 저절로 시작한다 (2026-07-24 첫 사용 흐름 손질)** — 샘플 데이터 화면이 자리를 잡았고 `guided-tour:v1` 기록이 아직 없으면 900ms 뒤에 한 번 저절로 시작한다. 건너뛰기를 누르면 `skipped` 로 기록해 다시 와도 안 뜨고, 자기 vault 를 연 사용자에게는 아예 시작하지 않는다. 시작하려는 그 순간에 모달(`aria-modal`)이 떠 있거나, 브라우저 창이 포커스를 잃었거나, 투어가 이미 열려 있으면 조용히 건너뛴다(`canAutoStartGuidedTour` — 임시 화면이 겹쳐 뜨는 것을 막는 가드). 사용자가 직접 여는 길은 둘이다: 컴퍼스 타일, 그리고 첫 실행 카드의 "2분 구경하기" 버튼
-- 8 declarative steps, plain-language copy, no jargon even for "ontology" itself: 지도=문서(1) · 점의 크기/모양(2, 캔버스의 노드에 붙는다) · 관계 범례(3) · 직접 눌러보기(4 — 사용자가 실제로 클릭할 때까지 기다렸다가 다음으로 넘어간다) · 데이터시트(5, 4단계에서 실제로 노드를 골랐을 때만 보여 준다) · INDEX(6) · 최근 바뀐 것만 보는 필터(7, 여기서 "구경 끝" 또는 "저는 개발자예요" 로 갈린다) · 에이전트로 건너가기(8, 개발자 쪽으로 갔을 때 — `FirstRunStarterModule` 을 강조한다)
-- Each step's anchor auto-skips (and the `N/M` progress-dot denominator shrinks) when its target isn't resolvable — missing element, `display:none`, or off-viewport
-- Highlight technique: a `box-shadow: 0 0 0 9999px` scrim-and-cutout paint (not a glow ring — `blur 0`), CSS-transitioned (180ms) between DOM-anchored steps, and a per-frame `worldToScreen` canvas projection (same technique as the realm "전개" button) for the two canvas-node steps — both painted on the same z-70 overlay layer so every step dims the surrounding chrome identically
-- The interactive step 4 is a click **funnel**, not a free-for-all: a 4-strip transparent blocker leaves only the spotlit domain dot's cutout clickable (chrome — the tour tile itself, search, "?" — stays blocked), and the anchored dot is a spine-visible domain whose click deterministically opens the datasheet
-- Opening the tour demotes other transient surfaces (shortcuts sheet, docs drawer, create-node composer, search palette) and temporarily hides `SampleNodeHint`; `Esc` closes only the tour (ladder tier between the context menu and the create-node composer — the first-run starter's capture-phase Esc yields while the tour overlay is open)
-- Focus follows the dialog card on open/step change and returns to the launcher tile on close; the "I'm a developer →" branch button only renders when its step-8 anchor (the first-run starter card) is still present
-- Completion/skip status persists to `localStorage` (`guided-tour:v1`) but never blocks re-running the tour from the same tile
+- **Compass** tile, just above the "?" tile — A guided tour handling only the map screen, teaching how to read what the images on this screen mean. Appears only at `md` width or larger (`hidden md:flex`, does not appear on phone).
+- **Starts automatically on first visit (2026-07-24 First Use Flow Cleanup)** — When sample data screen is settled and `guided-tour:v1` record does not yet exist, it starts automatically once after 900ms. Skipping records as `skipped` so it does not appear again even if revisited; does not start at all for users opening their own vault. Silently skips if a modal (`aria-modal`) is open at that moment, browser window loses focus, or tour is already open (`canAutoStartGuidedTour` — guard against overlapping temporary screens). Two ways to open manually: compass tile, and "Take 2-minute tour" button on the first run card.
+- 8 declarative steps, plain-language copy, no jargon even for "ontology" itself: map=document (1) · dot size/shape (2, attached to canvas nodes) · relationship legend (3) · try clicking yourself (4 — waits until user actually clicks before moving next) · data sheet (5, shown only if node was actually selected in step 4) · INDEX (6) · filter showing only recent changes (7, branches here to "Tour complete" or "I'm a developer") · skip to agent (8, when going developer side — highlights `FirstRunStarterModule`).
+- Each step's anchor auto-skips (and the `N/M` progress-dot denominator shrinks) when its target isn't resolvable — missing element, `display:none`, or off-viewport.
+- Highlight technique: a `box-shadow: 0 0 0 9999px` scrim-and-cutout paint (not a glow ring — `blur 0`), CSS-transitioned (180ms) between DOM-anchored steps, and a per-frame `worldToScreen` canvas projection (same technique as the realm "deploy" button) for the two canvas-node steps — both painted on the same z-70 overlay layer so every step dims the surrounding chrome identically.
+- The interactive step 4 is a click **funnel**, not a free-for-all: a 4-strip transparent blocker leaves only the spotlit domain dot's cutout clickable (chrome — the tour tile itself, search, "?" — stays blocked), and the anchored dot is a spine-visible domain whose click deterministically opens the datasheet.
+- Opening the tour demotes other transient surfaces (shortcuts sheet, docs drawer, create-node composer, search palette) and temporarily hides `SampleNodeHint`; `Esc` closes only the tour (ladder tier between the context menu and the create-node composer — the first-run starter's capture-phase Esc yields while the tour overlay is open).
+- Focus follows the dialog card on open/step change and returns to the launcher tile on close; the "I'm a developer →" branch button only renders when its step-8 anchor (the first-run starter card) is still present.
+- Completion/skip status persists to `localStorage` (`guided-tour:v1`) but never blocks re-running the tour from the same tile.
 
-#### 목적지 안내 (`DestinationGuide`, 2026-07-26, `src/features/guided-tour`)
-소유자 요청: *"각 LNB탭 들어갔을때 가이드는 다 각각 있으면 좋겠네? 지금은
-지도쪽만 있어서!"* — 지도에만 있던 안내를 나머지 다섯 목적지로 넓혔다.
+#### Destination Guide (`DestinationGuide`, 2026-07-26, `src/features/guided-tour`)
+Owner request: *"I wish each LNB tab had its own guide? Currently only the map side has one!"* — Expanded guidance from just the map to the remaining five destinations.
 
-- **안내 장치를 두 벌 만들지 않았다.** 지도가 쓰던 투어 장치(`useGuidedTour`
-  상태 관리 · 화면을 어둡게 덮고 한 곳만 뚫어 보여 주는 오버레이 · 설명 카드 ·
-  진행 점 · 건너뛰기)를 그대로 쓰고, `useGuidedTour({ steps })` 에 화면별 단계
-  목록만 갈아 끼운다. 지도의 8단계 여정(캔버스 노드에 붙는 안내 · 실제 클릭을
-  기다리는 단계 · 개발자용 갈래)은 예전처럼 HomePage 가 가진다
-- **문서함 · 공방 · 인사이트 · 프로젝트 · 기록** 각각 카드 2장 — ① 이 화면이
-  무엇을 하는 곳인지(무엇에도 붙지 않는 화면 중앙 카드) ② 여기서 가장 먼저 볼
-  것 하나(화면에 실제로 있는 요소 하나를 밝혀 준다: `docs-vault-doc-list` ·
-  `studio-entry-choice` · `do-next-touchups` · `project-selector-card` ·
-  `atlas-git-panel`). 기능을 나열하지 않고 "여기서 무엇을 할 수 있는가" 한
-  질문에만 답한다. 둘째 카드가 가리킬 요소가 그 순간 화면에 없으면(예: 문서
-  목록이 접혀 있을 때) 자동으로 한 장짜리가 된다
-- 이 안내는 앱 껍데기(`AppShell`)가 가지고 있고, 화면이 바뀔 때마다 `key` 로 다시
-  띄운다 — 페이지마다 각자 띄우게 하면 어느 한 페이지가 빠뜨려도 아무도 모른다
-  (#65 계열의 어긋남). 지도에서는 이 안내를 그리지 않는다
-- **방해하지 않는다** — "봤음" 기록은 화면마다 따로 남긴다(`guided-tour:<id>:v1`).
-  한 화면에서 봤다고 나머지 다섯 화면의 안내까지 사라지지 않고, 이미 본 화면은
-  다시 저절로 뜨지 않는다. 저절로 시작하는 것은 지도와 같은 조건
-  (`canAutoStartGuidedTour`)을 통과할 때뿐이다
-- **먼저 움직인 사람에게는 아예 안 뜬다 (2026-07-28)** — 저절로 뜨는 안내는
-  700ms 뒤에 열리고, 그때 화면이 가려져 있으면 최대 30초까지 기다린다. 그
-  기다리는 동안 사용자가 먼저 클릭하거나 키를 누르면 **뜨는 것 자체를 취소**한다
-  (지도가 쓰던 `watchGuidedTourAutoStartCancel` 을 그대로 가져왔다). 스스로
-  둘러보기 시작한 사람 위로 뒤늦게 뜨는 카드는 안내가 아니라 방해다. 이렇게
-  취소한 것은 "봤음" 으로 기록하지 않으므로 다음 방문에 다시 기회가 온다.
-  "이 화면은 여기서 열 수 없다" 고 사정을 밝히는 카드가 대신 서 있는 화면
-  (예: 폭이 `lg` 미만일 때의 공방)에서도 뜨지 않는다 — 없는 화면을 소개하는
-  안내는 거짓말이기 때문이다
-- **다시 보기** — 설정 메뉴 › 화면 › "화면 안내". 여섯 화면 모두에서 같은 자리에
-  있다(지도에서는 오른쪽 위 컴퍼스 타일이 여전히 주된 입구이고, 이 메뉴 행은 보조
-  수단이다). 화면마다 도움말 버튼을 따로 만들면 화면마다 버튼 개수가 달라지므로,
-  언제나 같은 자리에 있는 설정 메뉴 한 곳으로 모았다
-- 마지막 카드의 버튼은 `[다음]` 이 아니라 `[완료]` 다 — 있지도 않은 다음 장을
-  약속하지 않는다(지도 투어에도 같은 규칙을 적용했다)
+- **Did not create two sets of guidance devices.** Uses the map's tour device (`useGuidedTour`
+  state management · overlay darkening screen and showing only one spot · explanation card ·
+  progress dot · skip) as is, and swaps in screen-specific step lists into `useGuidedTour({ steps })`. The map's 8-step journey (guidance attached to canvas nodes · step waiting for actual click · developer branch) remains held by HomePage as before.
+- **Docs Vault · Studio · Insights · Project · Records** each have 2 cards — ① What this screen does (center card not attached to anything) ② One thing to see first here (highlights one actually existing element on screen: `docs-vault-doc-list` · `studio-entry-choice` · `do-next-touchups` · `project-selector-card` · `atlas-git-panel`). Does not list features, only answers "what can be done here" in one question. If the second card's target element is not on screen at that moment (e.g., document list collapsed), it automatically becomes a single card.
+- This guidance is held by the app shell (`AppShell`) and re-rendered with `key` every time the screen changes — if each page renders its own, one page missing means no one knows (#65 series misalignment). Does not draw this guidance on the map.
+- **Does not interfere** — "Seen" records are kept separately per screen (`guided-tour:<id>:v1`).
+  Seeing it on one screen does not make the remaining five screens' guides disappear, and already-seen screens do not auto-appear again. Auto-starting only happens when passing the same conditions as the map (`canAutoStartGuidedTour`).
+- **Does not appear at all for those who move first (2026-07-28)** — Auto-appearance guides
+  open after 700ms, and if the screen is covered at that time, waits up to 30 seconds. During
+  that wait, if the user clicks or presses a key first, **cancels appearing entirely**
+  (brought over `watchGuidedTourAutoStartCancel` used by the map). Cards appearing late over someone who started exploring themselves are interference, not guidance. Such cancellations are not recorded as "seen", so the opportunity comes again on next visit.
+  Does not appear even on screens where it says "This screen cannot be opened here" (e.g., studio when width is less than `lg`) — introducing a non-existent screen is a lie.
+- **View Again** — Settings Menu › Screen › "Screen Guide". Located in the same place on all six screens (on the map, the top-right compass tile remains the primary entry, this menu row is auxiliary). If each screen had its own help button, the number of buttons would vary per screen, so consolidated into one location in the settings menu always.
+- The button on the last card is `[Complete]` not `[Next]` — does not promise a non-existent next chapter (applied same rule to map tour).
 
 #### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
 - One pill, no expanded hero state (removed — it competed with the map for attention): selected project name, or workspace subtitle (concept/relation counts + weekly growth signal when > 0)
@@ -495,7 +422,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   bound folder and matches its source identity, revision, and fingerprint to the
   receipt. If that recheck cannot run, the saved receipt remains visible but
   currentness is `unavailable`; an observed source or ontology change is `stale`.
-- **Domain / capability / element node click** → `TopologyV2DetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("사용하는 항목 N · 필요한 항목 N · 근거 문서 N"), typed groups for **하위 항목**, **상위 항목**, **사용하는 항목**, and **필요한 항목**, each capped with a "+N more" overflow; a promoted **근거 문서** group listing `evidenceIds` rows; an **AI에게 줄 항목 정보 복사** action with MCP/CLI-style context; **자세히 보기** opens the full detail panel. Relation role stays explicit so the same edge is not counted twice.
+- **Domain / capability / element node click** → `TopologyV2DetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("N items used · N items needed · N evidence docs"), typed groups for **Sub-items**, **Super-items**, **Items Used**, and **Items Needed**, each capped with a "+N more" overflow; a promoted **Evidence Docs** group listing `evidenceIds` rows; an **Copy Item Info to Send to AI** action with MCP/CLI-style context; **View Details** opens the full detail panel. Relation role stays explicit so the same edge is not counted twice.
 
 #### Mobile-only
 - `BottomTabBar` (4 tabs: Map / Docs / Insights / Projects) at safe-area bottom
@@ -582,7 +509,7 @@ view-doc · pin · unpin · copy URL · print · edit · new doc · rename · de
 
 ---
 
-### `/ontology` — retired tree/ego hub → thin redirect (B3 허브가 곧 지도)
+### `/ontology` — retired tree/ego hub → thin redirect (B3 Hub is soon the map)
 
 The tree + ego graph Browse surface this section used to describe
 (`OntologyViewPage`, `OntologyTreeView`, the old `NodeDetailPanel`/ego SVG) is
@@ -607,46 +534,46 @@ surface chrome.
 
 ---
 
-### `/ontology/insights` — Insights (5-tab maintenance board, 질문 단위 재편 2026-07-26)
+### `/ontology/insights` — Insights (5-tab maintenance board, question-unit restructuring 2026-07-26)
 
 Every number on this page derives from the data source the page already used
 (`useOntologyInsight`, `shared/lib/ontology-tree`) — no separate persona or
-store layer. **One tab answers one question**: the old `구조` tab stacked three
+store layer. **One tab answers one question**: the old `Structure` tab stacked three
 different questions and grew to 2.2× the 14-inch viewport, so it was split into
-구성 / 연결 / 경계. Scroll contract: every tab stays ≤ 1.3× viewport.
+Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× viewport.
 
 #### Header (always visible)
 - Title + subtitle + right-aligned engraved census (`N concepts · N relations · N domains`)
-- `TabBar` — 할 일 Do next (default) / 구성 Inventory / 연결 Connections / 경계 Boundaries / 신선도 Freshness. Tab state in `?tab=`; each tab badge counts what that tab is about (verdict total / nodes / edges / cross-domain relations / freshness window). Legacy `?tab=structure|overview` → 구성, `?tab=relations` → 연결, so bookmarks and agent return-chip links stay alive.
+- `TabBar` — Do next (default) / Composition Inventory / Connection Connections / Boundary Boundaries / Freshness. Tab state in `?tab=`; each tab badge counts what that tab is about (verdict total / nodes / edges / cross-domain relations / freshness window). Legacy `?tab=structure|overview` → Composition, `?tab=relations` → Connection, so bookmarks and agent return-chip links stay alive.
 
-#### Tab 1 — 할 일 Do next
+#### Tab 1 — Do next
 - Today's touch-ups, agent readiness gauge, repair queue, and the growth queue (see `DoNextTab`); the badge is the single verdict model (`insights-verdict`) shared with the body.
-- **「내 몫 먼저」 two work groups** — the queue is split by the *nature of the work*, not by who you are. **의미 작업 / You can fix these right now** (meaning: missing definition · missing area · similar names · promotion candidates — answered by product knowledge) and **코드 작업 / Hand these to a developer or an AI** (neglected hubs · unlinked concepts · dependency cycles — answered by reading the implementation or a dependency direction). With your own folder open the meaning group is **first on screen**, so "83 items, none of them mine" becomes "N mine + M to hand off". Same data, only the order is in human language. Group headings render only when that group has visible rows.
-- **Session-ability translation, not role gating** — there are no accounts (local-first, permanent). Three facts the app already knows drive the row actions: ① can this session write to the vault ② has an agent been observed in this folder (heartbeat) ③ does this concept own a document (`hasOwnDocument`). Read-only sample → 「공방에서 수정」 becomes 「공방에서 보기」 plus a copyable command, and the group order flips (hand-off work first, since hand-off is the only completion this session has). No agent observed → 「에이전트로 검증」 becomes 「넘길 명령 복사」. **No greyed-out disabled buttons** — a disabled control that does not say why is the same dead end.
-- **한 문장 바로 쓰기 / inline one-field write** (`MeaningGapSection`) — rows for **뜻이 안 적혀 있어요** (no `description` *and* no body prose) and **어느 영역인지 안 적혀 있어요** (capability/element with no `domain:`) expand in place: a one-line input, or area chips built from the domains that actually exist in the vault. No new route, no modal, no trip to the workshop. Safety contract: the confirm line names the exact file and key before you press ("고칠 파일 `capabilities/pay.md` · 이 문장이 description 에 적혀요"), **cancel changes 0 files** (and a second press is required when you have typed something), the save locks in the pressed frame so double-clicks write once, and `expected_mtime` means a concurrent human/agent edit is never silently overwritten — the row says so and reloads, and the retry merges (their keys survive, only this one line is added). The write target is `resolveNodeDocument(node).ownSlug` — the same single source of truth the workshop uses, so a concept without its own document never gets someone else's file written to.
-- **비슷한 이름 — 같은 걸까요?** (duplicate suspects) — concept pairs whose names/slug/kind/domain/neighbours overlap heavily, top 3 with the shared words as evidence, the overlap percent, a map deeplink to the node worth keeping, and a per-pair `merge_concepts` dry-run handoff. The score is a mirror of the MCP engine's `similar_nodes`, locked by `tests/contract/duplicate-pairs.contract.test.ts`, so screen and agent never name a different pair. Only nodes that own a vault document are considered (a node born from another doc's `elements:` ref has no file to merge). **0 suspects renders no section** — an empty "no duplicates" card is ink without a decision.
+- **「First My Share」 two work groups** — the queue is split by the *nature of the work*, not by who you are. **Meaning work / You can fix these right now** (meaning: missing definition · missing area · similar names · promotion candidates — answered by product knowledge) and **Code work / Hand these to a developer or an AI** (neglected hubs · unlinked concepts · dependency cycles — answered by reading the implementation or a dependency direction). With your own folder open the meaning group is **first on screen**, so "83 items, none of them mine" becomes "N mine + M to hand off". Same data, only the order is in human language. Group headings render only when that group has visible rows.
+- **Session-ability translation, not role gating** — there are no accounts (local-first, permanent). Three facts the app already knows drive the row actions: ① can this session write to the vault ② has an agent been observed in this folder (heartbeat) ③ does this concept own a document (`hasOwnDocument`). Read-only sample → 「Edit in Workshop」 becomes 「View in Workshop」 plus a copyable command, and the group order flips (hand-off work first, since hand-off is the only completion this session has). No agent observed → 「Verify as Agent」 becomes 「Copy Handoff Command」. **No greyed-out disabled buttons** — a disabled control that does not say why is the same dead end.
+- **One-sentence inline write / inline one-field write** (`MeaningGapSection`) — rows for **Meaning not specified** (no `description` *and* no body prose) and **Area not specified** (capability/element with no `domain:`) expand in place: a one-line input, or area chips built from the domains that actually exist in the vault. No new route, no modal, no trip to the workshop. Safety contract: the confirm line names the exact file and key before you press ("File to fix `capabilities/pay.md` · This sentence is in the description"), **cancel changes 0 files** (and a second press is required when you have typed something), the save locks in the pressed frame so double-clicks write once, and `expected_mtime` means a concurrent human/agent edit is never silently overwritten — the row says so and reloads, and the retry merges (their keys survive, only this one line is added). The write target is `resolveNodeDocument(node).ownSlug` — the same single source of truth the workshop uses, so a concept without its own document never gets someone else's file written to.
+- **Similar names — are they the same?** (duplicate suspects) — concept pairs whose names/slug/kind/domain/neighbours overlap heavily, top 3 with the shared words as evidence, the overlap percent, a map deeplink to the node worth keeping, and a per-pair `merge_concepts` dry-run handoff. The score is a mirror of the MCP engine's `similar_nodes`, locked by `tests/contract/duplicate-pairs.contract.test.ts`, so screen and agent never name a different pair. Only nodes that own a vault document are considered (a node born from another doc's `elements:` ref has no file to merge). **0 suspects renders no section** — an empty "no duplicates" card is ink without a decision.
 - Queue sections show 3 rows each plus their total; the rest is the agent handoff's job (scroll contract).
 
-#### Tab 2 — 구성 Inventory
+#### Tab 2 — Configuration Inventory
 - **Hero census** (`InsightsHeroCensus`) — concepts / relations / health facts (orphan count, cycle count, domain-membership rate, evidence-linked rate)
 - **Kind census** card — kind → glyph + bar + count, tallest bar highlighted
 - **Domain capacity** card — domain → bar (capability/element sub-counts), hidden when there are no domains
 
-#### Tab 3 — 연결 Connections
+#### Tab 3 — Connections
 - **Relation breakdown** — every edge type as a bar row with a `TopologyV2TraceMark` (solid=containment, dashed=depends/relates) + count + percent of total; empty vault gets a "connect them on the map" hint
 - **Hubs** — top nodes by degree: kind glyph + title + relative bar + degree, map deeplink per row, "top N / M total" folded into the single footnote line
 
-#### Tab 4 — 경계 Boundaries
+#### Tab 4 — Boundaries
 - **Domain coupling** — a domain×domain **heat grid** (rows send, columns receive; the diagonal is inside-one-domain connections in neutral). Cell shade is a 4-step indigo alpha ladder and every non-zero cell keeps its number, so the card never speaks in colour alone. Picking a cell opens that pair's relation-type counts and real example edges (map deeplinks) in a slot that is reserved whether or not anything is selected. Top 6 domains by cross activity; beyond that the footnote says "top N of M domains" and how many cross links fall outside the grid. Same `computeDomainCouplingMatrix` output as MCP `domain_matrix` — no new calculation.
 - **Boundary pressure** — per-domain inside vs cross ratio; a high cross share signals a leaking boundary
 - Cold start (fewer than 2 domains or no cross edges) shows one explicit empty state **with a next step** (map editor link) instead of a misleading table
 
-#### Tab 5 — 신선도 Freshness
+#### Tab 5 — Freshness
 - **Domain freshness heatstrip** — one row per domain, a week-by-week heat strip (neutral ramp, current week in indigo) built from real vault `updatedAt` values (`FRESHNESS_WINDOW_WEEKS`); domains with no dated docs are excluded from the stale count rather than counted as stale ("unknown" ≠ "old"); stale domains get a dashed "stale" tag
 - **Recent updates** — most recently touched nodes with kind glyph, domain, and ISO date; footer shows total stale-domain count
 
 #### Bottom handoff row (`InsightsHandoffRow`, always visible)
-- One copyable `query_ontology(...)` chain per active tab — the tab's question translated into the agent's execution order (연결 → `centrality` then `blast_radius`; 경계 → `domain_matrix` then `match_edges`)
+- One copyable `query_ontology(...)` chain per active tab — the tab's question translated into the agent's execution order (connections → `centrality` then `blast_radius`; boundaries → `domain_matrix` then `match_edges`)
 
 Empty state (0 nodes): link to `/docs` (open vault).
 
@@ -672,7 +599,7 @@ Empty state (0 nodes): link to `/docs` (open vault).
 - New concept creation uses `workbench=create`. It no longer calls `createDoc`
   from the first button press: the generated UID, slug, kind, display labels,
   domain, and authorship fields are shown in `OntologyChangeReview`, and only
-  「확인하고 쓰기」 creates the file.
+  "Confirm and write" creates the file.
 - ACP keeps read tools frictionless. Every Atlas write tool pauses the same
   conversation on a typed change card, hides `allow_always`, and resumes only on
   `allow_once`; rejection is `reject_once`. The tool-mode policy is checked against
@@ -690,16 +617,16 @@ Empty state (0 nodes): link to `/docs` (open vault).
 The following behavior described the removed Studio UI. It is retained only to
 explain old screenshots and decisions; none of it is a current destination.
 
-- 개념 하나의 설명과 관계를 **채워 넣는 쓰기 화면**이다. 지금 작업 중인 노드를 화면 한가운데 크게 놓고, 관계 종류마다 방향을 고정해 둔다 — 위=상위 개념(is_a) · 아래=이 개념이 담는 것(contains) · 오른쪽=이 개념이 기대는 곳(depends) · 왼쪽=비슷한 것(relates). 방향이 늘 같아야 사용자가 매번 다시 읽지 않아도 된다. 왼쪽 세로 메뉴의 "공방" 으로 들어간다. **화면은 하나이고, 얼마나 채워졌는지만 두 가지이며, 모드를 고르는 탭은 없다.**
-- **이미 있는 노드 채우기(enhance)**: 기존 노드를 열어(`?node=<id>` 링크로 지정하며, 지정이 없으면 관계가 가장 많은 역량을 자동으로 고른다) 빠진 관계를 채운다. 이미 채워진 관계는 인디고 실선과 그 끝의 작은 카드로 그리고, 아직 빈 관계는 파선으로 그린 **빈 자리**로 그린다(장식용 아이콘이 아니라 선만 있는 빈 칸이다). 그중 하나에만 "여기부터 채워요" 안내를 붙인다.
-- **새로 만들기(create, `?mode=create`)**: 같은 화면을 전부 빈 상태로 연다 — 종류(kind)/이름/도메인/정의를 적는 초안 카드와, 네 방향의 빈 관계 자리. 저장하기 전에 "새 노드 1개, 관계 N개" 처럼 둘을 나눠서 미리 알려 준다. 이름이 기존 노드와 비슷하면 "기존 노드 열기" 와 "그래도 새로 만들기" 중 고를 수 있다. 다만 종류와 이름이 같아서 파일 주소(slug)까지 겹쳐 버리면 "기존 노드 열기" 만 남기고 저장 · 저장 예고 · 변경 미리보기를 모두 막는다. 이름 입력칸은 그 경고와 연결돼 있어 화면 낭독기에서도 같이 읽힌다. 입력하는 동안 결과를 바로 미리 보여 준다.
-- **화면이 아니라 파일이 바뀐다**: 빈 관계 자리를 채우면 실제 `.md` 파일의 frontmatter 관계 목록에 그대로 쓴다(`localVault.updateFrontmatter`). 읽기 전용 볼트(예: 샘플)에서는 대신 AI 에이전트에게 시킬 **MCP 명령 묶음**을 클립보드로 복사해 준다. 연결할 상대는 그 자리에서 바로 뜨는 목록에서 고르거나 "새로 만들기" 로 만든다.
-- **자기 파일이 없는 개념은 먼저 물어보고 파일을 만든다**: 볼트의 개념 중 상당수는 다른 문서의 관계 목록에 이름만 적혀서 생긴 것이라, 자기 `.md` 파일이 없다(이 저장소 자신의 볼트에서는 294개 중 198개). 관계는 개념의 파일 안에 저장되므로, 그런 개념에 관계를 이으려면 파일을 먼저 만들어야 한다. 그런데 사용자 디스크에 파일을 새로 만드는 것은 사용자가 시킨 적 없는 일이라, 저장하려는 순간 **만들 파일 경로까지 보여 주고 한 번 물어본다**. 취소하면 파일은 하나도 바뀌지 않는다(적던 내용은 초안으로 남는다). 확인하면 **기존 문서들이 이미 가리키고 있던 그 경로**에 관계까지 적힌 문서가 한 번의 쓰기로 생긴다. 종류를 확정할 수 없으면 임의로 정하지 않고 사용자가 고르게 한다. 읽기 전용 볼트에서는 `add_concept` 까지 포함한 MCP 명령 묶음을 준다.
-- **상위 개념(is_a)을 실제로 저장할 수 있게 했다**: "이 개념은 무엇의 한 종류인가" 는 볼트에서 가장 많이 비어 있던 항목이었다. 그래서 frontmatter 에 `broader` 키(SKOS 표준에서 쓰는 이름)를 두고, 그래프 계산 · 스키마(mcp/cli) · 게이트까지 전부 이 키를 알도록 실제로 추가했다. 채우면 파선이던 자리가 실선으로 바뀐다.
-- **얼마나 채웠는지 보여 주는 법**: 가운데 카드의 네 변 테두리로 보여 준다(빈 쪽은 파선, 채운 쪽은 실선). 그 아래에 쉬운 말 설명("4개 중 2개 채웠어요"), 왼쪽 위에 다음에 할 일을 가리키는 작은 나침반 표시가 있다. 퍼센트 원형 그래프 · 레벨 · 등급 같은 게임식 표시는 쓰지 않는다.
-- **비슷해 보이는 두 질문을 갈라 놓았다 (2026-07-28)**: 위쪽 버튼 줄은 **이 노드의 종류(kind)**를 고르는 곳이고(프로젝트/도메인/역량/요소 넷 중 하나), 위(↑) 방향의 관계 자리는 **`broader` 관계**, 즉 "어느 개념의 하위인가" 를 적는 곳이다. 서로 다른 사실이다. 그래서 버튼 줄에는 「종류 / Kind」 라는 한 단어 라벨을 눈에 보이게 붙이고 `aria-labelledby` 로도 연결했다. 위 관계 자리의 영문 질문은 `What is this node a kind of?` 다 — 예전 문구 `What kind of thing is this node?` 는 말 그대로 "이 노드의 kind" 를 묻는 것처럼 읽혀서 바로잡았다.
-- **가로 1024px 미만에서는 열지 않고 이유를 말한다 (2026-07-28)**: 이 화면은 폭이 고정된 카드와 그 둘레에 놓이는 관계 자리로 되어 있어 좁은 화면에서는 성립하지 않는다(설치한 앱은 최소 폭이 `minWidth 1040` 이라 이런 폭이 아예 나오지 않고, 모바일 하단 탭바에서도 공방은 뺐다). `<lg` 폭에서 들어오는 링크 세 갈래(노드 상세의 「관계 편집」 · 인사이트 · 문서함 frontmatter)는 이제 **왜**(가로 1024px 이 필요하고, 창을 넓히면 바로 열린다는 것)와 **어디로 가면 되는지**(지도 · 데스크톱 앱)를 함께 적은 카드 한 장을 받는다. 공방 화면 자체는 그리지 않고, 그 위에서는 첫 방문 안내도 뜨지 않는다 — 없는 화면을 소개하는 안내는 거짓말이기 때문이다.
-- **디자인**: 앱 전체와 같은 규칙을 따른다 — 무채색 + 인디고 한 가지 + `--color-*` 토큰만 쓴다. 앰버(주황)는 "당연히 채워져 있어야 하는데 비어 있는 자리" 신호로만 쓴다. **빛 번짐 · 그라디언트 · 보석 · 파티클 · 금색은 금지**다(예전에 있던 게임풍 예외는 2026-07-24 에 폐기됐다). 움직임은 관계 자리를 채울 때 200ms 동안 투명도와 색이 바뀌는 것 하나뿐이고, `prefers-reduced-motion` 설정에서는 그것도 멈춘다. 화면 문구는 전부 쉬운 말이다("이 노드는 무엇의 한 종류인가요?").
+- This is the **write screen** that fills in a concept's description and relationships. It places the node currently being edited large and centered on the screen, fixing the direction for each relationship type: up = parent concept (is_a), down = what this concept contains (contains), right = what this concept depends on (depends), left = similar concepts (relates). Directions must always remain constant so users do not need to re-read them every time. It opens from the "Workshop" in the left vertical menu. **There is only one screen, differing only in how much is filled, with no mode-selection tabs.**
+- **Enhancing existing nodes**: Opens an existing node (specified via a `?node=<id>` link; if unspecified, it automatically selects the capability with the most relationships) to fill in missing relationships. Already-filled relationships are drawn as indigo solid lines with small cards at their ends, while still-empty relationships are drawn as **empty spaces** with dashed lines (these are empty cells with only lines, not decorative icons). A "Start filling here" prompt is attached to only one of them.
+- **Creating new nodes (`?mode=create`)**: Opens the same screen entirely blank — a draft card for kind/name/domain/definition and empty relationship slots in four directions. Before saving, it separately notifies the user of "1 new node, N relationships." If the name is similar to an existing node, the user can choose between "Open existing node" and "Create anyway." However, if the kind and name match so closely that the file slug also overlaps, only "Open existing node" remains available; saving, save-previews, and change-previews are all blocked. The name input field is linked to this warning so screen readers announce it as well. Results are previewed in real-time while typing.
+- **Files change, not just the screen**: Filling an empty relationship slot writes directly to the frontmatter relationship list of the actual `.md` file (`localVault.updateFrontmatter`). In read-only vaults (e.g., samples), it instead copies a **bundle of MCP commands** for the AI agent to the clipboard. The target to connect with is selected from the list that appears immediately at that spot or created via "Create new."
+- **Concepts without their own files are asked first**: Many concepts in the vault exist only because other documents listed their names in relationship lists, meaning they lack their own `.md` file (in this repository's vault, 198 out of 294). Since relationships are stored within a concept's file, one must create a file first to link relationships to such concepts. Because creating new files on the user's disk is something the user has never explicitly requested, **the system shows the file path to be created and asks for confirmation once** at the moment of saving. If cancelled, no files change (written content remains as a draft). If confirmed, a document containing both the relationships and the **path already pointed to by existing documents** is generated in a single write operation. If the kind cannot be determined, it does not arbitrarily decide but lets the user choose. In read-only vaults, it provides an MCP command bundle including `add_concept`.
+- **Enabled actual saving of parent concepts (is_a)**: "What kind of thing is this node a kind of?" was the most frequently empty item in the vault. Therefore, we added the `broader` key (the name used in SKOS standards) to the frontmatter and actually added it to graph calculations, schemas (mcp/cli), and gates so all components recognize this key. When filled, the dashed line becomes a solid line.
+- **How to show how much is filled**: Displayed via the borders of the four sides of the central card (dashed for empty sides, solid for filled sides). Below that is an easy-to-understand explanation ("Filled 2 out of 4"), and in the top-left corner is a small compass icon indicating what to do next. Game-style displays like percentage pie charts, levels, or grades are not used.
+- **Separated two seemingly similar questions (2026-07-28)**: The top button row is for selecting the node's **kind**, and the relationship slot in the up (↑) direction is for recording the **`broader` relationship**, i.e., "is a sub-concept of which concept." These are different facts. Therefore, the button row has a visible single-word label "Kind / Kind" connected via `aria-labelledby`. The English question in the upper relationship slot is `What is this node a kind of?` — the previous phrase `What kind of thing is this node?` was corrected because it literally read as asking "the kind of this node."
+- **Does not open below 1024px width and explains why (2026-07-28)**: This screen consists of a fixed-width card and relationship slots placed around its perimeter, making it unworkable on narrow screens (the installed app has a minimum width of `minWidth 1040`, so such widths do not appear at all, and the Workshop is excluded from mobile bottom tab bars). Links entering in `<lg` width from three sources ("Edit Relationships" in node details, Insights, Document frontmatter) now receive a single card explaining **why** (1024px width is required and it opens immediately when the window is widened) and **where to go** (Map · Desktop app). The Workshop screen itself is not drawn, nor does the first-visit guide appear on it — because introducing a non-existent screen would be a lie.
+- **Design**: Follows the same rules as the rest of the app — achromatic + one indigo + using only `--color-*` tokens. Amber (orange) is used solely as a signal for "places that should naturally be filled but are empty." **Glow · gradients · gems · particles · gold are prohibited** (the previously existing game-style exception was abolished on 2026-07-24). The only motion is a change in opacity and color over 200ms when filling a relationship slot, and even that stops under the `prefers-reduced-motion` setting. All screen text uses plain language ("What kind of thing is this node?").
 
 </details>
 
@@ -753,7 +680,7 @@ level below `/projects`.
 #### Zone 1 — hero band
 - Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`) + hero meta (Hub label or plain label · status) + updated date + inline-editable description
 - "View topology" link + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor)
-- **Construction review** — `검수 결과 열기` reads one local qualification envelope into React session state only and places a full-width review directly below the hero. The default depth keeps purpose, current/next decision, first blocker/diagnostic, red/unknown/conflict, human approval, and exact plan counts visible. `근거·진단 보기` expands the same artifact's CQs, source-bound witnesses and citations, examples/counterexamples, seven quality axes, diagnostics, exact review/write plans, and digest equality. The same disclosure also exposes a session-only expert draft for CQ wording, witness source references, and the exact plan; edits are visibly dirty, can be restored, never mutate the receipt/vault/localStorage, and require qualification again before any write. Malformed, wrong-project, digest-mismatched, or unequal-plan envelopes fail closed; post-write maintenance is shown separately and never rewrites the completed qualification verdict. Nothing is uploaded, remembered, or written to the vault.
+- **Construction review** — `Open verification results` reads one local qualification envelope into React session state only and places a full-width review directly below the hero. The default depth keeps purpose, current/next decision, first blocker/diagnostic, red/unknown/conflict, human approval, and exact plan counts visible. `View rationale/diagnostics` expands the same artifact's CQs, source-bound witnesses and citations, examples/counterexamples, seven quality axes, diagnostics, exact review/write plans, and digest equality. The same disclosure also exposes a session-only expert draft for CQ wording, witness source references, and the exact plan; edits are visibly dirty, can be restored, never mutate the receipt/vault/localStorage, and require qualification again before any write. Malformed, wrong-project, digest-mismatched, or unequal-plan envelopes fail closed; post-write maintenance is shown separately and never rewrites the completed qualification verdict. Nothing is uploaded, remembered, or written to the vault.
 - **Engraved metric strip** — domains / capabilities / elements / documents / relations, derived from this project's own ontology nodes/edges (not the whole vault)
 #### Zone 2 — domain composition
 - Domain rows (one per domain, uniform height), only rendered when the project has domains (hidden entirely on 0 domains — "match 0 → hide" principle). Each row carries the shared capability:element ratio bar; clicking a row expands its full capability list in place, and the expanded panel links into topology focus for that domain. The former radial mini-map and card grid were retired 2026-08-13 (the map promised size-by-count it could not render — 4.7px between 17 and 6 — and the cards said the same numbers a third time)
@@ -856,91 +783,52 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 ---
 
-### `/git` — 기록 (record destination, 작업대 재설계 2026-07-27)
+### `/git` — Record (record destination, workbench redesign 2026-07-27)
 
-**이 화면이 하는 일 한 문장**: 내가 고친 개념이 무엇인지 확인하고, 그것을 지금
-git 커밋 하나로 남길지 정한다. 그래서 화면에서 가장 눈에 띄어야 하는 것은
-**바뀐 개념 목록과 「남기기」 버튼** 한 쌍이고, 나머지는 그 판단의 근거이거나
-화면 위아래 테두리일 뿐이다.
+**One sentence on what this screen does**: Verify what concept I changed and decide whether to leave it in one git commit. Therefore, the most prominent things on the screen are **the list of changed concepts and the "Leave" button** pair; everything else is either evidence for that judgment or merely the top/bottom borders of the screen.
 
-화면 모양은 두 단계로 갈린다. 먼저 **이 화면이 아예 일을 할 수 있는 상태인가**
-(`data-stage`) — 브라우저라 git 을 못 돌리거나 볼트를 아직 안 골랐으면 여기서
-걸린다. 일할 수 있으면 그다음 **지금 판단할 것이 있는가**(`data-shape`)로
-갈린다.
+The screen layout splits into two stages. First, **is this screen even in a state to do work** (`data-stage`) — if the browser can't run git or the vault hasn't been selected yet, it stops here. If it can work, it then splits by **whether there is something to decide now** (`data-shape`).
 
-#### 아직 일을 시작할 수 없는 상태 (`web` · `no-vault` · `not-initialized` · `loading` · `error`)
-- 이 상태들은 **모두 같은 크기, 같은 자리**에 그린다(`--git-setup-measure`
-  520px 한 칸, 화면 정중앙). 단계마다 폭이 달라지면 사용자는 매번 다른
-  페이지로 튕겨 나간 것처럼 느낀다
-- 해야 할 일을 한 줄로 보여 준다: 앱에서 열기 → 폴더 고르기 → 기록 시작.
-  원격 저장소 등록은 선택 사항이라 이 줄에 넣지 않는다. 여기에 추가 메뉴나
-  장식용 연결선은 두지 않는다
-- 브라우저에서는 `앱 받기` 가 주 버튼이고, 터미널에서 쓸 CLI 명령 복사는 보조
-  수단이다
+#### State where work cannot start yet (`web` · `no-vault` · `not-initialized` · `loading` · `error`)
+- These states are all drawn in **the same size, same position** (`--git-setup-measure`
+  one 520px cell, centered on screen). If the width changes per stage, users feel like they're jumping to different pages every time
+- Shows what to do in one line: Open app → select folder → start recording.
+  Registering a remote repository is optional so it's not included in this line. No additional menus or decorative links here
+- In the browser, `Get App` is the primary button, and copying CLI commands for terminal use is secondary
 
-#### 아직 안 남긴 변경이 있을 때 (`decide`)
-- 왼쪽: 맨 위에 상태별 합계 한 줄, 그 아래에 **종류(kind)별로 묶은 파일 행**
-  (상태 기호 `+ ~ − →` · 폴더보다 이름을 크게 · 몇 줄이 늘고 줄었는지). 행을
-  누르면 그 문서에서 바뀐 줄이 오른쪽에 나온다
-- 개념 파일이 아닌 것(`.gitignore` 등)은 **기본으로 접어 둔다** — 커밋에는 같이
-  들어가지만 사람이 판단할 대상은 아니기 때문이다. 접힌 줄이 몇 개인지 숫자로
-  말하므로 숨기는 것은 아니다
-- 아래 고정 바: 인디고로 채운 `N개 남기기` 버튼 → 확인 단계(실제로 만들어질
-  커밋 제목 한 줄 미리보기 + 원격으로 보낼지 여부, 기본은 꺼짐). 무엇이
-  기록되는지 알리는 문구도 여기 있다 — 실제로 파일이 쓰이는 자리이기 때문이다
-- 오른쪽: 근거를 보여 주는 칸 — `바뀐 줄`(git 내부 표기를 걷어낸 파일별 +/− 줄)
-  과 `지난 걸음`(지난 커밋들). **보여줄 내용이 있을 때만 그린다**
-- 2열로 나누는 기준 폭은 `xl`(1280)이다. 1024 에서 2열로 만들면 목록이 눌려
-  개념 이름이 잘린다
+#### State with uncommitted changes (`decide`)
+- Left: One line of status totals at the top, then **file rows grouped by kind**
+  (status symbols `+ ~ − →` · folder names larger · how many lines added/removed). Clicking a row shows changed lines from that document on the right
+- Non-concept files (`.gitignore`, etc.) are **collapsed by default** — they go into the commit but aren't things humans need to judge. The number of collapsed lines is shown numerically so it's not hidden
+- Bottom fixed bar: Indigo-filled `Leave N items` button → confirmation step (preview of the actual commit title line + whether to push remotely, default off). Text explaining what is being recorded is also here — because files are actually written here
+- Right: Area showing evidence — `Changed lines` (file-by-file +/- lines with git internal notation removed) and `Previous steps` (previous commits). **Drawn only when there is content to show**
+- The width for splitting into 2 columns is `xl` (1280). Making it 2 columns at 1024 compresses the list and cuts off concept names
 
-#### 남길 것이 없을 때 (`recall`)
-- 2열로 나누지 않는다. **지난 커밋 목록이 본문**인 한 칸짜리 화면
-  (`--git-single-measure`)
-- 커밋 한 줄에 담기는 것: 얼마 전인지 · 쉬운 말 요약(`추가 3 · 수정 2`) ·
-  만든 사람 · 짧은 해시. 펼치면 전체 해시 · ISO 형식 시각 · **커밋 제목 원문**
-  (나중에 추적할 때 필요한 기록)
-- 주 버튼 자리는 비활성 상태로 그대로 남긴다(`모두 남겼어요`). 상태에 따라
-  버튼이 통째로 사라지면 사용자는 다음번에 어디를 눌러야 하는지 매번 다시
-  찾아야 한다
+#### State with nothing to leave (`recall`)
+- Does not split into 2 columns. A single-screen view where **the previous commit list is the body** (`--git-single-measure`)
+- What's in one commit line: how recent · simple summary (`Added 3 · Modified 2`) · author · short hash. Expanding shows full hash · ISO format time · **original commit title** (record needed for later tracking)
+- The primary button position remains inactive (`All left`). If the button disappears entirely based on state, users have to figure out what to press next every time
 
-#### 화면에는 쉬운 말만 쓴다
-- Atlas 가 자동으로 만든 커밋 제목(`ontology snapshot: +3 concepts, …`)은
-  화면에 다시 보여 줄 때 사람 말로 바꾼다. 반대로 사람이 손으로 쓴 커밋이나
-  다른 도구가 만든 커밋은 원문 자체가 이미 사람의 말이므로 건드리지 않는다
-  (`describeSnapshotSubject`)
-- git 이 내부적으로 쓰는 표기(`diff --git` · `index <sha>..<sha>` ·
-  `@@ -a,b +c,d @@`)는 화면에 내보내지 않는다. 다만 중간을 건너뛴 구간에는 파선
-  한 줄을 **남긴다** — 건너뛴 사실까지 숨기면 그 diff 는 거짓말이 된다
+#### Only simple language on screen
+- Commit titles automatically created by Atlas (`ontology snapshot: +3 concepts, …`) are converted to human language when shown on screen. Conversely, manually written commits or those made by other tools are left as-is since the original text is already human language (`describeSnapshotSubject`)
+- Git's internal notation (`diff --git` · `index <sha>..<sha>` ·
+  `@@ -a,b +c,d @@`) is not exposed on screen. However, a dashed line is **left** for skipped sections — hiding the fact that it was skipped makes that diff a lie
 
-#### 사용자가 누르기 전에는 아무것도 쓰지 않는다
-화면이 처음 열릴 때 호출하는 것은 읽기 전용 도구
-(`git_status` / `git_diff` / `git_history`)뿐이다. 무언가를 바꾸는
-`git_init` · `git_set_remote` · `git_snapshot` 은 사용자가 그 버튼을 눌렀을
-때(`onClick`)만 실행된다.
+#### Nothing is written until the user clicks
+When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot`) are executed only when the user presses their button (`onClick`).
 
-### `/agents` — 에이전트 (신설 2026-08-20, 원장 90)
+### `/agents` — Agent (new 2026-08-20, catalog 90)
 
-**이 화면이 하는 일 한 문장**: 이 컴퓨터의 AI 코딩 도구를 **받고 · 깔고 · 붙이고 ·
-고치고 · 대화를 연다.**
+**One sentence on what this screen does**: **Get · install · attach · fix · and start conversation with** the AI coding tool on this computer.
 
-- **목록** — 이 기기에서 실제로 확인된 도구가 먼저 펼쳐지고, 나머지는 접힌다.
-- **연결 점검** — 여덟 단계를 재고(도구가 있나 · 띄울 수 있나 · 폴더 밖을 물어보나 ·
-  받아 둔 것이 성한가 · 앱 몫 설정 · 자격증명 링크 · 옛 로그인 기록 · 로그인)
-  **고칠 수 있는 것은 그 자리에서 고친다.** 못 고치는 것에는 사람이 할 일을 적는다.
-- **앱 전용 설치** — Node 와 도구를 앱 폴더 안에만 받는다. 버전을 고정하고, Node 는
-  받은 뒤 **해시를 대조한다**(안 맞으면 지우고 멈춘다). 무엇을 실행하는지 누르기
-  전에 원문으로 보여 준다. 진행률과 완료가 화면에 남는다 — 창을 닫았다 열어도.
-- **재연동** — 앱이 만든 것만 지우고 다시 만든다. 「로그아웃」이 아니다: 이 앱에는
-  앱 몫 로그인이 없고, 사용자가 터미널에서 한 로그인을 링크해서 그대로 쓴다.
+- **List** — Tools actually verified on this device are shown first, others are collapsed.
+- **Connection check** — Re-evaluate eight steps (does tool exist · can it launch · does it ask outside folder · is downloaded item intact · app-side settings · credential link · old login records · login). **Fixable things are fixed right there.** For unfixable ones, write what the human needs to do.
+- **App-specific installation** — Downloads Node and tools only inside the app folder. Fixes versions, and after downloading Node, **compares hashes** (if mismatched, delete and stop). Shows the original text before executing anything. Progress and completion remain on screen — even if you close and reopen the window.
+- **Reconnection** — Deletes only what the app created and recreates it. This is not "logout": this app has no app-side login, and links to the login the user did in the terminal, using it as-is.
 
-**왜 설정에서 나왔나**: 설정은 **값을 고르는 자리**이고 이것은 **진행 상태가 있는
-운영 작업**이다. 모달은 뒤를 막고 Esc 를 소유해서, 52MB 를 받는 동안 지도를 못 본다.
-**API Key 와 작업 공간은 설정에 남는다** — 전자는 2026-08-16 「경로 동결」 결정이
-서 있고(목적지 승격은 그 자체가 강조다), 후자는 볼트가 답하는 축이 다르다.
+**Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **API Keys and workspaces remain in settings** — the former has a "Path Freezing" decision on 2026-08-16 (promoting destination is itself an emphasis), and the latter's axis answered by vault is different.
 
-**웹에서는**: 화면은 그대로 뜨고, 브라우저가 못 하는 일(이 컴퓨터의 프로그램을
-띄우는 것)을 이유와 함께 말한다. 「연결 불가」가 아니다 — MCP 는 화면이 아니라
-**폴더에 붙으므로** 웹 사용자도 연결된다(2026-08-01 원장).
+**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01).
 
 ## 3. MCP server (current runtime inventory)
 
@@ -948,7 +836,7 @@ AI agents read/write the same vault as humans. Two ways to get the server runnin
 
 | Channel | How the agent starts it | What the user does |
 |---|---|---|
-| **Installed desktop app** (primary; macOS 2026-07-27, Windows beta 2026-08-01) | The app ships a compiled MCP server inside its own bundle (`Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp` on macOS, `ontology-atlas-mcp.exe` beside the Windows executable). The agent client spawns that binary directly, so it keeps serving while the app is closed. | Open the vault folder in the app and press **에이전트 연결 / Connect agent**. The app writes `.mcp.json` / `.codex/config.toml` with the bundled binary's absolute path and the vault's real path already filled in — no terminal, no Node, no install step. |
+| **Installed desktop app** (primary; macOS 2026-07-27, Windows beta 2026-08-01) | The app ships a compiled MCP server inside its own bundle (`Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp` on macOS, `ontology-atlas-mcp.exe` beside the Windows executable). The agent client spawns that binary directly, so it keeps serving while the app is closed. | Open the vault folder in the app and press **Connect agent**. The app writes `.mcp.json` / `.codex/config.toml` with the bundled binary's absolute path and the vault's real path already filled in — no terminal, no Node, no install step. |
 | **Source checkout** (fallback) | `node <checkout>/mcp/src/index.js` with `OATLAS_VAULT` set. | Clone the repo, then either paste the config or let `node <checkout>/cli/src/index.mjs init` / `agent-setup --write` write it. |
 
 npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27) — there is no `npx` channel.
@@ -1035,7 +923,7 @@ file export + the local stdio MCP genuinely can't serve them.
 - **Graph diff pulse** — newly appearing slugs amber-pulse for 5s on `/topology`
 - **Toasts** — `Added: <slug>` (info) / `Edited: <slug>` (success, mtime change) on every page
 - **Save-conflict guard** — if a file changed on disk between read and write, `/docs` editor save surfaces a localized conflict notice and keeps the buffer dirty instead of silently overwriting unsaved edits
-- Effect: IDE · AI 에이전트 · CLI 로 파일을 고치면, 사용자가 웹 탭을 다시 누르지 않아도 ~1.5–5s 안에 그래프가 갱신되고 toast 가 뜬다.
+- Effect: When files are edited via IDE · AI agent · CLI, the graph updates and toasts appear within ~1.5–5s without the user needing to click the web tab again.
 
 #### Read tools (19)
 1. **connection_info** — active vault/repo roots plus the actually advertised `readOnly`, `toolCount`, `toolNames`, and `toolsetHash`; explicit `OATLAS_REPO_ROOT` wins, otherwise repo root is auto-discovered from the active vault's Git top-level before falling back to process cwd
@@ -1053,29 +941,15 @@ file export + the local stdio MCP genuinely can't serve them.
 13. **query_concepts** `{ filter, limit? }` — typed filter DSL with AND/OR/NOT on `kind` / `domain` / `slug` / `title` / `has(arrayKey)`; match rows carry `{uid, slug}`
 14. **compile_ontology** `{ includeIndexes?, summary?, nodesLimit?, nodesOffset?, edgesLimit?, edgesOffset? }` — deterministic graph artifact with UID-required `nodes[]`, slug-based `edges[]`, identity indexes (`uidToSlug`, `slugToUid`, `mergedUidToSlug`), graph-array canonicalization actions, semantic `graphHash`, and pagination; invalid identity fails closed
 15. **query_ontology** `{ operation, ... }` — graph-engine query over the compiled artifact (`neighbors`, `path` with aligned `nodes[]`, `all_paths` with per-path `nodes[]` plus `limit` / `searchBudget` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` metadata and `evidence` guidance, `query_plan` with executable run/narrow advice, filter-preserving `suggestedQuery`, and filter-aware `estimate.totalMatches` for `match_nodes` / `match_edges`, `centrality`, `communities`, `similar_nodes`, `explain_relation`, `reachability`, `pattern_walk`, `impact`, `blast_radius`, `subgraph`, `builder_context`, `overview`, `schema`, `facets`, `match_nodes`, `match_edges`, `node_profile`, `domain_profile`, `domain_matrix`, `project_scope`, `project_map`, `relation_check`, `components`, `lineage`, `containment_tree`, `cycles`, `topological_order`, `recommend_relations`, `growth_plan`, `maintenance_plan`, `agent_brief`, `workspace_brief`, `health`) for graph-database-like answers without pulling the full compile payload. `builder_context` keeps its compatibility operation/response name but emits the current Workshop focus URL, persisted bounded neighborhood, `canvasPosition`, `expected_mtime`, and safe low-level write handoff while declaring that unsaved UI drafts are not included. Repeated read calls inside one MCP server session reuse the compiled artifact while the vault document signature is unchanged, so first-contact agent run orders do not pay the full compile cost for every graph query. `match_nodes` returns a `followUp` packet for the first returned row with ready-to-run `node_profile`, incoming/outgoing `match_edges`, and `blast_radius` MCP calls plus CLI fallback commands, so a graph scan can become focused evidence without another round of tool-selection guesswork. `match_edges` returns a `followUp` packet for the first returned real edge with ready-to-run `explain_relation`, `path`, and `relation_check` MCP calls plus CLI fallback commands, so edge scans move directly into evidence and write-preflight instead of being treated as raw proof. `match_edges.filters`, `match_edges.edges[].relationType`, `followUp.focusEdge.relationType`, and `query_plan(match_edges).normalized` expose public names such as `depends_on` next to canonical frontmatter `types` or `via` values such as `dependencies`, so terminal and MCP clients can show the relation name users typed while keeping executable graph keys. `node_profile.edges.incoming/outgoing.byRelationType` and edge `relationType` expose public names such as `depends_on` for node detail views; `domain_matrix.filters.relationTypes`, `connections.rows[].byRelationType`, and connection examples do the same for coupling views, while canonical `types`, `via`, and `byRelation` stay available for graph-key callers. The UI semantic coupling matrix and CLI node deep dive can be rerun from Claude Code, Codex, or terminal fallbacks with the same user-facing names. `agent_brief` returns Claude Code/Codex handoff readiness, a copyable `handoffPrompt` (also printable via `ontology-atlas agent-brief --prompt`), graph entrypoints, first MCP calls, structured `graphDbQueryPack` (`facets` / `schema` / `query_plan(match_nodes)` / `match_nodes` / `query_plan(match_edges)` / `match_edges` / `domain_matrix` / `query_plan(centrality)` / `centrality` / `query_plan(all_paths)` / `all_paths` / `explain_relation` / `business_questions` outcome, domain-boundary, capability-claim, and implementation-evidence scans), investigation playbooks including `graph_traversal` (`schema` → `query_plan(all_paths)` → `all_paths` → `pattern_walk` / `project_map`), `traversalStrategy` (`plan_before_enumeration` → `bounded_path_evidence` → `containment_cross_check`) for plan-first bounded traversal, per-playbook `evidence[]` and `stopWhen[]` checklists, write guardrails for `add_relation` / rename-merge / post-change sync, relation preflight before `add_relation`, a `relationDecisionGuide` for the `skip_existing` / `review_inverse` / `safe_to_add` / `review_new_schema` outcomes, `resultContracts` requiring `all_paths` callers to report completeness fields and requiring `match_nodes` / `match_edges` callers to report `totalMatches`, `limited`, and `followUp` details before treating scan rows as evidence, and read-first write policy. The CLI companion `ontology-atlas agent-brief [vault] --graph-db-pack` turns that pack into a shell-pasteable graph scan script for sessions without MCP. `relation_check` validates relation `type` before endpoint slug resolution, so relation typos such as `depend_on` still return nearest-value hints even in empty or project-less vaults, and returns `matchingEdges`, reverse-direction `inverseEdges`, and a recommendation decision (`skip_existing`, `review_inverse`, `safe_to_add`, or `review_new_schema`). Non-dependency relations may expose an `add_relation` `proposedAction`; a new `depends_on` returns no executable args and instead exposes `approvalGate.writeAllowed:false` until observable ability, rationale, explicit human approval, and nonblank `why` are present. `maintenance_plan` actions include stable `id`, cursor resume via `afterActionId`, explicit `cursor.reason` metadata, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable`, current-page `nextExecutableAction`, current-page `nextReviewAction`, plus `executableOnly` / `phases` / `severities` / `kinds` filters; ready pages report `cursor.found=true` with `cursor.reason=null`, while unknown cursors return an empty page with `cursor.found=false`, zero remaining actions, and no next actions. `phases`, `severities`, and `kinds` are enum-validated so typoed work-queue filters fail instead of returning an empty plan.
-`impact` 와 `blast_radius` 는 사람이 직접 적어 둔 `depends_on` 만 따라간다. 무엇이
-무엇을 담고 있는지 같은 구조 관계는 영향 범위와 위험 계산에서 뺀다 — 그런 구조
-질문에는 `reachability` 와 `subgraph` 가 답한다. 의존 edge 하나하나는 그 이유가
-적혀 있는지에 따라 `review_required`(사람이 봐야 함) 또는
-`declared_with_rationale`(이유가 적혀 있음)로 표시된다. 그리고 관계 하나하나가
-지금도 사실인지 확인한 기록(current-source receipt)이 생기기 전까지 이 답의
-completeness 와 `risk` 는 `unknown` 으로 남는다.
+`impact` and `blast_radius` follow only the `depends_on` relations that humans have explicitly written. Structural relationships such as what contains what are excluded from impact scope and risk calculations — for such structural questions, `reachability` and `subgraph` provide the answers. Each dependency edge is marked as either `review_required` (needs human review) or `declared_with_rationale` (reason provided), depending on whether a rationale is recorded. Until there is a current-source receipt confirming that each relationship remains factually accurate, the completeness and `risk` of this answer remain `unknown`.
 
 16. **validate_vault** — whole-vault health check with per-file issues and grouped summary, including required/valid/unique UID claims, merge identity history, graph-array canonicality, and dangling graph references
 
-`analyze_repo_structure`의 semantic discovery는 세 root 전체에서 Markdown 200개와
-directory entry 1,000개까지만 본다. 일반 의미 문서는 읽기 전 256 KiB에서 멈추며,
-이미 방문한 실제 directory, archive류, 끊어졌거나 repository 밖인 symlink는 scan을 확장하지 않는다.
+`analyze_repo_structure`'s semantic discovery scans only up to 200 Markdown files and 1,000 directory entries across all three roots. General semantic documents stop reading at 256 KiB before being read. Visited real directories, archives, broken symlinks, or symlinks outside the repository do not expand the scan.
 
-`apps/*`·`packages/*`의 direct workspace member는 static name+description을 가진
-`package.json`과 package `README.md`도 같은 6문서 packet 후보가 된다. conventional
-root당 48 member까지만 보며 scripts/dependencies를 읽거나 package 이름을 자동 business
-meaning으로 승격하지 않는다.
+Direct workspace members of `apps/*` and `packages/*` also become candidates for the same 6-document packet, including their static name+description `package.json` and package `README.md`. Only up to 48 members per conventional root are scanned; scripts/dependencies are not read, nor are package names automatically promoted to business meaning.
 
-비즈니스 capability 후보도 같은 원칙을 따른다. bounded outcome prose와 구현
-evidence가 함께 확인될 때만 제안하고, UI·transport·policy·telemetry 같은 구현형
-폴더명은 business meaning으로 자동 승격하지 않는다. 근거가 없으면 구현 검토
-대상으로 남으며, analyzer는 vault에 쓰지 않는다.
+Business capability candidates follow the same principle. They are proposed only when bounded outcome prose and implementation evidence are both confirmed; implementation-oriented folder names like UI, transport, policy, or telemetry are not automatically promoted to business meaning. Without evidence, they remain implementation review targets, and the analyzer does not write to the vault.
 
 17. **analyze_repo_structure** `{ rootPath?, maxDepth?, ignore?, proposal?, qualification? }` — side-effect-free bootstrap candidates from package / README / source layout plus the executable construction lifecycle. A valid complete proposal first returns an exact non-writing `reviewPlan`, plan/source digests, eight phase states, every `requiredGapId`, and a shadow-only `admission` receipt (`self_qualified`, `partial_visible_gap`, `human_review_required`, or `hard_block`); `self_qualified` is an auto-write candidate signal, not write permission. `canWrite` remains false and `writePlan` is absent until the existing human acceptance gate is satisfied. A separately identified evaluator then measures approved executive/employee/FDE/agent CQs, current claims/citations, seven quality axes, the complete source-hidden task, and cold-start/prior-CQ regression. After the user sees the exact plan and accepts its digest/revision plus every visible gap, the unchanged proposal and `constructionQualification:v1` packet may release a `writePlan` exactly equal to the reviewed rows. Maker-only evaluation, missing authority, `not_measured`, stale/private provenance, red mandatory axes, source/plan drift, regression failure, or an unaccepted gap fails closed. Acceptance is declared provenance, not authenticated identity or a truth certificate. Its five proposal competency answers still carry `answered` / `partial` / `visible-gap` plus typed concept, relation, evidence, and path witnesses, and the project body preserves that audit. `Excludes` is reserved for sourced product/concept boundaries: unknown or unmeasured evidence belongs in `Uncertainty` or a competency gap, and `epistemic-exclusion-boundary` blocks a proposal that would persist those unknowns as scope. Root `ARCHITECTURE.md` and classified Markdown under bounded `docs`, `site`, and `website` discovery can join the existing six-document semantic packet; archive-like paths and repository-escaping symlinks cannot. README extraction preserves purpose, responsibility/architecture, and ability blocks inside the existing 1,200-character budget instead of letting sponsor/backer/TOC sections consume it. Root package contracts remain bounded evidence, not meaning nodes: Rust reads allowlisted `Cargo.toml` package/features fields and returns separate literal `cfg`/`cfg_attr` provenance without evaluating predicates, executing code, or allowing relation writes. Python reads bounded static package evidence and import-participating boundaries; unused or unsafe inputs are skipped. Root Go modules contribute at most 24 import-participating package-directory element candidates, never path-derived capabilities. A proposal call recomputes the existing read-only import receipt so selectively proposed TS/JS/Python file endpoints and Go file/package endpoints are validated without relying on prior-call state, and import-backed `depends_on` must match observed direction. After the exact released rows land, the agent validates, compiles, connects the source, and finalizes project meaning.
 18. **infer_imports** `{ rootPath?, sourceFolders?, ignore?, maxFiles?, reviewMode?, afterReviewId? }` — side-effect-free TS/JS plus root-package Python file imports and root-module Go package imports. Existing file/module edges remain unchanged. Go is exposed separately as `packageImportEvidence` contract `goPackageImports:v1`: each row preserves the importing file, repository-relative source and target package directories, literal import spec, production/test role, and value usage without inventing a target file. It reads root-contained module-local imports only, never runs `go`, a compiler, module cache, or network, skips nested modules plus Go build-excluded `vendor`/`testdata`/underscore-prefixed fixture trees, ignores import-shaped lines inside multiline raw strings, caps files with the shared default 5000, caps each file at 256 KiB and 256 imports, and names external Go modules as out of scope. Its `coverage` receipt says which languages are supported; Cargo detection still marks Rust `use`/`mod`/macro dependency graphs unsupported. File and package receipts distinguish source role and usage; `value` does not claim runtime execution. Every collapsed edge includes whole-edge counts, their joint `productValueCount`, and up to five exact evidence receipts. Missing vault edges and Go package evidence are review-only, never executable write proposals. Compact and focus delivery surface Go counts plus the explicit full-evidence call instead of silently dropping a large package graph. CLI `infer-imports --apply` is disabled, and bootstrap/index cannot auto-create import endpoints or semantic `depends_on`; an agent must inspect both concepts, explain the meaning-level dependency, obtain human approval, and supply nonblank `why` before one explicit write.
@@ -1149,7 +1023,7 @@ just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
 - 6 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Workshop
-  (`/ontology/studio`, 공방 / Compass Stage) · Insights
+  (`/ontology/studio`, Workshop / Compass Stage) · Insights
   (`/ontology/insights`) · Projects (`/projects` or `/project/*`) · Git
   (`/git`)
 - Bottom of rail: agent-activity status tile + `settingsSlot`. `AppShell`
@@ -1165,7 +1039,7 @@ just unmounted).
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
   control; the long MCP connection proof stays behind the AI agent drill-in.
-- **AI 연결** (`AiConnectionPanel`, 2026-07-26) — a second drill-in row for
+- **AI Connection** (`AiConnectionPanel`, 2026-07-26) — a second drill-in row for
   your own API key: store it in the operating-system credential store (desktop only), check the
   connection with a request that carries **0 vault characters**, and read the
   tail of `.ontology-atlas/llm-audit.jsonl` where every call is recorded. The
@@ -1190,33 +1064,17 @@ just unmounted).
     consumes it. Gemini authenticates through the `x-goog-api-key` header —
     never the documented `?key=` query form, because a URL is a place that
     gets logged.
-  - **주소를 적어서 연결하기 — 내 컴퓨터에서 돌리는 모델 (2026-08-01).** 위의
-    이름 붙은 세 벤더 아래 네 번째 행은 특정 벤더가 아니라, 아무 러너나 받아
-    주는 **입구 하나**다(러너 = 모델을 실제로 돌려 주는 프로그램). 러너 주소
-    (기본 `http://localhost:11434`)를 적고 [연결 확인] 을 누르면 그 요청 한 번이
-    「살아 있나 · OpenAI 와 같은 형식으로 말하나 · 어떤 모델을 고를 수 있나」
-    세 가지를 함께 답한다. 설치된 모델이 목록으로 와서 사용자는 **고르기만**
-    하면 된다(이름을 직접 타이핑하지 않으니 오타로 실패할 자리가 없다). API 키는
-    필요 없다 — 이 갈래는 키 보관소를 아예 거치지 않는다. Ollama · LM Studio ·
-    llama.cpp server · vLLM 이 모두 이 입구 하나로 들어온다(주소는 OpenAI 호환
-    `/v1/*` 를 쓴다. 러너마다 다른 고유 API 를 골랐다면 러너 수만큼 변환 코드를
-    따로 만들어야 했을 것이다).
-    - **실패한 이유마다 다른 문장을 보여 준다** — 러너가 꺼져 있는 경우(연결
-      자체가 안 됨) · 그 포트에 다른 프로그램이 떠 있는 경우(404) · 설치된
-      모델이 하나도 없는 경우를 서로 구별하고, 각각 다음에 무엇을 하면 되는지
-      함께 적는다.
-    - **암호화하지 않는 `http` 는 이 컴퓨터 안(loopback)에서만 허용한다.**
-      바깥 기계를 가리키려면 `https` 여야 하고, 주소 안에 아이디·비밀번호를
-      적어 넣으면 거절한다 — 주소는 기록에 그대로 남는 자리이기 때문이다.
-    - **"밖으로 안 나간다" 는 말은 그게 사실일 때만 한다.** 주소가 이 컴퓨터를
-      가리키면 "이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가
-      `localhost:11434` 로 남아요 — 그게 나가지 않았다는 증거예요" 라고 쓰고,
-      사용자가 `https` 로 다른 기계를 가리키면 그 문장 대신 "이 주소는 이
-      컴퓨터 밖" 이라고 쓴다.
-    - 웹 브라우저에서는 이 갈래도 쓸 수 없다(브라우저 페이지가 사용자 컴퓨터의
-      localhost 로 요청을 보낼 수 없다). 그래서 "여기서는 안 된다" 고 밝히는
-      카드가 API 키 보관 이야기와 **따로** 그 이유를 적고 `/download` 로 보낸다.
-  - **Every recorded call names its destination host.** The audit line carries
+  - **Connect by Address — Models Running on My Computer (2026-08-01).** Below
+    the three named vendors, the fourth row is not a specific vendor but a single
+    **entry point** that accepts any runner (runner = the program actually executing the model). Enter the runner address
+    (default `http://localhost:11434`) and press [Check Connection]; this single request
+    answers three things together: "Is it alive? · Does it speak in OpenAI-compatible format? · Which models can be selected?". Installed models arrive as a list, so the user **only needs to choose** (no typos from typing names). No API key is needed — this branch bypasses the key vault entirely. Ollama · LM Studio · llama.cpp server · vLLM all enter through this single entry point (addresses use OpenAI-compatible `/v1/*`. If each runner required a unique custom API, separate conversion code would have been needed for each runner).
+    - **Different messages are shown for each failure reason** — distinguishing cases where the runner is down (connection itself fails), another program is running on that port (404), or no models are installed, and noting what to do next for each.
+    - **Unencrypted `http` is allowed only within this machine (loopback).**
+      To point to an external machine, `https` is required, and addresses containing username/password are rejected — because the address remains in logs as-is.
+    - **"Does not go out" is stated only when true.** If the address points to this computer, it writes "It does not leave this computer, and the log records the destination as `localhost:11434` — that is proof it did not leave." If the user points to another machine via `https`, this sentence is replaced with "This address is outside this computer."
+    - This branch cannot be used in web browsers (browser pages cannot send requests to the user's computer localhost). Therefore, a card stating "Not available here" explains the reason **separately** from the API key vault story and links to `/download`.
+  - Every recorded call names its destination host. The audit line carries
     `host` (e.g. `generativelanguage.googleapis.com`), and the screen states
     that host before you press check — the strongest claim we can prove for a
     named vendor is "it only goes to the official address compiled into the
@@ -1225,34 +1083,15 @@ just unmounted).
   - Unregistered vendors collapse to a one-line `name · [Add key]` row that
     expands in place, one at a time — three always-open password fields would
     turn a settings sheet into a form gate.
-- **실행기** (`AcpRuntimeSettings`, 2026-08-16, 데스크톱 앱 전용) — 이 컴퓨터에
-  이미 설치된 코딩 에이전트(Claude Code, Codex 등)를 앱이 찾아서 보여 주는 절.
-  이 절이 하는 일 하나는 **무엇을 지금 쓸 수 있는지 말하는 것**이다.
-  - 목록은 두 갈래로 갈린다: 「바로 쓸 수 있어요」가 펼쳐져 있고 「설치가 필요한
-    것」은 접힌다. 못 쓰는 이유는 설치 필요 / Node 필요 / uv 필요 / 직접 설치의
-    네 갈래로 갈라 적는다. 갈래마다 사용자가 할 일이 다르므로 「설치됨/아님」
-    둘로 뭉개지 않는다. [다시 확인] 으로 언제든 다시 훑는다.
-  - **목록은 빌드 때 커밋해 둔 ACP 레지스트리 스냅샷에서 온다**
+- **Runtime** (`AcpRuntimeSettings`, 2026-08-16, desktop app only) — A section where the app finds and displays coding agents (Claude Code, Codex, etc.) already installed on this computer. The one thing this section does is **tell you what can be used right now**.
+  - The list splits into two branches: "Ready to use" is expanded, while "Requires installation" is collapsed. Reasons for not being usable are split into four categories: requires installation / needs Node / needs uv / manual installation. Since the user's task differs per category, they are not lumped together as just "installed/not installed." Press [Re-check] to scan again at any time.
+  - **The list comes from an ACP registry snapshot committed at build time**
     (`src-tauri/src/acp-registry.json`, `scripts/build-acp-registry.mjs`,
-    갱신은 `pnpm acp:registry`). 실행 중에 CDN 을 부르지 않으므로 인터넷이 없어도
-    목록이 그대로 나오고, 무엇이 바뀌었는지는 git diff 에 남는다. 아이콘도 같은
-    이유로 빌드 때 받아 `public/acp-icons/` 에 번들한다(레지스트리 규격이 16×16
-    단색 SVG 라 브랜드 색이 앱으로 들어오지 않는다).
-  - **격리를 실측한 실행기에만 앱의 관문이 붙는다.** 앱이 띄우는 세션은 사용자의
-    전역 설정을 물려받지 않고 앱이 관리하는 설정 디렉터리를 쓰며, 볼트 밖 파일
-    요청이 오면 사용자에게 묻는다. 그 격리를 아직 재 보지 않은 줄에는
-    「확인 안 됨」 표시가 붙고, 그 뜻(그 도구에 해 둔 설정을 그대로 쓴다)을 묶음
-    위에서 한 번 설명한다. 표시는 반복되고 문장은 반복되지 않는다.
-  - **앱의 지도 옆에서 바로 대화한다.** 격리 관문을 실측한 실행기를 고르면 홈의
-    오른쪽 작업 표면에 `AcpChatPanel`이 열리고, 현재 볼트를 작업 폴더와 MCP
-    서버로 넘긴다. 별도 경로나 새 화면이 아니라 지도를 보면서 쓰는 같은
-    작업대다(`src/views/home/ui/HomePage.tsx`).
-  - 어댑터가 모델·작업 방식 목록을 제공할 때만 선택기가 나타난다. 권한 확인을
-    없애는 것으로 재 본 작업 방식은 숨기고, 아직 재 보지 않은 것은 이름 옆에
-    「확인 안 됨」과 뜻을 붙인다. 안전 판정의 `unverified` 상태는
-    `AcpSessionChoices`를 거쳐 기존 `Select`까지 보존된다.
-  - 브라우저에서는 프로세스를 띄울 수 없다. 웹에서는 목록 대신 왜 안 되는지와
-    어디서 되는지를 적는 한 줄이 그 자리를 대신한다.
+    updates via `pnpm acp:registry`). It does not call a CDN at runtime, so the list remains available offline, and changes are recorded in git diff. Icons are also fetched at build time and bundled in `public/acp-icons/` for the same reason (since the registry spec uses 16×16 monochrome SVGs, brand colors do not enter the app).
+  - **The app's gateway attaches only to runtimes with verified isolation.** Sessions launched by the app do not inherit the user's global settings but use a settings directory managed by the app, and ask the user when requests for files outside the vault arrive. Unverified sessions are marked as "unverified," with an explanation (it uses the settings configured for that tool) provided once in the summary above. The marker repeats, but the sentence does not.
+  - **Chat directly next to the app's map.** Selecting a runtime with verified isolation opens `AcpChatPanel` on the right work surface of the home page, passing the current vault as the working folder and MCP server. It is the same workspace used while viewing the map, without separate paths or new screens (`src/views/home/ui/HomePage.tsx`).
+  - The selector appears only when the adapter provides a list of models/workflows. Verified workflows are hidden by removing permission checks, and unverified ones are marked with "unverified" and their meaning next to the name. The `unverified` safety judgment state is preserved through `AcpSessionChoices` to the existing `Select`.
+  - Processes cannot be launched in browsers. On the web, a single line explaining why it doesn't work and where it does replaces the list.
 - The persistent shell mounts the rail settings trigger. Contextual
   `LiveActivityIndicator` and header controls remain on the pages whose
   workflow needs richer status or screen controls; they are not additional
@@ -1316,24 +1155,24 @@ just unmounted).
 For full reasoning see `docs/CHANGELOG.md`. High-level:
 
 - **Round 1-9** (2026-04~05 surface diet + robustness) — presentation mode · Relationship Radar · audience toggle · `/ontology/relations` route · landing CTA swap · `LocalVaultProvider` SSoT · vault error banner · permission state sync. Earlier auth (R10) and cloud (R10b) surface permanently removed.
-- **Round 10 / 10b** — `/login` / `/signup` / `/account` / `/reset-password` / `/settings/*` / `/admin/*` / `/review/*` / `/diagnostics/*` / `/knowledge/*` 를 모두 없앴다. Firebase / Firestore / Auth / Storage SDK, 스크린샷 업로더, 노드/엣지를 손으로 클라우드에 넣던 모달도 함께 걷어내고 완전한 local-first 로 되돌렸다.
-- **Round 11** — `pnpm vault:validate` / `vault:migrate` 를 새로 만들었다. MCP v0.7.0 — 도구 14개(읽기 8 + 쓰기 6, `rename_concept` / `merge_concepts` 추가). frontmatter 파서 세 벌을 한 계약으로 묶었다. 파일 수정 시각(mtime)으로 동시 편집 충돌을 막는 장치를 넣었다.
-- **Round 12** — 주 사용자를 개발자 + AI 에이전트로 정했다(기획자를 주 사용자로 삼았던 이전 결정을 되돌렸다). CLI 명령 4개 추가(`init` 외에 `list / validate / add / find`). 패키지 사이 계약 검사를 네 벌로 늘렸다. 우리 자신의 볼트에서 아무 데도 안 이어진 노드가 8개 → 1개.
-- **Round 13** — AI 에이전트가 이 볼트를 얼마나 잘 쓰는지 처음으로 측정했다(Claude Code + Codex, 표본 2). MCP 에 `instructions` 필드 추가(v0.7.1). VSCode 플러그인 v0.1.0 → v0.9.0(R15 에서 없앴다).
-- **Round 14** — *AI 에이전트가 고친 것이 볼트에 저절로 반영되게 했다.* 웹에 바로 보이게 하는 장치 4단(5초 주기 확인 / 새 노드 강조 / 추가 toast / 수정 toast). kind 별 frontmatter 서식을 정하고 세 진입점(MCP · CLI · 웹)이 같은 것을 쓰게 맞췄다. CLI `import` 명령(밖에서 온 `.md` 를 이 서식으로 정리). `/ontology-sync` 스킬과, 코딩하는 동안 볼트를 읽으라는 AGENTS 규칙. 세션이 시작될 때 볼트의 개수 요약을 자동으로 넣어 주는 SessionStart hook.
-- **Round 15** — VSCode 플러그인 제거(표면 4개 → 3개). CLI `init` 이 `.mcp.json` 을 직접 만들게 해서(작업 폴더와 볼트 양쪽) MCP 등록에 필요한 손질을 한 단계 없앴다. Later follow-up extends this to Codex by writing repo-local `.codex/config.toml` in cwd + vault and by making the app starter write vault-local `.mcp.json` / `.codex/config.toml`. `add` / `import` 의 `--auto-prefix` 를 기본 켜짐으로 바꿨다(시작 폴더 구조와 어긋나지 않게). 끄고 싶으면 `--raw-slug`.
+- **Round 10 / 10b** — Removed `/login` / `/signup` / `/account` / `/reset-password` / `/settings/*` / `/admin/*` / `/review/*` / `/diagnostics/*` / `/knowledge/*`. Also stripped out Firebase / Firestore / Auth / Storage SDKs, screenshot uploader, and the modal for manually adding nodes/edges to the cloud, reverting to fully local-first.
+- **Round 11** — Created `pnpm vault:validate` / `vault:migrate`. MCP v0.7.0 added `rename_concept` / `merge_concepts`; the live `tools/list` remains the inventory authority. Unified three frontmatter parsers into one contract. Added a mechanism to prevent concurrent edit conflicts using file modification time (mtime).
+- **Round 12** — Defined the primary user as developer + AI agent (reversed the previous decision to target planners as primary users). Added 4 CLI commands (`init` plus `list / validate / add / find`). Increased package contract checks from one to four. Reduced unconnected nodes in our own vault from 8 → 1.
+- **Round 13** — Measured for the first time how well AI agents use this vault (Claude Code + Codex, sample size 2). Added `instructions` field to MCP (v0.7.1). VSCode plugin v0.1.0 → v0.9.0 (removed in R15).
+- **Round 14** — *Made changes fixed by AI agents automatically reflect in the vault.* Implemented a 4-layer visibility system for immediate web display (5-second polling / new node highlighting / additional toast / modification toast). Standardized frontmatter formatting by kind and aligned three entry points (MCP · CLI · web) to use the same format. Added CLI `import` command (to organize external `.md` files into this format). Added `/ontology-sync` skill and AGENTS rule to read the vault while coding. Added SessionStart hook to automatically inject a vault count summary at session start.
+- **Round 15** — Removed VSCode plugin (surfaces reduced from 4 → 3). Made CLI `init` create `.mcp.json` directly (for both working directory and vault), eliminating one step of manual MCP registration. Later follow-up extends this to Codex by writing repo-local `.codex/config.toml` in cwd + vault and making the app starter write vault-local `.mcp.json` / `.codex/config.toml`. Changed `--auto-prefix` for `add` / `import` to default on (to avoid conflicting with initial folder structure); use `--raw-slug` to disable.
 - **Round 16** — fresh repo bootstrap path. `analyze_repo_structure` / CLI `analyze` propose project/domain/capability/element candidates from package metadata, README headings, and source layout with side effect 0.
 - **Round 17** — import-derived dependency evidence. `infer_imports` / CLI `infer-imports` parse TS/JS and bounded static Python file imports plus root-module Go package imports, resolve supported internal paths, and return review-only evidence without mutating the vault.
 - **Round 18+** — workbench loop consolidation. `/ontology` now frames Tree as Browse and immediately hands selected slugs to Builder (Write), Topology (visual focus), and Insights (Query). `/ontology/edit` is kept as a constrained relation write-review surface with source-file patch preview, preflight, post-save proof packets, and focused Insights handoff. `/ontology/insights` exposes the graph DB query pack as an executable local markdown graph cockpit, and `pnpm dogfood:graph-db` now fail-closes on setup self-check, `health --json`, graph scan follow-ups, public relation-name parity, structural `pattern-walk` / `project-map` traversal, bounded path completeness, relation preflight, and relation explanation contracts.
-- **승인된 시안을 기준으로 모든 페이지를 다시 만든 라운드 (2026-07-18, PR #355~#366)** — `docs/prototypes/` 에서 승인된 시안대로 전 화면을 현행화했다. Removed: `/ontology/insights` 의 옛 4탭 독자 유형 시스템(proof/collaboration/agent/census 프리셋, 세션 증빙 줄, collaborator brief, query-recipe cockpit, 약 6,200줄) — 개요/관계/신선도 3탭으로 대체했다; `/projects` 의 검색·필터·페이지 넘김이 있던 카드 목록 — 각인한 개수 헤더 + 최근 활동 줄 + 폭을 꽉 채운 카드 + 파선으로 그린 "다음 프로젝트" 자리로 대체했다(`ProjectQuickCreatePanel` 은 컴포넌트로는 남아 있지만 이 페이지에는 더 이상 나오지 않는다); `/project/[slug]` 의 "More info" 접이식 구역과, 태그/스택/링크를 그 자리에 늘어놓던 표시 — 빠른 편집과 전체 편집으로 옮겼다. Added: 토폴로지 데이터시트를 288 → 352px 로 키우고 근거(evidence) 그룹을 위로 올렸다, `TopologyV2SettingsGear`(오른쪽 도구 레일), `/ontology/edit` 3분할(240 · 캔버스 · 340, `xl` 이상에서 상시) + `BuilderWriteConfirmBar`, `/docs` 의 상시 Pinned/Vault/Recent 사이드바(280px, `lg` 이상) + `DocFrontmatterBlock` + 아래쪽 backlinks 줄, `/download` 의 정직한 사실 줄(크기와 체크섬은 아직 없을 때 "게시 시 기록" 이라고 적는다) + spctl 신뢰 패널 + changelog 미리보기.
-- **Agent-loop vault freshness (R+)** — CLI `preflight` 를 새로 만들었다: git 에 올린(staged) 파일을 볼트의 `path:` / `elements:` frontmatter 와 거꾸로 맞춰 보고, 이 커밋이 건드리는 노드가 어디까지 영향을 미치는지를 커밋하기 *전에* 보여 준다(알려 주기만 하고 아무것도 막지 않는다 — 언제나 exit 0 이고, 맞는 노드가 하나도 없으면 조용히 넘어간다). `agent-setup --install-pre-commit-hook` 으로 pre-commit hook 을 설치한다(이미 hook 이 있으면 뒤에 덧붙이고, 여러 번 돌려도 결과가 같으며, `--no-verify` 로 건너뛰는 것은 그대로 존중한다). `.github/workflows/vault-freshness.yml` 은 다른 저장소에서도 불러다 쓸 수 있는 workflow 이고 이 저장소 자신의 PR 에도 건다: PR 에서 바뀐 파일 중 볼트 노드가 가리키고 있는 소스가 바뀌었는데 정작 그 노드의 `.md` 는 이번 PR 에서 안 바뀐 경우를 `scripts/vault-freshness-drift.mjs`(의존성 없는 node 스크립트)가 찾아낸다. 하나도 없으면 코멘트 없이 끝내고, 하나라도 있으면 PR 에 코멘트를 하나만 남긴다(도배를 막으려고 기존 코멘트를 고치거나 지우는 방식이다).
+- **Round where all pages were recreated based on approved drafts (2026-07-18, PR #355~#366)** — Updated full-screen views in `docs/prototypes/` according to approved drafts. Removed: old 4-tab unique type system for `/ontology/insights` (proof/collaboration/agent/census presets, session evidence lines, collaborator brief, query-recipe cockpit, ~6,200 lines) — replaced with Overview/Relations/Freshness 3 tabs; card list with search/filter/pagination for `/projects` — replaced with embossed count header + recent activity line + full-width cards + dashed "Next Project" placeholder (`ProjectQuickCreatePanel` remains as a component but no longer appears on this page); "More info" collapsible section and tag/stack/link display on `/project/[slug]` — moved to quick edit and full edit. Added: increased topology data sheet from 288 → 352px and moved evidence groups up; `TopologyV2SettingsGear` (right tool rail); `/ontology/edit` 3-split (240 · canvas · 340, always visible on `xl`) + `BuilderWriteConfirmBar`; permanent Pinned/Vault/Recent sidebar (280px, `lg`+) for `/docs` + `DocFrontmatterBlock` + bottom backlinks line; honest facts line for `/download` (says "recorded at publish" when size/checksum are unavailable) + spctl trust panel + changelog preview.
+- **Agent-loop vault freshness (R+)** — Created CLI `preflight`: matches staged git files against vault `path:` / `elements:` frontmatter and shows which nodes this commit affects *before* committing (notification only, no blocking — always exits 0; silently passes if no matching nodes). Installs pre-commit hook via `agent-setup --install-pre-commit-hook` (appends if hook already exists, idempotent across multiple runs, respects `--no-verify`). `.github/workflows/vault-freshness.yml` is a reusable workflow for other repos and also applies to this repo's PRs: `scripts/vault-freshness-drift.mjs` (dependency-free node script) detects cases where source files pointed to by vault nodes changed in the PR, but the corresponding `.md` did not. Ends without comment if none found; leaves exactly one comment on the PR if any are found (updates or removes existing comments to avoid spam).
 
 ---
 
 ## 7. Deferred (future rounds — wait-for-signal)
 
-- `/ontology/edit` builder reconsideration — **SUPERSEDED 2026-07-24: the ERD builder was retired.** It had been kept as a constrained workbench surface (focus a saved slug, preview source-file frontmatter writes, run relation preflight, hand off to Insights/Topology). Once the 공방(`/ontology/studio`) covered assemble/connect/preview/write, the xyflow builder was removed and `/ontology/edit` became a redirect to the workshop. Users who prefer direct markdown still edit frontmatter in `/docs` or CLI/MCP; the workshop is the visual relation-repair / write-review surface.
-- ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). 기획자를 주 사용자로 삼았던 결정을 되돌렸다.
+- `/ontology/edit` builder reconsideration — **SUPERSEDED 2026-07-24: the ERD builder was retired.** It had been kept as a constrained workbench surface (focus a saved slug, preview source-file frontmatter writes, run relation preflight, hand off to Insights/Topology). Once the workshop (`/ontology/studio`) covered assemble/connect/preview/write, the xyflow builder was removed and `/ontology/edit` became a redirect to the workshop. Users who prefer direct markdown still edit frontmatter in `/docs` or CLI/MCP; the workshop is the visual relation-repair / write-review surface.
+- ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). Reversed the decision to target planners as primary users.
 - Search palette unification (`⌘K` + `⇧⌘K`) — R5 skip: not duplicates, would require ranking/section redesign.
 - LocalVaultPicker hoist out of dropdown — R5 skip: dead-end already closed by R4 J.
 - WebGL context-loss `ErrorBoundary` (Scenario 10) — R9 defer: theoretical, no reports.

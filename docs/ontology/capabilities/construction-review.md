@@ -12,4 +12,4 @@ created_by: "agent:unknown"
 relation_notes: { elements/project-detail: Construction qualification is opened and judged inside the existing project-detail workbench. }
 ---
 
-검증된 ontology construction artifact를 프로젝트 상세에서 결론부터 읽고, 같은 digest-bound 근거와 exact plan을 필요할 때 펼쳐 판단하는 능력이다. malformed, 다른 project, digest 또는 plan 불일치는 정상 판정처럼 보이지 않고 실패 닫으며, 파일은 session 밖에 저장하거나 vault에 쓰지 않는다.
+Read conclusions first in project details for verified ontology construction artifacts, then unfold digest-bound evidence and exact plans when needed to make judgments. Malformed inputs, different projects, or digest/plan mismatches do not appear as normal judgments but close with failure; files are not saved outside the session or written to the vault.

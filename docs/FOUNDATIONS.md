@@ -1,13 +1,10 @@
 # FOUNDATIONS — what grounds ontology-atlas
 
-> 이 문서는 제품을 *느낌*이 아니라 **공개·인용 가능한 학술/표준/craft 레퍼런스**에 묶어 둔다.
-> "온톨로지가 뭔지도 모르면서 만드는" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서
-> *우리만의 것*을 어디서 어떻게 다르게 만드는지.
+> This document ties the product to **public, citable academic/standard/craft references** rather than *feelings*.
+> A collection of grounds to prevent "building without even knowing what ontology is" — what already exists, and where/how we make *our own thing* differently on top of it.
 >
-> **인용 규율:** 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그다.
-> 최초 세트는 2026-06-01, ontology-construction 보강 세트는 2026-08-09에 원문·공식 메타데이터를
-> 다시 열어 확인했다. 링크/인용은 하되 본문을 베끼지 않는다. 새 레퍼런스를 추가할 때도
-> 공개·인용 가능·직접 확인을 지키며, 검색 결과만 보고 읽지 않은 자료를 인용하지 않는다.
+> **Citation discipline:** All references cited here are public papers / W3C standards / public books / public blogs.
+> The initial set was re-verified with original text and official metadata on 2026-06-01, and the ontology-construction reinforcement set on 2026-08-09. Links/citations are provided, but the body text is not copied. When adding new references, maintain public, citable, and directly verified standards, and do not cite materials read only via search results.
 
 This is a living document. When we make a design or feature decision, we should be able to point
 at *which* of these it descends from — or argue explicitly why we diverge.
@@ -260,7 +257,7 @@ applied reading of public, citable design thinking — not arbitrary taste.
   (ACM TOG 5(2), 1986)** — **expressiveness** (a graphical language must encode the facts in the set,
   *and no additional facts*) and **effectiveness** (given several expressive encodings, prefer the one
   the human visual system reads best, ranking channels after Cleveland & McGill). → **This is the rule
-  the design bench actually runs**, and it is what the 「도해」 seat's mark → typed-fact table is: a
+  the design bench actually runs**, and it is what the Infovis seat's mark → typed-fact table is: a
   mark that maps to no fact fails expressiveness, and a mark that asserts a fact the data does not
   contain (a decorative rail implying a category) fails it in the other direction. Effectiveness is
   why `.claude/rules/design.md` sends bar identity to position/length/order/label rather than hue, and

@@ -1,106 +1,114 @@
 # CLAUDE.md
 
-작업 가이드의 정본은 [`AGENTS.md`](AGENTS.md) 다. 이 파일은 그것을 불러오고,
-**Claude Code 만 볼 수 있는 것**을 덧붙인다.
+[`AGENTS.md`](AGENTS.md) is the canonical contributor guide. This file imports it
+and adds only material visible to Claude Code.
 
 @AGENTS.md
 
-## 어느 도구가 무엇을 읽나 — 새 파일을 놓기 전에 본다
+## Agent skills
 
-두 도구의 시야가 겹치지 않는다. 잘못 놓으면 **아무 에러 없이** 한쪽이 규칙을
-못 본 채 일한다.
+### Issue tracker
+
+Use GitHub Issues for deferred or discussion-heavy work; small, immediately
+actionable changes may go directly from a branch to a pull request. See
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical triage labels in `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository. See `docs/agents/domain.md` for the domain
+and decision sources engineering skills must read.
+
+## Which tool reads what
+
+The tools do not see the same files. Put a rule in the wrong tree and one tool
+silently works without it.
 
 | | Claude Code | Codex |
 |---|---|---|
-| `AGENTS.md` | 이 파일의 `@AGENTS.md` 임포트로 | **직접** — 단 `project_doc_max_bytes`(기본 32 KiB)까지만 |
-| `CLAUDE.md` · `.claude/**` | 읽는다 | **안 읽는다** |
-| `.agents/skills/**` · `.agents/agents/**` | — | 읽는다 |
-| `.codex/**` | — | 읽는다 (`config.toml` · `hooks.json`) |
+| `AGENTS.md` | through this file's `@AGENTS.md` import | directly, up to `project_doc_max_bytes` (32 KiB by default) |
+| `CLAUDE.md` and `.claude/**` | reads them | does not read them |
+| `.agents/skills/**` and `.agents/agents/**` | — | reads them |
+| `.codex/**` | — | reads `config.toml` and `hooks.json` |
 
-**두 트리는 같은 모양이다** — `<루트>/skills/` 와 `<루트>/agents/` 가 양쪽에 있고
-짝끼리 바이트 동일하다. 그래서 스킬이 자리 브리프를 가리킬 때 **상대 경로 한 줄**
-(`../../agents/po-*.md`)이면 충분하다: `.claude/skills/…` 에서는 `.claude/agents/`
-로, `.agents/skills/…` 에서는 `.agents/agents/` 로 각자 풀린다. **스킬 본문에
-도구 이름을 적지 않는다** — 두 벌이 바이트 동일해야 하므로 사본마다 다른 경로를
-쓸 수 없고, 이름으로 분기하면 각 도구가 남의 경로를 읽게 된다. 분기가 필요하면
-**능력**으로 한다("서브에이전트를 병렬로 띄울 수 있나"). 게이트:
+The two agent trees have the same shape: each has `skills/` and `agents/`, and
+paired files are byte-identical. A relative reference such as
+`../../agents/po-*.md` therefore resolves inside the matching tree. Do not name
+a tool inside a shared skill body; that makes one copy point into the other
+tool's tree. Branch on capability instead, for example whether parallel
+subagents are available. Contracts:
 `tests/contract/{po,design}-council.contract.test.ts`.
 
-여기서 나오는 규율 셋:
+Three rules follow:
 
-1. **두 도구가 다 지켜야 하는 규칙은 `AGENTS.md` 에 있어야 한다.** `.claude/rules/`
-   에만 쓴 규칙은 Codex 에게 존재하지 않는다.
-2. **`AGENTS.md` 는 32 KiB 를 넘으면 안 된다.** Codex 는 초과분을 **경고 없이,
-   문장 중간에서 자른다** — 화면에도 로그에도 신호가 없다. 실제로 39,617B 까지
-   자랐을 때 볼트 쓰기 루프와 frontmatter 스키마 표가 통째로 절단선 뒤에 있었다
-   (2026-07-31 실측). 그래서 여기 무엇을 더하면 **다른 무엇이 밀려난다**.
-   `pnpm agents:check` 가 상한 초과를 막고, 여유가 10% 아래로 내려가면 넘기 전에
-   경고한다.
-3. **스킬도 자리 브리프도 두 벌이고 같아야 한다.** `.claude/skills/<name>/` ↔
-   `.agents/skills/<name>/`, `.claude/agents/<seat>.md` ↔
-   `.agents/agents/<seat>.md` 는 바이트 동일해야 하며, `pnpm agents:check` 의
-   `skill-copy` · `agent-copy` 가 어긋남과 **한쪽에만 있는 파일**을 잡는다.
-   사본이 둘인데 게이트가 없으면 어긋나는 쪽이 기본값이다 — 실제로
-   `?guides=off` 지시가 `.claude` 쪽에만 들어가 Codex 는 첫 방문 안내에 덮인
-   화면을 재고 있었고, 카운슬 자리 15개는 `.claude/agents/` 에만 있는데 두
-   카운슬 스킬이 그것들을 **이름으로만** 불러서 Codex 세션은 부를 수도 읽을 수도
-   없는 이름을 받고 즉흥으로 때웠다(2026-08-04 실측). **자리를 새로 만들면 두
-   트리에 같이 넣는다.** 셋째 사본은 만들지 않는다.
+1. Put rules both tools need in `AGENTS.md`. A rule found only under
+   `.claude/rules/` does not exist for Codex.
+2. Keep `AGENTS.md` below 32 KiB. Codex truncates excess bytes silently, even in
+   the middle of a sentence. At 39,617 bytes, the vault write loop and
+   frontmatter schema disappeared from its context (measured 2026-07-31).
+   `pnpm agents:check` enforces the cap and warns below 10% headroom.
+3. Keep skill and agent-brief pairs identical:
+   `.claude/skills/<name>/` ↔ `.agents/skills/<name>/` and
+   `.claude/agents/<seat>.md` ↔ `.agents/agents/<seat>.md`.
+   `pnpm agents:check` detects drift and one-sided files. A missing mirror once
+   caused Codex to measure a guide-covered screen and later forced it to invent
+   fifteen unavailable review seats (measured 2026-08-04). Add new seats to both
+   trees; never create a third copy.
 
-## Claude Code 전용
+## Claude Code only
 
-- `.claude/rules/*.md` — 세부 규율 10종. **셋만 상주하고 일곱은 조건부다**
-  (frontmatter `paths:`). 규칙을 지운 게 아니라 필요할 때만 싣는다 — 매 턴
-  73KB 였던 것이 13.6KB 가 됐다.
+- `.claude/rules/*.md` contains ten detailed rules. Three are always loaded;
+  seven use frontmatter `paths:` and load only when relevant. This reduced the
+  per-turn rule context from 73 KB to 13.6 KB without deleting policy.
 
-  ⚠️ **조건부라고 공짜가 아니다** (2026-08-05 실측). `design.md` 는 `.tsx` 를
-  열기만 해도 실리는데 **63.4KB** 였고 — AGENTS.md(31.7KB)보다 크다 — 그중
-  **43%가 게이트 고고학**이었다. 버튼 하나 고치는 턴마다 「그림자는 왜 `var(`
-  면제가 아닌가」를 통째로 싣고 있었다는 뜻이다. 갈라서 `design-gates.md` 로
-  옮겼고 `design.md` 는 48.8KB 가 됐다. **조건부 규칙이 커지면 그 조건에 걸리는
-  모든 턴이 값을 치른다** — 규칙(무엇)과 사연(왜)을 같은 파일에 쌓지 마라.
+  Conditional does not mean free. In 2026-08-05, opening any `.tsx` loaded a
+  63.4 KB `design.md`, 43% of which was gate history. Splitting that history into
+  `design-gates.md` reduced the recurring cost. Keep rules (what) separate from
+  history (why).
 
-  | | 규칙 | 언제 실리나 |
+  | Loading | Rule | Trigger |
   |---|---|---|
-  | 상주 | `forbidden` · `git` · `local-first` | 항상. **파일을 열기 전에** 내려야 하는 판단이라서다 — `npm publish` 를 실행할지, 백엔드를 도입할지, 어떻게 커밋할지는 아무 파일도 안 읽고 결정된다 |
-  | 조건부 | `design` | `src/**/*.tsx` · `app/**/*.css` 등 UI 파일을 읽을 때 |
-  | 조건부 | `design-gates` | `eslint.config.mjs` · `tests/contract/**` · `scripts/check-*.mjs` — **게이트를 고칠 때만** |
-  | 조건부 | `architecture` | `src/**` · `app/**` · `next.config.ts` |
-  | 조건부 | `testing` | `**/*.test.*` · `tests/**` · 테스트 설정 |
-  | 조건부 | `surfaces` | `src/shared/lib/tauri-*.ts` · `src-tauri/**` · `tests/e2e/**` |
-  | 조건부 | `documentation` | `docs/**/*.md` · 루트 `*.md` |
-  | 조건부 | `codegraph` | `src/**` · `mcp/**` · `cli/**` 등 코드를 읽을 때. 세션 시작 트리거 요약은 `AGENTS.md` "Code intelligence" 절(상주)에 |
+  | always | `forbidden`, `git`, `local-first` | Decisions required before any file is opened: publishing, backend use, and commit workflow |
+  | conditional | `design` | UI files such as `src/**/*.tsx` and `app/**/*.css` |
+  | conditional | `design-gates` | `eslint.config.mjs`, `tests/contract/**`, `scripts/check-*.mjs`; only while changing gates |
+  | conditional | `architecture` | `src/**`, `app/**`, `next.config.ts` |
+  | conditional | `testing` | `**/*.test.*`, `tests/**`, test configuration |
+  | conditional | `surfaces` | `src/shared/lib/tauri-*.ts`, `src-tauri/**`, `tests/e2e/**` |
+  | conditional | `documentation` | `docs/**/*.md`, root `*.md` |
+  | conditional | `codegraph` | `src/**`, `mcp/**`, `cli/**`, and other code; `AGENTS.md` carries its always-loaded trigger summary |
 
-  ⚠️ **아무 파일도 안 맞는 글롭은 조용히 사라진 규칙이다.** 파일도 있고
-  YAML 도 유효하고 에러도 안 나는데 규칙만 존재하지 않게 된다(첫 적용 때
-  `i18n/**` 이 0개였다 — 실 위치는 `src/i18n`). 디렉터리를 옮기면
-  `tests/contract/rules-path-scope.contract.test.ts` 가 먼저 터진다.
-  상주 목록을 늘리려면 그 테스트의 `ALWAYS_LOADED` 에 이유와 함께 적어야
-  한다 — 73KB 로 되돌아가는 길을 무료로 두지 않는다.
-- `.claude/agents/*.md` — 상주 심사진: 팀장(`chief`) · PO 카운슬 5인(`po-*`) ·
-  디자인 벤치 8석(`design-*`) · 평결을 코드로 적용하는 `design-guardian`.
-  소집될 때만 로드된다.
-- `.claude/settings.json` — hooks · permissions.
-- `.claude/hooks/` — 넷이고 `.codex/hooks/` 에 짝이 있다: npm publish 차단 ·
-  되돌릴 수 없는 git 명령 차단 · 생성물 손 편집 차단 · SessionStart 볼트 census.
-  **훅을 더하거나 빼면 `pnpm test:claude:hooks` 가 먼저 터진다** — 명령 목록과
-  PreToolUse 매처를 실측값으로 못박아 두었다. 2026-07-31 에 둘에서 넷으로 늘렸을
-  때 그 검사를 아무도 안 돌려서 2주간 빨간 채로 있었다(2026-08-17 발견).
+  A glob matching zero files silently disables its rule. This happened when a
+  rule named `i18n/**` while the real path was `src/i18n`. Directory moves are
+  guarded by `tests/contract/rules-path-scope.contract.test.ts`. Adding an
+  always-loaded rule requires updating that test's `ALWAYS_LOADED` list with a
+  reason; otherwise the 73 KB context returns for free.
+- `.claude/agents/*.md` contains the standing reviewers: `chief`, five `po-*`
+  seats, eight `design-*` seats, and `design-guardian`. They load only when
+  convened.
+- `.claude/settings.json` owns hooks and permissions.
+- `.claude/hooks/` has four hooks mirrored under `.codex/hooks/`: block npm
+  publishing, block irreversible Git commands, block hand-editing generated
+  files, and inject a compact vault inventory at SessionStart. Changing the hook
+  set requires `pnpm test:claude:hooks`; the suite once stayed red for two weeks
+  after a two-to-four-hook expansion nobody tested.
 
-스킬(`/po-pass` · `/po-council` · `/design-council` · `/design-audit` ·
-`/design-system-audit` · `/design-build` ·
-`/user-walkthrough` · `/motion-verify` · `/responsive-sweep` · `/gate-probe` ·
-`/ontology-sync` · `/ontology-bootstrap` · `/ontology-extract` ·
-`/ontology-absorb-confluence` · `/ontology-field-trial` · `/parallel-brief`)은 **양쪽 다 읽으므로** 전용이 아니다 — 위 3번
-규율의 대상이다. 소집 트리거와 프로토콜의 정본은 `AGENTS.md`, 결정과 진
-반대 의견은 `docs/DECISIONS.md` 에 남는다.
+The shared skills (`/po-pass`, `/po-council`, `/design-council`,
+`/design-audit`, `/design-system-audit`, `/design-build`, `/user-walkthrough`,
+`/motion-verify`, `/responsive-sweep`, `/gate-probe`, `/ontology-sync`,
+`/ontology-bootstrap`, `/ontology-extract`, `/ontology-absorb-confluence`,
+`/ontology-field-trial`, and `/parallel-brief`) are not Claude-only. They are
+subject to the mirror rule above. `AGENTS.md` owns invocation triggers and
+protocols; `docs/DECISIONS.md` owns decisions and losing dissent.
 
-## 동기화 정책
+## Synchronization policy
 
-`AGENTS.md` 가 single source of truth 이고 이 파일은 얇은 래퍼다. 그러니
-**`AGENTS.md` 를 고쳐도 이 파일은 손댈 필요가 없다** — 여기 적는 것은 위 표가
-바뀔 때뿐이다.
+`AGENTS.md` is the single source of truth and this file is a thin wrapper. A
+change to `AGENTS.md` does not require changing this file unless the visibility
+table itself changed.
 
-⚠️ `@AGENTS.md` 임포트는 **조직화이지 절감이 아니다.** 임포트된 파일도 세션
-시작에 그대로 컨텍스트에 들어간다. "임포트니까 싸다"는 가정으로 본문을 키우지
-않는다.
+The `@AGENTS.md` import organizes context; it does not reduce it. Imported bytes
+still enter every session, so do not grow the file on the assumption that an
+import is cheap.

@@ -192,7 +192,7 @@ decision records behind it are in `docs/DECISIONS.md`, dated 2026-08-16.
 | `src/shared/lib/tauri-acp.ts` | The capability bridge and its web degradation. It never re-implements the permission policy |
 | `src/features/acp-session/` | `acp-client.ts` (JSON-RPC framing over the bridge) and `use-acp-session.ts` (one session's lifetime; a permission request blocks until the screen answers, and an unanswered one is refused) |
 | `src/widgets/acp-chat-panel/` | `AcpChatPanel.tsx` and `AcpPermissionCard.tsx`. **No route or control opens this panel yet**, so it is a module, not a surface |
-| `src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the settings sheet's 실행기 section |
+| `src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the settings sheet's Runtime section |
 
 Three properties are structural rather than incidental. The registry is a
 committed snapshot, so no ACP code path touches the network at runtime. A
