@@ -567,8 +567,10 @@ For installed-app dogfood, use `pnpm desktop:deploy:app`. It calls
 required, then replaces `/Applications/Ontology Atlas.app` and runs the local
 app/WebView proof. Do not use that local build as a release artifact:
 `desktop:build:app` remains the release path and keeps updater artifacts enabled.
-`pnpm desktop:build` keeps the local unsigned prototype shortcut by running the
-app build and DMG packager.
+`pnpm desktop:build` keeps the local identity-unsigned prototype shortcut by
+running the updater-disabled app build, ad-hoc signing the complete bundle, and
+then packaging the DMG. The ad-hoc signature supplies bundle integrity only; it
+does not claim a Developer ID identity or replace the credentialed release path.
 Before a release is made public, the protected dispatched workflow runs
 `pnpm desktop:verify-download -- --allow-draft` against the draft GitHub Release
 assets with `github.token`; after publishing, run `pnpm desktop:verify-download`
@@ -1071,8 +1073,9 @@ pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0 --json-file=.tmp/relea
 pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0 --markdown-file=.tmp/release-status.md
 ```
 
-For local unsigned smoke, `pnpm desktop:build` is the shortcut for
-`pnpm desktop:build:app && node scripts/package-macos-dmg.mjs`; run
+For local identity-unsigned smoke, `pnpm desktop:build` is the shortcut for
+`pnpm desktop:build:app:local && pnpm desktop:sign:adhoc && node
+scripts/package-macos-dmg.mjs`; run
 `pnpm desktop:verify-app` after it to catch app startup crashes, then
 `pnpm desktop:verify-install` to mount the generated DMG, copy the bundled app
 to a temporary install folder, verify that installed copy through the
