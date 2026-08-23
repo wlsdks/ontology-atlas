@@ -85,7 +85,8 @@ routing only: when to open a gate, not how it runs.
 - **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
   the PO pass, for UI, visual design, interaction, graph readability,
   responsive layout and macOS workbench work:
-  `/design-build` before the code, `/design-audit` after it,
+  `/design-directions` before the code when the shape is not yet settled,
+  `/design-build` to write it, `/design-audit` after it, and
   `/design-system-audit` before a release or an inconsistent-screen
   investigation. Public references are principle sources; never copy their
   assets or wording. A new design rule needs lint enforcement, an inventory and
@@ -109,8 +110,10 @@ routing only: when to open a gate, not how it runs.
   `/map-perf` when their stated surface applies.
 - **Ontology and parallel work** — `/ontology-bootstrap` for a starter vault,
   `/ontology-sync` after a meaningful code change, `/ontology-extract` for
-  prose, `/ontology-field-trial` when construction rules or the MCP read/write
-  contract could change vault quality, `/parallel-brief` before parallel work.
+  prose, `/ontology-absorb-confluence` for a wiki page the user's own
+  third-party MCP can read, `/ontology-field-trial` when construction rules or
+  the MCP read/write contract could change vault quality, `/parallel-brief`
+  before parallel work.
 
 The design system permits neutrals and one indigo; consult
 `.claude/rules/design.md`, `docs/DESIGN-SYSTEM.md`, and
