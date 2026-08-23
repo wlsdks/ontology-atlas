@@ -82,7 +82,7 @@
     "test:source:language": "node --test scripts/quality/source-language/inventory.test.mjs",
     "vault:validate": "node scripts/validate-vault.mjs",
     "decisions:check": "node scripts/check-decision-record.mjs",
-    "agents:check": "node cli/src/index.mjs agent-files",
+    "agents:check": "node cli/src/index.mjs agent-files --english-only",
     "test:vault:validate": "node --test scripts/validate-vault-script.test.mjs",
     "vault:migrate": "node scripts/migrate-vault.mjs",
     "test:vault:migrate": "node --test scripts/migrate-vault.test.mjs scripts/migrate-node-uids.test.mjs scripts/migrations/*.test.mjs",

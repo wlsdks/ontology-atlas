@@ -39,6 +39,10 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-md', kind: 'instructions', tools: Object.freeze(['claude-code']), pattern: /^CLAUDE\.md$/ }),
   Object.freeze({ id: 'agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'gemini-cli']), pattern: /^AGENTS\.md$/ }),
   Object.freeze({ id: 'gemini-md', kind: 'instructions', tools: Object.freeze(['gemini-cli']), pattern: /^GEMINI\.md$/ }),
+  // One level only. `cli/templates/vault/AGENTS.md` and its `vault-ko` twin are
+  // product data shipped inside a starter vault, not instructions to an agent
+  // working on this repository, and they sit three segments deep.
+  Object.freeze({ id: 'nested-agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'gemini-cli']), pattern: /^[^/]+\/AGENTS\.md$/ }),
   Object.freeze({ id: 'claude-rules', kind: 'rules', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/rules\/.+\.md$/ }),
   Object.freeze({ id: 'claude-skills', kind: 'skill', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/skills\/.+/ }),
   Object.freeze({ id: 'claude-agents', kind: 'agent', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/agents\/.+/ }),
@@ -142,7 +146,7 @@ function hasClaudeAgentsImport(content) {
   return /(^|\s)@AGENTS\.md(?=\s|$)/m.test(withoutInlineCode);
 }
 
-// ── the four drift checks ──────────────────────────────────────────────────
+// ── the six drift checks ──────────────────────────────────────────────────
 
 function checkClaudeAgentsBridge(recordByPath, existingPathSet, drift) {
   const claude = recordByPath.get('CLAUDE.md');
@@ -399,7 +403,14 @@ function checkAtRefs(records, options, drift) {
 const NON_ENGLISH_SCRIPT_RE =
   /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/gu;
 
-function checkAgentLanguage(records, drift) {
+function checkAgentLanguage(records, drift, requireEnglish) {
+  // Opt-in. This is one repository's policy, not a truth about agent files, and
+  // the same analyzer reads a user's own vault through the web docs workbench —
+  // where `cli/templates/vault-ko` is a supported starter. Imposing English
+  // there would call a correct Korean vault broken (contract, 2026-08-24).
+  if (!requireEnglish) {
+    return { status: 'not-applicable', scannedFiles: 0, flaggedFiles: 0, codePoints: 0 };
+  }
   let scannedFiles = 0;
   let flaggedFiles = 0;
   let codePoints = 0;
@@ -433,22 +444,53 @@ function checkAgentLanguage(records, drift) {
   };
 }
 
-function checkCodexSizeCap(recordByPath, drift) {
+/**
+ * Codex concatenates AGENTS.md root-down along the working directory and stops
+ * adding files once the combined size reaches `project_doc_max_bytes`, then
+ * truncates silently. Measuring the root file alone therefore understates the
+ * budget the moment a nested AGENTS.md exists: what a session actually loads is
+ * root plus the nested files on its path. Nested files here are one level deep,
+ * so the worst case any path can reach is root plus the largest of them.
+ */
+function checkCodexSizeCap(recordByPath, records, drift) {
   const agents = recordByPath.get('AGENTS.md');
-  if (!agents) return { status: 'not-applicable', agentsMdBytes: null, capBytes: CODEX_PROJECT_DOC_CAP_BYTES };
-  const bytes = agents.bytes;
-  if (bytes > CODEX_PROJECT_DOC_CAP_BYTES) {
+  const nested = records.filter((r) => r.ruleId === 'nested-agents-md');
+  const nestedBytes = nested.reduce((max, r) => Math.max(max, r.bytes), 0);
+  const worst = nested.reduce((a, b) => (a && a.bytes >= b.bytes ? a : b), null);
+  if (!agents) {
+    return {
+      status: 'not-applicable',
+      agentsMdBytes: null,
+      nestedFiles: nested.length,
+      worstNestedPath: worst?.path ?? null,
+      worstCaseBytes: null,
+      capBytes: CODEX_PROJECT_DOC_CAP_BYTES,
+    };
+  }
+  const worstCaseBytes = agents.bytes + nestedBytes;
+  const shared = {
+    agentsMdBytes: agents.bytes,
+    nestedFiles: nested.length,
+    worstNestedPath: worst?.path ?? null,
+    worstCaseBytes,
+    capBytes: CODEX_PROJECT_DOC_CAP_BYTES,
+  };
+  if (worstCaseBytes > CODEX_PROJECT_DOC_CAP_BYTES) {
+    const via = worst ? ` (AGENTS.md ${agents.bytes} + ${worst.path} ${worst.bytes})` : '';
     drift.push({
       check: 'codex-size-cap',
       code: 'agents-md-over-codex-cap',
-      path: 'AGENTS.md',
-      message: `AGENTS.md is ${bytes} bytes: over the Codex project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}`,
-      detail: { bytes, capBytes: CODEX_PROJECT_DOC_CAP_BYTES },
+      path: worst?.path ?? 'AGENTS.md',
+      message:
+        `the merged Codex instruction set reaches ${worstCaseBytes} bytes${via}: over the `
+        + `project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}, past which Codex `
+        + 'truncates silently',
+      detail: shared,
     });
-    agents.drift.push('agents-md-over-codex-cap');
-    return { status: 'drift', agentsMdBytes: bytes, capBytes: CODEX_PROJECT_DOC_CAP_BYTES };
+    (worst ?? agents).drift.push('agents-md-over-codex-cap');
+    return { status: 'drift', ...shared };
   }
-  return { status: 'ok', agentsMdBytes: bytes, capBytes: CODEX_PROJECT_DOC_CAP_BYTES };
+  return { status: 'ok', ...shared };
 }
 
 // ── entry point ────────────────────────────────────────────────────────────
@@ -465,12 +507,16 @@ function checkCodexSizeCap(recordByPath, drift) {
  *   so refs into them report `unverified` instead of false `missing`.
  * - `verifiableExtensions`: when set, only refs with these extensions can be
  *   judged missing (the web manifest only indexes `.md`).
+ * - `requireEnglish`: opt in to the English-only agent-text check. Off by
+ *   default so analysing someone else's repository or vault never imports this
+ *   repository's language policy.
  */
 export function analyzeAgentFiles({
   files,
   existingPaths = [],
   unverifiablePrefixes = [],
   verifiableExtensions = null,
+  requireEnglish = false,
 }) {
   const records = [];
   for (const entry of files) {
@@ -502,8 +548,8 @@ export function analyzeAgentFiles({
       { existingPathSet, recordPathSet, unverifiablePrefixes, verifiableExtensions },
       drift,
     ),
-    codexSizeCap: checkCodexSizeCap(recordByPath, drift),
-    agentLanguage: checkAgentLanguage(records, drift),
+    codexSizeCap: checkCodexSizeCap(recordByPath, records, drift),
+    agentLanguage: checkAgentLanguage(records, drift, requireEnglish),
   };
 
   const byTool = {};

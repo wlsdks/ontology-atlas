@@ -7,7 +7,7 @@ import { analyzeAgentFiles as analyzeCli } from "../../cli/src/lib/agent-files.m
  * Agent-files detection contract — the read-only agent-file scanner lives in
  * 2 places that cannot share a physical module:
  *   - cli/src/lib/agent-files.mjs (separate package — `ontology-atlas agent-files`,
- *     a full-fs scanner running all four drift checks, dot-dirs included)
+ *     a full-fs scanner running all six drift checks, dot-dirs included)
  *   - src/views/docs-vault/lib/agent-files.ts (web docs surface — an FSA scanner;
  *     dot-dirs are invisible to it, so it degrades honestly to `unverifiable`)
  *

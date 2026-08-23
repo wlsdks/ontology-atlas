@@ -78,11 +78,13 @@ The policies live in `.claude/rules/` and each skill owns its exact protocol.
 Use the matching source, never memory and never this summary — what follows is
 routing only: when to open a gate, not how it runs.
 
-- **PO gate** — `/po-pass` before any product, UX, graph, MCP, CLI, workflow
-  or macOS-shell change. Translate an offered solution into a user's observable
+- **PO gate** — `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`, entered through
+  `/po-pass`, before any product, UX, graph, MCP, CLI, workflow or
+  macOS-shell change. Translate an offered solution into a user's observable
   problem first. Ontology or agent value is never author-declarable N/A.
-- **Product design gate** — after the PO pass, for UI, visual design,
-  interaction, graph readability, responsive layout and macOS workbench work:
+- **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
+  the PO pass, for UI, visual design, interaction, graph readability,
+  responsive layout and macOS workbench work:
   `/design-build` before the code, `/design-audit` after it,
   `/design-system-audit` before a release or an inconsistent-screen
   investigation. Public references are principle sources; never copy their
@@ -186,7 +188,12 @@ references, mirrored skills/agents, and that every agent-read file is English.
 That subject set covers `.claude/hooks/`, `.claude/settings.json` and
 `.codex/`: a guard's refusal text is all a blocked agent gets to read.
 `.claude/skills/<name>/` and `.agents/skills/<name>/`, plus the matching agent
-briefs, must be byte identical. Do not name a tool inside a shared skill body;
+briefs, must be byte identical. Each directory a `.claude/rules/` glob reaches
+also carries a nested `AGENTS.md` naming those rules, because Codex merges
+`AGENTS.md` root-down along the working path and never auto-loads `.claude/`.
+They stay pointers: the cap check measures root plus the largest nested file,
+since Codex truncates the merge in silence.
+Do not name a tool inside a shared skill body;
 branch on capability.
 `.claude/settings.json` owns Claude hooks and `.codex/hooks.json` owns their
 Codex mirror.

@@ -16,11 +16,19 @@ only Claude Code visibility, loading, and hook ownership.
 | Location | Claude Code | Codex |
 |---|---|---|
 | `AGENTS.md` | imported here | read directly, capped by `project_doc_max_bytes` |
-| `CLAUDE.md`, `.claude/**` | reads | does not read |
+| `<dir>/AGENTS.md` | not loaded | merged root-down on the path |
+| `CLAUDE.md`, `.claude/**` | reads | not auto-loaded; opened on a pointer |
 | `.agents/skills/**`, `.agents/agents/**` | does not read | reads |
 | `.codex/**` | does not read | reads config and hooks |
 
-Put shared rules in `AGENTS.md`. The two agent trees have matching
+Put shared rules in `AGENTS.md`. `.claude/rules/` is the one body Codex cannot
+auto-load, so each rule-covered directory carries a nested `AGENTS.md` naming
+the rules that reach it. Those are pointers, never copies; the merged set must
+stay under the Codex cap, and
+`tests/contract/nested-agents-pointers.contract.test.ts` derives the expected
+rule set from the rules' own `paths:` frontmatter.
+
+The two agent trees have matching
 `skills/` and `agents/` files and must be byte-identical; relative
 references resolve within each tree. Shared skill bodies must branch on
 capability, not tool name. `pnpm agents:check` checks the import, cap,

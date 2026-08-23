@@ -5703,6 +5703,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-24 (112) — Rules reach non-Claude agents through nested AGENTS.md pointers, never copies",
+      "slug": "2026-08-24-112-rules-reach-non-claude-agents-through-nested-agentsmd-pointers-never-copies"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-24 (111) — Codex leaves in-app chat until Atlas MCP writes have an app-owned gate",
       "slug": "2026-08-24-111-codex-leaves-in-app-chat-until-atlas-mcp-writes-have-an-app-owned-gate"
     },
