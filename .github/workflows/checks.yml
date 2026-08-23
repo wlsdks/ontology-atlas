@@ -165,6 +165,22 @@ jobs:
       # `tests/contract/node-test-reachability.contract.test.ts` fails when a new
       # suite is added without appearing here, in a git hook, or in its stated
       # exclusion list.
+      # A checker whose unit test runs while the checker itself does not is the
+      # 2026-08-05 colour-gate shape. `test:vault:audit` reached CI in the step
+      # below; `vault:audit` did not, and it is the gate that proves every vault
+      # node's `path:` still points at a file that exists — 75 paths across 83
+      # nodes, 0.2 seconds, and it goes red on a planted path.
+      #
+      # The other six pairs in that shape were left alone deliberately.
+      # `vault:migrate` mutates, `vault:freshness` needs a diff range and exits 2
+      # without one, `skills:audit` always exits 0 over a personal skill
+      # collection, and the `dogfood:*` three are status reports rather than
+      # gates. Wiring them would put a migration tool in CI and call a permanent
+      # green a gate.
+      - name: Vault path drift
+        if: always()
+        run: pnpm vault:audit
+
       - name: Node test suites outside vitest
         if: always()
         run: |
