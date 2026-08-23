@@ -109,6 +109,33 @@ describe('package contract helpers', () => {
   it('keeps every pnpm command named in the docs resolvable to a real root script', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
     const mcpPkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
+    /*
+     * Derived, not listed. The hand-written array this replaces named seven of
+     * ten rules and three of twenty skills, and no seat brief at all: thirty-five
+     * of the forty-five agent files that can cite a `pnpm` command were outside
+     * the gate (measured 2026-08-24). A list of files to check rots the same way
+     * every hand-maintained list in this repository has, and the fix is the same
+     * one `documentation.md` names — compute both sides.
+     */
+    const agentFiles = [
+      ...readdirSync('.claude/rules').filter((name) => name.endsWith('.md'))
+        .map((name) => join('.claude/rules', name)),
+      ...readdirSync('.claude/agents').filter((name) => name.endsWith('.md'))
+        .map((name) => join('.claude/agents', name)),
+      ...readdirSync('.claude/skills', { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .flatMap((entry) => {
+          const dir = join('.claude/skills', entry.name);
+          return readdirSync(dir, { recursive: true })
+            .filter((name) => String(name).endsWith('.md'))
+            .map((name) => join(dir, String(name)));
+        }),
+    ].sort();
+    assert.ok(
+      agentFiles.length >= 40,
+      `agent-file sweep found only ${agentFiles.length} files — an empty sweep would pass vacuously`,
+    );
+
     const docs = [
       'README.md',
       'docs/DEVELOPMENT-CHECKS.md',
@@ -116,16 +143,7 @@ describe('package contract helpers', () => {
       'cli/README.md',
       'docs/benchmark/README.md',
       'scripts/migrations/README.md',
-      '.claude/rules/architecture.md',
-      '.claude/rules/design.md',
-      '.claude/rules/documentation.md',
-      '.claude/rules/forbidden.md',
-      '.claude/rules/git.md',
-      '.claude/rules/local-first.md',
-      '.claude/rules/testing.md',
-      '.claude/skills/ontology-bootstrap/SKILL.md',
-      '.claude/skills/ontology-extract/SKILL.md',
-      '.claude/skills/ontology-sync/SKILL.md',
+      ...agentFiles,
     ]
       .map((file) => readFileSync(file, 'utf-8'))
       .join('\n');
