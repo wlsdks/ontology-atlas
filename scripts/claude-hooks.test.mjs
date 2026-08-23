@@ -28,6 +28,7 @@ const HOOK_CONFIGS = [
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-npm-publish.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-unsafe-git.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh"',
     ],
     expectedPreToolMatchers: ['Bash', 'Edit|Write|MultiEdit|NotebookEdit'],
   },
@@ -370,5 +371,75 @@ describe('commit-msg language gate', () => {
   it('ignores Git comment lines, which never ship', async () => {
     const { status } = await runHook('# Please enter the commit message\n# 한국어 안내문\n');
     assert.equal(status, 0);
+  });
+});
+
+// The PostToolUse drift reporter. Its whole value is being right about two
+// things at once: loud when a mirrored tree has been half-edited, and silent
+// otherwise. A hook that speaks on every edit spends context to say nothing and
+// gets ignored exactly when it matters, so the quiet cases are asserted as hard
+// as the loud one.
+describe('report-agent-file-drift PostToolUse hook', () => {
+  const HOOK = '.claude/hooks/report-agent-file-drift.sh';
+  const root = process.cwd();
+
+  const fire = (filePath) => {
+    const payload = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Edit',
+      tool_input: { file_path: filePath },
+    });
+    const result = spawnSync('bash', [HOOK], {
+      cwd: root,
+      input: payload,
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+    });
+    return { status: result.status, stdout: (result.stdout ?? '').trim() };
+  };
+
+  it('is executable where settings.json points', async () => {
+    await access(HOOK, constants.X_OK);
+  });
+
+  it('says nothing about a file outside the agent-file surface', () => {
+    const { status, stdout } = fire(join(root, 'src/shared/ui/does-not-matter.tsx'));
+    assert.equal(status, 0);
+    assert.equal(stdout, '');
+  });
+
+  it('says nothing when the surface is clean, even on a watched path', () => {
+    const { status, stdout } = fire(join(root, '.claude/skills/po-pass/SKILL.md'));
+    assert.equal(status, 0, 'PostToolUse must never block: the edit already happened');
+    assert.equal(stdout, '', 'a clean surface must cost no context');
+  });
+
+  it('reports through additionalContext when one side of a mirror is edited', async () => {
+    const mirrored = '.claude/skills/po-pass/SKILL.md';
+    const original = await readFile(mirrored, 'utf8');
+    try {
+      await writeFile(mirrored, `${original}\n<!-- half of a mirrored pair -->\n`, 'utf8');
+      const { status, stdout } = fire(join(root, mirrored));
+      assert.equal(status, 0);
+      const parsed = JSON.parse(stdout);
+      assert.equal(parsed.hookSpecificOutput.hookEventName, 'PostToolUse');
+      const context = parsed.hookSpecificOutput.additionalContext;
+      assert.match(context, /skill-copy/);
+      assert.match(context, /po-pass\/SKILL\.md/);
+      assert.match(context, /pnpm agents:check/);
+    } finally {
+      await writeFile(mirrored, original, 'utf8');
+    }
+  });
+
+  it('survives a payload with no file path at all', () => {
+    const result = spawnSync('bash', [HOOK], {
+      cwd: root,
+      input: JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_input: {} }),
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+    });
+    assert.equal(result.status, 0);
+    assert.equal((result.stdout ?? '').trim(), '');
   });
 });
