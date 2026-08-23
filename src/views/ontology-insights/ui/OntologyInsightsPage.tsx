@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
@@ -203,14 +203,15 @@ export function OntologyInsightsPage() {
       : null,
   );
 
+  const syncTabFromHistory = useEffectEvent(() => {
+    const nextParams = new URL(window.location.href).searchParams;
+    const nextTab = parseInsightsTab(nextParams.get("tab"));
+    captureInsightsHeight();
+    setTabState(nextTab);
+    setReviewId(nextTab === "do-next" ? nextParams.get("review") : null);
+  });
+
   useEffect(() => {
-    const syncTabFromHistory = () => {
-      const nextParams = new URL(window.location.href).searchParams;
-      const nextTab = parseInsightsTab(nextParams.get("tab"));
-      captureInsightsHeight();
-      setTabState(nextTab);
-      setReviewId(nextTab === "do-next" ? nextParams.get("review") : null);
-    };
     window.addEventListener("popstate", syncTabFromHistory);
     return () => window.removeEventListener("popstate", syncTabFromHistory);
   }, []);

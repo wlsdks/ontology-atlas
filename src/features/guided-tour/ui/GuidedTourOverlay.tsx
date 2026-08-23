@@ -14,6 +14,12 @@ import { GuidedTourCard } from "./GuidedTourCard";
 /** Slack between step 4's funnel hole and the probe — absorbs momentary error against the visual node. */
 const TOUR_HOLE_PADDING = 16;
 
+interface AnchorMeasurements {
+  key: string;
+  testidRect: AnchorBox | null;
+  canvasRect: AnchorBox | null;
+}
+
 export interface GuidedTourOverlayProps {
   tour: UseGuidedTourResult;
   /**
@@ -75,17 +81,36 @@ export function GuidedTourOverlay({
     return () => window.removeEventListener("resize", onResize);
   }, [open]);
 
+  // A measurement belongs to one specific open/step/anchor identity. Resetting it
+  // by key during render makes an anchor-type transition paint the full scrim first;
+  // an old canvas circle or DOM rect can never leak into the new step.
+  const anchorKey =
+    !open || !step
+      ? "closed"
+      : step.anchor === null
+        ? `${step.id}:none`
+        : step.anchor.type === "testid"
+          ? `${step.id}:testid:${step.anchor.value}`
+          : `${step.id}:canvas:${step.anchor.target}`;
+  const [measurements, setMeasurements] = useState<AnchorMeasurements>(() => ({
+    key: anchorKey,
+    testidRect: null,
+    canvasRect: null,
+  }));
+  if (measurements.key !== anchorKey) {
+    setMeasurements({ key: anchorKey, testidRect: null, canvasRect: null });
+  }
+
   // testid anchors use a static rect, fixed once layout settles. Recomputed only
   // on step change and resize — moving the cutout is handled by a CSS
   // `transition` (180ms).
-  const [testidRect, setTestidRect] = useState<AnchorBox | null>(null);
   useEffect(() => {
-    if (!open || !step || step.anchor?.type !== "testid") {
-      setTestidRect(null);
-      return undefined;
-    }
+    if (!open || !step || step.anchor?.type !== "testid") return undefined;
     const anchorValue = step.anchor.value;
-    const recompute = () => setTestidRect(resolveAnchorRect(anchorValue));
+    const recompute = () =>
+      setMeasurements((current) =>
+        current.key === anchorKey ? { ...current, testidRect: resolveAnchorRect(anchorValue) } : current,
+      );
     recompute();
     // Re-check one frame after mount — a panel that just opened (the datasheet,
     // say) may not be at its final size on the first tick because of the slide-in.
@@ -95,18 +120,13 @@ export function GuidedTourOverlay({
       window.removeEventListener("resize", recompute);
       window.cancelAnimationFrame(raf);
     };
-  }, [open, step]);
+  }, [anchorKey, open, step]);
 
   // Canvas node anchors follow every frame (inheriting the camera spring's
   // rhythm, no CSS transition). While the probe is still unprojected (zero-size)
   // this is null and the full scrim is the fallback.
-  const [canvasRect, setCanvasRect] = useState<AnchorBox | null>(null);
-
   useEffect(() => {
-    if (!open || !step || step.anchor?.type !== "canvas-node") {
-      setCanvasRect(null);
-      return undefined;
-    }
+    if (!open || !step || step.anchor?.type !== "canvas-node") return undefined;
     // Canvas node anchors are map-only — destination guides pass no probe.
     if (!canvasAnchorRef) return undefined;
     let raf = 0;
@@ -114,22 +134,32 @@ export function GuidedTourOverlay({
       const el = canvasAnchorRef.current;
       if (el) {
         const r = el.getBoundingClientRect();
-        setCanvasRect(
-          r.width > 0 && r.height > 0
-            ? { top: r.top, left: r.left, width: r.width, height: r.height }
-            : null,
+        setMeasurements((current) =>
+          current.key === anchorKey
+            ? {
+                ...current,
+                canvasRect:
+                  r.width > 0 && r.height > 0
+                    ? { top: r.top, left: r.left, width: r.width, height: r.height }
+                    : null,
+              }
+            : current,
         );
       }
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [open, step, canvasAnchorRef]);
+  }, [anchorKey, open, step, canvasAnchorRef]);
 
   if (!open || !step) return null;
 
   const anchorRect =
-    step.anchor?.type === "testid" ? testidRect : step.anchor?.type === "canvas-node" ? canvasRect : null;
+    step.anchor?.type === "testid"
+      ? measurements.testidRect
+      : step.anchor?.type === "canvas-node"
+        ? measurements.canvasRect
+        : null;
   const cardWidth = Math.min(360, viewport.width - 32);
   // The card's real height is auto from its content; layout only needs an
   // approximation (the card is pinned by `top`/`left` and grows to fit, with the

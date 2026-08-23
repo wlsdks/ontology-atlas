@@ -164,6 +164,34 @@ describe('BlockImportModule', () => {
     expect(mocks.vault.createDoc).not.toHaveBeenCalled();
   });
 
+  it('discards an invalidated preview so restoring the vault cannot reopen a stale dialog', async () => {
+    const rendered = render(<BlockImportModule />);
+    await openPreview();
+
+    mocks.vault = makeVault({
+      manifest: {
+        docs: [
+          {
+            slug: 'capabilities/existing',
+            frontmatter: { kind: 'capability', uid: UIDS.blockSession },
+            title: 'Existing',
+          },
+        ],
+      },
+    });
+    rendered.rerender(<BlockImportModule />);
+
+    await waitFor(() => expect(screen.getByTestId('block-import-inline')).toHaveTextContent('importError'));
+    await waitFor(() => expect(screen.queryByTestId('block-import-dialog')).not.toBeInTheDocument());
+    expect(mocks.vault.createDoc).not.toHaveBeenCalled();
+
+    mocks.vault = makeVault();
+    rendered.rerender(<BlockImportModule />);
+
+    expect(screen.queryByTestId('block-import-dialog')).not.toBeInTheDocument();
+    expect(mocks.vault.createDoc).not.toHaveBeenCalled();
+  });
+
   it('rejects a present but malformed v2 manifest instead of treating it as manifest-less Markdown', async () => {
     stubPicker(
       fakeBlockDir({

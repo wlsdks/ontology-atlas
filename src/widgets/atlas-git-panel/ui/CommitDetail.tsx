@@ -5,7 +5,7 @@ import { cn } from "@/shared/lib/cn";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { controlClass } from "@/shared/ui";
-import type { GitChangeEntry } from "@/shared/lib/tauri-git";
+import { gitCommitDiff, type GitChangeEntry } from "@/shared/lib/tauri-git";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
 
@@ -71,27 +71,27 @@ function Section({
 
 export function CommitDetail({
   t,
+  vaultPath,
   hash,
   isoTime,
   relativeTime,
   subject,
   concepts,
   files,
-  diff,
   focusedConceptId,
   setFocusedConceptId,
   egoFor,
   kindLabel,
 }: {
   t: (key: string, values?: Record<string, string | number>) => string;
+  /** The connected vault scopes this commit's lazy `git show` request. */
+  vaultPath: string | null;
   hash: string;
   isoTime: string;
   relativeTime: string;
   subject: string;
   concepts: readonly CommitConcept[];
   files: readonly GitChangeEntry[];
-  /** This step's patch. `null` until read, empty string when there is none. */
-  diff: string | null;
   focusedConceptId: string | null;
   setFocusedConceptId: (id: string) => void;
   egoFor: (nodeId: string) => ConceptEgo | null;
@@ -125,13 +125,26 @@ export function CommitDetail({
    */
   const [lens, setLens] = useState<Lens>(concepts.length > 0 ? "concepts" : "files");
   const [openFile, setOpenFile] = useState<string | null>(null);
+  const [diff, setDiff] = useState<string | null>(null);
 
-  // Lens and chosen file follow the step. Inheriting another step's selection
-  // leaves the reader asking why they are looking at this.
+  // The parent keys this detail by vault + hash + concept count. A step transition
+  // therefore creates the correct initial lens, file selection, and loading state
+  // without a synchronous effect reset.
   useEffect(() => {
-    setLens(concepts.length > 0 ? "concepts" : "files");
-    setOpenFile(null);
-  }, [hash, concepts.length]);
+    if (!vaultPath) return;
+    let cancelled = false;
+    void gitCommitDiff(vaultPath, hash)
+      .then((result) => {
+        if (!cancelled) setDiff(result?.diff ?? "");
+      })
+      // A failed read does not bring the screen down — that section just says "none".
+      .catch(() => {
+        if (!cancelled) setDiff("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vaultPath, hash]);
 
   const perFile = useMemo(() => splitDiffByFile(diff ?? ""), [diff]);
   const activeFile = openFile ?? files[0]?.path ?? null;
