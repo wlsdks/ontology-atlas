@@ -28,15 +28,28 @@ export type AgentFileKind =
   | 'config'
   | 'mcp-config';
 
-export type AgentTool = 'claude-code' | 'codex' | 'cursor' | 'gemini-cli' | 'copilot';
+export type AgentTool =
+  | 'claude-code'
+  | 'codex'
+  | 'cursor'
+  | 'antigravity'
+  | 'gemini-cli'
+  | 'copilot';
 
 export type AgentDriftCheckStatus = 'ok' | 'drift' | 'not-applicable';
 
 /** Tool ids → human labels (proper nouns: not translated). */
+/**
+ * `gemini-cli` stays beside `antigravity` rather than being replaced by it.
+ * Gemini CLI stopped serving free, Pro and Ultra requests on 2026-06-18 and
+ * Antigravity CLI is the successor, but Gemini Code Assist Standard/Enterprise,
+ * Google Cloud access and paid API keys still reach it.
+ */
 export const AGENT_TOOL_LABELS: Readonly<Record<AgentTool, string>> = Object.freeze({
   'claude-code': 'Claude Code',
   codex: 'Codex',
   cursor: 'Cursor',
+  antigravity: 'Antigravity CLI',
   'gemini-cli': 'Gemini CLI',
   copilot: 'Copilot',
 });
@@ -69,12 +82,12 @@ const NON_ENGLISH_SCRIPT_RE =
 
 export const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
   { id: 'claude-md', kind: 'instructions', tools: ['claude-code'], pattern: /^CLAUDE\.md$/ },
-  { id: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], pattern: /^AGENTS\.md$/ },
-  { id: 'gemini-md', kind: 'instructions', tools: ['gemini-cli'], pattern: /^GEMINI\.md$/ },
+  { id: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], pattern: /^AGENTS\.md$/ },
+  { id: 'gemini-md', kind: 'instructions', tools: ['antigravity', 'gemini-cli'], pattern: /^GEMINI\.md$/ },
   // One level only. `cli/templates/vault/AGENTS.md` and its `vault-ko` twin are
   // product data shipped inside a starter vault, not instructions to an agent
   // working on this repository, and they sit three segments deep.
-  { id: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], pattern: /^[^/]+\/AGENTS\.md$/ },
+  { id: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], pattern: /^[^/]+\/AGENTS\.md$/ },
   { id: 'claude-rules', kind: 'rules', tools: ['claude-code'], pattern: /^\.claude\/rules\/.+\.md$/ },
   { id: 'claude-skills', kind: 'skill', tools: ['claude-code'], pattern: /^\.claude\/skills\/.+/ },
   { id: 'claude-agents', kind: 'agent', tools: ['claude-code'], pattern: /^\.claude\/agents\/.+/ },

@@ -20,7 +20,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: [] },
       ],
       checkStatuses: {
@@ -46,7 +46,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: ['missing-agents-import'] },
       ],
       checkStatuses: {
@@ -72,7 +72,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: ['missing-agents-import'] },
       ],
       checkStatuses: {
@@ -233,7 +233,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: [] },
       ],
       checkStatuses: {
@@ -256,7 +256,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: ['at-ref-missing'] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: ['at-ref-missing'] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',
@@ -285,7 +285,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',
@@ -310,7 +310,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: ['agents-md-over-codex-cap'] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: ['agents-md-over-codex-cap'] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: [] },
       ],
       checkStatuses: {
@@ -347,7 +347,7 @@ export const CASES = [
         { path: '.cursorrules', ruleId: 'cursorrules', kind: 'rules', tools: ['cursor'], drift: [] },
         { path: '.github/copilot-instructions.md', ruleId: 'copilot-instructions', kind: 'instructions', tools: ['copilot'], drift: [] },
         { path: '.mcp.json', ruleId: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], drift: [] },
-        { path: 'GEMINI.md', ruleId: 'gemini-md', kind: 'instructions', tools: ['gemini-cli'], drift: [] },
+        { path: 'GEMINI.md', ruleId: 'gemini-md', kind: 'instructions', tools: ['antigravity', 'gemini-cli'], drift: [] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',
@@ -463,7 +463,7 @@ export const CASES = [
       records: [
         { path: '.claude/hooks/block-unsafe-git.sh', ruleId: 'claude-hooks', kind: 'config', tools: ['claude-code'], drift: ['non-english-agent-text'] },
         { path: '.claude/settings.json', ruleId: 'claude-settings', kind: 'config', tools: ['claude-code'], drift: ['non-english-agent-text'] },
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',
@@ -492,8 +492,8 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
-        { path: 'src/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
+        { path: 'src/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',
@@ -519,9 +519,9 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
-        { path: 'cli/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
-        { path: 'src/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: ['agents-md-over-codex-cap'] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
+        { path: 'cli/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: [] },
+        { path: 'src/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], drift: ['agents-md-over-codex-cap'] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',

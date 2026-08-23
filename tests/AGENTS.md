@@ -1,8 +1,8 @@
 # AGENTS.md — `tests/`
 
 Claude Code loads the rules below automatically from their `paths:` frontmatter.
-Codex, Cursor, Gemini CLI and every other agent must open them before changing
-a file in this directory — nothing else surfaces them.
+Codex, Cursor, Antigravity CLI and every other agent must open them before
+changing a file in this directory — nothing else surfaces them.
 
 - `.claude/rules/codegraph.md` — `tests/**`
 - `.claude/rules/design-gates.md` — `tests/contract/**`

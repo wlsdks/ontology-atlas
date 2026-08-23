@@ -23,10 +23,18 @@ const AGENTS_AGENTS_PREFIX = '.agents/agents/';
  * Tool ids → human labels. Data, not code — when a tool renames or a new
  * client appears, this is the single update point (with AGENT_FILE_RULES).
  */
+/**
+ * `gemini-cli` stays beside `antigravity` rather than being replaced by it.
+ * Gemini CLI stopped serving free, Pro and Ultra requests on 2026-06-18 and
+ * Antigravity CLI is the successor, but Gemini Code Assist Standard/Enterprise,
+ * Google Cloud access and paid API keys still reach it. Dropping the label would
+ * be as wrong as leaving Antigravity out was.
+ */
 export const AGENT_TOOL_LABELS = Object.freeze({
   'claude-code': 'Claude Code',
   codex: 'Codex',
   cursor: 'Cursor',
+  antigravity: 'Antigravity CLI',
   'gemini-cli': 'Gemini CLI',
   copilot: 'Copilot',
 });
@@ -37,12 +45,12 @@ export const AGENT_TOOL_LABELS = Object.freeze({
  */
 export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-md', kind: 'instructions', tools: Object.freeze(['claude-code']), pattern: /^CLAUDE\.md$/ }),
-  Object.freeze({ id: 'agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'gemini-cli']), pattern: /^AGENTS\.md$/ }),
-  Object.freeze({ id: 'gemini-md', kind: 'instructions', tools: Object.freeze(['gemini-cli']), pattern: /^GEMINI\.md$/ }),
+  Object.freeze({ id: 'agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'antigravity', 'gemini-cli']), pattern: /^AGENTS\.md$/ }),
+  Object.freeze({ id: 'gemini-md', kind: 'instructions', tools: Object.freeze(['antigravity', 'gemini-cli']), pattern: /^GEMINI\.md$/ }),
   // One level only. `cli/templates/vault/AGENTS.md` and its `vault-ko` twin are
   // product data shipped inside a starter vault, not instructions to an agent
   // working on this repository, and they sit three segments deep.
-  Object.freeze({ id: 'nested-agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'gemini-cli']), pattern: /^[^/]+\/AGENTS\.md$/ }),
+  Object.freeze({ id: 'nested-agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'antigravity', 'gemini-cli']), pattern: /^[^/]+\/AGENTS\.md$/ }),
   Object.freeze({ id: 'claude-rules', kind: 'rules', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/rules\/.+\.md$/ }),
   Object.freeze({ id: 'claude-skills', kind: 'skill', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/skills\/.+/ }),
   Object.freeze({ id: 'claude-agents', kind: 'agent', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/agents\/.+/ }),

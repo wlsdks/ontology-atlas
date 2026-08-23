@@ -14,13 +14,13 @@ describe('agent-files — classification table', () => {
   it('maps every known agent-file pattern to a rule with kind + tools', () => {
     const expectations = [
       ['CLAUDE.md', 'claude-md', 'instructions', ['claude-code']],
-      ['AGENTS.md', 'agents-md', 'instructions', ['codex', 'cursor', 'gemini-cli']],
-      ['GEMINI.md', 'gemini-md', 'instructions', ['gemini-cli']],
+      ['AGENTS.md', 'agents-md', 'instructions', ['codex', 'cursor', 'antigravity', 'gemini-cli']],
+      ['GEMINI.md', 'gemini-md', 'instructions', ['antigravity', 'gemini-cli']],
       ['.claude/rules/design.md', 'claude-rules', 'rules', ['claude-code']],
       ['.claude/skills/ontology-sync/SKILL.md', 'claude-skills', 'skill', ['claude-code']],
       ['.claude/agents/design-guardian.md', 'claude-agents', 'agent', ['claude-code']],
       ['.agents/skills/ontology-sync/SKILL.md', 'agents-skills', 'skill', ['codex']],
-      ['src/AGENTS.md', 'nested-agents-md', 'instructions', ['codex', 'cursor', 'gemini-cli']],
+      ['src/AGENTS.md', 'nested-agents-md', 'instructions', ['codex', 'cursor', 'antigravity', 'gemini-cli']],
       ['.cursor/rules/base.mdc', 'cursor-rules', 'rules', ['cursor']],
       ['.cursorrules', 'cursorrules', 'rules', ['cursor']],
       ['.github/copilot-instructions.md', 'copilot-instructions', 'instructions', ['copilot']],
