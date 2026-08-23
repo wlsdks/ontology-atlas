@@ -96,10 +96,7 @@ const cargoToml = readText("src-tauri/Cargo.toml");
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
 const agentsDoc = readText("AGENTS.md");
 const rootReadme = readText("README.md");
-const featuresDoc = readText("docs/FEATURES.md");
-const productDirectionDoc = readText("docs/PRODUCT-DIRECTION.md");
 const productDesignDoc = readText("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md");
-const architectureDoc = readText("docs/ARCHITECTURE.md");
 const developmentChecksDoc = readText("docs/DEVELOPMENT-CHECKS.md");
 const agentGraphWorkflowDoc = readText("docs/AGENT-GRAPH-WORKFLOW.md");
 const troubleshootingDoc = readText("docs/TROUBLESHOOTING.md");
@@ -927,34 +924,23 @@ if (
   );
 }
 
+/*
+ * Human prose is not a runtime contract. This used to pin sentences across
+ * FEATURES, PRODUCT-DIRECTION, DESKTOP, and ARCHITECTURE, so correcting the
+ * retired root-map story made CI red while the shipped branch was right.
+ * Derive the routing fact from the component that owns it instead; docs prose
+ * remains protected by generated-surface and referential-integrity checks.
+ */
 if (
-  featuresDoc.includes("4 surfaces (desktop app · CLI · MCP · Website)") &&
-  featuresDoc.includes("**Ontology Atlas** is the user-facing desktop app / website brand") &&
-  featuresDoc.includes("daily heavy-lift ontology work happens in the installed app / CLI / MCP") &&
-  featuresDoc.includes("lets you open your own local vault folder from the browser") &&
-  productDirectionDoc.includes("Ontology Atlas") &&
-  productDirectionDoc.includes("The Tauri bundle product name") &&
-  // 2026-07-28: dropping the npm channel (#736) extended this sentence to say the
-  // installed app carries the MCP server. The literal that demanded the old
-  // enumeration order moves to the new sentence — what the gate keeps (installed app
-  // + CLI are the everyday surfaces) is unchanged.
-  productDirectionDoc.includes("installed desktop app (carrying the MCP server) + CLI as the daily workbench") &&
-  productDirectionDoc.includes("hosted website is the product introduction and download entry point") &&
-  desktopDoc.includes("Ontology Atlas") &&
-  desktopDoc.includes("current release") &&
-  desktopDoc.includes("asset identity") &&
-  flow(desktopDoc).includes("root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI") &&
-  flow(desktopDoc).includes("separate GitHub Pages workflow") &&
-  desktopDoc.includes("not the local-only app package") &&
-  architectureDoc.includes("Tauri macOS shell (installed local workbench)") &&
-  architectureDoc.includes("The public app/website brand is **Ontology Atlas**") &&
-  architectureDoc.includes("Tauri native bridge → user disk") &&
-  architectureDoc.includes("AI agents and the installed app end up with the same view")
+  rootEntryPage.includes("if (vault.manifest) return <HomePage />") &&
+  rootEntryPage.includes("if (isDesktopShell())") &&
+  rootEntryPage.includes("return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />") &&
+  rootEntryPage.includes("return <GatewayLandingPage />")
 ) {
-  pass("product and architecture docs frame the installed app as the daily heavy-lift local workbench while the hosted root map offers its own direct local-folder open path");
+  pass("root entry derives the loaded-vault map, desktop first run, and hosted gateway from runtime state");
 } else {
   fail(
-    "FEATURES, PRODUCT-DIRECTION, and ARCHITECTURE must describe the installed desktop app / CLI / MCP as the daily heavy-lift local surfaces while still describing the hosted root map's direct local-folder open path (root-first-open)",
+    "src/views/root-entry/ui/RootEntryPage.tsx must route a loaded vault to HomePage, an empty desktop shell to FirstRunPage, and an empty hosted web session to GatewayLandingPage",
   );
 }
 
