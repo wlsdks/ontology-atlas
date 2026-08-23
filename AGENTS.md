@@ -74,47 +74,37 @@ retired: `/login`, `/signup`, `/account`, `/reset-password`,
 
 ## Operating gates and skills
 
-The detailed policies live in `.claude/rules/`; use the matching source, not
-memory.
+The policies live in `.claude/rules/` and each skill owns its exact protocol.
+Use the matching source, never memory and never this summary — what follows is
+routing only: when to open a gate, not how it runs.
 
-- **PO gate**: `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before
-  product, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Translate an
-  offered solution into a user's observable problem first. Run `/po-pass`;
-  read the decision ledger, discriminate phenomenon from problem, score all six
-  rows, and convene `/po-council` below 18/24, on a fatal zero, or on its
-  stated trigger. Ontology or agent value is not author-declarable N/A.
-- **Product design gate**: `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` is
-  mandatory after the PO pass for UI, visual design, interaction, graph
-  readability, responsive layout, and macOS workbench changes. Public
-  references are principle sources only: do not copy their assets or wording.
-- **Councils**: convene `/po-council` before expensive or hard-to-reverse
-  work: a new or removed surface, public MCP/CLI/schema contract, positioning,
-  or first public release. `chief` decides seats/order, records the decision,
-  and never edits code. For visual work `/design-council` always includes
-  hierarchy and system; each seat opens the built surface, names an alternative,
-  and `design-guardian` is the accountable editor/decider. Use the standing
-  Design Guardian or an independent equivalent before and after meaningful
-  Relief/Topology work.
-- **Decision ledger**: `docs/DECISIONS.md` is append-only. Read it before a
-  pass or council; cite a standing decision or explicitly overturn it. Preserve
-  losing dissent and a falsifier. Never silently re-decide.
-- **Gate probe**: run `/gate-probe` whenever a gate changes. Inventory before
-  enabling, plant a defect for RED, restore GREEN, prove the subject set is
-  non-empty, and verify focused-check/CI wiring. A permanent green gate is not
-  evidence.
-- **UI proof**: before UI code, use `/design-build`; after it, use
-  `/design-audit` to measure DOM geometry and computed ramps before screenshots.
-  Use `/design-system-audit` before releases or inconsistent-screen
-  investigations. New design rules require lint enforcement, an inventory, and
-  a probe; values live only in `docs/DESIGN-SYSTEM.md`.
-- **Journey and motion**: `/user-walkthrough` names observable UX patterns,
-  not invented user feelings. Use `/responsive-sweep`, `/motion-verify`, or
+- **PO gate** — `/po-pass` before any product, UX, graph, MCP, CLI, workflow
+  or macOS-shell change. Translate an offered solution into a user's observable
+  problem first. Ontology or agent value is never author-declarable N/A.
+- **Product design gate** — after the PO pass, for UI, visual design,
+  interaction, graph readability, responsive layout and macOS workbench work:
+  `/design-build` before the code, `/design-audit` after it,
+  `/design-system-audit` before a release or an inconsistent-screen
+  investigation. Public references are principle sources; never copy their
+  assets or wording. A new design rule needs lint enforcement, an inventory and
+  a probe, and its values live only in `docs/DESIGN-SYSTEM.md`.
+- **Councils** — `/po-council` before expensive or hard-to-reverse work: a new
+  or removed surface, a public MCP/CLI/schema contract, positioning, or a first
+  public release. `chief` seats it and never edits code. `/design-council` for
+  visual work, with `design-guardian` accountable as editor and decider, before
+  and after meaningful Relief or Topology work.
+- **Decision ledger** — `docs/DECISIONS.md` is append-only. Read it before a
+  pass or council; cite a standing decision or overturn it explicitly, keeping
+  the losing dissent and a falsifier. Never silently re-decide.
+- **Gate probe** — `/gate-probe` whenever a gate changes. A permanently green
+  gate is not evidence.
+- **Journey and motion** — `/user-walkthrough` names observable UX patterns,
+  never invented user feelings. `/responsive-sweep`, `/motion-verify` and
   `/map-perf` when their stated surface applies.
-- **Other required routing**: `/ontology-bootstrap` for starter vaults,
-  `/ontology-sync` after meaningful code changes, and `/ontology-extract`
-  for prose. Use `/ontology-field-trial` when construction rules or MCP
-  read/write contracts could change vault quality. Use `/parallel-brief`
-  before parallel work. The skills own their exact protocols.
+- **Ontology and parallel work** — `/ontology-bootstrap` for a starter vault,
+  `/ontology-sync` after a meaningful code change, `/ontology-extract` for
+  prose, `/ontology-field-trial` when construction rules or the MCP read/write
+  contract could change vault quality, `/parallel-brief` before parallel work.
 
 The design system permits neutrals and one indigo; consult
 `.claude/rules/design.md`, `docs/DESIGN-SYSTEM.md`, and
