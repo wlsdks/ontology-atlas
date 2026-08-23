@@ -138,7 +138,7 @@ function validate(raw) {
       code: "unclosed-frontmatter",
       severity: "error",
       message:
-        "frontmatter 시작 `---` 만 있고 끝 `---` 가 없습니다 — 노드로 인식되지 않습니다.",
+        "frontmatter opens with `---` but never closes: this file is not read as a node.",
     });
     return { ok: false, issues };
   }
@@ -156,7 +156,7 @@ function validate(raw) {
       code: "parse-zero-keys",
       severity: "warning",
       message:
-        "frontmatter 블록은 있지만 key 가 하나도 추출되지 않았습니다 — 들여쓰기 또는 콜론 누락 의심.",
+        "the frontmatter block yielded no keys: check the indentation and the colons.",
     });
     return { ok: true, issues };
   }
@@ -169,19 +169,19 @@ function validate(raw) {
       code: "missing-kind",
       severity: "warning",
       message:
-        "frontmatter 에 `kind:` 가 없습니다 — graph 노드가 되려면 kind 가 필요합니다.",
+        "frontmatter has no `kind:`: a graph node needs one.",
     });
   } else if (typeof rawKind !== "string" || rawKind.trim() === "") {
     issues.push({
       code: "empty-kind",
       severity: "error",
-      message: "`kind:` 값이 비어있습니다 — graph 노드로 인식되지 않습니다.",
+      message: "`kind:` is empty, so this is not read as a graph node.",
     });
   } else if (!KNOWN_VAULT_KINDS.includes(rawKind.trim())) {
     issues.push({
       code: "unknown-kind",
       severity: "warning",
-      message: `\`kind: ${rawKind.trim()}\` 는 인식되지 않는 값입니다. 인식되는 값: ${KNOWN_VAULT_KINDS.join(" / ")}.`,
+      message: `\`kind: ${rawKind.trim()}\` is not a known kind. Known kinds: ${KNOWN_VAULT_KINDS.join(" / ")}.`,
     });
   } else {
     const trimmedKind = rawKind.trim();
@@ -195,7 +195,7 @@ function validate(raw) {
         issues.push({
           code: "missing-expected-field",
           severity: "warning",
-          message: `\`${key}:\` 가 비어있습니다 — kind=${trimmedKind} 노드는 ${key} 가 있어야 트리에서 부모를 찾을 수 있습니다.`,
+          message: `\`${key}:\` is empty; a kind=${trimmedKind} node needs ${key} to find its parent in the tree.`,
         });
       }
     }
@@ -207,7 +207,7 @@ function validate(raw) {
       issues.push({
         code: "missing-uid",
         severity: "error",
-        message: "`uid:`가 없습니다 — 모든 ontology 노드는 lowercase UUIDv4 영구 식별자를 가져야 합니다.",
+        message: "`uid:` is missing; every ontology node needs a permanent lowercase UUIDv4.",
       });
     } else {
       const uidIssue = nodeUidIssue(uid);
@@ -221,7 +221,7 @@ function validate(raw) {
           issues.push({
             code: "non-canonical-merged-uids",
             severity: "warning",
-            message: "`merged_uids:`는 중복 없이 오름차순으로 정렬된 UUIDv4 set이어야 합니다.",
+            message: "`merged_uids:` must be an ascending, duplicate-free set of UUIDv4 values.",
           });
         }
       }
@@ -264,7 +264,7 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
       issues.push({
         code: "non-canonical-graph-array",
         severity: "warning",
-        message: `\`${key}:\` graph 배열이 정렬/중복제거된 canonical set 이 아닙니다 — add_relation 또는 patch_concept 로 다시 저장하면 정리됩니다.`,
+        message: `\`${key}:\` is not a sorted, duplicate-free canonical set; re-saving through add_relation or patch_concept normalises it.`,
       });
     }
   }
@@ -341,7 +341,7 @@ export async function main({ argv = process.argv, cwd = process.cwd() } = {}) {
 
   if (reports.length === 0) {
     console.log(
-      `[validate-vault] ${files.length} 파일 스캔 — issue 0. vault clean ✓`,
+      `[validate-vault] ${files.length} files scanned — 0 issues. vault clean ✓`,
     );
     return 0;
   }
@@ -355,7 +355,7 @@ export async function main({ argv = process.argv, cwd = process.cwd() } = {}) {
   }
 
   console.log(
-    `\n[validate-vault] ${files.length} 파일 / ${reports.length} 문제 (error ${errorFiles} · warning ${warningFiles})`,
+    `\n[validate-vault] ${files.length} files / ${reports.length} issues (error ${errorFiles} · warning ${warningFiles})`,
   );
 
   return errorFiles > 0 ? 1 : 0;
@@ -415,9 +415,9 @@ function findDuplicateSlugIssues(entries) {
           code: 'duplicate-slug',
           severity: 'error',
           message:
-            `\`slug: ${declared}\` 를 다른 문서도 주장합니다 (${rest.join(', ')}). ` +
-            `같은 이름을 가리키는 관계가 어느 쪽을 뜻하는지 정할 수 없습니다 — ` +
-            `한쪽의 slug 를 바꾸거나 rename_concept 으로 합치세요.`,
+            `\`slug: ${declared}\` is claimed by other documents too (${rest.join(', ')}). ` +
+            `A relation naming it cannot say which one it means: ` +
+            `rename one slug, or merge them with rename_concept.`,
         },
       });
     }
@@ -445,7 +445,7 @@ function findDuplicateUidIssues(entries) {
         issue: {
           code: "duplicate-uid",
           severity: "error",
-          message: `UID ${uid}를 다른 문서도 정체성으로 주장합니다 (${others.join(", ")}).`,
+          message: `UID ${uid} is claimed as identity by other documents too (${others.join(", ")}).`,
         },
       });
     }
@@ -492,7 +492,7 @@ function findDanglingGraphReferenceIssues(entries) {
         issue: {
           code: "dangling-graph-reference",
           severity: "warning",
-          message: `\`${key}:\` graph reference "${ref}" 가 vault 의 어떤 node 로도 resolve 되지 않습니다.`,
+          message: `\`${key}:\` graph reference "${ref}" resolves to no node in the vault.`,
         },
       });
     }

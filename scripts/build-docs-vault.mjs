@@ -164,7 +164,7 @@ function gitLastCommitDays(rootDir, scopeDir) {
     // (measured: 247 paths → 1 distinct date). CI must use `fetch-depth: 0`.
     if (isShallowRepository(rootDir)) {
       console.warn(
-        '[docs-vault] ⚠️ 얕은 git 클론이다 — 문서 날짜가 전부 같아진다. 전체 히스토리로 체크아웃할 것 (CI: fetch-depth: 0).',
+        '[docs-vault] shallow git clone: every document date collapses to the same day. Check out full history (CI: fetch-depth: 0).',
       );
     }
     const log = execSync(`git log --format=%x01%cs --name-only -- "${scope}"`, {
@@ -826,7 +826,7 @@ export async function scanVaultDir(
 
 async function buildDocsVault({ check = false } = {}) {
   if (!existsSync(DOCS_DIR)) {
-    console.error(`[docs-vault] docs/ 디렉터리가 없음: ${DOCS_DIR}`);
+    console.error(`[docs-vault] no docs/ directory: ${DOCS_DIR}`);
     process.exit(1);
   }
 
@@ -851,7 +851,7 @@ async function buildDocsVault({ check = false } = {}) {
   const { docs, backlinksDetail, tags } = manifest;
   const changelogRaw = content['CHANGELOG'];
   if (typeof changelogRaw !== 'string') {
-    console.error('[docs-vault] docs/CHANGELOG.md 가 스캔에 없다 — 관문 미리보기를 만들 수 없다.');
+    console.error('[docs-vault] docs/CHANGELOG.md is not in the scan: the gateway preview cannot be built.');
     process.exit(1);
   }
   const gatewayChangelog = trimToRecentSections(
@@ -892,7 +892,7 @@ async function buildDocsVault({ check = false } = {}) {
  */
 async function buildStorefrontSample({ check = false } = {}) {
   if (!existsSync(SAMPLES_STOREFRONT_DIR)) {
-    console.error(`[docs-vault] samples/storefront/ 디렉터리가 없음: ${SAMPLES_STOREFRONT_DIR}`);
+    console.error(`[docs-vault] no samples/storefront/ directory: ${SAMPLES_STOREFRONT_DIR}`);
     process.exit(1);
   }
 

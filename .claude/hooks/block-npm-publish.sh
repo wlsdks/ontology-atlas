@@ -90,13 +90,13 @@ PY
 
 if echo "$COMMAND_FOR_MATCH" | grep -E "$PUBLISH_RE" >/dev/null; then
   BLOCKED=1
-  REASON="npm/pnpm/yarn publish 명령이 감지됐습니다. 외부 npm 레지스트리에 영구 발행되는 작업이라 사용자의 명시적 승인이 필수입니다."
+  REASON="An npm/pnpm/yarn publish command was detected. It publishes permanently to the external npm registry, so explicit user approval is required."
 fi
 
 if [[ $BLOCKED -eq 0 ]] && echo "$COMMAND_FOR_MATCH" | grep -E "$PACK_RE" >/dev/null; then
   if ! echo "$COMMAND_FOR_MATCH" | grep -E -- '--dry-run' >/dev/null; then
     BLOCKED=1
-    REASON="'npm pack' 이 --dry-run 없이 실행되려고 합니다. 실제 tarball 생성/발행은 사용자 승인이 필수입니다 (감사용이면 --dry-run 추가)."
+    REASON="'npm pack' is about to run without --dry-run. Producing or uploading a real tarball requires user approval; add --dry-run for a read-only audit."
   fi
 fi
 
@@ -107,7 +107,7 @@ if [[ $BLOCKED -eq 1 ]]; then
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "🚫 npm publish 가드: ${REASON}\n\n사용자가 명시적으로 'publish 해줘' 라고 지시한 경우에만 실행 가능합니다.\n.claude/rules/forbidden.md 와 CLAUDE.md 의 'npm publish' 섹션 참조.\n\n사용자 본인이 터미널에서 직접 실행하거나, .claude/hooks/block-npm-publish.sh 를 비활성화 후 실행하세요."
+    "permissionDecisionReason": "npm publish guard: ${REASON}\n\nRun it only when the user explicitly asked to publish.\nBasis: .claude/rules/forbidden.md, section \"npm publishing requires explicit user approval\".\n\nHave the user run it themselves in the terminal, or disable .claude/hooks/block-npm-publish.sh first."
   }
 }
 JSON

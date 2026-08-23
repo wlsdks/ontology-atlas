@@ -66,11 +66,26 @@ if ! JSON=$($CLI_BIN overview "$VAULT" --json 2>"$CLI_STDERR"); then
       | head -2
   )
   [ -z "$REASON" ] && exit 0
+
+  # A fresh clone or a new worktree has no `mcp/node_modules`, so the MCP child
+  # dies on ERR_MODULE_NOT_FOUND before it ever reads the vault. That is not a
+  # broken vault and `health` will not repair it — `health` runs through the same
+  # missing module. Naming the wrong command is worse than naming none: it costs
+  # a round trip and teaches that this line is noise (2026-08-24 observation).
+  FIX="ontology-atlas health $VAULT"
+  case "$REASON" in
+    *ERR_MODULE_NOT_FOUND*|*"Cannot find module"*|*package_json_reader*)
+      if [ -f "$(pwd)/mcp/package.json" ] && [ ! -d "$(pwd)/mcp/node_modules" ]; then
+        FIX="pnpm --dir mcp install   # this checkout has no mcp/node_modules yet"
+      fi
+      ;;
+  esac
+
   cat <<EOF
 [ontology vault @ ${VAULT}]
 Vault will not compile — no ontology context this session.
 $REASON
-Fix it before trusting any ontology answer: \`ontology-atlas health $VAULT\`.
+Fix it before trusting any ontology answer: \`$FIX\`.
 EOF
   exit 0
 fi

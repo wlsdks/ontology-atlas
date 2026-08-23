@@ -20,7 +20,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: [] },
       ],
       checkStatuses: {
@@ -29,6 +29,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'ok',
         codexSizeCap: 'ok',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [],
     },
@@ -44,7 +46,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: ['missing-agents-import'] },
       ],
       checkStatuses: {
@@ -53,6 +55,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'not-applicable',
         codexSizeCap: 'ok',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [{ check: 'claude-agents-bridge', code: 'missing-agents-import', path: 'CLAUDE.md' }],
     },
@@ -68,7 +72,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: ['missing-agents-import'] },
       ],
       checkStatuses: {
@@ -79,6 +83,8 @@ export const CASES = [
         // exists) — only the *import bridge* treats code spans as non-imports
         atRefs: 'ok',
         codexSizeCap: 'ok',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [{ check: 'claude-agents-bridge', code: 'missing-agents-import', path: 'CLAUDE.md' }],
     },
@@ -99,6 +105,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'drift',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [
         { check: 'claude-agents-bridge', code: 'broken-agents-import', path: 'CLAUDE.md' },
@@ -126,6 +134,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'not-applicable',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [],
     },
@@ -150,6 +160,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'not-applicable',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [{ check: 'skill-copy', code: 'skill-copy-diverged', path: 'ontology-sync/SKILL.md' }],
     },
@@ -176,6 +188,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'not-applicable',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [{ check: 'skill-copy', code: 'skill-copy-file-missing', path: 'ontology-sync/helper.sh' }],
     },
@@ -196,6 +210,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'not-applicable',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [],
     },
@@ -217,7 +233,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: [] },
       ],
       checkStatuses: {
@@ -226,6 +242,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'ok',
         codexSizeCap: 'ok',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [],
     },
@@ -238,7 +256,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: ['at-ref-missing'] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: ['at-ref-missing'] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',
@@ -246,6 +264,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'drift',
         codexSizeCap: 'ok',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [{ check: 'at-refs', code: 'at-ref-missing', path: 'AGENTS.md' }],
     },
@@ -265,7 +285,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',
@@ -273,6 +293,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'ok',
         codexSizeCap: 'ok',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [],
     },
@@ -288,7 +310,7 @@ export const CASES = [
     },
     expected: {
       records: [
-        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'gemini-cli'], drift: ['agents-md-over-codex-cap'] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: ['agents-md-over-codex-cap'] },
         { path: 'CLAUDE.md', ruleId: 'claude-md', kind: 'instructions', tools: ['claude-code'], drift: [] },
       ],
       checkStatuses: {
@@ -297,6 +319,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'ok',
         codexSizeCap: 'drift',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [{ check: 'codex-size-cap', code: 'agents-md-over-codex-cap', path: 'AGENTS.md' }],
     },
@@ -323,7 +347,7 @@ export const CASES = [
         { path: '.cursorrules', ruleId: 'cursorrules', kind: 'rules', tools: ['cursor'], drift: [] },
         { path: '.github/copilot-instructions.md', ruleId: 'copilot-instructions', kind: 'instructions', tools: ['copilot'], drift: [] },
         { path: '.mcp.json', ruleId: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], drift: [] },
-        { path: 'GEMINI.md', ruleId: 'gemini-md', kind: 'instructions', tools: ['gemini-cli'], drift: [] },
+        { path: 'GEMINI.md', ruleId: 'gemini-md', kind: 'instructions', tools: ['antigravity', 'gemini-cli'], drift: [] },
       ],
       checkStatuses: {
         claudeAgentsBridge: 'not-applicable',
@@ -331,6 +355,8 @@ export const CASES = [
         agentCopy: 'not-applicable',
         atRefs: 'not-applicable',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [],
     },
@@ -359,6 +385,8 @@ export const CASES = [
         agentCopy: 'ok',
         atRefs: 'not-applicable',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [],
     },
@@ -383,6 +411,8 @@ export const CASES = [
         agentCopy: 'drift',
         atRefs: 'not-applicable',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [
         { check: 'agent-copy', code: 'agent-copy-diverged', path: 'design-lead.md' },
@@ -410,10 +440,222 @@ export const CASES = [
         agentCopy: 'drift',
         atRefs: 'not-applicable',
         codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
       },
       drift: [
         { check: 'agent-copy', code: 'agent-copy-file-missing', path: 'po-wedge.md' },
       ],
+    },
+  },
+  {
+    name: 'agent language — non-English text is drift wherever it sits, string literals included',
+    input: {
+      files: [
+        { path: 'AGENTS.md', content: '# AGENTS.md\n' },
+        { path: '.claude/hooks/block-unsafe-git.sh', content: 'REASON="\uD798\uB0B4"\n' },
+        { path: '.claude/settings.json', content: '{"_comment": "\uBA54\uBAA8"}\n' },
+      ],
+      existingPaths: [],
+      requireEnglish: true,
+    },
+    expected: {
+      records: [
+        { path: '.claude/hooks/block-unsafe-git.sh', ruleId: 'claude-hooks', kind: 'config', tools: ['claude-code'], drift: ['non-english-agent-text'] },
+        { path: '.claude/settings.json', ruleId: 'claude-settings', kind: 'config', tools: ['claude-code'], drift: ['non-english-agent-text'] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'not-applicable',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'ok',
+        agentLanguage: 'drift',
+        mcpGrants: 'not-applicable',
+      },
+      drift: [
+        { check: 'agent-language', code: 'non-english-agent-text', path: '.claude/hooks/block-unsafe-git.sh' },
+        { check: 'agent-language', code: 'non-english-agent-text', path: '.claude/settings.json' },
+      ],
+    },
+  },
+  {
+    name: 'nested AGENTS.md — one level is instruction surface, a starter-vault template is not',
+    input: {
+      files: [
+        { path: 'AGENTS.md', content: '# AGENTS.md\n' },
+        { path: 'src/AGENTS.md', content: '# src pointer\n' },
+        { path: 'cli/templates/vault/AGENTS.md', content: '# starter vault\n' },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
+        { path: 'src/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'not-applicable',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'ok',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
+      },
+      drift: [],
+    },
+  },
+  {
+    name: 'Codex cap — the merge is root plus the largest nested file, and the nested file is blamed',
+    input: {
+      files: [
+        { path: 'AGENTS.md', content: 'x'.repeat(32 * 1024 - 10) },
+        { path: 'src/AGENTS.md', content: 'x'.repeat(11) },
+        { path: 'cli/AGENTS.md', content: 'x'.repeat(5) },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
+        { path: 'cli/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
+        { path: 'src/AGENTS.md', ruleId: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: ['agents-md-over-codex-cap'] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'not-applicable',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'drift',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
+      },
+      drift: [
+        { check: 'codex-size-cap', code: 'agents-md-over-codex-cap', path: 'src/AGENTS.md' },
+      ],
+    },
+  },
+  {
+    name: 'mcp grants — a seat may only name servers .mcp.json declares',
+    input: {
+      files: [
+        { path: '.mcp.json', content: '{"mcpServers":{"ontology-atlas":{"command":"node"}}}' },
+        { path: '.claude/agents/design-lead.md', content: '---\nname: design-lead\ntools: Read, mcp__ontology-atlas__get_concept, mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        { path: '.claude/agents/design-lead.md', ruleId: 'claude-agents', kind: 'agent', tools: ['claude-code'], drift: ['agent-copy-file-missing', 'undeclared-mcp-server'] },
+        { path: '.mcp.json', ruleId: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], drift: [] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'drift',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'drift',
+      },
+      drift: [
+        { check: 'agent-copy', code: 'agent-copy-file-missing', path: 'design-lead.md' },
+        { check: 'mcp-grants', code: 'undeclared-mcp-server', path: '.claude/agents/design-lead.md' },
+      ],
+    },
+  },
+  {
+    name: 'mcp grants — an unparseable .mcp.json is drift, never a quiet pass',
+    input: {
+      files: [
+        { path: '.mcp.json', content: '{ broken' },
+        { path: '.claude/agents/po-wedge.md', content: '---\nname: po-wedge\ntools: Read, Grep\n---\nbody\n' },
+        { path: '.agents/agents/po-wedge.md', content: '---\nname: po-wedge\ntools: Read, Grep\n---\nbody\n' },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        { path: '.agents/agents/po-wedge.md', ruleId: 'agents-agents', kind: 'agent', tools: ['codex'], drift: [] },
+        { path: '.claude/agents/po-wedge.md', ruleId: 'claude-agents', kind: 'agent', tools: ['claude-code'], drift: [] },
+        { path: '.mcp.json', ruleId: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], drift: ['mcp-config-unparseable'] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'ok',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'drift',
+      },
+      drift: [
+        { check: 'mcp-grants', code: 'mcp-config-unparseable', path: '.mcp.json' },
+      ],
+    },
+  },
+  {
+    name: 'mcp grants — each tree is measured against the config its own reader consults',
+    input: {
+      files: [
+        { path: '.mcp.json', content: '{"mcpServers":{"ontology-atlas":{},"chrome-devtools":{}}}' },
+        { path: '.codex/config.toml', content: '[mcp_servers.ontology-atlas]\ncommand = "node"\n' },
+        { path: '.claude/agents/design-lead.md', content: '---\nname: design-lead\ntools: mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+        { path: '.agents/agents/design-lead.md', content: '---\nname: design-lead\ntools: mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        { path: '.agents/agents/design-lead.md', ruleId: 'agents-agents', kind: 'agent', tools: ['codex'], drift: ['undeclared-mcp-server'] },
+        { path: '.claude/agents/design-lead.md', ruleId: 'claude-agents', kind: 'agent', tools: ['claude-code'], drift: [] },
+        { path: '.codex/config.toml', ruleId: 'codex-dir', kind: 'config', tools: ['codex'], drift: [] },
+        { path: '.mcp.json', ruleId: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], drift: [] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'ok',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'drift',
+      },
+      drift: [
+        { check: 'mcp-grants', code: 'undeclared-mcp-server', path: '.agents/agents/design-lead.md' },
+      ],
+    },
+  },
+  {
+    name: 'mcp grants — both configs declaring the server is the passing case',
+    input: {
+      files: [
+        { path: '.mcp.json', content: '{"mcpServers":{"chrome-devtools":{}}}' },
+        { path: '.codex/config.toml', content: '[mcp_servers.chrome-devtools]\ncommand = "npx"\n\n[mcp_servers.chrome-devtools.env]\nX = "1"\n' },
+        { path: '.claude/agents/design-lead.md', content: '---\nname: design-lead\ntools: mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+        { path: '.agents/agents/design-lead.md', content: '---\nname: design-lead\ntools: mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        { path: '.agents/agents/design-lead.md', ruleId: 'agents-agents', kind: 'agent', tools: ['codex'], drift: [] },
+        { path: '.claude/agents/design-lead.md', ruleId: 'claude-agents', kind: 'agent', tools: ['claude-code'], drift: [] },
+        { path: '.codex/config.toml', ruleId: 'codex-dir', kind: 'config', tools: ['codex'], drift: [] },
+        { path: '.mcp.json', ruleId: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], drift: [] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'ok',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'ok',
+      },
+      drift: [],
     },
   },
 ];

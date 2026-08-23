@@ -40,6 +40,45 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-24 (112) — Rules reach non-Claude agents through nested AGENTS.md pointers, never copies
+
+**Trigger**: `.claude/rules/` holds about 70 KB of guidance and only Claude Code
+loads it. This repository's own visibility table records that Codex, Cursor and
+Gemini CLI do not read `.claude/**`, so an agent on GPT-5.6 Sol, Terra or Luna
+editing `src/` received the architecture, design, surface and testing rules not
+at all. The `.codex/` hook mirror and the `.agents/` skill mirror already treat
+multi-model parity as a goal; rules were the remaining hole.
+
+**Decision (accountable: Jinan)**: every directory a `.claude/rules/` glob
+reaches carries a nested `AGENTS.md` naming those rules and the globs that reach
+it. Codex merges `AGENTS.md` root-down along the working path, so this is the
+only mechanism that puts the right rule in front of a non-Claude agent at the
+moment it matters. These files are pointers. The standing 2026-07-31 decision —
+"a one-line pointer, a reference and not a copy … no rule duplication into
+AGENTS.md (32 KiB)" — is cited, not overturned: a copy would exhaust Codex's
+`project_doc_max_bytes`, past which it truncates in silence.
+
+`docs/` is excluded. `scripts/build-docs-vault.mjs` sweeps `docs/**/*.md` into
+the shipped documentation vault, so a nested agent file there would become
+product surface.
+
+**Wiring**: `tests/contract/nested-agents-pointers.contract.test.ts` derives the
+expected rule set for each directory from the rules' own `paths:` frontmatter,
+so a pointer cannot quietly go stale. `agent-files` classifies one-level nested
+`AGENTS.md` as instruction surface, which brings it under the English-only gate,
+and `codex-size-cap` now measures root plus the largest nested file rather than
+the root alone.
+
+**Recorded dissent**: a pointer is weaker than the rule itself — a non-Claude
+agent must choose to open the file, and nothing forces it. The counter-argument
+is that no mechanism available to those tools can force it, and the alternative
+of copying is worse: it silently truncates the whole instruction set.
+**Falsifier**: a Codex or Cursor session that reads a nested `AGENTS.md`, does
+not open the rule it names, and then violates that rule. If observed, the answer
+is to move the load-bearing constraint into a lint rule or a hook, where
+compliance is not optional — not to grow the pointer into a copy.
+
+**Status**: active
 ## 2026-08-24 (111) — Codex leaves in-app chat until Atlas MCP writes have an app-owned gate
 
 **Prior decisions**: 2026-08-16 (8) treated Codex `read-only` session mode as a

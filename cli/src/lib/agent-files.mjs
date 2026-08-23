@@ -5,7 +5,7 @@
 // .mcp.json). Nobody sees which tool reads which file, and physically
 // duplicated skill trees drift byte-by-byte with no watchdog. This module
 // classifies known agent-file paths (data-driven table — one update point)
-// and runs four read-only drift checks. It never converts, syncs, or repairs.
+// and runs seven read-only drift checks. It never converts, syncs, or repairs.
 //
 // The web workbench mirrors this logic in
 // `src/views/docs-vault/lib/agent-files.ts`; the two implementations are held
@@ -23,10 +23,18 @@ const AGENTS_AGENTS_PREFIX = '.agents/agents/';
  * Tool ids → human labels. Data, not code — when a tool renames or a new
  * client appears, this is the single update point (with AGENT_FILE_RULES).
  */
+/**
+ * `gemini-cli` stays beside `antigravity` rather than being replaced by it.
+ * Gemini CLI stopped serving free, Pro and Ultra requests on 2026-06-18 and
+ * Antigravity CLI is the successor, but Gemini Code Assist Standard/Enterprise,
+ * Google Cloud access and paid API keys still reach it. Dropping the label would
+ * be as wrong as leaving Antigravity out was.
+ */
 export const AGENT_TOOL_LABELS = Object.freeze({
   'claude-code': 'Claude Code',
   codex: 'Codex',
   cursor: 'Cursor',
+  antigravity: 'Antigravity CLI',
   'gemini-cli': 'Gemini CLI',
   copilot: 'Copilot',
 });
@@ -37,8 +45,12 @@ export const AGENT_TOOL_LABELS = Object.freeze({
  */
 export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-md', kind: 'instructions', tools: Object.freeze(['claude-code']), pattern: /^CLAUDE\.md$/ }),
-  Object.freeze({ id: 'agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'gemini-cli']), pattern: /^AGENTS\.md$/ }),
-  Object.freeze({ id: 'gemini-md', kind: 'instructions', tools: Object.freeze(['gemini-cli']), pattern: /^GEMINI\.md$/ }),
+  Object.freeze({ id: 'agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot']), pattern: /^AGENTS\.md$/ }),
+  Object.freeze({ id: 'gemini-md', kind: 'instructions', tools: Object.freeze(['antigravity', 'gemini-cli']), pattern: /^GEMINI\.md$/ }),
+  // One level only. `cli/templates/vault/AGENTS.md` and its `vault-ko` twin are
+  // product data shipped inside a starter vault, not instructions to an agent
+  // working on this repository, and they sit three segments deep.
+  Object.freeze({ id: 'nested-agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot']), pattern: /^[^/]+\/AGENTS\.md$/ }),
   Object.freeze({ id: 'claude-rules', kind: 'rules', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/rules\/.+\.md$/ }),
   Object.freeze({ id: 'claude-skills', kind: 'skill', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/skills\/.+/ }),
   Object.freeze({ id: 'claude-agents', kind: 'agent', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/agents\/.+/ }),
@@ -48,9 +60,15 @@ export const AGENT_FILE_RULES = Object.freeze([
   // **opens and reads** the same brief. The purposes differ but the content must
   // match, which is what agent-copy enforces.
   Object.freeze({ id: 'agents-agents', kind: 'agent', tools: Object.freeze(['codex']), pattern: /^\.agents\/agents\/.+/ }),
+  // `.cursorrules` is the legacy single-file form. Cursor still reads it, but
+  // silently ignores it in agent mode — which is the mode every consumer of this
+  // classifier runs in. `.cursor/rules/*.mdc` is the current format and the one
+  // to write (verified 2026-08-24).
   Object.freeze({ id: 'cursor-rules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursor\/rules\/.+\.mdc$/ }),
   Object.freeze({ id: 'cursorrules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursorrules$/ }),
   Object.freeze({ id: 'copilot-instructions', kind: 'instructions', tools: Object.freeze(['copilot']), pattern: /^\.github\/copilot-instructions\.md$/ }),
+  Object.freeze({ id: 'claude-hooks', kind: 'config', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/hooks\/.+/ }),
+  Object.freeze({ id: 'claude-settings', kind: 'config', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/settings\.json$/ }),
   Object.freeze({ id: 'codex-dir', kind: 'config', tools: Object.freeze(['codex']), pattern: /^\.codex\/.+/ }),
   Object.freeze({ id: 'mcp-json', kind: 'mcp-config', tools: Object.freeze(['claude-code', 'cursor']), pattern: /^\.mcp\.json$/ }),
 ]);
@@ -140,7 +158,7 @@ function hasClaudeAgentsImport(content) {
   return /(^|\s)@AGENTS\.md(?=\s|$)/m.test(withoutInlineCode);
 }
 
-// ── the four drift checks ──────────────────────────────────────────────────
+// ── the seven drift checks ──────────────────────────────────────────────────
 
 function checkClaudeAgentsBridge(recordByPath, existingPathSet, drift) {
   const claude = recordByPath.get('CLAUDE.md');
@@ -381,22 +399,261 @@ function checkAtRefs(records, options, drift) {
   };
 }
 
-function checkCodexSizeCap(recordByPath, drift) {
+/**
+ * Every agent file is read by an agent, so its whole content — not only its
+ * comments — is steering text. A guard whose `permissionDecisionReason` was
+ * Korean shipped for months because `scripts/quality/source-language` audits
+ * comments in `.sh` and skips `.json` entirely, and the string literal that
+ * an agent actually reads sat in neither subject set (2026-08-23 audit). This
+ * repository is open source and English-only, and a Codex, Cursor or Gemini
+ * run has no reason to parse Hangul, kana or Han at the moment it is blocked.
+ *
+ * Localized product data is not an agent file: `cli/templates/vault-ko/**` and
+ * `display_<locale>` frontmatter never match AGENT_FILE_RULES, so they are out
+ * of this subject set by construction rather than by exception.
+ */
+const NON_ENGLISH_SCRIPT_RE =
+  /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/gu;
+
+function checkAgentLanguage(records, drift, requireEnglish) {
+  // Opt-in. This is one repository's policy, not a truth about agent files, and
+  // the same analyzer reads a user's own vault through the web docs workbench —
+  // where `cli/templates/vault-ko` is a supported starter. Imposing English
+  // there would call a correct Korean vault broken (contract, 2026-08-24).
+  if (!requireEnglish) {
+    return { status: 'not-applicable', scannedFiles: 0, flaggedFiles: 0, codePoints: 0 };
+  }
+  let scannedFiles = 0;
+  let flaggedFiles = 0;
+  let codePoints = 0;
+  for (const record of records) {
+    if (typeof record.entry.content !== 'string') continue;
+    scannedFiles += 1;
+    const hits = record.entry.content.match(NON_ENGLISH_SCRIPT_RE);
+    if (!hits) continue;
+    flaggedFiles += 1;
+    codePoints += hits.length;
+    const sample = Array.from(new Set(hits)).slice(0, 8).join('');
+    drift.push({
+      check: 'agent-language',
+      code: 'non-english-agent-text',
+      path: record.path,
+      message:
+        `${record.path} carries ${hits.length} non-English code point(s) (${sample}); `
+        + 'agent files are English-only because their text is what a blocked or '
+        + 'steered agent reads',
+      detail: { codePoints: hits.length, sample },
+    });
+    if (!record.drift.includes('non-english-agent-text')) {
+      record.drift.push('non-english-agent-text');
+    }
+  }
+  return {
+    status: flaggedFiles > 0 ? 'drift' : scannedFiles > 0 ? 'ok' : 'not-applicable',
+    scannedFiles,
+    flaggedFiles,
+    codePoints,
+  };
+}
+
+/**
+ * Codex concatenates AGENTS.md root-down along the working directory and stops
+ * adding files once the combined size reaches `project_doc_max_bytes`, then
+ * truncates silently. Measuring the root file alone therefore understates the
+ * budget the moment a nested AGENTS.md exists: what a session actually loads is
+ * root plus the nested files on its path. Nested files here are one level deep,
+ * so the worst case any path can reach is root plus the largest of them.
+ */
+/**
+ * `absent` and `unparseable` must not collapse together. A vault with no config
+ * has nothing to contradict, so the check does not apply. A config that exists
+ * but declares nothing makes every grant undeclared — reading that as a pass is
+ * the fail-open shape this repository has already been bitten by (probe,
+ * 2026-08-24).
+ */
+function declaredFromMcpJson(record) {
+  if (!record || typeof record.entry.content !== 'string') {
+    return { state: 'absent', servers: new Set() };
+  }
+  try {
+    const servers = JSON.parse(record.entry.content)?.mcpServers;
+    return {
+      state: 'parsed',
+      servers: new Set(servers && typeof servers === 'object' ? Object.keys(servers) : []),
+    };
+  } catch {
+    return { state: 'unparseable', servers: new Set() };
+  }
+}
+
+/**
+ * Codex declares its servers in TOML, and this module is shared with the web
+ * bundle, so it reads section headers rather than importing a parser the browser
+ * build has no reason to carry. `[mcp_servers.name]` and
+ * `[mcp_servers.name.env]` both name the same server; only the first segment
+ * counts. A config with no such section declares nothing, which is the
+ * `unparseable` verdict above rather than a pass.
+ */
+const TOML_MCP_SECTION_RE =
+  /^[ \t]*\[[ \t]*(?:mcp_servers|"mcp_servers"|'mcp_servers')[ \t]*\.[ \t]*(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))/gm;
+
+function declaredFromCodexConfig(record) {
+  if (!record || typeof record.entry.content !== 'string') {
+    return { state: 'absent', servers: new Set() };
+  }
+  const servers = new Set();
+  for (const match of record.entry.content.matchAll(TOML_MCP_SECTION_RE)) {
+    servers.add(match[1] ?? match[2] ?? match[3]);
+  }
+  return { state: servers.size > 0 ? 'parsed' : 'unparseable', servers };
+}
+
+/**
+ * An agent brief's `tools:` list is an allowlist, not a request. Naming
+ * `mcp__chrome-devtools__evaluate_script` on a seat whose server no repository
+ * config declares does not fail loudly — the tool is simply absent, and the seat
+ * runs on with no way to measure anything. Eight design seats and one PO seat
+ * granted exactly that for months while `.mcp.json` declared one server; the
+ * design gate AGENTS.md calls mandatory was inoperable for anyone but the author,
+ * whose personal `~/.claude.json` happened to carry it (2026-08-24 audit).
+ *
+ * Each tree is measured against the config its own reader consults: `.claude`
+ * briefs against `.mcp.json`, `.agents` briefs against `.codex/config.toml`. The
+ * first version measured both against `.mcp.json` and therefore passed while
+ * `.codex/config.toml` declared one server and the eight mirrored Codex seats
+ * granted two — the same defect the check was written to catch, hidden by the
+ * wrong denominator. Because the two brief trees are byte identical, this means
+ * in practice that every granted server must be declared in both configs.
+ *
+ * A personal config cannot be the repository's contract. What a fresh clone can
+ * start is what these files say, so that is what this measures.
+ */
+const MCP_TOOL_RE = /\bmcp__([a-z0-9][a-z0-9_-]*)__[a-z0-9_]+/gi;
+
+const GRANT_SOURCES = Object.freeze([
+  Object.freeze({ prefix: '.claude/agents/', configPath: '.mcp.json', read: declaredFromMcpJson }),
+  Object.freeze({
+    prefix: '.agents/agents/',
+    configPath: '.codex/config.toml',
+    read: declaredFromCodexConfig,
+  }),
+]);
+
+function checkMcpGrants(recordByPath, records, drift) {
+  const undeclared = new Set();
+  const unparseableConfigs = [];
+  let briefsChecked = 0;
+  let grantsChecked = 0;
+  let anyConfig = false;
+
+  for (const source of GRANT_SOURCES) {
+    const briefs = records.filter(
+      (r) => r.path.startsWith(source.prefix) && typeof r.entry.content === 'string',
+    );
+    const config = source.read(recordByPath.get(source.configPath));
+    if (config.state === 'absent' || briefs.length === 0) continue;
+    anyConfig = true;
+    briefsChecked += briefs.length;
+
+    if (config.state === 'unparseable') {
+      unparseableConfigs.push(source.configPath);
+      const configRecord = recordByPath.get(source.configPath);
+      drift.push({
+        check: 'mcp-grants',
+        code: 'mcp-config-unparseable',
+        path: source.configPath,
+        message:
+          `${source.configPath} exists but declares no MCP server: every agent-brief grant in `
+          + `${source.prefix} is undeclared and a fresh clone silently loses those tools`,
+        detail: { prefix: source.prefix },
+      });
+      if (configRecord && !configRecord.drift.includes('mcp-config-unparseable')) {
+        configRecord.drift.push('mcp-config-unparseable');
+      }
+    }
+
+    for (const record of briefs) {
+      const frontmatter = record.entry.content.split('\n---')[0];
+      const seen = new Set();
+      for (const [, server] of frontmatter.matchAll(MCP_TOOL_RE)) {
+        grantsChecked += 1;
+        if (config.servers.has(server) || seen.has(server)) continue;
+        seen.add(server);
+        undeclared.add(server);
+        drift.push({
+          check: 'mcp-grants',
+          code: 'undeclared-mcp-server',
+          path: record.path,
+          message:
+            `${record.path} grants tools from the MCP server "${server}", which `
+            + `${source.configPath} does not declare; a fresh clone gets the seat without the `
+            + 'tools and no error',
+          detail: { server, configPath: source.configPath },
+        });
+        if (!record.drift.includes('undeclared-mcp-server')) {
+          record.drift.push('undeclared-mcp-server');
+        }
+      }
+    }
+  }
+
+  if (!anyConfig) {
+    return {
+      status: 'not-applicable',
+      briefsChecked: 0,
+      grantsChecked: 0,
+      undeclaredServers: [],
+      unparseableConfigs: [],
+    };
+  }
+  return {
+    status: undeclared.size > 0 || unparseableConfigs.length > 0 ? 'drift' : 'ok',
+    briefsChecked,
+    grantsChecked,
+    undeclaredServers: [...undeclared].sort(),
+    unparseableConfigs: unparseableConfigs.sort(),
+  };
+}
+
+function checkCodexSizeCap(recordByPath, records, drift) {
   const agents = recordByPath.get('AGENTS.md');
-  if (!agents) return { status: 'not-applicable', agentsMdBytes: null, capBytes: CODEX_PROJECT_DOC_CAP_BYTES };
-  const bytes = agents.bytes;
-  if (bytes > CODEX_PROJECT_DOC_CAP_BYTES) {
+  const nested = records.filter((r) => r.ruleId === 'nested-agents-md');
+  const nestedBytes = nested.reduce((max, r) => Math.max(max, r.bytes), 0);
+  const worst = nested.reduce((a, b) => (a && a.bytes >= b.bytes ? a : b), null);
+  if (!agents) {
+    return {
+      status: 'not-applicable',
+      agentsMdBytes: null,
+      nestedFiles: nested.length,
+      worstNestedPath: worst?.path ?? null,
+      worstCaseBytes: null,
+      capBytes: CODEX_PROJECT_DOC_CAP_BYTES,
+    };
+  }
+  const worstCaseBytes = agents.bytes + nestedBytes;
+  const shared = {
+    agentsMdBytes: agents.bytes,
+    nestedFiles: nested.length,
+    worstNestedPath: worst?.path ?? null,
+    worstCaseBytes,
+    capBytes: CODEX_PROJECT_DOC_CAP_BYTES,
+  };
+  if (worstCaseBytes > CODEX_PROJECT_DOC_CAP_BYTES) {
+    const via = worst ? ` (AGENTS.md ${agents.bytes} + ${worst.path} ${worst.bytes})` : '';
     drift.push({
       check: 'codex-size-cap',
       code: 'agents-md-over-codex-cap',
-      path: 'AGENTS.md',
-      message: `AGENTS.md is ${bytes} bytes: over the Codex project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}`,
-      detail: { bytes, capBytes: CODEX_PROJECT_DOC_CAP_BYTES },
+      path: worst?.path ?? 'AGENTS.md',
+      message:
+        `the merged Codex instruction set reaches ${worstCaseBytes} bytes${via}: over the `
+        + `project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}, past which Codex `
+        + 'truncates silently',
+      detail: shared,
     });
-    agents.drift.push('agents-md-over-codex-cap');
-    return { status: 'drift', agentsMdBytes: bytes, capBytes: CODEX_PROJECT_DOC_CAP_BYTES };
+    (worst ?? agents).drift.push('agents-md-over-codex-cap');
+    return { status: 'drift', ...shared };
   }
-  return { status: 'ok', agentsMdBytes: bytes, capBytes: CODEX_PROJECT_DOC_CAP_BYTES };
+  return { status: 'ok', ...shared };
 }
 
 // ── entry point ────────────────────────────────────────────────────────────
@@ -413,12 +670,16 @@ function checkCodexSizeCap(recordByPath, drift) {
  *   so refs into them report `unverified` instead of false `missing`.
  * - `verifiableExtensions`: when set, only refs with these extensions can be
  *   judged missing (the web manifest only indexes `.md`).
+ * - `requireEnglish`: opt in to the English-only agent-text check. Off by
+ *   default so analysing someone else's repository or vault never imports this
+ *   repository's language policy.
  */
 export function analyzeAgentFiles({
   files,
   existingPaths = [],
   unverifiablePrefixes = [],
   verifiableExtensions = null,
+  requireEnglish = false,
 }) {
   const records = [];
   for (const entry of files) {
@@ -450,7 +711,9 @@ export function analyzeAgentFiles({
       { existingPathSet, recordPathSet, unverifiablePrefixes, verifiableExtensions },
       drift,
     ),
-    codexSizeCap: checkCodexSizeCap(recordByPath, drift),
+    codexSizeCap: checkCodexSizeCap(recordByPath, records, drift),
+    agentLanguage: checkAgentLanguage(records, drift, requireEnglish),
+    mcpGrants: checkMcpGrants(recordByPath, records, drift),
   };
 
   const byTool = {};

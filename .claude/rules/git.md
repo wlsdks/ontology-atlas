@@ -4,7 +4,9 @@
 
 ## Commit messages
 
-- Use an English conventional prefix and an English subject.
+- Write the whole message in English — prefix, subject and body.
+  `.githooks/commit-msg` blocks Hangul, kana and Han; merge, revert and
+  fixup subjects are exempt because Git generates them.
 - Allowed prefixes: `feat:` · `fix:` · `docs:` · `refactor:` · `chore:` ·
   `test:` · `style:` · `perf:`.
 - Do not invent non-conventional prefixes.
@@ -65,10 +67,12 @@ the first failure.
 
 ## Do not
 
-- Do not bypass hooks with `--no-verify`. `pre-commit` catches generated drift;
-  `pre-push` runs CI-like path lanes in parallel, leaving e2e to CI. Run the
-  command it prints. If a lane is wrong, repair the lane instead of skipping it.
-  Rationale and dissent: `docs/DECISIONS.md` (94) and (95).
+- Do not bypass hooks with `--no-verify`. `commit-msg` checks the message
+  language; `pre-commit` catches generated drift; `pre-push` runs CI-like path
+  lanes in parallel, leaving e2e to CI. Run the command it prints. If a lane
+  is wrong, repair the lane instead of skipping it. Rationale and dissent:
+  `docs/DECISIONS.md` (94), (95) and (96) — (96) overturns (95) and is the
+  standing decision for the hook that exists today.
 - Run `git reset --hard` or `git push --force` only when the user explicitly
   requests it. Never force-push `main`.
 - Never hand-resolve conflicts in generated JSON. Files under

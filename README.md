@@ -535,6 +535,14 @@ vault contract.
 > `init` refuses to overwrite it — your agent would silently answer from
 > *our* ontology instead of yours.
 
+The committed `.mcp.json` also declares `chrome-devtools`
+(`chrome-devtools-mcp`, pinned, run with `--isolated
+--no-usage-statistics --redact-network-headers`). The design and craft review
+seats in `.claude/agents/` measure rendered geometry and computed styles through
+it, so without it the design gate cannot run. It starts a Chrome instance only
+when a seat asks for one; `pnpm agents:check` fails if a seat ever names a server
+this file does not declare.
+
 Continue with the [CLI reference](cli/README.md), [MCP setup](mcp/README.md), or
 run the desktop shell with `pnpm desktop:dev`.
 

@@ -1,6 +1,21 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_comment": "후크 경로는 반드시 $CLAUDE_PROJECT_DIR 로 절대화한다. 상대 경로로 두면 셸의 cwd 가 저장소 루트가 아닐 때(워크트리·서브에이전트 스크래치·모노레포 하위 폴더) 파일을 못 찾고, 그때 나는 것은 차단이 아니라 'non-blocking status code' 다 — 즉 가드가 조용히 사라진 채 명령이 통과한다. npm publish 가드가 그런 식으로 무력화되는 것은 이 저장소가 hook 을 둔 이유 자체를 없앤다. `:-.` 폴백은 변수가 없는 클라이언트에서 종전 동작으로 되돌아가기 위한 것이지 정상 경로가 아니다.",
+  "_comment": "Hook paths must be absolutised through $CLAUDE_PROJECT_DIR. With a relative path, any shell whose cwd is not the repository root (a worktree, a subagent scratch directory, a monorepo subfolder) fails to find the file, and the result is not a block but a non-blocking status code: the guard disappears silently and the command runs. An npm publish guard defeated that way removes the whole reason this repository has hooks. The `:-.` fallback exists so clients without the variable keep the previous behaviour; it is not the normal path.",
+  "_comment_permissions": "Deny rules are the one guard that needs no path to resolve and no workspace trust: Claude Code applies them immediately and evaluates them ahead of ask, allow, and any PreToolUse hook. Two standing rules — `local-first.md` \"never scan password, credential, or key files from the user's disk\" and `forbidden.md` \"never commit service accounts, API keys, or .env* files\" — had no mechanism at all. .gitignore stops a secret being committed; nothing stopped one being read into a transcript and sent to a model. The .env names are enumerated rather than globbed because a deny rule cannot carry an exception and `.env.example` is tracked, documented, and scanned by the source-language gate. `tests/contract/secret-read-guard.contract.test.ts` derives the list from .gitignore so the two cannot drift.",
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.prod)",
+      "Read(.env.development.local)",
+      "Read(.env.test.local)",
+      "Read(.env.production.local)",
+      "Read(**/*.pem)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(~/.ssh/**)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -22,6 +37,17 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-generated-edit.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh\""
           }
         ]
       }

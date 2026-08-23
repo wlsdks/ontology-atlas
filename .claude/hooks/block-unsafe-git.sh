@@ -76,22 +76,22 @@ REASON=""
 # ① Hook bypass — --no-verify and its shorthand -n for commit/push.
 #    `-n` has different meanings in other commands, so we only look in git commit/push context.
 if echo "$COMMAND_FOR_MATCH" | grep -Eq -- '--no-verify'; then
-  REASON="\`--no-verify\` 는 git 훅을 우회합니다. 우회할 수 있는 게이트는 게이트가 아닙니다 — 훅이 막는 것이 있으면 그것을 고치세요."
+  REASON="\`--no-verify\` bypasses git hooks. A gate you can bypass is not a gate — if a hook blocks you, fix what it blocks."
 elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}git[[:space:]]+(commit|push)([[:space:]]+[^;|&]*)?[[:space:]]-n([[:space:]]|$)"; then
-  REASON="\`git commit -n\` / \`git push -n\` 은 \`--no-verify\` 의 단축형입니다."
+  REASON="\`git commit -n\` / \`git push -n\` is shorthand for \`--no-verify\`."
 
 # ② Force push — including lease. While lease is safer, it still has the nature of deleting others' commits,
 #    and this repo allows both only after explicit user instruction.
 elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}git[[:space:]]+push([[:space:]]+[^;|&]*)?[[:space:]](--force|--force-with-lease|-f)([[:space:]]|=|$)"; then
-  REASON="force push 는 남의 커밋을 지웁니다. 사용자가 명시적으로 지시한 경우에만 실행할 수 있고, main 에는 어떤 경우에도 금지입니다."
+  REASON="A force push deletes other people's commits. Run it only when the user explicitly asked, and never on main."
 
 # ③ Direct push to main/master — This repo always uses PRs.
 elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}git[[:space:]]+push([[:space:]]+[^;|&]*)?[[:space:]](main|master)([[:space:]]|:|$)"; then
-  REASON="main/master 로 직접 push 하려 합니다. 이 저장소는 항상 PR 을 거칩니다 — 브랜치를 만들고 PR 을 여세요."
+  REASON="This pushes straight to main/master. This repository always goes through a pull request — create a branch and open a PR."
 
 # ④ reset --hard — Uncommitted work in the working tree disappears.
 elif echo "$COMMAND_FOR_MATCH" | grep -Eq "${START}git[[:space:]]+reset([[:space:]]+[^;|&]*)?[[:space:]]--hard([[:space:]]|$)"; then
-  REASON="\`git reset --hard\` 는 커밋하지 않은 작업본을 되돌릴 수 없게 지웁니다. 사용자가 명시적으로 지시한 경우에만 실행하세요."
+  REASON="\`git reset --hard\` irreversibly discards uncommitted work. Run it only when the user explicitly asked."
 fi
 
 if [[ -n "$REASON" ]]; then
@@ -100,7 +100,7 @@ if [[ -n "$REASON" ]]; then
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "🚫 git 안전 가드: ${REASON}\n\n근거: .claude/rules/git.md \"함부로 하지 말 것\".\n\n사용자가 명시적으로 지시했다면 사용자 본인이 터미널에서 실행하거나(\`! <command>\`), .claude/hooks/block-unsafe-git.sh 를 잠시 끄고 실행하세요."
+    "permissionDecisionReason": "git safety guard: ${REASON}\n\nBasis: .claude/rules/git.md, section \"Do not\".\n\nIf the user explicitly asked for this, have them run it themselves in the terminal (\`! <command>\`), or disable .claude/hooks/block-unsafe-git.sh for that one run."
   }
 }
 JSON

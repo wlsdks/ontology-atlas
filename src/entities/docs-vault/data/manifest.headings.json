@@ -5703,6 +5703,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-24 (112) — Rules reach non-Claude agents through nested AGENTS.md pointers, never copies",
+      "slug": "2026-08-24-112-rules-reach-non-claude-agents-through-nested-agentsmd-pointers-never-copies"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-24 (111) — Codex leaves in-app chat until Atlas MCP writes have an app-owned gate",
       "slug": "2026-08-24-111-codex-leaves-in-app-chat-until-atlas-mcp-writes-have-an-app-owned-gate"
     },
@@ -10330,8 +10335,8 @@
     },
     {
       "depth": 2,
-      "text": "Pre-commit hook — generated vault freshness",
-      "slug": "pre-commit-hook-generated-vault-freshness"
+      "text": "Git hooks — generated vault freshness, message language, push lanes",
+      "slug": "git-hooks-generated-vault-freshness-message-language-push-lanes"
     },
     {
       "depth": 2,
@@ -10342,6 +10347,11 @@
       "depth": 3,
       "text": "Decision-ledger gate (`pnpm decisions:check`)",
       "slug": "decision-ledger-gate-pnpm-decisionscheck"
+    },
+    {
+      "depth": 2,
+      "text": "Agent File Checks",
+      "slug": "agent-file-checks"
     },
     {
       "depth": 2,

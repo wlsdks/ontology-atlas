@@ -60,7 +60,7 @@ if [[ -n "$VERDICT" ]]; then
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "🚫 생성물 가드: \`${VERDICT}\` 는 \`pnpm docs-vault:build\` 의 산출물이라 손으로 고치지 않습니다.\n\n고칠 곳은 **입력**입니다 — 내용이면 \`docs/**/*.md\`, 생성 방식이면 \`scripts/build-docs-vault.mjs\`. 고친 뒤 \`pnpm docs-vault:build\` 로 재생성하세요.\n\n충돌이면 어느 쪽을 취해도 됩니다(결정성 계약):\n  git checkout --ours src/entities/docs-vault/data public/docs-vault && pnpm docs-vault:build\n\n근거: .claude/rules/git.md \"생성물 JSON 충돌을 손으로 편집하지 말 것\" — 충돌 마커를 손으로 지우다 JSON 안에 남겨 타입 검사가 깨진 전례가 있습니다."
+    "permissionDecisionReason": "Generated-output guard: \`${VERDICT}\` is produced by \`pnpm docs-vault:build\`, so it is never hand-edited.\n\nEdit the **input** instead — \`docs/**/*.md\` for content, \`scripts/build-docs-vault.mjs\` for how it is generated — then regenerate with \`pnpm docs-vault:build\`.\n\nOn a merge conflict either side is acceptable (determinism contract):\n  git checkout --ours src/entities/docs-vault/data public/docs-vault && pnpm docs-vault:build\n\nBasis: .claude/rules/git.md, section \"Do not\" — never hand-resolve conflicts in generated JSON; a hand-repaired conflict marker once survived inside the JSON and broke type checking."
   }
 }
 JSON

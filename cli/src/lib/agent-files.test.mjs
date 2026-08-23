@@ -14,15 +14,18 @@ describe('agent-files — classification table', () => {
   it('maps every known agent-file pattern to a rule with kind + tools', () => {
     const expectations = [
       ['CLAUDE.md', 'claude-md', 'instructions', ['claude-code']],
-      ['AGENTS.md', 'agents-md', 'instructions', ['codex', 'cursor', 'gemini-cli']],
-      ['GEMINI.md', 'gemini-md', 'instructions', ['gemini-cli']],
+      ['AGENTS.md', 'agents-md', 'instructions', ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot']],
+      ['GEMINI.md', 'gemini-md', 'instructions', ['antigravity', 'gemini-cli']],
       ['.claude/rules/design.md', 'claude-rules', 'rules', ['claude-code']],
       ['.claude/skills/ontology-sync/SKILL.md', 'claude-skills', 'skill', ['claude-code']],
       ['.claude/agents/design-guardian.md', 'claude-agents', 'agent', ['claude-code']],
       ['.agents/skills/ontology-sync/SKILL.md', 'agents-skills', 'skill', ['codex']],
+      ['src/AGENTS.md', 'nested-agents-md', 'instructions', ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot']],
       ['.cursor/rules/base.mdc', 'cursor-rules', 'rules', ['cursor']],
       ['.cursorrules', 'cursorrules', 'rules', ['cursor']],
       ['.github/copilot-instructions.md', 'copilot-instructions', 'instructions', ['copilot']],
+      ['.claude/hooks/block-npm-publish.sh', 'claude-hooks', 'config', ['claude-code']],
+      ['.claude/settings.json', 'claude-settings', 'config', ['claude-code']],
       ['.codex/config.toml', 'codex-dir', 'config', ['codex']],
       ['.codex/hooks/block-npm-publish.sh', 'codex-dir', 'config', ['codex']],
       ['.mcp.json', 'mcp-json', 'mcp-config', ['claude-code', 'cursor']],
@@ -41,9 +44,11 @@ describe('agent-files — classification table', () => {
       'README.md',
       'docs/DESIGN-SYSTEM.md',
       'src/CLAUDE.md.bak',
-      '.claude/settings.json',
+      '.claude/settings.local.json', // personal override, never committed
       '.cursor/rules/base.md', // cursor rules must be .mdc
       'nested/CLAUDE.md', // repo-root slice: root files only
+      'cli/templates/vault/AGENTS.md', // starter-vault product data, three deep
+      'a/b/AGENTS.md', // nested pointers are one level only
     ]) {
       assert.equal(classifyAgentFilePath(path), null, path);
     }
@@ -344,5 +349,116 @@ describe('agent-files — analyzeAgentFiles result shape', () => {
     }
     assert.equal(result.summary.files, 3);
     assert.equal(result.summary.driftCount, 0);
+  });
+});
+
+describe('agent-files — English-only agent text', () => {
+  const file = (path, content) => ({ path, content });
+
+  it('passes when every scanned agent file is English', () => {
+    const result = analyzeAgentFiles({
+      requireEnglish: true,
+      files: [
+        file('CLAUDE.md', '# Project\n\n@AGENTS.md\n'),
+        file('AGENTS.md', '# Guide\n'),
+        file('.claude/hooks/block-unsafe-git.sh', 'REASON="a force push deletes commits"\n'),
+      ],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'ok');
+    assert.equal(result.checks.agentLanguage.flaggedFiles, 0);
+    assert.equal(result.checks.agentLanguage.scannedFiles, 3);
+  });
+
+  it('flags non-English text wherever it sits, string literals included', () => {
+    const result = analyzeAgentFiles({
+      requireEnglish: true,
+      files: [
+        file('AGENTS.md', '# Guide\n'),
+        file('.claude/hooks/block-unsafe-git.sh', 'REASON="힘내"\n'),
+        file('.claude/settings.json', '{"_comment": "메모"}\n'),
+      ],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'drift');
+    assert.equal(result.checks.agentLanguage.flaggedFiles, 2);
+    assert.equal(result.checks.agentLanguage.codePoints, 4);
+    const paths = result.drift
+      .filter((d) => d.check === 'agent-language')
+      .map((d) => d.path)
+      .sort();
+    assert.deepEqual(paths, ['.claude/hooks/block-unsafe-git.sh', '.claude/settings.json']);
+    const record = result.records.find((r) => r.path === '.claude/settings.json');
+    assert.ok(record.drift.includes('non-english-agent-text'));
+  });
+
+  it('catches kana and Han, not only Hangul', () => {
+    const result = analyzeAgentFiles({
+      requireEnglish: true,
+      files: [file('AGENTS.md', 'ok'), file('.claude/rules/git.md', 'テスト 测试')],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'drift');
+    assert.equal(result.checks.agentLanguage.codePoints, 5);
+  });
+
+  it('is not applicable when the scanner supplied no contents', () => {
+    const result = analyzeAgentFiles({ requireEnglish: true, files: [{ path: 'AGENTS.md', bytes: 10 }] });
+    assert.equal(result.checks.agentLanguage.status, 'not-applicable');
+  });
+
+  it('leaves localized product data out of the subject set', () => {
+    const result = analyzeAgentFiles({
+      requireEnglish: true,
+      files: [
+        file('AGENTS.md', 'ok'),
+        file('cli/templates/vault-ko/AGENTS.md', '한국어 템플릿'),
+        file('docs/ontology/domains/x.md', 'display_ko: 온톨로지'),
+      ],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'ok');
+    assert.equal(result.checks.agentLanguage.scannedFiles, 1);
+  });
+});
+
+
+  it('stays off by default — a Korean vault is not this repository', () => {
+    const result = analyzeAgentFiles({
+      files: [{ path: 'AGENTS.md', content: '이 폴더는 볼트입니다' }],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'not-applicable');
+    assert.equal(result.drift.length, 0);
+  });
+
+describe('agent-files — merged Codex instruction budget', () => {
+  const file = (path, bytes) => ({ path, content: 'x'.repeat(bytes) });
+
+  it('adds the largest nested AGENTS.md to the root file', () => {
+    const result = analyzeAgentFiles({
+      files: [file('AGENTS.md', 100), file('src/AGENTS.md', 300), file('cli/AGENTS.md', 200)],
+    });
+    const cap = result.checks.codexSizeCap;
+    assert.equal(cap.status, 'ok');
+    assert.equal(cap.nestedFiles, 2);
+    assert.equal(cap.worstNestedPath, 'src/AGENTS.md');
+    assert.equal(cap.worstCaseBytes, 400);
+  });
+
+  it('flags a merge over the cap and blames the nested file that causes it', () => {
+    const result = analyzeAgentFiles({
+      files: [
+        file('AGENTS.md', CODEX_PROJECT_DOC_CAP_BYTES - 10),
+        file('src/AGENTS.md', 11),
+        file('cli/AGENTS.md', 5),
+      ],
+    });
+    assert.equal(result.checks.codexSizeCap.status, 'drift');
+    const finding = result.drift.find((d) => d.check === 'codex-size-cap');
+    assert.equal(finding.path, 'src/AGENTS.md');
+    assert.match(finding.message, /truncates silently/);
+  });
+
+  it('stays under the cap when the root alone fits and nothing is nested', () => {
+    const result = analyzeAgentFiles({ files: [file('AGENTS.md', 100)] });
+    assert.equal(result.checks.codexSizeCap.status, 'ok');
+    assert.equal(result.checks.codexSizeCap.nestedFiles, 0);
+    assert.equal(result.checks.codexSizeCap.worstCaseBytes, 100);
   });
 });

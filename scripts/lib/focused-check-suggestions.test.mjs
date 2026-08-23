@@ -32,7 +32,9 @@ describe('focused check suggestions', () => {
   it('suggests the narrow registration gate for source-checkout MCP templates', () => {
     const result = suggestFocusedChecks(['.mcp.json', '.mcp.json.example']);
 
-    assert.deepEqual(domainCommands(result), ['pnpm test:mcp:registration']);
+    // `.mcp.json` is also what `agents:check` measures agent-brief MCP grants
+    // against, so both gates are correct here.
+    assert.deepEqual(domainCommands(result), ['pnpm test:mcp:registration', 'pnpm agents:check']);
     assert.deepEqual(result.escalations, []);
   });
 
@@ -592,7 +594,14 @@ describe('focused check suggestions', () => {
       'scripts/claude-hooks.test.mjs',
     ]);
 
-    assert.deepEqual(domainCommands(result), ['pnpm test:claude:hooks']);
+    // Every path here is also inventoried by `agent-files`, and `.claude/settings.json`
+    // carries the `permissions.deny` rules the secret-read guard derives from
+    // `.gitignore`, so all three gates apply.
+    assert.deepEqual(domainCommands(result), [
+      'pnpm test:claude:hooks',
+      'pnpm agents:check',
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
+    ]);
   });
 
   it('routes the GitHub Pages deploy workflow to the desktop readiness contract', () => {
@@ -797,6 +806,9 @@ describe('focused check suggestions', () => {
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
+      // A workflow is where a node:test suite becomes reachable or stops being
+      // reachable, so editing one re-checks that nothing now runs nowhere.
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
       'pnpm test:mcp:package',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm package:check']);
@@ -1028,6 +1040,10 @@ describe('focused check suggestions', () => {
       'pnpm docs:surface:check',
       'pnpm vault:migrate --list',
       'pnpm test:dogfood:script-refs',
+      // `.claude/rules/testing.md` and the skill are agent files, and a rule's
+      // globs are what the nested `AGENTS.md` pointers derive from.
+      'pnpm agents:check',
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
       'pnpm test:mcp:docs',
       'pnpm vault:validate',
     ]);
@@ -1332,5 +1348,86 @@ describe('focused check suggestions', () => {
       !commands.includes('pnpm dogfood:status'),
       '준비도 읽을거리를 게이트로 권한다 — 그것은 덜 여물어도 1 이다',
     );
+  });
+});
+
+describe('agent-file surface', () => {
+  /*
+   * These paths recommended nothing that measures them before 2026-08-24. CI ran
+   * `agents:check`, so the answer existed — it just cost an eight-minute round
+   * instead of the fifty milliseconds the command actually takes.
+   */
+  it('recommends the agent-file gate for every tree it inventories', () => {
+    for (const path of [
+      'CLAUDE.md',
+      'AGENTS.md',
+      'src/AGENTS.md',
+      '.claude/agents/po-wedge.md',
+      '.claude/skills/po-pass/SKILL.md',
+      '.claude/settings.json',
+      '.agents/skills/po-pass/SKILL.md',
+      '.agents/agents/po-wedge.md',
+      '.codex/hooks.json',
+      '.mcp.json',
+      'cli/src/lib/agent-files.mjs',
+    ]) {
+      assert.ok(
+        domainCommands(suggestFocusedChecks([path])).includes('pnpm agents:check'),
+        `${path} must recommend pnpm agents:check`,
+      );
+    }
+  });
+
+  it('leaves the starter-vault templates out — they are product data', () => {
+    for (const path of ['cli/templates/vault/AGENTS.md', 'cli/templates/vault-ko/AGENTS.md']) {
+      assert.ok(
+        !domainCommands(suggestFocusedChecks([path])).includes('pnpm agents:check'),
+        `${path} is a shipped starter vault, not this repository's agent surface`,
+      );
+    }
+  });
+
+  it('recommends the hook tests for every hook script, not a chosen two', () => {
+    for (const path of [
+      '.claude/hooks/block-unsafe-git.sh',
+      '.claude/hooks/block-generated-edit.sh',
+      '.claude/hooks/block-npm-publish.sh',
+      '.claude/hooks/inject-ontology-summary.sh',
+      '.claude/hooks/report-agent-file-drift.sh',
+      '.codex/hooks/block-unsafe-git.sh',
+      '.githooks/commit-msg',
+      '.githooks/commit-msg-language.mjs',
+      '.codex/hooks/block-secret-read.sh',
+      '.gitignore',
+    ]) {
+      assert.ok(
+        domainCommands(suggestFocusedChecks([path])).includes('pnpm test:claude:hooks'),
+        `${path} must recommend pnpm test:claude:hooks`,
+      );
+    }
+  });
+
+  it('recommends the paired contracts when either implementation moves alone', () => {
+    const contract =
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts';
+    for (const path of [
+      'cli/src/lib/agent-files.mjs',
+      'src/views/docs-vault/lib/agent-files.ts',
+      'tests/fixtures/agent-files-cases.mjs',
+      '.claude/rules/testing.md',
+      'src/AGENTS.md',
+      'AGENTS.md',
+      'CLAUDE.md',
+      '.claude/rules/forbidden.md',
+      '.claude/settings.json',
+      '.gitignore',
+      '.claude/skills/po-pass/SKILL.md',
+      '.agents/skills/po-pass/SKILL.md',
+    ]) {
+      assert.ok(
+        domainCommands(suggestFocusedChecks([path])).includes(contract),
+        `${path} must recommend the agent-files and nested-pointer contracts`,
+      );
+    }
   });
 });

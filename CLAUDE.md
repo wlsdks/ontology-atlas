@@ -1,30 +1,29 @@
 # CLAUDE.md
 
-[`AGENTS.md`](AGENTS.md) is the canonical contributor guide. This wrapper adds
-only Claude Code visibility, loading, and hook ownership.
+[`AGENTS.md`](AGENTS.md) is canonical. This wrapper adds only Claude Code
+visibility, loading, and hook ownership; anything true for both trees belongs
+there.
 
 @AGENTS.md
 
-## Agent skills
-
-- Issues: `docs/agents/issue-tracker.md`
-- Triage labels: `docs/agents/triage-labels.md`
-- Domain and decision sources: `docs/agents/domain.md`
+`docs/agents/` holds the issue tracker, triage labels, and domain and decision
+sources; nothing else points at them.
 
 ## Visibility and mirrors
 
 | Location | Claude Code | Codex |
 |---|---|---|
 | `AGENTS.md` | imported here | read directly, capped by `project_doc_max_bytes` |
-| `CLAUDE.md`, `.claude/**` | reads | does not read |
+| `<dir>/AGENTS.md` | not loaded | merged root-down on the path |
+| `CLAUDE.md`, `.claude/**` | reads | not auto-loaded; opened on a pointer |
 | `.agents/skills/**`, `.agents/agents/**` | does not read | reads |
 | `.codex/**` | does not read | reads config and hooks |
 
-Put shared rules in `AGENTS.md`. The two agent trees have matching
-`skills/` and `agents/` files and must be byte-identical; relative
-references resolve within each tree. Shared skill bodies must branch on
-capability, not tool name. `pnpm agents:check` checks the import, cap,
-references, and pair parity.
+The Codex column stands for every tool reading the open format: Cursor,
+Antigravity CLI and Copilot resolve `AGENTS.md` and its nested files the same
+way. That file owns the mirror contract, the nested-pointer rule, and what
+`pnpm agents:check` enforces. Importing it organizes context; it does not reduce
+bytes.
 
 ## Claude Code loading
 
@@ -41,13 +40,14 @@ updating its contract and reason.
 available to both agent trees; `AGENTS.md` owns invocation triggers and
 `docs/DECISIONS.md` owns decisions and dissent.
 
-`.claude/settings.json` owns Claude permissions and hooks. Its hooks mirror
-`.codex/hooks/`: block npm publishing, unsafe Git, and hand-editing generated
-files, plus inject compact vault inventory at session start. Change hook wiring
-with `pnpm test:claude:hooks`.
+`.claude/settings.json` owns Claude permissions and hooks, and both are
+inventoried agent files. Four mirror `.codex/hooks/`: block npm publishing,
+unsafe Git, hand-editing generated files, and inject a vault census at session
+start. Two do not — `report-agent-file-drift.sh` is Claude-only,
+`block-secret-read.sh` is Codex-only — and each header says why. Change hook
+wiring with `pnpm test:claude:hooks`.
 
 ## Synchronization
 
-`AGENTS.md` is the source of truth. Update this wrapper only when the
-visibility table, rule loading, mirror contract, or hook ownership changes. The
-`@AGENTS.md` import organizes context but does not reduce imported bytes.
+`AGENTS.md` is the source of truth. Update this wrapper only when the visibility
+table, rule loading, or hook ownership changes.

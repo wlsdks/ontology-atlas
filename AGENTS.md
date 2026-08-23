@@ -23,9 +23,7 @@ facts by an agent and readable and judgeable by a human.
 
 The app is the vault's home and the web is a gateway or second-best workbench.
 They share one folder, parser contract, and vault-local records; they do not
-promise identical screens. Keep degradation honest. Before any non-trivial
-product, UX, graph, MCP, CLI, workflow, or macOS-shell change, run the PO gate;
-for visual work, run the design gate after it.
+promise identical screens. Keep degradation honest.
 
 > **One product/system, one ontology, that people and their AI agents grow together.**
 
@@ -64,7 +62,8 @@ while a vault-bearing web user and the installed app see the map/first-run
 surface. The installed app must not offer its own download. `/topology` is
 the map address and supports contextual relation writing with directional
 preview and change review; ACP writes wait for `allow_once` or
-`reject_once`. `/ontology` and `/ontology/edit` are legacy redirects.
+`reject_once`. `/ontology`, `/ontology/edit` and `/ontology/studio` are legacy
+redirects; `/ontology/insights` is live.
 
 Adding or removing a route requires an appended `docs/DECISIONS.md` record in
 the same change; `pnpm decisions:check` enforces it. Keep retired namespaces
@@ -74,47 +73,47 @@ retired: `/login`, `/signup`, `/account`, `/reset-password`,
 
 ## Operating gates and skills
 
-The detailed policies live in `.claude/rules/`; use the matching source, not
-memory.
+The policies live in `.claude/rules/` and each skill owns its exact protocol.
+Use the matching source, never memory and never this summary — what follows is
+routing only: when to open a gate, not how it runs.
 
-- **PO gate**: `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before
-  product, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Translate an
-  offered solution into a user's observable problem first. Run `/po-pass`;
-  read the decision ledger, discriminate phenomenon from problem, score all six
-  rows, and convene `/po-council` below 18/24, on a fatal zero, or on its
-  stated trigger. Ontology or agent value is not author-declarable N/A.
-- **Product design gate**: `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` is
-  mandatory after the PO pass for UI, visual design, interaction, graph
-  readability, responsive layout, and macOS workbench changes. Public
-  references are principle sources only: do not copy their assets or wording.
-- **Councils**: convene `/po-council` before expensive or hard-to-reverse
-  work: a new or removed surface, public MCP/CLI/schema contract, positioning,
-  or first public release. `chief` decides seats/order, records the decision,
-  and never edits code. For visual work `/design-council` always includes
-  hierarchy and system; each seat opens the built surface, names an alternative,
-  and `design-guardian` is the accountable editor/decider. Use the standing
-  Design Guardian or an independent equivalent before and after meaningful
-  Relief/Topology work.
-- **Decision ledger**: `docs/DECISIONS.md` is append-only. Read it before a
-  pass or council; cite a standing decision or explicitly overturn it. Preserve
-  losing dissent and a falsifier. Never silently re-decide.
-- **Gate probe**: run `/gate-probe` whenever a gate changes. Inventory before
-  enabling, plant a defect for RED, restore GREEN, prove the subject set is
-  non-empty, and verify focused-check/CI wiring. A permanent green gate is not
-  evidence.
-- **UI proof**: before UI code, use `/design-build`; after it, use
-  `/design-audit` to measure DOM geometry and computed ramps before screenshots.
-  Use `/design-system-audit` before releases or inconsistent-screen
-  investigations. New design rules require lint enforcement, an inventory, and
-  a probe; values live only in `docs/DESIGN-SYSTEM.md`.
-- **Journey and motion**: `/user-walkthrough` names observable UX patterns,
-  not invented user feelings. Use `/responsive-sweep`, `/motion-verify`, or
+- **PO gate** — `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`, entered through
+  `/po-pass`, before any product, UX, graph, MCP, CLI, workflow or
+  macOS-shell change. Translate an offered solution into a user's observable
+  problem first. Ontology or agent value is never author-declarable N/A.
+- **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
+  the PO pass, for UI, visual design, interaction, graph readability,
+  responsive layout and macOS workbench work:
+  `/design-directions` before the code when the shape is not yet settled,
+  `/design-build` to write it, `/design-audit` after it, and
+  `/design-system-audit` before a release or an inconsistent-screen
+  investigation. Public references are principle sources; never copy their
+  assets or wording. A new design rule needs lint enforcement, an inventory and
+  a probe, and its values live only in `docs/DESIGN-SYSTEM.md`.
+- **Browser measurement** — the design and craft seats read rendered geometry
+  through the `chrome-devtools` server, declared in `.mcp.json` and
+  `.codex/config.toml` alike because the two brief trees are byte identical. A
+  seat may only name a server its own tree's config declares; a personal agent
+  config is not this repository's contract, and `pnpm agents:check` enforces it.
+- **Councils** — `/po-council` before expensive or hard-to-reverse work: a new
+  or removed surface, a public MCP/CLI/schema contract, positioning, or a first
+  public release. `chief` seats it and never edits code. `/design-council` for
+  visual work, with `design-guardian` accountable as editor and decider, before
+  and after meaningful Relief or Topology work.
+- **Decision ledger** — `docs/DECISIONS.md` is append-only. Read it before a
+  pass or council; cite a standing decision or overturn it explicitly, keeping
+  the losing dissent and a falsifier. Never silently re-decide.
+- **Gate probe** — `/gate-probe` whenever a gate changes. A permanently green
+  gate is not evidence.
+- **Journey and motion** — `/user-walkthrough` names observable UX patterns,
+  never invented user feelings. `/responsive-sweep`, `/motion-verify` and
   `/map-perf` when their stated surface applies.
-- **Other required routing**: `/ontology-bootstrap` for starter vaults,
-  `/ontology-sync` after meaningful code changes, and `/ontology-extract`
-  for prose. Use `/ontology-field-trial` when construction rules or MCP
-  read/write contracts could change vault quality. Use `/parallel-brief`
-  before parallel work. The skills own their exact protocols.
+- **Ontology and parallel work** — `/ontology-bootstrap` for a starter vault,
+  `/ontology-sync` after a meaningful code change, `/ontology-extract` for
+  prose, `/ontology-absorb-confluence` for a wiki page the user's own
+  third-party MCP can read, `/ontology-field-trial` when construction rules or
+  the MCP read/write contract could change vault quality, `/parallel-brief`
+  before parallel work.
 
 The design system permits neutrals and one indigo; consult
 `.claude/rules/design.md`, `docs/DESIGN-SYSTEM.md`, and
@@ -155,12 +154,11 @@ When delegation is justified, the brief must state: isolated port; read-only
 files; no stash/worktree deletion/`git add -A`; scratch outside the repo;
 baselines; and primary sources.
 
-If `.codegraph/` exists, start structural code questions with
-`codegraph_explore` or `codegraph explore` using exact symbols/paths. Check
-returned identity, use callers/impact plus a comment/docs search before a
-rename or deletion, and use compiler/tests as the authority for absence and
-safety. React to staleness; index only when status reports an old, partial, or
-inconsistent graph. Without CodeGraph, use targeted `rg` and reads.
+If `.codegraph/` exists, start structural code questions there with exact
+symbols or paths, and treat the compiler and tests as the authority for absence
+and safety. `.claude/rules/codegraph.md` owns the routing table and the failure
+modes; every code directory's `AGENTS.md` points at it. Without CodeGraph, use
+targeted `rg` and reads.
 
 ## Source authority and ontology loop
 
@@ -192,8 +190,14 @@ search name. Project containment is implicit; do not add `project:`.
 `AGENTS.md` is canonical. `CLAUDE.md` imports it and contains only
 Claude-specific visibility and loading information. Keep this file below the
 32 KiB Codex cap; `pnpm agents:check` verifies the cap, the import bridge,
-references, and mirrored skills/agents. `.claude/skills/<name>/` and
-`.agents/skills/<name>/`, plus the matching agent briefs, must be byte
-identical. Do not name a tool inside a shared skill body; branch on capability.
-`.claude/settings.json` owns Claude hooks and `.codex/hooks.json` owns their
-Codex mirror.
+references, mirrored skills/agents, and that every agent-read file is English.
+That subject set covers `.claude/hooks/`, `.claude/settings.json` and
+`.codex/`: a guard's refusal text is all a blocked agent gets to read.
+`.claude/skills/<name>/` and `.agents/skills/<name>/`, plus the matching agent
+briefs, must be byte identical. Each directory a `.claude/rules/` glob reaches
+also carries a nested `AGENTS.md` naming those rules, because Codex merges
+`AGENTS.md` root-down along the working path and never auto-loads `.claude/`.
+They stay pointers: the cap check measures root plus the largest nested file,
+since Codex truncates the merge in silence. Do not name a tool inside a shared
+skill body; branch on capability. `.claude/settings.json` owns Claude hooks and
+`.codex/hooks.json` owns their Codex mirror.
