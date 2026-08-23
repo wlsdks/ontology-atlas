@@ -176,6 +176,14 @@ jobs:
         if: always()
         run: pnpm test:docs-vault
 
+      # 관문의 증거 절은 볼트 파일 한 장을 **그대로** 보여 준다고 주장한다. 손으로
+      # 베낀 사본은 파일이 바뀌는 순간 거짓이 되고 아무도 알려주지 않으므로,
+      # 생성물을 다시 만들어 커밋된 것과 대조한다(`.claude/rules/documentation.md`
+      # 의 「생성한 뒤 대조」).
+      - name: Gateway evidence specimen freshness
+        if: always()
+        run: pnpm gateway:specimen:check
+
       # 2026-08-07: `docs:check` 의 세 하위 검사(생성 표면 diff · DESIGN-SYSTEM
       # 목차 · 링크 참조 무결성)는 **어느 워크플로에서도 불린 적이 없었다.** 훅도
       # 이걸 보지 않는다 — 위의 `pre-commit` 은 볼트 생성물만 잰다. 그 사각에서

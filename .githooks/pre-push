@@ -114,6 +114,8 @@ touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --exclude "**/*.p
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/' && lane agents 'pnpm agents:check'
 touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:links && pnpm docs-vault:check'
+# The gateway shows one vault file verbatim; the committed copy must match the vault.
+touched '^docs/ontology/' '^scripts/generate-evidence-specimen' '^src/views/download/model/evidence-specimen' && lane specimen 'pnpm gateway:specimen:check'
 touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
 
 # Repo-wide scanners: these read the whole tree, so almost any edit can move them.

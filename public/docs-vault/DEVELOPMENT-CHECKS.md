@@ -48,6 +48,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Static deploy safety | `pnpm build` | `pnpm exec tsc --noEmit` |
 | GitHub Pages deploy | `pnpm build` | `pnpm desktop:verify-hosted` after deploy |
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
+| Gateway evidence specimen | `pnpm gateway:specimen:check` | `pnpm gateway:specimen` to refresh |
 | Docs vs code surface | `pnpm docs:check` | `pnpm test:docs:checks` |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
@@ -129,6 +130,8 @@ pnpm test:vault:validate         # focused validator CLI argument contract
 pnpm docs-vault:check            # static dogfood manifest freshness
 pnpm test:docs-vault             # focused docs-vault build/check helper contract
 pnpm docs-vault:build            # refresh static dogfood manifest and public md
+pnpm gateway:specimen:check      # /download shows one vault file verbatim: is the copy current?
+pnpm gateway:specimen            # regenerate it from the vault
 pnpm vault:audit                 # dogfood path drift guard
 pnpm test:vault:audit            # focused vault audit CLI argument contract
 pnpm vault:migrate --list        # registered migrations

@@ -473,8 +473,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 시연 절의 제목·설명",
-      "wordCount": 76497,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 다운로드 페이지 증거",
+      "wordCount": 76586,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -502,7 +502,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 162296,
+      "wordCount": 162734,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "slug"
@@ -596,8 +596,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 10639,
-      "updatedAt": "2026-08-22",
+      "wordCount": 10673,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1541,6 +1541,8 @@
         "slug": "capabilities/vault-ontology",
         "kind": "capability",
         "title": "Vault Ontology Schema Authoring",
+        "display_ko": "볼트 온톨로지 스키마 작성",
+        "display_en": "Vault Ontology Schema Authoring",
         "domain": "domains/graph-modeling",
         "elements": [
           "elements/knowledge-graph",
@@ -1552,7 +1554,7 @@
       "headings": [],
       "excerpt": "사람과 agent가 같은 판별로 5개 authorable kind와 typed relation을 작성하도록 하고, 기계가 강제하는 frontmatter shape·사람이 승인하는 의미·현재 query/write 지원 범위· 추론하지 않는 경계를 서로 다른 권위와 검증 경로로 유지하는 능력. project·domain·capability·element·document만 저작할 수 있고, vault-readme는 도구가 만든 reader 전용 kind다. broader는 narrower에서 direct broader를 가리키며 UI에서 isa로 보이지만 현재 공개 rel",
       "wordCount": 127,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {

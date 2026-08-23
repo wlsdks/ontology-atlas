@@ -20,7 +20,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations, []);
   });
 
-  it('suggests docs-vault, docs contract, and dogfood status for dogfood ontology docs', () => {
+  it('suggests docs-vault, docs contract, dogfood status, and the gateway specimen for dogfood ontology docs', () => {
     const result = suggestFocusedChecks(['docs/ontology/capabilities/mcp-server.md']);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
@@ -28,6 +28,9 @@ describe('focused check suggestions', () => {
       'pnpm docs:links',
       'pnpm test:mcp:docs',
       'pnpm vault:validate',
+      // The gateway renders one vault file verbatim and states the vault's node count, so any
+      // vault edit can invalidate the committed copy of it.
+      'pnpm gateway:specimen:check',
       'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
   });
