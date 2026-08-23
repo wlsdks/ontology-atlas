@@ -29,6 +29,7 @@ import {
   startTransition,
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -70,6 +71,11 @@ const VaultAgentPanel = dynamic(
 );
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useRetainedDatasheetModel } from "../model/use-retained-datasheet-model";
+import { useIndexSelectionOverride } from "../model/use-index-selection-override";
+import {
+  buildSpotlightFitSignature,
+  useSpotlightFitTransition,
+} from "../model/use-spotlight-fit-transition";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
 import { useCanvasBackground, useExpand, useFootprint, useGlyphSet, useMapArrangement, useView3d } from "@/shared/lib/appearance-preferences";
@@ -651,8 +657,6 @@ function HomePageImpl() {
   // canvas restores the stored preference. If the user expands it manually during
   // a selection, that expansion wins until the selection ends. This is a
   // session-only demotion — the persisted preference is never touched.
-  const [indexManualExpandDuringSelection, setIndexManualExpandDuringSelection] =
-    useState(false);
   /*
    * On a map with nothing in it yet, INDEX starts collapsed. Owner, 2026-08-16:
    * *"On first start, the left index should be closed."*
@@ -691,27 +695,6 @@ function HomePageImpl() {
     (next: boolean) => setIndexPreference(next ? "collapsed" : "expanded"),
     [setIndexPreference],
   );
-  // Clicking the collapsed edge tab always means "give the slot back to
-  // INDEX" — the analysis rail owns the slot only because of a non-overview
-  // mode (focus/path/health), so returning to overview is always enough.
-  const handleIndexTabExpand = useCallback(() => {
-    setIndexPreference("expanded");
-    // A manual expand during a selection beats the automatic demotion for the rest
-    // of that selection (reset when the selection clears; a harmless no-op flag
-    // otherwise).
-    setIndexManualExpandDuringSelection(true);
-    // Same for the empty-map demotion. Without this line the tab depresses and
-    // nothing happens, because the demotion re-collapses it every render.
-    setIndexManualExpandWhileEmpty(true);
-    if (analysisMode !== "overview") {
-      setRouteState((current) => ({ ...current, analysisMode: "overview" }));
-    }
-  }, [
-    analysisMode,
-    setIndexManualExpandDuringSelection,
-    setIndexPreference,
-    setRouteState,
-  ]);
   // The map's safe-inset-left assumes INDEX's width by default
   // (`--topology-v2-safe-inset-left: 344` = 18 inset + 300 width + 26 gap).
   // Collapsing INDEX narrows that reserved space — flip the DOM attribute
@@ -757,10 +740,15 @@ function HomePageImpl() {
    * property needed is "it differs", so a monotonic counter is enough. It ticks
    * only on renders where the lens or the window changed.
    */
-  const [spotlightFitToken, setSpotlightFitToken] = useState(0);
-  useEffect(() => {
-    setSpotlightFitToken((n) => n + 1);
-  }, [recentWindow, spotlightOn, pathSourceSlug, pathTargetSlug, expandAllActive]);
+  const spotlightFitToken = useSpotlightFitTransition(
+    buildSpotlightFitSignature({
+      recentWindow,
+      spotlightOn,
+      pathSourceSlug,
+      pathTargetSlug,
+      expandAllActive,
+    }),
+  );
   const recentChanges = useAdaptiveRecentChanges(
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );
@@ -2368,6 +2356,32 @@ function HomePageImpl() {
   // kept) the left panel must come back. The realm ledger is exempt from the
   // automatic demotion because it is a realm's only exit and navigation surface.
   const topologySelectionActive = Boolean(v2DatasheetModel) && !nodePopoverDismissed;
+  const {
+    manualExpand: indexManualExpandDuringSelection,
+    markManualExpand: markIndexManualExpandDuringSelection,
+    beginExpandedSelection: beginExpandedIndexSelection,
+  } = useIndexSelectionOverride(topologySelectionActive);
+  // Clicking the collapsed edge tab always means "give the slot back to
+  // INDEX" — the analysis rail owns the slot only because of a non-overview
+  // mode (focus/path/health), so returning to overview is always enough.
+  const handleIndexTabExpand = useCallback(() => {
+    setIndexPreference("expanded");
+    // A manual expand during a selection beats the automatic demotion for the rest
+    // of that selection. The selection-session hook resets this at the exact
+    // inactive/active transition, before the next frame can inherit it.
+    markIndexManualExpandDuringSelection();
+    // Same for the empty-map demotion. Without this line the tab depresses and
+    // nothing happens, because the demotion re-collapses it every render.
+    setIndexManualExpandWhileEmpty(true);
+    if (analysisMode !== "overview") {
+      setRouteState((current) => ({ ...current, analysisMode: "overview" }));
+    }
+  }, [
+    analysisMode,
+    markIndexManualExpandDuringSelection,
+    setIndexPreference,
+    setRouteState,
+  ]);
   // Entry inspection E-7 — The `auto-align` toast completely covered the bottom-right permanent readout.
 // Both are fixed to bottom-right, but the toast has a default 16px offset,
 // so the notification sat directly on top of the instrument. Reconnects the reserved contract
@@ -2443,9 +2457,6 @@ function HomePageImpl() {
     const oy = Math.max(0, Math.min(rect.height, pointer.y - rect.top));
     positioner.style.setProperty("--topology-chrome-in-origin", `${ox}px ${oy}px`);
   }, [nodePopoverSlug]);
-  useEffect(() => {
-    if (!topologySelectionActive) setIndexManualExpandDuringSelection(false);
-  }, [topologySelectionActive]);
   // Owner follow-up, 2026-07-24: the realm and spotlight ledgers close during a node
   // selection too — having the left and right panels both open at once is
   // uncomfortable. The escape affordance survives in the ✕ on the realm/lens chips and
@@ -3340,7 +3351,6 @@ function HomePageImpl() {
       // Selections chosen in the INDEX tree do not collapse the list (owner
 // critique 2026-07-24: clicking a row collapsed the panel into a slim tab, hiding the child just expanded).
 // Selections chosen on the map collapse as before, widening the map.
-      if (options?.keepIndexOpen) setIndexManualExpandDuringSelection(true);
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
       setNodePopoverDismissed(false);
@@ -3354,11 +3364,15 @@ function HomePageImpl() {
           preserveImpact: options?.preserveImpact,
         }),
       );
+      // `setRouteState` publishes through useSyncExternalStore synchronously.
+      // Start the expanded session afterwards so the selection transition cannot
+      // reset this interaction before the INDEX frame reads it.
+      if (options?.keepIndexOpen) beginExpandedIndexSelection();
     },
     [
       projectBySlug,
       setRouteState,
-      setIndexManualExpandDuringSelection,
+      beginExpandedIndexSelection,
       setFullDetailSlug,
       setSelectedRelationActive,
       setNodePopoverDismissed,
@@ -3633,112 +3647,100 @@ function HomePageImpl() {
   // synchronous-flush) behavior. Kept on the bubble phase (not capture) so
   // this doesn't reorder relative to unrelated local Escape handlers (e.g.
   // inline-field-edit cancel) elsewhere on the page.
+  const handleTopologyEscape = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    if (event.key !== "Escape") return;
+    if (event.defaultPrevented) return;
+    /*
+     * ⚠️ **An Escape pressed inside the chat panel is not the map's** (2026-08-16
+     * review).
+     *
+     * This listener is on `window` and did not look at `event.target`, so pressing
+     * Escape while typing in the chat composer — which a hand does routinely to
+     * cancel a Korean IME composition — **cleared the selection on the map behind
+     * it**. Changing something the user is not even looking at is not the
+     * one-step-at-a-time this order promises.
+     *
+     * The chat panel closes its own things (the past-conversation list). When it has
+     * nothing left to close, nothing happening is the right outcome — better than
+     * reaching into the map.
+     */
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest('[data-testid="acp-chat-panel"], [data-testid="vault-agent-panel"]')
+    ) {
+      return;
+    }
+    const action = resolveTopologyEscLadderAction({
+      realmActive: resolvedRealmSlug !== null,
+      selectedEdgeActive: selectedEdge !== null,
+      contextMenuOpen: contextMenuNode !== null,
+      tourOpen: tour.open,
+      createNodeOpen,
+      bootstrapOpen,
+      searchOpen: ontologySearchOpen,
+      fullDetailOpen,
+      selectedRelationActive,
+      hasSelection: canvasSelectedSlug != null,
+      nodePopoverOpen: nodePopoverVisible,
+      hasLocalGraphRoot: localGraphRoot !== null,
+    });
+    // Leaving a realm comes first in the order: inside a realm, Escape returns to the
+    // whole map before anything else, ahead even of the edge popover.
+    if (action === "close-realm") {
+      handleExitRealm();
+      return;
+    }
+    switch (action) {
+      case "close-edge-popover":
+        // With the edge popover open, the first Escape closes that — the highest
+        // consumer after leaving a realm, the same contract as the node popover. The
+        // popover returns focus to its trigger itself (`TopologyV2EdgePanel`).
+        setSelectedEdge(null);
+        break;
+      case "close-context-menu":
+        closeContextMenu();
+        break;
+      case "close-tour":
+        // Escape closes only the tour (recording `skipped`) and does not fall
+        // through to another surface: one keypress, one surface.
+        tour.skip();
+        break;
+      case "close-create-node":
+        closeCreateNode();
+        break;
+      case "close-bootstrap":
+        setBootstrapOpen(false);
+        break;
+      case "close-full-detail":
+        setFullDetailSlug(null);
+        break;
+      case "close-relation-lens":
+        setSelectedRelationActive(false);
+        break;
+      case "close-node-popover":
+        // Hide the popover but keep the ego focus (the dim). The NEXT Escape sees
+        // `nodePopoverOpen: false` and falls through to "deselect".
+        setNodePopoverDismissed(true);
+        break;
+      case "deselect":
+        handleClose();
+        break;
+      case "pop-local-graph":
+        setLocalGraphStack((stack) => stack.slice(0, -1));
+        break;
+      case "none":
+        break;
+    }
+  });
+
   useEffect(() => {
     const handler = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      if (event.defaultPrevented) return;
-      /*
-       * ⚠️ **An Escape pressed inside the chat panel is not the map's** (2026-08-16
-       * review).
-       *
-       * This listener is on `window` and did not look at `event.target`, so pressing
-       * Escape while typing in the chat composer — which a hand does routinely to
-       * cancel a Korean IME composition — **cleared the selection on the map behind
-       * it**. Changing something the user is not even looking at is not the
-       * one-step-at-a-time this order promises.
-       *
-       * The chat panel closes its own things (the past-conversation list). When it has
-       * nothing left to close, nothing happening is the right outcome — better than
-       * reaching into the map.
-       */
-      const target = event.target;
-      if (
-        target instanceof Element &&
-        target.closest('[data-testid="acp-chat-panel"], [data-testid="vault-agent-panel"]')
-      ) {
-        return;
-      }
-      const action = resolveTopologyEscLadderAction({
-        realmActive: resolvedRealmSlug !== null,
-        selectedEdgeActive: selectedEdge !== null,
-        contextMenuOpen: contextMenuNode !== null,
-        tourOpen: tour.open,
-        createNodeOpen,
-        bootstrapOpen,
-        searchOpen: ontologySearchOpen,
-        fullDetailOpen,
-        selectedRelationActive,
-        hasSelection: canvasSelectedSlug != null,
-        nodePopoverOpen: nodePopoverVisible,
-        hasLocalGraphRoot: localGraphRoot !== null,
-      });
-      // Leaving a realm comes first in the order: inside a realm, Escape returns to the
-      // whole map before anything else, ahead even of the edge popover.
-      if (action === "close-realm") {
-        handleExitRealm();
-        return;
-      }
-      switch (action) {
-        case "close-edge-popover":
-          // With the edge popover open, the first Escape closes that — the highest
-          // consumer after leaving a realm, the same contract as the node popover. The
-          // popover returns focus to its trigger itself (`TopologyV2EdgePanel`).
-          setSelectedEdge(null);
-          break;
-        case "close-context-menu":
-          closeContextMenu();
-          break;
-        case "close-tour":
-          // Escape closes only the tour (recording `skipped`) and does not fall
-          // through to another surface: one keypress, one surface.
-          tour.skip();
-          break;
-        case "close-create-node":
-          closeCreateNode();
-          break;
-        case "close-bootstrap":
-          setBootstrapOpen(false);
-          break;
-        case "close-full-detail":
-          setFullDetailSlug(null);
-          break;
-        case "close-relation-lens":
-          setSelectedRelationActive(false);
-          break;
-        case "close-node-popover":
-          // Hide the popover but keep the ego focus (the dim). The NEXT Escape sees
-          // `nodePopoverOpen: false` and falls through to "deselect".
-          setNodePopoverDismissed(true);
-          break;
-        case "deselect":
-          handleClose();
-          break;
-        case "pop-local-graph":
-          setLocalGraphStack((stack) => stack.slice(0, -1));
-          break;
-        case "none":
-          break;
-      }
+      handleTopologyEscape(event);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [
-    contextMenuNode,
-    createNodeOpen,
-    ontologySearchOpen,
-    fullDetailOpen,
-    selectedRelationActive,
-    canvasSelectedSlug,
-    nodePopoverVisible,
-    localGraphRoot,
-    closeContextMenu,
-    closeCreateNode,
-    handleClose,
-    selectedEdge,
-    resolvedRealmSlug,
-    handleExitRealm,
-    tour,
-  ]);
+  }, []);
 
   const handleSelectImpactMode = useCallback(
     (nextMode: ProjectImpactMode) => {

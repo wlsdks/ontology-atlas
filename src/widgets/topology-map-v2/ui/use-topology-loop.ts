@@ -801,8 +801,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // while both tokens still equal their captured mount-time values — i.e. no
   // real fit-view or relayout click has happened yet.
   const initialFitTokensRef = useRef({ relayout: relayoutToken, fitView: fitViewToken });
-  // Mount-time value — skips the first fire for the same reason as the fits above.
-  const initialSpotlightFitTokenRef = useRef(spotlightFitToken);
+  // Starts empty so an initial deep-linked spotlight gets one fit. Afterwards the
+  // processed token prevents unrelated renders from taking the camera again.
+  const lastProcessedSpotlightFitTokenRef = useRef<number | null>(null);
   /*
    * **Deferred fit** for deep-linked sessions (2026-08-02, caught by the motion
    * seat's audit).
@@ -2012,7 +2013,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, [runSpotlightFit]);
 
   useEffect(() => {
-    if (spotlightFitToken === initialSpotlightFitTokenRef.current) return;
+    if (spotlightFitToken === lastProcessedSpotlightFitTokenRef.current) return;
+    lastProcessedSpotlightFitTokenRef.current = spotlightFitToken;
     if (!runSpotlightFit()) pendingSpotlightFitRef.current = true;
   }, [spotlightFitToken, runSpotlightFit]);
 
