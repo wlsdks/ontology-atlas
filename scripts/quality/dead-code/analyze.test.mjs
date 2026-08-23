@@ -53,6 +53,51 @@ test('filters baseline and exceptions for a partial scope and rejects outside-re
   assert.match(malformed.errors.join('\n'), /non-ratchet/);
 });
 
+test('applies exact platform exceptions only on their declared hosts', () => {
+  const key = 'scripts:runtime:unresolved:scripts/lib/verify-macos/process-lock.mjs:/usr/libexec/PlistBuddy';
+  const unresolved = {
+    type: 'unresolved',
+    key,
+    scope: 'scripts',
+    lane: 'runtime',
+    file: 'scripts/lib/verify-macos/process-lock.mjs',
+    symbol: '/usr/libexec/PlistBuddy',
+  };
+  const exception = {
+    key,
+    reason: 'macOS system executable is absent on other hosts',
+    consumer: 'scripts/lib/verify-macos/process-lock.mjs',
+    witness: '/usr/libexec/PlistBuddy',
+    platforms: ['linux', 'win32'],
+  };
+  const linux = evaluateDeadCode({
+    report: report([lane('scripts', 'runtime', [unresolved]), lane('scripts', 'verification')]),
+    baseline: empty(),
+    exceptions: { version: 1, exceptions: [exception] },
+    scope: 'scripts',
+    platform: 'linux',
+  });
+  assert.deepEqual(linux.errors, []);
+
+  const darwin = evaluateDeadCode({
+    report: report([lane('scripts', 'runtime'), lane('scripts', 'verification')]),
+    baseline: empty(),
+    exceptions: { version: 1, exceptions: [exception] },
+    scope: 'scripts',
+    platform: 'darwin',
+  });
+  assert.deepEqual(darwin.errors, []);
+
+  const malformed = evaluateDeadCode({
+    report: report([lane('scripts', 'runtime'), lane('scripts', 'verification')]),
+    baseline: empty(),
+    exceptions: { version: 1, exceptions: [{ ...exception, platforms: ['linux', 'linux'] }] },
+    scope: 'scripts',
+    platform: 'darwin',
+  });
+  assert.match(malformed.errors.join('\n'), /invalid exception platforms/);
+});
+
 test('uses unique scratch directories and atomic shrink writes', async () => {
   const parent = '/tmp/ontology-atlas-deadcode-fix-terra';
   mkdirSync(parent, { recursive: true });

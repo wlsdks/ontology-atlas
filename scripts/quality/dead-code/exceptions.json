@@ -128,6 +128,13 @@
       "witness": "swift"
     },
     {
+      "key": "scripts:runtime:unresolved:scripts/lib/verify-macos/process-lock.mjs:/usr/libexec/PlistBuddy",
+      "reason": "The macOS property-list reader uses an absolute system executable that is absent on non-macOS CI hosts.",
+      "consumer": "scripts/lib/verify-macos/process-lock.mjs",
+      "witness": "/usr/libexec/PlistBuddy",
+      "platforms": ["linux", "win32"]
+    },
+    {
       "key": "frontend:runtime:binaries:scripts/benchmark-scale.mjs:codex",
       "reason": "Root package scripts expose the external benchmark executable.",
       "consumer": "scripts/benchmark-scale.mjs",

@@ -14,6 +14,7 @@ const EXCEPTIONS_PATH = resolve(HERE, 'exceptions.json');
 const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
 const sorted = values => [...new Set(values)].sort();
 const active = (key, scope) => scope === 'all' || key.startsWith(`${scope}:`);
+const SUPPORTED_PLATFORMS = new Set(['darwin', 'linux', 'win32']);
 
 function safeConsumer(root, consumer) {
   if (!consumer || isAbsolute(consumer) || consumer.split('/').includes('..')) return null;
@@ -40,7 +41,7 @@ function exceptionError(exception, finding, root) {
   return null;
 }
 
-export function evaluateDeadCode({ report, baseline, exceptions, scope = 'all', root = process.cwd() }) {
+export function evaluateDeadCode({ report, baseline, exceptions, scope = 'all', root = process.cwd(), platform = process.platform }) {
   const errors = [...(report.errors ?? [])];
   if (report.knipVersion !== KNIP_VERSION) errors.push(`Knip version mismatch: expected ${KNIP_VERSION}, found ${report.knipVersion}`);
   const lanes = report.lanes ?? [];
@@ -59,8 +60,23 @@ export function evaluateDeadCode({ report, baseline, exceptions, scope = 'all', 
   const rawBaselineKeys = (baseline.findings ?? []).filter(key => active(key, scope));
   if (new Set(rawBaselineKeys).size !== rawBaselineKeys.length) errors.push('baseline contains duplicate keys');
   if (rawBaselineKeys.some(key => !/^(frontend|scripts|cli|mcp):(runtime|verification):(exports|types|nsExports|nsTypes|enumMembers|namespaceMembers|duplicates):/.test(key))) errors.push('baseline contains non-ratchet key');
-  const selectedExceptions = (exceptions.exceptions ?? []).filter(item => active(item.key, scope));
-  if (new Set(selectedExceptions.map(item => item.key)).size !== selectedExceptions.length) errors.push('exceptions contain duplicate keys');
+  const allExceptions = exceptions.exceptions ?? [];
+  if (new Set(allExceptions.map(item => item.key)).size !== allExceptions.length) errors.push('exceptions contain duplicate keys');
+  for (const exception of allExceptions) {
+    if (exception.platforms === undefined) continue;
+    if (
+      !Array.isArray(exception.platforms) ||
+      exception.platforms.length === 0 ||
+      new Set(exception.platforms).size !== exception.platforms.length ||
+      exception.platforms.some(value => !SUPPORTED_PLATFORMS.has(value))
+    ) {
+      errors.push(`invalid exception platforms: ${exception.key}`);
+    }
+  }
+  const selectedExceptions = allExceptions.filter(item => (
+    active(item.key, scope) &&
+    (item.platforms === undefined || item.platforms.includes(platform))
+  ));
   const accepted = new Set();
   for (const exception of selectedExceptions) {
     const finding = byKey.get(exception.key);
