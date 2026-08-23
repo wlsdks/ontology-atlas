@@ -146,6 +146,47 @@ jobs:
         if: always()
         run: pnpm agents:check
 
+      # Every remaining `node --test` suite. These are invisible to `pnpm test:run`,
+      # whose vitest include covers `app/**`, `src/**` and `tests/contract/**` only,
+      # so a suite that no workflow names runs nowhere at all.
+      #
+      # The comment above the colour gate already recorded this failure twice: two
+      # suites broken on main with nobody knowing (2026-07-26), then `check:tokens`
+      # and its own unit test defined and never called (2026-08-05). It happened a
+      # third time. On 2026-08-24 nineteen of thirty-one `node --test` suites were
+      # unreachable from CI and from the git hooks — including
+      # `test:claude:hooks`, which is the only coverage the publish guard, the Git
+      # guard, the generated-output guard, the commit-message gate, the agent-file
+      # drift reporter and the secret-read guard have.
+      #
+      # They are cheap: the whole set below measured about fourteen seconds.
+      # `integration:mcp` is deliberately not here — it runs for minutes, and
+      # promoting it is a scheduling decision rather than a wiring fix.
+      # `tests/contract/node-test-reachability.contract.test.ts` fails when a new
+      # suite is added without appearing here, in a git hook, or in its stated
+      # exclusion list.
+      - name: Node test suites outside vitest
+        if: always()
+        run: |
+          pnpm test:claude:hooks
+          pnpm test:checks:changed
+          pnpm test:source:language
+          pnpm test:docs:language
+          pnpm test:docs:checks
+          pnpm test:skills:audit
+          pnpm test:cli:args
+          pnpm test:cli:mcp-call
+          pnpm test:mcp:verify
+          pnpm test:vault:validate
+          pnpm test:vault:audit
+          pnpm test:vault:freshness
+          pnpm test:dogfood:args
+          pnpm test:dogfood:status
+          pnpm test:dogfood:graph-db
+          pnpm test:dogfood:script-refs
+          pnpm test:dogfood:compile-fix
+          pnpm dogfood:test
+
       # This is the unit suite for the desktop gate. Until now, it **only ran in the release workflow**,
       # so all defects that should have been caught here were first exposed "after tagging"
       # — which is why `v1.0.0-rc.2` was tagged four times, stopping at the build job each time. There is

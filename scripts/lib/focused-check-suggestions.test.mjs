@@ -600,7 +600,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(domainCommands(result), [
       'pnpm test:claude:hooks',
       'pnpm agents:check',
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts',
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts',
     ]);
   });
 
@@ -806,6 +806,9 @@ describe('focused check suggestions', () => {
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
+      // A workflow is where a node:test suite becomes reachable or stops being
+      // reachable, so editing one re-checks that nothing now runs nowhere.
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts',
       'pnpm test:mcp:package',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm package:check']);
@@ -1040,7 +1043,7 @@ describe('focused check suggestions', () => {
       // `.claude/rules/testing.md` and the skill are agent files, and a rule's
       // globs are what the nested `AGENTS.md` pointers derive from.
       'pnpm agents:check',
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts',
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts',
       'pnpm test:mcp:docs',
       'pnpm vault:validate',
     ]);
@@ -1406,7 +1409,7 @@ describe('agent-file surface', () => {
 
   it('recommends the paired contracts when either implementation moves alone', () => {
     const contract =
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts';
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts';
     for (const path of [
       'cli/src/lib/agent-files.mjs',
       'src/views/docs-vault/lib/agent-files.ts',
