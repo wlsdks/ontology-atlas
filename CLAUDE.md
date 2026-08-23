@@ -1,16 +1,13 @@
 # CLAUDE.md
 
-[`AGENTS.md`](AGENTS.md) is the canonical contributor guide. This wrapper adds
-only Claude Code visibility, loading, and hook ownership. Anything true for both
-agent trees belongs there, not here.
+[`AGENTS.md`](AGENTS.md) is canonical. This wrapper adds only Claude Code
+visibility, loading, and hook ownership; anything true for both trees belongs
+there.
 
 @AGENTS.md
 
-## Agent skills
-
-- Issues: `docs/agents/issue-tracker.md`
-- Triage labels: `docs/agents/triage-labels.md`
-- Domain and decision sources: `docs/agents/domain.md`
+`docs/agents/` holds the issue tracker, triage labels, and domain and decision
+sources; nothing else points at them.
 
 ## Visibility and mirrors
 
@@ -22,9 +19,11 @@ agent trees belongs there, not here.
 | `.agents/skills/**`, `.agents/agents/**` | does not read | reads |
 | `.codex/**` | does not read | reads config and hooks |
 
-`AGENTS.md` owns the mirror contract, the nested-pointer rule, and what
-`pnpm agents:check` enforces. The `@AGENTS.md` import organizes context but does
-not reduce imported bytes.
+The Codex column stands for every tool reading the open format: Cursor,
+Antigravity CLI and Copilot resolve `AGENTS.md` and its nested files the same
+way. That file owns the mirror contract, the nested-pointer rule, and what
+`pnpm agents:check` enforces. Importing it organizes context; it does not reduce
+bytes.
 
 ## Claude Code loading
 
@@ -50,5 +49,5 @@ wiring with `pnpm test:claude:hooks`.
 
 ## Synchronization
 
-`AGENTS.md` is the source of truth. Update this wrapper only when the
-visibility table, rule loading, or hook ownership changes.
+`AGENTS.md` is the source of truth. Update this wrapper only when the visibility
+table, rule loading, or hook ownership changes.

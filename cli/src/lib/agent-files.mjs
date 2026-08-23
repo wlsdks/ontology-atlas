@@ -45,12 +45,12 @@ export const AGENT_TOOL_LABELS = Object.freeze({
  */
 export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-md', kind: 'instructions', tools: Object.freeze(['claude-code']), pattern: /^CLAUDE\.md$/ }),
-  Object.freeze({ id: 'agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'antigravity', 'gemini-cli']), pattern: /^AGENTS\.md$/ }),
+  Object.freeze({ id: 'agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot']), pattern: /^AGENTS\.md$/ }),
   Object.freeze({ id: 'gemini-md', kind: 'instructions', tools: Object.freeze(['antigravity', 'gemini-cli']), pattern: /^GEMINI\.md$/ }),
   // One level only. `cli/templates/vault/AGENTS.md` and its `vault-ko` twin are
   // product data shipped inside a starter vault, not instructions to an agent
   // working on this repository, and they sit three segments deep.
-  Object.freeze({ id: 'nested-agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'antigravity', 'gemini-cli']), pattern: /^[^/]+\/AGENTS\.md$/ }),
+  Object.freeze({ id: 'nested-agents-md', kind: 'instructions', tools: Object.freeze(['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot']), pattern: /^[^/]+\/AGENTS\.md$/ }),
   Object.freeze({ id: 'claude-rules', kind: 'rules', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/rules\/.+\.md$/ }),
   Object.freeze({ id: 'claude-skills', kind: 'skill', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/skills\/.+/ }),
   Object.freeze({ id: 'claude-agents', kind: 'agent', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/agents\/.+/ }),
@@ -60,6 +60,10 @@ export const AGENT_FILE_RULES = Object.freeze([
   // **opens and reads** the same brief. The purposes differ but the content must
   // match, which is what agent-copy enforces.
   Object.freeze({ id: 'agents-agents', kind: 'agent', tools: Object.freeze(['codex']), pattern: /^\.agents\/agents\/.+/ }),
+  // `.cursorrules` is the legacy single-file form. Cursor still reads it, but
+  // silently ignores it in agent mode — which is the mode every consumer of this
+  // classifier runs in. `.cursor/rules/*.mdc` is the current format and the one
+  // to write (verified 2026-08-24).
   Object.freeze({ id: 'cursor-rules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursor\/rules\/.+\.mdc$/ }),
   Object.freeze({ id: 'cursorrules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursorrules$/ }),
   Object.freeze({ id: 'copilot-instructions', kind: 'instructions', tools: Object.freeze(['copilot']), pattern: /^\.github\/copilot-instructions\.md$/ }),

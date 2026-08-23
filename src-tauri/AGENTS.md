@@ -1,8 +1,8 @@
 # AGENTS.md — `src-tauri/`
 
 Claude Code loads the rules below automatically from their `paths:` frontmatter.
-Codex, Cursor, Antigravity CLI and every other agent must open them before
-changing a file in this directory — nothing else surfaces them.
+Codex, Cursor, Antigravity CLI, Copilot and every other agent must open them
+before changing a file in this directory — nothing else surfaces them.
 
 - `.claude/rules/codegraph.md` — `src-tauri/**`
 - `.claude/rules/surfaces.md` — `src-tauri/**`

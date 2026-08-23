@@ -1,8 +1,8 @@
 # AGENTS.md — `mcp/`
 
 Claude Code loads the rules below automatically from their `paths:` frontmatter.
-Codex, Cursor, Antigravity CLI and every other agent must open them before
-changing a file in this directory — nothing else surfaces them.
+Codex, Cursor, Antigravity CLI, Copilot and every other agent must open them
+before changing a file in this directory — nothing else surfaces them.
 
 - `.claude/rules/codegraph.md` — `mcp/**`
 - `.claude/rules/documentation.md` — `mcp/README.md`

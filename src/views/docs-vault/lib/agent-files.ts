@@ -82,17 +82,20 @@ const NON_ENGLISH_SCRIPT_RE =
 
 export const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
   { id: 'claude-md', kind: 'instructions', tools: ['claude-code'], pattern: /^CLAUDE\.md$/ },
-  { id: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], pattern: /^AGENTS\.md$/ },
+  { id: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], pattern: /^AGENTS\.md$/ },
   { id: 'gemini-md', kind: 'instructions', tools: ['antigravity', 'gemini-cli'], pattern: /^GEMINI\.md$/ },
   // One level only. `cli/templates/vault/AGENTS.md` and its `vault-ko` twin are
   // product data shipped inside a starter vault, not instructions to an agent
   // working on this repository, and they sit three segments deep.
-  { id: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli'], pattern: /^[^/]+\/AGENTS\.md$/ },
+  { id: 'nested-agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], pattern: /^[^/]+\/AGENTS\.md$/ },
   { id: 'claude-rules', kind: 'rules', tools: ['claude-code'], pattern: /^\.claude\/rules\/.+\.md$/ },
   { id: 'claude-skills', kind: 'skill', tools: ['claude-code'], pattern: /^\.claude\/skills\/.+/ },
   { id: 'claude-agents', kind: 'agent', tools: ['claude-code'], pattern: /^\.claude\/agents\/.+/ },
   { id: 'agents-skills', kind: 'skill', tools: ['codex'], pattern: /^\.agents\/skills\/.+/ },
   { id: 'agents-agents', kind: 'agent', tools: ['codex'], pattern: /^\.agents\/agents\/.+/ },
+  // `.cursorrules` is the legacy single-file form. Cursor still reads it, but
+  // silently ignores it in agent mode — which is the mode every consumer of this
+  // classifier runs in. `.cursor/rules/*.mdc` is the current format.
   { id: 'cursor-rules', kind: 'rules', tools: ['cursor'], pattern: /^\.cursor\/rules\/.+\.mdc$/ },
   { id: 'cursorrules', kind: 'rules', tools: ['cursor'], pattern: /^\.cursorrules$/ },
   { id: 'copilot-instructions', kind: 'instructions', tools: ['copilot'], pattern: /^\.github\/copilot-instructions\.md$/ },
