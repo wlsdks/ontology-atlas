@@ -249,6 +249,33 @@ describe('inject-ontology-summary health awareness', () => {
   // The silence convention itself must hold — adding no noise to a repository with
   // no vault is this hook's original contract. This measures that the check above
   // did not widen it.
+  /**
+   * A fresh clone and a new worktree both start without `mcp/node_modules`, so
+   * the MCP child dies on ERR_MODULE_NOT_FOUND before it reads anything. The
+   * hook used to answer that with `ontology-atlas health`, which runs through
+   * the same missing module and cannot repair it. Naming the wrong command
+   * costs a round trip and teaches that the line is noise, so the two cases are
+   * asserted apart.
+   */
+  it('names the install when the dependency is missing, not the vault doctor', async () => {
+    const source = await readFile('.claude/hooks/inject-ontology-summary.sh', 'utf8');
+    const mirror = await readFile('.codex/hooks/inject-ontology-summary.sh', 'utf8');
+    for (const [name, text] of [['claude', source], ['codex', mirror]]) {
+      assert.match(text, /ERR_MODULE_NOT_FOUND/, `${name}: does not recognise the missing-module failure`);
+      assert.match(text, /pnpm --dir mcp install/, `${name}: never names the command that fixes it`);
+      assert.match(
+        text,
+        /mcp\/node_modules/,
+        `${name}: does not check whether this checkout actually lacks the dependency`,
+      );
+      assert.match(
+        text,
+        /ontology-atlas health/,
+        `${name}: lost the vault doctor for the case that really is a broken vault`,
+      );
+    }
+  });
+
   it('stays silent, as before, when there is no vault at all', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-empty-'));
     try {
