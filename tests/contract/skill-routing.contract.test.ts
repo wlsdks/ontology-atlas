@@ -61,6 +61,50 @@ describe("skill routing", () => {
     expect(mirrored).toEqual(skills);
   });
 
+  /**
+   * The two skill trees are byte identical, and only one of them is read by
+   * Claude Code: skill discovery covers `~/.claude/skills`, the project and
+   * parent `.claude/skills`, plugin directories, and `--add-dir` — never
+   * `.agents/skills`, which is Codex's per-project location (verified against
+   * both tools' current documentation, 2026-08-24). The duplication is load
+   * bearing, not redundancy waiting to be deleted.
+   *
+   * Byte identity has a price: whatever frontmatter one copy carries, the other
+   * carries too. The Agent Skills open standard that both tools implement allows
+   * six fields, and a Claude Code extension outside that set is a hard error
+   * where the standard is enforced — "Unexpected key(s) in SKILL.md
+   * frontmatter", not a field quietly ignored. A shared body therefore has to
+   * stay inside the standard, which is the frontmatter form of this repository's
+   * own rule that a shared skill branches on capability rather than naming a
+   * tool.
+   */
+  const AGENT_SKILLS_SPEC_FIELDS = new Set([
+    "name",
+    "description",
+    "license",
+    "compatibility",
+    "metadata",
+    "allowed-tools",
+  ]);
+
+  it("keeps shared skill frontmatter inside the Agent Skills standard", () => {
+    for (const dir of [SKILLS_DIR, MIRROR_DIR]) {
+      for (const name of skills) {
+        const text = readFileSync(join(dir, name, "SKILL.md"), "utf8");
+        const frontmatter = text.split("---")[1] ?? "";
+        const keys = [...frontmatter.matchAll(/^([A-Za-z][A-Za-z0-9_-]*):/gm)].map((m) => m[1]);
+        expect(keys.length, `${name}/SKILL.md has no frontmatter keys`).toBeGreaterThan(0);
+        const extensions = keys.filter((key) => !AGENT_SKILLS_SPEC_FIELDS.has(key));
+        expect(
+          extensions,
+          `${name}/SKILL.md uses ${extensions.join(", ")}, which the Agent Skills standard `
+            + "does not define. The identical copy in the other tree carries it too, and where "
+            + "the standard is enforced an unknown key fails the whole file.",
+        ).toEqual([]);
+      }
+    }
+  });
+
   it("gives every skill a description, which is all an agent sees before opening it", () => {
     for (const name of skills) {
       const text = readFileSync(join(SKILLS_DIR, name, "SKILL.md"), "utf8");
