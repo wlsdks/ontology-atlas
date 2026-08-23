@@ -174,12 +174,14 @@ export function AcpChatScene() {
           <p className="break-keep font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
             {t('acpToolCaption')}
           </p>
-          {/* The characters are aria-hidden inside the typewriter, so the line's accessible
-              text lives on the pre itself — assistive tech hears the finished record once. */}
-          <pre
-            aria-label={toolCallLine(t('acpToolWhy'))}
-            className="mt-1.5 overflow-x-auto rounded-panel border border-[color:var(--color-border-soft)] px-4 py-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]"
-          >
+          {/*
+           * The typewriter's characters are aria-hidden (its own contract), so the record's
+           * accessible text is a visually-hidden plain copy beside it. Not `aria-label` on the
+           * `<pre>` — a generic element may not carry a name (the a11y ratchet rejected exactly
+           * that in CI, `aria-prohibited-attr`, 2026-08-23).
+           */}
+          <pre className="mt-1.5 overflow-x-auto rounded-panel border border-[color:var(--color-border-soft)] px-4 py-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
+            <span className="sr-only">{toolCallLine(t('acpToolWhy'))}</span>
             <HeroTypewriter
               lines={[{ text: toolCallLine(t('acpToolWhy')) }]}
               start={shown >= 2}

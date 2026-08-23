@@ -18,8 +18,16 @@ import { useEffect, useRef, useState } from 'react';
  * exactly `value`. This is not just test convenience — the evidence caption's honesty contract
  * (`DownloadPage.test.tsx`: the caption equals the graph it draws) reads this text, and a caption
  * that is momentarily wrong is momentarily dishonest. The animation therefore only ever shows
- * values on the way **to** the truth, never a made-up resting state, and every non-browser reader
- * (crawler, screen reader via the stable `aria-label`, test) sees the final number only.
+ * values on the way **to** the truth, never a made-up resting state.
+ *
+ * ## One plain span, no ARIA
+ *
+ * The first version wrapped the digits in `aria-hidden` and named the truth with `aria-label` on
+ * the wrapper — and the a11y ratchet rejected it in CI (`aria-prohibited-attr`): a generic
+ * `<span>` may not carry a name, by the ARIA spec. It also was not needed. The DOM starts at the
+ * final value and returns to it; the only reader that can ever see an intermediate value is a
+ * screen reader querying during the ~600ms run, and no `aria-live` means the run itself announces
+ * nothing. Plain text is the accessible version.
  */
 export function CountUp({ value, durationMs = 600 }: { value: number; durationMs?: number }) {
   const [shown, setShown] = useState(value);
@@ -58,10 +66,9 @@ export function CountUp({ value, durationMs = 600 }: { value: number; durationMs
   }, [value, durationMs]);
 
   return (
-    // `tabular-nums` so the digits do not jitter sideways while counting; the stable
-    // `aria-label` so assistive tech never hears the intermediate values.
-    <span ref={ref} aria-label={String(value)} className="[font-variant-numeric:tabular-nums]">
-      <span aria-hidden>{shown}</span>
+    // `tabular-nums` so the digits do not jitter sideways while counting.
+    <span ref={ref} className="[font-variant-numeric:tabular-nums]">
+      {shown}
     </span>
   );
 }
