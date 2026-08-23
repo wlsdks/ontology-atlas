@@ -97,10 +97,9 @@ output/
 .claude/settings.local.json
 .claude/cache/
 .claude/local/
-.claude/LOOP-TASK.md
 .claude/scheduled_tasks.lock
 
-# Local operational credentials — loaded by the autonomous loop every cycle. Never commit.
+# Local operational credentials. Never commit.
 .local-credentials/
 
 # Screenshots for session validation (do not commit)

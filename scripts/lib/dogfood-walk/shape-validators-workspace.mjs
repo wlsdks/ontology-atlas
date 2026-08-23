@@ -130,7 +130,7 @@ export function workspaceBriefShapeFailure(result, label = "workspace_brief") {
   return checksShapeFailure(label, result.health.checks, { requireNonEmpty: true });
 }
 
-export function workspaceBriefGrowthFailure(label, result) {
+function workspaceBriefGrowthFailure(label, result) {
   if (result.growth == null) return null;
   const growthFailure = numericSummaryFailure(`${label} growth`, result.growth, [
     "relationRecommendations",
@@ -158,7 +158,7 @@ export function workspaceBriefGrowthFailure(label, result) {
   return null;
 }
 
-export function workspaceNextActionSampleFailure(label, action, index) {
+function workspaceNextActionSampleFailure(label, action, index) {
   if (action.sample == null) return null;
   if (!Array.isArray(action.sample)) {
     return `${label} response malformed nextAction sample at index ${index}`;
@@ -195,7 +195,7 @@ export function workspaceNextActionSampleFailure(label, action, index) {
   return null;
 }
 
-export function workspaceProposedActionSampleFailure(label, action, sample, index, sampleIndex, expectedTool) {
+function workspaceProposedActionSampleFailure(label, action, sample, index, sampleIndex, expectedTool) {
   if (sample.tool !== expectedTool) {
     return `${label} response nextAction ${action.kind} sample tool mismatch at index ${index}.${sampleIndex}`;
   }
@@ -269,7 +269,7 @@ export function crossToolConsistencyFailures({ kinds, list, validation, compiled
   return failures;
 }
 
-export function checksShapeFailure(label, checks, { requireNonEmpty = false } = {}) {
+function checksShapeFailure(label, checks, { requireNonEmpty = false } = {}) {
   if (!Array.isArray(checks)) {
     return `${label} response missing checks array`;
   }
@@ -311,7 +311,7 @@ export function healthStatusSummary(result) {
   ].join(", ");
 }
 
-export function healthCheckDiagnosticLabel(check) {
+function healthCheckDiagnosticLabel(check) {
   const id = check?.id || "unknown";
   const status = check?.status || "unknown";
   const count = Number.isInteger(check?.count) ? `:${check.count}` : "";

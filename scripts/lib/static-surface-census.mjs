@@ -77,7 +77,7 @@ export function isHandCard(tag) {
  * cannot be seen from the opening tag, so it is decided by looking **into the
  * body that follows** for a first child carrying a divider.
  */
-export function cardAxes(tag, after) {
+function cardAxes(tag, after) {
   const radius = (tag.match(/rounded-(card|panel)/) || [])[1];
   const surface = (tag.match(/bg-\[color:var\(--(?:color-)?([a-z0-9-]+)\)\]/) || [])[1] || 'none';
   const border = /\bborder\b/.test(tag)

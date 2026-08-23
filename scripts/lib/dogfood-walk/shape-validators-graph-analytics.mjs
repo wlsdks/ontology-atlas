@@ -38,7 +38,7 @@ export function schemaShapeFailure(result) {
   return null;
 }
 
-export function schemaPatternFailure(label, pattern, index) {
+function schemaPatternFailure(label, pattern, index) {
   if (!pattern || typeof pattern !== "object" || Array.isArray(pattern)) {
     return `${label} malformed pattern at index ${index}`;
   }
@@ -327,7 +327,7 @@ export function centralityShapeFailure(result) {
   return null;
 }
 
-export function centralityRowFailure(label, row, index) {
+function centralityRowFailure(label, row, index) {
   const summaryFailure = matchRowsFailure(label, [row]);
   if (summaryFailure) return summaryFailure.replace("at index 0", `at index ${index}`);
   for (const key of ["inDegree", "outDegree", "degree", "bridgeScore"]) {
@@ -394,7 +394,7 @@ export function communitiesShapeFailure(result) {
   return null;
 }
 
-export function communityRowFailure(community, index, nodeLimit) {
+function communityRowFailure(community, index, nodeLimit) {
   if (!community || typeof community !== "object" || Array.isArray(community)) {
     return `communities malformed community at index ${index}`;
   }
@@ -439,7 +439,7 @@ export function communityRowFailure(community, index, nodeLimit) {
   return matchRowsFailure(`communities community ${community.id}`, community.nodes);
 }
 
-export function communityEdgeBucketFailure(label, bucket, expectedTotal) {
+function communityEdgeBucketFailure(label, bucket, expectedTotal) {
   if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
     return `${label} missing bucket`;
   }
@@ -529,7 +529,7 @@ export function similarNodesShapeFailure(result, targets) {
   return null;
 }
 
-export function similarMatchFailure(match, index) {
+function similarMatchFailure(match, index) {
   if (!match || typeof match !== "object" || Array.isArray(match)) {
     return `similar_nodes malformed match at index ${index}`;
   }
@@ -598,7 +598,7 @@ export function explainRelationShapeFailure(result, targets) {
   return null;
 }
 
-export function shortestRelationPathFailure(path, from, to) {
+function shortestRelationPathFailure(path, from, to) {
   if (!path || typeof path !== "object" || Array.isArray(path)) {
     return "explain_relation response missing shortestPath";
   }
@@ -646,7 +646,7 @@ export function shortestRelationPathFailure(path, from, to) {
   return null;
 }
 
-export function relationEdgeBucketFailure(label, bucket) {
+function relationEdgeBucketFailure(label, bucket) {
   if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
     return `${label} missing bucket`;
   }
@@ -666,7 +666,7 @@ export function relationEdgeBucketFailure(label, bucket) {
   return null;
 }
 
-export function commonNeighborBucketFailure(label, bucket, options = {}) {
+function commonNeighborBucketFailure(label, bucket, options = {}) {
   if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
     return `${label} missing bucket`;
   }
@@ -719,7 +719,7 @@ export function commonNeighborBucketFailure(label, bucket, options = {}) {
   return null;
 }
 
-export function profileEdgeGroupFailure(label, group, options = {}) {
+function profileEdgeGroupFailure(label, group, options = {}) {
   if (!group || typeof group !== "object" || Array.isArray(group)) {
     return `${label} missing group`;
   }
@@ -772,7 +772,7 @@ export function profileEdgeGroupFailure(label, group, options = {}) {
   return null;
 }
 
-export function containmentSummaryRowFailure(label, row, index) {
+function containmentSummaryRowFailure(label, row, index) {
   if (!row || typeof row !== "object" || Array.isArray(row)) {
     return `${label} malformed row at index ${index}`;
   }

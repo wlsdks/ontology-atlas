@@ -140,7 +140,7 @@ export function topologicalOrderShapeFailure(result) {
   return null;
 }
 
-export function topologicalNodeRowFailure(label, row, index, { requireRank = false } = {}) {
+function topologicalNodeRowFailure(label, row, index, { requireRank = false } = {}) {
   if (!row || typeof row !== "object" || Array.isArray(row)) {
     return `${label} malformed row at index ${index}`;
   }
@@ -215,7 +215,7 @@ export function lineageBucketFailure(label, bucket) {
   return null;
 }
 
-export function lineageNodeFailure(label, row, index) {
+function lineageNodeFailure(label, row, index) {
   if (!row || typeof row !== "object" || Array.isArray(row)) {
     return `${label} malformed row at index ${index}`;
   }
@@ -284,7 +284,7 @@ export function containmentTreeShapeFailure(result, targets) {
   return null;
 }
 
-export function containmentNodeFailure(row, index, { expectedSlug = null, expectedDistance = null, path = [] } = {}) {
+function containmentNodeFailure(row, index, { expectedSlug = null, expectedDistance = null, path = [] } = {}) {
   if (!row || typeof row !== "object" || Array.isArray(row)) {
     return `containment_tree malformed node at index ${index}`;
   }
@@ -325,7 +325,7 @@ export function containmentNodeFailure(row, index, { expectedSlug = null, expect
   return null;
 }
 
-export function countContainmentNodes(row) {
+function countContainmentNodes(row) {
   return 1 + row.children.reduce((sum, child) => sum + countContainmentNodes(child), 0);
 }
 
@@ -415,7 +415,7 @@ export function reachabilityShapeFailure(result, targets) {
   return null;
 }
 
-export function reachablePathsFailure(label, paths, expectedTotal, startSlug = null) {
+function reachablePathsFailure(label, paths, expectedTotal, startSlug = null) {
   if (!paths || typeof paths !== "object" || Array.isArray(paths)) {
     return `${label} missing bucket`;
   }
@@ -460,7 +460,7 @@ export function reachablePathsFailure(label, paths, expectedTotal, startSlug = n
   return null;
 }
 
-export function graphEdgeBucketFailure(label, bucket, expectedTotal = null) {
+function graphEdgeBucketFailure(label, bucket, expectedTotal = null) {
   if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
     return `${label} missing bucket`;
   }
@@ -531,7 +531,7 @@ export function impactShapeFailure(result, targets) {
   return null;
 }
 
-export function impactedNodeFailure(label, row, index) {
+function impactedNodeFailure(label, row, index) {
   if (!row || typeof row !== "object" || Array.isArray(row)) {
     return `${label} malformed node at index ${index}`;
   }
@@ -594,7 +594,7 @@ export function blastRadiusShapeFailure(result, targets) {
   return null;
 }
 
-export function blastRadiusNodeBucketFailure(bucket, expectedTotal) {
+function blastRadiusNodeBucketFailure(bucket, expectedTotal) {
   if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
     return "blast_radius nodes missing bucket";
   }
@@ -626,7 +626,7 @@ export function blastRadiusNodeBucketFailure(bucket, expectedTotal) {
   return null;
 }
 
-export function blastRadiusEdgeBucketFailure(bucket, expectedTotal) {
+function blastRadiusEdgeBucketFailure(bucket, expectedTotal) {
   const bucketFailure = graphEdgeBucketFailure("blast_radius edges", bucket, expectedTotal);
   if (bucketFailure) return bucketFailure;
   for (const [index, edge] of bucket.rows.entries()) {

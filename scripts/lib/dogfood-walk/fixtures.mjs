@@ -27,7 +27,7 @@ import {
 import { GRAPH_ARRAY_KEYS } from "../../../mcp/src/vault.mjs";
 import { IMPORT_SOURCE_ROLE_VALUES, IMPORT_USAGE_VALUES } from "../../../mcp/src/infer-imports.mjs";
 
-export const WRITE_TOOL_NAMES = new Set([
+const WRITE_TOOL_NAMES = new Set([
   "git_snapshot",
   "add_concept",
   "add_concepts",
@@ -180,7 +180,7 @@ function meaningAssessmentSchemaFixture() {
   };
 }
 
-export function makeDogfoodInitialize() {
+function makeDogfoodInitialize() {
   return {
     protocolVersion: "2024-11-05",
     serverInfo: { name: "ontology-atlas-mcp", version: "0.12.0" },
@@ -221,7 +221,7 @@ export function makeDogfoodInitialize() {
   };
 }
 
-export function paginationSchemaFixture() {
+function paginationSchemaFixture() {
   return {
     type: "object",
     required: ["offset", "limit", "total", "returned", "hasMore", "nextOffset"],
@@ -237,7 +237,7 @@ export function paginationSchemaFixture() {
   };
 }
 
-export function stringArrayMapSchemaFixture() {
+function stringArrayMapSchemaFixture() {
   return {
     type: "object",
     additionalProperties: {
@@ -247,7 +247,7 @@ export function stringArrayMapSchemaFixture() {
   };
 }
 
-export function conceptNeighborsSchemaFixture() {
+function conceptNeighborsSchemaFixture() {
   return {
     type: "object",
     required: ["domains", "domain", "capabilities", "elements", "dependencies", "relates", "contains", "describes"],
@@ -265,7 +265,7 @@ export function conceptNeighborsSchemaFixture() {
   };
 }
 
-export function outgoingEdgesSchemaFixture() {
+function outgoingEdgesSchemaFixture() {
   return {
     type: "array",
     items: {
@@ -280,7 +280,7 @@ export function outgoingEdgesSchemaFixture() {
   };
 }
 
-export function vaultWarningsSchemaFixture() {
+function vaultWarningsSchemaFixture() {
   return {
     type: "array",
     items: {
@@ -296,7 +296,7 @@ export function vaultWarningsSchemaFixture() {
   };
 }
 
-export function nonBlankStringSchemaFixture() {
+function nonBlankStringSchemaFixture() {
   return {
     type: "string",
     minLength: 1,
@@ -304,7 +304,7 @@ export function nonBlankStringSchemaFixture() {
   };
 }
 
-export function backlinkRewritePlanSchemaFixture() {
+function backlinkRewritePlanSchemaFixture() {
   const nonBlankString = nonBlankStringSchemaFixture();
   const backlinkValue = {
     type: ["array", "object", "string"],
@@ -351,7 +351,7 @@ export function backlinkRewritePlanSchemaFixture() {
   };
 }
 
-export function capturedDocSchemaFixture() {
+function capturedDocSchemaFixture() {
   return {
     type: "object",
     required: ["frontmatter"],
@@ -364,7 +364,7 @@ export function capturedDocSchemaFixture() {
   };
 }
 
-export function backlinkRowSchemaFixture() {
+function backlinkRowSchemaFixture() {
   return {
     type: "object",
     required: ["uid", "slug", "kind", "title", "mtime"],
@@ -385,7 +385,7 @@ export function backlinkRowSchemaFixture() {
   };
 }
 
-export function relationArrayPatchSchemaFixture() {
+function relationArrayPatchSchemaFixture() {
   return {
     type: "object",
     properties: Object.fromEntries(
@@ -395,7 +395,7 @@ export function relationArrayPatchSchemaFixture() {
   };
 }
 
-export function postWriteMaintenanceSchemaFixture() {
+function postWriteMaintenanceSchemaFixture() {
   const compactProposedActionTools = ["add_concept", "add_relation", "patch_concept"];
   const maintenanceSummaryRequired = [
     "totalActions",
@@ -2330,7 +2330,7 @@ export function makeDogfoodToolsList() {
   };
 }
 
-export function batchCapError(noun) {
+function batchCapError(noun) {
   const text = `Too many ${noun}: 51. Max 50 per call.`;
   return {
     result: {
@@ -2341,7 +2341,7 @@ export function batchCapError(noun) {
   };
 }
 
-export function strictValueErrorResponse(valueName, allowedValues, receivedValue, suggestion) {
+function strictValueErrorResponse(valueName, allowedValues, receivedValue, suggestion) {
   const suggestionText = suggestion ? ` Did you mean "${suggestion}"?` : "";
   const text = `${valueName} must be one of: ${allowedValues.join(", ")}. Received: "${receivedValue}".${suggestionText}`;
   return {
@@ -2361,7 +2361,7 @@ export function strictValueErrorResponse(valueName, allowedValues, receivedValue
   };
 }
 
-export const dogfoodTargets = {
+const dogfoodTargets = {
   projectSlug: "project",
   domainSlug: "domains/ai-agent-partner",
   capabilitySlug: "capabilities/mcp-server",

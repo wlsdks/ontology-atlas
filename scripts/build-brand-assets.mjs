@@ -67,7 +67,7 @@ export const STROKES = {
  * had to return with it, otherwise the app is indigo inside while the Dock icon
  * alone is copper.
  */
-export const BRAND_SOLID = '#5E6AD2';
+const BRAND_SOLID = '#5E6AD2';
 
 /**
  * Single-hue ramp for brand assets only — the exemption `forbidden.md` opens
@@ -80,8 +80,8 @@ export const BRAND_SOLID = '#5E6AD2';
  * went to the ember rotation `#E46238` → `#A83E1D` and came back when the accent
  * returned to indigo.)
  */
-export const GRADIENT_FROM = '#787EF6';
-export const GRADIENT_TO = '#3E4BDF';
+const GRADIENT_FROM = '#787EF6';
+const GRADIENT_TO = '#3E4BDF';
 
 /** The gradient is userSpaceOnUse — it runs along the mark's bounding-box diagonal. */
 const gradientDef = (id) =>

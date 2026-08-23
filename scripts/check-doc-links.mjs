@@ -57,7 +57,6 @@ const SKIP_DIRS = new Set([
   'worktrees',
 ]);
 const KEEP_DOT_DIRS = new Set(['.claude', '.agents', '.codex', '.github']);
-const SKIP_FILES = new Set(['.claude/LOOP-TASK.md']);
 
 export function usage() {
   return [
@@ -86,10 +85,7 @@ export function listMarkdownFiles(root = ROOT) {
       if (SKIP_DIRS.has(entry.name)) continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(full);
-      else if (entry.name.endsWith('.md')) {
-        const relative = path.relative(root, full).split('\\').join('/');
-        if (!SKIP_FILES.has(relative)) found.push(full);
-      }
+      else if (entry.name.endsWith('.md')) found.push(full);
     }
   };
   walk(root);

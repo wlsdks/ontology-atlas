@@ -7,60 +7,17 @@ export type {
   AgentActivityState,
   AgentActivityStatus,
 } from './model/agent-activity-status';
-export { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './model/vault-create-flow';
+export { useVaultCreateFlow } from './model/use-vault-create-flow';
+export { useJustStartVault } from './model/use-just-start-vault';
 export {
-  useVaultCreateFlow,
-  type VaultCreateFlowVault,
-} from './model/use-vault-create-flow';
-export {
-  useJustStartVault,
-  type JustStartVaultVault,
-} from './model/use-just-start-vault';
-export {
-  DEFAULT_VAULT_BASE_NAME,
-  DEFAULT_VAULT_PARENT_LABEL,
-  buildDefaultVaultDisplayPath,
-  resolveUniqueVaultDirName,
-} from './lib/default-vault-naming';
-export {
-  buildAgentSetupCheckCliCommandTemplate,
-  buildAgentSetupCliCommandTemplate,
   buildCodexMcpAddCommandTemplate,
   buildCodexConfigTomlTemplate,
   buildMcpConfigJson,
 } from './lib/ontology-starter';
-export {
-  MCP_SERVER_NAME,
-  buildCursorMcpDeeplink,
-  buildMcpDeeplinkConfig,
-  buildVsCodeMcpDeeplink,
-  utf8ToBase64,
-  type McpStdioConfig,
-} from './lib/mcp-deeplinks';
-export {
-  AgentClientButtons,
-  type AgentClientButtonsProps,
-  type AgentClientConfigState,
-} from './ui/AgentClientButtons';
-export {
-  WebManualConnectPanel,
-  type WebManualConnectPanelProps,
-} from './ui/WebManualConnectPanel';
-export {
-  ATLAS_CLONE_COMMAND,
-  manualConnectConfig,
-  manualLaunch,
-  manualSetupCommand,
-  manualVerifyCommand,
-  normalizeManualPath,
-  type ManualConnectConfig,
-  type ManualConnectInput,
-  type ManualPathIssue,
-  type ManualPathResult,
-} from './lib/manual-connect';
+export { buildCursorMcpDeeplink } from './lib/mcp-deeplinks';
+export { AgentClientButtons } from './ui/AgentClientButtons';
 export {
   buildOntologyStarterAgentVerifyPrompt,
-  buildOntologyStarterCliVerifyCommands,
   buildOntologyStarterJsonGateCommand,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
@@ -68,14 +25,8 @@ export {
   OntologyStarterCta,
 } from './ui/OntologyStarterCta';
 export {
-  buildProjectMarkdown,
   deriveBootstrapPlan,
   selectedElements,
-  buildDomainMarkdown,
-  domainDocSlug,
-  type BootstrapDocInput,
-  type BootstrapDomainCandidate,
-  type BootstrapElementCandidate,
   type BootstrapPlan,
 } from './lib/bootstrap-candidates';
 export {
@@ -83,9 +34,6 @@ export {
   type BootstrapVaultWriter,
   type ExecuteBootstrapResult,
 } from './lib/execute-bootstrap-plan';
-export {
-  VaultOpenGuideSheet,
-  type VaultOpenGuideSheetProps,
-} from './ui/VaultOpenGuideSheet';
-export { type AgentClientId, AGENT_CLIENTS, filesForClient } from './lib/agent-clients';
-export { OpenVaultCta, type OpenVaultCtaProps } from './ui/OpenVaultCta';
+export { VaultOpenGuideSheet } from './ui/VaultOpenGuideSheet';
+export type { AgentClientId } from './lib/agent-clients';
+export { OpenVaultCta } from './ui/OpenVaultCta';
