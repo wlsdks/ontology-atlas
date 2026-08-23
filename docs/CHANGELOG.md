@@ -7,6 +7,17 @@
 
 ---
 
+## 2026-08-23 · The download page moves where the product is working
+
+- The evidence section now runs a short linked demo once it settles: three beats light a line of
+  the file on the right while the map on the left focuses the thing that line is (the node, its
+  domain, its dependency), then let go. Touching the map stops the demo immediately, and readers
+  with motion turned off simply get the resting section.
+- The agent scene's tool call arrives as typing, like a terminal writing, instead of fading in.
+  The text is still the measured session, unchanged.
+- The concept and relation counts under the map, and the file count in the evidence panel, count
+  up briefly when they first come into view.
+
 ## 2026-08-23 · The gateway map labels only what the overview needs
 
 - The download page's evidence map no longer crams a label onto every name that fits. It labels

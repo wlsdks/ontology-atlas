@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
+import { HeroTypewriter } from './HeroTypewriter';
 
 /**
  * A re-enactment of the in-app conversation — **one measured round trip where a chat message
@@ -82,7 +83,16 @@ function toolCallLine(why: string): string {
  * The remaining gap between the two steps (650ms) is shorter than the old bubble→call gap (800ms) —
  * with one step gone, the total length is pulled back by that much to keep the rhythm.
  */
-const STEP_AT = [400, 1050];
+/*
+ * [Revised 2026-08-23] The tool call **types** instead of fading in — the owner-picked
+ * "live data card" from the reference survey (Resend's pattern: the motion is the data
+ * arriving). The content is unchanged and still the measured session verbatim; only the way the
+ * line arrives changed. Typing runs ~1.1s from 400ms, so the result's beat moved from 1050 to
+ * 1800 — it must land **after** the call has finished writing, or the effect precedes its cause.
+ */
+const STEP_AT = [400, 1800];
+/** The tool-call line's typing budget (ms) — ends before the result beat above. */
+const TOOL_TYPING_BUDGET_MS = 1100;
 
 /** The first line (the person's sentence) is always on — which is why the choreography starts at 1. */
 const PREMISE_SHOWN = 1;
@@ -164,8 +174,19 @@ export function AcpChatScene() {
           <p className="break-keep font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
             {t('acpToolCaption')}
           </p>
+          {/*
+           * The typewriter's characters are aria-hidden (its own contract), so the record's
+           * accessible text is a visually-hidden plain copy beside it. Not `aria-label` on the
+           * `<pre>` — a generic element may not carry a name (the a11y ratchet rejected exactly
+           * that in CI, `aria-prohibited-attr`, 2026-08-23).
+           */}
           <pre className="mt-1.5 overflow-x-auto rounded-panel border border-[color:var(--color-border-soft)] px-4 py-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
-            {toolCallLine(t('acpToolWhy'))}
+            <span className="sr-only">{toolCallLine(t('acpToolWhy'))}</span>
+            <HeroTypewriter
+              lines={[{ text: toolCallLine(t('acpToolWhy')) }]}
+              start={shown >= 2}
+              budgetMs={TOOL_TYPING_BUDGET_MS}
+            />
           </pre>
         </div>
 

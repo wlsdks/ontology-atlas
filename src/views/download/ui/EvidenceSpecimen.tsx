@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { EVIDENCE_SPECIMEN } from '../model/evidence-specimen.generated';
+import { CountUp } from './CountUp';
 
 /**
  * The evidence section's right half — **one real file, and what an agent reads out of it.**
@@ -38,7 +39,17 @@ import { EVIDENCE_SPECIMEN } from '../model/evidence-specimen.generated';
  * does — which is precisely the failure this page hit twice in two days with the demo section's
  * prose. The generator's doc block carries the rest.
  */
-export function EvidenceSpecimen() {
+/** Which meaning the linked demo is pointing at right now — `null` between runs. */
+export type EvidenceDemoKey = 'title' | 'domain' | 'dependencies' | null;
+
+/** The frontmatter keys each demo step lights — `title` also covers the display names. */
+const DEMO_LINE_PREFIXES: Record<Exclude<EvidenceDemoKey, null>, readonly string[]> = {
+  title: ['title:', 'display_ko:', 'display_en:'],
+  domain: ['domain:'],
+  dependencies: ['dependencies:'],
+};
+
+export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey } = {}) {
   const t = useTranslations('download');
   const tKind = useTranslations('kinds');
   const locale = useLocale();
@@ -57,13 +68,15 @@ export function EvidenceSpecimen() {
      given a Korean name for it yet. */
   const name = (pair: { ko: string; en: string }) => pair[tag];
 
-  const facts: { label: string; value: string; mono?: boolean }[] = [
-    { label: t('specimenFactName'), value: name(spec.facts.name) },
-    { label: t('specimenFactKind'), value: tKind(spec.facts.kind) },
-    { label: t('specimenFactDomain'), value: name(spec.facts.domain) },
-    { label: t('specimenFactDependsOn'), value: name(spec.facts.dependency) },
-    { label: t('specimenFactPath'), value: spec.facts.implPath, mono: true },
+  const facts: { key: EvidenceDemoKey; label: string; value: string; mono?: boolean }[] = [
+    { key: 'title', label: t('specimenFactName'), value: name(spec.facts.name) },
+    { key: null, label: t('specimenFactKind'), value: tKind(spec.facts.kind) },
+    { key: 'domain', label: t('specimenFactDomain'), value: name(spec.facts.domain) },
+    { key: 'dependencies', label: t('specimenFactDependsOn'), value: name(spec.facts.dependency) },
+    { key: null, label: t('specimenFactPath'), value: spec.facts.implPath, mono: true },
   ];
+  const lineLit = (line: string): boolean =>
+    demoKey !== null && DEMO_LINE_PREFIXES[demoKey].some((prefix) => line.startsWith(prefix));
 
   return (
     <div data-testid="evidence-specimen" className="flex min-w-0 flex-col gap-6">
@@ -78,8 +91,24 @@ export function EvidenceSpecimen() {
           </p>
           {/* Wide content scrolls inside its own box — the page body must never scroll sideways. */}
           <div className="min-w-0 overflow-x-auto px-4 py-3">
+            {/*
+             * One span per line so the linked demo can light the line the map is answering.
+             * The lit style is the selection grammar (indigo family, brightness only): a soft
+             * overlay plus primary ink — no second colour, no motion beyond the colour ramp.
+             */}
             <pre className="font-mono text-caption leading-body text-[color:var(--color-text-secondary)]">
-              {frontmatter.join('\n')}
+              {frontmatter.map((line) => (
+                <span
+                  key={line}
+                  className={cn(
+                    '-mx-1.5 block px-1.5 transition-colors',
+                    lineLit(line) &&
+                      'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]',
+                  )}
+                >
+                  {line}
+                </span>
+              ))}
             </pre>
           </div>
         </div>
@@ -102,7 +131,14 @@ export function EvidenceSpecimen() {
         </h3>
         <dl className="mt-4 grid gap-2.5">
           {facts.map((fact) => (
-            <div key={fact.label} className="flex min-w-0 items-baseline gap-4">
+            <div
+              key={fact.label}
+              className={cn(
+                'flex min-w-0 items-baseline gap-4 transition-colors',
+                demoKey !== null && fact.key === demoKey &&
+                  '-mx-1.5 bg-[color:var(--color-overlay-2)] px-1.5',
+              )}
+            >
               <dt className="w-[6.5rem] shrink-0 break-keep text-body leading-body text-[color:var(--color-text-quaternary)]">
                 {fact.label}
               </dt>
@@ -122,7 +158,12 @@ export function EvidenceSpecimen() {
       {/* ── Go and check ───────────────────────────────────────────────────── */}
       <div className="min-w-0 border-t border-[color:var(--color-border-soft)] pt-6">
         <p className="min-w-0 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-          {t('specimenFooter', { count: spec.vaultNodeCount })}
+          {t.rich('specimenFooter', {
+            count: spec.vaultNodeCount,
+            // The tag marks the number's position; the value comes from the same variable the
+            // plain interpolation used, so the animated number and the sentence cannot disagree.
+            n: () => <CountUp value={spec.vaultNodeCount} />,
+          })}
         </p>
         {/*
          * The link stands on its own line rather than trailing the sentence.

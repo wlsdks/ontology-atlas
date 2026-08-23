@@ -40,6 +40,54 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-23 (106) — Gateway motion is the product working: a linked demo, a typed tool call, counted numbers
+
+**Trigger**: the owner asked what else the page could carry and sent me to survey motion-heavy
+references. Surveyed live (2026-08-23): Warp, Superlist, Resend, Family, Linear, plus the earlier
+Buzz and Cursor passes. The shared property of the ones that work: **their motion is the product
+doing its job, never decoration** — Linear plays a scenario inside the product shot, Superlist
+locks a step list to a screen, Resend's cards are data arriving. The owner picked three devices
+from the survey.
+
+**Prior decisions**: none reversed. The motion charter's "informational motion only" rule is the
+selection filter that rejected the survey's other devices (marquee tickers, wandering particles,
+scroll-driven background washes) before they were offered.
+
+**Decision — three devices, each grounded in something real:**
+
+1. **The linked demo** (the star). After the evidence map settles, three beats walk the specimen's
+   meaning: the `title` line lights with the node itself under ego focus, the `domain` line with
+   the domain emphasised, the `dependencies` line with the dependency emphasised — then release.
+   The map side is the engine's own focus states (`focus.selectedSlug`,
+   `emphasizedNeighborSlug` — built precisely so "panel and map read as one"), driven by node ids
+   the generator derives from the same vault file. Runs once; a pointer act on the map cancels it
+   for good (the map is an object to handle, and a hand beats a script); reduced motion skips it
+   entirely because the resting section already carries every fact.
+2. **The typed tool call.** The agent scene's `add_relation` line arrives as typing instead of a
+   fade — the survey's "live data card", implemented with the hero's typewriter under a 1.1s
+   budget. Content unchanged: still the measured session verbatim. The result beat moved from
+   1050ms to 1800ms so the effect lands after its cause finishes writing.
+3. **Counted numbers.** The census caption's two numbers and the footer's file count ease from 0
+   on first sight (~600ms, once). The DOM always carries the final value — server, jsdom, reduced
+   motion, and after the run all read the true number, so the caption-honesty contract is never
+   momentarily false.
+
+**Gates**: the demo's three node ids are asserted against the drawn map (a stale id fails
+silently otherwise — planted a typo, went red); the highlight maps one beat to exactly one
+line+row pair (planted a crossed mapping, went red); `map-label-collision.spec` pins reduced
+motion because ego-exempt labels legitimately exceed the top-K budget mid-demo — and that
+surfaced a real instrument bug: the old 6s wait read **after ambient sleep** and saw an
+almost-empty frame.
+
+**Falsifier**: if the demo is reported as stealing attention from reading the file panel, drop
+beats before dropping the device — one beat (node only) still teaches the claim.
+
+**Review**: next gateway pass
+
+**Status**: active
+
+---
+
 ## 2026-08-23 (105) — The label budget asks where the camera is, not which dots exist
 
 **Trigger**: the owner looked at the gateway evidence map and asked for it to be tidied — the

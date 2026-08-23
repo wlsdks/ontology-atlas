@@ -124,6 +124,43 @@ describe('EvidenceSpecimen', () => {
     expect(hangul, `영문 화면에 한글이 그려졌다: ${hangul.join('')}`).toEqual([]);
   });
 
+  /**
+   * **The linked demo lights the pair, and only the pair.** Each beat's contract is one file line
+   * plus its fact row answering together — a highlight that lands on the wrong line teaches the
+   * wrong correspondence, which is worse than none.
+   */
+  it('demoKey 가 그 줄과 그 사실 행만 켠다', () => {
+    const { container } = render(wrap(<EvidenceSpecimen demoKey="domain" />, 'ko'));
+    const litLines = [...container.querySelectorAll('pre span')].filter((el) =>
+      el.className.includes('overlay-2'),
+    );
+    expect(litLines).toHaveLength(1);
+    expect(litLines[0].textContent).toMatch(/^domain:/);
+
+    const litRows = [...container.querySelectorAll('dl > div')].filter((el) =>
+      el.className.includes('overlay-2'),
+    );
+    expect(litRows).toHaveLength(1);
+    expect(litRows[0].textContent).toContain(EVIDENCE_SPECIMEN.facts.domain.ko);
+  });
+
+  it('demoKey 가 없으면 아무것도 안 켠다 — 쉬는 상태가 기본이다', () => {
+    const { container } = render(wrap(<EvidenceSpecimen />, 'ko'));
+    const lit = [...container.querySelectorAll('pre span, dl > div')].filter((el) =>
+      el.className.includes('overlay-2'),
+    );
+    expect(lit).toHaveLength(0);
+  });
+
+  it("title 비트는 이름 줄들(title·display)을 함께 켠다 — 한 뜻이 여러 줄에 적혀 있어서다", () => {
+    const { container } = render(wrap(<EvidenceSpecimen demoKey="title" />, 'ko'));
+    const lit = [...container.querySelectorAll('pre span')]
+      .filter((el) => el.className.includes('overlay-2'))
+      .map((el) => (el.textContent ?? '').split(':')[0]);
+    expect(lit).toContain('title');
+    expect(lit).toContain('display_ko');
+  });
+
   /** The claim "go and check" is only worth making if the link actually resolves to the file. */
   it('링크가 화면에 적힌 그 파일을 가리킨다', () => {
     render(wrap(<EvidenceSpecimen />));
