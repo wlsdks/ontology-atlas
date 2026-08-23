@@ -318,7 +318,7 @@ export function formatTopologyOverviewBrief({
   return lines.join("\n");
 }
 
-export function formatTopologyRelationProvenanceSummary(
+function formatTopologyRelationProvenanceSummary(
   provenance: TopologyRelationProvenanceBreakdown | undefined,
   labels: Pick<
     TopologyOverviewBriefLabels,
@@ -343,7 +343,7 @@ export function classifyTopologyRelationQuality(
   return classifyRelationQuality(edge);
 }
 
-export function formatTopologyRelationQualitySummary(
+function formatTopologyRelationQualitySummary(
   quality: TopologyRelationQualityBreakdown | undefined,
   labels: Pick<
     TopologyOverviewBriefLabels,
@@ -362,7 +362,7 @@ export function formatTopologyRelationQualitySummary(
   ].join(" · ");
 }
 
-export function formatTopologyAgentReadinessSummary(
+function formatTopologyAgentReadinessSummary(
   quality: TopologyRelationQualityBreakdown | undefined,
   labels: {
     ready: string;
@@ -407,31 +407,31 @@ export function formatTopologyHealthOwnerRelationMcpCheck(slug: string): string 
   });
 }
 
-export function formatTopologyOverviewMcpCheck(): string {
+function formatTopologyOverviewMcpCheck(): string {
   return formatQueryOntologyCall({
     operation: "overview",
     limit: 5,
   });
 }
 
-export function formatTopologyOverviewMcpQueryPlan(): string {
+function formatTopologyOverviewMcpQueryPlan(): string {
   return formatQueryOntologyCall({
     operation: "query_plan",
     targetOperation: "overview",
   });
 }
 
-export function formatTopologyOverviewMcpWorkspaceCheck(): string {
+function formatTopologyOverviewMcpWorkspaceCheck(): string {
   return formatQueryOntologyCall({
     operation: "workspace_brief",
   });
 }
 
-export function formatTopologyHealthImpactCliCheck(slug: string): string {
+function formatTopologyHealthImpactCliCheck(slug: string): string {
   return `${ATLAS_CLI} blast-radius ${slug} [vault] --depth 2 --direction incoming`;
 }
 
-export function formatTopologyHealthImpactMcpCheck(slug: string): string {
+function formatTopologyHealthImpactMcpCheck(slug: string): string {
   return formatQueryOntologyCall({
     operation: "blast_radius",
     slug,
@@ -626,7 +626,7 @@ export function buildTopologyHealthRepairHref(slug: string): string {
   return buildTopologyMeaningEditorNodeHref(slug);
 }
 
-export function getTopologyHealthNextAction(
+function getTopologyHealthNextAction(
   kind: TopologyHealthActionTarget["kind"],
   labels: Pick<
     TopologyHealthBriefLabels,

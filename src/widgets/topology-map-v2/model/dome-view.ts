@@ -74,7 +74,7 @@ export const DOME_PITCH_DEFAULT = 0.34;
  * Pole margin for pitch (rad) — at exactly ±π/2 the screen's "up" flips beyond
  * the pole (yaw direction inverts). This margin exists only to prevent that flip.
  */
-export const DOME_PITCH_POLE_MARGIN = 0.12;
+const DOME_PITCH_POLE_MARGIN = 0.12;
 /**
  * How far orbit drag may pitch — **all the way to just short of the poles**.
  *
@@ -103,7 +103,7 @@ export const DOME_PITCH_MIN = -DOME_PITCH_MAX;
  * pull could still cross the pole; this caps the squash itself. It must stay below
  * `POLE_MARGIN` (0.12) so the screen's up never flips even while pressed.
  */
-export const DOME_PITCH_OVERSHOOT_CAP = 0.09;
+const DOME_PITCH_OVERSHOOT_CAP = 0.09;
 /**
  * Perspective focal distance (dome units) — smaller is a wider lens, i.e. a bigger
  * front-to-back scale difference.
@@ -193,7 +193,7 @@ export const ORBIT_SMOOTH_TAU_MS = 14;
  * feel as a camera flick (the R4 motion charter's iOS deceleration constant — we do
  * not invent a new easing).
  */
-export const ORBIT_VEL_DECAY_PER_MS = 0.998;
+const ORBIT_VEL_DECAY_PER_MS = 0.998;
 /**
  * **Release projection and "a landing that means something".**
  *
@@ -312,7 +312,7 @@ export function orbitSnapTauMs(delta: number, yawVel: number): number {
 }
 
 /** Below this |yawVel| (rad/ms), snap to 0 — prevents an infinite tail. */
-export const ORBIT_VEL_EPS = 0.000005;
+const ORBIT_VEL_EPS = 0.000005;
 
 /**
  * kind → ring height (y, up is positive) and radius — the hero engine's PLANE
@@ -330,7 +330,7 @@ export const DOME_PLANE: Readonly<Record<DomeViewKind, { y: number; r: number }>
 export const DOME_FIT_RADIUS = DOME_PLANE.element.r;
 
 /** Radius cap for in-plane drag (dome units) — 1.5× the bottom ring. Beyond it, direction is kept and length clamped. */
-export const DOME_DRAG_MAX_RADIUS = DOME_FIT_RADIUS * 1.5;
+const DOME_DRAG_MAX_RADIUS = DOME_FIT_RADIUS * 1.5;
 
 /**
  * Positive floor for the plane back-projection denominator (dome units) — keeps the
@@ -338,7 +338,7 @@ export const DOME_DRAG_MAX_RADIUS = DOME_FIT_RADIUS * 1.5;
  * horizon (see `solveDomePlanePoint`). It is comfortably below `F·sin(pitch)` ≈ 125
  * at the old pitch floor (0.12), so solutions in the normal region are untouched.
  */
-export const DOME_PLANE_SOLVE_DENOM_MIN = 30;
+const DOME_PLANE_SOLVE_DENOM_MIN = 30;
 
 /**
  * Depth fog — the hero engine's fog ramp unchanged: near nodes 1.0, far nodes 0.09,
@@ -461,7 +461,7 @@ export const DOME_NODE_R: Readonly<Record<DomeViewKind, number>> = {
 };
 
 /** Deterministic hash → [0,1) — the hero engine's FNV-1a jitter, unchanged (angle stability). */
-export function domeHash01(str: string): number {
+function domeHash01(str: string): number {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);
@@ -572,11 +572,11 @@ export type DomeArrangement = "ownership" | "coupling";
  */
 export const CLOUD_ITERATIONS = 260;
 /** Strength of the all-pairs repulsion. Inverse-square in distance (Coulomb-like). */
-export const CLOUD_REPULSION = 16000;
+const CLOUD_REPULSION = 16000;
 /** Strength of the pull along a relation — a Hooke spring. */
-export const CLOUD_SPRING = 0.008;
+const CLOUD_SPRING = 0.008;
 /** Rest length of one relation (dome units). */
-export const CLOUD_REST_LENGTH = 92;
+const CLOUD_REST_LENGTH = 92;
 
 /**
  * **No overlap.**
@@ -595,9 +595,9 @@ export const CLOUD_REST_LENGTH = 92;
  * non-overlapping. The multiplier is the clearance on top: 1.0 makes discs touch,
  * 2.4 leaves room for another disc between them.
  */
-export const CLOUD_COLLIDE_RADIUS_SCALE = 2.4;
+const CLOUD_COLLIDE_RADIUS_SCALE = 2.4;
 /** What fraction of an overlap one correction resolves. 1.0 oscillates, so resolve half at a time. */
-export const CLOUD_COLLIDE_RELAX = 0.5;
+const CLOUD_COLLIDE_RELAX = 0.5;
 
 /**
  * **The cloud uses deeper fog and smaller dots.**
@@ -618,19 +618,19 @@ export const CLOUD_COLLIDE_RELAX = 0.5;
  * multiplier), for the cloud alone. Draw, hit-test and instrumentation all read
  * those two terms already, so the wiring is zero.
  */
-export const CLOUD_DEPTH_GAMMA = 0.62;
-export const CLOUD_NODE_SCALE = 0.78;
+const CLOUD_DEPTH_GAMMA = 0.62;
+const CLOUD_NODE_SCALE = 0.78;
 /** A very weak pull back to the origin — keeps the cloud from inflating without bound. */
-export const CLOUD_CENTERING = 0.0016;
+const CLOUD_CENTERING = 0.0016;
 /** Farthest a node may move in one iteration — runaway guard. */
-export const CLOUD_MAX_STEP = 9;
+const CLOUD_MAX_STEP = 9;
 /**
  * Node count up to which the O(n²) all-pairs repulsion runs in full. This vault
  * (82–125 nodes) is far below it; above it, iterations are reduced so time stays
  * closer to linear. An octree (Barnes-Hut) gets built once a genuinely large vault
  * is observed — building it now would leave nothing to validate against.
  */
-export const CLOUD_FULL_ITERATION_NODE_CAP = 400;
+const CLOUD_FULL_ITERATION_NODE_CAP = 400;
 
 /**
  * **Resumable handle** for the coupling-cloud relaxation — call `step(budgetMs)`
@@ -647,36 +647,12 @@ export const CLOUD_FULL_ITERATION_NODE_CAP = 400;
  * intact. The caller (use-topology-loop) advances it by budget each frame and does
  * not create the dome runtime until it completes.
  */
-export interface CouplingCloudRelaxer {
+interface CouplingCloudRelaxer {
   /** Advance iterations for budgetMs. True once finished, convergence included. */
   step(budgetMs: number): boolean;
 }
 
-/**
- * Coupling cloud — the 3D arrangement where relations decide position. Updates
- * `coords` in place.
- *
- * Three forces: ① all-pairs repulsion (inverse-square) ② relation springs (to rest
- * length) ③ a very weak pull back to the origin. Damping strengthens as iterations
- * progress (cooling) so positions set at the end — without cooling the layout is
- * still trembling when the fixed iteration count runs out, and identical input
- * yields subtly different pictures.
- *
- * The run-to-completion entry point; internally the same code as the stepper above,
- * so results are identical.
- */
-export function relaxCouplingCloud(
-  coords: Map<string, DomeCoord>,
-  nodes: readonly DomeInputNode[],
-  edges: readonly { sourceId: string; targetId: string }[],
-): void {
-  const relaxer = createCouplingCloudRelaxer(coords, nodes, edges);
-  while (!relaxer.step(Number.POSITIVE_INFINITY)) {
-    // step(∞) finishes in one call — the loop is a formality and never runs twice.
-  }
-}
-
-export function createCouplingCloudRelaxer(
+function createCouplingCloudRelaxer(
   coords: Map<string, DomeCoord>,
   nodes: readonly DomeInputNode[],
   edges: readonly { sourceId: string; targetId: string }[],
@@ -1353,14 +1329,14 @@ export function chargeTierLag(lag: Record<DomeViewKind, number>, deltaYaw: numbe
  * project spine (the hero's tierDelay unchanged). Switching off replays the same
  * clock backwards, settling from the leaves down.
  */
-export const DOME_TIER_DELAY_MS: Readonly<Record<DomeViewKind, number>> = {
+const DOME_TIER_DELAY_MS: Readonly<Record<DomeViewKind, number>> = {
   project: 0,
   domain: 180,
   capability: 380,
   element: 600,
 };
 /** How long one tier takes to rise (ms) — the hero's 520 ms ease-out cubic. */
-export const DOME_TIER_RISE_MS = 520;
+const DOME_TIER_RISE_MS = 520;
 
 /**
  * **Entry sweep — the dome takes its place by rising *and turning*.**
@@ -1386,8 +1362,8 @@ export const DOME_TIER_RISE_MS = 520;
  * the ramp finishes they are exactly 0 — after entry this section might as well not
  * exist.
  */
-export const DOME_ENTRY_PITCH_LIFT = 0.62;
-export const DOME_ENTRY_YAW_SWEEP = 0.45;
+const DOME_ENTRY_PITCH_LIFT = 0.62;
+const DOME_ENTRY_YAW_SWEEP = 0.45;
 
 /**
  * The entry sweep's **own clock** (ms) — it does not use the assembly clock.
@@ -1407,7 +1383,7 @@ export const DOME_ENTRY_YAW_SWEEP = 0.45;
  * objects to carry.
  */
 export const DOME_ENTRY_SWEEP_MS = 1500;
-export const DOME_ENTRY_SWEEP_HOLD_MS = 220;
+const DOME_ENTRY_SWEEP_HOLD_MS = 220;
 
 /**
  * **Fold the entry sweep into the pose** and disarm it — call this the moment a hand
@@ -1443,7 +1419,7 @@ export function domeEntrySweep(entryClockMs: number): number {
 export const DOME_ASSEMBLE_TOTAL_MS = DOME_TIER_DELAY_MS.element + DOME_TIER_RISE_MS;
 
 /** ease-out cubic — the hero's tierAlpha curve. */
-export function domeEaseOutCubic(t: number): number {
+function domeEaseOutCubic(t: number): number {
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
   return 1 - Math.pow(1 - c, 3);
 }
@@ -1654,7 +1630,7 @@ export function updateDomeFrame(
   runtime.frameEpoch++;
 }
 
-export const DOME_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
+const DOME_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
 
 /**
  * Back-projection — solve one world 2D point into dome coordinates **on the plane at
@@ -1859,7 +1835,7 @@ export function domeEgoWorldBounds(
  * frame, and it is dropped the instant an orbit drag, wheel or pointerdown begins so
  * the gesture takes over (the same interruption contract as the 2D camera tween).
  */
-export interface DomePoseTween {
+interface DomePoseTween {
   startYaw: number;
   startPitch: number;
   targetYaw: number;
@@ -1882,14 +1858,14 @@ export interface DomePoseTween {
  * (`DomeNodeFrame`): if fog used different scales for nodes and lines, two things at
  * the same depth would draw at different brightness.
  */
-export interface DomeRingSample {
+interface DomeRingSample {
   wx: number;
   wy: number;
   u: number;
 }
 
 /** One kind plane's latitude ring — a sampled polyline plus that tier's assembly ramp. */
-export interface DomeRing {
+interface DomeRing {
   kind: DomeViewKind;
   /** Assembly ramp 0..1 — rings rise and fall with their tier across the 2D↔3D transition. */
   a: number;
