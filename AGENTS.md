@@ -192,8 +192,11 @@ search name. Project containment is implicit; do not add `project:`.
 `AGENTS.md` is canonical. `CLAUDE.md` imports it and contains only
 Claude-specific visibility and loading information. Keep this file below the
 32 KiB Codex cap; `pnpm agents:check` verifies the cap, the import bridge,
-references, and mirrored skills/agents. `.claude/skills/<name>/` and
-`.agents/skills/<name>/`, plus the matching agent briefs, must be byte
-identical. Do not name a tool inside a shared skill body; branch on capability.
+references, mirrored skills/agents, and that every agent-read file is English.
+That subject set covers `.claude/hooks/`, `.claude/settings.json` and
+`.codex/`: a guard's refusal text is all a blocked agent gets to read.
+`.claude/skills/<name>/` and `.agents/skills/<name>/`, plus the matching agent
+briefs, must be byte identical. Do not name a tool inside a shared skill body;
+branch on capability.
 `.claude/settings.json` owns Claude hooks and `.codex/hooks.json` owns their
 Codex mirror.

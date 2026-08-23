@@ -23,6 +23,8 @@ describe('agent-files — classification table', () => {
       ['.cursor/rules/base.mdc', 'cursor-rules', 'rules', ['cursor']],
       ['.cursorrules', 'cursorrules', 'rules', ['cursor']],
       ['.github/copilot-instructions.md', 'copilot-instructions', 'instructions', ['copilot']],
+      ['.claude/hooks/block-npm-publish.sh', 'claude-hooks', 'config', ['claude-code']],
+      ['.claude/settings.json', 'claude-settings', 'config', ['claude-code']],
       ['.codex/config.toml', 'codex-dir', 'config', ['codex']],
       ['.codex/hooks/block-npm-publish.sh', 'codex-dir', 'config', ['codex']],
       ['.mcp.json', 'mcp-json', 'mcp-config', ['claude-code', 'cursor']],
@@ -41,7 +43,7 @@ describe('agent-files — classification table', () => {
       'README.md',
       'docs/DESIGN-SYSTEM.md',
       'src/CLAUDE.md.bak',
-      '.claude/settings.json',
+      '.claude/settings.local.json', // personal override, never committed
       '.cursor/rules/base.md', // cursor rules must be .mdc
       'nested/CLAUDE.md', // repo-root slice: root files only
     ]) {
@@ -344,5 +346,67 @@ describe('agent-files — analyzeAgentFiles result shape', () => {
     }
     assert.equal(result.summary.files, 3);
     assert.equal(result.summary.driftCount, 0);
+  });
+});
+
+describe('agent-files — English-only agent text', () => {
+  const file = (path, content) => ({ path, content });
+
+  it('passes when every scanned agent file is English', () => {
+    const result = analyzeAgentFiles({
+      files: [
+        file('CLAUDE.md', '# Project\n\n@AGENTS.md\n'),
+        file('AGENTS.md', '# Guide\n'),
+        file('.claude/hooks/block-unsafe-git.sh', 'REASON="a force push deletes commits"\n'),
+      ],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'ok');
+    assert.equal(result.checks.agentLanguage.flaggedFiles, 0);
+    assert.equal(result.checks.agentLanguage.scannedFiles, 3);
+  });
+
+  it('flags non-English text wherever it sits, string literals included', () => {
+    const result = analyzeAgentFiles({
+      files: [
+        file('AGENTS.md', '# Guide\n'),
+        file('.claude/hooks/block-unsafe-git.sh', 'REASON="힘내"\n'),
+        file('.claude/settings.json', '{"_comment": "메모"}\n'),
+      ],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'drift');
+    assert.equal(result.checks.agentLanguage.flaggedFiles, 2);
+    assert.equal(result.checks.agentLanguage.codePoints, 4);
+    const paths = result.drift
+      .filter((d) => d.check === 'agent-language')
+      .map((d) => d.path)
+      .sort();
+    assert.deepEqual(paths, ['.claude/hooks/block-unsafe-git.sh', '.claude/settings.json']);
+    const record = result.records.find((r) => r.path === '.claude/settings.json');
+    assert.ok(record.drift.includes('non-english-agent-text'));
+  });
+
+  it('catches kana and Han, not only Hangul', () => {
+    const result = analyzeAgentFiles({
+      files: [file('AGENTS.md', 'ok'), file('.claude/rules/git.md', 'テスト 测试')],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'drift');
+    assert.equal(result.checks.agentLanguage.codePoints, 5);
+  });
+
+  it('is not applicable when the scanner supplied no contents', () => {
+    const result = analyzeAgentFiles({ files: [{ path: 'AGENTS.md', bytes: 10 }] });
+    assert.equal(result.checks.agentLanguage.status, 'not-applicable');
+  });
+
+  it('leaves localized product data out of the subject set', () => {
+    const result = analyzeAgentFiles({
+      files: [
+        file('AGENTS.md', 'ok'),
+        file('cli/templates/vault-ko/AGENTS.md', '한국어 템플릿'),
+        file('docs/ontology/domains/x.md', 'display_ko: 온톨로지'),
+      ],
+    });
+    assert.equal(result.checks.agentLanguage.status, 'ok');
+    assert.equal(result.checks.agentLanguage.scannedFiles, 1);
   });
 });

@@ -24,7 +24,7 @@ Put shared rules in `AGENTS.md`. The two agent trees have matching
 `skills/` and `agents/` files and must be byte-identical; relative
 references resolve within each tree. Shared skill bodies must branch on
 capability, not tool name. `pnpm agents:check` checks the import, cap,
-references, and pair parity.
+references, pair parity, and that agent-read text is English-only.
 
 ## Claude Code loading
 
@@ -41,10 +41,11 @@ updating its contract and reason.
 available to both agent trees; `AGENTS.md` owns invocation triggers and
 `docs/DECISIONS.md` owns decisions and dissent.
 
-`.claude/settings.json` owns Claude permissions and hooks. Its hooks mirror
-`.codex/hooks/`: block npm publishing, unsafe Git, and hand-editing generated
-files, plus inject compact vault inventory at session start. Change hook wiring
-with `pnpm test:claude:hooks`.
+`.claude/settings.json` owns Claude permissions and hooks. It and
+`.claude/hooks/` are inventoried agent files, so their text is gated too. Its
+hooks mirror `.codex/hooks/`: block npm publishing, unsafe Git, and
+hand-editing generated files, plus inject compact vault inventory at session
+start. Change hook wiring with `pnpm test:claude:hooks`.
 
 ## Synchronization
 

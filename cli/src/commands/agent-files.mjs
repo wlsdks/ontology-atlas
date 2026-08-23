@@ -1,7 +1,8 @@
 // `ontology-atlas agent-files [--root path]` — read-only detection of which
-// AI tool reads which instruction file, plus five drift checks (CLAUDE.md ↔
+// AI tool reads which instruction file, plus six drift checks (CLAUDE.md ↔
 // AGENTS.md bridge · duplicated skill trees byte diff · duplicated agent-brief
-// byte diff · @reference existence · AGENTS.md Codex 32 KiB cap). Never converts, syncs, or repairs — this is
+// byte diff · @reference existence · English-only agent text · AGENTS.md Codex
+// 32 KiB cap). Never converts, syncs, or repairs — this is
 // a workbench readout, not a rulesync-style converter (strategy-audit no-go).
 
 import { COLORS } from '../lib/colors.mjs';
@@ -27,11 +28,13 @@ const ROOT_FILE_CANDIDATES = Object.freeze([
   '.cursorrules',
   '.mcp.json',
   '.github/copilot-instructions.md',
+  '.claude/settings.json',
 ]);
 
 /** Directories walked recursively: the only dot-dirs this command touches. */
 const SCAN_DIRS = Object.freeze([
   '.claude/rules',
+  '.claude/hooks',
   '.claude/skills',
   '.claude/agents',
   '.agents/skills',
@@ -226,6 +229,11 @@ function render(result) {
       'at-refs',
       result.checks.atRefs.status,
       `@reference existence (${result.checks.atRefs.refsChecked} checked · ${result.checks.atRefs.missingRefs} missing · ${result.checks.atRefs.unverifiedRefs} unverified)`,
+    ],
+    [
+      'agent-language',
+      result.checks.agentLanguage.status,
+      `English-only agent text (${result.checks.agentLanguage.scannedFiles} scanned · ${result.checks.agentLanguage.flaggedFiles} flagged · ${result.checks.agentLanguage.codePoints} non-English code points)`,
     ],
     [
       'codex-size-cap',

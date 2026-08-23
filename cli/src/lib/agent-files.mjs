@@ -5,7 +5,7 @@
 // .mcp.json). Nobody sees which tool reads which file, and physically
 // duplicated skill trees drift byte-by-byte with no watchdog. This module
 // classifies known agent-file paths (data-driven table — one update point)
-// and runs four read-only drift checks. It never converts, syncs, or repairs.
+// and runs six read-only drift checks. It never converts, syncs, or repairs.
 //
 // The web workbench mirrors this logic in
 // `src/views/docs-vault/lib/agent-files.ts`; the two implementations are held
@@ -51,6 +51,8 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'cursor-rules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursor\/rules\/.+\.mdc$/ }),
   Object.freeze({ id: 'cursorrules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursorrules$/ }),
   Object.freeze({ id: 'copilot-instructions', kind: 'instructions', tools: Object.freeze(['copilot']), pattern: /^\.github\/copilot-instructions\.md$/ }),
+  Object.freeze({ id: 'claude-hooks', kind: 'config', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/hooks\/.+/ }),
+  Object.freeze({ id: 'claude-settings', kind: 'config', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/settings\.json$/ }),
   Object.freeze({ id: 'codex-dir', kind: 'config', tools: Object.freeze(['codex']), pattern: /^\.codex\/.+/ }),
   Object.freeze({ id: 'mcp-json', kind: 'mcp-config', tools: Object.freeze(['claude-code', 'cursor']), pattern: /^\.mcp\.json$/ }),
 ]);
@@ -381,6 +383,56 @@ function checkAtRefs(records, options, drift) {
   };
 }
 
+/**
+ * Every agent file is read by an agent, so its whole content — not only its
+ * comments — is steering text. A guard whose `permissionDecisionReason` was
+ * Korean shipped for months because `scripts/quality/source-language` audits
+ * comments in `.sh` and skips `.json` entirely, and the string literal that
+ * an agent actually reads sat in neither subject set (2026-08-23 audit). This
+ * repository is open source and English-only, and a Codex, Cursor or Gemini
+ * run has no reason to parse Hangul, kana or Han at the moment it is blocked.
+ *
+ * Localized product data is not an agent file: `cli/templates/vault-ko/**` and
+ * `display_<locale>` frontmatter never match AGENT_FILE_RULES, so they are out
+ * of this subject set by construction rather than by exception.
+ */
+const NON_ENGLISH_SCRIPT_RE =
+  /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/gu;
+
+function checkAgentLanguage(records, drift) {
+  let scannedFiles = 0;
+  let flaggedFiles = 0;
+  let codePoints = 0;
+  for (const record of records) {
+    if (typeof record.entry.content !== 'string') continue;
+    scannedFiles += 1;
+    const hits = record.entry.content.match(NON_ENGLISH_SCRIPT_RE);
+    if (!hits) continue;
+    flaggedFiles += 1;
+    codePoints += hits.length;
+    const sample = Array.from(new Set(hits)).slice(0, 8).join('');
+    drift.push({
+      check: 'agent-language',
+      code: 'non-english-agent-text',
+      path: record.path,
+      message:
+        `${record.path} carries ${hits.length} non-English code point(s) (${sample}); `
+        + 'agent files are English-only because their text is what a blocked or '
+        + 'steered agent reads',
+      detail: { codePoints: hits.length, sample },
+    });
+    if (!record.drift.includes('non-english-agent-text')) {
+      record.drift.push('non-english-agent-text');
+    }
+  }
+  return {
+    status: flaggedFiles > 0 ? 'drift' : scannedFiles > 0 ? 'ok' : 'not-applicable',
+    scannedFiles,
+    flaggedFiles,
+    codePoints,
+  };
+}
+
 function checkCodexSizeCap(recordByPath, drift) {
   const agents = recordByPath.get('AGENTS.md');
   if (!agents) return { status: 'not-applicable', agentsMdBytes: null, capBytes: CODEX_PROJECT_DOC_CAP_BYTES };
@@ -451,6 +503,7 @@ export function analyzeAgentFiles({
       drift,
     ),
     codexSizeCap: checkCodexSizeCap(recordByPath, drift),
+    agentLanguage: checkAgentLanguage(records, drift),
   };
 
   const byTool = {};
