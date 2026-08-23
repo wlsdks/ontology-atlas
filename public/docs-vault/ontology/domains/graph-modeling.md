@@ -10,19 +10,18 @@ elements: [elements/acp-ontology-write-review, elements/category, elements/knowl
 created_by: human
 ---
 
-## 정의
-markdown frontmatter가 인코딩하는 5개 authorable kind, 예약 reader kind, 실제
-storage/query/write relation vocabulary와 비추론 경계를 정의하고 이를 결정론적
-그래프로 컴파일·쿼리하는 책임 영역.
+## Definition
+Defines the five authorable kinds, reserved reader kind, actual storage/query/write relation vocabulary, and non-inference boundaries encoded in markdown frontmatter, compiling them into a deterministic graph for compilation and querying.
 
-## 근거
-- docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: kind와 relation 의미의 공개 정본
-- docs/ARCHITECTURE.md: "compile_ontology turns markdown frontmatter into a deterministic graph artifact; query_ontology runs graph operations over that artifact" (주의: 이 문서는 risky-citation 경고 대상: negated/deprecated-state 서술 포함, 공개 spec과 함께 인용하여 상호 검증)
 
-## 포함 / 제외
-- 포함: kind별 frontmatter 정규화, 관계 지원 범위와 방향, direct `is_a` 판별,
-  compile_ontology/query_ontology, 자동 추론·표준 conformance 부재의 명시
-- 제외: 개별 도메인의 업무 의미 자체 (그건 각 도메인이 스스로 설명)
+## Evidence
+- docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: Public authoritative definition of kind and relation meanings
+- docs/ARCHITECTURE.md: "compile_ontology turns markdown frontmatter into a deterministic graph artifact; query_ontology runs graph operations over that artifact" (Note: This document is subject to risky-citation warnings: includes negated/deprecated-state descriptions; cite alongside the public spec for mutual verification)
 
-## 확신도
-high (0.9): README 직접 인용 + 독립 소스(ARCHITECTURE.md) 대조
+## Inclusion / Exclusion
+- Included: kind-specific frontmatter normalization, relationship support scope and direction, direct `is_a` determination,
+  compile_ontology/query_ontology, explicit absence of automatic inference and standard conformance
+- Excluded: The business meaning of individual domains themselves (each domain explains its own)
+
+## Confidence
+high (0.9): Direct README citation + cross-reference with independent source (ARCHITECTURE.md)

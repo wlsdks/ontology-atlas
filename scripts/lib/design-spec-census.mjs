@@ -4,8 +4,8 @@
  *
  * ## Why "the file is in the diff" is not the test
  *
- * `.claude/rules/design.md`'s section 「규격을 바꾸려면 「체계」를 부른다」 (changing
- * a spec means convening the design-systems seat) names the trigger files. Those
+ * `.claude/rules/design.md`'s “Changing the specification requires
+ * `design-system`” section names the trigger files. Those
  * are the **most frequently touched files in this repository** — `app/globals.css`
  * alone appears in more than a third of the last 200 commits. Requiring a ledger
  * entry whenever one appears in a diff would catch typo fixes, comments,
@@ -25,7 +25,7 @@
  * | `app/globals.css` | the **names and values** of ramp tokens (type · line height · radius · shadow · control height · content icon · the fixed-scale contract) | surface-only tokens, comments, order, whitespace |
  * | `src/shared/ui/control-class.ts` | cva **axis names, axis options, and defaults** (shape/size/tone/scope…) | the class strings each option emits |
  * | `src/shared/ui/controls.tsx` · `surface.tsx` | **exported primitive names** | internal implementation |
- * | `.claude/rules/design.md` | the **numbers and token names** in the 「스케일 고정 계약」 (fixed-scale contract) section | that section's sentences |
+ * | `.claude/rules/design.md` | the **numbers and token names** in the “Fixed scale contract” section | that section's sentences |
  *
  * The nature of the judgement differs per layer:
  *
@@ -58,17 +58,17 @@ import ts from 'typescript';
 export const SPEC_RULE_DOC = '.claude/rules/design.md';
 
 /** The section of that document where the list lives. Renaming the heading makes the parser die loudly. */
-export const SPEC_RULE_SECTION = '규격을 바꾸려면 「체계」를 부른다';
+export const SPEC_RULE_SECTION = 'Changing the specification requires `design-system`';
 
-/** design.md's 「스케일 고정 계약」 (fixed-scale contract) section — the target of the number and token inventory. */
-export const SCALE_CONTRACT_SECTION = '스케일 고정 계약';
+/** design.md's “Fixed scale contract” section — the target of the number and token inventory. */
+export const SCALE_CONTRACT_SECTION = 'Fixed scale contract';
 
 /**
  * Tokens in globals.css counted as ramp.
  *
  * The named ladders (type · line height · radius · shadow · control height ·
- * content icon) plus the two dimensions design.md pins in 「스케일 고정 계약」 (the
- * fixed-scale contract). The first four follow the regular `--<ramp>-<step>` naming
+ * content icon) plus the two dimensions design.md pins in “Fixed scale contract.”
+ * The first four follow the regular `--<ramp>-<step>` naming
  * and number about 40 in total, so anything caught here is almost certainly spec.
  */
 const RAMP_TOKEN_PATTERN =
@@ -99,7 +99,7 @@ const VARIANT_VOCABULARY_FILES = new Set([
 const PRIMITIVE_EXPORT_FILES = new Set([
   'src/shared/ui/controls.tsx',
   'src/shared/ui/surface.tsx',
-  // The modal authority created on 2026-08-15 with the 체계 seat's ratification — what it exports is the contract.
+  // The modal authority created on 2026-08-15 with design-system ratification — what it exports is the contract.
   'src/shared/ui/dialog.tsx',
   // 2026-08-15 (2) form behaviour layer — Input/Textarea · Checkbox.
   'src/shared/ui/input.tsx',
@@ -139,8 +139,8 @@ export function parseTriggerFiles(designMdText) {
   const section = extractSection(designMdText, SPEC_RULE_SECTION);
   if (section === null) {
     throw new Error(
-      `[design-spec] ${SPEC_RULE_DOC} 에서 「${SPEC_RULE_SECTION}」 절을 못 찾았다 — ` +
-        `절 제목이 바뀌었으면 이 상수도 같이 고쳐라.`,
+      `[design-spec] could not find section “${SPEC_RULE_SECTION}” in ${SPEC_RULE_DOC}; ` +
+        'update this constant when renaming the heading.',
     );
   }
   // ⚠️ Do not scrape backticked paths from the **whole** section. Its last
@@ -155,7 +155,7 @@ export function parseTriggerFiles(designMdText) {
   }
   if (files.length === 0) {
     throw new Error(
-      `[design-spec] 「${SPEC_RULE_SECTION}」 절에 «- \`경로\`» 형식의 목록 줄이 하나도 없다.`,
+      `[design-spec] section “${SPEC_RULE_SECTION}” has no list row shaped as “- \`path\`”.`,
     );
   }
   return files;
@@ -300,8 +300,7 @@ function exportedPrimitiveCensus(path, source) {
 }
 
 /**
- * Number and token inventory of design.md's 「스케일 고정 계약」 (fixed-scale
- * contract) section.
+ * Number and token inventory of design.md's “Fixed scale contract” section.
  *
  * The section is prose, but the **numbers and token names** inside it are spec
  * (36px pill · 20px rail icon · `--chrome-tile-size` …). Comparing whole sentences
@@ -316,8 +315,8 @@ function scaleContractCensus(designMdText) {
     .map((match) => match[0].replace(/-+$/, ''))
     .filter((token) => token.length > 2);
   const census = new Map();
-  if (numbers.length > 0) census.set('scale-contract 수치', [...new Set(numbers)].sort().join(' '));
-  if (tokens.length > 0) census.set('scale-contract 토큰', [...new Set(tokens)].sort().join(' '));
+  if (numbers.length > 0) census.set('scale-contract numbers', [...new Set(numbers)].sort().join(' '));
+  if (tokens.length > 0) census.set('scale-contract tokens', [...new Set(tokens)].sort().join(' '));
   return census;
 }
 
@@ -337,7 +336,7 @@ export function diffCensus(before, after) {
 }
 
 export function describeChange(path, change) {
-  if (change.kind === 'added') return `규격 추가: ${path} — ${change.key} = ${change.to}`;
-  if (change.kind === 'removed') return `규격 제거: ${path} — ${change.key} (였던 값: ${change.from})`;
-  return `규격 값 변경: ${path} — ${change.key}: ${change.from} → ${change.to}`;
+  if (change.kind === 'added') return `Spec added: ${path} — ${change.key} = ${change.to}`;
+  if (change.kind === 'removed') return `Spec removed: ${path} — ${change.key} (was: ${change.from})`;
+  return `Spec value changed: ${path} — ${change.key}: ${change.from} → ${change.to}`;
 }

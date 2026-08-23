@@ -8,4 +8,4 @@ path: src/widgets/global-search
 created_by: "agent:unknown"
 ---
 
-전역 검색 위젯. capabilities/topology-browsing 의 구현 증거.
+Global search widget. Evidence of implementation for capabilities/topology-browsing.

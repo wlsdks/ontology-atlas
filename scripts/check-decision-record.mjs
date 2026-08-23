@@ -200,7 +200,7 @@ console.error(`
 [decisions]   3. 트리거가 오탐이면 (예: 라우트 파일 이동), 그 사실을 기록에 한 줄로 남긴다
 [decisions]
 [decisions] «규격 …» 트리거라면 소집할 자리는 /design-council 의 「체계」다
-[decisions] (.claude/rules/design.md 「규격을 바꾸려면 「체계」를 부른다」).
+[decisions] (.claude/rules/design.md “Changing the specification requires design-system”).
 [decisions]
 [decisions] 기록은 품질 심사가 아니라 존재 확인이다 — 다음 패스가 읽을 자리에
 [decisions] 결정과 그때 진 반대 의견이 남아 있어야 같은 논쟁을 다시 하지 않는다.`);

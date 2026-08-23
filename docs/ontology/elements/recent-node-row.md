@@ -8,4 +8,4 @@ path: src/widgets/recent-node-row
 created_by: "agent:unknown"
 ---
 
-최근 본 노드 목록 행 위젯.
+Recently viewed node list row widget.

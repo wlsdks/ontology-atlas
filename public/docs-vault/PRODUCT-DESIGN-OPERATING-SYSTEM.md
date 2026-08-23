@@ -34,30 +34,23 @@ Atlas Designer Bench below is now eight callable agents in
 `.claude/agents/`, convened by `.claude/skills/design-council/SKILL.md`
 (mirrored at `.agents/skills/design-council/SKILL.md`):
 
-| Bench seat | Agent | 이름 | 이 자리가 하는 일 |
+| Bench seat | Agent | Name | What this seat does |
 | --- | --- | --- | --- |
-| Lead Product Designer | `design-lead` | 위계 | 이 화면에서 무엇이 먼저 눈에 들어와야 하는지 하나를 고른다 |
-| Design Systems Engineer | `design-system` | 체계 | 그 결정을 토큰·lint 룰·계약 테스트로 굳혀 다음 사람이 다시 정하지 못하게 한다 |
-| Interaction Designer | `design-interaction` | 상호작용 | 클릭·호버·드래그·포커스·키보드 상태가 서로 구별되는지 본다 |
-| Motion / Action Designer | `design-motion` | 모션 | 움직임이 부드럽고 이유가 있고 도중에 끊을 수 있는지 재서 본다 |
-| Information Visualization Designer | `design-infoviz` | 도해 | 화면의 모든 표시가 장식이 아니라 온톨로지 사실에 묶여 있는지 본다 |
-| macOS Workbench Designer | `design-workbench` | 작업대 | 설치된 macOS 앱의 14인치 첫 화면과 창 동작을 지킨다 |
-| Responsive & Touch Designer | `design-responsive` | 반응형 | 창 크기를 바꿔 가며 실제 좌표를 재고 터치 영역을 본다 |
-| Agent Handoff Designer | `design-handoff` | 핸드오프 | 사람이 보고 있는 그 상태에서 AI 에이전트가 이어받을 수 있는지 본다 |
+| Lead Product Designer | `design-lead` | Hierarchy | Picks one thing that must catch the eye first in this view |
+| Design Systems Engineer | `design-system` | System | Hardens that decision into tokens, lint rules, and contract tests so the next person cannot re-decide |
+| Interaction Designer | `design-interaction` | Interaction | Checks if click, hover, drag, focus, and keyboard states are distinct from each other |
+| Motion / Action Designer | `design-motion` | Motion | Measures if movement is smooth, has a reason, and can be interrupted midway |
+| Information Visualization Designer | `design-infoviz` | Diagram | Checks if all displays on the screen are tied to ontology facts rather than decoration |
+| macOS Workbench Designer | `design-workbench` | Workbench | Adheres to the first 14-inch screen and window behavior of installed macOS apps |
+| Responsive & Touch Designer | `design-responsive` | Responsive | Measures actual coordinates while resizing windows and checks touch areas |
+| Agent Handoff Designer | `design-handoff` | Handoff | Checks if an AI agent can take over from the state the human is currently viewing |
 
 `design-guardian` is **not** a seat — it is the accountable decider and the only
 one of the eight permitted to edit code, mirroring how Accountable Value Owner
 is deliberately not an agent in the PO Council. The Product Owner row below
 belongs to the PO Council (`/po-council`), not to this bench.
 
-Convene only the seats a change touches; 위계 and 체계 always attend — 위계 is the
-seat that picks what the eye must read first, 체계 is the seat that turns that
-decision into tokens, lint rules, and contract tests, and a decision that never
-becomes one of those is a decision the next person re-makes. Every seat must open
-the built surface rather than judge a diff, may research the web, and may not
-block without prescribing an alternative. Published principles only — never copy
-a reference product's assets, wording, styling, or palette, and never invent
-quotes from real designers.
+Convene only the seats a change touches; hierarchy and system always attend — hierarchy is the seat that picks what the eye must read first, system is the seat that turns that decision into tokens, lint rules, and contract tests, and a decision that never becomes one of those is a decision the next person re-makes. Every seat must open the built surface rather than judge a diff, may research the web, and may not block without prescribing an alternative. Published principles only — never copy a reference product's assets, wording, styling, or palette, and never invent quotes from real designers.
 
 `tests/contract/design-council.contract.test.ts` fails the build if a bench seat
 loses its agent, if `design-guardian` is listed as a seat, or if the skill and
@@ -313,10 +306,7 @@ The bench must produce a single design verdict. If the seats disagree, choose
 the smallest change that clarifies the ontology-reading moment in the installed
 app. Do not average the disagreement into a larger feature.
 
-평결(verdict — `Do not design` · `Investigate first` · `Shape a design slice` ·
-`Build and verify` 네 결론 중 하나를 고르는 최종 판정) 형식은 `/design-council`
-의 Council Verdict 블록이 단일 출처다. 그 형식이 적힌 곳은 거기 하나뿐이라는
-뜻이고, 그래서 여기 다시 적지 않는다.
+The format for the final verdict (picking one of four conclusions: `Do not design`, `Investigate first`, `Shape a design slice`, `Build and verify`) is the Council Verdict block in `/design-council`. That is the single source for that format, so it is not repeated here.
 
 ### No-Human-Designer Working Mode
 

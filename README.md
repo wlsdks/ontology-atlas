@@ -346,7 +346,7 @@ declarations. It does not turn folder structure into causal confidence:
 ```console
 $ node $ATLAS/cli/src/index.mjs blast-radius capabilities/mcp-server docs/ontology --depth 2
 capabilities/mcp-server — blast radius (depth 2, incoming)
-  risk unknown · 1 노드 · 1 관계 · 0 cross-domain
+  risk unknown · 1 node · 1 relation · 0 cross-domain
 
 impact certainty unknown · declared 1 · rationale 0 · source-backed 0
 Counts below follow declared depends_on only. Use reachability/subgraph for structure;
@@ -587,6 +587,9 @@ command to run before a pull request. The [contributor guide](CONTRIBUTING.md)
 explains the workflow; [development checks](docs/DEVELOPMENT-CHECKS.md) owns the
 full gate reference, and [map testability](docs/MAP-TESTABILITY.md) owns canvas
 performance, readability, contrast, and browser instrumentation.
+
+For Markdown changes, that selector includes `pnpm docs:language`, which keeps
+English canonical prose from regressing while preserving typed Korean locale data.
 
 ### Refreshing the agent runtime catalog
 

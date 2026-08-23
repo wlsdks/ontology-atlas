@@ -8,4 +8,4 @@ path: src/entities/project
 created_by: "agent:unknown"
 ---
 
-project 노드 데이터 모델 엔티티. capabilities/project-data-source 의 구현 증거.
+Project node data model entity. Implementation evidence for capabilities/project-data-source.

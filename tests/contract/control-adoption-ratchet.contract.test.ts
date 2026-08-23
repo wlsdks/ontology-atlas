@@ -54,7 +54,7 @@ import { describe, expect, it } from 'vitest';
  * | **버튼 등재 32** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
  * | **버튼 근거 없음 4** | 값 층이 낼 수는 있으나 **낼 것이 없는** 자리 — 컨트롤이 아니다(`NO_BASIS`) | 움직이지 않는 것이 정상이다. **갚을 대상이 아니다** |
  * | **버튼 부채 0** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
- * | **앵커 등재 29** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
+ * | **앵커 등재 28** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
  * | **앵커 부채 0** | 아직 안 옮긴 `<Link>` 23 · `<a>` 14 중 미등재분 | **0 을 향한다** |
  * | **폼 부채 0** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설 · 06 에 63→57→29→20) | **0 을 향한다.** 텍스트 필드는 전부 옮겼고 네이티브 `<select>` 부채는 **0** 이 됐다. 남은 20 은 배치 전용 라벨(규격이 아니다) + 체크박스 5(자기 계약이 고정) + 슬라이더·전면 에디터·무대 입력 |
@@ -1224,7 +1224,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // 2026-08-19: deleting the install section removed 7 anchors from the gateway
 // (the panel's primary CTA · Intel · GitHub exit · web exit · release notes ·
 // Windows download · Windows tracking) — `Link` 19→17 · `a` 17→12.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 12 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 11 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1348,15 +1348,6 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       '등재돼 있다 — 한 프리미티브가 두 태그를 내므로 두 등록부에 한 줄씩 선다.',
   },
   {
-    file: 'src/features/macos-download-link/ui/MacosDownloadLink.tsx',
-    count: 1,
-    claim: 'no-spec',
-    proof: 'className={className}',
-    why:
-      '이 파일이 선언하는 규격이 **0**이다 — href·rel 만 고정하고 클래스는 호출자 것을 그대로 ' +
-      '넘긴다. 값 층이 낼 것이 없다.',
-  },
-  {
     file: 'src/widgets/public-quick-actions/ui/PublicQuickActions.tsx',
     count: 2,
     claim: 'no-spec',
@@ -1415,7 +1406,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // pointed out the hero had no Windows-download or web-entry button, so all four
 // destinations became buttons. The same
 // The same standard-button claim, so the registration reason is the same.
-const BASELINE_ANCHOR_REGISTERED = 29;
+const BASELINE_ANCHOR_REGISTERED = 28;
 
 /** **Only this number may fall.** The anchor total (92) minus registered (25). */
 const BASELINE_ANCHOR_DEBT = 0;

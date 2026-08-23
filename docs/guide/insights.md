@@ -1,179 +1,144 @@
-# 정비 보드: 내 폴더 분석
+# Maintenance Board: Analyzing My Folders
 
-[폴더가 자란 뒤](/guide/growing-vault) 는 「이제 뭘 손봐야 하지」 를 CLI 로
-답했습니다. **같은 일을 하는 화면**이 있습니다. 왼쪽 레일의 「분석」,
-주소는 `/ontology/insights` 입니다.
+[After the folder has grown](/guide/growing-vault), you answered "what should I fix now" via CLI. There is a **screen that does the same thing**: "Analysis" in the left rail, at `/ontology/insights`.
 
-화면이 스스로 자기 일을 이렇게 말합니다.
+The screen describes its own purpose like this:
 
-> 이 화면은 지도를 가꾸는 사람과 AI 에이전트를 위한 정비 보드예요.
+> This screen is a maintenance board for the person tending the map and the AI agent.
 
-지도가 「지금 무엇이 있나」 라면 여기는 **「지금 무엇이 덜 됐나」** 입니다.
-그리고 머리말이 한 가지를 못박아 둡니다. 「모든 숫자는 문서에서 자동
-계산됩니다」. 어디에도 손으로 적어 둔 수가 없다는 뜻입니다.
+If the map is "what exists now," this is **"what is less done now."**
+And the header emphasizes one thing: "All numbers are automatically calculated from documents." This means no numbers are manually entered anywhere.
 
-## 1. 다섯 갈래로 나뉜다
+## 1. Divided into five branches
 
-머리의 탭 다섯이 각각 다른 질문에 답합니다.
+The five tabs at the top each answer a different question.
 
-| 탭 | 답하는 질문 |
+| Tab | Question Answered |
 |---|---|
-| 「할 일」 | 지금 손볼 게 몇 건이고, 오늘은 무엇부터 하나 |
-| 「구성」 | 무엇이 몇 개씩 있고, 어느 도메인이 무거운가 |
-| 「연결」 | 관계가 어떤 성격에 치우쳐 있고, 어디가 허브인가 |
-| 「경계」 | 도메인끼리 얼마나 새고 있나 |
-| 「신선도」 | 어디가 오래 안 만져졌나 |
+| "To-Do" | How many things need fixing now, and what to start with today |
+| "Structure" | What exists in what quantities, which domain is heavy |
+| "Connections" | Which relationships are skewed towards which nature, where is the hub |
+| "Boundaries" | How much domains are leaking into each other |
+| "Freshness" | Where hasn't been touched for a long time |
 
-탭 이름 옆의 수가 그 갈래의 크기입니다. 「할 일」 옆의 수가 0 이 아니면 그게
-오늘 할 일의 개수입니다.
+The number next to the tab name is the size of that branch. If the number next to "To-Do" is not 0, that is the count of today's tasks.
 
-## 2. 「오늘 먼저 볼 일」: 그날의 세 건
+## 2. "First things first today": The three items for the day
 
-가장 위 카드가 오늘의 우선 항목을 골라 놓습니다. 각 줄이 **왜 골랐는지**를
-같이 답니다. 예를 들어 「이유 · 여러 곳에서 참조돼요. 상위 개념으로 올릴
-만해요」.
+The top card selects today's priority items. Each line also answers **why it was selected**. For example, "Reason · Referenced from multiple places. Worth promoting to a parent concept."
 
-카드 머리에 이 화면이 상정한 순서가 한 줄로 적혀 있습니다.
+The order assumed by this screen is written in one line at the head of the card.
 
 ```
-지도에서 확인 → 원문 확인 → 스튜디오에서 수정 → 에이전트로 검증
+Verify on map → Verify original text → Edit in Studio → Validate with agent
 ```
 
-그리고 줄마다 그 네 걸음이 그대로 버튼입니다. 첫 걸음만 밖에 나와 있고 나머지
-셋은 줄 끝의 ⋯ 안에 있습니다.
+And each of those four steps is a button on the line. Only the first step is visible outside, while the remaining three are inside the ⋯ at the end of the line.
 
-| 버튼 | 가는 곳 |
+| Button | Destination |
 |---|---|
-| 「지도에서 확인」 (줄 위) | 지도에서 그 노드를 포커스합니다 |
-| 「원문 확인」 (⋯) | 그 노드의 `.md` 원문 |
-| 「스튜디오에서 보기」 (⋯) | [스튜디오](/guide/studio) 무대에 그 노드를 올립니다 |
-| 「넘길 명령 복사」 (⋯) | 이 한 건을 처리할 **MCP 명령**을 클립보드에 담습니다 |
+| "View on Map" (above the row) | Focuses that node on the map |
+| "View Source" (⋯) | The `.md` source of that node |
+| "View in Studio" (⋯) | Puts that node on the [Studio](/guide/studio) stage |
+| "Copy Merge Command" (⋯) | Copies the **MCP command** to process this item to your clipboard |
 
-마지막 것이 이 화면의 성격을 가장 잘 보여 줍니다. 「비슷한 이름: 같은
-걸까요?」 줄에서 누르면 이런 게 복사됩니다.
+The last one best illustrates the nature of this screen. Clicking the "Similar Name: Same Thing?" row copies something like this.
 
 ```
-merge_concepts({fromSlug:"capabilities/order-partial-cancel", intoSlug:"capabilities/order-cancel"}) 로 합칠 결과 미리보기
-→ 같은 뜻이 맞으면 같은 호출에 confirm:true 를 더해 실행
-→ get_concept({slug:"capabilities/order-cancel"}) 로 합쳐진 원문 확인
-→ query_ontology({operation:"health"}) 로 변경 결과 재확인
+Preview the result of merging with merge_concepts({fromSlug:"capabilities/order-partial-cancel", intoSlug:"capabilities/order-cancel"})
+→ If they mean the same thing, add confirm:true to the same call to execute
+→ Verify the merged original text with get_concept({slug:"capabilities/order-cancel"})
+→ Re-verify the change result with query_ontology({operation:"health"})
 ```
 
-**명령 하나가 아니라 확인까지 포함한 절차**입니다. 미리보기 → 실행 → 원문 확인
-→ 재검진. 에이전트에게 붙여넣으면 그대로 굴러갑니다.
+**It's a procedure that includes verification, not just a command.** Preview → Execute → Verify source → Re-check. Paste this into an agent and it runs as-is.
 
-## 3. 사람이 고칠 것과 에이전트가 고칠 것
+## 3. What Humans Fix vs. What Agents Fix
 
-「할 일」 탭 아래쪽에 두 판이 나란히 있습니다.
+Two panels sit side-by-side under the "To-Do" tab.
 
-**「에이전트 준비도」** 는 관계를 셋으로 나눕니다. 「준비됨」 · 「확인 필요」 ·
-「검토 필요」. 화면의 설명이 기준을 말합니다.
+**"Agent Readiness"** divides relationships into three categories: "Ready", "Needs Verification", and "Needs Review". The screen's description explains the criteria.
 
-> 각 관계에 근거가 얼마나 붙어 있는지: 에이전트가 바로 믿고 쓸 관계·한 번
-> 확인이 필요한 관계·사람이 검토할 관계로 나눈 거예요
+> Based on how much evidence is attached to each relationship: it separates relationships the agent can trust and use immediately, those needing one check, and those requiring human review.
 
-이 막대가 왼쪽으로 길수록 **에이전트에게 볼트를 맡길 수 있는 정도**가 높습니다.
-근거를 다는 규칙은 [무엇을 노드로 만드나](/guide/what-becomes-a-node) 에
-있습니다.
+The longer this bar extends to the left, the **higher the degree to which you can entrust the agent**. The rules for attaching evidence are in [What Becomes a Node](/guide/what-becomes-a-node).
 
-**「수리 큐」** 는 고장의 종류별 개수입니다.
+**"Repair Queue"** shows counts by fault type.
 
-| 항목 | 무엇을 센 것인가 |
+| Item | What is counted |
 |---|---|
-| 「오래된 근거」 | 근거를 마지막으로 확인한 지 오래된 개념 |
-| 「소속 미정」 | 연결이 하나도 없는 개념: 「아무 관계도 없는 외톨이 개념이에요」 |
-| 「상위 개념 후보」 | 여럿이 참조하고 있어 위로 올릴 만한 개념 |
-| 「분리된 섬」 | 본체와 끊어져 따로 노는 무리 |
-| 「누락된 연결」 | 담길 곳(도메인)이 정해지지 않은 개념 |
+| "Old Evidence" | Concepts whose evidence hasn't been verified in a long time |
+| "Unassigned Affiliation" | Concepts with no connections: "An orphan concept with no relationships" |
+| "Superconcept Candidate" | Concepts referenced by many, suitable for promotion |
+| "Disconnected Island" | Groups detached from the main body |
+| "Missing Link" | Concepts without a designated home (domain) |
 
-뒤의 둘이 특별합니다. CLI `health` 를 `needs_attention` 으로 뒤집는 두 신호가
-그것이고, 그래서 이 화면이 「수리할 게 없어요」 라고 말하려면 그 둘도 0 이어야
-합니다. 앱과 CLI 가 같은 판정을 내리게 맞춰 둔 자리입니다.
+The last two are special. They are the two signals that flip CLI `health` to `needs_attention`, so for this screen to say "Nothing to repair", both must be 0. This is where the app and CLI are aligned to make the same judgment.
 
-각 줄에서 바로 「관계 편집」(스튜디오) 과 「개념 문서」(원문) 로 갈 수 있습니다.
+From each row, you can go directly to "Edit Relationship" (Studio) and "Concept Document" (Source).
 
-## 4. 읽기 전용 폴더에서는 명령이 나온다
+## 4. Commands Appear in Read-Only Folders
 
-예시 폴더를 보고 있으면 화면이 그 사실을 먼저 말합니다.
+Looking at the example folder, the screen tells you this first.
 
-> 지금은 예시 폴더예요. 내 폴더를 열면 이 일들은 여기서 바로 끝낼 수 있어요.
-> 지금은 명령을 복사해 넘길 수 있어요.
+> This is currently an example folder. If you open your own folder, you can finish these tasks right here.
+> You can copy and pass the commands now.
 
-[스튜디오](/guide/studio) 의 저장 버튼과 같은 규칙입니다. 못 쓰는 자리에서 조용히
-실패하는 대신, **쓸 수 있는 쪽에게 넘길 것**을 내줍니다.
+It follows the same rule as the save button in [Studio](/guide/studio). Instead of silently failing in a place where you can't write, it provides **what to pass to those who can**.
 
-## 5. 나머지 네 탭이 답하는 것
+## 5. What the Remaining Four Tabs Answer
 
-### 「구성」: 무엇이 몇 개인가
+### "Configuration": How many of each thing
 
-종류별 개수(요소 · 역량 · 도메인 · 프로젝트), 관계 종류별 개수(포함 · 의존 ·
-연관), 그리고 건강 지표 넷: 「외톨이 개념」 · 「따로 떨어진 무리」 · 「서로 얽힌
-고리」 · 「근거 연결」.
+Counts by type (elements · capabilities · domains · projects), counts by relationship type (includes · depends on · related to), and four health indicators: "Orphan Concepts", "Disconnected Groups", "Tangled Loops", and "Evidence Links".
 
-「도메인 용량」 막대는 도메인마다 역량과 요소가 몇 개씩인지 나눠 그립니다. 한
-도메인만 유독 길면 쪼갤 때가 된 것입니다.
+The "Domain Capacity" bar divides the number of capabilities and elements per domain. If one domain is unusually long, it's time to split it.
 
-> 여러 도메인에 속한 개념은 각 도메인에 한 번씩 세어져 합계가 전체보다 클 수
-> 있습니다. 화면이 그 사실을 각주로 말해 줍니다.
+> Concepts belonging to multiple domains are counted once for each domain, so the total may exceed the overall count. The screen notes this in a footnote.
 
-### 「연결」: 어디가 중심인가
+### "Connections": Where is the center
 
-관계 타입 분포에 화면이 판단을 하나 붙여 둡니다.
+The screen adds a judgment to the relationship type distribution.
 
-> 담는 관계에 치우쳐 있으면 「기대는」 관계를 더 그려야 한다는 신호예요
+> If you are biased toward containment relations, it signals that you need to draw more 'expectation' relations.
 
-구조(담김)만 있으면 트리이고, 의미 관계가 붙어야 그래프가 된다는
-[관계는 어떻게 생기나](/guide/relations) 의 이야기를 수로 보는 자리입니다.
+This is a place to view the story of [how relations arise](/guide/relations) in numbers: if there is only structure (containment), it is a tree; it becomes a graph only when semantic relations are attached.
 
-**세는 규칙이 화면마다 다르다는 것도 여기서 밝힙니다.**
+**We also clarify here that the counting rules differ per screen.**
 
-> 여기 수는 서로 다른 관계를 한 번씩 셉니다(양쪽 문서가 같은 관계를 적어도 1).
-> CLI·MCP 는 적힌 참조를 그대로 세서 이보다 큽니다.
+> Here, we count each distinct relation once (both documents list at least one reference to the same relation).
+> The CLI/MCP counts written references as-is, so its numbers will be higher.
 
-같은 그래프를 다르게 센 것이지 어느 쪽이 틀린 게 아닙니다.
+It is just counting the same graph differently; neither side is wrong.
 
-「바꾸면 멀리 퍼지는 개념」 은 CLI 의 `blast-radius` 와 같은 질문입니다. 이걸
-고치면 몇 개를 다시 확인해야 하는가. 「바로」 이어진 것과 「건너서」 닿는 것을
-나눠 셉니다.
+"Concepts that spread far when changed" is the same question as `blast-radius` in the CLI. How many items need re-verification if this is fixed? We count separately those that are "directly" connected and those that reach "across".
 
-### 「경계」: 도메인이 새고 있나
+### "Boundaries": Are domains leaking?
 
-「도메인 결합」 격자는 어느 도메인 쌍이 실제로 이어져 있는지 보여 주고, **칸을
-누르면 그 두 도메인을 잇고 있는 연결**이 나옵니다. 가로줄이 나가는 쪽,
-세로줄이 받는 쪽입니다.
+The "domain coupling" grid shows which domain pairs are actually connected, and **clicking a cell** displays the connections linking those two domains. The horizontal lines go out from the source,
+and the vertical lines come into the target.
 
-「경계 압력」 은 도메인마다 「안쪽」(같은 도메인 안 연결) 과 「교차」(밖으로
-드나드는 연결) 를 비율로 냅니다. 교차 비중이 압도적으로 높은 도메인은 경계가
-잘못 그어졌다는 신호입니다.
+"Boundary pressure" outputs the ratio of "internal" (connections within the same domain) to "cross" (connections going in/out) for each domain. A domain with an overwhelmingly high proportion of cross-connections signals that its boundary is drawn incorrectly.
 
-### 「신선도」: 어디가 멈춰 있나
+### "Freshness": Where has it stopped?
 
-도메인별로 최근 12주의 갱신을 히트스트립으로 그리고, 「최근 갱신」 목록과 「90일
-이상 미갱신」 개수를 냅니다. 볼트에서 가장 먼저 썩는 것은 **아무도 안 여는
-구역**이라 이 탭이 그걸 이름으로 지목합니다.
+For each domain, we draw a heatstrip of updates over the last 12 weeks and provide a list of "recently updated" items and a count of "not updated for 90+ days." The first thing to rot in a vault is **areas no one opens**, so this tab names them.
 
-## 6. 화면 전체를 에이전트에게 넘기기
+## 6. Handing over the entire screen to the agent
 
-맨 아래에 「AI 에이전트용 · 에이전트 인계」 줄이 있고, 그 오른쪽 「다음 액션
-복사」 를 누르면 이 보드 전체의 다음 행동이 한 줄로 복사됩니다.
+There is a line at the bottom labeled "For AI Agent · Agent Handoff," and clicking "Copy Next Action" on the right copies the next action for this entire board into a single line.
 
 ```
-query_ontology({operation:"maintenance_plan"}) → 항목별 실행 → query_ontology({operation:"health"}) 로 재확인
+query_ontology({operation:"maintenance_plan"}) → Execute per item → Re-verify with query_ontology({operation:"health"})
 ```
 
-**이 화면에서 사람이 보는 것과 에이전트가 받는 것이 같은 큐**입니다. 화면은
-`maintenance_plan` 을 그리고, 복사되는 명령도 `maintenance_plan` 을 부릅니다.
-같은 목록을 사람이 눈으로 훑고 에이전트가 순서대로 처리합니다.
+**On this screen, what humans see and what the agent receives share the same queue.** The screen renders `maintenance_plan`, and the copied command also calls `maintenance_plan`. Humans scan the same list with their eyes, and the agent processes it in order.
 
-## 정리
+## Summary
 
-- 분석은 **정비 보드**입니다. 지도가 「무엇이 있나」, 여기는 「무엇이 덜
-  됐나」.
-- 탭 다섯: 할 일 · 구성 · 연결 · 경계 · 신선도. 이름 옆 수가 크기입니다.
-- 「오늘 먼저 볼 일」 은 **이유와 함께** 그날의 항목을 고르고, 줄마다 지도 · 원문
-  · 스튜디오 · 에이전트 명령으로 나가는 문이 있습니다.
-- 복사되는 것은 명령 한 줄이 아니라 **미리보기 → 실행 → 확인 → 재검진 절차**
-  입니다.
-- 읽기 전용 폴더에서는 고치는 대신 넘길 명령이 나옵니다.
-- 같은 큐를 CLI 로 보려면 [CLI](/guide/cli) 의 `maintenance` · `health` ·
-  `growth` 입니다.
+- The analysis is the **maintenance board**. The map shows "what exists," while this section shows "what has been less addressed."
+- Five tabs: Todo · Composition · Connections · Boundaries · Freshness. The number next to the name indicates size.
+- "What to see first today" selects that day's items **with reasons**, and each line provides links to the map, original text, studio, and agent commands.
+- What is copied is not just a single command line, but the **preview → execute → confirm → re-evaluate procedure**.
+- In read-only folders, commands to skip appear instead of fix commands.
+- To view the same queue via CLI, use `maintenance`, `health`, and `growth` from [CLI](/guide/cli).

@@ -8,4 +8,4 @@ path: src/views/project-selector
 created_by: "agent:unknown"
 ---
 
-프로젝트 선택/목록 페이지.
+Project selection/list page.

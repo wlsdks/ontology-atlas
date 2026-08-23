@@ -1,36 +1,27 @@
-# 이게 무엇인가
+# What is this?
 
-**코드는 남고 맥락은 사라집니다.** 왜 이렇게 만들었는지, 여길 건드리면 어디가
-흔들리는지: 그 지식은 보통 사람 머릿속과 흘러간 대화 속에 있습니다. grep 은
-코드를 찾아주지만 *왜* 는 찾아주지 못합니다.
+**Code remains, but context disappears.** Why was it built this way? If you touch this part, what else will break? That knowledge usually lives in people's heads and past conversations. grep finds code, but not *why*.
 
-Ontology Atlas 는 그 **의미 층**을 마크다운 폴더 하나에 붙잡아 둡니다. 파일의
-frontmatter 가 곧 노드이고 관계입니다. 별도 데이터베이스도, 로그인도, 서버도
-없습니다.
+Ontology Atlas captures that **layer of meaning** in a single folder of Markdown files. The file frontmatter serves as nodes and relationships. No separate database, login, or server required.
 
-## 읽는 사람이 둘입니다
+## Two types of readers
 
-- **사람**: 지도를 보고 판단합니다. 기획자·마케터·의사결정자·개발자가 같은
-  그림을 봅니다.
-- **AI 에이전트**: 같은 파일을 MCP 로 읽고 씁니다. 작업 시작점, 도메인 맥락,
-  구현 증거, 영향 범위, 검증 경로를 여기서 가져갑니다.
+- **Humans**: Read the map to make decisions. Planners, marketers, decision-makers, and developers all see the same picture.
+- **AI Agents**: Read and write the same files via MCP. They draw their starting points, domain context, implementation evidence, impact scope, and verification paths from here.
 
-한쪽만 읽는 문서는 썩습니다. 위키는 사람만 읽어서 낡고, 에이전트 전용 메모리는
-사람이 심판할 수 없어서 믿을 수 없게 됩니다. Atlas 는 **둘이 같이 기르는 한 층**
-입니다.
+Documents read by only one side rot away. Wikis age because only humans read them, while agent-only memory becomes untrustworthy because humans can't judge it. Atlas is **a single layer cultivated by both**.
 
-## 언제 쓰나
+## When to use it
 
-- 코드베이스가 커져서 "이건 왜 이렇게 됐지" 가 매번 고고학이 될 때
-- AI 에이전트에게 매 세션 같은 배경 설명을 다시 붙여넣고 있을 때
-- 기획자와 개발자가 같은 단어로 다른 것을 가리키고 있을 때
-- 무언가를 고치기 전에 무엇이 같이 흔들리는지 알고 싶을 때
+- When the codebase grows so large that "why is this like this?" becomes an archaeological dig every time
+- When you're pasting the same background context into AI agent sessions repeatedly
+- When planners and developers use the same words to mean different things
+- When you want to know what else will break before fixing something
 
-## 언제 안 쓰나
+## When not to use it
 
-- 파일 몇 개짜리 프로젝트: 머릿속에 다 들어갑니다
-- 문서 자체가 산출물인 일: 그건 위키가 맞습니다
-- 코드 구조만 알면 되는 질문: grep 과 언어 서버가 더 빠릅니다
+- Projects with just a few files: everything fits in your head
+- Cases where the documentation itself is the deliverable: that's what wikis are for
+- Questions where you only need to know code structure: grep and language servers are faster
 
-Atlas 는 CodeGraph·grep·AST 인덱스를 대체하지 않습니다. 그 도구들은 **구조**를
-답하고, Atlas 는 그 위의 **의미**를 답합니다.
+Atlas does not replace CodeGraph, grep, or AST indexes. Those tools answer **structure**; Atlas answers the **meaning** above it.

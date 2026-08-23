@@ -10,8 +10,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Current as of 2026-08-02. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
-      "wordCount": 2816,
-      "updatedAt": "2026-08-14",
+      "wordCount": 2809,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -24,6 +24,42 @@
       "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-21. A repo-native memory layer for Claude Code, Cursor, and Codex. ontology-atlas keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
       "wordCount": 1293,
       "updatedAt": "2026-06-21",
+      "linksOut": []
+    },
+    {
+      "slug": "agents/domain",
+      "path": "docs/agents/domain.md",
+      "title": "Domain Docs",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Ontology Atlas is a single-context product implemented across the web workbench, the macOS shell, the CLI, and the MCP server. Engineering skills should use the same product vocabulary across all of these packages. docs/PRODUCT-DIRECTION.md for the product mission and target outcomes. docs/FOUNDATIONS.md for the ground",
+      "wordCount": 210,
+      "updatedAt": "2026-08-23",
+      "linksOut": []
+    },
+    {
+      "slug": "agents/issue-tracker",
+      "path": "docs/agents/issue-tracker.md",
+      "title": "Issue Tracker: GitHub",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Use GitHub Issues for work that will not be completed immediately, needs discussion or reproduction evidence, or spans multiple implementation slices. Small, well-defined changes may proceed directly from a branch to a pull request without creating an issue. Do not create an issue merely because a branch exists. When a",
+      "wordCount": 168,
+      "updatedAt": "2026-08-23",
+      "linksOut": []
+    },
+    {
+      "slug": "agents/triage-labels",
+      "path": "docs/agents/triage-labels.md",
+      "title": "Triage Labels",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Engineering skills use five canonical triage roles. Map each role to the same label name in GitHub Issues. · Role · GitHub label · Meaning · needs-triage · needs-triage · A maintainer needs to evaluate the issue. · needs-info · needs-info · The issue is waiting for more information from the reporter. · ready-for-agent ",
+      "wordCount": 142,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -46,7 +82,7 @@
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
       "wordCount": 3784,
-      "updatedAt": "2026-08-21",
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -359,9 +395,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "현재 실행 순서의 정본. 사용자가 작업 ID를 지목하면 그 항목만 분해해 구현한다. 완료 표시는 아래 활성 트랙의 증거 표에 먼저 남기고, 기능의 현재 상태는 docs/FEATURES.md, 결정 이유는 docs/DECISIONS.md, 사용자 가시 변경은 docs/CHANGELOG.md가 각각 맡는다. 변하는 숫자를 이 문서에 고정하지 않는다. 현재 dogfood census는 node cli/src/index.mjs overview, 공개 MCP/CLI surface는 pnpm docs:surface:check로 확인한다. 이 트랙은 2026-08-09 설치 앱 ",
-      "wordCount": 6078,
-      "updatedAt": "2026-08-21",
+      "excerpt": "The canonical current execution order. When a user specifies a task ID, only that item is decomposed and implemented. Completion markers are first recorded in the evidence table of the active track below; the feature's current status is handled by docs/FEATURES.md, decision rationale by docs/DECISIONS.md, and user-visi",
+      "wordCount": 7084,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -400,8 +436,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Companion to 2026-05-04-claude-code.md. Same 7 tasks, same rubric, different agent stack. Repo HEAD: post PR 130–133 merge Vault: 22 nodes, 5% orphans (project root) Codex CLI: codex-cli 0.128.0 (model: gpt-5.5, sandbox: read-only, approval: never) MCP registration: codex mcp add ontology-atlas --env OATLASVAULT=... --",
-      "wordCount": 2629,
-      "updatedAt": "2026-06-06",
+      "wordCount": 2631,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "benchmark/results/2026-05-04-claude-code"
       ]
@@ -450,8 +486,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "7 tasks across 3 categories. Each has a known correct answer (verifiable by human against the current docs/ontology/ vault, code, and PR history) so we can grade independent of the AI's confidence. Paste the prompt verbatim into a fresh agent session. No follow-ups. Questions where the answer requires reasoning over mu",
-      "wordCount": 814,
-      "updatedAt": "2026-07-24",
+      "wordCount": 813,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -461,9 +497,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "마크의 뜻과 자산의 사용 규칙. 좌표의 진실원은 src/shared/ui/brand-mark.tsx 이고, 이 문서는 그것이 무엇을 말하는지와 어디에 쓰는지를 정한다. 중앙의 개념에서 출발해 관계와 계층을 따라 전체 코드베이스를 이해하도록 돕는 지식 지도. 영문 태그라인 — Map your codebase knowledge. 국문 — 코드베이스의 지식을 연결하고, 구조를 탐색하는 지도. 이 마크는 장식이 아니라 제품의 데이터 모델을 그린 그림이다. 겹의 순서가 element → capability → domain → project 와 같다. 프로젝트를 이해하기 위한 ",
-      "wordCount": 1089,
-      "updatedAt": "2026-08-18",
+      "excerpt": "The meaning of the mark and the usage rules for assets. The source of truth for coordinates is src/shared/ui/brand-mark.tsx, and this document defines what it says and where to use it. A knowledge map that helps you understand the entire codebase by starting from central concepts and following relationships and hierarc",
+      "wordCount": 1363,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -490,8 +526,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "What lives here and why. This is the round-by-round record behind tests/contract/control-adoption-ratchet.contract.test.ts: the exhaustive counts, the registration verdicts, the categories that were rejected and on what evidence. It was 579 lines of doc-block at the top of that test file until 2026-08-22. .claude/rules",
-      "wordCount": 7816,
-      "updatedAt": "2026-08-22",
+      "wordCount": 7833,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -502,7 +538,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 162296,
+      "wordCount": 163027,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "slug"
@@ -511,13 +547,13 @@
     {
       "slug": "DEMO-SCENARIO",
       "path": "docs/DEMO-SCENARIO.md",
-      "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-22 개정)",
+      "title": "Demo Video Shooting Scenario — `atlas-tour` (Revised 2026-08-22)",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "한 클립 · 9초 · 무컷 · 무배속 · 무음 · 루프 없음 · 한국어/영어 따로 촬영. 재생 계약의 구현은 src/views/download/ui/DemoStage.tsx, 자산 등록부는 src/views/download/model/demo-clips.ts. 아래 §0~§3 은 155초 투어의 시나리오이고, 그 투어는 더 이상 촬영 대상이 아니다. 지우지 않고 두는 이유는 §0(가)의 프라이버시 규율과 §3 끝의 「촬영이 세 번 엎어진 이유」가 길이와 무관하게 다음 촬영에도 그대로 적용되기 때문이다. 길이·비트표만 아래로 갈아탄다. 무엇이 바뀌었나: 이 절은 관문의",
-      "wordCount": 2296,
-      "updatedAt": "2026-08-22",
+      "excerpt": "One clip · 9 seconds · No cuts · No speed changes · No audio · No loop · Record separately in Korean/English. The implementation of the playback contract is in src/views/download/ui/DemoStage.tsx, and the asset registration section is in src/views/download/model/demo-clips.ts. What has changed: This section used to arg",
+      "wordCount": 3087,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -566,9 +602,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(관문 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 31980,
-      "updatedAt": "2026-08-22",
+      "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
+      "wordCount": 37534,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -584,8 +620,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 6601,
-      "updatedAt": "2026-08-17",
+      "wordCount": 6996,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -596,8 +632,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 10639,
-      "updatedAt": "2026-08-22",
+      "wordCount": 10942,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -607,9 +643,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-22 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속, 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시 확인했다 — /ontology 는 /topology?index=expanded 로, /ontology/edit 과 /ontology/studio 는 지도 안 contextual writer로 보내는 호환 redirect 이고, Insights 는 할 일 · 구성 · ",
-      "wordCount": 21101,
-      "updatedAt": "2026-08-22",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-22 (re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility redirect to /topology?index=expanded, /ontology/edit and /ontology/studio route to the contextual writer within th",
+      "wordCount": 22586,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "slug",
         "project:slug",
@@ -623,9 +659,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그다. 최초 세트는 2026-06-01, ontology-construction 보강 세트는 2026-08-09에 원문·공식 메타데이터를 다시 열어 확인했다. 링크/인용은 하되 본문을 베끼지 않는다. 새 레퍼런스를 추가할 때도 공개·",
-      "wordCount": 4431,
-      "updatedAt": "2026-08-09",
+      "excerpt": "This document ties the product to public, citable academic/standard/craft references rather than feelings. A collection of grounds to prevent \"building without even knowing what ontology is\" — what already exists, and where/how we make our own thing differently on top of it. Citation discipline: All references cited he",
+      "wordCount": 4456,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC",
         "ONTOLOGY-CONSTRUCTION-QUALIFICATION"
@@ -639,8 +675,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file is the single source of truth for the words this repository uses. English is canonical: comments, doc-blocks, and developer docs are written in English so contributors outside Korea can read them. Korean equivalents are listed for the maintainer and for the two Korean docs that stay Korean — docs/DECISIONS.md",
-      "wordCount": 2336,
-      "updatedAt": "2026-08-22",
+      "wordCount": 2353,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -650,165 +686,165 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "개발자의 일상 진입점입니다. 소스 체크아웃에서 실행합니다. 레지스트리에 발행된 패키지가 아니라서 npx 로는 실행되지 않습니다. 살아있는 경로는 앱 번들(에이전트 연결 버튼이 절대 경로로 설정을 써 줍니다)과 소스 체크아웃 둘뿐입니다. 명령을 외우기 전에 이걸 먼저 알아 두면 나머지가 쉬워집니다. · 진입로 · 쓰는 사람 · CLI · 사람: 터미널에서 · MCP · AI 에이전트: Claude Code · Codex · Cursor · 화면 · 사람: 스튜디오 · 분석 · 셋이 같은 .md 폴더를 봅니다. 그래프를 다루는 명령들은 실제로 MCP 서버를 감싸고 있어서",
-      "wordCount": 755,
-      "updatedAt": "2026-08-14",
+      "excerpt": "Your daily entry point. Run it from a source checkout. This isn't published to a registry, so you can't run it with npx. The only live paths are the app bundle (the agent connection button writes the absolute path) and source checkout. Knowing this before memorizing commands makes the rest easy. · Entry point · Who use",
+      "wordCount": 893,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/connect-agent",
       "path": "docs/guide/connect-agent.md",
-      "title": "AI 에이전트 연결하기",
+      "title": "Connecting an AI Agent",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "앱의 「에이전트 연결」 버튼 한 번이면 됩니다. 지금 쓰는 도구를 고르면 그 도구의 설정 파일에 볼트의 실제 절대 경로가 박힌 설정을 써 줍니다. · 도구 · 쓰는 파일 · Claude Code · .mcp.json · Codex · .codex/config.toml · Cursor · .cursor/mcp.json · Antigravity · .agents/mcpconfig.json · 버튼 하나가 파일 하나를 씁니다. 고르지 않은 도구의 파일은 만들지 않습니다. 여기서 한 번 헷갈리면 나머지가 다 이상해집니다. 에이전트는 Atlas 앱에 붙는 게 아니라 폴더에 붙",
-      "wordCount": 973,
-      "updatedAt": "2026-08-14",
+      "excerpt": "It’s just one click on the app's \"Connect Agent\" button. Once you select the tool you're using, it writes a configuration file for that tool containing the actual absolute path of the vault. · Tool · File used · Claude Code · .mcp.json · Codex · .codex/config.toml · Cursor · .cursor/mcp.json · Antigravity · .agents/mcp",
+      "wordCount": 1294,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/first-five-minutes",
       "path": "docs/guide/first-five-minutes.md",
-      "title": "첫 5분",
+      "title": "First Five Minutes",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "설치할지 정하기 전에, 먼저 움직이는 걸 봅니다. 첫 화면은 읽기 전용 샘플 지도입니다. 폴더를 고르기 전에도 지도가 이미 움직입니다. \"먼저 데이터를 넣으세요\" 라고 말하는 빈 화면이 아닙니다. 샘플은 둘 중에 고릅니다. · 샘플 · 무엇인가 · 이 앱의 코드 · 이 도구가 자기 자신을 적어 둔 지도. 개발자용 이름이 많이 나옵니다 · 쇼핑몰 예시 · 상품·주문·회원·배송·마케팅이 어떻게 이어지는지 보는 연습용 · 첫 실행 카드가 개념·관계·도메인 수를 같이 보여줍니다. 그 수는 지금 화면에 그려진 그래프에서 그대로 센 것이지 어딘가에 적어 둔 숫자가 아닙니다. 카",
-      "wordCount": 511,
-      "updatedAt": "2026-08-14",
+      "excerpt": "Before deciding whether to install, watch it move first. The first screen is a read-only sample map. The map moves even before you select a folder. It is not an empty screen telling you to \"put data in first.\" Choose one of the two samples. · Sample · What it is · Code for this app · A map documenting how this tool des",
+      "wordCount": 685,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/from-your-repo",
       "path": "docs/guide/from-your-repo.md",
-      "title": "내 저장소에서 시작하기",
+      "title": "Starting from My Repository",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "빈 볼트에 노드를 손으로 백 개 적는 일은 아무도 하지 않습니다. 그래서 시작은 이미 가진 것에서 뽑아내는 것입니다. 여러분은 이미 코드가 있고, 폴더 구조가 있고, 아마 CLAUDE.md 나 AGENTS.md 도 있습니다. 세 가지 입구가 있습니다. · 가진 것 · 입구 · 코드 저장소 · init --quick-start (아래 1·2절) · 이미 쓰던 에이전트 지침 파일 · absorb (3절) · 마크다운 문서가 든 폴더 · 앱의 「내 문서로 지도 만들기」 (4절) · 셋 다 공통 규칙이 하나 있습니다: 제안 단계는 아무것도 쓰지 않습니다. 확인한 것만 볼트에",
-      "wordCount": 849,
-      "updatedAt": "2026-08-14",
+      "excerpt": "No one manually enters a hundred nodes into an empty Vault. So, starting means extracting from what you already have. You already have code, folder structure, and probably CLAUDE.md or AGENTS.md. There are three entry points. · What you have · Entry point · Code repository · init --quick-start (Sections 1 & 2 below) · ",
+      "wordCount": 1030,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/growing-vault",
       "path": "docs/guide/growing-vault.md",
-      "title": "볼트가 자란 뒤",
+      "title": "After the Vault Grows",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "노드가 스무 개일 때는 아무 문제도 없습니다. 문제는 이백 개가 되고, 세 사람이 같이 쓰고, 에이전트가 매일 몇 개씩 더할 때 나타납니다. 같은 걸 두 번 만든 것 같은데 어디 있지? 이 이름 바꾸면 뭐가 깨지나? 이제 뭘 손봐야 하는지 어떻게 아나? 이 장은 그 뒤의 일입니다. 볼트가 자라면서 생기는 1번 실패 모드는 같은 개념을 두 번 만드는 것입니다. 「사용자 인증」과 「로그인 처리」가 따로 살면 관계가 둘로 갈리고, 어느 쪽을 봐야 할지 아무도 모르게 됩니다. 만들기 전에 물어보십시오. 이미 있으면 새로 만들지 말고 있는 것을 고칩니다. MCP 로 붙은 에이",
-      "wordCount": 974,
-      "updatedAt": "2026-08-09",
+      "excerpt": "Twenty nodes is no problem. Problems arise when you reach two hundred, three people start using it together, and agents add several items daily. I think I made the same thing twice, but where is it? If I rename this, what breaks? How do I know what needs fixing now? This chapter covers what happens next. The primary fa",
+      "wordCount": 1191,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/insights",
       "path": "docs/guide/insights.md",
-      "title": "정비 보드: 내 폴더 분석",
+      "title": "Maintenance Board: Analyzing My Folders",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "폴더가 자란 뒤 는 「이제 뭘 손봐야 하지」 를 CLI 로 답했습니다. 같은 일을 하는 화면이 있습니다. 왼쪽 레일의 「분석」, 주소는 /ontology/insights 입니다. 화면이 스스로 자기 일을 이렇게 말합니다. 이 화면은 지도를 가꾸는 사람과 AI 에이전트를 위한 정비 보드예요. 지도가 「지금 무엇이 있나」 라면 여기는 「지금 무엇이 덜 됐나」 입니다. 그리고 머리말이 한 가지를 못박아 둡니다. 「모든 숫자는 문서에서 자동 계산됩니다」. 어디에도 손으로 적어 둔 수가 없다는 뜻입니다. 머리의 탭 다섯이 각각 다른 질문에 답합니다. · 탭 · 답하는 질문 ·",
-      "wordCount": 1043,
-      "updatedAt": "2026-08-14",
+      "excerpt": "After the folder has grown, you answered \"what should I fix now\" via CLI. There is a screen that does the same thing: \"Analysis\" in the left rail, at /ontology/insights. The screen describes its own purpose like this: This screen is a maintenance board for the person tending the map and the AI agent. If the map is \"wha",
+      "wordCount": 1396,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/reading-the-map",
       "path": "docs/guide/reading-the-map.md",
-      "title": "지도 읽는 법",
+      "title": "How to Read the Map",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "폴더를 고르면 점과 선이 나타납니다. 그런데 점들이 거의 다 같은 회색입니다. 이 점은 무엇이고 저 점은 무엇인가? 왜 어떤 건 크고 어떤 건 작은가? 숫자는 왜 어떤 점에만 붙어 있나? 줌을 당겼더니 점이 늘었는데, 아까는 어디 있었나? 지도는 이 질문들에 색이 아니라 모양·크기·위치로 답합니다. 한 번 익히면 그다음부터는 설명 없이 읽힙니다. 노드의 종류(kind)는 도형으로 구분합니다. · 모양 · 종류 · 뜻 · 육각형 판 · project · 최상위 산출물 · 사각 칩 (모서리에 다리 네 개) · domain · 기능 묶음 · 원 · capability · ",
-      "wordCount": 1114,
-      "updatedAt": "2026-08-14",
+      "excerpt": "When you select a folder, dots and lines appear. However, most of the dots are the same shade of gray. What is this dot? What is that dot? Why are some large and others small? Why do numbers appear only on certain dots? When I zoomed in, more dots appeared. Where were they before? The map answers these questions not wi",
+      "wordCount": 1428,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/relations",
       "path": "docs/guide/relations.md",
-      "title": "관계는 어떻게 생기나",
+      "title": "How Relations Are Created",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "지도를 처음 열면 가운데 허브에서 도메인이 방사형으로 뻗어 나갑니다. 그 모양만 보면 이런 의문이 듭니다. 도메인끼리는 서로 아무 관계도 못 갖나? 이 구조는 미리 설계된 데이터를 조회하는 것뿐인가? 관계는 DB 에 들어 있나, md 에 들어 있나? 세 질문에 차례로 답합니다. 저장 키·화면 이름·MCP query/write 지원 범위·방향·endpoint kind·inverse·추론 경계의 정본은 Atlas 메타모델 명세입니다. 이 장은 그 표를 복제하지 않고 사람이 지도와 Markdown에서 관계를 읽는 법만 설명합니다. 방사형으로 보이는 건 구조(담김) 관계뿐입",
-      "wordCount": 1213,
-      "updatedAt": "2026-08-14",
+      "excerpt": "When you first open the map, domains radiate outward from the central hub. Just looking at this shape might raise these questions. Can't domains have any relations with each other? Is this structure just for querying pre-designed data? Are relations stored in the DB or in md files? We answer these three questions in or",
+      "wordCount": 1596,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/studio",
       "path": "docs/guide/studio.md",
-      "title": "지도에서 개념과 관계 고치기",
+      "title": "Correcting Concepts and Relations on the Map",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "관계는 .md 맨 위 frontmatter에 적힌 한 줄이지만, 직접 YAML을 입력할 필요는 없습니다. 이제 별도 스튜디오로 이동하지 않고 지도에서 고른 개념 곁에서 고칩니다. 옛 /ontology/studio 주소는 없어지지 않았습니다. 기존 북마크의 node, mode, edit 값을 읽어 /topology의 같은 개념과 편집 상태로 옮깁니다. 다만 왼쪽 레일의 독립 목적지는 아닙니다. 1. 지도에서 개념을 고릅니다. 2. 오른쪽 작은 정보창에서 「관계 편집」을 누릅니다. 3. 관계 종류와 이어질 개념을 고르고, 왜 이어지는지 적습니다. 4. 지도에 생긴 파선 ",
-      "wordCount": 458,
-      "updatedAt": "2026-08-21",
+      "excerpt": "Relations are written as a single line in the frontmatter at the top of .md files, but you don't need to input YAML directly. You can now edit them right next to the selected concept on the map without moving to a separate studio. The old /ontology/studio URL still works. It reads node, mode, and edit values from exist",
+      "wordCount": 661,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/trust",
       "path": "docs/guide/trust.md",
-      "title": "신뢰에 관하여",
+      "title": "About Trust",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "무명 저장소의 바이너리를 자기 컴퓨터에 들이는 일입니다. 그래서 무엇을 하지 않는지부터 적습니다. 볼트는 여러분 디스크에만 있습니다. 조용히 전송되는 것은 없습니다. 계정도, 서버도, 요금제 뒤에 갇힌 기능도 없습니다. 앱을 지워도 폴더는 그대로 남습니다. 잠기는 것이 없습니다. 이건 마케팅 문구가 아니라 구조적 사실입니다. 저장 형식이 마크다운이라 잠글 방법이 없습니다. 여러분이 고른 폴더만 읽습니다. .env 같은 dotfile 과 .git/ 은 인덱싱에서 제외합니다. 디스크의 다른 곳은 보지 않습니다. 켜지 않으면 어떤 모델도 호출되지 않습니다. 켜면 무엇이 나",
-      "wordCount": 143,
-      "updatedAt": "2026-08-09",
+      "excerpt": "It involves pulling binaries from anonymous repositories onto your own computer. Therefore, we start by listing what it does not do. Vault exists only on your disk. Nothing is transmitted silently. There are no accounts, no servers, and no features locked behind a subscription. Even if you delete the app, the folder re",
+      "wordCount": 215,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/vault-structure",
       "path": "docs/guide/vault-structure.md",
-      "title": "볼트의 구조",
+      "title": "Vault Structure",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "볼트는 그냥 마크다운 폴더입니다. 특별한 것은 각 파일 맨 위의 frontmatter 뿐입니다. 모든 노드는 두 식별자를 같이 가집니다. · 필드 · 의미 · 바꾸어도 되나 · 주로 쓰는 곳 · uid · 그 노드 자체의 영구 정체성 · 안 됨 · MCP 정확 조회·핸드오프·출처·내보내기 URN · slug · 사람이 읽는 현재 주소 · rename으로 바꿀 수 있음 · 파일 경로·관계값·URL·CLI 그래프 명령 · title · 사람에게 보이는 이름 · 바꿀 수 있음 · 화면·검색·설명 · uid는 작성기가 노드를 만들 때 한 번만 발급하는 lowercase UU",
-      "wordCount": 536,
-      "updatedAt": "2026-08-09",
+      "excerpt": "A vault is simply a Markdown folder. The only special part is the frontmatter at the top of each file. Every node has both identifiers. · Field · Meaning · Can it be changed? · Primary Use · uid · Permanent identity of the node itself · No · MCP precise lookup, handoff, source, export URN · slug · Human-readable curren",
+      "wordCount": 705,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/what-becomes-a-node",
       "path": "docs/guide/what-becomes-a-node.md",
-      "title": "무엇을 노드로 만드나",
+      "title": "What Becomes a Node?",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "볼트를 만들다 보면 반드시 이 질문에서 멈춥니다. 이건 도메인인가 역량인가? 파일마다 노드를 하나씩 만들어야 하나? 한 노드 아래에 자식이 서른 개면 잘못된 건가? 여기 답이 있습니다. 그리고 답의 대부분은 \"세지 말라\" 입니다. kind별 포함·제외·예시·반례와 isa 판별의 정본은 Atlas 메타모델 명세입니다. 이 장은 그 규칙을 다시 정의하지 않고, 파일 미러링과 fan-out이라는 실제 제작 함정을 설명합니다. \"얼마나 큰가\" 로 층을 고르면 계속 헷갈립니다. 무엇에 답하는가로 고르십시오. · kind · 답하는 질문 · 예 · project · 우리가 무엇",
-      "wordCount": 1069,
-      "updatedAt": "2026-08-14",
+      "excerpt": "When building a vault, you inevitably stop at this question. Is this a domain or a capability? Should I create one node per file? Is it wrong to have thirty children under one node? The answer is here. And most of the answer is \"don't count\". The definitive rules for inclusion/exclusion/examples by kind and isa determi",
+      "wordCount": 1469,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "guide/what-is-atlas",
       "path": "docs/guide/what-is-atlas.md",
-      "title": "이게 무엇인가",
+      "title": "What is this?",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "코드는 남고 맥락은 사라집니다. 왜 이렇게 만들었는지, 여길 건드리면 어디가 흔들리는지: 그 지식은 보통 사람 머릿속과 흘러간 대화 속에 있습니다. grep 은 코드를 찾아주지만 왜 는 찾아주지 못합니다. Ontology Atlas 는 그 의미 층을 마크다운 폴더 하나에 붙잡아 둡니다. 파일의 frontmatter 가 곧 노드이고 관계입니다. 별도 데이터베이스도, 로그인도, 서버도 없습니다. 사람: 지도를 보고 판단합니다. 기획자·마케터·의사결정자·개발자가 같은 그림을 봅니다. AI 에이전트: 같은 파일을 MCP 로 읽고 씁니다. 작업 시작점, 도메인 맥락, 구현 증",
-      "wordCount": 209,
-      "updatedAt": "2026-08-09",
+      "excerpt": "Code remains, but context disappears. Why was it built this way? If you touch this part, what else will break? That knowledge usually lives in people's heads and past conversations. grep finds code, but not why. Ontology Atlas captures that layer of meaning in a single folder of Markdown files. The file frontmatter ser",
+      "wordCount": 282,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "INTERACTION-DESIGN",
       "path": "docs/INTERACTION-DESIGN.md",
-      "title": "INTERACTION DESIGN — 유체적 인터페이스 원칙의 적용 (2026-07-17)",
+      "title": "INTERACTION DESIGN — Applying Fluid Interface Principles (2026-07-17)",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Apple Designing Fluid Interfaces (WWDC18) 계열의 공개 원칙을 이 프로젝트의 디자인 헌장 (DESIGN-SYSTEM.md · .claude/rules/design.md) 위에 적용한 결정 기록. 헌장과 충돌하면 헌장이 이긴다 — 아래 \"충돌 재정\" 참조. topology-map-v2 (Slice 2)의 설계 게이트 입력 문서이며, design-guardian 검증은 구현 시점에 스크린샷 증거로 수행한다. 앱을 두 영역으로 나누고 모션 규율을 다르게 적용한다: · 영역 · 규율 · 근거 · 크롬 (패널·버튼·팝오버·리스트) · 기존 헌장",
-      "wordCount": 756,
-      "updatedAt": "2026-07-18",
+      "excerpt": "A record of decisions applying open principles from the Apple Designing Fluid Interfaces (WWDC18) lineage to this project's design charter (DESIGN-SYSTEM.md · .claude/rules/design.md). If in conflict with the charter, the charter wins — see \"Conflict Resolution\" below. This is a design gate input document for topology-",
+      "wordCount": 890,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -818,9 +854,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
-      "wordCount": 467,
-      "updatedAt": "2026-07-31",
+      "excerpt": "Storyboard for the 30-second GIF/mp4 to be featured on the README first screen. claim → proof 5-cut sequence. Each cut ~6 seconds. screen: Left side shows VS Code (or Obsidian) opening domains/auth.md with frontmatter visible. Right side shows Claude Code terminal displaying results of ontology-atlas tool calls. action",
+      "wordCount": 528,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -842,9 +878,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "오픈소스 launch 단계의 publication 초안 모음. 메인테이너가 시점에 맞춰 직접 publish. 배포 채널 (2026-07-27 확정, docs/DECISIONS.md): npm 발행 계획은 폐기됐다. 공개 채널은 서명·공증된 macOS DMG 하나이고, 앱이 컴파일된 MCP 서버를 자기 번들에 싣고 다닌다 — 다운로드 1회가 사람 표면과 에이전트 표면을 동시에 설치한다. 터미널을 쓰는 사람에게는 소스 체크아웃이 두 번째 길이다. 아래 초안에 npx 를 다시 넣지 말 것 — 실행하면 404 다. 1. 사전 준비 [ ] 서명·공증된 macOS DMG 를 G",
-      "wordCount": 648,
-      "updatedAt": "2026-08-09",
+      "excerpt": "Collection of drafts for the open-source launch phase. Maintainers will publish directly at the appropriate time. Distribution channel (confirmed 2026-07-27, docs/DECISIONS.md): The plan to publish on npm has been scrapped. The public channel is a signed and notarized macOS DMG only, with the app carrying its compiled ",
+      "wordCount": 730,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -866,21 +902,21 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml uid: 71890f3e-7b5d-4c0a-8f14-123456789abc kind: capability slug: capabilities/login title: Login domain: domains/auth dependencies: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quote-tweet you",
-      "wordCount": 460,
-      "updatedAt": "2026-08-09",
+      "excerpt": "X's language is short and visual. A 5–7 tweet thread is the sweet spot. Each tweet stays within 280 chars. 1 tweet = 1 idea. yaml uid: 71890f3e-7b5d-4c0a-8f14-123456789abc kind: capability slug: capabilities/login title: Login domain: domains/auth dependencies: [capabilities/signup] Post the thread in one go (drafts fe",
+      "wordCount": 463,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "MAP-TESTABILITY",
       "path": "docs/MAP-TESTABILITY.md",
-      "title": "지도를 밖에서 검사하기 — `window.__atlasMap`",
+      "title": "Inspecting the Map from Outside — `window.__atlasMap`",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "한 줄: 밖에서 구분할 수 없는 상태는 밖에서 검사할 수 없다. 지도는 캔버스 하나라 DOM 이 없다 — 상태를 명시적으로 내보내지 않으면 자동화는 화면을 «보는 척» 하면서 엉뚱한 것을 잰다. 2026-07-31, 소유자가 노드 드래그 렉을 보고했다. 나는 여섯 번 연속으로 \"제 환경에선 안 느린데요\" 라고 답했다. 매번 배경을 밀고 있었다. 원인은 코드가 아니라 관측 가능성이었다: · 밖에서 본 것 · 실제로 갈리는 것 · 커서 grabbing · 노드 드래그 또는 배경 팬 — 같은 글자 · 커서 pointer · 호버 히트일 뿐, 잡히는지와 무관 · 프레임 60",
-      "wordCount": 951,
-      "updatedAt": "2026-08-03",
+      "excerpt": "One-liner: States that cannot be distinguished from outside cannot be inspected from outside. The map is a single canvas with no DOM — if state is not explicitly exported, automation merely «pretends to see» the screen while measuring the wrong things. On 2026-07-31, the owner reported node drag lag. I replied six time",
+      "wordCount": 1255,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -891,8 +927,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Status: RFC (Request for Comments). This is a v2.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. v2 makes immutable node uid mandatory; this is",
-      "wordCount": 5445,
-      "updatedAt": "2026-08-09",
+      "wordCount": 5503,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -918,9 +954,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "이 문서는 새 온톨로지 규칙을 만드는 곳이 아니다. 어떤 질문의 정본이 어디에 있고, 무엇이 기계 강제인지·검토 신호인지·사람 판단인지를 한 번에 찾게 하는 권위 지도다. 값이나 공개 도구 계약이 아래 문서와 코드에서 다르면 이 문서가 아니라 소유 정본을 고친다. vault 전체와 project 전체의 노드 수에는 상한이 없다. 한 부모의 직접 연결 폭은 결함 판정이 아니라 검토를 시작하는 신호다. 각 자식의 역할이 배타적이고 근거가 해소된 넓은 hub는 올바른 구조일 수 있다. bridge node는 숫자를 줄이는 바구니가 아니다. 공유 행동을 한 문장으로 설명하고",
-      "wordCount": 579,
-      "updatedAt": "2026-08-03",
+      "excerpt": "This document is not the place to create new ontology rules. It is an authoritative map that lets you find, in one place, where the canonical answer for any question lies and what is machine-enforced, what is a review signal, and what requires human judgment. If values or public tool contracts below differ from those i",
+      "wordCount": 779,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -943,17 +979,17 @@
           "capabilities/mcp-server"
         ],
         "relation_notes": {
-          "capabilities/mcp-server": "ACP 세션은 session/new 의 mcpServers 로 이 서버를 주입받아 볼트 도구를 얻는다 (src/features/acp-session/model/vault-mcp-server.ts). 그래서 ACP 는 MCP 서버를 대체하는 경로가 아니라 그 위에 서는 경로다.",
-          "capabilities/reviewed-ontology-writing": "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once."
+          "capabilities/mcp-server": "The ACP session receives this server as an mcpServer in session/new",
+          "ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing": "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once."
         },
         "relates": [
           "capabilities/reviewed-ontology-writing"
         ]
       },
       "headings": [],
-      "excerpt": "사용자가 이미 설치해 둔 코딩 에이전트(Claude Code, Codex 등)를 앱이 ACP(Agent Client Protocol) v1 로 직접 띄우고, 그 세션의 설정을 격리하고, 볼트 밖 파일 접근을 사람에게 되묻는 능력. 새 API 키도 새 벤더 연동도 필요 없다: 그 도구가 이미 쓰는 구독 인증을 그대로 쓴다. 이 능력이 실제로 하는 일 여덟: 1. 탐지. 이 기기의 실행기 상태를 다섯으로 갈라 판정한다: ready, cli-missing, node-missing, uvx-missing, binary-missing. 상태를 「설치됨/아님」 둘로 뭉개지 않는",
-      "wordCount": 1089,
-      "updatedAt": "2026-08-22",
+      "excerpt": "The ability to directly launch a coding agent (Claude Code, Codex, etc.) that the user has already installed via ACP (Agent Client Protocol) v1, isolate its session settings, and ask humans for confirmation on file access outside the vault. No new API keys or vendor integrations are needed: it uses the same subscriptio",
+      "wordCount": 1484,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "ontology/elements/agents-destination"
       ]
@@ -976,9 +1012,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "사람이 지도에서 AI 에이전트의 제품명, 검증된 현재 단계, 작업 목표와 대상, 다음 행동을 한 흐름으로 판독하는 능력. fresh heartbeat가 있을 때만 계획·편집·검증·승인 대기를 현재형으로 말하고, 쓰기 로그만 최근이면 작업 중이라고 추측하지 않고 변경 감지 또는 마지막 작업으로 구분한다. 화면은 codex-mcp-client·codex-acp 같은 감사용 client/runtime ID를 Codex·Claude Code 같은 사람용 제품명으로 바꾸지만, 원본 로그와 heartbeat 값은 그대로 보존한다. 지도 상태 줄뿐 아니라 전역 레일과 상세 act",
-      "wordCount": 505,
-      "updatedAt": "2026-08-22",
+      "excerpt": "The ability for humans to read in one flow the AI agent's product name, verified current stage, work goals and targets, and next actions from the map. Only when there is a fresh heartbeat does it speak of plan/edit/verify/approval waits in present tense; if only write logs are recent, it does not infer \"in progress\" bu",
+      "wordCount": 637,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -997,9 +1033,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "데스크톱 셸에서 새 버전을 자동 또는 수동으로 확인하고, 서명된 아카이브를 다운로드·설치한 뒤 앱을 다시 시작하게 하는 능력. 설치 앱은 release 종류에 따라 바뀌지 않는 Pages manifest 주소 하나만 읽는다. 포함: desktop-shell 24시간 자동 확인, 설정의 수동 확인, 버전별 dismiss, 다운로드 진행률, 설치 후 relaunch, 검사 실패와 설치 실패의 분리. 포함: Pages 빌드가 newest non-draft GitHub Release의 latest.json을 /update/latest.json에 staging하는 배포 계약.",
-      "wordCount": 207,
-      "updatedAt": "2026-08-22",
+      "excerpt": "The ability to automatically or manually check for new versions in the desktop shell, download and install signed archives, and relaunch the app. The installed app reads only one Pages manifest URL that remains constant across release types. Inclusions: desktop-shell 24-hour automatic checks, manual checks in settings,",
+      "wordCount": 268,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1027,9 +1063,9 @@
         "display_en": "Terminal Commands"
       },
       "headings": [],
-      "excerpt": "앱이나 MCP 클라이언트 없이도 같은 로컬 마크다운 볼트를 검사·조회·작성하고, 에이전트 연결과 그래프 작업을 터미널에서 재현하게 하는 운영 진입점이다. 개발자와 에이전트는 새 vault 생성부터 검증, 의미 조회, 관계 분석, 안전한 로컬 체크포인트까지 하나의 명령 표면에서 수행한다. MCP가 연결되지 않은 환경에서도 동일한 compiler/query 결과와 복구 명령을 받아 작업을 이어갈 수 있다. --json 출력은 자동화가 산문을 파싱하지 않고 상태·경고·다음 행동을 판단하게 한다. init·add·import·bootstrap은 새 노드의 lowercase ",
-      "wordCount": 362,
-      "updatedAt": "2026-08-16",
+      "excerpt": "An operational entry point that allows inspecting, querying, and writing local markdown vaults without an app or MCP client, and reproducing agent connections and graph operations in the terminal. Developers and agents perform new vault creation, verification, semantic queries, relationship analysis, and safe local che",
+      "wordCount": 453,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1055,9 +1091,9 @@
         }
       },
       "headings": [],
-      "excerpt": "검증된 ontology construction artifact를 프로젝트 상세에서 결론부터 읽고, 같은 digest-bound 근거와 exact plan을 필요할 때 펼쳐 판단하는 능력이다. malformed, 다른 project, digest 또는 plan 불일치는 정상 판정처럼 보이지 않고 실패 닫으며, 파일은 session 밖에 저장하거나 vault에 쓰지 않는다.",
-      "wordCount": 38,
-      "updatedAt": "2026-08-12",
+      "excerpt": "Read conclusions first in project details for verified ontology construction artifacts, then unfold digest-bound evidence and exact plans when needed to make judgments. Malformed inputs, different projects, or digest/plan mismatches do not appear as normal judgments but close with failure; files are not saved outside t",
+      "wordCount": 52,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1078,9 +1114,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "화면을 만드는 사람이 className 을 손으로 쓰지 않게 하는 부품 층. 값은 controlClass()/fieldClass()(cva)가 내고, 행동(기본 type · 접근 이름 강제 · 오류 배선 · 키보드 계약)은 컴포넌트가 진다. 같은 뜻의 컨트롤이 화면마다 다른 크기·색으로 나오지 않는다. 이름 없는 입력, 배타성이 접근성 트리에 안 실린 선택, 초점 링 없는 체크박스가 구조적으로 만들어지지 않는다. 값 층 control-class.ts: 모양 8종(chip·icon·row·pill·card·link·tile·segment) × 크기 × 톤 9단, fie",
-      "wordCount": 231,
-      "updatedAt": "2026-08-15",
+      "excerpt": "A component layer that prevents screen creators from manually writing className. Values are provided by controlClass()/fieldClass() (cva), and behavior (default type · forced access names · error wiring · keyboard contracts) is handled by the components. Controls with the same meaning do not appear in different sizes/c",
+      "wordCount": 272,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1099,9 +1135,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "폴더가 선택되었는지에 따라 vault-picked 모드와 static/sample 모드 사이에서 앱 동작을 분기하는 능력. src/features/data-source-mode (구현 증거) docs/FEATURES.md: \"Mode branching (data source)\" 절 (주의: risky-citation 경고: negated/deprecated-state 서술 포함 문서, 재검증 필요) medium-high (0.85): 단, docs/FEATURES.md 인용분은 최신성 재확인 필요",
-      "wordCount": 46,
-      "updatedAt": "2026-08-09",
+      "excerpt": "The ability to branch app behavior between vault-picked mode and static/sample mode depending on whether a folder is selected. src/features/data-source-mode (implementation evidence) docs/FEATURES.md: \"Mode branching (data source)\" section (Note: risky-citation warning: includes negated/deprecated-state descriptions; r",
+      "wordCount": 54,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1122,9 +1158,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "에이전트가 화면을 만들기 시작할 때 가장 먼저 읽는 안내판. 「명령에서 화면까지, 같은 순서로」: 어떤 부품을 집을지, 어느 램프에서 값을 가져올지, 다 짓고 무엇으로 재는지를 순서로 처방한다. 에이전트가 매번 다른 방식으로 조립하지 않는다. 규격을 어겼을 때 어느 게이트가 잡는지까지 같은 문서에서 알 수 있다. 2026-08-03 census 의 진단: 「막고 있던 것은 모델의 취향이 아니라 가져다 쓸 부품이 없다는 것과 작업 순서가 안 적혀 있다는 것이었다」. 부품은 2026-08-15 세 라운드로 갖춰졌다: 그러면 남는 것이 이 안내판이다. 조립 시험에서 음성이",
-      "wordCount": 214,
-      "updatedAt": "2026-08-15",
+      "excerpt": "The first guide an agent reads when starting to build a screen. \"From command to screen, in the same order\": it prescribes which component to pick, where to get values from, and what to measure after building everything, in sequence. The agent does not assemble things differently each time. You can see which gate catch",
+      "wordCount": 279,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1145,9 +1181,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "규격을 어기면 빨개지게 만드는 층. 이 디자인 시스템에서 가장 대체 불가능한 부분이고(2026-08-15 PO 카운슬 실측: 부품·토큰 배포는 붐비지만 강제를 통째로 배포하는 곳은 못 찾았다), 동시에 가장 이식하기 어려운 부분이다. 에이전트가 만든 화면이 규격을 벗어나면 CI 가 빨간불로 말한다: 사람이 눈으로 찾아내지 않아도 된다. 게이트가 조용히 죽는 것(빈 집합 위 공회전)까지 프로브가 잡는다. 1. lint 셀렉터(no-restricted-syntax): 값이 코드에 문자열로 남는 규격: 타입·반경·그림자·모션·자간·무게·팔레트·층위·커서·비활성·accent",
-      "wordCount": 214,
-      "updatedAt": "2026-08-15",
+      "excerpt": "The layer that turns red if the spec is violated. This is the most irreplaceable part of this design system (as of 2026-08-15 PO Council measurement: parts and token deployments are common, but no one deploys enforcement as a whole), and simultaneously the hardest part to port. If the screen created by the agent deviat",
+      "wordCount": 310,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1168,9 +1204,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "쓸 수 있는 값을 미리 몇 단계로 정해 둔 사다리들. 그 밖의 값은 lint 가 막는다. 화면마다 조금씩 다른 글자 크기·모서리·그림자가 생기지 않는다. 빛이 한 방향에서 오고, 위에 뜬 것이 더 짙은 그림자를 갖는다. 글자 크기 8단 · 행간 10단(크기와 1:1 짝) · 자간 · 무게 3단 · 반경 5단 · 그림자 5종(고도 3 + 도킹 2) · 모션 3단(fast 확인 · base 이동 · settle 확정) · 컨트롤 높이 · 층위(z) 사다리 · 아이콘 3단 · 다이얼로그 폭 2단 혼합. 고유 토큰 이름 580 중 269(46%)가 --topology- 이고",
-      "wordCount": 184,
-      "updatedAt": "2026-08-15",
+      "excerpt": "Ladders with predefined values available for use. Lint blocks any other values. No varying font sizes, border radii, or shadows across screens. Light comes from one direction, and elements above cast darker shadows. Font size (8 steps) · Line height (10 steps, 1:1 ratio with size) · Letter-spacing · Weight (3 steps) · ",
+      "wordCount": 231,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1191,9 +1227,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (main workflowdispatch에서 태그와 SHA를 admission하고, release-signing 빌드와 별도 release 공개 승인을 거쳐 같은 SH",
-      "wordCount": 177,
-      "updatedAt": "2026-08-17",
+      "excerpt": "The ability to compare platform-specific installers and trust status in one place, and continue via web if installation is blocked. macOS presents signed/notarized Apple Silicon/Intel DMGs; Windows presents unsigned x64 betas with SmartScreen risks disclosed first. src/views/download (platform group, release facts, war",
+      "wordCount": 217,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1218,13 +1254,13 @@
         "path": "src/features/docs-vault-local",
         "created_by": "human",
         "relation_notes": {
-          "elements/native-vault-filesystem-bridge": "설치 앱의 로컬 폴더 마운트가 실제 파일·디렉터리 mutation을 수행하는 네이티브 구현 증거다."
+          "elements/native-vault-filesystem-bridge": "The local folder mount of the installed app is evidence of native implementation performing actual file/directory mutation."
         }
       },
       "headings": [],
-      "excerpt": "File System Access API로 로컬 마크다운 폴더를 선택·마운트해 실시간 데이터소스로 삼는 능력. src/features/docs-vault-local (구현 증거) high (0.9): local-first 원칙 문서와 정합",
-      "wordCount": 28,
-      "updatedAt": "2026-08-17",
+      "excerpt": "The ability to select and mount a local markdown folder via the File System Access API, using it as a real-time data source. src/features/docs-vault-local (implementation evidence) high (0.9): Consistent with local-first principle documentation",
+      "wordCount": 40,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1245,9 +1281,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "완전히 새로운 사용자를 빈 상태에서 쓸 수 있는 스타터 볼트까지 데려가는 첫 실행 경험. 지도(/topology) 왼쪽 INDEX 패널 맨 위의 첫 실행 카드가 이 역량의 표면이다. 볼트를 고르기 전에만 산다. 폴더가 열리면 카드는 사라지고 INDEX 가 자리를 되받는다. 그래서 이 카드가 말해야 하는 것은 \"지금 보이는 건 남의 샘플이고, 내 폴더를 고르면 같은 지도가 내 데이터로 켜진다\" 하나다. 계기 대접은 여기 것이 아니다 (2026-08-02, PO 카운슬). 개념/관계/도메인 수를 3분할 인셋 계기 블록(19px mono semibold)으로 그려 왔고, ",
-      "wordCount": 353,
-      "updatedAt": "2026-08-16",
+      "excerpt": "The first-run experience that brings a completely new user from scratch to a starter vault they can use. The first-run card at the top of the INDEX panel on the left side of the map (/topology) is the surface of this capability. It appears only before choosing a vault. Once the folder opens, the card disappears and the",
+      "wordCount": 520,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1266,9 +1302,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "신규 사용자에게 지도와 핵심 루프를 소개하는 가이드 투어(시연 클립 포함). src/features/guided-tour (구현 증거) git log: \"시연 클립 둘을 관문에 싣는다 (786)\": 코드/커밋 증거, analyzerepostructure 증거 패킷 밖이라 독립 코드 근거로만 표기 medium (0.75)",
-      "wordCount": 41,
-      "updatedAt": "2026-08-09",
+      "excerpt": "A guided tour (including demo clips) introducing the map and core loop to new users. src/features/guided-tour (implementation evidence) git log: \"Load two demo clips into the gateway (786)\": code/commit evidence; since it's outside the analyzerepostructure evidence packet, listed only as independent code evidence mediu",
+      "wordCount": 53,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1287,9 +1323,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "next-intl 기반 [locale] 프리픽스 라우팅으로 UI 로케일을 전환하는 능력. src/features/locale-switch (구현 증거) AGENTS.md: Routes (\"The current routes are all [locale] prefixed by next-intl\") medium-high (0.8)",
-      "wordCount": 33,
-      "updatedAt": "2026-08-21",
+      "excerpt": "Ability to switch the UI locale via [locale] prefix routing based on next-intl. src/features/locale-switch (implementation evidence) AGENTS.md: Routes (\"The current routes are all [locale] prefixed by next-intl\") medium-high (0.8)",
+      "wordCount": 37,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1316,9 +1352,9 @@
         "display_en": "AI Connection Server"
       },
       "headings": [],
-      "excerpt": "로컬 마크다운 볼트를 AI 코딩 에이전트가 읽고 안전하게 갱신하도록 제공하는 stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 진실원으로 사용하며, 서버는 별도 데이터베이스나 모델 실행 루프를 소유하지 않는다. 에이전트는 프로젝트의 의미 노드를 정확히 찾고, 관계·근거·영향 범위를 함께 읽는다. 연결 직후 실제 vault/repository 좌표와 도구 인벤토리를 확인해 잘못된 폴더나 오래된 클라이언트 상태를 발견한다. 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된 오류와 dry-run으로 차단한다. 도구의 ",
-      "wordCount": 2006,
-      "updatedAt": "2026-08-17",
+      "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
+      "wordCount": 2566,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1339,9 +1375,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "선택한 local vault 또는 정적 샘플에서 프로젝트 목록과 본문을 읽고, local 모드에서만 프로젝트 생성·수정·부분수정·삭제 권한을 제공하는 데이터 접근 경계. 포함: manifest 목록 파생, slug별 본문 lazy read, local/static 분기, local CRUD gate. 제외: 단일 활성 프로젝트 선택 상태, ontology 관계 판정, 정적 샘플 쓰기. src/features/project-data-source/model/use-projects.ts: local/static 목록 분기 src/features/project-data-so",
-      "wordCount": 103,
-      "updatedAt": "2026-08-16",
+      "excerpt": "Data access boundary that reads project lists and bodies from a selected local vault or static sample, providing project create/update partial-update/delete permissions in local mode only. Included: Manifest list derivation, slug-based body lazy read, local/static branching, local CRUD gate. Excluded: Single active pro",
+      "wordCount": 116,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1362,9 +1398,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "project의 주요 필드를 검증해 생성·수정·복제·삭제하고, 새 프로젝트나 분류 변경 때 category 경계와 겹침을 고려해 위치를 자동 배치하는 폼 편집 능력. 포함: 폼 검증·직렬화, 일정과 taxonomy 보존, 생성/수정/복제/삭제, 자동 배치. 제외: 수동 position·containment 편집, screenshot upload, MCP/agent 쓰기 경로. src/features/project-edit/ui/ProjectForm.tsx: 검증·직렬화·submit 흐름 src/features/project-edit/model/schema.ts와 sc",
-      "wordCount": 84,
-      "updatedAt": "2026-08-16",
+      "excerpt": "Form editing capability that validates project main fields to create/update/duplicate/delete, and automatically places the position considering category boundaries and overlaps when creating a new project or changing categories. Included: Form validation/serialization, schedule and taxonomy preservation, create/update/",
+      "wordCount": 97,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1383,9 +1419,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "전체 편집기로 이동하지 않고 프로젝트 상세의 우측 다이얼로그에서 이름·설명·소유자· 태그를 수정·적용하거나 되돌리는 능력. 포함: editable 상세 화면의 네 필드, 이름 필수 검증, 적용/되돌리기, 성공·실패 상태. 제외: read-only/static 모드, category·status·timeline·관계 편집, persistence 통합 보증. src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx: dialog, 네 필드, patch payload와 상태 처리 src/views/project-detai",
-      "wordCount": 80,
-      "updatedAt": "2026-08-16",
+      "excerpt": "The ability to modify, apply, or revert name, description, owner, and tags in the right-side dialog of the project details without navigating to the full editor. Included: Four fields in the editable detail view, required name validation, apply/revert actions, success/failure states. Excluded: read-only/static modes, c",
+      "wordCount": 101,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1404,9 +1440,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "프로젝트 상세 상단바나 드로어에서 현재 locale·basePath를 반영한 상세 URL을 만들어 클립보드에 복사하고 성공·실패 피드백을 주는 능력. 포함: 프로젝트 상세 URL 생성, clipboard 복사, 상태/토스트/aria-live 피드백, 상세 상단바와 프로젝트 드로어 진입점. 제외: 권한·초대·만료·서버 저장·협업 공유, 목적지 접근성의 E2E 보증. src/features/project-share/ui/CopyProjectLinkButton.tsx: URL 생성·복사·피드백 src/features/project-share/ui/CopyProjectLin",
-      "wordCount": 79,
-      "updatedAt": "2026-08-16",
+      "excerpt": "The ability to generate a detail URL reflecting the current locale and basePath from the project details top bar or drawer, copy it to the clipboard, and provide success/failure feedback. Included: Project detail URL generation, clipboard copy, state/toast/aria-live feedback, project details top bar and project drawer ",
+      "wordCount": 104,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1426,9 +1462,9 @@
         "created_by": "agent:codex"
       },
       "headings": [],
-      "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. 연결 자체는 설치 앱·MCP·CLI 세 표면 모두에서 가능하다. connectprojectsource (CLI connect-source)는 rootPath를 생략하면 볼트를 감싸는 git 저장소를, 없으면 가장 가까운 조상 매니페스트 폴더를 후보로 지",
-      "wordCount": 629,
-      "updatedAt": "2026-08-09",
+      "excerpt": "The ability to connect a single Git repository or local folder to one project node, and compare the implementation paths of capabilities/elements declared by the ontology against actual source lists, leaving versioned categorical receipts. Map datasheets, full details, CLI, and MCP agentbrief read the same state, recen",
+      "wordCount": 913,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1451,9 +1487,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "지도에서 사람이 직접 고치거나 ACP 에이전트가 요청한 온톨로지 쓰기를, 정확한 typed 변경안 검토 뒤에만 마크다운 frontmatter에 적용하는 능력. 지도 선택 맥락과 사람의 최종 의미 결정권을 같은 흐름에 남긴다. 변경안은 휘발성 pre-write 상태이며 별도 승인 원장이나 두 번째 정본이 아니다. 확인 뒤 쓰인 마크다운이 즉시 정본이다. 지도 편집기는 한 번에 관계 하나만 다루고, ACP read tool은 자동 진행하지만 write tool은 allowonce 또는 rejectonce를 기다린다. 의미 쓰기에는 allowalways를 제공하지 않는다.",
-      "wordCount": 210,
-      "updatedAt": "2026-08-22",
+      "excerpt": "The capability to apply ontology writing requested by a user directly correcting the map or an ACP agent into markdown frontmatter only after reviewing accurate typed change proposals. It keeps the map selection context and the user's final meaning decision authority in the same flow. Change proposals are volatile pre-",
+      "wordCount": 271,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1475,9 +1511,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "project·domain·capability·element·document 저작 kind와 도구 전용 vault-readme의 경계를 일관되게 표시하고 관리하는 능력. kind 선택의 의미 판별은 docs/ONTOLOGY-ATLAS-SPEC.md §2가 소유하며, 폴더·팀·워크플로 이름만으로 분류하지 않는다. src/features/taxonomy (구현 증거) docs/ONTOLOGY-ATLAS-SPEC.md §2 (kind 판별의 공개 정본) medium-high (0.85): 구현 경로와 공개 kind 계약을 교차 확인",
-      "wordCount": 48,
-      "updatedAt": "2026-08-16",
+      "excerpt": "Dedicated to authoring project·domain·capability·element·document kinds and tools. A capability to consistently mark and manage the boundaries of vault-readme. The meaning of kind selection is owned by docs/ONTOLOGY-ATLAS-SPEC.md §2; classification is not based solely on folder, team, or workflow names. src/features/ta",
+      "wordCount": 66,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1502,9 +1538,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "볼트 전체 그래프를 커스텀 canvas-2D 엔진 위에서 렌더링·팬/줌·검색하는 능력. src/features/에 전용 폴더는 없으나 위젯 증거 + 문서 서술로 제안됨(review-required). src/widgets/topology-map-v2, topology-controls, global-search (구현 증거) AGENTS.md: Tech stack (\"The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)\") 3D 보기(dome view, 2026-08-18): 지도를 kind 동",
-      "wordCount": 624,
-      "updatedAt": "2026-08-22",
+      "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)",
+      "wordCount": 879,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1526,9 +1562,9 @@
         "created_by": "human"
       },
       "headings": [],
-      "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용한다. 필수 읽기, 상세 payload에 남은 정확한 인용, 한국어 질문의 한국어 응답 중 하나를 생략하면 한 번 교정하고, 두 번째에도 따르지 않은 답은 사용자에게 싣지 않는다. 구조 감사는 census",
-      "wordCount": 450,
-      "updatedAt": "2026-08-21",
+      "excerpt": "The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs",
+      "wordCount": 578,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1550,9 +1586,9 @@
         "created_by": "human"
       },
       "headings": [],
-      "excerpt": "사람과 agent가 같은 판별로 5개 authorable kind와 typed relation을 작성하도록 하고, 기계가 강제하는 frontmatter shape·사람이 승인하는 의미·현재 query/write 지원 범위· 추론하지 않는 경계를 서로 다른 권위와 검증 경로로 유지하는 능력. project·domain·capability·element·document만 저작할 수 있고, vault-readme는 도구가 만든 reader 전용 kind다. broader는 narrower에서 direct broader를 가리키며 UI에서 isa로 보이지만 현재 공개 rel",
-      "wordCount": 127,
-      "updatedAt": "2026-08-09",
+      "excerpt": "The capability to have people and agents author the same five kinds and typed relations in a single vault, while keeping the machine-enforced frontmatter shape, human-approved semantics, current query/write support scope, and non-inference boundaries under distinct authorities and verification paths. Only project, doma",
+      "wordCount": 168,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1571,9 +1607,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "설치 없이 체험할 수 있게 하는 번들 예시 볼트(데모 모드) 소스. src/features/vault-sample-source (구현 증거) README.md: \"The installed macOS app reading the example vault in files in a folder\" medium-high (0.8)",
-      "wordCount": 38,
-      "updatedAt": "2026-08-09",
+      "excerpt": "Source for a bundled example vault (demo mode) enabling experience without installation. src/features/vault-sample-source (implementation evidence) README.md: \"The installed macOS app reading the example vault in files in a folder\" medium-high (0.8)",
+      "wordCount": 39,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1606,9 +1642,9 @@
         }
       },
       "headings": [],
-      "excerpt": "AI 코딩 에이전트(Claude Code, Codex, Cursor)와 개발자가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 표면들: MCP 서버, 터미널 CLI, 앱 내 connect 플로우, 그리고 사용자가 이미 설치해 둔 코딩 에이전트를 앱이 직접 띄우는 ACP 실행기 층. README.md: \"Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection.\" mcp/src/index.js · mcp/src/tool-inv",
-      "wordCount": 213,
-      "updatedAt": "2026-08-22",
+      "excerpt": "Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user. README.md: \"Your agent reads and maintains it",
+      "wordCount": 259,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1632,9 +1668,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "사람과 AI 에이전트가 화면을 만들 때 고를 수 있는 값과 부품을 미리 정하고, 그 밖으로 나가면 자동으로 실패하게 만드는 책임 영역. 값(토큰 램프) · 부품(컨트롤 프리미티브) · 강제(lint 셀렉터·계약 테스트·래칫) · 조립 순서(핸드오프) 넷으로 이루어진다. 이 도메인이 다른 곳과 구별되는 지점: 문서가 아니라 게이트가 규격을 지킨다. 2026-08-03 전수 실측이 그 근거다: 디자인 시스템 문서가 이미 있는 상태에서 생 <button 419개 중 프리미티브가 덮던 것은 1개, 칩 하나의 크기 조합이 50종이었다. 게이트를 켠 뒤 손으로 쓴 버튼 74 ·",
-      "wordCount": 858,
-      "updatedAt": "2026-08-18",
+      "excerpt": "The responsibility area that pre-defines selectable values and components for humans and AI agents when building screens, and automatically fails if they deviate. It consists of four elements: values (token ramps), components (control primitives), enforcement (lint selectors, contract tests, ratchets), and assembly ord",
+      "wordCount": 1039,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1669,9 +1705,9 @@
         "created_by": "human"
       },
       "headings": [],
-      "excerpt": "markdown frontmatter가 인코딩하는 5개 authorable kind, 예약 reader kind, 실제 storage/query/write relation vocabulary와 비추론 경계를 정의하고 이를 결정론적 그래프로 컴파일·쿼리하는 책임 영역. docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: kind와 relation 의미의 공개 정본 docs/ARCHITECTURE.md: \"compileontology turns markdown frontmatter into a deterministic graph artifact; queryon",
-      "wordCount": 112,
-      "updatedAt": "2026-08-21",
+      "excerpt": "Defines the five authorable kinds, reserved reader kind, actual storage/query/write relation vocabulary, and non-inference boundaries encoded in markdown frontmatter, compiling them into a deterministic graph for compilation and querying. docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: Public authoritative definition of kind and re",
+      "wordCount": 134,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1704,13 +1740,13 @@
         ],
         "created_by": "human",
         "relation_notes": {
-          "elements/native-vault-filesystem-bridge": "네이티브 vault 파일시스템 브리지는 로컬 볼트·데이터 소스 도메인의 직접 구현 요소다."
+          "elements/native-vault-filesystem-bridge": "The native vault filesystem bridge is a direct implementation element of the local vault/data source domain."
         }
       },
       "headings": [],
-      "excerpt": "로컬 디스크의 마크다운 폴더를 고르고(File System Access API), git을 진실원으로 쓰며, 데모용 샘플 볼트를 제공하는 로컬-퍼스트·백엔드 0 데이터소스 계층. README.md: \"A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database.\" docs/ARCHITECTURE.md: \"There is no backend, no server database, no auth provider. The user's markdown fo",
-      "wordCount": 106,
-      "updatedAt": "2026-08-17",
+      "excerpt": "A local-first, backend-0 data source layer that selects markdown folders on the local disk (File System Access API), uses git as the source of truth, and provides demo sample vaults. README.md: \"A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database.\" docs/ARCHITECTURE.md:",
+      "wordCount": 124,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1748,9 +1784,9 @@
         "created_by": "human"
       },
       "headings": [],
-      "excerpt": "공유 링크 → 설치된 앱 → 연결까지의 첫 5분 경로(다운로드 결정, 첫 실행 투어, 로케일, 자동 업데이트)와 그 주위의 상시 내비게이션 셸. README.md: \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.md: Routes (\"/ is decided by who is asking\", \"The current routes are all [locale] prefixed by next-intl\") 포함: 첫 실행,",
-      "wordCount": 96,
-      "updatedAt": "2026-08-21",
+      "excerpt": "The first five-minute path from shared link → installed app → connection (download decision, initial run tour, locale, automatic updates) and the always-available navigation shell surrounding it. README.md: \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.",
+      "wordCount": 105,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1785,9 +1821,9 @@
         }
       },
       "headings": [],
-      "excerpt": "하나의 볼트 안에서 여러 project 노드를 목록화·조회·편집·공유하는 관리 영역. AGENTS.md: Project overview (project→domain→capability→element 읽기 spine, 다중 프로젝트 컨테인먼트) src/features/project-edit, project-quick-edit, project-share (구현 증거) 포함: 프로젝트 상세/편집기/셀렉터, 빠른 편집, 공유 링크 제외: 프로젝트가 담는 도메인/능력 자체의 의미(그건 각자 도메인) medium (0.7): AGENTS.md 근거는 간접적, 주로 폴더 증거에 ",
-      "wordCount": 63,
-      "updatedAt": "2026-08-12",
+      "excerpt": "A management area within a single vault that lists, views, edits, and shares multiple project nodes. AGENTS.md: Project overview (project→domain→capability→element reading spine, multi-project containment) src/features/project-edit, project-quick-edit, project-share (implementation evidence) Inclusions: Project detail/",
+      "wordCount": 79,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1821,9 +1857,9 @@
         "created_by": "human"
       },
       "headings": [],
-      "excerpt": "canvas-2D 그래프 브라우징 표면(지도·검색·인덱스 패널): 볼트 전체를 시각적으로 탐색하는 제품의 1차 진입 경로. docs/ARCHITECTURE.md: \"the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights\" (risky-citation 경고: AGENTS.md와 함께 인용하여 상호 검증) AGENTS.md: Routes (\"/topology is the map's address, not /\") 포함: to",
-      "wordCount": 79,
-      "updatedAt": "2026-08-09",
+      "excerpt": "canvas-2D graph browsing surface (map, search, index panel): The product's primary entry point for visually navigating the entire vault. docs/ARCHITECTURE.md: \"the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights\" (risky-citation warning: cross-verify by cit",
+      "wordCount": 88,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1859,13 +1895,13 @@
         "domain": "domains/agent-integration",
         "path": "src/views/agents/ui/AgentsPage.tsx",
         "created_by": "agent:unknown",
-        "display_ko": "「에이전트」 목적지",
+        "display_ko": "에이전트\" 목적지",
         "display_en": "Agents Destination"
       },
       "headings": [],
-      "excerpt": "이 컴퓨터의 AI 코딩 도구를 받고 · 깔고 · 붙이고 · 고치고 · 대화를 여는 한 자리(/agents/). 레일의 여덟 번째 목적지다. 이 일은 2026-08-20 까지 설정 시트의 두 칸(「실행기」·「MCP 연결」)이었고, 지도 위에는 같은 일을 하는 연결 시트가 따로 있었다. 한 가지 일에 주소가 셋이었다. 옮긴 근거는 화면 폭이 아니다(설치 앱 실측: 정상 경로에서 시트의 46~47%가 오히려 빈다). 근거는 그릇이다: 모달이 뒤를 딤으로 막고 Esc 를 소유한다. 52MB 를 받는 동안 지도를 못 본다. 설정은 값을 고르는 자리이고, 이것은 진행 상태가 있",
-      "wordCount": 364,
-      "updatedAt": "2026-08-21",
+      "excerpt": "A single location (/agents/) on this computer where you receive, install, attach, fix, and initiate conversations with AI coding tools. It is the eighth destination of the rail. Until 2026-08-20, this task occupied two cells in the settings sheet (\"Executor\"·\"MCP Connection\"), while a separate connection sheet on the m",
+      "wordCount": 481,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1883,9 +1919,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "앱 내비게이션 레일 위젯.",
+      "excerpt": "App navigation rail widget.",
       "wordCount": 4,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1903,9 +1939,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "앱 설정 메뉴 위젯.",
+      "excerpt": "App settings menu widget.",
       "wordCount": 4,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1923,9 +1959,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "볼트의 git 상태/스냅샷을 보여주는 패널 위젯.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Panel widget displaying the vault's git status/snapshot.",
+      "wordCount": 7,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1943,9 +1979,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "모바일/웹 하단 탭 네비게이션 위젯.",
+      "excerpt": "Mobile/web bottom tab navigation widget.",
       "wordCount": 5,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1963,9 +1999,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "kind/category 분류 데이터 엔튰티. capabilities/taxonomy 의 구현 증거.",
+      "excerpt": "Kind/category classification data entity. Implementation evidence for capabilities/taxonomy.",
       "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1983,9 +2019,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "문서 빠른 접근 서랑 위젯.",
+      "excerpt": "Document quick access drawer widget.",
       "wordCount": 5,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2003,9 +2039,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "볼트 데이터 모델 엔튰티. capabilities/docs-vault-local 의 구현 증거.",
+      "excerpt": "Vault data model entity. Implementation evidence for capabilities/docs-vault-local.",
       "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2023,9 +2059,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/docs 페이지. capabilities/docs-vault-local 의 구현 증거.",
+      "excerpt": "/docs page. Implementation evidence for capabilities/docs-vault-local.",
       "wordCount": 6,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2043,9 +2079,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "볼트 트리/목록 UI 위젯. capabilities/docs-vault-local 의 구현 증거.",
+      "excerpt": "Vault tree/list UI widget. Implementation evidence for capabilities/docs-vault-local.",
       "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2063,9 +2099,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "도메인별 노드 밀도 표시 위젯.",
-      "wordCount": 5,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Widget displaying node density per domain.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2083,9 +2119,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/download 페이지. capabilities/desktop-download-decision 의 구현 증거. macOS와 Windows x64 베타를 한 plate 안의 플랫폼 절로 나누고, Windows 미서명 경고를 실행 파일 CTA보다 먼저 보여 준다.",
-      "wordCount": 25,
-      "updatedAt": "2026-08-02",
+      "excerpt": "/download page. Implementation evidence for capabilities/desktop-download-decision. macOS and Windows x64 betas are separated into distinct platform sections within one plate, and the Windows unsigned file warning is displayed before the executable CTA.",
+      "wordCount": 32,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2103,9 +2139,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "첫 실행 화면. capabilities/first-run-starter 의 구현 증거.",
-      "wordCount": 7,
-      "updatedAt": "2026-08-02",
+      "excerpt": "First run screen. Evidence of implementation for capabilities/first-run-starter.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2123,9 +2159,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "노드 전체 상세 opt-in 패널 위젯.",
+      "excerpt": "Full node detail opt-in panel widget.",
       "wordCount": 6,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2143,9 +2179,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "게이트웨이(미설치 웹 방문자) 상시 크롬 위젯.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Persistent chrome widget for gateway (uninstalled web visitors).",
+      "wordCount": 8,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2163,9 +2199,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "게이트웨이 문서/마케팅 페이지.",
+      "excerpt": "Gateway documentation/marketing page.",
       "wordCount": 3,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2183,9 +2219,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "지도 제스처 힌트 오버레이 위젯.",
+      "excerpt": "Map gesture hint overlay widget.",
       "wordCount": 5,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2203,9 +2239,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "git 상태/이력 페이지.",
+      "excerpt": "Git status/history page.",
       "wordCount": 3,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2223,9 +2259,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "전역 검색 위젯. capabilities/topology-browsing 의 구현 증거.",
-      "wordCount": 7,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Global search widget. Evidence of implementation for capabilities/topology-browsing.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2243,9 +2279,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/ 홈 진입 페이지.",
+      "excerpt": "/ Home entry page.",
       "wordCount": 4,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2263,9 +2299,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "그래프 노드/엣지 자료구조 엔티티. capabilities/vault-ontology 의 구현 증거.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Graph node/edge data structure entity. Evidence of implementation for capabilities/vault-ontology.",
+      "wordCount": 10,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2283,9 +2319,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "File System Access API 핸들 엔티티. capabilities/docs-vault-local 의 구현 증거.",
-      "wordCount": 10,
-      "updatedAt": "2026-08-02",
+      "excerpt": "File System Access API handle entity. Evidence of implementation for capabilities/docs-vault-local.",
+      "wordCount": 11,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2303,9 +2339,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Tauri WebView가 선택한 볼트 안의 파일·디렉터리를 읽고 쓰게 하는 네이티브 브리지. Unix mutation은 canonical root와 상대 부모를 no-follow 디렉터리 FD로 붙들고, 일반 파일은 umask 기반 임시 inode를 완성해 같은 부모 안에서 원자 교체하며 디렉터리는 안정된 부모에서 생성한다. 검사 뒤 부모 이름이 외부 symlink로 교체돼도 볼트 밖 side effect를 만들지 않는다. Windows reparse-point 경쟁은 아직 별도 잔여 경계다.",
-      "wordCount": 57,
-      "updatedAt": "2026-08-17",
+      "excerpt": "Native bridge that allows the Tauri WebView to read and write files and directories within the selected vault. Unix mutations hold canonical roots and relative parent directories as no-follow directory file descriptors, complete regular files with umask-based temporary inodes for atomic replacement within the same pare",
+      "wordCount": 83,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2343,9 +2379,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "kind별 스키마 클래스 정의 엔티티. capabilities/vault-ontology 의 구현 증거.",
-      "wordCount": 9,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Kind-specific schema class definition entity. Evidence of implementation for capabilities/vault-ontology.",
+      "wordCount": 10,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2383,9 +2419,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "5질문 유지보수 대시보드. docs/ARCHITECTURE.md: \"maintenance on five-question Insights\".",
+      "excerpt": "Five-question maintenance dashboard. docs/ARCHITECTURE.md: \"maintenance on five-question Insights\".",
       "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2403,9 +2439,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "지도에서 선택한 노드의 compact inspector와 같은 자리를 쓰는 contextual relation editor. 관계 종류·대상·이유를 고르면 실제 map geometry 위에 dashed directional preview를 그리고, Ontology Change Review를 통과한 뒤 expectedMtime으로 frontmatter를 쓴다. 한 번에 관계 하나만 다뤄 별도 Studio를 작은 패널 안에 재현하지 않는다.",
-      "wordCount": 42,
-      "updatedAt": "2026-08-21",
+      "excerpt": "A contextual relation editor that shares space with the compact inspector of the selected node on the map. When you select the relation type, target, and reason, it draws a dashed directional preview on the actual map geometry, then writes to frontmatter with expectedMtime after passing the Ontology Change Review. It h",
+      "wordCount": 70,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2423,9 +2459,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/ontology → /topology?index=expanded 호환 리다이렉트.",
-      "wordCount": 5,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Compatible redirect from /ontology to /topology?index=expanded.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2443,9 +2479,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "MCP와 CLI가 .ontology-atlas 아래의 비공개 영수증·활동 로그를 다루는 공통 파일 경계다. sidecar 디렉터리와 최종 파일의 symlink/junction, 파일 identity 변경, hardlink 별칭을 실패 닫고, 원자 교체와 충돌 검사를 제공한다. 순수 Node 경로 API의 한계 때문에 동일 UID 공격자가 검사 사이에 부모 이름을 바꾸는 경쟁까지 완전한 디렉터리 핸들 격리로 주장하지 않는다.",
-      "wordCount": 49,
-      "updatedAt": "2026-08-17",
+      "excerpt": "The common file boundary where MCP and CLI handle private receipts and activity logs under .ontology-atlas. It closes symlink/junctions between the sidecar directory and final files, handles file identity changes and hardlink aliases, and provides atomic replacement and conflict detection. Due to limitations of the pur",
+      "wordCount": 73,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2463,9 +2499,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "project 노드 데이터 모델 엔티티. capabilities/project-data-source 의 구현 증거.",
+      "excerpt": "Project node data model entity. Implementation evidence for capabilities/project-data-source.",
       "wordCount": 9,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2483,9 +2519,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "프로젝트 상세 페이지. 프로젝트 자체의 설명·구성·연결뿐 아니라, 사용자가 선택한 construction qualification envelope을 session에서만 읽어 현재 결정, 첫 blocker, 사람 승인, exact plan을 같은 artifact의 근거와 함께 판단하게 한다. malformed, project/digest/plan mismatch는 실패 닫고 작성 후 maintenance는 qualification과 분리한다.",
-      "wordCount": 38,
-      "updatedAt": "2026-08-12",
+      "excerpt": "Project detail page. Beyond the project's own description, composition, and connections, it allows users to read the selected construction qualification envelope only for the current session, enabling judgment of current decisions, first blockers, human approvals, and exact plans alongside evidence from the same artifa",
+      "wordCount": 59,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2503,9 +2539,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "프로젝트 서랑 패널 위젯.",
+      "excerpt": "Project drawer panel widget.",
       "wordCount": 4,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2523,9 +2559,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "프로젝트 편집 페이지. capabilities/project-edit 의 구현 증거.",
+      "excerpt": "Project editing page. Implementation evidence for capabilities/project-edit.",
       "wordCount": 7,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2543,9 +2579,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "프로젝트 선택/목록 페이지.",
+      "excerpt": "Project selection/list page.",
       "wordCount": 3,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2563,9 +2599,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "비로그인 방문자용 빠른 액션 위젯.",
-      "wordCount": 5,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Quick action widget for unauthenticated visitors.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2583,9 +2619,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "최근 본 노드 목록 행 위젯.",
+      "excerpt": "Recently viewed node list row widget.",
       "wordCount": 6,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2603,9 +2639,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/ 스마트 진입(누구인지에 따라 분기) 로직.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-02",
+      "excerpt": "/ Smart entry logic (branches based on identity).",
+      "wordCount": 8,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2623,9 +2659,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "검색 힌트 오버레이 위젯.",
+      "excerpt": "Search hint overlay widget.",
       "wordCount": 4,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2643,9 +2679,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "검색 팔레트(커맨드-K 류) 위젯. capabilities/topology-browsing 의 구현 증거.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Search palette (Command-K style) widget. Implementation evidence for capabilities/topology-browsing.",
+      "wordCount": 9,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2663,9 +2699,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "키보드 단축키 안내 시트 위젯.",
+      "excerpt": "Keyboard shortcut guide sheet widget.",
       "wordCount": 5,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2683,9 +2719,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "노드 상태 값 엔티티. capabilities/taxonomy 의 구현 증거.",
+      "excerpt": "Node status value entity. Implementation evidence for capabilities/taxonomy.",
       "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2703,9 +2739,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "지도 패/줌/리셋 컨트롤 위젯. capabilities/topology-browsing 의 구현 증거.",
+      "excerpt": "Map pan/zoom/reset control widget. Implementation evidence for capabilities/topology-browsing.",
       "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2723,9 +2759,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "지도 인덱스(INDEX) 패널 위젯. capabilities/topology-browsing 의 구현 증거.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Map index (INDEX) panel widget. Implementation evidence for capabilities/topology-browsing.",
+      "wordCount": 9,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2743,9 +2779,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "커스텀 canvas-2D 그래프 렌더러 본체. capabilities/topology-browsing 의 핵심 구현 증거. AGENTS.md Tech stack: \"The graph renderer is ours\".",
+      "excerpt": "Custom canvas-2D graph renderer core. Core implementation evidence for capabilities/topology-browsing. AGENTS.md Tech stack: \"The graph renderer is ours\".",
       "wordCount": 18,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2763,16 +2799,16 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "에이전트 연결 상태와 실제 도구 읽기, 감사 기록, timeout 및 필수 읽기 실패를 보여주는 패널 위젯. 읽힌 manifest 없이 절대 경로만 복원된 상태는 기존 no-folder 잠금으로 강등하여 번들 샘플 화면과 숨은 로컬 본문·감사 로그가 갈라지지 않게 한다. 근거 읽기를 생략한 로컬 모델에는 한 번 교정하고, 두 번째에도 생략하면 답을 표시하지 않는다. capabilities/vault-agent의 사람 판정 표면이며, 구현은 src/widgets/vault-agent-panel과 src/features/vault-agent/model에 걸친다.",
-      "wordCount": 59,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Panel widget showing agent connection status, actual tool reads, audit logs, timeouts, and mandatory read failures. Restores only absolute paths without a read manifest, downgrading to the existing no-folder lock to prevent divergence between bundle sample screens and hidden local body/audit logs. Local models that ski",
+      "wordCount": 72,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "ontology/ontology-atlas",
       "path": "docs/ontology/ontology-atlas.md",
       "title": "Ontology Atlas",
-      "description": "사람과 AI 에이전트가 제품의 의미와 구현 근거를 같은 로컬 마크다운 그래프로 읽고 함께 가꾸는 온톨로지 워크벤치.",
+      "description": "An ontology workbench where humans and AI agents read and cultivate the product's meaning and implementation evidence together in a local Markdown graph.",
       "tags": [],
       "frontmatter": {
         "uid": "8c48b61f-1f75-448e-87a5-6ea2a7b02cf8",
@@ -2781,7 +2817,7 @@
         "title": "Ontology Atlas",
         "display_ko": "온톨로지 아틀라스",
         "display_en": "Ontology Atlas",
-        "description": "사람과 AI 에이전트가 제품의 의미와 구현 근거를 같은 로컬 마크다운 그래프로 읽고 함께 가꾸는 온톨로지 워크벤치.",
+        "description": "An ontology workbench where humans and AI agents read and cultivate the product's meaning and implementation evidence together in a local Markdown graph.",
         "domains": [],
         "capabilities": [],
         "elements": [],
@@ -2798,9 +2834,9 @@
         "path": "README.md"
       },
       "headings": [],
-      "excerpt": "로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다. README.md: \"Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product\" AGENTS.md: Project overview (\"a local-first ont",
-      "wordCount": 660,
-      "updatedAt": "2026-08-21",
+      "excerpt": "A local-first ontology workbench that transforms frontmatter from a local Markdown vault into a computable graph with types (domain, capabilities, implementation evidence, dependencies, impacts). Developers use CLI/web, and AI coding agents use MCP to read and write the same files. README.md: \"Your AI coding agent forg",
+      "wordCount": 688,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2872,6 +2908,18 @@
       "linksOut": []
     },
     {
+      "slug": "plans/SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22",
+      "path": "docs/plans/SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22.md",
+      "title": "Source Organization and English Migration Plan",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Make the repository's active contributor and agent instructions directly readable in English, remove proven dead code, and deepen internal modules without changing the three delivery units or their public interfaces. The delivery units remain: 1. the private root workbench and macOS application; 2. the bundled mcp/ ser",
+      "wordCount": 894,
+      "updatedAt": "2026-08-23",
+      "linksOut": []
+    },
+    {
       "slug": "plans/TOPOLOGY-V2-PHASE0",
       "path": "docs/plans/TOPOLOGY-V2-PHASE0.md",
       "title": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)",
@@ -2891,8 +2939,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. A slice here is one shippable piece of work — small enough to build, and small enough to prove, in one pass. Ontolo",
-      "wordCount": 11090,
-      "updatedAt": "2026-08-04",
+      "wordCount": 11123,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]
@@ -2904,9 +2952,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "[v10 정체성, 2026-07-18] — agent-native, human-sovereign(에이전트가 직접 쓰고, 최종 판단은 사람이 한다). 이 제품은 \"에이전트를 위한 시스템\"이 아니다. 사람과 AI 에이전트가 같이 읽고 같이 고치는 의미 계층 하나이고, 에이전트도 사람과 똑같은 정식 사용자다. 여기서 의미 계층이란 제품의 각 부분이 무엇인지 · 누가 맡는지 · 무엇이 그것을 증명하는지를 적어 둔 마크다운 폴더를 말한다. 에이전트는 이 폴더를 최신 상태로 유지하는 쪽이자 가장 많이 읽는 쪽이고 (MCP/CLI), 사람은 무엇이 맞는 뜻인지 최종적으로 정하는 ",
-      "wordCount": 5796,
-      "updatedAt": "2026-08-17",
+      "excerpt": "[v10 Identity, 2026-07-18] — agent-native, human-sovereign (agents write directly, humans make final judgments). This product is not a \"system for agents.\" It is a single layer of meaning that humans and AI agents read and edit together, with agents being formal users just like humans. Here, meaning layer refers to the",
+      "wordCount": 5923,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC",
         "AGENT-MEMORY-POSITIONING"
@@ -2919,9 +2967,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory — a project that counts what it shipped instead of asking whether anything got better. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens (렌즈 — 결정을 통과시키기 전에 반드시 물어야 하는 고정 질문 하나) before ",
-      "wordCount": 6050,
-      "updatedAt": "2026-08-04",
+      "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory — a project that counts what it shipped instead of asking whether anything got better. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens (lens — one fixed question to ask before passin",
+      "wordCount": 6127,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2955,9 +3003,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "이 폴더는 Ontology Atlas 를 만드는 사람들이 쓰는 기술 문서 모음입니다. 제품이 무엇인지 알고 싶어서 들어오셨다면 이 목록이 아니라 지도 화면을 먼저 보세요 — 제품이 어떤 영역으로 나뉘고 각 영역에 무엇이 들어 있는지 그림 한 장으로 보여 줍니다. 아래 표는 \"어떤 주제를 어느 문서에서 찾는가\" 를 정리한 색인입니다. This folder is the working documentation for people building Ontology Atlas. If you came here to learn what the product is, open the ",
-      "wordCount": 1097,
-      "updatedAt": "2026-08-09",
+      "excerpt": "This folder is a collection of technical documents used by the people building Ontology Atlas. If you came here to understand what the product is, look at the Map screen first — it shows in one image how the product is divided into domains and what belongs in each domain. The table below is an index summarizing \"which ",
+      "wordCount": 1114,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -2984,13 +3032,13 @@
     {
       "slug": "TECH-STACK",
       "path": "docs/TECH-STACK.md",
-      "title": "TECH STACK — 기술 스택 결정 기록 (2026-07-17)",
+      "title": "TECH STACK — Technology Stack Decision Record (2026-07-17)",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "2026-07-17 기준 전 레이어 조사(웹 프론트·데스크톱·CLI/MCP·LLM/Layer 2 인프라 4건) 후 확정한 판정. 판정 원칙: 검증된 스택은 유지가 기본값 (전면 재작성 반려 판정과 동일 논리 — 교체는 측정된 이득이 마이그레이션 비용을 명확히 넘을 때만). 다음 전면 재검토: 2027-01 또는 갈림길 조건 발화 시. 일부 조사는 세션 검색 예산 소진으로 학습 데이터+공식 문서 fetch 기반 — ⚠ 표기 항목은 실행 전 재검증. · 레이어 · 현재 · 판정 · 근거 · Next.js · 16.2.x static export · KEEP · stati",
-      "wordCount": 892,
-      "updatedAt": "2026-08-22",
+      "excerpt": "Verdict confirmed after investigating all layers (web front-end, desktop, CLI/MCP, LLM/Layer 2 infrastructure) as of 2026-07-17. Decision principle: Maintaining verified stacks is the default (same logic as rejecting full rewrites — replacement is only allowed when measured benefits clearly exceed migration costs). Nex",
+      "wordCount": 999,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -3018,20 +3066,20 @@
       },
       "headings": [],
       "excerpt": "Design spec for how the topology view (/, /topology) reveals a node on click and how it stays readable + fast as the vault grows past 2–3k nodes. This is the canonical decision; .claude/rules/design.md and DESIGN-SYSTEM.md carry the short rule, this doc carries the reasoning + cited references. Status: approved directi",
-      "wordCount": 1085,
-      "updatedAt": "2026-08-02",
+      "wordCount": 1090,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
       "slug": "TOPOLOGY-V2-DESIGN",
       "path": "docs/TOPOLOGY-V2-DESIGN.md",
-      "title": "TOPOLOGY-V2 DESIGN — 표현 아키텍처 설계 (Phase 1)",
+      "title": "TOPOLOGY-V2 DESIGN — Presentation Architecture Design (Phase 1)",
       "tags": [],
       "frontmatter": {},
       "headings": [],
       "excerpt": "Historical implementation record (superseded, 2026-07-27). This document preserves the measurements and decisions that led to topology-map-v2; its descriptions of coexisting DOM/Sigma engines and future migration phases are not current runtime instructions. The shipped contract is one canvas-2D engine. Use docs/TECH-ST",
-      "wordCount": 3710,
-      "updatedAt": "2026-08-22",
+      "wordCount": 4325,
+      "updatedAt": "2026-08-23",
       "linksOut": [
         "owner-topology-taste"
       ]
@@ -3044,8 +3092,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Common issues users hit when starting with ontology-atlas. If your case isn't here, open an issue: https://github.com/wlsdks/ontology-atlas/issues There are two ways to run Ontology Atlas, and only two: 1. The installed macOS app. It carries the MCP server inside its own bundle. Open a vault folder and press the connec",
-      "wordCount": 1251,
-      "updatedAt": "2026-08-03",
+      "wordCount": 1249,
+      "updatedAt": "2026-08-23",
       "linksOut": []
     }
   ],
@@ -3156,14 +3204,14 @@
     "design-references/DESIGN-linear": [
       {
         "fromSlug": "DESIGN-SYSTEM",
-        "context": "System > This document is maintained based on Section 3 of the design spec. For the original Linear specification, see **[`design-references/DESIGN-linear.md`]**. > > **v2 (2026-07)**: topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" > 시각 언어가 페이지 롤아웃(관문 → docs/ontology 허브 → pr",
+        "context": "System > This document is maintained based on Section 3 of the design spec. For the original Linear specification, see **[`design-references/DESIGN-linear.md`]**. > > **v2 (2026-07)**: The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the st",
         "linkText": "`design-references/DESIGN-linear.md`"
       }
     ],
     "TOPOLOGY-V2-DESIGN": [
       {
         "fromSlug": "DESIGN-SYSTEM",
-        "context": "기준: `src/widgets/topology-map-v2/` + > `app/globals.css` 의 `--topology-v2-*` / `--topology-chrome-*` 토큰. > 표현 아키텍처 전체는 **[`TOPOLOGY-V2-DESIGN.md`]**. > 이 절은 그 언어를 topology 밖 페이지로 확장할 때의 **작업 규칙서**다 — > 마케팅 산문이 아니다. ### v2 언어 정의 — 6개 축 1. **Machined surface (기계 가공 표면",
+        "context": "-v2/` + `--topology-v2-*` / `--topology-chrome-*` tokens in `app/globals.css`. The entire expression architecture is in **[`TOPOLOGY-V2-DESIGN.md`]**. This section is the **working rulebook** for extending that language to pages outside topology — it is not marketing c",
         "linkText": "`TOPOLOGY-V2-DESIGN.md`"
       }
     ],
@@ -3350,7 +3398,7 @@
     "owner-topology-taste": [
       {
         "fromSlug": "TOPOLOGY-V2-DESIGN",
-        "context": "이 확인한 3개 렌더 경로(지도 탭 `TopologyMapCanvas`, 그래프 탭 `SigmaTopology`, 프로젝트 상세 이웃 지도 `SigmaTopology minimal`)는 오너의 \"모드 증식 혐오\"(**[owner-topology-taste]**) 관점에서 이미 문제다 — 같은 vault 를 세 가지 코드가 그린다. B2+ 의 continuous smoothstep 전환(circuit ↔ constellation, 모드 플립 없음)은 애초에 \"지도 대 그래",
+        "context": "ct detail neighbor map `SigmaTopology minimal`) are already problematic from the owner's \"mode proliferation aversion\" (**[owner-topology-taste]**) perspective — one vault is drawn by three different codes. B2+’s continuous smoothstep transition (circuit ↔ constella",
         "linkText": "owner-topology-taste"
       }
     ],
@@ -3420,7 +3468,7 @@
     "ontology/elements/agents-destination": [
       {
         "fromSlug": "ontology/capabilities/acp-runtime",
-        "context": "태 표면 (목적지와 설정 시트가 같이 쓴다. 소개 줄을 그릴지는 부르는 쪽이 정한다) - src/views/agents/ui/AgentsPage.tsx: 「에이전트」 목적지, 이 능력의 현재 사용자 표면 (`**[elements/agents-destination]**`) - src/features/acp-session/model/chat-suggestions.ts · src/views/home/model/use-unbound-project-source.ts: source unb",
+        "context": "d by the caller) - src/views/agents/ui/AgentsPage.tsx: \"Agents\" destination, current user surface for this capability (`**[elements/agents-destination]**`) - src/features/acp-session/model/chat-suggestions.ts · src/views/home/model/use-unbound-project-source.ts: Source unb",
         "linkText": "elements/agents-destination"
       },
       {
@@ -4558,6 +4606,34 @@
     "type": "dir",
     "children": [
       {
+        "name": "agents",
+        "path": "agents",
+        "type": "dir",
+        "children": [
+          {
+            "name": "domain",
+            "path": "agents/domain",
+            "type": "doc",
+            "slug": "agents/domain",
+            "title": "Domain Docs"
+          },
+          {
+            "name": "issue-tracker",
+            "path": "agents/issue-tracker",
+            "type": "doc",
+            "slug": "agents/issue-tracker",
+            "title": "Issue Tracker: GitHub"
+          },
+          {
+            "name": "triage-labels",
+            "path": "agents/triage-labels",
+            "type": "doc",
+            "slug": "agents/triage-labels",
+            "title": "Triage Labels"
+          }
+        ]
+      },
+      {
         "name": "archive",
         "path": "archive",
         "type": "dir",
@@ -4826,84 +4902,84 @@
             "path": "guide/connect-agent",
             "type": "doc",
             "slug": "guide/connect-agent",
-            "title": "AI 에이전트 연결하기"
+            "title": "Connecting an AI Agent"
           },
           {
             "name": "first-five-minutes",
             "path": "guide/first-five-minutes",
             "type": "doc",
             "slug": "guide/first-five-minutes",
-            "title": "첫 5분"
+            "title": "First Five Minutes"
           },
           {
             "name": "from-your-repo",
             "path": "guide/from-your-repo",
             "type": "doc",
             "slug": "guide/from-your-repo",
-            "title": "내 저장소에서 시작하기"
+            "title": "Starting from My Repository"
           },
           {
             "name": "growing-vault",
             "path": "guide/growing-vault",
             "type": "doc",
             "slug": "guide/growing-vault",
-            "title": "볼트가 자란 뒤"
+            "title": "After the Vault Grows"
           },
           {
             "name": "insights",
             "path": "guide/insights",
             "type": "doc",
             "slug": "guide/insights",
-            "title": "정비 보드: 내 폴더 분석"
+            "title": "Maintenance Board: Analyzing My Folders"
           },
           {
             "name": "reading-the-map",
             "path": "guide/reading-the-map",
             "type": "doc",
             "slug": "guide/reading-the-map",
-            "title": "지도 읽는 법"
+            "title": "How to Read the Map"
           },
           {
             "name": "relations",
             "path": "guide/relations",
             "type": "doc",
             "slug": "guide/relations",
-            "title": "관계는 어떻게 생기나"
+            "title": "How Relations Are Created"
           },
           {
             "name": "studio",
             "path": "guide/studio",
             "type": "doc",
             "slug": "guide/studio",
-            "title": "지도에서 개념과 관계 고치기"
+            "title": "Correcting Concepts and Relations on the Map"
           },
           {
             "name": "trust",
             "path": "guide/trust",
             "type": "doc",
             "slug": "guide/trust",
-            "title": "신뢰에 관하여"
+            "title": "About Trust"
           },
           {
             "name": "vault-structure",
             "path": "guide/vault-structure",
             "type": "doc",
             "slug": "guide/vault-structure",
-            "title": "볼트의 구조"
+            "title": "Vault Structure"
           },
           {
             "name": "what-becomes-a-node",
             "path": "guide/what-becomes-a-node",
             "type": "doc",
             "slug": "guide/what-becomes-a-node",
-            "title": "무엇을 노드로 만드나"
+            "title": "What Becomes a Node?"
           },
           {
             "name": "what-is-atlas",
             "path": "guide/what-is-atlas",
             "type": "doc",
             "slug": "guide/what-is-atlas",
-            "title": "이게 무엇인가"
+            "title": "What is this?"
           }
         ]
       },
@@ -5592,6 +5668,13 @@
             "title": "plans/ — 하려고 했던 것의 기록"
           },
           {
+            "name": "SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22",
+            "path": "plans/SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22",
+            "type": "doc",
+            "slug": "plans/SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22",
+            "title": "Source Organization and English Migration Plan"
+          },
+          {
             "name": "TOPOLOGY-V2-PHASE0",
             "path": "plans/TOPOLOGY-V2-PHASE0",
             "type": "doc",
@@ -5682,7 +5765,7 @@
         "path": "DEMO-SCENARIO",
         "type": "doc",
         "slug": "DEMO-SCENARIO",
-        "title": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-22 개정)"
+        "title": "Demo Video Shooting Scenario — `atlas-tour` (Revised 2026-08-22)"
       },
       {
         "name": "DEPLOYMENT",
@@ -5738,14 +5821,14 @@
         "path": "INTERACTION-DESIGN",
         "type": "doc",
         "slug": "INTERACTION-DESIGN",
-        "title": "INTERACTION DESIGN — 유체적 인터페이스 원칙의 적용 (2026-07-17)"
+        "title": "INTERACTION DESIGN — Applying Fluid Interface Principles (2026-07-17)"
       },
       {
         "name": "MAP-TESTABILITY",
         "path": "MAP-TESTABILITY",
         "type": "doc",
         "slug": "MAP-TESTABILITY",
-        "title": "지도를 밖에서 검사하기 — `window.__atlasMap`"
+        "title": "Inspecting the Map from Outside — `window.__atlasMap`"
       },
       {
         "name": "ONTOLOGY-ATLAS-SPEC",
@@ -5801,7 +5884,7 @@
         "path": "TECH-STACK",
         "type": "doc",
         "slug": "TECH-STACK",
-        "title": "TECH STACK — 기술 스택 결정 기록 (2026-07-17)"
+        "title": "TECH STACK — Technology Stack Decision Record (2026-07-17)"
       },
       {
         "name": "TOPOLOGY-FOCUS-AND-SCALE",
@@ -5815,7 +5898,7 @@
         "path": "TOPOLOGY-V2-DESIGN",
         "type": "doc",
         "slug": "TOPOLOGY-V2-DESIGN",
-        "title": "TOPOLOGY-V2 DESIGN — 표현 아키텍처 설계 (Phase 1)"
+        "title": "TOPOLOGY-V2 DESIGN — Presentation Architecture Design (Phase 1)"
       },
       {
         "name": "TROUBLESHOOTING",

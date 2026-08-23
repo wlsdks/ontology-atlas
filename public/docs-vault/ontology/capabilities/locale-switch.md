@@ -9,12 +9,12 @@ path: src/features/locale-switch
 created_by: "agent:unknown"
 ---
 
-## 정의
-next-intl 기반 [locale] 프리픽스 라우팅으로 UI 로케일을 전환하는 능력.
+## Definition
+Ability to switch the UI locale via [locale] prefix routing based on next-intl.
 
-## 근거
-- src/features/locale-switch (구현 증거)
+## Evidence
+- src/features/locale-switch (implementation evidence)
 - AGENTS.md: Routes ("The current routes are all [locale] prefixed by next-intl")
 
-## 확신도
+## Confidence
 medium-high (0.8)

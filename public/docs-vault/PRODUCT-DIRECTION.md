@@ -1,36 +1,14 @@
 # PRODUCT DIRECTION — Ontology workbench (humans + AI agents co-author)
 
-> **[v10 정체성, 2026-07-18] — agent-native, human-sovereign(에이전트가 직접
-> 쓰고, 최종 판단은 사람이 한다).**
-> 이 제품은 "에이전트를 *위한* 시스템"이 아니다. **사람과 AI 에이전트가 같이
-> 읽고 같이 고치는 의미 계층 하나**이고, 에이전트도 사람과 똑같은 정식
-> 사용자다. 여기서 *의미 계층*이란 제품의 각 부분이 무엇인지 · 누가 맡는지 ·
-> 무엇이 그것을 증명하는지를 적어 둔 마크다운 폴더를 말한다.
-> 에이전트는 이 폴더를 최신 상태로 유지하는 쪽이자 가장 많이 읽는 쪽이고
-> (MCP/CLI), 사람은 무엇이 맞는 뜻인지 최종적으로 정하는 쪽이다 — 사람이
-> 보는 것은 평범한 마크다운과 git diff 이고, 원본 파일은 사람 자기 디스크에
-> 있다. 비슷해 보이는 두 부류와 위치가 다르다. 하나는 기계만 읽는 저장소
-> (벡터 DB · 자동 추출)인데 자동화 규모 경쟁에서 밀린다. 다른 하나는 사람만
-> 쓰는 위키인데 금방 낡는다.
-> **마케팅 문구는 에이전트를 쓰면서 겪는 불편에서 시작하되, 제품의 본체는
-> "둘이 같이 쓰는 한 벌"로 지킨다.** 모든 화면은 두 가지를 함께 만족해야 한다:
-> 에이전트가 그대로 쓸 수 있는가(타입이 붙은 사실 · 넘겨주기용 텍스트), 그리고
-> 사람이 읽고 판단할 수 있는가(쉬운 말 · 눈에 보이는 우선순위).
-> 첫 화면도 둘로 나뉜다. 공개 웹은 소개 페이지(사람을 데려오는 자리), 설치한
-> 앱은 옵시디언처럼 바로 폴더를 여는 첫 실행 화면(마케팅 문구 없음)이다.
+> **[v10 Identity, 2026-07-18] — agent-native, human-sovereign (agents write directly, humans make final judgments).**
+> This product is not a "system *for* agents." It is **a single layer of meaning that humans and AI agents read and edit together**, with agents being formal users just like humans. Here, *meaning layer* refers to the markdown folder where each part of the product's identity, responsibility, and proof are recorded.
+> Agents maintain this folder in its latest state and are also the ones who read it most (MCP/CLI), while humans make the final judgment on what the correct meaning is — what humans see is ordinary markdown and git diffs, and the original files are on their own disks. These two categories and locations differ. One is a repository only machines read (vector DB · auto extraction), which loses in automation scale competition. The other is a wiki only humans use, which quickly becomes outdated.
+> **Marketing copy starts from the friction experienced while using agents, but the product's core remains "a set used together by both."** Every screen must satisfy two things: can agents use it directly (typed facts · redirect text), and can humans read and judge it (plain language · visible priority)?
+> The first screen is also split. The public web has an introduction page (the place to bring people in), and the installed app has a first-run screen that opens folders immediately like Obsidian (no marketing copy).
 
-> **[현재 정본] 이 문서가 제품 방향, `docs/DECISIONS.md`가 결정 이유,
-> `docs/BACKLOG.md`의 활성 실행 트랙이 구현 순서를 맡는다.**
-> `docs/plans/PRODUCT-PLAN-2026-07.md`를 포함한 `docs/plans/`는 당시 의도와
-> 검토 이력을 보존하는 역사 기록이며 현재 상태나 실행 순서를 지시하지 않는다.
-> **[v9, 2026-07-17]** 당시 계획이 정한 것은 넷이다. ① 제품을 두 층으로
-> 나눈다 — Layer 1 은 내 컴퓨터에서
-> 도는 핵심 기능이고 절대 바뀌지 않으며, Layer 2 는 Atlas Network(Spec 표준 ·
-> Hub · 수요가 확인된 뒤에만 만드는 유료 Team Sync)다. ② 1차 대상을 "2~10인
-> 팀의 테크리드" 한 부류로 좁힌다. ③ v8 이 적어 둔 여러 이해관계자는 "게이트를
-> 통과한 뒤에 질문을 던지는 쪽"으로 정정한다. ④ 핵심 차별점은 적힌 내용이 아직
-> 유효하다는 것을 증명하는 기능이다 — 코드와 문서가 어긋난 것을 잡아내고, 승인을
-> 3단계로 두고, 프롬프트 주입을 막는다. 이 파일의 v2~v8 본문은 기록으로 남겨 둔다.
+> **[Current Canonical] This document handles product direction, `docs/DECISIONS.md` handles decision rationale, and active execution tracks in `docs/BACKLOG.md` handle implementation order.**
+> `docs/plans/PRODUCT-PLAN-2026-07.md` and other files in `docs/plans/` are historical records preserving intent and review history at the time; they do not indicate current state or execution order.
+> **[v9, 2026-07-17]** What the plan at that time defined was four things. ① Split the product into two layers — Layer 1 is core functionality running on your computer, never changing; Layer 2 is Atlas Network (Spec standard · Hub · paid Team Sync created only after demand is confirmed). ② Narrow the primary target to one group: "tech leads of 2-10 person teams." ③ Correct the multiple stakeholders noted in v8 to "those who ask questions after passing the gate." ④ The core differentiator is a feature proving that written content is still valid — catching mismatches between code and docs, placing approval in three stages, and preventing prompt injection. The v2~v8 body of this file is kept for record.
 
 > Written (v2): 2026-05-01
 > Decisions captured: the user confirmed **Direction A** (ontology-first) and added **dogfooding + AI-agent partnership** as a new direction.
@@ -498,15 +476,9 @@ fallback until public signed releases are uploaded.
 
 ### Option A — npm package + CLI
 
-> **결과 (2026-07-27, `docs/DECISIONS.md`)**: 이 안에서 npm 으로 배포하는
-> 부분은 **폐기**됐다. 아래 문단은 그때 검토했던 내용의 기록일 뿐, 실제로
-> 실행되는 명령이 아니다 — 그래서 복사해 붙일 수 있는 코드 블록으로 적어 두지
-> 않았다. CLI 자체는 소스 체크아웃 경로로 계속 살아 있다.
+> **Result (2026-07-27, `docs/DECISIONS.md`)**: The part distributed via npm within this was **abandoned**. The paragraph below is only a record of content reviewed at that time, not an actually executed command — so it is not written as a copy-pasteable code block. The CLI itself continues to live via source checkout path.
 
-검토했던 안: 프로젝트 폴더에서 `npx` 한 줄로 최신 CLI 를 내려받아 실행한다.
-지금 폴더를 볼트로 보고, 소스 개발용 작업 화면을 localhost:3210 에 띄우고,
-브라우저는 소스 체크아웃일 때의 대체 경로로 열고, 실제 시각 작업은 서명된
-macOS 앱에서 한다.
+Reviewed proposal: Download and run the latest CLI with one `npx` line from the project folder. View the current folder as a vault, launch the source development workbench on localhost:3210, open the browser to an alternative path during source checkout, and perform actual visual work in the signed macOS app.
 
 Pros:
 
@@ -539,23 +511,12 @@ Cons: blocks distribution (clone overhead).
 
 ### Recommendation: installed desktop app (carrying the MCP server) + CLI as the daily workbench
 
-> **2026-07-27 갱신**: 배포 경로는 **B 하나**로 좁혀졌다 — 애플 서명과 공증을
-> 마친 DMG. 여기서 *서명*은 애플이 발급한 개발자 인증서로 "이 앱을 만든 사람이
-> 누구인지" 앱에 도장을 찍는 일이고, *공증*은 그 앱을 애플 서버에 보내 악성
-> 코드가 없는지 검사받는 일이다. 둘 중 하나라도 없으면 macOS 가 실행을 막는다.
-> 앱은 컴파일된 MCP 서버를 자기 번들 안에 같이 싣고 있고, 「에이전트 연결」
-> 버튼이 에이전트 쪽 설정 파일을 대신 써 준다. 그래서 **한 번 내려받으면 사람이
-> 쓰는 화면과 에이전트가 쓰는 통로가 함께** 설치된다. A 안의 CLI 는 소스
-> 체크아웃 경로로 남고, npm 은 배포 통로가 아니다.
+> **2026-07-27 Update**: The distribution path was narrowed to **Option B** — a DMG with Apple signing and notarization. Here, *signing* is stamping the app with "who made this app" using a developer certificate issued by Apple, and *notarization* is sending that app to Apple's server for malware inspection. macOS blocks execution if either is missing.
+> The app bundles and runs a compiled MCP server within its own bundle, and the 「Agent Connection」 button writes the agent-side config file on behalf of the user. Thus, **both the human-facing screen and the agent connection channel** are installed with one download. Option A's CLI remains via source checkout path; npm is not a distribution channel.
 >
-> **2026-08-01 갱신**: 같은 Tauri 번들을 Windows x64 공개 베타로 넓혔다.
-> Windows 설치 파일은 아직 코드 서명이 안 돼 있어서, 내려받기 버튼 앞에 두
-> 가지 위험을 먼저 적어 둔다 — SmartScreen 이 "게시자를 알 수 없음" 경고를
-> 띄우는 것, 그리고 회사가 관리하는 PC 에서는 설치 자체가 막힐 수 있는 것.
-> 이것은 macOS 의 서명 기준을 낮춘 것이 아니라, 베타 수요를 재 보려고 소유자가
-> 예외를 승인한 것이다. Windows CI 는 의존성 검사 · Microsoft Defender 검사 ·
-> 무인 설치 · 앱 실행 · 설치된 MCP 동작이 모두 통과해야 릴리스를 내보내지만,
-> Windows 11 의 SmartScreen 화면까지 확인했다고 주장하지는 않는다.
+> **2026-08-01 Update**: Expanded the same Tauri bundle to Windows x64 public beta.
+> Windows installers still lack code signing, so two risks are listed before the download button — SmartScreen showing "Publisher Unknown" warning, and installation potentially being blocked on company-managed PCs.
+> This is not lowering macOS signing standards but rather an owner-approved exception to test beta demand. Windows CI requires dependency checks · Microsoft Defender checks · unattended installation · app execution · installed MCP operation to all pass before releasing, but does not claim to have checked Windows 11 SmartScreen screens.
 
 The desktop proof has graduated from exploration into the primary visual
 distribution track. Ontology Atlas should be the daily local workbench for users
@@ -666,21 +627,16 @@ readiness, onboarding brief, conflict guard, and SessionStart context injection.
 
 ### 🔁 Phase 4 — Shared decision atlas (v8 correction)
 
-R11 은 "개발자가 1차 사용자" 라고 정했다. 그 결정은 **처음 파고드는 좁은
-진입점**(이 문서에서 wedge 라고 부르는 것)으로는 여전히 맞다 — 진실원인 볼트를
-실제로 최신 상태로 유지할 수 있는 쪽이 개발자와 그의 에이전트이기 때문이다.
-하지만 그것을 "제품 전체의 사용자층은 개발자뿐" 이라는 뜻으로 쓰는 것은
-폐기한다. Atlas 는 기획자, 마케터, C-level, 의사결정자, 개발자, AI 에이전트가
-**같은 온톨로지 하나**를 보면서 사업의 핵심, 역량, 구현 근거, 영향 범위를 빠르게
-공유하는 작업대여야 한다.
+R11 decided that "developers are the primary users." That decision remains correct for **the narrow entry point** (called a wedge in this document) — because those who can actually keep the vault of truth up-to-date are developers and their agents.
+However, using it to mean "the product's entire user base is only developers" is abandoned. Atlas should be a workbench where planners, marketers, C-level executives, decision-makers, developers, and AI agents **share the same ontology** to quickly communicate business core, capabilities, implementation evidence, and impact scope.
 
 ### ⏳ Phase 4 execution — Wedge + shared surface
 
-1. ✅ CLI 명령 확장 — 52 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
-2. ✅ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증 (R12 + R14 메타 검증)
-3. ⏳ 10-minute shared understanding loop proof — 처음 보는 저장소에서 `init → bootstrap → topology/ontology 로 핵심 파악 → MCP 로 답변 품질 개선 → 에이전트가 sync 제안 → git diff 리뷰 → 다음 기획/개발 작업이 나아짐` 이 10분 안에 눈에 보이는지 확인한다. 이게 안 되면 아직 제품이 아니라 잘 만든 부품일 뿐이다.
-4. ⏳ Stakeholder-readable topology proof — `/topology` 와 `/ontology` 만 보고도 비개발자가 "무엇이 핵심 도메인·역량인가, 무엇이 그것을 구현으로 증명하는가, 어떤 변화가 어디에 영향을 주는가" 를 설명할 수 있는지 확인한다.
-4. ~~VSCode plugin~~ — R15 에서 제거. 이유: 사람들이 매일 쓰는 도구가 Claude Code / Codex 같은 AI 에이전트 터미널로 옮겨 가면서 VSCode 자체 점유율이 줄었다. 코드↔온톨로지 이동 / 역링크 / 쓰기는 mcp + cli 가 같은 값어치를 이미 한다.
+1. ✅ CLI command expansion — 52 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
+2. ✅ AI agent dogfood cycle — Claude Code verifies codebase analysis + add_concept workflow via mcp (R12 + R14 meta-verification)
+3. ⏳ 10-minute shared understanding loop proof — Verify if core grasp via `init → bootstrap → topology/ontology` → MCP answer quality improvement → agent sync proposal → git diff review → improved next planning/development work is visible within 10 minutes in a new repository. If this doesn't happen, it's still just well-made components, not a product.
+4. ⏳ Stakeholder-readable topology proof — Verify if non-developers can explain "what the core domain/capability is, what proves its implementation, and where changes have impact" by looking only at `/topology` and `/ontology`.
+4. ~~VSCode plugin~~ — Removed in R15. Reason: As people move to AI agent terminals like Claude Code / Codex daily, VSCode's own market share has decreased. Code↔ontology movement / backlinks / writing already have equal value via mcp + cli.
 
 ---
 

@@ -98,6 +98,47 @@
       "slug": "positioning-guardrail"
     }
   ],
+  "agents/domain": [
+    {
+      "depth": 1,
+      "text": "Domain Docs",
+      "slug": "domain-docs"
+    },
+    {
+      "depth": 2,
+      "text": "Read Before Exploring",
+      "slug": "read-before-exploring"
+    },
+    {
+      "depth": 2,
+      "text": "Use Established Vocabulary",
+      "slug": "use-established-vocabulary"
+    },
+    {
+      "depth": 2,
+      "text": "Flag Decision Conflicts",
+      "slug": "flag-decision-conflicts"
+    }
+  ],
+  "agents/issue-tracker": [
+    {
+      "depth": 1,
+      "text": "Issue Tracker: GitHub",
+      "slug": "issue-tracker-github"
+    },
+    {
+      "depth": 2,
+      "text": "Commands",
+      "slug": "commands"
+    }
+  ],
+  "agents/triage-labels": [
+    {
+      "depth": 1,
+      "text": "Triage Labels",
+      "slug": "triage-labels"
+    }
+  ],
   "ARCHITECTURE": [
     {
       "depth": 1,
@@ -2674,23 +2715,23 @@
     },
     {
       "depth": 2,
-      "text": "활성 실행 트랙 — 신뢰 계약 → 의미 계약 (2026-08-09)",
-      "slug": "활성-실행-트랙-신뢰-계약-의미-계약-2026-08-09"
+      "text": "Active Execution Track — Trust Contract → Meaning Contract (2026-08-09)",
+      "slug": "active-execution-track-trust-contract-meaning-contract-2026-08-09"
     },
     {
       "depth": 3,
-      "text": "PO 패스 — 구현 전에 문서를 정본으로 만든다",
-      "slug": "po-패스-구현-전에-문서를-정본으로-만든다"
+      "text": "PO Pass — Make documents canonical before implementation",
+      "slug": "po-pass-make-documents-canonical-before-implementation"
     },
     {
       "depth": 3,
-      "text": "2026-08-09 ontology-construction 재조사 checkpoint",
-      "slug": "2026-08-09-ontology-construction-재조사-checkpoint"
+      "text": "2026-08-09 ontology-construction re-investigation checkpoint",
+      "slug": "2026-08-09-ontology-construction-re-investigation-checkpoint"
     },
     {
       "depth": 3,
-      "text": "상태와 순서",
-      "slug": "상태와-순서"
+      "text": "Status and Order",
+      "slug": "status-and-order"
     },
     {
       "depth": 3,
@@ -2699,18 +2740,18 @@
     },
     {
       "depth": 3,
-      "text": "작업 카드와 완료 조건",
-      "slug": "작업-카드와-완료-조건"
+      "text": "Task Cards and Completion Criteria",
+      "slug": "task-cards-and-completion-criteria"
     },
     {
       "depth": 4,
-      "text": "D0 — 문서 정본과 실행 원장",
-      "slug": "d0-문서-정본과-실행-원장"
+      "text": "D0 — Document Master Copy and Execution Ledger",
+      "slug": "d0-document-master-copy-and-execution-ledger"
     },
     {
       "depth": 4,
-      "text": "D1 — ontology-construction foundation 재검증",
-      "slug": "d1-ontology-construction-foundation-재검증"
+      "text": "D1 — Ontology-Construction Foundation Reverification",
+      "slug": "d1-ontology-construction-foundation-reverification"
     },
     {
       "depth": 4,
@@ -2779,43 +2820,43 @@
     },
     {
       "depth": 3,
-      "text": "명시적으로 작업하지 않는 것",
-      "slug": "명시적으로-작업하지-않는-것"
+      "text": "Things explicitly not working on",
+      "slug": "things-explicitly-not-working-on"
     },
     {
       "depth": 3,
-      "text": "완료 증거 원장",
-      "slug": "완료-증거-원장"
+      "text": "Completion Evidence Ledger",
+      "slug": "completion-evidence-ledger"
     },
     {
       "depth": 3,
-      "text": "트랙 공통 종료 규칙",
-      "slug": "트랙-공통-종료-규칙"
+      "text": "Track Common Termination Rules",
+      "slug": "track-common-termination-rules"
     },
     {
       "depth": 2,
-      "text": "아래는 역사 백로그다",
-      "slug": "아래는-역사-백로그다"
+      "text": "Below is historical backlog",
+      "slug": "below-is-historical-backlog"
     },
     {
       "depth": 2,
-      "text": "✅ 완료 (R12-R14, 2026-05-04 ~ 2026-05-05)",
-      "slug": "완료-r12-r14-2026-05-04-2026-05-05"
+      "text": "✅ Done (R12-R14, 2026-05-04 ~ 2026-05-05)",
+      "slug": "done-r12-r14-2026-05-04-2026-05-05"
     },
     {
       "depth": 3,
-      "text": "R14 (#155-#163, 2026-05-05) — AI agent ↔ vault 자동 sync + 웹 즉시 반영",
-      "slug": "r14-155-163-2026-05-05-ai-agent-vault-자동-sync-웹-즉시-반영"
+      "text": "R14 (#155-#163, 2026-05-05) — AI agent ↔ vault auto sync + web immediate reflection",
+      "slug": "r14-155-163-2026-05-05-ai-agent-vault-auto-sync-web-immediate-reflection"
     },
     {
       "depth": 3,
-      "text": "R13 (#43-#67, 2026-05-04) — AI agent quality 첫 측정 + VSCode plugin",
-      "slug": "r13-43-67-2026-05-04-ai-agent-quality-첫-측정-vscode-plugin"
+      "text": "R13 (#43-#67, 2026-05-04) — AI agent quality first measurement + VSCode plugin",
+      "slug": "r13-43-67-2026-05-04-ai-agent-quality-first-measurement-vscode-plugin"
     },
     {
       "depth": 3,
-      "text": "R12 (#27-#42, 2026-05-04) — developer-primary 결정 + CLI 5 명령 + dogfood graph 완전화",
-      "slug": "r12-27-42-2026-05-04-developer-primary-결정-cli-5-명령-dogfood-graph-완전화"
+      "text": "R12 (#27-#42, 2026-05-04) — developer-primary decision + CLI 5 commands + dogfood graph completion",
+      "slug": "r12-27-42-2026-05-04-developer-primary-decision-cli-5-commands-dogfood-graph-completion"
     },
     {
       "depth": 3,
@@ -2824,18 +2865,18 @@
     },
     {
       "depth": 3,
-      "text": "Open questions 해소",
-      "slug": "open-questions-해소"
+      "text": "Resolved Open Questions",
+      "slug": "resolved-open-questions"
     },
     {
       "depth": 2,
-      "text": "~~결정 필요 (user input 후 unblock)~~ — Q3-Q8 자체 무효",
-      "slug": "결정-필요-user-input-후-unblock-q3-q8-자체-무효"
+      "text": "~~Decisions Needed (unblock after user input)~~ — Q3-Q8 self-invalid",
+      "slug": "decisions-needed-unblock-after-user-input-q3-q8-self-invalid"
     },
     {
       "depth": 2,
-      "text": "P0 — 즉시 실행 가능 (위험 낮음, 가치 큼)",
-      "slug": "p0-즉시-실행-가능-위험-낮음-가치-큼"
+      "text": "P0 — Immediately Executable (Low Risk, High Value)",
+      "slug": "p0-immediately-executable-low-risk-high-value"
     },
     {
       "depth": 3,
@@ -2844,8 +2885,8 @@
     },
     {
       "depth": 3,
-      "text": "~~T28. demo blueprint mission v2 정렬~~ — VOID",
-      "slug": "t28-demo-blueprint-mission-v2-정렬-void"
+      "text": "~~T28. demo blueprint mission v2 alignment~~ — VOID",
+      "slug": "t28-demo-blueprint-mission-v2-alignment-void"
     },
     {
       "depth": 3,
@@ -2854,13 +2895,13 @@
     },
     {
       "depth": 3,
-      "text": "~~F1. dogfood vscode-plugin capability 갱신~~ — VOID (R15)",
-      "slug": "f1-dogfood-vscode-plugin-capability-갱신-void-r15"
+      "text": "~~F1. dogfood vscode-plugin capability update~~ — VOID (R15)",
+      "slug": "f1-dogfood-vscode-plugin-capability-update-void-r15"
     },
     {
       "depth": 3,
-      "text": "~~F2. VaultDiffToaster diff logic 단위 test~~ — DONE (2026-05-09)",
-      "slug": "f2-vaultdifftoaster-diff-logic-단위-test-done-2026-05-09"
+      "text": "~~F2. VaultDiffToaster diff logic unit test~~ — DONE (2026-05-09)",
+      "slug": "f2-vaultdifftoaster-diff-logic-unit-test-done-2026-05-09"
     },
     {
       "depth": 3,
@@ -2869,13 +2910,13 @@
     },
     {
       "depth": 2,
-      "text": "~~P1 — V1.x 진화 (cloud-first 가정)~~ — 모두 N/A 또는 머지됨",
-      "slug": "p1-v1x-진화-cloud-first-가정-모두-na-또는-머지됨"
+      "text": "~~P1 — V1.x Evolution (cloud-first assumption)~~ — All N/A or Merged",
+      "slug": "p1-v1x-evolution-cloud-first-assumption-all-na-or-merged"
     },
     {
       "depth": 2,
-      "text": "P3 — 인프라 / 회귀 차단",
-      "slug": "p3-인프라-회귀-차단"
+      "text": "P3 — Infrastructure / Regression Blocking",
+      "slug": "p3-infrastructure-regression-blocking"
     },
     {
       "depth": 3,
@@ -2884,8 +2925,8 @@
     },
     {
       "depth": 3,
-      "text": "F3. .mcp.json git-tracked (✅ 이번 R14 closeout 에서 추가)",
-      "slug": "f3-mcpjson-git-tracked-이번-r14-closeout-에서-추가"
+      "text": "F3. .mcp.json git-tracked (✅ Added in this R14 closeout)",
+      "slug": "f3-mcpjson-git-tracked-added-in-this-r14-closeout"
     },
     {
       "depth": 3,
@@ -2894,13 +2935,13 @@
     },
     {
       "depth": 3,
-      "text": "~~T38. functions Firestore 컬렉션 archival~~ — VOID (R10b)",
-      "slug": "t38-functions-firestore-컬렉션-archival-void-r10b"
+      "text": "~~T38. functions Firestore collection archival~~ — VOID (R10b)",
+      "slug": "t38-functions-firestore-collection-archival-void-r10b"
     },
     {
       "depth": 3,
-      "text": "~~T24. knowledge-* 컬렉션 통합 검토~~ — VOID (R10b)",
-      "slug": "t24-knowledge--컬렉션-통합-검토-void-r10b"
+      "text": "~~T24. knowledge-* collection integration review~~ — VOID (R10b)",
+      "slug": "t24-knowledge--collection-integration-review-void-r10b"
     },
     {
       "depth": 2,
@@ -2919,38 +2960,38 @@
     },
     {
       "depth": 3,
-      "text": "T27. 큰 view 파일 정리",
-      "slug": "t27-큰-view-파일-정리"
+      "text": "T27. Clean up large view files",
+      "slug": "t27-clean-up-large-view-files"
     },
     {
       "depth": 3,
-      "text": "T40. 물리(force) 조절 v2 재배선 — 실기능으로 원하면 부활",
-      "slug": "t40-물리force-조절-v2-재배선-실기능으로-원하면-부활"
+      "text": "T40. Re-route physical force control v2 — revive if needed as a real feature",
+      "slug": "t40-re-route-physical-force-control-v2-revive-if-needed-as-a-real-feature"
     },
     {
       "depth": 2,
-      "text": "~~P2 — Phase 4 (비개발자 surface 다듬기)~~ — DROPPED (R12 #33)",
-      "slug": "p2-phase-4-비개발자-surface-다듬기-dropped-r12-33"
+      "text": "~~P2 — Phase 4 (Refining non-developer surface)~~ — DROPPED (R12 #33)",
+      "slug": "p2-phase-4-refining-non-developer-surface-dropped-r12-33"
     },
     {
       "depth": 2,
-      "text": "추천 진행 순서",
-      "slug": "추천-진행-순서"
+      "text": "Recommended Execution Order",
+      "slug": "recommended-execution-order"
     },
     {
       "depth": 2,
-      "text": "참조 문서",
-      "slug": "참조-문서"
+      "text": "Reference Documents",
+      "slug": "reference-documents"
     },
     {
       "depth": 2,
-      "text": "~~계약 테스트 사전 부패 4건~~ — ✅ 해소 (2026-07-21, PR #457)",
-      "slug": "계약-테스트-사전-부패-4건-해소-2026-07-21-pr-457"
+      "text": "~~4 Pre-failed Contract Tests~~ — ✅ Resolved (2026-07-21, PR #457)",
+      "slug": "4-pre-failed-contract-tests-resolved-2026-07-21-pr-457"
     },
     {
       "depth": 2,
-      "text": "잔여 게이트 (다음 라운드)",
-      "slug": "잔여-게이트-다음-라운드"
+      "text": "Remaining Gates (Next Round)",
+      "slug": "remaining-gates-next-round"
     }
   ],
   "benchmark/README": [
@@ -3480,98 +3521,98 @@
     },
     {
       "depth": 2,
-      "text": "한 문장",
-      "slug": "한-문장"
+      "text": "One Sentence",
+      "slug": "one-sentence"
     },
     {
       "depth": 2,
-      "text": "요소별 의미",
-      "slug": "요소별-의미"
+      "text": "Meaning by Element",
+      "slug": "meaning-by-element"
     },
     {
       "depth": 3,
-      "text": "중앙 육각형 — 핵심 개념",
-      "slug": "중앙-육각형-핵심-개념"
+      "text": "Central Hexagon — Core Concept",
+      "slug": "central-hexagon-core-concept"
     },
     {
       "depth": 3,
-      "text": "세 개의 원형 노드 — 주요 개념과 접점",
-      "slug": "세-개의-원형-노드-주요-개념과-접점"
+      "text": "Three Circular Nodes — Core Concepts and Intersections",
+      "slug": "three-circular-nodes-core-concepts-and-intersections"
     },
     {
       "depth": 3,
-      "text": "노드를 잇는 선 — 타입이 있는 관계",
-      "slug": "노드를-잇는-선-타입이-있는-관계"
+      "text": "Lines Connecting Nodes — Typed Relationships",
+      "slug": "lines-connecting-nodes-typed-relationships"
     },
     {
       "depth": 3,
-      "text": "중첩된 육각형 — 지식의 계층",
-      "slug": "중첩된-육각형-지식의-계층"
+      "text": "Nested Hexagons — Hierarchy of Knowledge",
+      "slug": "nested-hexagons-hierarchy-of-knowledge"
     },
     {
       "depth": 3,
-      "text": "점선 레이어 — 아직 보이지 않는 지도",
-      "slug": "점선-레이어-아직-보이지-않는-지도"
+      "text": "Dashed Layer — The Invisible Map",
+      "slug": "dashed-layer-the-invisible-map"
     },
     {
       "depth": 3,
-      "text": "바깥 육각형 — 코드베이스의 경계",
-      "slug": "바깥-육각형-코드베이스의-경계"
+      "text": "Outer Hexagon — Boundary of the Codebase",
+      "slug": "outer-hexagon-boundary-of-the-codebase"
     },
     {
       "depth": 3,
-      "text": "육각형이라는 형태 — 구조와 확장성",
-      "slug": "육각형이라는-형태-구조와-확장성"
+      "text": "The Hexagonal Form — Structure and Scalability",
+      "slug": "the-hexagonal-form-structure-and-scalability"
     },
     {
       "depth": 2,
-      "text": "색",
-      "slug": "색"
+      "text": "Colors",
+      "slug": "colors"
     },
     {
       "depth": 2,
-      "text": "크기 사다리 — 작을수록 층을 지운다",
-      "slug": "크기-사다리-작을수록-층을-지운다"
+      "text": "Size Ladder — Layering at Smaller Sizes",
+      "slug": "size-ladder-layering-at-smaller-sizes"
     },
     {
       "depth": 2,
-      "text": "자산 목록 — 무엇을 언제 쓰나",
-      "slug": "자산-목록-무엇을-언제-쓰나"
+      "text": "Asset List — What and When to Use",
+      "slug": "asset-list-what-and-when-to-use"
     },
     {
       "depth": 3,
-      "text": "마크 단독",
-      "slug": "마크-단독"
+      "text": "Mark only",
+      "slug": "mark-only"
     },
     {
       "depth": 3,
-      "text": "가로형 로고 (lockup)",
-      "slug": "가로형-로고-lockup"
+      "text": "Horizontal lockup",
+      "slug": "horizontal-lockup"
     },
     {
       "depth": 3,
-      "text": "앱/OS",
-      "slug": "앱os"
+      "text": "App/OS",
+      "slug": "appos"
     },
     {
       "depth": 3,
-      "text": "SVG 와 PNG 중 무엇을 쓰나",
-      "slug": "svg-와-png-중-무엇을-쓰나"
+      "text": "SVG vs PNG",
+      "slug": "svg-vs-png"
     },
     {
       "depth": 2,
-      "text": "만드는 법 — 세 단계, 사람이 한 번 돌린다",
-      "slug": "만드는-법-세-단계-사람이-한-번-돌린다"
+      "text": "How to build — three steps, run once by a human",
+      "slug": "how-to-build-three-steps-run-once-by-a-human"
     },
     {
       "depth": 2,
-      "text": "하지 말 것",
-      "slug": "하지-말-것"
+      "text": "Do not",
+      "slug": "do-not"
     },
     {
       "depth": 2,
-      "text": "게이트",
-      "slug": "게이트"
+      "text": "Gates",
+      "slug": "gates"
     }
   ],
   "CHANGELOG": [
@@ -6339,8 +6380,8 @@
     },
     {
       "depth": 3,
-      "text": "Verdict (체계 seat, 2026-08-04)",
-      "slug": "verdict-체계-seat-2026-08-04"
+      "text": "Verdict (Systems seat, 2026-08-04)",
+      "slug": "verdict-systems-seat-2026-08-04"
     },
     {
       "depth": 3,
@@ -6433,6 +6474,16 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-23 (102) — Make all active authored Markdown English; retain only typed locale data and immutable history",
+      "slug": "2026-08-23-102-make-all-active-authored-markdown-english-retain-only-typed-locale-data-and-immutable-history"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-23 (101) — Englishify the operational agent control plane first; preserve localized and append-only Markdown",
+      "slug": "2026-08-23-101-englishify-the-operational-agent-control-plane-first-preserve-localized-and-append-only-markdown"
     },
     {
       "depth": 2,
@@ -9928,88 +9979,88 @@
   "DEMO-SCENARIO": [
     {
       "depth": 1,
-      "text": "시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-22 개정)",
-      "slug": "시연-영상-촬영-시나리오-atlas-tour-2026-08-22-개정"
+      "text": "Demo Video Shooting Scenario — `atlas-tour` (Revised 2026-08-22)",
+      "slug": "demo-video-shooting-scenario-atlas-tour-revised-2026-08-22"
     },
     {
       "depth": 2,
-      "text": "0-1. 2026-08-22 개정 — 투어를 버리고 한 장면만 남긴다",
-      "slug": "0-1-2026-08-22-개정-투어를-버리고-한-장면만-남긴다"
-    },
-    {
-      "depth": 2,
-      "text": "0. 이번 개정이 고치는 것 둘 *(155초 투어 기준 — 위 §0-1 참고)*",
-      "slug": "0-이번-개정이-고치는-것-둘-155초-투어-기준-위-0-1-참고"
+      "text": "0-1. Revised 2026-08-22 — Abandoning the tour, leaving only one scene",
+      "slug": "0-1-revised-2026-08-22-abandoning-the-tour-leaving-only-one-scene"
     },
     {
       "depth": 3,
-      "text": "(가) 준비는 촬영 밖에서 끝낸다 — 프라이버시 결함이었다",
-      "slug": "가-준비는-촬영-밖에서-끝낸다-프라이버시-결함이었다"
+      "text": "(a) Finish prep outside the shoot — it was a privacy flaw",
+      "slug": "a-finish-prep-outside-the-shoot-it-was-a-privacy-flaw"
     },
     {
       "depth": 3,
-      "text": "(나) 비트표를 지금 앱에 맞춘다",
-      "slug": "나-비트표를-지금-앱에-맞춘다"
-    },
-    {
-      "depth": 2,
-      "text": "1. 이 영상이 벌어야 하는 한 문장",
-      "slug": "1-이-영상이-벌어야-하는-한-문장"
-    },
-    {
-      "depth": 2,
-      "text": "2. 촬영 규격",
-      "slug": "2-촬영-규격"
-    },
-    {
-      "depth": 2,
-      "text": "3. 비트 — 약 155초",
-      "slug": "3-비트-약-155초"
+      "text": "(a) Preparation Ends Outside the Shoot — A Privacy Defect",
+      "slug": "a-preparation-ends-outside-the-shoot-a-privacy-defect"
     },
     {
       "depth": 3,
-      "text": "다운로드 비트 — 재 보고 **빼기로 했다** (2026-08-19 실측)",
-      "slug": "다운로드-비트-재-보고-빼기로-했다-2026-08-19-실측"
-    },
-    {
-      "depth": 3,
-      "text": "비트 사이 규칙",
-      "slug": "비트-사이-규칙"
+      "text": "(B) Aligning the beat sheet with the current app",
+      "slug": "b-aligning-the-beat-sheet-with-the-current-app"
     },
     {
       "depth": 2,
-      "text": "4. 찍기 전 체크리스트",
-      "slug": "4-찍기-전-체크리스트"
+      "text": "1. The One Sentence This Video Must Convey",
+      "slug": "1-the-one-sentence-this-video-must-convey"
     },
     {
       "depth": 2,
-      "text": "5. 찍은 뒤 — 켜는 절차",
-      "slug": "5-찍은-뒤-켜는-절차"
+      "text": "2. Shooting Specifications",
+      "slug": "2-shooting-specifications"
     },
     {
       "depth": 2,
-      "text": "6. 켠 뒤 게이트",
-      "slug": "6-켠-뒤-게이트"
+      "text": "3. Beats — Approx. 155 seconds",
+      "slug": "3-beats-approx-155-seconds"
+    },
+    {
+      "depth": 3,
+      "text": "Download Bit — Decided to Exclude (Measured on 2026-08-19)",
+      "slug": "download-bit-decided-to-exclude-measured-on-2026-08-19"
+    },
+    {
+      "depth": 3,
+      "text": "Rules Between Bits",
+      "slug": "rules-between-bits"
     },
     {
       "depth": 2,
-      "text": "7. 지금 붙어 있는 것",
-      "slug": "7-지금-붙어-있는-것"
+      "text": "4. Pre-shoot Checklist",
+      "slug": "4-pre-shoot-checklist"
+    },
+    {
+      "depth": 2,
+      "text": "5. Post-recording — Activation Procedure",
+      "slug": "5-post-recording-activation-procedure"
+    },
+    {
+      "depth": 2,
+      "text": "6. Post-activation Gate",
+      "slug": "6-post-activation-gate"
+    },
+    {
+      "depth": 2,
+      "text": "7. What is currently attached",
+      "slug": "7-what-is-currently-attached"
     },
     {
       "depth": 3,
-      "text": "*(155초 투어)* 배속은 썼고 컷은 안 썼다",
-      "slug": "155초-투어-배속은-썼고-컷은-안-썼다"
+      "text": "*(155-second tour)* Speed was used, but no cuts",
+      "slug": "155-second-tour-speed-was-used-but-no-cuts"
     },
     {
       "depth": 3,
-      "text": "촬영이 세 번 엎어진 이유 — 다음 사람이 같은 데서 안 넘어지게",
-      "slug": "촬영이-세-번-엎어진-이유-다음-사람이-같은-데서-안-넘어지게"
+      "text": "Why the recording failed three times — So the next person doesn't fall into the same trap",
+      "slug": "why-the-recording-failed-three-times-so-the-next-person-doesnt-fall-into-the-same-trap"
     },
     {
       "depth": 3,
-      "text": "영어본은 같은 날 따로 찍었다",
-      "slug": "영어본은-같은-날-따로-찍었다"
+      "text": "The English version was recorded separately on the same day",
+      "slug": "the-english-version-was-recorded-separately-on-the-same-day"
     }
   ],
   "DEPLOYMENT": [
@@ -10279,13 +10330,13 @@
     },
     {
       "depth": 2,
-      "text": "이 문서를 읽는 법 (사람 · 에이전트 공통)",
-      "slug": "이-문서를-읽는-법-사람-에이전트-공통"
+      "text": "How to Read This Document (For Humans and Agents)",
+      "slug": "how-to-read-this-document-for-humans-and-agents"
     },
     {
       "depth": 3,
-      "text": "형제 문서 — 무엇을 어디서 찾나",
-      "slug": "형제-문서-무엇을-어디서-찾나"
+      "text": "Sister Documents — Where to Find What",
+      "slug": "sister-documents-where-to-find-what"
     },
     {
       "depth": 2,
@@ -10294,73 +10345,73 @@
     },
     {
       "depth": 2,
-      "text": "v2 — \"Circuit × Constellation\" (B2+) 시각 언어",
-      "slug": "v2-circuit-constellation-b2-시각-언어"
+      "text": "v2 — \"Circuit × Constellation\" (B2+) Visual Language",
+      "slug": "v2-circuit-constellation-b2-visual-language"
     },
     {
       "depth": 3,
-      "text": "v2 언어 정의 — 6개 축",
-      "slug": "v2-언어-정의-6개-축"
+      "text": "v2 Language Definition — 6 Axes",
+      "slug": "v2-language-definition-6-axes"
     },
     {
       "depth": 3,
-      "text": "v2 토큰 카탈로그 — tier 별",
-      "slug": "v2-토큰-카탈로그-tier-별"
+      "text": "v2 Token Catalog — By Tier",
+      "slug": "v2-token-catalog-by-tier"
     },
     {
       "depth": 3,
-      "text": "페이지 롤아웃 적용 규칙",
-      "slug": "페이지-롤아웃-적용-규칙"
+      "text": "Page Rollout Application Rules",
+      "slug": "page-rollout-application-rules"
     },
     {
       "depth": 3,
-      "text": "금지 재확인 (v2)",
-      "slug": "금지-재확인-v2"
+      "text": "Re-confirmation of prohibitions (v2)",
+      "slug": "re-confirmation-of-prohibitions-v2"
     },
     {
       "depth": 3,
-      "text": "가드 (페이지 롤아웃 프로세스)",
-      "slug": "가드-페이지-롤아웃-프로세스"
+      "text": "Guard (Page rollout process)",
+      "slug": "guard-page-rollout-process"
     },
     {
       "depth": 3,
-      "text": "부채 — 토큰 drift 감사 (2026-07-18)",
-      "slug": "부채-토큰-drift-감사-2026-07-18"
+      "text": "Fan — Token drift audit (2026-07-18)",
+      "slug": "fan-token-drift-audit-2026-07-18"
     },
     {
       "depth": 2,
-      "text": "노드 규격 (Node Spec, 2026-08-01)",
-      "slug": "노드-규격-node-spec-2026-08-01"
+      "text": "Node Spec (Node Spec, 2026-08-01)",
+      "slug": "node-spec-node-spec-2026-08-01"
     },
     {
       "depth": 3,
-      "text": "1. 형태 — kind 는 색이 아니라 도형",
-      "slug": "1-형태-kind-는-색이-아니라-도형"
+      "text": "1. Shape — kind is shape, not color",
+      "slug": "1-shape-kind-is-shape-not-color"
     },
     {
       "depth": 3,
-      "text": "2. 반지름 — 고정 사다리",
-      "slug": "2-반지름-고정-사다리"
+      "text": "2. Radius — Fixed Ladder",
+      "slug": "2-radius-fixed-ladder"
     },
     {
       "depth": 3,
-      "text": "3. 크기 스케일 — magnitudeScale (자식 수가 크기가 된다)",
-      "slug": "3-크기-스케일-magnitudescale-자식-수가-크기가-된다"
+      "text": "3. Size Scale — magnitudeScale (child count becomes size)",
+      "slug": "3-size-scale-magnitudescale-child-count-becomes-size"
     },
     {
       "depth": 3,
-      "text": "4. 각인 숫자 — 언제, 무엇을 세나",
-      "slug": "4-각인-숫자-언제-무엇을-세나"
+      "text": "4. Engraved Numbers — When and What to Count",
+      "slug": "4-engraved-numbers-when-and-what-to-count"
     },
     {
       "depth": 3,
-      "text": "5. 브릿지 노드 — 자리 예약, 값 미정 (2026-08)",
-      "slug": "5-브릿지-노드-자리-예약-값-미정-2026-08"
+      "text": "5. Bridge Nodes — Placeholder, Value TBD (2026-08)",
+      "slug": "5-bridge-nodes-placeholder-value-tbd-2026-08"
     },
     {
       "depth": 2,
-      "text": "Brand mark — \"헥사 별자리\" (candidate A, confirmed 2026-07-18)",
-      "slug": "brand-mark-헥사-별자리-candidate-a-confirmed-2026-07-18"
+      "text": "Brand mark — \"Hex Constellation\" (candidate A, confirmed 2026-07-18)",
+      "slug": "brand-mark-hex-constellation-candidate-a-confirmed-2026-07-18"
     },
     {
       "depth": 2,
@@ -10374,23 +10425,23 @@
     },
     {
       "depth": 2,
-      "text": "에이전트가 소비하는 층 — 이 문서를 누가 읽는가 (2026-08-01)",
-      "slug": "에이전트가-소비하는-층-이-문서를-누가-읽는가-2026-08-01"
+      "text": "Layers the agent consumes — who reads this document (2026-08-01)",
+      "slug": "layers-the-agent-consumes-who-reads-this-document-2026-08-01"
     },
     {
       "depth": 3,
-      "text": "이미 있다 (2026 업계가 \"빠졌다\"고 지적하는 것들)",
-      "slug": "이미-있다-2026-업계가-빠졌다고-지적하는-것들"
+      "text": "Already exists (what the 2026 industry \"missed\")",
+      "slug": "already-exists-what-the-2026-industry-missed"
     },
     {
       "depth": 3,
-      "text": "새로 채웠다",
-      "slug": "새로-채웠다"
+      "text": "Newly filled in",
+      "slug": "newly-filled-in"
     },
     {
       "depth": 3,
-      "text": "필요 없다고 판단했다 (그리고 왜)",
-      "slug": "필요-없다고-판단했다-그리고-왜"
+      "text": "Deemed unnecessary (and why)",
+      "slug": "deemed-unnecessary-and-why"
     },
     {
       "depth": 2,
@@ -10399,8 +10450,8 @@
     },
     {
       "depth": 3,
-      "text": "스케일 고정 계약 (2026-07-24, 소유자 확정 — \"지금 이대로 고정\")",
-      "slug": "스케일-고정-계약-2026-07-24-소유자-확정-지금-이대로-고정"
+      "text": "Scale fixed contract (2026-07-24, owner confirmed — \"fixed as is now\")",
+      "slug": "scale-fixed-contract-2026-07-24-owner-confirmed-fixed-as-is-now"
     },
     {
       "depth": 3,
@@ -10444,18 +10495,18 @@
     },
     {
       "depth": 4,
-      "text": "라틴 전용 장식은 한글에 얹지 않는다 (2026-07-26)",
-      "slug": "라틴-전용-장식은-한글에-얹지-않는다-2026-07-26"
+      "text": "Do not overlay Latin-only decorations on Korean (2026-07-26)",
+      "slug": "do-not-overlay-latin-only-decorations-on-korean-2026-07-26"
     },
     {
       "depth": 4,
-      "text": "라벨은 노드 도형선에 닿지 않는다 (2026-07-26 진입 검수 E-4)",
-      "slug": "라벨은-노드-도형선에-닿지-않는다-2026-07-26-진입-검수-e-4"
+      "text": "Labels do not touch node outline lines (2026-07-26 entry check E-4)",
+      "slug": "labels-do-not-touch-node-outline-lines-2026-07-26-entry-check-e-4"
     },
     {
       "depth": 3,
-      "text": "지도 잉크 사다리 — 깊이 축 하나, 그 밖 둘 (2026-07-31)",
-      "slug": "지도-잉크-사다리-깊이-축-하나-그-밖-둘-2026-07-31"
+      "text": "Map ink ladder — one depth axis, two others (2026-07-31)",
+      "slug": "map-ink-ladder-one-depth-axis-two-others-2026-07-31"
     },
     {
       "depth": 3,
@@ -10469,33 +10520,33 @@
     },
     {
       "depth": 3,
-      "text": "모션 문법 (usability motion family, Phase 3 2026-07-25)",
-      "slug": "모션-문법-usability-motion-family-phase-3-2026-07-25"
+      "text": "Motion Syntax (usability motion family, Phase 3 2026-07-25)",
+      "slug": "motion-syntax-usability-motion-family-phase-3-2026-07-25"
     },
     {
       "depth": 4,
-      "text": "값이 아니라 쓰임으로 고른다 — 그리고 기본이면 클래스를 안 쓴다 (2026-07-27)",
-      "slug": "값이-아니라-쓰임으로-고른다-그리고-기본이면-클래스를-안-쓴다-2026-07-27"
+      "text": "Choose by usage, not value — and don't use classes if it's the default (2026-07-27)",
+      "slug": "choose-by-usage-not-value-and-dont-use-classes-if-its-the-default-2026-07-27"
     },
     {
       "depth": 4,
-      "text": "모션 예산은 주인공에게 (2026-07-27)",
-      "slug": "모션-예산은-주인공에게-2026-07-27"
+      "text": "Motion budget goes to the protagonist (2026-07-27)",
+      "slug": "motion-budget-goes-to-the-protagonist-2026-07-27"
     },
     {
       "depth": 4,
-      "text": "전수 실측이 가르친 것 (2026-07-28)",
-      "slug": "전수-실측이-가르친-것-2026-07-28"
+      "text": "What exhaustive measurement taught us (2026-07-28)",
+      "slug": "what-exhaustive-measurement-taught-us-2026-07-28"
     },
     {
       "depth": 4,
-      "text": "목록 행 펼침 — 나가는 길은 들어온 길이다 (2026-07-26)",
-      "slug": "목록-행-펼침-나가는-길은-들어온-길이다-2026-07-26"
+      "text": "List row expansion — exit via the path entered (2026-07-26)",
+      "slug": "list-row-expansion-exit-via-the-path-entered-2026-07-26"
     },
     {
       "depth": 3,
-      "text": "reduced-motion 동등물은 목록이고, 그 목록은 테스트가 지킨다 (2026-07-26)",
-      "slug": "reduced-motion-동등물은-목록이고-그-목록은-테스트가-지킨다-2026-07-26"
+      "text": "The reduced-motion equivalent is a list, and tests enforce that list (2026-07-26)",
+      "slug": "the-reduced-motion-equivalent-is-a-list-and-tests-enforce-that-list-2026-07-26"
     },
     {
       "depth": 3,
@@ -10504,23 +10555,23 @@
     },
     {
       "depth": 3,
-      "text": "Touch & tablet responsive contract (2026-07-23, 반응형 감사 라운드)",
-      "slug": "touch-tablet-responsive-contract-2026-07-23-반응형-감사-라운드"
+      "text": "Touch & tablet responsive contract (2026-07-23, Responsive Audit Round)",
+      "slug": "touch-tablet-responsive-contract-2026-07-23-responsive-audit-round"
     },
     {
       "depth": 3,
-      "text": "셸 본문 슬롯 — 압축 금지 계약 (2026-07-27)",
-      "slug": "셸-본문-슬롯-압축-금지-계약-2026-07-27"
+      "text": "Shell body slot — No-compression contract (2026-07-27)",
+      "slug": "shell-body-slot-no-compression-contract-2026-07-27"
     },
     {
       "depth": 3,
-      "text": "기록 목적지 토큰 (`--git-*`, 2026-07-27 작업대 재설계)",
-      "slug": "기록-목적지-토큰---git--2026-07-27-작업대-재설계"
+      "text": "History destination tokens (`--git-*`, Workbench redesign 2026-07-27)",
+      "slug": "history-destination-tokens---git--workbench-redesign-2026-07-27"
     },
     {
       "depth": 3,
-      "text": "앱 내장 터미널 도크 토큰 — 제거됨 (2026-07-26)",
-      "slug": "앱-내장-터미널-도크-토큰-제거됨-2026-07-26"
+      "text": "App-embedded terminal dock tokens — Removed (2026-07-26)",
+      "slug": "app-embedded-terminal-dock-tokens-removed-2026-07-26"
     },
     {
       "depth": 2,
@@ -10609,138 +10660,138 @@
     },
     {
       "depth": 3,
-      "text": "Type ramp — 7단",
-      "slug": "type-ramp-7단"
+      "text": "Type ramp — 7 steps",
+      "slug": "type-ramp-7-steps"
     },
     {
       "depth": 3,
-      "text": "Line-height ramp — 9단 (2026-07-27)",
-      "slug": "line-height-ramp-9단-2026-07-27"
+      "text": "Line-height ramp — 9 steps (2026-07-27)",
+      "slug": "line-height-ramp-9-steps-2026-07-27"
     },
     {
       "depth": 4,
-      "text": "조건부 크기 함정 — companion 결합이 만든 새 실패 모드",
-      "slug": "조건부-크기-함정-companion-결합이-만든-새-실패-모드"
+      "text": "Conditional size trap — new failure mode created by companion binding",
+      "slug": "conditional-size-trap-new-failure-mode-created-by-companion-binding"
     },
     {
       "depth": 3,
-      "text": "콘텐츠 아이콘 램프 — 3단 (2026-08-04 체계석)",
-      "slug": "콘텐츠-아이콘-램프-3단-2026-08-04-체계석"
+      "text": "Content Icon Ramp — 3 Steps (System Established 2026-08-04)",
+      "slug": "content-icon-ramp-3-steps-system-established-2026-08-04"
     },
     {
       "depth": 4,
-      "text": "2026-08-05 — 이 램프는 **소비처가 0이었다**, 그리고 게이트는 73% 를 못 보고 있었다",
-      "slug": "2026-08-05-이-램프는-소비처가-0이었다-그리고-게이트는-73-를-못-보고-있었다"
+      "text": "2026-08-05 — This ramp had **zero consumers**, and the gate missed 73%",
+      "slug": "2026-08-05-this-ramp-had-zero-consumers-and-the-gate-missed-73"
     },
     {
       "depth": 3,
-      "text": "Radius ramp — 5단 (일반 표면)",
-      "slug": "radius-ramp-5단-일반-표면"
+      "text": "Radius Ramp — 5 Steps (General Surface)",
+      "slug": "radius-ramp-5-steps-general-surface"
     },
     {
       "depth": 3,
-      "text": "페이지 컬럼 — `--page-max` 하나",
-      "slug": "페이지-컬럼---page-max-하나"
+      "text": "Page Column — Single `--page-max`",
+      "slug": "page-column-single---page-max"
     },
     {
       "depth": 4,
-      "text": "정렬 원점 — `--gateway-origin` (2026-07-29 밤, 관문 표면)",
-      "slug": "정렬-원점---gateway-origin-2026-07-29-밤-관문-표면"
+      "text": "Alignment Origin — `--gateway-origin` (2026-07-29 night, Gateway Surface)",
+      "slug": "alignment-origin---gateway-origin-2026-07-29-night-gateway-surface"
     },
     {
       "depth": 3,
-      "text": "Padding — 램프를 두지 않는다 (2026-07-26 정리)",
-      "slug": "padding-램프를-두지-않는다-2026-07-26-정리"
+      "text": "Padding — Do Not Use Ramps (Updated 2026-07-26)",
+      "slug": "padding-do-not-use-ramps-updated-2026-07-26"
     },
     {
       "depth": 3,
-      "text": "패널 폭·측정폭 — 램프를 두지 않는다 (2026-08-04 체계석)",
-      "slug": "패널-폭측정폭-램프를-두지-않는다-2026-08-04-체계석"
+      "text": "Panel Width · Measurement Width — No Lamp (2026-08-04 System Stone)",
+      "slug": "panel-width-measurement-width-no-lamp-2026-08-04-system-stone"
     },
     {
       "depth": 3,
-      "text": "박스별 규격 표",
-      "slug": "박스별-규격-표"
+      "text": "Box Specifications Table",
+      "slug": "box-specifications-table"
     },
     {
       "depth": 3,
-      "text": "명시 예외 (램프 밖, 문서화된 것만)",
-      "slug": "명시-예외-램프-밖-문서화된-것만"
+      "text": "Explicit Exceptions (Outside the Lamp, Only Documented Ones)",
+      "slug": "explicit-exceptions-outside-the-lamp-only-documented-ones"
     },
     {
       "depth": 3,
-      "text": "Lint 봉쇄",
-      "slug": "lint-봉쇄"
+      "text": "Lint Blockade",
+      "slug": "lint-blockade"
     },
     {
       "depth": 3,
-      "text": "모션 문법 인덱스",
-      "slug": "모션-문법-인덱스"
+      "text": "Motion Syntax Index",
+      "slug": "motion-syntax-index"
     },
     {
       "depth": 2,
-      "text": "크롬 문법 (feat/chrome-system)",
-      "slug": "크롬-문법-featchrome-system"
+      "text": "Chrome Syntax (feat/chrome-system)",
+      "slug": "chrome-syntax-featchrome-system"
     },
     {
       "depth": 3,
-      "text": "Radius 스텝 (4계층)",
-      "slug": "radius-스텝-4계층"
+      "text": "Radius Steps (4 Layers)",
+      "slug": "radius-steps-4-layers"
     },
     {
       "depth": 3,
-      "text": "타일 / 칩 / 필 / 패널 4계층",
-      "slug": "타일-칩-필-패널-4계층"
+      "text": "Four-Layer Hierarchy: Tile / Chip / Pill / Panel",
+      "slug": "four-layer-hierarchy-tile-chip-pill-panel"
     },
     {
       "depth": 3,
-      "text": "박스 규격 (Geometry ladder) — \"모든 곳 동일 적용\" 계약",
-      "slug": "박스-규격-geometry-ladder-모든-곳-동일-적용-계약"
+      "text": "Box Specifications (Geometry Ladder) — \"Applied Uniformly Everywhere\" Contract",
+      "slug": "box-specifications-geometry-ladder-applied-uniformly-everywhere-contract"
     },
     {
       "depth": 3,
-      "text": "좌측 내비 레일 (AppNavRail)",
-      "slug": "좌측-내비-레일-appnavrail"
+      "text": "Left Nav Rail (AppNavRail)",
+      "slug": "left-nav-rail-appnavrail"
     },
     {
       "depth": 3,
-      "text": "토큰",
-      "slug": "토큰"
+      "text": "Tokens",
+      "slug": "tokens"
     },
     {
       "depth": 3,
-      "text": "Lucide 아이콘 규정",
-      "slug": "lucide-아이콘-규정"
+      "text": "Lucide Icon Specifications",
+      "slug": "lucide-icon-specifications"
     },
     {
       "depth": 3,
-      "text": "24px 정렬 레일",
-      "slug": "24px-정렬-레일"
+      "text": "24px Alignment Rails",
+      "slug": "24px-alignment-rails"
     },
     {
       "depth": 3,
-      "text": "소비 규범",
-      "slug": "소비-규범"
+      "text": "Consumption Norms",
+      "slug": "consumption-norms"
     },
     {
       "depth": 2,
-      "text": "컨트롤 인벤토리 (캐노니컬 컴포넌트) — 디자인 전면 정비 Phase 1 (2026-07-25)",
-      "slug": "컨트롤-인벤토리-캐노니컬-컴포넌트-디자인-전면-정비-phase-1-2026-07-25"
+      "text": "Control Inventory (Canonical Components) — Design Front-End Overhaul Phase 1 (2026-07-25)",
+      "slug": "control-inventory-canonical-components-design-front-end-overhaul-phase-1-2026-07-25"
     },
     {
       "depth": 3,
-      "text": "캐노니컬 컴포넌트 위치",
-      "slug": "캐노니컬-컴포넌트-위치"
+      "text": "Canonical Component Locations",
+      "slug": "canonical-component-locations"
     },
     {
       "depth": 3,
-      "text": "컨트롤 모양 — `controlClass()` (2026-08-03 소유자 확정)",
-      "slug": "컨트롤-모양-controlclass-2026-08-03-소유자-확정"
+      "text": "Control Shapes — `controlClass()` (Owner confirmed 2026-08-03)",
+      "slug": "control-shapes-controlclass-owner-confirmed-2026-08-03"
     },
     {
       "depth": 3,
-      "text": "폼 필드 — `fieldClass()` · `fieldLabel()` (2026-08-06 디자인 카운슬)",
-      "slug": "폼-필드-fieldclass-fieldlabel-2026-08-06-디자인-카운슬"
+      "text": "Form Fields — `fieldClass()` · `fieldLabel()` (Design Council, 2026-08-06)",
+      "slug": "form-fields-fieldclass-fieldlabel-design-council-2026-08-06"
     },
     {
       "depth": 4,
@@ -10749,8 +10800,8 @@
     },
     {
       "depth": 5,
-      "text": "`boxed` 와 `bare` — 합치면 안 되는 이유",
-      "slug": "boxed-와-bare-합치면-안-되는-이유"
+      "text": "`boxed` vs `bare` — Why they cannot be merged",
+      "slug": "boxed-vs-bare-why-they-cannot-be-merged"
     },
     {
       "depth": 4,
@@ -10759,73 +10810,73 @@
     },
     {
       "depth": 4,
-      "text": "새 토큰 0 · 게이트",
-      "slug": "새-토큰-0-게이트"
+      "text": "New Token 0 · Gate",
+      "slug": "new-token-0-gate"
     },
     {
       "depth": 3,
-      "text": "컨트롤 높이 사다리 (2026-08-03 소유자 확정)",
-      "slug": "컨트롤-높이-사다리-2026-08-03-소유자-확정"
+      "text": "Control Height Ladder (Owner confirmed 2026-08-03)",
+      "slug": "control-height-ladder-owner-confirmed-2026-08-03"
     },
     {
       "depth": 3,
-      "text": "link 바닥 24 · 산문 링크 계약 (2026-08-04)",
-      "slug": "link-바닥-24-산문-링크-계약-2026-08-04"
+      "text": "link floor 24 · Prose link contract (2026-08-04)",
+      "slug": "link-floor-24-prose-link-contract-2026-08-04"
     },
     {
       "depth": 3,
-      "text": "이 사다리는 **어느 모양에** 적용되나 (2026-08-03 — 범위 명시)",
-      "slug": "이-사다리는-어느-모양에-적용되나-2026-08-03-범위-명시"
+      "text": "Which shapes does this ladder apply to? (2026-08-03 — scope explicit)",
+      "slug": "which-shapes-does-this-ladder-apply-to-2026-08-03-scope-explicit"
     },
     {
       "depth": 3,
-      "text": "시스템을 늘리는 규칙 (2026-08-03 소유자 지시)",
-      "slug": "시스템을-늘리는-규칙-2026-08-03-소유자-지시"
+      "text": "Rules for extending the system (2026-08-03 owner directive)",
+      "slug": "rules-for-extending-the-system-2026-08-03-owner-directive"
     },
     {
       "depth": 4,
-      "text": "규칙 0 — 새 값을 만들기 전에 **이미 있는지 먼저 찾는다**",
-      "slug": "규칙-0-새-값을-만들기-전에-이미-있는지-먼저-찾는다"
+      "text": "Rule 0 — **Look for existing values before creating new ones**",
+      "slug": "rule-0-look-for-existing-values-before-creating-new-ones"
     },
     {
       "depth": 4,
-      "text": "규칙 1 — 축을 더하기 전에 슬롯을 먼저 본다",
-      "slug": "규칙-1-축을-더하기-전에-슬롯을-먼저-본다"
+      "text": "Rule 1 — Look at slots before adding axes",
+      "slug": "rule-1-look-at-slots-before-adding-axes"
     },
     {
       "depth": 4,
-      "text": "규칙 2 — 같은 겉모습의 두 태그를 만들지 않는다",
-      "slug": "규칙-2-같은-겉모습의-두-태그를-만들지-않는다"
+      "text": "Rule 2 — Do not create two tags with the same appearance",
+      "slug": "rule-2-do-not-create-two-tags-with-the-same-appearance"
     },
     {
       "depth": 4,
-      "text": "규칙 3 — 규격을 바꾸려면 「체계」를 부른다",
-      "slug": "규칙-3-규격을-바꾸려면-체계를-부른다"
+      "text": "Rule 3 — To change the spec, invoke the \"system\"",
+      "slug": "rule-3-to-change-the-spec-invoke-the-system"
     },
     {
       "depth": 4,
-      "text": "규칙 4 — 새 값을 더할 때는 「몇 개가 막혀 있나」를 먼저 센다",
-      "slug": "규칙-4-새-값을-더할-때는-몇-개가-막혀-있나를-먼저-센다"
+      "text": "Rule 4 — When adding new values, first count \"how many are blocked\"",
+      "slug": "rule-4-when-adding-new-values-first-count-how-many-are-blocked"
     },
     {
       "depth": 4,
-      "text": "규칙 5 — 규격을 문서에 쓰면 같은 PR 에 게이트를 넣는다",
-      "slug": "규칙-5-규격을-문서에-쓰면-같은-pr-에-게이트를-넣는다"
+      "text": "Rule 5 — When writing a spec in docs, include the gate in the same PR",
+      "slug": "rule-5-when-writing-a-spec-in-docs-include-the-gate-in-the-same-pr"
     },
     {
       "depth": 4,
-      "text": "규칙 6 — 라이브러리를 바꾸는 것은 최후다",
-      "slug": "규칙-6-라이브러리를-바꾸는-것은-최후다"
+      "text": "Rule 6 — Changing libraries is a last resort",
+      "slug": "rule-6-changing-libraries-is-a-last-resort"
     },
     {
       "depth": 3,
-      "text": "층이 둘이다 — 값과 행동",
-      "slug": "층이-둘이다-값과-행동"
+      "text": "There are two layers — values and behavior",
+      "slug": "there-are-two-layers-values-and-behavior"
     },
     {
       "depth": 3,
-      "text": "비활성 상태 (Disabled) — 값은 하나다 (2026-08-06)",
-      "slug": "비활성-상태-disabled-값은-하나다-2026-08-06"
+      "text": "Disabled State — One Value (2026-08-06)",
+      "slug": "disabled-state-one-value-2026-08-06"
     },
     {
       "depth": 3,
@@ -10834,13 +10885,13 @@
     },
     {
       "depth": 4,
-      "text": "목록의 자람과 상한 (`select-growth.ts`, 2026-08-02)",
-      "slug": "목록의-자람과-상한-select-growthts-2026-08-02"
+      "text": "List Growth and Upper Bound (`select-growth.ts`, 2026-08-02)",
+      "slug": "list-growth-and-upper-bound-select-growthts-2026-08-02"
     },
     {
       "depth": 3,
-      "text": "설정 시트의 행 측정폭 (`--settings-content-measure`, 2026-08-02)",
-      "slug": "설정-시트의-행-측정폭---settings-content-measure-2026-08-02"
+      "text": "Settings Sheet Row Measurement Width (`--settings-content-measure`, 2026-08-02)",
+      "slug": "settings-sheet-row-measurement-width---settings-content-measure-2026-08-02"
     },
     {
       "depth": 3,
@@ -10849,38 +10900,38 @@
     },
     {
       "depth": 3,
-      "text": "컨트롤 높이 토큰 (#13)",
-      "slug": "컨트롤-높이-토큰-13"
+      "text": "Control Height Tokens (#13)",
+      "slug": "control-height-tokens-13"
     },
     {
       "depth": 3,
-      "text": "다이얼로그 폭 스케일",
-      "slug": "다이얼로그-폭-스케일"
+      "text": "Dialog Width Scale",
+      "slug": "dialog-width-scale"
     },
     {
       "depth": 3,
-      "text": "소비 규범 (하드)",
-      "slug": "소비-규범-하드"
+      "text": "Consumption Norms (Hard)",
+      "slug": "consumption-norms-hard"
     },
     {
       "depth": 2,
-      "text": "개인화 — 캔버스 배경 세트 & 노드 아이콘 세트 (Phase 5, 2026-07-25)",
-      "slug": "개인화-캔버스-배경-세트-노드-아이콘-세트-phase-5-2026-07-25"
+      "text": "Personalization — Canvas Background Set & Node Icon Set (Phase 5, 2026-07-25)",
+      "slug": "personalization-canvas-background-set-node-icon-set-phase-5-2026-07-25"
     },
     {
       "depth": 3,
-      "text": "캔버스 배경 시스템 (#20)",
-      "slug": "캔버스-배경-시스템-20"
+      "text": "Canvas Background System (#20)",
+      "slug": "canvas-background-system-20"
     },
     {
       "depth": 3,
-      "text": "노드 아이콘 세트 (#21)",
-      "slug": "노드-아이콘-세트-21"
+      "text": "Node Icon Set (#21)",
+      "slug": "node-icon-set-21"
     },
     {
       "depth": 3,
-      "text": "확장 — 접힌 묶음을 어떻게 펼치나 (2026-08-01 신설 · 2026-08-02 개정)",
-      "slug": "확장-접힌-묶음을-어떻게-펼치나-2026-08-01-신설-2026-08-02-개정"
+      "text": "Expansion — How to Unfold Collapsed Bundles (New 2026-08-01 · Revised 2026-08-02)",
+      "slug": "expansion-how-to-unfold-collapsed-bundles-new-2026-08-01-revised-2026-08-02"
     },
     {
       "depth": 2,
@@ -10921,8 +10972,8 @@
     },
     {
       "depth": 3,
-      "text": "`-rc.1` 과 CFBundleVersion — 실측 결과 (2026-07-27)",
-      "slug": "-rc1-과-cfbundleversion-실측-결과-2026-07-27"
+      "text": "`-rc.1` and CFBundleVersion — Actual Results (2026-07-27)",
+      "slug": "-rc1-and-cfbundleversion-actual-results-2026-07-27"
     },
     {
       "depth": 2,
@@ -10931,58 +10982,58 @@
     },
     {
       "depth": 2,
-      "text": "Developer ID 자격증명 만들기 — 실행 가능한 절차",
-      "slug": "developer-id-자격증명-만들기-실행-가능한-절차"
+      "text": "Creating a Developer ID Certificate — Executable Procedure",
+      "slug": "creating-a-developer-id-certificate-executable-procedure"
     },
     {
       "depth": 3,
-      "text": "사람에게 남는 것은 두 순간뿐이다",
-      "slug": "사람에게-남는-것은-두-순간뿐이다"
+      "text": "What remains for humans are only two moments",
+      "slug": "what-remains-for-humans-are-only-two-moments"
     },
     {
       "depth": 3,
-      "text": "왜 Keychain Access GUI 를 쓰지 않는가",
-      "slug": "왜-keychain-access-gui-를-쓰지-않는가"
+      "text": "Why not use the Keychain Access GUI?",
+      "slug": "why-not-use-the-keychain-access-gui"
     },
     {
       "depth": 3,
-      "text": "1 — 키쌍과 CSR (자동)",
-      "slug": "1-키쌍과-csr-자동"
+      "text": "1 — Keypair and CSR (Automated)",
+      "slug": "1-keypair-and-csr-automated"
     },
     {
       "depth": 3,
-      "text": "2 — Apple 에서 인증서 발급 (사람)",
-      "slug": "2-apple-에서-인증서-발급-사람"
+      "text": "2 — Issuing a certificate from Apple (manual)",
+      "slug": "2-issuing-a-certificate-from-apple-manual"
     },
     {
       "depth": 3,
-      "text": "3 — `.p12` 조립과 GitHub 등록 (자동)",
-      "slug": "3-p12-조립과-github-등록-자동"
+      "text": "3 — Assembling `.p12` and registering with GitHub (automated)",
+      "slug": "3-assembling-p12-and-registering-with-github-automated"
     },
     {
       "depth": 3,
-      "text": "4 — 남은 다섯 값은 사람이 넣는다 (자격증명)",
-      "slug": "4-남은-다섯-값은-사람이-넣는다-자격증명"
+      "text": "4 — The remaining five values are entered by humans (credentials)",
+      "slug": "4-the-remaining-five-values-are-entered-by-humans-credentials"
     },
     {
       "depth": 3,
-      "text": "5 — 검증",
-      "slug": "5-검증"
+      "text": "5 — Verification",
+      "slug": "5-verification"
     },
     {
       "depth": 3,
-      "text": "백업해야 할 파일은 셋뿐이다",
-      "slug": "백업해야-할-파일은-셋뿐이다"
+      "text": "Only three files need to be backed up",
+      "slug": "only-three-files-need-to-be-backed-up"
     },
     {
       "depth": 3,
-      "text": "secret 은 어디에 사는가",
-      "slug": "secret-은-어디에-사는가"
+      "text": "Where secrets live",
+      "slug": "where-secrets-live"
     },
     {
       "depth": 3,
-      "text": "인증서가 생긴 다음에 할 일",
-      "slug": "인증서가-생긴-다음에-할-일"
+      "text": "What to do after obtaining certificates",
+      "slug": "what-to-do-after-obtaining-certificates"
     },
     {
       "depth": 2,
@@ -11048,8 +11099,8 @@
     },
     {
       "depth": 3,
-      "text": "⚠️ 무엇을 세는지가 이 도구의 전부다 — 두 번 틀렸다 (2026-08-09)",
-      "slug": "무엇을-세는지가-이-도구의-전부다-두-번-틀렸다-2026-08-09"
+      "text": "⚠️ What is counted is everything about this tool — it was wrong twice (2026-08-09)",
+      "slug": "what-is-counted-is-everything-about-this-tool-it-was-wrong-twice-2026-08-09"
     },
     {
       "depth": 2,
@@ -11145,8 +11196,8 @@
     },
     {
       "depth": 4,
-      "text": "에이전트 패널 — 처음 무슨 말을 걸지부터 다음 할 일까지 (2026-07-27, 데스크톱 앱 전용)",
-      "slug": "에이전트-패널-처음-무슨-말을-걸지부터-다음-할-일까지-2026-07-27-데스크톱-앱-전용"
+      "text": "Agent Panel — From What to Say First to Next Steps (2026-07-27, Desktop App Only)",
+      "slug": "agent-panel-from-what-to-say-first-to-next-steps-2026-07-27-desktop-app-only"
     },
     {
       "depth": 4,
@@ -11155,8 +11206,8 @@
     },
     {
       "depth": 4,
-      "text": "어권별 노드 이름 (`display_<locale>`, 2026-07-24)",
-      "slug": "어권별-노드-이름-display_locale-2026-07-24"
+      "text": "Locale-specific Node Names (`display_<locale>`, 2026-07-24)",
+      "slug": "locale-specific-node-names-display_locale-2026-07-24"
     },
     {
       "depth": 4,
@@ -11165,8 +11216,8 @@
     },
     {
       "depth": 4,
-      "text": "목적지 안내 (`DestinationGuide`, 2026-07-26, `src/features/guided-tour`)",
-      "slug": "목적지-안내-destinationguide-2026-07-26-srcfeaturesguided-tour"
+      "text": "Destination Guide (`DestinationGuide`, 2026-07-26, `src/features/guided-tour`)",
+      "slug": "destination-guide-destinationguide-2026-07-26-srcfeaturesguided-tour"
     },
     {
       "depth": 4,
@@ -11250,13 +11301,13 @@
     },
     {
       "depth": 3,
-      "text": "`/ontology` — retired tree/ego hub → thin redirect (B3 허브가 곧 지도)",
-      "slug": "ontology-retired-treeego-hub-thin-redirect-b3-허브가-곧-지도"
+      "text": "`/ontology` — retired tree/ego hub → thin redirect (B3 Hub is soon the map)",
+      "slug": "ontology-retired-treeego-hub-thin-redirect-b3-hub-is-soon-the-map"
     },
     {
       "depth": 3,
-      "text": "`/ontology/insights` — Insights (5-tab maintenance board, 질문 단위 재편 2026-07-26)",
-      "slug": "ontologyinsights-insights-5-tab-maintenance-board-질문-단위-재편-2026-07-26"
+      "text": "`/ontology/insights` — Insights (5-tab maintenance board, question-unit restructuring 2026-07-26)",
+      "slug": "ontologyinsights-insights-5-tab-maintenance-board-question-unit-restructuring-2026-07-26"
     },
     {
       "depth": 4,
@@ -11265,28 +11316,28 @@
     },
     {
       "depth": 4,
-      "text": "Tab 1 — 할 일 Do next",
-      "slug": "tab-1-할-일-do-next"
+      "text": "Tab 1 — Do next",
+      "slug": "tab-1-do-next"
     },
     {
       "depth": 4,
-      "text": "Tab 2 — 구성 Inventory",
-      "slug": "tab-2-구성-inventory"
+      "text": "Tab 2 — Configuration Inventory",
+      "slug": "tab-2-configuration-inventory"
     },
     {
       "depth": 4,
-      "text": "Tab 3 — 연결 Connections",
-      "slug": "tab-3-연결-connections"
+      "text": "Tab 3 — Connections",
+      "slug": "tab-3-connections"
     },
     {
       "depth": 4,
-      "text": "Tab 4 — 경계 Boundaries",
-      "slug": "tab-4-경계-boundaries"
+      "text": "Tab 4 — Boundaries",
+      "slug": "tab-4-boundaries"
     },
     {
       "depth": 4,
-      "text": "Tab 5 — 신선도 Freshness",
-      "slug": "tab-5-신선도-freshness"
+      "text": "Tab 5 — Freshness",
+      "slug": "tab-5-freshness"
     },
     {
       "depth": 4,
@@ -11450,38 +11501,38 @@
     },
     {
       "depth": 3,
-      "text": "`/git` — 기록 (record destination, 작업대 재설계 2026-07-27)",
-      "slug": "git-기록-record-destination-작업대-재설계-2026-07-27"
+      "text": "`/git` — Record (record destination, workbench redesign 2026-07-27)",
+      "slug": "git-record-record-destination-workbench-redesign-2026-07-27"
     },
     {
       "depth": 4,
-      "text": "아직 일을 시작할 수 없는 상태 (`web` · `no-vault` · `not-initialized` · `loading` · `error`)",
-      "slug": "아직-일을-시작할-수-없는-상태-web-no-vault-not-initialized-loading-error"
+      "text": "State where work cannot start yet (`web` · `no-vault` · `not-initialized` · `loading` · `error`)",
+      "slug": "state-where-work-cannot-start-yet-web-no-vault-not-initialized-loading-error"
     },
     {
       "depth": 4,
-      "text": "아직 안 남긴 변경이 있을 때 (`decide`)",
-      "slug": "아직-안-남긴-변경이-있을-때-decide"
+      "text": "State with uncommitted changes (`decide`)",
+      "slug": "state-with-uncommitted-changes-decide"
     },
     {
       "depth": 4,
-      "text": "남길 것이 없을 때 (`recall`)",
-      "slug": "남길-것이-없을-때-recall"
+      "text": "State with nothing to leave (`recall`)",
+      "slug": "state-with-nothing-to-leave-recall"
     },
     {
       "depth": 4,
-      "text": "화면에는 쉬운 말만 쓴다",
-      "slug": "화면에는-쉬운-말만-쓴다"
+      "text": "Only simple language on screen",
+      "slug": "only-simple-language-on-screen"
     },
     {
       "depth": 4,
-      "text": "사용자가 누르기 전에는 아무것도 쓰지 않는다",
-      "slug": "사용자가-누르기-전에는-아무것도-쓰지-않는다"
+      "text": "Nothing is written until the user clicks",
+      "slug": "nothing-is-written-until-the-user-clicks"
     },
     {
       "depth": 3,
-      "text": "`/agents` — 에이전트 (신설 2026-08-20, 원장 90)",
-      "slug": "agents-에이전트-신설-2026-08-20-원장-90"
+      "text": "`/agents` — Agent (new 2026-08-20, catalog 90)",
+      "slug": "agents-agent-new-2026-08-20-catalog-90"
     },
     {
       "depth": 2,
@@ -11716,714 +11767,714 @@
     },
     {
       "depth": 2,
-      "text": "세 진입로가 같은 볼트를 본다",
-      "slug": "세-진입로가-같은-볼트를-본다"
+      "text": "Three entry points, one vault",
+      "slug": "three-entry-points-one-vault"
     },
     {
       "depth": 2,
-      "text": "언제 무엇을 부르나",
-      "slug": "언제-무엇을-부르나"
+      "text": "When to call what",
+      "slug": "when-to-call-what"
     },
     {
       "depth": 3,
-      "text": "시작할 때",
-      "slug": "시작할-때"
+      "text": "When starting",
+      "slug": "when-starting"
     },
     {
       "depth": 3,
-      "text": "코드를 고치는 중",
-      "slug": "코드를-고치는-중"
+      "text": "While fixing code",
+      "slug": "while-fixing-code"
     },
     {
       "depth": 3,
-      "text": "무언가를 쓰기 전",
-      "slug": "무언가를-쓰기-전"
+      "text": "Before writing something",
+      "slug": "before-writing-something"
     },
     {
       "depth": 3,
-      "text": "커밋 직전",
-      "slug": "커밋-직전"
+      "text": "Just before committing",
+      "slug": "just-before-committing"
     },
     {
       "depth": 3,
-      "text": "뭘 할지 모르겠을 때",
-      "slug": "뭘-할지-모르겠을-때"
+      "text": "When you don't know what to do",
+      "slug": "when-you-dont-know-what-to-do"
     },
     {
       "depth": 3,
-      "text": "볼트를 못 믿겠을 때",
-      "slug": "볼트를-못-믿겠을-때"
+      "text": "When you don't trust the vault",
+      "slug": "when-you-dont-trust-the-vault"
     },
     {
       "depth": 3,
-      "text": "에이전트에게 넘길 때 · 밖으로 꺼낼 때",
-      "slug": "에이전트에게-넘길-때-밖으로-꺼낼-때"
+      "text": "When passing to an agent · When extracting out",
+      "slug": "when-passing-to-an-agent-when-extracting-out"
     },
     {
       "depth": 2,
-      "text": "알아 두면 편한 두 가지",
-      "slug": "알아-두면-편한-두-가지"
+      "text": "Two things to know for convenience",
+      "slug": "two-things-to-know-for-convenience"
     },
     {
       "depth": 2,
-      "text": "전체 목록",
-      "slug": "전체-목록"
+      "text": "Full list",
+      "slug": "full-list"
     }
   ],
   "guide/connect-agent": [
     {
       "depth": 1,
-      "text": "AI 에이전트 연결하기",
-      "slug": "ai-에이전트-연결하기"
+      "text": "Connecting an AI Agent",
+      "slug": "connecting-an-ai-agent"
     },
     {
       "depth": 2,
-      "text": "무엇이 무엇에 붙는 건가",
-      "slug": "무엇이-무엇에-붙는-건가"
+      "text": "What connects to what",
+      "slug": "what-connects-to-what"
     },
     {
       "depth": 2,
-      "text": "웹에서 연결하기",
-      "slug": "웹에서-연결하기"
+      "text": "Connecting via the web",
+      "slug": "connecting-via-the-web"
     },
     {
       "depth": 2,
-      "text": "적용 범위: 이 폴더 / 이 컴퓨터 전체",
-      "slug": "적용-범위-이-폴더-이-컴퓨터-전체"
+      "text": "Scope: This folder / Entire computer",
+      "slug": "scope-this-folder-entire-computer"
     },
     {
       "depth": 2,
-      "text": "붙었는지 확인하기",
-      "slug": "붙었는지-확인하기"
+      "text": "Verifying Connection",
+      "slug": "verifying-connection"
     },
     {
       "depth": 2,
-      "text": "연결되면 무엇이 달라지나",
-      "slug": "연결되면-무엇이-달라지나"
+      "text": "What Changes When Connected",
+      "slug": "what-changes-when-connected"
     },
     {
       "depth": 3,
-      "text": "에이전트가 UID와 slug를 쓰는 법",
-      "slug": "에이전트가-uid와-slug를-쓰는-법"
+      "text": "How the Agent Uses UID and Slug",
+      "slug": "how-the-agent-uses-uid-and-slug"
     },
     {
       "depth": 2,
-      "text": "첫 대화: 무엇을 물어볼까",
-      "slug": "첫-대화-무엇을-물어볼까"
+      "text": "First Conversation: What to Ask",
+      "slug": "first-conversation-what-to-ask"
     },
     {
       "depth": 2,
-      "text": "세션을 새로 시작할 때: 핸드오프",
-      "slug": "세션을-새로-시작할-때-핸드오프"
+      "text": "Starting a New Session: Handoff",
+      "slug": "starting-a-new-session-handoff"
     },
     {
       "depth": 2,
-      "text": "사람이 심판입니다",
-      "slug": "사람이-심판입니다"
+      "text": "Humans Are the Judges",
+      "slug": "humans-are-the-judges"
     }
   ],
   "guide/first-five-minutes": [
     {
       "depth": 1,
-      "text": "첫 5분",
-      "slug": "첫-5분"
+      "text": "First Five Minutes",
+      "slug": "first-five-minutes"
     },
     {
       "depth": 2,
-      "text": "0. 처음 열면 무엇이 있나",
-      "slug": "0-처음-열면-무엇이-있나"
+      "text": "0. What's on the First Screen",
+      "slug": "0-whats-on-the-first-screen"
     },
     {
       "depth": 2,
-      "text": "1. 지도를 눌러 봅니다 (2분)",
-      "slug": "1-지도를-눌러-봅니다-2분"
+      "text": "1. Clicking the Map (2 minutes)",
+      "slug": "1-clicking-the-map-2-minutes"
     },
     {
       "depth": 2,
-      "text": "2. 내 폴더를 열어 봅니다",
-      "slug": "2-내-폴더를-열어-봅니다"
+      "text": "2. Opening Your Folder",
+      "slug": "2-opening-your-folder"
     },
     {
       "depth": 3,
-      "text": "브라우저에서 열 때",
-      "slug": "브라우저에서-열-때"
+      "text": "When opening in a browser",
+      "slug": "when-opening-in-a-browser"
     },
     {
       "depth": 2,
-      "text": "3. 코드베이스에서 통째로 시작하기 (개발자)",
-      "slug": "3-코드베이스에서-통째로-시작하기-개발자"
+      "text": "3. Starting from the Codebase (for Developers)",
+      "slug": "3-starting-from-the-codebase-for-developers"
     },
     {
       "depth": 2,
-      "text": "4. 앱과 웹은 무엇이 다른가",
-      "slug": "4-앱과-웹은-무엇이-다른가"
+      "text": "4. What's the Difference Between the App and the Web?",
+      "slug": "4-whats-the-difference-between-the-app-and-the-web"
     },
     {
       "depth": 2,
-      "text": "5. 그다음",
-      "slug": "5-그다음"
+      "text": "5. What's Next?",
+      "slug": "5-whats-next"
     }
   ],
   "guide/from-your-repo": [
     {
       "depth": 1,
-      "text": "내 저장소에서 시작하기",
-      "slug": "내-저장소에서-시작하기"
+      "text": "Starting from My Repository",
+      "slug": "starting-from-my-repository"
     },
     {
       "depth": 2,
-      "text": "1. 한 줄로 시작하기",
-      "slug": "1-한-줄로-시작하기"
+      "text": "1. Starting with One Line",
+      "slug": "1-starting-with-one-line"
     },
     {
       "depth": 2,
-      "text": "2. 나눠서 보기: 훑기 · 확인 · 적용",
-      "slug": "2-나눠서-보기-훑기-확인-적용"
+      "text": "2. View in parts: Scan · Verify · Apply",
+      "slug": "2-view-in-parts-scan-verify-apply"
     },
     {
       "depth": 3,
-      "text": "① 훑기: 무엇이 후보인가",
-      "slug": "훑기-무엇이-후보인가"
+      "text": "① Scan: What are the candidates?",
+      "slug": "scan-what-are-the-candidates"
     },
     {
       "depth": 3,
-      "text": "② 의존 관계 후보",
-      "slug": "의존-관계-후보"
+      "text": "② Dependency candidates",
+      "slug": "dependency-candidates"
     },
     {
       "depth": 3,
-      "text": "③ 적용",
-      "slug": "적용"
+      "text": "③ Apply",
+      "slug": "apply"
     },
     {
       "depth": 2,
-      "text": "3. 이미 쓰던 지침 파일 흡수하기",
-      "slug": "3-이미-쓰던-지침-파일-흡수하기"
+      "text": "3. Absorbing existing instruction files",
+      "slug": "3-absorbing-existing-instruction-files"
     },
     {
       "depth": 2,
-      "text": "4. 앱에서: 문서가 이미 있는 폴더",
-      "slug": "4-앱에서-문서가-이미-있는-폴더"
+      "text": "4. In apps: Folders that already have documents",
+      "slug": "4-in-apps-folders-that-already-have-documents"
     },
     {
       "depth": 2,
-      "text": "5. AI 에이전트에게 시키기",
-      "slug": "5-ai-에이전트에게-시키기"
+      "text": "5. Let an AI Agent Do It",
+      "slug": "5-let-an-ai-agent-do-it"
     },
     {
       "depth": 2,
-      "text": "6. 자동으로 생긴 것은 뼈대일 뿐이다",
-      "slug": "6-자동으로-생긴-것은-뼈대일-뿐이다"
+      "text": "6. Auto-generated Items Are Just Skeletons",
+      "slug": "6-auto-generated-items-are-just-skeletons"
     },
     {
       "depth": 2,
-      "text": "정리",
-      "slug": "정리"
+      "text": "Summary",
+      "slug": "summary"
     }
   ],
   "guide/growing-vault": [
     {
       "depth": 1,
-      "text": "볼트가 자란 뒤",
-      "slug": "볼트가-자란-뒤"
+      "text": "After the Vault Grows",
+      "slug": "after-the-vault-grows"
     },
     {
       "depth": 2,
-      "text": "1. 가장 흔한 고장은 중복이다",
-      "slug": "1-가장-흔한-고장은-중복이다"
+      "text": "1. The Most Common Failure is Duplication",
+      "slug": "1-the-most-common-failure-is-duplication"
     },
     {
       "depth": 2,
-      "text": "2. 이름 바꾸기: 백링크는 알아서 따라온다",
-      "slug": "2-이름-바꾸기-백링크는-알아서-따라온다"
+      "text": "2. Renaming: Backlinks follow automatically",
+      "slug": "2-renaming-backlinks-follow-automatically"
     },
     {
       "depth": 2,
-      "text": "3. 다음에 뭘 할지는 큐가 말한다",
-      "slug": "3-다음에-뭘-할지는-큐가-말한다"
+      "text": "3. The queue tells you what to do next",
+      "slug": "3-the-queue-tells-you-what-to-do-next"
     },
     {
       "depth": 2,
-      "text": "4. 전체 검진",
-      "slug": "4-전체-검진"
+      "text": "4. Full health check",
+      "slug": "4-full-health-check"
     },
     {
       "depth": 2,
-      "text": "5. 여럿이 같이 쓰기",
-      "slug": "5-여럿이-같이-쓰기"
+      "text": "5. Collaborative use",
+      "slug": "5-collaborative-use"
     },
     {
       "depth": 2,
-      "text": "6. 동시에 고칠 때: 조용한 덮어쓰기 막기",
-      "slug": "6-동시에-고칠-때-조용한-덮어쓰기-막기"
+      "text": "6. When editing simultaneously: Preventing silent overwrites",
+      "slug": "6-when-editing-simultaneously-preventing-silent-overwrites"
     },
     {
       "depth": 2,
-      "text": "7. 지우기",
-      "slug": "7-지우기"
+      "text": "7. Deletion",
+      "slug": "7-deletion"
     },
     {
       "depth": 2,
-      "text": "정리",
-      "slug": "정리"
+      "text": "Summary",
+      "slug": "summary"
     }
   ],
   "guide/insights": [
     {
       "depth": 1,
-      "text": "정비 보드: 내 폴더 분석",
-      "slug": "정비-보드-내-폴더-분석"
+      "text": "Maintenance Board: Analyzing My Folders",
+      "slug": "maintenance-board-analyzing-my-folders"
     },
     {
       "depth": 2,
-      "text": "1. 다섯 갈래로 나뉜다",
-      "slug": "1-다섯-갈래로-나뉜다"
+      "text": "1. Divided into five branches",
+      "slug": "1-divided-into-five-branches"
     },
     {
       "depth": 2,
-      "text": "2. 「오늘 먼저 볼 일」: 그날의 세 건",
-      "slug": "2-오늘-먼저-볼-일-그날의-세-건"
+      "text": "2. \"First things first today\": The three items for the day",
+      "slug": "2-first-things-first-today-the-three-items-for-the-day"
     },
     {
       "depth": 2,
-      "text": "3. 사람이 고칠 것과 에이전트가 고칠 것",
-      "slug": "3-사람이-고칠-것과-에이전트가-고칠-것"
+      "text": "3. What Humans Fix vs. What Agents Fix",
+      "slug": "3-what-humans-fix-vs-what-agents-fix"
     },
     {
       "depth": 2,
-      "text": "4. 읽기 전용 폴더에서는 명령이 나온다",
-      "slug": "4-읽기-전용-폴더에서는-명령이-나온다"
+      "text": "4. Commands Appear in Read-Only Folders",
+      "slug": "4-commands-appear-in-read-only-folders"
     },
     {
       "depth": 2,
-      "text": "5. 나머지 네 탭이 답하는 것",
-      "slug": "5-나머지-네-탭이-답하는-것"
+      "text": "5. What the Remaining Four Tabs Answer",
+      "slug": "5-what-the-remaining-four-tabs-answer"
     },
     {
       "depth": 3,
-      "text": "「구성」: 무엇이 몇 개인가",
-      "slug": "구성-무엇이-몇-개인가"
+      "text": "\"Configuration\": How many of each thing",
+      "slug": "configuration-how-many-of-each-thing"
     },
     {
       "depth": 3,
-      "text": "「연결」: 어디가 중심인가",
-      "slug": "연결-어디가-중심인가"
+      "text": "\"Connections\": Where is the center",
+      "slug": "connections-where-is-the-center"
     },
     {
       "depth": 3,
-      "text": "「경계」: 도메인이 새고 있나",
-      "slug": "경계-도메인이-새고-있나"
+      "text": "\"Boundaries\": Are domains leaking?",
+      "slug": "boundaries-are-domains-leaking"
     },
     {
       "depth": 3,
-      "text": "「신선도」: 어디가 멈춰 있나",
-      "slug": "신선도-어디가-멈춰-있나"
+      "text": "\"Freshness\": Where has it stopped?",
+      "slug": "freshness-where-has-it-stopped"
     },
     {
       "depth": 2,
-      "text": "6. 화면 전체를 에이전트에게 넘기기",
-      "slug": "6-화면-전체를-에이전트에게-넘기기"
+      "text": "6. Handing over the entire screen to the agent",
+      "slug": "6-handing-over-the-entire-screen-to-the-agent"
     },
     {
       "depth": 2,
-      "text": "정리",
-      "slug": "정리"
+      "text": "Summary",
+      "slug": "summary"
     }
   ],
   "guide/reading-the-map": [
     {
       "depth": 1,
-      "text": "지도 읽는 법",
-      "slug": "지도-읽는-법"
+      "text": "How to Read the Map",
+      "slug": "how-to-read-the-map"
     },
     {
       "depth": 2,
-      "text": "1. 모양이 종류다",
-      "slug": "1-모양이-종류다"
+      "text": "1. Shape Indicates Type",
+      "slug": "1-shape-indicates-type"
     },
     {
       "depth": 2,
-      "text": "2. 크기는 두 가지가 정한다",
-      "slug": "2-크기는-두-가지가-정한다"
+      "text": "2. Size Is Determined by Two Factors",
+      "slug": "2-size-is-determined-by-two-factors"
     },
     {
       "depth": 3,
-      "text": "① 종류마다 정해진 크기",
-      "slug": "종류마다-정해진-크기"
+      "text": "① Fixed Size per Type",
+      "slug": "fixed-size-per-type"
     },
     {
       "depth": 3,
-      "text": "② 직속 자식 수",
-      "slug": "직속-자식-수"
+      "text": "② Direct Child Count",
+      "slug": "direct-child-count"
     },
     {
       "depth": 2,
-      "text": "3. 노드 위의 숫자",
-      "slug": "3-노드-위의-숫자"
+      "text": "3. Numbers on Nodes",
+      "slug": "3-numbers-on-nodes"
     },
     {
       "depth": 2,
-      "text": "4. 선의 문법",
-      "slug": "4-선의-문법"
+      "text": "4. Line Grammar",
+      "slug": "4-line-grammar"
     },
     {
       "depth": 2,
-      "text": "5. 줌에 따라 나타나고 사라진다 (의미 줌)",
-      "slug": "5-줌에-따라-나타나고-사라진다-의미-줌"
+      "text": "5. Appears and Disappears with Zoom (Semantic Zoom)",
+      "slug": "5-appears-and-disappears-with-zoom-semantic-zoom"
     },
     {
       "depth": 2,
-      "text": "6. `+N` 칩: 접혀 있는 자식들",
-      "slug": "6-n-칩-접혀-있는-자식들"
+      "text": "6. `+N` Chip: Collapsed Children",
+      "slug": "6-n-chip-collapsed-children"
     },
     {
       "depth": 2,
-      "text": "7. 눌러 보기",
-      "slug": "7-눌러-보기"
+      "text": "7. Clicking to Explore",
+      "slug": "7-clicking-to-explore"
     },
     {
       "depth": 2,
-      "text": "8. 요약에 적힌 수는 무엇을 세나",
-      "slug": "8-요약에-적힌-수는-무엇을-세나"
+      "text": "8. What Do the Numbers in the Summary Count?",
+      "slug": "8-what-do-the-numbers-in-the-summary-count"
     },
     {
       "depth": 2,
-      "text": "9. 주소가 곧 상태다",
-      "slug": "9-주소가-곧-상태다"
+      "text": "9. Address is State",
+      "slug": "9-address-is-state"
     },
     {
       "depth": 2,
-      "text": "정리",
-      "slug": "정리"
+      "text": "Summary",
+      "slug": "summary"
     }
   ],
   "guide/relations": [
     {
       "depth": 1,
-      "text": "관계는 어떻게 생기나",
-      "slug": "관계는-어떻게-생기나"
+      "text": "How Relations Are Created",
+      "slug": "how-relations-are-created"
     },
     {
       "depth": 2,
-      "text": "1. 도메인끼리 관계, 생깁니다",
-      "slug": "1-도메인끼리-관계-생깁니다"
+      "text": "1. Domains Do Have Relations",
+      "slug": "1-domains-do-have-relations"
     },
     {
       "depth": 3,
-      "text": "도메인이 도메인을 직접 가리키는 법",
-      "slug": "도메인이-도메인을-직접-가리키는-법"
+      "text": "How a Domain Directly Points to Another Domain",
+      "slug": "how-a-domain-directly-points-to-another-domain"
     },
     {
       "depth": 2,
-      "text": "2. 트리 위에 얹히는 그래프",
-      "slug": "2-트리-위에-얹히는-그래프"
+      "text": "2. Graphs Superimposed on a Tree",
+      "slug": "2-graphs-superimposed-on-a-tree"
     },
     {
       "depth": 2,
-      "text": "3. 저장은 DB 가 아니라 마크다운입니다",
-      "slug": "3-저장은-db-가-아니라-마크다운입니다"
+      "text": "3. Storage is Markdown, Not a Database",
+      "slug": "3-storage-is-markdown-not-a-database"
     },
     {
       "depth": 3,
-      "text": "관계를 선언하는 쪽",
-      "slug": "관계를-선언하는-쪽"
+      "text": "Declaring Relations",
+      "slug": "declaring-relations"
     },
     {
       "depth": 3,
-      "text": "관계를 받는 쪽",
-      "slug": "관계를-받는-쪽"
+      "text": "Receiving Relations",
+      "slug": "receiving-relations"
     },
     {
       "depth": 3,
-      "text": "관계 키 표",
-      "slug": "관계-키-표"
+      "text": "Relation Key Table",
+      "slug": "relation-key-table"
     },
     {
       "depth": 3,
-      "text": "지도에서 선의 문법",
-      "slug": "지도에서-선의-문법"
+      "text": "Line Syntax in the Map",
+      "slug": "line-syntax-in-the-map"
     },
     {
       "depth": 3,
-      "text": "진실원은 파일이라 `git diff` 로 보입니다",
-      "slug": "진실원은-파일이라-git-diff-로-보입니다"
+      "text": "The Source of Truth is Files, Visible via `git diff`",
+      "slug": "the-source-of-truth-is-files-visible-via-git-diff"
     },
     {
       "depth": 2,
-      "text": "4. 미리 설계된 데이터를 조회하는 게 아닙니다",
-      "slug": "4-미리-설계된-데이터를-조회하는-게-아닙니다"
+      "text": "4. It’s not about querying pre-designed data",
+      "slug": "4-its-not-about-querying-pre-designed-data"
     },
     {
       "depth": 2,
-      "text": "5. 데모 지도에 도메인 간 선이 없던 이유",
-      "slug": "5-데모-지도에-도메인-간-선이-없던-이유"
+      "text": "5. Why there were no lines between domains in the demo map",
+      "slug": "5-why-there-were-no-lines-between-domains-in-the-demo-map"
     },
     {
       "depth": 2,
-      "text": "6. 지도가 수천 개를 어떻게 그리나",
-      "slug": "6-지도가-수천-개를-어떻게-그리나"
+      "text": "6. How the map draws thousands of nodes",
+      "slug": "6-how-the-map-draws-thousands-of-nodes"
     },
     {
       "depth": 3,
-      "text": "동심 링 배치",
-      "slug": "동심-링-배치"
+      "text": "Concentric ring layout",
+      "slug": "concentric-ring-layout"
     },
     {
       "depth": 3,
-      "text": "부채꼴이 폭주하면 나선으로",
-      "slug": "부채꼴이-폭주하면-나선으로"
+      "text": "Switch to spiral if sectors overflow",
+      "slug": "switch-to-spiral-if-sectors-overflow"
     },
     {
       "depth": 3,
-      "text": "밀도 게이트",
-      "slug": "밀도-게이트"
+      "text": "Density gate",
+      "slug": "density-gate"
     },
     {
       "depth": 3,
-      "text": "의미 줌 (semantic zoom)",
-      "slug": "의미-줌-semantic-zoom"
+      "text": "Semantic zoom",
+      "slug": "semantic-zoom"
     },
     {
       "depth": 3,
-      "text": "겹침 완화는 보이는 것만",
-      "slug": "겹침-완화는-보이는-것만"
+      "text": "Overlap reduction applies only to visible nodes",
+      "slug": "overlap-reduction-applies-only-to-visible-nodes"
     },
     {
       "depth": 2,
-      "text": "정리",
-      "slug": "정리"
+      "text": "Summary",
+      "slug": "summary"
     }
   ],
   "guide/studio": [
     {
       "depth": 1,
-      "text": "지도에서 개념과 관계 고치기",
-      "slug": "지도에서-개념과-관계-고치기"
+      "text": "Correcting Concepts and Relations on the Map",
+      "slug": "correcting-concepts-and-relations-on-the-map"
     },
     {
       "depth": 2,
-      "text": "관계 하나 고치기",
-      "slug": "관계-하나-고치기"
+      "text": "Editing a Single Relation",
+      "slug": "editing-a-single-relation"
     },
     {
       "depth": 3,
-      "text": "네 관계",
-      "slug": "네-관계"
+      "text": "Four Relations",
+      "slug": "four-relations"
     },
     {
       "depth": 2,
-      "text": "새 개념 만들기",
-      "slug": "새-개념-만들기"
+      "text": "Creating New Concepts",
+      "slug": "creating-new-concepts"
     },
     {
       "depth": 2,
-      "text": "에이전트에게 시킬 때",
-      "slug": "에이전트에게-시킬-때"
+      "text": "When Delegating to Agents",
+      "slug": "when-delegating-to-agents"
     },
     {
       "depth": 2,
-      "text": "충돌과 정본",
-      "slug": "충돌과-정본"
+      "text": "Conflicts and Canonical State",
+      "slug": "conflicts-and-canonical-state"
     },
     {
       "depth": 2,
-      "text": "정리",
-      "slug": "정리"
+      "text": "Summary",
+      "slug": "summary"
     }
   ],
   "guide/trust": [
     {
       "depth": 1,
-      "text": "신뢰에 관하여",
-      "slug": "신뢰에-관하여"
+      "text": "About Trust",
+      "slug": "about-trust"
     },
     {
       "depth": 2,
-      "text": "로컬이 전부입니다",
-      "slug": "로컬이-전부입니다"
+      "text": "It is entirely local",
+      "slug": "it-is-entirely-local"
     },
     {
       "depth": 2,
-      "text": "평문 마크다운입니다",
-      "slug": "평문-마크다운입니다"
+      "text": "It is plain Markdown",
+      "slug": "it-is-plain-markdown"
     },
     {
       "depth": 2,
-      "text": "자동으로 훑지 않습니다",
-      "slug": "자동으로-훑지-않습니다"
+      "text": "It does not scan automatically",
+      "slug": "it-does-not-scan-automatically"
     },
     {
       "depth": 2,
-      "text": "LLM 연결은 선택입니다",
-      "slug": "llm-연결은-선택입니다"
+      "text": "LLM connectivity is optional",
+      "slug": "llm-connectivity-is-optional"
     },
     {
       "depth": 2,
-      "text": "서명·공증",
-      "slug": "서명공증"
+      "text": "Signing and Notarization",
+      "slug": "signing-and-notarization"
     },
     {
       "depth": 2,
-      "text": "오픈소스",
-      "slug": "오픈소스"
+      "text": "Open Source",
+      "slug": "open-source"
     }
   ],
   "guide/vault-structure": [
     {
       "depth": 1,
-      "text": "볼트의 구조",
-      "slug": "볼트의-구조"
+      "text": "Vault Structure",
+      "slug": "vault-structure"
     },
     {
       "depth": 2,
-      "text": "uid와 slug: 영구 정체성과 현재 주소",
-      "slug": "uid와-slug-영구-정체성과-현재-주소"
+      "text": "uid and slug: Permanent Identity and Current Address",
+      "slug": "uid-and-slug-permanent-identity-and-current-address"
     },
     {
       "depth": 3,
-      "text": "UID 없는 기존 문서함을 v2로 바꾸기",
-      "slug": "uid-없는-기존-문서함을-v2로-바꾸기"
+      "text": "Converting an Existing Vault Without UIDs to v2",
+      "slug": "converting-an-existing-vault-without-uids-to-v2"
     },
     {
       "depth": 2,
-      "text": "kind: 그 파일이 무엇인지",
-      "slug": "kind-그-파일이-무엇인지"
+      "text": "kind: What the file is",
+      "slug": "kind-what-the-file-is"
     },
     {
       "depth": 2,
-      "text": "관계",
-      "slug": "관계"
+      "text": "Relationships",
+      "slug": "relationships"
     },
     {
       "depth": 2,
-      "text": "이름을 두 언어로",
-      "slug": "이름을-두-언어로"
+      "text": "Names in Two Languages",
+      "slug": "names-in-two-languages"
     },
     {
       "depth": 2,
-      "text": "어디에 두는가",
-      "slug": "어디에-두는가"
+      "text": "Where to Place It",
+      "slug": "where-to-place-it"
     },
     {
       "depth": 2,
-      "text": "진실원은 파일입니다",
-      "slug": "진실원은-파일입니다"
+      "text": "The Vault is Files",
+      "slug": "the-vault-is-files"
     }
   ],
   "guide/what-becomes-a-node": [
     {
       "depth": 1,
-      "text": "무엇을 노드로 만드나",
-      "slug": "무엇을-노드로-만드나"
+      "text": "What Becomes a Node?",
+      "slug": "what-becomes-a-node"
     },
     {
       "depth": 2,
-      "text": "1. 네 단계의 읽기 사슬과 document는 질문이 다르다",
-      "slug": "1-네-단계의-읽기-사슬과-document는-질문이-다르다"
+      "text": "1. The Four-Stage Reading Chain and How `document` Differs in Question",
+      "slug": "1-the-four-stage-reading-chain-and-how-document-differs-in-question"
     },
     {
       "depth": 2,
-      "text": "2. 파일 하나당 노드 하나는 함정이다",
-      "slug": "2-파일-하나당-노드-하나는-함정이다"
+      "text": "2. One node per file is a trap",
+      "slug": "2-one-node-per-file-is-a-trap"
     },
     {
       "depth": 2,
-      "text": "3. 자식이 많은 것 자체는 결함이 아니다",
-      "slug": "3-자식이-많은-것-자체는-결함이-아니다"
+      "text": "3. Having many children is not a defect in itself",
+      "slug": "3-having-many-children-is-not-a-defect-in-itself"
     },
     {
       "depth": 3,
-      "text": "그럼 무엇이 신호인가",
-      "slug": "그럼-무엇이-신호인가"
+      "text": "So, what is the signal?",
+      "slug": "so-what-is-the-signal"
     },
     {
       "depth": 2,
-      "text": "4. 유일한 시험: 한 문장",
-      "slug": "4-유일한-시험-한-문장"
+      "text": "4. The Only Test: One Sentence",
+      "slug": "4-the-only-test-one-sentence"
     },
     {
       "depth": 2,
-      "text": "5. 셋 이상 못 쓰겠으면: 다리 노드",
-      "slug": "5-셋-이상-못-쓰겠으면-다리-노드"
+      "text": "5. If Three or More Cannot Be Used: Bridge Node",
+      "slug": "5-if-three-or-more-cannot-be-used-bridge-node"
     },
     {
       "depth": 2,
-      "text": "6. 역량에는 근거를 같은 손에 붙인다",
-      "slug": "6-역량에는-근거를-같은-손에-붙인다"
+      "text": "6. Attach the same evidence to capabilities",
+      "slug": "6-attach-the-same-evidence-to-capabilities"
     },
     {
       "depth": 2,
-      "text": "7. 아무것도 막지 않는다",
-      "slug": "7-아무것도-막지-않는다"
+      "text": "7. It blocks nothing",
+      "slug": "7-it-blocks-nothing"
     },
     {
       "depth": 2,
-      "text": "정리",
-      "slug": "정리"
+      "text": "Summary",
+      "slug": "summary"
     }
   ],
   "guide/what-is-atlas": [
     {
       "depth": 1,
-      "text": "이게 무엇인가",
-      "slug": "이게-무엇인가"
+      "text": "What is this?",
+      "slug": "what-is-this"
     },
     {
       "depth": 2,
-      "text": "읽는 사람이 둘입니다",
-      "slug": "읽는-사람이-둘입니다"
+      "text": "Two types of readers",
+      "slug": "two-types-of-readers"
     },
     {
       "depth": 2,
-      "text": "언제 쓰나",
-      "slug": "언제-쓰나"
+      "text": "When to use it",
+      "slug": "when-to-use-it"
     },
     {
       "depth": 2,
-      "text": "언제 안 쓰나",
-      "slug": "언제-안-쓰나"
+      "text": "When not to use it",
+      "slug": "when-not-to-use-it"
     }
   ],
   "INTERACTION-DESIGN": [
     {
       "depth": 1,
-      "text": "INTERACTION DESIGN — 유체적 인터페이스 원칙의 적용 (2026-07-17)",
-      "slug": "interaction-design-유체적-인터페이스-원칙의-적용-2026-07-17"
+      "text": "INTERACTION DESIGN — Applying Fluid Interface Principles (2026-07-17)",
+      "slug": "interaction-design-applying-fluid-interface-principles-2026-07-17"
     },
     {
       "depth": 2,
-      "text": "0. 두 세계의 경계 (핵심 결정)",
-      "slug": "0-두-세계의-경계-핵심-결정"
+      "text": "0. Boundary Between Two Worlds (Core Decision)",
+      "slug": "0-boundary-between-two-worlds-core-decision"
     },
     {
       "depth": 2,
-      "text": "1. 캔버스 유체 규율 (topology-map-v2)",
-      "slug": "1-캔버스-유체-규율-topology-map-v2"
+      "text": "1. Canvas Fluid Discipline (topology-map-v2)",
+      "slug": "1-canvas-fluid-discipline-topology-map-v2"
     },
     {
       "depth": 2,
-      "text": "2. 충돌 재정 (Apple 원칙 vs 우리 헌장)",
-      "slug": "2-충돌-재정-apple-원칙-vs-우리-헌장"
+      "text": "2. Conflict Resolution (Apple Principles vs Our Charter)",
+      "slug": "2-conflict-resolution-apple-principles-vs-our-charter"
     },
     {
       "depth": 2,
-      "text": "3. 크롬 규율 보강 (기존 헌장 + 소량 추가)",
-      "slug": "3-크롬-규율-보강-기존-헌장-소량-추가"
+      "text": "3. Chrome Discipline Reinforcement (Existing Charter + Minor Additions)",
+      "slug": "3-chrome-discipline-reinforcement-existing-charter-minor-additions"
     },
     {
       "depth": 2,
-      "text": "4. 접근성·감소 모션 (헌장 확장)",
-      "slug": "4-접근성감소-모션-헌장-확장"
+      "text": "4. Accessibility·Reduced Motion (Charter Extension)",
+      "slug": "4-accessibilityreduced-motion-charter-extension"
     },
     {
       "depth": 2,
-      "text": "5. Slice 2 설계 게이트 체크리스트에 추가되는 항목",
-      "slug": "5-slice-2-설계-게이트-체크리스트에-추가되는-항목"
+      "text": "5. Items Added to Slice 2 Design Gate Checklist",
+      "slug": "5-items-added-to-slice-2-design-gate-checklist"
     },
     {
       "depth": 2,
-      "text": "6. 구현 참고",
-      "slug": "6-구현-참고"
+      "text": "6. Implementation Notes",
+      "slug": "6-implementation-notes"
     }
   ],
   "launch/DEMO-GIF-STORYBOARD": [
@@ -12434,43 +12485,43 @@
     },
     {
       "depth": 2,
-      "text": "Cut 1 (0–6s) — \"AI 와 사람이 같은 vault 를 편집\"",
-      "slug": "cut-1-06s-ai-와-사람이-같은-vault-를-편집"
+      "text": "Cut 1 (0–6s) — \"AI and humans editing the same vault\"",
+      "slug": "cut-1-06s-ai-and-humans-editing-the-same-vault"
     },
     {
       "depth": 2,
-      "text": "Cut 2 (6–12s) — \"frontmatter 가 곧 그래프\"",
-      "slug": "cut-2-612s-frontmatter-가-곧-그래프"
+      "text": "Cut 2 (6–12s) — \"Frontmatter is the graph\"",
+      "slug": "cut-2-612s-frontmatter-is-the-graph"
     },
     {
       "depth": 2,
-      "text": "Cut 3 (12–18s) — \"토폴로지 view\"",
-      "slug": "cut-3-1218s-토폴로지-view"
+      "text": "Cut 3 (12–18s) — \"Topology view\"",
+      "slug": "cut-3-1218s-topology-view"
     },
     {
       "depth": 2,
-      "text": "Cut 4 (18–24s) — \"AI agent 가 ontology 를 *읽고* 코드 제안\"",
-      "slug": "cut-4-1824s-ai-agent-가-ontology-를-읽고-코드-제안"
+      "text": "Cut 4 (18–24s) — \"AI agent reads the ontology and suggests code\"",
+      "slug": "cut-4-1824s-ai-agent-reads-the-ontology-and-suggests-code"
     },
     {
       "depth": 2,
-      "text": "Cut 5 (24–30s) — \"버튼 한 번으로 에이전트가 붙는다\"",
-      "slug": "cut-5-2430s-버튼-한-번으로-에이전트가-붙는다"
+      "text": "Cut 5 (24–30s) — \"One button click connects the agent\"",
+      "slug": "cut-5-2430s-one-button-click-connects-the-agent"
     },
     {
       "depth": 2,
-      "text": "녹화 환경",
-      "slug": "녹화-환경"
+      "text": "Recording Environment",
+      "slug": "recording-environment"
     },
     {
       "depth": 2,
-      "text": "README 임베드",
-      "slug": "readme-임베드"
+      "text": "README Embed",
+      "slug": "readme-embed"
     },
     {
       "depth": 2,
-      "text": "대안: 이미지 4 개 grid",
-      "slug": "대안-이미지-4-개-grid"
+      "text": "Alternative: 4-image grid",
+      "slug": "alternative-4-image-grid"
     }
   ],
   "launch/HN-POST": [
@@ -12508,43 +12559,43 @@
     },
     {
       "depth": 2,
-      "text": "단계별 권장 순서",
-      "slug": "단계별-권장-순서"
+      "text": "Recommended Step-by-Step Order",
+      "slug": "recommended-step-by-step-order"
     },
     {
       "depth": 2,
-      "text": "게시 안 할 곳",
-      "slug": "게시-안-할-곳"
+      "text": "Where Not to Post",
+      "slug": "where-not-to-post"
     },
     {
       "depth": 2,
-      "text": "응답 템플릿",
-      "slug": "응답-템플릿"
+      "text": "Response Template",
+      "slug": "response-template"
     },
     {
       "depth": 3,
-      "text": "\"Obsidian 과 뭐가 다른가요?\"",
-      "slug": "obsidian-과-뭐가-다른가요"
+      "text": "\"How is this different from Obsidian?\"",
+      "slug": "how-is-this-different-from-obsidian"
     },
     {
       "depth": 3,
-      "text": "\"왜 GraphQL/Neo4j 같은 진짜 그래프 DB 가 아닌가요?\"",
-      "slug": "왜-graphqlneo4j-같은-진짜-그래프-db-가-아닌가요"
+      "text": "\"Why not a real graph DB like GraphQL/Neo4j?\"",
+      "slug": "why-not-a-real-graph-db-like-graphqlneo4j"
     },
     {
       "depth": 3,
-      "text": "\"MCP 가 뭐예요?\"",
-      "slug": "mcp-가-뭐예요"
+      "text": "\"What is MCP?\"",
+      "slug": "what-is-mcp"
     },
     {
       "depth": 3,
-      "text": "\"백엔드는 뭘 쓰나요?\"",
-      "slug": "백엔드는-뭘-쓰나요"
+      "text": "\"What backend do you use?\"",
+      "slug": "what-backend-do-you-use"
     },
     {
       "depth": 2,
-      "text": "측정 지표 (1주 후 자가 회고)",
-      "slug": "측정-지표-1주-후-자가-회고"
+      "text": "Metrics (Self-review after 1 week)",
+      "slug": "metrics-self-review-after-1-week"
     }
   ],
   "launch/REDDIT-POSTS": [
@@ -12624,78 +12675,78 @@
   "MAP-TESTABILITY": [
     {
       "depth": 1,
-      "text": "지도를 밖에서 검사하기 — `window.__atlasMap`",
-      "slug": "지도를-밖에서-검사하기-window__atlasmap"
+      "text": "Inspecting the Map from Outside — `window.__atlasMap`",
+      "slug": "inspecting-the-map-from-outside-window__atlasmap"
     },
     {
       "depth": 2,
-      "text": "왜 이 파일이 있는가",
-      "slug": "왜-이-파일이-있는가"
+      "text": "Why This File Exists",
+      "slug": "why-this-file-exists"
     },
     {
       "depth": 2,
-      "text": "켜는 법",
-      "slug": "켜는-법"
+      "text": "How to Enable",
+      "slug": "how-to-enable"
     },
     {
       "depth": 2,
-      "text": "창구",
-      "slug": "창구"
+      "text": "Interface",
+      "slug": "interface"
     },
     {
       "depth": 3,
-      "text": "`nodes()` — 무엇이 어디에 있고, 무엇을 끌 수 있나",
-      "slug": "nodes-무엇이-어디에-있고-무엇을-끌-수-있나"
+      "text": "`nodes()` — What is where, and what can be dragged",
+      "slug": "nodes-what-is-where-and-what-can-be-dragged"
     },
     {
       "depth": 3,
-      "text": "`edges()` — 선이 어디로 지나가나",
-      "slug": "edges-선이-어디로-지나가나"
+      "text": "`edges()` — Where lines pass through",
+      "slug": "edges-where-lines-pass-through"
     },
     {
       "depth": 3,
-      "text": "`interaction()` — 지금 끄는 것이 노드인가 배경인가",
-      "slug": "interaction-지금-끄는-것이-노드인가-배경인가"
+      "text": "`interaction()` — Is what's being dragged a node or the background?",
+      "slug": "interaction-is-whats-being-dragged-a-node-or-the-background"
     },
     {
       "depth": 3,
-      "text": "`backing()` — 캔버스 백킹 크기",
-      "slug": "backing-캔버스-백킹-크기"
+      "text": "`backing()` — Canvas backing size",
+      "slug": "backing-canvas-backing-size"
     },
     {
       "depth": 3,
-      "text": "`camera()` — 지도가 어디를 보고 있나",
-      "slug": "camera-지도가-어디를-보고-있나"
+      "text": "`camera()` — Where the map is looking",
+      "slug": "camera-where-the-map-is-looking"
     },
     {
       "depth": 3,
-      "text": "`selection()` — 무엇이 골라져 있나",
-      "slug": "selection-무엇이-골라져-있나"
+      "text": "`selection()` — What is selected",
+      "slug": "selection-what-is-selected"
     },
     {
       "depth": 3,
-      "text": "`chips()` — 칩의 **주장**과 **실제**",
-      "slug": "chips-칩의-주장과-실제"
+      "text": "`chips()` — The chip's **claim** vs. **reality**",
+      "slug": "chips-the-chips-claim-vs-reality"
     },
     {
       "depth": 2,
-      "text": "쓰는 법",
-      "slug": "쓰는-법"
+      "text": "How to use",
+      "slug": "how-to-use"
     },
     {
       "depth": 2,
-      "text": "측정 규율 넷",
-      "slug": "측정-규율-넷"
+      "text": "Four Measurement Disciplines",
+      "slug": "four-measurement-disciplines"
     },
     {
       "depth": 2,
-      "text": "화면 계기",
-      "slug": "화면-계기"
+      "text": "Screen Instrument",
+      "slug": "screen-instrument"
     },
     {
       "depth": 2,
-      "text": "마지막 관문",
-      "slug": "마지막-관문"
+      "text": "Final Gate",
+      "slug": "final-gate"
     }
   ],
   "ONTOLOGY-ATLAS-SPEC": [
@@ -12706,8 +12757,8 @@
     },
     {
       "depth": 2,
-      "text": "한국어 요약 (Korean summary)",
-      "slug": "한국어-요약-korean-summary"
+      "text": "Korean summary",
+      "slug": "korean-summary"
     },
     {
       "depth": 2,
@@ -12870,94 +12921,94 @@
     },
     {
       "depth": 2,
-      "text": "공개 품질 계약",
-      "slug": "공개-품질-계약"
+      "text": "Public Quality Contract",
+      "slug": "public-quality-contract"
     },
     {
       "depth": 2,
-      "text": "누가 무엇을 결정하는가",
-      "slug": "누가-무엇을-결정하는가"
+      "text": "Who Decides What",
+      "slug": "who-decides-what"
     },
     {
       "depth": 2,
-      "text": "변경 규칙",
-      "slug": "변경-규칙"
+      "text": "Change Rules",
+      "slug": "change-rules"
     },
     {
       "depth": 2,
-      "text": "실패로 보는 관측",
-      "slug": "실패로-보는-관측"
+      "text": "Observations Viewed as Failures",
+      "slug": "observations-viewed-as-failures"
     }
   ],
   "ontology/capabilities/acp-runtime": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "경계",
-      "slug": "경계"
+      "text": "Boundaries",
+      "slug": "boundaries"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/agent-work-visibility": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "경계",
-      "slug": "경계"
+      "text": "Boundaries",
+      "slug": "boundaries"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/app-update": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusions / Exclusions",
+      "slug": "inclusions-exclusions"
     },
     {
       "depth": 2,
-      "text": "신뢰 경계",
-      "slug": "신뢰-경계"
+      "text": "Trust Boundary",
+      "slug": "trust-boundary"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/cli-developer-entry": [
@@ -12968,33 +13019,33 @@
     },
     {
       "depth": 2,
-      "text": "사용자 결과",
-      "slug": "사용자-결과"
+      "text": "User Outcomes",
+      "slug": "user-outcomes"
     },
     {
       "depth": 2,
-      "text": "정체성 경계",
-      "slug": "정체성-경계"
+      "text": "Identity Boundary",
+      "slug": "identity-boundary"
     },
     {
       "depth": 2,
-      "text": "핵심 흐름",
-      "slug": "핵심-흐름"
+      "text": "Core Flow",
+      "slug": "core-flow"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusions / Exclusions",
+      "slug": "inclusions-exclusions"
     },
     {
       "depth": 2,
-      "text": "구현 근거",
-      "slug": "구현-근거"
+      "text": "Implementation Basis",
+      "slug": "implementation-basis"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence Level",
+      "slug": "confidence-level"
     }
   ],
   "ontology/capabilities/control-primitives": [
@@ -13005,40 +13056,40 @@
     },
     {
       "depth": 2,
-      "text": "사용자 결과",
-      "slug": "사용자-결과"
+      "text": "User Outcomes",
+      "slug": "user-outcomes"
     },
     {
       "depth": 2,
-      "text": "층 구조",
-      "slug": "층-구조"
+      "text": "Layer Structure",
+      "slug": "layer-structure"
     },
     {
       "depth": 2,
-      "text": "추출 경계",
-      "slug": "추출-경계"
+      "text": "Extraction Boundary",
+      "slug": "extraction-boundary"
     },
     {
       "depth": 2,
-      "text": "게이트",
-      "slug": "게이트"
+      "text": "Gates",
+      "slug": "gates"
     }
   ],
   "ontology/capabilities/data-source-mode": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/design-build-handoff": [
@@ -13049,28 +13100,28 @@
     },
     {
       "depth": 2,
-      "text": "사용자 결과",
-      "slug": "사용자-결과"
+      "text": "User Outcomes",
+      "slug": "user-outcomes"
     },
     {
       "depth": 2,
-      "text": "왜 이것이 이 시스템의 핵심인가",
-      "slug": "왜-이것이-이-시스템의-핵심인가"
+      "text": "Why this is core to this system",
+      "slug": "why-this-is-core-to-this-system"
     },
     {
       "depth": 2,
-      "text": "알려진 결함 (2026-08-15 실측, 수리 중)",
-      "slug": "알려진-결함-2026-08-15-실측-수리-중"
+      "text": "Known Defects (measured 2026-08-15, under repair)",
+      "slug": "known-defects-measured-2026-08-15-under-repair"
     },
     {
       "depth": 2,
-      "text": "추출 경계",
-      "slug": "추출-경계"
+      "text": "Extraction Boundary",
+      "slug": "extraction-boundary"
     },
     {
       "depth": 2,
-      "text": "사본 계약",
-      "slug": "사본-계약"
+      "text": "Copy Contract",
+      "slug": "copy-contract"
     }
   ],
   "ontology/capabilities/design-gate-ratchets": [
@@ -13081,18 +13132,18 @@
     },
     {
       "depth": 2,
-      "text": "사용자 결과",
-      "slug": "사용자-결과"
+      "text": "User Outcome",
+      "slug": "user-outcome"
     },
     {
       "depth": 2,
-      "text": "세 갈래",
-      "slug": "세-갈래"
+      "text": "Three Branches",
+      "slug": "three-branches"
     },
     {
       "depth": 2,
-      "text": "추출 경계",
-      "slug": "추출-경계"
+      "text": "Extraction Boundary",
+      "slug": "extraction-boundary"
     }
   ],
   "ontology/capabilities/design-token-ramps": [
@@ -13103,113 +13154,113 @@
     },
     {
       "depth": 2,
-      "text": "사용자 결과",
-      "slug": "사용자-결과"
+      "text": "User Outcome",
+      "slug": "user-outcome"
     },
     {
       "depth": 2,
-      "text": "램프",
-      "slug": "램프"
+      "text": "Ramps",
+      "slug": "ramps"
     },
     {
       "depth": 2,
-      "text": "추출 경계",
-      "slug": "추출-경계"
+      "text": "Extraction Boundary",
+      "slug": "extraction-boundary"
     },
     {
       "depth": 2,
-      "text": "게이트",
-      "slug": "게이트"
+      "text": "Gate",
+      "slug": "gate"
     }
   ],
   "ontology/capabilities/desktop-download-decision": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/docs-vault-local": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/first-run-starter": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "결정",
-      "slug": "결정"
+      "text": "Decision",
+      "slug": "decision"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/guided-tour": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/locale-switch": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/mcp-server": [
@@ -13220,498 +13271,498 @@
     },
     {
       "depth": 2,
-      "text": "사용자 결과",
-      "slug": "사용자-결과"
+      "text": "User Outcomes",
+      "slug": "user-outcomes"
     },
     {
       "depth": 2,
-      "text": "활성 도구 인벤토리 계약",
-      "slug": "활성-도구-인벤토리-계약"
+      "text": "Active Tool Inventory Contract",
+      "slug": "active-tool-inventory-contract"
     },
     {
       "depth": 2,
-      "text": "정체성 경계",
-      "slug": "정체성-경계"
+      "text": "Identity Boundaries",
+      "slug": "identity-boundaries"
     },
     {
       "depth": 2,
-      "text": "온톨로지 구축 lifecycle",
-      "slug": "온톨로지-구축-lifecycle"
+      "text": "Ontology Construction Lifecycle",
+      "slug": "ontology-construction-lifecycle"
     },
     {
       "depth": 2,
-      "text": "소스 연결",
-      "slug": "소스-연결"
+      "text": "Source Connection",
+      "slug": "source-connection"
     },
     {
       "depth": 2,
-      "text": "핵심 흐름",
-      "slug": "핵심-흐름"
+      "text": "Core Flow",
+      "slug": "core-flow"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusions / Exclusions",
+      "slug": "inclusions-exclusions"
     },
     {
       "depth": 2,
-      "text": "구현 근거",
-      "slug": "구현-근거"
+      "text": "Implementation Basis",
+      "slug": "implementation-basis"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/project-data-source": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Included / Excluded",
+      "slug": "included-excluded"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Basis",
+      "slug": "basis"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/project-edit": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Included / Excluded",
+      "slug": "included-excluded"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Basis",
+      "slug": "basis"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/project-quick-edit": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/project-share": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/project-source-evidence": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Grounds",
+      "slug": "grounds"
     },
     {
       "depth": 2,
-      "text": "경계",
-      "slug": "경계"
+      "text": "Boundary",
+      "slug": "boundary"
     }
   ],
   "ontology/capabilities/reviewed-ontology-writing": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "경계",
-      "slug": "경계"
+      "text": "Boundaries",
+      "slug": "boundaries"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Grounds",
+      "slug": "grounds"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/taxonomy": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/topology-browsing": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "뷰 모드",
-      "slug": "뷰-모드"
+      "text": "View Modes",
+      "slug": "view-modes"
     },
     {
       "depth": 2,
-      "text": "대형 지도 개관과 ACP 탐색 (2026-08-22)",
-      "slug": "대형-지도-개관과-acp-탐색-2026-08-22"
+      "text": "Large Map Overview and ACP Exploration (2026-08-22)",
+      "slug": "large-map-overview-and-acp-exploration-2026-08-22"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/vault-agent": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/vault-ontology": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/capabilities/vault-sample-source": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/domains/agent-integration": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
     },
     {
       "depth": 2,
-      "text": "프로젝트 의미 인계",
-      "slug": "프로젝트-의미-인계"
+      "text": "Project Meaning Handover",
+      "slug": "project-meaning-handover"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/domains/design-system": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
     },
     {
       "depth": 2,
-      "text": "추출 경계 (2026-08-15 PO 카운슬)",
-      "slug": "추출-경계-2026-08-15-po-카운슬"
+      "text": "Extraction Boundaries (2026-08-15 PO Council)",
+      "slug": "extraction-boundaries-2026-08-15-po-council"
     },
     {
       "depth": 2,
-      "text": "추출 명세: 시험 A 실측 (2026-08-15)",
-      "slug": "추출-명세-시험-a-실측-2026-08-15"
+      "text": "Extraction Spec: Test A Measurement (2026-08-15)",
+      "slug": "extraction-spec-test-a-measurement-2026-08-15"
     },
     {
       "depth": 3,
-      "text": "시험 B: 수리 후 재측정 (같은 날)",
-      "slug": "시험-b-수리-후-재측정-같은-날"
+      "text": "Test B: Re-measurement after fixes (same day)",
+      "slug": "test-b-re-measurement-after-fixes-same-day"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/domains/graph-modeling": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/domains/local-vault-management": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/domains/onboarding-and-shell": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusions / Exclusions",
+      "slug": "inclusions-exclusions"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/domains/project-portfolio": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusions / Exclusions",
+      "slug": "inclusions-exclusions"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/domains/topology-navigation": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "Inclusions / Exclusions",
+      "slug": "inclusions-exclusions"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/elements/agents-destination": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "왜 목적지인가 (2026-08-20, 원장 90)",
-      "slug": "왜-목적지인가-2026-08-20-원장-90"
+      "text": "Why Destination (2026-08-20, Chapter 90)",
+      "slug": "why-destination-2026-08-20-chapter-90"
     },
     {
       "depth": 2,
-      "text": "이 자리가 담는 것",
-      "slug": "이-자리가-담는-것"
+      "text": "What This Section Contains",
+      "slug": "what-this-section-contains"
     },
     {
       "depth": 2,
-      "text": "경계",
-      "slug": "경계"
+      "text": "Boundaries",
+      "slug": "boundaries"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Rationale",
+      "slug": "rationale"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     }
   ],
   "ontology/ontology-atlas": [
     {
       "depth": 2,
-      "text": "정의",
-      "slug": "정의"
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
-      "text": "근거",
-      "slug": "근거"
+      "text": "Evidence",
+      "slug": "evidence"
     },
     {
       "depth": 2,
-      "text": "포함 / 제외",
-      "slug": "포함-제외"
+      "text": "In Scope / Out of Scope",
+      "slug": "in-scope-out-of-scope"
     },
     {
       "depth": 2,
-      "text": "확신도",
-      "slug": "확신도"
+      "text": "Confidence",
+      "slug": "confidence"
     },
     {
       "depth": 2,
@@ -14067,6 +14118,58 @@
       "depth": 1,
       "text": "plans/ — 하려고 했던 것의 기록",
       "slug": "plans-하려고-했던-것의-기록"
+    }
+  ],
+  "plans/SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22": [
+    {
+      "depth": 1,
+      "text": "Source Organization and English Migration Plan",
+      "slug": "source-organization-and-english-migration-plan"
+    },
+    {
+      "depth": 2,
+      "text": "Outcome",
+      "slug": "outcome"
+    },
+    {
+      "depth": 2,
+      "text": "Measured Baseline",
+      "slug": "measured-baseline"
+    },
+    {
+      "depth": 2,
+      "text": "Invariants",
+      "slug": "invariants"
+    },
+    {
+      "depth": 2,
+      "text": "Workstream A — Operational English Control Plane",
+      "slug": "workstream-a-operational-english-control-plane"
+    },
+    {
+      "depth": 2,
+      "text": "Workstream B — Current Product Documentation",
+      "slug": "workstream-b-current-product-documentation"
+    },
+    {
+      "depth": 2,
+      "text": "Workstream C — Proven Code Cleanup",
+      "slug": "workstream-c-proven-code-cleanup"
+    },
+    {
+      "depth": 2,
+      "text": "Workstream D — Internal Module Deepening",
+      "slug": "workstream-d-internal-module-deepening"
+    },
+    {
+      "depth": 2,
+      "text": "Verification",
+      "slug": "verification"
+    },
+    {
+      "depth": 2,
+      "text": "Progress — 2026-08-23",
+      "slug": "progress-2026-08-23"
     }
   ],
   "plans/TOPOLOGY-V2-PHASE0": [
@@ -14801,38 +14904,38 @@
   "TECH-STACK": [
     {
       "depth": 1,
-      "text": "TECH STACK — 기술 스택 결정 기록 (2026-07-17)",
-      "slug": "tech-stack-기술-스택-결정-기록-2026-07-17"
+      "text": "TECH STACK — Technology Stack Decision Record (2026-07-17)",
+      "slug": "tech-stack-technology-stack-decision-record-2026-07-17"
     },
     {
       "depth": 2,
-      "text": "웹 프론트",
-      "slug": "웹-프론트"
+      "text": "Web Front-end",
+      "slug": "web-front-end"
     },
     {
       "depth": 2,
-      "text": "데스크톱",
-      "slug": "데스크톱"
+      "text": "Desktop",
+      "slug": "desktop"
     },
     {
       "depth": 2,
-      "text": "CLI · MCP · 테스트",
-      "slug": "cli-mcp-테스트"
+      "text": "CLI · MCP · Testing",
+      "slug": "cli-mcp-testing"
     },
     {
       "depth": 2,
-      "text": "LLM · Layer 2 (예약 결정 — 해당 게이트 발화 시 구현)",
-      "slug": "llm-layer-2-예약-결정-해당-게이트-발화-시-구현"
+      "text": "LLM · Layer 2 (Deferred decision — implement when relevant gate triggers)",
+      "slug": "llm-layer-2-deferred-decision-implement-when-relevant-gate-triggers"
     },
     {
       "depth": 2,
-      "text": "하지 않기로 한 것 (반려 기록)",
-      "slug": "하지-않기로-한-것-반려-기록"
+      "text": "What We Decided Against (Rejection Log)",
+      "slug": "what-we-decided-against-rejection-log"
     },
     {
       "depth": 2,
-      "text": "즉시 액션 (이번 사이클)",
-      "slug": "즉시-액션-이번-사이클"
+      "text": "Immediate Actions (This Cycle)",
+      "slug": "immediate-actions-this-cycle"
     }
   ],
   "TOPOLOGY-FOCUS-AND-SCALE": [
@@ -14905,8 +15008,8 @@
   "TOPOLOGY-V2-DESIGN": [
     {
       "depth": 1,
-      "text": "TOPOLOGY-V2 DESIGN — 표현 아키텍처 설계 (Phase 1)",
-      "slug": "topology-v2-design-표현-아키텍처-설계-phase-1"
+      "text": "TOPOLOGY-V2 DESIGN — Presentation Architecture Design (Phase 1)",
+      "slug": "topology-v2-design-presentation-architecture-design-phase-1"
     },
     {
       "depth": 2,
@@ -14915,138 +15018,138 @@
     },
     {
       "depth": 2,
-      "text": "1. 엔진 선택 (핵심 결정)",
-      "slug": "1-엔진-선택-핵심-결정"
+      "text": "1. Engine Selection (Core Decision)",
+      "slug": "1-engine-selection-core-decision"
     },
     {
       "depth": 3,
-      "text": "1.1 Graph Engine Fit Pass (PRODUCT-DESIGN-OPERATING-SYSTEM.md 양식)",
-      "slug": "11-graph-engine-fit-pass-product-design-operating-systemmd-양식"
+      "text": "1.1 Graph Engine Fit Pass (PRODUCT-DESIGN-OPERATING-SYSTEM.md format)",
+      "slug": "11-graph-engine-fit-pass-product-design-operating-systemmd-format"
     },
     {
       "depth": 3,
-      "text": "1.2 두 개의 살아있는 뷰를 하나로 — 명시적 unify 권고",
-      "slug": "12-두-개의-살아있는-뷰를-하나로-명시적-unify-권고"
+      "text": "1.2 Unifying Two Living Views — Explicit Unification Recommendation",
+      "slug": "12-unifying-two-living-views-explicit-unification-recommendation"
     },
     {
       "depth": 3,
-      "text": "1.3 결정 요약",
-      "slug": "13-결정-요약"
+      "text": "1.3 Decision Summary",
+      "slug": "13-decision-summary"
     },
     {
       "depth": 2,
-      "text": "2. B2+ 언어의 토큰화",
-      "slug": "2-b2-언어의-토큰화"
+      "text": "2. B2+ Language Tokenization",
+      "slug": "2-b2-language-tokenization"
     },
     {
       "depth": 3,
-      "text": "2.1 노드 표면 (kind별 fill/stroke tier)",
-      "slug": "21-노드-표면-kind별-fillstroke-tier"
+      "text": "2.1 Node Surface (kind-specific fill/stroke tier)",
+      "slug": "21-node-surface-kind-specific-fillstroke-tier"
     },
     {
       "depth": 3,
-      "text": "2.2 엣지 · 라벨 · 배경",
-      "slug": "22-엣지-라벨-배경"
+      "text": "2.2 Edges · Labels · Background",
+      "slug": "22-edges-labels-background"
     },
     {
       "depth": 3,
-      "text": "2.3 지오메트리 (반지름·레이아웃·모서리)",
-      "slug": "23-지오메트리-반지름레이아웃모서리"
+      "text": "2.3 Geometry (radius · layout · edges)",
+      "slug": "23-geometry-radius-layout-edges"
     },
     {
       "depth": 3,
-      "text": "2.4 모션 · 카메라",
-      "slug": "24-모션-카메라"
+      "text": "2.4 Motion · Camera",
+      "slug": "24-motion-camera"
     },
     {
       "depth": 2,
-      "text": "3. 상태 계약",
-      "slug": "3-상태-계약"
+      "text": "3. State Contract",
+      "slug": "3-state-contract"
     },
     {
       "depth": 3,
-      "text": "3.1 고도 티어(altitude tier) — overview / transition / working",
-      "slug": "31-고도-티어altitude-tier-overview-transition-working"
+      "text": "3.1 Altitude Tier — overview / transition / working",
+      "slug": "31-altitude-tier-overview-transition-working"
     },
     {
       "depth": 3,
-      "text": "3.2 포커스 상태 (State Contract 매핑)",
-      "slug": "32-포커스-상태-state-contract-매핑"
+      "text": "3.2 Focus State (State Contract Mapping)",
+      "slug": "32-focus-state-state-contract-mapping"
     },
     {
       "depth": 3,
-      "text": "3.3 팝오버 타입드 팩트 (plan §5 — MCP/CLI 핸드오프 포함)",
-      "slug": "33-팝오버-타입드-팩트-plan-5-mcpcli-핸드오프-포함"
+      "text": "3.3 Popover Typed Facts (plan §5 — including MCP/CLI handoff)",
+      "slug": "33-popover-typed-facts-plan-5-including-mcpcli-handoff"
     },
     {
       "depth": 3,
-      "text": "3.4 신선도(freshness) — 전원(powered) / 비전원(unpowered) 은유",
-      "slug": "34-신선도freshness-전원powered-비전원unpowered-은유"
+      "text": "3.4 Freshness — Powered / Unpowered Metaphor",
+      "slug": "34-freshness-powered-unpowered-metaphor"
     },
     {
       "depth": 3,
-      "text": "3.5 드리프트 경고 상태 (신규 — 프로토타입에 없음)",
-      "slug": "35-드리프트-경고-상태-신규-프로토타입에-없음"
+      "text": "3.5 Drift Warning State (New — not in prototype)",
+      "slug": "35-drift-warning-state-new-not-in-prototype"
     },
     {
       "depth": 3,
-      "text": "3.6 hover/press 상태 (클릭=안전 계약)",
-      "slug": "36-hoverpress-상태-클릭안전-계약"
+      "text": "3.6 Hover/Press State (Click = Safety Contract)",
+      "slug": "36-hoverpress-state-click-safety-contract"
     },
     {
       "depth": 2,
-      "text": "4. 구현 페이즈 분해 (strangler, feature flag `topology-map-v2`)",
-      "slug": "4-구현-페이즈-분해-strangler-feature-flag-topology-map-v2"
+      "text": "4. Implementation Phase Breakdown (strangler, feature flag `topology-map-v2`)",
+      "slug": "4-implementation-phase-breakdown-strangler-feature-flag-topology-map-v2"
     },
     {
       "depth": 3,
-      "text": "P2 — 스캐폴드 (엔진 + 카메라 + 레이아웃)",
-      "slug": "p2-스캐폴드-엔진-카메라-레이아웃"
+      "text": "P2 — Scaffold (Engine + Camera + Layout)",
+      "slug": "p2-scaffold-engine-camera-layout"
     },
     {
       "depth": 3,
-      "text": "P3 — 노드/트레이스/티어",
-      "slug": "p3-노드트레이스티어"
+      "text": "P3 — Nodes/Traces/Tiers",
+      "slug": "p3-nodestracestiers"
     },
     {
       "depth": 3,
-      "text": "P4 — 포커스/팝오버 + 신선도 오버레이",
-      "slug": "p4-포커스팝오버-신선도-오버레이"
+      "text": "P4 — Focus/PoPover + Freshness Overlay",
+      "slug": "p4-focuspopover-freshness-overlay"
     },
     {
       "depth": 3,
-      "text": "P5 — 성능 검증 + 가디언 + 설치 앱 게이트",
-      "slug": "p5-성능-검증-가디언-설치-앱-게이트"
+      "text": "P5 — Performance Validation + Guardian + Install App Gate",
+      "slug": "p5-performance-validation-guardian-install-app-gate"
     },
     {
       "depth": 3,
-      "text": "P6 — 전환 + 구엔진 삭제",
-      "slug": "p6-전환-구엔진-삭제"
+      "text": "P6 — Migration + Legacy Engine Removal",
+      "slug": "p6-migration-legacy-engine-removal"
     },
     {
       "depth": 2,
-      "text": "5. 14인치 풀스크린 충돌 규칙 + 어텐션 레이어 모델 + MCP/CLI 핸드오프",
-      "slug": "5-14인치-풀스크린-충돌-규칙-어텐션-레이어-모델-mcpcli-핸드오프"
+      "text": "5. 14-inch Fullscreen Collision Rules + Attention Layer Model + MCP/CLI Handoff",
+      "slug": "5-14-inch-fullscreen-collision-rules-attention-layer-model-mcpcli-handoff"
     },
     {
       "depth": 3,
-      "text": "5.1 어텐션 레이어 배정 (운영체제 문서 \"Relief/Topology Attention Layer Model\")",
-      "slug": "51-어텐션-레이어-배정-운영체제-문서-relieftopology-attention-layer-model"
+      "text": "5.1 Attention Layer Allocation (OS document \"Relief/Topology Attention Layer Model\")",
+      "slug": "51-attention-layer-allocation-os-document-relieftopology-attention-layer-model"
     },
     {
       "depth": 3,
-      "text": "5.2 14인치(1512×917) 충돌 규칙",
-      "slug": "52-14인치1512917-충돌-규칙"
+      "text": "5.2 14-inch (1512×917) Collision Rules",
+      "slug": "52-14-inch-1512917-collision-rules"
     },
     {
       "depth": 3,
-      "text": "5.3 MCP/CLI 핸드오프 노트",
-      "slug": "53-mcpcli-핸드오프-노트"
+      "text": "5.3 MCP/CLI Handoff Notes",
+      "slug": "53-mcpcli-handoff-notes"
     },
     {
       "depth": 2,
-      "text": "6. 열린 질문",
-      "slug": "6-열린-질문"
+      "text": "6. Open Questions",
+      "slug": "6-open-questions"
     }
   ],
   "TROUBLESHOOTING": [
@@ -15102,8 +15205,8 @@
     },
     {
       "depth": 3,
-      "text": "`pnpm vault:migrate <id> --write` refuses with \"commit 안 된 .md 변경\"",
-      "slug": "pnpm-vaultmigrate-id---write-refuses-with-commit-안-된-md-변경"
+      "text": "`pnpm vault:migrate <id> --write` refuses with \"uncommitted .md changes\"",
+      "slug": "pnpm-vaultmigrate-id---write-refuses-with-uncommitted-md-changes"
     },
     {
       "depth": 3,

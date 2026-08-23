@@ -8,4 +8,4 @@ path: src/widgets/docs-quick-drawer
 created_by: "agent:unknown"
 ---
 
-문서 빠른 접근 서랑 위젯.
+Document quick access drawer widget.

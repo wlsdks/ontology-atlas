@@ -8,4 +8,4 @@ path: src/views/project-editor
 created_by: "agent:unknown"
 ---
 
-프로젝트 편집 페이지. capabilities/project-edit 의 구현 증거.
+Project editing page. Implementation evidence for capabilities/project-edit.

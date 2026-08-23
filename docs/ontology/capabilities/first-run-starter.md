@@ -9,49 +9,26 @@ path: src/features/first-run-starter
 created_by: "agent:unknown"
 ---
 
-## 정의
-완전히 새로운 사용자를 빈 상태에서 쓸 수 있는 스타터 볼트까지 데려가는 첫 실행 경험.
+## Definition
+The first-run experience that brings a completely new user from scratch to a starter vault they can use.
 
-지도(`/topology`) 왼쪽 INDEX 패널 맨 위의 첫 실행 카드가 이 역량의 표면이다.
-볼트를 고르기 **전에만** 산다. 폴더가 열리면 카드는 사라지고 INDEX 가 자리를
-되받는다. 그래서 이 카드가 말해야 하는 것은 "지금 보이는 건 남의 샘플이고,
-내 폴더를 고르면 같은 지도가 내 데이터로 켜진다" 하나다.
+The first-run card at the top of the INDEX panel on the left side of the map (`/topology`) is the surface of this capability.
+It appears **only before** choosing a vault. Once the folder opens, the card disappears and the INDEX takes its place. Therefore, what this card must say is simply: "What you see now is someone else's sample; choose your own folder to light up the same map with your data."
 
-## 결정
+## Decision
 
-- **계기 대접은 여기 것이 아니다** (2026-08-02, PO 카운슬). 개념/관계/도메인
-  수를 3분할 인셋 계기 블록(19px mono semibold)으로 그려 왔고, 그것이 카드 안
-  최대 활자이자 최고 휘도였다. 계기 대접은 사용자 **자신의** 볼트가 열렸을
-  때의 것이다. 「지금은 샘플」을 네 번 말하는 화면에서 가장 센 잉크가 그
-  샘플의 크기인 것은 자기모순이었다. 탭 아래 캡션 1행으로 강등했다. 숫자의
-  출처는 바뀌지 않는다(`topologyCanonicalCensus` 파생이 props 로 들어온다).
-  고정 숫자 금지(2026-08-01 원장)는 그대로 지켜진다.
-- **상태 신호는 넷이 아니라 둘이다** (2026-08-02). 「지금 네 데이터가 아니다」를
-  언어 3회 + 색 1회로 말하고 있었다(「첫 실행」 eyebrow · 앰버 점 · 「지금은
-  샘플」 · 리드의 "연습용 읽기 전용 샘플이에요"). 앰버 점을 「지금은 샘플」 옆
-  으로 옮겨 한 클러스터로 묶고, 리드의 중복 절을 지웠다. 「첫 실행」은 다른
-  사실이라 남는다.
-- **첫 접점에 정체성 선언을 되돌렸다** (2026-08-02). 이 카드의 문자열에
-  「에이전트」·「MCP」·「AI」가 0회였는데 앱 전체는 179곳이 쓴다. 굵은 리드
-  ("…한눈에 보는 지도예요")만으로는 다른 마크다운 지도 도구와 구분되지
-  않는다. 새 개념을 도입하지 않고, 투어의 에이전트 단계가 이미 쓰는 어휘로
-  회색 뒤에 한 문장을 붙였다.
-- **샘플 선택은 탭이 아니라 선택 컨트롤이다** (2026-08-02). `role="tab"` 인데
-  클릭이 탭 패널을 바꾸는 게 아니라 카드를 접었고, 이미 선택된 탭을 눌러도
-  접혔다. 전환 시 접히는 동작(2026-07-24 핸드오프 설계)은 유지하고 semantics
-  를 `aria-pressed` 로 바로잡았다. 같은 선택의 재클릭은 무동작.
-- **`⌘O` 배지는 맥에서만 참이다** (2026-08-02). 폴더 열기 단축키는 meta 키에만
-  묶여 있어 Windows/Linux 에는 대응 바인딩이 없다. 웹 관문의 핵심 청중에게
-  없는 키를 광고하지 않도록 비-Apple 플랫폼에서는 배지를 그리지 않는다.
-- **CLI 다리의 문구는 명령이 실제로 하는 일에 맞춘다** (2026-08-02). 라벨이
-  「코드베이스에서 자동으로 시작하려면」(= 내 리포)이었는데 명령은 상대
-  경로라 **실행한 그 폴더**를 훑는다. 명령 자체(CLI 공개 계약)는 별도 PO 패스
-  대기이고, 이번에는 과장만 제거했다.
+- **Instrumentation is not the point** (2026-08-02, PO Council). We used to draw concept/relation/domain counts in inset instrumentation blocks (19px mono semibold), which were the largest font and highest brightness within the card. Instrumentation belongs when the user's **own** vault unlocks. Having the boldest ink on a screen saying "Sample for now" four times be the sample size itself was self-contradictory. It was demoted to one line of caption below the tab. The source of the numbers remains unchanged (`topologyCanonicalCensus` derived data comes in via props).
+  The prohibition on fixed numbers (2026-08-01 Ledger) is still upheld.
+- **Status signals are two, not four** (2026-08-02). "This isn't your data yet" was being communicated via language 3 times + color 1 time ("First Run" eyebrow · amber dot · "Sample for now" · lead's "It's a practice read-only sample"). Moved the amber dot next to "Sample for now" to group them into one cluster, and removed the redundant clause in the lead. "First Run" remains as it conveys a different fact.
+- **Identity declaration reverted at first touchpoint** (2026-08-02). The strings "Agent", "MCP", and "AI" appeared 0 times on this card, while the app uses them in 179 places. Just the bold lead ("...a map at a glance") isn't enough to distinguish it from other markdown mapping tools. Without introducing new concepts, we appended a sentence after the gray background using vocabulary already used by the tour's agent stage.
+- **Sample selection is a select control, not a tab** (2026-08-02). Although `role="tab"`, clicking didn't switch tab panels but collapsed the card, and pressing an already selected tab also collapsed it. The collapsing behavior on transition (2026-07-24 handoff design) is maintained, but semantics were corrected to `aria-pressed`. Re-clicking the same selection results in no action.
+- **`⌘O` badge is only true on Mac** (2026-08-02). The folder open shortcut is bound only to the meta key, so there is no corresponding binding for Windows/Linux. To avoid advertising a key absent from the core audience of web gateways, we do not render the badge on non-Apple platforms.
+- **CLI bridge wording matches what the command actually does** (2026-08-02). The label was "To start automatically from the codebase" (= my repo), but the command uses a relative path and scans **the folder where it was executed**. The command itself (CLI public contract) is pending separate PO pass, so this time we only removed exaggeration.
 
-## 근거
-- src/features/first-run-starter (구현 증거)
-- src/features/first-run-starter/ui/FirstRunStarterModule.tsx (첫 실행 카드 표면)
-- messages/ko.json · messages/en.json 의 `firstRunStarter` 묶음 (카드 문구 단일 출처)
+## Evidence
+- src/features/first-run-starter (implementation evidence)
+- src/features/first-run-starter/ui/FirstRunStarterModule.tsx (first run card surface)
+- messages/ko.json · messages/en.json `firstRunStarter` bundle (single source for card wording)
 
-## 확신도
+## Confidence
 high (0.85)

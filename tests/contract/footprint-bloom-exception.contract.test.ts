@@ -85,8 +85,8 @@ describe("발자국 번짐 — 헌장 예외의 사정거리", () => {
   });
 
   it("헌장 두 문서에 예외가 등재돼 있다 — 코드에만 있으면 다음 사람이 지운다", () => {
-    expect(read(".claude/rules/forbidden.md")).toMatch(/발자국 트레일 번짐/);
-    expect(read(".claude/rules/design.md")).toMatch(/발자국 트레일/);
+    expect(read(".claude/rules/forbidden.md")).toMatch(/footprint-trail bloom/i);
+    expect(read(".claude/rules/design.md")).toMatch(/footprint trail/i);
   });
 
   /**

@@ -11,17 +11,17 @@ created_by: human
 relation_notes: { capabilities/construction-review: Project portfolio owns the human review surface because construction qualification is judged in the matching project detail. }
 ---
 
-## 정의
-하나의 볼트 안에서 여러 project 노드를 목록화·조회·편집·공유하는 관리 영역.
+## Definition
+A management area within a single vault that lists, views, edits, and shares multiple project nodes.
 
-## 근거
-- AGENTS.md: Project overview (project→domain→capability→element 읽기 spine,
-  다중 프로젝트 컨테인먼트)
-- src/features/project-edit, project-quick-edit, project-share (구현 증거)
+## Evidence
+- AGENTS.md: Project overview (project→domain→capability→element reading spine,
+  multi-project containment)
+- src/features/project-edit, project-quick-edit, project-share (implementation evidence)
 
-## 포함 / 제외
-- 포함: 프로젝트 상세/편집기/셀렉터, 빠른 편집, 공유 링크
-- 제외: 프로젝트가 담는 도메인/능력 자체의 의미(그건 각자 도메인)
+## Inclusions / Exclusions
+- Inclusions: Project detail/editor/selector, quick edit, share link
+- Exclusions: The meaning of the domains/capabilities contained within a project (that belongs to each respective domain)
 
-## 확신도
-medium (0.7): AGENTS.md 근거는 간접적, 주로 폴더 증거에 의존. 재검토 권장
+## Confidence
+medium (0.7): AGENTS.md evidence is indirect; relies mainly on folder evidence. Re-review recommended.

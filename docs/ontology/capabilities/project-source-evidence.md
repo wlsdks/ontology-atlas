@@ -10,93 +10,50 @@ path: src/shared/lib/project-source-receipt.ts
 created_by: "agent:codex"
 ---
 
-## 정의
+## Definition
 
-project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가
-선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은
-범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP
-`agent_brief`가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다.
+The ability to connect a single Git repository or local folder to one project node, and compare the implementation paths of capabilities/elements declared by the ontology against actual source lists, leaving versioned categorical receipts. Map datasheets, full details, CLI, and MCP
+`agent_brief` read the same state, recency, first gap, and next action.
 
-연결 자체는 설치 앱·MCP·CLI 세 표면 모두에서 가능하다. `connect_project_source`
-(CLI `connect-source`)는 `rootPath`를 생략하면 볼트를 감싸는 git 저장소를, 없으면
-가장 가까운 조상 매니페스트 폴더를 후보로 지명하고, 노드들이 선언한 `path:`가 그
-후보 안에서 몇 개나 실제로 존재하는지로 신뢰도를 매긴다. 지명과 채점을 나눈 이유는
-`path:`가 저장소 상대 경로라 절대 루트를 지목할 수 없기 때문이다. `confirm: true`
-전에는 아무것도 쓰지 않고, `disconnect_project_source`(CLI `disconnect-source`)가
-되돌린다.
+The connection itself is possible across all three surfaces: installed app, MCP, and CLI. `connect_project_source`
+(CLI `connect-source`) names the git repository wrapping the vault if `rootPath` is omitted, or the nearest ancestor manifest folder if absent, and assigns confidence based on how many of the `path:` values declared by nodes actually exist within that candidate. The reason for naming and scoring separately is that `path:` is a relative path to the repository, so it cannot point to an absolute root. Nothing is written before `confirm: true`, and `disconnect_project_source` (CLI `disconnect-source`) reverts it.
 
-`Git 저장소` 표시는 선택한 소스의 종류이며 GitHub 계정이나 원격 저장소 연결을
-뜻하지 않는다. 절대 경로는 vault-local `.ontology-atlas/project-sources.json`
-sidecar에만 보관하고, 복사 인계와 MCP에는 source-relative witness만 전달한다.
-새 MCP 프로세스는 사람이 연결한 그 비공개 루트에서 설치 앱과 같은 bounded probe만
-다시 실행한다. kind·identity·revision·fingerprint가 모두 같을 때만 `current`, 하나라도
-다르면 `source_changed`다. 권한·파일시스템·Git 실패로 재확인이 불가능할 때만 기존
-영수증을 보존한 채 `unavailable`로 남긴다.
+The `Git repository` indicator denotes the selected source type and does not imply a GitHub account or remote repository connection. Absolute paths are stored only in the vault-local `.ontology-atlas/project-sources.json` sidecar, while copy handoffs and MCP pass only source-relative witnesses. A new MCP process re-executes only bounded probes like installed apps within that private root connected by the user. It is `current` only when kind, identity, revision, and fingerprint all match; if any differ, it is `source_changed`. It remains `unavailable` with the existing receipt preserved only when re-verification is impossible due to permissions, filesystem, or Git failures.
 
-내부 `meaningAssessment:v1` 파생 계약은 구조 readiness, 고정 evaluator와 graph
-hash에 묶인 다섯 competency question receipt의 typed witness, source ID·revision·
-fingerprint·측정 시각과 현재성을 함께 검증한다. 원시 witness는 결과에 복사하지 않고
-categorical 판정과 inventory provenance만 남긴다.
-구조가 ready여도 의미 witness가 비거나 source를 현재 재확인할 수 없으면
-`verified_current`로 승격하지 않는다.
-source receipt 자체가 stale이면 `source_changed → remeasure_source`지만, source는
-`verified_current/current`이고 저장된 competency receipt만 이전 source fingerprint에
-묶였으면 `competency_source_changed → reevaluate_competency`다. 이 경우 source
-차원은 current로 보존하고 전체 의미 상태만 `review_required`로 실패 닫는다.
+The internal `meaningAssessment:v1` derived contract ties structural readiness, a fixed evaluator, and typed witnesses of five competency question receipts bound to the graph hash. It verifies source ID, revision, fingerprint, measurement timestamp, and currentness together. Raw witnesses are not copied into results; only categorical judgments and inventory provenance remain. Even if structure is ready, meaning witness is empty, or the source cannot be re-verified as current, it does not elevate to `verified_current`. If the source receipt itself is stale, it becomes `source_changed → remeasure_source`; however, if the source is `verified_current/current` but only the stored competency receipt is bound to an old source fingerprint, it becomes `competency_source_changed → reevaluate_competency`. In this case, the source dimension remains current, and the overall meaning state closes with failure as `review_required`.
 
-`abilities`와 `evidence`처럼 질문에 `each`가 들어간 자격은 witness 종류가 한 번
-등장했다는 이유만으로 통과하지 않는다. 현재 project→domain→capability containment에서
-대상 집합을 파생해, `abilities`는 모든 domain의 typed capability relation을,
-`evidence`는 모든 capability의 concept/path 근거를 덮어야 `answered`다. 빠진 slug는
-미해소 대상으로 남고 `partial`/`visible-gap`은 계속 유효한 중간 상태다.
+Qualifications containing `each` in questions like `abilities` and `evidence` do not pass merely because a witness type has appeared once. By deriving the target set from current project→domain→capability containment, `abilities` must cover typed capability relations for all domains, and `evidence` must cover concept/path grounds for all capabilities to be `answered`. Missing slugs remain unresolved targets, and `partial`/`visible-gap` remain valid intermediate states.
 
-내부 `constructionQualification:v1`은 이 질문별 판정을 구축 전체의 재실행 계약으로
-확장한다. executive·직원·FDE·agent 시나리오와 사람이 승인한 CQ revision을
-graph/source digest에 묶고, target별 current witness와 supported claim에서 coverage를
-다시 파생한다. semantic·structural·functional·evidence/provenance·pragmatic·
-maintainability·interop 축은 서로 독립이며 하나의 합계로 접지 않는다. source-hidden
-evaluator와 builder는 달라야 하고 마지막 acceptance도 사람이 소유한다. 이 계약은
-vault나 공개 MCP 응답을 쓰지 않는 순수 qualification 경계이며, 실제 lifecycle 연결은
-후속 M1.5가 담당한다.
+The internal `constructionQualification:v1` extends these per-question judgments into a re-execution contract for the entire construction. It binds executive, employee, FDE, and agent scenarios along with user-approved CQ revisions to the graph/source digest, re-deriving coverage from current witnesses and supported claims per target. The semantic, structural, functional, evidence/provenance, pragmatic, maintainability, and interop axes are independent of each other and do not collapse into a single sum. Source-hidden evaluators and builders must differ, and the final acceptance is owned by the user. This contract is a pure qualification boundary that does not use vault or public MCP responses; actual lifecycle connections are handled by subsequent M1.5.
 
-proposal writer와 finalizer는 source witness의 의미도 공유한다. project Markdown의
-정확한 `## Competency answers` 절에서 renderer가 만든 backtick `Evidence`/`Paths`만
-canonical `path:`와 함께 source claim으로 파생하고, 앱과 MCP가 같은 집합을 만든다.
-임의 본문 파일명은 claim이 아니며 안전하지 않거나 형식이 깨진 경로는 빈 집합으로
-실패 닫는다. 따라서 승인한 write plan의 근거는 source receipt→finalize→새
-`agent_brief`까지 유지되지만, 실제 source inventory에 없는 경로는 끝까지 미지원이다.
+The proposal writer and finalizer also share the meaning of source witnesses. From the exact `## Competency answers` section in project Markdown, the renderer derives backtick `Evidence`/`Paths` as source claims along with canonical `path:`, ensuring the app and MCP generate the same set. Arbitrary body filenames are not claims; paths that are unsafe or malformed close with failure as an empty set. Thus, grounds for the approved write plan persist from source receipt → finalize → new `agent_brief`, but paths not in the actual source inventory remain unsupported to the end.
 
-## 근거
+## Grounds
 
-- `src/shared/lib/project-source-receipt.ts`: 영수증·현재성·빈틈·인계 계약
-- `src/views/home/model/use-project-source-model.ts`: 선택·측정·원자적 저장·재측정
-- `src-tauri/src/lib.rs`: Git tracked/unignored inventory와 bounded fingerprint
-- `mcp/src/project-source-inspection.mjs`: 앱 fingerprint를 재현하는 비공개 로컬 probe
-- `mcp/src/project-source-receipt.mjs`: private path를 제거한 `agent_brief` read model + sidecar 쓰기/제거
-- `mcp/src/project-source-mint.mjs`: 앱·CLI·MCP가 공유하는 순수 영수증 발행
-- `mcp/src/project-source-discovery.mjs`: 볼트 위치에서 소스 루트를 지명하는 bounded walk
-- `mcp/src/project-source-inference.mjs`: 후보 순위·신뢰도·이유의 순수 정본
-- `mcp/src/project-source-remedy.mjs`: 진단 action id → 실행 가능한 도구/명령/되돌리기
+- `src/shared/lib/project-source-receipt.ts`: Receipt, currentness, gap, and handoff contracts
+- `src/views/home/model/use-project-source-model.ts`: Selection, measurement, atomic storage, and re-measurement
+- `src-tauri/src/lib.rs`: Git tracked/unignored inventory and bounded fingerprint
+- `mcp/src/project-source-inspection.mjs`: Private local probe reproducing app fingerprint
+- `mcp/src/project-source-receipt.mjs`: `agent_brief` read model with private paths removed + sidecar write/removal
+- `mcp/src/project-source-mint.mjs`: Pure receipt issuance shared by app, CLI, and MCP
+- `mcp/src/project-source-discovery.mjs`: Bounded walk naming source root from vault location
+- `mcp/src/project-source-inference.mjs`: Pure ground for candidate ranking, confidence, and rationale
+- `mcp/src/project-source-remedy.mjs`: Diagnostic action id → executable tool/command/rollback
 - `mcp/src/project-meaning-evidence.mjs` · `src/shared/lib/project-meaning-evidence.ts`:
-  persisted competency source witness의 MCP·앱 동형 파생
-- `mcp/src/project-meaning-inventory.mjs`: source receipt와 finalizer가 공유하는
-  scoped evidence admission
-- `mcp/src/meaning-assessment.mjs`: 수치 없이 false-green을 닫는 순수 의미 판정 정본
-- `mcp/src/competency-coverage.mjs`: proposal과 새 프로세스 receipt가 공유하는
-  quantified target/covered/uncovered 판정
-- `mcp/src/construction-qualification.mjs`: 사람 소유 CQ·target별 근거·exact claim/citation
-  ledger·일곱 품질 축·source-hidden task를 합계 없이 판정하는 순수 계약
-- `tests/fixtures/construction-qualification/qualified.json`: 네 사용자군과 일곱 축을
-  모두 실행하는 portable digest-bound 대표 packet
+  MCP/app isomorphic derivation of persisted competency source witness
+- `mcp/src/project-meaning-inventory.mjs`: Scoped evidence admission shared by source receipt and finalizer
+- `mcp/src/meaning-assessment.mjs`: Pure meaning judgment ground closing false-green without numbers
+- `mcp/src/competency-coverage.mjs`: Quantified target/covered/uncovered judgment shared by proposal and new process receipt
+- `mcp/src/construction-qualification.mjs`: Pure contract judging user-owned CQ, per-target grounds, exact claim/citation ledger, seven quality axes, and source-hidden tasks without summing
+- `tests/fixtures/construction-qualification/qualified.json`: Portable digest-bound representative packet executing all four user groups and seven axes
 
-## 경계
+## Boundary
 
-- 저장소 전체 정답률이나 숫자형 confidence를 주장하지 않는다.
-- 한 project에 활성 소스는 최대 하나이며 중복 binding은 명시적 교체로만 복구한다.
-- 추정은 제안까지다. 자동으로 확정하지 않는다. 틀린 루트가 `verified_current`를
-  주장하는 영수증을 찍으면 `finalize_project_meaning`이 그것을 믿기 때문이다.
-- 프로젝트 스코프가 불완전해 project graph hash를 못 찍으면 연결을 fail-closed 한다.
-- 폴더 선택 취소·측정 실패·저장 실패는 기존 binding과 receipt를 보존한다.
-- 현재 source와 오래된 competency provenance를 같은 source 결함으로 합치지 않는다.
-- 재평가는 기존 typed witness를 자동 승인하거나 write/finalize하지 않으며 사람 승인을 유지한다.
-- 대표 qualification fixture는 계약 실행 증거일 뿐 세 실제 제품의 품질 증거가 아니다.
+- Does not claim repository-wide accuracy or numeric confidence.
+- A project has at most one active source; duplicate bindings are recovered only via explicit replacement.
+- Estimation extends only to proposal. It does not auto-confirm. If a wrong root issues a receipt claiming `verified_current`, `finalize_project_meaning` will trust it.
+- If the project scope is incomplete and cannot produce a project graph hash, connections fail-closed.
+- Folder deselection, measurement failure, or storage failure preserve existing binding and receipt.
+- Does not conflate current source with old competency provenance as a single source defect.
+- Re-evaluation does not auto-approve existing typed witnesses nor write/finalize; it maintains user approval.
+- Representative qualification fixture is evidence of contract execution, not quality evidence for three actual products.

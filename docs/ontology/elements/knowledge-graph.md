@@ -8,4 +8,4 @@ path: src/entities/knowledge-graph
 created_by: "agent:unknown"
 ---
 
-그래프 노드/엣지 자료구조 엔티티. capabilities/vault-ontology 의 구현 증거.
+Graph node/edge data structure entity. Evidence of implementation for capabilities/vault-ontology.

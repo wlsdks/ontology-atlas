@@ -8,4 +8,4 @@ path: src/entities/ontology-class
 created_by: "agent:unknown"
 ---
 
-kind별 스키마 클래스 정의 엔티티. capabilities/vault-ontology 의 구현 증거.
+Kind-specific schema class definition entity. Evidence of implementation for capabilities/vault-ontology.

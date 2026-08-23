@@ -57,14 +57,14 @@ function render(result) {
   const sc = diagnosisStatusColor(status, COLORS);
   process.stdout.write(
     `${COLORS.bold}workspace brief${COLORS.reset} ${sc}${status}${COLORS.reset}` +
-      ` ${COLORS.dim}· ${sum.nodes ?? 0} 노드 · ${sum.edges ?? 0} 관계` +
-      ` · ${sum.projects ?? 0} 프로젝트 · ${sum.domains ?? 0} 도메인${COLORS.reset}\n\n`,
+      ` ${COLORS.dim}· ${sum.nodes ?? 0} nodes · ${sum.edges ?? 0} relations` +
+      ` · ${sum.projects ?? 0} projects · ${sum.domains ?? 0} domains${COLORS.reset}\n\n`,
   );
 
   // Hotspots (highest degree)
   const hotspots = Array.isArray(result?.hotspots) ? result.hotspots : [];
   if (hotspots.length > 0) {
-    process.stdout.write(`${COLORS.dim}HOTSPOTS${COLORS.reset} ${COLORS.dim}(degree 상위)${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}HOTSPOTS${COLORS.reset} ${COLORS.dim}(highest degree)${COLORS.reset}\n`);
     for (let i = 0; i < Math.min(hotspots.length, 5); i += 1) {
       const h = hotspots[i];
       const kc = KIND_COLORS[h.kind] || COLORS.dim;
@@ -81,13 +81,13 @@ function render(result) {
   // Projects summary
   const projects = result?.projects?.maps ?? [];
   if (projects.length > 0) {
-    process.stdout.write(`${COLORS.dim}PROJECT별 포함 노드 수 (project_scope)${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}NODES PER PROJECT (project_scope)${COLORS.reset}\n`);
     for (const p of projects) {
       const pn = p.node?.title || p.project;
       const ps = p.summary ?? {};
       process.stdout.write(
         `  ${COLORS.magenta}${pn.padEnd(30)}${COLORS.reset}` +
-          ` ${COLORS.dim}${ps.nodes ?? 0} 노드 · ${ps.domains ?? 0} 도메인 · ${ps.capabilities ?? 0} 역량 · ${ps.elements ?? 0} 요소${COLORS.reset}\n`,
+          ` ${COLORS.dim}${ps.nodes ?? 0} nodes · ${ps.domains ?? 0} domains · ${ps.capabilities ?? 0} capabilities · ${ps.elements ?? 0} elements${COLORS.reset}\n`,
       );
     }
     process.stdout.write('\n');
@@ -176,7 +176,7 @@ function printUsage(stream = process.stderr) {
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N] [--limit N]\n\n` +
-      `first-contact dashboard: status + hotspots + project_scope 포함 노드 요약 + next actions.\n` +
+      `first-contact dashboard: status + hotspots + project_scope containment summary + next actions.\n` +
       `--limit is a first-contact alias for --node-limit so agent_brief CLI fallbacks run directly.\n` +
       `Use --json for repeatable first-contact snapshots such as pnpm dogfood:brief.\n` +
       `Use pnpm dogfood:health first when you only need the fail-closed health gate.\n` +

@@ -15,271 +15,100 @@ display_en: AI Connection Server
 
 # MCP Server
 
-로컬 마크다운 볼트를 AI 코딩 에이전트가 읽고 안전하게 갱신하도록 제공하는
-stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 진실원으로 사용하며,
-서버는 별도 데이터베이스나 모델 실행 루프를 소유하지 않는다.
+It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop.
 
-## 사용자 결과
+## User Outcomes
 
-- 에이전트는 프로젝트의 의미 노드를 정확히 찾고, 관계·근거·영향 범위를 함께 읽는다.
-- 연결 직후 실제 vault/repository 좌표와 도구 인벤토리를 확인해 잘못된 폴더나 오래된
-  클라이언트 상태를 발견한다.
-- 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된
-  오류와 dry-run으로 차단한다.
+- The agent accurately finds meaning nodes in the project and reads relationships, evidence, and impact scope together.
+- Upon connection, it verifies actual vault/repository coordinates and tool inventory to detect incorrect folders or stale client states.
+- Before writing, it reads the current document and blocks concurrent edits, duplicates, broken relationships, and destructive changes with structured errors and dry-runs.
 
-## 활성 도구 인벤토리 계약
+## Active Tool Inventory Contract
 
-- 도구의 현재 집합은 `mcp/src/index.js`의 registry에 annotation과 read-only filter를
-  적용한 `TOOLS_FOR_LIST`다. `tools/list`와 initialize의 `Tool inventory` 절은 같은
-  배열에서 파생되며, 다른 문서가 숫자나 전체 이름 목록을 다시 소유하지 않는다.
-- read-only 서버는 write 도구를 광고하지도, 초기 안내에 노출하지도 않는다. 전체
-  모드와 read-only 모드 모두 header count와 read/write 이름 집합이 실제
-  `tools/list`와 정확히 같아야 한다.
-- `mcp-verify`는 live `tools/list`와 initialize 안내의 count·분류·이름 집합을
-  독립적으로 비교한다. 문서와 설정 화면은 `tools/list`와 `mcp-verify`를 안내하며
-  변하기 쉬운 고정 count를 사용자에게 약속하지 않는다.
+- The current set of tools is `TOOLS_FOR_LIST`, which applies annotations and a read-only filter to the registry in `mcp/src/index.js`. Both the `Tool inventory` section of `tools/list` and initialize derive from the same array, so no other document owns a numeric or full name list.
+- A read-only server advertises neither write tools nor exposes them in its initial announcement. In both full mode and read-only mode, the header count and the set of read/write names must exactly match those in `tools/list`.
+- `mcp-verify` independently compares the live `tools/list` with the counts, classifications, and name sets in the initialize announcement. Documents and configuration screens reference `tools/list` and `mcp-verify`, avoiding promises to users about mutable fixed counts.
 
-## 정체성 경계
+## Identity Boundaries
 
-- `uid`는 rename 뒤에도 유지되는 영구 기계 정체성이고, `slug`는 사람이 읽고
-  편집하는 현재 주소다. 모든 노드 응답은 둘을 함께 반환한다.
-- exact read와 외부 interop 정체성은 UID를 사용할 수 있다. 마크다운 관계, URL,
-  그래프 연산 입력은 slug를 유지한다.
-- rename/reclassify는 UID를 보존한다. merge는 대상 UID를 보존하고 흡수한 UID를
-  `merged_uids`에 기록한다. 일반 patch는 `uid`와 `merged_uids`를 바꿀 수 없다.
-- `find_evidence`는 모든 검색 행에 `isNode`를 실어 그래프 노드와 일반
-  마크다운을 구분한다. `isNode:true`인 행만 영구 `uid`와 `kind`를 의무적으로
-  가지며, 일반 문서는 두 필드를 꾸며 내지 않는다. `nodesOnly:true`는 노드만 필요한
-  handoff를 위한 명시적 필터이고 기본 검색은 로컬 문서 근거를 숨기지 않는다.
+- `uid` is the permanent machine identity that persists across renames, while `slug` is the human-readable and editable current address. All node responses return both.
+- Exact reads and external interop identities may use UIDs. Markdown relations, URLs, and graph operation inputs maintain slugs.
+- rename/reclassify preserves the UID. merge preserves the target UID and records the absorbed UID in `merged_uids`. Standard patches cannot alter `uid` or `merged_uids`.
+- `find_evidence` includes `isNode` in all search rows to distinguish graph nodes from standard Markdown. Only rows with `isNode:true` are required to have permanent `uid` and `kind`; standard documents do not fabricate these fields. `nodesOnly:true` is an explicit filter for handoffs requiring only nodes, while default searches do not hide local document evidence.
 
-## 온톨로지 구축 lifecycle
+## Ontology Construction Lifecycle
 
-`analyze_repo_structure`의 complete proposal은 바로 쓰기 권한이 아니다. 첫 호출은
-정확한 `reviewPlan`과 plan/source digest, 여덟 단계 상태, 남은 gap id만 반환하고
-`canWrite:false`를 유지한다. maker와 분리된 evaluator가 사람 owner의 CQ, current
-claim/citation, 일곱 품질축, 전체 source-hidden task, cold-start 또는 이전 CQ regression을
-실행한 뒤 사용자가 그 exact plan과 gap을 승인해야 한다. 같은 proposal과 digest-bound
-`constructionQualification:v1` packet을 다시 제출했을 때만 처음 본 rows와 동일한
-`writePlan`이 풀린다. source/plan drift, maker-only, `not_measured`, red mandatory axis,
-regression 실패, 승인되지 않은 gap은 fail-closed다. 같은 응답의 `admission`은
-shadow-only로 `self_qualified`, `partial_visible_gap`, `human_review_required`,
-`hard_block`을 분류한다. `self_qualified`는 독립 근거가 모두 통과한 자동 반영 후보
-신호일 뿐이며, 실제 write는 기존 사람 승인·digest-bound `writePlan` gate를 우회하지
-않는다. 측정된 기능 공백은 부분 상태로 보이고, 정책·소유권·도메인 경계·충돌은 사람
-검토, stale·unsupported·비독립 평가·source-hidden/회귀 실패는 hard block으로 남는다.
-각 qualification claim은 현재 `reviewPlan`의 exact `concept:`·`relation:`·`competency:`·
-`impact:` 행을 가리키는 `proposalRefs`를 가져야 하며, lifecycle의
-`proposalCoverage`가 누락·외부 proposal·source-hidden 미검증 행을 fail-closed로
-분류한다. 이는 evaluator handoff의 대상 일치를 보장하는 receipt이지 claim의
-사업적 진실을 자동 승인하는 점수나 의미 판정은 아니다.
+The complete proposal from `analyze_repo_structure` is not immediate write permission. The first call returns only the exact `reviewPlan`, plan/source digest, eight-stage status, remaining gap IDs, and maintains `canWrite:false`. An evaluator separated from the maker executes human owner CQ, current claim/citation, seven quality axes, full source-hidden tasks, cold-start, or previous CQ regression. The user must then approve this exact plan and gaps. Only upon resubmitting the same proposal and digest-bound `constructionQualification:v1` packet will the identical `writePlan` be revealed for rows seen initially. Source/plan drift, maker-only status, `not_measured`, red mandatory axis, regression failure, or unapproved gaps result in a fail-closed state. The `admission` within the same response classifies shadow-only states as `self_qualified`, `partial_visible_gap`, `human_review_required`, and `hard_block`. `self_qualified` is merely a signal of an automatic reflection candidate where all independent evidence passed; actual writes do not bypass existing human approval or digest-bound `writePlan` gates. Measured feature gaps appear in partial state, while policy/ownership/domain boundaries/conflicts remain for human review, and stale/unsupported/non-independent evaluations/source-hidden/regression failures remain hard blocks. Each qualification claim must include `proposalRefs` pointing to the exact `concept:`, `relation:`, `competency:`, and `impact:` rows of the current `reviewPlan`, with lifecycle `proposalCoverage` classifying missing/external proposal/source-hidden unverified rows as fail-closed. This is a receipt ensuring target matching for evaluator handoff, not a score or semantic judgment automatically approving the business truth of the claim.
 
-승인은 선언된 provenance이며 신원 인증이나 truth certificate가 아니다. project Markdown은
-기존 competency answer/witness/visible gap을, finalizer receipt는 그 body와 current
-graph/source 결합을 영속한다. 상세 CQ revision·axis·exact gap acceptance·pre-write
-regression은 MCP 응답/agent transcript의 실행 증거이고 재시작 뒤 자동 복원됐다고 말하지
-않는다. 새 tool·kind·sidecar·writer token은 만들지 않는다.
+Approval is declared provenance, not identity verification or a truth certificate. Project Markdown persists existing competency answers/witnesses/visible gaps; the finalizer receipt persists its body and current graph/source combination. Detailed CQ revision, axes, exact gap acceptance, and pre-write regression are execution evidence in MCP responses/agent transcripts and do not claim automatic restoration after restart. No new tools, kinds, sidecars, or writer tokens are created.
 
-## 소스 연결
+## Source Connection
 
-`connect_project_source` / `disconnect_project_source`는 project 노드를 그것이
-설명하는 로컬 코드 폴더에 묶고 푼다. 이전에는 `agent_brief`가 `connect_source`를
-다음 행동으로 내놓으면서 그것을 실행할 도구가 없었다. 설치된 macOS 앱의 폴더
-선택기가 유일한 경로였다. 두 도구 모두 `confirm: true` 전에는 아무것도 쓰지 않고,
-절대 루트는 gitignore된 `.ontology-atlas/project-sources.json`에만 남는다.
+`connect_project_source` / `disconnect_project_source` bind and unbind project nodes to/from the local code folder they describe. Previously, `agent_brief` would output `connect_source` as the next action without a tool to execute it; the only path was the macOS app's folder picker. Both tools write nothing before `confirm: true`, leaving the absolute root only in gitignored `.ontology-atlas/project-sources.json`.
 
-## 핵심 흐름
+## Core Flow
 
-1. `connection_info` → `list_kinds` / `list_concepts` → `validate_vault`로 연결과
-   볼트 상태를 먼저 확인한다.
-2. `get_concept` / `get_concepts`와 graph query 도구로 의미·근거·경로·영향을
-   필요한 범위만 읽는다.
-3. 새 의미 후보는 코드 증거와 중복 여부를 검토하고 사용자가 승인한 것만 쓴다.
-4. 기존 노드 쓰기는 직전 `mtime`을 전달한다. rename/merge/delete 같은 파괴적
-   작업은 preview 후 명시 확인한다.
-5. 변경 뒤 `validate_vault`, compile, health/maintenance 흐름으로 그래프를 재검증한다.
+1. Connect `connection_info` → `list_kinds` / `list_concepts` → `validate_vault` to check connection and vault status first.
+2. Read only the necessary scope of meaning, evidence, paths, and impacts using `get_concept` / `get_concepts` and graph query tools.
+3. Review new meaning candidates for code evidence and duplication, writing only those approved by the user.
+4. Pass the previous `mtime` for existing node writes. Destructive operations like rename/merge/delete require explicit confirmation after preview.
+5. After changes, re-validate the graph via `validate_vault`, compile, and health/maintenance flows.
 
-설치 앱이 사람이 선택한 소스 루트를 sidecar에 묶은 뒤에는 새 MCP 프로세스도 앱과
-같은 bounded fingerprint를 로컬에서 재현한다. 저장 영수증과 정확히 일치할 때만
-source currentness를 `current`로 읽고, 변경은 `source_changed`로 실패 닫는다. 비공개
-절대 경로와 원시 source inventory는 MCP 응답에 포함하지 않는다.
+After the installed app binds a human-selected source root to the sidecar, new MCP processes reproduce the same bounded fingerprint locally. Source currentness is read as `current` only when matching the storage receipt exactly; changes fail-closed as `source_changed`. Private absolute paths and raw source inventory are not included in MCP responses.
 
-repository proposal이 competency를 `answered`로 서명할 때는 필요한 witness 배열이
-비어 있지 않은지만 보지 않는다. `abilities`는 제안된 모든 domain을 typed
-domain→capability witness가 덮는지, `evidence`는 모든 capability slug와 canonical
-path가 함께 인용됐는지 검사한다. 일부만 덮으면 누락 target slug를 구조화된 오류로
-돌려주며 write plan을 만들지 않는다. 정직한 `partial`/`visible-gap` proposal은 계속
-검토·저장할 수 있다.
+When a repository proposal signs competency as `answered`, it only checks that the required witness array is not empty. It verifies that `abilities` cover all proposed domains via typed domain→capability witnesses, and that `evidence` cites every capability slug and canonical path together. If only some are covered, it returns a structured error with the missing target slugs and does not create a write plan. Honest `partial`/`visible-gap` proposals can still be reviewed and stored.
 
-project purpose·proposed domain·project→domain relation이 confidence 0.8 이상이거나
-`scope`·`domains`가 `answered`이면 서로 다른 current semantic source 두 개가 그
-주장의 비일반 의미를 실제로 지지해야 한다. 목적은 두 출처가 목적 주장에 맞아야 하고,
-도메인은 두 출처가 각각 domain 이름과 명시적 responsibility 문장을 가져야 한다.
-같은 문장을 복제한 문서, 무관한 trusted
-문서, roadmap·negated/deprecated 근거, package manifest와 implementation path는 두 번째
-의미 권위로 세지 않는다. 한 근거만 있는 경우 confidence 0.8 미만과 명시적 `partial`
-gap으로 남기면 검토 가능하지만, 고신뢰·완료 응답으로 과장하면 review/write plan 전에
-실패 닫는다. analyzer도 프로젝트 정체성 문장을 뒤쪽 feature 문장보다 우선하고,
-domain은 별도 product/architecture responsibility 문장이 있을 때만 corroborated 후보로
-표시한다. implementation element는 domain 이름과 겹치거나 후보가 하나뿐이어도 역할
-근거 없이 자동 귀속하지 않고 project-scoped evidence로 남긴다.
+If project purpose, proposed domain, or project→domain relation has confidence ≥0.8, or `scope`/`domains` are `answered`, two distinct current semantic sources must actually support the non-literal meaning of that claim. The purpose requires both sources to align with the purpose claim; domains require both sources to provide a domain name and an explicit responsibility sentence. Duplicated text across documents, unrelated trusted documents, roadmap/negated/deprecated evidence, package manifests, and implementation paths do not count as a second semantic authority. If only one source exists, it remains below confidence 0.8 with an explicit `partial` gap (reviewable), but inflating it to high-confidence/completed causes failure before review/write plan. The analyzer also prioritizes project identity sentences over later feature sentences, and marks domains as corroborated candidates only when separate product/architecture responsibility sentences exist. Implementation elements overlapping domain names or having only one candidate are not auto-assigned roles but remain as project-scoped evidence.
 
-README의 앞 1,200자를 그대로 자르지 않는다. heading-scoped block에서 purpose,
-responsibility/architecture, ability/capability prose를 각각 보존하고 sponsor/backer/
-funding/donation/TOC 및 link/image-only 장식을 구조적으로 제외한 뒤 원문 순서로 전달한다.
-기존 문서당 1,200자·heading 8개·packet 6문서·읽기 전 256 KiB 상한은 바꾸지 않는다.
-`Excludes`에는 source가 말하는 제품/개념 경계만 둔다. “아직 증명되지 않음”이나
-“bounded scan 밖”은 `Uncertainty`/competency gap이며, proposal이 이를 exclusion으로
-넣으면 `epistemic-exclusion-boundary`로 write plan 전에 막는다.
+Do not blindly truncate the first 1,200 characters of README. Preserve purpose, responsibility/architecture, and ability/capability prose within heading-scoped blocks, structurally excluding sponsor/backer/funding/donation/TOC and link/image-only decorations, then pass them in original order. Do not change the existing limits: 1,200 chars/doc, 8 headings/doc, 6 docs/packet, and 256 KiB pre-read cap. `Excludes` should contain only product/concept boundaries stated by the source. "Not yet proven" or "outside bounded scan" are `Uncertainty`/competency gaps; if a proposal includes these as exclusions, block them via `epistemic-exclusion-boundary` before write plan.
 
-Cold-start 의미 근거는 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/` 아래에서
-분류된 current Markdown도 기존 `semanticEvidence` packet으로 운반한다. 세 root 전체에서
-Markdown 200개·directory entry 1,000개까지만 탐색하고, 일반 의미 문서는 읽기 전
-256 KiB에서 멈춘다. 실제 경로가 같은 directory는 한 번만 방문하며 archive류와
-끊어졌거나 repository 밖인 symlink는 제외한다. 최종 packet의 6문서·문서당 1,200자 경계는 유지한다.
-Proposal이 들어온 같은 호출은 기존 read-only import receipt도 다시 계산해 TS/JS/Python
-file endpoint와 Go의 importing-file/package-directory endpoint 및 방향을 검증한다. 이
-문서와 경로는 evidence/provenance일 뿐 business
-meaning이나 `depends_on`을 자동 승인하지 않으며, maker-independent qualification과 사람의
-exact-plan 승인이 없으면 `writePlan`을 열지 않는다.
-관계 rationale이 양끝 concept의 정확한 repository `path:`를 직접 이름 붙이면 같은 관계의
-evidence에도 그 경로가 있어야 한다. 다른 문서만 인용한 경우
-`relation-path-citation-mismatch`로 실패 닫으며, 경로를 언급하지 않은 일반 의미 문장은
-파일명을 추측해 차단하지 않는다.
+Cold-start semantic evidence is carried by existing `semanticEvidence` packets from classified current Markdown under root `ARCHITECTURE.md`, `docs/`, `site/`, and `website/`. Explore up to 200 Markdown files and 1,000 directory entries across all three roots, stopping at 256 KiB pre-read for general semantic documents. Visit each actual path in the same directory only once; exclude archives and symlinks that are broken or outside the repository. Maintain the final packet limit of 6 docs and 1,200 chars/doc. For proposals arriving in the same call, recalculate existing read-only import receipts to verify TS/JS/Python file endpoints and Go importing-file/package-directory endpoints and directions. These documents and paths serve as evidence/provenance only; they do not auto-approve business meaning or `depends_on`. Without maker-independent qualification and human exact-plan approval, do not open `writePlan`. If relationship rationale directly names the exact repository `path:` of both endpoint concepts, that path must also appear in evidence for the same relationship. Fail closed with `relation-path-citation-mismatch` if only other documents are cited; do not block general semantic sentences by guessing filenames.
 
-fresh `agent_brief`가 current source와 incomplete competency를 함께 읽으면 첫
-`nextActions`를 `review_competency_repair`로 올린다. 연결된 `meaningRepair:v2` compact
-manifest는 disposition count,
-provenance, `reviewRevision`, 첫 `meaning_repair_review` 호출만 담고, 별도
-`meaningRepairReviewPage:v1`이 현재 project Markdown 선언, typed containment가 만든
-구조 검토 후보, current source receipt가 직접 지지한 canonical-path 후보, 아직
-미해결인 대상 전체를 운반한다.
-containment와 path 존재는 사람의 의미 승인이나 행동 증명이 아니므로 후보를 자동으로
-`answered`로 바꾸거나 쓰지 않는다. source/provenance/scope/validation/mtime이 흔들리면
-기존 source·health 행동을 보존한 채 repair를 차단한다. 첫 review read는 project,
-domain, capability의 정확한 합집합을 결정적·무상태 cursor로 나눈다. 각 page는 최대
-20개이면서 JSON 5 KiB 이하이고 같은 대상의 literal `get_concepts(body:"full")` 호출을
-제공한다. `reviewRevision`은 graph/source/typed row/mtime을 결박하며 verifier는 마지막
-page까지 누락·중복·순서·크기·현재성뿐 아니라 각 full-body의 kind·mtime·비절단 여부와
-source/bundle parity를 검사한다.
+When a fresh `agent_brief` reads current source and incomplete competency together, set the first `nextActions` to `review_competency_repair`. The connected `meaningRepair:v2` compact manifest contains only disposition count, provenance, `reviewRevision`, and the first `meaning_repair_review` call; a separate `meaningRepairReviewPage:v1` carries current project Markdown declarations, structural review candidates from typed containment, canonical-path candidates directly supported by current source receipts, and all unresolved targets. Containment and path existence are not human semantic approval or action proof, so do not auto-convert candidates to `answered` or write them. If source/provenance/scope/validation/mtime is unstable, block repair while preserving existing source/health behavior. The first review read splits project, domain, and capability into deterministic, stateless cursors by their exact union. Each page has max 20 items, ≤5 KiB JSON, and provides literal `get_concepts(body:"full")` calls for the same target. `reviewRevision` binds graph/source/typed row/mtime; the verifier checks missing/duplicate/order/size/recency up to the last page, plus kind/mmtime/non-truncation of each full-body and source/bundle parity.
 
-Python cold start에서는 `README.rst`, 실행하지 않는 정적 `setup.py` package
-contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer_imports`는
-그 package의 정적 import를 file/module edge로 축약한다. 이 결과는 구현 증거이며,
-domain·capability·의미 `depends_on`으로 자동 승격하지 않는다. 각 module edge에는
-최대 5개의 정확한 file-edge 영수증과 나머지 근거 존재 여부가 붙는다. vault에 없는
-edge도 실행 가능한 `proposedAction` 대신 `rationale_review_required`로 반환한다.
-구현 경로를 이미 알면 `focusPath` 또는 `reviewMode:"focus"`를 먼저 쓴다. 이 모드는
-loadable vault 없이도 그 파일의 정확한 incoming/outgoing static import 수와 최대 100개
-영수증, stateless cursor를 반환한다. 빈 결과도 영향 없음으로 말하지 않고 symbol·test·dynamic
-behavior와 ontology meaning이 아직 별도 확인 대상임을 고정한다.
-`reviewMode`를 생략하면 예상 MCP 전체 응답(text와 structured content)이 128 KiB 이하일
-때만 기존 전체 graph를 반환한다. 그보다 큰 reconciled scan은 전체 배열 대신 검토 후보
-한 건, 정확한 근거, 양쪽 개념·relation preflight 호출, 중단 조건, stateless cursor와
-자동 선택 이유·예상 byte를 담은 `delivery` receipt만 반환한다. `reviewMode:"next"`는
-같은 compact packet을 명시적으로 요청한다. `reviewMode:"full"`은 전체 shape를
-보존하지만 128 KiB를 넘으면 `allowLargeResponse:true`라는 두 번째 확인이 있어야 한다.
-reconciliation할 loadable vault가 없는 oversized 생략 호출은
-안전한 packet을 가장하지 않고 두 복구 선택을 구조화된 오류로 반환한다. `index_project`의
-내부 분석은 explicit full로 고정해 이 전달 기본값이 기존 plan 의미를 바꾸지 않는다.
-각 근거는 제품/테스트 코드와 값/타입 전용 사용을 분리하고, module
-edge는 bounded sample이 아니라 전체 import에서 두 차원의 count와 교집합인
-`productValueCount`를 계산한다. JS/TS의 명시적 type import와 Python의 명시적
-`TYPE_CHECKING` guard 안 import는 type-only다. `value`는 그 밖의 정적 import라는
-뜻이지 runtime 실행을 주장하지 않는다. 제품 코드의 값 사용이 0건이면 테스트·타입 근거를
-숨기지 않되 그 import만으로 제품 `depends_on` 승인을 묻지 않고 별도 제품 의미
-근거를 요구한다. 그 밖에도 에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한
-뒤 사람에게 물어야 하며, 승인된 한 건만 비어 있지 않은 `why`와 함께 기록한다.
+In Python cold start, read `README.rst`, non-executed static `setup.py` package contract, and top-level `__init__.py` package as bounded evidence. `infer_imports` condenses static imports from that package into file/module edges. This result is implementation evidence; do not auto-promote to domain/capability/semantic `depends_on`. Each module edge carries up to 5 exact file-edge receipts and presence of other evidence. Edges not in the vault return `rationale_review_required` instead of executable `proposedAction`. If the implementation path is already known, use `focusPath` or `reviewMode:"focus"` first. This mode returns exact incoming/outgoing static import counts (up to 100 receipts) and a stateless cursor for that file without a loadable vault. Empty results do not imply no impact; they fix symbol/test/dynamic behavior and ontology meaning as still pending separate confirmation. If `reviewMode` is omitted, return the existing full graph only when expected MCP total response (text + structured content) is ≤128 KiB. For larger reconciled scans, return only one review candidate, exact evidence, preflight calls for both concepts/relations, stop conditions, stateless cursor, and a `delivery` receipt with auto-selection reason/expected bytes instead of the full array. `reviewMode:"next"` explicitly requests this compact packet. `reviewMode:"full"` preserves the full shape but requires a second confirmation `allowLargeResponse:true` if exceeding 128 KiB. Oversized omission calls without a loadable vault for reconciliation return structured errors with two recovery options instead of faking safe packets. Internal analysis of `index_project` fixes explicit full to ensure this delivery default does not change existing plan meaning. Separate product/test code and value/type-only usage per evidence; calculate `productValueCount` (intersection of two-dimensional counts across all imports, not bounded samples) for module edges. Explicit type imports in JS/TS and imports inside Python's explicit `TYPE_CHECKING` guard are type-only. `value` means other static imports, not claiming runtime execution. If product code value usage is 0, do not hide test/type evidence but do not ask that import alone to approve product `depends_on`; require separate product meaning evidence. Additionally, the agent must read both concepts and direction, explain semantic rationale, and ask the human; record only one approved item with a non-empty `why`.
 
-Root `go.mod`가 있는 Go 저장소는 compiler·`go list`·module cache·network를 실행하지
-않고 module-local import만 bounded text로 읽는다. 기존 file edge에 package directory를
-섞거나 임의의 target file을 만들지 않고, 별도 `goPackageImports:v1` receipt가 importing
-file과 repository-relative source/target package directory, literal import spec,
-production/test role을 보존한다. 전체 scan은 기존 file cap을 공유하고 각 Go file은
-256 KiB·256 imports에서 멈추며 nested module과 외부 module은 범위 밖이라고 명시한다.
-다중행 raw string 속 import 모양 텍스트와 `vendor`/`testdata`/underscore-prefixed
-fixture tree는 Go build 경계 밖 근거로 제외한다.
-Analyzer는 production/value import 참여가 큰 package directory를 최대 24개 implementation
-element/path 후보로 전달할 뿐, 폴더 이름을 domain이나 capability로 승격하거나 package
-edge를 의미 `depends_on`으로 자동 승인하지 않는다. compact/focus 응답은 package evidence
-건수와 explicit full-evidence 호출을 남겨 대형 graph가 조용히 사라지지 않게 한다.
+Go repositories with a root `go.mod` read module-local imports as bounded text without running compiler, `go list`, module cache, or network. Do not mix package directories into existing file edges or fabricate arbitrary target files; instead, preserve importing file and repository-relative source/target package directory, literal import spec, and production/test role in a separate `goPackageImports:v1` receipt. Full scans share existing file caps; each Go file stops at 256 KiB/256 imports; nested and external modules are explicitly out of scope. Exclude import-like text inside multi-line raw strings and `vendor`/`testdata`/underscore-prefixed fixture trees as evidence outside Go build boundaries. The analyzer passes package directories with high production/value import participation as up to 24 implementation element/path candidates only; do not promote folder names to domain/capability or auto-approve package edges as semantic `depends_on`. Compact/focus responses leave package evidence count and explicit full-evidence calls to prevent large graphs from silently disappearing.
 
-C/Autotools 저장소에서도 빈 import graph를 “의존 없음”으로 말하지 않는다. bounded
-manifest/source discovery가 실제 `.c`/`.h`를 확인하면 `infer_imports.coverage`는 `c`를
-미지원 언어로 표시하고 `allDetectedLanguagesSupported:false`를 반환한다. 실행하지 않는
-정적 `AC_INIT` 리터럴은 프로젝트 이름의 근거로 쓰고, bounded README prose에서는
-릴리스 상태보다 목적을 직접 말하는 문장을 우선한다. 이 근거만으로 domain이나
-capability를 만들지 않으며 C include/build dependency graph를 분석하거나 의미 관계로
-자동 승격하지도 않는다.
+C/Autotools repositories also do not report empty import graph as "no dependencies." If bounded manifest/source discovery confirms actual `.c`/`.h` files, `infer_imports.coverage` marks `c` as unsupported language and returns `allDetectedLanguagesSupported:false`. Use static `AC_INIT` literals as project name evidence; in bounded README prose, prioritize sentences stating purpose over release status. Do not create domain/capability from this evidence alone; do not analyze C include/build dependency graphs or auto-promote to semantic relations.
 
-같은 Autotools 분석은 정적 `AC_CONFIG_FILES`가 지목한 root 또는 한 단계 하위
-`Makefile.am`의 literal 선언을 실행 없이 읽는다. 설치 대상 header와 존재하는 `.h.in`
-template, non-`EXTRA` core source, raw/API specialized source, `EXTRA_*_SOURCES`의 선택형
-platform backend를 구분해 source 36개 안에서 역할별 대표를 먼저 보존한다. 내부
-`noinst_HEADERS`, 변수·shell·wildcard·절대/상위 경로는 역할 근거가 되지 않는다. 이
-build-role은 구현 handoff의 관측 근거이며 canonical capability나 C impact를 자동
-승인하지 않는다.
+The same Autotools analysis reads literal declarations in root or one-level-down `Makefile.am` pointed to by static `AC_CONFIG_FILES` without execution. Distinguish install-target headers, existing `.h.in` templates, non-`EXTRA` core source, raw/API specialized source, and optional platform backends from `EXTRA_*_SOURCES`, preserving role-based representatives within 36 sources first. Internal `noinst_HEADERS`, variables/shell/wildcards/absolute/parent paths do not serve as role evidence. This build-role is observation evidence for implementation handoff; it does not auto-approve canonical capability or C impact.
 
-Rust 저장소도 같은 원칙으로 빈 import graph를 “의존 없음”으로 말하지 않는다.
-`infer_imports.coverage`는 Cargo 감지 시 `use`/`mod`/macro dependency scan이 아직
-지원되지 않음을 명시하고, 0 edge의 뜻을 지원 언어에서 관측된 정적 import가 없다는
-범위로 제한한다. 대신 `analyze_repo_structure.configurationEvidence`와
-`index_project.configurationEvidence`는 root package 또는 저장소 안 literal direct
-workspace member의 `[features]` 선언과 conventional Cargo target source의 literal
-`cfg`/`cfg_attr` feature predicate를
-path/line/form/polarity/source role로 보존한다. 이 receipt는 predicate를 평가하거나
-build script/macro를 실행하지 않고 runtime impact, import dependency, semantic
-`depends_on`을 주장하거나 쓰지 않는다. workspace/package/feature/mapping/source-file
-limit과 거절된 member/predicate도 숨기지 않는다.
-이때 `relation_check`의 schema match도 의미 승인이 아니다. 새 `depends_on`은
-실행 가능한 `proposedAction` 없이 `approvalGate.writeAllowed:false`를 반환하며,
-관측 가능한 능력·의미적 이유·정확한 방향에 대한 사람의 명시적 승인 뒤에만 쓴다.
-Analyzer는 실제 import에 참여한 Python 구현 경계를 최대 12개 element/path 후보로
-연결한다. 직접 module/package 경계를 기본으로 하되, 긴 import 응답에 위험 소유권이
-묻히지 않도록 security/policy/risk exact endpoint가 최대 2개 자리를 예약할 수 있다.
-사용하지 않는 파일과 충돌하는 flat slug는 제외한다. 이 경로를
-근거로 제안한 `depends_on`은 관측된 import 방향과 일치해야 proposal validation을
-통과한다. 모델은 자동 후보 밖의 정확한 import file endpoint도 서로 다른 탐색 역할에
-한해 최대 4개까지 선택할 수 있다. 서버는 이 파일들을 자동으로 노드화하지 않고,
-proposal의 정확 경로·상한·file-edge 방향만 fail closed로 검증한다.
+Rust repositories also do not report empty import graph as "no dependencies." `infer_imports.coverage` explicitly states that `use`/`mod`/macro dependency scan is unsupported when Cargo is detected, limiting the meaning of 0 edges to "no observed static imports" within supported languages. Instead, `analyze_repo_structure.configurationEvidence` and `index_project.configurationEvidence` preserve `[features]` declarations of root package or literal direct workspace members inside the repository, and literal `cfg`/`cfg_attr` feature predicates of conventional Cargo target sources as path/line/form/polarity/source role. This receipt does not evaluate predicates or execute build scripts/macros; it does not claim/write runtime impact, import dependency, or semantic `depends_on`. It does not hide workspace/package/feature/mapping/source limits or rejected members/predicates. Schema match in `relation_check` is also not semantic approval. New `depends_on` returns `approvalGate.writeAllowed:false` without executable `proposedAction`, written only after human explicit approval of observable capability, semantic rationale, and exact direction. The analyzer connects up to 12 element/path candidates for Python implementation boundaries participating in actual imports. Base on direct module/package boundaries, but allow security/policy/risk exact endpoints to reserve up to 2 slots to prevent risk ownership from being diluted in long import responses. Exclude unused files and conflicting flat slugs. `depends_on` proposed based on this path must match observed import direction to pass proposal validation. The model may select up to 4 exact import file endpoints outside auto-candidates for different exploration roles. The server does not auto-node these files; it fail-closes verifying only the proposal's exact path/limit/file-edge direction.
 
-`impact`와 `blast_radius`는 선언된 `depends_on`만 따라간다. containment·domain·
-element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 위험으로 승격하지
-않는다. 선언된 의존에 `relation_notes`가 없으면 `review_required`, 있으면
-`declared_with_rationale`로 반환한다. 둘 다 관계 단위 current-source receipt가 없는
-현재는 source-backed가 아니므로 completeness와 risk를 `unknown`으로 유지한다.
-따라서 의존 선언 0건도 저위험이나 영향 없음으로 해석하지 않는다.
+`impact` and `blast_radius` follow only declared `depends_on`. Containment/domain/element relations are structural evidence for `reachability`/`subgraph`; do not promote to impact or risk. Return `review_required` if no `relation_notes` on declared dependency, `declared_with_rationale` if present. Both are currently not source-backed due to lack of current-source receipt per relation unit; keep completeness and risk as `unknown`. Therefore, 0 dependency declarations are not interpreted as low-risk or no impact.
 
-## 포함 / 제외
+## Inclusions / Exclusions
 
-- 포함: MCP 도구 등록과 입출력 계약, 볼트 parser/writer, deterministic compiler와
-  graph query, 동시성·dry-run·검증 안전장치, 설치 앱의 번들 서버.
-- 제외: AST/소스 검색 엔진, 임베딩 저장소, 모델 선택·에이전트 루프, 백엔드·계정,
-  사람 승인 없이 생성 제안을 자동 저장하는 기능.
+- Included: MCP tool registration and I/O contracts, Vault parser/writer, deterministic compiler and
+  graph query, concurrency/dry-run/validation safeguards, bundled server for installed apps.
+- Excluded: AST/source search engine, embedding store, model selection/agent loop, backend/accounts,
+  auto-saving creation proposals without human approval.
 
-## 구현 근거
+## Implementation Basis
 
-- `mcp/src/index.js` · `mcp/src/tool-inventory.mjs`: 활성 도구 registry에서
-  `tools/list`와 모드별 initialize 인벤토리를 함께 만드는 경계
+- `mcp/src/index.js` · `mcp/src/tool-inventory.mjs`: Boundary that creates both
+  `tools/list` and mode-specific initialize inventory from the active tool registry.
 - `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
-  `mcp/src/infer-imports.mjs`: bounded repository 의미 ingress, Rust 구성 provenance,
-  실행 없는 TS/JS/Python file-import와 Go package-import 근거, Autotools C/Rust 미지원
-  범위와 exact-path 관계 근거
-- `mcp/src/vault.mjs` · `mcp/src/schema.mjs`: 파일 읽기/쓰기와 UID/slug 규격
-- `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: compile/query
-- `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: quantified
-  competency coverage와 source-backed proposal write gate
+  `mcp/src/infer-imports.mjs`: Bounded repository meaning ingress, Rust configuration provenance,
+  evidence for TS/JS/Python file-imports and Go package-imports without execution, Autotools C/Rust unsupported
+  scope and exact-path relationship evidence.
+- `mcp/src/vault.mjs` · `mcp/src/schema.mjs`: File read/write and UID/slug specifications.
+- `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: Compile/query.
+- `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: Quantified
+  competency coverage and source-backed proposal write gate.
 - `mcp/src/construction-qualification.mjs` · `mcp/src/construction-lifecycle.mjs`:
-  maker-independent categorical qualification, exact plan/source/approval binding, 단계별
-  write eligibility
+  Maker-independent categorical qualification, exact plan/source/approval binding, step-by-step
+  write eligibility.
 - `mcp/src/project-source-inspection.mjs` · `mcp/src/project-source-receipt.mjs`:
-  설치 앱과 같은 bounded source currentness 재검증과 public receipt 경계
-- `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs`: 현재 선언,
-  구조/source 후보, 미해결 대상을 분리하는 action-first 사람 승인 패킷
+  Re-verification of bounded source currentness for installed apps and public receipt boundary.
+- `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs`: Current declarations,
+  separating structure/source candidates and unresolved targets into action-first human approval packets.
 - `mcp/scripts/verify.mjs` · `mcp/src/integration.test.mjs` ·
-  `scripts/dogfood-mcp-walk.mjs`: initialize/tools-list exact parity와 설치·실사용 검증
-- `mcp/README.md`: 현재 공개 도구 계약의 상세 단일 진실원
+  `scripts/dogfood-mcp-walk.mjs`: Initialize/tools-list exact parity and installation/live usage verification.
+- `mcp/README.md`: Detailed single source of truth for the current public tool contract.
 
-## 확신도
+## Confidence
 
-high (0.95): registry, parser/compiler contract, source/packed binary dogfood가 같은
-볼트를 대상으로 검증된다.
+high (0.95): Registry, parser/compiler contract, and source/packed binary dogfood are verified against the same
+Vault.

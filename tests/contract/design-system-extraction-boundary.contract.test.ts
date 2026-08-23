@@ -60,7 +60,6 @@ const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
   ["node-explanation-edit.tsx", "노드 본문 = 노드의 설명"],
   ["similar-node-warning.tsx", "중복 노드 경고 — 볼트 어휘"],
   ["frame-meter.tsx", "지도 프레임 계측 — 앱 전용 계기"],
-  ["entry-choice-card.tsx", "첫 실행 진입 선택 — 이 앱의 온보딩"],
 ];
 
 /** What a core part must not have — this app's routing, translations, or upper layers. */

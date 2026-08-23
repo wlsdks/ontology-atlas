@@ -12,8 +12,8 @@ import {
 } from "../../scripts/lib/design-spec-census.mjs";
 
 /**
- * Contract keeping 「규격을 바꾸려면 「체계」를 부른다」 (changing a spec means
- * convening the design-systems seat) from reverting to **a rule that lives only in a
+ * Contract keeping “Changing the specification requires `design-system`” from
+ * reverting to **a rule that lives only in a
  * document.**
  *
  * ## Background (rules audit, measured 2026-08-03)

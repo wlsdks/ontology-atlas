@@ -18,7 +18,7 @@
 ### A1 — Domain composition
 
 **Prompt:**
-> 이 repo 의 ontology vault 에서 `vault-local-first` 도메인 아래에 어떤 capability 와 element 들이 있는지 정리해줘. 도메인 자체의 설명 한 줄도 포함.
+> List the capabilities and elements under the `vault-local-first` domain in this repo's ontology vault. Include a one-line description of the domain itself.
 
 **Correct answer (verify against `docs/ontology/`):**
 - The agent should list the domain's `capabilities: [...]` array (currently includes `capabilities/scaffold-vault`, `capabilities/vault-validator`, etc — verify against the actual file at measurement time).
@@ -30,7 +30,7 @@
 ### A2 — Stub / unfinished detection
 
 **Prompt:**
-> 이 repo 의 ontology 에서 `kind: capability` 인데 `elements` 배열이 비어 있는 노드들 (= 미완료 후보) 을 찾아줘.
+> Find nodes in this repo's ontology with `kind: capability` but empty `elements` arrays (= potential incomplete items).
 
 **Correct answer:**
 - Verifiable via `query_concepts({ filter: "kind=capability AND NOT has(elements)" })` (MCP-on) or by grepping all capability `.md` files (MCP-off).
@@ -41,7 +41,7 @@
 ### A3 — Reference graph for a specific node
 
 **Prompt:**
-> `capabilities/mcp-server` 를 frontmatter 에서 참조하고 있는 모든 노드를 찾아 kind 별로 분류해줘.
+> List all nodes referencing `capabilities/mcp-server` in frontmatter, categorized by kind.
 
 **Correct answer:**
 - All nodes whose frontmatter array key (`capabilities`, `elements`, `dependencies`, `relates`, `contains`, `describes`) or inline string key (`domain`) contains `capabilities/mcp-server`.
@@ -61,7 +61,7 @@
 ### B1 — Validator issue codes
 
 **Prompt:**
-> ontology-atlas 의 vault validator 가 detect 하는 issue code 들을 모두 나열하고 각각의 의미를 한 줄씩 설명해줘.
+> List all issue codes detected by ontology-atlas's vault validator and explain the meaning of each in one line.
 
 **Correct answer:**
 - 5 codes: `unclosed-frontmatter`, `empty-kind`, `missing-kind`, `unknown-kind`, `parse-zero-keys`.
@@ -73,7 +73,7 @@
 ### B2 — Conflict guard mechanism
 
 **Prompt:**
-> ontology-atlas MCP 의 write 도구들이 사용자의 외부 에디터 변경을 어떻게 감지하는지, 어떤 도구가 어떤 인자를 받는지 설명해줘.
+> Explain how ontology-atlas MCP's write tools detect external editor changes by users, and what arguments each tool accepts.
 
 **Correct answer:**
 - mtime-based — `get_concept` returns `mtime` (ms), all write tools (`patch_concept` / `delete_concept` / `add_relation` / `rename_concept` / `merge_concepts`) accept optional `expected_mtime`.
@@ -93,7 +93,7 @@
 ### C1 — Function exports
 
 **Prompt:**
-> `src/shared/lib/validate-vault-document.ts` 에서 export 되는 함수들을 모두 나열해줘.
+> List all functions exported from `src/shared/lib/validate-vault-document.ts`.
 
 **Correct answer:**
 - Verifiable by reading the file. Currently exports `validateVaultDocument`, `validateVaultDocFrontmatter`, `summarizeVaultValidation` (verify at measurement time).
@@ -104,7 +104,7 @@
 ### C2 — package.json scripts
 
 **Prompt:**
-> 이 repo 의 `package.json` 의 `scripts:` 객체에 정의된 명령어들을 모두 나열해줘.
+> List all commands defined in the `scripts:` object of this repo's `package.json`.
 
 **Correct answer:**
 - Read `package.json`, list all keys in `scripts`; derive the count at measurement time instead of trusting this doc. Current examples include `dev`, `build`, `lint`, `test`, `test:run`, `vault:validate`, `test:vault:validate`, `vault:audit`, `vault:migrate`, `package:check`, `dogfood:walk`, and the focused `test:mcp:*` scripts.

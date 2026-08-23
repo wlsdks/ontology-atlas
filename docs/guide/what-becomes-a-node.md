@@ -1,182 +1,127 @@
-# 무엇을 노드로 만드나
+# What Becomes a Node?
 
-볼트를 만들다 보면 반드시 이 질문에서 멈춥니다.
+When building a vault, you inevitably stop at this question.
 
-> 이건 도메인인가 역량인가? 파일마다 노드를 하나씩 만들어야 하나? 한 노드
-> 아래에 자식이 서른 개면 잘못된 건가?
+> Is this a domain or a capability? Should I create one node per file? Is it wrong to have thirty children under one node?
 
-여기 답이 있습니다. 그리고 **답의 대부분은 "세지 말라"** 입니다.
+The answer is here. And **most of the answer is "don't count"**.
 
-kind별 포함·제외·예시·반례와 `is_a` 판별의 정본은
-[Atlas 메타모델 명세](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind)입니다.
-이 장은 그 규칙을 다시 정의하지 않고, 파일 미러링과 fan-out이라는 실제 제작
-함정을 설명합니다.
+The definitive rules for inclusion/exclusion/examples by `kind` and `is_a` determination are in the [Atlas Metamodel Specification](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind). This chapter does not redefine those rules but explains practical pitfalls like file mirroring and fan-out.
 
-## 1. 네 단계의 읽기 사슬과 document는 질문이 다르다
+## 1. The Four-Stage Reading Chain and How `document` Differs in Question
 
-"얼마나 큰가" 로 층을 고르면 계속 헷갈립니다. **무엇에 답하는가**로 고르십시오.
+Grouping by "how big" causes constant confusion. Group by **what question it answers** instead.
 
-| kind | 답하는 질문 | 예 |
+| kind | Question answered | Example |
 |---|---|---|
-| `project` | 우리가 무엇을 내놓는가 | `auth-platform` |
-| `domain` | 그 안에서 관심사가 어디서 갈리는가 | `auth` · `billing` |
-| `capability` | 이 시스템이 무엇을 할 수 있는가 | `token-issue` |
-| `element` | 그 행동이 무엇으로 실현되는가 | `jwt-signer` |
-| `document` | 어떤 결정·정책·설명을 기록하는가 | `ADR: local-first persistence` |
+| `project` | What are we delivering? | `auth-platform` |
+| `domain` | Where do concerns split within it? | `auth` · `billing` |
+| `capability` | What can this system do? | `token-issue` |
+| `element` | How is that action realized? | `jwt-signer` |
+| `document` | What decisions/policies/explanations are recorded? | `ADR: local-first persistence` |
 
-이 표는 탐색 순서이지 판별 규칙의 사본이 아닙니다. 경계에서 흔들리면 위 명세의
-positive test와 counterexample을 모두 적용하십시오. 특히 문장에 동사가 있다는
-이유만으로 capability가 되지 않고, 명사라는 이유만으로 element가 되지 않습니다.
-폴더·package·team·workflow·README heading은 먼저 evidence이며 스스로 의미 kind로
-승격하지 않습니다.
+This table shows exploration order, not a copy of discrimination rules. When wavering at boundaries, apply both the positive test and counterexample for each specification. Specifically, having a verb in a sentence does not make it a `capability`, nor does having a noun make it an `element`. Folders, packages, teams, workflows, and README headings are merely evidence first; they do not self-promote to meaning kinds.
 
-## 2. 파일 하나당 노드 하나는 함정이다
+## 2. One node per file is a trap
 
-가장 흔한 실패는 이겁니다. 디렉터리를 열고, 파일마다 노드를 하나씩 만듭니다.
+The most common failure is this: open a directory, and create one node per file.
 
-이 저장소가 실제로 그랬습니다. 한 역량 아래에 `elements:` 항목이 **92개**
-있었고, 그 목록은 `ls` 결과와 바이트가 같았습니다. 개념 92개가 생긴 게 아니라
-**디렉터리 목록이 의미 자리에 옮겨 적힌 것**이었습니다.
+This repository actually did that. Under one capability, there were **92** items in `elements:`, and the list matched the byte count of the `ls` output. Instead of 92 concepts emerging, it was merely a **directory list transcribed into the meaning position**.
 
-**경로는 개념의 증거이지 개념이 아닙니다.** 파일이 어디 사는지는 위치이고,
-그 파일이 무슨 역할을 하는지가 개념입니다. 그래서:
+**Paths are evidence of concepts, not concepts themselves.** Where a file lives is location; what role it plays is the concept. Therefore:
 
-- `title` 은 **역할**을 적습니다. `jwt-token`, `세션 저장소`.
-- 위치는 `path:` 에 적습니다.
-- `title` 이 `src/lib/auth/jwt.ts` 처럼 생겼거나 소스 확장자로 끝나면, 그건
-  개념 이름이 아니라 증거입니다. 도구가 이걸 알아보고 경고합니다.
+- `title` describes the **role**. e.g., `jwt-token`, `session-store`.
+- Location goes in `path:`.
+- If `title` looks like `src/lib/auth/jwt.ts` or ends with a source extension, that is evidence, not a concept name. The tool will detect this and warn you.
 
-**슬러그도 같습니다.** `elements/<이름>` 처럼 종류 폴더 아래 평평해야 하고,
-`elements/src/views/home` 같은 경로형 슬러그는 **쓰기가 거부됩니다.** 이건 취향
-문제가 아닙니다. 두 파일의 파일명이 겹치는 순간 서로 다른 노드가 조용히
-하나로 접힙니다(이 저장소에서 실제로 노드 3개가 화면에서 1개가 되면서 관계
-4개가 소리 없이 사라졌습니다).
+**The same applies to slugs.** They must be flat under the kind folder (e.g., `elements/<name>`). Path-like slugs such as `elements/src/views/home` are **rejected**. This is not a matter of taste. The moment two files share a filename, different nodes quietly collapse into one (in this repository, 3 nodes visually became 1, and 4 relationships silently vanished).
 
-## 3. 자식이 많은 것 자체는 결함이 아니다
+## 3. Having many children is not a defect in itself
 
-"자식은 12개까지" 같은 상한을 두고 싶어집니다. 그 규칙은 **없습니다.** 두 가지
-이유로 폐기됐습니다.
+You might want to impose an upper limit like "children up to 12." There is **no such rule**. It was discarded for two reasons.
 
-**첫째, 수가 잘못된 표적입니다.** `schema.org` 의 `CreativeWork` 은 직속 하위
-타입이 수십 개이고 위원회가 15년째 유지하고 있습니다. 건강한 39와 병든 92를
-가르는 것은 개수가 아닙니다. **형제끼리 서로 바꿔 쓸 수 없는가**입니다.
-Article/Book/Recipe/Movie 은 바꿔 쓸 수 없고, "또 하나의 서브커맨드" ×92 는
-바꿔 쓸 수 있습니다.
+**First, the number is the wrong target.** `schema.org`'s `CreativeWork` has dozens of direct subtypes and has been maintained by the committee for 15 years. What separates a healthy 39 from a sick 92 is not the count. It is **whether siblings are interchangeable**. Article/Book/Recipe/Movie cannot be swapped, but "another subcommand" ×92 can.
 
-**둘째, 상한은 우회됩니다.** "12를 넘으면 쪼개라" 고 하면, 「그룹 A」와 「그룹
-B」라는 빈 바구니 두 개를 만들고 절반씩 옮겨 넣으면 통과합니다. 정보는 하나도
-안 늘었는데 지표는 초록이 됩니다. **이해 없이 만족시킬 수 있는 규칙은 없는
-규칙보다 나쁩니다**. 없는 자신감을 만들어 냅니다.
+**Second, the upper limit is bypassed.** If you say "split when it exceeds 12," you can pass by creating two empty baskets named "Group A" and "Group B" and moving half into each. No information is added, yet the metric turns green. **Rules that can be satisfied without understanding are worse than no rules at all**; they create a false sense of confidence.
 
-### 그럼 무엇이 신호인가
+### So, what is the signal?
 
-수는 **트리거**이지 한계가 아닙니다. 볼트가 어릴 때 쓰는 시작 범위는 이렇습니다.
+The number is a **trigger**, not a limit. Vault's initial range when young is as follows:
 
-| 부모 → 자식 | 시작 트리거 |
+| Parent → Child | Initial Trigger |
 |---|---|
-| domain → capability | 약 8 |
-| capability → element | 약 6 |
+| domain → capability | ~8 |
+| capability → element | ~6 |
 
-이 수를 넘겼다고 결함이 아니고, 쓰기가 막히지도 않습니다. **넘으면 질문 하나를
-하라는 뜻**입니다. 그리고 볼트가 자라 그 종류의 부모가 열 개를 넘으면, 도구는
-바깥에서 들여온 이 수를 버리고 **여러분 볼트 자신의 분포**를 씁니다. 성숙한
-볼트는 자기 모양을 남보다 잘 압니다.
+Exceeding this number is not a defect, nor does it block writing. **It simply means you should ask one question.** And as Vault matures and the parent of that type exceeds ten, the tool discards this externally imported number and uses **Vault's own distribution**. A mature Vault knows its own shape better than anyone else.
 
-## 4. 유일한 시험: 한 문장
+## 4. The Only Test: One Sentence
 
-트리거를 넘었을 때 던지는 질문은 하나뿐입니다.
+When you exceed the trigger, there is only one question to ask:
 
-> **이 자식이 형제와 바꿔 쓸 수 없는 이유를, 순환하지 않는 한 문장으로 쓸 수
-> 있는가?**
+> **Can you write in a single non-circular sentence why this child cannot be swapped with its siblings?**
 
-"순환하지 않는" 이 중요합니다. "이건 A 를 다루니까 A 와 다르다" 는 아무 말도
-하지 않은 것입니다.
+"Non-circular" is important. Saying "This handles A, so it differs from A" says nothing.
 
-- 쓸 수 있으면 → **그대로 둡니다.** 자식이 서른이어도 정상입니다.
-- 못 쓰겠으면 → 새 노드를 만들지 말고, 있는 형제의 본문을 고칩니다.
+- If you can write it → **leave it as is.** It is normal even if the child has thirty.
+- If you cannot write it → Do not create a new node; instead, fix the body of an existing sibling.
 
-이름 앞머리가 같다는 건 힌트일 뿐 시험이 아닙니다. 이 저장소에서 실측해 보면
-접두사가 같은 형제들은 대개 정당했고, 정작 망가진 92개는 **접두사를 공유하지도
-않았습니다.**
+Having the same prefix is just a hint, not a test. Measuring in this repository shows that siblings with the same prefix are usually justified, while the actual 92 broken ones **did not even share a prefix.**
 
-## 5. 셋 이상 못 쓰겠으면: 다리 노드
+## 5. If Three or More Cannot Be Used: Bridge Node
 
-한 문장을 못 쓰겠는 자식이 **셋 이상**이면, 그건 층이 하나 빠진 것입니다.
-부모와 그 자식들 사이에 노드 하나를 넣습니다. 그 노드의 이름은 **그들이
-공유하는 행동**입니다.
+If three or more children cannot write a single sentence, the layer is missing one level.
+Insert a node between the parent and its children. Name this node **the behavior they share**.
 
-다리 노드는 네 조건을 **전부** 만족할 때만 만듭니다.
+Create a bridge node only when all four conditions are met.
 
-1. **행동을 이름으로 삼는다.** 「그룹 A」·「기타」·「2부」는 더미를 나눌 뿐
-   의미를 더하지 않습니다. 그건 다리가 아니라 이름 붙인 빈 바구니입니다.
-2. **그 행동을 한 문장으로 말할 수 있다.** 문장을 못 쓰면 아직 묶음을 못 찾은
-   것입니다.
-3. **다리 자신이 자기 형제와 바꿔 쓸 수 없다.** 기존 노드와 바꿔 쓸 수 있는
-   다리는 층이 아니라 중복입니다.
-4. **실제로 자식들을 그 아래로 옮긴다.** 비워 둔 다리는 막으려던 그 빈
-   바구니이고, 그냥 넘어가지도 않습니다. 아무것도 묶지 않는 노드는 정리
-   대상으로 보고됩니다.
+1. **Use the behavior as the name.** "Group A," "Others," and "Part 2" only divide piles; they add no meaning. Those are just named empty baskets, not bridges.
+2. **The behavior must be expressible in one sentence.** If you can't write a sentence, you haven't found a grouping yet.
+3. **The bridge itself cannot replace its siblings.** A bridge that can replace an existing node is redundancy, not a layer.
+4. **Actually move the children under it.** An empty bridge is just the empty basket you intended to block with; nothing passes through it. Nodes that bind nothing are reported for cleanup.
 
-넷 중 하나라도 안 되면 **아무것도 만들지 않습니다.** 개수만으로는 문제의 증거가
-되지 않습니다.
+If even one condition is not met, **create nothing.** Count alone is not evidence of a problem.
 
-## 6. 역량에는 근거를 같은 손에 붙인다
+## 6. Attach the same evidence to capabilities
 
-역량을 만들 때 **낯선 에이전트가 가장 먼저 열 구현 진입점 하나**를 같은 작업에서
-`path:` 에 넣으십시오.
+When creating a capability, **the unfamiliar agent must first enter one implementation entry point** in the same task into `path:`.
 
 ```markdown
 ---
 uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
 slug: capabilities/token-issue
-title: 토큰 발급
+title: Token Issuance
 domain: domains/auth
 path: src/lib/auth/jwt-signer.ts
-elements: []                     # 실제 구현 역할 노드 slug만 들어간다
+elements: []                     # Only the slugs of actual implementation role nodes go here
 ---
 ```
 
-경로는 근거이지 노드가 아닙니다. 여러 파일이 있어도 각 파일의 역할을 한 문장으로
-구별할 수 없다면 파일별 element 노드를 만들지 않습니다. 반대로 독립된 구현 역할이
-정말 있다면 그 역할을 element로 만들고 `elements:`에는 그 slug만 넣습니다.
+The path is evidence, not a node. Even if there are multiple files, do not create file-level element nodes if you cannot distinguish each file's role in one sentence. Conversely, if there truly is an independent implementation role, make that role an element and put only its slug in `elements:`.
 
-근거가 없는 역량은 **아무도 열어 볼 수 없는 주장**입니다. 이 볼트만 받아 든
-에이전트는 그 역량을 설명할 수는 있는데 찾아갈 수는 없습니다. 그래서 이런
-역량은 정리 큐(`maintenance`)에 `capability_without_evidence` 로 남아, 무언가를
-가리킬 때까지 계속 물어봅니다.
+A capability without evidence is **a claim no one can open.** The agent holding this vault can explain the capability but cannot navigate to it. Thus, such capabilities remain in the cleanup queue (`maintenance`) as `capability_without_evidence`, constantly asking for something to point to until they do.
 
-## 7. 아무것도 막지 않는다
+## 7. It blocks nothing
 
-위의 규격은 **쓰기를 거부하지 않습니다.** 건너뛰어도 저장은 성공하고, 대신
-응답에 경고가 붙거나 정리 큐에 행이 하나 생깁니다.
+The above specification **does not reject writes.** Skipping saves successfully, but instead attaches a warning to the response or adds a row to the cleanup queue.
 
-이건 느슨해서가 아니라 계산된 선택입니다. 막으면 볼트가 적대적으로 느껴지고,
-에이전트는 **도구를 우회하는 길**을 찾습니다. 우회당한 게이트는 없는
-게이트입니다. 그래서 게이트는 보고하고, 판단은 사람과 큐가 합니다.
+This is not due to laxity but is a calculated choice. Blocking makes the vault feel adversarial, and agents will **find ways to bypass the tool.** A bypassed gate is no gate at all. Therefore, the gate reports, and humans and queues make the judgment.
 
-예외가 하나 있습니다. **경로형 슬러그는 hard error 입니다.** 그건 의미 판단이
-아니라 형태 유효성이고(중복 슬러그와 같은 급), 만들 때 고치면 이름 하나
-고르는 비용인데 나중에 고치면 이름 바꾸기 연쇄 비용이 되기 때문입니다.
+There is one exception. **Path-based slugs are hard errors.** This is a matter of structural validity, not semantic judgment (like duplicate slugs). Fixing them at creation time costs only the effort of choosing a name; fixing them later incurs the cost of renaming cascades.
 
-## 정리
+## Summary
 
-- 층은 **크기가 아니라 답하는 질문**으로 고릅니다.
-- 정확한 kind 판별은 **메타모델 명세 한 곳**에서 합니다.
-- **경로는 증거, 역할이 개념.** `title` 은 역할, 위치는 `path:`.
-- **개수 상한은 없습니다.** 수는 질문을 던지라는 트리거일 뿐입니다.
-- 시험은 하나: **형제와 바꿔 쓸 수 없는 이유를 한 문장으로.**
-- 셋 이상 못 쓰겠으면 **다리 노드**, 단 네 조건을 다 만족할 때만.
-- 역량에는 **근거를 같은 손에** 붙입니다. 경로만으로도 충분합니다.
+- Choose layers based on **the question being answered**, not size.
+- Determine the exact kind in **a single meta-model specification**.
+- **Paths are evidence; roles are concepts.** `title` indicates role, and position is defined by `path:`.
+- **There is no upper limit on count.** Numbers serve only as triggers to ask questions.
+- The test is simple: **Can you explain in one sentence why it cannot be swapped with a sibling?**
+- Use **bridge nodes** only if three or more cannot be used, and only when all four conditions are met.
+- Attach **evidence to the same hand as capability**. The path alone is sufficient.
 
-이 규격은 사람에게만 있는 게 아닙니다. MCP 로 붙은 AI 에이전트도 쓰기 전에 같은
-문장을 읽습니다. 그래서 사람이 만든 노드와 에이전트가 만든 노드가 같은 모양을
-합니다.
+This specification applies not just to humans. AI agents connected via MCP also read the same sentences before acting. This ensures that nodes created by humans and those created by agents have the same structure.
 
-저장소 분석기가 한 번에 보여 주는 후보 수에도 별도 처리 상한이 있습니다. 그것은
-LLM과 사람이 읽을 **evidence packet을 bounded하게 유지하는 장치**이지, 이 절의
-노드 수·직접 연결 수 규칙이 아닙니다. 언어별 현재 값과 검증 소유 위치는
-[Ontology Quality Authority Map](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-QUALITY.md)에서 확인하십시오.
+The repository analyzer also has a separate processing limit on the number of candidates shown at once. This is a mechanism to keep the **evidence packet bounded** for both LLMs and humans, not a rule governing node count or direct connection counts in this section. Check the [Ontology Quality Authority Map](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-QUALITY.md) for current values per language and verification ownership locations.
 
-다음은 [관계는 어떻게 생기나](/guide/relations) 입니다. 노드를 정했으면 그들을
-잇는 차례입니다.
+Next is [How Relations Are Formed](/guide/relations). Once nodes are defined, it is time to connect them.

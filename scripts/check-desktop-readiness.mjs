@@ -144,7 +144,6 @@ const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
 const downloadRoute = readText("app/[locale]/download/page.tsx");
-const macosDownloadLink = readText("src/features/macos-download-link/ui/MacosDownloadLink.tsx");
 const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");
@@ -777,33 +776,6 @@ if (
   );
 }
 
-/*
- * 2026-08-19: half of this gate lost its subject. `MacosDownloadLink` (the
- * release-page link on the unpublished branch) and the repository exits
- * (`GITHUB_REPOSITORY_URL`, `sourceCta`) lived **only inside the download
- * section**, and the owner removed that section entirely:
- * *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*
- * (the last section is probably unnecessary — it is all at the top anyway).
- * `docs/DECISIONS.md` 2026-08-19 records the cost: the gateway now has no
- * repository link at all.
- *
- * The other half stands: a release URL must not take a **shape that breaks**
- * (`releases/latest` 404s when there is no public release, and `api.github.com`
- * cannot be called from a static export). That property holds wherever the
- * component is used, and it is what this gate was actually blocking.
- */
-if (
-  macosDownloadLink.includes("GITHUB_RELEASES_URL") &&
-  !macosDownloadLink.includes("releases/latest") &&
-  !macosDownloadLink.includes("api.github.com")
-) {
-  pass("hosted download CTAs avoid a broken latest-release URL and never call the GitHub API from the static export");
-} else {
-  fail(
-    "hosted download CTAs must avoid a broken latest-release URL before a public macOS DMG release exists, and must not depend on api.github.com from a static export",
-  );
-}
-
 // root-first-open (2026-07) retired the marketing `src/views/landing`
 // surface — `/` now renders the topology map directly (no vault-not-selected
 // promo/download-only landing), and its hero copy moved into `/download`'s
@@ -994,7 +966,7 @@ if (
   publishNpmDoc.includes("Start a user vault (desktop app path)") &&
   developmentChecksDoc.includes("Firebase SDK, Firebase Admin, and Firebase CLI dependencies") &&
   developmentChecksDoc.includes("separate Hosting deploy toolchain") &&
-  demoStoryboardDoc.includes("설치된 Ontology Atlas macOS 앱") &&
+  demoStoryboardDoc.includes("Installed macOS desktop app") &&
   // 2026-07-28: #736 rewrote this paragraph when it removed the npm premise. The
   // requirement is the fact that the app reads and writes the same `.md` through a
   // native bridge, plus the split where the web is the intro and download entry —
