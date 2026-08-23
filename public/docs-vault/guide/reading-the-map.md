@@ -1,196 +1,161 @@
-# 지도 읽는 법
+# How to Read the Map
 
-폴더를 고르면 점과 선이 나타납니다. 그런데 점들이 거의 다 같은 회색입니다.
+When you select a folder, dots and lines appear. However, most of the dots are the same shade of gray.
 
-> 이 점은 무엇이고 저 점은 무엇인가? 왜 어떤 건 크고 어떤 건 작은가? 숫자는
-> 왜 어떤 점에만 붙어 있나? 줌을 당겼더니 점이 늘었는데, 아까는 어디 있었나?
+> What is this dot? What is that dot? Why are some large and others small? Why do numbers appear only on certain dots? When I zoomed in, more dots appeared. Where were they before?
 
-지도는 이 질문들에 **색이 아니라 모양·크기·위치**로 답합니다. 한 번 익히면
-그다음부터는 설명 없이 읽힙니다.
+The map answers these questions **not with color, but with shape, size, and position**. Once you learn it, you can read it without explanation.
 
-## 1. 모양이 종류다
+## 1. Shape Indicates Type
 
-노드의 종류(kind)는 **도형**으로 구분합니다.
+Node types (kind) are distinguished by **shape**.
 
-| 모양 | 종류 | 뜻 |
+| Shape | Type | Meaning |
 |---|---|---|
-| 육각형 판 | `project` | 최상위 산출물 |
-| 사각 칩 (모서리에 다리 네 개) | `domain` | 기능 묶음 |
-| 원 | `capability` | 하나의 일관된 행동 |
-| 사각형 + 가운데 구멍 | `element` | 구체적인 조각 |
+| Hexagonal plate | `project` | Top-level deliverable |
+| Square chip (with four legs at corners) | `domain` | Functional grouping |
+| Circle | `capability` | A single coherent action |
+| Square with a center hole | `element` | Concrete piece |
 
-**왜 색이 아닌가.** 색상(hue)은 순서를 표현하지 못합니다. 파랑이 초록보다
-위인지 아래인지 아무도 모릅니다(Bertin, *Sémiologie graphique*, 1967). 그런데
-종류에는 순서가 있습니다: project ⊃ domain ⊃ capability ⊃ element. 게다가 이
-지도에서 색은 이미 두 가지 일을 하고 있습니다. **밝기**가 위계를 나르고,
-**신호색**(경고·오류·성공)이 상태를 나릅니다. 종류까지 색으로 나르면 이미
-일하고 있는 두 채널이 오염됩니다.
+**Why not color.** Hue cannot express order. No one knows if blue is above or below green (Bertin, *Sémiologie graphique*, 1967). However, types have an order: project ⊃ domain ⊃ capability ⊃ element. Moreover, color in this map already serves two purposes. **Brightness** conveys hierarchy, and **signal colors** (warning/error/success) convey status. If we used color for type as well, the two channels already in use would become corrupted.
 
-그래서 이 앱에는 "빨간 노드는 무슨 뜻이지?" 라는 질문이 없습니다. 색은 종류를
-뜻하지 않습니다.
+Therefore, this app has no question like "What does a red node mean?" Color does not indicate type.
 
-## 2. 크기는 두 가지가 정한다
+## 2. Size Is Determined by Two Factors
 
-### ① 종류마다 정해진 크기
+### ① Fixed Size per Type
 
-| 종류 | 반지름 |
+| Type | Radius |
 |---|---|
 | project | 30 |
 | domain | 17 |
 | capability | 11 |
 | element | 7 |
 
-이 사다리는 고정입니다. **domain 이 아무리 커도 project 보다 커 보이지
-않습니다**. 그렇게 되면 위계가 뒤집혀 보이기 때문입니다.
+This ladder is fixed. **A `domain` will never appear larger than a `project`.** If it did, the hierarchy would appear inverted.
 
-### ② 직속 자식 수
+### ② Direct Child Count
 
-같은 종류 안에서는 **직속 자식이 많을수록 조금 큽니다.** 최대 1.4배까지만
-커집니다(위의 사다리를 넘지 않으려고).
+Within the same type, **more direct children make it slightly larger.** It grows up to a maximum of 1.4x (to prevent exceeding the ladder above).
 
-- **domain 과 capability 만** 커집니다.
-- **project 는 안 커집니다**. 볼트당 보통 하나뿐이라 서로 비교할 상대가
-  없습니다.
-- **element 도 안 커집니다**. element 는 정의상 잎(leaf)이라 자식 수가 늘 0
-  입니다. 나를 수 있는 정보가 없는 것이지 "작다"는 신호가 아닙니다.
+- **Only `domain` and `capability` grow.**
+- **`project` does not grow.** Since a vault typically has only one, there is no relative to compare against.
+- **`element` does not grow either.** By definition, an element is a leaf, so its child count is always 0. This means there is no information to convey, not that it signals "smallness".
 
-크기는 "여기가 유난히 크다"만 말하고 "여기가 유난히 작다"는 **말하지
-않습니다.** 자식이 하나뿐인 노드도 기본 크기입니다.
+Size only says "this is unusually large," but **does not say "this is unusually small."** A node with only one child still has the base size.
 
-## 3. 노드 위의 숫자
+## 3. Numbers on Nodes
 
-`project` 와 `domain` 위에만 숫자가 눌러 새긴 것처럼 찍힙니다. capability 와
-element 에는 절대 안 붙습니다.
+Numbers appear embossed only on `project` and `domain`. They never appear on `capability` or `element`.
 
-**그 숫자는 크기와 다른 것을 셉니다.**
+**The number counts something different from size.**
 
-| 채널 | 세는 것 |
+| Channel | What it Counts |
 |---|---|
-| 노드 크기 | **직속** 자식 수 (바로 아래 한 단계) |
-| 각인 숫자 | **전체 후손** 수 (아래로 끝까지) |
+| Node Size | **Direct** child count (immediate next level) |
+| Embossed Number | **Total descendant** count (all the way down) |
 
-그래서 "제일 큰 노드"와 "숫자가 제일 큰 노드"가 다를 수 있습니다. 이건 결함이
-아니라 의도된 두 채널입니다. 크기는 눈이 훑을 때 걸리는 신호이고, 숫자는
-멈춰서 읽는 값입니다. 도메인 셋이 비슷하게 생겼는데 하나만 숫자가 세 배라면,
-그 안이 훨씬 깊다는 뜻입니다.
+Thus, the "largest node" and the "node with the largest number" may differ. This is not a bug but an intentional dual channel. Size is a signal caught by a glance; the number is a value read upon stopping. If three domains look similar in size but one has a number three times larger, it means that one is much deeper inside.
 
-숫자는 멀어지면 사라집니다(글리프보다 숫자가 커지는 것을 막습니다).
+The number disappears when zoomed out (to prevent the number from becoming larger than the glyph).
 
-## 4. 선의 문법
+## 4. Line Grammar
 
-| 선 | 뜻 |
+| Line | Meaning |
 |---|---|
-| 실선 | 담김: 무엇이 무엇을 담는가 |
-| 파선 + 굵기 테이퍼(시작 굵고 끝 얇음) | 방향 있는 관계 (기댄다 · 상위 개념이다) |
-| 파선 + 균일한 굵기 | 대칭 관계 (비슷하다 · 함께 읽는다) |
+| Solid line | Containment: what contains what |
+| Dashed line + tapered thickness (thick start, thin end) | Directed relationship (relies on · is a parent concept) |
+| Dashed line + uniform thickness | Symmetric relationship (is similar to · reads together) |
 
-화면 우하단에 이 범례가 **항상 떠 있습니다.** 외울 필요 없습니다.
+This legend **always floats** in the bottom-right corner. No need to memorize it.
 
-테이퍼가 **없다는 사실 자체가** 정보입니다. "이 관계는 양끝이 대등하다".
-자세한 것은 [관계는 어떻게 생기나](/guide/relations) 에 있습니다.
+The **absence of tapering** is itself information: "this relationship is equal at both ends."
+See [How Relationships Are Formed](/guide/relations) for details.
 
-## 5. 줌에 따라 나타나고 사라진다 (의미 줌)
+## 5. Appears and Disappears with Zoom (Semantic Zoom)
 
-처음 열면 뼈대만 보입니다. **나머지가 없는 게 아니라 아직 안 그린 것**입니다.
+When you first open it, you only see the skeleton. **It's not that there is nothing else; it just hasn't been drawn yet.**
 
-지도를 처음 맞췄을 때를 **1배**로 봅니다.
+The initial view of the map is considered **1x**.
 
-| 배율 | 보이는 것 |
+| Zoom Level | Visible Elements |
 |---|---|
-| 1배 (첫 화면) | project · domain · 허브 |
-| 1.5배부터 | capability 가 서서히 나타남 |
-| 2.3배부터 | element 가 서서히 나타남 |
+| 1x (initial screen) | project · domain · hub |
+| From 1.5x | capability gradually appears |
+| From 2.3x | element gradually appears |
 
-"서서히" 가 중요합니다. 임계에서 툭 튀어나오지 않고 알파가 이어져서 흐려집니다.
-줌을 **빼면** 다시 뼈대만 남습니다. 어느 방향으로 가도 화면이 점 수프가 되지
-않게 하는 장치입니다.
+"Gradually" is key. Elements don't abruptly pop out at the threshold; their alpha values blend smoothly.
+**Zooming out** returns you to the skeleton view. This prevents the screen from becoming a "point soup" regardless of zoom direction.
 
-멀리 나가면 도형도 서서히 원으로 수렴하고 장식(다리·구멍)이 사라집니다. 종류를
-구분해야 할 만큼 가까이 있지 않기 때문입니다.
+When zoomed out, shapes gradually converge into circles, and decorations (bridges, holes) disappear because you are not close enough to distinguish types.
 
-> **코드 요소를 아예 안 보고 싶다면**: 좌하단 톱니 › 「일반」 보기를 켜면
-> element 층이 상시 접힙니다. 노드를 눌렀을 때 그 노드의 요소는 그대로
-> 보입니다(기본은 숨김, 누르면 공개).
+> **If you don't want to see code elements at all**: Open the gear icon in the bottom-left › enable the "General" view.
+> This permanently collapses the element layer. Clicking a node still reveals its elements (hidden by default, revealed on click).
 
-## 6. `+N` 칩: 접혀 있는 자식들
+## 6. `+N` Chip: Collapsed Children
 
-직속 자식이 **12개를 넘는** 부모는 나머지를 `+N` 칩 하나로 접습니다. 도메인
-하나에 역량이 108개 있어도 화면이 라벨 수프가 되지 않습니다.
+Parents with **more than 12 direct children** collapse the rest into a single `+N` chip. Even if a domain has 108 capabilities, the screen won't become a "label soup."
 
-- 칩을 누르면 **그 부모만** 펼쳐집니다. 자식들이 유계 원반으로 퍼집니다.
-- `−` 칩을 누르면 다시 접힙니다.
-- 펼쳐진 부모는 **주소에 남습니다** (`?open=슬러그1,슬러그2`). 그래서 링크를
-  받은 사람도, AI 에이전트도 같은 화면을 재현합니다.
-- 펼친 자식이 또 빽빽하면 그 자식이 자기 칩을 갖습니다.
+- Clicking the chip **expands only that parent**. Children spread out in a bounded disk.
+- Clicking the `−` chip collapses them again.
+- Expanded parents **persist in the URL** (`?open=slug1,slug2`). This allows recipients and AI agents to reproduce the same view.
+- If expanded children are still dense, they get their own chips.
 
-## 7. 눌러 보기
+## 7. Clicking to Explore
 
-**노드를 누르면** 그 노드와 직접 이웃만 밝게 남고 나머지는 어두워집니다(ego
-포커스). 노드 옆에 작은 요약이 붙습니다. **자세히 보기는 그 요약 안에서 한 번 더
-눌러야 열립니다**. 클릭 한 번이 화면을 통째로 덮지 않습니다.
+**Clicking a node** highlights only that node and its direct neighbors (ego focus), dimming the rest. A small summary appears next to the node. **To see details, you must click again within that summary**. A single click does not cover the entire screen.
 
-| 동작 | 결과 |
+| Action | Result |
 |---|---|
-| 클릭 | ego 포커스 + 노드 옆 요약 |
-| 드래그 | 노드를 옮김 (놓으면 물리로 되돌아감) |
-| 우클릭 | 문서 열기 · 관계 편집 · AI에게 줄 정보 복사 · 경로 찾기 · 자세히 보기 |
-| `Tab` | 이웃 허브로 이동 |
-| `⌘K` | 이름으로 찾기 |
-| `?` | 단축키 목록 |
-| `Esc` | 지금 열려 있는 것 중 가장 위의 것 하나를 닫음 |
+| Click | Ego focus + node-side summary |
+| Drag | Move node (snaps back physically on release) |
+| Right-click | Open document · Edit relationship · Copy info for AI · Find path · View details |
+| `Tab` | Move to neighbor hub |
+| `⌘K` | Search by name |
+| `?` | List of shortcuts |
+| `Esc` | Close the topmost open item |
 
-**이 영역만 보기**: 노드를 고르면 링 바깥에 「이 영역만 보기」 버튼이 뜹니다(툴팁은
-「이 노드 안쪽만 봐요」). 누르면 지도가 **그 노드의 세계**로 바뀝니다. 그 노드의
-담김 서브트리만 남고, 바깥은 1px 인디고 원 뒤로 사라집니다. 경계를 넘는 관계는
-원 위의 짧은 토막으로 남고, 그 목록은 「바깥과 닿은 관계 N」 에서 펼칩니다.
-거기서 「저 영역만 보기」 로 상대편 세계로 건너뛸 수 있습니다.
+**View only this area**: Selecting a node reveals an "View Only This Area" button outside the ring (tooltip: "See only inside this node"). Clicking it changes the map to **that node's world**. Only its containment subtree remains; everything else disappears behind a 1px indigo circle. Relationships crossing the boundary remain as short segments on the circle, listed under "N External Connections" which you can expand.
+From there, you can jump to the other side's world via "View That Area Only".
 
-들어가 있는 동안 상단에 「<이름>만 보는 중」 칩이 뜹니다. 「전체 지도」 를 누르거나
-`Esc` 로 돌아옵니다. 이것도 주소에 남습니다.
+While inside, a chip at the top reads "<Name> Only". Click "Full Map" or press `Esc` to return. This also persists in the URL.
 
-## 8. 요약에 적힌 수는 무엇을 세나
+## 8. What Do the Numbers in the Summary Count?
 
-노드 요약의 수치는 **전부 직접 연결만** 셉니다. 여러 단계 건너뛴 합계가
-아닙니다.
+The numbers in a node summary count **only direct connections**. They are not cumulative sums across multiple steps.
 
-| 말 | 뜻 |
+| Term | Meaning |
 |---|---|
-| 사용하는 항목 | 이 노드를 직접 가리키는 다른 항목 |
-| 필요한 항목 | 이 노드가 직접 필요로 하는 다른 항목 |
-| 근거 문서 | 이 개념이 적혀 있는 문서 |
+| Uses | Other items directly pointing to this node |
+| Needs | Other items this node directly requires |
+| Source Document | The document where this concept is written |
 
-묶는 축은 **방향**이지 관계 종류가 아닙니다. 종류로도 나누고 방향으로도 나누면
-같은 선이 두 번 세어지기 때문입니다.
+The grouping axis is **direction**, not relationship type. If we grouped by both, the same line would be counted twice.
 
-「최근 갱신 / 한동안 그대로」 같은 줄은 그 노드의 `.md` 파일이 마지막으로 바뀐
-때를 말합니다. 지도가 만든 점수가 아니라 파일의 사실입니다.
+Lines like "Last Updated / Unchanged for a While" indicate when the node's `.md` file was last modified. This is a fact about the file, not a score generated by the map.
 
-## 9. 주소가 곧 상태다
+## 9. Address is State
 
-지금 화면의 상태: 무엇을 골랐는지, 무엇을 펼쳤는지, 어느 영역에 들어갔는지가
-URL 에 들어 있습니다.
+Current screen state: what you selected, what you expanded, and which region you're in are all encoded in the URL.
 
 ```
 /topology?open=domains/auth&realm=domains/auth
 ```
 
-그래서 세 가지가 따라옵니다.
+This leads to three consequences.
 
-- 링크를 보내면 받은 사람이 **같은 화면**을 봅니다.
-- 뒤로가기가 정상적으로 동작합니다.
-- AI 에이전트가 "이 화면을 보라" 고 말할 수 있습니다. 스크린샷이 아니라
-  주소로.
+- When you send a link, the recipient sees **the same screen**.
+- Back navigation works correctly.
+- An AI agent can say "look at this screen." Not via screenshot,
+  but via address.
 
-## 정리
+## Summary
 
-- **모양 = 종류**, 색이 아닙니다.
-- **크기 = 종류 사다리 × 직속 자식 수**, 최대 1.4배.
-- **숫자 = 전체 후손 수**, project 와 domain 에만.
-- **선 = 실선(담김) · 테이퍼 파선(방향) · 균일 파선(대칭)**.
-- 안 보이는 것은 **없는 게 아니라 접힌 것**입니다. 줌 또는 `+N` 칩.
-- 화면 상태는 주소에 있습니다.
+- **Shape = Type**, not color.
+- **Size = Type hierarchy level × direct children count**, max 1.4x.
+- **Number = total descendant count**, only for projects and domains.
+- **Lines = solid (containment), tapered dashed (direction), uniform dashed (symmetry)**.
+- What you don't see is **not missing, but folded**. Zoom or `+N` chip.
+- Screen state is in the address.
 
-노드를 눌렀는데 요약이 텅 비어 있다면, 그건 지도의 문제가 아니라 그 `.md` 에
-아직 아무 관계도 안 적힌 것입니다. 무엇을 적어야 하는지는
-[폴더의 구조](/guide/vault-structure), 어떻게 이어지는지는
-[관계는 어떻게 생기나](/guide/relations) 에 있습니다.
+If you click a node and the summary is empty, that's not a map issue but rather that no relations have been written in that `.md` file yet. What to write is covered in [Vault Structure](/guide/vault-structure), and how they connect is explained in [How Relations Are Created](/guide/relations).

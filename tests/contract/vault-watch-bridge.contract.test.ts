@@ -82,7 +82,7 @@ describe("폴더 감시 브리지", () => {
      */
     const bridgeRow = rules
       .split("\n")
-      .find((line) => line.startsWith("|") && line.includes("폴더 감시"));
+      .find((line) => line.startsWith("|") && line.includes("Folder watch"));
     expect(
       bridgeRow,
       "`.claude/rules/surfaces.md` 의 **능력 브리지 표**에 폴더 감시 행이 없다. " +
@@ -98,6 +98,6 @@ describe("폴더 감시 브리지", () => {
       rules,
       "강등(못 함)과 지연(늦음)의 구분이 표에서 사라졌다 — 그 구분이 이 브리지가 " +
         "DEGRADED_SURFACES 에 안 들어가는 유일한 이유다.",
-    ).toMatch(/강등이 아니라 \*\*지연\*\*/);
+    ).toMatch(/latency, not degradation/i);
   });
 });

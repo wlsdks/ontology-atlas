@@ -423,7 +423,7 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       const markdownFileCount = markdownEntries.length - skillFiles.length;
       assert.match(
         stripAnsi(v.stdout),
-        new RegExp(`${markdownFileCount} 파일 스캔: frontmatter · 그래프 참조 issue 0`),
+        new RegExp(`Scanned ${markdownFileCount} files: 0 frontmatter or graph-reference issues`),
       );
     }
 
@@ -588,7 +588,11 @@ await test('init --quick-start — fresh starter validates and reports health at
       /missing-expected-field/,
       `갓 만든 볼트가 자기 검사에서 경고를 받았다 — 첫 명령이 만든 상태가 다음 명령에서 실패로 보고된다:\n${validateOut}`,
     );
-    assert.match(validateOut, /issue 0/, `경고 0이어야 한다:\n${validateOut}`);
+    assert.match(
+      validateOut,
+      /0 frontmatter or graph-reference issues/,
+      `경고 0이어야 한다:\n${validateOut}`,
+    );
 
     const health = await run(['health', 'ontology'], { cwd: repo });
     assert.equal(health.code, 1, `health should surface starter recommendations:\n${stripAnsi(health.stdout)}`);
@@ -2913,7 +2917,7 @@ await test('validate — clean vault: exit 0', async () => {
   try {
     const r = await run(['validate', root]);
     assert.equal(r.code, 0);
-    assert.match(r.stdout, /clean ✓|issue 0/);
+    assert.match(r.stdout, /clean ✓|0 frontmatter or graph-reference issues/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -6297,8 +6301,8 @@ await test('workspace-brief — labels project_scope contained counts clearly', 
     const r = await run(['workspace-brief', root]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /PROJECT별 포함 노드 수 \(project_scope\)/);
-    assert.match(clean, /Project\s+2 노드/);
+    assert.match(clean, /NODES PER PROJECT \(project_scope\)/);
+    assert.match(clean, /Project\s+2 nodes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -6351,7 +6355,7 @@ await test('workspace-brief --help — documents health and growth output', asyn
   assert.match(clean, /Use pnpm dogfood:health first when you only need the fail-closed health gate/);
   assert.match(clean, /Use pnpm dogfood:status for the cheap human-readable health \+ workspace-brief \+ agent-brief \+ maintenance queue/);
   assert.match(clean, /Fail-severity nextActions or failing health checks exit non-zero for shell gates/);
-  assert.match(clean, /project_scope 포함 노드 요약/);
+  assert.match(clean, /project_scope containment summary/);
   assert.match(clean, /HEALTH CHECKS id:status:count/);
   assert.match(clean, /GROWTH actions\/relations\/dangling\/external\/ignoredExternal counts/);
   assert.match(clean, /NEXT ACTIONS labels use id\/kind/);

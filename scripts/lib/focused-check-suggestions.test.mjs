@@ -25,6 +25,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm docs-vault:check',
+      'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
       'pnpm vault:validate',
@@ -37,7 +38,25 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm docs-vault:check',
+      'pnpm docs:language',
       'pnpm docs:links',
+    ]);
+  });
+
+  it('suggests the Markdown language gate for prose and for its implementation', () => {
+    const prose = suggestFocusedChecks(['CONTRIBUTING.md']);
+    assert.deepEqual(prose.commands.map((row) => row.command), [
+      'pnpm docs:language',
+      'pnpm docs:links',
+    ]);
+
+    const gate = suggestFocusedChecks([
+      'scripts/quality/markdown-language/inventory.mjs',
+      'scripts/quality/markdown-language/inventory.test.mjs',
+    ]);
+    assert.deepEqual(gate.commands.map((row) => row.command), [
+      'pnpm docs:language',
+      'pnpm test:docs:language',
     ]);
   });
 
@@ -92,6 +111,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm docs-vault:check',
+      'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:guide-examples',
       'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
@@ -569,6 +589,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
       'pnpm exec vitest run src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx',
       'pnpm docs-vault:check',
+      'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:desktop:check',
       'pnpm test:desktop:runtime',
@@ -706,6 +727,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
       'pnpm test:mcp:package',
@@ -723,6 +745,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
     ]);
@@ -847,6 +870,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm docs-vault:check',
+      'pnpm docs:language',
       'pnpm docs:links',
       'pnpm docs:surface:check',
       'pnpm vault:migrate --list',

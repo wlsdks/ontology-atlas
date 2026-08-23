@@ -13,35 +13,23 @@ created_by: "agent:unknown"
 
 # Design Build Handoff
 
-에이전트가 화면을 만들기 시작할 때 **가장 먼저 읽는 안내판**. 「명령에서 화면까지,
-같은 순서로」: 어떤 부품을 집을지, 어느 램프에서 값을 가져올지, 다 짓고 무엇으로
-재는지를 순서로 처방한다.
+The **first guide** an agent reads when starting to build a screen. "From command to screen, in the same order": it prescribes which component to pick, where to get values from, and what to measure after building everything, in sequence.
 
-## 사용자 결과
-- 에이전트가 매번 다른 방식으로 조립하지 않는다.
-- 규격을 어겼을 때 **어느 게이트가 잡는지**까지 같은 문서에서 알 수 있다.
+## User Outcomes
+- The agent does not assemble things differently each time.
+- You can see **which gate catches** a spec violation in the same document.
 
-## 왜 이것이 이 시스템의 핵심인가
-2026-08-03 census 의 진단: *「막고 있던 것은 모델의 취향이 아니라 가져다 쓸 부품이
-없다는 것과 작업 순서가 안 적혀 있다는 것이었다」*. 부품은 2026-08-15 세 라운드로
-갖춰졌다: 그러면 남는 것이 이 안내판이다.
+## Why this is core to this system
+Diagnosis from the 2026-08-03 census: *"What was blocking progress wasn't model preference, but the lack of reusable components and unrecorded task order."* Components were prepared in three rounds by 2026-08-15; what remains is this guide.
 
-## 알려진 결함 (2026-08-15 실측, 수리 중)
-조립 시험에서 음성이 나왔다: 같은 날 비준된 새 부품 5개(`Input` · `Textarea` ·
-`Checkbox` · `SegmentedControl` · `Select`)가 이 안내판의 라우팅 표에 **0건**
-실려 있었다. 지시를 그대로 따르는 에이전트는 폼을 지으려다 「그 여덟에도 없는
-모양 → 멈추고 전체를 다시 센다」에 걸리거나 생 `<input>` 을 쓴다.
+## Known Defects (measured 2026-08-15, under repair)
+Negative results in assembly tests: five new components approved on the same day (`Input` · `Textarea` · `Checkbox` · `SegmentedControl` · `Select`) were **not listed** in this guide's routing table. Agents following instructions strictly either hit a "shape not found in those eight → stop and recount" error or use raw `<input>` elements when building forms.
 
-**부품을 비준하면 안내판도 같이 고쳐야 한다**: 그 짝을 사람이 기억하게 두지
-않고 게이트로 만든다(`design-spec-census` 에 얹어, 규격 파일이 새 부품을 export
-하는데 안내판이 그 이름을 모르면 실패).
+**When approving components, update the guide simultaneously**: Do not rely on humans to remember the pair; make it a gate (attach to `design-spec-census`, so if the spec file exports a new component but the guide doesn't know its name, it fails).
 
-## 추출 경계
-**extractable.** 211줄에 앱 고유어가 3회뿐이라 그대로 옮길 수 있다. 다만 이
-문서가 가리키는 게이트 이름들은 `design-gate-ratchets` 의 경계(atlas-bound)를
-따르므로, 추출본에서는 「부트스트랩 후 켜라」로 바뀌어야 한다.
+## Extraction Boundary
+**extractable.** Line 211 contains only three app-specific terms, so they can be translated as-is. However, since the gate names referenced in this document follow the boundaries of `design-gate-ratchets` (atlas-bound), the extraction should read "enable after bootstrap" instead.
 
-## 사본 계약
+## Copy Contract
 `.claude/skills/design-build/SKILL.md` ↔ `.agents/skills/design-build/SKILL.md`
-두 벌이 바이트 동일해야 한다(`pnpm agents:check` 의 `skill-copy`). 셋째 사본은
-만들지 않는다.
+Both sets must be byte-identical (`skill-copy` in `pnpm agents:check`). Do not create a third copy.

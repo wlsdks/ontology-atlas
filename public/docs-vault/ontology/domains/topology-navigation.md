@@ -10,16 +10,16 @@ elements: [elements/domain-capacity-bar, elements/full-detail-a1, elements/gestu
 created_by: human
 ---
 
-## 정의
-canvas-2D 그래프 브라우징 표면(지도·검색·인덱스 패널): 볼트 전체를 시각적으로 탐색하는 제품의 1차 진입 경로.
+## Definition
+canvas-2D graph browsing surface (map, search, index panel): The product's primary entry point for visually navigating the entire vault.
 
-## 근거
-- docs/ARCHITECTURE.md: "the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights" (risky-citation 경고: AGENTS.md와 함께 인용하여 상호 검증)
+## Evidence
+- docs/ARCHITECTURE.md: "the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights" (risky-citation warning: cross-verify by citing with AGENTS.md)
 - AGENTS.md: Routes ("`/topology` is the map's address, not `/`")
 
-## 포함 / 제외
-- 포함: topology-map-v2 렌더러, 검색 팔레트, 인덱스 패널
-- 제외: 그래프 편집(Studio, graph-modeling 도메인)
+## Inclusions / Exclusions
+- Inclusions: topology-map-v2 renderer, search palette, index panel
+- Exclusions: Graph editing (Studio, graph-modeling domain)
 
-## 확신도
-medium-high (0.85): 독립 소스 2건(ARCHITECTURE.md + AGENTS.md) 대조
+## Confidence
+medium-high (0.85): Cross-referenced against two independent sources (ARCHITECTURE.md + AGENTS.md)

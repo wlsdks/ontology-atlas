@@ -8,4 +8,4 @@ path: src/widgets/domain-capacity-bar
 created_by: "agent:unknown"
 ---
 
-도메인별 노드 밀도 표시 위젯.
+Widget displaying node density per domain.

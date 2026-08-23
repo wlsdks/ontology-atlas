@@ -8,308 +8,192 @@ paths:
   - ".github/workflows/**"
 ---
 
-# 표면 계약 — 웹과 앱
+# Surface contract — web and app
 
-> **조건부 로드** — 데스크톱 브리지 · `src-tauri/**` · e2e 를 읽을 때만 이 파일이 컨텍스트에 실린다(위 `paths:`). 이 규칙의 근거가 된 결정 기록: `docs/DECISIONS.md` 2026-07-27 「웹과 앱은 같은
-> 화면을 약속하지 않는다」. 구조 설명은 `docs/ARCHITECTURE.md` "Surface
-> contract" 절.
+> Conditionally loaded for desktop bridges, Tauri source, and e2e. Authority:
+> `docs/DECISIONS.md`, 2026-07-27, “web and app do not promise identical
+> screens.” Architecture: `docs/ARCHITECTURE.md`, “Surface contract.”
 
-## 각 표면의 일 — 한 문장씩
+## One job per surface
 
-먼저 말을 풀어 둔다. **표면**(surface)은 사용자가 이 제품을 만나는 창구
-하나하나를 말한다 — 여기서는 설치해서 쓰는 macOS 앱과 브라우저로 여는
-웹사이트 둘이다. **워크벤치**(작업대)는 사람이 매일 앉아 실제로 일을 하는
-자리, **관문**은 처음 온 사람이 설치 없이 들여다보는 입구를 뜻한다.
+A **surface** is a place where someone meets the product: the installed macOS
+app or the website. The **workbench** is where daily work happens; the
+**gateway** is the no-install entrance for a first look.
 
-- **앱의 일**: 볼트(사용자 디스크의 마크다운 폴더)가 사는 집 — 사람이 지도를
-  보며 판단하고, 앱 안의 에이전트(패널)와 앱 밖의 에이전트(MCP)를 연결하고
-  그 결과를 판정하는 작업대다.
-- **웹의 일**: ① **관문** — 아무것도 설치하지 않고 지도를 열어 보는 자리
-  (데모·첫 5분·링크 공유). ② **차선 작업대** — 앱이 없거나 설치가 막힌
-  환경(리눅스, 서명 없는 Windows 베타를 차단하는 회사 관리 PC 의 Chromium)에서
-  같은 폴더를 읽고 고치는 자리. 에이전트를 연결해 주는 곳은 아니다.
+- **App:** the vault's home. A person reads and judges the map, connects in-app
+  ACP agents and external MCP agents, and reviews their work.
+- **Web:** first the gateway—a demo, first five minutes, or shared link. Second,
+  a fallback workbench on systems without an app or where installation is
+  blocked. It reads and edits the same folder; it does not install an agent.
 
-**둘 중 ①이 먼저다.** "웹은 윈도우 사용자를 위한 것"이 아니다.
-실측(2026-07-27): 14일 순방문 35명이 전원 웹으로 들어왔고 Windows 사용자
-관측은 0건이다. 순서를 뒤집어 웹을 윈도우 대체품으로 취급하면, 지금 사람이
-들어오는 **유일한 길**의 품질이 뒷전이 된다. **Windows 앱이 나와도 웹은 안
-사라진다** — 서명 없는 베타를 설치할 수 있는 사람에게만 ② 일이 줄고, 링크로
-열리는 입구와 설치가 막힌 사람의 대안은 앱이 대신할 수 없다.
+Gateway comes first. In the 14 days measured on 2026-07-27, all 35 unique
+visitors arrived through the web and no Windows user was observed. Calling web
+only a Windows substitute deprioritizes the sole observed entrance. A future
+Windows app may reduce the fallback-workbench job, but cannot replace links and
+no-install access.
 
-## 코드베이스를 둘로 나누지 않는다
+## One build, not two codebases
 
-앱은 같은 정적 export(`out/`)를 Tauri WebView 에 싣는 **한 빌드**다
-(`src-tauri/tauri.conf.json` 의 `frontendDist: "../out"`). 웹과 앱이 갈리는
-지점은 코드를 둘로 복사한 것이 아니라, 앱에서만 되는 일을 하나씩 감싸 둔
-**능력 브리지 6개**다 — 여기서 **브리지**는 "앱이면 진짜로 실행하고, 웹이면
-없다고 답하는" 얇은 함수 한 겹을 말한다. 그 함수가 없다고 답할 때 화면이
-대신 보여 주는 것이 **강등 카드**다(강등 = 그 표면에서 그 기능이 빠진다는
-뜻이고, 카드에는 왜 빠지는지와 어디 가면 되는지를 적는다).
+Tauri loads the same static export from `out/`
+(`src-tauri/tauri.conf.json`, `frontendDist: "../out"`). The surfaces differ at
+thin capability bridges, not copied route trees. A bridge invokes the native
+ability in the app and returns absence on the web; the UI then removes the
+action or renders an honest degradation card stating why and where it works.
 
-| 브리지 | 파일 | 웹에서 |
+| Capability | Bridge | Web behaviour |
 |---|---|---|
-| 볼트 절대 경로 | `src/shared/lib/tauri-vault-fs.ts` | FSA 핸들로 대체(경로 없음) |
-| git | `src/shared/lib/tauri-git.ts` | 실행 불가 → 강등 카드 |
-| 키체인 | `src/shared/lib/tauri-secrets.ts` | 브라우저가 원리적으로 못 함 → 강등 카드 |
-| LLM 호출 | `src/shared/lib/tauri-llm.ts` | 브라우저가 원리적으로 못 함 → 버튼 자체를 안 그림 |
-| 에이전트 연결 | `src/shared/lib/tauri-agent-setup.ts` | 절대 경로가 없어 바로 쓸 수 있는 설정을 못 만듦 → 강등 카드 |
-| **실행기(ACP)** | `src/shared/lib/tauri-acp.ts` + `src-tauri/src/acp.rs` | 브라우저는 프로그램을 띄울 권한이 없다 → 강등 카드. **단 「에이전트를 못 붙인다」가 아니다** — 사용자가 자기 쪽에서 띄운 에이전트를 이 폴더에 붙이는 길(「내 에이전트 연결」)은 웹에도 있다 |
-| **폴더 감시** | `src-tauri/src/lib.rs`(`start_vault_watch`) + `src/features/docs-vault-local/model/TauriVaultWatchBridge.tsx` | OS 워처가 없어 **주기적으로 되묻는 방식**으로 대체(burst 1500ms / idle 5000ms) → 강등이 아니라 **지연**(기능이 빠지는 게 아니라 반영이 늦을 뿐) |
+| Vault absolute path | `src/shared/lib/tauri-vault-fs.ts` | FSA handle instead; no absolute path |
+| Git | `src/shared/lib/tauri-git.ts` | unavailable; degradation card |
+| Keychain | `src/shared/lib/tauri-secrets.ts` | impossible in a browser; degradation card |
+| LLM call | `src/shared/lib/tauri-llm.ts` | impossible; action not rendered |
+| Agent setup | `src/shared/lib/tauri-agent-setup.ts` | cannot write a ready config without an absolute path; degradation card |
+| ACP runtime | `src/shared/lib/tauri-acp.ts`, `src-tauri/src/acp.rs` | cannot spawn a process; degradation card. A user may still attach an externally launched agent to the folder |
+| Folder watch | `start_vault_watch` in `src-tauri/src/lib.rs`, `TauriVaultWatchBridge.tsx` | periodic reread: 1,500 ms after a burst, 5,000 ms while idle; delayed, not unavailable |
 
-붙이는 방법은 하나다: `getInvoke()` 를 부르고, `isTauri()` 가 아니면 `null` 이
-돌아오고, 그러면 화면이 **못 한다고 정직하게 말한다**. 새로 만드는 데스크톱
-기능도 이 방법으로만 붙인다. 다른 갈래를 새로 만들지 않는다.
+Every new desktop capability uses the existing `getInvoke()`/`isTauri()`
+convention. Do not create a parallel router or surface fork.
 
-### 폴더 감시는 「강등」이 아니라 「지연」이다 — 등재하는 곳이 다른 이유
+### Folder watch is latency, not degradation
 
-앞의 다섯은 웹에서 **아예 못 하는** 것이라 강등 카드가 답이다. 여섯 번째는
-다르다: 웹도 **결국 따라온다**. 다른 것은 *언제* 다.
+The web eventually sees file changes; only timing differs.
 
-| | 앱 | 웹 |
+| | App | Web |
 |---|---|---|
-| 어떻게 아나 | OS 파일워처(`notify`), 500ms 디바운스 | 일정 간격으로 폴더를 다시 읽어 본다 |
-| **반영까지** | **1.6~2.0초** (실측, 71파일 볼트) | 방금 바뀐 직후 1.5초 / 잠잠하면 5초 |
-| 탭이 숨으면 | 계속 감시 | 다시 읽기를 멈춘다(화면이 보일 때만 돈다) |
+| Detection | OS `notify` watcher, 500 ms debounce | periodic folder reread |
+| Visible update | 1.6–2.0 s on a measured 71-file vault | 1.5 s just after activity, 5 s while idle |
+| Hidden tab | continues watching | pauses rereads |
 
-⚠️ **앱의 「반영까지」는 예전에 「0.5초 안팎」이라고 적혀 있었다 — 그건 반영
-시간이 아니라 디바운스 값이었다** (2026-08-08, 설치된 앱 실측으로 정정).
+The old “about 0.5 seconds” claim named only the debounce, not the subsequent
+full reread and compile. Installed-app measurement on 2026-08-08 remained at 71
+documents after 0.7, 1.2, and 1.6 seconds, and reached 72 at 2.0 seconds twice.
+The app is event-driven rather than uniformly faster: it avoids the quiet
+five-second interval and watches hidden tabs.
 
-체인은 둘이다: `start_vault_watch` 의 **500ms 디바운스** 뒤에 JS 가
-`vault-changed` 를 받아 **볼트를 전부 다시 읽는다**(71파일 파싱 + 컴파일).
-문서는 앞의 500ms 만 적고 뒤를 뺐다.
+Do not gate milliseconds across machines. Gate the invariant that the app
+refreshes from `vault-changed`, not polling. Large-vault latency belongs in
+incremental rereading, not marketing copy.
 
-실측 방법과 값 — 설치본을 도그푸드 볼트 사본(71파일)에 붙여 놓고 앱이 도는
-동안 노드 하나를 만든 뒤, 화면의 문서 수(71→72)가 바뀌는지를 만든 시점부터의
-여유를 줄여 가며 확인했다:
+Do not add folder watch to `DEGRADED_SURFACES`; every row there means the browser
+cannot perform the ability and `/download/` is the remedy. That claim is false
+for delayed updates. Never put “instant” over a web demonstration, and prefer
+“updates automatically” over an app claim the measured 1.6–2.0 seconds refutes.
 
-| 만든 뒤 준 시간 | 화면 반영 |
+## Only the data is shared
+
+**Contractually shared:**
+
+| Item | Guarantee |
 |---|---|
-| 0.7초 · 1.2초 · 1.6초 | 아직 71 |
-| **2.0초** | **72** (2회 재현) |
-| 3.0초 | 72 |
+| Source data | Web and app read and write the physically same Markdown folder |
+| Parsing | Web, MCP, and scripts agree through contract tests; `mcp/src/schema.mjs` owns the schema |
+| Agent records | `.ontology-atlas/activity.jsonl` and `llm-audit.jsonl` remain plain text inside the vault |
+| Overwrite protection | `patch_concept(expected_mtime)` rejects a write after another surface changed the file |
 
-**그래서 「앱이 웹보다 빠르다」는 이 표의 원래 주장은 지금 실측으로는 성립하지
-않는다** — 웹의 직후 경로가 1.5초다. 앱이 실제로 다른 점은 **속도가 아니라
-방식**이다: 이벤트로 깨어나므로 «잠잠할 때 5초를 기다리는 구간»이 없고, 탭이
-숨어도 계속 본다.
+**Deliberately not shared:**
 
-⚠️ **밀리초로 게이트(위반을 자동으로 막는 검사)를 만들지 않는다** — 이 저장소가 이미 정해 둔 규율이다
-(기계마다 달라 들쭉날쭉 실패한다, `architecture.md`). 잠글 성질은 기계와 무관한
-쪽이다: 브리지가 폴링이 아니라 `vault-changed` 이벤트로 새로 읽는가.
+- The last-opened folder handle lives in each surface's IndexedDB. It is a
+  convenience, not source data. `/download` step 02 explains the app's first
+  folder prompt.
+- API keys stay in the app keychain; display preferences stay in localStorage.
+- Browser support differs. FSA works in Chrome, Edge, Safari 18.2+, and Opera;
+  Firefox receives an honest unsupported state.
+- Concurrent-editing ergonomics are not promised. The mtime guard protects data,
+  not a smooth multi-person workflow.
 
-**이 값은 볼트 크기에 따라 커진다** — 전체 재읽기이기 때문이다. 0.5초라는 숫자가
-그 사실을 가리고 있었다. 큰 볼트에서 체감이 나쁘면 고칠 곳은 문구가 아니라
-「바뀐 파일만 다시 읽기」다.
+> Data that must cross surfaces lives inside the vault folder, as frontmatter or
+> `.ontology-atlas/*.jsonl`.
 
-그래서 **`DEGRADED_SURFACES` 목록에 넣지 않는다.** 그 목록의 각 줄은
-*"브라우저는 원리적으로 이걸 못 한다 → 갈 곳은 `/download/` 하나뿐"* 이라고
-주장하는데, 폴더 감시에 대해서는 그 주장이 **거짓**이다. 넣으면 다음에 이
-코드를 감사하는 사람이 "웹은 파일 변화를 못 본다" 로 읽게 되고, 그건 사실이
-아니다.
+Do not claim cross-surface state is shared when it lives in browser- or app-only
+storage.
 
-**대신 위의 브리지 표가 등재 장부다.** 아래에 "강등을 가르는 기준이 둘(웹↔앱 ·
-화면 폭)" 이라고 적어 둔 것과 같은 이유로, **세 번째 기준**이 여기 있다 —
-*얼마나 빨리 반영되나*. 기준이 다르면 그것을 검사하는 자동 검사도 달라야 한다.
+## Do not backfill every app ability onto web
 
-⚠️ **이 차이를 마케팅에 쓸 때의 규율**: "고치면 지도가 즉시 따라온다" 는 앱에만
-해당하는 문장이다. 웹에서도 따라오지만 **즉시는 아니다**. 시연 영상이 이 기능을
-파는 근거로 쓰이므로(2026-07-29 결정 기록), 그 문장을 웹 화면 위에 얹지 않는다.
+An app capability creates no automatic obligation to build a web copy. That
+obligation was retired in 2026-07-27 after four app-only deliveries: keychain,
+bundled MCP, updater, and Git.
 
-**그리고 앱에서도 「즉시」는 과장이다** (2026-08-08 실측 1.6~2.0초, 위 표).
-파는 문장이 기대야 할 사실은 「기다리지 않아도 알아서 따라온다」이지 「눈 깜빡할
-사이」가 아니다 — 시연 영상에서 저장 후 지도가 바뀌기까지 2초쯤 걸리는 것을
-보게 되므로, 문구가 그보다 빠른 것을 약속하면 영상 자체가 반증이 된다.
+Explicitly rejected:
 
-## 같은 것은 데이터뿐이다 — 어디까지가 계약인가
+- **Browser BYOK.** Browser storage exposes keys to one injected script, and the
+  provider header itself calls direct browser access dangerous. Revisit only if
+  providers make direct browser calls an officially supported path.
+- **Writing agent config from web.** A browser lacks the absolute path and cannot
+  safely write `.mcp.json`. This does not mean web users cannot connect agents:
+  MCP attaches to the folder, not the Atlas screen. `WebManualConnectPanel.tsx`
+  asks for the path and renders config locally without sending or saving it.
 
-**같다 (계약)**
+A degradation card states:
 
-| 무엇이 | 무엇을 보장하나 |
+1. why the ability is unavailable;
+2. where it works, usually `/download/` or one CLI command;
+3. what remains possible on the current surface.
+
+Good examples: `atlas-git-web-get-app`, `ai-connection-web-degraded`, and
+`first-run-starter-unsupported`. “Coming soon” is not an explanation. Saying an
+available path is unavailable is the opposite but equal lie.
+
+## Verification matrix
+
+| Target | Proof |
 |---|---|
-| 원본 데이터 | 디스크의 마크다운 폴더 하나. 웹(FSA 핸들)과 앱(절대 경로)이 **물리적으로 같은 폴더**를 읽고 쓴다 |
-| 읽는 방식 | frontmatter 를 읽는 코드가 셋(웹·MCP·스크립트)인데 같은 답을 내는지 계약 테스트로 맞춘다(`tests/contract/`), 스키마는 `mcp/src/schema.mjs` 하나뿐 |
-| 에이전트 기록 | `.ontology-atlas/activity.jsonl` · `llm-audit.jsonl` — **볼트 안에 평문으로** 있어서 어느 표면에서 열든 같다 |
-| 덮어쓰기 방지 | `patch_concept(expected_mtime)` — 어느 표면이 고치든, 읽은 뒤 남이 먼저 고쳤으면 쓰기를 거절한다 |
+| Shared map, docs, insights, and project screens | Browser proof covers the common bundle. Recheck the installed app only for font rendering, scrolling, or window chrome |
+| App-only keychain, Git, updater, and path abilities | Installed-app evidence only |
+| Web surface | The three cases in `tests/e2e/web-surface-smoke.spec.ts` |
 
-**안 같다 (의도해서 다르게 둔 것)**
+Links between surfaces are useful but do not promise identical reconstruction.
 
-- **"마지막에 연 볼트"는 안 넘어간다.** 웹은 웹의 IndexedDB, 앱 WebView 는
-  앱의 IndexedDB — 양쪽에서 각각 폴더를 고른다. 이건 원본이 아니라 편의를 위한
-  기억이라 계약 위반이 아니다. 웹에서 앱으로 넘어오는 순간의 안내는
-  `/download` 설치 02 단계가 맡는다("앱이 처음 묻는 것은 폴더 하나입니다").
-- **키·설정은 안 넘어간다.** API 키는 앱의 키체인에, 화면 취향은 localStorage
-  에 있다. 비밀과 취향은 볼트에 넣지 않는다.
-- **어떤 브라우저에서 되나**: FSA(브라우저가 로컬 폴더를 열게 해 주는 API)는
-  Chrome/Edge/Safari 18.2+/Opera 만 지원한다. Firefox 는 `unsupported` 로
-  못 한다고 정직하게 말한다. Windows 에서 웹은 "앱이 없으니 대신 쓰는 것"이
-  아니라 **설치 없이 바로 여는 Chromium 경로**다; 서명 없는 베타가 회사 정책에
-  막힐 때도 이 경로는 남는다.
-- **두 표면에서 동시에 편집할 때의 사용 경험은 계약 밖**이다. 위의 덮어쓰기
-  방지가 데이터는 지키지만, 두 사람이 동시에 작업할 때 흐름이 매끄럽다는 뜻은
-  아니다.
+## The three web smoke cases
 
-### 여기서 나오는 규칙 하나
+`tests/e2e/web-surface-smoke.spec.ts` proves:
 
-> **표면을 넘어야 하는 데이터는 전부 볼트 폴더 안에 산다.**
+1. **Gateway:** a vault-less first visit renders a real map, non-zero facts, and
+   two live next actions.
+2. **Fallback workbench:** selecting a fake folder actually reads it and reports
+   the right node/edge counts; unsupported FSA explains why and where to go.
+3. **Honest degradation:** every registered app-only ability gives a reason and
+   a destination that opens; no dead button remains.
 
-frontmatter 이거나 `.ontology-atlas/*.jsonl` 이다. 표면 사이를 오가야 하는
-상태를 브라우저 저장소나 앱 전용 저장소에 두고 "양쪽이 같다" 고 말하지 않는다.
+The `Web surface smoke` job in `.github/workflows/e2e.yml` runs under a broader
+condition than the rest of e2e: any runtime change, including `src-tauri/**`,
+triggers it. Add every new app-only ability to `DEGRADED_SURFACES`.
 
-## 앱에 있는 것을 웹에 똑같이 만들어 넣지 않는다
+### Capability absence and viewport absence are different
 
-앱에 새 기능이 나갈 때 **웹에도 같은 기능을 뒤늦게 채워 넣을 의무는 없다.**
-이 의무는 2026-07-27 에 공식 폐지됐다 — 의무가 있는 척하는 동안에도 실제로는
-네 번 연속(키체인·MCP 번들·업데이터·git) 웹을 채우지 않고 나갔다.
+`DEGRADED_SURFACES` contains only web-versus-app absence. A feature hidden below
+a viewport breakpoint still exists on wide web and belongs to responsive tests,
+not that registry. Mixing them would falsely claim the web cannot perform it.
 
-명시적으로 **짓지 않기로** 한 것:
+`tests/e2e/responsive-overflow-audit.spec.ts` owns viewport absence. The same
+“why + where” rule applies, but the remedy may be widening the window or using a
+neighbouring screen rather than `/download/`. Navigation removal alone is not
+sufficient: a direct URL must also provide an answer instead of becoming a trap.
 
-- **웹에서 사용자가 자기 API 키를 넣게 하는 것(BYOK)** — 브라우저 저장소에
-  둔 키는 스크립트 주입(XSS) 한 번이면 새어 나가고, 모델 제공사 자신이 그
-  용도의 HTTP 헤더 이름에 `…-dangerous-direct-browser-access`(브라우저에서
-  직접 부르는 것은 위험함)라고 써 뒀다. 원리적으로 기각한 것이라 다시 볼
-  조건은 "제공사가 브라우저 직접 호출을 공식 지원 경로로 바꿀 때" 하나뿐이다.
-- **웹에서 `.mcp.json` 같은 에이전트 설정 파일을 대신 써 주는 것** — 브라우저는
-  파일을 쓰지 못한다. 이건 지금도 그대로다.
-  - ⚠️ **이 줄을 「웹에서는 에이전트를 못 붙인다」로 읽지 말 것** (2026-08-01
-    정정, 결정 기록 「웹의 「연결 불가」는 거짓이었다」). MCP 서버는 Atlas 화면이
-    아니라 **폴더에 붙는다** — 에이전트가 자기 쪽에서 서버를 띄우고, 그 서버가
-    디스크의 볼트를 직접 읽고 쓴다. 그러니 웹 사용자도 연결된다. 못 하는 것은
-    **설정 파일을 대신 저장해 주는 것** 하나다. 브라우저가 모르는 절대 경로는
-    **사람에게 물어서** 화면에서 설정 내용을 만들어 준다
-    (`src/features/docs-vault-local/ui/WebManualConnectPanel.tsx`) — 아무것도
-    바깥으로 보내지 않고 아무것도 저장하지 않는다. 강등 카드가 실제로 되는
-    일까지 안 된다고 말하는 것도 「곧 됩니다」와 같은 종류의 거짓말이다.
+## Two distribution channels only
 
-대신 **강등 카드가 두 가지를 말해야 한다**:
+Authority: the 2026-07-27 decision that bundled MCP in the app and retired npm
+publication. Code authority: `src/shared/config/mcp-server-launch.ts`.
 
-1. **왜** 안 되는지 (사과문이 아니라 이유를 쓴다)
-2. **어디서** 되는지 (갈 수 있는 곳 — 보통 `/download/`, 또는 CLI 명령 한 줄)
+Users obtain Atlas through the app bundle, whose connect button writes absolute
+paths, or a source checkout using `node <checkout>/cli/src/index.mjs`. Neither
+`ontology-atlas` nor `ontology-atlas-mcp` exists on npm. `npx ontology-atlas init`
+is a 404, not a future path.
 
-모범: `atlas-git-web-get-app`(기록) · `ai-connection-web-degraded`(설정 AI) ·
-`first-run-starter-unsupported`(FSA 미지원). **"곧 됩니다" 는 정직한 안내가
-아니라 거짓말이다.** 오늘 안 되는 것은 안 된다고 쓴다.
+### Contract beyond lint
 
-**반대 방향도 거짓말이다 — 되는 것을 안 된다고 쓰는 것** (2026-08-01). 강등
-문장은 **못 하는 일의 범위까지** 정확해야 한다. `agent-server-unavailable` 이
-「이 화면에서는 **연결할 수 없어요**」라고 썼는데, 실제로 못 하는 것은 「설정을
-대신 **저장**해 주는 것」 하나였다. 되는 범위를 실제보다 좁게 말하면 사용자는
-할 수 있는 일을 포기한다. 그래서 강등 카드에는 셋째 항목이 붙는다:
-
-3. **이 화면에서도 되는 것이 있으면 그것도 말한다.** 갈 곳이 `/download/`
-   하나뿐이라고 가정하지 않는다 — 예전에 이 카드가 준 유일한 대안은 긴 문서
-   링크였고, 연결하려던 사람은 보고 있던 시트를 잃고 문서 한가운데에 떨어졌다.
-
-## 무엇을 어디서 확인하나 (예전의 웹↔앱 왕복 검증을 대체한다)
-
-| 대상 | 어디서 증명하나 |
-|---|---|
-| **양쪽에 다 있는 화면**(지도·문서함·공방·인사이트·프로젝트) | 브라우저에서 확인했으면 앱도 통과한 것으로 본다. 같은 번들이기 때문이다. 예외: **글자 렌더링·스크롤·창 테두리(창 제목줄·툴바)**를 건드리는 변경만 설치한 앱에서 한 번 더 확인 |
-| **앱에서만 되는 기능**(키체인·git·업데이터·절대 경로) | 설치한 앱에서 직접 해 본 것만 인정(기존 규칙 그대로). 브라우저에서 확인한 것은 증명이 아니다 |
-| **웹 표면 자체** | `tests/e2e/web-surface-smoke.spec.ts` 3종 |
-
-**웹에서 간 길과 앱에서 간 길이 같은 화면으로 이어지는지는 더 이상 검증
-대상이 아니다.** 표면 사이를 잇는 링크가 있으면 편하고, 있는 것을 지우지도
-않는다. 다만 한쪽에서 간 경로가 다른 쪽에서 똑같이 재현된다고 **보장하지는
-않는다**.
-
-## 웹 스모크 3종 — 아무도 안 보는 표면을 지키는 유일한 눈
-
-여기서 **스모크 테스트**는 "켜지기는 하는가"를 자동으로 확인하는 가장 얕은
-검사를 말한다. `tests/e2e/web-surface-smoke.spec.ts`:
-
-1. **관문** — 볼트 없이 연 첫 화면에 실제 지도와 0 이 아닌 숫자가 뜨고, 다음에
-   할 수 있는 행동 두 개가 살아 있다
-2. **차선 작업대** — 가짜 폴더 선택기로 폴더를 고르면 **실제로 읽혀서**
-   노드 수·관계 수가 맞고, FSA 를 지원하지 않는 브라우저에서는 이유와 갈 곳을
-   함께 보여 준다
-3. **정직한 강등** — 목록에 등재된 앱 전용 기능이 화면에서 이유와 갈 곳을 함께
-   말하고, 그 갈 곳이 실제로 열린다(눌러도 아무 데도 안 가는 버튼 0개)
-
-**어디에 걸려 있나**: `.github/workflows/e2e.yml` 의 `Web surface smoke` 스텝.
-이 검사가 도는 조건은 전체 테스트보다 **더 넓다** — `runtime` 쪽만 바뀌어도
-(예: `src-tauri/**` 만 고친 변경) 돈다. 데스크톱만 건드린 변경이 웹을 한 번도
-안 열어 보고 머지되는 것이 바로 이 검사가 막으려는 일이기 때문이다.
-
-**앱 전용 기능을 새로 붙이면 ③ 의 `DEGRADED_SURFACES` 목록에 한 줄을
-더한다.** 목록에 없는 기능은 웹에서 어떻게 보이는지 아무도 확인하지 않는다.
-
-### 기능이 빠지는 이유는 두 가지다 — 목록은 그중 하나만 본다 (2026-07-28)
-
-`DEGRADED_SURFACES` 는 **"웹이냐 앱이냐"** 때문에 빠지는 것만 담는다. 각 줄이
-"브라우저는 원리적으로 이걸 못 한다 → 갈 곳은 `/download/` 하나뿐" 이라고
-주장한다.
-
-두 번째 이유가 있다: **화면이 좁아서**. 같은 웹 빌드가 넓은 화면에서는 그
-화면을 그대로 여는데 좁은 화면에서만 못 여는 경우다 (첫 사례: 공방 `<lg` —
-나침 무대는 폭이 고정된 카드와 그 주위를 도는 요소들로 짜여 있어 1024px 미만
-에서는 배치가 성립하지 않는다. 설치한 앱은 `minWidth 1040` 이라 이 폭 자체가
-생기지 않고, 남는 사람은 웹 태블릿과 화면 분할 사용자다).
-
-**이 두 가지를 한 목록에 섞지 않는다.** 폭 때문에 못 여는 것을
-`DEGRADED_SURFACES` 에 넣으면 그 줄이 "웹은 이걸 못 한다" 는 거짓 주장을 하게
-되고, 다음에 감사하는 사람이 그대로 믿는다. 폭 쪽은 폭을 직접 바꿔 가며
-재는 `tests/e2e/responsive-overflow-audit.spec.ts` 가 맡는다.
-
-**「왜 + 어디로」 계약은 이유가 무엇이든 똑같이 적용된다.** 폭 때문에 못 여는
-화면도 왜 못 여는지와 어디로 가면 되는지를 함께 말해야 한다. 다만 갈 곳이
-`/download/` 하나로 고정되지 않는다 — 창을 넓히는 것, 이 폭에서도 열리는 옆
-화면이 함께 갈 곳이다. 모범: `studio-too-narrow`.
-
-**반만 막는 것이 가장 나쁘다.** 공방은 아래 내비게이션(`BottomTabBar`)에서만
-탭을 뺐고 주소로 직접 들어오는 길에는 폭 검사가 없어서, 링크 세 갈래(데이터시트
-「관계 편집」·인사이트·문서함 frontmatter)가 한 번도 확인된 적 없는 폭으로
-사용자를 그대로 던졌다. 내비에서 지웠으면 **주소로 들어왔을 때도 답해야
-한다** — 못 가게 막아 놓고 들어오는 길만 열어 두면 그건 축소가 아니라
-함정이다.
-
-## 배포 채널은 둘뿐이다 — 죽은 `npx` 안내 차단
-
-> 근거가 된 결정 기록: `docs/DECISIONS.md` 2026-07-27 「앱이 MCP 를 품는다 … npm 발행
-> 계획 폐기」. 코드 측 단일 출처: `src/shared/config/mcp-server-launch.ts`.
-
-사용자가 이 도구를 손에 넣는 길은 **앱 번들**(「에이전트 연결」 버튼이 절대
-경로가 박힌 설정을 대신 써 준다)과 **소스 체크아웃**
-(`node <checkout>/cli/src/index.mjs`) 둘뿐이다. `ontology-atlas` /
-`ontology-atlas-mcp` 는 npm 레지스트리에 없고 앞으로도 없다 — 그래서
-`npx ontology-atlas init` 은 아직 안 된다는 뜻이 아니라 **거짓말**이고,
-실제로 실행하면 404 가 난다.
-
-### lint 가 못 보는 자리는 계약 테스트가 맡는다
-
-| 규격 | 무엇이 검사하나 | lint 가 못 하는 이유 |
+| Rule | Gate | Why lint cannot see it |
 |---|---|---|
-| **사람이 보는 문서에 죽은 npm 명령이 없다** | `tests/contract/npm-channel-retired.contract.test.ts` | 위반이 사는 곳이 마크다운 산문 · YAML 이슈 템플릿 · 출시 공지 초안이다. `no-restricted-syntax` 는 JS/TS 코드만 본다 |
+| Human-facing current docs contain no dead npm command | `tests/contract/npm-channel-retired.contract.test.ts` | Violations live in Markdown, issue-template YAML, and release drafts outside JS/TS lint |
 
-이 검사의 설계 결정 두 가지:
+The gate scans current instruction surfaces, not archived history. In strict
+surfaces, any dead command is forbidden; in explanatory docs it is forbidden
+only inside code blocks, where readers are invited to run it. Self-probes cover
+six violations plus valid live paths and honest explanations.
 
-- **금지 목록이 아니라 검사 대상 목록으로 짰다.** 보관된 옛 문서
-  (`docs/archive/**`) · CHANGELOG 의 과거 항목 · 날짜가 박힌 감사/성능 측정
-  기록 · 프로토타입 초안은 **그때는 사실이었고** 그대로 남아야 한다. 검사 대상
-  목록에 없으니 구조적으로 안 건드려진다 — 따로 관리할 예외가 0개인 것이
-  요점이다. 디렉터리 단위로 적어 두어서 그 안에 새로 생기는 파일도 자동으로
-  포함된다.
-- **"언급"과 "실행하라"를 놓인 자리로 가른다.** 1군(출시 공지 초안 · 이슈
-  템플릿 · 기여 안내 · 스타터 README)에서는 전면 금지 — 없어진 설치 경로를
-  언급할 이유가 없다. 2군(README · TROUBLESHOOTING · CLI/MCP README 등)에서는
-  **코드 블록 안에서만** 금지다. "그건 안 된다"고 설명하려면 그 명령을 이름으로
-  불러야 하는데, 코드 블록 안에 있으면 그건 "복사해서 실행하라"는 뜻이기
-  때문이다. 라벨 장식 검사가 화살표를 모양이 아니라 놓인 위치로 판별하는 것과
-  같은 원리다.
+## Falsifiers
 
-이 검사 안에는 **게이트 자신을 시험하는 케이스가 함께 들어 있다**(일부러 만든
-위반 6종은 잡히고, 살아 있는 경로와 정직한 설명 문장은 통과해야 한다). 게이트가
-조용히 무력해지면 거기서 먼저 터진다.
-
-## 이 계약이 틀렸다면 무엇이 보이나
-
-아래는 **반증 조건** — 이 규칙이 틀렸다는 것을 알아차리게 해 줄, 미리 정해 둔
-관찰 결과다. 결정 기록에 적힌 것과 같다:
-
-- 웹 스모크 테스트가 **2주 연속 빨간 채 방치**되거나 방문자에게서 "웹이
-  깨졌다"는 제보가 들어오면 → 스모크 3종이 부족했던 것이다. 웹에서 확인하는
-  범위를 다시 넓힌다.
-- 방문자는 느는데 다운로드로 이어지는 사람이 계속 0이고, 그 원인이 **웹에
-  기능이 없어서**라고 관측되면 → 강등 문구를 손보는 게 아니라 **웹이 맡은
-  일 자체**를 다시 정한다.
-- **Windows 사용자의 유입이나 문의가 관측**되기 시작하면 → 웹에서 API 키를
-  받는 것을 되살리는 게 아니라 **Windows 앱을 로드맵에 올린다**.
+- If web smoke remains red for two weeks or a visitor reports a broken web
+  surface, widen its three cases.
+- If visits rise but downloads stay zero specifically because a capability is
+  missing on web, reconsider the web's job rather than polishing degradation copy.
+- When Windows traffic or support requests appear, put a Windows app on the
+  roadmap instead of restoring browser BYOK.

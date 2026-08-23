@@ -40,6 +40,104 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-23 (102) — Make all active authored Markdown English; retain only typed locale data and immutable history
+
+**Trigger**: after the operational control plane reached English-only status,
+the owner explicitly clarified that the audit must include every Markdown file,
+not only startup instructions.
+
+**Prior decision**: decision (101) correctly protected typed locale data and
+append-only history, but its deferral of current ontology and sample bodies is
+overturned. The owner accepted English as the canonical body language for active
+repository documentation. Korean display names remain available through
+`display_ko`; a future localized-body schema may restore translated long-form
+bodies without making the canonical source bilingual.
+
+**Decision (accountable: Jinan, implemented by Codex)**: require zero Hangul in
+operational and current authored Markdown. Keep `display_ko` inside leading
+frontmatter and `cli/templates/vault-ko/**` as explicit locale data. Generated
+`public/docs-vault/**` and `.agents/**` mirrors inherit their authored
+sources. Preserve prior entries in `docs/DECISIONS.md`,
+`docs/CHANGELOG.md`, package changelogs, archives, audits, completed plans,
+prototypes, and superseded loop records as historical evidence.
+
+**Verification contract**: the repository language gate ratchets both unexpected
+file count and Hangul code-point count to zero for operational and current
+scopes, validates non-empty locale exceptions, and remains wired into focused
+checks, pre-push, and CI. The dogfood ontology must still pass schema/reference
+validation after translation, and the generated docs vault must be rebuilt.
+
+**Recorded dissent**: the Korean locale's long-form ontology body now falls back
+to canonical English because the schema has localized labels but no localized
+body field. **Falsifier**: Korean-locale walkthroughs show that this blocks a
+core task rather than merely presenting English technical documentation.
+**Revisit**: when that observation exists or a localized-body schema is proposed.
+
+**Status**: valid; explicitly overturns only the current-body deferral in (101)
+
+---
+
+## 2026-08-23 (101) — Englishify the operational agent control plane first; preserve localized and append-only Markdown
+
+**Convened because**: the owner asked to make every Markdown file and every
+Claude skill English. This changes the words a new contributor or agent reads
+first and conflicts with the standing exceptions for localized data and
+append-only history.
+
+**Prior decisions**: `docs/GLOSSARY.md` still correctly makes English canonical
+for code comments and developer documentation. The measured 1,532-file comment
+translation also remains valid evidence that a repository-wide language rewrite
+creates more follow-on cost than bounded, verified batches. This record narrows
+the order of work; it does not weaken the English-canonical direction.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Shape a slice | Problem insight 2 · User moment 2 |
+| Craft | Shape a slice | Verification 2 |
+| Steward | Shape a slice | Ontology value 4 · Agent value 4 |
+| Wedge | Shape a slice | Differentiation 2 |
+| Leverage | Shape a slice | appetite: two focused days for the first integrated batch |
+
+**Rubric total**: 16/24 (threshold 18, fatal zeros: none). The static language
+mismatch is proven; a language-caused agent handoff failure is not yet observed,
+so the first batch must include a source-hidden English-agent comparison rather
+than claiming success from file counts alone.
+
+**The decisive disagreement**: a literal Hangul-zero rewrite would satisfy the
+broadest reading of the request, but it would also erase functional
+`display_ko` values, the Korean vault template, and provenance in append-only
+records. The ontology body is one raw Markdown surface for both locales, so
+replacing it with English would make the `/ko` meaning view English until
+localized bodies exist.
+
+**Decision (accountable: Jinan, implemented by Codex)**: translate the
+operational agent control plane first: `AGENTS.md`, `CLAUDE.md`,
+`.claude/rules/**`, canonical `.claude/skills/**`, and canonical
+`.claude/agents/**`; update `.agents` mirrors byte-for-byte. Preserve
+functional Korean locale data, generated copies, and prior append-only records.
+Translate current normative product documentation in later bounded batches. Do
+not translate ontology or sample bodies to English-only until the shared-body
+locale contract is resolved.
+
+**Recorded dissent**: the owner said “all Markdown”; staging can become a
+permanent excuse that leaves English contributors blocked by Korean current-state
+or historical context. **Falsifier**: an English-only source-hidden agent still
+needs translation to identify a standing rule, current product meaning, or
+required next action after the operational batch. **Revisit**: immediately after
+that comparison, or when a current normative document blocks an English
+contribution.
+
+**Slice**: IN operational control plane translation, mirror parity, a language
+inventory gate with structural locale exceptions, generated/link checks, and a
+source-hidden English-agent comparison · OUT prior
+`DECISIONS.md`/`CHANGELOG.md` entries, archives, completed plans/audits,
+`display_ko`, `cli/templates/vault-ko/**`, samples, and ontology body
+translation · appetite two focused days.
+
+**Status**: partially superseded by (102), only for the current-body deferral
+
+---
+
 ## 2026-08-23 (100) — 시연 절은 가운데 축이다. 그리고 화면의 문구는 찍은 것을 말해야 한다
 
 **소집**: 단독 PO 패스. · **트리거**: 소유자가 배포된 화면을 열고 두 가지를

@@ -8,19 +8,19 @@ display_en: Local Vault & Data Source Management
 capabilities: [capabilities/data-source-mode, capabilities/docs-vault-local, capabilities/project-data-source, capabilities/vault-sample-source]
 elements: [elements/atlas-git-panel, elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/git, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
 created_by: human
-relation_notes: { elements/native-vault-filesystem-bridge: 네이티브 vault 파일시스템 브리지는 로컬 볼트·데이터 소스 도메인의 직접 구현 요소다. }
+relation_notes: { elements/native-vault-filesystem-bridge: The native vault filesystem bridge is a direct implementation element of the local vault/data source domain. }
 ---
 
-## 정의
-로컬 디스크의 마크다운 폴더를 고르고(File System Access API), git을 진실원으로 쓰며, 데모용 샘플 볼트를 제공하는 로컬-퍼스트·백엔드 0 데이터소스 계층.
+## Definition
+A local-first, backend-0 data source layer that selects markdown folders on the local disk (File System Access API), uses git as the source of truth, and provides demo sample vaults.
 
-## 근거
+## Evidence
 - README.md: "A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database."
-- docs/ARCHITECTURE.md: "There is no backend, no server database, no auth provider. The user's markdown folder is the single source of truth." (risky-citation 경고: README.md와 함께 인용하여 상호 검증)
+- docs/ARCHITECTURE.md: "There is no backend, no server database, no auth provider. The user's markdown folder is the single source of truth." (risky-citation warning: cite alongside README.md for mutual verification)
 
-## 포함 / 제외
-- 포함: 폴더 선택, 모드 분기(vault-picked vs static/sample), 활성 프로젝트 판정, 샘플 볼트
-- 제외: 그래프 편집 UI 자체(Studio는 graph-modeling)
+## Inclusion / Exclusion
+- Included: Folder selection, mode branching (vault-picked vs static/sample), active project determination, sample vaults
+- Excluded: The graph editing UI itself (Studio handles graph-modeling)
 
-## 확신도
-high (0.9): README 직접 인용 + 독립 소스(ARCHITECTURE.md) 대조
+## Confidence
+high (0.9): Direct README citation + cross-reference with independent source (ARCHITECTURE.md)

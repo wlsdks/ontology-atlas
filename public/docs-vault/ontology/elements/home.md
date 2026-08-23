@@ -8,4 +8,4 @@ path: src/views/home
 created_by: "agent:unknown"
 ---
 
-/ 홈 진입 페이지.
+/ Home entry page.

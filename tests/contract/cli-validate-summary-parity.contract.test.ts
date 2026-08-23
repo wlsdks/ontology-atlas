@@ -88,7 +88,7 @@ describe("cli validate — 텍스트 요약과 --json 이 같은 수를 말한�
     const summary = text.trim().split("\n").at(-1) ?? "";
     expect(summary).toContain(`error ${errors}`);
     expect(summary).toContain(`warning ${warnings}`);
-    expect(summary).toContain(`${issues.length} 문제`);
+    expect(summary).toContain(`${issues.length} issues`);
   });
 
   it("정상 볼트는 clean 이라고 말한다 (항상-빨강 아님)", () => {

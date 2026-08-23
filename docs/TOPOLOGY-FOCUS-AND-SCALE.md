@@ -21,9 +21,9 @@ Two issues, one root cause.
    graph mounts `NodeDetailPanel`
    (`src/views/ontology-view/ui/OntologyViewPage.tsx`) as a full-bleed overlay.
    It hides the graph (you lose where the node was), repeats labels
-   (`개념 정보` appears as eyebrow + left-nav tab + fact-card title), surfaces
-   raw jargon (`영향받음 1 · 의존 68`, `연결함 18 · 참조됨 10`), and can
-   contradict itself (`도메인 없음` while a card shows the domain). It reads as
+   (`Concept Info` appears as eyebrow + left-nav tab + fact-card title), surfaces
+   raw jargon (`Affected by 1 · Depends on 68`, `Connects to 18 · Referenced by 10`), and can
+   contradict itself (`No domain` while a card shows the domain). It reads as
    auto-generated, not as a focused tool.
 2. **The whole graph is shown at once.** The default view drops every node
    (287 in the dogfood vault, 2–3k+ in real ones) into one canvas — a
@@ -56,7 +56,7 @@ demand). See [References](#references).
 | **Overview (default)** | Domains + hubs only (semantic-zoom level 0), not all 2–3k nodes. A short "start here" hint. |
 | **Hover** | Lightweight preview: highlight the node + its direct neighbors; optional tooltip (title · kind · 1-line). No layout change. |
 | **Focus (click)** | Graph keeps the node + its **ego network (direct neighbors)** at full opacity; everything else dims to `opacity 0.15` (existing filter-toggle motion) or hides. A **compact popover** anchors near the clicked node. |
-| **Full detail (opt-in)** | The existing `NodeDetailPanel` content, reached via the popover's `자세히 보기`. This is the *only* place the large surface appears — and it is now a deliberate drill, not the click default. |
+| **Full detail (opt-in)** | The existing `NodeDetailPanel` content, reached via the popover's `View Details`. This is the *only* place the large surface appears — and it is now a deliberate drill, not the click default. |
 | **Clear** | `Esc` / click empty canvas / popover close → restore the overview. |
 
 ### The compact popover
@@ -68,16 +68,16 @@ the oversized `28px` detail-card radius which reads as decorative at popover
 size). Contents, top to bottom:
 
 1. **Eyebrow + title** — kind label (mono, quaternary) + node title. No
-   duplicate "개념 정보" stutter.
+   duplicate "Concept Info" stutter.
 2. **One-line description** — first prose line of the node, truncated.
 3. **Connected nodes** — the ego list, grouped by relation/kind, each row a
    click target that re-focuses to that neighbor (incremental ego walk, the
    Bloom/Linkurious pattern). Cap visible rows (e.g. 6) with `… +N`.
 4. **Plain-language counts** — replace jargon:
-   - `영향받음 1` → **"이 노드를 쓰는 곳 1"** (incoming)
-   - `의존 68` → **"필요한 항목 68"** (outgoing/transitive)
+   - `Affected by 1` → **"Places using this node: 1"** (incoming)
+   - `Depends on 68` → **"Required items: 68"** (outgoing/transitive)
 5. **Actions rail** — keep the workbench exits the design system already
-   mandates: `자세히 보기` (full panel), `Builder` (edit), `Insights` (query).
+   mandates: `View Details` (full panel), `Builder` (edit), `Insights` (query).
    One row, compact.
 6. **Close** (`✕` / `Esc`).
 
@@ -108,7 +108,7 @@ layout — not node count. Order of mitigation:
 2. **Level-of-detail labels** — `hideLabelsOnMove` / `hideEdgesOnMove` during
    interaction; show labels only above a zoom threshold or for hubs/ego.
 3. **Edge culling** — keep the existing "representative edges only"
-   (`1/496 표시 중`) behavior.
+   (`Showing 1/496`) behavior.
 4. **Clustering / combos** — above ~5k, aggregate by domain into super-nodes
    that expand on demand.
 
@@ -116,7 +116,7 @@ layout — not node count. Order of mitigation:
 
 - **In scope:** topology click → ego focus + popover; overview-first default;
   jargon → plain language; LOD/label perf settings; keep full `NodeDetailPanel`
-  behind `자세히 보기`.
+  behind `View Details`.
 - **Out of scope:** Builder/Insights redesign; new graph queries (ego data
   already exists); the `/ontology` tree page (it may reuse the popover later,
   but this spec targets topology).

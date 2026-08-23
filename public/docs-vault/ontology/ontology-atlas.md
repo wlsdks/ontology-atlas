@@ -5,7 +5,7 @@ kind: project
 title: Ontology Atlas
 display_ko: 온톨로지 아틀라스
 display_en: Ontology Atlas
-description: 사람과 AI 에이전트가 제품의 의미와 구현 근거를 같은 로컬 마크다운 그래프로 읽고 함께 가꾸는 온톨로지 워크벤치.
+description: An ontology workbench where humans and AI agents read and cultivate the product's meaning and implementation evidence together in a local Markdown graph.
 domains: []
 capabilities: []
 elements: []
@@ -14,19 +14,19 @@ created_by: human
 path: README.md
 ---
 
-## 정의
-로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다.
+## Definition
+A local-first ontology workbench that transforms frontmatter from a local Markdown vault into a computable graph with types (domain, capabilities, implementation evidence, dependencies, impacts). Developers use CLI/web, and AI coding agents use MCP to read and write the same files.
 
-## 근거
+## Evidence
 - README.md: "Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product"
 - AGENTS.md: Project overview ("a local-first ontology workbench for understanding a product/system from business core to implementation evidence")
 
-## 포함 / 제외
-- 포함: 그래프 스키마·컴파일·쿼리, MCP/CLI 에이전트 연동, 로컬 볼트 관리, 토폴로지 탐색, 프로젝트 포트폴리오, 온보딩·배포·앱 셸
-- 제외: 백엔드/인증/클라우드 협업 (R10에서 영구 제거, Layer 2로만 조건부 재도입)
+## In Scope / Out of Scope
+- In scope: Graph schema, compilation, querying, MCP/CLI agent integration, local vault management, topology browsing, project portfolio, onboarding/deployment/app shell
+- Out of scope: Backend/authentication/cloud collaboration (permanently removed in R10, conditionally reintroduced only for Layer 2)
 
-## 확신도
-high (README + AGENTS.md 직접 인용)
+## Confidence
+high (direct quote from README + AGENTS.md)
 
 ## Competency answers
 

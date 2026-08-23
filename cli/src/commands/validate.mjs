@@ -303,7 +303,7 @@ export function runValidate(args) {
   // "vault clean ✓" certifies files that were never opened.
   if (unreadable.length > 0) {
     console.log(
-      `\n${COLORS.yellow}[validate] 읽지 못한 파일 ${unreadable.length}건: 아래는 검사 범위 밖입니다.${COLORS.reset}`,
+      `\n${COLORS.yellow}[validate] Could not read ${unreadable.length} file(s); excluded from validation scope:${COLORS.reset}`,
     );
     for (const { file, message } of unreadable) {
       console.log(`  ${COLORS.yellow}?${COLORS.reset} ${relative(vaultPath, file).replace(/\\/g, '/')} · ${message}`);
@@ -320,10 +320,10 @@ export function runValidate(args) {
     // Once the sentence states the scope, the two answers stop contradicting each
     // other and become two different checks.
     console.log(
-      `${COLORS.green}[validate] ${files.length - unreadable.length} 파일 스캔: frontmatter · 그래프 참조 issue 0 ✓${COLORS.reset}`,
+      `${COLORS.green}[validate] Scanned ${files.length - unreadable.length} files: 0 frontmatter or graph-reference issues ✓${COLORS.reset}`,
     );
     console.log(
-      `${COLORS.dim}          코드 경로 대조(elements:/path: 가 실재하는 파일인가)는 이 검사에 없다: \`ontology-atlas health\` 가 본다.${COLORS.reset}`,
+      `${COLORS.dim}          Code-path existence for elements:/path: is outside this check; \`ontology-atlas health\` verifies it.${COLORS.reset}`,
     );
     return unreadable.length > 0 ? 1 : 0;
   }
@@ -369,11 +369,11 @@ export function runValidate(args) {
       modeTag = ` ${COLORS.dim}[--fail-on=${failOn.join(',')}: no match → exit 0]${COLORS.reset}`;
     }
   } else if (strict && warningFiles > 0) {
-    modeTag = ` ${COLORS.dim}[--strict: warning 도 exit 1]${COLORS.reset}`;
+    modeTag = ` ${COLORS.dim}[--strict: warnings also exit 1]${COLORS.reset}`;
   }
   console.log(
-    `\n[validate] ${files.length - unreadable.length} 파일 스캔 / ` +
-      `${reports.length} 파일에 ${allIssues.length} 문제 ` +
+    `\n[validate] scanned ${files.length - unreadable.length} files / ` +
+      `${allIssues.length} issues in ${reports.length} files ` +
       `(${COLORS.red}error ${errorIssues}${COLORS.reset} · ` +
       `${COLORS.yellow}warning ${warningIssues}${COLORS.reset})${modeTag}`,
   );

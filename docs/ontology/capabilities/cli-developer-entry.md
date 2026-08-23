@@ -16,61 +16,48 @@ display_en: Terminal Commands
 
 # CLI Developer Entry
 
-앱이나 MCP 클라이언트 없이도 같은 로컬 마크다운 볼트를 검사·조회·작성하고,
-에이전트 연결과 그래프 작업을 터미널에서 재현하게 하는 운영 진입점이다.
+An operational entry point that allows inspecting, querying, and writing local markdown vaults without an app or MCP client, and reproducing agent connections and graph operations in the terminal.
 
-## 사용자 결과
+## User Outcomes
 
-- 개발자와 에이전트는 새 vault 생성부터 검증, 의미 조회, 관계 분석, 안전한 로컬
-  체크포인트까지 하나의 명령 표면에서 수행한다.
-- MCP가 연결되지 않은 환경에서도 동일한 compiler/query 결과와 복구 명령을 받아
-  작업을 이어갈 수 있다.
-- `--json` 출력은 자동화가 산문을 파싱하지 않고 상태·경고·다음 행동을 판단하게 한다.
+- Developers and agents perform new vault creation, verification, semantic queries, relationship analysis, and safe local checkpoints on a single command surface.
+- In environments where MCP is not connected, the same compiler/query results and recovery commands are received to continue work.
+- `--json` output allows automation to determine state, warnings, and next actions without parsing prose.
 
-## 정체성 경계
+## Identity Boundary
 
-- `init`·`add`·`import`·`bootstrap`은 새 노드의 lowercase UUIDv4 `uid`를 한 번
-  발급한다. list/find JSON은 `{uid, slug}`를 함께 반환한다.
-- exact find는 UID와 slug를 지원하지만, 관계·경로·URL 인자는 읽을 수 있는 slug를
-  유지한다.
-- `validate`는 missing/invalid/duplicate primary·merged UID를 오류로 막고,
-  interop export는 `urn:uuid:<uid>`를 외부 정체성으로 사용한다.
+- `init`, `add`, `import`, and `bootstrap` issue a lowercase UUIDv4 `uid` for new nodes once. list/find JSON returns `{uid, slug}` together.
+- Exact find supports both UID and slug, but relationship/path/URL arguments maintain readable slugs.
+- `validate` blocks missing/invalid/duplicate primary keys and merged UIDs as errors,
+  while interop export uses `urn:uuid:<uid>` as the external identity.
 
-## 핵심 흐름
+## Core Flow
 
-1. `init` 또는 기존 vault의 `agent-setup`으로 로컬 작업 좌표를 준비한다. ready는
-   절대 경로의 bundled binary 또는 `node` + 절대 `mcp/src/index.js`라는 지원
-   launch shape와 실제 대상 파일·vault 좌표가 모두 맞을 때만 성립하며, 퇴역한
-   `npx` 설정은 review로 남긴다.
-   `init --quick-start`는 scaffold/config write와 bootstrap/MCP verification을 분리해,
-   뒤 단계 실패 시 nonzero와 unverified 상태·실행 가능한 diagnose/retry 명령만
-   남기며 성공한 경우에만 완료 3-step을 보여 준다.
-2. `validate`, `overview`, `workspace-brief`, `agent-brief`로 상태와 시작점을 읽는다.
-3. `find`, `show`, graph query 명령으로 필요한 노드·경로·영향만 좁혀 본다.
-4. `add` / `import` / `bootstrap`과 명시적 apply 명령으로 승인한 변경만 쓴다.
-   단 `infer-imports --apply`는 차단되고 bootstrap/index도 import endpoint나 의미
-   `depends_on`을 자동 작성하지 않는다. 미리보기의 선은 `imports`로 표시되며,
-   import는 정확한 근거가 붙은 검토 후보이지 승인된 의존 관계가 아니다.
-5. `mcp-verify`, `preflight`, `snapshot`으로 연결·영향·로컬 Git 체크포인트를 검증한다.
+1. Prepare local workspace coordinates via `init` or an existing vault's `agent-setup`. `ready` holds only when both the supported launch shape (absolute path to bundled binary or `node` + absolute `mcp/src/index.js`) and the actual target file/vault coordinates match; the retired `npx` setup remains in review.
+   `init --quick-start` separates scaffold/config write from bootstrap/MCP verification, leaving only nonzero status, unverified state, and executable diagnose/retry commands on failure, while showing the complete 3-step process only on success.
+2. Read status and starting points with `validate`, `overview`, `workspace-brief`, and `agent-brief`.
+3. Narrow down necessary nodes, paths, and impacts using `find`, `show`, and graph query commands.
+4. Write only approved changes via `add` / `import` / `bootstrap` and explicit apply commands.
+   However, `infer-imports --apply` is blocked, and bootstrap/index does not automatically write import endpoints or semantic `depends_on`. Preview lines are marked with `imports`, and imports are review candidates with precise justification, not approved dependencies.
+5. Verify connections, impacts, and local Git checkpoints with `mcp-verify`, `preflight`, and `snapshot`.
 
-## 포함 / 제외
+## Inclusions / Exclusions
 
-- 포함: vault scaffold/import/validate, MCP 연결 진단, deterministic graph query와
-  agent handoff, repo 분석 제안, 명시적 write/apply, vault 범위 Git preflight/snapshot.
-- 제외: npm 전역 배포, 원격 백엔드, 모델 실행, 자동 push, 사용자 승인 없는 의미
-  생성·저장, 소스 구조 검색 도구의 대체.
+- Included: vault scaffold/import/validate, MCP connection diagnostics, deterministic graph queries and
+  agent handoff, repo analysis suggestions, explicit write/apply, vault scope Git preflight/snapshot.
+- Excluded: npm global distribution, remote backends, model execution, automatic push, semantic
+  generation/storage without user approval, replacement of source structure search tools.
 
-## 구현 근거
+## Implementation Basis
 
-- `cli/src/index.mjs` · `cli/src/lib/cli-commands.mjs`: 명령 dispatcher와 registry
-- `cli/src/commands/`: 각 명령 구현
-- `cli/src/lib/mcp-call.mjs`: MCP와 같은 구조화 결과를 쓰는 graph 명령 경계
-- `src/shared/config/mcp-server-launch.ts`: 앱과 CLI가 공유하는 두 launch shape 판정
-- `scripts/smoke-packed-cli.mjs`: 실제 tarball 설치 환경에서 quick-start 성공과
-  주입된 부분 실패의 exit·문구·runtime import 완전성을 함께 보는 end-to-end smoke
-- `cli/README.md`: 현재 명령·옵션의 상세 단일 진실원
+- `cli/src/index.mjs` · `cli/src/lib/cli-commands.mjs`: command dispatcher and registry
+- `cli/src/commands/`: individual command implementations
+- `cli/src/lib/mcp-call.mjs`: graph command boundary writing structured results like MCP
+- `src/shared/config/mcp-server-launch.ts`: determination of two launch shapes shared by app and CLI
+- `scripts/smoke-packed-cli.mjs`: end-to-end smoke test viewing quick-start success, injected partial failures' exit codes/messages/runtime import completeness in actual tarball installation environments together
+- `cli/README.md`: detailed single source of truth for current commands/options
 
-## 확신도
+## Confidence Level
 
-high (0.95): local/integration/packed CLI suite와 MCP parity contract가 같은 vault
-규격과 결과 shape를 검증한다.
+high (0.95): local/integration/packed CLI suite and MCP parity contract verify the same vault
+specification and result shapes.

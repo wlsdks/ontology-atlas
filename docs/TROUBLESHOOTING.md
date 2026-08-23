@@ -70,7 +70,7 @@ Intentional — `add` never overwrites. If you want to update the doc:
 - Use the MCP `patch_concept` tool (AI agent), or
 - Delete the file (`rm`) then re-`add`.
 
-### `pnpm vault:migrate <id> --write` refuses with "commit 안 된 .md 변경"
+### `pnpm vault:migrate <id> --write` refuses with "uncommitted .md changes"
 
 Safety guard (R11 #21). The migrator refuses to write on top of uncommitted `.md` changes — your work and the migration would mix in the same commit.
 

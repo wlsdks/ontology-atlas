@@ -100,14 +100,14 @@ describe('design-build 레시피 — 참조 무결성', () => {
      */
     expect(recipe, '기존 토큰을 먼저 찾으라는 절이 있어야 한다').toContain('--control-h-');
     expect(recipe).toContain('app/globals.css');
-    expect(recipe, '늘리는 규칙 문서를 가리켜야 한다').toMatch(/시스템을 늘리는 규칙/);
+    expect(recipe, 'the recipe must point to the system-growth rules').toMatch(/System growth rules/i);
   });
 
   it('그 규칙 문서가 실재하고 여섯 조항을 담는다', () => {
     const ds = read('docs/DESIGN-SYSTEM.md');
-    expect(ds).toMatch(/시스템을 늘리는 규칙/);
+    expect(ds).toMatch(/Rules for extending the system/i);
     for (const n of [0, 1, 2, 3, 4, 5, 6]) {
-      expect(ds, `규칙 ${n} 이 없다`).toMatch(new RegExp(`규칙 ${n} —`));
+      expect(ds, `Rule ${n} is missing`).toMatch(new RegExp(`Rule ${n} —`));
     }
   });
 });

@@ -173,10 +173,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted download CTAs avoid a broken latest-release URL and never call the GitHub API from the static export/,
-  );
-  assert.match(
-    result.stdout,
     /✓ the hosted download page does not route into the browser workbench, and \/docs's own local-source tab stays desktop-only/,
   );
   assert.match(

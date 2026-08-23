@@ -8,4 +8,4 @@ path: src/views/project-detail
 created_by: "agent:unknown"
 ---
 
-프로젝트 상세 페이지. 프로젝트 자체의 설명·구성·연결뿐 아니라, 사용자가 선택한 construction qualification envelope을 session에서만 읽어 현재 결정, 첫 blocker, 사람 승인, exact plan을 같은 artifact의 근거와 함께 판단하게 한다. malformed, project/digest/plan mismatch는 실패 닫고 작성 후 maintenance는 qualification과 분리한다.
+Project detail page. Beyond the project's own description, composition, and connections, it allows users to read the selected construction qualification envelope only for the current session, enabling judgment of current decisions, first blockers, human approvals, and exact plans alongside evidence from the same artifact. Malformed data or project/digest/plan mismatches are closed as failures; post-write maintenance is separated from qualification.

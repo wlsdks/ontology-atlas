@@ -1,131 +1,88 @@
 ---
 name: gate-probe
-description: Prove a gate before you trust it. Run whenever you add or change a lint rule, contract test, e2e spec, or CI step — a gate that only ever passes is indistinguishable from no gate at all. This skill measures the violation census before switching a rule on, then reverts the defect to prove the gate turns red, then checks the detector is not idling on an empty set. Use it on every new check, and on any existing check you are about to rely on.
+description: Prove a gate before trusting it. Inventory violations, plant a defect, verify RED, restore GREEN, prevent idle scans, and confirm automatic wiring.
 ---
 
-# /gate-probe — 통과는 증거가 아니다
+# Gate probe
 
-**초록인 게이트는 두 가지 중 하나다: 지키고 있거나, 아무것도 안 보고 있거나.**
-둘은 화면에서 똑같이 생겼다. 이 스킬은 그 둘을 가른다.
+A green gate may be protecting the product or looking at nothing. Deliberately
+breaking the protected property is how to tell.
 
-먼저 이 문서에 계속 나오는 말 둘:
+- A **gate** is an automated check that blocks a violation: lint, contract test,
+  e2e spec, or CI step.
+- A **probe** is a defect planted on purpose to prove that gate turns red.
 
-- **게이트(gate)** — 조건을 안 지키면 실패하게 만들어 둔 자동 검사. lint 룰 ·
-  계약 테스트 · e2e 스펙 · CI 스텝이 전부 게이트다.
-- **프로브(probe)** — 그 게이트가 정말 잡는지 보려고 **일부러 틀린 것을 넣어
-  보는 것**. 이 스킬 이름의 「probe」가 그 뜻이다.
+This repository has shipped gates that searched generated prose instead of the
+screen, stayed green after the subject was deleted, checked only a function name,
+matched zero files, or were invoked by no workflow. None had been probed.
 
-## 이 절차가 없어서 실제로 일어난 일 (전부 이 저장소, 2026-08 첫 이틀)
+## 0. State the property
 
-- **자기가 검사한다고 말한 것을 한 번도 실제로 검사해 본 적 없는 게이트.**
-  `/topology` 스모크 검사가 `canvas-v2` 같은 표식 몇 개가 페이지에 있는지를
-  봤는데, 그 이름들은 정작 컴포넌트에는 없고 **자동 생성된 문서함 JSON 안의
-  설명 문장**에만 있었다. 그 JSON 이 페이지에 통째로 실려 나가니 검사가
-  통과했다. 볼트를 다시 생성해 그 문장이 사라지자 — 토폴로지 화면은 멀쩡한데 —
-  릴리스가 막혔다. **엉뚱한 이유로 통과하다가, 상관없는 변경에 실패한다.**
-- **검사 대상을 통째로 지워도 초록인 시험.** 테스트용 고정 데이터가 이미 검사
-  대상을 `null` 로 만들어 놔서, 수리 코드를 통째로 지워도 통과했다.
-- **동작이 아니라 이름만 본 게이트.** "소스 코드에 그 함수 이름이 들어 있나" 를
-  봤더니, 훅에서 그 기능을 실제로 떼어냈는데도 이름이 남아 있어서 통과했다.
-- **아무 파일에도 안 걸리는 파일 패턴(글롭).** 규칙 파일도 있고 YAML 도 유효하고
-  에러도 안 나는데, 검사 대상 파일이 0개라 규칙만 없는 것이나 마찬가지가 됐다.
-- **어느 CI 워크플로에서도 안 불리는 테스트 묶음.** 162초짜리 통합 시험이
-  "별도 스텝에서 돌린다"는 주석과 함께 빠졌는데, 그 스텝은 만들어진 적이 없다.
-  몇 주 동안 빨간 채로 아무도 몰랐다.
+Write one sentence describing the product fact the gate protects. Distinguish the
+fact from its implementation. “The three installation stages remain reachable”
+is a property; “scroll equals zero” is an implementation detail.
 
-공통점: **아무도 일부러 틀리게 만들어 보지 않았다.**
+## 1. Inventory before enabling
 
-## 절차
+For a new rule, count every current hit and classify it by pattern and legitimacy.
+Confirm the real violations fit one pull request. Hundreds of new warnings are
+noise that hides existing signal. A global raw-shadow ban once raised warnings
+from 144 to 548; a measured selector found five actual defects.
 
-### 0. 이 게이트가 지키는 것을 한 문장으로 쓴다
+If signal cannot be separated from noise, do not create the rule. Record the
+inventory and why the gate was rejected.
 
-이 문서는 그 한 문장을 **property**(항상 참이어야 하는 사실)라고 부른다. 못 쓰면
-아직 게이트가 아니다. 그 문장은 **사용자가 보는 제품의 사실**이어야 한다 —
-"스크롤이 0이다" 가 아니라 "설치 3단이 접히지 않는다". 지키려는 사실과 그것을
-구현한 방식을 헷갈리면 게이트가 양쪽으로 틀린다: 구현 방식만 붙들면 정당한 설계
-변경에도 실패하고, 그 구현을 지우면 지키려던 사실까지 같이 사라진다.
+## 2. Plant the defect and require RED
 
-### 1. 켜기 전 전수 측정 (새 룰일 때만)
+Temporarily restore the exact defect or insert one violating line. Run the gate.
+If it stays green, the gate does not exist.
 
-「전수 측정」은 **이 룰을 지금 켜면 몇 건이 걸리는지 하나도 빠뜨리지 않고 세어
-보는 것**이다. `.claude/rules/design-gates.md` 「룰을 켜기 전 반드시 측정한다」의 4단계를
-그대로 따른다. 걸린 것을 **패턴별로 분류**하고, 진짜 위반이 한 PR 로 치울 만한
-규모인지 본다.
+- Change only the probe line; never use `git checkout -- <file>` and erase other work.
+- Confirm the failure message identifies what and where to fix.
+- Probe every independently protected condition.
+- Restore the line immediately and require GREEN again.
 
-> 수백 건씩 warning 을 만드는 룰은 강제가 아니라 소음이고, 기존에 잘 돌던 신호까지
-> 덮어서 게이트 전체를 무력하게 만든다. 실측: `shadow-\[` 전면 금지가 lint 경고를
-> 144 → 548 로 올렸고, 범위를 좁혀 보니 진짜 위반은 5건이었다.
+## 3. Block idle scans
 
-**소음이 신호를 덮을 것 같으면 룰을 만들지 않는다.** 안 만든 것도 결론이니 근거가
-된 수치와 함께 기록한다. 이 저장소는 가이드 문구 게이트를 이 단계에서 기각했다
-(걸린 36건 중 19건이 예시·자리표시 문구였다).
+A scan over zero subjects is always green. Count the subjects and fail at zero.
+For glob-based rules, prove the glob matches real files. A ratchet baseline that
+would fail when the scan narrows is another valid anti-idle layer.
 
-### 2. 일부러 틀리게 만들어 놓고 실패하는지 본다 — **이 스킬에서 가장 중요한 단계**
-
-방금 고친 결함을 **일부러 원래대로 되돌려 놓고** 게이트를 돌린다. 그래도 실패하지
-않으면 그 게이트는 없는 것이나 같다.
-
-- 되돌릴 때는 **그 줄만** 고친다. `git checkout -- <file>` 은 쓰지 마라 — 그 파일에
-  해 둔 다른 작업까지 같이 날아간다(실제로 그렇게 날린 적 있다).
-- 실패 메시지가 **어디를 고쳐야 하는지** 말해 주는지도 같이 본다. 게이트의 값어치
-  절반은 실패했을 때 나오는 그 문장에 있다.
-- 되돌려 둔 것을 **반드시 원래대로 복구**하고 다시 초록인지 확인한다.
-
-여러 조건을 한꺼번에 잠근 게이트는 **조건마다 하나씩** 되돌려 본다. 하나만
-확인하면 나머지 조건은 여전히 아무것도 안 보고 있을 수 있다.
-
-### 3. 게이트가 진짜로 무언가를 보고 있는지 본다 (빈손으로 도는 것 차단)
-
-게이트가 **검사 대상이 하나도 없는 채로 초록**일 수 있다. 이 문서는 그 상태를
-「공회전」이라고 부른다. 대상 수를 세어 0이 아님을 단언하는 줄을 게이트 안에 둔다.
-
-```
-expect(keys.length).toBeGreaterThan(0);   // 0이면 이 시험 전체가 공회전한다
-expect(count, "레일 목적지를 하나도 못 찾았다").toBeGreaterThan(3);
-expect(sawOriginChange, "폭 목록이 원점을 한 번도 못 바꿨다").toBe(true);
+```ts
+expect(keys.length).toBeGreaterThan(0);
+expect(measured, 'the collector measured nothing').toBeGreaterThan(3);
 ```
 
-파일 패턴(글롭)으로 검사 대상을 고르는 룰은 **실제로 걸린 파일이 몇 개인지**
-확인한다. 0개면 그 규칙은 조용히 사라진 것이다.
+## 4. Confirm automatic wiring
 
-### 4. 실제로 자동으로 돌고 있는지 확인한다
+- Find the exact CI workflow and step that invokes the gate.
+- Confirm `pnpm checks:changed -- <affected paths...>` recommends it.
+- A check that depends on human memory is not a gate.
 
-만들어 둔 것과 실제로 도는 것은 다르다.
+## 5. Document it
 
-- CI 의 어느 워크플로/스텝이 이걸 부르나? `.github/workflows/**` 에서 **이름으로**
-  찾아 확인한다. 없으면 그 스텝을 같은 PR 에서 만든다.
-- 내 컴퓨터에서는 `pnpm checks:changed -- <바꾼 경로들>` 이 이걸 추천하나? 안 하면
-  경로-검사 연결을 넓힐지 판단한다.
-- 사람이 기억해서 손으로 돌려야만 도는 게이트는 게이트가 아니다.
+Add the command to `docs/DEVELOPMENT-CHECKS.md` and mention it in `README.md`.
+When a contract covers a layer lint cannot see, register that layer in the design
+rule table too.
 
-### 5. 문서에 올린다
-
-새 검사는 `docs/DEVELOPMENT-CHECKS.md` 와 `README.md` 명령 목록에 넣는다
-(`.claude/rules/documentation.md`). 값을 보는 lint 로는 못 잡아서 계약 테스트로
-만든 것이면 `design.md` 의 「lint 가 못 보는 층」 표에 한 줄 더한다.
-
-## 보고 형식
+## Report
 
 ```md
-## 게이트 프로브 — <게이트 이름>
+## Gate probe — <name>
 
-**지키는 property**: [제품의 사실 한 문장]
-**전수 측정**: [위반 N건 · 분류 / 새 룰이 아니면 "해당 없음"]
-**되돌리기**: [무엇을 되돌렸나] → [빨개졌나 / 메시지가 어디를 가리켰나]
-**공회전 차단**: [대상 수를 세는 단언 위치]
-**물려 있는 곳**: [워크플로·스텝 이름 / checks:changed 추천 여부]
-**판정**: 신뢰 가능 / 아직 아님(사유)
+**Property**: <one product fact>
+**Inventory**: <N violations and classification, or not applicable>
+**Probe**: <inserted defect> → <RED and diagnostic>
+**Idle protection**: <subject-count assertion>
+**Wiring**: <workflow step and checks:changed mapping>
+**Decision**: trustworthy / not yet trustworthy because …
 ```
 
-## 하지 말 것
+## Never
 
-- 통과했다는 이유로 믿기. **통과는 증거가 아니다.**
-- 사람이 쓴 문장 하나를 `assert.match` 로 못박기(`documentation.md` — 1,915개가
-  그렇게 틀렸다). 검사는 **다시 생성해서 diff · 참조가 실제로 존재하는지 ·
-  코드에서 뽑아낸 것과 대조** 셋 중 하나여야 한다.
-- 금지어 목록을 사람이 손으로 관리하게 만들기. 항목을 안 더하면 검사가 조용히
-  무력해지고, 더하면 사람이 계속 잡일을 하게 된다.
-- 게이트가 실패했을 때 게이트를 먼저 의심하지 않기. **그날 셋은 코드가 아니라
-  게이트가 틀린 경우였다** — 이미 없어진 표식을 찾던 검사, 워크트리 사본까지
-  훑던 링크 검사, 버려진 시안을 전제로 삼고 있던 시험. 다만 그 판정은 **재 보고
-  나서** 내린다. "게이트가 틀렸겠지" 는 가장 편한 오답이다.
+- Trust a gate merely because it passes.
+- Pin a human-written sentence. Generate and diff, verify a reference, derive
+  expected data from code, or mechanically inventory syntax instead.
+- Maintain a hand-written forbidden-word list that weakens unless expanded.
+- Assume a failure means product code is wrong before reproducing the gate's
+  subject. Several past red gates were stale or scoped incorrectly.

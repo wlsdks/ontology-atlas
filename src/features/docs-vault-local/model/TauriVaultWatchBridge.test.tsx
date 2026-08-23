@@ -37,7 +37,7 @@ const localVaultMocks = vi.hoisted(() => ({
   useLocalVault: vi.fn(),
 }));
 
-vi.mock('./LocalVaultProvider', () => ({
+vi.mock('./local-vault-context', () => ({
   useLocalVault: localVaultMocks.useLocalVault,
 }));
 

@@ -1,22 +1,20 @@
 # Discussions categories — suggested setup
 
-GitHub Discussions 가 활성화되면 다음 카테고리로 시작 추천. 사용자가
-github 웹 UI 에서 Repo Settings → Features → Discussions 활성화 후
-Discussions 탭에서 카테고리 매니저로 설정.
+Once GitHub Discussions is enabled, start with the following categories. Enable Discussions in Repo Settings → Features → Discussions on the GitHub web UI, then configure them via the Category Manager in the Discussions tab.
 
-## 카테고리
+## Categories
 
-| 카테고리 | 형식 | 설명 |
+| Category | Format | Description |
 |---|---|---|
-| 📣 Announcements | post-only | 메인테이너 공지 (릴리스, 마이그레이션) |
-| 💬 General | open conversation | 자유 질문 / 일상 |
-| 💡 Ideas | open conversation | 새 기능 / 방향성 제안 (이슈로 promote 전 단계) |
-| 🛠️ Show and tell | open conversation | "내 vault 이렇게 썼다", "AI agent + 우리 코드베이스 사례" 공유 |
-| 🆘 Q&A | answer-marked | "이거 어떻게 해요?" — 정답 가능한 질문 |
-| 🌱 Frontmatter conventions | open conversation | 새 frontmatter 키 표준화 토론 |
-| 🤖 MCP tools | open conversation | MCP 서버에 추가하면 좋을 도구 / 기존 도구 ergonomics |
+| 📣 Announcements | post-only | Maintainer announcements (releases, migrations) |
+| 💬 General | open conversation | Free-form questions / casual chat |
+| 💡 Ideas | open conversation | Proposals for new features / direction (pre-promotion to issues) |
+| 🛠️ Show and tell | open conversation | Share "how I used my vault", "AI agent + our codebase examples" |
+| 🆘 Q&A | answer-marked | "How do I do this?" — questions with accepted answers |
+| 🌱 Frontmatter conventions | open conversation | Discussions on standardizing new frontmatter keys |
+| 🤖 MCP tools | open conversation | Tools that would be good additions to the MCP server / ergonomics of existing tools |
 
-## 시작 시 pinned post 1 개
+## One pinned post at launch
 
 > Welcome to ontology-atlas Discussions. We're early.
 >
@@ -30,8 +28,8 @@ Discussions 탭에서 카테고리 매니저로 설정.
 >
 > Korean and English both first-class.
 
-## 운영 원칙
+## Operating Principles
 
-- 답이 없는 질문은 Q&A 가 아니라 General 또는 Ideas 로
-- 반복되는 Q&A 는 docs 로 promote
-- 메인테이너 응답 SLA 없음 (1인 메인테이너 단계). 사용자 간 답변 권장.
+- Questions without answers should go to General or Ideas, not Q&A
+- Recurring Q&A should be promoted to docs
+- No maintainer response SLA (single-maintainer stage). User-to-user answers are encouraged.

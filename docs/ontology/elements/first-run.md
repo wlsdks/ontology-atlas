@@ -8,4 +8,4 @@ path: src/views/first-run
 created_by: "agent:unknown"
 ---
 
-첫 실행 화면. capabilities/first-run-starter 의 구현 증거.
+First run screen. Evidence of implementation for capabilities/first-run-starter.

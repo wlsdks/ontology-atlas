@@ -1,91 +1,76 @@
-# 첫 5분
+# First Five Minutes
 
-설치할지 정하기 전에, 먼저 움직이는 걸 봅니다.
+Before deciding whether to install, watch it move first.
 
-## 0. 처음 열면 무엇이 있나
+## 0. What's on the First Screen
 
-첫 화면은 **읽기 전용 샘플 지도**입니다. 폴더를 고르기 전에도 지도가 이미
-움직입니다. "먼저 데이터를 넣으세요" 라고 말하는 빈 화면이 아닙니다.
+The first screen is a **read-only sample map**. The map moves even before you select a folder. It is not an empty screen telling you to "put data in first."
 
-샘플은 둘 중에 고릅니다.
+Choose one of the two samples.
 
-| 샘플 | 무엇인가 |
+| Sample | What it is |
 |---|---|
-| **이 앱의 코드** | 이 도구가 자기 자신을 적어 둔 지도. 개발자용 이름이 많이 나옵니다 |
-| **쇼핑몰 예시** | 상품·주문·회원·배송·마케팅이 어떻게 이어지는지 보는 연습용 |
+| **Code for this app** | A map documenting how this tool describes itself. Many developer-facing names appear |
+| **E-commerce example** | Practice seeing how products, orders, members, shipping, and marketing connect |
 
-첫 실행 카드가 개념·관계·도메인 수를 같이 보여줍니다. 그 수는 **지금 화면에
-그려진 그래프에서 그대로 센 것**이지 어딘가에 적어 둔 숫자가 아닙니다.
+The first run card shows the count of concepts, relationships, and domains together. These numbers are **counted directly from the graph drawn on the current screen**, not taken from some pre-written value.
 
-## 1. 지도를 눌러 봅니다 (2분)
+## 1. Clicking the Map (2 minutes)
 
-카드의 **「2분 구경하기: 지도 읽는 법」** 을 누르면 여덟 걸음짜리 안내가
-시작됩니다. 지도가 곧 문서라는 것, 점의 크기와 모양, 관계 범례, 직접 눌러 보기,
-데이터시트, INDEX, 최근 변경 렌즈까지.
+Clicking the card's **"2-Minute Tour: How to Read the Map"** starts an eight-step guide. It covers that the map is a document, node size and shape, relationship legend, clicking directly, datasheets, INDEX, and the recent changes lens.
 
-건너뛰어도 됩니다. 우상단 컴퍼스 타일에서 언제든 다시 시작합니다.
+You can skip it. You can restart anytime from the compass tile in the upper-right corner.
 
-안내 없이 바로 만져 보고 싶다면 [지도 읽는 법](/guide/reading-the-map) 이 같은
-내용을 글로 적어 둡니다.
+If you want to jump straight in without the guide, [How to Read the Map](/guide/reading-the-map) documents these details in text.
 
-## 2. 내 폴더를 열어 봅니다
+## 2. Opening Your Folder
 
-**「내 마크다운 폴더 열기」** 를 누르고 폴더를 하나 고릅니다. 그 자리에서 지도가
-여러분의 데이터로 바뀝니다.
+Click **Open My Markdown Folder** and select a folder. The map updates with your data right there.
 
-무슨 폴더를 골라야 하나:
+Which folder to choose:
 
-- 이미 마크다운 문서가 있는 폴더면 **그거면 됩니다.** 아무거나 하나 고르세요.
-- `kind:` frontmatter 가 없어도 괜찮습니다. 찾은 문서 수를 말해 주고 「내
-  문서로 지도 만들기」 를 제안합니다.
-- 아무것도 없으면 **「새 문서 폴더 만들기」** 로 시작 구조를 받습니다. 시작 노드
-  다섯 개가 생깁니다.
+- If the folder already contains Markdown documents, **that works.** Just pick any one.
+- It's fine if there is no `kind:` frontmatter. It will report the number of documents found and suggest **Create Map from My Documents**.
+- If there is nothing, start with **Create New Document Folder** to get the starting structure. Five starting nodes will be created.
 
-frontmatter 가 있는 파일은 곧바로 노드가 되고, 없는 파일은 그냥 문서로 남습니다.
+Files with frontmatter become nodes immediately, while files without it remain just as documents.
 
-**아무것도 망가뜨리지 않습니다.** 파일을 옮기지도, 이름을 바꾸지도 않습니다.
-frontmatter 를 읽을 뿐입니다. 마음에 안 들면 폴더를 닫으면 끝입니다.
+**It breaks nothing.** It does not move or rename files. It only reads the frontmatter. If you don't like it, just close the folder and you're done.
 
-### 브라우저에서 열 때
+### When opening in a browser
 
-파일 시스템 접근 권한이 필요해서 **Chrome · Edge · Safari 18.2+ · Opera** 에서
-동작합니다. Firefox 는 이 API 가 없어 폴더를 열지 못합니다. 그때는 화면이 그렇게
-말하고 앱 받는 곳을 안내합니다.
+It requires file system access permissions, so it works on **Chrome · Edge · Safari 18.2+ · Opera**. Firefox cannot open folders because it lacks this API. In that case, the screen will inform you and guide you to where to get the app.
 
-폴더는 브라우저 밖으로 나가지 않습니다.
+The folder does not leave the browser.
 
-## 3. 코드베이스에서 통째로 시작하기 (개발자)
+## 3. Starting from the Codebase (for Developers)
 
-첫 실행 카드의 **「개발자라면」** 을 펼치면 터미널에 붙여넣을 명령이 나옵니다.
-저장소를 훑어 첫 그래프를 만듭니다.
+Expand **For Developers** on the first run card to get a command to paste into your terminal.
+It scans the repository to create the first graph.
 
-무엇이 일어나는지는 [내 저장소에서 시작하기](/guide/from-your-repo) 에 단계별로
-적혀 있습니다. 훑기 단계는 볼트를 건드리지 않습니다.
+What happens is detailed step-by-step in [Starting from My Repository](/guide/from-your-repo). The scanning phase does not touch Vault.
 
-## 4. 앱과 웹은 무엇이 다른가
+## 4. What's the Difference Between the App and the Web?
 
-macOS 앱이 볼트의 본거지입니다. 브라우저가 **원리적으로** 할 수 없는 일들이
-앱에만 있습니다.
+The macOS app is the home base for Vaults. There are things that the browser **cannot do by principle** that only the app can.
 
-| 능력 | 앱 | 웹 |
+| Capability | App | Web |
 |---|---|---|
-| 볼트 절대 경로 | ✓ | 핸들만 (경로 없음) |
-| 폴더를 다음 방문에도 기억 | ✓ | 다시 고르기 |
-| git 기록·스냅샷 | ✓ | 불가 |
-| API 키 보관 | OS 키체인 | 원리적 불가 |
-| 폴더 감시 | OS 워처: 저장하면 알아서 따라옴 (수 초) | 폴링: 1.5~5초, 탭이 보일 때만 |
-| MCP 서버 | 앱에 동봉 | 소스 체크아웃 필요 |
-| 에이전트 설정 파일 쓰기 | ✓ 버튼 한 번 | 설정 텍스트를 만들어 줌 (저장은 직접) |
+| Vault absolute path | ✓ | Handle only (no path) |
+| Remember folder on next visit | ✓ | Choose again |
+| Git history & snapshots | ✓ | Not available |
+| API key storage | OS Keychain | Not possible by principle |
+| Folder watching | OS watcher: updates automatically when saved (a few seconds) | Polling: 1.5–5s, only when tab is visible |
+| MCP server | Bundled with app | Requires source checkout |
+| Write agent config file | ✓ One click | Generates config text (save manually) |
 
-마지막 줄이 자주 오해받는 자리입니다. **웹에서도 에이전트는 붙습니다.** 웹이
-못 하는 건 설정 파일을 대신 저장해 주는 것 하나입니다
-([AI 에이전트 연결하기](/guide/connect-agent)).
+The last row is often misunderstood. **Agents also attach in the web version.** The only thing the web cannot do is save the config file for you
+([Connecting AI Agent](/guide/connect-agent)).
 
-## 5. 그다음
+## 5. What's Next?
 
-여기까지 왔으면 지도가 여러분의 폴더를 그리고 있습니다. 갈림길은 둘입니다.
+If you've reached here, the map is drawing your folder. There are two paths forward.
 
-- **혼자 읽고 판단할 것이면** → [폴더의 구조](/guide/vault-structure). frontmatter
-  한 줄이 어떻게 노드가 되는지 봅니다.
-- **AI 에이전트에게 시킬 것이면** → [AI 에이전트 연결하기](/guide/connect-agent).
-  에이전트가 매 세션 같은 배경 설명을 다시 받지 않아도 되는 지점이 여기입니다.
+- **If you want to read and judge alone** → [Vault Structure](/guide/vault-structure). See how a single frontmatter line becomes a node.
+- **If you want to delegate to an AI agent** → [Connecting AI Agent](/guide/connect-agent).
+  This is where the agent doesn't need to receive the same background explanation every session.

@@ -14,36 +14,20 @@
 
 ---
 
-## 한국어 요약 (Korean summary)
+## Korean summary
 
-이 문서는 `ontology-atlas` 저장소가 이미 구현하고 강제해온 vault 마크다운
-frontmatter 스키마를 **공개 명세로 승격**한 것이다. v2는 모든 `kind:` 노드에
-불변 UUIDv4 `uid`를 요구하는 첫 breaking revision이다 — `mcp/src/schema.mjs` (canonical) · `cli/src/lib/schema.mjs`
-(mirror) · `src/shared/lib/validate-vault-document.ts` (validator) 가 실제로
-하는 일을 그대로 문서화한다.
+This document **elevates to a public specification** the vault markdown frontmatter schema that the `ontology-atlas` repository has already implemented and enforced. v2 is the first breaking revision requiring an immutable UUIDv4 `uid` for all `kind:` nodes — it documents exactly what `mcp/src/schema.mjs` (canonical) · `cli/src/lib/schema.mjs`
+(mirror) · `src/shared/lib/validate-vault-document.ts` (validator) actually do.
 
-핵심 요지:
+Key points:
 
-- **포맷**: 평문 마크다운 + YAML frontmatter. 저자가 만드는 5종 kind
-  (`project` / `domain` / `capability` / `element` / `document`)와 도구가 만든
-  예약 reader kind `vault-readme`. 관계의 저장 키·화면 이름·MCP query/write
-  지원 범위는 §5의 한 표가 정본이며, 특히 `broader`→`is_a`는 현재 일반
-  relation API에 없는 frontmatter/UI 경로임을 숨기지 않는다.
-- **왜 명세가 필요한가**: "사람이 읽고, 에이전트가 유지하고, git 이 추적하는
-  구조화된 프로젝트 메모리"의 표준 자리가 비어 있다 — MCP 는 프로토콜이지
-  포맷이 아니고, 기존 에이전트 메모리 포맷들은 특정 프레임워크에 종속적이다.
-  이 저장소는 스펙·레퍼런스 구현·검증기·contract test 를 이미 갖춘 후보다.
-- **신뢰 규칙**: vault body 는 **데이터이지 지시가 아니다** — 에이전트는
-  vault 안의 텍스트를 프롬프트 지시로 실행하면 안 된다 (§7 참고).
-- **버저닝**: v1.x 는 additive-only였고, 필수 UID는 v2 breaking 계약이다.
-  `pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>`를 먼저 dry-run한
-  뒤 `--write`로 명시 적용한다.
-- **준수 테스트**: `tests/contract/vault-schema.contract.test.ts` +
-  `tests/contract/validate-vault-document.contract.test.ts` 가 레퍼런스
-  스위트 — 이 명세를 구현하려는 다른 도구도 같은 fixture 로 자가 검증할 수
-  있다.
-- **RFC 피드백**: 8주 창 — 이 기간 동안 GitHub Issues 피드백 0건이면
-  표준화 트랙을 접고 코어에 전념한다 (제품 계획 kill criteria).
+- **Format**: Plain markdown + YAML frontmatter. The five kinds (`project` / `domain` / `capability` / `element` / `document`) created by authors and the reserved reader kind `vault-readme` created by tools are covered. The storage key, screen name, and MCP query/write support scope for relationships are defined in one table in §5; notably, we do not hide that `broader`→`is_a` currently lacks a frontmatter/UI path in the general relation API.
+- **Why a spec is needed**: There is no standard home for "structured project memory that humans read, agents maintain, and git tracks" — MCP is a protocol, not a format, and existing agent memory formats are tied to specific frameworks. This repository already has the spec, reference implementation, validator, and contract tests.
+- **Trust rule**: The vault body is **data, not instruction** — agents must not execute text within the vault as prompt instructions (see §7).
+- **Versioning**: v1.x was additive-only; mandatory UID is the v2 breaking contract. Run `pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>` with dry-run first, then apply explicitly with `--write`.
+- **Compliance tests**: `tests/contract/vault-schema.contract.test.ts` +
+  `tests/contract/validate-vault-document.contract.test.ts` form the reference suite — other tools implementing this spec can self-validate using the same fixtures.
+- **RFC feedback**: 8-week window — if there are zero GitHub Issues feedback during this period, we abandon the standardization track and focus on the core (product planning kill criteria).
 
 ---
 

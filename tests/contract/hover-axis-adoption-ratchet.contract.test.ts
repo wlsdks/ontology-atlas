@@ -65,7 +65,7 @@ const ROOT = process.cwd();
  * rise; **the places disappeared**, so this decrease earns no credit — but the
  * floor still comes down.
  */
-const CEILING = 328;
+const CEILING = 326;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

@@ -1,67 +1,66 @@
-# INTERACTION DESIGN — 유체적 인터페이스 원칙의 적용 (2026-07-17)
+# INTERACTION DESIGN — Applying Fluid Interface Principles (2026-07-17)
 
-> Apple *Designing Fluid Interfaces* (WWDC18) 계열의 공개 원칙을 이 프로젝트의 디자인 헌장
-> (`DESIGN-SYSTEM.md` · `.claude/rules/design.md`) 위에 적용한 결정 기록.
-> **헌장과 충돌하면 헌장이 이긴다** — 아래 "충돌 재정" 참조. topology-map-v2 (Slice 2)의
-> 설계 게이트 입력 문서이며, design-guardian 검증은 구현 시점에 스크린샷 증거로 수행한다.
+> A record of decisions applying open principles from the Apple *Designing Fluid Interfaces* (WWDC18) lineage to this project's design charter
+> (`DESIGN-SYSTEM.md` · `.claude/rules/design.md`).
+> **If in conflict with the charter, the charter wins** — see "Conflict Resolution" below. This is a design gate input document for topology-map-v2 (Slice 2), and design-guardian verification is performed via screenshot evidence at implementation time.
 
-## 0. 두 세계의 경계 (핵심 결정)
+## 0. Boundary Between Two Worlds (Core Decision)
 
-앱을 두 영역으로 나누고 모션 규율을 다르게 적용한다:
+Divide the app into two areas and apply different motion disciplines:
 
-| 영역 | 규율 | 근거 |
+| Area | Discipline | Rationale |
 |---|---|---|
-| **크롬 (패널·버튼·팝오버·리스트)** | 기존 헌장 유지: `transition-colors`/`opacity` 위주, <200ms, transform 최소 | Linear식 침착함 — 크롬이 튀면 데이터가 죽는다 |
-| **캔버스 (토폴로지 맵·카메라·드래그)** | **유체 원칙 전면 적용**: 스프링·1:1 추적·중단 가능·속도 인계 | 여기가 "옵시디언식 촉각"이 사는 곳 — 소유자 취향의 핵심 |
+| **Chrome (panels·buttons·popovers·lists)** | Maintain existing charter: focus on `transition-colors`/`opacity`, <200ms, minimal transform | Linear calmness — if chrome jumps, data dies |
+| **Canvas (topology map·camera·drag)** | **Fully apply fluid principles**: spring·1:1 tracking·interruptible·velocity transfer | This is where "Obsidian-like tactility" lives — core to owner preference |
 
-"서로 이상하게 겹쳐 버벅이는" 상황의 방지책이 바로 이 경계다: 크롬은 조용히, 캔버스만 살아있게. 두 규율을 한 표면에 섞지 않는다.
+This boundary prevents the situation where "they overlap weirdly and stutter": chrome stays quiet, canvas stays alive. Do not mix the two disciplines on one surface.
 
-## 1. 캔버스 유체 규율 (topology-map-v2)
+## 1. Canvas Fluid Discipline (topology-map-v2)
 
-- **응답은 pointer-down에서**: 노드 press 즉시 시각 피드백 (선택 링). click(up)을 기다리는 피드백 금지. 클릭=안전 계약 유지 — down은 피드백만, 커밋(포커스 전환)은 up에서, 드래그 이탈로 취소 가능 (~10px hysteresis).
-- **1:1 추적**: 드래그 중 노드/카메라는 포인터에 붙어 있는다. 잡은 지점의 offset을 존중 (중심 스냅 금지). `setPointerCapture` 사용, 마지막 수 프레임의 위치·시각 히스토리로 릴리스 속도 계산.
-- **중단 가능성 (제1원칙)**: 카메라 이동·포커스 전환·expand 애니메이션 중에도 입력을 잠그지 않는다. 새 목표는 **현재 표시값에서** 시작 (목표값에서 재시작 금지 — 점프 발생). 제스처 기반 모션에 CSS `@keyframes` 금지.
-- **스프링 기본값**: damping 1.0 (overshoot 없음) / response 0.3~0.4. **바운스(damping ~0.8)는 사용자가 던진 모멘텀이 있을 때만** (флик 릴리스). 메뉴·팝오버 등장에 바운스 금지.
-- **속도 인계**: 드래그→애니메이션 이음새에서 릴리스 속도를 스프링 초기 속도로 전달. 팬 릴리스 후 카메라는 관성 투영(`(v/1000)·d/(1−d)`, d≈0.998)으로 멈출 곳을 정한 뒤 감속.
-- **경계는 러버밴드**: 캔버스 팬 한계에서 하드 스톱 금지 — 점진 저항 후 복귀.
-- **공간 일관성**: 팝오버는 트리거 노드에서 자라나고 (transform-origin = 노드 앵커) 같은 경로로 사라진다. expand된 서브그래프 접기도 왔던 자리로 (기존 TopologyMapCanvas의 FLIP 자산 계승).
+- **Respond on pointer-down**: immediate visual feedback on node press (selection ring). No feedback waiting for click(up). Click=commit contract — down is only feedback, commit (focus switch) happens on up, cancellable via drag escape (~10px hysteresis).
+- **1:1 tracking**: during drag, nodes/camera stick to the pointer. Respect offset of grab point (no center snap). Use `setPointerCapture`, calculate release velocity from position/visual history of last few frames.
+- **Interruptibility (First Principle)**: never lock input during camera movement·focus switch·expand animation. New target starts **from current displayed value** (never restart from target value — causes jump). No CSS `@keyframes` for gesture-based motion.
+- **Spring defaults**: damping 1.0 (no overshoot) / response 0.3~0.4. **Bounce (damping ~0.8) only when user throws momentum** (flick release). No bounce on menu/popover appearance.
+- **Velocity transfer**: pass release velocity to spring initial velocity at drag→animation seam. After pan release, camera determines stop point via inertial projection (`(v/1000)·d/(1−d)`, d≈0.998) then decelerates.
+- **Boundaries are rubber bands**: no hard stops at canvas pan limits — gradual resistance then return.
+- **Spatial consistency**: popovers grow from trigger node (transform-origin = node anchor) and shrink via same path. Expand subgraph folds back to where it came from (inheriting existing TopologyMapCanvas FLIP assets).
 
-## 2. 충돌 재정 (Apple 원칙 vs 우리 헌장)
+## 2. Conflict Resolution (Apple Principles vs Our Charter)
 
-| Apple 원칙 | 재정 | 이유 |
+| Apple Principle | Resolution | Reason |
 |---|---|---|
-| 반투명 재질·backdrop-blur (§materials) | **기각 — 헌장 승** | glassmorphism은 금지 패턴. 깊이는 elevation 토큰(surface 단계 + border + shadow)으로 표현 |
-| 스프링을 모든 UI에 | **캔버스 한정 채택** | 크롬은 Linear식 침착함 유지 (§0 경계) |
-| scale press 피드백 (`:active scale`) | **완화 채택 금지 → 대안** | `hover:scale-*` 금지 패턴과 동족. press 피드백은 색/보더 토큰 변화로 |
-| dim 스크림 (모달 포커스) | **조건부 채택** | DOM 스크림의 알파는 허용 (WebGL 저알파 결함은 캔버스 내부 문제). 단 **WebGL 내부 dim은 여전히 hidden/불투명 토큰만** |
-| 사운드·햅틱 | **보류** | 웹/데스크톱 도구에 과함 — utility 원칙상 미도입 |
-| 시스템 폰트 우선 | **채택 (이미 준수)** | |
+| Translucent materials·backdrop-blur (§materials) | **Rejected — Charter wins** | glassmorphism is a prohibited pattern. Depth expressed via elevation tokens (surface step + border + shadow) |
+| Springs for all UI | **Adopted for canvas only** | Chrome maintains Linear calmness (§0 boundary) |
+| Scale press feedback (`:active scale`) | **Reject relaxation → Alternative** | Same family as `hover:scale-*` prohibited pattern. Press feedback via color/border token changes |
+| Dim scrim (modal focus) | **Conditional adoption** | DOM scrim alpha allowed (WebGL low-alpha defect is canvas-internal issue). But **WebGL internal dim still only hidden/transparent tokens** |
+| Sound·haptics | **Deferred** | Overkill for web/desktop tools — not adopted per utility principle |
+| System font priority | **Adopted (already compliant)** | |
 
-## 3. 크롬 규율 보강 (기존 헌장 + 소량 추가)
+## 3. Chrome Discipline Reinforcement (Existing Charter + Minor Additions)
 
-- **wayfinding**: 모든 화면이 "여기가 어디인가 / 어디로 갈 수 있나 / 어떻게 나가나"에 답해야 한다. 토폴로지 포커스 상태에서 뒤로 나가는 경로(Esc·바깥 클릭)를 항상 유지 — 사용자를 가두지 않는다.
-- **라벨은 구체적으로**: "홈" 같은 우산 라벨 대신 내용을 명명 ("이 노드를 쓰는 곳 N" 평문 원칙과 동일 계열).
-- **피드백 4종 구분**: 상태(신선도 배지)·완료(sync 완료)·경고(drift 경고)·오류(검증 실패) — 인라인, 제출-후-일괄 금지.
-- **타이포**: 큰 제목 tracking `-0.02em`·tight leading, 본문 0·1.5 — 고정 letter-spacing 전역 적용 금지. 간격은 rem (사용자 폰트 크기 존중).
-- **파괴적 액션만 확인 대화상자** (delete_concept류). 나머지는 undo로 관용 — 확인 남발은 클릭스루 학습을 만든다.
+- **Wayfinding**: every screen must answer "where am I / where can I go / how do I leave". Always maintain path out of topology focus state (Esc·outside click) — don't trap users.
+- **Labels specific**: name content instead of umbrella labels like "Home" (same lineage as plain text principle "places using this node N").
+- **Four feedback types**: status (freshness badge)·complete (sync complete)·warning (drift warning)·error (validation failure) — inline, no post-submit batch.
+- **Typography**: large title tracking `-0.02em`·tight leading, body 0·1.5 — prohibit global fixed letter-spacing. Spacing in rem (respect user font size).
+- **Confirm dialogs only for destructive actions** (delete_concept type). Others use undo convention — excessive confirmation creates click-through learning.
 
-## 4. 접근성·감소 모션 (헌장 확장)
+## 4. Accessibility·Reduced Motion (Charter Extension)
 
-- `prefers-reduced-motion`: 캔버스 스프링·FLIP → 짧은 크로스페이드로 대체 (이미 base layer 처리 + 캔버스 코드에서 개별 존중). 러버밴드·관성 유지 여부는 비주얼 진폭 축소로.
-- `prefers-contrast: more`: elevation을 보더 강화로 대체.
-- 큰 표면 재배치 시 이동 중 페이드-아웃 → 정착 후 페이드-인 (대형 이동체의 멀미 방지).
+- `prefers-reduced-motion`: canvas spring·FLIP → replaced with short crossfade (already handled in base layer + individually respected in canvas code). Rubber band/inertia retention via visual amplitude reduction.
+- `prefers-contrast: more`: replace elevation with border reinforcement.
+- During large surface repositioning, fade-out during movement → fade-in after settling (prevent motion sickness for large moving objects).
 
-## 5. Slice 2 설계 게이트 체크리스트에 추가되는 항목
+## 5. Items Added to Slice 2 Design Gate Checklist
 
-1. 노드 press→up→포커스 전환이 §1 규율(다운 피드백·hysteresis·취소)을 따르는가.
-2. 카메라 전환 중 사용자가 개입하면 현재값에서 이어지는가 (중단 테스트: 전환 중 드래그).
-3. 팬 릴리스에 속도 인계가 있는가 (이음새 육안 검사 + 슬로모 프레임 검토 — Apple 프로세스 원칙).
-4. 팝오버가 노드에서 자라나고 같은 경로로 접히는가.
-5. 크롬에 스프링/바운스가 새지 않았는가 (경계 위반 검사).
-6. WebGL 내부에 저알파가 없는가 (기존 단위 테스트) + DOM 스크림과 혼동하지 않았는가.
-7. reduced-motion에서 전 항목의 대체 경로가 있는가.
+1. Does node press→up→focus switch follow §1 discipline (down feedback·hysteresis·cancellation)?
+2. If user intervenes during camera transition, does it continue from current value? (Interrupt test: drag during transition).
+3. Is velocity transfer present on pan release? (Seam visual inspection + slow-mo frame review — Apple process principle).
+4. Does popover grow from node and shrink via same path?
+5. Did spring/bounce leak into chrome? (Boundary violation check).
+6. No low-alpha in WebGL internals (existing unit test) + didn't confuse with DOM scrim.
+7. Does reduced-motion have alternative paths for all above items?
 
-## 6. 구현 참고
+## 6. Implementation Notes
 
-- 스프링: Motion(구 Framer Motion) 계열 `type: 'spring', bounce: 0, duration: 0.4` = damping 1.0 근사. 새 의존성 도입 여부는 Slice 2에서 판단 — 기존 TopologyMapCanvas의 순수 함수 카메라 + CSS `translate` FLIP으로 충분하면 라이브러리 없이 velocity 인계만 자체 구현 (의존성 최소 원칙).
-- Sigma 캔버스와의 결합은 `docs/archive/SIGMA-PLAYBOOK.md` (조사됐으나 v2는 Sigma 미채택 — archived) 의 reducer·카메라 API 패턴을 따른다 — DOM 오버레이는 팝오버 1개로 제한.
+- Spring: Motion (formerly Framer Motion) series `type: 'spring', bounce: 0, duration: 0.4` ≈ damping 1.0. Whether to introduce new dependencies will be decided in Slice 2 — if the existing TopologyMapCanvas's pure function camera + CSS `translate` FLIP is sufficient, we'll implement velocity inheritance ourselves without libraries (principle of minimal dependencies).
+- Integration with Sigma canvas follows the reducer·camera API patterns in `docs/archive/SIGMA-PLAYBOOK.md` (investigated but v2 does not adopt Sigma — archived) — DOM overlays are limited to a single popover.

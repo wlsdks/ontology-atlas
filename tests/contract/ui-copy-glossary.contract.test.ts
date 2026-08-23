@@ -61,16 +61,21 @@ const MESSAGES: Record<string, Flat> = Object.fromEntries(
  *
  * `frontmatter` 는 **괄호 안에서만** 산다(괄호 규칙). 나머지는 아예 안 쓴다.
  */
-const BANNED: ReadonlyArray<{ word: RegExp; use: string; parenthesizedOk?: boolean }> = [
-  { word: /frontmatter/i, use: "파일 맨 위 정보칸 / the info block at the top", parenthesizedOk: true },
-  { word: /프론트매터/, use: "파일 맨 위 정보칸" },
-  { word: /문서 상단 속성|문서 속성/, use: "파일 맨 위 정보칸 — 같은 것을 세 이름으로 부르고 있었다" },
-  { word: /엣지/, use: "연결" },
-  { word: /렌더링/, use: "화면에 그리다" },
-  { word: /파싱/, use: "읽어 들이다" },
-  { word: /쿼리/, use: "검색어" },
-  { word: /메타데이터/, use: "기본 정보" },
-  { word: /(^|[^가-힣])인덱스/, use: "검색 준비" },
+const BANNED: ReadonlyArray<{
+  word: RegExp;
+  use: string;
+  glossaryMarker: RegExp;
+  parenthesizedOk?: boolean;
+}> = [
+  { word: /frontmatter/i, use: "파일 맨 위 정보칸 / the info block at the top", glossaryMarker: /frontmatter/i, parenthesizedOk: true },
+  { word: /프론트매터/, use: "파일 맨 위 정보칸", glossaryMarker: /frontmatter/i },
+  { word: /문서 상단 속성|문서 속성/, use: "파일 맨 위 정보칸 — 같은 것을 세 이름으로 부르고 있었다", glossaryMarker: /frontmatter/i },
+  { word: /엣지/, use: "연결", glossaryMarker: /\bedge\b/i },
+  { word: /렌더링/, use: "화면에 그리다", glossaryMarker: /\brender\b/i },
+  { word: /파싱/, use: "읽어 들이다", glossaryMarker: /\bparse\b/i },
+  { word: /쿼리/, use: "검색어", glossaryMarker: /\bquery\b/i },
+  { word: /메타데이터/, use: "기본 정보", glossaryMarker: /\bmetadata\b/i },
+  { word: /(^|[^가-힣])인덱스/, use: "검색 준비", glossaryMarker: /\bindex\b/i },
 ];
 
 /** `…(frontmatter)…` 처럼 괄호에 싸인 등장만 남기고 지운다. */
@@ -138,12 +143,12 @@ describe("화면 글자 용어집 계약", () => {
   /** 용어집 문서가 실재해야 오류 메시지의 안내가 죽은 링크가 되지 않는다. */
   it("정본 문서가 실재하고 표를 갖고 있다", () => {
     const glossary = read("docs/GLOSSARY.md");
-    expect(glossary).toContain("파일 맨 위 정보칸");
-    for (const { word } of BANNED) {
+    expect(glossary).toContain("the info block at the top of the file");
+    for (const { word, glossaryMarker } of BANNED) {
       expect(
         glossary,
         `${word.source} 가 용어집 표에 없다 — 게이트만 있고 근거가 없다`,
-      ).toMatch(word);
+      ).toMatch(glossaryMarker);
     }
   });
 });

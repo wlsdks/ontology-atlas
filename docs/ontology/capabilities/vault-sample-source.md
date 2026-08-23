@@ -9,12 +9,12 @@ path: src/features/vault-sample-source
 created_by: "agent:unknown"
 ---
 
-## 정의
-설치 없이 체험할 수 있게 하는 번들 예시 볼트(데모 모드) 소스.
+## Definition
+Source for a bundled example vault (demo mode) enabling experience without installation.
 
-## 근거
-- src/features/vault-sample-source (구현 증거)
+## Evidence
+- src/features/vault-sample-source (implementation evidence)
 - README.md: "The installed macOS app reading the example vault in files in a folder"
 
-## 확신도
+## Confidence
 medium-high (0.8)

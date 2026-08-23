@@ -8,4 +8,4 @@ path: src/views/root-entry
 created_by: "agent:unknown"
 ---
 
-/ 스마트 진입(누구인지에 따라 분기) 로직.
+/ Smart entry logic (branches based on identity).

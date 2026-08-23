@@ -8,4 +8,4 @@ path: src/views/git
 created_by: "agent:unknown"
 ---
 
-git 상태/이력 페이지.
+Git status/history page.

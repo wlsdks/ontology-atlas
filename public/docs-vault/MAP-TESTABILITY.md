@@ -1,182 +1,155 @@
-# 지도를 밖에서 검사하기 — `window.__atlasMap`
+# Inspecting the Map from Outside — `window.__atlasMap`
 
-> **한 줄**: 밖에서 구분할 수 없는 상태는 밖에서 검사할 수 없다.
-> 지도는 캔버스 하나라 DOM 이 없다 — 상태를 명시적으로 내보내지 않으면
-> 자동화는 화면을 «보는 척» 하면서 엉뚱한 것을 잰다.
+> **One-liner**: States that cannot be distinguished from outside cannot be inspected from outside.
+> The map is a single canvas with no DOM — if state is not explicitly exported,
+> automation merely «pretends to see» the screen while measuring the wrong things.
 
-## 왜 이 파일이 있는가
+## Why This File Exists
 
-2026-07-31, 소유자가 노드 드래그 렉을 보고했다. 나는 **여섯 번 연속으로
-"제 환경에선 안 느린데요"** 라고 답했다. 매번 배경을 밀고 있었다.
+On 2026-07-31, the owner reported node drag lag. I replied **six times in a row**
+that "It's not slow in my environment." Each time, I pushed back the blame.
 
-원인은 코드가 아니라 **관측 가능성**이었다:
+The cause was not code but **observability**:
 
-| 밖에서 본 것 | 실제로 갈리는 것 |
+| What's seen from outside | What actually happens |
 |---|---|
-| 커서 `grabbing` | 노드 드래그 **또는** 배경 팬 — 같은 글자 |
-| 커서 `pointer` | 호버 히트일 뿐, **잡히는지**와 무관 |
-| 프레임 60fps | 앱이 빠른 것 **또는** 입력이 캔버스에 안 닿은 것 |
-| rAF 간격 8.3ms | 앱의 작업량 **또는** 그냥 120Hz 주사 간격 |
+| Cursor `grabbing` | Node drag **or** background pan — same text |
+| Cursor `pointer` | Just a hover hit, irrelevant to **whether it's grabbed** |
+| Frame 60fps | App is fast **or** input didn't reach the canvas |
+| rAF interval 8.3ms | App workload **or** just a 120Hz refresh interval |
 
-네 줄 모두 왼쪽만 보고 오른쪽을 단정해서 틀렸다. 소유자가 화면을 보고
-*"너는 노드가 아니라 그냥 배경을 흔들잖아"* 라고 짚어준 뒤에야 끝났다.
+All four lines were wrong because they looked only at the left and concluded about the right. It ended only after the owner pointed out, looking at the screen,
+*"You're just shaking the background, not the nodes."*
 
-**사람이 화면을 봐야만 알 수 있는 것은 자동 검사의 사각지대다.** 그 사각지대를
-없애는 것이 이 훅의 목적이다.
+**Things that can only be known by humans looking at the screen are blind spots for automated inspection.** Eliminating these blind spots is the purpose of this hook.
 
-## 켜는 법
+## How to Enable
 
-URL 에 `e2e=1` 이 있을 때만 `window.__atlasMap` 이 붙는다. **제품 API 가 아니다** —
-쿼리가 없으면 객체 자체가 존재하지 않고, 붙어 있을 때도 refs 를 그때 읽는
-게터뿐이라 프레임 비용은 0 이다.
+`window.__atlasMap` is attached only when `e2e=1` is in the URL. **This is not a product API** —
+without the query parameter, the object itself does not exist; even when present, it's just
+a getter that reads refs at that moment, so frame cost is 0.
 
 ```
 http://localhost:4173/ko/topology?synth=3000&t=freeze&guides=off&e2e=1
 ```
 
-구현: `src/widgets/topology-map-v2/ui/use-topology-loop.ts` 마지막 effect.
+Implementation: Last effect in `src/widgets/topology-map-v2/ui/use-topology-loop.ts`.
 
-## 창구
+## Interface
 
-### `nodes()` — 무엇이 어디에 있고, 무엇을 끌 수 있나
+### `nodes()` — What is where, and what can be dragged
 
 ```js
 [{ id, kind, label, x, y, radius, draggable, hidden }]
 ```
 
-- `x`/`y` — **CSS 픽셀**(마우스 좌표계). `screenToWorld` 의 역함수를 같은
-  카메라로 계산하므로 어긋날 수 없다.
-- `radius` — **화면 반지름.** 그리는 쪽과 같은 식(`radiusForKind ×
-  magnitudeScale × 카메라 배율`)이다. 식이 갈리면 계기가 화면이 아니라 자기
-  상상을 재게 된다. 겹침은 이 값 없이 셀 수 없다.
-- `draggable` — **시뮬에 있는가.** 잡기는 `sim.hasNode()` 를 통과해야 성립하고,
-  실패하면 조용히 팬으로 흘러간다. **이걸 안 봐서 여섯 번 틀렸다.**
-- `hidden` — 밀도 게이트로 접혀 화면에 없는가.
+- `x`/`y` — **CSS pixels** (mouse coordinate system). Since `screenToWorld`'s inverse function is calculated with the same
+  camera, they cannot be misaligned.
+- `radius` — **Screen radius.** Uses the same formula as the drawing side (`radiusForKind ×
+  magnitudeScale × camera scale`). If the formula changes, the trigger measures self-imagination rather than the screen. Overlaps cannot be counted without this value.
+- `draggable` — **Is it in the simulation?** Grabbing requires passing `sim.hasNode()`, and
+  if it fails, it silently flows into panning. **Not checking this caused six errors.**
+- `hidden` — Folded by density gate, not on screen.
 
-### `edges()` — 선이 어디로 지나가나
+### `edges()` — Where lines pass through
 
 ```js
 [{ sourceId, targetId, kind, ax, ay, bx, by, controlX, controlY }]
 ```
 
-2026-08-03 에 추가됐다. 그전까지 **지도가 그래프로서 읽히는지에 대한 수치가
-하나도 없었다** — 노드 규격에는 계약 테스트가, 타입 램프에는 lint 가, 모션에는
-프레임 실측이 있는데 화면 대부분을 차지하는 배치만 "복잡해 보인다" 로
-판정되고 있었다.
+Added on 2026-08-03. Until then, **there was no metric for whether the map was readable as a graph** — node specs had contract tests, type ramps had linting, motion had frame measurements, but the layout occupying most of the screen was judged merely by "looks complex".
 
-- **컨트롤 포인트가 왜 필요한가**: 이 엣지들은 직선이 아니라 2차 베지어다
-  (`quadraticCurveTo`). 끝점만 이어서 교차를 세면 **화면에 없는 교차를 세고
-  화면에 있는 교차를 놓친다** — 숫자는 나오므로 그 오차는 조용하다.
-- 접힌 서브트리에 닿는 엣지는 제외된다. 드로우 루프의 첫 게이트와 같은 조건이다.
-- 소비처: `scripts/measure-graph-readability.mjs`.
+- **Why control points are needed**: These edges are not straight lines but quadratic Beziers
+  (`quadraticCurveTo`). Connecting only endpoints and counting intersections **counts intersections not on screen
+  and misses those on screen** — the number is produced, so this error is silent.
+- Edges touching folded subtrees are excluded. Same condition as the first gate in the draw loop.
+- Consumer: `scripts/measure-graph-readability.mjs`.
 
-### `interaction()` — 지금 끄는 것이 노드인가 배경인가
+### `interaction()` — Is what's being dragged a node or the background?
 
 ```js
 { kind: "node" | "pan" | "idle", nodeId }
 ```
 
-드래그 **중에** 부른다. `"pan"` 이면 그 측정은 무효다. 이 한 줄이 위 사고
-전체를 예방한다.
+Called **during** drag. If `"pan"`, that measurement is invalid. This single line prevents the entire incident above.
 
-### `backing()` — 캔버스 백킹 크기
+### `backing()` — Canvas backing size
 
 ```js
 { width, height, dpr }
 ```
 
-상호작용 중 해상도 캡이 **실제로 걸렸는지** 확인한다. "고쳤다"고 믿었는데
-발동조차 안 하고 있던 전례가 있다.
+Confirms whether resolution capping **actually engaged** during interaction. There have been precedents where we believed it was "fixed" but it never even fired.
 
-### `camera()` — 지도가 어디를 보고 있나
+### `camera()` — Where the map is looking
 
 ```js
 { x, y, scale, width, height }
 ```
 
-딥링크 착지·카메라 다이브·핏뷰 검증용. 「목표는 맞게 계산됐는데 카메라가 안
-갔다」는 결함이 실제로 있었고, 그때 이 창구가 없어 증명에 실패했다.
+For verifying deep link landing, camera dive, and FitView. There was an actual defect where "the target was calculated correctly but the camera didn't move," and without this window, we failed to prove it.
 
-### `selection()` — 무엇이 골라져 있나
+### `selection()` — What is selected
 
 ```js
 { nodeId, edge }
 ```
 
-### `chips()` — 칩의 **주장**과 **실제**
+### `chips()` — The chip's **claim** vs. **reality**
 
 ```js
 [{ parentId, claimedCount, expanded, shownChildren }]
 ```
 
-칩이 `+24` 라고 새겨 놓고 실제로는 1개만 그린 전례가 있다(티어 게이트가 칩
-전개를 안 봐줬다). **주장과 실제를 나란히 내보내야** 그 어긋남이 밖에서 잡힌다.
+There have been cases where a chip was engraved with `+24` but only one was actually drawn (the tier gate didn't support chip deployment). **You must display the claim and reality side-by-side** so that discrepancies can be caught externally.
 
-## 쓰는 법
+## How to use
 
 ```bash
 pnpm build && npx serve out -l 4173
 node scripts/perf-node-drag.mjs
 ```
 
-출력에 `노드 잡음 ✓` 가 없으면 그 수치는 버린다 — 하네스가 스스로 판정한다.
+If the output does not contain `node noise ✓`, discard that metric—the harness judges it itself.
 
-**가독성**(교차 · 겹침)은 별도 하네스이고 진짜 입력이 필요 없어 헤드리스다:
+**Readability** (crossings · overlaps) is a separate harness and requires no real input, so it is headless:
 
 ```bash
 node scripts/serve-static-export.mjs --port=4173 &
 node scripts/measure-graph-readability.mjs
 ```
 
-배치가 결정론적이라 같은 조건의 두 실행은 **바이트 동일**하다(실측). 그래서
-이 수치는 회귀 판정에 쓸 수 있다. 2026-08-03 기준선(1512×900, 수렴 후):
+Because the batch is deterministic, two runs under the same conditions are **byte-for-byte identical** (empirically). Thus, this metric can be used for regression testing. Baseline as of 2026-08-03 (1512×900, after convergence):
 
-| 케이스 | 보이는 노드/엣지 | 교차 | 품질 | 겹침 |
+| Case | Visible nodes/edges | Crossings | Quality | Overlaps |
 |---|---|---|---|---|
-| 도그푸드 볼트 | 31 / 66 | 89 | 0.9508 | 0 |
-| 합성 300 | 72 / 80 | 23 | 0.9920 | 0 |
-| 합성 3000 | 86 / 18 | — | 잴 수 없음(접힘) | 0 |
+| Dogfood vault | 31 / 66 | 89 | 0.9508 | 0 |
+| Synthetic 300 | 72 / 80 | 23 | 0.9920 | 0 |
+| Synthetic 3000 | 86 / 18 | — | Cannot measure (folded) | 0 |
 
-⚠️ **「잴 수 없음」을 만점으로 읽지 마라.** 밀도 게이트가 서브트리를 접어 남은
-엣지가 전부 끝점을 공유하면 교차가 원천적으로 불가능해진다 — 그걸 품질 1 로
-내면 「큰 볼트일수록 좋다」는 정반대 결론이 나온다. 그래서 계기가 `null` 을
-내고 그 사유를 함께 출력한다.
+⚠️ **Do not read "cannot measure" as a perfect score.** If the density gate folds a subtree and all remaining edges share endpoints, crossings become fundamentally impossible—treating that as quality 1 would lead to the opposite conclusion that "larger vaults are better." Therefore, it emits `null` along with the reason.
 
-**겹침 0 은 왜 믿을 수 있나** — 탐지기가 놀고 있는 것과 구별되기 때문이다.
-계산이 페이지 밖 순수 함수(`scripts/lib/graph-readability.mjs`)라 아는 답을
-넣어 볼 수 있고, `tests/contract/graph-readability.contract.test.ts` 가 그걸
-한다. 결함 4종(현선 회귀 · 스윕 축 반전 · 끝점 공유 쌍 오계수 · 겹침 임계
-약화)을 넣어 전부 빨개지는 것까지 확인했다.
+**Why trust overlap 0** — because it distinguishes from the detector being idle. Since the calculation is a pure function outside the page (`scripts/lib/graph-readability.mjs`), you can feed in known answers, and `tests/contract/graph-readability.contract.test.ts` does exactly that. We injected four types of defects (current line regression · sweep axis inversion · endpoint-sharing pair miscount · overlap threshold weakening) and confirmed they all turn red.
 
-전체 절차와 함정은 `/map-perf` 스킬
+The full procedure and pitfalls are in the `/map-perf` skill
 (`.claude/skills/map-perf/SKILL.md` · `.agents/skills/map-perf/SKILL.md`).
 
-## 측정 규율 넷
+## Four Measurement Disciplines
 
-이 사고에서 실제로 틀렸던 것들이다.
+These are the things that actually went wrong in this incident.
 
-1. **진짜 마우스만 쓴다** (`page.mouse.*`). 페이지 안에서 만든
-   `new PointerEvent(...)` 는 `isTrusted: false` 라 `setPointerCapture` 가
-   거부되고, 노드 잡기가 끊겨 **팬으로 흘러간다.**
-2. **`headless: false`.** 헤드리스는 표시가 없어 vsync 도 합성 백프레셔도
-   없다. **헤드리스 fps 는 실기기로 전이되지 않는다** — JS 비용만 전이된다.
-   실측: 같은 코드가 헤드리스 44fps / 실기기 7fps.
-3. **`gap` 이 아니라 `work`.** rAF 간격은 주사율과 하네스 왕복(CDP 1회 ≈
-   24ms)에 오염된다. 콜백이 동기로 쓴 시간이 우리 몫이다.
-4. **대조군을 같이 잰다.** `synth=3000` 옆에 `synth=31`. 비용이 노드 수에
-   비례하는지가 한 번에 갈린다(실측 139.9ms vs 1.0ms).
+1. **Use real mouse only** (`page.mouse.*`). `new PointerEvent(...)` created within the page has `isTrusted: false`, causing `setPointerCapture` to be rejected and node capture to break, **drifting into pan mode.**
+2. **`headless: false`.** Headless mode lacks display, so there is no vsync or composite backpressure. **Headless fps does not translate to real devices** — only JS cost translates. Empirical: the same code ran at 44fps headless / 7fps on a real device.
+3. **`work`, not `gap`.** The rAF interval is contaminated by frame rate and harness round-trip (one CDP call ≈ 24ms). The time the callback spends synchronously is our share.
+4. **Measure the control group together.** Placing `synth=31` next to `synth=3000` immediately reveals whether cost scales with node count (empirical: 139.9ms vs 1.0ms).
 
-## 화면 계기
+## Screen Instrument
 
-설정 → 「지도 배경」 → **프레임 계기**(기본 꺼짐). 지도 우하단에
-`fps · 최악 ○○ms · 끊김 ○`. **최악 간격이 fps 보다 중요하다** — 버벅임은
-평균이 아니라 꼬리다(실측: 중앙 16.7ms 인데 최악 150ms). 꺼져 있으면 측정
-루프도 돌지 않는다 — 성능을 갉아먹는 성능계는 거짓말쟁이다.
+Settings → "Map Background" → **Frame Instrument** (off by default). Bottom-right of the map shows
+`fps · worst ○○ms · stutter ○`. **The worst interval is more important than fps** — stuttering is in the tail, not the average (empirical: median 16.7ms but worst 150ms). If it's off, the measurement loop doesn't even run — a performance counter that eats performance is a liar.
 
-사용자 기기에서만 재현될 때는 이걸 켜 달라고 하는 것이 가장 빠른 길이다.
+When something can only be reproduced on the user's device, telling them to turn this on is the fastest path.
 
-## 마지막 관문
+## Final Gate
 
-이 훅과 하네스는 **Chrome** 을 잰다. 제품 표면은 Tauri(WKWebView)라 엔진이
-다르다. Chrome 에서 처방이 확정되면 설치 앱에서 한 번 더 재야 한다
-(`.claude/rules/surfaces.md`).
+This hook and harness measure **Chrome**. The product surface is Tauri (WKWebView), so the engine differs. Once a prescription is confirmed in Chrome, you must re-test it in the installed app (`.claude/rules/surfaces.md`).

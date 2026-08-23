@@ -10,586 +10,304 @@ paths:
   - "docs/DESIGN-SYSTEM.md"
 ---
 
-# Design system rules — **화면을 쓰는 동안 지켜야 할 것**
+# Design system rules for building screens
 
-> **조건부 로드** — UI 파일(`src/**/*.tsx` · `app/**/*.css` 등)을 열 때만 실린다.
+> Conditionally loaded for UI source. This file owns decisions needed while
+> building; it does not duplicate the design system's values.
 
-## 디자인 문서가 넷인 이유 — 헷갈리면 이 표만 본다
+## Four design documents, one system
 
-이름이 비슷해서 «둘이 왜 따로 있지» 가 반복되는데, **가르는 기준은 주제가 아니라
-「언제 읽히나」** 다. 넷 다 같은 하나의 디자인 시스템을 말하고, 자리만 다르다.
+| File | Question | Loaded | Size role |
+|---|---|---|---|
+| `forbidden.md`, Design | What must never be done? | always | smallest pre-file subset |
+| this file | What must a screen obey now? | UI source | working rules |
+| `design-gates.md` | Why is each gate shaped that way? | gate source only | failure history and probes |
+| `docs/DESIGN-SYSTEM.md` | What are the canonical values and evidence? | never automatically | 258 KB authority |
 
-| 파일 | 답하는 질문 | 언제 실리나 | 크기 |
-|---|---|---|---:|
-| `forbidden.md` 「디자인」절 | **절대 하지 말 것** | **항상** — 파일을 열기 전에 내려야 하는 판단이라서 | 12KB |
-| **이 파일** (`design.md`) | **지금 화면을 쓰는데 무엇을 지켜야 하나** — 스케일 계약 · 토큰 · 모션 · 무엇이 lint 로 막히나 | UI 파일을 열 때 | 49KB |
-| `design-gates.md` | **각 게이트가 왜 그 모양인가** — 면제 범위 · 룰이 조용히 죽은 사례 · 켜기 전 절차 | 게이트를 **고칠 때** (`eslint.config.mjs` · `tests/contract/**`) | 19KB |
-| `docs/DESIGN-SYSTEM.md` | **값과 근거의 정본** — 토큰 값 · 노드 규격 · 컨트롤 인벤토리 · 인용 계보 | **자동 로드 없음.** 필요한 절만 찾아 읽는다 | 258KB |
+`docs/DESIGN-SYSTEM.md` is the single source of truth for values. Use its table
+of contents and open only the relevant section; reading all 258 KB costs about
+60k tokens. This file contains decisions, not a second value catalog.
 
-**단일 진실원은 `docs/DESIGN-SYSTEM.md` 다.** 이 파일은 그 값을 **베끼지 않고
-가리킨다** — 값이 두 곳에 적히면 그 순간부터 어긋나기 시작하기 때문이다(Carbon).
-여기 있는 것은 «값» 이 아니라 «작업 중 판단» 이다.
+## Fixed scale contract (owner decision, 2026-07-24)
 
-⚠️ **258KB 를 통째로 읽지 마라.** `DESIGN-SYSTEM.md` 는 맨 위에 목차가 있다 —
-절 제목으로 `grep` 해서 그 줄부터 읽는다. 통째로 읽으면 한 번에 6만 토큰이 든다.
+**Chrome** means the frame around content: headers, toolbars, tab bars, and side
+panels. These values are fixed; divergence is a defect, not taste.
 
-## 스케일 고정 계약 (2026-07-24 소유자 확정 — 이탈은 결함)
-
-여기서 **크롬**(chrome)은 내용이 아니라 내용을 감싸는 UI 틀(헤더 · 툴바 · 탭바 ·
-사이드 패널)을 말한다. 아래 값은 고정이고, 다른 값을 쓰면 취향이 아니라 결함이다.
-
-- 크롬 필/타일 **36px**(`--chrome-tile-size`) · 크롬 라벨 **`text-label`(11px)**
-- 레일 아이콘 **20px 단일**(`--app-nav-rail-icon-size`, 로고만 26)
-- **화면 폭 1920 이상에서는 확대하지 않는다**(1:1). 2400 이상에서만 1.1 배 —
-  정수가 아닌 배율은 글자를 픽셀로 그릴 때 모양을 뭉갠다
-- 본문 폰트는 **Pretendard Variable** 을 우리가 직접 얹어 쓴다(셀프호스팅).
-  Inter 는 폐기했다 — 라틴 문자만 담긴 서브셋과 한글이 섞여 사고가 났다
-- 글자 크기 사다리(타입 램프)에 새 칸을 만들면 `src/shared/lib/cn.ts` 의
-  `TYPE_RAMP_STEPS` 에 **반드시 등록한다** — 등록 안 된 칸은 tailwind-merge 가
-  색상 클래스로 잘못 알아보고 크기를 아무 말 없이 버린다 (2026-07-23 크롬이
-  16px 로 렌더된 사고, `cn.test.ts` 가 막는다).
-- **행간도 크기와 한 짝이다** — `--leading-*` 9단(크기와 짝지은 7단 + 어디에도
-  안 묶인 `display-tight` 1.06 · `prose` 1.7). 앱이 쓴 UI 텍스트면 그 크기의
-  짝을, 사용자가 쓴 글이면 `prose` 를, 이름·수치면 `display-tight`(최대 2행)를
-  쓴다. 값의 상한은 한글 기준으로 정하고 언어별 분기는 만들지 않는다. 칸을
-  더하면 `LEADING_RAMP_STEPS` 에도 등록한다 — 이쪽은 값이 버려지는 게 아니라
-  **둘 다 살아남아** CSS 에 적힌 순서가 이기는 쪽을 정하는 식이라 더 알아채기
-  어렵다. 상세: `docs/DESIGN-SYSTEM.md` "Line-height ramp".
-- **크기 칸이 자기 행간을 같이 싣는다** (2026-07-27). 그래서 **글자 크기만
-  화면 폭에 따라 갈아끼우면 짝이 어긋난다** — 대괄호에 숫자를 직접 적는 크기
-  (`text-[Npx]` 류)에는 짝이 없어서, 원래 칸의 행간이 그 화면 폭에 그대로
-  남는다(실측: `/git` 헤드라인이 23px 글자에 24px 행간, 1.04). 화면 폭에 따라
-  바꾸는 크기도 램프 유틸리티로 쓰거나, `leading-*` 을 명시해 두 크기 모두를
-  덮어라. 램프 토큰을 대괄호 안에서 **길이로 돌려 참조하지 마라** — 크기는
-  같아 보여도 짝을 잃는다(램프 *밖* 크기 토큰을 그렇게 참조하는 것은 정당하다).
-  `--leading-hero` 는 오늘 쓰는 곳이 없어도 `text-hero` 가 함께 싣는 값이라
-  **지우면 안 된다** — 죽은 토큰이 아니다.
-- 루트 16px 를 그대로 물려받아 렌더되는 텍스트는 램프가 안 걸린 결함이다.
-  상세 표: `docs/DESIGN-SYSTEM.md` "스케일 고정 계약" 절.
-- ⚠️ **이 계약이 적용되는 범위는 작업대의 크롬까지다** (2026-07-28 체계 자리
-  확정). 36px 필/타일과 20px 레일 아이콘은 **지도 위에 떠서 화면을 최대한
-  양보해야 하는 도구 막대**의 치수다. `isGatewayRoute()` 인 라우트(오늘
-  `/download`)의 크롬은 도구가 아니라 이 사이트의 첫인상이라, 같은 값을 쓰면
-  관문이 아니라 앱 크롬으로 읽힌다 — 소유자 판정 *"세로 길이가 너무 좁고"*.
-  지금 그 값을 쓰는 곳은 `GatewayNav` 하나뿐이고(`min-h-14` / `md:min-h-16`,
-  Tailwind 기본 여백 램프의 정규 칸), **새 토큰은 만들지 않는다** — 쓰는 곳이
-  하나뿐인데 변수를 만들면 "36px 하나" 이던 참조 대상이 둘로 늘어 어디가
-  규격인지 흐려진다. 두 번째 관문 라우트가 생기면 그때 토큰으로 올린다
-  (기준은 시간이 아니라 **두 번째로 쓰는 곳이 생겼는가**).
-- ⚠️ **설정 시트도 계약 밖이다** (2026-08-02, 소유자 지적 3건 — `docs/DECISIONS.md`).
-  가르는 기준은 같다: 뒤를 어둡게 덮어 막는 **모달 화면**은 도구 막대가 아니다.
-  **계약 밖이라고 적은 것만으로는 화면이 안 바뀌었다** — 재 보니 이 시트는
-  계약의 값을 하나도 안 쓰고 있었다. 계약이 틀린 게 아니라 **그 화면에 규격이
-  아예 없었던 것**이고, 그 공백이 만든 결함이 진짜 문제였다: 절마다 폰트를 전부
-  세어 보니(전수 측정 = 센서스) **한 시트 안에 규격이 두 가지** 섞여 있었다
-  (화면/작업공간/AI = 12.5+11, **확장/발자국 = 9.5+11**). 원인은 `Slider`/`Choice`
-  가 「발자국」의 **접혀 있는 세부 항목**에서 태어나 그 치수를 그대로 들고
-  「확장」의 **주 컨트롤**이 된 것 — 그래서 라디오 칩(9.5px/24px)이 자기
-  라벨(11px)보다 작았다(눌리는 것이 라벨보다 작아지는 위계 뒤집힘 +
-  WCAG 2.5.8 여유 0).
-  **규격**: 누르는 글자·행 라벨 `text-body`, 설명·수치 `text-label`,
-  `text-caption` 은 **`uppercase` 아이브로우 한 자리만** — 그 밖에는 금지.
-  LNB 는 오른쪽 칸 행과 같은 인셋(`px-3 py-2`) + 한 단 위(`text-body-lg`).
-  새 토큰 0개.
-
-  ⚠️ **사정거리를 「루트 시트만」으로 좁힌 것이 두 번째 사고를 만들었다**
-  (2026-08-09, 소유자 지적). 2026-08-02 는 드릴인 목적지(`VaultAgentSetupPanel` ·
-  `AiConnectionPanel`)를 사정거리 밖에 뒀다 — *"그 안의 9.5px 은 대부분 램프
-  정의에 맞는 쓰임이라 묶으면 82건짜리 소음"* 이라는 근거였다. **소음 걱정은
-  옳았고 「대부분 정당하다」가 틀렸다.** 여덟 칸 전수 실측(1512×900, 볼트 연결):
-  여섯 칸은 9.5px 이 **0** 인데 「내 에이전트 연결」만 **보이는 글자의 42%**
-  (10/24)가 시트 바닥 아래였고, 정당하다던 쓰임을 열어 보니 `dt`(이름)이 9.5px
-  인데 그 `dd`(값)이 11px — **이름이 자기 값보다 작은** 같은 위계 뒤집힘이었다.
-  API 키 입력은 `fieldClass` 를 부르면서 그 램프의 기본값(14px)을 9.5px 로
-  덮어썼고, 사용자가 글자 하나하나 확인해야 하는 설정 JSON `<pre>` 도 9.5px 였다.
-  **소음은 사정거리가 아니라 면제를 좁혀서 막는다** — 지금 게이트는 드릴인
-  체인(`VaultAgentSetupPanel` → `AgentClientButtons` → `WebManualConnectPanel`)
-  까지 보고, 9.5px 면제는 `uppercase` 한 줄 판정으로 끝난다.
-  게이트(= 규칙을 지켰는지 자동으로 막아 주는 검사):
+- Chrome pills and tiles are **36px** through `--chrome-tile-size`; chrome labels
+  use **`text-label` (11px)**.
+- Rail icons are one **20px** step through `--app-nav-rail-icon-size`; only the
+  logo is 26px.
+- Do not scale at widths of 1920px or above. At 2400px and above, 1.1× is allowed;
+  fractional text scaling below that blurs rasterization.
+- Body type is self-hosted **Pretendard Variable**. Inter was removed after its
+  Latin-only subset mixed badly with Korean glyphs.
+- Register every type-ramp addition in `TYPE_RAMP_STEPS` in
+  `src/shared/lib/cn.ts`. An unregistered class was silently treated as colour
+  and discarded by tailwind-merge, rendering 16px chrome in 2026-07-23.
+- Type and line height are paired. Use the matching `--leading-*` step for UI,
+  `prose` for authored text, and `display-tight` for names/numbers of at most two
+  lines. Register new steps in `LEADING_RAMP_STEPS` too.
+- Responsive type changes must keep their line-height pair. Raw `text-[Npx]` and
+  length references such as `text-[var(--text-body)]` lose that pairing. Named
+  ramp utilities keep it. `--leading-hero` is live through `text-hero` even when
+  it has no direct consumer.
+- Text inheriting the 16px root size has escaped the ramp.
+- The fixed 36px/20px chrome contract applies to the workbench. Gateway chrome
+  is a first impression, not a map toolbar; `GatewayNav` uses existing
+  `min-h-14`/`md:min-h-16` steps. Create a gateway token only after a second real
+  consumer exists.
+- Modal settings sheets are also outside workbench chrome, but not outside a
+  specification. Their interactive text and row labels use `text-body`,
+  descriptions and values use `text-label`, and `text-caption` is reserved for
+  one uppercase eyebrow. LNB rows use `px-3 py-2` and `text-body-lg`.
+- Settings drill-ins follow the same hierarchy. A 2026-08-09 inventory found one
+  panel with 10 of 24 visible strings at 9.5px while six peers had none; keys were
+  smaller than values and JSON users had to inspect was also 9.5px. The gate
+  narrows exemptions to the uppercase eyebrow instead of excluding drill-ins:
   `tests/contract/settings-sheet-type-dialect.contract.test.ts`.
-  **일반화**: 세부 항목에 쓰던 부품을 그 절의 주 컨트롤 자리로 올려 쓸 때는
-  치수도 같이 올렸는지 확인한다 — 안 하면 그 절만 조용히 한 단 작아진다.
-  lint 는 못 잡는다(양쪽 다 정당한 램프 칸이라 코드에 수치가 안 남는다).
 
-## 디자인 헌장 (요약)
+Full values: `docs/DESIGN-SYSTEM.md`, “Fixed scale contract” and “Line-height
+ramp.”
 
-- **Linear 를 바탕으로 한다**. 색은 무채색(검정~흰색)에 인디고 하나
-  (`#5e6ad2`)만 더한다 — 이 극단적인 제약이 AI 가 뽑아낸 티 나는 화면을 막는다.
-- 채색은 **인디고 하나**. **상태를 알리는 색은 3종이다: warning(amber) ·
-  error(red) · success(emerald)** — 셋 다 같은 구성을 갖는다(꽉 찬 점 하나 +
-  배경/테두리/글자용 반투명 3단) (디자인 가디언 판정 §①, 2026-07-20 — 그 판정의
-  작업 파일은 `.qa-scratch/`(gitignore)에 있었고 **저장소에 없다**. 살아남은
-  기록은 이 문단과 `docs/DESIGN-SYSTEM.md` "Signal tones" 절이다).
-  success 는 "연결됨 / 쓰기 확인 / 완료" 처럼 잘 됐다는 뜻일 때만 쓴다 — 쓰임을
-  넓히지 말고, 이미 코드에 박혀 있던 초록을 토큰으로 바꾸는 데까지만. 장식으로
-  쓰는 초록, 성공과 무관한 초록은 금지. 상세: `docs/DESIGN-SYSTEM.md` "Signal tones".
-- 허브 노드와 Layer 0 컨테이너에만 보조 색(앰버 `#d4b478`)을 허용한다. v2 스파인
-  뷰에서는 **허브 링 하나 + Layer 0 컨테이너 하나**가 같이 보이는 데까지가 승인
-  범위다 (2026-07 소유자 라이브 테스트 + Guardian 검증을 통과한 설계 — 예전의
-  "동시 금지" 문구는 v2 이전 뷰 기준이라 현행화했다). 그 밖의 노드나 화면으로
-  앰버를 넓히는 것은 여전히 금지 — 앰버가 셋 이상 보이면 결함이다.
-  **문서에 적어 둔 예외 2건**:
-  ① 에이전트 포커스 링(W6 — 실데이터 1노드. 소스는 heartbeat 의 focus 가
-  우선이고, 없으면 activity.jsonl 의 쓰는-중(2분 창) 대상 — 2026-08-13 확장.
-  어느 쪽이든 동시에 최대 1노드라 상시 앰버 확장이 아니다), ② **최근 변경
-  스포트라이트 렌즈 ON(`?recent=`) 동안 변경-노드 회전 파선 링**(소유자
-  지시 2026-07-23 + Guardian 모션 검수 승인 — 그 모드를 켠 동안에만 나오므로
-  상시 앰버 확장이 아니고, 렌즈를 끄면 서서히 사라진다). 그 밖의 앰버는 여전히
-  결함이다. (문서 화면의 장식용 금색은 별개의 `--color-amber-docs-*` 토큰이다 —
-  헌장이 승인한 색이 아니라 **격리해 둔 것**이니 쓰임을 넓히지 말 것. 나중에
-  없앨지 다시 볼 예정.)
-- **앰버는 네 갈래이고 갈래마다 규율이 다르다** (2026-07-29 에 넷째가 등재됨) —
-  ① 허브 앰버(`#d4b478`, 확장 금지) ② 레일 로고 마크(값은 같지만 브랜드
-  마크이고, 라우트당 하나이며, 데이터가 아니다) ③ 종류(kind) 색 앰버
-  (`capability` 를 나타내는 데이터 표시 — 종류별 개수를 다 센 무라벨 막대,
-  지도 위의 점) ④ **발자국 트레일**(`--color-footprint-trail`, `#e8c47a`).
-  감사 때마다 ②③이 ①을 넓힌 것으로 오해받아 다시 확인된다. 판별표:
-  `docs/DESIGN-SYSTEM.md` "Three ambers, three rules".
+## Design charter
 
-  **④ 가 ① 을 넓힌 것이 아닌 이유는 색 값이 다르기 때문이다.** 소유자 지시
-  (*"노란색으로 빛나게"*)는 따르되 허브 앰버와 **같은 값을 쓰지 않는다** —
-  이 지도에서 노랑은 이미 "여기가 중심"이라는 뜻이라, 값이 같으면 "중심"과
-  "걸었다"가 한 색이 된다. 같은 색 계열 안에서 밝기와 진하기를 갈랐다. 그리고
-  ④ 는 **트레일 팝오버가 열려 있는 동안에만** 나온다 — 위의 예외 2건(에이전트
-  포커스 링 · 최근 변경 스포트라이트)과 같은 구조라 상시 앰버 확장이 아니다.
-  색은 노랑/인디고 **둘 중 하나로 고정**이고 사용자가 아무 색이나 고르는
-  컬러피커가 아니다.
-  게이트: `tests/contract/footprint-bloom-exception.contract.test.ts` 가 두
-  값이 같아지면 실패한다.
-- **막대 채색은 무채색 + 인디고 하나** — 인디고는 주인공 하나에만 쓴다(계열이
-  하나면 맨 앞 행 `DomainCompositionGrid`, 둘이면 주 계열인 `DomainCapacityBar`
-  의 역량). 두 계열의 경계는 색이 아니라 **1px 틈(트랙 색이 드러나는 간격)** 이
-  가른다(붙어 있는 두 조각의 대비가 3:1 에 못 미칠 때 색과 무관하게 쓰는
-  구분자). 종류(kind) 팔레트는 **색 말고는 무엇인지 알릴 방법이 없는 그림**
-  (종류별 개수를 다 센 무라벨 막대, 지도 위의 점, 트리 칩)에만 남는다 —
-  순서·라벨·숫자가 이미 무엇인지 말해 주는 막대에서 종류 색은 같은 정보를 두 번
-  칠하는 것이다. 예전의 "계열 수가 정한다" 규율은 두 계열 막대가 있는 모든
-  화면에 색 있는 두 가지를 쓸 권한을 줬고, 그렇게 늘어난 실측 비용이
-  `/projects` 의 색 있는 면적 32,987px² · 앰버 면 6곳이었다. 게다가 그
-  앰버/유칼립투스 짝은 트랙 위에 겹쳐 놓고 잰 대비가 **1.14:1** 이라 밝기로는
-  구분되지 않고 색상(hue)으로만 갈렸는데, 그 색상 차이가 적록 색약(남성 약 8%)
-  이 가장 못 가르는 방향이다 — 색이 무엇인지 알려 준다는 전제 자체가 틀렸다
-  (소유자 확정 2026-07-26 — 위 수치가 그 판정에서 옮겨 적은 실측이고, 원본
-  작업 파일은 `.qa-scratch/`(gitignore)라 저장소에 없다. **근거는 이 문단이다**).
-- 온톨로지 종류(kind) 색은 예외로 허용하되 **데이터를 나타내는 표시로만** 쓴다.
-  그래프의 채움색은 작은 점이 3:1 대비를 내야 해서 선명해도 되지만, 패널이나
-  카드에서는 무채색 바탕 + 작은 표식 + 라벨/아이콘으로 낮춘다. 상세 카드 안에서
-  왼쪽을 세로로 가득 채우는 색 띠(full-height colored rail)는 AI SaaS 광고
-  박스처럼 읽히므로 금지한다.
-- 분류를 구분할 때는 **색이 아니라 테두리 모양**으로 한다 (작업중: 인디고
-  밑줄, 예정: 파선).
-- **무엇이 선택됐는지 알리는 색은 인디고 한 계열 안에서 밝기로만 갈린다**:
-  노드 선택 = 기본 인디고(#5e6ad2), 엣지 선택(양끝 노드에 함께 초점) = 옅은
-  인디고(`--topology-v2-edge-selected`, rgba(200,210,255)). 다른 색으로 넓히지
-  않는다.
-- **"온톨로지" 라는 단어는 브랜드 자리와 그 단어를 정의하는 문장에서만 쓴다.**
-  그 밖의 UI 문구는 지도 / 개념 / 문서함 같은 쉬운 말로 쓴다 (2026-07-26 실측:
-  주 진입 경로 어디에도 정의가 없는데 그다음 화면 16곳이 이 단어를 설명 없이
-  쓰고 있었다 — 낯선 단어를 반복하면 사용자가 배우는 게 아니라 이 제품을
-  덜 믿게 된다). 정의가 사는 곳은 투어 1단계와 "?" 시트의 용어사전 두 곳뿐이고,
-  가르치려고 새 화면을 만들지 않는다.
+- Use an achromatic palette plus one indigo family. This restraint prevents the
+  generic AI-generated SaaS look.
+- Signal tones are warning amber, error red, and success emerald, each with one
+  solid dot and three translucent surface/edge/text steps. Success means a real
+  successful state such as connected, confirmed, or complete—not decoration.
+- Hub nodes and Layer 0 containers may use hub amber `#d4b478`; a spine view may
+  show one hub ring and one Layer 0 container. Documented, mode-bounded exceptions
+  are the single agent-focus ring and recent-change spotlight.
+- Amber has four distinct roles: hub, rail logo, kind data, and footprint trail.
+  Footprints use `--color-footprint-trail` (`#e8c47a`), never the hub value, and
+  appear only while the trail popover is open. The footprint trail may use yellow
+  or indigo, not an arbitrary colour picker. Gate:
+  `tests/contract/footprint-bloom-exception.contract.test.ts`.
+- Bars use neutrals plus one indigo protagonist. A 1px track gap separates
+  adjacent segments when colour contrast is insufficient. Kind colours remain
+  only where colour is the sole carrier of kind: unlabeled kind totals, map dots,
+  and tree chips. A prior amber/eucalyptus pair measured 1.14:1 and relied on a
+  red-green distinction, so it was not information-safe.
+- Kind colour is data, not a card decoration. Use neutral surfaces with a small
+  marker and label; never a full-height coloured rail.
+- Distinguish workflow categories through shape—indigo underline for active,
+  dashed for planned—not colour alone.
+- Selection stays within one indigo family: node selection uses the base indigo;
+  edge selection uses `--topology-v2-edge-selected` on both endpoints.
+- Use “ontology” only in the brand and in sentences that define it. Elsewhere use
+  map, concept, or workspace. The guided tour and help glossary own the two
+  definitions; do not create another teaching screen.
 
-## 토폴로지 노드 포커스 & 스케일
+## Topology focus and scale
 
-> 전체 설계 + 인용 출처: `@docs/TOPOLOGY-FOCUS-AND-SCALE.md`. 근거 원칙은
-> Shneiderman 의 *overview first, zoom and filter, details-on-demand* (1996).
+Authority and sources: `docs/TOPOLOGY-FOCUS-AND-SCALE.md`, grounded in
+Shneiderman's “overview first, zoom and filter, details on demand” (1996).
 
-- **노드를 클릭하면 그 노드와 직접 이웃(= ego)만 남기고 작은 팝오버를 띄운다.**
-  클릭한 노드와 직접 이웃만 불투명하게 두고 나머지는 흐리게
-  (`opacity 0.15`) 하거나 감춘다 — 방식은 렌더러마다 다르다(캔버스 엔진은
-  프레임마다 투명도를 다시 계산하고, SVG 엔진은 ego 상태를 prop 으로 받는다).
-  어느 쪽이든 원본 그래프 데이터는 건드리지 않는다. 팝오버는 노드 옆에
-  붙이고(앵커), 크기는 내용만큼만 갖는다. **화면을 가득 채우는 상세 모달을
-  클릭의 기본값으로 쓰지 않는다** — 기존 `NodeDetailPanel` 의 전체 상세는
-  팝오버 안의 `전체 상세 →` 를 눌렀을 때만 연다.
-- **첫 화면은 전체를 먼저 보여 준다(overview-first).** 노드 2~3천 개를 한 번에
-  쏟아 놓지 않는다. 첫 단계에는 project + domain + hub 만 두고, 나머지는 클릭할
-  때 펼친다(줌 단계마다 보여 주는 것이 달라지는 semantic zoom).
-- **전문용어는 쉬운 말로.** `영향받음 N` → "이 노드를 쓰는 곳 N", `의존 N` →
-  "이 노드가 기대는 곳 N". 같은 라벨을 여러 번 쓰지 않는다(`개념 정보` 3회).
-- **커질 때 성능은 이 순서로 손본다:** 레이아웃을 미리 계산해 캐시 → 움직이는
-  동안 라벨을 줄이고(`hideLabelsOnMove`/`hideEdgesOnMove`) → 화면 밖 엣지를
-  안 그리는 것을 유지 → 5천 개가 넘으면 도메인 단위로 묶기.
+- Clicking a node keeps its ego graph opaque, dims or hides everything else, and
+  anchors a compact popover beside it. Do not mutate the source graph. Full detail
+  is an explicit action inside that popover, never the default click result.
+- Start with project, domain, and hub nodes. Expand lower tiers on interaction;
+  do not dump thousands of nodes into the first frame.
+- Use plain labels such as “used by N” and “depends on N.” Do not repeat a generic
+  heading several times.
+- Scale in this order: cache layout, reduce labels/edges during movement, keep
+  offscreen-edge culling, then cluster by domain beyond 5,000 nodes.
 
-## 노드 규격(형태 · 반지름 · 크기 · 각인 숫자) — 정본은 DESIGN-SYSTEM.md (2026-08-01)
+## Node specification points to one authority
 
-> 종류(kind)마다 어떤 도형을 쓰는지(hex/사각/원/via-pad), 반지름 사다리,
-> `magnitudeScale`(자식 수로 정해지는 크기), 노드 위에 숫자를 새길 조건은
-> **여기 옮겨 적지 않는다** — 원본은 `docs/DESIGN-SYSTEM.md` "노드 규격
-> (Node Spec)" 절이다. 여기 베껴 두면 그 순간부터 두 곳이 어긋나기 시작한다
-> (Carbon — "값이 두 곳에 적히면 이미 어긋나기 시작한 것").
+Shape, radius, magnitude, and embedded-count rules live only in
+`docs/DESIGN-SYSTEM.md`, “Node Spec.” Keep
+`render/node-shapes.ts` and `shared/ui/topology-v2-kind-glyph.tsx` aligned;
+`tests/contract/node-kind-shape-parity.contract.test.ts` catches drift.
 
-- `render/node-shapes.ts`(캔버스)와 `shared/ui/topology-v2-kind-glyph.tsx`(DOM)
-  를 열기 전에: 종류마다 어떤 실루엣을 쓰는지는 **두 파일이 항상 같아야** 한다 —
-  한쪽만 고치면 `tests/contract/node-kind-shape-parity.contract.test.ts` 가 막는다.
-- **브릿지 노드는 아직 값이 정해지지 않았다.** 데이터 쪽에서 정식 개념으로
-  들이는 중이고, 어떻게 그릴지는 도해 자리(`design-infoviz`)의 판정을 기다리는
-  중이다 — 이 두 파일에 새 종류나 새 시각 값을 **짐작으로 넣지 않는다**. 들어갈
-  자리는 `docs/DESIGN-SYSTEM.md` "노드 규격" §5 가 비워 뒀다.
-- `app/globals.css` 의 `--topology-v2-radius-*` 값 자체(30/17/11/7)와 반지름
-  비율 상수(`DOMAIN_HALF_EXTENT_RATIO` 등)는 무엇이 커 보여야 하는지를 정하는
-  디자인 결정이라 lint 나 계약 테스트로는 맞는지 판정할 수 없다 — 바꾸려면
-  지도 45라운드에 해당하는 연구를 다시 해야 한다.
+Do not invent a visual for bridge nodes before `design-infoviz` decides it. The
+radius values 30/17/11/7 and constants such as `DOMAIN_HALF_EXTENT_RATIO` encode
+the outcome of the map research and require that work to be reopened before
+change.
 
-## [강등됨 2026-07-24] 구 온톨로지 스튜디오 게임 예외 — 폐기
+## Retired studio game exception
 
-`/ontology/studio` 는 한때 노드를 게임 아이템처럼 다루면서 glow·gradient·aura·
-particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안에서만
-허용하는 **그 화면 한정 예외**였다. 이 예외는 **폐기됐다** — fable 판정 B +
-소유자 확정(2026-07-24). "게임처럼 중독되게" 는 비유였지 사양이 아니었고, 절제가
-정체성인 앱에서 게임 미학은 "잘 만든 게임" 이 아니라 "흉내" 로 읽히며,
-기획자·임원·개발자·에이전트가 보고 판단하는 자료의 신뢰를 갉아먹었다.
+The old studio-only glow, gradient, aura, particle, rarity, and shimmer exception
+was revoked on 2026-07-24. “Make it addictive like a game” was a metaphor, not a
+specification; game aesthetics weakened trust in decision material. Studio later
+retired. Contextual map editing and ACP proposal cards follow the same neutral
+plus indigo system as the rest of the product.
 
-- 2026-08-21에는 **Studio 표면 자체도 은퇴했다.** 관계 쓰기는 지도 선택
-  inspector와 같은 자리의 contextual editor가 한 번에 관계 하나를 다룬다.
-- draft는 실제 지도 좌표의 파선 화살표, confirm은 같은 선의 실선 수렴이다.
-  force/layout 입력에는 들어가지 않고 `--motion-fast/base/settle`만 쓴다.
-- **glow/rarity/particle/gem은 contextual editor와 변경안 검토에서도 금지.**
-  `--studio-*` 토큰과 `.studio-*` 모션 클래스는 `app/globals.css`에서 지웠다.
-- design-guardian은 새 패널이 축소판 Studio나 두 번째 dock이 되는 것도 반려한다.
-- 배경과 KEEP/KILL/BUILD 판단: `[[ontology-studio-game-direction]]`. 사람을
-  붙잡는 것은 파티클이 아니라 루프(다음 할 일 → 즉시 반영 → 진전 누적)다.
+## Label decoration
 
-## 라벨 장식 — 화살표 (2026-07-26 소유자 확정)
+- Do not put decorative arrows after labels. A trailing `ArrowRight` or
+  `ArrowUpRight` is not hierarchy.
+- Arrows are allowed when they carry path, order, causality, or the prefix for an
+  external destination (`↗`).
+- `tests/contract/label-decoration.contract.test.ts` owns the exact syntax.
 
-- **라벨 끝의 화살표 금지.** `열기 →` · `상세 →` · 라벨 뒤에 붙는
-  `ArrowRight`/`ArrowUpRight` 아이콘. 소유자: *"글 옆에 화살표 있는거
-  싫어하거든? AI느낌이라?"* — 어디로 가는지는 라벨이 이미 말했고, 누를 수
-  있다는 건 컨트롤 생김새가 이미 말한다. 남는 신호는 관문의 결이다.
-- **화살표 자체가 금지는 아니다.** 문장 가운데의 화살표는 대개 정보다 —
-  `{source} → {target}`(경로), `오래된 → 최근`(순서), `설정 → Developer`
-  (메뉴 경로), `목차 클릭 → 이동`(인과). 앱을 **벗어나는** 링크
-  (`target="_blank"`·외부 딥링크) 앞에 붙는 `↗` 도 누르기 전에 알려 주는
-  정보다. 펼쳐진 상태를 나타내는 `ChevronRight`, 캐러셀 이전/다음도 그대로 둔다.
-- **가르는 법**: 화살표를 지우고 라벨을 소리 내어 읽어라. 잃은 게 없으면
-  장식이었다.
-- 게이트: `tests/contract/label-decoration.contract.test.ts` 가 ① 번역 문자열
-  끝의 화살표, ② 선언 없는 `↗`, ③ **라벨 끝에 붙은 화살표 요소**를 막는다.
-  ③ 은 2026-07-27 에 범위를 넓혔다 — 그 전에는 `→` 를 통째로 면제했고(면제 =
-  이 경우는 룰에서 빼 주는 것), 그래서 규칙을 등재한 다음 날 공방의 주 저장
-  버튼(`확인하고 저장 <span>→</span>`)이 그 면제를 타고 빠져나갔다. **룰이
-  있어도 적용 범위가 좁으면 룰이 없는 것과 같다.** 가르는 기준은 어떤 화살표
-  글자냐가 아니라 **어디에 있느냐**다: 화살표 뒤의 첫 글자(공백 제외)가 부모의
-  닫는 태그면 끝자리라서 장식이고, 아니면 문장 가운데라서 정보다. 룰을 켜기 전
-  전부 세어 보니 끝자리 3건 · 문장 가운데 7건이었다. 상세:
-  `docs/DESIGN-SYSTEM.md`.
+## Dimensional regularity
 
-## 치수 규칙성 — 내용 길이가 달라질 때 (2026-07-26 소유자 확정)
+Repeated cards in one row have equal height despite copy length. Repeated icon
+buttons, chips, and fields use one size step per role. Variation must encode a
+real hierarchy or state, not the accident of which file introduced the control.
+Measure repeated rectangles in `/design-audit`; do not approve by sight.
 
-소유자: *"박스 사이즈가 안맞지? 삐뚤빼뚤해보이는거말야.. 정갈한걸 좋아해서"*
+## Absolute rules point to one source
 
-- **상자의 치수는 우리가 정하는 것이지 내용물이 정하는 것이 아니다.** 반복되는
-  카드 묶음에서 높이가 글자 수에 따라 정해지면, 아무도 그렇게 정하지 않았는데
-  격자가 흐트러진다.
-- 있을 수도 없을 수도 있는 문구(`· 역량 1개 더` 같은)가 **줄 수를 바꾸지
-  못하게** 한다 — 그 문구가 없어도 그 줄은 자리를 지킨다.
-- 목록 자리는 **개수를 고정하고 나머지는 캡션으로 적는다**. "들어가는 만큼"
-  은 금지.
-- 그리드는 한 행 안에서만 늘린다 — 한 벌로 읽혀야 하는 묶음은 **행 높이도**
-  똑같이 맞춘다.
-- 긴 제목은 줄 수를 잘라 고정한다. 대신 마우스를 올리거나 초점이 갔을 때, 또는
-  상세 화면에서 전체 값을 보여 준다.
-- **대가**: 자리를 미리 비워 두면 vault 가 작을 때 빈 공간이 생긴다. 눈이 훑고
-  지나가는 **반복 묶음**에서만 그 대가를 치른다 — 한 번만 나오는 카드는 내용에
-  맞게 커져도 된다.
+The fifteen canonical Don'ts live in `docs/DESIGN-SYSTEM.md`, section
+"Absolute rules (Don'ts)". Do not copy them here. `forbidden.md` carries an always-loaded subset,
+and `tests/contract/design-donts-parity.contract.test.ts` reconciles `dont:`
+markers. Sentences may be rewritten or translated; marker slugs may not drift.
 
-상세: `docs/DESIGN-SYSTEM.md` "Dimensional regularity".
+## Changing the specification requires `design-system`
 
-## 절대 하지 말 것 — 정본은 DESIGN-SYSTEM.md (2026-08-05)
+Changes to any file below convene the `design-system` seat. This list is both the
+human rule and the machine input read by `scripts/lib/design-spec-census.mjs`:
 
-> 아래 금지는 앱 어디에서나 유효하다 — **공방도 포함이고 예외는 없다**(예전의
-> 게임 예외는 위에서 폐기됐다).
+- `src/shared/ui/control-class.ts` — cva axes, options, defaults, and field/control value layers
+- `src/shared/ui/controls.tsx` — interactive primitives
+- `src/shared/ui/surface.tsx` — appearing/disappearing surface primitive
+- `src/shared/ui/dialog.tsx` — blocking modal authority: scrim, focus trap, Escape, restoration, scroll lock, widths
+- `src/shared/ui/input.tsx` · `src/shared/ui/checkbox.tsx` — form behaviour authority
+- `src/shared/ui/badge-class.ts` — static badge geometry
+- `src/shared/ui/segmented-control.tsx` — exclusive single-selection containers and fill
+- `src/shared/lib/use-roving-radio-group.ts` — radiogroup behaviour
+- `src/shared/ui/page-frame.ts` — page inset, top spacing, width, and title layout
+- `app/globals.css` — type, leading, radius, shadow, control-height, icon, and palette ramps
+- `.claude/rules/design.md` — this file's “Fixed scale contract” section
 
-**목록을 여기 옮겨 적지 않는다** — 정본은 `docs/DESIGN-SYSTEM.md` 의
-**"Absolute rules (Don'ts)"** 절이고, 지금 15개다. `노드 규격` 절이 이미 쓰는
-방식과 같다.
+Adding a path here immediately extends `pnpm decisions:check`; no duplicate list
+exists in code. Contract:
+`tests/contract/design-spec-ledger.contract.test.ts`.
 
-**왜 베끼면 안 되는지는 실측이 답했다** (2026-08-05 감사): 같은 목록이 세 곳에
-있었는데 **어느 둘도 일치하지 않았다.** 이 파일은 8개, `forbidden.md` 는 9개,
-정본은 15개였고, 셋을 맞춰 주는 게이트가 없었다. 이 파일에만 있던 것도 있었고
-(`glow boxShadow ring`) 이 파일에만 없던 것도 있었다(`라벨 화살표` ·
-`카드 높이` — 둘 다 게이트까지 있는 규격인데 여기서는 빠져 있었다). Carbon 이
-말한 그대로다: **같은 값이 두 곳에 적히면 그 순간부터 둘이 어긋나기 시작한다.**
+This rule exists because 244 controls were normalized without convening this
+seat. The author alone grew eight tones, seven shapes, three axes, and their
+ramps. Although chip sizes fell from 50 to 3, one screen still carried 8–9
+control heights because every difficult case added another option.
 
-- **정본** — `docs/DESIGN-SYSTEM.md` "Absolute rules (Don'ts)" · 15개
-- **상주 부분집합** — `forbidden.md` 「디자인」 절. 매 턴 실리므로 «파일을 열기
-  전에 내려야 하는 판단»만 고른다. 거기 없다고 허용된 것이 아니다
-- **게이트** — `tests/contract/design-donts-parity.contract.test.ts` 가 각 항목
-  끝의 `dont:` HTML 주석을 열쇠로 짝을 맞춘다. 문장은 자유롭게 고쳐도 되고
-  번역해도 되지만 그 열쇠는 그대로 둔다 (`documentation.md`: 사람이 쓴 문장을
-  못박지 않는다)
+> A specification decided by one author is taste, not a specification.
 
-## 규격을 바꾸려면 「체계」를 부른다 (2026-08-03 소유자 지시)
+Machines cannot prove who reviewed a change. They can prove that vocabulary or
+values changed without a new decision record. The census watches axes, options,
+defaults, ramp tokens, exported primitives, and this section's numbers—not
+whether a frequently touched file merely appears in a diff. That precision
+avoided 63 false positives across 79 of the last 300 commits.
 
-**아래를 고치는 변경은 `design-system` 자리를 소집한다.** 회의를 열지 말지를
-고르는 게 아니라, **이 목록에 걸리면 부른다**:
+## The specification is enforced by lint
 
-- `src/shared/ui/control-class.ts` — 값 층(컨트롤이 어떻게 보일지를 정하는 값들이 모인 곳)의 축·선택지·기본값. **호버 축 셋(`hoverInk`·`hoverSurface`·`hoverBorder`)이 2026-08-15 에 여기 들어왔다** — 그 전까지 호버는 소비처의 몫이었고, 그 규율이 낳은 실측이 hover 선언 752개·자리 511이었다. 「축」은 고를 수 있는 항목 하나(모양·크기·톤 같은 것)이고, 「선택지」는 그 항목이 가질 수 있는 값들이다. **cva 가 둘이다** — 눌리는 것(`controlClass`)과 값을 받는 것(`fieldClass`·`fieldLabel`, 2026-08-06). 값 표는 `docs/DESIGN-SYSTEM.md` 「폼 필드」 절
-- `src/shared/ui/controls.tsx` — 버튼·칩처럼 **눌러서 동작하는** 부품(프리미티브 = 다른 화면들이 가져다 쓰는 기본 부품)
-- `src/shared/ui/surface.tsx` — 화면이 **나타나고 사라지는 방식**을 담은 기본 부품
-- `src/shared/ui/dialog.tsx` — **뒤를 막는 모달**의 정본 (스크림·트랩·Esc·복귀·스크롤락·폭 2단). 2026-08-15 신설 — 축·토큰·변형을 바꾸는 것이 곧 규격 변경이다
-- `src/shared/ui/input.tsx` · `src/shared/ui/checkbox.tsx` — 폼 **행동 층**의 정본 (이름 강제 · 오류/힌트 배선 · 라벨=타깃). 2026-08-15 신설
-- `src/shared/ui/badge-class.ts` — **정적 배지의 기하** 정본 (반경·인셋·타입단). 2026-08-15 신설 — 색·자간은 일부러 축이 아니다(실측에 다수파 없음)
-- `src/shared/ui/segmented-control.tsx` — **배타 단일선택**의 정본 (그릇 캐노니컬 둘: `well`·`chips` + `fill`). 2026-08-15 신설, 같은 날 2차 라운드에서 행동을 훅으로 갈라냄
-- `src/shared/lib/use-roving-radio-group.ts` — **radiogroup 행동 층**의 정본 (roving tabindex · 화살표 순환 · selection follows focus · Home/End 없음). 2026-08-15 신설 — 그릇이 수렴하지 않는 자리는 이것을 직접 입는다
-- `src/shared/ui/page-frame.ts` — **페이지 틀**(상단 여백 · 좌우 인셋 · 최대 폭 · 헤더/제목 줄). 2026-08-09 신설 — 그 전까지 이 층에는 규격이 아예 없어서 목적지마다 제각각이었다(제목까지 32/48/20px)
-- `app/globals.css` — 램프(ramp — 쓸 수 있는 값을 미리 정해 둔 사다리. 그 밖의 값은 lint 가 막는다): 글자 크기 · 행간 · 모서리 반경 · 그림자 · 컨트롤 높이 · 팔레트의 기준색
-- `.claude/rules/design.md` — 이 파일의 「스케일 고정 계약」 절
+Document a new rule and its `eslint.config.mjs` enforcement in the same PR. A
+document-only shadow ramp once left five raw rgba shadows alive.
 
-> 위 목록은 **이 규칙의 정본이면서, 동시에 검사 스크립트가 읽어 가는 입력**이다.
-> `pnpm decisions:check` 가 이 절에 백틱으로 적힌 경로를 그대로 **읽어서** 감시
-> 대상을 만든다(`scripts/lib/design-spec-census.mjs`). 코드 쪽에 같은 목록의
-> 사본이 없으므로, 여기 한 줄을 더하면 그날부터 검사가 그 파일도 본다. 목록과
-> 검사가 어긋나지 않게 지키는 계약 테스트:
-> `tests/contract/design-spec-ledger.contract.test.ts`.
+`no-restricted-syntax` currently enforces:
 
-**왜 이 규칙이 생겼나**: 컨트롤 244개를 하나의 규격으로 맞추는 동안 이 자리를 한
-번도 부르지 않았고, 값 층 설계(톤 8단 · 모양 7종 · 고를 항목 3개 · 램프 값)를
-**만드는 쪽이 혼자서** 정했다. 결과 — 칩 크기를 50종에서 3종으로 줄였는데도
-**한 화면에 컨트롤 높이가 8~9종** 있다. 규칙이 안 맞는 자리가 나올 때마다 규칙을
-고치는 대신 **고를 항목을 하나씩 더 붙였기** 때문이다.
+| Rule | Enforcement |
+|---|---|
+| Type ramp | no raw `text-[Npx]`; zero exemptions |
+| Radius ramp | no raw `rounded-[Npx]`, including directional forms |
+| Shadow ramp | every comma-separated layer must match an elevation, docking, press, surface, or inset form |
+| Hex colour | no hex inside arbitrary-value syntax |
+| Motion duration | no numeric `duration-*`; use tokens |
+| Leading ramp | no raw or named Tailwind leading steps; use `--leading-*`, `display-tight`, or `prose` |
+| Ramp bypass | do not reference type-ramp tokens as arbitrary lengths |
+| Inline shadow | JSX `boxShadow` must reference an approved token |
+| Inline type/radius | literals, ternaries, and templates are forbidden; `var()` only, with type-ramp bypass still forbidden |
+| Tracking | use named tracking tokens, never raw em values |
+| Weight | only signature 510, emphasis 560, strong 650, plus normal 400 reset |
+| Tailwind palette | use `--color-*`, not `text-white` or `bg-slate-*` |
+| z-index ≥20 | use `--z-*`; local stacking below 20 is free |
+| Cursor | do not repeat `cursor-pointer` on buttons or summaries; the base rule owns it |
+| Disabled state | opacity 55 and `CONTROL_DISABLED_CLASS` own the full state |
+| Gradient ban | `scaleGradientSelectors` |
+| Accent/tint pairing | `accentTintPairingSelectors`, including ternary branches |
 
-> **혼자 정한 규격은 규격이 아니라 취향이다.**
+A **ramp** is the allowed value list; a **selector** describes syntax lint finds;
+a **level** decides error versus warning; a **ratchet** allows a measured count to
+fall but never rise.
 
-⚠️ 「불렀는가」는 여전히 기계가 확인하지 못한다. 기계가 확인하는 것은 **규격이
-실제로 바뀌었는데 결정 기록이 비었는가**다 — `pnpm decisions:check` 가 위 목록의
-파일에서 이름과 값(축 · 선택지 · 기본값 · 램프 토큰 · 밖으로 내보내는 부품 ·
-스케일 계약의 수치)이 늘거나 줄었는지 세고, 하나라도 달라졌는데
-`docs/DECISIONS.md` 에 새 기록이 없으면 검사가 실패한다. **그 파일이 이번 변경에
-들어 있는지로 판정하지 않는다** — 이 파일들은 이 저장소에서 가장 자주 고쳐서
-(최근 300 커밋 중 79개) 그렇게 걸면 엉뚱하게 걸리는 것이 63건 나오고, 그건
-강제가 아니라 소음이다. 왜 이렇게 좁혔는지는
-`scripts/lib/design-spec-census.mjs` 맨 위 주석에 다 적혀 있다.
+### Contract tests cover layers lint cannot see
 
-검사 둘: `tests/contract/design-council.contract.test.ts`(그 자리가 이름으로
-실재하는가) + `tests/contract/design-spec-ledger.contract.test.ts`(위 목록의
-파일들이 실재하는가, 그리고 검사가 아무것도 안 잡은 채 헛돌고 있지는 않은가).
-「누구를 불렀는가」는 사람이 지킬 수밖에 없다 — 그래서 이 문단이 있다.
+Use a contract when correctness requires another file's values, composed output,
+absence of a class, or rendered geometry. Current owners include:
 
-## 규격은 lint 로 강제된다 (md 만으로는 안 지켜진다)
+- type/leading existence and pairing:
+  `type-ramp-step-defined` and `type-ramp-leading-pair`;
+- shell content compression and scroll-end reserve: `AppShell.test.tsx` and
+  `scroll-end-gap.spec.ts`;
+- composed control values and neutral scope separation: `control-class`;
+- repo-wide hand-written control count: `control-adoption-ratchet`;
+- numeric Lucide icon props: `icon-size-ramp`;
+- inline prose-link display and target semantics: `prose-link` plus
+  `touch-target-contract`;
+- Korean mid-word wrapping: `korean-word-break.spec.ts`;
+- rendered pointer affordance: `cursor-affordance.spec.ts`;
+- topology-panel ink hierarchy: `topology-panel-ink-ladder`;
+- quaternary text by composited surface: `quaternary-ink-surface` plus
+  `a11y-open-surfaces`;
+- filled-brand contrast: `brand-fill-ink-license`.
 
-**디자인 규격을 문서에 쓰면 같은 PR 에서 `eslint.config.mjs` 에 룰도 넣는다.**
-룰 없는 규격은 지켜지지 않는다 — 2026-07-26 실측: `--shadow-elevation-1/2/3`
-사다리가 `design.md` 에 정의돼 있었는데 룰이 없어서, 코드에 직접 적은 rgba
-그림자가 5건 살아 있었다.
+An unknown utility such as `text-large` produces no CSS and silently falls back
+to 16px, so hardcoded-value lint sees nothing. Spacing is deliberately not
+enforced: only 27 raw-pixel uses (1.1%) were measured, mostly one-off optical
+corrections. Unused `--pad-card`/`--pad-panel` tokens were removed instead;
+unused tokens are misinformation, not specification.
 
-지금 코드로 강제되는 것 (`no-restricted-syntax`):
+Gate rationale, notation failures, exemptions, and pre-enable inventory belong
+in `@.claude/rules/design-gates.md`, loaded only while changing gates. This file
+once reached 63.4 KB, 43% gate archaeology. Keep rules here and history there.
 
-| 규격 | 셀렉터 | 레벨 |
-|---|---|---|
-| 글자 크기 램프 | `text-[Npx]` 금지 | `src/**`+`app/**` 전역 error · **예외 0** (2026-08-05 마지막 7파일 93건 전환 완료) |
-| 모서리 반경 램프 | `rounded-[Npx]` 금지 — 방향이 붙은 것(`rounded-t-[Npx]`·`rounded-r-md`) 포함 (2026-08-04 확장) | 동일 |
-| **그림자 사다리** | `shadow-[…]` 는 **모양이 허용목록에 있는 것만** 통과 — elevation-1/2/3 · dock-bottom/side · control-press · 표면 전용 토큰 · inset. **판정은 콤마로 갈린 레이어마다** 한다(2026-08-06): 정상 레이어 한 겹이 그 옆의 손으로 쓴 고도 그림자를 면제해 주지 않는다 | 동일 |
-| **hex 색상** | 대괄호에 값을 직접 적는 자리(arbitrary value) 안의 hex 만 금지 | 동일 (지금 위반 0 — 미리 막는 검사) |
-| **모션 duration** | `duration-<숫자>` 금지 (토큰을 참조하는 형태는 문법상 안 걸린다) | 동일 |
-| **행간 램프** | `leading-[N]` 값 직접 적기 금지 + 이름 유틸리티(숫자꼴 `leading-4~7` · 비율꼴 `relaxed`·`snug`·`none`·`tight`) 전부 금지 — **2026-08-05 에 190건을 전량 램프로 옮겨 래칫 전 패밀리 0**. 목적지는 `--leading-*` 8단 + 비율 2단(`display-tight`·`prose`) | 동일 |
-| **램프 우회** | 램프 토큰을 대괄호 안에서 길이로 돌려 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
-| **인라인 그림자** | JSX `style={{ boxShadow }}` 의 값이 사다리·도킹·눌림·표면 토큰 중 하나를 참조하지 않으면 금지 (2026-08-04) | `src/**`+`app/**` 전역 error — **램프 부채 예외 파일도 받는다** |
-| **인라인 크기·반경** | JSX `style={{ fontSize/borderRadius }}` 의 리터럴 금지(삼항 가지·template literal 포함) — `var()` 토큰 참조만 통과, 단 `--text-*` 램프 토큰의 인라인 우회는 별도로 금지(행간 짝 상실) (2026-08-15) | 동일 (켤 때 위반 0 — 1곳 선치환). Satori 예약 파일명(`opengraph-image`/`twitter-image`)만 스코프 블록 면제 |
-| **자간 램프** | `tracking-[Nem]` 금지 — 대문자 마이크로 라벨은 `--tracking-caps-08/10/12/14/16`, 본문 짝은 `--tracking-caption/label/body/body-lg/title` (2026-08-05) | 동일 (켤 때 위반 0 — 243곳 선치환) |
-| **무게 램프** | `font-[NNN]` **과 이름 스텝**(`font-medium`·`font-semibold`·`font-bold` …) 둘 다 금지 — `--font-weight-signature`(510)·`-emphasis`(560)·`-strong`(650) 셋뿐. `font-normal`(400)은 기본값 복귀라 허용 (2026-08-05) | 동일 (켤 때 위반 0 — 대괄호 13곳 + 이름 스텝 216곳 선치환) |
-| **Tailwind 팔레트** | `text-white`·`bg-slate-*` 등 기본 팔레트 유틸리티 금지 — `--color-*` 토큰만 (2026-08-05) | 동일 (켤 때 위반 0 — 4곳 선치환) |
-| **층위 20 이상** | `z-[N]` 하드코딩 금지 — `--z-*` 사다리를 쓴다. 20 미만(한 표면 안의 지역 쌓임)은 자유 (2026-08-05) | 동일 (켤 때 위반 0 — 17곳 선치환) |
-| **중복 커서** | `<button>`·`<summary>` 의 className 에 `cursor-pointer` 를 다시 적는 것 금지 — 정책은 `globals.css` base 한 곳 (2026-08-05) | 동일 (켤 때 위반 0 — 13곳 선정리) |
-| **비활성 흐림** | `disabled:opacity-*` 는 55 외 값 금지 — 정본은 값 층 `CONTROL_DISABLED_CLASS`(한 세트: 흐림·커서·그림자·호버 무력화), 손 컨트롤은 상수 조합 (2026-08-06) | 동일 (켤 때 위반 0 — 9곳 선치환) |
-| 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
-| **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지. **삼항식 가지(`tone={cond ? "accent" : …}`)도 잡는다**(2026-08-13 확장 — 직계만 보던 시절 실사용 2곳이 빠져나가 있었다). 상수 우회는 `accent-ink-contrast` 계약이 맡는다 | 전역 error |
+## Token use
 
-> **표에 나온 말 넷** — 「램프(ramp)」는 쓸 수 있는 값을 미리 정해 둔 사다리이고,
-> 그 밖의 값은 lint 가 막는다. 「셀렉터」는 ESLint 가 코드에서 무엇을 찾아낼지
-> 적어 둔 검색 패턴이다. 「레벨」은 걸렸을 때 오류로 볼지 경고로 볼지다.
-> 「래칫(ratchet)」은 한 번 좋아진 수치가 다시 나빠지지 못하게 오늘 값을 상한으로
-> 박아 두는 검사다 — 줄이는 것은 되고 늘리는 것은 안 된다.
+- Route all colours through CSS variables. Do not write raw hex in product code.
+- Use canvas, panel, elevated, and secondary surfaces; text-primary through
+  quaternary; overlay-1/2/3 and soft/strong borders.
+- Use `--topology-*` tokens for topology dimensions, surfaces, shadows, radii,
+  insets, camera, focus, panel, and drag motion. A new clamp, shadow, easing, or
+  duration requires a token name, product reason, and WebView/test marker.
+- Coarse-pointer targets come only from `@media (pointer: coarse)` and
+  `--touch-target-min` (44px), never viewport guesses. A scrollable page below
+  `lg` reserves `--topology-mobile-bottom-tab-reserve`; full-bleed map/docs
+  surfaces do not. `scroll-end-gap.spec.ts` measures 17 routes at 1280, 768, and
+  390px.
+- Never ship stacked floating panels, popup soup, tokenless positioning,
+  non-blocking modals, or drag-only discovery. New transient surfaces dismiss or
+  recede unrelated ones.
+- Meaningful UI needs Design Guardian evidence: attention winner, typed fact,
+  token contract, motion state, screenshot/WebView evidence, and whether an
+  installed-app proof is required.
 
-### lint 가 못 보는 층은 계약 테스트가 맡는다
+## Motion
 
-`no-restricted-syntax` 는 **한 파일의 구문 트리(AST)에서 패턴을 찾아내는 것**이라,
-맞는지 보려면 다른 파일에 있는 값 목록까지 봐야 하는 규격은 아예 표현할 수 없다.
-그런 규격은 계약 테스트로 건다 — 문서에만 써 놓고 아무 검사도 안 거는 것만
-금지다.
+- Prefer colour and opacity transitions; minimize transform.
+- Use three semantic durations: `--motion-fast` 120ms for feedback,
+  `--motion-base` 180ms for moving a surface, and `--motion-settle` 240ms for a
+  completed change. Default Tailwind transitions already use fast; omit a class.
+  Camera/drag values 420/720ms are canvas-only.
+- Duration and easing move as one family. Respect the global reduced-motion rule.
+- The attention winner moves first. A protagonist hard-cut while the background
+  eases is a defect; a measured popover once completed 88.8% in its first frame
+  while the map received 100ms.
+- One input is one event. Related transitions start in the same frame; more than
+  `--motion-fast` separation reads as another event unless causality requires a
+  deliberate stagger.
+- Exits use their own animation name. Reversing an entrance does not restart when
+  only direction changes; `exit-motion-restart.contract.test.ts` guards this.
+- Reduced-motion alternatives live in the same cascade layer as the global
+  override; `reduced-motion-equivalent.contract.test.ts` owns the roster.
+- Surface swaps keep both frames briefly with `usePanelPresence`,
+  `useSurfaceSwap`, or `useSwapHeight`; exiting content is inert and
+  pointer-disabled for one `EXIT_WINDOW_MS`.
+- Frequent hover/focus motion ends by `--motion-fast`; move/settle values are for
+  infrequent events. User-initiated zoom, pan, and scroll retain time under WCAG
+  2.2 §2.3.3; only programmatic travel becomes immediate.
+- Measure the element that actually owns the animation. A 2026-07-28 audit
+  measured a non-animating positioner and falsely reported a hard cut; the inner
+  panel was already healthy at 16.3% first-frame change.
 
-| 규격 | 게이트 | lint 가 못 하는 이유 |
-|---|---|---|
-| **`text-*`/`leading-*` 가 램프에 실제로 있는 칸을 가리킨다** | `tests/contract/type-ramp-step-defined.contract.test.ts` | 맞는지 보려면 `app/globals.css` 에 어떤 토큰이 있는지를 알아야 한다. 칸 이름을 lint 룰에 베껴 두면 그 사본이 램프와 어긋나면서 검사가 못 보는 구멍이 생긴다 |
-| **셸 본문 칸이 그 안의 내용을 찌그러뜨리지 않는다** | `AppShell.test.tsx`(고치는 자리) + `tests/e2e/scroll-end-gap.spec.ts`(실제 여백 px) | 결함이 **레이아웃을 계산한 결과**로 생긴다. 클래스 이름은 멀쩡한데 실제 픽셀만 틀린다 |
-| **화면 폭에 따라 크기를 바꿀 때 행간 짝이 어긋나지 않는다** | `tests/contract/type-ramp-leading-pair.contract.test.ts` | 맞는지 보려면 **한 원소에 붙은 클래스 전부**를 봐야 하는데, `cn()` 의 인자로 쪼개져 있으면 패턴 하나에 안 담긴다. 램프 값을 `text-[var(…)]` 로 돌려 쓰는 **일부 경우**만 lint 가 잡는다 |
-| **컨트롤 값 층이 램프 밖으로 못 샌다** | `tests/contract/control-class.contract.test.ts` | 판정할 대상이 **cva 가 조합해서 만들어 내는 결과 문자열**이다. 코드에는 `chip`·`md` 같은 키만 적혀 있고 실제 값은 실행할 때 합쳐지므로 lint 가 볼 것이 없다. 그래서 여덟 모양 × 3 크기 × 9 톤 × … 을 전부 실제로 만들어 본다 |
-| **두 무채색 글자색 램프가 실제로 서로 다르다** | 같은 파일(`scope` 축 절) | 판정하려면 `app/globals.css` 의 **두 램프 8개 값**을 봐야 한다. 두 램프 값이 같아져 버리면 `scope` 는 아무 차이도 안 내면서 고를 것만 늘리는 셈이라, 그날 검사가 그걸 지우라고 말해 줘야 한다 |
-| **손으로 쓴 컨트롤이 늘지 않는다** | `tests/contract/control-adoption-ratchet.contract.test.ts` | 래칫이라 **저장소 전체의 개수**가 판정 기준인데, 그건 파일 하나만 봐서는 셀 수 없다 |
-| **콘텐츠 아이콘이 램프(12/14/16) 밖으로 안 샌다** | `tests/contract/icon-size-ramp.contract.test.ts` | 소비 채널이 className 이 아니라 **JSX 숫자 prop**(`size={N}`)이라 값 lint 의 사정거리 밖이다. 게다가 «이 태그가 lucide 인가»를 알려면 **같은 파일의 import 문**을 봐야 하는데 `no-restricted-syntax` 는 한 노드만 본다 |
-| **글 속의 링크는 컨트롤이 아니라 글이다** — `.prose-link` 는 밑줄 모양만 정하고 display·행간·크기·포커스는 그 링크를 감싼 글의 것을 따른다 | `tests/contract/prose-link.contract.test.ts` + `tests/e2e/touch-target-contract.spec.ts` 의 fine-pointer 감사(WCAG 2.5.8 인라인 면제 판정) | 판정하려면 「이 링크가 문장 흐름 속에 있는가」(실제로 그려진 결과)와 브라우저가 계산한 display 값을 봐야 한다 — 「문장 속인가」를 정하는 세 가지(옆에 오는 글자가 어디서 왔는지 · 부모가 정하는 실제 display · 줄바꿈)가 전부 여는 태그 바깥에 있어서, 코드만 보고 판정하던 `inline` 축은 잘못 설정된 4건을 못 본 채 무용지물이었다(2026-08-04) |
-| **한국어는 단어 중간에서 끊기지 않는다** — 두 줄로 접히는 한국어 문단은 `break-keep` 을 갖는다 | `tests/e2e/korean-word-break.spec.ts`(다섯 목적지 · 글자마다 `Range` 로 줄바꿈 자리의 앞뒤 글자를 본다) | 위반이 **코드에 아무 값도 안 남긴다** — `break-keep` 이 없는 것은 클래스의 *부재*이고, 부재는 셀렉터로 잡을 수 없다(문단 전부에 그 클래스를 요구하면 규격이 아니라 소음이다). 게다가 진짜 판정 기준은 클래스가 아니라 **실제로 끊겼는가**다 — 칸이 넉넉하면 `word-break: normal` 로도 안 끊긴다. 켤 때 실제 결함 2건(분석 화면의 준비도 설명 · 관문의 Windows 미서명 경고) |
-| **누를 수 있는 것은 전부 pointer** — 활성 `button`·`summary`·`a[href]` 는 렌더된 커서가 pointer 여야 한다 | `tests/e2e/cursor-affordance.spec.ts`(감사 대상 17개 라우트 전부 + 자기검증 프로브) | 위반이 **코드에 아무 값도 안 남긴다** — 새 컴포넌트가 그냥 `<button>` 을 쓰면 클래스도 인라인 스타일도 없이 브라우저 기본값으로 떨어져서 볼 문자열이 없다. lint 셀렉터는 «중복해서 적은 것» 만 볼 수 있고, «중앙 규칙이 사라졌거나 안 닿는 것» 은 렌더 결과를 재야 안다 |
-| **지도 패널의 둘째 잉크 램프가 성질을 지킨다** — 패널 표면 위 본문 AA · 위계 단조 감소 · 잉크가 몰래 늘지 않음 | `tests/contract/topology-panel-ink-ladder.contract.test.ts` | 판정하려면 **그 잉크가 얹힌 표면 토큰의 값**과 대비 계산이 필요하다 — 다른 파일의 값을 봐야 하므로 한 파일 AST 셀렉터로는 표현할 수 없다. 값은 자유롭게 바꿀 수 있고 대신 장부(`INK_LEDGER`)를 같이 고쳐야 해서 **그 판단이 diff 에 남는다**. 왜 전역으로 수렴시키지 않았는지는 `docs/DECISIONS.md` 2026-08-06 |
-| **어느 바탕 위에 어느 글자색까지 쓸 수 있나** — quaternary 는 겹치지 않은 무채색 바탕(맨 아래 3단 + canvas/panel 위 overlay-1)까지, 그보다 올라선 바탕(overlay-2 이상 · elevated+overlay · 색이 섞인 바탕) 위의 글자는 tertiary 부터 | `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) + `tests/e2e/a11y-open-surfaces.spec.ts`(화면) | 판정이 글자색이 아니라 **그 글자가 얹힌 바탕이 어떻게 겹쳐졌는지**에 달렸다 — 같은 클래스가 panel 위에서는 대비 5.00, overlay-2 위에서는 4.36 이다. 게다가 이 층에서 가장 흔한 코드 모양이 `active ? 틴트+밝은 글자색 : quaternary` 같은 분기라, 같은 태그에 붙은 클래스만 보고 짝을 맞추면 엉뚱하게 걸린다(2026-08-04 전수 18쌍 중 다수가 분기였다) — 그래서 코드만 보는 래칫 대신 값 자체를 고정하는 계약 + 실제로 화면을 열어서 재는 검사를 쓴다 |
-| **꽉 찬 브랜드 면 위에 어느 잉크를 얹어도 되나** — `--color-indigo-brand`(100% 불투명) 위의 글자는 AA(4.5:1)를 넘어야 하고, 오늘 그 자리를 통과하는 잉크는 `--color-text-on-accent` 다 | `tests/contract/brand-fill-ink-license.contract.test.ts` | 판정이 **두 토큰 값의 합성 대비**라 한 파일 AST 셀렉터로는 표현할 수 없다. 그리고 위반이 값 규칙을 하나도 안 어긴다 — `text-primary` 도 `indigo-brand` 도 정당한 램프 토큰이고, 틀린 것은 **둘을 같은 자리에 둔 것**이다(4.42:1). 인접한 `accent-ink-contrast` 계약은 **틴트 위 인디고 잉크**만 보므로 이 짝은 그 시야 밖이었다 |
+## Dark only
 
-**램프에 없는 칸은 아무 소리도 안 낸다 (2026-07-27 실측).** `text-large` 는
-램프에 없는데도 tsc·eslint·전체 테스트를 전부 통과했다 — Tailwind 가 그
-클래스를 아예 만들지 않아서, 그 자리가 루트 16px 로 그려졌을 뿐이다. **아예
-만들어지지 않은 것은 코드에 아무 값도 남기지 않으므로**, 하드코딩을 찾는 검사가
-볼 수 없다. 같은 파일에서 같은 사고(`text-callout`)가 이미 한 번 있었고 사람
-검수도 두 번 통과했다.
+The product has one dark appearance. Do not restore a light switch,
+`data-theme`, light-only tokens, or light contrast branches. `app/layout.tsx`
+fixes `viewport.colorScheme` to `dark` even when the OS prefers light.
 
-**여백(spacing)은 강제하지 않는다 (결론, 2026-07-26).** 값을 직접 적은 px 는
-27건뿐이고(전체의 1.1%), 그중 3·11·18px 을 빼면 전부 한두 번밖에 안 나오는
-**눈으로 맞춘 미세 보정**이라 램프 값으로 끌어다 붙이면 오히려 정렬이 깨진다.
-대신 그때 지목했던, 아무도 안 쓰는 토큰 2개(`--pad-card`/`--pad-panel`)는
-**지웠다** — 쓰는 곳이 0회인 데다 `--pad-panel` 은 패널의 실제 값(14px)과
-달라서, 문서가 규격이 아니라 틀린 정보를 주고 있었다. 카드는 `--card-pad`,
-패널은 `--topology-v2-panel-pad` 한 곳에서만 값이 나온다.
-**아무도 안 쓰는 토큰은 규격이 아니라 틀린 정보다.**
+## Token definition location
 
-### 각 게이트가 «왜 그 모양인가» 는 `design-gates.md` 로 갈라져 나갔다 (2026-08-05)
-
-위 두 표는 **무엇이 강제되나**를 말한다. 각 게이트가 **왜 그 모양인지** —
-면제를 어디까지 열었나 · 어떤 표기가 룰을 빠져나갔나 · 룰이 조용히 죽은 사례 ·
-켜기 전 측정 절차 — 는 `@.claude/rules/design-gates.md` 에 있고, **게이트를
-고칠 때만**(`eslint.config.mjs` · `tests/contract/**` · `scripts/check-*.mjs`)
-실린다.
-
-**왜 갈랐나**: 이 파일은 `src/**/*.tsx` 를 열기만 해도 실리는데 63.4KB 였고,
-그중 **43%(27.5KB)가 게이트 고고학**이었다 — 버튼 하나 고치는 턴마다 「그림자는
-왜 `var(` 면제가 아닌가」를 통째로 싣고 있었다. 규칙은 여기, 사연은 거기.
-
-⚠️ **새 게이트를 만들며 함정을 밟았으면 그 기록은 `design-gates.md` 에 적는다.**
-여기 표에는 「무엇이 강제되나」 한 줄만 더한다 — 안 그러면 이 파일이 다시
-63KB 가 된다.
-
-## 토큰 사용
-
-- 모든 색은 CSS 변수(`--color-canvas`, `--color-panel`, `--color-divider` …)를
-  거쳐 쓴다. 코드에 hex 를 직접 적지 않는다.
-- 배경 / 글자 / 테두리는 다음 다섯 단계 안에서만 고른다:
-  - `var(--color-canvas)` · `var(--color-panel)` · `var(--color-elevated)` · `var(--color-secondary-surface)`
-  - 글자: `--color-text-primary` 부터 `quaternary` 까지
-- 반투명은 `--color-overlay-1/2/3`, `--color-divider`, `--color-border-soft/strong`
-  으로 받는다.
-- Relief/Topology 의 패널 폭 · 표면 · 테두리 · 그림자 · 모서리 반경 · 안쪽 여백,
-  그리고 카메라/포커스/패널/드래그 모션은 `--topology-*` 토큰을 먼저 쓴다. JSX
-  안에 새 `clamp(...)` · 그림자 · 이징 · duration 을 넣어야 한다면 먼저 셋을 같이
-  만든다 — token name(토큰 이름) · product reason(제품상 왜 필요한지) ·
-  WebView/test marker(설치된 앱과 테스트에서 그것을 찾아낼 표식).
-- **터치/태블릿 계약 (2026-07-23)** — 손가락으로 누르는 영역의 크기는
-  `@media (pointer: coarse)` 와 `--touch-target-min`(44px) 한 곳에서만 정한다
-  (화면 폭으로 터치인지 아닌지를 짐작하지 말 것). BottomTabBar 가 있는 `<lg`
-  에서 화면 아래에 붙는 것과 스크롤 끝 표면은 반드시
-  `--topology-mobile-bottom-tab-reserve` 만큼 자리를 비워 둔다 — "탭바 뒤로
-  가려짐"은 결함이다. 상세: `docs/DESIGN-SYSTEM.md` "Touch & tablet responsive
-  contract".
-  - ⚠️ **이 예약은 페이지가 소유한다. 셸로 올리지 마라** (2026-08-07 실측으로
-    기각). 「페이지마다 기억해야 하는 구조는 다음 사람이 또 빠뜨린다」는 이유로
-    셸(`AppShell` 본문 슬롯)이 대신 예약하게 만드는 안을 검토했는데, 재 보니
-    **표면마다 답이 다르다**: 지도(`/topology`)와 문서함(`/docs`)은 슬롯이
-    스크롤되지 않고 캔버스·본문이 뷰포트 바닥(844)까지 **바 밑으로 흐르는** 것이
-    맞는 화면이다(바 위쪽 787). 셸이 예약을 지면 그 둘이 56px 줄고 바 위에 죽은
-    띠가 생긴다. 스크롤되는 문서 표면만 바를 피해야 하므로, 판단은 페이지에
-    남는다.
-  - 그럼 빠뜨리는 것은 무엇이 막나 — **게이트다.**
-    `tests/e2e/scroll-end-gap.spec.ts` 가 감사 대상 17개 라우트 × 3폭
-    (1280·768·**390**)에서 스크롤되는 표면마다 예약을 재고, 스크롤되지 않는
-    풀블리드 표면은 건너뛴다. 실제로 그 게이트가 관문(`/`)의 누락을 잡았다
-    (−17px). 예약을 페이지에 두는 대가는 「게이트가 전 라우트를 본다」로 낸다.
-- Relief/Topology 에서 다음은 내보내지 않는다 — stacked floating panels(떠 있는
-  패널을 겹겹이 쌓기) · popup soup(팝업이 뒤엉킨 상태) · tokenless
-  positioning(토큰 없이 좌표를 손으로 박기) · modal without modality(뒤를 막지
-  않는 모달) · drag-only discovery(드래그해 봐야만 발견되는 기능). 작성창과
-  모달은 뒤를 어둡게 덮거나 뒤쪽 조작을 막는다는 것을 증명해야 하고, 잠깐
-  나타나는 표면은 관련 없는 표면을 닫거나 뒤로 물려야 한다.
-- Design Guardian 의 판정 없이 의미 있는 UI 변경을 내보내지 않는다. 판정에는
-  최소한 이 여섯이 들어간다 — attention winner(눈을 먼저 가져가야 하는 단 하나) ·
-  typed fact(화면의 표시가 어떤 타입 있는 사실에 묶여 있는지) · token contract ·
-  motion state · screenshot/WebView evidence(실제 화면 증거) · installed-app
-  proof(설치된 앱에서 확인해야 하는지 여부).
-
-## 모션
-
-- 전환은 `transition-colors`, `transition-opacity` 위주로 쓴다. transform 은
-  최소한으로.
-- **duration 은 3단 램프뿐이고, 값이 아니라 쓰임으로 고른다** (2026-07-27):
-  `--motion-fast`(120ms) = **확인** — 이미 일어난 상태를 알려 주는 것(호버 ·
-  포커스 · 색 · 회전 · 칩이 서서히 바뀌는 것). Tailwind 의 기본 전환이 이 토큰을
-  쓰므로 **기본값이면 duration 클래스를 아예 쓰지 않는다**. `--motion-base`
-  (180ms) = **이동** — 표면이 자리를 바꾸는 일(팝오버 · 패널 · 카드 · 뒷배경이
-  나타나고 사라지는 것). `--motion-settle`(240ms) = **확정** — 일이 끝났다는
-  표시(FLIP 재배치 · 저장이 반영되는 것). `--topology-motion-camera/drag-settle`
-  (420/720ms)은 **지도 캔버스에서만** 쓰는 값이라 DOM 표면이 참조하면 결함이다.
-  숫자를 직접 적으면 lint 가 막는다.
-- 램프 duration 을 쓰는 원소는 **이징도 같은 패밀리**(세 램프가 공유하는 한 벌의
-  가속·감속 곡선)를 쓴다 — duration 만 갈아타면 "셋이 같은 이징을 쓴다"는 정의가
-  반쪽만 지켜진다.
-- `prefers-reduced-motion` 을 켠 사용자를 존중한다 — `app/globals.css` 의 base
-  layer 에 이미 처리돼 있다.
-- **움직임은 주인공이 먼저 갖는다.** 한 번의 입력이 여러 표면을 바꿀 때, 전환은
-  사용자가 부른 그것(Design Guardian 판정의 attention winner = 눈을 먼저 가져가야
-  하는 단 하나)이 먼저 받는다. 주인공은 하드컷(첫 프레임에 변화량의 70% 넘게
-  몰려 사실상 한 프레임에 바뀌는 것)인데 배경(어두워짐 · 이웃만 남기기 · 재배치)
-  만 부드럽게 움직이면 결함이다 — 실측 전례: INDEX 행에서 연 개념 팝오버가 첫
-  프레임에 88.8% 로 끝나 버렸는데 배경 지도는 100ms 짜리 부드러운 전환을 받고
-  있었다 (2026-07-27 모션 검수).
-- **한 입력 = 한 사건.** 같은 입력에서 나온 단계들은 같은 프레임에 시작한다.
-  시작 시점 차가 `--motion-fast`(120ms)를 넘으면 사용자가 두 사건으로 읽으므로
-  결함이다. 일부러 시차를 두는 것(스태거)은 원인이 먼저 움직여 인과를 보여 줄
-  때만 허용한다.
-- 위 두 원칙은 **lint 가 원리적으로 못 잡는 층**이다 — 전환이 아예 없는 원소는
-  코드에 아무 값도 안 남겨서 모든 값 규칙을 그냥 통과한다. 그래서 검사는
-  Guardian 판정의 Motion 항목과 프레임 실측이 맡는다.
-
-### 값은 맞는데 안 걸리는 것들 (2026-07-28 전수 실측)
-
-넷 다 duration 과 이징이 전부 토큰이라 값을 보는 lint 는 그냥 통과했는데, 화면
-에서는 한 프레임 만에 끝나 버렸다. 그래서 각각 계약 테스트나 룰을 갖는다.
-
-- **사라지는 애니메이션은 자기 이름을 갖고 정방향으로 재생한다.** 등장
-  키프레임을 `reverse` 로 되감아 쓰는 퇴장은 **같은 원소에서 클래스만 바뀌는
-  자리에서는 아예 재생되지 않는다** — CSS 애니메이션은 `animation-name` 이
-  그대로면 duration 이나 방향이 바뀌어도 다시 시작하지 않고, 이미 끝난
-  애니메이션은 `reverse` + `both` 를 만나는 순간 되감기의 마지막 상태를 즉시
-  보여 준다. 실측: 노드 팝오버가 한 프레임에 사라진 뒤 **보이지도 않는 채로**
-  transform 만 천천히 줄고 있었다.
-  게이트: `tests/contract/exit-motion-restart.contract.test.ts`.
-- **reduced-motion 용 대체 규칙은 모션을 끄는 전역 규칙과 같은 레이어 안에
-  쓴다.** `!important` 끼리 부딪히면 캐스케이드 레이어 순서가 **뒤집혀서**
-  레이어에 든 쪽이 이긴다. 레이어 밖에 쓰면 선택자가 아무리 구체적이어도
-  진다(실측: (0,3,0) 규칙이 (0,0,0) 전역 규칙에 져서 계산된 값이 0.01ms).
-  게이트: `tests/contract/reduced-motion-equivalent.contract.test.ts` — **그
-  테스트에 적힌 목록이 곧 검사 범위다.** 새 표면을 만들면 목록도 같이 넓힌다.
-- **표면을 갈아 끼우는 것은 두 프레임짜리 일이다.** 새로 들어오는 표면에만 등장
-  애니메이션을 주면, 사용자가 누른 그것은 0프레임을 받고 배경이 200ms 를 받는다
-  (바로 위의 「움직임은 주인공이 먼저 갖는다」를 구조적으로 어기게 된다).
-  `src/shared/lib/use-presence.ts` 의 `usePanelPresence` / `useSurfaceSwap` /
-  `useSwapHeight` 를 쓰고, 나가는 쪽에는 `inert` + `pointer-events-none` 을
-  건다. 나가는 데 주는 시간은 `EXIT_WINDOW_MS` 하나를 같이 쓴다.
-- **자주 일어나는 일일수록 짧아야 한다.** 호버·포커스로 바뀌는 것은
-  `0~--motion-fast` 안에서 끝낸다. 이동·확정 램프는 하루에 몇 번 있는 일에
-  주는 값이다. 룰: `eslint.config.mjs` 의 공유 셀렉터 배열(호버/포커스 변형과
-  이동/확정 duration 이 같은 className 에 같이 있으면 걸린다).
-- **WCAG 2.2 §2.3.3 의 예외는 진짜 예외다** — 사용자가 직접 시작한 줌·팬·스크롤은
-  reduced-motion 에서도 시간을 지킨다. 잘라 버리면 화면 전체가 한 프레임에
-  순간이동해서, 없애려던 움직임보다 더 나쁘다. 앱이 알아서 데려가는 이동만
-  즉시 도착시킨다.
-
-⚠️ **어느 원소를 재느냐를 틀리면 결론이 통째로 뒤집힌다.** 2026-07-28 감사
-초안이 팝오버의 **포지셔너**(전환이 없는 게 정상인, 위치만 잡아 주는 껍데기)를
-재고서 "주인공이 전환을 한 톨도 못 받는다"를 최우선 결함으로 냈는데, 실제
-애니메이션은 그 안쪽 패널에 있었고 첫 프레임 지분 16.3% 로 이미 멀쩡했다
-(2026-07-27 수정이 정상 동작 중이었다). 위에서 든 "88.8%" 전례도 **그때 이미
-고쳐진 값**이다. 애니메이션을 **실제로 가진 원소**를 재고, 고치기 전에 재현부터
-한다.
-
-## 다크 단일 (2026-07-19, 라이트 모드 전면 폐기)
-
-- 앱은 **어두운 화면 하나**로만 간다. 라이트 모드 토글, `data-theme` 속성,
-  `theme-toggle` 기능, 라이트 전용 토큰과 CSS 분기는 모두 지웠다 — 소유자의
-  전략 결정이다.
-- 새 UI 는 어두운 화면 값만 정의한다. `[data-theme="light"]` 셀렉터, 라이트 전용
-  분기 코드, 라이트에서의 대비 검증을 새로 만들지 말 것.
-- `prefers-color-scheme` 도 어두운 쪽으로 고정 — 시스템에서 밝은 화면을 선호하는
-  사용자에게도 어두운 화면을 보여 준다 (`app/layout.tsx` 의
-  `viewport.colorScheme: 'dark'`).
-
-## 토큰 정의 위치
-
-`app/globals.css` 의 `@theme` + `:root` 블록에 있다. Tailwind v4 는 반투명
-토큰으로 유틸리티 클래스만 만들고 `:root` 에는 변수를 안 내보내는 경우가 있어서,
-반투명 토큰은 `:root` 에도 따로 선언해 둔다.
+Tokens live in the `@theme` and `:root` blocks of `app/globals.css`. Tailwind v4
+may create utilities for translucent tokens without emitting root variables, so
+declare translucent values explicitly in `:root` as well.

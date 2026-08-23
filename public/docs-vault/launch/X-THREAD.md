@@ -1,7 +1,6 @@
 # X / Twitter — launch thread draft
 
-X 의 언어는 **짧고 시각적**. 5–7 트윗 짜리 thread 가 sweet spot. 각
-트윗 280 chars 안. 1 트윗 = 1 idea.
+X's language is **short and visual**. A 5–7 tweet thread is the sweet spot. Each tweet stays within 280 chars. 1 tweet = 1 idea.
 
 ## Tweet 1 (hook + visual)
 

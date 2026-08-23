@@ -1,205 +1,151 @@
-# 시연 영상 촬영 시나리오 — `atlas-tour` (2026-08-22 개정)
+# Demo Video Shooting Scenario — `atlas-tour` (Revised 2026-08-22)
 
-> 한 클립 · **9초** · 무컷 · 무배속 · 무음 · 루프 없음 · **한국어/영어 따로 촬영**.
-> 재생 계약의 구현은 `src/views/download/ui/DemoStage.tsx`, 자산 등록부는
-> `src/views/download/model/demo-clips.ts`.
+> One clip · **9 seconds** · No cuts · No speed changes · No audio · No loop · **Record separately in Korean/English**.
+> The implementation of the playback contract is in `src/views/download/ui/DemoStage.tsx`, and the asset registration section is
+> in `src/views/download/model/demo-clips.ts`.
 
-## 0-1. 2026-08-22 개정 — 투어를 버리고 한 장면만 남긴다
+## 0-1. Revised 2026-08-22 — Abandoning the tour, leaving only one scene
 
-**아래 §0~§3 은 155초 투어의 시나리오이고, 그 투어는 더 이상 촬영 대상이
-아니다.** 지우지 않고 두는 이유는 §0(가)의 프라이버시 규율과 §3 끝의 「촬영이
-세 번 엎어진 이유」가 길이와 무관하게 다음 촬영에도 그대로 적용되기 때문이다.
-길이·비트표만 아래로 갈아탄다.
+**What has changed**: This section used to argue for a 155-second tour. Now it is just **one scene** above the installation step; the tour demands three minutes before the audience even has a reason to watch.
+So we left only the single claim the map makes — *click one node, and the graph responds with its neighbors.*
 
-**무엇이 바뀌었나**: 이 절은 관문의 논증이던 시절에 155초를 벌었다. 지금은 설치
-단계 위의 **한 장면**이고, 투어는 관객이 볼 이유를 갖기도 전에 3분을 요구한다.
-그래서 지도가 내놓는 단 하나의 주장만 남겼다 — *하나를 누르면 그래프가 자기
-이웃으로 답한다.*
+**What Changed**: This section used to earn its place as a gateway argument with 155 seconds. Now it’s just **one scene** above the installation stage, and the tour demands three minutes before giving the audience any reason to watch. So only one claim remains from the map — *clicking one node makes the graph respond to its neighbors.*
 
-**소유자 지시 둘** (2026-08-22):
+**Owner Directive Two** (2026-08-22):
 
-- *"지도 레이아웃은 무시하고"* — 노드가 몰려 보이는 것은 이번 촬영의 대상이
-  아니다. 레이아웃은 따로 고친다.
-- *"녹화에서 폴더 지정하는건 없지? 이미 지정된 폴더에서 녹화해줘"* — §0(가)가
-  프라이버시를 이유로 세운 규율을 **장면 선택으로까지 넓힌 것**이다. 파일 선택
-  대화상자가 한 프레임도 없을 뿐 아니라, 「폴더를 고른다」는 비트 자체가 없다.
-  관객이 이미 된다고 가정하는 일에 9초 중 2초를 쓰지 않는다.
+- *"Ignore the map layout"* — The clustering of nodes is not the subject of this shot; the layout will be adjusted separately.
+- *"There's no folder selection during recording, right? Record in the already designated folder."* — §0(a) extends the rule established for privacy reasons **to scene selection as well**. There is not even a single frame of a file selection dialog box, nor any bit representing "choosing a folder." We do not spend 2 seconds out of 9 on something assumed to be already done.
 
-**새 비트 — 9초, 배속 구간 0**
+**New Beat — 9 seconds, acceleration section 0**
 
-| 초 | 무엇을 한다 | 남는 그림 |
+| 0.0~1.0 | The app opens to a folder it already knows | Prep card → INDEX appears |
 |---|---|---|
-| 0.0~1.0 | 앱이 이미 아는 폴더로 열린다 | 준비 카드 → INDEX 가 들어온다 |
-| 1.0~2.0 | 지도가 스스로 그려지고 정착한다 | 7개 도메인이 허브를 둘러싼다 |
-| 2.0~3.9 | 선다 | 관객이 전체를 읽는다 |
-| 3.9 | 도메인 노드 하나를 누른다 | — |
-| 3.9~9.0 | 이웃만 남고 나머지가 흐려진다 | 상세 패널: 하위 16 · 상위 1 · 근거 문서 1 |
+| 1.0~2.0 | The map draws itself and settles | 7 domains surround the hub |
+| 2.0~3.9 | Selection | The audience reads the whole |
+| 3.9 | Click one domain node | — |
+| 3.9~9.0 | Only neighbors remain, others blur | Detail panel: 16 sub · 1 parent · 1 reference doc |
+| 3.9~9.0 | Only neighbors remain, others blur | Detail panel: Lower 16 · Upper 1 · Source document 1 |
 
-**배속을 안 썼다.** 155초짜리에는 죽은 시간이 있어서 빨리 감을 것이 있었지만,
-9초에는 없다 — 조립도 클릭도 실제 기계에서 걸리는 만큼 걸린다. 그래서 이 영상은
-「무컷」에 더해 **「등속」**까지 주장할 수 있고, 관문 안내 줄이 그렇게 적는다.
+**Automation note** — Coordinates are window-relative. The `coordinateSpace` of `orca computer click --x --y` is `window`, so the 33px title bar is **not included in the offset**. And `screencapture -R 0,33,1512,949` returns 3024×1898 Retina pixels, so **pixels ÷ 2 = window-relative logical coordinates**. Confusing these two caused the node clicks in the first two takes to land on a blank canvas.
 
-**자동화 메모** — 좌표는 창 기준이다. `orca computer click --x --y` 의
-`coordinateSpace` 가 `window` 라 제목줄 33px 은 **오프셋에 안 들어간다**. 그리고
-`screencapture -R 0,33,1512,949` 는 3024×1898 레티나 픽셀로 돌아오므로
-**픽셀 ÷ 2 = 창 기준 논리 좌표**다. 이 둘을 헷갈려 첫 두 테이크의 노드 클릭이
-빈 캔버스에 떨어졌다.
+**Automation Note** — Coordinates are window-relative. Since the `coordinateSpace` of `orca computer click --x --y` is `window`, the 33px title bar is **not included in the offset**. Additionally, because `screencapture -R 0,33,1512,949` returns 3024×1898 Retina pixels, **pixels ÷ 2 = window-relative logical coordinates**. Confusing these two caused the node clicks in the first two takes to land on the empty canvas.
 
-## 0. 이번 개정이 고치는 것 둘 *(155초 투어 기준 — 위 §0-1 참고)*
+### (a) Finish prep outside the shoot — it was a privacy flaw
 
-### (가) 준비는 촬영 밖에서 끝낸다 — 프라이버시 결함이었다
+### (a) Preparation Ends Outside the Shoot — A Privacy Defect
 
-종전 촬영본(88.83초)은 **첫 5초에 macOS 파일 선택 대화상자**를 지나갔다. 그
-한 프레임에 촬영자의 개인 폴더 이름이 그대로 읽혔다 — 사이드바의 즐겨찾기와
-목록에 실제 개인 프로젝트 디렉터리들이 노출됐고, 그 영상이 **공개 다운로드
-페이지에 실려 있었다**.
+This is not a matter of directorial taste; it is **personal privacy embedded in the asset**. So we codify this rule:
 
-이건 연출 취향 문제가 아니라 **자산에 남의(촬영자의) 사생활이 박혀 나간 것**
-이다. 그래서 규칙으로 못박는다:
+This is not a matter of directorial preference; it's about **the asset having someone else's (the cinematographer's) privacy embedded in it**.
 
-> **설정에 해당하는 것은 촬영 전에 끝내 둔다.** 볼트 선택도, 에이전트 연결도
-> 프레임 안에서 하지 않는다. 카메라가 도는 동안 화면에 있는 것은 **결과**뿐이다.
+Therefore, we are establishing this as a rule:
 
-이 규칙이 프라이버시를 지키는 방식은 두 겹이다:
+> **Finalize all settings before shooting.** Neither bolt selection nor agent connections are made within the frame. While the camera is rolling, only the **result** appears on screen.
 
-1. **OS 파일 선택 대화상자를 담지 않는다** — 사이드바와 목록이 촬영자의 홈
-   디렉터리 구조를 통째로 보여준다.
-2. **에이전트 연결 화면을 담지 않는다** — 연결 버튼은 볼트의 **절대 경로**를
-   화면에 띄운다(`/Users/<사람>/...`). 연결의 값어치는 「설정 파일을 손 안
-   댄다」인데, 그건 관문의 정지 화면 문구가 이미 말한다. 영상이 벌 것은
-   연결된 **뒤**의 왕복이다.
+This rule protects privacy in two layers:
 
-폴더를 고르는 행위도 마찬가지다. 관문의 문구가 이미 말하고 있다("폴더를
-고르면 지도가 되고"). 영상이 벌 것은 그다음, 즉 **고른 뒤에 무엇이 되는가**다.
+1. **It does not contain an OS file selection dialog** — the sidebar and list display the photographer’s home directory structure in its entirety.
+2. **It does not contain an agent connection screen** — the connect button displays the vault’s **absolute path** on screen (`/Users/<person>/...`). The value of the connection is “not touching the configuration file,” which the gateway’s static screen message already conveys. What the video captures is the round trip **after** the connection.
 
-부수 효과로 첫 5초가 통째로 벌린다 — 종전에는 그 5초가 「아무것도 안 일어나는
-대화상자」였다.
+The same applies to the act of choosing a folder. The gate's message already says it all ("Choosing a folder becomes a map"). What unfolds next is what happens **after you choose**.
 
-### (나) 비트표를 지금 앱에 맞춘다
+As a side effect, the first 5 seconds are played in full — previously, those 5 seconds were just an empty dialogue box.
 
-종전 45초 비트표(2026-08-03)는 3D 배치가 하나도 없던 때의 것이고, 실제
-촬영본은 그것을 따르지 않았다. 문서가 사실과 다른 채로 남아 있었다. 이번에
-지금 앱의 화면과 컨트롤 이름으로 다시 쓴다.
+### (B) Aligning the beat sheet with the current app
 
-**길이 상한을 뗀다.** 소유자 판단(2026-08-19): *"2분 넘어도 되니 제대로
-동작하게."* 종전의 45초 제약이 요구받은 내용을 빼게 만들었고, 그 결과가
-문서와 자산이 어긋난 상태였다.
+The previous 45-second beat sheet (2026-08-03) was from a time when there were no 3D placements, and the actual filming did not follow it. The document remained inconsistent with reality. This time, I rewrite it using the current app's screen and control names.
 
-## 1. 이 영상이 벌어야 하는 한 문장
+**Remove the length cap.** Owner's judgment (2026-08-19): "It can exceed 2 minutes, so make it work properly." The previous 45-second constraint forced us to omit required content, resulting in a mismatch between the document and assets.
 
-> **내 폴더가 지도가 되고, 내 에이전트가 그 지도를 같이 쓴다.**
+## 1. The One Sentence This Video Must Convey
 
-끝났을 때 관객이 갖는 문장이 이것이 아니면 시나리오가 틀린 것이다. 기능
-나열이 아니라 **한 사람의 5분**을 압축한 것이어야 한다.
+> **My folder becomes a map, and my agent uses that same map.**
 
-## 2. 촬영 규격
+If the audience doesn't walk away with this sentence, the scenario is wrong. It must not be a list of features, but a compression of **one person's 5 minutes**.
 
-| 항목 | 값 |
+## 2. Shooting Specifications
+
+| Item | Value |
 |---|---|
-| 해상도 | 1512 × 918 (14" 논리 해상도 · 앱 창만, 바탕화면·메뉴바 제외) |
-| 길이 | **약 155초 + 내려받기 실측분** — 찍은 뒤 실측해 `DEMO_CLIPS[0].seconds` 와 맞춘다 |
-| 컷 | **0** — 한 테이크. 실수하면 처음부터 |
-| 소리 | 없음 (BGM 포함 0) |
-| 커서 | 보인다. 클릭 하이라이트는 쓰지 않는다 |
-| 속도 | 등속. 배속·점프 금지 |
-| 전달물 | `atlas-tour.{ko,en}.webm` + `.mp4` + `atlas-tour.{ko,en}-poster.png` |
+| Resolution | 1512 × 918 (14" logical resolution · app window only, excluding desktop and menu bar) |
+| Duration | **Approx. 155 seconds + actual download time** — measure after filming and align with `DEMO_CLIPS[0].seconds` |
+| Cuts | **0** — One take. If you make a mistake, start over |
+| Sound | None (including BGM: 0) |
+| Cursor | Visible. Do not use click highlights |
+| Speed | Constant speed. No speeding up or jumping |
+| Deliverables | `atlas-tour.{ko,en}.webm` + `.mp4` + `atlas-tour.{ko,en}-poster.png` |
 
-**볼트는 실물이어야 한다.** 데모용 3노드 폴더는 첫 화면에서 「이거 장난감이네」로
-읽힌다. 이 저장소의 `docs/ontology`(현재 82노드)를 쓴다 — 개수는 문서에 적지
-말고 `node cli/src/index.mjs overview` 로 확인한다.
+**The vault must be real.** The demo's 3-node folder reads as "this is a toy" on the first screen. Use this repository's `docs/ontology` (currently 82 nodes) — do not list the count in the document; verify it with `node cli/src/index.mjs overview`.
 
-**화면에 담기는 것은 앱 창뿐이다.** 메뉴바·독·바탕화면·알림을 프레임에 넣지
-않는다. (가)와 같은 이유다 — 창 밖에는 촬영자의 사생활이 있다.
+**Only the app window should be in frame.** Do not include the menu bar, dock, desktop, or notifications. (This is for the same reason as (a) — there is private information outside the window.)
 
-**언어 전환**: 설정 › 화면 › 언어에서 EN/KO 를 바꾼 뒤 **같은 동선을 다시**
-찍는다. 두 영상의 길이 차가 10초를 넘으면 한쪽이 다른 동선을 탄 것이다.
+**Language switch:** Change EN/KO in Settings › Display › Language, then film **the same route again**. If the duration difference between the two videos exceeds 10 seconds, one of them took a different route.
 
-## 3. 비트 — 약 155초
+## 3. Beats — Approx. 155 seconds
 
-각 비트의 «남는 그림»이 그 구간의 목적이다. 그림이 안 남으면 그 비트는 없어도
-된다. 괄호 안은 실제 컨트롤 이름이다(`data-testid`).
+The "remaining image" of each beat is its purpose. If no image remains, that beat can be omitted. The text in parentheses indicates the actual control name (`data-testid`).
 
-| 초 | 무엇을 한다 | 남는 그림 |
+| Seconds | What to do | Remaining Image |
 |---|---|---|
-| 0–6 | **아무것도 안 한다.** 볼트가 이미 열린 2D 지도가 서 있다. 손을 대지 않고 기다린다 | 폴더가 이미 그림이 되어 있다 |
-| 6–20 | **노드 하나를 누른다.** 이웃만 남고 나머지가 물러난다. 옆에 그 개념의 사실이 뜬다 | 「이게 무엇이고 무엇과 이어졌나」 |
-| 20–32 | **그 사실 안의 이웃을 하나 더 누른다.** 지도가 그쪽으로 옮겨 간다 | 클릭이 곧 이동이다 |
-| 32–46 | **INDEX 에서 검색한다**(`topology-concept-search`). 이름을 치고 결과를 눌러 지도가 그쪽으로 간다 | 82개 안에서 하나를 찾는 속도 |
-| 46–58 | **자동 정렬**(`topology-auto-arrange`)을 누른다. 흐트러진 배치가 제자리로 모인다 | 언제든 되돌릴 수 있다 |
-| 58–86 | **3D 를 켠다**(`topology-view-3d`). 돔이 조립되는 것을 끝까지 본다. 손으로 돌린다 | 평면이 형태가 되는 순간 |
-| 86–100 | **왼쪽 목록에서 개념을 고른다.** 돔이 그쪽으로 다시 잡힌다 | 3D 도 읽는 도구다 |
-| 100–118 | **배치를 「구름」으로 바꾼다.** 관계가 각도를 정하는 다른 배치가 퍼진다 | 같은 데이터, 다른 질문 |
-| 118–124 | **2D 로 돌아온다.** 평면이 다시 선다 | 왕복에 비용이 없다 |
-| 124–150 | **에이전트에게 묻는다.** 패널을 열고(이미 준비돼 있다) 이 폴더에 대해 한 문장 묻고, 답이 오는 것을 본다 | 사람과 에이전트가 **같은 폴더**를 본다 |
-| 150–155 | **기록으로 간다**(`app-nav-rail-item-git`). 방금 걸음이 남긴 줄을 보여준다 | 한 일이 파일로 남는다 |
+| 0–6 | **Do nothing.** The Bolt is already open, showing a 2D map. Wait without touching it | The folder has already become an image |
+| 6–20 | **Click one node.** Only neighbors remain; others recede. Facts about that concept appear beside it | "What is this and what is it connected to?" |
+| 20–32 | **Tap one more neighbor in that fact.** The map shifts toward it. Click is movement. |
+| 32–46 | **Search in INDEX** (`topology-concept-search`). Type the name, tap a result, and the map moves there. Speed of finding one among 82 items. |
+| 46–58 | **Tap auto-arrange** (`topology-auto-arrange`). Scattered nodes gather back into place. You can undo this anytime. |
+| 58–86 | **Turn on 3D** (`topology-view-3d`). Watch the dome assemble completely. Rotate it with your hand. The moment a flat surface becomes a shape. |
+| 86–100 | **Select a concept from the left list.** The dome refocuses on it. 3D is also a tool for reading. |
+| 100–118 | **Change layout to 'Cloud'.** A different layout spreads, where relationships determine angles. Same data, different question. |
+| 118–124 | **Return to 2D.** The plane stands up again. No cost for round trips. |
+| 124–150 | **Ask the agent.** Open the panel (already prepared), ask one sentence about this folder, and watch the answer arrive. The human and the agent look at the **same folder**. |
+| 150–155 | **Go to History** (`app-nav-rail-item-git`). It shows the lines left by your recent actions. Your work is saved as a file. |
 
-### 다운로드 비트 — 재 보고 **빼기로 했다** (2026-08-19 실측)
+### Download Bit — Decided to Exclude (Measured on 2026-08-19)
 
-소유자 지시(2026-08-19): *"가능하면 다운로드 하는 과정도 촬영에 들어가면
-좋을듯."* 어댑터 첫 실행은 수십 MB 를 받는다. 그 시간을 **숨기지 않고 보여주는
-것**이 이 비트의 값이다 — 처음 여는 사람이 겪을 그 기다림이 실제로 어떻게
-보이는지, 그리고 앱이 그동안 무엇을 하는 중인지 말하는지가 화면에 남는다.
+Owner instruction (2026-08-19): *"It would be good to include the download process in the recording if possible."* The adapter's first run downloads tens of MB. The value of this bit is **showing that time without hiding it** — what that wait actually looks like for someone opening it for the first time, and what the app is doing during that time, remains on screen.
 
-이건 (가)의 「설정은 촬영 밖에서」와 부딪히지 않는다. 그 규칙이 막는 것은
-**촬영자의 사생활이 프레임에 드는 것**(파일 선택 대화상자 · 절대 경로)이고,
-어댑터 내려받기는 누구의 화면에서든 똑같이 일어나는 **제품의 첫 경험**이다.
+This does not conflict with rule (a) 'settings outside the frame.' That rule blocks **the recorder's privacy from entering the frame** (file selection dialog · absolute paths), whereas adapter download is a **product's first experience** that happens identically on anyone's screen.
 
-**그래서 재 봤고, 그 결과 빼기로 했다.** 판정 기준은 이랬다:
+**So we re-shot it, and decided to exclude the result.** The criteria were as follows:
 
-| 실측 | 어떻게 |
+| Measurement | How |
 |---|---|
-| ~20초 이하 | 그대로 담는다. 기다림도 사실이다 |
-| 20~40초 | 담되, 그 앞뒤 비트를 줄여 전체가 늘어지지 않게 한다 |
-| 40초 초과 | **담지 않는다.** 무컷 영상에서 40초 넘는 진행 막대는 관객을 잃는다 |
+| ~20 seconds or less | Capture as is. Waiting is also a fact. |
+| 20–40 seconds | Capture, but trim the bits before and after so the total doesn't stretch out. |
+| Over 40 seconds | **Do not capture.** In a cut-free video, a progress bar over 40 seconds loses the audience. |
 
-**실측(2026-08-19, 설치본 rc.8)**: 어댑터는 「수십 MB」가 아니라 **277~352MB**
-였다. 캐시를 비우고 새 대화를 열자 화면에 「지금까지 32 MB 받았어요」가 뜬 뒤
-완료까지 **수 분**이 걸렸다. 40초 기준을 크게 넘으므로 이 비트는 담지 않는다.
+**Measurement (2026-08-19, installer rc.8)**: The adapter was not 'tens of MB' but **277–352 MB**. After clearing the cache and opening a new conversation, the screen showed 'Received 32 MB so far,' and it took **several minutes** to complete. This significantly exceeds the 40-second threshold, so this bit is excluded.
 
-**대신 캐시가 채워진 상태로 찍는다.** 첫 실행 경험은 관문의 정지 화면 문구가
-맡는다.
+**Instead, shoot with the cache filled.** The first-run experience is handled by the gate's stop-screen message.
 
-⚠️ **문서에 「수십 MB」라고 적혀 있던 것은 틀렸다.** 진행 표시 문안도 그렇게
-쓰여 있으니(`acpChat.firstRun.body`), 다음에 그 문안을 고칠 때 실측값으로
-바로잡는다 — 사용자에게 수십 MB 라고 말해 놓고 300MB 를 받으면 그건 거짓말이다.
+⚠️ **The document stating 'tens of MB' was incorrect.** The progress message also says so (`acpChat.firstRun.body`), so when that message is corrected next, update it with the measured value — telling users tens of MB but delivering 300 MB is a lie.
 
-측정 방법(다음에 다시 잴 때): `~/.npm/_npx` 에서 그 어댑터 캐시 항목을 지운 뒤
-(→ 첫 실행 상태 재현), 앱에서 새 대화를 열어 진행이 뜬 시각부터 대화가 열린
-시각까지를 잰다. 해시는 `sha512(패키지 스펙).hex[..16]` 로 계산된다
-(`src-tauri/src/acp.rs`).
+Measurement method (for next time): Delete the adapter cache entry in `~/.npm/_npx` (→ reproducing first-run state), open a new conversation in the app, and measure from when progress appears to when the conversation opens. The hash is calculated as `sha512(package spec).hex[..16]` (`src-tauri/src/acp.rs`).
 
-### 비트 사이 규칙
+### Rules Between Bits
 
-- **각 비트의 마지막 1초는 정지**다. 손을 떼고 화면이 서 있게 둔다 — 관객의
-  눈이 도착하기 전에 다음 동작이 시작되면 아무것도 안 남는다.
-- **오타·되돌리기·망설임은 다시 찍는다.** 무컷이라 그 시간이 그대로 남는다.
-- **에이전트에게 묻는 문장은 미리 정해 둔다.** 즉흥으로 치면 오타가 나고,
-  오타는 다시 찍는 사유다. 문장은 이 폴더에서 **실제로 답이 나오는 것**이어야
-  한다 — 답이 비면 그 비트는 제품이 안 되는 것을 보여주는 셈이다.
-- **에이전트 답을 기다리는 동안 화면을 만지지 않는다.** 기다림도 사실이다.
-  다만 30초를 넘으면 그 비트를 다시 설계한다(관객이 떠난다).
+- **The last 1 second of each bit is a freeze.** Let go of your hand and let the screen settle — if the next action starts before the audience's eyes arrive, nothing remains.
+- **Typos · Undo · Hesitation are re-shot.** Since it's cut-free, that time remains as is.
+- **Pre-determine the sentence asked to the agent.** If you improvise, typos occur, and typos require re-shooting. The sentence must be one that **actually yields an answer** in this folder — if the answer is empty, this bit shows the product failing.
+- **Do not touch the screen while waiting for the agent's answer.** Waiting is also a fact. However, if it exceeds 30 seconds, redesign that bit (the audience has left).
 
-## 4. 찍기 전 체크리스트
+## 4. Pre-shoot Checklist
 
-- [ ] **볼트가 이미 열려 있다** — 앱을 켰을 때 첫 화면이 지도다. 파일 선택
-      대화상자가 뜨면 그 테이크는 버린다
-- [ ] 설정 › 알림 › 화면 안내 자동 표시 **끔** (투어 카드가 뜨면 화면 절반이 덮인다)
-- [ ] 볼트 = `docs/ontology`
-- [ ] 창 크기 1512 × 918, 앱이 전면, **프레임에 창만 담긴다**
-- [ ] 알림·배터리 경고 등 OS 방해 요소 정리 (방해 금지 모드 켜기)
-- [ ] 언어가 찍으려는 로케일과 일치
-- [ ] 에이전트가 **미리 준비돼 있다** — 설정 «과정»도 첫 실행 «내려받기»도 찍지
-      않는다(위 (가)-2 · 다운로드 비트 절). 패널을 열면 「준비됨」이어야 한다
-- [ ] 쓸 에이전트의 어댑터 캐시가 **채워져 있다** — 촬영 직전에 한 번 열어 확인
-- [ ] 에이전트에게 물을 문장이 정해져 있고, **그 답이 실제로 나오는 것을 미리
-      한 번 돌려서 확인**했다. 촬영 중 빈 답이 오면 그 테이크는 버린다
-- [ ] 알림 뱃지·미읽음 표시를 미리 비웠다 (우상단 숫자가 프레임에 남지 않게)
-- [ ] 앱을 한 번 껐다 켜서 **첫 화면이 지도인 것**을 확인했다 (설정이 남아 있나 확인)
+- [ ] **VOLT is already open** — When the app launches, the first screen is the map. If a file selection dialog appears, discard that take.
+- [ ] Settings › Notifications › Auto-show screen guide **OFF** (tour cards cover half the screen)
+- [ ] VOLT = `docs/ontology`
+- [ ] Window size 1512 × 918, app in full-screen, **only the window frame is captured**
+- [ ] Clear OS distractions like notifications and battery warnings (enable Do Not Disturb mode)
+- [ ] Language matches the target locale
+- [ ] The agent is **pre-prepared** — do not capture Settings «Process» or the first run «Download» (see section (a)-2 · Download bits). When opening the panel, it should show "Ready"
+- [ ] The adapter cache for the agent to use is **populated** — open it once just before recording to verify
+- [ ] The question posed to the agent is fixed, and **you have verified beforehand that the answer actually appears**. If a blank answer comes during recording, discard that take.
+- [ ] Cleared notification badges and unread indicators in advance (so numbers in the top-right corner do not remain in the frame)
+- [ ] Closed and reopened the app to verify **the first screen is the map** (to confirm settings persist)
 
-## 5. 찍은 뒤 — 켜는 절차
+## 5. Post-recording — Activation Procedure
 
 ```bash
-# 1) 자산을 넣는다 (webm + mp4 + poster, 로케일별)
+# 1) Place assets (webm + mp4 + poster, per locale)
 public/demo/atlas-tour.ko.webm
 public/demo/atlas-tour.ko.mp4
 public/demo/atlas-tour.ko-poster.png
@@ -207,109 +153,75 @@ public/demo/atlas-tour.en.webm
 public/demo/atlas-tour.en.mp4
 public/demo/atlas-tour.en-poster.png
 
-# 2) 길이를 실측해 DEMO_CLIPS[0].seconds 와 맞춘다
+# 2) Measure the length and match it to DEMO_CLIPS[0].seconds
 ffprobe -v error -show_entries format=duration -of csv=p=0 public/demo/atlas-tour.ko.mp4
 
-# 3) 등록부를 켠다 — 이 줄을 고치기 전에는 절이 안 뜬다
+# 3) Enable the registry — this section will not appear until this line is fixed
 #    src/views/download/model/demo-clips.ts
 #    export const AVAILABLE_DEMO_CLIP_IDS = ['atlas-tour'];
 ```
 
-**자산과 선언이 둘 다 있어야 켜진다.** 파일 존재만으로 켜면 반쯤 올라간 자산이
-첫인상 자리에 그대로 나간다.
+**Both the asset and the declaration must exist for it to activate.** If you enable it based solely on file existence, a partially loaded asset will remain in the initial impression spot.
 
-## 6. 켠 뒤 게이트
+## 6. Post-activation Gate
 
-- **프레임 훑기** — 찍은 영상을 1초 간격으로 뽑아 **창 밖의 것과 개인 정보가
-  한 프레임도 없는지** 눈으로 확인한다. 종전 사고가 정확히 이 검사의 부재였다:
+- **Frame sweep** — Extract frames from the recorded video at 1-second intervals and visually verify that **no frame contains anything outside the window or personal information**. Previous incidents occurred precisely due to the absence of this check:
 
   ```bash
   ffmpeg -i public/demo/atlas-tour.ko.mp4 -vf "fps=1,scale=760:-1,tile=6x5" /tmp/sheet-%d.png
   ```
 
-- `/design-audit` — 영상 열이 절 제목과 같은 x 에서 시작·끝나는지(과거 두 번
-  어긋났다: `mx-auto` 로 188px, 뷰포트 상한으로 344px)
-- `/responsive-sweep` — 1280 · 1512 · 1920 · 2560 에서 넘침과 포스터 비율
-- 감속 모드에서 **포스터가 남고 재생 버튼이 뜨는지** — 자동재생만 끄고 내용을
-  빼앗지 않는 것이 감속의 뜻이다
-- 두 로케일이 각각 자기 영상을 받는지 (`.ko.` / `.en.` 경로)
-- `pnpm exec vitest run tests/contract/demo-clip-assets.contract.test.ts` —
-  **선언한 `seconds` 가 실물 MP4 길이와 같은가.** 이 문서가 오래 «촬영 후
-  게이트가 대조한다» 고 적어 두었는데 그 게이트는 없었다(2026-08-20 발견).
-  숫자는 조용히 썩는 종류라, 이제 `mvhd` 박스에서 직접 읽어 대조한다
+- `/design-audit` — Verify whether the video row starts and ends at x coordinates matching the section title (it shifted twice previously: by 188px due to `mx-auto`, and by 344px to the viewport top)
+- `/responsive-sweep` — Check for overflow and poster aspect ratio at 1280 · 1512 · 1920 · 2560
+- In reduced-motion mode, verify **whether the poster remains and the play button appears** — disabling autoplay alone is not enough; the content must not be stripped. That is the purpose of reduced motion.
+- Verify that each locale receives its own video (`.ko.` / `.en.` paths)
+- `pnpm exec vitest run tests/contract/demo-clip-assets.contract.test.ts` — **whether the declared `seconds` matches the actual MP4 length.** This document previously noted "post-recording gate comparison," but no such gate existed (discovered 2026-08-20). Numbers quietly rot, so now we read directly from the `mvhd` box for comparison.
 
-## 7. 지금 붙어 있는 것
+## 7. What is currently attached
 
-**2026-08-22 촬영본, 실측 9.000초 · 로케일별로 각각** (설치본 · 볼트
-`docs/ontology` 82노드 · 창 1512×949 · 내장 디스플레이 · 30fps).
-§0(가)의 프라이버시 결함은 없다 — 볼트는 촬영 전에 연결해 두었고, 파일 선택
-대화상자는 한 프레임도 나오지 않는다.
+**2026-08-22 recording, measured 9.000 seconds · per locale** (installer · VOLT `docs/ontology` 82 nodes · window 1512×949 · built-in display · 30fps).
+There is no privacy defect in §0(a) — the VOLT was connected before recording, and the file selection dialog did not appear in any frame.
 
-| | webm (AV1) | mp4 (H.264) | 포스터 |
+| | webm (AV1) | mp4 (H.264) | poster |
 |---|---:|---:|---:|
 | `ko` | 267KB | 285KB | 195KB |
 | `en` | 293KB | 275KB | 223KB |
 
-실제로 담긴 동선:
+The actual path captured:
 
-1. 앱이 이미 아는 폴더로 열린다 — 준비 카드, INDEX 진입
-2. 지도가 스스로 그려지고 정착한다 (허브 + 7개 도메인)
-3. 약 2초 선다
-4. 도메인 노드 **「온보딩·배포·앱 셸」** 을 누른다
-5. 이웃만 남고 나머지가 흐려지며, 상세 패널이 하위 16개(이름까지) · 상위 1개 ·
-   근거 문서 1개를 편다
+1. The app opens to a folder it already knows — Ready card, INDEX entry
+2. The map draws itself and settles (hub + 7 domains)
+3. Scroll down for about 2 seconds
+4. Click the domain node **「Onboarding · Deployment · App Shell」**
+5. Only neighbors remain visible while others blur, and the detail panel opens showing 16 sub-items (including names), 1 parent item,
+   and 1 reference document
 
-**커서가 화면에 남아 있다.** 지우지 않은 이유는 누르는 사람이 있다는 것이
-이 장면의 내용이기 때문이고, 페이지에서 766px 로 줄어 그려지므로 화살표는
-8px 안팎이다.
+**The cursor remains on screen.** The reason for not removing it is that the presence of a clicker is part of this scene's content, and since it renders at 766px on the page, the arrow is within ~8px.
 
-**직전 촬영본(2026-08-20, 199.13초)은 이것으로 대체됐다.** 그 동선 — 돔 · 구름 ·
-ACP 왕복 — 은 §3 비트표와 함께 위에 남아 있고, 다시 투어가 필요해지면 거기서
-시작한다.
+**The previous recording (2026-08-20, 199.13 seconds) has been replaced by this one.** That path — DOM · Cloud · ACP round-trip — remains above along with the §3 bit table, and serves as the starting point if a tour is needed again.
 
-### *(155초 투어)* 배속은 썼고 컷은 안 썼다
+### *(155-second tour)* Speed was used, but no cuts
 
-원장이 정한 「무컷 한 테이크」를 지키되 죽은 시간은 **빨리 감았다**. 잘라내면
-점프 컷이 생겨 이 자산의 성질 자체가 깨진다. 실제 동작(조립 · 회전 · 답변
-스트리밍 · 상세 패널)은 전부 **등속**이고, 배속이 붙은 구간은 아무 일도
-일어나지 않는 곳뿐이다. 원본 300초가 199초가 됐다.
+While adhering to the director's "no cuts, single take" rule, dead time was **fast-forwarded**. Cutting would create jump cuts, breaking the nature of this asset itself. Actual actions (assembly · rotation · answer streaming · detail panel) are all **constant speed**, and only sections with no activity have speed applied. The original 300 seconds became 199 seconds.
 
-### 촬영이 세 번 엎어진 이유 — 다음 사람이 같은 데서 안 넘어지게
+### Why the recording failed three times — So the next person doesn't fall into the same trap
 
-*(155초 투어에서 겪은 일이지만, 고정 좌표로 눈 감고 클릭하는 한 길이와
-무관하게 되풀이된다. 9초 촬영에서도 두 번 헛클릭했다 — 위 §0-1 의 자동화
-메모.)*
+*(This happened during the 155-second tour, but it repeats regardless of distance as long as you click with eyes closed at fixed coordinates. Even in the 9-second recording, two misclicks occurred — see automation notes in §0-1 above.)*
 
-전부 **고정 좌표로 눈 감고 클릭**해서 생긴 일이다. 이 화면은 상태에 따라
-크롬이 움직인다.
+All were caused by **clicking with eyes closed at fixed coordinates**. This screen causes Chrome to move depending on the state.
 
-- **3D 는 토글이 아니라 메뉴다** (평면/돔/구름). 버튼을 누르면 모드가 바뀌는
-  게 아니라 목록이 열린다.
-- **「걸어온 길 · N」 칩이 생기면 위쪽 버튼들이 오른쪽으로 밀린다.** 그래서
-  노드를 누른 뒤의 좌표는 누르기 전의 좌표와 다르다. 크롬 조작을 먼저 다 하고
-  노드 클릭을 나중에 두면 이 문제가 통째로 사라진다.
-- **에이전트 패널을 열면 지도가 좁아져 노드 위치가 전부 바뀐다.** 패널을 연
-  뒤에 노드를 누르려면 그 시점에 화면을 다시 재야 한다.
-- **한글은 `cliclick t:` 로 못 친다** (IME 가 뭉갠다). `pbcopy` + `⌘V` 로 넣는다.
-- **전송 버튼은 옆의 「물어보고 진행」 드롭다운과 히트 영역이 가깝다.**
+- **3D is a menu, not a toggle** (flat/dome/cloud). Pressing the button does not switch modes; it opens a list.
+- **When the "Path walked · N" chip appears, the buttons above shift to the right.** Therefore, coordinates after clicking a node differ from those before. If you handle Chrome operations first and click nodes later, this problem disappears entirely.
+- **Opening the agent panel shrinks the map, changing all node positions.** If you click a node after opening the panel, you must re-capture the screen at that moment.
+- **Korean cannot be typed via `cliclick t:`** (IME interferes). Use `pbcopy` + `⌘V` to paste.
+- **The send button's hit area is close to the adjacent "Ask and proceed" dropdown.**
 
-그래서 이번에는 **비트마다 `screencapture` 로 창을 찍어 눈으로 확인하고** 다음
-좌표를 정했다. 확인에 든 몇 초는 어차피 배속 구간으로 들어간다.
+So this time, we **captured the window via `screencapture` at every bit to verify visually** before determining the next coordinates. The few seconds spent on verification fall into speed-up sections anyway.
 
-### 영어본은 같은 날 따로 찍었다
+### The English version was recorded separately on the same day
 
-앱 설정 → 언어에서 English 로 바꾸고 **다시 시작한 뒤** 같은 비트를 그대로
-다시 밟았다. 화면 글자도 노드 이름도 영어다(볼트가 `display_en` 을 갖고 있어서
-노드 이름까지 따라온다). 관문의 안내 줄에서 「두 언어가 같은 녹화를 공유한다」
-는 절은 지웠다.
+Changed language to English in App Settings → and **restarted**, then walked through the same bits again. Both screen text and node names are in English (since VOLT has `display_en`, node names follow). The section stating "both languages share the same recording" in the gate instructions was removed.
 
-**좌표는 다시 계획할 필요가 없었다.** 영어 라벨이 더 넓어 동선이 틀어질 것으로
-봤는데, 레이아웃이 결정적이라 같은 노드가 한국어 812,797 · 영어 813,798 이었다.
-다음에 세 번째 언어를 찍는다면 여기서 시작하면 된다 — 다만 **매번 확인은
-한다**. 값이 같았다는 것은 관측이지 보장이 아니다.
+**No need to re-plan coordinates.** I expected the path to shift because English labels are wider, but the layout is deterministic, so the same node had Korean 812,797 and English 813,798. If recording a third language next time, start here — but **verify every time**. The fact that values were identical is an observation, not a guarantee.
 
-**두 자산이 다시 하나가 되지 않게 게이트를 걸었다.** 처음 이틀 동안 이 자산은
-한국어 마스터 하나를 두 이름으로 쓰고 있었고, 그동안 모든 검사가 초록이었다 —
-둘 다 존재했고, 둘 다 10KB 를 넘었고, 둘 다 선언한 길이였다. 한쪽을 다른 쪽에
-덮어쓰는 것은 다음 교체 때 한 줄이면 일어나는 사고이므로,
-`demo-clip-assets.contract` 가 이제 **바이트를 비교한다**.
+**A gate was set to prevent the two assets from merging again.** For the first two days, this asset used one Korean master under two names, and all checks passed green — both existed, both exceeded 10KB, and both declared their lengths. Overwriting one with the other would cause an incident in a single line during the next swap, so `demo-clip-assets.contract` now **compares bytes**.

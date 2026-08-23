@@ -176,8 +176,8 @@ jobs:
         if: always()
         run: pnpm test:docs-vault
 
-      # 2026-08-07: `docs:check` 의 세 하위 검사(생성 표면 diff · DESIGN-SYSTEM
-      # 목차 · 링크 참조 무결성)는 **어느 워크플로에서도 불린 적이 없었다.** 훅도
+      # 2026-08-07: `docs:check` 의 하위 검사(생성 표면 diff · DESIGN-SYSTEM
+      # 목차 · 문서 언어 · 링크 참조 무결성)는 **어느 워크플로에서도 불린 적이 없었다.** 훅도
       # 이걸 보지 않는다 — 위의 `pre-commit` 은 볼트 생성물만 잰다. 그 사각에서
       # 실제로 main 이 빨간 채 방치됐다: #960 이 `###` 절을 더하면서 목차 줄을
       # 손으로 넣었고, 생성기는 `## ` 만 담으므로 `design:toc:check` 가 그때부터
@@ -189,7 +189,7 @@ jobs:
       # 이 잡은 `mcp/node_modules` 를 설치하지 않아서(MCP 는 워크스페이스 멤버가
       # 아니다) `ERR_MODULE_NOT_FOUND` 로 죽는다 — 처음 물렸을 때 정확히 그렇게
       # 실패했고, 아래 `mcp` 잡의 설치 스텝 주석이 같은 함정을 이미 적어 뒀다.
-      # 그 검사는 의존성이 사는 `mcp` 잡으로 갔다. 여기는 파일만 읽는 둘을
+      # 그 검사는 의존성이 사는 `mcp` 잡으로 갔다. 여기는 파일만 읽는 셋을
       # 갖는다 — 가장 빠른 잡에 mcp 설치를 더해 느리게 만들지 않는 쪽을 골랐다.
       #
       # ⚠️ 스텝을 둘로 나눈 이유: `&&` 로 이으면 **앞이 깨졌을 때 뒤가 안 돈다.**
@@ -201,6 +201,10 @@ jobs:
       - name: Docs TOC
         if: always()
         run: pnpm design:toc:check
+
+      - name: Docs language
+        if: always()
+        run: pnpm docs:language
 
       - name: Docs links
         if: always()

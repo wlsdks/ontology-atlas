@@ -7,14 +7,14 @@ domain: domains/local-vault-management
 elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
 path: src/features/docs-vault-local
 created_by: human
-relation_notes: { elements/native-vault-filesystem-bridge: 설치 앱의 로컬 폴더 마운트가 실제 파일·디렉터리 mutation을 수행하는 네이티브 구현 증거다. }
+relation_notes: { elements/native-vault-filesystem-bridge: The local folder mount of the installed app is evidence of native implementation performing actual file/directory mutation. }
 ---
 
-## 정의
-File System Access API로 로컬 마크다운 폴더를 선택·마운트해 실시간 데이터소스로 삼는 능력.
+## Definition
+The ability to select and mount a local markdown folder via the File System Access API, using it as a real-time data source.
 
-## 근거
-- src/features/docs-vault-local (구현 증거)
+## Evidence
+- src/features/docs-vault-local (implementation evidence)
 
-## 확신도
-high (0.9): local-first 원칙 문서와 정합
+## Confidence
+high (0.9): Consistent with local-first principle documentation
