@@ -10,6 +10,8 @@ import {
   isNonBlankString,
   matchRowsFailure,
   numericSummaryFailure,
+} from "./shape-validators-primitives.mjs";
+import {
   pathShapeFailure,
 } from "./shape-validators-workspace.mjs";
 import { graphEdgeFailure } from "./shape-validators-graph-structure.mjs";

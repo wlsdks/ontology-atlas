@@ -10,7 +10,7 @@ import { evaluateMarkdownLanguageGate } from './check.mjs';
 test('classifies canonical Markdown by migration scope', () => {
   assert.equal(classifyMarkdownPath('AGENTS.md').kind, 'canonical');
   assert.equal(classifyMarkdownPath('AGENTS.md').scope, 'operational');
-  assert.equal(classifyMarkdownPath('.claude/LOOP-PRINCIPLES.md').scope, 'historical');
+  assert.equal(classifyMarkdownPath('.claude/rules/documentation.md').scope, 'operational');
   assert.equal(classifyMarkdownPath('docs/guide/cli.md').scope, 'current');
   assert.equal(classifyMarkdownPath('docs/DECISIONS.md').scope, 'historical');
 });

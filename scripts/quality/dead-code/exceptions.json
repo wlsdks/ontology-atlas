@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "exceptions": [
+    {
+      "key": "scripts:runtime:files:scripts/install-brand-icons.mjs:scripts/install-brand-icons.mjs",
+      "reason": "Manual brand-raster installer is intentionally invoked from the brand asset procedure.",
+      "consumer": "docs/BRAND.md",
+      "witness": "scripts/install-brand-icons.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/measure-a11y.mjs:scripts/measure-a11y.mjs",
+      "reason": "Manual axe census precedes a11y-ratchet baseline decisions.",
+      "consumer": "docs/DEVELOPMENT-CHECKS.md",
+      "witness": "scripts/measure-a11y.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/measure-contrast.mjs:scripts/measure-contrast.mjs",
+      "reason": "Manual contrast instrument shares the CI contrast collector and has a documented design-check consumer.",
+      "consumer": "docs/DEVELOPMENT-CHECKS.md",
+      "witness": "scripts/measure-contrast.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/measure-graph-readability.mjs:scripts/measure-graph-readability.mjs",
+      "reason": "Manual map-readability instrument is a documented graph design check.",
+      "consumer": "docs/MAP-TESTABILITY.md",
+      "witness": "scripts/measure-graph-readability.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/perf-node-drag.mjs:scripts/perf-node-drag.mjs",
+      "reason": "Manual drag-performance probe is consumed by the map-performance operating skill.",
+      "consumer": ".agents/skills/map-perf/SKILL.md",
+      "witness": "scripts/perf-node-drag.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/perf-vault.mjs:scripts/perf-vault.mjs",
+      "reason": "Manual vault-performance probe is an explicit focused-check recommendation.",
+      "consumer": "scripts/lib/focused-check-suggestions.mjs",
+      "witness": "scripts/perf-vault.mjs"
+    },
+    {
+      "key": "frontend:runtime:dependencies:package.json:pretendard",
+      "reason": "Pretendard is read directly as a raster-build asset rather than imported by the module graph.",
+      "consumer": "scripts/build-brand-raster.mjs",
+      "witness": "node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2"
+    },
+    {
+      "key": "frontend:runtime:dependencies:package.json:jsonc-parser",
+      "reason": "Root installation intentionally supplies this parser to source-checkout CLI scripts as well as the nested CLI manifest.",
+      "consumer": "cli/src/lib/agent-config.mjs",
+      "witness": "from 'jsonc-parser'"
+    },
+    {
+      "key": "frontend:runtime:devDependencies:package.json:tailwindcss",
+      "reason": "Tailwind CSS is retained as the direct compiler dependency for the PostCSS adapter.",
+      "consumer": "postcss.config.mjs",
+      "witness": "@tailwindcss/postcss"
+    },
+    {
+      "key": "cli:runtime:dependencies:package.json:ontology-atlas-mcp",
+      "reason": "The CLI resolves the installed MCP package dynamically for source-checkout verification.",
+      "consumer": "cli/src/commands/mcp-verify.mjs",
+      "witness": "require_.resolve('ontology-atlas-mcp/scripts/verify.mjs')"
+    },
+    {
+      "key": "mcp:runtime:dependencies:package.json:@modelcontextprotocol/core",
+      "reason": "The MCP core package is intentionally direct-pinned for the public server protocol boundary.",
+      "consumer": "mcp/README.md",
+      "witness": "@modelcontextprotocol/core"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/benchmark-scale.mjs:codex",
+      "reason": "Benchmark invokes the external Codex executable intentionally.",
+      "consumer": "scripts/benchmark-scale.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/benchmark.mjs:codex",
+      "reason": "Benchmark invokes the external Codex executable intentionally.",
+      "consumer": "scripts/benchmark.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/deploy-macos-app-local.mjs:pgrep",
+      "reason": "Local macOS deployment uses the system process inspector intentionally.",
+      "consumer": "scripts/deploy-macos-app-local.mjs",
+      "witness": "pgrep"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/deploy-macos-app-local.mjs:pkill",
+      "reason": "Local macOS deployment uses the system process terminator intentionally.",
+      "consumer": "scripts/deploy-macos-app-local.mjs",
+      "witness": "pkill"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/lib/verify-macos/process-lock.mjs:pgrep",
+      "reason": "macOS lock verification uses the system process inspector intentionally.",
+      "consumer": "scripts/lib/verify-macos/process-lock.mjs",
+      "witness": "pgrep"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/lib/verify-macos/process-lock.mjs:pkill",
+      "reason": "macOS lock verification uses the system process terminator intentionally.",
+      "consumer": "scripts/lib/verify-macos/process-lock.mjs",
+      "witness": "pkill"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/lib/verify-macos/visual-evidence.mjs:screencapture",
+      "reason": "macOS visual evidence requires the system screenshot executable.",
+      "consumer": "scripts/lib/verify-macos/visual-evidence.mjs",
+      "witness": "screencapture"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/lib/verify-macos/visual-evidence.mjs:swift",
+      "reason": "macOS visual evidence compiles its accessibility helper through Swift.",
+      "consumer": "scripts/lib/verify-macos/visual-evidence.mjs",
+      "witness": "swift"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/lib/verify-macos/window-accessibility.mjs:osascript",
+      "reason": "macOS accessibility verification invokes AppleScript intentionally.",
+      "consumer": "scripts/lib/verify-macos/window-accessibility.mjs",
+      "witness": "osascript"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/lib/verify-macos/window-accessibility.mjs:swift",
+      "reason": "macOS accessibility verification compiles its native helper through Swift.",
+      "consumer": "scripts/lib/verify-macos/window-accessibility.mjs",
+      "witness": "swift"
+    },
+    {
+      "key": "scripts:runtime:unresolved:scripts/lib/verify-macos/process-lock.mjs:/usr/libexec/PlistBuddy",
+      "reason": "The macOS property-list reader uses an absolute system executable that is absent on non-macOS CI hosts.",
+      "consumer": "scripts/lib/verify-macos/process-lock.mjs",
+      "witness": "/usr/libexec/PlistBuddy",
+      "platforms": ["linux", "win32"]
+    },
+    {
+      "key": "frontend:runtime:binaries:scripts/benchmark-scale.mjs:codex",
+      "reason": "Root package scripts expose the external benchmark executable.",
+      "consumer": "scripts/benchmark-scale.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "frontend:runtime:binaries:scripts/benchmark.mjs:codex",
+      "reason": "Root package scripts expose the external benchmark executable.",
+      "consumer": "scripts/benchmark.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "frontend:runtime:binaries:scripts/deploy-macos-app-local.mjs:pgrep",
+      "reason": "Root package scripts expose the macOS deployment process inspector.",
+      "consumer": "scripts/deploy-macos-app-local.mjs",
+      "witness": "pgrep"
+    },
+    {
+      "key": "frontend:runtime:binaries:scripts/deploy-macos-app-local.mjs:pkill",
+      "reason": "Root package scripts expose the macOS deployment process terminator.",
+      "consumer": "scripts/deploy-macos-app-local.mjs",
+      "witness": "pkill"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/benchmark-scale.mjs:codex",
+      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
+      "consumer": "scripts/benchmark-scale.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/benchmark.mjs:codex",
+      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
+      "consumer": "scripts/benchmark.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/deploy-macos-app-local.mjs:pgrep",
+      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
+      "consumer": "scripts/deploy-macos-app-local.mjs",
+      "witness": "pgrep"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/deploy-macos-app-local.mjs:pkill",
+      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
+      "consumer": "scripts/deploy-macos-app-local.mjs",
+      "witness": "pkill"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/benchmark-scale.mjs:codex",
+      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
+      "consumer": "scripts/benchmark-scale.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/benchmark.mjs:codex",
+      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
+      "consumer": "scripts/benchmark.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/deploy-macos-app-local.mjs:pgrep",
+      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
+      "consumer": "scripts/deploy-macos-app-local.mjs",
+      "witness": "pgrep"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/deploy-macos-app-local.mjs:pkill",
+      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
+      "consumer": "scripts/deploy-macos-app-local.mjs",
+      "witness": "pkill"
+    }
+  ]
+}

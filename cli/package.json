@@ -39,6 +39,8 @@
     "node": ">=24 <25"
   },
   "dependencies": {
-    "ontology-atlas-mcp": "^0.13.0"
+    "jsonc-parser": "3.3.1",
+    "ontology-atlas-mcp": "^0.13.0",
+    "smol-toml": "1.7.0"
   }
 }

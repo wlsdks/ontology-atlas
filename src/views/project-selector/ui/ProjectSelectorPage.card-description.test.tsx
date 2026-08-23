@@ -43,7 +43,6 @@ vi.mock("@/features/project-data-source", () => ({
 
 vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({ insight: { nodes: [], edges: [] } }),
-  LiveActivityIndicator: () => <div data-testid="live-activity-indicator-stub" />,
 }));
 
 vi.mock("@/features/docs-vault-local", () => ({

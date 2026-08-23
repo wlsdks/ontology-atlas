@@ -399,7 +399,8 @@ Do not delete the completion records·reasons for discard·recommended order bel
 
 ## ~~Decisions Needed (unblock after user input)~~ — Q3-Q8 self-invalid
 
-The head table in `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` (updated 2026-05-02) has already confirmed the answer:
+The cloud-era questions below were retired with the local-first model; current
+ontology boundaries are defined in `docs/ONTOLOGY-ATLAS-SPEC.md`.
 
 - **Q1·Q2** — Resolved (mission v2 cleanup)
 - **Q3-Q7** — Answer confirmed (2026-05-02, default adoption of user recommendations)
@@ -531,7 +532,7 @@ P1 V1.x evolution has all been closed as ✅/N/A, and the current surface is bei
 
 - `docs/PRODUCT-DIRECTION.md` — mission v3 direction
 - `docs/FEATURES.md` — all features currently available to users
-- `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x evolution spec (cloud part archived as N/A)
+- `docs/ONTOLOGY-ATLAS-SPEC.md` — current ontology model and conformance boundary
 - `docs/CHANGELOG.md` — chronological user-visible changes
 - `mcp/README.md` — current MCP tool surface and registration contract
 - `docs/benchmark/` — AI agent quality measurement matrix

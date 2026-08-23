@@ -34,6 +34,17 @@ const RULES = [
     matches: [/^scripts\/quality\/source-language\//],
   },
   {
+    command: 'pnpm knip',
+    reason: 'dead-code analyzer scope, configuration, package, or implementation changed',
+    matches: [
+      /^(?:app|src)\/.+\.(?:[cm]?[jt]sx?|css)$/,
+      /^scripts\/(?:quality\/dead-code\/|.+\.(?:mjs|js))$/,
+      /^cli\/(?:src\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
+      /^mcp\/(?:src\/|scripts\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
+      /^(?:package(?:-lock)?\.json|pnpm-lock\.yaml|next\.config\.ts|tsconfig(?:\.[^/]+)?\.json|vitest\.config\.ts|playwright\.config\.ts|postcss\.config\.mjs)$/,
+    ],
+  },
+  {
     // The accident this net actually catches is "a document moved or the vault was
     // regenerated but the prose citing it stayed", which only happens in a PR that
     // touched markdown — so markdown is also the trigger for the suggestion.
@@ -286,7 +297,6 @@ const RULES = [
       /^cli\/README\.md$/,
       /^scripts\/migrations\/README\.md$/,
       /^\.agents\/skills\/[^/]+\/SKILL\.md$/,
-      /^\.claude\/LOOP-PRINCIPLES\.md$/,
       /^\.claude\/rules\/[^/]+\.md$/,
       /^\.claude\/skills\/[^/]+\/SKILL\.md$/,
     ],
@@ -807,7 +817,6 @@ const MCP_DIRECT_UNIT_TEST_FILES = new Set([
 ]);
 
 const CLI_DIRECT_LIB_TESTS = new Map([
-  ['cli/src/lib/batch-results.mjs', 'cli/src/lib/batch-results.test.mjs'],
   ['cli/src/lib/captured-summary.mjs', 'cli/src/lib/captured-summary.test.mjs'],
   ['cli/src/lib/cli-args.mjs', 'cli/src/lib/cli-args.test.mjs'],
   ['cli/src/lib/cli-commands.mjs', 'cli/src/lib/cli-commands.test.mjs'],
@@ -821,7 +830,6 @@ const CLI_DIRECT_LIB_TESTS = new Map([
   ['cli/src/lib/query-result-contract.mjs', 'cli/src/lib/query-result-contract.test.mjs'],
   ['cli/src/lib/repo-analysis-results.mjs', 'cli/src/lib/repo-analysis-results.test.mjs'],
   ['cli/src/lib/resolve-vault.mjs', 'cli/src/lib/resolve-vault.test.mjs'],
-  ['cli/src/lib/vault-census.mjs', 'cli/src/lib/vault-census.test.mjs'],
 ]);
 
 const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());

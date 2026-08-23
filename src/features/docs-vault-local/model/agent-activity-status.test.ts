@@ -85,7 +85,7 @@ describe("agent activity status", () => {
           summary: "Refine source-driven ontology extraction",
           ontologySlug: null,
           files: [
-            "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+            "src/features/agent-activity/ui/AgentActivityChip.tsx",
             "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
           ],
         },
@@ -102,10 +102,10 @@ describe("agent activity status", () => {
       kind: "source",
       ontologySlug: null,
       files: [
-        "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+        "src/features/agent-activity/ui/AgentActivityChip.tsx",
         "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
       ],
-      label: "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
+      label: "source · src/features/agent-activity/ui/AgentActivityChip.tsx +1",
     });
     expect(status.proof).toEqual({
       count: 0,
@@ -151,14 +151,14 @@ describe("agent activity status", () => {
         focus: {
           summary: "Recover stale ontology focus",
           ontologySlug: "capabilities/agent-live-activity-contract",
-          files: ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx"],
+          files: ["src/features/agent-activity/ui/AgentActivityChip.tsx"],
         },
         plan: [],
         evidence: {
           mcp: ["query_ontology node_profile"],
-          codegraph: ["codegraph_context LiveActivityIndicator"],
-          source: ["rg LiveActivityIndicator"],
-          verification: ["pnpm exec vitest run LiveActivityIndicator.test.tsx"],
+          codegraph: ["codegraph explore AgentActivityChip"],
+          source: ["rg AgentActivityChip"],
+          verification: ["pnpm exec vitest run AgentActivityChip.test.tsx"],
         },
         updatedAt: "2026-06-06T05:00:00.000Z",
       }),
@@ -174,7 +174,7 @@ describe("agent activity status", () => {
       "capabilities/agent-live-activity-contract",
     );
     expect(status.refreshRequest.previousFiles).toEqual([
-      "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+      "src/features/agent-activity/ui/AgentActivityChip.tsx",
     ]);
     expect(status.refreshRequest.command).toContain("node $ATLAS/cli/src/index.mjs agent-activity <vault>");
     expect(status.refreshRequest.command).toContain("--state planning");
@@ -182,14 +182,14 @@ describe("agent activity status", () => {
       "--ontology-slug capabilities/agent-live-activity-contract",
     );
     expect(status.refreshRequest.command).toContain(
-      "--file src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+      "--file src/features/agent-activity/ui/AgentActivityChip.tsx",
     );
     expect(status.refreshRequest.command).toContain("--mcp 'query_ontology node_profile'");
     expect(status.refreshRequest.command).toContain(
-      "--source 'rg LiveActivityIndicator'",
+      "--source 'rg AgentActivityChip'",
     );
     expect(status.refreshRequest.command).toContain(
-      "--verify 'pnpm exec vitest run LiveActivityIndicator.test.tsx'",
+      "--verify 'pnpm exec vitest run AgentActivityChip.test.tsx'",
     );
     expect(status.refreshRequest.command).not.toContain("--verification");
     expect(status.refreshRequest.message).toContain(

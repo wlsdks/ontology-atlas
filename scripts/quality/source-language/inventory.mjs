@@ -9,7 +9,6 @@ import {
 export { classifySourcePath, isSupportedSourcePath } from './source-paths.mjs';
 
 const UNEXPECTED_LANGUAGE = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/gu;
-const UNEXPECTED_LANGUAGE_ONCE = new RegExp(UNEXPECTED_LANGUAGE.source, 'u');
 
 function typescriptComments(source, jsx) {
   const sourceFile = ts.createSourceFile(
@@ -340,8 +339,4 @@ export function auditSourceCommentEntries(entries) {
     }
   }
   return result;
-}
-
-export function hasUnexpectedLanguage(value) {
-  return UNEXPECTED_LANGUAGE_ONCE.test(value);
 }

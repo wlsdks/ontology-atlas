@@ -1198,7 +1198,7 @@ const eslintConfig = defineConfig([
   // `--color-amber-docs-a92`(document surface decoration quarantine). The comment on that token block in `globals.css` itself wrote *"prohibit expansion · pending subsequent downgrade review"*, yet this file was actually the **largest consumer** with 15 instances.
   //
   // ⚠️ **Pre-enable census measurement** (`design.md` "must measure before enabling rules"):
-  // Violations in this path are 0 after replacement. The reason for narrowing scope to this directory is also the same — enabling globally would turn red document surfaces (the legitimate home of that token) and 17 legacy instances in `ProjectDrawer` · `LiveActivityIndicator` simultaneously, making it noise rather than enforcement. Those two are not this council's surface, so they are next in sequence.
+  // Violations in this path are 0 after replacement. The reason for narrowing scope to this directory is also the same — enabling globally would turn red document surfaces (the legitimate home of that token) and 17 legacy instances in `ProjectDrawer` and the retired activity surface simultaneously, making it noise rather than enforcement. Those two are not this council's surface, so they are next in sequence.
   //
   // ⚠️ **Flat config does not merge rule option arrays but replaces them.** So
   // this block must **reload ramp selectors** — if not, the ramp guard `rampCoveredGlobs`(`src/**` all) quietly disappears from this directory. No subsequent blocks overwrite this glob.

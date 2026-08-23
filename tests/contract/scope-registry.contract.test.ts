@@ -163,7 +163,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.acp-chat.width", kind: "storage", scope: "global", note: "대화 칸 폭 — 이 컴퓨터의 화면 취향이라 볼트를 바꿔도 그대로다" },
   { key: "ontology-atlas:locale", kind: "storage", scope: "global", note: "화면 언어" },
   { key: "ontology-atlas:local-endpoint", kind: "storage", scope: "global", note: "LLM 로컬 엔드포인트" },
-  { key: "ontology-atlas:agent-config-scope", kind: "storage", scope: "global", note: "MCP 설정 적용 범위(project|global)" },
   { key: "ontology-atlas:guide-auto-start:v1", kind: "storage", scope: "global", note: "투어 자동 시작 선호" },
   { key: "demo:audience-plain:v1", kind: "storage", scope: "global", note: "평문 레지스터 선호" },
   { key: "demo:left-panel-collapsed:v2", kind: "storage", scope: "global", note: "좌측 패널 접힘 선호" },

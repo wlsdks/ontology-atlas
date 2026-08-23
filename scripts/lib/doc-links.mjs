@@ -160,7 +160,7 @@ export function isHistoricalDoc(relativePath) {
   return (
     /(^|\/)CHANGELOG\.md$/.test(normalized) ||
     normalized === 'docs/DECISIONS.md' ||
-    /^docs\/(archive|audits|superpowers|plans|prototypes)\//.test(normalized) ||
+    /^docs\/(archive|audits|plans|prototypes)\//.test(normalized) ||
     /^docs\/benchmark\/results\//.test(normalized)
   );
 }

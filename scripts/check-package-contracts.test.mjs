@@ -116,7 +116,6 @@ describe('package contract helpers', () => {
       'cli/README.md',
       'docs/benchmark/README.md',
       'scripts/migrations/README.md',
-      '.claude/LOOP-PRINCIPLES.md',
       '.claude/rules/architecture.md',
       '.claude/rules/design.md',
       '.claude/rules/documentation.md',
@@ -419,10 +418,16 @@ describe('package contract helpers', () => {
 
   it('keeps CLI npm test runnable from the published tarball', () => {
     const pkg = JSON.parse(readFileSync('cli/package.json', 'utf-8'));
+    const cliLibTests = readdirSync('cli/src/lib')
+      .filter((file) => file.endsWith('.test.mjs'))
+      .sort();
 
     assert.equal(isCoveredByFiles('src/lib/cli-args.test.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/batch-results.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/batch-results.test.mjs', pkg.files), true);
+    assert.ok(cliLibTests.length > 0, 'CLI test script must have concrete lib test subjects');
+    for (const testFile of cliLibTests) {
+      assert.equal(existsSync(join('cli/src/lib', testFile)), true, `${testFile} must still exist`);
+      assert.equal(isCoveredByFiles(`src/lib/${testFile}`, pkg.files), true, `${testFile} must ship for CLI npm test`);
+    }
     assert.equal(isCoveredByFiles('src/lib/import-analysis-results.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('src/lib/import-analysis-results.test.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('src/lib/repo-analysis-results.mjs', pkg.files), true);

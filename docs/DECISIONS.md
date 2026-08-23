@@ -40,6 +40,68 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-23 (109) — One deep dead-code analyzer, isolated scope/lane adapters, and a shrink-only ratchet
+
+**Trigger**: deletion cleanup exposed that the former root-only signal could not
+describe the independently delivered CLI, MCP, and repository scripts. A broad
+ignore list or auto-fixer would hide exactly the ownership questions that made
+the cleanup necessary.
+
+**Decision (accountable: Jinan, implemented by Codex)**: keep one deep analyzer
+interface and give the root frontend, scripts, CLI, and MCP JavaScript/TypeScript
+sources separate scope and runtime/verification lane adapters. Rust/Tauri remains
+compiler- and Cargo-verified rather than being claimed as Knip coverage.
+Configuration hints and zero-subject lanes
+are fail-closed setup errors; file, dependency, and cycle findings are blockers.
+Exports and types use a baseline that may only shrink. An exception is allowed
+only when it names the exact stable finding, consumer, and witnessed source use.
+Do not add broad ignores and do not auto-fix.
+
+**Wiring**: `pnpm knip` is discoverable through focused checks, runs as a
+repo-wide pre-push lane, and runs in `Checks` → `Unit · Contract` only after the
+root and MCP dependency installs. The wiring contract derives those edges from
+the package script, advisor, hook, workflow, and contributor command references.
+
+**Recorded dissent**: running every adapter before every push may be slower than
+path-local checks, and Knip's static model can misclassify dynamic consumers.
+**Falsifier**: a demonstrated legitimate dynamic consumer cannot be expressed as
+one exact witnessed exception, or the full lane repeatedly blocks ordinary
+pushes without finding a real ownership defect. Revisit the adapter boundary,
+not by adding a global ignore or auto-fix.
+
+**Status**: active
+
+## 2026-08-23 (108) — Retain ledgers and operating context; delete superseded, consumer-free artifacts recoverable from Git
+
+**Trigger**: the owner asked for a smaller, higher-signal Markdown and agent
+context surface. Decision (102)'s broad historical-retention wording protected
+evidence, but also kept obsolete plans, cloud-era drafts, and a retired loop
+guide in the checkout after their consumers were gone.
+
+**Decision (accountable: Jinan, implemented by Codex)**: preserve
+`DECISIONS.md`, `CHANGELOG.md`, operational skills and their mirrors, the
+ontology, samples, launch drafts, `PUBLISH-NPM.md`, and active current-state
+documents. Delete only tracked artifacts that are superseded, have no live
+consumer after backlink repair, and remain recoverable from Git. Do not delete
+ignored local agent state or user-owned vault state. Generated docs-vault output
+must be rebuilt from authored sources, never hand-edited.
+
+**Verification**: link, language, generated-vault, agent-mirror, and focused
+check gates remain green. Any retired gate subject is first demonstrated RED,
+then replaced by current structural coverage before GREEN is restored.
+The adjacent removal of four now-orphaned activity tokens (three docs-amber
+alphas and one success alpha) is mechanical design-system cleanup, not a
+vocabulary change; no authored Markdown cited them.
+
+**Recorded dissent**: historical drafts can retain context that a future agent
+would otherwise miss. **Falsifier**: a current task cannot be completed because
+the removed artifact contains the only non-Git explanation of a live contract.
+**Revisit**: when that observation occurs; restore the smallest needed context
+from Git rather than reinstating blanket retention.
+
+**Status**: valid; narrows decision (102)'s historical-retention wording only
+for superseded, consumer-free artifacts
+
 ## 2026-08-23 (107) — Selecting a node in the dome lights its meridian to the apex
 
 **Trigger**: the owner sent a still of the 3D dome asking for it to be more striking and more in

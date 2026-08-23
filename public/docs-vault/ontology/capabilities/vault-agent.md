@@ -15,9 +15,9 @@ The app's connect flow and MCP surface that allow AI agents to discover, authent
 
 The agent config state in App Settings counts only two actual client configs, not disguising example templates as connections. Source-checkout and app-bundled launch shape, current vault coordinates
 must match to be ready, and live stdio connection and tool inventory are proven by separate `mcp-verify`.
-Unix's approved agent config writing holds the setting root and parent in piece-by-piece no-follow directory
-FDs, completes a new inode, checks link count before writing and right before commit,\nand atomically renames. Thus, allowed
-filenames being hardlinks to inodes outside the vault or parent names changing to external symbolic links after inspection do not modify files outside. Windows reparse-point races are still
+Native vault writes retain Unix's piece-by-piece no-follow directory FD traversal, private-new-inode
+checks, and atomic rename. Thus, a parent name changing to an external symbolic link after inspection
+does not redirect a current vault write outside its opened directory. Windows reparse-point races are still
 unproven and provide no guarantee beyond static link checks.
 
 The "interactive agent in the app" mentioned here is the single vault-agent panel owned by this capability:
@@ -29,7 +29,7 @@ That side has different layers for config isolation and permission gates, and th
 - src/features/vault-agent: provider-neutral agent loop, tool execution, evidence citation
 - src-tauri/src/llm.rs: local/remote transport, audit logs, isolated timeout
 - src-tauri/src/llm_audit.rs: log-before-send scheduling/commitment, Unix openat/O_NOFOLLOW·link-count boundaries, vault-specific exclusive locking and reservation tail verification
-- src-tauri/src/agent_setup.rs: Unix dirfd/no-follow traversal for approved MCP configs and atomic replacement of new inodes
+- src-tauri/src/agent_setup.rs: Unix dirfd/no-follow traversal and atomic replacement helpers shared by native vault writes
 - src/widgets/vault-agent-panel: panel where users judge read/failure/proposal
 - src/shared/config/mcp-server-launch.ts · src/features/docs-vault-local/model/use-local-vault.ts
   : shared judgment of JSON/TOML launch shape and vault readiness

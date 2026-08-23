@@ -44,7 +44,7 @@ import {
  * | Predicate | What it filters out | Measured |
  * |---|---|---|
  * | **look only at call sites** | "always rendered" is excluded structurally | — |
- * | **if the alternate branch draws something it is a «swap»** | "the parent already animates" is filtered mechanically | 3 sites (`AgentGlobalScopePanel` · `VaultAgentSetupPanel` · `ProjectQuickEditPanel`) |
+ * | **if the alternate branch draws something it is a «swap»** | "the parent already animates" is filtered mechanically | 2 survivor sites (`VaultAgentSetupPanel` · `ProjectQuickEditPanel`) |
  * | **an unpressable root is not a surface** | hover readouts, tour anchors | false-positive rate ~40% → **1 of 11** |
  *
  * Four false positives were **defects in the detector itself** — the interpretation

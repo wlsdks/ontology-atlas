@@ -24,14 +24,11 @@ import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
  * current step, collapse finished ones to a line, and recede the ones not reached
  * yet. **Collapsing, not deleting** — everything collapsed must remain reachable.
  *
- * ## Why not `StepRow` (features)
+ * ## Why this stays local
  *
- * `StepRow` is an **always-expanded** grammar. The map sheet is right to show all
- * three steps at once (there, that is everything), while here verification, repair
- * and commands follow those three, so the same grammar becomes four screenfuls.
- * Rather than putting two behaviours under one name — which is what split
- * `StepCard`/`StepRow` in the first place — this single-consumer grammar lives next
- * to its consumer. It drops to `features` when a second consumer appears.
+ * Verification, repair and commands follow these three steps, so expanding all of
+ * them becomes four screenfuls. This single-consumer collapsible grammar therefore
+ * lives next to its consumer. It drops to `features` when a second consumer appears.
  *
  * ## What collapses and expands is the list-row disclosure grammar (`.ai-row-disclosure`)
  *

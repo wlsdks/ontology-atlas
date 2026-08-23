@@ -3,7 +3,7 @@
 > **판정: `partial`** — "라벨 붙은 그래프를 넘어선, 이름값을 실제로 획득한 경량
 > 온톨로지지만 미완성." 이 문서는 온톨로지 전문가 8인 패널이 "이 시스템이 제대로
 > 된 온톨로지를 표현할 수 있는가"를 심사한 전체 기록이다. 실행 가능한 공백은
-> `docs/plans/ONTOLOGY-STUDIO-PLAN.md` §1(스키마 심화)이 흡수한다. 이 문서는 근거·판정
+> the current `docs/ONTOLOGY-ATLAS-SPEC.md` supersedes the former schema plan. This document preserves the evidence and judgment
 > 원본을 durable 하게 보존한다.
 
 ## 심사단 (8 렌즈)
@@ -92,4 +92,4 @@ canonical SKOS Concept Scheme export 도달 가능.**
 > 선택적 추론.
 
 ---
-*관련: `docs/FOUNDATIONS.md`(인용 이론) · `docs/plans/ONTOLOGY-STUDIO-PLAN.md` §1(이 공백들의 구현 스키마).*
+*Related: `docs/FOUNDATIONS.md` (cited theory) and `docs/ONTOLOGY-ATLAS-SPEC.md` (current schema boundary).*

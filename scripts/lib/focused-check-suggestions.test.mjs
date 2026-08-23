@@ -8,6 +8,7 @@ import {
 } from './focused-check-suggestions.mjs';
 
 const SOURCE_LANGUAGE_COMMAND = 'pnpm source:language';
+const DEAD_CODE_COMMAND = 'pnpm knip';
 
 function commandNames(result) {
   return result.commands.map((row) => row.command);
@@ -17,7 +18,9 @@ function commandNames(result) {
 // keep asserting their own exact ordering, while one dedicated test below owns
 // the invariant that every supported source path adds this shared gate exactly once.
 function domainCommands(result) {
-  return commandNames(result).filter((command) => command !== SOURCE_LANGUAGE_COMMAND);
+  return commandNames(result).filter(
+    (command) => command !== SOURCE_LANGUAGE_COMMAND && command !== DEAD_CODE_COMMAND,
+  );
 }
 
 describe('focused check suggestions', () => {
@@ -95,12 +98,40 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/source-paths.mjs',
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(commandNames(gate), [
+    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND), [
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
     ]);
 
     assert.ok(!commandNames(suggestFocusedChecks(['messages/ko.json'])).includes(SOURCE_LANGUAGE_COMMAND));
+  });
+
+  it('suggests the dead-code analyzer once for every scope, manifest, and analyzer config', () => {
+    const paths = [
+      'src/shared/lib/example.ts',
+      'scripts/quality/dead-code/check.mjs',
+      'cli/src/lib/example.mjs',
+      'mcp/src/example.mjs',
+      'mcp/scripts/verify.mjs',
+      'package.json',
+      'package-lock.json',
+      'pnpm-lock.yaml',
+      'cli/package.json',
+      'cli/pnpm-lock.yaml',
+      'mcp/package.json',
+      'mcp/pnpm-lock.yaml',
+      'next.config.ts',
+      'tsconfig.json',
+      'vitest.config.ts',
+      'playwright.config.ts',
+      'postcss.config.mjs',
+    ];
+
+    for (const path of paths) {
+      const count = commandNames(suggestFocusedChecks([path]))
+        .filter((command) => command === DEAD_CODE_COMMAND).length;
+      assert.equal(count, 1, `${path} must recommend ${DEAD_CODE_COMMAND} exactly once`);
+    }
   });
 
   it('suggests narrow vault tooling tests for vault helper scripts', () => {
@@ -409,12 +440,12 @@ describe('focused check suggestions', () => {
 
   it('suggests direct CLI lib unit tests before aggregate CLI lib gate', () => {
     const result = suggestFocusedChecks([
-      'cli/src/lib/batch-results.mjs',
+      'cli/src/lib/captured-summary.mjs',
       'cli/src/lib/query-result-contract.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test cli/src/lib/batch-results.test.mjs',
+      'pnpm exec node --test cli/src/lib/captured-summary.test.mjs',
       'pnpm exec node --test cli/src/lib/query-result-contract.test.mjs',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
@@ -436,23 +467,6 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands[1].paths, [
       'cli/src/lib/mcp-call.mjs',
       'cli/src/lib/mcp-call.test.mjs',
-    ]);
-  });
-
-  it('suggests the direct CLI vault census helper test', () => {
-    const result = suggestFocusedChecks([
-      'cli/src/lib/vault-census.mjs',
-      'cli/src/lib/vault-census.test.mjs',
-    ]);
-
-    assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test cli/src/lib/vault-census.test.mjs',
-      'pnpm test:cli:lib',
-      'pnpm vault:validate',
-    ]);
-    assert.deepEqual(result.commands[0].paths, [
-      'cli/src/lib/vault-census.mjs',
-      'cli/src/lib/vault-census.test.mjs',
     ]);
   });
 
@@ -916,7 +930,6 @@ describe('focused check suggestions', () => {
       'mcp/README.md',
       'cli/README.md',
       'scripts/migrations/README.md',
-      '.claude/LOOP-PRINCIPLES.md',
       '.claude/rules/testing.md',
       '.claude/skills/ontology-bootstrap/SKILL.md',
     ]);

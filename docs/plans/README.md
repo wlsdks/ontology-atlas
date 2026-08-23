@@ -1,11 +1,6 @@
-# plans/ — 하려고 했던 것의 기록
+# Plans
 
-**착수 시점의 계획**만 여기 산다. 계획은 실행되면서 바뀌고, 바뀐 결과는 코드와
-`docs/CHANGELOG.md` 가 말한다. 그래서 이 파일들은 **현재 상태의 진실원이 아니다.**
-
-⚠️ 가장 흔한 오독: 계획서에 적힌 폐기된 접근을 **현행 선택지**로 읽는 것. 계획은
-"이렇게 하려 했다"이지 "이렇게 되어 있다"가 아니다.
-
-- 여기 넣는 것: 착수 계획 · 단계 정의 · 재구축 로드맵
-- 여기 넣지 않는 것: 오늘 유효한 아키텍처(`docs/ARCHITECTURE.md`), 기능 목록
-  (`docs/FEATURES.md`), 결정 기록(`docs/DECISIONS.md`)
+This folder contains point-in-time plans, not current-state authority. Code,
+`docs/CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/FEATURES.md`, and
+`docs/DECISIONS.md` describe what is current. Do not revive a retired approach
+from a plan without a new decision.

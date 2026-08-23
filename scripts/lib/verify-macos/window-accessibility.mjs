@@ -2,7 +2,6 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fail } from "./cli-args.mjs";
 import { processIds, readBundleIdentifier } from "./process-lock.mjs";
-import { printWindowDiagnostics } from "./visual-evidence.mjs";
 import { ACCESSIBILITY_TEXT_MAX_CHILDREN_PER_NODE, ACCESSIBILITY_TEXT_MAX_DEPTH, ACCESSIBILITY_TEXT_TIMEOUT_MS, ACCESSIBILITY_WINDOW_TIMEOUT_MS } from "./webview-env.mjs";
 
 export function parseOnscreenWindows(payload, ownerPids) {
@@ -541,4 +540,89 @@ export function verifyAccessibilityText({ appPath, executablePath, requiredText 
       `${path.basename(appPath)} is running but its Accessibility tree did not prove the required app content: ${unmetRequirement}.`,
     );
   }
+}
+
+
+export function formatWindowDiagnosticsPayload({
+  pids,
+  windows,
+  accessibilityRows,
+  accessibilityError = null,
+  captureRows = [],
+}) {
+  return {
+    pids,
+    windows: windows.map((window) => ({
+      windowNumber: window.kCGWindowNumber,
+      ownerPid: window.kCGWindowOwnerPID,
+      ownerName: window.kCGWindowOwnerName,
+      name: window.kCGWindowName,
+      bounds: window.kCGWindowBounds,
+      layer: window.kCGWindowLayer,
+      onscreen: window.kCGWindowIsOnscreen,
+      alpha: window.kCGWindowAlpha ?? null,
+      sharingState: window.kCGWindowSharingState ?? null,
+      storeType: window.kCGWindowStoreType ?? null,
+      memoryUsage: window.kCGWindowMemoryUsage ?? null,
+    })),
+    accessibilityRows,
+    ...(accessibilityError ? { accessibilityError } : {}),
+    captureRows: captureRows.map((row) => ({
+      windowNumber: row.id,
+      ownerName: row.ownerName,
+      sharingState: row.sharingState ?? null,
+      alpha: row.alpha ?? null,
+      ok: row.ok,
+      method: row.method,
+      stderr: row.stderr,
+      bytes: row.bytes,
+      artifactPath: row.artifactPath ?? null,
+    })),
+  };
+}
+
+
+export function collectWindowDiagnostics({
+  executablePath,
+  windows = null,
+  captureRows = [],
+  allowAccessibilityFailure = false,
+  processIdsFn = processIds,
+  readOnscreenWindowsFn = readOnscreenWindows,
+  readAccessibilityWindowsFn = readAccessibilityWindows,
+} = {}) {
+  const pids = processIdsFn(executablePath);
+  const resolvedWindows = windows ?? (pids.length > 0 ? parseOnscreenWindows(readOnscreenWindowsFn(), pids) : []);
+  let accessibilityRows = [];
+  let accessibilityError = null;
+  if (pids.length > 0) {
+    try {
+      if (allowAccessibilityFailure && readAccessibilityWindowsFn === readAccessibilityWindows) {
+        const accessibility = readAccessibilityWindowsBestEffort(pids);
+        accessibilityRows = parseAccessibilityWindowRows(accessibility.payload);
+        accessibilityError = accessibility.error;
+      } else {
+        accessibilityRows = parseAccessibilityWindowRows(readAccessibilityWindowsFn(pids));
+      }
+    } catch (error) {
+      if (!allowAccessibilityFailure) throw error;
+      accessibilityError = error instanceof Error ? error.message : String(error);
+    }
+  }
+  return formatWindowDiagnosticsPayload({
+    pids,
+    windows: resolvedWindows,
+    accessibilityRows,
+    accessibilityError,
+    captureRows,
+  });
+}
+
+
+export function printWindowDiagnostics({ executablePath, windows = null, captureRows = [] }) {
+  console.log(
+    `[desktop-app-verify:window-diagnostics] ${JSON.stringify(
+      collectWindowDiagnostics({ executablePath, windows, captureRows }),
+    )}`,
+  );
 }

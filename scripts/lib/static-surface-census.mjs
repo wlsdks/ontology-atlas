@@ -145,11 +145,3 @@ export function censusStaticSurfaces(root = process.cwd()) {
   }
   return { badges, cards, cardCombos, scanned };
 }
-
-/** The shape to paste into the ledger — never hand-edited. */
-export function ledgerLines(counts) {
-  return [...counts.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([file, count]) => `  ["${file.split(path.sep).join('/')}", ${count}],`)
-    .join('\n');
-}
