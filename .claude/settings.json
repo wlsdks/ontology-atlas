@@ -1,6 +1,21 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "_comment": "Hook paths must be absolutised through $CLAUDE_PROJECT_DIR. With a relative path, any shell whose cwd is not the repository root (a worktree, a subagent scratch directory, a monorepo subfolder) fails to find the file, and the result is not a block but a non-blocking status code: the guard disappears silently and the command runs. An npm publish guard defeated that way removes the whole reason this repository has hooks. The `:-.` fallback exists so clients without the variable keep the previous behaviour; it is not the normal path.",
+  "_comment_permissions": "Deny rules are the one guard that needs no path to resolve and no workspace trust: Claude Code applies them immediately and evaluates them ahead of ask, allow, and any PreToolUse hook. Two standing rules — `local-first.md` \"never scan password, credential, or key files from the user's disk\" and `forbidden.md` \"never commit service accounts, API keys, or .env* files\" — had no mechanism at all. .gitignore stops a secret being committed; nothing stopped one being read into a transcript and sent to a model. The .env names are enumerated rather than globbed because a deny rule cannot carry an exception and `.env.example` is tracked, documented, and scanned by the source-language gate. `tests/contract/secret-read-guard.contract.test.ts` derives the list from .gitignore so the two cannot drift.",
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.prod)",
+      "Read(.env.development.local)",
+      "Read(.env.test.local)",
+      "Read(.env.production.local)",
+      "Read(**/*.pem)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(~/.ssh/**)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {

@@ -594,8 +594,14 @@ describe('focused check suggestions', () => {
       'scripts/claude-hooks.test.mjs',
     ]);
 
-    // Every path here is also inventoried by `agent-files`, so both gates apply.
-    assert.deepEqual(domainCommands(result), ['pnpm test:claude:hooks', 'pnpm agents:check']);
+    // Every path here is also inventoried by `agent-files`, and `.claude/settings.json`
+    // carries the `permissions.deny` rules the secret-read guard derives from
+    // `.gitignore`, so all three gates apply.
+    assert.deepEqual(domainCommands(result), [
+      'pnpm test:claude:hooks',
+      'pnpm agents:check',
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts',
+    ]);
   });
 
   it('routes the GitHub Pages deploy workflow to the desktop readiness contract', () => {
@@ -1034,7 +1040,7 @@ describe('focused check suggestions', () => {
       // `.claude/rules/testing.md` and the skill are agent files, and a rule's
       // globs are what the nested `AGENTS.md` pointers derive from.
       'pnpm agents:check',
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts',
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts',
       'pnpm test:mcp:docs',
       'pnpm vault:validate',
     ]);
@@ -1398,7 +1404,7 @@ describe('agent-file surface', () => {
 
   it('recommends the paired contracts when either implementation moves alone', () => {
     const contract =
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts';
+      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts';
     for (const path of [
       'cli/src/lib/agent-files.mjs',
       'src/views/docs-vault/lib/agent-files.ts',
@@ -1408,6 +1414,8 @@ describe('agent-file surface', () => {
       'AGENTS.md',
       'CLAUDE.md',
       '.claude/rules/forbidden.md',
+      '.claude/settings.json',
+      '.gitignore',
       '.claude/skills/po-pass/SKILL.md',
       '.agents/skills/po-pass/SKILL.md',
     ]) {

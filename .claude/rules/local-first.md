@@ -14,10 +14,9 @@ place **Layer 2, Atlas Network** above it: a specification, a hub registry, and
 paid team sync only after demand exists.
 
 Layer 2 is optional and may exist only while satisfying the six trust promises
-in `forbidden.md`. Someone who never uses it loses no Layer 1 capability. An LLM
-connection—either the user's own API key or a local model—is allowed only when
-the user opts in, the UI states what leaves the computer, and a local audit log
-records each transfer.
+in `forbidden.md`. An LLM connection—the user's own API key or a local
+model—is allowed only on opt-in, with the UI stating what leaves the computer
+and a local audit log recording each transfer.
 
 ACP and externally connected MCP agents are a separate provider boundary. Atlas
 must distinguish its local stdio MCP child from the coding agent's provider
@@ -55,16 +54,16 @@ provider-owned transfers.
 
 ## Login
 
-- No login route exists. R10 permanently removed login, sign-up, account, and
-  password reset, along with `@/features/user-auth`,
-  `@/features/permissions`, and `@/features/account-scope`.
-- If cloud collaboration opens later, design its authentication and permissions
-  then. Do not pre-install them in Layer 1.
+- No login route exists. R10 removed those routes and `@/features/user-auth`,
+  `@/features/permissions`, and `@/features/account-scope` with them.
+- If cloud collaboration opens later, design its authentication then. Do not
+  pre-install it in Layer 1.
 
 ## Security
 
-- Never scan password, credential, or key files from the user's disk
-  automatically.
+- Never scan password, credential, or key files from the user's disk.
+  `permissions.deny` in `.claude/settings.json` enforces the read side; it needs
+  no path to resolve and outranks every hook.
 - Skip dotfiles and system directories such as `.env.local` and `.git/` while
   reading a vault.
 - Never send vault data over HTTP, WebSocket, or another external interface

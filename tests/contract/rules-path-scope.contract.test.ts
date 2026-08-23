@@ -124,6 +124,47 @@ describe("`.claude/rules` path scoping contract", () => {
   });
 
   /**
+   * `CLAUDE.md` tells the reader which rules load every turn and which wait for a
+   * matching path. That sentence is how someone decides where a new rule goes,
+   * and nothing checked it: the resident set is guarded above, but the wrapper's
+   * description of it could go stale the moment a rule was added or a
+   * frontmatter block was opened, and the reader would be confidently wrong.
+   *
+   * Both sides are computed rather than written down. `documentation.md` allows
+   * a prose gate only when it derives its expectation from code; a hand-written
+   * list here would be the pinned sentence that rule forbids.
+   */
+  it("describes its own loading conditions correctly in CLAUDE.md", () => {
+    const wrapper = readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8");
+    const section = wrapper.slice(wrapper.indexOf("## Claude Code loading"));
+    const sentence = section.slice(0, section.indexOf("\n\n`.claude/agents/`"));
+
+    const named = new Set([...sentence.matchAll(/`([a-z-]+)`/g)].map((m) => m[1]));
+    const resident = rules.filter((r) => r.paths === null).map((r) => r.file.replace(/\.md$/, ""));
+    const conditional = rules.filter((r) => r.paths !== null).map((r) => r.file.replace(/\.md$/, ""));
+
+    for (const name of [...resident, ...conditional]) {
+      expect(
+        named.has(name),
+        `CLAUDE.md's loading sentence never names \`${name}\`, so a reader cannot tell when it loads`,
+      ).toBe(true);
+    }
+  });
+
+  it("leaves no rule unmentioned by the two files every agent reads", () => {
+    const both =
+      readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8")
+      + readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
+    const unmentioned = rules
+      .map((r) => r.file)
+      .filter((file) => !both.includes(file.replace(/\.md$/, "")));
+    expect(
+      unmentioned,
+      `these rules exist but nothing an agent reads points at them:\n${unmentioned.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  /**
    * The rules are only part of what loads before the task does. `AGENTS.md` and
    * the `CLAUDE.md` wrapper that imports it are read every turn too, and the
    * 32 KiB Codex cap is far above what is healthy — it is a truncation limit,
