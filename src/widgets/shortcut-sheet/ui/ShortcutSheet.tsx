@@ -179,7 +179,7 @@ const SECTIONS: ShortcutSection[] = [
     surface: "global",
     rows: [
       { keys: ["↑", "↓"], labelKey: "moveBetweenResults" },
-      { keys: ["↵"], labelKey: "openSelectedProject" },
+      { keys: ["↵"], labelKey: "openSelectedResult" },
       { keys: ["Esc"], labelKey: "close" },
     ],
   },

@@ -13,20 +13,125 @@ async function settleCamera(page: Page) {
   await expect
     .poll(
       async () => {
-        const before = await readCamera(page);
-        await page.waitForTimeout(250);
-        const after = await readCamera(page);
-        if (!before || !after) return false;
-        return (
-          Math.abs(before.x - after.x) < 0.02 &&
-          Math.abs(before.y - after.y) < 0.02 &&
-          Math.abs(before.scale - after.scale) < 0.0002
-        );
+        const samples: Camera[] = [];
+        for (let index = 0; index < 3; index += 1) {
+          const camera = await readCamera(page);
+          if (!camera) return false;
+          samples.push(camera);
+          if (index < 2) await page.waitForTimeout(250);
+        }
+        return samples.slice(1).every((camera, index) => {
+          const before = samples[index];
+          return (
+            Math.abs(before.x - camera.x) < 0.02 &&
+            Math.abs(before.y - camera.y) < 0.02 &&
+            Math.abs(before.scale - camera.scale) < 0.0002
+          );
+        });
       },
       { timeout: 30_000, message: "카메라가 정착하지 않아 프레이밍을 비교할 수 없다" },
     )
     .toBe(true);
 }
+
+test("짧은 선택 인스펙터도 실제 자유 영역으로 카메라를 민다", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await seedFirstRunSeen(page);
+  await page.addInitScript(() => {
+    window.localStorage.setItem("demo:sample-source:v1", "storefront");
+    window.sessionStorage.setItem("demo:first-run-starter-dismissed:v1", "1");
+  });
+  await page.goto(
+    "/en/topology/?e2e=1&guides=off&p=element%3Acart-session&open=capability%3Acart%2Cdomain%3Aorder%2Cproject%3Astorefront",
+    { waitUntil: "domcontentloaded" },
+  );
+
+  await expect(page.getByTestId("topology-v2-detail-panel")).toBeVisible({
+    timeout: 20_000,
+  });
+  await settleCamera(page);
+
+  const measured = await page.evaluate(() => {
+    const probe = window.__atlasMap;
+    const canvas = document.querySelector<HTMLElement>(
+      '[data-testid="topology-map-v2-canvas"]',
+    );
+    const panel = document.querySelector<HTMLElement>(
+      '[data-testid="topology-node-popover-positioner"]',
+    );
+    const selectedId = probe?.selection().nodeId;
+    const selected = probe?.nodes().find((node) => node.id === selectedId);
+    if (!probe || !canvas || !panel || !selected) return null;
+    const canvasRect = canvas.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const selectedX = canvasRect.left + selected.x;
+    return {
+      marker: panel.dataset.topologyCameraObstacle,
+      panelHeightRatio: panelRect.height / canvasRect.height,
+      panelWidth: panelRect.width,
+      panelLeft: panelRect.left,
+      canvasRight: canvasRect.right,
+      freeCenterX: (canvasRect.left + panelRect.left) / 2,
+      canvasCenterX: canvasRect.left + canvasRect.width / 2,
+      selectedX,
+    };
+  });
+
+  expect(measured, "짧은 선택 인스펙터 기하를 측정하지 못했다").not.toBeNull();
+  expect(
+    measured!.panelHeightRatio,
+    "이 fixture가 60% 휴리스틱 아래의 짧은 인스펙터를 만들지 않았다",
+  ).toBeLessThan(0.6);
+  expect(measured!.marker).toBe("side-panel");
+  expect(measured!.panelWidth).toBeGreaterThan(300);
+  expect(measured!.panelLeft).toBeGreaterThan(measured!.canvasCenterX);
+  expect(measured!.panelLeft).toBeLessThan(measured!.canvasRight);
+  expect(Math.abs(measured!.selectedX - measured!.freeCenterX)).toBeLessThan(
+    Math.abs(measured!.selectedX - measured!.canvasCenterX),
+  );
+});
+
+test("390px의 넓은 하단 시트는 수평 카메라 인셋으로 오인되지 않는다", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await seedFirstRunSeen(page);
+  await page.addInitScript(() => {
+    window.localStorage.setItem("demo:sample-source:v1", "storefront");
+    window.sessionStorage.setItem("demo:first-run-starter-dismissed:v1", "1");
+  });
+  await page.goto(
+    "/ko/topology/?e2e=1&guides=off&p=element%3Acart-session&open=capability%3Acart%2Cdomain%3Aorder%2Cproject%3Astorefront",
+    { waitUntil: "domcontentloaded" },
+  );
+
+  const panel = page.getByTestId("topology-node-popover-positioner");
+  await expect(panel).toBeVisible({ timeout: 20_000 });
+  await settleCamera(page);
+  const withWideSheet = await readCamera(page);
+  expect(withWideSheet).not.toBeNull();
+
+  const geometry = await page.evaluate(() => {
+    const canvas = document.querySelector<HTMLElement>('[data-testid="topology-map-v2-canvas"]');
+    const obstacle = document.querySelector<HTMLElement>('[data-testid="topology-node-popover-positioner"]');
+    if (!canvas || !obstacle) return null;
+    const canvasRect = canvas.getBoundingClientRect();
+    const obstacleRect = obstacle.getBoundingClientRect();
+    return {
+      marker: obstacle.dataset.topologyCameraObstacle,
+      widthRatio: obstacleRect.width / canvasRect.width,
+      intersects: obstacleRect.left < canvasRect.right && obstacleRect.right > canvasRect.left,
+    };
+  });
+  expect(geometry).not.toBeNull();
+  expect(geometry!.marker).toBe("side-panel");
+  expect(geometry!.widthRatio).toBeGreaterThanOrEqual(0.6);
+  expect(geometry!.intersects).toBe(true);
+  expect(
+    await page.evaluate(() => window.__atlasMap?.obstacleInsets() ?? null),
+    "a full-width mobile sheet must contribute no left/right camera inset",
+  ).toEqual({ left: 0, right: 0 });
+});
 
 /**
  * Reproduces the actual geometry when the agent dock appears, without an ACP process.

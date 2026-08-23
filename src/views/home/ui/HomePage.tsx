@@ -218,7 +218,7 @@ import {
   deriveDeeplinkAncestorExpansion,
   clearVaultScopedRouteState,
 } from "../model/url-state";
-import { useVaultIdentityScope } from "@/features/vault-scope";
+import { useVaultSessionIdentityScope } from "@/features/vault-scope";
 import {
   computeTopologyShortestPath,
   formatTopologyPathAgentPacket,
@@ -426,9 +426,9 @@ function HomePageImpl() {
   // an app-wide store and handed down to the map canvas; the DOM glyphs subscribe
   // to the same store themselves, so both surfaces swap in lockstep.
   const canvasBackground = useCanvasBackground();
-  // 3D view (2026-08-18, opt-in): the map as a dome of concentric kind rings.
+  // 3D view (2026-08-18, opt-in): either the ownership Dome or the relation-driven Cloud.
   const view3d = useView3d();
-  /** What decides the 3D dome's bearing — see the `MapArrangement` doc-block. */
+  /** Which structural question places nodes in 3D — see the `MapArrangement` doc-block. */
   const mapArrangement = useMapArrangement();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
@@ -860,7 +860,7 @@ function HomePageImpl() {
    * back A→B→A leaves the screen **completely silent** for a slug that really is
    * missing this time.
    */
-  const vaultIdentity = useVaultIdentityScope();
+  const vaultIdentity = useVaultSessionIdentityScope();
   const vaultIdentityRef = useRef<string | null>(null);
   /**
    * Whether it is yet safe to diagnose "not found". The unresolved toast and the
@@ -2290,6 +2290,7 @@ function HomePageImpl() {
     handoffSource,
     authoredSignificance,
     docFreshnessIndex,
+    editBaselineScopeKey: deeplinkSourceReady ? vaultIdentity : null,
     updatedAgoNowMs,
     formatUpdatedLabel,
     agentActivityStatus,
@@ -2479,7 +2480,11 @@ function HomePageImpl() {
     baseState: baseRenderedIndexState,
     meaningEditorOpen: Boolean(meaningEditorIntent),
     selectionActive: topologySelectionActive,
-    selectionManualExpand: indexManualExpandDuringSelection,
+    // `?index=expanded` is an explicit deep-link contract (not merely the
+    // stored default). Legacy `/ontology?node=…` redirects carry it so the
+    // requested INDEX context stays visible beside the selected node.
+    selectionManualExpand:
+      indexManualExpandDuringSelection || indexState === "expanded",
     graphEmpty: topologyGraphEmpty,
     emptyManualExpand: indexManualExpandWhileEmpty,
     agentDockOpen: agentDockRequestedOpen,
@@ -5434,7 +5439,7 @@ function HomePageImpl() {
                     focus={{ selectedSlug: canvasSelectedSlug }}
                     /* Closes the defect where switching vaults mid-session (sample →
                        local) drew the new graph with the previous graph's camera. The
-                       single source is `useVaultIdentityScope()` above — the **same
+                       single source is `useVaultSessionIdentityScope()` above — the **same
                        signal** the deep-link cleanup uses, because "which vault am I
                        looking at" must not be answered differently per surface.
                        `deeplinkSourceReady` wraps it for the same reason as its neighbour
@@ -5856,6 +5861,7 @@ function HomePageImpl() {
           <div
             ref={nodePopoverPositionerRef}
             data-testid="topology-node-popover-positioner"
+            data-topology-camera-obstacle="side-panel"
             data-position-contract="selected-inspector-aligns-to-right-inset"
             data-fixed-surface-role="selected-node-inspector"
             data-fixed-surface-measure-target="topology-node-popover"

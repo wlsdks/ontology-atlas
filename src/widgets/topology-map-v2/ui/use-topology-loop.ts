@@ -416,18 +416,17 @@ export interface UseTopologyLoopArgs {
    */
   glyphSet?: GlyphSet;
   /**
-   * Canvas background set — `"dot"` (default, a static blueprint grid),
-   * `"flow"`, `"web"` (proximity constellation), or `"gravity"`. The last
-   * three are cursor-reactive particle backgrounds and obey ambient sleep.
+   * Canvas background set — `"dot"` (default), `"web"` (relation mesh), or
+   * `"depth"` (perspective grid). All remain restrained, non-particle fields.
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D view (2026-08-18, opt-in) — relays the map onto a dome of concentric
-   * kind rings (`model/dome-view.ts`). Draw, hit-testing, DOM anchors, and the
-   * inspection hook all read the same frame map. Omitted keeps 2D.
+   * 3D view (2026-08-18, opt-in) — relays the map into the ownership Dome or
+   * relation-driven Cloud (`model/dome-view.ts`). Draw, hit-testing, DOM anchors,
+   * and the inspection hook all read the same frame map. Omitted keeps 2D.
    */
   view3d?: boolean;
-  /** What the dome orients by — `model/dome-view.ts`'s `DomeArrangement`. */
+  /** Which 3D structure is drawn — ownership Dome or coupling Cloud. */
   mapArrangement?: MapArrangement;
   /** 3D reframe input: is the detail panel covering the viewport (`TopologyMapV2` JSDoc). */
   detailPanelVisible?: boolean;
@@ -5420,6 +5419,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const { width, height } = viewportRef.current;
         if (!camera) return null;
         return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
+      },
+      /**
+       * Live horizontal obstruction measured by the same product function the
+       * camera consumes. This distinguishes a desktop side inspector from a
+       * mobile full-width sheet without copying the classification into E2E.
+       */
+      obstacleInsets: () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return null;
+        const box = canvas.getBoundingClientRect();
+        if (box.width <= 0 || box.height <= 0) return null;
+        return measureCanvasInsets(canvas, {
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          height: box.height,
+        });
       },
       /**
        * Dome pose — where the dome is looking and whether it still spins by

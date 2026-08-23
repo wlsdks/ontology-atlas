@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { seedFirstRunSeen } from "./first-run-seed";
 import { useDogfoodSample } from "./sample-source";
 
 /**
@@ -224,5 +225,31 @@ test.describe("ontology view UI", () => {
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
     expect(overflow).toBe(false);
+  });
+
+  test("legacy node redirect keeps the explicitly requested INDEX beside the selection", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1512, height: 900 });
+    await seedFirstRunSeen(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem("demo:sample-source:v1", "dogfood");
+    });
+
+    await page.goto("/en/ontology/?node=capability:mcp-server");
+
+    await expect(page).toHaveURL(
+      /\/en\/topology\/\?index=expanded&p=capability%3Amcp-server/,
+    );
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-topology-index",
+      "expanded",
+    );
+    await expect(page.getByTestId("topology-index-panel")).toBeVisible();
+    await expect(page.getByTestId("topology-v2-detail-panel")).toBeVisible();
+    await expect(page.getByTestId("topology-v2-detail-panel")).toHaveAttribute(
+      "data-selected-node-id",
+      "capability:mcp-server",
+    );
   });
 });

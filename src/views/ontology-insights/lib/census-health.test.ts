@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { computeCensusHealth } from "./census-health";
+import { computeCensusHealth, computeInsightsCensus } from "./census-health";
 
 function node(id: string, kind: string, opts: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode {
   return {
@@ -20,6 +20,34 @@ function edge(from: string, to: string, type: string): KnowledgeGraphEdge {
 }
 
 describe("computeCensusHealth", () => {
+  it("excludes the reserved reader guide from kind sums and density", () => {
+    const nodes = [
+      node("project:atlas", "project"),
+      node("capability:inspect", "capability"),
+      node("capability:verify", "capability"),
+      node("vault-readme:README", "vault-readme"),
+    ];
+    const edges = [
+      edge("project:atlas", "capability:inspect", "contains"),
+      edge("project:atlas", "capability:verify", "contains"),
+      edge("capability:inspect", "capability:verify", "depends_on"),
+    ];
+
+    const census = computeInsightsCensus(nodes, edges);
+    expect(census.conceptCount).toBe(3);
+    expect(census.relationCount).toBe(3);
+    expect(Object.fromEntries(census.kindDistribution)).toEqual({
+      project: 1,
+      capability: 2,
+    });
+    expect(
+      Array.from(census.kindDistribution.values()).reduce((sum, count) => sum + count, 0),
+    ).toBe(census.conceptCount);
+
+    const health = computeCensusHealth(nodes, edges, { orphans: [], warnings: [] });
+    expect(health.edgesPerConcept).toBe(1);
+  });
+
   it("derives edge/concept ratio, orphans, cycles, domain membership %, evidence %", () => {
     const nodes = [
       node("domain:views", "domain"),

@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePrefersReducedMotion } from "./use-prefers-reduced-motion";
+
+const noopSubscribe = () => () => {};
 
 /**
  * Counts 0 → target once on mount.
@@ -11,10 +13,12 @@ import { usePrefersReducedMotion } from "./use-prefers-reduced-motion";
  */
 export function useCountUp(target: number, durationMs = 400): number {
   const reduce = usePrefersReducedMotion();
-  // Start at the target when there's nothing to animate (reduced motion, or no
-  // rAF as on the server) so no synchronous setState is needed in the effect.
-  const canAnimate = !reduce && typeof requestAnimationFrame === "function";
-  const [value, setValue] = useState(canAnimate ? 0 : target);
+  // useSyncExternalStore keeps the server and the hydration render on the exact
+  // target, then flips once React owns the client. The animated 0 therefore never
+  // disagrees with server HTML, and no synchronous setState effect is needed.
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const canAnimate = hydrated && !reduce && typeof requestAnimationFrame === "function";
+  const [value, setValue] = useState(0);
   const introDone = useRef(false);
   const synced = useRef(false);
   /**
@@ -35,9 +39,8 @@ export function useCountUp(target: number, durationMs = 400): number {
   }, [target]);
 
   useEffect(() => {
-    if (introDone.current) return;
+    if (!canAnimate || introDone.current) return;
     introDone.current = true;
-    if (!canAnimate) return; // already at target
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -49,10 +52,9 @@ export function useCountUp(target: number, durationMs = 400): number {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // Intro runs exactly once (guarded by introDone); duration read at mount and
-    // the live target arrives through targetRef.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Intro runs exactly once (guarded by introDone); the live target arrives
+    // through targetRef. `canAnimate` turns true only after hydration.
+  }, [canAnimate, durationMs]);
 
   // After mount, keep the displayed value synced to later target changes (skip
   // the initial run so it never clobbers the intro animation).
@@ -64,5 +66,5 @@ export function useCountUp(target: number, durationMs = 400): number {
     setValue(target);
   }, [target]);
 
-  return value;
+  return canAnimate ? value : target;
 }

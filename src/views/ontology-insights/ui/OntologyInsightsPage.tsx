@@ -36,7 +36,6 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   buildOntologyTree,
   computeEdgeTypeDistribution,
-  computeKindDistribution,
   rankAllByDegree,
 } from "@/shared/lib/ontology-tree";
 import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
@@ -70,7 +69,7 @@ import {
   isDoNextReviewId,
   resolveDoNextReviewState,
 } from "../lib/review-loop";
-import { computeCensusHealth } from "../lib/census-health";
+import { computeCensusHealth, computeInsightsCensus } from "../lib/census-health";
 import { buildVaultHealthRepair } from "../lib/vault-health-repair";
 import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
@@ -254,12 +253,17 @@ export function OntologyInsightsPage() {
 
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const edges = insight?.edges ?? EMPTY_EDGES;
-  const totalNodes = nodes.length;
+  const {
+    conceptCount: totalNodes,
+    relationCount: totalEdges,
+    kindDistribution: kindDist,
+  } = useMemo(
+    () => computeInsightsCensus(nodes, edges),
+    [nodes, edges],
+  );
   /** Is the tab body drawn at all? If it falls through to an empty state, the badge must not state a number either. */
-  const hasConcepts = (insight?.nodes.length ?? 0) > 0;
-  const totalEdges = edges.length;
+  const hasConcepts = totalNodes > 0;
 
-  const kindDist = useMemo(() => computeKindDistribution(nodes), [nodes]);
   const kindRows = useMemo(
     () =>
       Array.from(kindDist.entries())

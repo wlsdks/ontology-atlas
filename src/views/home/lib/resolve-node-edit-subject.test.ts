@@ -104,7 +104,7 @@ describe("hasNodeMtimeConflict", () => {
         sourceSlug: "capabilities/foo",
         baselineFreshnessIso: "2026-07-24T00:00:00.000Z",
         currentFreshnessIso: "2026-07-24T00:00:00.000Z",
-        baselineCapturedAtMs: 0,
+        baselineSelfEditAtMs: null,
         selfEditTimestamps: new Map(),
       }),
     ).toBe(false);
@@ -116,7 +116,7 @@ describe("hasNodeMtimeConflict", () => {
         sourceSlug: "capabilities/foo",
         baselineFreshnessIso: "2026-07-24T00:00:00.000Z",
         currentFreshnessIso: "2026-07-24T01:00:00.000Z",
-        baselineCapturedAtMs: 0,
+        baselineSelfEditAtMs: null,
         selfEditTimestamps: new Map(),
       }),
     ).toBe(true);
@@ -128,9 +128,21 @@ describe("hasNodeMtimeConflict", () => {
         sourceSlug: "capabilities/foo",
         baselineFreshnessIso: "2026-07-24T00:00:00.000Z",
         currentFreshnessIso: "2026-07-24T01:00:00.000Z",
-        baselineCapturedAtMs: 50,
+        baselineSelfEditAtMs: null,
         selfEditTimestamps: new Map([["capabilities/foo", 100]]),
       }),
     ).toBe(false);
+  });
+
+  it("is true when the self-edit record has not advanced since the baseline", () => {
+    expect(
+      hasNodeMtimeConflict({
+        sourceSlug: "capabilities/foo",
+        baselineFreshnessIso: "2026-07-24T00:00:00.000Z",
+        currentFreshnessIso: "2026-07-24T01:00:00.000Z",
+        baselineSelfEditAtMs: 100,
+        selfEditTimestamps: new Map([["capabilities/foo", 100]]),
+      }),
+    ).toBe(true);
   });
 });

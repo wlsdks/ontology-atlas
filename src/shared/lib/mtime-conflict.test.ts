@@ -73,6 +73,25 @@ describe("hasUnaccountedMtimeChange", () => {
     ).toBe(true);
   });
 
+  it("uses a snapshotted self-edit record as a version when one is available", () => {
+    expect(
+      hasUnaccountedMtimeChange({
+        baseline: 100,
+        current: 200,
+        selfEditAtMs: 150,
+        baselineSelfEditAtMs: 150,
+      }),
+    ).toBe(true);
+    expect(
+      hasUnaccountedMtimeChange({
+        baseline: 100,
+        current: 200,
+        selfEditAtMs: 250,
+        baselineSelfEditAtMs: 150,
+      }),
+    ).toBe(false);
+  });
+
   it("works with ISO freshness strings as well as numeric mtimes", () => {
     expect(
       hasUnaccountedMtimeChange({

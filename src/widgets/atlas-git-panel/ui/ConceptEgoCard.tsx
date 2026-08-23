@@ -18,13 +18,13 @@ import { controlClass } from '@/shared/ui/control-class';
  * ## What it carries (2026-08-02 expansion)
  *
  * It used to be three cells (domain · evidence document · connection count),
- * while the graph node already carried a **one-line summary, an agent name and
+ * while the graph node already carried a **one-line summary, an agent reference and
  * a project** that the screen was not using — withholding what you already know
  * is an omission, not a demotion.
  *
  * The order is the order a person reads in: name → **one-line summary** → what
- * it belongs to → where it is written down → **what to call it when talking to
- * an agent** → what it connects to. The last two correspond to this product's
+ * it belongs to → where it is written down → **the reference an agent can use**
+ * → what it connects to. The last two correspond to this product's
  * two users.
  *
  * ⚠️ **A missing field gets no slot** — a cell nobody fills is misinformation,
@@ -55,7 +55,7 @@ export function ConceptEgoCard({
       ? [{ label: t("egoProject"), value: ego.projectLabels.join(", ") }]
       : []),
     { label: t("egoDoc"), value: ego.docSlug, mono: true },
-    { label: t("egoAgentName"), value: ego.agentSlug, mono: true },
+    { label: t("egoAgentReference"), value: ego.agentSlug, mono: true },
   ];
 
   const bearings = EGO_BEARINGS.map((bearing) => ({

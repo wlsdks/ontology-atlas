@@ -118,6 +118,41 @@ describe("DomainCapacityBar", () => {
     expect(wide).toMatch(/w-\[\d+px\]/);
   });
 
+  it("renders all nine current English Storefront tails inside the measured 192px column", () => {
+    const storefrontRows = [
+      { capabilityCount: 7, elementCount: 10 },
+      { capabilityCount: 8, elementCount: 8 },
+      { capabilityCount: 6, elementCount: 9 },
+      { capabilityCount: 4, elementCount: 10 },
+      { capabilityCount: 8, elementCount: 6 },
+      { capabilityCount: 5, elementCount: 8 },
+      { capabilityCount: 6, elementCount: 5 },
+      { capabilityCount: 5, elementCount: 4 },
+      { capabilityCount: 5, elementCount: 1 },
+    ];
+
+    expect(storefrontRows).toHaveLength(9);
+    for (const [index, row] of storefrontRows.entries()) {
+      const text = `capabilities ${row.capabilityCount} · elements ${row.elementCount}`;
+      const { unmount } = render(
+        <DomainCapacityBar
+          row={{
+            id: `domain:${index}`,
+            title: `Domain ${index}`,
+            total: row.capabilityCount + row.elementCount,
+            ...row,
+          }}
+          labels={{ capabilityUnit: "capabilities", elementUnit: "elements" }}
+        />,
+      );
+      const breakdown = screen.getByText(text);
+      const tail = breakdown.parentElement as HTMLElement;
+      expect(tail).toHaveClass("w-[192px]");
+      expect(breakdown).toHaveTextContent(text);
+      unmount();
+    }
+  });
+
   it("floors the fill at zero when maxTotal is zero (empty vault guard)", () => {
     render(
       <DomainCapacityBar

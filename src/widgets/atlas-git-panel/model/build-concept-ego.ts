@@ -42,9 +42,9 @@ export interface ConceptEgo {
   /** The human-written one-line summary — the **first fact a person reads** on this card. */
   summary: string | null;
   /**
-   * The name used to point an agent at this concept — MCP/CLI take it verbatim.
-   * This product has two users, human and agent, so carrying only the name a
-   * human reads shows half of it.
+   * The reference used to point an agent at this concept — MCP/CLI take it
+   * verbatim. This product has two users, human and agent, so carrying only the
+   * name a person reads shows half of it.
    */
   agentSlug: string | null;
   /** Names of the projects it belongs to — where a multi-project vault splits. */

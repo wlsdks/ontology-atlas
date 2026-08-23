@@ -1,6 +1,7 @@
 /**
- * 3D view (dome view) — an opt-in mode that re-lays the map out as a **dome of
- * concentric kind rings**. The 「3D」 chip in the top toolbar turns it on.
+ * 3D view — an opt-in mode with two truthful arrangements: the **Dome** lays
+ * ownership onto concentric kind rings; the **Cloud** lets relations place nodes
+ * freely across all three axes. The top toolbar's 3D picker chooses between them.
  *
  * **3D here is a different layout, not a projection tweak.** The first
  * implementation (2026-08-18, morning) kept the 2D placement and only added a
@@ -9,13 +10,14 @@
  * project at the apex, then a domain ring, a capability ring, an element ring. A
  * node's angle on its ring comes from its containment parent (children fan out
  * inside the parent's sector), so both z and angle carry **typed facts**: height
- * = the kind's containment tier, angle = ownership.
+ * = the kind's containment tier, angle = ownership. Cloud has a separate
+ * relation-force derivation documented beside `buildCouplingCloudTargets` below.
  *
  * **Why opt-in rather than default.** Turning the same data into a dome
  * multiplies edge crossings (hero measurement 58.0 → 190.7, 3.29×; crossing
  * minimisation dominates graph readability, Purchase 1997). So the default map
- * stays 2D and the dome is for reading structure *as shape*. This mode's measured
- * cost is in `docs/DECISIONS.md`, entry 2026-08-18.
+ * stays 2D; 3D is for asking either the ownership or coupling question as shape.
+ * The measured cost is in `docs/DECISIONS.md`, entry 2026-08-18.
  *
  * **Camera and rotation grammar.** Dome coordinates are projected **into world 2D**
  * and then ride the existing camera (pan clamp, wheel zoom, fit) — no second
@@ -513,29 +515,12 @@ export interface DomeModel {
 /**
  * **The arrangement axis — 「Ownership」 (ownership) and 「Coupling」 (coupling).**
  *
- * The dome's geometry writes **two facts**: height = kind tier, bearing =
- * ownership. This axis swaps **only the bearing**.
- *
- * - `ownership` (default): bearing comes from the **containment parent**. It
- *   answers "what does this belong to, who owns it".
- * - `coupling`: bearing is decided by **all relations** (force relaxation). It
- *   answers "regardless of the org chart, what is attached to what" — the
- *   `depends_on` clumping containment was hiding surfaces on the ring.
- *
- * **Why the tiers are not released (why this is not a free 3D force cloud).**
- * Releasing tiers loses the typed fact height carries, and what is left is a pretty
- * cloud. That is why the **tier-constrained hybrid** — the unnamed family the
- * research pointed at — fits this data: the tier keeps reading, and only coupling
- * surfaces as angle. (Kobourov & Wampler 2005's sphere-constrained spring embedders;
- * our dome is already a "latitude = tier" member of that family.)
- *
- * **Determinism — this axis's most important property.** There is **no randomness
- * at all**. Relaxation **warm-starts** from the angles the ownership arrangement
- * produced, and the iteration count is fixed. So the same vault draws the same
- * picture whenever it is opened, and nodes hold their place when you move between
- * the two arrangements. A force layout that reshuffles the map on every reload
- * destroys the user's spatial memory — the same property this repo's fixed-scale
- * contract protects.
+ * `ownership` (default) is the Dome: height carries kind tier and bearing comes
+ * from containment. `coupling` is the Cloud: a deterministic force layout lets
+ * all relations decide all three coordinates, so it answers a genuinely
+ * different question. The first tier-constrained coupling prototype was reverted
+ * because it merely twisted the Dome. The detailed physical and determinism
+ * contract follows below.
  */
 export type DomeArrangement = "ownership" | "coupling";
 

@@ -144,6 +144,57 @@ describe('rebuildLocalManifestIncremental — 동치성', () => {
     expect(handleKeys(incremental.build.fileHandles)).toEqual(handleKeys(full.fileHandles));
   });
 
+  it('changing Cart Session preserves Coupon Issuing freshness byte-for-byte', async () => {
+    const storefront = {
+      'capabilities/coupon-issue.md': {
+        text: ['---', 'kind: capability', 'title: Coupon Issuing', '---', '# Coupon Issuing'].join(
+          '\n',
+        ),
+        lastModified: 1787500154000,
+      },
+      'elements/cart-session.md': {
+        text: ['---', 'kind: element', 'title: Cart Session', '---', '# Cart Session'].join('\n'),
+        lastModified: 1787500154000,
+      },
+    };
+    const before = await buildLocalManifestWithEntries(makeRoot(storefront));
+    const next = {
+      ...storefront,
+      'elements/cart-session.md': {
+        text: [
+          '---',
+          'kind: element',
+          'title: Cart Session',
+          '---',
+          '# Cart Session',
+          'External watcher probe.',
+        ].join('\n'),
+        lastModified: 1787501531417,
+      },
+    };
+
+    const incremental = await rebuildLocalManifestIncremental(makeRoot(next), before.entries);
+    const beforeCoupon = before.build.manifest.docs.find(
+      (doc) => doc.slug === 'capabilities/coupon-issue',
+    );
+    const afterCoupon = incremental.build.manifest.docs.find(
+      (doc) => doc.slug === 'capabilities/coupon-issue',
+    );
+    const afterCart = incremental.build.manifest.docs.find(
+      (doc) => doc.slug === 'elements/cart-session',
+    );
+
+    expect(beforeCoupon, 'baseline Coupon document must exist').toBeDefined();
+    expect(afterCoupon, 'incremental Coupon document must exist').toBeDefined();
+    expect(afterCart, 'changed Cart document must exist').toBeDefined();
+    expect(beforeCoupon!.mtime).toBe(1787500154000);
+    expect(beforeCoupon!.updatedAt).toBe('2026-08-23T15:49:14.000Z');
+    expect(afterCoupon?.mtime).toBe(beforeCoupon?.mtime);
+    expect(afterCoupon?.updatedAt).toBe(beforeCoupon?.updatedAt);
+    expect(afterCart?.mtime).toBe(1787501531417);
+    expect(afterCart?.updatedAt).toBe('2026-08-23T16:12:11.417Z');
+  });
+
   it('파일 추가 시 전체 재빌드와 동일', async () => {
     const before = await buildLocalManifestWithEntries(makeRoot(BASE));
     const next = {

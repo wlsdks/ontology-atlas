@@ -49,15 +49,15 @@ export function hasNodeMtimeConflict(params: {
   sourceSlug: string | null;
   baselineFreshnessIso: string | null;
   currentFreshnessIso: string | null;
-  baselineCapturedAtMs: number;
+  baselineSelfEditAtMs: number | null;
   selfEditTimestamps: ReadonlyMap<string, number>;
 }): boolean {
-  const { sourceSlug, baselineFreshnessIso, currentFreshnessIso, baselineCapturedAtMs, selfEditTimestamps } =
+  const { sourceSlug, baselineFreshnessIso, currentFreshnessIso, baselineSelfEditAtMs, selfEditTimestamps } =
     params;
   return hasUnaccountedMtimeChange({
     baseline: baselineFreshnessIso,
     current: currentFreshnessIso,
     selfEditAtMs: sourceSlug ? selfEditTimestamps.get(sourceSlug) ?? null : null,
-    baselineCapturedAtMs,
+    baselineSelfEditAtMs,
   });
 }

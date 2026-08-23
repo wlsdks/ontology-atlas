@@ -23,7 +23,7 @@ The ability for humans to read in one flow the AI agent's product name, verified
 - Thoughts and tool calls for one user turn are grouped as one collapsed `Work Process · N steps`. Agent answers remain in separate body text; expanding details shows original work order and actual target. Thought Markdown renders as bold/code/lists, not original markers.
 - Notifications are not poured out per tool call but aggregated by work start/end and structural change units. Current work reading opens from the status bar below the top-right toolbar; past notifications open from the far-right independent bell and wide inbox. Both surfaces share one feed but do not mix content. The status bar inherits neither the short width of the top-right toolbar nor natural content width (upper limit 520px) to preserve agent name and last work time.
 - In-app ontology writing allow/reject and terminal status remain as bounded snapshots in `.ontology-atlas/acp-work.jsonl` and are read as work receipts from notification popovers. Full conversations/thoughts/tool outputs/absolute paths/body values are not kept, nor mixed with `activity.jsonl` which records execution facts.
-- `created_by: human` is provenance only, not a review-needed state; scheduled reader kind `vault-readme` is a map editing target but not a concept census.
+- `created_by: human` is provenance only, not a review-needed state. The reserved reader kind `vault-readme` stays in Docs and is excluded from the map, relation editing, and concept census.
 
 ## Evidence
 - src/features/agent-activity/model/agent-work-projection.ts: Honest priority of heartbeats/write sessions and live/recent-write/completed separation

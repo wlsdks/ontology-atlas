@@ -5,6 +5,18 @@ import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { useSampleSource } from '@/features/vault-sample-source';
 
+const localHandleIdentity = new WeakMap<FileSystemDirectoryHandle, string>();
+let nextLocalHandleIdentity = 1;
+
+function localHandleIdentityName(handle: FileSystemDirectoryHandle): string {
+  const existing = localHandleIdentity.get(handle);
+  if (existing) return existing;
+  const created = `${handle.name}#${nextLocalHandleIdentity}`;
+  nextLocalHandleIdentity += 1;
+  localHandleIdentity.set(handle, created);
+  return created;
+}
+
 /**
  * **Which vault the screen is currently looking at**, as one string.
  *
@@ -17,7 +29,7 @@ import { useSampleSource } from '@/features/vault-sample-source';
  * gathers the app's three signals into that function:
  *
  * - `useDataSourceMode()` — is this the user's vault or a bundled sample?
- * - `useLocalVault().handle?.name` — if local, which folder?
+ * - `useLocalVault().handle?.name` — if local, which stable persisted namespace?
  * - `useSampleSource()` — if a sample, which one? (**without this axis a sample↔sample
  *   switch is not seen as a change**)
  *
@@ -33,6 +45,25 @@ export function useVaultIdentityScope(): VaultIdentityScope {
   return vaultIdentityScope({
     isLocalLoaded: mode === 'local' && localVault.status === 'loaded',
     handleName: localVault.handle?.name ?? null,
+    sampleSource,
+  });
+}
+
+/**
+ * Session-only identity for transient state such as route cleanup, camera state,
+ * and an open editor baseline. A folder name is display text, not identity: two
+ * different parents can both contain `ontology/`, so each actual directory handle
+ * gets its own in-memory token. Unlike `useVaultIdentityScope`, this value must
+ * never become a persisted storage key.
+ */
+export function useVaultSessionIdentityScope(): VaultIdentityScope {
+  const mode = useDataSourceMode();
+  const localVault = useLocalVault();
+  const [sampleSource] = useSampleSource();
+
+  return vaultIdentityScope({
+    isLocalLoaded: mode === 'local' && localVault.status === 'loaded',
+    handleName: localVault.handle ? localHandleIdentityName(localVault.handle) : null,
     sampleSource,
   });
 }

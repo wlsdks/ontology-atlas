@@ -141,13 +141,19 @@ export function DomainCapacityBar({
           axis, distorting the comparison value itself by up to 1.2%.
           The 「Connections」 (connections) tab's impact ranking already uses this grammar (fixed
           track plus fixed number column), so its column-width discipline is taken
-          verbatim. `tabular-nums` is applied to both rows so the digit positions do not
-          shift either. */}
-      <span className="w-[156px] flex-none text-right">
+          verbatim. 192px fits all nine current English Storefront tails without clipping.
+          `tabular-nums` is applied to both rows so the digit positions do not shift either. */}
+      <span
+        data-testid="domain-capacity-bar-tail"
+        className="w-[192px] flex-none text-right"
+      >
         <span className="block font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
           {row.total}
         </span>
-        <span className="block truncate font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]">
+        <span
+          data-testid="domain-capacity-bar-breakdown"
+          className="block truncate font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]"
+        >
           {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
         </span>
       </span>

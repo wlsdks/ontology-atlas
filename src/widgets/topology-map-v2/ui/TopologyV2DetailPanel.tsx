@@ -1330,7 +1330,7 @@ export function TopologyV2DetailPanel({
         role="group"
         aria-label={title}
         {...transientSurface("anchored")}
-      data-testid="topology-v2-detail-panel"
+        data-testid="topology-v2-detail-panel"
         data-selected-node-id={nodeId}
         data-selected-node-kind={kind}
         data-selected-node-title={title}

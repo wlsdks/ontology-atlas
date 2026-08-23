@@ -436,7 +436,7 @@ describe("범위 등록부 — URL 쿼리 키", () => {
     for (const wired of [
       // On a vault change, clear vault-specific address state
       "clearVaultScopedRouteState",
-      "useVaultIdentityScope",
+      "useVaultSessionIdentityScope",
       // Never hand a non-existent node through as the focus
       "resolveCanvasSelectedSlug",
       // Never assert "no path" for non-existent endpoints, and never pass them to the agent

@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 // `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
 // HMR/bundle states the bare `History` identifier resolved to the global DOM
 // History constructor, and `<History>` JSX dropped the whole screen into the
@@ -297,6 +297,7 @@ export function AtlasGitPanel({
   className,
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
+  const format = useFormatter();
   /*
    * Kind names have one source of truth: the `kinds` namespace. A key minted
    * here would write the same fact in two places, and drift starts there.
@@ -322,7 +323,33 @@ export function AtlasGitPanel({
   const [status, setStatus] = useState<GitStatusResult | null>(null);
   const [changes, setChanges] = useState<GitChangeEntry[]>([]);
   const [diffText, setDiffText] = useState("");
-  const [history, setHistory] = useState<GitCommitInfo[]>([]);
+  const [historyState, setHistoryState] = useState<{
+    rows: GitCommitInfo[];
+    referenceMs: number;
+  }>({ rows: [], referenceMs: 0 });
+  const history = historyState.rows;
+  // The bridge's `relativeTime` is useful only as a compatibility fallback: it
+  // is preformatted by git and can therefore arrive in a different language.
+  // Capture one reference instant per successful workspace read. Unrelated
+  // renders cannot churn wording, while an explicit refresh/snapshot cannot keep
+  // formatting against an hours-old mount instant.
+  const historyNowMs = historyState.referenceMs;
+  const localizedHistory = useMemo(
+    () =>
+      history.map((commit) => {
+        const instant = new Date(commit.isoTime);
+        if (Number.isNaN(instant.getTime())) return commit;
+        try {
+          return {
+            ...commit,
+            relativeTime: format.relativeTime(instant, historyNowMs),
+          };
+        } catch {
+          return commit;
+        }
+      }),
+    [format, history, historyNowMs],
+  );
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   /*
    * Whether git is installed — `null` means **not known yet**; absence is never
@@ -469,7 +496,7 @@ export function AtlasGitPanel({
     setStatus(next.status);
     setChanges(next.changes);
     setDiffText(next.diffText);
-    setHistory(next.history);
+    setHistoryState({ rows: next.history, referenceMs: Date.now() });
     setLoadState("ready");
   }, []);
   const reportWorkspaceReadFailure = useCallback((err: unknown) => {
@@ -796,7 +823,7 @@ export function AtlasGitPanel({
             selection={selection}
             setSelection={setSelectionChoice}
             diffFiles={diffFiles}
-            history={history}
+            history={localizedHistory}
             selectedPath={selectedPath}
             setSelectedPath={setSelectedPath}
             othersOpen={othersOpen}
