@@ -1556,11 +1556,14 @@ if (missingAgentDesignGate.length === 0) {
   );
 }
 
-if (pkg.scripts?.["desktop:build"] === "pnpm desktop:build:app && node scripts/package-macos-dmg.mjs") {
-  pass("desktop build script targets macOS .app and .dmg artifacts");
+if (
+  pkg.scripts?.["desktop:build"] ===
+  "pnpm desktop:build:app:local && pnpm desktop:sign:adhoc && node scripts/package-macos-dmg.mjs"
+) {
+  pass("desktop local build ad-hoc signs macOS .app before packaging without updater credentials");
 } else {
   fail(
-    "package.json must expose desktop:build as pnpm desktop:build:app && node scripts/package-macos-dmg.mjs",
+    "package.json must expose desktop:build as pnpm desktop:build:app:local && pnpm desktop:sign:adhoc && node scripts/package-macos-dmg.mjs so the local pre-tag gate needs neither updater credentials nor a damaged app bundle",
   );
 }
 

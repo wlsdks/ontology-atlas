@@ -262,7 +262,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ desktop local deploy command builds without release updater signing, installs, and verifies Relief health from \/Applications with default best-effort visual and WebView evidence/,
   );
-  assert.match(result.stdout, /✓ desktop build script targets macOS \.app and \.dmg artifacts/);
+  assert.match(
+    result.stdout,
+    /✓ desktop local build ad-hoc signs macOS \.app before packaging without updater credentials/,
+  );
   assert.match(result.stdout, /✓ Tauri CLI dependency is installed/);
   assert.match(result.stdout, /✓ Tauri JavaScript API dependency is installed/);
   assert.match(
