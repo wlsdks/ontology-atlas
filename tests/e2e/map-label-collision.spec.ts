@@ -1,5 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { LABEL_TOP_K } from "../../src/widgets/topology-map-v2/model/label-lod";
+import { EVIDENCE_SPECIMEN } from "../../src/views/download/model/evidence-specimen.generated";
+
+/**
+ * Reduced motion, deliberately: this spec measures the **resting** frame. The evidence section
+ * now runs a one-shot linked demo (ego focus walking the specimen's relations, 2026-08-23), and
+ * ego members are exempt from the label budget — measured mid-demo the frame legitimately carries
+ * top-K plus the neighbourhood. Without pinning motion off, the reading races the choreography
+ * and this spec flakes on timing. Reduced motion skips the demo (its own contract), so what is
+ * measured is the frame every reader ends at.
+ */
+test.use({ contextOptions: { reducedMotion: "reduce" } });
 
 /**
  * Map labels must not overlap — measured from the boxes the frame actually drew.
@@ -48,9 +59,13 @@ test.describe("지도 라벨 — 그려진 박스로 잰다", () => {
       undefined,
       { timeout: 20_000 },
     );
-    // The map assembles with a homing spring; labels are placed per frame, so the
-    // reading has to be taken after it settles (measured ~1.2s, with margin here).
-    await page.waitForTimeout(6_000);
+    /*
+     * Under reduced motion (pinned above) the assembly snaps, so there is no spring to outwait —
+     * and waiting the old 6s reads **after the gateway's ambient sleep** (3s idle): the sleeping
+     * canvas's last frame carried ≤5 label boxes (measured 2026-08-23) and the anti-idle guard
+     * below fired. 2s is after the snap settles and before sleep.
+     */
+    await page.waitForTimeout(2_000);
 
     const labels = (await page.evaluate(() =>
       (
@@ -93,5 +108,36 @@ test.describe("지도 라벨 — 그려진 박스로 잰다", () => {
       overlaps,
       `지도에서 두 이름이 픽셀을 공유한다 — 읽을 수 없다:\n${overlaps.join("\n")}`,
     ).toEqual([]);
+  });
+
+  /**
+   * The linked demo drives the engine's focus with node ids the generator derived from the vault
+   * (`EVIDENCE_SPECIMEN.facts.*.nodeId`). An id that stops matching a real node fails **silently**
+   * — the engine just focuses nothing and the demo walks an empty stage. So the three ids are
+   * checked against the nodes the map actually drew.
+   */
+  test("연결 시연이 모는 노드 id 셋이 실제 지도에 있다", async ({ page }) => {
+    await page.goto(MAP_ROUTE);
+    await page.getByTestId("download-stage-map-frame").scrollIntoViewIfNeeded();
+    await page.waitForFunction(
+      () => Boolean((window as unknown as { __atlasMap?: { nodes?: unknown } }).__atlasMap?.nodes),
+      undefined,
+      { timeout: 20_000 },
+    );
+    const ids = new Set(
+      (await page.evaluate(() =>
+        (window as unknown as { __atlasMap: { nodes: () => { id: string }[] } }).__atlasMap
+          .nodes()
+          .map((node) => node.id),
+      )) as string[],
+    );
+    expect(ids.size, "지도가 노드를 하나도 안 그렸다 — 이 시험이 헛돈다").toBeGreaterThan(10);
+    for (const nodeId of [
+      EVIDENCE_SPECIMEN.facts.name.nodeId,
+      EVIDENCE_SPECIMEN.facts.domain.nodeId,
+      EVIDENCE_SPECIMEN.facts.dependency.nodeId,
+    ]) {
+      expect(ids.has(nodeId), `시연이 모는 ${nodeId} 가 지도에 없다 — 빈 무대를 걷는다`).toBe(true);
+    }
   });
 });

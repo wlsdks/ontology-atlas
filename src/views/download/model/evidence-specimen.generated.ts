@@ -10,6 +10,8 @@
 export interface EvidenceSpecimenName {
   readonly ko: string;
   readonly en: string;
+  /** The map engine's node id (kind:basename) — what focus/emphasis props accept. */
+  readonly nodeId: string;
 }
 
 export interface EvidenceSpecimen {
@@ -63,16 +65,19 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
     "facts": {
       "name": {
         "ko": "AI 연결 서버",
-        "en": "AI Connection Server"
+        "en": "AI Connection Server",
+        "nodeId": "capability:mcp-server"
       },
       "kind": "capability",
       "domain": {
         "ko": "AI 에이전트 연동",
-        "en": "AI Agent Integration"
+        "en": "AI Agent Integration",
+        "nodeId": "domain:agent-integration"
       },
       "dependency": {
         "ko": "볼트 온톨로지 스키마 작성",
-        "en": "Vault Ontology Schema Authoring"
+        "en": "Vault Ontology Schema Authoring",
+        "nodeId": "capability:vault-ontology"
       },
       "implPath": "mcp/src"
     },

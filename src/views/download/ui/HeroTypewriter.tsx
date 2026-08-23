@@ -76,10 +76,10 @@ export interface HeroTypewriterLine {
   className?: string;
 }
 
-/** ms between characters for a headline of this length. */
-export function typingStepMs(totalChars: number): number {
+/** ms between characters for a line of this length under the given total budget. */
+export function typingStepMs(totalChars: number, budgetMs: number = BUDGET_MS): number {
   if (totalChars <= 0) return CADENCE_MS;
-  return Math.min(CADENCE_MS, BUDGET_MS / totalChars);
+  return Math.min(CADENCE_MS, budgetMs / totalChars);
 }
 
 /**
@@ -105,11 +105,18 @@ export function HeroTypewriter({
   lines,
   start,
   className,
+  budgetMs = BUDGET_MS,
 }: {
   lines: readonly HeroTypewriterLine[];
   /** Typing begins when this turns true — the eyebrow lands first, so the cause precedes it. */
   start: boolean;
   className?: string;
+  /**
+   * Ceiling on the whole run. The hero's 1.8s default suits a two-line headline; a shorter line
+   * inside a choreography (the agent scene's tool call) passes its own so the next beat is not
+   * kept waiting.
+   */
+  budgetMs?: number;
 }) {
   const reduced = usePrefersReducedMotion();
   const [typedState, setTypedState] = useState(0);
@@ -162,7 +169,7 @@ export function HeroTypewriter({
 
   useEffect(() => {
     if (!start || reduced) return;
-    const step = typingStepMs(total);
+    const step = typingStepMs(total, budgetMs);
     let n = 0;
     const id = window.setInterval(() => {
       n += 1;
@@ -170,7 +177,7 @@ export function HeroTypewriter({
       if (n >= total) window.clearInterval(id);
     }, step);
     return () => window.clearInterval(id);
-  }, [start, reduced, total]);
+  }, [start, reduced, total, budgetMs]);
 
   // The caret rides the first un-typed character, spaces included — skipping spaces would blink it
   // out of existence for one tick every time it crossed a word boundary (measured 2026-08-23).

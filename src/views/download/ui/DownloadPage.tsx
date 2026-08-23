@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Download } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -12,7 +12,9 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { HeroTypewriter, heroSentence } from './HeroTypewriter';
-import { EvidenceSpecimen } from './EvidenceSpecimen';
+import { EvidenceSpecimen, type EvidenceDemoKey } from './EvidenceSpecimen';
+import { CountUp } from './CountUp';
+import { EVIDENCE_SPECIMEN } from '../model/evidence-specimen.generated';
 import { buttonVariants } from '@/shared/ui';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
@@ -23,7 +25,7 @@ import {
   macosPublishedDate,
   windowsAsset,
 } from '../lib/release-state';
-import { StageMap, useStageGraph } from './StageMap';
+import { StageMap, useStageGraph, type StageScriptedFocus } from './StageMap';
 import { GatewayFx } from './GatewayFx';
 import { HeroObject } from './HeroObject';
 import { AcpChatScene } from './AcpChatScene';
@@ -747,10 +749,53 @@ function DemoSection() {
  * The caption's honesty contract is unchanged from before the remake: the number the caption
  * counts and the graph the map draws come from one hook, `useStageGraph()`.
  */
+/**
+ * The linked demo's score — step index → (what the map focuses, which file line lights).
+ *
+ * One run, three beats, then release. Each beat is the pair the section's whole claim is made
+ * of: a line of the file on the right, and the thing that line **is** on the live map to the
+ * left. The map side drives the engine's own focus states (`StageScriptedFocus`) with node ids
+ * the generator derived from the same vault file — nothing here is a second source.
+ *
+ *  1. the `title` line ↔ the node itself (ego focus: its neighbourhood stays, the rest recedes)
+ *  2. the `domain` line ↔ the domain node, emphasised inside that neighbourhood
+ *  3. the `dependencies` line ↔ the dependency node, emphasised the same way
+ *
+ * The beats sit `DEMO_BEAT_MS` apart — slower than the reading rhythm of the agent scene's
+ * choreography because each beat asks the eye to travel between two panels. One pointer act on
+ * the map cancels the run for good: the map is an object to handle, and a hand beats a script.
+ */
+const DEMO_SCRIPT: readonly { focus: StageScriptedFocus; line: EvidenceDemoKey }[] = [
+  {
+    focus: { selectedSlug: EVIDENCE_SPECIMEN.facts.name.nodeId, emphasizedSlug: null },
+    line: 'title',
+  },
+  {
+    focus: {
+      selectedSlug: EVIDENCE_SPECIMEN.facts.name.nodeId,
+      emphasizedSlug: EVIDENCE_SPECIMEN.facts.domain.nodeId,
+    },
+    line: 'domain',
+  },
+  {
+    focus: {
+      selectedSlug: EVIDENCE_SPECIMEN.facts.name.nodeId,
+      emphasizedSlug: EVIDENCE_SPECIMEN.facts.dependency.nodeId,
+    },
+    line: 'dependencies',
+  },
+];
+const DEMO_START_MS = 900;
+const DEMO_BEAT_MS = 1700;
+
 function EvidenceSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download');
   const { ref, inView } = useInViewOnce<HTMLDivElement>(0.25);
   const [captionIn, setCaptionIn] = useState(false);
+  /** −1 = idle/finished, 0..2 = a beat of `DEMO_SCRIPT` is on. */
+  const [demoStep, setDemoStep] = useState(-1);
+  /** Set forever on the first pointer act or after one full run — the demo never replays. */
+  const demoDoneRef = useRef(false);
 
   useEffect(() => {
     if (!inView) return;
@@ -760,6 +805,37 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
     const id = window.setTimeout(() => setCaptionIn(true), reduced ? 0 : 1400);
     return () => window.clearTimeout(id);
   }, [inView]);
+
+  /**
+   * The demo waits for the caption (i.e. for assembly to have settled) and runs once. Under
+   * reduced motion it never runs — the resting section already carries every fact, so the demo
+   * is strictly additive and skipping it loses nothing a reader cannot get by hovering.
+   */
+  useEffect(() => {
+    if (!captionIn || demoDoneRef.current) return;
+    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
+      return;
+    const timers: number[] = [];
+    DEMO_SCRIPT.forEach((_, i) => {
+      timers.push(window.setTimeout(() => setDemoStep(i), DEMO_START_MS + i * DEMO_BEAT_MS));
+    });
+    timers.push(
+      window.setTimeout(() => {
+        demoDoneRef.current = true;
+        setDemoStep(-1);
+      }, DEMO_START_MS + DEMO_SCRIPT.length * DEMO_BEAT_MS),
+    );
+    return () => {
+      for (const id of timers) window.clearTimeout(id);
+    };
+  }, [captionIn]);
+
+  const cancelDemo = useCallback(() => {
+    demoDoneRef.current = true;
+    setDemoStep(-1);
+  }, []);
+
+  const beat = demoStep >= 0 ? DEMO_SCRIPT[demoStep] : null;
 
   return (
     <section
@@ -794,12 +870,12 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
             data-testid="download-stage-map-frame"
             className="relative h-[24rem] min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] md:h-[30rem] lg:h-[34rem]"
           >
-            <StageMap graph={graph} />
+            <StageMap graph={graph} scripted={beat?.focus ?? null} onUserInteract={cancelDemo} />
           </div>
           <div
             className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'min-w-0 lg:self-center')}
           >
-            <EvidenceSpecimen />
+            <EvidenceSpecimen demoKey={beat?.line ?? null} />
           </div>
         </div>
 
@@ -816,9 +892,13 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
               data-token="engraved-numeral"
               className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
             >
-              {t('portraitCensus', {
+              {t.rich('portraitCensus', {
                 concepts: graph.nodes.length,
                 relations: graph.edges.length,
+                // Owner-picked count-up (survey 2026-08-23). The DOM always carries the final
+                // value (CountUp's contract), so the caption-honesty test reads truth at any time.
+                c: () => <CountUp value={graph.nodes.length} />,
+                r: () => <CountUp value={graph.edges.length} />,
               })}
             </span>
             <span aria-hidden>·</span>

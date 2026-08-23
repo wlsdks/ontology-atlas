@@ -91,13 +91,23 @@ function unquote(value) {
   return value?.replace(/^["']|["']$/g, '') ?? null;
 }
 
-/** Both display names for a slug, falling back to `title` when a locale is missing. */
+/**
+ * Names plus the **map node id** for a slug.
+ *
+ * The id is `kind:basename` — the form `derivationToInsight` mints (`domain:payment`) and the
+ * gateway map instrument confirms live (`capability:mcp-server`, measured 2026-08-23). The
+ * evidence section's linked demo drives the real engine's focus with these ids, so they are
+ * generated here rather than re-derived by hand in the component — the same one-source rule as
+ * every other value in this file.
+ */
 function namesFor(slug) {
   const lines = readFrontmatter(path.join(VAULT, `${slug}.md`));
   const title = unquote(field(lines, 'title')) ?? slug;
+  const kind = unquote(field(lines, 'kind')) ?? 'capability';
   return {
     ko: unquote(field(lines, 'display_ko')) ?? title,
     en: unquote(field(lines, 'display_en')) ?? title,
+    nodeId: `${kind}:${slug.split('/').pop()}`,
   };
 }
 
@@ -184,6 +194,8 @@ function render(spec) {
 export interface EvidenceSpecimenName {
   readonly ko: string;
   readonly en: string;
+  /** The map engine's node id (kind:basename) — what focus/emphasis props accept. */
+  readonly nodeId: string;
 }
 
 export interface EvidenceSpecimen {

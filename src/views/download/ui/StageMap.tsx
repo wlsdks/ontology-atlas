@@ -66,7 +66,31 @@ export function useStageGraph(): StageGraph {
  * docs/ontology · 96 concepts" while drawing the storefront's 7 nodes (measured 2026-07-28, the
  * first engine mount). What the stage claims and what it draws must be the same vault.
  */
-export function StageMap({ graph }: { graph: StageGraph }) {
+/**
+ * The scripted focus the evidence demo drives — `null` when no script is running.
+ *
+ * The engine states used are the two a person's own pointer would produce (`focus.selectedSlug`
+ * ego focus, `emphasizedNeighborSlug` panel-hover emphasis) — the demo is the same machinery on a
+ * timer, not a parallel presentation layer. `docs/DECISIONS.md` 2026-08-23 (106).
+ */
+export interface StageScriptedFocus {
+  selectedSlug: string | null;
+  emphasizedSlug: string | null;
+}
+
+export function StageMap({
+  graph,
+  scripted = null,
+  onUserInteract,
+}: {
+  graph: StageGraph;
+  scripted?: StageScriptedFocus | null;
+  /**
+   * Fired on the first pointer act (node press or pane click). The parent cancels the script —
+   * the map is "an object to handle", so the moment a hand lands on it, the hand wins.
+   */
+  onUserInteract?: () => void;
+}) {
   const t = useTranslations('download');
   const [selected, setSelected] = useState<string | null>(null);
   /**
@@ -216,13 +240,20 @@ export function StageMap({ graph }: { graph: StageGraph }) {
       <TopologyMapV2
         nodes={graph.nodes}
         edges={graph.edges}
-        focus={{ selectedSlug: selected }}
+        focus={{ selectedSlug: scripted ? scripted.selectedSlug : selected }}
+        emphasizedNeighborSlug={scripted?.emphasizedSlug ?? null}
   // The gateway has no "fit map" button, so the token is fixed at one mount.
         fitViewToken={1}
         relayoutToken={1}
         revealToken={revealToken}
-        onSelect={setSelected}
-        onPaneClick={() => setSelected(null)}
+        onSelect={(slug) => {
+          onUserInteract?.();
+          setSelected(slug);
+        }}
+        onPaneClick={() => {
+          onUserInteract?.();
+          setSelected(null);
+        }}
         expandedParents={expanded}
         onToggleCluster={toggleCluster}
         tierReveal={GATEWAY_TIER_REVEAL}
