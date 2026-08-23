@@ -40,6 +40,42 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-23 (107) — Selecting a node in the dome lights its meridian to the apex
+
+**Trigger**: the owner sent a still of the 3D dome asking for it to be more striking and more in
+motion. An inventory of the dome first: assembly stagger, entry sweep, idle spin (48s, stops on
+first touch — the owner's own earlier instruction), release momentum with meaningful-landing
+snap, tier torsion, selection reframe, sphere depth-shading, depth fog — nearly every device a
+survey would suggest already exists, several of them tuned *down* at the owner's request. So the
+addition had to be genuinely new territory, and responsive rather than autonomous.
+
+**Decision**: on selection in the dome, the containment chain from the selected node up to the
+apex — its meridian — lights. **With the existing ego grammar, not a new one**: ancestor nodes
+join the neighbour set (so they stay lit and labelled the way neighbours do) and the chain's
+`contains` edges take the same "ego" state a focused relation edge takes, in the same override
+slot the path lens uses. No new ink, alpha, or token. In the dome, height *is* the containment
+tier, so the meridian is the most legible possible answer to "where does this sit" — and it
+composes with the existing selection reframe, which was already turning the chain toward the
+viewer.
+
+The flat map is untouched (the guard is the dome flag): 2D ego stays 1-hop, where a full chain
+would draw long lines across an already-dense plane.
+
+**Mechanics**: the walk is the world's `parentId` chain (O(depth ≤ 3)), cycle-safe because
+malformed vaults really do write `contains` cycles, and allocation-free per frame (module-reused
+sets, the frame draw's standing discipline). The retained colour signature gets the same chain so
+a deselect fades it out through the normal ego fade.
+
+**Falsifier**: if the lit chain is misread as "a path I walked" (the confusion the trail lens was
+built to resolve), the chain should dim while the trail lens is open — it already does, via the
+lens's blanket dim.
+
+**Review**: next workbench map pass
+
+**Status**: active
+
+---
+
 ## 2026-08-23 (106) — Gateway motion is the product working: a linked demo, a typed tool call, counted numbers
 
 **Trigger**: the owner asked what else the page could carry and sent me to survey motion-heavy

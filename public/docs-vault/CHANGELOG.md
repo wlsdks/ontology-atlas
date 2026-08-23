@@ -7,6 +7,13 @@
 
 ---
 
+## 2026-08-23 · Selecting a node in the 3D dome lights its line to the top
+
+- In the dome view, pressing a node now lights the whole chain it hangs from (element to
+  capability to domain to the project at the apex) in the same indigo the selection already
+  uses, while the dome turns to face it. Pressing empty space lets it go. The flat map is
+  unchanged.
+
 ## 2026-08-23 · The download page moves where the product is working
 
 - The evidence section now runs a short linked demo once it settles: three beats light a line of
