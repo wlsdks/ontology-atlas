@@ -61,16 +61,3 @@ export function formatScreenContextBlock(snapshot: ScreenContextSnapshot): strin
   }
   return `<screen_context>\n${lines.join('\n')}\n</screen_context>`;
 }
-
-/**
- * The echo attached verbatim to the user's bubble — "what the agent saw" always stays
- * on screen. Moving to another node after sending makes the mismatch visible, and a
- * visible mismatch is itself the signal to correct it.
- */
-export function screenContextEcho(
-  snapshot: ScreenContextSnapshot,
-  labels: { lookingAt: (title: string) => string; wholeMap: string },
-): string {
-  if (!snapshot.focusedSlug) return labels.wholeMap;
-  return labels.lookingAt(snapshot.focusedTitle ?? snapshot.focusedSlug);
-}

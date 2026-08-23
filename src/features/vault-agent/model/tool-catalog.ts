@@ -28,8 +28,6 @@
  * - `connection_info` / `compile_ontology` — things the app already knows.
  */
 
-import type { ProposalToolName } from './types';
-
 /** The JSON Schema subset we use. Per-vendor conversion belongs to the adapter. */
 export interface AgentJsonSchema {
   type: 'object' | 'array' | 'string' | 'integer' | 'number' | 'boolean';
@@ -516,9 +514,4 @@ const TOOLS_BY_NAME = new Map(AGENT_TOOLS.map((tool) => [tool.name, tool]));
 
 export function findAgentTool(name: string): AgentToolDefinition | undefined {
   return TOOLS_BY_NAME.get(name);
-}
-
-export function isProposalToolName(name: string): name is ProposalToolName {
-  const tool = TOOLS_BY_NAME.get(name);
-  return tool?.effect === 'write';
 }
