@@ -7,10 +7,10 @@
 # ⚠️ `release: published` **only fires when a person publishes via the UI**. Events
 # triggered by the default `GITHUB_TOKEN` do not create new runs (GitHub recursion prevention),
 # so this trigger does not run in the normal path where `release-macos.yml` publishes.
-# That path has the publish job wake itself via `gh workflow run deploy-pages.yml`.
-# And this workflow only does `pnpm build` — the size and SHA-256 of `/download`
-# come from the committed `macos-release.generated.ts`, and updating that is also
-# part of the publish job.
+# That workflow uploads tag-scoped release facts instead of mutating protected `main`.
+# A local operator lands the generated file through a normal PR; that merge's `main`
+# push wakes this workflow. This workflow only does `pnpm build` — the size and SHA-256
+# of `/download` come from the committed `macos-release.generated.ts`.
 # (Measured 2026-07-29: immediately after publishing rc.3, the page continued advertising rc.2.)
 name: Deploy GitHub Pages
 
