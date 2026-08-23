@@ -62,7 +62,8 @@ while a vault-bearing web user and the installed app see the map/first-run
 surface. The installed app must not offer its own download. `/topology` is
 the map address and supports contextual relation writing with directional
 preview and change review; ACP writes wait for `allow_once` or
-`reject_once`. `/ontology` and `/ontology/edit` are legacy redirects.
+`reject_once`. `/ontology`, `/ontology/edit` and `/ontology/studio` are legacy
+redirects; `/ontology/insights` is live.
 
 Adding or removing a route requires an appended `docs/DECISIONS.md` record in
 the same change; `pnpm decisions:check` enforces it. Keep retired namespaces

@@ -151,6 +151,41 @@ describe("`.claude/rules` path scoping contract", () => {
     }
   });
 
+  /**
+   * `AGENTS.md` tells an agent which addresses are live and which only redirect.
+   * That sentence named `/ontology` and `/ontology/edit` while a third page,
+   * `/ontology/studio`, rendered the very same redirect view — so an agent read
+   * that studio was gone, then found the directory and had no way to tell
+   * whether it was live, retired, or something it should not have seen
+   * (measured 2026-08-24).
+   *
+   * A redirect page is identifiable without asking: it imports a view from
+   * `@/views/*-redirect` and renders nothing else. Deriving the set means a page
+   * that becomes a redirect, or stops being one, fails here rather than leaving
+   * the sentence quietly wrong.
+   */
+  it("names every legacy redirect route in AGENTS.md", () => {
+    const appDir = join(process.cwd(), "app/[locale]");
+    const pages = globSync("**/page.tsx", { cwd: appDir });
+    expect(pages.length, "no app pages found — this sweep would pass vacuously").toBeGreaterThan(5);
+
+    const redirects = pages
+      .filter((page) => /from ["']@\/views\/[a-z-]*redirect["']/.test(
+        readFileSync(join(appDir, page), "utf8"),
+      ))
+      .map((page) => `/${page.replace(/\/?page\.tsx$/, "")}`)
+      .sort();
+    expect(redirects.length, "no redirect pages matched the import pattern").toBeGreaterThan(0);
+
+    const agents = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
+    const unnamed = redirects.filter((route) => !agents.includes(`\`${route}\``));
+    expect(
+      unnamed,
+      `these routes only redirect, and AGENTS.md never says so:\n${unnamed.join("\n")}\n`
+        + "An agent that cannot tell a redirect from a live surface cannot route a user to either.",
+    ).toEqual([]);
+  });
+
   it("leaves no rule unmentioned by the two files every agent reads", () => {
     const both =
       readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8")
