@@ -40,6 +40,65 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-23 (104) — The demo clip loops with no controls, and the page stops explaining itself in protocol terms
+
+**Trigger**: the owner read the shipped page and made three separate calls: the video's timecode
+should not be there, the clip should keep playing, the evidence panel's content is hard, and the
+agents section's sentence should not be written that way.
+
+**Prior decisions**: this reverses two.
+
+- 2026-07-29 fixed the demo scenario as *no loop*. That was decided for a three-minute take, which
+  would have restarted in a reader's peripheral vision. Nine seconds is a different object.
+- The control bar existed so a viewer could scrub a 199-second tour.
+
+Both were correct for the asset they were written against and became wrong when the asset became a
+nine-second scene. The size cap (2026-08-19) and the centred axis (100) are untouched.
+
+**Observed**:
+
+1. `0:04 / 0:09` plus a progress rail is chrome announcing "this is a video player" over a scene
+   meant to read as the product. There is nothing to scrub to in nine seconds.
+2. Without controls **and** without a loop the clip freezes on its last frame with no way back.
+   The two changes only work together.
+3. The evidence panel showed the specimen file verbatim, and **four of its ten lines taught
+   nothing**: a UUID sitting first so the eye landed on it, a slug repeating the path printed
+   directly above, an empty list, and `created_by: "agent:unknown"`, which reads as a defect to
+   anyone outside the convention.
+4. The agents section explained itself in protocol terms — a bare protocol acronym plus
+   *"explain something and it becomes a relation; ask and the graph answers"*, which is a sentence
+   about the model, not about what the reader will do.
+
+**Decision**:
+
+- The clip **loops** and draws **no controls**. The play button stays for reduced-motion readers
+  and for browsers that refuse autoplay, which is the case it was written for.
+- The specimen shows only lines that carry meaning, and says how many it left out. Verbatim was
+  the right instinct for honesty and the wrong one for teaching: a reader learns "these are plain
+  files" from six legible lines and nothing at all from a UUID.
+- The agents copy names what the reader gets — the app starts the agent they already have, no key,
+  no sign-in, and a person approves a change before a file moves. Vendor naming still follows
+  2026-08-16 (5): the permitted display name, not the product name of the CLI.
+
+**Recorded dissent**:
+
+> A looping clip is motion that never stops, and this repository's design charter is hostile to
+> perpetual motion.
+
+Rejected because the loop is bounded by the viewport: the existing IntersectionObserver pauses it
+whenever the section is not on screen, so it never runs in a reader's periphery — the exact harm
+the 2026-07-29 "no loop" was protecting against.
+
+**Falsifier**: if the looping clip is reported as distracting while reading the sections around
+it, the observer's threshold is too generous or the loop is wrong; measure the pause boundary
+before removing the loop.
+
+**Review**: next gateway pass
+
+**Status**: active
+
+---
+
 ## 2026-08-23 (103) — The evidence section shows one transformation, not an inventory
 
 **Trigger**: looking at the shipped page the owner rejected the evidence rail

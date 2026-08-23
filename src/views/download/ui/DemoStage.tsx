@@ -177,10 +177,27 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
         {/*
          * `preload="none"` — the gateway's first bytes belong to the map and the download button.
          * `muted` + `playsInline` are the conditions for silent autoplay, and the sound is **zero,
-         * including any BGM**. `controls` is enabled only after playback starts, so that a control
-         * bar over the poster does not take ink from the first impression. (It used to be
-         * justified by "the clip is long enough to want to scrub"; at nine seconds that is no
-         * longer the reason — what it still buys is replay without a reload.)
+         * including any BGM**.
+         *
+         * ## [Revised 2026-08-23] No controls, and it loops
+         *
+         * Owner, looking at the shipped page: the timecode should not be there, and the clip
+         * should keep playing. Both halves reverse an earlier decision, so both are in the ledger
+         * (`docs/DECISIONS.md` 2026-08-23) rather than changed quietly.
+         *
+         * **No `controls`.** The bar existed for scrubbing a 199-second tour. At nine seconds
+         * there is nothing to scrub to, and `0:04 / 0:09` plus a progress rail is chrome that
+         * says "this is a video player" over a scene meant to read as the product.
+         *
+         * **`loop`.** The 2026-07-29 scenario said *no loop*, deciding for a three-minute take
+         * that would have restarted in a reader's peripheral vision. Nine seconds is a different
+         * object: without a loop it freezes on its last frame, and with no controls there is then
+         * no way back to the start. Looping makes the section self-restoring — arrive at any
+         * moment and the whole scene still plays.
+         *
+         * The consequence to keep in view: `onEnded` never fires now, so the play button no
+         * longer returns after playback. It is still the entry point for reduced-motion readers
+         * and for browsers that refuse autoplay, which is the case it was written for.
          */}
         {/*
          * Without `key={locale}`, **a Korean page plays the English video.**
@@ -202,10 +219,9 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
           poster={withBasePath(demoPoster(clip, locale))}
           preload="none"
           muted
+          loop
           playsInline
-          controls={started}
           onPlay={() => setStarted(true)}
-          onEnded={() => setStarted(false)}
           className="block h-auto w-full"
         >
           {demoSources(clip, locale).map((source) => (

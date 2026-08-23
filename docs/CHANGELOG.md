@@ -7,6 +7,17 @@
 
 ---
 
+## 2026-08-23 · The demo clip loops without a control bar, and two sections read more plainly
+
+- The demo clip plays on a loop with no timecode or progress rail. It still pauses whenever the
+  section is off screen, and the play button remains for readers who turn motion off.
+- The evidence panel now shows only the lines of the file that carry meaning, and says how many it
+  left out. The four it drops are an id, a duplicate of the path above it, an empty list, and an
+  internal bookkeeping field.
+- The agents section says what the reader gets instead of naming a protocol: the app starts the
+  agent you already have, with no new key and no sign-in, and you approve a change before any file
+  moves.
+
 ## 2026-08-23 · Every concept in the dogfood vault now has a Korean name
 
 - All 83 nodes carry a `display_ko`, up from 21. On a Korean screen the map, the

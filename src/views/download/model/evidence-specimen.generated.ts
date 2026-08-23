@@ -40,33 +40,25 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
     "url": "https://github.com/wlsdks/ontology-atlas/blob/main/docs/ontology/capabilities/mcp-server.md",
     "frontmatter": {
       "ko": [
-        "uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51",
-        "slug: capabilities/mcp-server",
         "kind: capability",
         "title: MCP Server",
         "domain: domains/agent-integration",
-        "elements: []",
         "path: mcp/src",
-        "created_by: \"agent:unknown\"",
         "dependencies: [capabilities/vault-ontology]",
         "display_ko: AI 연결 서버"
       ],
       "en": [
-        "uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51",
-        "slug: capabilities/mcp-server",
         "kind: capability",
         "title: MCP Server",
         "domain: domains/agent-integration",
-        "elements: []",
         "path: mcp/src",
-        "created_by: \"agent:unknown\"",
         "dependencies: [capabilities/vault-ontology]",
         "display_en: AI Connection Server"
       ]
     },
     "omittedLines": {
-      "ko": 2,
-      "en": 2
+      "ko": 6,
+      "en": 6
     },
     "facts": {
       "name": {

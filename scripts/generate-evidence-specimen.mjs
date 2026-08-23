@@ -29,11 +29,20 @@
  *
  * ## Verbatim, and honest about what is left out
  *
- * Two kinds of line are dropped, and both are **counted** so the page can say how many it is not
+ * Three kinds of line are dropped, and all are **counted** so the page can say how many it is not
  * showing rather than quietly presenting a subset as the whole file:
  *
  *  - lines longer than `MAX_LINE` (in practice `relation_notes`, a paragraph of prose per edge)
  *  - **the other locale's `display_*` line**
+ *  - **bookkeeping keys** (`BOOKKEEPING`) — see below
+ *
+ * The third was added on 2026-08-23 after the owner read the shipped panel and said the content
+ * was hard. It was: of ten lines, four taught nothing. `uid` is a UUID and it sat first, so it was
+ * the first thing the eye landed on; `slug` repeats the file path printed directly above it;
+ * `elements: []` is an empty list; `created_by: "agent:unknown"` reads as a defect to anyone who
+ * does not know the convention. Verbatim was the right instinct for honesty and the wrong one for
+ * teaching — a reader learns "these are plain files" from six legible lines and learns nothing at
+ * all from a UUID. The count still states how many are missing.
  *
  * The second is not tidiness. `/en/download/` is one of two routes locked by
  * `tests/e2e/locale-purity.spec.ts` as drawing no vault text, so a `display_ko:` line rendered
@@ -56,6 +65,13 @@ const OUT = path.join(ROOT, 'src', 'views', 'download', 'model', 'evidence-speci
 const SPECIMEN_SLUG = 'capabilities/mcp-server';
 /** Longer lines are elided and counted — `relation_notes` carries a paragraph per edge. */
 const MAX_LINE = 64;
+/**
+ * Keys that are machine bookkeeping rather than meaning. Dropped and counted.
+ *
+ * `elements` is here **only when empty** — a populated `elements:` line names real child nodes and
+ * is exactly the kind of line this panel exists to show.
+ */
+const BOOKKEEPING = ['uid:', 'slug:', 'created_by:'];
 const REPO_BLOB = 'https://github.com/wlsdks/ontology-atlas/blob/main';
 
 function readFrontmatter(file) {
@@ -108,7 +124,13 @@ function build() {
   /** Per locale: short lines, minus the *other* locale's display name. */
   const shownFor = (locale) => {
     const other = locale === 'ko' ? 'display_en:' : 'display_ko:';
-    return lines.filter((line) => line.length <= MAX_LINE && !line.startsWith(other));
+    return lines.filter(
+      (line) =>
+        line.length <= MAX_LINE &&
+        !line.startsWith(other) &&
+        !BOOKKEEPING.some((key) => line.startsWith(key)) &&
+        !/^elements:\s*\[\s*\]\s*$/.test(line),
+    );
   };
   const frontmatter = { ko: shownFor('ko'), en: shownFor('en') };
   const omittedLines = {
