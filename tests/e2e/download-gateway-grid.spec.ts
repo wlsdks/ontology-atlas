@@ -193,7 +193,20 @@ async function measure(page: import("@playwright/test").Page) {
           colLeft: Math.round(colRect.left),
           colW: Math.round(colRect.width),
           agentW: agent ? Math.round(agent.getBoundingClientRect().width) : null,
-          agentLeft: agent ? Math.round(agent.getBoundingClientRect().left) : null,
+          /*
+           * The head's **text** centre, not the element's. The `h2` fills the column whichever
+           * way its text is aligned, so its box centre is the column centre either way and would
+           * agree with a centred stage even when the text is hard left — which is the exact
+           * mismatch this is here to catch. A Range over the text node measures where the ink is.
+           */
+          headInkMid: (() => {
+            const head = document.querySelector('[data-testid="gateway-demo-section"] h2');
+            if (!head || !head.firstChild) return null;
+            const range = document.createRange();
+            range.selectNodeContents(head);
+            const r = range.getBoundingClientRect();
+            return Math.round(r.left + r.width / 2);
+          })(),
         };
       })(),
       // The right edge of the top bar's right group — the gate for the owner's "why is the gap so long?".
@@ -289,33 +302,34 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
     `${label}: 시연 무대 폭(${stage.demoW})이 토큰 계산값(${expectedStageW})과 다르다`,
   ).toBeLessThanOrEqual(1);
   /*
-   * **The stage starts where its own heading starts** (2026-08-23; this assertion used to
-   * require the opposite).
+   * **The demo section is one axis: the stage is centred, and so is its heading** (2026-08-23).
    *
-   * 2026-08-19 capped the video's width and centred it in the same change. The cap was the
-   * owner's instruction and still stands; the centring was the part nobody measured. Measured
-   * on the published page at 1920: all three section heads at x=200, the evidence map at 200,
-   * the agent scene at 200 — and this one stage at **569**. One section in three ran its own
-   * grid under a heading that started where the other two did.
+   * The first half of this — "the stage is centred" — is what this file asserted from the start,
+   * and it was green the whole time the section was visibly wrong. The stage sat centred under a
+   * hard-left heading, so the section ran two axes; measured at 1920, the ink of the head began at
+   * x=200 while the video began at 569. **A half-checked axis is what let that ship.**
    *
-   * So both halves are asserted now, and the second is the one that was missing: the two stages
-   * must share a **width** (said once) *and* an **origin**. Width alone was green throughout the
-   * four days the page was visibly broken.
+   * So the assertion is now the relation, not one side of it: whatever axis the section uses, the
+   * heading's ink and the stage must share it. That stays true if the section is ever moved back
+   * to the left, which the previous wording of this test would not have.
    */
+  const stageMid = stage.demoLeft + stage.demoW / 2;
+  const colMid = stage.colLeft + stage.colW / 2;
   expect(
-    Math.abs(stage.demoLeft - stage.colLeft),
-    `${label}: 시연 무대(${stage.demoLeft})가 자기 컬럼(${stage.colLeft})의 왼쪽 모서리에서 안 시작한다`,
+    Math.abs(stageMid - colMid),
+    `${label}: 시연 무대가 컬럼 가운데에 서지 않았다`,
   ).toBeLessThanOrEqual(1);
+  expect(stage.headInkMid, `${label}: 절 제목의 글자를 못 읽었다 — 이 시험이 헛돈다`).not.toBeNull();
+  expect(
+    Math.abs(stage.headInkMid! - stageMid),
+    `${label}: 절 제목(${stage.headInkMid})과 시연 무대(${Math.round(stageMid)})의 축이 다르다 — ` +
+      "한 절에 격자가 둘이면 눈에는 기둥이 끊겨 보인다",
+  ).toBeLessThanOrEqual(2);
   expect(
     stage.agentW,
     `${label}: 에이전트 장면(${stage.agentW})과 시연 무대(${stage.demoW})의 폭이 갈렸다 — ` +
       "「이만큼이 무대다」는 한 번만 말해져야 한다",
   ).toBe(stage.demoW);
-  expect(
-    stage.agentLeft,
-    `${label}: 에이전트 장면(${stage.agentLeft})과 시연 무대(${stage.demoLeft})의 원점이 갈렸다 — ` +
-      "폭만 같고 축이 다르면 눈에는 기둥이 끊겨 보인다",
-  ).toBe(stage.demoLeft);
 }
 
 test.describe("관문 다운로드의 그리드", () => {

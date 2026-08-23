@@ -234,12 +234,23 @@ function SectionIntro({
   sub,
   inView,
   still = false,
+  centered = false,
 }: {
   eyebrow: string;
   title: string;
   sub?: string;
   inView?: boolean;
   still?: boolean;
+  /**
+   * Centre the head on the same axis as the section's content.
+   *
+   * ⚠️ **This is a property of the section, not a preference of the head.** The demo section is
+   * the page's one *stage* — a single object narrower than the column, with a caption — so it is
+   * centred, and its head has to be centred with it or the section runs two axes. Every other
+   * section fills its column and stays left. The 2026-08-23 defect was exactly this half-applied:
+   * the stage was centred and its head was not (`docs/DECISIONS.md` 2026-08-23).
+   */
+  centered?: boolean;
 }) {
   /**
    * A section head's entrance is **owned by scroll** (2026-08-22).
@@ -258,6 +269,7 @@ function SectionIntro({
         className={cn(
           rise(),
           'flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
+          centered && 'justify-center',
         )}
       >
         {/* A static dot — a signal is a state, and there is no state here, so it does not blink. */}
@@ -268,6 +280,7 @@ function SectionIntro({
         className={cn(
           rise('gateway-rise-d2'),
           'mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]',
+          centered && 'text-center',
         )}
       >
         {title}
@@ -277,6 +290,7 @@ function SectionIntro({
           className={cn(
             rise('gateway-rise-d3'),
             'mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
+            centered && 'mx-auto text-center',
           )}
         >
           {sub}
@@ -701,7 +715,13 @@ function DemoSection() {
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro eyebrow="Demo" title={t('demoTitle')} sub={t('demoSub')} inView={inView} />
+        <SectionIntro
+          eyebrow="Demo"
+          title={t('demoTitle')}
+          sub={t('demoSub')}
+          inView={inView}
+          centered
+        />
         <div
           className={cn(
             'gateway-rise gateway-scroll-stage gateway-rise-d3',
