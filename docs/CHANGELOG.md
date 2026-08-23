@@ -7,6 +7,13 @@
 
 ---
 
+## 2026-08-23 · The gateway map labels only what the overview needs
+
+- The download page's evidence map no longer crams a label onto every name that fits. It labels
+  the hub, the seven domains, and the busiest capabilities (twelve names instead of
+  thirty-three), and every other concept stays as a dot until you hover or press it. All 82 dots
+  are still drawn, so the caption's count remains the picture's count.
+
 ## 2026-08-23 · The demo clip loops without a control bar, and two sections read more plainly
 
 - The demo clip plays on a loop with no timecode or progress rail. It still pauses whenever the
