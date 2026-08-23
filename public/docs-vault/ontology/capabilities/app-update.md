@@ -34,5 +34,5 @@ The Pages manifest is a pointer that stably distributes which release to target.
 - `scripts/check-hosted-download-surface.mjs`: hosted surface gate that verifies the deployed updater manifest together
 
 ## Confidence
-medium-high: State/deployment script tests and current rc.9 manifest staging have been verified.
-Round-trip testing of installing and relaunching with a real new version archive must be re-verified in the next deployment.
+medium-high: State, deployment, manifest staging, and signature gates are automated.
+Installing and relaunching with the real new archive is re-verified for every deployment.
