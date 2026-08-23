@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useTranslations } from "next-intl";
@@ -36,7 +36,6 @@ import {
 } from "@/shared/lib/atlas-git-record";
 import {
   gitDiff,
-  gitCommitDiff,
   gitFetch,
   gitErrorMessage,
   gitHistory,
@@ -231,6 +230,26 @@ const DOCK_INERT_CLASS =
 
 const noopSubscribe = () => () => {};
 
+type GitWorkspaceRead = {
+  status: GitStatusResult;
+  changes: GitChangeEntry[];
+  diffText: string;
+  history: GitCommitInfo[];
+};
+
+async function readGitWorkspace(vaultPath: string): Promise<GitWorkspaceRead | null> {
+  const status = await gitStatus(vaultPath);
+  if (!status) return null;
+  if (!status.initialized) return { status, changes: [], diffText: "", history: [] };
+  const [diff, history] = await Promise.all([gitDiff(vaultPath), gitHistory(vaultPath, 10)]);
+  return {
+    status,
+    changes: diff?.files ?? [],
+    diffText: diff?.diff ?? "",
+    history: history ?? [],
+  };
+}
+
 /**
  * Section label.
  *
@@ -361,6 +380,12 @@ export function AtlasGitPanel({
       setGitInstalled(null);
     }
   }, []);
+  const applyInitialProbe = useEffectEvent((probe: Awaited<ReturnType<typeof gitProbe>>) => {
+    setGitInstalled(probe === null ? null : probe.installed);
+  });
+  const reportInitialProbeFailure = useEffectEvent(() => {
+    setGitInstalled(null);
+  });
   /*
    * Called **only after a folder is chosen** (2026-08-02, caught by a contract
    * test: "If there is no folder inside the app … no IPC at all" — inside the app with
@@ -374,8 +399,18 @@ export function AtlasGitPanel({
    */
   useEffect(() => {
     if (!vaultPath) return;
-    void probeGit();
-  }, [probeGit, vaultPath]);
+    let cancelled = false;
+    void gitProbe()
+      .then((probe) => {
+        if (!cancelled) applyInitialProbe(probe);
+      })
+      .catch(() => {
+        if (!cancelled) reportInitialProbeFailure();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vaultPath]);
   const [loadErrorText, setLoadErrorText] = useState<string | null>(null);
 
   const [confirming, setConfirming] = useState(false);
@@ -429,40 +464,49 @@ export function AtlasGitPanel({
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [remoteNotice, setRemoteNotice] = useState<string | null>(null);
 
+  const applyWorkspaceRead = useCallback((next: GitWorkspaceRead) => {
+    setLoadErrorText(null);
+    setStatus(next.status);
+    setChanges(next.changes);
+    setDiffText(next.diffText);
+    setHistory(next.history);
+    setLoadState("ready");
+  }, []);
+  const reportWorkspaceReadFailure = useCallback((err: unknown) => {
+    setLoadErrorText(gitErrorMessage(err));
+    setLoadState("error");
+  }, []);
   // Read-only queries (status/diff/history) only — a write (git_snapshot) never happens here.
   const refresh = useCallback(async () => {
     if (!vaultPath) return;
-    // No synchronous setState before the first await (react-hooks/
-    // set-state-in-effect — an effect calls this directly). The initial
-    // loadState is already "loading".
     try {
-      const nextStatus = await gitStatus(vaultPath);
-      if (!nextStatus) return;
-      setLoadErrorText(null);
-      setStatus(nextStatus);
-      if (nextStatus.initialized) {
-        const [diffResult, historyResult] = await Promise.all([
-          gitDiff(vaultPath),
-          gitHistory(vaultPath, 10),
-        ]);
-        setChanges(diffResult?.files ?? []);
-        setDiffText(diffResult?.diff ?? "");
-        setHistory(historyResult ?? []);
-      } else {
-        setChanges([]);
-        setDiffText("");
-        setHistory([]);
-      }
-      setLoadState("ready");
+      const next = await readGitWorkspace(vaultPath);
+      if (next) applyWorkspaceRead(next);
     } catch (err) {
-      setLoadErrorText(gitErrorMessage(err));
-      setLoadState("error");
+      reportWorkspaceReadFailure(err);
     }
-  }, [vaultPath]);
+  }, [applyWorkspaceRead, reportWorkspaceReadFailure, vaultPath]);
+  const applyInitialWorkspaceRead = useEffectEvent((next: GitWorkspaceRead) => {
+    applyWorkspaceRead(next);
+  });
+  const reportInitialWorkspaceReadFailure = useEffectEvent((err: unknown) => {
+    reportWorkspaceReadFailure(err);
+  });
 
   useEffect(() => {
-    if (desktop) void refresh();
-  }, [desktop, refresh]);
+    if (!desktop || !vaultPath) return;
+    let cancelled = false;
+    void readGitWorkspace(vaultPath)
+      .then((next) => {
+        if (!cancelled && next) applyInitialWorkspaceRead(next);
+      })
+      .catch((err) => {
+        if (!cancelled) reportInitialWorkspaceReadFailure(err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [desktop, vaultPath]);
 
   // Split what the user judges (concepts) from the files that ride along. What
   // they have to read here is "which of my concepts changed"; `.gitignore` and
@@ -493,35 +537,6 @@ export function AtlasGitPanel({
       : history.length > 0
         ? { kind: "commit", hash: history[0].hash }
         : { kind: "pending" });
-
-  /*
-   * The chosen step's patch, read **only when the selection changes**. Reading
-   * them all up front while drawing the list would be one `git show` per step —
-   * paying in advance for what is not on screen (`architecture.md`
-      「Do not build a model of a surface that is not drawn」 — do not build the model of a surface
-   * that is not drawn). `null` means "not known yet"; `""` means "none".
-   */
-  const [commitDiff, setCommitDiff] = useState<string | null>(null);
-  const diffHash = selection.kind === "commit" ? selection.hash : null;
-  useEffect(() => {
-    if (!vaultPath || !diffHash) {
-      setCommitDiff(null);
-      return;
-    }
-    let cancelled = false;
-    setCommitDiff(null);
-    void gitCommitDiff(vaultPath, diffHash)
-      .then((result) => {
-        if (!cancelled) setCommitDiff(result?.diff ?? "");
-      })
-      // A failed read does not bring the screen down — that section just says "none".
-      .catch(() => {
-        if (!cancelled) setCommitDiff("");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [vaultPath, diffHash]);
 
   const stage: GitStage = !bridgeAvailable
     ? "web"
@@ -746,7 +761,6 @@ export function AtlasGitPanel({
         stage === "loading" ||
         stage === "error" ? (
           <DesktopBody
-            commitDiff={commitDiff}
             snapshotMessage={snapshotMessage}
             setSnapshotMessage={setSnapshotMessage}
             hostPlatformHint={
@@ -756,10 +770,11 @@ export function AtlasGitPanel({
             }
             onRecheckGit={() => {
               void probeGit();
-              refresh();
+              void refresh();
             }}
             key={stage}
             t={t}
+            vaultPath={vaultPath ?? null}
             stage={stage}
             loadErrorText={loadErrorText}
             status={status}
@@ -2569,7 +2584,6 @@ function ActionDock({
 
 function DesktopBody({
   t,
-  commitDiff,
   snapshotMessage,
   setSnapshotMessage,
   stage,
@@ -2623,11 +2637,12 @@ function DesktopBody({
   kindLabel,
   focusedConceptId,
   setFocusedConceptId,
+  vaultPath,
 }: {
   snapshotMessage: string;
   setSnapshotMessage: (v: string) => void;
-  /** The chosen step's patch — `null` is "not known yet", `""` is "none". */
-  commitDiff: string | null;
+  /** The connected vault is the exact scope of each selected commit's lazy patch read. */
+  vaultPath: string | null;
   /** `navigator.platform ?? userAgent` — the hint that picks per-platform install guidance. */
   hostPlatformHint: string;
   /** "re-check" (re-check) — so someone who just installed git need not restart the app. */
@@ -3094,14 +3109,15 @@ function DesktopBody({
                 if (!picked) return null;
                 return (
                   <CommitDetail
+                    key={`${vaultPath ?? ""}:${picked.hash}:${(concepts.get(picked.hash) ?? []).length}`}
                     t={t}
+                    vaultPath={vaultPath}
                     hash={picked.hash}
                     isoTime={picked.isoTime}
                     relativeTime={picked.relativeTime}
                     subject={picked.subject}
                     concepts={concepts.get(picked.hash) ?? []}
                     files={picked.files ?? []}
-                    diff={commitDiff}
                     focusedConceptId={focusedConceptId}
                     setFocusedConceptId={setFocusedConceptId}
                     egoFor={egoFor}

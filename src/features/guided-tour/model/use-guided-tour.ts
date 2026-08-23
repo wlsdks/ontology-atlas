@@ -149,8 +149,29 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     [steps, persona, hasSelection, canResolveAnchor, resolveTick],
   );
 
-  const stepIndex = visibleSteps.findIndex((s) => s.id === stepId);
-  const step = stepIndex >= 0 ? visibleSteps[stepIndex] : (visibleSteps[0] ?? null);
+  // A datasheet exit is pending: after `onLeaveDatasheet` clears the selection,
+  // the decision about the next step waits until `hasSelection` actually settles
+  // to false (a separate effect below). It is state because render needs this
+  // observable guard when normalizing an unavailable step.
+  const [pendingLeaveDatasheet, setPendingLeaveDatasheet] = useState(false);
+  const requestedStepIndex = visibleSteps.findIndex((s) => s.id === stepId);
+
+  // `visibleSteps` is a projection of the current DOM, so an anchor may disappear
+  // between renders. Normalize that state during rendering rather than committing a
+  // second render from an effect: React discards this render and retries with the
+  // first still-visible step before anything paints. Keeping the correction in the
+  // state machine (rather than only deriving a fallback) also prevents a later DOM
+  // reappearance from resurrecting an abandoned step.
+  if (
+    !pendingLeaveDatasheet &&
+    requestedStepIndex < 0 &&
+    visibleSteps.length > 0 &&
+    visibleSteps[0].id !== stepId
+  ) {
+    setStepId(visibleSteps[0].id);
+  }
+  const stepIndex = requestedStepIndex >= 0 ? requestedStepIndex : visibleSteps.length > 0 ? 0 : -1;
+  const step = stepIndex >= 0 ? visibleSteps[stepIndex] : null;
 
   // The fixed journey used for progress display — see the interface comment above.
   const personaSteps = useMemo(
@@ -158,25 +179,6 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     [steps, persona],
   );
   const personaStepIndex = step ? personaSteps.findIndex((s) => s.id === step.id) : -1;
-
-  // A datasheet exit is pending: after `onLeaveDatasheet` clears the selection,
-  // the decision about the next step waits until `hasSelection` actually settles
-  // to false (a separate effect below). This ref also guards against the
-  // "skip correction" effect below cutting in first and resetting stepId to
-  // "welcome" (a measured regression — the two effects reacted to the same
-  // `hasSelection` transition and wrote different stepIds).
-  const pendingLeaveDatasheetRef = useRef(false);
-
-  // If the current step falls out of the list under the skip rules (step 5
-  // excluded because the selection failed, say), correct to the first remaining
-  // step. While a datasheet exit is pending, yield to its dedicated effect.
-  useEffect(() => {
-    if (!open) return;
-    if (pendingLeaveDatasheetRef.current) return;
-    if (stepIndex < 0 && visibleSteps.length > 0 && visibleSteps[0].id !== stepId) {
-      setStepId(visibleSteps[0].id);
-    }
-  }, [open, stepIndex, visibleSteps, stepId]);
 
   // Focus restoration (2026-07-23) — the card takes focus on every step
   // (`GuidedTourCard`), so on close it is returned to whatever opened the tour
@@ -188,6 +190,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   const finish = useCallback(
     (status: GuidedTourStatus) => {
       writeGuidedTourStatus(status, storageKey);
+      setPendingLeaveDatasheet(false);
       setOpen(false);
       const el = restoreFocusElRef.current;
       restoreFocusElRef.current = null;
@@ -202,6 +205,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
         ? document.activeElement
         : null;
     setPersona("all");
+    setPendingLeaveDatasheet(false);
     setStepId(steps[0]?.id ?? "");
     setResolveTick((t) => t + 1);
     setOpen(true);
@@ -218,7 +222,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   const advance = useCallback(() => {
     if (stepIndex < 0) return;
     if (step?.id === "datasheet" && onLeaveDatasheet && hasSelection) {
-      pendingLeaveDatasheetRef.current = true;
+      setPendingLeaveDatasheet(true);
       onLeaveDatasheet();
       return;
     }
@@ -235,9 +239,8 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   // at that moment and choose the next step. The same commit-race pattern as the
   // try-click auto-advance.
   useEffect(() => {
-    if (!pendingLeaveDatasheetRef.current) return undefined;
+    if (!pendingLeaveDatasheet) return undefined;
     if (!open || hasSelection) return undefined;
-    pendingLeaveDatasheetRef.current = false;
     let cancelled = false;
     window.queueMicrotask(() => {
       if (cancelled) return;
@@ -249,6 +252,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
       const tryClickIdx = fresh.findIndex((s) => s.id === "try-click");
       const next = tryClickIdx >= 0 ? fresh[tryClickIdx + 1] : fresh[0];
       setResolveTick((t) => t + 1);
+      setPendingLeaveDatasheet(false);
       if (next) {
         setStepId(next.id);
       } else {
@@ -258,7 +262,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     return () => {
       cancelled = true;
     };
-  }, [steps, hasSelection, open, persona, canResolveAnchor, finish]);
+  }, [steps, hasSelection, open, pendingLeaveDatasheet, persona, canResolveAnchor, finish]);
 
   const back = useCallback(() => {
     if (stepIndex <= 0) return;

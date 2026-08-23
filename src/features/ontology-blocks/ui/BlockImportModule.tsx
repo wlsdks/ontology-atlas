@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -31,6 +31,38 @@ interface PreviewSource {
   manifest?: BlockManifest;
 }
 
+type InlineText = { kind: "done" | "error"; text: string } | null;
+
+interface ImportUiState {
+  preview: PreviewSource | null;
+  inlineText: InlineText;
+}
+
+type ImportUiAction =
+  | { type: "open-preview"; preview: PreviewSource }
+  | { type: "close-preview" }
+  | { type: "set-inline-text"; inlineText: InlineText }
+  | { type: "complete-import"; text: string }
+  | { type: "discard-invalid-preview"; preview: PreviewSource; text: string };
+
+function importUiReducer(state: ImportUiState, action: ImportUiAction): ImportUiState {
+  switch (action.type) {
+    case "open-preview":
+      return { preview: action.preview, inlineText: null };
+    case "close-preview":
+      return { ...state, preview: null };
+    case "set-inline-text":
+      return { ...state, inlineText: action.inlineText };
+    case "complete-import":
+      return { preview: null, inlineText: { kind: "done", text: action.text } };
+    case "discard-invalid-preview":
+      // A newly selected folder may have replaced this preview while React was
+      // retrying the render. Discard only the identity that failed planning.
+      if (state.preview !== action.preview) return state;
+      return { preview: null, inlineText: { kind: "error", text: action.text } };
+  }
+}
+
 /**
  * "Import a block" (the merge preview). A self-contained module mounted permanently
  * inside the global INDEX panel (`TopologyIndexPanel`) — the same contract as
@@ -52,7 +84,10 @@ interface PreviewSource {
 export function BlockImportModule() {
   const t = useTranslations("ontologyBlocks");
   const { status, manifest, createDoc } = useLocalVault();
-  const [preview, setPreview] = useState<PreviewSource | null>(null);
+  const [{ preview, inlineText }, dispatchImportUi] = useReducer(importUiReducer, {
+    preview: null,
+    inlineText: null,
+  });
   const [resolution, setResolution] = useState<BlockConflictResolution>("skip");
 
   /*
@@ -70,23 +105,7 @@ export function BlockImportModule() {
     onChange: setResolution,
   });
   const [busy, setBusy] = useState(false);
-  const [inlineText, setInlineText] = useState<{ kind: "done" | "error"; text: string } | null>(
-    null,
-  );
   const [dialogError, setDialogError] = useState(false);
-
-  const vaultLoaded = status === "loaded" && Boolean(manifest);
-  const open = preview !== null;
-  useBodyScrollLock(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPreview(null);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open]);
 
   const existingSlugs = useMemo(
     () => new Set(manifest?.docs.map((d) => d.slug) ?? []),
@@ -126,11 +145,22 @@ export function BlockImportModule() {
     }
   }, [preview, existingSlugs, existingUidClaims, resolution]);
 
+  if (planError && preview) {
+    dispatchImportUi({ type: "discard-invalid-preview", preview, text: t("importError") });
+  }
+
+  const vaultLoaded = status === "loaded" && Boolean(manifest);
+  const open = preview !== null;
+  useBodyScrollLock(open);
+
   useEffect(() => {
-    if (!planError) return;
-    setPreview(null);
-    setInlineText({ kind: "error", text: t("importError") });
-  }, [planError, t]);
+    if (!open) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") dispatchImportUi({ type: "close-preview" });
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open]);
 
   // Decided by whether it can be called, not by key presence (`in`) — judging "supported"
   // in an environment where the value is undefined paints a raw JS error where the user
@@ -141,7 +171,7 @@ export function BlockImportModule() {
 
   const pickBlockFolder = async () => {
     if (!vaultLoaded) return;
-    setInlineText(null);
+    dispatchImportUi({ type: "set-inline-text", inlineText: null });
     try {
       const dir = (isTauriVaultRuntime()
         ? await pickTauriVaultDirectory(t("importAria"))
@@ -155,7 +185,7 @@ export function BlockImportModule() {
       if (!dir) return;
       const { files, manifestRaw } = await readBlockDirectory(dir);
       if (files.length === 0) {
-        setInlineText({ kind: "error", text: t("importEmpty") });
+        dispatchImportUi({ type: "set-inline-text", inlineText: { kind: "error", text: t("importEmpty") } });
         return;
       }
       const blockManifest = manifestRaw ? parseBlockManifest(manifestRaw) : null;
@@ -164,15 +194,18 @@ export function BlockImportModule() {
       }
       setResolution("skip");
       setDialogError(false);
-      setPreview({
-        files,
-        blockName: blockManifest?.blockName?.trim() || dir.name,
-        sourceProject: blockManifest?.sourceProject?.trim() || dir.name,
-        ...(blockManifest ? { manifest: blockManifest } : {}),
+      dispatchImportUi({
+        type: "open-preview",
+        preview: {
+          files,
+          blockName: blockManifest?.blockName?.trim() || dir.name,
+          sourceProject: blockManifest?.sourceProject?.trim() || dir.name,
+          ...(blockManifest ? { manifest: blockManifest } : {}),
+        },
       });
     } catch (err) {
       if (isPickerAbort(err)) return;
-      setInlineText({ kind: "error", text: t("importError") });
+      dispatchImportUi({ type: "set-inline-text", inlineText: { kind: "error", text: t("importError") } });
     }
   };
 
@@ -188,8 +221,7 @@ export function BlockImportModule() {
           skipRefresh: i < plan.writes.length - 1,
         });
       }
-      setPreview(null);
-      setInlineText({ kind: "done", text: t("importDone", { count: plan.writes.length }) });
+      dispatchImportUi({ type: "complete-import", text: t("importDone", { count: plan.writes.length }) });
     } catch {
       setDialogError(true);
     } finally {
@@ -255,7 +287,7 @@ export function BlockImportModule() {
             exit={{ opacity: 0 }}
             transition={MOTION.base}
             className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-6"
-            onClick={() => setPreview(null)}
+            onClick={() => dispatchImportUi({ type: "close-preview" })}
           >
             <motion.section
               initial={{ opacity: 0, y: 12, scale: 0.985 }}
@@ -286,7 +318,7 @@ export function BlockImportModule() {
                 </div>
                 <IconButton
                   label={t("closeAria")}
-                  onClick={() => setPreview(null)}
+                  onClick={() => dispatchImportUi({ type: "close-preview" })}
                   data-testid="block-import-close"
                   className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
                 >
@@ -402,7 +434,7 @@ export function BlockImportModule() {
               <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-5 py-3">
                 <button
                   type="button"
-                  onClick={() => setPreview(null)}
+                  onClick={() => dispatchImportUi({ type: "close-preview" })}
                   data-testid="block-import-cancel"
                   className={controlClass({
                     shape: "segment",

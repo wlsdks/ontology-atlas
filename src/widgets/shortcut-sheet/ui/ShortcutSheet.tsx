@@ -254,6 +254,11 @@ export function ShortcutSheet({ open, onClose }: Props) {
   // `All` (all) tab keeps the previous list, so this is not hiding shortcuts to avoid
   // crowding.
   const [scope, setScope] = useState<ShortcutScope>("current");
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setScope("current");
+  }
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -271,11 +276,6 @@ export function ShortcutSheet({ open, onClose }: Props) {
   /** On the current-screen tab with nothing but global sections — say so quietly. */
   const currentHasOwnSections =
     scope !== "current" || visibleSections.some((s) => s.surface !== "global");
-
-  useEffect(() => {
-    if (!open) return;
-    setScope("current");
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;

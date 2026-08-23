@@ -979,8 +979,6 @@ function HomePageImpl() {
       handleChangeIndexDefaultCollapsed,
       audiencePlain,
       setAudiencePlain,
-      gitVaultPath,
-      ontologyChangeset,
       vault.status,
     ],
   );

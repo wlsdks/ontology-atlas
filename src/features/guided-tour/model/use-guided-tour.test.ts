@@ -147,6 +147,33 @@ describe("useGuidedTour", () => {
     expect(result.current.visibleSteps.map((s) => s.id)).toContain("datasheet");
   });
 
+  it("normalizes an unavailable step before paint and does not resurrect it when its anchor returns", () => {
+    const steps = [
+      { id: "first", anchor: null, persona: "all", copyKey: "first" },
+      { id: "second", anchor: { type: "testid", value: "second" }, persona: "all", copyKey: "second" },
+    ] as const;
+    const { result, rerender } = renderHook(
+      ({ hidden }: { hidden: boolean }) =>
+        useGuidedTour({
+          steps,
+          hasSelection: hidden,
+          canResolveAnchor: (anchor) => anchor === null || !hidden,
+          storageKey: TEST_KEY,
+        }),
+      { initialProps: { hidden: false } },
+    );
+    act(() => result.current.start());
+    act(() => result.current.advance());
+    expect(result.current.step?.id).toBe("second");
+
+    rerender({ hidden: true });
+    expect(result.current.step?.id).toBe("first");
+    expect(result.current.stepIndex).toBe(0);
+
+    rerender({ hidden: false });
+    expect(result.current.step?.id).toBe("first");
+  });
+
   it("auto-advances off try-click the moment a selection appears (false→true transition)", async () => {
     const { result, rerender } = setup(false);
     act(() => result.current.start());

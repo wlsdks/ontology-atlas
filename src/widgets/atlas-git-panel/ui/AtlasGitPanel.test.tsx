@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
@@ -441,6 +441,77 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(patch.textContent).not.toContain("index 05d74bf");
     // The file name is carried by **the list above** — the patch box does not repeat it.
     expect(patch.textContent).not.toContain("docs/capabilities/foo.md");
+  });
+
+  it("새 걸음으로 바뀐 뒤 늦은 이전 git show 응답을 버린다", async () => {
+    const newer = {
+      ...HISTORY[0],
+      shortHash: "def5678",
+      hash: "def5678abc1234",
+      subject: "newer snapshot",
+      files: [
+        {
+          path: "docs/elements/newer.md",
+          status: "modified" as const,
+          kind: "element",
+          slug: "elements/newer",
+          renamedFrom: null,
+        },
+      ],
+    };
+    let resolveOlder!: (value: unknown) => void;
+    let resolveNewer!: (value: unknown) => void;
+    const older = new Promise<unknown>((resolve) => {
+      resolveOlder = resolve;
+    });
+    const newerResult = new Promise<unknown>((resolve) => {
+      resolveNewer = resolve;
+    });
+
+    installDesktopGit({ history: [HISTORY[0], newer] });
+    const standardInvoke = tauriApiMock.invoke.getMockImplementation()!;
+    tauriApiMock.invoke.mockImplementation((command: string, args?: { hash?: string }) => {
+      if (command === "git_commit_diff") {
+        return args?.hash === newer.hash ? newerResult : older;
+      }
+      return standardInvoke(command);
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const steps = await screen.findAllByTestId("atlas-git-history-item");
+    fireEvent.click(steps[0]);
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_commit_diff"),
+      ).toHaveLength(1),
+    );
+    fireEvent.click(steps[1]);
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_commit_diff"),
+      ).toHaveLength(2),
+    );
+
+    await act(async () => {
+      resolveNewer({
+        count: 1,
+        files: [],
+        diff: "diff --git a/docs/elements/newer.md b/docs/elements/newer.md\n@@ -0,0 +1 @@\n+newer result\n",
+      });
+      await Promise.resolve();
+    });
+    expect(await screen.findByTestId("atlas-git-commit-diff")).toHaveTextContent("newer result");
+
+    await act(async () => {
+      resolveOlder({
+        count: 1,
+        files: [],
+        diff: "diff --git a/docs/capabilities/older.md b/docs/capabilities/older.md\n@@ -0,0 +1 @@\n+older stale result\n",
+      });
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("atlas-git-commit-diff")).toHaveTextContent("newer result");
+    expect(screen.getByTestId("atlas-git-commit-diff")).not.toHaveTextContent("older stale result");
   });
 
   it("커밋 이력이 탭 뒤에 숨지 않는다 — 목록에 늘 있다", async () => {
