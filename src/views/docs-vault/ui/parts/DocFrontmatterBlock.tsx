@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
@@ -170,7 +170,7 @@ export function DocFrontmatterBlock({
   // contract — `Date.now()` is never called during render. The caller remounts this
   // component per document via `key={doc.slug}` (see the file docstring), so both reset to
   // a fresh baseline for each new document.
-  const openedMtimeRef = useRef(doc.mtime);
+  const [openedMtime] = useState(() => doc.mtime);
   const [viewOpenedAtMs] = useState(() => Date.now());
   const resolvedSelfEditTimestamps = selfEditTimestamps ?? EMPTY_SELF_EDIT_TIMESTAMPS;
   // Only two real-data candidates go in: a heartbeat match, and a self-write this session.
@@ -200,7 +200,7 @@ export function DocFrontmatterBlock({
   // True only on a real mtime mismatch — no signal inflation.
   const mtimeConflict = hasDocMtimeConflict({
     doc: { slug: doc.slug, mtime: doc.mtime },
-    baselineMtime: openedMtimeRef.current,
+    baselineMtime: openedMtime,
     baselineCapturedAtMs: viewOpenedAtMs,
     selfEditTimestamps: resolvedSelfEditTimestamps,
   });

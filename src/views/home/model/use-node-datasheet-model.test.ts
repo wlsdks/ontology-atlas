@@ -132,4 +132,44 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
       "/docs/?slug=capabilities%2Flegacy",
     );
   });
+
+  it("same-node baseline survives a null reselect, while a new node starts a new baseline", () => {
+    const alpha = node("capability:alpha", ["capabilities/alpha"]);
+    const beta = node("capability:beta", ["capabilities/beta"]);
+    const now = Date.parse("2026-07-26T00:00:00.000Z");
+    function useModel(selected: KnowledgeGraphNode | null, freshness: ReadonlyMap<string, string>) {
+      return useNodeDatasheetModel({
+        selectedOntologyNode: selected,
+        insight: { nodes: [alpha, beta], edges: [] },
+        handoffSource: "read-only-sample",
+        authoredSignificance: null,
+        docFreshnessIndex: freshness,
+        updatedAgoNowMs: now,
+        formatUpdatedLabel: (key) => key,
+        agentActivityStatus: AGENT_ACTIVITY,
+        agentFocusNodeId: null,
+        selfEditTimestamps: new Map(),
+        formatEditAgeLabel: (key) => key,
+      });
+    }
+    const initial = new Map([["capabilities/alpha", "2026-07-01T00:00:00.000Z"]]);
+    const changed = new Map([["capabilities/alpha", "2026-07-02T00:00:00.000Z"]]);
+    const { result, rerender } = renderHook(
+      ({ selected, freshness }: { selected: KnowledgeGraphNode | null; freshness: ReadonlyMap<string, string> }) =>
+        useModel(selected, freshness),
+      { initialProps: { selected: alpha as KnowledgeGraphNode | null, freshness: initial } },
+    );
+
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
+    rerender({ selected: alpha, freshness: changed });
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(true);
+
+    rerender({ selected: null, freshness: changed });
+    expect(result.current.v2DatasheetModel).toBeNull();
+    rerender({ selected: alpha, freshness: changed });
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(true);
+
+    rerender({ selected: beta, freshness: new Map([["capabilities/beta", "2026-07-03T00:00:00.000Z"]]) });
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
+  });
 });

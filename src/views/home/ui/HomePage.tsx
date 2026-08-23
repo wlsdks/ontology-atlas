@@ -69,6 +69,7 @@ const VaultAgentPanel = dynamic(
   { ssr: false },
 );
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
+import { useRetainedDatasheetModel } from "../model/use-retained-datasheet-model";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
 import { useCanvasBackground, useExpand, useFootprint, useGlyphSet, useMapArrangement, useView3d } from "@/shared/lib/appearance-preferences";
@@ -2967,9 +2968,9 @@ function HomePageImpl() {
     !nodePopoverDismissed;
   // Popover entrance/exit symmetry. When `panelOpen` drops to false the panel is not
   // unmounted immediately but kept for the exit animation (~120 ms). During the exit
-  // the selection-derived `v2DatasheetModel` goes null, so the last model is retained
-  // in a ref and the same content keeps drawing — it folds away rather than changing
-  // as it goes.
+  // the selection-derived `v2DatasheetModel` goes null, so the helper holds its latest
+  // immutable snapshot. A different selected node gets no old snapshot while its own
+  // model is still unavailable.
   //
   // 2026-08-03: **the exit window now belongs to the panel** (the `<Surface>` inside
   // `TopologyV2DetailPanel`). The old `usePanelPresence` + `presence` prop pairing kept
@@ -2984,9 +2985,10 @@ function HomePageImpl() {
   // the first open frame and delays the entrance by one frame (`useHeldValue` holds
   // during render for the same reason).
   if ((panelOpen || meaningEditorOpen) && !nodePanelMounted) setNodePanelMounted(true);
-  const retainedDatasheetRef = useRef(v2DatasheetModel);
-  if (v2DatasheetModel) retainedDatasheetRef.current = v2DatasheetModel;
-  const panelDatasheetModel = v2DatasheetModel ?? retainedDatasheetRef.current;
+  const panelDatasheetModel = useRetainedDatasheetModel(
+    v2DatasheetModel,
+    selectedOntologyNode?.id ?? null,
+  );
   const selectedNodeOwnsRightRail = selectedNodeFocusActive;
   const topologyUtilityChromeState = selectedRelationActive
     ? "collapsed-active-relation"

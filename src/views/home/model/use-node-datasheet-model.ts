@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useState } from "react";
 import {
   buildTopologyMeaningEditorNodeHref,
   deriveCodeLocations,
@@ -152,25 +152,34 @@ export function useNodeDatasheetModel({
 
   // Freshness baseline from the moment this node was opened. It resets only
   // when nodeId changes: if polling moves freshness while the same node stays
-  // open, that *is* the "changed after you opened it" signal. Writing the ref
-  // triggers no re-render, so purity holds (React's derived-state-during-render
-  // pattern). capturedAtMs reuses the `updatedAgoNowMs` session snapshot — no
-  // new `Date.now()` call.
-  const editBaselineRef = useRef<{
+  // open, that *is* the "changed after you opened it" signal. The state is keyed
+  // by node id and adjusted during render, so React retries before paint without
+  // reading or mutating refs during render. capturedAtMs reuses the
+  // `updatedAgoNowMs` session snapshot — no new `Date.now()` call.
+  type EditBaseline = {
     nodeId: string;
     freshnessIso: string | null;
     capturedAtMs: number;
-  } | null>(null);
+  };
   const currentNodeId = selectedOntologyNode?.id ?? null;
   const currentSourceSlug = nodeFocus?.sourceSlug ?? null;
   const currentFreshnessIso = currentSourceSlug ? docFreshnessIndex.get(currentSourceSlug) ?? null : null;
-  if (currentNodeId !== null && editBaselineRef.current?.nodeId !== currentNodeId) {
-    editBaselineRef.current = {
-      nodeId: currentNodeId,
-      freshnessIso: currentFreshnessIso,
-      capturedAtMs: updatedAgoNowMs,
-    };
+  const baselineForCurrentNode: EditBaseline | null =
+    currentNodeId === null
+      ? null
+      : {
+        nodeId: currentNodeId,
+        freshnessIso: currentFreshnessIso,
+        capturedAtMs: updatedAgoNowMs,
+      };
+  const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(() => baselineForCurrentNode);
+  if (baselineForCurrentNode && editBaseline?.nodeId !== baselineForCurrentNode.nodeId) {
+    setEditBaseline(baselineForCurrentNode);
   }
+  const activeBaseline =
+    baselineForCurrentNode && editBaseline?.nodeId === baselineForCurrentNode.nodeId
+      ? editBaseline
+      : baselineForCurrentNode;
 
   const v2DatasheetModel = useMemo(() => {
     if (!nodeFocus || !selectedOntologyNode || !insight) return null;
@@ -233,13 +242,11 @@ export function useNodeDatasheetModel({
         }
       : null;
 
-    const baseline = editBaselineRef.current;
     const mtimeConflict = hasNodeMtimeConflict({
       sourceSlug: nodeFocus.sourceSlug,
-      baselineFreshnessIso: baseline && baseline.nodeId === selectedOntologyNode.id ? baseline.freshnessIso : null,
+      baselineFreshnessIso: activeBaseline?.freshnessIso ?? null,
       currentFreshnessIso: freshnessIso ?? null,
-      baselineCapturedAtMs:
-        baseline && baseline.nodeId === selectedOntologyNode.id ? baseline.capturedAtMs : updatedAgoNowMs,
+      baselineCapturedAtMs: activeBaseline?.capturedAtMs ?? updatedAgoNowMs,
       selfEditTimestamps,
     });
 
@@ -296,6 +303,7 @@ export function useNodeDatasheetModel({
     agentFocusNodeId,
     selfEditTimestamps,
     formatEditAgeLabel,
+    activeBaseline,
   ]);
 
   return { nodeFocus, significance: nodeFocusData?.significance ?? null, v2DatasheetModel };

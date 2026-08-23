@@ -12,6 +12,8 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
+  useLayoutEffect,
   useMemo,
   useRef,
   type PointerEvent as ReactPointerEvent,
@@ -131,6 +133,7 @@ import {
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
+import { prepareRevealHome } from "./topology-reveal-home";
 
 /** Kept outside the hook so it never enters an effect's dependency list. */
 function overviewBoundsFor(fit: "spine" | "full", world: TopologyWorld) {
@@ -459,6 +462,9 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
   const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
+  const getRealmCaption = useEffectEvent(() => realmCaption);
+  const getClusterBarLabels = useEffectEvent(() => clusterBarLabels);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -727,13 +733,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const realmTierKindsRef = useRef<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>(null);
   /** Cached `contains` ancestor chain of the realm root — treated as expanded so the outer density gate cannot hide the realm's interior. */
   const realmExpandChainRef = useRef<{ rootId: string; chain: ReadonlySet<string> } | null>(null);
-  /** Warding census caption prop mirror, so the rAF frame closure reads the latest wording. */
+  /** Latest render inputs read by the mount-only rAF and pointer closures. */
   const realmCaptionRef = useRef<string | null>(realmCaption);
-  realmCaptionRef.current = realmCaption;
-  // Cluster bar label mirror — hit-testing and draw must measure width from the **same string**.
   const clusterBarLabelsRef = useRef<ClusterBarLabels | null>(clusterBarLabels);
-  clusterBarLabelsRef.current = clusterBarLabels;
-
+  useLayoutEffect(() => {
+    realmCaptionRef.current = getRealmCaption();
+    clusterBarLabelsRef.current = getClusterBarLabels();
+  }, [realmCaption, clusterBarLabels]);
   const cameraRef = useRef<CameraAxes>({
     x: { value: 0, velocity: 0 },
     y: { value: 0, velocity: 0 },
@@ -812,7 +818,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * pay it once where initialization completes.
    */
   const pendingSpotlightFitRef = useRef(false);
-  /** Handle to the latest `runSpotlightFit`, so local functions never call a stale closure. */
   const runSpotlightFitRef = useRef<(() => boolean) | null>(null);
   /** Latest function to reframe the current semantic state with the settled viewport size. */
   const reframeViewportRef = useRef<((motion: ViewportReframeMotion) => boolean) | null>(null);
@@ -1548,18 +1553,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
-    // Passive default = the simplified overview scale
-    // (`computeOverviewCameraTarget`'s own JSDoc), fit to the SPINE bbox
-    // (project+domain+hub — the only tier drawn at entry), NOT the full
-    // 295-node bounds. Fitting the full bounds after the de-pileup spread them
-    // wide shrank the ~8 visible spine nodes to a dot.
-    // `overviewScaleRef` MUST anchor on the SAME spine bounds — it feeds both
-    // the altitude band's "100%" reference AND the zoom-ratio entry scale
-    // (`overviewEntryScale = overviewScale × overviewEntryRatio`), so if it used
-    // the full bounds while the camera sits at the spine fit, zoomRatio would be
-    // ≫1 at entry and capabilities would cross-fade in immediately (soup) and
-    // farT would drift off circuit.
-    const target = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+    const target = computeOverviewCameraTarget(
+      overviewBoundsFor(overviewFitRef.current, world),
+      width,
+      height,
+      tokens,
+      world.nodes.length,
+    );
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
       y: { value: target.ty, velocity: 0 },
@@ -1567,19 +1567,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     };
     cameraTargetRef.current = target;
     userDrivenCameraRef.current = false;
-    overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+    overviewScaleRef.current = computeOverviewFitScale(
+      overviewBoundsFor(overviewFitRef.current, world),
+      width,
+      height,
+      tokens,
+      world.nodes.length,
+    );
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
-    /*
-     * Pay off the deferred spotlight fit from a deep link
-     * (`pendingSpotlightFitRef`). Doing it immediately after the initial camera
-     * is set means the view aims at the spotlight from the first frame instead
-     * of showing the overview for one frame and then moving.
-     *
-     * Called through a ref because this is a local function outside
-     * `useCallback`; closing over `runSpotlightFit` directly would capture a
-     * stale closure.
-     */
     if (pendingSpotlightFitRef.current && runSpotlightFitRef.current?.()) {
       pendingSpotlightFitRef.current = false;
     }
@@ -2010,7 +2006,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     else beginCameraTween(target);
     return true;
   }, [beginCameraTween]);
-  runSpotlightFitRef.current = runSpotlightFit;
+  const getRunSpotlightFit = useEffectEvent(() => runSpotlightFit);
+  useLayoutEffect(() => {
+    runSpotlightFitRef.current = getRunSpotlightFit();
+  }, [runSpotlightFit]);
 
   useEffect(() => {
     if (spotlightFitToken === initialSpotlightFitTokenRef.current) return;
@@ -2235,16 +2234,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const cy = projectNode?.homeY ?? (world.spineBounds.minY + world.spineBounds.maxY) / 2;
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
-    const springs = new Map<string, HomeSpringState>();
-    for (const node of world.nodes) {
-      if (node.kind !== "project") {
-        node.x = cx;
-        node.y = cy;
-      }
-      springs.set(node.id, initHomeSpring(node.x, node.y));
-    }
-    recomputeWorldGeometry(world, tokens);
-    homeSpringsRef.current = springs;
+    const reveal = prepareRevealHome(world, tokens, { x: cx, y: cy });
+    worldRef.current = reveal.world;
+    homeSpringsRef.current = reveal.springs;
     homingActiveRef.current = true;
   }, [revealToken]);
 
@@ -4384,7 +4376,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             ? realmWardingEraseProgress(now - realmState.startMs)
             : realmWardingDrawProgress(now - realmState.startMs - REALM_WARDING_DRAW_DELAY_MS),
           // Census engraving, so the ring says what it is the boundary of.
-          caption: realmCaptionRef.current,
+          caption: getRealmCaption(),
         };
       }
 
@@ -4796,7 +4788,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           : null,
         depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
         expand: expandPrefRef.current,
-        clusterBarLabels: clusterBarLabelsRef.current,
+        clusterBarLabels: getClusterBarLabels(),
       });
       // Record which lens state this frame drew; the idle gate compares
       // against it next frame to decide whether the lens changed.
