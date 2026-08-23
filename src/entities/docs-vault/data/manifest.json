@@ -1184,12 +1184,18 @@
           "elements/first-run"
         ],
         "path": "src/features/first-run-starter",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "dependencies": [
+          "capabilities/vault-sample-source"
+        ],
+        "relation_notes": {
+          "capabilities/vault-sample-source": "The starter appears only in settled static mode and teaches through the bundled sample vault; without that sample source it cannot present the pre-folder map and sample choice."
+        }
       },
       "headings": [],
       "excerpt": "The first-run experience that brings a completely new user from scratch to a starter vault they can use. The first-run card at the top of the INDEX panel on the left side of the map (/topology) is the surface of this capability. It appears only before choosing a vault. Once the folder opens, the card disappears and the",
       "wordCount": 520,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {
@@ -1371,12 +1377,18 @@
         "display_en": "Project Source Evidence Receipt",
         "domain": "domains/project-portfolio",
         "path": "src/shared/lib/project-source-receipt.ts",
-        "created_by": "agent:codex"
+        "created_by": "agent:codex",
+        "dependencies": [
+          "capabilities/vault-ontology"
+        ],
+        "relation_notes": {
+          "capabilities/vault-ontology": "Source receipts derive project scope, capability and element path claims, and typed relations from the ontology schema; schema changes alter which witnesses and impacts the receipt can verify."
+        }
       },
       "headings": [],
       "excerpt": "The ability to connect a single Git repository or local folder to one project node, and compare the implementation paths of capabilities/elements declared by the ontology against actual source lists, leaving versioned categorical receipts. Map datasheets, full details, CLI, and MCP agentbrief read the same state, recen",
       "wordCount": 913,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {
@@ -1397,12 +1409,18 @@
           "elements/ontology-meaning-editor"
         ],
         "path": "src/features/ontology-meaning-editor",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "dependencies": [
+          "capabilities/docs-vault-local"
+        ],
+        "relation_notes": {
+          "capabilities/docs-vault-local": "The reviewed write flow applies its exact frontmatter plan through the mounted vault's updateFrontmatter with an mtime guard; without local folder mounting it cannot persist the approved Markdown change."
+        }
       },
       "headings": [],
       "excerpt": "The capability to apply ontology writing requested by a user directly correcting the map or an ACP agent into markdown frontmatter only after reviewing accurate typed change proposals. It keeps the map selection context and the user's final meaning decision authority in the same flow. Change proposals are volatile pre-",
       "wordCount": 271,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {
@@ -1450,12 +1468,20 @@
           "elements/topology-map-v2"
         ],
         "path": "src/widgets/topology-map-v2",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "dependencies": [
+          "capabilities/design-token-ramps",
+          "capabilities/vault-ontology"
+        ],
+        "relation_notes": {
+          "capabilities/vault-ontology": "The map renderer and search consume the compiled node kinds and typed relation vocabulary; changing the vault ontology schema changes what topology can render, filter, and explain.",
+          "capabilities/design-token-ramps": "The topology canvas and panels consume the shared topology, motion, radius, and color ramps from app/globals.css; changing those ramps changes map readability and interaction geometry."
+        }
       },
       "headings": [],
       "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)",
       "wordCount": 879,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {
@@ -2800,8 +2826,8 @@
       },
       "headings": [],
       "excerpt": "A local-first ontology workbench that transforms frontmatter from a local Markdown vault into a computable graph with types (domain, capabilities, implementation evidence, dependencies, impacts). Developers use CLI/web, and AI coding agents use MCP to read and write the same files. README.md: \"Your AI coding agent forg",
-      "wordCount": 688,
-      "updatedAt": "2026-08-23",
+      "wordCount": 681,
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {
@@ -3678,9 +3704,31 @@
         "linkText": "elements/first-run"
       }
     ],
+    "ontology/capabilities/vault-sample-source": [
+      {
+        "fromSlug": "ontology/capabilities/first-run-starter",
+        "context": "frontmatter · **[capabilities/vault-sample-source]**",
+        "linkText": "capabilities/vault-sample-source"
+      },
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[capabilities/vault-sample-source]**",
+        "linkText": "capabilities/vault-sample-source"
+      }
+    ],
     "ontology/capabilities/vault-ontology": [
       {
         "fromSlug": "ontology/capabilities/mcp-server",
+        "context": "frontmatter · **[capabilities/vault-ontology]**",
+        "linkText": "capabilities/vault-ontology"
+      },
+      {
+        "fromSlug": "ontology/capabilities/project-source-evidence",
+        "context": "frontmatter · **[capabilities/vault-ontology]**",
+        "linkText": "capabilities/vault-ontology"
+      },
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
         "context": "frontmatter · **[capabilities/vault-ontology]**",
         "linkText": "capabilities/vault-ontology"
       },
@@ -3748,6 +3796,18 @@
         "fromSlug": "ontology/domains/graph-modeling",
         "context": "frontmatter · **[elements/ontology-meaning-editor]**",
         "linkText": "elements/ontology-meaning-editor"
+      }
+    ],
+    "ontology/capabilities/docs-vault-local": [
+      {
+        "fromSlug": "ontology/capabilities/reviewed-ontology-writing",
+        "context": "frontmatter · **[capabilities/docs-vault-local]**",
+        "linkText": "capabilities/docs-vault-local"
+      },
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[capabilities/docs-vault-local]**",
+        "linkText": "capabilities/docs-vault-local"
       }
     ],
     "ontology/domains/graph-modeling": [
@@ -3906,6 +3966,18 @@
         "linkText": "elements/topology-map-v2"
       }
     ],
+    "ontology/capabilities/design-token-ramps": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[capabilities/design-token-ramps]**",
+        "linkText": "capabilities/design-token-ramps"
+      },
+      {
+        "fromSlug": "ontology/domains/design-system",
+        "context": "frontmatter · **[capabilities/design-token-ramps]**",
+        "linkText": "capabilities/design-token-ramps"
+      }
+    ],
     "ontology/domains/topology-navigation": [
       {
         "fromSlug": "ontology/capabilities/topology-browsing",
@@ -4058,13 +4130,6 @@
         "linkText": "capabilities/design-gate-ratchets"
       }
     ],
-    "ontology/capabilities/design-token-ramps": [
-      {
-        "fromSlug": "ontology/domains/design-system",
-        "context": "frontmatter · **[capabilities/design-token-ramps]**",
-        "linkText": "capabilities/design-token-ramps"
-      }
-    ],
     "ontology/capabilities/taxonomy": [
       {
         "fromSlug": "ontology/domains/graph-modeling",
@@ -4100,25 +4165,11 @@
         "linkText": "capabilities/data-source-mode"
       }
     ],
-    "ontology/capabilities/docs-vault-local": [
-      {
-        "fromSlug": "ontology/domains/local-vault-management",
-        "context": "frontmatter · **[capabilities/docs-vault-local]**",
-        "linkText": "capabilities/docs-vault-local"
-      }
-    ],
     "ontology/capabilities/project-data-source": [
       {
         "fromSlug": "ontology/domains/local-vault-management",
         "context": "frontmatter · **[capabilities/project-data-source]**",
         "linkText": "capabilities/project-data-source"
-      }
-    ],
-    "ontology/capabilities/vault-sample-source": [
-      {
-        "fromSlug": "ontology/domains/local-vault-management",
-        "context": "frontmatter · **[capabilities/vault-sample-source]**",
-        "linkText": "capabilities/vault-sample-source"
       }
     ],
     "ontology/elements/atlas-git-panel": [

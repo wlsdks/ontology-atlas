@@ -8,6 +8,8 @@ domain: domains/topology-navigation
 elements: [elements/global-search, elements/search-palette, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
 path: src/widgets/topology-map-v2
 created_by: "agent:unknown"
+dependencies: [capabilities/design-token-ramps, capabilities/vault-ontology]
+relation_notes: { capabilities/vault-ontology: "The map renderer and search consume the compiled node kinds and typed relation vocabulary; changing the vault ontology schema changes what topology can render, filter, and explain.", capabilities/design-token-ramps: "The topology canvas and panels consume the shared topology, motion, radius, and color ramps from app/globals.css; changing those ramps changes map readability and interaction geometry." }
 ---
 
 ## Definition
