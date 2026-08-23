@@ -66,27 +66,10 @@ export const PAGE_FRAME_FORM =
   "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12" as const;
 
 /**
- * **Width only** — for a slot already inside a page frame, where the padding is
- * already paid.
- *
- * Added 2026-08-12. The skills screen's **empty state** measured 1448px wide
- * (rightmost edge 1472) for 16 pieces of text, leaving **524px — 58% of the
- * screen — empty below.** Owner: *"When there is nothing in skills it feels too barren and pinned to the walls"* (with nothing in it the screen feels barren and
- * pinned to the walls).
- *
- * Insights and projects carry 48 and 80 items, so the same width was justified
- * there — the defect was using one width regardless of how much content exists.
- *
- * Same 960 as the form frame; do not restate it elsewhere (a value written in
- * two places starts drifting immediately — Carbon).
- */
-export const PAGE_COLUMN_FORM = "mx-auto w-full max-w-[960px]" as const;
-
-/**
  * **Stage column** — the narrow column stood in the middle of the screen when
  * there is nothing to open yet.
  *
- * Added 2026-08-12. Narrowing to `PAGE_COLUMN_FORM` (960) and grouping into a
+ * Added 2026-08-12. Narrowing to a 960px column and grouping into a
  * card was not enough; the owner looked at the result and pushed back:
  * *"The right and bottom emptiness is severe — use a different approach, the way the assembly-bench entry does."* (the right and bottom emptiness is severe — use a different
  * approach, the way the assembly-bench entry does).

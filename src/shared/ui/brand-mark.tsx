@@ -35,10 +35,6 @@ import type { SVGProps } from 'react';
 /** The 512 coordinate space — every asset shares this viewBox. */
 export const BRAND_MARK_VIEWBOX = 512;
 
-/** The brand gradient is a single-hue indigo ramp (measured off the original sheet). */
-/** Fallback where a gradient cannot be used (single-colour favicons and the like) — the brand colour the sheet names. */
-export const BRAND_MARK_SOLID = '#5E6AD2';
-
 const OUTER_HEX = 'M 256 56 L 429.2 156 L 429.2 356 L 256 456 L 82.8 356 L 82.8 156 Z';
 const DASHED_HEX = 'M 256 100 L 391.1 178 L 391.1 334 L 256 412 L 120.9 334 L 120.9 178 Z';
 const MID_HEX = 'M 256 144 L 353 200 L 353 312 L 256 368 L 159 312 L 159 200 Z';

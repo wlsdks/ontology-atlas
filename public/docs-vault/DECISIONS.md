@@ -40,6 +40,32 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-24 (110) — Retire the consumer-free Skills form-column specification
+
+**Prior decision**: 2026-08-21 (91) completely retired the standalone Skills
+surface and explicitly moved its remaining shared page-frame verification to
+Agents. This is a mechanical completion of that approved removal, not a new
+layout choice and not a replacement surface.
+
+**Observed residue**: `PAGE_COLUMN_FORM` had zero consumers after `/skills` was
+deleted. Its comment justified a padding-free 960px column only through the
+retired Skills empty state. The still-used `PAGE_FRAME_FORM` retains the 960px
+form frame, while current list, stage, map, and editor surfaces keep their own
+approved frame interfaces.
+
+**Decision (accountable: Jinan, implemented by Codex)**: delete the unused
+`PAGE_COLUMN_FORM` export and its retired-surface rationale. Do not redirect the
+old Skills layout role into Agents or mint a replacement token without two real
+consumers.
+
+**Recorded dissent**: preserving a padding-free 960px alias could avoid another
+hand-picked width when a future compact column appears. **Falsifier**: two live
+surfaces independently need the same padding-free 960px interface. Define a
+semantic shared interface from those measured consumers then; do not revive the
+Skills-named historical rationale.
+
+**Status**: active; implementation follow-through for decision (91)
+
 ## 2026-08-23 (109) — One deep dead-code analyzer, isolated scope/lane adapters, and a shrink-only ratchet
 
 **Trigger**: deletion cleanup exposed that the former root-only signal could not

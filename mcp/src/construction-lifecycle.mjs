@@ -608,7 +608,3 @@ export function evaluateConstructionLifecycle({
         : `Repair the first blocked lifecycle phase: ${firstBlockingPhase ?? 'unknown'}.`,
   };
 }
-
-export const CONSTRUCTION_LIFECYCLE_MANDATORY_AXES = Object.freeze(
-  CONSTRUCTION_QUALITY_AXES.filter((axis) => MANDATORY_AXES.includes(axis)),
-);
