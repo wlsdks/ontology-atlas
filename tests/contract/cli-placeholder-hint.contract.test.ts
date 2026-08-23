@@ -124,6 +124,8 @@ describe("CLI 자리 표시 — 보여 주는 화면은 채우는 법도 보여 
   });
 
   it("probe: 자리 표시를 쓰는 파일이 실제로 존재한다 — 0건이면 탐지기가 죽은 것", () => {
+    // Keep the retired helper name in the detector so an unhinted reintroduction
+    // cannot bypass this contract merely because its implementation was deleted.
     const users = [...sources].filter(
       ([, s]) => s.includes(ATLAS_CHECKOUT_PLACEHOLDER) || /\b(ATLAS_CLI|atlasCli)\b/.test(s),
     );

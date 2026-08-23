@@ -13,8 +13,8 @@
  */
 export type VaultScopeKey = 'server' | `local:${string}`;
 
-export const PINNED_DOCS_STORAGE_PREFIX = 'demo:docs-vault:pinned:v1:';
-export const RECENT_DOCS_STORAGE_PREFIX = 'demo:docs-vault:recent:v2:';
+const PINNED_DOCS_STORAGE_PREFIX = 'demo:docs-vault:pinned:v1:';
+const RECENT_DOCS_STORAGE_PREFIX = 'demo:docs-vault:recent:v2:';
 
 export function vaultScopeKey(args: {
   /** Is the active data source a local vault that actually loaded? */

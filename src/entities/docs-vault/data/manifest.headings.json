@@ -5698,6 +5698,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-24 (110) — Retire the consumer-free Skills form-column specification",
+      "slug": "2026-08-24-110-retire-the-consumer-free-skills-form-column-specification"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-23 (109) — One deep dead-code analyzer, isolated scope/lane adapters, and a shrink-only ratchet",
       "slug": "2026-08-23-109-one-deep-dead-code-analyzer-isolated-scopelane-adapters-and-a-shrink-only-ratchet"
     },

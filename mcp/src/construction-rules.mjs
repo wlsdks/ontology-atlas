@@ -279,17 +279,6 @@ export function pathShapedTitleMessage(title) {
 }
 
 /**
- * Warning literal for the growth path — the hole that let 92 accumulate.
- *
- * `patch_concept` is where fan-out actually grows, and it emitted nothing. This
- * message deliberately points back at the SAME check `add_concept` runs, so the
- * two doors teach one rule rather than two.
- */
-export function fanoutGrowthMessage({ slug, addedCount, newCount }) {
-  return `patch_concept added ${addedCount} entries to "${slug}".elements, now ${newCount} — this is the same fan-out signal add_concept checks at creation time. Run get_concept("${slug}") and apply the same check (shared prefix? distinct role? path-shaped title?) before adding more.`;
-}
-
-/**
  * Action text for a dense parent whose references are mostly broken.
  *
  * ⚠️ This proposes a QUESTION, then a tool call — never a ready-made scaffold.

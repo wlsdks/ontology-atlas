@@ -14,12 +14,12 @@
  * Pure. MCP callers and contract tests consume this table directly.
  */
 
-export const PROJECT_SOURCE_REMEDY_CONTRACT = 'projectSourceRemedy:v1';
+const PROJECT_SOURCE_REMEDY_CONTRACT = 'projectSourceRemedy:v1';
 
-export const PROJECT_SOURCE_CONNECT_TOOL = 'connect_project_source';
-export const PROJECT_SOURCE_DISCONNECT_TOOL = 'disconnect_project_source';
-export const PROJECT_SOURCE_CONNECT_COMMAND = 'connect-source';
-export const PROJECT_SOURCE_DISCONNECT_COMMAND = 'disconnect-source';
+const PROJECT_SOURCE_CONNECT_TOOL = 'connect_project_source';
+const PROJECT_SOURCE_DISCONNECT_TOOL = 'disconnect_project_source';
+const PROJECT_SOURCE_CONNECT_COMMAND = 'connect-source';
+const PROJECT_SOURCE_DISCONNECT_COMMAND = 'disconnect-source';
 
 /**
  * What a person still has to supply before the remedy can run.

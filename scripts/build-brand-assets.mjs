@@ -58,7 +58,7 @@ export const STROKES = {
 };
 
 /**
- * Solid brand colour — equals the component's `BRAND_MARK_SOLID`.
+ * Solid brand colour for baked app, favicon, and Open Graph assets.
  *
  * On the morning of 2026-08-18 this moved from indigo to ember (`#C14A24`) and
  * **the owner reverted it the same day**. Baked assets (icon, favicon, og) cannot

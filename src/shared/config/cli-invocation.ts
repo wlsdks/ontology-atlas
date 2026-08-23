@@ -72,8 +72,3 @@ export const ATLAS_CLI = `node ${ATLAS_CHECKOUT_PLACEHOLDER}/cli/src/index.mjs`;
  */
 export const ATLAS_CLI_HINT_EN =
   "Set this once: export ATLAS=<path to your ontology-atlas source checkout>  (there is no npm package)";
-
-/** `ATLAS_CLI` plus the rest, so callers never hand-write the prefix. */
-export function atlasCli(rest: string): string {
-  return `${ATLAS_CLI} ${rest}`;
-}

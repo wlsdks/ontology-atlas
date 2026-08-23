@@ -18,20 +18,6 @@
  * checkout**. Those two are all of it; there is no third.
  */
 
-/**
- * `npx` is not a distribution path for this product.
- *
- * Why the code needs to know: guidance copy, config templates, and deep links each
- * assumed "once it is published" and were scattered. Collected into one constant
- * they cannot scatter again, and reversing the decision means flipping this one place.
- */
-export const MCP_SERVER_DISTRIBUTION = {
-  /** The npm publishing plan is retired (docs/DECISIONS.md, 2026-07-27). */
-  npmPublishing: "retired",
-  decidedAt: "2026-07-27",
-  channels: ["app-bundled", "source-checkout"],
-} as const;
-
 export type McpServerLaunchKind = "app-bundled" | "source-checkout";
 
 /**
