@@ -191,7 +191,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ product and architecture docs frame the installed app as the daily heavy-lift local workbench while the hosted root map offers its own direct local-folder open path/,
+    /✓ root entry derives the loaded-vault map, desktop first run, and hosted gateway from runtime state/,
   );
   assert.match(
     result.stdout,
