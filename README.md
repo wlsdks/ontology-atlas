@@ -23,7 +23,7 @@
   warn about an unknown publisher, and managed work PCs may block it.</sub>
 </p>
 
-![The Ontology Atlas macOS app showing the example storefront vault: a project hexagon at the centre, six domains around it, solid contains edges and dashed depends-on edges, and an INDEX panel listing each domain with its capability and element counts](docs/assets/readme/topology-overview.png)
+![The current Ontology Atlas macOS app showing the Storefront example as a project hub, its domains and relations, with the INDEX listing each domain beside its capability and element counts](docs/assets/readme/topology-overview.png)
 
 <p align="center">
   <sub>The installed macOS app reading the example vault in
@@ -88,24 +88,16 @@ and standards/inference boundary live in the
 
 ## Status — read this before installing
 
-**Current tag `v1.0.0-rc.7`, published 2026-08-17.** Every public build is
-prerelease software, and the tag says so on purpose: a release candidate walks
-the same signing and notarization path as a final build, but has not been
-widely run yet.
+Every public build is prerelease software. A release candidate walks the same
+signing, notarization, installer, updater, and hosted-download checks as a final
+build, but has not been widely run yet.
 
-| Asset for this tag | Size | Signing |
-|---|---|---|
-| macOS `aarch64.dmg` (Apple silicon) | 51,405,632 B | Developer ID signed, Apple-notarized |
-| macOS `x64.dmg` (Intel) | 54,747,089 B | Developer ID signed, Apple-notarized |
-| Windows `x64-setup.exe` | 45,678,059 B | Intentionally unsigned public beta |
-
-Those figures describe `v1.0.0-rc.7` and nothing else. None of them is measured
-by hand: `pnpm download:release-facts` reads each published asset's real byte
-size and its SHA-256 from the sibling checksum asset, and the
-[download page](https://wlsdks.github.io/ontology-atlas/en/download/) renders
-that generated record. When the tag above is no longer the newest, that page and
-[GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases) are the
-authority, not this table.
+The [download page](https://wlsdks.github.io/ontology-atlas/en/download/) is the
+release authority: it renders a generated record of the current published tag,
+real asset sizes, checksums, platforms, and signing state. This README does not
+pin a tag or copy those values, so an older document cannot contradict the files
+people are about to install. [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)
+is the second direct source.
 
 - **The unsigned Windows beta is a real risk, not a formality.** SmartScreen
   will warn about an unknown publisher, and a managed work PC may refuse the
@@ -142,8 +134,8 @@ in the [feature inventory](docs/FEATURES.md), the
 - **A CLI carrying the same authority as the agent** — scaffold, validate,
   dry-run writes, bounded traversal, blast radius, commit preflight,
   vault-scoped git snapshots, agent handoff. [CLI reference](cli/README.md).
-- **The workbench surfaces, all reading one folder** — map, Docs, Workshop,
-  History, Insights, Projects.
+- **The workbench surfaces, all reading one folder** — Map, Docs, Insights,
+  Projects, Agents, and History.
 - **Export to standard graph formats.** JSON-LD and GraphML come off the same
   deterministic compile artifact, so the vault opens in rdflib, Protégé, Gephi,
   Cytoscape, NetworkX, or Neo4j without a converter of your own.
@@ -190,96 +182,67 @@ each with the capabilities inside it and the things those capabilities work with
 Run `node cli/src/index.mjs overview samples/storefront` for the current census;
 no document here writes the number, because it changes whenever anyone adds a node.
 
+![The current Docs workspace in the installed macOS app, with the vault tree, one capability document, its frontmatter summary, source date, backlinks, and a link back to the same node on the map](docs/assets/readme/docs-workspace.png)
+
+Docs is the same folder without the canvas: preview or edit Markdown, inspect the
+frontmatter that becomes the graph, follow backlinks, and jump back to the same
+concept on the map. There is no imported copy to synchronize.
+
 ### 2. Connect your agent
 
-![The Connect an AI agent sheet in the macOS app, listing a See what will be written button, one-click buttons for Claude Code, Cursor, VS Code and Codex, a note that there is no server left running, and the sentence the agent will read back: this project is made of Products, Members, Shipping, Marketing and 2 more, and each document is its evidence](docs/assets/readme/agent-connect.png)
+![The current Agents screen in the installed macOS app, showing detected coding agents, conversation and connection checks, and the three-step MCP connection flow for the selected folder](docs/assets/readme/agent-connect.png)
 
-This is normally a paragraph of setup instructions. Here it is a button.
+Atlas finds the coding agents already installed on this computer, lets you open
+the supported ones beside the map, and keeps MCP setup scoped to the selected
+folder.
 
-- **See what will be written, first.** The sheet shows the exact absolute paths,
-  whether each file is created or overwritten, and that the result is plain text
-  you can read in a git diff. Nothing is written until you confirm.
-- **Then it proves itself.** After writing, the app spawns the bundled MCP
-  server and runs a real round trip against your vault. You get a confirmation
-  naming the tool count and a node it actually read — or the failure reason. No
-  fake progress bar.
+- **Connect once, with visible scope.** The flow shows which folder and client
+  config it will change. The resulting files are plain text you can inspect.
+- **Then prove the connection.** The verification step starts the bundled MCP
+  server, reads the active vault, and reports the real result or the failure.
 - **Nothing stays running.** The server speaks stdio; your agent starts it when
   it needs it and it exits afterwards. No port, no daemon, no traffic leaving
   the machine.
 
-Claude Code, Cursor, VS Code and Codex each get a button. Any other MCP client
-can copy the snippet from **Advanced · detailed checks**.
+Claude Code, Cursor, Codex, and other supported clients get a direct setup path.
+Any other MCP client can use the generated snippet.
 The bundled server advertises its current read/write surface through
 `tools/list`; the [agent guide](mcp/README.md) documents every tool and its
 contract, and `mcp-verify` proves the live inventory.
 
 ### 3. Read the map
 
-![One domain selected on the map: unrelated nodes are dimmed, and a datasheet on the right lists the Orders domain with Connected 13, Source docs 1, actions for Document, Edit relations, Copy handoff, Ask the agent, Path and View only this, and typed relation groups contains 5, used by 5, leans on 2](docs/assets/readme/topology-focus.png)
+![The current map with Cart Session selected: unrelated concepts recede, typed parent relations remain visible, and the right inspector offers Ask agent, Edit, More, evidence, and full detail](docs/assets/readme/topology-focus.png)
 
-Selecting a node dims everything unrelated and opens its record. The same fact
-serves two readers at once: a visual hierarchy for a person, and a typed
-relation list — `contains`, `used by`, `leans on` — for an agent, with **Copy
-handoff** right there, because the next reader is often not a human.
+Selecting a node dims everything unrelated and opens its record without hiding
+the node behind the inspector. The same fact serves two readers at once: a
+visual hierarchy for a person and typed parents, evidence, and actions for an
+agent.
 
-The map can answer a simpler question before you inspect any one node: **what
-changed this week?** Turn on **Recent** and Atlas keeps documents changed inside
-the selected time window crisp while the rest of the map recedes. The INDEX
-narrows to those nodes but preserves their project and domain parents, so a
-refund change still reads in the context of Customer Support and Payments. In a
-local vault, the signal comes from the Markdown files' modification times on
-your disk — not inferred activity or a hosted service.
+Recent changes can narrow the map while preserving project and domain context;
+Footprints record the order in which you opened concepts. Both are views over
+local file and session evidence, not hosted activity guesses.
 
-![Recent changes in the installed macOS app, using a capture-only local copy of the Storefront sample: 7 fixture documents changed in the last 7 days, cyan dashed rings mark those recent nodes while the rest of the map recedes, and the INDEX keeps the matching nodes together with their project and domain parent chain; 7 is the result of this fixture, not a product limit](docs/assets/readme/recent-changes.png)
+![The current 3D picker in the installed macOS app, offering Flat for the normal map, Dome for containment structure, and Cloud for relation-driven proximity](docs/assets/readme/three-dimensional-views.png)
 
-_Installed-app capture from a local, capture-only copy of `samples/storefront`.
-Seven documents were marked as changed in this 7-day fixture — **7 is not a
-product limit**. Cyan dashed rings mark recent nodes; the INDEX retains their
-project/domain parent chain so the change remains readable in context._
+Three spatial readings are explicit rather than mixed together: **Flat** is the
+normal 2D map, **Dome** places containment tiers in depth, and **Cloud** lets
+relations determine all three axes. Changing the view never changes the graph.
 
-**Footprints** mark the concepts you opened, numbered in the order you walked
-them, so a long session leaves a path you can retrace instead of a map you have
-to re-derive.
+### 4. Review a relation beside its node
 
-![The Footprints section of Settings in the macOS app: a live preview strip drawing shoe-print marks between two node squares along a relation line, presets named Subtle, Default and Bold, and an expanded fine-tuning list with Print size 13px, Fill solid or outline, Strength 70 percent, Colour yellow or indigo, Bleed none, Distance 8px, and whether to mark along links](docs/assets/readme/settings-footprints.png)
+![The current relation review beside the map, showing the source, relation type, target, reason, and the exact dependencies and relation notes fields that will change before the write is confirmed](docs/assets/readme/relation-review.png)
 
-Shape, size, spacing and opacity are yours, and the strip above the controls is
-not a picture of the feature — it is **the same renderer the map uses**, drawing
-your current values as you change them. The map background is a separate choice
-of three (dots, a proximity constellation, or layered depth dots), previewed the
-same way from the real canvas tokens.
-
-That preview is why Settings can be a plain centred dialog: you do not need to
-see the map behind it, because the thing you are adjusting is drawn right there.
-
-<p align="center">
-  <img alt="Screen recording of the macOS app: clicking a domain in the INDEX panel expands its capabilities, the camera moves to that part of the map, and the domain datasheet slides in from the right" src="docs/assets/readme/atlas-map-focus.gif" width="800" />
-</p>
-
-<p align="center">
-  <sub>Recorded from the app window. Picking a domain in the INDEX expands it,
-  moves the camera, and opens its record.
-  (<a href="docs/assets/readme/atlas-map-focus.webm">webm</a>)</sub>
-</p>
-
-### 4. Complete what a node means
-
-![The Workshop compass stage in the macOS app: one capability sits in the centre card, two of four relation bearings are filled with linked nodes, the other two are dashed empty sockets asking what is this node a kind of and something similar or interchangeable, and the footer reads 2 of 4 filled, 2 to go, next to a confirm and save control](docs/assets/readme/workshop-context.png)
-
-Shape relations in Workshop: the four relation types are nailed to fixed compass
-bearings — what this node **is a kind of** (up), what it **holds** (down), what
-it **leans on** (right), what it is **similar to** (left). Missing relations are
-drawn as dashed empty sockets, and filling one writes a real frontmatter
-relation. The `builder_context` an agent hands you (a persisted Workshop focus
-URL) survives a reload, so it can point you at a node and you land on it.
-
-Nothing lands until you confirm. That boundary is visible on purpose.
+Edit one relation from the selected node. Atlas shows a directional preview on
+the map, then a compact review of the source, type, target, reason, and exact
+frontmatter fields. **Confirm and write** is the only point that changes the
+Markdown file; returning to edit or cancelling changes nothing.
 
 ### 5. Review the change, then record it
 
-![The History screen in the macOS app: Not saved yet, 1 edited, a changed concept list naming capabilities/return-intake with a plus one minus one count, a diff whose dependencies line gains capabilities/shipment-tracking, a Save 1 button, and a note that only documents inside this folder are recorded and files outside it are left alone](docs/assets/readme/history-review.png)
+![The current History screen in the installed macOS app, showing one uncommitted concept change, the exact Markdown diff, localized commit times, and the explicit commit action](docs/assets/readme/history-review.png)
 
-Whatever wrote — you, the Workshop, the CLI, or an agent over MCP — lands here
+Whatever wrote — you, the map editor, the CLI, or an agent over MCP — lands here
 first as a diff you read before it becomes history. The change above was written
 by a command, not by hand, and the command said what it would do to the graph
 before touching a file:
@@ -312,22 +275,16 @@ touched, and the screen says so.
 
 ### 6. Keep it healthy
 
-![The Graph insights maintenance board in the macOS app: header reading 31 Concepts, 62 Relations, 6 Domains, tabs for Do next, Inventory, Connections, Boundaries and Freshness, an Agent readiness bar split into ready, preflight and review, a repair queue counting missing links and hub candidates, a fix-these-now list of two decisions that need no code, and a Copy next action handoff button](docs/assets/readme/graph-insights.png)
+![The current Insights composition screen in the installed macOS app, with concept and relation census, kind distribution, graph health, and aligned domain capability-to-element bars derived from the selected folder](docs/assets/readme/graph-insights.png)
 
-Insights turns graph health into a work queue: what is disconnected, what is
-stale, what is missing evidence, which repair to make next. **Agent readiness**
-splits every relation into what an agent can trust immediately, what needs a
-quick check, and what a person should decide.
-
-**What the agent did** reads `.ontology-atlas/activity.jsonl` from inside your
-vault — plain text, in the folder, part of the same diff. The example vault has
-no agent history yet, so that panel is empty here; connect an agent and its
-writes show up in the same place, from the same file. Nothing is collected
-anywhere else to produce it.
+Insights turns graph health into a work queue: what is disconnected, stale, or
+missing evidence, and which repair to make next. Composition shows whether the
+folder is balanced across kinds and whether each domain has capabilities backed
+by implementation elements. Every number branches from the same compiled graph.
 
 ### 7. See the shape of the whole project
 
-![The Projects screen in the macOS app: one project card for the storefront sample with 13 capabilities and 11 elements, domain counts, and a per-domain bar chart of capability and element coverage, with a note that the counts are computed from how documents are linked](docs/assets/readme/projects-coverage.png)
+![The current Projects screen in the installed macOS app, showing the Storefront project, its derived totals, nine aligned domain composition rows, recent activity, and routes back to details and the map](docs/assets/readme/projects-coverage.png)
 
 Nothing on this screen is maintained by hand. Frontmatter has no `project:` key
 — the runtime walks the containment graph from each `project` root and derives
@@ -381,7 +338,7 @@ where people and agents judge the same facts.
 | Structure | Freeform notes and links | Vendor-defined types | Project → domain → capability → element, documents, typed relations |
 | Graph questions | Note traversal | Graph engine | Blast radius, reachability, cycles, paths, centrality, health |
 | Evidence from code | Hand-authored | Corpus ingestion | Bounded read-only proposals; nothing lands until approval |
-| Human surface | Notes app | Vendor console | Local map, Workshop, History, and Insights |
+| Human surface | Notes app | Vendor console | Local Map, Docs, Insights, Projects, Agents, and History |
 
 If you only need an agent to remember conversations, a notes tool is lighter.
 Atlas is for modeling the product your code implements. The argument and its
@@ -479,7 +436,7 @@ for the complete frontmatter contract.
 
 ## Product destinations, one vault
 
-Map, Docs, Workshop, Insights, Projects, History, MCP, and CLI all read the same
+Map, Docs, Insights, Projects, Agents, History, MCP, and CLI all read the same
 Markdown folder. The installed app is the full workbench; the hosted web app is
 the no-install gateway and a second-best workbench where native bridges are not
 available. MCP and CLI skip the screens and operate on the same files directly.
