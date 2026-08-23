@@ -181,6 +181,16 @@ jobs:
         if: always()
         run: pnpm vault:audit
 
+      # `test:claude:hooks` drives the real SessionStart hook, which spawns the
+      # source MCP server. The root install intentionally skips
+      # `mcp/node_modules`, so without this the hook dies on
+      # ERR_MODULE_NOT_FOUND before it reads any vault and every case collapses
+      # into the same "dependencies missing" message — which is what happened on
+      # the first run after these suites were wired into CI. `Unit · Contract`
+      # and `MCP` already install it for the same reason.
+      - name: Install MCP dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
       - name: Node test suites outside vitest
         if: always()
         run: |
