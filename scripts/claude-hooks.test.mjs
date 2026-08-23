@@ -41,6 +41,9 @@ const HOOK_CONFIGS = [
       'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/block-npm-publish.sh',
+      'bash .codex/hooks/block-secret-read.sh',
+      'bash .codex/hooks/block-secret-read.sh',
+      'bash .codex/hooks/block-secret-read.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
@@ -441,5 +444,84 @@ describe('report-agent-file-drift PostToolUse hook', () => {
     });
     assert.equal(result.status, 0);
     assert.equal((result.stdout ?? '').trim(), '');
+  });
+});
+
+// The Codex-side secret read guard. It exists because the Claude side has a
+// committable mechanism and Codex does not: deny-read filesystem policies are
+// documented only for the user-level `~/.codex/config.toml`, and `.codexignore`
+// was asked for repeatedly and never shipped. A project can still refuse the
+// command, which is what this does.
+//
+// Its two failure modes pull against each other. Too narrow and a secret walks
+// out through `head` or a pipeline; too broad and it refuses `cat .env.example`,
+// which is tracked precisely so people can read it. Both directions are asserted.
+describe('Codex secret read guard', () => {
+  const HOOK = '.codex/hooks/block-secret-read.sh';
+  const root = process.cwd();
+
+  const fire = (command) => {
+    const result = spawnSync('bash', [HOOK], {
+      cwd: root,
+      input: JSON.stringify({ tool_name: 'Bash', tool_input: { command } }),
+      encoding: 'utf8',
+      env: { ...process.env, CODEX_PROJECT_DIR: root },
+    });
+    return (result.stdout ?? '').trim();
+  };
+  const blocks = (command) => fire(command) !== '';
+
+  it('is executable where .codex/hooks.json points', async () => {
+    await access(HOOK, constants.X_OK);
+  });
+
+  it('refuses a direct read of every name .gitignore treats as a secret', async () => {
+    const names = (await readFile('.gitignore', 'utf8'))
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => /^\.env(\.[A-Za-z0-9._-]+)?$/.test(line));
+    assert.ok(names.length >= 3, '.gitignore lists no .env names — this sweep would pass vacuously');
+    for (const name of names) {
+      assert.ok(blocks(`cat ${name}`), `cat ${name} must be refused`);
+    }
+  });
+
+  it('follows the secret through pipelines, chains and command substitution', () => {
+    for (const command of [
+      'pnpm build && cat .env',
+      'echo hi; sed -n 1p .env',
+      'xxd .env | head',
+      'echo $(cat .env)',
+      'grep KEY .env.prod',
+      'cat config/.env',
+    ]) {
+      assert.ok(blocks(command), `${command} must be refused`);
+    }
+  });
+
+  it('leaves the tracked placeholder and ordinary work alone', () => {
+    for (const command of [
+      'cat .env.example',
+      'cp .env.example .env.local',
+      'cat README.md',
+      'pnpm test',
+      'git commit -m "document .env handling"',
+      'rg SECRET .',
+    ]) {
+      assert.equal(blocks(command), false, `${command} must not be refused`);
+    }
+  });
+
+  it('treats a heredoc body as data, not as a command', () => {
+    assert.equal(blocks("cat <<'EOF'\ncat .env\nEOF"), false);
+  });
+
+  it('names the file, the rule, and the readable alternative when it refuses', () => {
+    const parsed = JSON.parse(fire('cat .env'));
+    assert.equal(parsed.hookSpecificOutput.permissionDecision, 'deny');
+    const reason = parsed.hookSpecificOutput.permissionDecisionReason;
+    assert.match(reason, /\.env/);
+    assert.match(reason, /local-first\.md/);
+    assert.match(reason, /\.env\.example/);
   });
 });

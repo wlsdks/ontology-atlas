@@ -317,6 +317,7 @@ const RULES = [
       /^\.codex\/hooks\.json$/,
       /^\.codex\/hooks\/.+\.sh$/,
       /^\.githooks\/(?:commit-msg|commit-msg-language\.mjs)$/,
+      /^\.gitignore$/,
       /^scripts\/claude-hooks\.test\.mjs$/,
     ],
   },

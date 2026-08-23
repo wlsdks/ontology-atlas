@@ -1394,6 +1394,8 @@ describe('agent-file surface', () => {
       '.codex/hooks/block-unsafe-git.sh',
       '.githooks/commit-msg',
       '.githooks/commit-msg-language.mjs',
+      '.codex/hooks/block-secret-read.sh',
+      '.gitignore',
     ]) {
       assert.ok(
         domainCommands(suggestFocusedChecks([path])).includes('pnpm test:claude:hooks'),

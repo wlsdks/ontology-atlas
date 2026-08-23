@@ -11,6 +11,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-unsafe-git.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/block-secret-read.sh"
           }
         ]
       },
@@ -24,6 +28,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-unsafe-git.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/block-secret-read.sh"
           }
         ]
       },
@@ -37,6 +45,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-unsafe-git.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/block-secret-read.sh"
           }
         ]
       },
