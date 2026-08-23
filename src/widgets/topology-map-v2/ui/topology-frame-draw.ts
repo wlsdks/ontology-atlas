@@ -6,6 +6,7 @@
  */
 
 import type { CameraAxes } from "../engine/camera";
+import { collectDomeAncestry, domeAncestryEdgeKey } from "../model/dome-ancestry";
 import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
@@ -162,6 +163,15 @@ const domeEdgeOrderReused: WorldEdge[] = [];
 const domeEdgeDepthReused: number[] = [];
 const domeEdgeIndexReused: number[] = [];
 const domeNodeOrderReused: WorldNode[] = [];
+// Dome ancestry (2026-08-23) — the containment chain lit under selection. Reused per frame,
+// the file's standing allocation discipline. Two pairs because the COLOR ramp classifies by
+// the retained focus, which trails the live focus by ~160ms during a deselect fade.
+const domeAncestryNodesReused = new Set<string>();
+const domeAncestryEdgesReused = new Set<string>();
+const domeAncestryColorNodesReused = new Set<string>();
+const domeAncestryColorEdgesReused = new Set<string>();
+const domeAncestryUnionReused = new Set<string>();
+const domeAncestryColorUnionReused = new Set<string>();
 const domeRingScreenReused: { a: number; points: { x: number; y: number; u: number }[] }[] = [];
 /**
  * perf 2026-08-19 — one `DomeNodeFrame` lookup per node per frame.
@@ -1052,16 +1062,53 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     out.control.y = (controlY - camY) * camScale + halfH;
     return out;
   };
-  const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
+  const neighborsOfFocusedRaw = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
+  /*
+   * Dome ancestry (2026-08-23, `docs/DECISIONS.md` (107)). In the dome, height IS the containment
+   * tier, so a selection's clearest "where am I" is the meridian to the apex. The chain joins the
+   * **existing ego grammar** rather than getting its own: ancestors enter the neighbour set (they
+   * stay lit and labelled like neighbours), and below, the chain's edges take the same "ego"
+   * state a focused relation edge takes. No new ink, alpha, or token — the family line lights the
+   * way the neighbourhood already lights. 2D is untouched: the flat map's ego stays 1-hop.
+   */
+  const parentOf = (id: string) => world.nodeById.get(id)?.parentId;
+  const domeAncestryOn =
+    domeOn && focusedNodeId !== null &&
+    collectDomeAncestry(focusedNodeId, parentOf, domeAncestryNodesReused, domeAncestryEdgesReused) > 0;
+  let neighborsOfFocused: ReadonlySet<string> = neighborsOfFocusedRaw;
+  if (domeAncestryOn) {
+    domeAncestryUnionReused.clear();
+    for (const id of neighborsOfFocusedRaw) domeAncestryUnionReused.add(id);
+    for (const id of domeAncestryNodesReused) domeAncestryUnionReused.add(id);
+    neighborsOfFocused = domeAncestryUnionReused;
+  }
   // Click-focus color signature — the ego classification for the COLOR ramp
   // uses the RETAINED focus (`colorFocusedNodeId`/`colorSelectedEdge`), which
   // equals the live focus while a selection is active and lingers ~160ms after
   // a deselect so the fade-out has a dim/ego target to ease from. Everything
   // else on this frame still keys off the live `focusedNodeId` — no retention
   // bleed into labels, tier reveal, or camera.
-  const colorNeighbors = colorFocusedNodeId
+  const colorNeighborsRaw = colorFocusedNodeId
     ? world.neighborMap.get(colorFocusedNodeId) ?? EMPTY_NEIGHBOR_SET
     : EMPTY_NEIGHBOR_SET;
+  let colorNeighbors: ReadonlySet<string> = colorNeighborsRaw;
+  if (
+    domeOn &&
+    colorFocusedNodeId !== null &&
+    // The retained colour signature gets the same ancestry, so a deselect fades the chain out
+    // through the normal ego fade instead of snapping it to dim one ramp early.
+    collectDomeAncestry(
+      colorFocusedNodeId,
+      parentOf,
+      domeAncestryColorNodesReused,
+      domeAncestryColorEdgesReused,
+    ) > 0
+  ) {
+    domeAncestryColorUnionReused.clear();
+    for (const id of colorNeighborsRaw) domeAncestryColorUnionReused.add(id);
+    for (const id of domeAncestryColorNodesReused) domeAncestryColorUnionReused.add(id);
+    colorNeighbors = domeAncestryColorUnionReused;
+  }
   // perf 2026-08-19 — on a frame with no focus, pair, or lens (the usual rotating
   // or idle state) every node's ego classification is fixed at "normal"
   // (`resolveNodeEgoState`'s first branch). Deciding that once keeps the node and
@@ -1472,6 +1519,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         ? "dim"
         : resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
       if (isPathEdge && !trailLensActive) edgeEgoState = "ego";
+      // Dome ancestry — the chain's contains edges take the ego state, the same override slot
+      // (and the same reason) as the path lens: this line is what the selection is *about*.
+      if (
+        domeAncestryOn &&
+        !trailLensActive &&
+        kind === "contains" &&
+        domeAncestryEdgesReused.has(domeAncestryEdgeKey(edge.sourceId, edge.targetId))
+      ) {
+        edgeEgoState = "ego";
+      }
       // 고팬아웃 배치-공개(2026-07) 처방 4 — 펼침 중 depends 억제. 배치 자식이
       // DOI 순으로 드러나는 동안 무관한 depends 실타래가 지도를 뒤덮으면 방금
       // 드러난 소수가 안 읽힌다. anyExpanded 이고 contains 가 아니며(계층 실선은
