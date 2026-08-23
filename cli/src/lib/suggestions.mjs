@@ -21,7 +21,7 @@ export function formatAllowedValueError(name, value, allowed) {
   return `${name} must be one of: ${allowed.join(', ')}.${receivedText}${suggestionText}`;
 }
 
-export function formatErrorValue(value) {
+function formatErrorValue(value) {
   if (typeof value === 'string') return `"${value}"`;
   if (value === null) return 'null';
   if (Array.isArray(value)) return 'array';

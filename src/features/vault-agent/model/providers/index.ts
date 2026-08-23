@@ -20,5 +20,3 @@ export const PROVIDER_ADAPTERS: Record<string, ProviderAdapter> = {
 export function resolveProviderAdapter(provider: string): ProviderAdapter | null {
   return PROVIDER_ADAPTERS[provider] ?? null;
 }
-
-export { anthropicAdapter, openaiAdapter, geminiAdapter, localAdapter };

@@ -32,7 +32,7 @@
  * writes the binding.
  */
 
-export const PROJECT_SOURCE_INFERENCE_CONTRACT = 'projectSourceInference:v1';
+const PROJECT_SOURCE_INFERENCE_CONTRACT = 'projectSourceInference:v1';
 
 /** Directory levels walked up from the vault root before giving up. */
 export const PROJECT_SOURCE_MAX_ANCESTOR_DEPTH = 12;
@@ -53,19 +53,6 @@ export const PROJECT_SOURCE_MANIFEST_FILES = Object.freeze([
   'pom.xml',
   'pyproject.toml',
 ]);
-
-export const PROJECT_SOURCE_CANDIDATE_MARKERS = Object.freeze([
-  'enclosing_git_repository',
-  'ancestor_project_manifest',
-]);
-
-export const PROJECT_SOURCE_PROPOSAL_REASONS = Object.freeze([
-  'enclosing_git_repository',
-  'ancestor_project_manifest',
-  'no_enclosing_source',
-]);
-
-export const PROJECT_SOURCE_CONFIDENCE_LEVELS = Object.freeze(['high', 'medium', 'low']);
 
 const MARKER_RANK = new Map([
   ['enclosing_git_repository', 0],

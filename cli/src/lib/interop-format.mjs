@@ -29,7 +29,7 @@
  * phantom nodes for dangling/external refs.
  */
 
-export const INTEROP_URN_BASE = 'urn:uuid';
+const INTEROP_URN_BASE = 'urn:uuid';
 export const INTEROP_SCHEMA_VERSION = 2;
 
 const OATLAS_NS = 'https://wlsdks.github.io/ontology-atlas/ns#';
@@ -54,7 +54,7 @@ const VIA_PREDICATE = Object.freeze({
   domain: 'domain',
 });
 
-export function nodeUrn(uid) {
+function nodeUrn(uid) {
   if (!NODE_UID_RE.test(uid)) {
     throw new Error('Interop URN requires a valid lowercase UUIDv4 `uid`.');
   }
