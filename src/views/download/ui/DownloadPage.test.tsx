@@ -423,19 +423,21 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/Release gate requires/i)).not.toBeInTheDocument();
   });
 
-  // The product's core promise is local-first. A stranger deciding whether to
-  // run an unfamiliar binary needs it said plainly, next to the other facts.
+  // The product's core promise is local-first. Keep the claim scoped to Atlas:
+  // the updater and a connected agent can use the network without implying that
+  // Atlas has a backend or uploads the user's vault.
   /*
    * [Narrowed 2026-08-19] Two of the three sentences — "No account, no server" and "This website
    * sends nothing to a server" — were rows of the verification rail and went with it. Only the
-   * promise about the app survives, compressed into the hero trust line. The promise about the
-   * site itself is now nowhere on this page (`docs/DECISIONS.md` 2026-08-19).
+   * promise about the app survived in the hero trust line. It is now phrased as the durable
+   * boundary (no Atlas backend), not the false absolute that no network traffic ever occurs.
    */
   it('states the local-first promise where the download decision is made', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(screen.getByText(/nothing sent to a server/i)).toBeInTheDocument();
+    expect(screen.getByText(/no Atlas backend/i)).toBeInTheDocument();
+    expect(screen.queryByText(/nothing sent to a server/i)).not.toBeInTheDocument();
     // Checks that the false capability claim removed on 2026-07-27 has not returned — Chromium on
     // the web really does open a folder.
     expect(

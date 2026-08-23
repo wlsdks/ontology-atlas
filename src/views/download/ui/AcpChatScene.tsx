@@ -14,9 +14,12 @@ import { HeroTypewriter } from './HeroTypewriter';
  * The previous version was an `mcp-verify` terminal — a developer verifying configuration. Owner:
  *[I have no idea what this means; what I want to emphasize is that ACP is inside the service — that an agent is connected and ontology analysis is possible through chat alone]*. The scene that sells is not verification but **conversation inside the app**: a person explains in their own language, the agent calls vault tools, and the result remains as one line of markdown.
  *
- * ## The three re-enacted lines are not invented
+ * ## The conversation evidence is measured; the permission labels are current
  *
- * They are the measured round trip from `docs/DECISIONS.md` 2026-08-16 (7) — the user's sentence and `add_relation`'s `why` payload carried over verbatim (the ledger's discipline: a dated record stays the fact of that day). The tab label prints that date on screen. The tool call text is a program record and is not translated — translating it turns a re-enactment into an adaptation.
+ * The user's sentence and `add_relation`'s `why` payload come from the measured round trip in
+ * `docs/DECISIONS.md` 2026-08-16 (7). The surrounding caption and result describe the current
+ * reviewed-write policy, so the tab names this as the current Atlas write flow instead of claiming
+ * a verbatim dated replay. The tool call name remains a program record and is not translated.
  *
  * ## Brand and terms boundaries (docs/DECISIONS.md 2026-08-16 (5))
  *

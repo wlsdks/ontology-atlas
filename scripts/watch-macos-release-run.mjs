@@ -14,6 +14,10 @@ Dispatches the macOS release workflow from the protected ref with the requested
 tag as workflow_dispatch input, then watches that exact run to completion. The
 lookup is scoped to the admitted tag commit and workflow_dispatch event so an
 operator does not accidentally watch an unrelated latest run.
+
+On success, the command prints the exact release-facts artifact handoff. Apply
+that one generated file from a fresh clone in a normal protected-main PR; its
+checked merge is what triggers the Pages deployment.
 `);
 }
 
@@ -79,7 +83,7 @@ function parseArgs(argv) {
   if (!/^[^/\s]+\/[^/\s]+$/.test(options.repo)) {
     fail("--repo must use owner/name format.");
   }
-  if (!/^v.+/.test(options.tag)) {
+  if (!/^v[0-9A-Za-z][0-9A-Za-z._-]*$/.test(options.tag)) {
     fail(`--tag must be v-prefixed, got ${options.tag || "(empty)"}.`);
   }
   if (!/^[A-Za-z0-9_.-]+\.ya?ml$/.test(options.workflow)) {
@@ -187,6 +191,20 @@ function findReleaseRun(options, sha) {
   );
 }
 
+function printFactsHandoff(options, runId) {
+  const artifact = `ontology-atlas-release-facts-${options.tag}`;
+  console.log(`[desktop-release-run] release-facts artifact: ${artifact}`);
+  console.log(
+    `[desktop-release-run] gh run download ${runId} --repo ${options.repo} --name ${artifact} ` +
+      '--dir "$(mktemp -d /tmp/ontology-atlas-release-facts.XXXXXX)"',
+  );
+  console.log(
+    "[desktop-release-run] copy only src/views/download/model/macos-release.generated.ts " +
+      "from that artifact into a fresh origin/main branch, then submit a normal protected-main PR; " +
+      "required checks and its squash merge trigger Pages.",
+  );
+}
+
 const options = parseArgs(process.argv.slice(2));
 const sha = resolveTagSha(options);
 dispatchRelease(options);
@@ -198,3 +216,4 @@ if (runInfo.url) {
 }
 run(ghBin(), ["run", "watch", String(runInfo.databaseId), "--repo", options.repo, "--exit-status"]);
 console.log(`[desktop-release-run] ${options.workflow} run ${runInfo.databaseId} completed successfully`);
+printFactsHandoff(options, runInfo.databaseId);
