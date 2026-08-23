@@ -1077,7 +1077,7 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Design Charter §11 (CLAUDE.md) automatic blocking — Track E-13 (autonomous loop).
+  // Design Charter §11 (CLAUDE.md) automatic blocking.
   // - Prohibit scale hover (`hover:scale-*` `active:scale-*` etc)
   // - Prohibit purple-pink gradients (`from-purple-*` `to-pink-*` combinations)
   // - Glassmorphism: handled separately (current code usage 0).

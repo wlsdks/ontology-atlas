@@ -264,7 +264,7 @@ export function allPathsPlanShapeFailure(result, targets) {
   return null;
 }
 
-export function queryPlanExecutionShapeFailure(execution, targetOperation, label) {
+function queryPlanExecutionShapeFailure(execution, targetOperation, label) {
   if (!execution || typeof execution !== "object") {
     return `${label} missing execution advice`;
   }

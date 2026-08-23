@@ -61,7 +61,7 @@ export const SPEC_RULE_DOC = '.claude/rules/design.md';
 export const SPEC_RULE_SECTION = 'Changing the specification requires `design-system`';
 
 /** design.md's “Fixed scale contract” section — the target of the number and token inventory. */
-export const SCALE_CONTRACT_SECTION = 'Fixed scale contract';
+const SCALE_CONTRACT_SECTION = 'Fixed scale contract';
 
 /**
  * Tokens in globals.css counted as ramp.

@@ -25,7 +25,7 @@ const PORT = 8231;
 const OUT = '.qa-scratch/brand/png';
 
 /** The spec's wiring table — which artwork each size uses lives here in one place. */
-export const RASTER_PLAN = [
+const RASTER_PLAN = [
   ['icon-1024', 'full', 1024], ['icon-512', 'full', 512], ['icon-256', 'full', 256],
   ['icon-128', 'full', 128], ['icon-64', 'nodash', 64], ['icon-48', 'compact', 48],
   ['icon-32', 'compact', 32], ['icon-16', 'micro', 16],

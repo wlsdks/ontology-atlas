@@ -147,7 +147,7 @@ export function maintenancePlanShapeFailure(result, options = {}) {
   return null;
 }
 
-export function maintenanceNextActionPointerFailure(expectedAction, pointer, label) {
+function maintenanceNextActionPointerFailure(expectedAction, pointer, label) {
   if (!expectedAction || !pointer) return null;
   for (const key of ["executable", "phase", "kind", "severity"]) {
     if (pointer[key] !== expectedAction[key]) {
@@ -157,7 +157,7 @@ export function maintenanceNextActionPointerFailure(expectedAction, pointer, lab
   return null;
 }
 
-export function maintenanceBucketTotalFailure(bucket, remainingActions, bucketName) {
+function maintenanceBucketTotalFailure(bucket, remainingActions, bucketName) {
   const total = Object.values(bucket).reduce((sum, count) => sum + (Number.isInteger(count) ? count : 0), 0);
   if (total !== remainingActions) {
     return `maintenance_plan ${bucketName} total mismatch — remaining ${remainingActions}, bucket ${total}`;
@@ -165,7 +165,7 @@ export function maintenanceBucketTotalFailure(bucket, remainingActions, bucketNa
   return null;
 }
 
-export function maintenanceBucketMismatch(bucket, actions, actionKey, bucketName) {
+function maintenanceBucketMismatch(bucket, actions, actionKey, bucketName) {
   const expected = {};
   for (const action of actions) {
     const key = action?.[actionKey];
@@ -208,7 +208,7 @@ export function maintenancePlanMissingCursorShapeFailure(result) {
   return null;
 }
 
-export function maintenanceCursorFailure(cursor) {
+function maintenanceCursorFailure(cursor) {
   if (!cursor || typeof cursor !== "object" || Array.isArray(cursor)) {
     return "maintenance_plan response missing cursor";
   }
@@ -340,7 +340,7 @@ export function growthPlanShapeFailure(result) {
   return null;
 }
 
-export function relationRecommendationsShapeFailure(group, expectedTotal) {
+function relationRecommendationsShapeFailure(group, expectedTotal) {
   if (!group || typeof group !== "object" || Array.isArray(group)) {
     return "growth_plan response missing relationRecommendations";
   }

@@ -170,19 +170,19 @@ describe('checkFile', () => {
 });
 
 describe('walker and CLI', () => {
-  it('skips dependency and build directories at any depth', () => {
+  it('skips dependency and build directories at any depth while scanning committed Claude rules', () => {
     withRepo(
       {
         'docs/a.md': '# a',
         'node_modules/pkg/README.md': '# dep',
         'mcp/node_modules/pkg/README.md': '# nested dep',
         'out/index.md': '# build output',
-        '.claude/LOOP-TASK.md': '`docs/superpowers/removed.md`',
+        '.claude/rules/current.md': '# current rule',
       },
       (root) => {
         assert.deepEqual(
           listMarkdownFiles(root).map((file) => file.slice(root.length + 1)),
-          ['docs/a.md'],
+          ['.claude/rules/current.md', 'docs/a.md'],
         );
       },
     );
