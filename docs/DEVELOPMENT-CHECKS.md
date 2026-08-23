@@ -57,6 +57,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Gateway evidence specimen | `pnpm gateway:specimen:check` | `pnpm gateway:specimen` to refresh |
 | Docs vs code surface | `pnpm docs:check` | `pnpm test:docs:checks` |
 | Source comment language | `pnpm source:language` | `pnpm test:source:language` |
+| Agent instruction files | `pnpm agents:check` | the harness contracts under `tests/contract/` named below |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
@@ -125,6 +126,38 @@ download route proves the public DMG/checksum assets are still reachable. GitHub
 Pages needs no deploy secrets. The website deploy is deliberately separate from
 the macOS app release workflow: `.github/workflows/release-macos.yml` publishes
 signed/notarized local-only DMGs and is separate from the website deploy.
+
+## Agent File Checks
+
+`pnpm agents:check` is the first check for anything under `.claude/`, `.agents/`,
+`.codex/`, `AGENTS.md`, `CLAUDE.md`, a nested `<dir>/AGENTS.md`, or `.mcp.json`.
+It runs in CI and takes about fifty milliseconds, and `pnpm checks:changed`
+recommends it for every path it inventories.
+
+| Drift check | Refuses |
+|---|---|
+| `claude-agents-bridge` | `CLAUDE.md` that stops importing `@AGENTS.md` |
+| `skill-copy` · `agent-copy` | a byte difference between the `.claude` and `.agents` twins, or a file on one side only |
+| `at-refs` | an `@reference` that resolves nowhere |
+| `agent-language` | Hangul, kana or Han in a file an agent reads. Opt-in through `--english-only`, because a vault or repository may legitimately be written in another language |
+| `mcp-grants` | a brief granting `mcp__<server>__*` for a server its own tree's config never declares — `.claude/agents` against `.mcp.json`, `.agents/agents` against `.codex/config.toml` |
+| `codex-size-cap` | a merged instruction set over Codex's `project_doc_max_bytes`, measured as root `AGENTS.md` plus the largest nested file, because Codex truncates the merge in silence |
+
+These contracts under `tests/contract/` cover what a single command cannot, and
+`pnpm checks:changed` runs them together for the paths they guard:
+
+| Contract | Holds |
+|---|---|
+| `agent-files` | the CLI and web implementations agree, through one fixture table |
+| `nested-agents-pointers` | every rule-covered directory has a pointer naming the rules that reach it, derived from their `paths:` frontmatter |
+| `skill-routing` | every shipped skill is named in `AGENTS.md`, ships in both trees, and keeps its frontmatter inside the Agent Skills standard |
+| `rules-path-scope` | conditional rules match real files, the resident context ratchets downward only, and `CLAUDE.md` describes its own loading, redirects and asymmetric hooks correctly |
+| `secret-read-guard` | `permissions.deny` covers every `.env` name `.gitignore` treats as a secret, without blinding the repository to the tracked `.env.example` |
+| `node-test-reachability` | every `node --test` suite runs somewhere, or says in one line why it does not |
+| `agent-file-citations` | no rule, skill or brief cites a file that exists nowhere |
+
+Hook wiring is `pnpm test:claude:hooks`; see the git-hooks section above for the
+guards that run at commit time.
 
 ## Vault Checks
 

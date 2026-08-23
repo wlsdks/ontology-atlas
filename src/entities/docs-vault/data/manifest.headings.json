@@ -10350,6 +10350,11 @@
     },
     {
       "depth": 2,
+      "text": "Agent File Checks",
+      "slug": "agent-file-checks"
+    },
+    {
+      "depth": 2,
       "text": "Vault Checks",
       "slug": "vault-checks"
     },
