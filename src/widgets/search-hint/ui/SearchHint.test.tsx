@@ -1,6 +1,6 @@
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { SearchHint } from "./SearchHint";
 
@@ -12,7 +12,25 @@ function render(ui: React.ReactElement) {
   );
 }
 
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
 describe("SearchHint", () => {
+  it("keeps the 3D picker name and describes the current map view in Help", () => {
+    window.localStorage.setItem("atlas.appearance.view3d", "on");
+    window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
+
+    render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
+
+    const picker = screen.getByTestId("topology-view-3d");
+    expect(picker).toHaveAccessibleName("3D view");
+    expect(picker).toHaveAttribute(
+      "title",
+      "Choose a map view. Current: Cloud.",
+    );
+  });
+
   it("exposes utility-lane token contracts on search and auto-arrange actions", () => {
     const onOpenSearch = vi.fn();
     const onRelayout = vi.fn();

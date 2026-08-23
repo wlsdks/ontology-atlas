@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import { createElement } from "react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { useCountUp } from "./use-count-up";
 
 function mockReducedMotion(matches: boolean) {
@@ -18,6 +21,45 @@ afterEach(() => {
 });
 
 describe("useCountUp — insights count-up (#3)", () => {
+  it("renders the exact target on the server and hydrates without a recoverable mismatch", async () => {
+    mockReducedMotion(false);
+    const frames: FrameRequestCallback[] = [];
+    const recoverable: string[] = [];
+    const container = document.createElement("div");
+    let root: Root | null = null;
+
+    function CountText({ target }: { target: number }) {
+      return createElement("span", null, useCountUp(target));
+    }
+
+    try {
+      // Model the real split: the export renderer has no rAF, while the hydrating
+      // browser does. A client-only 0 used to disagree with the server's 42.
+      vi.stubGlobal("requestAnimationFrame", undefined);
+      const serverHtml = renderToString(createElement(CountText, { target: 42 }));
+      expect(serverHtml).toContain(">42<");
+      container.innerHTML = serverHtml;
+
+      vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+        frames.push(callback);
+        return frames.length;
+      });
+      vi.stubGlobal("cancelAnimationFrame", () => {});
+
+      await act(async () => {
+        root = hydrateRoot(container, createElement(CountText, { target: 42 }), {
+          onRecoverableError: (error) => recoverable.push(String(error)),
+        });
+        await Promise.resolve();
+      });
+
+      expect(recoverable).toEqual([]);
+    } finally {
+      if (root) act(() => root?.unmount());
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("reduced-motion → snaps to the target immediately (no animation)", () => {
     mockReducedMotion(true);
     const { result } = renderHook(() => useCountUp(42));

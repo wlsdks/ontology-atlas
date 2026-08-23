@@ -51,6 +51,7 @@ function renderModel(
       handoffSource: "read-only-sample",
       authoredSignificance: null,
       docFreshnessIndex: new Map(),
+      editBaselineScopeKey: "sample:test",
       updatedAgoNowMs: Date.parse("2026-07-26T00:00:00.000Z"),
       formatUpdatedLabel: (key) => key,
       agentActivityStatus: AGENT_ACTIVITY,
@@ -137,13 +138,18 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     const alpha = node("capability:alpha", ["capabilities/alpha"]);
     const beta = node("capability:beta", ["capabilities/beta"]);
     const now = Date.parse("2026-07-26T00:00:00.000Z");
-    function useModel(selected: KnowledgeGraphNode | null, freshness: ReadonlyMap<string, string>) {
+    function useModel(
+      selected: KnowledgeGraphNode | null,
+      freshness: ReadonlyMap<string, string>,
+      editBaselineScopeKey: string | null,
+    ) {
       return useNodeDatasheetModel({
         selectedOntologyNode: selected,
         insight: { nodes: [alpha, beta], edges: [] },
         handoffSource: "read-only-sample",
         authoredSignificance: null,
         docFreshnessIndex: freshness,
+        editBaselineScopeKey,
         updatedAgoNowMs: now,
         formatUpdatedLabel: (key) => key,
         agentActivityStatus: AGENT_ACTIVITY,
@@ -155,21 +161,278 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     const initial = new Map([["capabilities/alpha", "2026-07-01T00:00:00.000Z"]]);
     const changed = new Map([["capabilities/alpha", "2026-07-02T00:00:00.000Z"]]);
     const { result, rerender } = renderHook(
-      ({ selected, freshness }: { selected: KnowledgeGraphNode | null; freshness: ReadonlyMap<string, string> }) =>
-        useModel(selected, freshness),
-      { initialProps: { selected: alpha as KnowledgeGraphNode | null, freshness: initial } },
+      ({
+        selected,
+        freshness,
+        editBaselineScopeKey,
+      }: {
+        selected: KnowledgeGraphNode | null;
+        freshness: ReadonlyMap<string, string>;
+        editBaselineScopeKey: string | null;
+      }) => useModel(selected, freshness, editBaselineScopeKey),
+      {
+        initialProps: {
+          selected: alpha as KnowledgeGraphNode | null,
+          freshness: initial,
+          editBaselineScopeKey: "local:test" as string | null,
+        },
+      },
     );
 
     expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
-    rerender({ selected: alpha, freshness: changed });
+    rerender({ selected: alpha, freshness: changed, editBaselineScopeKey: "local:test" });
     expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(true);
 
-    rerender({ selected: null, freshness: changed });
+    rerender({ selected: null, freshness: changed, editBaselineScopeKey: null });
     expect(result.current.v2DatasheetModel).toBeNull();
-    rerender({ selected: alpha, freshness: changed });
+    rerender({ selected: alpha, freshness: changed, editBaselineScopeKey: "local:test" });
     expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(true);
 
-    rerender({ selected: beta, freshness: new Map([["capabilities/beta", "2026-07-03T00:00:00.000Z"]]) });
+    rerender({
+      selected: beta,
+      freshness: new Map([["capabilities/beta", "2026-07-03T00:00:00.000Z"]]),
+      editBaselineScopeKey: "local:test",
+    });
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
+  });
+
+  it("does not let a self write already present at open hide a later external change", () => {
+    const coupon = node("capability:coupon-issue", ["capabilities/coupon-issue"]);
+    const sessionStartedAt = Date.parse("2026-08-24T00:00:00.000Z");
+    const selfWriteBeforeOpen = Date.parse("2026-08-24T01:00:00.000Z");
+    const selfEdits = new Map([["capabilities/coupon-issue", selfWriteBeforeOpen]]);
+    function useModel(freshness: ReadonlyMap<string, string>) {
+      return useNodeDatasheetModel({
+        selectedOntologyNode: coupon,
+        insight: { nodes: [coupon], edges: [] },
+        handoffSource: "loaded-vault",
+        authoredSignificance: null,
+        docFreshnessIndex: freshness,
+        editBaselineScopeKey: "local:storefront",
+        updatedAgoNowMs: sessionStartedAt,
+        formatUpdatedLabel: (key) => key,
+        agentActivityStatus: AGENT_ACTIVITY,
+        agentFocusNodeId: null,
+        selfEditTimestamps: selfEdits,
+        formatEditAgeLabel: (key) => key,
+      });
+    }
+    const initial = new Map([
+      ["capabilities/coupon-issue", "2026-08-24T00:59:59.000Z"],
+    ]);
+    const externallyChanged = new Map([
+      ["capabilities/coupon-issue", "2026-08-24T03:00:00.000Z"],
+    ]);
+    const { result, rerender } = renderHook(
+      ({ freshness }: { freshness: ReadonlyMap<string, string> }) => useModel(freshness),
+      { initialProps: { freshness: initial } },
+    );
+
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
+    rerender({ freshness: externallyChanged });
+
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(true);
+  });
+
+  it("keeps the selected document clean when only a different document changes", () => {
+    const coupon = node("capability:coupon-issue", ["capabilities/coupon-issue"]);
+    const cart = node("element:cart-session", ["elements/cart-session"]);
+    function useModel(freshness: ReadonlyMap<string, string>) {
+      return useNodeDatasheetModel({
+        selectedOntologyNode: coupon,
+        insight: { nodes: [coupon, cart], edges: [] },
+        handoffSource: "loaded-vault",
+        authoredSignificance: null,
+        docFreshnessIndex: freshness,
+        editBaselineScopeKey: "local:storefront",
+        updatedAgoNowMs: Date.parse("2026-08-24T00:00:00.000Z"),
+        formatUpdatedLabel: (key) => key,
+        agentActivityStatus: AGENT_ACTIVITY,
+        agentFocusNodeId: null,
+        selfEditTimestamps: new Map(),
+        formatEditAgeLabel: (key) => key,
+      });
+    }
+    const initial = new Map([
+      ["capabilities/coupon-issue", "2026-08-23T15:49:14.000Z"],
+      ["elements/cart-session", "2026-08-23T15:49:14.000Z"],
+    ]);
+    const cartChanged = new Map([
+      ["capabilities/coupon-issue", "2026-08-23T15:49:14.000Z"],
+      ["elements/cart-session", "2026-08-23T16:12:11.417Z"],
+    ]);
+    const { result, rerender } = renderHook(
+      ({ freshness }: { freshness: ReadonlyMap<string, string> }) => useModel(freshness),
+      { initialProps: { freshness: initial } },
+    );
+
+    rerender({ freshness: cartChanged });
+
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
+  });
+
+  it("suppresses freshness drift explained by a self write after the panel opened", () => {
+    const coupon = node("capability:coupon-issue", ["capabilities/coupon-issue"]);
+    function useModel(
+      freshness: ReadonlyMap<string, string>,
+      selfEditTimestamps: ReadonlyMap<string, number>,
+    ) {
+      return useNodeDatasheetModel({
+        selectedOntologyNode: coupon,
+        insight: { nodes: [coupon], edges: [] },
+        handoffSource: "loaded-vault",
+        authoredSignificance: null,
+        docFreshnessIndex: freshness,
+        editBaselineScopeKey: "local:storefront",
+        updatedAgoNowMs: Date.parse("2026-08-24T00:00:00.000Z"),
+        formatUpdatedLabel: (key) => key,
+        agentActivityStatus: AGENT_ACTIVITY,
+        agentFocusNodeId: null,
+        selfEditTimestamps,
+        formatEditAgeLabel: (key) => key,
+      });
+    }
+    const initial = new Map([
+      ["capabilities/coupon-issue", "2026-08-23T15:49:14.000Z"],
+    ]);
+    const selfWritten = new Map([
+      ["capabilities/coupon-issue", "2026-08-24T02:00:00.000Z"],
+    ]);
+    const { result, rerender } = renderHook(
+      ({
+        freshness,
+        selfEdits,
+      }: {
+        freshness: ReadonlyMap<string, string>;
+        selfEdits: ReadonlyMap<string, number>;
+      }) => useModel(freshness, selfEdits),
+      { initialProps: { freshness: initial, selfEdits: new Map<string, number>() } },
+    );
+
+    rerender({
+      freshness: selfWritten,
+      selfEdits: new Map([
+        ["capabilities/coupon-issue", Date.parse("2026-08-24T02:00:00.100Z")],
+      ]),
+    });
+
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
+  });
+
+  it("starts a fresh baseline when the same node id moves from the sample to a settled local vault", () => {
+    const coupon = node("capability:coupon-issue", ["capabilities/coupon-issue"]);
+    const now = Date.parse("2026-08-24T00:00:00.000Z");
+    function useModel(
+      selected: KnowledgeGraphNode | null,
+      handoffSource: "loaded-vault" | "read-only-sample",
+      freshness: ReadonlyMap<string, string>,
+      editBaselineScopeKey: string | null,
+    ) {
+      return useNodeDatasheetModel({
+        selectedOntologyNode: selected,
+        insight: { nodes: [coupon], edges: [] },
+        handoffSource,
+        authoredSignificance: null,
+        docFreshnessIndex: freshness,
+        editBaselineScopeKey,
+        updatedAgoNowMs: now,
+        formatUpdatedLabel: (key) => key,
+        agentActivityStatus: AGENT_ACTIVITY,
+        agentFocusNodeId: null,
+        selfEditTimestamps: new Map(),
+        formatEditAgeLabel: (key) => key,
+      });
+    }
+    const sampleFreshness = new Map([["capabilities/coupon-issue", "2026-08-23"]]);
+    const localFreshness = new Map([
+      ["capabilities/coupon-issue", "2026-08-23T15:49:14.000Z"],
+    ]);
+    const { result, rerender } = renderHook(
+      ({
+        selected,
+        source,
+        freshness,
+        editBaselineScopeKey,
+      }: {
+        selected: KnowledgeGraphNode | null;
+        source: "loaded-vault" | "read-only-sample";
+        freshness: ReadonlyMap<string, string>;
+        editBaselineScopeKey: string | null;
+      }) => useModel(selected, source, freshness, editBaselineScopeKey),
+      {
+        initialProps: {
+          selected: coupon as KnowledgeGraphNode | null,
+          source: "read-only-sample" as "loaded-vault" | "read-only-sample",
+          freshness: sampleFreshness,
+          editBaselineScopeKey: "sample:storefront" as string | null,
+        },
+      },
+    );
+
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
+    rerender({
+      selected: null,
+      source: "loaded-vault",
+      freshness: localFreshness,
+      editBaselineScopeKey: null,
+    });
+    rerender({
+      selected: coupon,
+      source: "loaded-vault",
+      freshness: localFreshness,
+      editBaselineScopeKey: "local:storefront",
+    });
+
+    expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
+  });
+
+  it("starts a fresh baseline when the same scoped node id resolves to a different source slug", () => {
+    const firstSource = node("capability:coupon-issue", ["capabilities/coupon-issue"]);
+    const secondSource = node("capability:coupon-issue", ["ontology/capabilities/coupon-issue"]);
+    function useModel(
+      selected: KnowledgeGraphNode,
+      freshness: ReadonlyMap<string, string>,
+    ) {
+      return useNodeDatasheetModel({
+        selectedOntologyNode: selected,
+        insight: { nodes: [selected], edges: [] },
+        handoffSource: "loaded-vault",
+        authoredSignificance: null,
+        docFreshnessIndex: freshness,
+        editBaselineScopeKey: "local:storefront",
+        updatedAgoNowMs: Date.parse("2026-08-24T00:00:00.000Z"),
+        formatUpdatedLabel: (key) => key,
+        agentActivityStatus: AGENT_ACTIVITY,
+        agentFocusNodeId: null,
+        selfEditTimestamps: new Map(),
+        formatEditAgeLabel: (key) => key,
+      });
+    }
+    const { result, rerender } = renderHook(
+      ({
+        selected,
+        freshness,
+      }: {
+        selected: KnowledgeGraphNode;
+        freshness: ReadonlyMap<string, string>;
+      }) => useModel(selected, freshness),
+      {
+        initialProps: {
+          selected: firstSource,
+          freshness: new Map([
+            ["capabilities/coupon-issue", "2026-08-23T15:49:14.000Z"],
+          ]),
+        },
+      },
+    );
+
+    rerender({
+      selected: secondSource,
+      freshness: new Map([
+        ["ontology/capabilities/coupon-issue", "2026-08-24T01:00:00.000Z"],
+      ]),
+    });
+
     expect(result.current.v2DatasheetModel?.mtimeConflict).toBe(false);
   });
 });

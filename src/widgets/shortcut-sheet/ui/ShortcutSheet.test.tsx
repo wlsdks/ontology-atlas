@@ -24,6 +24,12 @@ function renderSheet() {
 }
 
 describe("ShortcutSheet — topology section (W2-C)", () => {
+  it("describes Enter for every search result type, not projects only", () => {
+    renderSheet();
+    expect(screen.getByText("Open the selected result")).toBeInTheDocument();
+    expect(screen.queryByText("Open the selected project")).toBeNull();
+  });
+
   it("no longer lists the unimplemented double-click/shift-click/tab/slash/depth interactions", () => {
     renderSheet();
     expect(screen.queryByText(/Show only neighbors of the selected node/i)).not.toBeInTheDocument();

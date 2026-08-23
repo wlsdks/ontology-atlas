@@ -150,20 +150,87 @@ test.describe("인사이트 구성 — 큰 숫자와 상단 칩이 같은 폴더
     const seen = await page.evaluate(() => {
       const chip = [...document.querySelectorAll("header span")].map((el) => (el.textContent ?? "").trim())
         .find((text) => /개념/.test(text) && /관계/.test(text));
-      const bignums = [...document.querySelectorAll('[data-testid="insights-bignum"]')].map((el) =>
-        Number(/(\d[\d,]*)/.exec(el.textContent ?? "")?.[1]?.replace(/,/g, "") ?? NaN),
-      );
+      const bignums = [...document.querySelectorAll('[data-testid="insights-bignum"]')].map((el) => {
+        const animated = el.querySelector("[data-insights-animated-value]");
+        const exact = el.querySelector("[data-insights-exact-value]");
+        const read = (node: Element | null) =>
+          Number(/(\d[\d,]*)/.exec(node?.textContent ?? "")?.[1]?.replace(/,/g, "") ?? NaN);
+        return { animated: read(animated), exact: read(exact) };
+      });
       return { chip: chip ?? null, bignums };
     });
 
     expect(seen.chip, "상단 칩을 못 찾았다 — 이 시험이 공회전한다").not.toBeNull();
     const chipConcepts = Number(/(\d+)\s*개념/.exec(seen.chip!)?.[1]);
     const chipRelations = Number(/(\d+)\s*관계/.exec(seen.chip!)?.[1]);
-    console.log(`[census-agreement] 칩 ${seen.chip} · 대형 숫자 ${seen.bignums.join(", ")}`);
+    console.log(
+      `[census-agreement] 칩 ${seen.chip} · painted ${seen.bignums.map((value) => value.animated).join(", ")} · exact ${seen.bignums.map((value) => value.exact).join(", ")}`,
+    );
 
     // Idling guard: with no large numbers present, nothing was measured.
     expect(seen.bignums.length, "대형 숫자를 하나도 못 찾았다").toBeGreaterThanOrEqual(2);
-    expect(seen.bignums[0], `개념 대형 숫자가 칩(${chipConcepts})과 다른 폴더를 센다`).toBe(chipConcepts);
-    expect(seen.bignums[1], `관계 대형 숫자가 칩(${chipRelations})과 다른 폴더를 센다`).toBe(chipRelations);
+    expect(seen.bignums[0].animated, `화면의 개념 숫자가 칩(${chipConcepts})과 다르다`).toBe(chipConcepts);
+    expect(seen.bignums[1].animated, `화면의 관계 숫자가 칩(${chipRelations})과 다르다`).toBe(chipRelations);
+    expect(seen.bignums[0].exact, `접근성 개념 숫자가 칩(${chipConcepts})과 다르다`).toBe(chipConcepts);
+    expect(seen.bignums[1].exact, `접근성 관계 숫자가 칩(${chipRelations})과 다르다`).toBe(chipRelations);
+  });
+});
+
+test.describe("인사이트 구성 — 도메인 행이 한 축과 읽을 수 있는 꼬리를 공유한다", () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+
+  test("Storefront 아홉 행의 192px 꼬리가 잘리지 않고 트랙 끝이 정렬된다", async ({ page }) => {
+    const { seedFirstRunSeen } = await import("./first-run-seed");
+    await seedFirstRunSeen(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem("demo:sample-source:v1", "storefront");
+      window.sessionStorage.setItem("demo:first-run-starter-dismissed:v1", "1");
+    });
+    await page.goto("/en/ontology/insights/?guides=off&tab=composition", {
+      waitUntil: "domcontentloaded",
+    });
+
+    const rows = page.getByTestId("domain-capacity-bar-row");
+    await expect(rows).toHaveCount(9, { timeout: 20_000 });
+    const kindStack = page.getByTestId("insights-kind-stack");
+    await expect(kindStack).toBeVisible();
+    const kindStackMetrics = await kindStack.evaluate((element) => {
+      const segments = [...element.querySelectorAll<HTMLElement>('[data-testid="insights-kind-stack-segment"]')]
+        .map((segment) => segment.getBoundingClientRect());
+      return {
+        gap: Number.parseFloat(getComputedStyle(element).columnGap),
+        segmentCount: segments.length,
+        seams: segments.slice(1).map((segment, index) => segment.left - segments[index].right),
+      };
+    });
+    expect(kindStackMetrics.segmentCount).toBe(4);
+    expect(kindStackMetrics.gap).toBeCloseTo(1, 1);
+    expect(kindStackMetrics.seams.every((gap) => gap >= 0.9)).toBe(true);
+    const metrics = await rows.evaluateAll((elements) =>
+      elements.map((row) => {
+        const tail = row.querySelector<HTMLElement>('[data-testid="domain-capacity-bar-tail"]');
+        const breakdown = row.querySelector<HTMLElement>('[data-testid="domain-capacity-bar-breakdown"]');
+        const track = row.querySelector<HTMLElement>('[data-testid="domain-capacity-bar-track"]');
+        if (!tail || !breakdown || !track) return null;
+        return {
+          rowOverflow: row.scrollWidth - row.clientWidth,
+          tailWidth: tail.getBoundingClientRect().width,
+          tailCssWidth: Number.parseFloat(getComputedStyle(tail).width),
+          breakdownOverflow: breakdown.scrollWidth - breakdown.clientWidth,
+          trackRight: track.getBoundingClientRect().right,
+        };
+      }),
+    );
+    expect(metrics.every(Boolean), "every domain row must expose track, tail, and breakdown").toBe(true);
+    const concrete = metrics.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+    expect(concrete.every(({ rowOverflow }) => rowOverflow <= 1)).toBe(true);
+    expect(concrete.every(({ breakdownOverflow }) => breakdownOverflow <= 1)).toBe(true);
+    expect(concrete.every(({ tailCssWidth }) => Math.abs(tailCssWidth - 192) <= 1)).toBe(true);
+    const tailVariance = Math.max(...concrete.map(({ tailWidth }) => tailWidth)) -
+      Math.min(...concrete.map(({ tailWidth }) => tailWidth));
+    const trackEndVariance = Math.max(...concrete.map(({ trackRight }) => trackRight)) -
+      Math.min(...concrete.map(({ trackRight }) => trackRight));
+    expect(tailVariance).toBeLessThanOrEqual(1);
+    expect(trackEndVariance).toBeLessThanOrEqual(1);
   });
 });

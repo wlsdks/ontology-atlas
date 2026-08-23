@@ -37,7 +37,7 @@ function ChangeDetails({ item }: { item: OntologyChangeItem }) {
           ] as const).map(([label, value]) => (
             <div key={label} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
               <dt className="text-[color:var(--color-text-quaternary)]">{t(label)}</dt>
-              <dd className="break-all font-mono text-[color:var(--color-text-primary)]">{value}</dd>
+              <dd className="break-words font-mono text-[color:var(--color-text-primary)]">{value}</dd>
             </div>
           ))}
           {item.relation.why ? (
@@ -54,11 +54,23 @@ function ChangeDetails({ item }: { item: OntologyChangeItem }) {
       {visibleFields.length > 0 ? (
         <dl className="grid gap-1.5 text-label">
           {visibleFields.map((field) => (
-            <div key={field.key} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
-              <dt className="break-all font-mono text-[color:var(--color-text-quaternary)]">
+            /* In the 352px relation panel, 6rem keeps the current long keys readable;
+               minmax(0,1fr) plus break-words still lets unbroken paths wrap when needed. */
+            <div
+              key={field.key}
+              data-testid="ontology-change-review-field-row"
+              className="grid grid-cols-[6rem_minmax(0,1fr)] gap-2"
+            >
+              <dt
+                data-testid="ontology-change-review-field-key"
+                className="break-words font-mono text-[color:var(--color-text-quaternary)]"
+              >
                 {field.key}
               </dt>
-              <dd className="break-all text-[color:var(--color-text-primary)]">
+              <dd
+                data-testid="ontology-change-review-field-value"
+                className="break-words text-[color:var(--color-text-primary)]"
+              >
                 {formatValue(field.after)}
               </dd>
             </div>
@@ -213,7 +225,7 @@ export function OntologyChangeReview({
           )}
         >
           {activeItem.target ? (
-            <p className="break-all font-mono text-label text-[color:var(--color-text-secondary)]">
+            <p className="break-words font-mono text-label text-[color:var(--color-text-secondary)]">
               {activeItem.target}
             </p>
           ) : null}

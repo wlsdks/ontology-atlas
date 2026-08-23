@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../../src/features/first-run-starter/model/first-run-starter-dismiss";
 import { seedFirstRunSeen } from "./first-run-seed";
 // The `window.__atlasMap` type is declared in exactly one place — two copies raise TS2717.
 import "./atlas-map-probe";
@@ -165,6 +166,11 @@ test.describe("지도에 초점을 주는 길", () => {
 
   /** Can you walk immediately after grabbing — is the entrance really wired to the feature. */
   test("G M 으로 잡은 다음 방향키로 걸을 수 있다", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await page.addInitScript((key) => {
+      window.sessionStorage.setItem(key, "1");
+      window.localStorage.setItem("demo:sample-source:v1", "storefront");
+    }, FIRST_RUN_STARTER_DISMISSED_KEY);
     await page.goto("/ko/topology/?guides=off&e2e=1");
     await page.locator("main").first().click({ position: { x: 5, y: 5 } });
     await page.keyboard.press("g");
@@ -178,12 +184,20 @@ test.describe("지도에 초점을 주는 길", () => {
         { timeout: 10_000 },
       )
       .toBe("map-canvas");
-    await page.keyboard.press("ArrowRight");
+    // Focus can land before graph props reach the canvas. Read the rendered map
+    // contract instead of `__atlasMap.nodes()`: the latter is the interaction
+    // instrument under test here and can be replaced during a dev remount.
     await expect
-      .poll(() => page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null), {
-        timeout: 5_000,
+      .poll(async () => Number(await page.getByTestId("topology-map-v2").getAttribute("data-source-node-count")), {
+        timeout: 15_000,
       })
-      .not.toBeNull();
+      .toBeGreaterThan(0);
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByTestId("topology-v2-detail-panel")).toHaveAttribute(
+      "data-selected-node-id",
+      /.+/,
+      { timeout: 5_000 },
+    );
   });
 });
 
@@ -441,7 +455,7 @@ test.describe("지도 키보드 걷기", () => {
     const covered: string[] = [];
     for (const key of [...DIRECTIONS, ...DIRECTIONS]) {
       await page.keyboard.press(key);
-      await page.waitForTimeout(500); // Let the camera transition finish
+      await settleSelectedPosition(page);
       const hit = await page.evaluate(() => {
         const probe = window.__atlasMap;
         const id = probe?.selection().nodeId;
@@ -505,6 +519,31 @@ test.describe("지도 키보드 걷기", () => {
         // when both are wrong together.
         let left = box.x;
         let rightEdge = box.right;
+        // The selected inspector is a known product surface. Measure it by its
+        // screen identity rather than importing the production marker/heuristic,
+        // so deleting that wiring makes this gate turn RED.
+        const selectedInspector = document.querySelector<HTMLElement>(
+          '[data-testid="topology-node-popover-positioner"]',
+        );
+        if (selectedInspector) {
+          const r = selectedInspector.getBoundingClientRect();
+          const cs = getComputedStyle(selectedInspector);
+          if (
+            r.width >= 40 &&
+            r.height >= 40 &&
+            r.right > box.x &&
+            r.left < box.right &&
+            cs.visibility !== "hidden" &&
+            cs.display !== "none" &&
+            Number(cs.opacity) >= 0.05
+          ) {
+            if (r.x + r.width / 2 >= box.x + box.width / 2) {
+              rightEdge = Math.min(rightEdge, r.x);
+            } else {
+              left = Math.max(left, r.right);
+            }
+          }
+        }
         for (const el of document.querySelectorAll("body *")) {
           if (el === canvas || canvas.contains(el) || el.contains(canvas)) continue;
           const r = el.getBoundingClientRect();
@@ -534,7 +573,7 @@ test.describe("지도 키보드 걷기", () => {
     for (const key of [...DIRECTIONS, ...DIRECTIONS, ...DIRECTIONS]) {
       const before = await readGeometry();
       await page.keyboard.press(key);
-      await page.waitForTimeout(600);
+      await settleSelectedPosition(page);
       const after = await readGeometry();
       if (!before || !after) continue;
       const cameraMoved = Math.hypot(after.camX - before.camX, after.camY - before.camY) > 2;

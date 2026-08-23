@@ -42,11 +42,15 @@ export interface Rect {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  /** A product-owned inspector may be a camera obstacle even when its content
+   * is shorter than the generic side-panel height heuristic. */
+  readonly cameraObstacle?: "side-panel";
 }
 
 /**
  * Is that rectangle a **side panel** — true when it occupies at least this ratio
- * of the canvas height.
+ * of the canvas height, unless an edge-attached product inspector declares the
+ * same role explicitly because its content is shorter.
  *
  * Why 0.6: the measured popover is 813/982 = **0.83**, while the top toolbar is
  * under 100px tall and never exceeds 0.1. The two populations separate with room
@@ -81,7 +85,9 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
   for (const panel of obstacles) {
     if (!intersects(panel, canvas)) continue;
 
-    const tallEnough = panel.height >= canvas.height * SIDE_PANEL_HEIGHT_RATIO;
+    const explicitSidePanel = panel.cameraObstacle === "side-panel";
+    const tallEnough =
+      explicitSidePanel || panel.height >= canvas.height * SIDE_PANEL_HEIGHT_RATIO;
     const wideEnough = panel.width >= canvas.width * TOP_BAR_WIDTH_RATIO;
 
     if (tallEnough && !wideEnough) {
@@ -141,7 +147,15 @@ export function collectCanvasObstacles(canvas: Element, canvasRect: Rect): Rect[
     if (out.some((r) => r.x <= box.x && r.y <= box.y && r.x + r.width >= box.right && r.y + r.height >= box.bottom)) {
       continue;
     }
-    out.push({ x: box.x, y: box.y, width: box.width, height: box.height });
+    out.push({
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: box.height,
+      ...(el.getAttribute("data-topology-camera-obstacle") === "side-panel"
+        ? { cameraObstacle: "side-panel" as const }
+        : {}),
+    });
   }
   return out;
 }
@@ -190,7 +204,9 @@ export function measureCanvasInsets(canvas: Element, canvasRect: Rect): CanvasIn
   let left = 0;
   let right = 0;
   for (const panel of collectCanvasObstacles(canvas, canvasRect)) {
-    const tall = panel.height >= canvasRect.height * SIDE_PANEL_HEIGHT_RATIO;
+    const explicitSidePanel = panel.cameraObstacle === "side-panel";
+    const tall =
+      explicitSidePanel || panel.height >= canvasRect.height * SIDE_PANEL_HEIGHT_RATIO;
     const wide = panel.width >= canvasRect.width * TOP_BAR_WIDTH_RATIO;
     if (!tall || wide) continue;
     const panelCenter = panel.x + panel.width / 2;

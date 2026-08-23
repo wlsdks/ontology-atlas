@@ -733,14 +733,13 @@ export interface FrameDrawParams {
    */
   clusterBarLabels?: ClusterBarLabels | null;
   /**
-   * 3D view (2026-08-18, opt-in) — the view mode that re-lays the map out as a
-   * dome of concentric kind rings (`model/dome-view.ts`). Per-node transform map
-   * (offset + perspective factor), refreshed by the loop every frame. Nodes,
-   * labels, edges, and chips all pass through it, and hit testing and the
-   * instrument (`__atlasMap`) read **the same map**, so a click follows the drawn
-   * position even mid-rotation. During a realm expansion the loop rewinds the ramp
-   * to null, so realm depth is never encoded twice. Null = pixel-identical to the
-   * pre-dome screen.
+   * 3D projection frame (2026-08-18, opt-in) — ownership draws the Dome and
+   * coupling draws the Cloud (`model/dome-view.ts`). This per-node transform map
+   * (offset + perspective factor) is refreshed every frame. Nodes, labels, edges,
+   * chips, hit testing, and `__atlasMap` all read **the same map**, so a click
+   * follows the drawn position even mid-rotation. During a realm expansion the
+   * loop rewinds the ramp to null, so realm depth is never encoded twice. Null is
+   * pixel-identical to the 2D screen.
    */
   domeFrame?: ReadonlyMap<string, DomeNodeFrame> | null;
   /**

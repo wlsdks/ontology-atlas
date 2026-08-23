@@ -76,6 +76,14 @@ const AUTH_ROW = {
  * domains).
  */
 describe("OverviewTab — 도메인 용량", () => {
+  it("종류 스택은 낮은 인접 색 대비를 1px 구조 seam으로 나눈다", () => {
+    render(<OverviewTab {...BASE} domainRows={[AUTH_ROW]} />);
+    const stack = screen.getByTestId("insights-kind-stack");
+    expect(stack).toHaveClass("gap-px");
+    expect(stack).toHaveClass("bg-[color:var(--color-divider)]");
+    expect(screen.getAllByTestId("insights-kind-stack-segment")).toHaveLength(3);
+  });
+
   it("도메인이 없으면 만들 길을 내민다 — 「없습니다」로 끝나는 것은 다음 단계가 없음이다", () => {
     render(<OverviewTab {...BASE} domainRows={[]} />);
     const action = screen.getByTestId("domain-capacity-empty-action");

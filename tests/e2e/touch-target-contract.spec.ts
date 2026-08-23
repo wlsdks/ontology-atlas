@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
  * Touch-target contract — does `--touch-target-min` (44px) **actually reach the
@@ -53,6 +54,56 @@ const MIN = 44;
 test.use({ hasTouch: true, isMobile: true, viewport: { width: 768, height: 1024 } });
 
 test.describe("터치 타깃 계약 (pointer: coarse)", () => {
+  test("390px 선택 상세의 독립 행동이 모두 44px 히트 영역을 갖는다", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seedFirstRunSeen(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem("demo:sample-source:v1", "storefront");
+      window.sessionStorage.setItem("demo:first-run-starter-dismissed:v1", "1");
+    });
+    await page.goto(
+      "/ko/topology/?guides=off&p=element%3Acart-session&open=capability%3Acart%2Cdomain%3Aorder%2Cproject%3Astorefront",
+      { waitUntil: "domcontentloaded" },
+    );
+    const panel = page.getByTestId("topology-v2-detail-panel");
+    await expect(panel).toBeVisible({ timeout: 20_000 });
+
+    const measured = await panel.evaluate((element, min) => {
+      const hit = (target: Element) => {
+        const rect = target.getBoundingClientRect();
+        const after = getComputedStyle(target, "::after");
+        if (after.content && after.content !== "none" && after.position === "absolute") {
+          return {
+            w: Math.max(rect.width, Number.parseFloat(after.width) || 0),
+            h: Math.max(rect.height, Number.parseFloat(after.height) || 0),
+          };
+        }
+        return { w: rect.width, h: rect.height };
+      };
+      const targets = [...element.querySelectorAll("button:not([disabled]), a[href]")]
+        .filter((target) => {
+          const rect = target.getBoundingClientRect();
+          const style = getComputedStyle(target);
+          return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden";
+        });
+      return {
+        scanned: targets.length,
+        short: targets
+          .map((target) => ({
+            id: target.getAttribute("data-testid") || target.textContent?.trim().slice(0, 24) || target.tagName,
+            ...hit(target),
+          }))
+          // CSS transforms can land an exact 44px floor at 43.995 physical px.
+          // Round to the rendered CSS pixel so the gate judges the contract,
+          // while 34/32px controls remain unambiguously red.
+          .filter(({ w, h }) => Math.round(w) < min || Math.round(h) < min),
+      };
+    }, MIN);
+
+    expect(measured.scanned, "선택 상세의 행동을 충분히 재지 못했다").toBeGreaterThan(5);
+    expect(measured.short, `44px 미만 히트 영역: ${JSON.stringify(measured.short)}`).toEqual([]);
+  });
+
   test("첫 실행 패널의 모든 컨트롤이 44px 히트 영역을 갖는다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await expect(page.getByTestId("topology-index-panel")).toBeVisible();

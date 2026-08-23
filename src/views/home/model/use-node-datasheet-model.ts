@@ -48,6 +48,10 @@ export interface UseNodeDatasheetModelArgs {
   /** frontmatter `significance` — overrides the derived value when present. */
   authoredSignificance: string | null;
   docFreshnessIndex: ReadonlyMap<string, string>;
+  /** Settled identity of the vault/source supplying `docFreshnessIndex`.
+   *  Null means the source is still restoring; no edit baseline is captured
+   *  or compared until the identity is authoritative. */
+  editBaselineScopeKey: string | null;
   /** Snapshot of "now" for the relative-time labels, so rendering stays pure. */
   updatedAgoNowMs: number;
   /** i18n — resolves `nodeDatasheet.updated_<key>`. */
@@ -130,6 +134,7 @@ export function useNodeDatasheetModel({
   handoffSource,
   authoredSignificance,
   docFreshnessIndex,
+  editBaselineScopeKey,
   updatedAgoNowMs,
   formatUpdatedLabel,
   agentActivityStatus,
@@ -150,34 +155,47 @@ export function useNodeDatasheetModel({
   }, [selectedOntologyNode, insight, authoredSignificance]);
   const nodeFocus = nodeFocusData?.focus ?? null;
 
-  // Freshness baseline from the moment this node was opened. It resets only
-  // when nodeId changes: if polling moves freshness while the same node stays
-  // open, that *is* the "changed after you opened it" signal. The state is keyed
-  // by node id and adjusted during render, so React retries before paint without
-  // reading or mutating refs during render. capturedAtMs reuses the
-  // `updatedAgoNowMs` session snapshot — no new `Date.now()` call.
+  // Freshness baseline from the moment this node was opened. The identity is
+  // the settled source scope + node id + source slug: the same graph id in a
+  // bundled sample and a local vault is not the same editable document. A null
+  // scope means restoration is still in flight, so it neither captures nor
+  // replaces a trusted baseline. The self-write timestamp is snapshotted with
+  // freshness; only a later record can explain a later freshness change.
   type EditBaseline = {
+    scopeKey: string;
     nodeId: string;
-    freshnessIso: string | null;
-    capturedAtMs: number;
+    sourceSlug: string;
+    freshnessIso: string;
+    selfEditAtMs: number | null;
   };
   const currentNodeId = selectedOntologyNode?.id ?? null;
   const currentSourceSlug = nodeFocus?.sourceSlug ?? null;
   const currentFreshnessIso = currentSourceSlug ? docFreshnessIndex.get(currentSourceSlug) ?? null : null;
   const baselineForCurrentNode: EditBaseline | null =
-    currentNodeId === null
+    editBaselineScopeKey === null ||
+    currentNodeId === null ||
+    currentSourceSlug === null ||
+    currentFreshnessIso === null
       ? null
       : {
+        scopeKey: editBaselineScopeKey,
         nodeId: currentNodeId,
+        sourceSlug: currentSourceSlug,
         freshnessIso: currentFreshnessIso,
-        capturedAtMs: updatedAgoNowMs,
+        selfEditAtMs: selfEditTimestamps.get(currentSourceSlug) ?? null,
       };
   const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(() => baselineForCurrentNode);
-  if (baselineForCurrentNode && editBaseline?.nodeId !== baselineForCurrentNode.nodeId) {
+  const baselineMatchesCurrentTarget = Boolean(
+    baselineForCurrentNode &&
+      editBaseline?.scopeKey === baselineForCurrentNode.scopeKey &&
+      editBaseline.nodeId === baselineForCurrentNode.nodeId &&
+      editBaseline.sourceSlug === baselineForCurrentNode.sourceSlug,
+  );
+  if (baselineForCurrentNode && !baselineMatchesCurrentTarget) {
     setEditBaseline(baselineForCurrentNode);
   }
   const activeBaseline =
-    baselineForCurrentNode && editBaseline?.nodeId === baselineForCurrentNode.nodeId
+    baselineForCurrentNode && baselineMatchesCurrentTarget
       ? editBaseline
       : baselineForCurrentNode;
 
@@ -246,7 +264,7 @@ export function useNodeDatasheetModel({
       sourceSlug: nodeFocus.sourceSlug,
       baselineFreshnessIso: activeBaseline?.freshnessIso ?? null,
       currentFreshnessIso: freshnessIso ?? null,
-      baselineCapturedAtMs: activeBaseline?.capturedAtMs ?? updatedAgoNowMs,
+      baselineSelfEditAtMs: activeBaseline?.selfEditAtMs ?? null,
       selfEditTimestamps,
     });
 

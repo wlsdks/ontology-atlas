@@ -368,6 +368,43 @@ const RULES = [
     matches: [/^app\/globals\.css$/, /^postcss\.config\.mjs$/],
   },
   {
+    command: 'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts',
+    reason: 'camera free-area measurement or its selected-inspector owner changed',
+    matches: [
+      /^src\/widgets\/topology-map-v2\/interaction\/free-area\.ts$/,
+      /^src\/views\/home\/ui\/HomePage\.tsx$/,
+    ],
+  },
+  {
+    command: 'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts',
+    reason: 'insights census rendering or its domain-capacity consumer changed',
+    matches: [
+      /^src\/shared\/lib\/use-count-up\.ts$/,
+      /^src\/views\/ontology-insights\/lib\/census-health\.ts$/,
+      /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/parts\/InsightsHeroCensus\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/tabs\/OverviewTab\.tsx$/,
+      /^src\/widgets\/domain-capacity-bar\/ui\/DomainCapacityBar\.tsx$/,
+    ],
+  },
+  {
+    command: 'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
+    reason: 'topology route-state and legacy redirect behavior changed',
+    matches: [/^src\/views\/home\/ui\/HomePage\.tsx$/],
+  },
+  {
+    command: 'pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts',
+    reason: 'ontology change-review rendering changed',
+    matches: [
+      /^src\/features\/ontology-change-review\/ui\/OntologyChangeReview\.tsx$/,
+    ],
+  },
+  {
+    command: 'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts',
+    reason: 'selected-node panel touch targets changed',
+    matches: [/^src\/widgets\/topology-map-v2\/ui\/TopologyV2DetailPanel\.tsx$/],
+  },
+  {
     /*
      * ⚠️ **Editing the docs surface runs the e2e that drives it** (2026-08-08).
      *

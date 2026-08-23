@@ -857,6 +857,93 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests the map viewport framing E2E for the exact camera-obstacle source owners', () => {
+    const paths = [
+      'src/widgets/topology-map-v2/interaction/free-area.ts',
+      'src/views/home/ui/HomePage.tsx',
+    ];
+    const command = 'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts';
+    const result = suggestFocusedChecks(paths);
+    const matches = result.commands.filter((row) => row.command === command);
+
+    assert.equal(matches.length, 1);
+    assert.deepEqual(matches[0].paths, paths);
+  });
+
+  it('suggests the insights census E2E for its exact derivation, page, hero, and domain-capacity owners', () => {
+    const paths = [
+      'src/shared/lib/use-count-up.ts',
+      'src/views/ontology-insights/lib/census-health.ts',
+      'src/views/ontology-insights/ui/OntologyInsightsPage.tsx',
+      'src/views/ontology-insights/ui/parts/InsightsHeroCensus.tsx',
+      'src/views/ontology-insights/ui/tabs/OverviewTab.tsx',
+      'src/widgets/domain-capacity-bar/ui/DomainCapacityBar.tsx',
+    ];
+    const command = 'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts';
+    const result = suggestFocusedChecks(paths);
+    const matches = result.commands.filter((row) => row.command === command);
+
+    assert.equal(matches.length, 1);
+    assert.deepEqual(matches[0].paths, paths);
+  });
+
+  it('suggests both framing and legacy-route E2Es for their shared HomePage owner', () => {
+    const result = suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']);
+    const commands = commandNames(result).filter(
+      (command) =>
+        command.includes('tests/e2e/map-viewport-reframe.spec.ts') ||
+        command.includes('tests/e2e/ontology-ui.spec.ts'),
+    );
+
+    assert.deepEqual(commands, [
+      'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts',
+      'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
+    ]);
+  });
+
+  it('suggests the contextual meaning-editor E2E for the exact change-review owner', () => {
+    const paths = ['src/features/ontology-change-review/ui/OntologyChangeReview.tsx'];
+    const command = 'pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts';
+    const result = suggestFocusedChecks(paths);
+    const matches = result.commands.filter((row) => row.command === command);
+
+    assert.equal(matches.length, 1);
+    assert.deepEqual(matches[0].paths, paths);
+  });
+
+  it('suggests the touch-target E2E for the selected-node panel owner', () => {
+    const paths = ['src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx'];
+    const command = 'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts';
+    const result = suggestFocusedChecks(paths);
+    const matches = result.commands.filter((row) => row.command === command);
+
+    assert.equal(matches.length, 1);
+    assert.deepEqual(matches[0].paths, paths);
+  });
+
+  it('does not broaden installed-audit E2E mappings to neighboring tests or helpers', () => {
+    const protectedCommands = new Set([
+      'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts',
+      'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts',
+      'pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts',
+      'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
+      'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts',
+    ]);
+    const result = suggestFocusedChecks([
+      'src/widgets/topology-map-v2/interaction/free-area.test.ts',
+      'src/views/home/model/use-node-datasheet-model.ts',
+      'src/views/ontology-insights/ui/tabs/OverviewTab.test.tsx',
+      'src/widgets/domain-capacity-bar/ui/DomainCapacityLegend.tsx',
+      'src/features/ontology-change-review/ui/OntologyChangeReview.test.tsx',
+      'src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.test.tsx',
+    ]);
+
+    assert.deepEqual(
+      commandNames(result).filter((command) => protectedCommands.has(command)),
+      [],
+    );
+  });
+
   it('suggests direct Playwright specs for changed e2e tests', () => {
     const result = suggestFocusedChecks([
       'tests/e2e/ontology-ui.spec.ts',

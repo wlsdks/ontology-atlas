@@ -23,6 +23,35 @@ describe("computeFreeArea", () => {
     expect(free.height).toBe(982);
   });
 
+  it("60%보다 짧아도 명시한 데스크톱 인스펙터는 자유 영역에서 뺀다", () => {
+    const shortInspector: Rect = {
+      x: 1128,
+      y: 32,
+      width: 352,
+      height: 456,
+      cameraObstacle: "side-panel",
+    };
+
+    expect(computeFreeArea(CANVAS, [shortInspector])).toEqual({
+      x: 64,
+      y: 0,
+      width: 1128 - 64,
+      height: 982,
+    });
+  });
+
+  it("명시한 모바일 전폭 시트는 자유 영역의 좌우 패널로 빼지 않는다", () => {
+    const mobileSheet: Rect = {
+      x: 76,
+      y: 72,
+      width: 1400,
+      height: 456,
+      cameraObstacle: "side-panel",
+    };
+
+    expect(computeFreeArea(CANVAS, [mobileSheet])).toEqual(CANVAS);
+  });
+
   it("왼쪽 패널은 왼쪽에서 뺀다", () => {
     const left: Rect = { x: 64, y: 0, width: 320, height: 900 };
     const free = computeFreeArea(CANVAS, [left]);
@@ -93,8 +122,14 @@ describe("measureCanvasInsets", () => {
    * values this test would **measure the environment** (a trap this file has already
    * fallen into once).
    */
-  const fakeCanvas = (panels: (Rect & { hidden?: boolean })[]) => {
-    const make = (r: Rect, hidden?: boolean) => {
+  const fakeCanvas = (
+    panels: (Rect & { hidden?: boolean; cameraObstacle?: "side-panel" })[],
+  ) => {
+    const make = (
+      r: Rect,
+      hidden?: boolean,
+      cameraObstacle?: "side-panel",
+    ) => {
       const el = document.createElement("div");
       el.getBoundingClientRect = (() => ({
         x: r.x, y: r.y, width: r.width, height: r.height,
@@ -102,12 +137,15 @@ describe("measureCanvasInsets", () => {
         toJSON: () => ({}),
       })) as typeof el.getBoundingClientRect;
       if (hidden) el.style.display = "none";
+      if (cameraObstacle) el.dataset.topologyCameraObstacle = cameraObstacle;
       return el;
     };
     document.body.innerHTML = "";
     const canvas = make({ x: 64, y: 0, width: 1448, height: 982 });
     document.body.append(canvas);
-    for (const p of panels) document.body.append(make(p, p.hidden));
+    for (const p of panels) {
+      document.body.append(make(p, p.hidden, p.cameraObstacle));
+    }
     return canvas;
   };
 
@@ -116,6 +154,34 @@ describe("measureCanvasInsets", () => {
     const insets = measureCanvasInsets(canvas, CANVAS);
     // canvas right edge (1512) − popover left (1128) = 384 (matching the measurement)
     expect(insets).toEqual({ left: 0, right: 384 });
+  });
+
+  it("명시한 짧은 인스펙터도 오른쪽 카메라 장애물로 잰다", () => {
+    const canvas = fakeCanvas([
+      {
+        x: 1128,
+        y: 32,
+        width: 352,
+        height: 456,
+        cameraObstacle: "side-panel",
+      },
+    ]);
+
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 0, right: 384 });
+  });
+
+  it("명시했어도 화면을 가로지르는 모바일 시트는 좌우 패널로 오인하지 않는다", () => {
+    const canvas = fakeCanvas([
+      {
+        x: 76,
+        y: 72,
+        width: 1400,
+        height: 456,
+        cameraObstacle: "side-panel",
+      },
+    ]);
+
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 0, right: 0 });
   });
 
   it("왼쪽 패널을 왼쪽 인셋으로 잰다", () => {

@@ -277,18 +277,19 @@ export function useFrameMeter(): boolean {
 /* ── 3D view (map view mode) ────────────────────────────────────────────── */
 
 /**
- * Whether the map is drawn as a dome of concentric `kind` rings.
+ * Whether the map is drawn with a 3D arrangement rather than the flat map.
  *
  * Owner request, 2026-08-18: "Put our actual map into a 3D dome that still zooms
  * and can be moved around freely." (put our actual map into a 3D dome that still zooms
- * and can be moved around freely). The map has exactly two views, 2D (default)
- * and 3D, toggled from one place — the "3D" chip in the map toolbar. No duplicate
- * switch in the settings sheet.
+ * and can be moved around freely). The toolbar picker now presents one flat view
+ * (the default) plus the Dome and Cloud 3D arrangements in one place. There is no
+ * duplicate switch in the settings sheet.
  *
  * **Off by default on a measurement, not a preference.** The same data in the
- * dome raises edge crossings sharply: 58.0 → 190.7 on the hero graph, 3.29×.
+ * original Dome arrangement raises edge crossings sharply: 58.0 → 190.7 on
+ * the hero graph, 3.29×.
  * Crossing count dominates graph readability (Purchase 1997), so the default map
- * stays planar and the dome is for people who want to see structure as shape.
+ * stays planar and 3D is opt-in for people who want to see structure as shape.
  * Geometry and cost: `src/widgets/topology-map-v2/model/dome-view.ts`,
  * `docs/DECISIONS.md`.
  */
@@ -313,26 +314,23 @@ export function useView3d(): boolean {
 /* ── Arrangement (3D map) ───────────────────────────────────────────────── */
 
 /**
- * What decides a node's **bearing** on the 3D dome. This is a question, not a
- * style, so the settings copy is written as two questions:
+ * Which structural question decides a node's **position** in 3D. This is a
+ * question, not a style, and the picker names the resulting visible
+ * arrangements Dome and Cloud:
  *
  * - `ownership` (default) — *who contains what.* Bearing comes from the
  *   containment parent, children spread inside the parent's sector, so ownership
  *   is readable as shape.
- * - `coupling` — *what attaches to what.* Every relation contributes to the
- *   bearing (with per-ring angular relaxation), which exposes `depends_on`
- *   clusters that containment was hiding within a tier.
+ * - `coupling` — *what attaches to what.* Every relation contributes to a free,
+ *   deterministic 3D force cloud. It releases the kind tiers so dependencies
+ *   can decide height as well as bearing; keeping the tiers produced only a
+ *   distorted Dome and was explicitly reverted. Geometry and determinism live
+ *   in `src/widgets/topology-map-v2/model/dome-view.ts`; decision 84 records the
+ *   rejected tier-constrained hybrid.
  *
- * **Not a free 3D force cloud.** Releasing the tier (height) would discard the
- * typed fact that height carries and leave only a pretty cloud. Only the bearing
- * changes here; height is invariant across arrangements. Geometry, determinism,
- * and the rejected families: the `DomeArrangement` doc-block in
- * `src/widgets/topology-map-v2/model/dome-view.ts`, and `docs/DECISIONS.md`.
- *
- * **Why this lives in settings while the 3D toggle lives in the toolbar.** 3D
- * on/off changes what you are looking at right now; arrangement is set once and
- * rarely revisited. Adding another toolbar chip is also how the mode
- * proliferation this repo has rejected starts.
+ * **Why this shares one picker with Flat.** Splitting 3D on/off from its
+ * arrangement makes the current view depend on two controls. The toolbar's one
+ * three-row picker states the whole view choice without duplicating it in settings.
  */
 export type MapArrangement = "ownership" | "coupling";
 

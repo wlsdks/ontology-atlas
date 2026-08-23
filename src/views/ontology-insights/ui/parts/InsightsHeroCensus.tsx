@@ -99,13 +99,20 @@ function BigNum({ value, unit, suffix }: { value: number | string; unit?: string
       style={{ textShadow: "0 2px 0 var(--topology-v2-numeral-shadow)" }}
       data-testid="insights-bignum"
     >
-      {display}
-      {suffix ?? ""}
-      {unit ? (
-        <span className="ml-1.5 text-body tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" style={{ textShadow: "none" }}>
-          {unit}
-        </span>
-      ) : null}
+      <span aria-hidden="true" data-insights-animated-value>
+        {display}
+        {suffix ?? ""}
+        {unit ? (
+          <span className="ml-1.5 text-body tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" style={{ textShadow: "none" }}>
+            {unit}
+          </span>
+        ) : null}
+      </span>
+      <span className="sr-only" data-insights-exact-value>
+        {value}
+        {suffix ?? ""}
+        {unit ? ` ${unit}` : ""}
+      </span>
     </div>
   );
 }

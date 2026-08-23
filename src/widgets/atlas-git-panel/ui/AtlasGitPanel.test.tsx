@@ -127,7 +127,7 @@ function installDesktopGit({
     if (command === "git_status") return status;
     if (command === "git_diff") return diff;
     if (command === "git_commit_diff") return { count: 0, files: [], diff: COMMIT_PATCH };
-    if (command === "git_history") return history;
+    if (command === "git_history") return typeof history === "function" ? history() : history;
     if (command === "git_snapshot") return snapshot;
     if (command === "git_init") return init;
     if (command === "git_set_remote") return setRemote;
@@ -218,6 +218,75 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
       "ontology snapshot: +1 concept (capabilities/foo)",
     );
+  });
+
+  it("localizes step time from the ISO instant and falls back to the raw bridge text", async () => {
+    const nowMs = Date.parse("2026-08-24T12:00:00.000Z");
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(nowMs);
+    const isoTime = new Date(nowMs - 2 * 60 * 60 * 1_000).toISOString();
+    installDesktopGit({
+      history: [
+        {
+          ...HISTORY[0],
+          hash: "localized-time",
+          shortHash: "localiz",
+          isoTime,
+          relativeTime: "RAW ENGLISH TIME",
+        },
+        {
+          ...HISTORY[0],
+          hash: "fallback-time",
+          shortHash: "fallbac",
+          isoTime: "not-an-iso-instant",
+          relativeTime: "RAW FALLBACK TIME",
+        },
+      ],
+    });
+    try {
+      renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+      const steps = await screen.findAllByTestId("atlas-git-history-item");
+      expect(steps[0]).toHaveTextContent("2시간 전");
+      expect(steps[0]).not.toHaveTextContent("RAW ENGLISH TIME");
+      expect(steps[1]).toHaveTextContent("RAW FALLBACK TIME");
+
+      fireEvent.click(steps[0]);
+      const detail = await screen.findByTestId("atlas-git-history-detail");
+      expect(detail).toHaveTextContent(isoTime);
+      expect(detail).toHaveTextContent("2시간 전");
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it("rebases localized step time when a snapshot refreshes the workspace", async () => {
+    let nowMs = Date.parse("2026-08-24T12:00:00.000Z");
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => nowMs);
+    const isoTime = new Date(nowMs - 2 * 60 * 60 * 1_000).toISOString();
+    installDesktopGit({
+      history: () => [
+        {
+          ...HISTORY[0],
+          isoTime,
+          relativeTime: "RAW ENGLISH TIME",
+        },
+      ],
+    });
+
+    try {
+      renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+      expect(await screen.findByTestId("atlas-git-history-item")).toHaveTextContent("2시간 전");
+
+      nowMs += 3 * 60 * 60 * 1_000;
+      fireEvent.click(screen.getByTestId("atlas-git-snapshot-button"));
+      fireEvent.click(await screen.findByTestId("atlas-git-confirm-button"));
+
+      await waitFor(() =>
+        expect(screen.getByTestId("atlas-git-history-item")).toHaveTextContent("5시간 전"),
+      );
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   it("does NOT invoke git_snapshot before the explicit confirm click (신뢰 헌장 — 자동 실행 0)", async () => {
@@ -1053,12 +1122,14 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
      * **Withholding what you already know is an omission, not a degradation.** The
      * screen was not using three things the graph node already carries — the
      * one-line summary a person reads first, the project this concept belongs to,
-     * and **the name an agent calls it by**. Without the last one this screen has
+     * and **the reference an agent uses for it**. Without the last one this screen has
      * answered only one of its two users.
      */
     expect(ego).toHaveTextContent("첫 실행에서 볼트를 만들어 준다");
     expect(ego).toHaveTextContent("아틀라스");
     expect(ego).toHaveTextContent("capabilities/foo");
+    expect(ego).toHaveTextContent("에이전트 참조");
+    expect(ego).not.toHaveTextContent("에이전트 이름");
 
     // Relations are **names, not counts** — 「1」 cannot say what the 1 is.
     const neighbors = screen.getAllByTestId("atlas-git-ego-neighbor");

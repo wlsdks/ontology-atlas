@@ -45,6 +45,8 @@ export interface AtlasMapNode {
 
 export interface AtlasMapProbe {
   camera: () => AtlasMapCamera | null;
+  /** Live DOM-derived horizontal obstruction, before static camera safety tokens. */
+  obstacleInsets: () => { left: number; right: number } | null;
   selection: () => { nodeId: string | null; edge: unknown };
   nodes: () => AtlasMapNode[];
   /**

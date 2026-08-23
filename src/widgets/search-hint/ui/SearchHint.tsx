@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ListTree, RefreshCcw, Rotate3d, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { ChromeChip } from '@/shared/ui/chrome-chip';
-import { useView3d } from '@/shared/lib/appearance-preferences';
+import { useMapArrangement, useView3d } from '@/shared/lib/appearance-preferences';
 import { View3dMenu } from './View3dMenu';
 
 interface Props {
@@ -99,8 +99,11 @@ export function SearchHint({
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
-  // 3D view — subscribes to the store directly so it toggles in lockstep with the map canvas (via HomePage).
+  // Map view — subscribe to both stored facts so the picker's Help names the
+  // same Flat/Dome/Cloud arrangement that the canvas is currently drawing.
   const view3d = useView3d();
+  const arrangement = useMapArrangement();
+  const currentView = view3d ? arrangement : 'flat';
   const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const [arranging, setArranging] = useState(false);
   const compact = density === 'compact-focus';
@@ -209,11 +212,9 @@ export function SearchHint({
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
           </ChromeChip>
         </div>
-        {/* 3D — the opt-in view that rearranges the map into a dome of kind rings
-            (2026-08-18 owner instruction, which pointed at this toolbar rather than the
-            settings sheet). The map has exactly two views, 2D (default) and 3D, and this
-            is the one place it toggles. The active indigo tint states that it is on (no
-            second colour). Same <md demotion as auto-arrange. */}
+        {/* The map-view picker chooses Flat (the default) or one of the two 3D
+            arrangements, Dome and Cloud. The active indigo tint states that a 3D
+            arrangement is on (no second colour). Same <md demotion as auto-arrange. */}
         {/*
           The 3D chip **opens a picker rather than toggling** (owner instruction,
           2026-08-18: *"Pressing 3D should bring up a selection popup."* — pressing 3D should bring
@@ -241,7 +242,9 @@ export function SearchHint({
             active={view3d}
             compact={compact}
             aria-label={t('view3dAriaLabel')}
-            title={view3d ? t('view3dTitleOn') : t('view3dTitleOff')}
+            title={t('view3dPickerHelp', {
+              view: t(`view3dChoice.${currentView}`),
+            })}
           >
             {t('view3dLabel')}
           </ChromeChip>

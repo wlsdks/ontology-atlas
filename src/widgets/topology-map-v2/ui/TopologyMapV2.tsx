@@ -333,23 +333,22 @@ export interface TopologyMapV2Props {
    */
   glyphSet?: GlyphSet;
   /**
-   * The canvas background set (Phase 5 #20) — dots (default), constellation or
-   * contours. HomePage reads it with `useCanvasBackground()` and passes it down.
-   * Omitted defaults to `"dot"`.
+   * The canvas background set — dots (default), relation web, or depth grid.
+   * HomePage reads it with `useCanvasBackground()` and passes it down. Omitted
+   * defaults to `"dot"`.
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D view (2026-08-18, opt-in) — the view mode that re-lays the map as a dome of
-   * concentric kind rings (`model/dome-view.ts`). The top toolbar's 「3D」 chip turns
-   * it on and HomePage reads it with `useView3d()` and passes it down. Omitted is
-   * false (the previous 2D, the default).
+   * 3D view (2026-08-18, opt-in) — ownership becomes the concentric Dome and
+   * coupling becomes the relation-driven Cloud (`model/dome-view.ts`). The top
+   * toolbar's 3D picker turns it on; omitted is false (2D, the default).
    */
   view3d?: boolean;
   /**
-   * What decides the 3D dome's **bearings** — "ownership" (ownership: the containment
-   * parent, default) or "coupling" (coupling: every relation's angle, relaxed). The
-   * rationale and the geometry are in the `DomeArrangement` doc-block in
-   * `model/dome-view.ts`. Ignored in 2D.
+   * Which structural question places nodes in 3D — `ownership` uses containment
+   * tiers in the Dome (default); `coupling` lets relations determine all three
+   * Cloud axes. The rationale and geometry live in `model/dome-view.ts`. Ignored
+   * in 2D.
    */
   mapArrangement?: MapArrangement;
   /**
@@ -556,6 +555,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       data-testid="topology-map-v2"
       data-map-engine="v2"
       data-minimal={minimal ? "true" : "false"}
+      data-source-node-count={nodes.length}
       data-map-lens={spotlightIds ? mapLensKind : undefined}
       data-path-node-count={mapLensKind === "path" ? spotlightIds?.size : undefined}
       data-path-edge-count={mapLensKind === "path" ? pathEdgeIds?.size ?? 0 : undefined}

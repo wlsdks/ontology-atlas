@@ -72,6 +72,35 @@ test('map relation editor previews, reviews, and writes one relation without lea
   await expect(review).toContainText('capabilities/tax-report');
   await expect(review).toContainText('related_to');
 
+  const reviewFit = await review.evaluate((element) => {
+    const panel = element.closest<HTMLElement>('[data-testid="meaning-editor-panel"]');
+    const rows = [...element.querySelectorAll<HTMLElement>('[data-testid="ontology-change-review-field-row"]')];
+    const keys = [...element.querySelectorAll<HTMLElement>('[data-testid="ontology-change-review-field-key"]')];
+    return {
+      panelWidth: panel?.getBoundingClientRect().width ?? 0,
+      panelOverflow: panel ? panel.scrollWidth - panel.clientWidth : Number.POSITIVE_INFINITY,
+      reviewOverflow: element.scrollWidth - element.clientWidth,
+      rowCount: rows.length,
+      rowOverflows: rows.map((row) => row.scrollWidth - row.clientWidth),
+      keyWidths: keys.map((key) => key.getBoundingClientRect().width),
+      keyWrap: keys.map((key) => {
+        const style = getComputedStyle(key);
+        return { overflowWrap: style.overflowWrap, wordBreak: style.wordBreak };
+      }),
+    };
+  });
+  expect(reviewFit.panelWidth).toBeCloseTo(352, 0);
+  expect(reviewFit.rowCount, 'review fixture must render changed frontmatter fields').toBeGreaterThan(0);
+  expect(reviewFit.panelOverflow).toBeLessThanOrEqual(1);
+  expect(reviewFit.reviewOverflow).toBeLessThanOrEqual(1);
+  expect(reviewFit.rowOverflows.every((overflow) => overflow <= 1)).toBe(true);
+  expect(reviewFit.keyWidths.every((width) => Math.abs(width - 96) <= 1)).toBe(true);
+  expect(
+    reviewFit.keyWrap.every(
+      ({ overflowWrap, wordBreak }) => overflowWrap === 'break-word' && wordBreak !== 'break-all',
+    ),
+  ).toBe(true);
+
   await page.getByTestId('meaning-editor-apply').click();
   await expect(page.getByTestId('topology-map-v2')).toHaveAttribute(
     'data-preview-phase',
