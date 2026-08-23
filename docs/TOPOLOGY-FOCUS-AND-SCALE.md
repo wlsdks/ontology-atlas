@@ -5,19 +5,22 @@ tags: [design, topology, graph, ux, performance, spec]
 
 # Topology — Node Focus & Scale
 
-> Design spec for how the topology view (`/`, `/topology`) reveals a node on
-> click and how it stays readable + fast as the vault grows past 2–3k nodes.
+> Design rationale and implemented contract for how the topology map reveals a
+> node on click and stays readable + fast as the vault grows. `/topology` is the
+> explicit map address; `/` is the map only after a vault is available (a web
+> visitor without one sees the gateway).
 > This is the canonical decision; `.claude/rules/design.md` and
 > `DESIGN-SYSTEM.md` carry the short rule, this doc carries the reasoning +
 > cited references.
 
-Status: **approved direction, pre-implementation** (2026-06-08).
+Status: **implemented direction** (initial rationale approved 2026-06-08;
+current renderer and interaction contract verified against source 2026-08-23).
 
-## Problem
+## Historical problem statement (2026-06-08; Sigma-era implementation superseded)
 
 Two issues, one root cause.
 
-1. **Node click opens a near-fullscreen modal.** Clicking a node in the Sigma
+1. **Node click opens a near-fullscreen modal.** Clicking a node in the former Sigma
    graph mounts `NodeDetailPanel`
    (`src/views/ontology-view/ui/OntologyViewPage.tsx`) as a full-bleed overlay.
    It hides the graph (you lose where the node was), repeats labels
@@ -36,11 +39,12 @@ Two issues, one root cause.
 ([Shneiderman 1996](#references)). It does the opposite: details-as-fullscreen
 and everything-at-once.
 
-## Decision
+## Decision (implemented)
 
-One mechanism answers both: **click → focus on the node's ego network, show a
-compact anchored popover, dim/hide the rest. The default view is an overview,
-not the full graph.**
+The current mechanism is: **click → durable ego focus, camera framing, compact
+`TopologyV2DetailPanel`, and dimmed unrelated graph.** The default map is a
+semantic-zoom overview, not the full graph. Full detail is an explicit
+`FullDetailA1` drill-down.
 
 This is the convergent pattern across Obsidian (local graph + hover preview),
 Neo4j Bloom / Linkurious (click-to-inspect + incremental ego expand), and
@@ -49,23 +53,26 @@ demand). See [References](#references).
 
 ## Detailed design
 
-### Interaction states
+### Current interaction states
 
 | State | What the user sees |
 |---|---|
-| **Overview (default)** | Domains + hubs only (semantic-zoom level 0), not all 2–3k nodes. A short "start here" hint. |
-| **Hover** | Lightweight preview: highlight the node + its direct neighbors; optional tooltip (title · kind · 1-line). No layout change. |
-| **Focus (click)** | Graph keeps the node + its **ego network (direct neighbors)** at full opacity; everything else dims to `opacity 0.15` (existing filter-toggle motion) or hides. A **compact popover** anchors near the clicked node. |
-| **Full detail (opt-in)** | The existing `NodeDetailPanel` content, reached via the popover's `View Details`. This is the *only* place the large surface appears — and it is now a deliberate drill, not the click default. |
-| **Clear** | `Esc` / click empty canvas / popover close → restore the overview. |
+| **Overview (default)** | Project/domain/hub spine is visible first; semantic-zoom tier and density gates reveal more only when useful. |
+| **Hover** | Hover emphasis/ripple may light the hovered ego set, without changing durable focus or camera. |
+| **Focus (click)** | `focus-state` keeps the node and bounded direct-neighbor ego readable, dims unrelated nodes/edges, and the camera reframes through the canvas layer. |
+| **Detail (opt-in)** | `TopologyV2DetailPanel` is the compact current datasheet; its explicit action opens `FullDetailA1` for deeper detail. |
+| **Clear** | The pointer state machine clears focus on the selected node again or empty-canvas interaction; the page Escape ladder closes one active layer at a time. |
 
-### The compact popover
+### Current compact detail panel
 
-Anchored near the node (flips to stay on-screen), sized to content — **never
-full-bleed**. Built only from design-system tokens (`--color-panel`,
-`--color-divider`, `--color-border-soft`, text scale; standard panel radius, not
-the oversized `28px` detail-card radius which reads as decorative at popover
-size). Contents, top to bottom:
+`TopologyV2DetailPanel` is the current compact DOM layer coordinated with the
+canvas. It keeps the selected ontology fact legible without replacing the map,
+groups direct connections and evidence, exposes current document/relation/edit
+or handoff actions where available, and offers an explicit full-detail drill.
+Its geometry is part of the map contract rather than an independent modal.
+
+The following 2026-06-08 content model is retained as historical rationale,
+not a claim about a Sigma-era `NodeDetailPanel` API:
 
 1. **Eyebrow + title** — kind label (mono, quaternary) + node title. No
    duplicate "Concept Info" stutter.
@@ -81,47 +88,47 @@ size). Contents, top to bottom:
    One row, compact.
 6. **Close** (`✕` / `Esc`).
 
-### Focus + context in the graph
+### Current focus + context in the graph
 
-- Use Sigma `nodeReducer` / `edgeReducer` to render the ego set normally and
-  fade/hide the rest — no mutation of the underlying graphology instance
-  ([Sigma reducers](#references)).
-- Restore reducers on clear.
-- "Connected only" = the ego subgraph that `NodeDetailPanel` **already
-  receives** as `ego: OntologyEgoSubgraph`. The data exists; this is a
-  presentation change, not a new query.
+- `model/focus-state.ts` owns durable selected ego state and hover emphasis;
+  `topology-physics-step.ts` and the canvas draw layer apply the focus/dim and
+  tier-reveal result without changing the graph data model.
+- `engine/camera.ts` springs camera movement within scale and pan bounds.
+- The current detail panel and `FullDetailA1` consume the selected node's
+  current relation/evidence view; they are not the retired `NodeDetailPanel`.
 
-### Overview-first default
+### Current overview-first default
 
 - Level 0: `project` + `domain` + hub capabilities only.
 - Expand on demand: clicking a domain reveals its capabilities/elements (combo
   open/close), so the user never faces the full hairball uninvited.
 - This is *semantic zoom*, not just visual zoom.
 
-### Performance layer (scale ≥ ~2–3k → ~10k+)
+### Current performance layers
 
-Sigma (WebGL) renders ~10k nodes fine; the costs are labels, edges, and live
-layout — not node count. Order of mitigation:
+`topology-map-v2` is a canvas-2D renderer, not Sigma/WebGL. Its current layers
+are explicit and measured before a renderer change:
 
-1. **Precompute + cache layout** — run ForceAtlas2 once, persist coordinates;
-   do not re-settle on every mount.
-2. **Level-of-detail labels** — `hideLabelsOnMove` / `hideEdgesOnMove` during
-   interaction; show labels only above a zoom threshold or for hubs/ego.
-3. **Edge culling** — keep the existing "representative edges only"
-   (`Showing 1/496`) behavior.
-4. **Clustering / combos** — above ~5k, aggregate by domain into super-nodes
-   that expand on demand.
+1. **Force/layout** — Graphology-backed ForceAtlas2 starts from deterministic
+   seeds, has a bounded synchronous warm/release budget, and restricts drag
+   work to the relevant local subgraph.
+2. **Camera** — spring, momentum, zoom clamps, and visible-tier pan bounds keep
+   navigation inside the drawable world.
+3. **Focus and visibility** — ego focus, semantic-zoom tiers, density gates,
+   cluster chips, and tier-aware hit testing avoid drawing or interacting with
+   irrelevant detail.
+4. **Canvas frame work** — the draw layer controls labels, edges, attention,
+   and DOM-overlay coordination under the visible frame budget.
 
 ## Scope / non-goals
 
-- **In scope:** topology click → ego focus + popover; overview-first default;
-  jargon → plain language; LOD/label perf settings; keep full `NodeDetailPanel`
-  behind `View Details`.
-- **Out of scope:** Builder/Insights redesign; new graph queries (ego data
-  already exists); the `/ontology` tree page (it may reuse the popover later,
-  but this spec targets topology).
+- **In scope:** the implemented map focus state, camera, compact detail panel,
+  full-detail drill, semantic zoom, density controls, and canvas performance
+  layers.
+- **Out of scope:** a second renderer, a separate Builder/tree/ERD surface, or
+  treating retired `/ontology` routes as current topology ownership.
 
-## Open questions
+## Historical open questions (resolved or superseded by the implemented contract)
 
 - Ego depth in the popover: 1-hop only, or 1-hop list + "expand to 2-hop"?
 - Should hover preview ship in v1 or follow the click-focus work?
@@ -161,7 +168,8 @@ Current implementation:
   attention layers, pointer handling, and DOM overlay coordination.
 - Graphology + ForceAtlas2 — graph data and layout inputs only.
 - The Sigma.js note from the initial spec is historical; Sigma has no current
-  dependency or runtime consumer.
+  dependency or runtime consumer. Its public documentation remains a principle
+  source only, not an API contract for this renderer.
 
 ## Changelog
 

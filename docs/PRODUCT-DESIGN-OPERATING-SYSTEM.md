@@ -801,8 +801,8 @@ Current Atlas contract:
   handling, attention layers, and the visible frame budget.
 - **Graphology** owns the graph data shape and ForceAtlas2 layout inputs. It is
   not a renderer.
-- **ForceAtlas2 / d3-force** own layout and live drag physics; they are not the
-  product surface by themselves.
+- **ForceAtlas2** owns the bounded, deterministic layout and local drag-relaxation
+  work used by the current map; it is not the product surface by itself.
 - **Atlas DOM overlays** own readable ontology cards, relation evidence,
   selected-node inspector, and MCP/CLI handoff. Overlay geometry is therefore a
   first-class graph-design problem, not a CSS afterthought.
@@ -810,15 +810,15 @@ Current Atlas contract:
   references are research history, not permission to add a second renderer.
 
 Before changing graph libraries, adding a second renderer, or replacing a
-Sigma/Graphology mechanism, fill this fit pass:
+`topology-map-v2`/Graphology/ForceAtlas2 mechanism, fill this fit pass:
 
 ```md
 Graph engine fit pass
 - User moment: [overview scan / click focus / relation inspect / path build / drag arrange / agent handoff]
-- Current stack: [topology-map-v2 / Graphology / ForceAtlas2 / d3-force / DOM overlay]
+- Current stack: [topology-map-v2 / Graphology / ForceAtlas2 / DOM overlay]
 - Observed failure: [runtime or screenshot evidence, not taste]
 - Missing capability: [renderer, layout, interaction, collision, label, camera, accessibility, or handoff]
-- Can current stack solve it? [setting / reducer / layout / worker / overlay constraint / verifier]
+- Can current stack solve it? [focus state / camera / tier or density gate / ForceAtlas2 setting or restricted tick / overlay constraint / verifier]
 - Candidate alternative: [force-graph / Cytoscape.js / d3 / yFiles/Ogma commercial reference / other]
 - Tradeoff: [performance, custom labels, typed facts, overlay integration, Graphology reuse, bundle, tests]
 - Decision: [keep current stack / spike alternative / replace a subsystem / do not change]
@@ -827,20 +827,21 @@ Graph engine fit pass
 
 Default decision rules:
 
-- **Keep Sigma/Graphology** when the problem is attention hierarchy,
+- **Keep `topology-map-v2`/Graphology** when the problem is attention hierarchy,
   relation-card density, camera framing, selected-state dimming, label
   disclosure, overlay collision, or agent handoff visibility. These are Atlas
   product-design problems; replacing the renderer will not solve them.
-- **Treat selected focus as a reducer/camera problem first**. The default
+- **Treat selected focus as a focus-state/camera problem first**. The default
   selected-node pattern is: center the selected node in the available map
   viewport, brighten the selected node, direct neighbors, and visible relation
   path, then dim unrelated nodes/edges. Do not add a large focus hull, extra
   floating legend, or second support panel unless a verifier proves it helps a
   user read the ontology fact faster.
-- **Tune the current stack first** when official Sigma/Graphology capabilities
-  apply: `nodeReducer`, `edgeReducer`, camera state, `graphToViewport`,
-  `viewportToGraph`, ForceAtlas2 settings, worker physics, label density, edge
-  level-of-detail, or `autoRescale` / size-reference settings.
+- **Tune the current stack first** through its actual mechanisms: the
+  `focus-state` ego/dim state, camera spring and pan bounds, semantic-zoom tier
+  and density gates, canvas label/edge level-of-detail, and ForceAtlas2 settings
+  or restricted local ticks. Do not prescribe a worker unless a measured frame
+  budget requires one.
 - **Use Force Graph-style products as interaction references, not replacements
   by default**. Force-directed demos are useful for drag, fit, node/link focus,
   and 2D/3D exploration patterns, but Atlas still needs typed ontology facts,
@@ -861,7 +862,8 @@ Default decision rules:
 Use these public sources as principle references only. This engine packet was
 refreshed on 2026-06-20 against the public project documentation and
 repositories; re-check it before a renderer migration or major graph
-interaction spike:
+interaction spike. The Sigma references below are historical principle sources:
+their API names document an earlier comparison, not current Atlas mechanisms.
 
 - Sigma.js: https://www.sigmajs.org/ — WebGL renderer built on Graphology, reducers for dynamic
   node/edge appearance, camera and interaction primitives.

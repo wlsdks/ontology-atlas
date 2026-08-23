@@ -35,7 +35,7 @@ Launch framing (v4, 2026-05-18):
   The Tauri bundle product name remains the installed app identity users see in
   Finder, Dock, and Launch Services.
 - Primary audience (v8, 2026-06-06): **everyone involved in deciding things about a product or system** — planners, marketers, C-level decision-makers, developers, and AI agents. The developer + AI-agent loop is still the strongest **wedge** — the narrow first entry point that gets a product adopted — because that pair is the one that can actually keep the git-backed source of truth up to date. But the Atlas people look at must let non-developers understand the core of the business or product quickly, without reading source code.
-- Everything rests on the `.md` documents, which grow into an ontology. Topology / tree / builder are *ways of looking at* those same documents.
+- Everything rests on the `.md` documents, which grow into an ontology. Topology is the current map workbench; tree and Builder are historical ways of looking at those same documents.
 - Non-developer stakeholders are **target readers and decision participants**, not an afterthought. The app should show the core domains, capabilities, dependencies, and impact paths clearly enough for planning, marketing, leadership, and engineering discussions.
 - Quality bar (v7, 2026-06-05): **Ontology Atlas must feel like a top-tier
   designer-built macOS workbench, not a merely functional graph UI.** Every
@@ -190,7 +190,13 @@ layer.
 
 ## 1. User decisions, summary
 
-### Decision 1 — Direction A (ontology-first)
+### Decision 1 — Direction A (ontology-first, historical; superseded 2026-07-29)
+
+This records the route framing that was reviewed at the time. The current route
+contract is: a web visitor without a vault sees the gateway at `/`; a vault-bearing
+web visitor and the installed app enter the map/first-run surface; and
+`/topology` is the explicit map address. The retired `/ontology` routes redirect
+to current surfaces and do not own separate chrome.
 
 `/` becomes the **ontology hub**:
 
@@ -222,10 +228,10 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 | Audience | Role | Primary surface |
 |---|---|---|
-| **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed desktop app (`/ontology`, `/topology`, `/docs`; macOS, Windows x64 beta), static/shared vault exports |
+| **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed desktop app (`/topology` and Docs; `/ontology` is a compatibility redirect; macOS, Windows x64 beta), static/shared vault exports |
 | **C-level / decision-maker** | See what the organization/system is made of, which capabilities matter, and what changes affect strategic bets | overview, topology, graph proof/impact summaries |
-| **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed desktop app (`/ontology`, `/docs`) |
-| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (runtime-advertised read/write inventory), vault-scoped Git evidence/checkpoint, Workshop handoff, agent heartbeat, explicit-project agent brief |
+| **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed desktop app (`/topology`, `/docs`; `/ontology` is a compatibility redirect) |
+| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (runtime-advertised read/write inventory), vault-scoped Git evidence/checkpoint, contextual topology handoff, agent heartbeat, explicit-project agent brief |
 
 The single artifact serves all audiences: a local, git-backed ontology that
 links business language, product capabilities, implementation evidence, and
@@ -283,18 +289,18 @@ Options:
 1. **CLI** — `ontology-atlas add ...` or the current source-checkout CLI
 2. **MCP server** — Claude Code/Codex calls `add_concept` / `add_relation`
    after read-first and duplicate checks
-3. **Workshop** — a person fills one typed compass socket and reviews the
-   resulting frontmatter write
+3. **Contextual topology writing** — a person fills one typed relation socket
+   beside the map and reviews the resulting frontmatter write
 
 An agent can propose concepts and, once they are accepted, write them through
-MCP. People judge that same meaning by reading plain Markdown, git diffs,
-Topology, and Workshop. There is no second, program-only copy of the graph
+MCP. People judge that same meaning by reading plain Markdown, git diffs, and
+the topology workbench. There is no second, program-only copy of the graph
 anywhere.
 
 ### 3-C. Two-way sync
 
 ```
-human edits Markdown or Workshop
+human edits Markdown or the contextual map writer
         │
         ▼
 ontology graph (vault frontmatter)
@@ -333,8 +339,8 @@ project an unnamed answer would be misleading.
 
 The installable macOS app is the first-class writable workbench, not a future
 exploration. The user opens a vault folder from disk and keeps the same
-markdown + MCP + CLI graph loop without a backend. The hosted root remains a
-read-only dogfood map and download/source entry.
+markdown + MCP + CLI graph loop without a backend. On the hosted web, root is
+the gateway until a vault is loaded; `/topology` is the explicit map address.
 
 Quality bar: it has to feel like a real Mac app, not a web page in a window.
 Compare against Obsidian, Claude Desktop, and Codex Desktop on the basics: the
@@ -348,14 +354,15 @@ Current distribution contract:
 
 1. Next.js static export is the Tauri frontend payload.
 2. The installed app opens local vaults through the native bridge and verifies
-   current Docs, Topology, Workshop, Insights, Projects, and Git routes.
-3. `/ontology` and `/ontology/edit` remain compatibility redirects to
-   Topology and Workshop; they are smoke inputs, not separate product
-   surfaces.
+   current Docs, Topology (including contextual writing), Insights, Projects,
+   Agents, and Git routes.
+3. `/ontology`, `/ontology/edit`, and `/ontology/studio` remain compatibility
+   redirects into the topology workbench; they are smoke inputs, not separate
+   product surfaces.
 4. Signing, notarization, release slots, checksums, and installed-app proof
    remain tag-release gates.
 5. Packaged MCP/CLI sidecars and auto-update remain separate distribution
-   slices. Until public npm packages exist, agent setup fails closed and points
+   slices. npm distribution is retired; agent setup fails closed and points
    source contributors at local entry points.
 
 Why Tauri first: this repo already uses `output: 'export'`, `images.unoptimized`,
@@ -465,16 +472,16 @@ automation can branch without scraping human labels; actionable blockers also
 expose `commands[]` for exact diagnostics, setup prompts, pre-dispatch source
 checks, post-merge tag creation/push, `desktop:release-run` exact workflow_dispatch watch, and public
 download verification, and Developer ID direct-download signing blockers include `missingSecrets[]` for
-release-operator reconciliation. Firebase
-Hosting remains a separate website
-deployment check, not a macOS app release dependency. This is
+release-operator reconciliation. GitHub Pages owns the separate website
+deployment check and is not a macOS app release dependency. Firebase Hosting
+is historical, not a current deployment surface. This is
 evidence for goal completion, not a substitute for publishing signed/notarized
 release assets.
-The hosted landing page should now bias toward "Download macOS app"
-and product explanation, with the browser folder picker treated as a prototype
-fallback until public signed releases are uploaded.
+The hosted landing page biases toward the installer selected from generated
+release facts and product explanation; the browser folder picker remains the
+web gateway fallback when installation is not the visitor's path.
 
-### Option A — npm package + CLI
+### Option A — npm package + CLI (historical, retired)
 
 > **Result (2026-07-27, `docs/DECISIONS.md`)**: The part distributed via npm within this was **abandoned**. The paragraph below is only a record of content reviewed at that time, not an actually executed command — so it is not written as a copy-pasteable code block. The CLI itself continues to live via source checkout path.
 
@@ -585,16 +592,17 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 
 ## 6. Phases — broken into executable steps
 
-### ✅ Phase 1 — Identity alignment (UI) — merged
+### ✅ Phase 1 — Identity alignment (UI) — merged, historical route record
 
-1. ✅ `/` becomes the ontology hub
+1. ✅ `/` becomes the ontology hub (superseded: gateway without a vault; map when a vault is available)
 2. ✅ New `/topology` route
 3. ✅ Landing copy — "Codebase ontology that grows with AI"
 4. ✅ Slim demo — 21 → 6 containers, ~50 flat projects, ~42 ontology nodes
 
-### ⏸ Phase 2 — Self-hosting — DEFERRED
+### ⏸ Phase 2 — Self-hosting — DEFERRED, historical
 
-`bin` + CLI packaging. **Per user policy, Firebase deploy is on hold** and `pnpm dev` covers verification → DEFERRED. Revisit later.
+`bin` + CLI packaging. This pre-GitHub-Pages Firebase deployment note is
+superseded; the current static website host is GitHub Pages.
 
 ### ✅ Phase 3 — AI agent partner — merged
 
@@ -632,30 +640,36 @@ However, using it to mean "the product's entire user base is only developers" is
 
 ### ⏳ Phase 4 execution — Wedge + shared surface
 
-1. ✅ CLI command expansion — 52 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
+1. ✅ CLI command expansion — 54 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
 2. ✅ AI agent dogfood cycle — Claude Code verifies codebase analysis + add_concept workflow via mcp (R12 + R14 meta-verification)
 3. ⏳ 10-minute shared understanding loop proof — Verify if core grasp via `init → bootstrap → topology/ontology` → MCP answer quality improvement → agent sync proposal → git diff review → improved next planning/development work is visible within 10 minutes in a new repository. If this doesn't happen, it's still just well-made components, not a product.
-4. ⏳ Stakeholder-readable topology proof — Verify if non-developers can explain "what the core domain/capability is, what proves its implementation, and where changes have impact" by looking only at `/topology` and `/ontology`.
+4. ⏳ Stakeholder-readable topology proof — Verify if non-developers can explain "what the core domain/capability is, what proves its implementation, and where changes have impact" by looking at `/topology` (with its current map/detail surfaces).
 4. ~~VSCode plugin~~ — Removed in R15. Reason: As people move to AI agent terminals like Claude Code / Codex daily, VSCode's own market share has decreased. Code↔ontology movement / backlinks / writing already have equal value via mcp + cli.
 
 ---
 
-## 7. Old vs. new mission
+## 7. Historical mission transition
 
-### Old mission (per AGENTS.md, current)
+This section preserves an earlier positioning transition. The current mission
+and identity live in `AGENTS.md`; neither statement below is current authority.
+
+### Old mission (historical, superseded; not the current AGENTS.md contract)
 
 > The user writes prose; the system extracts concepts, relations, evidence; humans review and approve; the result grows into three views (topology, tree, ERD).
 
-### Current mission
+### Later mission (historical, also superseded)
 
 > **A repo-native memory layer for AI coding agents, backed by an ontology of one codebase.**
 >
 > - Humans: review and refine the repo-local memory as normal markdown/git diffs.
 > - AI agents (Claude Code, Cursor, Codex): read, query, and propose updates via MCP or CLI.
 > - Bootstrap and sync reduce manual ontology authoring; the graph is maintained as a side effect of real code work.
-> - All inputs share one vault graph. All views (tree hub / topology sub-view / ERD) are optional workbench surfaces.
-> - Distributed as an installed macOS workbench plus CLI/MCP packages for
->   terminal and AI-agent workflows.
+> - All inputs share one vault graph. The current read/inspect workbench is the
+>   Topology map with its INDEX and detail surfaces; retired tree and ERD
+>   descriptions are historical records, not current product surfaces.
+> - Distributed as an installed workbench plus source-checkout CLI/MCP entry
+>   points for terminal and AI-agent workflows; npm is not a distribution
+>   channel.
 
 What changed:
 
@@ -670,11 +684,12 @@ What changed:
 The direction is no longer waiting on a phase pick. The active bar is evidence:
 
 - Installed macOS app launches and route-smokes the ontology workbench surfaces.
-- Topology + INDEX is the read/inspect surface, Workshop is the frontmatter
-  relation-write surface, and Insights is the five-question maintenance board.
-- `/ontology` redirects to `/topology?index=expanded`; `/ontology/edit`
-  redirects to Workshop and forwards `?node=`. Neither redirect owns current
-  chrome.
+- Topology + INDEX is the read/inspect surface, contextual map writing is the
+  frontmatter relation-write surface, and Insights is the five-question
+  maintenance board.
+- `/ontology` redirects to `/topology?index=expanded`; `/ontology/edit` and
+  `/ontology/studio` redirect into `/topology` and translate legacy edit query
+  strings. None of those redirects owns current chrome.
 - Agent/CLI graph DB packs still expose health, scans, paths, relation checks,
   and explanation contracts without turning Insights into a query cockpit.
 - CLI/MCP proof gates must stay runnable over `docs/ontology` before the goal is

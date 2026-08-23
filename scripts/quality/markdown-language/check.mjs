@@ -17,8 +17,8 @@ export const MARKDOWN_LANGUAGE_BASELINES = Object.freeze({
     unexpectedHangulCodePoints: 0,
   }),
   historical: Object.freeze({
-    unexpectedFiles: 22,
-    unexpectedHangulCodePoints: 507_581,
+    unexpectedFiles: 21,
+    unexpectedHangulCodePoints: 507_284,
   }),
 });
 
