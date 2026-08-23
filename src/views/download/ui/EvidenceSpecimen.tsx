@@ -83,10 +83,15 @@ export function EvidenceSpecimen() {
             </pre>
           </div>
         </div>
-        {/* The elided lines are stated rather than hidden — showing a subset as if it were the
-            whole file is the same kind of untruth this section exists to disprove. */}
+        {/*
+         * One line doing two jobs: it names the payoff (these lines *are* a node and an edge) and
+         * it states how many were left out. The second half is not optional — showing a subset as
+         * if it were the whole file is the same untruth this section exists to disprove.
+         */}
         <p className="mt-2 break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-          {omitted > 0 ? t('specimenElided', { count: omitted }) : t('specimenComplete')}
+          {omitted > 0
+            ? t('specimenElided', { shown: frontmatter.length, count: omitted })
+            : t('specimenComplete', { shown: frontmatter.length })}
         </p>
       </div>
 

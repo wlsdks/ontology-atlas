@@ -65,11 +65,23 @@ describe('DemoStage', () => {
     expect(screen.queryByTestId('demo-tablist')).toBeNull();
   });
 
-  it('무음이고 루프가 없고 미리 받지 않는다', () => {
+  /**
+   * Muted, looping, no controls, nothing preloaded.
+   *
+   * `loop` and the absence of `controls` both **reverse** earlier decisions (2026-07-29 "no
+   * loop"; the control bar that a 199-second tour needed for scrubbing). The owner reversed them
+   * on 2026-08-23 for a nine-second clip, and `docs/DECISIONS.md` carries the reasoning — this
+   * asserts the state so that going back is a deliberate act with a ledger entry, not a drift.
+   */
+  it('무음이고 무한 반복이며 컨트롤 바가 없고 미리 받지 않는다', () => {
     render(wrap(<DemoStage available={['atlas-tour']} />));
     const video = screen.getByTestId('demo-video-atlas-tour') as HTMLVideoElement;
     expect(video.muted).toBe(true);
-    expect(video.loop).toBe(false);
+    expect(video.loop, '루프가 꺼졌다 — 9초짜리가 마지막 프레임에 얼어붙는다').toBe(true);
+    expect(
+      video.hasAttribute('controls'),
+      '컨트롤 바가 돌아왔다 — 9초에는 되감을 곳이 없고 타임코드만 남는다',
+    ).toBe(false);
     expect(video.getAttribute('preload')).toBe('none');
   });
 
