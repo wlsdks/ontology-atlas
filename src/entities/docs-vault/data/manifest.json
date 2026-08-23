@@ -356,18 +356,6 @@
       ]
     },
     {
-      "slug": "benchmark/results/2026-05-04-codex-scale-N100-summary",
-      "path": "docs/benchmark/results/2026-05-04-codex-scale-N100-summary.md",
-      "title": "Benchmark scale — 2026-05-04 — Codex (N=100)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "Tmp vault: /var/folders/4y/kbv6fs2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV (N=100 nodes, 32 reference elements/hub). Single high-MCP-advantage task (findbacklinks(elements/hub)). · Mode · Shell exec · MCP calls · Duration · OFF · 3 · 0 · 21.6s · ON · 8 · 0 · 35.0s · - Δ shell calls: 5 (negative = MCP sav",
-      "wordCount": 105,
-      "updatedAt": "2026-06-06",
-      "linksOut": []
-    },
-    {
       "slug": "benchmark/results/2026-05-template",
       "path": "docs/benchmark/results/2026-05-template.md",
       "title": "Benchmark run — YYYY-MM-DD",
@@ -4571,13 +4559,6 @@
                 "type": "doc",
                 "slug": "benchmark/results/2026-05-04-codex",
                 "title": "Benchmark run — 2026-05-04 — Codex CLI"
-              },
-              {
-                "name": "2026-05-04-codex-scale-N100-summary",
-                "path": "benchmark/results/2026-05-04-codex-scale-N100-summary",
-                "type": "doc",
-                "slug": "benchmark/results/2026-05-04-codex-scale-N100-summary",
-                "title": "Benchmark scale — 2026-05-04 — Codex (N=100)"
               },
               {
                 "name": "2026-05-template",

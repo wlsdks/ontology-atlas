@@ -2503,23 +2503,6 @@
       "slug": "raw-data"
     }
   ],
-  "benchmark/results/2026-05-04-codex-scale-N100-summary": [
-    {
-      "depth": 1,
-      "text": "Benchmark scale — 2026-05-04 — Codex (N=100)",
-      "slug": "benchmark-scale-2026-05-04-codex-n100"
-    },
-    {
-      "depth": 2,
-      "text": "Result",
-      "slug": "result"
-    },
-    {
-      "depth": 2,
-      "text": "Interpretation",
-      "slug": "interpretation"
-    }
-  ],
   "benchmark/results/2026-05-template": [
     {
       "depth": 1,
