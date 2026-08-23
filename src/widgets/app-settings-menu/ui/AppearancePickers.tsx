@@ -172,7 +172,7 @@ export function CanvasBackgroundPicker() {
   });
   return (
     /*
-     * It has no margin of its own — this picker fills the LNB's 「지도 배경」 pane
+     * It has no margin of its own — this picker fills the LNB's "Map Background" pane
      * entirely, so the pane owns the margin. If both had one, the left starting line
      * would differ per section (measured: 20px in other sections, 32px only here).
      */
@@ -311,7 +311,7 @@ function AccentSwatch({ variant }: { variant: Accent }) {
 /**
  * Arrangement picker (2026-08-18) — what decides the 3D dome's **bearings**.
  *
- * That this picker's copy is **two questions** rather than 「스타일」 is the design.
+ * That this picker's copy is **two questions** rather than "Style" is the design.
  * Listing arrangements as styles turns them into N mediocre views on the spot, and
  * this repository already has a precedent for rejecting «mode proliferation». Each
  * option carries the question it answers, and a new option has to bring a new

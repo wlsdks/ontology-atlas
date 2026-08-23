@@ -324,7 +324,7 @@ export function VaultAgentSetupPanel({
   const tc = useTranslations('agentConnect');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   /**
-   * The 「잘 안 되나요?」 (having trouble?) drawer — in-flow collapsing, so it uses
+   * The 「Having trouble?」 (having trouble?) drawer — in-flow collapsing, so it uses
    * the list-row disclosure grammar. The first version's `Surface` (chrome grammar)
    * belongs to a floating surface, so the siblings below jumped twice (frame
    * measurement in the installed app — numbers in the `AgentSetupStep.tsx` preamble).
@@ -492,8 +492,8 @@ export function VaultAgentSetupPanel({
       : 'ready';
   /**
    * The file set — **the role label was removed** (2026-08-04). 「Claude Code ·
-   * Cursor 연결 파일」 was a fourth statement of what the tool name beside it, the
-   * path, and the 「연결 파일 상태」 group title already say three times.
+   * Cursor Connection File」 was a fourth statement of what the tool name beside it, the
+   * path, and the 「Connection File Status」 group title already say three times.
    */
   const agentSetupFiles = [
     {
@@ -624,7 +624,7 @@ export function VaultAgentSetupPanel({
       // **「5 are blocking」 gets somewhere to go** (2026-08-04). This block previously
       // had **0** interactive elements and not one character saying which file was
       // wrong — after reading the number, all a person could do was close the window.
-      // The readiness meter on the 「할 일」 screen counts the same check results, so
+      // The readiness meter on the 「To-Do」 screen counts the same check results, so
       // this sends them there.
       href:
         validationState === 'error' || validationState === 'warning'
@@ -633,10 +633,10 @@ export function VaultAgentSetupPanel({
     },
     {
       /*
-       * ⚠️ The 「연결 파일 {ready}/{total}」 row that stood here was removed
+       * ⚠️ The 「Connection File {ready}/{total}」 row that stood here was removed
        * (2026-08-04). The screen was stating the same number **three times** — the
        * header summary, this row, and step 3's status line. It is exactly the reason
-       * the 2026-08-02 design council removed the 「누락」 badge (there the third
+       * the 2026-08-02 design council removed the 「Missing」 badge (there the third
        * statement shouted in colour), and that ruling resurfaced here. The header
        * summary is **always visible**, so one of the two survivors is always on screen.
        */
@@ -874,8 +874,8 @@ export function VaultAgentSetupPanel({
             />
             {/*
               **`step3Desc` is not used here** (2026-08-02, design council). That
-              sentence reads 「에이전트가 이 지도를 읽기 시작하면 여기에 표시돼요」
-              (once an agent starts reading this map it will show here), but the
+              sentence reads "Once an agent starts reading this map it will show here",
+              but the
               heartbeat signal that keeps that promise belongs **only to the map
               sheet** (`use-agent-connect-model.ts`). What this screen knows stops at
               the config files' validity, so leaving the sentence would make it a
@@ -896,7 +896,7 @@ export function VaultAgentSetupPanel({
                 floating separately, "what is this step" reads as two lumps — the very
                 flatness this screen set out to fix. They are bound into one and split
                 inside by a hairline. (The check method used to live only inside the
-                advanced fold. It *is* the content of the 「연결 확인」 step, so this is
+                advanced fold. It *is* the content of the "Check Connection" step, so this is
                 its home.)
               */}
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
@@ -986,7 +986,7 @@ export function VaultAgentSetupPanel({
           >
         {/*
           ── Check group ────────────────────────────────────────────────
-          ⚠️ **This whole lump is soon moving to the 「손볼 곳」 tab** (owner call,
+          ⚠️ **This whole lump is soon moving to the "To Fix" tab** (owner call,
           2026-08-04 — check, repair and delete go there). Rather than moving it this
           round, it is gathered under one node in **a shape that is easy to move**.
           Left scattered, someone would have to hunt down eight places again.
@@ -1074,8 +1074,9 @@ export function VaultAgentSetupPanel({
           {/*
             ── Folder status ──────────────────────────────────────────────
             ⚠️ **Correction, 2026-08-04 — this box was lying.**
-            It carried a red 「HANDOFF BLOCKED」 badge and the sentence *"에이전트가
-            ontology를 수정하기 전에 vault validation 오류를 먼저 해결해야 합니다"*
+            It carried a red "HANDOFF BLOCKED" badge and the sentence *"The agent
+            must resolve vault validation errors before modifying the
+            ontology"*
             (the agent must resolve vault validation errors before modifying the
             ontology) — but **nothing is blocked**. The MCP write paths
             (`add_concept` · `patch_concept` …) have no such gate. The only thing an

@@ -50,7 +50,7 @@ export interface WorldNode {
    * Transitive descendant count — engraved as a numeral on project/domain chips
    * in circuit range (0 = skip). The panel3-S6 number contract: this **node badge =
    * total descendant count** (`TopologyV2Node.descendantCount` = the inventory
-   * total). It shares its source with the cluster chip hover tooltip's "하위 전체 N"
+   * total). It shares its source with the cluster chip hover tooltip's "Total N descendants"
    * (N descendants in total), so the two surfaces' numbers agree without drift.
    */
   count: number;
@@ -67,7 +67,7 @@ export interface WorldNode {
 }
 
 export interface WorldEdge {
-  /** 원본 graph edge identity. embed fixture는 생략할 수 있다. */
+  /** Original graph edge identity. Embed fixtures can be omitted. */
   id?: string;
   sourceId: string;
   targetId: string;
@@ -286,7 +286,7 @@ export function computeEgoBounds(
  * S2 part 5B — the radius-padded bbox of an expanded cluster "disc" (the parent
  * plus its direct children's fan). Clicking a chip to expand a parent dives the
  * camera to this bbox so "it expanded" is visible in the viewport (owner report #2:
- * *"확장해도 아무 변화가 안 보임"* — expanding shows no change at all). The same
+ * *"Expanding shows no change at all"* — expanding shows no change at all). The same
  * pattern as the ego bbox (`computeEgoBounds`), but holding contains children
  * rather than neighbours. `null` when `parentId` does not resolve or has no children.
  */
@@ -367,7 +367,7 @@ export function buildTopologyWorld(
   tokens: TopologyV2Tokens,
   /**
    * How the children of an over-threshold parent are laid out (settings
-   * 「확장 → 확장 구조」 — expand → expand structure). Omitted means `"disc"`, today's
+   * "Expand → Expand structure" — expand → expand structure). Omitted means `"disc"`, today's
    * spiral disc, so the coordinates are byte-identical. Changing the value requires
    * rebuilding the world, because the seed coordinates themselves differ (it is in
    * the world-build effect's deps in `use-topology-loop`).

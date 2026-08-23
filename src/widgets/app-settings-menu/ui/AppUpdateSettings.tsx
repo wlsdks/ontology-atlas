@@ -12,18 +12,18 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
 
 /**
- * 「앱」 (app) — the version in use and **an update check you press yourself.**
+ * 「App」 (app) — the version in use and **an update check you press yourself.**
  *
  * ## Why it was missing (owner report, 2026-08-20)
  *
  * Automatic checking and the bottom-right toast have existed since 2026-07-27. But
  * **there was no way for the user to press it** — `useAppUpdate` exposes
  * `check(manual)` and **0 places** in the whole repository called it, while
- * 「최신이에요」 (the `current` stage) **could not even be drawn**, because the toast
+ * 「It's up to date」 (the `current` stage) **could not even be drawn**, because the toast
  * returned `null` for it. The design was complete and the wiring was not.
  *
  * The hole that left open: automatic checks run **once a day** and a dismissal is
- * remembered for that version. So anyone who pressed 「나중에」 once had **no way to
+ * remembered for that version. So anyone who pressed 「Later」 once had **no way to
  * reach an update at all** until the next version shipped.
  *
  * ## Why installation does not happen here

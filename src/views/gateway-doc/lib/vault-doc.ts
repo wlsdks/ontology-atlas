@@ -148,8 +148,8 @@ export function extractEntries(markdown: string): DocEntry[] {
  * A heading's **matching key** — makes the source markdown and the rendered text the same string.
  *
  * ⚠️ Measured defect (2026-07-31): the list keyed on the raw
- * `` ## 관문에 읽을거리 둘: `/guide` `` while the body `h2` was looked up as the **rendered**
- * `관문에 읽을거리 둘: /guide`. **Three headings containing inline markdown** (backticks, bold) had
+ * `` ## Two things to read at the gateway: `/guide` `` while the body `h2` was looked up as the **rendered**
+ * `Two things to read at the gateway: /guide`. **Three headings containing inline markdown** (backticks, bold) had
  * their anchors silently broken — a failure invisible until someone clicks.
  *
  * So both sides pass through this function: inline markers are stripped and whitespace collapsed.

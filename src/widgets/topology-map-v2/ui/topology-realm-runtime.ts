@@ -1,5 +1,5 @@
 /**
- * The 「영역 전개」 (realm expansion) runtime — at the moment a transition starts it
+ * The realm expansion runtime — at the moment a transition starts it
  * computes the subtree, the re-layout coordinates, the warding geometry and the
  * fling start coordinates in one pass and hands them to `ui/use-topology-loop.ts`.
  * A thin adapter between the pure model (`model/realm.ts`) and the live world
@@ -149,7 +149,7 @@ export function realmVisibleBounds(
  * The camera fit bbox = the content bbox ∪ the warding circle's bbox. The warding
  * circle is the realm surface's frame (including the inventory engraved at its
  * bottom), so a clipped one reads as "an accidental arc" (owner report 2026-07-23:
- * *"원이 왜 존재하는지 모르겠다"* — I can't tell why the circle is there). S9's
+ * *"I can't tell why the circle is there"* — I can't tell why the circle is there). S9's
  * "content is the protagonist, the warding may hang off the edge of the screen" was
  * the contract back when the radius was a phantom that counted collapsed children —
  * now that it is a visible-member radius (S9 defect 2) the warding is content +10%
@@ -188,7 +188,7 @@ export function buildRealmRuntimeData(
   // **every contains edge** so shared (multi-parent) elements come along too.
   // `childrenByParent` is the density gate's single-parent map (last edge takes all),
   // so a shared element primarily owned by another capability dropped out and left
-  // "요소 2, and a realm ring that is empty" (owner report 2026-07-23, demonstrated on
+  // "Element 2, and a realm ring that is empty" (owner report 2026-07-23, demonstrated on
   // capability:builder-deep-link-focus).
   const containsChildren = new Map<string, string[]>();
   for (const e of world.edges) {

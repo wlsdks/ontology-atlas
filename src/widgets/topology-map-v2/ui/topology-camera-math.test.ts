@@ -362,7 +362,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
 });
 
 /**
- * The pan leash — a safety net for **surfaces with no 「지도 맞추기」** (fit the map)
+ * The pan leash — a safety net for **surfaces with no "Fit Map"**
  * (council verdict ②, 2026-07-29).
  *
  * One hard drag to the left on the gateway (`/download`) pushed the whole graph

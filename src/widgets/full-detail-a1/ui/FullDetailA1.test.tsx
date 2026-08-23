@@ -363,7 +363,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
   });
 });
 
-// R+ "코드 위치" (code location) — the REAL code evidence (raw file paths),
+// R+ "Code location" (code location) — the REAL code evidence (raw file paths),
 // distinct from the `node.slug` already shown top-right (a vault-doc
 // reference, not code).
 describe("FullDetailA1 — 코드 위치 (code location) section", () => {

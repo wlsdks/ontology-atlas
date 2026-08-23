@@ -50,6 +50,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
 | Gateway evidence specimen | `pnpm gateway:specimen:check` | `pnpm gateway:specimen` to refresh |
 | Docs vs code surface | `pnpm docs:check` | `pnpm test:docs:checks` |
+| Source comment language | `pnpm source:language` | `pnpm test:source:language` |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
@@ -183,11 +184,13 @@ pnpm docs:check                  # canonical documentation gates below
 pnpm docs:surface:check          # regenerate the MCP/CLI surface and diff it
 pnpm docs:surface:build          # refresh docs/.generated/mcp-surface.json
 pnpm docs:language               # ratchet unexplained Korean prose by document scope
+pnpm source:language             # require English comments in source, tests, and prototypes
 pnpm docs:links                  # broken repo links + cited file paths
 pnpm docs:comment-refs           # .md paths cited from CODE COMMENTS resolve
 pnpm docs:links:external         # opt-in: resolve http(s) links over the network
 pnpm test:docs:checks            # focused helper contracts for both scripts
 pnpm test:docs:language          # language inventory and exception contracts
+pnpm test:source:language        # source-comment scanner and zero-baseline contracts
 ```
 
 **One rule decides what these may check** (2026-08-01 — `docs/DECISIONS.md`):
@@ -209,6 +212,14 @@ someone improved the prose. They are gone; these two nets replace them.
   separate ratchets so progress in one scope cannot hide regression in another. A
   lower count fails with an instruction to lower the baseline; zero scanned files,
   locale fields, templates, generated files, or mirrors also fails as an idle detector.
+- **`source:language` — comments are English; localized data stays localized.**
+  `scripts/quality/source-language/check.mjs` scans tracked and untracked TypeScript,
+  JavaScript, Rust, C-family, Swift, CSS, HTML, YAML, TOML, shell, and supported
+  dotfiles. It parses comment tokens instead of raw text, so Korean runtime strings,
+  message catalogs, fixtures, and regular expressions remain untouched. Current code,
+  tests/fixtures, and historical prototypes have independent zero baselines. Each scope
+  must scan files and comments, preventing an empty inventory from reporting a false
+  green result.
 - **`docs:surface:check` — generate, then diff.** `scripts/build-docs-surface.mjs`
   boots the real MCP server, asks it `tools/list`, and writes every tool name,
   read/write mode, argument name, and required argument — plus the CLI command

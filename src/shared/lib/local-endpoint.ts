@@ -7,7 +7,7 @@ import {
 } from './tauri-secrets';
 
 /**
- * Client-side knowledge for the 「주소로 연결」 (connect by address) path — where to
+ * Client-side knowledge for the "Connect by address" path — where to
  * send requests, which model to use, and **why** a verify attempt failed.
  *
  * **Why localStorage.** The surface contract (`.claude/rules/surfaces.md`) already
@@ -19,8 +19,8 @@ import {
  *
  * **Why the model list is not stored.** The runner is the source of truth for it. A
  * stored list means one `ollama rm` leaves the screen offering a model that no longer
- * exists. The list is re-fetched from the runner on every 연결 확인 (verify
- * connection) press — one request answering all three of "is it up", "is it
+ * exists. The list is re-fetched from the runner on every verify connection
+ * press — one request answering all three of "is it up", "is it
  * compatible" and "what can I pick".
  */
 
@@ -155,13 +155,13 @@ const EMBEDDING_ONLY_PREFIXES = [
  * Embedding-only models are **not removed**: removing them would make the screen deny
  * something that is really in the user's runner. What changes is the **order** —
  * alphabetical becomes useful-first. Alphabetical put `embeddinggemma:latest` in slot 1,
- * and the owner did pick it and got a saved 「연결됨」 (connected) state (measured
+ * and the owner did pick it and got a saved "Connected" state (measured
  * 2026-08-01: 4 of the runner's 7 models were embedding-only). The defect was **a state
  * that will fail the first question being reported as success**, not the model's
  * presence in the list.
  *
- * Labelling is not hiding — rows judged to be embeddings carry a "대화는 못 해요"
- * (can't chat) note via `Select`'s `description`, and a person still chooses.
+ * Labelling is not hiding — rows judged to be embeddings carry a "Can't chat"
+ * note via `Select`'s `description`, and a person still chooses.
  *
  * Within a tier the order is alphabetical as before. The only change is that there are
  * now two tiers, so a runner with no embedding models sees exactly the previous list.

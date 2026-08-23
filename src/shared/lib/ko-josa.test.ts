@@ -26,8 +26,8 @@ describe("josa — 받침이 없는 이름", () => {
 });
 
 /**
- * 「으로/로」 follows a different rule from the other four: a ㄹ final consonant
- * takes the no-final-consonant form ("서울로", not "서울으로"). That one line is
+ * The directional particle pair follows a different rule from the other four:
+ * a rieul final consonant takes the no-final-consonant form. That exception is
  * why this pair is kept separate.
  */
 describe("josa — ㄹ 받침 예외", () => {

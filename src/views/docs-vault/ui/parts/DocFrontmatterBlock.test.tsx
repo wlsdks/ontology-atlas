@@ -55,8 +55,7 @@ describe("DocFrontmatterBlock", () => {
 
   /**
    * **A teaching line repeated on every document does not live there permanently** (2026-08-08,
-   * owner report — *"문서 볼 때 상단이 조금 이상한데.. 보기좋게 구성할순없나?"*, the top looks a
-   * bit odd when reading a document; can it be laid out better?).
+   * owner report — *"The top looks a bit odd when reading a document; can it be laid out better?"*.
    *
    * "See a spec example" is an explanation that does not vary per document. Yet it had its own row
    * even while collapsed, pushing the body down 25px on the screen of someone who came to read —

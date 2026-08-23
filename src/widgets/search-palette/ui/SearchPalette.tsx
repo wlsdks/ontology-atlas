@@ -422,7 +422,7 @@ function SearchPaletteDialog({
           </span>
         </div>
         {/* Layer filter chip row — pick between all, container, hub and node. A
-            selection restricts results to that layer. Defaults to '전체' (all). */}
+            selection restricts results to that layer. Defaults to 'All' (all). */}
         <div
           role="tablist"
           aria-label={t('layerFilterAriaLabel')}

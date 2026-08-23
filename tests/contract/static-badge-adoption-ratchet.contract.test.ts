@@ -12,7 +12,7 @@ import {
  * Static badge adoption ratchet — **hand-written badge geometry cannot grow**
  * (2026-08-15).
  *
- * **Why** (ratified by the 체계 seat, docs/DECISIONS.md). Inventory: 67 static badges
+ * **Why** (ratified by the system seat, docs/DECISIONS.md). Inventory: 67 static badges
  * split across **30 geometries and 60 colours**. The per-box spec table already had a
  * badge row, and its prescription (`rounded-chip px-2 py-0.5` label) had **zero exact
  * matches in production** — by this repository's own precedent, *a spec nobody uses is

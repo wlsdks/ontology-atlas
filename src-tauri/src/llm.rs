@@ -1,23 +1,20 @@
-// BYOK 연결 확인 (#80 S2) — 키가 실제로 동작하는지 1클릭으로 확인하고,
-// 그 호출을 볼트 안 감사 로그에 남긴다.
+// Verify BYOK connection (#80 S2) — check if the key actually works with one click and
+// leave that call in the bolt's audit log.
 //
-// ## 이 파일이 지키는 불변식
+// ## Invariants this file upholds
 //
-// 1. **키는 IPC 를 다시 넘지 않는다.** 키체인 읽기도 전송도 Rust 안에서 끝나고,
-//    WebView 로 나가는 것은 `LlmVerifyResult`(통과 여부·상태 코드·소요 시간)뿐.
-// 2. **log-before-send.** 감사 줄 예약(`llm_audit::reserve`)이 실패하면 sender
-//    를 아예 호출하지 않는다. 신뢰 헌장 ②를 규율이 아니라 코드 경로로 만든다.
-// 3. **볼트 데이터 0자.** 연결 확인은 본문 없는 인증 확인 요청이다. 화면이
-//    "볼트 데이터 0자" 라고 말할 수 있는 근거가 `AuditScope` 의 0 세 개다.
-// 4. **자동 호출 금지.** 사용자가 [연결 확인]을 누를 때만 실행된다.
+// 1. **The key is not passed via IPC.** Keychain reading and transmission end within Rust,
+//    and only `LlmVerifyResult` (pass/fail, status code, elapsed time) goes to the WebView.
+// 2. **log-before-send.** If audit line reservation (`llm_audit::reserve`) fails, the sender
+//    is not called at all. This turns Trust Charter §2 from a principle into a code path.
+// 3. **Zero bolt data.** Connection verification is an auth check with no body. The screen
+//    can say "0 bytes of bolt data" because `AuditScope` has three zeros.
+// 4. **No automatic invocation.** It runs only when the user clicks [Verify Connection].
 //
-// ## 왜 curl 셸아웃인가
+// ## Why curl shell-out?
 //
-// ① HTTP 클라이언트 크레이트를 새로 들이지 않아 공급망 표면이 0 이고(git.rs 가
-// 이미 시스템 git 을 셸아웃하는 선례), ② 무엇보다 **키가 argv 에 절대 오르지
-// 않는다** — URL·헤더를 `--config -` 로 stdin 에 넘기므로 같은 기계의 다른
-// 프로세스가 `ps` 로 키를 볼 수 없다. 키를 `-H` 인자로 넘기는 흔한 구현은 그
-// 자체가 유출 경로다.
+// ① No new HTTP client crate is added, keeping the supply chain surface at zero (git.rs
+// already has precedent for shell-ing out to system git), and ② crucially, **the key never enters argv** — URL and headers are passed to stdin via `--config -`, so other processes on the same machine can't see the key with `ps`. Common implementations passing the key as a `-H` argument are themselves a leak path.
 
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope, AuditToolRef};
 use crate::secrets;
@@ -27,108 +24,96 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Instant;
 
-/// 인증만 확인하는 최소 엔드포인트 — 모델 호출이 아니므로 토큰 과금·생성이
-/// 없고, 보낼 본문도 없다.
+/// Minimal endpoint for auth verification only — since it's not a model call, there's no
+/// token billing/generation,
+/// and no body to send.
 const ANTHROPIC_VERIFY_URL: &str = "https://api.anthropic.com/v1/models?limit=1";
 const OPENAI_VERIFY_URL: &str = "https://api.openai.com/v1/models";
-/// Gemini 공식 모델 목록 엔드포인트(공개 문서 `ai.google.dev/api/models`).
-/// 키는 **헤더로만** 보낸다 — 문서의 `?key=` 쿼리 형태는 쓰지 않는다. URL 에
-/// 실린 비밀은 프록시 로그·리퍼러·크래시 리포트에 그대로 남는 문법이고,
-/// 우리 감사 로그에도 목적지 URL 이 남으므로 키가 기록에 섞일 자리를 없앤다.
+/// Gemini official model list endpoint (public docs `ai.google.dev/api/models`).
+/// The key is sent **only in headers** — the `?key=` query form in docs is not used. Secrets
+/// embedded in URLs remain in proxy logs, referrers, and crash reports,
+/// and since our audit log also keeps the destination URL, this eliminates places where the key could be recorded.
 const GEMINI_VERIFY_URL: &str = "https://generativelanguage.googleapis.com/v1beta/models";
-/// 앤트로픽 API 가 요구하는 버전 헤더. 값이 바뀌면 401 이 아니라 400 이 온다.
+/// Version header required by Anthropic API. If the value changes, a 400 comes instead of 401.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
-/// 대화 엔드포인트 — 확인 URL 과 **같은 호스트**를 쓴다. 호스트가 갈라지면
-/// 화면이 키 등록 때 약속한 목적지와 실제 대화가 가는 곳이 달라진다.
+/// Chat endpoint — uses the **same host** as the verification URL. If the host diverges,
+/// the destination promised during key registration differs from where the actual chat goes.
 const ANTHROPIC_CHAT_URL: &str = "https://api.anthropic.com/v1/messages";
 const OPENAI_CHAT_URL: &str = "https://api.openai.com/v1/chat/completions";
-/// Gemini 는 모델 이름이 **경로에** 들어간다 — 그래서 이 상수는 접두어이고,
-/// 뒤에 `{model}:generateContent` 가 붙는다. 모델 문자열이 경로로 흘러가므로
-/// `validate_model_id` 로 먼저 좁힌다(경로 탈출·쿼리 주입 차단).
+/// Gemini puts the model name **in the path** — so this constant is a prefix,
+/// followed by `{model}:generateContent`. Since the model string flows into the path,
+/// narrow it first with `validate_model_id` (block path escape/query injection).
 const GEMINI_CHAT_URL_PREFIX: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
 
-/// 대화 왕복의 curl 제한 시간(초). 확인(20초)보다 길다 — 모델이 도구 호출을
-/// 결정하는 데 수십 초가 걸리는 것은 정상이고, 여기서 끊으면 사용자가 이유를
-/// 알 수 없는 실패를 본다. 그래도 무한은 아니다: [멈추기]가 사용자 쪽 상한이고
-/// 이 값은 매달린 소켓의 상한이다.
+/// curl timeout for chat round-trip (seconds). Longer than verification (20s) — it's normal for models to take
+/// tens of seconds to decide on tool calls; cutting here makes the user see an unexplained failure. Still not infinite: [Stop] is the user-side upper bound,
+/// and this value is the upper bound for hanging sockets.
 const CHAT_TIMEOUT_SECONDS: &str = "180";
-/// 로컬 러너는 사용자의 같은 기계에서 돌고 재시도가 무료다. 3분 동안 패널을
-/// 붙잡는 것보다 한 왕복을 실패로 닫고 더 작은 모델/질문을 고르게 하는 편이
-/// 정직하다. 원격 모델의 긴 생성 여유와 분리한다.
+/// The local runner runs on the user's same machine and retries are free. It's more
+/// honest to close one round-trip as a failure and prompt for smaller models/questions than to hold the panel for 3 minutes.
+/// Separate from remote models' long generation allowances.
 const LOCAL_CHAT_TIMEOUT_SECONDS: &str = "60";
 
-/// "키가 틀렸다" 로 읽어야 할 상태 코드. 벤더마다 다르므로 요청에 붙여 다닌다 —
-/// 화면이 `거부됨`(사용자가 키를 고치면 되는 일)과 `실패`(우리/네트워크 문제)를
-/// 다르게 말할 수 있는 근거다.
+/// Status codes that should be read as "key is wrong." Vendors differ, so carry it with the request —
+/// this gives the screen a basis to distinguish `Rejected` (user fixes key) from `Failed` (our/network issue).
 const AUTH_DENIED_STATUSES: &[u16] = &[401, 403];
-/// ── 주소로 연결 (키 없는 로컬 러너) ──────────────────────────────────────
+/// ── Connect by address (keyless local runner) ──────────────────────────────────────
 ///
-/// `secrets.rs` 가 명명 벤더를 3에서 동결하면서 남겨 둔 갈래가 이것이다:
-/// **사용자가 주소를 직접 적는다.** 벤더 이름을 하나 더 박는 대신 문 하나를
-/// 여는 이유는 롱테일 때문이다 — Ollama · LM Studio · llama.cpp server ·
-/// vLLM · LocalAI 가 전부 같은 OpenAI 호환 문법(`/v1/chat/completions`)을
-/// 내놓으므로, 주소가 변수이면 러너 목록은 우리 코드에 없어도 된다.
+/// This is the branch left behind when `secrets.rs` froze vendor names at 3:
+/// **The user enters the address directly.** The reason to open one door instead of adding another vendor name is long-tail — Ollama · LM Studio · llama.cpp server ·
+/// vLLM · LocalAI all offer the same OpenAI-compatible syntax (`/v1/chat/completions`), so if the address is variable, the runner list doesn't need to be in our code.
 ///
-/// **이 갈래에는 키가 없다.** 키체인을 지나가지 않고(`secrets::PROVIDERS` 에
-/// 없다), 인증 헤더를 붙이지 않는다. 그래서 "제공자 = 비밀키 하나" 라는 기존
-/// 모양이 성립하지 않던 자리가 열린다.
+/// **No key in this branch.** It doesn't pass through the keychain (not in `secrets::PROVIDERS`) and doesn't attach auth headers. So a spot opens where the existing shape "provider = secret key" doesn't hold.
 pub const LOCAL_PROVIDER: &str = "local";
-/// Ollama 의 기본 포트. **기본값일 뿐 상수가 아니다** — 사용자가 바꾼다.
+/// Default port for Ollama. **It's a default, not a constant** — the user changes it.
 pub const LOCAL_DEFAULT_BASE_URL: &str = "http://localhost:11434";
-/// 설치된 모델 목록. Ollama 네이티브(`/api/tags`)가 아니라 **OpenAI 호환**
-/// 목록을 쓴다 — 같은 한 번의 확인이 Ollama 말고 다른 러너에서도 그대로
-/// 동작해야 이 갈래가 "오픈소스들" 의 문이 된다 (2026-08-01 실측: Ollama
-/// 0.12 가 `/v1/models` 에 7개 모델을 200 으로 준다).
+/// List of installed models. Uses an **OpenAI-compatible** list, not Ollama native (`/api/tags`) —
+/// the same single verification must work for runners other than Ollama for this branch to become a door for "open-source ones" (2026-08-01 measurement: Ollama
+/// 0.12 returns 7 models with 200 on `/v1/models`).
 const LOCAL_MODELS_PATH: &str = "models";
 const LOCAL_CHAT_PATH: &str = "chat/completions";
 
-/// Gemini 는 **틀린 키에 400 을 준다** (2026-07-26 실측: 본문
+/// Gemini **gives 400 for wrong keys** (2026-07-26 measurement: body
 /// `{"error":{"code":400,"status":"INVALID_ARGUMENT","details":[…"reason":
-/// "API_KEY_INVALID"…]}}`). 401/403 로만 판정하면 틀린 키가 "확인하지 못했어요"
-/// 라는 엉뚱한 안내로 떨어진다.
+/// "API_KEY_INVALID"…]}}`). If judged only by 401/403, wrong keys fall into the misleading "Couldn't verify" message.
 ///
-/// 400 을 통째로 거부로 읽어도 되는 이유: 이 호출은 본문 없는 고정 GET 이고
-/// URL·헤더 이름이 전부 코드 상수라, 요청에서 **변하는 값이 키 하나뿐**이다.
-/// 400 을 만들 다른 입력이 우리 쪽에 없다.
+/// Why it's safe to read 400 entirely as rejection: this call is a fixed GET with no body,
+/// and URL/header names are all code constants, so the **only changing value in the request is the key**.
+/// There's no other input on our side that could produce a 400.
 const GEMINI_DENIED_STATUSES: &[u16] = &[400, 401, 403];
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LlmVerifyResult {
     pub provider: String,
-    /// 인증이 통과했나. 거부(401/403)와 그 외 실패를 화면이 다르게 말하도록
-    /// `http_status` 를 같이 준다.
+    /// Whether auth passed. Give `http_status` along with it so the screen can distinguish rejection (401/403) from other failures.
     pub ok: bool,
     pub http_status: Option<u16>,
-    /// 키 자체가 거부됐나 — 벤더별 상태 코드 차이(Gemini 는 400)를 여기서 한 번
-    /// 흡수한다. 화면이 상태 코드를 다시 해석하면 벤더가 늘 때마다 같은 지식이
-    /// 두 곳에서 갈라진다.
+    /// Whether the key itself was rejected — absorb vendor-specific status code differences (Gemini is 400) here.
+    /// If the UI reinterprets the status code, that knowledge splits across two places every time a new vendor is added.
     pub denied: bool,
-    /// 네트워크 실패 등의 한 줄. 키는 stdin 으로만 가므로 여기 담길 수 없다.
+    /// A single line for network failures, etc. Since keys only go via stdin, they cannot be included here.
     pub message: Option<String>,
     pub duration_ms: u64,
-    /// 이 호출이 남긴 감사 줄의 시각 — 화면이 "기록됨" 을 사실로 말하게 한다.
+    /// The timestamp of the audit line left by this call — ensures the UI states "recorded" as a fact.
     pub logged_at: String,
-    /// 확인 응답의 **본문** — 주소 갈래에서만 채운다.
+    /// The **body** of the confirmation response — populated only in the address branch.
     ///
-    /// 왜 명명 벤더는 `None` 인가: 그쪽 확인은 인증만 보는 호출이라 화면이
-    /// 본문으로 할 일이 없고, 응답에 계정 정보가 섞일 수 있는 자리를 IPC 로
-    /// 내보낼 이유가 없다. 주소 갈래는 반대다 — 이 본문이 곧 **설치된 모델
-    /// 목록**이고, 그걸 화면이 골라야 사용자가 모델 이름을 손으로 타이핑하다
-    /// 오타 하나로 실패하지 않는다. 파싱은 여기서 하지 않는다(§ 이 파일이
-    /// 벤더 스키마를 모르는 이유) — 웹 어댑터가 한다.
+    /// Why named vendors are `None`: that confirmation is a call that only checks authentication, so the UI
+    /// has no business with the body, and there is no reason to expose account information mixed into the response via IPC.
+    /// The address branch is different — this body is the **installed model list**, which the UI must select so users don't fail due to a single typo when manually typing model names. Parsing is not done here (see § why this file doesn't know vendor schemas) — the web adapter does.
     pub body: Option<String>,
 }
 
-/// 이 요청이 어떤 문으로 나가는가 — **잘못된 조합이 아예 표현되지 않게** 타입
-/// 으로 가른다. 명명 벤더는 키를 붙이고 주소가 코드 상수이며, 주소 갈래는
-/// 사용자가 적은 주소로 가고 키가 없다. 둘을 섞은 요청(명명 벤더 키를 임의
-/// 주소로)은 만들 수 없다.
+/// How this request exits — **preventing invalid combinations entirely** via type
+/// separation. Named vendors attach keys and use hardcoded addresses; the address branch
+/// goes to user-provided addresses without keys. Requests mixing both (named vendor keys with arbitrary
+/// addresses) cannot be created.
 pub enum Target<'a> {
     /// 명명 벤더 — 키를 붙이고, 주소는 이 파일의 상수다.
     Vendor { secret: &'a str },
-    /// 주소로 연결 — 사용자가 적은 base URL 로만 가고, 인증 헤더가 없다.
+    /// Connect via address — goes only to the base URL provided by the user, with no auth headers.
     Address { base_url: &'a str },
 }
 
@@ -138,13 +123,11 @@ pub struct VerifyRequest {
     headers: Vec<(String, String)>,
     /// 이 벤더에서 "키가 틀렸다" 를 뜻하는 상태 코드들.
     denied_statuses: &'static [u16],
-    /// 응답 본문을 화면에 돌려주나 — 모델 목록을 받는 주소 갈래만 true.
+    /// Returns the response body to the UI — true only for the address branch receiving the model list.
     returns_body: bool,
 }
 
-/// URL 의 호스트 — 감사 줄의 `host` 와 화면의 "어디로 가는가" 가 같은 값을
-/// 쓰도록 **URL 상수 하나에서 파생**시킨다. 호스트를 따로 상수로 두면 URL 을
-/// 고칠 때 조용히 어긋나서, 기록이 실제 목적지와 다른 곳을 가리키게 된다.
+/// The host in the URL — **derived from a single URL constant** so that the `host` in the audit line and the UI's "where it goes" write the same value. Keeping the host as a separate constant risks silent drift when updating the URL, causing records to point to a different destination than the actual target.
 fn host_of(url: &str) -> &str {
     let without_scheme = url.split_once("://").map_or(url, |(_, rest)| rest);
     without_scheme
@@ -153,20 +136,18 @@ fn host_of(url: &str) -> &str {
         .unwrap_or(without_scheme)
 }
 
-/// 응답에서 **감사 줄에** 남기는 것 — 상태 코드와 길이뿐. 본문은 기록되지
-/// 않는다.
+/// What remains in the **audit line** from the response — only status code and length. The body is not recorded.
 pub struct HttpEcho {
     pub status: u16,
     pub body_chars: usize,
-    /// 화면으로 돌려줄 본문 — `returns_body` 인 요청(주소 갈래의 모델 목록)
-    /// 에서만 채워진다. 기록되는 값이 아니다.
+    /// The body to return to the UI — populated only for requests that `returns_body` (the model list in the address branch).
+    /// This is not a recorded value.
     pub body: Option<String>,
 }
 
 impl HttpEcho {
-    /// 본문을 돌려주지 않는 확인 — 명명 벤더 셋의 모양. 실물 전송은
-    /// `send_via_curl` 이 직접 짓고, 이 지름길은 시험이 그 모양을 흉내낼 때만
-    /// 쓴다.
+    /// Confirmation that does not return a body — shape of the named vendor set. Actual transmission
+    /// is built directly by `send_via_curl`; this shortcut is used only when tests mimic that shape.
     #[cfg(test)]
     pub fn status_only(status: u16, body_chars: usize) -> Self {
         Self {
@@ -177,18 +158,16 @@ impl HttpEcho {
     }
 }
 
-/// 사용자가 적은 주소를 요청에 쓸 수 있는 모양으로 좁힌다.
+/// Narrows the user-provided address into a form usable in requests.
 ///
-/// 여기서 거절하는 것들과 그 이유:
-/// - **`http` 는 루프백에서만.** 평문으로 인터넷 너머에 볼트 발췌를 보내는
-///   경로를 열지 않는다. 같은 기계 안이면 평문이 정상이고(러너들이 TLS 를
-///   안 쓴다), 밖이면 `https` 를 요구한다.
-/// - **userinfo(`user:pass@host`) 금지.** URL 에 실린 비밀은 감사 줄·프록시
-///   로그에 그대로 남는다. Gemini 키를 헤더로만 보내는 이유와 같은 규율이다.
-/// - **공백·줄바꿈·따옴표·역슬래시 금지.** curl 설정은 줄 단위라 값 하나가
-///   새 옵션 줄을 만들 수 있다.
-/// - **쿼리·프래그먼트 금지.** 뒤에 경로를 붙일 자리라 `?`·`#` 이 있으면
-///   우리가 고르지 않은 엔드포인트가 된다.
+/// Rejections here and their reasons:
+/// - **`http` is only for loopback.** Does not open paths to send plaintext vault excerpts over the internet.
+///   Plaintext is normal within the same machine (runners don't use TLS); outside, `https` is required.
+/// - **No userinfo (`user:pass@host`).** Secrets in URLs remain visible in audit lines and proxy
+///   logs. Same discipline as sending Gemini keys only via headers.
+/// - **No whitespace, newlines, quotes, or backslashes.** curl config is line-based; a single value could
+///   create a new option line.
+/// - **No query strings or fragments.** Since paths are appended later, `?` or `#` would result in an endpoint we didn't configure.
 fn normalize_base_url(raw: &str) -> Result<String, String> {
     let trimmed = raw.trim().trim_end_matches('/');
     if trimmed.is_empty() {
@@ -225,10 +204,10 @@ fn normalize_base_url(raw: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
-/// 이 기계 자신인가. 호스트만 본다(포트는 무관).
+/// Is this machine itself. Only checks the host (port is irrelevant).
 fn is_loopback_authority(authority: &str) -> bool {
     let host = match authority.strip_prefix('[') {
-        // IPv6 리터럴 — `[::1]:11434`
+        // IPv6 literal — `[::1]:11434`
         Some(rest) => rest.split(']').next().unwrap_or(""),
         None => authority.split(':').next().unwrap_or(""),
     };
@@ -238,9 +217,9 @@ fn is_loopback_authority(authority: &str) -> bool {
             .is_ok_and(|address| address.is_loopback())
 }
 
-/// base URL + OpenAI 호환 경로. 이미 `/v1` 로 끝나면 덧붙이지 않는다 —
-/// Ollama 는 `http://localhost:11434` 를, LM Studio 는 `http://localhost:1234/v1`
-/// 를 안내하므로 둘 다 그대로 붙여넣어 동작해야 한다.
+/// base URL + OpenAI compatible path. Do not append if it already ends with `/v1` —
+/// Ollama provides `http://localhost:11434` and LM Studio provides `http://localhost:1234/v1`
+/// as guidance, so both should work as-is when pasted.
 fn local_endpoint(base_url: &str, path: &str) -> String {
     if base_url.ends_with("/v1") {
         format!("{base_url}/{path}")
@@ -249,9 +228,8 @@ fn local_endpoint(base_url: &str, path: &str) -> String {
     }
 }
 
-/// curl 설정 파일은 줄 단위라 줄바꿈이 든 값은 문법을 깨뜨린다. 저장 경로가
-/// trim 하므로 정상 키에는 없지만, 깨진 설정으로 엉뚱한 요청이 나가는 것보다
-/// 여기서 멈추는 게 낫다.
+/// curl config files are line-based, so values containing newlines break syntax. The save path
+/// trims, so normal keys won't have this, but stopping here is better than sending malformed requests.
 fn checked_secret(secret: &str) -> Result<&str, String> {
     if secret.contains('\n') || secret.contains('\r') {
         return Err("키에 줄바꿈이 섞여 있어요. 다시 저장해 주세요.".into());
@@ -259,9 +237,9 @@ fn checked_secret(secret: &str) -> Result<&str, String> {
     Ok(secret)
 }
 
-/// 명명 벤더에 주소 갈래가 왔거나 그 반대일 때의 한 줄. 조합이 어긋나면
-/// 조용히 한쪽을 고르지 않는다 — 키가 사용자가 적은 주소로 나가는 사고가
-/// 정확히 그 "조용히" 에서 생긴다.
+/// A single line for when the address branch arrives at a named vendor or vice versa. If combinations are mismatched,
+/// it does not silently pick one side — the accident of keys going to user-provided addresses
+/// arises precisely from that "silence".
 fn wrong_target(provider: &str) -> String {
     if provider == LOCAL_PROVIDER {
         "주소로 연결하는 갈래에는 키를 쓰지 않아요.".into()
@@ -351,8 +329,7 @@ fn curl_quote(value: &str) -> String {
     out
 }
 
-/// stdin 으로 넘길 curl 설정 — 여기에만 키가 있고, 대화 왕복에서는 **볼트
-/// 발췌가 실린 본문도** 여기로만 간다(argv·임시 파일 경유 없음).
+/// curl config passed via stdin — keys are only here, and in conversation round-trips, **vault excerpts in the body** also go only here (no argv or temp file intermediaries).
 fn curl_config_for(url: &str, headers: &[(String, String)], body: Option<&str>) -> String {
     let mut config = format!("url = {}\n", curl_quote(url));
     for (name, value) in headers {
@@ -372,12 +349,10 @@ fn curl_config(request: &VerifyRequest) -> String {
     curl_config_for(&request.url, &request.headers, None)
 }
 
-/// curl 종료 코드 → 사람이 **다음에 뭘 할지 아는** 한 줄.
+/// curl exit code → a single line enabling humans to **know what to do next**.
 ///
-/// 왜 stderr 문장을 그대로 쓰지 않나: 로컬 러너에서 가장 흔한 세 실패(꺼져
-/// 있음 · 포트 다름 · 주소 오타)가 stderr 에서는 전부 "Couldn't connect to
-/// server" 한 문장으로 뭉개진다. 종료 코드는 그 셋을 갈라 주는 유일하게
-/// 안정적인 신호다(curl 매뉴얼 § EXIT CODES).
+/// Why not use stderr messages directly: the three most common failures in local runners (down · port mismatch · address typo) all collapse into a single "Couldn't connect to
+/// server" message in stderr. The exit code is the only stable signal separating these three (curl manual § EXIT CODES).
 fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
     match code {
         Some(6) => "그 주소의 호스트를 찾지 못했어요 — 주소를 다시 확인해 주세요.".into(),
@@ -466,19 +441,17 @@ where
     S: FnOnce(&VerifyRequest) -> Result<HttpEcho, String>,
 {
     let request = verify_request(provider, target)?;
-    // 본문 없는 GET — 볼트에서 나가는 글자는 0자다. 빈 페이로드의 해시도
-    // "0바이트를 보냈다" 를 사후 대조할 수 있는 사실이다.
+    // GET without body — characters sent from vault are 0. Even the hash of an empty payload
+    // is a fact that can be post-verified as "sent 0 bytes".
     let payload = "";
     let logged_at = llm_audit::now_iso();
     let draft = AuditDraft {
         v: 1,
         at: logged_at.clone(),
         provider: provider.to_string(),
-        // 목적지를 provider 이름이 아니라 **호스트로** 남긴다. 이름은 우리가
-        // 붙인 라벨이지만 호스트는 요청이 실제로 향한 곳이라, 나중에 사용자가
-        // 주소를 직접 적는 갈래가 열려도 같은 문법으로 정직하게 읽힌다.
+        // Records the destination by **host**, not provider name. Names are labels we assign, but hosts are where the request actually went, so when a branch for manually entering addresses opens later, it can be read honestly with the same syntax.
         host: host_of(&request.url).to_string(),
-        // 모델을 부르지 않는 호출이므로 모델 이름이 없다 — 없는 값을 지어내지 않는다.
+        // No model name for calls that don't invoke models — do not fabricate a missing value.
         model: None,
         purpose: "verify".into(),
         question: None,
@@ -487,11 +460,11 @@ where
             prompt_chars: 0,
             vault_chars: 0,
         },
-        // 도구를 쓰지 않는 호출이다 — 빈 목록조차 남기지 않는다(§ llm_audit).
+        // Calls that don't use tools — leave even an empty list (see § llm_audit).
         tools: None,
         payload_sha256: llm_audit::sha256_hex(payload),
     };
-    // 기록이 안 되면 전송도 없다. 이 `?` 가 헌장 ②의 코드 경로다.
+    // No transmission if recording fails. This `?` is the code path for Charter ②.
     let reservation = llm_audit::reserve(vault_dir, draft)?;
 
     let started = Instant::now();
@@ -513,9 +486,7 @@ where
             } else {
                 "error"
             };
-            // 본문은 **성공했을 때만** 화면으로 간다. 실패 본문은 러너마다
-            // 모양이 달라 화면이 목록으로 오독할 수 있고, 그때 필요한 것은
-            // 목록이 아니라 상태 코드다.
+            // The body goes to the UI **only on success**. Failure bodies vary by runner and can be misread as a list by the UI; what's needed then is not a list but a status code.
             let body = if ok && request.returns_body {
                 body
             } else {
@@ -526,8 +497,8 @@ where
         Err(err) => ("error", false, false, None, 0, Some(err), None),
     };
 
-    // 확정에 실패하면 "기록이 완성된 호출" 이라는 약속이 깨진다 — 예약 줄은
-    // 남아 있으니 사실은 보존되지만, 화면에는 성공이라고 말하지 않는다.
+    // If confirmation fails, the promise of "a completed recording call" breaks — the reservation line
+    // remains, so the fact is preserved, but the UI does not report success.
     llm_audit::finalize(
         reservation,
         &AuditOutcome {
@@ -550,11 +521,11 @@ where
     })
 }
 
-/// 연결 확인 — **사용자가 [연결 확인]을 누를 때만**. 볼트 경로가 필요한 이유는
-/// 감사 로그가 볼트 안에 살기 때문이다: 기록할 곳이 없으면 보내지 않는다.
+/// Connection check — **only when the user clicks [Connection Check]**. The reason vault paths are needed:
+/// audit logs live inside the vault: if there's nowhere to record, don't send.
 ///
-/// `base_url` 은 **주소 갈래에서만** 온다. 명명 벤더에 주소가 함께 오면
-/// 거절한다 — 통과시키면 키체인의 키가 화면이 약속한 적 없는 호스트로 나간다.
+/// `base_url` comes **only from the address branch**. If an address arrives with a named vendor,
+/// reject it — allowing it would cause keys from the keychain to go to hosts the UI never promised.
 #[tauri::command]
 pub fn secret_verify(
     provider: String,
@@ -586,26 +557,25 @@ pub fn secret_verify(
     )
 }
 
-// ── 대화 왕복 (볼트 에이전트) ─────────────────────────────────────────────
+// ── Conversation Round-Trip (Bolt Agent) ─────────────────────────────────────────────
 //
-// 여기서 Rust 가 하는 일은 셋뿐이다: **비밀 취급 · 전송 · 감사.** 요청 본문을
-// 만들지도, 응답을 해석하지도 않는다 — 그건 WebView 의 일이다(벤더 형식 차이는
-// 어댑터 한 곳에서 흡수하는 편이 낫고, Rust 가 벤더 스키마를 알기 시작하면
-// 벤더가 바뀔 때마다 앱을 다시 빌드해야 한다).
+// Rust does only three things here: **confidentiality · transmission · audit.** It does not
+// construct the request body, nor interpret the response — that is WebView's job (vendor format differences
+// are better absorbed in one place by the adapter; if Rust starts knowing vendor schemas,
+// the app must be rebuilt every time a vendor changes).
 //
-// **Rust 는 루프를 모른다.** 왕복 1회 = 이 커맨드 호출 1회다. 상한·중단·턴
-// 개념은 전부 WebView 소유라, 사용자 턴 없이 이 커맨드가 도는 경로가 애초에
-// 만들어지지 않는다.
+// **Rust knows nothing of loops.** One round-trip = one invocation of this command. The concepts of upper bound, interruption, and turn
+// all belong to WebView, so without user turns, there is no path for this command to loop in the first place.
 
-/// 대화 요청. 확인 요청과 달리 **본문이 있다** — 그 본문에 볼트 발췌가 실린다.
+/// Conversation request. Unlike confirmation requests, it **has a body** — vault excerpts are included in that body.
 pub struct ChatRequest {
     url: String,
     headers: Vec<(String, String)>,
     body: String,
 }
 
-/// 응답에서 WebView 로 돌려주는 것 — 상태 코드와 **본문**. 본문은 정규화가
-/// 필요해서 넘길 뿐이고, 감사 로그에는 길이만 남는다(대화 저장소가 아니다).
+/// What is returned from the response to the WebView — status code and **body**. The body is passed for normalization
+/// purposes only, and only its length remains in the audit log (not a conversation store).
 pub struct ChatEcho {
     pub status: u16,
     pub body: String,
@@ -616,14 +586,14 @@ pub struct ChatEcho {
 pub struct LlmChatEcho {
     pub status: u16,
     pub body: String,
-    /// 이 왕복이 실제로 간 곳 — 화면 푸터와 감사 줄이 같은 값을 말한다.
+    /// The destination of this round trip — the screen footer and audit line both state the same value.
     pub host: String,
     pub duration_ms: u64,
-    /// 이 왕복이 남긴 감사 줄의 시각. 화면이 "기록됨" 을 사실로 말하는 근거다.
+    /// The timestamp of the audit line left by this round trip. It is the basis for the screen to assert "recorded" as fact.
     pub logged_at: String,
 }
 
-/// WebView 가 실측해서 넘기는 전송 범위 + 이 왕복에 실린 도구 호출들.
+/// The transmission scope measured and passed by the WebView + tool calls carried in this round trip.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditScopeInput {
@@ -637,14 +607,14 @@ pub struct AuditScopeInput {
     pub tools: Vec<AuditToolRef>,
 }
 
-/// 모델 이름이 요청의 어디에 실리나 — 허용 문자가 갈리는 이유다.
+/// Where the model name is embedded in the request — the reason allowed characters differ.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ModelPlacement {
-    /// JSON 본문 안. 러너들이 `qwen3:8b` · `hf.co/user/repo` 같은 이름을 쓰므로
-    /// `:` `/` 가 정상 문자다.
+    /// Inside the JSON body. Since runners use names like `qwen3:8b` · `hf.co/user/repo`,
+    /// `:` and `/` are valid characters.
     Body,
-    /// URL 경로 안(Gemini). `:` `/` 가 **문법**이라 통과시키면 우리가 고르지
-    /// 않은 엔드포인트로 키가 나간다.
+    /// Inside the URL path (Gemini). Since `:` and `/` are **syntax**, passing them causes keys to go to
+    /// endpoints we did not intend.
     UrlPath,
 }
 
@@ -656,7 +626,7 @@ fn model_placement(provider: &str) -> ModelPlacement {
     }
 }
 
-/// 모델 이름을 좁힌다. 좁히는 정도는 그 이름이 실리는 자리에 달렸다
+/// Narrow the model name. The degree of narrowing depends on where the name is embedded.
 /// (§ `ModelPlacement`).
 fn validate_model_id(model: &str, placement: ModelPlacement) -> Result<&str, String> {
     let trimmed = model.trim();
@@ -749,8 +719,7 @@ fn send_local_chat_via_curl(request: &ChatRequest) -> Result<ChatEcho, String> {
     send_chat_via_curl_with_timeout(request, LOCAL_CHAT_TIMEOUT_SECONDS)
 }
 
-/// 대화 왕복의 본체 — sender 주입형. **순서가 계약이다**: 예약 → (성공했을
-/// 때만) 전송 → 확정. `verify_with` 와 같은 문법을 일부러 반복한다.
+/// The body of the conversation round trip — sender-injected. **Order is a contract**: reserve → (only if successful) transmit → finalize. We intentionally repeat syntax like `verify_with`.
 #[allow(clippy::too_many_arguments)]
 pub fn chat_with<S>(
     provider: &str,
@@ -1716,7 +1685,7 @@ mod tests {
         )
         .unwrap();
         assert!(result.ok);
-        // 목록은 화면이 파싱한다 — Rust 는 벤더 스키마를 모른다.
+        // The screen parses the list — Rust does not know vendor schemas.
         assert_eq!(result.body.as_deref(), Some(listing));
 
         let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
@@ -1725,7 +1694,7 @@ mod tests {
         assert_eq!(line["host"], "localhost:11434");
         assert_eq!(line["outcome"], "ok");
         assert_eq!(line["scope"]["vaultChars"], 0);
-        // 목록 본문은 **기록되지 않는다** — 길이만 남는다.
+        // The list body is **not recorded** — only the length remains.
         assert!(!raw.contains("qwen3:8b"), "확인 응답 본문이 기록됐다");
         assert_eq!(line["responseChars"], listing.chars().count());
         fs::remove_dir_all(&vault).ok();
@@ -1734,9 +1703,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_local_check_that_hits_the_wrong_port_returns_a_status_not_a_list() {
-        // 같은 주소에 다른 프로그램이 떠 있는 흔한 경우 — 연결은 되는데 404 다.
-        // 그때 화면에 필요한 것은 목록이 아니라 상태 코드이고, 실패 본문을
-        // 목록으로 오독할 자리를 아예 없앤다.
+        // Common case where another program runs on the same address — connection succeeds but returns 404.
+        // In that case, what the screen needs is not a list but a status code, and we eliminate
+        // any room for misreading the failure body as a list.
         let vault = temp_vault("local-404");
         let result = verify_with(
             LOCAL_PROVIDER,
@@ -1781,7 +1750,7 @@ mod tests {
             },
             |request| {
                 assert_eq!(request.url, "http://localhost:11434/v1/chat/completions");
-                // 이 왕복에도 인증 헤더가 없다 — content-type 하나뿐.
+                // This round trip also lacks an auth header — only content-type.
                 assert_eq!(request.headers.len(), 1);
                 assert_eq!(request.headers[0].0, "content-type");
                 Ok(ChatEcho {
@@ -1799,15 +1768,16 @@ mod tests {
         assert_eq!(line["host"], "localhost:11434");
         assert_eq!(line["model"], "qwen3:8b");
         assert_eq!(line["scope"]["vaultChars"], 1_020);
-        // 옛 줄이 계속 읽혀야 하므로 스키마 버전은 그대로다(추가형 확장).
+        // Since old lines must continue to be read, the schema version remains unchanged (additive extension).
         assert_eq!(line["v"], 1);
         fs::remove_dir_all(&vault).ok();
     }
 
     #[test]
     fn a_local_round_trip_still_refuses_to_send_when_the_audit_line_cannot_be_written() {
-        // log-before-send 는 갈래가 늘어도 같다. 로컬이라 "어차피 안 나간다" 는
-        // 이유로 느슨해지면, 기록이 곧 증거라는 이 갈래의 판매 논리가 무너진다.
+        // log-before-send is the same regardless of branch count. If we relax it under the
+        // rationale that "it won't go out anyway" because it's local, the sales logic of this branch —
+        // that records are evidence — collapses.
         let vault = temp_vault("local-blocked");
         fs::write(vault.join(".ontology-atlas"), b"not a directory").unwrap();
         let sent = Cell::new(false);
@@ -1829,15 +1799,15 @@ mod tests {
 
     #[test]
     fn a_connection_that_never_happened_is_not_http_zero() {
-        // curl 은 연결 실패에도 `%{http_code}` 자리에 `000` 을 찍는다. 그대로
-        // 파싱하면 "HTTP 0 으로 응답했다" 는 없는 사실이 만들어지고, 화면은
-        // 러너가 꺼져 있다는 말 대신 `실패: 0` 을 보여준다 — 그러면 이 갈래가
-        // 약속한 "왜 안 되는지 말한다" 가 첫 실패에서 바로 깨진다.
+        // curl writes `000` in the `%{http_code}` position even on connection failure. Parsing it as-is
+        // creates the false fact that "HTTP 0 was returned," and the screen
+        // displays `failure: 0` instead of saying the runner is down — then this branch's
+        // promise to "explain why it failed" breaks immediately at the first failure.
         let refused = interpret_curl_output(Some(7), false, "\n000", "Couldn't connect to server");
         assert!(refused.is_err());
         assert!(refused.unwrap_err().contains("꺼져 있거나 포트가 달라요"));
 
-        // 정상 응답은 그대로 통과한다.
+        // Normal responses pass through as-is.
         let ok = interpret_curl_output(Some(0), true, "{\"data\":[]}\n200", "").unwrap();
         assert_eq!(ok.0, 200);
         assert_eq!(ok.1, "{\"data\":[]}");

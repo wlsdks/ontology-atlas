@@ -1,30 +1,30 @@
-// LLM 호출 감사 로그 — 볼트 안 `.ontology-atlas/llm-audit.jsonl` (#80 S2).
+// LLM call audit log — `.ontology-atlas/llm-audit.jsonl` inside the vault (#80 S2).
 //
-// ## 왜 Rust 가 로그를 소유하는가
+// ## Why Rust owns the log
 //
-// 신뢰 헌장 ②는 "조용한 수집 0 · 전송은 opt-in + 로컬 감사 로그" 다. 이걸
-// 규율(사람이 지키는 약속)이 아니라 **코드 경로**로 만들려면, 키를 쥔 쪽이
-// 기록도 쥐어야 한다. WebView 에 로그를 맡기면 프런트 버그 하나·우회 호출
-// 하나로 "기록 없는 전송" 이 생긴다.
+// Trust Charter ② states "silent collection 0 · transmission is opt-in + local audit log." To make this
+// a **code path** rather than a discipline (a promise humans keep), the party holding the key
+// must also hold the record. If we entrust logs to the WebView, a front-end bug or bypass call
+// alone can create "transmission without recording."
 //
-// 그래서 계약이 하나다: **log-before-send — 감사 줄을 남기지 못하면 보내지
-// 않는다.** `reserve()` 가 실패하면 호출자는 sender 를 부르지 않고 즉시 실패한다.
+// Thus, there is one contract: **log-before-send — if an audit line cannot be left, do not send.**
+// If `reserve()` fails, the caller does not invoke the sender and fails immediately.
 //
-// ## 왜 예약(reserve) + 확정(finalize) 2단인가
+// ## Why reserve + finalize two-step?
 //
-// 전송 전에는 결과(상태 코드·소요 시간)를 모르고, 전송 후에 처음 쓰면
-// "기록 없는 전송" 창이 열린다. 그래서 전송 직전에 **전송 전 사실만 담은 줄**을
-// 디스크에 확정(sync)하고, 응답이 오면 **그 줄만** 잘라내고 완성된 한 줄로
-// 다시 쓴다. Unix 에서는 그 전체 구간 동안 파일 잠금을 쥐므로 같은 볼트의 두
-// 요청이 서로의 예약을 자를 수 없다. 과거 줄은 건드리지 않는다(헌장 ⑤ 소급
-// 변경 금지). 프로세스가 응답 전에 죽으면 outcome 없는 줄이 남고, 리더는
-// 그것을 `unknown` 으로 읽는다.
+// Before transmission, we do not know the result (status code · duration), and writing for the first time after
+// transmission opens a window for "transmission without recording." Therefore, just before transmission, we
+// commit (sync) a line containing **only pre-transmission facts** to disk, and when the response arrives,
+// we cut that line and rewrite it as a completed single line. On Unix, we hold file locks during this entire
+// interval so two requests in the same vault cannot truncate each other's reservations. Past lines are untouched
+// (Charter ⑤ prohibition on retroactive changes). If the process dies before receiving a response, a line without
+// an outcome remains, and the reader interprets it as `unknown`.
 //
-// ## 무엇을 기록하지 않는가
+// ## What is not recorded
 //
-// **응답 본문은 기록하지 않는다.** 이 파일은 "무엇이 얼마나 나갔나" 의 감사이지
-// 대화 저장소가 아니다 — 대화를 쌓기 시작하면 볼트 밖에 제2 진실원이 생긴다
-// (헌장 ④). 길이(`responseChars`)만 남긴다.
+// **Response bodies are not recorded.** This file is an audit of "what went out and how much," not
+// a conversation store — starting to accumulate conversations creates a second source of truth outside the vault
+// (Charter ④). We only keep the length (`responseChars`).
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -32,11 +32,11 @@ use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
-/// 볼트 안 사이드카 디렉토리 — `activity.jsonl` 이 이미 사는 자리.
+/// The sidecar directory inside the vault — where `activity.jsonl` already resides.
 const SIDECAR_DIR: &str = ".ontology-atlas";
 const AUDIT_FILE: &str = "llm-audit.jsonl";
 
-/// 전송 범위 — "볼트에서 무엇이 얼마나 나갔나". 연결 확인은 전부 0 이다.
+/// Transmission scope — "what and how much went out from the vault." Connection checks are all 0.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditScope {
@@ -45,58 +45,58 @@ pub struct AuditScope {
     pub vault_chars: usize,
 }
 
-/// 이 왕복에 실려나간 도구 호출 한 건 — 이름과 대상만. 인자 전문은 남기지
-/// 않는다(볼트 본문이 인자에 섞일 수 있고, 이 파일은 대화 저장소가 아니다).
+/// One tool call sent in this round trip — name and target only. We do not keep full arguments
+/// (the vault body may mix with arguments, and this file is not a conversation store).
 ///
-/// **추가형 필드다** — 연결 확인 줄에는 아예 없고(`Option::is_none` skip),
-/// 그래서 이미 사용자 디스크에 앉은 줄의 모양이 바뀌지 않는다(헌장 ⑤).
+/// **Additive field** — it does not even exist on connection check lines (`Option::is_none` skip),
+/// so the shape of lines already sitting on user disks does not change (Charter ⑤).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditToolRef {
     pub name: String,
-    /// 화면 행이 말한 대상(노드 slug 등). 없으면 빈 문자열.
+    /// The target stated by the screen row (node slug, etc.). Empty string if absent.
     pub target: String,
 }
 
-/// 전송 **전에** 확정되는 사실들. 이 구조체가 예약 줄의 전부다.
+/// Facts committed **before** transmission. This struct is all that constitutes the reservation line.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditDraft {
     pub v: u8,
     pub at: String,
     pub provider: String,
-    /// 요청이 실제로 향한 호스트 — "볼트의 무엇이 **어디로** 갔나" 의 뒷말.
+    /// The host the request actually targeted — the answer to "where did vault content go?"
     ///
-    /// **추가형 확장이라 `v` 는 1 그대로다.** 이 필드가 없는 옛 줄도 그대로
-    /// 읽혀야 하고(리더가 `null` 로 강등), 이미 쓰인 줄은 손대지 않는다 —
-    /// 신뢰 헌장 ⑤(소급 변경 금지)를 스키마에서 지키는 방법이다. `v` 를 올리면
-    /// 사용자 디스크에 남아 있는 기존 기록이 하루아침에 "못 읽는 줄" 이 된다.
+    /// **Additive extension so `v` remains 1.** Old lines lacking this field must still be
+    /// read (reader downgrades to `null`), and already written lines are untouched —
+    /// this is how we uphold Charter ⑤ (prohibition on retroactive changes) in the schema. Raising `v`
+    /// would turn existing records remaining on user disks into "unreadable lines" overnight.
     pub host: String,
     pub model: Option<String>,
-    /// `"verify" | "agent"` — 확장은 값 추가로(스키마 `v` 는 올리지 않는다).
+    /// `"verify" | "agent"` — extensions add values (schema `v` is not raised).
     pub purpose: String,
-    /// 사용자 본인의 말만. 연결 확인은 `null`.
+    /// Only the user's own words. Connection checks are `null`.
     pub question: Option<String>,
     pub scope: AuditScope,
-    /// 이 왕복에 실려나간 도구 호출들. 연결 확인 줄에는 필드 자체가 없다.
+    /// Tool calls sent in this round trip. The field itself is absent on connection check lines.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<AuditToolRef>>,
-    /// 전송 전문의 sha256 — "미리보기에서 본 그 페이로드가 맞나" 의 사후 앵커.
+    /// SHA256 of the transmission payload — a post-hoc anchor for "is this the payload I saw in preview?"
     pub payload_sha256: String,
 }
 
-/// 응답이 온 뒤에야 알 수 있는 사실들.
+/// Facts that can only be known after the response arrives.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditOutcome {
-    /// `"ok" | "denied" | "error"`. 예약 줄에는 이 필드 자체가 없다.
+    /// `"ok" | "denied" | "error"`. The field itself is absent on reservation lines.
     pub outcome: String,
     pub http_status: Option<u16>,
     pub response_chars: usize,
     pub duration_ms: u64,
 }
 
-/// 디스크에 확정된 예약 줄의 위치. `offset` 은 그 줄이 시작하는 바이트다.
+/// Position of the committed reservation line on disk. `offset` is the byte where that line begins.
 #[derive(Debug)]
 pub struct AuditReservation {
     path: PathBuf,
@@ -106,9 +106,9 @@ pub struct AuditReservation {
     draft: AuditDraft,
 }
 
-/// 완성된 한 줄 = 전송 전 사실 + 응답 사실. `flatten` 이라 파일에는 두 구조체의
-/// **선언 순서 그대로** 평평하게 찍힌다 — 사람이 열어 읽는 로그이므로 키 순서가
-/// 곧 가독성이다.
+/// Completed line = pre-send facts + response facts. `flatten` writes the two structs
+/// **in their declaration order** flatly — since this is a log for human reading, key order
+/// determines readability.
 #[derive(Debug, Serialize)]
 struct AuditLine<'a> {
     #[serde(flatten)]

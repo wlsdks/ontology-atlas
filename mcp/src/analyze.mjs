@@ -3667,7 +3667,7 @@ function detectDomainsFromReadme(rootPath) {
         // README H2 is a heuristic domain source. Skip headers that are almost
         // never real codebase domains and only add bootstrap noise: generic doc
         // sections, narrative / question-style headers ("Why It Exists"),
-        // language-guide headers ("한국어 가이드"), and sentence-like headers
+        // language-guide headers ("Korean Guide"), and sentence-like headers
         // ("Three views plus MCP, one vault").
         const wordCount = title.split(/\s+/).filter(Boolean).length;
         if (
@@ -3687,9 +3687,9 @@ function detectDomainsFromReadme(rootPath) {
           /^(why|what|how|when|where|who)\b/i.test(normalizedTitle) ||
           // language-guide / translation section headers
           /가이드|\bguide\b/i.test(normalizedTitle) ||
-          // bare language-name headers ("## 한국어", "## English") — a
-          // translated-README section, same noise class as "## 한국어 가이드".
-          // Measured 2026-07-30: the repo's own "## 한국어" section counted as
+          // bare language-name headers ("## Korean", "## English") — a
+          // translated-README section, same noise class as "## Korean Guide".
+          // Measured 2026-07-30: the repo's own "## Korean" section counted as
           // a 6th domain candidate and drifted the verify census when the
           // section moved.
           /^(한국어|한글|english|日本語|中文|简体中文|繁體中文|español|français|deutsch|português|русский|italiano|türkçe)$/i.test(

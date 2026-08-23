@@ -123,7 +123,7 @@ const WORK_MARKDOWN = [
  *
  * ## Thinking is distinguished from speech
  *
- * The agent's 「생각」 (thinking) is not an answer. Drawn at the same weight, the user
+ * The agent's "thought" (thinking) is not an answer. Drawn at the same weight, the user
  * reads an intermediate step as the conclusion. So it is dim and small — but not
  * hidden (seeing what is happening is what makes the wait bearable).
  */
@@ -194,13 +194,15 @@ export function AcpChatPanel({
   vaultRoot: string | null;
   mcpServers?: unknown[];
   /**
-   * 패널 scaffold와 ACP 프로세스 시작을 분리한다. false여도 완성된 빈 대화는
-   * 그리되 세션은 시작하지 않는다 — 도크 reflow가 끝난 뒤 true가 된다.
+   * Separate the panel scaffold from starting the ACP process. Even if false, render
+   * a completed empty conversation but do not start a session — it becomes true after
+   * the dock reflow finishes.
    */
   sessionEnabled?: boolean;
   /**
-   * 지금 고를 수 있는 실행기들 — **관문이 있는 것만** 담겨 온다
-   * (`isGuardedRuntime`). 하나뿐이면 고를 것이 없으므로 이름만 그린다.
+   * The runtimes currently selectable — only those **with a guard** are included
+   * (`isGuardedRuntime`). If there is only one, there is nothing to choose, so only
+   * the name is rendered.
    */
   runtimes?: ReadonlyArray<{ id: string; label: string }>;
   onRuntimeChange?: (runtimeId: string) => void;
@@ -210,7 +212,7 @@ export function AcpChatPanel({
    */
   prefillRequest?: { text: string; nonce: number } | null;
   /**
-   * The answer to 「무엇을 물어보지」 (what should I ask) — drawn from **this folder's
+   * The answer to 「What should I ask?」 (what should I ask) — drawn from **this folder's
    * current state** (`useChatSuggestions`). Only shown on an empty conversation: once
    * a conversation has started the user already knows what to ask, and from then on
    * this area only takes up space.
@@ -238,11 +240,11 @@ export function AcpChatPanel({
   /** One turn's observable step, goal and target. `null` when it ends or closes. */
   onTurnActivityChange?: (activity: AcpTurnActivity | null) => void;
   /**
-   * 실제 Atlas read tool의 정확한 입력이 가리키는 지도 이동. 에이전트 답변
-   * 문장은 해석하지 않는다(`model/map-intent.ts`).
+   * The map movement pointed to by the exact input of the actual Atlas read tool. Does not interpret
+   * agent response sentences (`model/map-intent.ts`).
    */
   onMapIntent?: (intent: AcpMapIntent) => void;
-  /** 승인 전 점선, 승인 후 해당 ACP 도구가 끝날 때까지 실선인 단일 관계 변경안. */
+  /** A single relationship change proposal: dashed line before approval, solid line until the corresponding ACP tool finishes after approval. */
   onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
   /** Durable local summary of each ontology-write allow/reject and terminal result. */
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
@@ -393,7 +395,7 @@ export function AcpChatPanel({
   /**
    * **Was the list dismissed by hand?** After clicking outside to close it, the
    * composer's text is unchanged, so without this memory the next render reopens it
-   * immediately (owner report 2026-08-17: *"바닥 클릭하면 닫혀야하는데 안닫힘"* —
+   * immediately (owner report 2026-08-17: *"It should close when clicking the background but doesn't."* —
    * clicking the background should close it but doesn't). Reopening on a text change
    * is correct, so the memory is cleared then.
    */
@@ -416,8 +418,8 @@ export function AcpChatPanel({
     ? Math.min(Math.max(slashActive, 0), slashMatches.length - 1)
     : 0;
   /**
-   * Clicking outside closes it (owner report 2026-08-17: *"바닥 클릭하면 닫혀야하는데
-   * 안닫힘"* — clicking the background should close it but doesn't).
+   * Clicking outside closes it (owner report 2026-08-17: *"It should close when clicking the background
+   * but doesn't."* — clicking the background should close it but doesn't).
    *
    * Why `mousedown` rather than `click`: a click arrives after press and release, and
    * in between the composer loses focus and the screen jolts once. A press on the
@@ -538,8 +540,8 @@ export function AcpChatPanel({
   }, [events, pending]);
 
   /**
-   * The composer **grows with the text** (owner instruction 2026-08-16: *"입력하고
-   * 나면 이렇게 길어지는 것도 구현해야 함"* — it should also lengthen like this after
+   * The composer **grows with the text** (owner instruction 2026-08-16: *"It should also lengthen like this after
+   * typing."* — it should also lengthen like this after
    * typing).
    *
    * With a fixed row count, someone writing a three-line request presses send without
@@ -567,7 +569,7 @@ export function AcpChatPanel({
       /*
        * The upper bound is derived **from this panel's height**. The default of 6 rows
        * was chosen against a narrow strip and was stingy for this tall pane (owner:
-       * *"어느 정도까지는 길어지면 좋겠는데"* — I'd like it to grow at least somewhat).
+       * *"I'd like it to grow at least somewhat."* — I'd like it to grow at least somewhat).
        * But baking in a large number lets the composer push the whole conversation out
        * when the window shrinks — a ratio is the answer.
        */
@@ -594,8 +596,8 @@ export function AcpChatPanel({
         dropdown for a tool that has none is the same lie as "coming soon".
 
         ⚠️ The mode list **omits anything that skips the permission checkpoint**, and
-        anything not yet measured is marked 「확인 안 됨」 (not verified). This screen
-        promises 「폴더 밖은 먼저 물어본다」 (it asks before going outside the folder),
+        anything not yet measured is marked 「Not Verified」 (not verified). This screen
+        promises 「Asks Before Going Outside the Folder」 (it asks before going outside the folder),
         and a promise that one dropdown can revoke, or that makes the unknown look
         safe, is not a promise.
       */}
@@ -603,7 +605,7 @@ export function AcpChatPanel({
     choices.models.length > 0 || choices.modes.length > 0 ? (
         /*
          * The pickers sit **evenly on one row** (owner report from the real thing,
-         * 2026-08-16: *"제대로 보이지도 않고 위치도 이상하고"* — it doesn't display
+         * 2026-08-16: *"It doesn't display properly and the position is odd"* — it doesn't display
          * properly and the position is odd).
          *
          * It used to be `flex-wrap`, so each widened only to its content, and a
@@ -648,7 +650,7 @@ export function AcpChatPanel({
                  * line is a promise we never verified. The decisions and the evidence
                  * table: `mode-copy.ts`.
                  *
-                 * 「확인 안 됨」 is a **separate axis**. Knowing the name and having
+                 * 「Not Verified」 is a **separate axis**. Knowing the name and having
                  * measured whether it asks before working outside the folder are
                  * different things, so both are shown.
                  */
@@ -672,10 +674,9 @@ export function AcpChatPanel({
 
   const busy = status === 'thinking';
   const canType = status === 'ready' || status === 'thinking';
-  // 도크의 첫 프레임과 세션 교체 직후에는 프로세스 effect가 아직 시작 전이라
-  // 실제 상태가 idle이다. 이 패널이 떠 있는 동안 사용자가 보는 사실은 「연결을
-  // 기다리는 중」 — 화면 상태만 starting으로 투영하고 프로토콜 상태는 건드리지
-  // 않는다. sessionEnabled=true가 되는 한 렌더 사이에도 「꺼짐」이 번쩍이지 않는다.
+  // When the dock's first frame loads and immediately after session replacement,
+  // the process effect has not yet started,
+  // so the actual state is idle. While this panel is open, the user sees 「Waiting for Connection」 — we project only the screen state as starting without touching the protocol state. As long as sessionEnabled=true, 「Off」 does not flash during render cycles.
   const displayStatus = status === 'idle' ? 'starting' : status;
   const transcriptItems = groupEvents(withoutErrorEcho(events, error));
   const lastWorkGroupId = [...transcriptItems]
@@ -689,8 +690,7 @@ export function AcpChatPanel({
       data-acp-status={displayStatus}
       /*
        * ⚠️ The whole screen was bunched at the top because `flex-1` was missing (owner
-       * report from the real thing, 2026-08-16: *"입력하는 곳이 왜 위에 붙어 있는지도
-       * 이상하고"* — it's odd that the input area is stuck to the top).
+       * report from the real thing, 2026-08-16: *"It's odd that the input area is stuck to the top"* — it's odd that the input area is stuck to the top).
        *
        * The structure was a chat from the start — header / growing transcript /
        * composer at the bottom. But this `<section>`, a child of a parent flex, never
@@ -753,9 +753,7 @@ export function AcpChatPanel({
           {/*
             An icon-only button has **no visible name.** A `title` is attached, but the
             macOS webview's default tooltip takes a long wait, and until then the user
-            does not know what the button does (owner: *"마우스 올리면 툴팁이 떠야 이게
-            뭐하는건지 이해 가능할듯"* — a tooltip on hover is what makes it
-            understandable). It uses the tooltip already in the repository.
+            does not know what the button does (owner: *"A tooltip on hover is what makes it understandable"* — a tooltip on hover is what makes it understandable). It uses the tooltip already in the repository.
 
             The size also goes up one step — these three are this panel's primary
             chrome, and at `md` (32px) they do not read as things to press.
@@ -816,7 +814,7 @@ export function AcpChatPanel({
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
       >
         {/*
-          A 「켜는 중」 (starting) chip alone is not enough for the first download (owner's
+          A 「Starting」 (starting) chip alone is not enough for the first download (owner's
           real machine, 2026-08-19). During the several minutes npx spends fetching tens
           of MB the screen said nothing, so the user assumed it had hung and quit the
           app — and that interruption left a half-built cache that stopped it launching
@@ -846,9 +844,7 @@ export function AcpChatPanel({
           </div>
         ) : null}
         {events.length === 0 && !download ? (
-          // 빈 대화의 안내는 **기록이 쌓일 그 자리 한가운데**에 둔다. 위쪽에
-          // 붙여 두면 그것이 첫 번째 말풍선처럼 읽히고, 정작 대화가 시작될
-          // 자리는 비어 보인다.
+          // Place the empty conversation guide **in the center of where records will accumulate**. If placed at the top, it reads like the first speech bubble, and the actual place where the conversation starts appears empty.
           <div className="m-auto grid max-w-[34ch] gap-3">
             <p
               data-testid="acp-chat-empty"
@@ -857,7 +853,7 @@ export function AcpChatPanel({
               {t('emptyHint')}
             </p>
             {/*
-              The answer to 「무엇을 물어보지」 (what should I ask) comes from **this
+              The answer to 「What Should I Ask」 (what should I ask) comes from **this
               folder's current state** (2026-08-17). The common approach of baking in
               example sentences is decoration, not a suggestion — it would fit any app,
               and pressing one returns an answer unrelated to my folder, so the
@@ -956,9 +952,9 @@ export function AcpChatPanel({
         An error is **one sentence of human speech plus what to do next**.
 
         ⚠️ It used to paste what the adapter gave, verbatim (owner's screen,
-        2026-08-16): `문제가 생겼어요: {"code":-32603,"message":"Internal error: Failed
-        to authenticate: OAuth session expired…"}`. Owner: *"이렇게 보여주면 사용자가
-        어떻게 알겠어."* (how is a user supposed to understand this?). That line says
+        2026-08-16): `An error occurred: {"code":-32603,"message":"Internal error: Failed
+        to authenticate: OAuth session expired…"}`. Owner: *"If you show it like this, how
+        would the user know."* (how is a user supposed to understand this?). That line says
         neither what went wrong nor what to do, in human words.
 
         The original is not discarded but **folded away** — something has to report
@@ -1005,7 +1001,7 @@ export function AcpChatPanel({
             </summary>
             {/*
               The stale-login branch gets **the line that fixes it** first. The old
-              guidance (「터미널에서 다시 로그인하세요」 — log in again in the terminal)
+              guidance (「Log in again in the terminal」 — log in again in the terminal)
               was a dead end in this case: the app launches Claude with a dedicated
               config folder, and login is per folder. Rationale and measurements:
               `claude-login-repair.ts`.
@@ -1065,18 +1061,13 @@ export function AcpChatPanel({
 
       {/*
         The composer — **everything fits inside one box** (owner report from the real
-        thing, 2026-08-16: *"디자인도 이게 더 일반적인가? 대부분 이런 형태 아닌가"* —
-        isn't this design more common, isn't this the usual shape?).
+        thing, 2026-08-16: *"Isn't this design more common, isn't this the usual shape?"* — isn't this design more common, isn't this the usual shape?).
 
-        There used to be an input box with a wide 「보내기」 (send) pill **outside** it.
+        There used to be an input box with a wide 「Send」 (send) pill **outside** it.
         That made send take up space like the protagonist of a chat screen, when the
-        protagonist is the conversation. In the current shape one box says 「this is
-        where you write」, and inside it the bottom row holds **the pickers (left) and
-        send (right)**.
+        protagonist is the conversation. In the current shape one box says 「this is where you write」, and inside it the bottom row holds **the pickers (left) and send (right)**.
 
-        Send is a **round icon**. The word 「보내기」 was removed because the arrow already
-        means it and it takes less width inside the box. The name is carried by the
-        tooltip and the accessible name — the standard rule for an icon-only control.
+        Send is a **round icon**. The word 「Send」 was removed because the arrow already means it and it takes less width inside the box. The name is carried by the tooltip and the accessible name — the standard rule for an icon-only control.
 
         The composer is `frame="bare"` so a box is not created inside a box.
       */}
@@ -1107,13 +1098,9 @@ export function AcpChatPanel({
         */}
         {/*
           Typing `/` shows **the commands the agent found in this folder** (owner
-          question, 2026-08-17). The adapter was already sending the list mid-session
-          (`available_commands_update`) and we were discarding that line entirely —
-          47 of them, measured.
+          question, 2026-08-17). The adapter was already sending the list mid-session (`available_commands_update`) and we were discarding that line entirely — 47 of them, measured.
 
-          The list is never invented: if nothing arrives, typing `/` does nothing. The
-          vault folder is the working folder, so a skill placed in the vault appears
-          here directly — that is how 「아틀라스 전용」 (Atlas-specific) ones arrive.
+          The list is never invented: if nothing arrives, typing `/` does nothing. The vault folder is the working folder, so a skill placed in the vault appears here directly — that is how 「Atlas-Specific」 (Atlas-specific) ones arrive.
         */}
         {slashOpen ? (
           <ul
@@ -1181,7 +1168,7 @@ export function AcpChatPanel({
             onKeyDown={(e) => {
               /*
                * While the list is open **the list takes the keys first** (owner report
-               * 2026-08-17: *"키보드로 이동이 안된다"* — keyboard movement doesn't work).
+               * 2026-08-17: *"Keyboard movement doesn't work"* — keyboard movement doesn't work).
                * Enter's behaviour without a list (send) is unchanged below.
                */
               if (slashOpen) {
@@ -1273,21 +1260,11 @@ export function AcpChatPanel({
       {/*
         The past-conversations list — **it floats.**
 
-        ⚠️ **No z-index is used.** `--z-map-popover` was tried first, and that token
-        **does not exist** — referencing a missing variable makes CSS discard the whole
-        declaration, so the layering vanishes with no error at all (the trap this
-        repository records as 「a token nobody uses is not a specification but wrong
-        information」). Instead this block sits at **the very end** of the panel — at the
-        same level, what is painted later comes on top. No new token, no ladder change.
+        ⚠️ **No z-index is used.** `--z-map-popover` was tried first, and that token **does not exist** — referencing a missing variable makes CSS discard the whole declaration, so the layering vanishes with no error at all (the trap this repository records as 「a token nobody uses is not a specification but wrong information」). Instead this block sits at **the very end** of the panel — at the same level, what is painted later comes on top. No new token, no ladder change.
 
-        ⚠️ It used to be a flex child, so opening it **pushed** the conversation down and
-        the list looked like part of the conversation (owner: *"이렇게 같이 나와서
-        구분도 안 되고"* — it comes out together like this and can't be told apart).
-        Putting something that should float into the flow makes it not a popover but
-        just another row.
+        ⚠️ It used to be a flex child, so opening it **pushed** the conversation down and the list looked like part of the conversation (owner: *"It comes out together like this and can't be told apart"* — it comes out together like this and can't be told apart). Putting something that should float into the flow makes it not a popover but just another row.
 
-        So it is **absolutely positioned** against the panel with a scrim behind, which
-        says visually 「this is on top and clicking anywhere closes it」.
+        So it is **absolutely positioned** against the panel with a scrim behind, which says visually 「this is on top and clicking anywhere closes it」.
 
         ⚠️ Only **this folder's conversations** go in here (`keepSessionsInFolder`).
       */}
@@ -1317,14 +1294,9 @@ export function AcpChatPanel({
             {/*
               A name is what tells you what the list is of.
 
-              ⚠️ It used to be the uppercase eyebrow specification (`font-mono` plus
-              `uppercase` plus wide tracking). That specification assumes Latin script —
-              Hangul has no uppercase, so `uppercase` does nothing and only the wide
-              tracking remains, making **「지난」 and 「대화」 look like two separate words**
-              (owner's screen, 2026-08-16). It is a plain label now.
+              ⚠️ It used to be the uppercase eyebrow specification (`font-mono` plus `uppercase` plus wide tracking). That specification assumes Latin script — Hangul has no uppercase, so `uppercase` does nothing and only the wide tracking remains, making **「Past」 and 「Conversation」 look like two separate words** (owner's screen, 2026-08-16). It is a plain label now.
 
-              Why the count sits beside it: once the list scrolls, how many there are is
-              no longer visible.
+              Why the count sits beside it: once the list scrolls, how many there are is no longer visible.
             */}
             <div className="flex items-center justify-between gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
               <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
@@ -1352,10 +1324,7 @@ export function AcpChatPanel({
                     }}
                     /*
                      * The row under the mouse has to **respond** for you to know what
-                     * you are pressing (owner: *"마우스 올리면 각 영역에 호버 효과
-                     * 있으면"* — a hover effect on each area would be good). Surface and
-                     * text lift together — lifting only the surface tells you which row
-                     * it is while its title stays receded.
+                     * you are pressing (owner: *"A hover effect on each area would be good"* — a hover effect on each area would be good). Surface and text lift together — lifting only the surface tells you which row it is while its title stays receded.
                      */
                     hoverSurface="lift"
                     hoverInk="strong"
@@ -1544,7 +1513,7 @@ function slugMarkComponents(
   return out;
 }
 
-/** 대화의 GFM 표는 좁은 도크에서 열이 뭉개지지 않도록 자기 스크롤을 갖는다. */
+/** The GFM table in the conversation has its own scroll to prevent columns from squishing in the narrow dock. */
 function chatMarkdownComponents(
   known: ReadonlySet<string> | undefined,
   onHoverSlug: ((slug: string | null) => void) | undefined,
@@ -1579,17 +1548,11 @@ function TranscriptEntry({
 
   if (event.kind === 'user') {
     /*
-     * **A turn starts here** (2026-08-16 owner: *"내가 한 질문과 답변도 구분 잘
-     * 되어야하고"* — my question and the answer also need to be clearly separated).
+     * **A turn starts here** (2026-08-16 owner: *"My question and the answer also need to be clearly separated"* — my question and the answer also need to be clearly separated).
      *
-     * They were already separated by right alignment plus an indigo tint. But with a
-     * long answer, scrolling blurs 「where does the answer to this question begin」 —
-     * what has to be separated is not one bubble but **the turn's boundary**.
+     * They were already separated by right alignment plus an indigo tint. But with a long answer, scrolling blurs 「where does the answer to this question begin」 — what has to be separated is not one bubble but **the turn's boundary**.
      *
-     * So it gets three things: top margin (separating it from the next turn), a border
-     * (so it reads as an object rather than a surface), and a solid line above it
-     * unless it is the first turn. The colour was not deepened because indigo means
-     * 「selected」 in this app.
+     * So it gets three things: top margin (separating it from the next turn), a border (so it reads as an object rather than a surface), and a solid line above it unless it is the first turn. The colour was not deepened because indigo means 「Selected」 in this app.
      */
     return (
       <p
@@ -1665,14 +1628,9 @@ function TranscriptEntry({
         />
         {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
         {/*
-          **Which node was touched** (2026-08-17). If this line only says 「개념을
-          읽었어요」 (read a concept) without naming the target, reading the transcript
-          later tells you nothing about what happened and there is nothing to wire to
-          the map. The value was already arriving in `rawInput`.
+          **Which node was touched** (2026-08-17). If this line only says 「Read a concept」 (read a concept) without naming the target, reading the transcript later tells you nothing about what happened and there is nothing to wire to the map. The value was already arriving in `rawInput`.
 
-          It uses the same dotted underline — it means the same thing as a name in the
-          answer (something that exists on the map), so there is no reason to give it a
-          different shape.
+          It uses the same dotted underline — it means the same thing as a name in the answer (something that exists on the map), so there is no reason to give it a different shape.
         */}
         {toolTargets.length > 0 ? (
           <span className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">
@@ -1702,7 +1660,7 @@ function TranscriptEntry({
    * Diagnostics used to flow in here, printing things like
    * `UNPARSABLE:{"JSONRPC":"2.0","ID":7,…` and `SEND-FAILED: …` in uppercase monospace
    * in the middle of the conversation. Those are not for a person to read, and reading
-   * them leaves nothing to do — they now go to the error block's 「자세히」 (details).
+   * them leaves nothing to do — they now go to the error block's 「Details」 (details).
    *
    * The one that remains (`gate-off`) is not a diagnostic but **a fact about a
    * promise**: in this conversation we cannot ask on your behalf before touching

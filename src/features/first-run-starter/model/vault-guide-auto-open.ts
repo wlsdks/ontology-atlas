@@ -23,8 +23,7 @@ export function readVaultGuideAutoOpened(
   if (typeof window === 'undefined') return true;
   /*
    * The global "auto-display" switch covers **this sheet too** (2026-08-02, owner
-   * report: *"계속나와서 불편하네 테스트할때"* — it keeps appearing, which is
-   * annoying while testing).
+   * report: "It keeps appearing, which is annoying while testing).
    *
    * That switch used to cover only the map tour and the five destination guides
    * while this sheet looked at its own key alone. So with guidance turned off in

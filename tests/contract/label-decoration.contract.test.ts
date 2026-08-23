@@ -5,9 +5,9 @@ import { describe, expect, it } from "vitest";
 /**
  * Blocks decorative arrows attached to the end of a label.
  *
- * Owner verdict (2026-07-26), on seeing `지도에서 열기 →`:
+ * Owner verdict (2026-07-26), on seeing `Open in map →`:
  *
- * > *"나는 이런 글 옆에 화살표 있는거 싫어하거든? AI느낌이라?"*
+ * > *"I dislike arrows next to text like this — it feels AI-generated."*
  * > (I dislike arrows next to text like this — it feels AI-generated)
  *
  * An arrow after a label adds no information: the label already says where it goes,
@@ -16,8 +16,8 @@ import { describe, expect, it } from "vitest";
  * same label appears twelve times, the noise repeats twelve times too.
  *
  * **Arrows themselves are not banned.** An arrow mid-sentence is usually data:
- * `{source} → {target}` (a path), `오래된 → 최근` (order), `설정 → Developer` (a
- * menu path), `목차 클릭 → 해당 위치로` (causation). So this gate looks only at
+ * `{source} → {target}` (a path), `Old → Recent` (order), `Settings → Developer` (a
+ * menu path), `Click table of contents → Go to location` (causation). So this gate looks only at
  * **the end of a string**. The test: delete the arrow and read the label aloud. If
  * nothing was lost, it was decoration.
  *
@@ -95,37 +95,38 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
   /**
    * ── The gate's hole (measured 2026-07-26) ─────────────────────────────
    *
-   * The check above reads `messages/*.json` only. The violation that actually survived
-   * was a **JSX glyph** — a `↗` in a span at the end of an in-app `<Link>` in
-   * `ProjectDetailPage`, in the very file the PR that registered this rule had
-   * redesigned the same day. A gate that guards only translation strings cannot see
-   * leakage through markup.
-   *
-   * `↗` has exactly one use — **a leading warning on a link that leaves the app**. So
-   * the glyph must declare itself where it is used (`data-external-link-marker`). An
-   * undeclared `↗` is treated as decoration.
-   *
-   * ── The reach was too short (measured 2026-07-27) ──────────────────────
-   *
-   * The paragraph above used to say "`→` is out of scope — every standalone `→` in
-   * this codebase is a mid-sentence data arrow" and exempted `→` wholesale. Under that
-   * exemption the studio's **primary save button** lived as
-   * `확인하고 저장 <span>→</span>`. The day after registering the rule, the repository
-   * that registered it broke it. **A rule whose reach is too short is the same as no
-   * rule.**
-   *
-   * The exemption is removed, but mid-sentence data arrows must still pass. What
-   * separates them is not the glyph but **what follows it**:
-   *
-   * - `{a} <span>→</span> {b}` — a sibling follows → mid-sentence, data.
-   * - `{labels.save} <span>→</span></button>` — the parent's closing tag follows →
-   *   end of label, decoration. Delete it and nothing is lost.
-   *
-   * Inventory before switching it on (2026-07-27, every .tsx in `src` and `app`): 3
-   * trailing (all in the studio save-button family) and 7 mid-sentence. Small enough
-   * to clear in one PR, so it was switched on — the .claude/rules/design.md procedure
-   * "always measure before switching a rule on".
-   */
+   * The check above reads `messages/**
+ * `.json` only. The violation that actually survived
+ * was a **JSX glyph** — a `↗` in a span at the end of an in-app `<Link>` in
+ * `ProjectDetailPage`, in the very file the PR that registered this rule had
+ * redesigned the same day. A gate that guards only translation strings cannot see
+ * leakage through markup.
+ *
+ * `↗` has exactly one use — **a leading warning on a link that leaves the app**. So
+ * the glyph must declare itself where it is used (`data-external-link-marker`). An
+ * undeclared `↗` is treated as decoration.
+ *
+ * ── The reach was too short (measured 2026-07-27) ──────────────────────
+ *
+ * The paragraph above used to say "`→` is out of scope — every standalone `→` in
+ * this codebase is a mid-sentence data arrow" and exempted `→` wholesale. Under that
+ * exemption the studio's **primary save button** lived as
+ * `Confirm and Save <span>→</span>`. The day after registering the rule, the repository
+ * that registered it broke it. **A rule whose reach is too short is the same as no
+ * rule.**
+ *
+ * The exemption is removed, but mid-sentence data arrows must still pass. What
+ * separates them is not the glyph but **what follows it**:
+ *
+ * - `{a} <span>→</span> {b}` — a sibling follows → mid-sentence, data.
+ * - `{labels.save} <span>→</span></button>` — the parent's closing tag follows →
+ *   end of label, decoration. Delete it and nothing is lost.
+ *
+ * Inventory before switching it on (2026-07-27, every .tsx in `src` and `app`): 3
+ * trailing (all in the studio save-button family) and 7 mid-sentence. Small enough
+ * to clear in one PR, so it was switched on — the .claude/rules/design.md procedure
+ * "always measure before switching a rule on".
+ */
   const DECORATIVE_GLYPH_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*[↗➜⟶»]\s*</g;
   /** An element whose entire content is a single arrow — what follows decides whether it is mid-sentence or trailing. */
   const LONE_ARROW_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*([→↗➜⟶»])\s*<\/\1\s*>/g;
@@ -222,8 +223,7 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
    * detector works is locked by the synthetic probes below. A conditional rule with
    * zero consumers is **a rule waiting for its first case, not a broken gate.**
    *
-   * Verdict and falsifier: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」 (two
-   * dead primitives).
+   * Verdict and falsifier: `docs/DECISIONS.md` 2026-08-03 "two dead primitives".
    */
   /** Per-file verdict — a file with no declaration is out of scope for this rule, so it passes. */
   function externalMarkerSitsOnExternalLink(source: string): boolean {

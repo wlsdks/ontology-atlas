@@ -10,8 +10,7 @@ import { CONTROL_DISABLED_CLASS } from '@/shared/ui/control-class';
  *
  * ## Why this gate exists
  *
- * Owner report, 2026-08-03: *"'최근 변경' 누르니까 아무런 반응이 없는데?"*
- * (I press "recent changes" and nothing happens).
+ * Owner report, 2026-08-03: *"I pressed 'Recent changes' and nothing happened?"*
  * That chip was `disabled`, and a code comment said the slot stays and a tooltip
  * gives the reason. Measured, its **computed style was completely identical to the
  * three active chips beside it** — color, bg, border, opacity, and cursor all the
@@ -19,10 +18,10 @@ import { CONTROL_DISABLED_CLASS } from '@/shared/ui/control-class';
  *
  * | Chip | disabled | opacity | cursor |
  * |---|---|---|---|
- * | 자동 정렬 | false | 1 | default |
- * | 검색 | false | 1 | default |
- * | 내 데이터로 전환 | false | 1 | default |
- * | **최근 변경** | **true** | **1** | **default** |
+ * | Auto-align | false | 1 | default |
+ * | Search | false | 1 | default |
+ * | Switch to my data | false | 1 | default |
+ * | **Recent changes** | **true** | **1** | **default** |
  *
  * `ChromeChip` had **no `disabled:` handling at all**, and being a shared primitive
  * meant **every chip carried the same hole**. The tooltip requires hovering and

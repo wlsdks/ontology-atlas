@@ -10,8 +10,8 @@ import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW, PAGE_FRAME_FORM, PAGE_TOP_
  *
  * **What happened** (2026-08-09, owner):
  *
- * > *"인사이트, 프로젝트, 스킬 모두 상단 공백이 동일해야하는데 … 디자인 시스템
- * > 있는거 아녔나? 왜 다 다르지?"*
+ * > *"Insights, projects, and skills should all have the same top spacing — isn't
+ * > there a design system? why are they all different?"*
  * > (insights, projects, and skills should all have the same top spacing — isn't
  * > there a design system? why are they all different?)
  *

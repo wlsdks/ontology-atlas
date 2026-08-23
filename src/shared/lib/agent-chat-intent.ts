@@ -5,7 +5,7 @@
  * sheet to the map's conversation panel.
  *
  * **Why it is needed** (review, 2026-08-16). The first step of the getting-started
- * card is named 「AI 에이전트 연결」 (connect an AI agent) and its button opens
+ * card is named 「Connect an AI agent」 (connect an AI agent) and its button opens
  * the Agents section of settings — but that section held **only a list and
  * outbound links**. It showed what had been detected and offered **no door
  * through to actually connecting**. Which tool to use was picked by the code

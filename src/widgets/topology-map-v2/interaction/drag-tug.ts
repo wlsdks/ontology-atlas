@@ -7,8 +7,7 @@
  * AUDIT FINDING this replaces: FA2's global relax (`model/force-layout.ts`,
  * 1 iteration/frame + `slowDown: 20`) is intentionally gentle for the settled
  * default layout, but that same gentleness means a dragged node produces NO
- * visible neighbor motion — the owner's *"노드를 드래그해도 이웃이 안 움직임"*
- * (dragging a node does not move its neighbours)
+ * visible neighbor motion — the owner's "Dragging a node does not move its neighbours"
  * report. Instead of tuning FA2 (which would also affect the settled-layout
  * feel), this module propagates the DRAGGED node's own per-frame world-space
  * displacement directly to its 1-hop/2-hop neighbors, falling off by hop

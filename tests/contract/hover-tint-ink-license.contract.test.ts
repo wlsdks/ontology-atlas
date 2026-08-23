@@ -26,8 +26,7 @@ import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
  * At rest it was 5.32, so **hover was making it harder to read.**
  *
  * No value was wrong — both `danger-a32` and `danger-text` are legitimate ramp
- * tokens. What was wrong is the **place** (`design-gates.md`, 「값이 아니라 «자리»
- * 가 토큰을 정한다」 — the place, not the value, decides the token), and on top of
+ * tokens. What was wrong is the **place** (`design-gates.md`, 「The place, not the value, decides the token」 — the place, not the value, decides the token), and on top of
  * that `a32` was a token used **14 times as a border and once as a surface** (that
  * defect).
  *

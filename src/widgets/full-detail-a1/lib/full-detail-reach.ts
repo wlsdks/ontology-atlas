@@ -2,7 +2,7 @@
  * Full-detail A1 "reach = sentence instrument" — replaces the rejected
  * query-builder reach explorer (from/to/both direction × 1/2/3-step
  * segments) with ONE outward-only reach reading at a selectable step (1/2/3)
- * plus a per-domain breakdown ("대부분 X(a)와 Y(b)에 있다").
+ * plus a per-domain breakdown ("mostly in X(a) and Y(b)").
  *
  * Reuses the EXISTING reachability engine (`buildOntologyReachability`) —
  * ONE BFS to the max depth, then per-depth counts are derived from its
@@ -28,7 +28,7 @@ export interface FullDetailReachDomainRow {
   /** Domain node title, or `null` matching `domainId === null`. */
   domainTitle: string | null;
   count: number;
-  /** Matches the start node's OWN domain — rendered as "도메인 내부". */
+  /** Matches the start node's OWN domain — rendered as "inside domain". */
   isSelf: boolean;
 }
 

@@ -240,7 +240,7 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
  * `init --quick-start` failed its own gate on a single warning
  * (`missing-expected-field: domain`), and that one warning turned `health`,
  * `mcp-verify`, and `agent-brief` red. The warning's own wording is
- * *"트리에서 부모를 찾을 수 있습니다"* ("so it can find a parent in the tree") —
+ * *"cannot find a parent in the tree"* ("so it can find a parent in the tree") —
  * while that vault's project node already contained those capabilities via
  * `contains:`. **It said there was no parent when there was one.** The gate looks
  * at one file at a time, so the narrowing has to happen at vault level.

@@ -11,7 +11,7 @@ import { GUIDE_PAGES } from '@/views/gateway-doc/model/guide-pages';
  *
  * **All 34** in-body internal links across the guide's 13 chapters were 404s. The
  * markdown source writes them **without a locale prefix**, e.g.
- * `[지도 읽는 법](/guide/reading-the-map)` (one copy serves both `/ko` and `/en`,
+ * `[How to read the map](/guide/reading-the-map)` (one copy serves both `/ko` and `/en`,
  * so the source cannot hardcode a locale), and the body renderer put that value
  * straight into `<a href>`. No such route exists.
  *
@@ -72,7 +72,7 @@ function inBodyInternalLinks(): Array<{ file: string; href: string }> {
  * ## Why a second scanner (measured during the 2026-08-14 walkthrough)
  *
  * `inBodyInternalLinks` above sees only the `](/…)` form, so a **relative-path
- * link** such as `[명세](../ONTOLOGY-ATLAS-SPEC.md#…)` passed unchecked — and the
+ * link** such as `[specification](../ONTOLOGY-ATLAS-SPEC.md#…)` passed unchecked — and the
  * e2e spec only looked at `a[href^="/"]`, so it did too. Clicking such a link goes
  * to `/ko/guide/ONTOLOGY-ATLAS-SPEC.md`, where the `findGuidePage()` fallback
  * **silently** rendered chapter 1: a **misdelivery**, not a 404, which is why

@@ -5,8 +5,8 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { CHROME_STATUS_CHIP_CLASS, CompactCopyButton, controlClass } from "@/shared/ui";
 
 export interface TopologyPathChipProps {
-  /** Pre-formatted status line — "경로: {source} → 대상 선택" before a target
-   *  is picked, "{source} → {target} · N홉" once both endpoints resolve. The
+  /** Pre-formatted status line — "Path: {source} → Target selected" before a target
+   *  is picked, "{source} → {target} · N hops" once both endpoints resolve. The
    *  view composes this (i18n interpolation lives in `HomePage`, not here) so
    *  this component stays a pure "chrome grammar" chip. */
   label: string;

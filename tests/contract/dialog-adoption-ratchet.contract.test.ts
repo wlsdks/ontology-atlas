@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * Dialog adoption ratchet — **`role="dialog"` outside the primitive can never
  * exceed the ledger.**
  *
- * **Why** (ratified by the 체계 (design-systems) seat 2026-08-15,
+ * **Why** (ratified by the design-system seat 2026-08-15,
  * docs/DECISIONS.md). 26 places across 23 files were each assembling modality
  * themselves: 5 different scrim tokens, 8 hardcoded widths, a focus trap actually
  * present in only 8 of 20 places declaring aria-modal, and 2 aria-modals with
@@ -88,9 +88,9 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
 
 /**
  * **Debt** — to be repaid. It turns red if the count rises, and the row is
- * deleted when it reaches 0. Repayment order (the 체계 seat's prescription):
+ * deleted when it reaches 0. Repayment order (the design-system seat's prescription):
  * ProjectDrawer (the only remaining modal-without-modality) → the 7
- * backdrop-medium files (scrim convergence, after the 위계 seat approves) → the 3
+ * backdrop-medium files (scrim convergence, after the hierarchy seat approves) → the 3
  * palettes (together with registering `variant="palette"`).
  *
  * Founding inventory 2026-08-15: of 26 places across 23 files, the first three

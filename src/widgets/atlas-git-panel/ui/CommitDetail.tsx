@@ -20,17 +20,17 @@ import { ConceptEgoCard } from "./ConceptEgoCard";
  * unpushed · remote-only), and a tab **hides** every pane but its own — "you
  * have something unpushed" sitting behind another tab is the same as it not
  * existing. That decision and the test that holds it already exist
- * (「커밋 이력이 탭 뒤에 숨지 않는다」 — commit history never hides behind a tab).
+ * ("Commit history never hides behind a tab" — commit history never hides behind a tab).
  *
- * **Here what varies is not state but lens.** 「개념」 (concepts) and 「파일」
+ * **Here what varies is not state but lens.** "Concepts" (concepts) and "Files"
  * (files) are two ways of looking at *one already-chosen step*, and identity
  * stays above the tabs so it survives either lens. What hides is the
  * presentation, not a fact.
  *
  * Measurement forced the switch: five sections stacked in one column turned the
- * right-hand column into a 2,000px scroll, and 「바뀐 내용」 (what changed)
+ * right-hand column into a 2,000px scroll, and "What Changed" (what changed)
  * concatenated four files' patches, so which file you were reading was decided
- * **by scroll position alone**. Owner: *"너무 많은걸 스크롤로 다 표현하려는것같긴 해서"*
+ * **by scroll position alone**. Owner: *"It looked like too much was being expressed through scrolling."*
  * (it looked like too much was being expressed through scrolling).
  *
  * So the file list became a **chooser** — only the clicked file's patch renders

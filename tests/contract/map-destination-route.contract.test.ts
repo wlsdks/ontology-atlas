@@ -15,12 +15,12 @@ import { describe, expect, it } from "vitest";
  *
  * | Label | Pointed at | After the switch |
  * |---|---|---|
- * | 「지도로 돌아가기」 (back to the map) | `/` | lands on marketing |
- * | 「설치 없이 브라우저에서 써보기」 (try it in the browser, no install) | `/` | lands on marketing |
+ * | 「Back to map」 (back to the map) | `/` | lands on marketing |
+ * | 「Try it in the browser, no install」 (try it in the browser, no install) | `/` | lands on marketing |
  * | 〃 (unpublished branch) | `/` | lands on marketing |
  *
  * The second is the worst — the owner defined the marketing page's job as
- * *"다운로드 유도하거나 웹버전 이동"* (drive a download or move to the web
+ * *"Drive a download or move to the web version"* (drive a download or move to the web
  * version), and that "move to the web version" button becomes **a loop back into
  * marketing**.
  *
@@ -48,15 +48,14 @@ const MAP_ROUTE = "/topology";
  */
 const MAP_DESTINED = [
   { testid: "gateway-hero-web-cta", why: "히어로의 「브라우저에서 열기」 — 웹 제품을 여는 버튼" },
-  /*
+  /**
    * ⚠️ `download-web-cta`'s **control itself disappeared on 2026-08-19** — the owner
-   * removed the whole install section (*"맨 마지막 이거는 없어도 될듯? 어차피 맨
-   * 위에 다 있어서"* — the last one seems unnecessary since it's all at the top
+   * removed the whole install section (*"Does this last one seem unnecessary? It's all at the top anyway."* — the last one seems unnecessary since it's all at the top
    * anyway). The hero's web CTA now carries the same promise.
    */
-  /*
+  /**
    * ⚠️ `download-back-to-map`'s **control itself disappeared on 2026-07-31**
-   * (owner: *"이건 홍보 페이지라 메인 화면에서만 이동 가능하게"* — this is a
+   * (owner: *"This is a promotional page, so make it navigable only from the main screen."* — this is a
    * promotional page, so make it navigable only from the main screen). Putting a path
    * to the workbench in the gateway chrome offers the working surface to visitors who
    * have no vault yet, and people who do have one reach the map from `/` anyway.
@@ -175,24 +174,24 @@ describe("지도를 약속하는 링크의 목적지", () => {
  *
  * The test above iterates the `MAP_DESTINED` allowlist. That precisely guards "this
  * control goes to the map", but **a control not on the list is structurally out of
- * view**. So in the 2026-08-01 measurement, `/projects`'s 「← 지도」 (← map) link
+ * view**. So in the 2026-08-01 measurement, `/projects`'s "← map" link
  * was going to `/` (the gateway) while this whole file stayed green — that link had
  * no testid at all.
  *
  * This test inverts the aim. It searches by **what the label promises, not who
- * registered it**: collect the keys whose i18n value is literally 「지도」/「Map」,
+ * registered it**: collect the keys whose i18n value is literally "Map",
  * then look at the href of the links rendering those keys. Forgetting to register a
  * new link here no longer hides it, as long as the label promises a map.
  *
  * The reach is narrowed to **labels that are exactly "map"** because including
- * sentences that merely contain it (「지도에서 보기」 — view on the map) would also
+ * sentences that merely contain it ("view on the map") would also
  * catch explanatory copy that is not a link, producing noise. The class that
  * actually broke was exactly this narrow one; widening can wait until a violation
  * is observed.
  */
 const MAP_LABEL = /^[\s←→]*(?:지도|map)[\s←→]*$/i;
 
-/** Leaf keys whose i18n value is literally 「지도」 (map) — the names used by `t("<leaf>")`. */
+/** Leaf keys whose i18n value is literally "Map" — the names used by `t("<leaf>")`. */
 function mapLabelKeys(): Set<string> {
   const keys = new Set<string>();
   for (const file of ["messages/ko.json", "messages/en.json"]) {
@@ -230,7 +229,7 @@ function mapLabelKeys(): Set<string> {
  * - `href={workspaceHref}` — with `const workspaceHref = '/'` earlier in the file
  * - `href={'/'}` — **single quotes** inside the braces
  *
- * Both were the 「지도」 (map) link on `/project/[slug]`, labelled "map" but sending
+ * Both were the "map" link on `/project/[slug]`, labelled "map" but sending
  * the user to the gateway. The gate was green, because those were forms it did not
  * look at. It is the same illness this repository already learned from the
  * label-decoration rule: **a rule with too short a reach is the same as no rule.**

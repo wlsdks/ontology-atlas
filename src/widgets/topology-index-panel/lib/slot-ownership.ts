@@ -8,18 +8,18 @@ import type { IndexPanelState } from "./index-panel-state";
 export type LeftSlotAnalysisMode = "overview" | "focus" | "path" | "health";
 
 /**
- * Left-slot exclusivity (「B3 허브가 곧 지도」 — the hub is the map;
+ * Left-slot exclusivity (「The hub is the map」 — the hub is the map;
  * "Left-slot choreography").
  *
  * INDEX used to share the topology's left slot with the analysis rail
  * (`TopologyAnalysisBar`, née "reader lens panel"), which reclaimed it for
  * whichever analysis mode carried rail-specific controls INDEX didn't have.
- * 「분석 패널 완전 소멸 2단계」 (phase 2 of retiring the analysis panel entirely)
+ * "Phase 2 of retiring the analysis panel entirely" (phase 2 of retiring the analysis panel entirely)
  * removed that rail mode by mode — focus (§a) was removed outright (the node
  * datasheet's action row and `FullDetailA1`'s handoff row already covered what
  * it showed), path (§b) moved to a top-center "chrome grammar" status chip
  * (`TopologyPathChip`, mounted next to `SearchHint`), and health (§c) moved to
- * the 「수리 큐」 (repair queue) section of `/ontology/insights`' relations tab.
+ * the 「Repair Queue」 (repair queue) section of `/ontology/insights`' relations tab.
  * With all three gone, `TopologyAnalysisBar` itself was deleted (§d) — there is
  * no longer any content that reclaims the left slot, so INDEX owns it
  * unconditionally.

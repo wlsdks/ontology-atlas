@@ -118,7 +118,7 @@ export interface TraceDrawState {
   t: number;
   /**
    * True for the single ego edge the user is hovering in the detail panel's
-   * "연결된 노드" list — an extra "emphasis ripple" over the ego brightening so
+   * "connected nodes" list — an extra "emphasis ripple" over the ego brightening so
    * the panel row and this edge read as one (lead spec §4). Ignored unless
    * `egoState === "ego"`.
    */
@@ -173,10 +173,10 @@ export interface TraceDrawState {
    */
   dependsCometEligible?: boolean;
   /**
-   * 「걸어온 길」 (the walked-path lens) strength, 0..1 — non-zero only when this
+   * "walked-path lens" strength, 0..1 — non-zero only when this
    * relation was stepped along **consecutively**.
    *
-   * Owner, 2026-08-02: *"노란색으로 선까지 다?"* (does the yellow reach the lines
+   * Owner, 2026-08-02: *"Does the yellow reach the lines too?"* (does the yellow reach the lines
    * too?). With the lens on, this file drew every edge `dim`: footprints landed
    * beside the visited nodes but **the lines joining them carried background
    * ink**, so the "path walked" showed no path.
@@ -287,7 +287,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
 
   let stroke: string;
   let width: number;
-  // 「걸어온 길」 (the walked path) wins over every other state. While the lens
+  // "The walked path" wins over every other state. While the lens
   // is on this edge is neither selected nor ego — the caller turns both off —
   // yet it is the only thing the user is trying to read. Width goes from dim (1)
   // to at most 1.6: any thicker and the line beats the footprint marks, and the
@@ -299,7 +299,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   } else if (state.selected === true) {
     // The subject of the pair focus — pale indigo, the top ink.
     stroke = tokens.edgeSelected ?? tokens.indigoBright;
-    // Toned down — owner: "색이 너무 진하다" (the colour is too strong). Thin and
+    // Toned down — owner: "The colour is too strong." Thin and
     // pale so it reads as light rather than ink over a dim scene; the liveliness
     // keeps coming from the depends comet tail.
     width = (isDepends ? 1.7 : 1.5) - farT * 0.4;
@@ -429,8 +429,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
 
   if (isDepends) {
     if (egoState === "dim") return;
-    // Always-on comets, restored on owner instruction "예전 걸 살려줘" (bring the
-    // old one back), reversing the earlier demotion to "comet tail = focus
+    // Always-on comets, restored on owner instruction "Bring the old one back", reversing the earlier demotion to "comet tail = focus
     // signal": the tail flows on every non-dim depends edge regardless of focus
     // (prototype §13 `drawEdge`, `state !== "dim"`). Phase advance is owned by
     // `updateParticles`, which stops under reduced-motion, so those users get

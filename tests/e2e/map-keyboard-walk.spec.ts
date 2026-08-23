@@ -299,8 +299,7 @@ test.describe("지도 키보드 걷기", () => {
    * surrounding the project at the map's centre **have no edges between them** — each
    * attaches only to the project. So sidestepping from one domain to another did not
    * work, and on a screen where they stand in a ring that reads as broken (owner:
-   * *"중앙에서 자유롭게 이동이 안 되던데?"* — you cannot move freely from the
-   * centre).
+   * *"You cannot move freely from the centre."*
    *
    * Siblings are a relation ("same parent"), so this is not an arbitrary spatial
    * jump.
@@ -329,9 +328,8 @@ test.describe("지도 키보드 걷기", () => {
   /**
    * **When there is nowhere to go, say so** — rather than staying silent.
    *
-   * This test exists because of what the owner said in real use: *"방향키가 되긴
-   * 하는데 노드를 자유롭게 이동하진 못하네?"* (the arrow keys work, but you cannot
-   * move freely between nodes). With no response at all, "broken" and "nothing in
+   * This test exists because of what the owner said in real use: *"The arrow keys work, but you cannot
+   * move freely between nodes."* With no response at all, "broken" and "nothing in
    * that direction" are indistinguishable.
    */
   test("그 방향에 갈 곳이 없으면 안내가 뜬다", async ({ page }) => {
@@ -350,9 +348,9 @@ test.describe("지도 키보드 걷기", () => {
    * **The notice appears beside the node being walked from, dismisses itself, and
    * does not block walking** (three owner reports from real use, 2026-08-10).
    *
-   * What the owner saw: *"이렇게 나오면 모르겠는데? 그냥 이동하던 노드 바로 옆에 좀
-   * 잘보이게 나타났다가 사라지는게 좋을듯? 심지어 지금은 사라지지도 않고 계속떠있고..
-   * 이거 떠있는동안 x버튼 안누르면 아예 이동도 안됨."* (shown this way I cannot tell
+   * What the owner saw: *"Shown this way I cannot tell — it should appear clearly right beside the node I was moving from and then go
+   * away; right now it does not even disappear, and while it is up I cannot move at
+   * all unless I press the x."* (shown this way I cannot tell
    * — it should appear clearly right beside the node I was moving from and then go
    * away; right now it does not even disappear, and while it is up I cannot move at
    * all unless I press the x).
@@ -397,7 +395,7 @@ test.describe("지도 키보드 걷기", () => {
     await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
     expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
     await expect(page.locator("[data-walk-notice]").first()).toBeVisible({ timeout: 4_000 });
-    // It goes away without being pressed — owner: *"조금 보여지다 자동으로 사라지게"* (show briefly, then vanish on its own).
+    // It goes away without being pressed — owner: *"Show briefly, then vanish on its own."*
     await expect(page.locator("[data-walk-notice]")).toHaveCount(0, { timeout: 6_000 });
   });
 
@@ -423,8 +421,7 @@ test.describe("지도 키보드 걷기", () => {
 
   /**
    * **The selected node is never hidden behind the panel** (owner decision
-   * 2026-08-10: *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"* — it must not be
-   * covered; centre it in the space excluding the panel).
+   * 2026-08-10: *"It must not be covered; centre it in the space excluding the panel."*
    *
    * Selecting a node opens a popover on the right. The camera used to target **the
    * viewport centre**, so the selection could end up **behind the panel describing

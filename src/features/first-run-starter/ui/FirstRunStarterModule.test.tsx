@@ -84,7 +84,7 @@ describe('FirstRunStarterModule', () => {
   });
 
   // The first point of contact states in one sentence why this product differs
-  // (a person and an agent read and write the same folder) — 「에이전트」 appeared
+  // (a person and an agent read and write the same folder) — 「Agent」 appeared
   // zero times across its 33 strings.
   it('names the agent audience once in the lead paragraph', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
@@ -252,14 +252,14 @@ describe('FirstRunStarterModule', () => {
   });
 
   /*
-   * PO council verdict ③ (2026-08-03) — the "지금은 샘플" signal must follow
+   * PO council verdict ③ (2026-08-03) — the "Sample for now" signal must follow
    * **the lifetime of the connection state, not the lifetime of the card**.
    *
    * The real accident this gate prevents: pressing a sample source tab collapses
    * the card (`setCollapsed(true)`), and with the signal living **inside** the
    * card it disappeared too. At that moment the screen became structurally
    * indistinguishable from a real connected vault, and the owner read the
-   * "이 앱의 코드" tab **as evidence of a connection.**
+   * "Code for this app" tab **as evidence of a connection.**
    *
    * Both paths are locked — collapsed by dismiss, and collapsed by a tab switch.
    */
@@ -533,7 +533,7 @@ describe('FirstRunStarterModule', () => {
   });
 });
 
-// Structure change 2026-07-24 (owner report: "상단 스크롤 따로 하단 스크롤 따로",
+// Structure change 2026-07-24 (owner report: "Separate scrollbars for top and bottom",
 // separate scrollbars top and bottom) — the guide card and the INDEX (children)
 // render exclusively, so the panel always has exactly one scroller.
 describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
@@ -598,8 +598,7 @@ describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
 
 /**
  * Turning the lens on makes the card hand over its space (2026-08-02, owner
- * report: *"시작 안내 패널이 열린 상태에서 최근 변경 버튼 누르면 왼쪽 패널이
- * 안바뀌는 오류"* — pressing the recent-changes button while the starter panel is
+ * report: *"Error where the left panel doesn't change when pressing the recent-changes button while the starter panel is open"* — pressing the recent-changes button while the starter panel is
  * open leaves the left panel unchanged).
  *
  * The card and the INDEX are **two exclusive states** — while the card is

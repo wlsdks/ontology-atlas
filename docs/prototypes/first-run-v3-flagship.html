@@ -1,15 +1,14 @@
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
-  first-run v3 FLAGSHIP — "관제탑 첫 기동" (소유자 "더 멋지고 예쁘게" 라운드)
-  베이스 = v2b INDEX 통합(플로팅 표면 0) + B2+ 렌더 언어 풀 밀도:
-  · 캔버스: 결정론 도트 격자 · 곡선 회로 트레이스(PCB 곡률) · 별먼지 ·
-    회절 스파이크(밝은 별) · 신호 펄스(hex→mcp-server 전원 인가) ·
-    가공 헥사곤(이중 헤어라인+핀틱) · 도메인 칩(IC 핀틱) · 정적 비네트
-  · 시작하기 모듈: 가공 베젤 코너 틱 · 각인 census 계기 3구 · sheen 버튼
-    (inset 1px 하이라이트 — glow 아님) · 키캡 ⌘O
-  · INDEX 트리: kind 글리프 + 도메인별 1px capacity meter(실카운트 비례)
-  동작 계약(불변): 재방문·복원 vault 시 이 모듈/SAMPLE 배지 미렌더, 본인
-  vault 직행. "그냥 둘러볼게요" = sessionStorage 닫힘.
+  first-run v3 FLAGSHIP — "Control Tower First Startup" (owner "Make it cooler and prettier" round)
+  Base = v2b INDEX integration (floating surface 0) + B2+ render language full density:
+  · Canvas: deterministic dot grid · curved circuit traces (PCB curvature) · stardust ·
+    diffraction spikes (bright stars) · signal pulses (hex→mcp-server power on) ·
+    machined hexagons (double hairline + pin tick) · domain chips (IC pin tick) · static vignette
+  · Getting Started module: machined bezel corner ticks · engraved census gauges x3 · sheen buttons
+    (1px inset highlight — not glow) · keycap ⌘O
+  · INDEX tree: kind glyphs + per-domain 1px capacity meter (proportional to real count)
+  Behavior contract (invariant): On revisit or vault restore, this module/SAMPLE badge does not render; go directly to user's vault. "Just browsing" = close sessionStorage.
 -->
 <!doctype html>
 <html lang="ko">
@@ -30,7 +29,7 @@
   .frame{width:100%;height:100vh;position:relative;overflow:hidden;background:var(--canvas)}
   svg.map{position:absolute;inset:0;width:100%;height:100%}
   text{font-family:ui-monospace,monospace}
-  /* ── 상단 크롬 ── */
+  /* ── Top chrome ── */
   .chrome{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;z-index:5}
   .pill{display:flex;align-items:center;gap:11px;border:1px solid var(--border-soft);background:rgba(16,17,24,.94);border-radius:10px;padding:9px 14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
   .pill .pip{width:22px;height:22px;border:1px solid var(--border-strong);border-radius:6px;display:grid;place-items:center;color:var(--indigo-line);font-size:10px}
@@ -42,9 +41,9 @@
   .pill .sample{font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.16em;color:var(--amber);border:1px solid var(--amber-soft);border-radius:5px;padding:2.5px 8px;text-transform:uppercase}
   .util{display:flex;gap:8px}
   .util .btn{width:31px;height:31px;border:1px solid var(--border-soft);background:rgba(16,17,24,.94);border-radius:8px;display:grid;place-items:center;color:var(--t3);font-size:12px}
-  /* ── INDEX 패널 ── */
+  /* ── INDEX panel ── */
   .index{position:absolute;top:78px;left:24px;bottom:24px;width:326px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);border-radius:12px;z-index:4;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.45)}
-  /* 시작하기 모듈 — 가공 베젤 */
+  /* Getting Started module — machined bezel */
   .starter{position:relative;padding:18px 18px 16px;border-bottom:1px solid var(--divider);background:linear-gradient(180deg,rgba(94,106,210,.08),rgba(94,106,210,.015) 70%,transparent)}
   .starter .tick{position:absolute;width:9px;height:9px;border-color:rgba(139,151,255,.5);border-style:solid;border-width:0}
   .starter .tick.tl{top:7px;left:7px;border-top-width:1px;border-left-width:1px}
@@ -58,7 +57,7 @@
   .starter .cap .s{color:var(--amber);margin-left:auto;letter-spacing:.16em;font-size:8.5px}
   .starter p.ctx{font-size:12px;line-height:1.6;color:var(--t3);word-break:keep-all;margin-bottom:13px}
   .starter p.ctx b{color:var(--t1);font-weight:600}
-  /* census 계기 3구 */
+  /* census gauges x3 */
   .meterrow{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--divider);border-radius:9px;background:rgba(6,6,9,.55);box-shadow:inset 0 1px 2px rgba(0,0,0,.4);margin-bottom:14px;overflow:hidden}
   .meterrow .m{padding:9px 0 8px;text-align:center;font-family:ui-monospace,monospace}
   .meterrow .m+.m{border-left:1px solid var(--divider)}
@@ -69,7 +68,7 @@
   .starter .sub{display:flex;justify-content:space-between;margin-top:11px;font-size:11.5px}
   .starter .sub a{color:var(--t3);text-decoration:none;border-bottom:1px solid var(--divider);padding-bottom:1px;cursor:pointer}
   .starter .sub a:hover{color:var(--t2)}
-  /* INDEX 본문 */
+  /* INDEX body */
   .body{padding:15px 18px;display:flex;flex-direction:column;gap:11px;flex:1;min-height:0}
   .cap2{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.2em;color:var(--t4);text-transform:uppercase;display:flex;justify-content:space-between}
   .search{display:flex;align-items:center;gap:8px;border:1px solid var(--divider);border-radius:8px;background:var(--elevated);color:var(--t4);font-size:12px;padding:8px 11px;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
@@ -86,7 +85,7 @@
   .row .n{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4);text-shadow:0 1px 0 rgba(0,0,0,.6)}
   .foot{margin-top:auto;border-top:1px solid var(--divider);padding-top:11px;font-size:11px;line-height:1.55;color:var(--t4);word-break:keep-all}
   .foot b{color:var(--t3);font-weight:500}
-  /* 우하단 계기 판독 */
+  /* Bottom-right gauge readout */
   .readout{position:absolute;right:24px;bottom:24px;z-index:5;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.2em;color:var(--t4);text-transform:uppercase;display:flex;gap:14px;align-items:center}
   .readout .k{color:var(--t3)}
   .readout .d{width:3px;height:3px;border-radius:50%;background:var(--t4)}
@@ -115,7 +114,7 @@
     <text x="600" y="880" fill="rgba(255,255,255,.042)" font-size="46" letter-spacing=".34em">CORE</text>
     <text x="1490" y="640" fill="rgba(255,255,255,.032)" font-size="30" letter-spacing=".3em">AGENT</text>
 
-    <!-- 별먼지 -->
+    <!-- Stardust -->
     <g fill="rgba(236,236,240,.16)">
       <circle cx="520" cy="200" r="1.1"/><circle cx="640" cy="150" r="1.4"/><circle cx="880" cy="180" r="1"/>
       <circle cx="1240" cy="140" r="1.3"/><circle cx="1560" cy="210" r="1.1"/><circle cx="1720" cy="330" r="1.4"/>
@@ -126,7 +125,7 @@
       <circle cx="1840" cy="700" r="1.1"/><circle cx="420" cy="820" r="1.3"/>
     </g>
 
-    <!-- 곡선 회로 트레이스 (hex→domain) -->
+    <!-- Curved circuit traces (hex→domain) -->
     <g fill="none" stroke="rgba(255,255,255,.10)" stroke-width="1.1">
       <path d="M1080,530 Q1070,420 1080,362"/>
       <path d="M1112,548 Q1280,470 1388,442"/>
@@ -135,13 +134,13 @@
       <path d="M1048,588 Q900,680 800,738"/>
       <path d="M1048,548 Q880,470 762,404"/>
     </g>
-    <!-- 도메인 상호 관계 (점선) -->
+    <!-- Domain interconnections (dashed lines) -->
     <g fill="none" stroke="rgba(139,151,255,.28)" stroke-width="1" stroke-dasharray="2.5 5">
       <path d="M1400,458 Q1450,580 1448,692"/>
       <path d="M776,418 Q920,360 1062,352"/>
       <path d="M812,742 Q950,800 1064,812"/>
     </g>
-    <!-- 전원 인가 트레이스: hex→mcp-server + 신호 펄스 3점 -->
+    <!-- Power-on traces: hex→mcp-server + 3 signal pulse points -->
     <path d="M1080,530 Q1070,420 1080,362" fill="none" stroke="rgba(139,151,255,.55)" stroke-width="1.3"/>
     <g>
       <circle cx="1076" cy="484" r="2.6" fill="rgba(139,151,255,.9)"/>
@@ -149,7 +148,7 @@
       <circle cx="1075" cy="424" r="1.5" fill="rgba(139,151,255,.3)"/>
     </g>
 
-    <!-- element pads (도메인 주변 위성) -->
+    <!-- Element pads (satellites around domains) -->
     <g stroke="rgba(255,255,255,.05)" stroke-width="1">
       <line x1="1400" y1="432" x2="1520" y2="368"/><line x1="1400" y1="432" x2="1540" y2="452"/>
       <line x1="1456" y1="716" x2="1590" y2="690"/><line x1="1456" y1="716" x2="1570" y2="800"/>
@@ -166,7 +165,7 @@
       <circle cx="1520" cy="368" r="6"/><circle cx="1590" cy="690" r="6"/><circle cx="960" cy="892" r="6"/><circle cx="640" cy="320" r="6"/>
     </g>
 
-    <!-- 회절 스파이크: mcp-server(허브 별) + 외곽 밝은 별 2 -->
+    <!-- Diffraction spikes: mcp-server (hub star) + 2 outer bright stars -->
     <g stroke="rgba(236,236,240,.35)" stroke-width="1">
       <line x1="1080" y1="322" x2="1080" y2="298"/><line x1="1080" y1="374" x2="1080" y2="398"/>
       <line x1="1054" y1="348" x2="1030" y2="348"/><line x1="1106" y1="348" x2="1130" y2="348"/>
@@ -176,12 +175,12 @@
       <line x1="670" y1="686" x2="670" y2="714"/><line x1="656" y1="700" x2="684" y2="700"/>
     </g>
 
-    <!-- mcp-server 허브 노드 (밝은 별 + 링) -->
+    <!-- mcp-server hub node (bright star + ring) -->
     <circle cx="1080" cy="348" r="7" fill="#101118" stroke="rgba(236,236,240,.8)" stroke-width="1.3"/>
     <circle cx="1080" cy="348" r="12" fill="none" stroke="rgba(212,180,120,.4)" stroke-width="1"/>
     <text x="1080" y="286" text-anchor="middle" fill="#b8bac2" font-size="11.5">mcp-server</text>
 
-    <!-- 도메인 칩 (IC 핀틱) -->
+    <!-- Domain chip (IC pin tick) -->
     <g>
       <g fill="#101118" stroke="rgba(139,151,255,.8)" stroke-width="1.1">
         <rect x="1388" y="420" width="24" height="24" rx="3"/><rect x="1444" y="704" width="24" height="24" rx="3"/>
@@ -209,7 +208,7 @@
       <text x="750" y="366" text-anchor="middle">views</text>
     </g>
 
-    <!-- 프로젝트 헥사곤 (이중 헤어라인 + 핀틱 + 각인) -->
+    <!-- Project hexagons (double hairline + pin tick + engraving) -->
     <polygon points="1080,522 1116,542 1116,584 1080,604 1044,584 1044,542" fill="#101118" stroke="#d4b478" stroke-width="1.5"/>
     <polygon points="1080,532 1107,547 1107,579 1080,594 1053,579 1053,547" fill="none" stroke="rgba(212,180,120,.35)" stroke-width="1"/>
     <g stroke="rgba(212,180,120,.5)" stroke-width="1">

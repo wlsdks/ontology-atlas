@@ -28,7 +28,7 @@ import { expect, test, type Page } from "@playwright/test";
  * | shortcut sheet · document sort menu | — | 0 | |
  *
  * **That round fixed none of the three, because they are the spec's work.** The spec
- * round (the 체계 ink round, 2026-08-04) then repaid two of them: the 5 indigo
+ * round (the design-systems ink round, 2026-08-04) then repaid two of them: the 5 indigo
  * findings were covered by the exhaustive migration of 23 hand-written accent×tint
  * sites (`accent-ink-contrast` baseline 23 → 0), and the 3 `#82828a` findings were
  * replaced under the "text on a raised background starts at tertiary" licence
@@ -39,7 +39,7 @@ import { expect, test, type Page } from "@playwright/test";
  * - The 5 indigo findings are an **ink ramp verdict**. `--color-indigo-accent` is
  *   licensed for "darkest backgrounds only" (`accent-ink-contrast.contract.test.ts`)
  *   and here it sits on a tint. Whether each site is replaced or the value lifted is
- *   a matter for convening 체계, and .claude/rules/design.md names that list
+ *   a matter for convening design-systems, and .claude/rules/design.md names that list
  *   explicitly.
  * - The 3 `#82828a` findings are an **already known limit**.
  *   `a11y-ratchet.spec.ts`'s preamble records *"⚠️ still failing on hover/selected

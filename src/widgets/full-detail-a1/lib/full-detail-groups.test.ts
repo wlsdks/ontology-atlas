@@ -22,7 +22,7 @@ describe("buildFullDetailGroups", () => {
     { from: "project:root", to: "domain:a", type: "contains" },
     // capability:user depends_on domain:a → domain:a is "used by" capability:user
     { from: "capability:user", to: "domain:a", type: "depends_on" },
-    // domain:a depends_on capability:dep → 「기대는 곳」 (what it depends on)
+    // domain:a depends_on capability:dep → 「Depends on」 (what it depends on)
     { from: "domain:a", to: "capability:dep", type: "depends_on" },
   ];
 

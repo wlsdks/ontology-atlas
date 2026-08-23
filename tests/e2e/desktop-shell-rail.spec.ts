@@ -5,7 +5,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * **The installed app's `/` has the left rail** (measured and repaired 2026-08-01).
  *
  * **The regression this spec blocks.** The owner caught it in the installed app —
- * *"앱에서 왜 LNB가 없지?"* (why is there no left nav in the app?). The cause was not
+ * *"Why is there no left nav in the app?"* (why is there no left nav in the app?). The cause was not
  * the rail logic but **the boundary between static prerender and hydration**:
  *
  * 1. The shell hides the rail via
@@ -19,8 +19,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  *
  * On the web the same judgement happened to be correct (a visitor with no vault is on
  * the gateway), so nobody saw it, and the same address **was fine when entered by
- * client navigation** — a real re-render runs then. That asymmetry is the defect's
- * fingerprint.
+ * client navigation** — a real re-render runs then. That asymmetry is the defect's fingerprint.
  *
  * **Why the desktop is reproduced in a browser.** The app is a WKWebView so its DOM
  * cannot be measured from outside, and it ships **the same static export** as the web

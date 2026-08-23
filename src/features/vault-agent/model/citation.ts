@@ -80,7 +80,7 @@ const INLINE_CODE_PATTERN = /`([^`\n]+)`/g;
  * **Deletes inline markdown notation the model wrote, character by character**
  * (it is not rendered).
  *
- * `**증거가 없는 기능(\`capability\`):**` was being printed literally on screen.
+ * `**Feature without evidence(\`capability\`):**` was being printed literally on screen.
  * Asterisks and backticks carry no information on this surface — the emphasis
  * grammar of the conversation body is the citation chip, and `[[…]]` already owns that.
  *

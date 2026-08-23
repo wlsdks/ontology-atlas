@@ -9,7 +9,7 @@ import { globalScopeInstruction } from '@/features/docs-vault-local/lib/agent-gl
  * **Boundary contract** for the "this whole computer" scope.
  *
  * **What it guards.** Global scope exists to accommodate the owner's observation
- * (*"대부분 … 전역으로 할텐데"* — most people will do it globally). But if that
+ * (*"Most ... will likely do it globally"*). But if that
  * accommodation grows into **the app editing the user's home directory on their
  * behalf**, three things break at once: ① this product's claim that everything is
  * auditable by `git diff` ② lost updates on `~/.claude.json` (a runtime state store)

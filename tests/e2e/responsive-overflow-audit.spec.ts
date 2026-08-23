@@ -4,9 +4,8 @@ import { expect, test } from "@playwright/test";
  * Responsive overflow sweep (final review 2026-07-25).
  *
  * Every defect the owner reported repeatedly during that wave was the same kind:
- * *"글자가 박스 초과해서 튀어나가는거 보이지?"* · *"이렇게 겹쳐진건 대체 뭐지?"* ·
- * *"박스를 넘어섰지? 하단보면"* (text spilling out of its box, things overlapping,
- * content past the box at the bottom). No automated gate caught them, so they were
+ * "Text spilling out of its box, things overlapping,
+ * content past the box at the bottom." No automated gate caught them, so they were
  * found by eye every time — and the shortcut sheet's scroll-height regression passed
  * the jsdom unit tests and was only caught at final review.
  *

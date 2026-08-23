@@ -5,7 +5,7 @@
  * ## Why a standard link (2026-08-08, owner report)
  *
  * The first version put a `[[slug|name]]` wikilink in the body. The owner asked —
- * *"`[[` 이거는 옵시디언 특유라서 우리가 쓰면 안되는거 아닌가?"* (isn't `[[` an
+ * *"Isn't `[[` an Obsidian thing we shouldn't use?"* (isn't `[[` an
  * Obsidian thing we shouldn't use?)
  *
  * A fair point. Wikilinks come from MediaWiki (2001) and are a **PKM convention**

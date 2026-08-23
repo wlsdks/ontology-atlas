@@ -111,7 +111,7 @@ test.describe("웹 스모크 ① 관문", () => {
     //
     // Re-aimed 2026-08-19: both used to live inside the install panel
     // (`download-hero-actions` · `download-web-cta`), which the owner removed
-    // wholesale — *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"*
+    // wholesale — *"The last section seems unnecessary; it is all at the top anyway."*
     // (the last section seems unnecessary; it is all at the top anyway). The hero now
     // carries both destinations, which was also the basis for that decision.
     await expect(page.getByTestId("gateway-hero-cta")).toBeVisible();
@@ -234,8 +234,7 @@ test.describe("웹 스모크 ② 차선 워크벤치", () => {
 // would make the row assert the falsehood "the web cannot do this", and the next
 // auditor reads it as written. The width axis is gated by
 // `responsive-overflow-audit.spec.ts`, where width is the independent variable
-// (see `.claude/rules/surfaces.md` 「강등에는 축이 둘이다」 — degradation has two
-// axes, 2026-07-28).
+// (see `.claude/rules/surfaces.md` "degradation has two axes", 2026-07-28).
 type DegradedSurface = {
   name: string;
   url: string;
@@ -272,10 +271,10 @@ type DegradedSurface = {
    * disappearing.
    *
    * ⚠️ **Measure whether the named place exists, not the wording** (2026-08-17).
-   * This used to pin whole sentences like `/내 에이전트 연결/`; when the wording
+   * This used to pin whole sentences like `/connect-my-agent/`; when the wording
    * changed it went red, and **that red could not distinguish "the wording is
    * stale" from "it points nowhere"**. It was in fact both — the card pointed at an
-   * 「MCP」 section, and no section by that name existed in the sheet.
+   * "MCP" section, and no section by that name existed in the sheet.
    * `documentation.md`: *do not pin sentences a human wrote; check only what a
    * machine can generate.*
    *
@@ -298,21 +297,19 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
   },
   {
     // ⚠️ **This row claims "cannot save automatically", not "cannot connect"**
-    // (2026-08-01). The previous wording was "이 화면에서는 연결할 수 없어요" (you
-    // cannot connect on this screen) and it was false — MCP attaches to the folder,
+    // (2026-08-01). The previous wording was "You cannot connect on this screen" and it was false — MCP attaches to the folder,
     // not to Atlas, and the agent starts the server in its own session, so web users
     // do connect. The one thing a browser cannot do is **write the config file for
     // you**, because it does not know the absolute path. A degradation card
-    // understating the capability is also a honesty violation, so this regex targets
+    // understating the capability is also an honesty violation, so this regex targets
     // the narrow claim (automatic saving). Whether the path that ends right there is
     // alive is checked by a separate spec below.
     //
     // ⚠️ **Re-aimed 2026-08-21** (ledger 90). This card used to be opened by the
-    // connect sheet, which has since been retired. It is now drawn by the 「MCP 연결」
-    // section of the 「에이전트」 destination — **after a vault is open.**
+    // connect sheet, which has since been retired. It is now drawn by the "MCP connection"
+    // section of the "Agent" destination — **after a vault is open.**
     //
-    // Owner's call: *"볼트 있어야 그리는게 맞지"* (it is right to draw it only when
-    // a vault exists). It is also more accurate: **with no vault there is no config
+    // Owner's call: *"It is right to draw it only when a vault exists."* It is also more accurate: **with no vault there is no config
     // to save.** In the sheet era this card showed without a vault, and the sentence
     // was then saying it could not act on a file that did not yet exist.
     name: "에이전트 연결 — 브라우저는 폴더의 절대 경로를 몰라 설정을 대신 저장하지 못한다",
@@ -331,7 +328,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destination: "agent-connect-web-get-app",
   },
   {
-    // **The 「실행기」 (runtimes) section** (registered 2026-08-16) — the screen that
+    // **The "Runtimes" section** (registered 2026-08-16) — the screen that
     // finds coding agents installed on this machine and launches them inside the app.
     // A browser has no permission to launch programs on this computer, so the
     // rejection is in principle and the card states a reason rather than "coming
@@ -341,15 +338,14 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // today.
     //
     // **Also the first row where item ③ actually exists.** Before registration the
-    // wording was only "브라우저에서는 도구를 실행할 수 없어요" (the browser cannot
-    // run tools), and a web user reading just that sentence concludes the web cannot
+    // wording was only "The browser cannot run tools", and a web user reading just that sentence concludes the web cannot
     // use agents at all — precisely the falsehood `agent-server-unavailable` was
     // corrected for on 2026-08-01. Web users can attach an agent they started
-    // themselves to this folder, and that path (「MCP」) is in the same sheet. So that
+    // themselves to this folder, and that path ("MCP") is in the same sheet. So that
     // sentence went into the card and is locked here.
     //
     // ⚠️ **Re-aimed 2026-08-21** (ledger 90). This section left the settings sheet
-    // and became the 「에이전트」 destination. The check is **re-addressed, not
+    // and became the "Agent" destination. The check is **re-addressed, not
     // deleted** — whether the degradation sentence is alive is a question worth asking
     // wherever the surface moves. Opening a sheet is no longer needed: the destination
     // opens directly by address.
@@ -421,7 +417,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
    */
   test("에이전트 연결 — 웹에서도 그 자리에서 붙는 설정을 만든다", async ({ page }) => {
     // 2026-08-21 — the connect sheet was retired (ledger 90). This path lives in the
-    // destination's 「MCP 연결」 section and is drawn after a vault is open (with no
+    // destination's "MCP Connect" section and is drawn after a vault is open (with no
     // vault there is no config to build).
     await stubDirectoryPicker(page, SEED_VAULT);
     await gotoSettled(page, "/ko/topology/");
@@ -444,8 +440,8 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
      * Never claim to have verified something that was never verified.
      *
      * **Read the sentence from the catalogue, do not retype it.** A hand-typed
-     * excerpt (`증명할 수 없어요`) broke on 2026-08-22 when the copy was made plainer
-     * — `증명하지 못해요` — which changed nothing about the claim, and a regex written
+     * excerpt (`Cannot prove it`) broke on 2026-08-22 when the copy was made plainer
+     * — `Unable to prove` — which changed nothing about the claim, and a regex written
      * to cover both missed it again on the verb ending. What this proves is that the
      * screen renders *that* note; whether the note is well worded is the glossary
      * gate's job (`ui-copy-glossary.contract.test.ts`), not this spec's.
@@ -510,7 +506,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     //
     // ⚠️ 2026-07-29 — this spec had **already been sitting red** (found while
     // applying a council verdict). Both sentences it targeted were gone: "Chrome·Edge"
-    // is in no locale catalogue, and "서명된 설치 파일" (`windowsPolicy`) is policy
+    // is in no locale catalogue, and "Signed installer" (`windowsPolicy`) is policy
     // prose that moved inside a disclosure and is **invisible in the default state**.
     //
     // Rather than resurrect the strings, **the claim was rewritten**. What must hold
@@ -535,14 +531,14 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     //
     // ⚠️ 2026-07-29 (night) — the destination changed from `/ko/` to `/ko/topology/`
     // because the owner's decision made `/` a **marketing page** (ledger: reversing
-    // 「root-first-open」). This assertion means *"a visitor on an OS with no app can
+    // "root-first-open"). This assertion means *"a visitor on an OS with no app can
     // reach something that works today"*, and that place is the **web product**, not
     // the intro screen — `/topology`.
     //
     // The label-destination pairing is guarded separately at source level by
     // `tests/contract/map-destination-route.contract.test.ts`.
     //
-    // Deleted 2026-08-19: 「추적할 곳」 (`download-platform-windows-track`) — that
+    // Deleted 2026-08-19: "Track to follow" (`download-platform-windows-track`) — that
     // link was degradation guidance shown only while the Windows build was
     // **unpublished**, and it went with the panel. A real file exists now, so the
     // destination is the file rather than a tracking issue.

@@ -13,12 +13,12 @@ import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 /**
- * The 「MCP 연결」 pane, bundled so it **stands on its own**.
+ * The "MCP Connection" pane, bundled so it **stands on its own**.
  *
  * ## Why it exists (2026-08-20, ledger 90)
  *
  * While this pane lived only inside the settings sheet, the sheet called the hooks
- * and passed values down. When the 「에이전트」 destination appeared there were two
+ * and passed values down. When the "Agent" destination appeared there were two
  * consumers, and copying the derivation logic (the validation summary) into both
  * would make the two screens state different warning counts from that moment on.
  *
@@ -26,14 +26,13 @@ import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
  *
  * MCP attaches to **the folder**, not to an Atlas screen — the agent starts the
  * server on its own side and that server reads and writes the vault on disk
- * directly. So web users connect too (ledger 2026-08-01, 「웹의 「연결 불가」는
- * 거짓이었다」 — the web's "cannot connect" was a lie). The one thing a browser
+ * directly. So web users connect too (ledger 2026-08-01, "The web's 'cannot connect' was a lie" — the web's "cannot connect" was a lie). The one thing a browser
  * cannot do is **save the config file for you, because it does not know the
  * absolute path**, and that is answered by building the config on screen for the
  * person to paste.
  *
  * The runners pane, when it says on the web that it cannot launch a program, points
- * at *"the 「MCP 연결」 pane on this screen…"* — and if that pane is not on the same
+ * at *"the "MCP Connection" pane on this screen…"* — and if that pane is not on the same
  * screen, **the sentence points at nothing.** That is why the destination brings
  * this pane along.
  */
@@ -42,8 +41,8 @@ import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
  * an agent, rather than a card for a human to read.
  *
  * ⚠️ **Moved into this file** (2026-08-21, ledger 90). It used to live in the
- * settings sheet's MCP section, and when that section left for the 「에이전트」
- * destination it **nearly disappeared with it** — only the 「복사」 button inside the
+ * settings sheet's MCP section, and when that section left for the "Agent"
+ * destination it **nearly disappeared with it** — only the "Copy" button inside the
  * deleted branch used this constant, and lint's unused-variable warning is what
  * revealed that.
  *

@@ -3,8 +3,7 @@
  *
  * ## Why "only known names" (owner instruction, 2026-08-17)
  *
- * Owner: *"채팅에서 마우스만 올려도 우리 노드에 표시된다거나"* (hovering in the chat could
- * highlight our node). That requires knowing which characters in the text are a node.
+ * Owner: *"hovering in the chat could highlight our node"* (hovering in the chat could highlight our node). That requires knowing which characters in the text are a node.
  *
  * The common approach — link anything shaped like `a/b` — cannot be used here. An agent's answers are
  * full of file paths (`src/features/acp-session/model/x.ts`), URLs, and dates, and turning all of

@@ -11,7 +11,7 @@ import type { VaultDoc } from "@/entities/docs-vault";
  * names, and mid-word ellipses on a card purely because they happened to be at the top of the file.
  * Two measurements:
  * - The dogfood `docs/ontology/project.md` card led with contributor-facing text starting
- *   「정체성 (2026-07): agent-native, human-sovereign …」.
+ *   "Identity (2026-07): agent-native, human-sovereign …".
  * - `/ko/projects` "recent activity" emitted `VaultAgentSetupPanel (merged into AppSettingsMenu's
  *   vault / mcpAgents t…` as one row.
  *

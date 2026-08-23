@@ -23,7 +23,7 @@ export type UpdatePhase =
   | { kind: 'downloading'; version: string; received: number; total: number | null }
   /** Installed. All that remains is a restart. */
   | { kind: 'ready'; version: string }
-  /** 실패. 무엇이 실패했는지 말하고, 손으로 받을 길을 남긴다. */
+  /** Failure. State what failed, and leave a path for manual handling. */
   | { kind: 'failed'; operation: 'check' | 'install'; message: string };
 
 /** Once a day. So someone who opens the app often is not asked every time. */

@@ -30,7 +30,7 @@ import { controlClass } from '@/shared/ui/control-class';
  *
  * ## [Revised 2026-08-19] The stage stops at 48rem and centres
  *
- * Owner: *"'설치 없이, 움직이는 것부터 봅니다' 이 부분 동영상도 지금 너무 커"* (the video in the
+ * Owner: *"'Install without setup, I start by watching it move.' This video part is too big right now."* (the video in the
  * "see it move before installing" part is too big right now).
  *
  * The 2026-07-30 version used the section's column with no cap and no centring, on the grounds

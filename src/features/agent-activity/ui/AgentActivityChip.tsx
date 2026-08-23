@@ -105,17 +105,17 @@ function WorkReceiptRow({ receipt, nowMs }: { receipt: AcpWorkReceipt; nowMs: nu
 }
 
 /**
- * 검증된 「현재/마지막 작업」 판독과 과거 알림을 한 feed에서, 두 문으로 낸다.
+ * Verified 「Current/Last Task」 reading and past notifications are presented in one feed, in two lines.
  *
- * - 상태 행은 우상단 지도 도구줄 **아래**에서 현재 에이전트·단계·대상만 연다.
- * - 종은 도구줄 **맨 오른쪽** 정사각 타일이고 알림·작업 영수증만 연다.
- * - 안 읽은 수는 타일 안의 absolute badge라 버튼 폭을 늘리지 않는다.
+ * - The status row opens only the current agent·step·target below the top-right map toolbar.
+ * - The bell is a square tile at the **far right** of the toolbar, opening only notification/task receipts.
+ * - The unread count is an absolute badge inside the tile, so it does not increase button width.
  *
- * 둘을 별도 훅으로 만들지 않는 이유는 디스크 폴링과 읽음 기준을 복제하지 않기
- * 위해서다. 이 root 하나가 feed, 바깥 클릭, Escape, 포커스 복귀를 함께 소유한다.
- * Atlas는 에이전트와 「연결됨」을 주장하지 않는다. fresh heartbeat만 현재형으로,
- * 그 밖에는 「마지막 작업 N분 전」으로 말한다. 게이트는
- * `tests/e2e/agent-activity-placement.spec.ts`가 위치·정사각·폭·겹침을 실측한다.
+ * We do not create separate hooks for them to avoid duplicating disk polling and read criteria.
+ * This root owns the feed, outer click, Escape, and focus return together.
+ * Atlas does not claim the agent is 「Connected」. Only fresh heartbeats are in present tense,
+ * otherwise it says 「Last task N minutes ago」. The gate
+ * `tests/e2e/agent-activity-placement.spec.ts` measures position·square·width·overlap.
  */
 export function AgentActivityChip({
   suppressed = false,
@@ -129,7 +129,8 @@ export function AgentActivityChip({
   /**
    * Reports when the notification box opens and closes.
    *
-   * Why the outside needs to know (owner report 2026-08-17: *"알림이 위로 덮어야지?"* — shouldn't
+   * Why the outside needs to know (owner report 2026-08-17: *"Shouldn't
+   * the notification cover what's above?"* — shouldn't
    * the notification cover what's above?): the utility lane this chip lives in is `z-20` and
    * therefore **creates a stacking context.** So giving the notification box `z-30` makes that 30
    * valid **only inside the lane**, and the right-hand tool tiles outside it (same `z-20`, but later

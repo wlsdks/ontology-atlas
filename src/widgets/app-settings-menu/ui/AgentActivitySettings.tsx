@@ -15,7 +15,7 @@ import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * 「작업 중 표시」 (work-in-progress indicator) and 「알림」 (notifications) settings.
+ * "Show Work-in-Progress" (work-in-progress indicator) and "Notifications" settings.
  *
  * **On by default**, for a different reason than the frame meter — the meter is a
  * diagnostic tool and therefore opt-in, while this is the **fact** that *"something
@@ -23,7 +23,7 @@ import { controlClass } from '@/shared/ui/control-class';
  * someone who never switched it on sees nothing while their folder is being edited.
  * So this pane is only ever used to **turn things off**.
  *
- * Why the kind picker is indented under 「알림」: to someone who turned notifications
+ * Why the kind picker is indented under "Notifications": to someone who turned notifications
  * off entirely, six rows of kinds are noise, not a decision. It appears only while
  * they are on.
  */

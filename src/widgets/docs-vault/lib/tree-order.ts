@@ -5,14 +5,14 @@ import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';
  *
  * ## Why two axes
  *
- * Owner observation: *"폴더별 분리 정렬, 문서 우선 정렬 등 이런 정렬 조건도 좀
- * 있으면 좋을듯?"* (it would be good to have sort conditions like folders-separated
+ * Owner observation: *"It would be good to have sort conditions like folders-separated
+ * or documents-first."* (it would be good to have sort conditions like folders-separated
  * or documents-first).
  *
  * Measuring the dogfood vault (158 documents) shows why. The top-level `docs`
  * folder draws its 6 folders and 30 documents **mixed into one alphabetical run**,
  * so the `ontology` folder holding 96 nodes sits 23rd of 36 rows, buried between
- * "npm publish" and "제품 계획 v9". Finding a folder means filtering 30 documents by
+ * "npm publish" and "Product Plan v9". Finding a folder means filtering 30 documents by
  * eye.
  *
  * So the axes are split. They answer different questions:

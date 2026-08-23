@@ -12,8 +12,8 @@ import { CountUp } from './CountUp';
  * ## What this replaced, and why
  *
  * The previous version was an *inventory*: four kind counts, three sample relations, and one
- * impact number. The owner rejected it (2026-08-23) — *"오픈소스 설명에 넣기엔 좀 별로"*. Looking
- * at what it actually rendered, they were right, and the cause was the selection rule rather than
+ * impact number. The owner rejected it (2026-08-23) as unsuitable for open-source documentation.
+ * Looking at what it actually rendered, they were right, and the cause was the selection rule rather than
  * the styling. It picked "the three most common relation types, and from each the alphabetically
  * first edge by slug", which optimises for *representing the vault* and not at all for *being
  * legible to a stranger*. What reached the screen was this repository's own internals, in two

@@ -112,8 +112,7 @@ describe("stepCamera", () => {
   // `panBounds` every frame; without it, v2's spring genuinely arrives at
   // that landing target and strands the camera off in blank canvas after a
   // single realistic drag/flick — reproduced manually via chrome-devtools
-  // (any ~200px pan release sent the camera fully off-screen; only "지도
-  // 전체 맞추기" (fit view) recovered it).
+  // (any ~200px pan release sent the camera fully off-screen; only "Fit map" (fit view) recovered it).
   describe("panBounds — elastic clamp (prototype updateCamera() pan-bounds branch)", () => {
     const panBounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
 

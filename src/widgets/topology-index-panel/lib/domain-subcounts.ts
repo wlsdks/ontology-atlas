@@ -1,7 +1,7 @@
 import { flattenTree, type OntologyTreeNode } from "@/shared/lib/ontology-tree";
 
 /**
- * INDEX tree domain rows show a "역량 N · 요소 M" subcount + a proportional
+ * INDEX tree domain rows show a "Capability N · Element M" subcount + a proportional
  * capacity meter (docs/prototypes/hub-b3-immersive.html). Both derive from
  * the SAME `buildOntologyTree` result the rest of the app already trusts
  * (`@/shared/lib/ontology-tree`) — no bespoke recount, so these numbers can

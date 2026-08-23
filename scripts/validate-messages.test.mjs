@@ -157,10 +157,10 @@ describe('i18n message catalog', () => {
     /*
      * ⚠️ **Lock the property, not the value** (2026-08-12).
      *
-     * This used to pin five labels as literal strings (`'공방'`, `'인사이트'`, …). But
+     * This used to pin five labels as literal strings (`'Workshop'`, `'Insight'`, …). But
      * the intent stated in this test's own name is "is this understandable", and
-     * pinning worked against that intent: when the owner said *"'그래프 인사이트'
-     * 이거 뭔말인지 모르겠음"* (I have no idea what "graph insights" means), fixing
+     * pinning worked against that intent: when the owner said *"I have no idea what
+     * 'Graph Insight' means"*, fixing
      * the name required **fixing this test first**. That is a gate blocking an
      * improvement to the spec — the same conclusion this repository already reached
      * for doc gates: do not pin sentences a human wrote.
@@ -189,16 +189,16 @@ describe('i18n message catalog', () => {
       '레일에 전문용어가 들어왔다',
     );
     /*
-     * Ban hard-to-understand loanwords. 「인사이트」 is on this list because the owner
-     * genuinely did not recognise that screen's name (2026-08-12). 「빌더」 is a
+     * Ban hard-to-understand loanwords. "Insight" is on this list because the owner
+     * genuinely did not recognise that screen's name (2026-08-12). "Builder" is a
      * retired name and is blocked from coming back.
      *
-     * 「스튜디오」 came off the ban list by owner decision on 2026-08-12, after the
-     * name was changed twice (공방 → 조립대 → 스튜디오): *"조합대라는 이름 별로야..
-     * 좀 보편적이어도 되는데"* → *"스튜디오로 가자"* (that name is no good; something
+     * "Studio" came off the ban list by owner decision on 2026-08-12, after the
+     * name was changed twice (Workshop → Assembly Table → Studio): *"The name 'Assembly
+     * Table' isn't great.. it should be more common"* → *"Let's go with Studio"* (that name is no good; something
      * more common is fine → let's go with studio). The route was already
      * /ontology/studio, so address and label finally say the same thing.
-     * Ledger: docs/DECISIONS.md 2026-08-12 「쓰기 화면의 이름은 스튜디오다」.
+     * Ledger: docs/DECISIONS.md 2026-08-12 "The name of the writing screen is Studio".
      */
     assert.doesNotMatch(
       railLabels.join('\n'),
@@ -206,8 +206,8 @@ describe('i18n message catalog', () => {
       '레일에 알아듣기 어려운 외래어가 들어왔다',
     );
     /*
-     * One destination, one name (2026-08-13). The /git screen calls itself 「기록」
-     * while only the rail said 「Git」 — every other rail item is Korean, developer
+     * One destination, one name (2026-08-13). The /git screen calls itself "Records"
+     * while only the rail said "Git" — every other rail item is Korean, developer
      * vocabulary leaked into just this one, and one destination ended up with two
      * names. Instead of pinning the word, this locks **whether the two surfaces use
      * the same name** (the same doc-gate principle of not fixing sentences a human
@@ -281,10 +281,10 @@ describe('i18n message catalog', () => {
   it('keeps Korean app settings MCP proof copy readable without internal client jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
-    // 2026-08-02 — three names all started with 「AI」 so the eye could not separate
-    // them by first character (the 「AI 에이전트」 section, the 「AI 에이전트 연결」
-    // row, and the 「AI 연결」 subview). With the corridor gone, two destinations moved
-    // up into the LNB and the names split into 「내」/「앱 안」. Instead of frozen
+    // 2026-08-02 — three names all started with "AI" so the eye could not separate
+    // them by first character (the "AI Agent" section, the "Connect AI Agent"
+    // row, and the "AI Connection" subview). With the corridor gone, two destinations moved
+    // up into the LNB and the names split into "My"/"In-app". Instead of frozen
     // sentences, this scans **the whole section-name set**.
     const visibleCopy = [
       JSON.stringify(settings.section),
@@ -302,7 +302,7 @@ describe('i18n message catalog', () => {
     /*
      * ⚠️ **Re-aimed 2026-08-21** (ledger 90). This used to compare the first characters
      * of `section.agent` and `section.ai`. The `agent` section then left for the
-     * 「에이전트」 destination — what remains in the sheet is a **signpost row** pointing
+     * "Agent" destination — what remains in the sheet is a **signpost row** pointing
      * there.
      *
      * The **locked property is unchanged**: within the connect group, can the eye
@@ -374,7 +374,7 @@ describe('i18n message catalog', () => {
       // `Quick view` came back in the 2026-07-26 plain-language pass. Unlike the rest of
       // the old ban list (vague labels of the See all / Pick one kind) it names its
       // object ("Quick view of the doc library"). It conflicts with the current rule that
-      // 「온톨로지」 is not used outside brand positions, so this one entry is released.
+      // "Ontology" is not used outside brand positions, so this one entry is released.
       /See all|Pick one|See links|Clean up health|Source vault|source vault|^Source$/m,
     );
 
@@ -412,10 +412,10 @@ describe('i18n message catalog', () => {
         ko.topology.controls.docsAriaLabel,
         ko.topology.controls.docsLabel,
       ].join('\n'),
-      // `문서함` is the plain Korean the 2026-07-26 pass chose. An earlier round grouped
+      // `Document Room` is the plain Korean the 2026-07-26 pass chose. An earlier round grouped
       // it with the vague labels, but it is now this surface's official name, so only this
-      // entry is released. The rest — jargon of the 토폴로지 / Topology / overview kind and
-      // vague labels like '전체 보기' — stays blocked.
+      // entry is released. The rest — jargon of the Topology / overview kind and
+      // vague labels like 'View All' — stays blocked.
       /전체 보기|하나 선택|연결 보기|상태 정리|^문서$|토폴로지|Topology|overview brief|overview|query plan|Workspace|workspace|Health 신호/m,
     );
   });
@@ -560,8 +560,8 @@ describe('i18n message catalog', () => {
     assert.equal(ko.docsVault.desktopWelcome.title, '로컬 문서함을 열거나 만드세요');
     /*
      * ⚠️ **Wording is no longer pinned here** (2026-08-22). These two used to pin
-     * '문서함 실행 계약' and '문서 속성이 의미 그래프'. `docs/GLOSSARY.md` retired
-     * 「계약」 and 「문서 속성」 as screen words — the very jargon this test's name
+     * 'Document Execution Contract' and 'Document Property Meaning Graph'. `docs/GLOSSARY.md` retired
+     * "Contract" and "Document Property" as screen words — the very jargon this test's name
      * says it guards against — so the pins broke on a change made *in their
      * direction*. Pinning an authored sentence is what `documentation.md` forbids;
      * what is checked now is the property, and `ui-copy-glossary.contract.test.ts`
@@ -576,8 +576,8 @@ describe('i18n message catalog', () => {
     assert.equal(ko.docsVault.sourceContract.filesLabel, '문서함 파일');
     assert.equal(ko.docsVault.sourceContract.graphValue, '개념 {nodes}개 · 관계 {edges}개');
     assert.equal(ko.docsVault.sourceContract.agentLabel, 'AI 확인');
-    // The plain phrase replaced 「문서 상단의 속성」 / 「문서 속성」 — both screens now
-    // say 「파일 맨 위 정보칸」, and the glossary gate keeps the old names out.
+    // The plain phrase replaced "Properties at the top of the document" / "Document Properties" — both screens now
+    // say "File Top Info Bar", and the glossary gate keeps the old names out.
     assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /정보칸/);
     assert.match(ko.docsVault.sourceContract.graphBody, /지도/);
     assert.doesNotMatch(
@@ -736,8 +736,8 @@ describe('i18n message catalog', () => {
     // untranslated English nouns are not mixed into Korean sentences.
     const mixedLanguageCopy = [
       JSON.stringify(ko.download),
-      // LNB section names — on 2026-08-02 the single 「AI 에이전트」 row split into two
-      // destinations, 「내 에이전트 연결」 and 「앱 안 에이전트」. Instead of freezing one
+      // LNB section names — on 2026-08-02 the single "AI Agent" row split into two
+      // destinations, "Connect My Agent" and "In-app Agent". Instead of freezing one
       // string, the **whole** section-name set goes into the scan (same reason as the
       // comment above — a frozen sentence takes the gate with it when it disappears; the
       // old `settings.agentBody` pin was exactly that, and it went with the corridor).

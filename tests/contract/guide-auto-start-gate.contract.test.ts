@@ -38,7 +38,7 @@ const AUTO_START_SITES = [
    * (2026-08-07).
    *
    * This is the very file where the "switch is half-deaf" incident happened on
-   * 2026-08-02 (owner: *"계속나와서 불편하네 테스트할때"* — it keeps appearing,
+   * 2026-08-02 (owner: *"It keeps appearing, which is inconvenient while testing"* — it keeps appearing,
    * which is inconvenient while testing: guides were turned off in settings, yet the
    * sheet still appeared on the first screen with no folder). It was fixed then to
    * read `readGuideAutoStart()`, but **it never entered this list** — so deleting
@@ -117,7 +117,7 @@ describe("화면 안내 자동 표시 — 스위치가 모든 발화 지점을 �
   /**
    * Turning it off is **not deletion.** The ways to summon a guide (Settings ›
    * replay, the map compass) must stay alive regardless of the switch — owner:
-   * *"아니면 클릭했을때나"* (or else only when clicked).
+   * *"or else only when clicked."*
    */
   it("부르는 길은 스위치 뒤에 숨지 않는다", () => {
     const settings = read("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");

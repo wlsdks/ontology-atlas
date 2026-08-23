@@ -1,11 +1,11 @@
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
-  first-run chooser 재설계 v2a — "하단 커맨드 독"
-  소유자 반려(중앙 카드 "디자인 별로") 후 재설계. 중앙 플로팅 박스 폐기 —
-  지도(주인공, 특히 중앙 hexagon)를 가리지 않는다. 하단 중앙에 얇은 기계식
-  독 하나: 맥락 한 줄 + 액션 2 + 닫기. Figma 하단 툴바 포지션.
-  동작 계약: 재방문(복원된 vault 존재) 시 이 독은 아예 렌더되지 않는다 —
-  본인 vault 허브 직행. 독은 "저장된 vault 없음" 상태 전용.
+  first-run chooser redesign v2a — "bottom command dock"
+  Redesign after owner rejection (central card "design is weird"). Discard central floating box —
+  do not obscure the map (protagonist, especially central hexagon). One thin mechanical
+  dock at bottom center: one line of context + 2 actions + close. Figma bottom toolbar position.
+  Behavior contract: on return visit (restored vault exists), this dock is not rendered —
+  go directly to own vault hub. Dock is for "no saved vault" state only.
 -->
 <!doctype html>
 <html lang="ko">
@@ -43,7 +43,7 @@
   .index .tree .proj{color:var(--amber);font-weight:600}
   .index .foot{margin-top:auto;border-top:1px solid var(--divider);padding-top:10px;font-size:11px;color:var(--t4);word-break:keep-all}
   .index .foot b{color:var(--t3);font-weight:500}
-  /* ★ 하단 커맨드 독 — 유일한 신규 표면 */
+  /* ★ Bottom command dock — the only new surface */
   .dock{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:6;
     display:flex;align-items:center;gap:18px;height:58px;padding:0 10px 0 20px;
     border:1px solid var(--border-strong);border-radius:12px;background:rgba(17,18,23,.97);

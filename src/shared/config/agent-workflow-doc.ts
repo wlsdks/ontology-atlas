@@ -6,8 +6,7 @@
  * document is in, while the other passed only `?slug=`. The second therefore
  * looked the slug up in whatever vault was open (by default the sample shop),
  * did not find it, and opened something else. Measured during the 2026-08-01 rc.5
- * review: someone trying to connect an agent landed on the demo shop's "회원
- * 탈퇴" (account deletion) document, with nothing on screen saying the intended
+ * review: someone trying to connect an agent landed on the demo shop's "Account Deletion" document, with nothing on screen saying the intended
  * document had not been found.
  *
  * This document exists only in **this repository's own vault** — not in the

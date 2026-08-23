@@ -7,7 +7,7 @@ import { IMPACT_MODE_COPY_KEYS } from "./impact-mode-copy";
  * design-council B6 rank16 regression guard — the 4 impact-mode pills trigger
  * different graph operations, so their help text has to differ too. Previously the
  * three modes other than none (upstream/downstream/network) all shared one line
- * ("연결만 보기" — show connections only), leaving the user no way to tell which
+ * ("Show connections only" — show connections only), leaving the user no way to tell which
  * operation was running. This test blocks that regression from returning.
  */
 describe("IMPACT_MODE_COPY_KEYS (rank16)", () => {

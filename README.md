@@ -588,8 +588,10 @@ explains the workflow; [development checks](docs/DEVELOPMENT-CHECKS.md) owns the
 full gate reference, and [map testability](docs/MAP-TESTABILITY.md) owns canvas
 performance, readability, contrast, and browser instrumentation.
 
-For Markdown changes, that selector includes `pnpm docs:language`, which keeps
-English canonical prose from regressing while preserving typed Korean locale data.
+For Markdown changes, that selector includes `pnpm docs:language`. For source,
+test, configuration, and historical-prototype changes, it includes
+`pnpm source:language`. Together they keep English canonical prose and comments
+from regressing while preserving typed Korean locale data and runtime strings.
 
 ### Refreshing the agent runtime catalog
 

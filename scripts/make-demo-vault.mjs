@@ -4,7 +4,8 @@
  *
  * **Why not a dogfood copy.** The ledger's recording-setup gate (2026-07-29)
  * asked for a "dogfood copy". The owner widened it on 2026-07-30:
- * *"dogfood말고 내용 좋은걸로 하나 만들어줘도됨"* (a good-content vault instead of
+ * *"a good-content vault instead of
+ * dogfood is fine"* (a good-content vault instead of
  * dogfood is fine). There is a reason: dogfood describes **this tool itself**, so
  * node names are internal vocabulary like `mcp-server` and `topology-map-v2` —
  * and this clip's primary audience includes **people who do not know what an
@@ -16,8 +17,9 @@
  * "royalties lean on the play log", is the whole argument for why a graph is
  * needed.
  *
- * **Why outside the repository.** Ledger: *"원본 repo 밖 별도 폴더 + 자체 git
- * 초기화 — repo `.git` 오염 금지 · QA 픽스처 볼트 촬영 금지"* (a separate folder
+ * **Why outside the repository.** Ledger: *"a separate folder
+ * outside the source repo with its own git init; do not pollute the repo's
+ * `.git`, and do not film the QA fixture vault"* (a separate folder
  * outside the source repo with its own git init; do not pollute the repo's
  * `.git`, and do not film the QA fixture vault). The recording shows committing
  * from inside the vault, so this repository's git must not be touched, and the

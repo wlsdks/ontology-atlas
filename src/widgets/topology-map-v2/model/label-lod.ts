@@ -7,7 +7,7 @@
  * greedy label placement (`render/label-layout.ts`) already suppresses
  * overlaps, but on a dense vault it still tries to paint every in-viewport
  * label and the survivors read as noise. At overview altitude the reader's
- * question is "어디가 큰가 / 무엇이 허브인가" (where is it big, what is a hub)
+ * question is "where is it big, what is a hub" (where is it big, what is a hub)
  * — so the label budget should go to
  * the highest-degree nodes (the hubs, the spine), not to whichever leaf won the
  * greedy race. This module picks the top-K labels by node degree, deterministic
@@ -41,13 +41,12 @@ export const LABEL_TOP_K = 20;
  * DOI top-K children (`rankEgoNeighborsByDOI`: domain > capability > element →
  * degree → slug) are promoted to label candidates and then still compete in the
  * normal `LABEL_TOP_K` budget; the rest render as dots and re-label only on
- * hover/ego. 6–8 is the "읽히는 라벨 한 줌" (a readable handful of labels) band
- * (Shneiderman overview-first,
+ * hover/ego. 6–8 is the "a readable handful of labels" band (a readable handful of labels)
+ * band (Shneiderman overview-first,
  * `.claude/rules/design.md`); 8 keeps the disc's spine caps readable without the
  * text wall.
  *
- * **The single source for the value is the preference** 「확장 → 이름을 시도할
- * 개수」 (on expand, how many names to attempt), default 8. The frame draw reads
+ * **The single source for the value is the preference** "on expand, how many names to attempt" (on expand, how many names to attempt), default 8. The frame draw reads
  * the live value; this constant is that default and the fallback for callers that
  * do not know the preference — the same convention as
  * `focus-state.ts#EGO_NEIGHBOR_LIMIT`.
@@ -86,7 +85,7 @@ export function selectDiscLabelEligible(
  * cut was needed, regression 0 for the common small-fan-out focus); at/above
  * it, only the DOI-top-K neighbors (`selectDiscLabelEligible`) keep the
  * exemption — everyone else falls back into the normal top-K/greedy
- * competition, which still shows them if nothing collides ("과하지 않게", i.e. not
+ * competition, which still shows them if nothing collides ("not overdone", i.e. not
  * overdone — no
  * blanket label wipe, only the ones that would overlap get demoted to a dot).
  * Pure — the caller computes `doiEligibleIds` (ranking needs edge/degree data

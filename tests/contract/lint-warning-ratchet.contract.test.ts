@@ -11,10 +11,10 @@ import { beforeAll, describe, expect, it } from "vitest";
  * ## Why this file exists — the repository was breaking its own discipline
  * ════════════════════════════════════════════════════════════════════
  *
- * `.claude/skills/design-system-audit/SKILL.md`'s 「레벨 사각지대」 (the severity
+ * `.claude/skills/design-system-audit/SKILL.md`'s 「Level blind spot」 (the severity
  * blind spot) section already pinned it:
  *
- * > *"catching things at `warn` with no warning cap (`--max-warnings`) **fails
+ * > *"Catching things at `warn` with no warning cap (`--max-warnings`) **fails
  * > nothing, so it is not a gate**."*
  *
  * Yet `package.json`'s own `"lint": "eslint"` had no such cap. Measured 2026-08-06:

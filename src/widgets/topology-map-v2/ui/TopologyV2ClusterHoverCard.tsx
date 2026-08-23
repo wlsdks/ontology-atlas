@@ -3,8 +3,7 @@ import { transientSurface } from "@/shared/ui/transient-surface";
 import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
 
 /**
- * S2 part 5C — the cluster chip hover microcard. Owner report: *"칩에 마우스
- * 올리면 툴팁으로 의미를 알려달라"* (hovering a chip should tell me what it means
+ * S2 part 5C — the cluster chip hover microcard. Owner report: *"hovering a chip should tell me what it means in a tooltip"* (hovering a chip should tell me what it means
  * in a tooltip). Same contract as the edge hover card
  * (`TopologyV2EdgeHoverCard`): non-interactive (pointer-events-none — it never
  * steals a click), clamped to the viewport, modestly sized. One plain sentence,
@@ -15,7 +14,7 @@ import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
  * card only displays it.
  */
 export interface TopologyV2ClusterHoverCardProps {
-  /** The finished plain sentence (i18n) — "「Onboarding & UX」의 요소 63개가 접혀 있어요…". */
+  /** The finished plain sentence (i18n) — "63 elements of 'Onboarding & UX' are collapsed...". */
   sentence: string;
   /** Cursor viewport coordinates — the card offsets to the bottom right and clamps to the viewport. */
   x: number;

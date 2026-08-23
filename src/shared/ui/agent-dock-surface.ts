@@ -1,12 +1,11 @@
 /**
- * 지도 옆 에이전트 도크 안의 실제 대화 표면.
+ * The actual conversation surface inside the agent dock next to the map.
  *
- * 바깥 flex 칸은 지도 폭을 양보하는 레이아웃 장치일 뿐이고, 사용자가 보는
- * 패널은 이 인셋 표면 하나다. INDEX·노드 데이터시트와 같은 radius / border /
- * surface / shadow 토큰을 써서 네 면이 모두 보이게 한다. `inset-y-3`·`right-3`
- * 은 spacing ramp의 12px 단계이고, 두 가로 여백의 합은 기존
- * `--chrome-inset`(24px)이라 소비자가 고정 콘텐츠 폭을 계산할 때 새 수를
- * 만들 필요가 없다.
+ * The outer flex container is merely a layout device that yields to the map width, and
+ * the panel the user sees is this single inset surface. Use radius / border /
+ * surface / shadow tokens like INDEX·node data sheets so all four sides are visible. `inset-y-3`·`right-3`
+ * are 12px steps from the spacing ramp, and the sum of the two horizontal margins equals the existing
+ * `--chrome-inset`(24px) so consumers do not need to calculate a new number when computing fixed content width.
  */
 export const AGENT_DOCK_INSET_SURFACE_CLASS = [
   "absolute inset-y-3 right-3",

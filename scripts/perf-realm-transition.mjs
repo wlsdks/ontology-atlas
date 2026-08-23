@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Frame-time measurement for the realm ("영역 전개") transition — verifies the
+// Frame-time measurement for the realm ("realm expansion") transition — verifies the
 // topology-map-v2 S5 depth staging.
 //
 // No instrumentation is planted in production code. Instead an already-running

@@ -182,7 +182,7 @@ function unquote(value) {
 // Quote-aware separator split (fixed 2026-07-28, measured).
 //
 // Inline lists and objects used to be split on every comma, including commas
-// inside a value, so the tail of `labels: { ko: "지도, 검색" }` silently
+// inside a value, so the tail of `labels: { ko: "map, search" }` silently
 // disappeared. A separator inside quotes is data, not a separator.
 function splitTopLevel(input, separator) {
   const parts = [];
@@ -272,7 +272,7 @@ function serializeValue(v) {
  * (`add_relation`'s `why`).
  *
  * Single quotes joined the rule too. `unquote` strips unmatched quotes from both
- * ends, so a value like `'지도'` written unquoted reads back as `지도`.
+ * ends, so a value like `'map'` written unquoted reads back as `map`.
  */
 function needsQuote(s) {
   return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s);

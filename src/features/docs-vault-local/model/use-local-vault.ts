@@ -845,7 +845,7 @@ export function useLocalVaultInternal() {
         }));
         return;
       }
-      // Same reason the hardcoded Korean "폴더를 열지 못했습니다" was removed — null lets
+      // Same reason the hardcoded Korean "Failed to open folder" was removed — null lets
       // LocalVaultPicker fall back to `t('errorFallback')`.
       setState((s) => ({
         ...s,

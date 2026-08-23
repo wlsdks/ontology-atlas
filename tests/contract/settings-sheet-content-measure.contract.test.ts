@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest';
  * 188px (+28.6%) carries zero information, and a `justify-between` row pushes its
  * ends further apart as it widens, so the gap between "Anthropic ‥‥‥ [register
  * key]" became one long emptiness. That is the mechanical form of the owner's
- * twice-repeated *"ai연결 팝업창이 너무 가로가 길다"* (the AI connection popup is
+ * twice-repeated *"the AI connection popup is far too wide"* (the AI connection popup is
  * far too wide).
  *
  * **What this file locks — the derivation, not the value.**
@@ -30,7 +30,7 @@ import { describe, expect, it } from 'vitest';
  * written in two places, drift has already started").
  *
  * **Why bind the row rather than the sheet**: the sheet size was fixed by the
- * owner (2026-07-29 *"가로 세로 적당한 크기여야하고 고정 사이즈여야함"* — it should
+ * owner (2026-07-29 *"it should be a reasonable width and height, and a fixed size"* — it should
  * be a reasonable width and height, and a fixed size), and shrinking it breaks the
  * root's two-pane LNB and the "expand" section together. Shrinking the width also
  * would not prevent recurrence — widening the sheet next time brings the same

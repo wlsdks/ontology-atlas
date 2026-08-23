@@ -308,8 +308,8 @@ let clusterChipHoverAnim: { id: string; startAt: number } | null = null;
 // frame-to-frame pattern as `clusterChipHoverAnim`.
 let prevPlacedLabelIds: ReadonlySet<string> = new Set();
 let lastLabelRampNow = 0;
-// Project bumped 2 → 1.5 to match the owner spec exactly: "외곽 스트로크 1.5px
-// 앰버" (a 1.5px amber outer stroke). The outer stroke hardcodes amber for
+// Project bumped 2 → 1.5 to match the owner spec exactly: "1.5px amber outer
+// stroke" (a 1.5px amber outer stroke). The outer stroke hardcodes amber for
 // project (see `resolveNodeVisual` below), so its width is specified
 // independently of the other kinds' tier-neutral outlines.
 const LINE_WIDTH_BY_KIND: Record<WorldNode["kind"], number> = {
@@ -367,7 +367,7 @@ interface NodeVisual {
  * BOTH the node's normal (no-focus) look and its focused-state target, then
  * lerps between them by `focusRamp` (0..1, `stepFocusRamp`). So a click's
  * dim (background→gray) / ego (neighbor→indigo, center→bright) color swap eases
- * IN on the camera-dive time axis (owner headline: "하드 컷으로 읽히지 않게" —
+ * IN on the camera-dive time axis (owner headline: "avoid reading as a hard cut" —
  * it must never read as a hard cut), and a deselect eases it back OUT — the caller keeps `colorEgoState` pinned to
  * the retained focus while the ramp decays, so the dim target persists to fade
  * FROM instead of snapping to normal. Only color+dash+breathe here; center
@@ -694,7 +694,7 @@ export interface FrameDrawParams {
   spotlightIds: ReadonlySet<string> | null;
   mapLensKind: TopologyMapLensKind;
   pathEdgeIds: ReadonlySet<string> | null;
-  /** 스포트라이트 on/off 지수 램프 0..1 — loop 가 `stepFocusRamp`(focusDimTau 재사용)로 step. */
+  /** Spotlight on/off index ramp 0..1 — loop steps via `stepFocusRamp` (reuses focusDimTau). */
   spotlightRamp: number;
   /** Spotlight dash phase — advanced only during the transition, then held fixed. */
   spotlightDashOffset: number;
@@ -922,7 +922,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const labelScale = labelZoomScale(camera.scale.value);
 
   // Only the constellation background drifts on a **far layer**. Council
-  // 2026-07-28, owner: "우주처럼 관성 있어보이게" (it should carry inertia, like
+  // 2026-07-28, owner: "make it look inertial, like space" (it should carry inertia, like
   // space). Grid and contour are ground, so they stay at factor 1, welded to the
   // world. Zero autonomous motion: purely a function of the camera origin, so when
   // the camera stops the background stops. The whole decision lives in one pure
@@ -1202,8 +1202,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       trailKept ||
       previewEndpoint ||
       (focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id)));
-    // Spotlight tier-piercing reveal. Owner: "눈으로 보는 노드를 보고 바로
-    // 파악" (you should grasp it straight from the node you are looking at). A
+    // Spotlight tier-piercing reveal. Owner: "grasp it directly from the node you are
+    // looking at" (you should grasp it straight from the node you are looking at). A
     // changed node hidden below the zoom tier (an element, say) stays invisible
     // even with the lens on, so the spotlight ramp joins the same tier-exemption
     // reveal channel ego neighbours use: while the lens is on, changed nodes rise
@@ -1267,7 +1267,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const expandedParentIds = new Set<string>();
   const expandedDiscIds = new Set<string>();
   // The children a chip press **directly** revealed. Owner, from a live report:
-  // "+ 버튼 눌렀을때는 뭐가 선택된건지 모르겠거든?" (after pressing +, I can't
+  // "When I pressed +, I couldn't tell what was selected" (after pressing +, I can't
   // tell what got selected). A node click reads instantly through the ego dim plus
   // a solid indigo ring, but a chip expansion just made children appear with no
   // membership marking, so the user could not see the result of their own action.
@@ -1512,7 +1512,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             touches &&
             (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId)));
       // Trail lens — **every** edge dims, ego-emphasised ones included. The blue
-      // lines the owner called "어지럽다" (dizzying) were exactly these ego
+      // lines the owner called "dizzying" were exactly these ego
       // relation edges. Not a deletion but a retreat for the duration of the lens:
       // closing the popover brings them straight back.
       let edgeEgoState: EdgeEgoState = trailLensActive
@@ -1529,12 +1529,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ) {
         edgeEgoState = "ego";
       }
-      // 고팬아웃 배치-공개(2026-07) 처방 4 — 펼침 중 depends 억제. 배치 자식이
-      // DOI 순으로 드러나는 동안 무관한 depends 실타래가 지도를 뒤덮으면 방금
-      // 드러난 소수가 안 읽힌다. anyExpanded 이고 contains 가 아니며(계층 실선은
-      // 유지) 이미 ego/선택/호버/emphasis 로 살아있지 않은 depends 엣지는 dim
-      // 잉크로 강등한다. 자식 hover/ego 시 touches/emphasized/isSelected 가 참이라
-      // 기존 코멧/강조 규칙이 그 엣지를 되살린다(회귀 0).
+      // Go-fanout layout-publish (2026-07) prescription 4 — suppress depends during expansion. While
+      // layout children are revealed in DOI order, if irrelevant depends tangles cover the map, the just-
+      // revealed minority won't be read. If anyExpanded and not contains (hierarchy solid lines
+      // remain), depends edges that are not already alive via ego/selection/hover/emphasis are
+      // downgraded to dim ink. During child hover/ego, touches/emphasized/isSelected are true,
+      // so existing comet/emphasis rules revive those edges (regression 0).
       if (
         anyExpanded &&
         kind !== "contains" &&
@@ -1570,10 +1570,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         )
           ? trailRamp
           : 0;
-      // 3D 안개 면제 — 상호작용이 짚은 관계는 깊이에 묻히지 않는다.
+      // 3D fog exemption — relationships highlighted by interaction are not buried by depth.
       const domeEdgeExempt = emphasized || isSelectedEdge || isPathEdge || edgeEgoState === "ego";
-      // 먼 쪽 상세 생략 — 안개 면제와 같은 규칙: 읽으라고 밝힌 관계는 헤일로도
-      // 되찾는다(면제 엣지가 뒤엉킨 실타래를 자를 수 없으면 면제가 반쪽이다).
+      // Omit distant details — same rule as fog exemption: relationships brightened for reading
+      // also reclaim their halo (if exempt edges cannot cut through tangled tangles, the exemption is half-hearted).
       if (!domeEdgeExempt && domeEdgeDetail < 1) domeHaloWidthPx *= domeEdgeDetail;
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
@@ -1900,7 +1900,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // whatever the interaction is on (hover, ego, trail): anything that must be
     // read brightens again. This deep attenuation falls outside the 2D ink-contrast
     // floor (3:1) and is a waiver the owner granted for 3D only — see
-    // `docs/DECISIONS.md` 「3D 유예 목록」 (the 3D waiver list).
+    // `docs/DECISIONS.md` "3D Waiver List" (the 3D waiver list).
     // perf 2026-08-19 — recovers the buffered frame by sort index, no map re-lookup.
     const nodeDome = domeOn ? domeNodeFrameReused[domeNodeIndexReused[drawPos]] : ZERO_DOME_FRAME;
     // Far-side detail ramp (`domeDetailFactor` doc-block) — folds the extra strokes
@@ -2175,8 +2175,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // "same bundle" — with the ink one step down to desaturated indigo
     // (`expandedCohort`), so the parent stays the protagonist.
     //
-    // Why value and geometry rather than colour. Owner: "선택했을때 파란색이니까
-    // 다르게 구분되도록" (selection is already blue, so make this distinguishable).
+    // Why value and geometry rather than colour. Owner: "since selection is blue,
+    // make this distinguishable" (selection is already blue, so make this distinguishable).
     // The charter is neutrals plus a single indigo, so a new hue is forbidden;
     // instead it takes one more step down an existing ramp — node selection =
     // saturated indigo **solid**, edge selection = pale indigo, expanded cohort =
@@ -2204,7 +2204,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx.restore();
     }
 
-    // Realm root anchor ring. Owner, live report 2026-07-23: "루트가 유령 같다"
+    // Realm root anchor ring. Owner, live report 2026-07-23: "the root looks like a ghost"
     // (the root looks like a ghost). During a realm expansion the root (depth 0)
     // gets **the same indigo solid hairline** as the warding circle, so the world's
     // boundary (the large circle) and its centre (the small ring) answer each other
@@ -2273,7 +2273,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   if (clusterChipHoverAnim !== null && clusterChipHoverAnim.id !== hoveredClusterId) {
     clusterChipHoverAnim = null;
   }
-  // Owner, live report: "노드 사이에 +31 이 겹쳐지는것도 보기싫은데" (a +31
+  // Owner, live report: "a +31 overlapping between nodes looks bad too" (a +31
   // overlapping between nodes looks bad too). Collect the rectangles the chips
   // occupy this frame and hand them to the label placer below as **reservations**.
   // Chips draw before labels, so without this the placer would paint labels
@@ -2325,11 +2325,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // earlier exception kept chips attached to visited nodes at full strength;
       // once the default affordance became the overhead bar, that exception turned
       // into an opaque slab that **blocked exactly the walked relation line**
-      // (measured 2026-08-02: the trail arriving at 「주문」 was cut off beneath the
+      // (measured 2026-08-02: the trail arriving at "Order" was cut off beneath the
       // slab). While the lens is on, chips recede with everything else — one fewer
       // exception, and the trajectory becomes the protagonist. It rides the ramp,
       // so the chip does not hard-cut back when the lens turns off — see
-      // `.claude/rules/design.md` 「한 입력 = 한 사건」 (one input = one event).
+      // `.claude/rules/design.md` "One Input = One Event" (one input = one event).
       (trailLensActive ? 1 - (1 - BACKGROUND_DIM_WHEN_EXPANDED) * trailRamp : 1);
     // The draw and the label reservation are bound to **one input object**. Split
     // them and labels either overlap chips again (a missed reservation) or avoid
@@ -2563,14 +2563,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       isHovered,
       revealAlpha: labelRevealAlpha,
     });
-    // 3D — 라벨은 **온디맨드**다(히어로 판정: 상시 라벨이 실루엣을 부수고
-    // 시선이 형태 대신 텍스트로 간다). 호버·포커스(ego)·트레일이 짚은 노드만
-    // 이름을 얻고, 나머지는 조립 램프를 따라 서서히 물러난다. 램프 0 = 2D
-    // 그대로. 라벨은 제품의 핵심이라 없애지 않는다 — 언제 보이느냐만 모드가
-    // 정한다.
+    // 3D — labels are **on-demand** (heroic judgment: always-visible labels break the silhouette
+    // and draw the eye to text instead of shape). Only nodes highlighted by hover, focus (ego), or trail
+    // get names; others slowly recede along the assembly ramp. Ramp 0 = 2D
+    // unchanged. Labels are core to the product so they are not removed — only visibility mode
+    // determines when they appear.
     const domeLabelKeep =
       egoState === "center" || egoState === "neighbor" || isHovered || trailKept || pathKept;
-    // perf 2026-08-19 — 프레임 재조회 대신 인덱스 버퍼(`nodeFrameAt`) 사용.
+    // perf 2026-08-19 — use index buffer (`nodeFrameAt`) instead of re-querying frames.
     const labelDome = nodeFrameAt(index);
     const domeLabelGate = domeOn && !domeLabelKeep ? 1 - labelDome.a : 1;
     compactAlpha *= domeLabelGate;
@@ -2623,12 +2623,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     let anchorX = screen.x;
     let clampedAnchorY = anchorY;
     if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
-      // 보호 대상이면 버리는 대신 인셋 가장자리로 당긴다. 판정식은
-      // `render/label-layout.ts#isSafeRectProtectedLabel` 하나이고 — 이 파일에
-      // 인라인으로 두면 캔버스 밖에서 잴 수 없어 회귀를 막는 단위 테스트를 붙일
-      // 자리가 없다 — project/hub 가 왜 그 목록에 들어갔는지도 거기 적혀 있다.
-      // 클램프 대상이 적은 두 등급뿐이라 「전부 인셋에 쌓인다」는 원래 우려는
-      // 되살아나지 않고, 부딪히는 것은 여전히 greedy 억제가 가른다.
+      // If protected, pull to the inset edge instead of discarding. The check is
+      // just `render/label-layout.ts#isSafeRectProtectedLabel` — keeping it inline here
+      // would make it impossible to write unit tests that prevent regression, as there's no place
+      // to measure outside the canvas — and why project/hub is on that list is also documented there.
+      // With only two tiers having few clamp targets, the original concern that "everything stacks in the inset"
+      // does not resurface, and collisions are still handled by greedy suppression.
       if (!isSafeRectProtectedLabel({
         egoState,
         isHovered,
@@ -2676,8 +2676,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const boxAt = (baselineY: number) => ({
       // Reserve `LABEL_SIDE_GAP` extra on each side — **two labels that touch read
       // as one word.** The overlap test (`bboxesOverlap`) does not count touching
-      // as overlapping, so in a measurement on 2026-08-02 (fan expansion) 「카카오
-      // 알림톡」 and 「적립금 원장」 stood side by side 0.7px apart and read as a
+      // as overlapping, so in a measurement on 2026-08-02 (fan expansion) "Kakao
+      // Alimtok" and "Accumulated Points Ledger" stood side by side 0.7px apart and read as a
       // single string. Same prescription as the mockup's reserved box of
       // `measured width + 6`.
       minX: anchorX - width / 2 - LABEL_SIDE_GAP,

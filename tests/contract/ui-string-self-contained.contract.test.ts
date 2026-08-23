@@ -9,7 +9,7 @@ import ko from '../../messages/ko.json';
  *
  * **Why** (measured 2026-08-17). The "connect my agent" card said:
  *
- *   "연결 확인은 터미널에서 node $ATLAS/cli/src/index.mjs mcp-verify."
+ *   "Verify connection in terminal: node $ATLAS/cli/src/index.mjs mcp-verify."
  *
  * What `$ATLAS` is was written only in strings belonging to **two other panels**
  * (`projectPages.selector` and `atlasGit`). Someone looking at this card alone pastes

@@ -137,7 +137,7 @@ export function mergeNodeIdentityHistory(fromFrontmatter, intoFrontmatter) {
 }
 
 /**
- * Authorship provenance (decision ledger 2026-07-31 — 「사람이 만든 노드 표기」,
+ * Authorship provenance (decision ledger 2026-07-31 — 「Human-authored node notation」,
  * marking human-authored nodes).
  *
  * The value is either `human` or `agent:<name>`, nothing else. **The stamp is
@@ -168,7 +168,7 @@ export function agentCreatedBy(agentName) {
 
 /**
  * Node-eligibility gate — the numbers half (2026-07-31 council, `docs/DECISIONS.md`
- * 「온톨로지 구축 규격」). The gate logic lives in `mcp/src/vault.mjs`, the wording in
+ * 「Ontology Construction Specification」). The gate logic lives in `mcp/src/vault.mjs`, the wording in
  * `mcp/src/construction-rules.mjs`; only the values live here.
  *
  * ⚠️ **None of these is a limit.** The council removed the fan-out cap in every
@@ -472,7 +472,7 @@ export function buildFrontmatter(input) {
 }
 
 /**
- * Slug flatness gate (2026-08-01 verdict 「슬러그는 평평한 식별자다」 — "a slug is a
+ * Slug flatness gate (2026-08-01 verdict 「A slug is a flat identifier」 — "a slug is a
  * flat identifier", `docs/DECISIONS.md`). It retired the earlier two-pattern
  * element slug (flat / path-style): the moment two files share a basename, a
  * path-style slug makes their tail aliases collide, and three surfaces — web

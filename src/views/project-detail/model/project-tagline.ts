@@ -14,7 +14,7 @@ export interface ProjectTaglineSource {
  * The **one-line definition** to place in the project hero.
  *
  * Measured defect (2026-07-26): the hero passed a 320-character excerpt straight through and the
- * sentence cut mid-word — "…이 프로젝트의 ontology 는 비즈니". A paragraph-length text pushed into the
+ * sentence cut mid-word — "…the ontology of this project is busi". A paragraph-length text pushed into the
  * meta row made up half of the "it feels cramped" impression.
  *
  * Two things are held:

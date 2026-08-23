@@ -255,7 +255,7 @@ function ChangeRow({
          * (the native behaviour where clicking a label toggles).
          *
          * The expand button stays **outside** the label — inside it, every press of
-         * 「자세히」 (details) would flip the selection.
+         * "Details" would flip the selection.
          */}
         <Checkbox
           className="min-w-0 flex-1"

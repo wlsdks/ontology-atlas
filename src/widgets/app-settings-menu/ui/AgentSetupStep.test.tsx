@@ -11,8 +11,7 @@ import { AgentSetupStep } from './AgentSetupStep';
  *
  * The first version wrapped this body in `Surface` (chrome grammar — scale plus
  * fade, holding layout through the exit window), and the owner caught the defect in
- * the installed app: *"버벅이면서 이상하게 열리는데?"* (it stutters and opens
- * strangely). Frame measurement: on the step 1 → 3 transition, the siblings below
+ * the installed app: *"It stutters and opens strangely?"* Frame measurement: on the step 1 → 3 transition, the siblings below
  * moved **+254px in one frame, then −352px in one frame 140ms later**, with zero
  * transition frames. This is a layer value lint cannot catch in principle (duration
  * and easing were all tokens). So the choice of grammar itself is pinned as a

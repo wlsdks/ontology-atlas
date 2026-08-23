@@ -18,7 +18,7 @@ import {
  *
  * Background (measured 2026-07-26): of the dogfood sample's 294 concepts only 96 had
  * their own `.md`, and the other 198 were derived. Yet the map's opening sentence
- * said "everything here is a real document", and the popover's `문서` (document)
+ * said "everything here is a real document", and the popover's `Document`
  * button on a derived node opened *somebody else's document that cited it*.
  *
  * ⚠️ Surgery (2026-08-01): this contract once required derived nodes to **exist** in

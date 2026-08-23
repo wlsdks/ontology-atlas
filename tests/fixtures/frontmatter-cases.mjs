@@ -245,7 +245,7 @@ export const CASES = [
   // repeated saves multiplied the corruption (measured over 3 saves: 1 → 2 → 4).
   //
   // Inline lists and objects were unconditionally `split(',')`, so they split on commas
-  // inside values: the tail of `labels: { ko: "지도, 검색" }` silently disappeared.
+  // inside values: the tail of `labels: { ko: "map, search" }` silently disappeared.
   {
     name: "따옴표 안의 이스케이프된 따옴표 — 원문으로 되돌린다",
     input: '---\nkind: capability\ntitle: "say \\"hello\\""\n---\n',

@@ -68,7 +68,7 @@ export default function LocaleNotFound() {
         </h1>
         {/*
          * `break-keep` — the same paragraph and the same prescription as the root not-found
-         * (measured 2026-08-12: 「바뀌었|을」 at a real width of 382px). The two 404s are twins, so
+         * (measured 2026-08-12: 「changed|to be」 at a real width of 382px). The two 404s are twins, so
          * fixing one alone makes them diverge.
          */}
         <p className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]">

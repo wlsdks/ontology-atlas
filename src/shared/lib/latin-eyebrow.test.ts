@@ -12,7 +12,7 @@ describe('latinEyebrowClass — 라틴 전용 장식은 한글에 얹지 않는�
   it('한국어 로케일은 mono·uppercase·wide tracking 전부 걷는다', () => {
     // Hangul has no capitalisation, so only the tracking widens; and under mono
     // Hangul falls back, leaving only the spaces monospaced — the reason
-    // 「첫 실행」 read as 「첫  실행」.
+    // 「First run」 read as 「First  run」.
     expect(latinEyebrowClass('ko', 'tracking-[0.2em]')).toBe('');
     expect(latinEyebrowClass('ko-KR')).toBe('');
   });

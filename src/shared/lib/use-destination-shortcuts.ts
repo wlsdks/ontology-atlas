@@ -70,7 +70,7 @@ function blockingSurfaceOpen(): boolean {
  *
  * ⚠️ **Reading `event.key` alone kills the feature entirely while a Korean IME
  * is on** (2026-08-10, measured in the installed app). With Hangul input active,
- * the physical `G` reports `event.key` as `ㅎ` and `P` as `ㅔ`. No modifier was
+ * the physical `G` reports `event.key` as `hah` and `P` as `e`. No modifier was
  * held, focus was on body, no blocking surface was open — the letter simply did
  * not match `DESTINATION_BY_KEY`.
  *

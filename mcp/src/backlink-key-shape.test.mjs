@@ -9,8 +9,8 @@
 // Reproducing it showed **the behaviour was correct**. Renaming
 // `capabilities/mcp-server` carries `capabilities/acp-runtime`'s rationale along:
 //
-//   before: { "capabilities/mcp-server":   "ACP 세션은 …" }
-//   after : { "capabilities/mcp-server-x": "ACP 세션은 …" }
+//   before: { "capabilities/mcp-server":   "ACP sessions are …" }
+//   after : { "capabilities/mcp-server-x": "ACP sessions are …" }
 //
 // What was wrong was **the gate's contract**: it pinned `before`/`after` to a
 // string or an array of strings, while `relation_notes` is a **map**. So correct

@@ -38,7 +38,7 @@ const ROUTES = AUDITED_ROUTES;
  * | Route | Failing | What |
  * |---|---:|---|
  * | ~~`/ko`~~ | ~~2~~ → **0** | The ink on the primary CTA's indigo fill was `--color-text-primary` (#f7f8f8, **4.42:1**). Moved to `--color-text-on-accent` (#ffffff, **4.70:1**), which already existed for that surface — two places, `button.tsx`'s `primary` variant and `DownloadPage`'s size badge. Zero new values |
- * | ~~`/ko/projects`~~ | ~~2~~ → **0** | `--color-text-quaternary` only broke on surfaces one step up (overlay-1 composited **4.37**, elevated **4.16**). The 2026-08-03 체계 verdict took it `#787c84` → `#82828a` — all four resting surfaces AA (5.23 / 5.00 / 4.81 / 4.57), hierarchy step ratio 1.17 preserved, converging with the map panel's quaternary. Ledger: docs/DECISIONS.md |
+ * | ~~`/ko/projects`~~ | ~~2~~ → **0** | `--color-text-quaternary` only broke on surfaces one step up (overlay-1 composited **4.37**, elevated **4.16**). The 2026-08-03 verdict took it `#787c84` → `#82828a` — all four resting surfaces AA (5.23 / 5.00 / 4.81 / 4.57), hierarchy step ratio 1.17 preserved, converging with the map panel's quaternary. Ledger: docs/DECISIONS.md |
  * | Map · docs · studio | 0 | |
  *
  * With the baseline at 0, this gate's life is held by the `measured > 50` collection

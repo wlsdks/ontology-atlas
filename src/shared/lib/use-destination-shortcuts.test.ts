@@ -24,8 +24,9 @@ import { NAV_LEADER_WINDOW_MS } from "@/shared/config/destinations";
  * position.
  *
  * ⚠️ **This helper exists because of a real defect** (2026-08-10, measured in the
- * installed app). With the Korean IME on, physical `G` arrives as `key="ㅎ"` and
- * `P` as `key="ㅔ"`. No modifier, focus on body, no blocking surface — and
+ * installed app). With the Korean IME on, physical `G` arrives as the Hangul
+ * letter hieuh (U+314E), and `P` as the Hangul letter e (U+3154). No modifier,
+ * focus on body, no blocking surface — and
  * **nothing worked, purely because the character differed.** Korean is this
  * product's primary language, so that is the normal state, not an edge case, and
  * browser e2e types Latin so it can never catch it.

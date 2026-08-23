@@ -88,7 +88,7 @@ export default function NotFound() {
         {/*
          * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
          *
-         * This paragraph broke as 「바뀌었|을」 in a 440px card (382px real width). Instrument: a
+         * This paragraph broke as 「changed|to be」 in a 440px card (382px real width). Instrument: a
          * `Range` per character reveals the characters on either side of the line break — both
          * Korean with no space means mid-word. The cause is `word-break: normal`, and this
          * repository already used `break-keep` elsewhere.

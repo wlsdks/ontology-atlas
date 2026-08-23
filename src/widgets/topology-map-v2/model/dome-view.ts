@@ -4,8 +4,7 @@
  *
  * **3D here is a different layout, not a projection tweak.** The first
  * implementation (2026-08-18, morning) kept the 2D placement and only added a
- * per-kind z-lift; the owner turned it on and judged "뭐가 달라졌는지 모르겠다"
- * (I can't tell what changed). What the owner pointed at was the hero engine's
+ * per-kind z-lift; the owner turned it on and judged "I can't tell what changed" (I can't tell what changed). What the owner pointed at was the hero engine's
  * object (`hero-engine.js`): **the containment spine unrolled into rings** —
  * project at the apex, then a domain ring, a capability ring, an element ring. A
  * node's angle on its ring comes from its containment parent (children fan out
@@ -80,7 +79,7 @@ export const DOME_PITCH_POLE_MARGIN = 0.12;
  * How far orbit drag may pitch — **all the way to just short of the poles**.
  *
  * The value inherited from the hero was 0.12–0.72 (6.9°–41.3°), and the owner hit
- * exactly that wall (2026-08-18: *"밑에서 위로는 안되던데"* — you can't go from
+ * exactly that wall (2026-08-18: *"You can't go from below looking up"* — you can't go from
  * below looking up). This mode's charter is turning the thing every which way, so
  * only walls that really exist are locked:
  *
@@ -131,11 +130,11 @@ export const DOME_FOCAL = 760;
 /** 2D↔3D assemble/disassemble ramp (ms) — the same cinematic tier as a programmatic camera move. */
 export const DOME_RAMP_MS = 700;
 /**
- * Longest programmatic pose move (ms) — 「제자리로」 (the re-fit / home action) and
+ * Longest programmatic pose move (ms) — 「Home」 (the re-fit / home action) and
  * selection reframe. Half a turn (π, the worst case of the nearest-equivalent-
  * angle rule) gets this long. The 2D camera tween cap (420 ms) belongs to pan and
  * zoom and is far too abrupt for half a turn, which then reads as a whip (measured:
- * 2.3 rad in 93 ms). This promotes the 750 ms 「제자리로」 was already using into the
+ * 2.3 rad in 93 ms). This promotes the 750 ms 「Home」 was already using into the
  * name for the pose-move cap.
  */
 export const DOME_POSE_MS = 750;
@@ -143,7 +142,7 @@ export const DOME_POSE_MS = 750;
  * Orbit drag sensitivity — screen px → yaw (rad).
  *
  * The hero used 0.006, sized for its small canvas, and the owner judged rotation
- * on the map canvas "회전이 뻑뻑하다" (rotation feels stiff, 2026-08-18). three.js
+ * on the map canvas "Rotation feels stiff" (rotation feels stiff, 2026-08-18). three.js
  * OrbitControls' standard mapping is `2π × dx / clientHeight`, which for our map
  * canvas height (~900 px) works out to ≈0.007/px; raised to 0.0075 to match (one
  * full turn = 838 px of drag). A constant rather than the formula because binding
@@ -172,7 +171,7 @@ export const ORBIT_PITCH_PER_PX = 0.005;
 export const ORBIT_SMOOTH_TAU_MS = 14;
 
 /*
- * ⚠️ **45 → 14 (2026-08-19, owner: *"마우스가 버벅 대면서 움직이던데"* — the mouse
+ * ⚠️ **45 → 14 (2026-08-19, owner: *"The mouse moves in stutters"* — the mouse
  * moves in stutters).**
  *
  * 45 ms was chosen to remove the staircase, but it was **five times wider than the
@@ -345,10 +344,10 @@ export const DOME_PLANE_SOLVE_DENOM_MIN = 30;
 
 /**
  * Depth fog — the hero engine's fog ramp unchanged: near nodes 1.0, far nodes 0.09,
- * quadratic falloff. *«이 대비가 곧 3D 다»* (this contrast *is* the 3D — hero
+ * quadratic falloff. «This contrast is the 3D itself» (this contrast *is* the 3D — hero
  * comment). Far deeper than the 2D map's 3:1 ink contrast floor, which is a
  * dispensation the owner granted for 3D mode alone (`docs/DECISIONS.md`
- * «3D 유예 목록», the 3D dispensation list). In exchange, whenever something must
+ * «3D exemption list», the 3D dispensation list). In exchange, whenever something must
  * actually be read (hover, focus, ego, trail) the draw exempts it from fog and
  * brings it back up. `u` is depth normalised within this frame (0 near → 1 far).
  */
@@ -514,7 +513,7 @@ export interface DomeModel {
  * on a small ring if there is more than one.
  */
 /**
- * **The arrangement axis — 「소유」 (ownership) and 「결합」 (coupling).**
+ * **The arrangement axis — 「Ownership」 (ownership) and 「Coupling」 (coupling).**
  *
  * The dome's geometry writes **two facts**: height = kind tier, bearing =
  * ownership. This axis swaps **only the bearing**.
@@ -553,7 +552,7 @@ export type DomeArrangement = "ownership" | "coupling";
  *
  * **Why the tier is not held (it was built that way once and reverted).** The first
  * build fixed height and relaxed only bearing, a "tier-constrained hybrid". The
- * owner's judgment was *"내가 원한건 원래 기존거 1개랑.. 아예 다른 모양"* (what I
+ * owner's judgment was *"What I wanted was the existing one, plus a completely different shape"* (what I
  * wanted was the existing one, plus a completely different shape). That is right:
  * something still bound to rings with only its angle twisted is a variation on the
  * dome, not a different reading. Height has to be decided by relations too before
@@ -587,7 +586,7 @@ export const CLOUD_REST_LENGTH = 92;
  * Repulsion alone **guarantees nothing**. An inverse-square force grows as distance
  * shrinks, but it is integrated in finite steps, so a node with many relations gets
  * pressed onto its neighbours by the springs. Owner judgment (2026-08-18):
- * *"너무 붙어있어서 좀 별론가?"* (they're too close together, it doesn't look great).
+ * *"They're too close together, it doesn't look great"* (they're too close together, it doesn't look great).
  *
  * So at the end of every iteration a separate pass **pushes discs apart until they
  * genuinely do not overlap**. It is a position correction rather than a force, so it
@@ -1031,7 +1030,7 @@ export function beginDomeModelBuild(
   );
 
   /*
-   * 「결합」 (coupling) arrangement — relaxes from a **warm start** at the angles the
+   * "Coupling" (coupling) arrangement — relaxes from a **warm start** at the angles the
    * ownership arrangement produced. Not starting from arbitrary angles is what buys
    * determinism and spatial memory (`DomeArrangement` doc-block).
    */
@@ -1175,8 +1174,7 @@ export function domeEdgeControl(model: DomeModel, sourceId: string, targetId: st
  * **The dome's "grip" — where dragging rotates and where it pans.**
  *
  * In 3D, dragging empty space was **all orbit rotation** from the start, which left
- * no way at all to move the map (owner report 2026-08-18: *"이 캔버스 자체를
- * 움직이고 싶은 경우에 방법이 없는데?"* — there's no way to move the canvas
+ * no way at all to move the map (owner report 2026-08-18: *"There's no way to move the canvas itself?"* — there's no way to move the canvas
  * itself). The 2D behaviour of "drag empty space and the map follows" had simply
  * been covered over in 3D, so this is not a new 3D rule but **an existing rule being
  * restored**.
@@ -1188,7 +1186,7 @@ export function domeEdgeControl(model: DomeModel, sourceId: string, targetId: st
  * **Why an ellipse and not the bbox.** A drawn node's bbox is a rectangle and the
  * dome is round. Testing against the rectangle makes **the four corners** count as
  * "on the object" — black, empty screen that rotates when dragged, which is exactly
- * the «이런 검은 부분» (this black area) the owner pointed at. The ellipse inscribed
+ * the «this black area» (this black area) the owner pointed at. The ellipse inscribed
  * in the bbox nearly coincides with the dome's silhouette, so what is seen and what
  * is tested agree.
  *
@@ -1291,7 +1289,7 @@ function projectWithTrig(
  * Owner dispensation (2026-08-18): 3D mode is not bound to the app's motion
  * conventions (the three-step duration ramp and the rest). In exchange the values
  * all live inside this module — standardising them later will be decided by reading
- * this one file (`docs/DECISIONS.md` «3D 유예 목록», the 3D dispensation list).  */
+ * this one file (`docs/DECISIONS.md` «3D Dispensation List», the 3D dispensation list).  */
 
 /**
  * Tier torsion — during an orbit drag the deeper tiers lag slightly, then spring
@@ -1681,7 +1679,7 @@ export function solveDomePlanePoint(
   const sp = Math.sin(pitch);
   // Solve uy = −(py·cp + zr·sp)·s, s = F/(F + (−py·sp + zr·cp)) for zr.
   //
-  // Degenerate handling (2026-08-18, owner: "클릭해도 제대로 안움직여지는 것도 있고"
+  // Degenerate handling (2026-08-18, owner: "some nodes don't move properly when clicked"
   // — some of them don't move properly when clicked). As the pointer approaches this
   // plane's **horizon** (the line where the plane vanishes on screen) denom → 0, and
   // past it the sign flips and the solution jumps behind the camera. This used to
@@ -1777,7 +1775,7 @@ export function stepDomeDragSpring(
   spring.pz += spring.vz * dt;
 }
 
-/** The world bbox the dome occupies at the current yaw/pitch — input to 3D's 「제자리로」 (fit view). */
+/** The world bbox the dome occupies at the current yaw/pitch — input to 3D's "fit view". */
 export function domeWorldBounds(
   model: DomeModel,
   yaw: number,
@@ -1800,7 +1798,7 @@ export function domeWorldBounds(
 
 /**
  * Among the angles equivalent to `target` (mod 2π), the one nearest `current` — keeps
- * a programmatic rotation (「제자리로」, selection reframe) from taking the long way
+ * a programmatic rotation ("fit view", selection reframe) from taking the long way
  * round.
  */
 export function domeNearestYawTurn(target: number, current: number): number {
@@ -1814,8 +1812,8 @@ export function domeNearestYawTurn(target: number, current: number): number {
  * return value is the equivalent angle nearest the current yaw, so rotation always
  * takes the short way.
  *
- * Why the front (2026-08-18, second round; owner: *"클릭했을때도 적절한 카메라 이동
- * 모션이 필요할듯"* — clicking should get a proper camera move too): in a dome a node
+ * Why the front (2026-08-18, second round; owner: *"a proper camera move motion seems needed when clicking"
+ * — clicking should get a proper camera move too): in a dome a node
  * can be on the structure's **far side**, and zooming alone would grow it while it
  * stays hidden behind other rings. If 2D's focus dive is "bring the target to the
  * centre of the screen", the dome's equivalent is "bring the target to the front of
@@ -1858,7 +1856,7 @@ export function domeEgoWorldBounds(
 }
 
 /**
- * A programmatic pose move (「제자리로」, selection reframe) — puts yaw/pitch on the
+ * A programmatic pose move ("fit view", selection reframe) — puts yaw/pitch on the
  * same cubic ease-in-out clock as the camera tween. The loop interpolates it every
  * frame, and it is dropped the instant an orbit drag, wheel or pointerdown begins so
  * the gesture takes over (the same interruption contract as the 2D camera tween).
@@ -2004,15 +2002,15 @@ export interface DomeRuntime {
   yawSnap: number | null;
   /**
    * Whether idle spin is armed — the attract loop belongs to **a screen nobody has
-   * touched yet** (2026-08-18, second round; owner: *"클릭하고 나서 좀 안돌아가게
-   * 해주고"* — stop it spinning after I click). Any user intervention (orbit, zoom,
+   * touched yet** (2026-08-18, second round; owner: *"stop it spinning after I click"
+   * — stop it spinning after I click). Any user intervention (orbit, zoom,
    * pinch, node drag, selection) drops it to false and it does not come back, so
    * rotation never fights the pose being worked on. Only explicit returns re-arm it:
-   * the 「자동 정렬」 (auto-align) chip, which eases the pose home, and re-entering 3D.
+   * the "auto-align" chip, which eases the pose home, and re-entering 3D.
    */
   spinArmed: boolean;
   /**
-   * The programmatic pose move in progress — 「제자리로」 and selection reframe fill it
+   * The programmatic pose move in progress — "fit view" and selection reframe fill it
    * and the loop interpolates it cubically each frame. Any gesture clears it
    * immediately (the gesture inherits the current pose — the same contract as the 2D
    * tween).

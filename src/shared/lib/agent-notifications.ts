@@ -16,9 +16,9 @@
  * - **A single node or a single relation** — the map already shows it clearly.
  *   Notifications are for when nobody is looking at the screen; when someone is,
  *   the map is the better channel.
- * - **Tool calls** — explicitly rejected by the 2026-08-01 verdict: *"도구 호출
- *   로그를 그리는 순간 Atlas 는 에이전트 터미널과 경쟁하는 MCP 호출 뷰어가 되는데,
- *   이 제품의 해자는 도구층 위의 의미층이다."* (drawing a tool-call log turns
+ * - **Tool calls** — explicitly rejected by the 2026-08-01 verdict: *"Drawing a tool-call log turns
+ *   Atlas into an MCP call viewer competing with the agent's terminal; this
+ *   product's moat is the meaning layer above the tool layer."* (drawing a tool-call log turns
  *   Atlas into an MCP call viewer competing with the agent's terminal; this
  *   product's moat is the meaning layer above the tool layer)
  */

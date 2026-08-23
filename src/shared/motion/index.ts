@@ -8,7 +8,7 @@
  * `tests/contract/motion-token-mirror.contract.test.ts`: it parses the CSS, compares it
  * against this file, and fails when a name appears that is not on the ramp.
  *
- * **What had gone wrong** (measured 2026-07-28 by the design council's 「체계」 /
+ * **What had gone wrong** (measured 2026-07-28 by the design council's system /
  * design-systems seat). This file carried four steps
  * (`instant/fast/medium/slow` = 0.12/0.18/**0.28/0.42**), and **0.28 and 0.42 existed
  * nowhere in the CSS ramp**. Of 22 usages, **15 were rendering with an off-ramp

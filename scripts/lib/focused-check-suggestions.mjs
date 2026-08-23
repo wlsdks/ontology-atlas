@@ -1,5 +1,7 @@
 import { existsSync } from 'node:fs';
 
+import { isSupportedSourcePath } from '../quality/source-language/source-paths.mjs';
+
 const RULES = [
   {
     command: 'pnpm test:mcp:registration',
@@ -25,6 +27,11 @@ const RULES = [
     command: 'pnpm test:docs:language',
     reason: 'Markdown language inventory or ratchet implementation changed',
     matches: [/^scripts\/quality\/markdown-language\//],
+  },
+  {
+    command: 'pnpm test:source:language',
+    reason: 'source-comment language inventory or ratchet implementation changed',
+    matches: [/^scripts\/quality\/source-language\//],
   },
   {
     // The accident this net actually catches is "a document moved or the vault was
@@ -355,14 +362,13 @@ const RULES = [
      * ⚠️ **Editing the docs surface runs the e2e that drives it** (2026-08-08).
      *
      * Missing this mapping caused a real incident. #987 moved the docs header's
-     * 「샘플|로컬」 (sample | local) radio into the vault chip menu, and
+     * "sample | local" radio into the vault chip menu, and
      * `docs-deeplink.spec.ts` clicks that radio. The advisor **never once pointed at
      * that spec**, so it was not run locally, and CI stayed red while **six more PRs
      * merged** (2-minute timeout × 3 retries × two tests).
      *
-     * `.claude/rules/testing.md` warns about exactly this — *"화면을 삭제하면 같은
-     * PR 에서 e2e spec 도 같이 훑어 지운다"* (delete a screen and sweep its e2e specs
-     * in the same PR). That sweep was left to human memory; the tool does it instead:
+     * `.claude/rules/testing.md` warns about exactly this: delete a screen and sweep
+     * its e2e specs in the same PR. That sweep was left to human memory; the tool does it instead:
      * **a check the tool cannot point at is a check that does not exist.**
      */
     command:
@@ -873,8 +879,12 @@ export function normalizeChangedPath(path) {
 export function suggestFocusedChecks(paths = []) {
   const normalizedPaths = [...new Set(paths.map(normalizeChangedPath).filter(Boolean))];
   const staticCommands = rulesToSuggestions(RULES, normalizedPaths);
-  const withVitestDirect = prependSuggestions(
+  const withSourceLanguage = prependSuggestions(
     staticCommands,
+    directSourceLanguageSuggestions(normalizedPaths),
+  );
+  const withVitestDirect = prependSuggestions(
+    withSourceLanguage,
     directVitestTestSuggestions(normalizedPaths),
   );
   const withPlaywrightDirect = prependSuggestions(
@@ -907,6 +917,18 @@ export function suggestFocusedChecks(paths = []) {
   );
   const escalations = rulesToSuggestions(ESCALATIONS, normalizedPaths);
   return { paths: normalizedPaths, commands: withFocusedCheckDirect, escalations };
+}
+
+function directSourceLanguageSuggestions(paths) {
+  const sourcePaths = paths.filter(isSupportedSourcePath);
+  if (sourcePaths.length === 0) return [];
+  return [
+    {
+      command: 'pnpm source:language',
+      reason: 'source comments are English-only across current code, tests, and prototypes',
+      paths: sourcePaths,
+    },
+  ];
 }
 
 function directVitestTestSuggestions(paths) {

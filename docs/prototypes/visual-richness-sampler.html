@@ -4,22 +4,22 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>시각 리치니스 샘플러 — /ontology/insights 처방 적용안</title>
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Proposal standard: 1920×1080 primary · 1440 fluid min -->
 <!--
   VISUAL RICHNESS SAMPLER (visual-richness round, item A / P1):
-  the owner-reported "전체 페이지가 시각적으로 표현되는 것들이 없다" —
-  /ontology/insights 를 리뷰 문서의 처방대로 보강한 단일 프레임.
+  addressing the owner-reported "nothing on the entire page is visually expressed" —
+  a single frame enhanced per the prescription in /ontology/insights.
 
-  적용 장치 (visual-richness-review.md §A):
-    ① kind census → 글리프 미니어처 + 비례 미터 행
-    ② relation 분포 → trace 모티프(실선/파선 마크) + 바 행
-    ③ 도메인 신선도 heatstrip (vault mtime 유도 — 중립 명도 램프 + 인디고 신선)
-    ④ 허브 목록 → 실그래프 유도 미니 ego 썸네일 (honest SVG instrument)
-    ⑤ 갱신 활동 스파크라인 (mtime 이력)
-    ⑥ 섹션 구분자 = trace hairline (범례의 반복, 장식 아님)
+  Applied mechanisms (visual-richness-review.md §A):
+    ① kind census → glyph miniatures + proportional meter rows
+    ② relation distribution → trace motifs (solid/dashed marks) + bar rows
+    ③ domain freshness heatstrip (vault mtime derived — neutral luminance ramp + indigo freshness)
+    ④ hub list → real-graph-derived mini ego thumbnails (honest SVG instrument)
+    ⑤ update activity sparkline (mtime history)
+    ⑥ section dividers = trace hairlines (repetition of legend, not decoration)
 
-  헌장 유지: 중립 + 단일 인디고, 그라디언트/글로우/글래스 없음, 모든 잉크는
-  데이터(Tufte). 수치는 dogfood vault census 기반의 대표값.
+  Charter maintained: neutral + single indigo, no gradients/glow/glass, all ink is
+  data (Tufte). Values are representative figures based on dogfood vault census.
 -->
 <style>
   :root {
@@ -380,7 +380,7 @@
     for (var i = 0; i < shown; i++) {
       var a = (i / shown) * Math.PI * 2 - Math.PI / 2;
       var x2 = c + Math.cos(a) * R, y2 = c + Math.sin(a) * R;
-      var dashed = i % 3 === 2; // depends 비중 표현 — 마크 문법 재사용
+      var dashed = i % 3 === 2; // depends weight expression — reuse mark syntax
       spokes += '<line x1="' + c + '" y1="' + c + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
         '" stroke="' + (dashed ? "#3c3c4a" : "#33333c") + '" stroke-width="1"' +
         (dashed ? ' stroke-dasharray="2 2.4"' : "") + "/>" +

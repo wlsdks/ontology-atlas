@@ -9,7 +9,7 @@ import { censusStaticSurfaces, isHandCard } from "../../scripts/lib/static-surfa
  * Section-card adoption ratchet — **hand-written box insets cannot grow**
  * (2026-08-15).
  *
- * **Why** (ratified by the 체계 seat · docs/DECISIONS.md 2026-08-15, entry 5). A
+ * **Why** (ratified by the system seat · docs/DECISIONS.md 2026-08-15, entry 5). A
  * five-axis inventory (radius × padding × surface × border × header): 71 cases
  * across 36 files with **51 distinct combinations**, the top three covering 18%, and
  * 41 singletons. Unlike badges, **a value layer was rejected** — fixing any padding

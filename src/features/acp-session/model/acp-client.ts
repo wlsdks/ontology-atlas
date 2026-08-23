@@ -140,7 +140,7 @@ export interface AcpSessionSummary {
  *
  * Passing `cwd` to `session/list` does **not** make the adapter filter by that folder — measured,
  * conversations from other repositories that were never opened came back, titles and all
- * (`/Users/…/side-project/…`'s "디자인 시스템 수준 파악" among them).
+ * (`/Users/…/side-project/…`'s "understanding design system level" among them).
  *
  * Rendering that as-is puts **work titles from folders the user has never opened in this app** on
  * screen. The trust charter's second promise (zero collection without the user knowing) and the

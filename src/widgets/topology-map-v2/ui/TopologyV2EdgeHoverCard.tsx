@@ -6,7 +6,7 @@ import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
  * P3c — the edge hover microcard. A lighter predecessor of the click popover
  * (P3b, TopologyV2EdgePanel): near the cursor, one plain sentence plus the type
  * plus one evidence line when there is one. What opened the gate was an owner
- * usage signal (*"연결선에 호버하면 의미 표시"* — hovering a line should show its
+ * usage signal (*"Hovering a line should show its meaning"* — hovering a line should show its
  * meaning); P3c had originally been held back pending proof that 3b was used.
  *
  * Contract: non-interactive (pointer-events-none — it never steals a click),
@@ -14,9 +14,9 @@ import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
  * while an edge is selected — the caller's responsibility).
  */
 export interface TopologyV2EdgeHoverCardProps {
-  /** The plain sentence — "A 가 B 에 기대요" (from the same relation lexicon as P3b). */
+  /** The plain sentence — "A leans on B" (from the same relation lexicon as P3b). */
   sentence: string;
-  /** The formal type label — "의존" (depends). */
+  /** The formal type label — "depends". */
   typeLabel: string;
   /** P6 relation_notes — truncated to one line when present. */
   why: string | null;

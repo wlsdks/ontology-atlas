@@ -1,7 +1,7 @@
 /**
  * The child-density threshold — the pure model layer behind "fold a crowded
  * parent into a cluster chip, expand it on click" (`docs/TOPOLOGY-V2-DESIGN.md`
- * semantic-zoom charter, 「나머지는 클릭 시 expand」 — the rest expands on
+ * semantic-zoom charter, "the rest expands on click" — the rest expands on
  * click — applied to large fan-outs).
  *
  * Hundreds of children under one parent (dogfood sample: the Onboarding & UX
@@ -37,7 +37,7 @@ export const DEFAULT_CHIP_RING = 120;
  * Extra clearance (world units) pushing an **expanded** chip outside the child
  * ring. A collapsed chip may sit on the ring (`ring`) because no child is drawn
  * there; expanding puts child nodes and labels on that exact ring, where they
- * smear the `− N` chip. Owner report: "확장 칩이 노드/라벨 위에 겹침" (the
+ * smear the `− N` chip. Owner report: "The expand chip overlapped nodes and labels" (the
  * expand chip overlapped nodes and labels). Only when expanded, push this much
  * further outward so the chip stands beyond the child disc and can never
  * overlap a child node or label.
@@ -79,7 +79,7 @@ export interface ClusterChip {
    */
   childKind?: string;
   /**
-   * True for selective ego's `이웃 +N` (neighbours +N) chip. This module never
+   * True for selective ego's `Neighbor +N` (neighbours +N) chip. This module never
    * produces that chip — `use-topology-loop` merges it in at runtime — but it
    * takes the same draw and hit path, so it shares the type. Clicking it reveals
    * the next neighbour batch instead of toggling the URL.

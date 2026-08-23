@@ -280,7 +280,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // The defect on this screen was "guidance with nothing to press", so the
     // button's existence is itself the contract.
     //
-    // 2026-08-02: the title and 「되돌리는 방법」 (how to undo) **moved** to the
+    // 2026-08-02: the title and 「How to undo」 **moved** to the
     // stage's h1 and last line. The contract is "it is on this screen", not "it is
     // inside this div", so the scope rises to the setup stage — otherwise the gate
     // holds a DOM position rather than content every time the layout changes.
@@ -392,7 +392,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
   });
 
   /*
-   * The tabs are gone (2026-08-02). 「변경 내용 / 커밋 이력」 are really *not
+   * The tabs are gone (2026-08-02). 「Changes / Commit History」 are really *not
    * committed vs committed*, which the list's position already states —
    * uncommitted at the top, committed below. So this test now pins the **default
    * selection**: when there is something to commit it is open and its changes are
@@ -608,7 +608,7 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     /*
      * The old contract was "with 0 uncommitted, do not make the column"
      * (`data-shape="recall"`). That was **a judgement made before the two-column
-     * switch**, when the right side was 「증거」 (evidence) and there really was
+     * switch**, when the right side was 「Evidence」 (evidence) and there really was
      * nothing to show. Now the right side is **the detail of what is selected**,
      * and choosing a commit fills it with changed concepts, the ego drawing and
      * the changed content. While that branch survived, a vault with four commits
@@ -725,8 +725,7 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
      * Pull used to be disabled when `behind === 0`. But "there is nothing to pull"
      * is **a fact you should be able to press and find out**, not something to
      * answer with a dead button and silence — the screen only holds the count from
-     * the last check, and that count may already be stale (owner: *"버튼은 일단
-     * 눌려야지"* — the button should press first and tell you after).
+     * the last check, and that count may already be stale (owner: *"The button should press first and tell you after."*).
      */
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, ahead: 0, behind: 0 },
@@ -886,7 +885,7 @@ describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
 
 describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
   /*
-   * This is where 「이 걸음을 지도에서 보기」 (see this step on the map) used to be
+   * This is where 「See this step on the map」 used to be
    * (owner call: the point was to show everything here, so there is no reason for a
    * button that leaves). So if this position is empty when a concept is clicked,
    * the feature has disappeared.
@@ -976,7 +975,7 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
     const ego = await screen.findByTestId("atlas-git-concept-ego");
     expect(ego).toHaveTextContent("첫 실행 안내");
-    // The owning domain comes from the belongsTo neighbours — 「속한 곳」 has to be drawn.
+    // The owning domain comes from the belongsTo neighbours — 「Belongs to」 has to be drawn.
     expect(ego).toHaveTextContent("속한 곳");
 
     /*
@@ -1053,13 +1052,13 @@ describe("AtlasGitPanel — 2단 작업대의 선택", () => {
 
 describe("AtlasGitPanel — git 이 없어도 바뀐 것은 보인다", () => {
   /*
-   * Owner, 2026-08-02: *"우리 깃 안쓰는 사람은 기록 보는거 제공 안하나?"* (do people
-   * who don't use our git get no history at all?)
+   * Owner, 2026-08-02: *"Do people
+   * who don't use our git get no history at all?"*
    *
    * They do — `change-baseline-store` holds a per-vault baseline, so this session's
    * changes are known independently of git. But that summary was drawn **only in
    * the web degradation**, so a desktop user who had not turned git on was offered
-   * 「연동하기」 and never saw what had changed. Withholding what you already know is
+   * 「Connect」 and never saw what had changed. Withholding what you already know is
    * an omission, not a degradation.
    */
   const CHANGESET = {

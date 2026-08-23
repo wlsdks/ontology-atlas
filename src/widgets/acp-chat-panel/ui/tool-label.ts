@@ -6,13 +6,13 @@
  * On the real thing, the transcript came out like this:
  *
  * ```
- * 작업  mcp__atlas-vault__list_concepts
- * 작업  mcp__atlas-vault__add_concept
- * 실행  Terminal
+ * Run  mcp__atlas-vault__list_concepts
+ * Run  mcp__atlas-vault__add_concept
+ * Execute  Terminal
  * ```
  *
  * Those are function names, not what happened. This repository's design rule
- * already forbids it — *"전문용어는 쉬운 말로. `영향받음 N` → 「이 노드를 쓰는 곳
+ * already forbids it — *"Use plain words for jargon. `Affected N` → 「Places using this node
  * N」"* (jargon in plain words). For the screen to make waiting bearable through
  * "you can see what is happening", that line has to read.
  *

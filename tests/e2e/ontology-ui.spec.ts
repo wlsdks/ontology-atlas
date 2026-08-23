@@ -8,13 +8,13 @@ import { useDogfoodSample } from "./sample-source";
  * (`OntologyViewPage`, `ontology-command-bar`, `#tree-data-warnings`, the
  * MCP/Agents settings tab, the Insights maintenance board, …). That page was
  * retired when `/ontology` converged into a thin redirect to
- * `/topology?index=expanded` (B3 — "허브가 곧 지도"), so those 17 tests only
+ * `/topology?index=expanded` (B3 — "the hub is the map"), so those 17 tests only
  * failed waiting for markup that no longer renders — no product defect, just
  * e2e rot. They were deleted rather than repaired because the surface itself
  * is gone; equivalent current-surface coverage lives in
  * `topology-v2-smoke.spec.ts`.
  *
- * One more test ("데이터가 없으면 detail 패널은 노출되지 않음") was dropped even
+ * One more test ("detail panel is not exposed when there is no data") was dropped even
  * though it still reported green: it asserted zero `ontology-node-detail`
  * elements, but that testid has zero producers left in `src/` — the
  * assertion passes vacuously forever regardless of actual empty-state
@@ -78,8 +78,8 @@ test.describe("ontology view UI", () => {
     // release day — assert the role the element plays.
     //
     // [re-aimed 2026-08-19] This site used to be the panel (`download-primary-cta`).
-    // After the owner removed the install section entirely (*"맨 마지막 이거는 없어도
-    // 될듯? 어차피 맨 위에 다 있어서"* — the last section is probably unnecessary, it is
+    // After the owner removed the install section entirely (*"the last section is probably unnecessary, it is
+    // all at the top anyway"* — the last section is probably unnecessary, it is
     // all at the top anyway), the hero CTA carries the same role.
     const primary = page.getByTestId("gateway-hero-cta");
     await expect(primary).toBeVisible();

@@ -5,7 +5,7 @@
  * **Why a file inside the vault.** Browser storage (localStorage/IndexedDB) is
  * per-origin, so trails accumulated on the web and trails accumulated in the
  * installed Tauri app (a different origin) would be invisible to each other even
- * with the same vault folder open. Owner decision: "웹/앱에서 동일하게 보여야지?"
+ * with the same vault folder open. Owner decision: "the web and the app must show the same thing"
  * (the web and the app must show the same thing), and the vault folder is the
  * only ground both surfaces share.
  *

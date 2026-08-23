@@ -5,7 +5,7 @@
  * **Why it was needed:** the map, INDEX, popovers and the studio all draw
  * locale-specific display names (frontmatter `display_ko:` / `display_en:`)
  * while global search indexed only the canonical `title`. So reading
- * "온톨로지 코어" on a Korean screen and searching for it returned 0 results;
+ * "Ontology Core" on a Korean screen and searching for it returned 0 results;
  * only the original "Ontology Core", which the user had never seen, worked. The
  * studio picker did look at display names, so the two search surfaces even
  * behaved differently.

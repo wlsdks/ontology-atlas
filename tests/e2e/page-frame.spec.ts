@@ -7,10 +7,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
  *
  * **What happened (2026-08-09, owner report):**
  *
- * > *"인사이트, 프로젝트, 스킬 모두 상단 공백이 동일해야하는데 … 디자인 시스템
- * > 있는거 아녔나? 왜 다 다르지?"*
- * > (insights, projects, and skills should all have the same top spacing — don't
- * > we have a design system? why are they all different?)
+ * > *"Insights, projects, and skills should all have the same top spacing — don't
+ * > we have a design system? why are they all different?"*
  *
  * Measured, the distance to the title was **32 / 48 / 20px**. And the top was not
  * the only axis that diverged: the horizontal inset (40/40/32) and the maximum

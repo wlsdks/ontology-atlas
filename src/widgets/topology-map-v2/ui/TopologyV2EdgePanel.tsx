@@ -25,9 +25,9 @@ import { controlClass } from '@/shared/ui/control-class';
  * the relation lexicon (P1a); this widget is display-only.
  */
 export interface TopologyV2EdgePanelProps {
-  /** The plain sentence — "A 가 B 에 기대요" (from the lexicon's plain register). */
+  /** The plain sentence — "A leans on B" (from the lexicon's plain register). */
   sentence: string;
-  /** The formal type label — "의존" (depends). */
+  /** The formal type label — "depends". */
   typeLabel: string;
   fromTitle: string;
   toTitle: string;

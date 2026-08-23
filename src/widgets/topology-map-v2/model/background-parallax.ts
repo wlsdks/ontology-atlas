@@ -1,13 +1,13 @@
 /**
  * Parallax origin for the constellation background — pure computation.
  *
- * **Why it exists** (2026-07-28 design council). Owner: *"배경같은것도 좀 우주처럼
- * 관성있어보이게 하는 그런 배경도 설정에 1개 추가되면 좋겠는데"* (a background
+ * **Why it exists** (2026-07-28 design council). Owner: *"It would be nice to add a setting for a background
+ * that feels like space, with some kind of inertia."* (a background
  * with space-like inertia would be a good setting to add).
  *
  * Seven seats independently reached the same answer — **an autonomous
  * (time-driven) background is rejected; input-coupled parallax is approved.** The
- * 「체계」 seat (design systems) found the decisive fact: the setting **already
+ * 「System」 seat (design systems) found the decisive fact: the setting **already
  * exists** — `constellation`, one of the three `CanvasBackground` choices in
  * `appearance-preferences.ts`, is already a starfield. The delta the owner wanted
  * was not a new background but **camera-coupled parallax on that starfield**.
@@ -23,9 +23,9 @@
  * ban on "moving gradient backgrounds / aurora" (time-driven decoration), and
  * inside WCAG 2.2 §2.3.3's user-initiated exception.
  *
- * The precondition was already met — the 「상호작용」 seat (interaction) required
- * that *"카메라 관성 없이 배경만 넣으면 거짓말이다"* (a background without camera
- * inertia is a lie), and the camera measurably glides for 819 ms after a flick
+ * The precondition was already met — the 「Interaction」 seat (interaction) required
+ * that *"a background without camera
+ * inertia is a lie"*, and the camera measurably glides for 819 ms after a flick
  * release (2026-07-28, measured once ambient sleep had removed the contaminant).
  */
 

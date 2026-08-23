@@ -43,7 +43,7 @@ import type { StageGraph } from '../lib/stage-graph';
  * origin = max(--gateway-gutter, (viewport − --gateway-page-max) / 2)   ← --gateway-origin
  * ```
  *
- * The owner's report (*"좌우가 같아야함"* — the left and right must match) and why `mx-auto`
+ * The owner's report (*"The left and right must match"* — the left and right must match) and why `mx-auto`
  * was rejected live in the origin doc-blocks of `shared/lib/gateway-frame.ts` and
  * `app/globals.css`. This file's only job is seating every section's content inside
  * `PAGE_GUTTER` + `PAGE_COLUMN`. Gate: `tests/e2e/download-gateway-grid.spec.ts` reads the
@@ -57,7 +57,7 @@ import type { StageGraph } from '../lib/stage-graph';
  *
  * [Retired 2026-08-19] The install section (three steps, the panel, the verification rail)
  * disappeared entirely, taking with it the assertions that used the panel as their yardstick —
- * owner: *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"* (the last one can go; it's
+ * owner: *"The last one can go; it's all at the top anyway"* (the last one can go; it's
  * all at the top anyway). The hero carries all four destinations.
  */
 
@@ -88,7 +88,7 @@ const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
  *
  * ## [Deleted 2026-08-19] ⑤ Install and download
  *
- * Owner: *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"* (the last one can go; it's
+ * Owner: *"The last one can go; it's all at the top anyway"* (the last one can go; it's
  * all at the top anyway). The hero carries all four destinations (my platform, Intel, Windows,
  * browser), so the panel was asking the same decision a second time. Gone with it: the three
  * install steps, the download panel, and the verification rail — and the **four honesty facts**
@@ -96,8 +96,7 @@ const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
  * sent to a server") are now nowhere on this page. The owner accepted that cost explicitly
  * (`docs/DECISIONS.md` 2026-08-19). Only two sentences of release policy remain, in the colophon.
  *
- * The motion discipline is "informational motion only" (owner: *"다운로드 페이지는 모션이
- * 중요함.. 보여지는게 최선인 만큼"* — motion matters on the download page, since showing is the
+ * The motion discipline is "informational motion only" (owner: *"Motion matters on the download page, since showing is the best we can do"* — motion matters on the download page, since showing is the
  * best we can do). The effect layer (the current field, the grain, the cursor ring) is the
  * sealed `--gateway-fx-*` exception (see the `GatewayFx` doc-block).
  *
@@ -111,8 +110,7 @@ const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
  *    what stood behind it was 32 JS files, 2,572 KB decoded. The full story is in the
  *    `.gateway-rise` doc-block in `app/globals.css`.
  *
- * ② **The three sections below are owned by scroll.** Owner: *"부드러운 모션같은거 우리도
- *    하고싶거든? 스크롤하면서 멋지게"* (we want smooth motion too, something nice as you
+ * ② **The three sections below are owned by scroll.** Owner: *"We want smooth motion too, something nice as you scroll"* (we want smooth motion too, something nice as you
  *    scroll). With `animation-timeline: view()` the sole input to progress is how far the
  *    element has entered the scrollport — scroll slowly and it arrives slowly, stop and it
  *    stops. It uses neither rAF nor a scroll listener, so it adds not one frame to this page's
@@ -313,8 +311,7 @@ function SectionIntro({
  *
  * ## The headline is the owner's sentence, verbatim — not one character is polished
  *
- * 「에이전트는 코드를 작성하고 / 사람의 인지 부채는 쌓여갑니다」 ("agents write the code /
- * a person's cognitive debt piles up"). The size is `--text-monument` (clamp 40px–96px) — with
+ * "Agents write the code / a person's cognitive debt piles up". The size is `--text-monument` (clamp 40px–96px) — with
  * the map out of the first screen, the type inherits that weight (ramp registration in
  * `app/globals.css` and `cn.ts`).
  *
@@ -322,8 +319,8 @@ function SectionIntro({
  *
  * Implementing the mockup's "headline left / object right" split with the headline inside the
  * column broke the monument when measured: at 1728 the text column was 800px against a Korean
- * line budget of 916/1009px — the two sentences split into four lines, leaving `작성하고` and
- * `쌓여갑니다` stranded as rag lines. A monument is a monument only when **sentence = line**. So
+ * line budget of 916/1009px — the two sentences split into four lines, leaving `write code` and
+ * `piles up` stranded as rag lines. A monument is a monument only when **sentence = line**. So
  * the headline uses the full column as its measure (an `@container` wrapper declares it, and
  * `--text-monument`'s 4.8cqw sizes against that measure), and the split starts with the band
  * below it: lead, CTA, and trust line on the left, the hero object (a depth projection of the
@@ -348,8 +345,7 @@ function HeroSection({
   }, []);
 
   /**
-   * The hero CTA's four destinations (owner, 2026-08-18: *"윈도우 다운로드 하기 버튼이랑 웹
-   * 플레이그라운드 보기 버튼이 없음.. 데모 먼저 보기도 버튼인지도 모르겠고"* — there is no
+   * The hero CTA's four destinations (owner, 2026-08-18: *"There is no Windows download button and no web playground button.. I don't even know if 'see the demo first' is a button"* — there is no
    * Windows download button and no web playground button, and "see the demo first" does not even
    * read as a button):
    * ① get it for my platform (filled — the sole attention winner) ② see the demo first
@@ -425,8 +421,7 @@ function HeroSection({
           'lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]',
         )}
       >
-        {/* The old `lg:pb-14` optical correction was returned (owner, 2026-08-18: *"윗공백이 너무
-            심한데"* — too much space at the top; measured at 1512, the correction lifted the
+        {/* The old `lg:pb-14` optical correction was returned (owner, 2026-08-18: *"Too much space at the top"* — too much space at the top; measured at 1512, the correction lifted the
             decision block 28px, leaving 108px of empty lower-left between the block's bottom and
             the canvas bottom, which in turn made the object look pushed down). Now that the CTA
             wraps to two lines and the block is closer to the canvas height, plain `items-center`
@@ -469,8 +464,7 @@ function HeroSection({
                 {t('webCta')}
               </Link>
             )}
-            {/* `outline` — ghost has neither a face nor a border and read as prose (owner: *"버튼인지도
-                모르겠고"* — I can't even tell it's a button). Something pressable has to look
+            {/* `outline` — ghost has neither a face nor a border and read as prose (owner: *"I can't even tell it's a button"* — I can't even tell it's a button). Something pressable has to look
                 pressable, and in this ramp `outline` is the minimum unit of that. */}
             <a
               href="#demo"
@@ -524,7 +518,7 @@ function HeroSection({
               ) : null}
               {/* The gateway's second promise — the path to look without installing is always open.
                   The old `webCta` lived only in the unpublished branch, so now that a release is
-                  published it never appeared at all (owner: *"웹 플레이그라운드 보기 버튼이 없음"*
+                  published it never appeared at all (owner: *"The web playground button is missing"
                   — the web playground button is missing). The label is shorter than `webCta`'s
                   because of the line budget: a longer label drops this line alone onto a third row
                   in the 575px Korean measure (measured at 1512). */}
@@ -921,8 +915,7 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
  *
  * > **The agent lives inside the app — it analyzes and repairs the ontology through conversation alone.**
  *
- * The previous version was an `mcp-verify` terminal and the owner rejected it (*"이건 뭔말인지를
- * 모르겠어"* — I have no idea what this means; it showed a developer verifying configuration, not
+ * The previous version was an `mcp-verify` terminal and the owner rejected it (*"I have no idea what this means"* — I have no idea what this means; it showed a developer verifying configuration, not
  * the thing being sold). The real thing already exists: `AcpChatPanel` (the in-app conversation),
  * `AcpRuntimeSettings`, and the vault capability "in-app coding agent runner (ACP)". The scene
  * (`AcpChatScene`) re-enacts a measured round trip of that real thing (ledger 2026-08-16 (7)).

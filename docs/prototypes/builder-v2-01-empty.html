@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <title>빌더 v2 — 01 빈 캔버스</title>
-<!-- 시안 표준: 1920×1080 primary · 100vh 유동 (고정 px 프레임 없음, 스크롤 0)
+<!-- Design standard: 1920×1080 primary · 100vh fluid (no fixed px frame, scroll 0)
 
-  builder-v2-01-empty — 빌더 재구성 v2 · A0 소유자 승인용 3상태 중 [빈 캔버스].
-  계약 요약 (기획서 §1):
-    · 원칙: 빌더 = 지형도 캔버스의 편집 가능한 형제. 새 언어 발명 금지.
-      캔버스 안 = 지형도 v2 언어(kind 글리프 · trace 엣지 · 블루프린트 그리드 · 음각 numeral).
-      캔버스 밖 = 크롬 시스템(44px 타일/칩 · radius 10/12 · --chrome 문법 · engraved).
-    · 레이아웃: 좌 64px 내비 레일(활성=빌더) → 헤더 1행(브레드크럼+census 좌 ·
-      dirty 중 · 유틸 클러스터+내보내기 우) → [팔레트 240 | 블루프린트 캔버스 |
-      인스펙터 320] → 쓰기 확인 바 1행.
-    · 이 상태: 빈 캔버스 + 팔레트 + 빈 블루프린트 그리드 + "글리프를 골라 시작"
-      힌트 + 비활성 쓰기바 + 인스펙터 placeholder.
-    · 토큰은 chrome-rail-combined / index-panel-v2-full 의 :root 그대로 재사용.
+  builder-v2-01-empty — Builder reconstruction v2 · [Empty canvas] among 3 states for A0 owner approval.
+  Contract summary (planning doc §1):
+    · Principle: Builder = editable sibling of terrain map canvas. No new language invention.
+      Inside canvas = terrain map v2 language (kind glyph · trace edge · blueprint grid · engraved numeral).
+      Outside canvas = chrome system (44px tile/chip · radius 10/12 · --chrome syntax · engraved).
+    · Layout: left 64px nav rail (active=builder) → header 1 row (breadcrumb+census left ·
+      dirty indicator · utility cluster+export right) → [palette 240 | blueprint canvas |
+      inspector 320] → write-confirm bar 1 row.
+    · This state: empty canvas + palette + empty blueprint grid + "pick a glyph to start"
+      hint + inactive writebar + inspector placeholder.
+    · Tokens reuse :root of chrome-rail-combined / index-panel-v2-full as-is.
 -->
 <style>
   :root{
@@ -37,7 +37,7 @@
 
   .frame{width:100%;height:100vh;display:flex;overflow:hidden}
 
-  /* ══ 좌측 내비 레일 (chrome-rail-combined 문법, 활성=빌더) ══ */
+  /* ══ Left nav rail (chrome-rail-combined syntax, active=builder) ══ */
   .navrail{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;padding:12px 0 14px;
     background:#0a0b0f;border-right:1px solid var(--divider);z-index:10}
   .navrail .logo{width:34px;height:34px;display:grid;place-items:center;color:var(--t2);margin-bottom:14px}
@@ -57,7 +57,7 @@
 
   .work{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 
-  /* ══ 헤더 1행 ══ */
+  /* ══ Header 1 row ══ */
   .topbar{flex:none;height:58px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--divider)}
   .crumbs{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--t3)}
   .crumbs a{color:var(--t2);text-decoration:none}
@@ -80,7 +80,7 @@
   .exportbtn:hover{color:var(--t1);border-color:var(--border-strong)}
   .exportbtn svg{width:14px;height:14px;color:var(--t3)}
 
-  /* ══ 3-pane 본체 ══ */
+  /* ══ 3-pane body ══ */
   .panes{flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr) 320px;gap:14px;padding:14px}
   .pane{background:var(--panel);border:1px solid var(--border-soft);border-radius:12px;
     box-shadow:var(--machined),0 14px 34px rgba(0,0,0,.35);display:flex;flex-direction:column;min-height:0;overflow:hidden}
@@ -89,7 +89,7 @@
   .plabel .n{margin-left:auto;font-size:10px;color:var(--t4)}
   .pbody{flex:1;min-height:0;overflow-y:auto;padding:12px}
 
-  /* 팔레트 */
+  /* Palette */
   .kcard{display:flex;align-items:center;gap:11px;border:1px solid var(--border-soft);background:rgba(255,255,255,.02);
     border-radius:10px;padding:11px 12px;margin-bottom:9px;cursor:grab}
   .kcard:hover{border-color:var(--border-strong)}
@@ -99,7 +99,7 @@
   .kcard .kbd{font-family:var(--mono);font-size:9px;border:1px solid var(--divider);border-radius:4px;padding:1px 5px;color:var(--t4)}
   .khint{margin-top:6px;padding-top:11px;border-top:1px solid var(--divider);font-size:11px;line-height:1.65;color:var(--t4)}
 
-  /* 블루프린트 캔버스 */
+  /* Blueprint canvas */
   .canvas{position:relative;padding:0;overflow:hidden;
     background:
       repeating-linear-gradient(0deg,transparent 0 23px,rgba(255,255,255,.035) 23px 24px),
@@ -117,7 +117,7 @@
   .legend{position:absolute;right:14px;bottom:12px;font-family:var(--mono);font-size:10.5px;color:var(--t4);display:flex;gap:13px;align-items:center}
   .legend span{display:inline-flex;align-items:center;gap:6px}
 
-  /* 인스펙터 */
+  /* Inspector */
   .ihead{display:flex;align-items:center;gap:9px}
   .ihead .iname{min-width:0;flex:1;font-size:14.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t1)}
   .ikind{padding-left:25px;font-family:var(--mono);font-size:10.5px;color:var(--t4);margin-top:5px;letter-spacing:.02em}
@@ -136,7 +136,7 @@
   .iempty .s{font-size:11px;line-height:1.6;max-width:220px}
   .dim{opacity:.4;pointer-events:none}
 
-  /* 쓰기 확인 바 */
+  /* Write-confirm bar */
   .writebar{flex:none;height:58px;display:flex;align-items:center;gap:14px;padding:0 16px;border-top:1px solid var(--divider)}
   .writebar .wlabel{font-size:13px;font-weight:560;color:var(--t1);flex:none}
   .writebar .payload{min-width:0;flex:1;font-family:var(--mono);font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -154,7 +154,7 @@
 </head>
 <body>
 <div class="frame">
-  <!-- 좌측 내비 레일 -->
+  <!-- Left nav rail -->
   <aside class="navrail">
     <div class="logo" title="Ontology Atlas"><svg class="lucide" viewBox="0 0 24 24"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg></div>
     <nav>
@@ -171,7 +171,7 @@
   </aside>
 
   <div class="work">
-    <!-- 헤더 1행 -->
+    <!-- Header 1 row -->
     <header class="topbar">
       <nav class="crumbs">
         <a href="#">← 온톨로지</a><span class="sep">/</span><span class="cur">빌더</span>
@@ -188,7 +188,7 @@
 
     <!-- 3-pane -->
     <div class="panes">
-      <!-- 좌: kind 팔레트 -->
+      <!-- Left: kind palette -->
       <aside class="pane" aria-label="노드 팔레트">
         <div class="plabel">Node Kinds<span class="n">4</span></div>
         <div class="pbody" style="display:flex;flex-direction:column">
@@ -197,7 +197,7 @@
         </div>
       </aside>
 
-      <!-- 중: 블루프린트 캔버스 (빈 상태) -->
+      <!-- Center: blueprint canvas (empty state) -->
       <section class="pane canvas" aria-label="캔버스">
         <svg class="edges" aria-hidden="true"></svg>
         <div class="emptyhint">
@@ -222,7 +222,7 @@
         </span>
       </section>
 
-      <!-- 우: 인스펙터 (placeholder) -->
+      <!-- Right: inspector (placeholder) -->
       <aside class="pane" aria-label="인스펙터">
         <div class="plabel">Inspector</div>
         <div class="pbody" style="display:flex;flex-direction:column">
@@ -238,7 +238,7 @@
       </aside>
     </div>
 
-    <!-- 쓰기 확인 바 (비활성) -->
+    <!-- Write-confirm bar (inactive) -->
     <section class="writebar">
       <span class="wlabel">쓰기 확인</span>
       <span class="payload muted">변경 없음 — 캔버스에서 노드나 관계를 만들면 여기에 요약이 쌓입니다.</span>

@@ -1,56 +1,54 @@
-// BYOK API 키를 **OS 키체인**에 넣고 꺼내는 브리지 (#80).
+// Bridge to store and retrieve BYOK API keys in the **OS keychain** (#80).
 //
-// ## 왜 Rust 가 키를 소유하는가
+// ## Why Rust owns the key
 //
-// 이 모듈의 존재 이유는 단 하나다: **WebView 가 키를 절대 보지 못하게 한다.**
+// The sole reason this module exists is: **to prevent WebView from ever seeing the key.**
 //
-// 브라우저 저장소(localStorage/IndexedDB)에 키를 두면 XSS 하나로 키가 털린다.
-// 정적 export 로 나가는 웹 빌드에서 BYOK 를 하려면 `anthropic-dangerous-direct-
-// browser-access` 헤더가 필요한데, 그 헤더 이름 자체가 벤더의 경고다.
+// Storing keys in browser storage (localStorage/IndexedDB) exposes them to XSS.
+// To use BYOK in a static export web build, you need the `anthropic-dangerous-direct-
+// browser-access` header, and the header name itself is a vendor warning.
 //
-// 그래서 계약이 이렇다:
+// So the contract is:
 //
-// - 저장: 프런트가 키를 **한 번** 넘기고 즉시 자기 상태에서 지운다.
-// - 조회: 프런트는 키를 **꺼낼 수 없다**. `secret_status` 는 "있는가 · 어떤
-//   모양인가(마지막 4자)" 만 돌려준다. 전체 값을 반환하는 커맨드가 **없다.**
-// - 사용: 나중에 LLM 호출을 붙일 때도 **Rust 안에서** 키체인을 읽어 요청을
-//   보낸다. 키가 IPC 경계를 다시 넘지 않는다.
+// - Storage: Frontend passes the key **once** and immediately clears it from its own state.
+// - Retrieval: Frontend **cannot retrieve** the key. `secret_status` only returns "exists · what
+//   it looks like (last 4 chars)". There is **no** command that returns the full value.
+// - Usage: Even when attaching LLM calls later, read the keychain **inside Rust** and send the request.
+//   The key does not cross the IPC boundary again.
 //
-// 신뢰 헌장(`local-first.md` v9)이 BYOK 를 허용하는 조건 — opt-in · 전송 범위
-// UI 명시 · 로컬 감사 로그 — 중 이 모듈은 **보관**만 담당한다. 전송·감사는
-// 호출을 붙이는 슬라이스에서 별도로 구현한다.
+// Trust charter (`local-first.md` v9) allows BYOK under conditions — opt-in · explicit transmission scope
+// UI · local audit log — this module handles **storage** only. Transmission and auditing are
+// implemented separately in the slice attaching the call.
 //
-// ## 왜 계정 이름을 provider 로 쪼개는가
+// ## Why split account names by provider?
 //
-// 사용자가 Anthropic 과 OpenAI 를 동시에 쓸 수 있다. 하나의 엔트리에 뭉치면
-// 하나를 지울 때 다른 하나가 같이 날아간다.
+// Users can use Anthropic and OpenAI simultaneously. If bundled into one entry,
+// deleting one causes the other to disappear too.
 
 use keyring::Entry;
 use serde::Serialize;
 
-/// 키체인 서비스 이름 — Keychain Access.app 에서 사용자가 이 이름으로 찾는다.
-/// 앱 이름과 같아야 "이게 뭐지" 가 안 생긴다.
+/// Keychain service name — users find this by this name in Keychain Access.app.
+/// Must match the app name to avoid "what is this?" confusion.
 const SERVICE: &str = "Ontology Atlas";
 
-/// 지원 provider. 임의 문자열을 받지 않는 이유: 프런트가 넘긴 값이 그대로
-/// 키체인 계정 이름이 되므로, 오타 하나가 "저장은 됐는데 못 찾는" 유령 엔트리를
-/// 만든다. 허용 목록으로 고정한다.
+/// Supported provider. We do not accept arbitrary strings because the value passed from the frontend
+/// becomes the Keychain account name, so a single typo creates a "saved but unfound" ghost entry.
+/// We lock this to an allowlist.
 ///
-/// ## 명명 벤더는 여기서 **3으로 동결**한다
+/// ## Naming vendors are **frozen at 3** here
 ///
-/// 비용은 벤더 수가 아니라 **개념 수**다. 이 셋은 전부 같은 문법 하나를 공유
-/// 한다 — 키를 붙여넣고 · 키체인에 두고 · 끝 4자만 보고 · 코드에 박힌 공식
-/// 주소로 확인한다. 그래서 셋째(gemini)를 더해도 사용자가 배울 개념은 늘지
-/// 않았다.
+/// The cost is not the number of vendors but the **number of concepts**. These three all share one syntax:
+/// paste the key · store it in Keychain · look only at the last 4 characters · verify via the hardcoded formula
+/// address. Thus, adding a third (gemini) did not increase the concepts users need to learn.
 ///
-/// 4번째 명명 벤더는 두 조건을 **동시에** 만족할 때만 받는다:
-/// ① Bearer 호환(OpenAI 방식)으로 흡수할 수 없는 전용 인증 프로토콜이고,
-/// ② 실제 수요 증거가 있다.
+/// A fourth naming vendor is accepted only if it satisfies both conditions **simultaneously**:
+/// ① It uses a proprietary authentication protocol that cannot be absorbed via Bearer compatibility (OpenAI style), and
+/// ② There is evidence of actual demand.
 ///
-/// 조건을 못 채우는 벤더(Groq·Mistral·xAI·Together·LM Studio…)는 여기 오지
-/// 않는다 — 사용자가 주소를 직접 적는 "주소로 연결" 한 갈래가 전부 흡수한다.
-/// 명명 목록을 벤더별로 유지보수하기 시작하면 목록은 항상 누군가에게 모자라고
-/// (롱테일), 코드는 벤더 API 가 바뀔 때마다 썩는다.
+/// Vendors that fail these conditions (Groq·Mistral·xAI·Together·LM Studio…) do not come here — the single path where users enter addresses directly, "connect by address," absorbs them all.
+/// If we start maintaining the naming list per vendor, the list will always be short for someone
+/// (long tail), and the code rots every time a vendor API changes.
 const PROVIDERS: [&str; 3] = ["anthropic", "openai", "gemini"];
 
 pub(crate) fn validate_provider(provider: &str) -> Result<&'static str, String> {

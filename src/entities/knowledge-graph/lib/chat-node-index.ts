@@ -2,8 +2,7 @@
  * Maps a name that appeared in chat to a node on the map. **Needed because there
  * are two namespaces.**
  *
- * Observed in the installed app, 2026-08-17. Asked codex *"이 폴더에 있는 개념들의
- * slug 를 전부 알려줘"* (list every concept slug in this folder), it answered:
+ * Observed in the installed app, 2026-08-17. Asked codex *"list every concept slug in this folder"* (list every concept slug in this folder), it answered:
  *
  * ```
  * project

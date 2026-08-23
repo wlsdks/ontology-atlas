@@ -63,7 +63,7 @@ export function useRowDisclosure(open: boolean): {
     // box is unmounted, so putting this update after the guard below leaves
     // `previous` at `null` forever — and then a user-initiated open (closed →
     // open) is misread as a first mount and the animation dies. That regression
-    // happened on 2026-07-28; the "닫힘 → 열림" case (closed → open) in
+    // happened on 2026-07-28; the "Closed → Open" case (closed → open) in
     // `use-row-disclosure.test.tsx` caught it.
     const previous = previousOpenRef.current;
     previousOpenRef.current = open;

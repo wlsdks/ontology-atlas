@@ -208,7 +208,7 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
 
   it("상한이 헐겁지 않다 — 여유를 무료로 두지 않는다", () => {
     /*
-     * The same grammar the 체계 seat used on other ratchets: a ceiling with the
+     * The same grammar the system seat used on other ratchets: a ceiling with the
      * measurement far below it turns that slack into a free pass for whatever arrives
      * next. Seven exist today, so the floor is six.
      */

@@ -142,7 +142,7 @@ export function GuidedTourCard({
              is not a flex container, so this button was shrink-to-fit and those two
              centring declarations **had never once applied** — it sat left-aligned
              while claiming to be centred (measured 2026-07-29). Filling the width is
-             also what lines its left edge up with 「이전」 on the same row. */
+             also what lines its left edge up with "Previous" on the same row. */
           className={controlClass({ shape: "chip", size: "md", tone: "muted", className: "h-8 w-full justify-center rounded-[var(--chrome-radius-inner)] border-dashed border-[color:var(--chrome-border)] text-center text-body" })}
         >
           <span data-testid={hasSelection ? "guided-tour-success" : "guided-tour-waiting"}>

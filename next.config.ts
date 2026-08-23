@@ -13,8 +13,8 @@ const allowedDevOrigins = [
     .filter(Boolean) ?? []),
 ];
 
-// GitHub Pages 프로젝트 사이트(`/ontology-atlas` 서브패스) 배포용 —
-// 루트 배포(Firebase, dev)에서는 미설정. src/shared/lib/base-path.ts 와 짝.
+// For deploying to GitHub Pages project site (`/ontology-atlas` subpath) —
+// not configured for root deployment (Firebase, dev). Paired with src/shared/lib/base-path.ts.
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || undefined;
 
 const nextConfig: NextConfig = {
@@ -25,13 +25,13 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
-  // dev 전용 Next 인디케이터(N 원형)가 기본 top-right 에서 실제 크롬(설정
-  // 기어·SETTINGS·Workspace 칩)을 가리고 클릭까지 가로챘다(겹침 소탕
-  // 2026-07-23, 768 실측 — 소유자의 "N 아바타 겹침" 실보고의 정체).
-  // bottom-left 로 옮겼더니 이번엔 좌측 레일 최하단 "지도 설정" 기어와 정확히
-  // 겹쳐 클릭을 전부 가로챘다(최종 스윕 P3). 네 모서리 중 인터랙티브 크롬이
-  // 없는 곳은 우하단뿐 — 관계 범례(정보 표시)와 일부 겹칠 수 있으나 클릭을
-  // 뺏지는 않는다. 프로덕션 빌드에는 렌더되지 않는 dev 전용 표면.
+  // The dev-only Next indicator (N circle) originally covered the actual Chrome UI (settings
+  // gear · SETTINGS · Workspace chip) and hijacked clicks from its default top-right position
+  // (overlap elimination 2026-07-23, measured at 768px — identity of the owner's "N avatar overlap" report).
+  // Moving it to bottom-left caused it to exactly overlap the "Map Settings" gear at the bottom
+  // of the left rail, hijacking all clicks (final sweep P3). Among the four corners, only the
+  // bottom-right lacks interactive Chrome — it may overlap with the relationship legend (info display)
+  // but does not steal clicks. This is a dev-only surface not rendered in production builds.
   devIndicators: {
     position: 'bottom-right',
   },

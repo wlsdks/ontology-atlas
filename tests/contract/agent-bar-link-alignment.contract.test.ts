@@ -6,13 +6,13 @@ import { controlClass } from "@/shared/ui/control-class";
  * **The `truncate` axis breaks flex shapes** (owner report → measurement,
  * 2026-08-17).
  *
- * In the bottom agent bar the target node link (「예시 영역」) sat higher than the
+ * In the bottom agent bar the target node link ("Example Area") sat higher than the
  * text beside it. Measured from an installed-app screenshot, in ink pixels:
  *
  * ```
  *   codex-acp      top 18 · bottom 25
- *   마지막 작업…    top 17 · bottom 25
- *   예시 영역       top 14 · bottom 22   ← 3px higher
+ *   Last Task...    top 17 · bottom 25
+ *   Example Area    top 14 · bottom 22   ← 3px higher
  * ```
  *
  * The cause is the `block` that `truncate: true` emits. tailwind-merge lets it push
@@ -21,7 +21,7 @@ import { controlClass } from "@/shared/ui/control-class";
  *
  * Measured after the fix: the bottom edge is 25, **exactly matching** its neighbours,
  * with a 0.5px difference in centre. The remaining 1px difference at the top is
- * glyph shape (`업` vs `역`), not alignment.
+ * glyph shape (`up` vs `yeok`), not alignment.
  *
  * ⚠️ This check **pins the trap**; it does not fix every consumer. Seven places use
  * the same combination today, and this is the one where the defect was actually

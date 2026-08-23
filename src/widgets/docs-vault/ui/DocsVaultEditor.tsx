@@ -79,7 +79,7 @@ const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
  *
  * It used to be slug-only (`…:README`), so **files of the same name in different
  * folders overwrote each other's drafts** — opening folder A's `README.md` to edit
- * showed folder B's body carrying a 「임시저장됨 · 최종 저장 필요」 tag. Prose the user
+ * showed folder B's body carrying a "Temporarily Saved · Final Save Required" tag. Prose the user
  * never wrote, presented as the user's unsaved changes.
  *
  * What follows is worse: if the two files were **byte-identical** at that moment
@@ -227,7 +227,7 @@ export function DocsVaultEditor({
    * success, or as breakage).
    *
    * With only `@` typed it still shows the list (the first 8). Answering an empty
-   * query with 「없어요」 would simply be wrong.
+   * query with 「No results」 would simply be wrong.
    */
   const acHasQuery = (autocomplete?.query ?? '') !== '';
   const acEmpty = autocomplete !== null && acHasQuery && acMatches.length === 0;
@@ -373,7 +373,7 @@ export function DocsVaultEditor({
        * ⚠️ Do not destructure this as `doc` — the component's prop is already named
        * `doc` (the document being edited) and would be shadowed. That mistake was
        * actually made, and the link's base point matched its destination, producing
-       * `./같은폴더.md` (measured 2026-08-08).
+       * `./same-folder.md` (measured 2026-08-08).
        */
       const { doc: targetDoc, trigger } = pendingMention;
       const result = insertMentionRelation({
@@ -662,7 +662,7 @@ export function DocsVaultEditor({
         </span>
         {/* ⚠️ **The status chips on this row are one specification** (measured fix,
             2026-08-08). Only the save-status chip was `text-caption` (9.5px) while
-            its neighbours 「자동 백업 · 최종 저장」 and 「검증 · 되돌리기」 were
+            its neighbours 「Auto Backup · Last Saved」 and 「Verify · Undo」 were
             `text-label` (11px) — chips of the same kind standing side by side on one
             row, with the ramp off by a step (the parent row is itself `text-label`).
             The same defect type as the one caught in the settings sheet on
@@ -1020,7 +1020,7 @@ export function DocsVaultEditor({
                 </span>
                 {/* State up front 「what happens if I choose」 — this menu's result is
                     inside the frontmatter, so unsaid it reads as a feature that only
-                    inserts a link (owner: *"무슨 의미인지를 모르겠음"* — I can't tell
+                    inserts a link (owner: *"I don't understand what this means"* — I can't tell
                     what this means). */}
                 <span className="block truncate text-label text-[color:var(--color-text-quaternary)]">
                   {t('mentionHint')}
@@ -1044,7 +1044,7 @@ export function DocsVaultEditor({
                       onClick={() => pickMentionTarget(d)}
                       className="hover:bg-[color:var(--color-overlay-1)]"
                     >
-                      {/* Kind marker — owner: *"무슨 개념을 말하는건지도 모르겠고"* (I
+                      {/* Kind marker — owner: *"I don't even know which concept this refers to"* (I
                           can't tell which concept this even is). A list of titles
                           alone cannot say whether something is a domain, a capability
                           or an element, and without that you cannot decide which

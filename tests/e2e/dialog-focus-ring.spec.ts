@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
  * Programmatically moved focus **must not draw the browser's default ring.**
  *
  * **Why this gate exists** (design audit, 2026-08-04). The first-run sheet
- * 「내 폴더를 지도로 켜기」 (turn my folder into a map) moves focus to a
+ * 「Turn my folder into a map」 (turn my folder into a map) moves focus to a
  * `tabIndex={-1}` container when it opens — the correct handling, so a screen reader
  * starts from the title. But that container had nothing switching the ring off, so
  * `:focus-visible` matched and the browser's default focus ring (**system sky blue**

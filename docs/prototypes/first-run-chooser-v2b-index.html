@@ -1,12 +1,12 @@
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
-  first-run chooser 재설계 v2b — "INDEX 패널 통합" (플로팅 표면 0개)
-  소유자 반려(중앙 카드) 후 재설계. 신규 플로팅 surface 를 아예 만들지 않는다 —
-  첫 방문 상태의 INDEX 패널(B3 계기 패널, 첫 방문 기본 = 펼침) 맨 위가
-  "시작하기" 모듈로 시작한다: 폴더 열기 primary + 새 vault, 그 아래 hairline
-  건너 샘플 트리. 지도는 완전 무차폐. 시작하기 모듈은 vault 를 열면 사라지고
-  그 자리가 원래 INDEX 검색으로 돌아온다.
-  동작 계약: 재방문(복원된 vault)엔 이 모듈·SAMPLE 배지 없이 본인 vault 직행.
+  first-run chooser redesign v2b — "INDEX panel integration" (0 floating surfaces)
+  Redesign after owner rejection (central card). Do not create any new floating surface —
+  the top of the INDEX panel (B3 dashboard panel, default on first visit = open) for
+  first-visit state starts with a "Get Started" module: Open folder primary + New vault, below it
+  hairline jump sample tree. Map is completely unobstructed. Get Started module disappears when
+  vault is opened, returning that space to original INDEX search.
+  Behavior contract: on return visit (restored vault), go directly to own vault without this module/SAMPLE badge.
 -->
 <!doctype html>
 <html lang="ko">
@@ -34,7 +34,7 @@
   .util{display:flex;gap:8px}
   .util .btn{width:30px;height:30px;border:1px solid var(--border-soft);background:rgba(17,18,23,.92);border-radius:7px;display:grid;place-items:center;color:var(--t3);font-size:12px}
   .index{position:absolute;top:76px;left:22px;bottom:22px;width:320px;border:1px solid var(--border-soft);background:rgba(17,18,23,.95);border-radius:11px;z-index:4;display:flex;flex-direction:column;overflow:hidden}
-  /* ★ 시작하기 모듈 — 패널 상단, 별도 플로팅 없음 */
+  /* ★ Getting Started module — top of panel, no floating layer */
   .starter{padding:16px 16px 14px;border-bottom:1px solid var(--divider);background:linear-gradient(180deg,rgba(94,106,210,.07),transparent)}
   .starter .cap{display:flex;align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;color:var(--t3);text-transform:uppercase;margin-bottom:9px}
   .starter .cap .dot{width:5px;height:5px;border-radius:50%;background:var(--amber)}

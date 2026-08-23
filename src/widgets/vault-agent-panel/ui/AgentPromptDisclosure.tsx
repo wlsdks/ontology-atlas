@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Viewing the 「지침」 (instructions) — not editable, but **one click to read**.
+ * Viewing the "Instructions" (instructions) — not editable, but **one click to read**.
  *
  * A hidden prompt is trust debt. The user has to know what instructions go out
  * alongside their own vault content. The string drawn here is **the result of the
@@ -10,7 +10,7 @@
  *
  * ## Why content only, not a card
  *
- * This view and 「터미널에서 이어가기」 (continue in the terminal) are both side
+ * This view and "Continue in the terminal" (continue in the terminal) are both side
  * branches opened **when leaving or when in doubt**, yet each used to sit
  * permanently as a bordered strip, stacking at the floor at the same weight as the
  * composer (measured 1512×950: 4 strips at the floor). Now one row under the

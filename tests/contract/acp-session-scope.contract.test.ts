@@ -14,8 +14,8 @@ import {
  * all**:
  *
  * ```
- * { cwd: "/Users/…/side-project/ontology-atlas", title: "디자인 시스템 수준 파악" }
- * { cwd: "/Users/…/workspaces/…/main-3",        title: "Buzz 오픈소스 분석 …" }
+ * { cwd: "/Users/…/side-project/ontology-atlas", title: "Design System Level Assessment" }
+ * { cwd: "/Users/…/workspaces/…/main-3",        title: "Buzz Open Source Analysis ..." }
  * ```
  *
  * Rendering that directly makes Atlas display **work titles from folders the user

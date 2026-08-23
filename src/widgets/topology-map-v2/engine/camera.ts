@@ -32,7 +32,7 @@
  * the projection but not the compensating clamp, so a single realistic
  * pan/flick release genuinely arrived at that huge target and stranded the
  * camera in blank canvas (repro: chrome-devtools pointerdown/move/up with
- * ~30ms spacing over ~220px — only "지도 전체 맞추기"/fitViewToken recovered
+ * ~30ms spacing over ~220px — only "Fit to entire map"/fitViewToken recovered
  * it). `panBounds`/`isDragging` are optional so existing call sites (and the
  * pre-existing scale-only tests above) keep working unchanged when omitted.
  */

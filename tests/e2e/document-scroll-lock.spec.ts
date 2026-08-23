@@ -70,9 +70,8 @@ test.describe("문서 스크롤 잠금 — 셸이 뷰포트를 소유한다", ()
      * document".
      *
      * Its subject (the `download-trust` verification rail and the checksum copy button
-     * inside it) disappeared along with the install section — owner: *"맨 마지막 이거는
-     * 없어도 될듯? 어차피 맨 위에 다 있어서"* (this last one can probably go; it is all
-     * at the top anyway). The property this test guarded (zero document scroll slack
+     * inside it) disappeared along with the install section — owner: *"This last one can probably go; it is all
+     * at the top anyway."* The property this test guarded (zero document scroll slack
      * even in the gateway's tallest state) is now carried by the `/ko/?guides=off` test
      * in the loop above — the gateway's tallest state is now its first paint.
      */

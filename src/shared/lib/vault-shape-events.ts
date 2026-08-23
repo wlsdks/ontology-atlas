@@ -14,12 +14,11 @@
  * one. The activity log knows when and who; the manifest knows what.
  *
  * **Bridges are measured exactly as the ledger defines them.** The 2026-08-01 ledger entry
- * (bridge nodes as a first-class concept in the spec) describes the procedure as *"공유
- * 행동을 명명해 add_concept 1회 + 자식 재부모화"* — name the shared behaviour with one
+ * (bridge nodes as a first-class concept in the spec) describes the procedure as *"Name the shared behaviour with one `add_concept`, then re-parent the children onto it."* — name the shared behaviour with one
  * `add_concept`, then re-parent the children onto it. So a bridge here is **a newly created
  * node that two or more pre-existing nodes moved their parent onto**. No new `kind` is
  * invented: a bridge-specific kind has no agreed values yet (`docs/DESIGN-SYSTEM.md`
- * 「노드 규격」 (node spec) §5 reserves the slot and nothing more), and guessing at a kind
+ * "Node spec" §5 reserves the slot and nothing more), and guessing at a kind
  * that does not exist is precisely the failure this file avoids.
  *
  * Why **two or more**: a single move is a changed parent, not a new layer of hierarchy.

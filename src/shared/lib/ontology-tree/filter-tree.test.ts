@@ -78,8 +78,8 @@ describe("filterTreeByQuery", () => {
 
   it("매치 노드 + 부모 chain 살림 + 형제 제외", () => {
     const r = filterTreeByQuery(tree.roots, "로그인");
-    expect(r).toHaveLength(1); // root 살림
-    expect(r[0]?.children).toHaveLength(1); // child-1 만, child-2 (로그아웃) 제외
+    expect(r).toHaveLength(1); // root management
+    expect(r[0]?.children).toHaveLength(1); // Only child-1, excluding child-2 (logout)
     expect(r[0]?.children[0]?.node.id).toBe("child-1");
   });
 
@@ -220,9 +220,9 @@ describe("filterTreeByNodeIds", () => {
 
   it("변경 노드 + 조상 chain 살림, 변경 안 한 형제 제외", () => {
     const r = filterTreeByNodeIds(tree.roots, new Set(["child-1"]));
-    expect(r).toHaveLength(1); // root (조상)
+    expect(r).toHaveLength(1); // root (ancestor)
     expect(r[0]?.node.id).toBe("root");
-    expect(r[0]?.children).toHaveLength(1); // child-1 만 (child-2 제외)
+    expect(r[0]?.children).toHaveLength(1); // Only child-1 (excluding child-2)
     expect(r[0]?.children[0]?.node.id).toBe("child-1");
   });
 
@@ -236,7 +236,7 @@ describe("filterTreeByNodeIds", () => {
   it("자손만 변경 시 부모 chain 으로 살아남고, 변경된 자손만 남김", () => {
     const r = filterTreeByNodeIds(tree.roots, new Set(["grand-1"]));
     expect(r).toHaveLength(1); // root
-    expect(r[0]?.children).toHaveLength(1); // child-1 (조상)
+    expect(r[0]?.children).toHaveLength(1); // child-1 (ancestor)
     expect(r[0]?.children[0]?.node.id).toBe("child-1");
     expect(r[0]?.children[0]?.children).toHaveLength(1); // grand-1
     expect(r[0]?.children[0]?.children[0]?.node.id).toBe("grand-1");

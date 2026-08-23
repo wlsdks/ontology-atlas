@@ -8,12 +8,12 @@ import type { AgentProposal } from "@/features/vault-agent/model/types";
  * **It locks while the write is running.**
  *
  * The draft left the status `pending` throughout `await applyProposal`. So pressing
- * 「적용」 (apply) twice sent **two simultaneous vault writes**, and 「취소」 (cancel)
+ * "Apply" twice sent **two simultaneous vault writes**, and "Cancel"
  * could be pressed in between. The screen had **no indication at all** that it was
  * applying — meaning a double click was not an exception for the user but
  * **expected behaviour**. With no response, pressing again is normal.
  *
- * (The design council's 「상호작용」 rejection rationale, 2026-07-29.)
+ * (The design council's "Interaction" rejection rationale, 2026-07-29.)
  */
 
 const baseProposal = (status: AgentProposal["status"]): AgentProposal =>
@@ -94,7 +94,7 @@ describe("AgentProposalCard — 적용 중 잠금", () => {
     renderCard("applying");
 
     expect(screen.getByText("적용 중…")).toBeInTheDocument();
-    // **Only the write actions** lock. Read actions such as 「펼치기」 (expand) stay
+    // **Only the write actions** lock. Read actions such as 「Expand」 (expand) stay
     // open — there is no reason to stop someone inspecting what is being written.
     expect(screen.getByTestId("agent-proposal-apply")).toBeDisabled();
     expect(screen.getByTestId("agent-proposal-cancel")).toBeDisabled();

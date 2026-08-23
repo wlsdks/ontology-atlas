@@ -30,7 +30,7 @@ import { dirname, join, resolve } from 'node:path';
  * `pointer-events-none` or `aria-hidden` is not counted, on two grounds:
  *
  * 1. **The motion-budget rule already says so** — `.claude/rules/design.md`:
- *    *"빈도가 예산을 깎는다. 호버/포커스 표면은 `0~--motion-fast`."* (frequency
+ *    *"Frequency eats the budget. Hover/focus surfaces are `0~--motion-fast`."* (frequency
  *    eats the budget; hover/focus surfaces get 0 to `--motion-fast`). For a passive
  *    readout that follows the pointer, 0ms is a **permitted value**, not a defect.
  *    Measured: the map's edge and cluster hover cards are exactly this category
@@ -82,7 +82,7 @@ export const MOTION_MECHANISMS = [
   'useSurfaceSwap',
   '<Surface',
   // Dialog is the modal primitive holding AnimatePresence inside, so it owns its
-  // entrance and exit even when mounted conditionally (ratified by the 체계 seat,
+  // entrance and exit even when mounted conditionally (ratified by the system seat,
   // 2026-08-15, dialog.tsx).
   '<Dialog',
   'animate-out',
@@ -194,8 +194,7 @@ export function ternaryAlternative(src: string, qmark: number): string {
  * a layout shell that unmounts on that notification (`onExited`). Reading only the
  * opening tag makes it look like there is no way out.
  *
- * `.claude/rules/design.md` records the same trap: *"잴 원소를 틀리면 결론이 통째로
- * 뒤집힌다"* — measure the wrong element and the conclusion inverts; a popover's
+ * `.claude/rules/design.md` records the same trap: *"Measure the wrong element and the conclusion inverts entirely"* — measure the wrong element and the conclusion inverts; a popover's
  * positioner (a layout wrapper that correctly has no transition) was measured and
  * reported as the top defect "the subject receives no transition at all", when the
  * animation was on its child panel. This place really was miscounted that way once.

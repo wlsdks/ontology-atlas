@@ -41,7 +41,7 @@ const PATH = /폴더|볼트|문서함|앱 받기|앱에서 열기|내 데이터/
  * (council, 2026-08-08).
  *
  * On 2026-08-07 two rows sat here, `/ko/` and `/ko/download/`, with the reason
- * *"awaiting the 위계 verdict"*. That verdict landed: **no folder-opening path is
+ * *"awaiting the hierarchy verdict"*. That verdict landed: **no folder-opening path is
  * placed on the gateway.** `/topology`'s first-run panel is already the real
  * first-run surface, so duplicating it would leave two first-run surfaces to
  * maintain, and when two paths do the same job one of them is guaranteed to become a
@@ -51,9 +51,9 @@ const PATH = /폴더|볼트|문서함|앱 받기|앱에서 열기|내 데이터/
  * the sentence) is precisely what that decision **chose not to do**. But **leaving it
  * here with the reason "pending" means no layer of this file runs on that screen at
  * all**: it would stay green forever even if the in-page web CTA disappeared or the
- * landing point became a dead end (raised by the 체계 seat).
+ * landing point became a dead end (raised by the design-systems seat).
  *
- * So the exception's cost was **repaid** — the `관문은 폴더를 여는 화면이 아니다`
+ * So the exception's cost was **repaid** — the `the gateway is not a screen that opens folders`
  * describe below measures, per width, that ① a hop to the map is rendered above the
  * fold ② pressing it arrives ③ the landing point **really invokes the picker** by way
  * of the sheet. The same check pins "0 folder controls on the gateway", so reversing
@@ -276,7 +276,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
    *
    * Measured 2026-08-07: `/project/new` locks the save button and says so up front in a
    * banner, while `/project/[slug]/edit` kept the button enabled with no vault. Only on
-   * pressing did *"데모 모드에서는 저장할 수 없습니다"* appear, and at 390×844 that
+   * pressing did *"Saving is not available in demo mode"* appear, and at 390×844 that
    * notice measured **top 802, bottom 872** — clipped at both ends against the 844
    * viewport and stuck behind the bottom tab bar. On the presser's screen it is
    * indistinguishable from nothing happening.

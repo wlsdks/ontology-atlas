@@ -87,7 +87,7 @@ export interface HomeRouteState {
    * than the threshold (12) is collapsed by default on the map; only parents
    * listed here reveal their children. It lives in the URL so a shared link or
    * an agent can reproduce and read what is expanded (matching `design.md`
-   * 「나머지는 클릭 시 expand」 — the rest expands on click). HomePage converts
+    ["the rest expands on click"] — the rest expands on click). HomePage converts
    * it to a Set on the way down to the map.
    */
   expandedParents: string[];
@@ -320,8 +320,7 @@ export function parseExpandedParentsParam(
  * that) plus one "where did I come from". From the fourth on it is
  * accumulation, not comparison.
  *
- * **The user can now move this value** (Settings → 「확장 → 동시에 펼쳐 둘
- * 부모」 (expansion → parents open at once), 1–6). The paragraphs above remain
+ * **The user can now move this value** (Settings → [expansion → parents open at once] (expansion → parents open at once), 1–6). The paragraphs above remain
  * the rationale for the **default**, and the single source is the settings
  * side (`DEFAULT_EXPAND.maxOpenParents`) — the same number is not written in
  * two places.
@@ -558,7 +557,7 @@ export function selectTopologyNodeRouteState(
     // Click = selection (safe navigation) only — mode never changes, in any
     // mode. The old overview→focus auto-promotion stacked
     // [select + expand + relayout + camera fit] onto one click and erased
-    // causality. Owner: "클릭하면 그냥 바뀌어서 헷갈린다" (clicking just
+    // causality. Owner: "clicking just changes things and it is confusing" (clicking just
     // changes things and it is confusing). Expansion (focus) happens only on
     // explicit intent: card badge, double click, or deep link.
     analysisMode: current.analysisMode,

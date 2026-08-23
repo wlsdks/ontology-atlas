@@ -51,24 +51,24 @@ import {
 } from '@/widgets/topology-map-v2/model/ambient-sleep';
 
 export interface GatewayFrameTick {
-  /** rAF 타임스탬프(ms) — 페인트 스로틀(30fps 층)의 기준. */
+  /** rAF timestamp (ms) — baseline for paint throttling (30fps layer). */
   t: number;
   /**
-   * 이전 틱과의 간격(ms, 상한 64) — 탭이 백그라운드였다 돌아와도 누적 시계가
-   * 위상 점프하지 않는다(rAF 는 숨은 탭에서 멎는다).
+   * Interval since the previous tick (ms, cap 64) — ensures the cumulative clock
+   * does not phase-jump when a tab returns from background (rAF pauses in hidden tabs).
    */
   dtMs: number;
   /**
-   * 앰비언트 휴면 계수 (0,1] — 모션 «속도»에 곱한다. 0 인 프레임은 클라이언트에
-   * 도착하지 않는다(그 프레임은 그릴 것이 없다 — 시계가 멎었으니 마지막으로
-   * 그린 그림과 동일하다).
+   * Ambient sleep coefficient (0,1] — multiplies motion «speed». Frames with 0
+   * do not reach the client (there is nothing to draw in that frame — since the clock
+   * stopped, it is identical to the last drawn frame).
    */
   factor: number;
 }
 
 export type GatewayFrameClient = (tick: GatewayFrameTick) => void;
 
-/** 어떤 종류든 「손이 닿았다」로 치는 입력 — 전부 passive 라 스크롤을 안 막는다. */
+/** Input treated as "touched" regardless of type — all are passive so they do not block scrolling. */
 const INPUT_EVENTS = [
   'pointermove',
   'pointerdown',
@@ -93,20 +93,20 @@ function frame(t: number): void {
   const dtMs = Math.min(Math.max(t - lastT, 0), 64);
   lastT = t;
   const factor = ambientSleepFactor(performance.now(), lastInputMs);
-  if (isAmbientAsleep(factor)) return; // 잠듦 — 페인트 전면 스킵 (noop 프레임)
+  if (isAmbientAsleep(factor)) return; // Sleep — skip paint front (noop frame)
   const tick: GatewayFrameTick = { t, dtMs, factor };
   for (const client of clients) client(tick);
 }
 
 function start(): void {
   running = true;
-  lastInputMs = performance.now(); // 도착 자체가 「방금 손이 닿은 상태」다.
+  lastInputMs = performance.now(); // Arrival itself is "just touched".
   lastT = performance.now();
   for (const type of INPUT_EVENTS) {
     addEventListener(type, onInput, { passive: true });
   }
-  // 이 페이지의 스크롤러는 window 가 아니라 앱 셸의 본문 슬롯이다
-  // (`GatewayFx` 독블록 실측) — capture 로 어느 스크롤 호스트든 잡는다.
+  // The scroll host for this page is not window but the app shell's body slot
+  // (`GatewayFx` actual measurement) — capture grabs any scroll host.
   addEventListener('scroll', onInput, { capture: true, passive: true });
   rafId = requestAnimationFrame(frame);
 }
@@ -121,8 +121,9 @@ function stop(): void {
 }
 
 /**
- * 프레임 클라이언트 등록 — 반환된 함수로 해지한다. 첫 등록이 루프와 입력
- * 리스너를 세우고, 마지막 해지가 전부 걷는다(관문을 떠나면 아무것도 안 남는다).
+ * Register frame client — cancel via the returned function. The first registration
+ * sets up the loop and input listeners; the final cancellation cleans everything up (leaving
+ * nothing behind when leaving the gateway).
  */
 export function registerGatewayFrameClient(client: GatewayFrameClient): () => void {
   clients.add(client);
@@ -133,5 +134,5 @@ export function registerGatewayFrameClient(client: GatewayFrameClient): () => vo
   };
 }
 
-/** 게이트·독자용 재수출 — 관문의 휴면 시간표는 지도의 그것과 같은 상수다. */
+/** Re-export for gate/dock — the gateway's sleep schedule uses the same constant as the map. */
 export { AMBIENT_SLEEP_DELAY_MS, AMBIENT_SLEEP_RAMP_MS };

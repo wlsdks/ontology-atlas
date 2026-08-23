@@ -48,8 +48,8 @@ export function StepRow({ n, title, desc, testId, children }: StepRowProps) {
   return (
     <section className="flex flex-col" data-testid={testId ?? `agent-connect-step-${n}`}>
       {/*
-       * The number is **a line head, not a left rail** (owner report 2026-08-03: *"1하고 밑에보면
-       * 그냥 다 공백 이어지는 이런 구조 이상해"* — under the "1" it is just continuous blank space,
+       * The number is **a line head, not a left rail** (owner report 2026-08-03: *"Under the "1" it is just continuous blank space,
+       * which looks wrong"* — under the "1" it is just continuous blank space,
        * which looks wrong).
        *
        * It used to be `flex gap-3`, so the number had its own column and that column ran empty for

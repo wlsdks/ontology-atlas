@@ -23,7 +23,7 @@ import { SegmentedControl } from '@/shared/ui/segmented-control';
  * **collapsed detail** and carried that position's small dimensions; when they
  * were promoted to shared primitives and became `ExpandSettings`' **primary
  * decision controls**, the dimensions came along. This is what the owner saw
- * (*"이 버튼도 너무 작고? 뭔가 설정 자체가 좀 작아"* — this button is too small too,
+ * (*"This button is too small too, the settings themselves feel small."* — this button is too small too,
  * the settings themselves feel small).
  *
  * So the dialects fold into one. This sheet's specification:
@@ -41,7 +41,7 @@ import { SegmentedControl } from '@/shared/ui/segmented-control';
  */
 
 /**
- * Ink for the 「자세히」 (detail) toggle — `FootprintSettings` and `ExpandSettings`
+ * Ink for the 「Detail」 (detail) toggle — `FootprintSettings` and `ExpandSettings`
  * each held **their own copy of the same control** (byte-identical strings). With
  * two copies, a day comes when only one gets fixed, which is exactly why this file
  * exists. Shape, size and tone come from the value layer
@@ -52,7 +52,7 @@ export const DETAIL_TOGGLE_CHIP =
   'justify-self-start border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 /**
- * 「초기화」 (reset) — text that is pressable on its own is `link` (measured: 85
+ * 「Reset」 (reset) — text that is pressable on its own is `link` (measured: 85
  * instances). The same two files each held their own copy of this too.
  *
  * **Why `size: 'md'`**: this sheet's dialect. `link/sm` is `text-caption`
@@ -264,7 +264,7 @@ export function SettingsRow({
  *
  * The track is painted by hand. With `accent-color` alone the **unfilled side is
  * the browser's default light grey**, which makes the slider brighter than its own
- * label on a dark panel (owner: *"너무 못생겼잖아"* — that's just ugly). Indigo up
+ * label on a dark panel (owner: *"That's just ugly"*). Indigo up
  * to the filled point, surface token for the rest.
  *
  * It lived privately inside `FootprintSettings` and came down here when a second

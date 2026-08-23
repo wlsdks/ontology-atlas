@@ -27,7 +27,7 @@ import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-p
  * That mockup was an **instrument** built to measure 3 affordance options, 3
  * structure options and 3 numbers side by side, and its controls and explanatory
  * copy were transplanted here (the copy is the mockup's words, not newly written).
- * 「볼트 규모」 (small/real/large), which existed only in the mockup, was **a test
+ * 「Scale Size」 (small/real/large), which existed only in the mockup, was **a test
  * load** and was not brought over — it was the mockup's handle for measuring
  * itself, not a product setting.
  *
@@ -35,7 +35,7 @@ import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-p
  *
  * Shipping "the thing built for choosing between" as a setting leaves «we did not
  * choose» in the product. So the owner **chose**: the default affordance is
- * 「머리 위 막대」 (the bar above the head), 2026-08-01. The other two remain options,
+ * 「Bar Above」 (the bar above the head), 2026-08-01. The other two remain options,
  * because which of the three wins genuinely varies with density and screen size,
  * and the options shrink once those observations accumulate. The judgement and its
  * falsifier are in `docs/DECISIONS.md`.
@@ -59,8 +59,8 @@ export function ExpandSettings() {
    * identical border, radius and 12px gap — the screen does not say what comes
    * first). There are two decisions ("what do I press", "how is it laid out"). The
    * three numbers are constants that were already in the code, so most people never
-   * touch them and only tinkerers need them. The immediate neighbour 「발자국」 already
-   * solved the same problem with the same grammar (presets first, 「직접 맞추기」
+   * touch them and only tinkerers need them. The immediate neighbour 「Footprint」 already
+   * solved the same problem with the same grammar (presets first, 「Adjust Manually」
    * second), so that is used rather than inventing a new one.
    */
   const [detailOpen, setDetailOpen] = useState(false);

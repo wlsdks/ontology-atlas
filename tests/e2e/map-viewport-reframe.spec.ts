@@ -8,7 +8,7 @@ async function readCamera(page: Page): Promise<Camera | null> {
   return page.evaluate(() => window.__atlasMap?.camera() ?? null);
 }
 
-/** 카메라 목표뿐 아니라 실제 값이 도착해 멈춘 뒤의 화면을 잰다. */
+/** Measures the screen after the camera target and actual value arrive and stop. */
 async function settleCamera(page: Page) {
   await expect
     .poll(
@@ -29,12 +29,9 @@ async function settleCamera(page: Page) {
 }
 
 /**
- * 에이전트 도크가 들어오는 실제 기하를 ACP 프로세스 없이 재현한다.
+ * Reproduces the actual geometry when the agent dock appears, without an ACP process.
  *
- * `main#main`은 지도 flex 칸과 우측 도크가 형제인 제품 구조다. 여기에 같은 폭의
- * 임시 형제를 붙이면 지도 ResizeObserver·캔버스 백킹·카메라가 실제 앱과 같은
- * 경로를 탄다. 단순 viewport resize보다 이 방법이 중요한 이유는 창 전체 크기는
- * 그대로인데 **지도 칸만** 줄어드는 것이 보고된 결함의 조건이기 때문이다.
+ * `main#main` is the product structure where the map flex area and the right dock are siblings. Attaching a temporary sibling of the same width here makes the map ResizeObserver, canvas backing, and camera follow the same path as in the actual app. This method is more important than a simple viewport resize because the reported defect condition is that **only the map area** shrinks while the window size remains the same.
  */
 test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역에 다시 맞춘다", async ({ page }) => {
   test.setTimeout(90_000);
@@ -57,8 +54,8 @@ test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역�
     await expect(starter).toHaveCount(0);
   }
 
-  // 보고 조건과 같게 INDEX를 레일로 만든다. 이 클릭은 제품의 토큰 캐시 갱신과
-  // 정상 fit 경로를 모두 타므로, 이후에는 오직 도크 resize만 변수로 남는다.
+  // Create INDEX as a rail to match the reporting condition. This click triggers both the product's token cache update and
+  // the normal fit path, so afterwards only dock resize remains as a variable.
   const foldIndex = page.getByTestId("topology-index-fold");
   if (await foldIndex.isVisible()) {
     await foldIndex.click();
@@ -116,8 +113,7 @@ test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역�
   );
   const midTransition = samples[11];
   expect(midTransition).toBeDefined();
-  // 도크가 거의 다 열린 뒤에야 카메라가 뒤늦게 출발하면 사용자는 두 번
-  // 움직이는 버벅임으로 본다. 폭이 변하는 동안부터 같은 클럭으로 따라가야 한다.
+  // If the camera starts late, only after the dock is almost fully open, the user sees a stutter of two movements. It must follow along on the same clock from when the width begins to change.
   expect(
     Math.abs(midTransition.x - before!.x) +
       Math.abs(midTransition.y - before!.y) +
@@ -126,8 +122,8 @@ test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역�
   await expect
     .poll(async () => (await readCamera(page))?.width ?? 0, { timeout: 15_000 })
     .toBeLessThan(before!.width - 350);
-  // 마지막 resize를 받은 뒤 expensive viewport layer가 정착하는 두 프레임을
-  // 넘긴 시점. 이후 ACP 부팅 같은 unrelated rerender가 카메라를 다시 깨우면 안 된다.
+  // Two frames after the last resize, when the expensive viewport layer has settled.
+  // Unrelated rerenders like ACP boot should not wake the camera after this point.
   await page.waitForTimeout(100);
   const atResizeSettle = await readCamera(page);
   expect(atResizeSettle).not.toBeNull();
@@ -141,7 +137,7 @@ test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역�
   const automatic = await readCamera(page);
   expect(automatic).not.toBeNull();
 
-  // 이 검사가 공회전하지 않음을 잠근다. 새 폭은 fit 배율을 실제로 바꿔야 한다.
+  // Locks that this check does not spin. The new width must actually change the fit scale.
   expect(Math.abs(automatic!.scale - before!.scale)).toBeGreaterThan(0.001);
 
   const lastTransition = samples.at(-1)!;
@@ -153,8 +149,8 @@ test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역�
     Math.abs(automatic!.x - lastTransition.x) +
     Math.abs(automatic!.y - lastTransition.y) +
     Math.abs(automatic!.scale - lastTransition.scale) * 100;
-  // 패널 폭 전환이 끝날 때 카메라가 대부분 도착해야 한다. 남은 이동이 크면
-  // 그 직후 ACP 시작 비용에 멈췄다가 다시 움직여 실제 앱에서 버벅임으로 보인다.
+  // By the time panel width transition ends, the camera should mostly have arrived. If remaining
+  // movement is large, it may pause due to ACP startup cost and then move again, appearing as stutter in the real app.
   expect(motionRemainingAtDockEnd / totalMotion).toBeLessThan(0.35);
   const motionRemainingAfterResizeSettle =
     Math.abs(automatic!.x - atResizeSettle!.x) +
@@ -177,7 +173,7 @@ test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역�
     '도크 정착 뒤 underdamped camera가 되튕겨 두 번째 움직임을 만들었다',
   ).toBeLessThan(0.0001);
 
-  // 자동 리프레임의 정답은 사용자가 누르는 정본 「지도 전체 맞추기」와 같다.
+  // The correct answer for auto-reframe is the same as the user-triggered "Fit to Map".
   await page.getByRole("button", { name: "지도 전체 맞추기" }).click();
   await settleCamera(page);
   const explicit = await readCamera(page);

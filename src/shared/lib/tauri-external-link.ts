@@ -9,7 +9,7 @@ import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
  * instructions" in settings silently did nothing — and that was the **only next
  * step** we offered someone with no tooling at all.
  *
- * The owner reported it as: *"눌러도 반응이없음 설치방법은!"* (pressing "install
+ * The owner reported it as: *"Nothing happens when I press it! Install instructions!"* (pressing "install
  * instructions" does nothing).
  *
  * **Why intercept instead of fixing each link.** Outbound links are scattered

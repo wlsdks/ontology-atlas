@@ -44,8 +44,8 @@ export const TOUR_STEPS: readonly TourStep[] = [
   },
   {
     id: "relations",
-    // 관계 범례는 상시 코너에서 pull-only 「?」 도움말로 이동했다. 이 단계는
-    // 지도 전체를 보며 선 의미를 읽는 중앙 설명이라 특정 DOM 상자를 가리키지 않는다.
+    // The relationship legend moved to the permanent corner's pull-only 「?」 help. This step
+    // is the central explanation for reading line meanings while viewing the entire map, so it does not point at a specific DOM box.
     anchor: null,
     persona: "all",
     copyKey: "relations",
@@ -84,9 +84,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
 ];
 
 /**
- * Per-destination guides (owner request 2026-07-26: *"각 LNB탭 들어갔을때
- * 가이드는 다 각각 있으면 좋겠네? 지금은 지도쪽만 있어서!"* — each LNB tab should
- * have its own guide; right now only the map does).
+ * Per-destination guides (owner request 2026-07-26: "Each LNB tab should have its own guide; right now only the map does).
  *
  * **No second guidance system is built** — the tour mechanism the map already
  * used is reused as is, with only the step array differing per destination. The

@@ -15,7 +15,7 @@
  * projection genuinely EXCEEDS the bounds, so within-bounds flicks glide freely
  * and only edge-exceeding flicks rubber-band (the seeded velocity overshoots the
  * clamped bound, then `stepCamera`'s per-frame `clampAxisToPanBounds` elastically
- * returns it — INTERACTION-DESIGN §1 「경계는 러버밴드」 —
+ * returns it — INTERACTION-DESIGN §1 "Boundaries rubber-band" —
  * the boundary rubber-bands). The old port inflated
  * the projection ~60× so EVERY flick slammed to the same edge (the reported
  * snap); see `engine/momentum.ts`.
@@ -117,7 +117,7 @@ export interface PointerHandlerRefs {
   cameraTweenRef?: Ref<CameraTween | null>;
   dampingRef: Ref<number>;
   /**
-   * Dive-zoom fix (owner: *"줌 인/아웃이 느림"* — zoom in/out is slow) — `handleWheel` sets this to
+   * Dive-zoom fix (owner: *"Zoom in/out is slow"*) — `handleWheel` sets this to
    * `--topology-v2-camera-spring-angfreq-interactive` on every live wheel
    * tick, so the scale axis (and pan while wheel-zooming) settles crisp
    * instead of at the slower cinematic rate programmatic camera moves use.
@@ -291,11 +291,11 @@ export interface PointerHandlerRefs {
       position: { x: number; y: number };
     } | null,
   ) => void;
-  /** S2 part 3a — clicking the `이웃 +N` chip lights the next batch of neighbours (separate from the URL toggle). */
+  /** S2 part 3a — clicking the `Neighbor +N` chip lights the next batch of neighbours (separate from the URL toggle). */
   onExpandEgoNeighbors?: () => void;
   /**
    * High-fanout batch reveal (2026-07) — clicking an expanded cluster parent's
-   * `+N 더보기` chip lights that parent's next batch (separate from the URL toggle,
+   * `+N More` chip lights that parent's next batch (separate from the URL toggle,
    * which collapses; session-only). The argument is the **real parent** id parsed out
    * of the synthetic chip id.
    */
@@ -346,7 +346,7 @@ export interface TopologyPointerHandlers {
   /**
    * W2-B — native browser context menu is suppressed ONLY when the
    * right-click lands on a hittable node (design gate
-   * 「캔버스 기본 브라우저 컨텍스트 메뉴 억제는 노드 위에서만」 — suppress the
+   * "Suppress canvas default browser context menu only over a node" — suppress the
    * canvas default browser context menu only over a node). Off-node right-clicks fall through
    * to the OS/browser menu unchanged — panning/empty-canvas right-click
    * behavior is untouched.
@@ -465,7 +465,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const chipDomeFrame = domeFrameNow();
     for (const chip of chips) {
       // Dockability is **the same condition as the draw**: can the parent node be
-      // found in the graph. A batch-reveal `+N 더보기` chip has a synthetic parent id
+      // found in the graph. A batch-reveal `+N More` chip has a synthetic parent id
       // and cannot be found, and then the shape does not disappear but stays a pill
       // (that decision is also one function).
       const parentNode = world?.nodeById.get(chip.parentId);
@@ -473,7 +473,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       const form = clusterControlForm({
         affordance,
         expanded: chip.expanded,
-        // For a synthetic ego chip (`이웃 +N`) the parent node *is* the chosen node —
+        // For a synthetic ego chip (`Neighbor +N`) the parent node *is* the chosen node —
         // subjecting that chip to "absent unless chosen" would close batch reveal entirely.
         focused: chip.ego === true || focusedSlug === chip.parentId,
         dockable,
@@ -758,7 +758,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // the analysis rail / outside the window never delivers `pointerup` to the
     // canvas, the state machine sticks in `dragging`, and the camera then
     // follows a button-less mouse until it strands off-graph (owner's
-    // "드래그하면 캔버스가 사라져버림" — dragging makes the canvas disappear;
+    // "Dragging makes the canvas disappear";
     // QA loss B). Implicit release on pointerup/cancel is per-spec automatic.
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -799,7 +799,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         // Drop the landing aim too — new input and an explicit reset always win.
         dome.yawSnap = null;
         dome.pitchVel = 0;
-        // A programmatic pose move in flight (「제자리로」 or a selection reframe) is
+        // A programmatic pose move in flight ("Return to Origin" or a selection reframe) is
         // dropped here too — the same contract as pointerdown dropping the camera
         // tween: the gesture takes over immediately from the current pose (④'s
         // interruptibility requirement).
@@ -1027,7 +1027,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX);
         dome.orbiting = true;
         // Orbiting is intervention — the attention spin goes down here and does not
-        // come back (①; it returns via 「자동 정렬」 or re-entering 3D — see the
+        // come back (①; it returns via "Auto-arrange" or re-entering 3D — see the
         // `DomeRuntime.spinArmed` JSDoc).
         dome.spinArmed = false;
           commitDomeEntrySweep(dome);
@@ -1058,8 +1058,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // A drag (pan or node move) already returned in the block above, so only
     // idle|pressed reaches here. Edge hover works during focus (ego) too — an edge
     // click (P3b) works during focus, so hover has to match ("if you can grab it you
-    // can read it"; the root of the user report "노드 클릭한 상태에선 선 호버 툴팁이
-    // 안 나온다" — with a node clicked, the edge hover tooltip does not appear). The
+    // can read it"; the root of the user report "With a node clicked, the edge hover tooltip does not appear"). The
     // candidates already reflect the focus tier's hit rules via buildEdgeCandidates.
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
 
@@ -1099,23 +1098,23 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
 
     // Cursor affordance — **each surface shows its own primary action** (design
-    // council 「상호작용」 prescription plus a measured correction, 2026-07-28).
-    //
-    // Before: node = `grab`, edge = `pointer`, **background = nothing**. The node's
-    // `grab` was not a lie (it really does pin-drag). The real defect was the
-    // background — **it is pannable and offered no affordance at all** (measured: the
-    // background hover cursor was `auto`). So nobody was told "you can push this map",
-    // while the grabbing hand appeared only over nodes, which cannot be pushed.
-    //
-    // Now it splits by primary action:
-    // - node, edge, chip → `pointer` (press and it opens — the action the hint bar names)
-    // - background → `grab` (push and the map follows), `grabbing` while pushing
-    // Node dragging still works and still answers with `grabbing` — as an enhancement
-    // it yields the affordance in the primary position (the council's ruling being that
-    // it belongs to the class where drag-only discovery is acceptable).
-    //
-    // That this assignment sits **outside** the hover block above is also contractual —
-    // inside it, a consumer with no edge-hover wiring would get no cursor at all.
+   // council "Interaction" prescription plus a measured correction, 2026-07-28).
+   //
+   // Before: node = `grab`, edge = `pointer`, **background = nothing**. The node's
+   // `grab` was not a lie (it really does pin-drag). The real defect was the
+   // background — **it is pannable and offered no affordance at all** (measured: the
+   // background hover cursor was `auto`). So nobody was told "you can push this map",
+   // while the grabbing hand appeared only over nodes, which cannot be pushed.
+   //
+   // Now it splits by primary action:
+   // - node, edge, chip → `pointer` (press and it opens — the action the hint bar names)
+   // - background → `grab` (push and the map follows), `grabbing` while pushing
+   // Node dragging still works and still answers with `grabbing` — as an enhancement
+   // it yields the affordance in the primary position (the council's ruling being that
+   // it belongs to the class where drag-only discovery is acceptable).
+   //
+   // That this assignment sits **outside** the hover block above is also contractual —
+   // inside it, a consumer with no edge-hover wiring would get no cursor at all.
     e.currentTarget.style.cursor =
       hitNodeId !== null || edgeHit !== null ? "pointer" : "grab";
 
@@ -1132,16 +1131,16 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         // overlap — the chip wins).
         if (onHoverCluster) {
           if (chipHit === null || chipHit === EGO_NEIGHBOR_CHIP_ID) {
-        // An ego `이웃 +N` chip has no parent title, so no tooltip is raised (cursor and border only).
+        // An ego `Neighbor +N` chip has no parent title, so no tooltip is raised (cursor and border only).
             onHoverCluster(null);
           } else {
             clearEdgeHover();
             const chip = clusterChipsRef?.current?.find((c) => c.parentId === chipHit);
             if (chip) {
-              // High-fanout batch reveal — a `+N 더보기` chip has a synthetic id, so it
+              // High-fanout batch reveal — a `+N More` chip has a synthetic id, so it
               // is resolved to the real parent for the tooltip to find the parent's
               // title and descendant count (reusing the existing collapsed-tooltip copy —
-              // "접힘 N · 하위 전체 M", no new i18n). expanded is already false (a
+              // "Collapsed N · All Descendants M", no new i18n). expanded is already false (a
               // collapsed pill), so the collapsed wording appears.
               const realParent = parseClusterMoreChipId(chip.parentId) ?? chip.parentId;
               onHoverCluster({
@@ -1184,8 +1183,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       const neighborIds = [...(world.neighborMap.get(hitNodeId) ?? [])];
       const schedule = scheduleRipple(hitNodeId, performance.now(), neighborIds, tokens.rippleStaggerMs, RIPPLE_PER_NEIGHBOR_DELAY_MS, tokens.rippleStaggerMaxMs);
       for (const entry of schedule) rippleStartRef.current.set(entry.nodeId, entry.startAtMs);
-      // The hover pulse was retired on an owner report (*"쌀알 날아가는 효과 — 없애라,
-      // 이상해"* — the flying grains of rice effect: remove it, it looks wrong;
+      // The hover pulse was retired on an owner report (*"Flying grains of rice effect — remove it,
+      // it looks wrong"* — the flying grains of rice effect: remove it, it looks wrong;
       // 2026-07-23). Only the permanent comets remain — ripple and cursor are enough
       // of a hover response.
     }
@@ -1290,7 +1289,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           return;
         }
       }
-      // Stationary release gate (owner spec: *"드래그 후 멈추면 그 자리에 정지"* — after
+      // Stationary release gate (owner spec: *"After dragging, stopping should stop it right there"* — after
       // dragging, stopping should stop it right there) — sample the last ~80ms of
       // pointer motion; a stationary release yields isFlick=false and the camera holds
       // exactly here (no momentum glide). Only a release WITH motion (a flick) projects
@@ -1335,7 +1334,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // The clamp source is the VISIBLE tier's bounds: at spine-only zoom the
       // full 295-node bounds cover a huge legal-but-empty fan region (only ~8
       // spine nodes draw), so a strong flick could land the camera on nothing
-      // (owner's "캔버스가 사라져버림" — the canvas disappeared; QA loss A). Once
+      // (owner's "The canvas disappeared" — QA loss A). Once
       // capabilities start revealing, the full bounds become honest again.
       const world = worldRef.current;
       let clampedLanding = { x: px.landingTarget, y: py.landingTarget };
@@ -1390,12 +1389,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     ) {
       const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
       if (chipParent === EGO_NEIGHBOR_CHIP_ID) {
-        // S2 part 3a — the `이웃 +N` chip lights the next neighbour batch rather than toggling the URL.
+        // S2 part 3a — the `Neighbor +N` chip lights the next neighbour batch rather than toggling the URL.
         onExpandEgoNeighbors?.();
         clearClusterHover();
         return;
       }
-      // High-fanout batch reveal — a `+N 더보기` chip (synthetic id) lights that
+      // High-fanout batch reveal — a `+N More` chip (synthetic id) lights that
       // parent's next batch rather than toggling the URL (collapse). Resolved to the
       // real parent id before dispatch.
       const moreParent = chipParent === null ? null : parseClusterMoreChipId(chipParent);
@@ -1429,8 +1428,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
     // A ground click with only an edge selected (no node focus) is a deselection too —
     // `resolveClickAction` looks only at node focus, so it is reinforced here (user
-    // report: "선 클릭했다가 바닥 클릭하면 원래대로 돌아와야" — after clicking a line,
-    // clicking the ground should return things to normal).
+    // report: "After clicking a line,
+    // clicking the ground should return things to normal").
     const emptyGroundWithEdgeSelected =
       commitClick !== null && commitClick.nodeId === null && (selectedEdgeRef?.current ?? null) !== null;
     if (action.type === "deselect" || emptyGroundWithEdgeSelected) onPaneClick?.();
@@ -1554,9 +1553,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const beforeY = (sy - height / 2) / target.tscale + target.ty;
     // Normalize deltaMode first — a line/page-mode wheel reports a tiny raw
     // deltaY that the old `exp(-deltaY*0.0016)` turned into ~0% zoom (the
-    // owner's "휠 확대 안 됨" bug). See `interaction/wheel.ts`.
+    // owner's "Wheel zoom not working" bug). See `interaction/wheel.ts`.
     const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
-    // C1 owner feedback ("줌 인/아웃 느림") — sensitivity upped 0.0016 → 0.0020,
+    // C1 owner feedback ("Zoom in/out is slow") — sensitivity upped 0.0016 → 0.0020,
     // see `interaction/wheel.ts#WHEEL_ZOOM_SENSITIVITY`'s JSDoc.
     const factor = computeWheelZoomFactor(pixelDeltaY);
     // C1 A1 — wheel/pinch zoom-in must reach the ratio-based effective max
@@ -1607,7 +1606,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
     if (!hitNodeId) {
-      // Empty space — 「여기에 개념 만들기」 (create a concept here). With no consumer it is a no-op, as before.
+      // Empty space — "Create a concept here" (create a concept here). With no consumer it is a no-op, as before.
       if (!onContextMenuPane) return;
       e.preventDefault();
       onContextMenuPane({ x: e.clientX, y: e.clientY });

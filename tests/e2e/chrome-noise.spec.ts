@@ -4,8 +4,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
 /**
  * **The chrome must not summon things it does not draw itself** (added 2026-08-01).
  *
- * The owner caught this while recording the demo video — *"마우스 올려서 나오는
- * 이상한 툴팁이랑 각 탭 선택할때마다 … 뭔가 박스가 생김"* (a strange tooltip on
+ * The owner caught this while recording the demo video — *"A strange tooltip on
+ * hover, and some box appearing every time a tab is selected."* (a strange tooltip on
  * hover, and some box appearing every time a tab is selected). Both are **drawn by
  * the OS or the browser**, so they use neither our tokens nor our motion, and they
  * land on top of our screen.

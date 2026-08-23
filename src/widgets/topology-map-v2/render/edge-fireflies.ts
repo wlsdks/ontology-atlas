@@ -1,10 +1,7 @@
 /**
  * Always-on comets plus hover pulses — the pure model and pulse renderer that
  * restore the prototype's two edge motions (`docs/prototypes/topology-b2plus.html`
- * §14 `updateParticles`/`updatePulses`, §13 `drawPulses`). Owner: "지금 건 내가
- * 원하는 게 아냐 — 예전 걸 살려줘" (this isn't what I want; bring the old one
- * back), which replaced the focus-conditioned firefly dots with this original
- * spec.
+ * §14 `updateParticles`/`updatePulses`, §13 `drawPulses`). Owner: "this isn't what I want; bring the old one back" (this isn't what I want; bring the old one back), which replaced the focus-conditioned firefly dots with this original spec.
  *
  * Two effects:
  * 1. **Always-on comet** — every depends edge carries a per-edge phase `e.t`

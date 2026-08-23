@@ -38,7 +38,7 @@ export interface RealmBoundaryRow {
 }
 
 export interface TopologyRealmLedgerLabels {
-  /** The top eyebrow — 「영역」 (realm). */
+  /** The top eyebrow — 「Realm」 (realm). */
   label: string;
   /** Labels for the realm census fragments. */
   elementsShort: string;
@@ -46,7 +46,7 @@ export interface TopologyRealmLedgerLabels {
   depthShort: string;
   /** Placeholder for the realm tree's search field. */
   searchPlaceholder: string;
-  /** The 「영역 해제」 (leave realm) text button. */
+  /** The 「Leave Realm」 (leave realm) text button. */
   exit: string;
   exitAria: string;
   /** The one-line message when the tree is empty (zero search results and the like). */
@@ -54,7 +54,7 @@ export interface TopologyRealmLedgerLabels {
   /** "N relations touching the outside" (HomePage formats the count) — the collapsed-by-default summary line. */
   boundaryHeading: string;
   boundaryToggleAria: string;
-  /** The 「이 영역으로 이동」 (go to this realm) hover action on a row. */
+  /** The 「Go to this realm」 (go to this realm) hover action on a row. */
   boundaryJump: string;
   boundaryJumpAria: string;
   /** The one-line message when a realm is completely isolated. */
@@ -94,7 +94,7 @@ export interface TopologyRealmLedgerProps {
  * card, global census, global tree and global footer all hide, and exactly three
  * blocks remain:
  *
- *   1. Header — root glyph, title, a one-line census, and a quiet 「영역 해제」 (leave
+ *   1. Header — root glyph, title, a one-line census, and a quiet 「Leave Realm」 (leave
  *      realm) text button.
  *   2. Realm tree — the root subtree only, search included.
  *   3. Boundary relations — a collapsed-by-default summary line ("N relations

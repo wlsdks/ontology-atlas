@@ -1,33 +1,34 @@
-# E2E — Playwright(chromium).
+# E2E — Playwright (chromium).
 #
-# ## 왜 한 잡이 아니라 다섯인가 (2026-08-02)
+# ## Why five jobs instead of one (2026-08-02)
 #
-# 이 파일은 2026-07 정리 때 *"스위트가 충분히 작아져 샤딩 없이 한 잡으로 돌린다"*
-# 고 적어 뒀다. 그 전제가 낡았다 — 실측(가장 오래 걸린 성공 런의 스텝별 소요):
+# This file was written in 2026-07 with the note *"the suite is small enough to run
+# as a single job without sharding."* That premise is outdated — measured data (step times for the longest successful run):
 #
-# | 스텝 | 테스트 | 소요 |
+# | Step | Tests | Duration |
 # |---|---|---|
-# | 정적 export (공방 내비) | 5 | 49초 |
-# | 웹 스모크 | 10 | 46초 |
-# | **전체 스위트** | **150** | **448초** (부팅 22초 + 실행 426초) |
+# | Static export (workshop nav) | 5 | 49s |
+# | Web smoke | 10 | 46s |
+# | **Full suite** | **150** | **448s** (boot 22s + run 426s) |
 #
-# 셋이 한 잡에서 줄줄이 돌아 543초였다.
+# All three ran sequentially in one job for 543s.
 #
-# **워커를 올리지 않고 러너를 늘린다.** `playwright.config.ts` 의 `workers: 1`
-# 과 `fullyParallel: false` 는 취향이 아니라 dev(Turbopack) 콜드 스타트의
-# 타이밍 취약성에 대한 답이다(같은 파일의 `retries` 주석 참고 — 온디맨드
-# 재컴파일이 산발 실패를 낸다). 워커를 올리면 **한 dev 서버에 동시 요청이
-# 늘어** 정확히 그 취약성을 키운다. 샤딩은 다르다: 샤드마다 러너도 dev 서버도
-# 따로라 **서버당 동시성은 그대로 1**이고 벽시계만 나뉜다.
+# **Increase runners, not workers.** `workers: 1` and `fullyParallel: false` in
+# `playwright.config.ts` are not preferences but answers to the timing vulnerability
+# of dev (Turbopack) cold starts (see the `retries` comment in the same file — on-demand
+# recompilation causes sporadic failures). Increasing workers **increases concurrent requests
+# to a single dev server**, exactly amplifying that vulnerability. Sharding is different:
+# each shard gets its own runner and dev server, so **concurrency per server remains 1**,
+# and only wall-clock time is divided.
 #
-# 산수: 샤드당 고정비가 부팅 22초 + 준비 36초 ≈ 58초다. 150개를 N 등분하면
-# 샤드 하나가 58 + 426/N 초. N=3 이면 200초, N=4 면 165초, N=5 면 143초 —
-# **고정비 때문에 수확이 빠르게 준다.** 3을 고른다(543 → 200초, 63% 감소).
-# 더 잘게 썰 이유가 생기면 `shard` 배열만 늘리고 `/3` 을 같이 고친다.
+# Math: fixed cost per shard is boot 22s + setup 36s ≈ 58s. Dividing 150 tests by N shards
+# gives 58 + 426/N seconds per shard. For N=3 it is 200s, for N=4 it is 165s, for N=5 it is 143s —
+# **due to fixed costs, returns diminish quickly.** Choose 3 (543 → 200s, 63% reduction).
+# If there is a reason to slice finer later, just extend the `shard` array and update `/3` accordingly.
 #
-# 다섯 잡은 서로를 안 기다린다 — 분류(`classify-change.mjs`)는 node 빌트인만
-# 쓰는 스크립트라 잡마다 따로 돌려도 0초다. 앞단 잡을 두고 `needs:` 로 묶으면
-# 그 잡의 준비 시간이 전체 앞에 직렬로 붙는다.
+# The five jobs do not wait for each other — the classification (`classify-change.mjs`) script
+# uses only node built-ins, so running it separately per job costs 0s. If you group front-end jobs
+# with `needs:`, that job's setup time serializes in front of the whole thing.
 name: E2E smoke
 
 on:
@@ -47,26 +48,26 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # ── 정적 export 전용 층 — dev 로는 못 잡는다 ──────────────────────────
+  # ── Static export only layer — cannot catch with dev ──────────────────────────
   #
-  # 2026-07-28 실측: 공방의 같은-라우트 이동(산책 · 생성 전환)이 프로덕션
-  # 빌드에서만 죽어 있었다. 경로가 같고 쿼리만 다른 `router.push` 는 라우팅
-  # 단위가 아니라 no-op 이 되는데, dev 는 같은 코드로 둘 다 성공한다 —
-  # **dev 는 그 결함에 대해 진단력이 0** 이다. 나머지 스위트가 전부 dev 를
-  # 상대하므로, 이 잡이 없으면 그 부류의 회귀는 영원히 초록으로 통과한다.
+  # Measured 2026-07-28: same-route navigation in the workshop (browse · create transition)
+  # was crashing only in production builds. `router.push` with the same path but different
+  # query parameters becomes a no-op at the routing level, and dev succeeds for both with
+  # the same code — **dev has zero diagnostic power for this defect.** Since the rest of the
+  # suite targets dev, without this job, regressions of this class would pass green forever.
   static-export:
     name: Playwright (static export)
     runs-on: ubuntu-latest
-    # 20분이었다. 실측(2026-08-19)으로 통과하는 샤드가 이미 12~17분이라
-    # 여유가 3분뿐이었고, 준비 스텝이 한 번만 재시도해도 «느리지만 정상인 실행»
-    # 이 절벽에서 떨어진다. 준비 스텝의 무한 대기는 이제 `run-with-retry` 가
-    # 막으므로(setup-playwright), 이 값은 더 이상 그 안전망이 아니다 —
-    # 재시도가 들어갈 자리만큼 늘린다.
+    # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
+    # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
+    # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
+    # (setup-playwright), so this value is no longer that safety net — increase it by the amount
+    # needed for retries.
     timeout-minutes: 30
     steps:
-      # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론이면
-      # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
-      # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
+      # fetch-depth: 0 is required — change classification uses `git merge-base`. With a shallow clone,
+      # the base cannot be found, opening "run all" and rendering the gate meaningless. Checkout cannot
+      # be placed inside a composite action — local actions must already exist in the workspace to load.
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -92,28 +93,27 @@ jobs:
           path: output/playwright/test-results
           retention-days: 1
 
-  # ── 웹 스모크 — 분류기가 못 끄는 자리 ────────────────────────────────
+  # ── Web smoke — the place the classifier cannot turn off ────────────────────────────────
   #
-  # 2026-07-27 표면 분리(`docs/DECISIONS.md`) 이후 웹은 앱을 따라가지 않고,
-  # 소유자는 앱만 쓴다. 즉 웹은 **무인 표면**인데 유일한 유입 경로다. 나머지
-  # 스위트와 같은 조건(browser)만 걸면, 데스크톱 브리지만 건드린 변경
-  # (`src-tauri/**`)은 웹을 한 번도 안 보고 머지된다 — 그게 정확히 이 게이트가
-  # 막으라고 만들어진 부패다. 그래서 조건을 하나 넓혀 **shipped code 가
-  # 바뀌면(runtime) 무조건** 돌고, main 푸시에서는 분류기가 비교 베이스를 못
-  # 찾아도 항상 돈다.
+  # After surface separation (`docs/DECISIONS.md`) on 2026-07-27, the web no longer follows the app,
+  # and owners only use the app. In other words, the web is an **unmanned surface** but the only
+  # entry point. If it shares conditions with the rest of the suite (browser), changes touching
+  # only the desktop bridge (`src-tauri/**`) merge without ever seeing the web — that is exactly
+  # the rot this gate was built to block. So widen the condition: **if shipped code changes (runtime),
+  # it always runs**, and on main push, it always runs even if the classifier cannot find a comparison base.
   web-smoke:
     name: Playwright (web surface)
     runs-on: ubuntu-latest
-    # 20분이었다. 실측(2026-08-19)으로 통과하는 샤드가 이미 12~17분이라
-    # 여유가 3분뿐이었고, 준비 스텝이 한 번만 재시도해도 «느리지만 정상인 실행»
-    # 이 절벽에서 떨어진다. 준비 스텝의 무한 대기는 이제 `run-with-retry` 가
-    # 막으므로(setup-playwright), 이 값은 더 이상 그 안전망이 아니다 —
-    # 재시도가 들어갈 자리만큼 늘린다.
+    # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
+    # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
+    # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
+    # (setup-playwright), so this value is no longer that safety net — increase it by the amount
+    # needed for retries.
     timeout-minutes: 30
     steps:
-      # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론이면
-      # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
-      # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
+      # fetch-depth: 0 is required — change classification uses `git merge-base`. With a shallow clone,
+      # the base cannot be found, opening "run all" and rendering the gate meaningless. Checkout cannot
+      # be placed inside a composite action — local actions must already exist in the workspace to load.
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -122,8 +122,8 @@ jobs:
       - uses: ./.github/actions/setup-playwright
         id: setup
 
-      # 배포되는 웹이 곧 정적 export 다(deploy-pages) — 스모크도 그것을 상대한다.
-      # dev 상대일 때는 온디맨드 컴파일이 첫 요청 스펙에 수십 초를 물렸다.
+      # The deployed web is the static export (deploy-pages) — smoke also targets it.
+      # When targeting dev, on-demand compilation took dozens of seconds for the first request.
       - name: Web surface smoke
         if: >-
           steps.setup.outputs.runtime == 'true'
@@ -141,55 +141,53 @@ jobs:
           path: output/playwright/test-results
           retention-days: 1
 
-  # ── 스위트 — 3 샤드. PR 은 게이트(smoke)만, main 푸시는 전부 ─────────
+  # ── Suite — 3 shards. PR gets gate (smoke) only, main push gets all ─────────
   #
-  # 2026-08-21 실측: 전 스펙을 PR 마다 돌리던 때 샤드 하나가 13분이었고,
-  # 직렬 전체 실측 16.8분 중 7.8분(47%)이 **계측 스위프**(프레임/모션 표본
-  # 채집 · 전 라우트×전 폭 행렬 계측) 19파일이었다. 그 부류는 지키는 처방이
-  # 드물게 바뀌고, 결함은 머지 직후 main 런에서 똑같이 잡힌다. 그날 흔들린
-  # 스펙도 전부 그 부류였다. 그래서 둘로 갈랐다 — 경계의 정본과 근거는
-  # `tests/e2e/post-merge-specs.ts` 하나, 배선의 감시는
-  # `tests/contract/e2e-suite-split.contract.test.ts`.
+  # Measured 2026-08-21: when running the full spec per PR, one shard took 13 minutes,
+  # and of the serial full measured 16.8 minutes, 7.8 minutes (47%) was **instrumentation sweep**
+  # (frame/motion sample collection · previous route×previous width matrix instrumentation) across
+  # 19 files. This class rarely changes the prescription, and defects are caught identically in
+  # post-merge main runs. All specs shaken that day were of this class. So we split them — the
+  # boundary's canonical source and evidence is a single file `tests/e2e/post-merge-specs.ts`,
+  # and wiring monitoring is handled by `tests/contract/e2e-suite-split.contract.test.ts`.
   #
-  # 미룬 것이 실제로 도는 트리거: ① main 푸시(= 머지 직후, 아래 push 분기가
-  # 프로젝트 필터 없이 전부 돌린다) ② e2e 인프라를 건드린 PR(classify 의
-  # `e2e` 출력 — 스펙을 고친 PR 이 자기 빨강을 머지 전에 본다).
+  # Triggers that actually run deferred tests: ① main push (= immediately after merge, the push branch below
+  # runs all without project filters) ② PRs touching e2e infrastructure (classify's `e2e` output —
+  # a PR fixing specs sees its own red before merging).
   #
-  # **CI 는 dev 가 아니라 빌드된 정적 export 를 상대한다** (2026-08-21).
-  # dev(Turbopack)는 라우트를 첫 요청 때 컴파일하므로, 어떤 라우트를 처음
-  # 건드리는 스펙이 그 비용을 통째로 물었다 — 누가 무는지는 샤드 구성과 실행
-  # 순서가 정해서 **실행마다 다른 스펙이 30초 타임아웃으로 죽었다**(#1178 첫
-  # 런: dialog-responsive 32.6s ✘ 등, 혼자 돌리면 2.0s ✓). 정적 export 는
-  # 첫 요청 비용이 없어 시간이 결정적이고, 진단력도 더 높다(2026-07-28 실측:
-  # 공방 같은-라우트 이동은 export 에서만 죽었다). 전 스위트 350개를 정적
-  # 상대로 돌린 census: 0 실패 · 0 flaky · 직렬 15.7분(dev 16.8분). 로컬
-  # 기본값은 여전히 dev 재사용이다 — 이 전환은 CI 의 두 잡에만 있다.
+  # **CI targets built static export, not dev** (2026-08-21).
+  # dev (Turbopack) compiles routes on the first request, so any spec hitting a route for the first
+  # time paid that cost entirely — who bites is determined by shard configuration and execution order,
+  # **causing different specs to die with a 30s timeout each run** (#1178 first run: dialog-responsive 32.6s ✘ etc., 2.0s ✓ running alone). Static export has no first-request cost, making time deterministic and diagnostic power higher (measured 2026-07-28:
+  # workshop same-route navigation only crashed in export). Census of running all 350 full suite tests against static:
+  # 0 failures · 0 flaky · serial 15.7 minutes (dev 16.8 minutes). Local default is still dev reuse —
+  # this transition exists only in these two CI jobs.
   #
-  # 전체 스위트가 위 웹 스모크를 한 번 더 포함하는 것은 의도적이다(약 20초).
-  # 잡을 나눠야 웹이 깨졌을 때 로그를 뒤지지 않고 잡 이름만 보고 안다.
+  # The full suite including the web smoke once more is intentional (~20s).
+  # Jobs are split so that if the web breaks, you do not need to dig through logs; just seeing the job name tells you.
   #
-  # 렌더되는 페이지가 의존하지 않는 변경(에이전트 브리프 · 문서 · 워크플로)에
-  # 브라우저를 띄우지 않는다. 잡은 그대로 초록으로 끝나므로 머지가 막히지
-  # 않는다 — 스텝만 건너뛴다.
+  # Changes that do not affect rendered pages (agent brief · docs · workflows)
+  # do not launch a browser. The job still ends green, so merge is not blocked —
+  # only the step is skipped.
   suite:
     name: Playwright (chromium ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
-    # 20분이었다. 실측(2026-08-19)으로 통과하는 샤드가 이미 12~17분이라
-    # 여유가 3분뿐이었고, 준비 스텝이 한 번만 재시도해도 «느리지만 정상인 실행»
-    # 이 절벽에서 떨어진다. 준비 스텝의 무한 대기는 이제 `run-with-retry` 가
-    # 막으므로(setup-playwright), 이 값은 더 이상 그 안전망이 아니다 —
-    # 재시도가 들어갈 자리만큼 늘린다.
+    # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
+    # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
+    # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
+    # (setup-playwright), so this value is no longer that safety net — increase it by the amount
+    # needed for retries.
     timeout-minutes: 30
     strategy:
-      # 한 샤드가 빨개도 나머지는 끝까지 돈다 — 한 번에 한 결함만 알려 주면
-      # 검수가 왕복이 된다. `if: always()` 를 잡 안에서 쓰는 것과 같은 이유다.
+      # Even if one shard turns red, the rest run to completion — telling about only one defect at a time
+      # makes verification round-trip. This is the same reason for using `if: always()` inside the job.
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
     steps:
-      # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론이면
-      # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
-      # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
+      # fetch-depth: 0 is required — change classification uses `git merge-base`. With a shallow clone,
+      # the base cannot be found, opening "run all" and rendering the gate meaningless. Checkout cannot
+      # be placed inside a composite action — local actions must already exist in the workspace to load.
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -198,15 +196,15 @@ jobs:
       - uses: ./.github/actions/setup-playwright
         id: setup
 
-      # PR 은 PR 게이트(smoke)만 — 단 e2e 인프라 자체를 고친 PR 과 main
-      # 푸시는 프로젝트 필터 없이 전부(smoke + post-merge) 돈다.
+      # PR gets PR gate (smoke) only — except PRs fixing e2e infrastructure itself and main
+      # pushes run all (smoke + post-merge) without project filters.
       #
-      # ⚠️ 프로젝트 선택은 run 이 아니라 env 에 있다. 처음엔 run 의 접힘
-      # 스칼라(>-) 안에 표현식을 두 줄로 적었는데, **더 들여쓴 연속 줄은
-      # 접히지 않고 literal 줄로 남는** YAML 규칙 때문에 스크립트가 두 줄이
-      # 됐다 — 1줄이 샤드 없이 전체를 돌리고 2줄 `--shard=…` 가 exit 127 로
-      # 죽어, 세 샤드가 각각 348개 전부를 27분씩 돌고도 빨갰다(#1178 첫 런
-      # 실측). env 값은 한 줄 표현식이라 이 함정이 없다.
+      # ⚠️ Project selection is in env, not run. Initially I wrote the expression on two lines
+      # inside the folding scalar (>-) of run, but **continuously indented lines do not fold
+      # and remain literal lines** due to YAML rules — so the script became two lines —
+      # 1 line ran all without shards and 2 lines `--shard=…` died with exit 127,
+      # causing three shards each to run all 348 tests for 27 minutes and still turn red (#1178 first run
+      # measured). env values are single-line expressions, so this trap is avoided.
       - name: Run Playwright suite (shard ${{ matrix.shard }}/3)
         if: steps.setup.outputs.browser == 'true'
         run: pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test $PLAYWRIGHT_PROJECT_ARGS --shard=${{ matrix.shard }}/3

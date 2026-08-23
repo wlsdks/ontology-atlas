@@ -8,8 +8,8 @@ import { KNOWLEDGE_EDGE_TYPES, type KnowledgeEdgeType } from './types';
  * `KnowledgeEdgeType` to a human reads its wording from.
  *
  * Before this module four surfaces each picked their own wording: the topology map
- * legend and `/ontology/insights` used formal Korean nouns ("포함"/"의존"), the node
- * datasheet used its own plain phrases ("쓰는 곳"/"기대는 곳"), and the compass
+ * legend and `/ontology/insights` used formal Korean nouns ("contains"/"depends"), the node
+ * datasheet used its own plain phrases ("uses"/"expects"), and the compass
  * relation labels rendered raw untranslated English ("contains ─ · depends ╌ ·
  * evidence ┄"). A first-time reader moving between them saw up to four different word
  * families for the SAME edge type (measured: four per surface).

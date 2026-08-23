@@ -1,17 +1,17 @@
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
-  chrome-rail-combined — 최종 합본: 좌측 64px 내비 레일 + 통일 크롬 + INDEX v2.1.
-  (소유자 지적: index-panel-v2-full 에 app-rail-unified-nav 의 레일이 빠져 있었음)
-  합본 규칙: 레일이 전역 목적지(지도/문서함/빌더/인사이트/프로젝트) + 하단
-  에이전트 상태·설정을 전담 → 구 좌상단 유틸 타일(문서함/빌더) 제거,
-  우측 세로 레일은 지도 전용 3타일(전체보기/조절/단축키)만, 설정은 내비 레일로.
-  이하 원본 주석 (v2.1 다듬기):
-  실제 지형도 캡처(shots/rail-real-topology.png) 위에 구 좌측 컬럼을 덮고
-  새 브랜드 필 + INDEX 패널 v2.1 을 실척으로 합성. "분석 보기" 칩은 은퇴
-  예정이라 덮인 상태가 곧 실적용 모습.
-  v2 → v2.1 다듬기: 텍스트 캐럿(▶) 폐기 → Lucide chevron SVG · 행 세로 정렬
-  (카운트 센터) · 미터 트랙 인셋 · pip 인디고 틴트 · 유틸 타일 아이콘 16px ·
-  푸터/헤더 리듬 정리 · 캐럿 회전 상태.
+  chrome-rail-combined — final composite: left 64px nav rail + unified chrome + INDEX v2.1.
+  (Owner feedback: index-panel-v2-full was missing the rail from app-rail-unified-nav)
+  Composite rules: Rail handles global destinations (map/documents/builder/insight/project) + bottom
+  agent status/settings → remove left-top utility tiles (documents/builder),
+  right vertical rail has only map-specific 3 tiles (overview/tune/shortcuts), settings go to nav rail.
+  Original comment below (v2.1 refinement):
+  Overlay old left column on actual terrain map capture (shots/rail-real-topology.png)
+  and composite new brand field + INDEX panel v2.1 at true scale. "Analysis view" chip is
+  scheduled for retirement, so the overlaid state represents the practical usage.
+  v2 → v2.1 refinement: discard text caret (▶) → Lucide chevron SVG · row vertical alignment
+  (count center) · meter track inset · pip indigo tint · utility tile icons 16px ·
+  footer/header rhythm cleanup · caret rotation state.
 -->
 <!doctype html>
 <html lang="ko">
@@ -33,7 +33,7 @@
   body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif;overflow:hidden}
   .frame{width:100%;height:100vh;display:flex;overflow:hidden}
   .stage{position:relative;flex:1;min-width:0;height:100vh;overflow:hidden}
-  /* ══ 좌측 내비 레일 (app-rail-unified-nav v2 문법) ══ */
+  /* ══ Left nav rail (app-rail-unified-nav v2 syntax) ══ */
   .navrail{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;padding:12px 0 14px;
     background:#0a0b0f;border-right:1px solid var(--divider);z-index:10}
   .navrail .logo{width:34px;height:34px;display:grid;place-items:center;color:var(--t2);margin-bottom:14px}
@@ -51,7 +51,7 @@
   .navrail .foot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
   .navrail .agentdot{position:absolute;top:4px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--amber);outline:2px solid #0a0b0f}
   .stage>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:left top}
-  /* 구 크롬 커버 — 좌측 컬럼 + 상단 스트립 + 우측 레일을 캔버스색으로 덮음 */
+  /* Old chrome cover — overlay left column + top strip + right rail with canvas color */
   .cover{position:absolute;top:0;left:0;bottom:0;width:412px;
     background:linear-gradient(90deg, var(--canvas) 0%, var(--canvas) 92%, rgba(6,6,9,0) 100%)}
   .cover-top{position:absolute;top:0;left:0;right:0;height:82px;
@@ -59,7 +59,7 @@
   .cover-right{position:absolute;top:0;right:0;bottom:0;width:96px;
     background:linear-gradient(270deg, var(--canvas) 0%, var(--canvas) 82%, rgba(6,6,9,0) 100%)}
   svg.lucide{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-  /* ── 브랜드 필 + 유틸 타일 ── */
+  /* ── Brand field + utility tiles ── */
   .toprow{position:absolute;top:14px;left:24px;display:flex;align-items:stretch;gap:8px;z-index:3}
   .pill{display:flex;align-items:center;gap:11px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);
     border-radius:10px;padding:8px 14px 8px 9px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
@@ -73,7 +73,7 @@
     display:grid;place-items:center;color:var(--t3);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
   .tile:hover{color:var(--t1);border-color:var(--border-strong)}
   .tile svg{width:16px;height:16px}
-  /* ── 상단 중앙/우상단/우측 레일 — 동일 문법 ── */
+  /* ── Top center/top right/right rail — same syntax ── */
   .midrow{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:stretch;gap:8px;z-index:3}
   .chip{display:flex;align-items:center;gap:8px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);
     border-radius:10px;padding:0 14px;height:44px;font-size:12.5px;color:var(--t2);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
@@ -88,7 +88,7 @@
   .toprt{position:absolute;top:14px;right:24px;z-index:3}
   .rightrail{position:absolute;right:24px;top:50%;transform:translateY(-60%);display:flex;flex-direction:column;gap:8px;z-index:3}
   .rightrail .tile{height:44px}
-  /* ── INDEX 패널 v2.1 ── */
+  /* ── INDEX panel v2.1 ── */
   .index{position:absolute;top:76px;left:24px;bottom:24px;width:302px;z-index:3;
     border:1px solid var(--border-soft);background:rgba(15,16,22,.97);border-radius:12px;
     display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.45)}
@@ -153,7 +153,7 @@
   <div class="cover-right"></div>
   <div class="cover"></div>
 
-  <!-- 상단 중앙 — 같은 문법의 정렬/검색 클러스터 -->
+  <!-- Top center — alignment/search cluster with same syntax -->
   <div class="midrow">
     <span class="chip"><svg class="lucide" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>자동 정렬</span>
     <div class="searchbar">
@@ -162,12 +162,12 @@
     </div>
   </div>
 
-  <!-- 우상단 — 작업공간 (같은 pill 문법) -->
+  <!-- Top right — workspace (same pill syntax) -->
   <div class="toprt">
     <span class="chip"><svg class="lucide" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>작업공간<span class="kbd">D</span></span>
   </div>
 
-  <!-- 우측 세로 레일 — 좌측 유틸과 동일한 44px 타일 -->
+  <!-- Right vertical rail — 44px tile same as left utility -->
   <div class="rightrail">
     <span class="tile" title="전체 보기"><svg class="lucide" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></span>
     <span class="tile" title="지도 조절"><svg class="lucide" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg></span>

@@ -18,7 +18,7 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * **Timestamps are created at the moment the folder is picked.** `activity.jsonl`
  * records writes that already happened, so it does not prove live. Only a fresh
  * `agent-activity.json` heartbeat states the current step, and deleting it must drop
- * the same screen to `변경 감지` and remove the map's focus ring with it.
+ * the same screen to `Change Detected` and remove the map's focus ring with it.
  */
 test("fresh heartbeat만 현재 단계와 지도 대상을 말하고, 제거되면 변경 감지로 내린다", async ({ page }) => {
   test.setTimeout(120_000);
@@ -109,7 +109,7 @@ test("fresh heartbeat만 현재 단계와 지도 대상을 말하고, 제거되�
 
 /**
  * The notification tray states the same name — a finished job (more than 5 minutes
- * after the last write) turns its "job finished" line into "claude-code 작업 끝". The
+ * after the last write) turns its "job finished" line into "claude-code job finished". The
  * seed is two writes from 20 minutes ago: they group into one job, and since it has
  * gone quiet there is a completion notification.
  */

@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# PreToolUse hook — 생성물 파일의 **손 편집**을 차단한다.
+# PreToolUse hook — Blocks **manual editing** of generated files.
 #
-# **실측 사고가 있는 규칙이다.** `.claude/rules/git.md`:
-#   *"생성물 JSON 충돌을 손으로 편집하지 말 것. … 충돌 마커를 손으로 지우다
-#   JSON 안에 남겨 타입 검사가 깨진 전례가 있다."*
-# 규칙은 있었고 사고는 났다 — 산문은 강제가 아니기 때문이다.
-# (2026-07-31 하네스 감사 처방)
+# **This is a rule based on observed incidents.** `.claude/rules/git.md`:
+#   *"Do not manually edit generated JSON conflicts. … Manually removing conflict
+#   markers has left them inside the JSON, breaking type checks in past cases."*
+# The rule existed and incidents occurred — because prose is not enforced.
+# (2026-07-31 Hanes audit prescription)
 #
-# 차단 대상은 `pnpm docs-vault:build` 의 **산출물**이다:
+# The targets are the **outputs** of `pnpm docs-vault:build`:
 #   - src/entities/docs-vault/data/**
 #   - public/docs-vault/**
 #
-# 고쳐야 할 것은 산출물이 아니라 **입력**(`docs/**/*.md`)이거나 빌더
-# (`scripts/build-docs-vault.mjs`)다. 결정성 계약 덕에 재생성 결과는 어느
-# 머신에서나 같은 바이트다(`docs/DEVELOPMENT-CHECKS.md`).
+# What needs fixing is not the output but the **input** (`docs/**/*.md`) or the builder
+# (`scripts/build-docs-vault.mjs`). Thanks to the determinism contract, regenerated
+# results are identical bytes on any machine (`docs/DEVELOPMENT-CHECKS.md`).
 #
-# ⚠️ **Bash 는 막지 않는다.** `pnpm docs-vault:build` 도, 충돌 해소 관례
-# (`git checkout --ours … && pnpm docs-vault:build`)도 Bash 이고 둘 다 정당한
-# 경로다. 이 훅이 막는 것은 **에디터 도구로 한 줄씩 고치는 행위** 하나다.
+# ⚠️ **Bash does not block this.** `pnpm docs-vault:build` itself and the conflict resolution convention
+# (`git checkout --ours … && pnpm docs-vault:build`) are both Bash and both valid
+# paths. This hook blocks only **the act of fixing line-by-line via editor tools**.
 
 set -euo pipefail
 
@@ -45,7 +45,7 @@ path = tool_input.get("file_path") or tool_input.get("path") or ""
 if not path:
     sys.exit(0)
 
-# 절대 경로로 와도 저장소 상대 접두로 판정할 수 있게 정규화한다.
+# Normalizes paths so that absolute paths can be determined as repository-relative prefixes.
 normalized = path.replace("\\", "/")
 for prefix in GENERATED_PREFIXES:
     idx = normalized.find(prefix)

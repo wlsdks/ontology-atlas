@@ -14,7 +14,7 @@ import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
  * `topology-pointer-handlers.ts#createTopologyPointerHandlers` doc). Popover
  * (click) = information, this menu (right-click) = actions — the same 4
  * action-row items from `TopologyV2DetailPanel` (W2-A) plus the opt-in
- * 「전체 상세」 (full detail) link, reachable without first selecting the node.
+ * "full detail" (full detail) link, reachable without first selecting the node.
  *
  * Hand-rolled rather than a Radix `DropdownMenu` — this repo's overlays
  * (`ShortcutSheet`, `SearchPalette`) already implement their own manual

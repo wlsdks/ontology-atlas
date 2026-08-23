@@ -12,14 +12,15 @@ interface Props {
   onOpenSearch: () => void;
   /** Auto-arrange trigger — reheats the topology physics. */
   onRelayout: () => void;
-  /** 모든 고팬아웃 부모를 한 번에 펼치거나 다시 접는다. */
+  /** Expands or collapses all deep-out parents at once. */
   onToggleExpandAll?: () => void;
   allExpanded?: boolean;
   density?: 'default' | 'compact-focus';
   /**
-   * Selected-node focus 에서는 popover 가 입력 우선권을 가진다. 1024px 실측에서
-   * 우측 두 번째 줄로 내려온 308px 도구줄이 352px 상세 패널과 겹쳤다. 두 표면
-   * 사이에 75px 여유가 생기는 xl(1280px) 전까지 이 레인은 물러난다.
+   * In selected-node focus, the popover takes input priority. At 1024px measured,
+   * the 308px toolbar dropped to the second column from the right and overlapped
+   * with the 352px detail panel. This lane retreats until there is 75px of clearance
+   * before xl (1280px).
    */
   phoneFocusSuppressed?: boolean;
   /**
@@ -31,16 +32,18 @@ interface Props {
    */
   phoneSheetSuppressed?: boolean;
   /**
-   * 넓은 화면의 우측 node inspector가 지도 폭을 실제로 차지하는 상태. 같은
-   * 지도 컬럼 안에서 남은 영역의 중앙으로 이동해 inspector와 겹치지 않는다.
+   * On wide screens, the right node inspector actually occupies the map width. It
+   * moves to the center of the remaining area within the same map column so it does
+   * not overlap with the inspector.
    */
   rightInspectorReserved?: boolean;
   /**
-   * path 모드 상태 칩(`TopologyPathChip`, 분석 패널 완전 소멸 2단계 §b) —
-   * "상단 중앙 검색 옆"이라는 배치 요구를 이 컴포넌트의 기존 중앙 정렬
-   * 계산(`xl:left-1/2 xl:-translate-x-1/2`)에 얹어 새 절대 위치 계산 없이
-   * 만족한다. 이 슬롯이 있을 때만 렌더 — path 모드가 아니면 완전히 비어
-   * 기존 검색/정렬 2버튼 레이아웃과 동일하다.
+   * Path mode status chip (`TopologyPathChip`, analysis panel complete elimination phase 2 §b) —
+   * satisfies the "next to top-center search" placement requirement by leveraging this
+   * component's existing center-alignment calculation (`xl:left-1/2 xl:-translate-x-1/2`)
+   * without new absolute position calculations. Rendered only when this slot exists — if
+   * not in path mode, it is completely empty and identical to the previous search/sort
+   * 2-button layout.
    */
   pathChip?: ReactNode;
   /**
@@ -53,14 +56,14 @@ interface Props {
   /**
    * The S4 "realm expansion" status chip — the same "top-centre chrome column" grammar
    * as pathChip/returnChip. Rendered only while a realm is active, announcing the current
-   * world as "영역: {title} ✕" with ✕ returning to the full map. An empty slot costs
+   * world as "Realm: {title} ✕" with ✕ returning to the full map. An empty slot costs
    * nothing to render.
    */
   realmChip?: ReactNode;
   /**
-   * The "걸어온 길" (trail) chip (`TopologyTrailChip`) — the same "top-centre chrome
-   * column" grammar as pathChip/realmChip. Rendered only with 2 or more session visits,
-   * announcing the route taken as "걸어온 길 · N". An empty slot costs nothing to render.
+   * The "trail" chip (`TopologyTrailChip`) — the same "top-centre chrome column"
+   * grammar as pathChip/realmChip. Rendered only with 2 or more session visits,
+   * announcing the route taken as "Trail · N". An empty slot costs nothing to render.
    */
   trailChip?: ReactNode;
 }
@@ -75,7 +78,7 @@ const ARRANGE_FEEDBACK_MS = 950;
  * glassmorphism (backdrop-blur) ban and uses a solid panel background only.
  *
  * feat/chrome-system §6 — reskinned as ChromeChip (44px, 10px radius). The
- * top-right 「작업공간」 chip (`HomePage`) later moved onto the same ChromeChip, so the
+ * top-right "workspace" chip (`HomePage`) later moved onto the same ChromeChip, so the
  * whole top row converged on 44px (feat/chrome-finish, which also cleaned the
  * remaining TopologyReviewLink/Create-Node buttons' `--topology-utility-lane-height`
  * leftovers over to `--chrome-tile-size`).
@@ -110,13 +113,14 @@ export function SearchHint({
 
   return (
     <div
-      // 겹침 소탕 2026-08-22 — 상단 중앙 정렬은 xl+ 부터만. 전체 펼치기가
-      // 합류한 350px 레인은 1024에서 INDEX 끝(388)과 19px 겹쳤다. <xl에서는
-      // 우측 두 번째 줄(top 76px)에 두고, 1280부터 가운데로 돌아간다.
+      // Overlap cleanup 2026-08-22 — top-center alignment is xl+ only. The lane
+      // that joined with full expansion at 350px overlapped INDEX end (388) by 19px
+      // at 1024px. Placed on the second column from the right (top 76px) below xl,
+      // and returns to center from 1280.
       className={cn(
         "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 transition-[left] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-6 xl:left-1/2 xl:right-auto xl:top-8 xl:-translate-x-1/2",
-        // 두 강등이 동시일 땐 더 엄격한 focus(<lg)가 이긴다 — 두 클래스를
-        // 같이 얹으면 md:block 이 hidden 을 md 에서 되살려 충돌한다.
+        // When both downgrades happen simultaneously, the stricter focus (<lg) wins —
+        // applying both classes causes md:block to revive hidden at md, creating a conflict.
         phoneFocusSuppressed
           ? "hidden xl:block"
           : phoneSheetSuppressed
@@ -174,10 +178,11 @@ export function SearchHint({
             </ChromeChip>
           </div>
         ) : null}
-        {/* 자동 정렬 — 데스크톱에서만 노출. 모바일에서는 자주 안 쓰는 액션이라
-            우상단 floating 버튼이 시각적 무게를 잡아먹는 게 더 큰 손실. 필요하면
-            그래프 컨트롤 패널 안에서 트리거. wrapper 의 hidden/md:block 이
-            표시 여부를 맡아 ChromeChip 자체 display 유틸과 안 부딪힌다. */}
+        {/* Auto-arrange — exposed on desktop only. On mobile, the visual weight of a
+            floating button in the upper-right corner is a greater loss for an action
+            used infrequently. Trigger it inside the graph control panel if needed. The
+            wrapper's hidden/md:block handles visibility without clashing with ChromeChip's
+            own display utility. */}
         <div className="hidden md:block">
           <ChromeChip
             type="button"
@@ -211,7 +216,7 @@ export function SearchHint({
             second colour). Same <md demotion as auto-arrange. */}
         {/*
           The 3D chip **opens a picker rather than toggling** (owner instruction,
-          2026-08-18: *"3D누르면 선택 팝업이 나오게 해야지?"* — pressing 3D should bring
+          2026-08-18: *"Pressing 3D should bring up a selection popup."* — pressing 3D should bring
           up a selection popup). With two arrangements inside 3D, an on/off toggle can no
           longer say 「what am I looking at」 — the rationale and the three reasons are in
           the `View3dMenu` doc-block.

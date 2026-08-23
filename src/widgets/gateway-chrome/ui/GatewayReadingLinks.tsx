@@ -29,11 +29,11 @@ import { controlClass } from '@/shared/ui/control-class';
  *
  * Above that width the chrome already provides them. Putting the same link in both
  * the chrome and the page makes one of the two a dead promise — the same judgement
- * `GatewayNav`'s preamble used when dropping 「지도로 돌아가기」, followed here too.
+ * `GatewayNav`'s preamble used when dropping "back to the map", followed here too.
  *
  * The page currently being viewed stays a link but carries `aria-current`. Removing it
  * would change how many items are in the row depending on width, forcing the reader to
- * re-read 「is it one or two」 every time.
+ * re-read "is it one or two" every time.
  */
 export function GatewayReadingLinks({ className }: { className?: string }) {
   const t = useTranslations('gatewayNav');

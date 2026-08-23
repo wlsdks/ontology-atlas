@@ -186,7 +186,7 @@ export function GlobalSearch({
       open={open}
       onOpenChange={(next) => {
         // Esc, a scrim click and the close button all converge here — the footer's
-        // promise of "ESC 닫기" closes the window in one press and clears the input
+        // promise of "ESC closes" closes the window in one press and clears the input
         // and filters with it. (The Esc path used to clear only the query and leave
         // the kind/project filters, so reopening showed inexplicably narrowed results.)
         if (!next) {
@@ -243,7 +243,7 @@ export function GlobalSearch({
           // does not fire here — this `Dialog.Content` is itself a `fixed inset-0` flex
           // wrapper covering the whole screen, so what looks like a scrim is actually
           // **inside** Content and no "outside" exists as far as Radix is concerned
-          // (owner report 2026-07-25: "바깥 클릭하면 닫혀야하는데 안닫힘" — clicking
+          // (owner report 2026-07-25: "clicking outside should close it and doesn't" — clicking
           // outside should close it and doesn't). So it closes only when the wrapper
           // itself is the pressed target; the panel (Command) already stopPropagations,
           // so inside clicks never reach here. `onPointerDown` matches the settings

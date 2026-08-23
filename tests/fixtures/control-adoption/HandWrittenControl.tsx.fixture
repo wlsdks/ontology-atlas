@@ -1,12 +1,12 @@
 /*
- * 프로브 픽스처 — **일부러 손으로 쓴 컨트롤**.
+ * Probe fixture — **deliberately hand-written control**.
  *
- * `control-adoption-ratchet.contract.test.ts` 의 탐지기를 겨눠 보는 데만 쓴다.
- * 렌더되지 않고 import 되지 않으므로 `.fixture` 확장자로 둔다 — 빌드·lint·
- * 타입 검사의 대상이 아니고, 래칫의 워크(`.tsx` 만 센다)에도 안 잡힌다.
+ * Used solely to aim the detector in `control-adoption-ratchet.contract.test.ts`.
+ * Not rendered or imported, so placed with `.fixture` extension — not subject to build, lint,
+ * or type checking, and not caught by ratchet's workflow (which counts only `.tsx`).
  *
- * ⚠️ 이 파일을 「고치지」 마라. 규격이 램프를 통과하는 순간 탐지기 증명이
- * 사라진다 — 이건 부채가 아니라 **자를 재는 자**다.
+ * ⚠️ Do not "fix" this file. The moment it passes the spec check, the detector proof
+ * disappears — this is not a debt but **a measuring stick**.
  */
 export function HandWrittenControl() {
   return (
@@ -20,7 +20,7 @@ export function HandWrittenControl() {
   );
 }
 
-/** 크롬 토큰이 치수를 소유하지만 **등재되지 않은** 자리 — 부채로 잡혀야 한다. */
+/** A place where Chrome tokens own dimensions but are **not listed** — must be caught as debt. */
 export function UnregisteredChromeTokenControl() {
   return (
     <button type="button" className="h-[var(--overlay-close-size)] w-[var(--overlay-close-size)]">
@@ -30,11 +30,11 @@ export function UnregisteredChromeTokenControl() {
 }
 
 /**
- * **앵커 컨트롤** — 2026-08-04 에 이 게이트의 시야에 들어왔다.
+ * **Anchor control** — came into this gate's view on 2026-08-04.
  *
- * 그 전까지 래칫은 `<button>` 만 셌다. 컨트롤은 `<button>` 만이 아니고, 손으로
- * 규격을 쓴 `<Link>`·`<a>` 가 **109곳** 있었는데 게이트는 한 번도 그것을 본 적이
- * 없다. 아래 둘이 그 부류의 자(尺)다.
+ * Until then, ratchet counted only `<button>`. Controls are not just `<button>`; there were
+ * **109** hand-spec'd `<Link>`·`<a>` elements that the gate had never seen. The two below
+ * are measuring sticks of that class.
  */
 export function HandWrittenAnchorControl() {
   return (

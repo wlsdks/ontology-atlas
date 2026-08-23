@@ -27,11 +27,11 @@ import {
 /**
  * The connection check — **measure step by step why it does not work, and fix here what can be fixed.**
  *
- * Why it sits here (owner instruction, 2026-08-20): *"연동이 안 되면 사실상 못 쓰는 거잖아"*
+ * Why it sits here (owner instruction, 2026-08-20): *"if the connection fails, it is effectively unusable"*
  * (if the connection fails, it is effectively unusable). It goes where someone who is stuck is
  * already looking — a check buried somewhere deep has to be hunted for, and mostly is not.
  *
- * ## ⚠️ The owner rejected the first version (2026-08-20): *"디자인적으로 많이 아쉬운데"*
+ * ## ⚠️ The owner rejected the first version (2026-08-20): *"design-wise this leaves a lot to be desired"*
  * (design-wise this leaves a lot to be desired)
  *
  * Putting the result list in as the row's **fourth flex child** broke three things at once.
@@ -259,7 +259,7 @@ export function useAgentDoctor(
   const scanButton = (
     <>
     {/*
-      ⚠️ **Use the primitive** (owner, 2026-08-20: *"버튼은 사이즈 통일좀"* — please unify the
+      ⚠️ **Use the primitive** (owner, 2026-08-20: *"please unify the button sizes"* — please unify the
       button sizes). A hand-written `<button>` plus `controlClass` **reads as a different object**
       from the `Chip` beside it (which carries an icon) even with identical size classes — and this
       repository already has a ratchet preventing hand-written controls from growing.
@@ -409,8 +409,8 @@ export function useAgentDoctor(
            * **When everything is fine it is one line.** Seven copies of the same sentence are
            * duplication, not information, and this screen has already suffered that failure once.
            *
-           * ⚠️ **Counting them was rejected too** (2026-08-20, owner: *"3단계 괜찮아요 이런 말 뭔지
-           * 알아듣지를 못하겠어"* — "3 steps are fine" and the like, I cannot make out what it
+           * ⚠️ **Counting them was rejected too** (2026-08-20, owner: *"3 steps are fine" and the like, I cannot make out what it
+           * means* — "3 steps are fine" and the like, I cannot make out what it
            * means). "Step" is our internal word, and the check count differs per tool (Claude 7,
            * Codex 3), so **the number looks different for reasons the user cannot know** — it was our
            * implementation leaking out rather than information.
@@ -418,7 +418,7 @@ export function useAgentDoctor(
            * So the status is one sentence in plain language, and what was examined is **folded away**.
            * Anyone curious unfolds it; for everyone else it is one line.
            *
-           * ⚠️ **It must look pressable** (owner, 2026-08-20: *"이게 열었다 닫았다가 가능한건지?"* —
+           * ⚠️ **It must look pressable** (owner, 2026-08-20: *"Can this be opened and closed?"* —
            * can this be opened and closed?). Text alone leaves nobody aware it is a `<details>`. It
            * uses the indicator this screen already uses — a chevron that rotates when open.
            */
@@ -513,7 +513,8 @@ export function useAgentDoctor(
                       {t('installPlanTitle')}
                     </span>
                     {/*
-                      ⚠️ **Not pinned to one line** (owner, 2026-08-20: *"이거 왜이래 디자인"* — what is
+                      ⚠️ **Not pinned to one line** (owner, 2026-08-20: *"What is
+                      going on with this design"* — what is
                       going on with this design). Measured: this command is **142 characters**, roughly
                       900px at caption size (11px), while the settings sheet's right pane is **698px**
                       (880 − 180 for the LNB). It used to be bound to one line with `whitespace-pre`,

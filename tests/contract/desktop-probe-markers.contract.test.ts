@@ -40,7 +40,7 @@ import { describe, expect, it } from "vitest";
  * ways, all of them the gate being stale: ① waiting for card DOM that no longer
  * exists ② measuring against the viewport while the product measures against the
  * **map** (cover 1448 vs 1512, centre off by 31.5 = half the rail) ③ **pinning
- * Korean copy verbatim** (`"개념 추가"` · `"개념 이름"` · `"만들기"`) — the disease
+ * Korean copy verbatim** (`"Add concept"` · `"Concept name"` · `"Create"`) — the disease
  * this repository already banned in its documentation gates.
  *
  * So the whole family was retired: **1,154 lines** of Rust probe · **1,962 lines**
@@ -74,7 +74,7 @@ import { describe, expect, it } from "vitest";
  * `${dataTestid}-listbox` (`src/shared/ui/select.tsx`), so a source text search
  * misses it, but `desktop:verify-ai-settings:ko` really opens that listbox on every
  * run. A gate that scans source misses notation variants (design-gates.md,
- * 「스캐너가 표기 하나만 보면」 — when a scanner sees only one notation). So the
+ * "When a scanner sees only one notation"). So the
  * predicate below knows this one assembly rule, and if the assembling code
  * disappears the marker counts as missing again and the ratchet turns red.
  */

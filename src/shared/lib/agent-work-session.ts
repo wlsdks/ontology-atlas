@@ -59,7 +59,7 @@ export const AGENT_TASK_IDLE_MS = 5 * 60 * 1000;
  */
 export const AGENT_TASK_VISIBLE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-/** The three things a session can do to the vault. Owner-agreed wording: 「추가 · 편집 · 삭제」 (added · edited · removed). */
+/** The three things a session can do to the vault. Owner-agreed wording: 「Added · Edited · Removed」 (added · edited · removed). */
 export type AgentWriteKind = "added" | "edited" | "removed";
 
 export type AgentWriteCounts = Record<AgentWriteKind, number>;
@@ -89,7 +89,7 @@ const BATCH_TOOLS = new Set(["add_concepts", "add_relations"]);
 
 /**
  * How many rows a batch line really covered. The summary text
- * (`add_concepts 46행 성공`) is **owned by MCP**, so it is parsed here. If that
+ * (`add_concepts 46 lines successful`) is **owned by MCP**, so it is parsed here. If that
  * wording changes the count simply falls back to 1 rather than breaking the
  * screen — an undercount is preferable to a notification that never appears.
  */

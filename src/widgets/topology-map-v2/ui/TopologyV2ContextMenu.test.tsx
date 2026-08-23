@@ -67,7 +67,7 @@ describe("TopologyV2ContextMenu", () => {
   });
 
   // D7 regression — a node with no document of its own opened someone else's
-  // document under a 「문서」 (document) label. The link stays (no information is
+  // document under a "Document" label. The link stays (no information is
   // lost) but the label has to name its destination honestly.
   it("relabels the item when the node has no doc of its own but is mentioned in one", () => {
     renderMenu({

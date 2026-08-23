@@ -28,7 +28,7 @@ import { useLocalVault } from './local-vault-context';
  *
  * ## A notification has to carry information (owner instruction, 2026-08-01)
  *
- * The old text was `편집됨: capabilities/payment-authorization`. Four things were missing at once:
+ * The old text was `edited: capabilities/payment-authorization`. Four things were missing at once:
  * ① `capabilities/` is a developer folder name, not words for a screen; ② a slug is not what a
  * person calls the concept (`display_<locale>` exists, and only the toast ignored it); ③ it never
  * said what kind of thing changed; ④ "edited" states that an event occurred, which is not information.

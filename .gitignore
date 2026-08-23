@@ -1,8 +1,8 @@
-# Serena MCP project cache + memories (개인 환경)
+# Serena MCP project cache + memories (personal environment)
 .serena/
 
-# CodeGraph MCP 로컬 인덱스 (sqlite db + live socket) — 커밋 금지.
-# Tailwind v4 소스 스캔이 daemon.sock 을 읽다 죽지 않도록 ignore 필수.
+# CodeGraph MCP local index (sqlite db + live socket) — do not commit.
+# Ignoring is essential to prevent Tailwind v4 source scanning from crashing when reading daemon.sock.
 .codegraph/
 
 # Ontology Atlas local runtime state (agent heartbeat, UI session files).
@@ -28,8 +28,8 @@ dist/
 # Tauri / Rust desktop build output
 src-tauri/target/
 src-tauri/gen/
-# 컴파일된 MCP 서버 바이너리 (앱 번들 페이로드, ~59MB) — 빌드 산출물이지 소스가
-# 아니다. `pnpm mcp:build-binary` 가 만든다.
+# Compiled MCP server binaries (app bundle payload, ~59MB) — build output, not source
+# Created by `pnpm mcp:build-binary`.
 src-tauri/binaries/
 
 # Production
@@ -66,7 +66,7 @@ pnpm-debug.log*
 # External references (cloned separately, not part of this repo)
 references/
 
-# Playwright MCP 세션 덤프 (스냅샷 yaml·스크린샷)
+# Playwright MCP session dumps (snapshot yaml · screenshots)
 .playwright-mcp/
 *.png
 !public/logo.png
@@ -78,9 +78,9 @@ references/
 !src-tauri/icons/**
 !docs/prototypes/shots/
 !docs/prototypes/shots/**
-# 시연 클립 포스터 — 영상 첫 프레임이라 저장소가 들고 있어야 한다. 전역 `*.png`
-# 무시는 Playwright 덤프를 막으려는 것이고 배포 자산을 막으려는 것이 아니다
-# (위 브랜드 자산들과 같은 부류의 예외).
+# Demo clip poster — the first frame of the video, so it must be held in the repository. The global `*.png`
+# ignore is intended to block Playwright dumps, not deployment assets
+# (an exception of the same class as the brand assets above).
 !public/demo/*.png
 
 # Testing
@@ -93,35 +93,34 @@ output/
 .tmp/
 .cache/
 
-# Claude Code — 로컬 개인 상태만 ignore. 공유 가이드는 commit.
+# Claude Code — ignore only local personal state. Shared guidelines are committed.
 .claude/settings.local.json
 .claude/cache/
 .claude/local/
 .claude/LOOP-TASK.md
 .claude/scheduled_tasks.lock
 
-# 로컬 운영 자격 증명 — 자율 루프가 매 사이클 로드. 절대 commit 금지.
+# Local operational credentials — loaded by the autonomous loop every cycle. Never commit.
 .local-credentials/
 
-# 세션 검증용 스크린샷 (커밋 안 함)
+# Screenshots for session validation (do not commit)
 .screenshots/
 .qa-scratch/
 
-# 릴리스 스테이징 산출물 — CI 가 만들고 CI 안에서 소비한다. 로컬에서
-# stage-macos-release-assets.mjs 를 돌려보면 여기 생긴다.
+# Release staging output — created by CI and consumed within CI. Running
+# stage-macos-release-assets.mjs locally generates files here.
 release-upload/
 release-assets/
 
-# CLI 테스트가 `agent-setup` 을 실제로 돌리며 체크아웃 안에 떨어뜨리는 산출물.
-# 임시 볼트의 절대 경로가 들어 있어 커밋되면 **그 머신의 경로가 저장소에
-# 박힌다** — 실제로 한 번 그렇게 들어갔다(2026-07-29).
+# Output dropped into the checkout by CLI tests running `agent-setup` for real.
+# Contains absolute paths to temporary vaults; if committed, **that machine's path becomes embedded in the repository** — this actually happened once (2026-07-29).
 cli/.mcp.json.example
 
-# QA 스윕 산출물 — 감사 때마다 루트에 스크린샷 수천 장이 쌓인다(실측 2026-07-31:
-# `sweep-2026-07-28` 3.3M · `sweepA2` 11M). 지식은 `.qa-scratch/*.md` 에 남기고
-# 이미지는 남기지 않는다.
+# QA sweep output — thousands of screenshots accumulate at the root during audits (measurement on 2026-07-31:
+# `sweep-2026-07-28` 3.3M · `sweepA2` 11M). Knowledge remains in `.qa-scratch/*.md`,
+# but images are not kept.
 sweep*/
 
-# 에이전트 워크트리 — 저장소 안에 살지만 저장소의 일부가 아니다.
-# (2026-08-03: `git add -A` 가 이걸 gitlink 로 커밋해 main 에 들어간 적이 있다)
+# Agent worktree — lives inside the repository but is not part of it.
+# (2026-08-03: `git add -A` once committed this as a gitlink into main)
 .claude/worktrees/

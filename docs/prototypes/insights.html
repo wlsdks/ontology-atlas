@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>/ontology/insights — machined 계기판</title>
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
   B2+ batch #2 — /ontology/insights redesign mock. THE instrument page.
   Tufte discipline: data-ink only — engraved census header, kind census bars,
@@ -330,7 +330,7 @@
     return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
   }
 
-  // trace-mark legend swatch: solid=contains 계열, dashed=depends/relates, dotted=evidence
+  // trace-mark legend swatch: solid=contains family, dashed=depends/relates, dotted=evidence
   function markSVG(style) {
     var stroke = style === "contains" ? "var(--mark-contains)" : "var(--mark-depends)";
     var dash = style === "contains" ? "" : style === "evidence" ? ' stroke-dasharray="1.2 3"' : ' stroke-dasharray="3 3"';
@@ -351,7 +351,7 @@
     }).join("");
   }
 
-  // 종류 분포 — kind glyphs + engraved bars (296 world, real ratios)
+  // kind distribution — kind glyphs + engraved bars (296 world, real ratios)
   document.getElementById("kind-bars").innerHTML = barRows([
     { glyph: glyphSVG("element", 13),    t: "요소",     quiet: "element",    n: 250 },
     { glyph: glyphSVG("capability", 13), t: "역량",     quiet: "capability", n: 36 },
@@ -360,7 +360,7 @@
     { glyph: glyphSVG("project", 13),    t: "프로젝트", quiet: "project",    n: 1 }
   ]);
 
-  // 관계 타입 — trace-mark legend (solid contains / dashed depends·relates / dotted evidence)
+  // relation types — trace-mark legend (solid contains / dashed depends·relates / dotted evidence)
   document.getElementById("rel-bars").innerHTML = barRows([
     { mark: markSVG("evidence"), t: "evidence",   quiet: "노드 → 코드 근거", n: 271 },
     { mark: markSVG("relates"),  t: "relates",    quiet: "느슨한 연관",      n: 119 },
@@ -368,7 +368,7 @@
     { mark: markSVG("relates"),  t: "depends_on", quiet: "의존",             n: 15 }
   ]);
 
-  // 도메인 용량 — real dogfood domains, cap/el subcounts
+  // domain capacity — real dogfood domains, cap/el subcounts
   document.getElementById("dom-bars").innerHTML = barRows([
     { glyph: glyphSVG("domain", 13), t: "Views",                n: 118, sub: "역량 17 · 요소 101" },
     { glyph: glyphSVG("domain", 13), t: "AI Agent Partner",     n: 64,  sub: "역량 10 · 요소 54" },
@@ -378,7 +378,7 @@
     { glyph: glyphSVG("domain", 13), t: "Mode-Aware Adapters",  n: 12,  sub: "역량 2 · 요소 10" }
   ], { sub: true });
 
-  // 허브 상위 — real dogfood hub nodes (fresh dot = 최근 30일 갱신)
+  // hub top — real dogfood hub nodes (fresh dot = updated within last 30 days)
   var hubs = [
     { k: "capability", t: "MCP Server (32 tools)",        dom: "ai-agent-partner",    deg: 38 },
     { k: "capability", t: "Frontmatter → Ontology Stub",  dom: "ontology-core",       deg: 29 },
@@ -397,7 +397,7 @@
       '<span class="deg">' + h.deg + "</span></div>";
   }).join("");
 
-  // 신선도 — real recent vault activity (git, 최근 30일)
+  // freshness — real recent vault activity (git, last 30 days)
   var fresh = [
     { k: "element",    t: "Topology Analysis Bar",   dom: "views",             d: "07-18" },
     { k: "capability", t: "Topology Skeleton Entry", dom: "views",             d: "07-18" },

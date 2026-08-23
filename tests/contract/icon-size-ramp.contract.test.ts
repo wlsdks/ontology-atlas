@@ -8,7 +8,7 @@ import { ICON_SIZE } from '../../src/shared/ui/icon-size';
 /**
  * Content icon size ramp — **CSS ↔ JS mirror plus an off-ramp literal ratchet.**
  *
- * ## Why this gate has to exist (체계 seat inventory 2026-08-04, docs/DECISIONS.md)
+ * ## Why this gate has to exist (system seat inventory 2026-08-04, docs/DECISIONS.md)
  *
  * Content icon (lucide) sizes arrive as a JSX **numeric prop** (`size={N}`). That
  * is not a className, so it is out of range of the value lints (`text-[Npx]` and
@@ -17,7 +17,7 @@ import { ICON_SIZE } from '../../src/shared/ui/icon-size';
  * sites split across **9 px values** (10·11·12·13·14·15·16·17 plus unspecified 24),
  * and two surfaces mixed 4 values within a single file (docs palette 10/11/12/14 ·
  * dependency picker 10/11/12/13). That is drift, not role.
- * A field tester's note: *"아무것도 나에게 다른 값을 알려주지 않았다."*
+ * A field tester's note: *"It did not tell me the values differed."*
  * (nothing told me the values differed)
  *
  * The same disease as the framer duration incident

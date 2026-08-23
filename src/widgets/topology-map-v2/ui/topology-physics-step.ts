@@ -32,7 +32,7 @@ export interface PhysicsStepInput {
   overviewScale: number;
   tokens: TopologyV2Tokens;
   /**
-   * Dive-zoom fix (owner: *"줌 인/아웃이 느림"* — zoom in/out is slow) — which of
+   * Dive-zoom fix (owner: *"Zoom in/out is slow"*) — which of
    * the two split spring tokens
    * (`--topology-v2-camera-spring-angfreq-interactive/-transition`) this frame's
    * camera step uses. The caller (`use-topology-loop.ts`) tracks the mode:
@@ -56,8 +56,8 @@ export interface PhysicsStepInput {
   pairFocusActive: boolean;
   hoveredNodeId: string | null;
   /**
-   * The one neighbour the user is hovering in the detail panel's 「연결된 노드」
-   * (connected nodes) list, or null. Under focus (hover suppressed) this node still
+   * The one neighbour the user is hovering in the detail panel's "Connected Nodes"
+   * list, or null. Under focus (hover suppressed) this node still
    * ramps its emphasis so the panel row and the on-canvas node/edge light up
    * together ("emphasis ripple" linkage, lead spec §4). Null until the panel-hover
    * API feeds it in.
@@ -98,7 +98,7 @@ export interface PhysicsStepInput {
    */
   reducedMotion: boolean;
   /**
-   * The ambient sleep factor, [0,1] (council 「작업대」 (workbench) P0, 2026-07-28).
+   * The ambient sleep factor, [0,1] (council "Workbench" P0, 2026-07-28).
    *
    * Multiplied into the phase-advance speed of the permanent comets. 1 = awake
    * (identical to before), 0 = asleep. The ramp (1→0) is what keeps particles from
@@ -261,7 +261,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // (Obsidian feel). Clamping to the focused node's own point (not the whole ego
   // bbox) is what keeps the subject on screen: a wide ego bbox + margin would let
   // the camera reach the cluster's far corner and slide the focused node off the
-  // opposite edge. The zoom gate is essential: 「지도 전체 맞추기」 (fit the whole map)
+  // opposite edge. The zoom gate is essential: "Fit Whole Map"
   // / fit-view keeps the node selected (focusedNodeId stays set) while springing OUT
   // to the overview; once the camera scale drops below the overview fit scale the
   // clamp reverts to the full world bounds, so fit-view/close-focus recovery is
@@ -272,7 +272,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // Unfocused clamp source = the VISIBLE tier's bounds. At spine-only zoom the
   // full-graph bounds cover the vast legal-but-empty de-pileup fan (only the
   // ~8-node spine draws), so the elastic clamp would happily leave the camera
-  // stranded over nothing (owner's *"캔버스가 사라져버림"* — the canvas disappeared;
+  // stranded over nothing (owner's *"The canvas disappeared"*;
   // QA loss A). Uses the pre-step camera scale — one frame of lag is imperceptible
   // at spring speeds.
   const preStepZoomRatio = computeZoomRatio(camera.scale.value, overviewScale * tokens.overviewEntryRatio);

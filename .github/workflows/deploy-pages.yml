@@ -4,13 +4,14 @@
 # Triggers on push to main, on GitHub Release publication, and on manual
 # dispatch.
 #
-# ⚠️ `release: published` 는 **사람이 UI 로 게시할 때만** 발화한다. 기본
-# `GITHUB_TOKEN` 이 일으킨 이벤트는 새 실행을 만들지 않으므로(GitHub 재귀 방지),
-# `release-macos.yml` 이 게시하는 정상 경로에서는 이 트리거가 돌지 않는다.
-# 그 경로는 publish job 이 스스로 `gh workflow run deploy-pages.yml` 로 깨운다.
-# 그리고 이 워크플로는 `pnpm build` 만 한다 — `/download` 의 크기·SHA-256 은
-# 커밋된 `macos-release.generated.ts` 에서 오고, 그 갱신도 publish job 의 일이다.
-# (2026-07-29 실측: rc.3 게시 직후 페이지가 rc.2 를 계속 광고했다.)
+# ⚠️ `release: published` **only fires when a person publishes via the UI**. Events
+# triggered by the default `GITHUB_TOKEN` do not create new runs (GitHub recursion prevention),
+# so this trigger does not run in the normal path where `release-macos.yml` publishes.
+# That path has the publish job wake itself via `gh workflow run deploy-pages.yml`.
+# And this workflow only does `pnpm build` — the size and SHA-256 of `/download`
+# come from the committed `macos-release.generated.ts`, and updating that is also
+# part of the publish job.
+# (Measured 2026-07-29: immediately after publishing rc.3, the page continued advertising rc.2.)
 name: Deploy GitHub Pages
 
 on:
@@ -35,10 +36,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # fetch-depth: 0 필수 — `pnpm build` 가 `docs-vault:build` 로 문서
-      # 매니페스트를 다시 만들고, 문서별 "마지막으로 바뀐 날" 을 git 히스토리
-      # 에서 읽는다. 얕은 클론에서는 유일한 커밋이 root 로 취급돼 문서 전부가
-      # 같은 날짜를 받고, 배포된 사이트의 신선도 렌즈가 통째로 평평해진다.
+      # fetch-depth: 0 is required — `pnpm build` regenerates the document
+      # manifest via `docs-vault:build` and reads the "last changed date" per document
+      # from git history. With a shallow clone, the only commit is treated as root,
+      # so all documents receive the same date, flattening the freshness lens of the
+      # deployed site entirely.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
@@ -55,13 +57,13 @@ jobs:
         run: pnpm build
         env:
           NEXT_PUBLIC_BASE_PATH: /ontology-atlas
-          # 검색 콘솔 소유권 확인 코드 — 저장소 Variables 에서 받는다
+          # Search Console ownership verification code — retrieved from repository Variables
           # (Settings → Secrets and variables → Actions → Variables).
           #
-          # 비밀이 아니라 **공개 태그로 나가는 값**이라 Secrets 가 아니라
-          # Variables 가 맞다. 다만 이 저장소의 사실도 아니어서 하드코딩하지
-          # 않는다 — 포크한 사람의 사이트에 우리 코드가 박히면 그쪽 콘솔
-          # 등록이 막힌다. 미설정이면 `app/layout.tsx` 가 태그 자체를 안 낸다.
+          # It is not a secret but a **value that goes out as a public tag**, so it belongs
+          # in Variables, not Secrets. However, since this is also not true for this repository,
+          # it is not hardcoded — if our code were embedded in a fork's site, it would block
+          # that side's console registration. If unset, `app/layout.tsx` does not emit the tag.
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
           NEXT_PUBLIC_BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
       - name: Stage the newest published updater manifest

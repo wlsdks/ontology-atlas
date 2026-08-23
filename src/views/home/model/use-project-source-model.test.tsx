@@ -200,7 +200,7 @@ describe("project source model", () => {
   });
 
   /**
-   * 「이 폴더 맞나요?」 ("Is this the right folder?") — four things are this feature's contract.
+   * "Is this the right folder?" — four things are this feature's contract.
    *
    * (1) The inference performs **no new filesystem walk** — one measurement on
    * the vault root. (2) Confirming **skips the folder picker**. (3) The

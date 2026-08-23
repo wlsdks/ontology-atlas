@@ -98,7 +98,7 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
    * expectation is **an inverted contract** — by the 2026-07-30 decision, `/` for a
    * web visitor who has not chosen a vault is the gateway (the same face as
    * `/download`), and having no INDEX is correct
-   * (`.claude/rules/architecture.md` 「URL 계약」 — the URL contract). A separate
+   * (`.claude/rules/architecture.md` "URL contract" — the URL contract). A separate
    * check guards that contract now: `ontology-ui.spec.ts`'s "root renders the gateway
    * face", where `download-gnb` is visible and `topology-index-panel` count is 0.
    *

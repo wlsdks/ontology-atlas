@@ -9,7 +9,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * once connected") has a **content-fixed height** of 229px but had no width cap. The
  * left explanatory column is capped at 520px while the right one consumed all
  * remaining width, so the wider the screen the more the ratio collapsed. The owner's
- * report: *"비율이 좀 아쉽지? 우측에 있는게 너무 길다 가로로."* (the proportions are
+ * report: *"the proportions are off — the right-hand one is far too wide."* (the proportions are
  * off — the right-hand one is far too wide).
  *
  * | Window width | Preview | Ratio |

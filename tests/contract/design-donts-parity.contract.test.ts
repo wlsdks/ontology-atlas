@@ -21,9 +21,8 @@ import { describe, expect, it } from 'vitest';
  * And there was **no gate** reconciling them. `design.md` was missing the label
  * arrow and the card height — **both already backed by contract tests** — so a
  * copy was behind the spec and nobody knew. The discipline this repository wrote
- * down for skill copies had never been applied here: *"사본이 둘인데 게이트가
- * 없으면 어긋나는 쪽이 기본값이다"* (with two copies and no gate, drifting is the
- * default) — CLAUDE.md.
+ * down for skill copies had never been applied here: *"With two copies and no gate,
+ * drifting is the default"* — CLAUDE.md.
  *
  * ## Why slugs are compared rather than sentences
  *

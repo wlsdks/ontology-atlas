@@ -8,7 +8,7 @@ import { useCallback, useSyncExternalStore } from "react";
  * **Why a store rather than a Context provider.** These values are read from the
  * map canvas (a non-React renderer) *and* from DOM glyphs in several widgets at
  * the same time, and a change in settings has to reach both instantly — fable:
- * "한 표면만 안 바뀌면 결함" (if only one surface updates, that is a defect). So
+ * "If only one surface updates, that is a defect." So
  * localStorage is the source of truth and `useSyncExternalStore` + a custom event
  * deliver the live update, the same local-first persistence idiom as
  * `docs-vault-local` / `audiencePlain`.
@@ -279,8 +279,8 @@ export function useFrameMeter(): boolean {
 /**
  * Whether the map is drawn as a dome of concentric `kind` rings.
  *
- * Owner request, 2026-08-18: "실제 우리 지도에서 3D 형태로" + "돔이면서 확대도
- * 되고 요리조리 움직이면서" (put our actual map into a 3D dome that still zooms
+ * Owner request, 2026-08-18: "Put our actual map into a 3D dome that still zooms
+ * and can be moved around freely." (put our actual map into a 3D dome that still zooms
  * and can be moved around freely). The map has exactly two views, 2D (default)
  * and 3D, toggled from one place — the "3D" chip in the map toolbar. No duplicate
  * switch in the settings sheet.
@@ -551,7 +551,7 @@ export const FOOTPRINT_EDGE_SCALE = 0.9;
  * edge offset (folded into the node's `gap`, because it is one sentence to the
  * user), and edge mark count (replaced by the two-step density).
  *
- * Field names describe what is seen, not the value behind it ("진하기" rather
+ * Field names describe what is seen, not the value behind it ("Intensity" rather
  * than "alpha") — a settings screen is not a code review.
  */
 export interface FootprintPreference {
@@ -606,7 +606,7 @@ export const FOOTPRINT_RANGES = {
 /**
  * What the settings screen shows first. Spilling all 8 sliders on open gives the
  * attention to the controls rather than to the choice; the rest sits behind
- * 「직접 맞추기」 (the manual-tuning disclosure).
+ * 「Manual Tuning」 (the manual-tuning disclosure).
  */
 export const FOOTPRINT_PRESETS = {
   subtle: { size: 10, opacity: 0.5, bloom: 0, edgeDensity: "sparse" },
@@ -764,7 +764,7 @@ export interface ExpandPreference {
 
 /**
  * ⚠️ Two of these deliberately change what is on screen today: `affordance: "bar"`
- * (owner, 2026-08-01: *"기본값은 '머리 위 막대' 어때?"* — make the overhead bar
+ * (owner, 2026-08-01: *"How about making the overhead bar the default?"* — make the overhead bar
  * the default) and `structure: "fan"` (owner, 2026-08-02). The three numbers are
  * the previous constants unchanged.
  *

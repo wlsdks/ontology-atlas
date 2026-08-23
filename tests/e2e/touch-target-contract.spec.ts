@@ -30,7 +30,7 @@ import { test, expect } from "@playwright/test";
  * ::after rect), not the visible rect.
  *
  * **There are two layers**: coarse 44 is this repository's touch contract; fine 24
- * is WCAG 2.5.8 (AA). The 2026-08-04 link-floor reset (ledger 「link 바닥 24」) added
+ * is WCAG 2.5.8 (AA). The 2026-08-04 link-floor reset (ledger "link floor 24") added
  * the fine layer. While the value layer loaded 44 across all fine pointers a fine
  * check was meaningless, but with the floor at 24, **anything under 24 is a real
  * defect**. The predicate:

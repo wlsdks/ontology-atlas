@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# SessionStart hook — Codex/agent runtime 이 새 세션을 열 때 한 번 실행되어 현재
-# 디렉토리의 ontology vault 요약을 agent context 에 inject 한다.
+# SessionStart hook — Runs once when Codex/agent runtime opens a new session,
+# injecting the ontology vault summary of the current directory into the agent context.
 #
-# 사용자 의도 (R14 rounds): "작업 중간중간 ontology 읽어서 도움받고 끝나면
-# 알아서 mcp 로 기록". 매 prompt 마다 사용자가 "ontology 활용해" 라고 알려
-# 주지 않아도 agent 가 작업 첫 순간부터 vault 를 인지하게 하기 위함.
+# User intent (R14 rounds): "Read ontology during work to get help, then
+# automatically record via MCP upon completion." This ensures the agent
+# recognizes the vault from the very first moment of work, without requiring
+# the user to say "use ontology" in every prompt.
 #
-# Output 규약 (agent hooks):
-#   - exit 0 + stdout 비어있음 → silent (vault 없는 repo 에서 noise 차단)
-#   - exit 0 + stdout 내용     → agent system context 에 추가 (이게 우리 path)
-#   - exit ≥ 1                 → 무시되는 게 맞음 (블록 안 됨)
+# Output convention (agent hooks):
+#   - exit 0 + empty stdout → silent (blocks noise in repos without a vault)
+#   - exit 0 + non-empty stdout → added to agent system context (our path)
+#   - exit ≥ 1 → should be ignored (not blocked)
 #
-# vault 위치 결정 우선순위:
-#   1. OATLAS_VAULT 환경 변수 (사용자가 명시)
-#   2. <cwd>/docs/ontology  (이 repo 같은 dogfood 패턴)
-#   3. <cwd>/vault          (cli init default)
-#   4. <cwd> 자체에 frontmatter `kind:` 가진 .md 가 있으면 cwd
-#   ↳ 어느 후보도 못 잡으면 silent.
+# Vault location priority:
+#   1. OATLAS_VAULT environment variable (explicit user setting)
+#   2. <cwd>/docs/ontology (dogfood pattern for this repo)
+#   3. <cwd>/vault (cli init default)
+#   4. If <cwd> itself contains .md files with frontmatter `kind:`, use cwd
+#   ↳ Silent if no candidate is found.
 
 set -e
 
@@ -31,7 +32,7 @@ if [ -z "$CLI_BIN" ]; then
   exit 0
 fi
 
-# vault 결정
+# Determine vault location
 VAULT=""
 if [ -n "$OATLAS_VAULT" ] && [ -d "$OATLAS_VAULT" ]; then
   VAULT="$OATLAS_VAULT"
@@ -50,16 +51,16 @@ fi
 # Compact census only. Keep SessionStart output short because it is injected
 # into agent context on every new session.
 #
-# ⚠️ **볼트가 깨졌을 때 침묵하면 안 된다** (2026-08-17 실측). 예전에는 이 줄이
-# `... 2>/dev/null) || exit 0` 이었다 — 도구를 못 부른 것과 **볼트를 찾았는데
-# 읽지 못한 것**이 똑같이 침묵으로 뭉개졌다. 그런데 후자는 세션이 이 사실을
-# 가장 알아야 하는 순간이다: 손으로 노드를 하나 더하면(사람이 하는 정상 경로다)
-# `uid:` 가 없어서 그래프가 통째로 컴파일 실패하고, 그 세션은 **온톨로지 맥락을
-# 하나도 못 받은 채** 시작한다. 왜 조용한지도 모른다.
+# ⚠️ **Must not remain silent when the vault is broken** (observed 2026-08-17). Previously, this line was
+# `... 2>/dev/null) || exit 0` — failing to invoke the tool and **failing to read the vault**
+# were both collapsed into silence. However, the latter is the moment the session
+# needs to know this most: if you manually add one node (the normal human path),
+# the graph fails to compile entirely due to missing `uid:`, and that session **starts
+# without receiving any ontology context**. It doesn't even know why it's silent.
 #
-# 그래서 둘을 가른다: **stderr 가 있으면 볼트를 읽다 실패한 것**이므로 한 줄로
-# 말한다. stderr 조차 없으면(도구 자체가 못 돈 것) 종전대로 침묵한다 — 볼트가
-# 없는 저장소에 잡음을 넣지 않는다는 원래 규약은 그대로다.
+# So we separate them: **if stderr exists, it means vault reading failed**, so report it in one line.
+# If there is no stderr (the tool itself didn't run), remain silent as before — preserving the original
+# convention of not adding noise to repos without a vault.
 CLI_STDERR="$(mktemp)"
 trap 'rm -f "$CLI_STDERR"' EXIT
 
@@ -81,7 +82,7 @@ EOF
   exit 0
 fi
 
-# python 으로 빠른 요약 (kind 분포 + domain 분포 + 상위 hub). python3 표준.
+# Quick summary via Python (kind distribution + domain distribution + top hubs). Uses python3 standard library.
 SUMMARY=$(printf '%s' "$JSON" | python3 -c "$(cat <<'PY'
 import json, sys
 try:
@@ -110,7 +111,7 @@ if drift:
 PY
 )" 2>/dev/null)
 
-# 비어있으면 silent (vault 가 .md 없거나 kind 없는 readme 만 있는 경우 등)
+# Silent if empty (e.g., vault has no .md files or only a readme without kind)
 if [ -z "$SUMMARY" ]; then
   exit 0
 fi

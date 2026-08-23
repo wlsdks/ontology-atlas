@@ -19,8 +19,8 @@ import { describe, expect, it } from "vitest";
  * | Reaching 90% | 391ms | **621ms** |
  *
  * For **230ms** after the chip said "expanded", children were still arriving —
- * past `design.md`'s *"한 입력 = 한 사건 … 시작 시점 차가 120ms 를 넘으면 두
- * 사건으로 읽혀 결함"* (one input equals one event; a start-time gap over 120ms
+ * past `design.md`'s *"one input equals one event; a start-time gap over 120ms
+ * reads as two events and is a defect"* (one input equals one event; a start-time gap over 120ms
  * reads as two events and is a defect).
  *
  * **Why this is a recurring failure**: draw already had a "no double fade" guard

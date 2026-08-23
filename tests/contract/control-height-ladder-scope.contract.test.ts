@@ -24,8 +24,7 @@ import { describe, expect, it } from 'vitest';
  *
  * For the ladder to say "outside this table is a deviation", the rule must say
  * **which shapes it applies to**, and a machine must hold that scope. Source table:
- * docs/DESIGN-SYSTEM.md 「이 사다리는 어느 모양에 적용되나」 (which shapes the
- * ladder applies to).
+ * docs/DESIGN-SYSTEM.md "Which shapes does the ladder apply to".
  *
  * | Category | What the ladder holds | Held here? |
  * |---|---|---|
@@ -34,8 +33,7 @@ import { describe, expect, it } from 'vitest';
  * | Vertically stacked controls (tile, nav rail items) | **the inner tile** (not the outer total) | **here** |
  * | Inline text links | exempt | n/a |
  *
- * Ledger: `docs/DECISIONS.md` 2026-08-03 「타일 치수는 하나다」 (one tile
- * dimension).
+ * Ledger: `docs/DECISIONS.md` 2026-08-03 "Tile dimensions are one".
  */
 describe('컨트롤 높이 사다리 — 적용 범위', () => {
   const GLOBALS = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');

@@ -3,12 +3,12 @@ import { MCP_SERVER_NAME } from '@/shared/config';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 
 /**
- * ACP가 실제로 부른 Atlas 읽기 도구를 지도 상태로 옮긴다.
+ * Translates the Atlas read tool actually called by ACP into map state.
  *
- * 에이전트 답변의 문장을 파싱하지 않는다. 문장은 같은 뜻을 여러 방식으로 쓸 수
- * 있고, 아직 도구가 끝나지 않았는데도 그럴듯한 슬러그를 말할 수 있다. 반면
- * `tool_call.rawInput`은 도구가 받은 정확한 인자다. 현재 볼트에 실재하는 이름만
- * 통과시키면 지도는 추측 없이 같은 대상을 가리킬 수 있다.
+ * Does not parse sentences from the agent's answer. Sentences can express the same meaning
+ * in multiple ways, and plausible slugs can be mentioned even before the tool finishes. In contrast,
+ * `tool_call.rawInput` is the exact argument received by the tool. By passing only names
+ * that actually exist in the current vault, the map can point to the same object without guessing.
  */
 export type AcpMapIntent =
   | { kind: 'focus'; slug: string; toolCallId: string }
@@ -42,9 +42,9 @@ function recordInput(value: unknown): Record<string, unknown> | null {
 }
 
 /**
- * 마지막 사용자 발화 이후의 도구만 본다. 같은 차례에서 `find_path`가 한 번이라도
- * 성립하면 이후 설명을 위한 `get_concept`보다 경로 의도가 우선한다 — 그렇지 않으면
- * 완성된 경로가 마지막 읽기 노드 하나로 되돌아간다.
+ * Only look at tools after the last user utterance. If `find_path` succeeds even once in the same turn,
+ * path intent takes precedence over `get_concept` for subsequent explanation — otherwise
+ * the completed path reverts to a single last-read node.
  */
 export function deriveAcpMapIntent(
   events: readonly AcpMapIntentEvent[],

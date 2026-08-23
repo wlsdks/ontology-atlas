@@ -76,7 +76,7 @@ describe("DocsVaultViewer", () => {
     /*
      * 2026-08-15 — the basis for hiding changed **from width to hover capability**.
      * The old `sm:opacity-0` guessed "narrow means touch", which the touch contract
-     * forbids precisely (`design.md`: *"화면 폭으로 터치인지 짐작하지 말 것"* — do not
+     * forbids precisely (`design.md`: *"Do not guess touch from viewport width"* — do not
      * guess touch from viewport width). The real defect was on **wide touch devices**
      * (tablets, touch laptops), where this anchor stays invisible until a hover that
      * never happens.

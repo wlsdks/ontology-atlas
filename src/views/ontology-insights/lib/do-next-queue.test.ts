@@ -42,7 +42,7 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
 
   it("최근 갱신된 허브·갱신 시점 미상 허브는 방치로 단정하지 않는다", () => {
     const hub = n("capability:hub", "capability", "capabilities/hub");
-    const unknown = n("capability:u", "capability"); // evidence 없음
+    const unknown = n("capability:u", "capability"); // No evidence
     const spokes = Array.from({ length: 5 }, (_, i) => n(`element:s${i}`, "element"));
     const edges = [
       ...spokes.map((s) => e(s.id, hub.id)),

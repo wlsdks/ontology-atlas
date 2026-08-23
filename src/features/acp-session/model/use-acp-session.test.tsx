@@ -411,11 +411,11 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
     expect(prompt, '작업 순서가 없다').toMatch(/Work in this order/);
     // ③ look before creating
     expect(prompt, '중복을 먼저 찾으라는 지시가 없다').toMatch(/similar_nodes|find_evidence/);
-    // 지도 이동은 답변 문장 추측이 아니라 exact read tool 호출로 이어져야 한다.
+    // Map navigation must lead to an exact read tool call, not inferred answer sentences.
     expect(prompt, '지도 검색과 경로 요청이 exact read tool로 이어지지 않는다').toMatch(
       /get_concept.*find_path.*move and highlight the map/i,
     );
-    // ④ 애매하면 묻기 — 실측에서 가장 크게 바꾼 줄
+    // ④ If ambiguous, ask — the line changed most in actual measurement
     expect(prompt, '애매할 때 묻지 않고 만들게 된다').toMatch(/Ask first/);
     // ⑤ answer in the language the person wrote in
     expect(prompt, '한국어로 물었는데 영어로 답한다').toMatch(/language the person wrote in/);
@@ -513,7 +513,7 @@ describe('도구 입력 refinement — 실제 Claude ACP 순서', () => {
           },
         }),
       );
-      // claude-agent-acp는 streamed input이 완성되면 status 없이 이 refinement를 보낸다.
+      // claude-agent-acp sends this refinement without status once streamed input is complete.
       bridge.listener?.(
         JSON.stringify({
           jsonrpc: '2.0',

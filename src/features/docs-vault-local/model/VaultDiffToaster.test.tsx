@@ -195,7 +195,7 @@ describe('VaultDiffToaster', () => {
 
   /**
    * **A notification has to carry information** (owner instruction, 2026-08-01). What the owner
-   * caught on screen was `✓ 편집됨: capabilities/payment-authorization` — `capabilities/` is a
+   * caught on screen was `✓ Edited: capabilities/payment-authorization` — `capabilities/` is a
    * developer folder name, and a slug is not what a person calls the concept. The three below are the
    * contract against reverting that.
    */

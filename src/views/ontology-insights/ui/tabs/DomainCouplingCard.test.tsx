@@ -239,8 +239,8 @@ describe("DomainCouplingCard", () => {
  * dimensions** (`w-7` = 28px). The height was overridden by `h-[var(--coupling-cell)]` but nothing
  * overrode the width, so it stayed 28 — and since clickability is **decided by the data** (only
  * when the value > 0 and a pair exists), one grid mixed 44×44 and 28×44: measured, 17 against 19 of
- * 36 cells (owner report 2026-08-09: *"어떤건 정사각형이고 어떤건 직사각형이고 그런 기준이
- * 있는건가? 아니면 그냥 디자인 오류인가..?"* — are some square and some rectangular by some rule,
+ * 36 cells (owner report 2026-08-09: *"Are some square and some rectangular by some rule,
+ * or is it just a design error?"* — are some square and some rectangular by some rule,
  * or is it just a design error? It was the latter).
  *
  * A grid is **a promise that cells are the same size**, and once broken the reader reads size as

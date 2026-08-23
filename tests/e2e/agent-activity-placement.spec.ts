@@ -12,15 +12,15 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * control but left the geometry as it was at the bottom.** The owner reported three
  * things at once, and all three came from that one cause:
  *
- * 1. *"종 아이콘 사이즈가 가로로 너무 길고"* (the bell icon is far too wide) — the
+ * 1. *"The bell icon is far too wide"* (the bell icon is far too wide) — the
  *    bell-only chip sat inside a **text-row chip shell**
  *    (`CHROME_STATUS_CHIP_CLASS`, 14px horizontal padding). That is not a box for a
  *    single icon.
- * 2. *"누르면 이래 제대로 안보이고"* (pressing it, you cannot see it properly) — the
+ * 2. *"Pressing it, you cannot see it properly"* (pressing it, you cannot see it properly) — the
  *    tray grows **upward** via `bottom-[calc(100%+8px)]`, the geometry from when the
  *    chip lived at the bottom of the map. After the move, upward means off-screen
  *    and into the utility row.
- * 3. *"하단에는 그대로 이게 있고..? 헷갈리는데"* (this is still down at the bottom?
+ * 3. *"This is still down at the bottom? confusing"* (this is still down at the bottom?
  *    confusing) — the bell moved up while the status row stayed below, so **the same
  *    fact was in two places.**
  *
@@ -79,7 +79,7 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
     `종이 가로로 늘어났다 (${Math.round(bellBox.width)}×${Math.round(bellBox.height)})`,
   ).toBeLessThanOrEqual(1.35);
 
-  // 종은 상태 행 안이 아니라 우상단 도구줄의 맨 오른쪽 한 칸이다.
+  // The bell's status cell is not inside the row, but in the rightmost single cell of the top-right toolbar.
   const utilityRow = page.getByTestId('topology-utility-action-row');
   const utilityRowBox = (await utilityRow.boundingBox())!;
   expect(Math.abs(bellBox.y - utilityRowBox.y), '종이 위쪽 도구줄과 같은 행이 아니다').toBeLessThanOrEqual(1);
@@ -96,7 +96,7 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
   );
   expect(statusLabelFits, 'Codex와 마지막 작업 시각이 도구줄 폭에 묶여 잘렸다').toBe(true);
 
-  // ③ 열면 다 보여야 한다 — 화면 밖으로 나가지도, 유틸 줄을 덮지도 않는다.
+  // ③ When opened, everything must be visible — it must not go off-screen or cover the utility bar.
   await bell.click();
   const inbox = page.getByTestId("agent-activity-inbox");
   await expect(inbox).toBeVisible();
@@ -127,7 +127,7 @@ test("활동 줄은 한 곳에만 있고, 알림함은 열었을 때 다 보인�
   expect(overlaps, "알림함이 위쪽 유틸 버튼 줄을 덮었다").toBe(false);
 
   /*
-   * ④ **The tray paints on top** (owner report 2026-08-17: *"알림이 위로 덮어야지?"*
+   * ④ **The tray paints on top** (owner report 2026-08-17: *"Should the notification cover what is above?"*
    * — the notification should cover what is above). ③ only checked for overlap, not
    * **which one paints on top**, so it stayed green while the right-hand tool tiles
    * were covering the tray.

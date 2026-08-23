@@ -374,8 +374,8 @@ describe('연동 점검 화면', () => {
 
 
 /**
- * **Does the screen speak while the install runs** (owner, 2026-08-20: *"버튼들만 누르면 알아서
- * 설치되는 과정도 보여주고 완료된것도 체크해주고 하나?"* — does pressing the buttons show the
+ * **Does the screen speak while the install runs** (owner, 2026-08-20: *"Show the
+ * installation process that happens automatically when you press the buttons, and check off completion?"* — does pressing the buttons show the
  * install progress and check off completion?).
  *
  * The command used to return only when finished, so while 52MB downloaded all the screen could do

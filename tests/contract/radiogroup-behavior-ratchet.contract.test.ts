@@ -68,7 +68,7 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
   ["src/widgets/atlas-git-panel/ui/CommitDetail.tsx", "tone:'secondary' + 「눌린 칩의 인디고를 덮지 마라」 조건부 보더"],
   ["src/views/docs-vault/ui/parts/DocsSidebarBody.tsx", "bg-canvas 우물 · Chip 아이템 · Tooltip 래퍼 · 켜진 칩만 라벨"],
   /*
-   * ⚠️ The five below were **migration targets** in the 체계 seat's verdict.
+   * ⚠️ The five below were **migration targets** in the system seat's verdict.
    * Measurement overturned that assignment — all five carry **hover ink that does not
    * exist in the value layer**, so migrating them would remove hover feedback on
    * inactive items. In this repository hover is hand-written per place rather than an
@@ -105,7 +105,7 @@ const HOOK_ADOPTION_FLOOR = 11;
 /**
  * **The debt ledger** — hand-written radiogroups that have neither migrated nor put
  * the hook on. It cannot grow; repaying one deletes its row. Each row's disposition
- * is in the 체계 seat's verdict (docs/DECISIONS.md 2026-08-15, entry 8).
+ * is in the system seat's verdict (docs/DECISIONS.md 2026-08-15, entry 8).
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   /*

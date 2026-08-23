@@ -55,11 +55,11 @@ describe("useCopyFeedback", () => {
       vi.advanceTimersByTime(1000);
     });
     await act(async () => {
-      await result.current.copy("b"); // 새 copy — 타이머 재시작
+      await result.current.copy("b"); // New copy — restart timer
     });
     act(() => {
-      vi.advanceTimersByTime(1000); // 첫 타이머(이미 1000 경과)였다면 idle 됐겠지만
+      vi.advanceTimersByTime(1000); // If this were the first timer (already elapsed 1000ms), it would have gone idle, but
     });
-    expect(result.current.state).toBe("copied"); // 재시작돼 아직 copied
+    expect(result.current.state).toBe("copied"); // restarted, so still copied
   });
 });

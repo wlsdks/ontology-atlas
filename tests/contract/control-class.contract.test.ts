@@ -227,7 +227,7 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
 
   it('link 의 바닥은 24(2.5.8 AA)다 — 44(2.5.5/HIG)를 fine 포인터 전면에 싣지 않는다', () => {
     /*
-     * Floor reset, 2026-08-04 (ledger 「link 바닥 24」 — the link floor of 24). The
+     * Floor reset, 2026-08-04 (ledger 「link floor 24」 — the link floor of 24). The
      * value layer used to cite WCAG 2.5.8 (AA, 24×24) while loading 2.5.5 (AAA) /
      * HIG's 44 (`min-h-11`). 44 is `--touch-target-min`, which the touch contract
      * (design.md) pins as the single source for coarse pointers, so 44 across the
@@ -518,7 +518,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('가로 한 줄 모양 전 조합이 명시 높이를 선언하고, 그 값은 높이 어휘 안이다', () => {
     /*
-     * **The other half of #884** (second exhaustive count, 2026-08-03 · 체계 seat).
+     * **The other half of #884** (second exhaustive count, 2026-08-03 · system seat).
      *
      * The ladder restoration had stopped at chips and pills. What the second count
      * found:
@@ -545,7 +545,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
      * (The 34 that card/md occupied in the table above was then a separate token,
      * `--docs-header-tile-size`. That token was deleted on 2026-08-03 and the docs
      * header tile moved onto `--chrome-tile-size` (36) — 34 is now no token's value at
-     * all, simply outside the vocabulary. Ledger: 2026-08-03 「타일 치수는 하나다」
+     * all, simply outside the vocabulary. Ledger: 2026-08-03 「Tile dimensions are one」
      * (there is one tile dimension).)
      *
      * `link` (floor 24 — see the test above) and `tile` (two vertical axes, content
@@ -604,7 +604,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('마이크로 티어는 칩에서만 실재한다 — 다른 모양의 `xs` 는 `sm` 의 별칭이다', () => {
     /*
-     * **Why an alias** (2026-08-03, 체계 seat).
+     * **Why an alias** (2026-08-03, system seat).
      *
      * "There is no step below sm" is a hole the ratchet ledger recorded three rounds
      * running, and the measured consumers (micro command tags · px-1.5 py-0.5 · 9px

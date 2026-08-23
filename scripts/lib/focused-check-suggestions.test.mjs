@@ -7,6 +7,19 @@ import {
   suggestFocusedChecks,
 } from './focused-check-suggestions.mjs';
 
+const SOURCE_LANGUAGE_COMMAND = 'pnpm source:language';
+
+function commandNames(result) {
+  return result.commands.map((row) => row.command);
+}
+
+// The source-language gate is intentionally cross-cutting. Domain-specific tests
+// keep asserting their own exact ordering, while one dedicated test below owns
+// the invariant that every supported source path adds this shared gate exactly once.
+function domainCommands(result) {
+  return commandNames(result).filter((command) => command !== SOURCE_LANGUAGE_COMMAND);
+}
+
 describe('focused check suggestions', () => {
   it('normalizes paths for git and shell input', () => {
     assert.equal(normalizeChangedPath('./mcp\\scripts\\verify.mjs'), 'mcp/scripts/verify.mjs');
@@ -16,14 +29,14 @@ describe('focused check suggestions', () => {
   it('suggests the narrow registration gate for source-checkout MCP templates', () => {
     const result = suggestFocusedChecks(['.mcp.json', '.mcp.json.example']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm test:mcp:registration']);
+    assert.deepEqual(domainCommands(result), ['pnpm test:mcp:registration']);
     assert.deepEqual(result.escalations, []);
   });
 
   it('suggests docs-vault, docs contract, dogfood status, and the gateway specimen for dogfood ontology docs', () => {
     const result = suggestFocusedChecks(['docs/ontology/capabilities/mcp-server.md']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs-vault:check',
       'pnpm docs:language',
       'pnpm docs:links',
@@ -39,7 +52,7 @@ describe('focused check suggestions', () => {
   it('suggests docs-vault freshness for any markdown doc indexed by the static docs vault', () => {
     const result = suggestFocusedChecks(['docs/FEATURES.md']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs-vault:check',
       'pnpm docs:language',
       'pnpm docs:links',
@@ -48,7 +61,7 @@ describe('focused check suggestions', () => {
 
   it('suggests the Markdown language gate for prose and for its implementation', () => {
     const prose = suggestFocusedChecks(['CONTRIBUTING.md']);
-    assert.deepEqual(prose.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(prose), [
       'pnpm docs:language',
       'pnpm docs:links',
     ]);
@@ -57,10 +70,37 @@ describe('focused check suggestions', () => {
       'scripts/quality/markdown-language/inventory.mjs',
       'scripts/quality/markdown-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(gate.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(gate), [
       'pnpm docs:language',
       'pnpm test:docs:language',
     ]);
+  });
+
+  it('suggests the source-comment language gate for every supported source family', () => {
+    const result = suggestFocusedChecks([
+      'src/shared/lib/example.ts',
+      'src-tauri/src/example.rs',
+      'app/globals.css',
+      'docs/prototypes/example.html',
+      '.github/workflows/checks.yml',
+      '.claude/hooks/example.sh',
+      '.env.example',
+    ]);
+    assert.equal(
+      commandNames(result).filter((command) => command === SOURCE_LANGUAGE_COMMAND).length,
+      1,
+    );
+
+    const gate = suggestFocusedChecks([
+      'scripts/quality/source-language/source-paths.mjs',
+      'scripts/quality/source-language/inventory.test.mjs',
+    ]);
+    assert.deepEqual(commandNames(gate), [
+      SOURCE_LANGUAGE_COMMAND,
+      'pnpm test:source:language',
+    ]);
+
+    assert.ok(!commandNames(suggestFocusedChecks(['messages/ko.json'])).includes(SOURCE_LANGUAGE_COMMAND));
   });
 
   it('suggests narrow vault tooling tests for vault helper scripts', () => {
@@ -72,7 +112,7 @@ describe('focused check suggestions', () => {
       'scripts/migrations/2026-05-04-trim-frontmatter-values.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/build-docs-vault.test.mjs',
       'pnpm exec node --test scripts/validate-vault-script.test.mjs',
       'pnpm exec node --test scripts/audit-vault-paths.test.mjs',
@@ -103,7 +143,7 @@ describe('focused check suggestions', () => {
   it('suggests direct locale message validation before the package shortcut', () => {
     const result = suggestFocusedChecks(['scripts/validate-messages.test.mjs']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm test:i18n:messages',
     ]);
@@ -112,7 +152,7 @@ describe('focused check suggestions', () => {
   it('suggests the executable frontmatter-example gate for public guide changes', () => {
     const result = suggestFocusedChecks(['docs/guide/relations.md']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs-vault:check',
       'pnpm docs:language',
       'pnpm docs:links',
@@ -130,7 +170,7 @@ describe('focused check suggestions', () => {
       'tests/fixtures/vault-schema-cases.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint src/shared/lib/validate-vault-document.ts',
       'pnpm exec vitest run src/shared/lib/validate-vault-document.test.ts',
       'pnpm test:contracts',
@@ -148,7 +188,7 @@ describe('focused check suggestions', () => {
       'mcp/scripts/json-rpc-lines.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/analyze.test.mjs',
       'pnpm exec node --test mcp/src/ontology-compiler.test.mjs',
       'pnpm exec node --test mcp/src/vault.test.mjs',
@@ -169,7 +209,7 @@ describe('focused check suggestions', () => {
       'mcp/src/meaning-evaluation.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/construction-lifecycle.test.mjs',
       'pnpm exec node --test mcp/src/construction-qualification.test.mjs',
       'pnpm exec node --test mcp/src/meaning-evaluation.test.mjs',
@@ -186,7 +226,7 @@ describe('focused check suggestions', () => {
       'mcp/src/source-hidden-field-trial.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/source-hidden-field-trial.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm vault:validate',
@@ -197,7 +237,7 @@ describe('focused check suggestions', () => {
   it('suggests focused MCP surface integration for server entrypoint changes', () => {
     const result = suggestFocusedChecks(['mcp/src/index.js']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:surface',
@@ -210,7 +250,7 @@ describe('focused check suggestions', () => {
   it('suggests broad MCP integration when the integration harness changes', () => {
     const result = suggestFocusedChecks(['mcp/src/integration.test.mjs']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm integration:mcp',
       'pnpm vault:validate',
     ]);
@@ -228,7 +268,7 @@ describe('focused check suggestions', () => {
       'mcp/src/validate.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm test:contracts',
       'pnpm exec node --test mcp/src/vault.test.mjs',
       'pnpm exec node --test mcp/src/query.test.mjs',
@@ -254,7 +294,7 @@ describe('focused check suggestions', () => {
       'mcp/src/ontology-engine.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/ontology-compiler.test.mjs',
       'pnpm exec node --test mcp/src/ontology-engine.test.mjs',
       'pnpm test:mcp:unit',
@@ -267,7 +307,7 @@ describe('focused check suggestions', () => {
   it('suggests read integration, not graph integration, for the query_concepts DSL parser', () => {
     const result = suggestFocusedChecks(['mcp/src/query.mjs']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/query.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:read',
@@ -282,7 +322,7 @@ describe('focused check suggestions', () => {
       'mcp/src/infer-imports.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/analyze.test.mjs',
       'pnpm exec node --test mcp/src/infer-imports.test.mjs',
       'pnpm test:mcp:unit',
@@ -300,7 +340,7 @@ describe('focused check suggestions', () => {
       'mcp/src/conflict-detection.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
       'pnpm exec node --test mcp/src/vault.test.mjs',
       'pnpm exec node --test mcp/src/redirect-backlinks.test.mjs',
@@ -320,7 +360,7 @@ describe('focused check suggestions', () => {
       'mcp/src/validate.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm test:contracts',
       'pnpm exec node --test mcp/src/vault.test.mjs',
       'pnpm exec node --test mcp/src/validate.test.mjs',
@@ -338,7 +378,7 @@ describe('focused check suggestions', () => {
       'mcp/src/infer-imports.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/infer-imports.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
@@ -356,7 +396,7 @@ describe('focused check suggestions', () => {
       'mcp/src/suggestions.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/suggestions.test.mjs',
       'pnpm test:mcp:suggestions',
       'pnpm vault:validate',
@@ -373,7 +413,7 @@ describe('focused check suggestions', () => {
       'cli/src/lib/query-result-contract.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test cli/src/lib/batch-results.test.mjs',
       'pnpm exec node --test cli/src/lib/query-result-contract.test.mjs',
       'pnpm test:cli:lib',
@@ -387,7 +427,7 @@ describe('focused check suggestions', () => {
       'cli/src/lib/mcp-call.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm test:cli:mcp-call',
       'pnpm exec node --test cli/src/lib/mcp-call.test.mjs',
       'pnpm test:cli:lib',
@@ -405,7 +445,7 @@ describe('focused check suggestions', () => {
       'cli/src/lib/vault-census.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test cli/src/lib/vault-census.test.mjs',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
@@ -423,7 +463,7 @@ describe('focused check suggestions', () => {
       'cli/src/lib/cli-commands.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
       'pnpm exec node --test cli/src/lib/cli-commands.test.mjs',
       'pnpm test:cli:lib',
@@ -435,7 +475,7 @@ describe('focused check suggestions', () => {
   it('suggests broad CLI integration when the integration harness changes', () => {
     const result = suggestFocusedChecks(['cli/src/integration.test.mjs']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm integration:cli',
       'pnpm vault:validate',
     ]);
@@ -448,7 +488,7 @@ describe('focused check suggestions', () => {
       'cli/src/commands/agent-setup.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm test:cli:lib',
       'pnpm integration:cli:setup',
       'pnpm vault:validate',
@@ -463,7 +503,7 @@ describe('focused check suggestions', () => {
       'scripts/dogfood-graph-db-pack.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/lib/dogfood-args.test.mjs',
       'pnpm exec node --test scripts/dogfood-compile-fix.test.mjs',
       'pnpm exec node --test scripts/dogfood-status.test.mjs',
@@ -487,7 +527,7 @@ describe('focused check suggestions', () => {
       'scripts/lib/test-name-pattern.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/run-focused-node-test.test.mjs',
       'pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs',
       'pnpm exec node --test scripts/lib/pnpm-script-refs.test.mjs',
@@ -495,20 +535,30 @@ describe('focused check suggestions', () => {
       'pnpm test:dogfood:script-refs',
       'pnpm test:checks:changed',
     ]);
-    assert.deepEqual(result.commands[0].paths, [
+    assert.deepEqual(
+      result.commands.find(
+        (row) => row.command === 'pnpm exec node --test scripts/run-focused-node-test.test.mjs',
+      )?.paths,
+      [
       'scripts/run-focused-node-test.mjs',
       'scripts/run-focused-node-test.test.mjs',
-    ]);
-    assert.deepEqual(result.commands[3].paths, [
+      ],
+    );
+    assert.deepEqual(
+      result.commands.find(
+        (row) => row.command === 'pnpm exec node --test scripts/lib/test-name-pattern.test.mjs',
+      )?.paths,
+      [
       'scripts/lib/test-name-pattern.mjs',
       'scripts/lib/test-name-pattern.test.mjs',
-    ]);
+      ],
+    );
   });
 
   it('suggests script-reference checks when dogfood help text changes', () => {
     const result = suggestFocusedChecks(['scripts/dogfood-mcp-walk.mjs']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/dogfood-mcp-walk.test.mjs',
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:dogfood:timeout',
@@ -528,13 +578,13 @@ describe('focused check suggestions', () => {
       'scripts/claude-hooks.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm test:claude:hooks']);
+    assert.deepEqual(domainCommands(result), ['pnpm test:claude:hooks']);
   });
 
   it('routes the GitHub Pages deploy workflow to the desktop readiness contract', () => {
     const result = suggestFocusedChecks(['.github/workflows/deploy-pages.yml']);
 
-    const commands = result.commands.map((row) => row.command);
+    const commands = domainCommands(result);
     assert.ok(commands.includes('pnpm test:desktop:check'));
     assert.doesNotMatch(commands.join(' '), /firebase|bundle:check/i);
   });
@@ -577,7 +627,7 @@ describe('focused check suggestions', () => {
       'src-tauri/tauri.conf.json',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/check-desktop-readiness.test.mjs',
       'pnpm exec node --test scripts/desktop-doctor.test.mjs',
       'pnpm exec node --test scripts/desktop-smoke.test.mjs',
@@ -617,7 +667,7 @@ describe('focused check suggestions', () => {
   it('suggests the web surface smoke when a desktop capability bridge changes', () => {
     const result = suggestFocusedChecks(['src/shared/lib/tauri-secrets.ts']);
 
-    const commands = result.commands.map((row) => row.command);
+    const commands = domainCommands(result);
     assert.ok(commands.includes('pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts'));
   });
 
@@ -627,7 +677,7 @@ describe('focused check suggestions', () => {
       'scripts/check-ontology-design-surface.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/check-ontology-design-surface.test.mjs',
       'pnpm design:ontology',
     ]);
@@ -640,7 +690,7 @@ describe('focused check suggestions', () => {
   it('suggests static export gates when Next config changes', () => {
     const result = suggestFocusedChecks(['next.config.ts']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm desktop:check',
       'pnpm exec tsc --noEmit',
       'pnpm build',
@@ -656,7 +706,7 @@ describe('focused check suggestions', () => {
       'next-env.d.ts',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
@@ -676,7 +726,7 @@ describe('focused check suggestions', () => {
       'app/[locale]/brand-new/page.tsx',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
@@ -695,7 +745,7 @@ describe('focused check suggestions', () => {
       'scripts/validate-messages.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm exec eslint src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
       'pnpm exec tsc --noEmit',
@@ -710,13 +760,13 @@ describe('focused check suggestions', () => {
   it('suggests lint when ESLint config changes', () => {
     const result = suggestFocusedChecks(['eslint.config.mjs']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm lint']);
+    assert.deepEqual(domainCommands(result), ['pnpm lint']);
   });
 
   it('suggests typecheck and repo-analysis gates when TS config changes', () => {
     const result = suggestFocusedChecks(['tsconfig.json']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm integration:mcp:repo-analysis',
       'pnpm exec tsc --noEmit',
       'pnpm integration:cli:repo-analysis',
@@ -729,7 +779,7 @@ describe('focused check suggestions', () => {
       '.github/PULL_REQUEST_TEMPLATE.md',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
@@ -747,7 +797,7 @@ describe('focused check suggestions', () => {
       '.github/ISSUE_TEMPLATE/onboarding_friction.yml',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
@@ -762,7 +812,7 @@ describe('focused check suggestions', () => {
       'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint src/shared/lib/cn.ts src/shared/lib/cn.test.ts ' +
         'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
       'pnpm exec vitest run src/shared/lib/cn.test.ts',
@@ -787,7 +837,7 @@ describe('focused check suggestions', () => {
       'src/shared/lib/theme.ts',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint src/shared/config/site.ts src/shared/lib/theme.ts',
       'pnpm exec tsc --noEmit',
     ]);
@@ -807,7 +857,7 @@ describe('focused check suggestions', () => {
      *
      * The order is unchanged — the direct spec comes first.
      */
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
       'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
       'pnpm exec tsc --noEmit',
@@ -817,13 +867,13 @@ describe('focused check suggestions', () => {
   it('suggests focused smoke checks for test runner config changes', () => {
     const vitest = suggestFocusedChecks(['vitest.config.ts', 'vitest.setup.ts']);
 
-    assert.deepEqual(vitest.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(vitest), [
       'pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts',
     ]);
 
     const playwright = suggestFocusedChecks(['playwright.config.ts']);
 
-    assert.deepEqual(playwright.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(playwright), [
       'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
     ]);
   });
@@ -831,7 +881,7 @@ describe('focused check suggestions', () => {
   it('suggests overflow smoke for global styling changes', () => {
     const result = suggestFocusedChecks(['postcss.config.mjs', 'app/globals.css']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
     ]);
   });
@@ -846,7 +896,7 @@ describe('focused check suggestions', () => {
       'scripts/smoke-memory-loop.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm benchmark --dry-run',
       'pnpm benchmark:scale --dry-run',
       'node scripts/perf-vault.mjs 10',
@@ -871,7 +921,7 @@ describe('focused check suggestions', () => {
       '.claude/skills/ontology-bootstrap/SKILL.md',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm docs-vault:check',
       'pnpm docs:language',
       'pnpm docs:links',
@@ -890,7 +940,7 @@ describe('focused check suggestions', () => {
       'scripts/smoke-packed-cli.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:verify:first-contact',
       'pnpm test:mcp:verify:timeout',
@@ -908,7 +958,7 @@ describe('focused check suggestions', () => {
   it('suggests package contracts for lockfile changes', () => {
     const rootLock = suggestFocusedChecks(['pnpm-lock.yaml']);
 
-    assert.deepEqual(rootLock.commands.map((row) => row.command), ['pnpm test:mcp:package']);
+    assert.deepEqual(domainCommands(rootLock), ['pnpm test:mcp:package']);
     assert.deepEqual(rootLock.escalations.map((row) => row.command), ['pnpm package:check']);
 
     const mcpLock = suggestFocusedChecks(['mcp/package-lock.json']);
@@ -924,9 +974,9 @@ describe('focused check suggestions', () => {
     ];
     const cliPackageLockEscalations = ['pnpm package:check'];
 
-    assert.deepEqual(mcpLock.commands.map((row) => row.command), packageLockCommands);
+    assert.deepEqual(domainCommands(mcpLock), packageLockCommands);
     assert.deepEqual(mcpLock.escalations.map((row) => row.command), mcpPackageLockEscalations);
-    assert.deepEqual(cliLock.commands.map((row) => row.command), packageLockCommands);
+    assert.deepEqual(domainCommands(cliLock), packageLockCommands);
     assert.deepEqual(cliLock.escalations.map((row) => row.command), cliPackageLockEscalations);
   });
 
@@ -936,7 +986,7 @@ describe('focused check suggestions', () => {
       'mcp/src/verify-script.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:verify:first-contact',
       'pnpm test:mcp:verify:timeout',
@@ -953,7 +1003,7 @@ describe('focused check suggestions', () => {
       'cli/src/commands/workspace-brief.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm integration:cli:diagnosis',
       'pnpm vault:validate',
     ]);
@@ -969,7 +1019,7 @@ describe('focused check suggestions', () => {
       'cli/src/commands/similar.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm integration:cli:graph-read',
       'pnpm vault:validate',
     ]);
@@ -978,7 +1028,7 @@ describe('focused check suggestions', () => {
   it('suggests CLI plan output unit and graph-read integration for query_plan output helpers', () => {
     const result = suggestFocusedChecks(['cli/src/lib/query-plan-output.mjs']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test cli/src/lib/query-plan-output.test.mjs',
       'pnpm test:cli:lib',
       'pnpm integration:cli:graph-read',
@@ -993,7 +1043,7 @@ describe('focused check suggestions', () => {
       'cli/src/commands/merge.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm integration:cli:graph-write',
       'pnpm vault:validate',
     ]);
@@ -1006,7 +1056,7 @@ describe('focused check suggestions', () => {
       'cli/src/commands/bootstrap.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm integration:cli:repo-analysis',
       'pnpm vault:validate',
     ]);
@@ -1021,7 +1071,7 @@ describe('focused check suggestions', () => {
       'cli/src/commands/validate.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm test:contracts',
       'pnpm integration:cli:local-vault',
       'pnpm vault:validate',
@@ -1034,7 +1084,7 @@ describe('focused check suggestions', () => {
       'scripts/suggest-focused-checks.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs',
       'pnpm exec node --test scripts/suggest-focused-checks.test.mjs',
       'pnpm test:checks:changed',
@@ -1047,7 +1097,7 @@ describe('focused check suggestions', () => {
       'scripts/check-package-contracts.test.mjs',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
+    assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/check-package-contracts.test.mjs',
       'pnpm test:mcp:package',
       'pnpm test:mcp:docs',
@@ -1096,7 +1146,7 @@ describe('focused check suggestions', () => {
     // 2026-08-08: a false "app-only" claim was fixed, the advisor suggested only
     // catalogue consistency, and the desktop gate pinning that copy went red first in
     // CI.
-    const commands = suggestFocusedChecks(['messages/ko.json']).commands.map((s) => s.command);
+    const commands = commandNames(suggestFocusedChecks(['messages/ko.json']));
     assert.ok(commands.includes('pnpm test:i18n:messages'), '카탈로그 정합 검사를 안 권한다');
     assert.ok(
       commands.includes('pnpm test:desktop:check'),
@@ -1165,20 +1215,16 @@ describe('focused check suggestions', () => {
       'samples/storefront/domains/catalog.md',
       'docs/CHANGELOG.md',
     ]) {
-      const commands = suggestFocusedChecks([path]).commands.map((row) => row.command);
+      const commands = domainCommands(suggestFocusedChecks([path]));
       assert.ok(commands.includes(prose), `${path} 에 문구 게이트를 안 권한다`);
     }
     // Does not drag in the vault's non-markdown files.
-    const other = suggestFocusedChecks(['src/views/agents/ui/AgentsPage.tsx']).commands.map(
-      (row) => row.command,
-    );
+    const other = commandNames(suggestFocusedChecks(['src/views/agents/ui/AgentsPage.tsx']));
     assert.ok(!other.includes(prose), '관계없는 코드 변경에 문구 게이트를 권한다');
   });
 
   it('볼트 변경에는 깨진 것만 말하는 검사를 권한다', () => {
-    const commands = suggestFocusedChecks(['docs/ontology/README.md']).commands.map(
-      (row) => row.command,
-    );
+    const commands = commandNames(suggestFocusedChecks(['docs/ontology/README.md']));
     assert.ok(commands.includes('pnpm vault:validate'), '무결성 검사를 안 권한다');
     assert.ok(
       // `test:dogfood:status` (that script's unit tests) is a legitimate gate — it

@@ -92,7 +92,7 @@ describe("DomainCapacityBar", () => {
   });
 
   it("꼬리 열 폭이 내용과 무관하게 같다 — 여섯 행이 한 축을 공유해야 한다 (E1)", () => {
-    // `역량 4 · 요소 110` and `역량 2 · 요소 5` have different text widths. If that
+    // `Capacity 4 · Element 110` and `Capacity 2 · Element 5` have different text widths. If that
     // difference leaks into the length of the `flex-1` track beside it, the axis
     // diverges row by row (measured 929.8/935.5/941.2px) and a domain with smaller
     // values gets a longer bar axis. jsdom does not compute layout, so what is
@@ -151,8 +151,7 @@ describe("DomainCapacityLegend", () => {
 });
 
 /**
- * **Length does not state size** (2026-08-09, the owner chose 「막대가 구성을
- * 말하게」 — let the bar state composition).
+ * **Length does not state size** (2026-08-09, the owner chose 「Let the bar state composition」 — let the bar state composition).
  *
  * The denominator used to be the list's maximum, so length was size. But the number
  * right beside it was already answering that, and measured, the fill ratios were

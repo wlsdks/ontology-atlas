@@ -142,7 +142,7 @@ export function ProjectSelectorPage() {
          *    differently.** Measured: 49 capabilities + 54 elements + 8 domains + 1 project = **exactly
          *    112**. Only relations differed by 8 (relations outside the project). The old comment knew
          *    about this overlap and waved it away with "just state the scope"; the owner's verdict was
-         *    the opposite — *"이런거 좀 혼란스러워 위에줄에 정보는 필요없고"* (this sort of thing is
+         *    the opposite — *"This sort of thing is confusing; the top row doesn't need information."* (this sort of thing is
          *    confusing; the top row doesn't need information). Rather than making people distinguish by
          *    words, **count it in one place**: inside the project card.
          */}

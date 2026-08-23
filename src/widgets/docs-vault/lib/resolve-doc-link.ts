@@ -93,7 +93,7 @@ export function resolveDocLink({
    * ⚠️ **Percent-decode and normalise to NFC** (measured fix, 2026-08-08).
    *
    * The markdown parser passes link URLs percent-encoded —
-   * `../capabilities/스윕-검증-절차.md` arrives as `%EC%8A%A4%EC%9C%95…`. That string
+   * `../capabilities/sweep-verification-procedure.md` arrives as `%EC%8A%A4%EC%9C%95…`. That string
    * is not in the vault's slug set, so **every link to a Hangul slug fell through
    * to "unknown document"**. An ASCII slug has nothing to encode and stays fine, so
    * this defect appears only in a vault with Hangul (or space, or non-ASCII) slugs —

@@ -101,8 +101,7 @@ interface PlaneSpec {
 
 const PLANE: Record<HeroGraphNode['k'], PlaneSpec> = {
   /**
-   * The project apex y: 148 → 104 (owner, 2026-08-18: *"윗공백이 너무 심한데"* — too much space
-   * at the top).
+   * The project apex y: 148 → 104 (owner, 2026-08-18: *[too much space at the top]*).
    *
    * Measured (1512, a 303px canvas): the top third of the ink (95px) held only 25% of the total —
    * the cone descending from the apex to the dome is only a thin spine, so although the bbox sat
@@ -271,8 +270,7 @@ export function mountHeroObject(
    * The ink envelope (unit space) — the range of projected coordinates **before** multiplying by
    * `scaleFit`.
    *
-   * Why it exists (owner, 2026-08-18: *"밑에 가려지는 부분 개선해야하고"* — the part cut off at
-   * the bottom needs fixing): the world origin used to sit at the stage centre (H/2), but this
+   * Why it exists (owner, 2026-08-18: *[the part cut off at the bottom needs fixing]*): the world origin used to sit at the stage centre (H/2), but this
    * object's ink mass is not symmetric about the origin — the element dome (y=-150, r=224) is far
    * wider than the project apex (y=148), so measured at 1512 there were 39px of space above and
    * **0px below**, with the dome's bottom clipped by the instrument rule. Sampling a full

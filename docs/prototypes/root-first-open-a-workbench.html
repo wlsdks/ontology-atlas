@@ -1,9 +1,9 @@
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
-  root-first-open A — "워크벤치 첫 화면" (웹·데스크톱 진입 통일)
-  관찰 현상: OSS 셀프호스트 첫 오픈이 "macOS 다운로드" 마케팅 랜딩 — 모순.
-  안 A: 웹의 vault-미선택 `/` 를 데스크톱 FirstRun 과 같은 "작업 시작" 화면으로
-  통일. 열기/새로 만들기/샘플 3택 + 에이전트 셋업 행. 마케팅은 하단 한 줄로 강등.
+  root-first-open A — "Workbench first screen" (unify web/desktop entry)
+  Observed phenomenon: OSS self-host first open is a "macOS download" marketing landing — contradiction.
+  Plan A: Unify web's vault-unselected `/` with desktop FirstRun as a "start working" screen.
+  Open/New/Sample 3-choice + agent setup row. Demote marketing to one line at the bottom.
 -->
 <!doctype html>
 <html lang="ko">
@@ -50,7 +50,7 @@
   .row:first-of-type{border-top:0}
   .row code{font-family:ui-monospace,monospace;font-size:11px;color:var(--t2);background:var(--elevated);border:1px solid var(--divider);border-radius:5px;padding:2px 8px}
   .row .who{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.12em;color:var(--t4);width:44px;flex:none;text-transform:uppercase}
-  /* 우측 — 샘플 지도 계기 */
+  /* Right — sample map trigger */
   .inst{border:1px solid var(--border-soft);border-radius:12px;background:var(--panel);overflow:hidden;align-self:start}
   .inst .hd{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--divider)}
   .inst .hd .l{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;color:var(--t3);text-transform:uppercase;display:flex;gap:8px;align-items:center}

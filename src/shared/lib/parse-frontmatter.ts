@@ -235,7 +235,7 @@ function unquote(value: string): string {
  *
  * Inline lists and objects used to be split on every comma, with a comment
  * declaring that limitation "unsupported". But a comma inside a value **silently
- * truncates data** — the tail of `labels: { ko: "지도, 검색" }` disappeared. A
+ * truncates data** — the tail of `labels: { ko: "Map, Search" }` disappeared. A
  * separator inside quotes is data, not a separator.
  */
 function splitTopLevel(input: string, separator: string): string[] {
@@ -315,9 +315,9 @@ export function extractHeadings(body: string): HeadingInfo[] {
 export function buildExcerpt(body: string, max = 320): string {
   // Produce a readable prose preview. Markdown tables are the main hazard: a
   // raw excerpt of a table renders as a wall of `|` pipes (e.g.
-  // "| 도구 | 동작 | --- | listconcepts |"), which is unreadable in the
+  // "| Tool | Action | --- | listconcepts |"), which is unreadable in the
   // node-detail panel. Strip table separator/hr rows and turn cell pipes into
-  // middot separators so a table reads as "도구 · 동작 · listconcepts · …".
+  // middot separators so a table reads as "Tool · Action · listconcepts · …".
   const stripped = body
     .replace(/```[\s\S]*?```/g, '') // fenced code blocks
     .replace(/^#+\s.*$/gm, '') // headings

@@ -10,15 +10,15 @@ import ko from '../../messages/ko.json';
  * If a string says "go to the X section of settings", **that section must exist.**
  *
  * **Why** (measured 2026-08-17). The settings sheet had nine section names at the
- * time — two of them became 「Agents」 and 「MCP 연결」 by owner instruction on
- * 2026-08-19 — 화면 · 지도 배경 · 확장 · 발자국 · 알림 · 작업 공간 ·
- * **앱에서 대화** · **터미널에서 연결** · API Key. Two pieces of guidance named
+ * time — two of them became 「Agents」 and 「MCP Connection」 by owner instruction on
+ * 2026-08-19 — Screen · Map Background · Extension · Footprint · Notification · Workspace ·
+ * **Chat in App** · **Connect in Terminal** · API Key. Two pieces of guidance named
  * sections that did not exist:
  *
  * | Where | What it said | The real name |
  * |---|---|---|
- * | Runtimes degradation card | in the 「**MCP**」 section | 터미널에서 연결 |
- * | Chat launch-failure notice | in settings' **Agents** section | 앱에서 대화 |
+ * | Runtimes degradation card | in the 「**MCP**」 section | Connect in Terminal |
+ * | Chat launch-failure notice | in settings' **Agents** section | Chat in App |
  *
  * Whoever reads it hunts for a tab that is not there and gives up. Same species as
  * what this repository already wrote down: *"a row with no destination is the same
@@ -26,7 +26,7 @@ import ko from '../../messages/ko.json';
  *
  * **Why measure this instead of pinning the sentence.** The defect first surfaced in
  * the web smoke test, and that check was pinning **the whole wording**
- * (`alsoHere: /내 에이전트 연결/`). So a wording change turned it red, and that red
+ * (`alsoHere: /My Agent Connection/`). So a wording change turned it red, and that red
  * could not distinguish "the wording is stale" from "it points nowhere" — exactly the
  * shape `.claude/rules/documentation.md` forbids: *do not pin a sentence a human
  * wrote; check only what a machine can generate.*
@@ -36,7 +36,7 @@ import ko from '../../messages/ko.json';
  * breaks only when it points at a section that does not exist.
  */
 
-/** 「X」 칸 · “X” section · 섹션 「X」 — the shapes a "go to that section" instruction takes. */
+/** 「X」 field · “X” section · section 「X」 — the shapes a "go to that section" instruction takes. */
 const SECTION_REFERENCE_PATTERNS = [
   /[「“]([^」”]+)[」”]\s*(?:칸|section)/gu,
   /(?:섹션|section)\s*[「“]([^」”]+)[」”]/gu,
@@ -47,7 +47,7 @@ type Bundle = Record<string, unknown>;
 /**
  * **The places that can be pointed at live in two tables** (2026-08-21, ledger 90).
  *
- * Runtimes and MCP connect left the sheet and became the 「에이전트」 destination, so
+ * Runtimes and MCP connect left the sheet and became the "agent" destination, so
  * guidance may point at a sheet section **or at a section of that destination**.
  * Looking at only one table reports perfectly good guidance as a defect.
  *
@@ -62,7 +62,7 @@ function sheetSectionNames(bundle: Bundle): Set<string> {
   return new Set(Object.values(section ?? {}));
 }
 
-/** The section headings the 「에이전트」 destination renders on screen. */
+/** The section headings the "agent" destination renders on screen. */
 function destinationSectionNames(bundle: Bundle): Set<string> {
   const agents = bundle.agents as Record<string, string> | undefined;
   return new Set(

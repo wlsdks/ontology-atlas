@@ -89,7 +89,7 @@ export function buildDustPoints(
 
 /**
  * Two denser dot layers (depths 0.3 and 0.6) that turn the space **inside** the
- * ward into cosmos while 「영역 전개」 (realm expansion) is active. Denser than the
+ * ward into cosmos while realm expansion is active. Denser than the
  * dust and capped at alpha 0.12, greyscale — depth comes from plain dots, never
  * glow or blur. Fixing depth to exactly two values makes the two planes drift at
  * different speeds under camera pan/zoom, so the parallax responds to input.

@@ -108,8 +108,8 @@ describe("ontology-changeset", () => {
     // baseline a→bc vs current ab→c: with an empty separator both keys become "abcd".
     const baseline = snapshotOntology(nodes, [edge("a", "bc", "d")], 1);
     const cs = computeOntologyChangeset(baseline, nodes, [edge("ab", "c", "d")]);
-    expect(cs.removedEdges).toHaveLength(1); // a→bc 제거
-    expect(cs.addedEdges).toHaveLength(1); // ab→c 추가
+    expect(cs.removedEdges).toHaveLength(1); // Remove a→bc
+    expect(cs.addedEdges).toHaveLength(1); // Add ab→c
   });
 
   it("노드 kind/title 경계 이동 변경을 감지한다 — (a,b) → (ab,'') 충돌하지 않음", () => {
@@ -133,16 +133,16 @@ describe("acknowledgeNodeChange", () => {
     expect(computeOntologyChangeset(snap, current, baseEdges).changedNodes.sort()).toEqual(["a", "b"]);
     const acked = acknowledgeNodeChange(snap, "a", current, baseEdges);
     const cs = computeOntologyChangeset(acked, current, baseEdges);
-    expect(cs.changedNodes).toEqual(["b"]); // a 는 리뷰됨 → 빠짐, b 는 남음
+    expect(cs.changedNodes).toEqual(["b"]); // a is reviewed → omitted, b remains
   });
 
   it("승인 후 그 노드를 *다시* 편집하면 재-flag 된다(놓친 변경 없음)", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const v1 = [node("a", "domain", "A v1"), node("b", "capability"), node("c", "element")];
     const acked = acknowledgeNodeChange(snap, "a", v1, baseEdges);
-    expect(computeOntologyChangeset(acked, v1, baseEdges).changedNodes).toEqual([]); // 승인 직후 깨끗
+    expect(computeOntologyChangeset(acked, v1, baseEdges).changedNodes).toEqual([]); // Clean immediately after approval
     const v2 = [node("a", "domain", "A v2 edited again"), node("b", "capability"), node("c", "element")];
-    expect(computeOntologyChangeset(acked, v2, baseEdges).changedNodes).toEqual(["a"]); // 재편집 → 재-flag
+    expect(computeOntologyChangeset(acked, v2, baseEdges).changedNodes).toEqual(["a"]); // Re-edit → re-flag
   });
 
   it("added 노드 승인 → 더 이상 added 아님(baseline 에 편입)", () => {
@@ -155,7 +155,7 @@ describe("acknowledgeNodeChange", () => {
 
   it("removed 노드 승인 → 더 이상 removed 아님(삭제 승인)", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
-    const current = [node("a", "domain"), node("b", "capability")]; // c 삭제됨
+    const current = [node("a", "domain"), node("b", "capability")]; // c deleted
     expect(computeOntologyChangeset(snap, current, baseEdges).removedNodes).toEqual(["c"]);
     const acked = acknowledgeNodeChange(snap, "c", current, baseEdges);
     expect(computeOntologyChangeset(acked, current, baseEdges).removedNodes).toEqual([]);
@@ -169,8 +169,8 @@ describe("acknowledgeNodeChange", () => {
     expect(before.addedEdges.length).toBe(1);
     const acked = acknowledgeNodeChange(snap, "a", baseNodes, newEdges);
     const cs = computeOntologyChangeset(acked, baseNodes, newEdges);
-    expect(cs.addedEdges).toEqual([]); // a 의 새 outgoing edge 가 baseline 에 편입
-    expect(cs.changedNodes).toEqual([]); // a 도 더 이상 changed 아님
+    expect(cs.addedEdges).toEqual([]); // a's new outgoing edge incorporated into baseline
+    expect(cs.changedNodes).toEqual([]); // a is no longer changed
   });
 
   it("새 스냅샷 객체를 반환(useSyncExternalStore 리렌더용) — 원본 불변", () => {

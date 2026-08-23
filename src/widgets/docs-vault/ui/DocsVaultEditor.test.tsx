@@ -246,7 +246,7 @@ describe('DocsVaultEditor', () => {
 
   // Data-loss guard: a save REJECTED by a disk conflict (VaultConflictError —
   // the file changed between read and write) must NOT phantom-clean the buffer
-  // or flash "저장됨". If it did, dirty would drop and the next poll would
+  // or flash "Saved". If it did, dirty would drop and the next poll would
   // clobber the unsaved edits. The buffer stays dirty + a localized conflict
   // message is surfaced; a subsequent poll re-fetch must not overwrite.
   it('keeps edits dirty (and a poll cannot clobber) when the save is rejected by a conflict', async () => {
@@ -262,7 +262,7 @@ describe('DocsVaultEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
 
-    // rejected save → NO phantom "저장됨", and a localized conflict message shows
+    // rejected save → NO phantom "Saved", and a localized conflict message shows
     expect(screen.queryByText('저장됨')).not.toBeInTheDocument();
     expect(
       screen.getByText(
@@ -382,7 +382,7 @@ describe('DocsVaultEditor', () => {
    * 2026-08-01).
    *
    * The old key was slug-only (`…:README`). So opening folder A's `README.md`
-   * showed folder B's body carrying a 「임시저장됨 · 최종 저장 필요」 tag — prose the
+   * showed folder B's body carrying a 「Temporarily saved · Final save required」 tag — prose the
    * user never wrote, presented as the user's unsaved changes.
    *
    * And if the two files were **byte-identical** at that moment, both the conflict

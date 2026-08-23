@@ -548,11 +548,10 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     /*
      * A hole caught in the 2026-08-16 review. A name starting with
      * `mcp__atlas-vault__` used to **skip the path check** and be allowed outright.
-     * The rationale was 「that server was launched against the vault path, so it cannot
-     * touch anything outside」, and that is not true: `absorb_document` edits the source
+     * The rationale was "that server was launched against the vault path, so it cannot
+     * touch anything outside", and that is not true: `absorb_document` edits the source
      * file in place relative to the **repository root**, not the vault. That breaks
-     * this screen's promise 「폴더 밖은 먼저 물어본다」 (it asks before going outside the
-     * folder) without a single card.
+     * this screen's promise "ask before going outside the folder" without a single card.
      */
     bridge.verdict = 'ask';
     await bootSession();
@@ -856,7 +855,7 @@ describe('대화 패널 — 못 하는 일은 정직하게', () => {
 describe('대화 패널 — 사람이 읽는 화면이다', () => {
   it('에이전트의 답을 마크다운으로 그린다 — 백틱이 글자로 남지 않게', async () => {
     /*
-     * On the real thing it came out like this: ``이 폴더(`my-ontology-2`)는 …`` —
+     * On the real thing it came out like this: ``This folder (`my-ontology-2`) is …`` —
      * backticks and all. This repository already has a renderer and only this screen
      * was not using it.
      */
@@ -999,8 +998,7 @@ describe('대화 패널 — 어댑터를 두 개 띄우지 않는다', () => {
 
 describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
   /*
-   * Owner report from the real thing, 2026-08-16: *"박스 위에 글자에 입력한 게
-   * 겹치는데?"* (the text I type overlaps the text on the box).
+   * Owner report from the real thing, 2026-08-16: *"The text I type overlaps the text on the box?"*
    *
    * A defect I created. Trying to keep 「the row from shifting」, the hint was layered
    * over the text position — and that position is exactly where a long sentence
@@ -1045,7 +1043,7 @@ describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
       /*
        * The icon-control ramp is 24 / 28 / 32 and `lg` is the top. This is the panel's
        * primary chrome, so it uses the top — growing further would mean extending the
-       * ramp, and that is not decided alone in this place (the 「체계」 seat's call).
+       * ramp, and that is not decided alone in this place (the 「System」 seat's call).
        */
       expect(button.className, `${id}: 크기가 한 단 내려갔다`).toContain('h-8 w-8');
     }
@@ -1054,8 +1052,7 @@ describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
 
 describe('대화 패널 — 떠 있는 것은 떠 있어야 한다', () => {
   /*
-   * Owner report from the real thing, 2026-08-16: *"이렇게 같이 나와서 구분도 안
-   * 되고"* (it comes out together like this and can't be told apart).
+   * Owner report from the real thing, 2026-08-16: *"It comes out together like this and can't be told apart."*
    *
    * With the past-conversations list as a flex child, opening it **pushed** the
    * conversation down and the list looked like part of the conversation. Putting
@@ -1144,8 +1141,7 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
   it('로그인이 풀린 것을 알아보고, 원문은 접어 둔다', async () => {
     /*
      * Owner's screen, 2026-08-16: this position was pasting the whole JSON-RPC error.
-     * *"이렇게 보여주면 사용자가 어떻게 알겠어."* (how is a user supposed to
-     * understand this?)
+     * *"How is a user supposed to understand this?"*
      */
     await bootSession();
     fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: '안녕' } });
@@ -1219,7 +1215,7 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
     });
 
     const alert = await screen.findByTestId('acp-chat-error');
-    // The original survives only inside the folded 「자세히」 (details).
+    // The original survives only inside the folded "Details".
     expect(alert.textContent).toContain('authentication_failed');
     // That line is no longer in the transcript.
     const transcript = screen.getByTestId('acp-chat-panel');
@@ -1257,7 +1253,7 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
     expect(alert.dataset.trouble).toBe('install');
     expect(alert.textContent).toContain('trouble.install.title');
     expect(alert.textContent).toContain('trouble.install.hint');
-    // The original and the stderr clues survive inside the folded 「자세히」 (details).
+    // The original and the stderr clues survive inside the folded "Details".
     const details = alert.querySelector('details');
     expect(details?.hasAttribute('open')).toBe(false);
     expect(details?.textContent).toContain('acp session closed');
@@ -1391,8 +1387,8 @@ describe('빈 대화의 추천 — 이 폴더에 대한 것만 그린다', () =>
         ]}
       />,
     );
-    // 세션이 서기 전부터 같은 내용이 보인다. 여기서는 이후 클릭/입력 계약까지
-    // 재기 위해 실제 준비 상태로 이어 간다.
+    // The same content is visible before the session starts. Here we proceed to the actual ready state
+    // to re-establish the subsequent click/input contract.
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
     replyTo('initialize', { protocolVersion: 1 });
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
@@ -1510,7 +1506,7 @@ describe('답변 속 노드 이름 — 지도와 잇는다', () => {
 
 describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
   /**
-   * It used to say only 「개념을 읽었어요」 (read a concept) without naming the target.
+   * It used to say only "Read a concept" without naming the target.
    * The value was arriving in `rawInput` and the session was discarding it.
    */
   it('도구가 만진 노드를 적고, 올리면 지도로 나간다', async () => {
@@ -1684,7 +1680,7 @@ describe('도구 호출 — 지도를 정확한 대상으로 움직인다', () =
 
 describe('답하다 죽은 것과 다 끝난 것은 다른 말이다', () => {
   /**
-   * Either way, it used to read only 「끝남」 (finished) in a small chip. Dying halfway
+   * Either way, it used to read only "Finished" in a small chip. Dying halfway
    * through an answer looked identical to a clean finish, so the user assumed that was
    * the whole answer.
    */
@@ -1727,13 +1723,13 @@ describe('답하다 죽은 것과 다 끝난 것은 다른 말이다', () => {
 
 /**
  * For the in-app agent to **register its own name in the vault**, the screen has to
- * know 「a turn is running right now」 (owner instruction, 2026-08-17).
+ * know "a turn is running right now" (owner instruction, 2026-08-17).
  *
  * ⚠️ **Not for the whole time a session is open.** While the heartbeat is fresh the
- * screen lights the 「에이전트 활동 중」 (agent active) indicator on the rail. If that
+ * screen lights the "Agent Active" indicator on the rail. If that
  * lights when nothing was asked, the screen is stating something that did not happen,
- * and this panel already keeps that discipline (*"전송 전에 「읽음」으로 찍으면 …"* —
- * marking it 「read」 before sending …).
+ * and this panel already keeps that discipline (*"If you mark it 'Read' before sending …"* —
+ * marking it "read" before sending …).
  */
 describe('대화 패널 — 차례가 도는 동안만 알린다', () => {
   it('보내면 켜지고, 답이 끝나면 꺼진다', async () => {
@@ -1786,10 +1782,8 @@ describe('대화 패널 — 차례가 도는 동안만 알린다', () => {
 
 /**
  * The `/` menu has to be **selectable** (three owner reports, 2026-08-17):
- * "키보드로 이동이 안된다" (keyboard movement doesn't work) · "마우스 올려도 호버
- * 효과가 없어서 어딘지 구분도 안 되고" (no hover effect, so you can't tell where you
- * are) · "바닥 클릭하면 닫혀야하는데 안닫힘" (clicking the background should close it
- * but doesn't).
+ * "Keyboard navigation doesn't work" · "No hover effect when hovering with the mouse,
+ * so you can't tell where you are" · "Clicking the background should close it but doesn't."
  */
 describe('작성 칸 — `/` 메뉴', () => {
   async function openMenu() {

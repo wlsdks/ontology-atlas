@@ -18,22 +18,22 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { PendingPermission } from '@/features/acp-session/model/use-acp-session';
 
 /**
- * The 「이거 해도 될까요」 (may I do this?) card — it appears only when something
+ * The 「May I do this?」 card — it appears only when something
  * outside the vault is about to be touched.
  *
  * ## The agent is stopped while this card is up
  *
  * That is what a permission checkpoint is. So this card has **no close X** — if it
  * could be dismissed without answering it would be a notification, not a checkpoint.
- * There is an explicit 「안 할래요」 (don't) instead.
+ * There is an explicit 「Don't」 (don't) instead.
  *
  * ## What it shows
  *
- * **The full path.** 「파일을 고치려 합니다」 (it wants to edit a file) alone is not
+ * **The full path.** 「It wants to edit a file」 alone is not
  * something you can judge — *where* it wants to edit is precisely the basis for this
  * decision. So the path is not truncated, and a long one wraps so all of it shows.
  *
- * ## 「항상 허용」 (always allow) is not given prominence
+ * ## 「Always allow」 (always allow) is not given prominence
  *
  * Measured, that option carries a rule allowing **that entire directory for the whole
  * session**. One click widening the boundary wholesale means that, at the same weight
@@ -63,9 +63,9 @@ export function AcpPermissionCard({
   /* Not only where but **what** — see the comment below. */
   const intent = permissionIntent(request.toolKind);
   /*
-    What 「계속 허용」 (keep allowing) actually allows (2026-08-17).
+    What 「Keep allowing」 (keep allowing) actually allows (2026-08-17).
 
-    The old copy **asserted** *"위 경로가 있는 폴더 전체"* (the whole folder containing
+    The old copy **asserted** *"The whole folder containing the path above"* (the whole folder containing
     the path above), but the adapter decides that scope, not us — and measured, the
     value was not a folder but a **tool**. Writing that a folder is allowed while a
     tool is allowed leaves the user believing they granted a permission they never

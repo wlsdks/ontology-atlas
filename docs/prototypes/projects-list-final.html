@@ -4,17 +4,17 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>/projects FINAL — 콘텐츠 밀도 배분 (최근 활동 · 다음 프로젝트 슬롯)</title>
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
-  FINAL ROUND — "비율이 생명" + fill-not-stretch. docs/prototypes/RATIO-SYSTEM.md 적용.
-  이전 라운드 flag 반영: ① 도메인 미터 트랙 폭 캡 640px ② 카운트(역량 n ·
-  요소 m)를 바 바로 옆에 인접 배치.
-  세로: 카드를 flex-center 로 띄우던 빈 밴드 폐기 — 섹션 갭 28px 고정,
-  남는 세로는 실데이터 섹션으로 채운다:
-    ① 헤더 아래 "최근 활동" 각인 스트립 (최근 갱신 노드 4행 — insights
-       신선도 문법 재사용: kind 글리프 + slug + 도메인 + 각인 mtime)
-    ② 카드 아래 "다음 프로젝트 추가" machined 미니카드 (dashed 슬롯 —
-       CLI 행 + MCP agent handoff 행). 좌우 1600 중앙 (공통 거터).
+  FINAL ROUND — "Ratio is life" + fill-not-stretch. Apply docs/prototypes/RATIO-SYSTEM.md.
+  Previous round flags reflected: ① Domain meter track width cap 640px ② Counts (capability n ·
+  element m) placed adjacent to the bar.
+  Vertical: Discard empty band from flex-centering cards — fixed section gap 28px,
+  fill remaining vertical space with real data sections:
+    ① "Recent activity" engraved strip below header (last updated nodes 4 rows — reuse insights
+       freshness syntax: kind glyph + slug + domain + engraved mtime)
+    ② "Add next project" machined mini-card below cards (dashed slot —
+       CLI row + MCP agent handoff row). Left/right center at 1600 (common gutter).
 -->
 <style>
   /* Values copied from app/globals.css token families (standalone prototype). */
@@ -228,7 +228,7 @@
     color: var(--text-quaternary); letter-spacing: 0.04em;
   }
 
-  /* next-project slot — machined mini-card (dashed = 예정 슬롯, 헌장의 보더 문법) */
+  /* next-project slot — machined mini-card (dashed = planned slot, charter border syntax) */
   .nextslot {
     margin-top: 28px;
     border: 1px dashed var(--border-strong); border-radius: 11px;

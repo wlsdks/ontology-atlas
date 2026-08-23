@@ -17,7 +17,7 @@ import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
 import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
 
 /**
- * 「실행기」 (runners) — the coding agents this machine can invoke.
+ * 「Runners」 (runners) — the coding agents this machine can invoke.
  *
  * ## The one job of this screen
  *
@@ -31,12 +31,10 @@ import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primi
  * With 38 rows, one block cannot be scanned. **What is actually confirmed on this
  * computer** is expanded and the rest collapses — what you can do now comes first.
  *
- * ⚠️ **The meaning of "confirmed" was once wrong** (2026-08-16, owner: *"이렇게
- * 다 보여서 좀 이상한데"* — it looks odd that everything is shown). The old test
+ * ⚠️ **The meaning of "confirmed" was once wrong** (2026-08-16, owner: *"It looks odd that everything is shown like this"* — it looks odd that everything is shown). The old test
  * was `state === 'ready'`, which meant not "this tool is here" but **"npx exists,
  * so it could be launched"**. Only 12 of the CLI names we wrap were recorded, so
- * the other 26 could not be checked at all — and yet 20 rows carried a green
- * 「준비됨」. Rust now separates that case as `cli-unknown` (`acp.rs`), so this
+ * the other 26 could not be checked at all — and yet 20 rows carried a green 「Ready」. Rust now separates that case as `cli-unknown` (`acp.rs`), so this
  * screen's first group holds **only what was really confirmed**.
  *
  * ## Who asks on your behalf (owner call, 2026-08-16)
@@ -65,13 +63,13 @@ import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primi
  * is passed here rather than by the value layer (`badgeClass` supplies geometry
  * only).
  *
- * Only 「준비됨」 uses success — in this repository success is reserved for "it went
+ * Only "Ready" uses success — in this repository success is reserved for "it went
  * well" (connected, complete) and its use is not widened. The combination follows
  * exactly what `CommitDetail` uses for the same kind of badge; a new copy would
  * make the two screens' greens diverge.
  *
- * **The other states are not distinguished by colour.** Making 「설치 필요」 and
- * 「Node 필요」 two differently coloured warnings would make colour the only channel
+ * **The other states are not distinguished by colour.** Making "Installation Required" and
+ * "Node Required" two differently coloured warnings would make colour the only channel
  * carrying the information, when the difference between them lives in **the words**.
  */
 const READY_INK =
@@ -134,11 +132,10 @@ export function AcpRuntimeSettings({
      * so it draws almost immediately. The second pass checks and corrects.
      *
      * It used to do everything at once, so the check's duration was added directly
-     * to the time the screen took to appear (owner: *"Agents 탭 누르면 로딩 속도가
-     * 1초인가 느린데?"* — pressing the Agents tab takes about a second to load).
+     * to the time the screen took to appear (owner: *"The Agents tab takes about a second to load when pressed."* — pressing the Agents tab takes about a second to load).
      * The list could have been drawn first and nothing was being shown at all.
      *
-     * A row may later change from 「준비됨」 to 「로그인 필요」. That is not something
+     * A row may later change from "Ready" to "Login Required". That is not something
      * to hide but **the sign that the check finished**, and it beats a second of
      * empty screen.
      */
@@ -293,8 +290,7 @@ export function AcpRuntimeSettings({
               </Chip>
               {othersOpen || ready.length === 0 ? (
                 <>
-                  {/* What 「확인 못 함」 means is explained only while those rows are
-                      visible — someone who has not expanded has nothing to explain. */}
+                  {/* What 「Cannot Verify」 means is explained only while those rows are visible — someone who has not expanded has nothing to explain. */}
                   {others.some((r) => r.state === 'cli-unknown') ? (
                     <p
                       data-testid="app-settings-runtimes-unknown-note"
@@ -336,26 +332,15 @@ function RuntimeRow({
   const isReady = runtime.state === 'ready';
 
   /*
-   * ## Why a link to that tool's own instructions, not an 「설치」 button
+   * ## Why a link to that tool's own instructions, not an 「Install」 button
    *
-   * The reference product (Buzz) has an `Install` button in this same place, and
-   * pressing it **actually runs an install script** (measured: it runs
-   * `curl -fsSL https://…/install.sh | bash` through
-   * `run_install_command_with_retry`).
+   * The reference product (Buzz) has an `Install` button in this same place, and pressing it **actually runs an install script** (measured: it runs `curl -fsSL https://…/install.sh | bash` through `run_install_command_with_retry`).
    *
-   * We do not. "There is no defensible reason to run code nobody has reviewed" is
-   * this repository's rule (`forbidden.md`), and that script sits behind a URL, so
-   * **it can change at any time** — we cannot show what we are executing as a diff.
+   * We do not. "There is no defensible reason to run code nobody has reviewed" is this repository's rule (`forbidden.md`), and that script sits behind a URL, so **it can change at any time** — we cannot show what we are executing as a diff.
    *
-   * ⚠️ We do run other people's code (`npx -y <package>@<version>`). Three grounds
-   * for calling that different: **the version is pinned** (that URL script is not),
-   * it **lives only inside a child process we launched** (not a system-wide
-   * install), and it happens **when the user opens a conversation** (not from a
-   * general-purpose "install" button).
+   * ⚠️ We do run other people's code (`npx -y <package>@<version>`). Three grounds for calling that different: **the version is pinned** (that URL script is not), it **lives only inside a child process we launched** (not a system-wide install), and it happens **when the user opens a conversation** (not from a general-purpose "install" button).
    *
-   * So there is exactly one thing done here — **send them to that tool's official
-   * instructions.** We do not even transcribe the install command (the vendor can
-   * change it, and our copy would go stale).
+   * So there is exactly one thing done here — **send them to that tool's official instructions.** We do not even transcribe the install command (the vendor can change it, and our copy would go stale).
    */
   const website = isReady ? null : runtime.website;
 
@@ -387,52 +372,25 @@ function RuntimeRow({
         icon={runtime.icon}
         iconInk={runtime.brandInk}
         control={
-          /* Owner (2026-08-20): *"너무 버튼이 붙어있어서 답답하고"* — the buttons are
-             so close together it feels cramped. Three controls plus a status badge
-             stand on one row, and at `gap-1.5` (6px) the eye cannot tell where one
-             button ends. Widen by one step on the ramp. */
+          /* Owner (2026-08-20): *"The buttons are so close together it feels cramped"* — the buttons are so close together it feels cramped. Three controls plus a status badge stand on one row, and at `gap-1.5` (6px) the eye cannot tell where one button ends. Widen by one step on the ramp. */
         <span className="flex items-center gap-2">
             {/*
-             * ⚠️ **The badge was revised three times and finally removed.** Worth
-             * recording:
+             * ⚠️ **The badge was revised three times and finally removed.** Worth recording:
              *
-             * ① A **sentence** on every unguarded row → 18 of 20 rows carried the
-             *    same sentence, so half the screen was a copy.
-             * ② An **orange 「확인 안 됨」 badge** on every unguarded row → owner:
-             *    *"이게 무슨 말인지 잘 이해 안 가고"* (I can't really tell what this
-             *    means). You could not tell what 「확인」 was verifying, and orange on
-             *    19 rows made the whole list look defective.
-             * ③ **「물어보고 진행」** on the one row that works → owner: *"이건 뭔
-             *    말인지도 모르겠고"* (I don't understand this either). The row count
-             *    dropped to 1, but **the words still did not communicate.**
+             * ① A **sentence** on every unguarded row → 18 of 20 rows carried the same sentence, so half the screen was a copy.
+             * ② An **orange 「Not Verified」 badge** on every unguarded row → owner: *"I can't really tell what this means"* (I can't really tell what this means). You could not tell what 「Verify」 was verifying, and orange on 19 rows made the whole list look defective.
+             * ③ **「Ask Before Proceeding」** on the one row that works → owner: *"I don't understand this either"* (I don't understand this either). The row count dropped to 1, but **the words still did not communicate.**
              *
-             * What all three share: this fact is too large for a badge of 4–6
-             * characters. "Can the app ask on your behalf when a file outside the
-             * folder is touched" needs both its condition and its consequence to
-             * mean anything. So **the sentence goes where a sentence belongs** (one
-             * line above the group, naming names) and rows carry no badge. The list
-             * goes quiet and the fact is still on screen.
+             * What all three share: this fact is too large for a badge of 4–6 characters. "Can the app ask on your behalf when a file outside the folder is touched" needs both its condition and its consequence to mean anything. So **the sentence goes where a sentence belongs** (one line above the group, naming names) and rows carry no badge. The list goes quiet and the fact is still on screen.
              *
-             * ⚠️ **Not copied off screen either.** The sentence was once left on
-             * every row as `sr-only`, which moved the very defect ("19 identical
-             * sentences") into an invisible layer — someone using a screen reader
-             * hears the same sentence 19 times. The explanation above the group sits
-             * **before** the list, so it reaches anyone reading in order first. That
-             * is enough.
+             * ⚠️ **Not copied off screen either.** The sentence was once left on every row as `sr-only`, which moved the very defect ("19 identical sentences") into an invisible layer — someone using a screen reader hears the same sentence 19 times. The explanation above the group sits **before** the list, so it reaches anyone reading in order first. That is enough.
              */}
             {/*
-             * ⚠️ **There was no door through to connecting** (caught in the
-             * 2026-08-16 review).
+             * ⚠️ **There was no door through to connecting** (caught in the 2026-08-16 review).
              *
-             * The first-step card's stage-one name is 「AI 에이전트 연결」 and its
-             * button opens here. But all this screen held was a list and outward
-             * links, so someone who came to 「연결」 **could not connect** — the only
-             * place that opens a conversation was the conversation window's own
-             * header, which only someone who had already opened one can see.
+             * The first-step card's stage-one name is 「Connect AI Agent」 and its button opens here. But all this screen held was a list and outward links, so someone who came to 「Connect」 **could not connect** — the only place that opens a conversation was the conversation window's own header, which only someone who had already opened one can see.
              *
-             * Offered only for tools with a gate. Opening a conversation with an
-             * ungated tool would break the promise this screen makes one sentence
-             * above (it asks first before going outside the folder).
+             * Offered only for tools with a gate. Opening a conversation with an ungated tool would break the promise this screen makes one sentence above (it asks first before going outside the folder).
              */}
             {isReady && isGuardedRuntime(runtime.id, runtime.isolated) ? (
               <Chip
@@ -458,9 +416,7 @@ function RuntimeRow({
              */}
             {showDoctor ? doctor.scanButton : null}
             {/*
-             * ⚠️ Tools that only lacked a login were being offered 「설치 방법」 —
-             * to people who had already installed them. Different action, different
-             * sentence.
+             * ⚠️ Tools that only lacked a login were being offered 「Installation Method」 — to people who had already installed them. Different action, different sentence.
              */}
             {runtime.state === 'login-needed' ? null : website ? (
               <a

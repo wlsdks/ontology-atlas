@@ -452,10 +452,10 @@ export function formatTopologyPathMcpCheck(from: string, to: string): string {
 export interface TopologyPathStep {
   edgeId: string;
   relationType: string;
-  /** frontmatter가 선언한 실제 방향. */
+  /** The actual direction declared by frontmatter. */
   authoredFrom: string;
   authoredTo: string;
-  /** 이 경로를 따라 걷는 순서. */
+  /** The order of walking along this path. */
   from: string;
   to: string;
   reversed: boolean;
@@ -475,12 +475,12 @@ interface PathCandidate {
 }
 
 /**
- * 지도에 실제로 그릴 최단 연결 경로. 관계 자체의 방향은 보존하되 탐색 질문은
- * 방향 무관으로 푼다. 같은 길이가 여럿이면 다음 노드·관계 타입·edge id 순으로
- * 골라 입력 배열 순서가 바뀌어도 같은 경로를 돌려준다.
+ * The shortest connection path actually drawn on the map. Preserves the direction of relations,
+ * but solves exploration queries regardless of direction. If multiple paths have the same length,
+ * selects by next node, relation type, and edge id to ensure deterministic output order.
  *
- * `nodes`는 의도적으로 `{id}`만 요구한다. Home은 캔버스에 실린 노드 목록을
- * 넘겨 문서/reader 노드를 경유하는 보이지 않는 경로를 구조적으로 제외한다.
+ * `nodes` intentionally requires only `{id}`. Home passes the list of nodes rendered on the canvas
+ * to structurally exclude invisible paths that pass through document/reader nodes.
  */
 export function computeTopologyShortestPath(
   sourceId: string,

@@ -1,13 +1,13 @@
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
-  app-rail-unified-nav v3 — 합성 시안: 좌측 레일(목업) + 실제 지형도 화면 캡처.\n  보여주는 페이지 = / (지도 허브, /topology 동일). 캔버스·INDEX·크롬은 실화면 그대로.
-  변경: ① 이모지 폐기 → Lucide(프로젝트 표준 오픈소스 아이콘셋) 실SVG 인라인
-  ② 크롬을 실제 앱 렌더 기반으로 재현(브랜드 필 census 포맷·INDEX 구조·
-  데이터시트) ③ 레일 리듬 재설계 — 아이템 타일 40px + 라벨, 활성=인디고
-  타일+좌측 2px 바, 비활성 라벨 대비 상향.
-  구현 계약: 아이콘 = lucide-react { Map, BookOpen, GitBranch, ChartColumn,
-  FolderKanban, Bot, Settings, Search, Plus, CircleHelp }. 레일 64px 고정,
-  전 화면 공통, 하단 = LiveActivity(Bot+앰버 점) · 설정.
+  app-rail-unified-nav v3 — Composite design: left rail (mockup) + actual terrain map screen capture.\n  Page displayed = / (map hub, /topology identical). Canvas·INDEX·chrome are real screenshots.
+  Changes: ① Discard emojis → Lucide (project standard open-source icon set) inline SVG
+  ② Recreate chrome based on actual app render (brand field census format·INDEX structure·
+  datasheet) ③ Redesign rail rhythm — item tile 40px + label, active=indigo
+  tile+left 2px bar, inactive label contrast raised.
+  Implementation contract: icons = lucide-react { Map, BookOpen, GitBranch, ChartColumn,
+  FolderKanban, Bot, Settings, Search, Plus, CircleHelp }. Rail fixed at 64px,
+  full-screen common, bottom = LiveActivity(Bot+amber dot) · settings.
 -->
 <!doctype html>
 <html lang="ko">
@@ -27,7 +27,7 @@
   body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif;overflow:hidden}
   .frame{width:100%;height:100vh;display:flex;overflow:hidden}
   svg.lucide{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-  /* ══ 통합 레일 ══ */
+  /* ══ Unified rail ══ */
   .rail{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;padding:12px 0 14px;
     background:var(--rail);border-right:1px solid var(--divider);z-index:10}
   .rail .logo{width:34px;height:34px;display:grid;place-items:center;color:var(--t2);margin-bottom:14px}
@@ -45,12 +45,12 @@
   .rail .foot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
   .rail .foot .it{padding:6px 0}
   .rail .agentdot{position:absolute;top:8px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--amber);outline:2px solid var(--rail)}
-  /* ══ 본문 ══ */
+  /* ══ Body ══ */
   .stage{position:relative;flex:1;min-width:0}
   svg.map{position:absolute;inset:0;width:100%;height:100%}
   text{font-family:ui-monospace,monospace}
   .wm{fill:rgba(255,255,255,.045);font-size:44px;letter-spacing:.34em}
-  /* 상단 크롬 — 실제 브랜드 필 포맷 재현 */
+  /* Top chrome — recreate actual brand field format */
   .chrome{position:absolute;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;padding:14px 24px;z-index:5}
   .pill{display:flex;align-items:center;gap:12px;border:1px solid var(--border-soft);background:rgba(16,17,24,.95);border-radius:10px;padding:9px 14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
   .pill .pip{width:24px;height:24px;border:1px solid var(--border-strong);border-radius:7px;display:grid;place-items:center;color:var(--indigo-line)}
@@ -62,7 +62,7 @@
   .util .btn{width:32px;height:32px;border:1px solid var(--border-soft);background:rgba(16,17,24,.95);border-radius:8px;display:grid;place-items:center;color:var(--t3);cursor:pointer}
   .util .btn:hover{color:var(--t1);border-color:var(--border-strong)}
   .util .btn svg{width:15px;height:15px}
-  /* INDEX — 실제 구조 재현 (역량·요소 서브카운트 + 미터) */
+  /* INDEX — recreate actual structure (capability·element subcount + meter) */
   .index{position:absolute;top:78px;left:24px;bottom:24px;width:302px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);border-radius:12px;z-index:4;padding:15px;display:flex;flex-direction:column;gap:11px;box-shadow:0 18px 48px rgba(0,0,0,.4)}
   .index .cap{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.2em;color:var(--t3);text-transform:uppercase;display:flex;align-items:center;gap:7px}
   .index .cap .dot{width:5px;height:5px;border-radius:50%;background:var(--indigo)}
@@ -82,7 +82,7 @@
   .row .n{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--t3);text-shadow:0 1px 0 rgba(0,0,0,.6);align-self:start;margin-top:2px}
   .index .foot{margin-top:auto;border-top:1px solid var(--divider);padding-top:10px;font-size:11px;color:var(--t4);display:flex;align-items:center;gap:7px}
   .index .foot .dot{width:5px;height:5px;border-radius:50%;background:var(--amber)}
-  /* 데이터시트 (선택 상태) + 행동 행 */
+  /* Datasheet (selected state) + action row */
   .sheet{position:absolute;top:78px;right:24px;width:352px;border:1px solid var(--border-soft);background:rgba(16,17,24,.97);border-radius:12px;z-index:4;padding:16px;box-shadow:0 18px 48px rgba(0,0,0,.4)}
   .sheet .hd{display:flex;align-items:center;gap:10px;margin-bottom:9px}
   .sheet .hd .g{width:13px;height:13px;border:1.4px solid rgba(236,236,240,.85);border-radius:50%;flex:none}

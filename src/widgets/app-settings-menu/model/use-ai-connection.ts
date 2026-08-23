@@ -11,7 +11,7 @@ import {
 import { readLlmAuditLog, type LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 
 /**
- * State for the [AI 연결] section. The settings sheet's root row (the summary
+ * State for the [AI Connection] section. The settings sheet's root row (the summary
  * chip) and the subview must see the **same value**, so the parent owns it and
  * passes it down; querying separately leaves the chip holding the old value right
  * after a save.

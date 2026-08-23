@@ -35,8 +35,8 @@ export function resolveToastBottomOffset(reservedBottomPx = 0): number {
  * relation legend plus the instrument readout).
  *
  * Measured during entry review: the auto-arrange toast covered that stack
- * **completely** — the legend lines 「큰 줄기 보기」 (show the main branches) and
- * 「줌인하면 요소가 나타납니다」 (elements appear as you zoom in) disappeared and the
+ * **completely** — the legend lines [show the main branches] and
+ * [elements appear as you zoom in] disappeared and the
  * readout's left edge was clipped. Both are pinned bottom-right while the toast sat
  * at the default 16px offset. Tufte: decoration must not hide data — here a
  * notification hid a persistent instrument.
@@ -59,8 +59,7 @@ export function resolveToastBottomOffsetForStack(
 /**
  * **Offset that clears the right-hand dock.**
  *
- * Owner's screen, 2026-08-16: a toast reading 「온톨로지 개념 5개 · 에이전트 설정
- * 파일 3개를 만들었어요」 (created 5 ontology concepts and 3 agent config files) sat
+ * Owner's screen, 2026-08-16: a toast reading [created 5 ontology concepts and 3 agent config files] sat
  * **directly on top of the chat panel's composer.** Same shape as the bottom offset
  * above: the toast is pinned `bottom-right` at `right: 16`, and once a panel stands
  * to the right of the map those 16px are **inside the panel**. As long as a

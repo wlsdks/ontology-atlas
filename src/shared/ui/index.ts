@@ -48,7 +48,7 @@ export { InlineEditable } from './inline-editable';
  * The `ChipListEditor` and `LinkListEditor` exports were removed on 2026-08-03:
  * they stood on the public surface of `shared/ui` with 0 production consumers,
  * with the same symptoms as the `Card`/`Badge`/`DetailCard` failure above.
- * Background and falsifier: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」
+ * Background and falsifier: `docs/DECISIONS.md` 2026-08-03 two dead primitives
  * (two dead primitives).
  */
 export { Tooltip, TooltipProvider, TooltipContent } from './tooltip';

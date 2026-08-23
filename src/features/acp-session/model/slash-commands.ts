@@ -3,7 +3,7 @@
  *
  * ## Why (owner question, 2026-08-17)
  *
- * *"여기서 `/` 입력하면 뭔가 좀 아틀라스 전용 스킬같은거 있으면 좋을것같은데"* (typing `/` here
+ * *"typing `/` here ought to offer something like Atlas-specific skills"* (typing `/` here
  * ought to offer something like Atlas-specific skills).
  *
  * It works. The adapter was already sending it and **we were not receiving it** — the list arrives

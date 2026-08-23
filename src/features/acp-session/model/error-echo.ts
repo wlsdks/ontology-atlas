@@ -6,12 +6,12 @@
  * Sending one message with an expired claude login made the conversation pane look like this:
  *
  * ```
- * [me]  내 프로젝트 노드와 예시 영역 노드가 …
+ * [me]  My project node and example area node …
  *       Failed to authenticate: OAuth session expired and could not be refreshed
  *       ┌─────────────────────────────────────────┐
- *       │ 로그인이 풀렸어요                        │
- *       │ 터미널에서 그 도구를 한 번 실행해 …      │
- *       │ 자세히 ▸ {"code":-32603,"message":"Inter…│
+ *       │ Login has expired                        │
+ *       │ Run that tool once in the terminal …      │
+ *       │ Details ▸ {"code":-32603,"message":"Inter…│
  *       └─────────────────────────────────────────┘
  * ```
  *

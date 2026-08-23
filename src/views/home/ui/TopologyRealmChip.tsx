@@ -16,7 +16,7 @@ export interface TopologyRealmChipProps {
    * HomePage splits the `realm.chipViewing` template around {title}.
    */
   beforeLabel: string;
-  /** Copy that follows the title — ko "만 보는 중". Rendered flush against it. */
+  /** Copy that follows the title — ko "Viewing only". Rendered flush against it. */
   afterLabel: string;
   clearAriaLabel: string;
   onClear: () => void;

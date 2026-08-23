@@ -60,7 +60,7 @@ function renderSheet(locale: 'ko' | 'en') {
   );
 }
 
-/** Extracts the number from the subtitle — both 「딱 4가지만」 and "just 4 things". */
+/** Extracts the number from the subtitle — both 「Exactly 4 things」 and "just 4 things". */
 function subtitleCount(): number | null {
   const dialog = screen.getByRole('dialog');
   const text = dialog.querySelector('header p')?.textContent ?? '';

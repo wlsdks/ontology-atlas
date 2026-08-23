@@ -2,8 +2,8 @@
  * Contrast calculation — **pure functions**. It knows nothing of the DOM or the
  * browser.
  *
- * **Why this file exists.** `/design-council` instructs the 「도해」 (infoviz) seat
- * that *"design-infoviz must measure contrast"*, and that seat's brief makes
+ * **Why this file exists.** `/design-council` instructs the "infoviz" (infoviz)
+ * seat that *"design-infoviz must measure contrast"*, and that seat's brief makes
  * *"measure contrast — take the composited contrast of adjacent segments, and below
  * 3:1 there must be a colour-independent distinguisher"* a precondition of any
  * verdict. **But there was no instrument to measure with.** As of 2026-08-03 no

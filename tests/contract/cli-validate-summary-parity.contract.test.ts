@@ -10,7 +10,7 @@ import { BROKEN_VAULT, HEALTHY_VAULT } from "../e2e/fixtures/broken-vault";
  * state the same numbers?**
  *
  * Why this contract exists (measured 2026-08-04): for a folder with 5 errors and 4
- * warnings, the final summary line read `9 파일 / 8 문제 (error 5 · warning 3)`. All
+ * warnings, the final summary line read `9 files / 8 issues (error 5 · warning 3)`. All
  * three numbers were **file** counts (8 files with problems, 5 with errors, 3 with
  * warnings only), so one warning inside a file that also had errors **disappeared
  * entirely**. The same command's `--json` counted per issue and said 5/4. When two

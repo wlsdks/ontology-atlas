@@ -244,8 +244,7 @@ describe("dome-view — 평면 내 역투영(3D 노드 드래그의 좌표 계�
   });
 
   it("수평선 퇴화 — 포인터가 평면 수평선을 넘어도 얼지 않고 반경 상한 안의 유한한 점을 낸다", () => {
-    // Reproduces the owner report of 2026-08-18: "클릭해도 제대로 안움직여지는
-    // 것도 있고" (some of them don't move properly even when clicked). At low
+    // Reproduces the owner report of 2026-08-18: "Some don't move properly even when clicked" (some of them don't move properly even when clicked). At low
     // pitch (side-on) dragging a node upward takes the denominator through 0, and
     // the earlier code returned either null (discarding that frame's move — the
     // node freezes) or a solution behind the camera (it flies off). Contract:
@@ -316,13 +315,13 @@ describe("dome-view — 물성(관성·러버밴드·스프링)", () => {
   });
 
   it("pitch 는 극점 직전까지 전각이다 — 옆면(0)·아래 시점(음수)이 열려 있다", () => {
-    // Owner report, 2026-08-18: *"밑에서 위로는 안되던데"* (looking up from below
-    // doesn't work). The 0.12–0.72 range inherited from the hero was dropped. The
+    // Owner report, 2026-08-18: *"Looking up from below
+    // doesn't work."* The 0.12–0.72 range inherited from the hero was dropped. The
     // only wall left is the pole (±π/2), where the screen's up direction flips.
     expect(DOME_PITCH_MAX).toBeCloseTo(Math.PI / 2 - 0.12, 12);
     expect(DOME_PITCH_MIN).toBeCloseTo(-(Math.PI / 2 - 0.12), 12);
-    expect(clampDomePitch(0)).toBe(0); // 옆면 통과 — 잠기지 않는다
-    expect(clampDomePitch(-0.8)).toBe(-0.8); // 아래에서 올려다보기 — 열려 있다
+    expect(clampDomePitch(0)).toBe(0); // Side pass — does not lock
+    expect(clampDomePitch(-0.8)).toBe(-0.8); // Looking up from below — open
     expect(clampDomePitch(2)).toBe(DOME_PITCH_MAX);
     expect(clampDomePitch(-2)).toBe(DOME_PITCH_MIN);
   });
@@ -631,7 +630,7 @@ describe("티어 비틀림 — 손과 프로그램이 같은 함수를 쓴다", 
   /*
    * `/gate-probe` — **this assertion was red before the third round of
    * 2026-08-18.** The twist existed only on the hand-drag path; programmatic pose
-   * moves (click-to-reframe, 「제자리로」 — recentre) rotated the four rings as one
+   * moves (click-to-reframe, 「Recenter」) rotated the four rings as one
    * frozen block. The same rotation behaving like a different object depending on
    * who started it is exactly what reads as "a JS animation".
    */
@@ -890,8 +889,7 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
 
   /*
    * `/gate-probe` — **the first implementation died here.** Relaxing only the
-   * bearing while pinning tier height drew the owner's verdict *"내가 원한건 …
-   * 아예 다른 모양"* (what I wanted was a completely different shape). The cloud
+   * bearing while pinning tier height drew the owner's verdict *"What I wanted was a completely different shape."* The cloud
    * only reads differently from the dome if connection decides height as well.
    * Pin the tiers again and this assertion turns red.
    */

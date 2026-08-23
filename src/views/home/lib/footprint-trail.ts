@@ -17,7 +17,7 @@ export const FOOTPRINT_TRAIL_MAX = 30;
  * **Why dedup was removed (owner instruction, 2026-07-29).** The old
  * implementation deleted the previous position and moved the node to the end, so
  * a node existed at most once in the trail, which made the owner's request —
- * *"여러번 왔다갔다 했으면 숫자 여러개 표시"* (repeat visits should show several
+ * *"repeat visits should show several numbers"* (repeat visits should show several
  * numbers) — structurally impossible: no amount of fixing the number-drawing
  * code helps when the data holds one step.
  *

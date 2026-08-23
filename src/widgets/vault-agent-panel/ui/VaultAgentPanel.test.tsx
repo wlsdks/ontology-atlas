@@ -41,7 +41,7 @@ function emitSecretChange() {
 }
 
 /**
- * The first words' raw material — the same fact map the 「할 일」 (to-do) queue reads.
+ * The first words' raw material — the same fact map the "To-do" queue reads.
  * The test has to set the folder state directly to measure the three cases (empty
  * folder, folder with a queue, node selected).
  */
@@ -128,7 +128,7 @@ const refundNode = {
   ref: null,
 } as never;
 
-/** 「결제 처리」 with an empty meaning plus 「환불」 with an empty owner — the two concepts the queue points at. */
+/** "Payment Processing" with an empty meaning plus "Refund" with an empty owner — the two concepts the queue points at. */
 function loadQueueFolder() {
   conceptFacts.map = new Map([
     ['capabilities/payment', { hasDefinition: false, domainRef: 'billing', mtime: null }],
@@ -225,8 +225,8 @@ describe('VaultAgentPanel', () => {
 
   it('키가 없으면 말로 길을 알려주는 대신 그 자리로 가는 문을 준다', async () => {
     // Owner reversal (2026-07-26). The old contract was "do not create a second
-    // entrance into settings; name the location instead" — 「왼쪽 아래 설정(톱니)의
-    // 「AI 연결」에서…」. Making a person hunt for somewhere the screen could take them
+    // entrance into settings; name the location instead" — "From 'AI Connection' in
+    // the bottom-left settings (gear icon)...". Making a person hunt for somewhere the screen could take them
     // is not guidance.
     bridge.available = true;
     secrets.stored = false;

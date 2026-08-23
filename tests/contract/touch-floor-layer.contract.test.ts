@@ -118,7 +118,7 @@ describe('값 층이 바닥을 실제로 내보낸다', () => {
   /** Shapes that emit their own height via `min-h-*` — growing pushes neighbours aside rather than overlapping them. */
   // segment joined on 2026-08-15 — it alone had no coarse promotion, reproducing
   // "two specs in one sheet" where Choice chips were 44 and segments stayed 24
-  // (interaction seat prescription P4, co-signed by the 체계 seat).
+  // (interaction seat prescription P4, co-signed by the system seat).
   const FLOORED: ControlShape[] = ['chip', 'row', 'pill', 'segment'];
 
   /**
@@ -163,7 +163,7 @@ describe('값 층이 바닥을 실제로 내보낸다', () => {
  *
  * `bare` sits inside a box the parent already draws. A 44px floor there makes the
  * control **push its parent's box outward from the inside** — the search palette's
- * input would tear out of its own box. The 위계 (design-lead) seat's verdict found
+ * input would tear out of its own box. The hierarchy (design-lead) seat's verdict found
  * all 10 lookup places to be ones where **the results are the attention winner**,
  * so a larger input would also invert the hierarchy.
  */

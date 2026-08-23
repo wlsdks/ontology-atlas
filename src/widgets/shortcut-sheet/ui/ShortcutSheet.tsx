@@ -162,7 +162,7 @@ const SECTIONS: ShortcutSection[] = [
        * 2026-08-09~10, and this sheet — the only place that teaches the keyboard —
        * did not know about it and taught only click, drag and scroll.
        * 「A feature nobody can discover is not a feature」. Gate:
-       * `tests/e2e/map-keyboard-walk.spec.ts`, 「시트가 방향키 걷기를 안내한다」 (the
+       * `tests/e2e/map-keyboard-walk.spec.ts`, 「The sheet teaches arrow-key walking」 (the
        * sheet teaches arrow-key walking).
        */
       { keys: ["↑", "↓", "←", "→"], labelKey: "walkNeighbors" },
@@ -251,7 +251,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
   const currentSurface = surfaceForPathname(pathname);
   // #67 — the contextual tabs. The default is "current screen": rather than pouring
   // out some 40 rows at once, it starts with what can actually be pressed now. The
-  // `전체` (all) tab keeps the previous list, so this is not hiding shortcuts to avoid
+  // `All` (all) tab keeps the previous list, so this is not hiding shortcuts to avoid
   // crowding.
   const [scope, setScope] = useState<ShortcutScope>("current");
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -525,7 +525,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 (2026-08-20, surfaced when the destinations reached eight).
 
                 This area caused no trouble while the content was short enough not to
-                scroll. When the 「에이전트」 (agents) destination made the navigation
+                scroll. When the 「Agent」 (agents) destination made the navigation
                 section one row longer, a scroll actually appeared, and at that moment it
                 became **impossible to see the bottom without a mouse wheel or trackpad**
                 (axe `scrollable-region-focusable`).
@@ -564,7 +564,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                       {section.rows.map((row, rowIdx) => (
                         <div
                           // Aliased shortcuts sharing a label can appear several times in
-                          // one section (e.g. "팔레트 열기 (별명)" ⌘P / ⌘O), so the index is
+                          // one section (e.g. "Open Palette (alias)" ⌘P / ⌘O), so the index is
                           // part of the key to avoid a React duplicate key.
                           key={`${section.titleKey}-${rowIdx}-${row.labelKey}`}
                           className="flex items-center justify-between gap-4"

@@ -1,9 +1,8 @@
 /**
  * The **single source for the external links** the gateway chrome renders.
  *
- * Owner instruction (2026-07-30): *"x는 일단 모양은 만들어두고 링크는 내가 나중에
- * 줄게. 비활성화만 시켜두면 될듯. 일단 보이게 하고."* (build the X slot now, I'll
- * supply the link later — just disable it, but keep it visible).
+ * Owner instruction (2026-07-30): *"Build the X slot now, I'll
+ * supply the link later — just disable it, but keep it visible."*
  *
  * So **the slot renders, but with no destination it is not a link.** An empty
  * value makes the chrome render it disabled, and filling in the handle turns it

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 
 /**
- * The **surface licence contract** for quaternary ink (체계 seat verdict,
+ * The **surface licence contract** for quaternary ink (system seat verdict,
  * 2026-08-04).
  *
  * **What it locks.** The 2026-08-03 lift (#787c84 → #82828a) measured the four

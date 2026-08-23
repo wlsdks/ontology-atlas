@@ -7,8 +7,9 @@
  * Two branches can hold a conversation: the coding agent installed on the
  * machine (ACP), and the stored API key. Each used to own **its own door and
  * its own open state**, unaware of the other, so **two similar chat windows
- * could appear** to the right of the map. What the owner saw: *"이 에이전트랑
- * 다른 거지? 이 대화창은? 뭔가 헷갈리는데... 대화창 하나만 쓰자."* (isn't this
+ * could appear** to the right of the map. What the owner saw: *"isn't this
+ * a different agent? and this window? confusing — let's use just one chat
+ * window."* (isn't this
  * a different agent? and this window? confusing — let's use just one chat
  * window.)
  *

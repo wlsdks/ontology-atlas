@@ -13,7 +13,7 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * **before the vault is opened**. That measures "I launched the app and an agent was
  * already working", which is not what the owner asked for:
  *
- * > *"실시간으로 좌측 지도에 온톨로지가 그려지는게 보이도록"*
+ * > *"So you can see the ontology being drawn on the left-hand map in real time"*
  * > (so you can see the ontology being drawn on the left-hand map in real time)
  *
  * That is, arriving **while you are watching**. The present tense is owned by an

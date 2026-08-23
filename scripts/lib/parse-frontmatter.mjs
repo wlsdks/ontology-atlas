@@ -183,7 +183,7 @@ function unquote(value) {
 // Quote-aware separator splitting (fix measured 2026-07-28).
 //
 // This used to split inline lists and objects on every comma, so a comma inside a
-// value split it and the tail of `labels: { ko: "지도, 검색" }` silently vanished.
+// value split it and the tail of `labels: { ko: "map, search" }` silently vanished.
 // A separator inside quotes is data, not a separator.
 function splitTopLevel(input, separator) {
   const parts = [];

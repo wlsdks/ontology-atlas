@@ -71,8 +71,8 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
       case 'failed':
         return {
           title: t('failedTitle'),
-          // updater 라이브러리의 영문 진단을 제품 문구로 노출하지 않는다.
-          // 상세 진단은 개발자 로그의 것이고, 사람에게는 남은 길을 말한다.
+          // Do not expose the updater library's English diagnosis as product copy.
+          // Detailed diagnosis belongs in developer logs; tell humans the remaining path.
           detail: t('failedBody'),
           action: null,
         };

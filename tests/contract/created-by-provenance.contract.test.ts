@@ -28,8 +28,7 @@ const TEST_UID = "01890f3e-7b5d-4c0a-8f14-123456789abc";
 
 /**
  * Node authorship provenance (`created_by`) contract — ledger 2026-07-31,
- * 「사람이 만든 노드 표기: 소급 출처는 존재하지 않는다」 (marking human-authored
- * nodes: retroactive provenance does not exist).
+ * "Marking human-authored nodes: retroactive provenance does not exist".
  *
  * Four invariants held here:
  *   ① The value convention is `human` | `agent:<name>` and nothing else, and

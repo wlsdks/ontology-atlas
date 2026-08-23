@@ -4,23 +4,23 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>포커스 다이브 before/after — ego bbox ×1.15 프레이밍 스펙</title>
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
   FOCUS DIVE BEFORE/AFTER (visual-richness round, item B):
-  the owner-reported "다이브가 너무 깊게 착지한다" fix, as a stacked pair
+  the owner-reported "dive lands too deeply" fix, as a stacked pair
   reproducing the live screenshots' composition.
 
-    frame 1 BEFORE — 현행: computeFocusCameraTarget 의
+    frame 1 BEFORE — current: computeFocusCameraTarget's
                      revealFloor = overviewEntryScale × capability.fullRatio(2.0)
-                     가 ego bbox 자연 fit 을 뚫고 지나가 과심도 착지.
-                     라벨 밀집 + sky-chart 워터마크("V I E W S")와 컴팩트
-                     라벨의 동일 앵커 충돌 + 이웃이 화면 밖으로 잘림.
-    frame 2 AFTER  — 스펙: tscale = clamp( fit(egoBounds×1.15),
-                     overviewEntryScale, effectiveMax ) — revealFloor 항 삭제
-                     (C1 A2 ego tier 면제가 가시성을 이미 보장). 워터마크는
-                     포커스 활성 시 alpha 0. ego 전원이 여백 포함 수납.
+                     overshoots natural ego bbox fit, causing excessive depth landing.
+                     Label density + sky-chart watermark ("V I E W S") collides with compact
+                     labels at the same anchor + neighbors clipped off-screen.
+    frame 2 AFTER  — spec: tscale = clamp( fit(egoBounds×1.15),
+                     overviewEntryScale, effectiveMax ) — remove revealFloor term
+                     (C1 A2 ego tier exemption already guarantees visibility). Watermark
+                     alpha set to 0 when focus is active. Ego power accommodated with padding.
 
-  근거 문서: docs/prototypes/visual-richness-review.md §B.
+  Reference doc: docs/prototypes/visual-richness-review.md §B.
 -->
 <style>
   :root {

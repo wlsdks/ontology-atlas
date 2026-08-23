@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 첫 실행 카드는 방문자가 보는 첫 화면 전체가 앱이 쓴 문자열이다. 사용자 데이터와
- * 달리 잘라야 할 이유가 없으므로, 영문/국문 양쪽에서 텍스트 잘림과 용어 표의
- * `용어 = 정의` 행·열 정렬을 실제 DOM rect로 잰다.
+ * The first-run card is the entire screen the visitor sees, composed of strings written by the app. Unlike user data,
+ * there is no reason to truncate them, so we measure text truncation and term-table
+ * `term = definition` row/column alignment in both English and Korean using actual DOM rects.
  *
- * 이 검사는 INDEX 푸터와 함께 살던 `chrome-text-fit.spec.ts`에서 분리했다.
- * 푸터가 제거됐다고 첫 실행 카드의 독립 계약까지 사라지면 안 된다.
+ * I separated this check from `chrome-text-fit.spec.ts`, which lived with the INDEX footer.
+ * Even if the footer is removed, the first-run card's independent contract must not disappear.
  */
 const VIEWPORTS = [
   { label: "1512", width: 1512, height: 950 },

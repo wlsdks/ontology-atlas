@@ -2,7 +2,7 @@ export { AppSettingsMenu } from './ui/AppSettingsMenu';
 export type { AppSettingsMenuProps, AppSettingsScreenControls } from './ui/AppSettingsMenu';
 
 /**
- * The 「에이전트」 (agents) destination reuses this pane as is (2026-08-20, ledger 90).
+ * The 「Agents」 (agents) destination reuses this pane as is (2026-08-20, ledger 90).
  *
  * ⚠️ **A part that leaves the sheet must not take the sheet's dimensions with
  * it.** This pane stands on `SettingsGroup`/`SettingsRow`, and neither decides its
@@ -11,5 +11,5 @@ export type { AppSettingsMenuProps, AppSettingsScreenControls } from './ui/AppSe
  */
 export { AcpRuntimeSettings } from './ui/AcpRuntimeSettings';
 
-/** The 「MCP 연결」 (MCP connection) pane — shared by the destination and the settings sheet, for the reason above. */
+/** The 「MCP Connection」 (MCP connection) pane — shared by the destination and the settings sheet, for the reason above. */
 export { AgentSetupSection } from './ui/AgentSetupSection';

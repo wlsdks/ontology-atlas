@@ -8,8 +8,7 @@ import { describe, expect, it } from "vitest";
  *
  * **Why** (owner, 2026-08-09):
  *
- * > *"내 폴더 전체를 한눈에 — 모든 숫자는 문서에서 자동 계산됩니다 … 이거는 ai
- * > 패턴이거든? 이런거 있으면 다 변경해줘 작대기 안쓰도록"*
+ * > *"Scan my entire folder at a glance — all numbers are auto-calculated in the document … This is an AI pattern? If there are any like this, change them all to avoid using the dash."*
  * > (that dash construction is an AI pattern; change every instance so it is not
  * > used)
  *
@@ -42,7 +41,7 @@ const REPO_ROOT = join(import.meta.dirname, "..", "..");
  * **Zero — a ban, not a cap** (exhaustive cleanup completed 2026-08-09).
  *
  * It started as a cap (ko 232, en 265). The owner replaced the plan of fixing
- * screen by screen with *"1번부터 전부다 완벽하게"* (do all of it perfectly, from
+ * screen by screen with *"Do all of it perfectly, from the first"* (do all of it perfectly, from
  * the first), so **all 494 were cleared**: a full stop where the sentence ends, a
  * colon where it continues, parentheses for parentheticals.
  *

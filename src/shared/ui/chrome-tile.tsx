@@ -11,7 +11,7 @@ import { cn } from '@/shared/lib/cn';
  * otherwise a `button`.
  *
  * Chrome surfaces must consume this component; do not rebuild a square chrome
- * button inline in JSX (`docs/DESIGN-SYSTEM.md` 「크롬 문법」, the chrome
+ * button inline in JSX (`docs/DESIGN-SYSTEM.md` chrome grammar, the chrome
  * grammar chapter).
  */
 interface ChromeTileBaseProps {
@@ -45,8 +45,7 @@ const TILE_CLASS =
  * Disabled — **what cannot be pressed must not look pressable.**
  *
  * Same values and same grammar as `ChromeChip`. The chip's hole surfaced on
- * 2026-08-03 through an owner report — *"'최근 변경' 누르니까 아무런 반응이
- * 없는데?"* (pressing "recent changes" does nothing) — and the gate added then
+ * 2026-08-03 through an owner report — *"'recent changes' pressing does nothing"* (pressing "recent changes" does nothing) — and the gate added then
  * (`tests/contract/disabled-affordance.contract.test.ts`) **caught the identical
  * hole in this file too**, before anyone had reported it.
  */

@@ -22,14 +22,14 @@ import {
 import { drawEdgeFootprints, drawNodeFootprint } from '@/shared/lib/footprint-glyph';
 
 /**
- * Footprint settings — the 「지도」 subview's second segment.
+ * Footprint settings — the 「Map」 subview's second segment.
  *
  * ## Why the first screen is presets
  *
  * There are 8 values but **one decision**: "how loudly should it speak". Pouring 8
  * sliders onto the first screen lets the controls, not the person choosing, take
  * the attention. Three presets take that one decision first, and the details sit
- * behind 「직접 맞추기」 (adjust manually).
+ * behind 「Adjust Manually」 (adjust manually).
  *
  * ## The preview uses the same renderer as the map
  *
@@ -44,7 +44,7 @@ const PRESET_ORDER: readonly FootprintPresetName[] = ['subtle', 'default', 'bold
  * Preview height in px — **fixed**. The width fills the pane.
  *
  * The width used to be fixed at 260px too, leaving a small box floating inside a
- * wide pane (owner: *"너무 못생겼잖아"* — that's just ugly). The preview is this
+ * wide pane (owner: *"It's just ugly."* — that's just ugly). The preview is this
  * section's protagonist, so it must fill the pane, and the height must be fixed so
  * the window does not wobble when sections change.
  */

@@ -2,7 +2,7 @@
  * The name a document is called in the current UI language — the single rule for resolving
  * `display_<locale>`.
  *
- * Why it was needed: the map popover read `내 프로젝트` while the docs quick search read
+ * Why it was needed: the map popover read `My Project` while the docs quick search read
  * `My project` — same session, same document, two names (measured 2026-07-26). The graph side
  * already resolved `display_<locale>` in `derivationToInsight`, but the document-list surfaces
  * rendered the canonical `title` as-is. With two copies of the rule, that mismatch returns

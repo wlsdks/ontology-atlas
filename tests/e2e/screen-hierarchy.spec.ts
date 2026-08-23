@@ -8,7 +8,7 @@ import { AUDITED_ROUTES } from "./audited-routes";
  *
  * ## Why this layer has to exist
  *
- * On 2026-08-06 the 「위계」 (design-lead) seat named two defects on
+ * On 2026-08-06 the design lead seat named two defects on
  * `/project/new`, and both were **confirmed by measurement**:
  *
  * | Defect | Measured |
@@ -79,7 +79,7 @@ import { AUDITED_ROUTES } from "./audited-routes";
  *
  * | Fixed | Before | After |
  * |---|---|---|
- * | Studio h1 「무엇을 할까요?」 (what shall we do?) | `text-body-lg` 14px + secondary (tied with the entry card labels and losing on colour) | `text-title` 16px + primary (0 ties) |
+ * | Studio h1 "What shall we do?" | `text-body-lg` 14px + secondary (tied with the entry card labels and losing on colour) | `text-title` 16px + primary (0 ties) |
  * | Save at the end of the edit form | filled indigo 142×40 (a twin of the top sticky one) | `outline` — the only filled accent is the top sticky |
  *
  * The remaining exceptions are the two screens with no rendered title (map, docs),
@@ -384,7 +384,7 @@ const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
 const ACCENT_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
   /*
    * The edit exception (`/ko/project/storefront/edit/`) was **deleted** on
-   * 2026-08-08 when the 위계 (design-lead) verdict was applied.
+   * 2026-08-08 when the hierarchy (design-lead) verdict was applied.
    * `project-save-top` (sticky header) and `project-save` (end of form) were **two
    * filled indigos** with the same action, the same label, and the same 142×40. The
    * sticky one is visible at any scroll position so it carries the primary CTA, and

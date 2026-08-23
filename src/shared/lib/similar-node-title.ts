@@ -12,7 +12,7 @@
  * paths had none. This module fills that gap.
  *
  * A match requires **a close title *and* the same kind.** Same-named nodes of
- * different kinds (a domain "결제" and a capability "결제") are common and
+ * different kinds (a domain "Payment" and a capability "Payment") are common and
  * legitimate, so pairing them would only produce false alarms.
  */
 

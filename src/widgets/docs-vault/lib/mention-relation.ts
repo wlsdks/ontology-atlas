@@ -35,13 +35,13 @@ import { buildDocLinkMarkdown } from './relative-doc-path';
  *
  * ## Why the body notation is a standard link (2026-08-08, two owner reports)
  *
- * **First version**: plain names only. Owner — *"@ 해서 뭔가 등록하면 글에도 다른
- * 형식으로 나와야하지 않을까?"* (if @ registers something, shouldn't the prose show
+ * **First version**: plain names only. Owner — *"If @ registers something, shouldn't the prose show
+ * it in some form too?"* (if @ registers something, shouldn't the prose show
  * it in some form too?). Right — plain text looks as though nothing happened, and
  * then the result of the action just taken is not on screen.
  *
- * **Second version**: wikilinks (`[[slug|name]]`). Owner — *"`[[` 이거는 옵시디언
- * 특유라서 우리가 쓰면 안되는거 아닌가?"* (isn't `[[` an Obsidian thing we
+ * **Second version**: wikilinks (`[[slug|name]]`). Owner — *"Isn't `[[` an Obsidian thing we
+ * shouldn't use?"* (isn't `[[` an Obsidian thing we
  * shouldn't use?). Also a fair point. Wikilinks are a PKM convention from MediaWiki
  * (2001) rather than an Obsidian invention, but **the impression is Obsidian**.
  *
@@ -128,7 +128,7 @@ export type MentionRelationId = (typeof MENTION_RELATIONS)[number]['id'];
 
 /**
  * Relation id → **the studio's label key.** No copy is minted here — the studio
- * already has 「상위 개념 · 필요한 항목 · 하위 항목 · 관련 항목」, and two screens
+ * already has "Superior Concept · Required Item · Sub-item · Related Item", and two screens
  * using different words for the same job teaches the user two features.
  */
 export const RELATION_LABEL_KEY: Record<MentionRelationId, string> = {
@@ -187,7 +187,7 @@ export function insertMentionRelation({
    * (2026-08-08): `const { doc, trigger } = pendingMention` shadowed the
    * component's `doc` (the document being edited), so `currentSlug: doc.slug`
    * passed **the chosen target**. The base and destination then match and the link
-   * comes out as `./같은폴더.md` — caught by measurement. Renaming it to
+   * comes out as `./same-folder.md` — caught by measurement. Renaming it to
    * `editingSlug` makes «the one being edited» and «the one chosen» visibly
    * distinct at that call site.
    */

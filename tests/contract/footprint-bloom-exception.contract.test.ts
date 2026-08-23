@@ -132,8 +132,8 @@ describe("발자국 번짐 — 헌장 예외의 사정거리", () => {
 
 /**
  * The "path walked" lens tinting **nodes and relation lines too** with the trail
- * colour — reported by the owner on 2026-08-02: *"노드 선택되어서 빛나게 해줘야지?
- * 노란색으로 선까지 다?"* (the selected node should light up — in yellow, lines
+ * colour — reported by the owner on 2026-08-02: *"Should the selected node light up?
+ * In yellow, including the lines?"* (the selected node should light up — in yellow, lines
  * included?).
  *
  * This is an **extension** of amber, so why it stays inside the charter is proved

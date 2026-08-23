@@ -74,7 +74,7 @@ describe("change-baseline-store", () => {
 });
 
 describe("change-baseline-store — 영속/복원 (reload 생존, Self-Drawing Diff #5)", () => {
-  const more = [node("a"), node("b"), node("c")]; // a,b 와 겹침(복원 대상)
+  const more = [node("a"), node("b"), node("c")]; // Overlaps with a,b (target for restoration)
 
   it("mark → localStorage 에 영속 (키에 볼트가 들어간다)", () => {
     markChangeBaseline(nodes, edges, 77);
@@ -90,10 +90,10 @@ describe("change-baseline-store — 영속/복원 (reload 생존, Self-Drawing D
   });
 
   it("restore — 같은(겹치는) vault 면 영속 baseline 복원 + true", () => {
-    markChangeBaseline(nodes, edges, 42); // a,b 영속
+    markChangeBaseline(nodes, edges, 42); // a,b persistent
     clearChangeBaseline_inMemoryOnly();
     expect(getChangeBaseline()).toBeNull();
-    const ok = restorePersistedBaseline(more); // a,b 존재 → 겹침 100%
+    const ok = restorePersistedBaseline(more); // a,b exist → 100% overlap
     expect(ok).toBe(true);
     expect(getChangeBaseline()?.takenAt).toBe(42);
   });
@@ -101,7 +101,7 @@ describe("change-baseline-store — 영속/복원 (reload 생존, Self-Drawing D
   it("restore — 다른 vault(안 겹침)면 복원 안 함 + false (garbage 방지)", () => {
     markChangeBaseline(nodes, edges, 42); // a,b
     clearChangeBaseline_inMemoryOnly();
-    const ok = restorePersistedBaseline([node("x"), node("y")]); // 안 겹침
+    const ok = restorePersistedBaseline([node("x"), node("y")]); // No overlap
     expect(ok).toBe(false);
     expect(getChangeBaseline()).toBeNull();
   });
@@ -124,8 +124,8 @@ function clearChangeBaseline_inMemoryOnly() {
   // and restore it.
   const scope = getChangeBaselineScope() ?? VAULT_A;
   const saved = window.localStorage.getItem(keyFor(scope));
-  clearChangeBaseline(); // in-mem null + 영속 제거
-  if (saved !== null) window.localStorage.setItem(keyFor(scope), saved); // 영속 복구(reload 후 상태)
+  clearChangeBaseline(); // in-mem null + persistent removal
+  if (saved !== null) window.localStorage.setItem(keyFor(scope), saved); // Persistent restoration (state after reload)
 }
 
 /**

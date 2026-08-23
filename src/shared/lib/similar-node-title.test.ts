@@ -31,7 +31,7 @@ describe('findSimilarNodeByTitle', () => {
   });
 
   it('does not flag loosely-related titles below the token-overlap threshold', () => {
-    // Only one token ("인증") overlaps and the rest differ, so these must be treated
+    // Only one token ("authentication") overlaps and the rest differ, so these must be treated
     // as different concepts — the auth-login vs auth-logout class of false alarm.
     const match = findSimilarNodeByTitle('인증 실패 알림', 'capability', candidates);
     expect(match).toBeNull();

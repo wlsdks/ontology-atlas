@@ -1,6 +1,6 @@
 /**
  * Seeded force simulation — the "living graph" layer the owner asked for
- * ("노드를 클릭 드래그하면 그 노드가 force graph처럼 움직여야 한다" — drag a
+ * ("when dragging a node by click-drag, it should move like a force graph" — drag a
  * node and it should move like a force graph). The
  * deterministic concentric layout (`model/layout.ts`) is used as the *seed*
  * positions (preserving spatial memory — the owner's stated reason for
@@ -171,7 +171,7 @@ export function createForceSimulation(
         // count, so at 3000 nodes this one line ate a large share of the frame,
         // and discarding cost again (a 3000-node snapshot plus ~2000
         // `setAttribute` restores). In the 2026-07-31 lag incident the owner asked
-        // three times *"보이는 건 20개인데 왜 3000개를 계산하나"* (only 20 are
+        // three times *"Only 20 are visible, why compute 3000?"* (only 20 are
         // visible, why compute 3000?) — this line was the answer.
         const sub = new Graph({ type: "undirected", multi: false, allowSelfLoops: false });
         for (const id of restrictToIds) {

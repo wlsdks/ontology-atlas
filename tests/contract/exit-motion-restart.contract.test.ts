@@ -45,8 +45,9 @@ describe('퇴장 모션 재시작 계약', () => {
    * those, so any surface not on the list was **silently outside the check** — the
    * dropdown (`.select-listbox[data-state="closed"]`, `select-unpop`) really was
    * missing, and nothing was watching that screen's open/close motion. Exactly the
-   * discipline this repository already wrote down (`/gate-probe`): *"금지어 목록을
-   * 사람이 손으로 관리하게 만들기 — 항목을 안 더하면 검사가 조용히 무력해진다"*
+   * discipline this repository already wrote down (`/gate-probe`): *"Forcing a person to
+   * manually maintain a banned list means the check quietly becomes ineffective whenever an
+   * entry is not added."*
    * (making a person hand-maintain a banned list means the check quietly dies
    * whenever an entry is not added).
    *

@@ -4,21 +4,21 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>/ontology 허브 B3 최종 — 지도 위 INDEX 계기판 (승인안)</title>
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
   B3 FINAL (approved): the hub and /topology converge into ONE surface — the
   real v2 map is the page, INDEX (left instrument) + component datasheet
   (right) float over it. This file is the implementation spec mock:
 
-    frame 1 "기본 상태"  — INDEX(≤300px) + datasheet(288px, shipped anatomy)
-                           coexist over the ego-focused map. 1920×945 primary.
-    frame 2 "접힌 상태"  — INDEX folds to a slim vertical edge tab; the map
-                           widens; the datasheet stays. Same selection.
+    frame 1 "Default state"  — INDEX(≤300px) + datasheet(288px, shipped anatomy)
+                               coexist over the ego-focused map. 1920×945 primary.
+    frame 2 "Folded state"   — INDEX folds to a slim vertical edge tab; the map
+                               widens; the datasheet stays. Same selection.
 
   Datasheet matches the SHIPPED TopologyV2DetailPanel (main f3d673b18):
-  direction groups 쓰는 곳/기대는 곳, per-row solid/dashed trace marks,
-  one engraved metric line, 다음 액션 복사 + slug footer — plus the approved
-  "전체 상세 →" opt-in link to the A1 full-detail view.
+  direction groups used/expected, per-row solid/dashed trace marks,
+  one engraved metric line, next action copy + slug footer — plus the approved
+  "Full details →" opt-in link to the A1 full-detail view.
 -->
 <style>
   /* Values copied from app/globals.css token families (standalone prototype).
@@ -186,7 +186,7 @@
     flex: none; font-size: 9.5px; color: var(--text-quaternary);
     border: 1px dashed var(--border-strong); border-radius: 4px; padding: 0 4px;
   }
-  /* domain sub-line: 역량/요소 subcount + proportional capacity meter */
+  /* domain sub-line: capability/element subcount + proportional capacity meter */
   .trow .sub {
     flex-basis: 100%; display: flex; align-items: center; gap: 8px;
     padding: 2px 0 1px 32px;
@@ -330,7 +330,7 @@
     <nav class="tree" id="tree"></nav>
   </aside>
 
-  <!-- datasheet — shipped TopologyV2DetailPanel + 전체 상세 opt-in -->
+  <!-- datasheet — shipped TopologyV2DetailPanel + full details opt-in -->
   <aside class="sheet" aria-label="선택한 개념">
     <div class="head">
       <span class="glyph" data-glyph="capability" style="margin-top:1px"></span>
@@ -452,7 +452,7 @@
     el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
   });
 
-  // ---- INDEX tree — domain rows carry 역량/요소 subcounts + capacity meter
+  // ---- INDEX tree — domain rows carry capability/element subcounts + capacity meter
   var MAXN = 101;
   var TREE = {
     kind: "project", title: "ontology-atlas", n: 296, open: true,

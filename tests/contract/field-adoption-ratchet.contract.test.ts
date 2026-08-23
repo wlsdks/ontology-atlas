@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * Form adoption ratchet — **raw form elements outside the primitive layer cannot
  * exceed the ceiling.**
  *
- * **Why** (ratified by the 체계 seat 2026-08-15, docs/DECISIONS.md). A behaviour
+ * **Why** (ratified by the system seat 2026-08-15, docs/DECISIONS.md). A behaviour
  * layer now exists (`Input`/`Textarea`/`Checkbox` in src/shared/ui). Existing direct
  * `fieldClass` call sites are **not debt** (they comply with the value layer, and a
  * ledger declared closed is not reopened). This ratchet enforces one thing: **raw

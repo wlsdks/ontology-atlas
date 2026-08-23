@@ -1,18 +1,15 @@
-//! 「에이전트 연결」 — 앱이 자기 번들 안의 MCP 서버를 가리키고, 사용자가 승인한
-//! 설정 파일만 디스크에 쓰고, 그 자리에서 실제로 스폰해 검증한다.
+//! 「Agent Connection」 — The app points to its bundled MCP server, writes only user-approved
+//! settings files to disk, and spawns and verifies them in place.
 //!
-//! 왜 앱이 이 일을 하는가: 설치형 앱을 깔아도 에이전트가 붙지 못하는 모순을
-//! 끊기 위해서다. 웹은 열린 폴더의 절대 경로를 구조적으로 알 수 없어 실행
-//! 가능한 설정을 만들 수 없다 — 데스크톱만 할 수 있는 일이다.
+//! Why the app does this: To break the contradiction where installed apps fail to attach agents.
+//! Web cannot structurally know absolute paths of open folders, so it cannot create executable
+//! configurations — this is something only desktop can do.
 //!
-//! 헌장 준수:
-//!   * **쓰기는 사용자가 승인한 것만.** 이 모듈은 무엇을 쓸지 계산해서
-//!     돌려주기만 하는 `plan_agent_config` 와, 그 계획을 실행하는
-//!     `write_agent_config` 로 나뉜다. UI 는 계획을 먼저 보여준다.
-//!   * **쓸 수 있는 자리가 닫혀 있다.** 대상은 vault 폴더 또는 그 vault 를
-//!     담은 git repo 최상위뿐이고, 파일명은 아래 허용 목록뿐이다. 웹뷰가
-//!     임의 절대 경로를 쓰게 두지 않는다.
-//!   * **전송 0.** 스폰도 파일 쓰기도 전부 로컬. 네트워크를 쓰지 않는다.
+//! Charter compliance:
+//!   * **Writes are user-approved only.** This module splits into `plan_agent_config`, which
+//!     calculates what to write and returns it, and `write_agent_config`, which executes the plan. The UI shows the plan first.
+//!   * **Writable space is closed.** Targets are limited to the vault folder or the top-level git repo containing that vault, with filenames restricted to the allowlist below. The WebView is not allowed to write arbitrary absolute paths.
+//!   * **Zero transmission.** Both spawning and file writing are local. No network usage.
 
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
@@ -26,9 +23,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::git::find_repo_root;
 
-/// 번들 안 MCP 서버의 파일명. `scripts/lib/mcp-binary.mjs` 의
-/// `MCP_BINARY_NAME` 과 같은 값이어야 한다 — Tauri 의 `externalBin` 이
-/// `Contents/MacOS/<이름>` 으로 굽는다.
+/// Filename of the bundled MCP server. Must match `MCP_BINARY_NAME` in
+/// `scripts/lib/mcp-binary.mjs` — Tauri's `externalBin` bakes it into
+/// `Contents/MacOS/<name>`.
 const MCP_BINARY_NAME: &str = "ontology-atlas-mcp";
 
 fn bundled_binary_name() -> &'static str {
@@ -244,11 +241,11 @@ fn unix_name(value: &std::ffi::OsStr) -> Result<std::ffi::CString, String> {
         .map_err(|_| err_str("agent config path contains an unsupported NUL byte"))
 }
 
-/// 절대 디렉터리를 `/`부터 각 조각별 `openat(O_NOFOLLOW)`로 연다.
+/// Opens absolute directories piece by piece from `/` using `openat(O_NOFOLLOW)`.
 ///
-/// 완성된 경로를 한 번에 `open`하면 마지막 조각만 no-follow여도 그 **부모**가
-/// 검사 직후 링크로 바뀔 수 있다. 디렉터리 FD를 한 단계씩 이어 잡으면 이름이
-/// 나중에 교체돼도 쓰기는 이미 연 원래 트리 안에 머문다.
+/// Opening the completed path at once with `open` means only the last piece is no-follow, so its **parent**
+/// could be swapped to a link immediately after inspection. By chaining directory FDs one step at a time,
+/// even if names are later replaced, writes remain within the originally opened tree.
 #[cfg(unix)]
 pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
@@ -302,7 +299,7 @@ pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File,
     Ok(current)
 }
 
-/// 안정된 root FD 아래의 상대 디렉터리를 조각별로 만들고 no-follow로 연다.
+/// Creates and opens relative directories under a stable root FD piece by piece with no-follow.
 #[cfg(unix)]
 pub(crate) fn open_or_create_relative_directory(
     root: &fs::File,
@@ -349,8 +346,8 @@ pub(crate) fn open_or_create_relative_directory(
     Ok(current)
 }
 
-/// 허용된 상대 설정 경로의 부모를 안정된 디렉터리 FD로 연다. 없는 중간 폴더도
-/// 경로 문자열이 아니라 이미 연 부모 FD를 기준으로 만든다.
+/// Opens the parent of allowed relative config paths using a stable directory FD. Missing intermediate folders
+/// are created based on the already-opened parent FD, not the path string.
 #[cfg(unix)]
 pub(crate) fn open_entry_parent(
     config_root: &fs::File,
@@ -368,8 +365,8 @@ pub(crate) fn open_entry_parent(
     Ok((parent, unix_name(file_name)?))
 }
 
-/// 안정된 부모 FD 안에 새 inode를 완성한 뒤 `renameat`으로 이름만 교체한다.
-/// 기존 대상이 하드링크여도 그 inode를 truncate하지 않으므로 다른 경로는 불변이다.
+/// Completes a new inode within the stable parent FD and replaces only the name via `renameat`.
+/// Even if the existing target is a hardlink, its inode is not truncated, so other paths remain unchanged.
 #[cfg(unix)]
 fn ensure_private_temporary(file: &fs::File, stage: &str) -> std::io::Result<()> {
     use std::os::unix::fs::MetadataExt;
@@ -518,8 +515,8 @@ pub fn write_agent_config(
     let vault = canonical_dir(&vault_path)?;
     let (config_root, _) = resolve_config_root(&vault);
 
-    // 허용 목록 검사를 **쓰기 전에 전부** 한다 — 하나라도 거절이면 아무것도
-    // 쓰지 않는다. 절반만 쓰인 설정은 진단이 가장 어려운 상태다.
+    // Perform **all** allowlist checks **before writing** — if any are rejected, nothing is
+// written. Half-written configurations are the hardest state to diagnose.
     for write in &writes {
         if !ALLOWED_CONFIG_FILES.contains(&write.file_name.as_str()) {
             return Err(err_str(format!(
@@ -534,7 +531,7 @@ pub fn write_agent_config(
         .iter()
         .map(|write| config_root.join(&write.file_name))
         .collect();
-    // 파일이나 부모가 이미 링크라면 다른 설정을 하나도 쓰기 전에 전부 거절한다.
+    // If the file or parent is already a link, reject everything before writing any other configuration.
     for absolute in &targets {
         inspect_config_write_target(&config_root, absolute)?;
     }
@@ -549,8 +546,8 @@ pub fn write_agent_config(
             fs::create_dir_all(parent)
                 .map_err(|e| err_str(format!("could not create {}: {e}", parent.display())))?;
         }
-        // 부모를 만든 뒤에도 다시 본다. Unix의 실제 생성/쓰기는 아래에서 안정된
-        // 디렉터리 FD를 쓰므로 이 검사는 일괄 사전 거절과 진단을 위한 방어층이다.
+        // Re-check after creating the parent. Actual Unix creation/writing uses the stable
+        // directory FD below; this check is a defensive layer for batch pre-rejection and diagnosis.
         inspect_config_write_target(&config_root, &absolute)?;
 
         #[cfg(unix)]
@@ -573,11 +570,10 @@ fn rpc_line(id: u64, method: &str, params: serde_json::Value) -> String {
     )
 }
 
-/// 버튼 직후의 자가 검증. `initialize` → `tools/list` → `get_concept` 1건.
+/// Self-verification immediately after button press. `initialize` → `tools/list` → 1 `get_concept`.
 ///
-/// 여기서 실호출까지 가는 이유: 부팅만 확인하면 "서버는 떴는데 이 폴더를 못
-/// 읽는" 상태를 초록 불로 보고하게 된다. 사용자가 알고 싶은 것은 프로세스가
-/// 살아있는지가 아니라 **자기 vault 가 읽히는지**다.
+/// Why go to actual invocation here: If only boot is checked, the system reports "server is up but cannot read this folder"
+/// with a green light. What users want to know is not whether the process is alive, but **whether their vault is readable**.
 #[tauri::command]
 pub fn verify_mcp_server(vault_path: String, sample_slug: Option<String>) -> McpVerifyResult {
     match verify_inner(&vault_path, sample_slug.as_deref()) {
@@ -771,9 +767,9 @@ mod tests {
     fn allowed_config_files_cover_the_three_client_surfaces() {
         assert!(ALLOWED_CONFIG_FILES.contains(&".mcp.json"));
         assert!(ALLOWED_CONFIG_FILES.contains(&".codex/config.toml"));
-        // 개수를 하드코딩하지 않는다 — 목록이 늘 때마다 이 줄이 빨개지고, 그건
-        // "계약이 깨졌다" 가 아니라 "숫자를 안 고쳤다" 라서 신호가 아니다.
-        // 지켜야 할 것은 **개수가 아니라 구성**이다.
+        // Do not hardcode the count — if the list grows, this line turns red, which means
+        // "the contract was broken" rather than "the number wasn't updated", so it is not a signal.
+        // What must be preserved is **composition, not count**.
         assert!(ALLOWED_CONFIG_FILES.len() >= 3);
     }
 
@@ -890,8 +886,8 @@ mod tests {
         let root = open_absolute_directory_no_follow(&canonical_vault).unwrap();
         let (parent, file_name) = open_entry_parent(&root, ".codex/config.toml").unwrap();
 
-        // 검사/부모 open 뒤 이름을 바꿔치기한다. 문자열 경로로 다시 open하면
-        // outside/config.toml을 쓰지만, 이미 연 부모 FD는 원래 디렉터리를 붙든다.
+        // Swap names after inspect/opening the parent. Re-opening with string paths
+        // would write to outside/config.toml, but the already-opened parent FD holds the original directory.
         fs::rename(vault.join(".codex"), &original_parent).unwrap();
         symlink(&outside, vault.join(".codex")).unwrap();
         write_entry_atomically(&parent, &file_name, "inside", 0o600).unwrap();

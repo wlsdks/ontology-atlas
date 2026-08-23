@@ -187,7 +187,7 @@ describe("DestinationGuide", () => {
  * Why both are in one test: honouring only half becomes a different defect each way.
  * If the automatic does not stop, the switch is a lie; if it also does not come when
  * called, that is not a switch but **deletion**. The owner asked for the former
- * ("아니면 클릭했을때나" — or else when clicked).
+ * ("Or else when clicked" — or else when clicked).
  */
 describe("화면 안내 자동 표시 스위치", () => {
   it("끄면 목적지 안내가 저절로 뜨지 않는다", async () => {

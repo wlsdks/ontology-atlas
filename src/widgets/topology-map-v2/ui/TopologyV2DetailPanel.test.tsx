@@ -721,7 +721,7 @@ describe("TopologyV2DetailPanel — full-detail A1 opt-in link", () => {
 });
 
 // P3-③ (2026-07-21 retention round) — at 1440×900 a node with many connections
-// overflowed the panel content past the viewport, pushing the 「전체 상세 →」
+// overflowed the panel content past the viewport, pushing the "Full Details →"
 // (full detail) footer off screen (y=911) and out of reach. The panel must always
 // scroll inside the viewport by itself — jsdom does no real layout, so the
 // regression is caught by checking that the clamp contract (a token-based
@@ -787,7 +787,7 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
   // non-developer. It no longer renders in the visible DOM text; the row's
   // link carries the full `row.id` slug as a native `title=` hover instead
   // (information preserved, just no longer competing for first-read
-  // attention with the plain 「근거」 label).
+  // attention with the plain 「Evidence」 label).
   it("folds the evidence row's path behind a hover title instead of always-visible text", () => {
     renderPanel(undefined, {
       rows: [{ id: "capabilities/product-owner-operating-system", title: "product-owner-operating-system", path: "capabilities/" }],
@@ -828,8 +828,8 @@ describe("TopologyV2DetailPanel — 근거 evidence count (group only)", () => {
   });
 });
 
-// R+ 「코드 위치」 (code location) — the REAL code evidence (raw file paths),
-// distinct from the 「근거」 (evidence) group above, a source-doc slug reference.
+// R+ 「Code location」 — the REAL code evidence (raw file paths),
+// distinct from the 「Evidence」 group above, a source-doc slug reference.
 describe("TopologyV2DetailPanel — 코드 위치 (code location) group", () => {
   it("renders a code-location row for each path when codeLocations is non-empty", () => {
     renderPanel(undefined, undefined, {
@@ -866,7 +866,7 @@ describe("TopologyV2DetailPanel — 코드 위치 (code location) group", () => 
 // (`ontology/capabilities/mcp-server`) always visible, mono/quaternary but
 // still raw and unreadable to a non-developer. It now shows only the last
 // path segment and folds the full slug behind a native `title=` hover — the
-// 「전체 상세 →」 link already owns navigating to the full record.
+// 「Full details →」 link already owns navigating to the full record.
 describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () => {
   it("shows only the slug's last segment in visible text, with the full slug as a hover title", () => {
     render(
@@ -1035,10 +1035,10 @@ describe("TopologyV2DetailPanel — group count chips", () => {
   });
 });
 
-// Scope correction (2026-07-26) — 「이어진 곳」 (connected) counts all four relation
-// buckets, and every bucket it counts is drawn. Only 속한 곳 (incoming containment)
+// Scope correction (2026-07-26) — 「Connected」 counts all four relation
+// buckets, and every bucket it counts is drawn. Only belongs to (incoming containment)
 // used to be missing, so a node with only a parent (221 of the dogfood vault's 294
-// = 75%) said 「이어진 곳 0」 — with a clickable domain chip right above it. This
+// = 75%) said 「Connected 0」 — with a clickable domain chip right above it. This
 // pins the screen against stating a verifiable falsehood.
 describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", () => {
   const parentRow = {
@@ -1133,7 +1133,7 @@ describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs �
   it("renders the honest 'no relations recorded yet' empty-state when a node has zero recorded relations", () => {
     // A node like global-search, widely used in the code but with no relation yet
     // declared in the vault frontmatter — the UI has to say honestly that
-    // 「쓰는 곳 0」 means "not recorded yet", not "no dependencies".
+    // 「Uses 0」 means "not recorded yet", not "no dependencies".
     render(
       <TopologyV2DetailPanel
         open
@@ -1278,7 +1278,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     ).not.toBeInTheDocument();
   });
 
-  // S2 part 3 — a long 「담는 것」 defaults to the path-prefix summary, with 「전체 보기」 for the list.
+  // S2 part 3 — a long 「container」 defaults to the path-prefix summary, with 「View All」 for the list.
   it("담는 것이 15개 초과면 경로 프리픽스 요약을 보여주고 '전체 보기'로 리스트를 편다", () => {
     const rows = Array.from({ length: 6 }, (_, i) => ({
       id: `element:cli/src/commands/c${i}`,
@@ -1332,7 +1332,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     expect(screen.getByText(labels.containsOtherGroup)).toBeInTheDocument();
     expect(screen.queryByText("cmd 0")).not.toBeInTheDocument();
 
-    // The 「전체 보기」 toggle → the list appears.
+    // The 「View All」 toggle → the list appears.
     fireEvent.click(screen.getByTestId("topology-v2-contains-summary-toggle"));
     expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
     expect(screen.getByText("cmd 0")).toBeInTheDocument();
@@ -1377,7 +1377,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     expect(screen.getByText("cap 0")).toBeInTheDocument();
   });
 
-  // B4 (H1) — when the summary collapses into one 「기타」 lump (usable=false), the
+  // B4 (H1) — when the summary collapses into one 「Other」 lump (usable=false), the
   // summary and toggle are hidden even past the threshold and the individual list
   // renders instead (avoiding zero information).
   it("담는 것이 15개 초과라도 요약이 usable=false 면 리스트로 폴백한다", () => {
@@ -1650,8 +1650,8 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
 
 /**
  * Hovering a row makes the map beside it point at that node (owner instruction,
- * 2026-08-17: *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서 표시되면
- * 좋겠는데 가능할까? 지금은 아무 반응이 없어서.."* — hovering each of these should
+ * 2026-08-17: *"Would it be possible to make each of these highlight and display
+ * on the adjacent map when hovered? Currently, there is no response."* — hovering each of these should
  * make it glint on the map beside it; right now nothing responds).
  *
  * What is measured here is one thing: **which name goes out through which

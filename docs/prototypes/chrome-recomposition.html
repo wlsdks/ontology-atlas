@@ -4,23 +4,23 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>토폴로지 크롬 재구성 — 크롬 로우 분리 + 우측 기어 (B3 폴리시 스펙)</title>
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
   CHROME RECOMPOSITION (visual-richness round, item E + D):
   the B3 immersive hub, corrected for the owner-reported chrome collision.
 
-    결정: 크롬 로우 분리 — 상단 56px 는 크롬 레인(브랜드 필 · 각인 census ·
-    우측 유틸리티 레일). INDEX/데이터시트/접힘 탭은 전부 top 64px 아래에서
-    시작한다. 브랜드 필은 상태 무관 불변(필→아이콘 모프 안은 반려 — 브랜드
-    앵커가 흔들린다). census 는 상단 중앙 각인이 단일 출처 — B3 의 INDEX
-    내부 pcensus 중복 행은 삭제, 동기화 도트만 INDEX 헤더에 남는다.
+    Decision: Separate chrome row — top 56px is chrome lane (brand field · embossed census ·
+    right utility rail). INDEX/datasheet/folded tabs all start below top 64px. Brand field is
+    state-independent invariant (reject morphing field→icon — brand anchor shakes). Census is
+    single source in top center emboss — delete duplicate pcensus rows inside B3 INDEX,
+    keep sync dot only in INDEX header.
 
-    frame 1 "기본 상태"   — 크롬 로우 + INDEX(펼침) + 데이터시트 + 우측 레일
-                            (fit-view + 기어). 1920×945 primary.
-    frame 2 "접힘 + 설정" — INDEX 는 크롬 로우 아래 세로 탭, 기어 팝오버 열림
-                            (언어 EN/KO · 테마 · INDEX 기본 상태). 1920×945 primary.
+    frame 1 "default state"   — chrome row + INDEX(open) + datasheet + right rail
+                                (fit-view + gear). 1920×945 primary.
+    frame 2 "folded + settings" — INDEX becomes vertical tab below chrome row, gear popover opens
+                                  (language EN/KO · theme · INDEX default state). 1920×945 primary.
 
-  근거 문서: docs/prototypes/visual-richness-review.md §D §E.
+  Reference docs: docs/prototypes/visual-richness-review.md §D §E.
 -->
 <style>
   /* Values copied from app/globals.css token families (standalone prototype). */
