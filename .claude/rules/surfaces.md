@@ -178,6 +178,16 @@ paths, or a source checkout using `node <checkout>/cli/src/index.mjs`. Neither
 `ontology-atlas` nor `ontology-atlas-mcp` exists on npm. `npx ontology-atlas init`
 is a 404, not a future path.
 
+### Installing an agent tool for the user (2026-08-20)
+
+`.claude/rules/forbidden.md` prohibits a plugin marketplace inside Atlas, and
+this is the one installation it does allow. The app may install
+an agent CLI only when all four conditions hold: the user initiates it, sees the
+exact command first, installation stays in an app-owned location, and the version
+is pinned. Missing any condition forbids the action. Downloading a Node runtime
+was separately approved in decision (89); later runtime families need a new
+record. Evidence and losing dissent: ledger 2026-08-20 (88) and (89).
+
 ### Contract beyond lint
 
 | Rule | Gate | Why lint cannot see it |

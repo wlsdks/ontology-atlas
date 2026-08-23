@@ -47,16 +47,6 @@
 - Repeated cards whose heights vary only because their copy lengths differ.
   Cards in one row have equal height. <!--dont:content-decided-card-height-->
 
-The retired “ontology studio game exception” no longer exists. `/ontology/studio`
-once allowed `--studio-*` glow, gradients, aura, particles, rarity colours, and
-shimmer. The 2026-07-24 owner decision reversed it: “make it addictive like a
-game” was a metaphor, not a visual specification, and game styling weakened
-trust in decision material. Studio itself retired on 2026-08-21. Contextual map
-editing and ACP proposal cards follow the same neutral-plus-indigo system as the
-rest of the app. Glow, rarity, particles, and gems remain forbidden; old studio
-tokens and motion classes were removed from `app/globals.css`. Retention comes
-from a visible next action, immediate feedback, and accumulated progress.
-
 Details: `@.claude/rules/design.md` and `@docs/DESIGN-SYSTEM.md`.
 
 ## Routing
@@ -120,20 +110,13 @@ Details: `@.claude/rules/design.md` and `@docs/DESIGN-SYSTEM.md`.
 - Atlas will never execute third-party plugin code. That conflicts with the trust
   charter and gives no reason to run unaudited code inside a static local-first
   product.
+- Installing an agent CLI for the user is governed by
+  `.claude/rules/surfaces.md`, "Installing an agent tool for the user".
 - MCP tools and agent skills are the extension mechanism. They run in Claude
   Code, Codex, Cursor, or another program the user already chose to trust.
 - Allowed extensions are declarative files only: vault Markdown or configuration
   such as saved searches, templates, and `.ontology-atlasignore`. They execute no
   code and expose every change through Git diff.
-
-### Installing an agent tool for the user (2026-08-20)
-
-The rules above prohibit a plugin marketplace inside Atlas. The app may install
-an agent CLI only when all four conditions hold: the user initiates it, sees the
-exact command first, installation stays in an app-owned location, and the version
-is pinned. Missing any condition forbids the action. Downloading a Node runtime
-was separately approved in decision (89); later runtime families need a new
-record. Evidence and losing dissent: ledger 2026-08-20 (88) and (89).
 
 ## Dependencies
 

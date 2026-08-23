@@ -5,3 +5,41 @@ args = ["./mcp/src/index.js"]
 [mcp_servers.ontology-atlas.env]
 OATLAS_VAULT = "./docs/ontology"
 OATLAS_REPO_ROOT = "."
+
+# Declared because eight design seats and the craft PO seat grant
+# `mcp__chrome-devtools__*` in their `tools:` frontmatter, and the two agent-brief
+# trees are byte identical, so what `.mcp.json` declares for Claude Code has to be
+# declared here for Codex as well. Pinned, and run with the flags the trust
+# charter asks for: nothing collected, network headers redacted.
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = [
+  "-y",
+  "chrome-devtools-mcp@1.7.0",
+  "--isolated",
+  "--no-usage-statistics",
+  "--redact-network-headers",
+]
+
+# Secrets, and what this file cannot do about them.
+#
+# `.claude/settings.json` carries `permissions.deny` rules that refuse reads of
+# the files `.gitignore` treats as secrets. Codex's equivalent — deny-read
+# policies under `permissions.<name>.filesystem` — is documented for the
+# user-level `~/.codex/config.toml`, not for a committed project file, and
+# `.codexignore` was requested repeatedly and never shipped. So this file cannot
+# hand a teammate that protection, and pretending otherwise would be worse than
+# saying it plainly.
+#
+# What the project does instead is refuse the command:
+# `.codex/hooks/block-secret-read.sh` denies a shell read of those names at
+# PreToolUse. A process that opens the file itself is past any command-shaped
+# guard, on either side.
+#
+# To close the rest for yourself, in ~/.codex/config.toml:
+#
+#   default_permissions = "hardened"
+#
+#   [permissions.hardened.filesystem]
+#   ":project_roots" = { "." = "write", "**/.env" = "none", "**/.env.*" = "none" }
+#   "~/.ssh" = "none"

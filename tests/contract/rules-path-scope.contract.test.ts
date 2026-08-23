@@ -113,7 +113,7 @@ describe("`.claude/rules` path scoping contract", () => {
     );
   }, 15_000);
 
-  it("상주 총량이 20KB 를 넘지 않는다 — 되돌아가는 길에 저항을 둔다", () => {
+  it("keeps the resident rules under 20 KB — resistance on the way back", () => {
     // The exact ceiling does not matter; what matters is that **somewhere notices** when
     // the resident share swells again. Raising this number requires the commit that
     // raises it to say why.
@@ -121,5 +121,155 @@ describe("`.claude/rules` path scoping contract", () => {
       .filter((r) => r.paths === null)
       .reduce((sum, r) => sum + readFileSync(join(RULES_DIR, r.file)).byteLength, 0);
     expect(bytes).toBeLessThan(20_000);
+  });
+
+  /**
+   * `CLAUDE.md` tells the reader which rules load every turn and which wait for a
+   * matching path. That sentence is how someone decides where a new rule goes,
+   * and nothing checked it: the resident set is guarded above, but the wrapper's
+   * description of it could go stale the moment a rule was added or a
+   * frontmatter block was opened, and the reader would be confidently wrong.
+   *
+   * Both sides are computed rather than written down. `documentation.md` allows
+   * a prose gate only when it derives its expectation from code; a hand-written
+   * list here would be the pinned sentence that rule forbids.
+   */
+  it("describes its own loading conditions correctly in CLAUDE.md", () => {
+    const wrapper = readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8");
+    const section = wrapper.slice(wrapper.indexOf("## Claude Code loading"));
+    const sentence = section.slice(0, section.indexOf("\n\n`.claude/agents/`"));
+
+    const named = new Set([...sentence.matchAll(/`([a-z-]+)`/g)].map((m) => m[1]));
+    const resident = rules.filter((r) => r.paths === null).map((r) => r.file.replace(/\.md$/, ""));
+    const conditional = rules.filter((r) => r.paths !== null).map((r) => r.file.replace(/\.md$/, ""));
+
+    for (const name of [...resident, ...conditional]) {
+      expect(
+        named.has(name),
+        `CLAUDE.md's loading sentence never names \`${name}\`, so a reader cannot tell when it loads`,
+      ).toBe(true);
+    }
+  });
+
+  /**
+   * `AGENTS.md` tells an agent which addresses are live and which only redirect.
+   * That sentence named `/ontology` and `/ontology/edit` while a third page,
+   * `/ontology/studio`, rendered the very same redirect view — so an agent read
+   * that studio was gone, then found the directory and had no way to tell
+   * whether it was live, retired, or something it should not have seen
+   * (measured 2026-08-24).
+   *
+   * A redirect page is identifiable without asking: it imports a view from
+   * `@/views/*-redirect` and renders nothing else. Deriving the set means a page
+   * that becomes a redirect, or stops being one, fails here rather than leaving
+   * the sentence quietly wrong.
+   */
+  /**
+   * `CLAUDE.md` inventories the hooks and says which are mirrored into
+   * `.codex/hooks/`. A hook that exists on one side only is the interesting
+   * case, because the reason it is not mirrored is a judgement someone made —
+   * and the sentence went stale the moment a Codex-only guard was added two
+   * sessions after the sentence was written (measured 2026-08-24). The resident
+   * ratchet could not catch it: a claim can rot without changing size.
+   *
+   * Only the asymmetric hooks are required by name. The mirrored four are
+   * already covered by `pnpm test:claude:hooks`, which asserts the wiring on
+   * both sides; naming them here would be a second list to keep.
+   */
+  it("names every hook that exists on one side only", () => {
+    const shellScripts = (dir: string): string[] =>
+      readdirSync(join(process.cwd(), dir)).filter((name) => name.endsWith(".sh")).sort();
+    const claude = shellScripts(".claude/hooks");
+    const codex = shellScripts(".codex/hooks");
+    expect(claude.length + codex.length, "no hooks found — this sweep would pass vacuously")
+      .toBeGreaterThan(4);
+
+    const asymmetric = [
+      ...claude.filter((name) => !codex.includes(name)),
+      ...codex.filter((name) => !claude.includes(name)),
+    ].sort();
+    const wrapper = readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8");
+    const unnamed = asymmetric.filter((name) => !wrapper.includes(name));
+    expect(
+      unnamed,
+      `these hooks run for one tool and not the other, and CLAUDE.md never says so:\n`
+        + `${unnamed.join("\n")}\n`
+        + "An asymmetry nobody wrote down reads as an oversight the next time someone "
+        + "tries to restore parity.",
+    ).toEqual([]);
+  });
+
+  it("names every legacy redirect route in AGENTS.md", () => {
+    const appDir = join(process.cwd(), "app/[locale]");
+    const pages = globSync("**/page.tsx", { cwd: appDir });
+    expect(pages.length, "no app pages found — this sweep would pass vacuously").toBeGreaterThan(5);
+
+    const redirects = pages
+      .filter((page) => /from ["']@\/views\/[a-z-]*redirect["']/.test(
+        readFileSync(join(appDir, page), "utf8"),
+      ))
+      .map((page) => `/${page.replace(/\/?page\.tsx$/, "")}`)
+      .sort();
+    expect(redirects.length, "no redirect pages matched the import pattern").toBeGreaterThan(0);
+
+    const agents = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
+    const unnamed = redirects.filter((route) => !agents.includes(`\`${route}\``));
+    expect(
+      unnamed,
+      `these routes only redirect, and AGENTS.md never says so:\n${unnamed.join("\n")}\n`
+        + "An agent that cannot tell a redirect from a live surface cannot route a user to either.",
+    ).toEqual([]);
+  });
+
+  it("leaves no rule unmentioned by the two files every agent reads", () => {
+    const both =
+      readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8")
+      + readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
+    const unmentioned = rules
+      .map((r) => r.file)
+      .filter((file) => !both.includes(file.replace(/\.md$/, "")));
+    expect(
+      unmentioned,
+      `these rules exist but nothing an agent reads points at them:\n${unmentioned.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  /**
+   * The rules are only part of what loads before the task does. `AGENTS.md` and
+   * the `CLAUDE.md` wrapper that imports it are read every turn too, and the
+   * 32 KiB Codex cap is far above what is healthy — it is a truncation limit,
+   * not a budget.
+   *
+   * A plain ceiling was not enough here. Over five sessions of harness work the
+   * resident share was trimmed by 1,667 bytes and then quietly grew 484 bytes
+   * back, one justified documentation paragraph at a time, and nothing noticed
+   * because every individual addition was small and correct (2026-08-24). So
+   * this ratchets in one direction only: a commit that saves bytes must record
+   * the saving, which is what makes the saving permanent.
+   */
+  const RESIDENT_CONTEXT_BYTES = 27_678;
+
+  it("ratchets the whole resident context downward, never up", () => {
+    const files = ["AGENTS.md", "CLAUDE.md", ...ALWAYS_LOADED.map((f) => join(".claude/rules", f))];
+    const bytes = files.reduce(
+      (sum, file) => sum + readFileSync(join(process.cwd(), file)).byteLength,
+      0,
+    );
+    const detail = files
+      .map((file) => `  ${readFileSync(join(process.cwd(), file)).byteLength} ${file}`)
+      .join("\n");
+
+    expect(
+      bytes,
+      `the resident context grew to ${bytes} bytes:\n${detail}\n`
+        + "Every turn pays this before the task is read. Move detail to a path-loaded "
+        + "rule or a skill, or state in the commit why this must be resident.",
+    ).toBeLessThanOrEqual(RESIDENT_CONTEXT_BYTES);
+
+    expect(
+      bytes,
+      `the resident context is down to ${bytes} bytes: lower RESIDENT_CONTEXT_BYTES `
+        + "in this file so the saving cannot be spent again.",
+    ).toBeGreaterThan(RESIDENT_CONTEXT_BYTES - 512);
   });
 });

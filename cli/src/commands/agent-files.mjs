@@ -1,7 +1,8 @@
 // `ontology-atlas agent-files [--root path]` — read-only detection of which
-// AI tool reads which instruction file, plus five drift checks (CLAUDE.md ↔
+// AI tool reads which instruction file, plus six drift checks (CLAUDE.md ↔
 // AGENTS.md bridge · duplicated skill trees byte diff · duplicated agent-brief
-// byte diff · @reference existence · AGENTS.md Codex 32 KiB cap). Never converts, syncs, or repairs — this is
+// byte diff · @reference existence · English-only agent text · AGENTS.md Codex
+// 32 KiB cap). Never converts, syncs, or repairs — this is
 // a workbench readout, not a rulesync-style converter (strategy-audit no-go).
 
 import { COLORS } from '../lib/colors.mjs';
@@ -17,7 +18,7 @@ import {
   extractAtRefs,
 } from '../lib/agent-files.mjs';
 
-const ALLOWED_FLAGS = ['--root', '--json'];
+const ALLOWED_FLAGS = ['--root', '--json', '--english-only'];
 
 /** Root-level single-file candidates. */
 const ROOT_FILE_CANDIDATES = Object.freeze([
@@ -27,11 +28,13 @@ const ROOT_FILE_CANDIDATES = Object.freeze([
   '.cursorrules',
   '.mcp.json',
   '.github/copilot-instructions.md',
+  '.claude/settings.json',
 ]);
 
 /** Directories walked recursively: the only dot-dirs this command touches. */
 const SCAN_DIRS = Object.freeze([
   '.claude/rules',
+  '.claude/hooks',
   '.claude/skills',
   '.claude/agents',
   '.agents/skills',
@@ -78,7 +81,11 @@ function buildAgentFilesReport(parsed) {
   const root = resolveRoot(parsed.root);
   const files = scanAgentFiles(root);
   const existingPaths = resolveReferencedPaths(root, files);
-  const analysis = analyzeAgentFiles({ files, existingPaths });
+  const analysis = analyzeAgentFiles({
+    files,
+    existingPaths,
+    requireEnglish: parsed.englishOnly === true,
+  });
   return {
     operation: 'agent_files',
     sideEffect: false,
@@ -97,6 +104,17 @@ function scanAgentFiles(root) {
     const abs = join(root, candidate);
     if (existsSync(abs) && statSync(abs).isFile()) {
       entries.push(readEntry(abs, candidate));
+    }
+  }
+  // Codex merges AGENTS.md root-down along the working directory, so a nested
+  // file is instruction surface even though no SCAN_DIRS entry names it. One
+  // level deep matches the classification rule and keeps the walk cheap.
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+    const relative = `${entry.name}/AGENTS.md`;
+    const abs = join(root, relative);
+    if (existsSync(abs) && statSync(abs).isFile() && classifyAgentFilePath(relative)) {
+      entries.push(readEntry(abs, relative));
     }
   }
   for (const dir of SCAN_DIRS) {
@@ -228,12 +246,24 @@ function render(result) {
       `@reference existence (${result.checks.atRefs.refsChecked} checked · ${result.checks.atRefs.missingRefs} missing · ${result.checks.atRefs.unverifiedRefs} unverified)`,
     ],
     [
+      'agent-language',
+      result.checks.agentLanguage.status,
+      `English-only agent text (${result.checks.agentLanguage.scannedFiles} scanned · ${result.checks.agentLanguage.flaggedFiles} flagged · ${result.checks.agentLanguage.codePoints} non-English code points)`,
+    ],
+    [
+      'mcp-grants',
+      result.checks.mcpGrants.status,
+      result.checks.mcpGrants.status === 'not-applicable'
+        ? 'no MCP config or no agent briefs to check'
+        : `agent-brief MCP grants declared in each tree's own config (${result.checks.mcpGrants.briefsChecked} briefs · ${result.checks.mcpGrants.grantsChecked} grants · ${result.checks.mcpGrants.undeclaredServers.length} undeclared server${result.checks.mcpGrants.undeclaredServers.length === 1 ? '' : 's'}${result.checks.mcpGrants.unparseableConfigs.length > 0 ? ` · ${result.checks.mcpGrants.unparseableConfigs.join(', ')} declares nothing` : ''})`,
+    ],
+    [
       'codex-size-cap',
       result.checks.codexSizeCap.status,
       result.checks.codexSizeCap.agentsMdBytes === null
-        ? 'AGENTS.md 32 KiB Codex cap (no AGENTS.md)'
-        : `AGENTS.md ${result.checks.codexSizeCap.agentsMdBytes} / ${result.checks.codexSizeCap.capBytes} bytes (Codex project_doc_max_bytes)`,
-    ],
+        ? 'no AGENTS.md'
+        : `AGENTS.md ${result.checks.codexSizeCap.agentsMdBytes} + worst nested ${result.checks.codexSizeCap.worstCaseBytes - result.checks.codexSizeCap.agentsMdBytes} = ${result.checks.codexSizeCap.worstCaseBytes} / ${result.checks.codexSizeCap.capBytes} bytes merged (Codex project_doc_max_bytes, ${result.checks.codexSizeCap.nestedFiles} nested)`,
+],
   ];
   for (const [name, status_, description] of checkLines) {
     const c =
@@ -259,12 +289,13 @@ function render(result) {
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { root: cwd(), json: false };
+  const flags = { root: cwd(), json: false, englishOnly: false };
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
     if (a === '--root') flags.root = parseRequiredFlagValue('--root', args[++i]);
     else if (a.startsWith('--root=')) flags.root = parseRequiredFlagValue('--root', a.slice('--root='.length));
     else if (a === '--json') flags.json = true;
+    else if (a === '--english-only') flags.englishOnly = true;
     else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
     else return { error: `unexpected argument: ${a} (agent-files scans --root, it takes no positional args)` };
   }
@@ -284,15 +315,19 @@ function resolveRoot(root) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas agent-files [--root path] [--json]\n\n` +
+      `  ontology-atlas agent-files [--root path] [--json] [--english-only]\n\n` +
       `Read-only detection of AI agent instruction files at the repo root:\n` +
-      `which tool reads which file (CLAUDE.md, AGENTS.md, GEMINI.md,\n` +
-      `.claude/rules|skills|agents, .agents/skills|agents, .cursor,\n` +
-      `.cursorrules,\n` +
-      `.github/copilot-instructions.md, .codex, .mcp.json) plus five drift\n` +
+      `which tool reads which file (CLAUDE.md, AGENTS.md, <dir>/AGENTS.md,\n` +
+      `GEMINI.md, .claude/rules|skills|agents|hooks, .claude/settings.json,\n` +
+      `.agents/skills|agents, .cursor, .cursorrules,\n` +
+      `.github/copilot-instructions.md, .codex, .mcp.json) plus drift\n` +
       `checks: CLAUDE.md ↔ AGENTS.md import bridge, duplicated skill-tree\n` +
-      `byte diff, duplicated agent-brief byte diff,\n` +
-      `byte diff, @reference existence, and the AGENTS.md 32 KiB Codex cap.\n\n` +
+      `byte diff, duplicated agent-brief byte diff, @reference existence,\n` +
+      `agent-brief MCP grants declared in each tree's own MCP config,\n` +
+      `and the Codex 32 KiB cap measured across the merged root + nested set.\n\n` +
+      `--english-only adds a check that no agent file carries Hangul, kana or\n` +
+      `Han. It is opt-in: a vault or repository may legitimately be written in\n` +
+      `another language, so this is never assumed.\n\n` +
       `Exit code 0 = no drift, 1 = drift found, 2 = error. Nothing is written.\n`,
   );
 }

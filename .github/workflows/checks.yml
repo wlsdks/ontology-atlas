@@ -146,6 +146,73 @@ jobs:
         if: always()
         run: pnpm agents:check
 
+      # Every remaining `node --test` suite. These are invisible to `pnpm test:run`,
+      # whose vitest include covers `app/**`, `src/**` and `tests/contract/**` only,
+      # so a suite that no workflow names runs nowhere at all.
+      #
+      # The comment above the colour gate already recorded this failure twice: two
+      # suites broken on main with nobody knowing (2026-07-26), then `check:tokens`
+      # and its own unit test defined and never called (2026-08-05). It happened a
+      # third time. On 2026-08-24 nineteen of thirty-one `node --test` suites were
+      # unreachable from CI and from the git hooks — including
+      # `test:claude:hooks`, which is the only coverage the publish guard, the Git
+      # guard, the generated-output guard, the commit-message gate, the agent-file
+      # drift reporter and the secret-read guard have.
+      #
+      # They are cheap: the whole set below measured about fourteen seconds.
+      # `integration:mcp` is deliberately not here — it runs for minutes, and
+      # promoting it is a scheduling decision rather than a wiring fix.
+      # `tests/contract/node-test-reachability.contract.test.ts` fails when a new
+      # suite is added without appearing here, in a git hook, or in its stated
+      # exclusion list.
+      # A checker whose unit test runs while the checker itself does not is the
+      # 2026-08-05 colour-gate shape. `test:vault:audit` reached CI in the step
+      # below; `vault:audit` did not, and it is the gate that proves every vault
+      # node's `path:` still points at a file that exists — 75 paths across 83
+      # nodes, 0.2 seconds, and it goes red on a planted path.
+      #
+      # The other six pairs in that shape were left alone deliberately.
+      # `vault:migrate` mutates, `vault:freshness` needs a diff range and exits 2
+      # without one, `skills:audit` always exits 0 over a personal skill
+      # collection, and the `dogfood:*` three are status reports rather than
+      # gates. Wiring them would put a migration tool in CI and call a permanent
+      # green a gate.
+      - name: Vault path drift
+        if: always()
+        run: pnpm vault:audit
+
+      # `test:claude:hooks` drives the real SessionStart hook, which spawns the
+      # source MCP server. The root install intentionally skips
+      # `mcp/node_modules`, so without this the hook dies on
+      # ERR_MODULE_NOT_FOUND before it reads any vault and every case collapses
+      # into the same "dependencies missing" message — which is what happened on
+      # the first run after these suites were wired into CI. `Unit · Contract`
+      # and `MCP` already install it for the same reason.
+      - name: Install MCP dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
+      - name: Node test suites outside vitest
+        if: always()
+        run: |
+          pnpm test:claude:hooks
+          pnpm test:checks:changed
+          pnpm test:source:language
+          pnpm test:docs:language
+          pnpm test:docs:checks
+          pnpm test:skills:audit
+          pnpm test:cli:args
+          pnpm test:cli:mcp-call
+          pnpm test:mcp:verify
+          pnpm test:vault:validate
+          pnpm test:vault:audit
+          pnpm test:vault:freshness
+          pnpm test:dogfood:args
+          pnpm test:dogfood:status
+          pnpm test:dogfood:graph-db
+          pnpm test:dogfood:script-refs
+          pnpm test:dogfood:compile-fix
+          pnpm dogfood:test
+
       # This is the unit suite for the desktop gate. Until now, it **only ran in the release workflow**,
       # so all defects that should have been caught here were first exposed "after tagging"
       # — which is why `v1.0.0-rc.2` was tagged four times, stopping at the build job each time. There is

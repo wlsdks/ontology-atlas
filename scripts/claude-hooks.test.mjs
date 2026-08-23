@@ -28,6 +28,7 @@ const HOOK_CONFIGS = [
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-npm-publish.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-unsafe-git.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh"',
     ],
     expectedPreToolMatchers: ['Bash', 'Edit|Write|MultiEdit|NotebookEdit'],
   },
@@ -40,6 +41,9 @@ const HOOK_CONFIGS = [
       'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/block-npm-publish.sh',
+      'bash .codex/hooks/block-secret-read.sh',
+      'bash .codex/hooks/block-secret-read.sh',
+      'bash .codex/hooks/block-secret-read.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
@@ -91,7 +95,7 @@ describe('agent hooks', () => {
         const result = runPublishHook(config.publishHook, payload);
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
         assert.match(result.stdout, /"permissionDecision": "deny"/, `${config.name}: ${command}`);
-        assert.match(result.stdout, /npm publish 가드/, `${config.name}: ${command}`);
+        assert.match(result.stdout, /npm publish guard/, `${config.name}: ${command}`);
       }
     }
   });
@@ -221,7 +225,7 @@ describe('inject-ontology-summary health awareness', () => {
   // **found the vault but could not read it** into the same silence. The latter is
   // the moment a session most needs to hear about — and adding one node by hand puts
   // you in exactly that state.
-  it('말한다 — 볼트를 찾았는데 컴파일이 안 되면 침묵하지 않는다', async (t) => {
+  it('speaks up: a vault that is found but will not compile is never silent', async (t) => {
     if (!hasPython) {
       t.skip('python3 unavailable — hook is silent by design');
       return;
@@ -232,10 +236,10 @@ describe('inject-ontology-summary health awareness', () => {
         const result = runInjectHook(hook, dir);
         // It never blocks the session — a SessionStart hook always exits 0.
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
-        assert.match(result.stdout, /will not compile/, `${hook}: 침묵하지 않는다`);
-        assert.match(result.stdout, /missing-uid/, `${hook}: 무엇이 문제인지 댄다`);
-        assert.match(result.stdout, /ontology-atlas health/, `${hook}: 고칠 명령을 댄다`);
-        assert.ok(result.stdout.length < 700, `${hook}: 세션 문맥은 여전히 짧다`);
+        assert.match(result.stdout, /will not compile/, `${hook}: does not stay silent`);
+        assert.match(result.stdout, /missing-uid/, `${hook}: names what is broken`);
+        assert.match(result.stdout, /ontology-atlas health/, `${hook}: names the command that fixes it`);
+        assert.ok(result.stdout.length < 700, `${hook}: session context stays short`);
       }
     } finally {
       await rm(dir, { recursive: true, force: true });
@@ -245,13 +249,40 @@ describe('inject-ontology-summary health awareness', () => {
   // The silence convention itself must hold — adding no noise to a repository with
   // no vault is this hook's original contract. This measures that the check above
   // did not widen it.
-  it('볼트가 아예 없으면 종전대로 조용하다', async () => {
+  /**
+   * A fresh clone and a new worktree both start without `mcp/node_modules`, so
+   * the MCP child dies on ERR_MODULE_NOT_FOUND before it reads anything. The
+   * hook used to answer that with `ontology-atlas health`, which runs through
+   * the same missing module and cannot repair it. Naming the wrong command
+   * costs a round trip and teaches that the line is noise, so the two cases are
+   * asserted apart.
+   */
+  it('names the install when the dependency is missing, not the vault doctor', async () => {
+    const source = await readFile('.claude/hooks/inject-ontology-summary.sh', 'utf8');
+    const mirror = await readFile('.codex/hooks/inject-ontology-summary.sh', 'utf8');
+    for (const [name, text] of [['claude', source], ['codex', mirror]]) {
+      assert.match(text, /ERR_MODULE_NOT_FOUND/, `${name}: does not recognise the missing-module failure`);
+      assert.match(text, /pnpm --dir mcp install/, `${name}: never names the command that fixes it`);
+      assert.match(
+        text,
+        /mcp\/node_modules/,
+        `${name}: does not check whether this checkout actually lacks the dependency`,
+      );
+      assert.match(
+        text,
+        /ontology-atlas health/,
+        `${name}: lost the vault doctor for the case that really is a broken vault`,
+      );
+    }
+  });
+
+  it('stays silent, as before, when there is no vault at all', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-empty-'));
     try {
       for (const hook of INJECT_HOOKS) {
         const result = runInjectHook(hook, dir);
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
-        assert.equal(result.stdout, '', `${hook}: 빈 폴더에는 아무 말도 안 한다`);
+        assert.equal(result.stdout, '', `${hook}: says nothing in an empty folder`);
       }
     } finally {
       await rm(dir, { recursive: true, force: true });
@@ -302,3 +333,222 @@ function runPublishHook(hookPath, payload) {
     encoding: 'utf8',
   });
 }
+
+// The commit-message language gate. Its first draft used `grep -P`, which BSD
+// grep does not have, so on macOS `sh` resolved `/usr/bin/grep`, the `|| true`
+// swallowed the error and every Korean subject passed. It looked alive from an
+// interactive shell with GNU grep on PATH. These cases therefore drive the real
+// hook through `sh`, the way Git invokes it, rather than importing the module
+// and trusting that the wiring around it works.
+describe('commit-msg language gate', () => {
+  const runHook = async (message) => {
+    const dir = await mkdtemp(join(tmpdir(), 'commit-msg-'));
+    try {
+      const file = join(dir, 'COMMIT_EDITMSG');
+      await writeFile(file, message, 'utf8');
+      const result = spawnSync('sh', ['.githooks/commit-msg', file], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+      });
+      return { status: result.status, stderr: result.stderr ?? '' };
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  };
+
+  it('is wired as an executable hook where Git looks for it', async () => {
+    await access('.githooks/commit-msg', constants.X_OK);
+    await access('.githooks/commit-msg-language.mjs', constants.R_OK);
+    // Comments are allowed to name the trap; executable lines are not.
+    const code = (await readFile('.githooks/commit-msg', 'utf8'))
+      .split('\n')
+      .filter((line) => !/^\s*#/.test(line))
+      .join('\n');
+    assert.ok(
+      !/grep\s+-[a-zA-Z]*P/.test(code),
+      'commit-msg must not use grep -P: BSD grep has no PCRE and the gate fails open',
+    );
+  });
+
+  it('accepts an English subject and body', async () => {
+    const { status } = await runHook('fix: restore the alpha token\n\nThe ramp move dropped it.\n');
+    assert.equal(status, 0);
+  });
+
+  it('rejects a non-English subject and names the offending line', async () => {
+    const { status, stderr } = await runHook('feat: 관문 모션 셋\n');
+    assert.equal(status, 1, 'a Korean subject must not commit');
+    assert.match(stderr, /must be English/);
+    assert.match(stderr, /rules\/git\.md/);
+  });
+
+  it('rejects a non-English body under an English subject', async () => {
+    const { status } = await runHook('fix: restore tokens\n\n토큰이 빠졌다.\n');
+    assert.equal(status, 1);
+  });
+
+  it('catches kana and Han, not only Hangul', async () => {
+    assert.equal((await runHook('chore: テスト\n')).status, 1);
+    assert.equal((await runHook('docs: 测试\n')).status, 1);
+  });
+
+  it('leaves generated subjects alone — merge, revert, fixup', async () => {
+    assert.equal((await runHook("Merge branch 'x' into main\n")).status, 0);
+    assert.equal((await runHook('Revert "feat: 관문 모션 셋"\n')).status, 0);
+    assert.equal((await runHook('fixup! feat: 관문 모션 셋\n')).status, 0);
+  });
+
+  it('ignores Git comment lines, which never ship', async () => {
+    const { status } = await runHook('# Please enter the commit message\n# 한국어 안내문\n');
+    assert.equal(status, 0);
+  });
+});
+
+// The PostToolUse drift reporter. Its whole value is being right about two
+// things at once: loud when a mirrored tree has been half-edited, and silent
+// otherwise. A hook that speaks on every edit spends context to say nothing and
+// gets ignored exactly when it matters, so the quiet cases are asserted as hard
+// as the loud one.
+describe('report-agent-file-drift PostToolUse hook', () => {
+  const HOOK = '.claude/hooks/report-agent-file-drift.sh';
+  const root = process.cwd();
+
+  const fire = (filePath) => {
+    const payload = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Edit',
+      tool_input: { file_path: filePath },
+    });
+    const result = spawnSync('bash', [HOOK], {
+      cwd: root,
+      input: payload,
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+    });
+    return { status: result.status, stdout: (result.stdout ?? '').trim() };
+  };
+
+  it('is executable where settings.json points', async () => {
+    await access(HOOK, constants.X_OK);
+  });
+
+  it('says nothing about a file outside the agent-file surface', () => {
+    const { status, stdout } = fire(join(root, 'src/shared/ui/does-not-matter.tsx'));
+    assert.equal(status, 0);
+    assert.equal(stdout, '');
+  });
+
+  it('says nothing when the surface is clean, even on a watched path', () => {
+    const { status, stdout } = fire(join(root, '.claude/skills/po-pass/SKILL.md'));
+    assert.equal(status, 0, 'PostToolUse must never block: the edit already happened');
+    assert.equal(stdout, '', 'a clean surface must cost no context');
+  });
+
+  it('reports through additionalContext when one side of a mirror is edited', async () => {
+    const mirrored = '.claude/skills/po-pass/SKILL.md';
+    const original = await readFile(mirrored, 'utf8');
+    try {
+      await writeFile(mirrored, `${original}\n<!-- half of a mirrored pair -->\n`, 'utf8');
+      const { status, stdout } = fire(join(root, mirrored));
+      assert.equal(status, 0);
+      const parsed = JSON.parse(stdout);
+      assert.equal(parsed.hookSpecificOutput.hookEventName, 'PostToolUse');
+      const context = parsed.hookSpecificOutput.additionalContext;
+      assert.match(context, /skill-copy/);
+      assert.match(context, /po-pass\/SKILL\.md/);
+      assert.match(context, /pnpm agents:check/);
+    } finally {
+      await writeFile(mirrored, original, 'utf8');
+    }
+  });
+
+  it('survives a payload with no file path at all', () => {
+    const result = spawnSync('bash', [HOOK], {
+      cwd: root,
+      input: JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_input: {} }),
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+    });
+    assert.equal(result.status, 0);
+    assert.equal((result.stdout ?? '').trim(), '');
+  });
+});
+
+// The Codex-side secret read guard. It exists because the Claude side has a
+// committable mechanism and Codex does not: deny-read filesystem policies are
+// documented only for the user-level `~/.codex/config.toml`, and `.codexignore`
+// was asked for repeatedly and never shipped. A project can still refuse the
+// command, which is what this does.
+//
+// Its two failure modes pull against each other. Too narrow and a secret walks
+// out through `head` or a pipeline; too broad and it refuses `cat .env.example`,
+// which is tracked precisely so people can read it. Both directions are asserted.
+describe('Codex secret read guard', () => {
+  const HOOK = '.codex/hooks/block-secret-read.sh';
+  const root = process.cwd();
+
+  const fire = (command) => {
+    const result = spawnSync('bash', [HOOK], {
+      cwd: root,
+      input: JSON.stringify({ tool_name: 'Bash', tool_input: { command } }),
+      encoding: 'utf8',
+      env: { ...process.env, CODEX_PROJECT_DIR: root },
+    });
+    return (result.stdout ?? '').trim();
+  };
+  const blocks = (command) => fire(command) !== '';
+
+  it('is executable where .codex/hooks.json points', async () => {
+    await access(HOOK, constants.X_OK);
+  });
+
+  it('refuses a direct read of every name .gitignore treats as a secret', async () => {
+    const names = (await readFile('.gitignore', 'utf8'))
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => /^\.env(\.[A-Za-z0-9._-]+)?$/.test(line));
+    assert.ok(names.length >= 3, '.gitignore lists no .env names — this sweep would pass vacuously');
+    for (const name of names) {
+      assert.ok(blocks(`cat ${name}`), `cat ${name} must be refused`);
+    }
+  });
+
+  it('follows the secret through pipelines, chains and command substitution', () => {
+    for (const command of [
+      'pnpm build && cat .env',
+      'echo hi; sed -n 1p .env',
+      'xxd .env | head',
+      'echo $(cat .env)',
+      'grep KEY .env.prod',
+      'cat config/.env',
+    ]) {
+      assert.ok(blocks(command), `${command} must be refused`);
+    }
+  });
+
+  it('leaves the tracked placeholder and ordinary work alone', () => {
+    for (const command of [
+      'cat .env.example',
+      'cp .env.example .env.local',
+      'cat README.md',
+      'pnpm test',
+      'git commit -m "document .env handling"',
+      'rg SECRET .',
+    ]) {
+      assert.equal(blocks(command), false, `${command} must not be refused`);
+    }
+  });
+
+  it('treats a heredoc body as data, not as a command', () => {
+    assert.equal(blocks("cat <<'EOF'\ncat .env\nEOF"), false);
+  });
+
+  it('names the file, the rule, and the readable alternative when it refuses', () => {
+    const parsed = JSON.parse(fire('cat .env'));
+    assert.equal(parsed.hookSpecificOutput.permissionDecision, 'deny');
+    const reason = parsed.hookSpecificOutput.permissionDecisionReason;
+    assert.match(reason, /\.env/);
+    assert.match(reason, /local-first\.md/);
+    assert.match(reason, /\.env\.example/);
+  });
+});

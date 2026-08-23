@@ -1,0 +1,39 @@
+#!/bin/sh
+# Commit-message language gate (2026-08-24)
+#
+# `.claude/rules/git.md` has required an English conventional prefix and an
+# English subject since this repository started. It was never enforced, and when
+# this hook landed 269 of the last 300 subjects and 180 of the last 300 bodies
+# were Korean. A rule that every commit breaks is not a rule; the 2026 harness
+# literature names prompt-only enforcement the first anti-pattern, and this was
+# the clearest instance of it here.
+#
+# The repository is open source and English-only. A commit message is read by
+# reviewers, by `git log` archaeology, and by every agent that reads history for
+# context, so it belongs to the same English surface as the guard text those
+# agents read. Scope is the message being written — history is never rewritten.
+#
+# WARNING: do not reach for `grep -P` here. The first draft did, and it passed
+# every Korean subject on macOS: BSD grep has no PCRE, `sh` resolves
+# `/usr/bin/grep` rather than an interactive shell's GNU grep, and `|| true`
+# turned that error into silence. The gate was dead the moment it was written
+# and looked alive from a developer shell. Node already has to exist to commit
+# here (`pre-commit` shells out to `pnpm`), and a missing Node fails closed
+# below rather than open.
+#
+# Bypassing is `--no-verify`, which `.claude/rules/git.md` prohibits and
+# `.claude/hooks/block-unsafe-git.sh` blocks for agents.
+
+set -e
+
+msg_file="$1"
+[ -n "$msg_file" ] || exit 0
+[ -f "$msg_file" ] || exit 0
+
+if ! command -v node >/dev/null 2>&1; then
+  printf '\ncommit-msg  node is required to check the message language.\n'
+  printf '  This gate fails closed: a guard that cannot run must not read as a pass.\n\n'
+  exit 1
+fi
+
+exec node "$(dirname "$0")/commit-msg-language.mjs" "$msg_file"
