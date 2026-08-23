@@ -4,7 +4,7 @@ import nextTs from 'eslint-config-next/typescript';
 import boundaries from 'eslint-plugin-boundaries';
 
 // Enforce FSD layer boundaries at the lint stage. Written with official
-// `boundaries/dependencies` + object-form selectors from boundaries v6 (2026~).
+// `boundaries/dependencies` + v7 entity selectors/policies (2026~).
 //   Docs: https://www.jsboundaries.dev/docs/rules/dependencies/
 
 // ── Design Charter §11 (existing): prohibit scale hover · purple-pink gradient ──────
@@ -979,54 +979,42 @@ const eslintConfig = defineConfig([
         2,
         {
           default: 'disallow',
-          rules: [
+          policies: [
             // Value imports — standard FSD layer direction.
             {
-              from: { type: 'app-layer' },
+              from: { element: { type: 'app-layer' } },
               allow: {
-                to: {
-                  type: ['views', 'widgets', 'features', 'entities', 'shared'],
-                },
+                to: { element: { type: ['views', 'widgets', 'features', 'entities', 'shared'] } },
               },
             },
             {
-              from: { type: 'views' },
+              from: { element: { type: 'views' } },
               allow: {
-                to: { type: ['widgets', 'features', 'entities', 'shared'] },
+                to: { element: { type: ['widgets', 'features', 'entities', 'shared'] } },
               },
             },
             {
-              from: { type: 'widgets' },
-              allow: { to: { type: ['features', 'entities', 'shared'] } },
+              from: { element: { type: 'widgets' } },
+              allow: { to: { element: { type: ['features', 'entities', 'shared'] } } },
             },
             {
-              from: { type: 'features' },
-              allow: { to: { type: ['entities', 'shared'] } },
+              from: { element: { type: 'features' } },
+              allow: { to: { element: { type: ['entities', 'shared'] } } },
             },
             {
-              from: { type: 'entities' },
-              allow: { to: { type: ['shared'] } },
+              from: { element: { type: 'entities' } },
+              allow: { to: { element: { type: ['shared'] } } },
             },
             {
-              from: { type: 'shared' },
-              allow: { to: { type: ['shared'] } },
+              from: { element: { type: 'shared' } },
+              allow: { to: { element: { type: ['shared'] } } },
             },
             // Type-only imports (`import type ...`) are allowed in all directions.
             // They vanish at compile time, so there is no runtime dependency and they do not
             // create architecture coupling. Allows reasonable cases like shared/mocks/demo-data referencing entity shapes as types, or features referencing types of other features. `dependency.kind` is a selector-level field.
             {
               from: {
-                type: [
-                  'app-layer',
-                  'views',
-                  'widgets',
-                  'features',
-                  'entities',
-                  'shared',
-                ],
-              },
-              allow: {
-                to: {
+                element: {
                   type: [
                     'app-layer',
                     'views',
@@ -1035,6 +1023,20 @@ const eslintConfig = defineConfig([
                     'entities',
                     'shared',
                   ],
+                },
+              },
+              allow: {
+                to: {
+                  element: {
+                    type: [
+                      'app-layer',
+                      'views',
+                      'widgets',
+                      'features',
+                      'entities',
+                      'shared',
+                    ],
+                  },
                 },
                 dependency: { kind: 'type' },
               },
