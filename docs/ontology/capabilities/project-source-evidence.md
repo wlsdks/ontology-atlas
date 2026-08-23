@@ -8,6 +8,8 @@ display_en: Project Source Evidence Receipt
 domain: domains/project-portfolio
 path: src/shared/lib/project-source-receipt.ts
 created_by: "agent:codex"
+dependencies: [capabilities/vault-ontology]
+relation_notes: { capabilities/vault-ontology: "Source receipts derive project scope, capability and element path claims, and typed relations from the ontology schema; schema changes alter which witnesses and impacts the receipt can verify." }
 ---
 
 ## Definition
