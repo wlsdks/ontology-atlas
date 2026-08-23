@@ -155,15 +155,15 @@ export function runFocusedChecks({
   spawn = spawnSync,
 } = {}) {
   if (commands.length === 0) {
-    stdout.write('[focused-checks] 돌릴 것이 없다 — 바뀐 경로에 걸리는 검사가 없다.\n');
+    stdout.write('[focused-checks] nothing to run: no check matches the changed paths.\n');
     return 0;
   }
   const before = commands.length;
   commands = collapsePlaywrightCommands(commands);
   if (commands.length !== before) {
     stdout.write(
-      `[focused-checks] e2e ${before - commands.length + 1}건을 한 번의 Playwright 실행으로 합쳤다 ` +
-        `(${before} → ${commands.length}개). 같은 spec 을 같은 수만큼 돈다 — 기동만 1회다.\n`,
+      `[focused-checks] collapsed ${before - commands.length + 1} e2e commands into one Playwright run ` +
+        `(${before} -> ${commands.length}). The same specs run the same number of times; only startup happens once.\n`,
     );
   }
   for (const [index, suggestion] of commands.entries()) {
@@ -175,12 +175,12 @@ export function runFocusedChecks({
     });
     const code = result.status ?? 1;
     if (code !== 0) {
-      stdout.write(`\n[focused-checks] 실패: ${suggestion.command}\n`);
-      stdout.write('[focused-checks] 고치고 다시 돌려라. 남은 검사는 안 돌렸다.\n');
+      stdout.write(`\n[focused-checks] failed: ${suggestion.command}\n`);
+      stdout.write('[focused-checks] fix it and run again. The remaining checks did not run.\n');
       return code;
     }
   }
-  stdout.write(`\n[focused-checks] ${commands.length}개 통과\n`);
+  stdout.write(`\n[focused-checks] ${commands.length} passed\n`);
   return 0;
 }
 
@@ -221,7 +221,7 @@ export function suggestFocusedChecksUsage() {
   return `Usage:
   pnpm checks:changed
   pnpm checks:changed -- <path...>
-  pnpm checks:changed -- --run          # 추천을 그대로 실행 (첫 실패에서 멈춘다)
+  pnpm checks:changed -- --run          # run every recommendation, stopping at the first failure
 
 Suggests the first focused checks for changed files so agents avoid full-suite
 verification by default. With no path arguments it
