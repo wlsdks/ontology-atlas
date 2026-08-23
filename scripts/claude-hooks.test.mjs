@@ -91,7 +91,7 @@ describe('agent hooks', () => {
         const result = runPublishHook(config.publishHook, payload);
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
         assert.match(result.stdout, /"permissionDecision": "deny"/, `${config.name}: ${command}`);
-        assert.match(result.stdout, /npm publish 가드/, `${config.name}: ${command}`);
+        assert.match(result.stdout, /npm publish guard/, `${config.name}: ${command}`);
       }
     }
   });
@@ -221,7 +221,7 @@ describe('inject-ontology-summary health awareness', () => {
   // **found the vault but could not read it** into the same silence. The latter is
   // the moment a session most needs to hear about — and adding one node by hand puts
   // you in exactly that state.
-  it('말한다 — 볼트를 찾았는데 컴파일이 안 되면 침묵하지 않는다', async (t) => {
+  it('speaks up: a vault that is found but will not compile is never silent', async (t) => {
     if (!hasPython) {
       t.skip('python3 unavailable — hook is silent by design');
       return;
@@ -232,10 +232,10 @@ describe('inject-ontology-summary health awareness', () => {
         const result = runInjectHook(hook, dir);
         // It never blocks the session — a SessionStart hook always exits 0.
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
-        assert.match(result.stdout, /will not compile/, `${hook}: 침묵하지 않는다`);
-        assert.match(result.stdout, /missing-uid/, `${hook}: 무엇이 문제인지 댄다`);
-        assert.match(result.stdout, /ontology-atlas health/, `${hook}: 고칠 명령을 댄다`);
-        assert.ok(result.stdout.length < 700, `${hook}: 세션 문맥은 여전히 짧다`);
+        assert.match(result.stdout, /will not compile/, `${hook}: does not stay silent`);
+        assert.match(result.stdout, /missing-uid/, `${hook}: names what is broken`);
+        assert.match(result.stdout, /ontology-atlas health/, `${hook}: names the command that fixes it`);
+        assert.ok(result.stdout.length < 700, `${hook}: session context stays short`);
       }
     } finally {
       await rm(dir, { recursive: true, force: true });
@@ -245,13 +245,13 @@ describe('inject-ontology-summary health awareness', () => {
   // The silence convention itself must hold — adding no noise to a repository with
   // no vault is this hook's original contract. This measures that the check above
   // did not widen it.
-  it('볼트가 아예 없으면 종전대로 조용하다', async () => {
+  it('stays silent, as before, when there is no vault at all', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-empty-'));
     try {
       for (const hook of INJECT_HOOKS) {
         const result = runInjectHook(hook, dir);
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
-        assert.equal(result.stdout, '', `${hook}: 빈 폴더에는 아무 말도 안 한다`);
+        assert.equal(result.stdout, '', `${hook}: says nothing in an empty folder`);
       }
     } finally {
       await rm(dir, { recursive: true, force: true });
