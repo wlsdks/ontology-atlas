@@ -913,17 +913,20 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
 /**
  * This section's one idea (reworked 2026-08-18, `docs/DECISIONS.md`):
  *
- * > **The agent lives inside the app — it analyzes and repairs the ontology through conversation alone.**
+ * > **A guarded agent can live inside the app; other agents connect through MCP outside it.**
  *
  * The previous version was an `mcp-verify` terminal and the owner rejected it (*"I have no idea what this means"* — I have no idea what this means; it showed a developer verifying configuration, not
  * the thing being sold). The real thing already exists: `AcpChatPanel` (the in-app conversation),
- * `AcpRuntimeSettings`, and the vault capability "in-app coding agent runner (ACP)". The scene
- * (`AcpChatScene`) re-enacts a measured round trip of that real thing (ledger 2026-08-16 (7)).
+ * `AcpRuntimeSettings`, and the vault capability "in-app coding agent runner (ACP)". Eligibility
+ * requires an app-owned write review and folder boundary; current copy names Claude Agent for
+ * that path and Codex for external MCP setup. The scene (`AcpChatScene`) re-enacts a measured
+ * round trip of the guarded path (ledger 2026-08-16 (7)).
  *
  * Copy boundaries come from ledger 2026-08-16 (5): ① we redistribute nothing (the adapter runs
  * via npx on the user's machine) ② "Claude Code" is forbidden where our runner list is described —
  * only the registry's permitted name (Claude Agent) ③ it stands only on **"connect the agent you
- * already use"** — never implying we provide model access.
+ * already use"** — never implying we provide model access or that every detected runtime can open
+ * inside the app.
  */
 function AgentSection() {
   const t = useTranslations('download');

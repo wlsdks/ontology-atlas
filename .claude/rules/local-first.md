@@ -19,6 +19,11 @@ connection—either the user's own API key or a local model—is allowed only wh
 the user opts in, the UI states what leaves the computer, and a local audit log
 records each transfer.
 
+ACP and externally connected MCP agents are a separate provider boundary. Atlas
+must distinguish its local stdio MCP child from the coding agent's provider
+traffic and must not claim that `.ontology-atlas/llm-audit.jsonl` covers
+provider-owned transfers.
+
 ## Layer 1 promises (R10)
 
 1. **Start without a gate.** `pnpm dev` opens a usable first screen. R10 removed

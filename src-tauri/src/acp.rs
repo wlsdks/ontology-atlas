@@ -142,16 +142,17 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
     },
 ];
 
-// ⚠️ **codex is not here — it failed upon verification** (measured 2026-08-16).
+// ⚠️ **codex is not here — it failed two independent verification boundaries.**
 //
 // We set `CODEX_HOME` to the isolated directory and wrote `approval_policy = "on-request"` ·
 // `sandbox_mode = "workspace-write"`, but the session's default mode was
 // `agent` (codex's mode names — read-only/agent/agent-full-access — are completely different from
 // claude's) and it wrote files **outside** the working folder with **0** permission requests.
 //
-// So we do not list it. Listing it would make the UI say "this tool is blocked by the app",
-// which claims verification of something we haven't checked.
-// Blocking codex requires understanding its approval model separately, which is a future task.
+// Installed acceptance on 2026-08-24 added the missing MCP-write measurement: `read-only`
+// blocked direct files but a self-registered Atlas `add_relation` changed the vault without any
+// permission request. So we do not list or launch it. Restoring Codex chat requires an app-owned
+// checkpoint around both self-registered and injected MCP writes.
 
 fn isolation_for(id: &str) -> Option<&'static IsolationSpec> {
     ISOLATION.iter().find(|s| s.id == id)
@@ -1242,23 +1243,23 @@ pub(crate) fn config_env_for(runtime_id: &str) -> Option<&'static str> {
     isolation_for(runtime_id).map(|s| s.config_env)
 }
 
-/// If the executor supports config isolation, **must** prepare it; failures are raised as startup failures.
+/// Prepares the app-owned permission boundary before an ACP child can start.
 ///
-/// `None` means we do not fabricate isolation for unverified executors. Conversely,
-/// if `config_env_for()` returns a value, the UI has already said "gate present", so there is no option to launch in unisolated state after preparation failure.
+/// A runtime without verified configuration isolation is rejected here even if UI filtering fails.
+/// A session mode is not enough: Codex `read-only` blocked direct file access but allowed a
+/// self-registered Atlas MCP write without emitting a permission request (2026-08-24 acceptance).
 pub(crate) fn prepare_runtime_isolation(
     runtime_id: &str,
     app_data_dir: &Path,
     home: Option<&Path>,
     cli: Option<&Path>,
     path_env: &str,
-) -> Result<Option<(&'static str, PathBuf)>, String> {
-    let Some(env) = config_env_for(runtime_id) else {
-        return Ok(None);
-    };
+) -> Result<(&'static str, PathBuf), String> {
+    let env = config_env_for(runtime_id)
+        .ok_or_else(|| format!("permission-gate-unsupported:{runtime_id}"))?;
     let dir = prepare_isolated_config(runtime_id, app_data_dir, home, cli, path_env)
         .map_err(|reason| format!("isolation-failed:{reason}"))?;
-    Ok(Some((env, dir)))
+    Ok((env, dir))
 }
 
 /// 자격증명 링크를 건다. 이미 올바른 곳을 가리키면 그대로 둔다.
@@ -2942,16 +2943,16 @@ mod tests {
     }
 
     #[test]
-    fn unguarded_runtime_does_not_invent_an_isolation_requirement() {
-        let isolation = prepare_runtime_isolation(
-            "gemini-acp",
+    fn unguarded_runtime_cannot_cross_the_native_chat_boundary() {
+        let error = prepare_runtime_isolation(
+            "codex-acp",
             Path::new("/path/that/does/not/need/to/exist"),
             None,
             None,
             "",
         )
-        .unwrap();
-        assert!(isolation.is_none());
+        .unwrap_err();
+        assert_eq!(error, "permission-gate-unsupported:codex-acp");
     }
 
     #[test]

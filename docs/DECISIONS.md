@@ -40,6 +40,42 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-24 (111) — Codex leaves in-app chat until Atlas MCP writes have an app-owned gate
+
+**Prior decisions**: 2026-08-16 (8) treated Codex `read-only` session mode as a
+permission gate and 2026-08-17 (23) made successful gate setup a session-start
+condition. This record overturns only the claim that the Codex session mode also
+guards Atlas MCP writes. Claude's isolated-config gate and external
+Codex MCP setup remain unchanged.
+
+**Observed falsifier**: installed `1.0.0-rc.10` acceptance opened a real Codex
+session in `read-only` mode against a disposable storefront vault. The model
+called Atlas `add_relation`; no `session/request_permission` or review card
+appeared, yet the file immediately gained `relates: [capabilities/refund]` and
+the requested `relation_notes`. The earlier test had measured direct file writes
+and read-only MCP calls separately. It never measured an MCP write, so its green
+result did not cover the promise the UI made.
+
+**Solo PO pass**: 22/24 (problem 4, user moment 4, differentiation 3,
+ontology value 4, agent value 3, verification 4; no fatal zero).
+
+**Decision (accountable: Jinan, implemented by Codex)**: remove `codex-acp`
+from the guarded-runtime table. Codex remains detected and retains its external
+MCP connection/config path, but the installed app does not offer Codex in-app
+chat. Only Claude Agent, whose isolated configuration produces the permission
+request path the app owns, remains eligible. Do not call a session mode a write
+gate unless an installed-app probe shows both reject-without-write and
+allow-once-with-write for both self-registered and injected Atlas MCP mutations.
+
+**Recorded dissent**: hiding Codex chat removes a useful read-only conversation
+surface even though only its write path is unsafe. **Falsifier**: an app-owned
+MCP proxy or server capability token reliably pauses every Codex Atlas write,
+survives a vault self-registered `.codex/config.toml`, and proves reject/allow
+on a disposable vault. Restore Codex chat then; do not restore it from a direct
+file sandbox result.
+
+**Status**: active; overturns the Codex portion of decisions (8) and (23).
+
 ## 2026-08-24 (110) — Retire the consumer-free Skills form-column specification
 
 **Prior decision**: 2026-08-21 (91) completely retired the standalone Skills

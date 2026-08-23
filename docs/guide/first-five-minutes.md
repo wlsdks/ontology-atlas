@@ -41,7 +41,7 @@ Files with frontmatter become nodes immediately, while files without it remain j
 
 It requires file system access permissions, so it works on **Chrome · Edge · Safari 18.2+ · Opera**. Firefox cannot open folders because it lacks this API. In that case, the screen will inform you and guide you to where to get the app.
 
-The folder does not leave the browser.
+Opening the folder in Atlas does not upload it to an Atlas backend. If you later connect a coding agent, that agent may send prompts and context to its own provider.
 
 ## 3. Starting from the Codebase (for Developers)
 

@@ -95,10 +95,9 @@ export interface AcpRuntimeStatus {
   /**
    * Can the app isolate this runtime's configuration.
    *
-   * **False means there is no permission checkpoint.** The tool's own configuration is
-   * used as-is, so someone who set it to "never ask" gets no prompt even when launched
-   * from the app. The screen must state that on the row — never omit it or leave it
-   * implicit.
+   * **False means there is no app-owned permission checkpoint.** The tool's own configuration is
+   * used as-is, and a session mode is not enough to guard MCP writes. The summary before the list
+   * must state that only guarded runtimes can open in-app chat.
    */
   isolated: boolean;
 }

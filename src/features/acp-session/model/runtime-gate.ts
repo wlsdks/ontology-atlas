@@ -6,7 +6,7 @@
  * | | Claude | Codex |
  * |---|---|---|
  * | config isolation (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`) | **works** | it is read, but **the approval policy is ignored** |
- * | session mode (`session/set_mode`) | has no read-only | **`read-only` works** |
+ * | session mode (`session/set_mode`) | has no read-only | blocks direct files, **not Atlas MCP writes** |
  *
  * The codex measurement was the surprise. Putting `approval_policy = "untrusted"` and
  * `sandbox_mode = "workspace-write"` into an isolated `CODEX_HOME` still produced **zero permission
@@ -14,15 +14,10 @@
  * honoured — so our config **is read, and only the approval policy is overridden by the adapter's
  * session mode.**
  *
- * So for codex the gate is raised by changing the mode right after the session stands.
- *
- * ## Why the map is still writable under `read-only`
- *
- * What that mode blocks is **the agent touching files directly**, and every vault write of ours goes
- * through **the MCP server we wired**. Measured, `mcp.atlas-vault.list_concepts` worked normally
- * under `read-only`, and only writes outside the vault were asked about and then blocked. That is
- * exactly the shape of ledger decision ⑤ (*"writes go only through Atlas MCP tools, in every case"*),
- * so this mode does not cut a feature — **it enforces that decision.**
+ * The earlier conclusion that this made Codex guarded was overturned by installed-app acceptance
+ * on 2026-08-24. A self-registered Atlas `add_relation` produced no `session/request_permission`, no review
+ * card, and changed the vault immediately. A mode can be called read-only while an MCP child still
+ * mutates disk; the app must own the MCP write checkpoint before Codex is eligible for in-app chat.
  */
 
 /**
@@ -30,9 +25,7 @@
  * **no mode is imposed on a tool that was never measured** (imposing one without knowing what that
  * name means on that tool is guesswork).
  */
-export const GATED_SESSION_MODE: Readonly<Record<string, string>> = {
-  'codex-acp': 'read-only',
-};
+export const GATED_SESSION_MODE: Readonly<Record<string, string>> = {};
 
 /**
  * Does this runtime **have a permission gate** — may the screen say so?

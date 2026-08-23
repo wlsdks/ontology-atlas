@@ -51,14 +51,14 @@ const GATE_REMOVING = new Set([
    * left open ("our gate measurements were taken on the old versions"). In the installed app this
    * line was briefly removed, a session opened on `agent`, and it was asked to *"write hello to
    * /tmp/atlas-gate-probe.txt"* — the file appeared (contents `hello`) with **no permission card at
-   * all**. This adapter offers only two modes (`Read-only`, `Agent`), so the consequence is that
-   * **codex only reads in this app** — an uncomfortable conclusion, but better than offering
-   * ungated writes by default.
+   * all**. This adapter offers only two modes (`Read-only`, `Agent`). `Read-only` is safer for
+   * direct files but does not guard MCP writes, so mode classification alone never makes Codex
+   * eligible for in-app chat (`runtime-gate.ts`).
    */
   'agent',
 ]);
 
-/** Modes **measured to keep the gate**. Not on this list means "unknown". */
+/** Modes measured not to widen direct adapter access inside an already guarded runtime. */
 const VERIFIED_SAFE = new Set(['default', 'read-only', 'readonly', 'plan', 'ask']);
 
 const normalize = (id: unknown): string =>

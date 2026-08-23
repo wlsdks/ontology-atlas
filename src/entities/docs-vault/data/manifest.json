@@ -399,8 +399,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The meaning of the mark and the usage rules for assets. The source of truth for coordinates is src/shared/ui/brand-mark.tsx, and this document defines what it says and where to use it. A knowledge map that helps you understand the entire codebase by starting from central concepts and following relationships and hierarc",
-      "wordCount": 1363,
-      "updatedAt": "2026-08-23",
+      "wordCount": 1377,
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {
@@ -410,9 +410,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. In the dome",
-      "wordCount": 77110,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Installed-a",
+      "wordCount": 77222,
+      "updatedAt": "2026-08-24",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -439,7 +439,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 165946,
+      "wordCount": 166249,
       "updatedAt": "2026-08-24",
       "linksOut": [
         "slug"
@@ -545,8 +545,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-22 (re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility redirect to /topology?index=expanded, /ontology/edit and /ontology/studio route to the contextual writer within th",
-      "wordCount": 22591,
-      "updatedAt": "2026-08-23",
+      "wordCount": 22651,
+      "updatedAt": "2026-08-24",
       "linksOut": [
         "slug",
         "project:slug",
@@ -612,8 +612,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Before deciding whether to install, watch it move first. The first screen is a read-only sample map. The map moves even before you select a folder. It is not an empty screen telling you to \"put data in first.\" Choose one of the two samples. · Sample · What it is · Code for this app · A map documenting how this tool des",
-      "wordCount": 685,
-      "updatedAt": "2026-08-23",
+      "wordCount": 709,
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {
@@ -695,9 +695,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "It involves pulling binaries from anonymous repositories onto your own computer. Therefore, we start by listing what it does not do. Vault exists only on your disk. Nothing is transmitted silently. There are no accounts, no servers, and no features locked behind a subscription. Even if you delete the app, the folder re",
-      "wordCount": 215,
-      "updatedAt": "2026-08-23",
+      "excerpt": "It involves pulling binaries from anonymous repositories onto your own computer. Therefore, we start by listing what it does not do. The vault's canonical files remain on your disk. Atlas has no backend, account, or telemetry, and opening or editing a folder does not upload it to Atlas. Even if you delete the app, the ",
+      "wordCount": 239,
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {
@@ -888,8 +888,8 @@
         ]
       },
       "headings": [],
-      "excerpt": "The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch only those whose isolation contract is verified (currently Claude Agent), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscription authen",
-      "wordCount": 1484,
+      "excerpt": "The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch only those with a verified app-owned permission gate (currently Claude Agent), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscription a",
+      "wordCount": 1475,
       "updatedAt": "2026-08-24",
       "linksOut": [
         "ontology/elements/agents-destination"
@@ -1480,7 +1480,7 @@
       "headings": [],
       "excerpt": "The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs",
       "wordCount": 559,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {

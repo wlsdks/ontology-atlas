@@ -7,6 +7,16 @@
 
 ---
 
+## 2026-08-24 · Codex in-app chat pauses until Atlas MCP writes have an app-owned review gate
+
+- Installed-app acceptance proved that Codex `read-only` blocks direct file writes but can still
+  execute a self-registered Atlas MCP write without emitting the permission request the review card
+  depends on. The app no longer offers Codex in-app chat while that gap exists.
+- Codex remains detected and its external MCP connection/config path is unchanged. Claude Agent,
+  whose isolated session produces the app-owned permission checkpoint, remains available in chat.
+- Agent setup copy now scopes the no-port/no-network claim to the Atlas MCP child process and says
+  plainly that the coding agent itself may communicate with its provider.
+
 ## 2026-08-23 · Selecting a node in the 3D dome lights its line to the top
 
 - In the dome view, pressing a node now lights the whole chain it hangs from (element to

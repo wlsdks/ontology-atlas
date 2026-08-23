@@ -83,17 +83,16 @@ pub(crate) const CHECK_IDS: &[&str] = &[
 /// `repair()` 가 실제로 처리하는 검사. `fixable: true` 는 여기 있는 것만 될 수 있다.
 pub(crate) const REPAIRABLE_IDS: &[&str] = &["npx-cache", "config-dir", "credentials-link", "shadow-keychain"];
 
-/// **세션 모드로 관문을 세우는 실행기.**
+/// **세션 모드만으로 관문을 세울 수 있다고 검증된 실행기.**
 ///
 /// 화면 쪽 `GATED_SESSION_MODE`(`src/features/acp-session/model/runtime-gate.ts`)의
 /// 사본이다. 사본이 둘인 이유는 판정하는 자리가 둘이기 때문 — 세션을 여는 것은
 /// 화면이고, 진단하는 것은 여기다. 어긋나면
 /// `tests/contract/agent-doctor-checks.contract.test.ts` 가 막는다.
 ///
-/// codex 가 여기 있는 이유: 격리한 `CODEX_HOME` 을 읽기는 하는데 **승인 정책만
-/// 어댑터의 세션 모드가 덮어쓴다**(2026-08-16 실측). 그래서 관문이 없는 것이
-/// 아니라 **다른 길**이다.
-pub(crate) const SESSION_MODE_GATE: &[(&str, &str)] = &[("codex-acp", "read-only")];
+/// 2026-08-24 설치본에서 Codex `read-only`가 Atlas MCP write를 막지 못했다.
+/// 따라서 현재 표는 의도적으로 비어 있고, Codex는 인앱 대화를 열지 않는다.
+pub(crate) const SESSION_MODE_GATE: &[(&str, &str)] = &[];
 
 /// 진단에 필요한 바깥 세계. 테스트가 갈아 끼울 수 있게 값으로 받는다.
 pub(crate) struct DoctorContext<'a> {
@@ -161,9 +160,8 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
      * ⚠️ **관문을 세우는 방식이 실행기마다 다르다** (2026-08-20 정정).
      *
      * 아래 넷은 **설정 격리**로 관문을 세우는 실행기의 이야기다. codex 는 그
-     * 방식이 안 먹혀서(격리한 `CODEX_HOME` 을 읽기는 하는데 승인 정책만
-     * 어댑터가 덮어쓴다) 대신 **세션 모드 `read-only`** 로 관문을 세운다 —
-     * 실측으로 확인된 다른 길이지 관문이 없는 것이 아니다
+     * 방식이 안 먹히고 `read-only` 세션 모드도 Atlas MCP write를 막지 못했다.
+     * 따라서 현재는 관문이 없는 실행기이며 인앱 대화를 열지 않는다
      * (`src/features/acp-session/model/runtime-gate.ts`).
      *
      * 그래서 격리를 안 쓰는 실행기에는 이 넷을 **아예 안 낸다.** 처음 판은
@@ -401,7 +399,7 @@ mod tests {
     }
 
     #[test]
-    fn gate_is_reported_for_both_mechanisms() {
+    fn codex_read_only_is_not_reported_as_a_permission_gate() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-h-{}", std::process::id()));
 
         // 격리로 막는 실행기.
@@ -410,13 +408,14 @@ mod tests {
         assert_eq!(gate.state, "ok");
         assert_eq!(gate.detail.as_deref(), Some("isolation"));
 
-        // 세션 모드로 막는 실행기 — 관문이 없는 것이 아니라 다른 길이다.
+        // `read-only`는 직접 파일 쓰기만 막고 Atlas MCP write는 막지 못했다.
         let mut c = ctx(&base, None);
         c.runtime_id = "codex-acp";
         let codex = diagnose(&c);
         let gate = codex.iter().find(|c| c.id == "gate").unwrap();
-        assert_eq!(gate.state, "ok");
-        assert_eq!(gate.detail.as_deref(), Some("session-mode:read-only"));
+        assert_eq!(gate.state, "problem");
+        assert!(!gate.fixable);
+        assert_eq!(gate.detail, None);
     }
 
     #[test]
@@ -499,9 +498,8 @@ mod tests {
 
     /// **해당 없는 것을 「모른다」라고 말하지 않는다** (2026-08-20 정정).
     ///
-    /// codex 는 설정 격리가 아니라 세션 모드로 관문을 세운다. 그런데 첫 판은
-    /// 격리 검사 넷을 `unknown` 으로 냈고, 화면에 「앱 몫 설정이 준비됐나 —
-    /// 확인 못 했어요」가 떠서 멀쩡한 도구가 반쯤 고장 난 것처럼 읽혔다.
+    /// codex 는 설정 격리를 쓰지 않는다. 관문 자체는 이제 problem 이지만 해당
+    /// 없는 격리 검사 넷까지 `unknown` 으로 늘어놓지는 않는다.
     #[test]
     fn a_runtime_without_isolation_gets_no_isolation_checks() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-g-{}", std::process::id()));
