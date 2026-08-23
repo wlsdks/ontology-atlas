@@ -175,7 +175,7 @@ test("desktop smoke chunks prove current route meaning", () => {
     ],
     "/ontology": ["/topology/?", "index", "expanded"],
     "/topology": ["topology-map-v2-canvas", "topology-concept-search"],
-    "/ontology/edit": ["/ontology/studio/?node=", "/ontology/studio/"],
+    "/ontology/edit": ["/topology/?p=", "/topology/?workbench=create"],
     "/ontology/insights": [
       "maintenance-board",
       "one-tab-one-question",
@@ -233,7 +233,10 @@ test("smoke markers must exist in product source, not only in generated data", (
       const rel = path.relative(repoRoot, full);
       if (GENERATED.some((g) => rel.startsWith(g))) continue;
       if (entry.isDirectory()) walk(full);
-      else if (/\.(tsx?|json|css)$/.test(entry.name)) files.push(full);
+      else if (
+        /\.(tsx?|json|css)$/.test(entry.name)
+        && !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(entry.name)
+      ) files.push(full);
     }
   };
   for (const root of roots) {
@@ -246,8 +249,10 @@ test("smoke markers must exist in product source, not only in generated data", (
   const orphaned = [];
   for (const [route, markers] of Object.entries(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT)) {
     for (const marker of markers) {
-      // Path fragments (`/topology/?`) and ordinary words (`index`) are not component markers.
-      if (marker.startsWith("/") || !/[-.]/.test(marker)) continue;
+      // Ordinary words (`index`) are not stable markers. Route fragments are:
+      // they must still appear in current product source or a retired redirect can
+      // survive here until the release build, which happened for `/ontology/edit`.
+      if (!marker.startsWith("/") && !/[-.]/.test(marker)) continue;
       if (!haystack.includes(marker)) orphaned.push(`${route} → ${marker}`);
     }
   }
