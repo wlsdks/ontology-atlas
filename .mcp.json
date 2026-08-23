@@ -7,6 +7,16 @@
         "OATLAS_VAULT": "./docs/ontology",
         "OATLAS_REPO_ROOT": "."
       }
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@1.7.0",
+        "--isolated",
+        "--no-usage-statistics",
+        "--redact-network-headers"
+      ]
     }
   }
 }

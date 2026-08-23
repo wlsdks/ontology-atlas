@@ -52,6 +52,8 @@ interface AgentFileRule {
  * Known agent-file patterns → which tools read them. Data, not code — keep in
  * byte-for-byte sync with `AGENT_FILE_RULES` in `cli/src/lib/agent-files.mjs`.
  */
+const MCP_TOOL_RE = /\bmcp__([a-z0-9][a-z0-9_-]*)__[a-z0-9_]+/gi;
+
 const NON_ENGLISH_SCRIPT_RE =
   /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/gu;
 
@@ -130,6 +132,13 @@ export interface AgentFilesAnalysis {
       scannedFiles: number;
       flaggedFiles: number;
       codePoints: number;
+    };
+    mcpGrants: {
+      status: AgentDriftCheckStatus;
+      briefsChecked: number;
+      grantsChecked: number;
+      undeclaredServers: string[];
+      configUnparseable: boolean;
     };
     codexSizeCap: {
       status: AgentDriftCheckStatus;
@@ -562,6 +571,93 @@ export function analyzeAgentFiles({
    * files are one level deep, so the worst case any path reaches is root plus
    * the largest of them.
    */
+  /**
+   * ⑥ Agent-brief MCP grants. A brief's `tools:` list is an allowlist, not a
+   * request: naming `mcp__chrome-devtools__evaluate_script` on a seat whose
+   * server no repository config declares does not fail loudly — the tool is
+   * simply absent and the seat runs on unable to measure anything. A personal
+   * `~/.claude.json` cannot be the repository's contract; what a fresh clone can
+   * start is what `.mcp.json` says.
+   *
+   * `absent` and `unparseable` must not collapse together. No `.mcp.json` means
+   * nothing to contradict. One that will not parse declares no server at all,
+   * which makes every grant undeclared — reading that as a pass is fail-open.
+   */
+  const mcpGrants = (() => {
+    const mcpRecord = recordByPath.get('.mcp.json');
+    const briefs = records.filter(
+      (r) => r.kind === 'agent' && typeof r.entry.content === 'string',
+    );
+    let state: 'absent' | 'parsed' | 'unparseable' = 'absent';
+    let declared = new Set<string>();
+    if (mcpRecord && typeof mcpRecord.entry.content === 'string') {
+      try {
+        const servers = (JSON.parse(mcpRecord.entry.content) as { mcpServers?: unknown })
+          ?.mcpServers;
+        declared = new Set(servers && typeof servers === 'object' ? Object.keys(servers) : []);
+        state = 'parsed';
+      } catch {
+        state = 'unparseable';
+      }
+    }
+    if (state === 'absent' || briefs.length === 0) {
+      return {
+        status: 'not-applicable' as AgentDriftCheckStatus,
+        briefsChecked: 0,
+        grantsChecked: 0,
+        undeclaredServers: [] as string[],
+        configUnparseable: false,
+      };
+    }
+    if (state === 'unparseable') {
+      drift.push({
+        check: 'mcp-grants',
+        code: 'mcp-config-unparseable',
+        path: '.mcp.json',
+        message:
+          '.mcp.json exists but will not parse, so it declares no server: every agent-brief '
+          + 'MCP grant is undeclared and a fresh clone silently loses those tools',
+        detail: {},
+      });
+      if (mcpRecord && !mcpRecord.drift.includes('mcp-config-unparseable')) {
+        mcpRecord.drift.push('mcp-config-unparseable');
+      }
+    }
+    const undeclared = new Set<string>();
+    let grantsChecked = 0;
+    for (const record of briefs) {
+      const frontmatter = (record.entry.content as string).split('\n---')[0];
+      const seen = new Set<string>();
+      for (const [, server] of frontmatter.matchAll(MCP_TOOL_RE)) {
+        grantsChecked += 1;
+        if (declared.has(server) || seen.has(server)) continue;
+        seen.add(server);
+        undeclared.add(server);
+        drift.push({
+          check: 'mcp-grants',
+          code: 'undeclared-mcp-server',
+          path: record.path,
+          message:
+            `${record.path} grants tools from the MCP server "${server}", which .mcp.json `
+            + 'does not declare; a fresh clone gets the seat without the tools and no error',
+          detail: { server },
+        });
+        if (!record.drift.includes('undeclared-mcp-server')) {
+          record.drift.push('undeclared-mcp-server');
+        }
+      }
+    }
+    return {
+      status: (undeclared.size > 0 || state === 'unparseable'
+        ? 'drift'
+        : 'ok') as AgentDriftCheckStatus,
+      briefsChecked: briefs.length,
+      grantsChecked,
+      undeclaredServers: [...undeclared].sort(),
+      configUnparseable: state === 'unparseable',
+    };
+  })();
+
   const codexSizeCap = (() => {
     const agents = recordByPath.get('AGENTS.md');
     const nested = records.filter((r) => r.ruleId === 'nested-agents-md');
@@ -613,7 +709,15 @@ export function analyzeAgentFiles({
     for (const tool of record.tools) byTool[tool] = (byTool[tool] ?? 0) + 1;
   }
 
-  const checks = { claudeAgentsBridge, skillCopy, agentCopy, atRefs, codexSizeCap, agentLanguage };
+  const checks = {
+    claudeAgentsBridge,
+    skillCopy,
+    agentCopy,
+    atRefs,
+    codexSizeCap,
+    agentLanguage,
+    mcpGrants,
+  };
   const publicRecords: AgentFileRecord[] = records.map((record) => ({
     path: record.path,
     ruleId: record.ruleId,

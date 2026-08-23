@@ -90,6 +90,10 @@ routing only: when to open a gate, not how it runs.
   investigation. Public references are principle sources; never copy their
   assets or wording. A new design rule needs lint enforcement, an inventory and
   a probe, and its values live only in `docs/DESIGN-SYSTEM.md`.
+- **Browser measurement** — the design and craft seats read rendered geometry
+  through the `chrome-devtools` server that `.mcp.json` declares. A seat may
+  only name a server declared there; a personal agent config is not this
+  repository's contract, and `pnpm agents:check` enforces it.
 - **Councils** — `/po-council` before expensive or hard-to-reverse work: a new
   or removed surface, a public MCP/CLI/schema contract, positioning, or a first
   public release. `chief` seats it and never edits code. `/design-council` for

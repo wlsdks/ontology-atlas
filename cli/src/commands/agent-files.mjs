@@ -251,6 +251,13 @@ function render(result) {
       `English-only agent text (${result.checks.agentLanguage.scannedFiles} scanned · ${result.checks.agentLanguage.flaggedFiles} flagged · ${result.checks.agentLanguage.codePoints} non-English code points)`,
     ],
     [
+      'mcp-grants',
+      result.checks.mcpGrants.status,
+      result.checks.mcpGrants.status === 'not-applicable'
+        ? 'no .mcp.json or no agent briefs to check'
+        : `agent-brief MCP grants declared in .mcp.json (${result.checks.mcpGrants.briefsChecked} briefs · ${result.checks.mcpGrants.grantsChecked} grants · ${result.checks.mcpGrants.undeclaredServers.length} undeclared server${result.checks.mcpGrants.undeclaredServers.length === 1 ? '' : 's'})`,
+    ],
+    [
       'codex-size-cap',
       result.checks.codexSizeCap.status,
       result.checks.codexSizeCap.agentsMdBytes === null
@@ -316,6 +323,7 @@ function printUsage(stream = process.stderr) {
       `.github/copilot-instructions.md, .codex, .mcp.json) plus drift\n` +
       `checks: CLAUDE.md ↔ AGENTS.md import bridge, duplicated skill-tree\n` +
       `byte diff, duplicated agent-brief byte diff, @reference existence,\n` +
+      `agent-brief MCP grants declared in .mcp.json,\n` +
       `and the Codex 32 KiB cap measured across the merged root + nested set.\n\n` +
       `--english-only adds a check that no agent file carries Hangul, kana or\n` +
       `Han. It is opt-in: a vault or repository may legitimately be written in\n` +
