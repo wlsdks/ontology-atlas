@@ -876,6 +876,7 @@ describe('focused check suggestions', () => {
       'src/views/ontology-insights/lib/census-health.ts',
       'src/views/ontology-insights/ui/OntologyInsightsPage.tsx',
       'src/views/ontology-insights/ui/parts/InsightsHeroCensus.tsx',
+      'src/views/ontology-insights/ui/tabs/OverviewTab.tsx',
       'src/widgets/domain-capacity-bar/ui/DomainCapacityBar.tsx',
     ];
     const command = 'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts';
@@ -910,19 +911,31 @@ describe('focused check suggestions', () => {
     assert.deepEqual(matches[0].paths, paths);
   });
 
+  it('suggests the touch-target E2E for the selected-node panel owner', () => {
+    const paths = ['src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx'];
+    const command = 'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts';
+    const result = suggestFocusedChecks(paths);
+    const matches = result.commands.filter((row) => row.command === command);
+
+    assert.equal(matches.length, 1);
+    assert.deepEqual(matches[0].paths, paths);
+  });
+
   it('does not broaden installed-audit E2E mappings to neighboring tests or helpers', () => {
     const protectedCommands = new Set([
       'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts',
       'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts',
       'pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts',
       'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
+      'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts',
     ]);
     const result = suggestFocusedChecks([
       'src/widgets/topology-map-v2/interaction/free-area.test.ts',
       'src/views/home/model/use-node-datasheet-model.ts',
-      'src/views/ontology-insights/ui/tabs/OverviewTab.tsx',
+      'src/views/ontology-insights/ui/tabs/OverviewTab.test.tsx',
       'src/widgets/domain-capacity-bar/ui/DomainCapacityLegend.tsx',
       'src/features/ontology-change-review/ui/OntologyChangeReview.test.tsx',
+      'src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.test.tsx',
     ]);
 
     assert.deepEqual(

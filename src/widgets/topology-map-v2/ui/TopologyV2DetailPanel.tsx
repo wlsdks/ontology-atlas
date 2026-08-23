@@ -1432,7 +1432,7 @@ export function TopologyV2DetailPanel({
                     shape: "card",
                     size: "sm",
                     className:
-                      "min-w-0 text-left border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]",
+                      "atlas-touch-floor min-w-0 text-left border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]",
                   })}
                 >
                   <span className="shrink-0 text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
@@ -1569,7 +1569,7 @@ export function TopologyV2DetailPanel({
                 title={labels.actionAskAgentTip}
                 data-testid="topology-v2-detail-panel-action-ask-agent"
                 data-action-role="primary"
-                className="min-w-0 flex-1 rounded-card"
+                className="atlas-touch-floor min-w-0 flex-1 rounded-card"
               >
                 <MessageCircle size={ICON_SIZE.sm} aria-hidden />
                 <span className="truncate">{labels.actionAskAgent}</span>
@@ -1581,7 +1581,7 @@ export function TopologyV2DetailPanel({
                 aria-label={labels.handoff}
                 data-testid="topology-v2-detail-panel-action-handoff"
                 data-action-role="primary"
-                className="min-w-0 flex-1 rounded-card"
+                className="atlas-touch-floor min-w-0 flex-1 rounded-card"
               >
                 <Copy size={ICON_SIZE.sm} aria-hidden />
                 <span className="truncate">{labels.actionCopyHandoff}</span>
@@ -1728,7 +1728,7 @@ export function TopologyV2DetailPanel({
                     shape: "card",
                     size: "sm",
                     className:
-                      "shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]",
+                      "atlas-touch-floor shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]",
                   })}
             >
               {labels.openFullDetail}

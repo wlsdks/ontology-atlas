@@ -192,6 +192,20 @@ test.describe("인사이트 구성 — 도메인 행이 한 축과 읽을 수 �
 
     const rows = page.getByTestId("domain-capacity-bar-row");
     await expect(rows).toHaveCount(9, { timeout: 20_000 });
+    const kindStack = page.getByTestId("insights-kind-stack");
+    await expect(kindStack).toBeVisible();
+    const kindStackMetrics = await kindStack.evaluate((element) => {
+      const segments = [...element.querySelectorAll<HTMLElement>('[data-testid="insights-kind-stack-segment"]')]
+        .map((segment) => segment.getBoundingClientRect());
+      return {
+        gap: Number.parseFloat(getComputedStyle(element).columnGap),
+        segmentCount: segments.length,
+        seams: segments.slice(1).map((segment, index) => segment.left - segments[index].right),
+      };
+    });
+    expect(kindStackMetrics.segmentCount).toBe(4);
+    expect(kindStackMetrics.gap).toBeCloseTo(1, 1);
+    expect(kindStackMetrics.seams.every((gap) => gap >= 0.9)).toBe(true);
     const metrics = await rows.evaluateAll((elements) =>
       elements.map((row) => {
         const tail = row.querySelector<HTMLElement>('[data-testid="domain-capacity-bar-tail"]');

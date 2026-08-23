@@ -383,6 +383,7 @@ const RULES = [
       /^src\/views\/ontology-insights\/lib\/census-health\.ts$/,
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/parts\/InsightsHeroCensus\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/tabs\/OverviewTab\.tsx$/,
       /^src\/widgets\/domain-capacity-bar\/ui\/DomainCapacityBar\.tsx$/,
     ],
   },
@@ -397,6 +398,11 @@ const RULES = [
     matches: [
       /^src\/features\/ontology-change-review\/ui\/OntologyChangeReview\.tsx$/,
     ],
+  },
+  {
+    command: 'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts',
+    reason: 'selected-node panel touch targets changed',
+    matches: [/^src\/widgets\/topology-map-v2\/ui\/TopologyV2DetailPanel\.tsx$/],
   },
   {
     /*

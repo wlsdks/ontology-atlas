@@ -102,7 +102,8 @@ export function OverviewTab({
           <CardHead label={labels.kindCensusTitle} count={totalNodes} />
           <div
             aria-hidden
-            className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)]"
+            data-testid="insights-kind-stack"
+            className="mt-3 flex h-2.5 w-full gap-px overflow-hidden rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-divider)]"
           >
             {kindRows.map((row) => {
               const share = totalNodes > 0 ? row.count / totalNodes : 0;
@@ -110,6 +111,7 @@ export function OverviewTab({
               return (
                 <span
                   key={row.kind}
+                  data-testid="insights-kind-stack-segment"
                   style={{ flexGrow: share, backgroundColor: getOntologyKindTone(row.kind).fill }}
                 />
               );
