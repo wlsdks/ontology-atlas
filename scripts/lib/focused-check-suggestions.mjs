@@ -303,13 +303,61 @@ const RULES = [
   },
   {
     command: 'pnpm test:claude:hooks',
-    reason: 'Claude Code/Codex hook wiring or publish guard changed',
+    reason: 'agent hook wiring, a guard, or the commit-message gate changed',
+    /*
+     * This list named two of the four hook scripts, so editing the Git guard or
+     * the generated-output guard recommended nothing that tests them (measured
+     * 2026-08-24). A gate that covers half its own subject set is the shape this
+     * repository keeps finding; match the directories instead of enumerating
+     * files, so a new hook is covered the day it lands.
+     */
     matches: [
-      /^\.claude\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
+      /^\.claude\/hooks\/.+\.sh$/,
       /^\.claude\/settings\.json$/,
       /^\.codex\/hooks\.json$/,
-      /^\.codex\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
+      /^\.codex\/hooks\/.+\.sh$/,
+      /^\.githooks\/(?:commit-msg|commit-msg-language\.mjs)$/,
       /^scripts\/claude-hooks\.test\.mjs$/,
+    ],
+  },
+  {
+    command: 'pnpm agents:check',
+    reason: 'agent-file surface changed: mirror parity, pointers, MCP grants, and the Codex cap move together',
+    /*
+     * CI has run this since it existed, but nothing recommended it locally, so
+     * the answer to "did I break the mirror" cost an eight-minute CI round
+     * instead of the fifty milliseconds it actually takes (measured
+     * 2026-08-24).
+     */
+    matches: [
+      /^CLAUDE\.md$/,
+      /^AGENTS\.md$/,
+      /^[^/]+\/AGENTS\.md$/,
+      /^\.claude\/(?:agents|skills|hooks|rules)\/.+/,
+      /^\.claude\/settings\.json$/,
+      /^\.agents\/(?:agents|skills)\/.+/,
+      /^\.codex\/.+/,
+      /^\.mcp\.json$/,
+      /^cli\/src\/lib\/agent-files\.mjs$/,
+      /^cli\/src\/commands\/agent-files\.mjs$/,
+    ],
+  },
+  {
+    command: 'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts',
+    reason: 'one side of the agent-files pair, or a rule glob the nested pointers derive from, changed',
+    /*
+     * `cli/src/lib/agent-files.mjs` and `src/views/docs-vault/lib/agent-files.ts`
+     * are two implementations of one contract, and the nested `AGENTS.md`
+     * pointers derive their expected rule set from `.claude/rules/` frontmatter.
+     * Editing either side alone recommended neither contract, which is how a
+     * mirror silently diverged for a full iteration (measured 2026-08-24).
+     */
+    matches: [
+      /^cli\/src\/lib\/agent-files\.mjs$/,
+      /^src\/views\/docs-vault\/lib\/agent-files\.ts$/,
+      /^tests\/fixtures\/agent-files-cases\.mjs$/,
+      /^\.claude\/rules\/[^/]+\.md$/,
+      /^[^/]+\/AGENTS\.md$/,
     ],
   },
   {
