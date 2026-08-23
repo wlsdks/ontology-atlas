@@ -8,6 +8,8 @@ domain: domains/onboarding-and-shell
 elements: [elements/first-run]
 path: src/features/first-run-starter
 created_by: "agent:unknown"
+dependencies: [capabilities/vault-sample-source]
+relation_notes: { capabilities/vault-sample-source: The starter appears only in settled static mode and teaches through the bundled sample vault; without that sample source it cannot present the pre-folder map and sample choice. }
 ---
 
 ## Definition

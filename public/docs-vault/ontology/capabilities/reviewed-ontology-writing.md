@@ -8,6 +8,8 @@ domain: domains/graph-modeling
 elements: [elements/acp-ontology-write-review, elements/ontology-change-review, elements/ontology-meaning-editor]
 path: src/features/ontology-meaning-editor
 created_by: "agent:unknown"
+dependencies: [capabilities/docs-vault-local]
+relation_notes: { capabilities/docs-vault-local: "The reviewed write flow applies its exact frontmatter plan through the mounted vault's updateFrontmatter with an mtime guard; without local folder mounting it cannot persist the approved Markdown change." }
 ---
 
 ## Definition

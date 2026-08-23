@@ -13067,13 +13067,13 @@
     },
     {
       "depth": 3,
-      "text": "evidence: partial",
-      "slug": "evidence-partial"
+      "text": "evidence: answered",
+      "slug": "evidence-answered"
     },
     {
       "depth": 3,
-      "text": "impact: partial",
-      "slug": "impact-partial"
+      "text": "impact: answered",
+      "slug": "impact-answered"
     }
   ],
   "ontology/README": [
