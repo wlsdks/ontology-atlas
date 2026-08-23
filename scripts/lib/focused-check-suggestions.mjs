@@ -344,7 +344,7 @@ const RULES = [
     ],
   },
   {
-    command: 'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts',
+    command: 'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
     reason: 'one side of the agent-files pair, or a rule glob the nested pointers derive from, changed',
     /*
      * `cli/src/lib/agent-files.mjs` and `src/views/docs-vault/lib/agent-files.ts`
@@ -370,6 +370,7 @@ const RULES = [
       /^package\.json$/,
       /^\.github\/workflows\/[^/]+\.ya?ml$/,
       /^tests\/contract\/node-test-reachability\.contract\.test\.ts$/,
+      /^tests\/contract\/agent-file-citations\.contract\.test\.ts$/,
     ],
   },
   {

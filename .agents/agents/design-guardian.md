@@ -67,7 +67,7 @@ same-input stages cannot start more than `--motion-fast` apart.
 
 `/topology` uses a stable radial spine, click expansion, docked children, and
 S-curves. DOM cards own node appearance; canvas owns fine lines and particles;
-`camera-fit.ts` owns safe-inset fitting. Motion uses `--topology-motion-*` for
+`topology-camera-math.ts` owns safe-inset fitting. Motion uses `--topology-motion-*` for
 camera, focus, panel, drag, and path, with a reduced-motion equivalent.
 
 ## After a council
