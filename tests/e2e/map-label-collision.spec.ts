@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { LABEL_TOP_K } from "../../src/widgets/topology-map-v2/model/label-lod";
 
 /**
  * Map labels must not overlap — measured from the boxes the frame actually drew.
@@ -58,7 +59,22 @@ test.describe("지도 라벨 — 그려진 박스로 잰다", () => {
     )) as LabelBox[];
 
     // Anti-idle: an empty or near-empty frame would pass every assertion below.
-    expect(labels.length, "라벨을 거의 못 그렸다 — 이 시험이 헛돈다").toBeGreaterThan(10);
+    expect(labels.length, "라벨을 거의 못 그렸다 — 이 시험이 헛돈다").toBeGreaterThan(5);
+
+    /*
+     * **The overview label budget applies here.** The gateway pulls the tier-reveal bands
+     * forward so every dot exists at entry (its caption-honesty contract), and until 2026-08-23
+     * that same override classified entry zoom as leaf-reading altitude and lifted the top-K
+     * budget — all 82 labels raced the greedy placer and 33 landed wherever they fit, stacked
+     * into walls (the owner's report: the map looks messy). The budget band now classifies
+     * against the canonical zoom grammar, so entry is overview and at most `LABEL_TOP_K`
+     * candidates may place. Nothing at rest is hovered or focused, so no exemption can exceed it.
+     */
+    expect(
+      labels.length,
+      `그려진 라벨 ${labels.length}개가 개관 예산(${LABEL_TOP_K})을 넘는다 — ` +
+        "예산이 다시 풀렸다: 잎 라벨이 벽처럼 쌓인다",
+    ).toBeLessThanOrEqual(LABEL_TOP_K);
 
     const overlaps: string[] = [];
     for (let i = 0; i < labels.length; i += 1) {

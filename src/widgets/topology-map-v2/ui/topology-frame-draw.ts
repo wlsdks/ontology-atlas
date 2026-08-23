@@ -2372,7 +2372,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // goes to the highest-degree nodes; at the deepest element zoom the budget lifts
   // and every label returns. Exempt from the budget: ego focus members and the
   // hovered node only.
-  const applyLabelTopK = classifyZoomTier(zoomRatio, tierReveal) !== "element";
+  //
+  // The band is classified against the CANONICAL zoom grammar (DEFAULT_TIER_REVEAL),
+  // not the caller's `tierReveal` override. The two answer different questions:
+  // the override decides which DOTS exist at this zoom, the budget asks whether the
+  // READER is at leaf-reading altitude — and only the camera knows that. The gateway
+  // stage conflated them (measured 2026-08-23): it pulls the element band down to 0.45
+  // so every dot is drawn at entry (its caption-honesty contract), which silently
+  // classified entry zoom as "element", lifted the budget, and let all 82 labels race
+  // the greedy placer — 33 landed wherever they fit, leaf labels stacked into walls.
+  // The workbench passes no override, so for it this line is byte-identical.
+  const applyLabelTopK = classifyZoomTier(zoomRatio) !== "element";
   // High-fan disc density prescription: an expanded phyllotaxis disc can hold dozens–
   // hundreds of children. Blanket-exempting them all (the old behavior) punched
   // a wall of ~60 labels across the map. Instead, per disc only the DOI top-K

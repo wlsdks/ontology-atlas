@@ -40,6 +40,46 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-23 (105) — The label budget asks where the camera is, not which dots exist
+
+**Trigger**: the owner looked at the gateway evidence map and asked for it to be tidied — the
+labels read as walls of stacked names.
+
+**Prior decisions**: none reversed. The gateway's caption-honesty contract (2026-08-18: every dot
+the caption counts is drawn at entry) stands untouched, and the workbench's overview label budget
+(top-`LABEL_TOP_K` by degree; Shneiderman overview-first) stands untouched. What changed is a
+conflation between them.
+
+**Observed**: the gateway pulls the tier-reveal bands forward so all 82 dots exist at entry zoom.
+The frame draw classified the **label budget band with that same override**, so entry zoom read as
+leaf-reading altitude, the top-K budget lifted, and all 82 labels raced the greedy placer — 33
+landed wherever they fit (measured), leaf names stacked into walls while the workbench, at the
+same zoom, would have drawn a curated 20. Two different questions were riding one config: the
+reveal override answers *which dots exist*, the budget asks *whether the reader is close enough to
+read leaves* — and only the camera knows the second.
+
+**Decision**: the budget band classifies against the canonical zoom grammar
+(`DEFAULT_TIER_REVEAL`), regardless of the caller's reveal override. Measured on the gateway after
+the change: 12 labels drawn — the hub, all seven domains, and the highest-degree capabilities —
+with every leaf still present as a dot, and hover/press still labelling its neighbourhood through
+the existing ego exemption. The workbench passes no override, so it is byte-identical. The plain
+(non-developer) lens now lifts the budget at deep zoom where it previously never did; at that
+altitude the lens draws only a handful of labels, so the lift is the intended "you zoomed in to
+read" behaviour.
+
+**Gate**: `map-label-collision.spec.ts` now asserts the gateway's resting frame stays within
+`LABEL_TOP_K` — the exact defect state (32 labels) was planted and went red before this landed.
+
+**Falsifier**: if visitors are observed hovering leaf dots one by one to learn names — the budget
+starving the overview of the names people actually want — raise `LABEL_TOP_K` for the gateway
+scope rather than re-lifting the budget.
+
+**Review**: next gateway pass
+
+**Status**: active
+
+---
+
 ## 2026-08-23 (104) — The demo clip loops with no controls, and the page stops explaining itself in protocol terms
 
 **Trigger**: the owner read the shipped page and made three separate calls: the video's timecode
