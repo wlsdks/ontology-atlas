@@ -101,6 +101,10 @@ test("desktop release run dispatches the protected-main workflow and watches it"
     assert.match(result.stderr, /waiting for release-macos\.yml workflow_dispatch run/);
     assert.match(result.stdout, /watching release-macos\.yml run 12345/);
     assert.match(result.stdout, /completed successfully/);
+    assert.match(result.stdout, /ontology-atlas-release-facts-v0\.1\.0/);
+    assert.match(result.stdout, /gh run download 12345 --repo wlsdks\/ontology-atlas --name ontology-atlas-release-facts-v0\.1\.0/);
+    assert.match(result.stdout, /src\/views\/download\/model\/macos-release\.generated\.ts/);
+    assert.match(result.stdout, /normal protected-main PR/);
   });
 });
 
@@ -123,4 +127,6 @@ test("desktop release run help describes protected-main dispatch and watch", () 
   assert.match(stdout, /desktop:release-run/);
   assert.match(stdout, /workflow_dispatch/);
   assert.match(stdout, /protected ref/);
+  assert.match(stdout, /release-facts artifact/);
+  assert.match(stdout, /protected-main PR/);
 });

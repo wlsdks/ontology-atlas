@@ -888,9 +888,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "The ability to directly launch a coding agent (Claude Code, Codex, etc.) that the user has already installed via ACP (Agent Client Protocol) v1, isolate its session settings, and ask humans for confirmation on file access outside the vault. No new API keys or vendor integrations are needed: it uses the same subscriptio",
+      "excerpt": "The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch only those whose isolation contract is verified (currently Claude Agent), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscription authen",
       "wordCount": 1484,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-24",
       "linksOut": [
         "ontology/elements/agents-destination"
       ]
@@ -936,8 +936,8 @@
       },
       "headings": [],
       "excerpt": "The ability to automatically or manually check for new versions in the desktop shell, download and install signed archives, and relaunch the app. The installed app reads only one Pages manifest URL that remains constant across release types. Inclusions: desktop-shell 24-hour automatic checks, manual checks in settings,",
-      "wordCount": 268,
-      "updatedAt": "2026-08-23",
+      "wordCount": 260,
+      "updatedAt": "2026-08-24",
       "linksOut": []
     },
     {

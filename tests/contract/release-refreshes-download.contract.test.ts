@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const RELEASE_WORKFLOW = ".github/workflows/release-macos.yml";
 const GENERATED_FACTS = "src/views/download/model/macos-release.generated.ts";
 const TEMP_FACTS = '"$RUNNER_TEMP/macos-release.generated.ts"';
+const FACTS_ARTIFACT = "ontology-atlas-release-facts-${{ env.RELEASE_TAG }}";
 
 type Step = { body: string; name: string; run: string };
 
@@ -42,11 +43,10 @@ function stepWithRun(allSteps: Step[], pattern: RegExp): { index: number; step: 
   return { index, step: allSteps[index] };
 }
 
-function executableLines(script: string): string[] {
-  return script
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith("#"));
+function stepWithBody(allSteps: Step[], pattern: RegExp): { index: number; step: Step } {
+  const index = allSteps.findIndex((step) => pattern.test(step.body));
+  expect(index, `step body matching ${pattern}`).toBeGreaterThan(-1);
+  return { index, step: allSteps[index] };
 }
 
 function assertPublicationWriteBoundary(source: string): void {
@@ -58,7 +58,7 @@ function assertPublicationWriteBoundary(source: string): void {
   const recheck = stepWithRun(allSteps, /desktop:release-source\s+--\s+--mode=pin\b/);
   const publish = stepWithRun(allSteps, /\bgh\s+release\s+edit\b/);
   const generate = stepWithRun(allSteps, /\bpnpm\s+download:release-facts\b/);
-  const refresh = stepWithRun(allSteps, /\bgit\s+switch\s+-C\s+release-facts-update\s+origin\/main\b/);
+  const upload = stepWithBody(allSteps, /uses:\s*actions\/upload-artifact@/);
   const checkoutIndex = allSteps.findIndex((step) => /uses:\s*actions\/checkout@/.test(step.body));
 
   // `environment: release` gates this job; the admitted SHA is checked again before public release.
@@ -66,46 +66,46 @@ function assertPublicationWriteBoundary(source: string): void {
   expect(recheck.step.run).toMatch(/--tag="\$\{RELEASE_TAG\}"/);
   expect(recheck.step.run).toMatch(/--sha="\$\{RELEASE_SHA\}"/);
 
-  // The generator runs before any main checkout and bridges its one output through RUNNER_TEMP.
+  // The generator runs at the admitted SHA and hands off exactly one inert file.
   expect(checkoutIndex).toBeGreaterThan(-1);
   expect(allSteps[checkoutIndex].body).toContain("ref: ${{ needs.admit-release.outputs.release_sha }}");
   expect(checkoutIndex).toBeLessThan(generate.index);
-  expect(generate.index).toBeLessThan(refresh.index);
-  expect(allSteps.slice(0, refresh.index).map((step) => step.body).join("\n")).not.toMatch(/\bgit\s+switch\b/);
+  expect(generate.index).toBeLessThan(upload.index);
   expect(generate.step.run).toContain(`cp ${GENERATED_FACTS} ${TEMP_FACTS}`);
+  const copyAt = generate.step.run.indexOf(`cp ${GENERATED_FACTS} ${TEMP_FACTS}`);
+  expect(generate.step.run.slice(copyAt)).not.toMatch(/\bgit\s+(?:switch|push)\b/);
+  expect(upload.step.body).toContain(`name: ${FACTS_ARTIFACT}`);
+  expect(upload.step.body).toContain("path: ${{ runner.temp }}/macos-release.generated.ts");
+  expect(upload.step.body).toContain("if-no-files-found: error");
+  expect(upload.step.body).toContain("retention-days: 7");
 
-  const switchAt = refresh.step.run.search(/\bgit\s+switch\s+-C\s+release-facts-update\s+origin\/main\b/);
-  const afterSwitchRuns = [refresh.step.run.slice(switchAt), ...allSteps.slice(refresh.index + 1).map((step) => step.run)]
-    .map(executableLines)
-    .flat();
-  const copiedFiles = afterSwitchRuns.filter((line) => line.startsWith("cp "));
-  expect(copiedFiles).toEqual([`cp ${TEMP_FACTS} ${GENERATED_FACTS}`]);
-
-  const repoRuntime = afterSwitchRuns.filter((line) => /\b(?:pnpm|node|npm|yarn)\b/.test(line));
-  expect(repoRuntime).toEqual([]);
-
-  const refreshLines = executableLines(refresh.step.run);
-  const copyAt = refreshLines.indexOf(`cp ${TEMP_FACTS} ${GENERATED_FACTS}`);
-  const addAt = refreshLines.indexOf(`git add ${GENERATED_FACTS}`);
-  const commitAt = refreshLines.findIndex((line) => line.startsWith("git commit "));
-  const pushAt = refreshLines.findIndex((line) => line.startsWith("git push "));
-  expect(copyAt).toBeGreaterThan(-1);
-  expect(addAt).toBeGreaterThan(copyAt);
-  expect(commitAt).toBeGreaterThan(addAt);
-  expect(pushAt).toBeGreaterThan(commitAt);
+  // Protected main is never mutated from the release token. A locally authenticated
+  // operator consumes the artifact in a normal PR, whose merge triggers Pages.
+  const afterGenerate = allSteps.slice(generate.index + 1).map((step) => step.body).join("\n");
+  expect(afterGenerate).not.toMatch(/\bgit\s+(?:switch|push)\b/);
+  expect(afterGenerate).not.toMatch(/\bgh\s+pr\b/);
+  expect(afterGenerate).not.toMatch(/\bgh\s+workflow\s+run\s+deploy-pages\.yml\b/);
 }
 
 describe("release facts publication write boundary", () => {
   const workflow = readFileSync(RELEASE_WORKFLOW, "utf8");
 
-  it("generates admitted facts, crosses main through RUNNER_TEMP, then writes only that file", () => {
+  it("generates admitted facts and uploads the one-file protected-main handoff", () => {
     assertPublicationWriteBoundary(workflow);
   });
 
-  it("probe: rejects a repository runtime command after the main switch", () => {
+  it("probe: rejects a release-token direct push to protected main", () => {
     const defect = workflow.replace(
-      `cp ${TEMP_FACTS} ${GENERATED_FACTS}`,
-      `pnpm download:release-facts\n          cp ${TEMP_FACTS} ${GENERATED_FACTS}`,
+      `cp ${GENERATED_FACTS} ${TEMP_FACTS}`,
+      `cp ${GENERATED_FACTS} ${TEMP_FACTS}\n          git push origin HEAD:main`,
+    );
+    expect(() => assertPublicationWriteBoundary(defect)).toThrow();
+  });
+
+  it("probe: rejects uploading a broad workspace instead of the one generated file", () => {
+    const defect = workflow.replace(
+      "path: ${{ runner.temp }}/macos-release.generated.ts",
+      "path: .",
     );
     expect(() => assertPublicationWriteBoundary(defect)).toThrow();
   });

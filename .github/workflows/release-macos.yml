@@ -576,10 +576,9 @@ jobs:
     timeout-minutes: 10
     environment: release
     permissions:
-      # contents: Publish release + commit generated release facts
-      # actions:  Explicitly trigger Pages deployment (see reason in the last step below)
+      # Publish the verified GitHub Release. Generated download facts leave this
+      # job only as an artifact and cross protected main through a normal PR.
       contents: write
-      actions: write
     env:
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
       RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
@@ -653,44 +652,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      # 2026-07-29 — The hole revealed only after releasing rc.3. The size, SHA-256,
-      # and links for `/download` come from the **committed generated file** (`macos-release.generated.ts`), but
-      # `download:release-facts`, which creates that
-      # file, was **never invoked by any workflow**. So even after the release went out, the download page continued
-      # advertising the previous version — immediately after rc.3 was published, measurements showed rc.2 still displayed.
-      #
-      # This cannot be fixed with `deploy-pages`'s `release: published` trigger. It won't work in a loop:
-      # ① That workflow only runs `pnpm build` and does not regenerate the facts file
-      # ② Events triggered by the default `GITHUB_TOKEN` do not create new runs (to prevent recursion).
-      - name: Refresh /download release facts on main
-        run: |
-          # The generation code has already run at the approved SHA. Here we only copy the result files
-          # to the movable main, without executing any pnpm/node code provided by the repository.
-          git fetch --no-tags origin main
-          git switch -C release-facts-update origin/main
-          cp "$RUNNER_TEMP/macos-release.generated.ts" src/views/download/model/macos-release.generated.ts
-          if git diff --quiet -- src/views/download/model/macos-release.generated.ts; then
-            echo "release facts already current — nothing to commit"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/views/download/model/macos-release.generated.ts
-          git commit -m "chore: /download 릴리스 사실을 ${RELEASE_TAG} 로 갱신 [skip ci]"
-          # Only allow fast-forward — if main moved in the meantime, silently fail here instead of
-          # overwriting.
-          git push origin HEAD:main
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      # The push above **does not trigger a workflow** — pushes triggered by the default token
-      # hit the recursion prevention rule. `workflow_dispatch` is an explicit exception to that rule,
-      # allowing us to trigger deployment without adding any secrets. The value of this approach is that
-      # the causality is visible within this file — we do not rely on triggers in other files for "when a release goes out, pages follow".
-      - name: Deploy the refreshed download page
-        run: gh workflow run deploy-pages.yml --ref main
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      # The release token cannot bypass protected main and repository policy does not let
+      # GITHUB_TOKEN create pull requests. Preserve the admitted result as a one-file handoff.
+      # A locally authenticated operator applies this artifact in a normal PR; that PR receives
+      # the ordinary required checks, and its human-token merge triggers deploy-pages.yml.
+      - name: Upload protected release facts handoff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ontology-atlas-release-facts-${{ env.RELEASE_TAG }}
+          path: ${{ runner.temp }}/macos-release.generated.ts
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Summarize published desktop release
         run: |

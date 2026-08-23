@@ -18,8 +18,8 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { PendingPermission } from '@/features/acp-session/model/use-acp-session';
 
 /**
- * The 「May I do this?」 card — it appears only when something
- * outside the vault is about to be touched.
+ * The 「May I do this?」 card — it appears whenever policy requires an explicit
+ * checkpoint: for every Atlas ontology write and for outside or unresolved requests.
  *
  * ## The agent is stopped while this card is up
  *

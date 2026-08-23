@@ -243,12 +243,12 @@ describe("워크플로 보안 계약", () => {
       /^    permissions:\n      contents: write\s*$/m,
     );
     expect(jobBlock(release, "publish-macos")).toMatch(
-      /^    permissions:\n(?:      .+\n)*?      contents: write\n      actions: write\s*$/m,
+      /^    permissions:\n(?:      .+\n)*?      contents: write\s*$/m,
     );
     expect(writePermissionsByJob(release)).toEqual({
       "build-windows": ["checks"],
       "stage-macos": ["contents"],
-      "publish-macos": ["contents", "actions"],
+      "publish-macos": ["contents"],
     });
 
     // Pokes the helper itself so that a new job cannot slip past a check that only
@@ -313,16 +313,16 @@ describe("워크플로 보안 계약", () => {
     }
   });
 
-  it("쓰기 토큰 job은 움직인 main 코드에서 pnpm/node를 실행하지 않는다", () => {
+  it("쓰기 토큰 job은 생성 facts handoff 뒤 repo 코드나 main을 실행·변경하지 않는다", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
     const publish = jobBlock(release, "publish-macos");
-    const switchAt = publish.indexOf("git switch -C release-facts-update origin/main");
-    expect(switchAt).toBeGreaterThan(0);
-    const afterSwitch = publish.slice(switchAt);
-    expect(afterSwitch).not.toMatch(/^\s*(?:pnpm|node)\b/m);
-    expect(publish.slice(0, switchAt)).toContain(
+    const handoffAt = publish.indexOf(
       'cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"',
     );
+    expect(handoffAt).toBeGreaterThan(0);
+    const afterHandoff = publish.slice(handoffAt);
+    expect(afterHandoff).not.toMatch(/^\s*(?:pnpm|node)\b/m);
+    expect(afterHandoff).not.toMatch(/\bgit\s+(?:switch|push)\b/);
   });
 
   it("Pages OIDC 와 배포 권한은 deploy job 에만 있다", () => {

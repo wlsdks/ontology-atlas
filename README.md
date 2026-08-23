@@ -41,7 +41,8 @@
 
 <p align="center">
   <strong>Each desktop download includes the Atlas app and its MCP server.</strong>
-  One button writes your agent's config and proves the connection.
+  One button writes the connection files; the restart and <code>mcp-verify</code>
+  steps then prove the live connection from your agent's working folder.
 </p>
 
 <p align="center">
@@ -100,7 +101,7 @@ people are about to install. [GitHub Releases](https://github.com/wlsdks/ontolog
 is the second direct source.
 
 - **The unsigned Windows beta is a real risk, not a formality.** SmartScreen
-  will warn about an unknown publisher, and a managed work PC may refuse the
+  may warn about an unknown publisher, and a managed work PC may refuse the
   installer outright. [Security](SECURITY.md) explains what is and is not
   promised.
 - **Installing the desktop app installs the agent surface.** Both bundles carry
@@ -114,10 +115,11 @@ is the second direct source.
 ## Where it stands
 
 Two tiers here, and the second is the one worth reading. Nothing below is a
-roadmap promise — each line is either shipping in the tag above or written down
-in the [feature inventory](docs/FEATURES.md), the
-[specification](docs/ONTOLOGY-ATLAS-SPEC.md), or the
-[decision ledger](docs/DECISIONS.md).
+roadmap promise. It summarizes current product behavior documented in the
+[feature inventory](docs/FEATURES.md), the
+[specification](docs/ONTOLOGY-ATLAS-SPEC.md), and the
+[decision ledger](docs/DECISIONS.md). For what is downloadable today, use the
+[download page](https://wlsdks.github.io/ontology-atlas/en/download/).
 
 ### Working today
 
@@ -125,9 +127,10 @@ in the [feature inventory](docs/FEATURES.md), the
   and writes in place — no import step, no index to build, no account.
 - **The macOS app**, Developer ID signed and notarized, with the compiled MCP
   server inside its own bundle.
-- **Agent setup is a button, and it proves itself.** The app shows the exact
-  absolute paths before writing anything, writes only on confirm, then spawns
-  the server and runs a real round trip against your vault.
+- **Agent setup starts with one button and ends with a real proof.** The app
+  shows the exact paths before writing, creates only the missing connection
+  files on confirm, then guides the agent restart and `mcp-verify` check. File
+  presence is never presented as a live connection.
 - **MCP over stdio** for Claude Code, Cursor, VS Code, Codex, and any other MCP
   client — a typed read and write surface the running server advertises through
   `tools/list`. [Agent guide](mcp/README.md).
@@ -149,7 +152,7 @@ in the [feature inventory](docs/FEATURES.md), the
 
 - **Windows x64 is an intentionally unsigned public beta.** It carries the same
   local folder and MCP surface as macOS; what it does not carry is a signature,
-  so SmartScreen warns and a managed PC may block it outright.
+  so SmartScreen may warn and a managed PC may block it outright.
 - **The vault format is v2.0-rc — an RFC open for public comment.** It documents
   behavior already enforced by contract tests in this repository, and it carries
   its own kill criterion: no outside engagement inside the stated feedback
@@ -160,9 +163,10 @@ in the [feature inventory](docs/FEATURES.md), the
   app, or the CLI and MCP server from a source checkout — the same vault, fewer
   screens.
 - **Web and desktop do not promise the same screens, and that is not a backlog.**
-  Git history, offline work, and remembering your folder are desktop
-  capabilities; the web says why it cannot do them rather than half-doing them.
-  The capability table is in the [feature inventory](docs/FEATURES.md).
+  Git history and offline work are desktop capabilities. The web remembers its
+  File System Access handle in IndexedDB and restores it while browser
+  permission remains granted, but it cannot run git or native bridges. The
+  capability table is in the [feature inventory](docs/FEATURES.md).
 
 A third tier — what we have decided *not* to build, and why — is
 [What this is not](#what-this-is-not), below.
@@ -198,11 +202,12 @@ folder.
 
 - **Connect once, with visible scope.** The flow shows which folder and client
   config it will change. The resulting files are plain text you can inspect.
-- **Then prove the connection.** The verification step starts the bundled MCP
-  server, reads the active vault, and reports the real result or the failure.
+- **Then prove the connection from the agent's folder.** The final step gives
+  the exact `mcp-verify` check; that check starts the bundled MCP server, reads
+  the active vault, and reports the real result or failure.
 - **Nothing stays running.** The server speaks stdio; your agent starts it when
-  it needs it and it exits afterwards. No port, no daemon, no traffic leaving
-  the machine.
+  it needs it and it exits afterwards. The MCP server opens no port and makes no
+  network request; the coding agent itself may use its provider when you ask it to.
 
 Claude Code, Cursor, Codex, and other supported clients get a direct setup path.
 Any other MCP client can use the generated snippet.
@@ -453,8 +458,10 @@ own dogfood vault in [`docs/ontology/`](docs/ontology/); run
   back to the folder you picked. There is no other store.
 - **Git is the history.** Diffs stay human-readable; history and snapshots are
   scoped to the vault.
-- **No backend, no account, no telemetry.** The web app is a static export.
-  Nothing is transmitted anywhere unless you explicitly ask for it.
+- **No Atlas backend, account, or telemetry.** The web app is a static export.
+  The desktop app checks the public updater manifest automatically once per day.
+  Atlas does not upload vault content; a connected coding agent communicates
+  with its own provider only when you ask it to.
 - **Two ways in, one folder.** The hosted web app can open a local folder through the File System Access API. The desktop app uses a Tauri bridge to your selected folder and keeps the same vault open as a workspace.
 - **The Tauri macOS shell is a shell, not a silo.** MCP and CLI still read the
   selected folder directly; the app does not move it into a private store.
