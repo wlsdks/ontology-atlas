@@ -17,12 +17,18 @@ pnpm build
 
 For user-facing UI changes, add the relevant Playwright route check.
 
-## Pre-commit hook — generated vault freshness
+## Git hooks — generated vault freshness, message language, push lanes
 
 `pnpm install` points `core.hooksPath` at `.githooks/` (the `prepare` script;
-nothing to run by hand). One hook lives there: **`pre-commit` refuses a commit
-whose staged set touches the vault's markdown or its generated outputs while
-`node scripts/build-docs-vault.mjs --check` reports drift.**
+nothing to run by hand). Three hooks live there:
+
+| Hook | Blocks |
+|---|---|
+| `pre-commit` | a staged set touching the vault's markdown or its generated outputs while `node scripts/build-docs-vault.mjs --check` reports drift |
+| `commit-msg` | a commit message containing Hangul, kana or Han; merge, revert and fixup subjects are exempt because Git generates them (`.claude/rules/git.md`, "Commit messages") |
+| `pre-push` | path lanes that CI would fail, run in parallel with e2e left to CI — decision (96), which overturns (95) |
+
+The `pre-commit` rationale below is the oldest of the three.
 
 It exists because the same failure landed three times in two days (#826 · #828 ·
 #831): docs edited, `pnpm docs-vault:build` skipped, CI red eight minutes later.

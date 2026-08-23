@@ -10330,8 +10330,8 @@
     },
     {
       "depth": 2,
-      "text": "Pre-commit hook — generated vault freshness",
-      "slug": "pre-commit-hook-generated-vault-freshness"
+      "text": "Git hooks — generated vault freshness, message language, push lanes",
+      "slug": "git-hooks-generated-vault-freshness-message-language-push-lanes"
     },
     {
       "depth": 2,

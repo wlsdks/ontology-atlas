@@ -302,3 +302,73 @@ function runPublishHook(hookPath, payload) {
     encoding: 'utf8',
   });
 }
+
+// The commit-message language gate. Its first draft used `grep -P`, which BSD
+// grep does not have, so on macOS `sh` resolved `/usr/bin/grep`, the `|| true`
+// swallowed the error and every Korean subject passed. It looked alive from an
+// interactive shell with GNU grep on PATH. These cases therefore drive the real
+// hook through `sh`, the way Git invokes it, rather than importing the module
+// and trusting that the wiring around it works.
+describe('commit-msg language gate', () => {
+  const runHook = async (message) => {
+    const dir = await mkdtemp(join(tmpdir(), 'commit-msg-'));
+    try {
+      const file = join(dir, 'COMMIT_EDITMSG');
+      await writeFile(file, message, 'utf8');
+      const result = spawnSync('sh', ['.githooks/commit-msg', file], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+      });
+      return { status: result.status, stderr: result.stderr ?? '' };
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  };
+
+  it('is wired as an executable hook where Git looks for it', async () => {
+    await access('.githooks/commit-msg', constants.X_OK);
+    await access('.githooks/commit-msg-language.mjs', constants.R_OK);
+    // Comments are allowed to name the trap; executable lines are not.
+    const code = (await readFile('.githooks/commit-msg', 'utf8'))
+      .split('\n')
+      .filter((line) => !/^\s*#/.test(line))
+      .join('\n');
+    assert.ok(
+      !/grep\s+-[a-zA-Z]*P/.test(code),
+      'commit-msg must not use grep -P: BSD grep has no PCRE and the gate fails open',
+    );
+  });
+
+  it('accepts an English subject and body', async () => {
+    const { status } = await runHook('fix: restore the alpha token\n\nThe ramp move dropped it.\n');
+    assert.equal(status, 0);
+  });
+
+  it('rejects a non-English subject and names the offending line', async () => {
+    const { status, stderr } = await runHook('feat: 관문 모션 셋\n');
+    assert.equal(status, 1, 'a Korean subject must not commit');
+    assert.match(stderr, /must be English/);
+    assert.match(stderr, /rules\/git\.md/);
+  });
+
+  it('rejects a non-English body under an English subject', async () => {
+    const { status } = await runHook('fix: restore tokens\n\n토큰이 빠졌다.\n');
+    assert.equal(status, 1);
+  });
+
+  it('catches kana and Han, not only Hangul', async () => {
+    assert.equal((await runHook('chore: テスト\n')).status, 1);
+    assert.equal((await runHook('docs: 测试\n')).status, 1);
+  });
+
+  it('leaves generated subjects alone — merge, revert, fixup', async () => {
+    assert.equal((await runHook("Merge branch 'x' into main\n")).status, 0);
+    assert.equal((await runHook('Revert "feat: 관문 모션 셋"\n')).status, 0);
+    assert.equal((await runHook('fixup! feat: 관문 모션 셋\n')).status, 0);
+  });
+
+  it('ignores Git comment lines, which never ship', async () => {
+    const { status } = await runHook('# Please enter the commit message\n# 한국어 안내문\n');
+    assert.equal(status, 0);
+  });
+});
