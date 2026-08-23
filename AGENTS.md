@@ -154,12 +154,11 @@ When delegation is justified, the brief must state: isolated port; read-only
 files; no stash/worktree deletion/`git add -A`; scratch outside the repo;
 baselines; and primary sources.
 
-If `.codegraph/` exists, start structural code questions with
-`codegraph_explore` or `codegraph explore` using exact symbols/paths. Check
-returned identity, use callers/impact plus a comment/docs search before a
-rename or deletion, and use compiler/tests as the authority for absence and
-safety. React to staleness; index only when status reports an old, partial, or
-inconsistent graph. Without CodeGraph, use targeted `rg` and reads.
+If `.codegraph/` exists, start structural code questions there with exact
+symbols or paths, and treat the compiler and tests as the authority for absence
+and safety. `.claude/rules/codegraph.md` owns the routing table and the failure
+modes; every code directory's `AGENTS.md` points at it. Without CodeGraph, use
+targeted `rg` and reads.
 
 ## Source authority and ontology loop
 
@@ -199,8 +198,6 @@ briefs, must be byte identical. Each directory a `.claude/rules/` glob reaches
 also carries a nested `AGENTS.md` naming those rules, because Codex merges
 `AGENTS.md` root-down along the working path and never auto-loads `.claude/`.
 They stay pointers: the cap check measures root plus the largest nested file,
-since Codex truncates the merge in silence.
-Do not name a tool inside a shared skill body;
-branch on capability.
-`.claude/settings.json` owns Claude hooks and `.codex/hooks.json` owns their
-Codex mirror.
+since Codex truncates the merge in silence. Do not name a tool inside a shared
+skill body; branch on capability. `.claude/settings.json` owns Claude hooks and
+`.codex/hooks.json` owns their Codex mirror.

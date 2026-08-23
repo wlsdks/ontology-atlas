@@ -113,7 +113,7 @@ describe("`.claude/rules` path scoping contract", () => {
     );
   }, 15_000);
 
-  it("상주 총량이 20KB 를 넘지 않는다 — 되돌아가는 길에 저항을 둔다", () => {
+  it("keeps the resident rules under 20 KB — resistance on the way back", () => {
     // The exact ceiling does not matter; what matters is that **somewhere notices** when
     // the resident share swells again. Raising this number requires the commit that
     // raises it to say why.
@@ -121,5 +121,44 @@ describe("`.claude/rules` path scoping contract", () => {
       .filter((r) => r.paths === null)
       .reduce((sum, r) => sum + readFileSync(join(RULES_DIR, r.file)).byteLength, 0);
     expect(bytes).toBeLessThan(20_000);
+  });
+
+  /**
+   * The rules are only part of what loads before the task does. `AGENTS.md` and
+   * the `CLAUDE.md` wrapper that imports it are read every turn too, and the
+   * 32 KiB Codex cap is far above what is healthy — it is a truncation limit,
+   * not a budget.
+   *
+   * A plain ceiling was not enough here. Over five sessions of harness work the
+   * resident share was trimmed by 1,667 bytes and then quietly grew 484 bytes
+   * back, one justified documentation paragraph at a time, and nothing noticed
+   * because every individual addition was small and correct (2026-08-24). So
+   * this ratchets in one direction only: a commit that saves bytes must record
+   * the saving, which is what makes the saving permanent.
+   */
+  const RESIDENT_CONTEXT_BYTES = 27_678;
+
+  it("ratchets the whole resident context downward, never up", () => {
+    const files = ["AGENTS.md", "CLAUDE.md", ...ALWAYS_LOADED.map((f) => join(".claude/rules", f))];
+    const bytes = files.reduce(
+      (sum, file) => sum + readFileSync(join(process.cwd(), file)).byteLength,
+      0,
+    );
+    const detail = files
+      .map((file) => `  ${readFileSync(join(process.cwd(), file)).byteLength} ${file}`)
+      .join("\n");
+
+    expect(
+      bytes,
+      `the resident context grew to ${bytes} bytes:\n${detail}\n`
+        + "Every turn pays this before the task is read. Move detail to a path-loaded "
+        + "rule or a skill, or state in the commit why this must be resident.",
+    ).toBeLessThanOrEqual(RESIDENT_CONTEXT_BYTES);
+
+    expect(
+      bytes,
+      `the resident context is down to ${bytes} bytes: lower RESIDENT_CONTEXT_BYTES `
+        + "in this file so the saving cannot be spent again.",
+    ).toBeGreaterThan(RESIDENT_CONTEXT_BYTES - 512);
   });
 });
