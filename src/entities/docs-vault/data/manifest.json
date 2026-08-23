@@ -509,8 +509,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. The right h",
-      "wordCount": 76635,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. All 83 node",
+      "wordCount": 76710,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -1027,6 +1027,7 @@
         "slug": "capabilities/app-update",
         "kind": "capability",
         "title": "App Auto-Update",
+        "display_ko": "앱 자동 업데이트",
         "domain": "domains/onboarding-and-shell",
         "elements": [],
         "path": "src/features/app-update",
@@ -1129,6 +1130,7 @@
         "slug": "capabilities/data-source-mode",
         "kind": "capability",
         "title": "Data Source Mode Branching",
+        "display_ko": "데이터 출처 모드 분기",
         "domain": "domains/local-vault-management",
         "elements": [],
         "path": "src/features/data-source-mode",
@@ -1219,6 +1221,7 @@
         "slug": "capabilities/desktop-download-decision",
         "kind": "capability",
         "title": "Desktop Download Decision",
+        "display_ko": "데스크톱 내려받기 안내",
         "domain": "domains/onboarding-and-shell",
         "elements": [
           "elements/download"
@@ -1242,6 +1245,7 @@
         "slug": "capabilities/docs-vault-local",
         "kind": "capability",
         "title": "Local Folder Mounting",
+        "display_ko": "내 폴더 열기",
         "domain": "domains/local-vault-management",
         "elements": [
           "elements/docs-vault-entity",
@@ -1273,6 +1277,7 @@
         "slug": "capabilities/first-run-starter",
         "kind": "capability",
         "title": "First-Run Starter Vault",
+        "display_ko": "첫 실행 예시 볼트",
         "domain": "domains/onboarding-and-shell",
         "elements": [
           "elements/first-run"
@@ -1296,6 +1301,7 @@
         "slug": "capabilities/guided-tour",
         "kind": "capability",
         "title": "Guided Tour",
+        "display_ko": "화면 안내 투어",
         "domain": "domains/onboarding-and-shell",
         "elements": [],
         "path": "src/features/guided-tour",
@@ -1317,6 +1323,7 @@
         "slug": "capabilities/locale-switch",
         "kind": "capability",
         "title": "Locale Switching",
+        "display_ko": "언어 전환",
         "domain": "domains/onboarding-and-shell",
         "elements": [],
         "path": "src/features/locale-switch",
@@ -1367,6 +1374,7 @@
         "slug": "capabilities/project-data-source",
         "kind": "capability",
         "title": "Project Data Access",
+        "display_ko": "프로젝트 데이터 읽기",
         "domain": "domains/local-vault-management",
         "elements": [
           "elements/project"
@@ -1390,6 +1398,7 @@
         "slug": "capabilities/project-edit",
         "kind": "capability",
         "title": "Project Form Editing",
+        "display_ko": "프로젝트 양식 편집",
         "domain": "domains/project-portfolio",
         "elements": [
           "elements/project-editor"
@@ -1413,6 +1422,7 @@
         "slug": "capabilities/project-quick-edit",
         "kind": "capability",
         "title": "Project Quick Edit Dialog",
+        "display_ko": "프로젝트 빠른 편집",
         "domain": "domains/project-portfolio",
         "elements": [],
         "path": "src/features/project-quick-edit",
@@ -1434,6 +1444,7 @@
         "slug": "capabilities/project-share",
         "kind": "capability",
         "title": "Project Link Copy",
+        "display_ko": "프로젝트 링크 복사",
         "domain": "domains/project-portfolio",
         "elements": [],
         "path": "src/features/project-share",
@@ -1477,6 +1488,7 @@
         "slug": "capabilities/reviewed-ontology-writing",
         "kind": "capability",
         "title": "Reviewed Ontology Writing",
+        "display_ko": "검토 뒤 온톨로지 쓰기",
         "domain": "domains/graph-modeling",
         "elements": [
           "elements/acp-ontology-write-review",
@@ -1502,6 +1514,7 @@
         "slug": "capabilities/taxonomy",
         "kind": "capability",
         "title": "Kind Taxonomy Management",
+        "display_ko": "종류 분류 관리",
         "domain": "domains/graph-modeling",
         "elements": [
           "elements/category",
@@ -1526,6 +1539,7 @@
         "slug": "capabilities/topology-browsing",
         "kind": "capability",
         "title": "Topology Map Rendering & Search",
+        "display_ko": "지도 그리기와 검색",
         "domain": "domains/topology-navigation",
         "elements": [
           "elements/global-search",
@@ -1553,6 +1567,7 @@
         "slug": "capabilities/vault-agent",
         "kind": "capability",
         "title": "Agent Connect & Vault Access",
+        "display_ko": "에이전트 연결과 볼트 접근",
         "domain": "domains/agent-integration",
         "elements": [
           "elements/agents-destination",
@@ -1603,6 +1618,7 @@
         "slug": "capabilities/vault-sample-source",
         "kind": "capability",
         "title": "Sample Vault Demo Source",
+        "display_ko": "예시 볼트 출처",
         "domain": "domains/local-vault-management",
         "elements": [],
         "path": "src/features/vault-sample-source",
@@ -1874,6 +1890,7 @@
         "slug": "elements/acp-ontology-write-review",
         "kind": "element",
         "title": "ACP Ontology Write Review",
+        "display_ko": "ACP 쓰기 검토",
         "domain": "domains/graph-modeling",
         "path": "src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx",
         "created_by": "agent:unknown"
@@ -1881,7 +1898,7 @@
       "headings": [],
       "excerpt": "The ACP permission boundary that lets Atlas read tools continue automatically but pauses every Atlas write tool on a typed change review. It offers allowonce or rejectonce and deliberately hides allowalways for semantic writes.",
       "wordCount": 34,
-      "updatedAt": "2026-08-21",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -1916,6 +1933,7 @@
         "slug": "elements/app-nav-rail",
         "kind": "element",
         "title": "App Nav Rail",
+        "display_ko": "앱 내비게이션 레일",
         "domain": "domains/onboarding-and-shell",
         "path": "src/widgets/app-nav-rail",
         "created_by": "agent:unknown"
@@ -1936,6 +1954,7 @@
         "slug": "elements/app-settings-menu",
         "kind": "element",
         "title": "App Settings Menu",
+        "display_ko": "앱 설정 메뉴",
         "domain": "domains/onboarding-and-shell",
         "path": "src/widgets/app-settings-menu",
         "created_by": "agent:unknown"
@@ -1956,6 +1975,7 @@
         "slug": "elements/atlas-git-panel",
         "kind": "element",
         "title": "Atlas Git Panel",
+        "display_ko": "아틀라스 기록 패널",
         "domain": "domains/local-vault-management",
         "path": "src/widgets/atlas-git-panel",
         "created_by": "agent:unknown"
@@ -1976,6 +1996,7 @@
         "slug": "elements/bottom-tab-bar",
         "kind": "element",
         "title": "Bottom Tab Bar",
+        "display_ko": "하단 탭 바",
         "domain": "domains/onboarding-and-shell",
         "path": "src/widgets/bottom-tab-bar",
         "created_by": "agent:unknown"
@@ -1996,6 +2017,7 @@
         "slug": "elements/category",
         "kind": "element",
         "title": "Category",
+        "display_ko": "분류",
         "domain": "domains/graph-modeling",
         "path": "src/entities/category",
         "created_by": "agent:unknown"
@@ -2016,6 +2038,7 @@
         "slug": "elements/docs-quick-drawer",
         "kind": "element",
         "title": "Docs Quick Drawer",
+        "display_ko": "문서함 빠른 서랍",
         "domain": "domains/onboarding-and-shell",
         "path": "src/widgets/docs-quick-drawer",
         "created_by": "agent:unknown"
@@ -2036,6 +2059,7 @@
         "slug": "elements/docs-vault-entity",
         "kind": "element",
         "title": "Docs Vault (entity)",
+        "display_ko": "문서함 (엔티티)",
         "domain": "domains/local-vault-management",
         "path": "src/entities/docs-vault",
         "created_by": "agent:unknown"
@@ -2056,6 +2080,7 @@
         "slug": "elements/docs-vault-view",
         "kind": "element",
         "title": "Docs Vault (view)",
+        "display_ko": "문서함 (화면)",
         "domain": "domains/local-vault-management",
         "path": "src/views/docs-vault",
         "created_by": "agent:unknown"
@@ -2076,6 +2101,7 @@
         "slug": "elements/docs-vault-widget",
         "kind": "element",
         "title": "Docs Vault (widget)",
+        "display_ko": "문서함 (위젯)",
         "domain": "domains/local-vault-management",
         "path": "src/widgets/docs-vault",
         "created_by": "agent:unknown"
@@ -2096,6 +2122,7 @@
         "slug": "elements/domain-capacity-bar",
         "kind": "element",
         "title": "Domain Capacity Bar",
+        "display_ko": "도메인 용량 막대",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/domain-capacity-bar",
         "created_by": "agent:unknown"
@@ -2116,6 +2143,7 @@
         "slug": "elements/download",
         "kind": "element",
         "title": "Download",
+        "display_ko": "내려받기 화면",
         "domain": "domains/onboarding-and-shell",
         "path": "src/views/download",
         "created_by": "agent:unknown"
@@ -2136,6 +2164,7 @@
         "slug": "elements/first-run",
         "kind": "element",
         "title": "First Run",
+        "display_ko": "첫 실행 화면",
         "domain": "domains/onboarding-and-shell",
         "path": "src/views/first-run",
         "created_by": "agent:unknown"
@@ -2156,6 +2185,7 @@
         "slug": "elements/full-detail-a1",
         "kind": "element",
         "title": "Full Detail A1",
+        "display_ko": "전체 상세",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/full-detail-a1",
         "created_by": "agent:unknown"
@@ -2176,6 +2206,7 @@
         "slug": "elements/gateway-chrome",
         "kind": "element",
         "title": "Gateway Chrome",
+        "display_ko": "관문 크롬",
         "domain": "domains/onboarding-and-shell",
         "path": "src/widgets/gateway-chrome",
         "created_by": "agent:unknown"
@@ -2196,6 +2227,7 @@
         "slug": "elements/gateway-doc",
         "kind": "element",
         "title": "Gateway Doc",
+        "display_ko": "관문 읽을거리",
         "domain": "domains/onboarding-and-shell",
         "path": "src/views/gateway-doc",
         "created_by": "agent:unknown"
@@ -2216,6 +2248,7 @@
         "slug": "elements/gesture-hint",
         "kind": "element",
         "title": "Gesture Hint",
+        "display_ko": "제스처 힌트",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/gesture-hint",
         "created_by": "agent:unknown"
@@ -2236,6 +2269,7 @@
         "slug": "elements/git",
         "kind": "element",
         "title": "Git",
+        "display_ko": "git 연동",
         "domain": "domains/local-vault-management",
         "path": "src/views/git",
         "created_by": "agent:unknown"
@@ -2256,6 +2290,7 @@
         "slug": "elements/global-search",
         "kind": "element",
         "title": "Global Search",
+        "display_ko": "전체 검색",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/global-search",
         "created_by": "agent:unknown"
@@ -2276,6 +2311,7 @@
         "slug": "elements/home",
         "kind": "element",
         "title": "Home",
+        "display_ko": "홈 화면",
         "domain": "domains/onboarding-and-shell",
         "path": "src/views/home",
         "created_by": "agent:unknown"
@@ -2296,6 +2332,7 @@
         "slug": "elements/knowledge-graph",
         "kind": "element",
         "title": "Knowledge Graph",
+        "display_ko": "지식 그래프",
         "domain": "domains/graph-modeling",
         "path": "src/entities/knowledge-graph",
         "created_by": "agent:unknown"
@@ -2316,6 +2353,7 @@
         "slug": "elements/local-fs-handle",
         "kind": "element",
         "title": "Local Fs Handle",
+        "display_ko": "로컬 파일시스템 핸들",
         "domain": "domains/local-vault-management",
         "path": "src/entities/local-fs-handle",
         "created_by": "agent:unknown"
@@ -2336,6 +2374,7 @@
         "slug": "elements/native-vault-filesystem-bridge",
         "kind": "element",
         "title": "Native Vault Filesystem Bridge",
+        "display_ko": "네이티브 볼트 파일시스템 브리지",
         "domain": "domains/local-vault-management",
         "path": "src-tauri/src/lib.rs",
         "created_by": "agent:unknown"
@@ -2356,6 +2395,7 @@
         "slug": "elements/ontology-change-review",
         "kind": "element",
         "title": "Ontology Change Review",
+        "display_ko": "온톨로지 변경 검토",
         "domain": "domains/graph-modeling",
         "path": "src/features/ontology-change-review",
         "created_by": "agent:unknown"
@@ -2363,7 +2403,7 @@
       "headings": [],
       "excerpt": "A transient pre-write review that renders the exact typed ontology change requested by either the map editor or ACP. It never persists a second approval record: confirmed Markdown frontmatter remains the source of truth.",
       "wordCount": 34,
-      "updatedAt": "2026-08-21",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2376,6 +2416,7 @@
         "slug": "elements/ontology-class",
         "kind": "element",
         "title": "Ontology Class",
+        "display_ko": "온톨로지 클래스",
         "domain": "domains/graph-modeling",
         "path": "src/entities/ontology-class",
         "created_by": "agent:unknown"
@@ -2396,6 +2437,7 @@
         "slug": "elements/ontology-edit-redirect",
         "kind": "element",
         "title": "Ontology Workbench Compatibility Redirect",
+        "display_ko": "옛 작업대 링크 넘김",
         "domain": "domains/graph-modeling",
         "path": "src/views/ontology-edit-redirect",
         "created_by": "agent:unknown"
@@ -2403,7 +2445,7 @@
       "headings": [],
       "excerpt": "/ontology/edit and /ontology/studio are static-export compatibility entries. OntologyEditRedirectPage translates legacy node/mode/edit/via/review parameters into /topology p/workbench/edit state; neither old address is a navigation destination or write surface.",
       "wordCount": 26,
-      "updatedAt": "2026-08-21",
+      "updatedAt": "2026-08-23",
       "linksOut": []
     },
     {
@@ -2416,6 +2458,7 @@
         "slug": "elements/ontology-insights",
         "kind": "element",
         "title": "Ontology Insights",
+        "display_ko": "분석 화면",
         "domain": "domains/graph-modeling",
         "path": "src/views/ontology-insights",
         "created_by": "agent:unknown"
@@ -2436,6 +2479,7 @@
         "slug": "elements/ontology-meaning-editor",
         "kind": "element",
         "title": "Ontology Meaning Editor",
+        "display_ko": "뜻 편집기",
         "domain": "domains/graph-modeling",
         "path": "src/features/ontology-meaning-editor",
         "created_by": "agent:unknown"
@@ -2456,6 +2500,7 @@
         "slug": "elements/ontology-redirect",
         "kind": "element",
         "title": "Ontology Redirect",
+        "display_ko": "옛 온톨로지 링크 넘김",
         "domain": "domains/graph-modeling",
         "path": "src/views/ontology-redirect",
         "created_by": "agent:unknown"
@@ -2476,6 +2521,7 @@
         "slug": "elements/private-vault-sidecar-boundary",
         "kind": "element",
         "title": "Private Vault Sidecar Boundary",
+        "display_ko": "볼트 사이드카 경계",
         "domain": "domains/local-vault-management",
         "path": "mcp/src/vault-sidecar.mjs",
         "created_by": "agent:unknown"
@@ -2496,6 +2542,7 @@
         "slug": "elements/project",
         "kind": "element",
         "title": "Project (entity)",
+        "display_ko": "프로젝트 (엔티티)",
         "domain": "domains/project-portfolio",
         "path": "src/entities/project",
         "created_by": "agent:unknown"
@@ -2516,6 +2563,7 @@
         "slug": "elements/project-detail",
         "kind": "element",
         "title": "Project Detail",
+        "display_ko": "프로젝트 상세",
         "domain": "domains/project-portfolio",
         "path": "src/views/project-detail",
         "created_by": "agent:unknown"
@@ -2536,6 +2584,7 @@
         "slug": "elements/project-drawer",
         "kind": "element",
         "title": "Project Drawer",
+        "display_ko": "프로젝트 서랍",
         "domain": "domains/project-portfolio",
         "path": "src/widgets/project-drawer",
         "created_by": "agent:unknown"
@@ -2556,6 +2605,7 @@
         "slug": "elements/project-editor",
         "kind": "element",
         "title": "Project Editor",
+        "display_ko": "프로젝트 편집기",
         "domain": "domains/project-portfolio",
         "path": "src/views/project-editor",
         "created_by": "agent:unknown"
@@ -2576,6 +2626,7 @@
         "slug": "elements/project-selector",
         "kind": "element",
         "title": "Project Selector",
+        "display_ko": "프로젝트 선택기",
         "domain": "domains/project-portfolio",
         "path": "src/views/project-selector",
         "created_by": "agent:unknown"
@@ -2596,6 +2647,7 @@
         "slug": "elements/public-quick-actions",
         "kind": "element",
         "title": "Public Quick Actions",
+        "display_ko": "공개 빠른 동작",
         "domain": "domains/onboarding-and-shell",
         "path": "src/widgets/public-quick-actions",
         "created_by": "agent:unknown"
@@ -2616,6 +2668,7 @@
         "slug": "elements/recent-node-row",
         "kind": "element",
         "title": "Recent Node Row",
+        "display_ko": "최근 노드 줄",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/recent-node-row",
         "created_by": "agent:unknown"
@@ -2636,6 +2689,7 @@
         "slug": "elements/root-entry",
         "kind": "element",
         "title": "Root Entry",
+        "display_ko": "루트 진입",
         "domain": "domains/onboarding-and-shell",
         "path": "src/views/root-entry",
         "created_by": "agent:unknown"
@@ -2656,6 +2710,7 @@
         "slug": "elements/search-hint",
         "kind": "element",
         "title": "Search Hint",
+        "display_ko": "검색 힌트",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/search-hint",
         "created_by": "agent:unknown"
@@ -2676,6 +2731,7 @@
         "slug": "elements/search-palette",
         "kind": "element",
         "title": "Search Palette",
+        "display_ko": "검색 팔레트",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/search-palette",
         "created_by": "agent:unknown"
@@ -2696,6 +2752,7 @@
         "slug": "elements/shortcut-sheet",
         "kind": "element",
         "title": "Shortcut Sheet",
+        "display_ko": "단축키 시트",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/shortcut-sheet",
         "created_by": "agent:unknown"
@@ -2716,6 +2773,7 @@
         "slug": "elements/status",
         "kind": "element",
         "title": "Status",
+        "display_ko": "상태",
         "domain": "domains/graph-modeling",
         "path": "src/entities/status",
         "created_by": "agent:unknown"
@@ -2736,6 +2794,7 @@
         "slug": "elements/topology-controls",
         "kind": "element",
         "title": "Topology Controls",
+        "display_ko": "지도 컨트롤",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/topology-controls",
         "created_by": "agent:unknown"
@@ -2756,6 +2815,7 @@
         "slug": "elements/topology-index-panel",
         "kind": "element",
         "title": "Topology Index Panel",
+        "display_ko": "지도 INDEX 패널",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/topology-index-panel",
         "created_by": "agent:unknown"
@@ -2776,6 +2836,7 @@
         "slug": "elements/topology-map-v2",
         "kind": "element",
         "title": "Topology Map V2",
+        "display_ko": "지도 렌더러 v2",
         "domain": "domains/topology-navigation",
         "path": "src/widgets/topology-map-v2",
         "created_by": "agent:unknown"
@@ -2796,6 +2857,7 @@
         "slug": "elements/vault-agent-panel",
         "kind": "element",
         "title": "Vault Agent Panel",
+        "display_ko": "볼트 에이전트 패널",
         "domain": "domains/agent-integration",
         "path": "src/widgets/vault-agent-panel",
         "created_by": "agent:unknown"

@@ -3,6 +3,7 @@ uid: 5cd03c77-f1ed-448f-bb17-c4c3c804418a
 slug: capabilities/data-source-mode
 kind: capability
 title: Data Source Mode Branching
+display_ko: 데이터 출처 모드 분기
 domain: domains/local-vault-management
 elements: []
 path: src/features/data-source-mode

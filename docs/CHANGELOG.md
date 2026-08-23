@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-08-23 · Every concept in the dogfood vault now has a Korean name
+
+- All 83 nodes carry a `display_ko`, up from 21. On a Korean screen the map, the
+  INDEX panel, node details, and the download page's evidence section no longer mix
+  English names into Korean text. Measured on `/ko/download/`: 33 labels drawn, none
+  Latin-only, where most were English before.
+- English screens are unchanged: they read `display_en` or the title as before.
+
 ## 2026-08-23 · The evidence section shows one real file instead of counts
 
 - The right half of the download page's evidence section is now **one file that

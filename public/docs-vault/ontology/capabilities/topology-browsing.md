@@ -3,6 +3,7 @@ uid: c183b392-62bd-455f-a310-c541f49e7c38
 slug: capabilities/topology-browsing
 kind: capability
 title: "Topology Map Rendering & Search"
+display_ko: 지도 그리기와 검색
 domain: domains/topology-navigation
 elements: [elements/global-search, elements/search-palette, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
 path: src/widgets/topology-map-v2

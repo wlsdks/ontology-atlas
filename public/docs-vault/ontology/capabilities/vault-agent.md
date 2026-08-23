@@ -3,6 +3,7 @@ uid: a81da7e2-8ff6-46c9-a0aa-27b2948bc7b3
 slug: capabilities/vault-agent
 kind: capability
 title: "Agent Connect & Vault Access"
+display_ko: 에이전트 연결과 볼트 접근
 domain: domains/agent-integration
 elements: [elements/agents-destination, elements/vault-agent-panel]
 path: src/features/vault-agent

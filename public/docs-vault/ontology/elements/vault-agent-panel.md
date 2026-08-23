@@ -3,6 +3,7 @@ uid: 7294bda8-ce25-46e4-80ae-5f2e3619a48d
 slug: elements/vault-agent-panel
 kind: element
 title: Vault Agent Panel
+display_ko: 볼트 에이전트 패널
 domain: domains/agent-integration
 path: src/widgets/vault-agent-panel
 created_by: "agent:unknown"

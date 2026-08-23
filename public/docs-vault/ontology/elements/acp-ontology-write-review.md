@@ -3,6 +3,7 @@ uid: 5792b459-345c-469c-8342-7e2b902cffa3
 slug: elements/acp-ontology-write-review
 kind: element
 title: ACP Ontology Write Review
+display_ko: ACP 쓰기 검토
 domain: domains/graph-modeling
 path: src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx
 created_by: "agent:unknown"

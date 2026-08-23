@@ -3,6 +3,7 @@ uid: 0563e7ee-3818-4bbd-97fa-4035ad43a03d
 slug: capabilities/project-data-source
 kind: capability
 title: Project Data Access
+display_ko: 프로젝트 데이터 읽기
 domain: domains/local-vault-management
 elements: [elements/project]
 path: src/features/project-data-source

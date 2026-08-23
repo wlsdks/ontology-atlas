@@ -3,6 +3,7 @@ uid: 034ea9b5-5381-46c3-ae91-b1dc6ad8b184
 slug: capabilities/project-share
 kind: capability
 title: Project Link Copy
+display_ko: 프로젝트 링크 복사
 domain: domains/project-portfolio
 elements: []
 path: src/features/project-share
