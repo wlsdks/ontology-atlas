@@ -254,8 +254,8 @@ function render(result) {
       'mcp-grants',
       result.checks.mcpGrants.status,
       result.checks.mcpGrants.status === 'not-applicable'
-        ? 'no .mcp.json or no agent briefs to check'
-        : `agent-brief MCP grants declared in .mcp.json (${result.checks.mcpGrants.briefsChecked} briefs · ${result.checks.mcpGrants.grantsChecked} grants · ${result.checks.mcpGrants.undeclaredServers.length} undeclared server${result.checks.mcpGrants.undeclaredServers.length === 1 ? '' : 's'})`,
+        ? 'no MCP config or no agent briefs to check'
+        : `agent-brief MCP grants declared in each tree's own config (${result.checks.mcpGrants.briefsChecked} briefs · ${result.checks.mcpGrants.grantsChecked} grants · ${result.checks.mcpGrants.undeclaredServers.length} undeclared server${result.checks.mcpGrants.undeclaredServers.length === 1 ? '' : 's'}${result.checks.mcpGrants.unparseableConfigs.length > 0 ? ` · ${result.checks.mcpGrants.unparseableConfigs.join(', ')} declares nothing` : ''})`,
     ],
     [
       'codex-size-cap',
@@ -323,7 +323,7 @@ function printUsage(stream = process.stderr) {
       `.github/copilot-instructions.md, .codex, .mcp.json) plus drift\n` +
       `checks: CLAUDE.md ↔ AGENTS.md import bridge, duplicated skill-tree\n` +
       `byte diff, duplicated agent-brief byte diff, @reference existence,\n` +
-      `agent-brief MCP grants declared in .mcp.json,\n` +
+      `agent-brief MCP grants declared in each tree's own MCP config,\n` +
       `and the Codex 32 KiB cap measured across the merged root + nested set.\n\n` +
       `--english-only adds a check that no agent file carries Hangul, kana or\n` +
       `Han. It is opt-in: a vault or repository may legitimately be written in\n` +

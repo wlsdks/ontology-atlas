@@ -54,6 +54,16 @@ interface AgentFileRule {
  */
 const MCP_TOOL_RE = /\bmcp__([a-z0-9][a-z0-9_-]*)__[a-z0-9_]+/gi;
 
+/**
+ * Codex declares its servers in TOML. This module ships in the web bundle, so it
+ * reads section headers rather than pulling in a parser the browser build has no
+ * reason to carry, and the CLI twin reads them the same way so the two cannot
+ * disagree. `[mcp_servers.name]` and `[mcp_servers.name.env]` name one server;
+ * only the first segment counts.
+ */
+const TOML_MCP_SECTION_RE =
+  /^[ \t]*\[[ \t]*(?:mcp_servers|"mcp_servers"|'mcp_servers')[ \t]*\.[ \t]*(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))/gm;
+
 const NON_ENGLISH_SCRIPT_RE =
   /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/gu;
 
@@ -138,7 +148,7 @@ export interface AgentFilesAnalysis {
       briefsChecked: number;
       grantsChecked: number;
       undeclaredServers: string[];
-      configUnparseable: boolean;
+      unparseableConfigs: string[];
     };
     codexSizeCap: {
       status: AgentDriftCheckStatus;
@@ -583,78 +593,124 @@ export function analyzeAgentFiles({
    * nothing to contradict. One that will not parse declares no server at all,
    * which makes every grant undeclared — reading that as a pass is fail-open.
    */
+  /**
+   * ⑥ Agent-brief MCP grants. A brief's `tools:` list is an allowlist, not a
+   * request: naming `mcp__chrome-devtools__evaluate_script` on a seat whose
+   * server no repository config declares does not fail loudly — the tool is
+   * simply absent and the seat runs on unable to measure anything.
+   *
+   * Each tree is measured against the config its own reader consults: `.claude`
+   * briefs against `.mcp.json`, `.agents` briefs against `.codex/config.toml`.
+   * Measuring both against `.mcp.json` passed while `.codex/config.toml`
+   * declared one server and eight mirrored Codex seats granted two — the same
+   * defect the check exists to catch, hidden by the wrong denominator.
+   *
+   * A config that exists but declares nothing makes every grant undeclared;
+   * reading that as a pass is fail-open.
+   */
   const mcpGrants = (() => {
-    const mcpRecord = recordByPath.get('.mcp.json');
-    const briefs = records.filter(
-      (r) => r.kind === 'agent' && typeof r.entry.content === 'string',
-    );
-    let state: 'absent' | 'parsed' | 'unparseable' = 'absent';
-    let declared = new Set<string>();
-    if (mcpRecord && typeof mcpRecord.entry.content === 'string') {
+    const sources = [
+      {
+        prefix: '.claude/agents/',
+        configPath: '.mcp.json',
+        read: (text: string): Set<string> => {
+          const servers = (JSON.parse(text) as { mcpServers?: unknown })?.mcpServers;
+          return new Set(servers && typeof servers === 'object' ? Object.keys(servers) : []);
+        },
+      },
+      {
+        prefix: '.agents/agents/',
+        configPath: '.codex/config.toml',
+        read: (text: string): Set<string> => {
+          const found = new Set<string>();
+          for (const match of text.matchAll(TOML_MCP_SECTION_RE)) {
+            found.add((match[1] ?? match[2] ?? match[3]) as string);
+          }
+          return found;
+        },
+      },
+    ];
+
+    const undeclared = new Set<string>();
+    const unparseableConfigs: string[] = [];
+    let briefsChecked = 0;
+    let grantsChecked = 0;
+    let anyConfig = false;
+
+    for (const source of sources) {
+      const configRecord = recordByPath.get(source.configPath);
+      const briefs = records.filter(
+        (r) => r.path.startsWith(source.prefix) && typeof r.entry.content === 'string',
+      );
+      if (!configRecord || typeof configRecord.entry.content !== 'string') continue;
+      if (briefs.length === 0) continue;
+      anyConfig = true;
+      briefsChecked += briefs.length;
+
+      let declared = new Set<string>();
       try {
-        const servers = (JSON.parse(mcpRecord.entry.content) as { mcpServers?: unknown })
-          ?.mcpServers;
-        declared = new Set(servers && typeof servers === 'object' ? Object.keys(servers) : []);
-        state = 'parsed';
+        declared = source.read(configRecord.entry.content);
       } catch {
-        state = 'unparseable';
+        declared = new Set();
+      }
+      if (declared.size === 0) {
+        unparseableConfigs.push(source.configPath);
+        drift.push({
+          check: 'mcp-grants',
+          code: 'mcp-config-unparseable',
+          path: source.configPath,
+          message:
+            `${source.configPath} exists but declares no MCP server: every agent-brief grant in `
+            + `${source.prefix} is undeclared and a fresh clone silently loses those tools`,
+          detail: { prefix: source.prefix },
+        });
+        if (!configRecord.drift.includes('mcp-config-unparseable')) {
+          configRecord.drift.push('mcp-config-unparseable');
+        }
+      }
+
+      for (const record of briefs) {
+        const frontmatter = (record.entry.content as string).split('\n---')[0];
+        const seen = new Set<string>();
+        for (const [, server] of frontmatter.matchAll(MCP_TOOL_RE)) {
+          grantsChecked += 1;
+          if (declared.has(server) || seen.has(server)) continue;
+          seen.add(server);
+          undeclared.add(server);
+          drift.push({
+            check: 'mcp-grants',
+            code: 'undeclared-mcp-server',
+            path: record.path,
+            message:
+              `${record.path} grants tools from the MCP server "${server}", which `
+              + `${source.configPath} does not declare; a fresh clone gets the seat without the `
+              + 'tools and no error',
+            detail: { server, configPath: source.configPath },
+          });
+          if (!record.drift.includes('undeclared-mcp-server')) {
+            record.drift.push('undeclared-mcp-server');
+          }
+        }
       }
     }
-    if (state === 'absent' || briefs.length === 0) {
+
+    if (!anyConfig) {
       return {
         status: 'not-applicable' as AgentDriftCheckStatus,
         briefsChecked: 0,
         grantsChecked: 0,
         undeclaredServers: [] as string[],
-        configUnparseable: false,
+        unparseableConfigs: [] as string[],
       };
     }
-    if (state === 'unparseable') {
-      drift.push({
-        check: 'mcp-grants',
-        code: 'mcp-config-unparseable',
-        path: '.mcp.json',
-        message:
-          '.mcp.json exists but will not parse, so it declares no server: every agent-brief '
-          + 'MCP grant is undeclared and a fresh clone silently loses those tools',
-        detail: {},
-      });
-      if (mcpRecord && !mcpRecord.drift.includes('mcp-config-unparseable')) {
-        mcpRecord.drift.push('mcp-config-unparseable');
-      }
-    }
-    const undeclared = new Set<string>();
-    let grantsChecked = 0;
-    for (const record of briefs) {
-      const frontmatter = (record.entry.content as string).split('\n---')[0];
-      const seen = new Set<string>();
-      for (const [, server] of frontmatter.matchAll(MCP_TOOL_RE)) {
-        grantsChecked += 1;
-        if (declared.has(server) || seen.has(server)) continue;
-        seen.add(server);
-        undeclared.add(server);
-        drift.push({
-          check: 'mcp-grants',
-          code: 'undeclared-mcp-server',
-          path: record.path,
-          message:
-            `${record.path} grants tools from the MCP server "${server}", which .mcp.json `
-            + 'does not declare; a fresh clone gets the seat without the tools and no error',
-          detail: { server },
-        });
-        if (!record.drift.includes('undeclared-mcp-server')) {
-          record.drift.push('undeclared-mcp-server');
-        }
-      }
-    }
     return {
-      status: (undeclared.size > 0 || state === 'unparseable'
+      status: (undeclared.size > 0 || unparseableConfigs.length > 0
         ? 'drift'
         : 'ok') as AgentDriftCheckStatus,
-      briefsChecked: briefs.length,
+      briefsChecked,
       grantsChecked,
       undeclaredServers: [...undeclared].sort(),
-      configUnparseable: state === 'unparseable',
+      unparseableConfigs: unparseableConfigs.sort(),
     };
   })();
 

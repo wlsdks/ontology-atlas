@@ -453,30 +453,15 @@ function checkAgentLanguage(records, drift, requireEnglish) {
  * so the worst case any path can reach is root plus the largest of them.
  */
 /**
- * An agent brief's `tools:` list is an allowlist, not a request. Naming
- * `mcp__chrome-devtools__evaluate_script` on a seat whose server no repository
- * config declares does not fail loudly — the tool is simply absent, and the seat
- * runs on with no way to measure anything. Eight design seats and one PO seat
- * granted exactly that for months while `.mcp.json` declared one server; the
- * design gate AGENTS.md calls mandatory was inoperable for anyone but the author,
- * whose personal `~/.claude.json` happened to carry it (2026-08-24 audit).
- *
- * A personal config cannot be the repository's contract. What a fresh clone can
- * start is what `.mcp.json` says, so that is what this measures.
+ * `absent` and `unparseable` must not collapse together. A vault with no config
+ * has nothing to contradict, so the check does not apply. A config that exists
+ * but declares nothing makes every grant undeclared — reading that as a pass is
+ * the fail-open shape this repository has already been bitten by (probe,
+ * 2026-08-24).
  */
-const MCP_TOOL_RE = /\bmcp__([a-z0-9][a-z0-9_-]*)__[a-z0-9_]+/gi;
-
-/**
- * `absent` and `unparseable` must not collapse together. A vault with no
- * `.mcp.json` has nothing to contradict, so the check does not apply. A
- * `.mcp.json` that exists but will not parse declares no server at all, which
- * makes every grant undeclared — reading that as a pass is the fail-open shape
- * this repository has already been bitten by (probe, 2026-08-24).
- */
-function declaredMcpServers(recordByPath) {
-  const record = recordByPath.get('.mcp.json');
+function declaredFromMcpJson(record) {
   if (!record || typeof record.entry.content !== 'string') {
-    return { state: 'absent', servers: null };
+    return { state: 'absent', servers: new Set() };
   }
   try {
     const servers = JSON.parse(record.entry.content)?.mcpServers;
@@ -489,66 +474,132 @@ function declaredMcpServers(recordByPath) {
   }
 }
 
+/**
+ * Codex declares its servers in TOML, and this module is shared with the web
+ * bundle, so it reads section headers rather than importing a parser the browser
+ * build has no reason to carry. `[mcp_servers.name]` and
+ * `[mcp_servers.name.env]` both name the same server; only the first segment
+ * counts. A config with no such section declares nothing, which is the
+ * `unparseable` verdict above rather than a pass.
+ */
+const TOML_MCP_SECTION_RE =
+  /^[ \t]*\[[ \t]*(?:mcp_servers|"mcp_servers"|'mcp_servers')[ \t]*\.[ \t]*(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))/gm;
+
+function declaredFromCodexConfig(record) {
+  if (!record || typeof record.entry.content !== 'string') {
+    return { state: 'absent', servers: new Set() };
+  }
+  const servers = new Set();
+  for (const match of record.entry.content.matchAll(TOML_MCP_SECTION_RE)) {
+    servers.add(match[1] ?? match[2] ?? match[3]);
+  }
+  return { state: servers.size > 0 ? 'parsed' : 'unparseable', servers };
+}
+
+/**
+ * An agent brief's `tools:` list is an allowlist, not a request. Naming
+ * `mcp__chrome-devtools__evaluate_script` on a seat whose server no repository
+ * config declares does not fail loudly — the tool is simply absent, and the seat
+ * runs on with no way to measure anything. Eight design seats and one PO seat
+ * granted exactly that for months while `.mcp.json` declared one server; the
+ * design gate AGENTS.md calls mandatory was inoperable for anyone but the author,
+ * whose personal `~/.claude.json` happened to carry it (2026-08-24 audit).
+ *
+ * Each tree is measured against the config its own reader consults: `.claude`
+ * briefs against `.mcp.json`, `.agents` briefs against `.codex/config.toml`. The
+ * first version measured both against `.mcp.json` and therefore passed while
+ * `.codex/config.toml` declared one server and the eight mirrored Codex seats
+ * granted two — the same defect the check was written to catch, hidden by the
+ * wrong denominator. Because the two brief trees are byte identical, this means
+ * in practice that every granted server must be declared in both configs.
+ *
+ * A personal config cannot be the repository's contract. What a fresh clone can
+ * start is what these files say, so that is what this measures.
+ */
+const MCP_TOOL_RE = /\bmcp__([a-z0-9][a-z0-9_-]*)__[a-z0-9_]+/gi;
+
+const GRANT_SOURCES = Object.freeze([
+  Object.freeze({ prefix: '.claude/agents/', configPath: '.mcp.json', read: declaredFromMcpJson }),
+  Object.freeze({
+    prefix: '.agents/agents/',
+    configPath: '.codex/config.toml',
+    read: declaredFromCodexConfig,
+  }),
+]);
+
 function checkMcpGrants(recordByPath, records, drift) {
-  const config = declaredMcpServers(recordByPath);
-  const briefs = records.filter(
-    (r) => r.kind === 'agent' && typeof r.entry.content === 'string',
-  );
-  if (config.state === 'absent' || briefs.length === 0) {
+  const undeclared = new Set();
+  const unparseableConfigs = [];
+  let briefsChecked = 0;
+  let grantsChecked = 0;
+  let anyConfig = false;
+
+  for (const source of GRANT_SOURCES) {
+    const briefs = records.filter(
+      (r) => r.path.startsWith(source.prefix) && typeof r.entry.content === 'string',
+    );
+    const config = source.read(recordByPath.get(source.configPath));
+    if (config.state === 'absent' || briefs.length === 0) continue;
+    anyConfig = true;
+    briefsChecked += briefs.length;
+
+    if (config.state === 'unparseable') {
+      unparseableConfigs.push(source.configPath);
+      const configRecord = recordByPath.get(source.configPath);
+      drift.push({
+        check: 'mcp-grants',
+        code: 'mcp-config-unparseable',
+        path: source.configPath,
+        message:
+          `${source.configPath} exists but declares no MCP server: every agent-brief grant in `
+          + `${source.prefix} is undeclared and a fresh clone silently loses those tools`,
+        detail: { prefix: source.prefix },
+      });
+      if (configRecord && !configRecord.drift.includes('mcp-config-unparseable')) {
+        configRecord.drift.push('mcp-config-unparseable');
+      }
+    }
+
+    for (const record of briefs) {
+      const frontmatter = record.entry.content.split('\n---')[0];
+      const seen = new Set();
+      for (const [, server] of frontmatter.matchAll(MCP_TOOL_RE)) {
+        grantsChecked += 1;
+        if (config.servers.has(server) || seen.has(server)) continue;
+        seen.add(server);
+        undeclared.add(server);
+        drift.push({
+          check: 'mcp-grants',
+          code: 'undeclared-mcp-server',
+          path: record.path,
+          message:
+            `${record.path} grants tools from the MCP server "${server}", which `
+            + `${source.configPath} does not declare; a fresh clone gets the seat without the `
+            + 'tools and no error',
+          detail: { server, configPath: source.configPath },
+        });
+        if (!record.drift.includes('undeclared-mcp-server')) {
+          record.drift.push('undeclared-mcp-server');
+        }
+      }
+    }
+  }
+
+  if (!anyConfig) {
     return {
       status: 'not-applicable',
       briefsChecked: 0,
       grantsChecked: 0,
       undeclaredServers: [],
-      configUnparseable: false,
+      unparseableConfigs: [],
     };
   }
-  if (config.state === 'unparseable') {
-    const mcpRecord = recordByPath.get('.mcp.json');
-    drift.push({
-      check: 'mcp-grants',
-      code: 'mcp-config-unparseable',
-      path: '.mcp.json',
-      message:
-        '.mcp.json exists but will not parse, so it declares no server: every agent-brief '
-        + 'MCP grant is undeclared and a fresh clone silently loses those tools',
-      detail: {},
-    });
-    if (mcpRecord && !mcpRecord.drift.includes('mcp-config-unparseable')) {
-      mcpRecord.drift.push('mcp-config-unparseable');
-    }
-  }
-  const declared = config.servers;
-  const undeclared = new Set();
-  let grantsChecked = 0;
-  for (const record of briefs) {
-    const frontmatter = record.entry.content.split('\n---')[0];
-    const seen = new Set();
-    for (const [, server] of frontmatter.matchAll(MCP_TOOL_RE)) {
-      grantsChecked += 1;
-      if (declared.has(server) || seen.has(server)) continue;
-      seen.add(server);
-      undeclared.add(server);
-      drift.push({
-        check: 'mcp-grants',
-        code: 'undeclared-mcp-server',
-        path: record.path,
-        message:
-          `${record.path} grants tools from the MCP server "${server}", which .mcp.json `
-          + 'does not declare; a fresh clone gets the seat without the tools and no error',
-        detail: { server },
-      });
-      if (!record.drift.includes('undeclared-mcp-server')) {
-        record.drift.push('undeclared-mcp-server');
-      }
-    }
-  }
   return {
-    status: undeclared.size > 0 || config.state === 'unparseable' ? 'drift' : 'ok',
-    briefsChecked: briefs.length,
+    status: undeclared.size > 0 || unparseableConfigs.length > 0 ? 'drift' : 'ok',
+    briefsChecked,
     grantsChecked,
     undeclaredServers: [...undeclared].sort(),
-    configUnparseable: config.state === 'unparseable',
+    unparseableConfigs: unparseableConfigs.sort(),
   };
 }
 

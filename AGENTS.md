@@ -23,9 +23,7 @@ facts by an agent and readable and judgeable by a human.
 
 The app is the vault's home and the web is a gateway or second-best workbench.
 They share one folder, parser contract, and vault-local records; they do not
-promise identical screens. Keep degradation honest. Before any non-trivial
-product, UX, graph, MCP, CLI, workflow, or macOS-shell change, run the PO gate;
-for visual work, run the design gate after it.
+promise identical screens. Keep degradation honest.
 
 > **One product/system, one ontology, that people and their AI agents grow together.**
 
@@ -92,9 +90,10 @@ routing only: when to open a gate, not how it runs.
   assets or wording. A new design rule needs lint enforcement, an inventory and
   a probe, and its values live only in `docs/DESIGN-SYSTEM.md`.
 - **Browser measurement** — the design and craft seats read rendered geometry
-  through the `chrome-devtools` server that `.mcp.json` declares. A seat may
-  only name a server declared there; a personal agent config is not this
-  repository's contract, and `pnpm agents:check` enforces it.
+  through the `chrome-devtools` server, declared in `.mcp.json` and
+  `.codex/config.toml` alike because the two brief trees are byte identical. A
+  seat may only name a server its own tree's config declares; a personal agent
+  config is not this repository's contract, and `pnpm agents:check` enforces it.
 - **Councils** — `/po-council` before expensive or hard-to-reverse work: a new
   or removed surface, a public MCP/CLI/schema contract, positioning, or a first
   public release. `chief` seats it and never edits code. `/design-council` for

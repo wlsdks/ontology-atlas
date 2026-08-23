@@ -596,4 +596,66 @@ export const CASES = [
       ],
     },
   },
+  {
+    name: 'mcp grants — each tree is measured against the config its own reader consults',
+    input: {
+      files: [
+        { path: '.mcp.json', content: '{"mcpServers":{"ontology-atlas":{},"chrome-devtools":{}}}' },
+        { path: '.codex/config.toml', content: '[mcp_servers.ontology-atlas]\ncommand = "node"\n' },
+        { path: '.claude/agents/design-lead.md', content: '---\nname: design-lead\ntools: mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+        { path: '.agents/agents/design-lead.md', content: '---\nname: design-lead\ntools: mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        { path: '.agents/agents/design-lead.md', ruleId: 'agents-agents', kind: 'agent', tools: ['codex'], drift: ['undeclared-mcp-server'] },
+        { path: '.claude/agents/design-lead.md', ruleId: 'claude-agents', kind: 'agent', tools: ['claude-code'], drift: [] },
+        { path: '.codex/config.toml', ruleId: 'codex-dir', kind: 'config', tools: ['codex'], drift: [] },
+        { path: '.mcp.json', ruleId: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], drift: [] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'ok',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'drift',
+      },
+      drift: [
+        { check: 'mcp-grants', code: 'undeclared-mcp-server', path: '.agents/agents/design-lead.md' },
+      ],
+    },
+  },
+  {
+    name: 'mcp grants — both configs declaring the server is the passing case',
+    input: {
+      files: [
+        { path: '.mcp.json', content: '{"mcpServers":{"chrome-devtools":{}}}' },
+        { path: '.codex/config.toml', content: '[mcp_servers.chrome-devtools]\ncommand = "npx"\n\n[mcp_servers.chrome-devtools.env]\nX = "1"\n' },
+        { path: '.claude/agents/design-lead.md', content: '---\nname: design-lead\ntools: mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+        { path: '.agents/agents/design-lead.md', content: '---\nname: design-lead\ntools: mcp__chrome-devtools__evaluate_script\n---\nbody\n' },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        { path: '.agents/agents/design-lead.md', ruleId: 'agents-agents', kind: 'agent', tools: ['codex'], drift: [] },
+        { path: '.claude/agents/design-lead.md', ruleId: 'claude-agents', kind: 'agent', tools: ['claude-code'], drift: [] },
+        { path: '.codex/config.toml', ruleId: 'codex-dir', kind: 'config', tools: ['codex'], drift: [] },
+        { path: '.mcp.json', ruleId: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], drift: [] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'ok',
+        atRefs: 'not-applicable',
+        codexSizeCap: 'not-applicable',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'ok',
+      },
+      drift: [],
+    },
+  },
 ];
