@@ -34,19 +34,19 @@ describe('EvidenceSpecimen', () => {
    */
   it('보여 주는 줄이 전부 실제 볼트 파일에 그대로 있다', () => {
     const onDisk = readFileSync(join(process.cwd(), EVIDENCE_SPECIMEN.file), 'utf8');
-    expect(
-      EVIDENCE_SPECIMEN.frontmatter.length,
-      '보여 줄 줄이 하나도 없다 — 이 시험이 헛돈다',
-    ).toBeGreaterThan(4);
-    for (const line of EVIDENCE_SPECIMEN.frontmatter) {
-      expect(onDisk, `이 줄이 파일에 없다: ${line}`).toContain(line);
+    for (const locale of ['ko', 'en'] as const) {
+      const shown = EVIDENCE_SPECIMEN.frontmatter[locale];
+      expect(shown.length, `${locale}: 보여 줄 줄이 하나도 없다 — 이 시험이 헛돈다`).toBeGreaterThan(4);
+      for (const line of shown) {
+        expect(onDisk, `${locale}: 이 줄이 파일에 없다: ${line}`).toContain(line);
+      }
     }
   });
 
   it('화면에 그 줄들이 그대로 그려진다', () => {
     render(wrap(<EvidenceSpecimen />));
     const panel = screen.getByTestId('evidence-specimen');
-    for (const line of EVIDENCE_SPECIMEN.frontmatter) {
+    for (const line of EVIDENCE_SPECIMEN.frontmatter.en) {
       expect(panel.textContent ?? '').toContain(line);
     }
     expect(panel.textContent ?? '').toContain(EVIDENCE_SPECIMEN.file);
@@ -68,16 +68,20 @@ describe('EvidenceSpecimen', () => {
     const onDisk = readFileSync(join(process.cwd(), EVIDENCE_SPECIMEN.file), 'utf8');
     const total = /^---\n([\s\S]*?)\n---/.exec(onDisk)?.[1].split('\n').length ?? 0;
     expect(total, 'frontmatter 를 못 읽었다 — 이 시험이 헛돈다').toBeGreaterThan(4);
-    expect(
-      EVIDENCE_SPECIMEN.frontmatter.length + EVIDENCE_SPECIMEN.omittedLines,
-      `보여 준 ${EVIDENCE_SPECIMEN.frontmatter.length}줄 + 뺐다고 한 ${EVIDENCE_SPECIMEN.omittedLines}줄 이 ` +
-        `파일의 ${total}줄과 안 맞는다 — 부분을 전체라고 말하고 있다`,
-    ).toBe(total);
+    for (const locale of ['ko', 'en'] as const) {
+      const shown = EVIDENCE_SPECIMEN.frontmatter[locale].length;
+      const omitted = EVIDENCE_SPECIMEN.omittedLines[locale];
+      expect(
+        shown + omitted,
+        `${locale}: 보여 준 ${shown}줄 + 뺐다고 한 ${omitted}줄 이 파일의 ${total}줄과 안 맞는다 ` +
+          `— 부분을 전체라고 말하고 있다`,
+      ).toBe(total);
+    }
 
     render(wrap(<EvidenceSpecimen />));
     const panel = screen.getByTestId('evidence-specimen');
-    if (EVIDENCE_SPECIMEN.omittedLines > 0) {
-      expect(panel.textContent ?? '').toContain(String(EVIDENCE_SPECIMEN.omittedLines));
+    if (EVIDENCE_SPECIMEN.omittedLines.en > 0) {
+      expect(panel.textContent ?? '').toContain(String(EVIDENCE_SPECIMEN.omittedLines.en));
     }
   });
 
@@ -103,6 +107,21 @@ describe('EvidenceSpecimen', () => {
     const panel = screen.getByTestId('evidence-specimen');
     expect(panel.textContent ?? '').toContain(EVIDENCE_SPECIMEN.facts.name.en);
     expect(panel.textContent ?? '').toContain(EVIDENCE_SPECIMEN.facts.domain.en);
+  });
+
+  /**
+   * **The English panel draws no Korean.** `/en/download/` is one of two routes
+   * `tests/e2e/locale-purity.spec.ts` locks as drawing no vault text, and the first version of
+   * this panel broke it: showing the file verbatim put `display_ko: AI 연결 서버` on an English
+   * screen. CI caught it (2026-08-23). The fix leaves the other locale's display line out and
+   * counts it, so this asserts the property at the unit level too — an e2e failure is a slow way
+   * to learn it.
+   */
+  it('영문 패널에 한글이 하나도 안 그려진다', () => {
+    render(wrap(<EvidenceSpecimen />, 'en'));
+    const text = screen.getByTestId('evidence-specimen').textContent ?? '';
+    const hangul = text.match(/[\u3131-\u318E\uAC00-\uD7A3]/g) ?? [];
+    expect(hangul, `영문 화면에 한글이 그려졌다: ${hangul.join('')}`).toEqual([]);
   });
 
   /** The claim "go and check" is only worth making if the link actually resolves to the file. */

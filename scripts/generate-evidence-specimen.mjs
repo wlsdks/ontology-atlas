@@ -29,9 +29,19 @@
  *
  * ## Verbatim, and honest about what is left out
  *
- * Lines longer than `MAX_LINE` are dropped (in practice `relation_notes`, a paragraph of prose per
- * edge) and **counted**, so the page can say how many lines it is not showing rather than quietly
- * presenting a subset as the whole file.
+ * Two kinds of line are dropped, and both are **counted** so the page can say how many it is not
+ * showing rather than quietly presenting a subset as the whole file:
+ *
+ *  - lines longer than `MAX_LINE` (in practice `relation_notes`, a paragraph of prose per edge)
+ *  - **the other locale's `display_*` line**
+ *
+ * The second is not tidiness. `/en/download/` is one of two routes locked by
+ * `tests/e2e/locale-purity.spec.ts` as drawing no vault text, so a `display_ko:` line rendered
+ * there is Korean on an English screen — the spec caught exactly that in CI (2026-08-23) and its
+ * own doc block predicts this case: *"if a route starts drawing vault data this spec breaks first
+ * and forces the list to be revisited."* Revisiting it, the honest answer is that the panel should
+ * show the file as it pertains to its reader, and say how many lines that leaves out. The reader's
+ * own `display_*` line stays, so the localization mechanism is still visible.
  */
 
 import fs from 'node:fs';
@@ -95,8 +105,16 @@ function build() {
   const file = path.join(VAULT, `${SPECIMEN_SLUG}.md`);
   const lines = readFrontmatter(file);
 
-  const shown = lines.filter((line) => line.length <= MAX_LINE);
-  const omitted = lines.length - shown.length;
+  /** Per locale: short lines, minus the *other* locale's display name. */
+  const shownFor = (locale) => {
+    const other = locale === 'ko' ? 'display_en:' : 'display_ko:';
+    return lines.filter((line) => line.length <= MAX_LINE && !line.startsWith(other));
+  };
+  const frontmatter = { ko: shownFor('ko'), en: shownFor('en') };
+  const omittedLines = {
+    ko: lines.length - frontmatter.ko.length,
+    en: lines.length - frontmatter.en.length,
+  };
 
   const self = namesFor(SPECIMEN_SLUG);
   const domainSlug = field(lines, 'domain');
@@ -117,8 +135,8 @@ function build() {
     slug: SPECIMEN_SLUG,
     file: path.posix.join('docs/ontology', `${SPECIMEN_SLUG}.md`),
     url: `${REPO_BLOB}/docs/ontology/${SPECIMEN_SLUG}.md`,
-    frontmatter: shown,
-    omittedLines: omitted,
+    frontmatter,
+    omittedLines,
     facts: {
       name: self,
       kind: unquote(field(lines, 'kind')) ?? 'capability',
@@ -153,10 +171,10 @@ export interface EvidenceSpecimen {
   readonly file: string;
   /** The same file on GitHub, so the claim is checkable in one click. */
   readonly url: string;
-  /** Frontmatter lines, verbatim, in file order. */
-  readonly frontmatter: readonly string[];
-  /** How many lines were too long to show — stated on screen, never hidden. */
-  readonly omittedLines: number;
+  /** Frontmatter lines, verbatim, in file order, per locale. */
+  readonly frontmatter: { readonly ko: readonly string[]; readonly en: readonly string[] };
+  /** How many lines are not shown, per locale — stated on screen, never hidden. */
+  readonly omittedLines: { readonly ko: number; readonly en: number };
   readonly facts: {
     readonly name: EvidenceSpecimenName;
     readonly kind: string;
@@ -183,11 +201,13 @@ if (process.argv.includes('--check')) {
     );
     process.exit(1);
   }
-  console.log(`[gateway:specimen] current · ${spec.file} · ${spec.frontmatter.length} lines shown`);
+  console.log(
+    `[gateway:specimen] current · ${spec.file} · ko ${spec.frontmatter.ko.length} / en ${spec.frontmatter.en.length} lines shown`,
+  );
 } else {
   fs.writeFileSync(OUT, next);
   console.log(
     `[gateway:specimen] ${spec.file} → ${path.relative(ROOT, OUT)} ` +
-      `(${spec.frontmatter.length} lines shown, ${spec.omittedLines} elided, vault ${spec.vaultNodeCount} nodes)`,
+      `(ko ${spec.frontmatter.ko.length} / en ${spec.frontmatter.en.length} lines shown, vault ${spec.vaultNodeCount} nodes)`,
   );
 }

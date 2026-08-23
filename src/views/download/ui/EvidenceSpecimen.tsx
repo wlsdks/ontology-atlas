@@ -43,10 +43,19 @@ export function EvidenceSpecimen() {
   const tKind = useTranslations('kinds');
   const locale = useLocale();
   const spec = EVIDENCE_SPECIMEN;
+  const tag: 'ko' | 'en' = locale === 'ko' ? 'ko' : 'en';
+  /*
+   * The panel shows the file as it pertains to its reader: the other locale's `display_*` line is
+   * left out and counted. `/en/download/` is locked by `tests/e2e/locale-purity.spec.ts` as a route
+   * that draws no vault text, and a `display_ko:` line rendered there is Korean on an English
+   * screen — CI caught exactly that (2026-08-23).
+   */
+  const frontmatter = spec.frontmatter[tag];
+  const omitted = spec.omittedLines[tag];
   /* Node names are the vault's, not the message catalogue's — a node named only in English shows
      its English name rather than a blank, which is the honest state for a vault that has not been
      given a Korean name for it yet. */
-  const name = (pair: { ko: string; en: string }) => (locale === 'ko' ? pair.ko : pair.en);
+  const name = (pair: { ko: string; en: string }) => pair[tag];
 
   const facts: { label: string; value: string; mono?: boolean }[] = [
     { label: t('specimenFactName'), value: name(spec.facts.name) },
@@ -70,16 +79,14 @@ export function EvidenceSpecimen() {
           {/* Wide content scrolls inside its own box — the page body must never scroll sideways. */}
           <div className="min-w-0 overflow-x-auto px-4 py-3">
             <pre className="font-mono text-caption leading-body text-[color:var(--color-text-secondary)]">
-              {spec.frontmatter.join('\n')}
+              {frontmatter.join('\n')}
             </pre>
           </div>
         </div>
         {/* The elided lines are stated rather than hidden — showing a subset as if it were the
             whole file is the same kind of untruth this section exists to disprove. */}
         <p className="mt-2 break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-          {spec.omittedLines > 0
-            ? t('specimenElided', { count: spec.omittedLines })
-            : t('specimenComplete')}
+          {omitted > 0 ? t('specimenElided', { count: omitted }) : t('specimenComplete')}
         </p>
       </div>
 
@@ -108,29 +115,38 @@ export function EvidenceSpecimen() {
       </div>
 
       {/* ── Go and check ───────────────────────────────────────────────────── */}
-      <p className="min-w-0 break-keep border-t border-[color:var(--color-border-soft)] pt-6 text-body leading-body text-[color:var(--color-text-tertiary)]">
-        {t('specimenFooter', { count: spec.vaultNodeCount })}{' '}
+      <div className="min-w-0 border-t border-[color:var(--color-border-soft)] pt-6">
+        <p className="min-w-0 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+          {t('specimenFooter', { count: spec.vaultNodeCount })}
+        </p>
+        {/*
+         * The link stands on its own line rather than trailing the sentence.
+         *
+         * Both alternatives were measured and rejected. Inside the sentence it has to be
+         * `display: inline` (`.prose-link`), and `/download`'s coarse-pointer gate has no
+         * in-sentence exemption — it came back 338x35 and red. Making it a value-layer control
+         * *inside* the sentence gives `inline-flex`, which the value layer's own notes record as
+         * killing wrapping at 320px. Out of the sentence both problems disappear: the shape is
+         * correct, and `touch-hit-expand` gives the 44px finger target without moving a pixel of
+         * layout (`app/globals.css`, coarse-pointer block).
+         */}
         <a
           href={spec.url}
           target="_blank"
           rel="noreferrer"
-          // The value layer owns pressable geometry — a hand-written anchor here is debt the
-          // adoption ratchet counts, and it was right to: the base's transparent border wins by
-          // source order on a raw variant.
           className={controlClass({
             shape: 'link',
             hoverInk: 'strong',
-            className: 'text-[color:var(--color-text-secondary)] underline underline-offset-2',
+            className: 'touch-hit-expand mt-2 text-[color:var(--color-text-secondary)] underline underline-offset-2',
           })}
         >
-          {/* `↗` leads the label and is declared — it warns that the link leaves the app before
-              it is pressed, which is the one use this repository allows for it. */}
+          {/* `↗` leads the label and is declared — it warns that the link leaves the app. */}
           <span aria-hidden data-external-link-marker>
-            ↗{' '}
+            ↗
           </span>
           {t('specimenOpenFile')}
         </a>
-      </p>
+      </div>
     </div>
   );
 }

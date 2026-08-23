@@ -19,10 +19,10 @@ export interface EvidenceSpecimen {
   readonly file: string;
   /** The same file on GitHub, so the claim is checkable in one click. */
   readonly url: string;
-  /** Frontmatter lines, verbatim, in file order. */
-  readonly frontmatter: readonly string[];
-  /** How many lines were too long to show — stated on screen, never hidden. */
-  readonly omittedLines: number;
+  /** Frontmatter lines, verbatim, in file order, per locale. */
+  readonly frontmatter: { readonly ko: readonly string[]; readonly en: readonly string[] };
+  /** How many lines are not shown, per locale — stated on screen, never hidden. */
+  readonly omittedLines: { readonly ko: number; readonly en: number };
   readonly facts: {
     readonly name: EvidenceSpecimenName;
     readonly kind: string;
@@ -38,20 +38,36 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
     "slug": "capabilities/mcp-server",
     "file": "docs/ontology/capabilities/mcp-server.md",
     "url": "https://github.com/wlsdks/ontology-atlas/blob/main/docs/ontology/capabilities/mcp-server.md",
-    "frontmatter": [
-      "uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51",
-      "slug: capabilities/mcp-server",
-      "kind: capability",
-      "title: MCP Server",
-      "domain: domains/agent-integration",
-      "elements: []",
-      "path: mcp/src",
-      "created_by: \"agent:unknown\"",
-      "dependencies: [capabilities/vault-ontology]",
-      "display_ko: AI 연결 서버",
-      "display_en: AI Connection Server"
-    ],
-    "omittedLines": 1,
+    "frontmatter": {
+      "ko": [
+        "uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51",
+        "slug: capabilities/mcp-server",
+        "kind: capability",
+        "title: MCP Server",
+        "domain: domains/agent-integration",
+        "elements: []",
+        "path: mcp/src",
+        "created_by: \"agent:unknown\"",
+        "dependencies: [capabilities/vault-ontology]",
+        "display_ko: AI 연결 서버"
+      ],
+      "en": [
+        "uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51",
+        "slug: capabilities/mcp-server",
+        "kind: capability",
+        "title: MCP Server",
+        "domain: domains/agent-integration",
+        "elements: []",
+        "path: mcp/src",
+        "created_by: \"agent:unknown\"",
+        "dependencies: [capabilities/vault-ontology]",
+        "display_en: AI Connection Server"
+      ]
+    },
+    "omittedLines": {
+      "ko": 2,
+      "en": 2
+    },
     "facts": {
       "name": {
         "ko": "AI 연결 서버",

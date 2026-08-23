@@ -1406,6 +1406,14 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // pointed out the hero had no Windows-download or web-entry button, so all four
 // destinations became buttons. The same
 // The same standard-button claim, so the registration reason is the same.
+// Stayed 28 on 2026-08-23, and the round is worth recording because it nearly did not.
+// The evidence section's "open this file" link was first written trailing a sentence, which forces
+// `display: inline` and therefore the prose claim and a new registration here. Measuring it instead
+// of registering it showed the sentence position was the actual mistake: `/download`'s
+// coarse-pointer gate has no in-sentence exemption, and the link came back 338x35 red. Moved onto
+// its own line it is an ordinary control, `shape: 'link'` fits, `touch-hit-expand` supplies the
+// 44px finger target, and this ledger did not have to grow. **Check whether the position is wrong
+// before registering a shape the value layer cannot make.**
 const BASELINE_ANCHOR_REGISTERED = 28;
 
 /** **Only this number may fall.** The anchor total (92) minus registered (25). */
