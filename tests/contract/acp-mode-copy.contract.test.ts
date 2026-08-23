@@ -7,8 +7,8 @@ import { MEASURED_MODE_IDS, modeCopyKey } from "@/features/acp-session/model/mod
 /**
  * The working-mode list must be **in human words** (owner, 2026-08-17).
  *
- * The old screen: `Auto · 확인 안 됨` / `Manual` / `Plan Mode` /
- * `Don't Ask · 확인 안 됨`. Every name was English, and descriptions were attached
+ * The old screen: `Auto · Not Confirmed` / `Manual` / `Plan Mode` /
+ * `Don't Ask · Not Confirmed`. Every name was English, and descriptions were attached
  * only to the two we had not measured — the two actually worth choosing said
  * nothing about how they differ.
  *

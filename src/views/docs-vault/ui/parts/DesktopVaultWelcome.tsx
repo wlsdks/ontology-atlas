@@ -86,7 +86,7 @@ export function DesktopVaultWelcome({
     <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
       {/*
         `my-auto` — it only centres vertically when there is spare room (owner report from
-        real use, 2026-07-28: *"화면 상단에 이렇게 나오면 이상하지? 중앙에 예쁘게"* — it looks
+        real use, 2026-07-28: *"If this appears at the top of the screen, doesn't it look wrong? Center it nicely."* — it looks
         wrong pinned to the top of the screen; centre it nicely).
 
         Why an auto margin rather than something like `items-center`: once the content is

@@ -149,8 +149,8 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
       [center, a, b],
       [
         edge("e1", "c", "a"),
-        edge("e2", "c", "b"), // b 는 1-hop
-        edge("e3", "a", "b"), // a→b 가 2-hop 후보지만 b 는 1-hop 이라 skip
+        edge("e2", "c", "b"), // b is 1-hop
+        edge("e3", "a", "b"), // a→b is a 2-hop candidate but b is 1-hop, so skip
       ],
       { hops: 2 },
     );
@@ -165,7 +165,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
     const result = buildOntologyEgoSubgraph(
       "c",
       [center, a, b],
-      [edge("e1", "c", "a"), edge("e2", "b", "a")], // b→a, a 가 1-hop, b 가 2-hop incoming
+      [edge("e1", "c", "a"), edge("e2", "b", "a")], // b→a, a is 1-hop, b is 2-hop incoming
       { hops: 2 },
     );
     const hop2 = result.neighbors.filter((n) => n.hop === 2);

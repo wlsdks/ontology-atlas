@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * reduced-motion contract gate — enforces `docs/DESIGN-SYSTEM.md`'s *"끈 게
- * 아니라 덜 흔들리는 동등물"* (not switched off, but a less-shaking equivalent) in
+ * reduced-motion contract gate — enforces `docs/DESIGN-SYSTEM.md`'s *"not switched
+ * off, but a less-shaking equivalent"* (not switched off, but a less-shaking equivalent) in
  * code.
  *
  * Why it is needed: the contract lived only in a document and exactly one selector
@@ -31,7 +31,7 @@ const CSS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
  * list is not a violation but nonexistent**, and five leaked out that way as
  * complete hard cuts for reduced-motion users (studio stage entry · support
  * picking · summary convergence · practice steps · route loading). The same thing
- * happened on 2026-07-28 and the comment then said *"목록이 곧 사정거리다"* (the
+ * happened on 2026-07-28 and the comment then said *"the list is the reach"* (the
  * list is the reach) — but only the list's upkeep was fixed, while **the structure
  * that depends on a list** stayed.
  *

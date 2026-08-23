@@ -1,30 +1,29 @@
-// Atlas Git — Tauri 네이티브 git 계층 (데스크톱 앱이 vault 를 git 으로 버전
-// 기록하게 하는 IPC). 웹 GUI 는 다음 단계가 이 `#[tauri::command]` 들을
-// invoke 한다. `std::process::Command` 로 시스템 git 을 셸아웃하며, 안전
-// 규칙은 JS `git-snapshot.mjs`(cli/ · mcp/ 미러)를 Rust 로 그대로 옮긴 것이다.
+// Atlas Git — Tauri native git layer (IPC for making desktop apps version-control vaults via git). The web GUI
+// invokes these `#[tauri::command]`s in the next step. Shell out to system git via `std::process::Command`, with safety
+// rules ported directly from JS `git-snapshot.mjs` (cli/ · mcp/ mirror).
 //
-// ── Atlas Git 신뢰 헌장 (이 파일이 지켜야 하는 불변식) ─────────────────────
-//  1. 기본 로컬 커밋만 — 전송(push/pull)은 명시 인자/호출로만(opt-in).
-//  2. git 미초기화 시 자동 `git init` 절대 금지 — 상태로만 알린다.
-//  3. 토큰/로그인/자격증명 취급 0 — 오직 로컬 git 프로세스.
-//  4. vault 밖 파일은 절대 건드리지 않는다 — `git commit -m <msg> -- <pathspec>`
-//     의 "partial commit" 격리로 vault 밖에 이미 staged 된 변경은 그대로 두고
-//     pathspec 범위만 커밋한다. untracked 신규 파일도 vault 범위만 `git add`.
-//  5. 어떤 것도 자동 실행/자동 백업 강제 금지 — 전부 명시 호출로만.
+// ── Atlas Git Trust Charter (invariants this file must uphold) ─────────────────────
+//  1. Local commits only — transmission (push/pull) only via explicit arguments/calls (opt-in).
+//  2. Never auto-`git init` on uninitialized repos — report state only.
+//  3. Zero token/login/credential handling — local git processes only.
+//  4. Never touch files outside the vault — `git commit -m <msg> -- <pathspec>`
+//     isolates "partial commits" so changes already staged outside the vault remain untouched,
+//     and only untracked new files within the vault scope are `git add`ed.
+//  5. No forced auto-execution or auto-backup — all via explicit calls only.
 //
-// 우아한 실패: 예상 실패(레포 아님 · non-fast-forward · 훅 거부 · 충돌)는
-// 패닉/스택트레이스 대신 `Result<_, String>` 의 깔끔한 한 줄로 돌려준다.
+// Graceful failure: Expected failures (not a repo · non-fast-forward · hook rejection · conflict)
+// return clean single-line `Result<_, String>` instead of panics/stack traces.
 
 use serde::Serialize;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
-// ── vault 경로 검증 (절대경로 인젝션 방어) ─────────────────────────────────
-// vault_path 는 JS(웹 GUI)에서 넘어온다. 존재 + 디렉토리임을 확인하고
-// canonicalize 해 심볼릭 링크/상대 조각을 실경로로 확정한 뒤에만 git 의
-// cwd 로 쓴다. pathspec 은 repo_root 기준 상대로 계산되므로 vault 밖으로
-// 새는 add/commit 이 원천적으로 불가능하다.
+// ── Vault path validation (absolute path injection defense) ─────────────────────────────────
+// vault_path comes from JS (web GUI). Confirm existence + directory,
+// canonicalize to resolve symbolic links/relative pieces into real paths, then use as git's
+// cwd. Since pathspecs are calculated relative to repo_root, add/commit leaks outside the vault
+// are fundamentally impossible.
 pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     if vault_path.trim().is_empty() {
         return Err("vault 경로가 비어 있어요.".into());
@@ -38,16 +37,15 @@ pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     fs::canonicalize(&path).map_err(|err| format!("vault 경로를 확정할 수 없어요: {err}"))
 }
 
-// ── 저수준 git 셸아웃 ──────────────────────────────────────────────────────
+// ── Low-level git shell-out ──────────────────────────────────────────────────────
 struct GitRun {
     success: bool,
     stdout: String,
     stderr: String,
 }
 
-/// git 을 `cwd` 에서 실행하고 stdout/stderr 를 캡처한다. spawn 자체가 실패할
-/// 때만(예: git 미설치) `Err`. non-zero exit 는 `success:false` 로 담아
-/// 호출자가 판단하게 한다 — stderr 가 사용자 터미널을 어지럽히지 않게 pipe.
+/// Runs git in `cwd` and captures stdout/stderr. Returns `Err` only if spawn itself fails
+/// (e.g., git not installed). Non-zero exits are captured as `success:false` for the caller to decide — stderr is piped so it does not clutter the user's terminal.
 fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     let output = Command::new("git")
         .args(args)
@@ -61,8 +59,8 @@ fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     })
 }
 
-// ── 레포 발견 (자동 init 금지 — 상태로만) ──────────────────────────────────
-/// vault 를 담은 git repo 최상위. git repo 밖이면 `Ok(None)`.
+// ── Repo discovery (no auto init — state only) ──────────────────────────────────
+/// Top-level git repo containing the vault. `Ok(None)` if outside a git repo.
 pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String> {
     let out = run_git(vault_dir, &["rev-parse", "--show-toplevel"])?;
     if !out.success {
@@ -72,19 +70,16 @@ pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String
     if trimmed.is_empty() {
         return Ok(None);
     }
-    // git 이 돌려준 toplevel 을 canonicalize — pathspec 계산 시 vault_dir 과
-    // 같은 실경로 기준을 쓰기 위함(/var → /private/var 등 불일치 방지).
+    // Canonicalize the toplevel returned by git — to use the same real path baseline as vault_dir
+    // for pathspec calculation (preventing mismatches like /var → /private/var).
     let root = PathBuf::from(trimmed);
     Ok(Some(fs::canonicalize(&root).unwrap_or(root)))
 }
 
-/// 커밋/히스토리/diff/pull 처럼 repo 가 반드시 필요한 커맨드용. repo 밖이면
-/// "자동 init 안 함" 안내를 담은 `Err` — 신뢰 헌장 ②.
+/// For commands requiring a repo, such as commit/history/diff/pull. Returns `Err` with
+/// "auto init disabled" guidance if outside a repo — Trust Charter ②.
 ///
-/// 이 문장이 *자동* init 을 하지 않는다고 말하는 것에 주의: 사용자가 화면에서
-/// 직접 누르는 `git_init` 은 별 경로다(2026-07-25 소유자 결정). 헌장이 금지한
-/// 것은 조용한 실행이고, 사용자가 자기가 고른 폴더에서 버튼을 누르는 건 그
-/// 범주가 아니다. 이 함수는 여전히 자동 init 을 하지 않는다.
+/// Note that this statement does *not* auto-init: the `git_init` button users press on screen is a different path (owner decision 2026-07-25). The charter forbids silent execution, but users pressing a button in a folder they chose is not in that category. This function still does not auto-init.
 fn require_repo_root(vault_dir: &Path) -> Result<PathBuf, String> {
     match find_repo_root(vault_dir)? {
         Some(root) => Ok(root),
@@ -92,7 +87,7 @@ fn require_repo_root(vault_dir: &Path) -> Result<PathBuf, String> {
     }
 }
 
-/// repo_root 기준 vault 의 pathspec — vault 가 repo root 자체면 ".".
+/// Vault's pathspec relative to repo_root — "." if vault is the repo root itself.
 fn vault_pathspec(repo_root: &Path, vault_dir: &Path) -> String {
     match vault_dir.strip_prefix(repo_root) {
         Ok(rel) => {
@@ -112,7 +107,7 @@ fn vault_pathspec(repo_root: &Path, vault_dir: &Path) -> String {
     }
 }
 
-// ── porcelain 파싱 ─────────────────────────────────────────────────────────
+// ── porcelain parsing ─────────────────────────────────────────────────────────
 struct PorcelainRow {
     index: char,
     worktree: char,
@@ -127,7 +122,7 @@ fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
             let bytes = line.as_bytes();
             let index = bytes[0] as char;
             let worktree = bytes[1] as char;
-            // 첫 3바이트(상태 2 + 공백 1)는 항상 ASCII → byte 3 은 char 경계.
+            // The first 3 bytes (status 2 + space 1) are always ASCII → byte 3 is a char boundary.
             let rest = &line[3..];
             let mut renamed_from = None;
             let mut path = rest.to_string();
@@ -145,7 +140,7 @@ fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
         .collect()
 }
 
-/// `git status --porcelain -- <pathspec>` → 행 배열. git 실패 시 `Err`.
+/// `git status --porcelain -- <pathspec>` → array of lines. Returns `Err` on git failure.
 fn get_porcelain_status(repo_root: &Path, pathspec: &str) -> Result<Vec<PorcelainRow>, String> {
     let out = run_git(
         repo_root,
@@ -166,7 +161,7 @@ fn get_porcelain_status(repo_root: &Path, pathspec: &str) -> Result<Vec<Porcelai
     Ok(parse_porcelain(&out.stdout))
 }
 
-/// pathspec 없는 전체 repo porcelain — staged-outside-vault 가드용. 실패 시 빈 목록.
+/// Full repo porcelain without pathspec — guard for staged-outside-vault. Returns empty list on failure.
 fn get_full_porcelain_status(repo_root: &Path) -> Vec<PorcelainRow> {
     match run_git(
         repo_root,
@@ -235,7 +230,7 @@ fn unquote(value: &str) -> String {
     }
 }
 
-// ── 변경 요약 ──────────────────────────────────────────────────────────────
+// ── Change summary ──────────────────────────────────────────────────────────────
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ChangeEntry {
@@ -291,7 +286,7 @@ fn path_based_slug(vault_dir: &Path, abs_path: &Path) -> String {
     rel.strip_suffix(".md").unwrap_or(&rel).to_string()
 }
 
-/// 의미 단위 커밋 요약 한 줄 — kind별 카운트 + 대표 슬러그 최대 3개.
+/// One-line semantic commit summary — kind counts + up to 3 representative slugs.
 fn format_snapshot_summary(changes: &[ChangeEntry]) -> String {
     let added = changes.iter().filter(|c| c.status == "added").count();
     let modified = changes.iter().filter(|c| c.status == "modified").count();
@@ -346,7 +341,7 @@ fn status_mark(status: &str) -> char {
     }
 }
 
-/// custom 메시지면 auto summary 를 본문에 겹쳐 담아 의미 맥락을 보존한다.
+/// If a custom message is provided, the auto summary is embedded in the body to preserve semantic context.
 fn build_commit_message(
     subject: &str,
     auto_summary: &str,
@@ -364,7 +359,7 @@ fn build_commit_message(
     format!("{subject}\n\n{}", body.join("\n"))
 }
 
-/// vault pathspec 밖에서 이미 staged 된 경로 — 보호 경고용(커밋엔 안 섞임).
+/// Paths already staged outside the vault pathspec — for protection warnings (not mixed into commits).
 fn find_staged_outside_vault(rows: &[PorcelainRow], pathspec: &str) -> Vec<String> {
     rows.iter()
         .filter(|row| {
@@ -389,7 +384,7 @@ fn first_nonempty_line(text: &str) -> Option<String> {
         .map(|l| l.to_string())
 }
 
-// ── 우아한 실패 분류 (git-snapshot.mjs classifyGitError 미러) ──────────────
+// ── Graceful failure classification (mirror of git-snapshot.mjs classifyGitError) ──────────────
 struct GitErrorInfo {
     #[allow(dead_code)]
     reason: &'static str,
@@ -1184,35 +1179,35 @@ fn validate_remote_url(url: &str) -> Result<String, String> {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitInitResult {
-    /// 이번 호출로 기록이 시작됐나. 이미 저장소였으면 false + reason.
+    /// Whether a record was started by this call. If it was already a repository, returns false + reason.
     initialized: bool,
-    /// "already" (이미 저장소) | null (방금 시작)
+    /// "already" (already a repository) | null (just started)
     reason: Option<String>,
-    /// 만들어진(또는 이미 있던) repo 최상위 절대경로.
+    /// Absolute path to the top-level of the created (or existing) repo.
     repo_root: String,
-    /// 시작 직후 브랜치명 — 첫 커밋 전에도 `git symbolic-ref` 로 읽힌다.
+    /// Branch name immediately after start — read via `git symbolic-ref` even before the first commit.
     branch: Option<String>,
-    /// 기록 대상이 될 vault 범위 변경 수(= 아직 남기지 않은 변경).
+    /// Number of changes in the vault scope to be recorded (= changes not yet committed).
     changed_count: usize,
 }
 
-/// **사용자가 화면에서 직접 누를 때만** 호출되는 `git init`.
+/// `git init` called **only when the user presses it directly on screen**.
 ///
-/// 신뢰 헌장 경계: 헌장이 금지하는 것은 *자동* 실행·조용한 수집이다. 사용자가
-/// 자기가 고른 볼트 폴더에서 버튼을 누르는 건 그 범주가 아니다 (2026-07-25
-/// 소유자 결정 + Design Guardian 판정). 이 명령이 지키는 선:
+/// Trust charter boundary: what the charter prohibits is *automatic* execution and silent collection. A user
+/// pressing a button in a vault folder they chose themselves does not fall into that category (2026-07-25
+/// owner decision + Design Guardian ruling). The line this command adheres to:
 ///
-/// - **init 만 한다.** add/commit/push 로 연쇄하지 않는다 — 빈 저장소를 만들고
-///   호출자가 "아직 남기지 않은 변경 N건" 상태로 착지한다. 자동 커밋이야말로
-///   진짜 헌장 위반이다.
-/// - **이미 저장소면 아무것도 하지 않는다** (`reason: "already"`). 중첩 init 은
-///   기존 이력을 건드릴 수 있다.
-/// - 원격 설정·사용자 이름 설정 같은 부수 작업 0.
+/// - **It only performs init.** It does not chain add/commit/push — it creates an empty repository and
+///   leaves the caller in a state of "N changes remaining". Automatic commits are the true
+///   charter violation.
+/// - **If it is already a repository, it does nothing** (`reason: "already"`). Nested init could
+///   interfere with existing history.
+/// - No side tasks like remote configuration or user name setup.
 #[tauri::command]
 pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
 
-    // 이미 repo 안이면 그대로 알려준다 — 조용히 중첩 저장소를 만들지 않는다.
+    // If already inside a repo, just inform — do not silently create a nested repository.
     if let Some(root) = find_repo_root(&vault_dir)? {
         let pathspec = vault_pathspec(&root, &vault_dir);
         let changed = get_porcelain_status(&root, &pathspec)?.len();
@@ -1231,7 +1226,7 @@ pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
         return Err(classified_error_string(&info));
     }
 
-    // init 직후 toplevel 을 다시 읽어 canonical 경로를 얻는다(심링크·/var 차이).
+    // Re-read toplevel immediately after init to obtain the canonical path (differences in symlinks, /var, etc.).
     let root = find_repo_root(&vault_dir)?.ok_or_else(|| {
         "기록을 시작했지만 저장소를 다시 찾지 못했어요. 폴더 권한을 확인해 주세요.".to_string()
     })?;
@@ -1250,21 +1245,21 @@ pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitSetRemoteResult {
-    /// 원격이 이 호출로 설정됐나.
+    /// Whether the remote was set by this call.
     ok: bool,
-    /// 원격 이름(항상 "origin").
+    /// Remote name (always "origin").
     remote: String,
-    /// 최종 원격 URL.
+    /// Final remote URL.
     url: String,
-    /// 기존 origin 을 교체했으면 이전 URL — 사용자에게 무엇이 바뀌었는지 알린다.
+    /// If the existing origin was replaced, inform the user of what changed.
     replaced: Option<String>,
 }
 
-/// 보낼 곳(`origin`) 설정 — **사용자가 입력한 주소만** 쓴다. 우리가 주소를
-/// 제안·추측·자동탐지하지 않는다(신뢰 헌장: 조용한 전송 0).
+/// Configure where to push (`origin`) — **only uses addresses entered by the user**. We do not
+/// suggest, guess, or auto-detect addresses (Trust charter: zero silent transmission).
 ///
-/// push 는 하지 않는다 — 주소만 등록하고 호출자가 별 동작으로 보낸다. 그래야
-/// "누를 때만 나간다" 약속이 명령 경계에서 지켜진다.
+/// No push is performed — only the address is registered, and the caller sends it via separate actions. This ensures
+/// the "sends only when pressed" promise is upheld at the command boundary.
 #[tauri::command]
 pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -1272,7 +1267,7 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
     let clean = validate_remote_url(&url)?;
 
     let existing = get_remote_url(&repo_root, "origin");
-    // 이미 origin 이 있으면 add 는 실패하므로 set-url 로 교체한다.
+    // If origin already exists, add will fail, so replace with set-url.
     let subcommand = if existing.is_some() { "set-url" } else { "add" };
     let out = run_git(&repo_root, &["remote", subcommand, "origin", clean.as_str()])?;
     if !out.success {
@@ -1280,7 +1275,7 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
         return Err(classified_error_string(&info));
     }
 
-    // 교체된 경우에만 이전 주소를 돌려준다 — 사용자가 무엇이 바뀌었는지 알아야 한다.
+    // Only return the previous address if it was replaced — the user needs to know what changed.
     let replaced = existing.filter(|prev| prev != &clean);
 
     Ok(GitSetRemoteResult {
@@ -1294,11 +1289,11 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitProbe {
-    /// 이 컴퓨터에 git 이 있는가.
+    /// Is git installed on this computer?
     installed: bool,
-    /// `git --version` 원문 (설치돼 있을 때만) — 사용자에게 사실을 그대로 보여준다.
+    /// `git --version` original text (only when installed) — shows the user the facts as they are.
     version: Option<String>,
-    /// "macos" | "windows" | "linux" — 설치 안내를 플랫폼별로 고르기 위함.
+    /// "macos" | "windows" | "linux" — To select installation instructions by platform.
     platform: String,
 }
 

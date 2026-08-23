@@ -57,7 +57,7 @@ describe("resolveToastBottomOffset", () => {
  * **Notifications step aside for the right dock** (from the owner's screen,
  * 2026-08-16).
  *
- * The 「만들었어요」 (created) toast landed directly on the conversation panel's
+ * The 「Created」 toast landed directly on the conversation panel's
  * composer. It is **the same shape** as the problem already solved at the bottom
  * edge: anything positioned against a viewport edge sits on top of whatever
  * stands at that edge.

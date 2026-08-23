@@ -27,8 +27,7 @@ import {
  *   all here — the domain far-field spaced-caps watermark is a SEPARATE
  *   decorative effect drawn in `draw()`, not part of this alpha function).
  * - `capability`/`element`: eligibility ramps with the node's own
- *   `revealAlpha` (tier alpha, or the ego-reveal ramp when exempted) — 「잡을 수
- *   있으면 읽을 수 있다」 (if you can click it, you can read it).
+ *   `revealAlpha` (tier alpha, or the ego-reveal ramp when exempted) — 「If you can click it, you can read it」 (if you can click it, you can read it).
  * - `egoState === "center"` (selected) or `isHovered`: ALWAYS 1, any kind,
  *   any zoom band — overrides everything except `dim`.
  * - `egoState === "dim"`: always 0, regardless of anything else.
@@ -112,7 +111,7 @@ describe("computeDomainWatermarkAlpha", () => {
 
   /**
    * **Two effects must never share one anchor.** Measured on the dome
-   * 2026-08-19: the name rendered as `AΛI에이전트 연동동`. The old formulas were a
+   * 2026-08-19: the name rendered as `AΛIAGENT linkage`. The old formulas were a
    * crossfade summing to 1, so both were alive in the middle band, and the 3D
    * dome parks the camera in exactly that band, leaving the name illegible on
    * screen. This test forbids the overlap: across all of farT, **one of the two

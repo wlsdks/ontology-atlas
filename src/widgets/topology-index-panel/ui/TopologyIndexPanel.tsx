@@ -29,7 +29,7 @@ import {
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import { fieldClass } from '@/shared/ui/control-class';
 
-/** INDEX lenses — 「전체」 (all) and 「최근 변경」 (recently changed). */
+/** INDEX lenses — 「All」 (all) and 「Recently Changed」 (recently changed). */
 export type IndexLens = "all" | "recent";
 
 export interface TopologyIndexPanelLabels {
@@ -72,7 +72,7 @@ export interface TopologyIndexPanelLabels {
   dustyNodesLabel: string;
   dustyNodesAction: string;
   /**
-   * 「이 프로젝트에 연결된 코드 폴더가 없다」 (this project has no code folder
+   * 「This project has no code folder attached」 (this project has no code folder
    * attached) — a fact that used to be visible **only after clicking that exact
    * project node** (measured 2026-08-04: 0 occurrences on the first screen). It is
    * one quiet line shaped like the two rows above; pressing it opens that project,
@@ -156,29 +156,28 @@ export interface TopologyIndexPanelProps {
    */
   plainMode?: boolean;
   /**
-   * 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) — vault 미연결
-   * (정적 샘플) 상태에서 "먼지 앉은 노드 N" 행은 노출하지 않는다.
-   * 이 표면은 *현재 로드된 그래프*를 서술한다 — 샘플 모드에선
-   * 그 그래프가 사용자의 프로젝트가 아니라 이 제품 자신의 dogfood
-   * vault라서 방치 카운트는 첫 방문자에게 남의 저장소 얘기라 잡음이다
-   * (`BlockImportModule`의 "vault 없인 기능 자체가
-   * 작동 안 함" 케이스와는 다른 문제 — 그쪽은 P1 결함②에 따라 여전히
-   * disabled+힌트로 존치, 완전 은폐 금지). 생략 시 기존 하위호환 동작
-   * (항상 노출)을 유지 — 실 vault 연결(`vaultLoaded=true`)이면 두 행이
-   * 그대로 다시 나타난다(값 삭제가 아니라 강등).
+   * Unify attention winner for the left rail of the overview (2026-07-24) — do not expose the "N dusty nodes" row
+   * in the vault disconnected (static sample) state.
+   * This surface describes the *currently loaded graph* — in sample mode,
+   * that graph is this product's own dogfood
+   * vault, not the user's project, so the abandonment count is noise for the first visitor
+   * talking about someone else's repository (`BlockImportModule`'s "without a vault, the feature itself
+   * doesn't work" case is a different problem — that one remains disabled+hinted per P1 defect ②, complete concealment prohibited). If omitted, maintain existing backward-compatible behavior
+   * (always exposed) — if a real vault is connected (`vaultLoaded=true`), both rows
+   * reappear as before (values are demoted, not deleted).
    */
   vaultLoaded?: boolean;
 }
 
 /**
  * INDEX — the left machined instrument that replaces the tree/ego `/ontology`
- * page (「B3 허브가 곧 지도」 — the hub is the map). Floats over the topology map,
+ * page (「The hub is the map」 — the hub is the map). Floats over the topology map,
  * with `--topology-index-*` width/inset tokens (`app/globals.css`). See
  * `docs/prototypes/index-panel-v2-full.html` (v2.1) for the approved visual
  * spec and `TopologyIndexTab` for the collapsed counterpart.
  *
- * header 는 "INDEX · N"(N=노드 총수) + 접기 정사각 버튼만 둔다.
- * 트리 행 자체의 grid/캐럿/미터 스타일은 `TopologyIndexTreeRow` 가 소유한다.
+ * The header places only "INDEX · N" (N=total nodes) + a collapse square button.
+   The grid/caret/meter styles of the tree rows themselves are owned by `TopologyIndexTreeRow`.
  *
  * Search reuses `filterTreeByQuery` (`@/shared/lib/ontology-tree`) — the
  * SAME pure filter the old `/ontology` tree used — instead of a bespoke
@@ -217,8 +216,8 @@ export function TopologyIndexPanel({
    *
    * The container stays where it is: these chips' dimensions (24 · 11px · 7px ·
    * a uniform 48px) were settled by the owner over two rounds (2026-08-02
-   * *"버튼이 너무 작고"* — the buttons are too small → after the fix,
-   * *"비율이나 그런게 맞아야하는데"* — the proportions have to line up), and they
+   * *"The buttons are too small."* — the buttons are too small → after the fix,
+   * *"The proportions have to line up."* — the proportions have to line up), and they
    * carry panel-scoped ink (`--topology-v2-panel-*`) and the chrome radius, none of
    * which the value layer combines, so pulling them onto the primitive would break
    * that history. **Having no arrow-key movement, by contrast, was a defect
@@ -260,11 +259,11 @@ export function TopologyIndexPanel({
     });
   }
   const openIds = treeOpenState.openIds;
-  // P4a — "최근 변경" 렌즈. 검색이 활성이면 검색이 우선한다(둘을 동시에 좁히면
-  // "왜 안 보이지"가 두 원인으로 갈라져 헷갈린다) — 렌즈는 검색이 비어 있을
-  // 때만 트리를 좁힌다.
-  // 스포트라이트 (협의회 §⑤) — lensProp 제공 시 controlled(단일 진실원 =
-  // URL `?recent=`), 아니면 종전 로컬 state.
+  // P4a — "Recently Changed" lens. If search is active, search takes precedence (narrowing both
+  // splits the "why can't I see it" cause into two, causing confusion) — the lens narrows the tree
+  // only when search is empty.
+  // Spotlight (Council §⑤) — if lensProp is provided, controlled (single source of truth =
+  // URL `?recent=`), otherwise legacy local state.
   const [lensLocal, setLensLocal] = useState<IndexLens>("all");
   const lens = lensProp ?? lensLocal;
   const setLens = (next: IndexLens) => {
@@ -356,8 +355,7 @@ export function TopologyIndexPanel({
       style={{ width: "var(--topology-index-width)" }}
     >
       {/* The "get started" module (root-first-open v3, `first-run-v3-flagship.html`).
-          Restructured 2026-07-24 after the owner reported *"상단 스크롤 따로 하단
-          스크롤 따로"* (the top and bottom scroll separately) — the card and INDEX are
+          Restructured 2026-07-24 after the owner reported *"Top scroll and bottom scroll separately"* (the top and bottom scroll separately) — the card and INDEX are
           split into **two exclusive states**. While the guide is expanded the card
           takes the whole panel (one scroll); once the user chooses, it collapses and
           INDEX (children) opens. The module takes children and decides which to
@@ -382,7 +380,7 @@ export function TopologyIndexPanel({
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
       >
-      {/* 헤더 — 라벨 + 실측 총수 + 접기만.
+      {/* Header — label + measured total count + collapse only.
 
           The whole header row is the collapse toggle (owner feedback — a hit area
           limited to the chevron was awkward). It reuses the INDEX tree rows' hover
@@ -504,12 +502,11 @@ export function TopologyIndexPanel({
           data-testid="topology-index-window-chips"
           /*
            * The period chips **say what row you are choosing in** (2026-08-02, owner:
-           * *"버튼이 너무 작고 존재하는지도 잘 모르겠는데.. 여기서도 가이드가
-           * 있어야하려나?"* — the buttons are so small I can barely tell they exist;
+           * *"The buttons are so small I can barely tell they exist; does this need a guide too?"* — the buttons are so small I can barely tell they exist;
            * does this need a guide too?).
            *
            * They used to float as four unlabelled chips, so nothing on screen said
-           * what 「자동/1일/7일/30일」 (auto / 1 day / 7 days / 30 days) applied to.
+           * what 「Auto/1 day/7 days/30 days」 (auto / 1 day / 7 days / 30 days) applied to.
            */
           /*
            * A **visible label is not used** (2026-08-02, owner call — tried twice and
@@ -524,7 +521,7 @@ export function TopologyIndexPanel({
            * The reason for wanting a label was 「I can barely tell they exist」, and the
            * cause of that was not the missing name but **the dimensions** (20px tall,
            * 9.5px text). That was fixed below. A screen reader already hears
-           * 「최근 변경 창 선택」 (choose the recent-change window) through `aria-label` —
+           * 「Choose recent-change window」 (choose the recent-change window) through `aria-label` —
            * no accessibility is lost.
            */
           className="mb-3 flex shrink-0 flex-wrap items-center gap-1.5"
@@ -537,9 +534,8 @@ export function TopologyIndexPanel({
               data-testid={`topology-index-window-chip-${value}`}
               /*
                * The dimensions follow **the same dialect as the segments in this
-               * panel** (measured 2026-08-02; owner: *"버튼이 너무 작고"* — the buttons
-               * are too small → after the fix, *"근데 좀 안예쁜데? 비율이나 그런게
-               * 맞아야하는데"* — it still isn't pretty, the proportions have to line up).
+               * panel** (measured 2026-08-02; owner: *"The buttons are too small"* — the buttons
+               * are too small → after the fix, *"But it's not very pretty? The proportions should line up"* — it still isn't pretty, the proportions have to line up).
                *
                * | | Before | First fix | Now |
                * |---|---|---|---|
@@ -551,7 +547,7 @@ export function TopologyIndexPanel({
                * Why it took two passes: the first looked at **size only**. Measured,
                * there were two more real defects — ① width was set by character count,
                * giving a 9.9px spread (the pattern this repository forbids as
-               * 「치수 규칙성」 (dimension regularity): *in a repeated set, letting height
+               * 「Dimension regularity」 (dimension regularity): *in a repeated set, letting height
                * and width become a by-product of the content collapses the grid's
                * rhythm without anyone choosing it*) and ② the corner was fully round
                * while **the segment tabs directly above are 7px** — two dialects in one
@@ -712,16 +708,15 @@ export function TopologyIndexPanel({
         </button>
       ) : null}
 
-      {/* 「다른 폴더에서 노드 가져오기」 (import nodes from another folder) moved to
-          **settings → workspace** (2026-08-02, owner: *"이건 뭐임? 이 문구가 왜
-          있는거지..? 필요없는건가"* — what is this? why is this text here? is it
+      {/* 「Import nodes from another folder」 (import nodes from another folder) moved to
+          **settings → workspace** (2026-08-02, owner: *"What is this? Why is this text here? Is it unnecessary?"* — what is this? why is this text here? is it
           unnecessary?).
 
           The feature itself suits a local-first product — pick another vault's `.md`,
           open a merge preview, and write nothing to the folder before approval. The
           placement was wrong: **something used once or twice in a lifetime** stood as a
           permanent button at the bottom of INDEX every time someone read the map. And
-          「블록」 (block) is defined nowhere in this app, so a first-time reader had no
+          「Block」 (block) is defined nowhere in this app, so a first-time reader had no
           way to know what the button opens. */}
 
       </FirstRunStarterModule>

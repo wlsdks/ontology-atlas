@@ -1,5 +1,5 @@
 /**
- * INDEX panel expanded/collapsed state contract (「B3 허브가 곧 지도」 — the hub is
+ * INDEX panel expanded/collapsed state contract (「The hub is the map」 — the hub is
  * the map).
  *
  * The state has two independent sources — a `?index=` URL param (deep-link

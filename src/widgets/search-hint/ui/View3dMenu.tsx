@@ -22,9 +22,9 @@ import {
  *
  * With two arrangements inside 3D (dome and cloud), a single 「3D on/off」 toggle can
  * no longer say **what you are looking at**. The arrangements were first put in the
- * settings sheet, and two owner verdicts came back: *"구름은 어디에서 볼 수 있는거지?
- * 선택하는게 없는데?"* (where can I see the cloud? there's nothing to choose) and
- * *"소유, 결합 이런식이면 모르지? 3D누르면 선택 팝업이 나오게 해야지?"* (nobody knows
+ * settings sheet, and two owner verdicts came back: *"Where can I see the cloud?
+ * There's nothing to choose."* (where can I see the cloud? there's nothing to choose) and
+ * *"Nobody knows what "ownership" and "coupling" mean — pressing 3D should bring up a selection popup."* (nobody knows
  * what "ownership" and "coupling" mean — pressing 3D should bring up a selection popup).
  *
  * Both are the same diagnosis. **A control that changes what you are looking at
@@ -39,7 +39,7 @@ import {
  * switch in the settings sheet was removed when this popup appeared — this
  * repository's «one fact, one place» discipline.
  *
- * ## Why the names are not 「소유/결합」
+ * ## Why the names are not 「ownership/coupling」
  *
  * That was the first copy, and the owner did not recognise it. An abstract noun is
  * only a name to someone who already knows the concept. Name the visible thing first
@@ -163,7 +163,7 @@ export function View3dMenu({ open, onClose }: { open: boolean; onClose: () => vo
                 {t(`view3dChoice.${choice}`)}
               </span>
               {/* One line for what that row answers. The name alone does not convey
-                  «what is different» — which is why 「소유/결합」 failed. */}
+                  «what is different» — which is why 「Ownership/Combination」 failed. */}
               <span className="break-keep text-label text-[color:var(--topology-v2-panel-text-secondary)]">
                 {t(`view3dChoiceHint.${choice}`)}
               </span>

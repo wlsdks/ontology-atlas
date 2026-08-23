@@ -21,8 +21,7 @@ export const EXIT_WINDOW_MS = 140;
 /**
  * **Do not draw a loading indicator for work that takes 0ms.**
  *
- * Measured 2026-08-08 (owner report: *"회색선이 3개 생겼다가 사라지거든? 거의
- * 1초도 안걸려서 깜빡이다 사라져서"* — three grey lines appear and vanish, a
+ * Measured 2026-08-08 (owner report: *"Three grey lines appear and vanish, right? It flickers away in well under a second"* — three grey lines appear and vanish, a
  * flicker gone in well under a second): switching documents in the workspace
  * drew the viewer's 3-line skeleton for **8.2–15.9ms** (median 9.7ms), inside a
  * single 60Hz frame (16.7ms). It happened on all 8 transitions.

@@ -7,8 +7,7 @@ import { describe, expect, it } from "vitest";
  * The gateway stage width (`--gateway-stage-max`) — the invariants of the
  * wide-width revision (2026-08-19).
  *
- * Ledger entry (83) brought the demo stage down to 48rem (owner: *"동영상도 지금
- * 너무 커"* — the video is too big right now; at 1512 the clip took 73% of the
+ * Ledger entry (83) brought the demo stage down to 48rem (owner: *"The video is too big right now"* — the video is too big right now; at 1512 the clip took 73% of the
  * width). That prescription addressed a **proportion** problem but froze it in
  * absolute px, so on the owner's 2560 screenshot the stage shrank to 30% of the
  * viewport and the screen looked empty. The revision raised the cap to a

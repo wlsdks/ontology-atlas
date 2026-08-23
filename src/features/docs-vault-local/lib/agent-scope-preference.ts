@@ -5,8 +5,7 @@ import { useCallback, useSyncExternalStore } from 'react';
  *
  * ## Why the default is project (contrary to the owner's observation)
  *
- * Owner observation: *"대부분 에이전트 연결할때 프로젝트별 보다는 전역으로 할텐데?"* (most people
- * connect an agent globally rather than per project). That observation is **fully accepted as an
+ * Owner observation: "Most people connect an agent globally rather than per project". That observation is **fully accepted as an
  * option** — it is why global scope exists. But the **default** is not flipped. Two reasons:
  *
  * 1. **Of 12 official docs, zero push global as the default.** One states project explicitly

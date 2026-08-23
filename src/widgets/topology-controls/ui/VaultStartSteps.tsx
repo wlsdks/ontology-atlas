@@ -24,21 +24,20 @@ import { Chip } from "@/shared/ui";
  * It used to be a three-row checklist. With all three on screen at once, each row
  * could hold only **a one-line title**, and this is what the owner actually hit:
  *
- * - *"두번짼 뭔지도 모르겠고"* (I can't even tell what the second one is) — 「AI가 이
- *   코드를 읽고 지도 초안을 그리게 하기」 is a title, not an explanation. What
+ * - *"I can't even tell what the second one is."* (I can't even tell what the second one is) — 「Have AI read this code and draw a map draft」 is a title, not an explanation. What
  *   happens, what gets written into my folder, and whether approval is needed were
  *   nowhere.
- * - *"복사해도 완료 체크도 안됨"* (copying doesn't even tick it off) — completion was
+ * - *"Copying doesn't even tick it off."* (copying doesn't even tick it off) — completion was
  *   decided by **the relation count**. The user pressed what they were told to and
  *   the screen behaved as though nothing had happened. A progress indicator that does
  *   not count a press is not a progress indicator.
- * - *"만들어 주기"* (create it for me) — the button's name never said **what** it creates.
- * - *"첫번째는 에이전트 연결 안해도 사용은 가능해야하니 스킵하기 버튼"* (the first one
+ * - *"Create it for me."* (create it for me) — the button's name never said **what** it creates.
+ * - *"The first one should be usable without connecting an agent, so it needs a skip button."* (the first one
  *   should be usable without connecting an agent, so it needs a skip button) — right.
  *   Step one is an invitation, not a gate, and the checklist had no door to pass through.
  *
  * So it became **one step at a time**. A step that owns the screen has room to
- * explain, and 「다음」 (next) plus 「건너뛰기」 (skip) create a way past.
+ * explain, and 「Next」 (next) plus 「Skip」 (skip) create a way past.
  *
  * ## What it holds to
  *
@@ -109,7 +108,7 @@ export function VaultStartSteps({
   /**
    * The steps the user **actually took**. Deciding by waiting for the world to change
    * creates the moment where they pressed what they were told to and the screen sat
-   * still (owner: *"복사해도 완료 체크도 안됨"* — copying doesn't even tick it off). A
+   * still (owner: *"Copying doesn't even tick it off."* — copying doesn't even tick it off). A
    * press counts as a press.
    */
   const [acted, setActed] = useState<ReadonlySet<StartStepId>>(new Set());
@@ -145,8 +144,8 @@ export function VaultStartSteps({
   };
 
   /**
-   * Is this step **already done** — then the secondary button is 「다음」 (next), not
-   * 「건너뛰기」 (skip). "Skip" is the word for leaving something undone behind, so
+   * Is this step **already done** — then the secondary button is 「Next」 (next), not
+   * 「Skip」 (skip). "Skip" is the word for leaving something undone behind, so
    * using it on a step already taken erases what was just done.
    */
   const currentDone = current === "agent" ? agentReady : acted.has(current);
@@ -180,7 +179,7 @@ export function VaultStartSteps({
   /**
    * The primary action — its name states **what will happen when pressed**. And
    * pressing it moves to the next step: if the user did that step and the screen sat
-   * still, that is the owner's *"복사해도 완료 체크도 안 됨"* (copying doesn't even
+   * still, that is the owner's *"Copying doesn't even tick it off."* (copying doesn't even
    * tick it off).
    */
   const primary = (() => {
@@ -202,7 +201,7 @@ export function VaultStartSteps({
          * This step's name is **connect**, and connecting lives in exactly one place,
          * the settings' Agents pane — where you see what was detected and choose what
          * to use (owner report, 2026-08-16). It does **not** send you somewhere else
-         * depending on whether something was detected: with a name of 「연결」 (connect),
+         * depending on whether something was detected: with a name of 「Connect」 (connect),
          * opening a conversation makes the name and the action disagree.
          */
         label: t("agent.cta"),
@@ -247,9 +246,9 @@ export function VaultStartSteps({
         disabled: false,
         /*
          * This is the only step that **does not advance.** Whoever copied has to leave
-         * this app and paste into another tool, so they need a beat to see 「복사됐다」
-         * (copied). Instead, the secondary button below changes from 「건너뛰기」 (skip)
-         * to 「다음」 (next).
+         * this app and paste into another tool, so they need a beat to see 「Copied」
+         * (copied). Instead, the secondary button below changes from 「Skip」 (skip)
+         * to 「Next」 (next).
          */
         run: () => {
           void copyPrompt(analyzePrompt).then((ok) => {
@@ -304,7 +303,7 @@ export function VaultStartSteps({
       >
         {/*
           The title **is the step's title**. There used to be a card title
-          (「시작 체크리스트」 — the getting-started checklist) and a row title separately,
+          (「Getting Started Checklist」 — the getting-started checklist) and a row title separately,
           so the eye split between the two. This card now says exactly one thing, so it
           has one title. Progress is incidental to it, so it sits beside it.
         */}
@@ -356,7 +355,7 @@ export function VaultStartSteps({
             {/*
               **Every step has a skip.** Step one (connecting an agent) is an invitation
               rather than a gate, and so are the rest — this card must block nothing
-              (owner: *"에이전트 연결 안해도 사용은 가능해야 하니"* — it has to be usable
+              (owner: *"It has to be usable without connecting an agent"* — it has to be usable
               without connecting an agent).
             */}
             <Chip

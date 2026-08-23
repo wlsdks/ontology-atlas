@@ -32,7 +32,7 @@ export interface TopologyV2Tokens {
   indigo: string;
   indigoBright: string;
   amberHub: string;
-  /** Teal reserved for the 「최근 변경」 (recent changes) lens — it has to be distinct from the hub amber (owner call, 2026-08-02). */
+  /** Teal reserved for the "recent changes" lens — it has to be distinct from the hub amber (owner call, 2026-08-02). */
   recentChange: string;
   numeralShadow: string;
   numeralFace: string;
@@ -108,7 +108,7 @@ export interface TopologyV2Tokens {
   // 2.4 Motion · camera
   /**
    * `--topology-v2-camera-spring-angfreq-interactive` — dive-zoom fix (owner:
-   * *"줌 인/아웃이 느림"* — zoom in/out is slow). Drives the scale axis (and pan
+   * "zoom in/out is slow" — zoom in/out is slow). Drives the scale axis (and pan
    * while wheel-zooming)
    * during a LIVE wheel gesture — crisp, ~0.40s 95%-settle. The single shared
    * `cameraSpringAngFreq` (2.941, ~1.61s settle) this replaces made every
@@ -150,7 +150,7 @@ export interface TopologyV2Tokens {
    * the fit** while nothing is focused. `0` (the default) means no leash, i.e. the
    * previous envelope (world bbox ± 320).
    *
-   * A surface with no 「지도 맞추기」 (fit the map) chrome — the gateway `/download` —
+   * A surface with no "fit the map" chrome — the gateway `/download` —
    * switches this on: allowing an irreversible pan on a screen with no way back
    * leaves the stage empty. The decision logic is
    * `topology-camera-math.ts#computeUnfocusedPanBounds`.

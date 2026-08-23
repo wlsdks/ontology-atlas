@@ -60,8 +60,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
  *    looked empty.
  *
  * **[Deleted 2026-08-19] four assertions whose subject was the plate or the
- * three-step install.** The owner removed the install section entirely (*"맨 마지막
- * 이거는 없어도 될듯? 어차피 맨 위에 다 있어서"* — this last one can probably go; it
+ * three-step install.** The owner removed the install section entirely (*"this last one can probably go; it
+ * is all at the top anyway"* — this last one can probably go; it
  * is all at the top anyway). Removed with it:
  *
  * - The **plate** and the **install strip** from the seven elements (subject gone)
@@ -82,8 +82,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
  */
 
 /**
- * ⚠️ **Do not copy the origin value here** (prescription from the 체계
- * (design-systems) seat, 2026-07-29).
+ * ⚠️ **Do not copy the origin value here** (prescription from the design-systems
+ * seat, 2026-07-29).
  *
  * It used to be `width >= 768 ? 40 : 24`. That makes this file **a second source of
  * truth** — the test then verifies "does the rendered x equal the number I copied
@@ -257,8 +257,7 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   }
 
   /**
-   * **Are left and right equal** (owner report 2026-07-29: *"좌우가 같아야함"* —
-   * left and right must match).
+   * **Are left and right equal** (owner report 2026-07-29: *"Left and right must match."*
    *
    * This is the defect that passed while only the left was measured: when the origin
    * was a fixed value, 1920 gave left 64 and right 256 while all six elements
@@ -272,8 +271,7 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   ).toBe(origin);
 
   /**
-   * **The top bar is inside the same frame** (owner: *"공백이 길고 왜이러지?"* — the
-   * gap is long, why is that?). The right group stops at the column's right edge, so
+   * **The top bar is inside the same frame** (owner: *"The gap is long, why is that?"*). The right group stops at the column's right edge, so
    * this edge follows when the origin grows.
    */
   expect(m.gnbActionsRight, `${label}: GNB 우측 그룹을 못 읽었다`).not.toBeNull();

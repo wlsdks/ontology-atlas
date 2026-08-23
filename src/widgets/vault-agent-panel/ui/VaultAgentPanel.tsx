@@ -91,8 +91,8 @@ export function VaultAgentPanel({
   onOpenFolder?: () => void;
   downloadHref: string;
   /**
-   * A first message handed over from outside (S7) — pressing 「에이전트에게 말로
-   * 시키기」 (ask the agent) on a queue row or a node's detail brings a sentence
+   * A first message handed over from outside (S7) — pressing "Ask the agent" (ask the agent)
+   * on a queue row or a node's detail brings a sentence
    * carrying that row's context here. **It is a prefill, not a send.** `nonce` is the
    * value that lets the same sentence be seated again on a repeat.
    */
@@ -103,8 +103,8 @@ export function VaultAgentPanel({
   const [draft, setDraft] = useState('');
   const [scopeAccepted, setScopeAccepted] = useState(false);
   /**
-   * The two side branches below the composer — 「지침 보기」 (view instructions) and
-   * 「터미널에서 이어가기」 (continue in the terminal). **Only one opens at a time.**
+   * The two side branches below the composer — "View instructions" (view instructions) and
+   * "Continue in the terminal" (continue in the terminal). **Only one opens at a time.**
    *
    * Why one: the old layout, with both sitting permanently as bordered strips,
    * stacked four strips at the panel's floor (instructions · composer · boundary
@@ -139,7 +139,7 @@ export function VaultAgentPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const bridgeAvailable = isLlmChatBridgeAvailable();
-  /** The basis for the blanks the first words point at — the same fact map the 「할 일」 queue reads. */
+  /** The basis for the blanks the first words point at — the same fact map the "To-do" queue reads. */
   const conceptFacts = useVaultConceptFacts();
   /**
    * Which vendor's key is on this computer. The first in registration order (=
@@ -149,7 +149,7 @@ export function VaultAgentPanel({
    */
   const [provider, setProvider] = useState<ConnectionProvider | null>(null);
   /**
-   * The 「주소로 연결」 (connect by address) path's settings — the address and the
+   * The "Connect by address" (connect by address) path's settings — the address and the
    * chosen model. It lives in localStorage rather than the keychain (it is not a
    * secret), and a signal arrives when the settings sheet changes it.
    */
@@ -343,7 +343,7 @@ export function VaultAgentPanel({
 
   /**
    * Chip → prefill. The sentence is seated **in the frame it was pressed**. Sending is
-   * always [보내기].
+   * always [Send].
    *
    * Seating is deferred behind `requestAnimationFrame` — immediately after `setDraft`
    * React has not written the value yet, so the caret is computed against the old
@@ -456,7 +456,7 @@ export function VaultAgentPanel({
    *
    * All the ingredients are already on screen: the concept being viewed (the screen
    * context), the concepts in this folder with an empty meaning or owner (**the same
-   * judgement** as the 「할 일」 queue), and the map questions that can always be asked.
+   * judgement** as the "To-do" queue), and the map questions that can always be asked.
    * So the suggestions are free (local) and only running them is opt-in — "nothing
    * goes out before you send" becomes the basis of the first-words design rather than
    * a constraint on it.
@@ -517,7 +517,7 @@ export function VaultAgentPanel({
         data-agent-dock-surface="inset"
         style={{ width: 'calc(var(--agent-panel-width) - var(--chrome-inset))' }}
         className={`${AGENT_DOCK_INSET_SURFACE_CLASS} flex flex-col`}
-        // 열리는 동안에도 지도 조작을 막지 않는다 — 블로킹 표면이 아니다.
+        // Map manipulation is not blocked while open — it is not a blocking surface.
         inert={!open ? true : undefined}
       >
         <header className="flex shrink-0 items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2">
@@ -585,7 +585,7 @@ export function VaultAgentPanel({
             />
           ) : !provider ? (
             // Owner reversal (2026-07-26) — the old structure told the route **in
-            // words**: "in the bottom-left settings (gear), under 「AI 연결」…". Making a
+            // words**: "in the bottom-left settings (gear), under 'AI Connection'…". Making a
             // person find somewhere the screen could take them is homework, not guidance.
             <AgentLockedState
               title={t('degraded.noKeyTitle')}
@@ -596,8 +596,8 @@ export function VaultAgentPanel({
             />
           ) : !scopeAccepted ? (
             <>
-              {/* The consent card also stands at the floor — [알겠어요] (got it) is where
-                  [보내기] (send) will stand. The next control opening in the same place
+              {/* The consent card also stands at the floor — [Got it] is where
+                  [Send] will stand. The next control opening in the same place
                   reads as "this opened"; floating above and then producing a composer
                   below reads as "something else appeared". */}
               <div aria-hidden="true" className="min-h-0 shrink grow" />

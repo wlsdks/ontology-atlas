@@ -44,7 +44,7 @@ import "./atlas-map-probe";
  */
 
 /*
- * **Keep the video** (owner request: *"다 녹화해서 자리가 완벽하게 세팅되게끔"* —
+ * **Keep the video** (owner request: *"Record everything so the setup is provably perfect."* —
  * record everything so the setup is provably perfect). The assertions below catch
  * the numbers; this video is what a person checks by eye. It lands as `.webm`
  * under `output/playwright/test-results/**`.
@@ -178,9 +178,9 @@ test.describe("카메라 전환 규격", () => {
    * **One input = one event** — do the three things that move on selection read as
    * the same event?
    *
-   * The rule is pinned in `design.md`: *"같은 입력에서 나온 단계들은 같은 프레임에
-   * 시작한다. 시작 시점 차가 `--motion-fast`(120ms)를 넘으면 사용자가 두 사건으로
-   * 읽으므로 결함이다."* (stages caused by the same input start on the same frame;
+   * The rule is pinned in `design.md`: *"Stages caused by the same input start on the same frame;
+   * a start-time gap over `--motion-fast` (120ms) reads as two events and is a
+   * defect."* (stages caused by the same input start on the same frame;
    * a start-time gap over `--motion-fast` (120ms) reads as two events and is a
    * defect). This repository has **already produced that value** — the node popover
    * finished at 88.8% on the first frame while only the background map received a
@@ -235,7 +235,7 @@ test.describe("카메라 전환 규격", () => {
        * in CI). An ease-in curve barely moves at the start, so the time of "the first
        * detectable movement" **depends on the frame interval** and gets later on a slow
        * machine automatically. This is the rule the repository already wrote down:
-       * *"게이트는 밀리초가 아니라 횟수로 잠근다"* (`architecture.md` — a gate locks on
+       * *"A gate locks on counts, not milliseconds."* (`architecture.md` — a gate locks on
        * counts, not milliseconds).
        *
        * Counting frames makes two machines comparable (4–5 frames in the same

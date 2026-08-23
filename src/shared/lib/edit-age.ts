@@ -4,8 +4,8 @@
  *
  * The day-granularity `computeUpdatedAgo` ladder used elsewhere for vault-doc
  * freshness (`views/home/lib/format-updated-ago.ts`) collapses every edit within
- * a day to 「오늘」 (today) — fine for "when was this doc last touched at all",
- * too coarse for 「AI agent · 3분 전」 (AI agent, 3 minutes ago). This ladder
+ * a day to 「Today」 (today) — fine for "when was this doc last touched at all",
+ * too coarse for 「AI agent · 3 minutes ago」 (AI agent, 3 minutes ago). This ladder
  * covers minutes and hours, then falls back to the same day/week/month buckets so
  * long-idle facts still read naturally.
  */

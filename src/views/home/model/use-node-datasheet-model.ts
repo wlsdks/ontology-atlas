@@ -94,7 +94,7 @@ export interface NodeDatasheetDerivation {
     groups: ReturnType<typeof buildV2ConnectionGroups>;
     evidence: { rows: ReturnType<typeof buildV2EvidenceRows>; total: number };
     /**
-     * 「코드 위치」 (Code locations) — the node's REAL code evidence (raw file paths from vault
+     * [Code locations] (Code locations) — the node's REAL code evidence (raw file paths from vault
      * frontmatter `elements: [...]`), distinct from `evidence` above
      * (which is the self-referential source-doc slug, `evidenceIds`). See
      * `deriveCodeLocations`'s doc comment for why the two must stay separate.

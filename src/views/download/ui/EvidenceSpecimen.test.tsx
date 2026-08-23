@@ -112,8 +112,8 @@ describe('EvidenceSpecimen', () => {
   /**
    * **The English panel draws no Korean.** `/en/download/` is one of two routes
    * `tests/e2e/locale-purity.spec.ts` locks as drawing no vault text, and the first version of
-   * this panel broke it: showing the file verbatim put `display_ko: AI 연결 서버` on an English
-   * screen. CI caught it (2026-08-23). The fix leaves the other locale's display line out and
+   * this panel broke it by showing the locale-specific `display_ko` line on an English screen.
+   * CI caught it (2026-08-23). The fix leaves the other locale's display line out and
    * counts it, so this asserts the property at the unit level too — an e2e failure is a slow way
    * to learn it.
    */

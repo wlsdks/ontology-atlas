@@ -531,8 +531,7 @@ describe('DownloadPage', () => {
    * The order — **four sections, one idea each** (revised 2026-08-19): hero (type + object + CTA)
    * → demo → evidence (map + census) → the agent round trip → (footer) colophon.
    *
-   * ⑤ install and download was deleted (owner: *"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에 다
-   * 있어서"* — the last one can go; it's all at the top anyway). So **the decision is in the first
+   * ⑤ install and download was deleted (owner: *"Looks like this last one isn't needed? It's all at the top anyway."* — the last one can go; it's all at the top anyway). So **the decision is in the first
    * section**: the download button lives in the hero, and the three sections after it are the
    * argument for that decision. The property this test protects is the argument order
    * (problem → something moving → evidence → agents), and that property survives one section going away.
@@ -716,8 +715,7 @@ describe('DownloadPage', () => {
     });
 
     /**
-     * ⚠️ "Back to the map" **disappeared from both addresses** (2026-07-31, owner: *"이건 홍보
-     * 페이지라 메인 화면에서만 이동 가능하게"* — this is a promo page; make navigation possible
+     * ⚠️ "Back to the map" **disappeared from both addresses** (2026-07-31, owner: *"This is a promo page; navigation should only be possible from the main screen."* — this is a promo page; make navigation possible
      * only from the main screen).
      *
      * It used to be removed on `/` but kept on `/download`, reasoning that someone arriving by

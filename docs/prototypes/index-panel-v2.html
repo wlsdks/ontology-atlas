@@ -1,18 +1,18 @@
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min (이 파일은 좌측 컬럼 확대 시안 — 실척) -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min (this file is the left column enlarged design — actual scale) -->
 <!--
-  index-panel-v2 — 지형도 좌측 컬럼(브랜드 필 + INDEX 패널) 리디자인.
-  소유자 반려("디자인 별로") + Guardian 실측 처방 반영:
-  · 단일 24px 좌측 레일 정렬 (필 32 / 패널 18px 어긋남 해소), radius 패밀리 10/12
-  · 필 = 직사각(999px 원형 폐기), 헥스 pip + 타이틀 + 각인 census 한 줄
-  · 원형 아이콘 버튼 2개 → 8px 정사각 타일 (Lucide)
-  · INDEX 헤더 평문화: "INDEX · 에이전트 동기화" → 패널 정체(트리)와 상태 분리
-    — 상태는 푸터로, 헤더는 INDEX + 접기 정사각 버튼
-  · 트리 행 = grid(캐럿+글리프 / 라벨+서브+미터 / 각인 카운트):
-    - kind 글리프: 프로젝트=앰버 헥스, 도메인=인디고 스퀘어, 문서=서클
-    - 역량·요소 서브카운트 mono
-    - capacity meter = 라벨 폭 안 1px 인라인, 상시 인디고 잉크 (회색 3px 별도 줄 폐기)
-    - 카운트 = 각인(letterpress) 적용 (--topology-v2-numeral-shadow 실적용)
-  · 실데이터 그대로 (스크린샷 기준): 289/483, 도메인 6 + 문서 1
+  index-panel-v2 — Redesign of terrain map left column (brand field + INDEX panel).
+  Owner rejected "design only" + Guardian observed prescription applied:
+  · Single 24px left rail alignment (resolve 32/18px offset between field/panel), radius family 10/12
+  · Field = rectangle (discard 999px circle), hex pip + title + engraved census one line
+  · Two circular icon buttons → 8px square tiles (Lucide)
+  · Flatten INDEX header: "INDEX · Agent Sync" → separate panel identity (tree) from state
+    — state goes to footer, header becomes INDEX + fold square button
+  · Tree row = grid (caret+glyph / label+sub+meter / engraved count):
+    - kind glyph: project=amber hex, domain=indigo square, document=circle
+    - capability/element subcounts mono
+    - capacity meter = 1px inline inside label width, always indigo ink (discard separate gray 3px line)
+    - count = engraved (letterpress) applied (--topology-v2-numeral-shadow production)
+  · Real data as-is (screenshot basis): 289/483, domain 6 + document 1
 -->
 <!doctype html>
 <html lang="ko">
@@ -40,7 +40,7 @@
     background-image:radial-gradient(rgba(255,255,255,.025) .8px, transparent .8px);
     background-size:30px 30px}
   svg.lucide{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-  /* ── 상단: 브랜드 필 + 유틸 타일 — 24px 레일 정렬 ── */
+  /* ── Top: brand field + utility tiles — 24px rail alignment ── */
   .toprow{position:absolute;top:14px;left:24px;display:flex;align-items:stretch;gap:8px}
   .pill{display:flex;align-items:center;gap:11px;border:1px solid var(--border-soft);background:rgba(16,17,24,.95);
     border-radius:10px;padding:8px 14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
@@ -53,7 +53,7 @@
   .tile{width:42px;border:1px solid var(--border-soft);background:rgba(16,17,24,.95);border-radius:10px;
     display:grid;place-items:center;color:var(--t3);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
   .tile:hover{color:var(--t1);border-color:var(--border-strong)}
-  /* ── INDEX 패널 — 같은 24px 레일, radius 12 ── */
+  /* ── INDEX panel — same 24px rail, radius 12 ── */
   .index{position:absolute;top:76px;left:24px;bottom:24px;width:302px;
     border:1px solid var(--border-soft);background:rgba(16,17,24,.96);border-radius:12px;
     display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.45)}

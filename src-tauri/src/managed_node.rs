@@ -1,45 +1,48 @@
-//! Node 런타임을 **앱 전용 자리**에 받아 둔다 — 고정된 버전, 대조한 해시.
+//! Store the Node runtime in an **app-owned location** with a pinned version and
+//! a verified hash.
 //!
-//! ## 왜 있나 (2026-08-20 소유자 지시 · 원장 (89))
+//! ## Why this exists (owner direction 2026-08-20, ledger (89))
 //!
-//! 도구가 하나도 없는 사람의 마지막 막다른 길이 여기였다. 어댑터를 띄우려면
-//! Node 가 필요한데, 없으면 화면이 할 수 있는 말이 「Node 를 설치한 뒤 다시
-//! 확인」뿐이었다. 앱 밖으로 내보내는 안내는 그 사람이 돌아오지 않으면 끝난다.
+//! Users with no installed tools reached a final dead end: adapters require
+//! Node, and without it the UI could only say "Install Node and check again."
+//! Guidance that sends someone outside the app fails if they never return.
 //!
-//! ## 왜 이 방식인가
+//! ## Why this method
 //!
-//! `curl | bash` 는 안 쓴다. 원격 스크립트를 그대로 셸에 파이프하면 **무엇이
-//! 실행될지 우리가 모르고**, 어제와 오늘이 다를 수 있다. 대신 셋을 건다:
+//! Never use `curl | bash`. Piping a remote script directly into a shell means
+//! we do not know what will execute, and yesterday's script may differ from
+//! today's. Apply three constraints instead:
 //!
-//! | | 이 파일이 하는 것 |
+//! | | What this file does |
 //! |---|---|
-//! | **고정** | 버전을 상수로 박는다. 같은 앱은 언제나 같은 것을 받는다 |
-//! | **검증** | 공식 `SHASUMS256.txt` 에서 읽은 해시를 **빌드에 박아 두고** 받은 뒤 대조한다. 안 맞으면 지우고 실패한다 |
-//! | **격리** | `<app-data>/runtimes/node/` 안에만. 시스템 Node 도 PATH 도 안 건드리고, 앱을 지우면 같이 사라진다 |
+//! | **Pin** | Compile the version as a constant. The same app always downloads the same artifact |
+//! | **Verify** | Compile the hash from the official `SHASUMS256.txt`, compare after download, and delete then fail on mismatch |
+//! | **Isolate** | Write only inside `<app-data>/runtimes/node/`. Do not touch system Node or PATH; uninstalling the app removes it too |
 //!
-//! 해시는 `https://nodejs.org/dist/<버전>/SHASUMS256.txt` 를 직접 읽어 옮겼다.
+//! The hash was copied directly from
+//! `https://nodejs.org/dist/<version>/SHASUMS256.txt`.
 //!
-//! ## 왜 새 의존성이 없나
+//! ## Why there is no new dependency
 //!
-//! 받는 것은 `curl`, 푸는 것은 `tar`(macOS/Linux) 또는 PowerShell 의
-//! `Expand-Archive`(Windows). 셋 다 OS 가 들고 있고, 해시는 이미 있는 `sha2`
-//! 로 낸다. 공급망 표면이 0으로 는다.
+//! Download with `curl`; extract with `tar` on macOS/Linux or PowerShell's
+//! `Expand-Archive` on Windows. All are supplied by the OS, and the existing
+//! `sha2` dependency computes the hash. The supply-chain surface grows by zero.
 
 use std::path::{Path, PathBuf};
 
 use crate::acp::bounded_output;
 
-/// 받아 둘 Node 버전. **바꾸면 아래 해시도 같이 바꿔야 한다** — 계약 테스트가
-/// 버전 문자열과 파일 이름이 어긋나면 막는다.
+/// Node version to store. **If you change this, update the hash below too** — contract tests
+/// block mismatches between version strings and file names.
 pub(crate) const MANAGED_NODE_VERSION: &str = "v24.18.0";
 
-/// 한 플랫폼의 공식 배포물.
+/// Official distribution for a platform.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ManagedNodeArtifact {
-    /// 압축을 풀면 나오는 디렉터리 이름의 꼬리(`node-<버전>-<platform>`).
+    /// The tail of the directory name extracted after decompression (`node-<version>-<platform>`).
     pub platform: &'static str,
     pub filename: &'static str,
-    /// `SHASUMS256.txt` 의 값 그대로.
+    /// Exactly as in `SHASUMS256.txt`.
     pub sha256: &'static str,
     /// 받을 파일의 정확한 바이트 수 — **진행률의 분모다.**
     ///
@@ -242,13 +245,13 @@ fn download_with_progress(
             Err(err) => return Err(format!("node-download-failed:{err}")),
         }
         if started.elapsed() > limit {
-            // 시간이 다 됐으면 **죽이고 거둔다.** 안 거두면 좀비가 남는다.
+            // If time is up, **kill and reclaim it.** If not reclaimed, zombies remain.
             let _ = child.kill();
             let _ = child.wait();
             return Err("node-download-failed:timeout".to_string());
         }
         if let Ok(meta) = std::fs::metadata(dest) {
-            // 분모를 넘는 값을 보고하지 않는다 — 101% 는 진행률이 아니라 결함이다.
+            // Do not report values exceeding the denominator — 101% is a defect, not progress.
             report("downloading", Some(meta.len().min(total)), Some(total));
         }
         std::thread::sleep(std::time::Duration::from_millis(250));
@@ -277,7 +280,7 @@ fn extract(archive: &Path, into: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// `Command` 를 값으로 넘기려고 꺼낸다 — `bounded_output` 이 소유권을 받는다.
+/// Extract `Command` to pass by value — `bounded_output` takes ownership.
 fn command_ref(command: &mut std::process::Command) -> std::process::Command {
     let mut out = std::process::Command::new(command.get_program());
     out.args(command.get_args());
@@ -290,23 +293,23 @@ mod tests {
 
     #[test]
     fn hash_check_accepts_the_real_thing_and_refuses_anything_else() {
-        // 빈 입력의 sha256 — 대조가 실제로 계산을 하는지 보는 고정점.
+        // sha256 of empty input — a fixed point to verify if the comparison actually performs computation.
         let empty = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
         assert!(sha256_matches(b"", empty));
         assert!(sha256_matches(b"", &empty.to_uppercase()));
         assert!(!sha256_matches(b"x", empty));
-        // 한 글자만 달라도 막아야 한다 — 이게 이 기능의 존재 이유다.
+        // Must block even with a single character difference — this is the reason this feature exists.
         let mut tampered = empty.to_string();
         tampered.replace_range(0..1, "f");
         assert!(!sha256_matches(b"", &tampered));
     }
 
-    /// **버전 문자열과 파일 이름이 어긋나면** 받는 주소가 없는 파일을 가리킨다.
-    /// 버전을 올리면서 해시만 두고 파일 이름을 안 고치는 실수를 여기서 막는다.
+    /// **If version string and file name mismatch**, it points to a file with no receiving address.
+    /// This prevents mistakes where the hash is updated but the file name is not when bumping versions.
     #[test]
     fn artifact_filename_matches_the_pinned_version() {
         let Some(artifact) = MANAGED_NODE else {
-            return; // 등재 안 된 플랫폼 — 이 기능이 없다.
+            return; // Unlisted platform — this feature does not exist.
         };
         assert!(
             artifact.filename.contains(MANAGED_NODE_VERSION),
@@ -318,17 +321,17 @@ mod tests {
         assert!(artifact.sha256.chars().all(|c| c.is_ascii_hexdigit()));
     }
 
-    /// **분모가 0이면 진행률이 아니라 나눗셈 사고다.**
+    /// **If the denominator is 0, it's a division error, not progress.**
     ///
-    /// 이 값은 네트워크로 확인할 수 없다(CI 는 밖으로 안 나간다). 그래서 여기서
-    /// 재는 것은 「맞는 값인가」가 아니라 **「진행률로 쓸 수 있는 값인가」** 다 —
-    /// 실제로 틀렸다면 받은 뒤 `sha256` 이 먼저 안 맞고, 그건 이미 게이트가 있다.
+    /// This value cannot be verified over the network (CI does not go outside). So what we measure here
+    /// is not "is it the correct value" but **「is it a value usable as progress」** —
+    /// if it were actually wrong, `sha256` would fail first after receipt, and that already has a gate.
     #[test]
     fn artifact_bytes_can_serve_as_a_denominator() {
         let Some(artifact) = MANAGED_NODE else { return };
         assert!(artifact.bytes > 0, "0 을 분모로 쓸 수 없다");
-        // Node 배포물은 수십 MB 다. 자릿수가 어긋나면(바이트 대신 KB 를 적는 등)
-        // 진행률이 즉시 100% 로 붙거나 영영 1% 에 머문다.
+        // Node distributions are tens of MB. If the magnitude is off (e.g., writing KB instead of bytes),
+        // progress immediately jumps to 100% or stays stuck at 1% forever.
         assert!(
             (10_000_000..200_000_000).contains(&artifact.bytes),
             "크기 자릿수가 이상하다: {}",
@@ -359,7 +362,7 @@ mod tests {
         let Some(_) = MANAGED_NODE else { return };
         let plan = managed_node_plan().unwrap();
         assert!(plan.contains("https://nodejs.org/dist/"), "{plan}");
-        // 해시 앞머리가 보여야 한다 — 「검증한다」가 말뿐이 아님을 화면이 댄다.
+        // The hash prefix must be visible — the screen demonstrates that "verification" is not just talk.
         assert!(plan.contains('('), "{plan}");
     }
 }

@@ -1,6 +1,6 @@
 /**
  * Write-path wiring for the node-eligibility gate (2026-07-31 council —
- * `docs/DECISIONS.md`, 「온톨로지 구축 규격」 — the ontology construction rules).
+ * `docs/DECISIONS.md`, 「Ontology construction rules」 — the ontology construction rules).
  *
  * This file proves ONE thing, and deliberately only one: that the gate is
  * wired into the **shared** write primitive, so `add_concept`, `patch_concept`,

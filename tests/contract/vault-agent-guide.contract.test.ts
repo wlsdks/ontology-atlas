@@ -18,8 +18,7 @@ import { runCliJson } from "../helpers/run-cli-json";
  *
  * **Why this file appears in the vault** (measured 2026-08-17). Even with the MCP
  * server attached, agents did not pick it up. Asked in the installed app,
- * *"이 폴더에 있는 개념들의 slug 를 전부 알려줘"* (list every concept slug in this
- * folder), codex did:
+ * *"list every concept slug in this folder"*, codex did:
  *
  * | | What it did | MCP calls |
  * |---|---|---|
@@ -189,11 +188,11 @@ describe("볼트 에이전트 안내문", () => {
    * The guide **claims** that every node in this folder keeps `title` in English.
    * Rather than pinning that claim as a sentence, **ask the shipped data** — if the
    * convention changes, that sentence becomes false and this check breaks first.
-   *
-   * Measured 2026-08-17: with a guide lacking that line, codex wrote
-   * `title: 결제 환불 처리` (the same value as `display_ko`); with it, codex wrote
-   * `title: Payment refund processing`.
-   */
+     *
+     * Measured 2026-08-17: with a guide lacking that line, codex wrote
+     * `title: Payment refund processing` (the same value as `display_ko`); with it, codex wrote
+     * `title: Payment refund processing`.
+     */
   it("스타터가 실제로 그 규약을 지킨다 — 안내문의 주장이 데이터와 맞는가", () => {
     const named = starterFilesForLocale("ko").filter((file) =>
       /^display_en:/m.test(file.content),

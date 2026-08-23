@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn';
 /**
  * The hero headline, typed one character at a time with a caret that advances.
  *
- * Owner call 2026-08-23, after being shown the alternative and the cost: *"진짜 타자기"* — a real
+ * Owner call 2026-08-23, after being shown the alternative and the cost: *"real typewriter"* — a real
  * typewriter, the device `buzz.xyz` uses, not a per-character fade. What follows is that device
  * with its two measured failure modes engineered out rather than shipped.
  *
@@ -32,7 +32,7 @@ import { cn } from '@/shared/lib/cn';
  * `--motion-*` ramp token. The ramp answers "how long does one thing take to move" (120/180/240);
  * nothing here moves — characters switch on. The neighbouring agent scene already sets the
  * precedent, driving its line rhythm from a JS timer for the same reason
- * (`.gateway-term-line`: *"타자 리듬은 JS 타이머가 만든다"*).
+ * (`.gateway-term-line`: *"the typewriter rhythm is created by a JS timer"*).
  *
  * ## Failure mode ②: the text jumps while it types
  *

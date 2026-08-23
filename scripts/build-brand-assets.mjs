@@ -11,7 +11,7 @@
  * image dependency. That is why this script emits **SVG only**; assembling
  * PNG/icns/ico is `scripts/build-brand-raster.mjs`.
  *
- * Spec source: `docs/DECISIONS.md` 「브랜드 마크 겹 육각형 집행 사양」 (the
+ * Spec source: `docs/DECISIONS.md` 「brand mark overlapping hexagon enforcement spec」 (the
  * nested-hexagon brand mark enforcement spec).
  */
 import { writeFileSync, mkdirSync } from 'node:fs';

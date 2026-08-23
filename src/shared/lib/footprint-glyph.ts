@@ -13,8 +13,8 @@ import { FONT_WEIGHT } from "@/shared/ui/font-weight";
  * was that a ring shares the grammar of the node outline — the selection ring, the
  * expansion aura and the boundary are already circles, so the footprint ring became
  * a fourth circle whose meaning the user had to re-learn each time. Owner:
- * *"걸어왔던 길 노드들에 순서가 뜨고"* · *"연결된 선에도 작은 발자국이 지나간
- * 흔적처럼"* (show the visit order on the nodes you walked, and leave small
+ * *"Show the visit order on the nodes you walked, and leave small
+ * footprints along the connecting lines too."* (show the visit order on the nodes you walked, and leave small
  * footprints along the connecting lines too). A footprint sits **outside the circle
  * grammar**, so that collision cannot arise, and it carries what a ring could not:
  * direction (the toes point the way of travel) and order (the step number beside
@@ -25,8 +25,8 @@ import { FONT_WEIGHT } from "@/shared/ui/font-weight";
  * longer state what the mark means. The only thing a user chooses is **how loudly
  * the same meaning is stated** (`FootprintPreference`).
  *
- * **Beside the line, not on it.** Owner: *"선에 겹치게 말고"* (don't overlap the
- * line). A relation line is the channel carrying a typed fact (containment /
+ * **Beside the line, not on it.** Owner: *"Don't overlap the
+ * line."* (don't overlap the line). A relation line is the channel carrying a typed fact (containment /
  * dependency); a mark laid on top makes two facts fight over one ink. Footprints
  * are offset along the normal and say only "someone passed along here".
  *
@@ -51,8 +51,8 @@ export interface FootprintPaintContext {
   /**
    * Size factor taken from camera zoom — zooming out shrinks the prints too.
    *
-   * Owner decision: *"겹쳐지는건 없게 하고싶은데? 노드가 멀어지면 발자국도 조금
-   * 작아져도 괜찮으니"* (nothing should overlap; it is fine for footprints to shrink
+   * Owner decision: *"I want to avoid overlaps; it is fine for footprints to shrink
+   * as nodes recede."* (nothing should overlap; it is fine for footprints to shrink
    * as nodes recede). Overlap is worst when **zoomed out**: nodes and relation lines
    * crowd the screen, and prints held at a fixed pixel size would bury the graph.
    * Tying them to zoom makes the prints retreat first.
@@ -89,7 +89,8 @@ export function footprintScaleFor(cameraScale: number): number {
 
 /**
  * A print **never grows larger than the node it marks** (2026-08-02, owner:
- * *"화면 작아졌을때 발걸음 사이즈같은거 조절도 좀 꼼꼼히"* — tighten how the
+ * *"Tighten how the
+ * footprint size adapts when the window gets small."* — tighten how the
  * footprint size adapts when the window gets small).
  *
  * `footprintScaleFor` above is the **square root** of camera zoom while node radius
@@ -213,7 +214,7 @@ export function footprintPairRadius(size: number): number {
  *
  * ⚠️ The distance **includes the print radius**. Without it `gap` is the distance to the
  * print's *centre*, and the print bites into the node disc (measured in the installed
- * app — owner: *"겹쳐지는건 없게 하고싶은데"*, nothing should overlap). Overlap is an
+ * app — owner: *"I want to avoid overlapping."*, nothing should overlap). Overlap is an
  * edge condition, not a centre condition.
  */
 export function footprintAnchor(
@@ -324,8 +325,7 @@ export function edgeFootprintPlacements(
    * For a print to actually clear the line the offset must be **the gap plus the print's
    * half-width**. `gap` alone only moves the print's centre, so anything wider gets the
    * line running through its middle — exactly what the installed app showed (gap 8px,
-   * print half-width ~3px and up). The owner's requirement *"선에 겹치게 말고"* (don't
-   * overlap the line) is an **edge** condition, not a centre-distance one.
+   * print half-width ~3px and up). The owner's requirement *"Don't overlap the line"* is an **edge** condition, not a centre-distance one.
    *
    * Half-width is the ball ellipse's x radius (`size * 0.26`) scaled, plus half the stroke
    * width — it grows with the print, so enlarging the glyph cannot bring the overlap back.

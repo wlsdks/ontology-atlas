@@ -28,7 +28,7 @@ function stripComments(source: string): string {
 
 
 /**
- * The **licence contract** for the two indigo ink steps (체계 seat verdict
+ * The **licence contract** for the two indigo ink steps (System seat verdict
  * 2026-08-03, follow-up to PR #886).
  *
  * **What it locks.** This app has two solutions for indigo ink:
@@ -200,7 +200,7 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
    * to the runtime instrument that opens the surfaces (`a11y-ratchet`).
    *
    * The 1 place the audit named was repaid in that round (`StepRow`, 8.39:1), and the
-   * other 23 were migrated exhaustively by the 2026-08-04 체계 ink round (open-surface
+   * other 23 were migrated exhaustively by the 2026-08-04 system ink round (open-surface
    * overlay contrast) — only the ink changed to `--color-indigo-text-soft`, with zero
    * change to dimensions or borders. After migration every place measures at least
    * 6.30:1 composite (the lowest being a32/elevated). Hence a baseline of 0: this

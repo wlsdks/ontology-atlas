@@ -1,5 +1,5 @@
 // Wiring test for writeDoc slug flatness (decision 2026-08-01,
-// 「슬러그는 평평한 식별자다」 — a slug is a flat identifier; docs/DECISIONS.md).
+// 「A slug is a flat identifier」 — a slug is a flat identifier; docs/DECISIONS.md).
 //
 // The rule itself — which slugs are rejected — is measured by FLAT_SLUG_CASES in
 // `tests/contract/vault-schema.contract.test.ts`, including mcp/cli mirror

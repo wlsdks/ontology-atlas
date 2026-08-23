@@ -135,7 +135,7 @@ export interface TopologyTrailChipProps {
  * on top, each dot a kind glyph (indigo for where you are now), row click =
  * focus that node.
  *
- * Why newest-first — owner: "위에가 1인지 맨 아래가 1인지 구분하기 쉽지 않다"
+ * Why newest-first — owner: "It's hard to tell whether the top or the bottom is step 1"
  * (it is hard to tell whether the top or the bottom is step 1). Direction is not
  * left to the metaphor of the line. It matches every other time-ordered list in
  * the app (git history, freshness, the INDEX recent filter), and each row carries

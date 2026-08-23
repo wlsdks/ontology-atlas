@@ -15,7 +15,7 @@
  *   appears anywhere in the document — a non-contiguous phrase just scores at
  *   `bodyTierScore`, the lowest tier; the phrase is never required. If highlighting only
  *   accepted a contiguous phrase, search would report a hit while the viewer showed zero
- *   marks. Reproduced live by searching "관계 타입" and opening the CLI Developer Entry
+ *   marks. Reproduced live by searching "relationship type" and opening the CLI Developer Entry
  *   body match.
  */
 export interface HighlightSegment {

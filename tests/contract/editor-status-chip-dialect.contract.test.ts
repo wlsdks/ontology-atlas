@@ -11,9 +11,9 @@ import { describe, expect, it } from "vitest";
  *
  * | Chip | Measured |
  * |---|---|
- * | Save state — "변경 없음 · 디스크와 같음" | **9.5px** |
- * | "자동 백업 · 최종 저장" | 11px |
- * | "검증 · 되돌리기" | 11px |
+ * | Save state — "No changes · Matches disk" | **9.5px** |
+ * | "Auto backup · Last saved" | 11px |
+ * | "Validation · Undo" | 11px |
  *
  * The parent row is `text-label` (11px), yet the first chip alone dropped a step
  * to `text-caption`. **Same type and same cause** as the defect caught in the
@@ -24,7 +24,7 @@ import { describe, expect, it } from "vitest";
  * the same type step.* This row's spec is `text-label` (11px). By the ramp's own
  * definition `text-caption` (9.5px) is the step for "micro labels, legends,
  * timestamps" (`app/globals.css`), and the only thing in this row that qualifies
- * is **the eyebrow** (`editorEyebrow` — "편집 · <slug>"). So this test does not
+ * is **the eyebrow** (`editorEyebrow` — "Edit · <slug>"). So this test does not
  * ban `text-caption` outright but **permits it at the eyebrow only** — an outright
  * ban blocks legitimate use, and unlimited permission returns to the state that
  * created the defect.
@@ -114,14 +114,14 @@ describe("편집기 상단 줄 — 상태 칩의 타입 방언은 하나다", ()
 });
 
 /**
- * Two "미리보기" (preview) labels on one screen came out of the same review
+ * Two "Preview" labels on one screen came out of the same review
  * (2026-08-08).
  *
- * The document header's 「미리보기 | 편집」 tab (read this or edit it) and the
+ * The document header's 「Preview | Edit」 tab (read this or edit it) and the
  * editor's split-view toggle (see the result beside what I am editing) carried
  * **the same label 52px apart vertically**. Both are legitimate features, but
  * identical names read as a duplicate of one thing. The latter became
- * 「나란히 보기」 (side by side).
+ * 「Side by Side」 (side by side).
  */
 /**
  * **In this whole file, `text-caption` appears at the eyebrow only** (widened

@@ -351,10 +351,10 @@
   // depends facts from the dogfood vault; endpoints outside the focus ego are
   // aggregated up to their domain node so the drawn map stays sparse.
   var DEPENDS = [
-    ["agent-config-onboarding", "ai-agent-partner"],   // → MCP 서버 (AI Agent Partner)
+    ["agent-config-onboarding", "ai-agent-partner"],   // → MCP Server (AI Agent Partner)
     ["po-operating-system", "ai-agent-partner"],       // → Agent Brief
     ["cli-developer-entry", "ontology-core"],          // → Frontmatter Schema
-    ["onboarding-ux", "views"],                        // 도메인 상호 의존 (집계)
+    ["onboarding-ux", "views"],                        // Domain Interdependencies (Aggregation)
     ["views", "ontology-core"],
     ["mode-aware-adapters", "vault-local-first"]
   ];

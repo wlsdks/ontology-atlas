@@ -1,8 +1,9 @@
 /**
  * What to install, and how, on a machine without git.
  *
- * Owner, 2026-07-26: *"없으면 설치 페이지로 유도하거나 brew나 뭔가 설치방식
- * 알려주는건 하면 안되는건가? window, mac 둘 다 지원해야하는데.."* (if git is
+ * Owner, 2026-07-26: *"If git is
+ * missing, may we point at an install page or show a brew command? We support
+ * both Windows and macOS."* (if git is
  * missing, may we point at an install page or show a brew command? we support
  * both Windows and macOS).
  *

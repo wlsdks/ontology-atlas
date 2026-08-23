@@ -41,7 +41,8 @@ export function useStageGraph(): StageGraph {
 
 /**
  * The stage's map — **it is the real engine** (owner instruction 2026-07-28:
- * *"우리 실제가 훨씬 예쁘고 … 우측에서 드래그하면 움직이게 하고싶음 실제처럼, 사용하는것처럼"*
+ * *"ours is far prettier; I want dragging on the right to move it, like the real thing, like
+ * using it"*
  * — ours is far prettier; I want dragging on the right to move it, like the real thing, like
  * using it).
  *
@@ -259,7 +260,7 @@ export function StageMap({
         tierReveal={GATEWAY_TIER_REVEAL}
         /**
          * The first camera centres the full node bbox in the frame (owner, 2026-08-18:
-         * *"처음 로딩될때 … 너무 아래임.. 딱 중앙이었음해"* — on first load it sat too low; it
+         * *"on first load it sat too low; it should be dead centre"* — on first load it sat too low; it
          * should be dead centre). The workbench default (fit to the spine bbox) is the honest
          * frame when only the spine is drawn on entry, but this section draws every tier from
          * entry via `tierReveal` above — and the spine's centre is above the whole graph's mass,

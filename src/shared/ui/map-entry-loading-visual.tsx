@@ -3,12 +3,12 @@ import { BrandMark } from './brand-mark';
 export interface MapEntryLoadingVisualProps {
   title: string;
   description: string;
-  /** 정적 HTML과 크롤러가 읽을 제품 설명. 화면에서는 로더가 주인공이다. */
+  /** Product description for static HTML and crawlers. On screen, the loader is the protagonist. */
   headline?: string;
   lede?: string;
 }
 
-/** 지도 콜드 부트의 한 가지 시각: 중앙 상태 + 회로형 회전 표시. */
+/** One visual of map cold boot: center state + circuit-style spinner. */
 export function MapEntryLoadingVisual({
   title,
   description,

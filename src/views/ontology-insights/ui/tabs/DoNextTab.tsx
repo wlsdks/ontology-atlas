@@ -1251,7 +1251,7 @@ export function DoNextTab({
               /*
                * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
                *
-               * Folding to two lines, this paragraph broke as 「…으로 나 / 는 거예요」. Instrument: a
+               * Folding to two lines, this paragraph broke as 「... for me / is what I do」. Instrument: a
                * `Range` per character reveals the characters on either side of the line break —
                * both Korean with no space means mid-word. The cause is `word-break: normal`, and
                * this repository already used `break-keep` elsewhere.

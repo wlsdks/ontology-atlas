@@ -1,29 +1,28 @@
-# 단위 검증 게이트 — tsc · lint · vitest · MCP.
+# Unit verification gate — tsc · lint · vitest · MCP.
 #
-# 왜 있는가: 2026-07-26 까지 PR 에서 도는 것은 Playwright(15분)와 vault
-# 정합뿐이었다. `pnpm test:run` 3900여 개, `tsc`, `lint` 는 **한 번도 돌지
-# 않았다.** 그래서 `ProjectSelectorPage.test.tsx` 의 낡은 기대값이 main 에
-# 들어가 앉아 있다가 사람이 우연히 발견했고, 브랜치가 자기가 지운 모듈을
-# 자기가 import 하는 상태로 CI 를 세 번 깨뜨렸다.
+# Why it exists: Until 2026-07-26, PRs only ran Playwright (15 min) and vault
+# consistency checks. `pnpm test:run` (~3900 tests), `tsc`, and `lint` were **never run.**
+# Thus, stale expectations in `ProjectSelectorPage.test.tsx` sat in main until a human
+# accidentally discovered them, causing branches to break CI three times while importing
+# modules they had deleted themselves.
 #
-# 이 워크플로는 Playwright 보다 **훨씬 빨라서** 오히려 먼저 답을 준다 —
-# 타입/단위 회귀는 여기서 몇 분 안에 걸리고, 느린 e2e 는 그 뒤에 온다.
+# This workflow is **much faster than Playwright**, so it actually gives answers first —
+# type/unit regressions are caught here within minutes, and slow e2e tests follow later.
 #
-# ## 왜 한 잡이 아니라 셋인가 (2026-08-02)
+# ## Why split into three jobs (2026-08-02)
 #
-# 실측: 이 워크플로가 624초였고 그중 **463초(74%)가 단 두 스텝**이었다 —
-# 유닛+계약 291초, MCP 통합 172초. 둘은 서로를 전혀 안 기다리는데 한 잡
-# 안에서 줄줄이 돌아 합이 그대로 대기 시간이 됐다.
+# Observation: This workflow took 624 seconds, with **463 seconds (74%) spent on just two steps** —
+# unit+contract (291s) and MCP integration (172s). These two don't wait for each other, but running
+# them sequentially in one job made the sum equal to the wait time.
 #
-# 셋으로 가르면 임계 경로가 **가장 느린 하나**가 된다. 대가는 잡마다
-# 체크아웃·설치가 반복되는 것(잡당 ≈25초)인데, 그건 각 잡의 경로에 얹힐 뿐
-# 합산되지 않는다.
+# Splitting into three makes the critical path **the slowest single one**. The cost is repeated
+# checkout/setup per job (~25s per job), but that adds to each job's path rather than summing up.
 #
-# 가른 기준은 「무엇을 검사하나」가 아니라 **「얼마나 걸리나」**다 — 빠른 게이트
-# 아홉은 서로를 기다리게 할 값이 없어 한 잡에 몰아 둔다.
+# The splitting criterion was not «what is checked» but **«how long it takes»** — the nine fast gates
+# are grouped into one job because they have no reason to wait for each other.
 #
-# `if: always()` 는 잡 **안에서** 유지한다 — 첫 실패가 나머지를 가리면 검수가
-# 왕복이 된다. 잡 **사이**는 원래 독립이라 한 잡이 빨개도 나머지는 끝까지 돈다.
+# `if: always()` is maintained **within** jobs — if a first failure masks the rest, verification
+# becomes round-trip. Jobs **between** remain independent; even if one job turns red, others run to completion.
 name: Checks
 
 on:
@@ -43,16 +42,16 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # ── 잡 1: 빠른 게이트 아홉 (실측 합 ≈100초) ──────────────────────────
+  # ── Job 1: Nine fast gates (observed sum ≈100s) ──────────────────────────
   gates:
     name: Types · Lint · Docs
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      # fetch-depth: 0 필수 — `docs-vault:check` 가 문서별 "마지막으로 바뀐 날"
-      # 을 git 히스토리에서 읽는다. 얕은 클론은 문서 전부에 같은 날짜를 줘
-      # 검증이 실제와 다른 값을 비교하게 된다. `decisions:check` 도 base ref 를
-      # 필요로 한다.
+      # fetch-depth: 0 is required — `docs-vault:check` reads the "last changed date" per document
+      # from git history. A shallow clone gives all documents the same date,
+      # causing verification to compare against incorrect values. `decisions:check` also
+      # requires the base ref.
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -72,13 +71,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 각각 별 스텝으로 둔다 — 한 스텝에 묶으면 어느 게 깨졌는지 로그를
-      # 뒤져야 한다. `if: always()` 로 첫 실패가 나머지를 가리지 않게.
-      # 카운슬 소집 트리거 중 **기계적으로 확인 가능한 두 줄**만 강제한다:
-      # 라우트 신설/제거, MCP·CLI 공개 계약 변경. 나머지 트리거("포지셔닝",
-      # "낯선 사람이 처음 읽는 문구")는 의미라서 스크립트가 볼 수 없다.
-      # 산문으로만 있는 규격은 지켜지지 않는다는 이 저장소의 반복 교훈을
-      # 게이트로 옮긴 것 — 다만 기록의 *품질*이 아니라 *존재*만 본다.
+      # Kept as separate steps — grouping them into one step forces digging through logs
+      # to see which one broke. `if: always()` ensures a first failure doesn't mask the rest.
+      # We enforce only **two mechanically verifiable lines** among the council assembly triggers:
+      # route addition/removal, MCP/CLI public contract changes. Other triggers ("positioning",
+      # "phrases a stranger reads for the first time") are semantic and invisible to scripts.
+      # This moves the repo's repeated lesson that specifications existing only in prose
+      # go unkept into gates — though it looks only at *existence*, not *quality* of records.
       - name: Decision record
         if: github.event_name == 'pull_request'
         run: pnpm decisions:check -- --base=origin/${{ github.base_ref }}
@@ -90,18 +89,18 @@ jobs:
         if: always()
         run: pnpm lint
 
-      # 아래 둘은 `pnpm test:run` 밖의 node:test 스위트라 여기 걸지 않으면
-      # 아무 데서도 안 돈다. 실제로 2026-07-26 까지 둘 다 main 에서 깨진 채
-      # 있었고, 사람이 우연히 발견할 때까지 아무도 몰랐다 — 안 물린 게이트는
-      # 게이트가 아니라 주석이다.
+      # The two below are node:test suites outside `pnpm test:run`, so if not caught here,
+      # they won't run anywhere. In fact, as of 2026-07-26, both were broken on main
+      # and no one knew until someone happened to discover them — a gate that doesn't trigger is
+      # not a gate but a comment.
       #
-      # ⚠️ 2026-08-05: **바로 그 일이 색 게이트에 일어나 있었다.** 위 문장을
-      # 적어 둔 이 파일 안에서 `check:tokens` 와 그 단위 테스트가 둘 다 안
-      # 물려 있었다 — `package.json` 에 정의만 있고 다른 스크립트도, 이
-      # 워크플로도, `.githooks/pre-commit` 도 부르지 않았다. `test:check:tokens`
-      # 는 `node --test scripts/*.test.mjs` 라 vitest include(`app/**` · `src/**`
-      # · `tests/contract/**`) 밖이기도 했다. 통과하고 있었지만, 멈춰도 아무도
-      # 몰랐을 것이다.
+      # ⚠️ 2026-08-05: **That exact thing happened with the color gate.** Inside this file where I wrote the above sentence,
+      # both `check:tokens` and its unit test were not
+      # triggered — only defined in `package.json`, without any other scripts, this
+      # workflow, or `.githooks/pre-commit` calling them. `test:check:tokens`
+      # was `node --test scripts/*.test.mjs`, also outside vitest include(`app/**` · `src/**`
+      # · `tests/contract/**`). It was passing, but if it stopped, no one
+      # would have known.
       - name: Color tokens
         if: always()
         run: pnpm check:tokens
@@ -130,44 +129,42 @@ jobs:
         if: always()
         run: pnpm test:guide-examples
 
-      # 에이전트 지시 파일의 드리프트. **CLI 가 이미 exit 1 로 알려주고 있었는데
-      # 어느 워크플로에도 물려 있지 않았다** — 그래서 둘 다 조용히 썩었다
-      # (2026-07-31 발견):
+      # Drift in agent instruction files. **The CLI was already notifying exit 1,
+      # but no workflow caught it** — so both silently rotted (discovered 2026-07-31):
       #
-      # ① `skill-copy-diverged` ×3 — `.claude/skills` 에만 `?guides=off` 지시가
-      #    들어가고 `.agents/skills` 사본은 못 받았다. 그 상태로 Codex 가 감사
-      #    스킬을 돌리면 첫 방문 스크림에 덮인 화면을 재고, 측정값이 통째로
-      #    무의미해진다. 사본이 둘인데 게이트가 없으면 어긋나는 쪽이 기본값이다.
+      # ① `skill-copy-diverged` ×3 — Only `.claude/skills` received the `?guides=off` instruction,
+      #    while the `.agents/skills` copy did not. If Codex runs the audit skill in this state, it
+      #    overwrites the first-visit screen with inventory, rendering all measurements meaningless.
+      #    With two copies and no gate, the diverged one becomes the default.
       #
-      # ② `agents-md-over-codex-cap` — AGENTS.md 가 Codex 의
-      #    `project_doc_max_bytes`(기본 32,768B)를 넘으면 **경고 없이 잘린다**.
-      #    넘은 채로 두면 뒤쪽 절은 Codex 에게 존재하지 않는데 화면에는 아무
-      #    신호도 없다. 실측 시점엔 39,617B 라 볼트 쓰기 루프와 스키마 표가
-      #    통째로 절단선 뒤에 있었다.
+      # ② `agents-md-over-codex-cap` — If AGENTS.md exceeds Codex's
+      #    `project_doc_max_bytes` (default 32,768B), it is **silently truncated**.
+      #    Leaving it over means later sections are invisible to Codex while showing no signal on screen.
+      #    At the observation point, it was 39,617B, so the vault write loop and schema table
+      #    were entirely behind the truncation line.
       - name: Agent instruction files
         if: always()
         run: pnpm agents:check
 
-      # 데스크톱 게이트의 단위 스위트다. 지금까지 **릴리스 워크플로에만** 걸려
-      # 있어서, 여기서 잡혔어야 할 결함이 전부 "태그를 찍은 뒤"에 처음 드러났다
-      # — `v1.0.0-rc.2` 가 네 번 찍혀 네 번 다 빌드 잡에서 멈춘 이유다. 30초짜리
-      # 스위트를 태그 뒤로 미룰 이유가 없다.
+      # This is the unit suite for the desktop gate. Until now, it **only ran in the release workflow**,
+      # so all defects that should have been caught here were first exposed "after tagging"
+      # — which is why `v1.0.0-rc.2` was tagged four times, stopping at the build job each time. There is
+      # no reason to delay a 30-second suite until after tagging.
       #
-      # 전체 리허설(`pnpm desktop:release-rehearsal`)은 앱 컴파일이 들어 있어
-      # 사람이 태그 전에 로컬에서 돌린다. 여기서는 컴파일 없이 확인 가능한 것만
-      # 본다.
+      # Full rehearsal (`pnpm desktop:release-rehearsal`) includes app compilation,
+      # so humans run it locally before tagging. Here, we only check what is verifiable without compilation.
       - name: Desktop checker tests
         if: always()
         run: pnpm test:desktop:check
 
-      # 생성 매니페스트 게이트 둘. 2026-07 까지 어느 PR 검증에도 물려 있지
-      # 않았다 — `docs-vault:check` 는 macOS 릴리스 경로에만, `test:docs-vault`
-      # 는 아무 곳에도 없었다. 그래서 `docs/**` 를 고치고 재생성을 잊은 PR 도,
-      # 생성이 비결정적으로 되돌아간 PR 도 아무도 막지 못했다.
+      # Two generation manifest gates. Until 2026-07, neither was caught in any PR verification —
+      # `docs-vault:check` only ran on macOS release paths, and `test:docs-vault`
+      # ran nowhere. Thus, no one stopped PRs that edited `docs/**` and forgot regeneration,
+      # or PRs where generation reverted non-deterministically.
       #
-      # 2026-08-02 부터 `.githooks/pre-commit`(#834)이 같은 검사를 커밋 자리에서
-      # 먼저 한다. 그래도 여기 남는다 — 훅은 로컬 설정에 의존하고(`pnpm install`
-      # 을 안 한 클론 · `--no-verify` · 포크 기여자), CI 는 그렇지 않다.
+      # Since 2026-08-02, `.githooks/pre-commit`(#834) performs the same check at commit time.
+      # We still keep it here — hooks depend on local setup (`pnpm install`
+      # not run · `--no-verify` · fork contributors), while CI does not.
       - name: Docs vault freshness
         if: always()
         run: pnpm docs-vault:check
@@ -184,27 +181,26 @@ jobs:
         if: always()
         run: pnpm gateway:specimen:check
 
-      # 2026-08-07: `docs:check` 의 하위 검사(생성 표면 diff · DESIGN-SYSTEM
-      # 목차 · 문서 언어 · 링크 참조 무결성)는 **어느 워크플로에서도 불린 적이 없었다.** 훅도
-      # 이걸 보지 않는다 — 위의 `pre-commit` 은 볼트 생성물만 잰다. 그 사각에서
-      # 실제로 main 이 빨간 채 방치됐다: #960 이 `###` 절을 더하면서 목차 줄을
-      # 손으로 넣었고, 생성기는 `## ` 만 담으므로 `design:toc:check` 가 그때부터
-      # 계속 실패하고 있었는데 아무 신호도 없었다. **검사가 있어도 부르지 않으면
-      # 없는 것이다** (`.claude/skills/gate-probe` §4).
+      # 2026-08-07: Sub-checks of `docs:check` (generated surface diff · DESIGN-SYSTEM
+      # TOC · document/source-comment language · link reference integrity) were **never invoked in any workflow.** Hooks
+      # don't check this either — the above `pre-commit` only measures vault artifacts. In this blind spot,
+      # main was actually left red: #960 added `###` sections and manually inserted TOC lines,
+      # but the generator only captures `## `, so `design:toc:check` failed continuously with no signal. **A check
+      # that isn't invoked is as good as nonexistent** (`.claude/skills/gate-probe` §4).
       #
-      # ⚠️ **`docs:check` 를 통째로 여기서 돌리지 않는다.** 그 안의
-      # `docs:surface:check` 는 **실제 MCP 서버를 띄워** `tools/list` 를 묻는데,
-      # 이 잡은 `mcp/node_modules` 를 설치하지 않아서(MCP 는 워크스페이스 멤버가
-      # 아니다) `ERR_MODULE_NOT_FOUND` 로 죽는다 — 처음 물렸을 때 정확히 그렇게
-      # 실패했고, 아래 `mcp` 잡의 설치 스텝 주석이 같은 함정을 이미 적어 뒀다.
-      # 그 검사는 의존성이 사는 `mcp` 잡으로 갔다. 여기는 파일만 읽는 셋을
-      # 갖는다 — 가장 빠른 잡에 mcp 설치를 더해 느리게 만들지 않는 쪽을 골랐다.
+      # ⚠️ **We do not run `docs:check` entirely here.** Its
+      # `docs:surface:check` **launches the actual MCP server** to query `tools/list`, but
+      # this job doesn't install `mcp/node_modules` (MCP is not a workspace member), causing
+      # `ERR_MODULE_NOT_FOUND` and death — it failed exactly like this when first triggered, and the comment
+      # below in the `mcp` job's install step already noted this trap.
+      # That check went to the `mcp` job where dependencies live. This one has a set that only reads files — we chose
+      # not to add MCP installation to the fastest job to avoid slowing it down.
       #
-      # ⚠️ 스텝을 둘로 나눈 이유: `&&` 로 이으면 **앞이 깨졌을 때 뒤가 안 돈다.**
-      # 목차와 링크가 동시에 깨진 PR 이 목차 실패만 보고 고쳤다가 다시 빨개진다.
-      # 나눠 두면 한 번에 둘 다 보인다 (2026-08-07 리뷰).
+      # ⚠️ Reason for splitting into two steps: If chained with `&&`, **the second doesn't run if the first breaks.**
+      # A PR where both TOC and links break might fix only the TOC failure and turn red again.
+      # Splitting shows both at once (2026-08-07 review).
       #
-      # 이 분할이 `docs:check` 정의와 어긋나지 않게 잡는 계약:
+      # Contract to ensure this split doesn't contradict `docs:check` definition:
       # `tests/contract/docs-check-ci-coverage.contract.test.ts`
       - name: Docs TOC
         if: always()
@@ -214,17 +210,21 @@ jobs:
         if: always()
         run: pnpm docs:language
 
+      - name: Source comment language
+        if: always()
+        run: pnpm source:language
+
       - name: Docs links
         if: always()
         run: pnpm docs:links
 
-  # ── 잡 2: 단위 + 계약 스위트 (실측 291초 — 임계 경로) ────────────────
+  # ── Job 2: Unit + Contract Suites (observed 291s — critical path) ────────────────
   unit:
     name: Unit · Contract
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      # `classify-change.mjs` 가 base ref 와 비교하므로 전체 히스토리가 필요하다.
+      # `classify-change.mjs` compares against the base ref, so full history is required.
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -250,18 +250,18 @@ jobs:
       - name: Install MCP dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
-      # 변경이 실제로 깨뜨릴 수 있는 것만 돌린다. 실측(2026-07-27): 이 스위트가
-      # 270초였고 그 세션의 변경은 거의 전부 에이전트 브리프와 문서였다. 판단이
-      # 안 서면 runtime=true 로 열어둔다 — 빠뜨린 테스트는 출하되는 버그고,
-      # 남는 테스트는 4분이다.
+      # Run only what can actually break. Observation (2026-07-27): This suite
+      # took 270 seconds, and changes in that session were almost entirely agent briefs and documents. If judgment
+      # is uncertain, leave runtime=true — missed tests are shipped bugs,
+      # while remaining tests take 4 minutes.
       - name: Classify change
         id: classify
         if: github.event_name == 'pull_request'
         run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
 
-      # 런타임 코드가 안 바뀌었으면 계약 스위트만 돈다(2.4초 vs 270초).
-      # 계약 테스트는 `.claude/**` 배선을 읽으므로 거버넌스 변경에서도 반드시
-      # 돈다 — 건너뛰는 건 런타임 단위 테스트뿐이다.
+      # If runtime code hasn't changed, only run contract suites (2.4s vs 270s).
+      # Contract tests read `.claude/**` wiring, so they must always run
+      # during governance changes — only runtime unit tests are skipped.
       - name: Unit + contract tests
         if: always() && (github.event_name != 'pull_request' || steps.classify.outputs.runtime == 'true')
         run: pnpm test:run
@@ -270,7 +270,7 @@ jobs:
         if: always() && github.event_name == 'pull_request' && steps.classify.outputs.runtime != 'true'
         run: pnpm exec vitest run tests/contract/
 
-  # ── 잡 3: MCP 서버 (실측 176초) ──────────────────────────────────────
+  # ── Job 3: MCP Server (observed 176s) ──────────────────────────────────────
   mcp:
     name: MCP
     runs-on: ubuntu-latest
@@ -293,53 +293,56 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # MCP 는 워크스페이스 멤버가 아니라(루트에 `pnpm-workspace.yaml` 이 없다)
-      # 루트 설치가 `mcp/node_modules` 를 안 만든다. 순수 단위 케이스는 그래도
-      # 돌지만, 실제 서버를 띄우는 케이스가 `@modelcontextprotocol/sdk` 를 못
-      # 찾아 죽는다 — 로컬에서는 예전에 설치해 둔 게 있어서 통과했고, CI 에서
-      # 처음 드러났다(스위트를 물린 첫날). 릴리스 워크플로가 이미 쓰는 것과
-      # 같은 한 줄이다.
+      # MCP is not a workspace member (no `pnpm-workspace.yaml` at root),
+      # so the root install does not create `mcp/node_modules`. Pure unit tests
+      # still run, but cases that actually start the server fail to find
+      # `@modelcontextprotocol/sdk` and crash — it passed locally because
+      # it was installed previously, and only surfaced in CI (on the first day
+      # the suite ran). This is a one-liner, same as what the release workflow already uses.
       - name: Install MCP dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
       - name: Agent config setup integration
         run: pnpm integration:cli:setup
 
-      # MCP 서버의 단위 스위트. **어느 워크플로에도 물려 있지 않았다** —
-      # `package:check` 가 CLI 쪽(`test:cli:lib`/`test:cli:commands`)은 돌리는데
-      # MCP 는 대칭 스텝이 없었다. 그 사이 `verify-script.test.mjs` 1건이 소스
-      # 변경에 뒤처진 채 실패하고 있었고 아무도 못 봤다(2026-07-28 발견).
+      # MCP server unit suite. **It was not wired to any workflow** —
+      # `package:check` ran the CLI side (`test:cli:lib`/`test:cli:commands`),
+      # but there was no symmetric step for MCP. Meanwhile, one
+      # `verify-script.test.mjs` fell behind source changes and failed silently,
+      # unseen by anyone (discovered 2026-07-28).
       #
-      # 파일 목록이 아니라 **글롭**으로 찾는다. 종전 스크립트는 손으로 적은
-      # 21개 목록이었고 디스크에는 27개가 있었다 — 새 테스트 파일이 조용히
-      # 빠지는 구조였다. 목록이 곧 사정거리인데 목록이 손으로 관리되면
-      # 사정거리도 손으로 줄어든다.
+      # It finds files via **glob**, not a file list. The previous script had a
+      # hand-written list of 21 files, but there were 27 on disk — new test files
+      # quietly slipped through. A list is the scope; if the list is managed by
+      # hand, the scope shrinks by hand too.
       - name: MCP unit tests
         if: always()
         run: pnpm test:mcp:unit
 
-      # **통합 스위트 — 이제 실제로 돈다.** 종전 주석이 162초를 이유로 이걸
-      # 단위 스텝에서 빼면서 *"별도 스텝의 몫이다"* 라고 적었는데, 그 스텝은
-      # 만들어진 적이 없다. 결과: 실서버를 띄우는 가장 큰 MCP 스위트가 **어느
-      # 워크플로에도 안 물린 채** #806(경로형 슬러그 거부) 이후로 계속
-      # 빨간색이었고 아무도 못 봤다 — 2026-08-01 rc.5 검수에서 사람이 손으로
-      # 돌려서야 드러났다.
+      # **Integration suite — now actually runs.** The previous comment excluded it
+      # from the unit step citing 162 seconds as the reason, writing that it is
+      # *"the responsibility of a separate step,"* but that step was never created.
+      # Result: the largest MCP suite that starts a real server remained **unwired to
+      # any workflow** and red since #806 (path-slug rejection), unseen by anyone —
+      # it only surfaced when someone manually ran it during rc.5 verification on 2026-08-01.
       #
-      # 이 파일이 이미 두 번 적어 둔 것과 같은 병이다: *"목록이 곧 사정거리인데
-      # 목록이 손으로 관리되면 사정거리도 손으로 줄어든다."* 여기서는 목록이
-      # 아니라 **의도**가 손으로 관리됐다 — "나중에 스텝을 만든다"는 의도는
-      # 어디에도 강제되지 않았다. 2026-08-02, 그 "별도" 가 드디어 이 잡이다.
+      # This file repeats the same mistake written twice before: *"A list is the
+      # scope; if the list is managed by hand, the scope shrinks by hand."* Here,
+      # it was not the list but the **intent** that was managed by hand — the intent
+      # to "create a step later" was never enforced anywhere. On 2026-08-02, that
+      # "separate" one finally landed.
       - name: MCP integration tests
         if: always()
         run: node --test mcp/src/integration.test.mjs
 
-      # 생성 표면 diff — **여기 있는 이유는 의존성이다.** 이 검사는 실제 MCP
-      # 서버를 띄워 `tools/list` 를 묻고 `docs/.generated/mcp-surface.json` 과
-      # 대조한 뒤, 등록된 도구·커맨드 이름이 README 에 다 나오는지도 본다. 즉
-      # 위의 「Install MCP dependencies」 없이는 돌 수 없다 — `gates` 잡에 뒀다가
-      # `ERR_MODULE_NOT_FOUND` 로 실패했고, 그 잡은 임계 경로라 mcp 설치를
-      # 더하지 않았다. 나머지 두 하위 검사(목차 · 링크)는 파일만 읽으므로
-      # `gates` 에 남아 있다.
+      # Surface diff — **the reason it is here is dependency.** This check actually
+      # starts the MCP server, queries `tools/list`, compares it against
+      # `docs/.generated/mcp-surface.json`, and verifies that all registered tools
+      # and command names appear in the README. In other words, it cannot run without
+      # the above "Install MCP dependencies" — it failed with `ERR_MODULE_NOT_FOUND`
+      # when placed in the `gates` job, which is on the critical path and did not
+      # install mcp. The other two sub-checks (table of contents · links) only read
+      # files, so they remain in `gates`.
       - name: Docs surface (MCP tools/list)
         if: always()
         run: pnpm docs:surface:check

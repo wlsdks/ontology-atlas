@@ -130,8 +130,8 @@ describe('AgentTranscript', () => {
 
   /**
    * Regression guard, 2026-08-02 — in a measured turn the agent called tools 4 times
-   * and read 1,336 characters, printing 「읽음: capabilities/checkout 635자」 on screen,
-   * and four rows below it said 「읽은 근거 없이 답했어요」 (answered with no grounding
+   * and read 1,336 characters, printing 「Read: capabilities/checkout 635 chars」 on screen,
+   * and four rows below it said 「Answered without reading grounding」 (answered with no grounding
    * read). The screen was contradicting its own screen.
    */
   it('읽었는데 표기만 없는 답은 강등하지 않고 읽은 목록으로 보정한다', () => {

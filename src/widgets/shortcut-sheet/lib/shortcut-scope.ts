@@ -8,7 +8,7 @@
  *
  * The answer is **classification, not hiding** — deleting shortcuts destroys
  * discoverability, so what is actually usable on the current screen comes first and
- * the rest sits behind a tab. The `전체` (all) tab still shows everything, so no
+ * the rest sits behind a tab. The `All` (all) tab still shows everything, so no
  * information is lost.
  */
 

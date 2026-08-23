@@ -14,8 +14,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
  *
  * **Why only these two routes** (the reach, and its reason). Almost every screen in
  * the app draws **text from the user's vault**. Korean is correct in the example
- * vault (`온라인 쇼핑몰`, `주문 생성`, …) and in node titles the user wrote, and
- * machine-translating a user's own strings would violate this product's principles.
+ * vault (`online shopping mall`, `order creation`, …) and in node titles the user wrote,
+ * and machine-translating a user's own strings would violate this product's principles.
  * So "zero Korean on every /en route" is not a true proposition, and enforcing it
  * would require wrapping all vault-derived text in markers — a large change that
  * cannot be switched on now.

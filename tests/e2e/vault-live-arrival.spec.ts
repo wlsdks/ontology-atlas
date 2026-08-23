@@ -9,10 +9,8 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  *
  * ## Why this spec exists (owner request, 2026-08-17)
  *
- * Owner: *"실시간으로 좌측 지도에 온톨로지가 그려지는게 보이도록 하는것도 필요할듯?
- * 이제 상호작용이 가능하게 되었으니? 그걸 검증해보기도 해야함"*
- * (the ontology should be visibly drawn on the left map in real time now that
- * interaction works — and that should be verified)
+ * Owner: *"The ontology should be visibly drawn on the left map in real time now that
+ * interaction works — and that should be verified."*
  *
  * The plumbing already exists: a folder change triggers a reread. But **plumbing
  * existing and the screen following are different claims**, and this repository has

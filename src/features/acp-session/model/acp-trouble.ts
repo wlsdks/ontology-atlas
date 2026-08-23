@@ -4,12 +4,12 @@
  * Why (owner's screen, 2026-08-16). The conversation window showed the user this verbatim:
  *
  * ```
- * 문제가 생겼어요: {"code":-32603,"message":"Internal error: Failed to
+ * An error occurred: {"code":-32603,"message":"Internal error: Failed to
  * authenticate: OAuth session expired and could not be refreshed",
  * "data":{"errorKind":"authentication_failed"}}
  * ```
  *
- * Owner: *"이렇게 보여주면 사용자가 어떻게 알겠어"* (how is a user supposed to understand this?).
+ * Owner: *"how is a user supposed to understand this?"* (how is a user supposed to understand this?).
  * Correct — that line states neither **what happened** nor **what to do** in human words. All it
  * contains is the material we use for debugging.
  *

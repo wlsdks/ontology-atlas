@@ -117,7 +117,7 @@ describe("SearchHint", () => {
   });
 
   it("can suppress the focus lane below xl while keeping wide-screen utility access", () => {
-    // 1024px에서 우측 2행 레인과 상세 패널이 겹쳐 강등 구간을 xl까지 넓혔다.
+    // At 1024px the right two-row lane and detail panel overlapped, widening the downgrade zone to xl.
     render(
       <SearchHint
         density="compact-focus"

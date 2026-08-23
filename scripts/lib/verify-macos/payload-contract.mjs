@@ -907,8 +907,8 @@ export function validateWebviewVerifyPayload(payload, {
     /*
      * ⚠️ **Do not pin the token name** (2026-08-11). This used to accept only
      * `--topology-blocking-composer-width`, while the product **deliberately** moved
-     * to the canonical dialog width (`--dialog-w-md`) — `HomePage.tsx`: *"composer-width
-     * 대신 캐노니컬 --dialog-w-md(560px) 를 직접"* (use the canonical --dialog-w-md
+     * to the canonical dialog width (`--dialog-w-md`) — `HomePage.tsx`: *"Use the canonical --dialog-w-md
+     * (560px) directly instead of composer-width"* (use the canonical --dialog-w-md
      * (560px) directly instead of composer-width). So this check was guaranteed to
      * fail from the day the spec improved — exactly the shape `design-gates.md` warns
      * about, and such a gate makes the next person **revert the spec**.

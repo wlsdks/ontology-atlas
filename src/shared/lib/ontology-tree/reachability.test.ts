@@ -174,7 +174,7 @@ describe("computeOntologyDependents", () => {
   it("전이 incoming closure 를 센다 (체인 끝 = 모든 상류)", () => {
     expect(computeOntologyDependents("c", chain, chainEdges)).toBe(2); // b, a
     expect(computeOntologyDependents("b", chain, chainEdges)).toBe(1); // a
-    expect(computeOntologyDependents("a", chain, chainEdges)).toBe(0); // 아무도 a 에 의존 안 함
+    expect(computeOntologyDependents("a", chain, chainEdges)).toBe(0); // No one depends on a
   });
 
   it("soft association(related_to)은 의존이 아니라 제외", () => {

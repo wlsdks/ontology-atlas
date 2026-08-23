@@ -12,8 +12,8 @@
     --indigo-a16:rgba(113,112,255,.16); --indigo-a46:rgba(113,112,255,.46);
     --divider:rgba(255,255,255,.08); --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.16);
     --amber:#d4b478; --emerald:#4ea88a;
-    /* 지도 노드 규격 — app/globals.css 의 --topology-v2-* 그대로.
-       채움 4단 · 깊이 잉크 사다리 · sheen · 엣지 2종. */
+    /* Map node spec — exactly as in app/globals.css --topology-v2-*.
+       4-step fill · depth ink ladder · sheen · 2 edge types. */
     --n-fill-project:#1c1c22; --n-fill-domain:#191920;
     --n-fill-capability:#17171d; --n-fill-element:#15151a;
     --ink-top:#6e6e79; --ink-mid:#646471; --ink-leaf:#60606d;
@@ -21,14 +21,14 @@
     --n-sheen:#232329;
     --e-contains:#646471; --e-depends:#666685;
     --sel-ring:rgba(94,106,210,.45);
-    /* 크기는 자기 행간을 싣는다 — 앱 globals.css 의 짝 그대로. 실측에서
-       11px 하나가 행간 넷(17·18·22·16)을 쓰고 있었다. */
+    /* Size carries its own line-height — exactly as in app globals.css. In measurement,
+       11px was using four line-heights (17·18·22·16). */
     --caption:9.5px;  --lead-caption:14px;
     --label:11px;     --lead-label:16px;
     --body:12.5px;    --lead-body:20px;
     --body-lg:14px;   --lead-lg:22px;
     --title:16px;     --lead-title:24px;
-    --lead-code:18px;   /* 짝: label 11px 의 등폭 변형 — 코드는 본문보다 조밀하게 */
+    --lead-code:18px;   /* Pair: label 11px width variation — code is denser than body text */
     --r-chip:6px; --r-card:9px; --r-panel:12px;
     --fast:.12s; --base:.18s; --ease:cubic-bezier(.25,.1,.25,1);
     --rail:82px; --list-w:clamp(400px,38vw,560px);
@@ -41,7 +41,7 @@
   :focus-visible{outline:none;box-shadow:0 0 0 2px var(--indigo-a46);border-radius:5px;}
   .app{display:flex;height:100vh;}
 
-  /* 레일 */
+  /* Rail */
   .rail{width:var(--rail);flex:none;border-right:1px solid var(--divider);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:2px;}
   .rail .brand{width:30px;height:30px;border:1.5px solid var(--indigo);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);}
   .rail .bn{font-size:var(--caption);line-height:var(--lead-caption);color:var(--t3);margin:4px 0 16px;}
@@ -52,10 +52,10 @@
 
   .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
 
-  /* ── 상단: 이 폴더가 원격과 어떤 사이인가 + 동작 ── */
+  /* ── Top: relationship between this folder and remote + actions ── */
   .top{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--divider);flex:none;}
-  /* 페이지 이름은 크롬이지 내용이 아니다 — 16/600 이 상세 제목(16/400)을 이겨
-     주목 승자가 정적 라벨이었다(실측). 크롬은 한 단 내리고, 승자는 내용이 진다. */
+  /* Page name is chrome, not content — 16/600 beats detailed title (16/400).
+     Static label was the winner in measurement. Chrome drops one line; content wins prominence. */
   .ttl{display:flex;align-items:center;gap:8px;font-size:var(--body-lg);line-height:var(--lead-lg);
        font-weight:600;letter-spacing:-.01em;margin-right:4px;color:var(--t2);}
   .ttl svg{width:17px;height:17px;stroke:var(--indigo);fill:none;stroke-width:1.7;}
@@ -72,7 +72,7 @@
   .act.primary{background:var(--indigo-brand);border-color:transparent;color:#fff;font-weight:500;}
   .act.primary:hover{filter:brightness(1.08);}
 
-  /* 갈라짐 막대 — 갈라졌을 때만 나온다 */
+  /* Split bar — appears only when split */
   .diverge{display:none;align-items:center;gap:12px;padding:9px 22px;border-bottom:1px solid var(--divider);background:var(--ov1);font-size:var(--label);line-height:var(--lead-label);color:var(--t3);flex:none;}
   .diverge.on{display:flex;}
   .dgraph{display:flex;align-items:center;gap:0;height:16px;}
@@ -82,7 +82,7 @@
   .dgraph .seg{width:16px;height:1px;background:var(--border-strong);}
   .dgraph .fork{width:16px;height:16px;border-left:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong);border-bottom-left-radius:6px;margin-bottom:8px;}
 
-  /* ── 본문: 목록 | 상세 ── */
+  /* ── Body: list | detail ── */
   .body{flex:1;display:flex;min-height:0;}
   .list{width:var(--list-w);flex:none;border-right:1px solid var(--divider);display:flex;flex-direction:column;min-height:0;}
   .lhead{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--divider);flex:none;}
@@ -93,9 +93,9 @@
   .rows{overflow:auto;flex:1;}
 
   .row{width:100%;text-align:left;display:grid;/*
-     * 이름 칸에 고정 상한(23em)을 주면 창이 좁아질 때 그 칸이 먼저 다 먹고
-     * 원문이 38px 로 짜부라진다(1180px 실측). 둘이 비율로 나누고, 이름 칸의
-     * 상한은 칸이 아니라 내용에 건다.
+     * Setting a fixed max-width (23em) on the name column causes it to consume space first
+     * when the window narrows, squashing the original text to 38px (measured at 1180px). Divide proportionally;
+     * apply the name column's limit to content, not the cell itself.
      */
     grid-template-columns:64px minmax(0,1.7fr) minmax(0,1fr);gap:12px;
        align-items:center;min-height:36px;padding:0 16px;border-bottom:1px solid var(--divider);
@@ -111,12 +111,12 @@
   .row .names>.n:last-of-type .g{vertical-align:-1px;margin-right:5px;}
   .row .nocon{font-size:var(--label);line-height:var(--lead-label);color:var(--t4);opacity:.55;}
   .row .more{font-size:var(--label);line-height:var(--lead-label);color:var(--t4);font-weight:400;white-space:nowrap;flex:none;}
-  /* 아직 안 남긴 변화 = 0번째 행 */
+  /* Uncommitted changes = row 0 */
   .row.pending{border-left-color:var(--indigo);border-left-style:dashed;background:var(--indigo-a16);}
   .row.pending .names{color:var(--t1);}
   .daysep{padding:7px 16px 5px;font-size:var(--label);line-height:var(--lead-label);color:var(--t4);background:var(--canvas);position:sticky;top:0;border-bottom:1px solid var(--divider);}
 
-  /* kind 글리프 — 지도와 같은 실루엣, 채색 0 */
+  /* kind glyph — silhouette like a map, color fill 0 */
   .g{width:11px;height:11px;flex:none;display:inline-block;}
   .g i{display:block;width:100%;height:100%;border:1px solid currentColor;opacity:.85;}
   .g.project i{clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);border-radius:2px;}
@@ -125,10 +125,10 @@
   .g.element i,.g.document i{border-radius:2px;}
   .g.element i::after,.g.document i::after{content:"";display:block;margin:2px;height:3px;background:currentColor;}
 
-  /* 상세 */
+  /* Detail */
   .detail{flex:1;min-width:0;display:flex;flex-direction:column;overflow:auto;}
   .dhead{padding:16px 22px 12px;border-bottom:1px solid var(--divider);}
-  /* 이 화면의 주목 승자 — 지금 읽고 있는 걸음. 페이지 이름(크롬)보다 세야 한다. */
+  /* The winner in focus on this screen — the step currently being read. Must be bolder than page name (chrome). */
   .dsubj{font-size:var(--title);line-height:var(--lead-title);font-weight:600;letter-spacing:-.01em;color:var(--t1);}
   .dmeta{margin-top:7px;font-family:ui-monospace,monospace;font-size:var(--label);line-height:var(--lead-label);color:var(--t4);}
   .dsec{padding:16px 22px;border-bottom:1px solid var(--divider);}
@@ -149,7 +149,7 @@
   .dl.del{background:rgba(201,102,102,.10);color:#e0a8a8;}
   .dl.hunk{background:var(--ov1);color:var(--t4);}
 
-  /* ── ego: 고른 개념의 성질 + 1-depth 이웃. 지도로 안 가고 여기서 끝난다 ── */
+  /* ── ego: properties of selected concept + 1-depth neighbors. Ends here, no map view ── */
   .ego{border:1px solid var(--border);border-radius:var(--r-panel);overflow:hidden;}
   .ego-body{display:grid;grid-template-columns:minmax(200px,264px) minmax(0,1fr);}
     .ego-body>.props{grid-template-columns:1fr;border-right:1px solid var(--divider);border-bottom:0;}
@@ -159,7 +159,7 @@
   .ego-id .g{width:15px;height:15px;}
   .ego-id b{font-size:var(--body-lg);line-height:var(--lead-lg);font-weight:600;letter-spacing:-.01em;}
   .ego-id .kd{font-size:var(--label);line-height:var(--lead-label);color:var(--t4);}
-  /* 성질 — 타입 있는 사실만. 없는 칸은 자리를 지킨다(치수 규칙성) */
+  /* Properties — only facts with types. Empty cells preserve their space (dimensional regularity) */
   .props{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--divider);align-content:start;}
   .prop{padding:11px 14px;border-right:1px solid var(--divider);min-width:0;}
   .prop:last-child{border-right:0;}
@@ -171,15 +171,15 @@
           color:var(--t2);padding:3px 0;}
   .relrow{border-radius:var(--r-chip);margin:0 -6px;padding-left:6px;padding-right:6px;cursor:default;}
   .relrow:hover{background:var(--ov2);}
-  /* 표에 올린 관계만 그림에 남는다 — 표와 그림이 같은 사실을 가리키는 걸 보인다 */
+  /* Only relationships listed in the table appear in the diagram — showing that table and diagram point to the same fact */
   .egograph[data-hi] .eg-g:not([data-hi-on]),
   .egograph[data-hi] .eg-edge:not([data-hi-on]){opacity:.18;}
   .relrow b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--t3);font-weight:600;}
-  /* 선 견본 — 그림의 실선/점선과 같은 값이라 범례가 따로 필요 없다 */
+  /* Line samples — solid/dashed lines in diagram have corresponding values, so no separate legend needed */
   .rl{width:14px;height:0;border-top:1px solid var(--e-contains);flex:none;}
   .rl.dep{border-top-style:dashed;border-top-color:var(--e-depends);}
   .prop dd code{font-family:ui-monospace,monospace;}
-  /* ── ego 그림: 가운데가 이 개념, 둘레가 바로 옆 이웃 ── */
+  /* ── ego diagram: center is this concept, perimeter is immediate neighbors ── */
   .egograph{position:relative;background:var(--canvas);}
   .egograph svg{display:block;width:100%;height:clamp(268px,34vh,352px);}
   .eg-edge{stroke:var(--e-contains);stroke-width:1;fill:none;}
@@ -202,7 +202,7 @@
   .chip.on{border-color:var(--indigo-a46);background:var(--indigo-a16);color:var(--t1);}
   .dempty{padding:40px 22px;color:var(--t4);font-size:var(--body);line-height:var(--lead-body);}
 
-  /* ── git 미설치 ── */
+  /* ── git not installed ── */
   .top.muted{opacity:.42;pointer-events:none;}
   .nogit{flex:1;display:grid;place-items:start center;padding:56px 24px;overflow:auto;}
   .nogit-card{width:min(620px,100%);border:1px solid var(--border);border-radius:var(--r-panel);
@@ -289,7 +289,7 @@
   </div>
 </div>
 
-<!-- 시안 전용. 실제 화면에는 없다 — 네 가지 상태를 눌러 볼 수 있게 한 조작기다. -->
+<!-- Prototype-only. Not present in actual screen — a control to toggle four states. -->
 <div class="switch" aria-label="시안 미리보기 조작기">
   <span class="switch-tag">시안 · 상태 바꿔 보기</span>
   <button data-s="clean" class="on">변경 없음</button>
@@ -311,7 +311,7 @@ const glyph=(k)=>`<span class="g ${k}" title="${KIND_KO[k]??k}"><i></i></span>`;
 const sortK=(a,b)=>(KIND_ORDER[a.kind]??9)-(KIND_ORDER[b.kind]??9);
 const SLOTS=2;
 
-/* 아직 안 남긴 변화 — 상태 「고칠 게 있음」에서만 존재하는 0번째 걸음 */
+/* Uncommitted changes — the 0th step existing only in state "Needs Fix" */
 const PENDING={pending:true,ago:"지금",msg:"아직 안 남긴 변화",hash:"",concepts:[
   {slug:"capabilities/mcp-server",kind:"capability"},
   {slug:"capabilities/agent-connect-sheet",kind:"capability"},
@@ -386,14 +386,14 @@ const BEARINGS=[
   {k:"used_by",    ko:"이곳을 쓰는 곳", a:180},
 ];
 const SECTOR_CAP=7;
-/** 펼쳤을 때의 상한 — 무한이 아니다. 그 위는 지도의 일이다. */
+/** Max-height when expanded — not infinite. Above that is map territory. */
 const FAN_CAP_OPEN=24;
 const vaultOf=(slug)=>VAULT[slug]??VAULT[slug.split("/").pop()]??null;
 const labelOf=(slug)=>{const n=vaultOf(slug);return (n&&(n.ko||n.title))||nameOf({slug});};
 /**
- * 지도와 같은 실루엣 + 같은 재질. 실제 렌더러(`node-shapes.ts`)는 kind 채움 위에
- * 세로 sheen 그라디언트를 얹고 깊이 잉크 사다리로 테두리를 긋는다 — 미니 노드가
- * "대충 만든 것"으로 보였던 건 그 둘을 빼고 맨 선만 그렸기 때문이다.
+ * Silhouette like a map + same material. Actual renderer (`node-shapes.ts`) overlays
+ * a vertical sheen gradient on kind fill and draws border with depth ink ladder — mini nodes
+ * looked "roughly made" because only the outline was drawn without these two.
  */
 function nodeShape(kind,x,y,r,cls,idSuffix){
   const k=["project","domain","capability","element"].includes(kind)?kind:"element";
@@ -417,9 +417,9 @@ function sheenDefs(){
      </linearGradient>`).join("")}</defs>`;
 }
 /*
- * 지도 사다리는 30·17·11·7(4.3:1)인데, 8노드짜리 미리보기에서 그 비를 그대로
- * 쓰면 요소가 점이 된다. 순서는 지키고 폭만 압축한다 — 이건 지도가 아니라
- * 한 개념의 이웃을 읽는 자리라서다.
+ * Map ladder is 30·17·11·7 (4.3:1), but using this ratio directly in an 8-node preview
+ * makes elements become dots. Preserve order, compress width — because this is a place
+ * to read neighbors of a single concept, not a map.
  */
 const R_SELF={project:25,domain:21,capability:16,element:13.5,document:13.5};
 const R_NB  ={project:14,domain:12,capability:9.5,element:8,document:8};
@@ -435,10 +435,10 @@ function egoOf(slug){
   return {node:n,g};
 }
 /*
- * 방위를 고정했더니 이웃이 한 종류뿐인 개념에서 화면 3/4 가 비었다(실측: 담고
- * 있는 것 17 · 나머지 0). 그래서 **몫으로 나눈다** — 각 관계가 자기 개수에
- * 비례한 부채를 갖고, 그 합이 원 전체다. 관계가 하나뿐이면 원을 다 쓴다.
- * 순서는 고정(속함 → 담음 → 기댐 → 쓰임)이라 개념을 바꿔도 방향이 안 흔들린다.
+ * Fixing orientation left 3/4 of the screen empty in concepts with only one neighbor type (measured: 17 contained
+ * · 0 remaining). So **divide by proportion** — each relationship gets a slice proportional to its count,
+ * summing to the whole circle. If only one relationship exists, it uses the entire circle.
+ * Order is fixed (contains → holds → relies on → used by) so direction doesn't shift when concept changes.
  */
 function renderEgoGraph(slug){
   const e=egoOf(slug); if(!e) return "";
@@ -450,25 +450,25 @@ function renderEgoGraph(slug){
   }).filter((g)=>g.all.length);
   if(!groups.length) return `<div class="egograph"><div class="eg-empty">이 개념은 아직 이어진 곳이 없어요</div></div>`;
   const slots=groups.reduce((a,g)=>a+g.slots,0);
-  const GAP=groups.length>1?10:0;                       // 부채 사이 숨
+  const GAP=groups.length>1?10:0;                       // Gap between slices
   const usable=360-GAP*groups.length;
   /*
-   * 원으로 놓으면 그림이 정사각인데 칸은 가로가 1.9배 길다 — 세로가 먼저 차서
-   * 전체가 73% 로 줄고 노드가 18px 이 됐다(실측 채움률 24%). 배치를 칸 비율에
-   * 맞춘 타원으로 펴면 같은 칸에서 노드가 커진다.
+   * If placed in a circle, the diagram is square but the cell width is 1.9x longer — vertical fills first,
+   * shrinking everything to 73% and nodes to 18px (measured fill rate 24%). Stretching to an ellipse
+   * matching cell ratio makes nodes larger in the same space.
    */
   /*
-   * 배율을 고정한다. 상자를 내용에 맞췄더니 개념마다 축척이 달라져 같은 종류
-   * 노드가 21~37px 사이를 오갔다(실측) — 그 크기 변화는 **아무 사실도 안 나른다**.
-   * 크기는 종류가 나르는 값이므로 축척은 상수이고, 대신 **고리 반지름이** 붐빔에
-   * 따라 움직인다. 이웃이 둘이면 가깝게, 여덟이면 넓게.
+   * Fix scale. Matching box to content caused scale to vary per concept, making same-type
+   * nodes range 21~37px (measured) — that size change **carries no information**.
+   * Size is a value carried by type, so scale must be constant; instead, **ring radius**
+   * moves with density. Two neighbors: close together; eight: spread out.
    */
   const VW=660, VH=345, cx=VW/2, cy=VH/2;
   const maxSlots=Math.max(...groups.map((g)=>g.slots), 1);
   const R=Math.max(74, Math.min(126, 58+ (slots<=2?26:0) + maxSlots*11));
-  /* 어긋 배치 폭도 밀도를 따른다 — 17개를 한 고리에 두면 이웃 라벨끼리 붙는다. */
+  /* Misaligned placement width also follows density — putting 17 items in one ring causes neighbor labels to collide. */
   const STAG=slots>12?36:slots>4?22:0, EX=1.52, EY=0.80;
-  let cursor=-90-((groups[0].slots/slots)*usable+GAP)/2; // 첫 부채의 가운데가 위
+  let cursor=-90-((groups[0].slots/slots)*usable+GAP)/2; // Center of first slice is up
   let out="";
   groups.forEach((g)=>{
     const span=(g.slots/slots)*usable;
@@ -477,8 +477,8 @@ function renderEgoGraph(slug){
       const t=g.slots===1?0.5:i/(g.slots-1);
       const ang=(cursor+GAP/2+(g.slots===1?span/2:span*t))*Math.PI/180;
       /*
-       * 「외 N」은 노드가 아니라 **접힌 나머지의 표시**다. 고리 안에 두면 옆
-       * 이웃의 라벨과 같은 높이에 앉아 부딪힌다(실측 2건). 한 겹 바깥으로 뺀다.
+       * "Outer N" is not a node but **a display of folded remainder**. Placing it inside the ring
+       * puts it at the same height as adjacent neighbor labels, causing collision (measured 2 cases). Move it one layer outside.
        */
       const isMoreSlot=g.rest>0&&i===g.slots-1;
       const rr=R+(i%2)*STAG+(isMoreSlot?34:0);
@@ -494,17 +494,19 @@ function renderEgoGraph(slug){
       }
       const sn=g.shown[i], nb=vaultOf(sn), nk=nb?.kind??"element", full=labelOf(sn);
       /*
-       * 상자가 고정이라 긴 이름은 넘친다. 게다가 부채가 촘촘할수록 옆 라벨과
-       * 부딪히므로, 자르는 길이를 **밀도에 맞춘다** — 펼친 17개 부채에서 이
-       * 규칙 없이는 겹침이 남았다(실측 1건).
+       * The box is fixed, so long names overflow. Moreover, the denser the fan,
+       * the more it collides with adjacent labels; therefore, **truncate length
+       * according to density** — without this rule, overlaps remained in the
+       * expanded 17-fan view (1 observed case).
        */
       const maxLen=g.slots>12?9:g.slots>8?12:16;
       const name=full.length>maxLen?full.slice(0,maxLen-1)+"…":full;
       const rn=R_NB[nk]??9;
       /*
-       * 세로에 가까운 자리에서 라벨을 노드 위/아래에 두면(가운데 정렬) 이웃한
-       * 두 슬롯의 라벨이 같은 높이에 쌓여 겹친다(실측). 거의 수직인 자리만
-       * 가운데로 두고, 나머지는 좌우로 뻗게 해 서로 비켜 가게 한다.
+       * Placing labels above/below nodes near vertical positions (center-aligned)
+       * causes labels of two adjacent slots to stack at the same height and
+       * overlap (observed). Only center-align those nearly vertical; let others
+       * extend left/right to avoid each other.
        */
       const cos=Math.cos(ang), right=cos>0.04, left=cos<-0.04;
       const lx=x+(right?rn+8:left?-(rn+8):0);
@@ -517,9 +519,10 @@ function renderEgoGraph(slug){
 
     }
     /*
-     * 관계 이름은 이제 왼쪽 읽기 칸이 진다. 그림 안에 두면 부채 바깥 40px 에
-     * 앉아 상자를 넓히고, 상자가 넓어지면 세로에 묶인 그림이 통째로 줄어든다
-     * (실측: 이름을 뺀 것만으로 채움률이 오른다). 그림은 그림만 그린다.
+     * Relationship names now win the left reading pane. Placing them inside
+     * the drawing sits them 40px outside the fan, widening the box; as the box
+     * widens, the vertically constrained drawing shrinks entirely
+     * (observed: removing the name alone increases fill rate). Drawings draw only themselves.
      */
     cursor+=span+GAP;
   });
@@ -532,7 +535,7 @@ function renderEgoGraph(slug){
   return `<div class="egograph"><svg viewBox="0 0 ${VW} ${VH}"
      role="img" aria-label="${labelOf(slug)} 와 바로 옆 이웃 ${total}개">${sheenDefs()}${out}</svg></div>`;
 }
-/** 종류마다 가진 사실이 다르다 — 실측: path 는 요소 43/43, 도메인·역량 0/25. */
+/** Each type has different facts — observed: path is 43/43 elements, domain/capability 0/25. */
 function propsFor(slug){
   const n=vaultOf(slug); if(!n) return "";
   const by=n.by?(/^agent/.test(n.by)?"에이전트":"사람"):null;
@@ -563,9 +566,9 @@ function renderEgo(slug){
   </div>`;
 }
 let egoOpen=true, focusIdx=0, chipsAll=false;
-/** 그림에서 이웃을 눌러 들어간 개념. 걸음이 바뀌면 풀린다. */
+/** Concept entered by pressing a neighbor in the drawing. Disappears when the path changes. */
 let egoOverride=null;
-/** 펼쳐 놓은 부채. 개념이 바뀌면 접힌다. */
+/** Expanded fan. Folds when the concept changes. */
 let openFans=new Set();
 function renderDetail(){
   const steps=visibleSteps();
@@ -603,14 +606,14 @@ function renderDetail(){
 }
 
 function wireChips(){
-  // 「외 N」 펼치기
-  /* 키보드도 같은 일을 한다 — 마우스 전용 기능은 없는 기능이다. */
+  // Expand "Outer N"
+  /* Keyboard does the same — there is no mouse-only feature. */
   const press=(el,fn)=>{el.addEventListener("click",fn);
     el.addEventListener("keydown",(ev)=>{ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); fn(); }});};
   el("detail").querySelectorAll(".eg-morehit").forEach((m)=>press(m,()=>{
     openFans.add(m.dataset.fan); renderDetail();
   }));
-  // 읽기표 ↔ 그림 잇기
+  // Connect reading pane ↔ drawing
   const gph=el("detail").querySelector(".egograph");
   el("detail").querySelectorAll(".relrow[data-fan]").forEach((r)=>{
     const on=()=>{ if(!gph) return; gph.dataset.hi=r.dataset.fan;
@@ -641,9 +644,8 @@ document.querySelectorAll(".switch button").forEach((b)=>b.addEventListener("cli
   b.classList.add("on");mode=b.dataset.s;selected=0;
   if(mode==="nogit"){
     /*
-     * git 이 없으면 기록이 없다 — 목록도 상세도 그릴 것이 없다. 그래서 이
-     * 상태만 본문을 통째로 안내로 바꾼다. 강등 카드 계약(surfaces.md): ① 왜
-     * 이런지 ② 어디서 되는지 ③ 여기선 무엇이 되는지를 다 말한다.
+     * Without git, there is no history — nothing to list or detail. Thus, this
+     * state alone replaces the entire body with guidance. Degradation card contract (surfaces.md): ① why ② where it works ③ what happens here.
      */
     document.querySelector(".body").innerHTML=`<div class="nogit">
       <div class="nogit-card">

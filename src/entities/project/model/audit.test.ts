@@ -146,13 +146,13 @@ describe("detectOrphanProjects", () => {
 describe("detectPromotionCandidates", () => {
   it("isHub=false 이면서 fan-in 이 임계값 이상인 프로젝트를 반환한다", () => {
     const projects: Project[] = [
-      makeProject({ slug: "center" }), // 비허브, fan-in 4
+      makeProject({ slug: "center" }), // Non-hub, fan-in 4
       makeProject({ slug: "a", dependencies: ["center"] }),
       makeProject({ slug: "b", dependencies: ["center"] }),
       makeProject({ slug: "c", dependencies: ["center"] }),
       makeProject({ slug: "d", dependencies: ["center"] }),
-      makeProject({ slug: "quiet" }), // 비허브, fan-in 0
-      makeProject({ slug: "hub", isHub: true }), // 허브라서 제외 대상
+      makeProject({ slug: "quiet" }), // Non-hub, fan-in 0
+      makeProject({ slug: "hub", isHub: true }), // Excluded because it is a hub
     ];
 
     const candidates = detectPromotionCandidates(projects, { minFanIn: 4 });

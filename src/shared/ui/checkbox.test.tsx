@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Checkbox } from "./checkbox";
 
 /**
- * Checkbox contract, ratified by the 「체계」 (design systems) seat on 2026-08-15.
+ * Checkbox contract, ratified by the 「System」 (design systems) seat on 2026-08-15.
  *
  * Founding inventory: 6 hand-repeated call sites across 5 files had split three ways
  * — two accent tokens (brand ×4, accent ×1) plus **one UA default colour**, a live

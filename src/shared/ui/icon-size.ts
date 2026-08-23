@@ -14,7 +14,7 @@
  * 17, plus an unspecified 24). That is drift, not role differentiation: two files
  * mixed four values within one surface (the workspace palette at 10/11/12/14 and
  * the dependency picker at 10/11/12/13), and a hands-on tester copying a sibling
- * component wrote *"아무것도 나에게 다른 값을 알려주지 않았다"* (nothing told me a
+ * component wrote *"Nothing told me a different value existed"* (nothing told me a
  * different value existed). The consumption channel is a numeric prop rather than
  * a className, which put it outside the range of the value lint.
  *
@@ -28,7 +28,7 @@
  * Chrome and rail icons are not covered by this ramp; their own surface contracts
  * own them (`--topology-chrome-icon-size`, `--chrome-icon`,
  * `--app-nav-rail-icon-size`). Neither is the `data-kind-glyph` kind marker —
- * that is a typed data mark, owned by `docs/DESIGN-SYSTEM.md` 「노드 규격」 (the
+ * that is a typed data mark, owned by `docs/DESIGN-SYSTEM.md` node spec (the
  * node spec).
  *
  * **2026-08-05: nobody was using this constant.** The paragraph above stated

@@ -46,8 +46,8 @@ export const COMPOSER_MAX_ROWS = 6;
  * The **share** of the space the composer may take. The conversation is the main
  * event, so it never exceeds half.
  *
- * Owner, 2026-08-16: *"이렇게 계속 길어지지는 않지만 어느 정도까지는 길어지면
- * 좋겠는데"* (it shouldn't grow forever, but it should be able to grow a fair
+ * Owner, 2026-08-16: *"It shouldn't grow forever, but it should be able to grow a fair
+ * bit."* (it shouldn't grow forever, but it should be able to grow a fair
  * bit). The request was right: 6 rows came from a narrow strip and did not fit a
  * tall conversation column. Pinning a new constant such as "12 rows" would only
  * be right **at one window size** — shrink the window and the composer pushes the

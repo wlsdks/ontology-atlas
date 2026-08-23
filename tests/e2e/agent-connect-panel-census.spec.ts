@@ -8,7 +8,7 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * Locks the first screen of the MCP connect pane (formerly "connect from the
  * terminal") against becoming complicated again.
  *
- * **Why** (2026-08-17). Owner: *"사용하기 복잡하지는 않을까"* (isn't this
+ * **Why** (2026-08-17). Owner: *"Isn't this complicated to use?"* (isn't this
  * complicated to use?). Answering from the source alone was wrong — the file is
  * 1,468 lines with 11 copy-state hooks, which read as "11 copy buttons in a row",
  * but **opening it and measuring found 4 copy buttons on screen and 1 on the first

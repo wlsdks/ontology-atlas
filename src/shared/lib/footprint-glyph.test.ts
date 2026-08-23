@@ -15,8 +15,8 @@ import {
 
 /**
  * A print **never grows larger than the node it marks** (2026-08-02, owner:
- * *"화면 작아졌을때 발걸음 사이즈같은거 조절도 좀 꼼꼼히"* — tighten how the footprint
- * size adapts when the window gets small).
+   * "Tighten how the footprint size adapts when the window gets small" — tighten how the footprint
+   * size adapts when the window gets small).
  *
  * This gate locks the **ratio**, not the pixels. The previous implementation had no cap, so
  * a print scaling with the square root of camera zoom outran a node shrinking linearly.
@@ -125,7 +125,7 @@ describe("formatStepNumbers", () => {
 
 /**
  * The defect where prints bit into the node disc (measured in the installed app — owner:
- * *"겹쳐지는건 없게 하고싶은데"*, nothing should overlap). The cause was that `gap` measured
+ * "I want to avoid overlaps", nothing should overlap). The cause was that `gap` measured
  * to the print's **centre**; overlap is an edge condition, not a centre condition.
  */
 describe("footprintAnchor — 노드와 겹치지 않는다", () => {

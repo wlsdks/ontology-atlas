@@ -176,7 +176,7 @@ describe("isNodeHittable", () => {
     const neighbors = new Set(["capability:hidden"]);
     // Without the clustered set the ego exemption keeps it hittable...
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors)).toBe(true);
-    // ...but once it's folded behind the `이웃 +N` ("+N neighbours") chip (in the frame's clustered
+    // ...but once it's folded behind the `Neighbor +N` ("+N neighbours") chip (in the frame's clustered
     // set) it must not be grabbable — it isn't drawn.
     const clustered = new Set(["capability:hidden"]);
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors, DEFAULT_TIER_REVEAL, clustered)).toBe(false);

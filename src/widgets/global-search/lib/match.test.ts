@@ -32,13 +32,13 @@ describe("matchOntologyNodes", () => {
 
   it("title exact > prefix > substring > summary > id 순 점수", () => {
     const r = matchOntologyNodes("세션", corpus);
-    // "세션" matches the title character for character — an exact match.
+    // "Session" matches the title character for character — an exact match.
     expect(r[0]?.node.id).toBe("session");
     expect(r[0]?.score).toBe(5);
   });
 
   it("정확 일치는 더 최근에 승인된 prefix 매치보다 위다 (2026-08-13 실측 회귀)", () => {
-    // Measured: typing 「주문」 put the domain 「주문」 (an exact match) 6th, below five
+    // Measured: typing 「Order」 put the domain 「Order」 (an exact match) 6th, below five
     // later-approved prefix matches — after the tie at 4, recency sank the exact
     // match. Someone who typed a name in full is looking for the node with that name.
     const earlier = new Date("2026-04-01T00:00:00Z");
@@ -66,7 +66,7 @@ describe("matchOntologyNodes", () => {
     expect(r).toHaveLength(1);
     expect(r[0]?.node.id).toBe("auth-logout");
     // Score 3 if the title contains 'logout', 1 for the id-only fallback. The title
-    // "로그아웃" has no English logout, so this is the id fallback.
+    // "Logout" has no English logout, so this is the id fallback.
     expect(r[0]?.score).toBe(1);
   });
 

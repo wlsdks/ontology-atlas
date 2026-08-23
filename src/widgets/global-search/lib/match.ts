@@ -54,7 +54,7 @@ export interface MatchOntologyOptions {
  * Scores (lower is a weaker match):
  *   5 — exact name match. Someone who typed a name in full is looking for the node
  *       with that name; tied with a prefix match, the recency tie-break sinks the
- *       exact match (measured 2026-08-13: 「주문」 landed 6th, below five others)
+ *       exact match (measured 2026-08-13: "order" landed 6th, below five others)
  *   4 — name prefix match
  *   3 — name substring match
  *   2 — summary substring match
@@ -75,7 +75,7 @@ export interface MatchOntologyOptions {
  * first) — unified with the documents matcher for a predictable order.
  *
  * For mixed Korean and English, matching is substring-based after normalisation
- * (NFC + lowercase + whitespace tidy), so `auth-login` and `로그인` go through the
+ * (NFC + lowercase + whitespace tidy), so `auth-login` and "login" go through the
  * same call.
  *
  * The kind and projectIds filters are applied before scoring (only nodes that pass

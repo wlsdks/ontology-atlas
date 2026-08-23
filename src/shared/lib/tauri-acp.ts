@@ -109,7 +109,7 @@ export interface AcpRuntimeStatus {
  * With `probeLogin` on, each CLI is actually launched to check login state. That is the
  * only slow part of this call (measured: claude 300ms, codex 45ms), so it is off by
  * default — the screen **paints first and corrects later** (owner, 2026-08-16:
- * *"일단 로딩되게 하고 업데이트 시키는 방향으로"*, let it load first and update after).
+ * *"Let it load first and update after."*, let it load first and update after).
  */
 export async function detectAcpRuntimes(
   options?: { probeLogin?: boolean },

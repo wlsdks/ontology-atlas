@@ -1,6 +1,6 @@
 /**
  * Pointer state machine skeleton — the click-safe contract
- * (`.claude/rules/design.md` 「클릭=안전 계약」 — a click is a safe contract;
+ * (`.claude/rules/design.md` "Click = Safe Contract";
  * `docs/INTERACTION-DESIGN.md` §1,
  * `docs/TOPOLOGY-V2-DESIGN.md` §3.6) ported from the B2+ prototype's
  * `pointerdown`/`pointermove`/`releaseDrag()` handlers
@@ -11,8 +11,7 @@
  *   this is **not** a commit. Nothing durable (focus/camera) changes yet.
  * - `pointermove` while `phase === "pressed"`: once
  *   `engine/hysteresis.ts#exceedsHysteresisThreshold` trips, transition to
- *   `"dragging"` and **clear `pressedNodeId`** (prototype: 「드래그 이탈
- *   (`HYSTERESIS=7px`) 시 취소」 — cancel once the drag leaves the threshold; a
+ *   `"dragging"` and **clear `pressedNodeId`** (prototype: "Cancel when drag leaves threshold (`HYSTERESIS=7px`)" — a
  *   drag can never commit a click, even if
  *   the pointer later returns near the down-point).
  * - `pointerup` while still `"pressed"` (never exceeded hysteresis) emits a

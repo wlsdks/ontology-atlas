@@ -46,7 +46,7 @@ export type VaultDiffToastKind = 'added' | 'edited' | 'removed' | 'digest';
 /**
  * **The contract that a toast never speaks a slug** (owner instruction, 2026-08-01).
  *
- * It used to say `편집됨: capabilities/payment-authorization`. That line gives a user close to zero
+ * It used to say `edited: capabilities/payment-authorization`. That line gives a user close to zero
  * information — `capabilities/` is a developer folder name and `payment-authorization` is a file
  * name, not what a person calls that concept (vault nodes carry `display_ko`/`display_en`, and the
  * map, INDEX, and popovers already render those — only the toast used the raw slug).

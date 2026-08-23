@@ -9,7 +9,7 @@ import enMessages from "../../../../messages/en.json";
 import { ShortcutSheet } from "./ShortcutSheet";
 
 /**
- * W2-C — the "지형도"/"Relief" (topology) section used to list interactions the v2
+ * W2-C — the "Terrain Map"/"Relief" (topology) section used to list interactions the v2
  * canvas never implemented (double-click local · Shift+click path · Tab neighbours ·
  * / search · 0 depth). This test locks the corrected section to the canvas's ACTUAL
  * behavior so a future stale-key regression fails loudly (the exact failure mode that
@@ -101,7 +101,7 @@ describe("ShortcutSheet — relation guide", () => {
 
 // #67 — pouring some 40 rows into two columns at once made the dialog eat 95% of the
 // viewport (852px) at 1512×900 with the bottom cut off. The answer is **classification,
-// not hiding** — the `전체` (all) tab keeps the previous list, so discoverability is not lost.
+// not hiding** — the `All` (all) tab keeps the previous list, so discoverability is not lost.
 describe("ShortcutSheet — 문맥 탭 (#67)", () => {
   it("기본은 '지금 화면' — 지도에서는 문서함 섹션이 나오지 않는다", () => {
     renderSheet();
@@ -156,7 +156,7 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
 
 // #67 follow-up — the scroll area has to be genuinely **constrained**.
 //
-// Measured regression (English `전체` tab, 1512×806): adding the fade wrapper used
+// Measured regression (English `All` tab, 1512×806): adding the fade wrapper used
 // `h-full` on the scrolling div, and inside a wrapper whose height came from flex
 // (526px) that percentage resolved against the content height (1112px), making
 // `scrollHeight === clientHeight`. The result: the scroll died and the last section

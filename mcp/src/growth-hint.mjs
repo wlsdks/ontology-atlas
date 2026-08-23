@@ -31,7 +31,8 @@ function titleCaseFromSlug(slug) {
  * Audit 2026-07-25 — this function alone substituted on `[^a-z0-9]`, so **a
  * Korean title was erased entirely and came out as `untitled`**. The other four
  * implementations (`shared/lib/slugify.ts`, `derive-ontology-from-vault.ts`,
- * `analyze.mjs`, `absorb.mjs`) all preserve `가-힣`. Since `init --locale=ko` is a
+ * `analyze.mjs`, `absorb.mjs`) all preserve the Hangul syllable range
+ * (U+AC00–U+D7A3). Since `init --locale=ko` is a
  * supported path, agents were instructing Korean-vault users to create
  * `untitled.md`, and the slug collided on their second Korean concept.
  *

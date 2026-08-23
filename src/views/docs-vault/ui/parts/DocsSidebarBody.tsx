@@ -350,7 +350,7 @@ export function DocsSidebarBody({
       {/* One row holds **a set of filters plus three actions**. The larger header and the
           always-on search box stay removed for density, but the three are now bound by a
           border and the active one is labelled, so «state» and «action» separate visually
-          (2026-08-08 — the owner named this row as "복잡도" / complexity). */}
+          (2026-08-08 — the owner named this row as "complexity"). */}
       {/*
         a11y: this row is **not** `role="tablist"`. A full axe sweep on 2026-08-03 found one
         `aria-required-children` (WCAG 4.1.2) violation here — besides the three collections
@@ -367,7 +367,7 @@ export function DocsSidebarBody({
       */}
       <div className="flex flex-none items-center gap-1 border-b border-[color:var(--color-overlay-2)] px-2 py-2">
         {/*
-          ⚠️ **What is active has a name** (2026-08-08, owner reported "복잡도" / complexity).
+          ⚠️ **What is active has a name** (2026-08-08, owner reported "complexity").
           All three used to be unlabelled 32px icons, so «which filter is this list under»
           could not be read from the icons alone — that answer lived only in the grey caption
           line below. Information outside the control makes a person look in two places. Now
@@ -489,8 +489,7 @@ export function DocsSidebarBody({
         {/*
           It is **pressable even in the read-only sample**. It used to be disabled with a
           hover tooltip, but a hover-only explanation on a 40%-opacity icon never arrived —
-          in the owner's own use it read as "새 문서 작성은 왜 없지?" (why is there no
-          "create document"?).
+          in the owner's own use it read as "Why is there no 'create document'?"
 
           Pressing it now goes to what makes it possible: open my folder. The label says so in
           advance, so nothing is surprising — the charter's degradation grammar ("why it is

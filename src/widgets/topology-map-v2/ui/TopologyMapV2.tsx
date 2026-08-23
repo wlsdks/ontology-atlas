@@ -69,7 +69,7 @@ export interface TopologyV2Node {
 }
 
 export interface TopologyV2Edge {
-  /** 원본 KnowledgeGraphEdge identity. 외부 embed는 생략할 수 있다. */
+  /** Original KnowledgeGraphEdge identity. External embeds may be omitted. */
   id?: string;
   source: string;
   target: string;
@@ -117,7 +117,7 @@ export interface TopologyMapV2Props {
    * switch. Omitted, it fits once at first as before.
    */
   dataSourceKey?: string | null;
-  /** Increment to re-run fit-to-bounds (HomePage's 「지도 맞추기」 — fit the map). */
+  /** Increment to re-run fit-to-bounds (HomePage's "fit the map" — fit the map). */
   fitViewToken: number;
   /** The token that fits the camera to the emphasised nodes when the lens or period changes. */
   spotlightFitToken?: number;
@@ -138,7 +138,7 @@ export interface TopologyMapV2Props {
   ) => void;
   /**
    * The connected-node slug the user is hovering in the detail panel's
-   * 「연결된 노드」 (connected nodes) list. Under focus, that node and its connecting
+   * "connected nodes" (connected nodes) list. Under focus, that node and its connecting
    * edge light up on the canvas so panel and map read as one (lead spec §4).
    * Optional — the panel-hover wiring is a follow-up; omitting it keeps the map
    * behavior identical.
@@ -163,7 +163,7 @@ export interface TopologyMapV2Props {
    * unchanged (browser default menu everywhere, same as before this slice).
    */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
-  /** Right-click on empty canvas — 「여기에 개념 만들기」 (create a concept here). Omitted, it is a no-op as before. */
+  /** Right-click on empty canvas — "create a concept here" (create a concept here). Omitted, it is a no-op as before. */
   onContextMenuPane?: (position: { x: number; y: number }) => void;
   /**
    * Density gate — the set of parent slugs the user has expanded (URL `?open=`).
@@ -209,9 +209,9 @@ export interface TopologyMapV2Props {
    * key (changedSlugs) over the same window. null or omitted is off.
    */
   spotlightIds?: ReadonlySet<string> | null;
-  /** 같은 렌즈 기구가 지금 나르는 의미. 생략은 기존 최근 변경. */
+  /** The meaning currently carried by the same lens mechanism. Omission refers to existing recent changes. */
   mapLensKind?: TopologyMapLensKind;
-  /** 최단 경로에 실제로 포함된 authored edge id만. */
+  /** Only authored edge ids actually included in the shortest path. */
   pathEdgeIds?: ReadonlySet<string> | null;
   /**
    * S4 realm expansion — the map has switched to this node's world (`?realm=slug`);
@@ -220,20 +220,20 @@ export interface TopologyMapV2Props {
   realmRootId?: string | null;
   /** S4 — clicking the orbit "expand" button enters the realm at this slug (HomePage does the URL round trip). */
   onEnterRealm?: (slug: string) => void;
-  /** S4 — the orbit button's accessible label (i18n, injected by HomePage). The user-facing wording is 「이것만 보기」 (show only this; owner decision 2026-07-23) while the internal name stays realm. */
+  /** S4 — the orbit button's accessible label (i18n, injected by HomePage). The user-facing wording is "show only this" (show only this; owner decision 2026-07-23) while the internal name stays realm. */
   realmEnterLabel?: string;
-  /** S4 — the orbit button's hover microtooltip copy ("이 노드 안쪽만 봐요" — look only inside this node). */
+  /** S4 — the orbit button's hover microtooltip copy ("look only inside this node" — look only inside this node). */
   realmEnterTooltip?: string;
   /**
-   * The inventory engraving at the warding circle's base — "○○ · 요소 N" (i18n,
+   * The inventory engraving at the warding circle's base — "○○ · N elements" (i18n,
    * injected by HomePage). The widget does not count for itself but receives the
    * string, so it shares a single source with the ledger panel's inventory. null or
    * omitted means no engraving.
    */
   realmCaption?: string | null;
   /**
-   * The copy for 「머리 위 막대」 (the bar above the head) — 「모두 펼치기」 /
-   * 「N개 펼치기」 / 「접기」 (expand all / expand N / collapse), i18n, injected by
+   * The copy for "the bar above the head" (the bar above the head) — "expand all" /
+   * "expand N" / "collapse" (expand all / expand N / collapse), i18n, injected by
    * HomePage. The canvas renderer never composes strings (the same convention as
    * the warding caption). Omitted draws an English fallback, so a contract test
    * catches a broken wiring.
@@ -347,8 +347,8 @@ export interface TopologyMapV2Props {
    */
   view3d?: boolean;
   /**
-   * What decides the 3D dome's **bearings** — 「소유」 (ownership: the containment
-   * parent, default) or 「결합」 (coupling: every relation's angle, relaxed). The
+   * What decides the 3D dome's **bearings** — "ownership" (ownership: the containment
+   * parent, default) or "coupling" (coupling: every relation's angle, relaxed). The
    * rationale and the geometry are in the `DomeArrangement` doc-block in
    * `model/dome-view.ts`. Ignored in 2D.
    */
@@ -459,9 +459,9 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
    *
    * | What the owner saw | Cause |
    * |---|---|
-   * | *"이렇게 나오면 모르겠는데?"* (like this I can't tell) | A toast sits at the screen's bottom right. The blocked node is somewhere in the middle, and a sentence 500px away does not connect to "the thing I just pressed" |
-   * | *"사라지지도 않고 계속떠있고"* (it doesn't disappear, it just stays) | When the close button takes focus, sonner stops its own dismissal timer |
-   * | *"x버튼 안누르면 아예 이동도 안됨"* (without pressing x you can't even move) | Once focus moves to the toast, arrow keys never reach the canvas |
+   * | "I can't tell when it appears like this" (like this I can't tell) | A toast sits at the screen's bottom right. The blocked node is somewhere in the middle, and a sentence 500px away does not connect to "the thing I just pressed" |
+   * | "It doesn't disappear, it just stays" (it doesn't disappear, it just stays) | When the close button takes focus, sonner stops its own dismissal timer |
+   * | "Without pressing x you can't even move" (without pressing x you can't even move) | Once focus moves to the toast, arrow keys never reach the canvas |
    *
    * So this notice has to be **something that cannot take focus** — no button, and
    * `pointer-events: none`. Nothing is lost by missing it (that there is no node in
@@ -606,7 +606,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         role={canvasLabel ? "group" : undefined}
         aria-label={canvasLabel}
         tabIndex={canvasLabel ? 0 : undefined}
-        // Why `cursor-grab` is the **default state** (council 「상호작용」 —
+        // Why `cursor-grab` is the **default state** (council "Interaction" —
         // interaction — 2026-07-28): this canvas's primary action is panning. The
         // pointer handlers override it inline with `pointer` over a node or edge, and
         // `grabbing` while pushing.
@@ -685,7 +685,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
            * read it, it has gone elsewhere.
            *
            * It disables **the explanation, not the feature**: the button and its
-           * `aria-label` (「이것만 보기」 — show only this) are unchanged, so mouse and
+           * `aria-label` ("Show only this") are unchanged, so mouse and
            * assistive technology reach it exactly as before.
            */}
           {realmEnterTooltip && !view3d ? (

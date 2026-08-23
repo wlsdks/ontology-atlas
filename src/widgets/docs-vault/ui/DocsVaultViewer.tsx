@@ -223,7 +223,7 @@ export function DocsVaultViewer({
            * ⚠️ **Percent-decode and normalise to NFC** (measured fix, 2026-08-08).
            *
            * The markdown parser passes link URLs **percent-encoded** — measured:
-           * `capabilities/스윕-검증-절차` arrived as
+           * `capabilities/sweep-verification-procedure` arrived as
            * `capabilities/%EC%8A%A4%EC%9C%95-…` (69 characters). That string is not in
            * the vault's slug set, so **every** wikilink to a Hangul slug fell through
            * to the "link not in the folder" dotted style. ASCII slugs have nothing to
@@ -233,8 +233,7 @@ export function DocsVaultViewer({
            * NFC is matched too. Hangul slugs split into NFC (21 characters) and NFD
            * (31) depending on origin (the macOS filesystem uses NFD), so the characters
            * are identical while the strings do not match. The CLI validator already
-           * recorded the same judgement (`validate.mjs`: *"참조도 NFC 로 맞춘다 — 한쪽만
-           * 정규화하면 글자가 같은데 안 맞는 상태가 그대로 남는다"* — references are
+           * recorded the same judgement (`validate.mjs`: *"References are also normalised to NFC — normalising only one side leaves identical characters that don't match"* — references are
            * normalised to NFC too; normalising one side leaves identical characters
            * that do not match). That rule is followed rather than re-decided.
            */

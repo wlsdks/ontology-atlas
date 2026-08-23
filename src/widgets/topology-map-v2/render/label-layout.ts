@@ -43,7 +43,7 @@ export function isWithinSafeRect(x: number, y: number, rect: SafeRect): boolean 
  * ego-protected labels (selected/hovered/ego member) whose node sits under a
  * chrome inset. Guardian follow-up A (label-clarity): the safe-rect cull ran
  * BEFORE the selected/hovered alpha floor, so a focused domain's fan children
- * under the left panel lost their labels — recreating the 「이름 없는 도형」
+ * under the left panel lost their labels — recreating the "nameless shapes"
  * (nameless shapes) symptom the slice existed to fix. A clamped label sits at
  * the inset edge nearest its node, saying "this node is under this panel", which
  * beats silence.
@@ -178,7 +178,7 @@ export const CLUSTER_CHIP_LABEL_PRIORITY = 2;
  * Where a drawn node disc ranks in the label priority ladder.
  *
  * Measured during review: with ego focus on a product node, the child label
- * 「상품 등록」 cut **15px into** the selected node's box, and the label beside it
+ * "product registration" cut **15px into** the selected node's box, and the label beside it
  * was swallowed by an expand badge down to a single character. Greedy
  * suppression only knew label ↔ label overlap, never label ↔ **node shape** —
  * and a name laid over a shape makes both unreadable (Tufte: graphical

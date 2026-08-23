@@ -2,9 +2,9 @@
 /**
  * MCP server verify CLI — UX-3.
  *
- * 사용자가 .mcp.json 등록 후 *서버가 정상* 인지 1 명령으로 확인.
+ * Verify that the server is healthy in one command after registering .mcp.json.
  *
- * 사용법:
+ * Usage:
  *   node mcp/scripts/verify.mjs                    # vault = cwd
  *   node mcp/scripts/verify.mjs ./docs/ontology    # vault = positional arg
  *   node mcp/scripts/verify.mjs --vault ./docs/ontology
@@ -12,11 +12,11 @@
  *   OATLAS_VAULT=./docs/ontology node mcp/scripts/verify.mjs
  *   OATLAS_VERIFY_TIMEOUT_MS=15000 npm run verify    # larger/slower vaults
  *
- * 검증 항목:
- *   1. parser smoke test (parser.test.mjs) 통과
- *   2. server boot — initialize JSON-RPC 응답
+ * Verification items:
+ *   1. parser smoke test (parser.test.mjs) passes
+ *   2. server boot — initialize JSON-RPC response
  *   3. tools/list — complete tool inventory + graph-query/write-relation enum schema contract + strict tool-name/argument/enum runtime smoke
- *   4. tools/call list_concepts — vault 노드 수 출력
+ *   4. tools/call list_concepts — output vault node count
  *   5. tools/call list_concepts(kind=project) — project_scope gate probe
  *   6. tools/call get_concept — single-node detail + structuredContent contract
  *   7. tools/call get_concepts — batch reader success + partial-row contract
@@ -34,7 +34,7 @@
  *   19. tools/call query_ontology relation_check + graph kind typo rejection — write/query preflight fail-closed smoke
  *   20. tools/call absorb_document dry-run against a temp fixture (Slice 0) — CLAUDE.md/AGENTS.md absorption tool smoke, never touches the vault under test
  *
- * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
+ * All PASS → exit 0, failure → exit 1 + diagnostic message.
  */
 
 import { isBacklinkKeyValue } from '../src/backlink-key-shape.mjs';
@@ -84,10 +84,10 @@ const MCP_ROOT = resolve(__dirname, '..');
 const REPO_ROOT = resolve(MCP_ROOT, '..');
 const PARSER_TEST = join(MCP_ROOT, 'src', 'parser.test.mjs');
 const SERVER_ENTRY = join(MCP_ROOT, 'src', 'index.js');
-// 앱 번들에 실리는 컴파일 바이너리를 같은 전수 검증에 태우기 위한 오버라이드.
-// 미지정이면 지금까지처럼 node + 소스 엔트리. 지정되면 그 실행 파일을 인자 없이
-// 스폰한다 — "소스에서 통과하는 것"과 "사용자가 실제로 받는 것"이 다를 수 있어서
-// 같은 스위트가 양쪽을 다 볼 수 있어야 한다.
+// Override to subject the compiled binary included in the app bundle to the same exhaustive verification.
+// If unspecified, it uses node + source entry as before. If specified, it spawns that executable
+// without arguments — because "passing from source" and "what the user actually receives" can differ,
+// so the same suite must check both sides.
 const SERVER_BIN_OVERRIDE = process.env.OATLAS_MCP_SERVER_BIN || '';
 const SERVER_COMMAND = SERVER_BIN_OVERRIDE || process.execPath;
 const SERVER_COMMAND_ARGS = SERVER_BIN_OVERRIDE ? [] : [SERVER_ENTRY];
@@ -1074,9 +1074,9 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'get_concept inputSchema uid drift';
   }
-  // `excerpt` 는 더 이상 필수가 아니다 — `body: 'full'` 이면 본문이 `body` 로
-  // 온다. 대신 **`bodyInfo` 가 필수다**: 무엇을 안 줬는지 말하지 않는 응답이
-  // 이번 실측의 결함이었으므로, 그 필드가 빠지는 것이 곧 회귀다 (2026-08-01).
+  // `excerpt` is no longer required — if `body: 'full'`, the body comes as `body`.
+  // Instead, **`bodyInfo` is required**: a response not saying what wasn't given
+  // was the defect in this measurement, so that field missing is a regression (2026-08-01).
   if (!sameArray(getConceptTool.inputSchema?.properties?.body?.enum, ['excerpt', 'full'])) {
     return 'get_concept inputSchema body mode drift';
   }
@@ -2934,8 +2934,7 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(singleAddRelationInputType?.enum, WRITE_RELATION_TYPE_VALUES)) {
     return 'add_relation inputSchema type enum drift';
   }
-  // P6 회귀 게이트 — why 스키마 블록이 라운드 머지에서 증발해 strict-args 가
-  // why 를 unknown_argument 로 거부했던 사고의 재발 방지.
+  // P6 regression gate — preventing recurrence of the incident where the why schema block evaporated in round merge, causing strict-args to reject why as unknown_argument.
   const addRelationWhy = propertyAt(addRelationTool, ['properties', 'why']);
   if (addRelationWhy?.type !== 'string' || addRelationWhy?.maxLength !== 300) {
     return 'add_relation inputSchema why (relation_notes rationale) drift';
@@ -5763,14 +5762,13 @@ function backlinkKeyChangeFailure(row) {
 }
 
 /**
- * ⚠️ **판정을 여기서 다시 쓰지 않는다** (2026-08-17).
+ * ⚠️ **Do not rewrite the verdict here** (2026-08-17).
  *
- * 종전에는 이 함수가 문자열/배열만 받았고, 그래서 `relation_notes`(맵)을 가진
- * 노드의 rename 이 **정상인데도** 이 게이트를 못 넘었다. 맞는 동작에 켜지는
- * 게이트는 꺼지는 게이트다.
+ * Previously, this function accepted only strings/arrays, so nodes with
+ * `relation_notes` (a map) could not pass this gate even though their rename was
+ * **correct**. The gate that should be open is closed.
  *
- * 모양 판정은 `mcp/src/backlink-key-shape.mjs` 하나가 갖고, 자기 테스트도
- * 거기 있다.
+ * Shape validation is handled by a single module `mcp/src/backlink-key-shape.mjs`, and its tests are there too.
  */
 function isBacklinkRewriteValue(value) {
   return isBacklinkKeyValue(value);

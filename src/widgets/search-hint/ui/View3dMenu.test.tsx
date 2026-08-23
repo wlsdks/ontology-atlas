@@ -9,7 +9,7 @@ import { View3dMenu } from "./View3dMenu";
  * The contract for the view picker the 「3D」 chip opens.
  *
  * What this check holds is not values but **position and count**. When the
- * arrangements lived in the settings sheet under the names 「소유/결합」, the owner
+ * arrangements lived in the settings sheet under the names 「Ownership/Combination」, the owner
  * failed to find them twice (ledger (84)) — that regression leaves no value in the
  * code, so only the rendered result can catch it.
  */

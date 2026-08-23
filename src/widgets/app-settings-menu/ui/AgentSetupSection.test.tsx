@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AgentSetupSection } from './AgentSetupSection';
 
 /**
- * The 「MCP 연결」 pane — **moved out of the settings sheet on 2026-08-21**
+ * The 「MCP Connection」 pane — **moved out of the settings sheet on 2026-08-21**
  * (ledger 90).
  *
  * The two checks here **came along** from `AppSettingsMenu.test.tsx`. The screen
@@ -52,7 +52,7 @@ describe('MCP 연결 칸', () => {
    * walkthrough 2026-08-11; the e2e `open-vault-cta` caught the same defect again
    * right after the move, 2026-08-21).
    *
-   * This card says 「폴더를 열면 …」 (once you open the folder …). Without the way to
+   * This card says 「Once you open the folder …」. Without the way to
    * open it in the same place, it is the **dead-end CTA** this repository forbids by
    * name.
    */

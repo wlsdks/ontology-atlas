@@ -152,8 +152,7 @@ describe("ProjectSelectorPage", () => {
    *
    * Counting the same thing twice under two scopes makes the reader **assume one of them is wrong**. The
    * code comment knew this and waved it away with "just add a scope label"; the owner's verdict was the
-   * opposite: *"이런거 좀 혼란스러워 위에줄에 정보는 필요없고"* (this sort of thing is confusing; the top
-   * row doesn't need information).
+   * opposite: *"This sort of thing is confusing; the top row doesn't need information."*
    *
    * This test stops that row from quietly coming back.
    */

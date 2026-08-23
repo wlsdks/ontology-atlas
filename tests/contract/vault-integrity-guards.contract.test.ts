@@ -76,9 +76,8 @@ afterEach(() => {
  * outside. Measured: a file outside the vault was modified while the success line
  * reported a path inside it — the user cannot find their edit at that path.
  *
- * The threat that function's own comment describes — *"prompt injection 으로 …
- * vault root 바깥의 파일을 가리키지 못하도록"* (so prompt injection cannot point at
- * a file outside the vault root) — was open **on the filesystem side**, not the slug
+ * The threat that function's own comment describes — *"so prompt injection cannot point at
+ * a file outside the vault root"* — was open **on the filesystem side**, not the slug
  * side. The MCP and CLI copies both carry this contract.
  */
 describe("볼트 밖 쓰기 — 심볼릭 링크", () => {

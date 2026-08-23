@@ -13,9 +13,8 @@ import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-fr
  * The "agents" destination — where this computer's AI coding tools are **downloaded, installed,
  * connected, repaired, and opened into a conversation**.
  *
- * **Why it left settings** (2026-08-20, ledger 90). Owner instruction: *"우리도 설정을 아예 LNB로
- * 넣고 버즈나 다른 오픈소스처럼 그냥 한 창을 다 쓸까? 지금처럼 팝업말고?"* (should we put settings
- * into the LNB entirely and use a whole window like other open source, instead of a popup?) → of three
+ * **Why it left settings** (2026-08-20, ledger 90). Owner instruction: *[should we put settings
+ * into the LNB entirely and use a whole window like other open source, instead of a popup?]* → of three
  * options, **"promote agents to top level"**.
  *
  * Five PO council seats and five design bench seats reviewed it, and the basis for the move is not

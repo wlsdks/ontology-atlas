@@ -359,9 +359,7 @@ describe('실행기 목록 — 설치는 우리가 대신 하지 않는다', () 
 
 describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
   /*
-   * Owner report, 2026-08-16: *"Agents 탭 누르면 로딩 속도가 1초인가 느린데? 일단
-   * 로딩되게 하고 업데이트 시키는 방향으로 가야 하지 않을까"* (pressing the Agents
-   * tab takes about a second — shouldn't it load first and update after?).
+   * Owner report, 2026-08-16: *"When I press the Agents tab, the loading speed is about 1 second slow — shouldn't it load first and update after?"*
    *
    * Adding the login check added its cost **directly to the time the screen took to
    * appear.** The list could have been drawn first, and nothing was shown until the

@@ -3,7 +3,7 @@
  *
  * **Why tabs.** The detail page was a single scroll dump — hero → domain composition → **the whole
  * project.md** (thousands of px in the dogfood vault) → connections/handoff → footer. Owner:
- * *"스크롤로 모든거 보여주려 안해도 되니까?"* (you don't have to show everything by scrolling).
+ * *"Don't we have to show everything by scrolling?"* (you don't have to show everything by scrolling).
  *
  * Tabs split by **the question they answer**, not by "kind of information":
  *

@@ -8,14 +8,14 @@ import type { UpdatePhase } from '@/features/app-update';
 import { AppUpdateSettings } from './AppUpdateSettings';
 
 /**
- * 「업데이트 확인」 (check for updates) — this test's subject is **what was blocked
+ * 「Check for updates」 — this test's subject is **what was blocked
  * while this section did not exist**.
  *
  * Automatic checking and the bottom-right toast have existed since 2026-07-27, but
  * there was **no way for the user to press it**: `check(manual)` had 0 callers in
- * the whole repository, and 「최신이에요」 could not even be drawn because the toast
+ * the whole repository, and 「Latest」 could not even be drawn because the toast
  * returned `null` for it. Automatic checks run once a day and a dismissal is
- * remembered for that version, so anyone who pressed 「나중에」 once had **no way to
+ * remembered for that version, so anyone who pressed 「Later」 once had **no way to
  * reach an update at all until the next version shipped.**
  */
 

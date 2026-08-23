@@ -46,8 +46,7 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   const inGraph = topologyHref != null;
   /*
    * **An explanation earns its place only when it changes something** (2026-08-08, owner report —
-   * *"문서 볼 때 상단이 조금 이상한데.. 보기좋게 구성할순없나?"*, the top looks a bit odd when
-   * reading a document; can it be laid out better?).
+   *[the top looks a bit odd when reading a document; can it be laid out better?]*.
    *
    * This line used to appear on every document. But on a document that **is** on the map the
    * sentence says nothing new — the chip immediately to its left reads "map evidence" and there is

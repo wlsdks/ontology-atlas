@@ -137,10 +137,9 @@ export function pickInitialFocus(
  * ⚠️ At first, a direction with no neighbour did **nothing**. The "no wrapping"
  * judgement was right (jumping to the opposite side loses the user's position), but
  * **the silence was the problem**: after actually using it the owner said
- * *"방향키가 되긴 하는데 노드를 자유롭게 이동하진 못하네?"* (the arrow keys work, but
- * I can't move freely between nodes). With no response to a press, the user cannot
+ * "The arrow keys work, but I can't move freely between nodes". With no response to a press, the user cannot
  * tell «broken» from «nothing in that direction» — the same failure this repository
- * named **「조용한 기다림」** (the silent wait).
+ * named "The Silent Wait".
  *
  * So the constraint stays and **it speaks**. But holding an arrow key would stack up
  * dozens of identical notices, so after saying it once it stays quiet for a while.

@@ -8,9 +8,9 @@ const webServerPort = new URL(baseURL).port || '3100';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  // dev(Turbopack) 상대라 라우트 첫 진입은 온디맨드 컴파일을 기다린다 —
-  // global-setup 이 주요 라우트를 미리 컴파일시키고, 그래도 남는 편차를
-  // expect 타임아웃 15초로 흡수한다(10초일 때 산발 실패했다).
+  // Relative to dev (Turbopack), the first route entry waits for on-demand compilation —
+  // global-setup pre-compiles the main routes, and we absorb remaining variance with a
+  // 15-second expect timeout (it failed sporadically at 10 seconds).
   globalSetup: './tests/e2e/global-setup.ts',
   timeout: 60_000,
   expect: {
@@ -18,25 +18,25 @@ export default defineConfig({
   },
   fullyParallel: false,
   workers: 1,
-  // CI 는 dev(Turbopack) 를 콜드 스타트로 상대한다 — 전체 스위트를 연달아
-  // 돌리면 StrictMode 이중 마운트/하이드레이션 중복 렌더/온디맨드 재컴파일
-  // 이 특정 스펙에 산발적 타이밍 실패를 낸다(제품 결함 아님 — 개별 실행은
-  // 전부 통과, 정적 export 엔 없는 dev-only 아티팩트). 재시도로 환경 편차만
-  // 흡수하고 리포트엔 flaky 로 남겨 숨기지 않는다. 진짜 회귀는 재시도 후에도
-  // 실패한다. 로컬(retries 0)에서는 flakiness 를 그대로 노출한다.
+  // CI faces dev (Turbopack) as a cold start — running the full suite sequentially causes
+  // StrictMode double mount/hydration duplicate renders and on-demand re-compilations,
+  // leading to sporadic timing failures in this specific spec (not a product defect — individual runs
+  // all pass; it's a dev-only artifact absent in static exports). Retries absorb environmental variance
+  // but leave flakiness in the report rather than hiding it. True regressions fail even after retries.
+  // Local runs (retries 0) expose flakiness directly.
   retries: process.env.CI ? 2 : 0,
   reporter: [['list']],
   /**
-   * PR 게이트 / 머지 후 스위프 — 두 프로젝트, 한 목록.
+   * PR gate / post-merge sweep — two projects, one list.
    *
-   * 경계의 정본은 `tests/e2e/post-merge-specs.ts` 하나다(왜 그 경계인지도
-   * 거기 적혀 있다). 여기서는 그 목록의 여집합(smoke)과 그 목록(post-merge)
-   * 으로 나눌 뿐이다 — 목록에 없는 새 스펙은 **자동으로 smoke**, 즉 PR 에서
-   * 돈다. 실수의 방향이 «PR 이 느려짐»이지 «게이트 소실»이 아니다.
+   * The source of truth for the boundary is `tests/e2e/post-merge-specs.ts` (why that boundary
+   * is chosen is also documented there). Here we only split the list into its complement (smoke) and
+   * the post-merge list — new specs not in the list are **automatically smoke**, i.e., run in PRs.
+   * The direction of error is «PR slows down» rather than «gate loss».
    *
-   * 필터 없는 `pnpm exec playwright test` 는 두 프로젝트를 다 돌린다 —
-   * 로컬과 main 푸시의 행동은 분리 전과 같다. PR 에서만 `--project=smoke`.
-   * 배선이 살아 있는지는 `tests/contract/e2e-suite-split.contract.test.ts`.
+   * `pnpm exec playwright test` without filters runs both projects —
+   * local and main push behavior remains unchanged pre-split. Only PRs use `--project=smoke`.
+   * Verify wiring is alive via `tests/contract/e2e-suite-split.contract.test.ts`.
    */
   projects: [
     { name: 'smoke', testIgnore: POST_MERGE_SPECS.map((file) => `**/${file}`) },
@@ -50,18 +50,18 @@ export default defineConfig({
     video: 'off',
     screenshot: 'off',
   },
-  // R11 #24 — CI 에서 e2e 돌릴 때 dev server 자동 띄움. 로컬에선 이미
-  // 띄운 dev (3100) 재사용. webServer 가 없으면 CI 가 baseURL 에 연결 못 함.
+  // R11 #24 — Automatically start the dev server when running e2e in CI. Locally, reuse the already
+  // started dev (3100). Without webServer, CI cannot connect to baseURL.
   webServer: {
-    // R11 #24 — predev hook (docs-vault build) 까지 같이 도는 pnpm 진입점.
-    // CI 에서 cold-start 부터 검증, 로컬에선 이미 띄운 dev 서버 재사용.
+    // R11 #24 — pnpm entry point that also runs the predev hook (docs-vault build).
+    // Verify from cold-start in CI; reuse the already started dev server locally.
     //
-    // `PLAYWRIGHT_STATIC=1` 이면 **빌드된 정적 export 를 서빙**한다. dev 에는
-    // 없는 층을 재는 스펙이 있기 때문이다 — 2026-07-28 실측: 공방의 같은-라우트
-    // 이동이 프로덕션 export 에서만 죽었고(경로가 같고 쿼리만 다른 push 는
-    // 라우팅 단위가 아니라 no-op), dev 는 슬래시 유무·기제와 무관하게 둘 다
-    // 성공해 **그 결함에 대해 진단력이 0** 이었다. dev 에서만 도는 게이트는
-    // 그 부류의 회귀를 영원히 통과시킨다.
+    // If `PLAYWRIGHT_STATIC=1`, **serve the built static export**. This is because
+    // there are specs measuring layers not present in dev — 2026-07-28 measurement: same-route
+    // navigation in the workshop only failed in the production export (paths were identical, only query differed,
+    // so it was a no-op at the routing level), while dev succeeded for both regardless of slash presence/mechanism,
+    // making it **diagnostically useless** for this defect. A gate running only in dev
+    // will forever let this class of regression pass.
     command: process.env.PLAYWRIGHT_STATIC
       ? `node scripts/serve-static-export.mjs --port=${webServerPort}`
       : `pnpm dev -p ${webServerPort}`,

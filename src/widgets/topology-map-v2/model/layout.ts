@@ -3,8 +3,9 @@
  * (`docs/prototypes/topology-b2plus.html` §4): vault graph (project ⊃ domain
  * ⊃ capability ⊃ element) → deterministic `{x, y}` world coordinates.
  *
- * Contract (`docs/TOPOLOGY-V2-DESIGN.md` §4 P2 — "layout.test.ts: 고정 vault
- * 픽스처 → 결정론적 좌표, 겹침 없음, aspectX 계열 왜곡 상수 부재" — a fixed vault
+ * Contract (`docs/TOPOLOGY-V2-DESIGN.md` §4 P2 — "layout.test.ts: fixed vault
+ * fixture → deterministic coordinates, no overlap, no aspectX-style
+ * distortion constant" — a fixed vault
  * fixture yields deterministic coordinates, no overlap, and no aspectX-style
  * distortion constant):
  * - The project sits at the origin.
@@ -108,8 +109,8 @@ export interface LayoutOptions {
    */
   relaxScope?: ReadonlySet<string>;
   /**
-   * **How** an over-threshold parent's children are placed (the 「확장 → 확장
-   * 구조」 — expand → expand structure — setting). Omitted means `"disc"`,
+   * **How** an over-threshold parent's children are placed (the "expand → expand
+   * structure" — expand → expand structure — setting). Omitted means `"disc"`,
    * today's placement (golden-angle phyllotaxis spiral), so zero regression.
    *
    * Parents **at or below** the threshold take the earlier fan path

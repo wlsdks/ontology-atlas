@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 /**
- * The **wiring** contract for ambient sleep (council 「작업대」 (workbench) P0,
+ * The **wiring** contract for ambient sleep (council "Workbench" P0,
  * 2026-07-28).
  *
  * `ambient-sleep.ts`'s unit test only checks that the factor curve is right. What

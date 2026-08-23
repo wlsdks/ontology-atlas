@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * One concept lives under one name (2026-08-02, design council S3 · 체계 seat).
+ * One concept lives under one name (2026-08-02, design council S3 · system seat).
  *
  * **What happened.** The "3 connection steps" grammar — number badge + title +
  * description — existed in two copies: `StepRow` in the map sheet (no border) and
@@ -36,15 +36,14 @@ import { describe, expect, it } from "vitest";
  * gate now locks that there are **exactly two** step grammars.
  *
  * **And this round's real spec: there is one numbering system.** The owner's first
- * observation was *"번호가 세 벌이다 — 어느 게 지금 할 일인지 모른다"* (there are
- * three sets of numbers; I cannot tell which is the current task), and the
+ * observation was *"there are three sets of numbers; I cannot tell which is the current task"*, and the
  * measurement was worse: this one file had **four** sets of number badges:
  *
  * | Set | What | Count |
  * |---|---|---|
  * | Steps | `StepRow n={1..3}` | 3 |
- * | Flow | 「설정 흐름 보기」 `{index + 1}` | 6 |
- * | Evidence | 「첫 연결 증거 계약」 `{index + 1}` | 4 |
+ * | Flow | "View setup flow" `{index + 1}` | 6 |
+ * | Evidence | "First connection evidence contract" `{index + 1}` | 4 |
  * | Commands | CLI preview `{index + 1}` | 6 |
  *
  * Inventory before switching on: `index + 1` at **3 sites** → **0** after
@@ -56,7 +55,7 @@ import { describe, expect, it } from "vitest";
 const PANEL = "src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx";
 /*
  * ⚠️ **The connect sheet was retired on 2026-08-21** (ledger 90 — attaching became
- * the 「에이전트」 destination). So the "two copies" this contract measured are now
+ * the "agent" destination). So the "two copies" this contract measured are now
  * **one**: the settings panel (`PANEL`). The promoted `StepRow` is still alive, and
  * the reason it joined the two surfaces — do not make a copy — holds even with one
  * surface left.

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AppShell } from "./AppShell";
 
 /**
- * #65 — 레일 하단 유틸 티어(설정)는 **모든 화면에서 같다.**
+ * #65 — The bottom rail utility tier (settings) is **the same on all screens.**
  *
  * Pages used to register it by hand via `useNavRailSettingsSlot`, and one page forgot,
  * leaving that screen with a single icon (measured 2026-07-25: map 3, docs/insights/projects 2,
@@ -51,10 +51,10 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
     );
 
     const tier = screen.getByTestId("app-nav-rail-utility-tier");
-    // 지키는 사실은 "셸이 기본 슬롯을 공급한다" 이지 자식 **개수**가 아니다.
-    // 종전에는 `children.length === 2` 로 셌는데, 그건 티어에 웹 전용 원소가
-    // 하나 붙는 것만으로 깨지는 대리 지표였다(2026-07-28 「앱 받기」 추가).
-    // 개수 대신 **구성원**을 본다.
+    // The fact being enforced is "the shell supplies the default slot", not the child **count**.
+    // Previously it counted `children.length === 2`, which was a proxy metric that
+    // broke as soon as one web-specific element was added to the tier (2026-07-28 「App fetch」 addition).
+    // Instead of count, we look at **composition**.
     expect(screen.queryByTestId("app-nav-rail-agent-status")).not.toBeInTheDocument();
     expect(tier.querySelector("details"), "설정 트리거가 없다").not.toBeNull();
   });

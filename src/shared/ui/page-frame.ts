@@ -2,8 +2,8 @@
  * **The page frame for list-style destinations** — top padding, horizontal
  * inset, and max width as one unit.
  *
- * Owner, 2026-08-09: *"인사이트, 프로젝트, 스킬 모두 상단 공백이 동일해야하는데 …
- * 디자인 시스템 있는거 아녔나? 왜 다 다르지?"*
+ * Owner, 2026-08-09: *"Insights, projects, skills all need the same top spacing …
+ * Isn't there a design system? Why are they all different?"*
  * (three destinations should share the same top spacing — isn't there a design
  * system?)
  *
@@ -71,8 +71,7 @@ export const PAGE_FRAME_FORM =
  *
  * Added 2026-08-12. The skills screen's **empty state** measured 1448px wide
  * (rightmost edge 1472) for 16 pieces of text, leaving **524px — 58% of the
- * screen — empty below.** Owner: *"스킬은 아무것도 없을때 너무 횡하고 뭔가 벽에
- * 다 딱 붙어있고 그런 느낌인데"* (with nothing in it the screen feels barren and
+ * screen — empty below.** Owner: *"When there is nothing in skills it feels too barren and pinned to the walls"* (with nothing in it the screen feels barren and
  * pinned to the walls).
  *
  * Insights and projects carry 48 and 80 items, so the same width was justified
@@ -89,8 +88,7 @@ export const PAGE_COLUMN_FORM = "mx-auto w-full max-w-[960px]" as const;
  *
  * Added 2026-08-12. Narrowing to `PAGE_COLUMN_FORM` (960) and grouping into a
  * card was not enough; the owner looked at the result and pushed back:
- * *"우측/하단 공백이 너무 심하고? 뭔가 다른 방안을 써야지? … 이렇게 조립대같은
- * 전략을 쓰던지"* (the right and bottom emptiness is severe — use a different
+ * *"The right and bottom emptiness is severe — use a different approach, the way the assembly-bench entry does."* (the right and bottom emptiness is severe — use a different
  * approach, the way the assembly-bench entry does).
  *
  * Measured at 1512×900, ink box over leaf elements only:

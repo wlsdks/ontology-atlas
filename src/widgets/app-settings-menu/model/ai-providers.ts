@@ -2,7 +2,7 @@ import type { ConnectionProvider } from '@/shared/lib/tauri-secrets';
 
 /**
  * i18n keys for vendor labels — the settings sheet's summary chip and the
- * [AI 연결] subview must use the **same name**.
+ * [AI Connection] subview must use the **same name**.
  *
  * A ternary (`provider === 'anthropic' ? … : …`) leaves one of the two screens
  * unfixed every time a vendor is added, so the summary chip ends up holding the

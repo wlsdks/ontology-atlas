@@ -297,7 +297,7 @@ export function DocsQuickDrawer({
   const t = useTranslations("vaultWidgets.docsDrawer");
   // Entry review E-10 — a Latin eyebrow laid over the Korean section labels of the
   // docs-vault and workspace drawers. It only widened the spaces, as in
-  // 「폴더별  ·  31」. The folder name rows (TreeBranch) keep mono because they are
+  // "by folder  ·  31". The folder name rows (TreeBranch) keep mono because they are
   // machine strings — what is forbidden is laying it over a Korean sentence.
   const eyebrow14 = useLatinEyebrow("tracking-[var(--tracking-caps-14)]");
   const eyebrow08 = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
@@ -305,7 +305,7 @@ export function DocsQuickDrawer({
   const router = useRouter();
 
   // #61 — this drawer is quick access to **the active vault** (the label says so
-  // too, and '전체' goes to /docs). It used to read the build-time bundled
+  // too, and 'all' goes to /docs). It used to read the build-time bundled
   // `vaultManifest` directly, so selecting a 5-document local vault still produced
   // Atlas bundle documents, and pinned/recent were fixed at `:server`, mixing in
   // another vault's lists (review 2026-07-25).
@@ -387,7 +387,7 @@ export function DocsQuickDrawer({
           slug: n.slug as string,
           // Pick the name by the same rule as the map popover — this was the only
           // place drawing the canonical title, so a document just read as
-          // `내 프로젝트` on a Korean screen appeared as `My project` in the search list.
+          // "my project" on a Korean screen appeared as `My project` in the search list.
           title: resolveLocaleDisplayName(meta?.frontmatter, locale, canonical),
           path: n.path,
           updatedAt: meta?.updatedAt ?? "",

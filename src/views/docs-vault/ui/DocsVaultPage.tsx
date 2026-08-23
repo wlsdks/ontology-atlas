@@ -1212,7 +1212,7 @@ function DocsVaultContent() {
    * **The URL requests a document this vault does not have** — said once, then gone.
    *
    * It was derived from `normalizedQuerySlug` at first, and it **reappeared every visit**;
-   * the owner caught it in the app (*"문서함에 이건 왜나오지?"* — why does this keep showing
+   * the owner caught it in the app (*"Why is this showing up in the docs surface?"* — why does this keep showing
    * up in the docs surface?). The cause was not the banner but **the URL lying persistently**:
    * the unresolved slug stayed in the address, so the same verdict became true again on every
    * entry. And nobody had requested that slug — it was residue from a time when a different

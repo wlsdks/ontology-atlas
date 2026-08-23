@@ -3,34 +3,28 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * 화면 글자에 코드 말투가 다시 새는 것을 막는다 — 정본은 `docs/GLOSSARY.md`.
+ * Prevents code-style phrasing from seeping back into on-screen text — the canonical source is `docs/GLOSSARY.md`.
  *
- * ## 왜 생겼나 (2026-08-22)
+ * ## Why it was created (2026-08-22)
  *
- * 소유자가 화면과 설명을 읽고 말했다 — *"이런거 니가 말하는거 보는 내가
- * 알아들을수있는게 하나도없음!"*. 재 보니 사람이 읽는 글자 3,130개 중
- * **23군데**가 코드 말투 그대로였다: `frontmatter` 13 · `엣지` · `핸들` ·
- * `파싱` · `렌더링` · `쿼리` · `계약` · `인덱스` · `메타데이터`.
+ * The owner read the screen and documentation and said — *"I can't understand a single thing you're saying!"*. Upon review, **23 instances** of code-style phrasing remained among 3,130 characters of human-readable text: `frontmatter` 13 · `edge` · `handle` ·
+ * `parsing` · `rendering` · `query` · `contract` · `index` · `metadata`.
  *
- * 같은 감사가 **영어 화면이 존재하지 않는 명령을 시키던 것**도 잡았다 —
- * `pnpm folder:validate` 는 `package.json` 에 없다(있는 것은 `vault:validate`
- * 하나뿐). 그래서 이 시험은 낱말만이 아니라 **화면이 시키는 명령이 실재하는지**
- * 도 같이 잰다: 낱말을 쉽게 고쳐도 없는 명령을 시키면 사용자는 똑같이 막힌다.
+ * The same audit also caught **commands for which no English screen exists** —
+ * `pnpm folder:validate` is not in `package.json` (only `vault:validate` exists). So this test measures not just words but **whether the commands invoked by the screens actually exist**: even if words are easily corrected, invoking a non-existent command blocks the user just as much.
  *
- * ## 왜 코드 주석은 안 보나
+ * ## Why code comments are not checked
  *
- * 거기서는 그 낱말들이 **옳기** 때문이다. 「게이트」를 「위반을 자동으로 막는
- * 검사」로 매번 풀어 쓰면 길어지기만 하고 뜻은 그대로다. 사정거리는
- * `messages/*.json` — 사람이 화면에서 읽는 글자 — 하나다.
+ * Because those words are **correct** there. Expanding "gate" to "an inspection that automatically blocks violations" every time would only make it longer without changing the meaning. The scope is
+ * `messages/*.json` — one file containing text read by humans on screens.
  *
- * ## 면제가 왜 필요한가
+ * ## Why exemptions are necessary
  *
- * 두 자리는 낱말을 지우면 못 쓰게 된다.
+ * There are two places where removing the words makes them unusable.
  *
- * - **사용자가 그대로 입력하는 값** — `kind: project` 는 문장이 아니라 코드다.
- * - **찾아야 하는 낱말** — 오류 안내에서 `frontmatter` 를 통째로 지우면
- *   사용자가 그 말로 검색을 못 한다. `GLOSSARY.md` 의 괄호 규칙이 그래서
- *   있고, 여기서는 **괄호 안에 든 것만** 통과시킨다.
+ * - **Values entered directly by users** — `kind: project` is code, not a sentence.
+ * - **Words that must be found** — removing `frontmatter` entirely from error messages
+ *   prevents users from searching for that term. That's why the `GLOSSARY.md` parenthesis rule exists, and here we **only allow what is inside parentheses**.
  */
 
 const ROOT = process.cwd();
@@ -57,9 +51,9 @@ const MESSAGES: Record<string, Flat> = Object.fromEntries(
 );
 
 /**
- * 화면에서 쓰지 않는 낱말 — `docs/GLOSSARY.md` 의 표에서 온다.
+ * Words not used on screen — sourced from the table in `docs/GLOSSARY.md`.
  *
- * `frontmatter` 는 **괄호 안에서만** 산다(괄호 규칙). 나머지는 아예 안 쓴다.
+ * `frontmatter` is valid **only inside parentheses** (parentheses rule). The rest is not used at all.
  */
 const BANNED: ReadonlyArray<{
   word: RegExp;
@@ -78,7 +72,7 @@ const BANNED: ReadonlyArray<{
   { word: /(^|[^가-힣])인덱스/, use: "검색 준비", glossaryMarker: /\bindex\b/i },
 ];
 
-/** `…(frontmatter)…` 처럼 괄호에 싸인 등장만 남기고 지운다. */
+/** Leave only the appearance wrapped in parentheses like `…(frontmatter)…` and delete it. */
 function stripParenthesized(text: string): string {
   return text.replace(/[(（][^)）]*[)）]/g, " ");
 }
@@ -111,11 +105,12 @@ describe("화면 글자 용어집 계약", () => {
   }
 
   /**
-   * 화면이 시키는 `pnpm <script>` 는 **실재해야 한다.**
+   * The `pnpm <script>` called on screen **must actually exist.**
    *
-   * 영어 화면이 `pnpm folder:validate` 를 시키고 있었는데 그런 스크립트는 없다
-   * (2026-08-22 실측). 낱말을 아무리 쉽게 고쳐도 없는 명령을 시키면 사용자는
-   * 같은 자리에서 막힌다 — 쉬운 말과 맞는 말은 다른 문제이고 둘 다 필요하다.
+   * The English screen was calling `pnpm folder:validate`, but that script does not
+   * exist (measured 2026-08-22). No matter how simply you word it, if the command
+   * doesn't exist, the user hits a wall in the same place — simplicity and correctness
+   * are different problems, and both are needed.
    */
   it("화면이 시키는 pnpm 명령이 package.json 에 실재한다", () => {
     const scripts = Object.keys(
@@ -140,7 +135,7 @@ describe("화면 글자 용어집 계약", () => {
     ).toEqual([]);
   });
 
-  /** 용어집 문서가 실재해야 오류 메시지의 안내가 죽은 링크가 되지 않는다. */
+  /** The glossary document must exist so that error message guidance does not become a dead link. */
   it("정본 문서가 실재하고 표를 갖고 있다", () => {
     const glossary = read("docs/GLOSSARY.md");
     expect(glossary).toContain("the info block at the top of the file");

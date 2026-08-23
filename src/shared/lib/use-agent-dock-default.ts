@@ -8,7 +8,7 @@ import { SECRET_PROVIDERS, secretStatus, subscribeSecretChange } from './tauri-s
  * Should the agent dock **start open**.
  *
  * **Why not simply "always open".** The owner's requirement was
- * *"바로바로 채팅하면 알아서 진행되어야 하니 시야로 보이면서"* — the dock should be in
+ * *"If I chat immediately, it should proceed automatically, so keep it in sight"* — the dock should be in
  * sight so you can just start chatting. That means a dock in a **usable** state. Defaulting
  * it open on a machine with no key would give a **locked panel** permanent ownership of the
  * right third of the screen: the letter of the request, not the request.

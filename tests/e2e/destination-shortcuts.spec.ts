@@ -4,8 +4,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
 /**
  * Destination shortcuts — **all six destinations reachable by keyboard alone.**
  *
- * This spec is the feature's worth. The owner asked for *"단축키만으로도 다
- * 이동하면서 테스트 가능"* (able to move everywhere and be tested with shortcuts
+ * This spec is the feature's worth. The owner asked for *"Able to move everywhere and be tested with shortcuts
+ * alone."* (able to move everywhere and be tested with shortcuts
  * alone), and this is where that sentence is proven. Passing means a person or an
  * agent can move through this app without clicking a coordinate.
  *

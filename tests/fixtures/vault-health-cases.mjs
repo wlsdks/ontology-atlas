@@ -87,7 +87,7 @@ export const VAULT_HEALTH_CASES = [
         frontmatter: { kind: 'capability', title: '답변', domain: 'domains/문의-처리' },
       },
       // bare-slug form — must resolve to the same domain (no missing containment
-      // because the domain back-links this one too? no — the domain lists only 답변)
+      // because the domain back-links this one too? no — the domain lists only answer)
       {
         slug: 'capabilities/문의-접수',
         frontmatter: { kind: 'capability', title: '문의 접수', domain: '문의-처리' },

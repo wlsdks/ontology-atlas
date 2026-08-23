@@ -77,7 +77,7 @@ describe("bezierPoint", () => {
 
 /**
  * Comet-tail contract (always-on comets, restored on the owner instruction
- * "예전 걸 살려줘" — bring the old one back). The
+ * "bring back the old one" — bring the old one back). The
  * prototype's ambient comet is back: EVERY non-dim `depends` edge carries the
  * three-dot tail regardless of focus (the old A1 "focus signal only" retirement
  * is reversed). ego/selected edges get a bigger, brighter tail; dimmed edges

@@ -152,8 +152,8 @@ describe("AppNavRail", () => {
     expect(screen.getByRole("button", { name: "설정 슬롯" })).toBeInTheDocument();
   });
 
-  // 과제 ⑪ — LNB 컨텍스트 이월. 지도에서 노드를 선택한 채 문서함 항목으로
-  // 이동하면 그 노드의 문서가 바로 열려야 한다(선택과 무관한 기본 화면 금지).
+  // Task ⑪ — LNB context carryover. If you select a node on the map and then
+  // navigate to a document-vault item, that node's document should open immediately (no unrelated default screen).
   it("overrides the docs item's href with contextHrefs.docs when provided", () => {
     renderRail(
       <AppNavRail contextHrefs={{ docs: "/docs/?slug=capabilities/mcp-server" }} />,

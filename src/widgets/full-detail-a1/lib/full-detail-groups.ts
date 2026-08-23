@@ -1,8 +1,7 @@
 /**
- * Full-detail A1 direction groups — the 「데이터시트 확장판」 (expanded datasheet)
+ * Full-detail A1 direction groups — the "expanded datasheet" (expanded datasheet)
  * replaces the rejected badge-soup FROM THIS/CONTAINS rows with FOUR uncapped groups:
- * 담는 것(contains) / 이 노드를 쓰는 곳(usedBy) / 이 노드가 기대는 곳
- * (dependsOn) / 속한 곳(belongsTo). Unlike the compact canvas datasheet
+ * contains / usedBy / dependsOn / belongsTo. Unlike the compact canvas datasheet
  * (`topology-v2-datasheet.ts`), which demotes containment vs depends to a
  * per-row trace mark under a DIRECTION-only split, the full-detail surface
  * elevates containment back into its own two groups (outgoing containment =
@@ -30,7 +29,7 @@ export interface FullDetailConnectionRow {
   /** How many containment-children the ROW's own node has — 0 when it's a
    * leaf. Rendered as a compact engraved count only when > 0. */
   childCount: number;
-  /** Recently changed (mirrors the compact datasheet's 「전원」 (powered) concept). */
+  /** Recently changed (mirrors the compact datasheet's "powered" concept). */
   fresh: boolean;
 }
 

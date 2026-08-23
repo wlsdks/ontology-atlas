@@ -4,19 +4,19 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>/docs FINAL — machined 2-pane vault 에디터</title>
-<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!-- Design standard: 1920×1080 primary · 1440 fluid min -->
 <!--
-  FINAL ROUND — "비율이 생명". docs/prototypes/RATIO-SYSTEM.md 적용.
-  /docs (vault picker · 에디터 · 통합 팔레트) 의 첫 B2+ 목업.
+  FINAL ROUND — "Ratio is life". Apply docs/prototypes/RATIO-SYSTEM.md.
+  First B2+ mockup for /docs (vault picker · editor · unified palette).
 
-  실제 IA (src/views/docs-vault · src/widgets/docs-vault) 반영:
-    파일 트리(DocsVaultTree) + md 에디터/프리뷰(DocsVaultEditor/Viewer) +
-    통합 팔레트 진입(DocsVaultUnifiedPalette, ⌘K) + 백링크(DocsVaultBacklinks).
+  Reflect actual IA (src/views/docs-vault · src/widgets/docs-vault):
+    file tree(DocsVaultTree) + md editor/preview(DocsVaultEditor/Viewer) +
+    unified palette entry(DocsVaultUnifiedPalette, ⌘K) + backlinks(DocsVaultBacklinks).
 
-  945 구도: 상단 헤더 존(크럼스 + 타이틀 + 음각 vault census + 팔레트 진입)
-  ≤130px → 2-pane 본체(flex:1) — 좌 파일 목록 280px + 우 에디터/프리뷰 —
-  → 하단 백링크 스트립 앵커. 좌우 1600 중앙 (앱 공통 거터).
-  frontmatter 블록은 음각 mono — "frontmatter 가 곧 그래프" 를 에디터에서 증명.
+  945 layout: top header zone(crumb trail + title + embossed vault census + palette entry)
+  ≤130px → 2-pane body(flex:1) — left file list 280px + right editor/preview —
+  → bottom backlink strip anchor. Left/right 1600 center (app common gutter).
+  frontmatter block is embossed mono — prove "frontmatter is the graph" in the editor.
 -->
 <style>
   /* Values copied from app/globals.css token families (standalone prototype). */

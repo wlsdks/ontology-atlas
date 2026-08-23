@@ -20,7 +20,7 @@ import { AUDITED_ROUTES } from "./audited-routes";
  *
  * The 14 originally registered were **all repaid** — `target-size` 1 (control
  * normalisation), `aria-required-children` 1 (role given back), `color-contrast` 4
- * (ink token on filled indigo), and the final 8 disappeared when the 체계
+ * (ink token on filled indigo), and the final 8 disappeared when the design-systems
  * (design-systems seat) verdict raised `--color-text-quaternary` itself to
  * `#82828a` (see the `BASELINE` doc-block below; decision ledger 2026-08-03). With
  * all three baselines at 0, **the collection guard (the `passes` floor) holds this
@@ -103,7 +103,7 @@ const ROUTES = AUDITED_ROUTES;
  * new values.
  *
  * **The final 8 (`/ko/ontology/insights/` 4 · `/ko/projects/` 4) were all one
- * token, `--color-text-quaternary`, and were repaid on 2026-08-03 when the 체계
+ * token, `--color-text-quaternary`, and were repaid on 2026-08-03 when the design-systems
  * seat's verdict raised it from `#787c84` to `#82828a`** (ledger:
  * docs/DECISIONS.md).
  *

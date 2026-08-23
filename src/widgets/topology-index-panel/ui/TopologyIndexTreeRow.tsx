@@ -197,7 +197,7 @@ export function TopologyIndexTreeRow({
             {agentAttributed && labels.agentBadge ? (
               <span
                 data-testid="topology-index-agent-badge"
-                // 「에이전트가 방금」 (an agent, just now) — a Korean sentence, so the eyebrow treatment is dropped.
+                // 「An agent, just now」 (an agent, just now) — a Korean sentence, so the eyebrow treatment is dropped.
                 className={`shrink-0 text-caption text-[color:var(--topology-v2-panel-text-tertiary)] ${eyebrow}`}
               >
                 {labels.agentBadge}

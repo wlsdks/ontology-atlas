@@ -243,7 +243,7 @@ export function useProjectSourceModel(input: {
   }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable]);
 
   /**
-   * **「이 폴더 맞나요?」 ("Is this the right folder?", the on-screen prompt) — with no new filesystem walk.**
+   * ["Is this the right folder?", the on-screen prompt] ("Is this the right folder?", the on-screen prompt) — with no new filesystem walk.
    *
    * One `inspect_project_source` call on the vault root already climbs to the
    * enclosing git repository (`src-tauri/src/lib.rs`), so its result *is* the

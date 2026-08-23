@@ -66,7 +66,7 @@ export function TopologyEmptyState({
       : t('kickerNoDeps', { count: projectCount });
 
   /*
-   * ── The actions **read as one set** (2026-08-03, owner: *"버튼 삐뚤한거 싫어서"* —
+   * ── The actions **read as one set** (2026-08-03, owner: *"I don't like crooked buttons."* —
    * because I don't like crooked buttons) ──────────────────────────────────────
    *
    * It used to be `flex-wrap justify-center`. Then each button's width is set **by its

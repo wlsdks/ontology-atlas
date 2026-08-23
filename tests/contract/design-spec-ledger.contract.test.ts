@@ -18,7 +18,7 @@ import {
  *
  * ## Background (rules audit, measured 2026-08-03)
  *
- * Rule 3 of 「시스템을 늘리는 규칙」 in `docs/DESIGN-SYSTEM.md` and its trigger list
+ * Rule 3 of "Rules for expanding the system" in `docs/DESIGN-SYSTEM.md` and its trigger list
  * (`.claude/rules/design.md`) both existed, but **nothing enforced them.** Of the
  * five most recent commits that widened a value-layer ramp, one had a ledger record,
  * and `pnpm decisions:check` looked only at routes and the MCP/CLI contract, so spec

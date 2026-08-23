@@ -73,7 +73,7 @@ describe("countCrossProjectEdges", () => {
     ];
     const es = [
       edge("e1", "a", "b", "depends_on"), // cross
-      edge("e2", "c", "d", "uses"), // 같은 project
+      edge("e2", "c", "d", "uses"), // Same project
       edge("e3", "b", "a", "uses"), // cross
     ];
     expect(countCrossProjectEdges(es, ns)).toBe(2);

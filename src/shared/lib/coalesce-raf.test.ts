@@ -38,7 +38,7 @@ describe("coalesceRaf", () => {
     trigger();
     trigger();
     trigger();
-    expect(fn).not.toHaveBeenCalled(); // 프레임 전엔 실행 안 됨
+    expect(fn).not.toHaveBeenCalled(); // Does not execute before the frame
     flush();
     expect(fn).toHaveBeenCalledTimes(1);
   });

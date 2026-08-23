@@ -10,7 +10,7 @@ import { fieldClass, type FieldFrame, type FieldSize } from '@/shared/ui/control
  *
  * ## Why a separate cva rather than a ninth `shape`
  *
- * The 2026-08-06 design council's verdict (체계 + 위계 — the design-systems and
+ * The 2026-08-06 design council's verdict (system + hierarchy — the design-systems and
  * lead seats). All three reasons come from the value layer's own discipline:
  *
  * 1. The eight shapes were justified by an exhaustive count of **419 `<button>`s**;
@@ -23,7 +23,7 @@ import { fieldClass, type FieldFrame, type FieldSize } from '@/shared/ui/control
  *
  * ## Why three axes — two seats drew the same line independently
  *
- * The 위계 (lead) seat opened the real product and split forms into three:
+ * The hierarchy (lead) seat opened the real product and split forms into three:
  * **recording** (the value lands on disk; the eye is on the input) · **lookup**
  * (you arrive at something that already exists; the eye is on the **result**) ·
  * **stage** (writing, in place, the text a card will show). The first two are the
@@ -34,7 +34,7 @@ import { fieldClass, type FieldFrame, type FieldSize } from '@/shared/ui/control
  * ## ⚠️ The most important assertion in this file — do not write it as "is it in
  * the vocabulary"
  *
- * One of 체계's four negative probes **leaked through green**: "single-line `md`
+ * One of system's four negative probes **leaked through green**: "single-line `md`
  * at `h-9` (36)". 36 is inside the height vocabulary, so a vocabulary check passed
  * it.
  *
@@ -161,7 +161,7 @@ describe('frame — 누가 상자를 내는가', () => {
 
   /**
    * **`bare` must not emit a box.** The parent already emitted one, and a second
-   * box pushes that one outward from the inside. The 위계 seat's verdict: all 10
+   * box pushes that one outward from the inside. The hierarchy seat's verdict: all 10
    * lookup places are ones where **the result is the attention winner**, so an input
    * carrying an affordance beats the result.
    */

@@ -45,7 +45,7 @@ runs:
         version=$(node -e "console.log(require('@playwright/test/package.json').version)")
         echo "version=$version" >> "$GITHUB_OUTPUT"
 
-    # 캐시 키가 잡마다 같으므로 다섯 잡이 같은 브라우저 캐시를 공유한다.
+    # Since the cache key is identical across jobs, five jobs share the same browser cache.
     - name: Cache Playwright browsers
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       id: playwright-cache
@@ -53,14 +53,15 @@ runs:
         path: ~/.cache/ms-playwright
         key: playwright-chromium-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
-    # apt 는 기다리는 데 상한이 없다. 미러가 응답하지 않으면 영원히 기다리고,
-    # 그 «영원히» 를 끊는 것이 잡 타임아웃뿐이면 **비용을 전액 치른 뒤에야**
-    # 실패를 안다. 2026-08-20 에 실제로 그랬다 — `Ign: http://azure.archive.
-    # ubuntu.com/... InRelease` 를 19분 42초 반복하다 네 샤드가 같이 취소됐고,
-    # 테스트는 한 줄도 안 돌았으며, PR 하나에 재실행 여섯 번이 들었다.
+    # apt has no upper limit on waiting. If a mirror doesn't respond, it waits forever,
+    # and if the only way to break this «forever» is the job timeout, you **only learn of
+    # the failure after paying the full cost**. This actually happened on 2026-08-20 — repeating
+    # `Ign: http://azure.archive.
+    # ubuntu.com/... InRelease` for 19 minutes and 42 seconds caused all four shards to cancel together,
+    # no tests ran, and the PR required six re-runs.
     #
-    # 아래 두 값이 그 «영원히» 를 없앤다. 재시도는 apt 자신이 하고, 그마저
-    # 실패하면 바깥의 `run-with-retry` 가 다시 부른다.
+    # The two values below eliminate this «forever». Retries are handled by apt itself; if that
+    # also fails, `run-with-retry` outside calls it again.
     - name: Bound apt network waits
       shell: bash
       run: |
@@ -70,7 +71,7 @@ runs:
         Acquire::Retries "2";
         CONF
 
-    # 브라우저 내려받기는 **없으면 아무것도 못 하는** 것이라 best-effort 가 아니다.
+    # Browser download is **not best-effort** because without it, nothing works.
     - name: Install Playwright chromium
       shell: bash
       if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -79,11 +80,11 @@ runs:
         --attempts=3 --timeout-ms=180000 --label="playwright install chromium"
         -- pnpm exec playwright install chromium
 
-    # 시스템 라이브러리는 **best-effort** 다. 러너 이미지에 이미 대부분 들어 있고,
-    # 정말 빠졌다면 브라우저가 뜰 때 Playwright 가 어느 라이브러리가 없는지
-    # 이름을 대며 실패한다 — 그 판정이 apt 미러의 컨디션보다 정확하다. 미러가
-    # 잠깐 흔들렸다는 이유로 PR 전체를 세우지 않는다. 대신 조용히 넘어가지도
-    # 않는다: 두 번 다 실패하면 `::warning` 이 남는다.
+    # System libraries are **best-effort**. Most are already included in the runner image,
+    # and if truly missing, Playwright fails by naming which library is absent when the browser
+    # tries to launch — this judgment is more accurate than apt mirror conditions. We don't stop
+    # the entire PR just because a mirror wobbled for a moment. Nor do we silently pass:
+    # if both attempts fail, a `::warning` is left.
     - name: Install Playwright system deps (best effort)
       shell: bash
       run: >-
@@ -92,8 +93,8 @@ runs:
         --label="playwright install-deps chromium"
         -- pnpm exec playwright install-deps chromium
 
-    # node 빌트인만 쓰는 스크립트라 잡마다 따로 돌려도 0초다. 앞단 잡을 두고
-    # `needs:` 로 묶으면 그 잡의 준비 시간이 전체 앞에 직렬로 붙는다.
+    # Since it's a script using only node built-ins, running it separately per job takes 0 seconds. Grouping
+    # under `needs:` with the frontend job serializes its setup time to the front of the total.
     - name: Classify change
       id: classify
       shell: bash

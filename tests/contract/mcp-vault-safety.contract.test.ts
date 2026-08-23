@@ -22,8 +22,8 @@ import { describe, expect, it } from 'vitest';
  * the vault's owner", yet in that state writing was impossible while walking the
  * entire disk was not.
  *
- * This collides head-on with the promise this product makes to users: *"사용자
- * 디스크에 있는 비밀번호·인증 키 같은 파일은 절대 자동으로 훑지 않는다"* (files
+ * This collides head-on with the promise this product makes to users: *"Files on the
+ * user's disk such as passwords and credentials are never scanned automatically"* (files
  * on the user's disk such as passwords and credentials are never scanned
  * automatically) — `.claude/rules/local-first.md`. A tool call induced by one line
  * of a prompt must not break that promise.

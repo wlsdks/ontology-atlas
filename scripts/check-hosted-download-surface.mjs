@@ -240,7 +240,7 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
   const releasesUrl = "https://github.com/wlsdks/ontology-atlas/releases";
 
   // The root route hydrates the map client-side, so its INDEX panel CTAs
-  // ("내 마크다운 폴더 열기") never appear in the static HTML. Asserting them
+  // ("Open my markdown folder") never appear in the static HTML. Asserting them
   // here is what kept this gate failing on every deploy. What the static
   // export genuinely guarantees for `/` is that the route exists, is HTML,
   // and carries the product identity.
@@ -255,8 +255,8 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     //
     // Re-aimed 2026-08-19: the three old needles (`sourceCta`,
     // `windowsPlatformTitle`, `releaseGateNote`) all lived inside the install section,
-    // and the owner removed that section wholesale (*"맨 마지막 이거는 없어도 될듯?
-    // 어차피 맨 위에 다 있어서"* — the last one seems unnecessary since it's all at the
+    // and the owner removed that section wholesale (*"The last one seems unnecessary since it's all at the
+    // top anyway"* — the last one seems unnecessary since it's all at the
     // top anyway). The page is now made of four sections, so one needle is placed per
     // section: if a section drops out of a deployment, that section's needle catches
     // it.

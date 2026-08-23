@@ -1,6 +1,6 @@
 /**
  * Motion physics vocabulary — the single house spring family for topology-map-v2
- * (R4 "모션 헌법" — the motion charter; designed by fable, after Apple's
+ * (R4 "motion charter" — the motion charter; designed by fable, after Apple's
  * *Designing Fluid Interfaces*, WWDC 2018).
  *
  * WHY a vocabulary module: motion in this widget is expressed three different

@@ -58,8 +58,7 @@ export function TopologyChangeAnnouncement({
   return (
     <div
       /*
-       * Sits **below** the top chrome row. Owner, 2026-08-02: *"이거보면 화면
-       * 작아졌을때 … 겹쳐져서 나오지?"* (on a smaller screen these overlap).
+       * Sits **below** the top chrome row. Owner, 2026-08-02: *"When I look at this on a smaller screen … they overlap, right?"* (on a smaller screen these overlap).
        *
        * The former `top-4` (16px) put it in the **same place** as the chrome row.
        * Measured: the chrome pills sit at y 32–68 and both are centred with

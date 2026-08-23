@@ -30,7 +30,7 @@ const DEFAULT_STALE_DAYS_THRESHOLD = 30;
 /**
  * Incoming fan-in at or above which a node is treated as load-bearing — enough
  * other concepts depend on it that it's a promotion / "core" candidate. Shared
- * single source so significance ("핵심 축") and health-signal promotion agree.
+ * single source so significance ("core axis") and health-signal promotion agree.
  */
 export const PROMOTION_MIN_FAN_IN = 4;
 const DEFAULT_PROMOTION_MIN_FAN_IN = PROMOTION_MIN_FAN_IN;

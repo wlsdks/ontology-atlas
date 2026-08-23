@@ -3,8 +3,8 @@
  * prototype's `nodeEgoState()`/`edgeEgoState()`/`startRipple()`/
  * `updateEmphasis()` (`docs/prototypes/topology-b2plus.html` §9, §11, §13).
  *
- * Contract (`docs/TOPOLOGY-V2-DESIGN.md` §3.2 "State Contract 매핑" — the state
- * contract mapping, §3.6 "클릭=안전 계약" — click is a safe action):
+ * Contract (`docs/TOPOLOGY-V2-DESIGN.md` §3.2 "State Contract Mapping" — the state
+ * contract mapping, §3.6 "Click=Safe Contract" — click is a safe action):
  * - **Click** sets a *durable* focus (`focusedNode`) — the ego-set (focused
  *   node + its 1-hop neighbors) reads as `"center"`/`"neighbor"`, everything
  *   else as `"dim"` (opaque dim tokens, never alpha — see
@@ -40,11 +40,11 @@ export type EdgeEgoState = "ego" | "dim" | "normal";
  * with 87 of them, say — lighting them all up drives a bundle straight across
  * the screen and nothing is readable. Only the top `EGO_NEIGHBOR_LIMIT` by DOI
  * rank light up fully; the rest are **hidden, not dimmed**, folded into a
- * `이웃 +N` (neighbours +N) chip beside the focused node. Clicking the chip
+ * `neighbours +N` chip beside the focused node. Clicking the chip
  * reveals the next batch.
  *
- * **The single source of this value is the settings screen** — 「확장 → 한 번에
- * 여는 개수」 (Expand → how many to open at once, default 24) feeds straight into
+ * **The single source of this value is the settings screen** — "Expand → how many to open at once"
+ * (Expand → how many to open at once, default 24) feeds straight into
  * it. This file used to write 24 itself and the settings screen had to repeat it;
  * a value written in two places has already begun to drift (Carbon).
  * `use-topology-loop` reads the live value each frame, and this constant is both
@@ -53,7 +53,7 @@ export type EdgeEgoState = "ego" | "dim" | "normal";
 export const EGO_NEIGHBOR_LIMIT = DEFAULT_EXPAND.batchSize;
 
 /**
- * Synthetic parentId used by selective ego's `이웃 +N` (neighbours +N) chip. It
+ * Synthetic parentId used by selective ego's `neighbours +N` chip. It
  * is a reserved word so it can never collide with a real node id; the pointer
  * handler branches on it to reveal the next neighbour batch rather than toggling
  * the URL.
@@ -61,9 +61,9 @@ export const EGO_NEIGHBOR_LIMIT = DEFAULT_EXPAND.batchSize;
 export const EGO_NEIGHBOR_CHIP_ID = "__ego_neighbors__";
 
 /**
- * Synthetic parentId prefix for the `+N 더보기` (show +N more) chip that stands
+ * Synthetic parentId prefix for the `+N show more` chip that stands
  * in for the **remaining batches** of an expanded cluster parent. It mirrors the
- * `이웃 +N` chip (`EGO_NEIGHBOR_CHIP_ID`), but several parents can be expanded at
+ * `neighbours +N` chip (`EGO_NEIGHBOR_CHIP_ID`), but several parents can be expanded at
  * once, so a single reserved word is not enough: wrapping the real parent id in a
  * reserved prefix keeps each parent's remainder chip distinct. The pointer
  * handler branches on the prefix to reveal **that parent's** next batch instead
@@ -71,7 +71,7 @@ export const EGO_NEIGHBOR_CHIP_ID = "__ego_neighbors__";
  */
 export const CLUSTER_MORE_CHIP_PREFIX = "__cluster_more__:";
 
-/** Real parent id → the synthetic id of its `+N 더보기` (show +N more) chip. */
+/** Real parent id → the synthetic id of its `+N show more` chip. */
 export function clusterMoreChipId(parentId: string): string {
   return CLUSTER_MORE_CHIP_PREFIX + parentId;
 }
@@ -138,7 +138,7 @@ export interface SelectiveEgoResult {
   visibleNeighbors: Set<string>;
   /** Neighbours folded away; their edges and labels are hidden too. */
   hiddenNeighbors: Set<string>;
-  /** How many are hidden — the N on the `이웃 +N` chip. At 0 the chip disappears. */
+  /** How many are hidden — the N on the `neighbours +N` chip. At 0 the chip disappears. */
   hiddenCount: number;
 }
 
@@ -189,9 +189,8 @@ export function resolveEdgeEgoState(
 }
 
 /**
- * Selecting an edge focuses the pair. Owner request: "선을 클릭하면 그 선과
- * 연결된 노드간만 표시" (clicking a line should show only the nodes that line
- * connects). While an edge is selected and no node is focused:
+ * Selecting an edge focuses the pair. Owner request: "when clicking a line, show only the nodes connected by that line"
+ * (clicking a line should show only the nodes that line connects). While an edge is selected and no node is focused:
  * - both endpoints read as `"neighbor"` — the line is the subject, so neither
  *   gets the center ring
  * - every other node and edge reads as `"dim"`
@@ -263,14 +262,15 @@ export function resolveTrailLensNodeEgoState(
  * How much **trail ink** this node takes while the lens is on (0 = none,
  * 1 = full).
  *
- * Owner, 2026-08-02: *"걸어온길 클릭했을때 화면인데 노드 선택되어서 빛나게
- * 해줘야지?"* (this is the screen after clicking the walked-path control — the
+ * Owner, 2026-08-02: *"this is the screen after clicking the walked-path control — the
+ * nodes should be selected and glowing"
+ * (this is the screen after clicking the walked-path control — the
  * nodes should be selected and glowing). The lens previously only *kept* visited
  * nodes at `"normal"`. Everything else being dim gave relative contrast, but the
  * only visit marker was the footprint *beside* the node, so turning the path on
  * left the nodes along it saying nothing with their own bodies.
  *
- * **What 「빛나게」 (glowing) means inside the charter.** Not glow. Bloom
+ * **What "glowing" means inside the charter.** Not glow. Bloom
  * (`ctx.shadowBlur`) exists only as the opt-in, default-0 exception inside the
  * single file `shared/lib/footprint-glyph.ts`, and never leaves it
  * (`.claude/rules/forbidden.md`). All that happens here is that the colour of the
@@ -325,8 +325,8 @@ export function resolveEdgePulseSpeed(
  * - **No focus:** hover owns the ripple — the hovered node and its 1-hop
  *   neighbors (`isHoverEgoMember`) ramp.
  * - **Focus active:** hover is suppressed (focus owns attention), EXCEPT the one
- *   node the user is hovering in the detail panel's "연결된 노드" (connected
- *   nodes) list (`panelEmphasisNodeId`). That single neighbor still ramps so the panel row
+ *   node the user is hovering in the detail panel's "connected nodes"
+ *   list (`panelEmphasisNodeId`). That single neighbor still ramps so the panel row
  *   and the on-canvas node/edge light up together ("emphasis ripple" linkage,
  *   lead spec §4). `panelEmphasisNodeId` is null until the panel-hover API feeds
  *   it in.
@@ -410,7 +410,7 @@ export function stepEmphasis(
  * lerps each node's normal color toward its dim/ego target by this factor (and
  * eases the center node's radius 1→1.12), so the dim/neighbor/center color swap
  * a click triggers ramps IN with the camera dive instead of hard-cutting, and a
- * deselect ramps it back OUT (owner headline: "하드 컷으로 읽히지 않게" — it must
+ * deselect ramps it back OUT (owner headline: "must not read as a hard cut" — it must
  * not read as a hard cut). One
  * symmetric τ (`--topology-v2-focus-dim-tau`) — the color transition should feel
  * the same entering and leaving. Sibling to `stepEmphasis` (hover ripple) and

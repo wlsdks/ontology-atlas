@@ -101,7 +101,7 @@ describe("createTopologyPointerHandlers — handleContextMenu (W2-B)", () => {
 
 describe("createTopologyPointerHandlers — 빈 캔버스 우클릭 (2026-08-03)", () => {
   /*
-   * Removing the top 「+ 개념」 (add concept) chrome pill made this position **the only
+   * Removing the top "+ Concept" chrome pill made this position **the only
    * door for creating a node on a populated map**, because the empty map's two entry
    * points (the start checklist and the empty state) disappear the moment the map
    * fills. If this wiring breaks, nothing can be created from the map in a vault that

@@ -132,7 +132,7 @@ function serializeFrontmatterValue(
  * escapes to `\n` and the reader restores it (`unquote`).
  *
  * The single quote joined the rule too: `unquote` strips unmatched quotes from both
- * ends, so an unquoted value like `'지도'` reads back as `지도`.
+ * ends, so an unquoted value like `'map'` reads back as `map`.
  */
 function needsQuote(s: string): boolean {
   return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s);

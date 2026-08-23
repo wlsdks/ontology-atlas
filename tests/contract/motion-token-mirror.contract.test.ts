@@ -11,7 +11,7 @@ import {
 /**
  * The **CSS ↔ JS mirror contract** for motion tokens.
  *
- * **Why this gate is required** (design council 「체계」 measurement, 2026-07-28).
+ * **Why this gate is required** (design council "system" measurement, 2026-07-28).
  * framer-motion cannot read a CSS `var()` in `transition`'s numeric fields, so
  * `src/shared/motion` **copies** the values from `app/globals.css` — and without a
  * gate a copy inevitably diverges. It had:

@@ -9,15 +9,15 @@ import { RowButton } from '@/shared/ui/controls';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 
 /**
- * One step of 「내 에이전트 연결」 — **only one expands at a time.**
+ * One step of "Connect My Agent" — **only one expands at a time.**
  *
  * ## Why this component exists (2026-08-04, owner instruction)
  *
- * Owner: *"지금은 이상해 푸른 박스에 너무 길고 보기 안좋고 분리를 하든 차라리"*
+ * Owner: *"This is odd — a blue box, far too long, hard to look at; split it up."*
  * (this is odd — a blue box, far too long, hard to look at; split it up). The
  * measurement puts numbers on that: with the advanced fold open, this tab's
  * content was **2,581px** (**4.18 screenfuls** of a 617px window), and
- * 「연결하기」·「제대로 됐나」·「고장 났을 때」·「고급 검증」 were all stacked
+ * "Connect"·"Is it correct?"·"What if it breaks"·"Advanced verification" were all stacked
  * **flat, at the same weight**.
  *
  * The owner picked the approach (B — stepwise progression): expand only the
@@ -37,7 +37,7 @@ import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
  *
  * The first version (morning of 2026-08-04) wrapped it in `Surface` (chrome
  * grammar), and **that evening the owner caught the defect in the installed app** —
- * *"버벅이면서 이상하게 열리는데?"* (it stutters and opens strangely). Frame
+ * *"It stutters and opens strangely?"* (it stutters and opens strangely). Frame
  * measurement: moving from step 1 to step 3, the siblings below were pushed
  * **+254px in one frame** (the opening body mounts at full height immediately) and
  * then, 140ms later, snapped back **−352px in another single frame** (the closing
@@ -84,12 +84,12 @@ export interface AgentSetupStepProps {
  * ## Fact and interaction get separate channels (installed-app measurement, 2026-08-04)
  *
  * The badge fill carries **the flow's fact** (done/now/todo) only. So when the user
- * opens step 3 early, the 「지금」 badge is on step 1 while the expanded body is on
+ * opens step 3 early, the "Now" badge is on step 1 while the expanded body is on
  * step 3 — and previously the expanded row's head carried no signal at all, so the
  * two rows read as making conflicting claims (owner's attached screenshot). The
  * prescription is not to make the badge follow (that pollutes fact with
  * interaction) but **to give expansion its own channel**: the chevron rotation at
- * the row's right end — the channel the 「잘 안 되나요?」 toggle directly below
+ * the row's right end — the channel the "Having trouble?" toggle directly below
  * already uses, so it is not a new grammar. Rotation is a state confirmation, so it
  * rides the default transition (`--motion-fast`).
  */

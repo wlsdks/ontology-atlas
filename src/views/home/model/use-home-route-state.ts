@@ -107,7 +107,7 @@ export function useHomeRouteState(): [
       // Use the *actual browser path*. next-intl's usePathname returns the
       // locale-stripped path (`/topology`), which drops `/ko` from the URL, and
       // reloading that URL breaks the static export's [locale] route. User
-      // report: "새로고침하면 화면 로딩이 안 됨" (reloading leaves the screen
+      // report: "reloading leaves the screen stuck loading" (reloading leaves the screen
       // stuck loading).
       const browserPath = window.location.pathname;
       const nextUrl = query ? `${browserPath}?${query}` : browserPath;

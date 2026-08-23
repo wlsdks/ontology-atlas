@@ -5,8 +5,9 @@ import type {} from "./atlas-map-probe";
 /**
  * **Hovering a datasheet row makes the map beside it point at that node.**
  *
- * Owner request 2026-08-17: *"이부분들 각각 마우스 올리면 옆에 지도에서 반짝이면서
- * 표시되면 좋겠는데 가능할까? 지금은 아무 반응이 없어서.."* (it would be good if
+ * Owner request 2026-08-17: *"It would be good if
+ * hovering each of these highlighted it on the map beside them — right now nothing
+ * responds."* (it would be good if
  * hovering each of these highlighted it on the map beside them — right now nothing
  * responds).
  *

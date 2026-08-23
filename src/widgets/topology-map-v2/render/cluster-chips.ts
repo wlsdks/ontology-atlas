@@ -3,7 +3,7 @@
  * collapsed parent's children. Neutral surface plus the single indigo only
  * (`docs/DESIGN-SYSTEM.md` single-indigo charter) — no new hue, no glow.
  *
- * Owner report: "＋63 이 먼지처럼 읽힌다 / 무슨 의미인지 모르겠다" (the ＋63 reads
+ * Owner report: "+63 reads like dust; I can't tell what it means" (the ＋63 reads
  * like dust; I can't tell what it means). The stacked node-glyph rendering it
  * describes measured ~1.1:1 contrast. Three consequences:
  * ① A single composite `＋N` in the leading zone (`＋` indigo, numeral neutral
@@ -84,7 +84,7 @@ const BAR_FONT_SIZE = 12;
 /**
  * The bar's font — **the body stack, not mono.**
  *
- * The bar carries a sentence (「모두 펼치기」 — "Expand all"), not a number, so
+ * The bar carries a sentence (「Expand all」 — "Expand all"), not a number, so
  * it needs no tabular alignment. More importantly the mono stack has no Hangul
  * and falls back, which makes the advance width depend on how the stack
  * resolves and leaves the estimator below measuring something unknowable. This
@@ -128,7 +128,7 @@ function isWideGlyph(codePoint: number): boolean {
  * The coefficients are headless-Chromium measurements (weight 600, 12px, the
  * stack above) plus safety margin, so they are **always wider than reality** —
  * too narrow punches glyphs through the plate, too wide only adds a little
- * padding. Measured/estimated: 「모두 펼치기」 (Expand all) 55.2/59.0 · 「접기」
+ * padding. Measured/estimated: 「Expand all」 (Expand all) 55.2/59.0 · 「Collapse」
  * (Collapse) 20.8/22.1 · `Collapse` 50.0/57.4.
  */
 export function estimateCanvasTextWidth(text: string, fontSize: number): number {
@@ -171,7 +171,7 @@ export const FALLBACK_CLUSTER_BAR_LABELS: ClusterBarLabels = {
 /**
  * The bar's label — **one function for draw, hit-test, and label reservation**.
  *
- * **Why 「모두 펼치기」 (Expand all) and not 「N개 펼치기」 (Expand N)** — owner
+ * **Why 「Expand all」 (Expand all) and not 「Expand N」 (Expand N)** — owner
  * report, 2026-08-02. The bar used to read `+17` while the node right below it
  * was engraved `17`: **the same number said twice, and never a verb.** The
  * engraving answers "how many are here" (the total), the bar answers "what
@@ -297,16 +297,16 @@ export function drawClusterBar(
 export type ClusterControlForm = "pill" | "bar" | "badge" | "none";
 
 export interface ClusterControlInput {
-  /** The 「확장 → 펼치기 표시」 (expand → reveal control) setting. */
+  /** The 「Expand → Reveal control」 (expand → reveal control) setting. */
   affordance: ExpandAffordance;
   /** Is this parent currently expanded. */
   expanded: boolean;
   /**
    * Is this parent the **selected node**. The `bar` affordance exists only then
-   * — owner: *"안 고르면 아무것도 없고"* (nothing at all until you select one).
-   * A collapsed parent's count is already engraved on the node itself, so a
-   * permanently visible control would put the same fact on screen twice.
-   */
+     — owner: *"Nothing at all until you select one."*
+     * A collapsed parent's count is already engraved on the node itself, so a
+     * permanently visible control would put the same fact on screen twice.
+     */
   focused: boolean;
   /**
    * Can this chip **dock to a node** — do we know the parent's screen position.
@@ -361,10 +361,10 @@ const BADGE_NODE_CLEARANCE = 10;
 /* ── One node's controls use different bearings (measured 2026-08-02) ────────
  *
  * A selected node carries two controls: this file's expand control, and the DOM
- * orbit button 「이것만 보기」 (focus on this alone, `use-topology-loop.ts`).
+ * orbit button "Show only this" (focus on this alone, `use-topology-loop.ts`).
  * Both anchor around the node, and both **used the same bearing (upper-right,
  * 45°)**. The result was not overlap but **occlusion** — measured at 1512×982,
- * sample vault 「마케팅」 (marketing), shoulder badge:
+ * sample vault "Marketing", shoulder badge:
  *
  * - **80% (513px²)** of the 33.6×19 badge sat under the 28×28 orbit button,
  * - `document.elementFromPoint(badge centre)` returned the orbit button's
@@ -567,8 +567,7 @@ export function clusterChipRect(
 }
 
 /**
- * Owner report: "노드 사이에 +31 이 겹쳐지는것도 보기싫은데" (the +31 overlapping
- * between nodes looks bad too). Chips are drawn **before** node labels
+ * Owner report: "The +31 overlapping between nodes looks bad too." Chips are drawn **before** node labels
  * (`topology-frame-draw.ts`), and the label placer (`greedyPlaceLabels`) did not
  * know chips existed, so labels were painted straight over them. Handing the
  * placer a chip as a **reserved occupant** needs "the rectangle the chip
@@ -714,14 +713,14 @@ export interface ClusterChipDrawInput {
    */
   nodeScreenRadius?: number;
   /**
-   * The 「확장 → 펼치기 표시」 (expand → reveal control) setting. Omitted means
-   * `"pill"` — not one pixel differs from the earlier behaviour (this file's
-   * zero-regression contract).
-   */
+   * The "Expand → Reveal control" setting. Omitted means
+     * `"pill"` — not one pixel differs from the earlier behaviour (this file's
+     * zero-regression contract).
+     */
   affordance?: ExpandAffordance;
   /** Is this parent the selected node — the `"bar"` affordance's precondition. Defaults to false. */
   focused?: boolean;
-  /** The 「한 번에 여는 개수」 (how many one press opens) setting — decides "all" vs "N". */
+  /** The "How many one press opens" setting — decides "all" vs "N". */
   batchSize?: number;
   /** Bar wording (translated). The caller passes it; the renderer builds no strings. */
   barLabels?: ClusterBarLabels;

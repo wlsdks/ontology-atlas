@@ -17,9 +17,9 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 rfd = "0.15"
 serde = { version = "1", features = ["derive"] }
-# serde_json · sha2 · chrono 는 tauri 가 이미 끌어오는 transitive dep — 직접
-# 의존을 선언해도 신규 공급망 표면 0 (objc2 와 같은 근거). 감사 로그 한 줄
-# 직렬화 · 페이로드 해시 앵커 · ISO-8601 시각에만 쓴다.
+# serde_json · sha2 · chrono are transitive deps already pulled by tauri — declaring
+# direct dependencies adds zero new supply-chain surface (same rationale as objc2). One line
+# of audit log used only for serialization, payload hash anchor, and ISO-8601 timestamps.
 serde_json = "1"
 sha2 = "0.10"
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
@@ -27,17 +27,17 @@ notify-debouncer-full = "0.3"
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 
-# libc 도 tauri 가 이미 끌어오는 transitive dep (0.2, Cargo.lock 에 단일 버전) —
-# 직접 선언해도 신규 공급망 표면 0 (objc2 와 같은 근거).
+# libc is also a transitive dep already pulled by tauri (0.2, single version in Cargo.lock) —
+# declaring it directly adds zero new supply-chain surface (same rationale as objc2).
 #
-# 쓰는 곳은 하나다: ACP 하네스를 **프로세스 그룹째** 끝내는 것. 어댑터는 자기
-# 자식(진짜 CLI · MCP 서버)을 또 띄우므로 `Child::kill()` 만으로는 손자들이
-# 고아로 남는다. 표준 라이브러리에는 프로세스 그룹에 신호를 보내는 길이 없다.
+# It is used in one place: terminating the ACP harness **by process group**. The adapter spawns
+# its own children (real CLI · MCP server), so `Child::kill()` alone leaves grandchildren
+# orphaned. The standard library provides no way to send signals to a process group.
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
-# objc2 는 tauri 가 이미 끌어오는 transitive dep — 신규 공급망 표면 0.
-# WKWebView 의 60fps rAF 캡 해제 (ProMotion 120Hz)에만 사용.
+# objc2 is a transitive dep already pulled by tauri — zero new supply-chain surface.
+# Used only for WKWebView's 60fps rAF release (ProMotion 120Hz).
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 keyring = { version = "3", features = ["apple-native"] }

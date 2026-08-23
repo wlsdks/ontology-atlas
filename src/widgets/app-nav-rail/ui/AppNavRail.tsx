@@ -75,8 +75,7 @@ export interface AppNavRailProps {
    * place seen out of the corner of the eye.
    */
   agentsNoticeCount?: number;
-  /** 연결 시트가 현재 열려 있는지 — 타일의 `aria-expanded` 진실원(전역
-   *  launcher `wantOpen`). */
+  /** Whether the connection sheet is currently open — the truth source for the tile's `aria-expanded` (global launcher `wantOpen`). */
   className?: string;
 }
 
@@ -145,7 +144,7 @@ export function AppNavRail({
   const t = useTranslations("navRail");
   const pathname = usePathname() ?? "/";
   /**
-   * 「앱 받기」 (get the app) — the only download prompt, drawn **on the web only**.
+   * 「Get the app」 (get the app) — the only download prompt, drawn **on the web only**.
    * How that is decided, and why it happens after mount, is in
    * `../lib/show-get-app-tile`.
    */
@@ -378,14 +377,7 @@ export function AppNavRail({
                      the box the ring wraps (including the label) to the icon tile, and
                      the box's dimensions do not change by a pixel because of
                      `ring-inset`. */
-                  /* ⚠️ `border-0` — this position borrows `card` only for **the focus
-                     ring's geometry** (radius and ring box), exactly as the comment
-                     above says. But the #961 migration also brought along the 1px
-                     hairline the card shape carries, and the hand-written classes
-                     before the migration had no border — the owner caught it on the
-                     real thing (2026-08-08: "이거 영역에 왜 테두리가 생긴거지?" — why
-                     does this area have a border now?). The visible tile is drawn by the
-                     inner span below. Gate: desktop-shell-rail.spec.ts. */
+                  /* ⚠️ `border-0` — this position borrows `card` only for **the focus ring's geometry** (radius and ring box), exactly as the comment above says. But the #961 migration also brought along the 1px hairline the card shape carries, and the hand-written classes before the migration had no border — the owner caught it on the real thing (2026-08-08: "Why does this area have a border now?" — why does this area have a border now?). The visible tile is drawn by the inner span below. Gate: desktop-shell-rail.spec.ts. */
                   className={controlClass({ shape: "card", className: "group relative w-full flex-col gap-1 border-0 px-0 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]" })}
                 >
                   <span
@@ -442,8 +434,7 @@ export function AppNavRail({
         </ul>
       </nav>
 
-      {/* 하단 유틸 티어 — 설정과 웹 전용 앱 받기만. 에이전트는 위 목적지 하나가
-          연결·대화·상태 확인을 모두 소유한다. */}
+      {/* Bottom utility tier — only settings and web-only app download. The agent owns connection, conversation, and status checks through the single destination above. */}
       <div
         data-testid="app-nav-rail-utility-tier"
         className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"

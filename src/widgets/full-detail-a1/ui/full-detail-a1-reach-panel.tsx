@@ -12,7 +12,7 @@ import { controlClass } from "@/shared/ui/control-class";
  * query-builder (from/to/both direction × 1/2/3-step segments) with a
  * single outward-reach sentence + a clickable 1/2/3 step selector + a
  * per-domain engraved bar breakdown. Indigo is reserved for the self domain:
- * separately from `.claude/rules/design.md`'s 「hub/container 만 보조 톤」
+ * separately from `.claude/rules/design.md`'s "only hub/container get a supporting tone"
  * (only hub/container get a supporting tone) principle, this bar is the sole
  * place indigo is used, to separate self from other.
  */

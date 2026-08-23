@@ -4,32 +4,30 @@
 <meta charset="utf-8" />
 <title>기록 — 아직 자기 일을 못 하는 두 상태 (시안)</title>
 <!--
-  위계석 판정(2026-08-02) 반영본.
+  Updated to reflect hierarchy stone determination (2026-08-02).
 
-  ① `폴더 고르기 전` 상태를 **이 파일에서 뺐다.** 볼트가 없으면 지도·문서함·
-     공방·인사이트·프로젝트가 전부 같은 상태이고, 그 화면은 앱 관문
-     (`DesktopVaultWelcome`)이 이미 그린다. 기록 화면이 자기 랜딩을 또 그리면
-     같은 화면이 여섯 벌이 되고 여섯 번 드리프트한다.
+  ① Removed the `Before folder selection` state **from this file**. Without a vault, map, document room,
+     workshop, insight, and project are all in the same state, and that screen is already drawn by the app gateway
+     (`DesktopVaultWelcome`). If the record screen draws its own landing again,
+     it results in six copies of the same screen and six drifts.
 
-  ② 남은 상태(`git 연동 전`)는 **작업대 껍데기를 유지한다.** 이 화면은
-     존재하고 기능 하나만 꺼져 있다 — 상단 바가 살아 있는 것이 "지도는
-     됩니다"라는 문장의 증거다. 종전 시안은 말로는 그렇게 쓰고 구조로는
-     상단 바를 지워 반대를 말했다.
+  ② The remaining state (`Before git integration`) **keeps the workbench shell**. This screen
+     exists with only one feature disabled — the top bar being active is evidence that "the map
+     works." Previous designs said so verbally but deleted the top bar structurally, implying the opposite.
 
-  ③ 미리보기 제거. 실측 대비 2.38:1(11px 본문)이라 읽히지 않았고 내용이
-     전부 남의 커밋이었다 — 정보를 안 나르는 잉크.
+  ③ Removed preview. It was unreadable at 2.38:1 (11px body) compared to actual measurements, and the content
+     was entirely other people's commits — ink carrying no information.
 
-  ④ 타이포: 제목 30px : 리드 12.5px = 2.40. 종전 1.28 은 어느 밴드에도
-     없었고 h1 이 팩트 숫자와 동률이었다. 34px 은 관문 전용이라 앱 안
-     화면이 쓰면 위계가 뒤집힌다.
+  ④ Typography: title 30px : lead 12.5px = 2.40. The previous 1.28 had no precedent in any band
+     and h1 was on par with fact numbers. 34px is reserved for gateways; if app screens use it, hierarchy reverses.
 
-  ⑤ 사다리·eyebrow·고스트 버튼 제거 — 같은 말 반복이거나 소비처 0.
-     인디고 발광체를 5개에서 **2개**(레일 활성 + 주 버튼)로 줄였다.
+  ⑤ Removed ladder, eyebrow, and ghost buttons — either repeating the same message or having zero consumption points.
+     Reduced indigo glow elements from 5 to **2** (rail active + main button).
 -->
 <style>
   :root{
-    /* 값은 전부 app/globals.css 토큰과 **같은 값**이다. 손으로 옮겨 적으면
-       오차가 난다 — 실측에서 border 가 램프에 없는 .10 이었다. */
+    /* All values are **identical** to app/globals.css tokens. Manual transcription
+       causes errors — actual measurements showed border as .10 without ramping. */
     --canvas:#08090a; --panel:#0f1011;
     --ov1:rgba(255,255,255,.02); --ov2:rgba(255,255,255,.06);
     --t1:#f7f8f8; --t2:#d0d6e0; --t3:#8a8f98; --t4:#787c84;
@@ -53,7 +51,7 @@
   :focus-visible{outline:none;box-shadow:0 0 0 2px var(--indigo-a46);border-radius:5px}
   .app{display:flex;height:100vh}
 
-  /* ── 레일 — app/globals.css 의 --app-nav-rail-* 그대로 ── */
+  /* ── Rail — exactly as in app/globals.css --app-nav-rail-* ── */
   .rail{width:var(--rail);flex:none;border-right:1px solid var(--divider);
     display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;gap:2px}
   .rail .brand{width:var(--rail-logo);height:var(--rail-logo);display:grid;place-items:center}
@@ -73,10 +71,10 @@
 
   .main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
 
-  /* ── 상단 바: **살아 있다.** 이 화면이 존재한다는 증거다 ────────────
-     브랜치는 안 그린다 — git 이 없으면 브랜치도 없다. 그 자리는 고른 폴더
-     이름이다. 동작 넷은 꺼진 채로 보인다: 무엇이 생길지 말하면서 아직 못
-     누른다는 것도 같이 말한다. */
+  /* ── Top bar: **Active.** Evidence that this screen exists ────────────
+     Branches are not drawn — without git, there are no branches. That space holds the plain folder
+     name. The four actions appear disabled, communicating both what will be created and that it cannot
+     be pressed yet. */
   .top{display:flex;align-items:center;gap:12px;padding:0 clamp(16px,2vw,22px);
     height:56px;flex:none;border-bottom:1px solid var(--divider)}
   .ttl{display:flex;align-items:center;gap:8px;font-size:var(--body-lg);line-height:var(--lead-lg);
@@ -88,9 +86,9 @@
     border:1px solid var(--border-soft);border-radius:var(--r-control);
     font-size:var(--body);line-height:var(--lead-body);color:var(--t3);opacity:.4;cursor:default}
 
-  /* ── 본문: 카드 하나 ────────────────────────────────────────────
-     `margin:auto` — 짧으면 가운데, 길면 위에서 스크롤. `align-items:center`
-     는 짧은 화면에서 위가 잘린다(DesktopVaultWelcome 이 같은 이유로 이 패턴). */
+  /* ── Body: single card ────────────────────────────────────────────
+     `margin:auto` — centered if short, scrolls from top if long. `align-items:center`
+     clips the top on short screens (DesktopVaultWelcome uses this pattern for the same reason). */
   .body{flex:1;min-height:0;overflow:auto;display:flex;padding:clamp(20px,4vh,48px) clamp(16px,3vw,32px)}
   .card{width:100%;max-width:640px;margin:auto;display:flex;flex-direction:column;gap:16px}
   h1{margin:0;font-size:var(--hero);line-height:var(--lead-hero);font-weight:600;letter-spacing:var(--track-hero)}
@@ -102,8 +100,8 @@
     transition:background var(--fast) var(--ease)}
   .btn:hover{background:var(--indigo-hover)}
   .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7}
-  /* 2차 행동은 버튼이 아니라 링크다 — 같은 높이·같은 라운드로 나란히 두면
-     1차/2차가 안 갈린다. */
+  /* Secondary actions are links, not buttons — keeping them at the same height and border radius prevents
+     visual confusion between primary and secondary actions. */
   .alt{font-size:var(--body);line-height:var(--lead-body);color:var(--t3);text-decoration:none;
     border-bottom:1px solid var(--border-soft);padding-bottom:1px}
   .alt:hover{color:var(--t1);border-color:var(--border-strong)}
@@ -175,7 +173,7 @@
   </div>
 </div>
 
-<!-- 시안 전용 · 실제 화면에는 없다 -->
+<!-- Design-only · not present in actual screens -->
 <div class="switch" aria-label="시안 미리보기 조작기">
   <span class="switch-tag">시안 · 상태 바꿔 보기</span>
   <button data-s="no-vault" class="on">① 폴더 없음</button>
@@ -185,9 +183,9 @@
 
 <script>
 /*
- * **한 껍데기, 세 사유.** 상태마다 다른 레이아웃을 그리면 같은 화면이 세 벌이
- * 되고 세 번 드리프트한다(실측: 저장소에 이미 서로 다른 답이 셋 있었다).
- * 구조는 하나로 고정하고 사유만 바뀐다 — 위계석 처방 그대로.
+ * **One shell, three reasons.** Drawing different layouts per state creates three copies of the same screen
+ * and three drifts (actual measurement: three different answers already existed in the repo).
+ * Fix the structure to one; only the reason changes — as prescribed by the hierarchy stone.
  */
 const GIT = '<svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="9" r="2.6"/><path d="M6 8.6v6.8"/><path d="M18 11.6c0 3.4-3 4.4-6 4.4"/></svg>';
 const FOLDER = '<svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>';
@@ -219,8 +217,8 @@ function render(key){
   document.getElementById("btn").innerHTML = s.btn;
   document.getElementById("alt").textContent = s.alt;
   document.getElementById("note").textContent = s.note;
-  /* 폴더가 없으면 위치도 코드가 아니라 말이다 — 없는 경로를 mono 로 그리면
-     경로가 있는 것처럼 읽힌다. */
+  /* If there is no folder, location is not code either — drawing a non-existent path in mono
+     makes it read as if a path exists. */
   document.getElementById("where").style.fontFamily = key === "no-vault" ? "inherit" : "";
 }
 document.querySelectorAll(".switch button").forEach((b)=>b.addEventListener("click",()=>{

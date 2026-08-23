@@ -120,9 +120,7 @@ export async function installManagedNode(runtimeId: string): Promise<AcpCheck[]>
 /**
  * How far the install has got — 1:1 with Rust's `AcpInstallProgress`.
  *
- * Why an event (owner report, 2026-08-20): *"버튼들만 누르면 알아서 설치되는 과정도 보여주고
- * 완료된것도 체크해주고 하나?"* (does pressing the buttons show the install progress and check off
- * completion?) — it did not. `acp_install_cli` / `acp_install_node` return only **when finished**, so
+ * Why an event (owner report, 2026-08-20): *"does pressing the buttons show the install progress and check off completion?"* (does pressing the buttons show the install progress and check off completion?) — it did not. `acp_install_cli` / `acp_install_node` return only **when finished**, so
  * while 52MB downloaded and npm ran, all the screen could do was leave the chip disabled. Exactly
  * the pattern this repository's walkthrough named **"the silent wait"**.
  */

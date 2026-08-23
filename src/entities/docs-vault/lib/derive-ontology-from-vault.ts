@@ -229,7 +229,7 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
       : baseDisplay;
   // Per-locale display names come from one place, `shared/lib/locale-display-name`.
   // The doc list and quick search must call the same function, or the map says
-  // "내 프로젝트" while search says "My project".
+  // "My project" while search says "My project".
   const displayLocales = readDisplayLocales(fm);
   return {
     id,

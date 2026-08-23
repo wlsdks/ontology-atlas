@@ -8,8 +8,8 @@
  * `setPointerCapture` is refused, the node-grab path breaks midway, and the
  * gesture **falls through to a background pan.** A pan never wakes the physics
  * simulation, so it was always fast — and "it isn't slow here" was reported five
- * times. It ended only when the owner looked at the screen and said *"너는 노드가
- * 아니라 그냥 배경을 드래그하던데?"* (you were dragging the background, not a
+ * times. It ended only when the owner looked at the screen and said *"you were dragging the background, not a
+ * node"* (you were dragging the background, not a
  * node).
  *
  * > **The code path is only real if the input is real.** So this harness uses the
@@ -111,7 +111,7 @@ async function dragNode(page, box, target, moves) {
 
   // **At human drag speed.** One `mouse.move` is a CDP round trip costing ~24ms,
   // so 45 separate calls produce slow motion rather than a drag, and that slowness
-  // reads as the app being slow (owner report: "드래그가 너무 심각하게 느리던데" —
+  // reads as the app being slow (owner report: "The drag is seriously slow" —
   // the drag is seriously slow). `steps` fires several interpolated moves **within
   // one round trip**, dividing the round-trip cost and coming closer to a real
   // pointer stream.

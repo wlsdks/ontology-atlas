@@ -10,8 +10,8 @@
  * rename silently breaks every pointer at once, and the rationale a comment used
  * to carry is now unreachable from the code it explains.
  *
- * The owner named this risk before the first pointer was written: *"정확하게
- * 문서 위치를 지정해야할듯함 … 폴더 위치 바뀌는순간 다 난리날테니"* ("the doc
+ * The owner named this risk before the first pointer was written: *"the doc
+ * location has to be exact — the moment a folder moves, everything breaks"* ("the doc
  * location has to be exact — the moment a folder moves, everything breaks").
  *
  * `pnpm docs:links` already gives this guarantee for markdown-to-markdown links,

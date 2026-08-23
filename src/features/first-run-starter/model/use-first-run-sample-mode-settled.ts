@@ -11,17 +11,14 @@ import { useDataSourceMode } from '@/features/data-source-mode';
  * anything with `vault.status !== 'loaded'` as 'static' — including the brief window
  * (a frame or two after mount) while a previous vault handle restores
  * asynchronously from IndexedDB. Without this gate, a returning user sees the SAMPLE
- * badge and the get-started module flash and vanish (owner report — "맨날 들어와서
- * 누르게 하지 않기", don't make me press it every time I come in).
+ * badge and the get-started module flash and vanish (owner report — "don't make me press it every time I come in").
  */
 export function useFirstRunSampleModeSettled(): boolean {
   const vault = useLocalVault();
   const mode = useDataSourceMode();
   /*
    * **Someone who has opened a folder even once is not shown the sample guidance**
-   * (2026-08-02, owner: *"이미 연결한거 아님? 한번이라도 연결했으면 이 샘플은
-   * 안나와야하는데? 샘플은 정말 연결 한번도 안하고 그냥 써보는 사람이 체험하기
-   * 위한거라서"* — haven't they already connected? If they connected even once this
+   * (2026-08-02, owner: "Haven't they already connected? If they connected even once this
    * sample should not appear; the sample is for someone trying it out who has never
    * connected at all).
    *

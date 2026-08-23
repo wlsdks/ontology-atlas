@@ -107,15 +107,15 @@ describe("clusterBadgeRect", () => {
     const rect = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, clusterBadgeLabel(63));
     const cx = rect.x + rect.w / 2;
     const cy = rect.y + rect.h / 2;
-    expect(cx).toBeLessThan(PARENT_X); // 왼쪽
-    expect(cy).toBeLessThan(PARENT_Y); // 위
+    expect(cx).toBeLessThan(PARENT_X); // Left
+    expect(cy).toBeLessThan(PARENT_Y); // Top
   });
 
   it("배지는 부모 노드 반지름 바깥에 완전히 벗어난다(오라·노드 겹침 차단)", () => {
     const rect = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, clusterBadgeLabel(63));
     // Distance to the badge corner nearest the parent (**lower-right**) > node radius.
-    const nearX = rect.x + rect.w; // 오른쪽 변이 부모에 더 가깝다
-    const nearY = rect.y + rect.h; // 아래 변이 부모에 더 가깝다
+    const nearX = rect.x + rect.w; // The right edge is closer to the parent
+    const nearY = rect.y + rect.h; // The bottom edge is closer to the parent
     const dist = Math.hypot(nearX - PARENT_X, nearY - PARENT_Y);
     expect(dist).toBeGreaterThan(NODE_R);
   });

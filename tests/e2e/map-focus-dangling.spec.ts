@@ -9,7 +9,7 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * ## What happened
  *
  * Clicking "open in map" on a project document in the docs view made **every node on
- * the map look like it had vanished**. Owner: *"이건 또 뭐지?"* · *"로딩속도도 느리고"*
+ * the map look like it had vanished**. Owner: *"what is this now?"* · *"and it loads slowly too"*
  * (what is this now? and it loads slowly too).
  *
  * Nothing had vanished — **everything had been dimmed**. That button produces

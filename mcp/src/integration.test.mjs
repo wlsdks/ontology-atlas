@@ -5923,7 +5923,7 @@ await test("find_orphans — orphan row 에 domain + mtime 포함 (R+)", async (
     {
       slug: "capabilities/orphan-cap",
       content:
-        "---\nkind: capability\ntitle: Orphan\ndomain: identity\n---\n", // 어느 곳도 reference 안 함 → orphan
+        "---\nkind: capability\ntitle: Orphan\ndomain: identity\n---\n", // Do not reference anything here → orphan
     },
     {
       slug: "capabilities/used-cap",

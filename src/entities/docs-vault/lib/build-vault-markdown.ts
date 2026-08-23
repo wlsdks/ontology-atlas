@@ -70,7 +70,7 @@ export function buildVaultMarkdown(args: {
   domain?: string;
   /**
    * Per-locale display names (owner instruction, 2026-07-24) —
-   * `{ ko: "결제", en: "Payments" }` becomes `display_ko:` / `display_en:` keys.
+   * `{ ko: "Payment", en: "Payments" }` becomes `display_ko:` / `display_en:` keys.
    * Omitted when absent. `title` stays untouched as the single source of truth for
    * search and matching.
    */

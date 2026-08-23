@@ -6,8 +6,7 @@ import { useLocalVault } from '@/features/docs-vault-local';
 /**
  * **Is this the moment the first-visit automatic tour may be raised?**
  *
- * Owner confirmation (2026-07-26): *"7단계 투어는 폴더 지정하거나 일단 접속한 다음에
- * 나와야하지"* (the seven-step tour should appear after choosing a folder or at least
+ * Owner confirmation (2026-07-26): "The seven-step tour should appear after choosing a folder or at least
  * connecting) — i.e. **after** the folder guidance is the right order. But measured,
  * one of the two paths turned out to be blocked entirely.
  *

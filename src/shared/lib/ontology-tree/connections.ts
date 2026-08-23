@@ -4,7 +4,7 @@
  * title/kind. Originally lived inside `widgets/topology-map-v2` (the compact
  * canvas datasheet) as `buildV2Connections`/`groupV2ConnectionsByDirection`;
  * promoted to `shared/lib/ontology-tree` (R+ full-detail A1) so a SECOND
- * widget (`full-detail-a1`, the topology "전체 상세" / `/ontology` full-detail
+ * widget (`full-detail-a1`, the topology "Full detail" / `/ontology` full-detail
  * surface) can reuse the exact same derivation instead of forking a second
  * copy — FSD forbids widget→widget imports, so shared connection logic lives
  * one layer down. `topology-v2-datasheet.ts` re-exports these names
@@ -74,9 +74,9 @@ export function groupConnectionsByDirection(
  * child) groups instead of folding into usedBy/dependsOn by raw direction.
  *
  * The compact canvas popover used to group by DIRECTION only, so a domain's
- * 18 `contains` children landed in "기대는 곳" (dependsOn) — the exact typed-
- * fact collapse the UX round flagged (popover "쓰는 곳 5 · 기대는 곳 20" vs
- * full-detail "담는 것 18 · 쓰는 곳 4 · 기대는 곳 2 · 속한 곳 1"). This is the
+ * 18 `contains` children landed in "Depends on" — the exact typed-
+ * fact collapse the UX round flagged (popover "Writes 5 · Depends on 20" vs
+ * full-detail "Contains 18 · Writes 4 · Depends on 2 · Belongs to 1"). This is the
  * SAME bucketing the full-detail surface uses (`buildFullDetailGroups` now
  * delegates here), so the two surfaces can never disagree on the counts.
  */
@@ -97,7 +97,7 @@ export interface RoleGroupedConnections {
  * OUTGOING one makes nodeId the parent); `belongs_to` edges point child→parent
  * (so an INCOMING one makes nodeId the parent). Same rule as
  * `buildContainmentParents` (insights.ts) — getting it wrong would file a
- * `belongs_to`-authored parent under "담는 것" instead of "속한 곳".
+ * `belongs_to`-authored parent under "Contains" instead of "Belongs to".
  */
 function containmentNodeIsParent(connection: DatasheetConnection): boolean {
   return connection.relationType === "belongs_to"

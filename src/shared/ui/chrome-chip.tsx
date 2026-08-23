@@ -42,8 +42,7 @@ export const CHROME_STATUS_CHIP_CLASS =
 /**
  * **If it cannot be pressed, it must not look pressable.**
  *
- * Owner report, 2026-08-03: *"일반 화면에서 '최근 변경' 누르니까 아무런 반응이
- * 없는데?"* (pressing "recent changes" on a normal screen does nothing). Measured:
+ * Owner report, 2026-08-03: *"On a normal screen, pressing 'recent changes' does nothing."* (pressing "recent changes" on a normal screen does nothing). Measured:
  * the chip was `disabled`, yet its computed style was identical to the three
  * enabled chips beside it — same colour `rgb(138,143,152)`, same background,
  * border, opacity and cursor. `ChromeChip` had no `disabled:` handling at all,

@@ -3,7 +3,7 @@
  * `drawLabel()` (`docs/prototypes/topology-b2plus.html` §12-13).
  *
  * (label-clarity, 2026-07) — REDESIGNED per the 5-persona eval, which called it
- * 「이름 없는 도형 지도」 (a map of nameless shapes): domain/project chips at the
+ * "a map of nameless shapes" (a map of nameless shapes): domain/project chips at the
  * default circuit zoom showed only
  * an engraved COUNT numeral, no name — the name existed only as an
  * ultra-low-contrast far-field spaced-caps watermark two personas never
@@ -25,8 +25,7 @@
  *   `revealAlpha` (its effective/tier alpha this frame — the SAME signal
  *   `model/tier-visibility.ts#effectiveNodeAlpha` computes and
  *   `ui/topology-pointer-handlers.ts`'s `HITTABLE_MIN_TIER_ALPHA` gates
- *   hit-testing on), not a raw camera-scale threshold. "잡을 수 있으면 읽을
- *   수 있다" (if you can click it, you can read it) — an ego-revealed child
+ *   hit-testing on), not a raw camera-scale threshold. "if you can click it, you can read it" (if you can click it, you can read it) — an ego-revealed child
  *   now gets a label the instant it's clickable, ramping in together.
  * - The SELECTED (`egoState === "center"`) or currently HOVERED node's name
  *   is now ALWAYS drawn at full contrast, any kind, any zoom band — no
@@ -57,7 +56,7 @@ import { smoothstep } from "../model/altitude";
  * The old comment called the overlap window short, which assumed **the camera
  * passes through that band**. The 3D dome **parks** the camera there. Measured
  * 2026-08-19 (installed build, `docs/ontology`, dome): the footprint trail's
- * 「AI 에이전트 연동」 sat on screen as `AΛI에이전트 연동동`.
+ * "AI agent integration" sat on screen as `AΛIagent integration`.
  *
  * So the crossfade becomes a **handoff**: compact reaches 0 here and the
  * watermark starts rising here. Both effects keep their identity; they just
@@ -88,8 +87,7 @@ export interface LabelDrawState {
    * W6 agent visibility — true when this label belongs to the agent
    * heartbeat's current focus node (mirrors `NodeShapeDrawState.agentFocus`
    * in `render/node-shapes.ts`). Draws a small amber `drawActivityMark` dot
-   * just past the label's own text, per the owner spec 「노드 라벨 옆 소형
-   * Activity 마크」 — real heartbeat data only, `false` otherwise.
+   * just past the label's own text, per the owner spec "small Activity mark next to node label" — real heartbeat data only, `false` otherwise.
    */
   agentFocus: boolean;
   /** Label zoom factor (`labelZoomScale(cameraScale)`), default 1. */
@@ -371,7 +369,7 @@ export const ACTIVITY_MARK_GAP = 5;
 
 /**
  * The small solid amber dot marking a node's label as the agent heartbeat's
- * current focus (owner spec: 「노드 라벨 옆 소형 Activity 마크」 — a small
+ * current focus (owner spec: "Small Activity mark beside the node label" — a small
  * activity mark beside the node label). A plain filled circle —
  * no glow/shadow (design.md) — positioned by the caller just past the
  * label's own measured text width so it never overlaps the glyphs.

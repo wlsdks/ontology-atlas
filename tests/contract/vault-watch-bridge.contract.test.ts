@@ -69,8 +69,8 @@ describe("폴더 감시 브리지", () => {
     /**
      * ⚠️ **Aim at the table's row, not at a word.**
      *
-     * This began as `toContain("폴더 감시")`, but that string also appears in the prose
-     * heading immediately below it (「폴더 감시는 「강등」이 아니라 「지연」이다」 —
+     * This began as `toContain("Folder Watch")`, but that string also appears in the prose
+     * heading immediately below it (「Folder watching is latency, not degradation」 —
      * folder watching is latency, not degradation), so **deleting the row from the table
      * entirely still passed** (probe measured 2026-07-29). What the gate meant to protect
      * was **the registration**, not the explanation, yet the explanation alone satisfied

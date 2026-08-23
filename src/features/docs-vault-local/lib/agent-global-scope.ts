@@ -6,8 +6,7 @@ import { type AgentClientId } from './agent-clients';
  * **Global scope** — using Atlas from every project on this computer.
  *
  * **Why the app does not write these files itself.** Owner observation (2026-07-30):
- * *"대부분 에이전트 연결할때 프로젝트별 보다는 전역으로 할텐데?"* (most people connect an agent
- * globally rather than per project) — correct, so global is offered **as an option**. But the app
+ * "Most people connect an agent globally rather than per project" — correct, so global is offered **as an option**. But the app
  * does not edit the home directory on the user's behalf. One rule:
  *
  * > **Inside the vault or repo, the app writes. Outside it, the tool writes its own file.**

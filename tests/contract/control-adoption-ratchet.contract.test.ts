@@ -18,504 +18,395 @@ import { describe, expect, it } from 'vitest';
  * that were rejected and why — lives in a document, not here:**
  * docs/CONTROL-ADOPTION-ROUNDS.md
  *
- * 소유자 지적: *"판정이 끝났다는 건 뭔 말임? 고칠 게 없다는 뜻임? 그럼 종료를
- * 선언해 줘야지 다음에 또 안 찾지 않을까?"*
+ * Owner's note: *"What does it mean for the verdict to be final? Does it mean there's nothing left to fix? If so, you should declare termination so we don't have to check again next time."*
  *
- * | | 2026-08-05 | 지금 |
+ * | | 2026-08-05 | Now |
  * |---|---:|---:|
- * | 손으로 쓴 **버튼** | 74 | **0** |
- * | 손으로 쓴 **링크** | 67 | **0** |
- * | 손으로 쓴 **폼 요소** | 63 | **0** |
+ * | Hand-written **buttons** | 74 | **0** |
+ * | Hand-written **links** | 67 | **0** |
+ * | Hand-written **form elements** | 63 | **0** |
  *
- * **이 셋이 0 인 동안 이 라운드는 끝난 것이다.** 남은 것은 전부 «원리적으로
- * 디자인 시스템이 못 만드는 자리»로 **근거와 함께 목록에 들어가 있고**, 각 줄은
- * 「언제 다시 여는가」(`conditional`)를 진다 — 방법이 생기면 그 줄이 지워지고
- * 다시 부채로 내려온다.
+ * **This round is over as long as these three are 0.** The rest are all "positions the design system fundamentally cannot create," **listed with justification**, and each line carries a `conditional` — "when to reopen" — which, if a method arises, will be deleted and return to debt.
  *
- * **그러니 다음 사람은 이 수를 다시 찾지 않아도 된다.** 0 이 아니게 되는 순간은
- * 딱 하나 — **새로 손으로 쓴 컨트롤이 들어왔을 때**이고, 그때 이 파일이 빨개진다.
+ * **So the next person doesn't need to check these numbers again.** The only moment they become non-zero is when **a new hand-written control is added**, at which point this file turns red.
  *
- * ## 말부터 — 「부채」가 무슨 뜻인가 (2026-08-06, 소유자 지적)
+ * ## Terminology — What "debt" means (2026-08-06, Owner's note)
  *
- * 이 파일은 「부채(debt)」·「등재」 같은 말을 쓰는데, 개발자 은어라 처음 보는
- * 사람에게는 뜻이 안 통한다. 풀어 쓰면 이렇다:
+ * This file uses terms like "debt" and "registered," which are developer jargon and may not be understood by newcomers. Here is the plain explanation:
  *
- * | 이 파일의 말 | 쉬운 말 |
+ * | Term in this file | Plain meaning |
  * |---|---|
- * | **부채** | **디자인 시스템을 안 거치고 자리마다 손으로 스타일을 적어 둔 개수.** 많을수록 같은 버튼이 화면마다 조금씩 다르게 생긴다 |
- * | **등재** | **원리적으로 디자인 시스템이 못 만드는 자리** — 왜 못 만드는지 근거를 적어서 목록에 넣어 둔 것. 면제가 아니라 **「지금은 방법이 없다」는 기록**이고, 방법이 생기면 다시 부채로 내려온다 |
- * | **근거 없음** | **디자인 시스템이 만들 수는 있는데 만들 것이 없는 자리** — 투명한 클릭면처럼 보이는 게 없는 것. 고칠 대상이 아니다 |
- * | **래칫(ratchet)** | 한 번 좋아진 수가 **다시 나빠지지 못하게** 오늘 값을 상한으로 박아 두는 검사 |
+ * | **Debt** | **Count of positions where styles are written manually without going through the design system.** The higher the number, the more inconsistently styled buttons appear across screens. |
+ * | **Registered** | **Positions that the design system fundamentally cannot create** — listed with justification for why they can't be created. This is not an exemption but a **record of "no method available now"**; if a method arises, it returns to debt. |
+ * | **No-basis** | **Positions where the design system could create them but has nothing to create** — e.g., missing transparent click surfaces. Not a target for fixing. |
+ * | **Ratchet** | A check that fixes today's value as an upper bound so that improved numbers **cannot get worse again**. |
  *
- * **「버튼 부채 0」 = 손으로 스타일을 적은 버튼이 하나도 안 남았다**는 뜻이다.
+ * **"Button debt 0" = No buttons with hand-written styles remain.**
  *
- * | 수 | 뜻 — 한 줄 | 어느 방향으로 움직이나 |
+ * | Count | Meaning — one line | Direction of movement |
  * |---:|---|---|
- * | **버튼 등재 32** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
- * | **버튼 근거 없음 4** | 값 층이 낼 수는 있으나 **낼 것이 없는** 자리 — 컨트롤이 아니다(`NO_BASIS`) | 움직이지 않는 것이 정상이다. **갚을 대상이 아니다** |
- * | **버튼 부채 0** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
- * | **앵커 등재 28** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
- * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
- * | **앵커 부채 0** | 아직 안 옮긴 `<Link>` 23 · `<a>` 14 중 미등재분 | **0 을 향한다** |
- * | **폼 부채 0** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설 · 06 에 63→57→29→20) | **0 을 향한다.** 텍스트 필드는 전부 옮겼고 네이티브 `<select>` 부채는 **0** 이 됐다. 남은 20 은 배치 전용 라벨(규격이 아니다) + 체크박스 5(자기 계약이 고정) + 슬라이더·전면 에디터·무대 입력 |
- * | 버튼 전수 108 · 앵커 전수 102 · 폼 전수 63 | 각 부류의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
+ * | **Button registered 32** | Positions the value layer **fundamentally cannot produce** (`OUTSIDE_VALUE_LAYER`) | To increase, manually raise `BASELINE_REGISTERED`. That diff is where to write "why." |
+ * | **Button no-basis 4** | Positions the value layer could produce but **has nothing to produce** — not controls (`NO_BASIS`) | It is normal for this not to move. **Not a target for repayment.** |
+ * | **Button debt 0** | Positions that can be moved but **haven't been yet** | **Tends toward 0.** Button progress is read solely from here. |
+ * | **Anchor registered 28** | Same meaning, for anchors (`OUTSIDE_VALUE_LAYER_ANCHORS`) | Manually raise `BASELINE_ANCHOR_REGISTERED`. |
+ * | **Anchor no-basis 0** | Measured: saw all 102 and got 0 (since `<a>` aims to be thin, it's hard to become a "click surface with nothing to say") | Manually raise if qualifiers arise. |
+ * | **Anchor debt 0** | Unregistered among the 23 `<Link>`s and 14 `<a>`s not yet moved | **Tends toward 0.** |
+ * | **Form debt 0** | `<input>`, `<textarea>`, `<select>`, `<label>` with hand-written specs (added 2026-08-05; 63→57→29→20 on 06) | **Tends toward 0.** All text fields have been moved, and native `<select>` debt is **0**. The remaining 20 are layout-only labels (not specs) + 5 checkboxes (self-contract fixed) + slider/full-screen editor/stage input. |
+ * | Button total 108 · Anchor total 102 · Form total 63 | Sum of each category | Derived values. Do not judge based on these numbers. |
  *
- * **왜 셋인가 — 부채가 0 이 될 수 있어야 하기 때문이다.** 「원리적으로 못 냄」과
- * 「낼 것이 없음」을 부채에 섞어 두면 그 수는 0 에 닿을 수 없고, 0 에 닿을 수 없는
- * 수는 진도 눈금이 아니라 장식이다. 소유자 지적이 정확히 이것이었다 — *"할 필요가
- * 없다는 건 디자인 시스템으로 만들 필요가 없거나 관련 없는 부분이라는 거 아냐?
- * 그러면 아예 제외하는 게 맞고, 수에 포함시키면 헷갈리니."*
+ * **Why three categories — because debt must be able to reach 0.** Mixing "fundamentally cannot create" and "has nothing to produce" into debt means that number can never reach 0, and a number that can't reach 0 is decoration, not progress tracking. The owner's note was precisely this: *"Does 'no need' mean it doesn't need to be created by the design system or is unrelated? If so, it's correct to exclude it entirely; including it in the count causes confusion."*
  *
- * ⚠️ **2026-08-04 이전 이 게이트는 `<button>` 만 셌다.** 그래서 「부채 85」는
- * 한 번도 *컨트롤 전체*의 수였던 적이 없다 — 앵커 109 는 게이트의 시야 밖에서
- * 자유롭게 늘 수 있었다. 수가 갑자기 194 로 뛴 것이 아니라, **그만큼이 내내
- * 안 세어지고 있었다.**
+ * ⚠️ **Before 2026-08-04, this gate counted only `<button>`.** So "debt 85" was never the count for *all controls* — anchors (109) could grow freely outside the gate's view. The number didn't suddenly jump to 194; **that many had simply not been counted all along.**
  *
- * ### ⚠️ 등록부는 허가 목록이 아니라 부채 목록이다
+ * ### ⚠️ The registration ledger is a debt list, not an approval list
  *
- * 하드컷 등록부(`surface-motion-ratchet.contract.test.ts`) 머리말의 규율을
- * 그대로 승계한다 — *"여기 없는데 하드컷인 표면을 발견하면 줄을 더하는 게
- * 아니라 고친다."*
+ * Inherits the discipline from the header of `surface-motion-ratchet.contract.test.ts`: *"If you find a hard-cut surface not listed here, fix it rather than adding a line."*
  *
- * 1. **등재는 검증을 통과한 자리만.** 「아마 못 옮길 것」은 등재가 아니라
- *    부채다. 검증되지 않은 것이 부채 쪽에 있는 것은 **안전한 방향**의 오차다.
- * 2. **파일을 등재해도 그 파일이 면제되지 않는다.** 줄은 파일이 아니라 **수**를
- *    등재한다. 등재된 파일에 손 컨트롤을 하나 더 쓰면 등재 수는 그대로고 부채가
- *    1 오른다 = 빨개진다.
- * 3. **근거가 사라지면 줄도 죽는다.** 각 줄은 `proof` 문자열을 지고, 그것이
- *    파일에서 사라지면 게이트가 «주장이 죽었다» 고 말한다. `chrome-token` 줄은
- *    한 겹 더 — globals.css 에서 그 토큰이 **정말 고정 단이 아닌지**까지 본다.
- *    토큰이 평범한 px 하나가 되는 날 그 줄은 빨개지고 부채로 내려온다.
- * 4. **등재가 도피처가 되면 이 라운드는 실패다.** 옮길 수 있는데 안 옮긴 것을
- *    등재하는 것이 정확히 그 실패다.
+ * 1. **Registration is only for positions that passed verification.** "Probably can't be moved" is debt, not registration. Debt containing unverified items is an error in the **safe direction**.
+ * 2. **Registering a file does not exempt that file.** Lines register **counts**, not files. If you add one more hand control to a registered file, the registration count stays the same but debt increases by 1 = turns red.
+ * 3. **If justification disappears, the line dies.** Each line carries a `proof` string; if it disappears from the file, the gate says "claim is dead." The `chrome-token` line goes one layer deeper — checking in `globals.css` whether that token is **truly not a fixed step**. The day the token becomes a normal px, that line turns red and returns to debt.
+ * 4. **If registration becomes an escape route, this round fails.** Registering something that could be moved but isn't is exactly that failure.
  *
- * ### 등재의 기준 — 「영원히 밖」과 「아직 안 옮김」을 가르는 선
+ * ### Criteria for registration — The line separating "forever outside" from "not yet moved"
  *
- * 값 층(`controlClass()`)이 내는 것은 **className** 이다. 그래서 다음 셋은 이
- * 층이 원리적으로 낼 수 없고, 축을 더해도 안 된다:
+ * The value layer (`controlClass()`) produces **className**. Therefore, the following three are fundamentally unproduced by this layer, and adding axes won't help:
  *
- * | 주장 | 무엇이 값 층 밖인가 |
+ * | Claim | What is outside the value layer |
  * |---|---|
- * | `chrome-token` | 크롬 토큰이 치수를 소유한다. 값 층의 높이 어휘는 **고정 단**뿐인데 이 토큰들은 `clamp(38px, 4.2vh, 48px)` 이거나 좁은 폭·coarse 포인터에서 **다른 값으로 재정의**된다. 고정 단 램프는 뷰포트 함수도 포인터 승격도 표현할 수 없다 |
- * | `stage-geometry` | 치수가 className 이 아니라 **JS 가 계산한 `style`** 에서 온다(절대배치 무대 좌표). 램프는 style 을 못 낸다 |
- * | `value-layer-peer` | 값 층 **자신의 집**. 프리미티브가 자기 규격을 스스로 선언하는 자리다. 억지로 옮기면 계약을 깨거나 색·치수를 `className` 으로 넘겨 층을 무력화한다 — 층이 자기를 소비할 수는 없다 |
- * | `standard-button` *(앵커, 2026-08-04)* | **값 층이 명시적으로 양보한 유일한 모양.** `control-class.ts` 가 자기 머리말에 *"표준 버튼(`<Button>`)을 대체하지 않는다 … 겹치는 자리를 만들면 «어느 쪽이 규격인가»가 흐려진다"* 고 적어 뒀다. 그러니 `buttonVariants()` 를 지나는 앵커는 **다른 값 층을 이미 지난 것**이고, `controlClass` 로 옮기는 것은 준수가 아니라 그 규칙 위반이다 |
- * | `no-spec` *(앵커, 2026-08-04)* | 이 태그가 **모양·크기·색을 하나도 선언하지 않는다** — `className={className}` 순수 패스스루이거나 `"inline-flex"` 자리잡기 한 개다. 값 층이 낼 것이 0인 자리이고, 자리잡기는 값 층 자신이 `className` 의 몫이라고 정의한 층이다 |
- * | `state-scoped` *(앵커, 2026-08-04)* | 규격 전체가 **변형 접두 아래에만** 존재한다(`focus:` 건너뛰기 링크 — 평상시에는 `sr-only`). `controlClass()` 는 무변형 클래스 문자열을 내므로 접두를 붙일 수 없다 |
- * | `prose` *(앵커, 2026-08-04 link 바닥 라운드)* | **컨트롤이 아니라 산문이다.** 마크다운 본문 흐름 속 링크 — 형제가 글이고 줄 상자를 부모 `--leading-prose` 가 소유하며 WCAG 2.5.8 이 문장 속을 면제한다. 값 층의 모양 여덟은 전부 flex 계열이라 **display:inline 을 원리적으로 낼 수 없다**(inline-flex 는 320px 에서 줄바꿈을 죽인다 — 실측 rect 1 vs 2). 목적지는 `.prose-link` 계약(`prose-link.contract.test.ts`)이다 |
+ * | `chrome-token` | Chrome tokens own dimensions. The value layer's height vocabulary is **fixed steps** only, but these tokens are `clamp(38px, 4.2vh, 48px)` or **redefined to different values** on narrow width/coarse pointer. Fixed-step ramps cannot express viewport functions or pointer upgrades. |
+ * | `stage-geometry` | Dimensions come from **JS-calculated `style`** (absolute stage coordinates), not className. Ramps cannot produce style. |
+ * | `value-layer-peer` | The value layer's **own house**. Positions where primitives declare their own specs. Forcing a move breaks contracts or passes color/dimensions via `className`, neutralizing the layer — a layer cannot consume itself. |
+ * | `standard-button` *(anchor, 2026-08-04)* | **The only shape explicitly yielded by the value layer.** `control-class.ts` states in its header: *"Does not replace standard buttons (`<Button>`) … creating overlapping positions blurs 'which is the spec'."* Thus, anchors passing through `buttonVariants()` have **already passed another value layer**, and moving them via `controlClass` is a violation of that rule, not compliance. |
+ * | `no-spec` *(anchor, 2026-08-04)* | This tag **declares no shape/size/color** — either pure passthrough `className={className}` or a single `"inline-flex"` placeholder. It's a position where the value layer has nothing to produce; placeholders are layers the value layer itself defines as its `className` share. |
+ * | `state-scoped` *(anchor, 2026-08-04)* | The entire spec exists **only under variant prefixes** (e.g., `focus:` skip link — `sr-only` normally). `controlClass()` produces unvarianted class strings, so it cannot add prefixes. |
+ * | `prose` *(anchor, 2026-08-04 link bottom round)* | **Not a control but prose.** Links within markdown body flow — siblings are text, parent `--leading-prose` owns line boxes, and WCAG 2.5.8 exempts within sentences. All eight value layer shapes are flex-based, so it's **fundamentally impossible to produce `display:inline`** (inline-flex kills line wrapping at 320px — measured rect 1 vs 2). The destination is the `.prose-link` contract (`prose-link.contract.test.ts`). |
  *
- * 반대로 **「값 층에 그 모양이 아직 없다」는 등재 사유가 아니다.** 그건 「체계」가
- * 부품을 더하면 열리는 자리이므로 **부채**다. 이 구분이 이 라운드의 전부다.
+ * Conversely, "the value layer doesn't have that shape yet" is **not a reason for registration**. That's a position opened by adding parts to the "system," so it is **debt**. This distinction is everything in this round.
  *
- * ### 세 갈래로 읽는 법 — 자리 하나를 앞에 두고 던지는 두 질문
+ * ### How to read the three branches — Two questions thrown at each position
  *
- * 1. **값 층이 이걸 낼 수 있나?** 못 내면 → **등재**(위 표의 청구 유형 중 하나).
- * 2. 낼 수 있다면, **낼 것이 있나?** 있으면 → **부채**(옮겨라). 없으면 →
- *    **근거 없음**(`NO_BASIS` — 아래 「2026-08-04 부류 라운드」 절).
+ * 1. **Can the value layer produce this?** If not → **registration** (one of the claim types in the table above).
+ * 2. If yes, **does it have something to produce?** If yes → **debt** (move it). If no →
+ *    **no-basis** (`NO_BASIS` — see "2026-08-04 category round" section below).
  *
- * 2번에서 「없다」가 참인 경우는 오늘 하나뿐이다: **화면을 덮는 클릭면**(스크림 ·
- * 차단 백드롭). 모양·크기·타입·잉크를 하나도 선언하지 않아 값 층이 씌울 것이 없다.
- * ⚠️ 「옮기기 번거롭다」·「픽셀이 움직인다」는 2번의 답이 아니다 — 그건 부채다.
+ * The case where "no" is true in #2 is only one today: **full-screen click surfaces** (screams · blocking backdrops). They declare no shape/size/type/ink, so the value layer has nothing to overlay.
+ * ⚠️ "Too cumbersome to move" · "Pixels move" are not answers to #2 — those are debt.
  *
- * `conditional` 이 붙은 줄은 「X 가 생기면 옮긴다」는 뜻이다 — 값 층이 그 축을
- * 얻는 날 등재를 지우고 부채로 내린 뒤 갚는다.
+ * Lines tagged `conditional` mean "move if X arises" — on the day the value layer gains that axis, delete registration and lower to debt, then repay.
  *
- * ### 2026-08-04 등재 라운드가 **기각한 13건** — 등재 주장이 거짓이었다
+ * ### 13 claims **rejected** by the 2026-08-04 registration round — because the claims were false
  *
- * 이 라운드에 들어온 주장은 「git 15 · shared/ui 10 · 공방 11 = 36 이 값 층
- * 밖」이었다. 자리마다 열어 보니 **23 만 참**이었다:
+ * Claims entering this round were "git 15 · shared/ui 10 · workshop 11 = 36 outside value layer." Opening each position revealed **only 23 were true**:
  *
- * | 기각된 자리 | 수 | 주장이 왜 거짓인가 |
+ * | Rejected position | Count | Why the claim was false |
  * |---|---:|---|
- * | `atlas-git-panel/ui/CommitDetail.tsx` | 2 | `--git-*` 토큰을 **안 쓴다**. 밑줄 탭(`min-h-9 border-b-2`)과 깊은 인셋 행(`px-5`) — 둘 다 원장이 이미 센 **값 층의 구멍**이다 = 부채 |
- * | `atlas-git-panel/ui/ConceptEgoCard.tsx` | 1 | 같음. `flex-wrap` 목록 속 글자 컨트롤 — 「밀집 wrap」 구멍 = 부채 |
- * | `shared/ui/node-explanation-edit.tsx` | 3 | `src/shared/ui` 에 **살 뿐** 프리미티브가 아니다. `h-6 w-6 rounded-full` 은 원장이 이미 이름까지 적어 둔 「원형 아이콘 컨트롤이 없다」 구멍 = 부채 |
- * | `shared/ui/info-hint.tsx` | 1 | 같은 원형 아이콘 구멍 = 부채 |
- * | `shared/ui/compact-copy-button.tsx` | 1 | `rounded-chip px-2 py-1 text-label` 은 램프가 내는 값이다. 밖에 있는 것은 `active:translate-y` **누름 방언** 하나 = 부채 |
- * | `ontology-studio/**` — 문장 속 컨트롤 3 · 점선 피커 1 · `rounded-2xl` 진입 카드 1 | 5 | 「무대 기하」가 아니다. 앞의 넷은 `inline`/점선 구멍이고, 마지막 하나는 **소유자 승인 + `eslint-disable` 로 이미 보이게 등재된** 램프 대기 예외다 = 부채 |
+ * | `atlas-git-panel/ui/CommitDetail.tsx` | 2 | Does **not use** `--git-*` tokens. Underline tab (`min-h-9 border-b-2`) and deep inset row (`px-5`) — both are **value layer holes already counted by the owner** = debt |
+ * | `atlas-git-panel/ui/ConceptEgoCard.tsx` | 1 | Same. Text control in `flex-wrap` list — "dense wrap" hole = debt |
+ * | `shared/ui/node-explanation-edit.tsx` | 3 | Only **lives** in `src/shared/ui`, not a primitive. `h-6 w-6 rounded-full` is the "no circular icon control" hole already named by the owner = debt |
+ * | `shared/ui/info-hint.tsx` | 1 | Same circular icon hole = debt |
+ * | `shared/ui/compact-copy-button.tsx` | 1 | `rounded-chip px-2 py-1 text-label` is what the ramp produces. What's outside is just one `active:translate-y` **press idiom** = debt |
+ * | `ontology-studio/**` — sentence controls 3 · dotted picker 1 · `rounded-2xl` entry card 1 | 5 | Not "stage geometry." The first four are `inline`/dotted holes; the last is a ramp waiting exception **already visibly registered with owner approval + `eslint-disable`** = debt |
  *
- * ⚠️ **덧붙여, 공방 11 의 근거로 제시된 「`studio-navigation.spec.ts` 가 그
- * 치수를 계약으로 못박는다」는 사실이 아니다.** 그 스펙이 재는 것은
- * `studio-save`/`studio-exit` 둘의 `fontSize`·`height` 뿐이고, 그 둘은 이 11 안에
- * **없다**. 무대의 세 자리가 값 층 밖인 진짜 이유는 e2e 계약이 아니라
- * **`style={{left, top, width: layout.socket.w …}}`** 다 — 근거를 바꿔 등재했다.
+ * ⚠️ **Additionally, the justification for workshop 11 — "`studio-navigation.spec.ts` fixes those dimensions by contract" — is not true.** That spec measures only `fontSize`·`height` of `studio-save`/`studio-exit`, and those two are **not in** this 11. The real reason three stage positions are outside the value layer is not e2e contracts but
+ * **`style={{left, top, width: layout.socket.w …}}`** — justification changed to registration.
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 부채 90 이 기다리는 것 — 값 층의 구멍 (다음 라운드의 입력)
+ * ## What awaits debt 90 — Value layer holes (input for next round)
  * ════════════════════════════════════════════════════════════════════
  *
- * 라운드마다 「못 옮긴 이유」를 세어 왔고, 그 census 를 여기 한 번만 둔다. 수는
- * 그 구멍을 마지막으로 센 라운드의 실측이다.
+ * We've counted "reasons unable to move" each round, and placed that census here once. The count is the measurement from the last round that measured these holes.
  *
- * | 구멍 | 마지막 실측 | 무엇이 없나 |
+ * | Hole | Last measurement | What's missing |
  * |---|---:|---|
- * | **크기 램프가 인셋과 타입을 한 단으로 묶는다** | 9 | 「큰 인셋 + 작은 글자」가 실재한다(모노 마이크로 CTA 5 · 성공 틴트 액션 2 · 설정 알림 칩 · `MarkdownField` 탭). 옮기면 타입이 바뀐다 — 축이 아니라 **어느 쪽이 규격인지** 정하는 「체계」의 일 |
- * | **`scope: 'panel'` 이 잉크만 연다** | 7 | 보더·인디고는 여전히 밖이다: `--topology-v2-panel-border`(#2a2a30) · `--topology-v2-panel-divider`(#23232a) · `--topology-v2-indigo-bright`(#8890e0 ≠ 전역 #7170ff). 값 층 주석은 *"패널 램프에 인디고는 없다"* 고 단언하지만 **있다** |
- * | **원형 아이콘 컨트롤이 없다** | 6 | `icon` 은 `rounded-chip` 고정. 24px 원을 6px 사각으로 바꾸는 것은 정규화가 아니라 **정체성 변경**이라 「체계」 소집 없이 혼자 정하지 않았다 |
- * | **밀집 행·wrap 속 보조 컨트롤** | 5 + 1 | `link` 의 `min-h-11`(WCAG 2.5.8)을 실으면 행이 2~3배가 된다. `inline` 축은 「**문장** 속」만 면제하고 「밀집 행 속」을 못 말한다 |
- * | **3열 그리드 행** | 3 | `STEP_ROW`(시각·이름·왜). `row` 는 flex 전용 |
- * | **`tone: 'accent'` 는 잉크가 아니라 표식이다** | 3 | 인디고가 둘이다 — 표식용 `--color-indigo-accent`(#7170ff)와 글자용 `--color-indigo-text-soft`(#bcc3ffeb). 틴트 바탕 위 실측: accent **3.55~4.25:1 (AA 미달)** vs text-soft **7.09~8.37:1**. 「못 옮긴 자리」가 아니라 **값 층 자신의 잠재 결함** |
- * | **밑줄이 선택 표시인 탭** | 2 | `segment` 는 「보더 0」이 정의라 `border-b-2` 탭을 못 그린다. 틴트로 바꾸는 것은 정규화가 아니라 **표기법 변경** = 디자인 게이트의 일 |
- * | **점선 = 「채울 수 있음」 어포던스** | 2 | 무대의 「더 잇기」·피커의 「새로 만들기」. 보더 *스타일* 은 모양이라 `className` 으로 넘기면 층이 무력해진다 |
- * | **전폭 중앙정렬 + 터치 승격** | 2 | `chip`/`card` 는 내용 폭이라 `justify-center` 가 없고, `justify-center` 를 가진 `segment` 는 보더가 없다 = 「보더 있는 전폭 중앙 버튼」이 없다 |
- * | **떠오르는 세그먼트** | 2 | `segment` 의 눌림은 인디고 틴트 하나인데, 트랙 위에 `--color-panel` 썸이 떠오르는 방언이 둘(`LocaleSwitch` · 설정 `SegmentSwitch`)이고 하나는 계약이 문자열로 고정한다 |
- * | **타입 스텝을 안 내는 자리가 없다** | 2 | 모양 여덟이 전부 크기를 강제하므로, 부모 글자 크기를 **상속해야** 하는 컨트롤은 구조적으로 못 들어온다 |
- * | **보더 있는 아이콘 정사각이 없다** | 2 | `QueueRowActions` 케밥 · `HubRail`. 수가 둘뿐이라 **아직 축이 아니다** — 수를 적어 두고 넘긴다 |
- * | **pill 의 얕은 세로 인셋** | 2 | 램프는 2·2·4px 인데 실제 필터 pill 은 6~10px. 올리면 타입까지 커진다 |
- * | **깊은 인셋 목록 행** | 1 | 커밋 파일 행의 `px-5`. `row` 의 최대는 `px-3` |
- * | **램프 밖 16px 반경** | 1 | 진입 선택 카드 — 소유자 승인 + `eslint-disable` 로 **이미 보이게 등재된** 예외. `--radius-surface`(16) 등재는 다음 디자인 패스 |
- * | **누름 방언(`active:translate-y`)** | 1 | `compact-copy-button`. 값 층에 누름 축이 없다 |
+ * | **Size ramp bundles inset and type in one step** | 9 | "Large inset + small text" exists (mono micro CTA 5 · success tint action 2 · settings notification chip · `MarkdownField` tab). Moving changes type — not an axis but a "system" task of deciding **which is the spec**. |
+ * | **`scope: 'panel'` opens only ink** | 7 | Border/indigo still outside: `--topology-v2-panel-border`(#2a2a30) · `--topology-v2-panel-divider`(#23232a) · `--topology-v2-indigo-bright`(#8890e0 ≠ global #7170ff). Value layer comment asserts *"panel ramp has no indigo"* but **it does**. |
+ * | **No circular icon control** | 6 | `icon` is fixed to `rounded-chip`. Changing 24px circle to 6px square is not normalization but **identity change**, so it wasn't decided alone without "system" convening. |
+ * | **Auxiliary controls in dense rows/wrap** | 5 + 1 | Applying `link`'s `min-h-11`(WCAG 2.5.8) makes rows 2~3x taller. The `inline` axis exempts only "**within sentences**" but cannot speak of "within dense rows." |
+ * | **3-column grid row** | 3 | `STEP_ROW`(visual/name/why). `row` is flex-only. |
+ * | **`tone: 'accent'` is a marker, not ink** | 3 | Two indigos: marker `--color-indigo-accent`(#7170ff) and text `--color-indigo-text-soft`(#bcc3ffeb). Measured on tint background: accent **3.55~4.25:1 (AA fail)** vs text-soft **7.09~8.37:1**. Not a "position unable to move" but **a potential defect of the value layer itself**. |
+ * | **Underline as selection indicator tab** | 2 | `segment` defines "border 0," so it can't draw `border-b-2` tabs. Changing to tint is not normalization but **notation change** = design gate's job. |
+ * | **Dotted line = "fillable" affordance** | 2 | Stage's "add more" · picker's "create new." Border *style* is shape; passing via `className` neutralizes the layer. |
+ * | **Full-width center alignment + touch upgrade** | 2 | `chip`/`card` have content width, no `justify-center`; `segment` with `justify-center` has no border = "full-width center button with border" doesn't exist. |
+ * | **Rising segment** | 2 | `segment`'s press is only indigo tint, but two idioms of `--color-panel` thumb rising on track (`LocaleSwitch` · settings `SegmentSwitch`), one fixed by contract as string. |
+ * | **No position without type step** | 2 | All eight shapes enforce size, so controls needing to **inherit** parent text size structurally can't enter. |
+ * | **No bordered icon square** | 2 | `QueueRowActions` kebab · `HubRail`. Count is only two, so **not yet an axis** — count and pass. |
+ * | **Shallow vertical inset of pill** | 2 | Ramp has 2·2·4px but actual filter pill is 6~10px. Raising makes type larger too. |
+ * | **Deep inset list row** | 1 | `px-5` of commit file row. Max for `row` is `px-3`. |
+ * | **Ramp outside 16px radius** | 1 | Entry selection card — exception **already visibly registered with owner approval + `eslint-disable`**. `--radius-surface`(16) registration in next design pass. |
+ * | **Press idiom (`active:translate-y`)** | 1 | `compact-copy-button`. Value layer has no press axis. |
  *
- * ### 등재 후보 검증 — 2026-08-04 통합 라운드가 7 을 확인해 등재했다
+ * ### Registration candidate verification — 2026-08-04 integrated round confirmed 7 for registration
  *
- * 위 문단이 「다음 등재 라운드」로 미뤘던 크롬 토큰 후보를 자리마다 열었다:
- * `SearchPalette` · `GlobalSearch` · `ShortcutSheet` · `DocsHeaderTile` ·
- * `BackToTopButton` · `GitStatusTile` 등 = **6 등재**.
- * 검증이 결함 하나를 잡았다 — GlobalSearch 의 전용 토큰은 32px **단독 고정
- * 선언**이라 `tokenIsBeyondFixedSteps` 가 기각했고(그동안 coarse 승격 블록
- * 주석은 «이미 커버됨»이라 주장), `--overlay-close-size` 로 수렴시킨 뒤에야
- * 등재됐다. **아직 검증 안 된 후보**: 스크림/전면 오버레이 5(청구 유형 신설
- * 필요) · 설정 시트 계약 문자열 고정 4 — 여전히 부채로 둔다(안전한 방향).
+ * The paragraph above delayed chrome token candidates to "next registration round"; opening each position: `SearchPalette` · `GlobalSearch` · `ShortcutSheet` · `DocsHeaderTile` ·
+ * `BackToTopButton` · `GitStatusTile` etc. = **6 registrations**.
+ * Verification caught one defect — GlobalSearch's dedicated token is a 32px **single fixed declaration**, so `tokenIsBeyondFixedSteps` rejected it (coarse upgrade block comment previously claimed "already covered"), and only after converging to `--overlay-close-size` was it registered. **Still unverified candidates**: scream/full overlay 5 (need new claim type) · settings sheet contract string fix 4 — still kept as debt (safe direction).
  *
- * ### 이 수가 **과다 계상**이라는 것 — 알고 두는 한계
+ * ### That this count is **over-counted** — Limitations we keep in mind
  *
- * 세는 것은 여는 태그의 **리터럴** `controlClass(` 다(같은 파일에서
- * `controlClass()` 로 만든 상수를 쓰는 태그는 통과시킨다). 그래서 램프를 통과한
- * 완성 클래스를 **다른 파일**에서 import 해 쓰면 「손으로 쓴 것」으로 잡힌다.
- * 안전한 방향의 오차이지만(과소 계상은 없다), 공유 상수로 뽑는 옳은 리팩터에
- * 벌점을 준다.
+ * We count the **literal** `controlClass(` of opening tags (tags using constants created by `controlClass()` in the same file pass through). So if a completed class passing the ramp is imported and used in **another file**, it's caught as "hand-written." A safe-direction error (no under-counting), but penalizes the correct refactor to shared constants.
  *
- * ### 2026-08-04 구멍 라운드 — 부채 90 → 85, 그리고 **새 축 0개**
+ * ### 2026-08-04 hole round — debt 90 → 85, and **0 new axes**
  *
- * 남은 77건(이 라운드 시작 시점의 미등재분)을 전수로 갈랐다. **이 라운드의
- * 산출물은 옮긴 5건이 아니라 「왜 축을 안 만들었나」다.**
+ * The remaining 77 items (unregistered at start of this round) were fully split. **The output of this round is not the 5 moved but "why no axis was created."**
  *
- * | 부류 | 수 | 무엇인가 |
+ * | Category | Count | What it is |
  * |---|---:|---|
- * | **값 층 밖 재판정** | 25 | 크롬 토큰 계약 10 · 스크림/전면 오버레이 5 · 설정 시트 계약이 클래스 문자열을 고정 4 · 오류/404 표준 버튼 자리 6(이번에 4 채택) → **21은 다음 등재 라운드** |
- * | **모노 대문자 마이크로 CTA** | 5 | **3라운드 연속.** 다음 판정 1순위 — 단 축(voice)이 아니라 **부품**으로 먼저 검토한다(규칙 1) |
- * | 다행·그리드 행 | 10 | 선행 「축 안 만듦」 결정 유효 |
- * | panel 보더·인디고 | 6 | **4라운드 연속.** 단 전부 2차 구멍과 겹쳐 단독 회수 0~1 |
- * | 인셋 바닥·비대칭 | 5 | |
- * | 타입·잉크 상속 | 5 | |
- * | 40px·틴트 채움 3 · 밀집 행 속 2 · 칩 28px 1 | 6 | |
- * | 단발(같은 사유가 하나뿐) | 14 | 축의 근거가 되지 못한다 |
+ * | **Value layer outside re-judgment** | 25 | Chrome token contract 10 · scream/full overlay 5 · settings sheet contract fixes class string 4 · error/404 standard button positions 6 (4 adopted this time) → **21 for next registration round** |
+ * | **Mono uppercase micro CTA** | 5 | **3rd consecutive round.** Next judgment priority 1 — review as **part** first, not axis (rule 1). |
+ * | Lucky/grid row | 10 | Prior "no axis creation" decision valid. |
+ * | Panel border/indigo | 6 | **4th consecutive round.** All overlap with secondary holes, single recovery 0~1. |
+ * | Inset bottom/asymmetric | 5 | |
+ * | Type/ink inheritance | 5 | |
+ * | 40px/tint fill 3 · dense row inside 2 · chip 28px 1 | 6 | |
+ * | Singletons (only one reason) | 14 | Cannot serve as axis justification. |
  *
- * **왜 축을 하나도 안 만들었나**: 남은 자리 대부분이 **구멍 둘 이상에 동시에**
- * 걸린다(예: panel 인디고 + 인셋·타입 결합). 그래서 어떤 단일 축을 신설해도
- * 그 축 **혼자** 여는 자리가 0~1이다. 소비처 0~1 축은 만들지 않는다 —
- * `fixedHeight` 를 죽인 그 기준이다. **panel 보더·인디고 6은 인셋·타입 결합
- * 해제와 같은 라운드에서만 연다.**
+ * **Why no new axes**: Most remaining positions hit **multiple holes simultaneously** (e.g., panel indigo + inset/type combination). So creating any single axis opens only 0~1 positions for that axis alone. Axes with 0~1 consumers aren't created — that's the criterion that killed `fixedHeight`. **Panel border/indigo 6 opens only in the same round as resolving inset/type combination.**
  *
- * **재측정이 앞선 관측 둘을 정정했다**: 「원형 아이콘 6」은 이 대상군에선 **2**
- * (넷은 `shared/ui` 라 값 층 밖) · `HubRail` 은 「보더 있는 아이콘 정사각」이
- * 아니라 세로 엣지 탭이라, 정사각은 **1**뿐이고 여전히 축이 아니다.
+ * **Re-measurement corrected two prior observations**: "Circular icon 6" is **2** for this target group (four are in `shared/ui`, outside value layer) · `HubRail` is a vertical edge tab, not "bordered icon square," so squares are only **1**, still not an axis.
  *
- * 옮긴 5: 404 두 파일이 `<Button>` 채택(그 자리 대비 **4.42 → 4.70** 정정 —
- * `a11y-ratchet` 의 ROUTES 밖이라 래칫이 못 보던 자리다) · `rounded-[4px]`
- * + eslint-disable → `rounded-micro`(disable 사유가 등재로 소멸).
+ * Moved 5: Two 404 files adopted `<Button>` (correcting that position ratio **4.42 → 4.70** — outside `a11y-ratchet`'s ROUTES, a position the ratchet couldn't see) · `rounded-[4px]` + eslint-disable → `rounded-micro`(disable reason extinguished by registration).
  *
- * ⚠️ 곁가지 실측: raw `buttonVariants()` 는 base 의 `border-transparent` 와
- * 변형 보더가 **둘 다 남아** CSS 소스 순서가 투명을 이긴다. `<Link>` 소비처는
- * `cn` 병합이 필수다.
+ * ⚠️ Side measurement: raw `buttonVariants()` has both base `border-transparent` and variant border **remaining**, so CSS source order wins transparency. `<Link>` consumers require `cn` merge.
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 2026-08-04 앵커 라운드 — 110 을 **전수로 갈랐다**
+ * ## 2026-08-04 Anchor Round — Split 110 **fully**
  * ════════════════════════════════════════════════════════════════════
  *
- * 앵커 게이트를 켠 날의 110 을 자리마다 열어 분류했다. **이 라운드의 산출물은
- * 옮긴 8건이 아니라 「나머지 102 가 왜 안 움직이나」의 전수다** — 버튼 쪽이
- * 417 → 85 를 만든 방식이 정확히 그것이었다.
+ * On the day anchor gate opened, we opened and classified 110 position by position. **The output of this round is not the 8 moved but a full split of "why the remaining 102 don't move"** — exactly what made button side go from 417 → 85.
  *
- * ### 옮긴 8 — 두 부류뿐이고 둘 다 근거가 실측이다
+ * ### Moved 8 — Only two categories, both justified by measurement
  *
- * | 부류 | 수 | 실이동 |
+ * | Category | Count | Actual movement |
  * |---|---:|---|
- * | `chip`/`md` **정확 일치** | 5 | **0px.** 손 클래스가 `min-h-8 px-2.5 text-label`+`border-soft`+`rounded-chip` 였고 램프가 내는 것이 같은 값이다. 램프가 더하는 `py-1.5` 는 자연높이를 16+12+2=30 으로 만들 뿐 `min-h-8`(32)이 여전히 이긴다 |
- * | `link`/`lg`/`scope:panel` | 3 | **+10px** (FullDetailA1 핸드오프 행). 이건 정규화가 아니라 **접근성 정정**이다 — 그 자리는 글자 높이 20px 짜리 타깃이었고 WCAG 2.5.8 의 24px 바닥 **미달**이었다(문장 속 면제에 해당하지 않는 홀로 선 컨트롤). `link` 의 `min-h-11` 이 정확히 이 결함을 막으려고 기본값인 축이다 |
+ * | `chip`/`md` **exact match** | 5 | **0px.** Hand class was `min-h-8 px-2.5 text-label`+`border-soft`+`rounded-chip`, and ramp produces the same values. Ramp's added `py-1.5` only makes natural height 16+12+2=30, but `min-h-8`(32) still wins. |
+ * | `link`/`lg`/`scope:panel` | 3 | **+10px** (FullDetailA1 handoff row). This is not normalization but **accessibility correction** — that position had a 20px text-height target and fell short of WCAG 2.5.8's 24px floor **not exempted by sentence exemption** (a standalone control). `link`'s `min-h-11` is exactly the default axis created to prevent this defect. |
  *
- * ### 남은 102 — 등재 19 · 부채 83
+ * ### Remaining 102 — Registration 19 · Debt 83
  *
- * | 부류 | 수 | 무엇이 없나 / 왜 밖인가 |
+ * | Category | Count | What's missing / Why outside? |
  * |---|---:|---|
- * | **[등재] `standard-button`** | 10 | 값 층이 양보한 모양. DownloadPage 7 · AgentClientButtons 1 · 404 두 파일 2 |
- * | **[등재] `chrome-token`** | 3 | AtlasGitPanel 2(`--git-setup-action-height`) · TopologyReviewLink 1(`--chrome-tile-size`). 둘 다 선언이 둘 이상이라 토큰 검사를 통과한다 |
- * | **[등재] `no-spec`** | 3 | MacosDownloadLink(패스스루) · PublicQuickActions 2(`inline-flex` 래퍼) |
- * | **[등재] `value-layer-peer`** | 1 | `ChromeTile` 의 `<Link>` 갈래 |
- * | **[등재] `state-scoped`** | 1 | 건너뛰기 링크 |
- * | 타입 스텝을 **안 내는** 자리가 없다 | 13 | 모양 여덟이 전부 크기를 강제하므로 **부모 크기를 상속해야 하는** 앵커가 구조적으로 못 들어온다. 버튼 원장이 「2」로 세던 구멍인데 앵커에서 **13** 이다 — 이 라운드 최대 부류이고 다음 판정 1순위 |
- * | 밀집 행·문장 속 글자 링크 | 12 | `link` 의 `min-h-11`(WCAG 2.5.8)이 상단 바·칩 안·2연 링크 행을 2~3배로 만든다. `inline` 축은 「**문장** 속」만 면제한다 |
- * | **상시 밑줄 + `decoration-*`** | 12 | 값 층에 밑줄·decoration 축이 **아예 없다**. 절반이 마크다운 본문 링크(문서함 5 · 관문 2)라 컨트롤이 아니라 **산문**이다 — 축을 만들지, 이 부류를 컨트롤에서 빼는 게 맞는지가 「체계」의 판정이다 |
- * | 인셋과 타입이 한 단으로 묶인다 | 9 | 버튼 원장이 「9」로 센 그 구멍. 앵커에서도 정확히 9다 |
- * | 무게 축이 없다(`font-medium`/`semibold`) | 4 | `onAccent` 만 semibold 를 고정으로 싣는다 |
- * | 보더 없는 **세로** 타일 | 4 | 레일 2 · 하단 탭 2. `tile` 은 보더·반경·인셋이 필수다. ⚠️ 하단 탭의 `--topology-bottom-tab-min-height` 로 `chrome-token` 을 주장했다가 **기각**했다 — 56px 고정 선언 하나라 토큰 검사가 거절한다(게이트가 등재 도피를 실제로 막은 사례) |
- * | 사다리 밖 높이 | 3+2+2+1+2 | 36px 3 · 28px 2 · 40px 칩 2 · 48px 시트 행 1 · 40px `rounded-full` 방언 2 |
- * | 틴트/오버레이 채움 | 3 | |
- * | 모노 대문자 마이크로 | 3 | 버튼 쪽과 **같은 부류**. 합치면 8이고 4라운드 연속이다 |
- * | 다행·그리드 카드 | 3 | 선행 「축 안 만듦」 결정 유효 |
- * | `border-t` 목록 행 | 3 | `row` 에 구분선이 없다 |
- * | 패널 보더·액션 표면 | 2 | `scope: 'panel'` 이 잉크만 연다 — 버튼 쪽 5라운드 연속 |
- * | 단발(같은 사유가 하나뿐) | 6 | 누름/부상 방언 · 세로 밑줄 선택 표시 · ChromeTile 인라인 재구현 · 보더색 축 · `link` 에 `body-lg` 단 없음 · (위 사다리 밖에 포함되지 않은 잔여) |
+ * | **[Registration] `standard-button`** | 10 | Shape yielded by value layer. DownloadPage 7 · AgentClientButtons 1 · Two 404 files 2. |
+ * | **[Registration] `chrome-token`** | 3 | AtlasGitPanel 2(`--git-setup-action-height`) · TopologyReviewLink 1(`--chrome-tile-size`). Both have multiple declarations, passing token check. |
+ * | **[Registration] `no-spec`** | 3 | MacosDownloadLink(passthrough) · PublicQuickActions 2(`inline-flex` wrapper). |
+ * | **[Registration] `value-layer-peer`** | 1 | `<Link>` branch of `ChromeTile`. |
+ * | **[Registration] `state-scoped`** | 1 | Skip link. |
+ * | No position without type step | 13 | All eight shapes enforce size, so anchors needing to **inherit parent size** structurally can't enter. Button owner counted this hole as "2," but it's **13** for anchors — largest category this round, next judgment priority 1. |
+ * | Dense row/sentence text links | 12 | `link`'s `min-h-11`(WCAG 2.5.8) makes top bar/chip inside/2-link row 2~3x taller. `inline` axis exempts only "**within sentences**." |
+ * | **Permanent underline + `decoration-*`** | 12 | Value layer has **no underline/decoration axis at all**. Half are markdown body links (document 5 · gateway 2), so not controls but **prose** — whether to create an axis or remove this category from controls is "system's" judgment. |
+ * | Inset and type bundled in one step | 9 | The hole button owner counted as "9." Exactly 9 for anchors too. |
+ * | No weight axis (`font-medium`/`semibold`) | 4 | Only `onAccent` loads semibold as fixed. |
+ * | Borderless **vertical** tile | 4 | Rail 2 · bottom tab 2. `tile` requires border/radius/inset. ⚠️ Claimed `--topology-bottom-tab-min-height` for `chrome-token` on bottom tab but **rejected** — single 56px fixed declaration, so token check refuses (case where gate actually blocks registration escape). |
+ * | Height outside ladder | 3+2+2+1+2 | 36px 3 · 28px 2 · 40px chip 2 · 48px sheet row 1 · 40px `rounded-full` idiom 2. |
+ * | Tint/overlay fill | 3 | |
+ * | Mono uppercase micro | 3 | Same category as button side. Combined is 8, 4th consecutive round. |
+ * | Lucky/grid card | 3 | Prior "no axis creation" decision valid. |
+ * | `border-t` list row | 3 | `row` has no divider. |
+ * | Panel border/action surface | 2 | `scope: 'panel'` opens only ink — 5th consecutive round for button side. |
+ * | Singleton (only one reason) | 6 | Press/raise idiom · vertical underline selection indicator · ChromeTile inline reimplementation · border color axis · no `body-lg` step on `link` · (remaining not included in height outside ladder). |
  *
- * **왜 이번에도 새 축이 0인가**: 최대 부류 둘(타입 상속 13 · 밀집 행 12)이
- * **정반대 방향의 요구**다 — 하나는 "크기를 내지 마라", 하나는 "높이는 내되
- * 44 는 빼라". 둘 다 `link` 를 건드리고 서로의 해를 무효화한다. 어느 쪽이
- * 규격인지는 「체계」의 일이지 이 라운드가 혼자 정할 것이 아니다.
+ * **Why zero new axes again**: Two largest categories (type inheritance 13 · dense row 12) are **opposite direction requirements** — one "don't produce size," the other "produce height but exclude 44." Both touch `link` and invalidate each other's harm. Which is the spec is "system's" job, not something this round decides alone.
  *
- * ### 다음 라운드의 입력 — 회수량 순, 전수와 함께
+ * ### Input for next round — By recovery count, with full split
  *
- * | 순위 | 무엇 | 회수 | 왜 이번에 안 했나 |
+ * | Rank | What | Recovery | Why not this time? |
  * |---:|---|---:|---|
- * | 1 | `link` 의 **타입/타깃 두 축** 판정 | 25 | 타입 상속 13 + 밀집 행 12 를 한 번에 여는 유일한 결정. 「체계」 소집 사안이고, 이 라운드가 그 파일을 고치지 않기로 한 이유다 |
- * | 2 | 밑줄·decoration 축 — **혹은 산문 링크를 컨트롤에서 빼기** | 12 | 절반이 마크다운 본문이라 「누르는 것」이 아닐 수 있다. 축을 만들지 분류를 바꿀지가 먼저다 |
- * | 3 | 인셋·타입 결합 해제 | 9 | 버튼 쪽 9 와 **같은 결정**이다 — 두 수가 한 라운드에서 같이 내려간다 |
- * | 4 | 무게 축 | 4 | `onAccent` 만 semibold 를 싣는 지금이 비대칭이다 |
- * | 5 | 보더 없는 세로 타일 | 4 | 레일 2 + 하단 탭 2. `tile` 에 「보더 0」 갈래가 필요하다 |
- * | 6 | `app/error.tsx` · `app/global-error.tsx` 의 `rounded-full` 방언 | 2(+버튼 2) | 404 두 파일이 어제 `<Button>` 으로 정규화한 **그 방언의 형제**를 이번에 놓친 것이 아니라, 옆의 `<button>` 과 **함께** 옮겨야 해서 남겼다. 실측 예상 이동: 반경 9999→12 · px 16→18 · 타입 12.5→14 · 잉크 secondary→primary + 배경 채움. 값 층 이동이 아니라 **디자인 판정**이라 게이트가 다르다 |
- * | 7 | ChromeTile 인라인 재구현 1(`HomePage`) | 1 | 프리미티브로 옮기는 것이 답인데 아이콘 토큰이 다르고(`--topology-chrome-icon-size` vs `--chrome-icon`) 배지 자식이 있어 드롭인이 아니다 |
- * | — | 모노 대문자 마이크로 3 | 3 | 버튼 쪽 5와 **합쳐서 8**. 4라운드 연속이므로 축이 아니라 **부품**으로 검토한다 |
+ * | 1 | `link`'s **type/target two axes** judgment | 25 | The only decision opening both type inheritance 13 + dense row 12 at once. "System" convening matter, reason this round didn't fix that file. |
+ * | 2 | Underline/decoration axis — **or remove prose links from controls** | 12 | Half are markdown body, so may not be "pressable." Whether to create axis or change classification comes first. |
+ * | 3 | Resolve inset/type combination | 9 | Same decision as button side's 9 — both numbers drop in same round. |
+ * | 4 | Weight axis | 4 | Asymmetry now: only `onAccent` loads semibold. |
+ * | 5 | Borderless vertical tile | 4 | Rail 2 + bottom tab 2. `tile` needs "border 0" branch. |
+ * | 6 | `app/error.tsx` · `app/global-error.tsx`'s `rounded-full` idiom | 2(+button 2) | Not missed this time but the **sibling** of the idiom normalized to `<Button>` yesterday, needing to move **together** with adjacent `<button>`, so left behind. Expected actual movement: radius 9999→12 · px 16→18 · type 12.5→14 · ink secondary→primary + background fill. Not value layer movement but **design judgment**, so different gate. |
+ * | 7 | ChromeTile inline reimplementation 1(`HomePage`) | 1 | Answer is moving to primitive, but icon tokens differ (`--topology-chrome-icon-size` vs `--chrome-icon`) and has badge child, so not a drop-in. |
+ * | — | Mono uppercase micro 3 | 3 | Combined with button side's 5 to **8**. 4th consecutive round, so review as **part**, not axis. |
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 2026-08-04 통합 라운드 — 버튼 85 + 앵커 83 을 한 표로 재고, 조합으로 판정했다
+ * ## 2026-08-04 Integrated Round — Re-evaluate button 85 + anchor 83 as one table, judge by combination
  * ════════════════════════════════════════════════════════════════════
  *
- * 세 라운드 연속 「새 축 0」의 이유가 «남은 자리가 구멍 둘 이상에 동시에
- * 걸린다»였으므로, 이번엔 부류를 하나씩이 아니라 **조합으로** 쟀다. 전수
- * 재측정은 이 파일의 파서와 같은 로직(중괄호 깊이)으로 했고 85 · 83 이
- * 기준선과 정확히 일치했다.
+ * Since reason for "zero new axes" three consecutive rounds was "remaining positions hit multiple holes simultaneously," this time we weighed categories not singly but **by combination**. Full re-measurement used same logic as this file's parser (brace depth), and 85 · 83 matched baseline exactly.
  *
- * ### 통합 부류표 (버튼 B / 앵커 A — 한 자리가 여러 부류에 겹친다)
+ * ### Integrated category table (Button B / Anchor A — one position overlaps multiple categories)
  *
- * | 부류 | B | A | 합 | 상태 |
+ * | Category | B | A | Sum | Status |
  * |---|---:|---:|---:|---|
- * | 타입 스텝을 안 내는 자리(상속 필요) | 52* | 38* | 90* | `link` 재설계 대기(아래 판정) — *휴리스틱 과다 계상: 라벨이 자식 span 에 있는 자리·아이콘 전용이 섞인다. 선별 전수는 앵커 라운드의 13 이 정본 |
- * | 인셋·타입 결합(램프 밖 (px,py,type)) | 19 | 24 | 43 | 축이 아니라 **정체 셋으로 분해**(아래 판정) |
- * | 틴트 채움(인디고/성공 a-단 배경) | 15 | 9 | 24 | 모노 부품·panel 표면과 동반 |
- * | 사다리 밖 높이(h-5/7/9/10/12/16) | 10 | 10 | 20 | 부분적으로 크롬 토큰·표준 버튼 방언 |
- * | 상시 밑줄·decoration | 2 | 13 | 15 | 상호작용 판정: 산문 5 + 가짜 산문 2 는 컨트롤이 아니다 — 산문 계약 라운드로 |
- * | 무게(font-medium/semibold) | 8 | 7 | 15 | 축 후보, 소비처 전수 완료 |
- * | rounded-full 방언(pill 밖) | 9 | 5 | 14 | 다수가 모노 CTA 와 겹침 |
- * | **모노 대문자 마이크로 CTA** | 8 | 4 | 12 | **5라운드 연속 — 부품 승격 판정(아래)** |
- * | 다행·그리드 | 4 | 6 | 10 | 「축 안 만듦」 결정 유효 |
- * | panel 표면(보더·divider·indigo-bright) | 7 | 1 | 8 | 소비처 있음 — 인셋·타입 분해와 같은 라운드 |
- * | 원형 아이콘 | 6 | 0 | 6 | 축 후보(icon 원형 갈래), 소비처 6 |
- * | border-t 목록 행 | 4 | 2 | 6 | row 구분선 갈래 후보 |
- * | 전폭 중앙정렬 | 6 | 0 | 6 | |
- * | 스크림/전면 오버레이 | 5 | 0 | 5 | 등재 청구 유형 신설 대기 |
- * | 누름 방언(active:translate) | 4 | 0 | 4 | |
- * | 점선 2 · 밑줄 탭 1 · 9px 타입 2 | 5 | 0 | 5 | 단발 |
+ * | Position without type step (needs inheritance) | 52* | 38* | 90* | Waiting `link` redesign (judgment below) — *Heuristic over-count: positions with label in child span · icon-only mixed. Pre-selection full split is anchor round's 13 as ground truth. |
+ * | Inset/type combination (ramp outside (px,py,type)) | 19 | 24 | 43 | Not axis but **split into three identities** (judgment below). |
+ * | Tint fill (indigo/success a-step background) | 15 | 9 | 24 | With mono parts/panel surface. |
+ * | Height outside ladder(h-5/7/9/10/12/16) | 10 | 10 | 20 | Partially chrome token/standard button idiom. |
+ * | Permanent underline/decoration | 2 | 13 | 15 | Interaction judgment: prose 5 + fake prose 2 are not controls — to prose contract round. |
+ * | Weight(font-medium/semibold) | 8 | 7 | 15 | Axis candidate, consumer full split complete. |
+ * | rounded-full idiom(outside pill) | 9 | 5 | 14 | Majority overlaps mono CTA. |
+ * | **Mono uppercase micro CTA** | 8 | 4 | 12 | **5th consecutive round — part upgrade judgment (below)**. |
+ * | Lucky/grid | 4 | 6 | 10 | "No axis creation" decision valid. |
+ * | Panel surface(border/divider/indigo-bright) | 7 | 1 | 8 | Has consumers — same round as inset/type split. |
+ * | Circular icon | 6 | 0 | 6 | Axis candidate(icon circular branch), 6 consumers. |
+ * | border-t list row | 4 | 2 | 6 | `row` divider branch candidate. |
+ * | Full-width center alignment | 6 | 0 | 6 | |
+ * | Scream/full overlay | 5 | 0 | 5 | Waiting new registration claim type. |
+ * | Press idiom(active:translate) | 4 | 0 | 4 | |
+ * | Dotted 2 · underline tab 1 · 9px type 2 | 5 | 0 | 5 | Singleton. |
  *
- * ### 조합 분석 — 「축 A 혼자 N, A+B 로 M」 (이 소집의 목적)
+ * ### Combination analysis — "Axis A alone N, A+B for M" (purpose of this convening)
  *
- * 처방 후보별로 «그 처방만으로 자리가 통째로 열리는가»를 셌다:
+ * Counted per prescription candidate "does that prescription alone open the position entirely?":
  *
- * | 처방 | 혼자 여는 자리 | 조합으로 여는 자리 |
+ * | Prescription | Positions opened alone | Positions opened by combination |
  * |---|---:|---|
- * | 밑줄/산문 재단 | 17 | — (상호작용 판정 수신, 산문 계약 라운드로) |
- * | 크롬 토큰 등재 검증 | 15 | **이번에 7 실행** (나머지는 스크림 유형·설정 시트 계약) |
- * | 인셋·타입 해제(단일 축 가정) | 13 | +18 (모노·틴트와 함께) — 단 축으로 풀지 않는다(판정 ②) |
- * | 모노 부품 혼자 | 3 | **+9~12** (틴트 채움·인셋 결합과 함께 — 三構멍 동시가 이 부류의 정체) |
- * | 원형 아이콘 갈래 | 3 | +3 (크롬 토큰·틴트와 함께) |
- * | panel 표면 | 3 | +5 (인셋·타입과 함께 — 4라운드 연속 관측과 일치) |
- * | border-t 행 갈래 | 5 | +2 |
+ * | Underline/prose tailoring | 17 | — (Receiving interaction judgment, to prose contract round). |
+ * | Chrome token registration verification | 15 | **7 executed this time** (rest scream type/settings sheet contract). |
+ * | Inset/type release(single axis assumption) | 13 | +18 (with mono/tint) — but not resolved by single axis (judgment ②). |
+ * | Mono part alone | 3 | **+9~12** (with tint fill/inset combination — triple-hole simultaneity is this category's identity). |
+ * | Circular icon branch | 3 | +3 (with chrome token/tint). |
+ * | Panel surface | 3 | +5 (with inset/type — matches 4th consecutive round observation). |
+ * | border-t row branch | 5 | +2. |
  *
- * 수치가 소집 전제를 확인한다: **최대 회수는 단일 축이 아니라 «모노 부품 +
- * 틴트 톤 + 인셋 분해» 묶음(≈31)과 «link 재설계»(타입 상속 + 밀집 행 + 산문
- * 재단, ≈37)다.** 전자는 부품 스펙이 필요하고 후자는 아래 판정을 받았다.
+ * Numbers confirm convening premise: **largest recovery is not single axis but "mono part + tint tone + inset split" bundle(≈31) and "link redesign"(type inheritance + dense row + prose tailoring, ≈37).** Former needs part spec; latter received judgment below.
  *
- * ### 판정 (체계석, 2026-08-04)
+ * ### Judgment (System stone, 2026-08-04)
  *
- * ① **`link` 는 잘못된 바닥 위에 서 있다 — 사실 오류.** 값 층은 WCAG 2.5.8
- *    (AA, 24×24)을 인용하면서 2.5.5(AAA)/HIG 의 값(44, `min-h-11`)을 싣는다.
- *    44 는 `--touch-target-min`이고 design.md 가 «coarse 단일 출처»로 못박은
- *    값이다 — fine 포인터 전면 44 는 이 저장소 자신의 터치 계약 위반이다.
- *    `inline` 탈출구는 바닥이 잘못돼서 필요해진 축이다. **재설정(바닥 24 +
- *    coarse 승격 + `inline` 축 삭제 + 산문 재단)은 채택 소비처 43호출/28파일의
- *    픽셀을 움직이므로 자리별 전수 표와 함께 자체 라운드로 간다** — 이 라운드는
- *    판정과 주석 정정(잘못된 인용 제거)까지만 한다.
- * ② **인셋·타입 결합은 축이 아니다.** 43 자리의 (px,py,type) 분포가 한 구멍이
- *    아니라 세 정체다: 모노 명령 태그(부품) · 표준 버튼 방언(px-4/body/h-10) ·
- *    ±1단 이내 행/칩. 인셋 축을 신설하면 8모양×4크기에 곱해져 두 번째
- *    시스템이 된다(규칙 1 산수).
- * ③ **모노 명령 태그는 부품으로 승격한다** (5라운드 연속 = 최다 반복 부류).
- *    voice(font-mono·uppercase·tracking 1토큰·caption)를 소유하는 행동 층
- *    프리미티브 + 게이트를 같은 PR 에 — 다음 라운드 1순위. tracking 은 전수
- *    0.08×3 / 0.10 / 0.12 / 0.14×3 으로 갈라져 있어 값 확정에 화면 실측 필요.
- *    (2026-08-04 아이콘 램프 라운드의 전 범위 재전수 — 등재·부채 무관, 모든
- *    `font-mono`+`uppercase` 컨트롤 태그: **22자리 · 5값** = 0.06×2(문서함
- *    감사 모달, 이 라운드 신발견) · 0.08×6 · 0.10×2 · 0.12×4 · 0.14×8.
- *    부채 12 의 4값 위에 0.06 이 하나 더 있다 — 실측 라운드의 입력.)
+ * ① **`link` stands on wrong floor — factual error.** Value layer cites WCAG 2.5.8
+ *    (AA, 24×24) while loading values from 2.5.5(AAA)/HIG(44, `min-h-11`).
+ *    44 is `--touch-target-min` and design.md fixed as "coarse single source" — fine pointer full-screen 44 violates this repository's own touch contract.
+ *    `inline` escape route was an axis needed because floor was wrong. **Reset(floor 24 + coarse upgrade + `inline` axis deletion + prose tailoring) moves pixels for 43 calls/28 files of adoption consumers, so goes to its own round with position-by-position full split table** — this round only does judgment and comment correction(remove incorrect citation).
+ * ② **Inset/type combination is not an axis.** Distribution of (px,py,type) for 43 positions is not one hole but three identities: mono command tag(part) · standard button idiom(px-4/body/h-10) · ±1-step within row/chip. Creating inset axis multiplies to 8 shapes×4 sizes, becoming second system(rule 1 arithmetic).
+ * ③ **Mono command tag upgraded to part** (5th consecutive round = most repeated category). Action layer primitive + gate owning voice(font-mono·uppercase·tracking 1token·caption) in same PR — next round priority 1. Tracking splits into full split 0.08×3 / 0.10 / 0.12 / 0.14×3, needing screen measurement for value confirmation.
+ *    (Full range re-split of 2026-08-04 icon ramp round — unrelated to registration/debt, all `font-mono`+`uppercase` control tags: **22 positions · 5 values** = 0.06×2(document audit modal, newly found this round) · 0.08×6 · 0.10×2 · 0.12×4 · 0.14×8.
+ *    One more 0.06 above debt 12's 4 values — input for measurement round.)
  *
- * ### 다음 라운드 — 회수량 순
+ * ### Next round — By recovery count
  *
- * | 순위 | 무엇 | 회수(예상) | 선행 조건 |
+ * | Rank | What | Recovery(expected) | Prerequisite |
  * |---:|---|---:|---|
- * | 1 | `link` 재설정: 바닥 24(min-h-6) + coarse 승격 + inline 축 삭제 + 산문 재단(산문 5 · 가짜 산문 2 → 산문 계약: display:inline 강제·밑줄 토큰·UA 포커스) | 부채 ≈37 + 채택 43호출 정합 | 자리별 전수 표 · touch-target 계기에 Inline 예외 선탑재(안 하면 산문 5 가 거짓 빨강) · 밀집 행은 touch-hit-expand 금지(탭 훔침) — gap 처방(gap-1→2.5, 높이 불변) 우선 |
- * | 2 | 모노 명령 태그 부품(+ 틴트 채움 톤) | ≈12 | tracking 1값 확정(화면 실측) · 앰버-격리 1자리는 강등 판정 뒤 |
- * | 3 | 밀집 행 AA 즉시 수리 — DomainCouplingCard 세로 gap-1→gap-2.5(중심거리 21→26, 행 높이 불변) | AA 위반 1면 해소 | 상호작용 실측 수신 완료 — 적용만 남음 |
- * | 4 | panel 표면(보더·divider·indigo-bright) + 인셋 분해 잔여 | ≈8 | scope 계약(「신호는 scope 무관」) 명시 개정 필요 |
- * | 5 | 원형 아이콘 갈래 / border-t 행 갈래 / 무게 축 | 6 / 6 / 15 | 각각 소비처 전수 재확인 |
- * | 6 | 스크림 등재 청구 유형 · 설정 시트 계약 4 | 9 | 등재 기준 표 확장 |
+ * | 1 | `link` reset: floor 24(min-h-6) + coarse upgrade + inline axis deletion + prose tailoring(prose 5 · fake prose 2 → prose contract: force display:inline · underline token · UA focus) | Debt ≈37 + adoption 43-call consistency | Position-by-position full split table · touch-target meter Inline exception pre-adoption(if not, prose 5 becomes false red) · Dense row touch-hit-expand prohibited(tap stealing) — gap prescription(gap-1→2.5, height unchanged) priority. |
+ * | 2 | Mono command tag part(+ tint fill tone) | ≈12 | Tracking 1 value confirmation(screen measurement) · Amber-isolated 1 position post-downgrade judgment. |
+ * | 3 | Dense row AA immediate fix — DomainCouplingCard vertical gap-1→gap-2.5(center distance 21→26, row height unchanged) | Resolve 1 AA violation | Interaction measurement reception complete — only application remains. |
+ * | 4 | Panel surface(border/divider/indigo-bright) + remaining inset split | ≈8 | Scope contract("signal is scope-independent") explicit revision needed. |
+ * | 5 | Circular icon branch / border-t row branch / weight axis | 6 / 6 / 15 | Re-verify consumer full split for each. |
+ * | 6 | Scream registration claim type · settings sheet contract 4 | 9 | Expand registration criteria table. |
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 2026-08-04 link 바닥 24 라운드 — 「다음」 1순위 집행 (자체 라운드)
+ * ## 2026-08-04 link floor 24 Round — Execute "next" priority 1 (own round)
  * ════════════════════════════════════════════════════════════════════
  *
- * 통합 라운드 판정 ①의 집행이다. 원장: docs/DECISIONS.md 2026-08-04
- * 「link 바닥 24」. 이 파일에 남기는 것은 수와 정정 둘이다:
+ * Execution of integrated round judgment ①. Owner: docs/DECISIONS.md 2026-08-04
+ * "link floor 24." What remains in this file is count and correction both:
  *
- * - **채택 소비처 실측 40호출/24파일** — 판정문의 «43호출/28파일» 은 과다
- *   계상이었다(이 파일의 중괄호-깊이 파서와 같은 로직으로 재전수). 자리별
- *   before→after 전수 표는 PR 본문과 원장에 있다.
- * - `link` 바닥 `min-h-11`(44) → **`min-h-6`(24, WCAG 2.5.8 AA)**. coarse 의
- *   44 는 `.touch-hit-expand` 가 낸다 — 부착 25(신규 21), **미부착 15 는 이웃
- *   타깃 여유 <12px** (탭 훔침: DOM 순서상 뒤 원소의 ::after 가 앞 원소를
- *   덮는다) 또는 진짜 문장·캡션 행 속이다. 자리별 판정은 원장 표.
- * - `inline` 축 **삭제** — 14곳 전수 중 진짜 문장 속은 3곳뿐이었고, 판정
- *   재료(형제 글자 출처 · used display · reflow)가 전부 정적 시야 밖이다.
- *   인라인 면제 판정은 런타임 계기(touch-target-contract 의 fine-pointer
- *   검사, INLINE_EXEMPT + spacingClear)로 이관했다.
- * - **산문 재단 6** (위 `prose` 등재) — 앵커 부채 83 → 77. 판정문의 «→76» 은
- *   산문 7 가정이었고 재전수가 6 으로 정정했다(등재 주석 참조).
+ * - **Adoption consumer measurement 40 calls/24 files** — "43 calls/28 files" in judgment text was over-counted(re-split with same logic as this file's brace-depth parser). Position-by-position before→after full split table is in PR body and owner. |
+ * - `link` floor `min-h-11`(44) → **`min-h-6`(24, WCAG 2.5.8 AA)**. Coarse's
+ *   44 is produced by `.touch-hit-expand` — attachment 25(new 21), **non-attachment 15 has neighbor target margin <12px** (tap stealing: ::after of element later in DOM order covers preceding element) or truly within sentence/caption row. Position-by-position judgment in owner table.
+ * - `inline` axis **deletion** — Of 14 positions fully split, only 3 were truly within sentences; judgment materials(sibling text source · used display · reflow) are all outside static view.
+ *   Inline exemption judgment transferred to runtime meter(touch-target-contract's fine-pointer
+ *   check, INLINE_EXEMPT + spacingClear).
+ * - **Prose tailoring 6** (above `prose` registration) — Anchor debt 83 → 77. Judgment text's "→76" assumed prose 7, re-split corrected to 6(see registration comment).
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 2026-08-04 부류 라운드 — 「근거 없음」을 부채에서 갈라낸다 (버튼 78 → 74)
+ * ## 2026-08-04 Category Round — Separate "no-basis" from debt (button 78 → 74)
  * ════════════════════════════════════════════════════════════════════
  *
- * 소유자 지적으로 열린 라운드다: 부채 수에 **「값 층에 넣을 이유가 없다고 판정된
- * 자리」**가 섞여 있어 그 수가 무엇을 뜻하는지 흐려졌다. 이 라운드는 코드를 한 줄도
- * 안 고쳤다 — **분류와 계측만** 했다.
+ * Round opened by owner's note: debt count mixed with **"positions judged to have no reason to put in value layer,"** blurring what that number means. This round didn't fix a single line of code — only **classification and measurement**.
  *
- * ### 이 라운드의 산출물은 갈라낸 4 가 아니라 **기각한 20** 이다
+ * ### Output of this round is not the 4 separated but **20 rejected**
  *
- * 머리말이 「단발 14 · 다행·그리드 10」을 그 부류로 세어 뒀다. 자리마다 열어
- * **저장소 전체를 분모로** 다시 재니 대부분이 거짓이었다. 「단발」은 그 라운드의
- * *대상군 안에서* 하나였던 것이지 **저장소에서 하나**가 아니었다 — 분모가 다른 수를
- * 같은 이름으로 부르고 있었다.
+ * Header counted "singleton 14 · lucky/grid 10" as those categories. Opening position by position and **re-measuring with entire repository as denominator**, most were false. "Singleton" was only one *within that round's target group*, not **one in the repository** — calling different denominators by same name.
  *
- * | 주장 | 그때 셈 | 전수 재측정 | 참? | 어디로 |
+ * | Claim | Count then | Full split re-measurement | True? | Where to |
  * |---|---:|---:|---|---|
- * | 누름 방언(`active:translate`)이 단발 | 1 | **5** | 거짓 | 부채 |
- * | 점선 어포던스가 단발 | 2 | **3** | 거짓 | 부채 |
- * | 깊은 인셋(`px-5`)이 단발 | 1 | **2** | 거짓 | 부채 |
- * | 밑줄 탭(`border-b-*`)이 단발 | 2 | **2** — `tab-bar.tsx` 프리미티브가 이미 그 표기법을 소유한다 | 거짓 | 부채(목적지는 `<TabBar>`) |
- * | 세로 밑줄·보더색·무게 등 나머지 「단발」 | ~8 | 램프 밖 **속성 종류**로 묶으면 최소 6 소비처(무게 39 · 밑줄 24 · 모노 46 …) | 거짓 | 부채 |
- * | 다행·그리드 행 | 10 | 여는 태그에 실제 그리드는 **1**(`DesktopVaultWelcome`). 나머지는 「다행 카드」 판정이지 그리드가 아니다 | 거짓 | 부채 |
- * | 그 **1** 마저 | — | 아이콘 열이 `h-7 w-7` 고정이라 `row`(flex+gap)로 **같은 픽셀**이 나온다. 그리드는 필수가 아니라 취향이다 | 거짓 | 부채 |
- * | **전면 클릭면(스크림·차단 백드롭)** | 5 | **4** — 다섯 번째(`DemoStage` 재생 오버레이)는 `text-body`·`leading-body` 를 실어 판정 함수가 기각 | **참** | **근거 없음 4** |
+ * | Press idiom(`active:translate`) is singleton | 1 | **5** | False | Debt |
+ * | Dotted affordance is singleton | 2 | **3** | False | Debt |
+ * | Deep inset(`px-5`) is singleton | 1 | **2** | False | Debt |
+ * | Underline tab(`border-b-*`) is singleton | 2 | **2** — `tab-bar.tsx` primitive already owns that notation | False | Debt(destination `<TabBar>`). |
+ * | Remaining "singletons" like vertical underline/border color/weight | ~8 | Group by ramp outside **attribute types**, minimum 6 consumers(weight 39 · underline 24 · mono 46 …) | False | Debt |
+ * | Lucky/grid row | 10 | Actual grid in opening tags is **1**(`DesktopVaultWelcome`). Rest are "lucky card" judgments, not grids. | False | Debt |
+ * | That **1** even | — | Icon column fixed to `h-7 w-7`, so `row`(flex+gap) produces **same pixels**. Grid is preference, not necessity. | False | Debt |
+ * | **Full-screen click surface(scream/blocking backdrop)** | 5 | **4** — fifth(`DemoStage` play overlay) loads `text-body`·`leading-body`, so judgment function rejects. | **True** | **No-basis 4**. |
  *
- * 즉 **부류로 인정된 것은 하나뿐**이고, 그 안에서도 게이트가 한 자리를 기각했다.
- * 어제 등재 라운드가 13건을 걷어낸 것과 같은 결과다 — 그때 배운 것을 그대로 썼다.
+ * So **only one category recognized**, and even within it, gate rejected one position. Same result as yesterday's registration round removing 13 items — used what we learned then directly.
  *
- * ### 왜 클릭면만 참인가 — 이 판정이 요구하는 둘
+ * ### Why only click surface is true — Two requirements this judgment demands
  *
- * `isClickSurface()` 는 **동시에** 요구한다: ① `inset-0`(화면을 덮는다) ② 램프가
- * 소유한 속성 **0개**(높이·인셋·반경·보더·타입·무게 중 아무것도 선언하지 않는다).
- * 스크림은 자리잡기(`absolute inset-0 z-*`)와 바탕 한 겹뿐이고, 값 층의 모양 여덟 중
- * 무엇을 씌워도 **보이는 것이 달라지지 않는다**. 씌울 규격이 없어서다.
+ * `isClickSurface()` requires **simultaneously**: ① `inset-0`(covers screen) ② **0 attributes** owned by ramp(no declaration among height/inset/radius/border/type/weight).
+ * Screams only have positioning(`absolute inset-0 z-*`) and one background layer, and overlaying anything of value layer's eight shapes **doesn't change what's visible**. Because no spec to overlay.
  *
- * 지도의 셋은 규격 대신 **계약**을 진다 — `data-backdrop-contract="blocks-map-and-closes-composer"`
- * · `data-backdrop-surface-token` · `data-interactive-overlay`(투어 자동시작 차단
- * 판정이 읽는 마커). 디자인 시스템이 아니라 오버레이 기계 장치의 부품이다.
+ * The map's three carry **contracts** instead of specs — `data-backdrop-contract="blocks-map-and-closes-composer"`
+ * · `data-backdrop-surface-token` · `data-interactive-overlay`(marker read by tour auto-start block judgment). Parts of overlay machinery, not design system.
  *
- * ### 복귀 규칙 — 이 부류가 도피처가 되지 않게 하는 셋
+ * ### Return rules — Three to prevent this category from becoming escape route
  *
- * | 무엇이 참이 아니게 되면 | 어떤 검사가 빨개지나 |
+ * | What becomes false | Which check turns red |
  * |---|---|
- * | 스크림에 규격을 하나라도 단다(`px-3` 한 개면 충분) | 「등재한 수만큼 자격 있는 클릭면이 실재한다」 — 값 층이 낼 것이 생겼으므로 부채로 내려간다 |
- * | 다섯 번째 클릭면이 어딘가에 생긴다 | 「이 사유의 **전수**가 못박은 수와 같다」(`CLICK_SURFACE_CENSUS`) — 새 자리는 부채로도 잡히고 전수 핀으로도 잡힌다 |
- * | 자격 없는 자리를 이 부류로 청구한다 | 위 둘 + 「근거 없음이 늘지 않는다」 — 실측 프로브로 확인했다(`DemoStage` 허위 청구 → 4검사 빨강) |
+ * | Attach any spec to scream(even one `px-3` is enough) | "As many qualified click surfaces as registered actually exist" — value layer now has something to produce, so returns to debt. |
+ * | Fifth click surface appears somewhere | "Full split of this reason matches fixed count"(`CLICK_SURFACE_CENSUS`) — new position caught by both debt and full split pin. |
+ * | Claim unqualified position for this category | Above two + "no-basis doesn't increase" — confirmed by measurement probe(`DemoStage` false claim → 4 checks red). |
  *
- * 세 규칙 다 **기계가 재는 것**이고 사람의 의견에 기대지 않는다. 프로브 7종을 전부
- * 빨강으로 확인했다(전수 초과 · 등재 파일 내 추가 · 규격 부착 · `inset-0` 제거 ·
- * 허위 청구 · 등록부 비우기 · 기준선만 낮추기).
+ * All three rules **are machine-measured**, not relying on human opinion. Confirmed all 7 probes red(full split exceeded · additional in registration file · spec attachment · `inset-0` removal · false claim · clearing ledger · lowering baseline only).
  *
- * ### 다음 라운드가 이어받을 것
+ * ### What next round inherits
  *
- * - **`RecentNodeRow` 의 `className={className}` 순수 패스스루 1** — 앵커 등재의
- *   `no-spec` 과 **같은 성격**인데 아직 등재 안 됐다. 이 라운드는 새 부류를 만드는
- *   일이었으므로 손대지 않고 부채에 뒀다(안전한 방향). 다음 등재 라운드의 1순위.
- * - 스크림 유형이 생겼으므로 머리말이 「등재 청구 유형 신설 대기」로 적어 둔
- *   **스크림/전면 오버레이 5** 항목은 해소됐다 — 4는 근거 없음, 1은 부채(`DemoStage`).
+ * - **`RecentNodeRow`'s `className={className}` pure passthrough 1** — Same nature as anchor registration's
+ *   `no-spec` but not yet registered. This round was about creating new category, so didn't touch, left in debt(safe direction). Next registration round priority 1.
+ * - Scream type appeared, so header's "waiting for new registration claim type" item **scream/full overlay 5** is resolved — 4 no-basis, 1 debt(`DemoStage`). |
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 역사 — 라운드별 기록 (417 → 108). **지우지 않는다**
+ * ## History — Round-by-round record (417 → 108). **Do not delete**
  * ════════════════════════════════════════════════════════════════════
  *
- * 각 라운드가 무엇을 셌는지가 다음 승격의 근거다. 아래는 압축본이고 수치와
- * 사유는 보존한다. 원문 서술은 git 이력(이 파일의 2026-08-03 판)에 있다.
+ * What each round counted is justification for next upgrade. Below is compressed version, preserving numbers and reasons. Original narrative in git history(2026-08-03 revision of this file).
  *
- * ### 왜 lint 룰이 아니라 래칫인가 (창립 판단, 여전히 유효)
+ * ### Why ratchet instead of lint rule (founding judgment, still valid)
  *
- * 원안은 「`<button>` 의 className 이 `controlClass()` 에서 오지 않으면 lint
- * error」였다. `/gate-probe` 규율대로 켜기 전에 전수를 세니 **419개**였다. 한 PR
- * 로 못 치우는 룰은 강제가 아니라 소음이고 기존 신호(warning 96)까지 덮는다 —
- * 이 저장소는 `shadow-[` 를 통째로 금지했다가 lint 가 144 → 548 로 뛴 전례가
- * 있다. 게다가 전환은 **정규화**라 픽셀이 바뀌고(칩 143개에 고유 크기 조합
- * 50종), 픽셀을 바꾸는 결정은 디자인 게이트의 일이지 lint 룰의 일이 아니다.
+ * Original was "lint error if `<button>`'s className doesn't come from `controlClass()`." Counted full split before turning on per `/gate-probe` discipline: **419 items**. A rule that can't be fixed in one PR is noise not force, and covers existing signal(warning 96) — this repository previously banned `shadow-[` entirely, causing lint to jump 144 → 548. Moreover, transition is **normalization**, so pixels change(143 chips with unique size combinations 50 types), and decisions changing pixels are design gate's job, not lint rule's.
  *
- * ### 최초 실측 (2026-08-03) — 전수 419, 기준선 417
+ * ### Initial measurement (2026-08-03) — Full split 419, baseline 417
  *
- * 모양별: 칩 128 · 텍스트 링크형 85 · 목록 행 39 · 아이콘 정사각 36 · pill 32 ·
- * 토큰 반경 기타/미분류 58 · 카드형 18 · 떠 있는·h-8 19 · 표준 버튼 1.
- * className 자체가 없는 **2건**은 래퍼라 제외했고, 그 정정을 래칫이 스스로
- * 잡았다(첫 실행이 «419 → 417 로 줄었다» 로 빨개졌다).
+ * By shape: chip 128 · text link-type 85 · list row 39 · icon square 36 · pill 32 · token radius others/uncategorized 58 · card-type 18 · floating/h-8 19 · standard button 1.
+ * **2 items** with no className were wrappers, excluded; ratchet caught that correction itself(first run "reduced to 419 → 417" turned red).
  *
- * ⚠️ 파서 교훈: 여는 태그를 **중괄호 깊이**로 끊지 않으면 `onClick={() => …}` 의
- * `=>` 를 태그 끝으로 읽는다. 첫 측정에서 실제로 그랬고 419 중 251개가
- * 「className 없음」으로 분류돼 결론이 통째로 뒤집힐 뻔했다. **잴 원소를 틀리면
- * 수치가 나와도 틀린 수치다.**
+ * ⚠️ Parser lesson: If you don't split opening tags by **brace depth**, you read `=>` of `onClick={() => …}` as tag end. That happened in first measurement, classifying 251 of 419 as "no className," nearly flipping conclusion entirely. **Wrong element to measure means wrong number, even if a number comes out.**
  *
- * ### 내려온 기록
+ * ### Record of descent
  *
- * | 값 | 무엇이 옮겨졌나 |
+ * | Value | What was moved |
  * |---:|---|
- * | 417 | 최초 실측 |
- * | 406 | 설정 시트 11 — 칩 6 · 아이콘 2 · 행 1 · 링크형 1 |
- * | 389 | 지도 두 위젯 31 중 17 — 행 8 · 링크형 5 · 아이콘 3 · 카드 2 · 칩 1. 남긴 14 는 여섯 분류에 **없는** 모양(세로 액션 타일 5 · 세그먼트 탭 3 · 창 선택 칩 · 세로 엣지 탭 · 캔버스 앵커 원형 · 트리 셰브론)이거나, 램프 최소 인셋(8px)이 이 패널의 4px 인셋과 어긋나는 자리 2 |
- * | 303 | 문서함·빠른 서랍·공방 121 중 86 — 행 27 · 아이콘 24 · 칩 21 · 링크형 13 · pill 4 · 카드 2. 남긴 35 = 크롬 토큰 계약 4 · 무대 절대배치 15 · 한 벌로 읽히는 세트 11 · 문장 속 인라인 5 |
- * | 269 | 위 두 라운드가 「자리가 없어서」 남긴 48 의 회수 — 값 층의 구멍 넷을 메운 직후(`a1f956ce9`). 설정 시트 29 + 지도 액션 타일 5. `tone` 의 새 넷(secondary 6 · accent 11 · success 2 · warning 2 · danger 1)이 22 를, `shape: 'tile'` 이 7 을, `link` 의 `min-h-11` 이 3 을 열었다 |
- * | 259 | 뷰 라운드 18 중 10 — 행 6 · 칩 5. **여기서 처음으로 `row`/`sm` 이 손으로 쓰던 높이와 정확히 같았다**(`py-1.5` + `--leading-label` = 28px = `min-h-7`) |
- * | 227 | features 라운드 63 중 32 — 칩 15 · pill 6 · 링크형 6 · 아이콘 3 · 기타 2 |
- * | 210 | 지도 뷰 31 중 17 — 아이콘 9 · pill 4 · 칩 1 · 링크형 1. 남긴 14 = 컨트롤이 아닌 것 3(전면 백드롭은 스크림이지 눌리는 원소가 아니다) · 크롬 토큰 2 · 말줄임 필요 3 · 패딩 가진 텍스트 링크 3 · 램프에 스텝 없음 3 |
- * | 173 | 위젯 라운드 84 중 37 — 칩 21 · pill 4 · 아이콘 4 · 카드 5 · 행 2 · 링크형 1. 새 축 0. **210 − 37 = 173 이 전수 재측정과 정확히 맞았다** = 세 라운드가 파일을 하나도 안 겹친다는 뜻 |
- * | 148 | 값 층 라운드 25 — 원장이 반복해 센 구멍을 메운 결과. 세그먼트/고스트 12 · 패널 잉크 7 · 채운 인디고 3 · 말줄임 3. 새 축 셋 + 여덟째 모양 하나 |
- * | 136 | 공방·기록 라운드 38 중 12 — 카드 7 · 칩 2 · 세그먼트 2 · 온액센트 3(겹침). 새 축·모양·톤 0. **기록 패널은 15 중 0** — 이 라운드가 「구조적으로 값 층 밖」을 처음 보고했고, 2026-08-04 이 그중 **12** 를 등재했다(나머지 3 은 값 층의 구멍이라 부채) |
- * | 144 | 프리미티브·뷰 라운드 35 중 4. **옮긴 수보다 «왜 31개가 안 움직였나»가 산출물** — 값 층과 같은 층 6 · 이미 원장에 적힌 구멍 21 · 렌더 안 되는 죽은 프리미티브 4 |
- * | 123 | 잔여 라운드 57 중 9 — 칩 6 · 세그먼트 2 · 아이콘 1. 새 축·값 0. 옮긴 칩 넷이 `h-9`(36) → **`--control-h-md`(32)** 로 앉았다 = #884 가 되돌린 사다리가 작동한 첫 실측 |
- * | 119 | 죽은 프리미티브 둘 **삭제** — `LinkListEditor`·`ChipListEditor` 는 export 되고 단위 테스트도 있는데 프로덕션 소비처가 **0**이었다(전수 grep). 정확히 그 4건 |
- * | 117 | 값 층 라운드 2(체계석) 6 — 세 라운드 연속 센 「sm 아래 한 칸」을 **마이크로 티어**로 메웠다: `--radius-micro`(4px — 이미 96곳이 그 값) + 칩 `size: 'xs'` + `segment/sm` 재정의. 함께: chip/pill 기본 보더를 divider(0.08) → border-soft(0.06)로 — 전수 74:18 의 다수 정정 |
- * | **113** | 접근성·잉크 라운드 이후의 오늘. 2026-08-04 에 **등재 23 + 부채 90** 으로 갈렸다 |
+ * | 417 | Initial measurement |
+ * | 406 | Settings sheet 11 — chip 6 · icon 2 · row 1 · link-type 1. |
+ * | 389 | Map two widgets 31 of 17 — row 8 · link-type 5 · icon 3 · card 2 · chip 1. Remaining 14 are shapes **not in** six categories(vertical action tile 5 · segment tab 3 · window selection chip · vertical edge tab · canvas anchor circle · tree chevron) or positions where ramp minimum inset(8px) conflicts with panel's 4px inset 2. |
+ * | 303 | Document drawer/quick drawer/workshop 121 of 86 — row 27 · icon 24 · chip 21 · link-type 13 · pill 4 · card 2. Remaining 35 = chrome token contract 4 · stage absolute positioning 15 · set read as one 11 · inline within sentence 5. |
+ * | 269 | Recovery of 48 left by above two rounds "no space" — just after filling four value layer holes(`a1f956ce9`). Settings sheet 29 + map action tile 5. New four `tone`(secondary 6 · accent 11 · success 2 · warning 2 · danger 1) opened 22, `shape: 'tile'` opened 7, `link`'s `min-h-11` opened 3. |
+ * | 259 | View round 18 of 10 — row 6 · chip 5. **First time `row`/`sm` exactly matched hand-written height**(`py-1.5` + `--leading-label` = 28px = `min-h-7`). |
+ * | 227 | Features round 63 of 32 — chip 15 · pill 6 · link-type 6 · icon 3 · others 2. |
+ * | 210 | Map view 31 of 17 — icon 9 · pill 4 · chip 1 · link-type 1. Remaining 14 = not controls 3(full backdrop is scream, not pressable element) · chrome token 2 · ellipsis needed 3 · padding text link 3 · ramp no step 3. |
+ * | 173 | Widget round 84 of 37 — chip 21 · pill 4 · icon 4 · card 5 · row 2 · link-type 1. Zero new axes. **210 − 37 = 173 exactly matched full split re-measurement** = means three rounds didn't overlap a single file. |
+ * | 148 | Value layer round 25 — result of filling holes owner repeatedly counted. Segment/ghost 12 · panel ink 7 · filled indigo 3 · ellipsis 3. Three new axes + eighth shape one. |
+ * | 136 | Workshop/record round 38 of 12 — card 7 · chip 2 · segment 2 · on-accent 3(overlap). Zero new axis/shape/tone. **Record panel is 0 of 15** — this round first saw "structurally outside value layer," and 2026-08-04 registered **12** of them(rest 3 are value layer holes, so debt). |
+ * | 144 | Primitive/view round 35 of 4. **Output is "why 31 didn't move" rather than count moved** — same layer as value layer 6 · hole already in owner 21 · dead primitive not rendering 4. |
+ * | 123 | Remaining round 57 of 9 — chip 6 · segment 2 · icon 1. Zero new axis/value. Moved chips four sat at `h-9`(36) → **`--control-h-md`(32)** = #884's returned ladder worked, first measurement. |
+ * | 119 | Two dead primitives **deleted** — `LinkListEditor`·`ChipListEditor` exported and have unit tests but production consumers were **0**(full split grep). Exactly those 4 items. |
+ * | 117 | Value layer round 2(system stone) 6 — "one step below sm" counted three consecutive rounds filled as **micro tier**: `--radius-micro`(4px — already 96 positions with that value) + chip `size: 'xs'` + `segment/sm` override. Together: change chip/pill default border divider(0.08) → border-soft(0.06) — majority correction of full split 74:18. |
+ * | **113** | Today after accessibility/ink round. Split into **registration 23 + debt 90** on 2026-08-04. |
  *
- * ### 죽은 프리미티브 삭제가 딸고 나온 것 (2026-08-03)
+ * ### What came with dead primitive deletion (2026-08-03)
  *
- * `link-list-editor` 는 이 저장소에서 `data-external-link-marker`(라벨 앞 `↗`
- * 허용 열의 선언)를 **쓰는 유일한 `.tsx`** 였고,
- * `label-decoration.contract.test.ts` 가 *"표식을 쓴 파일이 0이면 안 된다"* 로 그
- * 사실에 기대고 있었다. **아무도 렌더하지 않는 컴포넌트가 규칙의 허용 조항을
- * 떠받치고 있었다.** 허용 열은 유지하고(WCAG G201 — 새 창으로 나가기 전 경고),
- * 게이트의 공회전 방지를 「예외를 쓴 파일 수」에서 「스캔한 파일 수 + 합성
- * 프로브」로 옮겼다. 원장: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」.
+ * `link-list-editor` was the **only `.tsx`** in this repository using `data-external-link-marker`(declaration of column allowing `↗` before label), and
+ * `label-decoration.contract.test.ts` relied on that fact with *"file writing marker must be 0."* **A component no one renders was supporting the rule's exception clause.** Kept exception(WCAG G201 — warning before leaving to new window), moved gate's idling prevention from "count of files writing exception" to "count of scanned files + synthetic probe." Owner: `docs/DECISIONS.md` 2026-08-03 "Two dead primitives."
  *
- * ### 값 층 라운드가 **안 만든 것** — 안 만든 것도 결론이다
+ * ### What value layer round **didn't create** — Not creating is also conclusion
  *
- * `/gate-probe` 1단계 규율("소음이 신호를 덮으면 룰을 만들지 않는다")을 축에도
- * 적용했다. **소비처를 하나도 못 대는 축은 만들지 않는다.**
+ * Applied `/gate-probe` step 1 discipline("don't create rule if noise covers signal") to axes too. **Don't create axis that can't name a single consumer.**
  *
- * | 원장이 요구한 것 | 안 만든 이유(실측) |
+ * | What owner requested | Reason not created(measurement) |
  * |---|---|
- * | `card` 의 `items-start`(다행 카드) | 축 하나로 안 열린다. 소비처 셋이 **2축 이상** 어긋난다(`FirstRunPage` 3 은 `grid-cols-[32px_1fr]` · `rounded-chip` · `px-4 py-3.5`, `DesktopVaultWelcome` 4 는 반경 0 풀블리드에 `px-4 py-4`). 정렬만 열면 **한 자리도 안 들어온다** = 사용처 0인 축 |
- * | `text-<step>` 의 짝 `tracking-<step>` | 낼 수는 있으나 **오늘 244개의 폭이 전부 바뀐다**(0.02em × 11px ≈ 6글자 칩 +1.3px). 정직한 고침은 globals.css 에 `--text-<step>--letter-spacing` 을 묶는 것이고 자체 실측 라운드가 필요하다 |
- * | `active` vs 「선택」 축 분리 | 세그먼트 12자리 실측이 **12/12 인디고 틴트 배경**이었고 갈린 것은 잉크뿐(primary 11 · accent 1). 축 대신 **다수로 정규화**했다 |
- * | `--chrome-radius-inner`(7px) | **구멍이 아니었다.** globals.css 에서 `var(--radius-chip)` = 6px 의 별칭이다. 원장의 「7px」은 낡은 기록이고, `segment` 가 `rounded-chip` 을 쓰는 근거가 여기 있다 |
- * | `fixedHeight` 축 | 2026-08-03 **삭제**. 값이 틀렸다는 증상이었지 축이 아니었다 |
+ * | `card`'s `items-start`(lucky card) | Doesn't open with one axis. Three consumers **deviate by 2+ axes**(`FirstRunPage` 3 is `grid-cols-[32px_1fr]` · `rounded-chip` · `px-4 py-3.5`, `DesktopVaultWelcome` 4 is radius 0 full bleed `px-4 py-4`). Opening only alignment **no position enters** = axis with 0 users. |
+ * | Pair `tracking-<step>` for `text-<step>` | Can produce but **all 244 widths change today**(0.02em × 11px ≈ 6-char chip +1.3px). Honest fix is bundling `--text-<step>--letter-spacing` in globals.css, needing own measurement round. |
+ * | Separate `active` vs "selected" axis | Segment 12 positions measured as **12/12 indigo tint background**, split only in ink(primary 11 · accent 1). Normalized by **majority** instead of axis. |
+ * | `--chrome-radius-inner`(7px) | **Not a hole.** Alias for `var(--radius-chip)` = 6px in globals.css. Owner's "7px" is old record, and here is reason `segment` uses `rounded-chip`. |
+ * | `fixedHeight` axis | Deleted 2026-08-03. Was symptom of wrong value, not axis. |
  *
- * ### 사다리 실측 (2026-08-03, 1512×860 · 다크) — 18 조합 중 7 만 사다리 위
+ * ### Ladder measurement (2026-08-03, 1512×860 · dark) — Only 7 of 18 combinations on ladder
  *
- * 사다리는 **28 / 32 / 40**:
+ * Ladder is **28 / 32 / 40**:
  *
- * | 모양 | sm | md | lg |
- * |---|---:|---:|---:|
+ * | Shape | sm | md | lg |
+ * |---|---:|---:|---|
  * | chip | 24 | **32** | **32** |
  * | pill | 24 | **32** | **32** |
  * | segment | 22 | 24 | **32** |
@@ -523,17 +414,12 @@ import { describe, expect, it } from 'vitest';
  * | card | 30 | 34 | **40** |
  * | icon | 24 | **28** | **32** |
  *
- * 읽히는 것 셋: ① 22 · 24 · 30 · 34 · 36 · 42 는 여전히 이 앱의 높이 어휘
- * **밖**이다 ② `chip`/`pill` 은 md 와 lg 의 높이가 같아 「한 단 크게」가 높이로는
- * 아무 일도 안 한다 ③ 칩 계열에 40px(`--control-h-lg`) 단이 없다.
+ * Three things read: ① 22 · 24 · 30 · 34 · 36 · 42 are still **outside** this app's height vocabulary. ② `chip`/`pill` have same height for md and lg, so "one step larger" does nothing for height. ③ Chip family lacks 40px(`--control-h-lg`) step. |
  *
- * ### 값 층이 계약의 사정거리를 넓힌 첫 사례
+ * ### First case value layer expanded contract scope
  *
- * 공방·기록 라운드가 옮긴 공방 헤더 6개에 `text-caption`(9.5px)이 3개 있었다 —
- * `studio-navigation.spec.ts` 의 「크롬 라벨은 11px 한 값」 계약이
- * `studio-save`/`studio-exit` 두 자리만 잡고 있어 형제들이 빠져나가 있었다.
- * 램프로 옮기니(`card/sm` = `text-label`) 계약이 재지 않던 자리가 자동으로
- * 계약값이 됐다.
+ * Workshop/record round moved workshop headers 6 had `text-caption`(9.5px) in 3 — `studio-navigation.spec.ts`'s "chrome label is one value 11px" contract only grabbed `studio-save`/`studio-exit` two positions, so siblings escaped.
+ * Moving to ramp(`card/sm` = `text-label`) automatically made uncontracted positions into contract values. |
  */
 /** The **kind of claim** that something is outside the value layer. A new kind must also be added to the registration-criteria table above. */
 type OutsideClaim =
@@ -590,8 +476,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
    * 2026-08-06 — **completion declared.** The last two were judged and listed.
    * ════════════════════════════════════════════════════════════════════
    *
-   * Owner: *"판정이 끝났다는 건 뭔 말임? 고칠 게 없다는 뜻임? 그럼 종료를 선언해
-   * 줘야지 다음에 또 안 찾지 않을까?"*
+   * Owner: *"What does it mean that the verdict is final? Does it mean there's nothing left to fix? Then you should declare it closed so I don't have to look for it again next time."*
    * (if the verdict is final and nothing is left to fix, declare it closed so the
    * next person does not go looking again)
    *
@@ -625,9 +510,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
    * 2026-08-06 — **a place with a final verdict comes out of debt**
    * ════════════════════════════════════════════════════════════════════
    *
-   * Owner: *"디자인 시스템화 안 시키기로 한 거는 왜 그런지 분석하고 문제없으면
-   * 아예 이슈에서 없애 버려 개수 안 나오게 — 계속 나한테 몇 개 남았다고 말하니까
-   * 나는 계속 고치라고 명령하게 되잖아."*
+   * Owner: *"Analyze why we decided not to design-systemize it, and if that's fine, remove it from the issue entirely so the count doesn't show up — since you keep telling me how many are left, I end up ordering them fixed."*
    * (if we decided not to design-system a place, analyse why, and if that is
    * fine remove it from the issue entirely so it stops showing up in the count —
    * being told how many are left keeps making me order it fixed)
@@ -1044,7 +927,7 @@ function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): s
      * **A gate that discourages the correct refactor is not a gate.**
      *
      * `fieldClass` joined on 2026-08-06. **Leave that one name out and moved
-     * places keep counting as debt, so the baseline never falls** — the 체계
+     * places keep counting as debt, so the baseline never falls** — the system
      * (design-systems) seat named this the top idling candidate in that PR.
      */
     if (/(?:controlClass|fieldClass|fieldLabel)\s*\(/.test(tag)) continue;
@@ -1180,8 +1063,8 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  *
  * ### Why a new count instead of adding to debt 85
  *
- * The preamble already recorded the judgement: *"종전엔 113 이 한 덩어리였고,
- * 그래서 무엇이 진전인지 알 수 없었다"* (113 used to be one lump, which made
+ * The preamble already recorded the judgement: *"Previously, 113 was one lump,
+ * so it was impossible to know what had progressed"* (113 used to be one lump, which made
  * progress unreadable — unmovable places and not-yet-moved places sat in the same
  * cell). The same lesson applies here.
  *
@@ -1453,7 +1336,7 @@ const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TA
  * **nobody can tell whether a button or a form moved.** The unit of work also
  * differs — a button is usually one `controlClass({ shape })` line, whereas a
  * form needs a **shape the value layer does not have yet** (`field`), so
- * convening 체계 (the design-systems seat) comes first.
+ * convening system (the design-systems seat) comes first.
  *
  * ### Today this count does not claim anything is movable
  *
@@ -1584,7 +1467,7 @@ const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
 /*
  * 2026-08-15: -1 → -6. Migrating to the Checkbox primitive folded 6 raw
  * type="checkbox" places across 5 files into shared/ui/checkbox.tsx (ratified by
- * the 체계 seat —
+ * the system seat —
  * docs/DECISIONS.md).
  */
 const BASELINE_FIELD_DEBT = -6;

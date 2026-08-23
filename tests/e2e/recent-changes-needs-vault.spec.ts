@@ -5,8 +5,7 @@ import { expect, test } from '@playwright/test';
  *
  * ## Why this spec exists
  *
- * Owner report, 2026-08-03: *"일반 화면에서 '최근 변경' 누르니까 아무런 반응이
- * 없는데?"* (on the normal screen, pressing "recent changes" does nothing). There
+ * Owner report, 2026-08-03: *"On the normal screen, pressing 'recent changes' does nothing."* There
  * were two causes: ① it was disabled without looking disabled (owned by
  * `tests/contract/disabled-affordance.contract.test.ts`), and ② on the sample it
  * **should not have been disabled at all.**

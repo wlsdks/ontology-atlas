@@ -7,8 +7,8 @@ import { FirstRunStarterModule } from "./FirstRunStarterModule";
 
 /**
  * The first-run card **collapses once the map is being used** (owner, 2026-08-19:
- * *"좌측에 이게 계속 떠있어서 보기 안좋으니 개선이 필요함"* — it looks bad with
- * this stuck on the left the whole time; it needs improving).
+   * "It stays stuck on the left and looks bad, so it needs improvement" — it looks bad with
+   * this stuck on the left the whole time; it needs improving).
  *
  * What this check protects is not "it collapses" but **"it collapses and can be
  * brought back"**. Collapsing with no way back is not an improvement, it is deleting

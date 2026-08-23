@@ -18,9 +18,9 @@ import { controlClass } from '@/shared/ui/control-class';
  * **It lives at four addresses** — `/` (a web visitor's first face) · `/download`
  * (the install deep link) · `/guide` · `/changelog`. The chrome is the same, but two
  * pieces differ by address: at the root it ① drops the breadcrumb's current node
- * (that is not the address) and ② drops 「지도로 돌아가기」 (back to the map) — someone
+ * (that is not the address) and ② drops "back to the map" (back to the map) — someone
  * who arrived here did not come from the map, and the route to the map is already
- * offered by 「설치 없이 브라우저에서 써보기」 (try it in the browser without
+ * offered by "try it in the browser without installing" (try it in the browser without
  * installing) inside the page. Putting the same link in both the chrome and the page
  * makes one of the two a dead promise.
  */
@@ -93,7 +93,7 @@ export function GatewayNav() {
 
         {/* This group's **right edge** is the mirror of the origin — it has to stop at
             `vw − origin` for the top bar to live in the same frame as the band below.
-            The owner's report *"공백이 길고 왜이러지?"* (why is there such a long gap?)
+            The owner's report *"why is there such a long gap?"* (why is there such a long gap?)
             was exactly this edge against the screen edge (measured 1920: 256px · 2560:
             864px). The gate measures it through this testid. */}
         <span
@@ -136,7 +136,7 @@ export function GatewayNav() {
             /* ⚠️ **Removing `opacity-50` is the fix at this position** (2026-07-30).
                Before that, quaternary (4.76:1) with 0.5 opacity on top dropped the
                effective contrast below the WCAG non-text threshold (1.4.11, 3:1) —
-               owner observation *"잘 안보이고"* (hard to see). Disabled speaks through
+               owner observation *"hard to see"* (hard to see). Disabled speaks through
                **shape, not dimming**: no border, `cursor-not-allowed`, `aria-disabled`
                and a tooltip. */
             <span
@@ -151,8 +151,8 @@ export function GatewayNav() {
           )}
 
           {/*
-           * ⚠️ **There is no 「지도로 돌아가기」** (2026-07-31, owner: *"이건 홍보
-           * 페이지라 메인 화면에서만 이동 가능하게"* — this is a promotional page, so
+           * ⚠️ **There is no "back to the map"** (2026-07-31, owner: *"this is a promotional
+           * page, so make it navigable only from the main screen"* — this is a promotional page, so
            * make it navigable only from the main screen).
            *
            * The gateway is what a visitor reads before installing. Putting a route to
@@ -160,7 +160,7 @@ export function GatewayNav() {
            * no vault yet, while someone who does have one goes to the map from `/`
            * anyway (`isGatewaySurface()`). It was a link neither of them used.
            *
-           * The route to the map is offered by 「설치 없이 브라우저에서 써보기」 inside
+           * The route to the map is offered by "try it in the browser without installing" inside
            * the page — that single one remains and stays under the watch of
            * `map-destination-route.contract.test.ts`.
            */}
@@ -174,7 +174,7 @@ export function GatewayNav() {
 /**
  * The gateway chrome's reading links — **drawn as chips**.
  *
- * ## Why not bare text (2026-07-30, owner: *"버튼도 아니고 잘 안보이고"* — it isn't a
+ * ## Why not bare text (2026-07-30, owner: *"it isn't a button and it's hard to see"* — it isn't a
  * button and it's hard to see)
  *
  * Contrast was never the problem — measured at **6.13:1**, comfortably over the body
@@ -216,7 +216,7 @@ function GatewayNavLink({
         'text-body leading-body',
         // ⚠️ **The border is there at rest.** At first the inactive state was
         // `border-transparent` with the chip appearing only on hover, but then the
-        // state the owner named (*"버튼도 아니고"* — it isn't even a button) is **exactly
+        // state the owner named (*"It isn't even a button"* — it isn't even a button) is **exactly
         // what the screen shows at rest** — hover is discovered only by someone who
         // already believed it was a control. Affordance has to exist before the hand arrives.
         active

@@ -69,7 +69,7 @@ export function DocsVaultVaultChip({
         aria-expanded={open}
         aria-label={t("vaultChip.menuAriaLabel")}
         /* The menu items have testids but this trigger did not, so two e2e specs were finding it
-           by its localized label ("문서함 정보 메뉴" / "Workspace info menu"). That is a seam where
+           by its localized label ("Workspace info menu"). That is a seam where
            editing a translation silently kills a spec — give it a locale-independent handle. */
         data-testid="vault-chip-menu-trigger"
         className="min-w-0 max-w-[200px] flex-none font-mono hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"

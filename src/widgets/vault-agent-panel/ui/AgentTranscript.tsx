@@ -30,7 +30,7 @@ export interface AgentTranscriptLabels {
    * The way back from the `unread` branch — same slot, different copy.
    *
    * **This one line carries the reason it stopped (the round) along with it.**
-   * Standing 「도구를 한 번도 안 부르고 멈췄어요」 (it stopped without calling a tool
+   * Standing "It stopped without calling a tool once" (it stopped without calling a tool
    * once) as a separate notice row makes three warnings in one turn, and at three
    * they become wallpaper.
    */
@@ -170,9 +170,9 @@ export function AgentTranscript({
 
           {/* A stopped turn is given **a way back**. Stating the reason without giving
               a route makes that position a dead end. It uses the same grammar as
-              「다음 한 걸음」 (the next step), so no new interaction has to be learned —
+              "The next step", so no new interaction has to be learned —
               pressing it only seats the same words in the composer, and sending is
-              always [보내기].
+              always [Send].
 
               A turn that **never looked at the vault at all** uses the same slot. Why
               no new banner: filling one existing chip is the whole of it, and the user
@@ -209,7 +209,7 @@ export function AgentTranscript({
 
               **The character count dropped to hover here** (2026-08-02). A round's
               fixed cost is 18,934 characters (8,500 of system guidance plus 10,122 of
-              tool schemas), so 「이 턴 40,036자」 is not the size of the user's data —
+              tool schemas), so "This turn: 40,036 chars" is not the size of the user's data —
               the read rows on the same screen totalled 1,336 characters, and the total
               is 30× that, mostly tool schemas. Permanently visible, the largest number
               on screen becomes the most meaningless one. The data (`sentChars`) is
@@ -284,7 +284,7 @@ function renderEvent(
       /**
        * An answer that read but did not cite. **It is not demoted** — the grounding
        * really exists, and the screen corrects by showing that list as chips. A dashed
-       * border here would make the screen contradict the 「읽음」 (read) row it just drew.
+       * border here would make the screen contradict the "Read" row it just drew.
        */
       const sources = grounding === 'uncited' ? (event.sources ?? []) : [];
       return (
@@ -391,7 +391,7 @@ const CITATION_PATTERN = /\[\[([^[\]]+)\]\]/g;
 
 /**
  * A chip leading to one concept. A `[[slug]]` citation inside the body and the
- * 「참고한 자료」 (sources consulted) the screen lays out as a correction when the
+ * "Sources consulted" the screen lays out as a correction when the
  * citation is missing use **the same control** — the same action looking different
  * is itself the defect.
  */

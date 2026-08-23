@@ -197,7 +197,7 @@ interface SafeInsets {
  * you are zoomed.
  *
  * ⚠️ This formula was once written out in **four** places (the overview, the pan
- * leash, and for one day the caller's 「자유 영역」 (free-area) shift as well). Of
+ * leash, and for one day the caller's "free-area" shift as well). Of
  * those, the focus dive **did not have it at all**, so choosing a node could put it
  * behind the panel that explains it. With several copies, the one that goes missing
  * is the default — so they were gathered into one.
@@ -319,7 +319,7 @@ export function computeOverviewCameraTarget(
  * The map on the `/download` stage is the gateway's only sales argument, and one
  * hard drag to the left pushed the whole graph behind the reserved column so **the
  * stage went empty** (ink in the 0..520 band +12.6%, unchanged 12 seconds later —
- * zero damping). On the workbench 「지도 맞추기」 (fit the map) brings it back, but
+ * zero damping). On the workbench "fit the map" brings it back, but
  * the gateway has no such chrome. **Allowing an irreversible gesture on a screen
  * with no way back** is the defect.
  *
@@ -406,8 +406,7 @@ export function computeEffectiveCameraScaleMin(
  * Camera target for the current focus state — the full-graph overview fit
  * when `focusedSlug` is `null`, or the clicked node + its 1-hop ego bbox
  * (`--topology-v2-focus-bbox-margin`) otherwise (`docs/TOPOLOGY-V2-DESIGN.md`
- * §3.2 「카메라가 노드+1-hop 이웃 bbox 로 스프링 다이브」 — the camera spring-dives
- * to the node plus its 1-hop neighbour bbox). `null` only if `focusedSlug`
+ * §3.2 "the camera spring-dives to the node plus its 1-hop neighbour bbox"). `null` only if `focusedSlug`
  * doesn't resolve to a known node.
  *
  * Dive-framing fix (owner symptom: "clicking a node dives TOO deep —
@@ -462,7 +461,7 @@ export function computeFocusCameraTarget(
   const h = Math.max(1, (egoBounds.maxY - egoBounds.minY) * marginRatio);
   /*
    * **Use the safe insets the same way the overview path does** (owner call,
-   * 2026-08-10: *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"* — it must not be
+   * 2026-08-10: *"It must not be covered; centre it in the space left by the panel."* — it must not be
    * covered; centre it in the space left by the panel).
    *
    * ⚠️ This function used to use the insets **not at all** — it returned
@@ -596,7 +595,7 @@ export function computeClusterFitTarget(
  * Why it is needed: moving the window to another monitor, or resizing it heavily,
  * changes the viewport and DPR together while the camera stays put. In that
  * combination, with every node outside the viewport, the user sees **an empty map**
- * — only pressing 「지도 전체 맞추기」 (fit the whole map) brings it back (codex
+ * — only pressing "fit the whole map" brings it back (codex
  * audit P1 report).
  *
  * The safety net's discipline:

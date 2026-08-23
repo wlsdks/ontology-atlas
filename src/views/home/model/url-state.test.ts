@@ -151,8 +151,7 @@ describe("parseHomeRouteState", () => {
   });
 
   it("keeps overview on node click — selection must not expand the map (explicit focus entry only)", () => {
-    // Owner: "클릭하면 그냥 [확장+재배치]돼서 헷갈린다" (a click just
-    // expands and relayouts, which is confusing). Click = selection (safe
+    // Owner: "When I click, it just [expands and relayouts], which is confusing". Click = selection (safe
     // navigation); expansion (focus) needs the explicit intent of a badge,
     // double click, or deep link.
     const state = parseHomeRouteState(new URLSearchParams(""));

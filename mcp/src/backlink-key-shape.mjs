@@ -7,8 +7,8 @@
 // Reproducing it showed **the behaviour was correct** — renaming carries the
 // relation's rationale along with it:
 //
-//   before: { "capabilities/mcp-server":   "ACP 세션은 …" }
-//   after : { "capabilities/mcp-server-x": "ACP 세션은 …" }
+//   before: { "capabilities/mcp-server":   "ACP session is …" }
+//   after : { "capabilities/mcp-server-x": "ACP session is …" }
 //
 // What was wrong was the gate's contract. It pinned `before`/`after` to a string
 // or an array of strings, and `relation_notes` is a **map**.

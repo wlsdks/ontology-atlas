@@ -2,8 +2,7 @@
  * Whether to render the "get the app" tile — **on the web only, and only after
  * mount**.
  *
- * **Why one place in the chrome.** Owner request: *"웹에서는 다양한곳에 앱
- * 다운로드를 유도하는 버튼을 놔주면 좋을듯? 잘보이게"* (put buttons in several
+ * **Why one place in the chrome.** Owner request: *"Would it be good to put buttons leading to the app download in several places on the web, clearly visible?"* (put buttons in several
  * places on the web that lead to the app download, clearly visible). Planting a
  * separate banner on every surface is noise rather than guidance, and it is the
  * kind of change this repo's design gates call "an additive-only pass fails".

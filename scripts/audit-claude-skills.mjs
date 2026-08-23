@@ -5,8 +5,8 @@
  *
  * ## Why it lives in this repository (2026-08-09)
  *
- * Owner: *"스킬도 다 md 로 만드니까 스킬 그 자체를 graph 화 시킬 수는 없나?
- * 스킬도 연계하는 구조로?"*
+ * Owner: *"Since skills are all made of md too, can't we graph the skills themselves?
+ * With a structure linking skills?"*
  * (skills are all markdown too, so could the skills themselves be turned into a
  * graph, with the skills linked to each other?)
  * This was built to **measure** whether there is anything real in that direction.

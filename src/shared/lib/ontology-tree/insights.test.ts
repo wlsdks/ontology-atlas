@@ -97,7 +97,7 @@ describe("rankAllByDegree", () => {
 
   it("default — document / project 제외, degree desc, 전체 반환", () => {
     const all = rankAllByDegree(nodes, edges);
-    expect(all).toHaveLength(3); // hub + leaf-1 + leaf-2 (doc / proj 제외)
+    expect(all).toHaveLength(3); // hub + leaf-1 + leaf-2 (excluding doc / proj)
     expect(all[0]?.node.id).toBe("hub");
     expect(all[0]?.degree).toBeGreaterThanOrEqual(all[1]?.degree ?? 0);
   });

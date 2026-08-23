@@ -1,6 +1,6 @@
 /**
  * Flick-release momentum projection — the iOS `UIScrollView` deceleration
- * projection (`docs/INTERACTION-DESIGN.md` §1 「관성 투영 (v/1000)·d/(1−d)」 —
+ * projection (`docs/INTERACTION-DESIGN.md` §1 "Inertial Projection (v/1000)·d/(1−d)" —
  * momentum projection).
  *
  * When a pan drag is released with screen-space velocity `v` (px/ms, sampled
@@ -35,7 +35,7 @@
  * afterward with the returned `worldVelocity` seeded in and `landingTarget` as
  * the new spring target. Exact expected values are pinned in `momentum.test.ts`.
  *
- * R4 (모션 헌법 — the motion charter): the `d/(1-d)` projection gain below is the SAME iOS
+ * R4 (Motion Charter — the motion charter): the `d/(1-d)` projection gain below is the SAME iOS
  * deceleration math the house vocabulary declares as
  * `model/motion-physics.ts#momentumDecayGain` / `projectMomentum`. It stays
  * inlined here (not imported) on purpose: `engine/` is the lower layer and must
@@ -72,7 +72,7 @@ export interface ReleaseVelocity {
 }
 
 /**
- * Stationary-release gate (owner spec: *"드래그 후 멈추면 그 자리에 정지"* — after
+ * Stationary-release gate (owner spec: "If stopped after dragging, stop right there" — after
  * dragging, stopping stops it right there) — the iOS
  * scroll rule. Samples pointer velocity over the last `windowMs` before release
  * and returns `isFlick: false` (zero velocity) when the pointer was stationary
@@ -134,7 +134,7 @@ export function projectFlickLanding(input: FlickReleaseInput): FlickReleaseResul
   const worldVelocity = (-velocityPxPerMs / cameraScale) * 1000;
   // iOS projection: landing offset = residual velocity integrated over the
   // geometric decay = (worldVelocity/1000) · d/(1−d), proportional to velocity.
-  // `decay / (1 - decay)` is the house `momentumDecayGain` (R4 모션 헌법 — the
+  // `decay / (1 - decay)` is the house `momentumDecayGain` (R4 Motion Charter — the
   // motion charter),
   // inlined here to keep engine/ independent of model/ (see module header).
   const landingOffset = (-velocityPxPerMs / cameraScale) * (decay / (1 - decay));

@@ -175,8 +175,8 @@ describe("TopologyIndexPanel", () => {
   });
 
   /**
-   * 「다른 폴더에서 노드 가져오기」 (import nodes from another folder) is **not in
-   * INDEX** (moved 2026-08-02, owner: *"이건 뭐임? 이 문구가 왜 있는거지..?"* — what is
+   * 「Import nodes from another folder」 (import nodes from another folder) is **not in
+   * INDEX** (moved 2026-08-02, owner: *"What is this? Why is this text here..?"* — what is
    * this? why is this text here?).
    *
    * Something used once or twice in a lifetime stood as a permanent button on the
@@ -654,10 +654,10 @@ describe("TopologyIndexPanel", () => {
     expect(screen.getByTestId("topology-index-census")).toBeInTheDocument();
   });
 
-  // P1 결함①a (사용성 전수 검수 2026-07-23) — 일반(비개발) 모드는
-  // element 행을 트리에서 제외하는데(호출자의 filterTreeExcludeKind), 그
-  // 사실을 설명하는 텍스트가 어디에도 없어 "역량 2 · 요소 7"인데 펼치면
-  // 2행만 보이는 정합성 결함으로 읽혔다.
+  // P1 Defect ①a (Usability full inspection 2026-07-23) — General (non-developer) mode
+  // excludes element rows from the tree (via caller's filterTreeExcludeKind), but
+  // there is no text explaining that fact, so "Capacity 2 · Element 7" was read as
+  // a consistency defect where expanding shows only 2 rows.
   describe("plainMode hint (P1 결함①a)", () => {
     it("renders the quiet plain-mode hint when plainMode is true and the label is provided", () => {
       render(
@@ -715,10 +715,10 @@ describe("TopologyIndexPanel", () => {
     });
   });
 
-  // 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) — vault 미연결
-  // (정적 샘플) 상태에서 "먼지 앉은 노드" 같은 유지보수 컨트롤은 첫
-  // 방문자에게 노출하지 않는다. `vaultLoaded=false`면 렌더만 억제하고,
-  // `vaultLoaded=true`(또는 생략 — 하위호환 기본값)면 그대로 나타나야 한다.
+  // Unify attention winner in the overview left rail (2026-07-24) — in vault disconnected
+  // (static sample) state, maintenance controls like "dusty nodes" are not exposed to
+  // first-time visitors. If `vaultLoaded=false`, rendering is suppressed;
+  // if `vaultLoaded=true` (or omitted — backward-compatible default), it must appear as usual.
   describe("vault-connected gate for maintenance controls (P1 오버뷰 레일)", () => {
     it("hides maintenance rows when vaultLoaded is false", () => {
       render(
@@ -766,8 +766,7 @@ describe("TopologyIndexPanel", () => {
 
     it("surfaces the unbound-code-folder fact without anyone clicking the project node", () => {
       /*
-       * Why this row exists — measured 2026-08-04: 「이 프로젝트에 연결된 코드 폴더가
-       * 없습니다」 (this project has no code folder attached) appeared **0 times** on the
+       * Why this row exists — measured 2026-08-04: 「This project has no code folder attached」 (this project has no code folder attached) appeared **0 times** on the
        * first screen and was visible only after clicking that one exact project node
        * (a 15-node fixture; 100+ nodes in dogfood). A prescription is worthless if the
        * diagnosis is never seen.

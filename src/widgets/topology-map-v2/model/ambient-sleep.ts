@@ -1,7 +1,7 @@
 /**
  * Ambient sleep — "alive in your hand, asleep when you put it down".
  *
- * **Why it exists.** Measured 2026-07-28 (design council, 「작업대」 — the macOS
+ * **Why it exists.** Measured 2026-07-28 (design council, "Workbench Seat" — the macOS
  * workbench seat): across a 6 s window with no input, main-thread task time was
  * **6,027 ms / 6,000 ms (~100%)**. Scripting was 36 ms of that — the cost is not
  * JS but a full-canvas repaint raster every frame. Ten seconds after load, with no
@@ -22,7 +22,7 @@
  * scales with viewport area — a wide external monitor pays more.
  *
  * **Why sleep and not switch off.** The always-on comets came from an owner
- * instruction ("상시성" — permanence; the R6 comment in `use-topology-loop.ts`),
+ * instruction ("Permanence" — permanence; the R6 comment in `use-topology-loop.ts`),
  * and the motion is not decoration: the comet is the only channel carrying a
  * `depends` edge's **direction**, since a dashed line alone cannot. Removing it
  * removes a typed fact. By the council's test — *does turning this motion off lose

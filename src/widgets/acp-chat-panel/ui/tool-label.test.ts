@@ -7,9 +7,9 @@ import { toolLabel } from './tool-label';
  *
  * This is where the real thing coming out like this was fixed:
  * ```
- * 작업  mcp__atlas-vault__list_concepts
+ * Task  mcp__atlas-vault__list_concepts
  * ```
- * This repository's design rule already forbids it — *"전문용어는 쉬운 말로"*
+ * This repository's design rule already forbids it — *"Use plain words for jargon"*
  * (jargon in plain words).
  */
 const OURS = 'atlas-vault';

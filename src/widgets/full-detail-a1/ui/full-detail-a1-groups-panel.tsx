@@ -9,8 +9,8 @@ import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * Full-detail A1 direction groups — FOUR full (uncapped) lists replacing the
- * rejected badge-soup FROM THIS/CONTAINS rows: 담는 것(contains, 2-col grid)
- * / 쓰는 곳(usedBy) / 기대는 곳(dependsOn) / 속한 곳(belongsTo). Every row
+ * rejected badge-soup FROM THIS/CONTAINS rows: contains (contains, 2-col grid)
+ * / usedBy / dependsOn / belongsTo. Every row
  * carries a per-row trace mark (solid=containment, dashed=depends) and
  * navigates on click (`onSelectNode`) — see
  * `docs/prototypes/detail-a1-datasheet.html`.

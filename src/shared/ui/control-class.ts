@@ -8,8 +8,8 @@ import { cn } from '@/shared/lib/cn';
  * **Why the value layer is a function.** This is not a claim that components
  * are wrong here — the first reading said that and was corrected the same day.
  * Three primitives with zero call sites (`Card`, `Badge`, `DetailCard`) looked
- * like proof. The owner pushed back — *"아직 안 쓴 걸 수도 있는 거 아님? 대부분
- * 디자인 시스템 만들 때 컴포넌트를 만들지 않나?"* (maybe they just have not been
+ * like proof. The owner pushed back — *"Maybe they just have not been
+ * adopted yet — doesn't every design system ship components?"* (maybe they just have not been
  * adopted yet — doesn't every design system ship components?) — and opening them
  * gave a different answer: created 2026-04-30, so "not yet" was out, and
  * `CardTitle` used **`text-lg`**, a step that does not exist in this repo's type
@@ -51,15 +51,14 @@ import { cn } from '@/shared/lib/cn';
  * `transition-colors` ×121 …), which is lossless. **Sizes were not**: across 143
  * chips the (height, `px`, `py`, type) combination had **50 distinct values**
  * with the top three covering only **23%** — effectively arbitrary rather than a
- * ramp, the exact defect `.claude/rules/design.md` 「치수 규칙성」 (dimensional
- * regularity) names. So the size ramp below is **the spec to converge on, not a
+ * ramp, the exact defect `.claude/rules/design.md` dimensional regularity names. So the size ramp below is **the spec to converge on, not a
  * summary of today**:
  *
  * > **Moving an existing control onto this function is normalisation, not a
  * > refactor — pixels change.**
  *
  * A bulk migration is therefore the design gate's call (`/design-council`
- * 「체계」, the design-systems seat), not this file's. What this file guarantees
+ * system, the design-systems seat), not this file's. What this file guarantees
  * today is narrower — **a newly written control does not turn 50 combinations
  * into 51** — enforced by
  * `tests/contract/control-adoption-ratchet.contract.test.ts`.
@@ -77,7 +76,7 @@ import { cn } from '@/shared/lib/cn';
  *
  * It lives in the value layer because per-component handling misses one: on
  * 2026-08-03 both `ChromeChip` and `ChromeTile` were missing it, found by the
- * owner as *"'최근 변경' 누르니까 아무런 반응이 없는데?"* (pressing "recent
+ * owner as *"'recent changes' pressing does nothing"* (pressing "recent
  * changes" does nothing). The values match what `Button` already uses;
  * `tests/contract/disabled-affordance.contract.test.ts` keeps the primitives
  * from drifting apart.
@@ -312,7 +311,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * eligibility to attach it (≥12px clearance to neighbouring targets) is the
      * consumer's — attaching it unconditionally in a dense row lets a later DOM
      * element steal the earlier one's tap. Per-site table:
-     * `docs/DECISIONS.md` 2026-08-04 「link 바닥 24」 (the 24px floor for links).
+     * `docs/DECISIONS.md` 2026-08-04 "link floor 24" (the 24px floor for links).
      * `tile` is a two-axis vertical surface whose content decides the height —
      * a different axis, not a ramp escape.
      *
@@ -321,7 +320,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * overflowing content grow.
      *
      * The full ramp (24 · 28 · 32 · 34 · 36 · 40 · 44) and each step's owner
-     * live in `docs/DESIGN-SYSTEM.md` 「컨트롤 높이 사다리」 (the control-height
+     * live in `docs/DESIGN-SYSTEM.md` "Control Height Ramp" (the control-height
      * ramp).
      *
      * **Type rides on size; separating them was rejected** (2026-08-04,
@@ -337,7 +336,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * type across all sizes) also collides with the owner's call above that `lg`
      * grows type and inset, and would raise every chip/pill `sm` (caption)
      * without cause. Ledger: `docs/DECISIONS.md` 2026-08-04
-     * 「타입-크기 분리 반려」 (type/size separation rejected).
+     * "Type/Size Separation Rejected".
      */
     size: {
       /**
@@ -462,7 +461,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * `tests/e2e/hover-contrast.spec.ts` plants as its known-failing case. No
        * consumer had followed it, so the next person would have been the first.
        *
-       * `.claude/rules/design-gates.md` 「호버 상태 대비」 (hover-state contrast)
+       * `.claude/rules/design-gates.md` "Hover State Contrast"
        * had already settled the rule — **only filled buttons darken on hover**,
        * measured from four primary CTAs sitting at 3.17–4.41 while hovered — but
        * it was absent from the value layer, so **all 12 consumers hand-wrote the

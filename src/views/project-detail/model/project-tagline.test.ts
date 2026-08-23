@@ -27,7 +27,7 @@ describe("resolveProjectTagline — 히어로 한 줄 정의", () => {
   });
 
   // Measured defect: the hero passed a 320-character excerpt straight through and cut **mid-word**, as in
-  // "…이 프로젝트의 ontology 는 비즈니". It has to end at a sentence boundary.
+  // "…the ontology of this project is busi". It has to end at a sentence boundary.
   it("어절 중간에서 자르지 않는다 — 문장 경계에서 끝난다", () => {
     const long =
       "마크다운에서 자라는 오픈소스 온톨로지 워크벤치입니다. " +

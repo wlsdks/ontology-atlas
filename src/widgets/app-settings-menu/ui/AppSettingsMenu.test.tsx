@@ -224,11 +224,10 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   /**
    * ⚠️ **This section left the sheet on 2026-08-21** (ledger 90). The old check was
    * "one click reaches the agent section inside this sheet", and that place is now
-   * the 「에이전트」 destination.
+   * the "Agent" destination.
    *
    * So what is pinned here changes: **a signpost stands where it left, and it sends
-   * you to the destination.** `surfaces.md`'s 「반만 막는 것이 가장 나쁘다」 (blocking
-   * only half is the worst option) is the basis — removed from the nav, the way in
+   * you to the destination.** `surfaces.md`'s "Blocking only half is the worst option" is the basis — removed from the nav, the way in
    * still has to answer.
    */
   it('빠져나간 자리에 이정표가 서서 목적지로 보낸다', () => {
@@ -247,7 +246,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
 
   /**
    * The hierarchy seat's prescription: **this row is not this sheet's
-   * protagonist.** The winner is 「대화 열기」 inside the destination, and the
+   * protagonist.** The winner is "Open Conversation" inside the destination, and the
    * signpost must not compete with it.
    */
   it('이정표 행은 인디고를 쓰지 않는다', () => {
@@ -265,14 +264,14 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /*
-   * ⚠️ The 「볼트 없음 안내」 and 「그 자리에서 폴더 열기」 checks **moved to**
+   * ⚠️ The "No Vault Notice" and "Open Folder Here" checks **moved to**
    * `AgentSetupSection.test.tsx` on 2026-08-21, because that screen left the sheet
    * (ledger 90). They were not deleted but followed — left here they would go on
    * measuring something this sheet does not draw.
    */
 
   /**
-   * #80 — [AI 연결] is a subview of this sheet, not a new route. In a browser (no
+   * #80 — [AI Connection] is a subview of this sheet, not a new route. In a browser (no
    * bridge) it builds no key input field and explains why.
    */
   it('opens the in-app agent destination from its own LNB row', () => {
@@ -284,8 +283,8 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /**
-   * The path the settings window's 「설정에서 키 등록」 takes — the request arrives
-   * **while the sheet is closed** and it opens straight into the [AI 연결] subview.
+   * The path the settings window's "Register Key in Settings" takes — the request arrives
+   * **while the sheet is closed** and it opens straight into the [AI Connection] subview.
    * It is the one wire that gives the user a door instead of telling them where the
    * gear is.
    *
@@ -351,9 +350,8 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * ④ **centre modal plus dim** (owner, 2026-07-30, referencing Claude desktop's
    * settings).
    *
-   * The reason for ② was *"설정 창이 지도 가리는거"* (the settings window covers the
-   * map) — the 「지도 배경」 and 「발자국」 sections promise *"change it and the map
-   * updates immediately"* while covering that map.
+   * The reason for ② was "The settings window covers the map" — the "Map Background" and "Footprint" sections promise "change it and the map
+   * updates immediately" while covering that map.
    *
    * **In ④ that reason disappeared.** Both sections already carry a **live preview
    * inside the panel** (`FootprintPreview` uses the same renderer as the map, and
@@ -583,8 +581,8 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   };
 
   /**
-   * Owner call: *"가로 세로 적당한 크기여야하고 고정 사이즈여야함"* (it needs sensible
-   * width and height and a fixed size).
+   * Owner call: *"It needs sensible
+   * width and height and a fixed size."*
    *
    * The height used to follow the content, so the window grew and shrank with every
    * section change. jsdom does not compute layout, so this cannot be measured by
@@ -620,11 +618,11 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     // Pinned by **structure**, not copy — it must not break every time a label is refined.
     const groups = [...nav.children];
     expect(groups.length, '묶음이 셋이 아니다').toBe(3);
-    // 「이어진 것」 went from 3 to 4 on 2026-08-16 (the runners section was added), and
-    // a third group 「앱」 appeared on 2026-08-20 (the update-check section). What this
+    // 「Connected」 went from 3 to 4 on 2026-08-16 (the runners section was added), and
+    // a third group 「App」 appeared on 2026-08-20 (the update-check section). What this
     // check holds is not the counts but the structure that **every group has a
     // title** — the counts are a by-product of that structure, updated when a section
-    // is added. The 「연결」 group is 2 items + **1 signpost row** = 3 buttons; the
+    // is added. The 「Connection」 group is 2 items + **1 signpost row** = 3 buttons; the
     // signpost sends you to a destination rather than opening a pane, so the item
     // count and the button count differ.
     expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3, 1]);
@@ -654,16 +652,16 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   /**
-   * The three 「알림」 rows **do not go back to 「화면」** (2026-08-02, owner report).
+   * The three 「Notifications」 rows **do not go back to 「Screen」** (2026-08-02, owner report).
    *
-   * They originally sat at the bottom of the 「화면」 section, with a comment
+   * They originally sat at the bottom of the 「Screen」 section, with a comment
    * justifying that position — meaning they were **deliberately there**. So the way
    * back is wide: the next person adding a notification row who attaches it to
-   * 「화면」 trips no check at all (both are legitimate component placements, so there
+   * 「Screen」 trips no check at all (both are legitimate component placements, so there
    * is no literal for lint to see).
    *
    * So **both directions** are pinned: the notification controls must be in the
-   * 「알림」 section, and must not be in the 「화면」 section. Pinning only one side lets
+   * 「Notifications」 section, and must not be in the 「Screen」 section. Pinning only one side lets
    * duplication (present in both) through.
    */
   it('알림 컨트롤은 「알림」 절에 있고 「화면」 절에는 없다', () => {
@@ -674,7 +672,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     ];
     openSheet();
 
-    // There are none at all on the first screen (the 「화면」 section).
+    // There are none at all on the first screen (the 「Screen」 section).
     expect(screen.getByTestId('app-settings-pane-screen')).toBeInTheDocument();
     for (const testId of NOTIFY_CONTROLS) {
       expect(
@@ -749,8 +747,8 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     }
     // The three numbers **start collapsed** (design audit, 2026-08-02) — six items
     // standing at equal weight make this section read as a list rather than «a place
-    // to choose». It reuses the grammar the neighbouring 「발자국」 already uses
-    // (「직접 맞추기」).
+    // to choose». It reuses the grammar the neighbouring 「Footprints」 already uses
+    // (「Manual Adjustment」).
     for (const id of [
       'app-settings-expand-batch',
       'app-settings-expand-label-attempts',
@@ -769,7 +767,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   /**
-   * **The mockup's test load does not come across.** 「볼트 규모」 (small/real/large)
+   * **The mockup's test load does not come across.** 「Scale」 (small/real/large)
    * was a handle the mockup built to measure itself, not a product setting — landing
    * it here would show users a control for «choosing» the size of their own data.
    */
@@ -798,7 +796,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   /**
-   * **The default affordance is 「머리 위 막대」** (owner decision, 2026-08-01). This
+   * **The default affordance is 「Top Bar」** (owner decision, 2026-08-01). This
    * is a value that deliberately changes today's screen, so the contract is whether
    * someone who never touched settings actually receives it — the screen-side
    * contract is measured by rendering in
@@ -912,7 +910,7 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
 });
 
 /**
- * 「다른 폴더에서 노드 가져오기」 (import nodes from another folder) lives in
+ * 「Import nodes from another folder」 lives in
  * **settings → workspace** (moved from the bottom of INDEX, 2026-08-02).
  *
  * It is pinned in both directions — `TopologyIndexPanel.test.tsx` checks "it is not

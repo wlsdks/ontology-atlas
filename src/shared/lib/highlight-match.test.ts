@@ -99,12 +99,12 @@ describe("splitHighlightSegments", () => {
   // the two contracts disagree the result is "search says it matched but the viewer
   // shows 0 marks".
   //
-  // Repro: `/ko/docs/` → search "관계 타입" → click the CLI Developer Entry body
+  // Repro: `/ko/docs/` → search "Relationship type" → click the CLI Developer Entry body
   // match → scrollTop 0, 0 marks. That phrase is nowhere contiguous in the document,
-  // while the tokens "관계" and "타입" each occur.
+  // while the tokens "Relationship" and "type" each occur.
   it("멀티 토큰 쿼리 — 구절이 어디에도 연속으로 없으면 개별 토큰을 OR 로 매치(스캐터드 AND 매치 착지)", () => {
     const text = "이 관계는 유용하다. 나중에 타입을 정의한다.";
-    // The phrase "관계 타입" occurs nowhere contiguously in this text.
+    // The phrase "Relationship type" occurs nowhere contiguously in this text.
     const segs = splitHighlightSegments(text, "관계 타입");
     const matched = segs.filter((s) => s.match).map((s) => s.text);
     expect(matched).toEqual(["관계", "타입"]);

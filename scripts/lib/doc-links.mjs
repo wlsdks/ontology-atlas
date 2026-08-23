@@ -88,7 +88,7 @@ const REPO_TOP_LEVEL = new Set([
  *
  * `REPO_TOP_LEVEL` is a hand-maintained 13-line allowlist, so **for a citation
  * pointing at a directory not on that list, no check existed at all.** Through
- * that gap, the colour charter's evidence (`신호 톤 3종`) and the bar-colouring
+ * that gap, the colour charter's evidence (`signal tone 3 types`) and the bar-colouring
  * discipline's evidence each pointed at a `.md` inside a gitignored scratch
  * folder for three weeks — files that are not on this machine either, and for
  * anyone who clones, the **whole folder** is missing. One lint message was citing

@@ -8,7 +8,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * ## Where it came from
  *
  * Looking at the insights screen (`/ontology/insights`) by eye showed
- * 「…으로 나 / 는 거예요」 — the word 「나눈」 split across two lines. The cause was
+ * "…for I / am doing" — the word "divided" split across two lines. The cause was
  * `word-break: normal` on that paragraph, while this repository already used
  * `break-keep` elsewhere: the spec existed but was not applied there.
  *
@@ -46,12 +46,12 @@ const ROUTES = [
    * return null and redirects to `/projects`, so without it this route would idle by
    * measuring `/ko/projects/` above a second time. `storefront` is the build-time
    * dogfood demo project, always present even without a vault. 4 breaks measured here:
-   * body markdown 「장바|구니」 · the empty-connections state 「여기 나타|납니다」
-   * (280px) · the handoff 「이 프로젝|트의 지도를」 (362px) · one more.
+   * body markdown 「cart」 · the empty-connections state 「appears here」
+   * (280px) · the handoff 「map of this project」 (362px) · one more.
    */
   "/ko/project/fallback/?slug=storefront",
   /*
-   * 404 (inventory: 「바뀌었|을」 at 382px). The address must actually render a 404 —
+   * 404 (inventory: 「will change」 at 382px). The address must actually render a 404 —
    * dev renders the root `app/not-found.tsx` for unresolved paths, and the static
    * export serves the `/404.html` built from the same component via
    * `scripts/serve-static-export.mjs` (locale is detected client-side from the first

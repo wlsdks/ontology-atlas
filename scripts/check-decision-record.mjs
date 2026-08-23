@@ -5,7 +5,7 @@
  * `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` lists when a council is required,
  * and `.claude/skills/po-council/SKILL.md` repeats it — but a trigger list
  * written in prose is enforced by whoever happens to remember it. The founding
- * incident (2026-07-27) was exactly that: a pass wrote "없음" (none) into two rubric
+ * incident (2026-07-27) was exactly that: a pass wrote "none" into two rubric
  * rows the doc calls fatal, self-certified, and shipped.
  *
  * Most of that trigger list is semantic ("positioning", "the words a stranger
@@ -24,7 +24,7 @@
  *
  * ## Row 3 was added on 2026-08-03 — it had been a rule that lived only in a document
  *
- * Rule 3 of 「시스템을 늘리는 규칙」 (rules for growing the system) in
+ * Rule 3 of "rules for growing the system" in
  * `docs/DESIGN-SYSTEM.md` — *changing a spec means convening the design-systems
  * seat* — existed along with its trigger list (`.claude/rules/design.md`), but
  * **nothing enforced it.** Measured: of five commits that widened a value-layer ramp,

@@ -305,14 +305,14 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
   const isBlockStart = (line) => {
     const trimmed = line.trim();
     if (trimmed === '') return false;
-    if (trimmed.startsWith('```')) return true; // 코드블록
-    if (trimmed.startsWith('|')) return true; // 표
+    if (trimmed.startsWith('```')) return true; // Code block
+    if (trimmed.startsWith('|')) return true; // table
     if (trimmed.startsWith('#')) return true; // heading
-    if (trimmed.startsWith('![')) return true; // 이미지
+    if (trimmed.startsWith('![')) return true; // image
     if (/^([-*_])(?:\s*\1){2,}$/.test(trimmed)) return true; // thematic break
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return true; // 리스트
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return true; // list
     if (/^\d+[.)]\s+/.test(trimmed)) return true; // ordered list
-    if (trimmed.startsWith('> ')) return true; // 인용
+    if (trimmed.startsWith('> ')) return true; // quote
     return false;
   };
   let i = 0;
@@ -469,8 +469,8 @@ export function walkMd(rootPath) {
  *
  * That produced this:
  *
- *   validate: `한글` does not resolve to any node in the vault
- *   list:     domain  한글  NFD file        ← the node is on the very next line
+ *   validate: `Korean` does not resolve to any node in the vault
+ *   list:     domain  Korean  NFD file        ← the node is on the very next line
  *
  * The compiler failed alongside it, so edges into that node dropped to
  * `resolved: false` — **nodes with Korean names lose their relations**, on this

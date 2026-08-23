@@ -11,17 +11,17 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
-/// ACP 하네스 — 사용자가 이미 설치한 코딩 에이전트를 찾아 앱 안에서 부른다.
+/// ACP harness — finds coding agents already installed by the user and invokes them within the app.
 mod acp;
 mod acp_doctor;
 mod managed_node;
-/// 「에이전트 연결」 — 번들 MCP 서버 경로 해석 · 설정 파일 계획/쓰기 · 자가 검증.
+/// "Agent Connection" — interprets bundled MCP server paths · plans/writes config files · self-validates.
 mod agent_setup;
-/// Atlas Git — vault 를 git 으로 버전 기록하는 네이티브 계층 (웹 GUI 가 invoke).
+/// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
 mod git;
-/// BYOK 연결 확인 — 키체인의 키로 인증만 확인하고 볼트 안 감사 로그에 남긴다.
+/// BYOK connection check — verifies authentication using the keychain key and logs to the Bolt audit log.
 mod llm;
-/// LLM 호출 감사 로그 — "기록 못 하면 보내지 않는다" 의 구현체.
+/// LLM call audit log — implementation of "do not send if logging fails."
 mod llm_audit;
 mod secrets;
 
@@ -31,16 +31,16 @@ const WEBVIEW_VERIFY_VAULT_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_VAULT";
 const WEBVIEW_VERIFY_AI_SETTINGS_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_AI_SETTINGS";
 const WEBVIEW_VERIFY_AI_BASE_URL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
-/// 설치된 앱에서 **「업데이트 확인」이 실제로 도는가**를 재는 스위치.
+/// Switch to measure whether **"Check for Updates" actually triggers** in the installed app.
 ///
-/// 이 저장소의 규율상 업데이터는 **설치한 앱에서 잰 것만 인정**한다
-/// (`.claude/rules/testing.md`) — 브라우저에는 갱신할 자기 자신이 없다.
+/// Per this repository's discipline, the updater only recognizes updates measured **from the installed app**
+/// (`.claude/rules/testing.md`) — the browser has no self to update.
 const WEBVIEW_VERIFY_APP_UPDATE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_APP_UPDATE";
-/// 설치된 앱에서 **설치 진행률이 실제로 화면에 도착하는가**를 재는 스위치.
+/// Switch to measure whether **installation progress actually reaches the screen** in the installed app.
 ///
-/// 단위 시험은 `listenInstallProgress` 를 통째로 흉내 내므로, Rust 의
-/// `app.emit` 이 React 의 `listen` 까지 닿는지는 **앱 안에서만** 알 수 있다.
-/// 도구가 하나도 없는 환경(`env -i HOME=<빈 곳>`)으로 띄워야 뜻이 있다.
+/// Unit tests mock `listenInstallProgress` entirely, so whether Rust's
+/// `app.emit` reaches React's `listen` can only be known **within the app**.
+/// It is meaningful only when launched in an environment with no tools (`env -i HOME=<empty>`).
 const WEBVIEW_VERIFY_ACP_INSTALL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ACP_INSTALL";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
@@ -49,11 +49,11 @@ const WEBVIEW_VERIFY_FIXTURE_SETTLE_MS: u64 = 1200;
 const WEBVIEW_VERIFY_MARKER_ATTEMPTS: usize = 12;
 const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 
-/// notify-debouncer-full 의 기본 watcher 타입 별칭 — State 저장용.
+/// Type alias for the default watcher type of notify-debouncer-full — for State storage.
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
 
-/// live-tauri — vault 파일워처를 앱 수명 동안 살려두는 State. start_vault_watch
-/// 가 여기에 debouncer 를 넣어둬야 drop 되지 않고 계속 감시한다.
+/// live-tauri — State keeping the vault file watcher alive for the app's lifetime. start_vault_watch
+/// must place the debouncer here so it does not drop and continues monitoring.
 #[derive(Default)]
 struct VaultWatcherState {
     debouncer: Mutex<Option<VaultDebouncer>>,
@@ -109,35 +109,24 @@ fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
     Ok(root)
 }
 
-/// 볼트 루트로 받아들이면 **안 되는** 자리인가 — 안 되면 안정된 사유 코드를 준다.
+/// Is this a position where **it is not allowed** to accept as the vault root — if not, provide a stable reason code.
 ///
-/// ## 왜 이 검사가 있는가 (2026-08-16)
+/// ## Why this check exists (2026-08-16)
 ///
-/// 폴더 피커에서 `/`(Macintosh HD)를 고르면 앱이 **한 마디 망설임 없이 볼트로
-/// 받아들였다.** 그리고 「이 폴더의 문서 34개를 지도에 올리기」를 제안했는데, 그
-/// 34개는 설치된 앱 번들 안의 마크다운이었다. macOS 가 직접 *"다른 앱의 데이터에
-/// 접근하려고 합니다"* 경고를 띄워 멈춘 것이지 우리가 막은 것이 아니다.
+/// When selecting `/` (Macintosh HD) in the folder picker, the app **accepted it as the vault
+/// without hesitation.** Then it proposed "Map 34 documents in this folder," but those
+/// 34 were Markdown files within the installed app bundle. macOS directly displayed the warning *"Another app is trying to access your data"* and stopped it; we did not block it.
 ///
-/// 읽기만 하던 시절에는 이것이 사고가 아니라 실수였다. **볼트 루트는 곧 에이전트의
-/// 작업 폴더가 되므로**, 같은 실수의 결과가 「잘못된 폴더를 읽었다」에서 「잘못된
-/// 폴더에서 에이전트가 파일을 고쳤다」로 바뀐다. 그래서 이 함수는 ACP 를 붙이기
-/// **전에** 닫아야 하는 문이고, 나중에 세션 작업 폴더 판정도 같은 함수를 쓴다 —
-/// 판정이 두 벌이 되면 한쪽만 느슨해지는 쪽이 기본값이 된다.
+/// During the read-only era, this was a mistake, not an incident. **The vault root becomes the agent's
+/// working folder**, so the consequence of the same mistake changes from "read the wrong folder" to "the agent modified files in the wrong folder." Thus, this function is a gate that must be closed **before** attaching ACP, and later session working folder checks also use this function — if two checks exist, the looser one becomes the default.
 ///
-/// ## 무엇을 막고 무엇을 안 막나
+/// ## What it blocks and what it does not
 ///
-/// 막는 것은 **이름이 정해진 자리**뿐이다: 파일시스템 루트(부모가 없는 경로 —
-/// Windows 드라이브 루트 `C:\` 도 여기 걸린다) · 홈 디렉터리 **자기 자신** ·
-/// 사용자 컨테이너(`/Users`) · OS·앱 디렉터리. 홈 **안쪽**(`~/notes`)은 정당한
-/// 볼트이므로 막지 않는다 — 막으면 가장 흔한 사용을 막는다.
+/// It blocks only **named positions**: filesystem root (paths with no parent — Windows drive roots like `C:\` are included here) · home directory **itself** · user container (`/Users`) · OS/app directories. Home **inside** (`~/notes`) is a valid vault, so it does not block it — blocking it would prevent the most common use case.
 ///
-/// 「폴더가 너무 크다」 같은 발견적 판정은 일부러 넣지 않았다. 임계값을 넘는
-/// 정당한 볼트가 반드시 생기고, 그때 사용자는 이유를 알 수 없는 거절을 만난다.
-/// 이름만 보고 「이건 앱 번들이다」를 판정한다.
+/// Heuristic checks like "folder is too large" are intentionally omitted. Legitimate vaults exceeding thresholds will inevitably appear, and users would encounter unexplained rejections. It judges based on name alone: "this is an app bundle."
 ///
-/// 확장자로 가르는 이유: 번들 여부를 정확히 알려면 `Info.plist` 를 읽어야
-/// 하는데, 그때는 이미 그 안을 들여다본 뒤다. 이름은 열기 전에 보인다.
-/// 목록은 macOS 가 **실행하거나 특별 취급하는** 것들이다.
+/// Reason for splitting by extension: to accurately determine if it is a bundle, one must read `Info.plist`, but by then you have already looked inside. The name is visible before opening. This list contains items that macOS **executes or treats specially**.
 fn is_bundle_directory(root: &Path) -> bool {
     const BUNDLE_EXTENSIONS: &[&str] = &[
         "app", "bundle", "framework", "kext", "plugin", "prefpane", "qlgenerator",
@@ -272,9 +261,7 @@ fn is_safe_webview_verify_route(route: &str) -> bool {
             .any(|ch| matches!(ch, ' ' | '"' | '\'' | '<' | '>' | '\\'))
 }
 
-/// 검증기가 [AI 연결]의 주소 칸에 넣을 값 — 리터럴을 깨는 문자는 이스케이프가
-/// 아니라 **거절**로 막는다. 이 값은 검증 빌드에서만 쓰이지만, 검증 경로라고
-/// 해서 주입 가능한 문자열을 WebView 로 흘리지 않는다.
+/// Value for the verifier to place in the [AI Connection] address field — characters breaking literals are blocked by **rejection**, not escaping. This value is used only in verification builds, but even in verification paths, do not leak injectable strings to the WebView.
 fn is_safe_verify_base_url(value: &str) -> bool {
     let url = value.trim();
     (url.starts_with("http://") || url.starts_with("https://"))
@@ -400,31 +387,27 @@ fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
     )
 }
 
-/// [설정 → AI 연결 → 주소로 연결] 흐름을 WebView 안에서 밟는 검증 스크립트.
+/// Verification script walking the [Settings → AI Connection → Connect via Address] flow inside the WebView.
 ///
-/// 지도 전용 검증기들과 같은 구조다: 상태 기계 하나가 `window` 전역에 결과
-/// 객체를 남기고, 뒤이어 도는 마커 수집 스크립트가 그것을 payload 로 싣는다.
+/// Same structure as the map-only verifiers: a single state machine leaves a result
+/// object on the `window` global, and a subsequent marker collection script loads it as payload.
 ///
-/// # 두 가지 규율
+/// # Two disciplines
 ///
-/// - **못 찾으면 못 찾았다고 남긴다.** 각 단계는 자기가 무엇을 기다리다 멈췄는지
-///   (`step`/`reason`) 를 남기고, 판정은 Node 쪽 계약이 한다. 스크립트가 스스로
-///   "성공" 을 선언하는 자리는 마지막 한 곳뿐이다.
-/// - **클릭은 토글이다.** [키 등록]·톱니처럼 다시 누르면 닫히는 컨트롤을 폴링
-///   루프에서 매 회 누르면 열고 닫기를 반복한다. 그래서 같은 컨트롤은 쿨다운
-///   안에 한 번만 누른다.
+/// - **If not found, log that it was not found.** Each step logs what it waited for and stopped at (`step`/`reason`), and the judgment is made by the Node-side contract. There is only one place where the script declares "success" itself.
+/// - **Clicks are toggles.** Controls like [Key Registration] or gears that close when pressed again will toggle open and closed if clicked every time in a polling loop. Therefore, click the same control only once within its cooldown.
 ///
-/// 주소는 `format!` 대신 치환으로 넣는다 — 본문이 중괄호투성이 JS 라 `{{`
-/// 이스케이프가 스크립트를 읽을 수 없게 만든다.
+/// Insert the address via substitution instead of `format!` — since the body is full of curly braces in JS, `{{`
+/// escaping would make the script unreadable.
 fn build_webview_verify_ai_settings_script(base_url: &str) -> String {
     AI_SETTINGS_VERIFY_SCRIPT.replace("__ATLAS_AI_BASE_URL__", &js_string_literal(base_url))
 }
 
-/// 설정 시트 → Agents → 점검 → (막혀 있으면) 앱이 내주는 설치를 실제로 누른다.
+/// From the settings sheet → Agents → Check → (if blocked) actually click the installation offered by the app.
 ///
-/// **재는 것은 설치 성공이 아니라 「진행이 화면에 도착하는가」** 다. 그래서
-/// 결과에 단계 목록을 그대로 쌓는다 — 하나도 안 쌓이면 이벤트가 안 온 것이고,
-/// 그건 사용자에게 종전과 똑같은 「조용한 기다림」이다.
+/// **What is measured is not installation success, but "does progress reach the screen"**. So
+/// accumulate the step list in the result as-is — if nothing accumulates, no event arrived,
+/// which is the same "quiet waiting" as before for the user.
 const ACP_INSTALL_VERIFY_SCRIPT: &str = r#"(() => {
   const result = {
     attempted: true,
@@ -553,11 +536,9 @@ const ACP_INSTALL_VERIFY_SCRIPT: &str = r#"(() => {
   step(0);
 })()"#;
 
-/// 설정 시트를 열고 → 「앱」 절로 가서 → 「업데이트 확인」을 실제로 누른다.
+/// Open the settings sheet → go to the "App" section → actually click "Check for Updates".
 ///
-/// **왜 클릭까지 하나** — 단위 시험은 버튼이 `checkNow` 를 부른다는 것까지만
-/// 증명한다. 그 뒤(플러그인 동적 import · 네트워크 왕복 · `getVersion()`)는
-/// 설치된 앱 안에만 있고, 이 저장소에서 배선이 죽어 있던 부분이 바로 그 층이다.
+/// **Why even click** — unit tests only prove that the button calls `checkNow`. What follows (plugin dynamic import · network round-trip · `getVersion()`) exists only within the installed app, and this repository's wiring was dead exactly in that layer.
 const APP_UPDATE_VERIFY_SCRIPT: &str = r#"(() => {
   const result = {
     attempted: true,
@@ -910,37 +891,21 @@ const AI_SETTINGS_VERIFY_SCRIPT: &str = r#"(() => {
   step(0);
 })()"#;
 
-/// 검증용 라우트 이동 — **주소만 갈아끼우고 앱의 클라이언트 라우터가 따라오길
-/// 기대한다.** 실제 내비게이션(`location.assign`)이 아니다.
+/// Verification route navigation — **expect the app's client router to follow as we swap only the address.**
+/// This is not actual navigation (`location.assign`).
 ///
-/// # ⚠️ 이 방식으로 검증할 수 있는 라우트는 일부다
+/// # ⚠️ Only some routes can be verified this way
 ///
-/// `history.replaceState` + `popstate`/`app:urlchange` 는 **소프트 내비게이션을
-/// 스스로 듣는 표면**에서만 화면을 바꾼다. 이 저장소에서는 지도(`app:urlchange`)
-/// 와 공방(자기 URL 이벤트)이 그렇다. 그 밖의 평범한 Next 라우트는 **주소만
-/// 바뀌고 마운트된 컴포넌트는 그대로 남는다.**
+/// `history.replaceState` + `popstate`/`app:urlchange` change the screen **only on surfaces that listen to soft navigation themselves**. In this repository, the map (`app:urlchange`) and workshop (self URL events) are such cases. Other standard Next routes **only change the address while the mounted component remains.**
 ///
-/// 그래서 `--require-webview-route` 를 통과해도 **화면은 다른 라우트일 수 있다.**
-/// 2026-07-29 실측: `/ko/download/` 를 요구했더니 주소는 그대로 찍히는데 화면은
-/// 루트(지도)였다. 그걸 "앱에서 다운로드 페이지가 안 열린다" 로 읽고 원인을 두 번
-/// 지어냈다 — 웹 브라우저에서 같은 기제를 재현해 보고서야 **도구의 한계**임이
-/// 드러났다(실제 내비게이션으로는 정상 렌더).
+/// Thus, even if `--require-webview-route` passes, **the screen may be on a different route.** 2026-07-29 measurement: requesting `/ko/download/` kept the address but showed the root (map) on screen. Reading this as "the app did not open the download page" led to fabricating causes twice — only by reproducing the same mechanism in a web browser was it revealed that **this is a tool limitation** (normal rendering works with actual navigation).
 ///
-/// ## 그래서 무엇을 하나
+/// ## So what do we do
 ///
-/// - **라우트별 마커를 함께 요구한다.** URL 일치는 도달의 증거가 아니다. 그
-///   화면에만 있는 텍스트나 `data-testid` 를 `--require-webview-content` 로 같이
-///   걸면 이 함정을 지난다.
-/// - 소프트 내비게이션을 안 듣는 라우트를 검증해야 하면, 이 스크립트를 고치기
-///   전에 **그 라우트를 시작 URL 로 띄우는 것**을 먼저 검토하라. 앱은
-///   `ONTOLOGY_ATLAS_VERIFY_ROUTE` 를 받기 전에 이미 로케일 루트로 한 번
-///   가므로(`build_webview_verify_route_reset_script`), 지금 구조에서는 그
-///   재설정과 목적지가 같은 값이어야 한다.
+/// - **Require route-specific markers together.** URL matching is evidence of arrival, not presence. Adding text or `data-testid` unique to that screen via `--require-webview-content` bypasses this trap.
+/// - If you need to verify a route that does not listen to soft navigation, first consider **launching that route as the start URL** before modifying this script. The app already goes to the locale root once (`build_webview_verify_route_reset_script`) before receiving `ONTOLOGY_ATLAS_VERIFY_ROUTE`, so in the current structure, the reset and destination must be the same value.
 ///
-/// 왜 애초에 이렇게 만들었나: 실제 내비게이션은 볼트 픽스처를 심어 둔
-/// IndexedDB 부트스트랩 이후의 앱 상태를 날린다. 주소만 바꾸는 쪽이 그 상태를
-/// 지키므로 지도·공방 검증에는 이 방식이 맞다. **틀린 것은 방식이 아니라,
-/// 한계를 적어 두지 않은 것이었다.**
+/// Why built this way originally: actual navigation wipes the app state after seeding the vault fixture in IndexedDB bootstrap. Changing only the address preserves that state, so this method is correct for map/workshop verification. **The error was not the method, but failing to document its limitations.**
 fn build_webview_verify_route_script(route: &str) -> String {
     let route = js_string_literal(route);
     format!(
@@ -1038,13 +1003,13 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
         .as_millis())
 }
 
-/// 살아 있는 ACP 세션들. 앱이 꺼질 때 여기 남은 것을 전부 끝낸다.
+/// Live ACP sessions. Terminate all remaining here when the app shuts down.
 #[derive(Default)]
 struct AcpSessions(Mutex<std::collections::HashMap<String, Arc<AcpSessionHandle>>>);
 
 struct AcpSessionHandle {
     pid: u32,
-    /// `acp_start` 가 검사하고 정규화한 권한 경계. 화면이 다시 고를 수 없다.
+    /// Permission boundary checked and normalized by `acp_start`. The screen cannot reselect.
     vault_root: PathBuf,
     stdin: Mutex<Box<dyn Write + Send>>,
 }
@@ -1202,11 +1167,11 @@ fn acp_start(
     };
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from);
-    // 앱이 대신 깔아 준 것도 찾을 수 있어야 한다 — 안 그러면 설치해 놓고도
-    // 화면이 계속 「설치 필요」라고 말한다.
+    // Must also find what the app installed on our behalf — otherwise, even after installing,
+    // the screen keeps saying "Installation required."
     let app_data_for_paths = app.path().app_data_dir().ok();
     let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
-    // 앱이 받아 둔 Node 도 후보에 넣는다 — 안 그러면 받아 놓고도 「Node 필요」다.
+    // Include Node accepted by the app as a candidate — otherwise, even after accepting, it says "Node required."
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
@@ -1220,29 +1185,24 @@ fn acp_start(
     )?;
 
     /*
-     * npx 갈래면 띄우기 **직전에** 캐시 항목을 검사한다 (2026-08-19 소유자
-     * 실기계). 첫 내려받기가 중간에 끊기면 반쯤 만들어진 항목이 남고, npx 는
-     * 그것을 재사용하려다 `Could not read package.json` 으로 매번 즉사한다 —
-     * 스스로 낫지 않는 상태다. 깨져 있으면 **그 항목 하나만** 지워서 npx 가
-     * 처음부터 다시 받게 한다. 판정 근거와 해시 유도는 `acp.rs` 의
-     * npx 캐시 자기 치유 블록에 있다.
+     * Check cache entries **just before** launching if using npx (owner's physical machine 2026-08-19). If the first download is interrupted halfway, a half-formed entry remains, and npx tries to reuse it, dying every time with `Could not read package.json` —
+     * a state that does not heal itself. If broken, **delete only that entry** so npx downloads from scratch. Judgment basis and hash derivation are in the
+     * npx cache self-healing block in `acp.rs`.
      */
     let npx_preflight = acp::preflight_npx_cache(&launch, home.as_deref());
 
-    // **사용자의 전역 설정을 물려받지 않는다** (결정 원장 2026-08-16 (2)).
-    // 실측: 소유자의 `~/.claude/settings.json` 이 `Bash(*)`·`Write(*)` 를 미리
-    // 허용해 두고 있어서, 그 설정을 물려받은 세션은 작업 폴더 밖에 파일을 쓰면서
-    // 한 번도 묻지 않았다. 관문은 프로토콜이 아니라 이 설정이 만든다.
+    // **Do not inherit the user's global settings** (Decision log 2026-08-16 (2)).
+    // Measurement: the owner's `~/.claude/settings.json` pre-allowed `Bash(*)`·`Write(*)`, so a session inheriting that setting wrote files outside the working folder
+    // without asking once. The gateway is not the protocol but this setting.
     let app_data = app
         .path()
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
-    // 격리를 **지원하지 않는 것**은 None 으로 정직하게 띄울 수 있다. 그러나
-    // 격리를 지원한다고 표시한 실행기의 준비 실패는 시작 실패다. 그 상태로
-    // 띄우면 사용자의 전역 허용 목록을 물려받고, 화면이 약속한 관문은 없다.
-    // 그림자 걷기가 「이 항목이 아직 통하나」를 물어보려면 그 CLI 의 **절대
-    // 경로**가 필요하다. 이름으로 띄우면 자식이 보는 PATH 에 좌우되는데, GUI
-    // 앱의 기본 PATH 는 사용자의 셸과 다르다(이 파일 맨 위 실측).
+    // Honest to launch as None for those that **do not support isolation**. However,
+    // a launcher that claims to support isolation but fails preparation is a start failure. Launching in that state
+    // inherits the user's global allow list, and the screen has no promised gateway.
+    // Shadow walking requires asking "is this item still valid," which needs the CLI's **absolute
+    // path**. Launching by name depends on the PATH visible to children, but a GUI app's default PATH differs from the user's shell (measurement at the top of this file).
     let isolation_cli = acp::registry_agent(&runtime_id)
         .and_then(|agent| agent.cli.as_deref())
         .and_then(|name| {
@@ -1282,8 +1242,8 @@ fn acp_start(
     }
     #[cfg(windows)]
     {
-        // 자식이 콘솔 창을 띄우지 않게 한다. 앱 자체는 windows_subsystem 이
-        // 걸려 있지만 자식은 그것을 물려받지 않는다.
+        // Prevent the child from opening a console window. The app itself has windows_subsystem
+        // set, but the child does not inherit it.
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         command.creation_flags(CREATE_NO_WINDOW);
@@ -1303,19 +1263,16 @@ fn acp_start(
     spawn_acp_line_pump(app.clone(), session_id.clone(), stdout, "acp://message");
     spawn_acp_line_pump(app.clone(), session_id.clone(), stderr, "acp://stderr");
 
-    // ⚠️ **등록이 먼저다** (2026-08-16 검수에서 적발).
+    // ⚠️ **Registration must come first** (caught in 2026-08-16 review).
     //
-    // 아래 스레드는 자식이 끝나면 등록부에서 지운다. 종전에는 그 스레드를 먼저
-    // 띄우고 등록을 나중에 했는데, **곧바로 죽는 자식**(잘못된 어댑터 · npx
-    // 실패)이면 지우기가 등록보다 먼저 일어난다. 그러면 죽은 pid 가 등록부에
-    // 영원히 남고, 앱을 끌 때 `terminate_all_acp_sessions` 가 그 pid 를 죽인다 —
-    // 그때 그 번호는 **다른 프로그램**의 것일 수 있다(그리고 프로세스 그룹으로
-    // 신호를 보낸다).
+    // The thread below removes the child from the registry after it ends. Previously, we launched that thread first
+    // and registered later, but for a **child that dies immediately** (wrong adapter · npx
+    // failure), removal happens before registration. Then the dead pid remains in the registry forever, and `terminate_all_acp_sessions` kills that pid when the app shuts down —
+    // at that time, that number could belong to **another program** (and sends signals to the process group).
     sessions.insert(session_id.clone(), pid, root, stdin)?;
 
-    // 자식을 기다리는 스레드가 종료를 알리고 등록부에서 지운다. 여기서 지우지
-    // 않으면 이미 죽은 세션에 계속 쓰려 하고, 그 실패는 사용자에게 「보냈는데
-    // 답이 없다」로 보인다.
+    // The thread waiting for the child announces termination and removes it from the registry. If not removed here,
+    // it continues writing to already dead sessions, and that failure appears to the user as "sent but no reply."
     {
         let app = app.clone();
         let session_id = session_id.clone();
@@ -1329,28 +1286,22 @@ fn acp_start(
     }
 
     /*
-     * 첫 내려받기(수십 MB)는 몇 분 걸리는데 화면은 「켜는 중」만 보였다 —
-     * 사용자가 멈춘 줄 알고 앱을 끄고, 그것이 위의 깨진 캐시를 만드는 바로 그
-     * 방아쇠였다(2026-08-19). 그래서 내려받기가 실제로 일어날 시작에만 화면에
-     * 알리고, 진행은 **지어내지 않고 잰다**: 전체 크기는 어디에도 못 박혀 있지
-     * 않아 퍼센트는 정직하게 만들 수 없고, 캐시 항목 디렉터리가 자라는 크기
-     * (지금까지 몇 MB)는 실측이다.
+     * The first download (tens of MB) takes minutes, but the screen only showed "Starting" —
+     * the user thought it was stuck and closed the app, which was the very trigger that created the broken cache above (2026-08-19). So we notify the screen only when the download actually starts, and measure progress **without fabricating**: total size is not fixed anywhere,
+     // so percentage cannot be made honest, but the growing size of the cache entry directory
+     // (how many MB so far) is measurable.
      */
     /*
-     * ⚠️ 알림은 **이 커맨드가 리턴한 뒤에** 보내야 한다. 화면은 `acp_start` 의
-     * 답(세션 이름)을 받고 나서야 `acp://notice` 를 구독하므로, 여기서 바로
-     * emit 하면 첫 알림이 허공에 사라진다. 그래서 전부 스레드로 옮기고 짧게
-     * 기다렸다 보낸다 — 혹시 그래도 놓치면, 매초 오는 진행 알림이 화면 쪽에서
-     * 표시를 새로 만들 수 있게 되어 있다(`use-acp-session.ts`).
+     * ⚠️ Notifications must be sent **after this command returns**. The screen only subscribes to `acp://notice` after receiving the answer (session name) from `acp_start`, so emitting here would make the first notification vanish into the void. So we move everything to a thread and wait briefly before sending — if we still miss it, the progress notifications arriving every second allow the screen side to refresh the display (`use-acp-session.ts`).
      */
     let first_run_message = match &npx_preflight {
-        // 치유했다는 사실도 문구에 실어 진단에 남긴다 — 다음에 또 끊겼을 때 단서다.
+        // Include the fact of healing in the message for diagnostics — a clue if it breaks again next time.
         acp::NpxCachePreflight::HealedBrokenEntry { reason } => {
             Some(format!("npx-first-run-download:healed:{reason}"))
         }
         acp::NpxCachePreflight::FirstDownload => Some("npx-first-run-download".to_string()),
-        // 지우지 못했으면 종전과 똑같이 실패할 것이다 — 화면의 「자세히」가
-        // 적어도 왜인지 말할 수 있게 사유를 올린다.
+        // If deletion fails, it will fail as before — raise the reason so the screen's "Details" can
+        // at least explain why.
         acp::NpxCachePreflight::HealFailed { reason, error } => {
             Some(format!("npx-cache-heal-failed:{reason}:{error}"))
         }
@@ -1370,7 +1321,7 @@ fn acp_start(
         let app = app.clone();
         let session_id = session_id.clone();
         std::thread::spawn(move || {
-            // 화면이 구독을 붙일 시간. 놓쳐도 아래 진행 알림이 받쳐 준다.
+            // Time for the screen to attach subscription. If missed, the progress notification below covers it.
             std::thread::sleep(std::time::Duration::from_millis(250));
             let _ = app.emit(
                 "acp://notice",
@@ -1380,13 +1331,13 @@ fn acp_start(
                 },
             );
             let (Some(entry), Some(package)) = (entry, package) else {
-                return; // 치유 실패 알림뿐 — 잴 내려받기가 없다.
+                return; // Only healing failure notification — no download to measure.
             };
             let started = std::time::Instant::now();
             loop {
                 std::thread::sleep(std::time::Duration::from_millis(1000));
-                // 내려받기가 이보다 오래 걸리면 진행 표시가 문제의 전부가
-                // 아니다 — 스레드를 영원히 남기지 않는다.
+                // If the download takes longer than this, the progress indicator is not the whole problem
+                // — do not leave the thread forever.
                 if started.elapsed() > std::time::Duration::from_secs(20 * 60) {
                     break;
                 }
@@ -1395,7 +1346,7 @@ fn acp_start(
                     .map(|sessions| sessions.contains(&session_id))
                     .unwrap_or(false);
                 if !alive {
-                    break; // 자식이 끝났다 — 성공이든 실패든 이 표시는 끝이다.
+                    break; // The child has ended — success or failure, this marker is done.
                 }
                 if acp::npx_entry_health(&entry, &package) == acp::NpxEntryHealth::Usable {
                     let _ = app.emit(
@@ -1422,11 +1373,10 @@ fn acp_start(
     Ok(session_id)
 }
 
-/// 자식의 한 스트림을 줄 단위로 화면에 흘린다.
+/// Stream a child's single stream to the screen line by line.
 ///
-/// 상한을 넘긴 줄은 **버리고 알린다**. 잘라서 넘기면 반쪽 JSON 이 파서에
-/// 들어가 더 이해하기 어려운 고장이 되고, 세션을 통째로 죽이면 큰 파일 하나가
-/// 대화를 끝내 버린다.
+/// Lines exceeding the upper limit are **dropped and reported**. If we truncate them, half-JSON enters the parser,
+/// causing harder-to-understand failures; killing the entire session ends the conversation for large files.
 fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
     app: AppHandle,
     session_id: String,
@@ -1457,7 +1407,7 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
                         },
                     );
                     if err.kind() != std::io::ErrorKind::InvalidData {
-                        break; // 입출력 자체가 끊긴 것이면 더 읽을 것이 없다.
+                        break; // If the I/O itself is disconnected, there is nothing more to read.
                     }
                 }
             }
@@ -1465,13 +1415,13 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
     });
 }
 
-/// 권한 요청 하나를 우리 정책으로 판정한다 — `allow-inside-vault` 또는 `ask`.
+/// Evaluate a single permission request against our policy — `allow-inside-vault` or `ask`.
 ///
-/// **판정을 화면 쪽에 다시 구현하지 않는다.** 두 벌이 되면 한쪽만 느슨해지는
-/// 쪽이 기본값이 되고, 그 한쪽이 하필 사용자에게 보이는 쪽이다. 게다가 이
-/// 판정은 심볼릭 링크를 풀고 아직 없는 경로의 조상을 정규화해야 해서, 브라우저
-/// 쪽에서는 애초에 정확히 할 수 없다. 더 중요하게, 볼트 루트는 화면이 보내는
-/// 문자열을 믿지 않고 `acp_start` 때 검증해 세션에 묶어 둔 값만 쓴다.
+/// **Do not reimplement the evaluation logic on the screen side.** If the two diverge, the looser one becomes
+/// the default, and that one happens to be visible to the user. Moreover, this
+/// evaluation must resolve symbolic links and normalize ancestors of non-existent paths, which the browser
+/// side cannot do accurately from the start. More importantly, the vault root does not trust strings sent by the screen;
+/// it verifies them at `acp_start` and uses only values bound to the session.
 fn permission_verdict_for_session(
     sessions: &AcpSessions,
     session_id: &str,
@@ -1507,7 +1457,7 @@ fn acp_send(
     sessions.send_line(&session_id, &line)
 }
 
-/// 세션과 그것이 띄운 모든 것을 끝낸다.
+/// End the session and everything it spawned.
 #[tauri::command]
 fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
     let pid = sessions.take_pid(&session_id)?;
@@ -1612,7 +1562,7 @@ struct AcpInstallProgress {
     runtime_id: String,
     /// 어느 일인가 — `"node"` · `"cli"`. 화면이 문구를 갖는다.
     job: &'static str,
-    /// 어느 단계인가 — 화면이 문구를 갖는다(여기서 사람 말을 만들지 않는다).
+    /// Which phase is this — the screen holds the message (we do not generate human language here).
     stage: &'static str,
     received: Option<u64>,
     total: Option<u64>,
@@ -1758,26 +1708,26 @@ fn acp_install_node(
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
-/// **이 도구를 앱이 대신 깔아 줄 수 있나 — 그렇다면 무슨 명령으로.**
+/// **Can the app install this tool on behalf of the user — and if so, with what command.**
 ///
-/// 화면은 이것을 받아 **누르기 전에 명령 원문을 보여 준다**(조건 ②). 없으면
-/// `None` — 화면은 종전대로 설치 안내 링크만 낸다.
+/// The screen receives this and **shows the raw command before pressing it** (condition ②). If absent,
+/// `None` — the screen continues to show only the installation guide link.
 #[tauri::command]
 fn acp_install_plan(app: tauri::AppHandle, runtime_id: String) -> Option<String> {
     let app_data = app.path().app_data_dir().ok()?;
     acp::managed_install_command(&runtime_id, &app_data)
 }
 
-/// 앱 전용 자리에 그 도구를 깐다.
+/// Install the tool in the app-specific location.
 ///
-/// 조건 넷(원장 2026-08-20 (88))이 여기서 지켜진다:
-/// ① 이 커맨드는 **사용자가 누를 때만** 불린다 — 앱이 켜질 때 아무것도 안 받는다.
-/// ② 명령 원문은 `acp_install_plan` 이 미리 화면에 보여 준다.
-/// ③ `--prefix <app-data>/managed-node` — 전역 npm 도 시스템 PATH 도 안 건드린다.
-/// ④ 패키지 버전은 `INSTALLABLE_CLI` 에 고정돼 있다.
+/// Condition four (ledger 2026-08-20 (88)) is upheld here:
+/// ① This command is **only invoked when the user presses it** — the app receives nothing on startup.
+/// ② The raw command is pre-shown to the screen by `acp_install_plan`.
+/// ③ `--prefix <app-data>/managed-node` — does not touch global npm or system PATH.
+/// ④ Package version is pinned to `INSTALLABLE_CLI`.
 ///
-/// 깐 뒤 **다시 잰 값**을 돌려준다 — 「깔았습니다」라고 말하고 실제로는 안 깔린
-/// 경우가 이 자리에서 가장 나쁜 결함이다.
+/// After installation, **re-verify and return the value** — saying "installed" when it actually wasn't
+/// is the worst defect at this location.
 #[tauri::command]
 fn acp_install_cli(
     app: tauri::AppHandle,
@@ -1801,8 +1751,8 @@ fn acp_install_cli(
     };
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
-    // 앱이 받아 둔 Node 의 npm 도 후보다 — 시스템에 npm 이 없는 사람이
-    // 여기까지 왔다면 그게 유일한 길이다.
+    // The app's bundled npm is a fallback — if someone reached here without npm on their system,
+    // that is the only way forward.
     let managed_node_bin = managed_node::managed_node_bin_dir(&app_data);
     let dirs = acp::candidate_bin_dirs(
         home.as_deref(),
@@ -1811,8 +1761,8 @@ fn acp_install_cli(
         None,
         managed_node_bin.as_deref(),
     );
-    // npm 을 **이름으로** 띄우지 않는다 — GUI 앱의 PATH 는 사용자의 셸과 다르다
-    // (이 파일 맨 위의 실측이 그 이유다).
+    // Do not launch npm by **name** — the PATH of a GUI app differs from the user's shell
+    // (the measurement at the top of this file confirms why).
     let npm = acp::resolve_command("npm", &dirs, &probe)
         .ok_or_else(|| "npm-missing".to_string())?;
     let child_path = std::env::join_paths(dirs.iter())
@@ -1833,15 +1783,15 @@ fn acp_install_cli(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     /*
-     * ⚠️ **`.output()` 을 안 쓴다** (2026-08-20 소유자 지적).
+     * ⚠️ **Do not use `.output()`** (owner's note 2026-08-20).
      *
-     * 그 함수는 프로세스가 끝나야 돌아온다. npm 이 도는 30~90초 동안 화면은
-     * 아무것도 모르는 채 「설치 중…」 네 글자를 띄우고 있었고, 그게 이 저장소가
-     * 「조용한 기다림」이라고 부르는 결함이다.
+     * That function returns only after the process ends. npm runs for 30–90 seconds, during which the screen
+     // remains unaware, displaying only the four characters "Installing...", which is the defect this repo calls
+     * "quiet waiting".
      *
-     * 대신 **stderr 을 줄 단위로 흘린다.** npm 은 진행 상황을 거기 쓴다.
-     * 퍼센트를 지어내지 않고 **그 도구가 실제로 뱉은 줄**을 그대로 올린다 —
-     * 우리가 만든 문장이 아니므로 낡지도 않는다.
+     * Instead, **stream stderr line by line.** npm writes progress there.
+     * Do not fabricate percentages; **push the exact lines the tool actually emitted** —
+     * since they are not sentences we created, they do not become outdated.
      */
     let mut child = command.spawn().map_err(|err| format!("install-failed:{err}"))?;
     let stderr_pipe = child.stderr.take();
@@ -1857,8 +1807,8 @@ fn acp_install_cli(
                 if trimmed.is_empty() {
                     continue;
                 }
-                // 실패했을 때 보여 줄 마지막 줄은 여기서 계속 갱신된다 —
-                // 종전처럼 다 모아 두었다가 뒤에서 찾을 필요가 없다.
+                // The last line to show on failure is continuously updated here —
+                // no need to collect everything and search later as before.
                 if let Ok(mut slot) = tail.lock() {
                     slot.clear();
                     slot.push_str(trimmed);
@@ -1880,41 +1830,41 @@ fn acp_install_cli(
         let _ = handle.join();
     }
     if !status.success() {
-        // 실패 사유의 **마지막 줄**만 올린다 — npm 은 수백 줄을 뱉는데 그것을
-        // 화면에 그대로 붓는 것은 안내가 아니다.
+        // Push only the **last line** of the failure reason — npm emits hundreds of lines; dumping them
+        // directly to the screen is not guidance.
         let last = tail.lock().map(|slot| slot.clone()).unwrap_or_default();
         emit_install_progress(&app, &runtime_id, "cli", "failed", None, None, None);
         return Err(format!("install-failed:{last}"));
     }
 
-    // 「깔았습니다」로 끝내지 않는다 — **다시 재는 중**이라고 말하고, 잰 값을 준다.
+    // Do not end with "Installed" — **say "Re-verifying..."** and provide the re-verified value.
     emit_install_progress(&app, &runtime_id, "cli", "verifying-install", None, None, None);
     let after = doctor_context(&app, &runtime_id)?;
     emit_install_progress(&app, &runtime_id, "cli", "done", None, None, None);
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
-/// 앱 **밖**으로 나가는 주소를 기본 브라우저로 연다.
+/// Open an address going **outside** the app in the default browser.
 ///
-/// ## 왜 필요한가 (2026-08-20 워크스루에서 적발)
+/// ## Why needed (discovered during walkthrough 2026-08-20)
 ///
-/// 앱 안의 `<a target="_blank">` 는 **아무 일도 안 한다.** Tauri WebView 는
-/// 새 창을 열지 않고, 이 앱에는 그것을 처리하는 플러그인도 없었다. 그래서
-/// 설정의 「↗ 설치 방법」을 눌러도 조용히 아무 일도 안 일어났다 — 도구가 하나도
-/// 없는 사람에게 우리가 준 **유일한 다음 걸음**이 그것이었는데.
+/// `<a target="_blank">` inside the app **does nothing**. Tauri WebView
+/// does not open new windows, and this app had no plugin to handle it. Thus,
+/// pressing "↗ Installation Method" in settings silently did nothing — for users with no tools,
+/// that was the **only next step** we provided.
 ///
-/// 실측: 도구 없는 새 사용자로 앱을 띄워 그 링크를 눌렀을 때 앞 프로세스 수가
-/// 그대로였고 앱이 계속 앞에 있었다. 밖으로 나가는 링크는 **10개 파일**에 있다.
+/// Measurement: When launching the app as a new user without tools and clicking that link, the foreground process count
+/// remained unchanged and the app stayed in front. Outbound links exist in **10 files**.
 ///
-/// ## 왜 플러그인을 안 들이나
+/// ## Why not use a plugin
 ///
-/// 새 의존성은 이 저장소에서 이유를 대야 하는 일이고, 여는 일은 OS 명령 한 줄이다.
-/// 이미 프로세스를 띄우는 코드가 이 파일에 있으므로 공급망 표면이 0으로 는다.
+/// New dependencies must be justified in this repo; opening is just one OS command.
+/// Since code to spawn a process already exists in this file, the supply chain surface becomes 0.
 ///
-/// ## 무엇을 막나
+/// ## What it blocks
 ///
-/// **`http`/`https` 만 연다.** 화면이 주는 주소를 그대로 OS 에 넘기는 자리라,
-/// 다른 스킴을 허용하면 링크 하나로 임의의 것을 열 수 있게 된다.
+/// **Only opens `http`/`https`.** This location passes the address given by the screen directly to the OS;
+/// allowing other schemes would allow opening arbitrary things via a single link.
 #[tauri::command]
 fn open_external_url(url: String) -> Result<(), String> {
     if !is_openable_url(&url) {
@@ -1947,29 +1897,29 @@ fn open_external_url(url: String) -> Result<(), String> {
         .map_err(|err| format!("open-failed:{err}"))
 }
 
-/// 열어도 되는 주소인가. **허용 목록이지 금지 목록이 아니다** — 금지 목록은
-/// 새 스킴이 생길 때마다 조용히 뚫린다.
+/// Is this an address that may be opened. **It is an allowlist, not a denylist** — denylists
+/// are quietly bypassed whenever new schemes appear.
 pub(crate) fn is_openable_url(url: &str) -> bool {
     let lowered = url.trim().to_ascii_lowercase();
     (lowered.starts_with("https://") || lowered.starts_with("http://"))
         && !url.chars().any(|c| c.is_whitespace())
 }
 
-/// 연동 점검 — **단계별로 재고, 고칠 수 있는 것에는 그렇다고 표시한다.**
+/// Integration check — **verify step-by-step, marking fixable items as such.**
 ///
-/// 증상 하나에 문장 하나로 답하던 종전 방식은 원인이 다른 단계에 있을 때
-/// 사용자를 엉뚱한 곳으로 보냈다(2026-08-20 로그인 사고가 그랬다). 여기서는
-/// 사실만 돌려주고 문장은 화면이 만든다.
+/// The previous approach of answering one symptom with one sentence sent users to the wrong place
+/// when the cause lay in a different phase (as seen in the 2026-08-20 login incident). Here we
+/// return only facts; the screen generates the sentences.
 #[tauri::command]
 fn acp_diagnose(app: tauri::AppHandle, runtime_id: String) -> Result<Vec<acp_doctor::AcpCheck>, String> {
-    // 다시 재기 시작하면 지난 설치 결과는 잊는다 — 화면도 같은 순간에 자기
-    // 상태를 지우므로 두 곳이 같은 규칙을 따른다.
+    // If re-verifying starts, forget previous installation results — the screen also clears its
+    // state at the same moment, so both locations follow the same rule.
     forget_install_progress(&app, &runtime_id);
     let ctx = doctor_context(&app, &runtime_id)?;
     Ok(acp_doctor::diagnose(&ctx.borrow()))
 }
 
-/// 화면이 「고치기」를 눌렀을 때. **`fixable` 이라고 말한 것만 온다.**
+/// When the screen presses "Fix". **Only `fixable` items arrive.**
 #[tauri::command]
 fn acp_repair(
     app: tauri::AppHandle,
@@ -1978,17 +1928,16 @@ fn acp_repair(
 ) -> Result<Vec<acp_doctor::AcpCheck>, String> {
     let ctx = doctor_context(&app, &runtime_id)?;
     acp_doctor::repair(&ctx.borrow(), &check_id)?;
-    // 고친 뒤의 상태를 **다시 재서** 돌려준다. 「고쳤습니다」라고 말하고 실제로는
-    // 안 고쳐진 경우가 이 자리에서 가장 나쁜 결함이라, 화면이 말이 아니라
-    // 다시 잰 값을 보여 주게 한다.
+    // Return the state **re-verified after fixing**. Saying "fixed" when it actually wasn't
+    // is the worst defect at this location, so make the screen show the re-verified value instead of just saying it.
     let after = doctor_context(&app, &runtime_id)?;
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
-/// 연결을 처음부터 다시 맺는다 — 소유자 요청의 「재연동」.
+/// Re-establish the connection from scratch — "Re-integrate" per owner request.
 ///
-/// 지운 뒤 **다시 잰 값**을 돌려준다. 이 자리의 가장 나쁜 결함은 「다시 맺었어요」
-/// 라고 말해 놓고 실제로는 그대로인 것이다.
+/// Return the **re-verified value** after deletion. The worst defect here is saying "re-established"
+/// while leaving it unchanged.
 #[tauri::command]
 fn acp_reset_connection(
     app: tauri::AppHandle,
@@ -2000,8 +1949,8 @@ fn acp_reset_connection(
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
-/// 진단이 볼 바깥 세계를 한 번에 모은다. 소유권 때문에 값으로 들고 다니고,
-/// `borrow()` 가 그것을 빌린 형태로 바꾼다.
+/// Diagnostics collect the outside world in one go. Due to ownership, values are carried as data,
+/// and `borrow()` converts them into borrowed forms.
 struct OwnedDoctorContext {
     runtime_id: String,
     home: Option<PathBuf>,
@@ -2988,16 +2937,15 @@ fn start_vault_watch(
     Ok(())
 }
 
-/// WKWebView 의 rAF 60fps 캡 해제 — ProMotion(120Hz) 디스플레이 대응.
+/// WKWebView rAF 60fps cap release — ProMotion (120Hz) display support.
 ///
-/// macOS 13~15 의 WKWebView 는 WebKit 내부 feature
-/// `PreferPageRenderingUpdatesNear60FPSEnabled`(기본 true) 때문에 디스플레이
-/// 주사율과 무관하게 requestAnimationFrame 을 60fps 로 묶는다. 이 머신 실측
-/// (frame-profile probe) 에서도 120Hz 디스플레이 위 17ms 고정이 확인됐다.
-/// Safari 가 내부에서 쓰는 것과 같은 private `_features` /
-/// `_setEnabled:forFeature:` API 로 해당 feature 를 끈다. selector 존재를
-/// 먼저 확인하므로 미래 macOS 에서 API 가 사라져도 조용히 60fps 로 남을 뿐
-/// crash 하지 않는다.
+/// WKWebView on macOS 13–15 bundles requestAnimationFrame to 60fps regardless of display
+/// refresh rate due to the WebKit internal feature
+/// `PreferPageRenderingUpdatesNear60FPSEnabled` (default true). A measurement on this machine
+/// (frame-profile probe) also confirmed 17ms fixation on a 120Hz display.
+/// Use private `_features` /
+/// `_setEnabled:forFeature:` APIs that Safari uses internally to disable this feature. Since we check selector existence first,
+/// if the API disappears in future macOS, it will quietly remain at 60fps without crashing.
 #[cfg(target_os = "macos")]
 fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
     let _ = window.with_webview(|platform_webview| {
@@ -3083,12 +3031,12 @@ pub fn run() {
     }
 
     tauri::Builder::default()
-        // 업데이터는 minisign 서명을 검증한 뒤에만 번들을 교체한다. 공개키는
-        // `tauri.conf.json` 에 박혀 있고 개인키는 CI 의 secret 에만 있으므로,
-        // 우리가 서명하지 않은 패키지는 이 앱이 설치하지 않는다.
+        // The updater replaces the bundle only after verifying the minisign signature. The public key is
+        // embedded in `tauri.conf.json` and the private key is only in CI secrets, so
+        // packages we did not sign are not installed by this app.
         //
-        // process 플러그인은 갱신 후 재시작 하나 때문에 있다 — 사용자가 앱을
-        // 손으로 껐다 켜야 한다면 "버튼 한 번" 이 아니다.
+        // The process plugin exists solely because of one restart after update — if users must manually
+        // close and reopen the app, it is not "one button press".
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(VaultWatcherState::default())
@@ -3151,15 +3099,15 @@ pub fn run() {
                         }
                         if verify_acp_install {
                             let _ = verify_window.eval(ACP_INSTALL_VERIFY_SCRIPT);
-                            // 52MB 를 받는 일이라 넉넉히 준다. 재는 것은 완료가
-                            // 아니라 «진행이 도착하는가» 이므로 중간에 끊겨도
-                            // 쌓인 단계 목록이 답을 준다.
+                            // It involves receiving 52MB, so we provide ample time. Verification is about whether
+                            // «progress arrives», not completion, so even if interrupted midway,
+                            // the accumulated step list provides the answer.
                             std::thread::sleep(Duration::from_millis(90000));
                         }
                         if verify_app_update {
                             let _ = verify_window.eval(APP_UPDATE_VERIFY_SCRIPT);
-                            // 클릭 두 단계 + 실제 네트워크 왕복 하나가 이 안에서
-                            // 끝나야 마커 수집이 최종 상태를 본다.
+                            // Two click steps + one actual network round-trip must complete within this
+                            // window for marker collection to see the final state.
                             std::thread::sleep(Duration::from_millis(12000));
                         }
                         if verify_ai_settings {
@@ -3167,14 +3115,13 @@ pub fn run() {
                                 Some(base_url) => {
                                     let _ = verify_window
                                         .eval(build_webview_verify_ai_settings_script(base_url));
-                                    // 클릭 다섯 단계 + 실제 HTTP 왕복 하나가 이
-                                    // 안에서 끝나야 마커 수집이 최종 상태를 본다.
+                                    // Five click steps + one actual HTTP round-trip must complete within this
+                                    // window for marker collection to see the final state.
                                     std::thread::sleep(Duration::from_millis(12000));
                                 }
                                 None => {
-                                    // 주소가 없거나 안전하지 않으면 **조용히 건너뛰지
-                                    // 않는다** — 그 사실을 마커로 남겨 검증기가
-                                    // 빨갛게 터지게 한다.
+                                    // If the address is missing or unsafe, **do not silently skip** — leave that fact as a marker so the verifier
+                                    // turns red.
                                     let _ = verify_window.eval(
                                         r#"(() => {
                                           window.__ontologyAtlasAiSettingsVerify = {
@@ -5800,7 +5747,7 @@ pub fn run() {
                 apply_verify_window_size(app_handle);
                 schedule_show_main_window(app_handle.clone());
             }
-            // 창을 닫아도 어댑터와 그 손자들이 계속 도는 상태를 만들지 않는다.
+            // Do not create a state where the adapter and its children continue running even after the window is closed.
             RunEvent::ExitRequested { .. } | RunEvent::Exit => {
                 terminate_all_acp_sessions(app_handle);
             }
@@ -5810,9 +5757,8 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    /// **허용 목록이지 금지 목록이 아니다** — 금지 목록은 새 스킴이 생길 때마다
-    /// 조용히 뚫린다. 이 자리는 화면이 준 주소를 그대로 OS 에 넘기므로,
-    /// 뚫리면 링크 하나로 임의의 것을 열 수 있게 된다.
+    /// **It is an allowlist, not a denylist** — denylists are quietly bypassed whenever new schemes appear. This location passes the address given by the screen directly to the OS,
+    /// so if bypassed, a single link could open arbitrary things.
     #[test]
     fn only_http_urls_are_handed_to_the_os() {
         for good in ["https://example.com", "http://example.com/a?b=c", "HTTPS://EXAMPLE.COM"] {
@@ -6056,15 +6002,14 @@ mod tests {
         assert!(!error.is_empty());
     }
 
-    /// 2026-08-16 — 폴더 피커가 `/`(Macintosh HD)를 볼트로 받아들였고, 막은 것은
-    /// 우리가 아니라 macOS 의 경고 대화상자였다. 볼트 루트는 곧 에이전트의 작업
-    /// 폴더가 되므로 그 문을 먼저 닫는다.
-    /// 2026-08-17 — macOS 에서 **`.app` 은 디렉터리다.** `is_dir()` 만 보면
-    /// 통과하고, `open <경로>` 는 폴더를 여는 게 아니라 **그 프로그램을
-    /// 실행한다.** 「Finder 에서 보기」가 절대 하면 안 되는 일이다.
+    /// 2026-08-16 — The folder picker accepted `/` (Macintosh HD) as the vault root, and what blocked it was
+    /// not us but macOS's warning dialog. Since the vault root will soon become the agent's working
+    /// folder, we close that door first.
+    /// 2026-08-17 — On macOS, **`.app` is a directory.** Checking only `is_dir()`
+    /// allows it through, and `open <path>` does not open the folder but **executes that program**. "View in Finder" must never be done.
     ///
-    /// 볼트 루트로도 같은 이유로 막는다: 번들 안은 앱의 내부 구조이지 사람이
-    /// 문서를 두는 자리가 아니고, 에이전트의 작업 폴더가 되면 더욱 아니다.
+    /// We also block the vault root for the same reason: the bundle interior is the app's internal structure, not a place for users
+    /// to store documents, and even less so when it becomes the agent's working folder.
     #[test]
     fn vault_root_rejection_blocks_macos_bundles() {
         for path in [
@@ -6083,7 +6028,7 @@ mod tests {
 
     #[test]
     fn vault_root_rejection_allows_ordinary_folders_with_dots() {
-        // 늘 거절하면 그것도 검사가 아니다. 점이 들어간 평범한 폴더는 통과한다.
+        // If you always reject, that's not a validator. A normal folder with dots passes through.
         for path in ["/tmp/my.notes", "/tmp/v1.2.3", "/tmp/plain"] {
             assert_eq!(vault_root_rejection(Path::new(path)), None, "{path}");
         }
@@ -6099,8 +6044,8 @@ mod tests {
 
     #[test]
     fn vault_root_rejection_blocks_named_system_directories() {
-        // 이 목록이 비면 검사는 통과하면서 아무것도 안 막는다 — 빈 집합 위에서
-        // 도는 게이트는 게이트가 아니므로 그 자체를 먼저 단언한다.
+        // When this list is empty, the check passes and blocks nothing —
+        // a gate looping over an empty set isn't a gate, so assert that first.
         let blocked: Vec<&str> = if cfg!(target_os = "macos") {
             vec!["/Applications", "/System", "/Library", "/Users", "/Volumes"]
         } else if cfg!(target_os = "linux") {
@@ -6127,7 +6072,7 @@ mod tests {
     fn vault_root_rejection_blocks_the_home_directory_itself() {
         let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
         let Some(home) = std::env::var_os(key).map(PathBuf::from) else {
-            return; // 홈이 없는 환경(일부 CI)에서는 판정할 것이 없다
+            return; // In environments without a home directory (some CI), there's nothing to judge
         };
         let Ok(home) = fs::canonicalize(home) else {
             return;
@@ -6141,15 +6086,15 @@ mod tests {
 
     #[test]
     fn vault_root_rejection_allows_ordinary_folders_inside_home() {
-        // 가장 흔한 정당한 볼트를 막으면 이 검사는 제품을 망가뜨린다.
-        // 홈 **안쪽**은 통과해야 한다.
+        // Blocking the most common legitimate bolt breaks this product.
+        // The **inside** of the home must pass.
         let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
         let Some(home) = std::env::var_os(key).map(PathBuf::from) else {
             return;
         };
         assert_eq!(vault_root_rejection(&home.join("notes")), None);
         assert_eq!(vault_root_rejection(&home.join("code/atlas/docs")), None);
-        // 시스템 디렉터리의 안쪽도 자리에 따라 정당하다(외장 디스크 등).
+        // The inside of system directories is also justified depending on location (e.g., external drives).
         if cfg!(target_os = "macos") {
             assert_eq!(vault_root_rejection(Path::new("/Volumes/Work/vault")), None);
         }
@@ -6198,9 +6143,9 @@ mod tests {
         ] {
             assert!(script.contains(test_id), "{test_id}");
         }
-        // 토글 컨트롤을 매 폴링마다 누르면 열고 닫기를 반복한다.
+        // Toggling the control every poll causes it to open and close repeatedly.
         assert!(script.contains("CLICK_COOLDOWN"));
-        // 성공을 선언하는 자리는 마지막 한 곳뿐이다.
+        // There is only one place left to declare success.
         assert_eq!(script.matches("\"done\"").count(), 1);
     }
 
@@ -6231,14 +6176,14 @@ mod tests {
 
         assert!(source.contains("온톨로지 지형도"));
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
-        // v2 캔버스 카피 — 정본 census 문구가 relief 마커에 포함돼야 한다.
+        // v2 canvas copy — the original census message must be included in the relief marker.
         assert!(source.contains("개념 \\d+개 · 관계 \\d+개"));
-        // v2 캔버스가 존재하기만 하는 false positive를 막는 draw evidence.
+        // Draw evidence to prevent false positives where only the v2 canvas exists.
         assert!(source.contains("topologyV2CanvasInkPixels"));
         assert!(source.contains("getImageData"));
-        // `data-focus-cluster-size` 단언은 지웠다(2026-08-12 표식 정리) — 그
-        // 속성은 UI 어디에도 없어(“은퇴 표식”), 이 줄은 죽은 조회가 프로브에
-        // 남아 있기를 강제하는 반대 방향 게이트였다.
+        // The `data-focus-cluster-size` assertion was removed (cleaned up markers on 2026-08-12) — that
+        // attribute doesn't exist anywhere in the UI ("retired marker"); this line was a reverse gate forcing
+        // dead queries to remain in the probe.
         assert!(source.contains("dragHandleSlug"));
         assert!(source.contains("data-drag-physics-sync-contract"));
         assert!(source.contains("data-drag-physics-release-policy"));
@@ -6818,12 +6763,12 @@ mod atomic_write_tests {
         std::fs::remove_dir_all(&base).ok();
     }
 
-    /// **원본을 먼저 비우지 않는다.**
+    /// **Do not clear the original first.**
     ///
-    /// 2026-08-16 검수: 종전 `fs::write` 는 O_TRUNC 다 — 쓰는 도중에 죽으면
-    /// 사용자의 마크다운이 잘린 채로 남는다. 이 검사가 잡는 것은 「새 내용이
-    /// 들어갔나」가 아니라 **「임시 파일을 거쳐 갔나」**다: 그 성질이 원자성을
-    /// 낳고, 결과만 보면 두 구현이 구별되지 않는다.
+    /// 2026-08-16 review: Previous `fs::write` uses O_TRUNC — if it dies while writing,
+    /// the user's markdown remains truncated. This check doesn't catch "did new content
+    /// enter?" but rather **「did it go through a temporary file?」**: that nature
+    /// produces atomicity, and looking at the result, the two implementations are indistinguishable.
     #[test]
     fn replaces_through_a_temporary_file_and_leaves_none_behind() {
         let dir = std::env::temp_dir().join(format!("oatlas-atomic-{}", std::process::id()));
@@ -6834,7 +6779,7 @@ mod atomic_write_tests {
         write_text_atomically(&target, "new").unwrap();
 
         assert_eq!(std::fs::read_to_string(&target).unwrap(), "new");
-        // 임시 파일이 남으면 다음 쓰기가 `create` 에서 걸리거나 사용자 폴더가 지저분해진다.
+        // If temporary files remain, the next write will fail on `create` or the user folder gets messy.
         let leftovers: Vec<_> = std::fs::read_dir(&dir)
             .unwrap()
             .filter_map(|e| e.ok())
@@ -6849,7 +6794,7 @@ mod atomic_write_tests {
     fn a_failed_write_leaves_the_original_untouched() {
         let dir = std::env::temp_dir().join(format!("oatlas-atomic-fail-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        // 디렉터리를 대상으로 주면 rename 이 실패한다 — 원본이 없는 경우의 대역.
+        // Giving a directory as the target causes rename to fail — the fallback for when the original is missing.
         let target = dir.join("as-dir");
         std::fs::create_dir_all(&target).unwrap();
 
@@ -6899,13 +6844,13 @@ mod acp_install_progress_tests {
     use super::*;
 
     /**
-     * **키 이름이 TS 와 맺은 계약이다.**
+     * **The key name is the contract with TS.**
      *
-     * 화면(`src/features/acp-doctor/model/acp-doctor.ts` 의 `AcpInstallProgress`)
-     * 은 `payload.runtimeId` 로 남의 도구 진행을 걸러 낸다. 그러니 serde 가
-     * `runtime_id` 를 그대로 내보내면 이벤트는 **도착하는데 전부 버려진다** —
-     * 콘솔에 아무 에러도 안 나고 진행률만 영영 안 뜬다. 그 조용한 실패를
-     * `rename_all = "camelCase"` 하나가 막고 있으므로, 그 한 줄을 여기서 잠근다.
+     * The screen (`AcpInstallProgress` in `src/features/acp-doctor/model/acp-doctor.ts`)
+     * filters out other tools' progress using `payload.runtimeId`. So if serde
+     * outputs `runtime_id` as-is, the event **arrives but is all discarded** —
+     * no errors appear in the console and progress never shows. That silent failure
+     * is prevented by that single line `rename_all = "camelCase"`, so lock it down here.
      */
     #[test]
     fn progress_payload_uses_the_keys_the_screen_reads() {
@@ -6930,12 +6875,12 @@ mod acp_install_progress_tests {
         );
         assert_eq!(object["runtimeId"], "claude-acp");
         assert_eq!(object["received"], 26_043_779u64);
-        // 모르는 값은 **없는 척이 아니라 null** 이다. 화면이 그것으로 퍼센트를
-        // 그릴지 말지를 정한다.
+        // Unknown values are **null, not absent**. The screen decides whether to render
+        // the percentage based on that.
         assert!(object["note"].is_null());
     }
 
-    /// 이벤트 이름도 계약이다 — 화면이 이 문자열로 듣는다.
+    /// The event name is also a contract — the screen listens for this string.
     #[test]
     fn progress_event_name_matches_the_listener() {
         assert_eq!(ACP_INSTALL_PROGRESS_EVENT, "acp-install://progress");

@@ -1,13 +1,14 @@
 /*
- * 탐지기 프로브 — **세면 안 되는 것.**
+ * Detector probe — **things that must not be counted.**
  *
- * 이미 마운트된 컨테이너 안에서 내용만 바뀌는 자리(설정 시트의 절, 연결 시트의
- * 단계 갈래)는 «등장» 이 아니라 «교체» 다. 실물에서 세 자리가 이 부류였고,
- * 구 등록부는 그것을 사람이 손으로 «부모가 이미 애니메이션한다» 고 적어 걸러야
- * 했다. 센서스는 대안 가지가 무언가를 그리는지로 **기계적으로** 가른다.
+ * Places where only content changes within an already-mounted container (e.g., sections of
+ * setting sheets, branches of connection sheets) are "replacements," not "appearances." In
+ * reality, three places fell into this category, and the old registry required humans to
+ * manually write "parent is already animating" to filter them out. The census distinguishes
+ * **mechanically** by whether an alternative branch draws anything.
  *
- * 이 픽스처가 세어지기 시작하면 그 판별식이 죽은 것이고, 그때 센서스는 고쳐야
- * 할 것 없는 자리에 나가는 길을 붙이라고 요구하기 시작한다 — 소음이다.
+ * If this fixture starts being counted, the discrimination logic is dead, and the census will
+ * begin demanding paths to fix places that need no fixing — noise.
  */
 function ProbeLeftPanel() {
   return <div className="fixed inset-0 z-50">left</div>;

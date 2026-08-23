@@ -524,7 +524,7 @@ export function ProjectDetailPage({
                 ariaLabel={t("inlineDescriptionAria")}
                 placeholder={t("inlineDescriptionPlaceholder")}
                 dataTestId="project-detail-description"
-                // `break-keep` — this description broke mid-word as 「아|홉」 at 576px (measured
+                // `break-keep` — this description broke mid-word as 「a|hop」 at 576px (measured
                 // 2026-08-15 by the korean-word-break instrument).
                 className="mt-2.5 max-w-[64ch] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
               />
@@ -781,7 +781,7 @@ export function ProjectDetailPage({
           </div>
           {bodyContent ? (
             // The body is limited to a readable measure.
-            // `break-keep` — the Korean body broke mid-word as 「장바|구니」 at 584px (measured
+            // `break-keep` — the Korean body broke mid-word as 「jangba|gi」 at 584px (measured
             // 2026-08-12). `word-break` inherits, so this one wrapper covers every markdown paragraph.
             <div
               className={`${storyMarkdownClassName} max-w-[var(--measure-prose)] break-keep`}
@@ -851,7 +851,7 @@ export function ProjectDetailPage({
                   icon={<Waypoints size={ICON_SIZE.lg} aria-hidden />}
                   title={t("connectedEmpty")}
                   /*
-                   * `break-keep` — this description broke mid-word as 「여기 나타|납니다」 at 280px
+                   * `break-keep` — this description broke mid-word as 「yeogi natan|inimnida」 at 280px
                    * (measured 2026-08-12, same instrument). `EmptyState`'s description `<p>` is shared,
                    * so the rule is applied narrowly through the span wrapped here.
                    */
@@ -865,7 +865,7 @@ export function ProjectDetailPage({
             {/*
               What this card actually does is "copy a starting prompt so my AI can pick up reading this
               project". Yet it was named "agent handoff" with the caption "a person does not need to
-              read this — it is for an AI agent". Owner's verdict: *"너무 AI같음"* (too AI-ish). Both
+              read this — it is for an AI agent". Owner's verdict: *"Too AI-ish."* (too AI-ish). Both
               were right — it is internal jargon, and a negative framing ("you don't need to read this")
               pushes the reader away while never actually saying what it does.
 
@@ -880,7 +880,7 @@ export function ProjectDetailPage({
             {/*
              * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
              *
-             * This paragraph broke as 「이 프로젝|트의 지도를」 in the 400px rail (362px real width).
+             * This paragraph broke as 「i peurojeok|iteo-ui map-eul」 in the 400px rail (362px real width).
              * Instrument: a `Range` per character reveals the characters on either side of the line
              * break — both Korean with no space means mid-word. The cause is `word-break: normal`, and
              * this repository already used `break-keep` elsewhere.

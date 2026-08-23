@@ -29,8 +29,7 @@ import {
  * `src/views/<name>/ui/*.tsx` and running `pnpm exec eslint` gave **0 errors, 0
  * warnings**. That path received **7** `no-restricted-syntax` selectors
  * (scale/gradient 5 + accent tint 2) and **0** ramp selectors. The owner's goal is
- * *"명령만 하면 디자인 시스템 기반으로 화면이 나온다"* (just give the order and a
- * screen comes out built on the design system) — yet **a new screen was exactly
+ * *"just give the order and a screen comes out built on the design system"* — yet **a new screen was exactly
  * where none of the spec was enforced**.
  *
  * So `eslint.config.mjs` was inverted into a **denylist**, and this file's job

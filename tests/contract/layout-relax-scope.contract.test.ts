@@ -23,9 +23,7 @@ import { DENSITY_GATE_THRESHOLD } from "@/widgets/topology-map-v2/model/density-
  * better overlap quality.
  *
  * ⚠️ **The gate locks counts and sets, not milliseconds.** Precedent from
- * `architecture.md`: *"성능 예산은 기계마다 달라 플레이크가 되지만 '닫혀 있으면
- * 순회 0회'는 어느 기계에서나 참이다"* (a performance budget differs per machine
- * and turns flaky, but "closed means zero traversals" is true on every machine).
+ * `architecture.md`: *"Performance budgets differ per machine and become flaky, but 'closed means zero traversals' is true on every machine."*
  * So nothing is timed here; what is measured is **whether the nodes relaxation
  * actually moved stay inside the scope**.
  */

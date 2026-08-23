@@ -119,8 +119,7 @@ describe('EmptyState — size variant', () => {
  *
  * **Why this check exists** (measured at narrow widths, 2026-07-29). Below
  * 1024px the studio turns into an honest degradation card, and that route then
- * had **zero** heading elements. The screen showed 「공방은 넓은 화면에서
- * 열려요」 (the studio opens on a wider screen) in large type, but the document
+ * had **zero** heading elements. The screen showed 「The studio opens on a wider screen」 in large type, but the document
  * had no heading at all, so a screen-reader user could learn from the headings
  * neither what the page was nor why the studio had not opened.
  *

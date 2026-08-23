@@ -71,7 +71,7 @@ export function isHandCard(tag) {
 }
 
 /**
- * Extracts a card's **five axes** — the five the 체계 (design-systems) seat
+ * Extracts a card's **five axes** — the five the design-systems seat
  * demanded an exhaustive combination count for before any axis is decided:
  * surface token · border · radius · padding · presence of a header. A header
  * cannot be seen from the opening tag, so it is decided by looking **into the

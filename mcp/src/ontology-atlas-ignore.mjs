@@ -28,7 +28,7 @@ export function parseOntologyAtlasIgnore(text) {
     const line = raw.trim();
     if (!line) continue;
     if (line.startsWith('#')) continue;
-    if (line.startsWith('!')) continue; // negation 미지원
+    if (line.startsWith('!')) continue; // negation not supported
     patterns.push(line.endsWith('/') ? line.slice(0, -1) : line);
   }
   return patterns;

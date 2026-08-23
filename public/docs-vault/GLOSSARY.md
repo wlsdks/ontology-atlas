@@ -206,24 +206,25 @@ Two rules keep this safe:
    `pnpm docs:links` already gives markdown-to-markdown links. Without it, one
    folder rename silently breaks every pointer at once.
 
-### Quotes stay in Korean
+### Refer to Korean evidence without Korean source comments
 
-Three kinds of Korean survive translation, all for the same reason: the Korean
-**is** the thing being pointed at, so replacing it breaks the pointer.
+Source comments stay in English even when the evidence is Korean. Preserve the
+pointer, not a second copy of the localized text:
 
-1. **Owner quotes** — evidence. Translating loses what makes it evidence.
-2. **Korean doc section titles in `「 」`** — those headings are still Korean, so
-   an English rendering no longer matches the heading it cites.
-3. **On-screen strings quoted as evidence.** Measured 2026-08-22: a pass rendered
-   `"Is this the right folder?"` and `"Code location"` into English inside comments. Both are
-   live strings in `messages/ko.json`, so anyone grepping the screen text to find
-   the code behind it would no longer hit those comments. Restored.
+1. **Owner decisions** — cite the dated decision record or discussion and state
+   its operative meaning in English.
+2. **Localized document sections** — cite the path and stable heading anchor; add
+   an English description when the heading itself is not English.
+3. **On-screen strings** — cite the message key, such as
+   `ko.agentConnect.manualShapeOnlyNote`, and explain the behavior in English.
+   The catalog remains the searchable source of the exact Korean copy.
 
-In every case: keep the Korean, add a short English gloss.
+This keeps comments accessible to international contributors without weakening
+traceability to the original evidence.
 
 ```ts
-// Owner, 2026-08-18: "When first loading … it's too low.. It should be exactly centered"
-// (the map sat too low on first load; it should be centred)
+// Owner decision, 2026-08-18 (docs/DECISIONS.md, "Map first-load framing"):
+// The map should be exactly centered on first load.
 ```
 
 ---
@@ -260,6 +261,7 @@ boundary, not a ban.
 | `tests/contract/ui-copy-glossary.contract.test.ts` | §5 — user-facing strings, and every `pnpm <script>` a screen names must exist |
 | `pnpm docs:links` | Markdown-to-markdown links and cited repo paths |
 | `pnpm docs:comment-refs` | `.md` paths cited from code comments resolve |
+| `pnpm source:language` | Source, test, config, and prototype comments contain no Hangul, Han, or kana |
 
 Code comments are **not** scanned for §4 vocabulary. There the technical words
 are the correct ones.

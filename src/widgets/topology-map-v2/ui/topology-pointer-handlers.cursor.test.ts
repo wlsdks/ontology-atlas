@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 /**
  * The cursor affordance contract — **each surface shows its own primary action**
- * (design council 「상호작용」 (interaction) prescription plus a measured correction,
+ * (design council "Interaction" prescription plus a measured correction,
  * 2026-07-28).
  *
  * ## Why this contract was needed
@@ -185,8 +185,7 @@ describe("커서 어포던스 — 각 표면이 자기 1차 행동을 보여준�
  *
  * The gate is pinned on **a count, not milliseconds** — a performance budget differs
  * per machine, but "zero recomputations while the camera is still" is true on any
- * machine (`architecture.md` 「게이트는 ms 가 아니라 횟수로 잠근다」 — a gate is
- * locked on counts, not milliseconds).
+ * machine (`architecture.md` "A gate is locked on counts, not milliseconds").
  *
  * What is counted is `worldToScreen`: it is called three times per edge while
  * building one set of candidates, so zero calls means no candidates were built.

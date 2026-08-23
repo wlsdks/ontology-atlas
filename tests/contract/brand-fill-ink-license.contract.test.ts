@@ -41,9 +41,8 @@ function stripComments(source: string): string {
  * used the correct `--color-text-on-accent` (#ffffff, 4.70:1).
  *
  * No value was wrong — all three are legitimate ramp tokens. What was wrong is the
- * **place**. `.claude/rules/design-gates.md` 「값이 아니라 «자리» 가 토큰을
- * 정한다」 (the place, not the value, decides the token) diagnosed exactly this
- * disease on 2026-08-05 (three `text-white` places) and prescribed exactly this fix
+ * **place**. `.claude/rules/design-gates.md` "The place, not the value, decides the token"
+ * diagnosed exactly this disease on 2026-08-05 (three `text-white` places) and prescribed exactly this fix
  * (`text-on-accent`), but **no gate was built then, so three places regressed.**
  *
  * **The verdict is a calculation, not an allowlist.** Writing "only these tokens
@@ -285,7 +284,7 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
 
   it("사각이 줄었으면 상한도 내린다 — 여유를 무료로 두지 않는다", () => {
     /*
-     * 체계 seat's recommendation (2026-08-15): when a dot is deleted and the blind spot
+     * System seat's recommendation (2026-08-15): when a dot is deleted and the blind spot
      * shrinks while the ceiling stays, that slack becomes a free pass for the next
      * **genuine pair** that arrives. The same grammar as `accent-ink-contrast`'s "repay
      * the debt, lower the baseline".

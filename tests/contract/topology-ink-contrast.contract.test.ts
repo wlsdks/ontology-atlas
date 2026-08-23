@@ -10,7 +10,7 @@ import { realmDepthClarityAlpha } from "@/widgets/topology-map-v2/model/realm-tr
  *
  * Background (measured 2026-07-31): **all eight** of the map's edge and node strokes
  * were below it — the brightest, the project stroke, at 2.78:1 and the darkest,
- * contains-l2, at 1.59:1. The 위계 (hierarchy) seat's on-screen measurement caught
+ * contains-l2, at 1.59:1. The hierarchy seat's on-screen measurement caught
  * the same thing from another angle: the contains line's peak luminance was 14.4
  * against a background of 13.3 — **the line was effectively absent** — and the
  * brightest thing on screen was the summary chip (102.5), not a connection. The
@@ -95,7 +95,7 @@ describe("topology ink contrast contract", () => {
   });
 
   it("크롬(클러스터 칩)은 rest 에서 어떤 노드보다 어둡다", () => {
-    // 위계 seat's on-screen measurement (2026-07-31): chip peak luminance 102.5 against
+    // Hierarchy seat's on-screen measurement (2026-07-31): chip peak luminance 102.5 against
     // child node 28.4 = **a 3.6× inversion**. The map's job is to show connections and
     // concepts, yet the summary button was the brightest thing. At rest the chip must
     // sit on the ramp's bottom step.
@@ -112,7 +112,7 @@ describe("topology ink contrast contract", () => {
   });
 
   it("노드 stroke 와 containment 엣지가 **같은 깊이 축**을 참조한다", () => {
-    // 체계 seat's verdict (2026-07-31): these two draw the same tree depth twice.
+    // System seat's verdict (2026-07-31): these two draw the same tree depth twice.
     // Written separately, three pairs converged to within 0.02 contrast **by
     // coincidence** — luck, not a contract, and editing one side would split them with
     // no warning. So the **alias relationship** is pinned rather than the values. If the
@@ -159,13 +159,13 @@ describe("topology ink contrast contract", () => {
   });
 
   it("깊이 선명도 알파와 **합성해도** 잉크 사다리가 3:1 바닥 위다", () => {
-    // 도해 (infoviz) seat's measurement (2026-08-18): multiplying
+    // Infoviz seat's measurement (2026-08-18): multiplying
     // `--topology-v2-ink-depth-leaf` (#60606d, 3.19:1 on its own) by the S5 clarity
     // alpha of 0.84 gives a composited contrast of **2.58:1** on the map surface — a
     // shortfall the standalone check (the first test above) cannot catch. Measuring the
     // screen means compositing with the alpha the renderer actually multiplies by
     // (`realmDepthClarityAlpha`). (The 3D dome's depth fog is outside this floor by
-    // owner deferral — `docs/DECISIONS.md` «3D 유예 목록», the 3D deferral list. This
+    // owner deferral — `docs/DECISIONS.md` "3D deferral list", the 3D deferral list. This
     // contract is the 2D map's.)
     const surface = readToken("topology-v2-canvas-bg-near");
     const compositeHex = (ink: string, alpha: number, bg: string): string => {

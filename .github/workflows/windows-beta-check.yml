@@ -1,24 +1,20 @@
 name: Windows x64 Beta Check
 
-# 발동 조건은 **Windows 에서만 알 수 있는 것**으로 좁힌다 (2026-08-02).
+# Narrow the trigger condition to **things only known on Windows** (2026-08-02).
 #
-# 실측: #834(pre-commit 훅)가 이 12분짜리 잡을 **5번** 켰다 — 총 60분. 그 PR 이
-# 한 일은 `package.json` 에 `prepare` 스크립트 한 줄을 더한 것이고, Windows
-# 설치 파일과는 아무 상관이 없었다. 최근 40런의 절반 가까이가 이런 부류다.
+# Measurement: #834 (pre-commit hook) triggered this 12-minute job **5 times** — totaling 60 minutes. That PR
+# did nothing more than add one line to the `prepare` script in `package.json`, having no relation to Windows
+# installers. Nearly half of the recent 40 runs were of this type.
 #
-# `package.json` · `pnpm-lock.yaml` 을 뺀다. **빼도 잃는 게 없다** — 둘 다
-# `scripts/classify-change.mjs` 의 RUNTIME 목록에 있어서, 바뀌면 리눅스에서
-# 전체 단위 스위트와 정적 export 빌드(`pnpm build`)가 이미 돈다. Windows 릴리스
-# 계약 테스트 3종도 `pnpm test:desktop:check` 안에 있어 매 PR 리눅스에서 돈다.
-# 즉 저 둘이 켜던 것은 «Windows 에서만 알 수 있는 것» 이 아니었다.
+# Exclude `package.json` and `pnpm-lock.yaml`. **Nothing is lost by excluding them** — both are
+# included in the RUNTIME list of `scripts/classify-change.mjs`, so if they change, the full unit suite and static export build (`pnpm build`) already run on Linux. The three Windows release contract tests are also within `pnpm test:desktop:check` and run on every PR on Linux.
+# Thus, what those two files triggered was not "something only known on Windows."
 #
-# 남은 목록은 전부 **네이티브 산출물에 직접 들어가는 것**이다: Rust 소스,
-# 번들되는 MCP 서버, 그 바이너리를 굽고 검증하고 스테이징하는 스크립트, 그리고
-# 이 워크플로 자신.
+# The remaining list consists entirely of **items that go directly into native outputs**: Rust source,
+# bundled MCP servers, scripts that bake and verify the binaries and staging, and
+# this workflow itself.
 #
-# ⚠️ 이 잡은 사람들이 받는 `.exe` 를 만들지 않는다. 그건 `release-macos.yml` 의
-# `build-windows` 잡이 태그에서 만든다. 여기 올라가는 아티팩트는 조기경보용
-# 사본이다 — 그래서 발동을 좁히는 것이 릴리스 검증을 약화시키지 않는다.
+# ⚠️ This job does not build the `.exe` users receive. That is built by the `build-windows` job in `release-macos.yml` from tags. The artifacts uploaded here are early-warning copies — so narrowing the trigger does not weaken release verification.
 on:
   pull_request:
     paths:
@@ -43,20 +39,15 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  # `cargo test` 의 debug 컴파일에서 **전체 디버그 정보를 만들지 않는다**.
-  # MSVC 에서 556개 크레이트의 PDB 를 굽고 링크하는 비용이 이 프로파일의 큰
-  # 몫인데, CI 의 이 잡은 디버거를 붙이지 않는다.
+  # `cargo test`'s debug compilation **does not generate full debug information**.
+  # On MSVC, baking and linking PDBs for 556 crates accounts for a large
+  # portion of the cost in this profile, but CI does not attach a debugger to this job.
   #
-  # 그렇다고 `0` 으로 끄지는 않는다 — 그러면 테스트가 깨졌을 때 백트레이스에서
-  # 파일·줄이 사라져 원격 진단이 어려워진다. `line-tables-only` 는 파일·줄은
-  # 남기고 타입 정보만 버리는 중간값이라, 이 잡이 실제로 쓰는 것은 그대로 두고
-  # 안 쓰는 것만 안 만든다.
+  # However, we do not turn it off completely (`0`) — that would remove file and line information from backtraces when tests fail, making remote diagnosis difficult. `line-tables-only` is a middle ground that keeps file and line info while discarding type information, so this job keeps what it actually uses and avoids creating what it doesn't.
   #
-  # **release 프로파일은 안 건드린다** — 사람들이 받을 설치 파일은 릴리스
-  # 워크플로가 굽는 것과 같은 방식으로 굽혀야 이 잡의 증명이 유효하다.
+  # **The release profile is untouched** — the installer files users receive must be baked in the same way as the release workflow to make this job's proof valid.
   #
-  # `CARGO_INCREMENTAL` 은 여기 없다. `Swatinem/rust-cache` 가 스스로 0 으로
-  # 건다(문서 명시) — 같은 값을 두 곳에 적으면 그 순간부터 드리프트가 시작된다.
+  # `CARGO_INCREMENTAL` is absent here. `Swatinem/rust-cache` sets it to 0 itself (as documented) — writing the same value in two places starts drift from that moment.
   CARGO_PROFILE_DEV_DEBUG: line-tables-only
   CARGO_PROFILE_TEST_DEBUG: line-tables-only
 
@@ -84,19 +75,16 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
-      # 이 잡의 시간은 거의 전부 Rust 컴파일이다 (실측 2026-08-02, 마지막 성공
-      # 런의 스텝별 소요): 720초 중 **637초(88%)** — release 번들 437초 +
-      # `cargo test` 의 debug 컴파일 200초. 나머지 스텝을 전부 0으로 만들어도
-      # 83초밖에 못 줄인다.
+      # Almost all of this job's time is Rust compilation (measurement on 2026-08-02, step durations from the last successful run): of 720 seconds, **637 seconds (88%)** — 437 seconds for the release bundle +
+      # 200 seconds for `cargo test`'s debug compilation. Even if we set all other steps to 0,
+      # we can only save 83 seconds.
       #
-      # 그런데 그 637초는 매번 **의존성부터** 다시 짓는 시간이다. Tauri 의
-      # 의존 그래프는 우리 크레이트보다 압도적으로 크고, 그 부분은 `Cargo.lock`
-      # 이 그대로면 바이트가 같다. `target/` 과 `~/.cargo` 를 캐시하면 우리
-      # 크레이트만 다시 짓는다.
+      # However, those 637 seconds are time spent rebuilding **dependencies from scratch** every time. Tauri's
+      # dependency graph is overwhelmingly larger than our crates, and that part has identical bytes if `Cargo.lock`
+      # remains unchanged. Caching `target/` and `~/.cargo` means we only rebuild our own crates.
       #
-      # 캐시 키는 이 액션이 `Cargo.lock` + 러너 + 툴체인으로 만든다 — 잠금이
-      # 바뀌면 자동으로 미스가 나므로 낡은 의존성이 살아남지 않는다.
-      # 서드파티 액션이라 이 저장소의 관례대로 SHA 로 고정한다.
+      # The cache key is generated by this action using `Cargo.lock` + runner + toolchain — if the lock changes, a miss occurs automatically, so stale dependencies do not persist.
+      # As a third-party action, we pin it by SHA in accordance with this repository's conventions.
       - name: Cache Rust build
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
         with:

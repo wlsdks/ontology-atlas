@@ -21,7 +21,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
  * - sideOffset 6 + small radius
  *
  * Usage:
- *   <Tooltip content="중앙 정렬">
+ *   <Tooltip content="Centered">
  *     <button>...</button>
  *   </Tooltip>
  */

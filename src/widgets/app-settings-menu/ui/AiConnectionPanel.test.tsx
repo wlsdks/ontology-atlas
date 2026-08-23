@@ -462,11 +462,10 @@ describe('AiConnectionPanel audit tail', () => {
 });
 
 /**
- * A reversible expansion — the way out for someone who pressed [키 등록] and enters
- * nothing. Owner report from measurement (2026-07-26): "입력 안하고 닫고싶을수도
- * 있잖아?" (you might want to close it without entering anything). At the time the
- * expanded card had only [저장] and no way to collapse it on screen.
- */
+ * A reversible expansion — the way out for someone who pressed [Register Key] and enters
+ * nothing. Owner report from measurement (2026-07-26): "You might want to close it without entering anything." At the time the
+   * expanded card had only [Save] and no way to collapse it on screen.
+   */
 describe('AiConnectionPanel draft cancel', () => {
   it('offers a visible way out of an expanded row, not just Save', () => {
     renderPanel(makeConnection());
@@ -772,7 +771,7 @@ describe('AiConnectionPanel — 주소로 연결', () => {
 
   /**
    * Alphabetical order put `embeddinggemma:latest` first, and the owner actually
-   * chose it and had it saved as 「연결됨」 — **a state that will fail on the first
+   * chose it and had it saved as "Connected" — **a state that will fail on the first
    * question was displayed as success.** It is fixed by ordering and annotation, not
    * by deletion (labelling is not hiding).
    */

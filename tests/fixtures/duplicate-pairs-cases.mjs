@@ -1,6 +1,6 @@
 // Fixture vaults for the duplicate-pairs contract test.
 //
-// The `/ontology/insights` 「비슷한 이름 — 같은 걸까요?」 card scores concept
+// The `/ontology/insights` 「Similar names — are they the same thing?」 card scores concept
 // pairs the same way the agent does with
 // `query_ontology({operation:'similar_nodes'})`. Duplicates are the #1 failure
 // mode of a growing vault, so a screen that flags a different pair than the

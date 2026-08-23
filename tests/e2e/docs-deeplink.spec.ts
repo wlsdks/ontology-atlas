@@ -21,7 +21,7 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * (`sample:… → local:…`) looked like a vault switch to that cleanup: a deep link
  * someone had just handed over was mistaken for a leftover mid-boot and erased, and
  * tab restoration filled the vacancy with the last document. The fix's own comment
- * said *"첫 마운트의 `?slug=` 는 잔재가 아니라 누군가 준 것"* (a `?slug=` on first
+ * said *"A `?slug=` on first mount is not a leftover but something someone handed you."* (a `?slug=` on first
  * mount is not a leftover but something someone handed you) — but that protection
  * only covered the first run and never reached a switch during boot.
  *
@@ -53,14 +53,14 @@ const DEEP_TITLE = /딥링크 표적 문서/;
 /**
  * Switches the source **to sample** — the control moved on 2026-08-08.
  *
- * It used to be the 「샘플 | 로컬」 (sample | local) radio at the right edge of the
+ * It used to be the 「Sample | Local」 (sample | local) radio at the right edge of the
  * screen. #987 (docs chrome consolidation) removed that radio and gathered display,
  * switching, and diagnostics into the **vault chip menu**, because two places on
  * screen were stating the same fact.
  *
  * ⚠️ **This spec was not updated in that PR, and CI stayed broken across six
- * merges.** `.claude/rules/testing.md` warns about exactly that — *"화면을
- * 삭제하면 같은 PR 에서 e2e spec 도 같이 훑어 지운다"* (delete a screen and sweep
+ * merges.** `.claude/rules/testing.md` warns about exactly that — *"Delete a screen and sweep
+ * its e2e specs in the same PR."* (delete a screen and sweep
  * its e2e specs in the same PR). The property being guarded (a vault switch after
  * settling clears the slug) is unchanged and only **the control's location** moved,
  * so instead of deleting the test it is gathered here in one place — the next move

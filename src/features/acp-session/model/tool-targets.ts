@@ -3,10 +3,10 @@
  *
  * ## Why (2026-08-17)
  *
- * 도구 줄은 「개념을 읽었어요」라고만 적고 **어느 개념인지는 말하지 않았다.**
- * 그러니 대화 기록을 나중에 읽어도 무슨 일이 있었는지 알 수 없고, 지도와 이을
- * 것도 없다. 값은 오고 있었다. 초기 `tool_call` 또는 streamed input을 완성한
- * `tool_call_update`가 `rawInput`을 싣고, 세션 훅이 둘을 한 도구 행으로 합친다.
+ * The tool line only said "read the concept" and **did not specify which concept**.
+ * So even when reading the conversation history later, one cannot know what happened, nor
+ * can it be linked to the map. The value was arriving. The initial `tool_call` or the completed
+ * `tool_call_update` carrying `rawInput`, and the session hook merges both into a single tool row.
  *
  * ## The argument names were chosen by counting
  *

@@ -80,14 +80,14 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * - [my agent connection] `VaultAgentSetupPanel` — the config file that lets
  *   outside tools (Claude Code · Codex · Cursor · Antigravity) read this folder.
  *   The long MCP proof, the status card grid and the decision-order document sit
- *   behind the 「고급 · 자세한 검증」 (advanced, detailed verification) fold.
+ *   behind the "Advanced, detailed verification" fold.
  * - [in-app agent] (#80) key registration, connection check, sent log. Zero new
  *   routes — settings has one home.
  *
  * ## The drill-in corridor was removed (2026-08-02, design council A-3)
  *
  * Those last two were once **two summary rows inside one LNB section** called
- * 「AI 에이전트」, each drilling into a subview. Measuring that corridor pane gave
+ * "AI Agent", each drilling into a subview. Measuring that corridor pane gave
  * 108px of ink out of 698×617 — **82.5% empty** with zero settings items. A pane
  * where nothing can be chosen was consuming a whole section. Worse, drilling in
  * removed all 180px of the LNB, so the list you had just chosen from was gone and
@@ -95,8 +95,8 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  *
  * So **the corridor was deleted and both destinations promoted into the LNB**
  * (6 rows → 7). Subview transitions 2 → 0, back steps 1 → 0, LNB always present.
- * It also ended three names all starting with 「AI」 that never separated on their
- * first character — now 「내」 versus 「앱 안」.
+ * It also ended three names all starting with "AI" that never separated on their
+ * first character — now "My" versus "In-app".
  *
  * The P3 defect ⑥ contract still holds — `open`/`onOpenChange` are optional
  * controlled props, ⌘K yields to the palette (settings demote), and Escape is
@@ -107,8 +107,8 @@ import { transientSurface } from "@/shared/ui/transient-surface";
 /**
  * LNB items — the left list's order and grouping *is* this array.
  *
- * 「지도 배경」 (map background) and 「발자국」 (footprints) sit at the **same
- * level** as 「화면」 (screen) rather than under it because they carry 4 and 8
+ * "Map Background" (map background) and "Footprints" (footprints) sit at the **same
+ * level** as "Screen" (screen) rather than under it because they carry 4 and 8
  * values respectively, and folding them into the screen section would let that
  * section swallow the rest. An LNB's advantage over drill-in is that adding a
  * section is nearly free, so sections were added.
@@ -124,7 +124,7 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * titles say why the five items are in that order — the first three are what you
  * see, the last two are what this app is connected to.
  *
- * ## Dimensions are not borrowed from chrome (2026-08-02, owner: *"이 LNB버튼도 작고"*
+ * ## Dimensions are not borrowed from chrome (2026-08-02, owner: *"This LNB button is small too"*
  * — this LNB button is small too)
  *
  * Items used to be `px-2.5 py-1.5`, giving a height of **32px** with **14px**
@@ -132,7 +132,7 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * (`--app-nav-rail-tile-height`), and 14px has no basis anywhere in this sheet.
  * So the dimensions of **a tool bar that floats over the map and yields screen
  * space** were being borrowed by *a destination you deliberately enter to read
- * and choose in* — the exact reason 「스케일 고정 계약」 (the locked-scale contract)
+ * and choose in* — the exact reason "Locked-scale contract" (the locked-scale contract)
  * limits its own reach to workbench chrome, applied here in reverse
  * (`design.md`, the same logic as the `GatewayNav` exception).
  *
@@ -149,27 +149,26 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  *   scanning channel.
  */
 const SETTINGS_GROUPS = [
-  // Why 「확장」 (expand) sits **between** background and footprints (owner,
-  // 2026-08-01: *"발자국 위에 하나 넣어주면 될듯"* — put one above footprints):
+  // Why "Expand" (expand) sits **between** background and footprints (owner,
+  // 2026-08-01: *"It seems like putting one above footprints would work"* — put one above footprints):
   // the first two are what the map is drawn from (ground, glyphs) and expand is
   // what opens on top of that. Footprints are the trace left after everything is
   // drawn, so last is right.
-  // Why 「알림」 (notify) sits **after** footprints: the first four follow how the
+  // Why "Notifications" (notify) sits **after** footprints: the first four follow how the
   // map is drawn (ground · glyph · expand · trace), and notify is the layer where
-  // the app speaks on top of it. Why it is not moved under 「이어진 것」 is in the
+  // the app speaks on top of it. Why it is not moved under "Connected" is in the
   // render-branch comment.
   { key: 'look', items: ['screen', 'background', 'expand', 'footprint', 'notify'] },
-  // Why 「내 에이전트 연결」 and 「앱 안 에이전트」 sit **side by side** here: they
+  // Why "My Agent Connection" and "In-App Agent" sit **side by side** here: they
   // are two different destinations, not two summary rows of one section. One is
   // the **config file** that lets outside tools read this folder; the other is the
   // **key** for talking to an agent inside the app.
   /*
-   * These three names **stay in English** (owner call, 2026-08-16: *"Agents 랑
-   * MCP API KEY 이렇게 3개로 분리하는 게 좋지 않을까? 한국어가 아니어도 되는데"* —
+   * These three names **stay in English** (owner call, 2026-08-16: *"Wouldn't it be better to split these into Agents, MCP API KEY? They don't need to be Korean."* —
    * splitting into Agents, MCP and API KEY seems better, and they don't have to be
-   * Korean). The three previous names (「실행기」 · 「내 에이전트 연결」 ·
-   * 「앱 안 에이전트」) were all coinages of ours that said nothing about what the
-   * pane does — 「실행기」 especially is a literal translation of "runtime" and
+   * Korean). The three previous names (「Runtime」 · 「My Agent Connection」 ·
+   * 「In-App Agent」) were all coinages of ours that said nothing about what the
+   * pane does — 「Runtime」 especially is a literal translation of "runtime" and
    * means nothing when read in Korean.
    *
    * Agents · MCP · API Key are words the target user **already knows**, and they
@@ -182,13 +181,13 @@ const SETTINGS_GROUPS = [
    *
    * Name history — it has gone back and forth three times, so read this before a
    * fourth:
-   * ① 「Agents」·「MCP」 (owner call, 2026-08-16) → ② 「앱에서 대화」 ·
-   * 「터미널에서 연결」 (2026-08-17): someone trying to connect an agent could not
+   * ① 「Agents」·「MCP」 (owner call, 2026-08-16) → ② 「Chat in App」 ·
+   * 「Connect from Terminal」 (2026-08-17): someone trying to connect an agent could not
    * tell which of the two to press — one was a category name, the other a protocol
    * acronym, and both read as "connect an agent". So they were split by **where
-   * you use them**. → ③ 「Agents」·「MCP 연결」 (owner instruction, 2026-08-19):
-   * 「MCP 연결」 answers its half of the 08-17 concern (an acronym alone does not
-   * show what action it is) with 「연결」, but 「Agents」 still does not say that it
+   * you use them**. → ③ 「Agents」·「MCP Connection」 (owner instruction, 2026-08-19):
+   * 「MCP Connection」 answers its half of the 08-17 concern (an acronym alone does not
+   * show what action it is) with 「Connection」, but 「Agents」 still does not say that it
    * means in-app conversation — the one-line intro at the top of each pane carries
    * that distinction instead.
    * The 「Agents」 label is not a vendor condition — the list uses `Claude Agent`
@@ -196,13 +195,13 @@ const SETTINGS_GROUPS = [
    * named Agents" (`tests/contract/vendor-naming.contract.test.ts`).
    */
   /*
-   * ⚠️ **`runtimes` and `agent` left for the 「에이전트」 destination on
+   * ⚠️ **`runtimes` and `agent` left for the 「Agent」 destination on
    * 2026-08-20** (ledger 90). Settings is where you choose values, while
    * downloading, installing, connecting and repairing tools is **operational work
    * with progress**, and a modal that blocks what is behind it is the wrong
    * container for that.
    *
-   * What remains is 「폴더」 (folder) and 「키」 (key) — both values you set once.
+   * What remains is 「Folder」 (folder) and 「Key」 (key) — both values you set once.
    * (`ai` is not promoted to a destination because the 2026-08-16 "frozen path,
    * de-emphasised" decision still stands.)
    *
@@ -211,7 +210,7 @@ const SETTINGS_GROUPS = [
    */
   { key: 'connect', items: ['workspace', 'ai'] },
   /*
-   * Why 「앱」 (app) is **last**: the two groups before it are things you touch
+   * Why 「App」 (app) is **last**: the two groups before it are things you touch
    * daily (how the map looks · what attaches to this folder), while this group is
    * about **the app itself** and you only come here to look something up. It is
    * also where macOS convention puts it (about and updates at the end of a list).
@@ -516,7 +515,7 @@ export function AppSettingsMenu({
   };
 
   // A request from another surface to open "that place in settings". The map's
-  // right dock 「설정에서 키 등록」 (register a key in settings) comes in this way —
+  // right dock 「Register Key in Settings」 (register a key in settings) comes in this way —
   // giving the user a door instead of telling them where the gear is.
   //
   // This widget mounts twice depending on viewport width (rail tile at lg+, chrome
@@ -619,8 +618,7 @@ export function AppSettingsMenu({
          * → ④ **centre modal plus dim** (owner, 2026-07-30, referencing Claude
          * desktop's settings).
          *
-         * The reason for ② was *"설정 창이 지도 가리는거"* (the settings window
-         * covers the map) — the 「지도 배경」 and 「발자국」 sections promise *"change
+         * The reason for ② was *"The settings window covers the map"* — the 「Map Background」 and 「Footprint」 sections promise *"change
          * it and the map updates immediately"* while covering that very map. So the
          * scrim was removed to keep the map visible.
          *
@@ -660,8 +658,8 @@ export function AppSettingsMenu({
           data-surface-role="settings-dock"
           tabIndex={-1}
           /*
-           * **Fixed size** (owner call, 2026-07-29: *"가로 세로 적당한 크기여야하고
-           * 고정 사이즈여야함"* — it needs sensible width and height and a fixed
+           * **Fixed size** (owner call, 2026-07-29: *"It needs sensible width and height and a fixed
+           * size"* — it needs sensible width and height and a fixed
            * size). The height used to follow the content length, so the window grew
            * and shrank with every section change — a flat horizontal band in the
            * footprints section, a tall narrow window in the workspace section. A
@@ -673,10 +671,10 @@ export function AppSettingsMenu({
            * where the size changes). Overflowing content **scrolls the right pane**;
            * the window does not grow.
            *
-           * ## Height 640 → 672 (2026-08-02, owner: *"뭔가 답답해 설정내부"* — the
-           * inside of settings feels cramped)
+           * ## Height 640 → 672 (2026-08-02, owner: *"The
+           * inside of settings feels cramped"*
            *
-           * At 640, the busiest section 「화면」 was **clipped by 41px** (content 626
+           * At 640, the busiest section "Screen" was **clipped by 41px** (content 626
            * against a 585 visible pane). At the same time, on the measured 14-inch
            * viewport (1512×806), **118px outside this panel sat empty** — a clipped
            * box and spare room on the same screen, which is the mechanical form of
@@ -728,8 +726,8 @@ export function AppSettingsMenu({
           {
             /*
              * Two-column LNB — list left, content right. Owner instruction
-             * (2026-07-29, reconfirmed): *"다른 서비스 보면 LNB가 있는 팝업창 형태로
-             * 많이 구성하잖아.. 우리도 그렇게 해달라고"* (other services often use a
+             * (2026-07-29, reconfirmed): *"Other services often use a
+             * popup with an LNB; do it that way."* (other services often use a
              * popup with an LNB; do it that way). The earlier drill-in proposal (a
              * council recommendation) was overturned — with five sections, drill-in
              * means going back out and in again every time, which does not suit
@@ -750,19 +748,19 @@ export function AppSettingsMenu({
                       {t(`sectionGroup.${group.key}`)}
                     </p>
                     {/*
-                      **Signpost row** — the head of the 「연결」 group (2026-08-21,
+                      **Signpost row** — the head of the "Connection" group (2026-08-21,
                       ledger 90, hierarchy seat's prescription).
 
                       When the runtimes and MCP connection panes left for the
                       destination, anyone who used to look for them here needed
                       **to be told where they went**. `surfaces.md`'s
-                      「반만 막는 것이 가장 나쁘다」 (blocking only half is the worst
-                      option) is the basis — if it is removed from the nav, the way
+                      "Blocking only half is the worst
+                      option" is the basis — if it is removed from the nav, the way
                       in has to answer too.
 
                       The three hierarchy prescriptions are kept exactly: **zero
                       indigo** (this is not the sheet's protagonist; the winner is
-                      「대화 열기」 inside the destination) · a **single navigation
+                      "Open Chat" inside the destination) · a **single navigation
                       glyph** with no text in the control position · and it **closes
                       the sheet and goes** rather than drawing the destination's pane
                       inside the sheet.
@@ -894,8 +892,8 @@ export function AppSettingsMenu({
                     the no-transient-stacking contract. */}
                 {/*
                   Auto-display switch — it does not delete the guide. Off simply means
-                  it does not appear by itself; 「다시 보기」 below and the map's compass
-                  tile still open it. Owner: *"처음만 나오면 되거든? 아니면 클릭했을때나"*
+                  it does not appear by itself; "View Again" below and the map's compass
+                  tile still open it. Owner: *"It only needs to show the first time, or when clicked"*
                   (it only needs to show the first time, or when clicked).
                 */}
                 <SettingsRow
@@ -940,33 +938,33 @@ export function AppSettingsMenu({
                   </>
                 ) : section === 'notify' ? (
                   /*
-                   * Why 「알림」 (notify) gets its own pane (2026-08-02, owner report).
+                   * Why "Notifications" gets its own pane (2026-08-02, owner report).
                    *
-                   * These three sat at the **bottom** of the 「화면」 section until
+                   * These three sat at the **bottom** of the "Screen" section until
                    * yesterday, justified by a comment saying *"both are settings for
                    * what the screen says"*. That sentence is true — and it is exactly
                    * **the argument for a section of their own**. The other six in
-                   * 「화면」 (language · view mode · INDEX default · glyph set · two
+                   * "Screen" (language · view mode · INDEX default · glyph set · two
                    * guides) are «how the map is drawn», while these three are «what
                    * the app tells me».
                    *
-                   * Volume says the same. Measured: 「화면」 carried these three (3
+                   * Volume says the same. Measured: "Screen" carried these three (3
                    * rows plus 6 chips) on top of its own six controls. The 6 chips of
-                   * 「받을 알림」 are **primary controls**, not collapsed detail, so
+                   * "Notifications Received" are **primary controls**, not collapsed detail, so
                    * another subject was occupying half of one section. Removing them
-                   * still leaves six in 「화면」.
+                   * still leaves six in "Screen".
                    *
-                   * Why they go under 「보이는 것」 rather than 「이어진 것」:
-                   * 「작업 중 표시」 literally appears **on the map**, and notifications
-                   * are also something the app shows me. 「이어진 것」 is the place for
+                   * Why they go under "Visible Things" rather than "Connected Things":
+                   * "Show During Work" literally appears **on the map**, and notifications
+                   * are also something the app shows me. "Connected Things" is the place for
                    * «what outside thing this connects to», which is a different nature.
                    */
                   <AgentActivitySettings />
                 ) : section === 'background' ? (
                   <>
                   {/* 3D layout (dome/cloud) is not here — the picker the map's top
-                      「3D」 chip opens owns it (`View3dMenu`). It was here at first and
-                      the owner could not find it: *"구름은 어디에서 볼 수 있는거지?"*
+                      "3D" chip opens owns it (`View3dMenu`). It was here at first and
+                      the owner could not find it: *"Where can I see the cloud?"*
                       (where can I see the cloud?). A control that changes what you are
                       looking at belongs over what you are looking at, and two homes
                       break the «one fact, one place» discipline. */}
@@ -974,7 +972,7 @@ export function AppSettingsMenu({
                   {/* Frame meter — puts the map's real frame output in the
                       bottom-right meter stack. **Off by default**, and while off the
                       measurement loop does not run either (a performance meter that
-                      eats performance is a liar). Why here: the 「지도」 pane collects
+                      eats performance is a liar). Why here: the "Map" pane collects
                       how the canvas is drawn, and the meter floats over that canvas. */}
                   <SettingsGroup>
                     <SettingsRow
@@ -1190,9 +1188,11 @@ export function AppSettingsMenu({
                 </Link>
                   </SettingsGroup>
                     {/*
-                      「다른 폴더에서 노드 가져오기」 (import nodes from another folder)
+                      "Import nodes from another folder"
                       — moved here from the bottom of INDEX (2026-08-02, owner:
-                      *"이건 뭐임? 이 문구가 왜 있는거지..? 필요없는건가"* — what is this?
+                      *"What is this?
+                      why is this text here? is it unnecessary?"*
+                      (what is this?
                       why is this text here? is it unnecessary?).
 
                       Why here: this job is about **what comes into this folder**, and
@@ -1200,7 +1200,7 @@ export function AppSettingsMenu({
                       button on a screen for reading the map — it gets used once or
                       twice in a lifetime.
 
-                      The name changed too. 「블록」 in the old 「블록 가져오기」 is
+                      The name changed too. "Block" in the old "Import Block" is
                       defined nowhere in this app, so a first-time reader had no way to
                       know what the button opens.
 

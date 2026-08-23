@@ -225,7 +225,7 @@ describe("GlobalSearch", () => {
 
   /**
    * The Esc contract (measured regression, 2026-07-26) — the footer promises
-   * "ESC 닫기", so **the first** Esc closes it and clears the input and filters.
+   * "ESC Close", so **the first** Esc closes it and clears the input and filters.
    *
    * The real defect: Radix sets `aria-hidden` on siblings rather than adding
    * `aria-modal`, while this app's global Esc discipline (the first-run card's
@@ -315,8 +315,8 @@ describe("GlobalSearch", () => {
   });
 });
 
-// Owner report (2026-07-25): "검색 버튼 눌렀을때 ... 바깥 클릭하면 닫혀야하는데
-// 안닫힘! 대부분 x 누르거나 바깥누르면 닫히지 않나?" (clicking outside should close
+// Owner report (2026-07-25): "When clicking the search button ... clicking outside should close it
+// but it doesn't — don't most close on x or an outside click?" (clicking outside should close
 // it and doesn't — don't most close on x or an outside click?). Right — that is the
 // de facto standard for command palettes (Linear · VS Code · Raycast · Spotlight),
 // and this app's other overlays (the settings sheet, the docs drawer, the trail

@@ -134,12 +134,12 @@ export function DomainCapacityBar({
         ) : null}
       </span>
       {/* The tail column is **fixed width**. Leaving the width to the content lets the
-          text-width difference between `역량 4 · 요소 110` and `역량 2 · 요소 5` set the
+          text-width difference between `Capability 4 · Element 110` and `Capability 2 · Element 5` set the
           length of the `flex-1` track beside it, splitting an axis six rows must share
           into three lengths (measured 2026-07-26: 929.8 / 935.5 / 941.2px — an 11.4px
           staircase at the right edge). A domain with smaller values then got a longer
           axis, distorting the comparison value itself by up to 1.2%.
-          The 「연결」 (connections) tab's impact ranking already uses this grammar (fixed
+          The 「Connections」 (connections) tab's impact ranking already uses this grammar (fixed
           track plus fixed number column), so its column-width discipline is taken
           verbatim. `tabular-nums` is applied to both rows so the digit positions do not
           shift either. */}
@@ -166,7 +166,7 @@ export function DomainCapacityBar({
  * Why `aria-hidden` — this line is the key to a bar graphic that is itself
  * `aria-hidden`. Hiding the graphic and reading out only the key leaves a screen
  * reader with two words and no context. The same fact is carried as text by each row's
- * `역량 N · 요소 M` caption.
+ * `Capability N · Element M` caption.
  *
  * It always renders when the bar does — appearing and disappearing makes the space
  * above the bar wobble (dimension regularity).

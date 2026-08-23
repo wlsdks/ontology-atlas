@@ -3,7 +3,7 @@
  *
  * ## Why (owner report, 2026-08-17)
  *
- * The list read: `Auto · 확인 안 됨` / `Manual` / `Plan Mode` / `Don't Ask · 확인 안 됨`. Every name
+ * The list read: `Auto · Unverified` / `Manual` / `Plan Mode` / `Don't Ask · Unverified`. Every name
  * was English, and the descriptions were attached **only to the two we had not measured** — while the
  * two actually worth choosing (`Manual`, `Plan Mode`) had not one character on screen saying how they
  * differ.

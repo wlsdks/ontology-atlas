@@ -824,7 +824,7 @@ if (
  * went wholly stale on one rewrite").
  *
  * The bill came due on 2026-08-03: when the PO council retired the word
- * 「볼트/vault」 from the screen (see the decision ledger) this pin went red
+ * "vault" from the screen (see the decision ledger) this pin went red
  * immediately. **The copy got better and the gate blocked it** — the failure
  * direction .claude/rules/documentation.md forbids:
  *
@@ -1043,8 +1043,8 @@ if (
   // 2026-08-19: the four old markers (`download-platform-macos` ·
   // `download-platform-windows` · `download-macos-pending` ·
   // `buildDmgName('aarch64')`) all lived inside the install section, and the owner
-  // removed that section entirely (*"맨 마지막 이거는 없어도 될듯? 어차피 맨 위에
-  // 다 있어서"* — the last section is probably unnecessary, it is all at the top
+  // removed that section entirely (*"the last section is probably unnecessary, it is all at the top
+  // anyway"* — the last section is probably unnecessary, it is all at the top
   // anyway). The remaining property is the same — **the page reads release facts
   // from the generated module** — and today the hero carries it: it really reads the
   // Windows asset (`windowsAsset`) and names the in-development version honestly

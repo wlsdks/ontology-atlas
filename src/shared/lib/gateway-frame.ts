@@ -10,7 +10,7 @@
  * copy.
  *
  * The rationale for the values is unchanged. The 2026-07-29 verdict ③
- * 「그리드는 한 벌」 (one grid for everything) protects *every element standing
+ * 「One grid for everything」 (one grid for everything) protects *every element standing
  * on the same x*, and the single source of that x is `--gateway-origin`
  * (`app/globals.css`, `views/download/lib/gateway-grid.ts`).
  */

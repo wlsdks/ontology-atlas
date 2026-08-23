@@ -1,6 +1,6 @@
 /**
- * Wheel-delta normalization — the fix for the owner-reported "휠 확대 안 됨"
- * (wheel does not zoom) bug.
+ * Wheel-delta normalization — the fix for the owner-reported "Wheel does not zoom"
+ * bug.
  *
  * ROOT CAUSE (P3 live diagnosis, chrome-devtools): the prototype and the P2
  * port both applied `Math.exp(-e.deltaY * 0.0016)` to the *raw* `deltaY`. But
@@ -41,15 +41,13 @@ export function normalizeWheelDeltaY(deltaY: number, deltaMode: number, viewport
  * Exponential zoom-factor sensitivity per pixel of (normalized) wheel delta —
  * `factor = exp(-pixelDeltaY * sensitivity)`.
  *
- * FIX (owner feedback — "줌 인/아웃이 느리게 느껴짐", zoom in/out feels
- * slow/sluggish): upped from `0.0016` (~1.21x per a standard 120px notch) to
+ * FIX (owner feedback — "Zoom in/out feels slow/sluggish"): upped from `0.0016` (~1.21x per a standard 120px notch) to
  * `0.0020` (~1.27x per notch) — sits between d3-zoom's own convention
  * (~1.18x/notch) and Leaflet 2.0's, per the design round's spec. No
  * `--topology-v2-*` token (same "device-input tuning has no design token"
  * precedent as `WHEEL_LINE_HEIGHT_PX` above).
  */
-// 0.0020 → 0.0023 (owner report 2026-07-24, *"약간만 빠르게"* — just a little
-// faster) — ~1.27x → ~1.32x per notch. Together with the settle rate (angfreq 15)
+// 0.0020 → 0.0023 (owner report 2026-07-24, "Just a little faster") — ~1.27x → ~1.32x per notch. Together with the settle rate (angfreq 15)
 // it lifts the perceived zoom speed slightly.
 export const WHEEL_ZOOM_SENSITIVITY = 0.0023;
 
@@ -63,8 +61,7 @@ export function computeWheelZoomFactor(pixelDeltaY: number, sensitivity: number 
 }
 
 /**
- * Trackpad glide guard (owner report, 2026-07-23: *"노드 연결선에 마우스 올리면
- * 화면이 움직인다/흔들린다"* — just hovering an edge makes the screen move and
+ * Trackpad glide guard (owner report, 2026-07-23: "Just hovering an edge makes the screen move and shake" — just hovering an edge makes the screen move and
  * shake). A macOS trackpad emits tiny wheel events of |deltaY| 1–3px whenever two
  * fingers rest and slide, or when momentum lingers. Composing all of that noise
  * into zoom makes the screen tremble from a hovering cursor alone.

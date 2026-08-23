@@ -17,8 +17,7 @@ import { describe, expect, it } from "vitest";
  *
  * One sheet with the same kind of content (label + control + one-line
  * description), and yet **a whole ramp step was shifted** depending on the
- * section. That is what the owner saw: *"이는 버튼도 너무 작고? 뭔가 설정 자체가좀
- * 작아"* (this button is too small too — the settings themselves feel small),
+ * section. That is what the owner saw: *"this button is too small too — the settings themselves feel small"* (this button is too small too — the settings themselves feel small),
  * pointing at the Expand section.
  *
  * The cause is inheritance, not taste. `Slider` and `Choice` were born inside
@@ -49,11 +48,7 @@ import { describe, expect, it } from "vitest";
  * of noise"*. **The noise concern was right and the premise "most are legitimate"
  * was wrong.**
  *
- * On 2026-08-09 the owner pointed at "connect my agent": *"왜이렇게 작아보이지?
- * 우리 디자인 시스템에서 이런거 통일 안되어있나? 다른거 보면 크잖아.. 다 너무
- * 작아서 잘 안보임"* (why does this look so small — isn't this unified in our
- * design system? Other places are bigger; it is all too small to read). Measured
- * (1512×900, vault connected, all eight panes):
+ * On 2026-08-09 the owner pointed at "connect my agent": *"why does this look so small — isn't this unified in our design system? Other places are bigger; it is all too small to read"* (why does this look so small — isn't this unified in our design system? Other places are bigger; it is all too small to read). Measured (1512×900, vault connected, all eight panes):
  *
  * | Pane | 12.5 | 11 | **9.5** |
  * |---|---|---|---|
@@ -416,7 +411,7 @@ describe("패널은 최소 창 안에서 자기 거터를 먹지 않는다", () 
    * While it was 640, the busiest section (Appearance) was clipped by 41px while
    * 118px sat empty outside the panel at a 14-inch viewport (1512×806) — a clipped
    * box and spare space on the same screen is the mechanical form of the owner's
-   * *"답답해"* (it feels cramped).
+   * "it feels cramped."
    */
   it("패널 높이가 최소 창 − 오버레이 거터 2벌 을 넘지 않는다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");

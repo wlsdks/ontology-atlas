@@ -177,7 +177,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
    * 2026-08-08: at the call site, `const { doc, trigger } = pendingMention` shadowed
    * the component prop `doc` (the document being edited), so **the chosen target**
    * was passed as the base point. The base and destination then match and the link
-   * comes out as `./같은폴더.md`. It was caught by measuring the screen, but with
+   * comes out as `./same-folder.md`. It was caught by measuring the screen, but with
    * this assertion in place it would have thrown **at the call**. An API that is
    * hard to misuse beats a comment.
    */

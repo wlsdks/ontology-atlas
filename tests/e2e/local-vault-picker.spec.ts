@@ -13,7 +13,7 @@ import { useDogfoodSample } from "./sample-source";
  * spec that should have been swept away with #435.
  *
  * ⚠️ **[2026-08-08] The source indicator lives in the vault chip menu, not a header
- * radio.** PR #987 removed the 「샘플|로컬」 radio pair on the right of the header and
+ * radio.** PR #987 removed the 「sample|local」 radio pair on the right of the header and
  * moved that judgement into the vault chip menu. This spec was still clicking those
  * radios, so two tests died on a 2-minute timeout — **the second victim of the same
  * cause** as `docs-deeplink.spec.ts`. Use `expectSourceIs*` below to read source

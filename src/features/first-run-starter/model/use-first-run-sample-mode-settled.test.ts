@@ -38,7 +38,7 @@ describe('useFirstRunSampleModeSettled', () => {
 
   /**
    * The sample guidance is for **someone who has never connected** (2026-08-02, owner:
-   * *"한번이라도 연결했으면 이 샘플은 안나와야하는데?"* — if they connected even once
+   * *"If they have connected even once, this sample should not appear?"* — if they connected even once
    * this sample should not appear).
    *
    * The old verdict was only "is a vault open right now", so someone who had connected

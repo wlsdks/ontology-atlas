@@ -6,8 +6,8 @@ import { SKELETON_DELAY_MS, useDelayedVisible } from './use-presence';
 /**
  * **Never show a loading indicator for work that takes 0ms** — the property this test locks.
  *
- * Owner report (2026-08-08): *"문서 선택해서 이동할때 우측 문서화면에 좀 이상하게 회색선이
- * 3개 생겼다가 사라지거든? 거의 1초도 안걸려서 깜빡이다 사라져서"* (picking a document makes
+ * Owner report (2026-08-08): *"When selecting and navigating to a document, strange grey lines
+ * appear and disappear in the right-hand document pane."* (picking a document makes
  * three grey lines flash in the right-hand pane and vanish in well under a second).
  *
  * Measured in the browser: across all 8 document switches, the viewer's three-line skeleton

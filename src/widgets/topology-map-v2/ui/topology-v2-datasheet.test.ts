@@ -136,7 +136,7 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
   it("splits containment into its OWN 담는 것/속한 곳 groups instead of folding by direction (the domain-popover bug)", () => {
     // The exact UX-round case: a domain node with 18 `contains` children + a
     // few depends/used edges. Direction-only grouping put the 18 children in
-    // "기대는 곳" (dependsOn); role grouping keeps them in `contains`.
+    // "DependsOn"; role grouping keeps them in `contains`.
     const connections: V2DatasheetConnection[] = [
       ...Array.from({ length: 18 }, (_, i) =>
         conn({ id: `child-${i}`, relationType: "contains", direction: "outgoing" }),
@@ -150,7 +150,7 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
       conn({ id: "parent", relationType: "belongs_to", direction: "outgoing" }),
     ];
     const groups = buildV2ConnectionGroups(connections, 6);
-    // 담는 것 18 · 쓰는 곳 4 · 기대는 곳 2 · 속한 곳 1 — matches full-detail.
+    // container 18 · writer 4 · supporter 2 · member 1 — matches full-detail.
     expect(groups.contains.total).toBe(18);
     expect(groups.contains.rows).toHaveLength(6); // capped, true total preserved
     expect(groups.usedBy.total).toBe(4);
@@ -397,7 +397,7 @@ describe("summarizeContainsByPathPrefix (S2 파트 3)", () => {
       ...Array.from({ length: 4 }, (_, i) => el(`cli/src/commands/c${i}`)),
       ...Array.from({ length: 2 }, (_, i) => el(`.claude/skills/s${i}`)),
       el("cli/src/lib/one"),
-      el("solo"), // No slash → 기타 (other)
+      el("solo"), // No slash → Other (other)
     ];
     const summary = summarizeContainsByPathPrefix(rows, 2);
     expect(summary.total).toBe(8);
@@ -424,14 +424,14 @@ describe("summarizeContainsByPathPrefix (S2 파트 3)", () => {
     expect(groups.usedBy.summary).toBeUndefined();
   });
 
-  // B4 (H1) — rescue a summary collapsing into one 「기타」 lump by re-splitting, then by falling back to the list.
+  // B4 (H1) — rescue a summary collapsing into one 「Other」 lump by re-splitting, then by falling back to the list.
   it('깊은 프리픽스가 전부 흩어져 "기타"가 과반이면 1단계 프리픽스로 재분할', () => {
     const rows: V2DatasheetConnection[] = [
       ...["a", "b", "c", "d", "e", "f"].map((s) => el(`cli/${s}/x`)),
       ...["g", "h", "i", "j"].map((s) => el(`src/${s}/y`)),
     ];
     // The deep prefixes (cli/a … src/j) are all count 1 → only the top 4 are named and
-    // the remaining 6 go to 기타. 기타 (6) is the majority, so it re-splits on the
+    // the remaining 6 go to Other. Other (6) is the majority, so it re-splits on the
     // one-level prefix (cli/src) and takes the side that actually divides.
     const summary = summarizeContainsByPathPrefix(rows, 4);
     expect(summary.usable).toBe(true);

@@ -2,7 +2,7 @@
  * Contrast measurement — sweeps the rendered DOM and names **text that is not
  * legible**.
  *
- * **Why this file exists.** `/design-council` instructs the 「도해」 (infoviz) seat
+ * **Why this file exists.** `/design-council` instructs the "infoviz" (infoviz) seat
  * that it *"must measure contrast"*, and that seat's brief makes the measurement a
  * precondition of any verdict. **But there was no instrument** — as of 2026-08-03 no
  * script in this repository computed contrast, and `/design-audit` only **checked

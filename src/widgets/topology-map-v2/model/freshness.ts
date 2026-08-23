@@ -13,8 +13,7 @@
  * These four are **not mutually exclusive** — `hub+fresh` and `hub+stale`
  * both occur in the fixture data (prototype `mcp-server` capability is
  * `hub+fresh`, `adapter-registry` is `hub+stale`). Each is applied as an
- * independent overlay, never a replacement color (design.md "새 채색 대신
- * 보더/오버레이로 상태" — carry state on a border or overlay rather than a new
+ * independent overlay, never a replacement color (design.md "carry state on a border or overlay rather than a new fill colour" — carry state on a border or overlay rather than a new
  * fill colour; extended from Sigma reducers to canvas-2D here).
  *
  * `reducedMotion` disables breathe unconditionally (prototype: `if (n.fresh

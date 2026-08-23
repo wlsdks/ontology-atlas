@@ -51,7 +51,7 @@ test.describe("인사이트 할 일 — 탭 배지와 묶음 배지가 같은 �
       //
       // ⚠️ **Do not read this as `num(parent text)`** — the first attempt did, grabbed a
       // container further up, and read the concept count **112** as a blocking signal.
-      // Match a whole chip's shape (`"0 분리된 섬"`) instead, so a failed match turns the
+      // Match a whole chip's shape (`"0 isolated islands"`) instead, so a failed match turns the
       // count assertion below red rather than **silently yielding 0**.
       const CHIP = /^(\d+)\s*(분리된 섬|누락된 연결)$/;
       const repair = [...document.querySelectorAll("*")]

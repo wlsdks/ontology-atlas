@@ -42,7 +42,7 @@ describe("frontmatter writer contract — MCP and CLI agree", () => {
  *    `patch_concept` re-serialised frontmatter the backslashes **doubled** (three
  *    round trips: 1 → 2 → 4). Repeated saving was corruption growth.
  * 2. Inline lists and objects were split on commas unconditionally, so a comma
- *    inside a value truncated the data (`labels: { ko: "지도, 검색" }` → `"지도"`).
+ *    inside a value truncated the data (`labels: { ko: "map, search" }` → `"map"`).
  *
  * Why the existing matrix missed them: the parser contract watched only
  * **input → parse result**, and the writer contract only **input → string**. Joining

@@ -67,7 +67,7 @@ import { fieldClass } from '@/shared/ui/control-class';
  *
  * ## What this surface is for (2026-07-26 redesign)
  *
- * Owner: *"이 페이지에서는 깃 연결을 빠르게 가능하게 해주고 그래야하는데"*
+ * Owner: *"This page should make connecting git fast."*
  * (this page should make connecting git fast). So this is **not a dashboard that
  * reports state — it is a screen that makes the user able to do their job**. One
  * question decides its shape:
@@ -87,7 +87,7 @@ import { fieldClass } from '@/shared/ui/control-class';
  *
  * ## Workbench redesign (2026-07-27) — this screen's job in one sentence
  *
- * Owner: *"이 기록 페이지도 너무 AI느낌나"* (this history page feels too much like
+ * Owner: *"This history page feels too much like AI output."* (this history page feels too much like
  * AI output). That was not a vibe but six measurable defects, and every one came
  * from never deciding what the screen is for. Decided, it reads:
  *
@@ -127,8 +127,8 @@ import { fieldClass } from '@/shared/ui/control-class';
  *    button in the bottom dock.
  * ⑤ Zero motion → one `.git-fade-in` (appear, stagger, swap) with a
  *    reduced-motion equivalent.
- * ⑥ Unfamiliar words and an inverted trust-copy hierarchy → 「최근 기록」 became
- *    「지난 걸음」 (removing the clash with the page title 「기록」), and the
+ * ⑥ Unfamiliar words and an inverted trust-copy hierarchy → "Recent History" became
+ *    "Past Steps" (removing the clash with the page title "History"), and the
  *    recording-scope notice moved to **where the write happens**.
  *
  * The largest plumbing leak on this screen went with them: the evidence column
@@ -159,7 +159,7 @@ import { fieldClass } from '@/shared/ui/control-class';
  * Web (browser vault): a browser cannot spawn a process, so it degrades honestly
  * — a property of the surface, not a fixable defect. But it **does not stop at
  * "you can't"**: in a browser the only real next step on this surface is getting
- * the app, so `앱 받기` is the primary button and the terminal path (copy the
+ * the app, so `Get App` is the primary button and the terminal path (copy the
  * CLI) is a secondary escape below it. The previous screen had it exactly
  * backwards — the copy button was larger than the get-the-app link.
  *
@@ -196,7 +196,7 @@ const INIT_CLI_COMMAND = "git init";
 
 /**
  * The primary action — the **one** thing this screen asks of the user. Setup's
- * 「앱 받기 / 폴더 고르기 / 기록 시작」 and the workbench's 「N개 남기기」 all use the
+ * "Get App / Choose Folder / Start Recording" and the workbench's "Leave N items" all use the
  * same weight: actions of equal standing must look equal.
  *
  * Height is `--git-setup-action-height` (36px on desktop, the same step as the
@@ -236,9 +236,9 @@ const noopSubscribe = () => () => {};
  *
  * 2026-07-26 — the mono + `uppercase` + 0.12em-tracking eyebrow grammar was
  * removed. That combination is a **Latin-only device**: JetBrains Mono has no
- * Hangul glyphs, so "이번에 바뀐 것" fell back wholesale to the system font, and
+ * Hangul glyphs, so "Things changed this time" fell back wholesale to the system font, and
  * 0.12em tracking on top of it reads in Hangul not as letter-spacing but as
- * **broken word spacing** (at 1920 it looked like "이번에  바뀐  것").
+ * **broken word spacing** (at 1920 it looked like "Things  changed  this  time").
  * `uppercase` does nothing at all to Hangul, so only its side effects remain.
  *
  * Hierarchy comes instead from the body stack (Pretendard) plus the
@@ -363,7 +363,7 @@ export function AtlasGitPanel({
   }, []);
   /*
    * Called **only after a folder is chosen** (2026-08-02, caught by a contract
-   * test: 「앱 안에서 폴더가 없으면 … 아무 IPC 도 안 부른다」 — inside the app with
+   * test: "If there is no folder inside the app … no IPC at all" — inside the app with
    * no folder, no IPC at all).
    *
    * Two reasons. ① With no folder this screen has nothing to do whether or not
@@ -389,7 +389,7 @@ export function AtlasGitPanel({
    * (#85).
    *
    * `null` = **the user has not chosen yet**, and the tab then follows state: if
-   * there are changed lines to show, 「바뀐 줄」, otherwise 「지난 걸음」. The test
+   * there are changed lines to show, "Changed Lines", otherwise "Past Steps". The test
    * is the number of **parsed diff files**, not the number of changes: when only
    * newly created documents changed there is nothing prior to compare against,
    * so deciding on change count lands the user in an empty pane they never asked
@@ -398,7 +398,7 @@ export function AtlasGitPanel({
   /*
    * The workbench selection — **an axis that replaces tabs**.
    *
-   * The right column used to split into 「변경 내용 / 커밋 이력」 tabs, but those
+   * The right column used to split into "Changed Content / Commit History" tabs, but those
    * two are really *"not yet committed vs committed"*, which **the list's
    * position already states** (uncommitted at the top, committed below, in time
    * order). With tabs, commit history hid behind one — and the owner genuinely
@@ -498,7 +498,7 @@ export function AtlasGitPanel({
    * The chosen step's patch, read **only when the selection changes**. Reading
    * them all up front while drawing the list would be one `git show` per step —
    * paying in advance for what is not on screen (`architecture.md`
-   * 「화면에 없는 표면의 모델은 만들지 않는다」 — do not build the model of a surface
+      「Do not build a model of a surface that is not drawn」 — do not build the model of a surface
    * that is not drawn). `null` means "not known yet"; `""` means "none".
    */
   const [commitDiff, setCommitDiff] = useState<string | null>(null);
@@ -557,7 +557,7 @@ export function AtlasGitPanel({
    *
    * Only the automatic subject was possible before. It says what changed well,
    * but never **why**, and why is what someone reading the history later actually
-   * looks for (owner: *"수동으로 커밋도 할 수도 있잖아"* — you should be able to
+   * looks for (owner: *"you should be able to commit manually too"* — you should be able to
    * commit manually too).
    */
   const [snapshotMessage, setSnapshotMessage] = useState("");
@@ -714,7 +714,7 @@ export function AtlasGitPanel({
       data-stage={stage}
       // The sheet's skeleton belongs to the host (HomePage's scrim + card shell).
       // Adding a border or background here produces a double card (owner report
-      // 2026-07-23: "보기 안 좋고" — it does not look good). Same division of
+      // 2026-07-23: "it does not look good" — it does not look good). Same division of
       // labour as AgentConnectSheet: the panel carries content only.
       className={cn("flex w-full min-h-0 flex-col", className)}
     >
@@ -875,7 +875,7 @@ function PageHeader({
           <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
-        {/* The old `subtitle` ("vault 의 변경을 git 스냅샷으로 남깁니다") was
+        {/* The old `subtitle` ("records vault changes as a git snapshot") was
             deleted: 12 characters carrying three system terms (vault, git,
             snapshot). The scope notice takes its place — the second thing a user
             needs confirmed is not a product description but "nothing outside my
@@ -990,7 +990,7 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
  * Why this is not decoration: in this state the screen asks the user for one
  * thing ("get the app" / "choose a folder"). **Without saying what they get, that
  * is an order rather than an offer.** A first-time visitor cannot imagine the
- * destination from the word 「기록」 alone. So the destination's skeleton —
+ * destination from the word "records" alone. So the destination's skeleton —
  * timeline on the left, the chosen step's concepts and neighbours on the right —
  * is shown in miniature. It is the thing this screen is selling.
  *
@@ -1073,7 +1073,7 @@ function SetupPreview({ t }: { t: Translator }) {
             <span className="h-1.5 w-2/3 rounded-full bg-[color:var(--color-overlay-3)]" />
             {/* This sketch's grammar is **grey bars instead of text** — all
                 twenty-odd other positions are. These two chips were the only ones
-                holding real words (`역량`, `요소`), and under `opacity-45` they
+                holding real words (`capability`, `element`), and under `opacity-45` they
                 measured **2.09:1**. Ink cannot fix it: at this opacity even the
                 ramp's brightest ink (`--color-text-primary`) is 4.30, short of AA
                 (pure white is exactly 4.50). The fixable axis is not colour but
@@ -1139,9 +1139,9 @@ function SetupPreview({ t }: { t: Translator }) {
  *
  * ## 2026-08-02 redesign — from one column to a two-cell stage
  *
- * Owner: *"상단에 왜이렇게 붙어있고 내용도 작고 구성도 별로야"* (why is it stuck to
+ * Owner: *"why is it stuck to the top, the content is small and the composition is poor"* (why is it stuck to
  * the top, the content is small and the composition is poor) →
- * *"되돌리는 정도가 아니라 디자인 자체를 다시해줘"* (don't revert it — redesign it).
+ * *"don't revert it — redesign it"* (don't revert it — redesign it).
  *
  * The measurements explain that verdict exactly (1512×806, `/ko/git/`): a 520px
  * column used 520×464 = **19.8%** of the screen, leaving 348px on each side
@@ -1155,8 +1155,8 @@ function SetupPreview({ t }: { t: Translator }) {
  * So the stage has two cells:
  *
  * - **Left (the telling cell, `--git-setup-measure` 520px)** — what to do now.
- *   The title rises from `text-title` (16px) to `text-display` (23px) and 「기록」
- *   drops to a one-line eyebrow: this screen's title is not "기록" but **"choose
+ *   The title rises from `text-title` (16px) to `text-display` (23px) and "records"
+ *   drops to a one-line eyebrow: this screen's title is not "records" but **"choose
  *   a folder first"** (Toss public talks — one thing per screen). Body text goes
  *   one step from `text-body` (12.5) to `text-body-lg` (14) — the substance of
  *   "the content is small".
@@ -1209,7 +1209,7 @@ function SetupFrame({
           700px apart — the settings sheet had the same illness once (see the
           `--settings-content-measure` comment). */}
       <div className="flex min-w-0 max-w-[var(--git-setup-measure)] flex-col gap-5">
-        {/* 「기록」 is not this screen's title but **where you are** — the
+        {/* "records" is not this screen's title but **where you are** — the
             destination name drops to an eyebrow and the h1 belongs to the task at
             hand. */}
         <p className="flex items-center gap-2 text-label text-[color:var(--color-text-quaternary)]">
@@ -1243,7 +1243,7 @@ function SetupFrame({
 /**
  * S0 — the browser. A browser cannot run git, and that fact stays as it is. What
  * changed is the **order of weight**: on the previous screen this surface's only
- * real next step (`앱 받기`) was an 11px text link, smaller than the copy button
+ * real next step (`get the app`) was an 11px text link, smaller than the copy button
  * above it. Now get-the-app is the primary button and the terminal path is a
  * secondary escape below it.
  */
@@ -1256,7 +1256,7 @@ function SetupFrame({
  * survives a reload.
  *
  * This summary used to be drawn **only in the web degradation**, so a desktop
- * user who had not turned git on was offered 「기록 시작하기」 and shown not one
+ * user who had not turned git on was offered "start recording" and shown not one
  * character of *what actually changed* — a worse state than the web (owner,
  * 2026-08-02). Withholding what you already know is an omission, not a
  * degradation.
@@ -1335,17 +1335,16 @@ function WebSetup({
       <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
 
       {/*
-       * ⚠️ **The terminal escape was removed** (2026-08-09, owner: *"이런건
-       * 필요할까? 내용이..? 별 필요없어보여서"* — is this even needed? it doesn't
-       * look necessary).
+       * ⚠️ **The terminal escape was removed** (2026-08-09, owner: *"is this even needed? it doesn't
+       * look necessary"* — is this even needed? it doesn't look necessary).
        *
        * What stood here was one `node $ATLAS/cli/src/index.mjs snapshot` line plus
-       * a copy button plus the footnote 「먼저 한 번만 `export ATLAS=…`」. Two
+       * a copy button plus the footnote "first, run `export ATLAS=…` once". Two
        * reasons it went:
        *
        * ① **Almost nobody could use it.** `$ATLAS` has to point at this
        *    repository's **source folder** — that is, clone-only. The footnote
-       *    admitted as much itself: *"npm 패키지는 없어요."* A product screen had
+       *    admitted as much itself: *"there is no npm package."* A product screen had
        *    become the place where we explain that our package does not exist.
        * ② **It was not needed either.** If the vault is a git repository, plain
        *    `git commit` does the job. There is no reason to go through our CLI
@@ -1433,8 +1432,7 @@ function RemoteActionButton({
       disabled={disabled}
       onClick={() => onClick(id)}
       /*
-       * **It has to look pressable** (owner, 2026-08-02: *"너무 작아서 누르는
-       * 버튼인지도 모르겠음"* — it is so small I cannot even tell it is a button).
+       * **It has to look pressable** (owner, 2026-08-02: *"it is so small I cannot even tell it is a button"* — it is so small I cannot even tell it is a button).
        *
        * It used to be 24px tall, transparent, with quaternary-grade ink. 24px is
        * WCAG 2.2 §2.5.8's **minimum**, not a primary action's dimension, and with
@@ -1491,11 +1489,10 @@ function LocationLine({
       {/*
         Branch and remote names are proper nouns the user chose, so they are not
         translated — they are the same strings the user meets again in the
-        terminal and on the repository page. The old `branchLabel` ("브랜치") label
+        terminal and on the repository page. The old `branchLabel` ("branch") label
         was deleted: `main → origin/main` already says what it is.
 
-        **Four floating pieces became three** (owner, 2026-08-02: *"브랜치 표기
-        방식도 좀 별로"* — the branch notation is not great). A separate 「↑2 ↓0」
+        **Four floating pieces became three** (owner, 2026-08-02: *"the branch notation is not great"* — the branch notation is not great). A separate "↑2 ↓0"
         chip used to sit next to `main → origin/main`, and the only job those
         numbers did was **tell you which button to press**. Then the numbers
         belong on the buttons — there is no reason to read them and move your eyes
@@ -1520,7 +1517,7 @@ function LocationLine({
       </span>
       {upstream ? (
         <>
-          {/* 「같음」 appears only when there are no numbers — it says why both buttons are disabled. */}
+          {/* "identical" appears only when there are no numbers — it says why both buttons are disabled. */}
           {same ? (
             <span
               data-testid="atlas-git-divergence"
@@ -1592,8 +1589,7 @@ function LocationLine({
  *
  * It lives **outside** the top bar, because attaching it inside as a wrapped line
  * makes the bar taller the moment a new line appears, dropping all three of
- * Fetch/Pull/Push down with it (owner, 2026-08-03: *"fetch 누르니까 위치
- * 이상하게 변경되고"* — pressing fetch moves things around). A button escaping from
+ * Fetch/Pull/Push down with it (owner, 2026-08-03: *"pressing fetch moves things around"* — pressing fetch moves things around). A button escaping from
  * under the finger that just pressed it is a defect, not a side effect of showing
  * a result.
  */
@@ -1759,7 +1755,7 @@ function StatusMark({ t, status }: { t: Translator; status: string }) {
 /**
  * A change row — where defect ③ of the old screen is fixed.
  *
- * It used to be one line of `capability · 추가 1 · 수정 2` with a list of mono
+ * It used to be one line of `capability · added 1 · edited 2` with a list of mono
  * slugs beneath it, repeated per kind. With no hierarchy and no items it read as
  * a **build log**, and above all it **could not be pressed** — fourteen things had
  * changed and the screen offered no way to see the evidence for any one of them.
@@ -1854,9 +1850,7 @@ function ChangeRow({
  * The change list. **Concepts first, grouped by kind, as items.** Other files
  * collapse.
  *
- * Owner: *"사용자가 판단해야 할 건 «내 개념이 뭐가 바뀌었나» 이지 파일 목록이
- * 아니다"* (what the user has to judge is which of my concepts changed, not a file
- * list). `.codex/config.toml` and `.gitignore` are recorded along with the rest
+ * Owner: *"what the user has to judge is which of my concepts changed, not a file list"* (what the user has to judge is which of my concepts changed, not a file list). `.codex/config.toml` and `.gitignore` are recorded along with the rest
  * but are not for reading, so they collapse by default and the collapsed row
  * states the count — nothing is hidden.
  *
@@ -1900,7 +1894,7 @@ function ChangeList({
     <div data-testid="atlas-git-change-groups" className="flex min-w-0 shrink-0 flex-col gap-2">
       {/* This line is this block's **only** title. The evidence column head
           carried the same `changesTitle`, so the identical string appeared twice
-          32px apart — three times counting the 「지금」 row on the left timeline —
+          32px apart — three times counting the "now" row on the left timeline —
           and the user had to decide which was true. The chosen document's path
           was folded into this line's right end. */}
       <div className="flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -2184,9 +2178,9 @@ function StepList({
   }
 
   /*
-   * **No tabs.** Splitting 「아직 안 보냄」, 「받을 것」 and 「커밋 안 함」 into tabs
+   * **No tabs.** Splitting "not sent yet", "to receive" and "do not commit" into tabs
    * makes each tab hide the others, and this repository already has a decision
-   * against that plus a test that holds it (「커밋 이력이 탭 뒤에 숨지 않는다」 —
+   * against that plus a test that holds it ("commit history never hides behind a tab") —
    * commit history never hides behind a tab). The three states are **different
    * stretches of one timeline**, so order already states the relation; what is
    * needed is a boundary, not a partition.
@@ -2226,7 +2220,7 @@ function StepList({
         Uncommitted changes are like a commit in that they are also a **change
         bundle**; the only difference is that they have no name yet. So they use
         the same row grammar, and the distinction is carried by line style
-        (dashed) and the time (「지금」). No new colour.
+        (dashed) and the time ("now"). No new colour.
       */}
       {pendingCount > 0 ? (
         <li>
@@ -2400,7 +2394,7 @@ function SnapshotResultLine({
  * The bottom dock — where this screen's **verb** lives (the prescription for
  * defect ④).
  *
- * On the old screen `14개 남기기` was an 11px ghost-outline button floating at the
+ * On the old screen `Keep 14` was an 11px ghost-outline button floating at the
  * end of the list. It is the **only decision** anyone comes to this page to make,
  * and it was the quietest thing on screen. Now it is pinned to the bottom of the
  * column (`mt-auto`), so it stays in the same place however long the list gets,
@@ -2636,7 +2630,7 @@ function DesktopBody({
   commitDiff: string | null;
   /** `navigator.platform ?? userAgent` — the hint that picks per-platform install guidance. */
   hostPlatformHint: string;
-  /** 「다시 확인하기」 (re-check) — so someone who just installed git need not restart the app. */
+  /** "re-check" (re-check) — so someone who just installed git need not restart the app. */
   onRecheckGit: () => void;
   t: Translator;
   stage: Extract<GitStage, "loading" | "not-installed" | "error" | "not-initialized" | "workbench">;
@@ -2875,7 +2869,7 @@ function DesktopBody({
            * Even without git, **what changed this time is known** — the per-vault
            * baseline survives a reload. This summary used to be drawn only in the
            * web degradation, so someone who had not turned git on was offered
-           * 「시작하기」 and never saw what had changed. Withholding what you already
+           * "start" and never saw what had changed. Withholding what you already
            * know is an omission, not a degradation (owner, 2026-08-02).
            */}
           <SessionChangeSummary
@@ -2950,7 +2944,7 @@ function DesktopBody({
    * removed.
    *
    * That branch was **a judgement made before the two-column switch**: back then
-   * the right side was 「증거」 (evidence), so with zero uncommitted changes there
+   * the right side was "evidence" (evidence), so with zero uncommitted changes there
    * really was nothing to show. Now the right side is **the detail of what is
    * selected**, and choosing a commit fills it with changed concepts, the ego
    * drawing and the changed content. While the branch survived, a vault with four
@@ -2966,7 +2960,7 @@ function DesktopBody({
   // gutter and padding. Mockup v1's 420px clipped every line, and **a clipped diff
   // is not evidence**. Below `lg` the two stack (evidence under the list).
   /*
-   * The right column is no longer 「증거」 but **the detail of what is selected**,
+   * The right column is no longer "evidence" but **the detail of what is selected**,
    * so its existence condition changed too: it used to be "is there a diff or
    * history to show", and now the change list lives in this column as well, so the
    * column has to exist **whenever there is something to commit**.
@@ -3016,7 +3010,7 @@ function DesktopBody({
         <div className="flex min-w-0 flex-col xl:min-h-0 xl:border-r xl:border-[color:var(--color-divider)]">
           {remotePanel ? <div className="flex-none px-4 pt-3">{remotePanel}</div> : null}
           {/* List head — the mockup's `lhead`. With nothing to commit it does not
-              repeat what the dock says (「모두 커밋했어요」) but states **what the
+              repeat what the dock says ("all committed") but states **what the
               current state actually is**. */}
           {!hasChanges ? (
             <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">
@@ -3052,7 +3046,7 @@ function DesktopBody({
              * the column's height in half regardless of content. Measured at
              * 1512×806: 208px of list content in a 180px window meant **52px was
              * silently clipped**, and what got clipped happened to be the `domain`
-             * group's only row and the 「그 밖의 파일 N개」 toggle — the screen said
+             * group's only row and the "other files N items" toggle — the screen said
              * "domain 1" and did not show that 1, and the only door to non-concept
              * files ceased to exist.
              *

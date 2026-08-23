@@ -59,7 +59,7 @@ done
 [ "$have_push" = "1" ] || exit 0
 
 if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
-  echo "[pre-push] $BASE_REF 를 못 찾아 범위를 못 정했다 — 검사를 건너뛴다."
+  echo "[pre-push] Could not resolve $BASE_REF; skipping because the diff scope is unknown."
   exit 0
 fi
 
@@ -96,7 +96,7 @@ lane() {
   eval "pid_$name=$!"
 }
 
-echo "[pre-push] 이 브랜치가 바꾼 $n_changed 개 파일로 레인을 고른다 (병렬)"
+echo "[pre-push] Selecting parallel lanes from $n_changed files changed on this branch."
 
 TS='\.tsx?$|\.mjs$|tsconfig.*\.json$|next\.config\.ts$'
 APP='^src/|^app/'
@@ -120,11 +120,12 @@ touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
 
 # Repo-wide scanners: these read the whole tree, so almost any edit can move them.
 # Cheap enough (~1 min) that filtering would buy noise, not time.
+lane source_language 'pnpm source:language'
 lane contract 'pnpm exec vitest run tests/contract/'
 lane comment_refs 'node scripts/check-comment-refs.mjs'
 lane decisions 'pnpm decisions:check'
 
-echo "[pre-push] 레인 $lane_count 개: $lane_names"
+echo "[pre-push] Running $lane_count lanes:$lane_names"
 wait
 
 failed=""
@@ -145,10 +146,10 @@ if [ -n "$failed" ]; then
     tail -40 "$TMP/$name.log"
   done
   echo ""
-  echo "[pre-push] CI 가 볼 것을 여기서 먼저 봤고, 빨갛다:$failed"
-  echo "[pre-push] 고치고 다시 푸시해라 — CI 를 8분 태우는 것보다 싸다."
+  echo "[pre-push] Local CI mirrors failed:$failed"
+  echo "[pre-push] Fix them and push again; this is cheaper than spending eight CI minutes."
   echo ""
   exit 1
 fi
 
-echo "[pre-push] 전부 통과. e2e 는 CI 가 본다 (병렬 3갈래)."
+echo "[pre-push] All local lanes passed. CI owns the three parallel e2e shards."

@@ -1,53 +1,53 @@
-//! 연동 점검 — **왜 안 되는지를 화면이 스스로 알아내고, 고칠 수 있으면 고친다.**
+//! Integration check — **The screen discovers why it fails on its own, and fixes it if possible.**
 //!
-//! ## 왜 있나 (2026-08-20 소유자 지시)
+//! ## Why this exists (2026-08-20 owner directive)
 //!
-//! *"연동이 안 되면 사실상 못 쓰는 거잖아."* 맞다. 이 제품에서 에이전트 연결은
-//! 곁가지가 아니라 본체이고, 그런데 지금까지 연결이 깨졌을 때 화면이 할 수 있는
-//! 일은 **한 가지 증상에 한 문장씩** 답하는 것뿐이었다. 사용자는 어느 단계가
-//! 무너졌는지 모른 채 그 문장을 믿고 터미널을 열어야 했다.
+//! *"If integration doesn't work, it's practically unusable."* True. In this product, agent connectivity is
+//! not a side feature but the core, yet until now when connections broke, the screen could only
+//! respond with **one sentence per symptom**. Users had to open the terminal trusting that sentence,
+//! unaware of which step had failed.
 //!
-//! 그 방식의 대가를 오늘 실측으로 치렀다. 로그인 안내가 실은 **덫**이었는데
-//! (`claude-login-repair.ts`), 증상 하나만 보고 있었기 때문에 3일 동안 아무도
-//! 그것이 원인인 줄 몰랐다. 단계별로 재 봤으면 「자격증명 링크는 걸려 있는데
-//! 로그인은 안 됨」이라는 모순이 첫 화면에 보였을 것이다.
+//! We paid the price of that approach today through real measurement. The login guidance was actually a **trap**
+//! (`claude-login-repair.ts`), and because we were only looking at one symptom, no one
+//! realized it was the cause for 3 days. If we had retried step by step, the contradiction "credential link is active but
+//! login fails" would have appeared on the first screen.
 //!
-//! ## 설계 규율 셋
+//! ## Three design disciplines
 //!
-//! 1. **여기서는 문장을 만들지 않는다.** 돌려주는 것은 검사 id 와 기계가 잰
-//!    사실(경로 · 이름 · 사유)뿐이고, 사람이 읽는 문장은 화면이 i18n 으로 만든다.
-//!    Rust 에 한국어 문장을 박으면 영어 화면이 거짓말을 하게 된다.
-//! 2. **모르는 것은 「문제 없음」이 아니다.** 확인할 방법이 없으면 `unknown` 이다.
-//!    이 저장소가 실행기 상태에서 이미 정한 규율과 같다 — 안 해 본 것을 해 본
-//!    것처럼 말하지 않는다.
-//! 3. **고칠 수 있다고 말하려면 실제로 고치는 코드가 있어야 한다.** `fixable` 이
-//!    참인 검사는 `repair()` 가 그 id 를 반드시 처리한다. 계약 테스트가 그 둘을
-//!    묶는다.
+//! 1. **Do not construct sentences here.** What we return is only the check id and machine-measured
+//!    facts (path · name · reason); the screen constructs human-readable sentences via i18n.
+//!    Embedding Korean sentences in Rust forces English screens to lie.
+//! 2. **"Unknown" is not "no problem."** If there is no way to verify, it is `unknown`.
+//!    This aligns with the discipline already set by this repository in executor mode — do not speak as if
+//!    you have done something you haven't.
+//! 3. **To claim something is fixable, there must be actual fixing code.** For checks where `fixable` is
+//!    true, `repair()` must handle that id. Contract tests bind these two together.
 
 use std::path::{Path, PathBuf};
 
 use crate::acp;
 
-/// 검사 한 줄. **문장이 아니라 사실이다.**
+/// One line of check. **It is a fact, not a sentence.**
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AcpCheck {
-    /// 화면이 문구를 고르는 열쇠. i18n 키와 1:1.
+    /// The key the screen uses to choose text. 1:1 with i18n keys.
     pub id: &'static str,
     /// `ok` · `problem` · `unknown`
     pub state: &'static str,
-    /// 앱이 이 문제를 스스로 고칠 수 있나. `problem` 일 때만 뜻이 있다.
+    /// Can the app fix this problem itself? Meaningful only when `problem` is true.
     pub fixable: bool,
-    /// **앞 단계가 막혀서 이 단계는 손대도 소용없다.**
+    /// **This step is futile because the preceding step failed.**
     ///
-    /// 2026-08-20 워크스루에서 잡혔다: 도구가 아예 없는 사람에게 화면이
-    /// 「앱 몫 설정이 준비됐나 — 고치기」를 권하고 있었다. 눌러도 아무 소용이
-    /// 없다 — 띄울 도구 자체가 없으니까. 검사 순서가 의존 순서라고 이 파일이
-    /// 적어 두고서 화면은 그것을 안 쓰고 있었다.
+    /// Caught in the 2026-08-20 walkthrough: The tool was recommending
+    /// 「App quota settings ready — fix」 to users who had no tools at all.
+    /// Pressing it does nothing — there is no tool to launch. This file
+    /// states that inspection order follows dependency order, yet the UI
+    /// ignored it.
     ///
-    /// 패턴 이름: **무너진 앞단 위에 세운 고치기 버튼.**
+    /// Pattern name: **Fix button built on a collapsed prerequisite.**
     pub blocked: bool,
-    /// 기계가 잰 사실 한 조각(경로 · 사유). 없으면 `None` — 지어내지 않는다.
+    /// One fact measured by the machine (path · reason). `None` if absent — never fabricate.
     pub detail: Option<String>,
 }
 
@@ -102,17 +102,17 @@ pub(crate) struct DoctorContext<'a> {
     pub app_data_dir: &'a Path,
     /// 그 실행기의 진짜 CLI 절대 경로 (찾았을 때만).
     pub cli: Option<&'a Path>,
-    /// 어댑터를 띄우는 프로그램 절대 경로 (찾았을 때만).
+    /// Absolute path of the program launching the adapter (only when found).
     pub launcher: Option<&'a Path>,
     /// 자식에게 줄 PATH.
     pub path_env: &'a str,
-    /// 앱 몫 설정 폴더가 로그아웃 상태인가. `None` 이면 물어보지 못했다.
+    /// Is the app quota settings folder in a logged-out state. `None` if it could not be queried.
     pub isolated_logged_out: Option<bool>,
-    /// 그 폴더 앞으로 난 키체인 항목이 있나. `None` 이면 확인할 수 없는 OS.
+    /// Is there a keychain item leading to that folder? `None` if the OS is unverifiable.
     pub shadow_present: Option<bool>,
 }
 
-/// 지금 상태를 검사 목록으로 만든다. **아무것도 고치지 않는다.**
+/// Converts the current state into an inspection list. **Does not fix anything.**
 pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     let mut out = Vec::new();
 
@@ -256,7 +256,7 @@ fn npx_entry_path(ctx: &DoctorContext<'_>) -> Option<PathBuf> {
     Some(acp::npx_cache_entry_dir(&root, &package))
 }
 
-/// `fixable` 이 참이라고 말한 것만 여기 온다. **말한 것을 실제로 한다.**
+/// Only items where `fixable` returned true arrive here. **Actually performs what was promised.**
 pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), String> {
     if !REPAIRABLE_IDS.contains(&check_id) {
         return Err(format!("not-repairable:{check_id}"));
@@ -302,14 +302,14 @@ pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), Stri
 /// 시작 실패로 죽는데, 사용자는 「다시 맺기」를 눌렀을 뿐이다.
 pub(crate) fn reset_connection(ctx: &DoctorContext<'_>) -> Result<(), String> {
     let Some(dir) = isolated_dir(ctx) else {
-        // 격리를 안 쓰는 실행기는 앱이 만든 것이 없다. 지울 것이 없으니 성공이다
-        // — 「할 수 없다」고 말하면 사용자는 뭔가 잘못된 줄 안다.
+        // Executors that do not use isolation have no app-created artifacts. No need to delete, so success
+// — saying "cannot do it" makes users think something is wrong.
         return Ok(());
     };
 
-    // 키체인 항목을 **먼저** 걷는다. 폴더를 먼저 지우면 그 항목의 이름을 만드는
-    // 근거(폴더 경로)는 남지만, 순서를 뒤집을 이유가 없고 실패 시 반쯤 지워진
-    // 상태가 덜 남는 쪽이 낫다.
+    // Remove the keychain item **first**. Deleting the folder first leaves the basis (folder path) for
+// naming that item, but there is no reason to reverse the order, and leaving a half-deleted
+// state on failure is worse.
     acp::remove_shadow_credentials(&dir);
 
     match std::fs::remove_dir_all(&dir) {

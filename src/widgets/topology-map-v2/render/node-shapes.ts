@@ -123,11 +123,11 @@ export interface NodeShapeDrawState {
   countLabel: string | null;
   /**
    * The currently-hovered node (no focus active — hover is suppressed under
-   * focus, `topology-frame-draw.ts` nulls `hoveredNodeId` there). Draws a
-   * static 1px indigo hairline preview ring — the "잡을 수 있다" (can grab this)
-   * affordance of the canvas-emphasis slice §C — never for the already-`"center"` node, which
-   * has its own stronger selection ring below.
-   */
+     * focus, `topology-frame-draw.ts` nulls `hoveredNodeId` there). Draws a
+     * static 1px indigo hairline preview ring — the "Can grab this"
+     * affordance of the canvas-emphasis slice §C — never for the already-`"center"` node, which
+     * has its own stronger selection ring below.
+     */
   isHovered: boolean;
   /**
    * rank5 — the hovered node's own hover-ripple emphasis (0..1, the SAME
@@ -150,27 +150,26 @@ export interface NodeShapeDrawState {
   selectionPulse: { scaleFactor: number; alpha: number } | null;
   /**
    * W6 agent visibility — true for the single node matching the current
-   * agent heartbeat's `focus.ontologySlug` (resolved upstream by
-   * `views/home/lib/resolve-agent-focus-node.ts`), only while that
-   * heartbeat is fresh (`hasFreshHeartbeat`, `topology-frame-draw.ts`'s
-   * caller nulls the id otherwise). Draws a static amber hairline ring — the
-   * SAME `amberHub` signal tone as the hub ring / project hexagon, never a
-   * glow (design.md 「발광 대신 재질」 — material, not emission). Real heartbeat
-   * data only; `false`
-   * whenever there's no fresh focus (fabrication 0).
-   */
+     * agent heartbeat's `focus.ontologySlug` (resolved upstream by
+     * `views/home/lib/resolve-agent-focus-node.ts`), only while that
+     * heartbeat is fresh (`hasFreshHeartbeat`, `topology-frame-draw.ts`'s
+     * caller nulls the id otherwise). Draws a static amber hairline ring — the
+     * SAME `amberHub` signal tone as the hub ring / project hexagon, never a
+     * glow (design.md "Material instead of emission" — material, not emission). Real heartbeat
+     * data only; `false`
+     * whenever there's no fresh focus (fabrication 0).
+     */
   agentFocus: boolean;
   /**
-   * Spotlight ring for changed nodes. Owner, 2026-07-23: "변경된 것만 테두리가
-   * 돌아가게" (only the changed ones should have a rotating border). While the
-   * lens is on, nodes inside the mtime window get an amberHub **rotating dashed**
-   * kind-outline — the fix for a report that changed nodes were unreadable in
-   * the element view when settling contrast was the only cue. Zero glow/blur
-   * (material, not emission); amberHub follows the agent-focus ring's precedent
-   * as a signal tone. `alpha` is the lens fade in/out, `dashOffset` the rotation
-   * phase in px (the caller pins it to 0 under reduced-motion, giving a static
-   * dash). null hides it.
-   */
+   * Spotlight ring for changed nodes. Owner, 2026-07-23: "Only the changed ones should have a rotating border." While the
+     * lens is on, nodes inside the mtime window get an amberHub **rotating dashed**
+     * kind-outline — the fix for a report that changed nodes were unreadable in
+     * the element view when settling contrast was the only cue. Zero glow/blur
+     * (material, not emission); amberHub follows the agent-focus ring's precedent
+     * as a signal tone. `alpha` is the lens fade in/out, `dashOffset` the rotation
+     * phase in px (the caller pins it to 0 under reduced-motion, giving a static
+     * dash). null hides it.
+     */
   spotlightRing: { alpha: number; dashOffset: number } | null;
   /**
    * Time source for the hover circuit-trace shimmer: the frame's
@@ -243,13 +242,12 @@ export interface NodeShapeTokens {
   numeralFace: string;
   holeFill: string;
   /**
-   * Canvas-emphasis slice — Layer-0 container identity (design.md: 「Hub 노드와
-   * Layer 0 컨테이너에만 보조 톤(앰버) 허용」 — amber is allowed on hub nodes and
-   * Layer-0 containers only). Inner offset hairline for the
-   * project hexagon's double-hairline "machined bezel" (spec §A1's second
-   * stroke — the outer stroke itself is `amberHub`, applied to the BODY
-   * stroke by `topology-frame-draw.ts#resolveNodeVisual`, not here).
-   */
+   * Canvas-emphasis slice — Layer-0 container identity (design.md: "Amber allowed on hub nodes and Layer 0 containers only" — amber is allowed on hub nodes and
+     * Layer-0 containers only). Inner offset hairline for the
+     * project hexagon's double-hairline "machined bezel" (spec §A1's second
+     * stroke — the outer stroke itself is `amberHub`, applied to the BODY
+     * stroke by `topology-frame-draw.ts#resolveNodeVisual`, not here).
+     */
   projectHairlineInner: string;
   /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
   projectPinTick: string;
@@ -308,13 +306,13 @@ const PROJECT_DECOR_MIN_RADIUS = 8;
 const PROJECT_DECOR_MAX_FAR_T = 0.9;
 /** Inner hairline sits inset at this fraction of the outer body radius (ported ratio from the flagship prototype's double-hex, `docs/prototypes/first-run-v3-flagship.html` — outer circumradius 41, inner 31 ≈ 0.756). */
 const PROJECT_HAIRLINE_INNER_RATIO = 0.75;
-/** Selection ring offsets — the inner ring sits exactly on the body outline (spec §B1's 「노드 외곽」, the node's outer edge), the outer hairline 6px beyond it. */
+/** Selection ring offsets — the inner ring sits exactly on the body outline (spec §B1's "Node outer edge", the node's outer edge), the outer hairline 6px beyond it. */
 const SELECTION_RING_OUTER_OFFSET = 6;
 /** The one-shot commit-pulse ring sits between the two static rings so its brief expansion reads as coming FROM the node, not replacing either static ring. */
 const SELECTION_PULSE_RING_OFFSET = 3;
 /** Hover preview ring sits just outside the body, inside the (mutually-exclusive, hover never fires under focus) selection ring's radius. */
 const HOVER_RING_OFFSET = 3;
-/** W6 agent visibility — agent-focus ring offset (owner spec: "정적 1px, r+8"), deliberately wider than the hub ring's r+4 so the two never visually merge on a hub node the agent is also focused on. */
+/** W6 agent visibility — agent-focus ring offset (owner spec: "Static 1px, r+8"), deliberately wider than the hub ring's r+4 so the two never visually merge on a hub node the agent is also focused on. */
 const AGENT_FOCUS_RING_OFFSET = 8;
 
 export interface PinTick {
@@ -340,14 +338,13 @@ export function domainPinTicks(cx: number, cy: number, s: number): PinTick[] {
   return ticks;
 }
 
-/** Fixed 6px leg length for the project hexagon's 4-direction pin ticks (owner spec, canvas-emphasis slice — 「핀 틱 4방향(상하좌우 6px 선)」: four ticks, up/down/left/right, 6px each), unlike domain's radius-proportional ticks. */
+/** Fixed 6px leg length for the project hexagon's 4-direction pin ticks (owner spec, canvas-emphasis slice — "Pin ticks in 4 directions (up/down/left/right 6px line)": four ticks, up/down/left/right, 6px each), unlike domain's radius-proportional ticks. */
 const PROJECT_PIN_TICK_LENGTH = 6;
 
 /**
  * The four "chassis leg" pin ticks on the project hexagon — one per cardinal
  * direction (up/down/left/right), each a fixed 6px line starting at the
- * node's own edge (`r`) and pointing outward. "가공 부품 문법" (machined-part
- * vocabulary) — reinforces the project node's Layer-0-container identity
+ * node's own edge (`r`) and pointing outward. "Machined-part vocabulary" — reinforces the project node's Layer-0-container identity
  * without any glow, mirroring `domainPinTicks`' geometry-as-decoration
  * approach but with fixed (not radius-proportional) leg length per spec.
  */
@@ -515,7 +512,7 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
  * Strokes ONE ring at `radius`, following the node's own kind-shape (hex/
  * square/rounded-square, converging to a circle past `FULL_CIRCLE_FAR_T` —
  * same convergence rule as the body itself) — a "material ring" overlay
- * (`.claude/rules/design.md` 「발광 대신 재질」 — material, not emission), never a
+ * (`.claude/rules/design.md` "Material, not emission" — material, not emission), never a
  * glow/shadow. Shared by
  * the hub ring, the project double-hairline, the selection double-ring, its
  * one-shot commit pulse, and the hover preview ring — all five are the same
@@ -769,7 +766,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   }
 
   // W6 agent visibility — the fresh heartbeat's current target gets a static amber
-  // hairline ring (owner spec: "정적 1px, r+8", same signal tone as the hub
+  // hairline ring (owner spec: "Static 1px, r+8", same signal tone as the hub
   // ring/project hexagon amber — never a new color system). Independent of
   // `hub`/`egoState === "center"` — an agent-focused node can simultaneously
   // be a hub or the user's own selection; the rings stack at their own
@@ -793,7 +790,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   }
 
   // Canvas-emphasis slice §A — project hexagon's own decorative identity
-  // (design.md: 「Hub 노드와 Layer 0 컨테이너에만 보조 톤(앰버) 허용」 — amber on
+  // (design.md: "Amber allowed on hub nodes and Layer 0 containers only" — amber on
   // hub nodes and Layer-0 containers only). The
   // OUTER amber stroke is the body's own `stroke` (set by
   // `topology-frame-draw.ts#resolveNodeVisual` for kind==="project", not
@@ -817,7 +814,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   }
 
   // Canvas-emphasis slice §C — hover preview: a static 1px indigo hairline
-  // ring, "잡을 수 있다" (can grab this) affordance. `isHovered` is only ever
+  // ring, "Can grab this" affordance. `isHovered` is only ever
   // true while no focus is active (`topology-frame-draw.ts` nulls
   // `hoveredNodeId` under focus), so this never collides with the selection
   // ring below — but the `egoState` guards stay as defense in depth.

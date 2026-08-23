@@ -10,9 +10,9 @@
  *
  * R+ unified count semantics: groups used to split by relation TYPE (containment
  * vs depends) while the metric line above counted by DIRECTION (incoming vs
- * outgoing) — the same words (「포함」/「의존」 next to 「쓰는 곳」/「기대는 곳」), two
+ * outgoing) — the same words ("Contains"/"Depends" next to "Uses"/"Is Used By"), two
  * different axes, so the numbers never reconciled (persona finding: header
- * "used by 10 · depends on 73" vs groups 「포함 71 / 의존 12」). Groups are now
+ * "used by 10 · depends on 73" vs groups "Contains 71 / Depends 12"). Groups are now
  * DIRECTION-based too, computed from the exact same connection set the metric
  * line counts — the header count and the group total are the SAME number by
  * construction, not just by convention. Relation TYPE (containment vs depends)
@@ -22,7 +22,7 @@
  * R+ full-detail A1: the base connection derivation (`buildConnections`/
  * `groupConnectionsByDirection` + structural types) moved to
  * `shared/lib/ontology-tree/connections.ts` so the NEW `full-detail-a1` widget
- * (topology 「전체 상세」 (full detail) / `/ontology` full-detail surface) can reuse
+ * (topology "Full Detail" / `/ontology` full-detail surface) can reuse
  * FSD forbids widget→widget imports, so shared derivation lives one layer
  * down. Re-exported here under the SAME `V2`-prefixed names so this file's
  * existing consumers (`HomePage.tsx`, `TopologyV2DetailPanel`, this module's
@@ -37,12 +37,12 @@ import { groupConnectionsByRole } from "@/shared/lib/ontology-tree/connections";
 import type { DatasheetConnection as V2DatasheetConnection } from "@/shared/lib/ontology-tree/connections";
 
 /**
- * S2 part 3 — when the 「담는 것」 (what this contains) list is long (>15), show an
+ * S2 part 3 — when the "Contains" (what this contains) list is long (>15), show an
  * aggregate summary by kind and path prefix instead of individual rows (e.g.
- * "cli/src/commands 48 · .claude/skills 6 · 기타 12"). Pure and deterministic:
+ * "cli/src/commands 48 · .claude/skills 6 · Other 12"). Pure and deterministic:
  * count per prefix → descending count, ties by key alphabetically → only the top
  * `maxGroups` are named, and the rest plus prefix-less rows become `otherCount`
- * (「기타」, other).
+ * ("Other", other).
  */
 export interface V2ContainsGroupSummary {
   groups: { key: string; count: number }[];
@@ -50,14 +50,14 @@ export interface V2ContainsGroupSummary {
   total: number;
   /**
    * B4 (the H1 non-developer language layer) — does the summary actually carry
-   * information? `false` means it collapsed into a single 「기타」 (other) lump and
+   * information? `false` means it collapsed into a single "Other" lump and
    * carries nothing, so the panel renders the individual list instead. `true` as
    * soon as one named group exists.
    */
   usable: boolean;
 }
 
-/** The threshold that turns the 「담는 것」 group summary on — a total **above** this shows the summary. */
+/** The threshold that turns the "Contains" group summary on — a total **above** this shows the summary. */
 export const V2_CONTAINS_SUMMARY_THRESHOLD = 15;
 
 /** Take only the slug part of a node id (`kind:slug`), dropping the `kind:` prefix. */
@@ -66,7 +66,7 @@ function idToSlug(id: string): string {
   return colon === -1 ? id : id.slice(colon + 1);
 }
 
-/** The directory prefix up to the last slash — null with no slash (folds into 「기타」).
+/** The directory prefix up to the last slash — null with no slash (folds into "Other").
  * e.g. `cli/src/commands/add` → `cli/src/commands`. */
 function deepPrefixKey(id: string): string | null {
   const slug = idToSlug(id);
@@ -77,7 +77,7 @@ function deepPrefixKey(id: string): string | null {
 
 /** The first path segment (one level) — null with no slash. e.g.
  * `cli/src/commands/add` → `cli`, `.claude/skills/x` → `.claude`. Used to re-split
- * more coarsely when deep prefixes all scatter to count 1 and collapse into 「기타」. */
+ * more coarsely when deep prefixes all scatter to count 1 and collapse into "Other". */
 function coarsePrefixKey(id: string): string | null {
   const slug = idToSlug(id);
   const slash = slug.indexOf("/");
@@ -112,11 +112,11 @@ function bucketByKey(
 }
 
 /**
- * Aggregate 「담는 것」 rows by path prefix. Deterministic: descending count, ties by
+ * Aggregate "Contains" rows by path prefix. Deterministic: descending count, ties by
  * key alphabetically. Only the top `maxGroups` are named; the remaining prefixes plus
  * prefix-less rows fold into `otherCount`.
  *
- * B4 (H1) — when the deep prefixes all scatter and 「기타」 takes the majority (zero
+ * B4 (H1) — when the deep prefixes all scatter and "Other" takes the majority (zero
  * information), re-split more coarsely on the first path segment and take whichever
  * actually divides. If still no group is named (no row has a slash), mark
  * `usable: false` so the panel renders the individual list instead.
@@ -129,7 +129,7 @@ export function summarizeContainsByPathPrefix(
   const cap = Math.max(0, maxGroups);
   const deep = bucketByKey(rows, deepPrefixKey, cap);
 
-  // If 「기타」 takes the majority or no group is named, retry with the coarser one-level prefix.
+  // If "Other" takes the majority or no group is named, retry with the coarser one-level prefix.
   let chosen = deep;
   if (deep.groups.length === 0 || deep.otherCount * 2 > total) {
     const coarse = bucketByKey(rows, coarsePrefixKey, cap);
@@ -149,38 +149,38 @@ export function summarizeContainsByPathPrefix(
 }
 
 /** One relation-role group as the panel renders it: a capped preview of rows +
- * the group's TRUE total (so the header can say "쓰는 곳 23" while showing 6). */
+ * the group's TRUE total (so the header can say "Uses 23" while showing 6). */
 export interface V2ConnectionGroupView {
   rows: V2DatasheetConnection[];
   total: number;
   /**
-   * The uncapped full rows — the material that makes 「+N」 a door you open in place
+   * The uncapped full rows — the material that makes "+N" a door you open in place
    * rather than a dead number (2026-08-13, the same lineage as rejecting the project
-   * detail's 「역량 N개 더」). It references the pre-cap array directly, so the extra
+   * detail's "N more capabilities"). It references the pre-cap array directly, so the extra
    * cost is one reference.
    */
   allRows?: V2DatasheetConnection[];
   /**
-   * S2 part 3 — the path-prefix aggregate, filled only for the 「담는 것」 group (shown
+   * S2 part 3 — the path-prefix aggregate, filled only for the "Contains" group (shown
    * instead of the individual list once the total exceeds the threshold). Computed
    * over all rows, before the cap.
    */
   summary?: V2ContainsGroupSummary;
 }
 export interface V2ConnectionGroupsView {
-  /** Outgoing containment — plain "담는 것" (what this node contains). */
+  /** Outgoing containment — plain "Contains" (what this node contains). */
   contains: V2ConnectionGroupView;
-  /** Incoming non-containment — plain "쓰는 곳" (places that use this). */
+  /** Incoming non-containment — plain "Uses" (places that use this). */
   usedBy: V2ConnectionGroupView;
-  /** Outgoing non-containment — plain "기대는 곳" (places this leans on). */
+  /** Outgoing non-containment — plain "Is Used By" (places this leans on). */
   dependsOn: V2ConnectionGroupView;
   /**
-   * Incoming containment — plain "속한 곳" (the parent(s) this node belongs to).
+   * Incoming containment — plain "Belongs To" (the parent(s) this node belongs to).
    *
    * Scope correction (2026-07-26): for a while this bucket was neither rendered in the
-   * compact popover nor counted in the 「이어진 곳」 (connections) total. So the popover
+   * compact popover nor counted in the "Connected" (connections) total. So the popover
    * for **a node with only a parent** (221 of the dogfood's 294 = 75%) said
-   * 「이어진 곳 0」 — while showing a clickable domain chip directly above it. That is a
+   * "Connected 0" — while showing a clickable domain chip directly above it. That is a
    * checkable falsehood, so the popover now draws this group and counts it (the same
    * four buckets and the same words as the full detail).
    */
@@ -195,7 +195,7 @@ export const V2_CONNECTION_ROW_CAP = 6;
  * dependsOn / belongsTo) and cap each group to `perGroupCap` rows, keeping the
  * true total. M-2: containment is pulled into its OWN `contains`/`belongsTo`
  * groups instead of folding into usedBy/dependsOn by raw direction — so a
- * domain's 18 `contains` children read as "담는 것 18", not "기대는 곳". This
+ * domain's 18 `contains` children read as "Contains 18", not "Is Used By". This
  * is the SAME split `buildFullDetailGroups` uses (both delegate to
  * `groupConnectionsByRole`), so the popover and full-detail can never disagree.
  * Callers source `metric.contains`/`usedBy`/`dependsOn` from these `.total`s so
@@ -223,21 +223,21 @@ export function buildV2ConnectionGroups(
 }
 
 export interface V2MetricValues {
-  /** Outgoing containment — plain "담는 것" (what this node contains). Only
+  /** Outgoing containment — plain "Contains" (what this node contains). Only
    *  rendered when > 0 (leaf nodes contain nothing, so the segment is hidden
-   *  for them rather than showing a noisy "담는 것 0"). */
+   *  for them rather than showing a noisy "Contains 0"). */
   contains: number;
-  /** Direct incoming non-containment — plain "쓰는 곳" (places that use this). */
+  /** Direct incoming non-containment — plain "Uses" (places that use this). */
   usedBy: number;
-  /** Direct outgoing non-containment — plain "기대는 곳" (places this leans on). */
+  /** Direct outgoing non-containment — plain "Is Used By" (places this leans on). */
   dependsOn: number;
   /**
-   * Direct incoming containment — plain "속한 곳" (the parent(s) this node sits
+   * Direct incoming containment — plain "Belongs To" (the parent(s) this node sits
    * inside). Most nodes have nothing but a parent, so leaving this out zeroes the
    * total (see the `V2ConnectionGroupsView.belongsTo` comment).
    */
   belongsTo: number;
-  /** Node-level evidence references — plain "근거". */
+  /** Node-level evidence references — plain "Evidence". */
   evidence: number;
 }
 
@@ -259,12 +259,12 @@ export interface V2MetricSegment {
 }
 
 /**
- * The ONE engraved metric line's segments — "담는 것 18 · 쓰는 곳 4 · 기대는
- * 곳 2 · 근거 1". Replaces the old subtitle + count boxes (the owner's
- * *"정보가 세 번 나온다"* — the same information appears three times); every fact
- * appears exactly once. M-2: the leading "담는 것" segment appears ONLY for
- * container nodes (`contains > 0`) — a leaf's line stays "쓰는 곳 · 기대는 곳 ·
- * 근거", so the typed split adds signal for domains without adding a "담는 것 0"
+ * The ONE engraved metric line's segments — "Contains 18 · Uses 4 · Is Used By
+ * 2 · Evidence 1". Replaces the old subtitle + count boxes (the owner's
+ * *"Information appears three times"* — the same information appears three times); every fact
+ * appears exactly once. M-2: the leading "Contains" segment appears ONLY for
+ * container nodes (`contains > 0`) — a leaf's line stays "Uses · Is Used By ·
+ * Evidence", so the typed split adds signal for domains without adding a "Contains 0"
  * to every element.
  *
  * Datasheet internal refinement (2026-07-23) — segments are exposed structured (not
@@ -283,8 +283,8 @@ export function buildV2MetricSegments(
     segments.push({ key: "contains", label: labels.contains, value: values.contains });
   segments.push({ key: "usedBy", label: labels.usedBy, value: values.usedBy });
   segments.push({ key: "dependsOn", label: labels.dependsOn, value: values.dependsOn });
-  // 「속한 곳」 follows the same rule as 「담는 것」 — hidden only at 0, so a root or
-  // orphan node never carries 「속한 곳 0」. Hiding it when it exists is the defect above.
+  // "Belongs To" follows the same rule as "Contains" — hidden only at 0, so a root or
+  // orphan node never carries "Belongs To 0". Hiding it when it exists is the defect above.
   if (values.belongsTo > 0)
     segments.push({ key: "belongsTo", label: labels.belongsTo, value: values.belongsTo });
   segments.push({ key: "evidence", label: labels.evidence, value: values.evidence });
@@ -302,8 +302,8 @@ export function formatV2MetricLine(
     .join(" · ");
 }
 
-/** One row in the promoted 근거 (evidence) group — RATIO-SYSTEM §4 scale-up (owner:
- * *"정보는 좋은데 너무 작고 그래"* — the information is good but far too small).
+/** One row in the promoted evidence group — RATIO-SYSTEM §4 scale-up (owner:
+ * *"The information is good but far too small."* — the information is good but far too small).
  * Built from `KnowledgeGraphNode.evidenceIds` (a vault slug like
  * "capabilities/product-owner-operating-system" — the node's own backing `.md`, see
  * `derivationToInsight`'s doc comment), split into a readable `title` (the last path
@@ -349,7 +349,7 @@ export function buildV2EvidenceRows(
  * `buildV2EvidenceRows`'s title/path split.
  *
  * Only this result is on screen and the full source folds into the native `title=`
- * tooltip — no information is lost, because the 「전체 상세」 (full detail) link already
+ * tooltip — no information is lost, because the 「All Details」 (full detail) link already
  * owns that destination (for the panel-side render see the sticky footer and evidence
  * rows in `TopologyV2DetailPanel.tsx`).
  */
@@ -394,7 +394,7 @@ export interface V2HandoffInput {
 
 /**
  * Agent-ready handoff payload (MCP/CLI-style) for a single node — the
- * 「다음 액션 복사」 (copy the next action) differentiation. Stable English field keys
+ * 「Copy Next Action」 differentiation. Stable English field keys
  * + a suggested MCP call so it pastes cleanly into a coding agent regardless of UI
  * locale; the button label is localized, this payload is intentionally not.
  * Deterministic.

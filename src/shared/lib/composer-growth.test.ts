@@ -88,7 +88,7 @@ describe('composerTopIsHidden', () => {
 
 /**
  * The cap is decided by **the height of the slot it sits in** (2026-08-16, owner:
- * *"어느 정도까지는 길어지면 좋겠는데"* — it should be allowed to grow a fair amount).
+   * "It should be allowed to grow a fair amount" — it should be allowed to grow a fair amount).
  *
  * The default of 6 rows came from a narrow bottom strip and was stingy in a tall
  * conversation column. But hard-coding a larger number instead lets the composer push the

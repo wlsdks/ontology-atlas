@@ -3,8 +3,8 @@ import { useCallback, useSyncExternalStore } from "react";
 /**
  * Global switch for whether guided tours start **on their own**.
  *
- * **Why a separate axis** (owner report, 2026-07-29): *"매번 나오는건 좀
- * 그렇긴한데.. 처음만 나오면 되거든? 아니면 클릭했을때나"* (every time is a bit
+ * **Why a separate axis** (owner report, 2026-07-29): *"Every time is a bit
+ * much — once at the start is enough, or when I click."* (every time is a bit
  * much — once at the start is enough, or when I click). Each tour already shows
  * once per destination (`guided-tour:<destination>:v1`), but there are six of
  * them, so moving between destinations feels like "every time" rather than
@@ -14,8 +14,9 @@ import { useCallback, useSyncExternalStore } from "react";
  * and settings, which is the "or when I click" half of the request.
  *
  * **Default off** (owner, 2026-08-13, overturning the 2026-07-29 default of on):
- * *"이런거 이제 안나오게 안되나? 맨날 나와서 불편한데.. 가이드는 기본적으로
- * 설정에서 off해놓는건 어떤지? 필요한 사람만 키도록.."* (can these stop
+ * *"Can these stop
+ * appearing? Default the guides to off in settings, and let whoever wants them
+ * turn them on."* (can these stop
  * appearing? default the guides to off in settings, and let whoever wants them
  * turn them on). The report came back even after the global switch existed. A
  * stored explicit "1" is still honoured.

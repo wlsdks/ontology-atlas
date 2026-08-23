@@ -141,8 +141,7 @@ const BASELINE_HARD_CUTS = 0;
  * recorded.
  *
  * 22 → 20 (evening of 2026-08-04, grammar correction for those same two branches).
- * The owner caught it in the installed app — *"버벅이면서 이상하게 열리는데?"* (it
- * opens strangely and stutters). Both are **in-flow collapses** wearing a floating
+ * The owner caught it in the installed app — *"it opens strangely and stutters?"*. Both are **in-flow collapses** wearing a floating
  * surface's grammar (`Surface` chrome: scale + fade, occupying layout during the exit
  * window). Frame measurement: on the 1→3 step transition the sibling below jumped
  * +254px in one frame, then −352px in one frame 140ms later (zero transition frames).

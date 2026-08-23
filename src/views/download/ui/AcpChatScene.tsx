@@ -12,34 +12,19 @@ import { HeroTypewriter } from './HeroTypewriter';
  * ## What this section was selling was wrong (owner, 2026-08-18)
  *
  * The previous version was an `mcp-verify` terminal — a developer verifying configuration. Owner:
- * *"이건 뭔말인지를 모르겠어.. 내가 강조하고싶은건 서비스 안에 acp가 들어갔거든? 에이전트가
- * 연동되어서 채팅만으로 온톨로지 분석이 가능하다는걸 강조하고싶은데"* (I have no idea what this
- * means; what I want to emphasize is that ACP is inside the service — that an agent is connected
- * and ontology analysis is possible through chat alone). The scene that sells is not verification
- * but **conversation inside the app**: a person explains in their own language, the agent calls
- * vault tools, and the result remains as one line of markdown.
+ *[I have no idea what this means; what I want to emphasize is that ACP is inside the service — that an agent is connected and ontology analysis is possible through chat alone]*. The scene that sells is not verification but **conversation inside the app**: a person explains in their own language, the agent calls vault tools, and the result remains as one line of markdown.
  *
  * ## The three re-enacted lines are not invented
  *
- * They are the measured round trip from `docs/DECISIONS.md` 2026-08-16 (7) — the user's sentence
- * and `add_relation`'s `why` payload carried over verbatim (the ledger's discipline: a dated
- * record stays the fact of that day). The tab label prints that date on screen. The tool call text
- * is a program record and is not translated — translating it turns a re-enactment into an adaptation.
+ * They are the measured round trip from `docs/DECISIONS.md` 2026-08-16 (7) — the user's sentence and `add_relation`'s `why` payload carried over verbatim (the ledger's discipline: a dated record stays the fact of that day). The tab label prints that date on screen. The tool call text is a program record and is not translated — translating it turns a re-enactment into an adaptation.
  *
  * ## Brand and terms boundaries (docs/DECISIONS.md 2026-08-16 (5))
  *
- * This section's copy stands only on "connect the agent you already use" — sentences implying we
- * provide Claude access are forbidden, and where our runner list is described the display name is
- * only the registry's permitted name (Claude Agent), the rule
- * `tests/contract/vendor-naming.contract.test.ts` locks.
+ * This section's copy stands only on "connect the agent you already use" — sentences implying we provide Claude access are forbidden, and where our runner list is described the display name is only the registry's permitted name (Claude Agent), the rule `tests/contract/vendor-naming.contract.test.ts` locks.
  *
  * ## Motion
  *
- * When the section enters the viewport, the user bubble → the tool call → the result arrive in
- * causal order (staggering is allowed only when the cause moves first and shows the causality —
- * `.claude/rules/design.md`). Under reduced-motion every line is visible immediately with no
- * timers. Leaving rewinds it and re-entering starts over — one cycle completes the argument (the
- * same playback contract `AgentTerminal` used).
+ * When the section enters the viewport, the user bubble → the tool call → the result arrive in causal order (staggering is allowed only when the cause moves first and shows the causality — `.claude/rules/design.md`). Under reduced-motion every line is visible immediately with no timers. Leaving rewinds it and re-entering starts over — one cycle completes the argument (the same playback contract `AgentTerminal` used).
  */
 
 /**

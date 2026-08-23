@@ -60,14 +60,11 @@ export interface FirstRunStarterModuleProps {
   /**
    * The INDEX body, drawn **exclusively** with the guide card. While the card is
    * expanded, children are not rendered, so the panel always has exactly one
-   * scroller (owner report: "상단 스크롤 따로 하단 스크롤 따로" — separate
-   * scrollbars top and bottom). Once the user chooses, the card collapses and
+   * scroller (owner report: "Separate scrollbars top and bottom). Once the user chooses, the card collapses and
    * the INDEX opens.
    */
   /**
-   * Is the "recent changes" lens on? (2026-08-02, owner report: *"시작 안내
-   * 패널이 열린 상태에서 최근 변경 버튼 누르면 왼쪽 패널이 안바뀌는 오류"* —
-   * pressing the recent-changes button while the starter panel is open leaves
+   * Is the "recent changes" lens on? (2026-08-02, owner report: "Pressing the recent-changes button while the starter panel is open leaves
    * the left panel unchanged.)
    *
    * The card and the INDEX are **two exclusive states**, so while the card is
@@ -83,8 +80,7 @@ export interface FirstRunStarterModuleProps {
   /**
    * Has the user selected any node on the map? If so this card has **done its job**.
    *
-   * Why it collapses (owner, 2026-08-19: *"좌측에 이게 계속 떠있어서 보기
-   * 안좋으니"* — it looks bad with this stuck on the left the whole time): the
+   * Why it collapses (owner, 2026-08-19: "It looks bad with this stuck on the left the whole time): the
    * card says «what to do first», but someone who has selected a node is already
    * using the map. From then on it is not guidance, it is a blind covering a
    * third of the screen. Switching samples and turning on the lens already
@@ -159,7 +155,7 @@ export function FirstRunStarterModule({
     fsaUnsupported,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
-  // 「첫  실행」·「지금은  샘플」·「지도에서  쓰는  말」 rendered with doubled
+  // "First Run" · "Currently Sample" · "Map Terminology" rendered with doubled
   // spaces. The i18n strings had single spaces — what widened was the space
   // glyph under latin-only decoration (mono + uppercase + wide tracking) applied
   // to Korean (measured tracking 1.36–2.09px).
@@ -284,11 +280,11 @@ export function FirstRunStarterModule({
   // card was.
   /*
    * **The status signal lives with the connection state, not with the card**
-   * (PO council verdict ③, 2026-08-03). "지금은 샘플" used to live **inside** the
+   * (PO council verdict ③, 2026-08-03). "Currently Sample" used to live **inside** the
    * card only, so pressing a sample source tab (`setCollapsed(true)`) removed it
    * along with the card. At that moment the screen became **structurally
    * indistinguishable in layout, labels, and counts** from having a real vault
-   * open, and the owner read the "이 앱의 코드" tab as evidence of a connection.
+   * open, and the owner read the "This App's Code" tab as evidence of a connection.
    *
    * This module renders only while `sampleModeSettled`, so putting the signal on
    * this row makes the signal's lifetime **the lifetime of sample mode** — it
@@ -374,8 +370,8 @@ export function FirstRunStarterModule({
       >
         {t("brand")}
       </p>
-      {/* There are two status signals — "첫 실행" (when) and "지금은 샘플"
-          (whose data). The amber dot used to sit beside "첫 실행" on the left,
+      {/* There are two status signals — "First Run" (when) and "Currently Sample"
+          (whose data). The amber dot used to sit beside "First Run" on the left,
           where the colour read as a lone third signal. Moving the dot next to
           its own sentence binds them into **one cluster** — the colour and the
           words point at the same thing. */}
@@ -409,14 +405,14 @@ export function FirstRunStarterModule({
             `block` is there because of a measured defect: left inline, the size
             change happened **mid-sentence**, dropping the lead's last syllable
             onto the next line with the smaller type running straight on after it
-            ("…보는 지도예 / 요. 내 마크다운 폴더를…"). That is a spot where two
+            ("…map you see / o. Open my markdown folder..."). That is a spot where two
             sizes and two line-heights overlap within one line. A size change may
             happen only at a line boundary. */}
         <b className="mb-1.5 block text-body-lg font-[var(--font-weight-strong)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]">
           {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
         </b>
         {t(sampleSource === "storefront" ? "contextStorefrontRest" : "contextRest")}{" "}
-        {/* This card's 33 strings contained 「에이전트」, 「MCP」, and 「AI」 zero
+        {/* This card's 33 strings contained 「Agent」, 「MCP」, and 「AI」 zero
             times, while the rest of the app used them in 179 places — so the
             first point of contact alone had no identity statement, and the bold
             lead did not distinguish this from any other markdown map tool. One
@@ -426,8 +422,8 @@ export function FirstRunStarterModule({
 
       {/* The empathetic sample vault. The dogfood vault (this tool describing
           itself) does not land with a non-developer, so one click switches to an
-          instantly recognizable example business ("온라인 쇼핑몰"). Reuses the
-          same tokens and structure as the existing "전체 | 최근 변경" segment in
+          instantly recognizable example business ("Online Shopping Mall"). Reuses the
+          same tokens and structure as the existing "All | Recently Changed" segment in
           TopologyIndexPanel.
 
           Semantics correction (PO council 2026-08-02): it was `role="tab"`, but
@@ -484,7 +480,7 @@ export function FirstRunStarterModule({
           card**. Instrument treatment belongs to the moment the user's **own**
           vault is open. This card renders only before that, so the strongest ink
           here being someone else's sample size contradicts a screen that says
-          "지금은 샘플" four times. The numbers' source is unchanged — a
+          "Sample Now" four times. The numbers' source is unchanged — a
           `topologyCanonicalCensus` derivation arrives as props, and the ban on
           hardcoded numbers (2026-08-01 ledger) still holds. */}
       <p
@@ -732,13 +728,12 @@ export function FirstRunStarterModule({
           had no pointer to it at all. It is hidden behind a collapsed disclosure
           so it is out of a non-developer's line of sight and only whoever expands
           it sees the command.
-          Copy correction (PO council 2026-08-02): the label said "코드베이스에서
-          자동으로 시작하려면" (= my repo), but the command takes a relative path
+          Copy correction (PO council 2026-08-02): the label said "Start automatically from codebase" (= my repo), but the command takes a relative path
           and therefore scans **the folder it runs in** — inside a source checkout
           it bootstraps atlas itself. The command is the CLI's public contract and
           out of scope here, so the copy is narrowed to what the command actually
           does (consistent with `cliBridgeSourceOnly`'s honest notice). The toggle
-          also moves from addressing a role ("개발자라면") to addressing an action. */}
+          also moves from addressing a role ("If you are a developer") to addressing an action. */}
       <div className="mt-3">
         <button
           type="button"

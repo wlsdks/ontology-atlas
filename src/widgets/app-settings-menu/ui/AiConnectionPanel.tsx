@@ -39,7 +39,7 @@ import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import type { AiConnectionState } from '../model/use-ai-connection';
 
 /**
- * The [AI 연결] subview (#80 S1·S2) — put my API key in this computer's keychain,
+ * The [AI Connection] subview (#80 S1·S2) — put my API key in this computer's keychain,
  * check in one click that the key is alive, and read the calls that went out from
  * a log inside the vault.
  *
@@ -62,8 +62,8 @@ import type { AiConnectionState } from '../model/use-ai-connection';
  * - **Unregistered rows stay collapsed.** Three input fields stacked at once make
  *   the settings sheet read as a form gate. A collapsed row still states its
  *   status (unregistered); only its visual weight drops.
- * - **Expanding is reversible.** Someone who pressed [키 등록] and changed their
- *   mind needs a way back on screen — both a visible [취소] and Esc.
+ * - **Expanding is reversible.** Someone who pressed [Register Key] and changed their
+ *   mind needs a way back on screen — both a visible [Cancel] and Esc.
  *
  * ## This screen's visual hierarchy (2026-07-26 owner report)
  *
@@ -129,11 +129,11 @@ export function AiConnectionPanel({
   const listRef = useRef<HTMLDivElement | null>(null);
 
   /**
-   * Cancel an expansion — the single path shared by the [취소] button and Esc.
+   * Cancel an expansion — the single path shared by the [Cancel] button and Esc.
    *
    * Collapsing alone discards the draft key (`KeyDraftForm` unmounts). The one
    * extra thing done here is **returning focus**: without sending it back to the
-   * [키 등록] just pressed, focus falls to body, which loses the user's place and
+   * [Register Key] just pressed, focus falls to body, which loses the user's place and
    * also kills the next rung of the Esc order (subview → root) — the sheet's
    * keydown no longer arrives once focus has left the dialog.
    */
@@ -198,7 +198,7 @@ export function AiConnectionPanel({
     // The width is pinned to **the same value as the root face's rows**
     // (`--settings-content-measure`). Drilling in removed the LNB, and the content
     // ate those 180px, so within the same sheet a row spread to 846px and the gap
-    // between 「Anthropic ‥‥‥ [키 등록]」 became one long emptiness. What is pinned is
+    // between "Anthropic ‥‥‥ [Register Key]" became one long emptiness. What is pinned is
     // the row, not the sheet — the sheet is fixed size, and shrinking it breaks the
     // root's two-column LNB.
     <div
@@ -222,7 +222,7 @@ export function AiConnectionPanel({
           here is "what do I get if I connect", and "how do I connect" comes second.
           While this sentence was a footnote below the list the order was inverted,
           and it was denying an already-shipped feature as "coming soon" — the agent
-          panel's [설정에서 키 등록] sends people here, and the arrival screen was
+          panel's [Register Key in Settings] sends people here, and the arrival screen was
           invalidating the CTA that sent them. So the copy states **only what works
           today**: it reads and answers (10 read tools) · writes happen after
           confirmation (`scope.consent` is already that contract). Not one word of
@@ -324,7 +324,7 @@ function TrustHeadline({ children }: { children: ReactNode }) {
  *
  * Why no mono/uppercase/wide-tracking eyebrow on the label: that combination is a
  * Latin-only convention, so Hangul gets no capitalisation and **only the word gaps
- * widen** (the gap the owner read as "무엇이  나가는가"). The heading here is a
+ * widen** (the gap the owner read as "What is going out"). The heading here is a
  * Korean sentence, so it is demoted by size and ink rather than by decoration.
  */
 function SupportingSection({
@@ -465,17 +465,11 @@ function ProviderCard({
           so the movement reads as a collapsed row *becoming* an expanded one rather
           than being swapped for something else (dimension regularity). */}
       <div className="flex h-[var(--control-row-h)] items-center justify-between gap-3 px-3">
-        {/* The vendor name is identity, not status — it is drawn in the same ink
-            whether or not a key is registered. Being unregistered is already said
-            without ambiguity by whether the following slot is a [키 등록] button or
-            the last 4 characters. Dimming the name too encodes the same fact twice
-            while making this screen's primary task ("find my vendor") harder.
-            This list is the panel's attention winner, so the name is body size,
-            primary ink. */}
+        {/* The vendor name is identity, not status — it is drawn in the same ink whether or not a key is registered. Being unregistered is already said without ambiguity by whether the following slot is a [Register Key] button or the last 4 characters. Dimming the name too encodes the same fact twice while making this screen's primary task ("find my vendor") harder. This list is the panel's attention winner, so the name is body size, primary ink. */}
         <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>
         {stored ? (
           // Status words use the body face and only the masked last 4 are mono —
-          // treating the whole thing as monospace widens the gap after "등록됨" so the
+          // treating the whole thing as monospace widens the gap after "Registered" so the
           // label and value look separated. This fragment fading in right after a
           // save is the face of "it saved".
           <span
@@ -491,7 +485,7 @@ function ProviderCard({
             data-testid={`ai-register-${provider}`}
             // Having declared `aria-expanded`, pressing again must collapse it —
             // otherwise a promise made to a screen reader becomes a lie. So this
-            // button also returns through **the same path** as [취소] and Esc
+            // button also returns through **the same path** as [Cancel] and Esc
             // (`onCancel`).
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
@@ -606,7 +600,7 @@ type LocalVerifyState =
  *
  * A runner's model names carry tags like `qwen3:8b`, so people transcribe them
  * wrongly. And when they do, the runner answers with one line of 404, so all that
- * remains on screen is "failed". So one [연결 확인] fetches the list too, and
+ * remains on screen is "failed". So one [Check Connection] fetches the list too, and
  * choosing happens only from that list — removing any way to pick a name that does
  * not exist.
  *
@@ -892,7 +886,7 @@ function LocalCaption({
     );
   }
   if (verify.kind === 'done' && verify.reason === 'ok') {
-    // Saying only 「설치된 모델 N개」 reads as though all N are worth choosing — on the
+    // Saying only "N installed models" reads as though all N are worth choosing — on the
     // measured runner, 4 of 7 were embedding-only. With no embeddings at all the
     // sentence stays as it was (no distinction is invented where there is none).
     const chatCount = countChatCapableModels(verify.models);
@@ -943,7 +937,7 @@ function isLoopbackHost(authority: string): boolean {
  * sheet closes. Tying the lifetime to visibility turns this panel's contract ("a
  * pasted key is on screen only until it is saved") from discipline into structure.
  *
- * So [취소] does no clearing here — it only tells the parent to collapse. This
+ * So [Cancel] does no clearing here — it only tells the parent to collapse. This
  * component disappearing *is* the draft disappearing.
  *
  * **An exit motion does not stretch that contract.** For the collapse to be
@@ -957,7 +951,7 @@ function isLoopbackHost(authority: string): boolean {
  * **No confirmation dialog even with text entered.** ① What is lost is a value you
  * can paste again from the clipboard or the vendor console, ② a modal on a modal is
  * a stacking form this repository forbids, and ③ this card's confirmation budget is
- * already spent on [지우기]'s two-step arming — charging the same friction for
+ * already spent on [Clear]'s two-step arming — charging the same friction for
  * reversible and irreversible actions makes the real warning cheap.
  */
 function KeyDraftForm({
@@ -983,7 +977,7 @@ function KeyDraftForm({
 
   useEffect(() => {
     if (!open) return;
-    // The user just pressed [키 등록] to open this field, so do not make them click
+    // The user just pressed [Register Key] to open this field, so do not make them click
     // again. The explicit call rather than `autoFocus` is for `preventScroll`: the
     // container's height at mount is 0 (the transition's start point), and the panel
     // jumps if the browser tries to correct with a scroll.
@@ -1024,7 +1018,7 @@ function KeyDraftForm({
         }}
         // The value is mono (a machine string) and the guidance uses the body face —
         // drawing a Korean placeholder monospaced too widens the word gaps into
-        // "API  키  붙여넣기".
+        // "Paste API Key".
         className={fieldClass({ size: "md", className: "min-w-0 flex-1 font-mono placeholder:font-sans" })}
       />
       {/* The neutral control left of save — the exit for someone who pressed and
@@ -1218,9 +1212,9 @@ function AuditTail({
           ))
         )}
       </div>
-      {/* Only the path is mono; the Korean beside it uses the body face. A whole
-          line in mono widens Hangul word gaps into "커밋할지는  당신의  선택이에요",
-          because the monospace glyph width carries straight into Hangul letter
+      {/* Only the path is mono; the text beside it uses the body face. A whole
+          line in mono widens word gaps into "Whether to commit is your choice",
+          because the monospace glyph width carries straight into letter
           spacing. A file path is a machine string, so mono is information there —
           the sentence next to it is not. */}
       <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">

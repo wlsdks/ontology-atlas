@@ -62,7 +62,7 @@ export interface VaultAgentNotices {
 export interface UseVaultAgentArgs {
   provider: ConnectionProvider | null;
   /**
-   * Only set on the 「주소로 연결」 (connect by address) path — the runner address the
+   * Only set on the "Connect by address" (connect by address) path — the runner address the
    * user typed and the model chosen from the list. Both are null for a named vendor,
    * and the model is then the adapter's default.
    */
@@ -149,7 +149,7 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
    * Elapsed seconds — the screen states a number only once the silence passes 5
    * seconds. Not fake progress but **how long you have actually waited**.
    *
-   * The start time is set in the [보내기] (send) handler — from the event, not from an
+   * The start time is set in the [Send] (send) handler — from the event, not from an
    * effect. The effect only subscribes to the timer as an external system, so it
    * does not cost another render.
    */

@@ -31,7 +31,7 @@ import { FullDetailA1GroupsPanel } from "./full-detail-a1-groups-panel";
 import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 
 /**
- * The A1 「데이터시트 확장판」 (expanded datasheet) full-detail surface —
+ * The A1 "expanded datasheet" (expanded datasheet) full-detail surface —
  * owner-approved mockup `docs/prototypes/detail-a1-datasheet.html`. Replaces BOTH
  * rejected surfaces (`TopologyOntologyDrawer`'s badge-soup FROM THIS/CONTAINS rows +
  * rich collaborator brief, and `OntologyViewPage`'s `NodeDetailPanel`
@@ -39,7 +39,7 @@ import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
  * single flat page: header → ONE engraved metric strip → four full
  * direction groups → reach sentence instrument → agent handoff row → body.
  *
- * Shared between two entry points: the topology datasheet's 「전체 상세」 (full detail)
+ * Shared between two entry points: the topology datasheet's "full detail" (full detail)
  * opt-in (`HomePage.tsx`) and the `/ontology` page's node detail
  * (`OntologyViewPage.tsx`) — both feed the SAME `groups`/`reach` facts built
  * by `buildFullDetailGroups`/`buildFullDetailReachModel` (lib/), so the
@@ -70,8 +70,8 @@ export interface FullDetailA1Node {
   fresh: boolean;
   /**
    * Entry review E-5 — the same node's freshness contradicted itself one click apart.
-   * The datasheet panel said 「2일 전 바뀜」 (changed 2 days ago; the document mtime
-   * ramp) while this screen said 「한동안 그대로」 (unchanged for a while; the session
+   * The datasheet panel said "changed 2 days ago" (changed 2 days ago; the document mtime
+   * ramp) while this screen said "unchanged for a while" (unchanged for a while; the session
    * changeset baseline). That is precisely the split `use-node-datasheet-model`'s M-3
    * contract forbids — freshness has one source of truth, mtime. The caller passes
    * **the very sentence the datasheet uses**. When present it replaces the binary
@@ -129,12 +129,12 @@ export interface FullDetailA1Props {
   documentHref?: string | null;
   /**
    * When it has no document of its own, another document that records this node. This
-   * surface has no 「근거」 (evidence) list, so removing the link would lose "where is
+   * surface has no "evidence" (evidence) list, so removing the link would lose "where is
    * this written down" — it is kept, relabelled to name its destination.
    */
   mentionDocumentHref?: string | null;
   /**
-   * "코드 위치" (code location) — the node's REAL code evidence: raw file
+   * "code location" (code location) — the node's REAL code evidence: raw file
    * paths (`deriveCodeLocations`), not the self-referential vault-doc slug
    * `node.slug` already shows above. Omitted/empty hides the section —
    * never fabricated.
@@ -597,7 +597,7 @@ export function FullDetailA1({
 }
 
 /**
- * One "코드 위치" row for the full-detail surface — same shape as the
+ * One "Code Location" row for the full-detail surface — same shape as the
  * topology datasheet's `CodeLocationRow` (truncated-middle mono path + a
  * per-row copy button with its own `useCopyFeedback` state), duplicated here
  * rather than shared across widgets: FSD forbids widget→widget imports, and

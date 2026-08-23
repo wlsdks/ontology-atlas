@@ -37,7 +37,7 @@ import { controlClass } from '@/shared/ui/control-class';
  * 1. **65–75 characters per line** (`--measure-prose`). The workbench's full-width column makes the
  *    eye lose the first character of the next line in prose.
  * 2. **`leading-prose` for the body** — the pair for text a person wrote (`.claude/rules/design.md`
- *    「행간도 크기의 짝이다」, line height is the pair of size). UI text's tight leading is
+    ["line height is the pair of size"], line height is the pair of size). UI text's tight leading is
  *    suffocating in a paragraph.
  * 3. **Large gaps between sections** — this is read in order rather than scanned, so rhythm carries
  *    the hierarchy in place of a table of contents.
@@ -167,7 +167,7 @@ export function GatewayDocPage({
       <GatewayNav />
 
       {/*
-       * **A reading page centres its prose column** (2026-07-31, owner: *"왼쪽에 다 몰려있고"* —
+       * **A reading page centres its prose column** (2026-07-31, owner: *"everything is bunched on the left"* —
        * everything is bunched on the left).
        *
        * ⚠️ At first this applied the gateway's "every element on one x" verdict (2026-07-29 ③) and
@@ -374,7 +374,7 @@ function resolveProseHref(href: string, locale: string): string {
  * ## Why (usability audit, 2026-08-07)
  *
  * The `href` used to be put straight onto the `<a>`. Guide bodies are markdown, and the internal
- * links written there have **no locale prefix** — `[지도 읽는 법](/guide/reading-the-map)` — because
+ * links written there have **no locale prefix** — `[How to read the map](/guide/reading-the-map)` — because
  * one copy of the markdown serves both `/ko` and `/en` and the locale cannot be baked into the
  * source. So the address being clicked became `/guide/…`, and no such route exists.
  *

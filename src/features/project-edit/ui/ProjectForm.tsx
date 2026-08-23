@@ -1738,7 +1738,7 @@ export function ProjectForm({
  *
  * ## No box around it (owner, 2026-08-17)
  *
- * Owner: *"조금 ai디자인같고 허접한데"* (it looks a bit AI-designed and cheap).
+ * Owner: *"It looks a bit AI-designed and cheap."*
  * Measurement found the values already followed the system — zero radius deviations and
  * zero font-size deviations on this screen. What was wrong was the **hierarchy**.
  *

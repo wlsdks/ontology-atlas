@@ -1,6 +1,6 @@
 // Fixture vaults for the impact-ranking contract test.
 //
-// The `/ontology/insights` 「바꾸면 멀리 퍼지는 개념」 card counts, for each
+// The `/ontology/insights` 「Concepts that spread far when changed」 card counts, for each
 // concept, how many concepts must be re-checked when it changes. That is the
 // same question the agent asks with
 // `query_ontology({operation:'blast_radius', direction:'incoming'})`, so the two

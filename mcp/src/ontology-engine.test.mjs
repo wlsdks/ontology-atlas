@@ -3430,7 +3430,7 @@ describe('queryCompiledOntology', () => {
 
     // Wall time varies by machine, so the gate is locked on **a count** — it only
     // checks that the budget really is a ceiling (`.claude/rules/architecture.md`
-    // 「게이트는 ms 가 아니라 횟수로 잠근다」 — lock a gate on counts, not milliseconds).
+    // "Gate is locked by count, not ms" — lock a gate on counts, not milliseconds).
     assert.ok(
       result.expandedStates <= result.searchBudget,
       `expandedStates ${result.expandedStates} exceeded budget ${result.searchBudget}`,

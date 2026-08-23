@@ -10,20 +10,17 @@
  * degradation, it is a lie" (`.claude/rules/surfaces.md`).
  *
  * **Why clip A was renamed (2026-07-30).** The id and label used to be `agent-edits` /
- * *"the map follows when the AI edits"*. When the owner redefined clip A as a **feature tour**
- * (*"클로드 코드에 연결된것까지 보여줄 필요는 없어"* — no need to show it connected to Claude
- * Code), that label became **false**: the footage has no scene of an AI editing. Applying the
+ *[the map follows when the AI edits]*. When the owner redefined clip A as a **feature tour**
+ *([no need to show it connected to Claude Code]), that label became **false**: the footage has no scene of an AI editing. Applying the
  * rule above ("the label is the sentence the viewer will hold when the clip ends") it became
- * `one-folder` / *"one folder opens into six screens"*. **Attaching a sentence that differs from
+ * `one-folder` / *[one folder opens into six screens]*. **Attaching a sentence that differs from
  * what was filmed is the defect this registry exists to prevent.**
  *
  * So whether an asset exists is decided in **one place, in data**. Before a file is attached
  * `AVAILABLE` is empty and the section does not render. When footage arrives it is switched on by
  * adding one line to the array below — the component is not touched.
  *
- * **A tab label is not a feature name.** Ledger-confirmed: the label is *"the sentence the viewer
- * will hold when the clip ends"*. A feature name like "MCP connection" reads only to someone who
- * already knows, and this asset's primary audience includes **people who do not know what an agent is**.
+ * **A tab label is not a feature name.** Ledger-confirmed: the label is *[the sentence the viewer will hold when the clip ends]*. A feature name like "MCP connection" reads only to someone who already knows, and this asset's primary audience includes **people who do not know what an agent is**.
  */
 
 /**

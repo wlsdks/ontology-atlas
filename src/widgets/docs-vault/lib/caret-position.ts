@@ -6,7 +6,7 @@
  *
  * The `@` mention menu appeared in the editor's **bottom-left corner**, because
  * the old wikilink popover was pinned there and this inherited the position. The
- * owner corrected it immediately — *"적던 위치에 바로 나와야"* (it should appear
+ * owner corrected it immediately — *"It should appear right where I was typing."* (it should appear
  * right where I was typing). That is right, and there is a reason: the mention
  * menu is **an extension of the character being typed**, so away from where the
  * eyes are it does not read as the result of what was just done.

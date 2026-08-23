@@ -19,7 +19,7 @@ import { generateNodeUid } from './build-vault-markdown';
  * project template (`ontology-starter.ts` PROJECT_MD). C6 — these are treated
  * as "never customized": when a project is renamed while its display name still
  * equals one of these, the display key is auto-filled from the new title so the
- * map/INDEX don't keep showing "내 프로젝트" / "My project" after a rename.
+ * map/INDEX don't keep showing "My project" / "My project" after a rename.
  * A user who set their own display name is NOT in this set, so their choice is
  * never overwritten.
  */
@@ -180,7 +180,7 @@ function serializeValue(v: string | number | boolean | string[]): string {
  * escapes to `\n` and the reader restores it (`unquote`).
  *
  * The single quote joined the rule too: `unquote` strips unmatched quotes from both
- * ends, so an unquoted value like `'지도'` reads back as `지도`.
+ * ends, so an unquoted value like `'map'` reads back as `map`.
  */
 function needsQuote(s: string): boolean {
   return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s);

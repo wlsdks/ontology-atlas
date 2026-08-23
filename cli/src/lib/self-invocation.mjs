@@ -3,7 +3,7 @@
 // **Why** (dogfooding, measured 2026-07-28): `init`'s "Next steps" told the user
 // to run `ontology-atlas list`, which pasted verbatim gives `command not found`
 // (exit 127). That name is **not in any registry and never will be**
-// (`docs/DECISIONS.md` 2026-07-27 「앱이 MCP 를 품는다 … npm 발행 계획 폐기」 —
+// (`docs/DECISIONS.md` 2026-07-27 「the app carries the MCP server … npm publishing plan abandoned」 —
 // the app carries the MCP server; publishing to npm was abandoned). The two live
 // channels are the app bundle and a source checkout.
 //

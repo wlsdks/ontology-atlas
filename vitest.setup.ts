@@ -1,15 +1,14 @@
 import '@testing-library/jest-dom/vitest';
 
 /**
- * jsdom 에는 `ResizeObserver` 가 없다 — 이건 제품의 사정이 아니라 **환경의
- * 구멍**이라, 이걸 쓰는 컴포넌트마다 각자 스텁을 심는 것은 같은 파일을 세
- * 벌 쓰는 일이다(실제로 3벌이 있었다). 여기 한 번만 둔다.
+ * jsdom lacks `ResizeObserver` — this is **a hole in the environment**, not a product constraint,
+ * so stubbing it per component using it means duplicating the same file three times (there were
+ * actually 3 copies). We place it here once.
  *
- * **관측을 흉내 내지 않는다** — 콜백을 부르지 않는 빈 스텁이다. 실제 크기
- * 변화에 무엇이 일어나는지는 레이아웃이 있는 곳(브라우저 e2e)에서 재고,
- * 여기서는 "관측을 구독한 컴포넌트가 렌더된다" 까지만 성립시킨다. 가짜
- * 콜백을 부르면 단위 테스트가 실제로는 확인할 수 없는 치수를 확인한다고
- * 주장하게 된다.
+ * **It does not simulate observation** — it's an empty stub that doesn't call callbacks. What happens
+ * during actual size changes is verified in places with layout (browser e2e);
+ * here we only establish that "components subscribing to observation render." Faking
+ * callbacks would claim the unit test verifies dimensions it actually can't verify.
  */
 if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
   class ResizeObserverStub {
@@ -21,24 +20,23 @@ if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
 }
 
 /**
- * `window.matchMedia` — **jsdom 에 없는 브라우저 API**. 위 ResizeObserver 스텁과
- * 같은 부류의 환경 심이다.
+ * `window.matchMedia` — **a browser API missing in jsdom**. Same category as the ResizeObserver stub above.
  *
- * ## 왜 공용 setup 에 두나
- *
- * 실패 모드가 **엉뚱한 자리에서 터진다.** `/download` 의 시연 절이 켜지자
- * `DownloadPage.test.tsx` 의 **무관한 테스트 둘**(「다운로드 마디를 지운다」·
- * 「지도로 돌아가기를 지운다」)이 빨개졌다 — 그 절이 `prefers-reduced-motion` 을
- * 읽는 자식을 렌더하기 때문이다. 테스트마다 스텁을 복제하면 다음 사람이 같은
- * 벽에 다시 부딪히고, 그때도 원인이 자기 변경처럼 보인다.
- *
- * **제품에는 위험이 없다.** 소비처는 `useSyncExternalStore` 의 서버 스냅샷을
- * `() => false` 로 주므로 프리렌더는 이 경로를 지나지 않고, 실제 브라우저는
- * `matchMedia` 를 예외 없이 가진다. 구멍은 jsdom 하나다.
- *
- * 기본값은 **"줄이지 않음"** — 애니메이션을 켠 쪽이 검증 대상이라 그쪽이 기본이다.
- * 감소 모션을 검사하려면 그 테스트가 이 스텁을 덮어쓴다(기존 두 자리가 이미 그렇다).
- */
+   * ## Why put it in the common setup
+   *
+   * Failure modes **trigger in unexpected places.** When the demo section of `/download` was enabled,
+   * two **unrelated tests** in `DownloadPage.test.tsx` («Delete download node» ·
+   * «Delete go back to map») turned red — because that section renders a child reading
+   * `prefers-reduced-motion`. Duplicating stubs per test means the next person hits the same
+   * wall again, and the cause looks like their own change.
+   *
+   * **No risk to the product.** The consumer passes `() => false` as the server snapshot for
+   * `useSyncExternalStore`, so pre-render doesn't traverse this path, and real browsers
+   * have `matchMedia` without exception. The hole is only in jsdom.
+   *
+   * Default is **"not reduced"** — since enabling animation is the verification target, that's the default.
+   * To test reduced motion, the specific test overrides this stub (the existing two locations already do).
+   */
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = ((query: string) => ({
     matches: false,

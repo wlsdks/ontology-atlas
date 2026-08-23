@@ -89,7 +89,7 @@ function renderDrawer(
       </TaxonomyProvider>
     </NextIntlClientProvider>,
   );
-  // The impact-mode pills sit inside the "기본 정보 더 보기" (show more basic info)
+  // The impact-mode pills sit inside the "Show more basic info" (show more basic info)
   // <details>. A native <details> hides its content from the accessibility tree while
   // closed, so it is expanded explicitly before any role query.
   fireEvent.click(screen.getByTestId("project-drawer-more-info-summary"));

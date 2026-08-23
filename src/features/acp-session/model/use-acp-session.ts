@@ -389,10 +389,10 @@ export function useAcpSession({
         const nextTitle = typeof update.title === 'string' ? update.title : null;
         const nextToolKind = typeof update.kind === 'string' ? update.kind : null;
         const hasRawInput = update.rawInput !== undefined;
-        // claude-agent-acp는 streamed tool_use를 먼저 pending 행으로 보내고,
-        // 입력이 완성되면 **status 없는** tool_call_update로 rawInput을 보낸다.
-        // 상태만 합치면 화면에는 도구 이름만 남고 exact target과 지도 intent가
-        // 영원히 비게 된다. update가 실제로 싣는 필드만 기존 행에 덧씌운다.
+        // claude-agent-acp sends streamed tool_use as a pending row first,
+        // and when input is complete, sends rawInput via **status-less** tool_call_update.
+        // Merging only the status leaves only the tool name on screen, while the exact target and map intent
+        // remain permanently empty. Overwrite existing fields with only the fields actually carried by the update.
         setEvents((prev) =>
           prev.map((event) => {
             if (event.kind !== 'tool' || event.id !== id) return event;

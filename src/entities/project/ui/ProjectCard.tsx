@@ -73,8 +73,7 @@ function borderClass(borderStyle: CardCategoryMeta['borderStyle'], isHub: boolea
      *
      * This case used to mark the "in progress" category with a 2px indigo
      * underline (the charter's "categories are told by border shape, not colour").
-     * It was softened and re-reviewed, and the verdict held — *"하단에 파란선도
-     * 없애 그냥"* (drop the blue line at the bottom entirely).
+     * It was softened and re-reviewed, and the verdict held — *"drop the blue line at the bottom entirely"* (drop the blue line at the bottom entirely).
      *
      * So it falls back to the same plain border as every other category. The
      * category is still stated by the card's side label and by the category marks
@@ -212,8 +211,7 @@ export function ProjectCard({
         /*
          * On the map a card has **fixed dimensions**, so the grid stays regular.
          *
-         * Preview is the one exception (owner, 2026-08-17: *"카드 좌우 공백이
-         * 상당한데?"* — the card has a lot of space on either side). Measured: a
+         * Preview is the one exception (owner, 2026-08-17: *"The card has a lot of space on either side?"* — the card has a lot of space on either side). Measured: a
          * 220px card sat inside a 260px rail leaving 40px of slack, while the
          * completeness box directly beneath used the full 260 — so the card looked
          * shrunken.

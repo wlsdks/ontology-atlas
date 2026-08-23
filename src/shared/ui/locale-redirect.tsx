@@ -26,8 +26,7 @@ function detect(): Supported {
  * history, so not even the owner could see their own first impression.
  *
  * That cost was paid for real. Opening `/` kept landing the owner on
- * `/ko/topology/`, reported as a defect — *"이 페이지 아직도 지도로 redirect
- * 되네?"* (is this page still redirecting to the map?) — while the code was
+ * `/ko/topology/`, reported as a defect — *"Is this page still redirecting to the map?"* (is this page still redirecting to the map?) — while the code was
  * behaving exactly as designed; that browser simply remembered `/ko/topology/`.
  * A screen that looks like a defect is one. And a shared link would show the
  * recipient something the sender could not predict.

@@ -45,7 +45,7 @@ function card(
   );
 }
 
-/** The measured shape the adapter sends along with 「계속 허용」 (keep allowing). */
+/** The measured shape the adapter sends along with 「Keep allowing」. */
 const alwaysWith = (targets: unknown[]) => [
   {
     optionId: 'always',

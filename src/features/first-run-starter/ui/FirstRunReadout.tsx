@@ -53,7 +53,7 @@ export function FirstRunReadout({
   const t = useTranslations("firstRunStarter.readout");
   const visible = useFirstRunSampleModeSettled();
   // This readout's grammar (mono + uppercase + wide tracking) is a normal signal in
-  // latin but in Korean only widens the space glyphs, reading as 「큰  줄기  보기」
+  // latin but in Korean only widens the space glyphs, reading as "Large Stem View"
   // (measured tracking 1.8px). The condition is made per locale — English is unchanged.
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
 

@@ -1,6 +1,6 @@
 /**
- * 최근 변경·경로·전체 보기는 같은 "집합으로 카메라를 맞추고 나머지를
- * 가라앉히는" 렌즈 기구를 공유하지만, 의미는 섞지 않는다.
+ * Recent changes, path, and full views share the same lens mechanism of "aligning
+ * the camera to a set and sinking the rest", but their meanings must not be mixed.
  */
 export type TopologyMapLensKind = 'recent' | 'path' | 'all';
 

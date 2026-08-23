@@ -10,8 +10,8 @@ import { queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';
  * `/ontology/insights` health verdict (`src/entities/knowledge-graph/lib/
  * vault-health.ts`) must agree with the CLI/MCP `node $ATLAS/cli/src/index.mjs health`
  * (`query_ontology({operation:'health'})`) on the SAME vault. Previously the app
- * auto-healed containment in its derived graph and reported "100% 수리할 것
- * 없음" (100%, nothing to repair) while the CLI reported `needs_attention` — a trust
+ * auto-healed containment in its derived graph and reported "100% repair needed
+ * none" (100%, nothing to repair) while the CLI reported `needs_attention` — a trust
  * hole.
  *
  * This test feeds one fixture vault through BOTH implementations and asserts an

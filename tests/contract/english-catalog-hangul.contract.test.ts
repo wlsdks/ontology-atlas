@@ -11,9 +11,9 @@ import { describe, expect, it } from "vitest";
  *
  * | Key | Value present | Problem |
  * |---|---|---|
- * | `en …create.secondaryName` | `한국어 이름 (선택)` | an English user cannot read the label |
- * | `en …secondaryNamePlaceholder` | `한국어 이름 (optional)` | two languages in one string |
- * | `ko …secondaryNamePlaceholder` | `English name (선택)` | the same mistake in the other direction |
+ * | `en …create.secondaryName` | `Korean name (optional)` | an English user cannot read the label |
+ * | `en …secondaryNamePlaceholder` | `Korean name (optional)` | two languages in one string |
+ * | `ko …secondaryNamePlaceholder` | `English name (optional)` | the same mistake in the other direction |
  *
  * All three are the same slot: **the "other language's name" field**. The author
  * confused *the language being named* with *the language being written in* — asking
@@ -36,7 +36,7 @@ const HANGUL = /[가-힣㄰-㆏]/;
 /**
  * The legitimate exception — **a language's name is written in that language** (the
  * universal convention in browser language pickers). The language list on an English
- * screen must show "한국어" rather than "Korean" so a speaker of that language can
+ * screen must show "Korean" rather than "Korean" so a speaker of that language can
  * find their own.
  */
 const ALLOWED = new Set(["locale.korean"]);

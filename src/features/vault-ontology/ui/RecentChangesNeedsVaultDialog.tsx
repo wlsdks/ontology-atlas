@@ -41,9 +41,7 @@ export interface RecentChangesNeedsVaultDialogProps {
  * degradation contract in `.claude/rules/surfaces.md` (why + where) and the **zero dead
  * CTAs** the web smoke test requires.
  *
- * Owner instruction (2026-08-03): *"칩 누르면 뭔가 화면에서 팝업 띄워줘야 하지 않을까?
- * … 화면 중앙에 예쁜 팝업 띄워서 폴더 세팅 유도하던지?"* (shouldn't pressing the chip
- * raise a popup? — put a nice one in the centre of the screen to guide folder setup).
+ * Owner instruction (2026-08-03): "Shouldn't pressing the chip raise a popup? — put a nice one in the centre of the screen to guide folder setup).
  *
  * **The skeleton is not new.** scrim + centred card + tokens + `MOTION.base` — the same
  * contract as `AgentConnectSheet` (`.claude/rules/design.md`: a modal must **prove**

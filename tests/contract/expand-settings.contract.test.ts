@@ -163,8 +163,7 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
   });
 
   /**
-   * The overhead bar exists **only on a selected node** (prototype: *"안 고르면
-   * 아무것도 없고"* — nothing at all when unselected). Lose that property and the
+   * The overhead bar exists **only on a selected node** (prototype: *"Nothing at all when unselected"* — nothing at all when unselected). Lose that property and the
    * bar floats permanently like the pill, erasing the difference between the
    * three.
    */
@@ -196,7 +195,7 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
     // The assertion must not be "narrower than the pill": once the bar became a text
     // button, longer copy makes that inequality a function of the copy, so it would
     // measure **the language rather than the empty width** (it already inverts on the
-    // Korean 「모두 펼치기」). So the empty width is measured directly — the plate's
+    // Korean 「Expand All」). So the empty width is measured directly — the plate's
     // width is *exactly* text width plus horizontal padding.
     const barLabel = clusterBarLabel({ expanded: false, count: 31, batchSize: 24, labels: KO_BAR_LABELS });
     expect(bar.w, "막대에 그리는 것 없는 폭이 생겼다").toBeCloseTo(
@@ -614,7 +613,7 @@ describe("그려진 것 — 기본값에서 지도에 서는 것은 「머리 �
  * Controls attached to one node use **different compass points** — prescription
  * measured 2026-08-02.
  *
- * Measured (1512×982, sample vault "마케팅"): **80% of the shoulder badge
+ * Measured (1512×982, sample vault "Marketing"): **80% of the shoulder badge
  * (513px²)** sat under the orbit "show only this" button, and
  * `document.elementFromPoint(badge centre)` returned that button — the badge was
  * never clickable. The default overhead bar had 80px² of its bottom-right corner
@@ -697,7 +696,8 @@ describe("동시에 펼쳐 둘 부모 — 딥링크도 상한을 받는다", () 
 
 /**
  * **A bar is only a bar if it is a text button** — owner report 2026-08-02:
- * *"머리위막대가 조금 다른듯한데 머리위 배지랑 다른게없는데?"* (the overhead bar
+ * *"The overhead bar seems slightly different, but it is no different from the overhead badge."*
+ * (the overhead bar
  * seems slightly different, but it is no different from the overhead badge).
  *
  * The prototype separates the three by more than position: the floating pill is

@@ -1,13 +1,13 @@
 /**
- * Semantic-zoom tier gating — the "level 0 = project + domain + hub 만"
- * charter from `.claude/rules/design.md` ("기본 뷰 = overview-first ... level 0
- * = project + domain + hub 만, 나머지는 클릭 시 expand (semantic zoom)") — the
+ * Semantic-zoom tier gating — the "level 0 = project + domain + hub only"
+ * charter from `.claude/rules/design.md` ("default view = overview-first ... level 0
+ * = project + domain + hub only, others expand on click (semantic zoom)") — the
  * default view is overview-first; level 0 draws only project + domain + hub and
  * everything else expands on click.
  *
  * P3 live diagnosis (chrome-devtools, dogfood 295 nodes / 505 edges) showed
  * the overview drawing *every* node — capabilities and elements fanned into
- * tight concentric arcs (the owner's "반달 겹침" / fan-arc pileup) with label
+ * tight concentric arcs (the owner's "fan-arc pileup") with label
  * and trace soup on top. The lead's decision is to gate the NODES (and their
  * traces), not just the labels: at the overview entry only project + domain +
  * the single hub node draw; capabilities appear as you zoom into a transition
@@ -105,7 +105,7 @@ export function edgeTierAlpha(sourceAlpha: number, targetAlpha: number): number 
 }
 
 /**
- * C1 A2 — focus ego tier exemption ("클릭 시 expand"). A node that's semantic-
+ * C1 A2 — focus ego tier exemption ("expand on click"). A node that's semantic-
  * zoom-gated (e.g. a capability at overview zoom, tierAlpha ≈ 0) must still
  * become visible + clickable once it's the focused node or one of its 1-hop
  * neighbors — that's the entire point of clicking a domain to "expand" it.
@@ -121,8 +121,7 @@ export function effectiveNodeAlpha(tierAlpha: number, isEgoMember: boolean, egoR
  * — hidden (semantic-zoom-gated) nodes must not be hit. Shared by the pointer
  * hit-test (`ui/topology-pointer-handlers.ts#hitVisibleNode` via
  * `isNodeHittable` below) and the label-eligibility ramp
- * (`render/labels.ts#computeLabelAlpha`) — "잡을 수 있으면 읽을 수 있다" (if
- * you can click it, you can read it), the label-clarity persona fix. */
+ * (`render/labels.ts#computeLabelAlpha`) — "if you can click it, you can read it", the label-clarity persona fix. */
 export const HITTABLE_MIN_TIER_ALPHA = 0.5;
 
 /** Minimal node shape `isNodeHittable` needs — structurally compatible with `WorldNode`. */
@@ -145,8 +144,8 @@ export interface HittableNodeInput {
  *
  * S3 finishing polish (designed by fable, S2 known gap) — `clusteredIds` is the
  * frame's NOT-DRAWN set: subtree nodes collapsed by the density condition AND,
- * critically, the selective-ego neighbors folded behind the `이웃 +N` ("+N
- * neighbours") chip when a focused node exceeds the ego limit. Those hidden
+ * critically, the selective-ego neighbors folded behind the "+N neighbours"
+ * chip when a focused node exceeds the ego limit. Those hidden
  * neighbors are still 1-hop neighbors, so the ego exemption below would
  * (wrongly) keep them clickable — grabbing an invisible node. Excluding the
  * clustered set FIRST keeps hit and draw in lockstep: if it isn't painted this
@@ -217,8 +216,7 @@ export function isNodeHittable(
  * the SPINE bounds, not the full-graph bounds: the de-pileup layout spreads all
  * 295 nodes over a far larger area than the ~8 spine nodes actually drawn at
  * the overview, so clamping to the full bounds leaves a vast legal-but-EMPTY
- * region the camera can strand in — the owner's "드래그하면 캔버스가
- * 사라져버림" (drag and the canvas disappears; QA loss A). One strong flick
+ * region the camera can strand in — the owner's "drag and the canvas disappears" (drag and the canvas disappears; QA loss A). One strong flick
  * projected thousands of world units
  * and landed inside the invisible fan; every pixel was "in bounds", nothing was
  * drawn.

@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# PreToolUse hook — Bash 명령에서 npm/pnpm/yarn publish 류를 차단한다.
+# PreToolUse hook — Blocks npm/pnpm/yarn publish commands in Bash.
 #
-# Claude Code 가 PreToolUse hook 으로 호출. stdin 으로 tool_input JSON 을 받고,
-# 명령에 publish 키워드가 들어 있으면 deny 하는 JSON 을 출력 (exit 0).
+# Called by Claude Code as a PreToolUse hook. Receives tool_input JSON via stdin,
+# and outputs a deny JSON if the command contains the publish keyword (exit 0).
 #
-# 통과시키는 경우는 출력 없이 exit 0 — Claude Code 가 그대로 진행.
+# For passing through, exits 0 with no output — Claude Code proceeds as is.
 #
-# 차단 규칙:
-# - `npm publish`, `pnpm publish`, `yarn publish` (실제 발행)
-# - `npm publish` 류가 chain (`&&`, `||`, `;`, `|`) 안에 섞여 있어도 차단
-# - `npm pack` (단순 dry-run 은 통과 — 키워드 `--dry-run` 포함 시)
-# - `npm version <patch|minor|major>` 가 자동 publish 와 결합된 경우 (`postversion` script)
-# - `npm whoami`, `npm view`, `npm pack --dry-run` 같은 read-only 는 통과
+# Blocking rules:
+# - `npm publish`, `pnpm publish`, `yarn publish` (actual publishing)
+# - Blocks even if `npm publish`-like commands are mixed in chains (`&&`, `||`, `;`, `|`)
+# - `npm pack` (simple dry-run passes — when keyword `--dry-run` is included)
+# - `npm version <patch|minor|major>` combined with auto-publish (`postversion` script)
+# - Read-only commands like `npm whoami`, `npm view`, `npm pack --dry-run` pass
 #
-# 사용자가 명시 승인을 줘서 publish 를 실행하려면, 이 파일을 임시로 비활성화 (`mv block-npm-publish.sh block-npm-publish.sh.off`) 하거나, 사용자가 직접 터미널에서 실행한다.
+# To execute publish with explicit user approval, temporarily disable this file (`mv block-npm-publish.sh block-npm-publish.sh.off`) or run it directly in the terminal.
 
 set -euo pipefail
 
 INPUT="$(cat)"
 
-# tool_name 이 shell execution surface 가 아니면 패스. Codex desktop 은
-# functions.exec_command + tool_input.cmd 형태를 쓴다.
+# Passes if tool_name is not a shell execution surface. Codex desktop
+# uses functions.exec_command + tool_input.cmd format.
 TOOL_NAME=$(printf '%s' "$INPUT" | python3 -c '
 import json, sys
 try:
@@ -33,7 +33,7 @@ if [[ "$TOOL_NAME" != "Bash" && "$TOOL_NAME" != "exec_command" && "$TOOL_NAME" !
   exit 0
 fi
 
-# tool_input.command/cmd 추출 (JSON 안에 escape 된 따옴표 처리)
+# Extracts tool_input.command/cmd (handles escaped quotes inside JSON)
 COMMAND=$(printf '%s' "$INPUT" | python3 -c '
 import json, sys
 try:
@@ -49,20 +49,20 @@ if [[ -z "$COMMAND" ]]; then
   exit 0
 fi
 
-# 정규식 매칭: publish 류 패턴
-# - (npm|pnpm|yarn) publish — *명령 시작점* 만 매치. line 시작 또는
-#   shell chain delimiter (&&, ||, ;, |) 직후. heredoc body / commit
-#   message 본문 안의 단어는 *명령 시작* 이 아니라 매치 안 됨 (R11 #28
+# Regex matching: publish-like patterns
+# - (npm|pnpm|yarn) publish — Matches only the *command start*. Line start or
+#   immediately after shell chain delimiter (&&, ||, ;, |). Words inside heredoc body / commit
+#   message body are not matched as *command start* (R11 #28
 #   false positive fix).
-# - npm pack (dry-run 아닌 경우) — 같은 정밀화.
+# - npm pack (non-dry-run) — Same precision.
 BLOCKED=0
 REASON=""
 
-# 명령 시작점 patterns:
-#   ^                       — line 시작 (heredoc body 제외)
-#   (&&|\|\||;|\|)\s+       — shell chain delimiter 직후 (&&, ||, ;, |)
-# multi-line heredoc body 의 line-start 텍스트는 검사 전에 제거해 명령
-# 시작으로 오인하지 않는다.
+# Command start patterns:
+#   ^                       — line start (excluding heredoc body)
+#   (&&|\|\||;|\|)\s+       — immediately after shell chain delimiter (&&, ||, ;, |)
+# Removes line-start text from multi-line heredoc bodies before checking to avoid
+# misidentifying them as command starts.
 PUBLISH_RE='(^|(&&|\|\||;|\|)[[:space:]]+)(npm|pnpm|yarn)[[:space:]]+publish([[:space:]]|$)'
 PACK_RE='(^|(&&|\|\||;|\|)[[:space:]]+)npm[[:space:]]+pack([[:space:]]|$)'
 COMMAND_FOR_MATCH=$(COMMAND="$COMMAND" python3 - <<'PY'
@@ -101,7 +101,7 @@ if [[ $BLOCKED -eq 0 ]] && echo "$COMMAND_FOR_MATCH" | grep -E "$PACK_RE" >/dev/
 fi
 
 if [[ $BLOCKED -eq 1 ]]; then
-  # PreToolUse deny 형식 (Claude Code 1.x): JSON 으로 reason 전달
+  # PreToolUse deny format (Claude Code 1.x): Passes reason via JSON
   cat <<JSON
 {
   "hookSpecificOutput": {

@@ -60,7 +60,7 @@ function renderPalette(initialQuery = '') {
     <DocsVaultUnifiedPalette
       onClose={() => {}}
       docs={docs}
-      // So the '최근' section produces 2 options in empty-query mode — securing listbox options.
+      // So the 'Recent' section produces 2 options in empty-query mode — securing listbox options.
       recentSlugs={['alpha', 'beta']}
       pinnedSlugs={[]}
       commands={[]}

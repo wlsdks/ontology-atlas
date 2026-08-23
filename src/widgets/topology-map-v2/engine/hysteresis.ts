@@ -7,7 +7,7 @@
  * }
  * ```
  * where `HYSTERESIS = 7` (px). This is the click-safe contract's mechanical
- * core (`.claude/rules/design.md` 「클릭=안전 계약」 — a click is a safe contract;
+ * core (`.claude/rules/design.md` 「Click=safe contract」 — a click is a safe contract;
  * `docs/INTERACTION-DESIGN.md`
  * §1): a pointerdown does not commit to a drag until the pointer has moved
  * more than `thresholdPx` from its down-position — below that, a

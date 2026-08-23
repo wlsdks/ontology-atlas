@@ -203,7 +203,7 @@ describe("GuidedTourOverlay", () => {
   /**
    * **[back] does not disappear per step** (regression guard from dogfooding 2026-07-29).
    *
-   * The draft wrapped the whole back/next row in `!isInteractive`, so 「이전」 —
+   * The draft wrapped the whole back/next row in `!isInteractive`, so "Previous" —
    * present at the bottom left for five steps — **vanished silently** on 4/7 ("try
    * pressing it yourself"), and the user had to relearn on the spot whether this
    * tour can go back. How to go forward may differ per step (next, try it, choose a

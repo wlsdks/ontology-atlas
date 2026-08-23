@@ -173,7 +173,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('이 폴더에서 문서 1개를 읽었어요')).toBeInTheDocument();
     expect(screen.getByText('상태')).toBeInTheDocument();
     expect(screen.getByText('아직 검사 결과가 없어요')).toBeInTheDocument();
-    // The 「연결 파일 {ready}/{total}」 row was removed — the header summary always states the same number.
+    // The 「Connection file {ready}/{total}」 row was removed — the header summary always states the same number.
     expect(screen.getByText('여는 자리')).toBeInTheDocument();
     expect(
       screen.getByText('다른 코드 폴더에서 열기 전에 연결 설정을 복사하세요'),
@@ -182,7 +182,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('자체 점검')).toBeInTheDocument();
     expect(screen.getByText('고치기 전에 아래 명령을 복사해 실행하세요')).toBeInTheDocument();
     expect(screen.getByLabelText('첫 연결에서 확인되는 것')).toBeInTheDocument();
-    // 「연결 파일 상태」 appears in two places — the fold's group title and the first
+    // 「Connection file status」 appears in two places — the fold's group title and the first
     // connection evidence's item name. Both point at the same thing, so only
     // existence is checked.
     expect(screen.getAllByText('연결 파일 상태').length).toBeGreaterThan(0);
@@ -303,7 +303,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    // File status is owned by one list inside 「잘 안 되나요?」 — name · path · status.
+    // File status is owned by one list inside 「Having trouble?」 — name · path · status.
     const connections = screen.getByRole('list', {
       name: '도구별 연결 파일 상태',
     });
@@ -318,7 +318,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('.mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.'),
     ).toBeInTheDocument();
 
-    // The per-tool «how do I check» is step 3's content — it appears when 「연결 확인」 opens.
+    // The per-tool «how do I check» is step 3's content — it appears when 「Check connection」 opens.
     fireEvent.click(screen.getByTestId('agent-setup-step-3-toggle'));
     const step3 = screen.getByTestId('agent-setup-step-3');
     expect(within(step3).getByText('/mcp 로 확인')).toBeInTheDocument();
@@ -1376,7 +1376,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // With all three ready, step 1 is collapsed as 「완료」 — open it to see the tool
+    // With all three ready, step 1 is collapsed as 「Complete」 — open it to see the tool
     // column. This one line is the proof that it was collapsed, not deleted.
     fireEvent.click(screen.getByTestId('agent-setup-step-1-toggle'));
 
@@ -1412,7 +1412,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // 2026-08-01 — the old assertion was 「연결할 수 없어요」 and that sentence was
+    // 2026-08-01 — the old assertion was 「Cannot connect」 and that sentence was
     // false. The one thing a browser cannot do is **save it automatically** (ledger
     // 2026-08-01).
     const card = screen.getByTestId('agent-server-unavailable');

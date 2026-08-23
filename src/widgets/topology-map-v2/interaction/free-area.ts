@@ -1,7 +1,6 @@
 /**
  * Free area — **measure the space a panel does not cover** (owner call,
- * 2026-08-10: *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"* — it must not be
- * covered; centre it in the space left after subtracting the panel).
+ * 2026-08-10: "It must not be covered; centre it in the space left after subtracting the panel".
  *
  * ## What this module does and does not do
  *
@@ -116,8 +115,7 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
  * **Measure from the DOM** what is covering the canvas.
  *
  * The "is it visible" decision follows the discipline this repository already
- * settled (`/design-audit`, 「사각형이 나온다고 보이는 것은 아니다」 — a rectangle
- * coming back does not mean it is visible): zero size, `visibility:hidden`,
+ * settled (`/design-audit`, "A rectangle coming back does not mean it is visible"): zero size, `visibility:hidden`,
  * `display:none`, near-transparent, inside a collapsed `<details>`, or under an
  * `aria-hidden` ancestor is not on screen and is not counted. Skip that and **a
  * panel mid-exit keeps pushing the camera left** in a state nobody can trace.

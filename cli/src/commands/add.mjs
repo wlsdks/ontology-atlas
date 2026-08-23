@@ -89,7 +89,7 @@ export async function runAdd(args) {
       );
     }
     // A path-shaped slug is rejected as a hard error by writeDoc's flatSlugIssue
-    // gate (docs/DECISIONS.md 「슬러그는 평평한 식별자다」 — slugs are flat identifiers).
+    // gate (docs/DECISIONS.md "slugs are flat identifiers" — slugs are flat identifiers).
     return 0;
   } catch (err) {
     process.stderr.write(

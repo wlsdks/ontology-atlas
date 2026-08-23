@@ -4,9 +4,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
 /**
  * "Get the app" sits in **the same place on every web destination**.
  *
- * Owner request: *"웹에서는 다양한곳에 앱 다운로드를 유도하는 버튼을 놔주면
- * 좋을듯? 잘보이게"* (on the web it would be good to put buttons leading to the app
- * download in various places, clearly visible). Planting a banner on every surface is
+ * Owner request: *"On the web it would be good to put buttons leading to the app
+ * download in various places, clearly visible."* Planting a banner on every surface is
  * noise rather than guidance, and is the kind of thing this repository's design gates
  * call an additive-only pass. So there is one in the chrome — the rail's utility tier
  * is the same place on every destination, so **one element already is "various
@@ -60,7 +59,7 @@ test("타일이 실제로 다운로드 화면으로 데려간다 — 죽은 CTA 
   await page.waitForURL(/\/download\//);
 
   // Also checks the landing screen does not send a Windows visitor away empty-handed —
-  // the site the owner asked for with *"윈도우는 준비중이라고 적어놔주고"* (write that
+  // the site the owner asked for with *"Write that Windows is on the way"* (write that
   // Windows is on the way).
   await expect(page.getByText("Windows").first()).toBeVisible();
 });
