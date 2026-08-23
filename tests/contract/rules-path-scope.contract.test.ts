@@ -164,6 +164,41 @@ describe("`.claude/rules` path scoping contract", () => {
    * that becomes a redirect, or stops being one, fails here rather than leaving
    * the sentence quietly wrong.
    */
+  /**
+   * `CLAUDE.md` inventories the hooks and says which are mirrored into
+   * `.codex/hooks/`. A hook that exists on one side only is the interesting
+   * case, because the reason it is not mirrored is a judgement someone made —
+   * and the sentence went stale the moment a Codex-only guard was added two
+   * sessions after the sentence was written (measured 2026-08-24). The resident
+   * ratchet could not catch it: a claim can rot without changing size.
+   *
+   * Only the asymmetric hooks are required by name. The mirrored four are
+   * already covered by `pnpm test:claude:hooks`, which asserts the wiring on
+   * both sides; naming them here would be a second list to keep.
+   */
+  it("names every hook that exists on one side only", () => {
+    const shellScripts = (dir: string): string[] =>
+      readdirSync(join(process.cwd(), dir)).filter((name) => name.endsWith(".sh")).sort();
+    const claude = shellScripts(".claude/hooks");
+    const codex = shellScripts(".codex/hooks");
+    expect(claude.length + codex.length, "no hooks found — this sweep would pass vacuously")
+      .toBeGreaterThan(4);
+
+    const asymmetric = [
+      ...claude.filter((name) => !codex.includes(name)),
+      ...codex.filter((name) => !claude.includes(name)),
+    ].sort();
+    const wrapper = readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8");
+    const unnamed = asymmetric.filter((name) => !wrapper.includes(name));
+    expect(
+      unnamed,
+      `these hooks run for one tool and not the other, and CLAUDE.md never says so:\n`
+        + `${unnamed.join("\n")}\n`
+        + "An asymmetry nobody wrote down reads as an oversight the next time someone "
+        + "tries to restore parity.",
+    ).toEqual([]);
+  });
+
   it("names every legacy redirect route in AGENTS.md", () => {
     const appDir = join(process.cwd(), "app/[locale]");
     const pages = globSync("**/page.tsx", { cwd: appDir });

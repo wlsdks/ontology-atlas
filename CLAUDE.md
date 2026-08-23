@@ -42,11 +42,11 @@ available to both agent trees; `AGENTS.md` owns invocation triggers and
 `docs/DECISIONS.md` owns decisions and dissent.
 
 `.claude/settings.json` owns Claude permissions and hooks, and both are
-inventoried agent files. Four hooks mirror `.codex/hooks/`: block npm
-publishing, unsafe Git, and hand-editing generated files, plus inject a compact
-vault inventory at session start. `report-agent-file-drift.sh` is Claude-only
-and reports drift after an edit to the agent-file surface; its own header says
-why it is not mirrored. Change hook wiring with `pnpm test:claude:hooks`.
+inventoried agent files. Four mirror `.codex/hooks/`: block npm publishing,
+unsafe Git, hand-editing generated files, and inject a vault census at session
+start. Two do not — `report-agent-file-drift.sh` is Claude-only,
+`block-secret-read.sh` is Codex-only — and each header says why. Change hook
+wiring with `pnpm test:claude:hooks`.
 
 ## Synchronization
 
