@@ -125,7 +125,7 @@
     "benchmark": "node scripts/benchmark.mjs",
     "benchmark:scale": "node scripts/benchmark-scale.mjs",
     "perf:dome": "node scripts/perf-dome.mjs",
-  "perf:graph": "node scripts/perf-graph.mjs",
+    "perf:graph": "node scripts/perf-graph.mjs",
     "perf:graph:check": "node scripts/perf-graph.mjs --check --n=1000",
     "perf:graph:scale": "node scripts/perf-graph.mjs --check --sizes=1000,5000 --runs=3 --max-compile-ms=1500 --max-query-ms=1500",
     "dogfood:compile": "node cli/src/index.mjs compile docs/ontology --summary --json",
@@ -172,7 +172,9 @@
     "test:run": "vitest run",
     "e2e": "playwright test",
     "design:toc": "node scripts/build-design-system-toc.mjs",
-    "design:toc:check": "node scripts/build-design-system-toc.mjs --check"
+    "design:toc:check": "node scripts/build-design-system-toc.mjs --check",
+    "gateway:specimen": "node scripts/generate-evidence-specimen.mjs",
+    "gateway:specimen:check": "node scripts/generate-evidence-specimen.mjs --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",

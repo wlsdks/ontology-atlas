@@ -710,6 +710,24 @@ const RULES = [
   },
   {
     /*
+     * **The gateway shows one vault file verbatim.** `/download`'s evidence section renders the
+     * frontmatter of a pinned node and claims it is a file you can open in this repository. That
+     * claim is only true while the committed generated copy matches the vault, so editing either
+     * side has to re-run the generator.
+     *
+     * The specimen file itself is the obvious trigger, but so is **any** vault edit: the caption
+     * states how many `kind:` nodes exist, which every added or deleted node changes.
+     */
+    command: 'pnpm gateway:specimen:check',
+    reason: 'the vault feeds the gateway evidence specimen (file shown verbatim + node count)',
+    matches: [
+      /^docs\/ontology\//,
+      /^scripts\/generate-evidence-specimen\.mjs$/,
+      /^src\/views\/download\/model\/evidence-specimen\.generated\.ts$/,
+    ],
+  },
+  {
+    /*
      * **Vault markdown is drawn on screen.** `/docs` renders this folder as is, and so
      * do `samples/storefront` and `docs/guide`. So the prose written here is **product
      * copy**, not code, and it is within reach of the copy gate (no em dashes).

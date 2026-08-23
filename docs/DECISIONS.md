@@ -40,6 +40,74 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-23 (103) — The evidence section shows one transformation, not an inventory
+
+**Trigger**: looking at the shipped page the owner rejected the evidence rail
+(too weak, in the owner's words, to sit in an open-source description), the
+heading with it, and asked for a redesign after surveying other products, adding
+that it need not stay a map.
+
+**Prior decision**: this changes *what fills* the right half that 2026-08-18
+created. That layout decision (cut the section in half, put something real on the
+right) still stands.
+
+**Observed**:
+
+1. **The screen showed this project's internals.** The rail picked "the three
+   most common relation types, and from each the alphabetically first edge by
+   slug" — a rule that represents the vault faithfully and selects for legibility
+   not at all. What reached the screen was
+   a Korean-named node joined to an English-named one by `--contains-->`: one line
+   mixing both languages and raw relation syntax.
+2. **63 of 83 vault nodes (75%) have no Korean name**, so much of the Korean
+   page's map is labelled in English. The rail was not the whole problem.
+3. **Nine references measured** (Biome, Linear, Raycast, Cursor, Logseq, Ghostty,
+   Tauri, Cap, AppFlowy). The ones that work share exactly one property: **they
+   show a single concrete moment, never an inventory.** Biome puts messy code
+   beside the formatted result with one measured number and its conditions.
+   Raycast gives four short claims with at most one number each. Logseq — famous
+   for its graph — leads with the notes you actually write. Ghostty, Tauri and Cap
+   show nothing at all.
+
+**Decision**:
+
+- **Stop counting; show one transformation.** Left: a file that exists in this
+  repository. Right: what an agent reads out of it. The product's claim is that
+  the frontmatter *is* the graph, so put that claim itself on screen.
+- **Hand-type none of it.** `scripts/generate-evidence-specimen.mjs` derives the
+  panel from the vault and CI diffs it. A hand-copied file becomes false the
+  moment the file changes and says nothing when it does — the failure this page
+  hit twice on this same day.
+- **Keep the map.** "It need not stay a map" was permission, not instruction, and
+  measurement showed `StageMap` has exactly one consumer: this is the gateway's
+  only touchable thing. Removing it leaves a visitor no live map before install.
+- **Link to the file on GitHub.** In open source the strongest evidence is "go
+  and look".
+
+**Recorded dissent**:
+
+> Dropping the map too and putting file and facts side by side would match
+> Biome's shape more closely and leave the section saying one thing.
+
+Rejected on the measurement above: the map is the page's only interaction. The
+signal that this dissent was right is defined below.
+
+**Falsifiers**:
+
+- If nobody is observed touching the map in this section, the dissent was right;
+  drop it and run file and facts as two panels.
+- If the specimen file reads as opaque to visitors, change the specimen. **Change
+  `SPECIMEN_SLUG`, not the device** — it is pinned for exactly this.
+
+**Left open**: 62 nodes still have no Korean name. Only the one the specimen needs
+was filled here; the rest is naming work and needs the owner's review.
+
+**Review**: when a falsifier above is observed
+
+**Status**: active
+
+---
+
 ## 2026-08-23 (102) — Make all active authored Markdown English; retain only typed locale data and immutable history
 
 **Trigger**: after the operational control plane reached English-only status,

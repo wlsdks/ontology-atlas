@@ -3623,6 +3623,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-23 · The evidence section shows one real file instead of counts",
+      "slug": "2026-08-23-the-evidence-section-shows-one-real-file-instead-of-counts"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-23 · 시연 절이 가운데로 서고, 설명 문구가 실제 영상을 말합니다",
       "slug": "2026-08-23-시연-절이-가운데로-서고-설명-문구가-실제-영상을-말합니다"
     },
@@ -6474,6 +6479,11 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-23 (103) — The evidence section shows one transformation, not an inventory",
+      "slug": "2026-08-23-103-the-evidence-section-shows-one-transformation-not-an-inventory"
     },
     {
       "depth": 2,

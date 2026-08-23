@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -12,6 +12,7 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { HeroTypewriter, heroSentence } from './HeroTypewriter';
+import { EvidenceSpecimen } from './EvidenceSpecimen';
 import { buttonVariants } from '@/shared/ui';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
@@ -29,7 +30,6 @@ import { AcpChatScene } from './AcpChatScene';
 import { useInViewOnce } from '../lib/use-in-view-once';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 import type { StageGraph } from '../lib/stage-graph';
-import { buildEvidenceRailModel } from '../lib/evidence-rail';
 
 /**
  * **This page's grid is one grid** (council verdict, 2026-07-29 — it survives the remake).
@@ -796,7 +796,11 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
           >
             <StageMap graph={graph} />
           </div>
-          <EvidenceRail graph={graph} inView={inView} />
+          <div
+            className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'min-w-0 lg:self-center')}
+          >
+            <EvidenceSpecimen />
+          </div>
         </div>
 
         {/* This number is the graph drawn directly above it. The lineage of the source, the scope
@@ -827,92 +831,6 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
         </p>
       </div>
     </section>
-  );
-}
-
-/**
- * The evidence rail — **a different rendering of the same graph**, filling the half beside the
- * map. Numbers, relations, and names are all derived by `buildEvidenceRailModel` from the same
- * `StageGraph` as the map on the left (zero decoration — this section is called evidence). The
- * notation grammar matches the instrument strip: labels in the body face, numbers in engraved
- * mono. Korean labels are not set in mono, for the same reason as the instrument strip — Korean
- * falls back to a mixed typeface under mono.
- *
- * ## Sizing — a second lead, not a footnote (owner, 2026-08-18: *"너무 작아서"* — it's too small)
- *
- * The first pass wore the instrument strip's sizes (caption 9.5, label 11, body-lg 14), but the
- * instrument strip is the hero's **footnote** while this rail is **half** of the evidence
- * section — the same clothes are below hierarchy here. Every step moves up one rung inside the
- * ramp (zero new steps): section head caption→label, name label→body, number body-lg→title,
- * verbatim relation body→body-lg, impact sentence body-lg→title.
- */
-function EvidenceRail({ graph, inView }: { graph: StageGraph; inView: boolean }) {
-  const t = useTranslations('download');
-  const tKind = useTranslations('kinds');
-  const model = useMemo(() => buildEvidenceRailModel(graph), [graph]);
-
-  return (
-    <div
-      data-testid="download-evidence-rail"
-      className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'min-w-0 lg:self-center')}
-    >
-      <div className="border-t border-[color:var(--color-border-soft)] py-6">
-        <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-          {t('evidenceKindsHeading')}
-        </h3>
-        <dl className="mt-4 flex flex-wrap gap-x-12 gap-y-3">
-          {model.census.map((row) => (
-            <div key={row.kind} className="min-w-0">
-              <dt className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-                {tKind(row.kind)}
-              </dt>
-              <dd
-                data-token="engraved-numeral"
-                className="mt-1 font-mono text-title leading-title text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-              >
-                {row.count}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      <div className="border-t border-[color:var(--color-border-soft)] py-6">
-        <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-          {t('evidenceRelationsHeading')}
-        </h3>
-        <ul className="mt-4 grid gap-3">
-          {model.relations.map((line) => (
-            <li
-              key={`${line.source}-${line.type}-${line.target}`}
-              className="min-w-0 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
-            >
-              {line.source}
-              {/* The type is the frontmatter's own text, untranslated. Typed facts are this
-                  product's substance, and the original text is the evidence. */}
-              <span
-                aria-hidden
-                className="mx-1.5 font-mono text-body leading-body text-[color:var(--color-text-quaternary)]"
-              >
-                --{line.type}--&gt;
-              </span>
-              {line.target}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {model.impact ? (
-        <div className="border-t border-[color:var(--color-border-soft)] py-6 pb-0">
-          <h3 className="font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-            {t('evidenceImpactHeading')}
-          </h3>
-          <p className="mt-4 break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]">
-            {t('evidenceImpactLine', { name: model.impact.name, count: model.impact.count })}
-          </p>
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -967,16 +885,6 @@ function AgentSection() {
         >
           <AcpChatScene />
         </div>
-        <p
-          className={cn(
-            'gateway-rise gateway-rise-d3',
-            inView && 'is-in',
-            'mt-5 max-w-[var(--gateway-stage-max)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
-          )}
-        >
-          {t('agentsCap')}
-        </p>
-
         {/* The three cards are still — one moving thing above is enough. */}
         <div className="mt-14 grid min-w-0 gap-y-10 md:grid-cols-3">
           {columns.map((column, i) => (

@@ -176,6 +176,14 @@ jobs:
         if: always()
         run: pnpm test:docs-vault
 
+      # The gateway's evidence section claims one vault file is shown verbatim. A hand-copied
+      # duplicate becomes false the moment the file changes and says nothing when it does, so
+      # the artifact is regenerated and diffed against the commit (the "generate, then compare"
+      # shape in `.claude/rules/documentation.md`).
+      - name: Gateway evidence specimen freshness
+        if: always()
+        run: pnpm gateway:specimen:check
+
       # 2026-08-07: `docs:check` 의 하위 검사(생성 표면 diff · DESIGN-SYSTEM
       # 목차 · 문서 언어 · 링크 참조 무결성)는 **어느 워크플로에서도 불린 적이 없었다.** 훅도
       # 이걸 보지 않는다 — 위의 `pre-commit` 은 볼트 생성물만 잰다. 그 사각에서

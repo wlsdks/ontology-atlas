@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-08-23 · The evidence section shows one real file instead of counts
+
+- The right half of the download page's evidence section is now **one file that
+  actually exists in this repository**, together with what an agent reads out of
+  it. The kind counts and the sampled relation list are gone. A link opens that
+  file on GitHub so the claim can be checked.
+- None of those values are hand-typed: they are derived from the vault, and a
+  check fails when the committed copy and the vault disagree.
+- The section heading changed from claiming the map *is* this repository to naming
+  what actually happens: a few lines at the top of a file become the map.
+- Removed the caption under the agents section about agent writes ending up as a
+  line in a file.
+
 ## 2026-08-23 · 시연 절이 가운데로 서고, 설명 문구가 실제 영상을 말합니다
 
 - 시연 절의 제목·설명·영상·캡션이 **한 축에 가운데로** 섭니다. 영상만 가운데이고

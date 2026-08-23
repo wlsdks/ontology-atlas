@@ -3,6 +3,8 @@ uid: 1ee91a34-14c2-4bdd-bda8-84910555939b
 slug: capabilities/vault-ontology
 kind: capability
 title: Vault Ontology Schema Authoring
+display_ko: 볼트 온톨로지 스키마 작성
+display_en: Vault Ontology Schema Authoring
 domain: domains/graph-modeling
 elements: [elements/knowledge-graph, elements/ontology-class]
 path: mcp/src/schema.mjs
