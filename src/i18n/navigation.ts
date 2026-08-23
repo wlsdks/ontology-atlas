@@ -9,4 +9,4 @@ import { routing } from './routing';
  * preserved automatically. External URLs and root `/` redirects keep
  * using the bare next/* exports.
  */
-export const { Link, redirect, usePathname, useRouter, getPathname } = createNavigation(routing);
+export const { Link, redirect, usePathname, useRouter } = createNavigation(routing);

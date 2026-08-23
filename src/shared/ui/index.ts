@@ -4,13 +4,11 @@ export { Button, buttonVariants, type ButtonProps } from './button';
  * come with it. Inventory: 10 of 20 such surfaces were hard cuts, and all 10
  * were inline panels.
  */
-export { Surface, type SurfaceMotion, type SurfaceProps } from './surface';
+export { Surface } from './surface';
 export { AGENT_DOCK_INSET_SURFACE_CLASS } from './agent-dock-surface';
-export { Dialog, type DialogProps } from './dialog';
-export { Input, Textarea, type InputProps, type TextareaProps } from './input';
-export { Checkbox, type CheckboxProps } from './checkbox';
-export { badgeClass, type BadgeShape, type BadgeClassOptions } from './badge-class';
-export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './segmented-control';
+export { Dialog } from './dialog';
+export { Textarea } from './input';
+export { Checkbox } from './checkbox';
 /**
  * Control components — the layer that adds **behaviour** on top of
  * `controlClass`. The function below owns the values; this owns `type="button"`,
@@ -20,14 +18,8 @@ export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } fr
  * controls had that shape. The other six (chip, link-like, row, icon, pill,
  * card) are here.
  */
-export { Chip, IconButton, RowButton, type IconButtonProps } from './controls';
-export {
-  controlClass,
-  type ControlClassOptions,
-  type ControlShape,
-  type ControlSize,
-  type ControlTone,
-} from './control-class';
+export { Chip, IconButton, RowButton } from './controls';
+export { controlClass } from './control-class';
 /*
  * `Card`, `Badge` and `DetailCard` were **deleted on 2026-08-03.**
  *
@@ -41,8 +33,8 @@ export { LiveAnnouncer } from './live-announcer';
 export { InfoHint } from './info-hint';
 export { ToastProvider, useToast } from './toast';
 export { EmptyState } from './empty-state';
-export { EvidenceOnlyBadge, type EvidenceOnlyBadgeProps } from './evidence-only-badge';
-export { Select, type SelectOption, type SelectProps } from './select';
+export { EvidenceOnlyBadge } from './evidence-only-badge';
+export { Select } from './select';
 export { InlineEditable } from './inline-editable';
 /*
  * The `ChipListEditor` and `LinkListEditor` exports were removed on 2026-08-03:
@@ -51,35 +43,24 @@ export { InlineEditable } from './inline-editable';
  * Background and falsifier: `docs/DECISIONS.md` 2026-08-03 two dead primitives
  * (two dead primitives).
  */
-export { Tooltip, TooltipProvider, TooltipContent } from './tooltip';
+export { Tooltip, TooltipProvider } from './tooltip';
 export { StaggeredFadeIn } from './staggered-fade-in';
 export { HighlightedText } from './highlighted-text';
-export { ErrorBoundary } from './error-boundary';
 export {
   TopologyV2KindGlyph,
   TopologyV2TraceMark,
-  isTopologyV2RenderableKind,
-  type TopologyV2RenderableKind,
 } from './topology-v2-kind-glyph';
-export {
-  NodeExplanationEdit,
-  type NodeExplanationEditLabels,
-} from './node-explanation-edit';
-export { TabBar, type TabBarItem } from './tab-bar';
-export { ChromeTile, type ChromeTileProps } from './chrome-tile';
-export { ChromeChip, CHROME_STATUS_CHIP_CLASS, type ChromeChipProps } from './chrome-chip';
-export { BrandMark, type BrandMarkProps } from './brand-mark';
-export { HexMark, type HexMarkProps } from './hex-mark';
-export { GithubMark, type GithubMarkProps } from './github-mark';
-export { XMark, type XMarkProps } from './x-mark';
-export { CompactCopyButton, type CompactCopyButtonProps } from './compact-copy-button';
-export { SimilarNodeWarning, type SimilarNodeWarningProps } from './similar-node-warning';
-export {
-  LastEditSubjectRow,
-  type LastEditSubjectKind,
-  type LastEditSubjectRowProps,
-} from './last-edit-subject-row';
-export { MtimeConflictBadge, type MtimeConflictBadgeProps } from './mtime-conflict-badge';
+export { TabBar } from './tab-bar';
+export { ChromeTile } from './chrome-tile';
+export { ChromeChip, CHROME_STATUS_CHIP_CLASS } from './chrome-chip';
+export { BrandMark } from './brand-mark';
+export { HexMark } from './hex-mark';
+export { GithubMark } from './github-mark';
+export { XMark } from './x-mark';
+export { CompactCopyButton } from './compact-copy-button';
+export { SimilarNodeWarning } from './similar-node-warning';
+export { LastEditSubjectRow } from './last-edit-subject-row';
+export { MtimeConflictBadge } from './mtime-conflict-badge';
 export { RouteLoadingFallback } from './route-loading-fallback';
-export { JsonLd, serializeJsonForHtml, type JsonLdProps } from './json-ld';
+export { JsonLd } from './json-ld';
 export { AccentBootScript } from './accent-boot-script';

@@ -127,8 +127,6 @@ export const DOME_PITCH_OVERSHOOT_CAP = 0.09;
  * depth cue.
  */
 export const DOME_FOCAL = 760;
-/** 2D↔3D assemble/disassemble ramp (ms) — the same cinematic tier as a programmatic camera move. */
-export const DOME_RAMP_MS = 700;
 /**
  * Longest programmatic pose move (ms) — 「Home」 (the re-fit / home action) and
  * selection reframe. Half a turn (π, the worst case of the nearest-equivalent-

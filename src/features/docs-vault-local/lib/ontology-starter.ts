@@ -582,9 +582,6 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
   - \`relates: [...]\` — 느슨한 연관 참조(선택)
 `;
 
-/** Starter body language. The file set and frontmatter are identical; only the prose differs. */
-export type StarterLocale = "en" | "ko";
-
 const STARTER_FILES_EN: ReadonlyArray<StarterFile> = [
   { relPath: 'README.md', content: README_MD },
   { relPath: 'project.md', content: PROJECT_MD },

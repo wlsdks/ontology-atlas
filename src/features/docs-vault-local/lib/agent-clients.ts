@@ -98,14 +98,3 @@ export const AGENT_CLIENTS: readonly AgentClient[] = [
 export function filesForClient(id: AgentClientId): readonly string[] {
   return AGENT_CLIENTS.find((client) => client.id === id)?.files ?? [];
 }
-
-/**
- * Every file the app may write — must be **identical** to Rust's `ALLOWED_CONFIG_FILES`.
- *
- * That side is a security allowlist (anything outside it is refused) and this side is the UI's
- * source of truth, so a mismatch means either a button exists whose write is refused, or the
- * reverse. A contract test compares the two lists.
- */
-export function allAgentConfigFiles(): readonly string[] {
-  return [...new Set(AGENT_CLIENTS.flatMap((client) => client.files))].sort();
-}

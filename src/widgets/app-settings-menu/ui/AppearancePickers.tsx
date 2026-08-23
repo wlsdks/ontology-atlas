@@ -9,19 +9,15 @@ import {
   CANVAS_BACKGROUNDS,
   DEFAULT_ACCENT,
   GLYPH_SETS,
-  MAP_ARRANGEMENTS,
   useAccent,
   useCanvasBackground,
   useGlyphSet,
-  useMapArrangement,
   writeAccent,
   writeCanvasBackground,
   writeGlyphSet,
-  writeMapArrangement,
   type Accent,
   type CanvasBackground,
   type GlyphSet,
-  type MapArrangement,
 } from '@/shared/lib/appearance-preferences';
 import { controlClass } from '@/shared/ui/control-class';
 import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
@@ -308,78 +304,6 @@ function AccentSwatch({ variant }: { variant: Accent }) {
  * limit on screen too — without it, a Dock icon that does not change reads as a
  * defect.
  */
-/**
- * Arrangement picker (2026-08-18) — what decides the 3D dome's **bearings**.
- *
- * That this picker's copy is **two questions** rather than "Style" is the design.
- * Listing arrangements as styles turns them into N mediocre views on the spot, and
- * this repository already has a precedent for rejecting «mode proliferation». Each
- * option carries the question it answers, and a new option has to bring a new
- * question to get in.
- *
- * Geometry, determinism and the rejected families: the `DomeArrangement` doc-block
- * in `topology-map-v2/model/dome-view.ts`.
- */
-export function MapArrangementPicker() {
-  const t = useTranslations('nav.settingsMenu');
-  const value = useMapArrangement();
-  const group = useRovingRadioGroup({
-    value,
-    values: MAP_ARRANGEMENTS,
-    onChange: writeMapArrangement,
-  });
-  return (
-    <div className="px-3 py-2.5" data-testid="app-settings-arrangement">
-      <p className="text-body text-[color:var(--color-text-secondary)]">{t('arrangementLabel')}</p>
-      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
-        {t('arrangementCaption')}
-      </p>
-      <div
-        {...group.groupProps}
-        aria-label={t('arrangementLabel')}
-        className="mt-2 grid grid-cols-2 gap-2"
-      >
-        {MAP_ARRANGEMENTS.map((arrangement: MapArrangement, index) => {
-          const active = arrangement === value;
-          return (
-            <button
-              key={arrangement}
-              {...group.itemProps(index)}
-              type="button"
-              data-testid={`app-settings-arrangement-${arrangement}`}
-              className={controlClass({
-                shape: 'tile',
-                size: 'md',
-                className: cn(PICKER_TILE_FRAME, PICKER_TILE_INK(active)),
-              })}
-            >
-              <span
-                className={cn(
-                  'text-label',
-                  active
-                    ? 'text-[color:var(--color-indigo-text-soft)]'
-                    : 'text-[color:var(--color-text-tertiary)]',
-                )}
-              >
-                {t(`arrangement.${arrangement}`)}
-              </span>
-              {/* Each option carries the question it answers — this single line is
-                  what separates «a style menu» from «two questions».
-                  Why `text-label` (11px): the settings sheet's dialect is «pressable
-                  text = text-body · description = text-label», and `text-caption`
-                  (9.5px) is allowed only in the one uppercase-eyebrow position
-                  (`settings-sheet-type-dialect` contract). */}
-              <span className="break-keep text-label text-[color:var(--color-text-quaternary)]">
-                {t(`arrangementHint.${arrangement}`)}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export function AccentPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useAccent();

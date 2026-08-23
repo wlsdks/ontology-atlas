@@ -336,7 +336,7 @@ export function useView3d(): boolean {
  */
 export type MapArrangement = "ownership" | "coupling";
 
-export const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["ownership", "coupling"];
+const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["ownership", "coupling"];
 
 export const DEFAULT_MAP_ARRANGEMENT: MapArrangement = "ownership";
 

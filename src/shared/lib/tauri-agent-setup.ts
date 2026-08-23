@@ -24,15 +24,6 @@ export interface BundledMcpServer {
   reason: string | null;
 }
 
-export interface McpVerifyResult {
-  ok: boolean;
-  serverVersion: string | null;
-  toolCount: number | null;
-  sampleSlug: string | null;
-  sampleTitle: string | null;
-  failure: string | null;
-}
-
 /** Path to the MCP server inside the app bundle. `available: false` on the web. */
 export async function readBundledMcpServer(): Promise<BundledMcpServer> {
   const invoke = getInvoke();
@@ -44,26 +35,4 @@ export async function readBundledMcpServer(): Promise<BundledMcpServer> {
     };
   }
   return invoke<BundledMcpServer>('mcp_bundled_server');
-}
-
-/** Spawns the bundled server on the spot to verify this vault is actually readable. */
-export async function verifyMcpServer(
-  vaultPath: string,
-  sampleSlug?: string | null,
-): Promise<McpVerifyResult> {
-  const invoke = getInvoke();
-  if (!invoke) {
-    return {
-      ok: false,
-      serverVersion: null,
-      toolCount: null,
-      sampleSlug: null,
-      sampleTitle: null,
-      failure: 'Connection checking requires the installed app.',
-    };
-  }
-  return invoke<McpVerifyResult>('verify_mcp_server', {
-    vaultPath,
-    sampleSlug: sampleSlug ?? null,
-  });
 }

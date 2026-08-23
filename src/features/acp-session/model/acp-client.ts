@@ -617,35 +617,6 @@ function readToolName(params: Record<string, unknown>): string | null {
 }
 
 /**
- * Is this tool from **the vault MCP server we wired**?
- *
- * Why this is needed (found by measurement, 2026-08-16). Running a real session end to end showed
- * **the agent could not write anything to the map.** Our own gate was blocking our own tools:
- *
- * ```
- * permission request: outside · (no path)  ×4  → all rejected
- * answer: "every MCP tool call was blocked by a permission denial, so nothing was actually written to the map"
- * ```
- *
- * The cause was that the policy **only knew how to look at file paths**. An MCP tool call has no
- * `file_path`, so it fell through to "path unknown → ask", and in a measurement environment with no
- * auto-answer that meant rejection.
- *
- * But that server is **one we launched with the vault path**, so it cannot touch anything outside
- * the vault — auto-allow is right on exactly the same grounds as "a file inside the vault". What the
- * gate protects is "outside the vault", not "using a tool".
- *
- * ⚠️ **One residual risk**: a project's `.mcp.json` defining a server with the same name could
- * borrow this verdict. A name collision causes a conflict on the adapter side, so it is a narrow
- * hole, but not zero. Hence the name is not written here as a literal but taken from **the very
- * constant we inject with** — change one place and both move together.
- */
-export function isVaultMcpTool(toolName: string | null, serverName: string): boolean {
-  if (!toolName || !serverName) return false;
-  return toolName.startsWith(`mcp__${serverName}__`);
-}
-
-/**
  * Finds the **path** carried by the request — the argument name differs per tool.
  *
  * Why several names are checked (caught in the second review, 2026-08-16). It used to check
