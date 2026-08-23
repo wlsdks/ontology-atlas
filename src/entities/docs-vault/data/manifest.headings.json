@@ -985,38 +985,6 @@
       "slug": "paravel-app-vault-자체-정책"
     }
   ],
-  "archive/MISSION-CLEANUP-CANDIDATES": [
-    {
-      "depth": 1,
-      "text": "Mission Cleanup Candidates — mission v2 와 코드 정렬 (✅ ARCHIVED)",
-      "slug": "mission-cleanup-candidates-mission-v2-와-코드-정렬-archived"
-    },
-    {
-      "depth": 2,
-      "text": "1원리 분석 (요지)",
-      "slug": "1원리-분석-요지"
-    },
-    {
-      "depth": 2,
-      "text": "✅ 완료된 staging plan",
-      "slug": "완료된-staging-plan"
-    },
-    {
-      "depth": 2,
-      "text": "보존 결정 (mission 정렬 또는 cloud-mode 옵션)",
-      "slug": "보존-결정-mission-정렬-또는-cloud-mode-옵션"
-    },
-    {
-      "depth": 2,
-      "text": "Cold storage (read-only)",
-      "slug": "cold-storage-read-only"
-    },
-    {
-      "depth": 2,
-      "text": "firebase deploy 정책",
-      "slug": "firebase-deploy-정책"
-    }
-  ],
   "archive/PUBLISH-NPM": [
     {
       "depth": 1,
@@ -10466,8 +10434,8 @@
     },
     {
       "depth": 3,
-      "text": "`/` and `/topology` — canvas-2D topology hub",
-      "slug": "and-topology-canvas-2d-topology-hub"
+      "text": "`/` (with a loaded vault) and `/topology` — canvas-2D topology hub",
+      "slug": "with-a-loaded-vault-and-topology-canvas-2d-topology-hub"
     },
     {
       "depth": 4,
@@ -10486,8 +10454,8 @@
     },
     {
       "depth": 4,
-      "text": "`SigmaHubRail` (left, collapsed default)",
-      "slug": "sigmahubrail-left-collapsed-default"
+      "text": "`HubRail` (left, collapsed default)",
+      "slug": "hubrail-left-collapsed-default"
     },
     {
       "depth": 4,
@@ -13655,8 +13623,8 @@
     },
     {
       "depth": 3,
-      "text": "Decision 1 — Direction A (ontology-first)",
-      "slug": "decision-1-direction-a-ontology-first"
+      "text": "Decision 1 — Direction A (ontology-first, historical; superseded 2026-07-29)",
+      "slug": "decision-1-direction-a-ontology-first-historical-superseded-2026-07-29"
     },
     {
       "depth": 3,
@@ -13705,8 +13673,8 @@
     },
     {
       "depth": 3,
-      "text": "Option A — npm package + CLI",
-      "slug": "option-a-npm-package-cli"
+      "text": "Option A — npm package + CLI (historical, retired)",
+      "slug": "option-a-npm-package-cli-historical-retired"
     },
     {
       "depth": 3,
@@ -13745,13 +13713,13 @@
     },
     {
       "depth": 3,
-      "text": "✅ Phase 1 — Identity alignment (UI) — merged",
-      "slug": "phase-1-identity-alignment-ui-merged"
+      "text": "✅ Phase 1 — Identity alignment (UI) — merged, historical route record",
+      "slug": "phase-1-identity-alignment-ui-merged-historical-route-record"
     },
     {
       "depth": 3,
-      "text": "⏸ Phase 2 — Self-hosting — DEFERRED",
-      "slug": "phase-2-self-hosting-deferred"
+      "text": "⏸ Phase 2 — Self-hosting — DEFERRED, historical",
+      "slug": "phase-2-self-hosting-deferred-historical"
     },
     {
       "depth": 3,
@@ -13775,18 +13743,18 @@
     },
     {
       "depth": 2,
-      "text": "7. Old vs. new mission",
-      "slug": "7-old-vs-new-mission"
+      "text": "7. Historical mission transition",
+      "slug": "7-historical-mission-transition"
     },
     {
       "depth": 3,
-      "text": "Old mission (per AGENTS.md, current)",
-      "slug": "old-mission-per-agentsmd-current"
+      "text": "Old mission (historical, superseded; not the current AGENTS.md contract)",
+      "slug": "old-mission-historical-superseded-not-the-current-agentsmd-contract"
     },
     {
       "depth": 3,
-      "text": "Current mission",
-      "slug": "current-mission"
+      "text": "Later mission (historical, also superseded)",
+      "slug": "later-mission-historical-also-superseded"
     },
     {
       "depth": 2,
@@ -14060,8 +14028,8 @@
   "TECH-STACK": [
     {
       "depth": 1,
-      "text": "TECH STACK — Technology Stack Decision Record (2026-07-17)",
-      "slug": "tech-stack-technology-stack-decision-record-2026-07-17"
+      "text": "TECH STACK — Technology Stack Decision Record",
+      "slug": "tech-stack-technology-stack-decision-record"
     },
     {
       "depth": 2,
@@ -14090,8 +14058,8 @@
     },
     {
       "depth": 2,
-      "text": "Immediate Actions (This Cycle)",
-      "slug": "immediate-actions-this-cycle"
+      "text": "Immediate Actions (This Cycle — historical, superseded)",
+      "slug": "immediate-actions-this-cycle-historical-superseded"
     }
   ],
   "TOPOLOGY-FOCUS-AND-SCALE": [
@@ -14102,13 +14070,13 @@
     },
     {
       "depth": 2,
-      "text": "Problem",
-      "slug": "problem"
+      "text": "Historical problem statement (2026-06-08; Sigma-era implementation superseded)",
+      "slug": "historical-problem-statement-2026-06-08-sigma-era-implementation-superseded"
     },
     {
       "depth": 2,
-      "text": "Decision",
-      "slug": "decision"
+      "text": "Decision (implemented)",
+      "slug": "decision-implemented"
     },
     {
       "depth": 2,
@@ -14117,28 +14085,28 @@
     },
     {
       "depth": 3,
-      "text": "Interaction states",
-      "slug": "interaction-states"
+      "text": "Current interaction states",
+      "slug": "current-interaction-states"
     },
     {
       "depth": 3,
-      "text": "The compact popover",
-      "slug": "the-compact-popover"
+      "text": "Current compact detail panel",
+      "slug": "current-compact-detail-panel"
     },
     {
       "depth": 3,
-      "text": "Focus + context in the graph",
-      "slug": "focus-context-in-the-graph"
+      "text": "Current focus + context in the graph",
+      "slug": "current-focus-context-in-the-graph"
     },
     {
       "depth": 3,
-      "text": "Overview-first default",
-      "slug": "overview-first-default"
+      "text": "Current overview-first default",
+      "slug": "current-overview-first-default"
     },
     {
       "depth": 3,
-      "text": "Performance layer (scale ≥ ~2–3k → ~10k+)",
-      "slug": "performance-layer-scale-23k-10k"
+      "text": "Current performance layers",
+      "slug": "current-performance-layers"
     },
     {
       "depth": 2,
@@ -14147,8 +14115,8 @@
     },
     {
       "depth": 2,
-      "text": "Open questions",
-      "slug": "open-questions"
+      "text": "Historical open questions (resolved or superseded by the implemented contract)",
+      "slug": "historical-open-questions-resolved-or-superseded-by-the-implemented-contract"
     },
     {
       "depth": 2,

@@ -21,7 +21,7 @@
 
 > **Mission v3**: "One product/system, one ontology, that people and their AI agents grow together."
 > **Current framing**: an agent-native, human-sovereign meaning layer: typed enough for Claude Code, Cursor, and Codex; plain Markdown and Git diffs for human judgment.
-> **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (desktop app · CLI · MCP · Website)** — daily heavy-lift ontology work happens in the installed app / CLI / MCP; the hosted website's root map lets anyone open their own local vault folder directly too (root-first-open, 2026-07), while `/download` stays the product intro + release download path.
+> **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (desktop app · CLI · MCP · Website)** — daily heavy-lift ontology work happens in the installed app / CLI / MCP; on the hosted website, `/` is the gateway until a vault is loaded, then routes to the topology map, while `/topology` remains the explicit map address and `/download` carries the current release path.
 > **Brand split**: **Ontology Atlas** is the user-facing desktop app / website brand and release asset identity. `ontology-atlas` remains the repo, CLI binary, and MCP package name.
 
 The product should not feel like an ontology editor. The core user-visible loop
@@ -30,10 +30,10 @@ diff review -> better next agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/docs`, `/ontology/insights`, `/projects`, `/agents`, and `/git` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 54 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
-| **Website** | GitHub Pages static export / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
+| **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
 Multi-project vaults use explicit selection at the agent boundary:
 `ontology-atlas agent-brief --project SLUG` forwards the same project identity
@@ -186,7 +186,7 @@ for duplicates before extracting. All three refuse to write until a person picks
 Byte-parity between the CLI templates and the web starter constants is gated by
 `tests/contract/starter-templates.contract.test.ts`.
 
-**Web root-first-open (2026-07-18)**: on hosted web, `/` no longer shows a
+**Web root-first-open (2026-07-18, superseded 2026-07-30)**: on hosted web, `/` no longer showed a
 marketing landing page at all — with no vault selected it renders `HomePage`
 (the same topology hub `/topology` uses) drawing this project's own dogfood
 sample, read-only, plus a **first-run starter module** integrated into the
@@ -216,10 +216,10 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 
 ### `/` — Smart entry
 
-- **Hosted web, no vault** → the **gateway face** — headline, download, and "open it in the browser" — the same view `/download` renders (2026-07-30 — reversed the previous decision to open the map directly from the root). Judged by `isGatewaySurface()`. A web user who *has* a vault still gets `HomePage` with the dogfood sample and the INDEX-panel first-run starter
+- **Hosted web, no vault** → the **gateway face** — headline, download, and "open it in the browser" — the same view `/download` renders (2026-07-30 — reversed the previous decision to open the map directly from the root). Judged by `isGatewaySurface()`.
 - **Desktop app, no restored vault** → `FirstRunPage` (just start / open / create / browse demo), not the hosted intro
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
-- **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 decision ["Don't keep a separate hub; the map takes its place"] — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
+- **Vault loaded (web or desktop)** → `HomePage` — the topology hub for that vault (map + INDEX concept panel + node datasheet), the same component `/topology` renders (B3 decision ["Don't keep a separate hub; the map takes its place"] — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
 - **Switch vault mid-session**: the topology settings gear (⚙, top-right utility rail) has a "switch vault" row → `/docs/?intent=local`, alongside the `/docs` vault pill's own "swap" control
 
 ### `/download` — the install decision (remade 2026-07-27)
@@ -232,7 +232,7 @@ Korean-only changelog excerpt, 12 same-weight boxes, and the signing copy that
 had become false).
 
 - **Decision first, at full column width**: eyebrow → headline → one-paragraph lead → the macOS decision card. The card is the widest thing above the fold because it is the most important; it used to sit inside a half-width column under a taller figure.
-- **One filled indigo button per state, and it is the one that works.** Published → the Apple Silicon DMG with its real size (most Macs sold since 2020), Intel beside it at ghost weight. **Unpublished** → the winner is "open the map in your browser" (`/`), because today the GitHub releases page has nothing on it; a filled button pointed at an empty page spends the page's one strongest promise on a dead end. The releases link stays, at lower weight.
+- **One filled indigo button per release state, and it is the one that works.** Generated GitHub Release facts select the CTA: published assets show their real platform/architecture download and size; an unavailable asset gets honest pending copy instead of a dead release button. The releases link stays at lower weight.
 - **Architecture help is on the page, not assumed**: "Apple menu → About This Mac; if *Chip* says Apple M1–M4 it's Apple Silicon". Naming both architectures and stopping there left the majority of visitors — who do not know which Mac they own — stuck in front of two buttons.
 - **One release-state source**: everything the page may claim about a build comes from `src/views/download/model/macos-release.generated.ts`, written by `pnpm download:release-facts` out of the real GitHub Release. Published macOS → per-architecture DMGs; published Windows → the x64 NSIS installer; both carry real byte size, filename, direct URL, and copyable SHA-256. Unpublished → plain pending copy instead of placeholder facts. There is no state where the page shows a size or checksum that does not exist.
 - **Trust is four facts with their proofs, not a paragraph**: Developer ID signing (`codesign verified`) · Apple notarization + stapling (`stapler validate passes`) · a published SHA-256 per file with the verify command built from the current version's real DMG name · and *what the app does not do* — no account, no server, the folder you pick never leaves your disk. Signing is stated as a property of the release path and drift-guarded by `release-facts.test.ts` against the real `desktop:release-artifact` chain (`desktop:sign` → `desktop:notarize` → `desktop:verify-release-dmg --require-signed --require-notarized`), so the claim cannot outlive the pipeline that backs it.
@@ -241,13 +241,13 @@ had become false).
 - **Evidence figure**: the dogfood instrument (project hex + domain chips + hub capability circle, real `docs/ontology` census — `src/views/download/model/dogfood-census.generated.ts`, built by `scripts/build-docs-vault.mjs`) now sits beside step 02, the one place it is an answer rather than decoration, with its scope caption ("counts this repo's own vault, not yours").
 - **Secondary CTA**: "Go to GitHub" → GitHub repo, as a visible medium outline button rather than a small source footnote.
 - **Motion**: none on entrance (first painted frame is identical to the settled frame across every node in `#main`). The budget goes to the attention winner alone — the filled CTA eases on `--motion-base` + `--motion-ease` with a 6.1% first-frame share — and `prefers-reduced-motion` lands it instantly. The previous page inverted this: a staggered fade ran on background cards while the winner hard-cut.
-- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `wlsdks.github.io/ontology-atlas` root/download pages. It asserts only **server-rendered** text: the root map hydrates client-side, so its in-app CTAs never reach the static HTML — expecting them is what kept this gate failing on every Pages deploy while the site itself was fine (5/5 runs red, 2026-07-26~27). Expected download copy is read from `messages/ko.json` instead of duplicated in the checker, so the contract is "the page renders its own copy" and cannot drift: title, source-code CTA, both platform headings, the Windows beta trust state, the hosted-site scope note, a stable GitHub Releases href, and no `/releases/latest` dependency.
+- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `wlsdks.github.io/ontology-atlas` root/download pages after the Pages workflow deploys; on a published release it also runs `pnpm desktop:verify-download` for that tag. It asserts only **server-rendered** text: a loaded-vault map hydrates client-side, so its in-app CTAs never reach the static HTML — expecting them is what kept this gate failing on every Pages deploy while the site itself was fine (5/5 runs red, 2026-07-26~27). Expected download copy is read from `messages/ko.json` instead of duplicated in the checker, so the contract is "the page renders its own copy" and cannot drift: title, source-code CTA, both platform headings, the Windows beta trust state, the hosted-site scope note, a stable GitHub Releases href, and no `/releases/latest` dependency.
 - **Privacy note**: the installed app and vault data use local disk as the source of truth; `/docs`'s own local-source *browsing* tab stays desktop-only (unrelated to opening your primary vault from `/`)
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 
-### `/` and `/topology` — canvas-2D topology hub
+### `/` (with a loaded vault) and `/topology` — canvas-2D topology hub
 
-Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-link target, `/topology` = explicit deep-link namespace).
+`/topology` renders `HomePage`; `/` renders it after a vault is loaded (R3 keep-both decision: `/` = home/back-link target, `/topology` = explicit deep-link namespace). Without a vault, `/` follows the gateway/desktop first-run branches above.
 
 #### Analysis modes + workflow entry points
 - **Overview (default)** — the canvas-2D Topology map with deterministic
@@ -288,7 +288,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).
 - The old "map controls" panel (search · "Hubs only" · overlays · depth/force sliders · in-panel shortcuts help) was a dead control board — the v2 canvas engine never read those focus/overlay/force fields — and was demolished (2026-07-21). Physics (force) tuning may return later as a real, wired feature (see BACKLOG).
 
-#### `SigmaHubRail` (left, collapsed default)
+#### `HubRail` (left, collapsed default)
 - Hub list sorted by degree, click to select
 - Keyboard: `↑/↓` cycle hubs · `Home/End` jump to first/last
 - Suppressed when hero panel expanded (avoid overlap)
@@ -1022,13 +1022,13 @@ their viewport. `OperationsNav` and `OntologySubNav` are retired (deleted, not
 just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 6 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Workshop
-  (`/ontology/studio`, Workshop / Compass Stage) · Insights
-  (`/ontology/insights`) · Projects (`/projects` or `/project/*`) · Git
-  (`/git`)
-- Bottom of rail: agent-activity status tile + `settingsSlot`. `AppShell`
-  supplies the app-wide settings trigger by default; a page can override the
-  slot for a surface-specific control.
+- 6 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Insights
+  (`/ontology/insights`) · Projects (`/projects` or `/project/*`) · Agents
+  (`/agents`) · Git (`/git`). Workshop is the map's contextual relation-writing
+  surface, not a rail destination.
+- Bottom utility tier: the `settingsSlot` plus the web-only Get App tile.
+  `AppShell` supplies the app-wide settings trigger by default; a page can
+  override the slot for a surface-specific control.
 - Active-item detection: shared `resolveActiveNavDestination`
   (`src/shared/lib/nav-destination.ts`) — `BottomTabBar` uses the same semantic
   resolver, so a route has one destination even when mobile intentionally
@@ -1098,13 +1098,13 @@ just unmounted).
   settings sheet; neither is a navigation destination.
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
-- 4 core destinations: Map · Docs · Insights · Projects. Workshop is the
-  immersive desktop write surface, Git is a desktop workbench, and the retired
-  ERD builder tab was removed 2026-07-24.
+- 4 core destinations: Map · Docs · Insights · Projects. Contextual relation
+  writing and Git remain desktop workbench actions, and the retired ERD builder
+  tab was removed 2026-07-24. Web adds Get App as a fifth utility, not a
+  destination.
 - Min height 56 px (safe-area)
-- Hidden only on the standalone `/download/` surface. Root is the Topology hub
-  even without a loaded vault, so mobile first-run users keep global
-  navigation.
+- Hidden only on the standalone `/download/` surface. Root without a loaded
+  vault is the gateway; after a vault loads, root shares the map destination.
 
 ### Search palettes (separate by design — R5 skip merge)
 - **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
@@ -1163,7 +1163,7 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 - **Round 15** — Removed VSCode plugin (surfaces reduced from 4 → 3). Made CLI `init` create `.mcp.json` directly (for both working directory and vault), eliminating one step of manual MCP registration. Later follow-up extends this to Codex by writing repo-local `.codex/config.toml` in cwd + vault and making the app starter write vault-local `.mcp.json` / `.codex/config.toml`. Changed `--auto-prefix` for `add` / `import` to default on (to avoid conflicting with initial folder structure); use `--raw-slug` to disable.
 - **Round 16** — fresh repo bootstrap path. `analyze_repo_structure` / CLI `analyze` propose project/domain/capability/element candidates from package metadata, README headings, and source layout with side effect 0.
 - **Round 17** — import-derived dependency evidence. `infer_imports` / CLI `infer-imports` parse TS/JS and bounded static Python file imports plus root-module Go package imports, resolve supported internal paths, and return review-only evidence without mutating the vault.
-- **Round 18+** — workbench loop consolidation. `/ontology` now frames Tree as Browse and immediately hands selected slugs to Builder (Write), Topology (visual focus), and Insights (Query). `/ontology/edit` is kept as a constrained relation write-review surface with source-file patch preview, preflight, post-save proof packets, and focused Insights handoff. `/ontology/insights` exposes the graph DB query pack as an executable local markdown graph cockpit, and `pnpm dogfood:graph-db` now fail-closes on setup self-check, `health --json`, graph scan follow-ups, public relation-name parity, structural `pattern-walk` / `project-map` traversal, bounded path completeness, relation preflight, and relation explanation contracts.
+- **Round 18+** — the first workbench loop consolidated Browse / Builder / Query handoffs. Those standalone surfaces were later retired: `/ontology`, `/ontology/edit`, and `/ontology/studio` are compatibility redirects into the topology workbench; relation writing is contextual on `/topology`, and Insights is the five-question maintenance board. Graph query packs remain agent/CLI handoff material, while `pnpm dogfood:graph-db` fail-closes on setup self-check, `health --json`, graph scan follow-ups, public relation-name parity, structural `pattern-walk` / `project-map` traversal, bounded path completeness, relation preflight, and relation explanation contracts.
 - **Round where all pages were recreated based on approved drafts (2026-07-18, PR #355~#366)** — Updated full-screen views in `docs/prototypes/` according to approved drafts. Removed: old 4-tab unique type system for `/ontology/insights` (proof/collaboration/agent/census presets, session evidence lines, collaborator brief, query-recipe cockpit, ~6,200 lines) — replaced with Overview/Relations/Freshness 3 tabs; card list with search/filter/pagination for `/projects` — replaced with embossed count header + recent activity line + full-width cards + dashed "Next Project" placeholder (`ProjectQuickCreatePanel` remains as a component but no longer appears on this page); "More info" collapsible section and tag/stack/link display on `/project/[slug]` — moved to quick edit and full edit. Added: increased topology data sheet from 288 → 352px and moved evidence groups up; `TopologyV2SettingsGear` (right tool rail); `/ontology/edit` 3-split (240 · canvas · 340, always visible on `xl`) + `BuilderWriteConfirmBar`; permanent Pinned/Vault/Recent sidebar (280px, `lg`+) for `/docs` + `DocFrontmatterBlock` + bottom backlinks line; honest facts line for `/download` (says "recorded at publish" when size/checksum are unavailable) + spctl trust panel + changelog preview.
 - **Agent-loop vault freshness (R+)** — Created CLI `preflight`: matches staged git files against vault `path:` / `elements:` frontmatter and shows which nodes this commit affects *before* committing (notification only, no blocking — always exits 0; silently passes if no matching nodes). Installs pre-commit hook via `agent-setup --install-pre-commit-hook` (appends if hook already exists, idempotent across multiple runs, respects `--no-verify`). `.github/workflows/vault-freshness.yml` is a reusable workflow for other repos and also applies to this repo's PRs: `scripts/vault-freshness-drift.mjs` (dependency-free node script) detects cases where source files pointed to by vault nodes changed in the PR, but the corresponding `.md` did not. Ends without comment if none found; leaves exactly one comment on the PR if any are found (updates or removes existing comments to avoid spam).
 
@@ -1171,7 +1171,7 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 
 ## 7. Deferred (future rounds — wait-for-signal)
 
-- `/ontology/edit` builder reconsideration — **SUPERSEDED 2026-07-24: the ERD builder was retired.** It had been kept as a constrained workbench surface (focus a saved slug, preview source-file frontmatter writes, run relation preflight, hand off to Insights/Topology). Once the workshop (`/ontology/studio`) covered assemble/connect/preview/write, the xyflow builder was removed and `/ontology/edit` became a redirect to the workshop. Users who prefer direct markdown still edit frontmatter in `/docs` or CLI/MCP; the workshop is the visual relation-repair / write-review surface.
+- `/ontology/edit` builder reconsideration — **SUPERSEDED 2026-07-24: the ERD builder was retired.** It had been kept as a constrained workbench surface (focus a saved slug, preview source-file frontmatter writes, run relation preflight, hand off to Insights/Topology). The later workshop was folded into contextual writing on `/topology`; `/ontology/edit` and `/ontology/studio` now preserve legacy links through redirects. Users who prefer direct markdown still edit frontmatter in `/docs` or CLI/MCP.
 - ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). Reversed the decision to target planners as primary users.
 - Search palette unification (`⌘K` + `⇧⌘K`) — R5 skip: not duplicates, would require ranking/section redesign.
 - LocalVaultPicker hoist out of dropdown — R5 skip: dead-end already closed by R4 J.

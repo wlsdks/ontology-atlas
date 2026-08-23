@@ -177,18 +177,6 @@
       "linksOut": []
     },
     {
-      "slug": "archive/MISSION-CLEANUP-CANDIDATES",
-      "path": "docs/archive/MISSION-CLEANUP-CANDIDATES.md",
-      "title": "Mission Cleanup Candidates — mission v2 와 코드 정렬 (✅ ARCHIVED)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "✅ 모든 stage 머지 완료 (2026-05-01 저녁, PR 5-11). 본 문서는 historical analysis 로 보관 — 같은 패턴의 cleanup 이 미래에 필요할 때 참조용. 사용자 가시 변화 시간순: docs/CHANGELOG.md (2026-05-01 저녁 entry). 현재 next-work: docs/BACKLOG.md. mission v2 = \"사람과 AI agent 가 같이 저작하는 codebase ontology\" (docs/PRODUCT-DIRECTION.md). 척추 = md frontmatter → ontology. AI agent",
-      "wordCount": 495,
-      "updatedAt": "2026-05-03",
-      "linksOut": []
-    },
-    {
       "slug": "archive/PUBLISH-NPM",
       "path": "docs/archive/PUBLISH-NPM.md",
       "title": "npm publish — step-by-step guide (RETIRED)",
@@ -2904,7 +2892,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. A slice here is one shippable piece of work — small enough to build, and small enough to prove, in one pass. Ontolo",
-      "wordCount": 11123,
+      "wordCount": 11170,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
@@ -2918,7 +2906,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "[v10 Identity, 2026-07-18] — agent-native, human-sovereign (agents write directly, humans make final judgments). This product is not a \"system for agents.\" It is a single layer of meaning that humans and AI agents read and edit together, with agents being formal users just like humans. Here, meaning layer refers to the",
-      "wordCount": 5923,
+      "wordCount": 6111,
       "updatedAt": "2026-08-23",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC",
@@ -2976,12 +2964,12 @@
     {
       "slug": "TECH-STACK",
       "path": "docs/TECH-STACK.md",
-      "title": "TECH STACK — Technology Stack Decision Record (2026-07-17)",
+      "title": "TECH STACK — Technology Stack Decision Record",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Verdict confirmed after investigating all layers (web front-end, desktop, CLI/MCP, LLM/Layer 2 infrastructure) as of 2026-07-17. Decision principle: Maintaining verified stacks is the default (same logic as rejecting full rewrites — replacement is only allowed when measured benefits clearly exceed migration costs). Nex",
-      "wordCount": 999,
+      "excerpt": "Decisions were recorded on 2026-07-17; package/runtime facts were refreshed from the repository on 2026-08-23. Decision principle: Maintaining verified stacks is the default (same logic as rejecting full rewrites — replacement is only allowed when measured benefits clearly exceed migration costs). Next full review: Jan",
+      "wordCount": 973,
       "updatedAt": "2026-08-23",
       "linksOut": []
     },
@@ -3009,8 +2997,8 @@
         ]
       },
       "headings": [],
-      "excerpt": "Design spec for how the topology view (/, /topology) reveals a node on click and how it stays readable + fast as the vault grows past 2–3k nodes. This is the canonical decision; .claude/rules/design.md and DESIGN-SYSTEM.md carry the short rule, this doc carries the reasoning + cited references. Status: approved directi",
-      "wordCount": 1090,
+      "excerpt": "Design rationale and implemented contract for how the topology map reveals a node on click and stays readable + fast as the vault grows. /topology is the explicit map address; / is the map only after a vault is available (a web visitor without one sees the gateway). This is the canonical decision; .claude/rules/design.",
+      "wordCount": 1171,
       "updatedAt": "2026-08-23",
       "linksOut": []
     },
@@ -4482,13 +4470,6 @@
             "title": "Dogfood — real external codebase (sanitized, 2026-05-06)"
           },
           {
-            "name": "MISSION-CLEANUP-CANDIDATES",
-            "path": "archive/MISSION-CLEANUP-CANDIDATES",
-            "type": "doc",
-            "slug": "archive/MISSION-CLEANUP-CANDIDATES",
-            "title": "Mission Cleanup Candidates — mission v2 와 코드 정렬 (✅ ARCHIVED)"
-          },
-          {
             "name": "PUBLISH-NPM",
             "path": "archive/PUBLISH-NPM",
             "type": "doc",
@@ -5629,7 +5610,7 @@
         "path": "TECH-STACK",
         "type": "doc",
         "slug": "TECH-STACK",
-        "title": "TECH STACK — Technology Stack Decision Record (2026-07-17)"
+        "title": "TECH STACK — Technology Stack Decision Record"
       },
       {
         "name": "TOPOLOGY-FOCUS-AND-SCALE",
