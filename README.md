@@ -114,8 +114,8 @@ is the second direct source.
 ## Where it stands
 
 Two tiers here, and the second is the one worth reading. Nothing below is a
-roadmap promise — each line is either shipping in the tag above or written down
-in the [feature inventory](docs/FEATURES.md), the
+roadmap promise — each line is backed by the current build, the
+[feature inventory](docs/FEATURES.md), the
 [specification](docs/ONTOLOGY-ATLAS-SPEC.md), or the
 [decision ledger](docs/DECISIONS.md).
 
