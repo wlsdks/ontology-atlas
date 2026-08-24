@@ -5713,6 +5713,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-25 (114) — A summary node reports when its description falls behind its membership, and never rewrites it",
+      "slug": "2026-08-25-114-a-summary-node-reports-when-its-description-falls-behind-its-membership-and-never-rewrites-it"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-24 (113) — The write checkpoint moves into the server that performs the write",
       "slug": "2026-08-24-113-the-write-checkpoint-moves-into-the-server-that-performs-the-write"
     },
