@@ -3439,6 +3439,8 @@
       "body": "Nothing happens until you allow it. Check below where it wants to write.",
       "ontologyWriteTitle": "Review the proposed change",
       "ontologyWriteBody": "Allowing writes the change below to this folder's Markdown. Nothing changes before then.",
+      "consentTitle": "There is a change to make in this folder",
+      "consentBody": "Nothing changes until you allow it. What it wants to change is written below, in its own words.",
       "unknownTarget": "Cannot tell what it wants to do",
       "reject": "No thanks",
       "allowOnce": "Allow once",
@@ -3484,15 +3486,15 @@
     "trouble": {
       "auth": {
         "title": "An old app-scoped sign-in is getting in the way",
-        "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-scoped sign-in: it shadows the shared one and has already expired. Press 「New chat」 and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under 「Details」 into a terminal."
+        "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-scoped sign-in: it shadows the shared one and has already expired. Press 「Try again」 below and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under 「Details」 into a terminal."
       },
       "install": {
         "title": "A broken piece from an interrupted download is in the way",
-        "hint": "The first-run download was cut off halfway, and the leftover pieces make it fail at the same spot every time. Press “New chat” and the app clears them and downloads again from scratch. Check your internet connection and keep the app open while it downloads (a few hundred MB)."
+        "hint": "The first-run download was cut off halfway, and the leftover pieces make it fail at the same spot every time. Press 「Try again」 below and the app clears them and downloads again from scratch. Check your internet connection and keep the app open while it downloads (a few hundred MB)."
       },
       "timeout": {
         "title": "The tool is not responding",
-        "hint": "Try “New chat”. If it keeps happening, check that the tool starts on its own in a terminal."
+        "hint": "Nothing came back from the tool for 45 seconds. A download in progress keeps the wait alive, so this is closer to a genuine stall. Press 「Try again」 below. If it keeps happening, check that the tool starts on its own in a terminal."
       },
       "launch": {
         "title": "The tool could not be started",
@@ -3500,12 +3502,13 @@
       },
       "network": {
         "title": "No connection to the outside",
-        "hint": "Check your internet connection, then press “New chat”. Reading and editing the map works offline."
+        "hint": "Check your internet connection, then press 「Try again」 below. Reading and editing the map works offline."
       },
       "unknown": {
         "title": "Something went wrong",
-        "hint": "Try “New chat”. If it keeps happening, the details below are what to report."
+        "hint": "Press 「Try again」 below. If it keeps happening, what is under 「Details」 is what to report."
       },
+      "retry": "Try again",
       "details": "Details",
       "diagnosticsLabel": "What the tool printed"
     },

@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import { AcpPermissionCard } from './AcpPermissionCard';
 
+const KO = koMessages.acpChat.permission;
+
 /**
  * This card is where **the most expensive single decision** in this product happens:
  * the agent wants to touch something outside the folder, and the person decides
@@ -158,5 +160,69 @@ describe('온톨로지 쓰기 검토 — 한 번의 정확한 결정만 제공�
     expect(review.textContent).toContain('depends_on');
     expect(review.textContent).toContain('domains/graph-modeling');
     expect(screen.queryByTestId('acp-permission-allow-always')).toBeNull();
+  });
+});
+
+describe('금고 서버가 스스로 물을 때 — 카드가 그 문장을 그대로 보여준다', () => {
+  /*
+   * Wire capture, 2026-08-24. The vault's MCP server pauses each write through
+   * `elicitation/create`; `codex-acp` forwards it as `session/request_permission` with **no
+   * `toolCall.title`** and `kind: "other"`, putting the question in `toolCall.content[]`:
+   *
+   *   "Create concept wire-probe. Apply this change to the vault?"
+   *
+   * The screen was not reading that field, so the card printed 「the tool did not say what it wants
+   * to do」 and 「cannot tell what it wants to do」, one under the other — two lines, no information.
+   */
+  const ASK = 'Create concept wire-probe. Apply this change to the vault?';
+
+  function consentCard() {
+    return (
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AcpPermissionCard
+          pending={{
+            request: {
+              title: ASK,
+              toolCallId: 'elicitation-ontology-atlas',
+              toolName: null,
+              toolKind: 'other',
+              filePath: null,
+              rawInput: { serverName: 'ontology-atlas' },
+              reviewKind: 'permission',
+              options: [
+                { optionId: 'accept', kind: 'allow_once', name: 'Accept' },
+                { optionId: 'decline', kind: 'reject_once', name: 'Decline' },
+              ],
+            },
+            resolve: vi.fn(),
+          }}
+        />
+      </NextIntlClientProvider>
+    );
+  }
+
+  it('묻는 문장을 읽을 크기로 세우고, 모른다는 말을 두 번 하지 않는다', () => {
+    render(consentCard());
+    expect(screen.getByTestId('acp-permission-ask').textContent).toBe(ASK);
+    expect(
+      screen.queryByTestId('acp-permission-intent'),
+      '문장을 아는데도 「무엇을 하려는지 알 수 없어요」를 또 적었다',
+    ).toBeNull();
+    const text = screen.getByTestId('acp-permission-card').textContent ?? '';
+    expect(text).not.toContain(KO.unknownTarget);
+    expect(text).not.toContain(KO.intent.unknown);
+  });
+
+  it('폴더 밖을 건드린다고 말하지 않는다 — 이건 고른 폴더 안의 변경이다', () => {
+    render(consentCard());
+    const text = screen.getByTestId('acp-permission-card').textContent ?? '';
+    expect(text).toContain(KO.consentTitle);
+    expect(text).not.toContain(KO.title);
+  });
+
+  it('평범한 도구 호출은 예전 그대로 무엇을 하려는지 말한다', () => {
+    render(card('delete'));
+    expect(screen.getByTestId('acp-permission-intent').dataset.intent).toBe('delete');
+    expect(screen.queryByTestId('acp-permission-ask')).toBeNull();
   });
 });
