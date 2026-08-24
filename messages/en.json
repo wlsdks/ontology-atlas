@@ -380,7 +380,7 @@
     "openLabel": "Open my markdown folder",
     "openBusy": "Opening folder…",
     "buildFromCodeLabel": "Make a map from my code",
-    "buildFromCodeHint": "Pick a code folder and an AI surveys it and proposes a draft. It asks before every write.",
+    "buildFromCodeHint": "Pick a project folder and Atlas creates an atlas folder inside it, then reads the code and proposes a draft. It shows you the path before creating, and asks before every write.",
     "buildFromCodeBusy": "Opening the folder…",
     "createLabel": "✚ Create a new markdown folder",
     "createBusy": "Writing starter structure…",
@@ -418,7 +418,14 @@
     "cliBridgeSourceOnly": "This command runs inside an ontology-atlas source checkout. You do not need it if you only use the app.",
     "errorRootRejected": "This folder cannot become a map. Pick a folder that holds documents, not a system folder or your whole home folder.",
     "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
-    "errorPermission": "Atlas cannot read this folder. Pick it again to grant access."
+    "errorPermission": "Atlas cannot read this folder. Pick it again to grant access.",
+    "buildFromCodeWillCreate": "The map folder goes here. Your code is untouched, and only this folder is new.",
+    "buildFromCodeReuse": "This project already has a map folder. Nothing new is created; Atlas continues in it.",
+    "buildFromCodeCreateGo": "Create it here",
+    "buildFromCodeReuseGo": "Continue in it",
+    "buildFromCodeCreating": "Creating…",
+    "buildFromCodeCancel": "Cancel",
+    "buildFromCodeFailed": "The folder could not be created. Check that you can write to this project."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",

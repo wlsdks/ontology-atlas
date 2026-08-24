@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useLocalVault, useVaultCreateFlow } from '@/features/docs-vault-local';
 import {
@@ -8,8 +8,9 @@ import {
 } from './first-run-starter-dismiss';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { buildFromCodePrompt } from './build-from-code-prompt';
+import type { ProjectVaultLocation } from './project-vault-location';
+import { useBuildFromCode } from './use-build-from-code';
 import { useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settled';
 
 /**
@@ -68,7 +69,8 @@ export function useFirstRunStarter() {
   }, [vault, setActionError]);
 
   /**
-   * **The door for someone who already has code** (decision, 2026-08-24).
+   * **The door for someone who already has code** (decision, 2026-08-24; location revised the
+   * same day).
    *
    * ⚠️ Measured on the shipped card: of its four actions, none makes an ontology from a repository
    * that already exists. Opening a folder with no Markdown gives an empty map; creating one gives
@@ -79,34 +81,21 @@ export function useFirstRunStarter() {
    * so this hands the work to the agent, which is the shape this product argues for anyway: the
    * agent works through MCP and the person approves every write.
    *
-   * The handoff waits for the vault to actually land. `vault.open()` resolves when the picker
-   * closes, and a cancelled picker is deliberately **not** a state change, so firing on resolve
-   * alone would open a conversation about a folder nobody chose. The effect below watches for a
-   * loaded manifest instead.
+   * **What changed on 2026-08-24**: the door used to ask for a *vault* folder and hand it over. It
+   * now asks for the *project* and puts the map inside it, at `<project>/atlas`, so the code and its
+   * meaning travel together in one repository — see `project-vault-location.ts` for why that is the
+   * only version that keeps the product's central claim. Because that writes into somebody's source
+   * tree, the flow gained a middle step that shows the exact path and waits.
    */
-  /*
-   * A ref, not state: "is a handoff owed" is a fact about what has happened, not something the
-   * screen draws, and holding it in state would re-run the effect on the render its own clearing
-   * causes.
-   */
-  const buildRequestedRef = useRef(false);
-  const buildFromCode = useCallback(async () => {
-    setActionError(null);
-    buildRequestedRef.current = true;
-    await vault.open();
-  }, [vault, setActionError]);
-
-  const vaultReady = vault.status === 'loaded' && Boolean(vault.manifest);
-  const vaultRootPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
-  useEffect(() => {
-    if (!buildRequestedRef.current || !vaultReady) return;
-    buildRequestedRef.current = false;
-    // Only the installed app can reach an agent. On the web the door is not drawn at all, so this
-    // is a second guard rather than the only one — a request that arrived some other way still
-    // must not promise a conversation that cannot open.
-    if (!isDesktopShell()) return;
-    requestAgentChat(null, buildFromCodePrompt(vaultRootPath, vault.handle?.name ?? null));
-  }, [vaultReady, vaultRootPath, vault.handle]);
+  const build = useBuildFromCode({
+    openRecord: vault.openRecent,
+    handoff: useCallback((location: ProjectVaultLocation) => {
+      // A second guard, not the only one: the door is not drawn on the web at all, but a request
+      // that arrived some other way still must not promise a conversation that cannot open.
+      if (!isDesktopShell()) return;
+      requestAgentChat(null, buildFromCodePrompt(location.projectRoot, null));
+    }, []),
+  });
 
   const busy =
     vault.status === 'opening' || vault.status === 'loading' || scaffolding;
@@ -165,7 +154,8 @@ export function useFirstRunStarter() {
     dismiss,
     undismiss,
     openFolder,
-    buildFromCode,
+    /** The choose → see the path → create flow. The screen must render `build.location` before `confirm`. */
+    build,
     /** Only the installed app can hand work to an agent; the web has none to hand it to. */
     canBuildFromCode: isDesktopShell(),
     createVault: handleCreate,

@@ -28,12 +28,18 @@ export function buildFromCodePrompt(
   // The absolute path when the desktop bridge knows it, the folder's name when it does not, and
   // "this folder" when neither is available — never an invented path.
   const target = rootPath ?? (folderName ? `the folder named "${folderName}"` : 'this folder');
+  // The vault now lives *inside* the project (`<project>/atlas`), so the code to survey is the
+  // parent of the open vault, not the vault. Saying so is not pedantry: an agent told only "build an
+  // ontology for this vault" surveys the folder it was handed, finds the four files Atlas just
+  // seeded, and reports a product made of nothing.
+  const codeRoot = rootPath ? `${rootPath} (the vault sits inside it, at ${rootPath}/atlas)` : target;
   return [
-    `Build a first ontology for ${target}.`,
+    `Build a first ontology for ${codeRoot}.`,
     '',
     'Work in this order and stop at each boundary:',
     '1. Survey the code with `analyze_repo_structure`, and use `infer_imports` where the',
     '   structure alone does not say what depends on what. Read before you write.',
+    '   Skip the vault folder itself; it holds the map, not the product.',
     '2. Tell me, in plain sentences, what you found: which domains this product seems to have,',
     '   which capabilities sit under them, and which files implement each one. Name anything you',
     '   are unsure about rather than guessing it into a node.',

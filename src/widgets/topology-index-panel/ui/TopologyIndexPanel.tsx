@@ -376,6 +376,14 @@ export function TopologyIndexPanel({
         /* Selecting any node means the guidance card has done its job —
            see `FirstRunStarterModule`'s `nodeSelected` doc-block. */
         nodeSelected={selectedId !== null}
+        /*
+         * ⚠️ **Who the 「make a map from my code」 door is for** (owner correction, 2026-08-24).
+         * A vault is open and nothing in it points at real code — the same fact the unbound-source
+         * row below reports. Deliberately *not* "has never opened a folder", which is the card's own
+         * rule: somebody who opened a folder, saw an empty map and gave up has opened folders
+         * **more** than a first-timer, and that rule hid the door from exactly that person.
+         */
+        mapUnbuilt={vaultLoaded && unboundProjectNodeId !== null}
         relations={totalRelations}
         domains={domainCount}
         onStartTour={onStartTour}
