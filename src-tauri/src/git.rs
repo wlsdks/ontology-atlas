@@ -47,9 +47,10 @@ struct GitRun {
 /// Runs git in `cwd` and captures stdout/stderr. Returns `Err` only if spawn itself fails
 /// (e.g., git not installed). Non-zero exits are captured as `success:false` for the caller to decide — stderr is piped so it does not clutter the user's terminal.
 fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
-    let output = Command::new("git")
-        .args(args)
-        .current_dir(cwd)
+    let mut command = Command::new("git");
+    command.args(args).current_dir(cwd);
+    silence_git_credential_prompts(&mut command);
+    let output = command
         .output()
         .map_err(|err| format!("git 을 실행할 수 없어요 (설치 확인): {err}"))?;
     Ok(GitRun {
@@ -57,6 +58,98 @@ fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
         stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
         stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
     })
+}
+
+/// Keeps git from waiting on a human this app cannot show a prompt to.
+///
+/// **Measured 2026-08-24, and it is less than it sounds.** With stdin closed the way this app
+/// spawns git, a fetch needing a password already fails in 0.3s with "unable to get password from
+/// user" — with or without these variables. git notices there is no terminal on its own, so setting
+/// them changed nothing on this machine.
+///
+/// They are kept for the configuration where they *do* differ: a credential helper or `SSH_ASKPASS`
+/// that opens a window, which would leave the operation waiting on a dialog nobody expects to see.
+/// Cheap insurance, not the defence.
+///
+/// **The defence is the deadline**, because the failure that actually never ends has nothing to do
+/// with credentials: a remote that accepts the connection and then says nothing. Measured in the
+/// same session against a non-routable address, git was still running after 20 seconds with no
+/// timeout of its own. That is what `run_network_git` bounds.
+///
+/// `GIT_SSH_COMMAND` is deliberately not set: it would override a user's own `core.sshCommand`, and
+/// this app has no business rewriting how someone reaches their own remote.
+fn silence_git_credential_prompts(command: &mut Command) {
+    command
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("GIT_ASKPASS", "")
+        .env("SSH_ASKPASS", "");
+}
+
+/// How long a git operation that reaches the network may take before the app stops waiting.
+///
+/// Generous on purpose: a first `pull` on a large repository over a slow link is legitimately slow,
+/// and cutting off real work is worse than waiting. What this bounds is the case that never ends —
+/// a remote that accepts the connection and then says nothing. Measured 2026-08-24 against a
+/// non-routable address: git was still running after 20 seconds and has no timeout of its own, so
+/// before this the screen kept a spinner up for as long as the app stayed open. A credential prompt
+/// is *not* that case — git fails on its own in a third of a second when there is no terminal.
+const NETWORK_GIT_DEADLINE: std::time::Duration = std::time::Duration::from_secs(120);
+
+/// `run_git` for the three commands that leave this machine.
+///
+/// Spawns rather than `.output()` so the wait can be given a deadline, and kills the whole attempt
+/// when it expires. The error names the elapsed limit, because "it is taking a while" is not
+/// something a person can act on and "it gave up after two minutes" is.
+fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
+    use std::io::Read;
+    use std::process::Stdio;
+
+    let mut command = Command::new("git");
+    command
+        .args(args)
+        .current_dir(cwd)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    silence_git_credential_prompts(&mut command);
+
+    let mut child = command
+        .spawn()
+        .map_err(|err| format!("git 을 실행할 수 없어요 (설치 확인): {err}"))?;
+
+    let started = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let mut stdout = String::new();
+                let mut stderr = String::new();
+                if let Some(mut pipe) = child.stdout.take() {
+                    let _ = pipe.read_to_string(&mut stdout);
+                }
+                if let Some(mut pipe) = child.stderr.take() {
+                    let _ = pipe.read_to_string(&mut stderr);
+                }
+                return Ok(GitRun {
+                    success: status.success(),
+                    stdout,
+                    stderr,
+                });
+            }
+            Ok(None) => {
+                if started.elapsed() >= NETWORK_GIT_DEADLINE {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(format!(
+                        "git {} 이(가) {}초 안에 끝나지 않아 멈췄어요 — 원격 주소와 인증을 확인해 주세요.",
+                        args.first().copied().unwrap_or("명령"),
+                        NETWORK_GIT_DEADLINE.as_secs()
+                    ));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(err) => return Err(format!("git 상태를 확인할 수 없어요: {err}")),
+        }
+    }
 }
 
 // ── Repo discovery (no auto init — state only) ──────────────────────────────────
@@ -776,7 +869,7 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
             summary: "보낼 곳이 아직 없어요".to_string(),
         });
     };
-    let out = run_git(&repo_root, &["fetch", "--prune"])?;
+    let out = run_network_git(&repo_root, &["fetch", "--prune"])?;
     if !out.success {
         // Returning only `message` would mean we erase the reason git told us (`note`)
         // and the next move (`guidance`) — a failure without "what went wrong" cannot be fixed.
@@ -913,7 +1006,7 @@ fn run_push(repo_root: &Path) -> PushOutcome {
             guidance: Some(format!("git push -u origin {branch}")),
         };
     };
-    match run_git(repo_root, &["push"]) {
+    match run_network_git(repo_root, &["push"]) {
         Ok(out) if out.success => {
             let remote_name = upstream.split('/').next().unwrap_or("origin");
             PushOutcome {
@@ -1131,7 +1224,7 @@ pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
         ));
     };
 
-    let out = run_git(&repo_root, &["pull"])?;
+    let out = run_network_git(&repo_root, &["pull"])?;
     if !out.success {
         let info = classify_git_error(&git_error_text(&out), "pull");
         return Err(classified_error_string(&info));
