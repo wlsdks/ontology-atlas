@@ -364,7 +364,9 @@
     "errorRootRejected": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
     "trustLine": "Local Markdown is the source of truth · no Atlas backend",
     "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
-    "errorPermission": "Atlas cannot read this folder. Pick it again to grant access."
+    "errorPermission": "Atlas cannot read this folder. Pick it again to grant access.",
+    "errorPermissionDenied": "macOS is protecting the folder “{folder}”. Allow Ontology Atlas in System Settings under Privacy & Security, then Files and Folders, and open it again.",
+    "errorPermissionDeniedThisFolder": "this one"
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -425,7 +427,9 @@
     "buildFromCodeReuseGo": "Continue in it",
     "buildFromCodeCreating": "Creating…",
     "buildFromCodeCancel": "Cancel",
-    "buildFromCodeFailed": "The folder could not be created. Check that you can write to this project."
+    "buildFromCodeFailed": "The folder could not be created. Check that you can write to this project.",
+    "errorPermissionDenied": "macOS is protecting the folder “{folder}”. Allow Ontology Atlas in System Settings under Privacy & Security, then Files and Folders, and open it again.",
+    "errorPermissionDeniedThisFolder": "this one"
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -2291,7 +2295,8 @@
       "sourceUnboundLabel": "{count} project(s) with no code folder",
       "sourceUnboundAction": "Connect",
       "plainHint": "Elements are hidden: click a dot on the map to reveal its elements",
-      "openedInsideLabel": "Opened the map folder found inside the project you picked."
+      "openedInsideLabel": "Opened the map folder found inside the project you picked.",
+      "openedInsideDismiss": "Dismiss this notice"
     },
     "deeplinkNotFound": "Node not found: {query}",
     "bootstrap": {

@@ -141,6 +141,18 @@ export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFro
             </p>
           ) : null}
         </div>
+      ) : build.errorText !== null ? (
+        /*
+         * ⚠️ A failure before a project is chosen has no confirm box to live in, and the error used
+         * to be written into state that nothing rendered — so a picker that threw left the person
+         * pressing a button that did nothing, twice. It gets its own line here.
+         */
+        <p
+          data-testid={variant === 'card' ? 'first-run-build-error' : 'index-build-error'}
+          className="mt-1 break-keep text-caption leading-caption text-[color:var(--color-danger-text)]"
+        >
+          {build.errorText || t('buildFromCodeFailed')}
+        </p>
       ) : variant === 'card' ? (
         /* What will actually happen, before it happens — including that it asks before writing. */
         <p className="mt-1 break-keep text-caption leading-caption text-[color:var(--topology-v2-panel-text-quaternary)]">

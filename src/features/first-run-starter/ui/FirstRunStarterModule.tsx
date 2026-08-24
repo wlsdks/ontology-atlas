@@ -102,6 +102,16 @@ export interface FirstRunStarterModuleProps {
    * from exactly that person. The caller decides this from the project's source binding.
    */
   mapUnbuilt?: boolean;
+  /**
+   * **Is there an agent to hand the work to.**
+   *
+   * ⚠️ Without this the door was a dead end (found while walking the flow, 2026-08-25). The handoff
+   * ends at `if (!target) return;` when no ACP runtime exists, so on a Mac with no agent installed
+   * the button created a folder, opened a vault, and then silently did nothing — having promised a
+   * map. The card's own rule already says a door that cannot open is worse than no door; it was
+   * being applied to the web and not to this.
+   */
+  agentAvailable?: boolean;
   children?: ReactNode;
 }
 
@@ -148,6 +158,7 @@ export function FirstRunStarterModule({
   lensActive = false,
   nodeSelected = false,
   mapUnbuilt = false,
+  agentAvailable = false,
   children,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
@@ -356,7 +367,7 @@ export function FirstRunStarterModule({
    * not out-shout it, and it disappears the moment a map exists.
    */
   const standaloneDoor =
-    !visible && mapUnbuilt && canBuildFromCode && !fsaUnsupported ? (
+    !visible && mapUnbuilt && canBuildFromCode && agentAvailable && !fsaUnsupported ? (
       <div
         data-testid="index-build-from-code-row"
         className="border-b border-[color:var(--topology-v2-panel-border)] px-4 pb-3 pt-3"
@@ -602,7 +613,7 @@ export function FirstRunStarterModule({
         cannot open is worse than no door — the same rule that keeps 「coming soon」 out of this
         product.
       */}
-      {canBuildFromCode && !fsaUnsupported ? (
+      {canBuildFromCode && agentAvailable && !fsaUnsupported ? (
         <BuildFromCodeDoor build={build} variant="card" disabled={busy} />
       ) : null}
 

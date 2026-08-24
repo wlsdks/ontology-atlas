@@ -1,13 +1,19 @@
 /**
  * Pure functions for "just start" (desktop first run, Tauri runtime only) — picks the vault folder
- * name under `~/Documents/Ontology Atlas/<name>` and assembles the path string shown to the user.
+ * name under `~/Ontology Atlas/<name>` and assembles the path string shown to the user.
  * Actual filesystem access (existence checks, creation) belongs to `@/shared/lib/tauri-vault-fs`;
  * this module takes that result (the list of existing names) and computes a collision-free name
  * purely, so it is testable in vitest with no FS mock.
  */
 
 export const DEFAULT_VAULT_BASE_NAME = 'my-ontology';
-export const DEFAULT_VAULT_PARENT_LABEL = '~/Documents/Ontology Atlas';
+/**
+ * ⚠️ Not `~/Documents/...` (2026-08-25). Documents is TCC-protected on macOS, so a button promising
+ * "no decisions, just begin" opened a system permission dialog as the very first thing a new person
+ * saw. `$HOME` carries no such gate. Must stay in step with `default_vault_parent_dir` in
+ * `src-tauri/src/lib.rs`; `just-start-vault-location.contract.test.ts` holds them together.
+ */
+export const DEFAULT_VAULT_PARENT_LABEL = '~/Ontology Atlas';
 
 /**
  * Returns `baseName` unchanged when it is not in `existingNames`, otherwise the next

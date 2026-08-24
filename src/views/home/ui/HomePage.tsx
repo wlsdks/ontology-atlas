@@ -5262,7 +5262,11 @@ function HomePageImpl() {
                     // Dusty (long-untouched) node count; the row hides at 0.
                     dustyNodeCount={dustySlugs.size}
                     unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
+                    // The door hands work to an agent; without one it would create a folder and
+                    // then silently do nothing, having promised a map.
+                    agentAvailable={acpRuntimes.length > 0}
                     openedInsidePickedFolder={vault.openedInsidePickedFolder ?? null}
+                    onDismissOpenedInside={vault.dismissOpenedInsideNotice}
                     onPromoteUncatalogedDocs={
                       bootstrapPlan && bootstrapPlan.elements.length > 0
                         ? () => setBootstrapOpen(true)
@@ -5310,6 +5314,7 @@ function HomePageImpl() {
                       }),
                       sourceUnboundAction: t("index.sourceUnboundAction"),
                       openedInsideLabel: t("index.openedInsideLabel"),
+                      openedInsideDismiss: t("index.openedInsideDismiss"),
                       // Rendered only in plain mode; the panel gates it.
                       plainHint: t("index.plainHint"),
                     }}

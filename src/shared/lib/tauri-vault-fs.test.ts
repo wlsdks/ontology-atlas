@@ -332,16 +332,16 @@ describe('tauri vault file-system shim', () => {
     );
   });
 
-  it('ensures the default vault parent dir under Documents and returns its absolute path', async () => {
+  it('ensures the default vault parent dir and returns its absolute path', async () => {
     const calls = installInvoke(({ command }) => {
       if (command === 'ensure_default_vault_parent_dir') {
-        return '/Users/me/Documents/Ontology Atlas';
+        return '/Users/me/Ontology Atlas';
       }
       throw new Error(`unexpected command: ${command}`);
     });
 
     await expect(ensureDefaultVaultParentDir()).resolves.toBe(
-      '/Users/me/Documents/Ontology Atlas',
+      '/Users/me/Ontology Atlas',
     );
     expect(calls).toEqual([
       { command: 'ensure_default_vault_parent_dir', args: undefined },
@@ -365,12 +365,12 @@ describe('tauri vault file-system shim', () => {
     });
 
     await expect(
-      listTauriDirectoryNames('/Users/me/Documents/Ontology Atlas'),
+      listTauriDirectoryNames('/Users/me/Ontology Atlas'),
     ).resolves.toEqual(['my-ontology', 'my-ontology-2']);
     expect(calls).toEqual([
       {
         command: 'list_vault_directory',
-        args: { rootPath: '/Users/me/Documents/Ontology Atlas', relativePath: '' },
+        args: { rootPath: '/Users/me/Ontology Atlas', relativePath: '' },
       },
     ]);
   });
@@ -385,13 +385,13 @@ describe('tauri vault file-system shim', () => {
       throw new Error(`unexpected command: ${command}`);
     });
 
-    await ensureTauriChildDirectory('/Users/me/Documents/Ontology Atlas', 'my-ontology');
+    await ensureTauriChildDirectory('/Users/me/Ontology Atlas', 'my-ontology');
 
     expect(calls).toEqual([
       {
         command: 'ensure_vault_directory',
         args: {
-          rootPath: '/Users/me/Documents/Ontology Atlas',
+          rootPath: '/Users/me/Ontology Atlas',
           relativePath: 'my-ontology',
         },
       },

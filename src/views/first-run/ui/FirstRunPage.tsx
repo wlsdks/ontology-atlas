@@ -5,6 +5,8 @@ import { Compass, FolderOpen, Orbit, Sparkles, Zap } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { useJustStartVault, useLocalVault, useVaultCreateFlow } from "@/features/docs-vault-local";
+import { deniedFolderName } from "@/features/docs-vault-local";
+import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { Link } from "@/i18n/navigation";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { useToast } from "@/shared/ui/toast";
@@ -23,7 +25,7 @@ import { controlClass } from '@/shared/ui/control-class';
  * - Create a new vault → the same `open()`, then, if the folder is empty, the existing
  *   `scaffoldOntology()` (the same action as `/docs`'s `OntologyStarterCta`) seeds the starter
  * - **Just start** (Tauri runtime only) → with no folder picker, creates a real on-disk folder under
- *   `~/Documents/Ontology Atlas/<name>` and connects to it directly (`useJustStartVault`). Because it
+ *   `~/Ontology Atlas/<name>` and connects to it directly (`useJustStartVault`). Because it
  *   is a real disk path, agents such as MCP or Claude Code can reach it — not using OPFS is the core of
  *   this design. A dev build can open this page in a browser via the `?shell=desktop` override
  *   (`isDesktopShell()`), so this card renders only when the real Tauri invoke bridge
@@ -93,7 +95,20 @@ export function FirstRunPage() {
                */
               vault.errorCode === "path-missing"
               ? t("errorPathMissing")
-              : vault.errorMessage ?? t("errorFallback")
+              : /*
+                 * ⚠️ The operating system refused, and a retry gives the same refusal. The raw
+                 * `Operation not permitted (os error 1)` names an errno, not a folder, and never
+                 * mentions that the fix is a checkbox in System Settings — so it is replaced by a
+                 * sentence that names the folder and where to allow it.
+                 */
+                vault.errorCode === "permission-denied"
+                ? t("errorPermissionDenied", {
+                    folder:
+                      deniedFolderName(
+                        vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null,
+                      ) ?? t("errorPermissionDeniedThisFolder"),
+                  })
+                : vault.errorMessage ?? t("errorFallback")
           : null;
 
   const cardBase = controlClass({

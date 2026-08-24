@@ -2537,13 +2537,23 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     }
 }
 
-/// Exclusive to the "just start" desktop first-run action — the name of the
-/// container folder that gathers vaults inside Documents. Only the Rust side
-/// can know $HOME/Documents (JS cannot reach it without the fs plugin), so
-/// path assembly is split into a pure function for testing and the command
-/// adds only create_dir_all to its result.
+/// Exclusive to the "just start" desktop first-run action — the container folder
+/// that gathers vaults created with no project in mind. Only the Rust side can
+/// know $HOME (JS cannot reach it without the fs plugin), so path assembly is a
+/// pure function for testing and the command adds only create_dir_all.
+///
+/// ⚠️ **Deliberately not inside Documents** (2026-08-25). It used to be
+/// `~/Documents/Ontology Atlas`, and Documents is one of the folders macOS
+/// protects with TCC. So the button whose entire promise is "no decisions, just
+/// begin" made a system permission dialog the very first thing a new person saw,
+/// before any map existed to justify it. `$HOME` itself carries no such gate, so
+/// "just start" now starts.
+///
+/// This is the no-project path only. When somebody points Atlas at a codebase,
+/// the map goes inside that project as `<project>/atlas` — see
+/// `src/shared/lib/project-vault-dir.ts`.
 fn default_vault_parent_dir(home: &str) -> PathBuf {
-    PathBuf::from(home).join("Documents").join("Ontology Atlas")
+    PathBuf::from(home).join("Ontology Atlas")
 }
 
 #[tauri::command]
@@ -3533,12 +3543,22 @@ mod tests {
         }
     }
 
+    /// ⚠️ The container must stay **out of** the folders macOS protects with TCC. "Just start"
+    /// promises no decisions, and putting it under Documents made a system permission dialog the
+    /// first thing a new person saw, before any map existed to justify it.
     #[test]
-    fn default_vault_parent_dir_joins_documents_and_container_name() {
+    fn just_start_container_sits_outside_the_protected_folders() {
         assert_eq!(
             default_vault_parent_dir("/Users/me"),
-            PathBuf::from("/Users/me/Documents/Ontology Atlas")
+            PathBuf::from("/Users/me/Ontology Atlas")
         );
+        let path = default_vault_parent_dir("/Users/me");
+        for protected in ["Documents", "Desktop", "Downloads"] {
+            assert!(
+                !path.iter().any(|part| part == protected),
+                "just start would open a TCC prompt before the person has anything to consent about"
+            );
+        }
     }
 
     #[test]

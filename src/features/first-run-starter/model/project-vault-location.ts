@@ -2,7 +2,7 @@
  * Where the map lives when someone points Atlas at a codebase.
  *
  * ⚠️ **Inside the project, not beside it** (owner, 2026-08-24). The product shipped two answers at
- * once: the app's "just start" put vaults in `~/Documents/Ontology Atlas/`, **outside** any project,
+ * once: the app's "just start" put vaults outside any project,
  * while the CLI's `init` and this repository's own vault sit **inside** the repository
  * (`docs/ontology`). Only one of those keeps the product's central promise.
  *

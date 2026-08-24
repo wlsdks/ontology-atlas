@@ -205,7 +205,7 @@ describe('FirstRunPage', () => {
     );
     await waitFor(() => {
       expect(toastMocks.show).toHaveBeenCalledWith(
-        expect.stringContaining('~/Documents/Ontology Atlas/my-ontology'),
+        expect.stringContaining('~/Ontology Atlas/my-ontology'),
         'success',
       );
     });

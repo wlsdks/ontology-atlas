@@ -9355,6 +9355,21 @@
       "depth": 2,
       "text": "2026-08-25 — `init` may only wire the project it was actually run inside",
       "slug": "2026-08-25-init-may-only-wire-the-project-it-was-actually-run-inside"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 — \"Just start\" leaves the folders macOS protects",
+      "slug": "2026-08-25-just-start-leaves-the-folders-macos-protects"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 — A folder the OS is protecting gets its own error, not an errno",
+      "slug": "2026-08-25-a-folder-the-os-is-protecting-gets-its-own-error-not-an-errno"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 — Two flow defects found by walking the door, not by reading it",
+      "slug": "2026-08-25-two-flow-defects-found-by-walking-the-door-not-by-reading-it"
     }
   ],
   "DEMO-SCENARIO": [

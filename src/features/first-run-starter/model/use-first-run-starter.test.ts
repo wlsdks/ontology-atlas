@@ -7,7 +7,7 @@ interface MockVault {
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
   /** The **variant** of the failure. For variants that leak no raw string, this value is the only meaning. */
-  errorCode?: 'root-rejected' | 'path-missing' | 'access-failed' | null;
+  errorCode?: 'root-rejected' | 'path-missing' | 'permission-denied' | 'access-failed' | null;
   handle?: { name: string } | null;
   open: ReturnType<typeof vi.fn>;
   openRecent?: (record: { desktopRootPath?: string }) => Promise<unknown>;
@@ -235,6 +235,21 @@ describe('첫 실행 카드 — 말할 수 있는 실패는 말한다', () => {
     mocks.vault.errorCode = 'path-missing';
     const { result } = renderHook(() => useFirstRunStarter());
     expect(result.current.errorText).toBe('errorPathMissing');
+  });
+
+  /*
+   * ⚠️ Owner, 2026-08-24, on the repeating macOS consent dialog. The dialog is the OS's, but what
+   * happened when somebody declined it was ours: `Operation not permitted (os error 1)` on screen —
+   * an errno, no folder named, and no hint that the fix is a checkbox in System Settings.
+   */
+  it('OS 가 막은 폴더는 원문 대신 어디서 허용하는지를 말한다', () => {
+    mocks.vault.errorCode = 'permission-denied';
+    mocks.vault.errorMessage = 'Operation not permitted (os error 1)';
+    const { result } = renderHook(() => useFirstRunStarter());
+    expect(
+      result.current.errorText,
+      'errno 를 그대로 보여 주면 사람이 할 수 있는 일이 없다',
+    ).toBe('errorPermissionDenied');
   });
 
   it('그 밖의 실패는 원문을 쓰되, 비어 있어도 카드가 뜬다', () => {

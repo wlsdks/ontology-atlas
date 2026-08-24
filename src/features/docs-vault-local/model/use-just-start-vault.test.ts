@@ -42,7 +42,7 @@ describe('useJustStartVault', () => {
 
   it('creates the default folder, connects it, and scaffolds an always-empty new vault', async () => {
     tauriFsMocks.ensureDefaultVaultParentDir.mockResolvedValue(
-      '/Users/me/Documents/Ontology Atlas',
+      '/Users/me/Ontology Atlas',
     );
     tauriFsMocks.listTauriDirectoryNames.mockResolvedValue([]);
     tauriFsMocks.createTauriVaultHandle.mockReturnValue(fakeHandle('my-ontology'));
@@ -60,11 +60,11 @@ describe('useJustStartVault', () => {
     rerender();
 
     expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith(
-      '/Users/me/Documents/Ontology Atlas',
+      '/Users/me/Ontology Atlas',
       'my-ontology',
     );
     expect(tauriFsMocks.createTauriVaultHandle).toHaveBeenCalledWith(
-      '/Users/me/Documents/Ontology Atlas/my-ontology',
+      '/Users/me/Ontology Atlas/my-ontology',
     );
     expect(vault.openRecent).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'current', name: 'my-ontology' }),
@@ -74,12 +74,12 @@ describe('useJustStartVault', () => {
     });
     // Walkthrough 2026-07-26 — "just start" also creates the starter in the screen's language.
     expect(vault.scaffoldOntology).toHaveBeenCalledWith('ko');
-    expect(result.current.createdPath).toBe('~/Documents/Ontology Atlas/my-ontology');
+    expect(result.current.createdPath).toBe('~/Ontology Atlas/my-ontology');
   });
 
   it('picks a numbered name when the base folder is already taken', async () => {
     tauriFsMocks.ensureDefaultVaultParentDir.mockResolvedValue(
-      '/Users/me/Documents/Ontology Atlas',
+      '/Users/me/Ontology Atlas',
     );
     tauriFsMocks.listTauriDirectoryNames.mockResolvedValue(['my-ontology']);
     tauriFsMocks.createTauriVaultHandle.mockReturnValue(fakeHandle('my-ontology-2'));
@@ -91,7 +91,7 @@ describe('useJustStartVault', () => {
     });
 
     expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith(
-      '/Users/me/Documents/Ontology Atlas',
+      '/Users/me/Ontology Atlas',
       'my-ontology-2',
     );
   });
@@ -112,7 +112,7 @@ describe('useJustStartVault', () => {
 
   it('does not scaffold when connecting the freshly created folder fails', async () => {
     tauriFsMocks.ensureDefaultVaultParentDir.mockResolvedValue(
-      '/Users/me/Documents/Ontology Atlas',
+      '/Users/me/Ontology Atlas',
     );
     tauriFsMocks.listTauriDirectoryNames.mockResolvedValue([]);
     tauriFsMocks.createTauriVaultHandle.mockReturnValue(fakeHandle('my-ontology'));
