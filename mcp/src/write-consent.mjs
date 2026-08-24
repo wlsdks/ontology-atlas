@@ -135,6 +135,21 @@ export async function requestWriteConsent({ server, toolName, args, enabled }) {
   try {
     result = await server.elicitInput({
       mode: 'form',
+      /*
+       * ⚠️ **`confirm` is asked for, never required** (installed acceptance, 2026-08-24).
+       *
+       * It was `required: ['confirm']` at first, and that made the gate refuse **every** answer,
+       * including yes. A form-capable client fills the boolean; an ACP bridge does not have one to
+       * fill. `codex-acp` maps this request onto ACP `session/request_permission`, the app renders
+       * its ordinary permission card, and pressing 「allow once」 comes back as `action: 'accept'`
+       * with **no form content at all**. Codex reported it verbatim: *"the permission response was
+       * invalid because it lacked the required `confirm` field"* — the write was refused, twice,
+       * after a person had said yes.
+       *
+       * A checkpoint that cannot be passed is not a checkpoint, it is a wall, and a wall teaches
+       * people to route around the gate. So the boolean stays as the **form** spelling of the
+       * question, and `action` stays the answer.
+       */
       message: `${summary}. Apply this change to the vault?`,
       requestedSchema: {
         type: 'object',
@@ -145,7 +160,6 @@ export async function requestWriteConsent({ server, toolName, args, enabled }) {
             description: `${toolName} — ${summary}`,
           },
         },
-        required: ['confirm'],
       },
     });
   } catch (error) {
@@ -160,7 +174,16 @@ export async function requestWriteConsent({ server, toolName, args, enabled }) {
     };
   }
 
-  const accepted = result?.action === 'accept' && result?.content?.confirm === true;
+  /*
+   * **`action` is the answer; the boolean only overrides it.**
+   *
+   * `accept` is the MCP elicitation spelling of "the person said yes" — `decline` and `cancel` are
+   * the other two, and neither reaches here as an approval. A client that *did* render the form and
+   * whose user unticked the box sends `accept` with `confirm: false`; that is a no, and it wins.
+   * Absence is not a no — see the schema comment above for what absence actually measured as.
+   */
+  const answered = result?.content?.confirm;
+  const accepted = result?.action === 'accept' && answered !== false;
   if (accepted) return { allowed: true, asked: true };
 
   return {

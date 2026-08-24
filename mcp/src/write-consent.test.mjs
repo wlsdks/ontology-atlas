@@ -58,7 +58,30 @@ test('an accepted confirmation lets the write through', async () => {
   assert.equal(result.allowed, true);
   assert.equal(result.asked, true);
   assert.match(server.asked[0].message, /Link a → b/);
-  assert.equal(server.asked[0].requestedSchema.required[0], 'confirm');
+  // ⚠️ Never required — a bridge with no form to fill would be refused after a person said yes.
+  assert.ok(
+    !server.asked[0].requestedSchema.required,
+    'requiring the box makes the gate unpassable through an ACP permission card',
+  );
+});
+
+test('a permission card with no form content is still a yes', async () => {
+  /*
+   * Installed acceptance, 2026-08-24. `codex-acp` maps this request onto ACP
+   * `session/request_permission`; the app draws its ordinary permission card and 「allow once」
+   * returns `action: 'accept'` with **no content**. While the box was required, that was read as a
+   * refusal and the write was denied twice after the owner had approved it. Codex's own words:
+   * *"the permission response was invalid because it lacked the required `confirm` field."*
+   */
+  const server = fakeServer({ capabilities: { elicitation: {} }, reply: { action: 'accept' } });
+  const result = await requestWriteConsent({
+    server,
+    toolName: 'add_concept',
+    args: { slug: 'probe-app' },
+    enabled: true,
+  });
+  assert.equal(result.allowed, true, 'a gate that cannot be passed is a wall, not a checkpoint');
+  assert.equal(result.asked, true);
 });
 
 test('a declined confirmation refuses the write', async () => {
