@@ -1,17 +1,16 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { collectProbeSelectors, findDeadSelectors } from "./lib/probe-selectors";
+import { collectProbeSelectors, findDeadSelectors, readProbeSources } from "./lib/probe-selectors";
 
 /**
  * WebView probe selectors ↔ the real UI (audit, 2026-07-25).
  *
  * ## Why it is needed — the same accident happened three times
  *
- * Desktop verification collects evidence through JS probes in
- * `src-tauri/src/lib.rs` that find UI with `document.querySelector`. But **deleting
- * UI does not delete the probes.**
+ * Desktop verification collects evidence through JS probes — the files under
+ * `src-tauri/src/webview_verify/` plus the scripts still templated inside
+ * `src-tauri/src/lib.rs` — that find UI with `document.querySelector`. But
+ * **deleting UI does not delete the probes.**
  *
  * The 2026-07 map rebuild removed the Sigma renderer while the probes kept poking
  * at `.sigma-mouse` and `[data-testid="sigma-topology-viewport"]`, leaving two gates
@@ -39,8 +38,6 @@ import { collectProbeSelectors, findDeadSelectors } from "./lib/probe-selectors"
  * cleanup. A growing list is itself a signal.
  */
 
-const RUST_ENTRY = join(process.cwd(), "src-tauri", "src", "lib.rs");
-
 /**
  * Optional evidence selectors that point at removed UI but **do not hard-fail**.
  *
@@ -53,8 +50,8 @@ const KNOWN_STALE_OPTIONAL = new Set([
 ]);
 
 describe("WebView 프로브 셀렉터 계약", () => {
-  const rust = readFileSync(RUST_ENTRY, "utf8");
-  const selectors = collectProbeSelectors(rust);
+  const probeSources = readProbeSources(process.cwd());
+  const selectors = collectProbeSelectors(probeSources);
 
   it("프로브가 실제로 testid 를 조회한다 (파서 자체가 죽지 않았는지)", () => {
     // If the parser returns 0, this whole test passes meaninglessly — that trap is blocked here.
@@ -84,8 +81,8 @@ describe("WebView 프로브 셀렉터 계약", () => {
 
   it("Sigma 시대 셀렉터가 프로브에 남아 있지 않다 (이번 회귀 고정)", () => {
     // The two that actually killed a gate cannot return, not even via the allowlist.
-    expect(rust).not.toContain(".sigma-mouse");
-    expect(rust).not.toContain("canvas.sigma-nodes");
-    expect(rust).not.toContain("sigma-topology-viewport");
+    expect(probeSources).not.toContain(".sigma-mouse");
+    expect(probeSources).not.toContain("canvas.sigma-nodes");
+    expect(probeSources).not.toContain("sigma-topology-viewport");
   });
 });
