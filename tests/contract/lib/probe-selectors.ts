@@ -2,11 +2,29 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * Extracts the `data-testid` values queried by the WebView probes in
- * `src-tauri/src/lib.rs`. The probes are JS inside a Rust raw string, so static
- * parsing is impossible; only the selector literals are scraped from the text, which
- * is exact enough for this purpose.
+ * Extracts the `data-testid` values queried by the WebView probes. The probes are
+ * real JavaScript files under `src-tauri/src/webview_verify/` (extracted 2026-08-24
+ * from Rust raw strings in `lib.rs`), plus a few small scripts still embedded in
+ * `lib.rs` as `format!` templates. A full JS parse is now possible for the extracted
+ * files, but scraping the selector literals from the text covers both homes with one
+ * mechanism and remains exact enough for this purpose.
  */
+/**
+ * Every source the WebView probes live in, concatenated: `lib.rs` (the remaining
+ * `format!`-templated scripts) and each `src-tauri/src/webview_verify/*.js` file.
+ * Reading the directory rather than a fixed list means a new probe file is scanned
+ * the moment it exists; the callers' non-empty floors catch a silently empty read.
+ */
+export function readProbeSources(cwd: string): string {
+  const rust = readFileSync(join(cwd, "src-tauri", "src", "lib.rs"), "utf8");
+  const verifyDir = join(cwd, "src-tauri", "src", "webview_verify");
+  const scripts = readdirSync(verifyDir)
+    .filter((name) => name.endsWith(".js"))
+    .sort()
+    .map((name) => readFileSync(join(verifyDir, name), "utf8"));
+  return [rust, ...scripts].join("\n");
+}
+
 export function collectProbeSelectors(rustSource: string): string[] {
   const found = new Set<string>();
   // Both `[data-testid="foo"]` and `[data-testid='foo']`.
