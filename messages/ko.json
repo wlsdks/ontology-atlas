@@ -3142,6 +3142,11 @@
       "monthsAgo": "{count}개월 전"
     }
   },
+  "summaryFreshness": {
+    "prefix": "설명이 지금 담고 있는 것보다 뒤처짐",
+    "lag": "{count}일",
+    "action": "재검토"
+  },
   "vaultOpenGuide": {
     "title": "내 폴더를 지도로 켜기",
     "subtitle": "OS 폴더 선택창이 뜨기 전에, 딱 {count}가지만 알아두세요.",

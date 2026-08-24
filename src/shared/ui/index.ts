@@ -60,6 +60,7 @@ export { XMark } from './x-mark';
 export { CompactCopyButton } from './compact-copy-button';
 export { SimilarNodeWarning } from './similar-node-warning';
 export { LastEditSubjectRow } from './last-edit-subject-row';
+export { SummaryFreshnessRow } from './summary-freshness-row';
 export { MtimeConflictBadge } from './mtime-conflict-badge';
 export { RouteLoadingFallback } from './route-loading-fallback';
 export { JsonLd } from './json-ld';

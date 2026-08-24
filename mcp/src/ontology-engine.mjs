@@ -242,6 +242,14 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   // never blocked its absence, which is correct: blocking would make the vault
   // hostile. So the absence is not rejected, it is *reported*.
   'capability_without_evidence',
+  // Appended last on purpose: the README documents this enum in declaration order,
+  // and appending keeps that contract diff-legible instead of renumbering prose.
+  //
+  //   - `rejudge_summary_membership` — a domain or project whose containment list
+  //     changed after its description was last written. Two clocks live in one file
+  //     and a compiled snapshot sees neither; only Git history separates the
+  //     judgement from the membership it judges.
+  'rejudge_summary_membership',
 ]);
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
 const MAINTENANCE_SEVERITIES = new Set(MAINTENANCE_SEVERITY_VALUES);
@@ -457,6 +465,14 @@ export function createOntologyEngine(artifact, options = {}) {
   const nodeEligibilityFindings = Array.isArray(options.nodeEligibilityFindings)
     ? options.nodeEligibilityFindings
     : [];
+  /**
+   * Summary nodes whose membership outran their description, from
+   * `findStaleParentSummaries`. Injected for the same reason as the findings
+   * above: the comparison needs Git history, which a compiled artifact does not
+   * carry. Empty when the vault is not in a repository, which reads as "not
+   * checked" rather than "clean".
+   */
+  const staleSummaries = Array.isArray(options.staleSummaries) ? options.staleSummaries : [];
   const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
   const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
   const sourceDocBySlug = new Map(
@@ -3271,6 +3287,20 @@ export function createOntologyEngine(artifact, options = {}) {
         score: mapped.score,
         reason: finding.message,
         node: summarizeNode(nodeBySlug.get(finding.slug)),
+      });
+    }
+    // `review`, never `repair`: the fix is a person reading the domain against its
+    // members and deciding, and no tool call can stand in for that. `info` for the
+    // same reason — nothing here is broken, something here is owed.
+    for (const row of staleSummaries) {
+      if (!row?.slug) continue;
+      rows.push({
+        phase: 'review',
+        kind: 'rejudge_summary_membership',
+        severity: 'info',
+        score: typeof row.score === 'number' ? row.score : 0.5,
+        reason: row.hint || `"${row.slug}" declares a membership that changed after its description was last written.`,
+        node: summarizeNode(nodeBySlug.get(row.slug)),
       });
     }
     return rows;

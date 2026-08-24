@@ -150,12 +150,19 @@ import {
   reconcileImportEdges,
 } from './reconcile-imports.mjs';
 import { detectVaultPathDrift, suggestPathReconciliations } from './detect-drift.mjs';
+import {
+  SUMMARY_KINDS,
+  describeStaleParent,
+  findStaleParentSummaries,
+  staleParentScore,
+} from './stale-parent.mjs';
 import { scoreEvidence } from './evidence-rank.mjs';
 import {
   discoverGitRepositoryRoot,
   inspectVaultGit,
   inspectVaultGitHistory,
   snapshotVaultGit,
+  collectNodeRevisions,
 } from './git-tools.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import {
@@ -8340,9 +8347,16 @@ function queryOntologyTool(args = {}) {
     );
     return buildMeaningRepairReviewPage(context.meaningRepairInput, args);
   }
+  // `maintenance_plan` is the one read operation that needs Git history: summary
+  // freshness compares a node's description against the membership it describes,
+  // and a compiled artifact carries neither clock. Computed only for that
+  // operation so every other query stays a pure snapshot read.
+  const maintenanceFreshness =
+    args.operation === 'maintenance_plan' ? buildSummaryFreshness(loadVaultDocs(VAULT_ROOT)) : null;
   const queryResult = queryCompiledOntology(artifact, args, {
     ontologyAtlasIgnorePatterns,
     ...(args.operation === 'builder_context' ? { sourceDocs: loadVaultDocs(VAULT_ROOT) } : {}),
+    ...(maintenanceFreshness?.checked ? { staleSummaries: maintenanceFreshness.stale } : {}),
   });
   const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
     ? attachVaultValidation(queryResult, args)
@@ -9216,17 +9230,23 @@ function compactPostWriteMaintenance(limit = 5) {
   // writes with `includePostWriteMaintenance: false`, findings accumulate, and
   // the batch's single closing call collects all of them.
   const nodeEligibilityFindings = drainNodeEligibilityFindings();
+  const maintenanceDocs = loadVaultDocs(VAULT_ROOT);
+  // Same signal `validate_vault` reports as `summaryFreshness`, surfaced here as an
+  // action so an agent planning work sees it without running a second tool. Reading
+  // history is bounded to summary nodes and degrades to silence outside a repo.
+  const freshness = buildSummaryFreshness(maintenanceDocs);
   const result = queryCompiledOntology(artifact, {
     operation: 'maintenance_plan',
     limit,
   }, {
     ontologyAtlasIgnorePatterns,
     nodeEligibilityFindings,
+    staleSummaries: freshness.checked ? freshness.stale : [],
     // The empty-bridge audit needs bodies to tell "created and abandoned" from
     // "documented but childless" — and without that distinction it would fire on
     // 20 of this vault's 38 capabilities. The compiled-cache read above already
     // loads every doc, so this second pass is the same disk we just touched.
-    sourceDocs: loadVaultDocs(VAULT_ROOT),
+    sourceDocs: maintenanceDocs,
   });
   return {
     operation: result.operation,
@@ -9289,6 +9309,63 @@ function compactMaintenanceNodes(nodesValue) {
 // shape as CLI `ontology-atlas validate --json`. It fills the gap between per-doc
 // `warnings` (get_concept) and the vault aggregate (`vaultWarnings` in
 // list_concepts): a detailed report combining both.
+/**
+ * Builds the summary-freshness section of `validate_vault`.
+ *
+ * Reports domains and projects whose containment list changed after their
+ * description was last written — the update path nothing else in this tool checks.
+ * `pathDrift` asks whether a node still points at real code; this asks whether a
+ * node still describes what it holds.
+ *
+ * Advisory only. A stale description blocks nothing and is never rewritten here:
+ * the body is a human judgement, so the tool asks for a re-judgement and stops.
+ *
+ * Degrades to `checked: false` outside a repository rather than reporting a clean
+ * bill, because not looking is not the same as finding nothing. History reading is
+ * bounded to summary nodes (8 of 83 in the dogfood vault), so a vault of ordinary
+ * size pays well under a second.
+ */
+function buildSummaryFreshness(docs) {
+  const summarySlugs = docs
+    .filter((doc) => SUMMARY_KINDS.includes(doc?.frontmatter?.kind))
+    .map((doc) => doc.slug);
+  if (summarySlugs.length === 0) {
+    return {
+      checked: true,
+      summaryNodes: 0,
+      stale: [],
+      hint: 'no domain or project nodes to check.',
+    };
+  }
+  const revisions = collectNodeRevisions({
+    repoRoot: REPO_ROOT,
+    vaultRoot: VAULT_ROOT,
+    slugs: summarySlugs,
+  });
+  if (!revisions.ok) {
+    return {
+      checked: false,
+      summaryNodes: summarySlugs.length,
+      stale: [],
+      hint: `Summary freshness was NOT checked (${revisions.reason}). This comparison reads Git history, so a vault outside a repository cannot be judged — read each domain against the nodes it contains by hand.`,
+    };
+  }
+  const stale = findStaleParentSummaries({
+    docs,
+    revisionsOf: (slug) => revisions.revisionsBySlug.get(slug) ?? [],
+  }).map((row) => ({ ...row, score: staleParentScore(row), hint: describeStaleParent(row) }));
+
+  return {
+    checked: true,
+    summaryNodes: summarySlugs.length,
+    stale,
+    hint:
+      stale.length > 0
+        ? `${stale.length} summary node(s) declare a membership that changed after their description was last written. Nothing is blocked; read each against the nodes it contains and re-judge the body.`
+        : `all ${summarySlugs.length} summary node(s) were described after their membership last changed.`,
+  };
+}
+
 function validateVaultTool({ repoRoot } = {}) {
   requireOptionalNonBlankString(repoRoot, 'repoRoot');
   const docs = loadVaultDocs(VAULT_ROOT);
@@ -9371,6 +9448,7 @@ function validateVaultTool({ repoRoot } = {}) {
       scanned: docs.length,
       problems,
       summary: { problemFiles: problems.length, errorFiles, warningFiles, byCode },
+      summaryFreshness: buildSummaryFreshness(docs),
       pathDrift: {
         repoRoot: driftRoot,
         checked: false,
@@ -9413,6 +9491,7 @@ function validateVaultTool({ repoRoot } = {}) {
       warningFiles,
       byCode,
     },
+    summaryFreshness: buildSummaryFreshness(docs),
     pathDrift: {
       repoRoot: drift.repoRoot,
       checked: true,

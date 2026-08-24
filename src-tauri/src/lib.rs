@@ -3158,6 +3158,7 @@ pub fn run() {
             git::git_set_remote,
             git::git_snapshot,
             git::git_history,
+            git::vault_node_revisions,
             git::git_diff,
             git::git_commit_diff,
             git::git_pull,

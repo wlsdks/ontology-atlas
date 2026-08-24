@@ -8,6 +8,7 @@ export type {
   AgentActivityStatus,
 } from './model/agent-activity-status';
 export { useVaultCreateFlow } from './model/use-vault-create-flow';
+export { useSummaryFreshness } from './model/use-summary-freshness';
 export { useJustStartVault } from './model/use-just-start-vault';
 export {
   buildCodexMcpAddCommandTemplate,

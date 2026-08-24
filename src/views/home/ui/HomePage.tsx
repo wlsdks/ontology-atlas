@@ -49,6 +49,7 @@ import {
   useAgentServer,
   useLocalVault,
   VaultOpenGuideSheet,
+  useSummaryFreshness,
 } from "@/features/docs-vault-local";
 import {
   FirstRunReadout,
@@ -253,6 +254,7 @@ import {
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
+import { daysBehind } from "@/entities/docs-vault";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
 import { resolveToastRightOffset } from "@/shared/ui/toast-position";
 import { MapEntryLoadingVisual } from "@/shared/ui/map-entry-loading-visual";
@@ -943,6 +945,21 @@ function HomePageImpl() {
   // System Access handle, which makes the history tile and panel degrade honestly to
   // the session changeset.
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
+  // Direction B (2026-08-25 design-directions) — summary nodes whose description has
+  // fallen behind the membership it describes. Empty in the browser, which has no Git
+  // history to read; the node popover simply renders no row there.
+  const summaryFreshnessCandidates = useMemo(
+    () =>
+      (ontologyInsight?.nodes ?? [])
+        // `agentSlug` is the vault-root-relative address, which is exactly what
+        // `vault_node_revisions` resolves against; `evidenceIds[0]` would carry the
+        // bundled sample's extra path segment and, for a node with no document of its
+        // own, would name someone else's file.
+        .filter((node) => node.hasOwnDocument !== false && Boolean(node.agentSlug))
+        .map((node) => ({ slug: node.agentSlug as string, kind: node.kind })),
+    [ontologyInsight],
+  );
+  const summaryFreshness = useSummaryFreshness(gitVaultPath ?? undefined, summaryFreshnessCandidates);
   const handoffSource: "loaded-vault" | "read-only-sample" =
     vault.status === "loaded" ? "loaded-vault" : "read-only-sample";
   // `AppNavRail` lives in the layout, so this page cannot mount it. It registers the
@@ -2289,6 +2306,7 @@ function HomePageImpl() {
   // namespace as `DocFrontmatterBlock` rather than copying it, so the two cannot
   // drift.
   const tEditProvenance = useTranslations("editProvenance");
+  const tSummaryFreshness = useTranslations("summaryFreshness");
   const formatEditAgeLabel = useCallback(
     (key: string, count: number) => tEditProvenance(`age.${key}`, { count }),
     [tEditProvenance],
@@ -5926,6 +5944,11 @@ function HomePageImpl() {
                 kind={panelDatasheetModel.kind}
                 domain={panelDatasheetModel.domain}
                 powered={panelDatasheetModel.powered}
+                summaryStaleness={
+                  summaryFreshness.has(panelDatasheetModel.slug)
+                    ? { behindByDays: daysBehind(summaryFreshness.get(panelDatasheetModel.slug)!) }
+                    : null
+                }
                 groups={panelDatasheetModel.groups}
                 evidence={panelDatasheetModel.evidence}
                 codeLocations={panelDatasheetModel.codeLocations}
@@ -5972,6 +5995,13 @@ function HomePageImpl() {
                   // The same `editProvenance` namespace as `DocFrontmatterBlock` — one
                   // source, no drift.
                   editSubjectPrefix: tEditProvenance("prefix"),
+                  summaryFreshnessPrefix: tSummaryFreshness("prefix"),
+                  summaryFreshnessLag: summaryFreshness.has(panelDatasheetModel.slug)
+                    ? tSummaryFreshness("lag", {
+                        count: daysBehind(summaryFreshness.get(panelDatasheetModel.slug)!),
+                      })
+                    : undefined,
+                  summaryFreshnessAction: tSummaryFreshness("action"),
                   editSubjectAgent: tEditProvenance("subjectAgent"),
                   editSubjectHuman: tEditProvenance("subjectHuman"),
                   editConflictMessage: tEditProvenance("conflictMessage"),

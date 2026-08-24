@@ -1416,6 +1416,91 @@ fn host_platform() -> &'static str {
 ///
 /// **Installs nothing.** We only detect and report; the user installs it in their
 /// own terminal — the trust charter's "zero silent execution" holds here too.
+/// One historical version of one vault file: when it landed and what it said.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeRevision {
+    slug: String,
+    iso_time: String,
+    content: String,
+}
+
+/// Revisions of named vault nodes, newest first, for the summary-freshness check.
+///
+/// The screen needs to know whether a domain's **description** or its **membership**
+/// moved last. Both live in one file, so a timestamp is not enough — the caller has to
+/// compare content across versions. This command stays deliberately ignorant of what
+/// that content means: it does no frontmatter parsing and knows nothing about
+/// containment. Git plumbing lives here; the ontology judgement lives in one TypeScript
+/// module that the web build shares, so there is no second copy of the rule to drift.
+///
+/// Bounded twice over. The caller passes only summary nodes (8 of 83 in the dogfood
+/// vault), and `max_revisions` caps the walk per node. A slug with no history is simply
+/// absent from the result rather than reported as an error, because a file written but
+/// not yet committed is a normal state, not a failure.
+#[tauri::command]
+pub fn vault_node_revisions(
+    vault_path: String,
+    slugs: Vec<String>,
+    max_revisions: Option<u32>,
+) -> Result<Vec<NodeRevision>, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+    let prefix = if pathspec == "." {
+        String::new()
+    } else {
+        format!("{pathspec}/")
+    };
+    let max_count = max_revisions.unwrap_or(40).clamp(1, 200).to_string();
+
+    let mut revisions = Vec::new();
+    for slug in slugs.iter().take(MAX_FRESHNESS_SLUGS) {
+        // A slug is an address inside the vault, never a way out of it. Anything that
+        // could climb the tree or reach an absolute path is dropped rather than escaped,
+        // because this value reaches a `git show` argument.
+        if slug.is_empty() || slug.contains("..") || slug.starts_with('/') || slug.contains('\\') {
+            continue;
+        }
+        let file_path = format!("{prefix}{slug}.md");
+        let log = run_git(
+            &repo_root,
+            &[
+                "log",
+                &format!("--max-count={max_count}"),
+                "--pretty=format:%H %cI",
+                "--no-renames",
+                "--",
+                &file_path,
+            ],
+        )?;
+        if !log.success {
+            continue;
+        }
+        for line in log.stdout.lines() {
+            let line = line.trim();
+            let Some((hash, iso_time)) = line.split_once(' ') else {
+                continue;
+            };
+            let show = run_git(&repo_root, &["show", &format!("{hash}:{file_path}")])?;
+            if !show.success {
+                continue;
+            }
+            revisions.push(NodeRevision {
+                slug: slug.clone(),
+                iso_time: iso_time.trim().to_string(),
+                content: show.stdout,
+            });
+        }
+    }
+    Ok(revisions)
+}
+
+/// Summary nodes are a small, bounded set by construction (`project` and `domain` only).
+/// The cap exists so a malformed caller cannot turn one screen paint into an unbounded
+/// number of `git show` processes.
+const MAX_FRESHNESS_SLUGS: usize = 64;
+
 #[tauri::command]
 pub fn git_probe() -> GitProbe {
     let platform = host_platform().to_string();

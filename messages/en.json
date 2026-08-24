@@ -3142,6 +3142,11 @@
       "monthsAgo": "{count}mo ago"
     }
   },
+  "summaryFreshness": {
+    "prefix": "Description is behind what this holds",
+    "lag": "{count}d",
+    "action": "re-judge"
+  },
   "vaultOpenGuide": {
     "title": "Turn your folder into the map",
     "subtitle": "Before the OS folder picker opens, just {count} things to know.",
