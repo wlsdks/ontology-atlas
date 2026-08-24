@@ -38,3 +38,28 @@ export const GATED_SESSION_MODE: Readonly<Record<string, string>> = {};
 export function isGuardedRuntime(runtimeId: string, isolated: boolean): boolean {
   return isolated || runtimeId in GATED_SESSION_MODE;
 }
+
+/**
+ * Does this runtime's **own configuration** already put a permission request in front
+ * of a person for every tool call — including calls into our MCP server?
+ *
+ * Only config isolation has been measured to do that (Claude: an isolated
+ * `CLAUDE_CONFIG_DIR` with an empty allow-list produced the request, and declining it
+ * left the file uncreated). A session mode is not the same thing: Codex `read-only`
+ * blocked direct file access while an Atlas MCP write went through with no request at
+ * all (installed rc.10 acceptance, 2026-08-24).
+ *
+ * The answer decides **who holds the single checkpoint** for a session. `true` hands it
+ * to the runtime and keeps the server gate off, so nobody is asked twice. `false` — the
+ * default for anything unmeasured — turns the server gate on, because an unasked write
+ * is worse than one question too many.
+ */
+export function runtimeOwnsWriteGate(runtimeId: string | null | undefined): boolean {
+  return typeof runtimeId === 'string' && CONFIG_ISOLATED_RUNTIMES.has(runtimeId);
+}
+
+/**
+ * Runtimes whose configuration the app isolates. Mirrors `ISOLATION` in
+ * `src-tauri/src/acp.rs`; `runtime-gate.test.ts` keeps the two from drifting.
+ */
+const CONFIG_ISOLATED_RUNTIMES: ReadonlySet<string> = new Set(['claude-acp']);

@@ -344,8 +344,19 @@ export function AgentActivityChip({
           }
           data-testid="agent-activity-bell"
           data-agent-activity-bell-slot="utility-row-end"
-          className="relative shrink-0 overflow-visible"
-          icon={<Bell aria-hidden />}
+          /*
+           * The bell carries its own state, not just a badge beside it. Reported
+           * 2026-08-24: with the count sitting in a 16px badge, a bell holding nine
+           * unread receipts and an empty bell read the same at a glance. Filling the
+           * glyph and lifting it to primary ink changes the **shape and weight** of
+           * the mark, so "there is something here" survives a squint and does not
+           * depend on noticing a small badge -- or on colour alone.
+           */
+          className={cn(
+            'relative shrink-0 overflow-visible',
+            feed.unreadCount > 0 && 'text-[color:var(--color-text-primary)]',
+          )}
+          icon={<Bell aria-hidden fill={feed.unreadCount > 0 ? 'currentColor' : 'none'} />}
           badge={
             feed.unreadCount > 0 ? (
               <span

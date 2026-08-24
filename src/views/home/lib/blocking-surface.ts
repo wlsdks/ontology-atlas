@@ -22,6 +22,20 @@ export interface BlockingSurfaceState {
   createNodeOpen: boolean;
   /** The guided tour — a sequence with its own scrim and focus trap. */
   tourOpen: boolean;
+  /**
+   * An agent has stopped and is waiting for a yes or no.
+   *
+   * ⚠️ **Measured 2026-08-24, installed app.** The permission card declares
+   * `role="alertdialog"` and is the most expensive single decision in this product, yet it was
+   * missing from this predicate. A single unmodified letter still fired — `d` opened the documents
+   * drawer directly over the pending card, and Escape then went to the card, not the drawer, so the
+   * person could neither answer the question nor clear the thing covering it. Both ways out were
+   * gone at once.
+   *
+   * That is the exact failure this file was written for, arriving through a surface added later —
+   * which is why the guard belongs here and not as another ad-hoc `if` beside one shortcut.
+   */
+  agentAwaitingDecision: boolean;
 }
 
 /**
@@ -30,5 +44,5 @@ export interface BlockingSurfaceState {
  * keyboard.
  */
 export function shouldSuppressGlobalShortcuts(state: BlockingSurfaceState): boolean {
-  return state.createNodeOpen || state.tourOpen;
+  return state.createNodeOpen || state.tourOpen || state.agentAwaitingDecision;
 }

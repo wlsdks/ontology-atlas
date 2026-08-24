@@ -1259,6 +1259,39 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
     expect(details?.textContent).toContain('acp session closed');
     expect(details?.textContent).toContain('_npx/8757e2301903ae53');
   });
+
+  it('카드가 시킨 그 행동을 카드가 준다 — 「다시 시도」가 실제로 새 세션을 띄운다', async () => {
+    /*
+     * Owner's installed app, 2026-08-24: *"if this is normal I still would not know what to do —
+     * give me what to do, bigger and better made"*. Five of the six kinds ended their sentence with
+     * 「press New chat」, and 「New chat」 was a pencil icon up in the header. An error surface whose
+     * next step lives somewhere else is a dead end.
+     */
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    const handshakes = () => bridge.sent.filter((m) => m.method === 'initialize').length;
+    const before = handshakes();
+    bridge.stderr?.('npm error enoent Could not read package.json');
+    bridge.exit?.(1);
+
+    const alert = await screen.findByTestId('acp-chat-error');
+    const retry = alert.querySelector<HTMLButtonElement>('[data-testid="acp-chat-error-retry"]');
+    expect(retry, '오류 카드가 「다시 시도」를 주지 않는다').not.toBeNull();
+    fireEvent.click(retry as HTMLButtonElement);
+    await waitFor(() =>
+      expect(
+        handshakes(),
+        '「다시 시도」가 새 악수를 시작하지 않았다',
+      ).toBeGreaterThan(before),
+    );
+  });
 });
 
 describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-08-19)', () => {

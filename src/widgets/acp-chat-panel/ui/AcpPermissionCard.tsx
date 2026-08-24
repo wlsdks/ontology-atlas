@@ -62,6 +62,30 @@ export function AcpPermissionCard({
     : providedChangeSet;
   /* Not only where but **what** — see the comment below. */
   const intent = permissionIntent(request.toolKind);
+  /**
+   * **A server asking the person's consent is not "something outside this folder"** (wire capture,
+   * 2026-08-24).
+   *
+   * The vault's own MCP server pauses each write by asking the client through
+   * `elicitation/create`; `codex-acp` forwards it as an ordinary
+   * `session/request_permission`. With no way to tell the two apart the card headed a change to a
+   * file **inside** the chosen folder with 「it is trying to touch something outside this folder」 —
+   * false, and false in the direction that makes a correct decision look alarming.
+   *
+   * The signal is measured, not guessed: that request arrives with
+   * `toolCallId: "elicitation-<server>"` and a `rawInput.serverName`. Both must be present, so an
+   * ordinary tool call named something similar cannot borrow this heading.
+   */
+  const serverConsent =
+    typeof request.toolCallId === 'string' &&
+    request.toolCallId.startsWith('elicitation-') &&
+    typeof request.rawInput.serverName === 'string';
+  /**
+   * The one sentence that makes this answerable. When the vault's server asked the question itself,
+   * that question is the material — not our generic heading, and never a second line repeating that
+   * we do not know.
+   */
+  const askedSentence = serverConsent ? request.title : null;
   /*
     What 「Keep allowing」 (keep allowing) actually allows (2026-08-17).
 
@@ -131,13 +155,13 @@ export function AcpPermissionCard({
             id="acp-permission-title"
             className="break-keep text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
           >
-            {t(ontologyWrite ? 'ontologyWriteTitle' : 'title')}
+            {t(ontologyWrite ? 'ontologyWriteTitle' : serverConsent ? 'consentTitle' : 'title')}
           </p>
           <p
             id="acp-permission-body"
             className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]"
           >
-            {t(ontologyWrite ? 'ontologyWriteBody' : 'body')}
+            {t(ontologyWrite ? 'ontologyWriteBody' : serverConsent ? 'consentBody' : 'body')}
           </p>
         </div>
       </div>
@@ -157,6 +181,22 @@ export function AcpPermissionCard({
           activeItemIndex={activeItemIndex}
           onActiveItemChange={onActiveItemChange}
         />
+      ) : askedSentence ? (
+        /*
+         * ⚠️ **Never say "unknown" twice** (owner's screen, 2026-08-24). The card used to print
+         * 「the tool did not say what it wants to do」 here **and** 「cannot tell what it wants to
+         * do」 below it, because a server elicitation carries `kind: "other"` (→ unknown) and no
+         * title. Two lines, two inks, no information — the shape that reads as generated filler.
+         *
+         * When the question itself arrived, it is the whole line, at reading size: this is the
+         * decision material, not a caption under it.
+         */
+        <p
+          data-testid="acp-permission-ask"
+          className="break-keep text-body leading-prose text-[color:var(--color-text-primary)]"
+        >
+          {askedSentence}
+        </p>
       ) : (
         <p
           data-testid="acp-permission-intent"
@@ -177,11 +217,13 @@ export function AcpPermissionCard({
         >
           {request.filePath}
         </p>
-      ) : !ontologyWrite ? (
+      ) : ontologyWrite || askedSentence ? null : (
+        /* The question already stands above when the server asked one; repeating it here is the
+           duplicate line this card was criticised for. */
         <p className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
           {request.title ?? t('unknownTarget')}
         </p>
-      ) : null}
+      )}
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Button
