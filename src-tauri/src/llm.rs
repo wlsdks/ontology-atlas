@@ -355,11 +355,22 @@ fn curl_config(request: &VerifyRequest) -> String {
 ///
 /// Why not use stderr messages directly: the three most common failures in local runners (down · port mismatch · address typo) all collapse into a single "Couldn't connect to
 /// server" message in stderr. The exit code is the only stable signal separating these three (curl manual § EXIT CODES).
+/// Machine-readable prefixes for the two failures the screen must branch on.
+///
+/// The screen used to recognise them by matching **Korean substrings** of these messages, which
+/// made the sentence itself a cross-language contract no test held — and `forbidden.md` actively
+/// invites translating exactly such prose. Translating it would have silently downgraded "your
+/// vault could not be written" into "check your network", the one diagnosis the audit notice
+/// exists to give. Same convention as `vault-root-rejected:`: a code, because composing
+/// human-readable copy inside Rust traps the translation there.
+pub(crate) const AUDIT_BLOCKED_PREFIX: &str = "audit-blocked:";
+pub(crate) const TIMED_OUT_PREFIX: &str = "timed-out:";
+
 fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
     match code {
         Some(6) => "그 주소의 호스트를 찾지 못했어요 — 주소를 다시 확인해 주세요.".into(),
         Some(7) => "그 주소에서 응답이 없어요 — 러너가 꺼져 있거나 포트가 달라요.".into(),
-        Some(28) => "시간 안에 응답이 오지 않았어요.".into(),
+        Some(28) => format!("{TIMED_OUT_PREFIX}시간 안에 응답이 오지 않았어요."),
         Some(35) | Some(60) => "보안 연결(TLS)을 맺지 못했어요.".into(),
         _ if stderr.is_empty() => "응답을 받지 못했어요 (네트워크 확인).".to_string(),
         _ => format!("응답을 받지 못했어요: {stderr}"),
@@ -469,7 +480,8 @@ where
         payload_sha256: llm_audit::sha256_hex(payload),
     };
     // No transmission if recording fails. This `?` is the code path for Charter ②.
-    let reservation = llm_audit::reserve(vault_dir, draft)?;
+    let reservation = llm_audit::reserve(vault_dir, draft)
+        .map_err(|error| format!("{AUDIT_BLOCKED_PREFIX}{error}"))?;
 
     let started = Instant::now();
     let echo = send(&request);
@@ -530,7 +542,7 @@ where
 ///
 /// `base_url` comes **only from the address branch**. If an address arrives with a named vendor,
 /// reject it — allowing it would cause keys from the keychain to go to hosts the UI never promised.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn secret_verify(
     provider: String,
     vault_path: String,
@@ -762,7 +774,8 @@ where
         payload_sha256: llm_audit::sha256_hex(body),
     };
     // No recording, no transmission.
-    let reservation = llm_audit::reserve(vault_dir, draft)?;
+    let reservation = llm_audit::reserve(vault_dir, draft)
+        .map_err(|error| format!("{AUDIT_BLOCKED_PREFIX}{error}"))?;
 
     let started = Instant::now();
     let echo = send(&request);
@@ -810,7 +823,7 @@ where
 /// One chat round trip — **only within a turn where the user pressed [Send]**. The vault
 /// path is required for the same reason as the verification flow: with nowhere to record,
 /// nothing is sent.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn llm_chat(
     provider: String,
     vault_path: String,
@@ -1174,8 +1187,12 @@ mod tests {
         // this file return only types that cannot hold a key. Even as new commands are
         // added, a return type outside this allowlist gets caught here.
         let source = include_str!("llm.rs").replace("\r\n", "\n");
+        // Both spellings count. `#[tauri::command(async)]` moves the body off the macOS main
+        // thread, and a matcher that saw only the bare form would report zero commands here and
+        // pass while checking nothing — the failure this assertion exists to prevent.
         let commands: Vec<usize> = source
-            .match_indices("\n#[tauri::command]\npub fn ")
+            .match_indices("\n#[tauri::command")
+            .filter(|(idx, _)| source[*idx..].contains("]\npub fn "))
             .map(|(idx, _)| idx)
             .collect();
         assert_eq!(commands.len(), 2, "연결 확인과 대화 왕복 둘뿐이다");

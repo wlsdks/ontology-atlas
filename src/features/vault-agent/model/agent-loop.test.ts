@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { LlmChatEcho } from '@/shared/lib/tauri-llm';
 
-import { runTurn, startTurn, type AgentLoopDeps } from './agent-loop';
+import { runTurn, startTurn, type AgentLoopDeps, AUDIT_BLOCKED_PREFIX, TIMED_OUT_PREFIX } from './agent-loop';
 import { anthropicAdapter } from './providers/anthropic';
 import { localAdapter } from './providers/local';
 import { EMPTY_SCREEN_CONTEXT } from './screen-context';
@@ -362,7 +362,10 @@ describe('runTurn', () => {
 
   it('감사 기록 실패는 전송 거절로 읽힌다', async () => {
     const send = vi.fn<Send>(async () => {
-      throw new Error('감사 기록을 남기지 못했어요: EACCES');
+      // The shape `llm.rs` actually emits: a machine-readable code, then whatever human copy the
+      // Rust side happened to compose. This test used to feed its own copy of the Korean sentence
+      // and assert the code — so it passed no matter what Rust really said.
+      throw new Error(`${AUDIT_BLOCKED_PREFIX}감사 기록을 남기지 못했어요: EACCES`);
     });
     const result = await runTurn(
       deps({ send }),
@@ -374,7 +377,7 @@ describe('runTurn', () => {
 
   it('생성 시간 초과를 연결 실패로 숨기지 않는다', async () => {
     const send = vi.fn<Send>(async () => {
-      throw new Error('모델이 제한 시간 안에 응답하지 않았어요');
+      throw new Error(`${TIMED_OUT_PREFIX}모델이 제한 시간 안에 응답하지 않았어요`);
     });
     const result = await runTurn(
       deps({ send }),

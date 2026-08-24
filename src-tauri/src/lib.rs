@@ -1646,7 +1646,7 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
 ///
 /// So the screen calls twice: first draw without the check, then check and
 /// correct.
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_detect_runtimes(app: tauri::AppHandle, probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> {
     let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
     let skip = |_: &str, _: &std::path::Path, _: &[&str], _: &str| None;
@@ -1837,7 +1837,7 @@ fn acp_node_plan() -> Option<String> {
 /// clicks · show first what is downloaded from where · only inside
 /// `<app-data>/runtimes/node` · pin the version and **verify the hash after
 /// download** (on mismatch, delete and fail).
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_install_node(
     app: tauri::AppHandle,
     runtime_id: String,
@@ -1878,7 +1878,7 @@ fn acp_install_plan(app: tauri::AppHandle, runtime_id: String) -> Option<String>
 ///
 /// After installation, **re-verify and return the value** — saying "installed" when it actually wasn't
 /// is the worst defect at this location.
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_install_cli(
     app: tauri::AppHandle,
     runtime_id: String,
@@ -2038,13 +2038,22 @@ fn open_external_url(url: String) -> Result<(), String> {
         c.arg(&url);
         c
     };
-    command
+    let mut child = command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map(|_| ())
-        .map_err(|err| format!("open-failed:{err}"))
+        .map_err(|err| format!("open-failed:{err}"))?;
+
+    // Dropping a `Child` does not reap it. `open` exits almost immediately, so every clicked link
+    // used to leave a zombie in the process table for the rest of the session — unbounded by
+    // anything but how many links someone follows. Waiting on a detached thread keeps this command
+    // instant while still collecting the exit status. (`reveal_in_finder` below already uses
+    // `.status()` for the same reason; it can afford to wait because it is a one-shot action.)
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+    Ok(())
 }
 
 /// Is this an address that may be opened. **It is an allowlist, not a denylist** — denylists
@@ -2060,7 +2069,7 @@ pub(crate) fn is_openable_url(url: &str) -> bool {
 /// The previous approach of answering one symptom with one sentence sent users to the wrong place
 /// when the cause lay in a different phase (as seen in the 2026-08-20 login incident). Here we
 /// return only facts; the screen generates the sentences.
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_diagnose(app: tauri::AppHandle, runtime_id: String) -> Result<Vec<acp_doctor::AcpCheck>, String> {
     // If re-verifying starts, forget previous installation results — the screen also clears its
     // state at the same moment, so both locations follow the same rule.
@@ -2070,7 +2079,7 @@ fn acp_diagnose(app: tauri::AppHandle, runtime_id: String) -> Result<Vec<acp_doc
 }
 
 /// When the screen presses "Fix". **Only `fixable` items arrive.**
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_repair(
     app: tauri::AppHandle,
     runtime_id: String,
@@ -2088,7 +2097,7 @@ fn acp_repair(
 ///
 /// Return the **re-verified value** after deletion. The worst defect here is saying "re-established"
 /// while leaving it unchanged.
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_reset_connection(
     app: tauri::AppHandle,
     runtime_id: String,
@@ -2197,6 +2206,11 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
     })
 }
 
+/// Deliberately **not** `(async)`, unlike the other slow commands in this file.
+///
+/// `rfd::FileDialog::pick_folder` opens an `NSOpenPanel`, which macOS requires on the main thread
+/// and which runs its own modal event loop — so the UI stays responsive *because* this blocks here.
+/// Moving it to a worker is the one change in this file that would break the thing the others fix.
 #[tauri::command]
 fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, String> {
     let title = dialog_title.as_deref().unwrap_or("Open ontology vault");
@@ -2513,7 +2527,7 @@ fn inspect_git_source_inventory(root: &Path) -> Result<(String, bool, Vec<String
     Ok((fingerprint, inventory.truncated, inventory.files))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, String> {
     let selected_root = canonical_root(&root_path)?;
     match git::find_repo_root(&selected_root)? {

@@ -108,15 +108,28 @@ export function startTurn(input: StartTurnInput): AgentTurn {
   };
 }
 
+/**
+ * Machine-readable prefixes minted by `src-tauri/src/llm.rs`. Mirrored here rather than imported
+ * because the Rust side cannot export to TypeScript; `tests/contract/agent-notice-codes.contract.test.ts`
+ * is what keeps the two copies honest.
+ */
+export const AUDIT_BLOCKED_PREFIX = 'audit-blocked:';
+export const TIMED_OUT_PREFIX = 'timed-out:';
+
 function noticeFor(deps: AgentLoopDeps, status: number | null, message: string): AgentEvent {
   if (status === 429) return { kind: 'notice', code: 'rate-limited', text: deps.notices.rateLimited };
   if (status === 401 || status === 403) {
     return { kind: 'notice', code: 'rejected', text: deps.notices.rejected };
   }
-  if (message.includes('감사 기록') || message.includes('기록을 남기지')) {
+  // Codes, not prose. These used to match Korean substrings of the Rust error text, which made
+  // the sentence a cross-language contract nothing pinned — and `forbidden.md` tells the next
+  // agent to translate exactly that prose. Doing so would have dropped an unwritable vault
+  // through to `network-failed`, telling the user to check their network while the real blocker
+  // was the folder. `tests/contract/agent-notice-codes.contract.test.ts` now holds both sides.
+  if (message.includes(AUDIT_BLOCKED_PREFIX)) {
     return { kind: 'notice', code: 'audit-blocked', text: deps.notices.auditBlocked };
   }
-  if (message.includes('시간 안에') || /timed?\s*out/i.test(message)) {
+  if (message.includes(TIMED_OUT_PREFIX) || /timed?\s*out/i.test(message)) {
     return { kind: 'notice', code: 'timed-out', text: deps.notices.timedOut };
   }
   return { kind: 'notice', code: 'network-failed', text: deps.notices.networkFailed };

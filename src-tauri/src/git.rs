@@ -763,7 +763,7 @@ fn divergence_counts(repo_root: &Path) -> (Option<usize>, Option<usize>) {
 ///
 /// Trust charter: same discipline as the only other commands that go over the network
 /// (`git_snapshot(push)` · `git_pull`) — runs only when the user presses it. No automatic calls.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
@@ -803,7 +803,7 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
 /// Semantic-unit snapshot that adds + commits only the vault scope. Without `message`,
 /// the auto summary is used as the subject. Sends to upstream only when `push` is true (opt-in).
 /// No changes to commit is not an error but `committed:false, reason:"no-changes"`.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_snapshot(
     vault_path: String,
     message: Option<String>,
@@ -1119,7 +1119,7 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
 
 /// git pull from upstream (opt-in transmission). Reports missing upstream / conflict /
 /// non-fast-forward as a clean Err without crashing.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;

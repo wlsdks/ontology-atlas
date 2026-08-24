@@ -349,7 +349,7 @@ fn rpc_line(id: u64, method: &str, params: serde_json::Value) -> String {
 ///
 /// Why go to actual invocation here: If only boot is checked, the system reports "server is up but cannot read this folder"
 /// with a green light. What users want to know is not whether the process is alive, but **whether their vault is readable**.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn verify_mcp_server(vault_path: String, sample_slug: Option<String>) -> McpVerifyResult {
     match verify_inner(&vault_path, sample_slug.as_deref()) {
         Ok(result) => result,
