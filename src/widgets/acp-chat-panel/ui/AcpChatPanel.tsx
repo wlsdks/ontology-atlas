@@ -190,6 +190,7 @@ export function AcpChatPanel({
   runtimes = [],
   onRuntimeChange,
   prefillRequest,
+  openingRequest,
   suggestions = [],
   onSuggestionAction,
   knownSlugs,
@@ -222,6 +223,20 @@ export function AcpChatPanel({
    * only sits down; it is not sent — the user has to be able to edit, send or clear it.
    */
   prefillRequest?: { text: string; nonce: number } | null;
+  /**
+   * A first turn to **send** once the session is ready — unlike `prefillRequest`, which only
+   * seats a sentence in the box for the person to edit.
+   *
+   * ⚠️ **Why a caller may send on the person's behalf** (decision, 2026-08-24). The first-run
+   * card's 「make a map from my code」 door presses this. The button's own label states exactly
+   * what will be asked, the sentence lands in the transcript as **the person's own turn** so
+   * nothing is hidden, and every write it leads to still stops at the permission card. A button
+   * that names an instruction and then makes you press send again is a half-promise.
+   *
+   * It waits for `ready`: sending into a session that is still starting would be swallowed, and
+   * the person would watch a door do nothing.
+   */
+  openingRequest?: { text: string; nonce: number } | null;
   /**
    * The answer to 「What should I ask?」 (what should I ask) — drawn from **this folder's
    * current state** (`useChatSuggestions`). Only shown on an empty conversation: once
@@ -489,6 +504,22 @@ export function AcpChatPanel({
    * and that single frame looks exactly like 「I pressed it and it responded late」.
    * The same grammar the neighbouring panel uses.
    */
+  /*
+   * The opening turn fires **once per nonce and only once the session is ready.** A ref rather
+   * than state: this is a "has it happened" fact, not something the screen draws, and putting it
+   * in state would re-run the effect on the very render the send causes.
+   */
+  const sentOpeningNonceRef = useRef<number | null>(null);
+  const openingNonce = openingRequest?.nonce ?? null;
+  const openingText = openingRequest?.text ?? null;
+  useEffect(() => {
+    if (openingNonce === null || !openingText) return;
+    if (status !== 'ready') return;
+    if (sentOpeningNonceRef.current === openingNonce) return;
+    sentOpeningNonceRef.current = openingNonce;
+    void send(openingText);
+  }, [openingNonce, openingText, status, send]);
+
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
   const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);

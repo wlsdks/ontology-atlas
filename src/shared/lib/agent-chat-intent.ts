@@ -24,13 +24,31 @@ const AGENT_CHAT_INTENT_QUEUE_KEY = 'ontology-atlas:agent-chat-intent:pending';
 interface AgentChatIntentDetail {
   /** Which runtime to open with; unset means whichever is currently selected. */
   runtimeId: string | null;
+  /**
+   * A first turn to open with, or `null` for a conversation that starts empty.
+   *
+   * ⚠️ **Why a door may carry a sentence** (decision, 2026-08-24). The first-run card had no route
+   * from an existing codebase to a map of it: opening a folder with no Markdown gives an empty map,
+   * and the only real path was a folded terminal row whose own copy told app users it excluded
+   * them. The app cannot run the analysis itself — it never calls MCP, that being the agents'
+   * surface — so the door hands the work to the agent, which is the shape this product argues for
+   * anyway: the agent works through MCP and the person approves each write.
+   *
+   * The sentence arrives as **the person's own turn**, visible in the transcript, and every write
+   * it leads to still stops at the permission card. Nothing here bypasses a checkpoint; it saves a
+   * person from typing an instruction they already pressed a button to give.
+   */
+  prompt?: string | null;
 }
 
-export function requestAgentChat(runtimeId: string | null = null): void {
+export function requestAgentChat(
+  runtimeId: string | null = null,
+  prompt: string | null = null,
+): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(
     new CustomEvent<AgentChatIntentDetail>(AGENT_CHAT_INTENT_EVENT, {
-      detail: { runtimeId },
+      detail: { runtimeId, prompt },
     }),
   );
 }
@@ -41,20 +59,26 @@ export function requestAgentChat(runtimeId: string | null = null): void {
  * that route. Session storage carries exactly one one-shot runtime id across the
  * route change; the map consumes and removes it before opening the dock.
  */
-export function queueAgentChatIntent(runtimeId: string): void {
+export function queueAgentChatIntent(runtimeId: string, prompt: string | null = null): void {
   if (typeof window === 'undefined') return;
   try {
     window.sessionStorage.setItem(
       AGENT_CHAT_INTENT_QUEUE_KEY,
-      JSON.stringify({ runtimeId } satisfies AgentChatIntentDetail),
+      JSON.stringify({ runtimeId, prompt } satisfies AgentChatIntentDetail),
     );
   } catch {
     // Navigation still proceeds. The map will simply have no queued request.
   }
 }
 
+export interface QueuedAgentChatIntent {
+  runtimeId: string;
+  /** The first turn to open with, or `null` for an empty conversation. */
+  prompt: string | null;
+}
+
 /** Returns `undefined` when no valid queued request exists. Always clears the slot. */
-export function consumeQueuedAgentChatIntent(): string | undefined {
+export function consumeQueuedAgentChatIntent(): QueuedAgentChatIntent | undefined {
   if (typeof window === 'undefined') return undefined;
   let raw: string | null = null;
   try {
@@ -66,9 +90,13 @@ export function consumeQueuedAgentChatIntent(): string | undefined {
   if (!raw) return undefined;
   try {
     const parsed = JSON.parse(raw) as Partial<AgentChatIntentDetail>;
-    return typeof parsed.runtimeId === 'string' && parsed.runtimeId.length > 0
-      ? parsed.runtimeId
-      : undefined;
+    if (typeof parsed.runtimeId !== 'string' || parsed.runtimeId.length === 0) return undefined;
+    return {
+      runtimeId: parsed.runtimeId,
+      // A malformed or absent prompt degrades to an ordinary open rather than failing the whole
+      // request — the door's first promise is the conversation, the sentence is the convenience.
+      prompt: typeof parsed.prompt === 'string' && parsed.prompt.trim() ? parsed.prompt : null,
+    };
   } catch {
     return undefined;
   }
@@ -76,12 +104,15 @@ export function consumeQueuedAgentChatIntent(): string | undefined {
 
 /** Subscribes to the request. Returns the unsubscribe function, for use as effect cleanup. */
 export function subscribeAgentChatIntent(
-  handler: (runtimeId: string | null) => void,
+  handler: (runtimeId: string | null, prompt: string | null) => void,
 ): () => void {
   if (typeof window === 'undefined') return () => {};
   const listener = (event: Event) => {
     const detail = (event as CustomEvent<AgentChatIntentDetail>).detail;
-    handler(detail?.runtimeId ?? null);
+    handler(
+      detail?.runtimeId ?? null,
+      typeof detail?.prompt === 'string' && detail.prompt.trim() ? detail.prompt : null,
+    );
   };
   window.addEventListener(AGENT_CHAT_INTENT_EVENT, listener);
   return () => window.removeEventListener(AGENT_CHAT_INTENT_EVENT, listener);

@@ -9315,6 +9315,11 @@
       "depth": 2,
       "text": "2026-08-24 — Codex returns to in-app chat, because the checkpoint moved to the server",
       "slug": "2026-08-24-codex-returns-to-in-app-chat-because-the-checkpoint-moved-to-the-server"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — The first-run card gets a door for people who already have code",
+      "slug": "2026-08-24-the-first-run-card-gets-a-door-for-people-who-already-have-code"
     }
   ],
   "DEMO-SCENARIO": [

@@ -2526,6 +2526,17 @@ function HomePageImpl() {
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
   const [pendingAgentChatRuntimeId, setPendingAgentChatRuntimeId] = useState<string | null>(null);
   /**
+   * A first turn the door asked to open with, held until the dock is actually up.
+   *
+   * `nonce` rather than a bare string: pressing the same door twice must send again, and a value
+   * that never changes would be indistinguishable from "already handled" (decision, 2026-08-24).
+   */
+  const [agentOpeningRequest, setAgentOpeningRequest] = useState<{
+    text: string;
+    nonce: number;
+  } | null>(null);
+  const pendingAgentChatPromptRef = useRef<string | null>(null);
+  /**
    * Whether the chat panel is **mounted** — a different value from whether it is open.
    * Open asks "should it be visible"; this asks "is it drawn". If the two were one
    * value, closing would leave no room for the exit animation to run (which is why it
@@ -3306,14 +3317,17 @@ function HomePageImpl() {
    * the same function does the opening.
    */
   useEffect(() => {
-    const accept = (runtimeId: string | null) => {
+    const accept = (runtimeId: string | null, prompt: string | null) => {
       const target = runtimeId ?? acpRuntime?.id ?? null;
       if (!target) return;
       setAcpRuntimeId(target);
+      // Held rather than set now: the panel only exists once the dock opens below, and a request
+      // handed to a panel that is not mounted is a request nobody receives.
+      pendingAgentChatPromptRef.current = prompt;
       setPendingAgentChatRuntimeId(target);
     };
     const queued = consumeQueuedAgentChatIntent();
-    if (queued) window.queueMicrotask(() => accept(queued));
+    if (queued) window.queueMicrotask(() => accept(queued.runtimeId, queued.prompt));
     return subscribeAgentChatIntent(accept);
   }, [acpRuntime?.id]);
 
@@ -3330,6 +3344,9 @@ function HomePageImpl() {
       if (cancelled) return;
       agentDockTouchedRef.current = true;
       openVaultAgent();
+      const prompt = pendingAgentChatPromptRef.current;
+      pendingAgentChatPromptRef.current = null;
+      if (prompt) setAgentOpeningRequest({ text: prompt, nonce: Date.now() });
       setPendingAgentChatRuntimeId(null);
     });
     return () => {
@@ -6400,6 +6417,7 @@ function HomePageImpl() {
             sessionEnabled={acpChatOpen}
             // The sentence jumped from the node sits in the **here** write box — it is not sent.
             prefillRequest={vaultAgentPrefill ?? askPrefill}
+            openingRequest={agentOpeningRequest}
             suggestions={chatSuggestions}
             onSuggestionAction={handleChatSuggestionAction}
             knownSlugs={chatKnownSlugs}
