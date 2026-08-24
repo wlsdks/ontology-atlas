@@ -38,6 +38,15 @@ interface Props {
    */
   rightInspectorReserved?: boolean;
   /**
+   * The left INDEX panel is expanded. The lane is centred in the **map**, but the
+   * panel is an overlay, so `left-1/2` centres it over the panel too and the first
+   * chip in the column (trail/realm/path) ends up underneath it -- reported
+   * 2026-08-24 with the trail chip half-covered. Reserving the panel's width shifts
+   * the whole column into the map that is actually visible. `transition-[left]`
+   * below already animates the shift, so the chips slide aside rather than jump.
+   */
+  leftIndexReserved?: boolean;
+  /**
    * Path mode status chip (`TopologyPathChip`, analysis panel complete elimination phase 2 §b) —
    * satisfies the "next to top-center search" placement requirement by leveraging this
    * component's existing center-alignment calculation (`xl:left-1/2 xl:-translate-x-1/2`)
@@ -92,6 +101,7 @@ export function SearchHint({
   phoneFocusSuppressed = false,
   phoneSheetSuppressed = false,
   rightInspectorReserved = false,
+  leftIndexReserved = false,
   pathChip,
   returnChip,
   realmChip,
@@ -129,10 +139,17 @@ export function SearchHint({
           : phoneSheetSuppressed
             ? "hidden md:block"
             : undefined,
+        // Only from xl, where the lane is actually centred; below that it is pinned
+        // to the right edge and the panel never reaches it.
+        leftIndexReserved &&
+          "xl:left-[calc(50%+var(--topology-index-width)/2)]",
       )}
       data-testid="topology-search-action-lane"
       data-right-inspector-reserve={
         rightInspectorReserved ? "recenter-in-remaining-map" : undefined
+      }
+      data-left-index-reserve={
+        leftIndexReserved ? "recenter-in-remaining-map" : undefined
       }
       data-search-lane-density={density}
       data-search-lane-contract={

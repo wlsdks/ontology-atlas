@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
+import { badgeClass } from "@/shared/ui/badge-class";
 import { Link } from "@/i18n/navigation";
 import {
   countChangesByStatus,
@@ -1543,7 +1544,22 @@ function LocationLine({
         So the chip went and became `Push 2` · `Pull 3`. What remains is "where am
         I" (the branch) and "what can I do" (the three actions).
       */}
-      <span className="flex min-w-0 items-center gap-1.5 font-mono">
+      {/*
+        ⚠️ **The location has to look like a thing** (owner, 2026-08-24: the notation
+        sits beside three bordered buttons as loose text, so it reads as a stray
+        caption rather than "where am I"). It is one fact -- branch, the tracking
+        arrow, its upstream, and whether they agree -- so it becomes one ratified
+        `tag` badge instead of four floating spans. Geometry comes from
+        `badgeClass`; no new shape is invented here.
+      */}
+      <span
+        data-testid="atlas-git-location-ref"
+        className={badgeClass({
+          shape: 'tag',
+          className:
+            'flex min-w-0 items-center gap-1.5 border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] font-mono',
+        })}
+      >
         <span className="truncate text-[color:var(--color-text-secondary)]">{branch}</span>
         {upstream ? (
           <>
@@ -1564,7 +1580,11 @@ function LocationLine({
             <span
               data-testid="atlas-git-divergence"
               title={t("remoteStale")}
-              className="shrink-0 text-[color:var(--color-text-quaternary)]"
+              className={badgeClass({
+                shape: 'tag',
+                className:
+                  'shrink-0 border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)]',
+              })}
             >
               {t("divergeSame")}
             </span>

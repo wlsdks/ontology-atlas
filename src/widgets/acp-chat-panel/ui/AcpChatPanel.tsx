@@ -1410,12 +1410,20 @@ function WorkGroup({
           className="transition-transform"
           style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
         />
+        {/*
+          A running turn has to *look* running (owner report, 2026-08-24: the row
+          reads as stopped while the agent is mid-work). The dot pulses only while
+          `active`, so the motion means "still going" and stops the moment the group
+          finishes -- an opacity breath on a 6px dot, not a glow or halo, and
+          `motion-safe:` keeps it out of reduced-motion.
+        */}
         <span
           aria-hidden
+          data-acp-work-active={active ? 'running' : undefined}
           className={cn(
             'size-1.5 shrink-0 rounded-full',
             active
-              ? 'bg-[color:var(--color-indigo-accent)]'
+              ? 'bg-[color:var(--color-indigo-accent)] motion-safe:animate-pulse'
               : 'bg-[color:var(--color-text-quaternary)]',
           )}
         />

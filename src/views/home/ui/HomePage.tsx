@@ -4400,6 +4400,7 @@ function HomePageImpl() {
                     density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                     phoneFocusSuppressed={selectedNodeFocusActive}
                     rightInspectorReserved={nodePanelMounted}
+                    leftIndexReserved={renderedIndexState === "expanded"}
                     // <md expanded INDEX is a full-bleed sheet — while the sheet is the main surface,
 // the top chrome column is demoted (overlap eradication 2026-07-23, completion of rank7 sheet
 // syntax). Same contract as utility lane's hidden md:flex.
