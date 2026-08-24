@@ -19481,7 +19481,36 @@ reverting the height to 982 turns it red. **No installed-app measurement exists
 yet** — deleting the state file and measuring first launch, then resize and
 relaunch, on a 14-inch panel is this decision's outstanding condition.
 
-**Status**: valid · installed-app measurement pending
+**Measured on the installed app, 2026-08-24** (16-inch panel, logical 1728x1117,
+2x scale; ad-hoc signed build of this branch):
+
+1. First launch with no saved state opened at exactly **1512x900**, unconstrained
+   — `fit source=default requested=1512x900 applied=1512x900 recentered=false`.
+   The old 982 could not produce this; the ledger had only ever measured 949.
+2. Quit and relaunch returned the window to the same rectangle, and the line read
+   `source=restored`, so the diagnostic separates a restored window from a default
+   one as designed.
+3. The saved file confirmed the hazard this decision was written around: a
+   1512x900 logical window is stored as **`"width": 3024, "height": 1800`** —
+   physical pixels, exactly as predicted.
+4. **The clamp did not work, and only the installed app could show it.** A planted
+   3000x2000 state produced a 3000pt window hanging off the display while the fit
+   line reported `current=1512x900 recentered=false`. `set_size` is dispatched
+   through the event loop, so reading the window back straight after a restore
+   returns the *pre-restore* geometry — the clamp was a no-op in the one case it
+   exists for, and all 12 unit tests passed throughout, because the pure function
+   was never wrong. The wiring was.
+   The fix inverts it: the plugin no longer performs the initial restore
+   (`skip_initial_state`), this app reads the saved file itself, sanitises the
+   numbers **before** applying them, and never reads the window back. Re-measured
+   with the same planted state: `requested=3000x2000 applied=1728x1065
+   recentered=true`, window on screen at 0,37. 1065 is exactly
+   `1117 - 24 - 28`.
+
+That fourth item is the entry's own lesson: a green unit suite proved the
+arithmetic and said nothing about whether the arithmetic ever ran.
+
+**Status**: valid · measured on the installed app
 
 ---
 
@@ -19607,5 +19636,100 @@ the five-minute threshold because nobody was looking disproves this hold on the
 spot.
 
 **Status**: valid · three investigation sessions pending
+
+---
+
+## 2026-08-24 — MCP handed agents a retired address; one repair, and a gate so it cannot return
+
+**Prior record**: the 2026-08-24 council that rejected the `ontology-atlas://`
+scheme named exactly this repair as the thing to do instead, "as a separate
+ordinary change with its own routine pass". This is that pass. Standing decision
+(92), 2026-08-21 owns what `/ontology/studio?node=…` translates to.
+
+**Observed phenomenon**: `mcp/src/ontology-engine.mjs:1522` emitted
+`href: /ontology/studio/?node=<focusParam>` from `builder_context` — a **retired
+legacy redirect**. The vault's own `docs/ontology/elements/ontology-edit-redirect.md`
+says of those addresses: "neither old address is a navigation destination or write
+surface". The MCP server was contradicting the ontology it exists to serve, in the
+one field that tells an agent where meaning is edited. Three council seats found
+it independently. A sweep of `mcp/` and `cli/` confirmed it was the only navigable
+address either package emits.
+
+**User problem**: an agent finishes a `builder_context` read and hands its human
+"open the Workshop here". The address works only because a client-side redirect
+catches it — which is the requester's own defect class, a prescribed action whose
+executor is somewhere else, found alive in shipped output.
+
+**Decision**: emit `/topology/?p=<focusParam>&workbench=edit`. That is byte-for-byte
+what the redirect already resolves to under decision (92).5, so the destination does
+not change and the hop disappears. `focusParam` is untouched: it is already the
+canonical graph node id (`kind:tail`) the map's `?p=` resolver exact-matches, and
+`mcp/README.md` documents its round-trip as the next call's `slug`.
+
+The address stays **app-relative and locale-less**. Routes are locale-prefixed and
+a Pages deployment adds a base path, neither of which the server knows; baking
+`/en/` in would send ko users cross-locale and break under `basePath`. That property
+was already true and undocumented, and is now written into `mcp/README.md`.
+
+**Rejected alternative**: `/topology/?mode=focus&p=…`, the council's literal
+wording. It opens a read-only drawer rather than the meaning editor, which is a
+behaviour change the council did not argue for and (92).5 did not overturn. Read
+the council's phrase as "the `/topology` address that focuses the node".
+
+**Rubric**: 18/24 — Problem insight 4 · User moment 4 · Differentiation 2 ·
+Ontology value 2 · Agent value 4 · Verification 2. No fatal zeros. Ontology value
+is an honest 2: no graph semantics change, but the handoff's update path stops
+lying. Verification is 2 because the installed-app follow of the emitted URL has
+not been run.
+
+**Gate**: `tests/contract/mcp-emitted-href.contract.test.ts` scans every non-test
+source in `mcp/src` and `cli/src` for retired routes, taking the list verbatim from
+`.claude/rules/forbidden.md` and decision (91). It excuses whole comment lines and
+not trailing comments, because explaining what an address replaced is how this
+repository documents a repair while the code is what ships. It also asserts the
+scanned set is non-empty and still contains the emitting module, and that a
+`/topology/` href is still emitted — so deleting the emission cannot pass as fixing
+it. Probed both ways: reverting line 1522 turns it red, and planting
+`'/settings/profile'` in `cli/src` turns it red.
+
+**Falsifier**: within one dogfood week, an agent-relayed `builder.href` that, opened
+against the workbench origin and locale, fails to open the meaning editor on the
+focused node — deeplink-miss toast, wrong node, or no editor — disproves the address
+choice on the spot.
+
+**Status**: valid · installed-app follow of the emitted URL pending
+
+---
+
+## 2026-08-24 — The rejected URL scheme gets a gate, not a decision-record trigger
+
+**Prior record**: the 2026-08-24 council rejecting `ontology-atlas://` recorded, in
+passing, that `scripts/check-decision-record.mjs` fires only on added or deleted
+`app/` routes and two `CONTRACT_FILES` — so registering a scheme in
+`src-tauri/tauri.conf.json` would pass `decisions:check` under a green "no council
+trigger in this change". The council left it as a `/gate-probe` candidate.
+
+**Rejected alternative**: adding the Tauri config to that trigger list. It was the
+obvious repair and it is the wrong one — it would demand a decision record for every
+window size, icon, and bundle tweak, and a gate that cries on everything is one
+people learn to silence.
+
+**Decision**: `tests/contract/url-scheme-rejected.contract.test.ts` enforces the
+decision that was actually made and stays silent about everything else in the file.
+It checks the deep-link plugin config, raw `CFBundleURLTypes` in both the bundle
+config and `Info.plist`, the plugin dependency on the Rust and npm sides, and any
+minted `ontology-atlas://` address in shipped source. Probed three ways — plugin
+block, `Info.plist` key, Cargo dependency — each turns it red.
+
+The scheme may legitimately return: the council recorded a falsifier and re-entry
+conditions. The route back is to overturn that record first, per `forbidden.md`
+("change the rule itself first. Do not create a silent exception in code"), and
+deleting this file is part of the overturn. Deleting a file is a diff a reviewer
+sees; a registration slipped into a config value is not.
+
+**Falsifier**: if this gate ever fires on a change that is not registering a URL
+scheme, its shape is wrong and it should be narrowed rather than exempted.
+
+**Status**: valid
 
 ---

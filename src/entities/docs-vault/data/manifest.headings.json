@@ -9270,6 +9270,16 @@
       "depth": 2,
       "text": "2026-08-24 — PO pass: hold `tauri-plugin-notification` for ACP completion and blocked signals (10/24)",
       "slug": "2026-08-24-po-pass-hold-tauri-plugin-notification-for-acp-completion-and-blocked-signals-1024"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — MCP handed agents a retired address; one repair, and a gate so it cannot return",
+      "slug": "2026-08-24-mcp-handed-agents-a-retired-address-one-repair-and-a-gate-so-it-cannot-return"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — The rejected URL scheme gets a gate, not a decision-record trigger",
+      "slug": "2026-08-24-the-rejected-url-scheme-gets-a-gate-not-a-decision-record-trigger"
     }
   ],
   "DEMO-SCENARIO": [

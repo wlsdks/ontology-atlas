@@ -8666,7 +8666,7 @@ await test("builder_context — persisted Workshop focus, positions, and agent h
     assert.equal(context.operation, "builder_context");
     assert.equal(context.focus, "domains/auth");
     assert.equal(context.source, "persisted_vault");
-    assert.equal(context.builder.href, "/ontology/studio/?node=domain%3Aauth");
+    assert.equal(context.builder.href, "/topology/?p=domain%3Aauth&workbench=edit");
     assert.equal(context.builder.unsavedDraftsIncluded, false);
     assert.equal(roundTrip.focus, context.focus);
     assert.deepEqual(roundTrip.builder, context.builder);

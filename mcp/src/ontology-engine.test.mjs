@@ -1891,7 +1891,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.source, 'persisted_vault');
     assert.equal(result.focus, 'domains/auth');
     assert.deepEqual(result.builder, {
-      href: '/ontology/studio/?node=domain%3Aauth',
+      href: '/topology/?p=domain%3Aauth&workbench=edit',
       focusParam: 'domain:auth',
       unsavedDraftsIncluded: false,
     });

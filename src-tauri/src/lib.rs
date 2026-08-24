@@ -72,6 +72,15 @@ const MIN_ONSCREEN_TITLE_BAR_PT: f64 = 120.0;
 /// the launch diagnostic can tell a restored window from a default one, and so the harness's
 /// `--reset-window-state` and this agree on one path.
 const WINDOW_STATE_FILENAME: &str = ".window-state.json";
+/// Restoring `FULLSCREEN` performs a Space transition before first paint and gives macOS's own
+/// restoration a second owner; `VISIBLE` can produce a launch with no window at all, which nobody
+/// can tell apart from the app failing to start; and nothing here ever changes `DECORATIONS`, so
+/// saving them only adds a route to a window that cannot be moved or closed.
+#[cfg(desktop)]
+const WINDOW_STATE_FLAGS: tauri_plugin_window_state::StateFlags =
+    tauri_plugin_window_state::StateFlags::SIZE
+        .union(tauri_plugin_window_state::StateFlags::POSITION)
+        .union(tauri_plugin_window_state::StateFlags::MAXIMIZED);
 
 /// A window rectangle in logical points. `x`/`y` are the **outer** frame origin — the top-left of
 /// the title bar, which is what `set_position` accepts — while `width`/`height` are the **inner**
@@ -2974,6 +2983,29 @@ fn show_main_window(app: &AppHandle) {
     }
 }
 
+/// The subset of `tauri-plugin-window-state`'s file this app reads back itself.
+///
+/// The plugin writes **physical** pixels, which is the whole reason the geometry cannot be trusted
+/// unexamined: quitting at 1512x900 on a 2x panel stores 3024x1800, and restoring that on a 1x
+/// display asks for a window larger than the display. Measured on this machine 2026-08-24.
+#[derive(serde::Deserialize)]
+struct SavedWindowState {
+    width: f64,
+    height: f64,
+    x: f64,
+    y: f64,
+    #[serde(default)]
+    maximized: bool,
+}
+
+/// Reads the geometry the plugin saved, or `None` when there is nothing to restore.
+fn read_saved_window_state(app: &AppHandle) -> Option<SavedWindowState> {
+    let path = app.path().app_config_dir().ok()?.join(WINDOW_STATE_FILENAME);
+    let raw = fs::read_to_string(path).ok()?;
+    let parsed: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    serde_json::from_value(parsed.get(MAIN_WINDOW_LABEL)?.clone()).ok()
+}
+
 /// Runs `sanitize_window_geometry` against the live window and leaves one provable line behind.
 ///
 /// `source` records whether the geometry came from a restored state file, from the config default,
@@ -2984,10 +3016,22 @@ fn show_main_window(app: &AppHandle) {
 /// installed build; `write_verify_line` reaches the harness, which parses stdout. Emitting only the
 /// latter would put this diagnostic exactly where the decision that added logging says nobody can
 /// read it.
-fn fit_main_window_to_display(window: &tauri::WebviewWindow, source: &str) {
-    let monitor = match window.current_monitor() {
-        Ok(Some(monitor)) => Some(monitor),
-        _ => window.primary_monitor().ok().flatten(),
+fn fit_main_window_to_display(
+    window: &tauri::WebviewWindow,
+    saved: Option<SavedWindowState>,
+    source: &str,
+) {
+    // A restored window is measured on the display it was saved on, not the one the app happens to
+    // open on. `monitor_from_point` takes physical coordinates, which is what the file stores.
+    let monitor = match saved
+        .as_ref()
+        .and_then(|state| window.monitor_from_point(state.x, state.y).ok().flatten())
+    {
+        Some(monitor) => Some(monitor),
+        None => match window.current_monitor() {
+            Ok(Some(monitor)) => Some(monitor),
+            _ => window.primary_monitor().ok().flatten(),
+        },
     };
     let Some(monitor) = monitor else {
         log::warn!("no monitor reported; leaving window geometry untouched");
@@ -2997,20 +3041,47 @@ fn fit_main_window_to_display(window: &tauri::WebviewWindow, source: &str) {
     let monitor_size = monitor.size().to_logical::<f64>(scale);
     let monitor_position = monitor.position().to_logical::<f64>(scale);
 
-    let (Ok(inner), Ok(position)) = (window.inner_size(), window.outer_position()) else {
-        log::warn!("window geometry unreadable; leaving it untouched");
+    // A maximised window is on-screen and correctly sized by definition, and macOS owns what zoom
+    // means on each display. Reproducing it from stored numbers would fight the window manager.
+    if saved.as_ref().is_some_and(|state| state.maximized) {
+        let _ = window.maximize();
+        let line = format!("[ontology-atlas-window-verify] fit source={source} maximized=true");
+        log::info!("{line}");
+        write_verify_line(line);
         return;
+    }
+
+    let current = match (window.inner_size(), window.outer_position()) {
+        (Ok(inner), Ok(position)) => WindowGeometry {
+            x: position.to_logical::<f64>(scale).x,
+            y: position.to_logical::<f64>(scale).y,
+            width: inner.to_logical::<f64>(scale).width,
+            height: inner.to_logical::<f64>(scale).height,
+        },
+        _ => {
+            log::warn!("window geometry unreadable; leaving it untouched");
+            return;
+        }
     };
-    let inner = inner.to_logical::<f64>(scale);
-    let position = position.to_logical::<f64>(scale);
+
+    // The saved rectangle is sanitised **before** it is applied, never read back afterwards.
+    // `set_size` is dispatched through the event loop, so a read taken straight after a restore
+    // still reports the pre-restore geometry — measured 2026-08-24, when a planted 3000x2000 state
+    // produced a 3000pt window while this line reported 1512x900 and `recentered=false`. Letting the
+    // plugin restore and then inspecting the result made the clamp a no-op in the one case it
+    // exists for, so the plugin no longer performs the initial restore at all.
+    let requested = match saved.as_ref() {
+        Some(state) => WindowGeometry {
+            x: state.x / scale,
+            y: state.y / scale,
+            width: state.width / scale,
+            height: state.height / scale,
+        },
+        None => current,
+    };
 
     let sanitized = sanitize_window_geometry(
-        WindowGeometry {
-            x: position.x,
-            y: position.y,
-            width: inner.width,
-            height: inner.height,
-        },
+        requested,
         MonitorRect {
             x: monitor_position.x,
             y: monitor_position.y,
@@ -3020,13 +3091,16 @@ fn fit_main_window_to_display(window: &tauri::WebviewWindow, source: &str) {
         MAIN_WINDOW_MIN_LOGICAL,
     );
 
-    if sanitized.resized {
+    // When restoring, the window is not yet where the file says, so size and position are applied
+    // unconditionally. On a plain launch only an actual correction is written.
+    let restoring = saved.is_some();
+    if restoring || sanitized.resized {
         let _ = window.set_size(tauri::LogicalSize::new(
             sanitized.geometry.width,
             sanitized.geometry.height,
         ));
     }
-    if sanitized.repositioned {
+    if restoring || sanitized.repositioned {
         let _ = window.set_position(tauri::LogicalPosition::new(
             sanitized.geometry.x,
             sanitized.geometry.y,
@@ -3034,9 +3108,9 @@ fn fit_main_window_to_display(window: &tauri::WebviewWindow, source: &str) {
     }
 
     let line = format!(
-        "[ontology-atlas-window-verify] fit source={source} current={:.0}x{:.0} applied={:.0}x{:.0} recentered={}",
-        inner.width,
-        inner.height,
+        "[ontology-atlas-window-verify] fit source={source} requested={:.0}x{:.0} applied={:.0}x{:.0} recentered={}",
+        requested.width,
+        requested.height,
         sanitized.geometry.width,
         sanitized.geometry.height,
         sanitized.repositioned
@@ -3082,10 +3156,12 @@ fn schedule_show_main_window(app: AppHandle) {
     });
 }
 
-/// live-tauri — vault 디렉터리를 recursive 로 감시해 `.md` 변경 시 webview 에
-/// `vault-changed` 이벤트를 emit. 500ms debounce 로 에디터의 다중 write 를 묶는다.
-/// JS 측은 이 이벤트를 listen 해 즉시 refresh — 5초 폴링 대기 없이 반영.
-/// debouncer 를 State 에 보관해 앱 수명 동안 살린다(재호출 시 이전 것을 교체·drop).
+/// Watches the vault directory recursively and emits `vault-changed` to the webview when a `.md`
+/// file changes, debounced by 500ms so one editor's burst of writes arrives as a single event.
+///
+/// The screen listens and refreshes immediately, which is what the app has over the web surface:
+/// no five-second polling gap. The debouncer is held in `State` so it lives as long as the app —
+/// calling this again replaces and drops the previous one.
 #[tauri::command]
 fn start_vault_watch(
     app: AppHandle,
@@ -3255,11 +3331,16 @@ pub fn run() {
                 // indistinguishable from the app failing to start; and nothing in this app ever
                 // changes decorations, so saving them only adds a route to an undecorated window
                 // that cannot be moved or closed.
-                .with_state_flags(
-                    tauri_plugin_window_state::StateFlags::SIZE
-                        | tauri_plugin_window_state::StateFlags::POSITION
-                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
-                )
+                .with_state_flags(WINDOW_STATE_FLAGS)
+                // The plugin restores from `on_window_ready`, which fires *after* `setup`. Leaving
+                // it to do the initial restore meant `fit_main_window_to_display` measured the
+                // config default, found it fine, and did nothing — and the restored geometry then
+                // landed unchecked. Measured on 2026-08-24: a planted 3000x2000 state produced a
+                // 3000pt window hanging off the display while the fit line reported 1512x900 and
+                // `recentered=false`. The clamp was a no-op in exactly the case it exists for. So
+                // the initial restore is skipped here and performed explicitly below, in an order
+                // this file controls.
+                .skip_initial_state(MAIN_WINDOW_LABEL)
                 .build(),
         );
     }
@@ -3315,19 +3396,18 @@ pub fn run() {
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
                 // The plugin reads this file at window creation and leaves it in place, so its
                 // presence at setup time is what separates "the owner's window came back" from
-                // "this is the config default" in the line below.
-                let restored = !verify_webview
-                    && app
-                        .path()
-                        .app_config_dir()
-                        .map(|dir| dir.join(WINDOW_STATE_FILENAME).exists())
-                        .unwrap_or(false);
-                let source = match (verify_webview, restored) {
+                // "this is the config default", and this app — not the plugin — is what applies it.
+                let saved = if verify_webview {
+                    None
+                } else {
+                    read_saved_window_state(app.handle())
+                };
+                let source = match (verify_webview, saved.is_some()) {
                     (true, _) => "harness",
                     (false, true) => "restored",
                     (false, false) => "default",
                 };
-                fit_main_window_to_display(&window, source);
+                fit_main_window_to_display(&window, saved, source);
             }
 
             #[cfg(target_os = "macos")]
