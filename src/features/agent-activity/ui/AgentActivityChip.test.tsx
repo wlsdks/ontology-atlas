@@ -224,6 +224,31 @@ describe("AgentActivityChip", () => {
     );
   });
 
+  // The badge alone did not survive a glance (owner report, 2026-08-24): a bell
+  // holding unread receipts and an empty bell looked identical. The glyph itself
+  // has to change, so the signal is shape and weight rather than a small badge.
+  it("안 읽은 알림이 있으면 종 글리프 자체가 채워진다", () => {
+    renderBell({
+      unreadCount: 3,
+      notifications: [
+        { id: "a", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 1, edited: 0, removed: 0 } },
+      ],
+    });
+    const svg = screen.getByTestId("agent-activity-bell").querySelector("svg");
+    expect(svg?.getAttribute("fill")).toBe("currentColor");
+  });
+
+  it("안 읽은 알림이 없으면 종은 비어 있다", () => {
+    renderBell({
+      unreadCount: 0,
+      notifications: [
+        { id: "a", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 1, edited: 0, removed: 0 } },
+      ],
+    });
+    const svg = screen.getByTestId("agent-activity-bell").querySelector("svg");
+    expect(svg?.getAttribute("fill")).toBe("none");
+  });
+
   it('작업 상태와 알림을 서로 다른 트리거와 표면으로 연다', () => {
     renderBell({
       writing: true,

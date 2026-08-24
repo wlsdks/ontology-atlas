@@ -90,6 +90,39 @@ export function MeaningEditorPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /*
+   * ⚠️ **Reopening reuses this instance** (2026-08-24). The panel stays mounted
+   * after `onClose` so its exit animation can run (`Surface` + `onExited`), and
+   * `HomePage` keys it by node id — so opening "relation edit" again on the same
+   * node hands back the *same* component with all of its step state intact.
+   *
+   * Paired with `apply` leaving `saving` true on the success path, that was a
+   * dead end a person could not get out of: the panel came back showing the
+   * review of a change already written to Markdown, its confirm button frozen in
+   * the busy state, and -- because every control is `disabled={saving}` -- the
+   * "edit again" and close buttons were dead too. The only way out was dismissing the whole
+   * node panel. Measured on the installed rc.10 build: still frozen after 90s,
+   * with no second write and no error.
+   *
+   * Opening is the one moment the step is unambiguously "start over", so the
+   * transient state is cleared here rather than guessing on the way out.
+   */
+  const [openedWith, setOpenedWith] = useState(open);
+  if (open !== openedWith) {
+    // React's documented "adjust state when a prop changes" pattern rather than an
+    // effect: the reset has to land in the same render the panel reopens in, so the
+    // stale review never paints even for a frame.
+    setOpenedWith(open);
+    if (open) {
+      setPlan(null);
+      setSaving(false);
+      setError(null);
+      setRelation(initialRelation);
+      setTargetId(initialTargetId ?? '');
+      setWhy(initialWhy);
+    }
+  }
+
   const eligible = useMemo(
     () => candidates.filter((candidate) => candidateAllowed(source, candidate, relation)),
     [candidates, relation, source],
@@ -155,8 +188,12 @@ export function MeaningEditorPanel({
     try {
       await onApply(plan);
     } catch {
-      setSaving(false);
       setError(t('saveError'));
+    } finally {
+      // Also on the success path: the caller closes the panel, but the instance
+      // outlives that close (see the reopen note above), so leaving `saving` true
+      // is what froze the reopened panel in its busy state.
+      setSaving(false);
     }
   };
 
