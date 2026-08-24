@@ -1880,15 +1880,6 @@
      * WebView markers should reference the token name when a surface depends on
      * 14-inch fullscreen geometry or click/focus interaction feel.
      */
-    --topology-panel-overview-rail-width: clamp(
-      calc(320px / var(--topology-ui-scale-factor)),
-      calc(21vw / var(--topology-ui-scale-factor)),
-      calc(360px / var(--topology-ui-scale-factor))
-    );
-    --topology-panel-overview-responsive-width: min(
-      var(--topology-panel-overview-rail-width),
-      calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
-    );
     --topology-ui-scale-factor: 1;
     /*
      * App nav rail (`AppNavRail.tsx`, left 64px permanent chrome) scale —
@@ -1942,16 +1933,6 @@
        TopologyMapCanvas.tsx itself was deleted after #344, making consumers 0. The v2 equivalent is
        below §2.5 --topology-v2-safe-inset-* (unitless numbers, consumed by canvas 2D). */
     --topology-panel-support-surface: rgba(15, 16, 17, 0.99);
-    --topology-panel-read-layer-z-index: 30;
-    --topology-selected-relation-card-max-height: min(328px, calc(100dvh - 7rem));
-    --topology-selected-relation-action-min-width: 86px;
-    --topology-selected-relation-copy-payload-min-height: 42px;
-    --topology-selected-relation-route-step-min-width: 48px;
-    --topology-selected-relation-kicker-font-size: 9px;
-    --topology-selected-relation-chip-font-size: 9px;
-    --topology-selected-relation-route-label-font-size: 8px;
-    --topology-selected-relation-route-value-font-size: 10px;
-    --topology-selected-relation-payload-font-size: 10px;
     --topology-command-spine-padding: clamp(8px, 0.56vw, 10px);
     --topology-command-spine-gap: clamp(6px, 0.48vw, 8px);
     --topology-command-spine-surface: linear-gradient(

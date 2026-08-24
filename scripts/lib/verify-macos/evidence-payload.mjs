@@ -1020,8 +1020,6 @@ export function buildWebviewEvidencePayload(
           popover: markers.topologyNodePopoverScrollContract ?? null,
           rootOverflowY: markers.topologyNodePopoverOverflowY ?? null,
           bodyContract: markers.topologyNodePopoverBodyScrollContract ?? null,
-          bodyOverflowY: markers.topologyNodePopoverBodyOverflowY ?? null,
-          bodyOverflowX: markers.topologyNodePopoverBodyOverflowX ?? null,
         },
         footer: {
           contract: markers.topologyNodePopoverFooterContract ?? null,
@@ -1034,7 +1032,6 @@ export function buildWebviewEvidencePayload(
           visible: markers.topologyNodePopoverRelationRowVisible === true,
           fullRowVisible: markers.topologyNodePopoverRelationRowFullyVisible === true,
           rowHeight: markerNumber(markers, "topologyNodePopoverRelationRowHeight"),
-          visibleHeight: markerNumber(markers, "topologyNodePopoverVisibleRelationRowHeight"),
           readableRowContract: markers.topologyNodePopoverConnectionListReadableRowContract ?? null,
           listHandoffContract:
             markers.topologyNodePopoverConnectionListHandoffContract ?? null,
