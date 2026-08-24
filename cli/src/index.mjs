@@ -13,6 +13,7 @@
 
 import { COLORS } from './lib/colors.mjs';
 import { cliInvocation } from './lib/self-invocation.mjs';
+import { cwdBindingScope } from './lib/cwd-binding-scope.mjs';
 import {
   mkdirSync,
   existsSync,
@@ -523,16 +524,33 @@ async function runInit(targetArg, opts = {}) {
   writeMcpJson(target, '.', vaultRepoArg, 'vault');
   writeCodexConfig(target, '.', vaultRepoArg, 'vault');
 
-  // 2. cwd (codebase root) — only if distinct from target. OATLAS_VAULT is the
-  //    relative path from cwd to target.
+  // 2. cwd (codebase root) — only when the vault is created *inside* it.
+  //
+  // ⚠️ The condition used to be merely "cwd is not the target", which is true of every unrelated
+  // directory on the disk. Measured 2026-08-24: running `init <somewhere-else>` from this repository
+  // rewrote *this repository's* .mcp.json and .codex/config.toml to point at the scratch vault,
+  // silently. This write exists for "I am standing in my project, put a vault inside it"; when the
+  // vault lands outside cwd, cwd is merely where the person stood. See lib/cwd-binding-scope.mjs.
+  const bindingScope = cwdBindingScope(cwdPath, canonicalTarget);
   let cwdVaultArg = '.';
-  if (cwdPath !== canonicalTarget) {
-    let omotRel = relative(cwdPath, canonicalTarget) || '.';
-    if (!omotRel.startsWith('.')) omotRel = `./${omotRel}`;
-    cwdVaultArg = omotRel;
-    writeMcpJson(cwdPath, omotRel, '.', 'cwd');
-    writeCodexConfig(cwdPath, omotRel, '.', 'cwd');
+  if (bindingScope.write) {
+    cwdVaultArg = bindingScope.relativeVault;
+    writeMcpJson(cwdPath, cwdVaultArg, '.', 'cwd');
+    writeCodexConfig(cwdPath, cwdVaultArg, '.', 'cwd');
+  } else if (bindingScope.reason === 'outside') {
+    // Saying so matters: somebody who expected their current project to be wired needs to know it
+    // was not, and why, rather than discovering later that their agent points somewhere else.
+    warn(
+      `  cwd left untouched: the vault is outside ${cwdPath}. Its own .mcp.json and .codex/config.toml are wired; run this from the project you want bound.`,
+    );
   }
+
+  // The closing summary must name what was actually wired. It used to promise both folders
+  // unconditionally, which became false the moment cwd was deliberately left alone.
+  const wiredFolders = bindingScope.write
+    ? 'Both your codebase root (cwd) and the vault folder now have'
+    : 'The vault folder now has';
+  const wiredOpenWhich = bindingScope.write ? 'either folder' : 'that folder';
 
   if (clientBindingIssues.length > 0) {
     stampInitCompleted(target);
@@ -600,14 +618,14 @@ ${COLORS.bold}Next steps:${COLORS.reset}
 
   ${COLORS.dim}5.${COLORS.reset} ${COLORS.bold}Open this folder in an AI agent${COLORS.reset}:
        ${COLORS.bold}Claude Code / Cursor${COLORS.reset}
-       Both your codebase root (cwd) and the vault folder now have a wired
-       ${COLORS.bold}.mcp.json${COLORS.reset}. Open either folder, restart the agent,
+       ${wiredFolders} a wired
+       ${COLORS.bold}.mcp.json${COLORS.reset}. Open ${wiredOpenWhich}, restart the agent,
        and the ${COLORS.bold}ontology-atlas${COLORS.reset} namespace appears with ${MCP_TOOL_COUNT} tools
        (${MCP_TOOL_SPLIT}).
 
        ${COLORS.bold}Codex${COLORS.reset}
-       Both your codebase root (cwd) and the vault folder now have a wired
-       ${COLORS.bold}.codex/config.toml${COLORS.reset}. Open either folder in Codex and restart it.
+       ${wiredFolders} a wired
+       ${COLORS.bold}.codex/config.toml${COLORS.reset}. Open ${wiredOpenWhich} in Codex and restart it.
        Codex ignores a project-scoped ${COLORS.bold}.codex/config.toml${COLORS.reset} until that folder is
        ${COLORS.bold}trusted${COLORS.reset}; approve the trust prompt, then run ${COLORS.cyan}codex mcp list${COLORS.reset}
        from the folder and confirm ${COLORS.bold}ontology-atlas${COLORS.reset} appears before any write.

@@ -9335,6 +9335,11 @@
       "depth": 2,
       "text": "2026-08-24 — Picking a project opens the map inside it, and says so",
       "slug": "2026-08-24-picking-a-project-opens-the-map-inside-it-and-says-so"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 — `init` may only wire the project it was actually run inside",
+      "slug": "2026-08-25-init-may-only-wire-the-project-it-was-actually-run-inside"
     }
   ],
   "DEMO-SCENARIO": [
