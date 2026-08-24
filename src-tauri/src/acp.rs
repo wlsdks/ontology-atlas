@@ -220,8 +220,28 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
 ///
 /// `approval_policy = "untrusted"` keeps the escalation path alive for the commands codex may still
 /// legitimately propose, so a blocked action surfaces as a question rather than a silent failure.
+///
+/// ⚠️ **The `ontology-atlas` block is how the *vault's own* registration gets a gate.** A vault
+/// written by `init` registers that server in its project `.codex/config.toml`, and a session loads
+/// that file even from a fresh isolated home (measured 2026-08-24) — so without this the app would
+/// open a session whose only Atlas server is ungated, which is exactly what decision (111) caught.
+///
+/// It is declared **here** rather than in the vault's file on purpose. That file is shared with the
+/// person's own terminal and their `codex exec` automation, where a gate nobody can answer refuses
+/// every write; the app-opened session is the only place the app may speak for. Measured: codex
+/// merges this env into the project entry rather than replacing it — `connection_info` still
+/// returned the vault's own path while `add_concept` was refused. `command`/`args` are placeholders
+/// the merge overrides; the project entry supplies the real launch.
+
 const ISOLATED_CODEX_CONFIG: &str = r#"approval_policy = "untrusted"
 sandbox_mode = "read-only"
+
+[mcp_servers.ontology-atlas]
+command = "node"
+args = []
+
+[mcp_servers.ontology-atlas.env]
+OATLAS_WRITE_CONSENT = "on"
 "#;
 
 pub(crate) type LoginProbe<'a> = dyn Fn(&str, &Path, &[&str], &str) -> Option<bool> + 'a;
@@ -2948,6 +2968,25 @@ mod tests {
         assert_eq!(a, claude_credentials_service(Path::new("/tmp/a")));
         assert!(a.starts_with("Claude Code-credentials-"));
         assert_eq!(a.len(), "Claude Code-credentials-".len() + 8);
+    }
+
+    #[test]
+    fn the_isolated_codex_config_gates_the_vaults_own_registration() {
+        // A vault written by `init` registers the Atlas server in its project
+        // `.codex/config.toml`, and a session loads that file even from a fresh isolated home
+        // (measured 2026-08-24). Without this block the app would open a session whose only
+        // Atlas server is ungated -- decision (111)'s exact finding.
+        assert!(
+            ISOLATED_CODEX_CONFIG.contains("[mcp_servers.ontology-atlas.env]"),
+            "the vault's own registration has to inherit a gate"
+        );
+        assert!(
+            ISOLATED_CODEX_CONFIG.contains("OATLAS_WRITE_CONSENT = \"on\""),
+            "and the gate is the consent switch"
+        );
+        // It is declared here and not in the vault's file on purpose: that file is shared with
+        // the person's terminal and their non-interactive runs, where a gate nobody can answer
+        // refuses every write.
     }
 
     #[test]
