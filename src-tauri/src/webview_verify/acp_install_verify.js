@@ -30,8 +30,8 @@
   const find = (testId) =>
     Array.from(document.querySelectorAll('[data-testid="' + testId + '"]')).find(visible) || null;
 
-  // 화면에 실제로 그려진 진행 줄을 매 tick 마다 훑는다 — 이벤트가 도착해서
-  // **렌더까지 됐을 때만** 여기 쌓인다.
+  // Sweep the progress row actually drawn on screen on every tick — an entry
+  // accumulates here only when an event has arrived **and made it to render**.
   const sample = () => {
     const row = document.querySelector('[data-testid="agent-doctor-progress"]');
     if (!row) return;
@@ -59,14 +59,15 @@
     }
 
     /*
-     * ⚠️ **2026-08-21: 설정 시트를 거치지 않는다** (원장 90). 실행기 목록이
-     * 「에이전트」 목적지로 나가면서 시트에는 그 칸이 없다 — 종전 드라이버는
-     * `app-settings-nav-runtimes` 를 계속 찾다가 아무것도 못 하고 끝났다
-     * (실측: `progressStages` 가 빈 채로 통과했다. 검사가 조용히 무력해진 것이고,
-     * 그 자체가 이 이관이 남긴 잔재였다).
+     * ⚠️ **2026-08-21: do not go through the settings sheet** (ledger 90). The
+     * runtime list moved out to the "Agents" destination and the sheet no longer
+     * has that slot — the previous driver kept looking for
+     * `app-settings-nav-runtimes`, accomplished nothing, and ended
+     * (measured: it passed with `progressStages` empty. The check had gone
+     * quietly inert, and that itself was residue this migration left behind).
      *
-     * 이제 목적지에서 곧바로 재고, 거기가 아니면 그 사실을 말한다 —
-     * `ONTOLOGY_ATLAS_VERIFY_ROUTE=/ko/agents/` 로 띄우면 된다.
+     * Now we measure right at the destination, and if we are not there we say
+     * so — launch with `ONTOLOGY_ATLAS_VERIFY_ROUTE=/ko/agents/`.
      */
     result.sheetOpen = !!find("app-settings-popover");
 
@@ -96,7 +97,7 @@
     result.doctorRendered = true;
 
     if (!result.installClicked) {
-      // Node 가 먼저다 — 그게 없으면 CLI 설치도 못 돈다.
+      // Node comes first — without it the CLI install cannot run either.
       const node = find("agent-doctor-install-node");
       const cli = find("agent-doctor-install");
       const target = node || cli;
@@ -113,10 +114,11 @@
     }
 
     /*
-     * **닫았다 다시 연다** — 이 결함은 그 동작으로만 재현된다 (2026-08-20).
-     * 시트가 언마운트되면 진행 상태가 사라지고, 완료(`done`)는 단발이라
-     * 그 사이에 지나가면 영영 못 본다. Rust 가 마지막 상태를 들고 있다가
-     * 마운트 때 돌려주는지를 여기서 실제로 잰다.
+     * **Close it and open it again** — this defect reproduces only through that
+     * motion (2026-08-20). When the sheet unmounts, the progress state
+     * disappears, and completion (`done`) is a one-shot, so if it passes in
+     * that gap it is never seen. Here we actually measure whether Rust holds
+     * the last state and hands it back on mount.
      */
     result.step = "watching-progress";
     result.reason = "sampling the progress row";

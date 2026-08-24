@@ -65,7 +65,7 @@
       return;
     }
     result.sectionOpen = true;
-    // 지금 도는 판 — `getVersion()` 이 실제로 답했는지가 이 줄로 보인다.
+    // The build currently running — this line shows whether `getVersion()` actually answered.
     result.versionText = find("app-settings-update-version")?.innerText || "";
 
     if (!result.checkClicked) {

@@ -79,9 +79,10 @@
     }
     result.sheetOpen = true;
 
-    // 2026-08-02 — 드릴인 복도가 없어졌다. 「앱 안 에이전트」는 LNB 한 줄이고,
-    // 그 내용은 오른쪽 칸(`app-settings-pane-ai`)에 바로 선다. 종전 두 걸음
-    // (절 → 요약 행 → 서브뷰)이 한 걸음이 됐다.
+    // 2026-08-02 — the drill-in corridor is gone. "Agents in the app" is one
+    // LNB row, and its content stands directly in the right pane
+    // (`app-settings-pane-ai`). The former two steps (section → summary row →
+    // subview) became one.
     const aiView = find("app-settings-pane-ai");
     if (!aiView) {
       result.step = "open-ai-connection-view";
@@ -197,11 +198,12 @@
       return;
     }
 
-    // 목록이 **화면에 실제로 있는가.** 2026-08-02 실측: 러너가 준 모델 7개가
-    // aria 로는 전부 정상이었는데(activedescendant 가 7개를 훑었다) 화면에는
-    // 1개만 보였다 — 두 단계 위 조상의 `overflow: hidden` 이 264px 짜리 목록을
-    // 39px 로 잘랐기 때문이다(가시 14.8%). 그 상태는 role/aria/텍스트 마커를
-    // 전부 통과한다. 그래서 여기서 재는 것은 **잘림과 클릭 가능성**이다.
+    // Is the list **actually on screen.** Measured 2026-08-02: the seven
+    // models the runner supplied were all correct to aria (activedescendant
+    // walked all seven), yet only one was visible on screen — because an
+    // ancestor two levels up had `overflow: hidden` and clipped the 264px list
+    // to 39px (14.8% visible). That state passes every role/aria/text marker.
+    // Which is why what this probe measures is **clipping and clickability**.
     const listRect = listbox.getBoundingClientRect();
     let clipTop = listRect.top;
     let clipBottom = listRect.bottom;
@@ -216,14 +218,15 @@
     clipBottom = Math.min(clipBottom, window.innerHeight);
     result.modelListHeight = Math.round(listRect.height);
     result.modelListVisibleHeight = Math.round(Math.max(0, clipBottom - clipTop));
-    // 목록이 **자기 안에서** 넘쳤나 — 조상 잘림과는 다른 사실이다. 상한
-    // 규칙(`select-growth.ts`)이 참이면 항목 수가 행 상한 아래일 때 이건
-    // 거짓이어야 한다: 다 보이는데 스크롤이 있으면 「더 있다」가 거짓말이다.
+    // Did the list overflow **inside itself** — a different fact from ancestor
+    // clipping. If the cap rule (`select-growth.ts`) holds, this must be false
+    // while the item count is below the row cap: a scrollbar when everything
+    // is already visible makes "there is more" a lie.
     result.modelListOverflowing = listbox.scrollHeight > listbox.clientHeight + 1;
     result.modelListCappedBy = listbox.getAttribute("data-capped-by") || "";
-    // 목록 자신의 스크롤 창 안에 있는 옵션만 센다 — 목록이 길어 안에서
-    // 스크롤되는 것은 결함이 아니고, "보인다고 주장하는 것이 안 눌리는" 것이
-    // 결함이다.
+    // Count only the options inside the list's own scroll window — a long
+    // list scrolling within itself is not a defect; "something that claims to
+    // be visible cannot be clicked" is the defect.
     const inView = options.filter((option) => {
       const rect = option.getBoundingClientRect();
       const centerY = rect.top + rect.height / 2;

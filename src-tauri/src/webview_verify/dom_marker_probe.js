@@ -389,12 +389,13 @@
                                 topologyCreateNodeBackdropRect.height > 0
                               );
                               /*
-                               * ⚠️ 2026-08-11 — **뷰포트가 아니라 「막겠다고 선언한 것」을 덮는지 본다.**
-                               * 이 덮개의 계약은 코드에 적혀 있다:
-                               * `data-backdrop-contract="blocks-map-and-clears-create-intent"` — 즉 **지도**를
-                               * 막고 레일은 살려 둔다(레일로 빠져나가면 만들기 의도가 지워진다). 그런데 이
-                               * 검증은 뷰포트 전체를 요구해서, 실측 1448×900 덮개가 1512 뷰포트에 64px
-                               * 모자라다는 이유로 **반드시 실패**했다. 레일 폭은 규격이고 결함이 아니다.
+                               * ⚠️ 2026-08-11 — **check that it covers what it declared it would block, not the viewport.**
+                               * This backdrop's contract is written in the code:
+                               * `data-backdrop-contract="blocks-map-and-clears-create-intent"` — that is, it blocks
+                               * the **map** and leaves the rail alive (escaping through the rail clears the create
+                               * intent). Yet this verification demanded the full viewport, so it **always failed**
+                               * because the measured 1448×900 backdrop fell 64px short of the 1512 viewport.
+                               * The rail width is a specification, not a defect.
                                */
                               const topologyCreateNodeBackdropTargetRect = (
                                 document.querySelector('[data-surface-role="map-canvas"]') ||
@@ -1293,10 +1294,12 @@
                                   topologyCreateNodePanelHeight:
                                     topologyCreateNodePanelRect?.height || 0,
                                   /*
-                                   * ⚠️ 2026-08-11 — **가운데의 기준도 지도다.** 뷰포트 가운데로 재던
-                                   * 이 값은 레일 폭의 절반(실측 31.5 ≈ 64/2)만큼 늘 어긋났고, 허용
-                                   * 24를 넘어 반드시 실패했다. 컴포저는 자기가 막는 영역(지도) 가운데에
-                                   * 서고, 그 영역은 위 `topologyCreateNodeBackdropTargetRect` 와 같다.
+                                   * ⚠️ 2026-08-11 — **the reference for centring is also the map.** Measured
+                                   * against the viewport centre, this value was always off by half the rail
+                                   * width (measured 31.5 ≈ 64/2), exceeding the 24 tolerance and so always
+                                   * failing. The composer stands at the centre of the region it blocks (the
+                                   * map), and that region is the same `topologyCreateNodeBackdropTargetRect`
+                                   * as above.
                                    */
                                   topologyCreateNodePanelCenterOffset:
                                     topologyCreateNodePanelRect
@@ -2001,8 +2004,9 @@
                                 }
                               });
                               } catch (markerError) {
-                                // marker 수집이 특정 모드의 DOM 에서 throw 하면 빈 payload
-                                // 가 12번 찍히고 원인이 사라진다 — 에러를 payload 로 노출.
+                                // If marker collection throws in a particular mode's DOM, an empty
+                                // payload gets logged 12 times and the cause disappears — expose the
+                                // error as the payload.
                                 return JSON.stringify({
                                   href: location.href,
                                   title: document.title,
