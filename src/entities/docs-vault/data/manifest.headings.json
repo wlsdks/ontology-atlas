@@ -5703,6 +5703,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-24 (113) — The write checkpoint moves into the server that performs the write",
+      "slug": "2026-08-24-113-the-write-checkpoint-moves-into-the-server-that-performs-the-write"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-24 (112) — Rules reach non-Claude agents through nested AGENTS.md pointers, never copies",
       "slug": "2026-08-24-112-rules-reach-non-claude-agents-through-nested-agentsmd-pointers-never-copies"
     },

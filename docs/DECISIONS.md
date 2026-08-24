@@ -40,6 +40,83 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-24 (113) — The write checkpoint moves into the server that performs the write
+
+**Prior decisions**: (111) removed `codex-acp` from in-app chat because a Codex
+`read-only` session let an Atlas MCP write reach disk with no permission request,
+and named the way back: *"an app-owned MCP proxy or server capability token
+reliably pauses every Codex Atlas write."* This record builds that checkpoint. It
+does **not** restore Codex chat — (111) stays active until its installed-app
+proof exists.
+
+**Observed cause**: Codex's approval policy documents its own scope — it decides
+"when the model requires human approval before executing **a command**". MCP tool
+calls were never inside it. Reading `codex-acp` confirms the shape: the adapter
+builds permission requests from `item/commandExecution/requestApproval` and
+`item/fileChange/requestApproval`, and there is no MCP-tool equivalent. So the
+gate the screen promised did not exist on the wire, and no third-party
+configuration could have supplied it.
+
+**The lever we already own**: the same adapter forwards
+`mcpServer/elicitation/request` into ACP `session/request_permission`, and the
+MCP SDK this server runs on (`@modelcontextprotocol/server` 2.0.0, latest
+published) implements `elicitation/create`. A gate placed in Atlas's own MCP
+server therefore reaches every client that ever connects, instead of one that was
+measured.
+
+**Solo PO pass**: 21/24 (problem 4, user moment 3, differentiation 3, ontology
+value 4, agent value 4, verification 3; no fatal zero).
+
+**Decision**: write tools ask before they write when `OATLAS_WRITE_CONSENT` is
+on. The switch is per session and set by whoever launches the server, so a vault
+whose client already owns the gate is unchanged. **One session, one checkpoint,
+held by whoever can actually hold it**: a runtime with app-owned config isolation
+(Claude) keeps its own gate and the server gate stays off, so nobody is asked
+twice; every other runtime — including one nobody has measured — gets the server
+gate, because an unasked write is worse than one question too many.
+
+**Fail closed**: if the gate is on and the client never declared the
+`elicitation` capability, the write is refused rather than performed. A
+checkpoint that waves traffic through when it cannot see is the failure this
+record exists to end.
+
+**Measured** (disposable vaults, wire evidence):
+
+| gate | client | asked | vault |
+|---|---|---|---|
+| off | no elicitation | no | **wrote** (7 → 8) |
+| on | no elicitation | no | refused (7 → 7) |
+| on | accepts | yes | wrote (7 → 8) |
+| on | declines | yes | refused (7 → 7) |
+| on | **real Codex** | yes | **refused** (7 → 7) |
+
+The Codex row used `codex exec` against an isolated `CODEX_HOME`: the same
+`add_concept` call that (111) measured writing unasked returned *"The change was
+not approved (decline). No change was made."* and left the vault untouched.
+
+**Recorded dissent**: a gate that asks per tool call will be clicked through, and
+batching would have produced one question for a whole plan instead of one per
+write. **Falsifier**: a session in which a person approves a long run of writes
+without reading them, or asks for the prompts to stop. Then the unit of consent
+is the plan, not the call, and this moves up to the plan layer.
+
+**Isolation is not gate ownership**: Rust's `ISOLATION` says the app can control
+a runtime's config directory. Owning the gate is the stronger claim that the
+resulting configuration actually asks *for MCP writes* — true for Claude, false
+for Codex, whose isolated `CODEX_HOME` was read while its approval policy was
+overridden. Conflating the two is how (111) happened;
+`runtime-gate.test.ts` holds the one-directional invariant.
+
+**Not in this change**: restoring Codex in-app chat. That needs the Rust
+isolation entry, a rebuilt app, and the installed-app acceptance (111) demands —
+reject and allow, for both self-registered and injected writes. Half of it is now
+measured; the direct-write half has not been re-measured with both gates live,
+and (111) says explicitly not to restore from a direct-file sandbox result.
+
+**Revisit**: when that rebuild round runs.
+
+**Status**: active
+
 ## 2026-08-24 (112) — Rules reach non-Claude agents through nested AGENTS.md pointers, never copies
 
 **Trigger**: `.claude/rules/` holds about 70 KB of guidance and only Claude Code
