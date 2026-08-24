@@ -1308,7 +1308,7 @@ describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-0
     await waitFor(() => expect(bridge.notice).toBeTruthy());
     bridge.notice?.('npx-first-run-download');
 
-    const card = await screen.findByTestId('acp-first-run-download');
+    const card = await screen.findByTestId('acp-starting');
     expect(card.textContent).toContain('firstRun.title');
     expect(card.textContent).toContain('firstRun.body');
     // No progress yet — **nothing is invented.**
@@ -1329,7 +1329,7 @@ describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-0
     await waitFor(() =>
       expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
     );
-    expect(screen.queryByTestId('acp-first-run-download')).toBeNull();
+    expect(screen.queryByTestId('acp-starting')).toBeNull();
   });
 
   it('첫 알림을 놓쳐도 진행 알림만으로 표시를 만든다 — 구독 전에 나간 알림은 유실될 수 있다', async () => {
@@ -1344,15 +1344,40 @@ describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-0
     await waitFor(() => expect(bridge.notice).toBeTruthy());
     // Progress notices arrive without a preceding `npx-first-run-download`.
     bridge.notice?.('npx-download-progress:7');
-    await screen.findByTestId('acp-first-run-download');
+    await screen.findByTestId('acp-starting');
     expect(screen.getByTestId('acp-first-run-progress').textContent).toContain(
       'firstRun.progress:{"mb":7}',
     );
   });
 
-  it('내려받기가 없는 시작에는 아무것도 더 그리지 않는다', async () => {
+  it('내려받기가 없는 평범한 시작도 화면 가운데서 기다린다 — 우측 상단 칩 하나로는 부족하다', async () => {
+    /*
+     * ⚠️ This test used to assert the opposite: *"a start with no download draws nothing extra."*
+     * Owner, 2026-08-24, of the top-right 「connecting」 badge: *"when it first opens it would be
+     * good to have a spinner in the middle of the screen… large enough to actually see."* The
+     * centred block existed but only while npx was fetching, so the common case — an ordinary
+     * start — left the body empty and the panel looked finished while it was still opening.
+     */
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    const waiting = await screen.findByTestId('acp-starting');
+    expect(waiting.textContent).toContain('starting.title');
+    // No download, so nothing claims one — and no invented megabytes.
+    expect(waiting.textContent).not.toContain('firstRun.title');
+    expect(screen.queryByTestId('acp-first-run-progress')).toBeNull();
+    // The 「ask me anything」 hint must not invite input into a tool that cannot answer yet.
+    expect(screen.queryByTestId('acp-chat-empty')).toBeNull();
+  });
+
+  it('준비되면 기다림 표시는 사라진다', async () => {
     await bootSession();
-    expect(screen.queryByTestId('acp-first-run-download')).toBeNull();
+    expect(screen.queryByTestId('acp-starting')).toBeNull();
   });
 });
 

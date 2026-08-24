@@ -3434,6 +3434,10 @@
       "body": "The first run downloads the tool (a few hundred MB) and can take a few minutes. Please keep the app open.",
       "progress": "{mb} MB downloaded so far"
     },
+    "starting": {
+      "title": "Opening the tool",
+      "body": "The tool is starting on this computer. You can ask as soon as it is ready."
+    },
     "permission": {
       "title": "It wants to touch something outside this folder",
       "body": "Nothing happens until you allow it. Check below where it wants to write.",

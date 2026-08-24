@@ -41,6 +41,7 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { useTypewriterReveal } from '@/shared/lib/use-typewriter-reveal';
 import {
   buildOntologyChangeSet,
   type OntologyChangeSet,
@@ -832,18 +833,42 @@ export function AcpChatPanel({
           progress (how many MB so far); the total size is unknown, so no percentage is
           invented.
         */}
-        {status === 'starting' && download ? (
+        {status === 'starting' ? (
+          /*
+           * ⚠️ **A 12px chip in a corner is not where a person looks while waiting** (owner,
+           * 2026-08-24, of the top-right 「connecting」 badge: *"when it first opens it would be
+           * good to have a spinner in the middle of the screen, or a nicely made bar showing
+           * progress — large enough to actually see."*).
+           *
+           * The download case already had a centred block, but it only rendered **while npx was
+           * fetching**. An ordinary start — the common case — drew nothing at all in the body, so
+           * the panel looked empty and finished while it was still opening. The wait now has one
+           * place, centred where the answer will appear, and the download detail folds into it
+           * rather than being the only reason it exists.
+           */
           <div
-            data-testid="acp-first-run-download"
-            className="m-auto grid max-w-[38ch] gap-1.5 text-center"
+            data-testid="acp-starting"
+            role="status"
+            aria-live="polite"
+            className="m-auto grid max-w-[38ch] justify-items-center gap-2 text-center"
           >
-            <p className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-              {t('firstRun.title')}
+            <LoaderCircle
+              size={ICON_SIZE.lg}
+              aria-hidden
+              className="motion-safe:animate-spin text-[color:var(--color-text-quaternary)]"
+            />
+            <p className="break-keep text-body leading-prose text-[color:var(--color-text-secondary)]">
+              {t(download ? 'firstRun.title' : 'starting.title')}
             </p>
-            <p className="break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-              {t('firstRun.body')}
+            <p className="break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
+              {t(download ? 'firstRun.body' : 'starting.body')}
             </p>
-            {download.mb !== null ? (
+            {/*
+              The measured megabytes, and only when they were measured. The total is not something
+              this app can honestly know (it differs per package), so no percentage is invented —
+              the same rule `formatDownloadProgress` already keeps.
+            */}
+            {download?.mb != null ? (
               <p
                 data-testid="acp-first-run-progress"
                 className="text-caption leading-caption text-[color:var(--color-text-quaternary)]"
@@ -853,7 +878,7 @@ export function AcpChatPanel({
             ) : null}
           </div>
         ) : null}
-        {events.length === 0 && !download ? (
+        {events.length === 0 && status !== 'starting' ? (
           // Place the empty conversation guide **in the center of where records will accumulate**. If placed at the top, it reads like the first speech bubble, and the actual place where the conversation starts appears empty.
           <div className="m-auto grid max-w-[34ch] gap-3">
             <p
@@ -952,6 +977,12 @@ export function AcpChatPanel({
                 event={item.event}
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
+                /*
+                 * Only the **last** bubble, and only while the turn is still running. Revealing an
+                 * older answer again on every re-render would replay finished text, and revealing
+                 * after the turn ends would leave a completed conversation half drawn.
+                 */
+                streaming={busy && index === transcriptItems.length - 1}
               />
             </div>
           );
@@ -1592,12 +1623,24 @@ function TranscriptEntry({
   event,
   knownSlugs,
   onHoverSlug,
+  streaming = false,
 }: {
   event: AcpEvent;
   knownSlugs?: ReadonlySet<string>;
   onHoverSlug?: (slug: string | null) => void;
+  /** Is this the bubble the agent is still writing into? Only that one reveals gradually. */
+  streaming?: boolean;
 }) {
   const t = useTranslations('acpChat');
+  /*
+   * ⚠️ **Hooks run for every entry, so this cannot sit inside the `agent` branch below.** The
+   * reveal is a no-op for a finished bubble (`streaming` false returns the text untouched), which
+   * is what makes calling it unconditionally correct rather than merely legal.
+   */
+  const revealedText = useTypewriterReveal(
+    event.kind === 'agent' ? event.text : '',
+    streaming,
+  );
 
   if (event.kind === 'user') {
     /*
@@ -1628,12 +1671,12 @@ function TranscriptEntry({
      * eats the whole screen. This is **chat density**.
      */
     return (
-      <div data-acp-entry="agent" className={CHAT_MARKDOWN}>
+      <div data-acp-entry="agent" data-acp-streaming={streaming ? 'true' : undefined} className={CHAT_MARKDOWN}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={chatMarkdownComponents(knownSlugs, onHoverSlug)}
         >
-          {event.text}
+          {revealedText}
         </ReactMarkdown>
       </div>
     );
