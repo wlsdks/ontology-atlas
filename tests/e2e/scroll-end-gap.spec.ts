@@ -77,6 +77,13 @@ const SLOTLESS_ROUTES = new Set(
 const VIEWPORTS = [
   // A combination where all routes scroll — the "content > viewport" needed to reproduce compression.
   { label: "desktop-1280x700", w: 1280, h: 700 },
+  // The installed app's opening window — `tauri.conf.json` main window content size. Before
+  // this entry, neither size the macOS app actually opens at was ever measured here.
+  { label: "desktop-1512x900", w: 1512, h: 900 },
+  // The app's window floor (`minWidth`/`minHeight`). `tauri-plugin-window-state` restores the
+  // owner's last size, so the floor is a routine first viewport, not an occasional one. Still
+  // `≥lg` (1024): no tab bar; the `lg:pb-10` 40px `--page-bottom-breath` reservation applies.
+  { label: "desktop-1040x720", w: 1040, h: 720 },
   // `<lg` — the width where the bottom tab bar stands and the page contracts its reservation.
   { label: "tablet-768x950", w: 768, h: 950 },
   // Phone. Absent from the previous matrix, leaving **the narrowest width with a tab bar** unmeasured.

@@ -295,3 +295,68 @@ export async function waitForExistingProcessesToExit({
   return pids;
 }
 
+
+
+/**
+ * The app enforces a single instance, so a second launch does not start a second process — it hands
+ * focus to the window that already exists and exits immediately.
+ *
+ * That turns a running app into a silent measurement trap: the harness would "launch" the bundle it
+ * just built, attach to the **previous** build's window, and report success about code it never ran.
+ * A stale instance is therefore a hard stop rather than a warning, unless the caller explicitly
+ * asked for it to be replaced with `--kill-existing`.
+ *
+ * Returns the failure message, or `null` when nothing is running.
+ */
+export function staleInstanceFailure({ appBundleName, pids = [] } = {}) {
+  if (pids.length === 0) {
+    return null;
+  }
+  return (
+    `${appBundleName} is already running (pid ${pids.join(", ")}). ` +
+    "The app allows a single instance, so launching now would measure the running build " +
+    "instead of the one under test. Re-run with --kill-existing, or quit the app first."
+  );
+}
+
+
+/**
+ * The window-state plugin writes here — `app_config_dir()`, not the WebView data store that
+ * `isolate_verify_webview_storage()` puts in incognito. Geometry therefore needs its own isolation.
+ */
+export const WINDOW_STATE_FILENAME = ".window-state.json";
+
+export function windowStatePath({ bundleIdentifier, home = os.homedir() } = {}) {
+  if (!bundleIdentifier) {
+    return null;
+  }
+  return path.join(home, "Library", "Application Support", bundleIdentifier, WINDOW_STATE_FILENAME);
+}
+
+/**
+ * Moves the owner's saved window geometry aside for the duration of a verification run.
+ *
+ * Two things go wrong without it. The run inherits whatever size the developer last dragged the
+ * window to, so a `--min-window-size` verdict stops being about the shipped default; and the app
+ * writes the harness's own geometry back on exit, so a verification run silently resizes the
+ * owner's next real launch. The file is moved rather than deleted — the harness must not destroy
+ * user state to measure the product.
+ */
+export function setAsideWindowState(statePath, { fsImpl = fs } = {}) {
+  const noop = { moved: false, restore() {} };
+  if (!statePath || !fsImpl.existsSync(statePath)) {
+    return noop;
+  }
+  const parked = `${statePath}.verify-backup`;
+  fsImpl.renameSync(statePath, parked);
+  return {
+    moved: true,
+    parked,
+    restore() {
+      if (!fsImpl.existsSync(parked)) {
+        return;
+      }
+      fsImpl.renameSync(parked, statePath);
+    },
+  };
+}

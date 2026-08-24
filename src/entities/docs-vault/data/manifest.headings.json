@@ -9250,6 +9250,26 @@
       "depth": 2,
       "text": "2026-08-15 (9) — 비표준 구현 루트도 의미 후보의 증거가 되되, 기능으로 자동 승격하지 않는다",
       "slug": "2026-08-15-9-비표준-구현-루트도-의미-후보의-증거가-되되-기능으로-자동-승격하지-않는다"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — Tauri runtime hardening: keep only what is used, and make what could not explain itself explain itself",
+      "slug": "2026-08-24-tauri-runtime-hardening-keep-only-what-is-used-and-make-what-could-not-explain-itself-explain-itself"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — The `1512×982` window default was never a window. It was the whole display",
+      "slug": "2026-08-24-the-1512982-window-default-was-never-a-window-it-was-the-whole-display"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — PO Council: reject the `ontology-atlas://` OS URL scheme (0/24)",
+      "slug": "2026-08-24-po-council-reject-the-ontology-atlas-os-url-scheme-024"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — PO pass: hold `tauri-plugin-notification` for ACP completion and blocked signals (10/24)",
+      "slug": "2026-08-24-po-pass-hold-tauri-plugin-notification-for-acp-completion-and-blocked-signals-1024"
     }
   ],
   "DEMO-SCENARIO": [
@@ -10235,6 +10255,11 @@
       "depth": 2,
       "text": "Readiness Gate",
       "slug": "readiness-gate"
+    },
+    {
+      "depth": 2,
+      "text": "Installed-App Log",
+      "slug": "installed-app-log"
     },
     {
       "depth": 2,

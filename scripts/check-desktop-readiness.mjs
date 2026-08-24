@@ -682,7 +682,7 @@ if (
 
 if (
   pkg.scripts?.["desktop:release-preflight"] ===
-  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1040x720 --require-accessibility-text=\"Ontology Atlas\" && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
+  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1040x720 --require-accessibility-text=\"Ontology Atlas\" --reset-window-state && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
 ) {
   pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, LaunchServices app content proof, DMG, and install smoke");
 } else {
@@ -1628,6 +1628,50 @@ if (tauriConfig) {
   fail("src-tauri/tauri.conf.json must exist before desktop prototype work continues");
 }
 
+// The 14-inch MacBook Pro reference panel is 1512x982 logical points — that is the whole display,
+// menu bar and notch included. Tauri's width/height are the *inner* content size, so a declared
+// height of 982 asked for 982 + 28pt of title bar inside a 945pt visible frame: AppKit silently
+// constrained it on every launch and the shipped default was never once observed as a window
+// (the ledger measured 1512x949 outer and 1512x917 content). The measurement scripts, meanwhile,
+// have always swept 1512x900. This gate exists so the shipped first viewport and the swept first
+// viewport cannot drift apart again.
+const REFERENCE_14_INCH_LOGICAL = { width: 1512, height: 982 };
+const MACOS_MENU_BAR_RESERVE_PT = 37;
+const MACOS_TITLE_BAR_PT = 28;
+// Read out of src-tauri/src/lib.rs rather than copied. A second literal here would let the Rust
+// constant drift while this gate stayed green, which is the failure the comment on both sides was
+// written to prevent — and a comment is not a gate.
+const mainWindowMinSource = readText("src-tauri/src/lib.rs").match(
+  /const MAIN_WINDOW_MIN_LOGICAL: \(f64, f64\) = \(([\d.]+), ([\d.]+)\);/,
+);
+const MAIN_WINDOW_MIN_LOGICAL = mainWindowMinSource
+  ? { width: Number(mainWindowMinSource[1]), height: Number(mainWindowMinSource[2]) }
+  : null;
+if (!MAIN_WINDOW_MIN_LOGICAL) {
+  fail(
+    "src-tauri/src/lib.rs must declare `const MAIN_WINDOW_MIN_LOGICAL: (f64, f64) = (w, h);` so the window gate can bind the config floor to the Rust constant instead of duplicating it",
+  );
+}
+
+const mainWindowConfig = tauriConfig?.app?.windows?.find((window) => window.label === "main");
+const visibleFrameHeight = REFERENCE_14_INCH_LOGICAL.height - MACOS_MENU_BAR_RESERVE_PT;
+if (
+  mainWindowConfig &&
+  mainWindowConfig.width <= REFERENCE_14_INCH_LOGICAL.width &&
+  mainWindowConfig.height + MACOS_TITLE_BAR_PT <= visibleFrameHeight &&
+  MAIN_WINDOW_MIN_LOGICAL &&
+  mainWindowConfig.minWidth === MAIN_WINDOW_MIN_LOGICAL.width &&
+  mainWindowConfig.minHeight === MAIN_WINDOW_MIN_LOGICAL.height
+) {
+  pass(
+    `Tauri main window opens at a size the 14-inch reference panel can actually hold (${mainWindowConfig.width}x${mainWindowConfig.height} content, ${mainWindowConfig.height + MACOS_TITLE_BAR_PT} outer <= ${visibleFrameHeight} visible)`,
+  );
+} else {
+  fail(
+    `src-tauri/tauri.conf.json main window must fit the 14-inch reference panel: width <= ${REFERENCE_14_INCH_LOGICAL.width}, height + ${MACOS_TITLE_BAR_PT}pt title bar <= ${visibleFrameHeight}pt visible frame, and minWidth/minHeight must equal MAIN_WINDOW_MIN_LOGICAL in src-tauri/src/lib.rs (${MAIN_WINDOW_MIN_LOGICAL ? `${MAIN_WINDOW_MIN_LOGICAL.width}x${MAIN_WINDOW_MIN_LOGICAL.height}` : "unreadable"}); got ${mainWindowConfig ? `${mainWindowConfig.width}x${mainWindowConfig.height}, min ${mainWindowConfig.minWidth}x${mainWindowConfig.minHeight}` : "no window labelled main"}`,
+  );
+}
+
 if (tauriConfig?.build?.frontendDist === "../out") {
   pass("Tauri loads the Next.js static export from out/");
 } else {
@@ -1784,7 +1828,22 @@ if (
  * is blocked without anyone knowing it. The latter is the real shield.
  */
 const ALLOWED_CAPABILITY_PERMISSIONS = [
+  // `core:default` is still allowed by name, but this window no longer uses it. It expands to nine
+  // sets, and four of them — `core:image`, `core:resources`, `core:menu`, `core:tray` — were granted
+  // to a webview that never called them: the frontend reaches Rust through app-defined commands
+  // (which capabilities do not gate) plus one `listen`. Enumerating is what makes that visible.
   "core:default",
+  // Resolve app-owned paths.
+  "core:path:default",
+  // `listen`, the frontend's only core plugin call — `vault-changed`, `acp://*`.
+  "core:event:default",
+  // Window and webview lifecycle for the single main window.
+  "core:window:default",
+  "core:webview:default",
+  // `getVersion()` in `AppUpdateSettings.tsx` — the app's own version shown beside the update
+  // control. Not the version in the first log line: that one comes from Rust `package_info()`,
+  // which the permission system does not gate at all.
+  "core:app:default",
   // Check for and install updates. The network target is fixed by the endpoint in
   // `tauri.conf.json` and no user input reaches it. minisign signature verification
   // is enforced before install.
@@ -1792,6 +1851,19 @@ const ALLOWED_CAPABILITY_PERMISSIONS = [
   // Restart after update, and only that. Not `process:default` — there is no reason
   // to grant exit as well.
   "process:allow-restart",
+];
+
+/**
+ * The core baseline this window genuinely needs. Accepting either the enumerated form or the
+ * `core:default` umbrella keeps the gate about *what is granted*, not about which spelling is used —
+ * but a capability granting neither has lost the baseline and must fail.
+ */
+const REQUIRED_CORE_PERMISSIONS = [
+  "core:path:default",
+  "core:event:default",
+  "core:window:default",
+  "core:webview:default",
+  "core:app:default",
 ];
 
 /** These families are blocked without knowing the individual names — nothing a local-first app has reason to grant a window. */
@@ -1811,7 +1883,10 @@ if (
   Array.isArray(tauriCapability?.windows) &&
   tauriCapability.windows.length === 1 &&
   tauriCapability.windows[0] === "main" &&
-  capabilityPermissions.includes("core:default") &&
+  (capabilityPermissions.includes("core:default") ||
+    REQUIRED_CORE_PERMISSIONS.every((permission) =>
+      capabilityPermissions.includes(permission),
+    )) &&
   unexpectedPermissions.length === 0 &&
   forbiddenPermissions.length === 0
 ) {

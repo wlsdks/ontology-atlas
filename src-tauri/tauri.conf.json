@@ -15,7 +15,7 @@
         "label": "main",
         "title": "Ontology Atlas",
         "width": 1512,
-        "height": 982,
+        "height": 900,
         "minWidth": 1040,
         "minHeight": 720,
         "center": true,
@@ -25,10 +25,10 @@
     ],
     "security": {
       "csp": {
-        "default-src": "'self' customprotocol: asset:",
+        "default-src": "'self'",
         "connect-src": "ipc: http://ipc.localhost",
         "font-src": "'self' data:",
-        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "img-src": "'self' blob: data:",
         "script-src": "'self'",
         "worker-src": "'self' blob:",
         "style-src": "'unsafe-inline' 'self'"

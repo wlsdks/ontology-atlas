@@ -43,6 +43,117 @@ const WEBVIEW_VERIFY_APP_UPDATE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_APP_UPDATE";
 /// It is meaningful only when launched in an environment with no tools (`env -i HOME=<empty>`).
 const WEBVIEW_VERIFY_ACP_INSTALL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ACP_INSTALL";
 const MAIN_WINDOW_LABEL: &str = "main";
+/// One rotation of the app log, kept small on purpose: this file exists so a bug report can carry
+/// evidence, not so the app accumulates a history of the owner's machine.
+const APP_LOG_MAX_FILE_BYTES: u128 = 5 * 1024 * 1024;
+
+/// Where a recentred window is *placed* below the top of a display. 37 is the notched 14"/16"
+/// figure — the conservative choice, because placing a window slightly low costs nothing while
+/// placing it under a notch costs the title bar.
+const MACOS_MENU_BAR_RESERVE_PT: f64 = 37.0;
+/// The shortest menu bar macOS presents: every non-notched panel, including all external displays.
+///
+/// This is the *acceptance* floor, and it must not be the notched 37. Reserving generously when
+/// choosing a position is safe; rejecting a position a non-notched display legitimately allows is
+/// not. A window snapped to the top of an external monitor sits at y = 24, and judging it against
+/// 37 would call it unreachable and recentre it **on every launch** — the plugin restores the
+/// owner's window and this would immediately take it away again. The same conflation shrank a
+/// maximised window that fit its display exactly, so the height ceiling below uses this figure too.
+const MACOS_MENU_BAR_MIN_PT: f64 = 24.0;
+/// The title bar sits outside the inner size Tauri's `width`/`height` describe, so a window's real
+/// vertical footprint is content + this.
+const MACOS_TITLE_BAR_PT: f64 = 28.0;
+/// Must equal `minWidth`/`minHeight` in `tauri.conf.json`; `check-desktop-readiness.mjs` asserts it.
+const MAIN_WINDOW_MIN_LOGICAL: (f64, f64) = (1040.0, 720.0);
+/// How much grabbable title bar has to remain inside a display. A window whose title bar is off
+/// screen cannot be moved back by the person using it.
+const MIN_ONSCREEN_TITLE_BAR_PT: f64 = 120.0;
+/// `tauri-plugin-window-state`'s own `DEFAULT_FILENAME`, inside `app_config_dir()`. Named here so
+/// the launch diagnostic can tell a restored window from a default one, and so the harness's
+/// `--reset-window-state` and this agree on one path.
+const WINDOW_STATE_FILENAME: &str = ".window-state.json";
+
+/// A window rectangle in logical points. `x`/`y` are the **outer** frame origin — the top-left of
+/// the title bar, which is what `set_position` accepts — while `width`/`height` are the **inner**
+/// content size, which is what `set_size` accepts and what `tauri.conf.json` declares.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct WindowGeometry {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+/// A display's usable rectangle in logical points.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct MonitorRect {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct SanitizedGeometry {
+    geometry: WindowGeometry,
+    resized: bool,
+    repositioned: bool,
+}
+
+/// Decides where the main window may actually sit on a given display.
+///
+/// This runs on **every** launch, not only after a restore, because the smallest display this
+/// product promises (1440×900) cannot hold the default content height either — a restore-only clamp
+/// would leave the plain first launch unguarded on that machine.
+///
+/// It exists because `tauri-plugin-window-state` restores size unconditionally, in *physical*
+/// pixels, and its own off-screen test only guards position and passes when any single corner
+/// intersects a display. Quitting at 1512×900 on a 2× Retina panel saves 3024×1800; relaunching
+/// with that display gone would otherwise ask a 1× monitor for a window larger than itself. Working
+/// in logical points and clamping here is what makes that case survivable.
+fn sanitize_window_geometry(
+    saved: WindowGeometry,
+    monitor: MonitorRect,
+    min: (f64, f64),
+) -> SanitizedGeometry {
+    let usable_width = monitor.width.max(min.0);
+    let usable_height = (monitor.height - MACOS_MENU_BAR_MIN_PT - MACOS_TITLE_BAR_PT).max(min.1);
+
+    let width = saved.width.clamp(min.0, usable_width);
+    let height = saved.height.clamp(min.1, usable_height);
+    let resized = width != saved.width || height != saved.height;
+
+    // `saved.y` is already the title bar's top edge, and the title bar is the only part of a window
+    // a person can grab. `intersects`-style corner tests pass for a window whose title bar sits
+    // above the menu bar while its bottom corners are still on screen — that window is unreachable.
+    let onscreen_width = (saved.x + width).min(monitor.x + monitor.width) - saved.x.max(monitor.x);
+    let reachable = onscreen_width >= MIN_ONSCREEN_TITLE_BAR_PT
+        && saved.y >= monitor.y + MACOS_MENU_BAR_MIN_PT
+        && saved.y <= monitor.y + monitor.height - MACOS_TITLE_BAR_PT;
+
+    // A clamped window that keeps its old origin drifts off the right or bottom edge, so a resize
+    // implies a reposition.
+    let repositioned = resized || !reachable;
+    let (x, y) = if repositioned {
+        (
+            monitor.x + (monitor.width - width) / 2.0,
+            monitor.y + MACOS_MENU_BAR_RESERVE_PT + ((usable_height - height) / 2.0).max(0.0),
+        )
+    } else {
+        (saved.x, saved.y)
+    };
+
+    SanitizedGeometry {
+        geometry: WindowGeometry {
+            x,
+            y,
+            width,
+            height,
+        },
+        resized,
+        repositioned,
+    }
+}
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
 const WEBVIEW_VERIFY_ROUTE_INTERVAL_MS: u64 = 400;
 const WEBVIEW_VERIFY_FIXTURE_SETTLE_MS: u64 = 1200;
@@ -915,6 +1026,10 @@ fn build_webview_verify_route_script(route: &str) -> String {
   const current = location.pathname + location.search + location.hash;
   const next = targetUrl.pathname + targetUrl.search + targetUrl.hash;
   window.__ontologyAtlasVerifyExpectedRoute = next;
+  // Returned to Rust through `eval_with_callback`, so the harness can stop as soon as the route is
+  // actually live instead of running a fixed number of blind attempts and assuming the best.
+  const arrived = () =>
+    (location.pathname + location.search + location.hash) === next;
   if (!window.__ontologyAtlasVerifyRouteInterval) {{
     window.__ontologyAtlasVerifyRouteTicks = 0;
     window.__ontologyAtlasVerifyRouteInterval = window.setInterval(() => {{
@@ -940,7 +1055,7 @@ fn build_webview_verify_route_script(route: &str) -> String {
       history.replaceState({{}}, "", next);
       window.dispatchEvent(new PopStateEvent("popstate"));
       window.dispatchEvent(new Event("app:urlchange"));
-      return;
+      return arrived();
     }}
     const targetLink = Array.from(document.querySelectorAll("a[href]"))
       .find((link) => {{
@@ -954,17 +1069,18 @@ fn build_webview_verify_route_script(route: &str) -> String {
     if (targetLink && typeof targetLink.click === "function") {{
       window.__ontologyAtlasVerifyRouteMisses = 0;
       targetLink.click();
-      return;
+      return arrived();
     }}
     window.__ontologyAtlasVerifyRouteMisses =
       Number(window.__ontologyAtlasVerifyRouteMisses || 0) + 1;
     if (window.__ontologyAtlasVerifyRouteMisses < 14) {{
-      return;
+      return arrived();
     }}
     history.replaceState({{}}, "", next);
     window.dispatchEvent(new PopStateEvent("popstate"));
     window.dispatchEvent(new Event("app:urlchange"));
   }}
+  return arrived();
 }})()"#,
         interval_ms = WEBVIEW_VERIFY_ROUTE_INTERVAL_MS,
     )
@@ -1276,6 +1392,7 @@ fn acp_start(
         let session_id = session_id.clone();
         std::thread::spawn(move || {
             let code = child.wait().ok().and_then(|status| status.code());
+            log::info!("acp session {session_id} exited with code {code:?}");
             if let Some(state) = app.try_state::<AcpSessions>() {
                 let _ = state.remove(&session_id);
             }
@@ -2857,6 +2974,77 @@ fn show_main_window(app: &AppHandle) {
     }
 }
 
+/// Runs `sanitize_window_geometry` against the live window and leaves one provable line behind.
+///
+/// `source` records whether the geometry came from a restored state file, from the config default,
+/// or from the verification harness, because "the window opened somewhere I did not leave it" is
+/// only diagnosable if the record says which of the three produced the rectangle.
+///
+/// It is written twice on purpose. `log::info!` reaches the file an owner can actually send from an
+/// installed build; `write_verify_line` reaches the harness, which parses stdout. Emitting only the
+/// latter would put this diagnostic exactly where the decision that added logging says nobody can
+/// read it.
+fn fit_main_window_to_display(window: &tauri::WebviewWindow, source: &str) {
+    let monitor = match window.current_monitor() {
+        Ok(Some(monitor)) => Some(monitor),
+        _ => window.primary_monitor().ok().flatten(),
+    };
+    let Some(monitor) = monitor else {
+        log::warn!("no monitor reported; leaving window geometry untouched");
+        return;
+    };
+    let scale = monitor.scale_factor();
+    let monitor_size = monitor.size().to_logical::<f64>(scale);
+    let monitor_position = monitor.position().to_logical::<f64>(scale);
+
+    let (Ok(inner), Ok(position)) = (window.inner_size(), window.outer_position()) else {
+        log::warn!("window geometry unreadable; leaving it untouched");
+        return;
+    };
+    let inner = inner.to_logical::<f64>(scale);
+    let position = position.to_logical::<f64>(scale);
+
+    let sanitized = sanitize_window_geometry(
+        WindowGeometry {
+            x: position.x,
+            y: position.y,
+            width: inner.width,
+            height: inner.height,
+        },
+        MonitorRect {
+            x: monitor_position.x,
+            y: monitor_position.y,
+            width: monitor_size.width,
+            height: monitor_size.height,
+        },
+        MAIN_WINDOW_MIN_LOGICAL,
+    );
+
+    if sanitized.resized {
+        let _ = window.set_size(tauri::LogicalSize::new(
+            sanitized.geometry.width,
+            sanitized.geometry.height,
+        ));
+    }
+    if sanitized.repositioned {
+        let _ = window.set_position(tauri::LogicalPosition::new(
+            sanitized.geometry.x,
+            sanitized.geometry.y,
+        ));
+    }
+
+    let line = format!(
+        "[ontology-atlas-window-verify] fit source={source} current={:.0}x{:.0} applied={:.0}x{:.0} recentered={}",
+        inner.width,
+        inner.height,
+        sanitized.geometry.width,
+        sanitized.geometry.height,
+        sanitized.repositioned
+    );
+    log::info!("{line}");
+    write_verify_line(line);
+}
+
 fn apply_verify_window_size(app: &AppHandle) {
     if std::env::var_os(WEBVIEW_VERIFY_ENV).is_none() {
         return;
@@ -2909,8 +3097,8 @@ fn start_vault_watch(
     let mut debouncer = new_debouncer(
         Duration::from_millis(500),
         None,
-        move |result: DebounceEventResult| {
-            if let Ok(events) = result {
+        move |result: DebounceEventResult| match result {
+            Ok(events) => {
                 let md_changed = events.iter().any(|event| {
                     event
                         .paths
@@ -2921,6 +3109,17 @@ fn start_vault_watch(
                     let _ = app_handle.emit("vault-changed", ());
                 }
             }
+            // This arm was previously dropped in silence. When the watcher fails, the vault simply
+            // stops appearing to change — the screen looks fine and nothing anywhere says why.
+            Err(errors) => {
+                for error in errors {
+                    // `error.kind` only. A `notify` error's full `Display` embeds the paths it was
+                    // watching, which for a vault means the owner's own note filenames — and a
+                    // filename is already meaning in this product. The kind is what makes a watcher
+                    // failure diagnosable; the file list is not.
+                    log::warn!("vault watcher error: {:?}", error.kind);
+                }
+            }
         },
     )
     .map_err(|err| err.to_string())?;
@@ -2928,6 +3127,7 @@ fn start_vault_watch(
         .watcher()
         .watch(&canonical, RecursiveMode::Recursive)
         .map_err(|err| err.to_string())?;
+    log::info!("vault watcher started at {}", canonical.display());
     *state
         .debouncer
         .lock()
@@ -2974,7 +3174,7 @@ fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
                 respondsToSelector: sel!(_setEnabled:forFeature:)
             ];
             if !class_responds.as_bool() || !instance_responds.as_bool() {
-                eprintln!(
+                log::warn!(
                     "[frame-rate-cap] WKPreferences private feature API unavailable; staying at default frame pacing"
                 );
                 return;
@@ -3004,13 +3204,13 @@ fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
                         _setEnabled: Bool::NO,
                         forFeature: &*feature
                     ];
-                    eprintln!(
+                    log::info!(
                         "[frame-rate-cap] disabled PreferPageRenderingUpdatesNear60FPSEnabled — WebView follows display refresh rate"
                     );
                     return;
                 }
             }
-            eprintln!(
+            log::warn!(
                 "[frame-rate-cap] PreferPageRenderingUpdatesNear60FPSEnabled feature not found; staying at default frame pacing"
             );
         }
@@ -3028,7 +3228,59 @@ pub fn run() {
         ));
     }
 
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+
+    // Registered before every other plugin, as the plugin's own guidance requires, so it runs before
+    // anything else can claim state. A second launch does not open a rival window: it hands focus back
+    // to the window that already exists. Without this, two instances would watch, harness and write the
+    // same vault at once — and the updater's restart makes a second launch routine.
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }));
+    }
+
+    // Registered after single-instance, and **not at all** under the verification harness. Skipping
+    // only the initial restore would not be enough: the plugin also writes on exit, so a harness run
+    // that resizes the window would overwrite the owner's real geometry, and the next verification
+    // would adjudicate `--min-window-size` against whatever a developer last dragged. A gate whose
+    // verdict depends on the last window drag is not evidence.
+    if !verify_webview {
+        builder = builder.plugin(
+            tauri_plugin_window_state::Builder::new()
+                // FULLSCREEN, VISIBLE and DECORATIONS are deliberately absent. Restoring fullscreen
+                // performs a Space transition before first paint and gives macOS's own restoration a
+                // second owner; restoring `visible` can launch with no window at all, which is
+                // indistinguishable from the app failing to start; and nothing in this app ever
+                // changes decorations, so saving them only adds a route to an undecorated window
+                // that cannot be moved or closed.
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::POSITION
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
+                )
+                .build(),
+        );
+    }
+
+    builder
+        // A rotating log file in the OS log directory, because a packaged bundle's stdout reaches
+        // nobody. Written outside the vault so it never becomes a second store of meaning, and kept at
+        // `Info` so it records what the app *did* — never vault content, prompts, or secrets.
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("ontology-atlas".to_string()),
+                    }),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stderr),
+                ])
+                .level(log::LevelFilter::Info)
+                .max_file_size(APP_LOG_MAX_FILE_BYTES)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
+                .build(),
+        )
         // The updater replaces the bundle only after verifying the minisign signature. The public key is
         // embedded in `tauri.conf.json` and the private key is only in CI secrets, so
         // packages we did not sign are not installed by this app.
@@ -3040,12 +3292,43 @@ pub fn run() {
         .manage(VaultWatcherState::default())
         .manage(AcpInstallProgressState::default())
         .manage(AcpSessions::default())
-        .setup(|app| {
+        .setup(move |app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
+            // The first line of every log file: without a version, a bug report's log cannot be
+            // matched to the build that produced it.
+            log::info!(
+                "ontology atlas {} started",
+                app.handle().package_info().version
+            );
+
             show_main_window(app.handle());
             apply_verify_window_size(app.handle());
+
+            // Claiming the harness is isolated in a comment is not proof; this line is what the
+            // payload contract asserts.
+            write_verify_line(format!(
+                "[ontology-atlas-window-verify] state_plugin={}",
+                if verify_webview { "disabled" } else { "enabled" }
+            ));
+            if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+                // The plugin reads this file at window creation and leaves it in place, so its
+                // presence at setup time is what separates "the owner's window came back" from
+                // "this is the config default" in the line below.
+                let restored = !verify_webview
+                    && app
+                        .path()
+                        .app_config_dir()
+                        .map(|dir| dir.join(WINDOW_STATE_FILENAME).exists())
+                        .unwrap_or(false);
+                let source = match (verify_webview, restored) {
+                    (true, _) => "harness",
+                    (false, true) => "restored",
+                    (false, false) => "default",
+                };
+                fit_main_window_to_display(&window, source);
+            }
 
             #[cfg(target_os = "macos")]
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
@@ -3086,12 +3369,37 @@ pub fn run() {
                                 WEBVIEW_VERIFY_ROUTE_INTERVAL_MS,
                             ));
                             let script = build_webview_verify_route_script(&route);
-                            for _ in 0..WEBVIEW_VERIFY_ROUTE_ATTEMPTS {
-                                let _ = verify_window.eval(&script);
+                            // This loop used to run all 20 attempts unconditionally and never learn
+                            // the outcome: 8 seconds burned even on an immediate arrival, and a
+                            // route that never resolved looked exactly like one that did. The
+                            // script now reports whether the route is live, so the harness stops on
+                            // arrival and says so when it never arrives.
+                            let arrived = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(
+                                false,
+                            ));
+                            let mut attempts_used = WEBVIEW_VERIFY_ROUTE_ATTEMPTS;
+                            for attempt in 1..=WEBVIEW_VERIFY_ROUTE_ATTEMPTS {
+                                let sink = std::sync::Arc::clone(&arrived);
+                                let _ = verify_window.eval_with_callback(
+                                    script.as_str(),
+                                    move |result| {
+                                        if result.trim() == "true" {
+                                            sink.store(true, std::sync::atomic::Ordering::SeqCst);
+                                        }
+                                    },
+                                );
                                 std::thread::sleep(Duration::from_millis(
                                     WEBVIEW_VERIFY_ROUTE_INTERVAL_MS,
                                 ));
+                                if arrived.load(std::sync::atomic::Ordering::SeqCst) {
+                                    attempts_used = attempt;
+                                    break;
+                                }
                             }
+                            let landed = arrived.load(std::sync::atomic::Ordering::SeqCst);
+                            write_verify_line(format!(
+                                "[ontology-atlas-verify-route] route={route} arrived={landed} attempts={attempts_used}"
+                            ));
                         } else {
                             std::thread::sleep(Duration::from_millis(2000));
                         }
@@ -6880,5 +7188,210 @@ mod acp_install_progress_tests {
     #[test]
     fn progress_event_name_matches_the_listener() {
         assert_eq!(ACP_INSTALL_PROGRESS_EVENT, "acp-install://progress");
+    }
+}
+
+
+#[cfg(test)]
+mod window_geometry_tests {
+    use super::{
+        sanitize_window_geometry, MonitorRect, WindowGeometry, MACOS_MENU_BAR_MIN_PT,
+        MACOS_MENU_BAR_RESERVE_PT, MACOS_TITLE_BAR_PT, MAIN_WINDOW_MIN_LOGICAL,
+    };
+
+    /// The 14-inch MacBook Pro reference panel in logical points.
+    const REFERENCE_14_INCH: MonitorRect = MonitorRect {
+        x: 0.0,
+        y: 0.0,
+        width: 1512.0,
+        height: 982.0,
+    };
+
+    fn at(x: f64, y: f64, width: f64, height: f64) -> WindowGeometry {
+        WindowGeometry {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
+    #[test]
+    fn a_window_that_already_fits_is_returned_untouched() {
+        // The identity case. Without it, an over-eager clamp would move a window every launch and
+        // every other test here would still pass.
+        let saved = at(0.0, MACOS_MENU_BAR_RESERVE_PT, 1512.0, 900.0);
+        let result = sanitize_window_geometry(saved, REFERENCE_14_INCH, MAIN_WINDOW_MIN_LOGICAL);
+        assert_eq!(result.geometry, saved);
+        assert!(!result.resized);
+        assert!(!result.repositioned);
+    }
+
+    #[test]
+    fn the_shipped_default_fits_the_reference_panel() {
+        // 1512x982 was the shipped default and is the *entire* display: 982 content + 28 title bar
+        // against a 945-point visible frame. 900 is what actually fits, and is the number the
+        // measurement scripts already sweep.
+        let usable = REFERENCE_14_INCH.height - MACOS_MENU_BAR_RESERVE_PT - MACOS_TITLE_BAR_PT;
+        assert!(900.0 <= usable, "900 must fit inside {usable}");
+        assert!(982.0 > usable, "982 must not fit, which is why it was never a window");
+    }
+
+    #[test]
+    fn a_window_larger_than_the_display_is_clamped_and_recentered() {
+        let result = sanitize_window_geometry(
+            at(0.0, MACOS_MENU_BAR_RESERVE_PT, 2560.0, 1400.0),
+            REFERENCE_14_INCH,
+            MAIN_WINDOW_MIN_LOGICAL,
+        );
+        assert_eq!(result.geometry.width, 1512.0);
+        assert_eq!(
+            result.geometry.height,
+            REFERENCE_14_INCH.height - MACOS_MENU_BAR_MIN_PT - MACOS_TITLE_BAR_PT
+        );
+        assert!(result.resized);
+        assert!(result.repositioned, "a clamped window must not keep an origin that now overflows");
+    }
+
+    #[test]
+    fn geometry_saved_in_physical_pixels_survives_losing_the_retina_display() {
+        // The plugin saves `inner_size()`, which is physical. Quitting at 1512x900 on a 2x panel
+        // writes 3024x1800; relaunching on a 1x 1440x900 display must not ask for a window larger
+        // than the display itself.
+        let one_x = MonitorRect {
+            x: 0.0,
+            y: 0.0,
+            width: 1440.0,
+            height: 900.0,
+        };
+        let result = sanitize_window_geometry(
+            at(0.0, MACOS_MENU_BAR_RESERVE_PT, 3024.0, 1800.0),
+            one_x,
+            MAIN_WINDOW_MIN_LOGICAL,
+        );
+        assert_eq!(result.geometry.width, 1440.0);
+        assert_eq!(
+            result.geometry.height,
+            one_x.height - MACOS_MENU_BAR_MIN_PT - MACOS_TITLE_BAR_PT
+        );
+        assert!(result.geometry.width <= one_x.width);
+        assert!(result.geometry.height <= one_x.height);
+    }
+
+    #[test]
+    fn a_title_bar_above_the_menu_bar_is_brought_back() {
+        // A corner-intersection test passes for this window: its bottom corners are on screen. Its
+        // title bar is not, so nobody can move it.
+        let result = sanitize_window_geometry(
+            at(0.0, -200.0, 1200.0, 800.0),
+            REFERENCE_14_INCH,
+            MAIN_WINDOW_MIN_LOGICAL,
+        );
+        assert!(result.repositioned);
+        assert!(result.geometry.y >= REFERENCE_14_INCH.y + MACOS_MENU_BAR_RESERVE_PT);
+        assert!(!result.resized, "position was the only problem");
+    }
+
+    #[test]
+    fn a_window_dragged_almost_entirely_off_the_right_edge_is_brought_back() {
+        let result = sanitize_window_geometry(
+            at(1470.0, 300.0, 1200.0, 800.0),
+            REFERENCE_14_INCH,
+            MAIN_WINDOW_MIN_LOGICAL,
+        );
+        assert!(result.repositioned);
+        assert!(result.geometry.x >= REFERENCE_14_INCH.x);
+    }
+
+    #[test]
+    fn a_window_below_the_minimum_is_raised_to_it() {
+        let result = sanitize_window_geometry(
+            at(100.0, 100.0, 600.0, 400.0),
+            REFERENCE_14_INCH,
+            MAIN_WINDOW_MIN_LOGICAL,
+        );
+        assert_eq!(result.geometry.width, MAIN_WINDOW_MIN_LOGICAL.0);
+        assert_eq!(result.geometry.height, MAIN_WINDOW_MIN_LOGICAL.1);
+        assert!(result.resized);
+    }
+
+    #[test]
+    fn a_second_display_left_of_the_primary_keeps_its_negative_origin() {
+        // Monitor rects are not anchored at zero. A sanitizer that assumed they were would drag
+        // every window on a left-hand external display back onto the built-in panel.
+        let left_monitor = MonitorRect {
+            x: -1920.0,
+            y: 0.0,
+            width: 1920.0,
+            height: 1080.0,
+        };
+        let saved = at(-1800.0, 200.0, 1400.0, 900.0);
+        let result = sanitize_window_geometry(saved, left_monitor, MAIN_WINDOW_MIN_LOGICAL);
+        assert_eq!(result.geometry, saved);
+        assert!(!result.repositioned);
+    }
+
+    /// A 1080p external display: no notch, so its menu bar is the 24pt minimum.
+    const EXTERNAL_1080P: MonitorRect = MonitorRect {
+        x: 0.0,
+        y: 0.0,
+        width: 1920.0,
+        height: 1080.0,
+    };
+
+    #[test]
+    fn a_window_snapped_to_the_top_of_a_non_notched_display_is_left_alone() {
+        // Every external monitor spends 24pt on its menu bar, not the notched 37. Judging this
+        // window against 37 called it unreachable and recentred it — on every single launch, which
+        // took away the very position the state plugin had just restored.
+        let saved = at(0.0, MACOS_MENU_BAR_MIN_PT, 1400.0, 900.0);
+        let result = sanitize_window_geometry(saved, EXTERNAL_1080P, MAIN_WINDOW_MIN_LOGICAL);
+        assert_eq!(result.geometry, saved);
+        assert!(!result.repositioned, "a window a non-notched display allows must be left where it is");
+        assert!(!result.resized);
+    }
+
+    #[test]
+    fn a_maximized_window_that_exactly_fills_a_non_notched_display_is_not_shrunk() {
+        // The zoomed shape macOS itself produces on a 1080p panel. Reserving the notched 37 here
+        // clamped a window that fits exactly, so a restored maximised window was resized *and*
+        // recentred immediately after the plugin restored it.
+        let zoomed_height = EXTERNAL_1080P.height - MACOS_MENU_BAR_MIN_PT - MACOS_TITLE_BAR_PT;
+        let saved = at(0.0, MACOS_MENU_BAR_MIN_PT, 1920.0, zoomed_height);
+        let result = sanitize_window_geometry(saved, EXTERNAL_1080P, MAIN_WINDOW_MIN_LOGICAL);
+        assert_eq!(result.geometry, saved);
+        assert!(!result.resized, "a window that fits its display exactly must not be clamped");
+        assert!(!result.repositioned);
+    }
+
+    #[test]
+    fn a_title_bar_genuinely_under_the_menu_bar_is_still_recovered() {
+        // The acceptance floor was loosened, not removed: above the shortest menu bar is still
+        // unreachable, so relaxing 37 to 24 must not turn this case green.
+        let result = sanitize_window_geometry(
+            at(0.0, MACOS_MENU_BAR_MIN_PT - 8.0, 1400.0, 900.0),
+            EXTERNAL_1080P,
+            MAIN_WINDOW_MIN_LOGICAL,
+        );
+        assert!(result.repositioned);
+        assert!(result.geometry.y >= EXTERNAL_1080P.y + MACOS_MENU_BAR_MIN_PT);
+    }
+
+    #[test]
+    fn a_recentred_window_is_placed_clear_of_a_notch_and_still_fits() {
+        // Placement stays conservative even though acceptance is permissive: a recentred window
+        // clears the notched menu bar, and its bottom edge must still land on the display.
+        let result = sanitize_window_geometry(
+            at(0.0, -400.0, 3024.0, 1800.0),
+            REFERENCE_14_INCH,
+            MAIN_WINDOW_MIN_LOGICAL,
+        );
+        assert!(result.repositioned);
+        assert!(result.geometry.y >= REFERENCE_14_INCH.y + MACOS_MENU_BAR_RESERVE_PT);
+        assert!(
+            result.geometry.y + result.geometry.height
+                <= REFERENCE_14_INCH.y + REFERENCE_14_INCH.height,
+            "a recentred window must not hang off the bottom"
+        );
     }
 }

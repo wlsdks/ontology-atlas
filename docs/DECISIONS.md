@@ -19337,3 +19337,275 @@ qualification은 이 결정의 후속 조건으로 남긴다.
 qualification pending
 
 ---
+
+## 2026-08-24 — Tauri runtime hardening: keep only what is used, and make what could not explain itself explain itself
+
+**Prior record**: the 2026-07-27 surface contract established that the app is the
+vault's home and that Tauri carries one static build. This decision does not move
+that boundary. It removes permissions that were never exercised and adds a
+diagnostic that did not exist.
+
+**Observed phenomenon**: (1) `tauri` sat at 2.11.2 and `tauri-build` at 2.6.2,
+three patches behind. (2) Nothing prevented a second instance against one vault —
+two watchers, two ACP harnesses, two MCP sidecars, and two writers on the same
+Markdown were all reachable, and the updater's restart makes a second launch a
+routine event rather than an exotic one. (3) Every `println!` among 16,562 lines
+of Rust sits inside `#[cfg(test)]`. A packaged `.app` sends stdout nowhere a
+person can reach, so an installed build left **no evidence at all** behind a
+report of "the agent stopped". (4) The CSP was byte-identical to the example block
+in the Tauri v2 CSP documentation — a page whose own text says "tailor this to
+your own application needs". `asset:` was inert because `assetProtocol` is not
+enabled, and `customprotocol:` is a v1 relic referenced nowhere in this
+repository. (5) `core:default` granted `core:image`, `core:resources`,
+`core:menu`, and `core:tray` to a webview that never called them.
+
+**User problem**: an owner whose installed app misbehaved had nothing to send.
+And in a product whose files are the source of truth, concurrent writers are the
+one failure it cannot absorb.
+
+**Decision**:
+- Move to `tauri` 2.11.5 and `tauri-build` 2.6.3. `Cargo.toml` already carries a
+  caret, so only the lock changes.
+- Register `tauri-plugin-single-instance` **first**, per its own guidance. A
+  second launch hands focus back to the window that already exists.
+- Add `tauri-plugin-log`: one rotating 5 MiB file in the OS log directory. It sits
+  outside the vault so it never becomes a second store of meaning, and stays at
+  `Info` so it records **what the app did** — never vault content, prompts, or
+  secrets. `llm_audit.rs` still owns the LLM transfer ledger; this does not
+  replace it.
+- Delete the inert `customprotocol:`, `asset:`, and `http://asset.localhost`
+  entries from the CSP.
+- Narrow the capability from `core:default`'s nine sets to five. Only two have an
+  observed frontend caller — `listen` needs `core:event`, `getVersion` needs
+  `core:app`. `core:path`, `core:window` and `core:webview` are retained, not
+  because they are known to be used, but because narrowing a permission without
+  installed-app proof fails silently, and a capability gate cannot catch that.
+
+**Rejected alternatives**: adopting `tauri-plugin-fs`, `dialog`, `shell`, `http`,
+or `store` was rejected. Exposing filesystem and network permissions to the
+webview is harder to prove than the present shape, where 48 narrow Rust commands
+are the only door. Enabling the asset protocol was rejected too — nothing uses it.
+
+**Where the line sits on paths**: the vault's own root path is logged when the
+watcher starts, because a watcher that never fires cannot be diagnosed without
+it. Individual note filenames are not: `notify`'s error `Display` embeds the paths
+it was watching, so watcher failures log the error *kind* only. In this product a
+filename is already meaning, and the log is the one place meaning is not kept.
+
+**Falsifiers**: (1) one line of vault body, note filename, prompt text, or a key
+appearing in the log file means this decision failed. (2) If the narrowed capability silently kills
+any webview ability, restore `core:default` and record why. (3) If single-instance
+blocks a legitimate second launch — someone opening a different vault
+concurrently — reopen the instance boundary at vault granularity rather than app
+granularity.
+
+**Verification evidence**: `cargo check` clean; `cargo test` 210 existing tests
+pass; 8 added window-geometry units pass. No installed-app evidence exists at the
+time of this record; it is bound to the window decision below.
+
+**Status**: valid · installed-app evidence pending
+
+---
+
+## 2026-08-24 — The `1512×982` window default was never a window. It was the whole display
+
+**Prior record**: the 2026-07-27 record gave the workbench seat the 14-inch first
+viewport, window lifecycle, and wide-screen density. This is that seat's ruling.
+
+**Observed phenomenon**: the `1512×982` declared in `tauri.conf.json` is the
+**entire logical display** of the 14-inch MacBook Pro. Tauri's `width`/`height`
+are the inner content size, so 982 asked for 982 plus a 28pt title bar inside a
+945pt visible frame, and AppKit silently constrained it on every launch. The
+ledger's own measurements read `1512×949` outer and `1512×917`/`918` content:
+**982 has never once been observed as a window.** Meanwhile `measure-a11y.mjs`,
+`measure-graph-readability.mjs`, and `measure-contrast.mjs` have always swept
+`1512×900`. The shipped first viewport and the measured first viewport have never
+been the same number.
+
+**User problem**: an owner who sized the window lost that size on every relaunch,
+and the viewport our instruments testify about was not the one anyone sees.
+
+**Decision**:
+- Change the default height from `982` to `900`. 900 + 28 = 928 ≤ 945, so the
+  shipped window is honoured instead of constrained, and the number becomes the
+  one the measurement scripts already use. Width stays 1512 so that every `1512`
+  measurement in the ledger describes a viewport the app actually opens.
+- Adopt `tauri-plugin-window-state` with `SIZE | POSITION | MAXIMIZED` only.
+  `FULLSCREEN` is not saved: restoring it performs a Space transition before first
+  paint and gives macOS's own restoration a second owner. `VISIBLE` is not saved:
+  it can produce a launch with no window, which a person cannot distinguish from
+  the app failing to start. `DECORATIONS` is not saved: this app never changes
+  them, so saving only adds a route to an undecorated window that cannot be moved
+  or closed.
+- Run `sanitize_window_geometry` on **every launch**, restored or not. The plugin
+  restores size unconditionally in **physical** pixels, and its off-screen test
+  guards position only — and passes when any single corner intersects a display.
+  Quitting at 1512×900 on a 2× panel writes 3024×1800; relaunching without that
+  display would otherwise ask a 1× panel for a window larger than itself. The
+  sanitizer converts to logical points, clamps, and recentres when fewer than
+  120pt of grabbable title bar remain on screen. It **accepts permissively and
+  places conservatively**: acceptance and the height ceiling use the 24pt menu
+  bar every non-notched panel spends, while a recentred window is placed below
+  the notched 37pt. The first version used 37 for both, which called a window
+  snapped to the top of any external monitor unreachable and recentred it on
+  every launch — the plugin restored the owner's window and the sanitizer
+  immediately took it away again. That is this decision's own falsifier (1),
+  and it was in the code before an audit found it.
+- Do **not register** the plugin under the verification harness. Skipping the
+  initial restore is not enough — the write on exit must also be impossible, or a
+  harness run overwrites the owner's real geometry. `--reset-window-state` lets
+  the release preflight run without saved geometry. A gate whose verdict depends
+  on the last window drag is not evidence.
+
+**Rejected alternatives**: dropping the width to 1440 was rejected — every
+existing `1512` measurement in the ledger would then describe a viewport the app
+never opens. Clamping only on the restore path was rejected too: on the smallest
+display this product promises, 1440×900, a 900pt content area does not fit even
+without restoration.
+
+**Falsifiers**: (1) if a user reports the window opening somewhere they did not
+leave it, or a `--min-window-size` failure traces to the state file rather than to
+`tauri.conf.json`, the sanitizer is wrong — and the retreat is dropping `POSITION`
+to restore `SIZE` only, not removing the clamp. (2) If the default reads as
+maximized, move the width to 1440 and re-anchor the measurement scripts in the
+same change.
+
+**Verification evidence**: 8 `sanitize_window_geometry` units pass — identity (a
+fitting window is returned untouched), oversized clamp plus recentre, 2× physical
+geometry restored onto a 1× display, a title bar above the menu bar recovered, a
+window dragged off the right edge recovered, below-minimum raised, and a
+left-hand external display with a negative origin preserved. A
+`check-desktop-readiness.mjs` gate now asserts the shipped window fits the
+14-inch reference panel and that `minWidth`/`minHeight` equal the Rust constant;
+reverting the height to 982 turns it red. **No installed-app measurement exists
+yet** — deleting the state file and measuring first launch, then resize and
+relaunch, on a 14-inch panel is this decision's outstanding condition.
+
+**Status**: valid · installed-app measurement pending
+
+---
+
+## 2026-08-24 — PO Council: reject the `ontology-atlas://` OS URL scheme (0/24)
+
+**Convened because** an OS-registered URL scheme is a public contract change, and
+links minted into portable vault Markdown outlive any retreat. Round 1 ran as five
+parallel independent seats; Round 2 completed for Craft, Steward, and Wedge.
+Evidence and Leverage stand on their Round 1 positions, both already blocking. No
+claim is made that all five returned rebuttals.
+
+| Seat | Verdict | Signed rows |
+|---|---|---|
+| Evidence | Do not build | Problem insight 0 · User moment 0 |
+| Craft | Do not build (changed in Round 2) | Verification 0 |
+| Steward | Do not build | Ontology value 0 · Agent value 0 |
+| Wedge | Do not build | Differentiation 0 |
+| Leverage | Do not build now | appetite 0 this cycle |
+
+**Rubric**: 0/24 (fatal zeros: Problem insight, Ontology value, Agent value,
+Verification)
+
+**Observed phenomenon — none**: zero third-party issues, roughly 6 measured
+downloads, and 35 of 35 observed visitors arriving through the web. The population
+a scheme would serve is effectively empty. The motivating ledger record the
+request cited was resolved in-band the same day; its defect class is *a prescribed
+action name with no executor*, and its recorded cure was **typed executors in the
+same channel** — the opposite of a second, untyped, fire-and-forget address
+vocabulary.
+
+**Decisive facts**: (1) putting a uid in a URL is already prohibited by
+`mcp/README.md:466` and spec §4 — "UID is not a … URL token; Slug remains the
+inspectable address". (2) A uid link is invisible to `findBacklinks`, and
+`defaultUrlTransform` reduces it to an empty string so it renders as a **dead
+span inside Atlas's own Markdown viewer**. (3) A bare uid names no vault. (4)
+`is_openable_url` in `src-tauri/src/lib.rs` already records the mirrored
+**outbound** judgment, allowing only http/https — registering an inbound scheme
+would put the product on both sides of one recorded threat model. (5) No CI lane
+installs a bundle to `/Applications`, so the only available gate is either a
+string-pinning test that stays green while the feature is broken, or a human
+remembering to open a terminal after each release.
+
+**Instead — one repair, passed separately**: `mcp/src/ontology-engine.mjs:1522`
+hands agents a retired `/ontology/studio/?node=` href today. That is the one live,
+file-observed instance of the requester's own defect class, found independently by
+three seats. Change it to the canonical `/topology/` focus address, pair
+`mcp/README.md` per the documentation table, and add a contract test banning
+retired namespaces in MCP-emitted hrefs.
+
+**Gate blindness found in passing**: `scripts/check-decision-record.mjs` watches
+only added or deleted `app/` routes and two `CONTRACT_FILES`, so registering a
+scheme in `tauri.conf.json` would pass `decisions:check` green. Recorded as a
+`/gate-probe` candidate.
+
+**Recorded dissent**: slugs are mutable and the uid is the immutable identity, so
+a rename-durable address is a real gap; and the cold-start moment — app closed,
+concept reference sitting in an external transcript — is the one moment no in-band
+channel serves, which makes waiting for observation necessarily one beat late.
+Steward conceded the durability gap is real and named the follow-up it would score
+positively: teach the existing `?p=` resolver to accept uid and `merged_uids` and
+canonicalize to `kind:slug`, as a separate slice with its own pass.
+
+**Falsifier**: within one dogfood week, or in the first measured installed cohort,
+three or more occasions of hand-searching the map because the app was closed or
+open on another vault; or a third-party issue asking for a clickable app link; or
+a named client that linkifies non-http schemes for a real user. Any of these
+reopens the question — and only then, slug plus vault-qualified, focus-only,
+allowlist-parsed, with a threat model and a new record first.
+
+**Slice**: IN nothing · OUT scheme registration, uid addresses, write-capable or
+action-executing URLs, any second address vocabulary in vault Markdown ·
+appetite 0
+
+**Status**: valid · human signature pending
+
+---
+
+## 2026-08-24 — PO pass: hold `tauri-plugin-notification` for ACP completion and blocked signals (10/24)
+
+**Prior records**: the 2026-07-27 update-notification pair (6/24 do-not-build,
+standing; the same-day owner overturn was updater-specific on a cost-side change
+and does not transfer), the 2026-08-01 quiet-threshold and work-unit inbox
+decision, (23) 2026-08-17, and (92) 2026-08-21.
+
+**Observed phenomenon**: `acp.rs` and `lib.rs` emit `acp://message|stderr|notice|exit`
+to the webview only; no OS-level signal exists. But **no recorded instance** exists
+of anyone missing a completion or an `allow_once` prompt, and this checkout holds
+no `.ontology-atlas/` transcripts to check either way.
+
+**Sharpest sub-case**: a session blocked at `allow_once` emits no further work
+units. Under the standing 2026-08-01 rule that judges completion by five minutes
+of quiet, a **blocked** session and a **finished** one are indistinguishable
+inside the app's own inbox. If that misclassification is real, the first repair is
+in-band — teach the inbox to separate blocked from quiet — not an OS plugin.
+
+**Rubric**: Problem insight 2 · User moment 2 · Differentiation 2 · Ontology value
+0 · Agent value 2 · Verification 2 = **10/24** (fatal zero: Ontology value)
+
+**Escalation**: mechanically triggered but not convened, citing the standing
+2026-07-27 interpretation that convening a council to reach "do not build" is
+process theatre. If investigation flips the direction to build, a fresh pass is
+mandatory and escalates on its own numbers.
+
+**Decision — investigate first, no code**: three real dogfood ACP sessions. For
+each, record whether a write waited at `allow_once` while the app was not
+frontmost, how long until the person noticed, and whether the in-app inbox
+presented that blocked session as quiet or done. If the misclassification is
+observed, the smallest slice is the inbox distinguishing blocked from finished;
+only its measured insufficiency reopens the OS plugin.
+
+**Pre-committed no-gos if it ever builds**: no vault-derived text in notification
+bodies, because a lock screen is not the vault; opt-in; the notification focuses
+the app and executes nothing; and the OS layer never becomes a second store of
+session truth — the inbox stays canonical.
+
+**Recorded dissent**: an app with no interrupt path makes the person the polling
+loop, and the blocked-agent case is heavier than mere awareness because the
+**agent's** work stalls too. Building only after observation is necessarily one
+beat late.
+
+**Falsifier**: a single dogfood session where an `allow_once` request waited past
+the five-minute threshold because nobody was looking disproves this hold on the
+spot.
+
+**Status**: valid · three investigation sessions pending
+
+---

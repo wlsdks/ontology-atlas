@@ -109,9 +109,21 @@ for a macOS prototype:
 - the Tauri WebView CSP is enabled instead of left open: it allows local app
   assets, data/blob images, local styles, and the Tauri IPC endpoint required by
   native vault commands, without allowing arbitrary remote hosts.
-- `src-tauri/capabilities/default.json` stays scoped to the `main` window with
-  `core:default` only; the desktop app does not grant broad Tauri filesystem,
-  shell, HTTP, or opener plugin permissions.
+- `src-tauri/capabilities/default.json` stays scoped to the `main` window, but
+  no longer through the `core:default` umbrella: that umbrella expands to nine
+  permission sets, and four of them — `core:image`, `core:resources`,
+  `core:menu`, `core:tray` — were granted to a webview that never called them.
+  The capability now enumerates five core sets (`core:path:default`,
+  `core:event:default`, `core:window:default`, `core:webview:default`,
+  `core:app:default`) plus `updater:default` and `process:allow-restart` for the
+  one-button update-and-restart path. Only two of those five have an observed
+  frontend caller — `listen` needs `core:event` and `getVersion` needs
+  `core:app`. The other three are retained deliberately: dropping them is a
+  further narrowing, and narrowing a permission without installed-app proof
+  fails silently, which is the one failure mode a capability gate cannot catch. The
+  desktop app still does not grant broad Tauri filesystem, shell, HTTP, or
+  opener plugin permissions; `desktop:check` allows permissions only by name
+  and blocks those families by prefix.
 - `src-tauri/src/lib.rs` exposes the local vault bridge used by the installed
   app: native folder selection, recursive directory listing, markdown/image
   reads, text writes, file and directory deletion, directory creation, and
@@ -366,6 +378,35 @@ It mounts the image, requires the drag target symlink to point to
 verifies that copied app through the same LaunchServices app content proof used
 by `desktop:release-preflight`, and cleans up the temp install after detaching
 the image.
+
+## Installed-App Log
+
+A packaged `.app` sends stdout nowhere a person can reach, so before
+`tauri-plugin-log` an installed build left no evidence behind a report of "the
+app misbehaved". The shell now writes a rotating log file:
+
+```
+~/Library/Logs/dev.jinan.ontology-atlas/ontology-atlas.log
+```
+
+That is the file to attach to a bug report about the installed app. The first
+line of every file stamps the app version, so a log can be matched to the build
+that produced it. Rotation keeps exactly one file: at the 5 MiB cap the old
+file is deleted and a fresh one starts, so the log cannot grow without bound
+and there are no archived siblings to hunt for.
+
+The log stays at `Info` level and records what the app did — startup, vault
+watcher lifecycle, ACP session events, window-geometry fallbacks — never vault
+content, prompts, or secrets. It lives outside the vault so it cannot become a
+second store of meaning, and it never leaves the machine: nothing in the app
+reads it back or uploads it, and sharing it is the owner's explicit action,
+consistent with the local-first promise that nothing is collected silently.
+`.ontology-atlas/llm-audit.jsonl` inside the vault remains the separate ledger
+for opt-in LLM transfers.
+
+Know what the log does not capture: only the Rust side reaches it. WebView
+JavaScript errors and console output never appear in this file, so a blank or
+broken screen with a clean log points at the frontend, not the shell.
 
 ## First Prototype Scope
 

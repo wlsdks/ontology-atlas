@@ -9,7 +9,10 @@ import {
   WEBVIEW_WORKBENCH_MARKERS,
   webviewWorkbenchMarkersForPath,
 } from "./lib/verify-macos/webview-env.mjs";
-import { validateTopologyMapV2CanvasEvidence } from "./lib/verify-macos/payload-contract.mjs";
+import {
+  validateTopologyMapV2CanvasEvidence,
+  validateWindowStatePluginIsolation,
+} from "./lib/verify-macos/payload-contract.mjs";
 
 /**
  * **Installed-app WebView payload contract — measures only what is left**
@@ -190,6 +193,49 @@ test("payload contract · WebView 크기 상·하한을 잰다", () => {
       maxWebviewSize: { width: 1100, height: 800 },
     }),
     /viewport was 2000x1400/,
+  );
+});
+
+test("payload contract · window-state plugin isolation is observed, not assumed", () => {
+  const disabledLine = "[ontology-atlas-window-verify] state_plugin=disabled";
+  const enabledLine = "[ontology-atlas-window-verify] state_plugin=enabled";
+  // Pass: the app said it dropped the plugin for this verify launch.
+  assert.equal(
+    validateWindowStatePluginIsolation(`noise\n${disabledLine}\nmore noise`),
+    null,
+  );
+  // Fail: the plugin ran — the run may have consumed and overwritten the owner's
+  // saved window geometry, so its size verdict is worthless. The message must say
+  // that, not merely "unexpected value".
+  const enabledMessage = validateWindowStatePluginIsolation(`noise\n${enabledLine}`);
+  assert.match(enabledMessage, /state_plugin=enabled/);
+  assert.match(enabledMessage, /window geometry/);
+  // Fail: silence. A launch that never reports the marker is indistinguishable
+  // from a build where the marker — and the guard behind it — was deleted.
+  const absentMessage = validateWindowStatePluginIsolation("noise only\nno marker here");
+  assert.match(absentMessage, /state_plugin/);
+  assert.match(absentMessage, /window geometry/);
+});
+
+test("payload contract · launch stdout wires the isolation verdict into the payload contract", () => {
+  // The option is opt-in: callers without a launch stream (browser-side reuse of the
+  // contract) keep today's verdicts, which the other tests in this file pin.
+  assert.equal(
+    validateWebviewVerifyPayload(validPayload(), {
+      launchStdout: "[ontology-atlas-window-verify] state_plugin=disabled",
+    }),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(validPayload(), {
+      launchStdout: "[ontology-atlas-window-verify] state_plugin=enabled",
+    }),
+    /state_plugin=enabled/,
+  );
+  // An empty capture counts as launched-with-env but unobserved — it must fail.
+  assert.match(
+    validateWebviewVerifyPayload(validPayload(), { launchStdout: "" }),
+    /never reported the window-state plugin marker/,
   );
 });
 

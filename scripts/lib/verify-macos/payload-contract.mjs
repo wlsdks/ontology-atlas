@@ -12,6 +12,42 @@ export function validateTopologyMapV2CanvasEvidence(markers) {
   return null;
 }
 
+// `write_verify_line` in src-tauri/src/lib.rs tags window-lifecycle facts with this
+// prefix. webview-env.mjs owns the JSON payload prefix; this one is declared here
+// because the payload contract is its only reader.
+const WINDOW_STATE_PLUGIN_MARKER_PREFIX =
+  "[ontology-atlas-window-verify] state_plugin=";
+
+/**
+ * **The harness's geometry isolation must be observable, not asserted in a comment**
+ * (2026-08-24). `tauri-plugin-window-state` restores and saves real window geometry,
+ * so a verify launch that keeps it registered fails twice: it inherits the owner's
+ * saved size (the size verdict stops being deterministic) and it overwrites that
+ * saved size on exit (the harness damages the owner's setup). The Rust side skips
+ * registering the plugin under ONTOLOGY_ATLAS_VERIFY_WEBVIEW and prints
+ * `state_plugin=disabled` to say so; this check turns that line into evidence.
+ *
+ * Absence fails too: a silent launch is indistinguishable from a build where the
+ * marker — and the guard behind it — was deleted.
+ */
+export function validateWindowStatePluginIsolation(launchStdout) {
+  const states = String(launchStdout ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith(WINDOW_STATE_PLUGIN_MARKER_PREFIX))
+    .map((line) => line.slice(WINDOW_STATE_PLUGIN_MARKER_PREFIX.length).trim());
+  if (states.length === 0) {
+    return "app never reported the window-state plugin marker (state_plugin=…); the verify launch may have inherited or overwritten the owner's saved window geometry, so its window-size verdict is not trustworthy";
+  }
+  // One launch prints the marker once. Rejecting *any* non-disabled value (instead
+  // of picking one line) also catches a capture polluted by a second app instance.
+  const active = states.find((state) => state !== "disabled");
+  if (active !== undefined) {
+    return `app kept the window-state plugin registered under the verify env (state_plugin=${active || "empty"}); the run may have inherited or overwritten the owner's saved window geometry, so its window-size verdict is not trustworthy`;
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   expectedFixtureVault = null,
@@ -20,6 +56,7 @@ export function validateWebviewVerifyPayload(payload, {
   requireAiSettings = false,
   expectedAiSettingsBaseUrl = null,
   requireWebviewReducedMotion = false,
+  launchStdout = null,
 } = {}) {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
@@ -61,6 +98,16 @@ export function validateWebviewVerifyPayload(payload, {
     payload.markers.topologyV2PrefersReducedMotion !== true
   ) {
     return "WebView did not report reduced motion from the installed macOS preference";
+  }
+  // Runs only when the caller hands over the launch stdout: the harness always
+  // launches the executable with ONTOLOGY_ATLAS_VERIFY_WEBVIEW set (webviewVerifyEnvPatch
+  // has no off switch for it), so possessing that stream is the same fact as "the
+  // verify env was set". Placed **before** the size checks: a launch that let the
+  // window-state plugin restore geometry taints the very numbers the size checks
+  // would otherwise report as evidence, and the cause must be named first.
+  if (typeof launchStdout === "string") {
+    const windowStatePluginError = validateWindowStatePluginIsolation(launchStdout);
+    if (windowStatePluginError) return windowStatePluginError;
   }
   if (minWebviewSize) {
     const width = Number(payload.width);
