@@ -1,15 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default permissions for the main ontology workbench window. `core:default` was replaced by the five core sets below: it expanded to nine, and `core:image`, `core:resources`, `core:menu` and `core:tray` were granted to a webview that never called them. The webview's only core-plugin calls are `listen` from `@tauri-apps/api/event` and `getVersion` from `@tauri-apps/api/app`; everything else goes through app-defined commands, which capabilities do not gate. `core:path`, `core:window` and `core:webview` are retained without an observed frontend caller — dropping them is a further narrowing that needs installed-app proof, not a guess.",
+  "description": "Default permissions for the main ontology workbench window, narrowed to what the webview is measured to call. `core:default` expands to nine sets; this window needs two of them. Everything else the frontend does goes through app-defined commands, which capabilities do not gate, so granting core sets for them protects nothing. Capabilities gate JS-to-Rust IPC only: the window sizing this app does from Rust needs no `core:window` grant, which is why removing it changes nothing.",
   "windows": [
     "main"
   ],
   "permissions": [
-    "core:path:default",
     "core:event:default",
-    "core:window:default",
-    "core:webview:default",
     "core:app:default",
     "updater:default",
     "process:allow-restart"

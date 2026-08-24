@@ -9285,6 +9285,16 @@
       "depth": 2,
       "text": "2026-08-24 — PO pass: hold the ACP events-to-Channel move until one session is measured (6/24)",
       "slug": "2026-08-24-po-pass-hold-the-acp-events-to-channel-move-until-one-session-is-measured-624"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — `opt-level = \"s\"` measured and rejected: it halves the hashing this product does",
+      "slug": "2026-08-24-opt-level-s-measured-and-rejected-it-halves-the-hashing-this-product-does"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — The capability keeps two core sets, and this time it was measured",
+      "slug": "2026-08-24-the-capability-keeps-two-core-sets-and-this-time-it-was-measured"
     }
   ],
   "DEMO-SCENARIO": [

@@ -125,3 +125,32 @@ test('ratchets every source-comment scope in both directions', () => {
   tooHigh.testFixture.unexpectedLanguageCodePoints += 1;
   assert.match(evaluateSourceCommentLanguageGate(audit, tooHigh).join('\n'), /lower the baseline/);
 });
+
+
+test("a rust lifetime is not a string, so comments after it stay visible", () => {
+  // Measured 2026-08-24: treating every `'` as a quote put the scanner inside a string from the
+  // first `&'static str` onward, blinding it to 2,624 consecutive lines of src-tauri/src/lib.rs
+  // while the gate reported zero. One lifetime is enough to reproduce it.
+  const comments = extractCommentTokens("x.rs", "fn f(x: &'static str) {}\n// 한국어 주석\n");
+  assert.equal(comments.length, 1);
+  assert.match(comments[0].text, /한국어/);
+});
+
+test("an even number of lifetimes does not accidentally re-sync the scanner", () => {
+  // This is why the old failure looked intermittent: two lifetimes paired up and closed the fake
+  // string, so files with balanced quotes scanned correctly and hid the bug.
+  const comments = extractCommentTokens("x.rs", "struct S<'a> { x: &'a str }\n// 한국어 주석\n");
+  assert.equal(comments.length, 1);
+});
+
+test("genuine char literals are still stepped over, including escapes", () => {
+  for (const literal of ["'x'", "'\\n'", "'\\''", "'\\u{1F600}'"]) {
+    const comments = extractCommentTokens("x.rs", `let c = ${literal};\n// 한국어 주석\n`);
+    assert.equal(comments.length, 1, `${literal} should not swallow the comment`);
+  }
+});
+
+test("a comment marker inside a string literal is still not a comment", () => {
+  // The repair must not overshoot: string contents stay invisible to the language gate.
+  assert.equal(extractCommentTokens("x.rs", 'let s = "// 한국어";\n').length, 0);
+});

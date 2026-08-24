@@ -55,6 +55,24 @@ function typescriptComments(source, jsx) {
   return comments;
 }
 
+/**
+ * Rust spends `'` on two unrelated things, and only one of them is a string.
+ *
+ * `'a` and `'static` are lifetimes; `'x'` and `'\n'` are char literals. Treating every `'` as a
+ * quote makes one odd lifetime swallow the rest of the file: measured 2026-08-24 on
+ * `src-tauri/src/lib.rs`, a single `&'static str` blinded the scanner to 2,624 consecutive lines,
+ * and the file reported **zero** Korean comments while it actually held 199. Two lifetimes in a row
+ * happened to pair up and re-sync, which is why the failure looked intermittent rather than total.
+ *
+ * Returns the index just past a genuine char literal, or `null` when the quote opens a lifetime.
+ */
+function rustCharLiteralEnd(source, index) {
+  const match = /^'(?:\\(?:x[0-9a-fA-F]{2}|u\{[0-9a-fA-F]{1,6}\}|.)|[^\\'])'/.exec(
+    source.slice(index),
+  );
+  return match ? index + match[0].length : null;
+}
+
 function rawStringEnd(source, index) {
   const match = /^(?:br|r)(#*)"/.exec(source.slice(index));
   if (!match) return null;
@@ -119,6 +137,12 @@ function cLikeComments(
         index = end;
         continue;
       }
+    }
+    if (rust && char === "'") {
+      const charLiteralEnd = rustCharLiteralEnd(source, index);
+      // A lifetime is not a string: step over the quote and keep reading code.
+      index = charLiteralEnd ?? index + 1;
+      continue;
     }
     if (char === '"' || char === "'" || char === '`') {
       state = 'string';
