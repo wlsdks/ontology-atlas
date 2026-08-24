@@ -122,4 +122,57 @@ describe('MeaningEditorPanel', () => {
     expect(screen.queryByTestId('meaning-editor-change-review')).not.toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('변경할 내용이 없습니다');
   });
+
+  it('쓰기를 마친 뒤 다시 열면 처음 단계로 돌아가고 버튼이 풀린다', async () => {
+    // The panel outlives `onClose` (exit animation) and HomePage keys it by node
+    // id, so a reopen reuses this instance. Before the fix it came back showing
+    // the already-written change with the confirm button frozen in its busy state
+    // and every control -- including "edit again" -- disabled.
+    const onApply = vi.fn().mockResolvedValue(undefined);
+    const props = {
+      source: {
+        id: 'capability:contextual-editing',
+        slug: 'capabilities/contextual-editing',
+        title: 'Contextual Meaning Editing',
+        kind: 'capability',
+        frontmatter: { relates: ['capabilities/mcp-server'] },
+      },
+      candidates: [
+        {
+          id: 'capability:mcp-server',
+          slug: 'capabilities/mcp-server',
+          title: 'MCP Server',
+          kind: 'capability',
+        },
+      ],
+      initialRelation: 'relates' as const,
+      initialTargetId: 'capability:mcp-server',
+      initialWhy: '도구 요청이 이 서버를 지난다.',
+      onPreview: vi.fn(),
+      onApply,
+      onClose: vi.fn(),
+    };
+    const view = (open: boolean) => (
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <MeaningEditorPanel open={open} {...props} />
+      </NextIntlClientProvider>
+    );
+
+    const { rerender } = render(view(true));
+    fireEvent.click(screen.getByTestId('meaning-editor-review'));
+    fireEvent.click(screen.getByTestId('meaning-editor-apply'));
+    await waitFor(() => expect(onApply).toHaveBeenCalledTimes(1));
+
+    // The caller closes; the instance stays mounted for its exit animation.
+    rerender(view(false));
+    rerender(view(true));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('meaning-editor-panel')).toHaveAttribute(
+        'data-meaning-editor-step',
+        'edit',
+      ),
+    );
+    expect(screen.getByTestId('meaning-editor-review')).not.toBeDisabled();
+  });
 });

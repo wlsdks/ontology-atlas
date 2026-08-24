@@ -8,7 +8,7 @@ import {
   consumeQueuedAgentChatIntent,
   subscribeAgentChatIntent,
 } from "@/shared/lib/agent-chat-intent";
-import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
+import { isGuardedRuntime, runtimeOwnsWriteGate } from "@/features/acp-session/model/runtime-gate";
 import { agentChatDoor } from "../model/agent-chat-door";
 import {
   AcpChatPanel,
@@ -2598,7 +2598,11 @@ function HomePageImpl() {
             validForCurrentVault: vault.agentConfigStatus?.codexConfigValid === true,
           }
         : null;
-    return vaultMcpServers(agentServer.launch, gitVaultPath, registration);
+    // Claude's isolated config already asks before every tool call, so a second
+    // server-side gate would double-prompt. Everything else gets the server gate.
+    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
+      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+    });
   }, [
     agentServer.launch,
     gitVaultPath,
@@ -3765,6 +3769,8 @@ function HomePageImpl() {
   const shortcutsSuppressed = shouldSuppressGlobalShortcuts({
     createNodeOpen,
     tourOpen: tour.open,
+    // `blocked` is this app's word for "the agent stopped and the permission card is waiting".
+    agentAwaitingDecision: acpTurnActivityFrame?.activity.state === "blocked",
   });
 
   // ⌘K and ⇧⌘K open the same palette (ontology nodes + projects). ⌘K used to open a
@@ -4400,6 +4406,7 @@ function HomePageImpl() {
                     density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                     phoneFocusSuppressed={selectedNodeFocusActive}
                     rightInspectorReserved={nodePanelMounted}
+                    leftIndexReserved={renderedIndexState === "expanded"}
                     // <md expanded INDEX is a full-bleed sheet — while the sheet is the main surface,
 // the top chrome column is demoted (overlap eradication 2026-07-23, completion of rank7 sheet
 // syntax). Same contract as utility lane's hidden md:flex.

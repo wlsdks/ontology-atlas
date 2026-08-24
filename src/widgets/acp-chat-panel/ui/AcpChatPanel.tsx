@@ -1,6 +1,16 @@
 'use client';
 
-import { ArrowUp, ChevronRight, History, LoaderCircle, Square, SquarePen, X } from 'lucide-react';
+import {
+  ArrowUp,
+  ChevronRight,
+  History,
+  LoaderCircle,
+  RotateCcw,
+  Square,
+  SquarePen,
+  TriangleAlert,
+  X,
+} from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -966,27 +976,62 @@ export function AcpChatPanel({
           data-testid="acp-chat-error"
           data-trouble={trouble?.kind}
           role="alert"
-          className="break-keep rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)]"
+          className="grid break-keep gap-2.5 rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)]"
         >
-          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-status-danger)]">
-            {t(`trouble.${trouble?.kind ?? 'unknown'}.title`)}
-          </p>
-          <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
-            {t(`trouble.${trouble?.kind ?? 'unknown'}.hint`)}
-          </p>
+          <div className="grid gap-1">
+            <p className="flex items-start gap-1.5 text-body-lg leading-display-tight font-[var(--font-weight-emphasis)] text-[color:var(--color-status-danger)]">
+              <TriangleAlert size={ICON_SIZE.md} aria-hidden className="mt-px shrink-0" />
+              {t(`trouble.${trouble?.kind ?? 'unknown'}.title`)}
+            </p>
+            <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
+              {t(`trouble.${trouble?.kind ?? 'unknown'}.hint`)}
+            </p>
+          </div>
           {/*
-            **The doctor sits where the blocked person is already looking.** Placed
-            somewhere in settings, a blocked person has to go find it, and mostly does
-            not. On the web it is impossible in principle (processes, keychain), so it
-            is not drawn at all — not "coming soon" but absent from the start.
+            ⚠️ **The card named an action it did not offer** (owner's installed app,
+            2026-08-24: *"if this is normal I still would not know what to do — give me
+            what to do, bigger and better made"*). Five of the six kinds ended in
+            「press New chat」, and 「New chat」 was a **pencil icon in the header** — a
+            person reading an error at the bottom of the panel has to recognise a glyph
+            two hundred pixels away as the sentence they just read. An error surface
+            whose next step lives somewhere else is a dead end, and this repository
+            already counts that as a defect.
+
+            So the retry is here, as the card's attention winner. `launch` is the one
+            kind excluded: its next step is the Agents destination, not another attempt
+            at the same failing start, and offering a button that re-runs a start we
+            know cannot work would teach people to distrust it.
           */}
-          {showDoctor ? (
-            <div className="mt-2 min-w-0">
-              {doctor.scanButton}
-              {doctor.result}
-            </div>
-          ) : null}
-          <details className="mt-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            {trouble?.kind === 'launch' ? null : (
+              <Chip
+                size="lg"
+                tone="accentOnTint"
+                data-testid="acp-chat-error-retry"
+                disabled={displayStatus === 'starting'}
+                onClick={() => {
+                  setHistoryOpen(false);
+                  void switchSession(null);
+                }}
+                className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+              >
+                <RotateCcw size={ICON_SIZE.md} aria-hidden />
+                {t('trouble.retry')}
+              </Chip>
+            )}
+            {/*
+              **The doctor sits where the blocked person is already looking.** Placed
+              somewhere in settings, a blocked person has to go find it, and mostly does
+              not. On the web it is impossible in principle (processes, keychain), so it
+              is not drawn at all — not "coming soon" but absent from the start.
+
+              It is the row's **second** action: the retry above fixes most of these
+              kinds on its own, and a check that reports nothing wrong is not a fix.
+            */}
+            {showDoctor ? doctor.scanButton : null}
+          </div>
+          {showDoctor ? <div className="min-w-0">{doctor.result}</div> : null}
+          <details>
             <summary
               data-testid="acp-chat-error-details"
               className={controlClass({
@@ -1410,12 +1455,20 @@ function WorkGroup({
           className="transition-transform"
           style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
         />
+        {/*
+          A running turn has to *look* running (owner report, 2026-08-24: the row
+          reads as stopped while the agent is mid-work). The dot pulses only while
+          `active`, so the motion means "still going" and stops the moment the group
+          finishes -- an opacity breath on a 6px dot, not a glow or halo, and
+          `motion-safe:` keeps it out of reduced-motion.
+        */}
         <span
           aria-hidden
+          data-acp-work-active={active ? 'running' : undefined}
           className={cn(
             'size-1.5 shrink-0 rounded-full',
             active
-              ? 'bg-[color:var(--color-indigo-accent)]'
+              ? 'bg-[color:var(--color-indigo-accent)] motion-safe:animate-pulse'
               : 'bg-[color:var(--color-text-quaternary)]',
           )}
         />

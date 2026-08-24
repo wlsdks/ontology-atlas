@@ -142,7 +142,9 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
      * a promise the app cannot keep, and that is ours to fix, not the user's,
      * so no fix button is attached.
      */
-    out.push(if acp::config_env_for(ctx.runtime_id).is_some() {
+    // Measured eligibility, not mere isolation: the app can control codex's config directory and
+    // still not hold its write gate, which is exactly what decision (111) recorded.
+    out.push(if acp::chat_eligible(ctx.runtime_id) && acp::config_env_for(ctx.runtime_id).is_some() {
         AcpCheck::ok("gate", Some("isolation".into()))
     } else if let Some((_, mode)) = SESSION_MODE_GATE.iter().find(|(id, _)| *id == ctx.runtime_id) {
         AcpCheck::ok("gate", Some(format!("session-mode:{mode}")))
@@ -413,20 +415,45 @@ mod tests {
     }
 
     #[test]
-    fn codex_read_only_is_not_reported_as_a_permission_gate() {
+    /// ⚠️ **What survives from `codex_read_only_is_not_reported_as_a_permission_gate`.**
+    ///
+    /// That test held decision (111)'s finding: codex's `read-only` session mode blocked direct file
+    /// writes while an Atlas MCP write landed unasked, so codex had **no** gate and the screen must
+    /// not claim one. The 2026-08-24 acceptance retired the conclusion, not the lesson — codex is
+    /// gated now because the app owns the checkpoint (isolated config plus the server-side consent
+    /// in `mcp/src/write-consent.mjs`), and **never** because a session mode was asked for.
+    ///
+    /// So the assertion moves from "codex has no gate" to the thing that was true all along and must
+    /// stay true: a session mode is not a gate this app will report.
+    fn a_gate_is_something_the_app_owns_never_a_session_mode() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-h-{}", std::process::id()));
 
-        // An executor gated by isolation.
+        // The runtime gated by isolation.
         let claude = diagnose(&ctx(&base, None));
         let gate = claude.iter().find(|c| c.id == "gate").unwrap();
         assert_eq!(gate.state, "ok");
         assert_eq!(gate.detail.as_deref(), Some("isolation"));
 
-        // `read-only` only blocked direct file writes; it failed to block Atlas MCP writes.
+        // Codex too — and by isolation, which is the point.
         let mut c = ctx(&base, None);
         c.runtime_id = "codex-acp";
         let codex = diagnose(&c);
         let gate = codex.iter().find(|c| c.id == "gate").unwrap();
+        assert_eq!(gate.state, "ok");
+        assert_eq!(
+            gate.detail.as_deref(),
+            Some("isolation"),
+            "codex must be gated by what the app owns, not by a mode it asked for"
+        );
+        assert!(
+            SESSION_MODE_GATE.iter().all(|(id, _)| *id != "codex-acp"),
+            "a session mode is a request the adapter may override — decision (111) measured that"
+        );
+
+        // A runtime the app neither isolates nor measured still gets nothing green.
+        let mut c = ctx(&base, None);
+        c.runtime_id = "amp-acp";
+        let gate = diagnose(&c).into_iter().find(|c| c.id == "gate").unwrap();
         assert_eq!(gate.state, "problem");
         assert!(!gate.fixable);
         assert_eq!(gate.detail, None);
@@ -512,16 +539,44 @@ mod tests {
         assert_eq!(by_id("shadow-keychain"), Some("unknown"));
     }
 
+    /// **Eligibility is a subset of isolation, and never the reverse.**
+    ///
+    /// The two lists hold the same two ids today, which is exactly when this invariant is easiest to
+    /// lose: someone adds a runtime to `ISOLATION` and assumes chat follows. It must not. Isolation
+    /// says the app can control a config directory; eligibility is the measured claim that the
+    /// resulting configuration stops a write until a person answers, and only an installed-app run
+    /// showing reject-without-write **and** allow-with-write earns it (decisions (111), (113)).
+    #[test]
+    fn an_isolated_runtime_is_not_automatically_chat_eligible() {
+        for id in acp::CHAT_ELIGIBLE {
+            assert!(
+                acp::config_env_for(id).is_some(),
+                "{id} may hold the chat gate but the app does not control its config"
+            );
+        }
+        assert!(
+            !acp::chat_eligible("amp-acp"),
+            "an unmeasured runtime must never be eligible by default"
+        );
+        let base = std::env::temp_dir().join(format!("atlas-doctor-e-{}", std::process::id()));
+        let mut c = ctx(&base, None);
+        c.runtime_id = "amp-acp";
+        let gate = diagnose(&c).into_iter().find(|check| check.id == "gate").unwrap();
+        assert_eq!(gate.state, "problem");
+    }
+
     /// **Do not say "don't know" about what does not apply** (2026-08-20 correction).
     ///
-    /// codex does not use config isolation. The gate itself is now a problem,
-    /// but the four inapplicable isolation checks are not laid out as `unknown`
-    /// on top of that.
+    /// A runtime that does not use config isolation gets none of the four isolation checks, rather
+    /// than four rows of `unknown` beside whatever its gate verdict is.
     #[test]
     fn a_runtime_without_isolation_gets_no_isolation_checks() {
+        // The example used to be codex. It stopped being one when the app started controlling
+        // codex's config directory — which is not the same as trusting its gate, and the next
+        // test holds that line. `amp-acp` is a runtime the app genuinely does not isolate.
         let base = std::env::temp_dir().join(format!("atlas-doctor-g-{}", std::process::id()));
         let mut c = ctx(&base, None);
-        c.runtime_id = "codex-acp";
+        c.runtime_id = "amp-acp";
         let ids: Vec<&str> = diagnose(&c).iter().map(|check| check.id).collect();
 
         for absent in ["config-dir", "credentials-link", "shadow-keychain", "login"] {

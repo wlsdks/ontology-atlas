@@ -415,6 +415,58 @@ describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => 
     }
   });
 
+  it('내려받는 중에는 악수 시계가 다시 시작된다 — 첫 대화가 영영 안 열리던 자리다', async () => {
+    /*
+     * Owner's installed app, 2026-08-24. The first launch of `codex-acp` fetches 274 MB through
+     * `npx`; nothing answers `initialize` until it lands, so the 45s ceiling expired, the child was
+     * killed mid-download, and the panel said "the tool is not responding". Deleting the half-built
+     * cache and retrying failed at the same second, so below roughly 6 MB/s the first conversation
+     * could never open. Progress is proof of life and restarts the clock.
+     */
+    vi.useFakeTimers();
+    try {
+      const t = fakeTransport();
+      const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
+      let settled: unknown = null;
+      const handshake = client.initialize().then(
+        (value) => (settled = { ok: value }),
+        (error: unknown) => (settled = { failed: error }),
+      );
+
+      // Four minutes of downloading — far past the 45s ceiling — with a progress notice each 30s.
+      for (let elapsed = 0; elapsed < 240_000; elapsed += 30_000) {
+        await vi.advanceTimersByTimeAsync(30_000);
+        client.extendPendingDeadlines();
+      }
+      expect(settled, 'a download that keeps advancing must not be called a timeout').toBeNull();
+
+      // The download lands and the adapter finally answers.
+      t.emit({ jsonrpc: '2.0', id: 1, result: { protocolVersion: 1 } });
+      await handshake;
+      expect(settled).toEqual({ ok: { protocolVersion: 1 } });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('내려받기가 멎으면 예전 그대로 시간이 지나 실패한다', async () => {
+    // The ceiling keeps its meaning: 45s with **no sign of life**. Extending it only while progress
+    // arrives must not turn a genuinely stalled fetch into an endless wait.
+    vi.useFakeTimers();
+    try {
+      const t = fakeTransport();
+      const client = createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
+      const timedOut = expect(client.initialize()).rejects.toThrow(/acp-timeout/);
+      // One burst of progress, then the fetch stalls.
+      await vi.advanceTimersByTimeAsync(30_000);
+      client.extendPendingDeadlines();
+      await vi.advanceTimersByTimeAsync(60_000);
+      await timedOut;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('대화 한 턴에는 시간을 안 준다 — 오래 걸리는 것이 정상인 일이다', async () => {
     vi.useFakeTimers();
     try {
@@ -473,5 +525,40 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
       reviewKind: 'permission',
       options: [],
     });
+  });
+
+  it('제목이 없으면 도구가 남긴 문장을 읽는다 — 서버가 스스로 묻는 자리다', () => {
+    /*
+     * Wire capture, 2026-08-24. The vault server pauses a write with `elicitation/create`;
+     * `codex-acp` forwards it as `session/request_permission` with **no `toolCall.title`**, putting
+     * the question in `toolCall.content[]`. The screen was reading only `title`, so the one sentence
+     * that makes the decision answerable never reached the card, which then printed two lines of
+     * "unknown" instead.
+     */
+    const parsed = toPermissionRequest({
+      options: [{ kind: 'allow_once', optionId: 'accept', name: 'Accept' }],
+      toolCall: {
+        toolCallId: 'elicitation-ontology-atlas',
+        kind: 'other',
+        content: [
+          {
+            type: 'content',
+            content: { type: 'text', text: 'Create concept wire-probe. Apply this change to the vault?' },
+          },
+        ],
+        rawInput: { serverName: 'ontology-atlas' },
+      },
+    });
+    expect(parsed.title).toBe('Create concept wire-probe. Apply this change to the vault?');
+  });
+
+  it('제목이 있으면 제목이 이긴다 — 규약이 이름 붙인 자리다', () => {
+    const parsed = toPermissionRequest({
+      toolCall: {
+        title: 'Write notes.md',
+        content: [{ type: 'content', content: { type: 'text', text: 'ignore me' } }],
+      },
+    });
+    expect(parsed.title).toBe('Write notes.md');
   });
 });

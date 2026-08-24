@@ -40,6 +40,83 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-24 (113) — The write checkpoint moves into the server that performs the write
+
+**Prior decisions**: (111) removed `codex-acp` from in-app chat because a Codex
+`read-only` session let an Atlas MCP write reach disk with no permission request,
+and named the way back: *"an app-owned MCP proxy or server capability token
+reliably pauses every Codex Atlas write."* This record builds that checkpoint. It
+does **not** restore Codex chat — (111) stays active until its installed-app
+proof exists.
+
+**Observed cause**: Codex's approval policy documents its own scope — it decides
+"when the model requires human approval before executing **a command**". MCP tool
+calls were never inside it. Reading `codex-acp` confirms the shape: the adapter
+builds permission requests from `item/commandExecution/requestApproval` and
+`item/fileChange/requestApproval`, and there is no MCP-tool equivalent. So the
+gate the screen promised did not exist on the wire, and no third-party
+configuration could have supplied it.
+
+**The lever we already own**: the same adapter forwards
+`mcpServer/elicitation/request` into ACP `session/request_permission`, and the
+MCP SDK this server runs on (`@modelcontextprotocol/server` 2.0.0, latest
+published) implements `elicitation/create`. A gate placed in Atlas's own MCP
+server therefore reaches every client that ever connects, instead of one that was
+measured.
+
+**Solo PO pass**: 21/24 (problem 4, user moment 3, differentiation 3, ontology
+value 4, agent value 4, verification 3; no fatal zero).
+
+**Decision**: write tools ask before they write when `OATLAS_WRITE_CONSENT` is
+on. The switch is per session and set by whoever launches the server, so a vault
+whose client already owns the gate is unchanged. **One session, one checkpoint,
+held by whoever can actually hold it**: a runtime with app-owned config isolation
+(Claude) keeps its own gate and the server gate stays off, so nobody is asked
+twice; every other runtime — including one nobody has measured — gets the server
+gate, because an unasked write is worse than one question too many.
+
+**Fail closed**: if the gate is on and the client never declared the
+`elicitation` capability, the write is refused rather than performed. A
+checkpoint that waves traffic through when it cannot see is the failure this
+record exists to end.
+
+**Measured** (disposable vaults, wire evidence):
+
+| gate | client | asked | vault |
+|---|---|---|---|
+| off | no elicitation | no | **wrote** (7 → 8) |
+| on | no elicitation | no | refused (7 → 7) |
+| on | accepts | yes | wrote (7 → 8) |
+| on | declines | yes | refused (7 → 7) |
+| on | **real Codex** | yes | **refused** (7 → 7) |
+
+The Codex row used `codex exec` against an isolated `CODEX_HOME`: the same
+`add_concept` call that (111) measured writing unasked returned *"The change was
+not approved (decline). No change was made."* and left the vault untouched.
+
+**Recorded dissent**: a gate that asks per tool call will be clicked through, and
+batching would have produced one question for a whole plan instead of one per
+write. **Falsifier**: a session in which a person approves a long run of writes
+without reading them, or asks for the prompts to stop. Then the unit of consent
+is the plan, not the call, and this moves up to the plan layer.
+
+**Isolation is not gate ownership**: Rust's `ISOLATION` says the app can control
+a runtime's config directory. Owning the gate is the stronger claim that the
+resulting configuration actually asks *for MCP writes* — true for Claude, false
+for Codex, whose isolated `CODEX_HOME` was read while its approval policy was
+overridden. Conflating the two is how (111) happened;
+`runtime-gate.test.ts` holds the one-directional invariant.
+
+**Not in this change**: restoring Codex in-app chat. That needs the Rust
+isolation entry, a rebuilt app, and the installed-app acceptance (111) demands —
+reject and allow, for both self-registered and injected writes. Half of it is now
+measured; the direct-write half has not been re-measured with both gates live,
+and (111) says explicitly not to restore from a direct-file sandbox result.
+
+**Revisit**: when that rebuild round runs.
+
+**Status**: active
+
 ## 2026-08-24 (112) — Rules reach non-Claude agents through nested AGENTS.md pointers, never copies
 
 **Trigger**: `.claude/rules/` holds about 70 KB of guidance and only Claude Code
@@ -20041,5 +20118,55 @@ app still works with the thirteen commands moved; what is reasoned is that they
 were freezing it before.
 
 **Status**: valid · progress-during-install not yet watched by a human
+
+## 2026-08-24 — Codex returns to in-app chat, because the checkpoint moved to the server
+
+**Convened because**: decision (111) removed Codex from in-app chat and wrote down
+the exact price of return. This record pays it, and records what the acceptance run
+found on the way.
+
+**Prior decision**: (111) stands and is now satisfied, not overturned. Its restore
+condition was *"an app-owned MCP proxy or server capability token reliably pauses
+every Codex Atlas write… proves reject/allow on a disposable vault."* (113) built
+that checkpoint inside the server that performs the write. This record is the
+measurement.
+
+**What was measured** — installed build, disposable vault at `~/Downloads/atlas-accept`
+(10 Markdown files), Codex registered by the **vault's own** `.codex/config.toml`,
+which is the registration path (111) could not gate:
+
+| answer | wire | vault |
+|---|---|---|
+| reject | `Error: The change was not approved (decline). No change was made` | unchanged, 10 files |
+| allow | `{"ok":true,"slug":"wire-probe","changed":true}` | the file appeared |
+
+**What the run caught that no unit test had**: the gate refused **yes**. The
+elicitation declared `required: ['confirm']`, and an ACP permission card has no form
+to fill — `codex-acp` maps 「allow once」 to `action: 'accept'` with no content, so a
+person's approval arrived as a decline. Codex reported it verbatim: *"the permission
+response was invalid because it lacked the required `confirm` field."* A checkpoint
+that cannot be passed is a wall, and a wall teaches people to route around the gate
+rather than answer it. `action` is now the answer; the boolean only overrides it.
+
+**Decision (accountable: owner)**: `codex-acp` joins `CHAT_ELIGIBLE`. `ISOLATION` and
+`CHAT_ELIGIBLE` stay separate lists — controlling a config directory is not the same
+claim as the resulting configuration holding a write, and conflating them is what
+2026-08-24 was about.
+
+**Recorded dissent**: one green acceptance is a smaller sample than the two red
+measurements that removed Codex, and the gate depends on a third party continuing to
+forward `mcpServer/elicitation/request`. The counter is that the checkpoint no longer
+lives in that third party's configuration: it lives in the server, fails closed when a
+client declares no `elicitation` capability, and therefore degrades to refusal rather
+than to a silent write.
+
+**Falsifier**: one Atlas write from an app-opened Codex session that changes the vault
+without a card, or one approval that does not reach the server, returns Codex to the
+state (111) left it in.
+
+**Revisit**: when `codex-acp` changes how it forwards elicitation, or when a second
+runtime asks to join this list.
+
+**Status**: valid
 
 ---

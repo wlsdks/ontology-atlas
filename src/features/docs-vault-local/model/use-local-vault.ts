@@ -1348,10 +1348,27 @@ export function useLocalVaultInternal() {
     }
     let cancelled = false;
     (async () => {
+      /*
+       * ⚠️ **Whatever happens, this must end** (installed app, 2026-08-24).
+       *
+       * `RootEntryPage` holds a neutral boot frame until `restoreAttempted` turns true. This body
+       * had no `catch` and no `finally`, so any rejection along the way left that flag false and
+       * the app sat on 「moving to the local docs picker」 **forever** — no error, no way out, and
+       * the person had touched nothing.
+       *
+       * It is not hypothetical. A vault under a macOS-protected folder (Downloads, Documents,
+       * Desktop) whose access prompt was dismissed makes the Tauri read fail, and that is exactly
+       * what happened here. Note the asymmetry it exposed: a folder that is **gone** already
+       * reported honestly (`path-missing` → 「that folder could not be found, choose another」),
+       * while a folder that is **there but unreadable** reported nothing at all. The second is the
+       * more common case and it had the worse answer.
+       *
+       * So the flag is set in `finally`, and a failure carries `access-failed` — the code the
+       * first-run screen already turns into a sentence with somewhere to go.
+       */
       const record = await getLocalFsHandle();
       await refreshRecentVaults();
       if (!record) {
-        if (!cancelled) setRestoreAttempted(true);
         return;
       }
       if (cancelled) return;
@@ -1381,7 +1398,6 @@ export function useLocalVaultInternal() {
               lastLoadedAt: null,
               manifestHandle: null,
             });
-            setRestoreAttempted(true);
           }
           return;
         }
@@ -1403,8 +1419,28 @@ export function useLocalVaultInternal() {
           manifestHandle: null,
         });
       }
-      setRestoreAttempted(true);
-    })();
+    })()
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setState({
+          status: 'error',
+          handle: null,
+          manifest: null,
+          agentConfigStatus: null,
+          agentActivityStatus: emptyAgentActivityStatus(),
+          agentActivityLog: [],
+          acpWorkReceipts: [],
+          fileHandles: new Map(),
+          imageHandles: new Map(),
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorCode: 'access-failed',
+          lastLoadedAt: null,
+          manifestHandle: null,
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setRestoreAttempted(true);
+      });
     return () => {
       cancelled = true;
     };

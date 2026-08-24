@@ -88,13 +88,22 @@ function ShortcutRelationGuide({ title }: { title: string }) {
           {relationVocabulary("contains", "formal")}
         </span>
         <span className="flex items-center gap-2">
+          {/*
+            ⚠️ The wedge has to be **big enough to read** (2026-08-24). This swatch
+            and the symmetric one below were 3px and 2px tall over 32px wide: both
+            faithful to the canvas (depends tapers source→target, related_to keeps
+            uniform width) and both, at that size, just "a dashed line". Measured on
+            the shipped build, the two rows were indistinguishable, so the legend
+            claimed to teach a distinction it did not show. Widened and deepened
+            here only — the canvas encoding is unchanged.
+          */}
           <span
             aria-hidden
-            className="h-[3px] w-8 shrink-0"
+            className="h-1.5 w-10 shrink-0"
             style={{
               backgroundImage:
                 "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",
-              clipPath: "polygon(0 0, 100% 33%, 100% 67%, 0 100%)",
+              clipPath: "polygon(0 0, 100% 38%, 100% 62%, 0 100%)",
             }}
           />
           {relationVocabulary("depends_on", "formal")}
@@ -102,7 +111,7 @@ function ShortcutRelationGuide({ title }: { title: string }) {
         <span className="flex items-center gap-2">
           <span
             aria-hidden
-            className="h-[2px] w-8 shrink-0 rounded-full"
+            className="h-[2px] w-10 shrink-0 rounded-full"
             style={{
               backgroundImage:
                 "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",

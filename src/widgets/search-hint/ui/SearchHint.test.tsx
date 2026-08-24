@@ -204,3 +204,25 @@ describe("SearchHint", () => {
     expect(lane).toHaveClass("transition-[left]");
   });
 });
+
+/**
+ * The lane is centred in the map, but the INDEX panel is an overlay -- so with the
+ * panel expanded, `left-1/2` centred the chip column over the panel and the first
+ * chip sat underneath it (owner report, 2026-08-24). Reserving the panel width
+ * moves the column into the map that is actually visible.
+ */
+describe('SearchHint — INDEX 패널 자리 확보', () => {
+  it('패널이 펼쳐지면 남은 지도 기준으로 다시 가운데 정렬한다', () => {
+    render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} leftIndexReserved />);
+    const lane = screen.getByTestId('topology-search-action-lane');
+    expect(lane).toHaveAttribute('data-left-index-reserve', 'recenter-in-remaining-map');
+    expect(lane.className).toContain('xl:left-[calc(50%+var(--topology-index-width)/2)]');
+  });
+
+  it('패널이 접혀 있으면 지도 전체 기준 가운데를 유지한다', () => {
+    render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
+    const lane = screen.getByTestId('topology-search-action-lane');
+    expect(lane).not.toHaveAttribute('data-left-index-reserve');
+    expect(lane.className).toContain('xl:left-1/2');
+  });
+});

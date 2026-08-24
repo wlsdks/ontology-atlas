@@ -214,6 +214,11 @@ export interface AcpClientHandlers {
 interface PendingCall {
   resolve: (value: Record<string, unknown>) => void;
   reject: (error: Error) => void;
+  /**
+   * Restarts this call's deadline. Used while a first-run download is **still advancing** —
+   * see `extendPendingDeadlines` below.
+   */
+  extend: () => void;
 }
 
 /** The JSON-RPC error code answering a method we did not declare. */
@@ -252,6 +257,24 @@ export interface AcpClient {
   setMode(sessionId: string, modeId: string): Promise<boolean>;
   /** Feeds one line from the transport. Used only when the subscription is wired directly. */
   ingest(line: string): void;
+  /**
+   * Restarts the deadline on every in-flight call.
+   *
+   * ⚠️ **Why waiting is not the same as hanging** (owner's installed app, 2026-08-24). Opening a
+   * conversation with a tool for the first time makes `npx` fetch the adapter — measured **274 MB**
+   * for `codex-acp`. Nothing answers `initialize` until that finishes, so the 45s ceiling above
+   * expired, the child was killed mid-download, and the screen said "the tool is not responding".
+   * The next attempt deleted the half-built cache and started the same 274 MB from zero, so on any
+   * connection slower than about 6 MB/s **the first conversation could never open** — it failed at
+   * the same second every time.
+   *
+   * The app already knows the difference: Rust sends `npx-download-progress:<mb>` while the fetch
+   * advances, and the panel draws those megabytes. A clock that keeps running against a download it
+   * is watching succeed is measuring the wrong thing. So the caller restarts the deadline on each
+   * progress notice: the ceiling now means **"45s with no sign of life"**, not "45s of wall clock",
+   * and a stalled download still ends in the same timeout it always did.
+   */
+  extendPendingDeadlines(): void;
   dispose(): void;
 }
 
@@ -304,14 +327,17 @@ export function createAcpClient(
   ): Promise<Record<string, unknown>> => {
     const id = nextId++;
     return new Promise((resolve, reject) => {
-      const timer =
-        timeoutMs > 0
-          ? setTimeout(() => {
-              if (!pending.has(id)) return;
-              pending.delete(id);
-              reject(new Error(`acp-timeout: ${method}`));
-            }, timeoutMs)
-          : null;
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const arm = () => {
+        if (timeoutMs <= 0) return;
+        if (timer !== null) clearTimeout(timer);
+        timer = setTimeout(() => {
+          if (!pending.has(id)) return;
+          pending.delete(id);
+          reject(new Error(`acp-timeout: ${method}`));
+        }, timeoutMs);
+      };
+      arm();
       const clear = () => {
         if (timer !== null) clearTimeout(timer);
       };
@@ -324,6 +350,7 @@ export function createAcpClient(
           clear();
           reject(error);
         },
+        extend: arm,
       });
       void send({ jsonrpc: '2.0', id, method, params }).catch((error: unknown) => {
         handlers.onProtocolNotice?.(`send-failed: ${String(error)}`);
@@ -567,6 +594,9 @@ export function createAcpClient(
       }
     },
     ingest,
+    extendPendingDeadlines: () => {
+      for (const [, waiting] of pending) waiting.extend();
+    },
     dispose: () => {
       disposed = true;
       unsubscribe();
@@ -643,12 +673,50 @@ function readPathArg(rawInput: Record<string, unknown>): string | null {
   return null;
 }
 
+/**
+ * The sentence a person reads on the permission card.
+ *
+ * ⚠️ **The question was arriving and the screen was not reading it** (wire capture, 2026-08-24).
+ * Owner's words at the card: *"this design is not pretty… it feels AI-generated"*. It was worse than
+ * unpretty — it said nothing. The card showed 「the tool did not say what it wants to do」 **and**
+ * 「cannot tell what it wants to do」, one under the other, in two different inks.
+ *
+ * The cause: a server-side elicitation reaches ACP with **no `toolCall.title`**. `codex-acp` maps
+ * `mcpServer/elicitation/request` onto `session/request_permission` and puts the message in
+ * `toolCall.content[]` instead — measured verbatim:
+ *
+ * ```json
+ * "toolCall": { "toolCallId": "elicitation-ontology-atlas", "kind": "other",
+ *   "content": [{ "type": "content",
+ *                 "content": { "type": "text",
+ *                              "text": "Create concept wire-probe. Apply this change to the vault?" } }] }
+ * ```
+ *
+ * So the vault's own question — the one sentence that makes the decision answerable — was on the
+ * wire the whole time, one field away from the screen. A gate that cannot say what it is gating
+ * teaches people to press whichever button ends the interruption.
+ *
+ * `title` still wins when it exists: it is the field the protocol names for this, and an adapter
+ * that fills it means it.
+ */
+function readPermissionTitle(toolCall: Record<string, unknown>): string | null {
+  if (typeof toolCall.title === 'string' && toolCall.title.trim()) return toolCall.title;
+  const content = Array.isArray(toolCall.content) ? toolCall.content : [];
+  for (const entry of content) {
+    const inner = asRecord(asRecord(entry).content);
+    if (inner.type === 'text' && typeof inner.text === 'string' && inner.text.trim()) {
+      return inner.text.trim();
+    }
+  }
+  return null;
+}
+
 export function toPermissionRequest(params: Record<string, unknown>): AcpPermissionRequest {
   const toolCall = asRecord(params.toolCall);
   const rawInput = asRecord(toolCall.rawInput);
   const rawOptions = Array.isArray(params.options) ? params.options : [];
   return {
-    title: typeof toolCall.title === 'string' ? toolCall.title : null,
+    title: readPermissionTitle(toolCall),
     toolCallId: typeof toolCall.toolCallId === 'string' ? toolCall.toolCallId : null,
     toolName: readToolName(params),
     toolKind: typeof toolCall.kind === 'string' ? toolCall.kind : null,
