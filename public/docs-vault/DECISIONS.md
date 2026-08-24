@@ -19733,3 +19733,97 @@ scheme, its shape is wrong and it should be narrowed rather than exempted.
 **Status**: valid
 
 ---
+
+## 2026-08-24 — PO pass: hold the ACP events-to-Channel move until one session is measured (6/24)
+
+**Prior decision**: (25) 2026-08-17, "an exit event closes only the session it was
+born in", standing, falsifier unobserved. Its recorded dissent already reasoned
+about the transport this proposal wants to replace — "Tauri events are already
+filtered by session id" — so per-session filtering is a considered design here,
+not an oversight. Nothing in that record is overturned.
+
+**Observed phenomenon**: `spawn_acp_line_pump` (`src-tauri/src/lib.rs`) emits one
+Tauri event per line of child-process stdout and stderr, at two call sites
+(`acp://message`, `acp://stderr`). `acp::MAX_LINE_BYTES` is 16 MiB, so a single
+payload can in principle be that large, and Tauri event payloads are always JSON
+strings delivered by evaluating JavaScript. `app.emit` broadcasts, and
+`src/shared/lib/tauri-acp.ts:195` filters with `event.payload.sessionId === sessionId`,
+so with N concurrent sessions each line is delivered N times and discarded N−1
+times. The official documentation states plainly that "the event system is not
+designed for low latency or high throughput situations" and names `Channel` as
+what Tauri itself uses for child-process output.
+
+**User problem — none recorded**: no ledger entry, and no observation anywhere in
+this repository, of agent output arriving slowly, stuttering, arriving out of
+order, or being dropped. `.ontology-atlas/` transcripts are gitignored and absent
+from this checkout, so no seat could produce evidence either way. **This proposal
+arrived from reading the framework's documentation, not from watching anyone use
+the product** — which is the exact shape this repository is strict about.
+
+**Phenomenon/problem tests**: difference **FAIL** — remove the phenomenon and no
+one is identified losing a decision, understanding, or handoff. Second
+observation — a real instance would show as stuttering output during a verbose
+session, a `dropped-line:` notice, or CPU spent in the webview while an agent
+talks; none observed. Solution independence **FAIL** — the statement names the
+mechanism (`Channel`) rather than a problem that would survive another solution.
+
+**Audience and moment**: someone running a long, verbose ACP agent inside the
+installed app, watching its output stream. Real, but no triggering instance has
+been observed.
+
+**Current alternative**: the events work. Oversized lines already have a bounded
+path — `read_bounded_line` caps at `MAX_LINE_BYTES` and reports `dropped-line:`
+rather than emitting an unbounded payload — so the 16 MiB ceiling is a bound, not
+an observed event size. ACP protocol lines are JSON-RPC messages, ordinarily
+kilobytes.
+
+**Ontology value**: none. No concept, relation, evidence, provenance, or update
+path becomes clearer. The transport is invisible to the graph.
+
+**Agent value**: none. These events are consumed by this app's own UI. No MCP or
+CLI contract, no agent-facing typed surface, changes at all.
+
+**Simplification**: a channel would remove the broadcast-then-discard filtering on
+the frontend. Against that, `acp://exit` and `acp://notice` must stay events
+because decision (25) built session-ownership semantics on them, so the result is
+two transports where there is now one.
+
+**Verification**: nameable but unrun. Instrument one real dogfood session for line
+count, lines per second, and the size distribution of emitted lines against the
+16 MiB bound.
+
+**Score**: Problem insight 2 · User moment 2 · Differentiation 0 · Ontology value
+0 · Agent value 0 · Verification 2 = **6/24** (fatal zeros: Ontology value, Agent
+value)
+
+**Escalation**: mechanically required — below 18 and two fatal zeros — and
+deliberately **not convened**, citing the standing 2026-07-27 interpretation that
+convening a council to reach "do not build" is process theatre. A build direction
+would require a fresh pass escalating on its own numbers.
+
+**Verdict**: **Investigate first.** One measurement decides it, and it is cheap:
+during the next real dogfood ACP session, record how many lines are emitted, at
+what rate, and the p50/p99 emitted line size. If p99 is kilobytes and the rate is
+modest, close this as measured-and-not-a-problem — that record is worth having, so
+the next person who reads the Tauri documentation does not re-raise it from the
+same quote. If p99 approaches megabytes, or a session sustains a rate where the
+webview visibly falls behind, reopen with a fresh pass.
+
+**No-gos if it is ever built**: do not move `acp://exit` or `acp://notice` —
+decision (25) built session-ownership semantics on them; do not touch the
+generation and process-id ownership check; keep `MAX_LINE_BYTES` bounded.
+
+**Recorded dissent**: the framework's own documentation names child-process output
+as the canonical channel case, and waiting for a user to notice a latency problem
+means shipping a known mechanism mismatch until it hurts someone. The counter is
+that this repository has been burned more often by unmeasured churn than by
+documented-but-unobserved mismatches, and a 16 MiB bound that nothing has been
+observed to approach is a ceiling, not a load.
+
+**Falsifier**: one observed session where agent output visibly lags the agent, or
+one `dropped-line:` notice traced to payload size rather than a malformed line,
+proves the hold wrong.
+
+**Status**: valid · one measured session pending
+
+---

@@ -9280,6 +9280,11 @@
       "depth": 2,
       "text": "2026-08-24 — The rejected URL scheme gets a gate, not a decision-record trigger",
       "slug": "2026-08-24-the-rejected-url-scheme-gets-a-gate-not-a-decision-record-trigger"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — PO pass: hold the ACP events-to-Channel move until one session is measured (6/24)",
+      "slug": "2026-08-24-po-pass-hold-the-acp-events-to-channel-move-until-one-session-is-measured-624"
     }
   ],
   "DEMO-SCENARIO": [
