@@ -121,8 +121,9 @@ pub fn audit_log_path(vault_dir: &Path) -> PathBuf {
     vault_dir.join(SIDECAR_DIR).join(AUDIT_FILE)
 }
 
-/// 전송 전문의 sha256(소문자 hex). 연결 확인은 본문이 없으므로 빈 문자열의
-/// 해시가 되고, 그것도 "0바이트를 보냈다" 는 검증 가능한 사실이다.
+/// sha256 (lowercase hex) of the full transmitted payload. A connection check has no
+/// body, so it becomes the hash of the empty string — and even that is the verifiable
+/// fact "0 bytes were sent".
 pub fn sha256_hex(payload: &str) -> String {
     let digest = Sha256::digest(payload.as_bytes());
     let mut out = String::with_capacity(64);
@@ -132,7 +133,7 @@ pub fn sha256_hex(payload: &str) -> String {
     out
 }
 
-/// 지금 시각(UTC, 밀리초) — `activity.jsonl` 과 같은 ISO-8601 문법.
+/// The current time (UTC, milliseconds) — the same ISO-8601 syntax as `activity.jsonl`.
 pub fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
 }
@@ -174,8 +175,8 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
         }
     }
 
-    // 루트 FD의 직접 자식을 O_NOFOLLOW 로 연다. 사전 검사 후
-    // 디렉터리가 링크로 바뀌는 경쟁 창도 여기서 닫힌다.
+    // Open the direct child of the root FD with O_NOFOLLOW. The race window where the
+    // directory is swapped for a link after the pre-check is closed here too.
     let sidecar_fd = unsafe {
         libc::openat(
             root.as_raw_fd(),
@@ -229,8 +230,9 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
         ));
     }
 
-    // 예약부터 확정까지 한 요청만 파일 꼬리를 소유한다. LOCK_NB 로 UI 스레드를
-    // 네트워크 제한 시간만큼 세우지 않고, 두 번째 요청은 보내기 전에 실패한다.
+    // From reserve to finalize, only one request owns the file's tail. LOCK_NB avoids
+    // stalling the UI thread for the length of the network timeout, and a second request
+    // fails before sending.
     let locked = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
     if locked != 0 {
         let error = std::io::Error::last_os_error();
@@ -244,9 +246,9 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
 
 #[cfg(not(unix))]
 fn open_audit_file(_vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
-    // 경로 사전 검사 뒤 다시 여는 방식은 Windows reparse-point 경쟁을 닫지
-    // 못한다. 네이티브 핸들 기반 no-follow + file-ID 검증이 생길 때까지는
-    // 기록 없는 전송을 허용하는 대신 이 기능을 실패 폐쇄한다.
+    // Pre-checking the path and then reopening it does not close the Windows
+    // reparse-point race. Until native-handle-based no-follow + file-ID verification
+    // exists, this feature fails closed rather than allowing transmission without a record.
     Err("이 플랫폼에서는 안전한 LLM 감사 기록을 아직 지원하지 않아요.".into())
 }
 
@@ -273,8 +275,9 @@ fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
     Ok(())
 }
 
-/// **전송 직전** 호출. 감사 줄을 디스크에 확정(sync)하고 그 위치를 돌려준다.
-/// 실패하면 호출자는 **아무것도 보내면 안 된다** — 그게 이 함수의 존재 이유다.
+/// Called **just before transmission**. Commits (syncs) the audit line to disk and
+/// returns its position. On failure the caller **must send nothing** — that is this
+/// function's reason to exist.
 pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, String> {
     let (path, mut file) = open_audit_file(vault_dir)?;
     ensure_reservation_path(&path, &file)?;
@@ -288,7 +291,7 @@ pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, 
         .len();
     file.write_all(&reserved_line)
         .map_err(|err| format!("감사 기록을 남기지 못했어요: {err}"))?;
-    // sync 까지 해야 "보내기 전에 기록됐다" 가 크래시 앞에서도 참이 된다.
+    // Only with the sync does "it was recorded before sending" stay true even in the face of a crash.
     file.sync_all()
         .map_err(|err| format!("감사 기록을 저장하지 못했어요: {err}"))?;
     ensure_reservation_path(&path, &file)?;
@@ -302,9 +305,10 @@ pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, 
     })
 }
 
-/// 응답 도착 후 호출. 예약 줄(파일 끝의 그 줄)만 잘라내고 완성된 한 줄로
-/// 다시 쓴다 — 과거 줄은 읽지도 건드리지도 않는다. 예약이 가진 배타 잠금과
-/// 꼬리 바이트 재검증이 다른 요청이나 외부 변경을 남의 줄로 오인하지 않게 한다.
+/// Called after the response arrives. Cuts only the reserved line (the one at the end of
+/// the file) and rewrites it as a completed single line — past lines are neither read nor
+/// touched. The reservation's exclusive lock and the re-verification of the tail bytes
+/// keep another request or an outside change from being mistaken for someone else's line.
 pub fn finalize(mut reservation: AuditReservation, outcome: &AuditOutcome) -> Result<(), String> {
     let line = serde_json::to_string(&AuditLine {
         draft: &reservation.draft,
@@ -392,9 +396,9 @@ mod tests {
 
     #[test]
     fn a_verify_line_still_has_no_tools_key_at_all() {
-        // `tools` 는 추가형이다 — 연결 확인 줄에 빈 배열조차 넣지 않는다.
-        // 넣으면 이미 디스크에 앉은 줄과 모양이 갈라지고(헌장 ⑤), "도구를 0개
-        // 썼다" 라는 하지도 않은 주장을 기록이 하게 된다.
+        // `tools` is additive — connection-check lines do not get even an empty array.
+        // Adding one would split the shape from lines already sitting on disk (Charter ⑤)
+        // and make the record assert "0 tools were used", a claim it never made.
         let line = serde_json::to_string(&verify_draft()).unwrap();
         assert!(!line.contains("\"tools\""), "{line}");
     }
@@ -426,7 +430,7 @@ mod tests {
         assert_eq!(line["purpose"], "agent");
         assert_eq!(line["tools"][0]["name"], "get_concept");
         assert_eq!(line["tools"][0]["target"], "capabilities/payment");
-        // 응답 본문은 기록하지 않는다 — 길이만.
+        // The response body is not recorded — only its length.
         assert_eq!(line["responseChars"], 812);
         assert!(line.get("responseBody").is_none());
         fs::remove_dir_all(&vault).ok();
@@ -434,7 +438,7 @@ mod tests {
 
     #[test]
     fn sha256_matches_the_published_test_vectors() {
-        // 페이로드 앵커가 진짜 sha256 이어야 사후 대조가 의미를 가진다.
+        // The payload anchor must be a real sha256 for post-hoc comparison to mean anything.
         assert_eq!(
             sha256_hex(""),
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -453,7 +457,7 @@ mod tests {
         let raw = fs::read_to_string(audit_log_path(&vault)).unwrap();
         let parsed: Value = serde_json::from_str(raw.trim()).unwrap();
         assert_eq!(parsed["purpose"], "verify");
-        // 전송 전에는 결과를 모른다 — 없는 사실을 지어내지 않는다.
+        // Before transmission the result is unknown — we do not fabricate facts that do not exist.
         assert!(parsed.get("outcome").is_none());
         assert_eq!(reservation.offset, 0);
         fs::remove_dir_all(&vault).ok();
@@ -503,8 +507,9 @@ mod tests {
 
     #[test]
     fn reserve_fails_loudly_when_the_vault_cannot_hold_the_log() {
-        // 사이드카 자리에 파일이 있으면 폴더를 만들 수 없다 — 이때 예약이
-        // 실패해야 호출자가 전송을 포기한다(log-before-send 의 앞단).
+        // A file sitting where the sidecar goes means the folder cannot be created — the
+        // reservation must fail here so the caller abandons the transmission
+        // (the front end of log-before-send).
         let vault = temp_vault("blocked");
         fs::write(vault.join(SIDECAR_DIR), b"not a directory").unwrap();
         assert!(reserve(&vault, verify_draft()).is_err());
@@ -807,11 +812,13 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn writer_matches_the_shared_reader_fixture() {
-        // writer(Rust) ↔ reader(웹 `llm-audit-log.ts`) drift 차단. 같은 픽스처를
-        // 양쪽이 본다 — 이 assert 가 깨지면 TS 계약 테스트도 같이 갱신해야 한다.
+        // Blocks drift between writer (Rust) ↔ reader (web `llm-audit-log.ts`). Both sides
+        // look at the same fixture — if this assert breaks, the TS contract test must be
+        // updated with it.
         //
-        // 앞 두 줄만 writer 가 만드는 모습이다. 뒤의 줄들은 리더가 감당해야 할
-        // 실제 파일의 모습(옛 줄·다른 벤더)이라 여기서 쓰지 않는다.
+        // Only the first two lines are what the writer produces. The later lines are the
+        // shape of real files the reader has to handle (old lines, other vendors), so they
+        // are not written here.
         let fixture = include_str!("../../tests/fixtures/llm-audit-log.sample.jsonl");
         let lines: Vec<&str> = fixture.lines().filter(|l| !l.trim().is_empty()).collect();
         let expected_final: Value = serde_json::from_str(lines[0]).unwrap();
@@ -843,9 +850,9 @@ mod tests {
 
     #[test]
     fn the_fixture_keeps_a_line_from_before_host_existed() {
-        // 헌장 ⑤ — `host` 는 추가형이라 이미 사용자 디스크에 앉아 있는 줄을
-        // 고치지 않는다. 그 줄이 계속 읽힌다는 증거를 픽스처가 들고 있어야
-        // 리더가 부재를 처리하는 코드를 지우지 못한다.
+        // Charter ⑤ — `host` is additive, so lines already sitting on user disks are not
+        // fixed up. The fixture must hold the proof that such a line keeps being read, so
+        // that the reader's absence-handling code cannot be deleted.
         let fixture = include_str!("../../tests/fixtures/llm-audit-log.sample.jsonl");
         let legacy = fixture
             .lines()

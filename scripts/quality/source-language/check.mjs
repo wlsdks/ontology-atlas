@@ -8,22 +8,22 @@ import { pathToFileURL } from 'node:url';
 import { auditSourceCommentEntries, isSupportedSourcePath } from './inventory.mjs';
 
 /**
- * `current` is not zero, and the zero it used to hold was a lie.
+ * Zero — and this time it is measured rather than assumed.
  *
  * Until 2026-08-24 the Rust tokenizer treated every `'` as a string quote, so one odd lifetime —
  * `&'static str` — put it inside a string for the rest of the file. `src-tauri/src/lib.rs` alone
  * lost 2,624 consecutive lines that way and reported **zero** Korean comments while holding 199.
  * Repairing the tokenizer recovered 1,085 comment tokens across the repository and revealed the
- * real figure below: 9 files, 979 lines, all under `src-tauri/src/`.
+ * real figure: 9 files, 979 comment lines, 20,229 code points, all under `src-tauri/src/`.
  *
- * These numbers are debt, not permission. The gate's job now is to stop it growing; lowering them
- * is ordinary work for whoever next opens one of those files. A gate that reported zero could not
- * do either.
+ * That debt was then paid rather than recorded: all 979 lines were translated to English in the
+ * same round, verified line by line to have changed comment text only. So the number below is the
+ * true one, and any increase is new debt rather than an old file finally being seen.
  */
 export const SOURCE_COMMENT_LANGUAGE_BASELINES = Object.freeze({
   current: Object.freeze({
-    unexpectedFiles: 9,
-    unexpectedLanguageCodePoints: 20229,
+    unexpectedFiles: 0,
+    unexpectedLanguageCodePoints: 0,
   }),
   testFixture: Object.freeze({
     unexpectedFiles: 0,

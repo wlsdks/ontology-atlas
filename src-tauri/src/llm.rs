@@ -111,17 +111,17 @@ pub struct LlmVerifyResult {
 /// goes to user-provided addresses without keys. Requests mixing both (named vendor keys with arbitrary
 /// addresses) cannot be created.
 pub enum Target<'a> {
-    /// 명명 벤더 — 키를 붙이고, 주소는 이 파일의 상수다.
+    /// Named vendor — attaches the key, and the address is a constant in this file.
     Vendor { secret: &'a str },
     /// Connect via address — goes only to the base URL provided by the user, with no auth headers.
     Address { base_url: &'a str },
 }
 
-/// 전송할 요청. 본문은 없다(`GET`).
+/// The request to send. It has no body (`GET`).
 pub struct VerifyRequest {
     url: String,
     headers: Vec<(String, String)>,
-    /// 이 벤더에서 "키가 틀렸다" 를 뜻하는 상태 코드들.
+    /// Status codes that mean "the key is wrong" for this vendor.
     denied_statuses: &'static [u16],
     /// Returns the response body to the UI — true only for the address branch receiving the model list.
     returns_body: bool,
@@ -268,22 +268,23 @@ fn verify_request(provider: &str, target: &Target<'_>) -> Result<VerifyRequest, 
             denied_statuses: AUTH_DENIED_STATUSES,
             returns_body: false,
         }),
-        // Gemini 는 Bearer 가 아니라 전용 헤더를 쓴다 — OpenAI 호환 갈래로
-        // 흡수되지 않는 인증이라 명명 벤더 자리를 받는다.
+        // Gemini uses a dedicated header, not Bearer — authentication that cannot be
+        // absorbed into the OpenAI-compatible branch, so it gets a named-vendor slot.
         ("gemini", Target::Vendor { secret }) => Ok(VerifyRequest {
             url: GEMINI_VERIFY_URL.to_string(),
             headers: vec![("x-goog-api-key".into(), checked_secret(secret)?.to_string())],
             denied_statuses: GEMINI_DENIED_STATUSES,
             returns_body: false,
         }),
-        // 주소 갈래의 연결 확인 = **설치된 모델 목록 받아오기**. 요청 하나로
-        // 세 가지가 한꺼번에 판정된다: 러너가 살아 있는가(연결) · 이 주소가
-        // OpenAI 호환인가(200 vs 404) · 어떤 모델을 고를 수 있는가(본문).
-        // 확인과 목록을 두 커맨드로 쪼개면 감사 줄도 둘이 되고, 사용자는
-        // "확인은 됐는데 목록은 비었다" 는 설명 불가한 상태를 만난다.
+        // Connection check for the address branch = **fetching the installed model list**.
+        // One request settles three things at once: is the runner alive (connection) ·
+        // is this address OpenAI-compatible (200 vs 404) · which models can be chosen
+        // (the body). Splitting check and listing into two commands would also mean two
+        // audit lines, and the user would meet the unexplainable state
+        // "verification passed but the list is empty".
         (LOCAL_PROVIDER, Target::Address { base_url }) => Ok(VerifyRequest {
             url: local_endpoint(&normalize_base_url(base_url)?, LOCAL_MODELS_PATH),
-            // 인증 헤더가 **없다**. 이 갈래가 존재하는 이유 자체다.
+            // There is **no** auth header. That is the very reason this branch exists.
             headers: vec![],
             denied_statuses: AUTH_DENIED_STATUSES,
             returns_body: true,
@@ -293,12 +294,13 @@ fn verify_request(provider: &str, target: &Target<'_>) -> Result<VerifyRequest, 
     }
 }
 
-/// argv 에 올라가는 인자 — **비밀이 하나도 없다**. URL·헤더·본문은 stdin 으로
-/// 간다. 대화 왕복은 제한 시간만 다르다.
+/// Arguments that go on argv — **not a single secret among them**. URL, headers, and
+/// body go via stdin. Chat round-trips differ only in the timeout.
 fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 9] {
     [
-        // curl 은 이 옵션이 **첫 인자**일 때만 ~/.curlrc 를 읽지 않는다. 사용자
-        // 설정이 redirect/proxy/header 를 보태 키의 전송 경계를 바꾸지 못하게 한다.
+        // curl skips ~/.curlrc only when this option is the **first argument**. It keeps
+        // user config from adding redirect/proxy/header entries that would change the
+        // key's transmission boundary.
         "--disable",
         "--silent",
         "--show-error",
@@ -389,13 +391,14 @@ fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), Stri
     )
 }
 
-/// curl 이 남긴 것 → (상태 코드, 본문) 또는 **이유가 담긴 실패**.
+/// What curl left behind → (status code, body) or a **failure that carries a reason**.
 ///
-/// ⚠️ 여기서 종료 코드를 먼저 보는 것이 요점이다. curl 은 연결 자체가 실패해도
-/// `--write-out %{http_code}` 자리에 **`000` 을 찍는다** — 그걸 그냥 파싱하면
-/// `0` 이라는 그럴듯한 숫자가 나와 "HTTP 0 으로 응답했다" 는 없는 사실이
-/// 만들어지고, 화면은 러너가 꺼져 있다는 말 대신 `실패: 0` 을 보여준다
-/// (2026-08-01 실측: 닫힌 포트로 확인했더니 `status=Some(0), message=None`).
+/// ⚠️ Checking the exit code first is the whole point here. Even when the connection
+/// itself fails, curl **prints `000`** in the `--write-out %{http_code}` slot — parsing
+/// that as-is yields the plausible number `0`, fabricating the nonexistent fact
+/// "it responded with HTTP 0", and the screen shows `failure: 0` instead of saying the
+/// runner is down (2026-08-01 measurement: checking against a closed port gave
+/// `status=Some(0), message=None`).
 fn interpret_curl_output(
     exit_code: Option<i32>,
     success: bool,
@@ -429,8 +432,9 @@ fn send_via_curl(request: &VerifyRequest) -> Result<HttpEcho, String> {
     })
 }
 
-/// 확인 흐름의 본체 — sender 를 주입받아 네트워크 없이도 계약을 시험할 수 있게
-/// 한다. **순서가 계약이다**: 예약 → (성공했을 때만) 전송 → 확정.
+/// The body of the verification flow — the sender is injected so the contract can be
+/// tested without a network. **The order is the contract**: reserve → (only on success)
+/// send → finalize.
 pub fn verify_with<S>(
     provider: &str,
     vault_dir: &Path,
@@ -681,11 +685,11 @@ fn chat_request(
             ],
             body: body.to_string(),
         }),
-        // 주소 갈래는 **OpenAI 호환 대화 엔드포인트**로 간다. 네이티브
-        // (`/api/chat`)를 고르지 않은 이유: 그건 Ollama 하나만의 문법이라
-        // 러너가 바뀌면 어댑터를 또 써야 하고, 호환 갈래는 LM Studio ·
-        // llama.cpp server · vLLM 이 같은 모양으로 이미 내놓는다. 인증
-        // 헤더는 여기서도 없다.
+        // The address branch goes to the **OpenAI-compatible chat endpoint**. Why the
+        // native one (`/api/chat`) was not chosen: that is Ollama's syntax alone, so a
+        // change of runner would mean writing yet another adapter, while the compatible
+        // branch is already offered in the same shape by LM Studio · llama.cpp server ·
+        // vLLM. There is no auth header here either.
         (LOCAL_PROVIDER, Target::Address { base_url }) => Ok(ChatRequest {
             url: local_endpoint(&normalize_base_url(base_url)?, LOCAL_CHAT_PATH),
             headers: vec![json],
@@ -750,14 +754,14 @@ where
             prompt_chars: scope.prompt_chars,
             vault_chars: scope.vault_chars,
         },
-        // 빈 목록은 "도구 없이 보낸 첫 왕복" 이라는 사실이므로 그대로 남긴다 —
-        // 연결 확인 줄의 부재(`None`)와는 다른 뜻이다.
+        // An empty list is the fact "a round trip sent with no tools", so it stays as-is —
+        // a different meaning from the absence (`None`) on connection-check lines.
         tools: Some(scope.tools),
-        // 전송 **전문**의 해시. 화면이 보여준 범위와 실제로 나간 바이트가 같은지
-        // 사후에 대조할 수 있는 유일한 앵커다.
+        // Hash of the **full transmitted payload**. The only anchor for checking after the
+        // fact that the bytes that actually went out match the scope the screen showed.
         payload_sha256: llm_audit::sha256_hex(body),
     };
-    // 기록이 안 되면 전송도 없다.
+    // No recording, no transmission.
     let reservation = llm_audit::reserve(vault_dir, draft)?;
 
     let started = Instant::now();
@@ -788,8 +792,8 @@ where
         },
     )?;
 
-    // 네트워크 자체가 실패했으면 상태 코드가 없다 — 0 으로 지어내지 않고
-    // 호출자에게 실패로 돌린다(화면은 "연결에 실패했어요" 를 말한다).
+    // If the network itself failed there is no status code — we do not fabricate a 0,
+    // we return failure to the caller (the screen says "the connection failed").
     if let Some(message) = message {
         return Err(message);
     }
@@ -803,8 +807,9 @@ where
     })
 }
 
-/// 대화 왕복 1회 — **사용자가 [보내기]를 누른 턴 안에서만**. 볼트 경로가
-/// 필수인 이유는 확인 흐름과 같다: 기록할 곳이 없으면 보내지 않는다.
+/// One chat round trip — **only within a turn where the user pressed [Send]**. The vault
+/// path is required for the same reason as the verification flow: with nowhere to record,
+/// nothing is sent.
 #[tauri::command]
 pub fn llm_chat(
     provider: String,
@@ -869,7 +874,7 @@ mod tests {
 
     #[test]
     fn the_key_never_appears_in_argv() {
-        // `ps` 로 다른 프로세스가 키를 볼 수 없어야 한다 — 비밀은 stdin 설정에만.
+        // Other processes must not be able to see the key with `ps` — secrets go only in the stdin config.
         let request = verify_request(
             "anthropic",
             &Target::Vendor {
@@ -901,7 +906,7 @@ mod tests {
         .unwrap();
         let config = curl_config(&request);
         assert!(config.contains(r#"Bearer abc\"def\\ghi"#), "{config}");
-        // 헤더/URL 은 각각 한 줄씩 — 값이 줄을 늘려 새 옵션을 만들 수 없다.
+        // Header/URL take one line each — a value cannot add lines to create a new option.
         assert_eq!(config.lines().count(), 2);
     }
 
@@ -918,8 +923,9 @@ mod tests {
 
     #[test]
     fn the_gemini_key_travels_in_a_header_never_in_the_url() {
-        // 공식 문서는 `?key=` 쿼리 형태도 안내하지만 우리는 헤더만 쓴다 — URL 은
-        // 감사 줄·프록시 로그에 그대로 남는 자리라 비밀이 실리면 안 된다.
+        // The official docs also describe the `?key=` query form, but we use only the
+        // header — the URL is a place preserved verbatim in audit lines and proxy logs,
+        // so no secret may ride on it.
         let request = verify_request(
             "gemini",
             &Target::Vendor {
@@ -945,8 +951,8 @@ mod tests {
 
     #[test]
     fn curl_never_follows_a_redirect() {
-        // 리다이렉트를 따라가면 키가 우리가 고르지 않은 호스트로 다시 전송된다.
-        // 이 단언이 그 옵션의 부재를 회귀 불가능하게 못박는다.
+        // Following a redirect would retransmit the key to a host we did not choose.
+        // This assertion pins the absence of that option against regression.
         for arg in curl_argv() {
             assert_ne!(arg, "-L");
             assert_ne!(arg, "--location");
@@ -967,8 +973,8 @@ mod tests {
 
     #[test]
     fn the_recorded_host_is_derived_from_the_url_the_request_actually_uses() {
-        // 호스트를 따로 상수로 두면 URL 을 고칠 때 조용히 어긋난다 — 파생값이라
-        // 기록이 실제 목적지를 벗어날 수 없다.
+        // Keeping the host as a separate constant drifts silently when the URL is fixed —
+        // being a derived value, the record cannot depart from the actual destination.
         assert_eq!(
             host_of("https://api.anthropic.com/v1/models?limit=1"),
             "api.anthropic.com"
@@ -983,8 +989,9 @@ mod tests {
 
     #[test]
     fn the_hosts_match_the_shared_fixture_the_screen_promises() {
-        // 화면은 키를 붙여넣기 **전에** "이 키가 가는 곳" 을 말한다. 그 문장이
-        // 실제 목적지와 같은지는 웹 쪽 테스트가 같은 픽스처로 함께 잡는다.
+        // The screen states "where this key goes" **before** the key is pasted. Whether
+        // that sentence matches the actual destination is caught jointly by the web-side
+        // tests using the same fixture.
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../../tests/fixtures/llm-provider-hosts.json"))
                 .unwrap();
@@ -1003,9 +1010,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_gemini_key_rejected_with_400_is_a_rejection_not_a_failure() {
-        // 2026-07-26 실측: Gemini 는 틀린 키에 400(`API_KEY_INVALID`)을 준다.
-        // 401/403 로만 판정하면 사용자가 "확인하지 못했어요" 를 보고 자기 키가
-        // 아니라 앱이 고장난 줄 안다.
+        // 2026-07-26 measurement: Gemini gives 400 (`API_KEY_INVALID`) for a wrong key.
+        // Judging only by 401/403, the user sees "Couldn't verify" and assumes the app is
+        // broken rather than their key.
         let vault = temp_vault("gemini400");
         let result = verify_with(
             "gemini",
@@ -1029,8 +1036,8 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_400_from_a_bearer_vendor_is_still_a_plain_failure() {
-        // 거부 상태는 벤더별 목록이다 — Gemini 의 400 규칙이 다른 벤더로 새면
-        // 우리 쪽 요청 실수까지 "키가 틀렸다" 로 오진한다.
+        // Denied statuses are a per-vendor list — if Gemini's 400 rule leaked to other
+        // vendors, even a request mistake on our side would be misdiagnosed as "the key is wrong".
         let vault = temp_vault("openai400");
         let result = verify_with(
             "openai",
@@ -1060,14 +1067,14 @@ mod tests {
         let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
         let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
         assert_eq!(line["host"], "api.openai.com");
-        // 추가형 확장이라 스키마 버전은 그대로다 — 옛 줄이 계속 읽혀야 한다.
+        // An additive extension, so the schema version stays the same — old lines must keep reading.
         assert_eq!(line["v"], 1);
         fs::remove_dir_all(&vault).ok();
     }
 
     #[test]
     fn refuses_to_send_when_the_audit_line_cannot_be_written() {
-        // log-before-send 의 핵심: 기록할 수 없으면 **전송 자체가 없다**.
+        // The heart of log-before-send: if it cannot be recorded, **there is no transmission at all**.
         let vault = temp_vault("blocked");
         fs::write(vault.join(".ontology-atlas"), b"not a directory").unwrap();
         let sent = Cell::new(false);
@@ -1112,7 +1119,7 @@ mod tests {
         let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
         assert_eq!(line["outcome"], "ok");
         assert_eq!(line["purpose"], "verify");
-        // 화면이 "볼트 데이터 0자" 라고 말하는 근거.
+        // The basis for the screen to say "0 characters of vault data".
         assert_eq!(line["scope"]["vaultChars"], 0);
         assert_eq!(line["scope"]["promptChars"], 0);
         assert_eq!(line["question"], serde_json::Value::Null);
@@ -1141,7 +1148,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_network_failure_is_still_recorded() {
-        // 실패한 호출도 "나갔다" 는 사실이다 — 기록에서 빠지면 감사가 거짓말이 된다.
+        // A failed call is still the fact that "something went out" — omitting it from the record makes the audit a lie.
         let vault = temp_vault("neterr");
         let result = verify_with(
             "anthropic",
@@ -1163,9 +1170,9 @@ mod tests {
 
     #[test]
     fn no_command_here_hands_the_key_back_to_the_webview() {
-        // secrets.rs 의 소스-리플렉션 계약과 같은 규율: 이 파일의 커맨드는
-        // 키를 담을 수 없는 타입만 반환한다. 새 커맨드가 늘어도 반환 타입이
-        // 이 허용 목록 밖이면 여기서 걸린다.
+        // The same discipline as the source-reflection contract in secrets.rs: commands in
+        // this file return only types that cannot hold a key. Even as new commands are
+        // added, a return type outside this allowlist gets caught here.
         let source = include_str!("llm.rs").replace("\r\n", "\n");
         let commands: Vec<usize> = source
             .match_indices("\n#[tauri::command]\npub fn ")
@@ -1183,12 +1190,12 @@ mod tests {
         }
     }
 
-    // ── 대화 왕복 ─────────────────────────────────────────────────────────
+    // ── Chat round trip ───────────────────────────────────────────────────
 
     #[test]
     fn a_chat_key_never_appears_in_argv_and_neither_does_the_vault_excerpt() {
-        // 볼트 발췌가 argv 에 오르면 같은 기계의 다른 프로세스가 `ps` 로 사용자
-        // 문서를 읽는다 — 키와 똑같이 stdin 설정에만 실려야 한다.
+        // If a vault excerpt rode on argv, another process on the same machine could read
+        // the user's documents with `ps` — like the key, it must ride only in the stdin config.
         let request = chat_request(
             "anthropic",
             "claude-sonnet-4-5",
@@ -1210,9 +1217,9 @@ mod tests {
 
     #[test]
     fn a_json_body_survives_the_curl_config_escape_round_trip() {
-        // curl 설정은 따옴표 안에서 `\n` 을 진짜 줄바꿈으로 되돌린다. 백슬래시를
-        // 먼저 이스케이프하지 않으면 JSON 문자열 안의 `\n` 이 날것 줄바꿈이 되어
-        // 보내는 본문 자체가 깨진 JSON 이 된다.
+        // Inside quotes, curl config turns `\n` back into a real newline. Without escaping
+        // backslashes first, a `\n` inside a JSON string becomes a raw newline and the
+        // body we send is itself broken JSON.
         let body = r#"{"text":"first\nsecond","quote":"say \"hi\""}"#;
         let request = chat_request(
             "openai",
@@ -1226,7 +1233,7 @@ mod tests {
             .lines()
             .find(|line| line.starts_with("data = "))
             .expect("data 줄이 있어야 한다");
-        // curl 이 되돌리는 것과 같은 규칙으로 풀어 원문과 같은지 본다.
+        // Unescape by the same rule curl applies and check it matches the original.
         let quoted = data_line.trim_start_matches("data = ");
         let inner = &quoted[1..quoted.len() - 1];
         let mut restored = String::new();
@@ -1239,14 +1246,14 @@ mod tests {
             }
         }
         assert_eq!(restored, body);
-        // 설정은 여전히 줄 단위다 — 본문이 새 옵션 줄을 만들 수 없다.
+        // The config is still line-based — the body cannot create a new option line.
         // url · header×2 · request · data = 5.
         assert_eq!(config.lines().count(), 5, "{config}");
     }
 
     #[test]
     fn every_chat_endpoint_is_https_and_shares_the_verify_host() {
-        // 키 등록 화면이 약속한 목적지와 대화가 가는 곳이 같아야 한다.
+        // The destination the key-registration screen promised and where chat goes must be the same.
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../../tests/fixtures/llm-provider-hosts.json"))
                 .unwrap();
@@ -1274,8 +1281,8 @@ mod tests {
 
     #[test]
     fn a_model_name_cannot_escape_the_gemini_url_path() {
-        // Gemini 만 모델이 경로로 들어간다 — 슬래시·쿼리가 통과하면 우리가
-        // 고르지 않은 엔드포인트로 키가 나간다.
+        // Only Gemini puts the model in the path — if slashes or queries pass through,
+        // the key goes out to an endpoint we did not choose.
         for bad in ["../../v1/evil", "x?key=leak", "a b", "m#frag", ""] {
             assert!(
                 validate_model_id(bad, ModelPlacement::UrlPath).is_err(),
@@ -1299,7 +1306,7 @@ mod tests {
 
     #[test]
     fn a_chat_round_trip_refuses_to_send_when_the_audit_line_cannot_be_written() {
-        // log-before-send — 대화 경로에서도 똑같다.
+        // log-before-send — exactly the same on the chat path.
         let vault = temp_vault("chat-blocked");
         fs::write(vault.join(".ontology-atlas"), b"not a directory").unwrap();
         let sent = Cell::new(false);
@@ -1377,9 +1384,9 @@ mod tests {
         assert_eq!(line["scope"]["nodes"][0], "capabilities/payment");
         assert_eq!(line["tools"][0]["name"], "get_concept");
         assert_eq!(line["model"], "claude-sonnet-4-5");
-        // 페이로드 앵커는 **실제로 보낸 문자열**의 해시여야 사후 대조가 된다.
+        // The payload anchor must be the hash of the **string actually sent** for post-hoc comparison to work.
         assert_eq!(line["payloadSha256"], llm_audit::sha256_hex(body));
-        // 응답 본문은 길이만 남는다 — 대화 저장소가 아니다.
+        // Only the length of the response body remains — this is not a conversation store.
         assert_eq!(line["responseChars"], 14);
         assert!(
             !raw.contains("content\\\":[]"),
@@ -1391,9 +1398,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn the_agent_line_this_module_writes_matches_the_shared_reader_fixture() {
-        // writer(여기) ↔ reader(웹 `llm-audit-log.ts`) drift 차단. 픽스처의
-        // `purpose:"agent"` 줄이 이 코드가 실제로 쓰는 모습과 같아야 한다 —
-        // 시각·소요 시간만 호출마다 달라지므로 그 둘은 비교에서 뺀다.
+        // Blocks drift between writer (here) ↔ reader (web `llm-audit-log.ts`). The
+        // fixture's `purpose:"agent"` line must match what this code actually writes —
+        // only timestamp and duration vary per call, so those two are excluded from the comparison.
         let fixture = include_str!("../../tests/fixtures/llm-audit-log.sample.jsonl");
         let expected: serde_json::Value = fixture
             .lines()
@@ -1497,7 +1504,7 @@ mod tests {
             },
         )
         .unwrap();
-        // 거부도 응답이다 — 화면이 상태 코드로 안내를 고를 수 있게 그대로 준다.
+        // A denial is still a response — passed through as-is so the screen can pick guidance by status code.
         assert_eq!(result.status, 401);
         let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
         let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
@@ -1505,12 +1512,12 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
-    // ── 주소로 연결 (키 없는 로컬 러너) ──────────────────────────────────
+    // ── Connect by address (keyless local runner) ────────────────────────
 
     #[test]
     fn the_address_branch_carries_no_authorization_header_at_all() {
-        // 이 갈래가 존재하는 이유 자체다. 헤더가 하나라도 붙으면 "제공자 =
-        // 비밀키 하나" 라는 옛 모양이 슬그머니 되살아난 것이다.
+        // This is the very reason this branch exists. If even one header is attached, the
+        // old shape "provider = one secret key" has quietly come back to life.
         let request = verify_request(
             LOCAL_PROVIDER,
             &Target::Address {
@@ -1525,8 +1532,8 @@ mod tests {
 
     #[test]
     fn a_named_vendor_key_can_never_travel_to_an_address_the_user_typed() {
-        // 이 단언이 이 슬라이스에서 가장 중요한 하나다. 통과하면 키체인의 키가
-        // 화면이 약속한 적 없는 호스트로 나간다.
+        // This assertion is the single most important one in this slice. If it passed,
+        // a keychain key would go out to a host the screen never promised.
         for provider in ["anthropic", "openai", "gemini"] {
             assert!(
                 verify_request(
@@ -1548,15 +1555,15 @@ mod tests {
             )
             .is_err());
         }
-        // 반대 방향도 막힌다 — 주소 갈래에 키를 실을 자리는 없다.
+        // The opposite direction is blocked too — the address branch has no place to carry a key.
         assert!(verify_request(LOCAL_PROVIDER, &Target::Vendor { secret: "sk" }).is_err());
         assert!(chat_request(LOCAL_PROVIDER, "m", &Target::Vendor { secret: "sk" }, "{}").is_err());
     }
 
     #[test]
     fn plaintext_http_is_allowed_only_to_this_machine() {
-        // 헌장이 허용한 것은 **localhost** 다. 평문으로 인터넷 너머에 볼트
-        // 발췌를 보내는 길은 열지 않는다 — 밖으로 나가려면 https 다.
+        // What the charter allows is **localhost**. We do not open a path that sends vault
+        // excerpts in plaintext across the internet — going outside requires https.
         for ok in [
             "http://localhost:11434",
             "http://127.0.0.1:1234",
@@ -1579,12 +1586,12 @@ mod tests {
     fn a_base_url_cannot_smuggle_credentials_or_a_new_curl_option() {
         for bad in [
             "",
-            "localhost:11434",                 // 스킴 없음
-            "ftp://localhost:11434",           // 우리가 말할 수 없는 스킴
-            "http://user:pw@localhost:11434",  // URL 에 실린 비밀
-            "http://localhost:11434?key=leak", // 우리가 고르지 않은 쿼리
+            "localhost:11434",                 // no scheme
+            "ftp://localhost:11434",           // a scheme we cannot speak
+            "http://user:pw@localhost:11434",  // a secret carried in the URL
+            "http://localhost:11434?key=leak", // a query we did not choose
             "http://localhost:11434#frag",
-            "http://local host:11434", // 공백 = curl 설정의 새 토큰
+            "http://local host:11434", // whitespace = a new token in curl config
             "http://localhost:11434\nheader = evil",
             "http://localhost:11434\" \nheader = evil",
         ] {
@@ -1597,8 +1604,8 @@ mod tests {
 
     #[test]
     fn an_lm_studio_style_base_url_does_not_get_a_second_v1() {
-        // Ollama 는 `http://localhost:11434` 를, LM Studio 는 `…/v1` 을
-        // 안내한다. 둘 다 붙여넣은 그대로 동작해야 "오픈소스들" 의 문이 된다.
+        // Ollama documents `http://localhost:11434`, LM Studio documents `…/v1`. Both must
+        // work exactly as pasted for this to become the door for "the open-source ones".
         assert_eq!(
             local_endpoint("http://localhost:11434", LOCAL_CHAT_PATH),
             "http://localhost:11434/v1/chat/completions"
@@ -1607,7 +1614,7 @@ mod tests {
             local_endpoint("http://localhost:1234/v1", LOCAL_CHAT_PATH),
             "http://localhost:1234/v1/chat/completions"
         );
-        // 끝 슬래시도 사람이 흔히 붙인다.
+        // People also commonly append a trailing slash.
         assert_eq!(
             local_endpoint(
                 &normalize_base_url("http://localhost:11434/").unwrap(),
@@ -1619,31 +1626,32 @@ mod tests {
 
     #[test]
     fn a_local_model_name_may_carry_a_colon_but_a_gemini_one_may_not() {
-        // Ollama 의 이름은 `qwen3:8b` 다. 옛 규칙(`:` 금지)을 그대로 두면 이
-        // 갈래는 첫 왕복에서 전부 실패한다 — 그 `:` 금지는 모델이 **URL 경로**
-        // 로 들어가는 Gemini 때문에 있는 것이라, 자리를 나눠야 맞다.
+        // Ollama's names look like `qwen3:8b`. Keeping the old rule (`:` forbidden) as-is
+        // would make this branch fail entirely on the first round trip — that `:` ban
+        // exists because of Gemini, where the model goes into the **URL path**, so the
+        // right fix is to split by placement.
         assert_eq!(
             validate_model_id("qwen3:8b", ModelPlacement::Body).unwrap(),
             "qwen3:8b"
         );
         assert!(validate_model_id("hf.co/user/repo:Q4", ModelPlacement::Body).is_ok());
         assert!(validate_model_id("qwen3:8b", ModelPlacement::UrlPath).is_err());
-        // 자리와 무관하게 막히는 것들.
+        // Things blocked regardless of placement.
         for bad in ["", "a b", "m#frag", "x?key=leak"] {
             assert!(
                 validate_model_id(bad, ModelPlacement::Body).is_err(),
                 "{bad:?}"
             );
         }
-        // 실제 배선이 자리를 맞게 고르나.
+        // Does the actual wiring pick the right placement.
         assert!(model_placement("gemini") == ModelPlacement::UrlPath);
         assert!(model_placement(LOCAL_PROVIDER) == ModelPlacement::Body);
     }
 
     #[test]
     fn curl_exit_codes_tell_off_from_wrong_port_from_timeout_apart() {
-        // 화면이 "왜 안 되는지" 를 말할 수 있는 유일한 안정 신호. stderr 문장은
-        // 이 셋을 한 문장으로 뭉갠다.
+        // The only stable signal that lets the screen say "why it is failing". The stderr
+        // sentence flattens these three into a single message.
         let refused = curl_failure_message(Some(7), "Couldn't connect to server");
         let unknown_host = curl_failure_message(Some(6), "Could not resolve host");
         let timeout = curl_failure_message(Some(28), "Operation timed out");
@@ -1664,8 +1672,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_local_check_records_localhost_and_hands_back_the_model_list() {
-        // 이 제품의 신뢰 서사가 로그로 증명되는 자리 — 목적지가 제공자 **이름**
-        // 이 아니라 호스트라서, 이 줄이 곧 "아무 데도 안 나갔다" 의 증거다.
+        // The place where this product's trust story is proven by the log — because the
+        // destination is a host, not a provider **name**, this line itself is the evidence
+        // that "nothing left the machine".
         let vault = temp_vault("local-ok");
         let listing = r#"{"object":"list","data":[{"id":"qwen3:8b"},{"id":"gemma4:12b"}]}"#;
         let result = verify_with(

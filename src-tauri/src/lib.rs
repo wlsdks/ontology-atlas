@@ -259,18 +259,20 @@ fn is_bundle_directory(root: &Path) -> bool {
 }
 
 fn vault_root_rejection(root: &Path) -> Option<&'static str> {
-    // 부모가 없으면 파일시스템 루트다(`/`, `C:\`). 심볼릭 링크로 우회하지
-    // 못하도록 호출자가 canonicalize 한 경로를 넘긴다.
+    // No parent means the filesystem root (`/`, `C:\`). The caller passes a
+    // canonicalized path so a symlink cannot route around this check.
     if root.parent().is_none() {
         return Some("filesystem-root");
     }
 
-    // macOS 에서 **`.app` 은 디렉터리다** (2026-08-17). `is_dir()` 만 보면
-    // 통과하고, `open <경로>` 는 폴더를 여는 게 아니라 **그 프로그램을
-    // 실행한다** — 「Finder 에서 보기」가 절대 하면 안 되는 일이다.
+    // On macOS, **a `.app` is a directory** (2026-08-17). Checking only
+    // `is_dir()` lets it through, and `open <path>` does not open the folder —
+    // it **launches that program**, the one thing "Reveal in Finder" must
+    // never do.
     //
-    // 볼트 루트로도 같은 이유로 막는다: 번들 안은 앱의 내부 구조이지 사람이
-    // 문서를 두는 자리가 아니고, 에이전트의 작업 폴더가 되면 더욱 아니다.
+    // It is rejected as a vault root for the same reason: the inside of a
+    // bundle is the app's internal structure, not a place where a person keeps
+    // documents — and even less a place to become an agent's working folder.
     if is_bundle_directory(root) {
         return Some("bundle-directory");
     }
@@ -311,8 +313,9 @@ fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     const SYSTEM_DIRS: &[&str] = &[];
 
     for dir in SYSTEM_DIRS {
-        // 정확히 그 디렉터리일 때만 막는다. 그 **안쪽**은 사용자가 고를 수 있는
-        // 자리가 있다(예: 리눅스의 `/home/<사용자>`, macOS 의 `/Volumes/<디스크>`).
+        // Block only when it is exactly that directory. **Inside** it there
+        // are places a user may legitimately pick (e.g. `/home/<user>` on
+        // Linux, `/Volumes/<disk>` on macOS).
         if root == Path::new(dir) {
             return Some("system-directory");
         }
@@ -1172,9 +1175,10 @@ impl AcpSessions {
     }
 
     fn send_line(&self, session_id: &str, line: &str) -> Result<(), String> {
-        // 등록부 잠금과 writer 잠금을 동시에 쥐지 않는다. 자식 하나의 stdin이
-        // 막혀도 다른 세션의 send/stop, 자식 종료 정리, 앱 종료 drain은 계속
-        // 진행되어야 막힌 프로세스 자체를 끊을 수 있다.
+        // Never hold the registry lock and the writer lock at the same time.
+        // Even when one child's stdin is blocked, other sessions' send/stop,
+        // child-exit cleanup, and the app-shutdown drain must keep moving —
+        // that is what makes it possible to kill the blocked process itself.
         let handle = {
             let map = self
                 .0
@@ -1193,7 +1197,8 @@ impl AcpSessions {
             .map_err(|err| format!("write-failed:{err}"))
     }
 
-    /// 이 세션이 아직 살아 있나 — 내려받기 진행 표시 스레드가 멈출 때를 안다.
+    /// Is this session still alive — this is how the download progress
+    /// reporting thread knows when to stop.
     fn contains(&self, session_id: &str) -> bool {
         self.0
             .lock()
@@ -1229,11 +1234,12 @@ impl AcpSessions {
     }
 }
 
-/// 세션 이름은 늘어나기만 하는 번호로 만든다. pid 를 이름으로 쓰면 OS 가 pid 를
-/// 재사용했을 때 방금 끝난 세션과 새 세션이 같은 이름을 갖는다.
+/// Session names come from a monotonically increasing counter. Using the pid
+/// as the name would give a just-ended session and a new session the same name
+/// whenever the OS reuses a pid.
 static ACP_SESSION_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
-/// 세션 하나에서 나온 한 줄.
+/// One line produced by one session.
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct AcpLineEvent {
@@ -1255,19 +1261,21 @@ struct AcpNoticeEvent {
     message: String,
 }
 
-/// ACP 하네스를 띄운다. 돌려주는 것은 세션 이름 하나뿐이고, 이후의 모든 주고받기는
-/// 그 이름으로 한다.
+/// Launch the ACP harness. The only thing returned is a session name; every
+/// exchange after this uses that name.
 ///
-/// ## 이 커맨드가 지키는 것
+/// ## What this command guarantees
 ///
-/// 1. **작업 폴더는 볼트 루트 판정을 그대로 통과해야 한다.** 폴더 피커가 쓰는
-///    그 함수를 여기서도 부른다 — 판정이 두 벌이 되면 한쪽만 느슨해지는 쪽이
-///    기본값이 된다. 에이전트에게 `/` 를 넘기는 것은 실수가 아니라 사고다.
-/// 2. **자식은 자기 프로세스 그룹을 갖는다.** 어댑터가 띄우는 손자들까지 한
-///    번에 끝낼 수 있는 유일한 방법이고, 이게 없으면 앱을 꺼도 프로세스가 남는다.
-/// 3. **자식 PATH 는 우리가 찾아낸 자리로 다시 만든다.** 어댑터는 진짜 CLI 를
-///    이름으로 찾으므로, GUI 앱이 물려받은 빈약한 PATH 를 그대로 주면 어댑터가
-///    같은 자리에서 막힌다.
+/// 1. **The working folder must pass the vault-root check unchanged.** We call
+///    the very function the folder picker uses — if two copies of the check
+///    exist, the looser one becomes the default. Handing an agent `/` is not a
+///    mistake, it is an incident.
+/// 2. **The child gets its own process group.** That is the only way to end
+///    the grandchildren the adapter spawns in one stroke; without it,
+///    processes survive quitting the app.
+/// 3. **The child's PATH is rebuilt from the locations we actually found.**
+///    The adapter resolves the real CLI by name, so handing it the sparse PATH
+///    a GUI app inherits makes the adapter fail at exactly the same spot.
 #[tauri::command]
 fn acp_start(
     app: AppHandle,
@@ -1570,8 +1578,9 @@ fn acp_permission_verdict(
     }
 }
 
-/// 세션에 한 줄을 보낸다. 줄바꿈은 여기서 붙인다 — 호출자가 잊으면 상대는
-/// 영원히 기다리고, 그 증상은 「멈췄다」로만 보인다.
+/// Send one line to the session. The newline is appended here — if the caller
+/// forgets it, the peer waits forever, and the only visible symptom is "it
+/// froze."
 #[tauri::command]
 fn acp_send(
     sessions: State<'_, AcpSessions>,
@@ -1587,15 +1596,15 @@ fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), 
     let pid = sessions.take_pid(&session_id)?;
     match pid {
         Some(pid) => acp::terminate_tree(pid),
-        // 이미 끝난 세션을 끝내라는 것은 실패가 아니다.
+        // Being asked to stop a session that already ended is not a failure.
         None => Ok(()),
     }
 }
 
-/// 앱이 꺼질 때 남은 세션을 전부 끝낸다.
+/// End every remaining session when the app shuts down.
 ///
-/// 이게 없으면 창을 닫아도 어댑터와 그 손자들이 계속 돈다. 사용자는 앱을 껐다고
-/// 믿는데 기계는 계속 일하고 있는 상태다.
+/// Without this, closing the window leaves the adapter and its grandchildren
+/// running. The user believes the app is off while the machine keeps working.
 fn terminate_all_acp_sessions(app: &AppHandle) {
     let Some(state) = app.try_state::<AcpSessions>() else {
         return;
@@ -1609,29 +1618,34 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
     }
 }
 
-/// 이 기기에 실제로 있는 ACP 실행기를 판정해서 돌려준다.
+/// Determine which ACP runtimes actually exist on this machine and return them.
 ///
-/// **PATH 만 믿지 않는다** — Finder 로 띄운 앱은 셸 초기화를 안 거쳐서 버전
-/// 관리자(nvm 등)가 심은 경로가 통째로 없다. 무엇을 뒤지는지는 `acp.rs` 에
-/// 전부 적혀 있고 그 목록이 곧 검사 대상이다.
+/// **PATH alone is not trusted** — an app launched from Finder skips shell
+/// initialization, so the paths a version manager (nvm and the like) planted
+/// are missing wholesale. What gets searched is written out in full in
+/// `acp.rs`, and that list is itself the test subject.
 ///
-/// **아무것도 쓰지 않는다.** 다만 `probe_login` 이 참이면 로그인 확인을 위해
-/// 그 CLI 를 짧게 띄운다(종료 코드만 본다 — 출력은 버린다).
+/// **Nothing is written.** However, when `probe_login` is true, the CLI is
+/// briefly launched to confirm login (only the exit code is inspected — the
+/// output is discarded).
 ///
-/// 이 기기의 실행기 상태.
+/// The runtime state of this machine.
 ///
-/// `probe_login` 이 참일 때만 **각 CLI 를 띄워 로그인 여부를 확인한다.**
-/// 그것이 이 호출에서 유일하게 느린 부분이고(실측: claude 300ms · codex 45ms),
-/// 나머지는 디스크를 훑는 것이라 거의 즉시다.
+/// Only when `probe_login` is true does this **launch each CLI to check
+/// whether it is logged in.** That is the only slow part of this call
+/// (measured: claude 300ms · codex 45ms); everything else scans the disk and
+/// is near-instant.
 ///
-/// ## 왜 나눴나 (2026-08-16 소유자 지적)
+/// ## Why the split (2026-08-16 owner remark)
 ///
-/// *"Agents 탭 누르면 로딩 속도가 1초인가 느린데? 일단 로딩되게 하고 업데이트
-/// 시키는 방향으로 가야 하지 않을까"* — 맞는 지적이다. 로그인 확인을 붙이면서
-/// **화면이 뜨는 시간에 그 비용이 그대로 얹혔다.** 목록을 먼저 그릴 수 있는데도
-/// 확인이 끝날 때까지 아무것도 안 보여 주고 있었다.
+/// *"When I click the Agents tab, loading takes about a second — shouldn't we
+/// load it first and update afterwards?"* — a correct observation. When the
+/// login check was added, **its cost was stacked directly onto the time the
+/// screen takes to appear.** The list could have been drawn first, yet nothing
+/// was shown until the check finished.
 ///
-/// 그래서 화면은 두 번 부른다: 먼저 확인 없이 그리고, 그다음 확인해서 고친다.
+/// So the screen calls twice: first draw without the check, then check and
+/// correct.
 #[tauri::command]
 fn acp_detect_runtimes(app: tauri::AppHandle, probe_login: Option<bool>) -> Vec<acp::AcpRuntimeStatus> {
     let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
@@ -1649,7 +1663,8 @@ fn acp_detect_runtimes(app: tauri::AppHandle, probe_login: Option<bool>) -> Vec<
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
-    // 앱이 대신 깔아 준 것도 찾는다 — 안 그러면 설치해 놓고도 「설치 필요」다.
+    // Also find what the app installed on the user's behalf — otherwise it
+    // still reads "installation required" after installing.
     let app_data_for_paths = app.path().app_data_dir().ok();
     let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
     let managed_node_bin = app_data_for_paths
@@ -1664,78 +1679,85 @@ fn acp_detect_runtimes(app: tauri::AppHandle, probe_login: Option<bool>) -> Vec<
     )
 }
 
-/// 설치가 어디까지 왔는지 화면에 알리는 한 줄.
+/// One line telling the screen how far the installation has come.
 ///
-/// ## 왜 이벤트인가 (2026-08-20 소유자 지적)
+/// ## Why an event (2026-08-20 owner remark)
 ///
-/// *"버튼들만 누르면 알아서 설치되는 과정도 보여주고 완료된것도 체크해주고
-/// 하나?"* — 아니었다. 종전에는 커맨드가 **끝나야** 돌아왔으므로, 52MB 를
-/// 받고 npm 이 도는 동안 화면이 할 수 있는 일은 칩을 비활성으로 두고 「설치
-/// 중…」 글자를 띄우는 것뿐이었다. 이 저장소의 워크스루가 **「조용한 기다림」**
-/// 이라고 이름 붙여 둔 패턴 그대로다.
+/// *"If I just press the buttons, does it show the installation happening on
+/// its own and check off completion too?"* — it did not. Previously the
+/// command returned only **after finishing**, so while 52MB downloaded and npm
+/// ran, all the screen could do was disable the chip and display the words
+/// "Installing…" — exactly the pattern this repository's walkthrough named
+/// **"the silent wait."**
 ///
-/// ## 무엇을 안 하나
+/// ## What it does not do
 ///
-/// **모르는 진행률을 지어내지 않는다.** `received`/`total` 은 아는 자리
-/// (Node 내려받기)에만 실리고, npm 은 분모가 없으므로 대신 **자기가 실제로
-/// 뱉은 마지막 줄**을 `note` 로 올린다. 이 앱의 업데이트 토스트가 이미 같은
-/// 규율을 따른다 — 총량을 모르면 퍼센트를 그리지 않고 그 사실을 말한다.
+/// **It does not invent progress it does not know.** `received`/`total` are
+/// populated only where they are known (the Node download); npm has no
+/// denominator, so instead **the last line it actually emitted** is carried
+/// as `note`. This app's update toast already follows the same discipline —
+/// when the total is unknown, it draws no percentage and says so.
 #[derive(Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct AcpInstallProgress {
     runtime_id: String,
-    /// 어느 일인가 — `"node"` · `"cli"`. 화면이 문구를 갖는다.
+    /// Which job this is — `"node"` · `"cli"`. The screen owns the wording.
     job: &'static str,
     /// Which phase is this — the screen holds the message (we do not generate human language here).
     stage: &'static str,
     received: Option<u64>,
     total: Option<u64>,
-    /// 그 도구가 실제로 뱉은 줄. 우리가 지어낸 문장이 아니다.
+    /// The line the tool actually emitted. Not a sentence we made up.
     note: Option<String>,
-    /// 이 상태가 생긴 시각(epoch ms).
+    /// When this state was produced (epoch ms).
     ///
-    /// **없으면 어제 끝난 설치가 오늘 「설치했어요」로 뜬다.** 화면은 이 값으로
-    /// 낡은 것을 안 그린다 — 마지막 상태를 들고 있는 것과 그것을 언제까지
-    /// 보여 줄지는 다른 질문이다.
+    /// **Without it, an installation that finished yesterday shows up today as
+    /// "installed it."** The screen uses this value to avoid drawing stale
+    /// state — holding the last state and deciding how long to keep showing it
+    /// are different questions.
     at: u64,
 }
 
-/// 화면이 듣는 이름. `acp://exit` 와 같은 결로 짓는다.
+/// The name the screen listens for. Named in the same grain as `acp://exit`.
 ///
-/// ⚠️ **이 이름과 payload 키는 TS 쪽과 맺은 계약이다.** 화면은
-/// `payload.runtimeId` 로 남의 진행을 걸러 내므로, 키 이름이 하나만 어긋나도
-/// 이벤트는 도착하는데 **전부 버려진다** — 에러 없이 진행률만 영영 안 뜬다.
-/// 그래서 아래 테스트가 직렬화 결과의 키를 그대로 못박는다.
+/// ⚠️ **This name and the payload keys are a contract with the TS side.** The
+/// screen filters out other runtimes' progress by `payload.runtimeId`, so if
+/// even one key name is off, the events arrive but are **all discarded** — no
+/// error, the progress just never appears. That is why the test below pins the
+/// serialized keys exactly.
 const ACP_INSTALL_PROGRESS_EVENT: &str = "acp-install://progress";
 
-/// **마지막 진행 상태를 도구별로 들고 있는 곳.**
+/// **Where the last progress state is held, per tool.**
 ///
-/// ## 왜 필요한가 (2026-08-20, 카운슬 압박으로 발견)
+/// ## Why it is needed (2026-08-20, found under council pressure)
 ///
-/// 설정 시트는 닫히면 **통째로 언마운트된다**
-/// (`AppSettingsMenu.tsx` 의 `(open || settingsMounted) && …` 조건부 포털).
-/// 그래서 화면 쪽 `useAgentDoctor` 의 상태가 전부 사라지고 이벤트 구독도 끊긴다.
+/// The settings sheet **unmounts wholesale** when closed
+/// (the `(open || settingsMounted) && …` conditional portal in
+/// `AppSettingsMenu.tsx`). So all of `useAgentDoctor`'s state on the screen
+/// side vanishes and the event subscription is severed too.
 ///
-/// 갈래가 셋인데 **마지막 하나가 진짜 결함**이다:
+/// There are three branches, and **the last one is the real defect**:
 ///
-/// | 시트를 닫아 둔 사이 | 다시 열면 |
+/// | While the sheet was closed | On reopening |
 /// |---|---|
-/// | Node 내려받는 중 | 250ms 주기라 **0.25초 안에 자가복구**된다 |
-/// | npm 설치 중 | npm 이 조용하면 다음 줄이 나올 때까지 아무것도 안 보인다 |
-/// | **`done` 이 지나감** | `done` 은 **단발**이다 → **영영 완료를 못 본다** |
+/// | Node downloading | 250ms cadence, so it **self-heals within 0.25s** |
+/// | npm installing | if npm is quiet, nothing shows until its next line |
+/// | **`done` went by** | `done` is **one-shot** → **completion is never seen** |
 ///
-/// 소유자가 이 라운드에 명시적으로 요구한 것이 그 완료 표시였다
-/// (*"완료된것도 체크해주고 하나?"*). 이벤트만으로는 그 요구를 못 지킨다.
+/// That completion indicator is what the owner explicitly demanded this round
+/// (*"does it check off completion too?"*). Events alone cannot honor that
+/// demand.
 ///
-/// ## 왜 화면이 아니라 여기인가
+/// ## Why here and not the screen
 ///
-/// 상태를 셸(React)로 올려도 **라우트를 떠나거나 새로고침하면 같이 죽는다** —
-/// 목적지로 옮겨도 마찬가지다. 설치를 실제로 소유한 것은 이쪽 프로세스이므로,
-/// 마지막 상태도 여기 두는 것이 진실원이 하나가 되는 자리다.
+/// Lifting the state into the shell (React) still **dies with a route change
+/// or a reload** — moving it to the destination changes nothing. The process
+/// that actually owns the installation is this one, so keeping the last state
+/// here is where the source of truth becomes singular.
 #[derive(Default)]
 struct AcpInstallProgressState {
-    /// `runtime_id` → 그 도구의 마지막 진행. 도구마다 따로 둔다 — 한 칸이면
-    /// Codex 설치가 Claude 의 완료 표시를 덮어쓴다.
+    /// `runtime_id` → that tool's last progress. Kept per tool — with a single
+    /// slot, a Codex install would overwrite Claude's completion indicator.
     last: Mutex<HashMap<String, AcpInstallProgress>>,
 }
 
@@ -1760,8 +1782,9 @@ fn emit_install_progress(
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0),
     };
-    // **먼저 적어 두고 그다음에 보낸다.** 순서가 반대면, 이벤트를 받은 화면이
-    // 곧바로 물어봤을 때 아직 안 적힌 값을 읽을 수 있다.
+    // **Record first, send after.** In the reverse order, a screen that
+    // received the event and asked right away could read a value not yet
+    // recorded.
     if let Some(state) = app.try_state::<AcpInstallProgressState>() {
         if let Ok(mut last) = state.last.lock() {
             last.insert(runtime_id.to_string(), payload.clone());
@@ -1770,10 +1793,10 @@ fn emit_install_progress(
     let _ = app.emit(ACP_INSTALL_PROGRESS_EVENT, payload);
 }
 
-/// 이 도구의 **마지막 진행 상태**. 없으면 `None`.
+/// This tool's **last progress state**. `None` when there is none.
 ///
-/// 화면이 다시 마운트될 때 한 번 물어본다 — 그래야 닫아 둔 사이에 지나간
-/// 완료를 놓치지 않는다.
+/// The screen asks once when it remounts — that is how a completion that went
+/// by while the sheet was closed is not missed.
 #[tauri::command]
 fn acp_install_progress(
     app: tauri::AppHandle,
@@ -1784,11 +1807,12 @@ fn acp_install_progress(
     last.get(&runtime_id).cloned()
 }
 
-/// 다시 점검을 시작하면 **지난 설치 결과는 잊는다.**
+/// Starting a fresh check **forgets the previous installation result.**
 ///
-/// 안 지우면, 재점검한 뒤 시트를 닫았다 열었을 때 「설치했어요」가 되살아나
-/// 방금 한 일이 아닌 것을 방금 한 것처럼 말하게 된다. 화면 쪽도 같은 순간에
-/// 자기 상태를 지우므로, 두 곳이 같은 규칙을 따른다.
+/// Without clearing it, closing and reopening the sheet after a re-check would
+/// resurrect "installed it," presenting something that was not just done as if
+/// it were. The screen side clears its own state at the same moment, so both
+/// places follow the same rule.
 fn forget_install_progress(app: &tauri::AppHandle, runtime_id: &str) {
     if let Some(state) = app.try_state::<AcpInstallProgressState>() {
         if let Ok(mut last) = state.last.lock() {
@@ -1797,20 +1821,22 @@ fn forget_install_progress(app: &tauri::AppHandle, runtime_id: &str) {
     }
 }
 
-/// **Node 를 앱이 받아 줄 수 있나 — 그렇다면 어디서 무엇을.**
+/// **Can the app download Node for the user — and if so, what from where.**
 ///
-/// 화면은 이것을 받아 누르기 전에 **주소와 해시 앞머리**를 보여 준다. 없으면
-/// 등재 안 된 플랫폼이고, 화면은 종전대로 공식 안내로 보낸다.
+/// The screen takes this and shows the **URL and hash prefix** before the
+/// click. `None` means an unlisted platform, and the screen sends the user to
+/// the official instructions as before.
 #[tauri::command]
 fn acp_node_plan() -> Option<String> {
     managed_node::managed_node_plan()
 }
 
-/// Node 를 앱 전용 자리에 받아 두고 **해시를 대조한다.**
+/// Download Node into the app-owned location and **verify the hash.**
 ///
-/// 조건 넷(원장 (88)(89))이 여기서 지켜진다: 사용자가 누를 때만 · 어디서
-/// 무엇을 받는지 먼저 보여 준다 · `<app-data>/runtimes/node` 안에만 ·
-/// 버전을 고정하고 **받은 뒤 해시를 대조한다**(안 맞으면 지우고 실패).
+/// The four conditions (ledger (88)(89)) are honored here: only when the user
+/// clicks · show first what is downloaded from where · only inside
+/// `<app-data>/runtimes/node` · pin the version and **verify the hash after
+/// download** (on mismatch, delete and fail).
 #[tauri::command]
 fn acp_install_node(
     app: tauri::AppHandle,
@@ -2149,9 +2175,9 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
 
-    // 앱 몫 폴더 기준으로 묻는다 — **화면이 「준비됨」이라고 말하면서 실제로는
-    // 로그아웃이던 것**이 이 결함의 절반이었다. 사용자 폴더를 물으면 앱이 쓰지도
-    // 않는 자리를 재는 것이다.
+    // Ask against the app-owned folder — **the screen saying "ready" while it
+    // was actually logged out** was half of this defect. Asking the user's
+    // folder measures a place the app does not even use.
     let isolated = app_data_dir.join("agent-config").join(runtime_id);
     let isolated_logged_out = cli
         .as_deref()
@@ -2177,13 +2203,15 @@ fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, 
     let Some(picked) = rfd::FileDialog::new().set_title(title).pick_folder() else {
         return Ok(None);
     };
-    // 심볼릭 링크를 따라간 **실제** 자리로 판정한다 — `/tmp` → `/private/tmp`
-    // 처럼 이름만 다른 같은 자리를 놓치지 않기 위해서다. canonicalize 가
-    // 실패하면(권한 등) 사용자가 방금 고른 경로를 그대로 판정한다.
+    // Judge the **actual** location after following symlinks — so that the
+    // same place under a different name, like `/tmp` → `/private/tmp`, is not
+    // missed. When canonicalize fails (permissions and the like), judge the
+    // path the user just picked as-is.
     let resolved = fs::canonicalize(&picked).unwrap_or_else(|_| picked.clone());
     if let Some(reason) = vault_root_rejection(&resolved) {
-        // 화면이 사유별 문구를 고를 수 있도록 **안정된 코드**를 돌려준다.
-        // 사람이 읽는 문장을 여기서 만들면 번역이 Rust 안에 갇힌다.
+        // Return a **stable code** so the screen can pick per-reason wording.
+        // Composing the human-readable sentence here would trap translation
+        // inside Rust.
         return Err(format!("vault-root-rejected:{reason}"));
     }
     Ok(Some(picked.to_string_lossy().to_string()))
@@ -2216,16 +2244,17 @@ fn list_vault_directory(
     Ok(out)
 }
 
-/// 볼트 지문 한 항목 — 경로와 mtime **만**. 본문은 담지 않는다.
+/// One vault fingerprint entry — path and mtime **only**. No body content.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct VaultStamp {
     relative_path: String,
-    /// `TauriTextFile::last_modified` 와 같은 표현 — 이 볼트에서 mtime 의 타입은 하나다.
+    /// Same representation as `TauriTextFile::last_modified` — this vault has one type for mtime.
     last_modified: u128,
 }
 
-/// `vault_fingerprint` 의 결과. 절단·가지치기를 **숨기지 않고** 함께 돌려준다.
+/// The result of `vault_fingerprint`. Truncation and pruning are returned
+/// alongside, **not hidden**.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct VaultFingerprint {
@@ -2534,15 +2563,15 @@ fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, 
     }
 }
 
-/// TS `VAULT_WALK_MAX_DEPTH` 와 **같은 값이어야 한다** (계약 테스트가 본다).
+/// **Must equal** TS `VAULT_WALK_MAX_DEPTH` (a contract test watches it).
 const VAULT_WALK_MAX_DEPTH: usize = 12;
-/// TS `VAULT_WALK_MAX_ENTRIES` 와 같은 값.
+/// Same value as TS `VAULT_WALK_MAX_ENTRIES`.
 const VAULT_WALK_MAX_ENTRIES: usize = 4000;
-/// TS `PRUNE_BY_NAME` 과 같은 목록.
+/// Same list as TS `PRUNE_BY_NAME`.
 const VAULT_PRUNE_DIR_NAMES: &[&str] = &["node_modules"];
-/// TS `CACHE_DIR_TAG` 와 같은 값.
+/// Same value as TS `CACHE_DIR_TAG`.
 const VAULT_CACHE_DIR_TAG: &str = "CACHEDIR.TAG";
-/// TS `IMAGE_EXT` 와 같은 확장자 집합(소문자 비교).
+/// Same extension set as TS `IMAGE_EXT` (lowercase comparison).
 const VAULT_IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "svg", "avif", "bmp"];
 
 fn vault_entry_is_tracked(name: &str) -> bool {
@@ -2569,7 +2598,8 @@ fn walk_vault_stamps(
         return Ok(());
     }
 
-    // 목록을 먼저 모은다 — 캐시 표식 판정이 이 목록 안에서 끝난다.
+    // Collect the listing first — the cache-tag judgment completes within
+    // this list.
     let mut children: Vec<(String, bool)> = Vec::new();
     for entry in fs::read_dir(dir).map_err(|err| err.to_string())? {
         let entry = entry.map_err(|err| err.to_string())?;
@@ -2619,22 +2649,25 @@ fn walk_vault_stamps(
     Ok(())
 }
 
-/// 볼트를 훑어 **경로와 mtime 만** 돌려준다.
+/// Walk the vault and return **paths and mtimes only**.
 ///
-/// ## 왜 이 명령이 필요한가 (2026-07-31)
+/// ## Why this command is needed (2026-07-31)
 ///
-/// 지문 계산이 `read_vault_text_file` 을 파일마다 불렀다 — 그 명령은 **본문
-/// 전체 + mtime** 을 돌려주므로, 쓰이는 것이 숫자 하나인데 볼트 전체가 IPC 를
-/// 건너왔다. 이 저장소 자신을 볼트로 열면 `docs/` 가 **261 파일 · 17.7MB** 이고,
-/// 그 경로는 창에 포커스가 돌아올 때마다 돈다.
+/// The fingerprint computation called `read_vault_text_file` per file — that
+/// command returns the **entire body + mtime**, so the whole vault crossed IPC
+/// when all that was used was one number. Opening this repository itself as a
+/// vault makes `docs/` **261 files · 17.7MB**, and that path runs every time
+/// focus returns to the window.
 ///
-/// 왕복도 파일마다 하나씩이었다(디렉터리마다 `list_vault_directory` 하나 추가).
-/// 이제 **한 번**이고, 페이로드는 경로+숫자뿐이다.
+/// Round-trips were also one per file (plus one `list_vault_directory` per
+/// directory). Now it is **one call**, and the payload is paths + numbers only.
 ///
-/// ⚠️ **walk 규칙은 TS 쪽과 한 글자도 달라선 안 된다.** 다르면 지문이 달라지고,
-/// 앱은 "바뀐 게 없는데 매번 재빌드" 하거나 "바뀌었는데 안 알아챈다". 상수는 위에
-/// 모아 두었고 `tests/contract/vault-walk-rules.contract.test.ts` 가 두 소스를
-/// 맞대어 본다.
+/// ⚠️ **The walk rules must not differ from the TS side by a single
+/// character.** If they differ, the fingerprints differ, and the app either
+/// "rebuilds every time though nothing changed" or "doesn't notice what did."
+/// The constants are gathered above and
+/// `tests/contract/vault-walk-rules.contract.test.ts` holds the two sources
+/// against each other.
 #[tauri::command]
 fn vault_fingerprint(root_path: String) -> Result<VaultFingerprint, String> {
     let root = resolve_existing_inside(&root_path, "")?;
@@ -2672,17 +2705,20 @@ fn read_vault_binary_file(
     })
 }
 
-/// 파일 하나를 **끊기지 않게** 쓴다 — 임시 파일에 쓰고, 디스크에 확정하고, 이름을 바꾼다.
+/// Write one file **without tearing** — write to a temporary file, commit it
+/// to disk, then rename.
 ///
-/// ## 왜 (2026-08-16 검수)
+/// ## Why (2026-08-16 review)
 ///
-/// 종전에는 `fs::write` 하나였다. 그건 원본을 **먼저 비우고** 쓴다. 그 사이에
-/// 앱이 죽거나 디스크가 차면 사용자의 마크다운이 **잘린 채로** 남는다 — 그리고
-/// 그 파일은 방금 우리가 열어 준 그 폴더의 것이다. 이 제품의 약속은 「당신의
-/// 파일은 그대로 당신 디스크에 있다」이고, 그 약속에는 「멀쩡하게」가 포함된다.
+/// Previously this was a single `fs::write`. That **truncates the original
+/// first** and then writes. If the app dies or the disk fills in between, the
+/// user's Markdown is left **cut short** — and that file belongs to the very
+/// folder we just opened for them. This product's promise is "your files stay
+/// on your disk as they are," and that promise includes "intact."
 ///
-/// 이름 바꾸기는 같은 파일 시스템 안에서 원자적이다. 그래서 어느 순간에 죽어도
-/// 파일은 **옛 내용 아니면 새 내용**이지, 반쪽이 되지 않는다.
+/// A rename is atomic within the same filesystem. So no matter when the crash
+/// comes, the file is **either the old content or the new content**, never
+/// half of one.
 #[cfg(any(not(unix), test))]
 fn write_text_atomically(path: &std::path::Path, content: &str) -> Result<(), String> {
     use std::io::Write;
@@ -2725,14 +2761,15 @@ fn write_text_atomically(path: &std::path::Path, content: &str) -> Result<(), St
     })?;
     let result = (|| -> std::io::Result<()> {
         file.write_all(content.as_bytes())?;
-        // 이름을 바꾸기 전에 디스크에 확정한다 — 안 하면 이름만 새것이고
-        // 내용은 아직 캐시에 있는 상태로 전원이 나갈 수 있다.
+        // Commit to disk before renaming — otherwise power can be lost with
+        // the name already new while the content still sits in cache.
         file.sync_all()?;
         drop(file);
         fs::rename(&temporary, path)
     })();
     if result.is_err() {
-        // 실패하면 임시 파일만 치운다. 원본은 손대지 않았다.
+        // On failure, clean up only the temporary file. The original was
+        // never touched.
         let _ = fs::remove_file(&temporary);
     }
     result.map_err(|err| err.to_string())
@@ -2921,19 +2958,20 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     if !metadata.is_dir() {
         return Err("vault root must be a directory".into());
     }
-    // ⚠️ **`is_dir()` 로는 부족하다** (2026-08-17). macOS 에서 `.app` 은
-    // 디렉터리라 위 검사를 통과하고, 그러면 아래 `open` 이 폴더를 여는 게
-    // 아니라 **그 프로그램을 실행한다.** 같은 판정을 볼트 루트 문에서 쓰는
-    // 함수로 한다 — 판정이 두 벌이 되면 한쪽만 느슨해지는 쪽이 기본값이다.
+    // ⚠️ **`is_dir()` is not enough** (2026-08-17). On macOS a `.app` is a
+    // directory, so it passes the check above, and then the `open` below does
+    // not open the folder — it **launches that program.** The judgment is made
+    // with the same function the vault-root gate uses — if two copies of the
+    // check exist, the looser one becomes the default.
     if let Some(reason) = vault_root_rejection(&root) {
         return Err(format!("refusing to open this path: {reason}"));
     }
 
     #[cfg(target_os = "macos")]
     {
-        // `-a Finder` 로 **여는 프로그램을 못박는다.** 이것만으로도 번들이
-        // 실행되지 않지만, 위 거절과 둘 다 둔다 — 하나가 풀려도 다른 하나가
-        // 남는다.
+        // `-a Finder` **pins which program opens it.** This alone keeps a
+        // bundle from launching, but both it and the rejection above stay —
+        // if one comes loose, the other remains.
         let status = Command::new("open")
             .arg("-a")
             .arg("Finder")
@@ -2954,10 +2992,11 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     }
 }
 
-/// "그냥 시작하기" 데스크톱 first-run 액션 전용 — Documents 안에 vault 들을
-/// 모아두는 컨테이너 폴더 이름. Rust 쪽에서만 $HOME/Documents 를 알 수
-/// 있으므로(JS 는 fs 플러그인 없이 접근 불가), 경로 조립을 순수 함수로
-/// 분리해 테스트하고 커맨드는 그 결과에 create_dir_all 만 더한다.
+/// Exclusive to the "just start" desktop first-run action — the name of the
+/// container folder that gathers vaults inside Documents. Only the Rust side
+/// can know $HOME/Documents (JS cannot reach it without the fs plugin), so
+/// path assembly is split into a pure function for testing and the command
+/// adds only create_dir_all to its result.
 fn default_vault_parent_dir(home: &str) -> PathBuf {
     PathBuf::from(home).join("Documents").join("Ontology Atlas")
 }
