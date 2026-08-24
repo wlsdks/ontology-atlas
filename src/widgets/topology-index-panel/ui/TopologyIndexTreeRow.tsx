@@ -19,6 +19,22 @@ export interface TopologyIndexTreeRowLabels {
   /** Hover explanation for the domain badge (multi-membership is counted more than once). */
   domainCountTitle: string;
   /**
+   * What 「capability」 and 「element」 mean, at the one place their counts are read.
+   *
+   * ⚠️ Owner, 2026-08-24: *"more people than not will not know what a capability or an element even is —
+   * something is needed so that a person who does not know what an ontology is can understand."*
+   * The words themselves cannot change: they are the meta-model's kind names, owned by
+   * `docs/ONTOLOGY-ATLAS-SPEC.md` §2, and `AGENTS.md` forbids a competing glossary. A second
+   * teaching screen is forbidden too (`design.md`: the tour and the help glossary own the two
+   * definitions).
+   *
+   * So the definition travels to the confusion instead of the reader travelling to the
+   * definition — composed from the **existing** glossary strings, so there is one source and it
+   * cannot drift. This row already explains its own numbers this way (`freshTitle`,
+   * `domainCountTitle`); this is the same move for the one label that names a kind.
+   */
+  subcountsTitle?: string;
+  /**
    * The number-scope contract — the scope word for the large number at the right of
    * a domain row ("everything below"). When present, the large number's title reads
    * "{subtotalTitle} {count} · {domainCountTitle}", making explicit that this number
@@ -212,7 +228,11 @@ export function TopologyIndexTreeRow({
           </div>
           {isDomain && subcounts ? (
             <div className="mt-[3.5px] flex items-center gap-1.5">
-              <span className="shrink-0 font-mono text-caption text-[color:var(--topology-v2-panel-text-quaternary)]">
+              <span
+                title={labels.subcountsTitle}
+                data-testid="topology-index-subcounts"
+                className="shrink-0 font-mono text-caption text-[color:var(--topology-v2-panel-text-quaternary)]"
+              >
                 {labels.capabilitiesShort} {subcounts.capabilityCount} · {labels.elementsShort}{" "}
                 {subcounts.elementCount}
               </span>

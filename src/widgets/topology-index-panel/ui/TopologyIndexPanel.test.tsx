@@ -93,6 +93,7 @@ const labels = {
   censusDomains: "domains",
   capabilitiesShort: "caps",
   elementsShort: "elems",
+  subcountsTitle: "caps: one thing a person can do · elems: the code that implements it",
   domainCountTitle: "겹침 포함", freshTitle: "recently updated",
   emptyHint: "No matches",
   segmentAll: "All",
@@ -879,5 +880,37 @@ describe("TopologyIndexPanel — 행 클릭 펼침", () => {
 
     fireEvent.click(root);
     expect(root).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("역량·요소 숫자가 그 자리에서 무슨 뜻인지 말한다", () => {
+    /*
+     * ⚠️ Owner, 2026-08-24: *"more people than not will not know what a capability or an element even is —
+     * something is needed so that a person who does not know what an ontology is can understand."*
+     *
+     * The words cannot change (meta-model kind names, owned by the spec), and a second teaching
+     * screen is forbidden. So the definition travels to the confusion: the same `title` treatment
+     * this panel already uses for its other numbers, composed by the caller from the **existing**
+     * glossary strings so there is one source.
+     */
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    const counts = screen.getAllByTestId("topology-index-subcounts")[0];
+    expect(counts.textContent).toContain("caps");
+    expect(counts.textContent).toContain("elems");
+    expect(
+      counts.getAttribute("title"),
+      "숫자만 있고 그 말이 무슨 뜻인지는 어디에도 없다",
+    ).toBe(labels.subcountsTitle);
   });
 });

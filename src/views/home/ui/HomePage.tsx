@@ -410,6 +410,15 @@ function HomePageImpl() {
   // name-input contract.
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
+  /* The help glossary owns these definitions; reading them here keeps one source (see
+     `TopologyIndexTreeRowLabels.subcountsTitle`). */
+  const tGlossary = useTranslations('searchWidgets.shortcuts.glossary');
+  const kindCountsTitle = useMemo(
+    () =>
+      `${tGlossary('capabilityTerm')}: ${tGlossary('capabilityDefinition')} · ` +
+      `${tGlossary('elementTerm')}: ${tGlossary('elementDefinition')}`,
+    [tGlossary],
+  );
   const tTopologyKeyboardWalk = useTranslations('topologyWidgets.keyboardWalk');
   // aria-label/title for the history chrome-tile entry point below `lg`. Reuses
   // the same `atlasGit` keys `GitStatusTile` already uses.
@@ -5233,6 +5242,7 @@ function HomePageImpl() {
                       censusDomains: t("index.censusDomains"),
                       capabilitiesShort: t("index.capabilitiesShort"),
                       elementsShort: t("index.elementsShort"),
+                      subcountsTitle: kindCountsTitle,
                       freshTitle: t("index.freshTitle"),
                       domainCountTitle: t("index.domainCountTitle"),
                       subtotalTitle: t("index.subtotalTitle"),
