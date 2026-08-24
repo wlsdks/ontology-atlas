@@ -555,6 +555,23 @@ export function useAcpSession({
             // so a late notice is harmless.
             const mb = Number(message.slice('npx-download-progress:'.length));
             setDownload({ mb: Number.isFinite(mb) ? mb : null });
+            /*
+             * ⚠️ **A download in flight is not a hang** (owner's installed app, 2026-08-24).
+             *
+             * The handshake has a 45s ceiling. The first launch of a tool spends far longer than
+             * that inside `npx` — measured 274 MB for `codex-acp` — and nothing answers
+             * `initialize` until it lands. So the ceiling expired, the child was killed **mid
+             * download**, and the panel said "the tool is not responding". The next try deleted the
+             * half-built cache and restarted the same 274 MB, failing at the same second: below
+             * roughly 6 MB/s the first conversation could never open at all.
+             *
+             * This notice is proof the fetch is advancing, so it restarts the deadline. The ceiling
+             * keeps its meaning — 45 seconds with **no sign of life** — and a download that truly
+             * stalls still times out exactly as before.
+             */
+            if (!stale() && acpSessionRef.current === acpSessionId) {
+              clientRef.current?.extendPendingDeadlines();
+            }
             return;
           }
           if (message.startsWith('npx-download-done')) {
