@@ -8,9 +8,10 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { Bot, ChevronRight, FolderOpen } from "lucide-react";
+import { ChevronRight, FolderOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
+import { BuildFromCodeDoor } from "./BuildFromCodeDoor";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
@@ -90,6 +91,17 @@ export interface FirstRunStarterModuleProps {
    * reopens it at any time.
    */
   nodeSelected?: boolean;
+  /**
+   * **This vault has no map built from code yet** — nothing in it points at a real repository.
+   *
+   * ⚠️ Deliberately *not* "has never opened a folder" (owner correction, 2026-08-24). That is the
+   * card's rule, and it is right for browsing guidance: someone who has not looked around yet needs
+   * the sample and the tour, and pushing those at a returning person is noise. It is the wrong rule
+   * for unfinished work. Somebody who opened a folder, saw an empty map and gave up has opened
+   * folders *more* than a first-timer, and the card's rule hid the 「make a map from my code」 door
+   * from exactly that person. The caller decides this from the project's source binding.
+   */
+  mapUnbuilt?: boolean;
   children?: ReactNode;
 }
 
@@ -135,6 +147,7 @@ export function FirstRunStarterModule({
   audiencePlain = false,
   lensActive = false,
   nodeSelected = false,
+  mapUnbuilt = false,
   children,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
@@ -148,7 +161,7 @@ export function FirstRunStarterModule({
     dismiss,
     undismiss,
     openFolder,
-    buildFromCode,
+    build,
     canBuildFromCode,
     createVault,
     busy,
@@ -328,13 +341,44 @@ export function FirstRunStarterModule({
     </div>
   );
 
-  // No guide available (a local vault, say) — INDEX only.
-  if (!visible && !(sampleModeSettled && dismissed)) return <>{children}</>;
+  /*
+   * ⚠️ **Person B's only door** (owner correction, 2026-08-24).
+   *
+   * Everything above this line belongs to the first-run card, and that card is gated on
+   * `recentVaults.length === 0` — "this computer has never opened a folder". The owner named the
+   * mistake exactly: *"shouldn't it be person B who has opened folders many times and still hasn't
+   * made one?"* Someone who opened a folder, saw an empty map and gave up has opened folders **more**
+   * than a first-timer, so the card's rule hid this door from the very person it was built for.
+   *
+   * The rule that replaces it is about unfinished work, not about newness: a vault is open, and
+   * nothing in it points at real code yet (`mapUnbuilt`, decided by the caller from the project's
+   * source binding). It stays a single quiet line because it sits above somebody's own tree and must
+   * not out-shout it, and it disappears the moment a map exists.
+   */
+  const standaloneDoor =
+    !visible && mapUnbuilt && canBuildFromCode && !fsaUnsupported ? (
+      <div
+        data-testid="index-build-from-code-row"
+        className="border-b border-[color:var(--topology-v2-panel-border)] px-4 pb-3 pt-3"
+      >
+        <BuildFromCodeDoor build={build} variant="row" disabled={busy} />
+      </div>
+    ) : null;
+
+  // No guide available (a local vault, say) — INDEX only, plus the door when a map is still missing.
+  if (!visible && !(sampleModeSettled && dismissed))
+    return (
+      <>
+        {standaloneDoor}
+        {children}
+      </>
+    );
   // The guide was closed or collapsed — the single "back" row plus the INDEX.
   if (!visible || collapsed) {
     return (
       <>
         {reopenRow}
+        {standaloneDoor}
         {children}
       </>
     );
@@ -559,37 +603,7 @@ export function FirstRunStarterModule({
         product.
       */}
       {canBuildFromCode && !fsaUnsupported ? (
-        <>
-          <button
-            type="button"
-            data-testid="first-run-build-from-code"
-            disabled={busy}
-            onClick={() => {
-              void buildFromCode();
-            }}
-            /*
-             * Hover comes from the axes, not from two hand-written `hover:` literals. The
-             * adoption ratchet counts those and its whole point is that they may fall and never
-             * rise — the neighbouring tour CTA predates it and is part of the baseline, which is
-             * not a licence to add two more beside it.
-             */
-            className={controlClass({
-              shape: "card",
-              scope: "panel",
-              hoverBorder: "strong",
-              hoverInk: "strong",
-              className:
-                "touch-hit-expand mt-2 inline-flex h-8 w-full justify-center gap-1.5 border-[color:var(--color-indigo-line-a35)] text-body text-[color:var(--topology-v2-panel-text-secondary)]",
-            })}
-          >
-            <Bot size={ICON_SIZE.sm} aria-hidden />
-            {busy && !scaffolding ? t("buildFromCodeBusy") : t("buildFromCodeLabel")}
-          </button>
-          {/* What will actually happen, before it happens — including that it asks before writing. */}
-          <p className="mt-1 break-keep text-caption leading-caption text-[color:var(--topology-v2-panel-text-quaternary)]">
-            {t("buildFromCodeHint")}
-          </p>
-        </>
+        <BuildFromCodeDoor build={build} variant="card" disabled={busy} />
       ) : null}
 
       {/* The tour's only entry point was a single icon in the right rail, and

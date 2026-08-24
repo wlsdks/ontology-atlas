@@ -380,7 +380,7 @@
     "openLabel": "내 폴더 열기",
     "openBusy": "폴더 여는 중…",
     "buildFromCodeLabel": "내 코드로 지도 만들기",
-    "buildFromCodeHint": "코드 폴더를 고르면 AI가 훑어서 초안을 제안해요. 쓰기 전에 하나씩 물어봐요.",
+    "buildFromCodeHint": "프로젝트 폴더를 고르면 그 안에 atlas 폴더를 만들고, AI가 코드를 훑어 초안을 제안해요. 만들기 전에 경로를 보여 주고, 쓰기 전에 하나씩 물어봐요.",
     "buildFromCodeBusy": "폴더 여는 중…",
     "createLabel": "✚ 새 폴더 만들기",
     "createBusy": "시작 구조 작성 중…",
@@ -418,7 +418,14 @@
     "cliBridgeSourceOnly": "ontology-atlas 소스 체크아웃 안에서 실행하는 명령이에요. 앱만 쓴다면 필요 없습니다.",
     "errorRootRejected": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
     "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
-    "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요."
+    "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요.",
+    "buildFromCodeWillCreate": "여기에 지도 폴더를 만들어요. 코드는 그대로 두고, 이 폴더만 새로 생겨요.",
+    "buildFromCodeReuse": "이 프로젝트에는 지도 폴더가 이미 있어요. 새로 만들지 않고 그대로 이어서 써요.",
+    "buildFromCodeCreateGo": "여기에 만들기",
+    "buildFromCodeReuseGo": "이어서 쓰기",
+    "buildFromCodeCreating": "만드는 중…",
+    "buildFromCodeCancel": "취소",
+    "buildFromCodeFailed": "폴더를 만들지 못했어요. 이 프로젝트에 쓰기 권한이 있는지 확인해 주세요."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",

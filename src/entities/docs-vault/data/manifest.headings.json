@@ -9320,6 +9320,16 @@
       "depth": 2,
       "text": "2026-08-24 — The first-run card gets a door for people who already have code",
       "slug": "2026-08-24-the-first-run-card-gets-a-door-for-people-who-already-have-code"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — The map moves inside the project, into a folder named `atlas`",
+      "slug": "2026-08-24-the-map-moves-inside-the-project-into-a-folder-named-atlas"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — The door follows \"hasn't built one yet\", not \"has never opened a folder\"",
+      "slug": "2026-08-24-the-door-follows-hasnt-built-one-yet-not-has-never-opened-a-folder"
     }
   ],
   "DEMO-SCENARIO": [

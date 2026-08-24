@@ -20,7 +20,25 @@ const mocks = vi.hoisted(() => ({
   mode: 'static' as 'static' | 'local',
   desktop: true,
   requestAgentChat: vi.fn(),
+  pickedProject: '/Users/dana/my-product' as string | null,
+  ensureChildDir: vi.fn(async (_root: string, _name: string) => undefined),
 }));
+
+vi.mock('@/shared/lib/tauri-vault-fs', async () => {
+  const actual = await vi.importActual<typeof import('@/shared/lib/tauri-vault-fs')>(
+    '@/shared/lib/tauri-vault-fs',
+  );
+  return {
+    ...actual,
+    isTauriVaultRuntime: () => true,
+    getTauriVaultRootPath: () => mocks.pickedProject,
+    createTauriVaultHandle: (rootPath: string) => ({ name: rootPath }),
+    pickTauriVaultDirectory: async () =>
+      mocks.pickedProject === null ? null : { name: 'picked' },
+    listTauriDirectoryNames: async () => ['src', 'package.json'],
+    ensureTauriChildDirectory: (root: string, name: string) => mocks.ensureChildDir(root, name),
+  };
+});
 
 vi.mock('@/features/docs-vault-local', async () => {
   const actual = await vi.importActual<typeof import('@/features/docs-vault-local')>(
@@ -72,6 +90,8 @@ describe('FirstRunStarterModule', () => {
     mocks.mode = 'static';
     mocks.desktop = true;
     mocks.requestAgentChat.mockClear();
+    mocks.ensureChildDir.mockClear();
+    mocks.pickedProject = '/Users/dana/my-product';
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
     window.localStorage.removeItem('demo:sample-source:v1');
     // Clearing storage clears the module cache too — otherwise a test leans on
@@ -629,6 +649,9 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     // actually visible, so it is stated explicitly.
     mocks.vault = makeVault();
     mocks.mode = 'static';
+    mocks.desktop = true;
+    mocks.ensureChildDir.mockClear();
+    mocks.pickedProject = '/Users/dana/my-product';
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
     resetSampleSourceCacheForTests();
   });
@@ -669,14 +692,80 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
    * ⚠️ The door for someone who already has code (decision, 2026-08-24). Measured on the shipped
    * card: of its four actions none makes an ontology from a repository that already exists.
    */
-  it('코드를 이미 가진 사람에게 문을 준다 — 무엇을 할지와, 쓰기 전에 묻는다는 것까지', () => {
+  it('코드를 이미 가진 사람에게 문을 준다 — 무엇을 할지와, 쓰기 전에 묻는다는 것까지', async () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     const door = screen.getByTestId('first-run-build-from-code');
     expect(door).toHaveTextContent('buildFromCodeLabel');
     // The hint states what will happen **before** it happens, including that it asks before writing.
     expect(screen.getByTestId('first-run-starter')).toHaveTextContent('buildFromCodeHint');
-    fireEvent.click(door);
-    expect(mocks.vault.open, '문을 눌렀는데 폴더 피커가 안 열린다').toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(door);
+    });
+
+    /*
+     * ⚠️ What the person must be able to read before agreeing (owner direction, 2026-08-24). The map
+     * now lands inside their project, so this press ends in a folder written into their source tree.
+     * The exact path is on screen, and nothing is created until the button beside it is pressed.
+     */
+    expect(screen.getByTestId('first-run-build-path')).toHaveTextContent(
+      '/Users/dana/my-product/atlas',
+    );
+    expect(
+      mocks.ensureChildDir,
+      '경로를 보여 주기만 해야 하는 단계에서 이미 폴더를 만들었다',
+    ).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('first-run-build-confirm-go'));
+    });
+    expect(mocks.ensureChildDir).toHaveBeenCalledWith('/Users/dana/my-product', 'atlas');
+  });
+
+  it('취소하면 만들지 않고 경로도 치운다', async () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('first-run-build-from-code'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('first-run-build-confirm-cancel'));
+    });
+    expect(screen.queryByTestId('first-run-build-confirm')).toBeNull();
+    expect(mocks.ensureChildDir).not.toHaveBeenCalled();
+  });
+
+  /*
+   * ⚠️ **The correction this door needed** (owner, 2026-08-24): *"shouldn't it be person B who has
+   * opened folders many times and still hasn't made one?"* The card is gated on "this computer has
+   * never opened a folder", so the door it contained was invisible to the person who opened folders
+   * repeatedly, saw an empty map each time, and gave up — the exact person it was built for.
+   */
+  it('폴더를 여러 번 열어 봤어도 지도를 못 만든 사람에게 문이 보인다', () => {
+    // The card itself is gone (a vault is open, so first-run guidance is finished), and the door
+    // must not go with it.
+    mocks.mode = 'local';
+    render(
+      <FirstRunStarterModule concepts={4} relations={2} domains={1} mapUnbuilt>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.queryByTestId('first-run-starter'), '카드는 이미 할 일을 마쳤다').toBeNull();
+    expect(
+      screen.getByTestId('index-build-from-code'),
+      '폴더를 여러 번 연 것은 끝냈다는 뜻이 아니라 더 헤맸다는 뜻이다',
+    ).toBeInTheDocument();
+    // It sits above their own tree, not instead of it.
+    expect(screen.getByTestId('index-body')).toBeInTheDocument();
+  });
+
+  it('코드가 이미 붙어 있으면 그 문은 사라진다 — 끝난 일을 다시 권하지 않는다', () => {
+    mocks.mode = 'local';
+    render(
+      <FirstRunStarterModule concepts={40} relations={30} domains={5}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.queryByTestId('index-build-from-code')).toBeNull();
   });
 
   it('웹에서는 그 문이 아예 없다 — 「곧 됩니다」도 비활성 버튼도 아니다', () => {

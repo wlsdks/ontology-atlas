@@ -20240,3 +20240,79 @@ analysis could move in-process and this record's central reasoning expires.
 **Status**: valid
 
 ---
+## 2026-08-24 — The map moves inside the project, into a folder named `atlas`
+
+**Context**: the product shipped two contradictory answers to "where does a map
+live". The installed app's "just start" created `~/Documents/Ontology Atlas/`,
+outside any project (`src-tauri/src/lib.rs`), while the CLI's `init` and this
+repository's own vault sit inside the repository. The owner asked directly:
+*"if the user picks a particular project, should our folder be created at that
+project's root, rather than somewhere outside it?"*
+
+**Decision**: when someone points the 「make a map from my code」 door at a
+project, the vault is created at `<project>/atlas/`. The name is `atlas`, chosen
+by the owner over `docs/ontology`: *"docs is used so much I think it would just
+get deleted."* Nothing is created until the exact path is on screen and the
+person presses the button beside it. An existing `atlas` folder is continued, not
+overwritten, and the screen says which of the two is happening.
+
+**Why inside**: with the map outside the repository, a colleague who clones the
+code does not get the meaning, and a change to the code lands in a pull request
+while the change to its meaning does not. The map then rots invisibly. That
+directly contradicts the product's own claim that Git is the source of truth and
+that people judge meaning in plain files and diffs. Inside, the two travel
+together and are reviewed in one diff.
+
+**Why a visible name, not a dot-folder**: what is hidden does not get read, and
+this product's whole argument is that a person opens these files.
+
+**Recorded dissent**: a product name at a repository root is close to a one-way
+door. If Atlas is ever renamed, that folder is already sitting in other people's
+repositories, and no later decision can reach them. The counter is that a map
+swept away in a routine `docs/` tidy-up is a worse failure than an awkward name,
+and the owner judged the deletion risk to be the real one.
+
+**Falsifier**: someone deletes or gitignores the `atlas` folder because they read
+it as vendor litter, or a team refuses the folder at their repository root. Either
+means the name bought recognisability at too high a price.
+
+**Not settled here**: the app's own "just start" path still writes to
+`~/Documents/Ontology Atlas/`. That surface has no project to sit inside, so this
+record does not move it; the inconsistency stands and is named for a later pass.
+
+**Status**: valid
+
+---
+
+## 2026-08-24 — The door follows "hasn't built one yet", not "has never opened a folder"
+
+**Context**: the 「make a map from my code」 door shipped inside the first-run
+card, which is gated on `recentVaults.length === 0` — this computer has never
+opened a folder. The owner rejected that audience: *"shouldn't it be person B who
+has opened folders many times and still hasn't made one?"*
+
+**Decision**: the card keeps its rule, and the door gets its own. It appears
+wherever a vault is open and nothing in it points at real code, however many times
+that person has opened folders, and disappears once a map with connected code
+exists.
+
+**Why the two conditions separate**: "never connected" is right for *browsing
+guidance*. The sample switch and the tour teach someone who has not looked around
+yet, and pushing them at a returning person is noise. It is wrong for *unfinished
+work*. Somebody who opened a folder, saw an empty map and gave up has opened
+folders more than a first-timer: repeated opening is evidence of struggling, not
+of being finished. The old rule hid this door from precisely the person it was
+built for.
+
+**Recorded dissent**: a second home for one action risks two things claiming to be
+the same door and drifting apart. The counter is that both render one component
+with one label and one flow, and the variant only changes its size so that it does
+not out-shout the person's own tree.
+
+**Falsifier**: the row is measured as ignored by people with an unbuilt map, or it
+is reported as clutter by someone who has deliberately chosen not to connect code.
+The second would mean "no source bound" is too broad a reading of "unfinished".
+
+**Status**: valid
+
+---
