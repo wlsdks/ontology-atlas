@@ -92,9 +92,25 @@ export function vaultMcpServers(
   launch: McpServerLaunch | null,
   vaultPath: string | null,
   registration?: ExistingVaultMcpRegistration | null,
+  options?: { ownsWriteGate?: boolean },
 ): AcpMcpServer[] {
   if (!launch || !vaultPath) return [];
   if (vaultAlreadyRegisters(launch, registration)) return [];
+  /*
+   * **One session, one checkpoint — held by whoever can actually hold it.**
+   *
+   * A runtime with app-owned config isolation (Claude) already raises a permission
+   * request for every tool call, so a second gate here would ask the same person the
+   * same question twice. A runtime without it (Codex, measured 2026-08-24) lets an
+   * Atlas MCP write reach disk with no request at all — there the server has to hold
+   * the gate itself, because nobody else does.
+   *
+   * `ownsWriteGate` means "this runtime's own configuration already produces the
+   * request", so the server gate is switched **off** for it and **on** for everyone
+   * else. Defaulting to `false` is the safe direction: a runtime nobody has measured
+   * gets the gate rather than a silent write path.
+   */
+  const serverGate = options?.ownsWriteGate === true ? null : 'on';
   return [
     {
       name: VAULT_MCP_SERVER_NAME,
@@ -104,6 +120,7 @@ export function vaultMcpServers(
         { name: 'OATLAS_VAULT', value: vaultPath },
         // MCP finds the repository root itself when the vault is inside git. Guessing it here would
         // pin a wrong value whenever the vault sits outside the repo.
+        ...(serverGate ? [{ name: 'OATLAS_WRITE_CONSENT', value: serverGate }] : []),
       ],
     },
   ];

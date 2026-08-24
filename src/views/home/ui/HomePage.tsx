@@ -8,7 +8,7 @@ import {
   consumeQueuedAgentChatIntent,
   subscribeAgentChatIntent,
 } from "@/shared/lib/agent-chat-intent";
-import { isGuardedRuntime } from "@/features/acp-session/model/runtime-gate";
+import { isGuardedRuntime, runtimeOwnsWriteGate } from "@/features/acp-session/model/runtime-gate";
 import { agentChatDoor } from "../model/agent-chat-door";
 import {
   AcpChatPanel,
@@ -2598,7 +2598,11 @@ function HomePageImpl() {
             validForCurrentVault: vault.agentConfigStatus?.codexConfigValid === true,
           }
         : null;
-    return vaultMcpServers(agentServer.launch, gitVaultPath, registration);
+    // Claude's isolated config already asks before every tool call, so a second
+    // server-side gate would double-prompt. Everything else gets the server gate.
+    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
+      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+    });
   }, [
     agentServer.launch,
     gitVaultPath,

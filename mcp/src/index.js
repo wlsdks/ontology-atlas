@@ -47,6 +47,11 @@ import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
 import { SERVER_VERSION } from './server-version.mjs';
+import {
+  parseConsentEnv,
+  requestWriteConsent,
+  CONSENT_DECLINED,
+} from './write-consent.mjs';
 import { buildToolInventorySection } from './tool-inventory.mjs';
 import {
   PROJECT_SOURCE_STATE_RELATIVE_PATH,
@@ -6167,6 +6172,11 @@ function parseReadOnlyEnv(value) {
 }
 const READ_ONLY_MODE = parseReadOnlyEnv(process.env.OATLAS_READ_ONLY);
 
+// The app-owned write checkpoint. Rationale, and the measurement that forced it,
+// live in `write-consent.mjs`. Off unless the launcher asks for it, so a vault
+// whose client already owns the gate is unchanged.
+const WRITE_CONSENT_MODE = parseConsentEnv(process.env.OATLAS_WRITE_CONSENT);
+
 const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({
   ...tool,
   annotations: {
@@ -6324,6 +6334,28 @@ server.setRequestHandler('tools/call', async (request) => {
       );
     }
     const args = normalizeToolArguments(request.params.arguments, name);
+
+    // ── The write checkpoint ──
+    // Every tool that is not a read tool passes a human decision first when the
+    // launcher turned the gate on. It sits **before** the switch so a tool added later
+    // is covered by being outside the read set, not by someone remembering to guard it.
+    if (WRITE_CONSENT_MODE && TOOL_BY_NAME.has(name) && !READ_TOOL_NAMES.has(name)) {
+      const consent = await requestWriteConsent({
+        server,
+        toolName: name,
+        args,
+        enabled: true,
+      });
+      if (!consent.allowed) {
+        // A refusal is a normal outcome, not a crash: the agent is told plainly
+        // that nothing changed and why, so it can report back instead of retrying.
+        const error = new Error(consent.message);
+        error.code = consent.reason;
+        error.declinedByHuman = consent.reason === CONSENT_DECLINED;
+        throw error;
+      }
+    }
+
     switch (name) {
       case 'connection_info':
         return ok(connectionInfoTool());
