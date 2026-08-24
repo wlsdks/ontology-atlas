@@ -185,9 +185,10 @@ fn classify_change(row: &PorcelainRow) -> &'static str {
     "modified"
 }
 
-// ── frontmatter kind/slug (경량 파서) ──────────────────────────────────────
-// 의미 정보용 최소 추출 — 파일 선두 `---` 블록에서 top-level `kind:`/`slug:`만
-// 읽는다. 커밋을 막지 않는 best-effort(실패해도 경로 기반 slug 로 진행).
+// ── frontmatter kind/slug (lightweight parser) ─────────────────────────────
+// Minimal extraction for semantic info — reads only top-level `kind:`/`slug:` from
+// the file's leading `---` block. Best-effort that never blocks a commit (on failure,
+// proceeds with the path-based slug).
 fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
     let Ok(raw) = fs::read_to_string(abs_path) else {
         return (None, None);
@@ -510,7 +511,7 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
     }
 }
 
-/// 분류 결과를 사용자용 한 줄 문자열로 — Result<_, String> 의 Err 페이로드.
+/// The classification result as a one-line user-facing string — the Err payload of Result<_, String>.
 fn classified_error_string(info: &GitErrorInfo) -> String {
     let mut out = info.message.clone();
     if let Some(note) = &info.note {
@@ -533,7 +534,7 @@ fn git_error_text(run: &GitRun) -> String {
     parts.join("\n")
 }
 
-// ── upstream / 브랜치 조회 ─────────────────────────────────────────────────
+// ── upstream / branch lookup ───────────────────────────────────────────────
 fn get_current_branch(repo_root: &Path) -> Option<String> {
     let out = run_git(repo_root, &["rev-parse", "--abbrev-ref", "HEAD"]).ok()?;
     if !out.success {
@@ -590,28 +591,28 @@ fn get_remote_url(repo_root: &Path, remote_name: &str) -> Option<String> {
     }
 }
 
-// ── 결과 타입 (웹 GUI 가 소비) ─────────────────────────────────────────────
+// ── Result types (consumed by the web GUI) ─────────────────────────────────
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitStatusResult {
-    /// vault 가 git repo 안인가 — 웹 GUI 버튼 상태 판단의 1차 신호.
+    /// Whether the vault is inside a git repo — the primary signal for the web GUI's button-state decisions.
     initialized: bool,
-    /// repo 최상위 절대경로 (initialized 일 때만).
+    /// Absolute path of the repo toplevel (only when initialized).
     repo_root: Option<String>,
-    /// 현재 브랜치명.
+    /// Current branch name.
     branch: Option<String>,
-    /// upstream ref (예: origin/main) — 없으면 null(push 불가 안내).
+    /// upstream ref (e.g. origin/main) — null when absent (signals push is unavailable).
     upstream: Option<String>,
-    /// vault 범위의 미커밋 변경 수.
+    /// Number of uncommitted changes within the vault scope.
     changed_count: usize,
-    /// vault 밖에 이미 staged 된 경로(스냅샷이 건드리지 않음 — 정보용).
+    /// Paths already staged outside the vault (the snapshot does not touch them — informational).
     staged_outside_vault: Vec<String>,
-    /// upstream 에 아직 안 간 내 걸음 수. upstream 이 없으면 `None`.
+    /// Number of my steps not yet on the upstream. `None` when there is no upstream.
     ///
-    /// 이 둘이 없으면 화면은 「보낼 게 있는지」를 말할 수 없어 Push 버튼이
-    /// 항상 켜져 있거나 항상 꺼져 있다 — 둘 다 거짓말이다.
+    /// Without these two, the screen cannot say "is there anything to send", so the
+    /// Push button is either always on or always off — both are lies.
     ahead: Option<usize>,
-    /// upstream 에는 있고 내게 없는 걸음 수. upstream 이 없으면 `None`.
+    /// Number of steps on the upstream that I don't have. `None` when there is no upstream.
     behind: Option<usize>,
 }
 
@@ -620,7 +621,7 @@ pub struct GitStatusResult {
 pub struct PushOutcome {
     pushed: bool,
     remote_url: Option<String>,
-    /// 실패 시 사용자용 한 줄.
+    /// One user-facing line on failure.
     message: Option<String>,
     guidance: Option<String>,
 }
@@ -629,16 +630,16 @@ pub struct PushOutcome {
 #[serde(rename_all = "camelCase")]
 pub struct GitSnapshotResult {
     committed: bool,
-    /// "no-changes" | null(커밋됨).
+    /// "no-changes" | null (committed).
     reason: Option<String>,
     commit_hash: Option<String>,
     subject: Option<String>,
-    /// 의미 단위 auto 요약 한 줄.
+    /// One-line semantic-unit auto summary.
     summary: Option<String>,
     counts: SnapshotCounts,
     files: Vec<ChangeEntry>,
     staged_outside_vault: Vec<String>,
-    /// push 를 요청(opt-in)했을 때만 채워짐.
+    /// Populated only when push was requested (opt-in).
     push: Option<PushOutcome>,
 }
 
@@ -660,9 +661,9 @@ pub struct GitCommitInfo {
     subject: String,
     relative_time: String,
     iso_time: String,
-    /// 이 걸음이 건드린 vault 파일 — `kind`/`slug` 가 실려 있어 화면이 커밋을
-    /// 「개념이 어떻게 변했나」로 읽을 수 있다. 이게 없으면 이력은 커밋 제목
-    /// 문자열일 뿐이고, 개념 단위로 볼 방법이 아예 없다.
+    /// Vault files this step touched — carries `kind`/`slug` so the screen can read a
+    /// commit as "how did the concepts change". Without this, history is nothing but
+    /// commit subject strings, with no way at all to view it at the concept level.
     files: Vec<ChangeEntry>,
 }
 
@@ -671,7 +672,7 @@ pub struct GitCommitInfo {
 pub struct GitDiffResult {
     count: usize,
     files: Vec<ChangeEntry>,
-    /// 추적 파일의 텍스트 diff (신규 파일은 목록으로만).
+    /// Text diff of tracked files (new files appear in the list only).
     diff: String,
 }
 
@@ -679,9 +680,9 @@ pub struct GitDiffResult {
 #[serde(rename_all = "camelCase")]
 pub struct GitFetchResult {
     ok: bool,
-    /// upstream ref (예: origin/main). 없으면 빈 문자열 + `ok:false`.
+    /// upstream ref (e.g. origin/main). Empty string + `ok:false` when absent.
     upstream: String,
-    /// fetch **직후** 다시 잰 갈라짐 — 화면이 이 값으로 Pull/Push 를 켠다.
+    /// Divergence re-measured **right after** the fetch — the screen enables Pull/Push from this value.
     ahead: Option<usize>,
     behind: Option<usize>,
     summary: String,
@@ -692,15 +693,15 @@ pub struct GitFetchResult {
 pub struct GitPullResult {
     ok: bool,
     upstream: String,
-    /// pull 결과 요약 마지막 줄 (예: "Already up to date.").
+    /// Last line of the pull result summary (e.g. "Already up to date.").
     summary: String,
 }
 
-// ── #[tauri::command] 세트 ─────────────────────────────────────────────────
+// ── The #[tauri::command] set ──────────────────────────────────────────────
 
-/// vault 의 git 상태 요약 — 초기화 여부 + 브랜치/upstream + 미커밋 변경 수.
-/// 웹 GUI 가 "스냅샷/push/pull" 버튼 활성화를 판단하는 데 쓴다. repo 밖이면
-/// 에러가 아니라 `initialized:false` 로 알린다(자동 init 금지).
+/// Summary of the vault's git state — initialized or not + branch/upstream + uncommitted
+/// change count. The web GUI uses it to decide whether to enable the "snapshot/push/pull"
+/// buttons. Outside a repo it reports `initialized:false` instead of an error (auto init forbidden).
 #[tauri::command]
 pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -738,18 +739,18 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
     })
 }
 
-/// upstream 과 얼마나 갈라졌나 — `(ahead, behind)`.
+/// How far we have diverged from upstream — `(ahead, behind)`.
 ///
-/// 이 값은 **마지막 fetch 시점 기준**이다. git 이 원래 그렇다: 로컬은 원격을
-/// 다시 물어보기 전까지 자기가 아는 마지막 상태로 답한다. 그래서 화면에
-/// `Fetch` 가 따로 있어야 이 숫자가 갱신된다.
+/// This value is **as of the last fetch**. That is simply how git works: the local
+/// side answers with the last state it knows until it asks the remote again. That is
+/// why the screen needs a separate `Fetch` for these numbers to refresh.
 fn divergence_counts(repo_root: &Path) -> (Option<usize>, Option<usize>) {
     let out = match run_git(
         repo_root,
         &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
     ) {
         Ok(o) if o.success => o,
-        // upstream 이 사라졌거나 참조가 깨졌으면 「모른다」 — 0 이 아니다.
+        // If the upstream vanished or the ref is broken, the answer is "unknown" — not 0.
         _ => return (None, None),
     };
     let mut parts = out.stdout.split_whitespace();
@@ -758,10 +759,10 @@ fn divergence_counts(repo_root: &Path) -> (Option<usize>, Option<usize>) {
     (ahead, behind)
 }
 
-/// 원격의 최신 상태를 **받아만 온다** — 작업 트리는 건드리지 않는다.
+/// **Only receives** the remote's latest state — does not touch the working tree.
 ///
-/// 신뢰 헌장: 네트워크를 타는 유일한 다른 명령(`git_snapshot(push)`·`git_pull`)
-/// 과 같은 규율이다 — 사용자가 누를 때만 돈다. 자동 호출 금지.
+/// Trust charter: same discipline as the only other commands that go over the network
+/// (`git_snapshot(push)` · `git_pull`) — runs only when the user presses it. No automatic calls.
 #[tauri::command]
 pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -777,8 +778,8 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
     };
     let out = run_git(&repo_root, &["fetch", "--prune"])?;
     if !out.success {
-        // `message` 만 돌려주면 git 이 말해 준 이유(`note`)와 다음 수(`guidance`)를
-        // 우리가 지우는 셈이다 — 「무엇이 잘못됐는지」 없는 실패는 못 고친다.
+        // Returning only `message` would mean we erase the reason git told us (`note`)
+        // and the next move (`guidance`) — a failure without "what went wrong" cannot be fixed.
         let info = classify_git_error(&out.stderr, "fetch");
         return Err(classified_error_string(&info));
     }
@@ -799,9 +800,9 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
     })
 }
 
-/// vault 범위만 add + commit 하는 의미 단위 스냅샷. `message` 없으면 auto
-/// 요약을 subject 로 쓴다. `push` 가 true 일 때만 upstream 으로 전송(opt-in).
-/// 커밋할 변경이 없으면 에러가 아니라 `committed:false, reason:"no-changes"`.
+/// Semantic-unit snapshot that adds + commits only the vault scope. Without `message`,
+/// the auto summary is used as the subject. Sends to upstream only when `push` is true (opt-in).
+/// No changes to commit is not an error but `committed:false, reason:"no-changes"`.
 #[tauri::command]
 pub fn git_snapshot(
     vault_path: String,
@@ -843,8 +844,9 @@ pub fn git_snapshot(
     let full_rows = get_full_porcelain_status(&repo_root);
     let staged_outside = find_staged_outside_vault(&full_rows, &pathspec);
 
-    // 신뢰 헌장 ④ — vault 범위의 untracked 신규 파일만 먼저 add. tracked 파일의
-    // 변경/삭제는 이어지는 pathspec partial-commit 이 index 를 건드리지 않고 담는다.
+    // Trust charter ④ — first add only untracked new files within the vault scope.
+    // Changes/deletions of tracked files are captured by the subsequent pathspec
+    // partial-commit without touching the index.
     let untracked: Vec<&str> = rows
         .iter()
         .filter(|r| r.index == '?' && r.worktree == '?')
@@ -879,7 +881,7 @@ pub fn git_snapshot(
         total: changes.len(),
     };
 
-    // push 는 opt-in 명시일 때만 — upstream 없으면 자동 `-u` 설정 안 함(헌장 ①).
+    // push only on explicit opt-in — no automatic `-u` setup when there is no upstream (charter ①).
     let push_outcome = if push.unwrap_or(false) {
         Some(run_push(&repo_root))
     } else {
@@ -899,8 +901,8 @@ pub fn git_snapshot(
     })
 }
 
-/// 커밋은 이미 로컬에 있으므로 push 실패는 Err 로 크래시시키지 않고
-/// `PushOutcome{pushed:false, ...}` 안내로 담는다.
+/// The commit already exists locally, so a push failure does not crash as Err;
+/// it is delivered as `PushOutcome{pushed:false, ...}` guidance instead.
 fn run_push(repo_root: &Path) -> PushOutcome {
     let Some(upstream) = get_upstream_ref(repo_root) else {
         let branch = get_current_branch(repo_root).unwrap_or_else(|| "<branch>".into());
@@ -939,8 +941,8 @@ fn run_push(repo_root: &Path) -> PushOutcome {
     }
 }
 
-/// vault 경로에 닿은 최근 커밋 요약(해시/메시지/시간) — 옵시디언 Git 히스토리
-/// 패리티. 커밋이 하나도 없으면 빈 목록.
+/// Summary of recent commits touching the vault path (hash/message/time) — Obsidian
+/// Git history parity. Empty list when there are no commits at all.
 #[tauri::command]
 pub fn git_history(
     vault_path: String,
@@ -952,8 +954,8 @@ pub fn git_history(
     let max_count = limit.unwrap_or(10).max(1).to_string();
     const SEP: char = '\x1f';
     /*
-     * 레코드 구분자를 **머리에** 둔다. 꼬리에 두면 `--name-status` 줄이 구분자
-     * 뒤로 밀려 다음 커밋의 것으로 붙는다.
+     * Put the record separator at the **head**. Placed at the tail, the `--name-status`
+     * lines get pushed past the separator and attach to the next commit.
      */
     const REC: char = '\x1e';
     let format = format!("--pretty=format:{REC}%h{SEP}%H{SEP}%s{SEP}%cr{SEP}%cI");
@@ -971,7 +973,7 @@ pub fn git_history(
         ],
     )?;
     if !out.success {
-        // 커밋 0개(아직 히스토리 없음) 등 — 빈 목록으로 우아하게.
+        // Zero commits (no history yet) and the like — degrade gracefully to an empty list.
         return Ok(Vec::new());
     }
     let trimmed = out.stdout.trim();
@@ -1007,12 +1009,12 @@ pub fn git_history(
     Ok(commits)
 }
 
-/// `--name-status` 한 줄(`M\tpath`)을 `ChangeEntry` 로.
+/// One `--name-status` line (`M\tpath`) into a `ChangeEntry`.
 ///
-/// `kind` 는 **지금 디스크의 파일**에서 읽는다 — 그 커밋 시점의 blob 이 아니다.
-/// 개념의 정체는 시간이 지나도 같은 것으로 다루는 편이 화면에 유용하고,
-/// 커밋마다 `git show` 를 도는 비용을 치를 값이 없다. 지워진 파일은 경로에서
-/// 슬러그만 얻고 `kind` 는 비운다.
+/// `kind` is read from **the file on disk right now** — not the blob at that commit.
+/// Treating a concept's identity as the same thing over time is more useful for the
+/// screen, and running `git show` per commit is not worth the cost. For deleted files,
+/// only the slug is derived from the path and `kind` stays empty.
 fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Option<ChangeEntry> {
     let mut cols = line.split('\t');
     let code = cols.next()?.trim();
@@ -1047,7 +1049,7 @@ fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Optio
     })
 }
 
-/// 아직 커밋 안 된 vault 범위 변경의 파일 목록 + 텍스트 diff.
+/// File list + text diff of not-yet-committed changes within the vault scope.
 #[tauri::command]
 pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -1057,7 +1059,7 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     let changes = build_change_summary(&rows, &repo_root, &vault_dir);
 
-    // HEAD 있으면 HEAD 기준, 없으면(커밋 0개) index 기준으로 폴백.
+    // Against HEAD when it exists; falls back to the index when it doesn't (zero commits).
     let diff = match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
         Ok(out) if out.success => out.stdout,
         _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
@@ -1073,20 +1075,22 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     })
 }
 
-/// **한 커밋이 실제로 쓴 것** — 그 커밋의 vault 범위 patch.
+/// **What one commit actually wrote** — that commit's vault-scope patch.
 ///
-/// `git_diff` 와 갈라 둔 이유: 저쪽은 «아직 커밋 안 된» 작업 트리를 보고,
-/// 이쪽은 «이미 이름이 붙은» 한 걸음을 본다. 인자도 결과도 다르므로 한
-/// 명령에 `Option` 을 달아 두 뜻을 겸하게 하면 호출부가 무엇을 묻는지
-/// 시그니처로 못 읽는다.
+/// Why this is kept separate from `git_diff`: that one looks at the «not yet committed»
+/// working tree, while this one looks at one «already named» step. Both the arguments
+/// and the results differ, so hanging an `Option` on a single command to make it carry
+/// both meanings would leave the call site unable to read from the signature what it
+/// is asking.
 #[tauri::command]
 pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
 
-    // 해시는 사용자 입력이 아니라 우리가 방금 `git log` 로 읽은 값이지만,
-    // 인자로 오는 이상 옵션으로 오해될 문자열은 거른다(`--upload-pack=…` 류).
+    // The hash is not user input but a value we just read via `git log`; still, since
+    // it arrives as an argument, filter out strings that could be mistaken for options
+    // (the `--upload-pack=…` kind).
     let rev = hash.trim();
     if rev.is_empty() || !rev.chars().all(|c| c.is_ascii_hexdigit()) {
         return Err("commit hash must be hexadecimal".to_string());
@@ -1113,8 +1117,8 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
     })
 }
 
-/// upstream 에서 git pull (opt-in 전송). upstream 없음/충돌/비-fast-forward 를
-/// 크래시 없이 깔끔한 Err 로 안내한다.
+/// git pull from upstream (opt-in transmission). Reports missing upstream / conflict /
+/// non-fast-forward as a clean Err without crashing.
 #[tauri::command]
 pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -1147,9 +1151,10 @@ pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
     })
 }
 
-/// 원격 주소가 git 이 받아들일 형태인지 최소 검사 — 사용자 입력을 셸에 넘기기
-/// 전 게이트. `run_git` 이 인자 배열을 쓰므로 셸 인젝션 자체는 불가능하지만,
-/// 형태가 아닌 문자열(빈 값·공백 포함·플래그 흉내)은 여기서 거른다.
+/// Minimal check that the remote address has a shape git will accept — the gate before
+/// user input is handed to the shell. Shell injection itself is impossible because
+/// `run_git` uses an argument array, but strings that are not address-shaped (empty
+/// value · containing whitespace · flag lookalike) are filtered out here.
 fn validate_remote_url(url: &str) -> Result<String, String> {
     let trimmed = url.trim();
     if trimmed.is_empty() {
@@ -1161,7 +1166,7 @@ fn validate_remote_url(url: &str) -> Result<String, String> {
     if trimmed.chars().any(char::is_whitespace) {
         return Err("주소에 공백이 들어 있어요. 저장소 주소만 붙여 주세요.".into());
     }
-    // 흔한 4형태만 허용: scp-like(git@host:path) · https · ssh · file 경로.
+    // Allow only the four common shapes: scp-like (git@host:path) · https · ssh · file path.
     let looks_scp = trimmed.contains('@') && trimmed.contains(':');
     let looks_url = trimmed.starts_with("https://")
         || trimmed.starts_with("http://")
@@ -1307,17 +1312,17 @@ fn host_platform() -> &'static str {
     }
 }
 
-/// git 이 이 컴퓨터에 있는지 **읽기 전용**으로 확인한다.
+/// Checks **read-only** whether git exists on this computer.
 ///
-/// 왜 별 커맨드인가: 지금까지 git 미설치는 `run_git` 의 spawn 실패가 만든
-/// 일반 에러 문자열로만 드러났다("git 을 실행할 수 없어요 (설치 확인)").
-/// 화면은 그 문자열로 **무엇을 안내해야 할지 알 수 없다** — 설치가 문제인지
-/// 폴더가 문제인지 구분이 안 된다. 타입화된 신호로 바꿔 UI 가 플랫폼에 맞는
-/// 설치 안내를 고를 수 있게 한다(소유자 요청 2026-07-26).
+/// Why a separate command: until now a missing git surfaced only as the generic
+/// error string `run_git`'s spawn failure produces ("cannot run git (check
+/// installation)"). From that string the screen **cannot know what guidance to
+/// give** — it cannot tell whether the installation or the folder is the problem.
+/// Turning it into a typed signal lets the UI pick platform-appropriate install
+/// guidance (owner request 2026-07-26).
 ///
-/// **아무것도 설치하지 않는다.** 우리는 감지하고 알려줄 뿐이고, 설치는
-/// 사용자가 자기 터미널에서 한다 — 신뢰 헌장의 "조용한 실행 0" 이 여기서도
-/// 유지된다.
+/// **Installs nothing.** We only detect and report; the user installs it in their
+/// own terminal — the trust charter's "zero silent execution" holds here too.
 #[tauri::command]
 pub fn git_probe() -> GitProbe {
     let platform = host_platform().to_string();
@@ -1330,9 +1335,9 @@ pub fn git_probe() -> GitProbe {
                 platform,
             }
         }
-        // non-zero exit 도 "실행은 됐다" 이므로 설치는 된 것으로 본다.
+        // A non-zero exit still means "it did run", so treat git as installed.
         Ok(_) => GitProbe { installed: true, version: None, platform },
-        // spawn 실패 = 실행 파일이 없다.
+        // Spawn failure = the executable is absent.
         Err(_) => GitProbe { installed: false, version: None, platform },
     }
 }
@@ -1377,10 +1382,11 @@ mod tests {
         assert_eq!(rows[0].path, "docs/new.md");
     }
 
-    /// `--name-status` 한 줄이 `ChangeEntry` 가 되는가.
+    /// Does one `--name-status` line become a `ChangeEntry`?
     ///
-    /// 이 파싱이 이력의 「개념」을 만든다 — 여기서 조용히 빈 목록이 나오면
-    /// 화면은 모든 걸음을 「개념 밖」으로 그리고, 아무 에러도 안 난다.
+    /// This parsing is what creates the "concepts" of history — if it quietly yields
+    /// an empty list here, the screen draws every step as "outside the concepts",
+    /// and no error appears anywhere.
     #[test]
     fn history_change_entry_reads_status_code_and_path() {
         let repo = PathBuf::from("/repo");
@@ -1388,7 +1394,7 @@ mod tests {
         let added = history_change_entry("A\tdocs/elements/foo.md", &repo, &vault).unwrap();
         assert_eq!(added.status, "added");
         assert_eq!(added.path, "docs/elements/foo.md");
-        // 디스크에 없는 파일이라 frontmatter 를 못 읽는다 → 경로 기반 슬러그.
+        // The file is not on disk so the frontmatter cannot be read → path-based slug.
         assert_eq!(added.slug, "elements/foo");
         assert_eq!(added.kind, None);
 
@@ -1404,7 +1410,7 @@ mod tests {
                 .status,
             "modified"
         );
-        // `R100` 처럼 점수가 붙어도 첫 글자로 판정한다.
+        // Even with a score attached, as in `R100`, judge by the first character.
         assert_eq!(
             history_change_entry("R100\tdocs/y.md", &repo, &vault)
                 .unwrap()
@@ -1413,7 +1419,7 @@ mod tests {
         );
     }
 
-    /// 커밋 제목 줄과 파일 줄이 섞이면 안 된다 — 빈/깨진 줄은 버린다.
+    /// Commit subject lines and file lines must not mix — drop empty/broken lines.
     #[test]
     fn history_change_entry_rejects_lines_without_a_tab() {
         let repo = PathBuf::from("/repo");
@@ -1534,15 +1540,15 @@ mod tests {
 
     #[test]
     fn host_platform_is_one_of_the_three_we_guide() {
-        // 설치 안내는 플랫폼별로 다르다 — 알 수 없는 값이 나오면 UI 가 안내를
-        // 못 고른다. 셋 중 하나임을 고정한다.
+        // Install guidance differs per platform — an unknown value leaves the UI
+        // unable to pick guidance. Pin the value to one of the three.
         assert!(matches!(host_platform(), "macos" | "windows" | "linux"));
     }
 
     #[test]
     fn git_probe_reports_this_machine_truthfully() {
-        // 이 저장소에서 테스트가 도는 환경은 git 이 있다 — probe 가 그 사실을
-        // 그대로 말하는지(추측하지 않는지) 확인한다.
+        // Any environment where this repository's tests run has git — check that the
+        // probe states that fact as-is (does not guess).
         let probe = git_probe();
         assert!(probe.installed);
         assert!(probe.version.as_deref().unwrap_or("").contains("git"));
@@ -1558,7 +1564,7 @@ mod tests {
         ] {
             assert_eq!(validate_remote_url(url).unwrap(), url, "should accept {url}");
         }
-        // 앞뒤 공백은 다듬는다 — 붙여넣기가 정상 경로다.
+        // Leading/trailing whitespace is trimmed — pasting is the normal path.
         assert_eq!(
             validate_remote_url("  git@github.com:me/repo.git \n").unwrap(),
             "git@github.com:me/repo.git"
@@ -1567,7 +1573,7 @@ mod tests {
 
     #[test]
     fn validate_remote_url_rejects_non_addresses() {
-        // 빈 값 · 플래그 흉내 · 내부 공백 · 형태 불명.
+        // Empty value · flag lookalike · internal whitespace · unrecognizable shape.
         for bad in ["", "   ", "--upload-pack=evil", "git@host:a b", "저장소주소"] {
             assert!(
                 validate_remote_url(bad).is_err(),

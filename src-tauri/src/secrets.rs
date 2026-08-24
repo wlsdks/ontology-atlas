@@ -64,8 +64,9 @@ fn entry(provider: &str) -> Result<Entry, String> {
     Entry::new(SERVICE, account).map_err(|err| format!("키체인을 열 수 없어요: {err}"))
 }
 
-/// 키의 **모양만** 보여주기 위한 꼬리 4자. 전체 값은 절대 프런트로 가지 않는다.
-/// 사용자가 "내가 넣은 그 키가 맞나" 를 확인할 수 있는 최소 정보다.
+/// The tail 4 characters, to show only the key's **shape**. The full value never goes
+/// to the front end. The minimum information that lets the user confirm "is this the
+/// key I put in".
 fn tail4(secret: &str) -> String {
     let chars: Vec<char> = secret.chars().collect();
     let start = chars.len().saturating_sub(4);
@@ -76,16 +77,16 @@ fn tail4(secret: &str) -> String {
 #[serde(rename_all = "camelCase")]
 pub struct SecretStatus {
     provider: String,
-    /// 키가 키체인에 있는가.
+    /// Whether the key is in the keychain.
     stored: bool,
-    /// 마지막 4자 — 있을 때만. **전체 값은 어떤 커맨드로도 나가지 않는다.**
+    /// Last 4 characters — only when present. **The full value leaves through no command whatsoever.**
     last4: Option<String>,
 }
 
-/// 키 저장 — **사용자가 설정 화면에서 직접 붙여넣고 저장을 누를 때만**.
+/// Store a key — **only when the user pastes it directly on the settings screen and presses save**.
 ///
-/// 빈 문자열은 거절한다(실수로 지워버리는 경로를 막는다 — 지우려면
-/// `secret_clear` 를 명시적으로 부른다).
+/// An empty string is rejected (this blocks the path of erasing by accident — to
+/// erase, call `secret_clear` explicitly).
 #[tauri::command]
 pub fn secret_set(provider: String, secret: String) -> Result<SecretStatus, String> {
     let trimmed = secret.trim();
@@ -103,7 +104,7 @@ pub fn secret_set(provider: String, secret: String) -> Result<SecretStatus, Stri
     })
 }
 
-/// 키 상태 — **있는가 · 마지막 4자**. 전체 값을 돌려주는 경로는 없다.
+/// Key status — **present or not · last 4 characters**. There is no path that returns the full value.
 #[tauri::command]
 pub fn secret_status(provider: String) -> Result<SecretStatus, String> {
     let known = validate_provider(&provider)?;
@@ -113,9 +114,9 @@ pub fn secret_status(provider: String) -> Result<SecretStatus, String> {
             stored: true,
             last4: Some(tail4(&secret)),
         }),
-        // 없음 = 정상 상태다(에러가 아니다). 다른 키체인 오류도 "없음" 으로
-        // 강등한다 — 사용자에게 필요한 답은 "지금 쓸 수 있나" 뿐이고, 잠긴
-        // 키체인을 에러로 띄우면 화면이 막힌다.
+        // Absent = a normal state (not an error). Other keychain errors are also
+        // demoted to "absent" — the only answer the user needs is "can I use it right
+        // now", and surfacing a locked keychain as an error blocks the screen.
         Err(_) => Ok(SecretStatus {
             provider: known.to_string(),
             stored: false,
@@ -124,9 +125,10 @@ pub fn secret_status(provider: String) -> Result<SecretStatus, String> {
     }
 }
 
-/// **Rust 안에서만** 키를 읽는다 — 호출을 붙이는 쪽(`llm.rs`)이 요청 헤더를
-/// 만들 때 쓴다. tauri 커맨드가 아니므로 이 값은 IPC 경계를 넘지 못한다
-/// (파일 상단 계약 그대로: 전체 키를 반환하는 **커맨드**는 없다).
+/// Reads the key **inside Rust only** — used by the side attaching the call
+/// (`llm.rs`) when it builds the request headers. This is not a tauri command, so
+/// the value cannot cross the IPC boundary (exactly the contract at the top of this
+/// file: there is no **command** that returns the full key).
 pub(crate) fn read_secret(provider: &str) -> Result<String, String> {
     let known = validate_provider(provider)?;
     entry(known)?
@@ -134,28 +136,29 @@ pub(crate) fn read_secret(provider: &str) -> Result<String, String> {
         .map_err(|_| "저장된 키가 없어요. 먼저 키를 등록해 주세요.".to_string())
 }
 
-/// 키 삭제 — 없어도 성공으로 본다(멱등). "지웠는데 에러" 는 사용자에게
-/// 의미 없는 불안만 준다.
+/// Delete a key — absence still counts as success (idempotent). "I deleted it and got
+/// an error" only gives the user meaningless anxiety.
 ///
-/// ## 다만 「없었다」와 「못 지웠다」는 다르다 (2026-08-17)
+/// ## But "it wasn't there" and "it couldn't be deleted" are different (2026-08-17)
 ///
-/// 예전에는 `let _ = handle.delete_credential();` 로 결과를 통째로 버리고
-/// **무조건** `stored: false` 를 돌려줬다. 키체인이 잠겨 있거나 삭제가
-/// 실패해도 화면은 「지웠어요」라고 말했고, **키는 그대로 남아 있었다.**
+/// Previously, `let _ = handle.delete_credential();` threw the result away wholesale
+/// and returned `stored: false` **unconditionally**. Even when the keychain was locked
+/// or the deletion failed, the screen said "deleted", and **the key was still there.**
 ///
-/// 멱등성 논리("없으면 성공")는 옳지만 여기까지 오면 안 된다. 이 모듈이 다루는
-/// 것은 비밀이고, **지워졌다는 거짓말은 사용자가 안심하고 그 자리를 떠나게
-/// 만든다** — 지워졌다고 믿고 컴퓨터를 넘기거나 공유한다. 이 파일 맨 위가
-/// 선언한 계약("WebView 가 키를 절대 보지 못하게 한다")과 같은 무게의 약속이다.
+/// The idempotency logic ("absent means success") is right, but it must not reach this
+/// far. What this module handles is a secret, and **a lie that it was deleted lets the
+/// user walk away reassured** — believing it is deleted, they hand over or share the
+/// computer. This is a promise of the same weight as the contract declared at the top
+/// of this file ("the WebView never sees the key").
 ///
-/// 그래서 오류의 **종류를 가른다**: 없어서 실패한 것만 성공으로 보고, 나머지는
-/// 실패라고 말한다. 지우지 못한 것을 지웠다고 하는 것보다, 못 지웠다고 하는
-/// 편이 언제나 낫다.
+/// So we **split errors by kind**: only failure-because-absent counts as success, and
+/// the rest is reported as failure. Saying it could not be deleted is always better
+/// than saying something was deleted when it was not.
 ///
-/// ⚠️ **확인에 `secret_status` 를 쓰면 안 된다.** 그 함수는 일부러 모든
-/// 키체인 오류를 「없음」으로 강등한다(잠긴 키체인 때문에 화면이 막히지 않게).
-/// 그러니 그것으로 확인하면 잠긴 키체인이 그대로 「지워짐」으로 통과한다 —
-/// 고치려던 결함과 똑같은 답이 나온다.
+/// ⚠️ **Do not use `secret_status` for the verification.** That function deliberately
+/// demotes every keychain error to "absent" (so a locked keychain does not block the
+/// screen). Verify with it, and a locked keychain passes straight through as
+/// "deleted" — the exact same answer as the defect this was meant to fix.
 #[tauri::command]
 pub fn secret_clear(provider: String) -> Result<SecretStatus, String> {
     let known = validate_provider(&provider)?;
@@ -165,18 +168,19 @@ pub fn secret_clear(provider: String) -> Result<SecretStatus, String> {
         stored: false,
         last4: None,
     };
-    // 키체인 결과를 세 갈래로 좁혀서 **판정은 순수 함수에 맡긴다** — 키체인이
-    // 있어야 도는 코드는 테스트할 수 없지만, 판정은 테스트할 수 있다.
+    // Narrow the keychain result to three branches and **leave the judgment to a pure
+    // function** — code that needs a keychain to run cannot be tested, but the
+    // judgment can.
     let deleted = match handle.delete_credential() {
         Ok(()) => Step::Done,
         Err(keyring::Error::NoEntry) => Step::Missing,
         Err(_) => Step::Failed,
     };
-    // 지웠다고 주장하기 전에 되읽는다. 삭제가 애초에 실패했으면 되읽을 필요가
-    // 없다(그 자체로 답이 나왔다).
+    // Read back before claiming it was deleted. If the deletion failed in the first
+    // place, no read-back is needed (that alone is the answer).
     let readback = if deleted == Step::Done {
         match handle.get_password() {
-            Ok(_) => Step::Done, // 아직 읽힌다 = 안 지워졌다
+            Ok(_) => Step::Done, // still readable = not deleted
             Err(keyring::Error::NoEntry) => Step::Missing,
             Err(_) => Step::Failed,
         }
@@ -190,40 +194,41 @@ pub fn secret_clear(provider: String) -> Result<SecretStatus, String> {
     }
 }
 
-/// 키체인 한 번의 결과를 이 셋으로 좁힌다.
+/// Narrows the result of one keychain call to these three.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Step {
-    /// 됐다(삭제 성공 · 되읽기에서 아직 값이 읽힘).
+    /// It went through (delete succeeded · on read-back, a value was still read).
     Done,
-    /// 그런 항목이 없다.
+    /// No such entry.
     Missing,
-    /// 다른 이유로 실패했다 — 잠긴 키체인 등. **모른다는 뜻이다.**
+    /// Failed for another reason — a locked keychain, etc. **It means we do not know.**
     Failed,
 }
 
-/// 「정말 지워졌는가」 판정. 여기서 `true` 를 돌려주면 화면이 사용자에게
-/// **지워졌다고 말한다** — 그 말에 기대어 사람은 컴퓨터를 넘기거나 공유한다.
-/// 그래서 **확실할 때만** `true` 다.
+/// The "was it really deleted" judgment. Returning `true` here makes the screen tell
+/// the user **it was deleted** — and leaning on that word, a person hands over or
+/// shares the computer. So it is `true` **only when certain**.
 pub(crate) fn is_cleared(deleted: Step, readback: Step) -> bool {
     match deleted {
-        // 애초에 없었다 — 멱등. "지웠는데 에러" 라는 의미 없는 불안을 안 준다.
+        // It was never there — idempotent. No meaningless "deleted, yet an error" anxiety.
         Step::Missing => true,
-        // 못 지웠다. 잠긴 키체인이면 값은 그대로 남아 있다.
+        // Could not delete. With a locked keychain the value is still there.
         Step::Failed => false,
         Step::Done => match readback {
-            // 확인됐다.
+            // Confirmed.
             Step::Missing => true,
-            // 지웠다는데 아직 읽힌다 — 안 지워진 것이다.
+            // Claimed deleted yet still readable — it was not deleted.
             Step::Done => false,
-            // 삭제 자체는 성공했다. 되읽기가 다른 이유로 실패한 것까지 실패로
-            // 부르면 멀쩡한 삭제마다 경고가 뜬다.
+            // The deletion itself succeeded. Calling a read-back that failed for some
+            // other reason a failure too would raise a warning on every perfectly fine delete.
             Step::Failed => true,
         },
     }
 }
 
-/// 지우지 못했을 때 사용자가 읽는 문장. 왜 안 됐는지와 **직접 지우는 길**을
-/// 같이 준다 — 이 저장소의 강등 카드 규율과 같다(못 하는 이유 + 갈 곳).
+/// The sentence the user reads when deletion failed. Gives why it failed together with
+/// **a way to delete it themselves** — same as this repository's degradation-card
+/// discipline (the reason it cannot + where to go).
 const STILL_THERE: &str = "키를 지우지 못했어요. 키체인이 잠겨 있을 수 있어요 — \
 잠금을 풀고 다시 시도하거나, 키체인 접근 앱에서 \"Ontology Atlas\" 항목을 직접 지워 주세요.";
 
@@ -233,42 +238,44 @@ mod tests {
 
     #[test]
     fn clearing_is_only_claimed_when_it_is_certain() {
-        // 2026-08-17 실측 재현: 예전 코드는 삭제 결과를 통째로 버리고 무조건
-        // "지웠어요" 를 돌려줬다. 잠긴 키체인에서 키는 그대로 남아 있었다.
+        // Reproduces the 2026-08-17 observation: the old code threw the delete result
+        // away wholesale and returned "deleted" unconditionally. On a locked keychain
+        // the key was still there.
         assert!(!is_cleared(Step::Failed, Step::Failed), "못 지웠으면 지웠다고 하면 안 된다");
-        // 지웠다는데 아직 읽히면 안 지워진 것이다.
+        // If it claims deleted but still reads back, it was not deleted.
         assert!(!is_cleared(Step::Done, Step::Done), "아직 읽히면 안 지워진 것이다");
     }
 
     #[test]
     fn absent_key_still_counts_as_cleared() {
-        // 멱등 — 원래 의도는 지킨다. "없는 걸 지웠다" 로 불안 주지 않는다.
+        // Idempotent — the original intent is kept. No anxiety over "deleted something absent".
         assert!(is_cleared(Step::Missing, Step::Failed));
         assert!(is_cleared(Step::Missing, Step::Missing));
     }
 
     #[test]
     fn a_verified_delete_is_cleared() {
-        // 늘 실패하는 판정은 판정이 아니다 — 정상 경로가 통과하는지도 본다.
+        // A judgment that always fails is not a judgment — also check that the normal path passes.
         assert!(is_cleared(Step::Done, Step::Missing));
     }
 
     #[test]
     fn a_successful_delete_survives_an_unreadable_readback() {
-        // 삭제는 됐는데 되읽기만 다른 이유로 실패한 경우까지 실패로 부르면
-        // 멀쩡한 삭제마다 경고가 뜬다.
+        // Calling it a failure even when the delete succeeded and only the read-back
+        // failed for another reason would raise a warning on every perfectly fine delete.
         assert!(is_cleared(Step::Done, Step::Failed));
     }
 
     #[test]
     fn provider_allowlist_rejects_arbitrary_names() {
-        // 프런트가 넘긴 문자열이 그대로 키체인 계정이 되므로 오타는 유령
-        // 엔트리를 만든다 — 허용 목록 밖은 전부 거절한다.
+        // The string the front end passes becomes the keychain account as-is, so a typo
+        // creates a ghost entry — everything outside the allowlist is rejected.
         assert!(validate_provider("anthropic").is_ok());
         assert!(validate_provider("openai").is_ok());
         assert!(validate_provider("gemini").is_ok());
-        // 대소문자·공백·별칭은 전부 거절 — 하나라도 통과하면 같은 키가 두 계정
-        // 이름으로 나뉘어 "저장은 됐는데 못 찾는" 상태가 된다.
+        // Case variants, whitespace, and aliases are all rejected — let even one
+        // through and the same key splits across two account names, ending in the
+        // "saved but unfound" state.
         for bad in ["", "Anthropic", "anthropic ", "../etc", "Gemini", "google"] {
             assert!(validate_provider(bad).is_err(), "should reject {bad:?}");
         }
@@ -276,24 +283,25 @@ mod tests {
 
     #[test]
     fn the_named_vendor_list_stays_frozen_at_three() {
-        // 4번째는 "Bearer 호환으로 흡수 불가 + 수요 증거" 둘 다일 때만이다.
-        // 이 단언이 깨졌다면 그 두 조건을 PR 본문에 적었는지 먼저 확인하라.
+        // A fourth comes only when both hold: "cannot be absorbed via Bearer
+        // compatibility + evidence of demand". If this assertion broke, first check
+        // that those two conditions are written in the PR body.
         assert_eq!(PROVIDERS.len(), 3, "명명 벤더는 3에서 동결한다");
     }
 
     #[test]
     fn tail4_never_leaks_more_than_four_characters() {
         assert_eq!(tail4("sk-ant-api03-abcdefgh"), "efgh");
-        assert_eq!(tail4("abc"), "abc"); // 4자 미만이면 있는 만큼
+        assert_eq!(tail4("abc"), "abc"); // under 4 characters, as many as there are
         assert_eq!(tail4(""), "");
-        // 긴 키에서도 꼬리 4자 초과로 새지 않는다.
+        // Even on a long key, nothing beyond the tail 4 characters leaks.
         let long = "x".repeat(200);
         assert_eq!(tail4(&long).chars().count(), 4);
     }
 
     #[test]
     fn tail4_is_safe_on_multibyte_input() {
-        // 바이트 슬라이싱이면 여기서 패닉한다 — char 단위여야 한다.
+        // Byte slicing would panic here — it must be char-based.
         assert_eq!(tail4("키가한글이면어떡하지"), "어떡하지");
     }
 
@@ -305,11 +313,11 @@ mod tests {
 
     #[test]
     fn there_is_no_command_that_returns_the_whole_secret() {
-        // 이 파일에 `get_password` 결과를 그대로 반환하는 pub 커맨드가 없어야
-        // 한다는 계약을 소스로 확인한다. 새 커맨드를 추가하다 실수로 전체 값을
-        // 노출하면 여기서 걸린다.
+        // Checks against the source the contract that this file must have no pub
+        // command returning the `get_password` result as-is. Accidentally exposing the
+        // full value while adding a new command gets caught here.
         let source = include_str!("secrets.rs");
-        // `SecretStatus` 만 반환 타입으로 쓴다.
+        // Only `SecretStatus` is used as a return type.
         let command_count = source.matches("#[tauri::command]").count();
         let status_returns = source.matches("Result<SecretStatus, String>").count();
         assert_eq!(command_count, status_returns, "모든 커맨드는 SecretStatus 만 반환해야 한다");

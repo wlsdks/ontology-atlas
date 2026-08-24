@@ -30,16 +30,16 @@ fn bundled_binary_name() -> &'static str {
     }
 }
 
-/// 자가 검증 한 판의 예산. 첫 스폰은 macOS 가 서명을 훑느라 느릴 수 있다.
+/// Budget for one round of self-verification. The first spawn can be slow while macOS scans the signature.
 const VERIFY_TIMEOUT: Duration = Duration::from_secs(25);
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BundledServer {
-    /// 번들 바이너리 절대 경로. 없으면 `None`.
+    /// Absolute path of the bundled binary. `None` when it is missing.
     pub path: Option<String>,
     pub available: bool,
-    /// 못 찾았을 때 사람이 읽을 수 있는 이유 (진단용, UI 가 그대로 보여준다).
+    /// Human-readable reason when it could not be found (diagnostic; the UI shows it verbatim).
     pub reason: Option<String>,
 }
 
@@ -49,11 +49,11 @@ pub struct McpVerifyResult {
     pub ok: bool,
     pub server_version: Option<String>,
     pub tool_count: Option<usize>,
-    /// `get_concept` 실호출로 실제 vault 노드가 돌아왔는지 — 부팅만이 아니라
-    /// "이 폴더를 읽는다"까지 증명해야 초록 불이다.
+    /// Whether a real vault node came back from an actual `get_concept` call — the light
+    /// turns green only after proving "it reads this folder", not merely that it booted.
     pub sample_slug: Option<String>,
     pub sample_title: Option<String>,
-    /// 실패 사유. 가짜 진행바 대신 이 문장을 보여준다.
+    /// Failure reason. This sentence is shown instead of a fake progress bar.
     pub failure: Option<String>,
 }
 
@@ -61,8 +61,8 @@ fn err_str(message: impl Into<String>) -> String {
     message.into()
 }
 
-/// 번들 바이너리는 앱 실행 파일의 형제다 (`Contents/MacOS/`). `tauri dev` 도
-/// 같은 규칙 — 개발 실행 파일 옆에 복사된다.
+/// The bundled binary is a sibling of the app executable (`Contents/MacOS/`). `tauri dev`
+/// follows the same rule — it is copied next to the dev executable.
 fn resolve_bundled_binary() -> Result<PathBuf, String> {
     let exe = std::env::current_exe()
         .map_err(|e| err_str(format!("could not resolve the app executable: {e}")))?;

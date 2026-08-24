@@ -19922,3 +19922,54 @@ unreviewed one turns it red.
 **Status**: valid · measured on a packaged build
 
 ---
+
+## 2026-08-24 — ACP output measured: events are the right transport, and the question is closed
+
+**Prior decision**: the 2026-08-24 PO pass held the events-to-`Channel` move at
+6/24 with the verdict "investigate first", and named the exact measurement that
+would settle it — line count, rate, and p50/p99 emitted line size during one real
+session. This is that measurement. The hold is resolved, not extended.
+
+**How it was measured**: a harness outside the repository spawned the same ACP
+adapter the app spawns (`npx @agentclientprotocol/claude-agent-acp@0.70.0`),
+completed a real turn against the dogfood vault, and recorded every stdout line's
+byte length and arrival time — the exact stream `spawn_acp_line_pump` reads.
+
+**First attempt was wrong and is recorded as such**: it sent `session/prompt` with
+a hardcoded session id that the adapter never issued, so no turn ran and it
+measured a handshake. Reporting 0.6 lines/second from that would have been a
+measurement of nothing. The harness was fixed to use the session id the adapter
+actually returns, and the numbers below come from a run where the adapter reported
+a `stopReason`.
+
+| | Measured |
+|---|---|
+| Lines after the prompt | 6 over 24.4s |
+| Rate | **0.2–0.3 lines/second** |
+| p50 line size | 988 B |
+| p99 / largest line | **47,274 B (46 KB)** |
+| Largest line against `MAX_LINE_BYTES` | **0.28%** of the 16 MiB ceiling |
+
+**Decision**: keep the events. The documentation's concern is "low latency or high
+throughput", and this stream is three orders of magnitude away from either. p99 is
+kilobytes, not megabytes, and the 46 KB peak is the capabilities response, not
+streamed content. `Channel` would add a second transport — `acp://exit` and
+`acp://notice` must stay events because decision (25) built session-ownership
+semantics on them — in exchange for nothing measurable.
+
+**What this record is for**: the proposal came from reading Tauri's documentation,
+and the same page will be read again. The next person finds this number instead of
+raising the same quote.
+
+**Honest limit**: one turn, one short prompt, one adapter. A long agentic session
+with many tool calls emits more lines. The margin absorbs a great deal — even 100×
+this rate is 20–30 lines/second, which events carry without trouble — but the
+falsifier below is what reopens it, not an argument.
+
+**Falsifier**: an observed session where agent output visibly lags the agent, or a
+`dropped-line:` notice traced to payload size rather than a malformed line. Either
+reopens this with a fresh pass.
+
+**Status**: valid · measured and closed
+
+---

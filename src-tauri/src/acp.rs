@@ -124,12 +124,12 @@ pub(crate) fn registry_agent(id: &str) -> Option<&'static RegistryAgent> {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct IsolationSpec {
     pub id: &'static str,
-    /// 이 실행기가 「설정을 어디서 읽나」를 정하는 환경 변수.
+    /// The environment variable that decides where this executor reads its configuration from.
     pub config_env: &'static str,
     /// The credential file name inside that config directory. To avoid breaking login upon isolation,
     /// we **link** this file to the user's original (do not copy).
     pub credentials_file: &'static str,
-    /// 사용자의 원본 설정 디렉터리(홈 기준 상대 경로).
+    /// The user's original config directory (relative to home).
     pub user_config_dir: &'static str,
 }
 
@@ -158,16 +158,16 @@ fn isolation_for(id: &str) -> Option<&'static IsolationSpec> {
     ISOLATION.iter().find(|s| s.id == id)
 }
 
-/// 앱이 띄우는 세션에 넣는 설정. **사용자의 전역 설정을 물려받지 않는다.**
+/// The settings placed into sessions the app launches. **They do not inherit the user's global settings.**
 ///
-/// 2026-08-16 실측: 소유자의 `~/.claude/settings.json` 은 `defaultMode: auto` 에
-/// `Bash(*)` · `Write(*)` · `Edit(*)` 를 포함해 15개를 미리 허용해 두고 있었다.
-/// 그 설정을 물려받은 세션은 작업 폴더 **밖**에 파일을 쓰면서 **한 번도 묻지
-/// 않았고**, 터미널까지 실행했다. 세션 모드를 「직접 확인」으로 바꿔도 같았다 —
-/// 미리 허용된 것은 모드와 무관하게 통과하기 때문이다.
+/// Measured 2026-08-16: the owner's `~/.claude/settings.json` had `defaultMode: auto` and
+/// 15 pre-allowed entries including `Bash(*)` · `Write(*)` · `Edit(*)`.
+/// A session that inherited those settings wrote files **outside** the working folder while
+/// **never asking once**, and even ran the terminal. Switching the session mode to
+/// "confirm directly" changed nothing — pre-allowed entries pass regardless of mode.
 ///
-/// 격리한 설정으로 같은 것을 시키니 권한 요청이 왔고, 거절하니 파일이 안 생겼다.
-/// **관문은 프로토콜이 주는 게 아니라 이 설정이 만든다.**
+/// Given the same task with isolated settings, a permission request came, and refusing it
+/// meant no file was created. **The gate is made by these settings, not granted by the protocol.**
 const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
   "permissions": {
     "defaultMode": "default",
@@ -180,43 +180,43 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
 
 pub(crate) type LoginProbe<'a> = dyn Fn(&str, &Path, &[&str], &str) -> Option<bool> + 'a;
 
-/// 파일시스템을 어떻게 들여다볼지 — 테스트가 진짜 디스크 없이 판정할 수 있게
-/// 주입한다. 「이 기기에 무엇이 있나」를 검사가 기기에 의존해서 물으면, 그
-/// 검사는 개발자 기계에서만 초록이 된다.
+/// How to look at the filesystem — injected so tests can judge without a real disk.
+/// If a check asks "what is on this machine" in a machine-dependent way, that
+/// check only goes green on the developer's machine.
 pub(crate) struct FsProbe<'a> {
     /// Is there something executable in that location?
     pub is_executable: &'a dyn Fn(&Path) -> bool,
-    /// 디렉터리의 바로 아래 이름들 (없으면 빈 목록).
+    /// The names directly under a directory (empty list if absent).
     pub list_dir: &'a dyn Fn(&Path) -> Vec<String>,
     /// Read a small text file (returns None if missing). Used only to read
     /// the single file where nvm writes its "default version".
     pub read_text: &'a dyn Fn(&Path) -> Option<String>,
-    /// 그 CLI 에 「로그인돼 있나」를 물어본다. `None` = 안 물어봤다(모른다).
+    /// Asks that CLI "are you logged in". `None` = did not ask (unknown).
     ///
-    /// 실물에서는 그 CLI 를 짧게 띄워 **종료 코드만** 본다. 검사에서는 가짜를
-    /// 꽂는다 — 이 판정 하나 때문에 검사가 진짜 프로세스를 띄우게 두지 않는다.
+    /// In production this briefly launches the CLI and looks at **the exit code only**.
+    /// Tests plug in a fake — we do not let a test spawn a real process just for this one verdict.
     pub login_ok: &'a LoginProbe<'a>,
 }
 
 /**
- * 「로그인돼 있나」를 물어보는 명령 — **우리가 실제로 재 본 것만.**
+ * The commands that ask "are you logged in" — **only the ones we have actually measured.**
  *
- * ## 왜 필요한가 (2026-08-16 소유자 지적)
+ * ## Why this is needed (owner's remark, 2026-08-16)
  *
- * *"나도 원래 claude code, codex 다 있는데도 각 에이전트에 버튼 눌러서
- * 세팅했었는데? 지금 atlas 는 바로 준비됨이던데 확인이 필요할 듯"*
+ * *"I already had claude code and codex installed, but I still had to press the
+ * button on each agent to set it up? Atlas shows 'ready' immediately — this needs verification"*
  *
- * 맞는 지적이었다. 우리 「준비됨」은 **파일이 그 자리에 있나**만 봤다. 그런데
- * 설치는 했지만 로그인은 안 한 사람에게도 그렇게 말하고 있었고, 그 사람이
- * 대화를 열면 `Authentication required` 로 죽는다(이미 실측해 둔 실패다).
+ * The remark was correct. Our "ready" only checked **whether the file was in place**. But
+ * we were saying that even to someone who had installed but not logged in, and when that
+ * person opens a conversation it dies with `Authentication required` (a failure we had already measured).
  *
- * ⚠️ **출력은 읽지 않는다. 종료 코드만 본다.** `claude auth status` 는 이메일과
- * 조직 ID 까지 돌려준다(실측). 그걸 우리가 읽을 이유가 없고, 읽으면 신뢰
- * 헌장이 막는 종류의 일이 된다 — 화면에 안 띄우더라도 프로세스 메모리에
- * 들어오는 것 자체를 안 한다.
+ * ⚠️ **We do not read the output. Exit code only.** `claude auth status` returns the email
+ * and even the organization ID (measured). We have no reason to read that, and reading it
+ * becomes the kind of thing the trust charter forbids — even without showing it on screen,
+ * we do not let it enter process memory at all.
  *
- * 재 본 값(2026-08-16): `claude auth status` 300ms · `codex login status` 45ms,
- * 둘 다 로그인 상태에서 exit 0.
+ * Measured values (2026-08-16): `claude auth status` 300ms · `codex login status` 45ms,
+ * both exit 0 while logged in.
  */
 pub(crate) const LOGIN_PROBE: &[(&str, &[&str])] = &[
     ("claude-acp", &["auth", "status"]),
@@ -230,18 +230,18 @@ fn login_probe_args(runtime_id: &str) -> Option<&'static [&'static str]> {
         .map(|(_, args)| *args)
 }
 
-/// nvm 이 설치한 Node 들의 `bin` 디렉터리 — **사용자가 쓰기로 한 버전이 앞**.
+/// The `bin` directories of Nodes installed by nvm — **the version the user chose to use comes first**.
 ///
-/// nvm 은 버전마다 디렉터리를 따로 두고 셸이 그중 하나만 PATH 에 넣는다. 앱은 그
-/// 셸을 안 거치므로 직접 골라야 하는데, **최신을 고르는 것은 틀린 답이다.**
+/// nvm keeps a separate directory per version and the shell puts only one of them on PATH.
+/// The app does not go through that shell, so it must pick directly — and **picking the newest is the wrong answer.**
 ///
-/// 이 기기 실측(2026-08-16)이 그것을 바로 보여 줬다: `claude` 가 `v22.15.0` 의
-/// bin 에만 남아 있고 사용자의 실제 `claude` 는 `~/.local/bin` 이다. 버전
-/// 디렉터리는 전역 설치한 CLI 의 **낡은 사본이 쌓이는 자리**라, 아무 버전이나
-/// 뒤지면 사용자의 셸이 절대 쓰지 않을 바이너리를 집는다.
+/// Measurement on this machine (2026-08-16) showed exactly that: `claude` remained only in
+/// the bin of `v22.15.0` while the user's real `claude` is `~/.local/bin`. Version
+/// directories are **where stale copies of globally installed CLIs pile up**, so rummaging
+/// through any version picks a binary the user's shell would never use.
 ///
-/// 그래서 순서는 ① `~/.nvm/alias/default` 가 가리키는 버전 ② 나머지를 숫자
-/// 내림차순. 그리고 이 목록은 후보의 **맨 뒤**에 붙는다(`candidate_bin_dirs`).
+/// Hence the order: ① the version `~/.nvm/alias/default` points at ② the rest in numeric
+/// descending order. And this list is appended at the **very end** of the candidates (`candidate_bin_dirs`).
 fn nvm_bin_dirs(home: &Path, probe: &FsProbe<'_>) -> Vec<PathBuf> {
     let root = home.join(".nvm");
     let versions = root.join("versions").join("node");
@@ -299,10 +299,10 @@ pub(crate) fn candidate_bin_dirs(
     home: Option<&Path>,
     path_env: Option<&OsStr>,
     probe: &FsProbe<'_>,
-    // `managed_bin` — 앱이 대신 깔아 준 것이 사는 자리. **맨 뒤에 붙는다**:
-    // 사용자가 자기 손으로 깐 것이 언제나 이긴다(이 파일의 PATH 순서 계약).
+    // `managed_bin` — where what the app installed on the user's behalf lives. **Appended last**:
+    // what the user installed with their own hands always wins (this file's PATH order contract).
     managed_bin: Option<&Path>,
-    // `managed_node_bin` — 앱이 받아 둔 Node 의 `bin`. 같은 이유로 맨 뒤다.
+    // `managed_node_bin` — the `bin` of the Node the app downloaded. Last for the same reason.
     managed_node_bin: Option<&Path>,
 ) -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = Vec::new();
@@ -322,8 +322,8 @@ pub(crate) fn candidate_bin_dirs(
 
     #[cfg(windows)]
     {
-        // Windows 는 버전 관리자보다 설치 프로그램이 흔하다. npm 전역 shim 자리와
-        // 표준 설치 경로만 보탠다.
+        // On Windows, installers are more common than version managers. We only add the npm
+        // global shim location and the standard install path.
         if let Some(appdata) = std::env::var_os("APPDATA") {
             push(PathBuf::from(appdata).join("npm"), &mut dirs);
         }
@@ -341,9 +341,9 @@ pub(crate) fn candidate_bin_dirs(
     }
 
     if let Some(home) = home {
-        // 한 자리에 하나만 사는 디렉터리가 먼저다.
+        // Directories where only one thing lives per location come first.
         for rel in [
-            ".local/bin", // claude 공식 설치 스크립트의 기본 자리
+            ".local/bin", // the default location of the official claude install script
             ".bun/bin",
             ".volta/bin",
             ".asdf/shims",
@@ -353,16 +353,16 @@ pub(crate) fn candidate_bin_dirs(
         ] {
             push(home.join(rel), &mut dirs);
         }
-        // nvm 버전 디렉터리는 **맨 뒤**다 — 전역 설치한 CLI 의 낡은 사본이
-        // 버전마다 쌓이는 자리라, 앞에 두면 사용자의 셸이 절대 안 쓰는
-        // 바이너리를 집는다(2026-08-16 이 기기에서 실제로 그랬다).
+        // nvm version directories come **last** — they are where stale copies of globally
+        // installed CLIs pile up per version, and putting them first picks a binary the
+        // user's shell would never use (it actually happened on this machine, 2026-08-16).
         for dir in nvm_bin_dirs(home, probe) {
             push(dir, &mut dirs);
         }
     }
 
-    // 앱이 깐 것은 **맨 뒤**다. 사용자가 자기 손으로 깐 것을 우리가 이기면,
-    // 「터미널에선 되는데 앱에서만 다르다」가 그 자리에서 태어난다.
+    // What the app installed goes **last**. If we beat what the user installed with their
+    // own hands, "it works in the terminal but behaves differently only in the app" is born right there.
     if let Some(bin) = managed_bin {
         push(bin.to_path_buf(), &mut dirs);
     }
@@ -373,9 +373,9 @@ pub(crate) fn candidate_bin_dirs(
     dirs
 }
 
-/// 이름 하나를 절대 경로로 푼다. 못 찾으면 `None` — **추측한 경로를 돌려주지
-/// 않는다.** 없는 경로를 돌려주면 실패가 실행 시점으로 미뤄지고, 그때 나오는
-/// 오류는 사용자가 읽을 수 없는 것이 된다.
+/// Resolves one name to an absolute path. `None` if not found — **we do not return a
+/// guessed path.** Returning a nonexistent path defers the failure to execution time, and
+/// the error that comes out then is one the user cannot read.
 pub(crate) fn resolve_command(
     name: &str,
     dirs: &[PathBuf],
@@ -452,7 +452,7 @@ fn resolve_program(
     }
 }
 
-/// 띄울 방법이 없을 때의 사유 코드 — 실행 방식마다 사용자가 할 일이 다르다.
+/// The reason code when there is no way to launch — the user's required action differs per launch method.
 fn launcher_missing_state(launch: &RegistryLaunch) -> &'static str {
     match launch {
         RegistryLaunch::Npx { .. } => "node-missing",
@@ -473,8 +473,8 @@ pub(crate) fn detect_runtimes(
     managed_node_bin: Option<&Path>,
 ) -> Vec<AcpRuntimeStatus> {
     let dirs = candidate_bin_dirs(home, path_env, probe, managed_bin, managed_node_bin);
-    // 로그인 확인도 어댑터를 띄울 때와 **같은 PATH** 를 본다. 안 그러면 래퍼가
-    // node 를 못 찾아 실패하고, 그 실패가 「로그인 안 됨」으로 읽힌다.
+    // The login probe sees the **same PATH** used to launch the adapter. Otherwise the
+    // wrapper fails to find node, and that failure gets read as "not logged in".
     let child_path = std::env::join_paths(dirs.iter())
         .map(|joined| joined.to_string_lossy().to_string())
         .unwrap_or_default();
@@ -489,9 +489,9 @@ pub(crate) fn detect_runtimes(
             let program = resolve_program(&agent.launch, &dirs, probe);
 
             /*
-             * 도구도 있고 띄울 수도 있다 — 그런데 **로그인은 했나.** 재 본
-             * 실행기에만 물어본다(`LOGIN_PROBE`). 안 물어본 것은 `None` 이고,
-             * 그건 「로그인 안 됨」이 아니라 「모른다」다.
+             * The tool exists and can be launched — but **is it logged in?** We only ask
+             * executors we have measured (`LOGIN_PROBE`). What we did not ask is `None`,
+             * and that means "unknown", not "not logged in".
              */
             let login_ok = cli
                 .as_deref()
@@ -504,27 +504,27 @@ pub(crate) fn detect_runtimes(
                 launcher_missing_state(&agent.launch)
             } else if login_ok == Some(false) {
                 /*
-                 * 도구는 있는데 로그인이 안 돼 있다. 「준비됨」이라고 말하면
-                 * 사용자가 대화를 열어 보고서야 `Authentication required` 를
-                 * 만난다 — 화면이 먼저 말해야 하는 것이고, 사용자가 할 일도
-                 * 분명하다(그 도구에서 로그인).
+                 * The tool exists but is not logged in. If we say "ready", the user only
+                 * meets `Authentication required` after opening a conversation — the
+                 * screen must say it first, and the user's required action is clear
+                 * (log in with that tool).
                  */
                 "login-needed"
             } else if agent.cli.is_none() {
                 /*
-                 * ⚠️ **여기가 「준비됨」이었다** (2026-08-16 소유자 지적:
-                 * *"우리는 지금 이렇게 다 보여서 좀 이상한데"*).
+                 * ⚠️ **This branch used to be "ready"** (owner's remark, 2026-08-16:
+                 * *"it's a bit odd that everything shows up like this for us right now"*).
                  *
-                 * 이 갈래는 「그 도구가 이 컴퓨터에 있다」가 아니라 **「우리가
-                 * 이 어댑터가 무슨 CLI 를 감싸는지 안 적어 뒀다」**는 뜻이다.
-                 * `UNDERLYING_CLI` 에 12개만 있어서 나머지 26개는 확인할
-                 * 방법 자체가 없는데, npx 가 있다는 이유로 전부 「준비됨」이
-                 * 됐다 — 38개 중 20개가 그렇게 초록 배지를 달고 있었다.
+                 * This branch does not mean "that tool exists on this computer" — it means
+                 * **"we did not write down which CLI this adapter wraps"**.
+                 * `UNDERLYING_CLI` had only 12 entries, so the other 26 had no way to be
+                 * verified at all, yet all of them became "ready" merely because npx
+                 * existed — 20 out of 38 wore a green badge that way.
                  *
-                 * 그건 화면이 **해 본 적 없는 것을 해 본 것처럼 말하는 것**이고,
-                 * 이 제품이 「곧 됩니다」를 안 쓰는 것과 같은 규율에 걸린다.
-                 * 띄우는 것은 여전히 되므로 목록에서 빼지 않는다 — 상태만
-                 * 정직해진다.
+                 * That is the screen **claiming to have done something it never did**, and
+                 * it falls under the same discipline as this product not using "coming soon".
+                 * Launching still works, so we do not remove it from the list — only the
+                 * state becomes honest.
                  */
                 "cli-unknown"
             } else {
@@ -561,8 +561,8 @@ pub(crate) fn detect_runtimes(
         .collect()
 }
 
-/// 실행기 하나를 띄우기 위한 값들을 푼다. 못 띄우면 **사람이 읽을 수 있는
-/// 사유 코드**를 돌려준다.
+/// Resolves the values needed to launch one executor. If it cannot be launched, returns a
+/// **human-readable reason code**.
 pub(crate) fn resolve_launch(
     runtime_id: &str,
     home: Option<&Path>,
@@ -747,11 +747,12 @@ pub(crate) enum NpxEntryHealth {
     Broken(&'static str),
 }
 
-/// npm 이 항목에 남기는 `_npx.packages` 표식이 우리 스펙을 가리키는가.
+/// Does the `_npx.packages` marker npm leaves in an entry point at our spec?
 ///
-/// 표식이 없으면 소유로 본다 — 이 경로 자체가 우리 스펙의 해시에서 나왔고,
-/// 그것이 소유의 증거다. 표식이 **다른** 스펙을 가리키면(해시 공식이 바뀐
-/// 미래의 npm 등) 남의 것일 수 있으니 절대 건드리지 않는다.
+/// If the marker is absent, we treat it as ours — this path itself came from the hash of
+/// our spec, and that is the evidence of ownership. If the marker points at a **different**
+/// spec (a future npm whose hash formula changed, etc.), it may be somebody else's, so we
+/// never touch it.
 fn npx_entry_owned(manifest: &serde_json::Value, package: &str) -> bool {
     match manifest
         .get("_npx")
@@ -763,21 +764,21 @@ fn npx_entry_owned(manifest: &serde_json::Value, package: &str) -> bool {
     }
 }
 
-/// 「온전함」 판정. 근거는 실측한 두 상태의 차이다:
+/// The "intactness" verdict. The basis is the difference between two measured states:
 ///
-/// - **살아 있는 항목**(소유자 기계 `8adbf6f1a7dec4e5`): `package.json`(내용은
+/// - **A live entry** (owner machine `8adbf6f1a7dec4e5`): `package.json` (contents are
 ///   `dependencies` + `_npx.packages`) · `package-lock.json` ·
-///   `node_modules/.bin/<실행 파일>` 이 전부 있다.
-/// - **깨진 항목**(소유자가 맞은 `8757e2301903ae53`): `node_modules/` 101개
-///   패키지, `.bin` 은 **빈 디렉터리**, `package.json` **없음**.
+///   `node_modules/.bin/<executable>` are all present.
+/// - **A broken entry** (the one that hit the owner, `8757e2301903ae53`): `node_modules/`
+///   with 101 packages, `.bin` an **empty directory**, `package.json` **missing**.
 ///
-/// 그래서 둘을 본다: ① `package.json` 이 읽히고 JSON 으로 파싱되는가 — npx 가
-/// 죽는 바로 그 지점이다. ② `node_modules` 가 있는데 `.bin` 이 비어 있는가 —
-/// 내려받기는 됐는데 실행 파일 연결 전에 끊긴 상태로, npx 는 「실행할 것을 못
-/// 찾겠다」로 멈춘다. 실행 파일 **이름**은 검사하지 않는다 — 패키지마다 bin
-/// 이름이 달라서, 이름을 짐작하면 멀쩡한 항목을 매번 지우는 루프가 된다.
-/// `package.json` 은 있는데 `node_modules` 가 없는 항목은 npx 가 스스로 다시
-/// 설치하므로 Usable 이다.
+/// So we look at two things: ① does `package.json` read and parse as JSON — the exact spot
+/// where npx dies. ② does `node_modules` exist while `.bin` is empty — the state where the
+/// download completed but was cut off before executable linking, where npx stops with
+/// "cannot find anything to run". We do not check the executable **name** — bin names
+/// differ per package, and guessing the name becomes a loop that deletes a healthy entry
+/// every time. An entry with `package.json` but no `node_modules` is Usable because npx
+/// reinstalls it on its own.
 pub(crate) fn npx_entry_health(entry: &Path, package: &str) -> NpxEntryHealth {
     if !entry.exists() {
         return NpxEntryHealth::Missing;
@@ -806,8 +807,8 @@ pub(crate) fn npx_entry_health(entry: &Path, package: &str) -> NpxEntryHealth {
     NpxEntryHealth::Usable
 }
 
-/// 이 시작이 npx 갈래인가 — 그렇다면 못 박은 패키지 스펙을 돌려준다.
-/// `resolve_launch` 가 npx 폴백에서 만드는 모양(`npx -y <스펙> …`) 그대로를 본다.
+/// Is this launch the npx branch — if so, returns the pinned package spec.
+/// Looks at exactly the shape `resolve_launch` builds in the npx fallback (`npx -y <spec> …`).
 pub(crate) fn npx_launch_package(launch: &AcpLaunch) -> Option<&str> {
     let stem = launch.program.file_stem()?.to_str()?;
     if !stem.eq_ignore_ascii_case("npx") {
@@ -819,7 +820,7 @@ pub(crate) fn npx_launch_package(launch: &AcpLaunch) -> Option<&str> {
     }
 }
 
-/// 이 시작이 npx 갈래면 그 캐시 항목의 경로 — 진행 표시가 크기를 잴 자리다.
+/// If this launch is the npx branch, the path of its cache entry — where the progress display measures size.
 pub(crate) fn npx_cache_entry_for_launch(
     launch: &AcpLaunch,
     home: Option<&Path>,
@@ -828,18 +829,18 @@ pub(crate) fn npx_cache_entry_for_launch(
     Some(npx_cache_entry_dir(&npx_cache_root(home)?, package))
 }
 
-/// npx 시작 직전 검사의 결과 — 화면이 무엇을 말할지가 여기서 갈린다.
+/// The result of the check just before an npx launch — what the screen says branches here.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum NpxCachePreflight {
-    /// npx 를 쓰지 않는 시작(전역 어댑터·binary·uvx) — 볼 것이 없다.
+    /// A launch that does not use npx (global adapter · binary · uvx) — nothing to look at.
     NotNpx,
-    /// 홈을 몰라 캐시를 못 봤다 — 종전과 같이 그냥 띄운다(fail-open).
+    /// Home is unknown so the cache could not be inspected — just launch as before (fail-open).
     CacheUnknown,
-    /// 항목이 살아 있다 — 내려받기 없이 바로 뜬다.
+    /// The entry is alive — starts right away with no download.
     CacheReady,
-    /// 항목이 아직 없다 — npx 가 처음으로 내려받는다(수십 MB).
+    /// The entry does not exist yet — npx downloads it for the first time (tens of MB).
     FirstDownload,
-    /// 깨진 항목을 지웠다 — npx 가 처음부터 다시 내려받는다.
+    /// We deleted a broken entry — npx downloads again from scratch.
     HealedBrokenEntry { reason: &'static str },
     /// Corrupted but could not be deleted — leaving it as-is fails exactly as before.
     /// Raise the reason so the UI can at least diagnose it.
@@ -849,9 +850,9 @@ pub(crate) enum NpxCachePreflight {
     },
 }
 
-/// npx 로 띄우기 직전에 캐시 항목을 검사하고, 깨져 있으면 **그 항목 하나만**
-/// 지운다. `_npx` 전체를 지우면 사용자의 다른 npx 도구가 전부 다시 받게 되므로
-/// 범위는 항목 하나다.
+/// Inspects the cache entry just before launching via npx and, if broken, deletes **only
+/// that one entry**. Deleting all of `_npx` would make every other npx tool of the user's
+/// re-download, so the scope is a single entry.
 pub(crate) fn preflight_npx_cache(launch: &AcpLaunch, home: Option<&Path>) -> NpxCachePreflight {
     let Some(package) = npx_launch_package(launch) else {
         return NpxCachePreflight::NotNpx;
@@ -873,10 +874,10 @@ pub(crate) fn preflight_npx_cache(launch: &AcpLaunch, home: Option<&Path>) -> Np
     }
 }
 
-/// 디렉터리 아래 파일 크기의 합(바이트). 내려받기 진행 표시가 「지금까지 몇 MB」
-/// 를 재는 데 쓴다 — 전체 크기는 우리가 정직하게 알 수 없으므로(패키지마다
-/// 다르고 어디에도 못 박혀 있지 않다) 받은 만큼만 말한다. 심볼릭 링크는
-/// 따라가지 않는다.
+/// The sum of file sizes under a directory (bytes). The download progress display uses it
+/// to measure "how many MB so far" — we cannot honestly know the total size (it differs
+/// per package and is pinned nowhere), so we only state how much has been received.
+/// Symbolic links are not followed.
 pub(crate) fn dir_size_bytes(dir: &Path) -> u64 {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return 0;
@@ -895,16 +896,19 @@ pub(crate) fn dir_size_bytes(dir: &Path) -> u64 {
     total
 }
 
-/// 부모 셸의 임의 설정·자격증명을 받지 않고도 **구독 로그인**으로 동작하는 것을
-/// 실측한 실행기. 다른 36종까지 짐작으로 비우면 환경 API 키만 쓰는 도구를 조용히
-/// 망가뜨리므로, 검증한 범위에서만 자란다.
+/// Executors measured to work with **subscription login** without receiving the parent
+/// shell's arbitrary settings and credentials. Emptying the environment for the other 36
+/// kinds on a guess would silently break tools that only use environment API keys, so this
+/// grows only within the verified range.
 const SANITIZED_ENV_RUNTIMES: &[&str] = &["claude-acp", "codex-acp"];
 
-/// GUI 앱이 재구축할 수 없거나 구독 로그인·기업망에 필요한 운영체제 환경.
+/// Operating-system environment a GUI app cannot reconstruct, or that subscription login
+/// and corporate networks need.
 ///
-/// 이 목록은 강한 샌드박스가 아니다. HOME 과 프록시를 보존하므로 자식은 여전히
-/// 사용자 파일과 네트워크를 쓸 수 있다. 여기서 막는 것은 부모 프로세스에 우연히
-/// 실린 API 키·라우팅·동적 로더 입력이 세션의 인증/실행 경계를 조용히 바꾸는 일이다.
+/// This list is not a strong sandbox. It preserves HOME and proxies, so the child can still
+/// use the user's files and network. What it blocks is API keys, routing, and dynamic-loader
+/// inputs incidentally carried by the parent process silently changing the session's
+/// authentication/execution boundary.
 const SHARED_RUNTIME_ENV: &[&str] = &[
     "HOME",
     "USERPROFILE",
@@ -937,8 +941,8 @@ const SHARED_RUNTIME_ENV: &[&str] = &[
 ];
 
 fn runtime_environment_key_allowed(runtime_id: &str, key: &OsStr) -> bool {
-    // Windows 환경 이름은 대소문자를 구분하지 않는다. 같은 정책을 모든 플랫폼에서
-    // 쓰면 `OpenAI_Api_Key` 같은 혼합 표기도 Windows에서 빠뜨리지 않는다.
+    // Windows environment names are case-insensitive. Using the same policy on every
+    // platform means mixed spellings like `OpenAI_Api_Key` are not missed on Windows either.
     let normalized = key.to_string_lossy().to_ascii_uppercase();
     SHARED_RUNTIME_ENV.contains(&normalized.as_str())
         || normalized.starts_with("LC_")
@@ -946,8 +950,9 @@ fn runtime_environment_key_allowed(runtime_id: &str, key: &OsStr) -> bool {
             && matches!(normalized.as_str(), "CODEX_HOME" | "CODEX_CA_CERTIFICATE"))
 }
 
-/// 검증한 구독 실행기에 전달할 명시적 환경. `None`은 미검증 실행기의 기존 상속을
-/// 유지한다는 뜻이고, 빈 `Some`은 전부 지운다는 뜻이므로 둘을 합치지 않는다.
+/// The explicit environment to hand a verified subscription executor. `None` means an
+/// unverified executor keeps its existing inheritance, and an empty `Some` means erase
+/// everything, so the two are not merged.
 pub(crate) fn sanitized_runtime_environment(
     runtime_id: &str,
     inherited: impl IntoIterator<Item = (OsString, OsString)>,
@@ -964,7 +969,7 @@ pub(crate) fn sanitized_runtime_environment(
     )
 }
 
-/// 세션 시작과 로그인 확인이 **같은 환경 정책**을 쓰게 하는 단일 진입점.
+/// The single entry point that makes session start and the login probe use **the same environment policy**.
 pub(crate) fn apply_runtime_environment(
     command: &mut std::process::Command,
     runtime_id: &str,
@@ -974,25 +979,25 @@ pub(crate) fn apply_runtime_environment(
         command.env_clear();
         command.envs(environment);
     }
-    // PATH 는 부모 값을 허용 목록으로 통과시키지 않고, 우리가 실제 실행기와 CLI를
-    // 찾을 때 만든 경로로 마지막에 덮는다.
+    // PATH is not passed through the allow list from the parent value; it is overwritten
+    // last with the path we built when finding the actual executor and CLI.
     command.env("PATH", child_path);
 }
 
-/// 앱이 관리하는 설정 디렉터리를 준비하고 그 경로를 준다.
+/// Prepares the app-managed config directory and returns its path.
 ///
-/// **왜 격리하는가는 `ISOLATED_CLAUDE_SETTINGS` 주석에 있다.** 여기서는 그 결정을
-/// 디스크에 만드는 일만 한다:
+/// **Why we isolate is in the `ISOLATED_CLAUDE_SETTINGS` comment.** Here we only turn that
+/// decision into disk state:
 ///
-/// 1. `<앱 데이터>/agent-config/<실행기>/` 를 만든다.
-/// 2. 우리 설정을 **매번 다시 쓴다.** 사용자가 그 파일을 고쳐서 관문을 열어 둔 채
-///    잊는 일이 없도록 — 이 디렉터리는 사용자의 설정 자리가 아니라 앱의 것이다.
-/// 3. 자격증명은 **링크만 건다.** 격리하면 로그인이 깨지는데(실측:
-///    `Authentication required`), 비밀을 앱 폴더로 복사하는 것은 헌장이 막는
-///    종류의 일이다. 링크는 디스크에 보이고 원본이 하나로 유지된다.
+/// 1. Create `<app data>/agent-config/<executor>/`.
+/// 2. **Rewrite our settings every time.** So the user cannot edit that file, leave the gate
+///    open, and forget — this directory is the app's, not the user's settings location.
+/// 3. Credentials are **only linked.** Isolation breaks login (measured:
+///    `Authentication required`), and copying secrets into an app folder is the kind of
+///    thing the charter forbids. A link is visible on disk and the original stays singular.
 ///
-/// 원본 자격증명이 없으면 링크를 만들지 않고 그냥 둔다 — 그때는 사용자가 아직
-/// 그 도구에 로그인하지 않은 것이고, 화면이 그렇게 말해야 한다.
+/// If the original credentials are absent, we make no link and leave it alone — the user
+/// has simply not logged in to that tool yet, and the screen must say so.
 pub(crate) fn prepare_isolated_config(
     runtime_id: &str,
     app_data_dir: &Path,
@@ -1000,9 +1005,9 @@ pub(crate) fn prepare_isolated_config(
     cli: Option<&Path>,
     path_env: &str,
 ) -> Result<PathBuf, String> {
-    // 격리를 아직 실측하지 않은 실행기는 **격리하지 않는다고 정직하게 알린다.**
-    // 짐작한 환경 변수로 설정을 옮기면 로그인이 조용히 깨지고, 사용자는 왜
-    // 안 되는지 알 수 없다.
+    // An executor whose isolation we have not yet measured is **honestly reported as not
+    // isolated.** Moving settings via a guessed environment variable silently breaks login,
+    // and the user has no way to know why it does not work.
     let spec = isolation_for(runtime_id)
         .ok_or_else(|| format!("isolation-unsupported:{runtime_id}"))?;
 
@@ -1019,9 +1024,9 @@ pub(crate) fn prepare_isolated_config(
         let link = dir.join(spec.credentials_file);
         if source.exists() {
             link_credentials(&source, &link)?;
-            // 링크가 실제로 걸린 뒤에만 그림자를 걷는다 — 링크할 원본이 없으면
-            // 앱 몫 항목이 유일한 자격증명일 수 있고, 그걸 지우면 멀쩡한 로그인을
-            // 우리가 깨는 것이 된다.
+            // Only clear the shadow after the link is actually in place — if there is no
+            // original to link, the app-side entry may be the only credential, and deleting
+            // it would mean we break a working login.
             clear_shadowing_credentials(&dir, cli, path_env);
         }
     }
@@ -1029,11 +1034,11 @@ pub(crate) fn prepare_isolated_config(
     Ok(dir)
 }
 
-/// Claude Code 가 자격증명을 넣는 **키체인 항목 이름**.
+/// The **keychain item name** Claude Code stores credentials under.
 ///
-/// 형식은 `Claude Code-credentials-<설정폴더 절대경로의 sha256 앞 8자>` 다.
-/// 2026-08-20 실측으로 두 자리를 확인했다 — `~/.claude` → `ce4c8c26`,
-/// 앱 전용 폴더 → `85f2eaa5`. 테스트가 그 두 값을 그대로 못박는다.
+/// The format is `Claude Code-credentials-<first 8 chars of the sha256 of the config
+/// folder's absolute path>`. Measured on 2026-08-20 for two locations — `~/.claude` →
+/// `ce4c8c26`, the app-specific folder → `85f2eaa5`. The tests pin those two values verbatim.
 pub(crate) fn claude_credentials_service(config_dir: &Path) -> String {
     use sha2::{Digest, Sha256};
     let digest = Sha256::digest(config_dir.to_string_lossy().as_bytes());
@@ -1044,54 +1049,55 @@ fn hex_lower(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// 앱 전용 폴더 앞으로 만들어진 키체인 항목을 걷는다.
+/// Clears the keychain item created against the app-specific folder.
 ///
-/// ## 왜 이것이 필요한가 (2026-08-20 실측)
+/// ## Why this is needed (measured 2026-08-20)
 ///
-/// 이 앱은 Claude 를 전용 설정 폴더로 띄우고, 로그인이 갈라지지 않게
-/// `.credentials.json` 을 사용자의 것으로 **링크**한다. 그 설계는 실제로
-/// 동작한다 — 키체인 항목이 없는 새 폴더에 링크만 걸고 `claude auth status`
-/// 를 물으면 `loggedIn: true` 가 나온다(사용자 계정 그대로).
+/// This app launches Claude with a dedicated config folder and **links**
+/// `.credentials.json` to the user's own so login does not fork. That design actually
+/// works — with only the link in a fresh folder that has no keychain item, asking
+/// `claude auth status` yields `loggedIn: true` (the user's own account).
 ///
-/// 문제는 **Claude Code 가 키체인을 파일보다 먼저 본다**는 것이다. 그래서 그
-/// 폴더 앞으로 항목이 한 번 생기면 링크는 그 순간부터 읽히지 않는다. 그리고
-/// 항목은 딱 한 경로로 생긴다 — 사람이 그 폴더로 로그인했을 때. 2026-08-17 에
-/// 넣은 안내가 정확히 그것을 시켰고(`CLAUDE_CONFIG_DIR=<앱 폴더> claude /login`),
-/// 그 토큰이 회전되면 죽고, 죽으면 화면이 같은 안내를 다시 했다.
-/// **안내가 덫을 만들고 있었다.**
+/// The problem is that **Claude Code checks the keychain before the file**. So once an
+/// item exists against that folder, the link stops being read from that moment. And the
+/// item is created via exactly one path — a person logging in with that folder. The
+/// guidance we added on 2026-08-17 instructed precisely that
+/// (`CLAUDE_CONFIG_DIR=<app folder> claude /login`); when that token rotated it died, and
+/// when it died the screen showed the same guidance again.
+/// **The guidance was building a trap.**
 ///
-/// 실측: 그 항목을 지우자 같은 폴더가 곧바로 `loggedIn: true` 로 돌아왔다.
-/// 그래서 고치는 방향은 「앱 몫으로 로그인하라」가 아니라 「앱 몫 항목을
-/// 없애라」다.
+/// Measured: deleting that item made the same folder immediately return to
+/// `loggedIn: true`. So the fix direction is not "log in for the app's share" but
+/// "remove the app-share item".
 ///
-/// 실패해도 조용히 넘어간다 — 지우지 못하면 종전대로 문제 카드가 뜨고,
-/// 사용자는 아무것도 잃지 않는다. 반대로 여기서 실패를 시작 실패로 올리면
-/// 키체인 접근이 막힌 환경에서 앱이 아예 안 뜬다.
+/// Failure passes silently — if we cannot delete, the problem card shows as before and the
+/// user loses nothing. Conversely, escalating a failure here into a start failure means the
+/// app does not launch at all in environments where keychain access is blocked.
 fn clear_shadowing_credentials(config_dir: &Path, cli: Option<&Path>, path_env: &str) {
     #[cfg(target_os = "macos")]
     {
         let service = claude_credentials_service(config_dir);
-        // 있는지부터 본다. 없을 때 지우기를 부르면 macOS 가 승인 창을 띄울 수
-        // 있는데, 평소(항목 없음)에 창이 뜨는 것은 관문이 아니라 마찰이다.
+        // Check existence first. Calling delete when there is nothing can make macOS show
+        // an approval dialog, and a dialog in the common case (no item) is friction, not a gate.
         let mut find = std::process::Command::new("security");
         find.args(["find-generic-password", "-s", &service]);
-        // 항목이 없으면 `security` 는 곧바로 비어 있는 출력으로 끝난다.
-        // 있으면 `svce` 줄이 나오므로 그것으로 존재를 판정한다.
+        // If the item is absent, `security` finishes immediately with empty output.
+        // If present, an `svce` line appears, so we judge existence by that.
         let found = bounded_output(find, KEYCHAIN_PROBE_TIMEOUT);
         if !found.map(|out| out.contains(&service)).unwrap_or(false) {
             return;
         }
 
-        // **그 항목이 아직 통하면 손대지 않는다.**
+        // **If that item still works, do not touch it.**
         //
-        // 앱 몫 로그인만 살아 있는 사람이 있을 수 있다 — 종전 안내대로 앱
-        // 폴더에 로그인하고 그 뒤로 터미널을 안 쓴 경우다. 그 사람의 항목을
-        // 지우면 우리가 멀쩡한 로그인을 깨는 것이 된다. 그래서 「죽었나」를
-        // 시각이 아니라 **직접 물어서** 판정한다 — 시각은 실패한 갱신 시도로도
-        // 새로 찍혀서 죽은 항목이 계속 최신으로 보일 수 있다.
+        // Someone may have only the app-share login alive — they logged in to the app
+        // folder per the old guidance and never used the terminal since. Deleting their
+        // item would mean we break a working login. So "is it dead" is judged by
+        // **asking directly**, not by timestamp — a timestamp gets re-stamped even by a
+        // failed refresh attempt, so a dead item can keep looking fresh.
         //
-        // 못 물어보면(CLI 를 못 찾음) 아무것도 안 한다. 모르는 채로 지우는 것이
-        // 이 자리에서 가장 나쁜 선택이다.
+        // If we cannot ask (CLI not found), do nothing. Deleting while not knowing is the
+        // worst choice available here.
         let Some(cli) = cli else {
             return;
         };
@@ -1117,15 +1123,15 @@ fn clear_shadowing_credentials(config_dir: &Path, cli: Option<&Path>, path_env: 
     }
 }
 
-/// 명령 하나를 **시간을 묶어서** 돌리고 표준출력을 돌려준다.
+/// Runs one command **bounded in time** and returns its stdout.
 ///
-/// 왜 `Command::output()` 을 그냥 쓰지 않나: 그건 자식이 끝날 때까지 **영원히**
-/// 기다린다. 여기서 부르는 것들(`security` · 실행기 CLI)은 키체인이 잠겨 있거나
-/// 래퍼가 네트워크를 물면 안 끝날 수 있고, 그러면 세션 시작이 통째로 멈춘다 —
-/// 화면에는 아무 설명 없이 「띄우는 중」만 남는다. 같은 부류의 결함을 CI 준비
-/// 스텝에서 이미 한 번 겪었다(2026-08-20, apt 가 20분을 먹었다).
+/// Why not just use `Command::output()`: it waits **forever** until the child ends. The
+/// things called here (`security` · executor CLIs) may never finish when the keychain is
+/// locked or the wrapper hits the network, and then session start stalls entirely — the
+/// screen shows only "launching" with no explanation. We already suffered the same class
+/// of defect once in a CI preparation step (2026-08-20, apt ate 20 minutes).
 ///
-/// 못 띄우거나 상한을 넘기면 `None` — 「실패」가 아니라 **모른다**다.
+/// If it cannot be launched or exceeds the limit, `None` — meaning **unknown**, not "failed".
 pub(crate) fn bounded_output(mut command: std::process::Command, limit: std::time::Duration) -> Option<String> {
     use std::io::Read;
     use std::process::Stdio;
@@ -1158,11 +1164,11 @@ pub(crate) fn bounded_output(mut command: std::process::Command, limit: std::tim
     Some(out)
 }
 
-/// 그 폴더 앞으로 난 키체인 항목을 **조건 없이** 지운다.
+/// Deletes the keychain item registered against that folder **unconditionally**.
 ///
-/// `clear_shadowing_credentials` 와 다른 점: 저쪽은 「아직 통하면 손대지
-/// 않는다」를 지키지만, 여기는 사용자가 **직접 「다시 맺기」를 눌렀을 때**만
-/// 불린다. 그때는 통하든 말든 지우는 것이 그 버튼의 뜻이다.
+/// The difference from `clear_shadowing_credentials`: that one honors "do not touch it
+/// while it still works", but this is called only when the user **explicitly pressed
+/// "reconnect"**. At that point, deleting whether it works or not is what that button means.
 pub(crate) fn remove_shadow_credentials(config_dir: &Path) {
     #[cfg(target_os = "macos")]
     {
@@ -1185,11 +1191,12 @@ pub(crate) fn remove_shadow_credentials(config_dir: &Path) {
     }
 }
 
-/// 앱 몫 설정 폴더가 **로그아웃 상태인가.** 못 물어보면 `None`(모른다).
+/// Is the app-share config folder **logged out?** `None` if we cannot ask (unknown).
 ///
-/// 화면의 「준비됨」 배지는 오래 **사용자 폴더**를 재고 있었다. 그래서 앱이 실제로
-/// 쓰는 폴더가 로그아웃인데도 초록이었고, 사용자는 대화를 열어 보고서야 그것을
-/// 알았다(2026-08-20 실측). 재야 할 자리는 앱이 쓰는 그 폴더다.
+/// The screen's "ready" badge had long been measuring the **user's folder**. So it stayed
+/// green even while the folder the app actually uses was logged out, and the user only
+/// found out after opening a conversation (measured 2026-08-20). The place to measure is
+/// the folder the app uses.
 pub(crate) fn probe_isolated_logged_out(
     cli: &Path,
     config_dir: &Path,
@@ -1201,7 +1208,7 @@ pub(crate) fn probe_isolated_logged_out(
         .env("PATH", path_env)
         .env("CLAUDE_CONFIG_DIR", config_dir);
     let stdout = bounded_output(command, LOGIN_PROBE_TIMEOUT)?;
-    // 파싱조차 못 하면 「로그인됨」도 「로그아웃」도 아니다.
+    // If it cannot even be parsed, it is neither "logged in" nor "logged out".
     serde_json::from_str::<serde_json::Value>(stdout.trim())
         .ok()?
         .get("loggedIn")?
@@ -1209,7 +1216,7 @@ pub(crate) fn probe_isolated_logged_out(
         .map(|logged_in| !logged_in)
 }
 
-/// 그 폴더 앞으로 난 키체인 항목이 있나. macOS 밖에서는 `None`(볼 수 없다).
+/// Is there a keychain item registered against that folder? Outside macOS, `None` (cannot look).
 pub(crate) fn shadow_credentials_present(config_dir: &Path) -> Option<bool> {
     #[cfg(target_os = "macos")]
     {
@@ -1226,10 +1233,10 @@ pub(crate) fn shadow_credentials_present(config_dir: &Path) -> Option<bool> {
     }
 }
 
-/// `claude auth status` 의 JSON 이 **로그아웃 상태**라고 말하는가.
+/// Does the JSON from `claude auth status` say **logged out**?
 ///
-/// 모르겠으면 `false` 다 — 판정하지 못한 것을 「죽었다」로 읽으면 멀쩡한
-/// 로그인을 지우게 된다. 그래서 `loggedIn` 이 명시적으로 `false` 일 때만 참이다.
+/// If unsure, it is `false` — reading what we could not judge as "dead" would delete a
+/// working login. So it is true only when `loggedIn` is explicitly `false`.
 pub(crate) fn claude_status_is_logged_out(stdout: &str) -> bool {
     let Ok(value) = serde_json::from_str::<serde_json::Value>(stdout.trim()) else {
         return false;
@@ -1238,7 +1245,7 @@ pub(crate) fn claude_status_is_logged_out(stdout: &str) -> bool {
 }
 
 
-/// 이 실행기의 「설정을 어디서 읽나」 환경 변수 이름.
+/// The name of this executor's "where do settings get read from" environment variable.
 pub(crate) fn config_env_for(runtime_id: &str) -> Option<&'static str> {
     isolation_for(runtime_id).map(|s| s.config_env)
 }
@@ -1262,15 +1269,15 @@ pub(crate) fn prepare_runtime_isolation(
     Ok((env, dir))
 }
 
-/// 자격증명 링크를 건다. 이미 올바른 곳을 가리키면 그대로 둔다.
+/// Puts the credentials link in place. If it already points at the right place, leave it alone.
 fn link_credentials(source: &Path, link: &Path) -> Result<(), String> {
     if let Ok(existing) = std::fs::read_link(link) {
         if existing == source {
             return Ok(());
         }
     }
-    // 남아 있던 것은 지운다 — 예전 홈으로 가는 끊긴 링크가 남으면 로그인이
-    // 깨진 채로 「설정은 있는데 왜 안 되지」가 된다.
+    // Delete whatever was left behind — a broken link pointing at an old home leaves login
+    // broken and turns into "the settings exist, so why doesn't it work?".
     let _ = std::fs::remove_file(link);
 
     #[cfg(unix)]
@@ -1280,9 +1287,9 @@ fn link_credentials(source: &Path, link: &Path) -> Result<(), String> {
     }
     #[cfg(windows)]
     {
-        // Windows 의 심볼릭 링크는 권한이 필요하다. 실패하면 링크 없이 진행하고
-        // (로그인 화면이 뜨는 것이 조용히 비밀을 복사하는 것보다 낫다) 사유를
-        // 그대로 올린다.
+        // Symbolic links on Windows require a privilege. On failure, proceed without a link
+        // (a login screen appearing is better than silently copying secrets) and raise the
+        // reason as-is.
         std::os::windows::fs::symlink_file(source, link)
             .map_err(|err| format!("credentials-link-failed:{err}"))
     }
@@ -1293,34 +1300,36 @@ fn link_credentials(source: &Path, link: &Path) -> Result<(), String> {
     }
 }
 
-/// 권한 요청 하나를 우리 정책으로 판정한다.
+/// Judges one permission request against our policy.
 ///
-/// ## 왜 제목이 아니라 경로로 보나
+/// ## Why we look at the path, not the title
 ///
-/// 실측(2026-08-16)에서 권한 요청의 제목은 볼트 **안**이면 상대 경로
-/// (`Write meeting-notes.md`), **밖**이면 절대 경로였다. 그 차이로 판정하면 문구가
-/// 조금만 바뀌어도 정책이 조용히 뒤집힌다. 같은 요청의 원문에
-/// `toolCall.rawInput.file_path` 가 절대 경로로 들어 있으므로 그것으로 판정한다.
+/// In measurement (2026-08-16), a permission request's title was a relative path when
+/// **inside** the vault (`Write meeting-notes.md`) and an absolute path when **outside**.
+/// Judging by that difference means the policy silently flips whenever the wording changes
+/// slightly. The raw form of the same request carries `toolCall.rawInput.file_path` as an
+/// absolute path, so we judge by that.
 ///
-/// 경로를 못 찾으면 **묻는다.** 모르는 것을 허용으로 기울이면, 판단할 수 없는
-/// 요청일수록 그냥 통과하게 된다.
+/// If the path cannot be found, **we ask.** Tilting the unknown toward allow means the
+/// less judgeable a request is, the more easily it passes.
 pub(crate) fn permission_verdict(vault_root: &Path, file_path: Option<&str>) -> PermissionVerdict {
     let Some(raw) = file_path else {
         return PermissionVerdict::Ask;
     };
     let raw = Path::new(raw);
-    // 권한 경계의 루트는 호출자가 꾸며 낸 문자열이 아니라 `acp_start` 가 확인한
-    // 절대 디렉터리여야 한다. 빈 경로는 현재 작업 폴더로, `/` 는 모든 절대
-    // 경로의 조상으로 해석되므로 둘 중 하나라도 허용하면 관문 전체가 열린다.
+    // The root of the permission boundary must be the absolute directory `acp_start`
+    // verified, not a string the caller made up. An empty path resolves to the current
+    // working folder and `/` is the ancestor of every absolute path, so allowing either
+    // one opens the entire gate.
     if !vault_root.is_absolute() || !raw.is_absolute() {
         return PermissionVerdict::Ask;
     }
     let Ok(root) = std::fs::canonicalize(vault_root) else {
         return PermissionVerdict::Ask;
     };
-    // `acp_start` 가 저장한 정규 경로와 지금 해소되는 대상이 달라졌다면 세션
-    // 시작 뒤 루트 경로가 링크로 바뀐 것이다. 새 대상을 같은 볼트로 승격하지
-    // 않는다 — 권한 경계는 세션 수명 동안 움직이지 않는다.
+    // If what resolves now differs from the canonical path `acp_start` stored, the root
+    // path was replaced by a link after the session started. We do not promote the new
+    // target to the same vault — the permission boundary does not move during a session's lifetime.
     if root != vault_root || !root.is_dir() || root.parent().is_none() {
         return PermissionVerdict::Ask;
     }
@@ -1332,19 +1341,20 @@ pub(crate) fn permission_verdict(vault_root: &Path, file_path: Option<&str>) -> 
     }
 }
 
-/// 두 경로를 **같은 잣대로** 만든다.
+/// Puts two paths on **the same yardstick**.
 ///
-/// 그냥 `canonicalize` 만 쓰면 안 되는 이유가 둘이다:
+/// There are two reasons plain `canonicalize` is not enough:
 ///
-/// 1. **쓰려는 파일은 대개 아직 없다.** 없는 경로는 `canonicalize` 가 실패하므로
-///    원본이 그대로 남는데, 볼트 루트는 존재해서 정규화된다. macOS 에서 그
-///    비대칭이 바로 사고가 된다 — `/var/...` 가 `/private/var/...` 로 바뀌어,
-///    **볼트 안인데 밖으로 판정**된다(2026-08-16 이 검사가 잡았다).
-/// 2. 그렇다고 정규화를 아예 안 하면 볼트 안의 심볼릭 링크가 밖을 가리키는
-///    경우를 「안」으로 세게 된다.
+/// 1. **The file about to be written usually does not exist yet.** `canonicalize` fails on
+///    a nonexistent path so the original stays as-is, while the vault root exists and gets
+///    canonicalized. On macOS that asymmetry becomes an accident directly — `/var/...`
+///    turns into `/private/var/...`, and **something inside the vault gets judged as
+///    outside** (this check caught it on 2026-08-16).
+/// 2. But skipping canonicalization entirely counts a symlink inside the vault that points
+///    outside as "inside".
 ///
-/// 그래서 **존재하는 가장 깊은 조상까지 정규화하고 나머지는 이어 붙인다.**
-/// 존재하는 부분은 링크가 풀리고, 아직 없는 부분은 이름 그대로 남는다.
+/// So we **canonicalize up to the deepest existing ancestor and re-append the rest.**
+/// The existing part has its links resolved; the not-yet-existing part keeps its names as-is.
 fn resolve_for_comparison(path: &Path) -> PathBuf {
     if let Ok(canonical) = std::fs::canonicalize(path) {
         return canonical;
@@ -1364,8 +1374,8 @@ fn resolve_for_comparison(path: &Path) -> PathBuf {
                 rest.push(name.to_os_string());
                 cursor = parent;
             }
-            // 더 올라갈 곳이 없다 — 정규화할 수 있는 조상이 하나도 없는
-            // 경로다(상대 경로 등). 원본 그대로 비교한다.
+            // Nowhere further to climb — a path with no canonicalizable ancestor at all
+            // (a relative path, etc.). Compare the original as-is.
             _ => return path.to_path_buf(),
         }
     }
@@ -1374,20 +1384,21 @@ fn resolve_for_comparison(path: &Path) -> PathBuf {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum PermissionVerdict {
-    /// 볼트 안이라 앱이 대신 허용한다.
+    /// Inside the vault, so the app allows on the user's behalf.
     AllowInsideVault,
-    /// 사용자에게 묻는다.
+    /// Ask the user.
     Ask,
 }
 
-/// 한 줄을 읽되 **길이에 상한을 둔다**.
+/// Reads one line but **puts an upper bound on its length**.
 ///
-/// 어댑터가 개행 없이 끝없이 쓰면 표준 `read_line` 은 버퍼를 무한히 키우다가
-/// 앱을 통째로 죽인다. 남이 만든 프로그램의 출력을 신뢰하지 않는다는 뜻이고,
-/// 상한을 넘으면 그 줄을 **버리고 사실대로 알린다** — 조용히 잘라 내면 JSON 이
-/// 반쪽이 된 채로 파서에 들어가서 더 이해하기 어려운 고장이 된다.
+/// If an adapter writes endlessly without a newline, the standard `read_line` grows its
+/// buffer without limit until it kills the whole app. This means we do not trust the output
+/// of a program somebody else made, and past the bound we **drop that line and report the
+/// truth** — silently truncating would feed half a JSON into the parser and produce a
+/// harder-to-understand breakage.
 ///
-/// `Ok(None)` 은 스트림 끝. `Err` 는 상한 초과 또는 입출력 오류.
+/// `Ok(None)` is end of stream. `Err` is bound exceeded or an I/O error.
 pub(crate) fn read_bounded_line<R: std::io::BufRead>(
     reader: &mut R,
     max_bytes: usize,
@@ -1413,7 +1424,7 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
                 }
                 out.extend_from_slice(&available[..at]);
                 reader.consume(at + 1);
-                // `\r\n` 으로 끝나는 줄도 받아 준다.
+                // Lines ending in `\r\n` are accepted too.
                 if out.last() == Some(&b'\r') {
                     out.pop();
                 }
@@ -1435,23 +1446,23 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
     }
 }
 
-/// 한 줄의 상한. 어댑터는 파일 내용을 통째로 실어 보내기도 하므로 넉넉해야
-/// 하지만, 무한이어서는 안 된다.
+/// The bound for one line. Adapters sometimes ship an entire file's contents in a line, so
+/// it must be generous — but it must not be infinite.
 pub(crate) const MAX_LINE_BYTES: usize = 16 * 1024 * 1024;
 
-/// 얌전히 끝나기를 기다리는 시간. 넘으면 강제로 끝낸다.
+/// How long we wait for a graceful exit. Past this, we terminate forcibly.
 const GRACEFUL_EXIT_WAIT: std::time::Duration = std::time::Duration::from_millis(1_000);
 
 #[cfg(unix)]
 fn process_is_running(pid: u32) -> bool {
-    // 신호 0 은 「보내지 않고 보낼 수 있는지만 확인」이다.
+    // Signal 0 is "check only whether it could be sent, without sending".
     unsafe { libc::kill(pid as i32, 0) == 0 }
 }
 
-/// 그룹 리더가 이미 회수된 뒤에도 **그 PGID에 구성원이 남았는지** 확인한다.
+/// Checks whether **members remain in that PGID** even after the group leader was reaped.
 ///
-/// `kill(pid, 0)`은 리더 하나만 본다. 음수 PID는 프로세스 그룹 전체를 뜻하므로,
-/// TERM을 무시한 손자까지 사라졌는지는 이 판정으로만 알 수 있다.
+/// `kill(pid, 0)` looks at the leader alone. A negative PID means the whole process group,
+/// so whether even a TERM-ignoring grandchild is gone can only be known via this check.
 #[cfg(unix)]
 fn process_group_is_running(pgid: u32) -> Result<bool, String> {
     if unsafe { libc::kill(-(pgid as i32), 0) } == 0 {
@@ -1460,24 +1471,26 @@ fn process_group_is_running(pgid: u32) -> Result<bool, String> {
     let err = std::io::Error::last_os_error();
     match err.raw_os_error() {
         Some(libc::ESRCH) => Ok(false),
-        // EPERM은 「없다」가 아니다. macOS에서는 방금 TERM을 받은 그룹이
-        // 회수되는 짧은 구간에도 보일 수 있으므로 grace 동안은 살아 있는 것으로
-        // 보고 다시 확인한다. 최종 신호에서도 EPERM이면 그때 오류로 올린다.
+        // EPERM does not mean "gone". On macOS it can also appear during the brief window
+        // in which a group that just received TERM is being reaped, so during the grace
+        // period we treat it as alive and check again. If the final signal still gets
+        // EPERM, we raise the error then.
         Some(libc::EPERM) => Ok(true),
         _ => Err(format!("failed to inspect process group {pgid}: {err}")),
     }
 }
 
-/// 프로세스 **그룹**에 신호를 보낸다. 그룹으로 못 보내면 리더에게라도 보낸다.
+/// Sends a signal to the process **group**. If it cannot reach the group, it at least
+/// signals the leader.
 ///
-/// 그룹이 먼저인 이유: 어댑터는 자기 자식(진짜 CLI · MCP 서버 · 서브에이전트)을
-/// 또 띄운다. 리더만 죽이면 손자들이 고아로 남아 **앱을 끈 뒤에도 계속 돈다.**
-/// 참고 제품에서 유휴 에이전트 3개가 92 프로세스 · 7.1GB 를 쓰고 있는 것을
-/// 실측했다 — 그 트리를 확실히 끝내는 것이 이 함수의 존재 이유다.
+/// Why group-first: the adapter launches children of its own (the real CLI · MCP servers ·
+/// subagents). Killing only the leader leaves the grandchildren orphaned and **still
+/// running after the app is closed.** We measured a reference product where 3 idle agents
+/// were using 92 processes · 7.1GB — reliably ending that tree is this function's reason to exist.
 ///
-/// 그룹이 이미 사라졌는데 리더만 다른 그룹에 남은 `ESRCH` 갈래에서는 리더에게
-/// 폴백한다. `EPERM`이면 리더 신호를 최선으로 시도하되 성공으로 숨기지 않는다 —
-/// 리더 하나를 끝낸 것은 트리 전체를 끝낸 증거가 아니기 때문이다.
+/// In the `ESRCH` branch where the group is already gone but the leader remains in another
+/// group, we fall back to the leader. On `EPERM` we make a best-effort leader signal but do
+/// not hide it as success — ending one leader is not evidence of ending the whole tree.
 #[cfg(unix)]
 fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
     let group = -(pid as i32);
@@ -1487,7 +1500,7 @@ fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
     let group_err = std::io::Error::last_os_error();
     match group_err.raw_os_error() {
         Some(libc::ESRCH) if !process_is_running(pid) => {
-            Ok(()) // 그룹도 리더도 이미 끝났다 — 실패가 아니다.
+            Ok(()) // Both the group and the leader already ended — not a failure.
         }
         Some(libc::ESRCH) => {
             if unsafe { libc::kill(pid as i32, signal) } == 0 {
@@ -1501,7 +1514,7 @@ fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
             Err(format!("failed to signal {pid}: {leader_err}"))
         }
         Some(libc::EPERM) => {
-            // 리더라도 끝내 보지만, 손자를 끝냈다는 증거는 없으므로 오류는 유지한다.
+            // Try to end at least the leader, but keep the error since there is no evidence the grandchildren ended.
             if process_is_running(pid) {
                 unsafe {
                     libc::kill(pid as i32, signal);
@@ -1515,15 +1528,15 @@ fn signal_group_or_leader(pid: u32, signal: i32) -> Result<(), String> {
     }
 }
 
-/// 하네스와 **그것이 띄운 모든 것**을 끝낸다.
+/// Ends the harness and **everything it launched**.
 ///
-/// 순서: 얌전히(SIGTERM) → 최대 1초 기다림 → 강제로(SIGKILL). 어댑터가 자기
-/// 자식을 정리할 틈을 주되, 안 끝나면 기다리지 않는다.
+/// Order: gracefully (SIGTERM) → wait up to 1 second → forcibly (SIGKILL). Give the adapter
+/// a window to clean up its own children, but do not keep waiting if it does not finish.
 ///
-/// ⚠️ **Windows 는 이 조각의 범위 밖이다**(결정 원장 2026-08-16). Windows 에는
-/// 프로세스 그룹이 없어서 Job Object 로 트리를 소유해야 하는데, 그건 별도
-/// 조각이다. 그때까지 Windows 는 `taskkill /T` 로 트리를 끝내려 시도하고,
-/// 그것이 실패하면 손자가 남을 수 있다 — 모르는 척하지 않고 여기 적어 둔다.
+/// ⚠️ **Windows is out of scope for this piece** (decision ledger 2026-08-16). Windows has
+/// no process groups, so a Job Object must own the tree, and that is a separate piece.
+/// Until then, Windows attempts to end the tree with `taskkill /T`, and if that fails a
+/// grandchild may remain — we write it down here rather than pretend not to know.
 pub(crate) fn terminate_tree(pid: u32) -> Result<(), String> {
     #[cfg(unix)]
     {
@@ -1563,7 +1576,7 @@ pub(crate) type RealProbe = (
     fn(&str, &Path, &[&str], &str) -> Option<bool>,
 );
 
-/// 실제 디스크를 보는 기본 프로브.
+/// The default probe that looks at the real disk.
 pub(crate) fn real_probe() -> RealProbe {
     let is_executable = |path: &Path| -> bool {
         let Ok(meta) = std::fs::metadata(path) else {
@@ -1591,7 +1604,7 @@ pub(crate) fn real_probe() -> RealProbe {
             .map(|e| e.file_name().to_string_lossy().to_string())
             .collect()
     };
-    // nvm 의 `alias/default` 한 줄만 읽는다. 임의 파일을 읽는 통로가 아니다.
+    // Reads only nvm's one-line `alias/default`. This is not a channel for reading arbitrary files.
     let read_text = |path: &Path| -> Option<String> {
         let meta = std::fs::metadata(path).ok()?;
         if !meta.is_file() || meta.len() > 4096 {
@@ -1600,16 +1613,16 @@ pub(crate) fn real_probe() -> RealProbe {
         std::fs::read_to_string(path).ok()
     };
     /*
-     * 로그인 여부는 그 CLI 에게 **직접 물어본다.** 그 자리의 파일을 뜯어보지
-     * 않는다 — 자격증명 파일의 모양은 벤더가 언제든 바꾸고, 우리가 그걸 읽는
-     * 것 자체가 신뢰 헌장이 막는 종류의 일이다.
+     * Login status is **asked of that CLI directly.** We do not pick apart the files at
+     * that location — the shape of a credential file is something the vendor can change at
+     * any time, and us reading it is itself the kind of thing the trust charter forbids.
      *
-     * **종료 코드만** 본다(0 = 로그인됨). 출력은 파이프로 버린다: `claude auth
-     * status` 는 이메일과 조직 ID 를 돌려주는데(실측) 우리가 그것을 프로세스
-     * 메모리에 들일 이유가 없다.
+     * We look at **the exit code only** (0 = logged in). Output is discarded via a pipe:
+     * `claude auth status` returns the email and organization ID (measured), and we have
+     * no reason to bring that into process memory.
      *
-     * 못 띄우거나 시간이 지나면 `None` — 「로그인 안 됨」이 아니라 **모른다**다.
-     * 모르는 것을 「안 됨」으로 적으면 멀쩡한 도구를 못 쓰게 만든다.
+     * If it cannot be launched or times out, `None` — meaning **unknown**, not "not logged
+     * in". Recording the unknown as "not working" makes a working tool unusable.
      */
     let login_ok =
         |runtime_id: &str, path: &Path, args: &[&str], child_path: &str| -> Option<bool> {
@@ -1621,18 +1634,20 @@ pub(crate) fn real_probe() -> RealProbe {
                 .stdout(Stdio::null())
                 .stderr(Stdio::null());
             /*
-             * ⚠️ **자식에게 우리가 다시 만든 PATH 를 준다** (2026-08-16 검수에서
-             * 적발). 종전에는 앱이 상속받은 환경 그대로 띄웠는데, 이 파일 맨 위가
-             * 적어 둔 바로 그 이유로 그건 절반만 푼 것이다 — Finder 로 띄운 앱의
-             * PATH 에는 nvm 자리가 없고, `claude` 는 node 를 이름으로 찾는 래퍼다.
-             * 그러면 「종료 코드 ≠ 0」이 나오고 우리는 그걸 **로그인 안 됨**으로
-             * 읽어서, 멀쩡히 로그인된 도구를 목록에서 통째로 지웠다.
+             * ⚠️ **We hand the child the PATH we rebuilt** (caught in the 2026-08-16
+             * review). Previously we launched with the environment the app inherited as-is,
+             * and for exactly the reason written at the top of this file that only solved
+             * half the problem — the PATH of an app launched via Finder has no nvm
+             * location, and `claude` is a wrapper that finds node by name. That yields
+             * "exit code ≠ 0", we read it as **not logged in**, and erased a perfectly
+             * logged-in tool from the list entirely.
              */
             apply_runtime_environment(&mut command, runtime_id, child_path);
             let mut child = command.spawn().ok()?;
 
-            // 응답이 없으면 기다리다 화면이 멈춘다. 실측값(claude 300ms · codex
-            // 45ms)의 여러 배를 상한으로 두고, 넘으면 끝내고 「모른다」로 답한다.
+            // Waiting on a nonresponsive tool freezes the screen. We set the bound at a
+            // multiple of the measured values (claude 300ms · codex 45ms); past it, kill
+            // and answer "unknown".
             let deadline = std::time::Instant::now() + LOGIN_PROBE_TIMEOUT;
             loop {
                 match child.try_wait() {
@@ -1653,26 +1668,28 @@ pub(crate) fn real_probe() -> RealProbe {
     (is_executable, list_dir, read_text, login_ok)
 }
 
-/// 로그인 확인에 기다려 주는 시간. 실측(claude 300ms · codex 45ms)의 여러 배다 —
-/// 넉넉하되, 응답이 없는 도구 때문에 목록이 멈추지는 않게.
+/// How long we wait for the login probe. A multiple of the measured values (claude 300ms ·
+/// codex 45ms) — generous, but the list must not stall because of a nonresponsive tool.
 const LOGIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
-/// 키체인을 들여다보는 데 주는 상한. `security` 는 보통 수십 ms 에 끝나지만,
-/// 키체인이 잠겨 있으면 잠금 해제 창을 띄우고 사람이 답할 때까지 기다린다 —
-/// 그 기다림이 세션 시작을 잡아먹으면 안 된다.
+/// The bound given for looking into the keychain. `security` usually finishes in tens of
+/// ms, but when the keychain is locked it shows an unlock dialog and waits until a person
+/// answers — that wait must not eat session start.
 const KEYCHAIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 
-/// **앱이 대신 깔아 줄 수 있는 CLI** — 넷을 다 갖춘 것만 등재한다.
+/// **CLIs the app can install on the user's behalf** — only those satisfying all four
+/// conditions are listed.
 ///
-/// 근거와 조건: 원장 2026-08-20 (88) · `.claude/rules/forbidden.md` 의
-/// 「에이전트 도구를 대신 설치해 주는 것」 절.
+/// Basis and conditions: ledger 2026-08-20 (88) · the "Installing an agent tool for the
+/// user" section of `.claude/rules/forbidden.md`.
 ///
-/// **버전을 고정한다.** `@latest` 로 두면 같은 앱이 어제와 오늘 다른 것을 깔고,
-/// 그러면 「앱에서만 다르게 동작한다」가 재현 불가능한 형태로 온다.
+/// **The version is pinned.** With `@latest`, the same app installs different things
+/// yesterday and today, and then "it behaves differently only in the app" arrives in an
+/// unreproducible form.
 ///
-/// **전역이 아니라 앱 전용 자리에 깐다** — `--prefix <app-data>/managed-node`.
-/// 사용자의 전역 npm 도 시스템 PATH 도 안 건드리고, 그 폴더를 지우면 흔적이
-/// 남지 않는다.
+/// **Installed into an app-specific location, not globally** — `--prefix
+/// <app-data>/managed-node`. It touches neither the user's global npm nor the system PATH,
+/// and deleting that folder leaves no trace.
 pub(crate) const INSTALLABLE_CLI: &[(&str, &str)] = &[
     ("claude-acp", "@anthropic-ai/claude-code@2.1.237"),
     ("codex-acp", "@openai/codex@0.148.0"),
@@ -1855,8 +1872,9 @@ mod tests {
             .stderr(std::process::Stdio::piped());
 
         apply_runtime_environment(&mut command, "claude-acp", "/atlas/verified/bin");
-        // 테스트 자식임을 알리는 값은 정책을 적용한 **뒤**에만 넣는다. 정책 전에
-        // 넣으면 env_clear가 없을 때도 자식이 안 떠서 검사가 거짓 초록이 된다.
+        // The value marking this as a test child is set only **after** applying the policy.
+        // Set before the policy, the child would not launch even without env_clear, making
+        // the check falsely green.
         command.env("ATLAS_ENV_PROBE_CHILD", "1");
 
         let output = command.output().unwrap();
@@ -1915,8 +1933,8 @@ mod tests {
 
     #[test]
     fn path_entries_come_before_our_guesses() {
-        // 사용자가 자기 셸에서 고른 것이 우리 추측을 이긴다. 순서가 뒤집히면
-        // 두 버전이 깔린 기계에서 앱이 사용자가 안 고른 쪽을 쓴다.
+        // What the user chose in their own shell beats our guesses. If the order flips, on
+        // a machine with two installed versions the app uses the one the user did not choose.
         let files = HashSet::new();
         let dirs = empty_dirs();
         let (is_exec, list, read) = probe_with(&files, &dirs);
@@ -1934,8 +1952,8 @@ mod tests {
 
     #[test]
     fn nvm_versions_are_offered_newest_first() {
-        // 실측 사고 지점: 이 기기의 node 는 nvm 아래에만 있다. 문자열 정렬이면
-        // v9 가 v24 보다 뒤로 가서 낡은 Node 를 먼저 집는다.
+        // The measured accident spot: this machine's node lives only under nvm. With string
+        // sorting, v9 sorts after v24 and the stale Node gets picked first.
         let files = HashSet::new();
         let mut dirs = empty_dirs();
         dirs.insert(
@@ -1966,17 +1984,17 @@ mod tests {
         );
     }
 
-    /// 2026-08-16 실측이 잡아낸 결함. 처음엔 nvm 디렉터리를 후보 앞쪽에 두고
-    /// 「최신 버전 먼저」로 골랐는데, 이 기기에서 `claude` 가 **낡은 v22 의
-    /// bin 에만** 남아 있어서 사용자의 셸이 절대 안 쓰는 사본을 집었다
-    /// (실제 `claude` 는 `~/.local/bin`). 버전 디렉터리는 전역 설치한 CLI 의
-    /// 사본이 쌓이는 자리라 그렇다.
+    /// The defect the 2026-08-16 measurement caught. Initially we put nvm directories at
+    /// the front of the candidates and picked "newest version first", but on this machine
+    /// `claude` remained **only in the bin of stale v22**, so we picked a copy the user's
+    /// shell would never use (the real `claude` is `~/.local/bin`). Version directories are
+    /// where copies of globally installed CLIs pile up — that is why.
     #[cfg(not(windows))]
     #[test]
     fn a_stale_copy_in_an_old_nvm_version_does_not_beat_the_real_one() {
         let files: HashSet<PathBuf> = [
-            "/home/me/.local/bin/claude",                        // 진짜
-            "/home/me/.nvm/versions/node/v22.15.0/bin/claude",   // 낡은 사본
+            "/home/me/.local/bin/claude",                        // the real one
+            "/home/me/.nvm/versions/node/v22.15.0/bin/claude",   // the stale copy
             "/home/me/.nvm/versions/node/v24.16.0/bin/npx",
         ]
         .iter()
@@ -2003,9 +2021,9 @@ mod tests {
         );
     }
 
-    /// nvm 이 「기본」이라고 적어 둔 버전이 최신보다 먼저다. 사용자가 일부러
-    /// 낮은 버전을 쓰고 있는데 우리가 최신을 집으면, 그 프로젝트가 도는 Node 와
-    /// 다른 Node 로 어댑터를 띄우게 된다.
+    /// The version nvm wrote down as "default" comes before the newest. If the user is
+    /// deliberately on a lower version and we pick the newest, we launch the adapter with a
+    /// Node different from the Node that project runs on.
     #[test]
     fn the_nvm_default_alias_wins_over_the_newest_version() {
         let files: HashSet<PathBuf> = [
@@ -2046,8 +2064,8 @@ mod tests {
 
     #[test]
     fn resolve_command_returns_none_instead_of_a_guessed_path() {
-        // 없는 경로를 돌려주면 실패가 실행 시점으로 미뤄지고, 그때 사용자가 보는
-        // 것은 우리가 쓴 문장이 아니라 OS 의 오류다.
+        // Returning a nonexistent path defers the failure to execution time, and what the
+        // user sees then is the OS's error, not a sentence we wrote.
         let files = HashSet::new();
         let dirs = empty_dirs();
         let (is_exec, list, read) = probe_with(&files, &dirs);
@@ -2066,8 +2084,8 @@ mod tests {
     #[cfg(not(windows))]
     #[test]
     fn detects_a_runtime_that_lives_only_under_nvm() {
-        // 이 기기 실측 그대로: codex 와 npx 는 nvm 아래, claude 는 ~/.local/bin.
-        // 둘 다 GUI 앱의 기본 PATH 밖이다.
+        // Exactly as measured on this machine: codex and npx live under nvm, claude in
+        // ~/.local/bin. Both are outside a GUI app's default PATH.
         let files: HashSet<PathBuf> = [
             "/home/me/.nvm/versions/node/v24.16.0/bin/npx",
             "/home/me/.nvm/versions/node/v24.16.0/bin/codex",
@@ -2089,7 +2107,7 @@ mod tests {
             login_ok: &|_, _, _, _| None,
         };
 
-        // PATH 는 GUI 앱이 받는 최소한만 — 여기에 아무것도 없다.
+        // PATH is only the minimum a GUI app receives — nothing lives here.
         let path = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
         let out = detect_runtimes(Some(Path::new("/home/me")), Some(&path), &probe, None, None);
 
@@ -2116,12 +2134,12 @@ mod tests {
 
     #[test]
     fn missing_cli_and_missing_node_are_different_answers() {
-        // 「설치됨/아님」 두 값으로 뭉개면 화면이 무엇을 하라고 말할지 모른다.
+        // Flattening into the two values "installed/not" leaves the screen unsure what to tell the user to do.
         let mut files: HashSet<PathBuf> = HashSet::new();
         let dirs = empty_dirs();
 
         {
-            // ① 아무것도 없다 → CLI 부터 없다.
+            // ① Nothing exists → the CLI is missing first.
             let (is_exec, list, read) = probe_with(&files, &dirs);
             let probe = FsProbe {
                 is_executable: &is_exec,
@@ -2134,7 +2152,7 @@ mod tests {
             assert_eq!(claude.state, "cli-missing", "CLI 부재가 먼저다 — 할 일이 더 분명하다");
         }
 
-        // ② CLI 는 있는데 npx 도 어댑터도 없다 → 띄울 방법이 없다.
+        // ② The CLI exists but neither npx nor an adapter does → no way to launch.
         files.insert(test_bin("claude"));
         let path_env = test_path_env();
         let (is_exec, list, read) = probe_with(&files, &dirs);
@@ -2153,13 +2171,14 @@ mod tests {
         );
     }
 
-    /// **여기 있다 ≠ 로그인돼 있다.**
+    /// **Being here ≠ being logged in.**
     ///
-    /// 2026-08-16 소유자 지적: *"나도 원래 claude code, codex 다 있는데도 각
-    /// 에이전트에 버튼 눌러서 세팅했었는데? 지금 atlas 는 바로 준비됨이던데
-    /// 확인이 필요할 듯"*. 맞았다 — 우리 「준비됨」은 파일 존재만 봤고, 설치는
-    /// 했지만 로그인은 안 한 사람도 그렇게 불렀다. 그 사람이 대화를 열면
-    /// `Authentication required` 로 죽는다(이미 실측해 둔 실패다).
+    /// Owner's remark, 2026-08-16: *"I already had claude code and codex installed, but I
+    /// still had to press the button on each agent to set it up? Atlas shows 'ready'
+    /// immediately — this needs verification"*. It was right — our "ready" only looked at
+    /// file existence, and called someone who installed but never logged in the same thing.
+    /// When that person opens a conversation it dies with `Authentication required` (a
+    /// failure we had already measured).
     #[test]
     fn installed_but_not_logged_in_is_not_ready() {
         let mut files: HashSet<PathBuf> = HashSet::new();
@@ -2169,7 +2188,7 @@ mod tests {
         let dirs = empty_dirs();
         let (is_exec, list, read) = probe_with(&files, &dirs);
 
-        // ① 로그인돼 있다 → 준비됨.
+        // ① Logged in → ready.
         let probe = FsProbe {
             is_executable: &is_exec,
             list_dir: &list,
@@ -2180,7 +2199,7 @@ mod tests {
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(claude.state, "ready");
 
-        // ② 로그인이 안 돼 있다 → **준비됨이 아니다.** 할 일이 분명한 다른 상태다.
+        // ② Not logged in → **not ready.** A different state with a clear required action.
         let probe = FsProbe {
             is_executable: &is_exec,
             list_dir: &list,
@@ -2194,8 +2213,8 @@ mod tests {
             "설치만 하고 로그인 안 한 사람에게 준비됐다고 말하면, 그 사람은 대화를 열어 보고서야 안다",
         );
 
-        // ③ **모르면 「안 됨」으로 적지 않는다.** 물어보지 못한 것을 실패로 세면
-        //    멀쩡한 도구를 못 쓰게 만든다.
+        // ③ **The unknown is not recorded as "not working".** Counting what we could not
+        //    ask as a failure makes a working tool unusable.
         let probe = FsProbe {
             is_executable: &is_exec,
             list_dir: &list,
@@ -2207,7 +2226,7 @@ mod tests {
         assert_eq!(claude.state, "ready");
     }
 
-    /// 로그인 확인은 **재 본 실행기에만** 물어본다.
+    /// The login probe asks **only executors we have measured**.
     #[test]
     fn we_only_ask_about_runtimes_we_measured() {
         use std::cell::RefCell;
@@ -2222,7 +2241,7 @@ mod tests {
                 .unwrap();
             files.insert(test_bin(&cli));
         }
-        // 재 보지 않은 것도 하나 깔아 둔다 — 그것에는 안 물어봐야 한다.
+        // Also install one we have not measured — that one must not be asked.
         files.insert(test_bin("gemini"));
         let path_env = test_path_env();
 
@@ -2247,12 +2266,13 @@ mod tests {
         );
     }
 
-    /// 로그인 확인도 **어댑터를 띄울 때와 같은 PATH** 를 본다.
+    /// The login probe also sees **the same PATH used to launch the adapter**.
     ///
-    /// 2026-08-16 검수에서 적발: 종전에는 앱이 상속받은 환경 그대로 띄웠다.
-    /// 이 파일 맨 위가 적어 둔 그대로, Finder 로 띄운 앱의 PATH 에는 nvm 자리가
-    /// 없다 — `claude` 는 node 를 이름으로 찾는 래퍼라 거기서 실패하고, 우리는
-    /// 그 실패를 **로그인 안 됨**으로 읽어 멀쩡한 도구를 목록에서 지웠다.
+    /// Caught in the 2026-08-16 review: previously we launched with the environment the app
+    /// inherited as-is. Exactly as the top of this file records, the PATH of an app launched
+    /// via Finder has no nvm location — `claude` is a wrapper that finds node by name, it
+    /// fails right there, and we read that failure as **not logged in** and erased a
+    /// working tool from the list.
     #[test]
     fn login_probe_gets_the_same_path_we_launch_with() {
         use std::cell::RefCell;
@@ -2290,18 +2310,17 @@ mod tests {
         );
     }
 
-    /// **띄울 수 있다 ≠ 그 도구가 여기 있다.**
+    /// **Launchable ≠ that tool is here.**
     ///
-    /// 2026-08-16 소유자 지적(*"이렇게 다 보여서 좀 이상한데"*)의 뿌리. 우리가
-    /// 무슨 CLI 를 감싸는지 안 적어 둔 실행기는 확인할 방법이 없는데, npx 만
-    /// 있으면 전부 「준비됨」이 됐다 — 38개 중 20개가 그랬다.
+    /// The root of the owner's 2026-08-16 remark (*"it's a bit odd that everything shows up
+    /// like this"*). An executor whose wrapped CLI we did not write down has no way to be
+    /// verified, yet everything became "ready" as long as npx existed — 20 out of 38 did.
     ///
-    /// 이 검사는 **개수**를 못 박지 않는다(레지스트리가 자라면 바뀐다).
-    /// 못 박는 것은 규칙 하나다: **CLI 이름을 모르면 「준비됨」이라고 말하지
-    /// 않는다.**
+    /// This check does not pin a **count** (it changes as the registry grows).
+    /// What it pins is one rule: **if we do not know the CLI name, we do not say "ready".**
     #[test]
     fn we_do_not_call_a_runtime_ready_when_we_never_checked_for_it() {
-        // npx 는 있고, 아는 CLI 는 하나도 없는 기기.
+        // A machine with npx present and not a single known CLI.
         let mut files: HashSet<PathBuf> = HashSet::new();
         files.insert(test_bin("npx"));
         let path_env = test_path_env();
@@ -2319,9 +2338,9 @@ mod tests {
             let agent = registry().iter().find(|a| a.id == status.id).unwrap();
             if agent.cli.is_none() {
                 /*
-                 * 띄울 방법이 없으면 그 사유가 먼저다(`binary-missing` 등) —
-                 * 그것도 정직한 답이다. 잡아야 하는 것은 **「준비됨」이라고
-                 * 말하는 것** 하나다.
+                 * If there is no way to launch, that reason comes first
+                 * (`binary-missing`, etc.) — that too is an honest answer. The one thing
+                 * to catch is **saying "ready"**.
                  */
                 assert_ne!(
                     status.state, "ready",
@@ -2329,18 +2348,18 @@ mod tests {
                     status.id,
                 );
             } else {
-                // 아는 CLI 인데 이 기기에 없다 → 사용자가 할 일이 분명하다.
+                // A known CLI that is absent on this machine → the user's required action is clear.
                 assert_eq!(status.state, "cli-missing", "{}", status.id);
             }
         }
 
-        // 그리고 이 상황에서 「준비됨」은 **하나도 없어야** 한다.
+        // And in this situation there must be **zero** "ready" states.
         assert_eq!(
             out.iter().filter(|s| s.state == "ready").count(),
             0,
             "아는 CLI 가 하나도 없는 기기인데 준비됨이 있다",
         );
-        // 검사가 빈 집합 위에서 돌고 있지 않은지도 본다.
+        // Also check the test is not running over an empty set.
         assert!(
             out.iter().filter(|s| s.state == "cli-unknown").count() > 0,
             "cli-unknown 이 0 이면 이 검사는 아무것도 안 지키고 있다",
@@ -2349,7 +2368,7 @@ mod tests {
 
     #[test]
     fn an_installed_adapter_wins_over_npx() {
-        // npx 는 첫 실행이 느리다. 이미 깔려 있으면 그걸 쓴다.
+        // npx is slow on first execution. If already installed, use that.
         let files: HashSet<PathBuf> = ["claude", "claude-agent-acp", "npx"]
         .iter()
         .map(|name| test_bin(name))
@@ -2434,9 +2453,9 @@ mod tests {
     #[cfg(not(windows))]
     #[test]
     fn launch_hands_the_child_a_path_that_can_find_the_real_cli() {
-        // 절반만 푼 상태를 막는 검사다. 우리가 어댑터를 절대 경로로 띄워도
-        // 그 어댑터는 다시 `claude` 를 **이름으로** 찾는다 — 부모가 못 찾던
-        // PATH 를 그대로 물려주면 어댑터가 같은 자리에서 막힌다.
+        // A check that blocks the half-solved state. Even if we launch the adapter by
+        // absolute path, that adapter in turn finds `claude` **by name** — handing down the
+        // PATH the parent could not find things with makes the adapter hit the same wall.
         let files: HashSet<PathBuf> = [
             "/home/me/.local/bin/claude",
             "/home/me/.nvm/versions/node/v24.16.0/bin/npx",
@@ -2477,7 +2496,7 @@ mod tests {
         let dirs = empty_dirs();
         let path_env = test_path_env();
 
-        // CLI 가 없다 — 사용자가 그 도구를 깔아야 한다.
+        // The CLI is missing — the user must install that tool.
         let none: HashSet<PathBuf> = HashSet::new();
         let (is_exec, list, read) = probe_with(&none, &dirs);
         let probe = FsProbe {
@@ -2491,7 +2510,7 @@ mod tests {
             .unwrap_err()
             .starts_with("cli-missing:"));
 
-        // CLI 는 있는데 띄울 방법이 없다 — 다른 처방이 필요하다.
+        // The CLI exists but there is no way to launch — a different prescription is needed.
         let cli_only: HashSet<PathBuf> = [test_bin("claude")].into_iter().collect();
         let (is_exec, list, read) = probe_with(&cli_only, &dirs);
         let probe = FsProbe {
@@ -2506,7 +2525,7 @@ mod tests {
             "node-missing"
         );
 
-        // 모르는 실행기를 조용히 통과시키지 않는다.
+        // An unknown executor is not silently passed through.
         assert!(resolve_launch("nope", None, Some(path_env.as_os_str()), &probe,
             None, None)
             .unwrap_err()
@@ -2529,8 +2548,9 @@ mod tests {
 
     #[test]
     fn bounded_line_reader_refuses_an_endless_line_instead_of_eating_memory() {
-        // 남이 만든 프로그램의 출력을 신뢰하지 않는다. 개행 없이 계속 쓰면
-        // 표준 read_line 은 버퍼를 무한히 키우다가 앱을 통째로 죽인다.
+        // We do not trust the output of a program somebody else made. Written endlessly
+        // without a newline, the standard read_line grows its buffer without limit until it
+        // kills the whole app.
         let flood = vec![b'x'; 4096];
         let mut input = std::io::BufReader::new(&flood[..]);
         let err = read_bounded_line(&mut input, 64).unwrap_err();
@@ -2539,8 +2559,8 @@ mod tests {
 
     #[test]
     fn bounded_line_reader_drops_the_oversized_line_and_keeps_reading() {
-        // 잘라서 넘기면 반쪽 JSON 이 파서에 들어가 더 이해하기 어려운 고장이
-        // 된다. 그 줄만 버리고 다음 줄부터 이어 간다.
+        // Passing a truncated line feeds half a JSON into the parser and produces a
+        // harder-to-understand breakage. Drop only that line and continue from the next.
         let mut data = vec![b'x'; 200];
         data.push(b'\n');
         data.extend_from_slice(b"{\"ok\":true}\n");
@@ -2553,7 +2573,7 @@ mod tests {
         );
     }
 
-    /// 손자가 죽을 때까지 기다린다 — 신호는 즉시 도착하지만 회수는 비동기다.
+    /// Waits until the grandchild dies — the signal arrives immediately but reaping is asynchronous.
     #[cfg(unix)]
     fn wait_until_gone(pid: u32, within: std::time::Duration) -> bool {
         let deadline = std::time::Instant::now() + within;
@@ -2566,11 +2586,11 @@ mod tests {
         !process_is_running(pid)
     }
 
-    /// 진짜 프로세스를 띄워서 트리 정리를 잰다.
+    /// Launches real processes to measure tree cleanup.
     ///
-    /// 이 검사가 없으면 「죽인다」는 우리 주장일 뿐이다. 실제로 참고 제품에서
-    /// 유휴 에이전트 3개가 92 프로세스 · 7.1GB 로 떠 있는 것을 봤다 — 남는
-    /// 프로세스는 이론이 아니라 관측된 일이다.
+    /// Without this check, "we kill it" is merely our claim. We actually saw a reference
+    /// product with 3 idle agents up at 92 processes · 7.1GB — leftover processes are an
+    /// observed event, not theory.
     #[cfg(unix)]
     #[test]
     fn terminate_tree_reaps_grandchildren_that_a_naive_kill_would_orphan() {
@@ -2578,8 +2598,8 @@ mod tests {
         use std::os::unix::process::CommandExt;
         use std::process::{Command, Stdio};
 
-        // 「어댑터가 자기 자식을 또 띄운다」를 최소로 재현한다: sh 가 sleep 을
-        // 배경으로 띄우고 그 pid 를 알려 준 뒤 자기도 잔다.
+        // Minimally reproduces "the adapter launches children of its own": sh launches
+        // sleep in the background, reports its pid, then sleeps itself.
         let spawn_tree = || {
             let mut child = Command::new("/bin/sh")
                 .arg("-c")
@@ -2595,7 +2615,7 @@ mod tests {
             (child, grandchild)
         };
 
-        // ① 순진하게 자식만 죽이면 손자는 살아남는다 — 이게 우리가 피하려는 것.
+        // ① Naively killing only the child lets the grandchild survive — this is what we are avoiding.
         {
             let (mut child, grandchild) = spawn_tree();
             assert!(process_is_running(grandchild));
@@ -2606,17 +2626,17 @@ mod tests {
                 "이 검사의 전제가 깨졌다 — 순진한 kill 이 손자까지 죽였다면 \
                  이 플랫폼에서는 트리 정리가 필요 없다는 뜻이다"
             );
-            // 남긴 채로 두지 않는다.
+            // Do not leave it behind.
             let _ = terminate_tree(grandchild);
         }
 
-        // ② 그룹째 끝내면 손자도 함께 끝난다.
+        // ② Ending the whole group ends the grandchild with it.
         let (mut child, grandchild) = spawn_tree();
         assert!(process_is_running(grandchild));
         let leader_pid = child.id();
-        // 실제 앱과 같이 별도 wait 스레드가 리더를 회수한다. 리더를 이 함수 뒤에
-        // 회수하면 macOS에서 죽은 그룹 리더가 EPERM 과도 상태로 남아, 앱에 없는
-        // 수명 조건을 시험하게 된다.
+        // As in the real app, a separate wait thread reaps the leader. Reaping the leader
+        // after this function leaves a dead group leader in an EPERM transitional state on
+        // macOS, testing a lifetime condition the app does not have.
         let reaper = std::thread::spawn(move || child.wait());
         terminate_tree(leader_pid).expect("트리를 끝내지 못했다");
         let _ = reaper.join();
@@ -2626,11 +2646,12 @@ mod tests {
         );
     }
 
-    /// 리더가 먼저 회수돼도 같은 그룹의 손자가 남아 있으면 강제 종료까지 간다.
+    /// Even if the leader is reaped first, escalation goes all the way to forced kill when
+    /// a grandchild of the same group remains.
     ///
-    /// 실제 앱에는 자식을 기다리는 별도 스레드가 있으므로 SIGTERM 직후 리더 PID는
-    /// 사라질 수 있다. 그 순간 리더만 확인하면 TERM을 무시한 손자는 살아 있는데
-    /// 트리가 끝났다고 오판한다.
+    /// The real app has a separate thread waiting on the child, so the leader PID can
+    /// vanish right after SIGTERM. Checking only the leader at that moment misjudges the
+    /// tree as finished while a TERM-ignoring grandchild is alive.
     #[cfg(unix)]
     #[test]
     fn terminate_tree_escalates_after_the_group_leader_is_reaped() {
@@ -2640,8 +2661,8 @@ mod tests {
 
         let mut leader = Command::new("/bin/sh")
             .arg("-c")
-            // 안쪽 sh 가 TERM 무시 설정을 끝낸 뒤 자기 pid 를 알린다. 바깥 sh 는
-            // 기본 TERM 동작을 유지하므로 그룹 TERM 때 리더만 먼저 끝난다.
+            // The inner sh reports its own pid after finishing the TERM-ignore setup. The
+            // outer sh keeps default TERM behavior, so on a group TERM only the leader ends first.
             .arg("/bin/sh -c 'trap \"\" TERM; echo $$; while :; do sleep 1; done' & wait")
             .stdout(Stdio::piped())
             .process_group(0)
@@ -3316,10 +3337,11 @@ mod npx_cache_tests {
 
     #[test]
     fn entry_dir_matches_npms_observed_hashes() {
-        // 공식(sha512 hex 앞 16자)을 **소유자 기계에서 실측한 두 값**에 못
-        // 박는다. 하나는 소유자 화면의 npm 오류가 가리킨 바로 그 깨진 디렉터리,
-        // 하나는 같은 기계에 살아 있던 codex 항목이다. 공식이 흔들리면 치유가
-        // 조용히 아무것도 안 하게 되므로, 여기가 가장 먼저 터져야 한다.
+        // Pins the formula (first 16 hex characters of the sha512) to **two values measured on
+        // the owner's own machine**. One is the exact broken directory the npm error on the owner's
+        // screen pointed at; the other is the codex entry that was alive on that same machine. If
+        // the formula drifts, healing quietly does nothing at all — so this is the test that has to
+        // break first.
         let root = PathBuf::from("/Users/me/.npm/_npx");
         assert_eq!(
             npx_cache_entry_dir(&root, CLAUDE_SPEC),
@@ -3333,7 +3355,7 @@ mod npx_cache_tests {
 
     #[test]
     fn spots_the_owners_broken_cache_shape() {
-        // 실측 그대로: node_modules 는 차 있고 .bin 은 비어 있고 package.json 없음.
+        // Exactly as measured: node_modules is populated, .bin is empty, package.json is absent.
         let dir = scratch("broken");
         let entry = dir.join("8757e2301903ae53");
         build_entry(
@@ -3353,7 +3375,7 @@ mod npx_cache_tests {
 
     #[test]
     fn accepts_a_completed_install() {
-        // 살아 있는 항목의 실측 모양(package.json + _npx 표식 + .bin 연결).
+        // The measured shape of a live entry: package.json, the _npx marker, and a linked .bin.
         let dir = scratch("healthy");
         let entry = dir.join("entry");
         build_entry(
@@ -3370,8 +3392,8 @@ mod npx_cache_tests {
 
     #[test]
     fn spots_unlinked_bins_and_unparseable_manifests() {
-        // 내려받기는 끝났는데 실행 파일 연결 전에 끊긴 상태 —
-        // npx 는 「실행할 것을 못 찾겠다」로 멈추고 스스로 낫지 않는다.
+        // The download finished but the run was cut off before the executable was linked — npx
+        // stops with "cannot find anything to run" and never heals itself.
         let dir = scratch("nobin");
         let entry = dir.join("entry");
         build_entry(
@@ -3386,7 +3408,7 @@ mod npx_cache_tests {
             npx_entry_health(&entry, CLAUDE_SPEC),
             NpxEntryHealth::Broken("bin-links-missing"),
         );
-        // 반쪽 JSON — 쓰다가 끊긴 package.json 도 같은 막다른 길이다.
+        // Half-written JSON: a package.json cut off mid-write is the same dead end.
         std::fs::write(entry.join("package.json"), "{\"dependencies\": {").unwrap();
         assert_eq!(
             npx_entry_health(&entry, CLAUDE_SPEC),
@@ -3397,8 +3419,8 @@ mod npx_cache_tests {
 
     #[test]
     fn leaves_a_foreign_entry_alone() {
-        // _npx 표식이 **다른** 스펙을 가리키면 남의 캐시일 수 있다 —
-        // 깨진 듯 보여도(빈 .bin) 절대 지우지 않는다.
+        // When the _npx marker names a **different** spec, the entry may belong to someone else —
+        // never delete it, however broken it looks (an empty .bin).
         let dir = scratch("foreign");
         let entry = dir.join("entry");
         build_entry(
@@ -3415,7 +3437,7 @@ mod npx_cache_tests {
 
     #[test]
     fn preflight_removes_only_the_broken_entry() {
-        // 홈 전체를 흉내 낸다: 우리 항목은 깨져 있고, 옆에는 남의 항목이 산다.
+        // Imitates a whole home directory: our entry is broken and a stranger's entry lives beside it.
         let home = scratch("home");
         let root = npx_cache_root(Some(&home)).unwrap();
         let ours = npx_cache_entry_dir(&root, CLAUDE_SPEC);
@@ -3450,7 +3472,7 @@ mod npx_cache_tests {
             "옆의 남의 항목은 그대로여야 한다 — 범위는 항목 하나다"
         );
 
-        // 지운 뒤의 다음 시작은 「처음 내려받기」다 — 화면이 그렇게 말할 근거.
+        // After the delete, the next launch is a first download — the grounds for the screen saying so.
         assert_eq!(
             preflight_npx_cache(&npx_launch(CLAUDE_SPEC), Some(&home)),
             NpxCachePreflight::FirstDownload,
@@ -3475,7 +3497,7 @@ mod npx_cache_tests {
             NpxCachePreflight::CacheReady,
         );
 
-        // 전역 어댑터로 뜨는 시작은 npx 캐시와 무관하다.
+        // A launch that starts from a globally installed adapter has nothing to do with the npx cache.
         let installed = AcpLaunch {
             program: PathBuf::from("/usr/local/bin/claude-agent-acp"),
             args: vec![],
@@ -3485,7 +3507,7 @@ mod npx_cache_tests {
             preflight_npx_cache(&installed, Some(&home)),
             NpxCachePreflight::NotNpx,
         );
-        // 홈을 모르면 캐시를 못 본다 — 종전과 같이 그냥 띄운다.
+        // With no known home there is no cache to inspect — launch as before.
         assert_eq!(
             preflight_npx_cache(&npx_launch(CLAUDE_SPEC), None),
             NpxCachePreflight::CacheUnknown,
@@ -3496,7 +3518,7 @@ mod npx_cache_tests {
     #[test]
     fn cache_root_honors_the_users_npmrc_override() {
         let home = scratch("npmrc");
-        // `cache-min` 같은 이웃 열쇠에 속으면 엉뚱한 곳을 뒤진다.
+        // Being fooled by a neighbouring key such as `cache-min` would search the wrong place.
         std::fs::write(
             home.join(".npmrc"),
             "cache-min=999\ncache = ~/custom-cache\n",
@@ -3507,7 +3529,7 @@ mod npx_cache_tests {
             Some(home.join("custom-cache").join("_npx")),
         );
 
-        // npmrc 가 없으면 플랫폼 기본값.
+        // With no npmrc, the platform default applies.
         let plain = scratch("plainhome");
         let expected = if cfg!(windows) {
             plain.join("AppData").join("Local").join("npm-cache").join("_npx")

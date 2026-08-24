@@ -63,12 +63,14 @@ impl AcpCheck {
     }
 }
 
-/// 이 둘이 막히면 **뒤의 모든 것이 소용없다.** 도구가 없거나 띄울 수 없으면
-/// 설정 폴더를 아무리 고쳐도 대화는 안 열린다.
+/// If these two are blocked, **everything after them is futile.** When the tool
+/// is missing or cannot be launched, no amount of fixing the config folder will
+/// open a conversation.
 const PREREQUISITE_IDS: &[&str] = &["cli", "launcher"];
 
-/// 이 파일이 아는 검사 전부. **순서가 곧 의존 순서다** — 앞의 것이 무너지면
-/// 뒤의 것은 재도 뜻이 없으므로 화면이 위에서부터 읽으면 된다.
+/// Every check this file knows. **The order is the dependency order** — when an
+/// earlier one collapses, measuring a later one is meaningless, so the screen
+/// can simply read from the top.
 pub(crate) const CHECK_IDS: &[&str] = &[
     "cli",
     "launcher",
@@ -80,30 +82,32 @@ pub(crate) const CHECK_IDS: &[&str] = &[
     "login",
 ];
 
-/// `repair()` 가 실제로 처리하는 검사. `fixable: true` 는 여기 있는 것만 될 수 있다.
+/// The checks `repair()` actually handles. Only entries here may be `fixable: true`.
 pub(crate) const REPAIRABLE_IDS: &[&str] = &["npx-cache", "config-dir", "credentials-link", "shadow-keychain"];
 
-/// **세션 모드만으로 관문을 세울 수 있다고 검증된 실행기.**
+/// **Executors verified to be able to stand a gate through session mode alone.**
 ///
-/// 화면 쪽 `GATED_SESSION_MODE`(`src/features/acp-session/model/runtime-gate.ts`)의
-/// 사본이다. 사본이 둘인 이유는 판정하는 자리가 둘이기 때문 — 세션을 여는 것은
-/// 화면이고, 진단하는 것은 여기다. 어긋나면
-/// `tests/contract/agent-doctor-checks.contract.test.ts` 가 막는다.
+/// This is a copy of the screen-side `GATED_SESSION_MODE`
+/// (`src/features/acp-session/model/runtime-gate.ts`). There are two copies
+/// because there are two places that judge — the screen opens the session, and
+/// this file diagnoses. If they diverge,
+/// `tests/contract/agent-doctor-checks.contract.test.ts` blocks it.
 ///
-/// 2026-08-24 설치본에서 Codex `read-only`가 Atlas MCP write를 막지 못했다.
-/// 따라서 현재 표는 의도적으로 비어 있고, Codex는 인앱 대화를 열지 않는다.
+/// On the 2026-08-24 installed build, Codex `read-only` failed to block Atlas
+/// MCP writes. The table is therefore intentionally empty for now, and Codex
+/// does not open in-app conversations.
 pub(crate) const SESSION_MODE_GATE: &[(&str, &str)] = &[];
 
-/// 진단에 필요한 바깥 세계. 테스트가 갈아 끼울 수 있게 값으로 받는다.
+/// The outside world the diagnosis needs. Taken as values so tests can swap them out.
 pub(crate) struct DoctorContext<'a> {
     pub runtime_id: &'a str,
     pub home: Option<&'a Path>,
     pub app_data_dir: &'a Path,
-    /// 그 실행기의 진짜 CLI 절대 경로 (찾았을 때만).
+    /// Absolute path of that executor's real CLI (only when found).
     pub cli: Option<&'a Path>,
     /// Absolute path of the program launching the adapter (only when found).
     pub launcher: Option<&'a Path>,
-    /// 자식에게 줄 PATH.
+    /// The PATH to hand the child process.
     pub path_env: &'a str,
     /// Is the app quota settings folder in a logged-out state. `None` if it could not be queried.
     pub isolated_logged_out: Option<bool>,
@@ -126,14 +130,17 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     });
 
     /*
-     * **관문이 있나 — 그리고 어떤 방식인가.**
+     * **Is there a gate — and of which kind.**
      *
-     * 이 줄이 없으면 화면이 「이 도구로 대화 열기」를 내주는 근거가 진단
-     * 어디에도 안 보인다. 그리고 관문 방식이 둘이라는 사실도 안 보여서, codex
-     * 를 보던 사람은 격리 검사가 없는 것을 「덜 안전한가」로 읽게 된다.
+     * Without this line, the basis on which the screen offers "Open a
+     * conversation with this tool" appears nowhere in the diagnosis. The fact
+     * that there are two gate mechanisms stays invisible too, so someone
+     * looking at codex reads the absence of isolation checks as "is it less
+     * safe?".
      *
-     * 둘 중 아무 방식도 없으면 **문제**다. 앱이 못 지킬 약속을 화면이 하고 있다는
-     * 뜻이고, 그건 사용자가 아니라 우리가 고칠 일이라 고치기 버튼을 안 단다.
+     * Having neither mechanism is a **problem**. It means the screen is making
+     * a promise the app cannot keep, and that is ours to fix, not the user's,
+     * so no fix button is attached.
      */
     out.push(if acp::config_env_for(ctx.runtime_id).is_some() {
         AcpCheck::ok("gate", Some("isolation".into()))
@@ -143,12 +150,13 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         AcpCheck::problem("gate", false, None)
     });
 
-    // npx 갈래가 아니면 캐시 자체가 없다. 「문제 없음」이 아니라 「해당 없음」이라
-    // 목록에서 뺀다 — 없는 것을 초록으로 그리면 화면이 안 재 본 것을 잰 척한다.
+    // Outside the npx branch there is no cache at all. That is "not applicable",
+    // not "no problem", so it is left off the list — painting the absent thing
+    // green makes the screen pretend to have measured what it never did.
     if let Some(entry) = npx_entry_path(ctx) {
         out.push(match acp::npx_entry_health(&entry, npx_package(ctx).as_deref().unwrap_or("")) {
             acp::NpxEntryHealth::Usable => AcpCheck::ok("npx-cache", None),
-            // 아직 안 받은 것은 결함이 아니다 — 처음 띄울 때 받는다.
+            // Not yet downloaded is not a defect — it downloads on first launch.
             acp::NpxEntryHealth::Missing => AcpCheck::ok("npx-cache", Some("not-downloaded".into())),
             acp::NpxEntryHealth::Broken(reason) => {
                 AcpCheck::problem("npx-cache", true, Some(reason.into()))
@@ -157,17 +165,19 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     }
 
     /*
-     * ⚠️ **관문을 세우는 방식이 실행기마다 다르다** (2026-08-20 정정).
+     * ⚠️ **How a gate is stood differs per executor** (2026-08-20 correction).
      *
-     * 아래 넷은 **설정 격리**로 관문을 세우는 실행기의 이야기다. codex 는 그
-     * 방식이 안 먹히고 `read-only` 세션 모드도 Atlas MCP write를 막지 못했다.
-     * 따라서 현재는 관문이 없는 실행기이며 인앱 대화를 열지 않는다
-     * (`src/features/acp-session/model/runtime-gate.ts`).
+     * The four below are the story of executors that stand their gate through
+     * **config isolation**. For codex that approach does not take, and the
+     * `read-only` session mode also failed to block Atlas MCP writes. It is
+     * therefore currently an executor with no gate, and it does not open
+     * in-app conversations (`src/features/acp-session/model/runtime-gate.ts`).
      *
-     * 그래서 격리를 안 쓰는 실행기에는 이 넷을 **아예 안 낸다.** 처음 판은
-     * `unknown` 으로 냈는데, 화면에 「앱 몫 설정이 준비됐나 — 확인 못 했어요」가
-     * 떠서 **멀쩡한 도구가 반쯤 고장 난 것처럼** 읽혔다. 해당 없는 것을 「모른다」
-     * 라고 말하는 것도 거짓말이다.
+     * So for executors that do not use isolation, these four are **not emitted
+     * at all.** The first cut emitted them as `unknown`, and the screen showed
+     * "Is the app-side config ready — could not verify", which read as **a
+     * perfectly fine tool being half broken.** Saying "don't know" about
+     * something that does not apply is also a lie.
      */
     let isolated = isolated_dir(ctx);
     let Some(dir) = isolated.clone() else {
@@ -184,8 +194,8 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         let source = spec_user_dir.join(".credentials.json");
         let link = dir.join(".credentials.json");
         out.push(if !source.exists() {
-            // 사용자가 터미널에서 로그인한 적이 없다. 링크할 원본이 없는 것이지
-            // 링크가 깨진 것이 아니다.
+            // The user has never logged in from the terminal. The source to
+            // link is missing; the link is not broken.
             AcpCheck::unknown("credentials-link", None)
         } else if std::fs::read_link(&link).ok().as_deref() == Some(source.as_path()) {
             AcpCheck::ok("credentials-link", Some(link.display().to_string()))
@@ -209,17 +219,18 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     finish(out)
 }
 
-/// **놀고 있지 않다는 증거.** 등재되지 않은 id 를 돌려주면 화면이 그 줄에 대해
-/// 아무 문구도 못 찾아 빈 칸을 그린다. 목록과 실제 산출을 여기서 묶는다.
+/// **Proof this is not idle.** Returning an unlisted id leaves the screen unable
+/// to find any wording for that row, so it draws a blank. The list and the
+/// actual output are bound together here.
 fn finish(mut out: Vec<AcpCheck>) -> Vec<AcpCheck> {
     debug_assert!(
         out.iter().all(|check| CHECK_IDS.contains(&check.id)),
         "등재되지 않은 검사 id 를 돌려줬다"
     );
 
-    // 선행 조건이 막혔으면 뒤의 것들은 **고칠 수 있다고 말하지 않는다.**
-    // 상태는 그대로 둔다 — 잰 것을 감추는 것이 아니라, 소용없는 행동을 권하지
-    // 않는 것이 요점이다.
+    // When a prerequisite is blocked, the later ones **are not claimed fixable.**
+    // Their state is left as measured — the point is not to hide what was
+    // measured, but not to recommend a futile action.
     let blocked_upstream = out
         .iter()
         .any(|check| PREREQUISITE_IDS.contains(&check.id) && check.state == "problem");
@@ -235,7 +246,8 @@ fn finish(mut out: Vec<AcpCheck>) -> Vec<AcpCheck> {
     out
 }
 
-/// 이 실행기의 앱 몫 설정 폴더. 격리를 재 본 실행기만 값이 있다.
+/// This executor's app-side config folder. Only executors whose isolation has
+/// been measured have a value.
 fn isolated_dir(ctx: &DoctorContext<'_>) -> Option<PathBuf> {
     acp::config_env_for(ctx.runtime_id)?;
     Some(ctx.app_data_dir.join("agent-config").join(ctx.runtime_id))
@@ -260,9 +272,9 @@ pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), Stri
         return Err(format!("not-repairable:{check_id}"));
     }
     match check_id {
-        // 셋 다 같은 준비 경로가 고친다: 설정 폴더를 다시 쓰고, 자격증명을 다시
-        // 링크하고, 그림자 항목을 걷는다. 하나만 골라 고치는 길을 따로 두면
-        // 그 길이 본 경로와 어긋난다.
+        // The same preparation path fixes all three: rewrite the config folder,
+        // relink the credentials, and clear the shadow entry. Keeping a separate
+        // path that fixes just one would let that path drift from the main one.
         "config-dir" | "credentials-link" | "shadow-keychain" => acp::prepare_isolated_config(
             ctx.runtime_id,
             ctx.app_data_dir,
@@ -280,24 +292,26 @@ pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), Stri
     }
 }
 
-/// **연결을 처음부터 다시 맺는다.**
+/// **Re-establishes the connection from scratch.**
 ///
-/// 소유자 요청(2026-08-20): *"로그아웃 버튼을 놔두던지 재로그인 눌러서 다시
-/// 연동되게 한다거나."*
+/// Owner request (2026-08-20): *"Either leave a logout button, or let pressing
+/// re-login make the integration link up again."*
 ///
-/// ## 「로그아웃」이 아니라 「다시 맺기」인 이유
+/// ## Why this is "re-establish", not "logout"
 ///
-/// 이 앱에는 **앱 몫 로그인이 없다** — 사용자가 터미널에서 쓰는 그 로그인을
-/// 링크해서 그대로 쓴다. 그러니 여기서 「로그아웃」을 내주면 두 가지 중 하나가
-/// 되는데 둘 다 나쁘다: 사용자의 진짜 로그인을 지우거나(우리 소관이 아니다),
-/// 아무것도 안 하면서 그런 척하거나.
+/// This app has **no app-side login** — it links the very login the user uses
+/// in the terminal and uses it as-is. So offering "logout" here becomes one of
+/// two things, and both are bad: deleting the user's real login (not ours to
+/// touch), or doing nothing while pretending to.
 ///
-/// 대신 **앱이 만든 것만** 지운다. 설정 폴더 · 링크 · 그 폴더 앞으로 난
-/// 키체인 항목. 그다음 처음부터 다시 만든다. 이것이 「연동이 꼬였을 때 다시
-/// 연결」의 이 구조에서의 정확한 뜻이다.
+/// Instead, only **what the app created** is deleted: the config folder, the
+/// link, and the keychain item addressed to that folder. Then everything is
+/// built again from scratch. In this structure, that is the exact meaning of
+/// "reconnect when the integration got tangled".
 ///
-/// 지운 뒤 **반드시 다시 만든다.** 지우기만 하면 다음 세션이 관문 없이 뜨거나
-/// 시작 실패로 죽는데, 사용자는 「다시 맺기」를 눌렀을 뿐이다.
+/// After deleting, it **must rebuild.** Deleting alone means the next session
+/// either comes up without a gate or dies on startup failure — and the user
+/// only pressed "re-establish".
 pub(crate) fn reset_connection(ctx: &DoctorContext<'_>) -> Result<(), String> {
     let Some(dir) = isolated_dir(ctx) else {
         // Executors that do not use isolation have no app-created artifacts. No need to delete, so success
@@ -343,10 +357,10 @@ mod tests {
         }
     }
 
-    /// **무너진 앞단 위에 고치기 버튼을 세우지 않는다** (2026-08-20 워크스루).
+    /// **Do not build a fix button on a collapsed prerequisite** (2026-08-20 walkthrough).
     ///
-    /// 도구가 아예 없는 사람에게 「앱 몫 설정이 준비됐나 — 고치기」를 권하고
-    /// 있었다. 눌러도 소용없다 — 띄울 도구 자체가 없으니까.
+    /// We were recommending "App quota settings ready — fix" to someone with
+    /// no tool at all. Pressing it is futile — there is no tool to launch.
     #[test]
     fn nothing_downstream_is_offered_as_fixable_when_the_tool_is_missing() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-l-{}", std::process::id()));
@@ -354,7 +368,7 @@ mod tests {
         let home = base.join("home");
         std::fs::create_dir_all(&home).unwrap();
 
-        // cli 도 launcher 도 없는 사람 = 워크스루의 그 사람.
+        // Someone with neither cli nor launcher = the person from the walkthrough.
         let app_data = base.join("appdata");
         let c = ctx(&app_data, Some(&home));
         assert!(c.cli.is_none() && c.launcher.is_none(), "이 시험의 전제가 깨졌다");
@@ -375,7 +389,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&base);
     }
 
-    /// 반대 방향: 선행 조건이 멀쩡하면 뒤의 수리는 그대로 살아 있어야 한다.
+    /// The opposite direction: when the prerequisites are fine, downstream repairs must stay alive.
     #[test]
     fn downstream_repairs_survive_when_prerequisites_are_fine() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-m-{}", std::process::id()));
@@ -402,13 +416,13 @@ mod tests {
     fn codex_read_only_is_not_reported_as_a_permission_gate() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-h-{}", std::process::id()));
 
-        // 격리로 막는 실행기.
+        // An executor gated by isolation.
         let claude = diagnose(&ctx(&base, None));
         let gate = claude.iter().find(|c| c.id == "gate").unwrap();
         assert_eq!(gate.state, "ok");
         assert_eq!(gate.detail.as_deref(), Some("isolation"));
 
-        // `read-only`는 직접 파일 쓰기만 막고 Atlas MCP write는 막지 못했다.
+        // `read-only` only blocked direct file writes; it failed to block Atlas MCP writes.
         let mut c = ctx(&base, None);
         c.runtime_id = "codex-acp";
         let codex = diagnose(&c);
@@ -424,8 +438,9 @@ mod tests {
         let mut c = ctx(&base, None);
         c.runtime_id = "gemini-acp";
         let gate = diagnose(&c).into_iter().find(|c| c.id == "gate").unwrap();
-        // 앱이 못 지킬 약속을 화면이 하고 있다는 뜻이라 문제이고,
-        // 사용자가 아니라 우리가 고칠 일이라 고치기 버튼을 안 단다.
+        // It is a problem because it means the screen is making a promise the
+        // app cannot keep, and it is ours to fix, not the user's, so no fix
+        // button is attached.
         assert_eq!(gate.state, "problem");
         assert!(!gate.fixable);
     }
@@ -442,14 +457,14 @@ mod tests {
         let c = ctx(&app_data, Some(&home));
         prepare_for_test(&c);
 
-        // 사용자가 손댄 흔적을 심어 둔다 — 다시 맺기는 이것을 없애야 한다.
+        // Plant a trace of user tampering — re-establishing must remove it.
         let dir = app_data.join("agent-config").join("claude-acp");
         std::fs::write(dir.join("junk.json"), "{}").unwrap();
 
         reset_connection(&c).unwrap();
 
         assert!(!dir.join("junk.json").exists(), "다시 맺었는데 옛 파일이 남았다");
-        // **지우기만 하면 안 된다.** 다음 세션이 관문 없이 뜨거나 죽는다.
+        // **Deleting alone is not enough.** The next session comes up without a gate or dies.
         assert!(dir.join("settings.json").is_file(), "다시 만들지 않았다");
         assert!(dir.join(".credentials.json").exists(), "링크를 다시 안 걸었다");
         let _ = std::fs::remove_dir_all(&base);
@@ -460,15 +475,16 @@ mod tests {
         let base = std::env::temp_dir().join(format!("atlas-doctor-k-{}", std::process::id()));
         let mut c = ctx(&base, None);
         c.runtime_id = "codex-acp";
-        // 지울 것이 없으니 성공이다 — 「할 수 없다」고 하면 사용자는 뭔가 잘못된
-        // 줄 안다.
+        // Nothing to delete, so it is success — saying "cannot do it" makes the
+        // user think something is wrong.
         assert!(reset_connection(&c).is_ok());
     }
 
     #[test]
     fn every_fixable_check_has_a_repair_that_handles_it() {
-        // 「고칠 수 있어요」라고 말해 놓고 누르면 아무 일도 안 나는 것이 이
-        // 자리에서 가장 나쁜 결함이다. 화면은 사실을 말했다고 믿게 된다.
+        // Saying "this can be fixed" and then having nothing happen on press is
+        // the worst defect in this spot. The screen is led to believe it told
+        // the truth.
         for id in REPAIRABLE_IDS {
             assert!(
                 CHECK_IDS.contains(id),
@@ -491,15 +507,16 @@ mod tests {
         let base = std::env::temp_dir().join(format!("atlas-doctor-b-{}", std::process::id()));
         let checks = diagnose(&ctx(&base, None));
         let by_id = |id: &str| checks.iter().find(|c| c.id == id).map(|c| c.state);
-        // 물어보지 못한 둘은 unknown 이어야 한다 — 「문제 없음」이 아니다.
+        // The two we could not ask about must be unknown — not "no problem".
         assert_eq!(by_id("login"), Some("unknown"));
         assert_eq!(by_id("shadow-keychain"), Some("unknown"));
     }
 
-    /// **해당 없는 것을 「모른다」라고 말하지 않는다** (2026-08-20 정정).
+    /// **Do not say "don't know" about what does not apply** (2026-08-20 correction).
     ///
-    /// codex 는 설정 격리를 쓰지 않는다. 관문 자체는 이제 problem 이지만 해당
-    /// 없는 격리 검사 넷까지 `unknown` 으로 늘어놓지는 않는다.
+    /// codex does not use config isolation. The gate itself is now a problem,
+    /// but the four inapplicable isolation checks are not laid out as `unknown`
+    /// on top of that.
     #[test]
     fn a_runtime_without_isolation_gets_no_isolation_checks() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-g-{}", std::process::id()));
@@ -510,7 +527,7 @@ mod tests {
         for absent in ["config-dir", "credentials-link", "shadow-keychain", "login"] {
             assert!(!ids.contains(&absent), "격리를 안 쓰는 실행기에 {absent} 를 냈다");
         }
-        // 그렇다고 빈 목록이면 안 된다 — 공통 검사는 그대로 나와야 한다.
+        // That said, an empty list is not acceptable — the common checks must still come out.
         assert!(ids.contains(&"cli"), "공통 검사까지 사라졌다");
         assert!(ids.contains(&"launcher"));
     }
@@ -522,8 +539,9 @@ mod tests {
         for id in ["cli", "launcher"] {
             let check = checks.iter().find(|c| c.id == id).unwrap();
             assert_eq!(check.state, "problem");
-            // 남의 도구를 앱이 대신 받아서 설치하지 않는다 — 이 저장소가 이미
-            // 정해 둔 선이다. 그러니 고칠 수 있다고 말해서도 안 된다.
+            // The app does not download and install someone else's tool on
+            // their behalf — a line this repository has already drawn. So it
+            // must not claim it can fix this either.
             assert!(!check.fixable, "{id} 를 앱이 고칠 수 있다고 말하고 있다");
         }
     }
@@ -536,8 +554,9 @@ mod tests {
         let home = base.join("home");
         std::fs::create_dir_all(&home).unwrap();
 
-        // 선행 조건(도구·실행기)을 세워 둔다 — 그것이 없으면 뒤의 수리는 이제
-        // 「소용없음」으로 막히고, 그건 이 시험이 재려는 것이 아니다.
+        // Stand up the prerequisites (tool and launcher) — without them the
+        // downstream repair is now blocked as "futile", and that is not what
+        // this test is measuring.
         let tool = base.join("fake-cli");
         std::fs::write(&tool, "").unwrap();
         let mut c = ctx(&app_data, Some(&home));
@@ -568,8 +587,8 @@ mod tests {
         std::fs::create_dir_all(&home).unwrap();
         let app_data = base.join("appdata");
         let checks = diagnose(&ctx(&app_data, Some(&home)));
-        // 터미널에서 로그인한 적이 없는 사람에게 「링크가 깨졌다」고 말하면
-        // 없는 잘못을 뒤집어씌우는 것이다.
+        // Telling someone who has never logged in from the terminal that "the
+        // link is broken" pins a fault on them that does not exist.
         assert_eq!(
             checks.iter().find(|c| c.id == "credentials-link").unwrap().state,
             "unknown"

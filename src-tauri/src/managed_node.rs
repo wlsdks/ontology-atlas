@@ -44,17 +44,19 @@ pub(crate) struct ManagedNodeArtifact {
     pub filename: &'static str,
     /// Exactly as in `SHASUMS256.txt`.
     pub sha256: &'static str,
-    /// 받을 파일의 정확한 바이트 수 — **진행률의 분모다.**
+    /// Exact byte count of the file to download — **the denominator of progress.**
     ///
-    /// 박아 두어도 조용히 썩지 않는다: 이 URL 은 버전이 박힌 **불변 배포물**이라
-    /// 크기가 달라졌다면 `sha256` 이 먼저 안 맞는다. 즉 이 값의 드리프트는
-    /// 이미 있는 해시 게이트가 잡는 것이지 새 감시 대상이 아니다.
+    /// Hard-coding it does not rot silently: this URL is a version-pinned
+    /// **immutable distribution**, so if the size had changed, `sha256` would
+    /// mismatch first. Drift in this value is caught by the hash gate that
+    /// already exists, not a new thing to watch.
     pub bytes: u64,
 }
 
-/// **우리가 배포하는 플랫폼만 등재한다.** 안 해 본 자리에 설치를 제안하면,
-/// 화면이 우리가 확인한 적 없는 것을 해 주겠다고 말하는 것이 된다. 등재되지
-/// 않은 곳에서는 이 기능이 아예 없고, 화면은 종전대로 공식 안내로 보낸다.
+/// **Only platforms we ship are listed.** Offering installation on a platform
+/// we have never tried means the screen promises to do something we have never
+/// verified. Where unlisted, this feature does not exist at all, and the screen
+/// sends people to the official guidance as before.
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub(crate) const MANAGED_NODE: Option<ManagedNodeArtifact> = Some(ManagedNodeArtifact {
     platform: "darwin-arm64",
@@ -95,27 +97,27 @@ pub(crate) const MANAGED_NODE: Option<ManagedNodeArtifact> = Some(ManagedNodeArt
 )))]
 pub(crate) const MANAGED_NODE: Option<ManagedNodeArtifact> = None;
 
-/// 앱이 받아 둔 Node 가 사는 뿌리. 이 밖으로는 한 바이트도 안 쓴다.
+/// The root where the app-downloaded Node lives. Not one byte is written outside it.
 pub(crate) fn managed_node_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("runtimes").join("node")
 }
 
-/// `node` · `npm` 이 실제로 있는 곳.
+/// Where `node` · `npm` actually live.
 pub(crate) fn managed_node_bin_dir(app_data_dir: &Path) -> Option<PathBuf> {
     let artifact = MANAGED_NODE?;
     let root = managed_node_root(app_data_dir).join(artifact.platform);
-    // Windows 배포물은 `node.exe`·`npm.cmd` 가 압축 루트에 바로 있다 — `bin/` 이 없다.
+    // Windows distributions put `node.exe`·`npm.cmd` right at the archive root — there is no `bin/`.
     Some(if cfg!(windows) { root } else { root.join("bin") })
 }
 
-/// 이미 받아 두었나.
+/// Has it already been downloaded.
 pub(crate) fn managed_node_present(app_data_dir: &Path) -> bool {
     managed_node_bin_dir(app_data_dir)
         .map(|bin| bin.join(if cfg!(windows) { "node.exe" } else { "node" }).exists())
         .unwrap_or(false)
 }
 
-/// **화면이 먼저 보여 줄 사실.** 어디서 무엇을 받는지 누르기 전에 읽을 수 있다.
+/// **The fact the screen shows first.** What is downloaded from where can be read before pressing.
 pub(crate) fn managed_node_plan() -> Option<String> {
     let artifact = MANAGED_NODE?;
     Some(format!("{} ({})", download_url(&artifact), &artifact.sha256[..12]))
@@ -128,10 +130,11 @@ fn download_url(artifact: &ManagedNodeArtifact) -> String {
     )
 }
 
-/// 받은 파일의 해시가 기대값과 같은가.
+/// Does the downloaded file's hash match the expected value.
 ///
-/// **대조가 이 기능의 존재 이유다.** 이것이 빠지면 우리가 하는 일은
-/// 「인터넷에서 받은 것을 실행한다」가 되고, 그건 이 저장소가 안 하기로 한 일이다.
+/// **The comparison is this feature's reason to exist.** Without it, what we do
+/// becomes "execute what was downloaded from the internet", and that is what
+/// this repository decided not to do.
 pub(crate) fn sha256_matches(bytes: &[u8], expected: &str) -> bool {
     use sha2::{Digest, Sha256};
     let digest = Sha256::digest(bytes);
@@ -139,18 +142,19 @@ pub(crate) fn sha256_matches(bytes: &[u8], expected: &str) -> bool {
     actual.eq_ignore_ascii_case(expected)
 }
 
-/// 없으면 받아서 검증하고 푼다. 이미 있으면 아무것도 안 한다.
+/// If absent, download, verify, and extract. If already present, do nothing.
 ///
-/// 실패는 **닫히는 쪽**이다 — 해시가 안 맞으면 받은 것을 지우고 에러를 낸다.
-/// 반쯤 받은 것을 남겨 두면 다음 실행이 그것을 쓰려다 더 이상한 자리에서 죽는다.
-/// 설치가 어디까지 왔는지 알리는 통로.
+/// Failure **fails closed** — on a hash mismatch, delete what was downloaded
+/// and raise an error. Leaving a half-downloaded file means the next run tries
+/// to use it and dies in an even stranger place.
+/// The channel that reports how far the installation has come.
 ///
-/// **왜 콜백인가** — 이 모듈은 Tauri 를 모른다(그래야 테스트가 앱 없이 돈다).
-/// 이벤트로 바꾸는 일은 부르는 쪽이 한다.
+/// **Why a callback** — this module knows nothing of Tauri (so that tests run
+/// without the app). Turning it into an event is the caller's job.
 ///
-/// `received`/`total` 은 **아는 만큼만** 넘긴다. 모르면 `None` 이고, 화면은
-/// 가짜 퍼센트를 그리지 않는다 — 이 저장소의 `formatDownloadProgress` 가
-/// 이미 같은 규율을 따른다.
+/// `received`/`total` pass **only as much as is known.** Unknown means `None`,
+/// and the screen draws no fake percentage — this repository's
+/// `formatDownloadProgress` already follows the same discipline.
 pub(crate) type NodeProgress<'a> = &'a dyn Fn(&'static str, Option<u64>, Option<u64>);
 
 pub(crate) fn ensure_managed_node(
@@ -168,7 +172,7 @@ pub(crate) fn ensure_managed_node(
     let archive = root.join(artifact.filename);
     let _ = std::fs::remove_file(&archive);
 
-    // 받는다. `curl` 은 OS 가 들고 있다 — 새 의존성 0.
+    // Download. `curl` is carried by the OS — zero new dependencies.
     download_with_progress(
         &download_url(&artifact),
         &archive,
@@ -177,7 +181,7 @@ pub(crate) fn ensure_managed_node(
         report,
     )?;
 
-    // **대조한다.** 안 맞으면 지우고 실패한다.
+    // **Compare.** On mismatch, delete and fail.
     report("verifying", None, None);
     let bytes = std::fs::read(&archive).map_err(|err| format!("node-read-failed:{err}"))?;
     if !sha256_matches(&bytes, artifact.sha256) {
@@ -190,7 +194,7 @@ pub(crate) fn ensure_managed_node(
     extract(&archive, &root)?;
     let _ = std::fs::remove_file(&archive);
 
-    // 압축은 `node-<버전>-<platform>/` 으로 풀린다. 우리가 찾는 이름으로 옮긴다.
+    // The archive extracts to `node-<version>-<platform>/`. Move it to the name we look for.
     let unpacked = root.join(format!("node-{MANAGED_NODE_VERSION}-{}", artifact.platform));
     let target = root.join(artifact.platform);
     if unpacked.exists() {
@@ -204,15 +208,17 @@ pub(crate) fn ensure_managed_node(
     Ok(bin)
 }
 
-/// 받으면서 **얼마나 왔는지 알린다.**
+/// Downloads while **reporting how far it has come.**
 ///
-/// `bounded_output` 을 안 쓰는 유일한 이유가 이것이다 — 그 함수는 끝나야
-/// 돌아오므로, 52MB 를 받는 동안 화면은 아무 말도 못 한다. 이 저장소의
-/// 워크스루가 「조용한 기다림」이라고 이름 붙여 둔 결함이 정확히 그 모양이다.
+/// This is the one and only reason `bounded_output` is not used — that function
+/// returns only when finished, so the screen could say nothing while 52MB is
+/// downloading. That is exactly the shape of the defect this repository's
+/// walkthrough named "the silent wait".
 ///
-/// **진행은 curl 의 출력이 아니라 받고 있는 파일의 크기로 잰다.** curl 의
-/// 진행 막대는 `\r` 로 한 줄을 덮어쓰는 형식이라 줄 단위로 못 읽고,
-/// 옵션 이름도 버전마다 다르다. 파일 크기는 어느 curl 에서나 같은 뜻이다.
+/// **Progress is measured by the size of the file being received, not by
+/// curl's output.** curl's progress bar overwrites one line with `\r`, so it
+/// cannot be read line by line, and the option names differ per version. File
+/// size means the same thing on every curl.
 fn download_with_progress(
     url: &str,
     dest: &Path,
