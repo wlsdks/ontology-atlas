@@ -265,7 +265,15 @@ export function useAgentDoctor(
       repository already has a ratchet preventing hand-written controls from growing.
     */}
     <Chip
-      size="sm"
+      /*
+       * ⚠️ **One row, one step apart** (owner, 2026-08-24: *"the other buttons on the right — I want
+       * them bigger, they are too small right now"*). This chip sits beside the `lg` 「open a chat
+       * with this tool」 chip on the agents row, and `sm` is **two steps** below it, so it read as
+       * debris rather than as the row's second action. `md` shares `lg`'s 32px height and drops only
+       * one text step — equal height, real hierarchy, which is what the dimensional-regularity rule
+       * asks for.
+       */
+      size="md"
       tone="muted"
       hoverInk="strong"
       data-testid="agent-doctor-scan"
@@ -286,7 +294,8 @@ export function useAgentDoctor(
     */}
     {checks && !prerequisiteBlocked ? (
       <Chip
-        size="sm"
+        /* Same row as the scan chip above, so the same step. */
+        size="md"
         tone="muted"
         hoverInk="strong"
         data-testid="agent-doctor-reset"

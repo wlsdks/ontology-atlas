@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { badgeClass } from '@/shared/ui/badge-class';
+import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -72,8 +73,23 @@ import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primi
  * "Node Required" two differently coloured warnings would make colour the only channel
  * carrying the information, when the difference between them lives in **the words**.
  */
+/*
+ * ⚠️ **Ready is a dot, not a sticker** (owner, 2026-08-24: *"why is 「ready」 so small… the colour is
+ * not good either"*).
+ *
+ * The ink itself measured fine — 9.56:1 on this ground. What was wrong was the **hierarchy**: the
+ * row's least important element was its only saturated non-indigo fill, so a filled green pill sat
+ * shouting beside the indigo action it should have been deferring to. The charter's own spelling of
+ * a signal is *"one solid dot and three translucent surface/edge/text steps"*, and the dot is the
+ * half that carries the meaning here. So the emerald stays — same tokens, no new hue — and moves
+ * from the fill to the dot, while the label joins the row's neutral voice.
+ *
+ * `CommitDetail` keeps the filled pill on purpose. There the status **is** the subject of the line;
+ * here it trails two controls, and the same treatment in the two places would be the divergence, not
+ * the fix.
+ */
 const READY_INK =
-  'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]';
+  'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]';
 
 const NOT_READY_INK =
   'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]';
@@ -430,7 +446,8 @@ function RuntimeRow({
                    pressable. That it leaves the app is still said by the glyph (↗). */
                 className={controlClass({
                   shape: 'chip',
-                  size: 'sm',
+                  /* The row's third control — the same step as the doctor chips beside it. */
+                  size: 'md',
                   tone: 'muted',
                   hoverInk: 'strong',
                   className: 'shrink-0',
@@ -445,11 +462,27 @@ function RuntimeRow({
             ) : null}
             <span
               data-runtime-state={runtime.state}
+              /*
+               * A state, not a control — so it keeps a badge shape rather than growing into a
+               * button. But `micro` puts it on the caption ramp, and beside a row of 32px chips the
+               * one thing stating whether the tool actually works was the smallest text there.
+               * `tag` moves it one step onto the label ramp without pretending it is pressable.
+               */
               className={badgeClass({
-                shape: 'micro',
-                className: isReady ? READY_INK : NOT_READY_INK,
+                shape: 'tag',
+                className: cn(
+                  'inline-flex items-center gap-1.5 py-0.5',
+                  isReady ? READY_INK : NOT_READY_INK,
+                ),
               })}
             >
+              {isReady ? (
+                <span
+                  aria-hidden
+                  data-testid="app-settings-runtime-ready-dot"
+                  className="size-1.5 shrink-0 rounded-full bg-[color:var(--color-status-success)]"
+                />
+              ) : null}
               {t(`state.${runtime.state}`)}
             </span>
           </span>
