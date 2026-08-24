@@ -20368,3 +20368,44 @@ would mean the redirect needs an escape hatch.
 **Status**: valid
 
 ---
+## 2026-08-25 — `init` may only wire the project it was actually run inside
+
+**Observed damage**: running `node cli/src/index.mjs init <somewhere-else>` from
+this repository rewrote **this repository's** `.mcp.json` and
+`.codex/config.toml` to point at the scratch vault. Nothing asked, nothing
+warned, and the edit was noticed only because the files were under version
+control. Anyone whose project is not in Git would have lost their agent
+configuration without a trace.
+
+**Cause**: the cwd write was guarded by `cwdPath !== canonicalTarget` — a
+condition true of every unrelated directory on the disk.
+
+**Decision**: `init` writes agent config into the current directory only when the
+vault is created **inside** it. When the vault lands outside, cwd is left
+untouched and the command says so and why. The vault's own config is always
+written, unchanged from before.
+
+**Why containment rather than difference**: the cwd write exists for one real
+flow — *"I am standing in my project, put a vault inside it"* — where cwd is the
+codebase the vault describes. When the vault is elsewhere, cwd is merely where
+the person happened to stand, and repointing its agents at an unrelated vault is
+a silent edit to a project this command was never asked to touch.
+
+**Also corrected**: the closing summary promised that "both your codebase root
+(cwd) and the vault folder" were wired. That became false the moment cwd was
+deliberately skipped, so it now names what was actually written.
+
+**Recorded dissent**: someone running `init ../other-project/vault` from their
+codebase may genuinely want their current project bound to a vault kept beside
+it, and now has to run the command from somewhere else or wire it by hand. The
+counter is that this reading cannot be distinguished from the accidental one, and
+between silently editing an uninvolved project and asking someone to re-run a
+command, the recoverable failure is the right one to choose.
+
+**Falsifier**: a report of keeping the vault deliberately outside the codebase and
+finding the extra step onerous. That would call for an explicit flag, not for
+restoring the unconditional write.
+
+**Status**: valid
+
+---
