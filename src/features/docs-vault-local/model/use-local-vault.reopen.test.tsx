@@ -132,4 +132,33 @@ describe('useLocalVaultInternal — 데스크톱 최근 vault 재열기', () => 
     );
     expect(hook.result.current.errorCode).toBe('access-failed');
   });
+
+  it('복원 중 무엇이 터져도 첫 화면이 갇히지 않는다 — 있지만 못 읽는 폴더', async () => {
+    /*
+     * Installed app, 2026-08-24. `RootEntryPage` holds a neutral boot frame until
+     * `restoreAttempted` turns true, and the restore effect had no catch and no finally. A vault
+     * under a macOS-protected folder whose access prompt was dismissed made the read reject, the
+     * flag stayed false, and the app sat on 「moving to the local docs picker」 forever — no error,
+     * no way out, and the person had touched nothing.
+     *
+     * Note the asymmetry this exposed: a folder that is **gone** already answered honestly
+     * (`path-missing`), while a folder that is **there but unreadable** answered nothing at all.
+     */
+    store.getLocalFsHandle.mockResolvedValue(desktopRecord());
+    store.verifyHandlePermission.mockRejectedValue(
+      new Error('Operation not permitted (os error 1)'),
+    );
+
+    const hook = renderHook(() => useLocalVaultInternal());
+
+    await waitFor(() =>
+      expect(
+        hook.result.current.restoreAttempted,
+        '복원이 실패했는데 첫 화면이 계속 기다리고 있다',
+      ).toBe(true),
+    );
+    expect(hook.result.current.status).toBe('error');
+    expect(hook.result.current.errorCode).toBe('access-failed');
+    expect(hook.result.current.errorMessage).toBe('Operation not permitted (os error 1)');
+  });
 });
