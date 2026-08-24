@@ -1833,13 +1833,8 @@ const ALLOWED_CAPABILITY_PERMISSIONS = [
   // to a webview that never called them: the frontend reaches Rust through app-defined commands
   // (which capabilities do not gate) plus one `listen`. Enumerating is what makes that visible.
   "core:default",
-  // Resolve app-owned paths.
-  "core:path:default",
-  // `listen`, the frontend's only core plugin call — `vault-changed`, `acp://*`.
+  // `listen`, the frontend's only event-plugin call — `vault-changed`, `acp://*`.
   "core:event:default",
-  // Window and webview lifecycle for the single main window.
-  "core:window:default",
-  "core:webview:default",
   // `getVersion()` in `AppUpdateSettings.tsx` — the app's own version shown beside the update
   // control. Not the version in the first log line: that one comes from Rust `package_info()`,
   // which the permission system does not gate at all.
@@ -1854,17 +1849,22 @@ const ALLOWED_CAPABILITY_PERMISSIONS = [
 ];
 
 /**
- * The core baseline this window genuinely needs. Accepting either the enumerated form or the
- * `core:default` umbrella keeps the gate about *what is granted*, not about which spelling is used —
- * but a capability granting neither has lost the baseline and must fail.
+ * The core baseline this window genuinely needs, measured rather than assumed (2026-08-24).
+ *
+ * `core:event` carries `listen`, the frontend's only event-plugin call. `core:app` carries
+ * `getVersion`, shown beside the update control. Nothing in `src/` or `app/` imports
+ * `@tauri-apps/api/path`, `/window`, `/webview`, `/menu`, `/tray` or `/image`, and the modules that
+ * are imported invoke only the `event`, `app` and `resources` plugins. Removing `core:path`,
+ * `core:window` and `core:webview` was then verified on a packaged build: it launches, loads a real
+ * vault, renders, and logs no permission denial.
+ *
+ * Capabilities gate JS-to-Rust IPC only. This app resizes and positions its window from Rust, which
+ * is why dropping `core:window` changes nothing a user can see.
+ *
+ * The `core:default` umbrella is still accepted so the gate judges *what is granted* rather than the
+ * spelling, but a capability granting neither shape has lost the baseline and must fail.
  */
-const REQUIRED_CORE_PERMISSIONS = [
-  "core:path:default",
-  "core:event:default",
-  "core:window:default",
-  "core:webview:default",
-  "core:app:default",
-];
+const REQUIRED_CORE_PERMISSIONS = ["core:event:default", "core:app:default"];
 
 /** These families are blocked without knowing the individual names — nothing a local-first app has reason to grant a window. */
 const FORBIDDEN_CAPABILITY_PREFIXES = ["fs:", "shell:", "http:", "opener:"];

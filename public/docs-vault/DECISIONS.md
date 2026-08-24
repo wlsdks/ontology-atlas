@@ -19827,3 +19827,98 @@ proves the hold wrong.
 **Status**: valid · one measured session pending
 
 ---
+
+## 2026-08-24 — `opt-level = "s"` measured and rejected: it halves the hashing this product does
+
+**Prior record**: the 2026-08-24 release-profile change adopted `lto`,
+`codegen-units = 1` and `strip`, and left `opt-level = "s"` out with the reason
+"1.5 MB of an 89 MB bundle does not justify trading throughput nobody has
+measured". This is that measurement, and it closes the question rather than
+leaving it open.
+
+**Observed measurement**: a standalone benchmark outside the repository, linking
+the same `sha2 0.10.9` the app uses and hashing 512 MiB in 1 MiB chunks — the
+shape `inspect_project_source` produces when it walks a vault — built twice with
+identical settings except the optimisation level:
+
+| Profile | Throughput |
+|---|---|
+| `opt-level = 3` (shipped) | **582 MiB/s** |
+| `opt-level = "s"` (candidate) | **277 MiB/s** |
+
+`opt-level = "s"` costs **52% of the throughput** on the one CPU-bound path this
+product owns.
+
+**Decision**: do not adopt `opt-level = "s"`. It buys 1.5 MB — 1.7% of an 89 MB
+bundle whose largest component is a 61 MB sidecar — and pays for it by doubling
+the time spent hashing the owner's own files.
+
+**Honest scale**: `SOURCE_INVENTORY_MAX_HASH_BYTES` caps one inventory at 32 MiB,
+so in absolute terms the difference per scan is roughly 55ms against 115ms. Small.
+The reason to refuse is not the milliseconds but the ratio: a 2× regression on the
+product's own hot path, bought with 1.7% of a bundle, is a trade that gets worse
+every time the vault grows.
+
+**Rejected alternative**: adopting it anyway and revisiting if a large vault ever
+feels slow. Rejected because the number is already known — waiting would mean
+choosing to be surprised later by something measured today.
+
+**Falsifier**: if a future profile ever makes the Rust half of the binary the
+bundle's dominant component — that is, if the sidecar shrinks below it — the trade
+changes and this should be re-measured rather than cited.
+
+**Status**: valid · question closed, not deferred
+
+---
+
+## 2026-08-24 — The capability keeps two core sets, and this time it was measured
+
+**Prior record**: the 2026-08-24 runtime-hardening change replaced `core:default`
+with five core sets and said so plainly: `core:path`, `core:window` and
+`core:webview` were "retained without an observed frontend caller — dropping them
+is a further narrowing that needs installed-app proof, not a guess". This is that
+proof, and it closes the item.
+
+**Static evidence**: nothing in `src/` or `app/` imports `@tauri-apps/api/path`,
+`/window`, `/webview`, `/menu`, `/tray` or `/image`. The modules that *are*
+imported invoke only `plugin:event|*` (`core`'s `event` module), `plugin:app|*`
+(`getVersion`), and `plugin:resources|close` — the last from `core.js`, reachable
+only by constructing a `Resource`, which nothing here does. `Channel` is not a
+`Resource`, so even adopting one later would not need that grant.
+
+**Runtime evidence**: a packaged, ad-hoc-signed build with the three permissions
+removed launches, loads the dogfood vault, renders WebView content, and logs
+**zero** permission denials.
+
+**The reason it was safe to remove at all**: capabilities gate JS-to-Rust IPC
+only. This app sizes and positions its window from Rust — `set_size`,
+`set_position`, `maximize` on a `WebviewWindow` — which no capability governs. The
+`core:window` grant was protecting a door the app never walks through.
+
+**Decision**: the main window's capability is `core:event:default`,
+`core:app:default`, `updater:default`, `process:allow-restart`. Four permissions,
+each with a named caller.
+
+**A finding worth carrying**: `@tauri-apps/api/core` calls `plugin:resources|close`
+internally, and `core:resources` is *not* granted. Nothing constructs a `Resource`
+today, so it never fires — but this is exactly the shape that would fail silently
+and late. Anyone introducing a `Resource` subclass must grant it in the same
+change; the readiness gate's allow-by-name list is where that decision gets made
+visible.
+
+**Rejected alternative**: leaving the three granted on the theory that unused
+permissions are harmless. Rejected because a capability file is a claim about what
+the webview may do, and a claim nobody has checked is not a security boundary — it
+is a comment.
+
+**Falsifier**: any permission denial in the app log, or a webview feature that
+silently stops working, means the narrowing was wrong. The retreat is to grant the
+specific set with its caller named, not to restore `core:default`.
+
+**Verification**: `check-desktop-readiness.mjs` binds the required set and was
+probed both ways — removing a needed permission turns it red, and granting an
+unreviewed one turns it red.
+
+**Status**: valid · measured on a packaged build
+
+---
