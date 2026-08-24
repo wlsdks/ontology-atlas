@@ -178,7 +178,24 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
 ///
 /// A runtime joins this list only after an installed-app run shows reject-without-write **and**
 /// allow-with-write, for both self-registered and injected Atlas MCP mutations.
-pub(crate) const CHAT_ELIGIBLE: &[&str] = &["claude-acp"];
+///
+/// ⚠️ **Codex earned its way back on 2026-08-24, and the run is what did it.** Decision (111)
+/// named the price: *"an app-owned MCP proxy or server capability token reliably pauses every Codex
+/// Atlas write."* The checkpoint now lives in the server that performs the write
+/// (`mcp/src/write-consent.mjs`, decision (113)), so it holds for the vault's **own** registration
+/// as much as for one the app injects — the hole that removed Codex in the first place.
+///
+/// Measured on the installed build against a disposable vault:
+///
+/// | answer | what the wire said | what the vault did |
+/// |---|---|---|
+/// | reject | `Error: The change was not approved (decline)` | unchanged, 10 files |
+/// | allow  | `{"ok":true,"slug":"wire-probe","changed":true}` | the file appeared |
+///
+/// That run also caught the gate refusing **yes**: the elicitation required a `confirm` boolean an
+/// ACP permission card has no way to send, so a person's approval came back as a decline. A
+/// checkpoint that cannot be passed is a wall, and a wall teaches people to route around it.
+pub(crate) const CHAT_ELIGIBLE: &[&str] = &["claude-acp", "codex-acp"];
 
 /// Has this runtime's permission gate been measured to hold? See `CHAT_ELIGIBLE`.
 pub(crate) fn chat_eligible(id: &str) -> bool {
@@ -3083,15 +3100,18 @@ mod tests {
 
     #[test]
     fn unguarded_runtime_cannot_cross_the_native_chat_boundary() {
+        // The example used to be codex; the 2026-08-24 acceptance measured its gate and moved it
+        // into `CHAT_ELIGIBLE`. `amp-acp` is a runtime nobody has measured, which is the case this
+        // test exists for: **unmeasured means refused**, not "probably fine".
         let error = prepare_runtime_isolation(
-            "codex-acp",
+            "amp-acp",
             Path::new("/path/that/does/not/need/to/exist"),
             None,
             None,
             "",
         )
         .unwrap_err();
-        assert_eq!(error, "permission-gate-unsupported:codex-acp");
+        assert_eq!(error, "permission-gate-unsupported:amp-acp");
     }
 
     #[test]

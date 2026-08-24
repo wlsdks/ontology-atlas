@@ -9310,6 +9310,11 @@
       "depth": 2,
       "text": "2026-08-24 — The install progress this repo built to cure \"quiet waiting\" had never once been delivered",
       "slug": "2026-08-24-the-install-progress-this-repo-built-to-cure-quiet-waiting-had-never-once-been-delivered"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — Codex returns to in-app chat, because the checkpoint moved to the server",
+      "slug": "2026-08-24-codex-returns-to-in-app-chat-because-the-checkpoint-moved-to-the-server"
     }
   ],
   "DEMO-SCENARIO": [
