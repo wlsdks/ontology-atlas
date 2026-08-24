@@ -20329,8 +20329,16 @@ outside every project there was exactly one folder worth picking. Putting the ma
 at `<project>/atlas` made two plausible — the project root and the map — and the
 open path still took whatever it was handed. So somebody who built a map with the
 door and then, out of habit, picked their project root got their entire source
-tree read as a vault: every README and CHANGELOG in the repository pulled in as
-concepts, and yesterday's map nowhere on screen.
+tree read as a vault.
+
+**Corrected after measuring on the installed app (2026-08-25).** An earlier draft
+of this record claimed the map would be nowhere on screen. That is wrong: pointing
+the vault at a project root found the concepts inside its `atlas/` folder, because
+the reader walks subdirectories. The real damage is quieter. Every other `.md`
+carrying frontmatter anywhere in the repository joins the map, and the vault root
+becomes the project root, so later writes and the `.ontology-atlas/` records land
+beside the source instead of inside the map folder. The fix is unchanged; the
+reason it matters is not the one first written down.
 
 **Decision**: when the picked folder holds a child directory named `atlas` that
 contains Markdown, Atlas opens that child instead, and the INDEX panel states

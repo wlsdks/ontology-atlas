@@ -5,8 +5,13 @@
  * outside every project there was only one folder worth picking. Putting the map at
  * `<project>/atlas` made two folders plausible — the project root and the map — and "open a folder"
  * still took whatever was handed to it. So a person who built a map with the door and then, out of
- * habit, picked their project root got their **whole source tree read as a vault**: every README and
- * CHANGELOG in the repository dragged in as concepts, and yesterday's map nowhere on screen.
+ * habit, picked their project root got their **whole source tree read as a vault**.
+ *
+ * Measured on the installed app (2026-08-25): pointing the vault at a project root found the
+ * concepts inside its `atlas/` folder, because the reader walks subdirectories. So the map is not
+ * invisible — the damage is quieter and worse. Every other `.md` carrying frontmatter anywhere in
+ * the repository joins it, and **the vault root becomes the project root**, so later writes and the
+ * `.ontology-atlas/` records land beside the source instead of inside the map folder.
  *
  * The rule is deliberately narrow. Redirecting is only right when the picked folder is a project
  * *carrying* a map, so both halves must be true:
