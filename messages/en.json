@@ -379,6 +379,9 @@
     "agentClause": "AI agents like Claude Code read and write the same folder.",
     "openLabel": "Open my markdown folder",
     "openBusy": "Opening folder…",
+    "buildFromCodeLabel": "Make a map from my code",
+    "buildFromCodeHint": "Pick a code folder and an AI surveys it and proposes a draft. It asks before every write.",
+    "buildFromCodeBusy": "Opening the folder…",
     "createLabel": "✚ Create a new markdown folder",
     "createBusy": "Writing starter structure…",
     "dismissLabel": "Just looking around here",
@@ -3433,6 +3436,10 @@
       "title": "Getting this tool ready",
       "body": "The first run downloads the tool (a few hundred MB) and can take a few minutes. Please keep the app open.",
       "progress": "{mb} MB downloaded so far"
+    },
+    "starting": {
+      "title": "Opening the tool",
+      "body": "The tool is starting on this computer. You can ask as soon as it is ready."
     },
     "permission": {
       "title": "It wants to touch something outside this folder",

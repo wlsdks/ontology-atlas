@@ -42,6 +42,8 @@ export interface TopologyIndexPanelLabels {
   censusDomains: string;
   capabilitiesShort: string;
   elementsShort: string;
+  /** What those two kind names mean — see `TopologyIndexTreeRowLabels.subcountsTitle`. */
+  subcountsTitle?: string;
   freshTitle: string;
   /** Hover explanation for the domain badge (multi-membership is counted more than once). */
   domainCountTitle: string;

@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { ChevronRight, FolderOpen } from "lucide-react";
+import { Bot, ChevronRight, FolderOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -148,6 +148,8 @@ export function FirstRunStarterModule({
     dismiss,
     undismiss,
     openFolder,
+    buildFromCode,
+    canBuildFromCode,
     createVault,
     busy,
     scaffolding,
@@ -538,6 +540,57 @@ export function FirstRunStarterModule({
           ) : null}
         </button>
       )}
+
+      {/*
+        ⚠️ **The door for someone who already has code** (decision, 2026-08-24; it overturns that
+        record's own no-go on this card's affordance count, on the owner's instruction).
+
+        Measured on the shipped card: of its four actions **none makes an ontology from a
+        repository that already exists**. Opening a folder with no Markdown gives an empty map,
+        creating one gives five seeded examples, and the only real path was the folded terminal
+        row whose own copy tells app users it excludes them.
+
+        It stays **secondary**, outlined rather than filled. The 2026-08-02 record set this card's
+        attention hierarchy deliberately and a second filled indigo would give it two winners; the
+        addition is a route, not a re-ranking.
+
+        Drawn only in the installed app. The web has no agent to hand the work to, and a door that
+        cannot open is worse than no door — the same rule that keeps 「coming soon」 out of this
+        product.
+      */}
+      {canBuildFromCode && !fsaUnsupported ? (
+        <>
+          <button
+            type="button"
+            data-testid="first-run-build-from-code"
+            disabled={busy}
+            onClick={() => {
+              void buildFromCode();
+            }}
+            /*
+             * Hover comes from the axes, not from two hand-written `hover:` literals. The
+             * adoption ratchet counts those and its whole point is that they may fall and never
+             * rise — the neighbouring tour CTA predates it and is part of the baseline, which is
+             * not a licence to add two more beside it.
+             */
+            className={controlClass({
+              shape: "card",
+              scope: "panel",
+              hoverBorder: "strong",
+              hoverInk: "strong",
+              className:
+                "touch-hit-expand mt-2 inline-flex h-8 w-full justify-center gap-1.5 border-[color:var(--color-indigo-line-a35)] text-body text-[color:var(--topology-v2-panel-text-secondary)]",
+            })}
+          >
+            <Bot size={ICON_SIZE.sm} aria-hidden />
+            {busy && !scaffolding ? t("buildFromCodeBusy") : t("buildFromCodeLabel")}
+          </button>
+          {/* What will actually happen, before it happens — including that it asks before writing. */}
+          <p className="mt-1 break-keep text-caption leading-caption text-[color:var(--topology-v2-panel-text-quaternary)]">
+            {t("buildFromCodeHint")}
+          </p>
+        </>
+      ) : null}
 
       {/* The tour's only entry point was a single icon in the right rail, and
           non-developers did not find it (measured in a live walkthrough).

@@ -20170,3 +20170,73 @@ runtime asks to join this list.
 **Status**: valid
 
 ---
+
+## 2026-08-24 — The first-run card gets a door for people who already have code
+
+**Convened because**: this adds a main affordance to the first surface a stranger
+reads, and the 2026-08-02 first-run-card record put **"adding or removing an affordance"** in that
+slice's no-go list. That no-go was an appetite boundary for one day of work, not a
+permanent ban — but overturning it needs a record, which is this one.
+
+**Accountable**: the owner, who asked for it in their own words and, when told the
+prior no-go stood in the way, answered that we should go ahead and do it.
+That instruction is the grounds; this record is not a self-approval.
+
+**Prior decision**: 2026-08-02 stands in every other respect — the attention
+hierarchy, the demoted gauge, the glossary rows, the census provenance. Only the
+no-go on affordance count is overturned, and only for this one addition. The same
+record's own follow-up — *"point the CLI bridge at my repository"* — is what this
+door finally answers.
+
+**Observed phenomenon** (measured on the shipped card): of its four actions —
+open my folder, create a new folder, look around here, take the two-minute tour —
+**none makes an ontology from a repository that already exists**. Opening a folder
+with no Markdown gives an empty map; creating one gives five seeded example nodes.
+The only real path is the folded "to start from a terminal" row, and `cliBridgeSourceOnly`
+has that row telling app users it excludes them.
+
+**User problem**: someone who **already has a codebase** opens the app and there is
+no route on screen from their code to a map of it. This product's north star is
+"link → app → within five minutes an agent cites a node in my vault", and the first
+five minutes had no starting line.
+
+**Why the app hands this to an agent rather than doing it itself**
+
+The app never calls MCP tools. It is a static export with a Tauri bridge; MCP is the
+agents' surface. Making the door analyse a repository in TypeScript would create a
+second canonical implementation of `analyze_repo_structure`, which `AGENTS.md`
+forbids and which a contract test would then have to hold in step forever.
+
+So the door does what the product's own thesis says: **the agent does the work
+through MCP, and the person approves each write.** That is not a workaround, it is
+the shape this product argues for. It also makes the owner's original sentence
+literal — *"press this and it just proceeds, connecting the agents and so on."*
+
+**What it does**: pick the folder (the existing picker, unchanged) → open the agent
+conversation → put the bootstrap instruction in as the person's own first turn.
+The agent then runs `analyze_repo_structure`, proposes typed nodes, and **every
+write asks** through the checkpoint decision (113) built and decision (114) proved.
+
+**What it deliberately does not do**: it does not analyse the repository itself, it
+does not write a single node without the person answering a card, and on the web —
+where there is no agent to hand to — the door is **absent** rather than present and
+disabled. A door that cannot open is worse than no door.
+
+**Recorded dissent**: the instruction is sent on the person's behalf by a button
+press, and a prefilled composer they press themselves would be more literal about
+consent. The counter is that the button's own label states exactly what will be
+asked, the message appears in the transcript as their own turn so nothing is
+hidden, and every write still stops for an answer. A button labelled "make a map
+from my code" that then makes you press send again is a half-promise, which is the
+defect class this whole round has been repairing.
+
+**Falsifier**: someone presses the door, watches the agent propose, and refuses the
+writes — or presses it and cannot tell what was about to happen. Either means the
+handoff explains itself less well than the folded CLI row it replaced.
+
+**Revisit**: when the app gains a way to call MCP itself, at which point the
+analysis could move in-process and this record's central reasoning expires.
+
+**Status**: valid
+
+---
