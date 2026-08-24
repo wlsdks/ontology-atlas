@@ -32,7 +32,8 @@
         "script-src": "'self'",
         "worker-src": "'self' blob:",
         "style-src": "'unsafe-inline' 'self'"
-      }
+      },
+      "freezePrototype": true
     }
   },
   "bundle": {
@@ -53,7 +54,7 @@
     "category": "DeveloperTool",
     "shortDescription": "Local-first codebase ontology workbench for Ontology Atlas",
     "longDescription": "Ontology Atlas is a local-first desktop app for opening a markdown ontology vault, editing codebase meaning, and handing the same graph to AI agents without a backend or login. The repository, CLI, and release assets remain under the ontology-atlas project name.",
-    "copyright": "Copyright © 2026 ontology-atlas contributors",
+    "copyright": "Copyright \u00a9 2026 ontology-atlas contributors",
     "macOS": {
       "minimumSystemVersion": "12.0"
     },
