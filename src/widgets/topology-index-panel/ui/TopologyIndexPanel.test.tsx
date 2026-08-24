@@ -106,6 +106,7 @@ const labels = {
   dustyNodesLabel: "0 nodes gathering dust",
   dustyNodesAction: "See freshness",
   sourceUnboundLabel: "1 project with no code folder",
+  openedInsideLabel: 'opened-inside',
   sourceUnboundAction: "Connect",
 };
 
@@ -793,6 +794,50 @@ describe("TopologyIndexPanel", () => {
       // This row does not open the folder picker — the prescription lives in exactly one place, the project panel.
       fireEvent.click(row);
       expect(onSelect).toHaveBeenCalledWith("project:root");
+    });
+
+    /*
+     * ⚠️ Owner, 2026-08-24: picking a project root now opens the map inside it. That substitution is
+     * the helpful one, but a product that quietly opens a folder other than the one somebody chose
+     * teaches them it does not do what they asked. The fact has to be on screen.
+     */
+    it("says so when the map inside the picked project was opened instead", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          openedInsidePickedFolder="/Users/dana/my-product"
+          vaultLoaded
+        />,
+      );
+      expect(screen.getByTestId("topology-index-opened-inside")).toHaveTextContent(
+        "opened-inside",
+      );
+    });
+
+    it("stays quiet when the folder that was picked is the folder that opened", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          vaultLoaded
+        />,
+      );
+      expect(screen.queryByTestId("topology-index-opened-inside")).not.toBeInTheDocument();
     });
 
     it("hides the unbound row when every project already has a code folder", () => {

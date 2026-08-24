@@ -20316,3 +20316,47 @@ The second would mean "no source bound" is too broad a reading of "unfinished".
 **Status**: valid
 
 ---
+## 2026-08-24 — Picking a project opens the map inside it, and says so
+
+**Context**: the owner asked, on reading the previous record, *"so now, whether
+inside the project or outside it, if there is an atlas folder we read it and draw
+the ontology?"* The answer at that moment was no. `PROJECT_VAULT_DIR` was read
+only by the door's own flow; "open a folder" did no subfolder detection at all and
+treated whatever was picked as the vault.
+
+**The hole this closes was opened by the decision above it.** While maps lived
+outside every project there was exactly one folder worth picking. Putting the map
+at `<project>/atlas` made two plausible — the project root and the map — and the
+open path still took whatever it was handed. So somebody who built a map with the
+door and then, out of habit, picked their project root got their entire source
+tree read as a vault: every README and CHANGELOG in the repository pulled in as
+concepts, and yesterday's map nowhere on screen.
+
+**Decision**: when the picked folder holds a child directory named `atlas` that
+contains Markdown, Atlas opens that child instead, and the INDEX panel states
+plainly that it did.
+
+**Why both halves of the condition**: without the Markdown test, a project with
+an unrelated `atlas/` source module would silently open an empty vault — the
+person sees nothing and cannot tell why, which is a worse failure than the one
+being fixed.
+
+**Why it is never silent**: quietly opening a folder other than the one somebody
+chose teaches them the product does not do what they asked, even when the
+substitution is the helpful one. The notice costs one line and keeps the
+substitution inspectable.
+
+**Recorded dissent**: an explicit prompt ("this project has a map folder, open
+it?") would be more literal about consent than a notice after the fact. The
+counter is that this is a read, not a write, it lands the person on the map they
+already made, and a confirmation on every open of a project is a toll charged
+forever to prevent a mistake the notice already exposes. If the notice proves
+insufficient the prompt is the next step, not a redesign.
+
+**Falsifier**: somebody reports being surprised by which folder opened, or
+deliberately wants the project root read as a vault and cannot get it. The second
+would mean the redirect needs an escape hatch.
+
+**Status**: valid
+
+---

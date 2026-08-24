@@ -9330,6 +9330,11 @@
       "depth": 2,
       "text": "2026-08-24 — The door follows \"hasn't built one yet\", not \"has never opened a folder\"",
       "slug": "2026-08-24-the-door-follows-hasnt-built-one-yet-not-has-never-opened-a-folder"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-24 — Picking a project opens the map inside it, and says so",
+      "slug": "2026-08-24-picking-a-project-opens-the-map-inside-it-and-says-so"
     }
   ],
   "DEMO-SCENARIO": [

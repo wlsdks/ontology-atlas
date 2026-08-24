@@ -22,8 +22,11 @@
  * that folder is already sitting in other people's repositories.
  */
 
-/** The folder Atlas creates inside a project. One name, used by every surface that creates one. */
-export const PROJECT_VAULT_DIR = 'atlas';
+// One definition, in `shared`, because the open path in `docs-vault-local` needs the same name and
+// sits in the same layer. See `src/shared/lib/project-vault-dir.ts`.
+export { PROJECT_VAULT_DIR } from '@/shared/lib/project-vault-dir';
+
+import { PROJECT_VAULT_DIR } from '@/shared/lib/project-vault-dir';
 
 export interface ProjectVaultLocation {
   /** The project the person chose — this becomes the connected source. */
