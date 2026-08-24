@@ -66,6 +66,7 @@
     "src/project-meaning-inventory.mjs",
     "src/project-meaning-receipt.mjs",
     "src/suggestions.mjs",
+    "src/write-consent.mjs",
     "src/parser.test.mjs",
     "scripts/verify.mjs",
     "scripts/json-rpc-lines.mjs",
