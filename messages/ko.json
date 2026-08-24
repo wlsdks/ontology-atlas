@@ -364,7 +364,9 @@
     "errorRootRejected": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
     "trustLine": "로컬 마크다운이 원본 · Atlas 백엔드 없음",
     "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
-    "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요."
+    "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요.",
+    "errorPermissionDenied": "macOS가 「{folder}」 폴더를 보호하고 있어요. 시스템 설정 → 개인정보 보호 및 보안 → 파일 및 폴더에서 Ontology Atlas에 접근을 허용한 뒤 다시 열어 주세요.",
+    "errorPermissionDeniedThisFolder": "이"
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -425,7 +427,9 @@
     "buildFromCodeReuseGo": "이어서 쓰기",
     "buildFromCodeCreating": "만드는 중…",
     "buildFromCodeCancel": "취소",
-    "buildFromCodeFailed": "폴더를 만들지 못했어요. 이 프로젝트에 쓰기 권한이 있는지 확인해 주세요."
+    "buildFromCodeFailed": "폴더를 만들지 못했어요. 이 프로젝트에 쓰기 권한이 있는지 확인해 주세요.",
+    "errorPermissionDenied": "macOS가 「{folder}」 폴더를 보호하고 있어요. 시스템 설정 → 개인정보 보호 및 보안 → 파일 및 폴더에서 Ontology Atlas에 접근을 허용한 뒤 다시 열어 주세요.",
+    "errorPermissionDeniedThisFolder": "이"
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -2291,7 +2295,8 @@
       "sourceUnboundLabel": "코드 폴더가 연결 안 된 프로젝트 {count}개",
       "sourceUnboundAction": "연결",
       "plainHint": "요소는 숨겨져 있어요. 지도의 점을 누르면 그 요소들이 보여요",
-      "openedInsideLabel": "고른 프로젝트 안에 있는 지도 폴더를 열었어요."
+      "openedInsideLabel": "고른 프로젝트 안에 있는 지도 폴더를 열었어요.",
+      "openedInsideDismiss": "알림 닫기"
     },
     "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}",
     "bootstrap": {

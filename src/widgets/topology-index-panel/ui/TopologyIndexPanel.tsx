@@ -7,7 +7,7 @@ import {
   type FocusEvent as ReactFocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft, Search, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { Link } from "@/i18n/navigation";
@@ -83,6 +83,8 @@ export interface TopologyIndexPanelLabels {
   sourceUnboundLabel: string;
   /** Says the map inside the picked project was opened, so the substitution is never silent. */
   openedInsideLabel: string;
+  /** Accessible name for the control that closes that notice once it has been read. */
+  openedInsideDismiss: string;
   sourceUnboundAction: string;
   /**
    * A quiet one-line hint explaining that element rows are absent from the tree in
@@ -132,6 +134,10 @@ export interface TopologyIndexPanelProps {
   unboundProjectNodeId?: string | null;
   /** Truthy when "open a folder" opened the map inside the folder that was picked. */
   openedInsidePickedFolder?: string | null;
+  /** Whether any agent runtime exists to hand 「make a map from my code」 to. */
+  agentAvailable?: boolean;
+  /** Clears the notice above. Omitted where nothing can clear it, and the control is then not drawn. */
+  onDismissOpenedInside?: () => void;
   /** Clicking the row above → the "build a map from my documents" dialog (`bootstrapOpen`). */
   onPromoteUncatalogedDocs?: (() => void) | null;
   /**
@@ -206,6 +212,8 @@ export function TopologyIndexPanel({
   dustyNodeCount,
   unboundProjectNodeId = null,
   openedInsidePickedFolder = null,
+  agentAvailable = false,
+  onDismissOpenedInside,
   onPromoteUncatalogedDocs = null,
   onStartTour,
   onEnablePlainMode,
@@ -389,6 +397,7 @@ export function TopologyIndexPanel({
          * **more** than a first-timer, and that rule hid the door from exactly that person.
          */
         mapUnbuilt={vaultLoaded && unboundProjectNodeId !== null}
+        agentAvailable={agentAvailable}
         relations={totalRelations}
         domains={domainCount}
         onStartTour={onStartTour}
@@ -703,12 +712,37 @@ export function TopologyIndexPanel({
         that lists what was loaded.
       */}
       {openedInsidePickedFolder ? (
-        <p
+        <div
           data-testid="topology-index-opened-inside"
-          className="mt-2 shrink-0 break-keep px-1 text-caption leading-caption text-[color:var(--topology-v2-panel-text-tertiary)]"
+          className="mt-2 flex shrink-0 items-start gap-1.5 px-1"
         >
-          {labels.openedInsideLabel}
-        </p>
+          <p className="min-w-0 flex-1 break-keep text-caption leading-caption text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {labels.openedInsideLabel}
+          </p>
+          {/*
+            A one-time fact must not become permanent furniture. Nothing else clears this, so without
+            a way to close it the line sits in the panel for the rest of the session, long after it
+            has told the person everything it knows.
+          */}
+          {onDismissOpenedInside ? (
+            <button
+              type="button"
+              data-testid="topology-index-opened-inside-dismiss"
+              onClick={onDismissOpenedInside}
+              aria-label={labels.openedInsideDismiss}
+              title={labels.openedInsideDismiss}
+              className={controlClass({
+                shape: "chip",
+                size: "sm",
+                scope: "panel",
+                hoverInk: "strong",
+                className: "touch-hit-expand shrink-0 border-transparent px-1",
+              })}
+            >
+              <X size={ICON_SIZE.sm} aria-hidden />
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {/* No code folder bound — **the same shape and the same weight** as the two rows

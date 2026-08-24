@@ -20409,3 +20409,115 @@ restoring the unconditional write.
 **Status**: valid
 
 ---
+## 2026-08-25 — "Just start" leaves the folders macOS protects
+
+**Context**: the previous record left the app's "just start" path unresolved,
+noting only that it writes outside any project. Looking again gave a sharper
+reason to move it than consistency. It created `~/Documents/Ontology Atlas/`, and
+Documents is one of the directories macOS guards with TCC — so the button whose
+entire promise is *no decisions, just begin* made a system permission dialog the
+first thing a new person saw, before any map existed to justify it.
+
+That is also the concrete half of the owner's 2026-08-24 report about the
+repeating consent dialog. The repetition itself came from ad-hoc build identities
+and is not a product defect; meeting the dialog at all on the zero-friction path
+is.
+
+**Decision**: the container moves to `~/Ontology Atlas/`. `$HOME` itself carries
+no TCC gate, so "just start" starts. This is the no-project path only; when
+somebody points Atlas at a codebase the map still goes inside it as
+`<project>/atlas`.
+
+**Recorded dissent**: a folder at the home root is clutter, and Documents is
+where a person expects documents to live. The counter is that the cost is paid
+once and quietly, while the permission dialog was paid loudly at the worst
+possible moment — by someone with no reason yet to trust the app with a
+protected folder. Tidiness is worth less than a first run that runs.
+
+**Falsifier**: someone reports the home-root folder as clutter, or asks where
+their vault went. Either means the location should be configurable rather than
+moved again.
+
+**Not changed**: vaults already created under Documents. Their absolute path is
+stored, so they keep opening from where they are.
+
+**Status**: valid
+
+---
+
+## 2026-08-25 — A folder the OS is protecting gets its own error, not an errno
+
+**Observed**: declining the macOS access prompt (or hitting an ad-hoc build whose
+identity macOS no longer recognises) made the read fail with `Operation not
+permitted (os error 1)`, and that string went straight to the screen under the
+generic `access-failed` code. It names an errno, not a folder, and never mentions
+that the remedy is a checkbox in System Settings. Earlier the same condition left
+the app waiting forever; that hang was fixed on 2026-08-24, which made the
+remaining silence the visible problem.
+
+**Decision**: a refusal by the operating system is classified as its own
+`permission-denied` code from the OS message, and the screen names the folder and
+where to allow it. All four paths that can meet a protected folder classify the
+same way, so the app does not say different things about one fact depending on
+how the person arrived at it.
+
+**Why classify from the message, never the path**: guessing "this looks like it
+is under Documents" is wrong in both directions — a protected folder can sit
+anywhere the person moved it, and an ordinary project inside Documents needs no
+warning once consent is granted. The operating system already answered; this
+reads its answer.
+
+**Why not a warning before the picker**: the dialog is the OS's and appears
+whether or not Atlas predicts it. A pre-warning would add a step to every pick to
+pre-empt a prompt most people simply accept. What was missing was not a warning
+but an answer after a refusal.
+
+**Recorded dissent**: matching on English errno text is brittle; a localised or
+future runtime could word it differently and fall back to the generic code. The
+counter is that the fallback is the previous behaviour rather than a new failure,
+and that the alternative — inferring from paths — is wrong in ways the person
+cannot correct.
+
+**Falsifier**: a refusal that still shows the raw errno, meaning the signature
+list missed a form.
+
+**Status**: valid
+
+---
+## 2026-08-25 — Two flow defects found by walking the door, not by reading it
+
+**Context**: the owner asked that the flow feel smooth rather than merely
+correct — *"the user has to feel it as smooth; the flow must not be strange."*
+Walking it end to end surfaced two places where each piece behaved correctly and
+the sequence did not.
+
+**1. The door was a dead end without an agent.** The handoff ends at
+`if (!target) return;` when no ACP runtime exists. So on a Mac with no agent
+installed, pressing 「make a map from my code」 created a folder, opened a vault,
+and then silently did nothing — having promised a map. Every part worked; the
+person got a folder and no explanation.
+
+Decision: the door is not drawn when there is nothing to hand the work to. This
+is the rule the card already applied to the web — *a door that cannot open is
+worse than no door* — which had simply never been applied to a desktop with no
+agent. Someone in that state still meets the separate "connect an AI agent" path,
+which is where they belong.
+
+**2. The "opened the map inside" notice never went away.** It is set when the
+substitution happens and nothing cleared it, so a one-time fact became permanent
+furniture in the panel for the rest of the session, long after it had said
+everything it knows. Decision: it can be closed once read. Not auto-dismissed on
+a timer, because a notice that disappears before it is read is the failure this
+line exists to prevent.
+
+**Why this is recorded**: both were invisible to the tests that shipped with the
+features, and both were found by asking what happens next rather than what each
+piece returns. Neither was a wrong function; both were wrong sequences.
+
+**Falsifier**: someone with no agent reports that the missing door left them
+without a way to build a map, which would mean the connect path is not carrying
+the weight assumed here.
+
+**Status**: valid
+
+---

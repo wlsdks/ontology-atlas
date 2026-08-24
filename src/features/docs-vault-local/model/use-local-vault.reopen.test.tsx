@@ -158,7 +158,27 @@ describe('useLocalVaultInternal — 데스크톱 최근 vault 재열기', () => 
       ).toBe(true),
     );
     expect(hook.result.current.status).toBe('error');
-    expect(hook.result.current.errorCode).toBe('access-failed');
+    /*
+     * ⚠️ Narrowed from the generic `access-failed` on 2026-08-25. Not being stuck was the first
+     * repair; saying *which* failure this is, is the second. `Operation not permitted` is the
+     * operating system refusing, and the remedy is a checkbox in System Settings rather than a
+     * retry — so the screen can name the folder and the setting instead of printing an errno.
+     */
+    expect(hook.result.current.errorCode).toBe('permission-denied');
     expect(hook.result.current.errorMessage).toBe('Operation not permitted (os error 1)');
+  });
+
+  it('막힌 것이 아니라 사라진 폴더는 여전히 사라졌다고 말한다', async () => {
+    // The narrowing must not swallow its neighbour: sending somebody to System Settings to fix a
+    // folder that is simply gone is a wrong instruction, and they will follow it and find nothing.
+    store.getLocalFsHandle.mockResolvedValue(desktopRecord());
+    store.verifyHandlePermission.mockRejectedValue(
+      new Error('No such file or directory (os error 2)'),
+    );
+
+    const hook = renderHook(() => useLocalVaultInternal());
+
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    expect(hook.result.current.errorCode).not.toBe('permission-denied');
   });
 });

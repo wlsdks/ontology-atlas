@@ -107,6 +107,7 @@ const labels = {
   dustyNodesAction: "See freshness",
   sourceUnboundLabel: "1 project with no code folder",
   openedInsideLabel: 'opened-inside',
+  openedInsideDismiss: 'opened-inside-dismiss',
   sourceUnboundAction: "Connect",
 };
 
@@ -820,6 +821,33 @@ describe("TopologyIndexPanel", () => {
       expect(screen.getByTestId("topology-index-opened-inside")).toHaveTextContent(
         "opened-inside",
       );
+    });
+
+    /*
+     * ⚠️ A one-time fact must not become permanent furniture. Nothing else clears this notice, so
+     * without a way to close it the line sits in the panel for the rest of the session, long after
+     * it has told the person everything it knows.
+     */
+    it("lets the notice be closed once it has been read", () => {
+      const onDismiss = vi.fn();
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          openedInsidePickedFolder="/Users/dana/my-product"
+          onDismissOpenedInside={onDismiss}
+          vaultLoaded
+        />,
+      );
+      fireEvent.click(screen.getByTestId("topology-index-opened-inside-dismiss"));
+      expect(onDismiss).toHaveBeenCalled();
     });
 
     it("stays quiet when the folder that was picked is the folder that opened", () => {
