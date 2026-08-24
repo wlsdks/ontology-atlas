@@ -530,7 +530,7 @@ where
 ///
 /// `base_url` comes **only from the address branch**. If an address arrives with a named vendor,
 /// reject it — allowing it would cause keys from the keychain to go to hosts the UI never promised.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn secret_verify(
     provider: String,
     vault_path: String,
@@ -810,7 +810,7 @@ where
 /// One chat round trip — **only within a turn where the user pressed [Send]**. The vault
 /// path is required for the same reason as the verification flow: with nowhere to record,
 /// nothing is sent.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn llm_chat(
     provider: String,
     vault_path: String,
@@ -1174,8 +1174,12 @@ mod tests {
         // this file return only types that cannot hold a key. Even as new commands are
         // added, a return type outside this allowlist gets caught here.
         let source = include_str!("llm.rs").replace("\r\n", "\n");
+        // Both spellings count. `#[tauri::command(async)]` moves the body off the macOS main
+        // thread, and a matcher that saw only the bare form would report zero commands here and
+        // pass while checking nothing — the failure this assertion exists to prevent.
         let commands: Vec<usize> = source
-            .match_indices("\n#[tauri::command]\npub fn ")
+            .match_indices("\n#[tauri::command")
+            .filter(|(idx, _)| source[*idx..].contains("]\npub fn "))
             .map(|(idx, _)| idx)
             .collect();
         assert_eq!(commands.len(), 2, "연결 확인과 대화 왕복 둘뿐이다");

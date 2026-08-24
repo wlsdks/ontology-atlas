@@ -19973,3 +19973,73 @@ reopens this with a fresh pass.
 **Status**: valid · measured and closed
 
 ---
+
+## 2026-08-24 — The install progress this repo built to cure "quiet waiting" had never once been delivered
+
+**Prior record**: the owner reported "quiet waiting" on 2026-08-20 — an install
+that shows four characters and no progress. The repository answered it properly:
+`acp_install_cli` pumps npm's stderr line by line on a spawned thread rather than
+using `.output()`, and `ensure_managed_node` reports downloaded bytes every 250ms
+against a known total. Both carry long comments arguing why, including "do not
+fabricate percentages; push the exact lines the tool actually emitted". Neither
+decision is overturned here. They were correct, and they never ran.
+
+**Observed phenomenon**: a `#[tauri::command]` without `(async)` executes **inline
+on the macOS main thread**. Established from the crate source, not the prose:
+`tauri-macros` expands the blocking wrapper to call the function body directly,
+and `wry` receives `invoke` inside `webView:startURLSchemeTask:`, which WebKit
+delivers on the main thread.
+
+The consequence that matters is one step further. Events emitted from *any*
+thread are delivered by the **main thread's event loop**. So while
+`acp_install_node` blocks that thread downloading 52 MB, every progress event its
+own pump emits sits in a queue nobody is draining. The window cannot be moved,
+resized or closed; input is ignored; macOS eventually paints the beachball. When
+the command finally returns, the whole progress history replays at once.
+
+The feature was built, argued, merged — and could not work, because the command
+whose progress it reported was holding the thread that would have delivered it.
+
+**Decision**: thirteen commands move to `#[tauri::command(async)]` — the two
+installers, the four ACP doctor commands, runtime detection, project-source
+inspection, the two curl-backed LLM commands, the three network git commands, and
+MCP verification. None of them takes `State<'_, T>`, so the borrowed-argument
+constraint the documentation warns about does not apply, and the frontend changes
+nothing because `invoke` was already promise-based.
+
+**`pick_vault_directory` deliberately stays synchronous.** `rfd::FileDialog::pick_folder`
+opens an `NSOpenPanel`, which macOS requires on the main thread and which runs its
+own modal event loop — the UI stays responsive *because* that command blocks
+there. It is the reason this is a named list rather than a blanket rule, and the
+reason the gate asserts the exception as loudly as the rule.
+
+**Also repaired in the same pass**: `open_external_url` spawned `open` and dropped
+the `Child` without waiting. Dropping a `Child` does not reap it, so every clicked
+external link left a zombie in the process table for the rest of the session,
+bounded only by how many links someone followed. It is now reaped on a detached
+thread. The `reveal_in_finder` path in the same file already did this correctly
+with `.status()`.
+
+**Rejected alternative**: making all 44 commands async. `pick_vault_directory`
+proves a blanket rule wrong, and ~35 commands finish in milliseconds where the
+attribute would buy nothing and cost a thread hop.
+
+**Falsifier**: if a user reports the window freezing during an install, a chat, or
+a git pull after this change, the analysis is wrong somewhere and the next step is
+to measure which thread the body is actually on rather than to add more
+attributes.
+
+**Verification**: `tests/contract/command-main-thread.contract.test.ts` names each
+command and its reason, and was probed both ways — reverting `git_pull` to the
+bare attribute turns it red, and making `pick_vault_directory` async turns it red.
+`cargo test` 222 pass. The packaged app was rebuilt and launched: window at
+1512x900, vault watcher running, WebView content loaded from a real vault.
+
+**Honest limit**: the freeze was established from the crate source and the
+mechanism, not from a stopwatch on a 52 MB download. What is measured is that the
+app still works with the thirteen commands moved; what is reasoned is that they
+were freezing it before.
+
+**Status**: valid · progress-during-install not yet watched by a human
+
+---
