@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { readProbeSources } from "./lib/probe-selectors";
+
 /**
  * **The probes that verify the installed app must not wait for things that do not
  * exist** (2026-08-11).
@@ -107,7 +109,10 @@ const productSource = [...walk(join(REPO_ROOT, "src")), ...walk(join(REPO_ROOT, 
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
 
-const probeSource = readFileSync(join(REPO_ROOT, "src-tauri/src/lib.rs"), "utf8");
+// The probes moved from raw strings in `lib.rs` into real files on 2026-08-24;
+// `readProbeSources` concatenates `lib.rs` (still holding the templated scripts)
+// with every `src-tauri/src/webview_verify/*.js` probe file.
+const probeSource = readProbeSources(REPO_ROOT);
 
 const huntedMarkers = [
   ...new Set([...probeSource.matchAll(/data-testid="([a-z0-9-]+)"/g)].map(([, id]) => id)),

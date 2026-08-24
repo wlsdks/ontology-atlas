@@ -1,14 +1,17 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Gate against dead literals surviving inside the JavaScript that `lib.rs` embeds.
+ * Gate against dead literals surviving inside the verifier JavaScript.
  *
- * The webview probe and the three verify scripts live inside Rust raw strings, which puts them
- * outside every TypeScript gate this repository has — no typecheck, no lint, no unused-variable
- * warning. Nothing there is checked by a compiler, so a mechanical edit can leave residue that
- * looks like code and computes nothing.
+ * The webview probe and the three verify scripts were extracted on 2026-08-24 from Rust raw
+ * strings in `lib.rs` into real files under `src-tauri/src/webview_verify/`, byte for byte. The
+ * extension puts them in reach of tooling, but nothing type-checks or lints them yet (they are
+ * plain `.js` outside the TS project), and the scripts still templated inside `lib.rs` via
+ * `format!` remain strings a compiler never sees. So this gate now scans both homes: every
+ * `src-tauri/src/webview_verify/*.js` file and every `r#"…"#` block left in `lib.rs`. A
+ * mechanical edit can still leave residue that looks like code and computes nothing.
  *
  * **That is not hypothetical.** Commit `8806b8eba` (2026-08-13) removed 56 dead markers by
  * substitution and left the substitution behind: measured on 2026-08-24, 92 `(null)` and 84
@@ -30,20 +33,45 @@ import { describe, expect, it } from 'vitest';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const libSource = readFileSync(join(repoRoot, 'src-tauri/src/lib.rs'), 'utf8');
+const verifyDir = join(repoRoot, 'src-tauri/src/webview_verify');
 
-/** Every `r#"…"#` block in lib.rs — these are the embedded scripts, and nothing else uses them. */
-function embeddedScripts(source: string): { start: number; body: string }[] {
-  const blocks: { start: number; body: string }[] = [];
+/** One scanned script: where it lives, the line its body starts on, and the body itself. */
+interface Script {
+  origin: string;
+  /** 1-based line of the body's first character inside `origin`. */
+  line: number;
+  body: string;
+}
+
+/** Every `r#"…"#` block in lib.rs — the still-embedded scripts, and nothing else uses them. */
+function embeddedScripts(source: string): Script[] {
+  const blocks: Script[] = [];
   const opener = /r#"/g;
   let match: RegExpExecArray | null;
   while ((match = opener.exec(source)) !== null) {
     const from = match.index + match[0].length;
     const to = source.indexOf('"#', from);
     if (to < 0) break;
-    blocks.push({ start: from, body: source.slice(from, to) });
+    blocks.push({
+      origin: 'src-tauri/src/lib.rs',
+      line: source.slice(0, from).split('\n').length,
+      body: source.slice(from, to),
+    });
     opener.lastIndex = to + 2;
   }
   return blocks;
+}
+
+/** Every extracted probe file under `src-tauri/src/webview_verify/`. */
+function extractedScripts(): Script[] {
+  return readdirSync(verifyDir)
+    .filter((name) => name.endsWith('.js'))
+    .sort()
+    .map((name) => ({
+      origin: `src-tauri/src/webview_verify/${name}`,
+      line: 1,
+      body: readFileSync(join(verifyDir, name), 'utf8'),
+    }));
 }
 
 /** The residue shapes, each meaning "this expression can never do anything". */
@@ -54,19 +82,24 @@ const DEAD_LITERAL_USES: { label: string; pattern: RegExp }[] = [
   { label: 'passed as an argument', pattern: /\(\s*\((?:null|undefined)\)\s*[,)]/g },
 ];
 
-const scripts = embeddedScripts(libSource);
+const fileScripts = extractedScripts();
+const libScripts = embeddedScripts(libSource);
+const scripts = [...fileScripts, ...libScripts];
 
-function lineOf(offset: number): number {
-  return libSource.slice(0, offset).split('\n').length;
+function locate(script: Script, offsetInBody: number): string {
+  const line = script.line + script.body.slice(0, offsetInBody).split('\n').length - 1;
+  return `${script.origin}:${line}`;
 }
 
-describe('the JavaScript embedded in lib.rs contains no dead literals', () => {
-  it('finds the embedded scripts at all', () => {
-    // A gate that scans nothing reports a clean sweep. The probe is the largest block by far;
-    // if the extraction ever happens and these move to real files, this assertion is what tells
-    // the next person to point this gate at the new location rather than delete it.
-    expect(scripts.length).toBeGreaterThan(3);
-    expect(Math.max(...scripts.map((script) => script.body.length))).toBeGreaterThan(10_000);
+describe('the verifier JavaScript contains no dead literals', () => {
+  it('finds the probe scripts at all', () => {
+    // A gate that scans nothing reports a clean sweep. The 2026-08-24 extraction moved the four
+    // probes into real files; this pins both homes so a silently empty read of either one cannot
+    // pass. The DOM marker probe is the largest script by far — its size proves the files were
+    // actually read, and the remaining `format!`-templated scripts keep lib.rs in scope.
+    expect(fileScripts.length).toBeGreaterThanOrEqual(4);
+    expect(Math.max(...fileScripts.map((script) => script.body.length))).toBeGreaterThan(10_000);
+    expect(libScripts.length).toBeGreaterThan(0);
   });
 
   it('leaves no parenthesised null or undefined in a position that uses the value', () => {
@@ -75,9 +108,8 @@ describe('the JavaScript embedded in lib.rs contains no dead literals', () => {
     for (const script of scripts) {
       for (const { label, pattern } of DEAD_LITERAL_USES) {
         for (const hit of script.body.matchAll(pattern)) {
-          const at = script.start + (hit.index ?? 0);
           offenders.push(
-            `src-tauri/src/lib.rs:${lineOf(at)} — ${label}: ${hit[0].replace(/\s+/g, ' ')}`,
+            `${locate(script, hit.index ?? 0)} — ${label}: ${hit[0].replace(/\s+/g, ' ')}`,
           );
         }
       }
