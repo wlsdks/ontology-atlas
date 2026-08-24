@@ -18,6 +18,8 @@ interface MockVault {
 const mocks = vi.hoisted(() => ({
   vault: null as unknown as MockVault,
   mode: 'static' as 'static' | 'local',
+  desktop: true,
+  requestAgentChat: vi.fn(),
 }));
 
 vi.mock('@/features/docs-vault-local', async () => {
@@ -29,6 +31,14 @@ vi.mock('@/features/docs-vault-local', async () => {
 
 vi.mock('@/features/data-source-mode', () => ({
   useDataSourceMode: () => mocks.mode,
+}));
+
+vi.mock('@/shared/lib/desktop-shell', () => ({
+  isDesktopShell: () => mocks.desktop,
+}));
+
+vi.mock('@/shared/lib/agent-chat-intent', () => ({
+  requestAgentChat: (...args: unknown[]) => mocks.requestAgentChat(...args),
 }));
 
 vi.mock('next-intl', () => ({
@@ -60,6 +70,8 @@ describe('FirstRunStarterModule', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
     mocks.mode = 'static';
+    mocks.desktop = true;
+    mocks.requestAgentChat.mockClear();
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
     window.localStorage.removeItem('demo:sample-source:v1');
     // Clearing storage clears the module cache too — otherwise a test leans on
@@ -651,5 +663,30 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
       </FirstRunStarterModule>,
     );
     expect(screen.getByTestId('index-body'), '렌즈를 껐다고 트리가 사라졌다').toBeInTheDocument();
+  });
+
+  /*
+   * ⚠️ The door for someone who already has code (decision, 2026-08-24). Measured on the shipped
+   * card: of its four actions none makes an ontology from a repository that already exists.
+   */
+  it('코드를 이미 가진 사람에게 문을 준다 — 무엇을 할지와, 쓰기 전에 묻는다는 것까지', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    const door = screen.getByTestId('first-run-build-from-code');
+    expect(door).toHaveTextContent('buildFromCodeLabel');
+    // The hint states what will happen **before** it happens, including that it asks before writing.
+    expect(screen.getByTestId('first-run-starter')).toHaveTextContent('buildFromCodeHint');
+    fireEvent.click(door);
+    expect(mocks.vault.open, '문을 눌렀는데 폴더 피커가 안 열린다').toHaveBeenCalled();
+  });
+
+  it('웹에서는 그 문이 아예 없다 — 「곧 됩니다」도 비활성 버튼도 아니다', () => {
+    mocks.desktop = false;
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(
+      screen.queryByTestId('first-run-build-from-code'),
+      '넘길 에이전트가 없는데 문을 그렸다 — 열리지 않는 문은 없는 문보다 나쁘다',
+    ).toBeNull();
+    // The rest of the card is untouched: this is an addition, not a re-ranking.
+    expect(screen.getByTestId('first-run-starter-open')).toBeInTheDocument();
   });
 });

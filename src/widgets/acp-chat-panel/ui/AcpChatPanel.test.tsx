@@ -1379,6 +1379,45 @@ describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-0
     await bootSession();
     expect(screen.queryByTestId('acp-starting')).toBeNull();
   });
+
+  /*
+   * ⚠️ A door may open with a first turn (decision, 2026-08-24). The first-run card's 「make a map
+   * from my code」 button presses this: the app cannot run the analysis itself — it never calls
+   * MCP — so it hands the work to the agent. The sentence must wait for `ready`, because a prompt
+   * sent into a starting session is swallowed and the person watches a door do nothing.
+   */
+  it('문이 실은 첫 말은 세션이 준비된 뒤에, 한 번만 나간다', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        openingRequest={{ text: 'Build a first ontology for /repo.', nonce: 7 }}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    const promptsWhileStarting = () =>
+      bridge.sent.filter((m) => m.method === 'session/prompt').length;
+    expect(promptsWhileStarting(), '아직 시작 중인데 보냈다 — 삼켜진다').toBe(0);
+
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+
+    await waitFor(() => expect(promptsWhileStarting()).toBe(1));
+    const sent = bridge.sent.find((m) => m.method === 'session/prompt') as
+      | { params?: { prompt?: Array<{ text?: string }> } }
+      | undefined;
+    expect(sent?.params?.prompt?.[0]?.text).toBe('Build a first ontology for /repo.');
+
+    // The same nonce must not fire again on a later render — one press, one turn.
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+    expect(promptsWhileStarting()).toBe(1);
+  });
 });
 
 describe('권한 카드 — 놓칠 수 없어야 한다', () => {
