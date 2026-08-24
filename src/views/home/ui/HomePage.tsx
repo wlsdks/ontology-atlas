@@ -5244,6 +5244,7 @@ function HomePageImpl() {
                     // Dusty (long-untouched) node count; the row hides at 0.
                     dustyNodeCount={dustySlugs.size}
                     unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
+                    openedInsidePickedFolder={vault.openedInsidePickedFolder ?? null}
                     onPromoteUncatalogedDocs={
                       bootstrapPlan && bootstrapPlan.elements.length > 0
                         ? () => setBootstrapOpen(true)
@@ -5290,6 +5291,7 @@ function HomePageImpl() {
                         count: unboundProjectSource?.count ?? 0,
                       }),
                       sourceUnboundAction: t("index.sourceUnboundAction"),
+                      openedInsideLabel: t("index.openedInsideLabel"),
                       // Rendered only in plain mode; the panel gates it.
                       plainHint: t("index.plainHint"),
                     }}

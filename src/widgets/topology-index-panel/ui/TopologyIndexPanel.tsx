@@ -81,6 +81,8 @@ export interface TopologyIndexPanelLabels {
    * where the prescription lives. No folder is chosen here — the same action is
    * never placed in two spots. */
   sourceUnboundLabel: string;
+  /** Says the map inside the picked project was opened, so the substitution is never silent. */
+  openedInsideLabel: string;
   sourceUnboundAction: string;
   /**
    * A quiet one-line hint explaining that element rows are absent from the tree in
@@ -128,6 +130,8 @@ export interface TopologyIndexPanelProps {
   dustyNodeCount?: number;
   /** The node id of a project with no code folder bound. null means the row does not exist. */
   unboundProjectNodeId?: string | null;
+  /** Truthy when "open a folder" opened the map inside the folder that was picked. */
+  openedInsidePickedFolder?: string | null;
   /** Clicking the row above → the "build a map from my documents" dialog (`bootstrapOpen`). */
   onPromoteUncatalogedDocs?: (() => void) | null;
   /**
@@ -201,6 +205,7 @@ export function TopologyIndexPanel({
   uncatalogedDocCount,
   dustyNodeCount,
   unboundProjectNodeId = null,
+  openedInsidePickedFolder = null,
   onPromoteUncatalogedDocs = null,
   onStartTour,
   onEnablePlainMode,
@@ -688,6 +693,22 @@ export function TopologyIndexPanel({
             {labels.dustyNodesAction}
           </span>
         </Link>
+      ) : null}
+
+      {/*
+        ⚠️ **Saying that a different folder was opened** (owner, 2026-08-24). Since the map moved to
+        `<project>/atlas`, picking a project root opens the map inside it — the substitution people
+        actually want. But quietly opening a folder other than the one somebody chose teaches them
+        the product does not do what they asked, so the fact is stated once, plainly, in the panel
+        that lists what was loaded.
+      */}
+      {openedInsidePickedFolder ? (
+        <p
+          data-testid="topology-index-opened-inside"
+          className="mt-2 shrink-0 break-keep px-1 text-caption leading-caption text-[color:var(--topology-v2-panel-text-tertiary)]"
+        >
+          {labels.openedInsideLabel}
+        </p>
       ) : null}
 
       {/* No code folder bound — **the same shape and the same weight** as the two rows

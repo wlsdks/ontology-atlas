@@ -42,12 +42,15 @@ import {
   buildVaultMcpConfigJson,
 } from '../lib/ontology-starter';
 import {
+  createTauriVaultHandle,
   getTauriVaultRootPath,
   isTauriVaultRuntime,
+  listTauriDirectoryNames,
   pickTauriVaultDirectory,
   vaultRootRejectionReason,
   tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
+import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
 import { toErrorMessage } from '@/shared/lib/error-message';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
@@ -658,6 +661,14 @@ export function useLocalVaultInternal() {
   // missing — one frame looks supported, but the hydration error is gone.
   const [state, setState] = useState<State>(() => emptyState('idle'));
   const [restoreAttempted, setRestoreAttempted] = useState(false);
+  /**
+   * Set when "open a folder" opened the map **inside** the folder that was picked.
+   *
+   * ⚠️ Exists so the screen can say so. Quietly opening a different folder from the one a person
+   * chose teaches them the product does not do what they asked, even when the substitution is the
+   * helpful one. Holds the path they actually picked; `null` means nothing was substituted.
+   */
+  const [openedInsidePickedFolder, setOpenedInsidePickedFolder] = useState<string | null>(null);
   const [recentVaults, setRecentVaults] = useState<LocalFsHandleRecord[]>([]);
 
   /** Fingerprint of the last successful build — the comparison that lets auto-refresh skip. */
@@ -804,11 +815,35 @@ export function useLocalVaultInternal() {
         setState(previousState);
         return;
       }
+      /*
+       * ⚠️ **A person who picks their project means their map** (owner, 2026-08-24). Since the map
+       * moved to `<project>/atlas`, two folders became plausible to pick, and this path took
+       * whatever it was handed — so picking the project root read the entire source tree as a vault
+       * and buried the map that was right there. See `resolve-picked-vault-folder.ts` for why the
+       * rule is narrow and why it is never silent.
+       */
+      const pickedPath = getTauriVaultRootPath(handle);
+      let openHandle = handle;
+      let pickedInstead: string | null = null;
+      if (pickedPath) {
+        const resolved = await resolvePickedVaultFolder(pickedPath, async (candidate) => {
+          try {
+            return await listTauriDirectoryNames(candidate);
+          } catch {
+            return null;
+          }
+        });
+        if (resolved.redirected) {
+          openHandle = createTauriVaultHandle(resolved.rootPath);
+          pickedInstead = pickedPath;
+        }
+      }
+      setOpenedInsidePickedFolder(pickedInstead);
       const now = Date.now();
       await putLocalFsHandle({
         id: CURRENT_LOCAL_FS_HANDLE_ID,
-        handle,
-        name: handle.name,
+        handle: openHandle,
+        name: openHandle.name,
         createdAt: now,
         lastAccessedAt: now,
       });
@@ -824,7 +859,7 @@ export function useLocalVaultInternal() {
        * was already gone — the user saw a silent sample map. Add to the list only after
        * success.
        */
-      await load(handle);
+      await load(openHandle);
       await refreshRecentVaults();
     } catch (err) {
       // A cancel is not a failure — restore the state from just before the picker (see `isPickerAbort`).
@@ -1620,6 +1655,8 @@ export function useLocalVaultInternal() {
       state.manifest !== null &&
       state.manifestHandle === state.handle,
     restoreAttempted,
+    /** The folder the person picked, when the map inside it was opened instead. Screens must say so. */
+    openedInsidePickedFolder,
     // Derived from state to stay SSR-consistent (avoiding an `isSupported()` call in the lazy
     // initializer). The switch to 'unsupported' happens in a mount effect.
     isSupported: state.status !== 'unsupported',
