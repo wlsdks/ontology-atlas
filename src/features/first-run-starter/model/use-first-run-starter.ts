@@ -8,6 +8,8 @@ import {
 } from './first-run-starter-dismiss';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
+import { deniedFolderName } from '@/features/docs-vault-local';
+import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { buildFromCodePrompt } from './build-from-code-prompt';
 import type { ProjectVaultLocation } from './project-vault-location';
 import { useBuildFromCode } from './use-build-from-code';
@@ -120,7 +122,15 @@ export function useFirstRunStarter() {
             ? t('errorRootRejected')
             : vault.errorCode === 'path-missing'
               ? t('errorPathMissing')
-              : vault.errorMessage) ?? ''
+              : vault.errorCode === 'permission-denied'
+                // The OS refused; a retry gives the same refusal, so name the folder and the setting.
+                ? t('errorPermissionDenied', {
+                    folder:
+                      deniedFolderName(
+                        vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null,
+                      ) ?? t('errorPermissionDeniedThisFolder'),
+                  })
+                : vault.errorMessage) ?? ''
         : null;
 
   useEffect(() => {

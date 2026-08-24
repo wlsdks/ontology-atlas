@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   desktop: true,
   requestAgentChat: vi.fn(),
   pickedProject: '/Users/dana/my-product' as string | null,
+  pickerThrows: false,
   ensureChildDir: vi.fn(async (_root: string, _name: string) => undefined),
 }));
 
@@ -33,8 +34,10 @@ vi.mock('@/shared/lib/tauri-vault-fs', async () => {
     isTauriVaultRuntime: () => true,
     getTauriVaultRootPath: () => mocks.pickedProject,
     createTauriVaultHandle: (rootPath: string) => ({ name: rootPath }),
-    pickTauriVaultDirectory: async () =>
-      mocks.pickedProject === null ? null : { name: 'picked' },
+    pickTauriVaultDirectory: async () => {
+      if (mocks.pickerThrows) throw new Error('picker exploded');
+      return mocks.pickedProject === null ? null : { name: 'picked' };
+    },
     listTauriDirectoryNames: async () => ['src', 'package.json'],
     ensureTauriChildDirectory: (root: string, name: string) => mocks.ensureChildDir(root, name),
   };
@@ -92,6 +95,7 @@ describe('FirstRunStarterModule', () => {
     mocks.requestAgentChat.mockClear();
     mocks.ensureChildDir.mockClear();
     mocks.pickedProject = '/Users/dana/my-product';
+    mocks.pickerThrows = false;
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
     window.localStorage.removeItem('demo:sample-source:v1');
     // Clearing storage clears the module cache too — otherwise a test leans on
@@ -119,7 +123,7 @@ describe('FirstRunStarterModule', () => {
   // (a person and an agent read and write the same folder) — 「Agent」 appeared
   // zero times across its 33 strings.
   it('names the agent audience once in the lead paragraph', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     expect(screen.getByTestId('first-run-starter-agent-clause')).toHaveTextContent(
       'agentClause',
     );
@@ -131,7 +135,7 @@ describe('FirstRunStarterModule', () => {
   // is a false glyph, not a hint. The platform is split for real and both
   // directions are pinned.
   it('hides the ⌘O badge on non-Apple platforms', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     expect(screen.getByTestId('first-run-starter-open')).not.toHaveTextContent('⌘O');
   });
 
@@ -142,7 +146,7 @@ describe('FirstRunStarterModule', () => {
       configurable: true,
     });
     try {
-      render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+      render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
       expect(screen.getByTestId('first-run-starter-open')).toHaveTextContent('⌘O');
     } finally {
       if (original) Object.defineProperty(window.navigator, 'platform', original);
@@ -163,7 +167,7 @@ describe('FirstRunStarterModule', () => {
   });
 
   it('renders no tour CTA when onStartTour is omitted', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     expect(screen.queryByTestId('first-run-tour-cta')).not.toBeInTheDocument();
   });
 
@@ -203,7 +207,7 @@ describe('FirstRunStarterModule', () => {
   // no way to learn the product's name. Pins that one brand wordmark line always
   // renders above the caption.
   it('renders a brand wordmark line above the first-run caption', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.getByTestId('first-run-starter-brand')).toBeInTheDocument();
     expect(screen.getByTestId('first-run-starter-brand')).toHaveTextContent('brand');
@@ -211,14 +215,14 @@ describe('FirstRunStarterModule', () => {
 
   it('does not render once a vault is active (local mode)', () => {
     mocks.mode = 'local';
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
   it('does not render before the vault restore attempt has settled', () => {
     mocks.vault.restoreAttempted = false;
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
@@ -226,7 +230,7 @@ describe('FirstRunStarterModule', () => {
   // The folder CTA opens a guidance sheet first rather than going straight to the
   // OS picker. `vault.open()` is called only after "choose an existing folder" is confirmed.
   it('opens the guide sheet first, then wires "choose existing" to vault.open()', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     fireEvent.click(screen.getByTestId('first-run-starter-open'));
     expect(mocks.vault.open).not.toHaveBeenCalled();
@@ -241,7 +245,7 @@ describe('FirstRunStarterModule', () => {
       mocks.vault.status = 'loaded';
       mocks.vault.manifest = { docs: [] };
     });
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     fireEvent.click(screen.getByTestId('first-run-starter-create'));
     expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
@@ -253,7 +257,7 @@ describe('FirstRunStarterModule', () => {
   });
 
   it('dismissing hides the module and persists for the session', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
 
@@ -264,7 +268,7 @@ describe('FirstRunStarterModule', () => {
   it('does not render at all on a later mount within the same session', () => {
     window.sessionStorage.setItem(FIRST_RUN_STARTER_DISMISSED_KEY, '1');
 
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
@@ -273,7 +277,7 @@ describe('FirstRunStarterModule', () => {
   // the starter guide" row stays where the closed card was, and clicking it
   // restores the card for the session.
   it('leaves a quiet reopen row after dismiss and restores the card on click', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
 
     const reopen = screen.getByTestId('first-run-starter-reopen');
@@ -296,7 +300,7 @@ describe('FirstRunStarterModule', () => {
    * Both paths are locked — collapsed by dismiss, and collapsed by a tab switch.
    */
   it('keeps the sample signal alive after the card collapses — both ways', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
 
     // ① collapse by dismiss
@@ -319,7 +323,7 @@ describe('FirstRunStarterModule', () => {
     vi.useFakeTimers();
     window.localStorage.setItem('ontology-atlas:guide-auto-start:v1', '1');
     window.localStorage.removeItem('vault-open-guide:auto:v1');
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     expect(screen.queryByTestId('vault-guide-sheet')).not.toBeInTheDocument();
     act(() => {
       vi.advanceTimersByTime(500);
@@ -332,7 +336,7 @@ describe('FirstRunStarterModule', () => {
   it('does not auto-open the folder guide sheet on later visits', () => {
     vi.useFakeTimers();
     window.localStorage.setItem('vault-open-guide:auto:v1', '1');
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     act(() => {
       vi.advanceTimersByTime(1000);
     });
@@ -344,7 +348,7 @@ describe('FirstRunStarterModule', () => {
   // must close only the sheet. Pins that the capture-phase dismiss handler yields
   // to the modal.
   it('Escape while the guide sheet is open closes the sheet, not the card', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     fireEvent.click(screen.getByTestId('first-run-starter-open'));
     expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
 
@@ -355,7 +359,7 @@ describe('FirstRunStarterModule', () => {
   });
 
   it('Escape dismisses the module', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     fireEvent.keyDown(window, { key: 'Escape' });
 
@@ -370,7 +374,7 @@ describe('FirstRunStarterModule', () => {
   // disclosure that is collapsed by default: the command is invisible in the
   // default state and appears only when the developer toggle is expanded.
   it('keeps the CLI bootstrap command collapsed behind a developer disclosure by default', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.getByTestId('first-run-starter-cli-toggle')).toBeInTheDocument();
     expect(screen.queryByTestId('first-run-starter-cli-bridge')).not.toBeInTheDocument();
@@ -380,7 +384,7 @@ describe('FirstRunStarterModule', () => {
   });
 
   it('reveals the source-checkout command and says it is source-only when expanded', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
 
     expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
@@ -400,7 +404,7 @@ describe('FirstRunStarterModule', () => {
   // line must be full width and wrap at word boundaries, not ellipsize, so the
   // full command can be verified by eye before copying.
   it('renders the command as a full-width wrapping code line — never mid-word ellipsis', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
 
     const code = screen.getByText(
@@ -418,7 +422,7 @@ describe('FirstRunStarterModule', () => {
   // create-new-vault.
   it('demotes both FSA CTAs to an honest notice + download link when the browser is unsupported', () => {
     mocks.vault.status = 'unsupported';
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.queryByTestId('first-run-starter-open')).not.toBeInTheDocument();
     expect(screen.queryByTestId('first-run-starter-create')).not.toBeInTheDocument();
@@ -434,7 +438,7 @@ describe('FirstRunStarterModule', () => {
   // A non-developer had no way to discover the "plain" view-mode toggle. One
   // quiet nudge line sits near the dismiss row.
   it('P2 결함③ — renders a quiet nudge toward the plain-mode gear toggle near the dismiss row', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     const hint = screen.getByTestId('first-run-starter-plain-mode-hint');
     expect(hint).toHaveTextContent('plainModeHint');
@@ -450,7 +454,7 @@ describe('FirstRunStarterModule', () => {
   // persuasiveness comes from existing, not from being the default — it stays one
   // click away under its honest name.
   it('renders the sample-source segment defaulting to "storefront" and persists a switch to "dogfood"', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     const dogfoodTab = screen.getByTestId('first-run-starter-sample-source-dogfood');
     const storefrontTab = screen.getByTestId('first-run-starter-sample-source-storefront');
@@ -471,7 +475,7 @@ describe('FirstRunStarterModule', () => {
   it('keeps an explicitly persisted "dogfood" choice after the default flipped', () => {
     window.localStorage.setItem('demo:sample-source:v1', 'dogfood');
 
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.getByTestId('first-run-starter-sample-source-dogfood')).toHaveAttribute(
       'aria-checked',
@@ -498,7 +502,7 @@ describe('FirstRunStarterModule', () => {
   });
 
   it('exposes the sample source as an exclusive selection, not a tablist', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     const group = screen.getByTestId('first-run-starter-sample-source');
     /*
@@ -517,7 +521,7 @@ describe('FirstRunStarterModule', () => {
 
     // People read left first — the order is "what we recommend first".
   it('renders the storefront tab before the dogfood tab', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     const tabs = screen
       .getByTestId('first-run-starter-sample-source')
@@ -535,7 +539,7 @@ describe('FirstRunStarterModule', () => {
   it('restores a previously persisted "storefront" sample-source choice on mount', () => {
     window.localStorage.setItem('demo:sample-source:v1', 'storefront');
 
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.getByTestId('first-run-starter-sample-source-storefront')).toHaveAttribute(
       'aria-checked',
@@ -553,7 +557,7 @@ describe('FirstRunStarterModule', () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
 
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
     fireEvent.click(screen.getByTestId('first-run-starter-cli-bridge-copy'));
 
@@ -652,6 +656,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     mocks.desktop = true;
     mocks.ensureChildDir.mockClear();
     mocks.pickedProject = '/Users/dana/my-product';
+    mocks.pickerThrows = false;
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
     resetSampleSourceCacheForTests();
   });
@@ -693,7 +698,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
    * card: of its four actions none makes an ontology from a repository that already exists.
    */
   it('코드를 이미 가진 사람에게 문을 준다 — 무엇을 할지와, 쓰기 전에 묻는다는 것까지', async () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     const door = screen.getByTestId('first-run-build-from-code');
     expect(door).toHaveTextContent('buildFromCodeLabel');
     // The hint states what will happen **before** it happens, including that it asks before writing.
@@ -723,7 +728,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
   });
 
   it('취소하면 만들지 않고 경로도 치운다', async () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     await act(async () => {
       fireEvent.click(screen.getByTestId('first-run-build-from-code'));
     });
@@ -745,7 +750,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     // must not go with it.
     mocks.mode = 'local';
     render(
-      <FirstRunStarterModule concepts={4} relations={2} domains={1} mapUnbuilt>
+      <FirstRunStarterModule concepts={4} relations={2} domains={1} mapUnbuilt agentAvailable>
         <div data-testid="index-body" />
       </FirstRunStarterModule>,
     );
@@ -761,16 +766,54 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
   it('코드가 이미 붙어 있으면 그 문은 사라진다 — 끝난 일을 다시 권하지 않는다', () => {
     mocks.mode = 'local';
     render(
-      <FirstRunStarterModule concepts={40} relations={30} domains={5}>
+      <FirstRunStarterModule concepts={40} relations={30} domains={5} agentAvailable>
         <div data-testid="index-body" />
       </FirstRunStarterModule>,
     );
     expect(screen.queryByTestId('index-build-from-code')).toBeNull();
   });
 
+  /*
+   * ⚠️ Found by walking the flow, 2026-08-25. The handoff ends at `if (!target) return;` when no ACP
+   * runtime exists, so on a Mac with no agent installed this button created a folder, opened a
+   * vault, and then silently did nothing — having promised a map. The card's own rule already said a
+   * door that cannot open is worse than no door; it was being applied to the web and not to this.
+   */
+  /*
+   * ⚠️ Found by walking the flow, 2026-08-25. A failure before a project is chosen has no confirm
+   * box to live in, and the error was written into state that nothing rendered — so a picker that
+   * threw left the person pressing a button that did nothing, twice.
+   */
+  it('프로젝트를 고르기도 전에 실패하면 그 사실을 말한다 — 눌러도 아무 일 없는 버튼이 되지 않는다', async () => {
+    mocks.pickerThrows = true;
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('first-run-build-from-code'));
+    });
+    expect(screen.getByTestId('first-run-build-error')).toBeInTheDocument();
+  });
+
+  it('넘길 에이전트가 없으면 문을 그리지 않는다 — 폴더만 만들고 끝나면 약속을 어긴 것이다', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(screen.queryByTestId('first-run-build-from-code')).toBeNull();
+    // The rest of the card is untouched: this removes a dead end, it does not re-rank anything.
+    expect(screen.getByTestId('first-run-starter-open')).toBeInTheDocument();
+  });
+
+  it('에이전트가 없으면 사람 B 의 줄도 그리지 않는다', () => {
+    mocks.mode = 'local';
+    render(
+      <FirstRunStarterModule concepts={4} relations={2} domains={1} mapUnbuilt>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.queryByTestId('index-build-from-code')).toBeNull();
+    expect(screen.getByTestId('index-body')).toBeInTheDocument();
+  });
+
   it('웹에서는 그 문이 아예 없다 — 「곧 됩니다」도 비활성 버튼도 아니다', () => {
     mocks.desktop = false;
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     expect(
       screen.queryByTestId('first-run-build-from-code'),
       '넘길 에이전트가 없는데 문을 그렸다 — 열리지 않는 문은 없는 문보다 나쁘다',

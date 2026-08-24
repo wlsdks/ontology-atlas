@@ -51,6 +51,7 @@ import {
   tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
+import { classifyVaultAccessError } from './classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/error-message';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
@@ -229,6 +230,11 @@ type Status =
  * - `path-missing` — (desktop) the vault folder opened previously has moved or been
  *   deleted and is no longer reachable by absolute path. "Choose the folder again" is
  *   the next action.
+ * - `permission-denied` — the operating system is protecting this folder and has not been told to
+ *   allow it. Its own code because the remedy is a checkbox in System Settings, not a retry, and
+ *   because the raw `Operation not permitted (os error 1)` names an errno rather than a folder.
+ *   Classified from the OS message, never guessed from the path — see
+ *   `classify-vault-access-error.ts`.
  * - `access-failed` — any other read or build failure. `errorMessage` carries the cause
  *   string, including a Tauri command's `Err(String)`, so it is no longer silent.
  * - `root-rejected` — the chosen location cannot be a vault root (a filesystem root, the
@@ -237,7 +243,11 @@ type Status =
  *   again" would be wrong guidance. `errorMessage` is null and the screen picks the
  *   reason in its own language (`vaultRootRejectionReason`).
  */
-export type VaultErrorCode = 'path-missing' | 'access-failed' | 'root-rejected';
+export type VaultErrorCode =
+  | 'path-missing'
+  | 'permission-denied'
+  | 'access-failed'
+  | 'root-rejected';
 
 interface State {
   status: Status;
@@ -773,7 +783,10 @@ export function useLocalVaultInternal() {
         fileHandles: new Map(),
         imageHandles: new Map(),
         errorMessage: toErrorMessage(err),
-        errorCode: 'access-failed',
+        // A refusal by the operating system is not the same event as a broken folder, and sending
+        // somebody to System Settings to fix a folder that is simply gone would be worse than vague.
+        errorCode:
+          classifyVaultAccessError(err) === 'permission-denied' ? 'permission-denied' : 'access-failed',
         lastLoadedAt: null,
         manifestHandle: null,
       });
@@ -886,7 +899,10 @@ export function useLocalVaultInternal() {
         ...s,
         status: 'error',
         errorMessage: toErrorMessage(err),
-        errorCode: 'access-failed',
+        errorCode:
+          classifyVaultAccessError(err) === 'permission-denied'
+            ? 'permission-denied'
+            : 'access-failed',
       }));
     }
   }, [load, refreshRecentVaults, state]);
@@ -932,7 +948,10 @@ export function useLocalVaultInternal() {
           ...s,
           status: 'error',
           errorMessage: toErrorMessage(err),
-          errorCode: 'access-failed',
+          errorCode:
+            classifyVaultAccessError(err) === 'permission-denied'
+              ? 'permission-denied'
+              : 'access-failed',
         }));
       }
     },
@@ -1468,7 +1487,12 @@ export function useLocalVaultInternal() {
           fileHandles: new Map(),
           imageHandles: new Map(),
           errorMessage: error instanceof Error ? error.message : String(error),
-          errorCode: 'access-failed',
+          // Every path that can meet a protected folder classifies the same way; otherwise the app
+          // says different things about one fact depending on how the person arrived at it.
+          errorCode:
+            classifyVaultAccessError(error) === 'permission-denied'
+              ? 'permission-denied'
+              : 'access-failed',
           lastLoadedAt: null,
           manifestHandle: null,
         });
@@ -1657,6 +1681,14 @@ export function useLocalVaultInternal() {
     restoreAttempted,
     /** The folder the person picked, when the map inside it was opened instead. Screens must say so. */
     openedInsidePickedFolder,
+    /**
+     * Clears that notice once it has been read.
+     *
+     * ⚠️ A one-time fact must not become permanent furniture. It is set when the substitution
+     * happens and nothing else clears it, so without this the line sits in the panel for the rest of
+     * the session, long after it has told the person everything it knows.
+     */
+    dismissOpenedInsideNotice: () => setOpenedInsidePickedFolder(null),
     // Derived from state to stay SSR-consistent (avoiding an `isSupported()` call in the lazy
     // initializer). The switch to 'unsupported' happens in a mount effect.
     isSupported: state.status !== 'unsupported',

@@ -42,10 +42,10 @@ describe('resolveUniqueVaultDirName', () => {
 describe('buildDefaultVaultDisplayPath', () => {
   it('joins the fixed parent label with the chosen dir name', () => {
     expect(buildDefaultVaultDisplayPath('my-ontology')).toBe(
-      '~/Documents/Ontology Atlas/my-ontology',
+      '~/Ontology Atlas/my-ontology',
     );
     expect(buildDefaultVaultDisplayPath('my-ontology-2')).toBe(
-      '~/Documents/Ontology Atlas/my-ontology-2',
+      '~/Ontology Atlas/my-ontology-2',
     );
   });
 });

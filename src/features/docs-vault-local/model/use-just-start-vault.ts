@@ -22,7 +22,7 @@ export interface JustStartVaultVault {
 
 /**
  * "Just start" — Tauri desktop only. With no folder picker, it creates a real disk folder under
- * `~/Documents/Ontology Atlas/<name>` and connects to it immediately. **Not OPFS** — the whole point
+ * `~/Ontology Atlas/<name>` and connects to it immediately. **Not OPFS** — the whole point
  * of the design is that an agent, MCP, or Claude Code can reach it directly. Once the folder is
  * prepared it reuses the existing `vault.openRecent()` and `vault.scaffoldOntology()` rather than
  * adding a pipeline (the same pattern by which `useVaultCreateFlow` chains `open()` and

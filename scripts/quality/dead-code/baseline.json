@@ -39,7 +39,6 @@
     "frontend:runtime:exports:src/features/agent-activity/model/read-at-storage.ts:READ_AT_KEY_PREFIX",
     "frontend:runtime:exports:src/features/app-update/index.ts:useAppUpdate",
     "frontend:runtime:exports:src/features/docs-vault-local/lib/bootstrap-candidates.ts:isRuntimeOwnedSkill",
-    "frontend:runtime:exports:src/features/docs-vault-local/lib/default-vault-naming.ts:DEFAULT_VAULT_PARENT_LABEL",
     "frontend:runtime:exports:src/features/docs-vault-local/lib/manual-connect.ts:manualLaunch",
     "frontend:runtime:exports:src/features/first-run-starter/model/vault-guide-auto-open.ts:VAULT_GUIDE_AUTO_OPENED_KEY",
     "frontend:runtime:exports:src/features/vault-agent/model/first-words.ts:FIRST_WORDS_MAX_CHIPS",

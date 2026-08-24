@@ -37,3 +37,4 @@ export {
 export { VaultOpenGuideSheet } from './ui/VaultOpenGuideSheet';
 export type { AgentClientId } from './lib/agent-clients';
 export { OpenVaultCta } from './ui/OpenVaultCta';
+export { deniedFolderName } from './model/classify-vault-access-error';
