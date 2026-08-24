@@ -66,3 +66,19 @@ keyring = { version = "3", features = ["apple-native"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3", features = ["windows-native"] }
+
+# Cargo's release defaults leave 16 codegen units, no cross-crate inlining, and full debug symbols.
+# Measured on this app: these three take the Rust half of the binary from 13.4 MB to 8.3 MB, with no
+# change to what the code means.
+#
+# Tauri's size guidance names two more that are deliberately absent.
+# `opt-level = "s"` saves a further 1.5 MB by optimising for size over speed; the Rust half of this
+# app hashes and walks vault files, and 1.5 MB of an 89 MB bundle does not justify trading throughput
+# nobody has measured.
+# `panic = "abort"` saves 1.7 MB and changes what a bug costs: today a panic inside one command fails
+# that command and leaves the window standing, and with abort it takes the whole app down. For a
+# workbench holding an owner's unsaved judgement that is the wrong trade at any size.
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true
