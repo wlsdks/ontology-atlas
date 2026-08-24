@@ -142,7 +142,9 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
      * a promise the app cannot keep, and that is ours to fix, not the user's,
      * so no fix button is attached.
      */
-    out.push(if acp::config_env_for(ctx.runtime_id).is_some() {
+    // Measured eligibility, not mere isolation: the app can control codex's config directory and
+    // still not hold its write gate, which is exactly what decision (111) recorded.
+    out.push(if acp::chat_eligible(ctx.runtime_id) && acp::config_env_for(ctx.runtime_id).is_some() {
         AcpCheck::ok("gate", Some("isolation".into()))
     } else if let Some((_, mode)) = SESSION_MODE_GATE.iter().find(|(id, _)| *id == ctx.runtime_id) {
         AcpCheck::ok("gate", Some(format!("session-mode:{mode}")))
@@ -518,10 +520,32 @@ mod tests {
     /// but the four inapplicable isolation checks are not laid out as `unknown`
     /// on top of that.
     #[test]
-    fn a_runtime_without_isolation_gets_no_isolation_checks() {
-        let base = std::env::temp_dir().join(format!("atlas-doctor-g-{}", std::process::id()));
+    /// Isolation is not eligibility. The app controls codex's config directory, and the gate check
+    /// must still say `problem` until an installed-app run measures it — decision (111).
+    #[test]
+    fn an_isolated_runtime_is_not_automatically_chat_eligible() {
+        assert!(
+            acp::config_env_for("codex-acp").is_some(),
+            "codex config is controlled by the app"
+        );
+        assert!(
+            !acp::chat_eligible("codex-acp"),
+            "controlling a config directory is not a measured permission gate"
+        );
+        let base = std::env::temp_dir().join(format!("atlas-doctor-e-{}", std::process::id()));
         let mut c = ctx(&base, None);
         c.runtime_id = "codex-acp";
+        let gate = diagnose(&c).into_iter().find(|check| check.id == "gate").unwrap();
+        assert_eq!(gate.state, "problem");
+    }
+
+    fn a_runtime_without_isolation_gets_no_isolation_checks() {
+        // The example used to be codex. It stopped being one when the app started controlling
+        // codex's config directory — which is not the same as trusting its gate, and the next
+        // test holds that line. `amp-acp` is a runtime the app genuinely does not isolate.
+        let base = std::env::temp_dir().join(format!("atlas-doctor-g-{}", std::process::id()));
+        let mut c = ctx(&base, None);
+        c.runtime_id = "amp-acp";
         let ids: Vec<&str> = diagnose(&c).iter().map(|check| check.id).collect();
 
         for absent in ["config-dir", "credentials-link", "shadow-keychain", "login"] {

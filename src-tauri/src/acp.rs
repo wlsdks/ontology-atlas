@@ -140,19 +140,50 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
         credentials_file: ".credentials.json",
         user_config_dir: ".claude",
     },
+    IsolationSpec {
+        id: "codex-acp",
+        config_env: "CODEX_HOME",
+        credentials_file: "auth.json",
+        user_config_dir: ".codex",
+    },
 ];
 
-// ⚠️ **codex is not here — it failed two independent verification boundaries.**
+// ⚠️ **Why codex is back, and what had to change first.**
 //
-// We set `CODEX_HOME` to the isolated directory and wrote `approval_policy = "on-request"` ·
-// `sandbox_mode = "workspace-write"`, but the session's default mode was
-// `agent` (codex's mode names — read-only/agent/agent-full-access — are completely different from
-// claude's) and it wrote files **outside** the working folder with **0** permission requests.
+// It was removed after two measurements. The first: `CODEX_HOME` isolated with
+// `approval_policy = "on-request"` · `sandbox_mode = "workspace-write"` still left the session's
+// default mode at `agent` (codex's mode names — read-only/agent/agent-full-access — are completely
+// different from claude's) and it wrote files **outside** the working folder with **0** permission
+// requests. The second (installed acceptance, 2026-08-24): `read-only` blocked direct files but a
+// self-registered Atlas `add_relation` changed the vault with no permission request at all.
 //
-// Installed acceptance on 2026-08-24 added the missing MCP-write measurement: `read-only`
-// blocked direct files but a self-registered Atlas `add_relation` changed the vault without any
-// permission request. So we do not list or launch it. Restoring Codex chat requires an app-owned
-// checkpoint around both self-registered and injected MCP writes.
+// Neither hole is closed by a session mode, and that is the point — a mode is a request the adapter
+// may override, which is exactly what was measured. Both are now closed by things this app owns:
+// direct writes by the sandbox floor in `ISOLATED_CODEX_CONFIG` below, and Atlas MCP writes by the
+// server-side checkpoint (`mcp/src/write-consent.mjs`, decision (113)).
+//
+// ⚠️ **Listing it here is not the same as offering in-app chat.** This entry only lets the app
+// control the config directory. Whether the UI offers a conversation is decided separately in
+// `runtime-gate.ts`, and decision (111) keeps that closed until an installed-app run proves reject
+// and allow for both self-registered and injected writes.
+
+/// Runtimes whose permission gate the app has **measured** — the only ones eligible for a
+/// conversation inside the app.
+///
+/// ⚠️ **This is not the same list as `ISOLATION`, and keeping them apart is the whole lesson of
+/// decision (111).** Isolation says the app can control a runtime's config directory. Eligibility
+/// is the stronger claim that the resulting configuration actually stops a write until a person
+/// answers. Codex is isolated and **not** eligible: its isolated `CODEX_HOME` was read (the `model`
+/// value applied) while the approval policy was overridden, and an Atlas MCP write landed unasked.
+///
+/// A runtime joins this list only after an installed-app run shows reject-without-write **and**
+/// allow-with-write, for both self-registered and injected Atlas MCP mutations.
+pub(crate) const CHAT_ELIGIBLE: &[&str] = &["claude-acp"];
+
+/// Has this runtime's permission gate been measured to hold? See `CHAT_ELIGIBLE`.
+pub(crate) fn chat_eligible(id: &str) -> bool {
+    CHAT_ELIGIBLE.contains(&id)
+}
 
 fn isolation_for(id: &str) -> Option<&'static IsolationSpec> {
     ISOLATION.iter().find(|s| s.id == id)
@@ -176,6 +207,21 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
     "ask": []
   }
 }
+"#;
+
+/// The config an app-opened codex session runs under. **Not inherited from the user's own
+/// `~/.codex/config.toml`** — that file is where a person keeps the permissions they granted for
+/// their own terminal work, and a session opened from a map panel is not that.
+///
+/// `sandbox_mode = "read-only"` is the floor, not a preference. The 2026-08-24 measurements showed
+/// an approval policy being overridden by the adapter's session mode, so the boundary cannot rest
+/// on asking — it rests on the process not being able to write in the first place. Vault changes do
+/// not need it: they travel through the Atlas MCP server, which asks before it writes.
+///
+/// `approval_policy = "untrusted"` keeps the escalation path alive for the commands codex may still
+/// legitimately propose, so a blocked action surfaces as a question rather than a silent failure.
+const ISOLATED_CODEX_CONFIG: &str = r#"approval_policy = "untrusted"
+sandbox_mode = "read-only"
 "#;
 
 pub(crate) type LoginProbe<'a> = dyn Fn(&str, &Path, &[&str], &str) -> Option<bool> + 'a;
@@ -1018,6 +1064,10 @@ pub(crate) fn prepare_isolated_config(
         std::fs::write(dir.join("settings.json"), ISOLATED_CLAUDE_SETTINGS)
             .map_err(|err| format!("settings-write-failed:{err}"))?;
     }
+    if spec.id == "codex-acp" {
+        std::fs::write(dir.join("config.toml"), ISOLATED_CODEX_CONFIG)
+            .map_err(|err| format!("settings-write-failed:{err}"))?;
+    }
 
     if let Some(home) = home {
         let source = home.join(spec.user_config_dir).join(spec.credentials_file);
@@ -1262,6 +1312,12 @@ pub(crate) fn prepare_runtime_isolation(
     cli: Option<&Path>,
     path_env: &str,
 ) -> Result<(&'static str, PathBuf), String> {
+    // Two separate questions, asked in the order that matters. Eligibility first: a runtime whose
+    // gate has not been measured must not reach a conversation even if the app *could* isolate its
+    // config. Conflating the two is how decision (111) happened.
+    if !chat_eligible(runtime_id) {
+        return Err(format!("permission-gate-unsupported:{runtime_id}"));
+    }
     let env = config_env_for(runtime_id)
         .ok_or_else(|| format!("permission-gate-unsupported:{runtime_id}"))?;
     let dir = prepare_isolated_config(runtime_id, app_data_dir, home, cli, path_env)
@@ -2892,6 +2948,29 @@ mod tests {
         assert_eq!(a, claude_credentials_service(Path::new("/tmp/a")));
         assert!(a.starts_with("Claude Code-credentials-"));
         assert_eq!(a.len(), "Claude Code-credentials-".len() + 8);
+    }
+
+    #[test]
+    fn an_isolated_codex_session_gets_a_sandbox_floor_not_an_inherited_config() {
+        let base = std::env::temp_dir().join(format!("atlas-acp-codex-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let app_data = base.join("appdata");
+        let home = base.join("home");
+        std::fs::create_dir_all(home.join(".codex")).unwrap();
+        std::fs::write(home.join(".codex").join("auth.json"), "{\"t\":1}").unwrap();
+        // The user's own permissive config must not travel into an app-opened session.
+        std::fs::write(
+            home.join(".codex").join("config.toml"),
+            "approval_policy = \"never\"\nsandbox_mode = \"danger-full-access\"\n",
+        )
+        .unwrap();
+
+        let dir = prepare_isolated_config("codex-acp", &app_data, Some(&home), None, "").unwrap();
+        let written = std::fs::read_to_string(dir.join("config.toml")).unwrap();
+        assert_eq!(written, ISOLATED_CODEX_CONFIG);
+        assert!(written.contains("sandbox_mode = \"read-only\""), "the floor is the sandbox");
+        assert!(!written.contains("danger-full-access"), "the user's own grant must not leak in");
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
