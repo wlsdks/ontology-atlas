@@ -3769,6 +3769,8 @@ function HomePageImpl() {
   const shortcutsSuppressed = shouldSuppressGlobalShortcuts({
     createNodeOpen,
     tourOpen: tour.open,
+    // `blocked` is this app's word for "the agent stopped and the permission card is waiting".
+    agentAwaitingDecision: acpTurnActivityFrame?.activity.state === "blocked",
   });
 
   // ⌘K and ⇧⌘K open the same palette (ontology nodes + projects). ⌘K used to open a
