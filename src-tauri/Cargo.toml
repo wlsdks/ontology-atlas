@@ -26,6 +26,20 @@ chrono = { version = "0.4", default-features = false, features = ["std", "now"] 
 notify-debouncer-full = "0.3"
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
+# A packaged `.app` has nowhere to print. Every `println!` in this crate is inside `#[cfg(test)]`,
+# so an installed build previously explained nothing after the fact — an owner reporting "the agent
+# stopped" left no evidence behind at all. This writes a rotating file into the OS log directory,
+# outside the vault, and mirrors to stderr under `tauri dev`. Vault content and secrets are never
+# logged; the LLM transfer ledger stays in `llm_audit.rs`, which this does not replace.
+tauri-plugin-log = "2.9.0"
+# Restores the window the owner left, which a workbench owes them. The plugin restores size in
+# *physical* pixels with no monitor check of its own, so `sanitize_window_geometry` clamps every
+# launch — restored or not — and the plugin is not registered at all under the verification harness,
+# which must not inherit or write the owner's geometry.
+tauri-plugin-window-state = "2.4.1"
+# log is a transitive dep already pulled by tauri (0.4, single version in Cargo.lock) — declaring it
+# directly adds zero new supply-chain surface (same rationale as objc2).
+log = "0.4"
 
 # libc is also a transitive dep already pulled by tauri (0.2, single version in Cargo.lock) —
 # declaring it directly adds zero new supply-chain surface (same rationale as objc2).
@@ -35,6 +49,14 @@ tauri-plugin-process = "2.3.1"
 # orphaned. The standard library provides no way to send signals to a process group.
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+# Two instances of this app pointed at one vault means two file watchers, two ACP harnesses, two MCP
+# sidecars and two writers against the same Markdown. Vault files are the source of truth here, so
+# concurrent writers are the one failure this product cannot absorb — and the updater's restart makes
+# a second launch a routine event, not an exotic one. Desktop-only by construction: the plugin does
+# not exist for mobile targets.
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = "2.4.3"
 
 # objc2 is a transitive dep already pulled by tauri — zero new supply-chain surface.
 # Used only for WKWebView's 60fps rAF release (ProMotion 120Hz).

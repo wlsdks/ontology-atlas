@@ -7,10 +7,14 @@ import {
   bundlePathConflictWarnings,
   createVerifyLock,
   existingProcessPatterns,
+  staleInstanceFailure,
   gracefulQuitCommandOptions,
   gracefulQuitExistingAppCommands,
+  restoreWindowStateAfterExit,
+  setAsideWindowState,
   verifyLockPath,
   waitForExistingProcessesToExit,
+  windowStatePath,
 } from "./verify-macos-app-launch.mjs";
 
 test("verify app launch waits until stale processes disappear after cleanup", async () => {
@@ -145,4 +149,199 @@ test("existingProcessPatterns match stale macOS app copies with the same executa
       "\\.app/Contents/MacOS/ontology-atlas$",
     ],
   );
+});
+
+
+test("a running instance is a hard stop when --kill-existing was not passed", () => {
+  // The app allows one instance, so launching over a running one would silently attach to the
+  // previous build. This must fail loudly instead, and the message must name the pids and the way out.
+  const message = staleInstanceFailure({
+    appBundleName: "Ontology Atlas.app",
+    pids: [4242, 4243],
+  });
+  assert.ok(message, "a running instance must produce a failure message");
+  assert.match(message, /Ontology Atlas\.app is already running/);
+  assert.match(message, /4242, 4243/);
+  assert.match(message, /--kill-existing/);
+});
+
+test("no running instance is not a failure", () => {
+  assert.equal(staleInstanceFailure({ appBundleName: "Ontology Atlas.app", pids: [] }), null);
+  assert.equal(staleInstanceFailure({ appBundleName: "Ontology Atlas.app" }), null);
+});
+
+
+// The window-state helpers take an injected fsImpl precisely so these tests never touch the real
+// `~/Library/Application Support/` — a test that rewrote the owner's saved geometry would be the
+// exact defect the helper exists to prevent.
+function makeFakeFs(initialFiles = {}) {
+  const files = new Map(Object.entries(initialFiles));
+  const renames = [];
+  return {
+    files,
+    renames,
+    existsSync: (filePath) => files.has(filePath),
+    renameSync: (from, to) => {
+      if (!files.has(from)) {
+        throw Object.assign(new Error(`ENOENT: no such file, rename '${from}' -> '${to}'`), {
+          code: "ENOENT",
+        });
+      }
+      files.set(to, files.get(from));
+      files.delete(from);
+      renames.push({ from, to });
+    },
+  };
+}
+
+test("window state path follows the tauri-plugin-window-state layout under the given home", () => {
+  assert.equal(
+    windowStatePath({ bundleIdentifier: "dev.jinan.ontology-atlas", home: "/Users/owner" }),
+    "/Users/owner/Library/Application Support/dev.jinan.ontology-atlas/.window-state.json",
+  );
+});
+
+test("no bundle identifier yields no window state path, and setting a null path aside is inert", () => {
+  // An unreadable Info.plist must degrade to "nothing to isolate", not crash the harness before
+  // the verdict; the guard shape stays uniform so the finally-block restore never branches.
+  assert.equal(windowStatePath({ bundleIdentifier: null, home: "/Users/owner" }), null);
+  assert.equal(windowStatePath({ home: "/Users/owner" }), null);
+
+  const guard = setAsideWindowState(null, { fsImpl: makeFakeFs() });
+  assert.equal(guard.moved, false);
+  assert.doesNotThrow(() => guard.restore());
+});
+
+test("an absent window state file is left alone and restore stays safe", () => {
+  const statePath =
+    "/Users/owner/Library/Application Support/dev.jinan.ontology-atlas/.window-state.json";
+  const fakeFs = makeFakeFs();
+
+  const guard = setAsideWindowState(statePath, { fsImpl: fakeFs });
+  assert.equal(guard.moved, false);
+  assert.deepEqual(fakeFs.renames, []);
+  assert.doesNotThrow(() => guard.restore());
+  assert.deepEqual(fakeFs.renames, []);
+});
+
+test("an existing window state file is moved — not deleted — and restore puts it back", () => {
+  const statePath =
+    "/Users/owner/Library/Application Support/dev.jinan.ontology-atlas/.window-state.json";
+  const geometry = '{"main":{"width":800,"height":600}}';
+  const fakeFs = makeFakeFs({ [statePath]: geometry });
+
+  const guard = setAsideWindowState(statePath, { fsImpl: fakeFs });
+  assert.equal(guard.moved, true);
+  assert.equal(guard.parked, `${statePath}.verify-backup`);
+  // Moved, not deleted: the owner's geometry must survive the run byte-for-byte at the parked path.
+  assert.equal(fakeFs.files.has(statePath), false);
+  assert.equal(fakeFs.files.get(guard.parked), geometry);
+
+  guard.restore();
+  assert.equal(fakeFs.files.get(statePath), geometry);
+  assert.equal(fakeFs.files.has(guard.parked), false);
+});
+
+// A guard double that records restore() calls, so these tests prove the *decision* — restore or
+// hold back — without a real filesystem behind it.
+function makeFakeGuard({ moved }) {
+  const guard = {
+    moved,
+    parked:
+      "/Users/owner/Library/Application Support/dev.jinan.ontology-atlas/.window-state.json.verify-backup",
+    restoreCalls: 0,
+    restore() {
+      guard.restoreCalls += 1;
+    },
+  };
+  return guard;
+}
+
+test("window state restore waits for the app to exit before putting the file back", async () => {
+  const guard = makeFakeGuard({ moved: true });
+  const waited = [];
+  const result = await restoreWindowStateAfterExit({
+    guard,
+    appPath: "/tmp/Ontology Atlas.app",
+    executablePath: "/tmp/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
+    waitForExit: async ({ appPath, executablePath }) => {
+      waited.push({ appPath, executablePath });
+      return [];
+    },
+    warn: () => {
+      throw new Error("a clean exit must not warn");
+    },
+  });
+
+  assert.deepEqual(result, { restored: true, remainingPids: [] });
+  assert.equal(guard.restoreCalls, 1);
+  // The wait must target the same process identity the launch used, or it waits on nothing.
+  assert.deepEqual(waited, [
+    {
+      appPath: "/tmp/Ontology Atlas.app",
+      executablePath: "/tmp/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
+    },
+  ]);
+});
+
+test("window state stays parked — loudly — while the app still runs", async () => {
+  // Restoring under a live writer would let the app overwrite the owner's geometry on quit.
+  // The honest behaviour is to keep the parked backup and report it, never a silent restore.
+  const guard = makeFakeGuard({ moved: true });
+  const warnings = [];
+  const result = await restoreWindowStateAfterExit({
+    guard,
+    appPath: "/tmp/Ontology Atlas.app",
+    executablePath: "/tmp/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
+    waitForExit: async () => [4242],
+    warn: (message) => {
+      warnings.push(message);
+    },
+  });
+
+  assert.deepEqual(result, { restored: false, remainingPids: [4242] });
+  assert.equal(guard.restoreCalls, 0, "must not restore into a live writer");
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /NOT restored/);
+  assert.match(warnings[0], /4242/);
+  assert.ok(warnings[0].includes(guard.parked), "the report must name the parked path");
+});
+
+test("an unmoved window state guard skips the exit wait entirely", async () => {
+  // Nothing was parked, so polling the process table would only slow the common no-flag path.
+  const guard = makeFakeGuard({ moved: false });
+  const result = await restoreWindowStateAfterExit({
+    guard,
+    appPath: "/tmp/Ontology Atlas.app",
+    executablePath: "/tmp/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
+    waitForExit: async () => {
+      throw new Error("must not poll processes when nothing was parked");
+    },
+    warn: () => {
+      throw new Error("must not warn when nothing was parked");
+    },
+  });
+
+  assert.deepEqual(result, { restored: false, remainingPids: [] });
+  // restore() still runs once so the guard contract stays uniform; it is a no-op for an
+  // unmoved guard.
+  assert.equal(guard.restoreCalls, 1);
+});
+
+test("restore is idempotent and survives the parked file disappearing underneath it", () => {
+  const statePath =
+    "/Users/owner/Library/Application Support/dev.jinan.ontology-atlas/.window-state.json";
+  const fakeFs = makeFakeFs({ [statePath]: "{}" });
+
+  const guard = setAsideWindowState(statePath, { fsImpl: fakeFs });
+  guard.restore();
+  // The finally block runs after any exit path, including one that already restored; a second
+  // restore must not throw ENOENT or clobber the freshly restored file.
+  assert.doesNotThrow(() => guard.restore());
+  assert.equal(fakeFs.files.get(statePath), "{}");
+
+  const vanished = makeFakeFs({ [statePath]: "{}" });
+  const vanishedGuard = setAsideWindowState(statePath, { fsImpl: vanished });
+  vanished.files.delete(vanishedGuard.parked);
+  assert.doesNotThrow(() => vanishedGuard.restore());
 });

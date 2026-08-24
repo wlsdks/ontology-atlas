@@ -33,6 +33,10 @@ export function parseVerifyAppLaunchArgs(argv, {
     appPath: positional[0] ?? defaultAppPath,
     holdMs: holdMsArg ? Number(holdMsArg.slice("--hold-ms=".length)) : defaultHoldMs,
     killExisting: argv.includes("--kill-existing"),
+    // The release preflight asserts a claim about the *default* window, so it must run without the
+    // owner's saved geometry. Without this the `--min-window-size` verdict would be decided by
+    // whatever size a developer last dragged the window to.
+    resetWindowState: argv.includes("--reset-window-state"),
     leaveRunning: argv.includes("--leave-running"),
     openApp: argv.includes("--open-app"),
     requireWindow: argv.includes("--require-window"),
@@ -83,8 +87,28 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 
+/**
+ * `--leave-running` keeps the app alive after the harness returns, and the window-state plugin
+ * writes geometry when that app eventually quits — directly over the owner's file the harness
+ * just restored in its `finally` block. No ordering makes both flags honest at once, so the pair
+ * is refused before anything launches. Mirrors `staleInstanceFailure`: a pure message so the
+ * refusal itself is testable without a process exit.
+ *
+ * Returns the failure message, or `null` when the flags can coexist.
+ */
+export function windowStateFlagConflict({ resetWindowState, leaveRunning } = {}) {
+  if (!resetWindowState || !leaveRunning) {
+    return null;
+  }
+  return (
+    "--reset-window-state is not compatible with --leave-running; the app left running writes " +
+    "its window geometry on quit and would overwrite the restored file. Omit --leave-running."
+  );
+}
+
+
 export function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--webview-fixture-vault=docs/ontology] [--require-webview-reduced-motion] [--verify-ai-settings] [--ai-settings-base-url=http://localhost:11434] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--reset-window-state] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--webview-fixture-vault=docs/ontology] [--require-webview-reduced-motion] [--verify-ai-settings] [--ai-settings-base-url=http://localhost:11434] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -106,6 +130,11 @@ release artifacts still need pnpm desktop:verify-release-dmg.
 Options:
   --kill-existing   Terminate already-running copies of this app bundle executable before launch,
                     including installed .app copies with the same executable name.
+  --reset-window-state
+                    Move the owner's saved window geometry aside for this run and restore it after
+                    the verified app has fully exited, so default-window claims such as
+                    --min-window-size are not decided by a previously dragged size. Not compatible
+                    with --leave-running: a still-running app writes geometry back on quit.
   --leave-running   Keep the verified app running after verification so Computer Use or a human can
                     inspect the same installed app window. Direct WebView route checks can use this
                     without --open-app so the verifier returns instead of holding the process open.

@@ -5,6 +5,7 @@ import {
   normalizeWebviewRoute,
   parseMinWindowSize,
   parseVerifyAppLaunchArgs,
+  windowStateFlagConflict,
 } from "./verify-macos-app-launch.mjs";
 
 test("verify app launch args keep executable launch defaults", () => {
@@ -17,6 +18,7 @@ test("verify app launch args keep executable launch defaults", () => {
       appPath: "/tmp/Ontology Atlas.app",
       holdMs: 5000,
       killExisting: false,
+      resetWindowState: false,
       leaveRunning: false,
       openApp: false,
       requireWindow: false,
@@ -56,6 +58,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       appPath: "/tmp/Custom.app",
       holdMs: 5000,
       killExisting: false,
+      resetWindowState: false,
       leaveRunning: false,
       openApp: true,
       requireWindow: true,
@@ -109,11 +112,13 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--webview-evidence=/tmp/ontology-atlas-webview.json",
       "--require-accessibility-text=개념 지도",
       "--require-accessibility-text=AI 에이전트 그래프 검증",
+      "--reset-window-state",
     ]),
     {
       appPath: "/tmp/Custom.app",
       holdMs: 7000,
       killExisting: true,
+      resetWindowState: true,
       leaveRunning: true,
       openApp: true,
       requireWindow: true,
@@ -159,6 +164,7 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       appPath: "/tmp/Custom.app",
       holdMs: 5000,
       killExisting: false,
+      resetWindowState: false,
       leaveRunning: true,
       openApp: false,
       requireWindow: true,
@@ -183,6 +189,21 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireAccessibilityText: [],
     },
   );
+});
+
+test("reset-window-state refuses to combine with leave-running", () => {
+  // A left-running app writes its geometry on quit, straight over the file the harness just
+  // restored — so this pair must be a hard stop, and the message must name both flags and the
+  // way out.
+  const message = windowStateFlagConflict({ resetWindowState: true, leaveRunning: true });
+  assert.ok(message, "the flag pair must produce a failure message");
+  assert.match(message, /--reset-window-state/);
+  assert.match(message, /--leave-running/);
+  assert.match(message, /Omit --leave-running/);
+
+  assert.equal(windowStateFlagConflict({ resetWindowState: true, leaveRunning: false }), null);
+  assert.equal(windowStateFlagConflict({ resetWindowState: false, leaveRunning: true }), null);
+  assert.equal(windowStateFlagConflict({}), null);
 });
 
 test("parseMinWindowSize accepts WIDTHxHEIGHT only", () => {

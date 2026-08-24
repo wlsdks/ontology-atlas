@@ -441,11 +441,20 @@ terminates it; the default direct-executable check now also requires the Tauri
 WebView DOM probe to report a loaded `tauri://` document with non-empty
 Ontology Atlas body text. The verifier takes a per-app lock before any
 `--kill-existing` cleanup, so two local app checks cannot terminate each other
-and produce a misleading early-exit failure. The cleanup also targets stale
+and produce a misleading early-exit failure. Because the app now allows a single
+instance, a launch over an already-running copy would focus the running window
+instead of starting one, so a run without `--kill-existing` refuses outright
+rather than measuring the previous build and calling it green.
+`--reset-window-state` moves the saved window geometry
+(`~/Library/Application Support/<bundle id>/.window-state.json`) aside for the
+run and restores it afterwards: the release preflight asserts a claim about the
+*default* window, so it must not be adjudicated by whatever size a developer
+last dragged the window to, and the harness must not write its own geometry back
+over the owner's. The cleanup also targets stale
 macOS `.app` copies with the same `Contents/MacOS/ontology-atlas` executable
 name, so an installed app cannot keep the same bundle id alive beside the fresh
 build under test. Add
-`-- --kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`
+`-- --kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --reset-window-state`
 when a local dogfood session needs to clear stale packaged-app processes,
 launch through macOS LaunchServices, and fail unless the real Ontology Atlas
 window appears at desktop-builder size and can produce a local screenshot

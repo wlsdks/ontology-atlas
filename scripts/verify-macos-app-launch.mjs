@@ -6,10 +6,10 @@ import { pathToFileURL } from "node:url";
 import { resolveMacosExecutable } from "./lib/macos-release-names.mjs";
 import { AI_SETTINGS_PAYLOAD_TIMEOUT_MS, authorityOfBaseUrl, isSafeAiSettingsBaseUrl, validateAiSettingsAuditTrail } from "./lib/verify-macos/ai-settings-contract.mjs";
 import { appBundleName, names, root } from "./lib/verify-macos/context.mjs";
-import { fail, normalizeWebviewRoute, parseVerifyAppLaunchArgs, printHelp, sleep } from "./lib/verify-macos/cli-args.mjs";
+import { fail, normalizeWebviewRoute, parseVerifyAppLaunchArgs, printHelp, sleep, windowStateFlagConflict } from "./lib/verify-macos/cli-args.mjs";
 import { writeWebviewEvidence } from "./lib/verify-macos/evidence-payload.mjs";
 import { validateWebviewVerifyPayload } from "./lib/verify-macos/payload-contract.mjs";
-import { createVerifyLock, printBundlePathConflictWarnings, processExists, terminate, terminateExisting, verifyLockPath, waitForExistingProcessesToExit } from "./lib/verify-macos/process-lock.mjs";
+import { createVerifyLock, existingProcessIds, printBundlePathConflictWarnings, processExists, readBundleIdentifier, setAsideWindowState, staleInstanceFailure, terminate, terminateExisting, verifyLockPath, waitForExistingProcessesToExit, windowStatePath } from "./lib/verify-macos/process-lock.mjs";
 import { waitForWebviewVerifyPayload } from "./lib/verify-macos/relation-marker-validators.mjs";
 import { printWindowDiagnostics, tryCaptureWindowEvidence, verifyCapturableWindow, verifyOnscreenWindow } from "./lib/verify-macos/visual-evidence.mjs";
 import { webviewVerifyEnvPatch } from "./lib/verify-macos/webview-env.mjs";
@@ -273,7 +273,14 @@ async function verifyExecutableLaunch({
         // arrive within the default 15 s window. Widening the window is not the same as
         // softening the verdict; the verdict is unchanged.
         ...(verifyAiSettings ? { timeoutMs: AI_SETTINGS_PAYLOAD_TIMEOUT_MS } : {}),
-        validatePayload: (candidate) => validateWebviewVerifyPayload(candidate, validationOptions),
+        // `stdout` is read at validation time, not captured now, so the window-state marker the app
+        // printed during startup is in scope. Holding this stream means the run launched with the
+        // verify env, which is exactly when the plugin must have been left unregistered.
+        validatePayload: (candidate) =>
+          validateWebviewVerifyPayload(candidate, {
+            ...validationOptions,
+            launchStdout: stdout,
+          }),
       },
     );
     if (webviewError) {
@@ -364,6 +371,47 @@ async function verifyExecutableLaunch({
 }
 
 
+/**
+ * Puts the parked window-state file back only once the app is actually gone.
+ *
+ * The window-state plugin writes geometry when the app exits, so restoring while any instance is
+ * still alive hands the owner's just-restored file straight to that writer — `terminateExisting`
+ * only waits about 2.5 s before falling through, and the `--open-app` instance runs without the
+ * verify env, so its plugin is registered. If the wait times out with processes still alive, the
+ * honest move is to **leave the file parked and say so**: the parked copy is the only surviving
+ * byte-for-byte owner geometry, and restoring it under a live writer would convert a loud,
+ * recoverable failure into a silent loss the moment the app quits.
+ *
+ * Returns `{ restored, remainingPids }`; injectable collaborators keep this testable without
+ * real processes or a real filesystem.
+ */
+export async function restoreWindowStateAfterExit({
+  guard,
+  appPath,
+  executablePath,
+  waitForExit = waitForExistingProcessesToExit,
+  warn = (message) => console.error(`[desktop-app-verify] ${message}`),
+} = {}) {
+  if (!guard?.moved) {
+    // Nothing was parked, so there is no file to protect and no reason to poll the process table.
+    guard?.restore();
+    return { restored: false, remainingPids: [] };
+  }
+  const remainingPids = await waitForExit({ appPath, executablePath });
+  if (remainingPids.length > 0) {
+    warn(
+      `saved window geometry was NOT restored: process(es) ${remainingPids.join(", ")} are still ` +
+        `running and would overwrite it on quit. The owner's geometry is preserved at ` +
+        `${guard.parked}; quit the app, then move that file back over the original ` +
+        `(drop the .verify-backup suffix).`,
+    );
+    return { restored: false, remainingPids };
+  }
+  guard.restore();
+  return { restored: true, remainingPids: [] };
+}
+
+
 async function main() {
   if (process.argv.includes("--help") || process.argv.includes("-h")) {
     printHelp();
@@ -378,6 +426,7 @@ async function main() {
     appPath,
     holdMs,
     killExisting,
+    resetWindowState,
     leaveRunning,
     openApp,
     requireWindow,
@@ -450,6 +499,10 @@ async function main() {
   if (requireWebviewContent && openApp) {
     fail("--require-webview-content is only supported for direct executable launch; omit --open-app.");
   }
+  const windowStateConflict = windowStateFlagConflict({ resetWindowState, leaveRunning });
+  if (windowStateConflict) {
+    fail(windowStateConflict);
+  }
   if (requireWebviewRoute && openApp) {
     fail("--require-webview-route is only supported for direct executable launch; omit --open-app.");
   }
@@ -517,6 +570,33 @@ async function main() {
     fail(verifyLock.message);
   }
 
+  // Moved aside before anything launches, and restored in `finally` whatever the verdict is.
+  const windowStateGuard = resetWindowState
+    ? setAsideWindowState(
+        windowStatePath({ bundleIdentifier: readBundleIdentifier(resolvedAppPath) }),
+      )
+    : { moved: false, restore() {} };
+  let windowStateRestored = false;
+  if (windowStateGuard.moved) {
+    console.log("[verify] saved window geometry set aside for this run");
+    // `fail()` is `process.exit(1)`, so a verification failure raised inside the try block below
+    // terminates without running its `finally` at all — and the owner's geometry would then sit
+    // parked with nothing having said so. This handler runs on every exit path, including that one.
+    // It has to stay synchronous, so it reports rather than waits: a message naming the file beats
+    // a restore that races the app still writing to it.
+    process.on("exit", () => {
+      if (!windowStateGuard.moved || windowStateRestored) {
+        return;
+      }
+      console.error(
+        `[verify] saved window geometry is still parked at ${windowStateGuard.parked}. ` +
+          "Quit Ontology Atlas, then move that file back over " +
+          `${windowStateGuard.parked.replace(/\.verify-backup$/, "")} to restore it.`,
+      );
+    });
+  }
+
+  let windowStateLeftParked = false;
   try {
     if (killExisting) {
       terminateExisting({
@@ -532,6 +612,16 @@ async function main() {
         fail(
           `${appBundleName} still had stale process(es) after --kill-existing: ${remainingPids.join(", ")}`,
         );
+      }
+    } else {
+      // Single instance means a second launch focuses the window that already exists instead of
+      // starting one. Continuing here would measure the running build and call it green.
+      const staleMessage = staleInstanceFailure({
+        appBundleName,
+        pids: existingProcessIds({ appPath: resolvedAppPath, executablePath }),
+      });
+      if (staleMessage) {
+        fail(staleMessage);
       }
     }
 
@@ -584,7 +674,26 @@ async function main() {
       });
     }
   } finally {
+    const windowStateRestore = await restoreWindowStateAfterExit({
+      guard: windowStateGuard,
+      appPath: resolvedAppPath,
+      executablePath,
+    });
     verifyLock.release();
+    // Exit non-zero via exitCode rather than fail(): fail() would process.exit() here and
+    // swallow any exception already propagating out of the try block, hiding the launch
+    // failure that left the app alive in the first place.
+    windowStateLeftParked = windowStateGuard.moved && !windowStateRestore.restored;
+    windowStateRestored = Boolean(windowStateRestore.restored);
+    if (windowStateLeftParked) {
+      process.exitCode = 1;
+    }
+  }
+
+  if (windowStateLeftParked) {
+    // The launch checks themselves passed, but the run disturbed owner state it could not put
+    // back; printing the green summary line here would bury the only evidence of that.
+    return;
   }
 
   console.log(
