@@ -5715,8 +5715,10 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('parses verify timeout env as a strict positive integer', () => {
-    assert.equal(parseVerifyTimeoutMs(undefined), 8000);
-    assert.equal(parseVerifyTimeoutMs(''), 8000);
+    // ⚠️ 30s, not 8s: verify walks the whole source tree, so it takes 12.6s here and the old
+    // 8s default could not survive this project's own vault. See `DEFAULT_VERIFY_TIMEOUT_MS`.
+    assert.equal(parseVerifyTimeoutMs(undefined), 30000);
+    assert.equal(parseVerifyTimeoutMs(''), 30000);
     assert.equal(parseVerifyTimeoutMs('15000'), 15000);
   });
 
