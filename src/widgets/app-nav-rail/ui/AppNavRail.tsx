@@ -17,15 +17,11 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   BarChart3,
+  Blocks,
   Bot,
   Download,
   BookOpen,
   FolderKanban,
-  // `History as HistoryIcon` — under certain HMR/bundle states the bare `History`
-  // identifier resolves to the global DOM History constructor and crashes the screen
-  // with "Illegal constructor" (AtlasGitPanel hit the same accident). An alias can
-  // never collide with a global.
-  History as HistoryIcon,
   Map as MapIcon,
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
@@ -63,12 +59,6 @@ export interface AppNavRailProps {
    *  their default href; every other item, and any unnamed key, keeps its static href.
    *  `AppShell` passes through what it read from `useNavRailShellValue()`. */
   contextHrefs?: NavRailContextHrefs | null;
-  /**
-   * The trail destination's uncommitted change count — an ambient signal from off
-   * screen. `AppShell` reads it through `useAtlasGitContext()` and passes it in, so
-   * the widget never imports a feature directly. At `0` the badge disappears.
-   */
-  gitDirtyCount?: number;
   /**
    * How many tools finished installing while the user was on another screen. It
    * counts **terminal states only** — progress is not drawn here, because this is a
@@ -137,7 +127,6 @@ export function AppNavRail({
   settingsSlot,
   hidden,
   contextHrefs,
-  gitDirtyCount = 0,
   agentsNoticeCount = 0,
   className,
 }: AppNavRailProps) {
@@ -229,14 +218,12 @@ export function AppNavRail({
   // the screen and stay here.
   const destinations: RailDestination[] = [
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
+    { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
     { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
-    // Trail — promoted to a destination on 2026-07-25. The old "rail utility tile plus
-    // a 560px modal" was absorbed (two entrances is how the #65 family of defects
-    // recurs). The icon stays History — a three-node git graph glyph reads as "the
-    // ontology graph" in this rail and collides with the map icon and the brand hexagon
-    // (rejected by the Design Guardian).
+    // Architecture took Git's primary slot on 2026-08-26. `/git` remains a live
+    // contextual workbench route; removing a rail tile did not retire the capability.
     // Agents — a new destination on 2026-08-20 (ledger 90). The install and connect
     // screens were pulled out of the settings sheet to here.
     //
@@ -254,7 +241,6 @@ export function AppNavRail({
       // of the eye cannot be read if it changes every second).
       badgeCount: agentsNoticeCount,
     },
-    { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
 
   return (

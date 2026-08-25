@@ -169,7 +169,7 @@ const BASELINE_HARD_CUTS = 0;
  * cannot join that file's list recorded there (the same path the permission card took
  * on 2026-08-16).
  */
-const BASELINE_APPEARING_SURFACES = 29;
+const BASELINE_APPEARING_SURFACES = 30;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

@@ -48,7 +48,7 @@ import { describe, expect, it } from 'vitest';
  * | **Button registered 32** | Positions the value layer **fundamentally cannot produce** (`OUTSIDE_VALUE_LAYER`) | To increase, manually raise `BASELINE_REGISTERED`. That diff is where to write "why." |
  * | **Button no-basis 4** | Positions the value layer could produce but **has nothing to produce** — not controls (`NO_BASIS`) | It is normal for this not to move. **Not a target for repayment.** |
  * | **Button debt 0** | Positions that can be moved but **haven't been yet** | **Tends toward 0.** Button progress is read solely from here. |
- * | **Anchor registered 28** | Same meaning, for anchors (`OUTSIDE_VALUE_LAYER_ANCHORS`) | Manually raise `BASELINE_ANCHOR_REGISTERED`. |
+ * | **Anchor registered 29** | Same meaning, for anchors (`OUTSIDE_VALUE_LAYER_ANCHORS`) | Manually raise `BASELINE_ANCHOR_REGISTERED`. |
  * | **Anchor no-basis 0** | Measured: saw all 102 and got 0 (since `<a>` aims to be thin, it's hard to become a "click surface with nothing to say") | Manually raise if qualifiers arise. |
  * | **Anchor debt 0** | Unregistered among the 23 `<Link>`s and 14 `<a>`s not yet moved | **Tends toward 0.** |
  * | **Form debt 0** | `<input>`, `<textarea>`, `<select>`, `<label>` with hand-written specs (added 2026-08-05; 63→57→29→20 on 06) | **Tends toward 0.** All text fields have been moved, and native `<select>` debt is **0**. The remaining 20 are layout-only labels (not specs) + 5 checkboxes (self-contract fixed) + slider/full-screen editor/stage input. |
@@ -185,7 +185,7 @@ import { describe, expect, it } from 'vitest';
  *
  * | Category | Count | What's missing / Why outside? |
  * |---|---:|---|
- * | **[Registration] `standard-button`** | 10 | Shape yielded by value layer. DownloadPage 7 · AgentClientButtons 1 · Two 404 files 2. |
+ * | **[Registration] `standard-button`** | 11 | Shape yielded by value layer. DownloadPage 7 · AgentClientButtons 1 · Architecture empty-state exit 1 · Two 404 files 2. |
  * | **[Registration] `chrome-token`** | 3 | AtlasGitPanel 2(`--git-setup-action-height`) · TopologyReviewLink 1(`--chrome-tile-size`). Both have multiple declarations, passing token check. |
  * | **[Registration] `no-spec`** | 3 | MacosDownloadLink(passthrough) · PublicQuickActions 2(`inline-flex` wrapper). |
  * | **[Registration] `value-layer-peer`** | 1 | `<Link>` branch of `ChromeTile`. |
@@ -1107,7 +1107,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // 2026-08-19: deleting the install section removed 7 anchors from the gateway
 // (the panel's primary CTA · Intel · GitHub exit · web exit · release notes ·
 // Windows download · Windows tracking) — `Link` 19→17 · `a` 17→12.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 11 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 18, a: 11 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1176,6 +1176,15 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     claim: 'standard-button',
     proof: 'buttonVariants',
     why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
+  },
+  {
+    file: 'src/views/architecture/ui/ArchitectureWorkbench.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      '프로필이 없는 전체 화면의 문서함 출구. 링크 의미를 보존하면서 ' +
+      '`cn(buttonVariants({ variant: "primary", size: "sm" }))` 표준 버튼 값을 쓴다.',
   },
   {
     file: 'app/[locale]/not-found.tsx',
@@ -1297,9 +1306,9 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // its own line it is an ordinary control, `shape: 'link'` fits, `touch-hit-expand` supplies the
 // 44px finger target, and this ledger did not have to grow. **Check whether the position is wrong
 // before registering a shape the value layer cannot make.**
-const BASELINE_ANCHOR_REGISTERED = 28;
+const BASELINE_ANCHOR_REGISTERED = 29;
 
-/** **Only this number may fall.** The anchor total (92) minus registered (25). */
+/** **Only this number may fall.** The current anchor total (29) minus registered (29). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

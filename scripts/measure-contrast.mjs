@@ -49,6 +49,7 @@ const ROUTES = (maybeBase?.startsWith("http") ? maybeRoutes : [maybeBase, ...may
 export const DEFAULT_ROUTES = [
   "/ko/",
   "/ko/topology/",
+  "/ko/architecture/",
   "/ko/docs/",
   "/ko/ontology/studio/",
   "/ko/ontology/insights/",

@@ -16,11 +16,11 @@ import { seedFirstRunSeen } from "./first-run-seed";
 /** Same order as the table — when the table changes this must too, and a contract test catches it. */
 const DESTINATIONS = [
   { key: "m", path: "/topology" },
+  { key: "r", path: "/architecture" },
   { key: "d", path: "/docs" },
   { key: "i", path: "/ontology/insights" },
   { key: "p", path: "/projects" },
   { key: "a", path: "/agents" },
-  { key: "g", path: "/git" },
 ] as const;
 
 async function go(page: import("@playwright/test").Page, key: string) {

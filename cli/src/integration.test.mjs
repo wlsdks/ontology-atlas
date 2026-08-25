@@ -7961,6 +7961,68 @@ function makeRepoFixture() {
   return repo;
 }
 
+await test('architecture --json — returns the same fail-closed agent brief as MCP', async () => {
+  const vault = withVault([
+    {
+      slug: 'architecture/payments',
+      content: [
+        '---',
+        'architecture_schema: architecture-profile/v1',
+        'profile_uid: 22c86542-7512-4b6e-8c73-77be4730c772',
+        'profile_slug: payments-core',
+        'project_uid: e91d8a44-a95b-4faf-840d-e71c8b2d935c',
+        'title: Payments Core',
+        'patterns: [dependency:hexagonal]',
+        'scope_paths: [src/payments/**]',
+        'role_domain: [src/payments/domain/**]',
+        'role_adapter: [src/payments/adapters/**]',
+        'allow_domain: []',
+        'allow_adapter: [domain]',
+        'evidence: [ARCHITECTURE.md]',
+        '---',
+        '',
+        '# Payments architecture',
+        '',
+      ].join('\n'),
+    },
+  ]);
+  const repo = mkdtempSync(join(tmpdir(), 'cli-architecture-'));
+  try {
+    mkdirSync(join(repo, 'src', 'payments', 'domain'), { recursive: true });
+    mkdirSync(join(repo, 'src', 'payments', 'adapters'), { recursive: true });
+    writeFileSync(
+      join(repo, 'src', 'payments', 'domain', 'payment.ts'),
+      'import { save } from "../adapters/postgres";\nexport const payment = save;\n',
+      'utf-8',
+    );
+    writeFileSync(
+      join(repo, 'src', 'payments', 'adapters', 'postgres.ts'),
+      'export const save = true;\n',
+      'utf-8',
+    );
+
+    const result = await run([
+      'architecture',
+      repo,
+      '--vault',
+      vault,
+      '--profile',
+      'payments-core',
+      '--json',
+    ]);
+    assert.equal(result.code, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.contract, 'architectureBrief:v1');
+    assert.equal(payload.sideEffect, 0);
+    assert.equal(payload.conformance.status, 'violated');
+    assert.equal(payload.conformance.violations[0].fromRole, 'domain');
+    assert.equal(payload.agentPlanContract.contract, 'architectureChangePlan:v1');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('init — fresh starter vault compiles clean (no ambiguous alias / compile issue) [cold-start]', async () => {
   // A freshly scaffolded vault must be CLEAN so the SessionStart hook stays
   // silent on first contact (AGENTS.md: "a clean vault stays silent (no

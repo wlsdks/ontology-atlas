@@ -30,6 +30,7 @@
 
 export const DESTINATION_IDS = [
   'map',
+  'architecture',
   'docs',
   'insights',
   'projects',
@@ -43,10 +44,26 @@ export const DESTINATION_IDS = [
    * what comes out first, and the contract enforces that.
    */
   'agents',
-  'git',
 ] as const;
 
 export type DestinationId = (typeof DESTINATION_IDS)[number];
+
+/**
+ * Persistent destinations below `lg`. The installed app has five slots; web may
+ * add the separate Get App utility as a sixth. Keep Architecture here because a
+ * selected route must remain visible in the shell that replaces the desktop rail.
+ * Agents keeps its existing contextual mobile entry points rather than changing
+ * the spatial order of this five-slot reading and planning ladder.
+ */
+export const MOBILE_DESTINATION_IDS = [
+  'map',
+  'architecture',
+  'docs',
+  'insights',
+  'projects',
+] as const satisfies ReadonlyArray<DestinationId>;
+
+export type MobileDestinationId = (typeof MOBILE_DESTINATION_IDS)[number];
 
 /**
  * Default hrefs. In one place the rail may supply a different one from context
@@ -55,11 +72,11 @@ export type DestinationId = (typeof DESTINATION_IDS)[number];
  */
 export const DESTINATION_HREF: Record<DestinationId, string> = {
   map: '/topology/',
+  architecture: '/architecture/',
   docs: '/docs/',
   insights: '/ontology/insights/',
   projects: '/projects/',
   agents: '/agents/',
-  git: '/git/',
 };
 
 /** The leader key: press this, then one of the letters below, to navigate. */
@@ -68,12 +85,13 @@ export const NAV_LEADER_KEY = 'g';
 /** The letter after the leader — the first letter, unless it collides, in which case another letter that still carries the meaning. */
 export const DESTINATION_KEY: Record<DestinationId, string> = {
   map: 'm',
+  // `a` belongs to Agents; the second consonant keeps Architecture mnemonic.
+  architecture: 'r',
   docs: 'd',
   insights: 'i',
   projects: 'p',
   // `a` — nothing collides with it.
   agents: 'a',
-  git: 'g',
 };
 
 /** How long, in ms, to wait for the second letter after the leader. */

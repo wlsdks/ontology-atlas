@@ -251,6 +251,7 @@
   "navRail": {
     "ariaLabel": "주요 이동",
     "map": "지도",
+    "architecture": "아키텍처",
     "docs": "문서함",
     "insights": "분석",
     "projects": "프로젝트",
@@ -258,6 +259,63 @@
     "git": "기록",
     "getApp": "앱 받기",
     "getAppTitle": "맥 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, 기록과 AI 연결까지 다룹니다. 윈도우는 준비 중이에요"
+  },
+  "architecture": {
+    "eyebrow": "코드 아키텍처",
+    "title": "아키텍처",
+    "description": "에이전트가 코드를 바꾸기 전에 승인된 구현 역할과 경계를 읽습니다.",
+    "profileList": "적용 범위",
+    "sourceCheckRequired": "소스 확인 필요",
+    "sourceCheckBody": "이 프로필은 사람이 승인한 의도입니다. 현재 import는 Atlas MCP나 CLI가 확인하며, 근거가 없다고 녹색으로 표시하지 않습니다.",
+    "patterns": "패턴 축",
+    "roles": "역할과 의존 방향",
+    "rolePaths": "경로 {count}개",
+    "dependencyLowerOnly": "의존은 아래 역할로만 향합니다",
+    "dependencyExplicit": "프로젝트가 정한 허용 의존 규칙",
+    "modesAria": "아키텍처 작업 단계",
+    "modes": {
+      "understand": "이해",
+      "plan": "계획",
+      "verify": "검증"
+    },
+    "understandTitle": "의도한 구조 읽기",
+    "understandBody": "패턴 이름은 계약을 요약합니다. 에이전트가 따라야 할 사실은 역할·경로·의존 규칙입니다.",
+    "evidenceTitle": "승인된 근거",
+    "planTitle": "아키텍처부터 읽는 에이전트 계획",
+    "planBody": "구현 전에 선택한 범위를 연결된 코딩 에이전트에 넘깁니다. 에이전트는 편집 전에 타입 있는 계획을 반환해야 합니다.",
+    "handoffPreview": "에이전트 인계문 미리보기",
+    "copyHandoff": "에이전트 인계문 복사",
+    "copyingHandoff": "에이전트 인계문 복사 중…",
+    "copiedHandoff": "에이전트 인계문을 복사했습니다",
+    "copyHandoffError": "복사하지 못했습니다. 다시 시도",
+    "openDocs": "문서함 열기",
+    "verifyTitle": "실제 변경 검증",
+    "verifyBody": "편집 뒤 같은 소스 검사를 다시 실행하고 계획한 의존과 실제 import를 비교합니다.",
+    "unknownIsNotCompliant": "알 수 없음은 통과가 아닙니다. 미지원 언어·미분류 경로·빈 역할은 그대로 빈틈으로 남습니다.",
+    "verifyCommands": "에이전트 검사: inspect_architecture → 집중 테스트 → inspect_architecture",
+    "noProfiles": "승인된 아키텍처 프로필이 없습니다",
+    "noProfilesBody": "이 온톨로지 폴더에 architecture-profile/v1 Markdown 문서를 추가하세요. 아키텍처는 온톨로지 kind와 분리되며 지도에 나타나지 않습니다.",
+    "roleLabels": {
+      "routing": "라우트",
+      "app": "앱 셸",
+      "views": "화면",
+      "widgets": "위젯",
+    "features": "피처",
+      "entities": "엔티티",
+      "shared": "공유 기반",
+      "domain": "도메인",
+      "application": "애플리케이션",
+      "port": "포트",
+      "adapter": "어댑터",
+      "core": "코어",
+      "integration": "통합"
+    },
+    "patternLabels": {
+      "feature-sliced-design": "Feature-Sliced Design",
+      "hexagonal": "헥사고날",
+      "mvp": "MVP",
+      "custom": "사용자 정의"
+    }
   },
   "ontologyRelations": {
     "relationShort": {
@@ -500,6 +558,14 @@
       "projectsCard": {
         "title": "카드 하나가 제품 하나",
         "body": "막대는 그 영역이 말(역량)과 증거(요소)로 어떻게 나뉘는지예요. 크기는 오른쪽 숫자가 말해요. 카드를 열면 자세한 내용이 나오고, 지도에서 그 자리로 바로 갈 수도 있어요."
+      },
+      "architectureWhat": {
+        "title": "코드가 어떻게 맞물려야 하는지 보는 곳이에요",
+        "body": "지도는 코드베이스가 무엇을 만드는지 설명해요. 아키텍처는 구현 역할, 허용된 의존 방향, 코딩 에이전트가 편집 전에 읽어야 할 정확한 인계문을 기록해요."
+      },
+      "architectureBlueprint": {
+        "title": "작업이 움직여도 청사진의 자리는 유지해요",
+        "body": "이해·계획·검증은 같은 역할 위치를 재사용해요. 계획과 실제 변경은 상태만 바꾸고 배치의 뜻은 바꾸지 않아요."
       },
       "gitWhat": {
         "title": "무엇이 언제 바뀌었는지 남기는 곳이에요",
@@ -785,6 +851,7 @@
         "walkNeighbors": "이어진 개념으로 이동",
         "navBlockedByOverlay": "열려 있는 창을 먼저 닫아 주세요. Esc 를 누르면 닫혀요",
         "goTo_map": "지도로",
+        "goTo_architecture": "아키텍처로",
         "goTo_docs": "문서함으로",
         "goTo_insights": "분석으로",
         "goTo_projects": "프로젝트로",

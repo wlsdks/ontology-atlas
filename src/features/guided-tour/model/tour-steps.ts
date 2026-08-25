@@ -101,13 +101,22 @@ export const TOUR_STEPS: readonly TourStep[] = [
  * interactive click, and the developer branch, so `TOUR_STEPS` keeps owning it.
  */
 export type DestinationTourId =
+  | "architecture"
   | "docs"
   | "insights"
   | "projects"
-  | "agents"
-  | "git";
+  | "agents";
 
 export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> = {
+  architecture: [
+    { id: "architecture-what", anchor: null, persona: "all", copyKey: "architectureWhat" },
+    {
+      id: "architecture-blueprint",
+      anchor: { type: "testid", value: "architecture-blueprint" },
+      persona: "all",
+      copyKey: "architectureBlueprint",
+    },
+  ],
   docs: [
     { id: "docs-what", anchor: null, persona: "all", copyKey: "docsWhat" },
     {
@@ -146,15 +155,6 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       anchor: { type: "testid", value: "project-selector-card" },
       persona: "all",
       copyKey: "projectsCard",
-    },
-  ],
-  git: [
-    { id: "git-what", anchor: null, persona: "all", copyKey: "gitWhat" },
-    {
-      id: "git-changes",
-      anchor: { type: "testid", value: "atlas-git-panel" },
-      persona: "all",
-      copyKey: "gitChanges",
     },
   ],
 };

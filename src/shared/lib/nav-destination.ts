@@ -1,10 +1,10 @@
 export type AppNavDestinationId =
   | "map"
+  | "architecture"
   | "docs"
   | "insights"
   | "projects"
-  | "agents"
-  | "git";
+  | "agents";
 
 /**
  * Pure prefix matcher for the canonical app destinations (feat/chrome-system
@@ -13,8 +13,8 @@ export type AppNavDestinationId =
  * is "active" for a given pathname, so it lives here once instead of being
  * duplicated per widget. Compatibility routes under `/ontology/edit` and
  * `/ontology/studio` fold into `map`, while `/ontology/insights` keeps its own
- * destination. The mobile `BottomTabBar` renders the four core destinations
- * Map / Docs / Insights / Projects.
+ * destination. The mobile `BottomTabBar` renders the five persistent reading
+ * and planning destinations from `MOBILE_DESTINATION_IDS`.
  */
 export function resolveActiveNavDestination(pathname: string): AppNavDestinationId | null {
   // `usePathname()` from `@/i18n/navigation` is already locale-agnostic, but
@@ -25,7 +25,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   if (path.startsWith("/ontology/edit") || path.startsWith("/ontology/studio"))
     return "map";
   if (path.startsWith("/ontology/insights")) return "insights";
-  if (path.startsWith("/git")) return "git";
+  if (path.startsWith("/architecture")) return "architecture";
   // Agents — destination added 2026-08-20 (decision ledger 90). `/agents` is its
   // only route so the rung's position is arbitrary; it matches the rail's order.
   if (path.startsWith("/agents")) return "agents";

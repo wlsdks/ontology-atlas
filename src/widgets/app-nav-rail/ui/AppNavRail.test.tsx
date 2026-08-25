@@ -77,11 +77,12 @@ describe("AppNavRail", () => {
   it("renders all 6 destinations with i18n labels", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-architecture")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-docs")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
-    expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
+    expect(screen.queryByTestId("app-nav-rail-item-git")).not.toBeInTheDocument();
     // The retired ERD builder (2026-07-24) — removed from the rail.
     expect(screen.queryByTestId("app-nav-rail-item-builder")).not.toBeInTheDocument();
     expect(screen.queryByTestId("app-nav-rail-agent-status")).not.toBeInTheDocument();
@@ -200,31 +201,9 @@ describe("AppNavRail", () => {
       "href",
       "/agents/?focus=main",
     );
-    expect(screen.getByTestId("app-nav-rail-item-git")).toHaveAttribute(
+    expect(screen.getByTestId("app-nav-rail-item-architecture")).toHaveAttribute(
       "href",
-      "/git/?focus=main",
+      "/architecture/?focus=main",
     );
-  });
-});
-
-describe("발자취 목적지 (2026-07-25 승격)", () => {
-  it("여섯 번째 목적지로 선다", () => {
-    renderRail();
-    expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
-  });
-
-  it("미커밋 변경이 있으면 warning 뱃지가 뜨고, 없으면 소멸한다", () => {
-    const { unmount } = renderRail(<AppNavRail gitDirtyCount={3} />);
-    expect(screen.getByTestId("app-nav-rail-badge-git")).toHaveTextContent("3");
-    unmount();
-
-    // At 0 it **disappears** rather than greying out — an ambient signal takes no space when there is nothing to say.
-    renderRail(<AppNavRail gitDirtyCount={0} />);
-    expect(screen.queryByTestId("app-nav-rail-badge-git")).not.toBeInTheDocument();
-  });
-
-  it("세 자리 카운트는 `9+` 로 막는다 (타일 지오메트리 보호)", () => {
-    renderRail(<AppNavRail gitDirtyCount={40} />);
-    expect(screen.getByTestId("app-nav-rail-badge-git")).toHaveTextContent("9+");
   });
 });

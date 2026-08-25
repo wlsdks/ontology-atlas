@@ -453,8 +453,8 @@ function structuredValueRepairDetails(text) {
 
 describe('verify.mjs first-contact gates', () => {
   it('publishes finalize_project_meaning as a non-destructive non-idempotent write tool', () => {
-    assert.equal(EXPECTED_TOOLS.length, 35);
-    assert.equal(EXPECTED_READ_TOOLS.length, 19);
+    assert.equal(EXPECTED_TOOLS.length, 36);
+    assert.equal(EXPECTED_READ_TOOLS.length, 20);
     assert.equal(EXPECTED_WRITE_TOOLS.length, 16);
     assert.ok(EXPECTED_WRITE_TOOLS.includes('finalize_project_meaning'));
     assert.equal(EXPECTED_READ_TOOLS.includes('finalize_project_meaning'), false);

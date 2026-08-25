@@ -71,11 +71,11 @@ describe("useDestinationShortcuts", () => {
     expect(navigate, "한글 입력 상태에서 안 먹는다").toHaveBeenCalledWith("/projects/", "projects");
   });
 
-  it("한글 입력기에서 G G(git)도 성립한다", () => {
+  it("한글 입력기에서 G R(architecture)도 성립한다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
     pressHangul("ㅎ", "KeyG");
-    pressHangul("ㅎ", "KeyG");
-    expect(navigate).toHaveBeenCalledWith("/git/", "git");
+    pressHangul("ㄱ", "KeyR");
+    expect(navigate).toHaveBeenCalledWith("/architecture/", "architecture");
   });
 
   it("자판이 QWERTY 가 아니어도 찍힌 글자로 맞는다", () => {
@@ -92,11 +92,11 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it("리더를 두 번 누르면 git 으로 간다 — 리더 자신도 둘째 글자가 될 수 있다", () => {
+  it("리더 다음 r을 누르면 architecture로 간다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
     press("g");
-    press("g");
-    expect(navigate).toHaveBeenCalledWith("/git/", "git");
+    press("r");
+    expect(navigate).toHaveBeenCalledWith("/architecture/", "architecture");
   });
 
   it("입력칸에 초점이 있으면 이동하지 않는다", () => {

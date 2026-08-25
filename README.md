@@ -88,6 +88,12 @@ disconnected, what is stale.*
 Your agent asks those questions over MCP. You read the same answers as a map,
 and every write the agent makes lands as a line in a Markdown file you can diff.
 
+Architecture is a separate contract, not another ontology layer. A reviewed
+`architecture-profile/v1` document declares implementation roles, scoped paths,
+and allowed dependency direction; `inspect_architecture` and the `architecture`
+CLI compare that intent with current source imports and return
+`conforms`, `violated`, or `unknown`. Unknown coverage is never shown as green.
+
 The exact five-kind discriminator, relation support matrix, direct `is_a` test,
 and standards/inference boundary live in the
 [vault specification](docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
@@ -142,8 +148,9 @@ roadmap promise. It summarizes current product behavior documented in the
 - **A CLI carrying the same authority as the agent** — scaffold, validate,
   dry-run writes, bounded traversal, blast radius, commit preflight,
   vault-scoped git snapshots, agent handoff. [CLI reference](cli/README.md).
-- **The workbench surfaces, all reading one folder** — Map, Docs, Insights,
-  Projects, Agents, and History.
+- **The workbench surfaces, all reading one folder** — Map, Architecture, Docs,
+  Insights, Projects, and Agents. Git History remains available from contextual
+  workbench links instead of occupying a primary rail slot.
 - **Export to standard graph formats.** JSON-LD and GraphML come off the same
   deterministic compile artifact, so the vault opens in rdflib, Protégé, Gephi,
   Cytoscape, NetworkX, or Neo4j without a converter of your own.
@@ -239,7 +246,23 @@ Three spatial readings are explicit rather than mixed together: **Flat** is the
 normal 2D map, **Dome** places containment tiers in depth, and **Cloud** lets
 relations determine all three axes. Changing the view never changes the graph.
 
-### 4. Review a relation beside its node
+### 4. Plan against reviewed architecture
+
+Architecture stays separate from the Ontology Map. The Living Blueprint keeps
+the same role order while you move through **Understand → Plan → Verify**. Plan
+copies an `architectureChangePlan:v1` handoff; the connected agent runs
+`inspect_architecture` before and after editing. In a source checkout the exact
+fallback is:
+
+```console
+node cli/src/index.mjs architecture . --vault docs/ontology --profile atlas-web --json
+```
+
+Pattern names such as Feature-Sliced Design, Hexagonal, Clean Architecture, or
+MVP are reviewed declarations. Atlas derives conformance from source evidence;
+it does not infer a fashionable label from folder names.
+
+### 5. Review a relation beside its node
 
 ![The current relation review beside the map, showing the source, relation type, target, reason, and the exact dependencies and relation notes fields that will change before the write is confirmed](docs/assets/readme/relation-review.png)
 
@@ -248,7 +271,7 @@ the map, then a compact review of the source, type, target, reason, and exact
 frontmatter fields. **Confirm and write** is the only point that changes the
 Markdown file; returning to edit or cancelling changes nothing.
 
-### 5. Review the change, then record it
+### 6. Review the change, then record it
 
 ![The current History screen in the installed macOS app, showing one uncommitted concept change, the exact Markdown diff, localized commit times, and the explicit commit action](docs/assets/readme/history-review.png)
 
@@ -283,7 +306,7 @@ before it writes rather than after.
 Git is scoped to the vault. Files outside the folder you picked are never
 touched, and the screen says so.
 
-### 6. Keep it healthy
+### 7. Keep it healthy
 
 ![The current Insights composition screen in the installed macOS app, with concept and relation census, kind distribution, graph health, and aligned domain capability-to-element bars derived from the selected folder](docs/assets/readme/graph-insights.png)
 
@@ -292,7 +315,7 @@ missing evidence, and which repair to make next. Composition shows whether the
 folder is balanced across kinds and whether each domain has capabilities backed
 by implementation elements. Every number branches from the same compiled graph.
 
-### 7. See the shape of the whole project
+### 8. See the shape of the whole project
 
 ![The current Projects screen in the installed macOS app, showing the Storefront project, its derived totals, nine aligned domain composition rows, recent activity, and routes back to details and the map](docs/assets/readme/projects-coverage.png)
 
@@ -348,7 +371,7 @@ where people and agents judge the same facts.
 | Structure | Freeform notes and links | Vendor-defined types | Project → domain → capability → element, documents, typed relations |
 | Graph questions | Note traversal | Graph engine | Blast radius, reachability, cycles, paths, centrality, health |
 | Evidence from code | Hand-authored | Corpus ingestion | Bounded read-only proposals; nothing lands until approval |
-| Human surface | Notes app | Vendor console | Local Map, Docs, Insights, Projects, Agents, and History |
+| Human surface | Notes app | Vendor console | Local Map, Architecture, Docs, Insights, Projects, Agents, and contextual History |
 
 If you only need an agent to remember conversations, a notes tool is lighter.
 Atlas is for modeling the product your code implements. The argument and its
@@ -446,7 +469,8 @@ for the complete frontmatter contract.
 
 ## Product destinations, one vault
 
-Map, Docs, Insights, Projects, Agents, History, MCP, and CLI all read the same
+Map, Architecture, Docs, Insights, Projects, Agents, contextual History, MCP,
+and CLI all read the same
 Markdown folder. The installed app is the full workbench; the hosted web app is
 the no-install gateway and a second-best workbench where native bridges are not
 available. MCP and CLI skip the screens and operate on the same files directly.

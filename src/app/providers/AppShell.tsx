@@ -13,7 +13,6 @@ import {
   useNavRailShellValue,
 } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
-import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import {
   DestinationGuide,
@@ -241,12 +240,6 @@ function AppNavRailSlot() {
   // (measured 2026-07-25: map 3, docs/insights/projects 2, that page 1). Structure a
   // page has to remember is the source of drift, so the default moves up to the shell
   // and a page overrides only when it needs a special slot.
-  // The badge count reads **the same hook** as the destination — if the two values
-  // diverge you get the trust-breaking case where the list is empty but a number
-  // remains. It is based on the session changeset, so it works on both web and desktop.
-  const { changeset: gitChangeset } = useAtlasGitContext();
-  const gitDirtyCount = gitChangeset.touchedNodeIds.size;
-
   const toast = useToast();
   const tShortcutRows = useTranslations("searchWidgets.shortcuts.rows");
 
@@ -294,7 +287,6 @@ function AppNavRailSlot() {
       settingsSlot={utilityTier}
       hidden={hidden || gateway}
       contextHrefs={contextHrefs}
-      gitDirtyCount={gitDirtyCount}
       agentsNoticeCount={installNotice.count}
     />
   );

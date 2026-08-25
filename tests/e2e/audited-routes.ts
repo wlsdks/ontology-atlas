@@ -42,6 +42,7 @@
 export const AUDITED_ROUTES = [
   "/ko/",
   "/ko/topology/",
+  "/ko/architecture/",
   "/ko/docs/",
   "/ko/ontology/insights/",
   "/ko/projects/",

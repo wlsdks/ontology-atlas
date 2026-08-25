@@ -25,6 +25,7 @@ tags: [architecture, infra, overview]
 │ │                          less web visitor, map for   │
 │ │                          the app and vault users     │
 │ ├─ /topology               map + contextual write     │
+│ ├─ /architecture           reviewed roles + agent gate│
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
@@ -59,6 +60,7 @@ tags: [architecture, infra, overview]
 │ ├─ read tools     connection/git proof · list/get/find ·│
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
+│ │                  inspect_architecture                 │
 │ └─ write tools    add_concept · add_concepts ·          │
 │                    add_relation · add_relations ·       │
 │                    remove/replace relation · patch ·    │
@@ -76,9 +78,10 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 54 commands)                      │
+│ CLI (cli/, v0.11.0 — 57 commands)                      │
 │ ├─ init/agent-activity/add/import/list/find/validate/query│
-│ ├─ mcp-verify/analyze/infer-imports/bootstrap/compile  │
+│ ├─ mcp-verify/analyze/infer-imports/architecture       │
+│ ├─ bootstrap/compile                                   │
 │ ├─ preflight (commit preflight + pre-commit hook)      │
 │ └─ graph CRUD + deep dive commands                     │
 │                                                         │
@@ -102,6 +105,18 @@ never keeps a second copy of the data. `compile_ontology` reads the frontmatter
 in memory — the same vault always produces byte-identical output, which is what
 "deterministic" means here. `query_ontology` runs its graph operations over that
 file, and write tools save confirmed changes back into the markdown.
+
+Architecture intent uses a parallel, non-ontology record. A Markdown file with
+`architecture_schema: architecture-profile/v1` has no `kind:` and therefore
+never becomes a Map node. It declares pattern axes, scoped implementation roles,
+path mappings, allowed dependency direction, and reviewed evidence. MCP
+`inspect_architecture` and CLI `architecture` derive the observed import model
+from the connected source and compare it with that declaration. Their
+`architectureConformance:v1` result is `conforms`, `violated`, or `unknown`;
+unsupported languages, incomplete scans, unmapped edges, unruled edges, and
+empty roles prevent a false green result. The `/architecture` Living Blueprint
+renders the declared model and copies the typed pre/post agent plan, while source
+analysis remains in MCP/CLI rather than being duplicated into Markdown.
 
 ## Surface contract — web and app
 
@@ -311,12 +326,15 @@ project's own — before they have picked any folder of their own.
 /topology                  map + contextual relation editor + change review. Any link labelled
                            "map" or "edit relation" points here, not at / (gate:
                            tests/contract/map-destination-route.contract.test.ts)
+/architecture              reviewed architecture profiles, stable role blueprint, and typed
+                           MCP/CLI planning + verification handoff; never an ontology map
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
 /ontology/studio           compatibility redirect; translates node/mode/edit/via/review to /topology
 /ontology/insights         five-question maintenance board
-/git                       local vault git history / snapshot workbench (desktop-only destination)
+/git                       local vault git history / snapshot workbench; still live, reached
+                           contextually rather than from the six-item primary rail
 /agents                    coding agents this computer can run — the app launches them and
                            you talk to them here. Fetches Node and the pinned CLI into an
                            app-only folder when they are missing, runs the eight-step
@@ -348,10 +366,12 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 > `/reset-password`, `/settings/*`.
 
 **One piece of code decides which nav item is active; each screen size shows a
-different list of buttons.** The desktop rail shows six destinations: Map, Docs,
-Insights, Projects, Agents, and Git. The mobile bottom bar shows four: Map,
-Docs, Insights, and Projects — contextual writing stays inside Map, while Agents
-and Git are desktop-only. Both read the same rules in
+different list of buttons.** The desktop rail shows six destinations: Map,
+Architecture, Docs, Insights, Projects, and Agents. The mobile bottom bar shows
+five persistent destinations: Map, Architecture, Docs, Insights, and Projects;
+web adds Get App as a separate utility. Contextual writing stays inside Map,
+Agents keeps its narrow-screen entry points, and Git remains a contextual route.
+Both read the same rules in
 `src/shared/lib/nav-destination.ts`, so every route belongs to exactly one
 destination even on a screen size that deliberately hides that button. The
 retired
