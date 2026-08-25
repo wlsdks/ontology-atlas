@@ -2538,7 +2538,6 @@ function HomePageImpl() {
     graphEmpty: topologyGraphEmpty,
     emptyManualExpand: indexManualExpandWhileEmpty,
     agentDockOpen: agentDockRequestedOpen,
-    startStepsOpen: startStepsVisible,
   });
   /**
    * Collapse ↔ expand is **one event** produced by one click. Previously only the

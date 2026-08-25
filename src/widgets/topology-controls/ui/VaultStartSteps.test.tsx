@@ -167,21 +167,35 @@ describe("첫 걸음 — 이 폴더에 문서가 있으면 그것이 첫 걸음�
   });
 });
 
-describe("첫 걸음 — 카드는 INDEX 가 가린 폭을 빼고 가운데를 잡는다", () => {
+/**
+ * ⚠️ **Reversed on 2026-08-25** (owner: *"from the user's side it is not actually centred"*).
+ *
+ * This block used to require the opposite: with INDEX open, the wrapper had to add left padding the
+ * width of INDEX. That padding pushes the card right by half its size, so the surface asking for the
+ * person's attention sat off the middle of the window while still claiming the middle — the exact
+ * thing the owner saw.
+ *
+ * The first repair collapsed INDEX whenever this card was up. That was far too broad: the card is up
+ * by default for anybody who just opened a folder, so INDEX became unreachable, and the web smoke
+ * test caught it in CI. The card is a floating overlay above INDEX; it can simply stay in the
+ * window's centre and let INDEX pass beneath its left edge.
+ */
+describe("첫 걸음 — 카드는 창의 가운데를 지킨다", () => {
   const wrapper = () => card().parentElement as HTMLElement;
 
-  it("INDEX 가 펼쳐져 있으면 그 폭만큼 ≥md 에서 비워 둔다", () => {
+  it("INDEX 가 펼쳐져도 옆으로 밀리지 않는다", () => {
     renderSteps({ indexExpanded: true });
-    expect(wrapper().dataset.indexReserved).toBe("true");
-    expect(wrapper().className).toContain(
-      "md:pl-[calc(var(--topology-index-inset)+var(--topology-index-width)+1rem)]",
-    );
+    expect(
+      wrapper().className,
+      "INDEX 폭만큼 왼쪽을 비우면 카드가 그 절반만큼 오른쪽으로 밀린다",
+    ).not.toContain("md:pl-[calc(");
+    expect(wrapper().className).toContain("justify-center");
   });
 
-  it("INDEX 가 접혀 있으면 아무것도 비우지 않는다", () => {
+  it("INDEX 가 접혀 있어도 같은 자리다", () => {
     renderSteps({ indexExpanded: false });
-    expect(wrapper().dataset.indexReserved).toBe("false");
     expect(wrapper().className).not.toContain("md:pl-[calc(");
+    expect(wrapper().className).toContain("justify-center");
   });
 
   it("기본값은 「비우지 않음」 — prop 을 안 넘긴 호출자가 화면을 바꾸지 않는다", () => {

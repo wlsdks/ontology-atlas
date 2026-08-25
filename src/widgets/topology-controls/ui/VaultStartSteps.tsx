@@ -294,11 +294,21 @@ export function VaultStartSteps({
   return (
     <div
       data-index-reserved={indexExpanded ? "true" : "false"}
-      className={`pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4${
-        indexExpanded
-          ? " md:pl-[calc(var(--topology-index-inset)+var(--topology-index-width)+1rem)]"
-          : ""
-      }`}
+      /*
+       * ⚠️ **Centred in the window, not in what is left of it** (owner, 2026-08-25: *"from the user's
+       * side it is not actually centred"*).
+       *
+       * It used to add left padding the width of INDEX whenever INDEX was open, which pushes this
+       * card right by half that padding — so the surface asking for the person's attention sat off
+       * the middle of the screen while still claiming the middle. The first repair collapsed INDEX
+       * instead, and that was far too broad: this checklist is up by default for anybody who just
+       * opened a folder, so it made INDEX unreachable and the web smoke test caught it.
+       *
+       * The card is a floating overlay, so it can simply stay in the window's centre. INDEX may
+       * overlap its left edge on a narrow window; the card is above INDEX in the stack and its own
+       * width already yields on small screens.
+       */
+      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4"
     >
       <div
         data-testid="vault-start-steps"

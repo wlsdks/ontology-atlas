@@ -2519,7 +2519,7 @@
   },
   "featuresMisc": {
     "localVaultPicker": {
-      "unsupported": "여기서는 온톨로지 폴더를 열어 편집할 수 없어요. 데스크톱 앱을 설치하면 디스크의 폴더를 열고 편집할 수 있어요.",
+      "unsupported": "여기서는 온톨로지 폴더를 열어 편집할 수 없어요. 데스크톱 앱을 설치해 디스크의 폴더를 열고 편집하세요.",
       "copyPathTooltip": "온톨로지 폴더 경로 복사",
       "copyPathAriaLabel": "온톨로지 폴더 경로 복사: {path}",
       "copyPathCopied": "경로 복사됨",

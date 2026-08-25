@@ -44,11 +44,24 @@ pnpm test:run                        # full unit suite, conditional escalation
 ## Playwright commands
 
 ```bash
-pnpm exec playwright test
+pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test   # what CI runs
 pnpm exec playwright test --headed
 pnpm exec playwright test tests/e2e/foo.spec.ts
 pnpm exec playwright test --update-snapshots
 ```
+
+### Reproduce a red e2e the way CI runs it
+
+`PLAYWRIGHT_STATIC=1` serves the built static export; without it the config
+starts `pnpm dev`. **They are different products.** Measured 2026-08-25: a change
+that pushed a start card off-centre passed every local e2e run under dev and
+failed four CI jobs, because the failing assertion depended on layout the dev
+server rendered differently. Twenty minutes went into re-reading correct source
+before the run mode was compared.
+
+Before concluding that CI is wrong or flaky, run the exact CI line above. If it
+still passes, only then look at server age (`design-gates.md`, stale
+`reuseExistingServer`). A local pass under a different run mode is not evidence.
 
 ## TDD
 
