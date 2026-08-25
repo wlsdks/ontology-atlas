@@ -54,7 +54,7 @@ export async function runHealth(args) {
   const sum = result?.summary ?? {};
   process.stdout.write(
     `${COLORS.bold}vault health${COLORS.reset} ${sc}${status}${COLORS.reset}` +
-      ` ${COLORS.dim}· ${sum.nodes ?? 0} 노드 · ${sum.edges ?? 0} 관계${COLORS.reset}\n\n`,
+      ` ${COLORS.dim}· ${sum.nodes ?? 0} nodes · ${sum.edges ?? 0} relations${COLORS.reset}\n\n`,
   );
   const checks = Array.isArray(result?.checks) ? result.checks : [];
   for (const c of checks) {
@@ -68,13 +68,13 @@ export async function runHealth(args) {
   }
   // Highlights dependency cycles and disconnected islands, naming the drill-down command for each failing check.
   if (sum.dependencyCycles) {
-    process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset}: \`cycles\` 명령으로 자세히\n`);
+    process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset}: run \`cycles\` for detail\n`);
   }
   // actionableComponents > 1 means meaningful nodes have split into disconnected
   // islands. Ignored kinds (vault-readme and friends) are already excluded, so
   // anything above 1 is a real break; `components` lists them.
   if (sum.actionableComponents > 1) {
-    process.stdout.write(`${COLORS.yellow}components ${sum.actionableComponents}${COLORS.reset}: 그래프가 분리됨, \`components\` 명령으로 자세히\n`);
+    process.stdout.write(`${COLORS.yellow}components ${sum.actionableComponents}${COLORS.reset}: the graph is split -- run \`components\` for detail\n`);
   }
   return healthResultExitCode(result);
 }
@@ -120,7 +120,7 @@ function printUsage(stream = process.stderr) {
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N] [--limit N]\n\n` +
-      `pass=healthy / warn=info-only / fail=blocking. exit 0 만 healthy.\n` +
+      `pass=healthy / warn=info-only / fail=blocking. Only exit 0 is healthy.\n` +
       `--limit is a first-contact alias for --node-limit so agent_brief CLI fallbacks run directly.\n` +
       `Use --json for repeatable automation gates such as pnpm dogfood:health.\n` +
       `Failing health checks exit non-zero; use workspace-brief when you also need hotspots and next actions.\n` +

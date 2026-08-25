@@ -83,7 +83,7 @@ describe('남의 제품 마크 판 — 예외를 예외로 유지한다', () => 
     expect(ir, '기본 잉크가 어둡지 않으면 밝은 판 위에서 안 보인다').toBeLessThan(60);
   });
 
-  it('쓰는 곳은 마크 타일 한 파일뿐이다', () => {
+  it('판을 칠하는 곳은 한 파일뿐이다 — 소비자가 늘어도 그림은 하나다', () => {
     const users = sourceFiles(join(ROOT, 'src'))
       .concat(sourceFiles(join(ROOT, 'app')))
       .filter((file) => {
@@ -94,10 +94,14 @@ describe('남의 제품 마크 판 — 예외를 예외로 유지한다', () => 
 
     // globals.css always appears, since it is the definition site. The only other file
     // allowed to remain is the one that draws the mark tile.
-    expect(users.sort()).toEqual([
-      'app/globals.css',
-      'src/widgets/app-settings-menu/ui/settings-primitives.tsx',
-    ]);
+    /*
+     * The drawing file moved to `shared/ui` on 2026-08-25 so a second surface — the start checklist —
+     * could show the tool it found with the vendor's own mark instead of only naming it. The
+     * exception did not widen: still exactly one file paints the light plate, and every consumer
+     * goes through it. That is the invariant this test exists for, and a second copy of the painting
+     * is precisely what it must keep catching.
+     */
+    expect(users.sort()).toEqual(['app/globals.css', 'src/shared/ui/vendor-mark.tsx']);
   });
 
   it('출처와 근거가 문서에 적혀 있다', () => {

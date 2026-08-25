@@ -20735,3 +20735,189 @@ still loading, which would make it flicker on every open.
 **Status**: valid
 
 ---
+## 2026-08-25 — `atlas` becomes reachable, without a registry
+
+**Context**: the owner asked whether the product ships a CLI, and if so to make
+`atlas` take you in — *"very high quality; if we are doing it, much better than
+now. Every feature usable from the CLI alone."* — and separately: *"no npm yet."*
+
+**What the investigation found**: the CLI was far better stocked than expected —
+56 commands covering reads, writes, graph queries and Git. Against the 35 MCP
+tools only eight had no CLI counterpart, and one of those was load-bearing:
+`relate` could **create** a relation and nothing could remove one. A person
+working only in the terminal had to open the Markdown and hand-edit frontmatter
+to undo their own typo, which is exactly the hand-editing every other write
+command exists to avoid. "Everything from the CLI" was false in one specific,
+fixable place.
+
+The larger problem was not capability but **reach**. The only way to run any of
+it was `node <checkout>/cli/src/index.mjs`, the `bin` name existed but was
+installed nowhere, and the bare command printed all 56 rows.
+
+**Decisions**:
+
+1. **`remove-relation`**, the mirror of `relate` — same argument order, same
+   flags, same `expectedRevision` guard. It takes the edge's `relation_notes`
+   entry with it, because a sentence explaining an edge that no longer exists is
+   an orphan a later reader trusts precisely because it is written down.
+
+2. **`install-shim`** writes a one-line `exec` launcher into `~/.local/bin/atlas`.
+   No registry, no `sudo`, nothing outside the person's home. This satisfies the
+   four conditions in `surfaces.md`: the user types it, the exact contents are
+   printed first, it lands in a user-owned location, and it pins this checkout's
+   absolute path. A file the command did not write is never replaced or deleted —
+   recognition is by a marker we wrote, never by the filename, because deleting
+   somebody's own script is the worst thing this command could do.
+
+3. **The bare command stops being the reference.** It reads the working directory
+   and names the few things that make sense from there. Printing 56 commands
+   answers *"what else can this do"*, a question the person has not asked; the one
+   who typed the bare word has said they do not know the next one. `--help` keeps
+   the full list.
+
+**Not done, deliberately**: no npm publish, and nothing is distributed. The `bin`
+name and the shim are both local facts about a checkout, which is why
+`decisions:check` reports no council trigger — a name that reaches nobody is not
+yet a public contract. Publishing remains the owner's call.
+
+**Recorded dissent**: a shim is a worse install than a package manager — it does
+not update, it breaks if the checkout moves, and it asks people to edit their
+shell profile. The counter is that the alternative on offer was no install at
+all, and an honest one-line launcher a person can read and delete beats a command
+nobody can type.
+
+**Falsifier — observed the same hour, and closed.** The recorded falsifier was
+"someone moves or deletes their checkout and gets a confusing failure". Testing it
+immediately produced exactly that: a Node module-loader stack trace naming neither
+`atlas` nor the folder that went missing. The shim now checks its target before
+`exec` and exits 127 with a sentence naming the missing path and what to do about
+it. Writing a falsifier down and then trying it took one command, and it was the
+difference between a documented risk and a defect that shipped.
+
+**Status**: valid
+
+---
+## 2026-08-25 — One word per thing, and it may be the accurate one
+
+**Overturns** the standing rule in `.claude/rules/design.md`: *"Use 'ontology'
+only in the brand and in sentences that define it. Elsewhere use map, concept, or
+workspace."*
+
+**Why it was overturned**: avoiding the accurate word did not produce plain
+language. It produced **four names for one thing**. A measured inventory of the
+Korean catalogue found the person's own folder called by four different names
+across 41 strings, and the word for "map" doing duty for both the meaning graph
+and the screen that draws it.
+
+The owner met the result of that on screen and could not read it: the empty map
+said *"there are no projects to draw"*, which describes the node count as a count
+of `project` — one of the five schema kinds. A newcomer's first sentence was
+written in this repository's private vocabulary, by a rule meant to keep private
+vocabulary out.
+
+**Two corrections, the same day.** First: *"make these terms consistent and not
+strange. You may use the word ontology."* Then, after a repair that flattened
+every folder word to something plainer and replaced the word for validation with a
+vaguer verb: *"proper domain terms are fine — do not mangle them into something
+odd for the sake of non-developers. The universal technical term is what matters."*
+
+Both failures are the same size. A split vocabulary makes a reader learn four
+words for one thing; a flattened one teaches them a word that no file, CLI command
+or MCP tool will ever repeat back, so they learn the real one later anyway.
+
+**Decision**: one word per thing, and the word is the domain's own. The folder is
+the ontology folder; the graph is the ontology; the map is the view of it; a node
+is a concept; a kind keeps its real name wherever the kind is the point. The
+canonical spellings live in the gate rather than the rule, so a change lands in
+one place: `tests/contract/user-facing-vocabulary.contract.test.ts`.
+
+**`vault` was considered and rejected on the owner's own test.** It is Obsidian's
+coinage, not a universal term — Logseq says graph, Foam and Zettlr say workspace,
+and knowledge engineering does not use the word. Nothing forbids it; it is simply
+not the standard that was asked for. Inside code, CLI, MCP and docs it stays,
+because there it is a filesystem and API name, and identifiers keep their spelling
+even inside copy: `pnpm vault:validate` is a name, not a synonym.
+
+**Also removed**: `topology-plain-language.contract.test.ts` pinned the exact
+Korean of sixteen labels. `documentation.md` forbids pinning a sentence written by
+a person, and this gate proved why — repairing the copy broke four assertions that
+had no opinion about the repair. What survives is the half a machine can judge:
+no internal vocabulary in a label, and every relation type having its own
+non-empty name.
+
+**Recorded dissent**: the ontology term is longer and more technical than the map word, and
+a first-time visitor may bounce off it. The counter is that they meet it in the
+product's own name, in every file's frontmatter and in every agent tool, so the
+question is not whether they learn it but whether they learn it once.
+
+**Falsifier**: someone reads a screen and cannot tell the ontology from the map,
+or reports the folder term as jargon. Either means the accurate word was the wrong
+trade after all.
+
+**Status**: valid
+
+---
+
+## 2026-08-25 — The empty map stops offering a round trip to itself
+
+**Convened because**: this removes an affordance from the topology empty state,
+and the 2026-08-02 first-run-card record put **"adding or removing an
+affordance"** in that slice's no-go list. That no-go was an appetite boundary,
+not a permanent ban, but overturning it needs a record, which is this one.
+
+**Accountable**: the owner. The blocker was named to them explicitly — that the
+standing decision requires an owner instruction before an affordance count moves
+— and they answered to go ahead. That instruction is the grounds; this record is
+not a self-approval.
+
+**Prior decision**: 2026-08-02 stands in every other respect. Only the no-go on
+affordance count is overturned, and only for this one removal.
+
+**Observed phenomenon**: the empty map offered its `ctaTree` row, pointing at
+`/ontology/`. That route is not a destination. `app/[locale]/ontology/page.tsx`
+renders `OntologyRedirectPage`, which redirects to `/topology/` with INDEX
+expanded — the screen the empty-state panel is drawn on. At zero concepts,
+pressing it leaves the screen and comes back to the same screen, now showing an
+empty index.
+
+**User problem**: someone whose ontology is empty is offered, among two or three
+actions, one that cannot change their situation. They spend their first
+interaction learning that a control does nothing, on the screen where they have
+the least context to judge which of the remaining controls is worth pressing.
+
+**Solution independence**: the problem holds under any other fix — routing the
+row somewhere real, or relabelling it. What is wrong is offering a way to look at
+a list before anything can be in it, not the wording or the href.
+
+**Second observation (the falsifier)**: if this is real, the same illness should
+appear elsewhere on the same panel. It does, and it was already repaired: the
+`crossViewHint` line is hidden at zero concepts for the recorded reason that it
+"is telling somebody where to find something they do not have, using two screen
+names they have not met" (owner, 2026-08-25). The CTA is that line with a link
+attached. This change puts both behind the same predicate.
+
+**Decision**: `ctaTree` renders only when the panel is not in its no-concepts
+state, matching `crossViewHint`. Where concepts exist, expanding the index is a
+real action and the row stays.
+
+**Ontology value**: the empty state stops implying a browsable ontology exists
+before one has been authored.
+
+**Agent value**: none claimed. This is a human-facing panel; an agent reaches the
+same data through `list_concepts`, which correctly returns an empty set.
+
+**Recorded dissent**: a removed row is a removed path, and someone who *wants*
+the index panel expanded on an empty map now has no button for it. The counter is
+that INDEX is reachable from the map chrome itself, and that a control whose only
+effect is to redraw the screen you are on is not a path.
+
+**Falsifier**: someone on an empty map looks for a way to open the concept list
+and cannot find one, or the two remaining actions are reported as too few to
+choose from. Either means the row was carrying weight this record did not see.
+
+**Gate**: `TopologyEmptyState.test.tsx` — the row is absent at zero concepts and
+present with one. Probed by forcing the condition true: 2 failed.
+
+**Status**: valid
+
+---

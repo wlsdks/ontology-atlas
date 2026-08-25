@@ -486,7 +486,7 @@
     ]
   },
   "cli": {
-    "commandCount": 54,
+    "commandCount": 56,
     "commands": [
       "absorb",
       "add",
@@ -517,6 +517,7 @@
       "index",
       "infer-imports",
       "init",
+      "install-shim",
       "list",
       "maintenance",
       "match-edges",
@@ -535,6 +536,7 @@
       "reachability",
       "relate",
       "relation-check",
+      "remove-relation",
       "rename",
       "schema",
       "similar",

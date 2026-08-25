@@ -55,7 +55,7 @@ export async function runPath(args) {
   if (!result || result.found === false || !Array.isArray(result.hops) || result.hops.length === 0) {
     process.stdout.write(
       `${COLORS.dim}no path${COLORS.reset} ${COLORS.bold}${from}${COLORS.reset} ${COLORS.dim}→${COLORS.reset} ${COLORS.bold}${to}${COLORS.reset}` +
-        ` ${COLORS.dim}(maxHops ${maxHops ?? 5} 초과 또는 vault 에 slug 없음)${COLORS.reset}\n`,
+        ` ${COLORS.dim}(over maxHops ${maxHops ?? 5}, or a slug is not in the vault)${COLORS.reset}\n`,
     );
     return 1;
   }

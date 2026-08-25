@@ -233,7 +233,7 @@ function parseArgs(args) {
     }
   }
   if (positional.length === 0) {
-    return { error: '필수 인자: absorb 할 .md 파일 1 개 이상' };
+    return { error: 'required argument: at least one .md file to absorb' };
   }
   if (flags.vault === false) return { error: '--vault requires a path' };
   for (const value of Object.values(flags)) {
@@ -251,15 +251,19 @@ function printUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas absorb <file...> [--vault path] [--write]\n` +
       `\n` +
-      `  CLAUDE.md/AGENTS.md 스타일 markdown 을 typed vault 노드로 변환. 기본값은\n` +
-      `  dry-run: 전환 계획만 출력하고 디스크는 건드리지 않는다. --write 를 주면\n` +
-      `  정책/규칙 섹션은 document 노드로 실제 작성되고, 원본은 흡수 요약 + 미흡수\n` +
-      `  섹션 원문을 보존한 slim pointer 로 재작성된다 (원본은 .pre-absorb.bak 로 백업).\n` +
-      `  아키텍처/컴포넌트 섹션은 후보 제안만: 절대 자동 작성하지 않는다.\n` +
-      `  인젝션 의심 섹션 (Tier 1) 은 흡수에서 제외되고 원문 그대로 pointer 에 남는다.\n` +
+      `  Turn CLAUDE.md / AGENTS.md style markdown into typed vault nodes. The default\n` +
+      `  is a dry run: it prints the conversion plan and leaves the disk alone. With\n` +
+      `  --write, policy and rule sections are written as document nodes, and the\n` +
+      `  original is rewritten as a slim pointer holding an absorption summary plus the\n` +
+      `  verbatim text of whatever was not absorbed (the original is backed up to\n` +
+      `  .pre-absorb.bak).\n` +
+      `  Architecture and component sections are proposed as candidates only; they are\n` +
+      `  never written automatically.\n` +
+      `  A section suspected of injection (Tier 1) is excluded from absorption and stays\n` +
+      `  verbatim in the pointer.\n` +
       `\n${COLORS.bold}options:${COLORS.reset}\n` +
       `  --vault path    target vault (default: cwd)\n` +
-      `  --write         실제로 vault 에 쓰고 원본을 slim pointer 로 재작성\n` +
+      `  --write         write to the vault and rewrite the original as a slim pointer\n` +
       `\n${COLORS.bold}examples:${COLORS.reset}\n` +
       `  ontology-atlas absorb AGENTS.md --vault .\n` +
       `  ontology-atlas absorb CLAUDE.md --vault . --write\n`,

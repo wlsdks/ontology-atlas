@@ -143,7 +143,7 @@ export async function runSnapshot(args) {
       push = {
         pushed: false,
         reason: 'no-upstream',
-        message: 'push 실패: 이 브랜치에 upstream 이 없어요. 커밋은 로컬에 기록됨.',
+        message: 'push failed: this branch has no upstream. The commit is recorded locally.',
         guidance: `git push -u origin ${branch}`,
       };
       exitCode = 1;
@@ -216,7 +216,7 @@ function emitNoChanges(json, vaultRoot) {
     );
     return 0;
   }
-  process.stdout.write(`${COLORS.dim}스냅샷할 변경 없음${COLORS.reset} ${COLORS.dim}(vault=${vaultRoot})${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.dim}nothing to snapshot${COLORS.reset} ${COLORS.dim}(vault=${vaultRoot})${COLORS.reset}\n`);
   return 0;
 }
 
@@ -272,11 +272,11 @@ function emitHistory({ json, vaultRoot, repoRoot, pathspec, limit }) {
     return 0;
   }
   if (commits === null || commits.length === 0) {
-    process.stdout.write(`${COLORS.dim}아직 vault 범위 커밋이 없어요${COLORS.reset} ${COLORS.dim}(vault=${vaultRoot})${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}no vault-scoped commit yet${COLORS.reset} ${COLORS.dim}(vault=${vaultRoot})${COLORS.reset}\n`);
     return 0;
   }
   process.stdout.write(
-    `${COLORS.cyan}history${COLORS.reset}  ${COLORS.dim}vault=${vaultRoot} · 최근 ${commits.length}개${COLORS.reset}\n`,
+    `${COLORS.cyan}history${COLORS.reset}  ${COLORS.dim}vault=${vaultRoot} · latest ${commits.length}${COLORS.reset}\n`,
   );
   for (const c of commits) {
     process.stdout.write(
@@ -316,11 +316,11 @@ function emitDiff({ json, vaultRoot, repoRoot, pathspec }) {
   }
 
   if (changes.length === 0) {
-    process.stdout.write(`${COLORS.dim}커밋 안 된 vault 변경 없음${COLORS.reset} ${COLORS.dim}(vault=${vaultRoot})${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}no uncommitted vault changes${COLORS.reset} ${COLORS.dim}(vault=${vaultRoot})${COLORS.reset}\n`);
     return 0;
   }
 
-  process.stdout.write(`${COLORS.cyan}diff${COLORS.reset}  ${COLORS.dim}vault=${vaultRoot} · 커밋 안 된 변경 ${changes.length}개${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.cyan}diff${COLORS.reset}  ${COLORS.dim}vault=${vaultRoot} · ${changes.length} uncommitted change(s)${COLORS.reset}\n`);
   for (const change of changes) {
     const mark = STATUS_MARK[change.status] ?? '?';
     const color = STATUS_COLOR[change.status] ?? COLORS.dim;
@@ -331,7 +331,7 @@ function emitDiff({ json, vaultRoot, repoRoot, pathspec }) {
   if (diffText.trim()) {
     process.stdout.write(`\n${diffText.replace(/\n$/, '')}\n`);
   } else {
-    process.stdout.write(`\n${COLORS.dim}추적 파일의 텍스트 diff 없음 (신규 파일만): 위 목록 참고${COLORS.reset}\n`);
+    process.stdout.write(`\n${COLORS.dim}no text diff on tracked files (new files only) -- see the list above${COLORS.reset}\n`);
   }
   return 0;
 }
@@ -354,7 +354,7 @@ function runPull({ json, vaultRoot, repoRoot }) {
       return 1;
     }
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  이 브랜치에 연결된 원격이 없어요: 먼저 upstream 을 설정하세요.\n` +
+      `${COLORS.red}error${COLORS.reset}  this branch has no remote: set an upstream first.\n` +
         `  ${COLORS.cyan}git push -u origin ${branch}${COLORS.reset}\n`,
     );
     return 1;
@@ -375,7 +375,7 @@ function runPull({ json, vaultRoot, repoRoot }) {
     return 0;
   }
   process.stdout.write(
-    `${COLORS.green}ok${COLORS.reset}    pull 완료 ${COLORS.dim}(${upstream})${COLORS.reset}\n  ${COLORS.dim}${summary}${COLORS.reset}\n`,
+    `${COLORS.green}ok${COLORS.reset}    pulled ${COLORS.dim}(${upstream})${COLORS.reset}\n  ${COLORS.dim}${summary}${COLORS.reset}\n`,
   );
   return 0;
 }
@@ -442,7 +442,7 @@ function render({ json, dryRun, vaultRoot, repoRoot, subject, autoSummary, messa
 
   if (push) {
     if (push.pushed) {
-      process.stdout.write(`\n${COLORS.green}ok${COLORS.reset}    원격으로 전송됨: ${COLORS.bold}${push.remoteUrl}${COLORS.reset}\n`);
+      process.stdout.write(`\n${COLORS.green}ok${COLORS.reset}    pushed to the remote: ${COLORS.bold}${push.remoteUrl}${COLORS.reset}\n`);
     } else {
       // A transmission failure is guidance (an error), so it goes to stderr — never polluting the stdout commit summary.
       let out = `\n${COLORS.red}error${COLORS.reset}  ${push.message}\n`;

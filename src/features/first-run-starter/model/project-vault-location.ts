@@ -67,3 +67,21 @@ export function projectVaultLocation(projectRoot: string | null | undefined): Pr
 export function projectAlreadyHasVault(entryNames: readonly string[]): boolean {
   return entryNames.some((name) => name === PROJECT_VAULT_DIR);
 }
+
+/**
+ * Did the person hand us a map folder instead of the project it sits in?
+ *
+ * ⚠️ Measured on the installed app, 2026-08-25: picking an existing `atlas` folder as "the project"
+ * produced `…/atlas/atlas` on screen and offered to create it. Nothing crashes, but the proposal is
+ * nonsense, and a product that proposes nonsense with a straight face is one people stop reading —
+ * which is fatal for a confirmation whose whole job is to be read.
+ *
+ * The check is the folder's own name, the same fact `PROJECT_VAULT_DIR` already defines. It cannot
+ * know whether some unrelated project is genuinely named `atlas`, so the caller says so and offers
+ * the parent rather than refusing outright; the person still decides.
+ */
+export function pickedTheMapFolder(projectRoot: string | null | undefined): boolean {
+  if (typeof projectRoot !== 'string') return false;
+  const name = projectRoot.trim().replace(/[/\\]+$/, '').split(/[/\\]/).pop();
+  return name === PROJECT_VAULT_DIR;
+}

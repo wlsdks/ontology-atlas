@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { GitCompareArrows, ShieldAlert } from 'lucide-react';
+import { Eye, GitCompareArrows, ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { permissionIntent } from '@/features/acp-session/model/permission-intent';
@@ -137,9 +137,27 @@ export function AcpPermissionCard({
        * `px-4 py-3.5` at first). This is not one item but **one section**: title,
        * rationale and options stand together to form a single decision.
        */
-      className={ontologyWrite
-        ? 'grid gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)]'
-        : 'grid gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]'}
+      /*
+       * ⚠️ **The colour has to agree with the words** (owner, 2026-08-25: *"the colours are bad and
+       * the inside layout is poor"*).
+       *
+       * Every non-write request was painted warning amber, including the one that says *this is your
+       * own project, nothing has happened yet*. A card whose frame shouts while its sentence
+       * reassures teaches people that the amber means nothing — the same cry-wolf failure the copy
+       * fix addressed, left standing in the paint.
+       *
+       * Amber is now reserved for what it means: the agent reaching somewhere that is genuinely not
+       * the person's project. Inside the project the card is neutral, and an ontology write keeps its
+       * indigo. Every one of the three still stops for an answer; only the alarm is spent where it
+       * is earned.
+       */
+      className={
+        ontologyWrite
+          ? 'grid gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)]'
+          : locality === 'inside-project'
+            ? 'grid gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]'
+            : 'grid gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]'
+      }
     >
       <div className="flex items-start gap-2.5">
         {ontologyWrite ? (
@@ -147,6 +165,13 @@ export function AcpPermissionCard({
             size={ICON_SIZE.md}
             aria-hidden
             className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
+          />
+        ) : locality === 'inside-project' ? (
+          // Inside the person's own project the mark is a neutral eye, not an alarm shield.
+          <Eye
+            size={ICON_SIZE.md}
+            aria-hidden
+            className="mt-0.5 shrink-0 text-[color:var(--color-text-tertiary)]"
           />
         ) : (
           <ShieldAlert
@@ -246,9 +271,13 @@ export function AcpPermissionCard({
           {request.filePath}
         </p>
       ) : ontologyWrite || askedSentence ? null : (
-        /* The question already stands above when the server asked one; repeating it here is the
-           duplicate line this card was criticised for. */
-        <p className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
+        /*
+         * The question already stands above when the server asked one; repeating it here is the
+         * duplicate line this card was criticised for. When there is neither a path nor a question,
+         * this takes the path's own slot — same box, same weight — rather than floating between the
+         * body and the buttons as a third unattached sentence.
+         */
+        <p className="break-keep rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
           {request.title ?? t('unknownTarget')}
         </p>
       )}
@@ -272,38 +301,47 @@ export function AcpPermissionCard({
         </Button>
       </div>
 
+      {/*
+        ⚠️ **One block, and the control looks like one** (owner, 2026-08-25). This used to be two
+        right-aligned strips stacked under the buttons: a real action rendered as a caption, and a
+        separate sentence about its scope. They read as trailing debris, and the action was easy to
+        mistake for a label — which is exactly what happened while driving the app.
+        The action keeps its quiet weight (it is the wider grant, not the recommended one) but sits
+        with the sentence that qualifies it, separated from the primary row by a rule.
+      */}
       {allowAlways && !ontologyWrite ? (
-        <button
-          type="button"
-          data-testid="acp-permission-allow-always"
-          onClick={() => resolve(allowAlways.optionId)}
-          className={controlClass({
-            shape: 'link',
-            size: 'md',
-            tone: 'muted',
-            hoverInk: 'secondary',
-            className: 'justify-self-end',
-          })}
-        >
-          {t(
-            scope.kind === 'tool'
-              ? 'allowAlwaysTool'
-              : scope.kind === 'directory'
-                ? 'allowAlwaysDirectory'
-                : 'allowAlwaysUnknown',
-          )}
-        </button>
-      ) : null}
-      {allowAlways && !ontologyWrite ? (
-        <p
-          data-testid="acp-permission-scope"
-          data-scope={scope.kind}
-          className="justify-self-end break-all text-right text-caption leading-caption text-[color:var(--color-text-quaternary)]"
-        >
-          {scope.kind === 'unknown'
-            ? t('scopeUnknownHint')
-            : t('scopeHint', { names: scope.names.join(' · ') })}
-        </p>
+        <div className="grid gap-1 border-t border-[color:var(--color-border-soft)] pt-2.5">
+          <button
+            type="button"
+            data-testid="acp-permission-allow-always"
+            onClick={() => resolve(allowAlways.optionId)}
+            className={controlClass({
+              shape: 'card',
+              size: 'sm',
+              tone: 'muted',
+              hoverBorder: 'strong',
+              hoverInk: 'secondary',
+              className: 'justify-self-start',
+            })}
+          >
+            {t(
+              scope.kind === 'tool'
+                ? 'allowAlwaysTool'
+                : scope.kind === 'directory'
+                  ? 'allowAlwaysDirectory'
+                  : 'allowAlwaysUnknown',
+            )}
+          </button>
+          <p
+            data-testid="acp-permission-scope"
+            data-scope={scope.kind}
+            className="break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+          >
+            {scope.kind === 'unknown'
+              ? t('scopeUnknownHint')
+              : t('scopeHint', { names: scope.names.join(' · ') })}
+          </p>
+        </div>
       ) : null}
     </section>
   );

@@ -2716,8 +2716,8 @@ export function assertBriefCountsAgree(result) {
   if (typeof stated !== 'number' || !Array.isArray(carried)) return result;
   if (stated !== carried.length) {
     throw new Error(
-      `agent_brief health check 수가 어긋난다: readiness.healthChecks=${stated} 인데 `
-      + `health.checks 는 ${carried.length}개다 (${carried.map((c) => c?.id).join(', ')})`,
+      `agent_brief health-check counts disagree: readiness.healthChecks=${stated} but `
+      + `health.checks holds ${carried.length} (${carried.map((c) => c?.id).join(', ')})`,
     );
   }
   return result;
