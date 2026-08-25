@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -28,25 +28,41 @@ function ChangeDetails({ item }: { item: OntologyChangeItem }) {
 
   return (
     <>
+      {/*
+        ⚠️ **One grid for the whole list, not one grid per row.** Each row used to be its own
+        `grid grid-cols-[4.5rem_…]`, so the labels lined up only because 4.5rem was written four
+        times — and 4.5rem is 72px holding four 11px labels of two characters each, about 22px of
+        text. The remaining 50px read as a gap between a label and its own value, which is what
+        made this block look crooked (owner, on the installed rc.13 build).
+
+        `auto` sizes the shared column to the widest label instead, so alignment is a property of
+        the structure rather than of a number that has to be kept true by hand, and a longer word
+        or another locale cannot break it.
+
+        The field list below keeps its explicit 6rem: those keys are raw frontmatter names, and
+        `contextual-meaning-editor.spec.ts` measures that column at 96px inside a 352px panel.
+      */}
       {item.relation ? (
-        <dl className="grid gap-1.5 text-label">
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-label">
           {([
             ['from', item.relation.from],
             ['relation', item.relation.type],
             ['to', item.relation.to],
           ] as const).map(([label, value]) => (
-            <div key={label} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
+            <Fragment key={label}>
               <dt className="text-[color:var(--color-text-quaternary)]">{t(label)}</dt>
               <dd className="break-words font-mono text-[color:var(--color-text-primary)]">{value}</dd>
-            </div>
+            </Fragment>
           ))}
           {item.relation.why ? (
-            <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
+            <>
+              {/* The reason is prose and the only new thing here: from/relation/to already appear
+                  in the row's own summary, so this line gets the space to be read. */}
               <dt className="text-[color:var(--color-text-quaternary)]">{t('why')}</dt>
-              <dd className="break-words text-[color:var(--color-text-secondary)]">
+              <dd className="break-words leading-prose text-[color:var(--color-text-secondary)]">
                 {item.relation.why}
               </dd>
-            </div>
+            </>
           ) : null}
         </dl>
       ) : null}
@@ -142,7 +158,12 @@ function ChangeItemRow({
         {mounted ? (
           <div
             ref={contentRef}
-            className="ai-row-disclosure-body grid gap-2 pb-2 pl-7 pr-1"
+            /*
+              ⚠️ `pt` matters here in a way it does not on the other disclosures: this row carries a
+              filled active background, so without it the first label sits flush against that fill and
+              reads as part of the header rather than as the start of the detail.
+            */
+            className="ai-row-disclosure-body grid gap-2 pb-2.5 pl-7 pr-1 pt-1.5"
           >
             <ChangeDetails item={item} />
           </div>
