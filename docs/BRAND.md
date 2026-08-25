@@ -3,19 +3,39 @@
 > The **meaning** of the mark and the **usage rules** for assets. The source of truth for coordinates is
 > [`src/shared/ui/brand-mark.tsx`](../src/shared/ui/brand-mark.tsx), and this document defines what it says and where to use it.
 
+## Identity Status
+
+The verbal identity below is current as of 2026-08-25. The nested-hex mark is
+still the shipping compatibility asset, but the owner has rejected it as the
+final brand direction. No replacement mark has been approved. Its geometry must
+not constrain the next identity exploration, and replacing it requires a
+separate recorded design decision and asset-pipeline run.
+
 ## One Sentence
 
-> **A knowledge map that helps you understand the entire codebase by starting from central concepts and following relationships and hierarchy.**
+> **Understand what your codebase builds, why it is structured that way, and
+> what a change will affect.**
 
-English tagline — **Map your codebase knowledge.**
-Korean — **Connect the knowledge of your codebase and explore its structure.**
+Category — **A local-first codebase ontology workbench.**
+
+Asset shorthand — **Understand your codebase.** Localized product copy belongs
+in the message catalogs rather than this authored English document.
+
+The codebase is the boundary and entry point. Product strategy, policy,
+ownership, and business concepts remain first-class when they explain what the
+code implements, why an implementation boundary exists, or what a change can
+affect. Atlas is not a general-purpose ontology editor, a structural code index,
+or an agent conversation-memory store.
 
 ---
 
-## Meaning by Element
+## Current Mark — Compatibility Asset, Not the New Identity
 
-This mark is not decoration but **a drawing of the product's data model**. The order of layers
-matches `element → capability → domain → project`.
+The following sections preserve the reading and production contract of the mark
+that still ships. They explain existing coordinates and small-size reductions;
+they are not a brief for the replacement. The current mark is a drawing of the
+product's former map/data-model framing, with layers matching `element →
+capability → domain → project`.
 
 ### Central Hexagon — Core Concept
 
@@ -148,6 +168,8 @@ The rasterization uses a browser to avoid adding new image dependencies (sharp·
 
 ## Do not
 
+- **Do not treat the current geometry as the next identity brief.** It remains a
+  compatibility asset until a replacement is selected and verified.
 - **Do not redraw the mark.** If coordinates need changing, update `brand-mark.tsx` and rerun the pipeline. Hand-made assets will inevitably fall out of sync — in fact, `logo.png` and `og-image.png` carried the deprecated "A" logo until 2026-07-30, and og images were served **every time they were shared**.
 - **Do not uniformize stroke weight.** The core > outer > middle hierarchy is this mark's identity.
 - **Do not rotate, italicize, or distort the mark.** Maintain the fixed aspect ratio of the tall hexagon.

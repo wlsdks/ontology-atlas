@@ -15,18 +15,6 @@
       "linksOut": []
     },
     {
-      "slug": "AGENT-MEMORY-POSITIONING",
-      "path": "docs/AGENT-MEMORY-POSITIONING.md",
-      "title": "Agent Memory Positioning",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [],
-      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-21. A repo-native memory layer for Claude Code, Cursor, and Codex. ontology-atlas keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
-      "wordCount": 1293,
-      "updatedAt": "2026-06-21",
-      "linksOut": []
-    },
-    {
       "slug": "agents/domain",
       "path": "docs/agents/domain.md",
       "title": "Domain Docs",
@@ -398,9 +386,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "The meaning of the mark and the usage rules for assets. The source of truth for coordinates is src/shared/ui/brand-mark.tsx, and this document defines what it says and where to use it. A knowledge map that helps you understand the entire codebase by starting from central concepts and following relationships and hierarc",
-      "wordCount": 1377,
-      "updatedAt": "2026-08-24",
+      "excerpt": "The meaning of the mark and the usage rules for assets. The source of truth for coordinates is src/shared/ui/brand-mark.tsx, and this document defines what it says and where to use it. The verbal identity below is current as of 2026-08-25. The nested-hex mark is still the shipping compatibility asset, but the owner has",
+      "wordCount": 1550,
+      "updatedAt": "2026-08-25",
       "linksOut": []
     },
     {
@@ -410,14 +398,26 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. A door for ",
-      "wordCount": 78014,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. The public ",
+      "wordCount": 78129,
       "updatedAt": "2026-08-25",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
         "slug"
       ]
+    },
+    {
+      "slug": "CODEBASE-ONTOLOGY-POSITIONING",
+      "path": "docs/CODEBASE-ONTOLOGY-POSITIONING.md",
+      "title": "Codebase Ontology Positioning",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-08-25. Understand what your codebase builds, why it is structured that way, and what a change will affect. Ontology Atlas is a local-first codebase ontology workbench. It keeps product meaning, capability boundaries, implementation ",
+      "wordCount": 1444,
+      "updatedAt": "2026-08-25",
+      "linksOut": []
     },
     {
       "slug": "CONTROL-ADOPTION-ROUNDS",
@@ -439,7 +439,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 180292,
+      "wordCount": 180954,
       "updatedAt": "2026-08-25",
       "linksOut": [
         "slug"
@@ -545,8 +545,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-22 (re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility redirect to /topology?index=expanded, /ontology/edit and /ontology/studio route to the contextual writer within th",
-      "wordCount": 22651,
-      "updatedAt": "2026-08-24",
+      "wordCount": 22685,
+      "updatedAt": "2026-08-25",
       "linksOut": [
         "slug",
         "project:slug",
@@ -2824,7 +2824,7 @@
       "slug": "ontology/ontology-atlas",
       "path": "docs/ontology/ontology-atlas.md",
       "title": "Ontology Atlas",
-      "description": "An ontology workbench where humans and AI agents read and cultivate the product's meaning and implementation evidence together in a local Markdown graph.",
+      "description": "A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect, linking product meaning to implementation evidence in Markdown that people and AI agents maintain together.",
       "tags": [],
       "frontmatter": {
         "uid": "8c48b61f-1f75-448e-87a5-6ea2a7b02cf8",
@@ -2833,7 +2833,7 @@
         "title": "Ontology Atlas",
         "display_ko": "온톨로지 아틀라스",
         "display_en": "Ontology Atlas",
-        "description": "An ontology workbench where humans and AI agents read and cultivate the product's meaning and implementation evidence together in a local Markdown graph.",
+        "description": "A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect, linking product meaning to implementation evidence in Markdown that people and AI agents maintain together.",
         "domains": [],
         "capabilities": [],
         "elements": [],
@@ -2850,9 +2850,9 @@
         "path": "README.md"
       },
       "headings": [],
-      "excerpt": "A local-first ontology workbench that transforms frontmatter from a local Markdown vault into a computable graph with types (domain, capabilities, implementation evidence, dependencies, impacts). Developers use CLI/web, and AI coding agents use MCP to read and write the same files. README.md: \"Your AI coding agent forg",
-      "wordCount": 681,
-      "updatedAt": "2026-08-24",
+      "excerpt": "A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect. It links product domains and capabilities to implementation evidence, dependencies, and impact in a computable Markdown graph that people and AI agents maintain together. README.m",
+      "wordCount": 713,
+      "updatedAt": "2026-08-25",
       "linksOut": []
     },
     {
@@ -2944,12 +2944,12 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "[v10 Identity, 2026-07-18] — agent-native, human-sovereign (agents write directly, humans make final judgments). This product is not a \"system for agents.\" It is a single layer of meaning that humans and AI agents read and edit together, with agents being formal users just like humans. Here, meaning layer refers to the",
-      "wordCount": 6111,
-      "updatedAt": "2026-08-23",
+      "excerpt": "[v11 Codebase-centered identity, 2026-08-25] — Ontology Atlas is a codebase ontology workbench. Its plain-language promise is: understand what your codebase builds, why it is structured that way, and what a change will affect. It is neither a general-purpose ontology editor nor a structural code index. Product and busi",
+      "wordCount": 6339,
+      "updatedAt": "2026-08-25",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC",
-        "AGENT-MEMORY-POSITIONING"
+        "CODEBASE-ONTOLOGY-POSITIONING"
       ]
     },
     {
@@ -3207,7 +3207,7 @@
       },
       {
         "fromSlug": "PRODUCT-DIRECTION",
-        "context": "implements. The exact discriminator, `broader`/`is_a` support boundary, and non-inference contract have one authority: **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. This direction document decides why the product exists; it does not maintain a second schema glossary. ### What Atlas",
+        "context": "implements. The exact discriminator, `broader`/`is_a` support boundary, and non-inference contract have one authority: **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. This direction document decides why the product exists; it does not maintain a second schema glossary. ### What belon",
         "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
       }
     ],
@@ -3232,11 +3232,11 @@
         "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
       }
     ],
-    "AGENT-MEMORY-POSITIONING": [
+    "CODEBASE-ONTOLOGY-POSITIONING": [
       {
         "fromSlug": "PRODUCT-DIRECTION",
-        "context": "is built on. What we promise the user is agent memory that costs less and does not go stale. Canonical internal note: **[`docs/AGENT-MEMORY-POSITIONING.md`]**. ### Required product loop This loop must work before the project is treated as launch-ready: ```text init -> bootst",
-        "linkText": "`docs/AGENT-MEMORY-POSITIONING.md`"
+        "context": "conversation-memory store and hides the product/implementation meaning that distinguishes it. Canonical internal note: **[`docs/CODEBASE-ONTOLOGY-POSITIONING.md`]**. ### Required product loop This loop must work before the project is treated as launch-ready: ```text init -> bootst",
+        "linkText": "`docs/CODEBASE-ONTOLOGY-POSITIONING.md`"
       }
     ],
     "owner-topology-taste": [
@@ -5514,13 +5514,6 @@
         "title": "Agent Graph Workflow"
       },
       {
-        "name": "AGENT-MEMORY-POSITIONING",
-        "path": "AGENT-MEMORY-POSITIONING",
-        "type": "doc",
-        "slug": "AGENT-MEMORY-POSITIONING",
-        "title": "Agent Memory Positioning"
-      },
-      {
         "name": "ARCHITECTURE",
         "path": "ARCHITECTURE",
         "type": "doc",
@@ -5547,6 +5540,13 @@
         "type": "doc",
         "slug": "CHANGELOG",
         "title": "CHANGELOG"
+      },
+      {
+        "name": "CODEBASE-ONTOLOGY-POSITIONING",
+        "path": "CODEBASE-ONTOLOGY-POSITIONING",
+        "type": "doc",
+        "slug": "CODEBASE-ONTOLOGY-POSITIONING",
+        "title": "Codebase Ontology Positioning"
       },
       {
         "name": "CONTROL-ADOPTION-ROUNDS",

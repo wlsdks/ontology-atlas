@@ -19,14 +19,15 @@
 
 ## 0. At a glance
 
-> **Mission v3**: "One product/system, one ontology, that people and their AI agents grow together."
-> **Current framing**: an agent-native, human-sovereign meaning layer: typed enough for Claude Code, Cursor, and Codex; plain Markdown and Git diffs for human judgment.
+> **Mission v4**: "One codebase, one ontology, that people and their AI agents keep current together."
+> **Current framing**: a local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect. Product meaning stays linked to implementation evidence; people judge plain Markdown and Git diffs, and AI agents use the same typed graph.
 > **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (desktop app · CLI · MCP · Website)** — daily heavy-lift ontology work happens in the installed app / CLI / MCP; on the hosted website, `/` is the gateway until a vault is loaded, then routes to the topology map, while `/topology` remains the explicit map address and `/download` carries the current release path.
 > **Brand split**: **Ontology Atlas** is the user-facing desktop app / website brand and release asset identity. `ontology-atlas` remains the repo, CLI binary, and MCP package name.
 
-The product should not feel like an ontology editor. The core user-visible loop
-is `init -> bootstrap -> MCP-backed agent answer -> agent sync proposal -> git
-diff review -> better next agent task`.
+The product is not a general-purpose ontology editor or a code index. It is a
+codebase ontology workbench. Its core user-visible loop is `init -> bootstrap ->
+MCP-backed agent answer -> agent sync proposal -> git diff review -> better next
+agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
