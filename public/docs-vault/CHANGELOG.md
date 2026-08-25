@@ -20,6 +20,18 @@
   shipping compatibility asset while its rejected visual direction is replaced
   in a separate design decision.
 
+## 2026-08-25 · The chat says when the agent has stopped answering
+
+- Found by pressing the installed build: a turn ended on the agent's side without the app ever
+  learning. All nine of its steps finished, the adapter stayed up but used a third of a second of
+  processor time over thirteen minutes, and no result arrived. The panel kept saying it was working
+  and refused every keystroke, so there was no way to type and no hint that Stop was the way back.
+- A turn is deliberately given no time limit, because one that reads a whole codebase can take
+  minutes. That stays. What is new is that a working turn talks constantly, so silence far longer
+  than any gap between its steps now means something and is said out loud.
+- The panel does not claim the agent is broken, because it cannot know that. It says how long the
+  silence has been and points at Stop, which already recovered the session and simply went unnamed.
+
 ## 2026-08-25 · Verify waits long enough for a slower machine
 
 - The `v1.0.0-rc.11` release blocked at its MCP gate: verify timed out after 15 seconds on the x64
