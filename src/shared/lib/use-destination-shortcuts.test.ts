@@ -99,6 +99,13 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).toHaveBeenCalledWith("/architecture/", "architecture");
   });
 
+  it("리더 G를 두 번 누르면 preserved Git destination으로 간다", () => {
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    press("g");
+    press("g");
+    expect(navigate).toHaveBeenCalledWith("/git/", "git");
+  });
+
   it("입력칸에 초점이 있으면 이동하지 않는다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
     const input = document.createElement("input");

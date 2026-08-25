@@ -26,12 +26,13 @@ describe("retired Skills product surface", () => {
       "insights",
       "projects",
       "agents",
+      "git",
     ]);
     expect(resolveActiveNavDestination("/skills")).toBeNull();
     expect(resolveActiveNavDestination("/ko/skills/")).toBeNull();
     expect(resolveActiveNavDestination("/agents")).toBe("agents");
     expect(resolveActiveNavDestination("/architecture")).toBe("architecture");
-    expect(resolveActiveNavDestination("/git")).toBeNull();
+    expect(resolveActiveNavDestination("/git")).toBe("git");
   });
 
   it("removes the route and all three product implementation layers", () => {

@@ -197,40 +197,40 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
   });
 
   /**
-   * **Six is the ceiling** (owner decision, 2026-08-26).
+   * **Seven is the ceiling** (owner correction, 2026-08-26).
    *
    * At the minimum window (`minHeight: 720`) the rail stacks logo + destination tiles
-   * + the utility layer vertically. The earlier seven/eight-item measurements still
-   * prove why scroll handling is required under zoom; the product ceiling is tighter:
-   * a seventh now requires naming which primary destination leaves first.
+   * + the utility layer vertically. The earlier seven/eight-item measurements prove
+   * why scroll handling is required under zoom. Architecture is additive, so seven
+   * remain primary; an eighth requires another measured navigation decision.
    *
-   * What this check blocks is a seventh arriving quietly. Needing seven means
-   * **naming what to remove first** — the path the owner chose (the alternative,
-   * raising the minimum window height to 780, was rejected).
+   * What this check blocks is an eighth arriving quietly. It does not permit a new
+   * destination to evict an existing one as an implementation shortcut.
    */
-  it("목적지는 여섯을 넘지 않는다 — 일곱째는 무엇을 뺄지 먼저 정한다", () => {
+  it("목적지는 일곱을 넘지 않는다 — 여덟째는 별도 결정을 요구한다", () => {
     expect(
       DESTINATION_IDS.length,
       `레일 목적지가 ${DESTINATION_IDS.length}개다 — ` +
-        `일곱째를 넣으려면 무엇을 뺄지 먼저 정하고 이 상한을 같이 고쳐라`,
-    ).toBeLessThanOrEqual(6);
+        `여덟째를 넣으려면 별도 결정을 남기고 이 상한을 같이 고쳐라`,
+    ).toBeLessThanOrEqual(7);
   });
 
   it("상한이 헐겁지 않다 — 여유를 무료로 두지 않는다", () => {
     /*
      * The same grammar the system seat used on other ratchets: a ceiling with the
      * measurement far below it turns that slack into a free pass for whatever arrives
-     * next. Six exist today, so the floor is six.
+     * next. Seven exist today, and the owner explicitly required both Architecture
+     * and Git to remain.
      */
     expect(
       DESTINATION_IDS.length,
-      "목적지가 줄었다 — 위 상한도 같이 내려라",
-    ).toBe(6);
+      "목적지가 줄었다 — Architecture 추가가 기존 목적지를 제거하면 안 된다",
+    ).toBe(7);
   });
 
   it("레일이 넘칠 때 스크롤할 수 있다 — 상한만으로는 배율을 못 막는다", () => {
     /*
-     * The ceiling of six only protects the nominal height of the default minimum
+     * The ceiling of seven only protects the nominal height of the default minimum
      * window; it guarantees nothing under zoom, longer translations, or a smaller
      * effective viewport. Without `overflow` handling there, the lower destinations and
      * the utility layer are **clipped and unreachable** — the same defect the responsive

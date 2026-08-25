@@ -2,7 +2,7 @@
  * The destination registry — ids, default hrefs and keyboard shortcuts in one
  * place.
  *
- * **Why this file exists.** The six destinations' hrefs lived inline **inside the
+ * **Why this file exists.** The seven destinations' hrefs lived inline **inside the
  * `AppNavRail` component**. That was enough for drawing the screen, but a
  * **second consumer that reads the list as data** (keyboard navigation and the
  * shortcut sheet) could not use it: the array inside the component is
@@ -40,10 +40,12 @@ export const DESTINATION_IDS = [
    * this is operational work with progress (download, install, sign in, repair,
    * open a conversation).
    *
-   * ⚠️ **Six is the ceiling** (owner call, 2026-08-21). A seventh requires naming
-   * what comes out first, and the contract enforces that.
+   * ⚠️ **Seven is the current ceiling** (owner correction, 2026-08-26).
+   * Architecture was added without removing Git; an eighth requires a new
+   * measured navigation decision, and the contract enforces that.
    */
   'agents',
+  'git',
 ] as const;
 
 export type DestinationId = (typeof DESTINATION_IDS)[number];
@@ -77,6 +79,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   insights: '/ontology/insights/',
   projects: '/projects/',
   agents: '/agents/',
+  git: '/git/',
 };
 
 /** The leader key: press this, then one of the letters below, to navigate. */
@@ -92,6 +95,7 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   projects: 'p',
   // `a` — nothing collides with it.
   agents: 'a',
+  git: 'g',
 };
 
 /** How long, in ms, to wait for the second letter after the leader. */

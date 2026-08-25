@@ -387,16 +387,16 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 - **Did not create two sets of guidance devices.** Uses the map's tour device (`useGuidedTour`
   state management · overlay darkening screen and showing only one spot · explanation card ·
   progress dot · skip) as is, and swaps in screen-specific step lists into `useGuidedTour({ steps })`. The map's 8-step journey (guidance attached to canvas nodes · step waiting for actual click · developer branch) remains held by HomePage as before.
-- **Docs Vault · Studio · Insights · Project · Records** each have 2 cards — ① What this screen does (center card not attached to anything) ② One thing to see first here (highlights one actually existing element on screen: `docs-vault-doc-list` · `studio-entry-choice` · `do-next-touchups` · `project-selector-card` · `atlas-git-panel`). Does not list features, only answers "what can be done here" in one question. If the second card's target element is not on screen at that moment (e.g., document list collapsed), it automatically becomes a single card.
+- **Architecture · Docs Vault · Insights · Project · Agents · Records** each have 2 cards — ① What this screen does (center card not attached to anything) ② One thing to see first here (highlights one actually existing element on screen). Does not list features, only answers "what can be done here" in one question. If the second card's target element is not on screen at that moment (e.g., document list collapsed), it automatically becomes a single card.
 - This guidance is held by the app shell (`AppShell`) and re-rendered with `key` every time the screen changes — if each page renders its own, one page missing means no one knows (#65 series misalignment). Does not draw this guidance on the map.
 - **Does not interfere** — "Seen" records are kept separately per screen (`guided-tour:<id>:v1`).
-  Seeing it on one screen does not make the remaining five screens' guides disappear, and already-seen screens do not auto-appear again. Auto-starting only happens when passing the same conditions as the map (`canAutoStartGuidedTour`).
+  Seeing it on one screen does not make the remaining six screens' guides disappear, and already-seen screens do not auto-appear again. Auto-starting only happens when passing the same conditions as the map (`canAutoStartGuidedTour`).
 - **Does not appear at all for those who move first (2026-07-28)** — Auto-appearance guides
   open after 700ms, and if the screen is covered at that time, waits up to 30 seconds. During
   that wait, if the user clicks or presses a key first, **cancels appearing entirely**
   (brought over `watchGuidedTourAutoStartCancel` used by the map). Cards appearing late over someone who started exploring themselves are interference, not guidance. Such cancellations are not recorded as "seen", so the opportunity comes again on next visit.
   Does not appear even on screens where it says "This screen cannot be opened here" (e.g., studio when width is less than `lg`) — introducing a non-existent screen is a lie.
-- **View Again** — Settings Menu › Screen › "Screen Guide". Located in the same place on all six screens (on the map, the top-right compass tile remains the primary entry, this menu row is auxiliary). If each screen had its own help button, the number of buttons would vary per screen, so consolidated into one location in the settings menu always.
+- **View Again** — Settings Menu › Screen › "Screen Guide". Located in the same place on all seven screens (on the map, the top-right compass tile remains the primary entry, this menu row is auxiliary). If each screen had its own help button, the number of buttons would vary per screen, so consolidated into one location in the settings menu always.
 - The button on the last card is `[Complete]` not `[Next]` — does not promise a non-existent next chapter (applied same rule to map tour).
 
 #### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
@@ -809,10 +809,11 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 ---
 
-### `/git` — Record (contextual workbench route; redesigned 2026-07-27)
+### `/git` — Record (primary desktop destination; redesigned 2026-07-27)
 
-The route remains live, but Architecture took its primary rail slot on
-2026-08-26. Change-review, snapshot, and history links enter it contextually.
+Architecture was added without replacing this destination. Git keeps its primary
+desktop rail tile, uncommitted-change badge, `G G` shortcut, and contextual
+change-review, snapshot, and history links.
 
 **One sentence on what this screen does**: Verify what concept I changed and decide whether to leave it in one git commit. Therefore, the most prominent things on the screen are **the list of changed concepts and the "Leave" button** pair; everything else is either evidence for that judgment or merely the top/bottom borders of the screen.
 
@@ -1054,10 +1055,10 @@ their viewport. `OperationsNav` and `OntologySubNav` are retired (deleted, not
 just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 6 destinations: Map (`/`, `/topology`) · Architecture (`/architecture`) ·
+- 7 destinations: Map (`/`, `/topology`) · Architecture (`/architecture`) ·
   Docs (`/docs`) · Insights (`/ontology/insights`) · Projects (`/projects` or
-  `/project/*`) · Agents (`/agents`). Workshop remains the map's contextual
-  relation-writing surface; Git stays reachable at `/git` from contextual links.
+  `/project/*`) · Agents (`/agents`) · Git (`/git`). Workshop remains the map's
+  contextual relation-writing surface.
 - Bottom utility tier: the `settingsSlot` plus the web-only Get App tile.
   `AppShell` supplies the app-wide settings trigger by default; a page can
   override the slot for a surface-specific control.

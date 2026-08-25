@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * Destination shortcuts — **all six destinations reachable by keyboard alone.**
+ * Destination shortcuts — **all seven destinations reachable by keyboard alone.**
  *
  * This spec is the feature's worth. The owner asked for *"Able to move everywhere and be tested with shortcuts
  * alone."* (able to move everywhere and be tested with shortcuts
@@ -21,6 +21,7 @@ const DESTINATIONS = [
   { key: "i", path: "/ontology/insights" },
   { key: "p", path: "/projects" },
   { key: "a", path: "/agents" },
+  { key: "g", path: "/git" },
 ] as const;
 
 async function go(page: import("@playwright/test").Page, key: string) {
@@ -54,7 +55,7 @@ test.describe("목적지 이동 단축키", () => {
     await seedFirstRunSeen(page);
   });
 
-  test("G + 글자로 여섯 목적지를 전부 간다", async ({ page }) => {
+  test("G + 글자로 일곱 목적지를 전부 간다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");
 
@@ -200,7 +201,7 @@ test.describe("목적지 이동 단축키", () => {
     expect(page.url(), "시간 제한이 안 걸렸다").toBe(before);
   });
 
-  test("단축키 시트가 여섯 목적지를 전부 안내한다", async ({ page }) => {
+  test("단축키 시트가 일곱 목적지를 전부 안내한다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await dismissBlockingSurface(page);
     // `?` is wired by the map (HomePage) through `useTypingShortcuts`. It does not

@@ -149,8 +149,8 @@ roadmap promise. It summarizes current product behavior documented in the
   dry-run writes, bounded traversal, blast radius, commit preflight,
   vault-scoped git snapshots, agent handoff. [CLI reference](cli/README.md).
 - **The workbench surfaces, all reading one folder** — Map, Architecture, Docs,
-  Insights, Projects, and Agents. Git History remains available from contextual
-  workbench links instead of occupying a primary rail slot.
+  Insights, Projects, Agents, and Git History. Architecture is additive: the
+  existing Git destination, change badge, and keyboard path remain available.
 - **Export to standard graph formats.** JSON-LD and GraphML come off the same
   deterministic compile artifact, so the vault opens in rdflib, Protégé, Gephi,
   Cytoscape, NetworkX, or Neo4j without a converter of your own.

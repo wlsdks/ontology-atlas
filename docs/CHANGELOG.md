@@ -23,9 +23,10 @@
   fallback only when the installed app can verify the project source, vault, and
   Atlas CLI absolute paths. Other surfaces state that the fallback is unavailable
   instead of fabricating one.
-- Architecture replaces Git in the six-item primary rail; `/git` remains live and
-  reachable from contextual workbench links. Mobile keeps Architecture visible
-  in the bottom navigation so the selected destination never disappears.
+- Architecture is additive in the primary rail: Git remains present with its
+  uncommitted-change badge, `G G` shortcut, guided tour, and `/git` route. Mobile
+  keeps Architecture visible in the bottom navigation so the selected destination
+  never disappears.
 - Installed-app and responsive dogfood caught two live defects: the center column
   had no xl scroll owner, and changing to the taller Plan stage at the previous
   mobile scroll end put the copy action behind the fixed tab bar. Both are fixed;

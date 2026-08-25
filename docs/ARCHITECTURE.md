@@ -333,8 +333,8 @@ project's own — before they have picked any folder of their own.
 /ontology/edit             compatibility redirect → /topology contextual workbench
 /ontology/studio           compatibility redirect; translates node/mode/edit/via/review to /topology
 /ontology/insights         five-question maintenance board
-/git                       local vault git history / snapshot workbench; still live, reached
-                           contextually rather than from the six-item primary rail
+/git                       local vault git history / snapshot workbench; remains a
+                           primary desktop-rail destination with contextual links too
 /agents                    coding agents this computer can run — the app launches them and
                            you talk to them here. Fetches Node and the pinned CLI into an
                            app-only folder when they are missing, runs the eight-step
@@ -366,11 +366,11 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 > `/reset-password`, `/settings/*`.
 
 **One piece of code decides which nav item is active; each screen size shows a
-different list of buttons.** The desktop rail shows six destinations: Map,
-Architecture, Docs, Insights, Projects, and Agents. The mobile bottom bar shows
+different list of buttons.** The desktop rail shows seven destinations: Map,
+Architecture, Docs, Insights, Projects, Agents, and Git. The mobile bottom bar shows
 five persistent destinations: Map, Architecture, Docs, Insights, and Projects;
 web adds Get App as a separate utility. Contextual writing stays inside Map,
-Agents keeps its narrow-screen entry points, and Git remains a contextual route.
+Agents and Git keep their narrow-screen entry points.
 Both read the same rules in
 `src/shared/lib/nav-destination.ts`, so every route belongs to exactly one
 destination even on a screen size that deliberately hides that button. The

@@ -40,6 +40,54 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-26 — Architecture is additive; Git remains a primary destination
+
+**Convened**: solo PO pass · **Trigger**: the owner inspected the delivered
+navigation and corrected the substitution explicitly: "Architecture is added;
+do not remove another destination."
+**Rubric**: 24/24 (fatal zero: none)
+**Decision**: restore Git beside Architecture and preserve every pre-existing
+entry path.
+**Applied rule**: owner correction · additive slice · no route or public-contract
+change.
+**Accountable**: owner.
+
+**Prior decision**: the same-day Architecture record remains standing for the
+separate profile, conformance, MCP/CLI, and Living Blueprint contracts. Its rail
+replacement clause is overturned by this record. The recorded falsifier — a
+developer seeking Git from the rail — was observed immediately in the owner's
+first review, so the losing dissent won.
+
+**Observed phenomenon**: `/git` and its workbench still existed, but the primary
+rail, active-route marker, `G G` shortcut, guided tour, and uncommitted-change
+badge no longer exposed it. Architecture therefore arrived as a replacement even
+though the owner intended a new destination.
+
+**Decision details**:
+
+1. The desktop primary rail has seven destinations: Map · Architecture · Docs ·
+   Insights · Projects · Agents · Git.
+2. Git retains `/git`, the History icon, active-route state, uncommitted-change
+   badge, `G G`, and its two-step destination guide. Architecture retains
+   `/architecture`, `G R`, and its Living Blueprint.
+3. The mobile bottom bar remains the measured five-item set: Map · Architecture ·
+   Docs · Insights · Projects. This correction restores the desktop LNB that was
+   removed; it does not invent another mobile slot.
+4. Future destination work may not fund an addition by silently removing an
+   existing destination. Removal needs its own explicit owner decision.
+
+**Recorded dissent**: seven destination rows plus the fixed utility tier may
+become unreachable at the minimum window height or under UI zoom.
+**Falsifier**: if rendered measurement shows Git, another destination, or the
+utility tier clipped, occluded, or unreachable, revisit rail sizing and scroll
+ownership. Do not remove a destination as the first remedy.
+**Revisit**: on a measured reachability failure at a supported desktop viewport,
+or when the owner explicitly retires a destination.
+
+**Status**: standing. The prior record's Git-demotion clause is overturned.
+
+---
+
 ## 2026-08-26 — Architecture is a separate reviewed contract and primary workbench destination
 
 **Trigger**: the owner fixed Atlas as a developer-facing codebase ontology, then

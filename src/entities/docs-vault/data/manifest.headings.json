@@ -5862,6 +5862,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-26 — Architecture is additive; Git remains a primary destination",
+      "slug": "2026-08-26-architecture-is-additive-git-remains-a-primary-destination"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-26 — Architecture is a separate reviewed contract and primary workbench destination",
       "slug": "2026-08-26-architecture-is-a-separate-reviewed-contract-and-primary-workbench-destination"
     },
@@ -11106,8 +11111,8 @@
     },
     {
       "depth": 3,
-      "text": "`/git` — Record (contextual workbench route; redesigned 2026-07-27)",
-      "slug": "git-record-contextual-workbench-route-redesigned-2026-07-27"
+      "text": "`/git` — Record (primary desktop destination; redesigned 2026-07-27)",
+      "slug": "git-record-primary-desktop-destination-redesigned-2026-07-27"
     },
     {
       "depth": 4,
@@ -13479,6 +13484,28 @@
       "depth": 2,
       "text": "Rationale",
       "slug": "rationale"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/elements/app-nav-rail": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Boundary",
+      "slug": "boundary"
     },
     {
       "depth": 2,

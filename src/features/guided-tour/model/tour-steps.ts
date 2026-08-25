@@ -105,7 +105,8 @@ export type DestinationTourId =
   | "docs"
   | "insights"
   | "projects"
-  | "agents";
+  | "agents"
+  | "git";
 
 export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> = {
   architecture: [
@@ -155,6 +156,15 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       anchor: { type: "testid", value: "project-selector-card" },
       persona: "all",
       copyKey: "projectsCard",
+    },
+  ],
+  git: [
+    { id: "git-what", anchor: null, persona: "all", copyKey: "gitWhat" },
+    {
+      id: "git-changes",
+      anchor: { type: "testid", value: "atlas-git-panel" },
+      persona: "all",
+      copyKey: "gitChanges",
     },
   ],
 };

@@ -74,7 +74,7 @@ describe("AppNavRail", () => {
     expect(wordmark).toHaveAttribute("translate", "no");
   });
 
-  it("renders all 6 destinations with i18n labels", () => {
+  it("renders all 7 destinations with i18n labels", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-architecture")).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
-    expect(screen.queryByTestId("app-nav-rail-item-git")).not.toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
     // The retired ERD builder (2026-07-24) — removed from the rail.
     expect(screen.queryByTestId("app-nav-rail-item-builder")).not.toBeInTheDocument();
     expect(screen.queryByTestId("app-nav-rail-agent-status")).not.toBeInTheDocument();
@@ -205,5 +205,31 @@ describe("AppNavRail", () => {
       "href",
       "/architecture/?focus=main",
     );
+    expect(screen.getByTestId("app-nav-rail-item-git")).toHaveAttribute(
+      "href",
+      "/git/?focus=main",
+    );
+  });
+});
+
+describe("Git destination preservation", () => {
+  it("keeps Git beside the additive Architecture destination", () => {
+    renderRail();
+    expect(screen.getByTestId("app-nav-rail-item-architecture")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
+  });
+
+  it("shows the uncommitted-change badge only when there is something to record", () => {
+    const { unmount } = renderRail(<AppNavRail gitDirtyCount={3} />);
+    expect(screen.getByTestId("app-nav-rail-badge-git")).toHaveTextContent("3");
+    unmount();
+
+    renderRail(<AppNavRail gitDirtyCount={0} />);
+    expect(screen.queryByTestId("app-nav-rail-badge-git")).not.toBeInTheDocument();
+  });
+
+  it("caps three-digit counts at 9+ to protect tile geometry", () => {
+    renderRail(<AppNavRail gitDirtyCount={40} />);
+    expect(screen.getByTestId("app-nav-rail-badge-git")).toHaveTextContent("9+");
   });
 });

@@ -22,6 +22,10 @@ import {
   Download,
   BookOpen,
   FolderKanban,
+  // `History as HistoryIcon` — under certain HMR/bundle states the bare `History`
+  // identifier resolves to the global DOM History constructor and crashes the screen
+  // with "Illegal constructor". The alias cannot collide with that global.
+  History as HistoryIcon,
   Map as MapIcon,
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
@@ -59,6 +63,12 @@ export interface AppNavRailProps {
    *  their default href; every other item, and any unnamed key, keeps its static href.
    *  `AppShell` passes through what it read from `useNavRailShellValue()`. */
   contextHrefs?: NavRailContextHrefs | null;
+  /**
+   * The Git destination's uncommitted change count. `AppShell` reads the same
+   * changeset as the Git workbench and passes only the count, preserving the
+   * widget boundary. At zero the ambient badge disappears.
+   */
+  gitDirtyCount?: number;
   /**
    * How many tools finished installing while the user was on another screen. It
    * counts **terminal states only** — progress is not drawn here, because this is a
@@ -127,6 +137,7 @@ export function AppNavRail({
   settingsSlot,
   hidden,
   contextHrefs,
+  gitDirtyCount = 0,
   agentsNoticeCount = 0,
   className,
 }: AppNavRailProps) {
@@ -222,8 +233,6 @@ export function AppNavRail({
     { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
-    // Architecture took Git's primary slot on 2026-08-26. `/git` remains a live
-    // contextual workbench route; removing a rail tile did not retire the capability.
     // Agents — a new destination on 2026-08-20 (ledger 90). The install and connect
     // screens were pulled out of the settings sheet to here.
     //
@@ -241,6 +250,9 @@ export function AppNavRail({
       // of the eye cannot be read if it changes every second).
       badgeCount: agentsNoticeCount,
     },
+    // Owner correction, 2026-08-26: Architecture is additive. Git keeps its
+    // primary destination, current-route marker, and uncommitted-change badge.
+    { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
 
   return (
