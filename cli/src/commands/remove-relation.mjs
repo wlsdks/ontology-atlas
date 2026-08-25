@@ -133,6 +133,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `${COLORS.bold}remove-relation${COLORS.reset} — take one relation off a node\n\n` +
+      `${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas remove-relation <from> <to> <type> [vault] [--vault path] [--json] [--dry-run]\n\n` +
       `The mirror of ${COLORS.bold}relate${COLORS.reset}: same arguments, opposite direction.\n` +
       `--dry-run reports what would be removed without writing.\n\n` +
