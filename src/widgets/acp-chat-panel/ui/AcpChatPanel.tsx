@@ -739,7 +739,7 @@ export function AcpChatPanel({
     const id = window.setInterval(() => {
       const now = Date.now();
       setSilence(
-        turnLiveness(status, lastTurnUpdateAt, now) === 'silent'
+        turnLiveness(status, lastTurnUpdateAt, now, pending !== null) === 'silent'
           ? {
               basis: lastTurnUpdateAt,
               minutes: Math.max(1, Math.floor((now - lastTurnUpdateAt) / 60_000)),
@@ -748,7 +748,7 @@ export function AcpChatPanel({
       );
     }, 5_000);
     return () => window.clearInterval(id);
-  }, [busy, lastTurnUpdateAt, status]);
+  }, [busy, lastTurnUpdateAt, pending, status]);
   const turnSilent = busy && silence !== null && silence.basis === lastTurnUpdateAt;
   const silentMinutes = silence?.minutes ?? 0;
   // When the dock's first frame loads and immediately after session replacement,

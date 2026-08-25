@@ -29,21 +29,32 @@
  */
 export const TURN_SILENCE_LIMIT_MS = 90_000;
 
-export type TurnLiveness = 'idle' | 'working' | 'silent';
+export type TurnLiveness = 'idle' | 'working' | 'awaiting-answer' | 'silent';
 
 /**
  * @param status the session status; only `thinking` can be judged
  * @param lastUpdateAt epoch ms of the most recent `session/update`, or of the send that opened the
  *   turn when none has arrived yet. `null` means no turn is open.
  * @param now epoch ms
+ * @param awaitingAnswer a permission request is on screen, waiting for the person
  */
 export function turnLiveness(
   status: string,
   lastUpdateAt: number | null,
   now: number,
+  awaitingAnswer = false,
   limitMs: number = TURN_SILENCE_LIMIT_MS,
 ): TurnLiveness {
   if (status !== 'thinking') return 'idle';
+  /*
+   * ⚠️ **The ball is in the person's court, so silence is theirs, not the agent's.** Caught in the
+   * installed rc.12 build: a permission card sat on screen while the notice underneath said the
+   * agent had gone quiet for three minutes. Updates genuinely stop while an answer is awaited, so
+   * the check below sees a stall — but the wait is already explained by the card, and telling
+   * somebody that nothing is happening while they are the thing that is not happening is worse than
+   * saying nothing.
+   */
+  if (awaitingAnswer) return 'awaiting-answer';
   // ⚠️ No timestamp means the turn just opened, not that it has been silent forever. Reading a
   // missing clock as "silent" would flag every turn the instant it started.
   if (lastUpdateAt === null) return 'working';

@@ -903,6 +903,31 @@ describe('대화 패널 — 못 하는 일은 정직하게', () => {
     }
   });
 
+  /*
+   * ⚠️ Caught by this very fix's first outing in the installed rc.12 build: a permission card sat on
+   * screen while the notice under it said the agent had gone quiet for three minutes. Updates do
+   * stop while an answer is awaited -- but the person is the thing that has stopped, the card
+   * already explains the wait, and telling somebody nothing is happening while they are the thing
+   * not happening is worse than saying nothing.
+   */
+  it('승인 카드가 떠 있는 동안은 조용해도 멈췄다고 하지 않는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await bootSession();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: '지도 만들어줘' } });
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      emit(permissionRequest('/tmp/vault/a.md', 91));
+      await waitFor(() =>
+        expect(screen.getByTestId("acp-permission-card")).toBeInTheDocument(),
+      );
+
+      await vi.advanceTimersByTimeAsync(TURN_SILENCE_LIMIT_MS + 6_000);
+      expect(screen.queryByTestId('acp-chat-turn-silent')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('빈 말은 보내지 않는다', async () => {
     await bootSession();
     expect(screen.getByTestId('acp-chat-send')).toBeDisabled();
