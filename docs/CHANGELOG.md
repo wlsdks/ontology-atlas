@@ -20,6 +20,19 @@
   shipping compatibility asset while its rejected visual direction is replaced
   in a separate design decision.
 
+## 2026-08-25 · Verify waits long enough for a slower machine
+
+- The `v1.0.0-rc.11` release blocked at its MCP gate: verify timed out after 15 seconds on the x64
+  macOS runner while the arm64 build of the same commit passed. Nothing was broken. Verify walks the
+  whole source tree, 1,419 files here, not the 84-node ontology, and takes 12.6 seconds on a fast
+  laptop, so a 15-second budget left 2.4 seconds of margin and any slower machine failed.
+- The default is now 30 seconds and the release gate 90. A verify timeout exists to catch a server
+  that is hung, not one that is slow: extra patience costs nothing when things work, and a release
+  blocked by a runner's speed costs a whole build. Running `mcp-verify` on this project's own
+  ontology needs no flag now; it could not complete under the old 8-second default at all.
+- The retry hint doubles the timeout that was actually used instead of naming a fixed number, which
+  would otherwise become the advice to retry at the value that just failed.
+
 ## 2026-08-25 · The map lives inside your project, and the door finds the people who need it
 
 - **A door for somebody who already has code.** The first-run card offered four actions and none of
