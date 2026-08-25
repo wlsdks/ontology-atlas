@@ -2063,7 +2063,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
   assert.match(clean, /pnpm test:dogfood:graph-db\s+Narrow dogfood graph DB pack runner contract/);
   assert.match(clean, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);
-  assert.match(clean, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+Source-checkout dogfood verify with explicit args/);
+  assert.match(clean, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 90000\s+Source-checkout dogfood verify with explicit args/);
   assert.match(clean, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);
   assert.match(clean, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
   assert.match(clean, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact initialize-tool-inventory\/initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
@@ -2079,7 +2079,7 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.match(stripAnsi(r.stderr), /Received: "nope"/);
   assert.match(stripAnsi(r.stderr), /--timeout-ms N/);
   assert.match(stripAnsi(r.stderr), /OATLAS_VERIFY_TIMEOUT_MS=N/);
-  assert.match(stripAnsi(r.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(r.stderr), /ontology-atlas mcp-verify --timeout-ms 60000/);
 
   const partial = await run(['mcp-verify', '--timeout-ms=1000ms']);
   assert.equal(partial.code, 1);
@@ -2087,29 +2087,29 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.match(stripAnsi(partial.stderr), /Received: "1000ms"/);
   assert.match(stripAnsi(partial.stderr), /--timeout-ms N/);
   assert.match(stripAnsi(partial.stderr), /OATLAS_VERIFY_TIMEOUT_MS=N/);
-  assert.match(stripAnsi(partial.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(partial.stderr), /ontology-atlas mcp-verify --timeout-ms 60000/);
 
   const explicitVault = await run(['mcp-verify', 'ontology', '--timeout-ms=1000ms']);
   assert.equal(explicitVault.code, 1);
   assert.match(stripAnsi(explicitVault.stderr), /--timeout-ms must be a positive integer/);
   assert.match(stripAnsi(explicitVault.stderr), /Received: "1000ms"/);
-  assert.match(stripAnsi(explicitVault.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(explicitVault.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 60000/);
 
   const explicitVaultFlag = await run(['mcp-verify', '--vault', 'ontology', '--timeout-ms=1000ms']);
   assert.equal(explicitVaultFlag.code, 1);
-  assert.match(stripAnsi(explicitVaultFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(explicitVaultFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 60000/);
 
   const missing = await run(['mcp-verify', '--timeout-ms']);
   assert.equal(missing.code, 1);
   assert.match(stripAnsi(missing.stderr), /--timeout-ms requires a value/);
   assert.match(stripAnsi(missing.stderr), /Received: undefined/);
-  assert.match(stripAnsi(missing.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(missing.stderr), /ontology-atlas mcp-verify --timeout-ms 60000/);
 
   const nextFlag = await run(['mcp-verify', '--timeout-ms', '--vault', 'ontology']);
   assert.equal(nextFlag.code, 1);
   assert.match(stripAnsi(nextFlag.stderr), /--timeout-ms requires a value/);
   assert.match(stripAnsi(nextFlag.stderr), /Received: "--vault"/);
-  assert.match(stripAnsi(nextFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(nextFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 60000/);
 
   const envTimeout = await run(['mcp-verify', 'ontology'], {
     env: { OATLAS_VERIFY_TIMEOUT_MS: '1000ms' },
@@ -2117,7 +2117,7 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.equal(envTimeout.code, 1);
   assert.match(stripAnsi(envTimeout.stderr), /OATLAS_VERIFY_TIMEOUT_MS must be a positive integer/);
   assert.match(stripAnsi(envTimeout.stderr), /Received: "1000ms"/);
-  assert.match(stripAnsi(envTimeout.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(envTimeout.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 60000/);
   assert.doesNotMatch(stripAnsi(envTimeout.stderr), /npm run verify -- --timeout-ms 15000/);
 
   const envKillGrace = await run(['mcp-verify', 'ontology'], {
@@ -2155,7 +2155,9 @@ await test('mcp-verify — passes CLI retry hint to the verify script', async ()
   });
 
   assert.equal(r.code, 1);
-  assert.match(stripAnsi(r.stderr), /retry=ontology-atlas mcp-verify --vault '.+vault with space' --timeout-ms 15000/);
+  // ⚠️ Double the timeout that was actually used, never a literal: the hint is printed *after* a
+  // run timed out, so a fixed number becomes a dead end the moment a default moves onto it.
+  assert.match(stripAnsi(r.stderr), /retry=ontology-atlas mcp-verify --vault '.+vault with space' --timeout-ms 60000/);
   assert.doesNotMatch(stripAnsi(r.stderr), /npm run verify -- --timeout-ms 15000/);
 });
 

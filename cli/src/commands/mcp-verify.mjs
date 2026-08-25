@@ -14,7 +14,19 @@ import { formatUnknownFlagError, parsePositiveIntegerFlag, parseVaultFlag, resol
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require_ = createRequire(import.meta.url);
 const ALLOWED_FLAGS = ['--vault', '--timeout-ms'];
-const DEFAULT_VERIFY_TIMEOUT_MS = 8_000;
+/*
+ * ⚠️ **Headroom, not a guess.** Measured 2026-08-25: a bare `mcp-verify docs/ontology` takes
+ * 12.6s on an Apple Silicon laptop, because verify's `infer_imports`/`index_project` steps scan
+ * the whole source tree (1,419 files here), not the 84-node vault. The old 8s default could not
+ * survive this project's own vault at all, and the 15s every caller passed to compensate left
+ * 2.4s of margin: the v1.0.0-rc.11 release blocked when the x64 macOS runner, slower than the
+ * arm64 one, crossed it while the arm64 build of the same commit was still going.
+ *
+ * A verify timeout exists to catch a server that is **hung**, not one that is slow. Ten seconds
+ * of extra patience costs nothing when things work; a release blocked by a machine's speed costs
+ * a whole build. So the budget is roughly 2.5x the measured time on fast hardware.
+ */
+const DEFAULT_VERIFY_TIMEOUT_MS = 30_000;
 const DEFAULT_VERIFY_KILL_GRACE_MS = 1_000;
 
 
@@ -106,7 +118,7 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
         ...process.env,
         OATLAS_VAULT: vaultRoot,
         OATLAS_REPO_ROOT: process.env.OATLAS_REPO_ROOT || process.cwd(),
-        OATLAS_VERIFY_RETRY_EXAMPLE: mcpVerifyRetryExample(vaultArg),
+        OATLAS_VERIFY_RETRY_EXAMPLE: mcpVerifyRetryExample(vaultArg, verifyWaitMs),
         ...(timeoutMs ? { OATLAS_VERIFY_TIMEOUT_MS: String(timeoutMs) } : {}),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -131,7 +143,7 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
       if (!wrapperTimedOut && signal) {
         process.stderr.write(
           `${COLORS.red}error${COLORS.reset}  MCP verify script terminated by ${signal}. ` +
-          'Check OATLAS_MCP_VERIFY_PATH or rerun with --timeout-ms 15000 for slower vaults.\n',
+          'Check OATLAS_MCP_VERIFY_PATH or rerun with a larger --timeout-ms for slower vaults.\n',
         );
       }
       finish(code ?? 1);
@@ -143,9 +155,14 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
   });
 }
 
-function mcpVerifyRetryExample(vaultArg) {
+/*
+ * ⚠️ The suggested value is derived from the one that was actually used, never written as a literal.
+ * This string is printed *after* a run timed out, so naming the same number the run just failed at
+ * is a dead end -- and that is exactly what a literal becomes the moment a default moves to it.
+ */
+function mcpVerifyRetryExample(vaultArg, effectiveTimeoutMs = DEFAULT_VERIFY_TIMEOUT_MS) {
   const vaultPart = vaultArg && vaultArg !== '.' ? ` --vault ${shellArg(vaultArg)}` : '';
-  return `ontology-atlas mcp-verify${vaultPart} --timeout-ms 15000`;
+  return `ontology-atlas mcp-verify${vaultPart} --timeout-ms ${effectiveTimeoutMs * 2}`;
 }
 
 function shellArg(value) {
@@ -236,7 +253,7 @@ function printUsage(output = process.stderr) {
   output.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas mcp-verify [vault] [--timeout-ms N]\n` +
-      `  ontology-atlas mcp-verify --vault path --timeout-ms 15000\n\n` +
+      `  ontology-atlas mcp-verify --vault path --timeout-ms 90000\n\n` +
       `Runs the MCP package verify CLI against the resolved vault.\n` +
       `Timeout cleanup sends SIGTERM and then SIGKILL; set OATLAS_VERIFY_KILL_GRACE_MS=N only when the post-timeout cleanup window needs explicit tuning.\n` +
       `Checks parser smoke, server boot, tool inventory (missing/extra/duplicate/invalid names), list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/node census/file validation, agent_brief, workspace health,\n` +
@@ -267,7 +284,7 @@ function printUsage(output = process.stderr) {
       `  pnpm test:dogfood:status          Narrow dogfood status shortcut runner contract.\n` +
       `  pnpm test:dogfood:graph-db        Narrow dogfood graph DB pack runner contract.\n` +
       `  pnpm dogfood:verify               Root checkout dogfood vault verify shortcut.\n` +
-      `  pnpm cli:mcp-verify docs/ontology --timeout-ms 15000\n` +
+      `  pnpm cli:mcp-verify docs/ontology --timeout-ms 90000\n` +
       `                                      Source-checkout dogfood verify with explicit args.\n` +
       `  pnpm cli:mcp-verify -- --help     Source-checkout shortcut for this help from the repo root.\n` +
       `  pnpm test:mcp:verify              MCP verify helper contract without the full integration suite.\n` +
