@@ -255,7 +255,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.3.19",
+        "package": "dimcode@0.3.20",
         "args": [
           "acp"
         ]
