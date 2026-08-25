@@ -3480,7 +3480,9 @@
       "allowAlwaysDirectory": "이 폴더를 이번 대화 내내 허용",
       "allowAlwaysUnknown": "이번 대화 내내 허용",
       "scopeHint": "허용 범위: {names}",
-      "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요."
+      "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요.",
+      "insideProjectTitle": "내 프로젝트 안의 코드를 보려고 해요",
+      "insideProjectBody": "지도 폴더 밖이지만, 고른 프로젝트 안입니다. 허락하기 전에는 아무 일도 일어나지 않아요."
     },
     "close": "대화 닫기",
     "composerPlaceholder": "이 폴더에 대해 물어보거나 시켜요",

@@ -21,6 +21,7 @@ function card(
   toolKind: string | null,
   filePath: string | null = '/etc/hosts',
   extraOptions: Array<{ optionId: string; kind: string; name: string | null }> = [],
+  vaultPath: string | null = null,
 ) {
   return (
     <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -42,6 +43,7 @@ function card(
           },
           resolve: vi.fn(),
         }}
+        vaultPath={vaultPath}
       />
     </NextIntlClientProvider>
   );
@@ -224,5 +226,27 @@ describe('금고 서버가 스스로 물을 때 — 카드가 그 문장을 그�
     render(card('delete'));
     expect(screen.getByTestId('acp-permission-intent').dataset.intent).toBe('delete');
     expect(screen.queryByTestId('acp-permission-ask')).toBeNull();
+  });
+});
+
+
+/**
+ * Measured in the installed app, 2026-08-25: right after pressing 「make a map from my code」, this
+ * card warned that the agent wanted to touch something **outside this folder** — which was the
+ * person's own project, the thing they had just asked for. Since maps live inside projects, code
+ * reads are outside the vault by construction, so that warning now fires on the intended path. A
+ * warning that cries wolf teaches people to click through it.
+ */
+describe('권한 카드 — 내 프로젝트 안과 전혀 다른 곳을 다르게 말한다', () => {
+  const VAULT = '/Users/dana/my-product/atlas';
+
+  it('내 프로젝트 안이면 그렇게 말한다', () => {
+    render(card('read', '/Users/dana/my-product/src/orders.ts', [], VAULT));
+    expect(screen.getByText(koMessages.acpChat.permission.insideProjectTitle)).toBeInTheDocument();
+  });
+
+  it('정말 다른 곳은 예전 경고 그대로다 — 주의가 필요한 쪽', () => {
+    render(card('read', '/Users/dana/.ssh/id_rsa', [], VAULT));
+    expect(screen.getByText(koMessages.acpChat.permission.title)).toBeInTheDocument();
   });
 });

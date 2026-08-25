@@ -20600,3 +20600,69 @@ the weight assumed here.
 **Status**: valid
 
 ---
+## 2026-08-25 — Pressing the door in the installed app found five defects, one fatal
+
+The owner asked for the button to be pressed rather than reasoned about. It was,
+on a real project, and the flow ran: the path appeared before anything was
+created, nothing existed on disk until the confirm, the folder landed inside the
+project with the code untouched, the vault opened, the chat opened, and the
+opening turn arrived as the person's own words. Then it stopped.
+
+**1. Fatal: the agent could not see the code.** Claude reported that the Atlas
+server's repository root was the vault folder itself and that it refused to look
+one level up at the product. The app spawns MCP with `OATLAS_VAULT` and no
+`OATLAS_REPO_ROOT`, so the root fell back to the vault. That omission was
+deliberate and correct while vaults lived beside their projects — guessing would
+have pinned a wrong root. Moving maps inside projects made the vault a folder
+containing the map and none of the product, so **the feature built to make a map
+from somebody's code could not see their code.**
+
+Decision: pass `OATLAS_REPO_ROOT` when, and only when, the vault has the shape
+Atlas itself creates (`<project>/atlas`). Then the parent is known, not guessed.
+Every other vault keeps the previous behaviour, which is why the original
+reasoning survives intact for them.
+
+**2. The picker asked for the wrong thing.** The button says 「make a map from my
+code」 and the dialog's default title said "Open ontology vault" — telling the
+person, at the moment of choosing, to find a vault they do not have inside the
+flow that exists to create one. It now asks for the project folder.
+
+**3. The permission card cried wolf.** It warned that the agent wanted to touch
+something *outside this folder*, which was the person's own project — the thing
+they had just asked for. With maps inside projects, code reads are outside the
+vault by construction, so the warning now fires on the intended path every time.
+A checkpoint that cries wolf teaches people to click through it, which is the one
+thing it must never teach. The card now distinguishes the person's own project
+from somewhere else entirely. Nothing is suppressed: every access still stops for
+an answer.
+
+**4. Two surfaces claimed the same next step.** The start checklist stayed on the
+map offering 「connect an AI agent · 1/3」 beside an open conversation with one.
+It is guidance for someone who has not started; it now yields while the agent
+panel is open, and returns when it closes.
+
+**5. The door appeared on a map that was plainly built.** The rule was "a vault
+is open and no code is bound", and it fired on the owner's own vault of 82
+concepts, because one project node there has no code folder attached. 「Make a map
+from my code」 reads there as an invitation to start over, and pressing it would
+create a different vault inside some project and leave that one behind. A concept
+ceiling now separates a person still starting from one who has built something;
+past it, the unbound-source row still offers the connect path, which is the right
+action for a built map missing its evidence link.
+
+**What this round is really evidence for**: five defects, and not one of them was
+visible to the tests that shipped with these features. All five needed the button
+pressed on a real machine. The first was caused by an earlier decision in this
+same session, which had been verified by gates that were all green.
+
+**Recorded dissent**: the concept ceiling in (5) is a number, and numbers about
+"enough work" age badly. The counter is that the alternative — judging whether a
+map is good — is not something a threshold can do honestly, and a wrong door on a
+large vault is more costly than a missing one, because it invites starting over.
+
+**Falsifier**: somebody with a genuinely unfinished map of more than the ceiling
+looks for the door and cannot find it.
+
+**Status**: valid
+
+---

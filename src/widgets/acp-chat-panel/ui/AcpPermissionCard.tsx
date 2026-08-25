@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 
 import { permissionIntent } from '@/features/acp-session/model/permission-intent';
 import { permissionScope } from '@/features/acp-session/model/permission-scope';
+import { permissionLocality } from '@/features/acp-session/model/permission-locality';
 import { OntologyChangeReview } from '@/features/ontology-change-review';
 import {
   buildOntologyChangeSet,
@@ -45,8 +46,11 @@ export function AcpPermissionCard({
   changeSet: providedChangeSet,
   activeItemIndex,
   onActiveItemChange,
+  vaultPath,
 }: {
   pending: PendingPermission;
+  /** The open vault, so the card can tell the person's own project from somewhere else entirely. */
+  vaultPath?: string | null;
   /** The computed value comes along so the panel and the map read the same typed change. */
   changeSet?: OntologyChangeSet | null;
   activeItemIndex?: number;
@@ -99,6 +103,7 @@ export function AcpPermissionCard({
     is asserted.
   */
   const scope = permissionScope(request.options);
+  const locality = permissionLocality(vaultPath ?? null, request.filePath ?? null);
 
   const allowOnce = request.options.find((o) => o.kind === 'allow_once');
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
@@ -155,13 +160,36 @@ export function AcpPermissionCard({
             id="acp-permission-title"
             className="break-keep text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
           >
-            {t(ontologyWrite ? 'ontologyWriteTitle' : serverConsent ? 'consentTitle' : 'title')}
+            {t(
+              ontologyWrite
+                ? 'ontologyWriteTitle'
+                : serverConsent
+                  ? 'consentTitle'
+                  : /*
+                     * ⚠️ Since maps live inside projects, reading the code is *by construction*
+                     * outside the vault — so the generic "outside this folder" now fires on the
+                     * exact thing the person just asked for. A warning that cries wolf on the
+                     * intended path teaches people to click through it. Nothing is suppressed;
+                     * the card still stops for an answer, it just says which situation this is.
+                     */
+                    locality === 'inside-project'
+                    ? 'insideProjectTitle'
+                    : 'title',
+            )}
           </p>
           <p
             id="acp-permission-body"
             className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]"
           >
-            {t(ontologyWrite ? 'ontologyWriteBody' : serverConsent ? 'consentBody' : 'body')}
+            {t(
+              ontologyWrite
+                ? 'ontologyWriteBody'
+                : serverConsent
+                  ? 'consentBody'
+                  : locality === 'inside-project'
+                    ? 'insideProjectBody'
+                    : 'body',
+            )}
           </p>
         </div>
       </div>

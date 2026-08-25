@@ -3480,7 +3480,9 @@
       "allowAlwaysDirectory": "Allow this folder for the rest of this chat",
       "allowAlwaysUnknown": "Allow for the rest of this chat",
       "scopeHint": "Covers: {names}",
-      "scopeUnknownHint": "This tool did not say what the grant covers. Allowing once is the safer choice."
+      "scopeUnknownHint": "This tool did not say what the grant covers. Allowing once is the safer choice.",
+      "insideProjectTitle": "It wants to look at code in your project",
+      "insideProjectBody": "That is outside the map folder but inside the project you picked. Nothing happens until you allow it."
     },
     "close": "Close conversation",
     "composerPlaceholder": "Ask about this folder, or give it a task",

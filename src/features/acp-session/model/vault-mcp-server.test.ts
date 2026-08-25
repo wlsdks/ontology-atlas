@@ -93,3 +93,38 @@ describe('어느 런타임이 볼트 설정을 스스로 읽나 — 실측한 �
     expect(vaultSelfReadSlot(undefined)).toBeNull();
   });
 });
+
+/**
+ * Measured in the installed app, 2026-08-25. The door created `<project>/atlas`, opened it, and
+ * handed the work to Claude — which stopped at the first step and said the Atlas server reported its
+ * code root as the vault folder itself, refusing to look one level up at the product. The feature
+ * built to make a map from somebody's code could not see their code.
+ */
+
+
+describe('저장소 루트 — 지도가 프로젝트 안에 있으면 코드는 한 단계 위다', () => {
+  const rootOf = (servers: ReturnType<typeof vaultMcpServers>) =>
+    (servers[0]?.env as Array<{ name: string; value: string }> | undefined)?.find(
+      (e) => e.name === 'OATLAS_REPO_ROOT',
+    )?.value ?? null;
+
+  it('프로젝트 안의 금고면 부모를 코드 루트로 넘긴다', () => {
+    expect(rootOf(vaultMcpServers(launch, '/Users/dana/my-product/atlas'))).toBe(
+      '/Users/dana/my-product',
+    );
+  });
+
+  /*
+   * ⚠️ The narrow half, and the reason the old code guessed nothing. A vault somebody keeps at
+   * `~/notes` has no project above it; naming its parent as a code root would point the survey at
+   * their home directory.
+   */
+  it('우리가 만든 모양이 아니면 예전처럼 아무것도 넘기지 않는다', () => {
+    expect(rootOf(vaultMcpServers(launch, '/Users/dana/notes'))).toBeNull();
+    expect(rootOf(vaultMcpServers(launch, '/Users/dana/Documents/my-ontology'))).toBeNull();
+  });
+
+  it('파일시스템 뿌리에 있는 atlas 는 프로젝트가 없다', () => {
+    expect(rootOf(vaultMcpServers(launch, '/atlas'))).toBeNull();
+  });
+});

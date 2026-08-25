@@ -1150,6 +1150,7 @@ export function AcpChatPanel({
       <Surface open={Boolean(pending)} origin="bottom center" motion="overlay">
         {pendingHeld ? (
           <AcpPermissionCard
+            vaultPath={vaultRoot}
             pending={pendingHeld}
             changeSet={pendingHeldChangeSet}
             activeItemIndex={
