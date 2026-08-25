@@ -828,6 +828,39 @@ describe("TopologyIndexPanel", () => {
      * without a way to close it the line sits in the panel for the rest of the session, long after
      * it has told the person everything it knows.
      */
+    /*
+     * ⚠️ Measured in the installed app, 2026-08-25: the door appeared on the owner's own vault of
+     * 82 concepts, because one project node there has no code folder attached. Someone with a map
+     * that size has plainly built one, and 「make a map from my code」 reads as an invitation to
+     * start over — pressing it would create a different vault and leave this one behind.
+     */
+    it("keeps the door away from a map that is plainly already built", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={82}
+          totalRelations={115}
+          domainCount={7}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          unboundProjectNodeId="project:root"
+          agentAvailable
+          vaultLoaded
+        />,
+      );
+      // ⚠️ Asserted on the prop, not on the rendered door: this file stubs the starter module, so
+      // querying for the button would pass whether or not the rule holds.
+      expect(
+        (firstRunStarterProps.current as { mapUnbuilt?: boolean } | null)?.mapUnbuilt,
+        "이미 만든 지도에 「지도 만들기」를 권하면 처음부터 다시 하라는 말로 읽힌다",
+      ).toBe(false);
+      // The right action for a built map missing its evidence link is still offered.
+      expect(screen.getByTestId("topology-index-source-unbound")).toBeInTheDocument();
+    });
+
     it("lets the notice be closed once it has been read", () => {
       const onDismiss = vi.fn();
       render(

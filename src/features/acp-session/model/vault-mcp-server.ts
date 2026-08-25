@@ -16,6 +16,8 @@ import type { McpServerLaunch } from '@/shared/config';
  * `.codex/config.toml` already had `ontology-atlas`, and the adapter's deduplication **discarded
  * ours without a word**. So the server the app wires avoids names a user would plausibly write by hand.
  */
+import { PROJECT_VAULT_DIR } from '@/shared/lib/project-vault-dir';
+
 export const VAULT_MCP_SERVER_NAME = 'atlas-vault';
 
 /** An entry in ACP `session/new`'s `mcpServers` (the stdio variant). */
@@ -111,6 +113,7 @@ export function vaultMcpServers(
    * gets the gate rather than a silent write path.
    */
   const serverGate = options?.ownsWriteGate === true ? null : 'on';
+  const projectRoot = projectRootForVault(vaultPath);
   return [
     {
       name: VAULT_MCP_SERVER_NAME,
@@ -118,10 +121,42 @@ export function vaultMcpServers(
       args: [...launch.args],
       env: [
         { name: 'OATLAS_VAULT', value: vaultPath },
-        // MCP finds the repository root itself when the vault is inside git. Guessing it here would
-        // pin a wrong value whenever the vault sits outside the repo.
+        /*
+         * ⚠️ **The repository root, when we actually know it** (measured in the installed app,
+         * 2026-08-25). This used to be omitted on the reasoning that the vault might sit outside the
+         * repository, so guessing would pin a wrong value. That was right while every vault lived
+         * beside its project — and it broke the moment maps moved inside one.
+         *
+         * With the vault at `<project>/atlas`, MCP resolved its code root to the vault itself, which
+         * holds the map and none of the product. The agent surveyed a folder containing four seeded
+         * files, refused to look one level up, and reported it could not start — so the door built
+         * to make a map from somebody's code could not see their code.
+         *
+         * `projectRootForVault` returns a path only for the shape Atlas itself creates. Anywhere
+         * else it returns null and the previous behaviour stands: MCP finds the root on its own.
+         */
+        ...(projectRoot ? [{ name: 'OATLAS_REPO_ROOT', value: projectRoot }] : []),
         ...(serverGate ? [{ name: 'OATLAS_WRITE_CONSENT', value: serverGate }] : []),
       ],
     },
   ];
+}
+
+/**
+ * The project a vault was created inside, or `null` when this vault is not one of ours.
+ *
+ * Recognition is by the folder name Atlas creates (`PROJECT_VAULT_DIR`) and nothing else. A vault
+ * somebody keeps at `~/notes` has no project above it, and naming its parent as a code root would
+ * point the survey at their home directory — the exact wrong-root failure the old comment guarded
+ * against, which is why that guard survives for every other shape.
+ */
+export function projectRootForVault(vaultPath: string): string | null {
+  const trimmed = vaultPath.trim().replace(/[/\\]+$/, '');
+  if (!trimmed) return null;
+  const parts = trimmed.split(/[/\\]/);
+  const name = parts.pop();
+  if (name !== PROJECT_VAULT_DIR) return null;
+  const parent = parts.join(trimmed.includes('\\') && !trimmed.includes('/') ? '\\' : '/');
+  // A parent of `''` means the vault sat at a filesystem root; there is no project there.
+  return parent ? parent : null;
 }

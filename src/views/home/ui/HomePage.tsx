@@ -5376,7 +5376,17 @@ function HomePageImpl() {
                    * bootstrap** (`docsFoundCount` below). Nothing new was built; an
                    * existing screen simply became reachable, with no popup added.
                    */
-                  canCreateNode && !startStepsDismissed ? (
+                  /*
+                   * ⚠️ Not while a conversation is open (measured in the installed app,
+                   * 2026-08-25). Pressing 「make a map from my code」 opens the agent panel and
+                   * sends the first turn — and this checklist stayed on the map beside it, still
+                   * offering 「connect an AI agent · 1/3」 to somebody already mid-conversation
+                   * with one. Two surfaces claiming the same next step, one of them stale.
+                   *
+                   * It is guidance for a person who has not started. Someone talking to an agent
+                   * has started. Dismissal is untouched: closing the panel brings it back.
+                   */
+                  canCreateNode && !startStepsDismissed && !agentDockOpen ? (
                     <VaultStartSteps
                       agentConnected={agentConnect.status.kind === "connected"}
                       acpRuntimeLabel={acpRuntimeLabel}

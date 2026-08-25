@@ -34,6 +34,12 @@ import {
  * directory this reuses it and says so, because the alternative — quietly writing into a folder
  * whose contents nobody has looked at — is how a person loses work they had already done.
  */
+/**
+ * Names the folder being asked for. English because it is an OS dialog title, chosen by the native
+ * layer's own default when absent, and the surrounding native chrome is not localised either.
+ */
+const PROJECT_PICKER_TITLE = 'Choose your project folder';
+
 type BuildFromCodeStage = 'idle' | 'choosing' | 'confirm' | 'creating';
 
 export interface BuildFromCodeState {
@@ -74,7 +80,13 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
     if (!isTauriVaultRuntime()) return;
     setState({ ...IDLE, stage: 'choosing' });
     try {
-      const handle = await pickTauriVaultDirectory();
+      /*
+       * ⚠️ The dialog has to ask for what this flow actually wants (measured in the installed app,
+       * 2026-08-25). The button says 「make a map from my code」 and the picker's default title says
+       * "Open ontology vault" — so at the exact moment of choosing, the person is told to find a
+       * vault they do not have, inside the flow that exists to create one.
+       */
+      const handle = await pickTauriVaultDirectory(PROJECT_PICKER_TITLE);
       if (!handle) {
         setState(IDLE);
         return;

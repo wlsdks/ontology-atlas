@@ -32,6 +32,23 @@ import { fieldClass } from '@/shared/ui/control-class';
 /** INDEX lenses — 「All」 (all) and 「Recently Changed」 (recently changed). */
 export type IndexLens = "all" | "recent";
 
+/**
+ * Above this many concepts, a map counts as built and the 「make a map from my code」 door steps
+ * aside.
+ *
+ * ⚠️ **Measured in the installed app, 2026-08-25.** The rule was "a vault is open and no code is
+ * bound", and it fired on the owner's own vault of 82 concepts and 115 relations — because one
+ * project node there has no code folder attached. Someone with a map that size has plainly built
+ * one; offering to 「make a map from my code」 reads as an invitation to start over, and pressing it
+ * would create a *different* vault inside some project and leave this one behind.
+ *
+ * The ceiling is the starter vault's seed count with room to spare: a person who has added a handful
+ * of nodes is still starting, and one who has added dozens is not. It deliberately does not try to
+ * judge quality. Beyond it the unbound-source row still offers the connect path, which is the right
+ * action for a built map missing its evidence link.
+ */
+const UNBUILT_MAP_CONCEPT_CEILING = 8;
+
 export interface TopologyIndexPanelLabels {
   label: string;
   fold: string;
@@ -396,7 +413,7 @@ export function TopologyIndexPanel({
          * rule: somebody who opened a folder, saw an empty map and gave up has opened folders
          * **more** than a first-timer, and that rule hid the door from exactly that person.
          */
-        mapUnbuilt={vaultLoaded && unboundProjectNodeId !== null}
+        mapUnbuilt={vaultLoaded && unboundProjectNodeId !== null && totalConcepts <= UNBUILT_MAP_CONCEPT_CEILING}
         agentAvailable={agentAvailable}
         relations={totalRelations}
         domains={domainCount}
