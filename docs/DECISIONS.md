@@ -20816,3 +20816,67 @@ trade after all.
 **Status**: valid
 
 ---
+
+## 2026-08-25 — The empty map stops offering a round trip to itself
+
+**Convened because**: this removes an affordance from the topology empty state,
+and the 2026-08-02 first-run-card record put **"adding or removing an
+affordance"** in that slice's no-go list. That no-go was an appetite boundary,
+not a permanent ban, but overturning it needs a record, which is this one.
+
+**Accountable**: the owner. The blocker was named to them explicitly — that the
+standing decision requires an owner instruction before an affordance count moves
+— and they answered to go ahead. That instruction is the grounds; this record is
+not a self-approval.
+
+**Prior decision**: 2026-08-02 stands in every other respect. Only the no-go on
+affordance count is overturned, and only for this one removal.
+
+**Observed phenomenon**: the empty map offered its `ctaTree` row, pointing at
+`/ontology/`. That route is not a destination. `app/[locale]/ontology/page.tsx`
+renders `OntologyRedirectPage`, which redirects to `/topology/` with INDEX
+expanded — the screen the empty-state panel is drawn on. At zero concepts,
+pressing it leaves the screen and comes back to the same screen, now showing an
+empty index.
+
+**User problem**: someone whose ontology is empty is offered, among two or three
+actions, one that cannot change their situation. They spend their first
+interaction learning that a control does nothing, on the screen where they have
+the least context to judge which of the remaining controls is worth pressing.
+
+**Solution independence**: the problem holds under any other fix — routing the
+row somewhere real, or relabelling it. What is wrong is offering a way to look at
+a list before anything can be in it, not the wording or the href.
+
+**Second observation (the falsifier)**: if this is real, the same illness should
+appear elsewhere on the same panel. It does, and it was already repaired: the
+`crossViewHint` line is hidden at zero concepts for the recorded reason that it
+"is telling somebody where to find something they do not have, using two screen
+names they have not met" (owner, 2026-08-25). The CTA is that line with a link
+attached. This change puts both behind the same predicate.
+
+**Decision**: `ctaTree` renders only when the panel is not in its no-concepts
+state, matching `crossViewHint`. Where concepts exist, expanding the index is a
+real action and the row stays.
+
+**Ontology value**: the empty state stops implying a browsable ontology exists
+before one has been authored.
+
+**Agent value**: none claimed. This is a human-facing panel; an agent reaches the
+same data through `list_concepts`, which correctly returns an empty set.
+
+**Recorded dissent**: a removed row is a removed path, and someone who *wants*
+the index panel expanded on an empty map now has no button for it. The counter is
+that INDEX is reachable from the map chrome itself, and that a control whose only
+effect is to redraw the screen you are on is not a path.
+
+**Falsifier**: someone on an empty map looks for a way to open the concept list
+and cannot find one, or the two remaining actions are reported as too few to
+choose from. Either means the row was carrying weight this record did not see.
+
+**Gate**: `TopologyEmptyState.test.tsx` — the row is absent at zero concepts and
+present with one. Probed by forcing the condition true: 2 failed.
+
+**Status**: valid
+
+---
