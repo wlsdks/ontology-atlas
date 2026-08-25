@@ -5,7 +5,7 @@ kind: project
 title: Ontology Atlas
 display_ko: 온톨로지 아틀라스
 display_en: Ontology Atlas
-description: "An ontology workbench where humans and AI agents read and cultivate the product's meaning and implementation evidence together in a local Markdown graph."
+description: "A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect, linking product meaning to implementation evidence in Markdown that people and AI agents maintain together."
 domains: []
 capabilities: []
 elements: []
@@ -15,15 +15,15 @@ path: README.md
 ---
 
 ## Definition
-A local-first ontology workbench that transforms frontmatter from a local Markdown vault into a computable graph with types (domain, capabilities, implementation evidence, dependencies, impacts). Developers use CLI/web, and AI coding agents use MCP to read and write the same files.
+A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect. It links product domains and capabilities to implementation evidence, dependencies, and impact in a computable Markdown graph that people and AI agents maintain together.
 
 ## Evidence
-- README.md: "Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product"
-- AGENTS.md: Project overview ("a local-first ontology workbench for understanding a product/system from business core to implementation evidence")
+- README.md: "Understand what your codebase builds, why it is structured that way, and what a change will affect."
+- AGENTS.md: Project overview ("a local-first codebase ontology workbench" spanning product meaning to implementation evidence)
 
 ## In Scope / Out of Scope
-- In scope: Graph schema, compilation, querying, MCP/CLI agent integration, local vault management, topology browsing, project portfolio, onboarding/deployment/app shell
-- Out of scope: Backend/authentication/cloud collaboration (permanently removed in R10, conditionally reintroduced only for Layer 2)
+- In scope: Codebase ontology schema, compilation, querying, MCP/CLI agent integration, local vault management, topology browsing, project portfolio, onboarding/deployment/app shell, and product/business meaning that explains the codebase or change impact
+- Out of scope: General-purpose ontologies unrelated to a codebase; exhaustive symbol indexing; backend/authentication/cloud collaboration (permanently removed in R10, conditionally reintroduced only for Layer 2)
 
 ## Confidence
 high (direct quote from README + AGENTS.md)
@@ -34,7 +34,7 @@ high (direct quote from README + AGENTS.md)
 
 What product/system outcome and user problem define the ontology scope?
 
-Ontology Atlas helps people and AI coding agents preserve and judge one shared, local-first meaning model of a product and the implementation evidence behind it.
+Ontology Atlas helps people and AI coding agents understand what a codebase builds, why it is structured that way, and what a change will affect by preserving product meaning and implementation evidence in one local-first codebase ontology.
 
 - Concepts: `ontology-atlas`
 - Evidence: `README.md`

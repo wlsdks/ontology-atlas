@@ -32,8 +32,8 @@ export const metadata: Metadata = {
   // string ends up in <title>. We only set a fallback default here for the
   // root `/` redirect page (which the user sees for ~50ms before redirect).
   title: 'Ontology Atlas',
-  description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault. Markdown frontmatter is the graph.',
-  keywords: ['Ontology Atlas', 'ontology-atlas', 'ontology', 'knowledge graph', 'markdown', 'frontmatter', 'AI agent', 'MCP', 'topology'],
+  description: 'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
+  keywords: ['Ontology Atlas', 'ontology-atlas', 'codebase ontology', 'ontology', 'knowledge graph', 'markdown', 'frontmatter', 'AI agent', 'MCP', 'topology'],
   authors: [{ name: 'ontology-atlas contributors' }],
   /**
    * Search Console ownership verification — **the value comes from an environment variable.**
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: 'Ontology Atlas',
     title: 'Ontology Atlas',
-    description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault.',
+    description: 'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
     images: [
       {
         url: '/og-image.png',
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Ontology Atlas',
-    description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault.',
+    description: 'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
     images: ['/og-image.png'],
   },
   robots: {
@@ -123,7 +123,7 @@ export default function RootLayout({
             alternateName: 'ontology-atlas',
             url: SITE_URL,
             description:
-              'AI-native codebase ontology workbench. Humans and AI agents author the same vault.',
+              'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
             inLanguage: ['en', 'ko'],
             publisher: {
               '@type': 'Organization',

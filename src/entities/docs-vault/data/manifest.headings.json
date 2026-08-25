@@ -46,58 +46,6 @@
       "slug": "recommended-first-user-flow"
     }
   ],
-  "AGENT-MEMORY-POSITIONING": [
-    {
-      "depth": 1,
-      "text": "Agent Memory Positioning",
-      "slug": "agent-memory-positioning"
-    },
-    {
-      "depth": 2,
-      "text": "One-line Position",
-      "slug": "one-line-position"
-    },
-    {
-      "depth": 2,
-      "text": "The User Problem",
-      "slug": "the-user-problem"
-    },
-    {
-      "depth": 2,
-      "text": "Product Bet",
-      "slug": "product-bet"
-    },
-    {
-      "depth": 2,
-      "text": "Why This Can Matter",
-      "slug": "why-this-can-matter"
-    },
-    {
-      "depth": 2,
-      "text": "Success Conditions",
-      "slug": "success-conditions"
-    },
-    {
-      "depth": 2,
-      "text": "Failure Conditions",
-      "slug": "failure-conditions"
-    },
-    {
-      "depth": 2,
-      "text": "What The Recent Engine Work Enables",
-      "slug": "what-the-recent-engine-work-enables"
-    },
-    {
-      "depth": 2,
-      "text": "Agent Builder Concerns Lens",
-      "slug": "agent-builder-concerns-lens"
-    },
-    {
-      "depth": 2,
-      "text": "Positioning Guardrail",
-      "slug": "positioning-guardrail"
-    }
-  ],
   "agents/domain": [
     {
       "depth": 1,
@@ -2826,13 +2774,18 @@
     },
     {
       "depth": 2,
+      "text": "Identity Status",
+      "slug": "identity-status"
+    },
+    {
+      "depth": 2,
       "text": "One Sentence",
       "slug": "one-sentence"
     },
     {
       "depth": 2,
-      "text": "Meaning by Element",
-      "slug": "meaning-by-element"
+      "text": "Current Mark — Compatibility Asset, Not the New Identity",
+      "slug": "current-mark-compatibility-asset-not-the-new-identity"
     },
     {
       "depth": 3,
@@ -2925,6 +2878,11 @@
       "depth": 1,
       "text": "CHANGELOG",
       "slug": "changelog"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 · Atlas narrows its identity to the codebase",
+      "slug": "2026-08-25-atlas-narrows-its-identity-to-the-codebase"
     },
     {
       "depth": 2,
@@ -5642,6 +5600,58 @@
       "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
     }
   ],
+  "CODEBASE-ONTOLOGY-POSITIONING": [
+    {
+      "depth": 1,
+      "text": "Codebase Ontology Positioning",
+      "slug": "codebase-ontology-positioning"
+    },
+    {
+      "depth": 2,
+      "text": "One-line Position",
+      "slug": "one-line-position"
+    },
+    {
+      "depth": 2,
+      "text": "The User Problem",
+      "slug": "the-user-problem"
+    },
+    {
+      "depth": 2,
+      "text": "Product Bet",
+      "slug": "product-bet"
+    },
+    {
+      "depth": 2,
+      "text": "Why This Can Matter",
+      "slug": "why-this-can-matter"
+    },
+    {
+      "depth": 2,
+      "text": "Success Conditions",
+      "slug": "success-conditions"
+    },
+    {
+      "depth": 2,
+      "text": "Failure Conditions",
+      "slug": "failure-conditions"
+    },
+    {
+      "depth": 2,
+      "text": "What The Recent Engine Work Enables",
+      "slug": "what-the-recent-engine-work-enables"
+    },
+    {
+      "depth": 2,
+      "text": "Agent Builder Concerns Lens",
+      "slug": "agent-builder-concerns-lens"
+    },
+    {
+      "depth": 2,
+      "text": "Positioning Guardrail",
+      "slug": "positioning-guardrail"
+    }
+  ],
   "CONTROL-ADOPTION-ROUNDS": [
     {
       "depth": 1,
@@ -5834,6 +5844,11 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 — Atlas narrows to a codebase ontology, without becoming a code index",
+      "slug": "2026-08-25-atlas-narrows-to-a-codebase-ontology-without-becoming-a-code-index"
     },
     {
       "depth": 2,
@@ -13967,8 +13982,8 @@
     },
     {
       "depth": 3,
-      "text": "What Atlas should turn into ontology nodes, and what it should not",
-      "slug": "what-atlas-should-turn-into-ontology-nodes-and-what-it-should-not"
+      "text": "What belongs in a codebase ontology, and what does not",
+      "slug": "what-belongs-in-a-codebase-ontology-and-what-does-not"
     },
     {
       "depth": 3,
@@ -13982,8 +13997,8 @@
     },
     {
       "depth": 3,
-      "text": "Market framing guardrail (v4)",
-      "slug": "market-framing-guardrail-v4"
+      "text": "Market framing guardrail (v11)",
+      "slug": "market-framing-guardrail-v11"
     },
     {
       "depth": 3,
@@ -14007,8 +14022,8 @@
     },
     {
       "depth": 2,
-      "text": "2. Audience model (v8 — shared business/code atlas)",
-      "slug": "2-audience-model-v8-shared-businesscode-atlas"
+      "text": "2. Audience model (v11 — people and agents working from one codebase ontology)",
+      "slug": "2-audience-model-v11-people-and-agents-working-from-one-codebase-ontology"
     },
     {
       "depth": 2,

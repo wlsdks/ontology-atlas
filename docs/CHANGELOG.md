@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-08-25 · Atlas narrows its identity to the codebase
+
+- The public promise now says what the product helps a person understand: what
+  a codebase builds, why it is structured that way, and what a change will
+  affect. "Agent memory" remains a benefit, not the product category.
+- Atlas now names itself as a codebase ontology workbench, not a general-purpose
+  ontology editor or a source-code index. Product and business concepts remain
+  in scope when they explain the product the code implements or the impact of a
+  change.
+- The product name is unchanged. The existing nested-hex mark remains the
+  shipping compatibility asset while its rejected visual direction is replaced
+  in a separate design decision.
+
 ## 2026-08-25 · The map lives inside your project, and the door finds the people who need it
 
 - **A door for somebody who already has code.** The first-run card offered four actions and none of
