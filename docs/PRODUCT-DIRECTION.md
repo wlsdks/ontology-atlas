@@ -1,5 +1,13 @@
 # PRODUCT DIRECTION — Ontology workbench (humans + AI agents co-author)
 
+> **[v11 Codebase-centered identity, 2026-08-25] — Ontology Atlas is a
+> codebase ontology workbench.** Its plain-language promise is: *understand what
+> your codebase builds, why it is structured that way, and what a change will
+> affect.* It is neither a general-purpose ontology editor nor a structural code
+> index. Product and business meaning remain first-class when they explain the
+> product the codebase implements, an implementation boundary, or change impact.
+> AI-agent continuity is a benefit of this ontology, not the product category.
+
 > **[v10 Identity, 2026-07-18] — agent-native, human-sovereign (agents write directly, humans make final judgments).**
 > This product is not a "system *for* agents." It is **a single layer of meaning that humans and AI agents read and edit together**, with agents being formal users just like humans. Here, *meaning layer* refers to the markdown folder where each part of the product's identity, responsibility, and proof are recorded.
 > Agents maintain this folder in its latest state and are also the ones who read it most (MCP/CLI), while humans make the final judgment on what the correct meaning is — what humans see is ordinary markdown and git diffs, and the original files are on their own disks. These two categories and locations differ. One is a repository only machines read (vector DB · auto extraction), which loses in automation scale competition. The other is a wiki only humans use, which quickly becomes outdated.
@@ -18,9 +26,10 @@
 
 ## TL;DR — first principle in one line (v3, 2026-05-04)
 
-> **One codebase, one ontology, that the developer and their AI agent grow together.**
+> **Understand what your codebase builds, why it is structured that way, and
+> what a change will affect.**
 
-Launch framing (v4, 2026-05-18):
+Historical launch framing (v4, 2026-05-18; superseded by v11):
 
 > **A repo-native memory layer for Claude Code, Cursor, and Codex.**
 >
@@ -34,6 +43,11 @@ Launch framing (v4, 2026-05-18):
   `dev.jinan.ontology-atlas`, and DMG filenames use `ontology-atlas_*`.
   The Tauri bundle product name remains the installed app identity users see in
   Finder, Dock, and Launch Services.
+- Scope correction (v11, 2026-08-25): **the codebase is the product boundary and
+  entry point.** Atlas may model product strategy, policy, ownership, and
+  business concepts when they explain what that codebase implements or what a
+  change affects. It does not expand into unrelated organizational knowledge or
+  a general ontology authoring market.
 - Primary audience (v8, 2026-06-06): **everyone involved in deciding things about a product or system** — planners, marketers, C-level decision-makers, developers, and AI agents. The developer + AI-agent loop is still the strongest **wedge** — the narrow first entry point that gets a product adopted — because that pair is the one that can actually keep the git-backed source of truth up to date. But the Atlas people look at must let non-developers understand the core of the business or product quickly, without reading source code.
 - Everything rests on the `.md` documents, which grow into an ontology. Topology is the current map workbench; tree and Builder are historical ways of looking at those same documents.
 - Non-developer stakeholders are **target readers and decision participants**, not an afterthought. The app should show the core domains, capabilities, dependencies, and impact paths clearly enough for planning, marketing, leadership, and engineering discussions.
@@ -45,21 +59,22 @@ Launch framing (v4, 2026-05-18):
   clarifies state, continuity, or command feedback; decorative animation remains
   out of scope.
 
-Working definition: an ontology here is not just a topology visualization or a
-generic knowledge base. It is the executable meaning model of a product and the
-codebase that realizes it, written as five authorable kinds and the typed
-frontmatter relations Atlas actually implements. The exact discriminator,
+Working definition: a codebase ontology here is not just a topology
+visualization, generic knowledge base, or source-code index. It is the
+executable meaning model of what a codebase builds, why it has its current
+boundaries, and what changes can affect, written as five authorable kinds and
+the typed frontmatter relations Atlas actually implements. The exact discriminator,
 `broader`/`is_a` support boundary, and non-inference contract have one authority:
 [`ONTOLOGY-ATLAS-SPEC.md` §2](ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
 This direction document decides why the product exists; it does not maintain a
 second schema glossary.
 
-### What Atlas should turn into ontology nodes, and what it should not
+### What belongs in a codebase ontology, and what does not
 
-Atlas is **not only a developer plugin** and **not only a raw source-code
-structure index**. It should make the product/business legible from the graph,
-then let a developer or AI agent trace that meaning down to the implementation
-that proves it.
+Atlas is **not a developer-only plugin**, **not a raw source-code structure
+index**, and **not a general-purpose ontology editor**. It should make the
+product implemented by a codebase legible, then let a person or AI agent trace
+that meaning down to the implementation that proves it.
 
 The primary artifact is the **business-to-code meaning layer**. People normally
 read it in the order project outcome → responsibility domain → observable
@@ -155,21 +170,21 @@ The practical bar:
   ontology is "for developers only". It is that business meaning and code
   evidence sit in one git-backed graph that people actually make decisions from.
 
-### Market framing guardrail (v4)
+### Market framing guardrail (v11)
 
-Do not lead with "ontology editor" in launch copy. Developers do not want a new
-knowledge base they must manually maintain.
+Lead with the observable outcome in ordinary language:
 
-Lead with the daily AI-coding pain:
+> Understand what your codebase builds, why it is structured that way, and what
+> a change will affect.
 
-> Your AI coding agent forgets your codebase. Give it a local, git-backed memory
-> it can read and maintain.
-
-The ontology graph is what the product is built on. What we promise the user is
-agent memory that costs less and does not go stale.
+`Codebase ontology workbench` is the category explanation. Markdown, Git, MCP,
+typed relations, local-first ownership, and human/agent co-authoring are the
+proof of how it works. Agent continuity remains an important benefit, but
+leading with "memory" makes Atlas sound like a conversation-memory store and
+hides the product/implementation meaning that distinguishes it.
 
 Canonical internal note:
-[`docs/AGENT-MEMORY-POSITIONING.md`](AGENT-MEMORY-POSITIONING.md).
+[`docs/CODEBASE-ONTOLOGY-POSITIONING.md`](CODEBASE-ONTOLOGY-POSITIONING.md).
 
 ### Required product loop
 
@@ -224,25 +239,32 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 ---
 
-## 2. Audience model (v8 — shared business/code atlas)
+## 2. Audience model (v11 — people and agents working from one codebase ontology)
 
 | Audience | Role | Primary surface |
 |---|---|---|
-| **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed desktop app (`/topology` and Docs; `/ontology` is a compatibility redirect; macOS, Windows x64 beta), static/shared vault exports |
-| **C-level / decision-maker** | See what the organization/system is made of, which capabilities matter, and what changes affect strategic bets | overview, topology, graph proof/impact summaries |
+| **Planner / PM / marketer** | Understand what the product's codebase implements, which capabilities and policies it carries, and how a proposed change reaches the product | installed desktop app (`/topology` and Docs; `/ontology` is a compatibility redirect; macOS, Windows x64 beta), static/shared vault exports |
+| **C-level / decision-maker** | Judge the product capabilities and implementation evidence behind a technical or strategic change | overview, topology, graph proof/impact summaries |
 | **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed desktop app (`/topology`, `/docs`; `/ontology` is a compatibility redirect) |
 | **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (runtime-advertised read/write inventory), vault-scoped Git evidence/checkpoint, contextual topology handoff, agent heartbeat, explicit-project agent brief |
 
-The single artifact serves all audiences: a local, git-backed ontology that
-links business language, product capabilities, implementation evidence, and
-change impact. Developer + agent workflows are the wedge that keeps it fresh;
-the installed app/topology is the shared reading and decision surface.
+The single artifact serves every audience **when the decision is about a
+codebase or the product it implements**: a local, git-backed ontology linking
+business language, product capabilities, implementation evidence, and change
+impact. Developer + agent workflows keep it fresh; the installed app/topology
+is the shared reading and decision surface.
 
 > **2026-06-06 correction (user).** Atlas is not a developer-only service. It
 > should let planners, marketers, C-level decision-makers, developers, and AI
 > agents see the core of a business/product quickly through the ontology. The
 > developer + agent MCP loop is a wedge and maintenance engine, not the whole
 > product.
+
+> **2026-08-25 scope correction (owner).** The broad audience remains able to
+> read and judge the ontology, but Atlas no longer presents itself as a general
+> ontology for any product or organization. Every primary use starts from a
+> codebase, the product it implements, or a change whose implementation evidence
+> lives there.
 
 ---
 

@@ -3,13 +3,13 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/brand/lockup-dark.svg" />
-    <img src="public/brand/lockup-light.svg" alt="Ontology Atlas — Map your codebase knowledge." width="360" />
+    <img src="public/brand/lockup-light.svg" alt="Ontology Atlas — Understand your codebase." width="360" />
   </picture>
 </p>
 
 <p align="center">
-  <strong>Your AI coding agent forgets your product between sessions.<br />
-  Keep the shared map beside the code — in Markdown you own.</strong>
+  <strong>Understand what your codebase builds, why it is structured that way,<br />
+  and what a change will affect.</strong>
 </p>
 
 <p align="center">
@@ -34,9 +34,10 @@
 </p>
 
 <p align="center">
-  Ontology Atlas turns repository Markdown into a typed graph of the product:
-  domains, capabilities, evidence, dependencies, and impact. People judge the
-  map and git diffs; AI agents query and maintain the same vault over MCP.
+  Ontology Atlas keeps that explanation as a codebase ontology in repository
+  Markdown: product domains and capabilities linked to implementation evidence,
+  dependencies, and impact. People judge the files and git diffs; AI agents
+  query and maintain the same ontology over MCP.
 </p>
 
 <p align="center">
@@ -70,9 +71,13 @@
 
 ## In 30 seconds
 
-A folder of Markdown files. Each file's frontmatter declares what it is
-(`project`, `domain`, `capability`, `element`, or a linked `document`) and what
-it points at. That is the whole database.
+Source code shows how a system works. It rarely preserves which product
+capability the code serves, why its boundaries exist, or what a change could
+affect. Atlas keeps those answers beside the code in a folder of Markdown files.
+
+Each file's frontmatter declares what it is (`project`, `domain`, `capability`,
+`element`, or a linked `document`) and what it points at. That folder is the
+whole database.
 
 Because the kinds and relation types are a small fixed set, the folder is not
 just readable — it is **computable**. Atlas compiles it into a graph and answers
@@ -471,6 +476,10 @@ own dogfood vault in [`docs/ontology/`](docs/ontology/); run
 
 ## What this is not
 
+- **Not a general-purpose ontology editor.** Atlas starts from a codebase. A
+  business concept belongs when it explains what that codebase builds, why an
+  implementation boundary exists, or what a change can affect. Unrelated
+  knowledge management belongs in a more general tool.
 - **Not a wiki, and not agent memory.** A wiki only people write rots the week
   it is written; a store only agents write drifts with nobody left to judge it.
   Atlas is one layer both audiences read and write, and the arbiter is a git

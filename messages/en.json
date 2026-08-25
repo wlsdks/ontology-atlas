@@ -333,8 +333,8 @@
     "korean": "한국어"
   },
   "mapEntry": {
-    "headline": "The shared meaning layer for people and their AI agents.",
-    "lede": "Turn the Markdown already living in your repository into a queryable model of product domains, capabilities, implementation evidence, dependencies, and impact: then grow it together through MCP, CLI, and a visual workbench.",
+    "headline": "Understand what your codebase builds, why it is structured that way, and what a change will affect.",
+    "lede": "Keep product domains, capabilities, implementation evidence, dependencies, and impact in Markdown beside the code, where people and AI agents can maintain the same codebase ontology.",
     "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself: domains, capabilities, and elements read straight from the info block at the top of each file.",
     "mapComing": "Loading the map…",
     "loadingDetail": "Reading this folder's concepts and relations, then fitting them on screen."

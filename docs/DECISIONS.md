@@ -40,6 +40,85 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-25 — Atlas narrows to a codebase ontology, without becoming a code index
+
+**Context**: the owner rejected two successive master framings while reviewing
+the brand. "A shared meaning layer" was too abstract to understand, while "AI
+agent memory" described one benefit and made the product sound like a session
+memory store. The owner selected the plain account of the actual decision Atlas
+supports: understand what a codebase builds, why it is structured that way, and
+what a change will affect. They then explicitly chose to move from a broad
+ontology position to a codebase ontology position.
+
+**Prior records affected**: Product Direction v4 led with repo-native agent
+memory; v8 broadened the audience to everyone making decisions about a product
+or system; v10 made the shared human/agent meaning layer canonical. Their
+operating truths survive, but neither agent memory nor unconstrained product
+ontology remains the market category. This record narrows those positions
+explicitly rather than silently rewriting them.
+
+**Review path**: the owner explicitly excluded the standing PO seats from this
+brand question. Three fresh independent seats — visual identity, brand
+strategy/naming, and category marketing — reviewed the current artifact and
+positioning without seeing earlier icon candidates, then completed one
+cross-critique. They agreed that the current icon is an over-specified system
+diagram, that `Atlas` and especially `Ontology` invite category clichés, that
+DNA is campaign language rather than a name or icon instruction, and that a new
+public name must be singular rather than endorsed by a second product name. A
+subsequent fifteen-name round ended with all three seats voting `KEEP: NONE`;
+there is no approved replacement name.
+
+**Decision**:
+
+1. Ontology Atlas is a **local-first codebase ontology workbench**. Its primary
+   boundary and entry point is a codebase.
+2. The first-contact promise is: **understand what your codebase builds, why it
+   is structured that way, and what a change will affect.**
+3. This is not a code-only ontology. Product strategy, policy, ownership, and
+   business concepts remain first-class when they explain the product the code
+   implements, an implementation boundary, or change impact. Unrelated
+   organizational knowledge does not define the product category.
+4. Source search, AST indexes, language servers, grep, and CodeGraph retain
+   structural authority. Atlas records the curated meaning and evidence that
+   explain why those facts matter; it does not index every symbol.
+5. People and AI agents still maintain the same Git-backed Markdown ontology.
+   Agent continuity is a product benefit and adoption wedge, not the master
+   identity.
+6. The `Ontology Atlas` product name remains until a stronger singular
+   masterbrand wins a controlled comprehension and recall test. The nested-hex
+   mark remains only as the shipping compatibility asset; the owner has rejected
+   it as the final visual direction, and no replacement is approved here.
+
+**What this removes**: first-contact copy that leads with agent forgetting,
+"shared meaning layer" as an unexplained category, and the assumption that a
+general ontology unrelated to a codebase belongs in Atlas merely because the
+schema can represent it. It removes no node kind, relation, surface, MCP/CLI
+contract, export, or existing vault content.
+
+**Recorded dissent**: narrowing the entry point to a codebase may make planners,
+marketers, and leaders read Atlas as a developer-only product, even though they
+remain intended readers and decision participants. It may also understate valid
+product meaning that is not reducible to a file path.
+
+**Counter**: the boundary is not "every concept has a source path." The boundary
+is that the ontology explains a product implemented by a codebase and supports a
+decision about that codebase. Business meaning stays because it makes code
+legible; general knowledge leaves because it makes the product category
+indistinguishable from an ontology editor.
+
+**Falsifier**: target users shown the new wording still classify Atlas mainly as
+a code index, or real teams repeatedly need the same workbench for ontologies
+with no codebase, implementation evidence, or code-change decision. Either
+observation reopens the boundary. A new name reopens only when it materially
+beats `Ontology Atlas` on unaided comprehension, delayed recall, pronunciation,
+and search ownership under identical copy.
+
+**Accountable**: owner
+
+**Status**: valid
+
+---
+
 ## 2026-08-25 (114) — A summary node reports when its description falls behind its membership, and never rewrites it
 
 **Prior decisions**: none on this surface. (7), 2026-08-14, established the
