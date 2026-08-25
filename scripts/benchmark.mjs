@@ -26,7 +26,8 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 
 const TASKS = [
   {
@@ -73,6 +74,16 @@ const TASKS = [
    * makes, which is that a change lands in the right place and respects a
    * boundary somebody already decided.
    *
+   * ⚠️ **Do not phrase a D task as "should we build this?"** Measured 2026-08-25:
+   * the first version of D1 asked whether a feature belonged in a capability, and
+   * this repository's own `AGENTS.md` tells any connected agent to run the product
+   * owner gate before a product decision. Codex obeyed, opened
+   * `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` and `docs/DECISIONS.md`, and spent
+   * fourteen minutes per cell running a PO pass. That measured our process files,
+   * not the vault, and it is an artifact of dogfooding: a user's repository has no
+   * PO operating system to trip. Ask what the boundary **is**, never what it
+   * should be.
+   *
    * Each D task is phrased as a change request, the way a person would bring it.
    * The graded answer is not "did it find the node" but "did it name the
    * boundary, cite where the boundary lives, and stop where the boundary stops".
@@ -84,24 +95,38 @@ const TASKS = [
     id: "D1",
     label: "Documented exclusion (meaning)",
     prompt:
-      "우리 MCP 서버가 코드 심볼 검색까지 해주면 좋겠다는 요청이 들어왔어. 이걸 mcp-server capability 안에서 구현하는 게 맞아? 맞다면 왜고, 아니라면 왜 아닌지 근거를 대줘.",
+      "MCP 서버에 코드 심볼 검색을 넣으려고 해. 이 기능이 mcp-server capability 의 범위 안인지 밖인지, 이 프로젝트에 이미 기록된 경계가 뭐라고 말하는지 알려줘. 새로 판단하지 말고 기록된 것만.",
     /*
      * The key is pinned to what `capabilities/mcp-server` `## Inclusions /
      * Exclusions` says today. If that section changes, this key is wrong and must
      * change with it — that is the point of keeping it beside the prompt.
      */
     key: {
-      mustRefuse: true,
-      boundary: [/AST/i, /search engine|심볼 검색|symbol search/i],
+      /*
+       * The prompt itself contains the words for "symbol search", so matching them
+       * would hand a free point to any answer that restates the question. The three signals below are things only
+       * the vault can supply: the exact excluded term, the notion of exclusion, and
+       * a verdict that puts the request outside the capability.
+       */
+      boundary: [/\bAST\b/i, /제외|[Ee]xclud/, /범위 밖|밖입니다|밖에 있|out of scope|not in scope/i],
       provenance: [/capabilities\/mcp-server/, /Inclusions? \/ Exclusions?|## Exclusions?/],
-      contradicts: [/mcp-server\s*(capability)?\s*(안에서|에서)?\s*구현하는? 게 맞|맞습니다|적절합니다|포함하는 것이 맞/],
+      /*
+       * Only unambiguous affirmative scope claims. A bare affirmation ("that is
+       * right") was tried first and rejected: correct answers use it too, as in
+       * "it is right that this is recorded as excluded", and a contradiction
+       * detector that fires on correct answers is worse than none.
+       *
+       * The patterns themselves stay in the answer language, the way the prompts do:
+       * they are match data, not prose.
+       */
+      contradicts: [/범위\s*안에?\s*(포함|들어|속)/, /mcp-server\s*가?\s*담당해야/, /포함하는 것이 맞/],
     },
   },
   {
     id: "D2",
     label: "Impact boundary before a change (meaning)",
     prompt:
-      "ontology-atlas 의 vault 스키마를 바꾸려고 해. 무엇이 깨질 수 있고, 왜 그게 깨지는지 설명해줘. 추측 말고 근거가 어디에 적혀 있는지도 같이.",
+      "ontology-atlas 의 vault 스키마를 바꾸면 무엇이 영향을 받는다고 이 프로젝트에 기록돼 있어? 그 영향의 이유가 어디에 적혀 있는지도 같이 알려줘. 새로 분석하지 말고 기록된 것만.",
     key: {
       mustRefuse: false,
       boundary: [/read and write contract|읽기.{0,4}쓰기 계약|agent-facing/i],
@@ -113,7 +138,7 @@ const TASKS = [
     id: "D3",
     label: "Verification path (meaning)",
     prompt:
-      "ACP runtime 쪽 코드를 고쳤어. 무엇을 확인해야 통과라고 말할 수 있어? 그리고 이 capability 가 명시적으로 책임지지 않는 범위는 어디까지야?",
+      "ACP runtime capability 가 명시적으로 책임지지 않는다고 기록해 둔 범위가 뭐야? 그리고 그 기록이 어디에 있는지도 알려줘. 새로 판단하지 말고 기록된 것만.",
     key: {
       mustRefuse: false,
       boundary: [/Job Object|taskkill/i, /브라우저|[Bb]rowsers? cannot|프로세스를 실행할 수 없/],
@@ -131,10 +156,119 @@ const TASKS = [
 ];
 
 const args = process.argv.slice(2);
+
+/*
+ * **Why the project config has to move, not just the global one.**
+ *
+ * `codex mcp remove` edits `~/.codex/config.toml`. This repository also commits
+ * `.codex/config.toml`, which declares `mcp_servers.ontology-atlas` so a fresh
+ * checkout can connect without setup. Codex merges both, so removing the global
+ * entry left the project entry serving the OFF cells.
+ *
+ * Measured 2026-08-25: an OFF run logged 8 `ontology-atlas/*` calls on A1 and 10
+ * on B1. The whole 14-cell matrix was ON against ON, and it had been reporting a
+ * clean OFF baseline since the automated path landed. A benchmark whose control
+ * arm silently holds the treatment produces a small honest-looking effect, which
+ * is worse than no benchmark.
+ */
+const PROJECT_CODEX_CONFIG = resolve(".codex/config.toml");
+const PARKED_CODEX_CONFIG = resolve(".codex/config.toml.benchmark-parked");
+
+/*
+ * **Why a third mode, and why it has to hide the folder.**
+ *
+ * Measured 2026-08-25: in "MCP off" the agent answered D1 perfectly by running
+ * `cat docs/ontology/capabilities/mcp-server.md`. Of course it did — the vault is
+ * ordinary markdown inside the repository, and removing the MCP server does not
+ * remove the files.
+ *
+ * So the old two-mode matrix can only ever measure the MCP interface. It cannot
+ * answer the question this product exists to answer, which is whether the
+ * recorded meaning adds anything the source alone cannot give. For that, the
+ * control arm has to have no vault at all.
+ *
+ *   none : no vault on disk, no MCP  — can the source alone answer?
+ *   off  : vault markdown present, no MCP — grep and cat reach it
+ *   on   : vault plus the MCP tools
+ *
+ * `none` is the honest control. `off` measures what the markdown adds over the
+ * source; `on` measures what the tools add over the markdown.
+ */
+const PARK_ROOT = join(tmpdir(), "oatlas-benchmark-park");
+
+/*
+ * **Everything that has to leave the repository, and why each one.**
+ *
+ * Measured 2026-08-25, and every line here is a control arm that leaked:
+ *
+ * - `docs/ontology` is the vault. Renaming it inside the repo was not enough:
+ *   the agent found `docs/ontology.benchmark-parked/` and read it 19 times. A
+ *   parked folder has to leave the tree the agent can search.
+ * - `public/docs-vault` and `src/entities/docs-vault/data` are generated copies
+ *   of the same vault. `pnpm docs-vault:build` writes them, so hiding only the
+ *   source folder hides nothing.
+ * - `docs/benchmark/tasks.md` and `rubric.md` carry the graded answers. They are
+ *   parked in **every** mode, not just the no-vault one, because an answer key
+ *   inside the repository under measurement is not a control problem, it is a
+ *   cheating problem: all nine D1 cells read them, one of them 51 times.
+ *
+ * `docs/benchmark/results/` deliberately stays: the harness writes into it.
+ */
+const VAULT_PARK = ["docs/ontology", "public/docs-vault", "src/entities/docs-vault/data"];
+const ANSWER_PARK = ["docs/benchmark/tasks.md", "docs/benchmark/rubric.md"];
+
+function parkedPath(rel) {
+  return join(PARK_ROOT, rel.replace(/[/\\]/g, "__"));
+}
+
+function park(relPaths, hidden) {
+  if (!existsSync(PARK_ROOT)) mkdirSync(PARK_ROOT, { recursive: true });
+  for (const rel of relPaths) {
+    const live = resolve(rel);
+    const away = parkedPath(rel);
+    if (hidden && existsSync(live)) renameSync(live, away);
+    if (!hidden && existsSync(away)) {
+      mkdirSync(dirname(live), { recursive: true });
+      renameSync(away, live);
+    }
+  }
+}
+
+function setVault(present) {
+  park(VAULT_PARK, !present);
+}
+
+function setProjectConfig(present) {
+  const parked = existsSync(PARKED_CODEX_CONFIG);
+  const live = existsSync(PROJECT_CODEX_CONFIG);
+  if (!present && live) renameSync(PROJECT_CODEX_CONFIG, PARKED_CODEX_CONFIG);
+  if (present && parked) renameSync(PARKED_CODEX_CONFIG, PROJECT_CODEX_CONFIG);
+}
+
+/*
+ * A killed run must never leave the repository's committed config parked.
+ *
+ * `process.on("exit")` alone is not enough: measured 2026-08-25, a SIGKILL left
+ * `.codex/config.toml` renamed on disk, which silently removes the MCP server
+ * from every Codex session in this checkout until someone notices. So the run
+ * also repairs the state it finds on the way in, and any later run — or a plain
+ * `pnpm benchmark --dry-run` — puts a stranded config back.
+ */
+setProjectConfig(true);
+setVault(true);
+park(ANSWER_PARK, false);
+process.on("exit", () => {
+  setProjectConfig(true);
+  setVault(true);
+  park(ANSWER_PARK, false);
+});
+for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(sig, () => process.exit(1));
 const bypass = args.includes("--bypass");
 const dryRun = args.includes("--dry-run");
 const onOnly = args.includes("--on-only");
 const offOnly = args.includes("--off-only");
+const noneOnly = args.includes("--none-only");
+const withNone = args.includes("--with-none") || noneOnly;
 /*
  * **Why repeats.** The 2026-08-25 single-shot run put C2 at 10,534 tokens OFF and
  * 49,196 ON for a task where both modes ran the same two shell commands. At n=1 an
@@ -176,7 +310,7 @@ if (!existsSync(resolve("mcp/src/index.js"))) {
 console.log(`[benchmark] repo: ${REPO}`);
 console.log(`[benchmark] vault: ${VAULT}`);
 console.log(`[benchmark] output: ${OUT_DIR}/`);
-console.log(`[benchmark] tasks: ${SELECTED.length}, modes: ${onOnly ? "on" : offOnly ? "off" : "off+on"}`);
+console.log(`[benchmark] tasks: ${SELECTED.length}, modes: ${noneOnly ? "none" : onOnly ? "on" : offOnly ? "off" : withNone ? "none+off+on" : "off+on"}`);
 if (dryRun) {
   console.log("[benchmark] --dry-run — exiting without spawn");
   process.exit(0);
@@ -256,38 +390,14 @@ function runTask(task, mode, iter) {
   return { task: task.id, mode, iter, mcpCalls, mcpFailed, shellCalls, tokens, grade, durationMs };
 }
 
-/*
- * **Why the project config has to move, not just the global one.**
- *
- * `codex mcp remove` edits `~/.codex/config.toml`. This repository also commits
- * `.codex/config.toml`, which declares `mcp_servers.ontology-atlas` so a fresh
- * checkout can connect without setup. Codex merges both, so removing the global
- * entry left the project entry serving the OFF cells.
- *
- * Measured 2026-08-25: an OFF run logged 8 `ontology-atlas/*` calls on A1 and 10
- * on B1. The whole 14-cell matrix was ON against ON, and it had been reporting a
- * clean OFF baseline since the automated path landed. A benchmark whose control
- * arm silently holds the treatment produces a small honest-looking effect, which
- * is worse than no benchmark.
- */
-const PROJECT_CODEX_CONFIG = resolve(".codex/config.toml");
-const PARKED_CODEX_CONFIG = resolve(".codex/config.toml.benchmark-parked");
 
-function setProjectConfig(present) {
-  const parked = existsSync(PARKED_CODEX_CONFIG);
-  const live = existsSync(PROJECT_CODEX_CONFIG);
-  if (!present && live) renameSync(PROJECT_CODEX_CONFIG, PARKED_CODEX_CONFIG);
-  if (present && parked) renameSync(PARKED_CODEX_CONFIG, PROJECT_CODEX_CONFIG);
-}
-
-// A killed run must never leave the repository's committed config parked.
-process.on("exit", () => setProjectConfig(true));
-for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(1));
-
-function ensureMcp(enabled) {
+function ensureMode(mode) {
   // Always start clean: the global entry and the committed project entry both.
   spawnSync("codex", ["mcp", "remove", "ontology-atlas"], { stdio: "ignore" });
-  setProjectConfig(enabled);
+  setProjectConfig(mode === "on");
+  setVault(mode !== "none");
+  park(ANSWER_PARK, true);
+  const enabled = mode === "on";
   if (enabled) {
     spawnSync(
       "codex",
@@ -306,15 +416,22 @@ function ensureMcp(enabled) {
   }
 }
 
-if (!onOnly) {
+if (!onOnly && !noneOnly) {
   console.log("[benchmark] OFF mode (ontology-atlas MCP unregistered)...");
-  ensureMcp(false);
+  ensureMode("off");
   for (let i = 1; i <= repeat; i++) for (const task of SELECTED) cells.push(runTask(task, "off", i));
 }
 
-if (!offOnly) {
+if (withNone && !onOnly && !offOnly) {
+  console.log("[benchmark] NONE mode (vault folder hidden, no MCP)...");
+  ensureMode("none");
+  for (let i = 1; i <= repeat; i++) for (const task of SELECTED) cells.push(runTask(task, "none", i));
+  setVault(true);
+}
+
+if (!offOnly && !noneOnly) {
   console.log("[benchmark] ON mode (ontology-atlas MCP registered)...");
-  ensureMcp(true);
+  ensureMode("on");
   for (let i = 1; i <= repeat; i++) for (const task of SELECTED) cells.push(runTask(task, "on", i));
 }
 

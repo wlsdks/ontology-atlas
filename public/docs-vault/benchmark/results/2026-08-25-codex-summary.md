@@ -10,14 +10,29 @@ Runs per cell: **3**. Cell values are the median; the observed range follows in 
 
 | Task | OFF shell / MCP | ON shell / MCP | Δ shell | Δ MCP | OFF tok | ON tok | Δ tok |
 |---|---|---|---|---|---|---|---|
-| **B1** Capability boundary (decision, not description) | — | 31 / 5 (18–53) | — | — | — | 186380 (130935–205612) | — |
+| **D1** Documented exclusion (meaning) | 15 / 0 (4–16) | 7 / 6 (5–8) | -8 | +6 | 55747 (52256–66728) | 66665 (61948–68856) | +10918 |
+
+## Meaning cells (D) — graded against the pinned key
+
+Key lives beside each prompt in `scripts/benchmark.mjs`. Open it and disagree with it; that is the point of pinning it.
+
+| Task | Mode | Boundary /3 | Provenance /2 | Contradicts the vault |
+|---|---|---|---|---|
+| **D1** r1 | OFF | 3 (3/3) | 1 | no |
+| **D1** r2 | OFF | 3 (3/3) | 2 | no |
+| **D1** r3 | OFF | 3 (3/3) | 2 | no |
+| **D1** r1 | ON | 3 (3/3) | 1 | no |
+| **D1** r2 | ON | 3 (3/3) | 2 | no |
+| **D1** r3 | ON | 3 (3/3) | 2 | no |
+
+Invented rationale (rubric D-c) is still a human count: a fabricated *why* can pass every string check.
 
 ## Aggregates
 
-- Avg shell exec: OFF 0.0 → ON 34.0
-- Avg MCP calls: OFF 0.0 → ON 5.0
-- Avg tokens: OFF 0 → ON 174309 (not reported by codex)
-- Total cells run: 3
+- Avg shell exec: OFF 11.7 → ON 6.7
+- Avg MCP calls: OFF 0.0 → ON 6.0
+- Avg tokens: OFF 58244 → ON 65823 (13.0%)
+- Total cells run: 9
 
 ## Next: human grading
 
