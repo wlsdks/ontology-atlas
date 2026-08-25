@@ -95,9 +95,50 @@ ramp.”
   dashed for planned—not colour alone.
 - Selection stays within one indigo family: node selection uses the base indigo;
   edge selection uses `--topology-v2-edge-selected` on both endpoints.
-- Use “ontology” only in the brand and in sentences that define it. Elsewhere use
-  map, concept, or workspace. The guided tour and help glossary own the two
-  definitions; do not create another teaching screen.
+### One word per thing (owner, 2026-08-25 — overturns the earlier “avoid ontology” rule)
+
+The old rule said to use “ontology” only in the brand and in sentences defining
+it, and to say map, concept or workspace elsewhere. Avoiding the word did not
+produce plain language; it produced **four names for one thing**. A measured
+inventory of the Korean catalogue found the person's own folder called by four
+different names across 41 strings, and the word for “map” doing duty for both the
+graph and the screen that draws it — which is why the empty state described the
+node count as a count of *projects*, building a newcomer's first sentence out of a
+schema kind.
+
+The owner lifted the ban, then corrected the over-correction the same day: *“make
+these terms consistent and not strange. You may use the word ontology.”* and
+*“proper domain terms are fine — do not mangle them into something odd for the
+sake of non-developers. The universal technical term is what matters.”* A first
+pass had flattened every folder word to a plainer one and replaced the word for
+validation with a vaguer verb; that mangling is as wrong as the split it replaced.
+
+One word per thing, and the word is the accurate one. The canonical spellings are
+data, so they live in the gate rather than here:
+`tests/contract/user-facing-vocabulary.contract.test.ts`. In prose:
+
+| Thing | Rule |
+|---|---|
+| The Markdown folder the person chose | the ontology-folder term; never a second synonym, and never another product's coinage |
+| The meaning graph inside it | the ontology; never the renderer's name |
+| The screen that draws it | the map — the view, never the data |
+| One node | the concept term; never “node” |
+| A node's kind | the kind's real name, only where the kind is the point |
+
+The split that matters most: **the ontology is the thing, the map is the view of
+it.** Using one word for both is what produced sentences describing data as if it
+were drawing.
+
+`vault` was considered for the folder and rejected on the owner's own test: it is
+Obsidian's coinage, not a universal term — Logseq says graph, Foam and Zettlr say
+workspace, and knowledge engineering does not use the word. Nothing forbids it; it
+is simply not the standard asked for. Inside code, CLI, MCP and docs `vault`
+stays: there it is a filesystem and API name, and renaming a public contract is a
+separate decision. Identifiers keep their spelling wherever they appear, including
+inside copy — `pnpm vault:validate` and `validate_vault` are names, not synonyms.
+
+The guided tour and help glossary still own the definitions; this permits the
+word, it does not licence a second teaching screen.
 
 ## Topology focus and scale
 

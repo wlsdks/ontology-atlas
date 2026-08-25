@@ -2,6 +2,7 @@
 
 import { Link, useRouter } from "@/i18n/navigation";
 import { fieldClass } from '@/shared/ui/control-class';
+import { AGENT_DOCK_INSET_SURFACE_CLASS } from '@/shared/ui/agent-dock-surface';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
@@ -535,7 +536,19 @@ export function DocsQuickDrawer({
               }
             }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed right-0 top-0 flex h-full w-full max-w-[380px] flex-col overflow-hidden border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-dock-side)] touch-pan-y"
+            /*
+             * ⚠️ **Inset like the agent dock, not glued to the window** (owner, 2026-08-25: *"can
+             * this be composed like the agent panel? the panel is stuck to the top and bottom and
+             * looks bad"*).
+             *
+             * It used to be `fixed right-0 top-0 h-full`, so it met the window edge on three sides
+             * and its top and bottom simply ended — a panel with no visible boundary reads as a
+             * broken frame rather than a surface. `AGENT_DOCK_INSET_SURFACE_CLASS` is the contract
+             * the agent dock already uses for exactly this: 12px insets so all four sides are seen,
+             * with the panel radius, border and shadow tokens. Sharing it also means the two right-
+             * hand surfaces cannot drift apart.
+             */
+            className={`${AGENT_DOCK_INSET_SURFACE_CLASS} fixed right-3 flex w-full max-w-[380px] flex-col touch-pan-y`}
           >
             <header className="shrink-0 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div className="flex items-start justify-between gap-3">

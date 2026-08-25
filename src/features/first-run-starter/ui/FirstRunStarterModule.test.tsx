@@ -713,7 +713,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
      * now lands inside their project, so this press ends in a folder written into their source tree.
      * The exact path is on screen, and nothing is created until the button beside it is pressed.
      */
-    expect(screen.getByTestId('first-run-build-path')).toHaveTextContent(
+    expect(screen.getByTestId('build-from-code-path')).toHaveTextContent(
       '/Users/dana/my-product/atlas',
     );
     expect(
@@ -722,7 +722,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     ).not.toHaveBeenCalled();
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('first-run-build-confirm-go'));
+      fireEvent.click(screen.getByTestId('build-from-code-go'));
     });
     expect(mocks.ensureChildDir).toHaveBeenCalledWith('/Users/dana/my-product', 'atlas');
   });
@@ -733,9 +733,10 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
       fireEvent.click(screen.getByTestId('first-run-build-from-code'));
     });
     await act(async () => {
-      fireEvent.click(screen.getByTestId('first-run-build-confirm-cancel'));
+      fireEvent.click(screen.getByTestId('build-from-code-cancel'));
     });
-    expect(screen.queryByTestId('first-run-build-confirm')).toBeNull();
+    // The dialog closes, so the path it was showing is gone from the document.
+    await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull());
     expect(mocks.ensureChildDir).not.toHaveBeenCalled();
   });
 
