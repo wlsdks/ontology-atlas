@@ -834,6 +834,35 @@ describe("TopologyIndexPanel", () => {
      * that size has plainly built one, and 「make a map from my code」 reads as an invitation to
      * start over — pressing it would create a different vault and leave this one behind.
      */
+    /*
+     * ⚠️ Measured in the installed app, 2026-08-25. `unboundProjectNodeId` is null both when every
+     * project has code bound and when the vault holds no project at all, so keying only on it hid
+     * the door from an empty vault — the person it exists for, sitting in front of nothing.
+     */
+    it("shows the door on an empty vault, where nothing has been built at all", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={0}
+          totalRelations={0}
+          domainCount={0}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          unboundProjectNodeId={null}
+          noProjectsYet
+          agentAvailable
+          vaultLoaded
+        />,
+      );
+      expect(
+        (firstRunStarterProps.current as { mapUnbuilt?: boolean } | null)?.mapUnbuilt,
+        "빈 금고야말로 아직 아무것도 못 만든 상태다",
+      ).toBe(true);
+    });
+
     it("keeps the door away from a map that is plainly already built", () => {
       render(
         <TopologyIndexPanel

@@ -5262,6 +5262,7 @@ function HomePageImpl() {
                     // Dusty (long-untouched) node count; the row hides at 0.
                     dustyNodeCount={dustySlugs.size}
                     unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
+                    noProjectsYet={projectSourceReadiness.state === "no-projects"}
                     // The door hands work to an agent; without one it would create a folder and
                     // then silently do nothing, having promised a map.
                     agentAvailable={acpRuntimes.length > 0}
