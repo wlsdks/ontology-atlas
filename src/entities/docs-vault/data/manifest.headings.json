@@ -9380,6 +9380,11 @@
       "depth": 2,
       "text": "2026-08-25 — An empty vault is the strongest case for the door, and it was the one case that hid it",
       "slug": "2026-08-25-an-empty-vault-is-the-strongest-case-for-the-door-and-it-was-the-one-case-that-hid-it"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 — `atlas` becomes reachable, without a registry",
+      "slug": "2026-08-25-atlas-becomes-reachable-without-a-registry"
     }
   ],
   "DEMO-SCENARIO": [

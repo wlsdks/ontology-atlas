@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { stdout, stderr, argv, cwd } from 'node:process';
 import { CLI_COMMAND_COUNT, CLI_COMMAND_RUNNERS, CLI_COMMANDS } from './lib/cli-commands.mjs';
+import { startHereContext, startHereRows } from './lib/start-here.mjs';
 import { closestAllowedValue, formatUnknownFlagError } from './lib/cli-args.mjs';
 import { readMcpPackageMetadata } from './lib/mcp-metadata.mjs';
 import { runBootstrap } from './commands/bootstrap.mjs';
@@ -736,8 +737,76 @@ async function runCommandHelp(command) {
   return run(['--help']);
 }
 
+/**
+ * Reads enough of the working directory to say what the person should do next.
+ *
+ * Deliberately shallow — three `existsSync` calls and one directory read. Bare `atlas` must answer
+ * instantly; a start screen that pauses to walk a repository has already failed the moment it exists
+ * for.
+ */
+function readSituation() {
+  const here = process.cwd();
+  const isVault = (dir) =>
+    existsSync(join(dir, 'project.md')) ||
+    existsSync(join(dir, 'domains')) ||
+    existsSync(join(dir, 'capabilities'));
+  const inVault = isVault(here);
+  let nearbyVault = null;
+  if (!inVault) {
+    for (const name of ['atlas', 'vault', 'ontology', join('docs', 'ontology')]) {
+      if (isVault(join(here, name))) {
+        nearbyVault = `./${name}`;
+        break;
+      }
+    }
+  }
+  const looksLikeCode = ['package.json', 'Cargo.toml', 'go.mod', 'pyproject.toml', 'pom.xml', 'src']
+    .some((name) => existsSync(join(here, name)));
+  let conceptCount = 0;
+  const vaultDir = inVault ? here : nearbyVault ? join(here, nearbyVault) : null;
+  if (vaultDir) {
+    for (const sub of ['domains', 'capabilities', 'elements']) {
+      try {
+        conceptCount += readdirSync(join(vaultDir, sub)).filter((f) => f.endsWith('.md')).length;
+      } catch {
+        /* a vault need not have every folder */
+      }
+    }
+    if (existsSync(join(vaultDir, 'project.md'))) conceptCount += 1;
+  }
+  const shimInstalled = (process.env.PATH ?? '')
+    .split(':')
+    .filter(Boolean)
+    .some((dir) => existsSync(join(dir, 'atlas')));
+  return { inVault, nearbyVault, looksLikeCode, conceptCount, shimInstalled };
+}
+
+/**
+ * ⚠️ **The bare command is not the reference** (owner, 2026-08-25: *"if we are doing this, make it
+ * much better"*). It used to print all 56 commands, which answers *"what else can this do"* — a
+ * question the person has not asked yet. Somebody typing the bare word has said they do not know the
+ * next one, and fifty-six answers put the work back on them. `--help` still has the full list.
+ */
+function printStartHere(stream = stdout) {
+  const situation = readSituation();
+  const rows = startHereRows(situation);
+  const width = Math.max(...rows.map((r) => r.command.length));
+  stream.write(
+    `${COLORS.bold}atlas${COLORS.reset} ${COLORS.dim}v${PKG.version}${COLORS.reset}\n\n` +
+      `${COLORS.dim}${startHereContext(situation)}${COLORS.reset}\n\n`,
+  );
+  for (const row of rows) {
+    stream.write(`  ${COLORS.bold}${row.command.padEnd(width)}${COLORS.reset}  ${COLORS.dim}${row.why}${COLORS.reset}\n`);
+  }
+  stream.write('\n');
+}
+
 async function main() {
-  if (!SUBCOMMAND || SUBCOMMAND === '--help' || SUBCOMMAND === '-h') {
+  if (!SUBCOMMAND) {
+    printStartHere();
+    return 0;
+  }
+  if (SUBCOMMAND === '--help' || SUBCOMMAND === '-h') {
     printHelp();
     return 0;
   }

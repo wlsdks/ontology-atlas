@@ -20694,3 +20694,65 @@ still loading, which would make it flicker on every open.
 **Status**: valid
 
 ---
+## 2026-08-25 — `atlas` becomes reachable, without a registry
+
+**Context**: the owner asked whether the product ships a CLI, and if so to make
+`atlas` take you in — *"very high quality; if we are doing it, much better than
+now. Every feature usable from the CLI alone."* — and separately: *"no npm yet."*
+
+**What the investigation found**: the CLI was far better stocked than expected —
+56 commands covering reads, writes, graph queries and Git. Against the 35 MCP
+tools only eight had no CLI counterpart, and one of those was load-bearing:
+`relate` could **create** a relation and nothing could remove one. A person
+working only in the terminal had to open the Markdown and hand-edit frontmatter
+to undo their own typo, which is exactly the hand-editing every other write
+command exists to avoid. "Everything from the CLI" was false in one specific,
+fixable place.
+
+The larger problem was not capability but **reach**. The only way to run any of
+it was `node <checkout>/cli/src/index.mjs`, the `bin` name existed but was
+installed nowhere, and the bare command printed all 56 rows.
+
+**Decisions**:
+
+1. **`remove-relation`**, the mirror of `relate` — same argument order, same
+   flags, same `expectedRevision` guard. It takes the edge's `relation_notes`
+   entry with it, because a sentence explaining an edge that no longer exists is
+   an orphan a later reader trusts precisely because it is written down.
+
+2. **`install-shim`** writes a one-line `exec` launcher into `~/.local/bin/atlas`.
+   No registry, no `sudo`, nothing outside the person's home. This satisfies the
+   four conditions in `surfaces.md`: the user types it, the exact contents are
+   printed first, it lands in a user-owned location, and it pins this checkout's
+   absolute path. A file the command did not write is never replaced or deleted —
+   recognition is by a marker we wrote, never by the filename, because deleting
+   somebody's own script is the worst thing this command could do.
+
+3. **The bare command stops being the reference.** It reads the working directory
+   and names the few things that make sense from there. Printing 56 commands
+   answers *"what else can this do"*, a question the person has not asked; the one
+   who typed the bare word has said they do not know the next one. `--help` keeps
+   the full list.
+
+**Not done, deliberately**: no npm publish, and nothing is distributed. The `bin`
+name and the shim are both local facts about a checkout, which is why
+`decisions:check` reports no council trigger — a name that reaches nobody is not
+yet a public contract. Publishing remains the owner's call.
+
+**Recorded dissent**: a shim is a worse install than a package manager — it does
+not update, it breaks if the checkout moves, and it asks people to edit their
+shell profile. The counter is that the alternative on offer was no install at
+all, and an honest one-line launcher a person can read and delete beats a command
+nobody can type.
+
+**Falsifier — observed the same hour, and closed.** The recorded falsifier was
+"someone moves or deletes their checkout and gets a confusing failure". Testing it
+immediately produced exactly that: a Node module-loader stack trace naming neither
+`atlas` nor the folder that went missing. The shim now checks its target before
+`exec` and exits 127 with a sentence naming the missing path and what to do about
+it. Writing a falsifier down and then trying it took one command, and it was the
+difference between a documented risk and a defect that shipped.
+
+**Status**: valid
+
+---
