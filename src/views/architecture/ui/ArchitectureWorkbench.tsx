@@ -88,7 +88,12 @@ export function ArchitectureWorkbench({
           icon={<Boxes aria-hidden />}
           tone="solid"
           align="center"
-          className="max-w-[640px]"
+          /*
+           * A whole-route fallback still needs the route's page-headline rung.
+           * EmptyState intentionally demotes centred titles to body text, so this
+           * page-owned h1 restores the existing display/strong/primary contract.
+           */
+          className="max-w-[640px] [&_h1]:break-keep [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-display [&_h1]:text-[color:var(--color-text-primary)]"
           action={(
             <Link href="/docs/" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }))}>
               {t('openDocs')}
