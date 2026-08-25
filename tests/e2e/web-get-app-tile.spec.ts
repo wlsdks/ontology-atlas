@@ -25,6 +25,7 @@ const WEB_SURFACES = [
   "/ko/ontology/insights/",
   "/ko/projects/",
   "/ko/git/",
+  "/ko/architecture/",
 ];
 
 test("웹의 모든 목적지에서 앱 받기 타일이 같은 자리에 있다", async ({ page }) => {
@@ -66,21 +67,21 @@ test("타일이 실제로 다운로드 화면으로 데려간다 — 죽은 CTA 
 
 
 /**
- * `<lg` — at widths where the rail is hidden, **the bottom tab bar's fifth slot**
+ * `<lg` — at widths where the rail is hidden, **the bottom tab bar's sixth slot**
  * does the job.
  *
  * The hole exposed by measurement (2026-07-28): with the rail at `lg:flex`, the number
  * of visible `/download` links at 390 and 768 was **0**. Mobile and tablet web visitors
  * had no path to the download at all. By owner decision a tab bar slot was given up.
  *
- * Adding a fifth narrows the other four — so **touch target and overflow are measured
+ * Adding a sixth narrows the other five — so **touch target and overflow are measured
  * together**. Making it small because it is a utility would make it the hardest item
  * to press at that width, violating this repository's touch contract (44px).
  */
 const NARROW_WIDTHS = [360, 390, 768];
 
 for (const width of NARROW_WIDTHS) {
-  test(`${width}px 웹 — 탭바 다섯 번째 자리가 다운로드로 데려간다`, async ({ page }) => {
+  test(`${width}px 웹 — 탭바 여섯 번째 자리가 다운로드로 데려간다`, async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.setViewportSize({ width, height: 844 });
     await page.goto("/ko/topology/?guides=off", { waitUntil: "networkidle" });
@@ -102,10 +103,10 @@ for (const width of NARROW_WIDTHS) {
     });
 
     expect(geometry, "탭바를 못 찾았다").not.toBeNull();
-    expect(geometry!.count).toBe(5);
-    // On overflow the fifth is pushed off screen — present but unpressable.
+    expect(geometry!.count).toBe(6);
+    // On overflow the sixth is pushed off screen — present but unpressable.
     expect(geometry!.overflows, "탭바가 가로로 넘친다").toBe(false);
-    // The 44px touch contract — it must hold even after giving up one more slot.
+    // The 44px touch contract — it must hold even with six destinations.
     expect(geometry!.minWidth).toBeGreaterThanOrEqual(44);
     expect(geometry!.minHeight).toBeGreaterThanOrEqual(44);
   });
