@@ -314,6 +314,18 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/FINDINGS-2026-08-25",
+      "path": "docs/benchmark/FINDINGS-2026-08-25.md",
+      "title": "Does the ontology help? — 2026-08-25",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Read this before running the benchmark again. It explains what the numbers can and cannot tell you, and why the first three attempts produced numbers that looked fine and meant nothing. 1. An ontology is worth its cost only where it holds something nothing else holds. When the vault was deleted outright, a coding agent",
+      "wordCount": 1671,
+      "updatedAt": "2026-08-25",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/README",
       "path": "docs/benchmark/README.md",
       "title": "Benchmark — does the ontology actually help AI agents?",
@@ -321,9 +333,10 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 1267,
-      "updatedAt": "2026-06-06",
+      "wordCount": 1331,
+      "updatedAt": "2026-08-25",
       "linksOut": [
+        "benchmark/FINDINGS-2026-08-25",
         "benchmark/tasks",
         "benchmark/rubric",
         "benchmark/results/2026-05-template"
@@ -3281,10 +3294,17 @@
         "linkText": "`mcp/README.md`"
       }
     ],
+    "benchmark/FINDINGS-2026-08-25": [
+      {
+        "fromSlug": "benchmark/README",
+        "context": "agents prefer raw grep, maybe the value is elsewhere. Either way, **measurement before further investment**. > **Read **[`FINDINGS-2026-08-25.md`]** first.** It records > what the first real run measured, why three earlier attempts measured nothing, > and the one rule",
+        "linkText": "`FINDINGS-2026-08-25.md`"
+      }
+    ],
     "benchmark/tasks": [
       {
         "fromSlug": "benchmark/README",
-        "context": "s elsewhere. Either way, **measurement before further investment**. ## What's in here | File | Purpose | |---|---| | **[`tasks.md`]** | 7 benchmark tasks — 3 categories (cross-cutting / semantic / negative-control). Each task has a known correct answer",
+        "context": "6-08-25.md`](FINDINGS-2026-08-25.md) | What we learned, what the numbers can and cannot show, and what to run next. | | **[`tasks.md`]** | 7 benchmark tasks — 3 categories (cross-cutting / semantic / negative-control). Each task has a known correct answer",
         "linkText": "`tasks.md`"
       }
     ],
@@ -4682,6 +4702,13 @@
                 "title": "Benchmark — 2026-08-25 — Codex automated"
               }
             ]
+          },
+          {
+            "name": "FINDINGS-2026-08-25",
+            "path": "benchmark/FINDINGS-2026-08-25",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-08-25",
+            "title": "Does the ontology help? — 2026-08-25"
           },
           {
             "name": "README",

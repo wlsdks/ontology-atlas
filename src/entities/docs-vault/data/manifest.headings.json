@@ -2202,6 +2202,48 @@
       "slug": "remaining-gates-next-round"
     }
   ],
+  "benchmark/FINDINGS-2026-08-25": [
+    {
+      "depth": 1,
+      "text": "Does the ontology help? — 2026-08-25",
+      "slug": "does-the-ontology-help-2026-08-25"
+    },
+    {
+      "depth": 2,
+      "text": "The conclusion, in three sentences",
+      "slug": "the-conclusion-in-three-sentences"
+    },
+    {
+      "depth": 2,
+      "text": "The rule",
+      "slug": "the-rule"
+    },
+    {
+      "depth": 2,
+      "text": "Claim 1: the vault added nothing here, and we know why",
+      "slug": "claim-1-the-vault-added-nothing-here-and-we-know-why"
+    },
+    {
+      "depth": 2,
+      "text": "Claim 2: half the vault was description, and the fix was renaming",
+      "slug": "claim-2-half-the-vault-was-description-and-the-fix-was-renaming"
+    },
+    {
+      "depth": 2,
+      "text": "Claim 3: the outside evidence agrees on the shape",
+      "slug": "claim-3-the-outside-evidence-agrees-on-the-shape"
+    },
+    {
+      "depth": 2,
+      "text": "What to do next",
+      "slug": "what-to-do-next"
+    },
+    {
+      "depth": 2,
+      "text": "Appendix: why the first three attempts measured nothing",
+      "slug": "appendix-why-the-first-three-attempts-measured-nothing"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
