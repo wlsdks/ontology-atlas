@@ -11,29 +11,37 @@ const cargoToml = fs.readFileSync(path.join(root, "src-tauri", "Cargo.toml"), "u
 const cargoVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 
 /**
- * The fifth place — the web bundle's `RELEASE_VERSION` (added 2026-07-28).
+ * The web bundle's `RELEASE_VERSION` — **derived, and this checks that it stays derived.**
  *
- * Shipping `v1.0.0-rc.2` produced a **green preflight with red tests**: the version
- * lives in five places and this check only looked at four (really three). This one
- * is a hand-maintained constant because the web bundle cannot pull in the server
- * entry point, so forgetting it makes the download screen state an old version. The
- * tests caught it that time, but **trusting the preflight and pushing the tag would
- * have missed it.** A gate that sees only part of the truth manufactures false
- * greens.
+ * History: it was a hand-maintained constant, which made it a fifth place to remember. Shipping
+ * `v1.0.0-rc.2` produced a green preflight with red tests because this gate looked at four of the
+ * five. The literal was removed on 2026-08-25 and the value now comes from `package.json` through
+ * `next.config.ts`, so it **cannot** drift.
+ *
+ * That changes what is worth checking. Comparing a derived value to its own source proves nothing;
+ * what can still break is somebody re-introducing a literal, which silently restores the old
+ * failure. So the property is asserted instead of the value.
  */
 const releaseFacts = fs.readFileSync(
   path.join(root, "src", "views", "download", "lib", "release-facts.ts"),
   "utf8",
 );
-const releaseFactsVersion = releaseFacts.match(/RELEASE_VERSION\s*=\s*"([^"]+)"/)?.[1];
+const releaseFactsLiteral = releaseFacts.match(/RELEASE_VERSION\s*=\s*["'`]([^"'`]+)["'`]/)?.[1];
+const releaseFactsDerived = /RELEASE_VERSION\s*=\s*process\.env\.NEXT_PUBLIC_RELEASE_VERSION/.test(
+  releaseFacts,
+);
+const nextConfig = fs.readFileSync(path.join(root, "next.config.ts"), "utf8");
+const nextConfigFeedsVersion =
+  /NEXT_PUBLIC_RELEASE_VERSION\s*:\s*releaseVersion/.test(nextConfig) &&
+  /packageJson[\s\S]{0,120}version/.test(nextConfig);
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-tag -- --tag=vX.Y.Z
 
 Fails unless the macOS release tag matches every version declaration:
-package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml, and
-src/views/download/lib/release-facts.ts. In GitHub Actions the tag can also
-come from GITHUB_REF_NAME.
+package.json, src-tauri/tauri.conf.json and src-tauri/Cargo.toml, and unless
+/download still derives its version from package.json rather than declaring one.
+In GitHub Actions the tag can also come from GITHUB_REF_NAME.
 `);
 }
 
@@ -72,11 +80,21 @@ if (!match) {
 }
 
 const tagVersion = match[1];
+if (releaseFactsLiteral) {
+  fail(
+    `src/views/download/lib/release-facts.ts declares RELEASE_VERSION as the literal "${releaseFactsLiteral}". It must read process.env.NEXT_PUBLIC_RELEASE_VERSION so the download page cannot state a version the app does not have.`,
+  );
+}
+if (!releaseFactsDerived || !nextConfigFeedsVersion) {
+  fail(
+    "the download page's RELEASE_VERSION is no longer fed from package.json through next.config.ts. Restore that chain rather than typing the version again.",
+  );
+}
+
 const versions = {
   package: pkg.version,
   tauri: tauriConfig.version,
   cargo: cargoVersion,
-  "release-facts": releaseFactsVersion,
 };
 const mismatches = Object.entries(versions)
   .filter(([, version]) => version !== tagVersion)
@@ -84,10 +102,10 @@ const mismatches = Object.entries(versions)
 
 if (mismatches.length > 0) {
   fail(
-    `release tag ${tag} does not match macOS app versions: ${mismatches.join(", ")}. Update package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml, and src/views/download/lib/release-facts.ts together before tagging.`,
+    `release tag ${tag} does not match macOS app versions: ${mismatches.join(", ")}. Update package.json, src-tauri/tauri.conf.json and src-tauri/Cargo.toml together before tagging; the download page follows package.json on its own.`,
   );
 }
 
 console.log(
-  `[desktop-release-tag] ${tag} matches package, Tauri, Cargo, and release-facts versions`,
+  `[desktop-release-tag] ${tag} matches package, Tauri and Cargo versions, and /download derives its own from package.json`,
 );

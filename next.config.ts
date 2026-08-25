@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
+import packageJson from './package.json' with { type: 'json' };
+
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const allowedDevOrigins = [
@@ -13,12 +15,26 @@ const allowedDevOrigins = [
     .filter(Boolean) ?? []),
 ];
 
+/*
+ * ⚠️ **One version, not a copy of one.** `release-facts.ts` used to carry the version as a
+ * hand-typed literal beside `package.json`, `tauri.conf.json` and `Cargo.toml` — a fourth place
+ * that is not an independent source, only a transcription of the first. Nothing caught a stale copy
+ * until release time, because `desktop:release-status` runs at the tag and not in CI, so a wrong
+ * download page survived every check until somebody tried to ship.
+ *
+ * It is passed through `env` rather than imported into a component: a JSON import would pull the
+ * whole manifest, dependency list included, into the client bundle. Only this string crosses.
+ */
+const releaseVersion = (packageJson as { version?: string }).version;
+if (!releaseVersion) throw new Error('package.json has no version to publish on /download');
+
 // For deploying to GitHub Pages project site (`/ontology-atlas` subpath) —
 // not configured for root deployment (Firebase, dev). Paired with src/shared/lib/base-path.ts.
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || undefined;
 
 const nextConfig: NextConfig = {
   allowedDevOrigins,
+  env: { NEXT_PUBLIC_RELEASE_VERSION: releaseVersion },
   output: 'export',
   basePath,
   images: {
