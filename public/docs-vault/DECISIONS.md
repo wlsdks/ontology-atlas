@@ -40,6 +40,85 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-25 (114) — A summary node reports when its description falls behind its membership, and never rewrites it
+
+**Prior decisions**: none on this surface. (7), 2026-08-14, established the
+neighbouring principle that a compact response must not hide a stale edge and
+must demand a full follow-up; this extends that stance from edges to a node's own
+prose rather than overturning it.
+
+**Observed phenomenon**: `domains/agent-integration.md` was last written
+2026-08-23 10:48 while four of the seven nodes it declares moved after it, up to
+2026-08-24 05:54. Every one of `validate.mjs`'s seventeen codes asks whether the
+graph is intact — dangling reference, duplicate uid, parseable frontmatter — and
+none asks whether it still tells the truth. Nothing anywhere reported the gap.
+
+**Two rules were built and thrown away before this one.** This is the substance of
+the record, because the discarded rules are the ones a later pass will re-propose.
+
+1. *Child edited after the parent.* Measured on the dogfood vault: 6 of 7 domains
+   flagged, 4 of them at every child. Inspection killed it —
+   `agent-integration`'s Definition names "MCP servers, terminal CLI, in-app
+   connect flow, and the ACP executor layer", which still covered all four
+   children that had been edited under it. A domain summary is written at a level
+   of abstraction that survives its children being revised. That rule measures
+   churn, not staleness.
+2. *Child created after the parent.* Structurally incapable of firing: containment
+   is declared in the parent's own frontmatter, so adding a child always touches
+   the parent in the same commit. Measured 0 of 7, and it would have measured 0
+   forever.
+
+**Decision**: compare the two clocks that live inside one file — the body, which
+is the judgement, and the containment arrays, which are the membership — and
+report only when membership moved last. Surfaced as
+`validate_vault.summaryFreshness`, a `rejudge_summary_membership` maintenance
+action at `review`/`info`, and one row in the installed app's node popover.
+
+**Applied rule**: smallest slice. No model call, no new file, no new frontmatter
+key. The remedy is a question, never a rewrite: a summary body is a human
+judgement someone accepted, and `local-first.md` keeps meaning under the user's
+signature rather than a model's. A cache would regenerate it; this vault cannot.
+
+**Public contract change**: `validate_vault` gains the `summaryFreshness` section
+and `MAINTENANCE_KIND_VALUES` gains `rejudge_summary_membership`, appended last so
+the README's declaration-order contract stays diff-legible. Both are additive; no
+existing field or value changed shape. The solo pass judged escalation
+unnecessary on that basis, and `decisions:check` disagreed and demanded this
+record. The gate was right: an additive output field is still a contract other
+people read.
+
+**Map surface**: direction B of the same-day `/design-directions` pass, chosen by
+the owner over a label tick (C) and a review lens (D). Discovery stays with
+`maintenance_plan` and the insights Do-Next tab; the map only confirms on arrival.
+The row uses the same tertiary ink and label step as `LastEditSubjectRow` and adds
+no colour channel, because the signal is `info` and a mark that reads as an alarm
+teaches people to dismiss it.
+
+**Solo PO pass**: 23/24 (problem insight 3 — the phenomenon is measured but the
+workflow damage is inferred, not observed; user moment 4, differentiation 4,
+ontology value 4, agent value 4, verification 4; no fatal zero).
+
+**Signature**: owner.
+
+**Recorded dissent**: C argued that a popover-only signal has no discoverability —
+someone browsing the map never learns a domain is stale unless they happen to
+click it. That is true and unanswered; B accepts it on the grounds that the app is
+not the discovery path.
+
+**Falsifier**: if flagged summaries turn out, on inspection, to still describe
+their membership correctly, the containment array is the wrong proxy for meaning
+and this is withdrawn rather than tuned. The first rule's falsifier fired within
+an hour of being written, which is why this one is stated as plainly.
+
+Second falsifier, for the dissent: if the owner reports missing a stale domain
+while looking at the map, C won and the label tick should be reopened.
+
+**Review**: when a vault is observed carrying three or more stale summaries at
+once. Until then the count is 0 of 8 here, and a permanently silent check is
+proven live by a planted-defect test rather than by the vault.
+
+**Status**: active.
+
 ## 2026-08-24 (113) — The write checkpoint moves into the server that performs the write
 
 **Prior decisions**: (111) removed `codex-acp` from in-app chat because a Codex

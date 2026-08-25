@@ -5,13 +5,14 @@ kind: domain
 title: "Graph Modeling & Ontology Schema"
 display_ko: 그래프 모델과 스키마
 display_en: "Graph Modeling & Ontology Schema"
-capabilities: [capabilities/reviewed-ontology-writing, capabilities/taxonomy, capabilities/vault-ontology]
+capabilities: [capabilities/reviewed-ontology-writing, capabilities/summary-freshness, capabilities/taxonomy, capabilities/vault-ontology]
 elements: [elements/acp-ontology-write-review, elements/category, elements/knowledge-graph, elements/ontology-change-review, elements/ontology-class, elements/ontology-edit-redirect, elements/ontology-insights, elements/ontology-meaning-editor, elements/ontology-redirect, elements/status]
 created_by: human
+relation_notes: { capabilities/summary-freshness: "Graph modeling owns whether the compiled graph still tells the truth, so it also owns the advisory that a summary node's description has fallen behind the membership it declares." }
 ---
 
 ## Definition
-Defines the five authorable kinds, reserved reader kind, actual storage/query/write relation vocabulary, and non-inference boundaries encoded in markdown frontmatter, compiling them into a deterministic graph for compilation and querying.
+Defines the five authorable kinds, reserved reader kind, actual storage/query/write relation vocabulary, and non-inference boundaries encoded in markdown frontmatter, compiling them into a deterministic graph for compilation and querying. It also owns whether that graph still tells the truth: alongside writing and compiling, it reports when a summary node's own description has fallen behind the membership it declares.
 
 
 ## Evidence
@@ -20,7 +21,8 @@ Defines the five authorable kinds, reserved reader kind, actual storage/query/wr
 
 ## Inclusion / Exclusion
 - Included: kind-specific frontmatter normalization, relationship support scope and direction, direct `is_a` determination,
-  compile_ontology/query_ontology, explicit absence of automatic inference and standard conformance
+  compile_ontology/query_ontology, the summary-freshness advisory over a node's own history,
+  explicit absence of automatic inference and standard conformance
 - Excluded: The business meaning of individual domains themselves (each domain explains its own)
 
 ## Confidence

@@ -49,6 +49,7 @@
     "src/growth-hint.mjs",
     "src/evidence-rank.mjs",
     "src/git-tools.mjs",
+    "src/stale-parent.mjs",
     "src/ontology-atlas-ignore.mjs",
     "src/compiled-cache.mjs",
     "src/ontology-compiler.mjs",

@@ -682,12 +682,12 @@ if (
 
 if (
   pkg.scripts?.["desktop:release-preflight"] ===
-  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1040x720 --require-accessibility-text=\"Ontology Atlas\" --reset-window-state && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
+  "pnpm desktop:check && pnpm notice:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1040x720 --require-accessibility-text=\"Ontology Atlas\" --reset-window-state && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
 ) {
-  pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, LaunchServices app content proof, DMG, and install smoke");
+  pass("desktop local release preflight runs readiness, third-party notice currency, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, LaunchServices app content proof, DMG, and install smoke");
 } else {
   fail(
-    "package.json must expose desktop:release-preflight as the local pre-tag macOS release gate, including cli:mcp-verify, dogfood:agent-setup-gate, and LaunchServices app content proof against docs/ontology before release artifact checks",
+    "package.json must expose desktop:release-preflight as the local pre-tag macOS release gate, including notice:check, cli:mcp-verify, dogfood:agent-setup-gate, and LaunchServices app content proof against docs/ontology before release artifact checks",
   );
 }
 

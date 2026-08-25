@@ -7,6 +7,27 @@
 
 ---
 
+## 2026-08-25 · The released app carries its third-party notices
+
+- The macOS app and Windows installer now ship `NOTICE.md` and `LICENSE` inside the bundle. The app
+  statically links JavaScriptCore and WebKit through its compiled MCP sidecar, and ships the
+  Pretendard font, and both carry notice obligations that were not being met. Ontology Atlas itself
+  remains MIT; those licenses bind the component, not the program linking it.
+- The notice is generated from the actual dependency trees by `pnpm notice:build`, and
+  `pnpm notice:check` blocks a release whose notice has gone stale.
+
+## 2026-08-25 · A domain says when its description has fallen behind what it holds
+
+- A `domain` or `project` body is a summary of the nodes it contains. When that list changes and
+  nobody re-writes the description, the vault kept saying the old thing and nothing noticed:
+  every existing check asked whether the graph was intact, never whether it still told the truth.
+- `validate_vault` now reports `summaryFreshness`, and `query_ontology({operation:'maintenance_plan'})`
+  now raises a `rejudge_summary_membership` action, when a node's containment list changed after its
+  prose was last written. Both are advisory: nothing is blocked, no model is called, and no rewrite
+  is proposed. The body is a human judgement, so the vault asks for a judgement.
+- Outside a Git repository both report `checked: false` instead of a clean bill, because not looking
+  is not the same as finding nothing.
+
 ## 2026-08-24 · Codex in-app chat pauses until Atlas MCP writes have an app-owned review gate
 
 - Installed-app acceptance proved that Codex `read-only` blocks direct file writes but can still

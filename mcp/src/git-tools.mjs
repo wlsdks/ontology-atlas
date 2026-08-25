@@ -314,3 +314,79 @@ function semanticSubject(files) {
   ].filter(Boolean);
   return `ontology snapshot: ${parts.join(', ')} vault file${files.length === 1 ? '' : 's'}`;
 }
+
+/**
+ * Reads the revisions of specific vault nodes, newest first, for the stale-parent check.
+ *
+ * That check compares two clocks living in one file — the body, which is the
+ * judgement, and the containment arrays, which are the membership — so it needs
+ * content per revision, not just a timestamp. Only summary nodes are asked for
+ * (8 of 83 in the dogfood vault), and the walk stops at `maxRevisions`, so the cost
+ * is bounded well below a full-history scan.
+ *
+ * Each entry is `{ changedAt, body, children }`. `body` is everything after the
+ * frontmatter block; `children` is the union of the containment arrays. Parsing is
+ * deliberately line-level rather than a full YAML load: this reads historical
+ * revisions that may predate the current schema, and a strict parser throwing on an
+ * old file would take the whole advisory down with it.
+ *
+ * Returns `{ ok: false, reason }` in the same shape as the other helpers here when
+ * the vault is not inside a repository, so a vault kept outside Git degrades to no
+ * advisory instead of an error.
+ */
+export function collectNodeRevisions({ repoRoot, vaultRoot, slugs, maxRevisions = 40 }) {
+  const scope = resolveVaultGitScope({ repoRoot, vaultRoot, operation: 'node_revisions' });
+  if (!scope.ok) return scope;
+  const { gitRoot, vaultRelative } = scope;
+  const prefix = vaultRelative === '.' ? '' : `${vaultRelative}/`;
+  const revisionsBySlug = new Map();
+
+  for (const slug of slugs ?? []) {
+    const filePath = `${prefix}${slug}.md`;
+    const log = git(
+      gitRoot,
+      ['log', `--max-count=${maxRevisions}`, '--format=%H %aI', '--no-renames', '--', filePath],
+      { allowFailure: true },
+    );
+    if (!log.ok) continue;
+
+    const revisions = [];
+    for (const line of String(log.stdout).split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const spaceIndex = trimmed.indexOf(' ');
+      if (spaceIndex < 0) continue;
+      const sha = trimmed.slice(0, spaceIndex);
+      const changedAt = trimmed.slice(spaceIndex + 1).trim();
+      const show = git(gitRoot, ['show', `${sha}:${filePath}`], { allowFailure: true });
+      if (!show.ok) continue;
+      const { body, children } = splitNodeRevision(show.stdout);
+      revisions.push({ changedAt, body, children });
+    }
+    if (revisions.length) revisionsBySlug.set(slug, revisions);
+  }
+
+  return { operation: 'node_revisions', ok: true, repoRoot: gitRoot, revisionsBySlug };
+}
+
+/** Containment keys, mirrored from `stale-parent.mjs` so this module stays free of a cycle. */
+const REVISION_CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
+
+/** Splits one historical revision into its body and its declared containment members. */
+function splitNodeRevision(text) {
+  const source = String(text ?? '');
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(source);
+  const frontmatter = match ? match[1] : '';
+  const body = match ? source.slice(match[0].length) : source;
+  const children = [];
+  for (const key of REVISION_CONTAINMENT_KEYS) {
+    const inline = new RegExp(`^${key}:[ \\t]*\\[(.*?)\\]`, 'm').exec(frontmatter);
+    if (inline) {
+      for (const ref of inline[1].split(',')) {
+        const cleaned = ref.trim().replace(/^["']|["']$/g, '');
+        if (cleaned) children.push(cleaned);
+      }
+    }
+  }
+  return { body, children: [...new Set(children)] };
+}
