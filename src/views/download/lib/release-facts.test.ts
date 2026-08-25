@@ -16,9 +16,24 @@ function readJson(relativePath: string): Record<string, unknown> {
 }
 
 describe("release-facts", () => {
-  it("matches the version declared in package.json", () => {
+  /*
+   * ⚠️ This no longer proves alignment — since 2026-08-25 the value **is** `package.json`'s, read
+   * through `next.config.ts`, so comparing them is comparing a thing to itself. What it still
+   * proves is that the chain is wired: with the env missing the module falls back to `unknown`, so
+   * a broken `next.config.ts` or a missing vitest `env` shows up here rather than as a download
+   * page quietly advertising nothing.
+   *
+   * `check-macos-release-tag.mjs` owns the other half — that nobody reintroduces a literal.
+   */
+  it("is fed from package.json rather than carrying its own copy", () => {
     const pkg = readJson("package.json");
+    expect(RELEASE_VERSION).not.toBe("unknown");
     expect(RELEASE_VERSION).toBe(pkg.version);
+    const source = readFileSync(
+      join(process.cwd(), "src/views/download/lib/release-facts.ts"),
+      "utf8",
+    );
+    expect(source).toMatch(/RELEASE_VERSION\s*=\s*process\.env\.NEXT_PUBLIC_RELEASE_VERSION/);
   });
 
   it("matches the version declared in src-tauri/tauri.conf.json", () => {
