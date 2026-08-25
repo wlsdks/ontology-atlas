@@ -233,6 +233,13 @@ export function useAcpSession({
 }: UseAcpSessionOptions) {
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
   /*
+   * ⚠️ When the open turn last spoke, so the screen can tell "still working" from "stopped
+   * answering". `prompt` is deliberately given no timeout, so a turn that ends without a result
+   * would otherwise hold the composer shut forever with nothing on screen saying why
+   * (`turn-liveness.ts`, measured in the installed rc.11 build).
+   */
+  const [lastTurnUpdateAt, setLastTurnUpdateAt] = useState<number | null>(null);
+  /*
    * Status is held in a ref as well: the moment the adapter dies (`onExit`) is outside render, so a
    * closure sees a stale value. What is needed there is the status **at that moment** — was a turn
    * in progress (died mid-answer) or had it simply finished?
@@ -373,6 +380,8 @@ export function useAcpSession({
 
   const applyUpdate = useCallback(
     (update: Record<string, unknown>) => {
+      // Any update at all counts as the turn speaking; what it says does not matter here.
+      setLastTurnUpdateAt(Date.now());
       const kind = typeof update.sessionUpdate === 'string' ? update.sessionUpdate : '';
       const content = update.content as { text?: unknown } | undefined;
       const text = typeof content?.text === 'string' ? content.text : '';
@@ -864,15 +873,18 @@ export function useAcpSession({
       if (!client || !sessionId || !text.trim()) return;
       latestUserRequestRef.current = text.trim();
       push({ kind: 'user', id: nextEventId(), text });
+      setLastTurnUpdateAt(Date.now());
       setStatusTracked('thinking');
       try {
         await client.prompt(sessionId, [{ type: 'text', text }]);
         if (!disposedRef.current) {
           setApprovedOntologyWriteTracked(null);
+          setLastTurnUpdateAt(null);
           setStatusTracked('ready');
         }
       } catch (err) {
         setApprovedOntologyWriteTracked(null);
+        setLastTurnUpdateAt(null);
         setError(err instanceof Error ? err.message : String(err));
         setStatusTracked('error');
       }
@@ -949,6 +961,7 @@ export function useAcpSession({
 
   return {
     status,
+    lastTurnUpdateAt,
     events,
     error,
     slashCommands,

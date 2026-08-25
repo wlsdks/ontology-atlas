@@ -3446,6 +3446,8 @@
     "composerLabel": "Write what you want done",
     "send": "Send",
     "stop": "Stop",
+    "turnSilent": "The agent has said nothing for {minutes} minutes",
+    "turnSilentHint": "It may still be working, or it may have finished without telling us. Press Stop to type again.",
     "status": {
       "idle": "Off",
       "starting": "Connecting",

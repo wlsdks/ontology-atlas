@@ -3446,6 +3446,8 @@
     "composerLabel": "무엇을 시킬지 적어요",
     "send": "보내기",
     "stop": "그만",
+    "turnSilent": "에이전트가 {minutes}분째 아무 소식이 없어요",
+    "turnSilentHint": "아직 일하는 중일 수도 있지만, 대답이 끝났는데 알려 주지 않은 것일 수도 있어요. 「그만」을 누르면 다시 입력할 수 있어요.",
     "status": {
       "idle": "꺼짐",
       "starting": "연결 중",
