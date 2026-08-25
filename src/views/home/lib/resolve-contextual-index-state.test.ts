@@ -9,6 +9,7 @@ const resting = {
   graphEmpty: false,
   emptyManualExpand: false,
   agentDockOpen: false,
+  startStepsOpen: false,
 };
 
 describe("resolveContextualIndexState", () => {
@@ -28,6 +29,7 @@ describe("resolveContextualIndexState", () => {
         ...resting,
         baseState: "collapsed",
         agentDockOpen: false,
+        startStepsOpen: false,
       }),
     ).toBe("collapsed");
   });
@@ -56,5 +58,33 @@ describe("resolveContextualIndexState", () => {
         emptyManualExpand: true,
       }),
     ).toBe("expanded");
+  });
+});
+
+/**
+ * Owner, 2026-08-25: *"I don't like where the AI-agent-connect guide sits when the left INDEX panel
+ * opens — from the user's side it is not actually centred. While that popup is up, INDEX should not
+ * be openable at all; just close it."*
+ *
+ * The checklist centres itself in the map area, and opening INDEX shrinks that area — so the surface
+ * asking for the person's attention drifted off the middle of the window while still claiming it.
+ */
+describe('시작 안내가 떠 있으면 INDEX 는 자리를 비운다', () => {
+  const base = {
+    baseState: 'expanded' as const,
+    meaningEditorOpen: false,
+    selectionActive: false,
+    selectionManualExpand: false,
+    graphEmpty: false,
+    emptyManualExpand: false,
+    agentDockOpen: false,
+  };
+
+  it('안내가 떠 있으면 접힌다 — 화면 가운데를 되돌려 준다', () => {
+    expect(resolveContextualIndexState({ ...base, startStepsOpen: true })).toBe('collapsed');
+  });
+
+  it('안내가 없으면 평소대로 펼쳐진다', () => {
+    expect(resolveContextualIndexState({ ...base, startStepsOpen: false })).toBe('expanded');
   });
 });

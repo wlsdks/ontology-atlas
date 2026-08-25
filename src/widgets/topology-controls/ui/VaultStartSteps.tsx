@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { VendorMark } from "@/shared/ui/vendor-mark";
+import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   Cable,
   CircleAlert,
@@ -60,6 +63,10 @@ export interface VaultStartStepsProps {
    * for whoever went looking.
    */
   acpRuntimeLabel?: string | null;
+  /** Bundled mark for that tool (`/acp-icons/<id>.svg`), so the step shows it rather than only naming it. */
+  acpRuntimeIcon?: string | null;
+  /** The vendor's published brand colour for that mark, when there is one. */
+  acpRuntimeInk?: string | null;
   /** The door that opens a conversation (when a runner exists), or the screen for picking a tool (when none does). */
   onOpenAgentConnect?: (() => void) | null;
   /**
@@ -91,6 +98,8 @@ export interface VaultStartStepsProps {
 export function VaultStartSteps({
   agentConnected = false,
   acpRuntimeLabel = null,
+  acpRuntimeIcon = null,
+  acpRuntimeInk = null,
   onOpenAgentConnect = null,
   onSendAnalyzeToAgent = null,
   analyzePrompt,
@@ -103,6 +112,7 @@ export function VaultStartSteps({
   indexExpanded = false,
 }: VaultStartStepsProps) {
   const t = useTranslations("topology.startSteps");
+  const kindLabel = useOntologyKindLabel();
   const { state: copyState, copy: copyPrompt } = useCopyFeedback();
   const [index, setIndex] = useState(0);
   /**
@@ -299,7 +309,7 @@ export function VaultStartSteps({
         role="status"
         aria-label={t("title")}
         aria-live="polite"
-        className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[var(--shadow-elevation-1)]"
+        className="pointer-events-auto w-[min(480px,calc(100vw-2rem))] rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[var(--shadow-elevation-1)]"
       >
         {/*
           The title **is the step's title**. There used to be a card title
@@ -331,10 +341,66 @@ export function VaultStartSteps({
         */}
         <p
           data-testid="start-step-body"
-          className="mt-2 min-h-15 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
+          className="mt-2 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
         >
           {body}
         </p>
+        {/*
+          ⚠️ **Name the tool with its own mark** (owner, 2026-08-25: *"if something was found, can it
+          not be shown properly — the box can be bigger — with the Claude mark, like the agent tab?"*).
+          The step said "found an AI tool you can use: Claude Agent" and buried the one concrete
+          finding at the end of a sentence. A found tool is the whole point of this step, so it gets a
+          row of its own with the vendor's drawing beside its name — the same `VendorMark` the agent
+          settings list uses, so the two cannot drift.
+        */}
+        {/*
+          ⚠️ **Show the shapes instead of describing the prompt** (owner, 2026-08-25: *"why does it
+          say what is in the instruction here? just compose it nicely — put something in, a map shape
+          or an example, something simple"*).
+          
+          The step used to spend its second sentence on what our prompt contains, which is an
+          implementation detail of our prompt engineering, not something the person is deciding. What
+          they are about to see is a map made of four marks, so the card shows those marks — the same
+          `TopologyV2KindGlyph` the map draws, so this is a preview rather than an illustration, and
+          it teaches the four names they will meet in the files.
+        */}
+        {current === "analyze" ? (
+          <ul
+            data-testid="start-step-kind-preview"
+            className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5"
+          >
+            {(["project", "domain", "capability", "element"] as const).map((kind) => (
+              <li key={kind} className="flex items-center gap-1.5">
+                <TopologyV2KindGlyph kind={kind} size={13} />
+                <span className="text-label leading-label text-[color:var(--color-text-quaternary)]">
+                  {kindLabel(kind)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {current === "agent" && acpRuntimeLabel ? (
+          <div
+            data-testid="start-step-runtime"
+            /*
+             * No box. A bordered plate here would be a third rectangle inside this card, and the
+             * `static-card-adoption-ratchet` caught it on the first try — the ledger exists because
+             * 71 hand-written boxes once grew into 51 distinct combinations. The mark already carries
+             * its own plate, which is enough to separate the tool from the sentence above it.
+             */
+            className="mt-3 flex items-center gap-2.5"
+          >
+            <VendorMark src={acpRuntimeIcon} ink={acpRuntimeInk} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                {acpRuntimeLabel}
+              </span>
+              <span className="block truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
+                {t("agent.runtimeReady")}
+              </span>
+            </span>
+          </div>
+        ) : null}
         <div className="mt-4 flex items-center justify-between gap-2">
           {/* The way back — the first step has nowhere to go, so it only holds the space. */}
           {index > 0 ? (

@@ -21,10 +21,18 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-function renderEmpty(projectCount: number, reason?: "no-projects" | "no-relations") {
+/*
+ * ⚠️ Read from the catalogue, not pinned as literals. These tests guard **which** string the screen
+ * chooses, not how it is worded — and `documentation.md` is explicit that checks derive facts rather
+ * than pin human prose. Pinning it meant a copy repair (owner, 2026-08-25: the empty state was
+ * leaking the `project` kind at a newcomer) broke four tests that had no opinion about wording.
+ */
+const EMPTY = koMessages.topology.empty;
+
+function renderEmpty(conceptCount: number, reason?: "no-projects" | "no-relations") {
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <TopologyEmptyState projectCount={projectCount} reason={reason} />
+      <TopologyEmptyState conceptCount={conceptCount} reason={reason} />
     </NextIntlClientProvider>,
   );
 }
@@ -33,7 +41,7 @@ describe("TopologyEmptyState", () => {
   it("0 프로젝트일 때 복구 CTA 를 명확한 화면 이름으로 노출", () => {
     renderEmpty(0);
     expect(
-      screen.getByRole("status", { name: /지도에 그릴 프로젝트가 없습니다/ }),
+      screen.getByRole("status", { name: new RegExp(EMPTY.titleNoProjects) }),
     ).toBeInTheDocument();
     expect(screen.getByText("개념 둘러보기").closest("a")).toHaveAttribute(
       "href",
@@ -49,7 +57,7 @@ describe("TopologyEmptyState", () => {
   it("보조 힌트는 별도 안내 박스로 강조하지 않는다", () => {
     renderEmpty(1, "no-relations");
     const hint = screen.getByText(
-      "전체 지도 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
+      EMPTY.crossViewHint,
     );
     expect(hint.className).not.toContain("rounded-md");
     expect(hint.className).not.toContain("border");
@@ -81,12 +89,12 @@ describe("TopologyEmptyState", () => {
   it("폴더를 열 수 있으면 다운로드 오안내 대신 picker 카피를 쓴다", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <TopologyEmptyState projectCount={0} reason="no-projects" canPickFolder />
+        <TopologyEmptyState conceptCount={0} reason="no-projects" canPickFolder />
       </NextIntlClientProvider>,
     );
     const panel = screen.getByRole("status");
     expect(panel).not.toHaveTextContent("macOS 앱");
-    expect(panel).toHaveTextContent("폴더를 열고 첫 프로젝트를 만들면 지도가 시작돼요.");
+    expect(panel).toHaveTextContent(EMPTY.bodyNoProjectsPicker);
     const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(links).not.toContain("/download/");
   });
@@ -103,17 +111,27 @@ describe("TopologyEmptyState", () => {
   it("reason 이 no-projects 면 projectCount 가 있어도 빈 프로젝트 안내를 우선한다", () => {
     renderEmpty(1, "no-projects");
     expect(
-      screen.getByRole("status", { name: /지도에 그릴 프로젝트가 없습니다/ }),
+      screen.getByRole("status", { name: new RegExp(EMPTY.titleNoProjects) }),
     ).toBeInTheDocument();
   });
 
   it("한국어 빈 상태는 topology 내부 용어 대신 지도 상태를 설명한다", () => {
     renderEmpty(0);
     const panel = screen.getByRole("status");
-    expect(panel).toHaveTextContent("지도 · 프로젝트 0개");
-    expect(panel).toHaveTextContent("지도에 그릴 프로젝트가 없습니다");
+    expect(panel).toHaveTextContent(EMPTY.titleNoProjects);
     expect(panel).not.toHaveTextContent("TOPOLOGY");
     expect(panel).not.toHaveTextContent("토폴로지");
+    /*
+     * ⚠️ The hole this very test was written to close, and did not (owner, 2026-08-25: *"what is 'a
+     * project to draw'? it just means there are no ontology concepts, right?"*).
+     *
+     * It banned the renderer's name and then asserted a count phrased as projects in the same breath — so the
+     * screen's first sentence to a newcomer was built from `project`, a schema kind, and the guard
+     * against internal vocabulary held the door open for it. The count is the graph's **node** count,
+     * which makes the word wrong about the data as well as unreadable.
+     */
+    expect(panel).not.toHaveTextContent("프로젝트");
+    expect(panel).toHaveTextContent("개념");
   });
 
   it("빈 상태 패널은 큰 카드 대신 작은 상태 패널로 렌더", () => {
@@ -159,7 +177,7 @@ describe("TopologyEmptyState", () => {
     const onCreateNode = vi.fn();
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <TopologyEmptyState projectCount={0} canCreateNode onCreateNode={onCreateNode} />
+        <TopologyEmptyState conceptCount={0} canCreateNode onCreateNode={onCreateNode} />
       </NextIntlClientProvider>,
     );
     const btn = screen.getByTestId("empty-create-node");
@@ -172,7 +190,7 @@ describe("TopologyEmptyState", () => {
     const onStartFromDocs = vi.fn();
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <TopologyEmptyState projectCount={0} docsFoundCount={4} onStartFromDocs={onStartFromDocs} />
+        <TopologyEmptyState conceptCount={0} docsFoundCount={4} onStartFromDocs={onStartFromDocs} />
       </NextIntlClientProvider>,
     );
     const btn = screen.getByTestId("empty-start-from-docs");
@@ -188,7 +206,7 @@ describe("TopologyEmptyState", () => {
   it("docsFoundCount=0 이면 부트스트랩 CTA 없음 — 기존 빈 vault 흐름 유지", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <TopologyEmptyState projectCount={0} docsFoundCount={0} onStartFromDocs={vi.fn()} />
+        <TopologyEmptyState conceptCount={0} docsFoundCount={0} onStartFromDocs={vi.fn()} />
       </NextIntlClientProvider>,
     );
     expect(screen.queryByTestId("empty-start-from-docs")).not.toBeInTheDocument();

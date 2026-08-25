@@ -1,9 +1,13 @@
 'use client';
 
+import { Fragment } from 'react';
+
 import { Bot } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { controlClass } from '@/shared/ui/control-class';
+
+import { BuildFromCodeConfirmDialog } from './BuildFromCodeConfirmDialog';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { useBuildFromCode } from '../model/use-build-from-code';
@@ -51,15 +55,21 @@ export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFro
          * Hover comes from the axes, not from hand-written `hover:` literals. The adoption ratchet
          * counts those and its whole point is that they may fall and never rise.
          */
+        /*
+         * ⚠️ The two variants differ by the `size` **axis**, not by hand-written heights and type.
+         * Writing `h-8 … text-body` / `h-7 … text-caption` in `className` bypassed the axis system
+         * and fought the compound variants that already set height, padding, gap and type for a card
+         * at each size — which is what composing it oddly looked like on screen.
+         */
         className={controlClass({
           shape: 'card',
           scope: 'panel',
+          size: variant === 'card' ? 'md' : 'sm',
           hoverBorder: 'strong',
           hoverInk: 'strong',
-          className:
-            variant === 'card'
-              ? 'touch-hit-expand mt-2 inline-flex h-8 w-full justify-center gap-1.5 border-[color:var(--color-indigo-line-a35)] text-body text-[color:var(--topology-v2-panel-text-secondary)]'
-              : 'touch-hit-expand inline-flex h-7 w-full justify-center gap-1.5 border-[color:var(--color-indigo-line-a35)] text-caption text-[color:var(--topology-v2-panel-text-secondary)]',
+          className: `touch-hit-expand w-full justify-center border-[color:var(--color-indigo-line-a35)] text-[color:var(--topology-v2-panel-text-secondary)]${
+            variant === 'card' ? ' mt-2' : ''
+          }`,
         })}
       >
         <Bot size={ICON_SIZE.sm} aria-hidden />
@@ -73,79 +83,19 @@ export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFro
         a person never saw is not a path they agreed to — so the exact location is on screen, in a
         face they can compare against a shell, before the button that creates it.
       */}
-      {build.location ? (
-        <div
-          data-testid={variant === 'card' ? 'first-run-build-confirm' : 'index-build-confirm'}
-          className="mt-2 rounded-[var(--radius-card)] border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--topology-v2-panel-surface)] p-2"
-        >
-          <p className="break-keep text-caption leading-caption text-[color:var(--topology-v2-panel-text-secondary)]">
-            {build.reusesExisting ? t('buildFromCodeReuse') : t('buildFromCodeWillCreate')}
-          </p>
-          <code
-            data-testid={variant === 'card' ? 'first-run-build-path' : 'index-build-path'}
-            className="mt-1 block break-all font-mono text-caption leading-caption text-[color:var(--topology-v2-panel-text-primary)]"
-          >
-            {build.location.displayPath}
-          </code>
-          <div className="mt-2 flex gap-1.5">
-            <button
-              type="button"
-              data-testid={
-                variant === 'card' ? 'first-run-build-confirm-go' : 'index-build-confirm-go'
-              }
-              disabled={build.stage === 'creating'}
-              onClick={() => {
-                void build.confirm();
-              }}
-              className={controlClass({
-                shape: 'card',
-                scope: 'panel',
-                tone: 'accent',
-                hoverBorder: 'strong',
-                hoverInk: 'strong',
-                className:
-                  'touch-hit-expand inline-flex h-7 flex-1 items-center justify-center text-caption',
-              })}
-            >
-              {build.stage === 'creating'
-                ? t('buildFromCodeCreating')
-                : build.reusesExisting
-                  ? t('buildFromCodeReuseGo')
-                  : t('buildFromCodeCreateGo')}
-            </button>
-            <button
-              type="button"
-              data-testid={
-                variant === 'card' ? 'first-run-build-confirm-cancel' : 'index-build-confirm-cancel'
-              }
-              disabled={build.stage === 'creating'}
-              onClick={build.reset}
-              className={controlClass({
-                shape: 'card',
-                scope: 'panel',
-                hoverBorder: 'strong',
-                hoverInk: 'strong',
-                className:
-                  'touch-hit-expand inline-flex h-7 items-center justify-center px-2 text-caption text-[color:var(--topology-v2-panel-text-tertiary)]',
-              })}
-            >
-              {t('buildFromCodeCancel')}
-            </button>
-          </div>
-          {build.errorText !== null ? (
-            <p
-              data-testid={variant === 'card' ? 'first-run-build-error' : 'index-build-error'}
-              className="mt-1.5 break-keep text-caption leading-caption text-[color:var(--color-danger-text)]"
-            >
-              {build.errorText || t('buildFromCodeFailed')}
-            </p>
-          ) : null}
-        </div>
-      ) : build.errorText !== null ? (
+      {/*
+        The path and the confirm live in a centred dialog, not here. Cramming a warning, an
+        explanation, an absolute path and two controls into a ~240px column produced mid-token path
+        wraps and two-line buttons, and stacked a bordered block under a bordered button inside a
+        bordered panel — three rectangles of equal weight. See `BuildFromCodeConfirmDialog`.
+      */}
+      <BuildFromCodeConfirmDialog build={build} />
+
+      {build.location === null && build.errorText !== null ? (
         /*
-         * ⚠️ A failure before a project is chosen has no confirm box to live in, and the error used
-         * to be written into state that nothing rendered — so a picker that threw left the person
-         * pressing a button that did nothing, twice. It gets its own line here.
+         * A failure before a project is chosen has no dialog to live in — the dialog opens on a
+         * location, and there is none. Without this the button simply did nothing and the person
+         * pressed it again.
          */
         <p
           data-testid={variant === 'card' ? 'first-run-build-error' : 'index-build-error'}

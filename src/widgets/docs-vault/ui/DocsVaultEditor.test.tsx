@@ -87,7 +87,15 @@ describe('DocsVaultEditor', () => {
     expect(screen.getByText('디스크 파일과 같음')).toBeInTheDocument();
     expect(screen.getByLabelText('저장·검증·되돌리기 흐름')).toBeInTheDocument();
     expect(screen.getByText('검증')).toBeInTheDocument();
-    expect(screen.getByText('저장 후 문서함 점검 또는 vault validate 실행')).toBeInTheDocument();
+    /*
+     * Read from the catalogue rather than pinned as a literal. `documentation.md` forbids pinning a
+     * sentence written by a person, and this one broke when the copy repair on 2026-08-25 settled the
+     * product on one name for the folder — a test with no opinion about wording standing in the way
+     * of better wording.
+     */
+    expect(
+      screen.getByText(koMessages.vaultWidgets.editor.validateContractClean),
+    ).toBeInTheDocument();
     expect(screen.getByText('되돌리기')).toBeInTheDocument();
     expect(screen.getByText('닫기 전 확인 · git diff로 최종 복구 가능')).toBeInTheDocument();
 

@@ -349,7 +349,7 @@
     "title": "폴더를 열고 바로 시작하세요",
     "subtitle": "이 Mac의 마크다운 폴더를 가리키면 그 파일들이 로컬 원본이 됩니다. Atlas가 업로드하지는 않지만, 나중에 연결한 코딩 에이전트는 질문과 문맥을 자기 제공자에게 보낼 수 있어요.",
     "openTitle": "내 폴더 열기",
-    "openBody": "기존 마크다운 폴더를 선택해 워크스페이스로 들어갑니다.",
+    "openBody": "이미 있는 마크다운 폴더를 골라 온톨로지 폴더로 씁니다.",
     "justStartTitle": "그냥 시작하기",
     "justStartBody": "내 문서(Documents) › Ontology Atlas 폴더에 바로 만들어요. 폴더 선택 없이. AI 에이전트도 이 폴더를 읽고 쓸 수 있어요.",
     "justStartBusy": "만드는 중…",
@@ -421,15 +421,18 @@
     "errorRootRejected": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
     "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
     "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요.",
-    "buildFromCodeWillCreate": "여기에 지도 폴더를 만들어요. 코드는 그대로 두고, 이 폴더만 새로 생겨요.",
-    "buildFromCodeReuse": "이 프로젝트에는 지도 폴더가 이미 있어요. 새로 만들지 않고 그대로 이어서 써요.",
-    "buildFromCodeCreateGo": "여기에 만들기",
+    "buildFromCodeWillCreate": "이 프로젝트 안에 지도 폴더를 만들까요?",
+    "buildFromCodeReuse": "이 프로젝트의 지도 폴더를 이어서 쓸까요?",
+    "buildFromCodeCreateGo": "만들기",
     "buildFromCodeReuseGo": "이어서 쓰기",
     "buildFromCodeCreating": "만드는 중…",
     "buildFromCodeCancel": "취소",
     "buildFromCodeFailed": "폴더를 만들지 못했어요. 이 프로젝트에 쓰기 권한이 있는지 확인해 주세요.",
     "errorPermissionDenied": "macOS가 「{folder}」 폴더를 보호하고 있어요. 시스템 설정 → 개인정보 보호 및 보안 → 파일 및 폴더에서 Ontology Atlas에 접근을 허용한 뒤 다시 열어 주세요.",
-    "errorPermissionDeniedThisFolder": "이"
+    "errorPermissionDeniedThisFolder": "이",
+    "buildFromCodeSteppedUp": "고른 건 지도 폴더예요. 그 폴더를 담고 있는 프로젝트로 한 단계 올라갔어요.",
+    "buildFromCodeSafety": "코드는 그대로 두고, 이 폴더만 새로 생겨요.",
+    "buildFromCodeSafetyReuse": "새로 만들지 않고, 이미 있는 폴더를 그대로 써요."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -448,7 +451,7 @@
       },
       "nodes": {
         "title": "점의 크기와 모양",
-        "body": "가장 큰 점이 제품 전체, 그 다음이 영역, 작은 점이 하나하나의 기능과 부품이에요. 점의 생김새가 곧 무엇인지를 말해요."
+        "body": "가장 큰 점이 제품 전체, 그 다음이 도메인, 작은 점이 역량과 요소예요. 점의 생김새가 곧 무엇인지를 말해요."
       },
       "relations": {
         "title": "선은 관계예요",
@@ -758,7 +761,7 @@
         "ontologyTerm": "온톨로지",
         "ontologyDefinition": "무엇이 있고 서로 어떻게 연결되는지 적어 둔 문서 묶음: 이 지도의 원본",
         "domainTerm": "도메인",
-        "domainDefinition": "기능을 묶는 큰 영역",
+        "domainDefinition": "역량을 묶는 상위 분류",
         "capabilityTerm": "역량",
         "capabilityDefinition": "사용자가 할 수 있는 일 하나",
         "elementTerm": "요소",
@@ -1032,7 +1035,7 @@
       "diskContractNeedsSave": "디스크 저장 아님 · 저장 버튼 또는 ⌘S 필요",
       "saveWorkflowAriaLabel": "저장·검증·되돌리기 흐름",
       "validateContract": "검증",
-      "validateContractClean": "저장 후 문서함 점검 또는 vault validate 실행",
+      "validateContractClean": "저장 후 문서함 점검 또는 온톨로지 검증 실행",
       "validateContractDirty": "저장 전: 검증은 아직 디스크 기준",
       "revertContract": "되돌리기",
       "revertContractClean": "닫기 전 확인 · git diff로 최종 복구 가능",
@@ -1233,11 +1236,11 @@
       "healthIslands": "따로 떨어진 무리",
       "kindCensusTitle": "종류 분포",
       "domainCapacityTitle": "도메인 용량",
-      "noDomainsBody": "도메인은 역량들을 묶는 영역이에요. 지도에서 도메인 노드를 만들어 개념들을 담으면, 여기서 영역별 균형을 볼 수 있어요.",
+      "noDomainsBody": "도메인은 역량을 묶는 상위 분류예요. 지도에서 도메인을 만들어 개념을 담으면, 여기서 도메인별 균형을 볼 수 있어요.",
       "noDomainsAction": "지도에서 도메인 만들기",
       "noDomains": "도메인 노드가 아직 없습니다.",
       "kindGlyphCaption": "글리프 = 지도의 노드 셰이프 그대로: 패널과 캔버스는 같은 세계.",
-      "domainCapacityCaption": "오른쪽 숫자가 이 영역에 담긴 개념 수예요. 막대는 그 안에서 역량과 요소가 어떤 비율인지를 보여줘요. 왼쪽이 역량, 오른쪽이 요소이고, 한쪽으로 쏠려 있으면 말만 있거나 증거만 있다는 뜻이에요. 여러 도메인에 속한 개념은 각 도메인에 한 번씩 세어져 합계가 전체보다 클 수 있어요.",
+      "domainCapacityCaption": "오른쪽 숫자가 이 도메인에 담긴 개념 수예요. 막대는 그 안에서 역량과 요소가 어떤 비율인지를 보여줘요. 왼쪽이 역량, 오른쪽이 요소이고, 한쪽으로 쏠려 있으면 말만 있거나 증거만 있다는 뜻이에요. 여러 도메인에 속한 개념은 각 도메인에 한 번씩 세어져 합계가 전체보다 클 수 있어요.",
       "relationTypesTitle": "관계 타입",
       "relationTypesCaption": "관계가 어떤 성격인지: 담는 관계에 치우쳐 있으면 「기대는」 관계를 더 그려야 한다는 신호예요. 여기 수는 서로 다른 관계를 한 번씩 셉니다(양쪽 문서가 같은 관계를 적어도 1). CLI·MCP 는 적힌 참조를 그대로 세서 이보다 큽니다.",
       "noRelationTypes": "아직 이어진 관계가 없어요",
@@ -1379,8 +1382,8 @@
         "groupCodeHint": "구현이나 기대는 방향을 봐야 답이 나오는 일이에요. 명령을 복사해 넘기면 돼요.",
         "sectionMissingDefinition": "뜻이 안 적혀 있어요. 한 문장 적을까요?",
         "hintMissingDefinition": "이 개념이 무슨 뜻인지 어디에도 없어요. 한 문장만 적으면 지도·검색·AI가 모두 같은 뜻을 읽어요.",
-        "sectionMissingDomain": "어느 영역인지 안 적혀 있어요. 골라 줄까요?",
-        "hintMissingDomain": "기능·요소는 어느 영역에 속하는지 적혀야 지도에서 제자리에 놓여요.",
+        "sectionMissingDomain": "어느 도메인인지 안 적혀 있어요. 골라 줄까요?",
+        "hintMissingDomain": "역량·요소는 어느 도메인에 속하는지 적혀야 지도에서 제자리에 놓여요.",
         "inlineWriteHere": "여기서 적기",
         "inlineWriteHereClose": "접기",
         "inlineDefinitionPlaceholder": "이 개념을 한 문장으로 적어 주세요",
@@ -1546,7 +1549,7 @@
         "writePlan": "작성 계획",
         "writePlanMissing": "작성 계획은 아직 없습니다. 계획 불일치는 아닙니다.",
         "draftTitle": "검토용 초안",
-        "draftHint": "CQ·증거 위치·정확한 계획을 이 결과 안에서 세밀하게 고쳐 볼 수 있습니다. 원본 판정과 vault는 바뀌지 않습니다.",
+        "draftHint": "CQ·증거 위치·정확한 계획을 이 결과 안에서 세밀하게 고쳐 볼 수 있습니다. 원본 판정과 온톨로지는 바뀌지 않습니다.",
         "showDraft": "검토용 수정 열기",
         "hideDraft": "검토용 수정 닫기",
         "draftDirty": "검토용 초안이 바뀌었습니다. 저장하지 않으며, 다시 qualification을 받아야 합니다.",
@@ -1616,7 +1619,7 @@
       "contractToggleLabel": "문서함 점검",
       "contractToggleHide": "문서함 점검 닫기",
       "contractToggleShow": "문서함 점검 보기",
-      "crumbBack": "워크스페이스",
+      "crumbBack": "온톨로지 폴더",
       "vaultPillFolders": "{count}개 폴더",
       "vaultPillSwap": "폴더 바꾸기",
       "vaultPillSampleLabel": "내장 샘플 (이 도구 자신의 문서)",
@@ -1654,7 +1657,7 @@
       "editSave": "저장",
       "editSaving": "저장 중…",
       "editCancel": "취소",
-      "validatorWarningsAriaLabel": "Vault 검증 경고",
+      "validatorWarningsAriaLabel": "온톨로지 검증 경고",
       "validatorIssues": {
         "unclosedFrontmatter": "파일 맨 위 정보칸(frontmatter)이 닫히지 않아서, 이 문서는 지도에 올라가지 않아요.",
         "emptyKind": "kind 값이 비어 있어요. 그래프 노드로 인식되지 않아요.",
@@ -1702,8 +1705,8 @@
     "vaultStatus": {
       "downloadAppCta": "데스크톱 앱 다운로드",
       "unsupportedTooltip": "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있습니다.",
-      "permissionNeededBanner": "Vault 잠시 멈춤: 폴더 권한 재승인이 필요합니다. 그동안 샘플 문서를 보여주고 있어요.",
-      "errorBanner": "Vault 폴더에 접근할 수 없어요 ({message}). 샘플 문서를 대신 표시: picker 에서 다시 선택하거나 refresh 해 주세요.",
+      "permissionNeededBanner": "온톨로지 폴더가 잠시 멈췄어요: 폴더 권한을 다시 허용해 주세요. 그동안 샘플 문서를 보여주고 있어요.",
+      "errorBanner": "온톨로지 폴더에 접근할 수 없어요 ({message}). 샘플 문서를 대신 보여 줍니다. 폴더를 다시 고르거나 새로 고쳐 주세요.",
       "rootRejectedBanner": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
       "openPicker": "문서함 다시 선택",
       "openFallback": "이 문서 열기",
@@ -1769,7 +1772,7 @@
       "agentCopyGateAriaLabel": "문서함 그래프 검증 게이트 복사",
       "agentCopyGateSuccess": "문서함 그래프 점검을 복사했습니다.",
       "copyFailed": "복사 실패",
-      "modalSubtitle": "이 vault 의 파일 · 그래프 · AI 검증 게이트를 한눈에 확인",
+      "modalSubtitle": "이 온톨로지 폴더의 파일 · 그래프 · AI 검증 게이트를 한눈에 확인",
       "closeTitle": "닫기 (Esc)",
       "filesTruncated": "폴더가 너무 커서 일부만 읽었습니다. 문서 폴더를 더 좁게 골라 주세요.",
       "filesPruned": "빌드·의존성 폴더 {count}개는 건너뛰었습니다({names})."
@@ -1780,7 +1783,7 @@
       "newDoc": "새 문서"
     },
     "vaultReveal": {
-      "errorFallback": "Finder에서 vault를 열지 못했습니다.",
+      "errorFallback": "Finder에서 온톨로지 폴더를 열지 못했습니다.",
       "error": "Finder 열기 실패: {message}"
     },
     "agentSetup": {
@@ -1981,7 +1984,7 @@
       "noHeadings": "h2/h3 heading 이 없는 문서입니다.",
       "notLocalFile": "이 문서는 로컬 폴더 파일이 아닙니다.",
       "tocFailed": "TOC 삽입 실패: {message}",
-      "vaultConflict": "vault 의 이 파일이 외부 (다른 에디터/AI) 에 의해 변경됐습니다. 새로 고침 후 다시 저장해주세요.",
+      "vaultConflict": "이 파일이 밖에서 (다른 에디터나 AI가) 바뀌었어요. 새로 고친 뒤 다시 저장해 주세요.",
       "notRendered": "문서를 아직 화면에 못 그렸어요. 다시 시도해 주세요.",
       "renamePrompt": "새 문서 주소 (확장자 없이):",
       "renameAlreadyExists": "이미 존재하는 문서입니다: {slug}",
@@ -2004,7 +2007,7 @@
       "growthThisWeek": " · 이번 주 프로젝트 +{count}",
       "subtitle": "개념 <b>{concepts}</b>개 · 관계 <b>{relations}</b>개{growth}",
       "eyebrow": "개념 {concepts}개",
-      "expandHint": "워크스페이스 지도 펼치기"
+      "expandHint": "온톨로지 지도 펼치기"
     },
     "nodeDatasheet": {
       "domainLabel": "도메인",
@@ -2130,9 +2133,9 @@
       "toastSavedAction": "지도에서 보기",
       "toastExists": "같은 주소의 노드가 이미 있어요.",
       "toastError": "노드를 만들지 못했어요.",
-      "unavailableHeading": "워크스페이스 필요",
+      "unavailableHeading": "온톨로지 폴더가 필요해요",
       "unavailableBody": "지도에서 개념을 만들려면 먼저 내 폴더를 열어 주세요.",
-      "unavailableAction": "워크스페이스 열기",
+      "unavailableAction": "온톨로지 폴더 열기",
       "primaryNamePlaceholder": "개념 이름 (한국어)",
       "secondaryNamePlaceholder": "영어 이름 (선택)",
       "localeNamesHint": "위 칸은 지금 화면 언어(한국어) 이름이에요. 영어 이름을 같이 적으면 영어 화면에서도 읽혀요.",
@@ -2235,14 +2238,14 @@
       "sparseFilterTitle": "필터가 관계를 숨겼습니다",
       "sparseFilterBody": "현재 필터 안에는 연결을 그릴 만큼의 개념이나 프로젝트가 남아 있지 않습니다.",
       "clearFilters": "필터 해제",
-      "kicker": "지도 · 프로젝트 {count}개",
+      "kicker": "지도 · 개념 {count}개",
       "kickerNoDeps": "지도 · 개념 {count}개 · 관계 0개",
-      "titleNoProjects": "지도에 그릴 프로젝트가 없습니다",
+      "titleNoProjects": "이 온톨로지는 아직 비어 있어요",
       "titleNoDeps": "아직 그릴 관계가 없습니다",
-      "bodyNoProjectsDownload": "데스크톱 앱을 설치하고 로컬 vault를 열면 첫 프로젝트 개념부터 지도를 시작할 수 있습니다.",
-      "bodyNoProjectsPicker": "폴더를 열고 첫 프로젝트를 만들면 지도가 시작돼요.",
+      "bodyNoProjectsDownload": "데스크톱 앱을 설치하고 온톨로지 폴더를 열면 채우기 시작할 수 있어요.",
+      "bodyNoProjectsPicker": "개념을 하나 만들면 지도가 그려져요. AI에게 코드를 읽혀 한 번에 채울 수도 있어요.",
       "bodyNoDeps": "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타납니다.",
-      "crossViewHint": "전체 지도 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
+      "crossViewHint": "만든 개념은 둘러보기와 저장·편집에서도 그대로 볼 수 있어요.",
       "ctaCreateNode": "개념 만들기",
       "ctaTree": "개념 둘러보기",
       "ctaBuilder": "저장·편집 열기",
@@ -2419,14 +2422,15 @@
       "back": "이전",
       "agent": {
         "title": "AI 에이전트 연결",
-        "bodyFound": "쓸 수 있는 AI 도구를 찾았어요: {runtime}. 앱 안에서 바로 대화하면서 이 지도를 같이 채울 수 있어요.",
+        "bodyFound": "이 컴퓨터에서 쓸 수 있는 AI 도구를 찾았어요. 연결하면 대화하면서 온톨로지를 같이 채울 수 있어요.",
         "bodyMissing": "Claude Agent를 쓰고 있다면 여기서 관문이 있는 대화를 열 수 있어요. Codex와 다른 MCP 클라이언트는 자기 앱이나 터미널에서 이 폴더에 연결할 수 있습니다. 연결하지 않아도 나머지는 그대로 쓸 수 있어요.",
-        "cta": "에이전트 설정 열기"
+        "cta": "에이전트 설정 열기",
+        "runtimeReady": "앱 안에서 바로 대화할 수 있어요"
       },
       "analyze": {
         "title": "코드를 읽고 지도 초안 그리기",
-        "bodyAgent": "이 폴더를 훑어보고 어떤 프로젝트·영역·기능이 있는지 AI가 제안하게 해요. 지시에 「사람이 승인하기 전에는 폴더에 쓰지 않는다」가 들어 있어요.",
-        "bodyCopy": "AI에게 줄 지시를 복사해서, 쓰고 있는 도구에 붙여넣으면 돼요. 지시에 「사람이 승인하기 전에는 폴더에 쓰지 않는다」가 들어 있어요.",
+        "bodyAgent": "이 폴더의 코드를 훑어보고, 어떤 것들이 있는지 AI가 제안해요. 쓰기 전에는 하나씩 물어봐요.",
+        "bodyCopy": "AI에게 줄 지시를 복사해서 쓰고 있는 도구에 붙여넣으면 돼요. 쓰기 전에는 하나씩 물어봐요.",
         "ctaAgent": "에이전트에게 시키기",
         "ctaCopy": "지시 복사하기",
         "ctaCopied": "복사됐어요. 도구에 붙여넣으세요",
@@ -2515,16 +2519,16 @@
   },
   "featuresMisc": {
     "localVaultPicker": {
-      "unsupported": "여기서는 로컬 vault 편집을 사용할 수 없습니다. 데스크톱 앱을 설치해 디스크의 vault 폴더를 열고 편집하세요.",
-      "copyPathTooltip": "로컬 vault 경로 복사",
-      "copyPathAriaLabel": "로컬 vault 경로 복사: {path}",
+      "unsupported": "여기서는 온톨로지 폴더를 열어 편집할 수 없어요. 데스크톱 앱을 설치하면 디스크의 폴더를 열고 편집할 수 있어요.",
+      "copyPathTooltip": "온톨로지 폴더 경로 복사",
+      "copyPathAriaLabel": "온톨로지 폴더 경로 복사: {path}",
       "copyPathCopied": "경로 복사됨",
       "copyPathFailed": "경로 복사 실패",
-      "revealPathAriaLabel": "Finder에서 로컬 vault 열기: {path}",
+      "revealPathAriaLabel": "Finder에서 온톨로지 폴더 열기: {path}",
       "revealPathLabel": "Finder",
-      "openLabel": "vault 폴더 열기",
+      "openLabel": "온톨로지 폴더 열기",
       "validationChip": "{errors, plural, =0 {⚠ {warnings}} other {✗ {errors}}}",
-      "validationTooltip": "{errors, plural, =0 {정보칸 경고 {warnings} 건: pnpm vault:validate 로 상세} other {정보칸 오류 {errors} 건{warnings, plural, =0 {} other {, 경고 {warnings} 건}}: 일부 문서가 지도에서 빠졌습니다. pnpm vault:validate 로 상세}}"
+      "validationTooltip": "{errors, plural, =0 {정보칸 경고 {warnings} 건: pnpm vault:validate 로 자세히} other {정보칸 오류 {errors} 건{warnings, plural, =0 {} other {, 경고 {warnings} 건}}: 일부 문서가 지도에서 빠졌습니다. pnpm vault:validate 로 자세히}}"
     },
     "vaultDiffToaster": {
       "added": "추가: {name}",
@@ -2871,7 +2875,7 @@
     "statusConnectedFocus": "{agent}가 {ago} \"{focus}\" 를 다듬었어요.",
     "statusStale": "마지막 신호가 {ago}예요. 에이전트 세션을 다시 시작하면 이어집니다.",
     "statusNone": "아직 연결 전이에요. 위 ① 단계로 1분이면 연결됩니다.",
-    "manualPathHint": "브라우저 세션이라 폴더의 절대 경로는 직접 채워야 해요. 스니펫의 [my-vault 폴더의 절대 경로] 자리를 실제 경로로 바꿔주세요.",
+    "manualPathHint": "브라우저 세션이라 폴더의 절대 경로는 직접 채워야 해요. 스니펫의 [내 폴더의 절대 경로] 자리를 실제 경로로 바꿔주세요.",
     "claudeCode": "Claude Code: .mcp.json",
     "codex": "Codex: 명령 한 줄",
     "genericHint": "다른 MCP 클라이언트도 같은 실행 명령과 인자로 등록됩니다. 제대로 붙었는지는 위의 「진짜 붙는지 확인」이 대신 재 줍니다.",
@@ -3398,7 +3402,7 @@
       "remove": "기존 사실 지우기",
       "rename": "개념 이름 바꾸기",
       "merge": "개념 합치기",
-      "write": "볼트 고치기"
+      "write": "온톨로지 고치기"
     },
     "from": "시작",
     "relation": "관계",
@@ -3547,11 +3551,11 @@
       "heading": "이 폴더에서 지금 할 만한 것",
       "connectSource": {
         "label": "먼저 코드 폴더 연결하기",
-        "prompt": "이 프로젝트가 실제로 구현된 코드 폴더를 먼저 연결해 줘. 연결되기 전에는 볼트 파일을 소스 코드로 분석하지 마."
+        "prompt": "이 프로젝트가 실제로 구현된 코드 폴더를 먼저 연결해 줘. 연결되기 전에는 온톨로지 파일을 소스 코드로 분석하지 마."
       },
       "bootstrap": {
         "label": "코드 훑어서 지도 시작하기",
-        "prompt": "연결된 소스 코드를 근거로 온톨로지 구축을 시작해 줘. 먼저 connection_info와 list_kinds로 현재 볼트를 확인하고, 소스에서 도메인·역량·구현 원소 후보와 근거 파일을 제안해. 비슷한 기존 개념을 먼저 찾고, 내가 검토하기 전에는 쓰지 마. 내가 승인한 후보만 묶음 변경으로 쓰고 마지막에 validate_vault와 compile_ontology 결과를 알려 줘."
+        "prompt": "연결된 소스 코드를 근거로 온톨로지 구축을 시작해 줘. 먼저 connection_info와 list_kinds로 현재 온톨로지를 확인하고, 소스에서 도메인·역량·구현 원소 후보와 근거 파일을 제안해. 비슷한 기존 개념을 먼저 찾고, 내가 검토하기 전에는 쓰지 마. 내가 승인한 후보만 묶음 변경으로 쓰고 마지막에 validate_vault와 compile_ontology 결과를 알려 줘."
       },
       "island": {
         "label": "「{first}」 쪽 {count}개가 지도에서 떨어져 있어요",

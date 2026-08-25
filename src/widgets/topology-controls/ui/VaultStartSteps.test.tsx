@@ -70,8 +70,20 @@ describe("첫 걸음 — 한 번에 하나씩", () => {
 describe("첫 걸음 — 에이전트 걸음은 앱이 아는 것을 말한다", () => {
   it("찾은 실행기가 있으면 이름으로 부르고, 문은 **설정의 Agents 칸**으로 간다", () => {
     const onOpenAgentConnect = vi.fn();
-    renderSteps({ acpRuntimeLabel: "Claude Agent", onOpenAgentConnect });
-    expect(screen.getByTestId("start-step-body").textContent).toContain("Claude Agent");
+    renderSteps({
+      acpRuntimeLabel: "Claude Agent",
+      acpRuntimeIcon: "/acp-icons/claude-acp.svg",
+      acpRuntimeInk: "#D97757",
+      onOpenAgentConnect,
+    });
+    /*
+     * ⚠️ The found tool has its own row now (owner, 2026-08-25). It used to be the tail of a
+     * sentence — "found an AI tool: Claude Agent" — which buried the one concrete thing
+     * this step exists to report. Naming it is not enough; the row carries the vendor's own mark.
+     */
+    const runtimeRow = screen.getByTestId("start-step-runtime");
+    expect(runtimeRow.textContent).toContain("Claude Agent");
+    expect(runtimeRow.querySelector('[data-vendor-mark="true"]')).not.toBeNull();
     expect(card().dataset.agentReady).toBe("true");
     fireEvent.click(screen.getByTestId("start-step-cta-agent"));
     expect(onOpenAgentConnect).toHaveBeenCalledTimes(1);
