@@ -39,9 +39,22 @@ describe('turn-liveness — 아직 일하는 중인지, 대답을 멈춘 것인�
     expect(turnLiveness('thinking', t, t + 13 * 60_000)).toBe('silent');
   });
 
+  /*
+   * ⚠️ Caught in the installed rc.12 build, by the fix's own first outing: a permission card sat on
+   * screen while the notice below it said the agent had gone quiet for three minutes. Updates do
+   * stop while an answer is awaited — but the person *is* the thing that has stopped, and the card
+   * already explains the wait.
+   */
+  it('사람의 승인을 기다리는 중이면 침묵이라고 하지 않는다', () => {
+    const t = 1_000_000;
+    expect(turnLiveness('thinking', t, t + 13 * 60_000, true)).toBe('awaiting-answer');
+    // Same clock, no card on screen: still a stall.
+    expect(turnLiveness('thinking', t, t + 13 * 60_000, false)).toBe('silent');
+  });
+
   it('한계는 호출자가 정할 수 있다 — 시험이 실시간을 기다리지 않도록', () => {
-    expect(turnLiveness('thinking', 0, 50, 100)).toBe('working');
-    expect(turnLiveness('thinking', 0, 100, 100)).toBe('silent');
+    expect(turnLiveness('thinking', 0, 50, false, 100)).toBe('working');
+    expect(turnLiveness('thinking', 0, 100, false, 100)).toBe('silent');
   });
 
   /*
