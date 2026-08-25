@@ -2886,6 +2886,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-25 · The chat says when the agent has stopped answering",
+      "slug": "2026-08-25-the-chat-says-when-the-agent-has-stopped-answering"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-25 · Verify waits long enough for a slower machine",
       "slug": "2026-08-25-verify-waits-long-enough-for-a-slower-machine"
     },
