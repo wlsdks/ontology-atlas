@@ -2,6 +2,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { TURN_SILENCE_LIMIT_MS } from '@/features/acp-session/model/turn-liveness';
+
 /**
  * A fake bridge — it imitates the protocol round trip with no real process.
  *
@@ -836,6 +838,69 @@ describe('대화 패널 — 못 하는 일은 정직하게', () => {
     );
     expect(screen.getByTestId('acp-chat-error')).toHaveTextContent('adapter died');
     expect(screen.getByRole('textbox')).toBeDisabled();
+  });
+
+  /*
+   * ⚠️ Measured in the installed v1.0.0-rc.11 build: a turn ended on the agent's side without a
+   * `session/prompt` result. All nine steps finished, the adapter went idle at 0.35s of CPU over
+   * thirteen minutes, and because `prompt` is deliberately given **no timeout**, the panel kept
+   * claiming progress and refused every keystroke. `cancel` recovered it; nothing on screen said so.
+   *
+   * The point of these two is that a long turn and a dead one must *not* look the same.
+   */
+  it('턴이 오래 조용하면 사실대로 말하고 나가는 길을 가리킨다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await bootSession();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: '지도 만들어줘' } });
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      // The agent never answers, and never says anything either.
+      expect(screen.queryByTestId('acp-chat-turn-silent')).toBeNull();
+
+      await vi.advanceTimersByTimeAsync(TURN_SILENCE_LIMIT_MS + 6_000);
+      await waitFor(() =>
+        expect(screen.getByTestId('acp-chat-turn-silent')).toBeInTheDocument(),
+      );
+      // The way out has to be on screen next to the words that name the problem.
+      expect(screen.getByTestId('acp-chat-stop')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('말을 계속하는 턴은 아무리 길어도 멈췄다고 하지 않는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await bootSession();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: '지도 만들어줘' } });
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+      // Three quiet stretches, each just under the limit, with one word between them: a real sweep.
+      for (let round = 0; round < 3; round += 1) {
+        await vi.advanceTimersByTimeAsync(TURN_SILENCE_LIMIT_MS - 10_000);
+        emit({
+          jsonrpc: '2.0',
+          method: 'session/update',
+          params: {
+            sessionId: 'sess-1',
+            update: {
+              sessionUpdate: 'agent_message_chunk',
+              content: { type: 'text', text: `still going ${round}` },
+            },
+          },
+        });
+        // ⚠️ Chunks of one answer concatenate into a single node, so the text is matched inside the
+        // panel rather than as its own element.
+        await waitFor(() =>
+          expect(screen.getByTestId('acp-chat-panel').textContent).toContain(
+            `still going ${round}`,
+          ),
+        );
+      }
+      expect(screen.queryByTestId('acp-chat-turn-silent')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('빈 말은 보내지 않는다', async () => {
