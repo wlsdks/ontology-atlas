@@ -49,6 +49,21 @@
   shipping compatibility asset while its rejected visual direction is replaced
   in a separate design decision.
 
+## 2026-08-26 · The download page keeps up with the release on its own
+
+- The version was written by hand in a fourth file that only copied `package.json`, and nothing
+  noticed a stale copy until release time. It is read from `package.json` now, so bumping a version
+  touches three files and the download page follows.
+- Worse, the published page had to be refreshed by a separate command after each release, and that
+  command was forgotten twice: the site advertised rc.10 while rc.11 and rc.12 had both shipped.
+  Releasing now regenerates those facts from the published release and opens the pull request for
+  them. Merging it is the only step left, and it is the one that moves the page.
+- If any of that fails the release is still fine. It says what to finish by hand rather than
+  reporting a failure for a page that is one commit behind.
+- A permission card no longer sits under a line saying the agent has gone quiet. Updates do stop
+  while an answer is awaited, but the person is the one being waited on, and the card already says
+  so.
+
 ## 2026-08-25 · The chat says when the agent has stopped answering
 
 - Found by pressing the installed build: a turn ended on the agent's side without the app ever
