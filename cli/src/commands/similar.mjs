@@ -99,11 +99,11 @@ function render(result, query) {
   const top = matches[0];
   if (top && top.score >= 0.5) {
     process.stdout.write(
-      `\n${COLORS.red}⚠${COLORS.reset} ${COLORS.dim}top score ≥ 0.5: \`patch_concept\` 가 \`add_concept\` 보다 안전${COLORS.reset}\n`,
+      `\n${COLORS.red}⚠${COLORS.reset} ${COLORS.dim}top score ≥ 0.5: \`patch_concept\` is safer than \`add_concept\`${COLORS.reset}\n`,
     );
   } else if (top && top.score >= 0.25) {
     process.stdout.write(
-      `\n${COLORS.yellow}~${COLORS.reset} ${COLORS.dim}top score 0.25-0.5: 새 노드 + \`relates\` edge 가 보통 더 깨끗${COLORS.reset}\n`,
+      `\n${COLORS.yellow}~${COLORS.reset} ${COLORS.dim}top score 0.25-0.5: a new node plus a \`relates\` edge is usually cleaner${COLORS.reset}\n`,
     );
   }
 }
@@ -127,7 +127,7 @@ function parseArgs(args) {
     else positional.push(a);
   }
   if (positional.length === 0 && !flags.slug) {
-    return { error: 'query is required (e.g. `similar "사용자 로그인"` or `similar --slug capabilities/foo`)' };
+    return { error: 'query is required (e.g. `similar "user login"` or `similar --slug capabilities/foo`)' };
   }
   if (flags.vault === false) return { error: '--vault requires a path' };
   for (const value of Object.values(flags)) {
@@ -170,12 +170,12 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas similar "<title>" [vault] [--slug X] [--kind K] [--limit N] [--json]\n\n` +
       `--limit range 1-${LIMIT_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
-      `  ontology-atlas similar "사용자 로그인"\n` +
+      `  ontology-atlas similar "user login"\n` +
       `  ontology-atlas similar "auth flow" --kind capability\n` +
       `  ontology-atlas similar --slug capabilities/auth-login\n\n` +
-      `${COLORS.bold}Score 가이드:${COLORS.reset}\n` +
-      `  ≥ 0.5 : 같은 노드 가능성 높음 → \`patch_concept\` 권장\n` +
-      `  0.25-0.5: 인접 개념 → 새 노드 + \`relates\` edge 깨끗\n` +
-      `  < 0.25: 무관 → 새 노드 안전\n`,
+      `${COLORS.bold}Score guide:${COLORS.reset}\n` +
+      `  >= 0.5 : likely the same node -- prefer \`patch_concept\`\n` +
+      `  0.25-0.5: a neighbouring concept -- a new node plus a \`relates\` edge is cleaner\n` +
+      `  < 0.25: unrelated -- a new node is safe\n`,
   );
 }

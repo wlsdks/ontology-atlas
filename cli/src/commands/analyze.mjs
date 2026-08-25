@@ -108,9 +108,9 @@ export async function runAnalyze(args) {
   }
 
   process.stdout.write(
-    `${COLORS.dim}side effect 0: vault 변경 안 함. 후보는 연결된 agent에서${COLORS.reset} ` +
+    `${COLORS.dim}side effect 0: the vault is unchanged. Candidates are written by the connected agent only after${COLORS.reset} ` +
       `${COLORS.bold}review → qualification → human acceptance → exact writePlan${COLORS.reset} ` +
-      `${COLORS.dim}lifecycle을 거친 뒤에만 작성.${COLORS.reset}\n`,
+      `${COLORS.dim}that lifecycle.${COLORS.reset}\n`,
   );
   return 0;
 }
@@ -216,9 +216,9 @@ function printUsage(stream = process.stderr) {
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  Walk a code repository (default: cwd), detect package.json / README\n` +
       `  H2 sections / src/ folders, propose ontology node candidates.\n` +
-      `  Default: ${COLORS.bold}side effect 0${COLORS.reset}: vault 변경 안 함, 후보만 출력.\n` +
-      `  ${COLORS.bold}--apply${COLORS.reset}: compatibility wrapper; approval_required 로 종료하며 쓰지 않음.\n` +
-      `  exact constructionQualification:v1 + human acceptance + writePlan 은 MCP lifecycle 에서만 해제.\n` +
+      `  Default: ${COLORS.bold}side effect 0${COLORS.reset}: the vault is unchanged; only candidates are printed.\n` +
+      `  ${COLORS.bold}--apply${COLORS.reset}: a compatibility wrapper; it exits approval_required and writes nothing.\n` +
+      `  An exact constructionQualification:v1 plus human acceptance plus a writePlan are released by the MCP lifecycle only.\n` +
       `  ${COLORS.bold}--max-depth N${COLORS.reset}: default 2, range 0-${MAX_DEPTH_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  ontology-atlas analyze                 # preview only (no writes)\n` +

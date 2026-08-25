@@ -67,14 +67,14 @@ function renderOverview(result, hubsLimit) {
   const referencedOnly = graph.referencedOnly ?? 0;
   process.stdout.write(
     `${COLORS.bold}vault overview${COLORS.reset}` +
-      ` ${COLORS.dim}· ${nodes} 노드 · ${edges} 관계 (resolved ${resolved} · external ${external}${unresolved ? ` · unresolved ${unresolved}` : ''})${COLORS.reset}\n`,
+      ` ${COLORS.dim}· ${nodes} nodes · ${edges} relations (resolved ${resolved} · external ${external}${unresolved ? ` · unresolved ${unresolved}` : ''})${COLORS.reset}\n`,
   );
   // The screens (map, insights) count concepts named without a document too, so
   // their total is larger. Leaving that unexplained here would give two entrances
   // different numbers for one vault with neither saying why.
   if (referencedOnly > 0) {
     process.stdout.write(
-      `${COLORS.dim}  문서 있는 개념 ${nodes} + 이름만 적힌 개념 ${referencedOnly} = 지도가 세는 ${nodes + referencedOnly}${COLORS.reset}\n`,
+      `${COLORS.dim}  ${nodes} concepts with a document + ${referencedOnly} named only in a reference = ${nodes + referencedOnly} counted by the map${COLORS.reset}\n`,
     );
   }
   // The relation count states its scope for the same reason (measured 2026-07-27:
@@ -84,14 +84,14 @@ function renderOverview(result, hubsLimit) {
   // fold that one fact into a single relation.
   if (edges > 0) {
     process.stdout.write(
-      `${COLORS.dim}  관계 ${edges} 는 적힌 참조 기준: 양쪽 문서가 같은 관계를 적으면 2로 셉니다 (지도는 접어서 1)${COLORS.reset}\n`,
+      `${COLORS.dim}  ${edges} relations counts written references: when both documents write the same relation it counts twice (the map folds it to one)${COLORS.reset}\n`,
     );
   }
   process.stdout.write('\n');
 
   // Kind distribution — count per kind plus a coloured bar.
   if (Object.keys(byKind).length > 0) {
-    process.stdout.write(`${COLORS.dim}KIND 분포${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}KIND distribution${COLORS.reset}\n`);
     const total = Object.values(byKind).reduce((sum, n) => sum + n, 0) || 1;
     for (const [kind, count] of sortByCount(byKind)) {
       const pct = Math.round((count / total) * 100);
@@ -106,7 +106,7 @@ function renderOverview(result, hubsLimit) {
 
   // Relation type distribution.
   if (Object.keys(byRelation).length > 0) {
-    process.stdout.write(`${COLORS.dim}관계 종류 분포${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}Relation-type distribution${COLORS.reset}\n`);
     const total = Object.values(byRelation).reduce((sum, n) => sum + n, 0) || 1;
     for (const [rel, count] of sortByCount(byRelation)) {
       const pct = Math.round((count / total) * 100);
@@ -120,10 +120,10 @@ function renderOverview(result, hubsLimit) {
 
   // Domain distribution (only when present).
   if (Object.keys(byDomain).length > 0) {
-    process.stdout.write(`${COLORS.dim}도메인 분포${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}Domain distribution${COLORS.reset}\n`);
     for (const [dom, count] of sortByCount(byDomain)) {
       process.stdout.write(
-        `  ${COLORS.blue}${dom.padEnd(28)}${COLORS.reset} ${String(count).padStart(3)} 노드\n`,
+        `  ${COLORS.blue}${dom.padEnd(28)}${COLORS.reset} ${String(count).padStart(3)} nodes\n`,
       );
     }
     process.stdout.write('\n');
@@ -132,7 +132,7 @@ function renderOverview(result, hubsLimit) {
   // Hub nodes — highest degree, excluding document / vault-readme.
   if (hubs.length > 0) {
     const cap = Math.min(hubs.length, hubsLimit);
-    process.stdout.write(`${COLORS.dim}허브 노드${COLORS.reset} ${COLORS.dim}(degree 상위 ${cap}, document/project 제외)${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}Hub nodes${COLORS.reset} ${COLORS.dim}(top ${cap} by degree, document/project excluded)${COLORS.reset}\n`);
     for (let i = 0; i < cap; i += 1) {
       const h = hubs[i];
       const kc = KIND_COLORS[h.kind] || COLORS.dim;

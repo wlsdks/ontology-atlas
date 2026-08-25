@@ -104,7 +104,7 @@ function render(result, requestedSlug) {
     `${COLORS.bold}${requestedSlug}${COLORS.reset} ${COLORS.dim}· blast radius${COLORS.reset}` +
       ` ${COLORS.dim}(depth ${result?.depth ?? 2}, ${result?.direction ?? 'incoming'})${COLORS.reset}\n` +
       `  risk ${rc}${risk}${COLORS.reset}` +
-      ` · ${sum.affectedNodes ?? 0} 노드 · ${sum.affectedEdges ?? 0} 관계` +
+      ` · ${sum.affectedNodes ?? 0} nodes · ${sum.affectedEdges ?? 0} relations` +
       ` · ${sum.crossDomainEdges ?? 0} cross-domain\n\n`,
   );
   const qualification = result?.qualification ?? {};
@@ -134,7 +134,7 @@ function render(result, requestedSlug) {
   }
   const rows = result?.nodes?.rows ?? [];
   if (rows.length > 0) {
-    process.stdout.write(`${COLORS.dim}affected nodes (distance 별)${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}affected nodes, by distance${COLORS.reset}\n`);
     for (const r of rows) {
       const kind = r.node?.kind ?? '?';
       const kc = KIND_COLORS[kind] || COLORS.dim;
@@ -211,7 +211,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
       `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas blast-radius <slug> [vault] [--depth N] [--direction incoming|outgoing|both] [--plan] [--force] [--json]\n\n` +
-      `default depth 2, --depth range 0-${DEPTH_CAP}, direction incoming (이 노드를 의존하는 무엇).\n` +
+      `default depth 2, --depth range 0-${DEPTH_CAP}, direction incoming (whatever depends on this node).\n` +
       `Use --plan to run query_plan(blast_radius) first; expensive or warning plans skip execution unless --force is passed.\n`,
   );
 }

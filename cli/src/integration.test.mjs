@@ -238,7 +238,7 @@ await test('list — empty vault: 0 노드 메시지', async () => {
   try {
     const r = await run(['list', root]);
     assert.equal(r.code, 0);
-    assert.match(r.stdout, /ontology 노드 0|0 ontology 노드/);
+    assert.match(r.stdout, /0 ontology nodes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -2643,7 +2643,7 @@ await test('list — kind 있는 노드만 카운트', async () => {
   try {
     const r = await run(['list', root]);
     assert.equal(r.code, 0);
-    assert.match(r.stdout, /2 ontology 노드/);
+    assert.match(r.stdout, /2 ontology nodes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3018,7 +3018,7 @@ await test('validate --fail-on=does-not-exist — stderr 에 unknown code 경고
     const r = await run(['validate', root, '--fail-on=does-not-exist']);
     // The unknown-code warning must appear on stderr (execution is unaffected — no match, so exit 0).
     assert.equal(r.code, 0);
-    assert.match(r.stderr, /알려지지 않은 code|--list-codes/);
+    assert.match(r.stderr, /unknown codes|--list-codes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3562,7 +3562,7 @@ await test('find — title 부분매칭', async () => {
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /auth-token/);
-    assert.match(clean, /1 매칭/);
+    assert.match(clean, /1 matches/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3649,7 +3649,7 @@ await test('find — 매칭 0 도 exit 0 (정상)', async () => {
   try {
     const r = await run(['find', 'xyz999', root]);
     assert.equal(r.code, 0);
-    assert.match(r.stdout, /매칭 0/);
+    assert.match(r.stdout, /matched nothing/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5930,7 +5930,7 @@ await test('overview — graph fixture 의 counts + 허브 정확', async () => 
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     // header — 3 nodes (no vault-readme)
-    assert.match(clean, /3 노드/);
+    assert.match(clean, /3 nodes/);
     // KIND distribution — capability 2 / domain 1
     assert.match(clean, /capability\s+2/);
     assert.match(clean, /domain\s+1/);
@@ -6077,7 +6077,7 @@ await test('overview --limit 3 — 허브 N 만 출력', async () => {
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
     // Hub lines carry rank prefixes 1-3 only — nothing at 4+
-    assert.match(clean, /허브 노드.*상위 3/);
+    assert.match(clean, /Hub nodes.*top 3/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

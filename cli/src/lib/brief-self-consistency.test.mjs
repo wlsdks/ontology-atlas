@@ -31,7 +31,7 @@ test('말한 수와 실은 수가 다르면 잡는다', () => {
   const brief = briefWith(7, [{ id: 'a' }, { id: 'b' }]);
   assert.throws(
     () => assertBriefCountsAgree(brief),
-    /health check 수가 어긋난다/,
+    /health-check counts disagree/,
     '브리프가 자기 안에서 모순인데 아무도 안 잡으면, 그 문서를 읽는 에이전트가 틀린 수를 믿는다',
   );
 });
