@@ -5827,6 +5827,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-25 (115) — MCP `instructions` 는 도구 목록 앞에 \"어떤 질문에 무엇을 부르나\"를 먼저 말한다",
+      "slug": "2026-08-25-115-mcp-instructions-는-도구-목록-앞에-어떤-질문에-무엇을-부르나를-먼저-말한다"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-25 (114) — A summary node reports when its description falls behind its membership, and never rewrites it",
       "slug": "2026-08-25-114-a-summary-node-reports-when-its-description-falls-behind-its-membership-and-never-rewrites-it"
     },

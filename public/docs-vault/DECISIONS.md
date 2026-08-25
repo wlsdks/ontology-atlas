@@ -40,6 +40,38 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-25 (115) — MCP `instructions` 는 도구 목록 앞에 "어떤 질문에 무엇을 부르나"를 먼저 말한다
+
+**소집**: 단독 패스 · **트리거**: 공개 계약 변경 (`mcp/src/index.js` 의 `initialize` instructions)
+**결정**: `instructions` 맨 앞에 1,098자 라우팅 블록을 **덧붙인다**. 기존 문장은 하나도 지우지 않는다.
+**적용 규칙**: 최소 슬라이스 — 추가만, 제거 없음
+**서명**: Stark
+
+**왜**: 실제 서버로 재보니 `initialize` 가 실어 보내는 instructions 가 **32,787자**다.
+그 안에 오퍼레이션 *이름* 은 40개 넘게 있는데 **언제 쓰라는 말이 없었다** — 15번
+항목 한 줄이 3,140자짜리 쉼표 나열이다. 측정된 결과: D1 을 물었을 때 에이전트가
+`get_concept` 을 4번 부르고 포기한 뒤 `rg` 로 47번 코드를 뒤졌다. 답은 볼트의
+`## Boundaries` 에 있었다. 새 블록의 첫 문장은 "볼트는 왜에 답하고 소스는 무엇에
+답한다. 이유·경계·제외·결정은 코드에 없으므로 grep 으로 찾을 수 없다"이다.
+
+**기록된 반대**: instructions 는 이미 세션마다 9,400토큰을 쓰는데 거기에 더 붙이는
+것은 문제를 키운다. 옳은 지적이라 중복 나열 두 개(3,140자 + 1,643자)를 포인터로
+줄이려 했으나 **되돌렸다** — `mcp/src/integration.test.mjs` 가 `relationDecisionGuide`,
+`skip_existing`, `componentLimit` 등을 instructions 안에 있어야 한다고 계약으로
+고정하고 있다. 그 계약을 뒤집는 것은 이 기록의 범위가 아니라 **별도 결정**이다.
+줄이는 쪽은 아직 미결로 남는다.
+
+**반증 조건**: 라우팅 블록이 있는데도 에이전트가 경계·이유 질문에서 볼트보다 코드
+검색을 먼저 택하면 이 추가는 값을 못 한 것이다. 측정 지점은 `pnpm benchmark --only=B1`
+의 MCP 호출 수와 `## Boundaries` 인용 여부다. (첫 재측정에서 MCP 호출은 2 → 중앙값 5로
+올랐으나 n=1 대 n=3 이라 유의하다고 주장하지 않는다.)
+
+**재검토**: `ontology-field-trial` 을 우리가 모르는 저장소에서 처음 돌린 뒤.
+근거 전문은 `docs/benchmark/FINDINGS-2026-08-25.md`.
+
+**상태**: 유효
+
+
 ## 2026-08-25 (114) — A summary node reports when its description falls behind its membership, and never rewrites it
 
 **Prior decisions**: none on this surface. (7), 2026-08-14, established the
