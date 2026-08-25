@@ -1,0 +1,790 @@
+`package.json`의 `scripts` 객체에는 총 168개의 명령어가 정의되어 있습니다. 아래 이름으로 `pnpm <명령어>` 형태로 실행할 수 있습니다.
+
+### 기본
+
+```text
+prepare
+predev
+dev
+dev:route-smoke
+build
+```
+
+### Desktop 및 릴리스
+
+```text
+desktop:check
+desktop:doctor
+desktop:smoke
+desktop:perf
+desktop:verify-app
+desktop:verify-ai-settings:ko
+desktop:verify-dmg
+desktop:verify-install
+desktop:verify-release-dmg
+desktop:verify-download
+download:release-facts
+desktop:release-rehearsal
+desktop:release-preflight
+desktop:goal-audit
+skills:audit
+test:skills:audit
+test:desktop:runtime
+test:desktop:bridge
+desktop:release-secrets
+desktop:release-source
+desktop:release-tag
+desktop:release-slot
+desktop:release-github
+desktop:release-run
+desktop:release-status
+desktop:release-artifact
+desktop:release-artifact:unsigned
+desktop:verify-hosted
+desktop:stage-hosted-updater
+design:ontology
+desktop:sign
+desktop:sign:adhoc
+desktop:repack-updater
+desktop:sign:dmg
+desktop:signing-setup
+desktop:notarize
+tauri
+desktop:dev
+notice:build
+notice:check
+mcp:build-binary
+acp:registry
+acp:registry:check
+mcp:verify-binary
+desktop:build:app
+desktop:build:app:local
+desktop:build:windows
+desktop:stage:windows
+desktop:deploy:app
+desktop:build
+test:desktop:check
+```
+
+### 문서 및 Vault
+
+```text
+docs-vault:build
+docs-vault:check
+test:docs-vault
+docs:surface:build
+docs:surface:check
+docs:comment-refs
+docs:language
+source:language
+docs:links
+test:guide-examples
+docs:links:external
+docs:check
+test:docs:checks
+test:docs:language
+test:source:language
+vault:validate
+decisions:check
+agents:check
+test:vault:validate
+vault:migrate
+test:vault:migrate
+vault:audit
+test:vault:audit
+vault:freshness
+test:vault:freshness
+```
+
+### CLI 및 MCP
+
+```text
+package:check
+test:cli:args
+test:cli:lib
+test:cli:commands
+test:cli:mcp-call
+test:e2e:static
+test:contracts
+integration:cli
+integration:cli:entry
+integration:cli:setup
+integration:cli:compile
+integration:cli:mcp-verify
+integration:cli:diagnosis
+integration:cli:graph-read
+integration:cli:graph-write
+integration:cli:repo-analysis
+integration:cli:local-vault
+integration:cli:growth
+integration:cli:maintenance
+cli:mcp-verify
+test:mcp:unit
+eval:meaning-extraction
+test:meaning-corpus
+integration:mcp
+integration:mcp:surface
+integration:mcp:repo-analysis
+integration:mcp:graph
+integration:mcp:vault-read
+integration:mcp:read
+integration:mcp:write
+integration:mcp:readme
+```
+
+### Smoke, Benchmark 및 Dogfood
+
+```text
+smoke:onboarding
+smoke:memory-loop
+smoke:packed-cli
+benchmark
+benchmark:scale
+perf:dome
+perf:graph
+perf:graph:check
+perf:graph:scale
+dogfood:compile
+dogfood:compile-fix
+test:dogfood:args
+test:dogfood:script-refs
+checks:changed
+test:checks:changed
+test:i18n:messages
+test:claude:hooks
+test:dogfood:compile-fix
+dogfood:health
+dogfood:agent
+dogfood:agent-graph-db-pack
+dogfood:graph-db
+dogfood:agent-setup-gate
+dogfood:agent-fallbacks
+dogfood:brief
+dogfood:growth
+dogfood:maintenance
+dogfood:status
+test:dogfood:status
+test:dogfood:graph-db
+dogfood:verify
+dogfood:help
+dogfood:walk
+dogfood:release-gate
+dogfood:test
+test:mcp:dogfood
+test:mcp:dogfood:timeout
+test:mcp:docs
+test:mcp:registration
+test:mcp:maintenance
+test:mcp:package
+test:mcp:suggestions
+test:mcp:verify
+test:mcp:verify:first-contact
+test:mcp:verify:timeout
+```
+
+### 품질, 테스트 및 디자인
+
+```text
+lint
+knip
+check:tokens
+test:check:tokens
+test
+test:run
+e2e
+design:toc
+design:toc:check
+gateway:specimen
+gateway:specimen:check
+```
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.147.0
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a0374b-2ceb-7231-8ebd-aab3af514a50
+--------
+user
+이 repo 의 package.json 의 scripts: 객체에 정의된 명령어들을 모두 나열해줘.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+`package.json`의 `scripts` 객체만 확인해서, 정의된 명령어와 값을 그대로 정리하겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '/\"scripts\"[[:space:]]*:/,/"'^[[:space:]]*},/p'"' package.json" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+  "scripts": {
+    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
+    "predev": "node scripts/clean-next-dev-cache.mjs && pnpm docs-vault:build",
+    "dev": "next dev",
+    "dev:route-smoke": "node scripts/check-dev-locale-routes.mjs",
+    "build": "pnpm docs-vault:build && next build",
+    "desktop:check": "node scripts/check-desktop-readiness.mjs",
+    "desktop:doctor": "node scripts/desktop-doctor.mjs",
+    "desktop:smoke": "node scripts/desktop-smoke.mjs",
+    "desktop:perf": "node scripts/check-desktop-performance.mjs",
+    "desktop:verify-app": "node scripts/verify-macos-app-launch.mjs",
+    "desktop:verify-ai-settings:ko": "pnpm desktop:verify-app -- \"/Applications/Ontology Atlas.app\" --kill-existing --webview-fixture-vault=docs/ontology --hold-ms=16000 --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1360x840 --min-webview-size=1400x860 --try-window-screenshot=.tmp/ontology-atlas-ai-settings-ko.png --require-webview-route=/ko/topology/ --webview-evidence=.tmp/ontology-atlas-ai-settings-ko.webview.json --verify-ai-settings --leave-running",
+    "desktop:verify-dmg": "node scripts/verify-macos-dmg.mjs",
+    "desktop:verify-install": "node scripts/verify-macos-install-smoke.mjs",
+    "desktop:verify-release-dmg": "node scripts/verify-macos-dmg.mjs --require-signed --require-notarized",
+    "desktop:verify-download": "node scripts/check-macos-download-release.mjs",
+    "download:release-facts": "node scripts/generate-download-release-facts.mjs",
+    "desktop:release-rehearsal": "node scripts/release-rehearsal.mjs",
+    "desktop:release-preflight": "pnpm desktop:check && pnpm notice:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1040x720 --require-accessibility-text=\"Ontology Atlas\" --reset-window-state && pnpm desktop:verify-dmg && pnpm desktop:verify-install",
+    "desktop:goal-audit": "node scripts/check-desktop-goal-audit.mjs",
+    "skills:audit": "node scripts/audit-claude-skills.mjs",
+    "test:skills:audit": "node --test scripts/audit-claude-skills.test.mjs",
+    "test:desktop:runtime": "pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts src/views/root-entry/ui/RootEntryPage.test.tsx src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx",
+    "test:desktop:bridge": "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/features/docs-vault-local/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml",
+    "desktop:release-secrets": "node scripts/check-macos-release-secrets.mjs",
+    "desktop:release-source": "node scripts/check-macos-release-source.mjs",
+    "desktop:release-tag": "node scripts/check-macos-release-tag.mjs",
+    "desktop:release-slot": "node scripts/check-macos-release-slot.mjs",
+    "desktop:release-github": "node scripts/check-macos-release-github.mjs",
+    "desktop:release-run": "node scripts/watch-macos-release-run.mjs",
+    "desktop:release-status": "node scripts/check-macos-release-status.mjs",
+    "desktop:release-artifact": "node scripts/build-macos-release-artifact.mjs",
+    "desktop:release-artifact:unsigned": "pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign:adhoc && pnpm desktop:repack-updater && node scripts/package-macos-dmg.mjs && pnpm desktop:verify-dmg && pnpm desktop:verify-install",
+    "desktop:verify-hosted": "node scripts/check-hosted-download-surface.mjs",
+    "desktop:stage-hosted-updater": "node scripts/stage-hosted-updater-manifest.mjs --out=out/update/latest.json",
+    "design:ontology": "node scripts/check-ontology-design-surface.mjs",
+    "desktop:sign": "node scripts/sign-macos-app.mjs",
+    "desktop:sign:adhoc": "node scripts/sign-macos-app.mjs --adhoc",
+    "desktop:repack-updater": "node scripts/repack-macos-updater-archive.mjs",
+    "desktop:sign:dmg": "node scripts/sign-macos-app.mjs --dmg",
+    "desktop:signing-setup": "node scripts/apple-signing-setup.mjs",
+    "desktop:notarize": "node scripts/notarize-macos-dmg.mjs",
+    "tauri": "tauri",
+    "desktop:dev": "pnpm tauri dev",
+    "notice:build": "node scripts/build-notice.mjs",
+    "notice:check": "node scripts/build-notice.mjs --check",
+    "mcp:build-binary": "node scripts/build-mcp-binary.mjs",
+    "acp:registry": "node scripts/build-acp-registry.mjs",
+    "acp:registry:check": "node scripts/build-acp-registry.mjs --check",
+    "mcp:verify-binary": "node scripts/verify-mcp-binary.mjs",
+    "desktop:build:app": "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app",
+    "desktop:build:app:local": "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app --config '{\"bundle\":{\"createUpdaterArtifacts\":false}}'",
+    "desktop:build:windows": "pnpm mcp:build-binary && pnpm tauri build --bundles nsis",
+    "desktop:stage:windows": "node scripts/stage-windows-release-assets.mjs",
+    "desktop:deploy:app": "node scripts/deploy-macos-app-local.mjs",
+    "desktop:build": "pnpm desktop:build:app:local && pnpm desktop:sign:adhoc && node scripts/package-macos-dmg.mjs",
+    "test:desktop:check": "node --test scripts/build-notice.test.mjs scripts/classify-change.test.mjs scripts/run-with-retry.test.mjs scripts/check-desktop-readiness.test.mjs scripts/apple-signing-setup.test.mjs scripts/build-macos-release-artifact.test.mjs scripts/build-updater-manifest.test.mjs scripts/stage-hosted-updater-manifest.test.mjs scripts/generate-download-release-facts.test.mjs scripts/stage-macos-release-assets.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs scripts/desktop-smoke.test.mjs scripts/serve-static-export.test.mjs scripts/build-brand-raster.test.mjs scripts/check-dev-locale-routes.test.mjs scripts/clean-next-dev-cache.test.mjs scripts/check-desktop-performance.test.mjs scripts/clean-tauri-macos-apps.test.mjs scripts/deploy-macos-app-local.test.mjs scripts/lib/macos-release-names.test.mjs scripts/lib/macos-dmg-layout.test.mjs scripts/lib/macos-checksum.test.mjs scripts/lib/mcp-binary.test.mjs scripts/lib/notary-credentials.test.mjs scripts/lib/redact-command.test.mjs scripts/lib/release-secret-env.test.mjs scripts/check-macos-download-release.test.mjs scripts/check-macos-release-github.test.mjs scripts/check-macos-release-secrets.test.mjs scripts/check-macos-release-source.test.mjs scripts/check-macos-release-status.test.mjs scripts/check-desktop-goal-audit.test.mjs scripts/verify-macos-app-launch.*.test.mjs scripts/verify-macos-install-smoke.test.mjs scripts/watch-macos-release-run.test.mjs scripts/check-hosted-download-surface.test.mjs",
+    "docs-vault:build": "node scripts/build-docs-vault.mjs",
+    "docs-vault:check": "node scripts/build-docs-vault.mjs --check",
+    "test:docs-vault": "node --test scripts/build-docs-vault.test.mjs",
+    "docs:surface:build": "node scripts/build-docs-surface.mjs",
+    "docs:surface:check": "node scripts/build-docs-surface.mjs --check",
+    "docs:comment-refs": "node scripts/check-comment-refs.mjs",
+    "docs:language": "node scripts/quality/markdown-language/check.mjs",
+    "source:language": "node scripts/quality/source-language/check.mjs",
+    "docs:links": "node scripts/check-doc-links.mjs",
+    "test:guide-examples": "node --test scripts/check-guide-frontmatter-examples.test.mjs",
+    "docs:links:external": "node scripts/check-doc-links.mjs --external",
+    "docs:check": "pnpm docs:surface:check && pnpm design:toc:check && pnpm docs:language && pnpm source:language && pnpm docs:links",
+    "test:docs:checks": "node --test scripts/build-docs-surface.test.mjs scripts/check-doc-links.test.mjs",
+    "test:docs:language": "node --test scripts/quality/markdown-language/inventory.test.mjs",
+    "test:source:language": "node --test scripts/quality/source-language/inventory.test.mjs",
+    "vault:validate": "node scripts/validate-vault.mjs",
+    "decisions:check": "node scripts/check-decision-record.mjs",
+    "agents:check": "node cli/src/index.mjs agent-files --english-only",
+    "test:vault:validate": "node --test scripts/validate-vault-script.test.mjs",
+    "vault:migrate": "node scripts/migrate-vault.mjs",
+    "test:vault:migrate": "node --test scripts/migrate-vault.test.mjs scripts/migrate-node-uids.test.mjs scripts/migrations/*.test.mjs",
+    "vault:audit": "node scripts/audit-vault-paths.mjs",
+    "test:vault:audit": "node --test scripts/audit-vault-paths.test.mjs",
+    "vault:freshness": "node scripts/vault-freshness-drift.mjs",
+    "test:vault:freshness": "node --test scripts/vault-freshness-drift.test.mjs scripts/lib/vault-freshness-drift.test.mjs",
+    "package:check": "node scripts/check-package-contracts.mjs && pnpm test:cli:lib && pnpm test:cli:commands && pnpm perf:graph:check && node --test scripts/check-package-contracts.test.mjs",
+    "test:cli:args": "node --test cli/src/lib/cli-args.test.mjs",
+    "test:cli:lib": "node --test cli/src/lib/*.test.mjs",
+    "test:cli:commands": "node --test cli/src/commands/*.test.mjs",
+    "test:cli:mcp-call": "node --test cli/src/lib/mcp-call.test.mjs",
+    "test:e2e:static": "pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts",
+    "test:contracts": "vitest run tests/contract",
+    "integration:cli": "node --test cli/src/integration.test.mjs",
+    "integration:cli:entry": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(metadata|command inventory|subcommand --help|help|top-level command typos|init)\" cli/src/integration.test.mjs",
+    "integration:cli:setup": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(init|agent-setup)\" cli/src/integration.test.mjs",
+    "integration:cli:compile": "node scripts/run-focused-node-test.mjs --test-name-pattern \"compile\" cli/src/integration.test.mjs",
+    "integration:cli:mcp-verify": "node scripts/run-focused-node-test.mjs --test-name-pattern \"mcp-verify\" cli/src/integration.test.mjs",
+    "integration:cli:diagnosis": "node scripts/run-focused-node-test.mjs --test-name-pattern \"health|agent-brief|workspace-brief\" cli/src/integration.test.mjs",
+    "integration:cli:graph-read": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(backlinks|path|explain|all-paths|reachability|pattern-walk|project-map|relation-check|orphans|query|match-nodes|match-edges|domain-matrix|overview|hubs|blast-radius|cycles|node|similar)\" cli/src/integration.test.mjs",
+    "integration:cli:graph-write": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(rename|delete|merge|graph write commands)\" cli/src/integration.test.mjs",
+    "integration:cli:repo-analysis": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(index|analyze|infer-imports|bootstrap|repo analysis commands)\" cli/src/integration.test.mjs",
+    "integration:cli:local-vault": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(list|add|find|import|validate|local/frontmatter commands)\" cli/src/integration.test.mjs",
+    "integration:cli:growth": "node scripts/run-focused-node-test.mjs --test-name-pattern \"growth\" cli/src/integration.test.mjs",
+    "integration:cli:maintenance": "node scripts/run-focused-node-test.mjs --test-name-pattern \"maintenance\" cli/src/integration.test.mjs",
+    "cli:mcp-verify": "node cli/src/index.mjs mcp-verify",
+    "test:mcp:unit": "node --test $(ls mcp/src/*.test.mjs | grep -v '/integration.test.mjs')",
+    "eval:meaning-extraction": "node scripts/evaluate-meaning-corpus.mjs",
+    "test:meaning-corpus": "node --test scripts/evaluate-meaning-corpus.test.mjs && pnpm eval:meaning-extraction",
+    "integration:mcp": "node --test mcp/src/integration.test.mjs",
+    "integration:mcp:surface": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(tools/list|initialize|tools/call)\" mcp/src/integration.test.mjs",
+    "integration:mcp:repo-analysis": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(index_project|analyze_repo_structure|infer_imports)\" mcp/src/integration.test.mjs",
+    "integration:mcp:graph": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(compile_ontology|query_ontology)\" mcp/src/integration.test.mjs",
+    "integration:mcp:vault-read": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(list_concepts|find_evidence|find_backlinks|find_neighbors|find_path|find_orphans|get_concept|get_concepts|validate_vault)\" mcp/src/integration.test.mjs",
+    "integration:mcp:read": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(MCP read/query tools|query_concepts)\" mcp/src/integration.test.mjs",
+    "integration:mcp:write": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(add_concepts|add_concept/add_concepts|MCP slug conflicts|MCP write tools|add_relations|patch_concept|rename_concept|graph destructive writes|merge_concepts|delete_concept|add_relation)\" mcp/src/integration.test.mjs",
+    "integration:mcp:readme": "node scripts/run-focused-node-test.mjs --test-name-pattern \"README first exploration\" mcp/src/integration.test.mjs",
+    "smoke:onboarding": "node scripts/smoke-clean-onboarding.mjs",
+    "smoke:memory-loop": "node scripts/smoke-memory-loop.mjs",
+    "smoke:packed-cli": "node scripts/smoke-packed-cli.mjs",
+    "benchmark": "node scripts/benchmark.mjs",
+    "benchmark:scale": "node scripts/benchmark-scale.mjs",
+    "perf:dome": "node scripts/perf-dome.mjs",
+    "perf:graph": "node scripts/perf-graph.mjs",
+    "perf:graph:check": "node scripts/perf-graph.mjs --check --n=1000",
+    "perf:graph:scale": "node scripts/perf-graph.mjs --check --sizes=1000,5000 --runs=3 --max-compile-ms=1500 --max-query-ms=1500",
+    "dogfood:compile": "node cli/src/index.mjs compile docs/ontology --summary --json",
+    "dogfood:compile-fix": "node scripts/dogfood-compile-fix.mjs",
+    "test:dogfood:args": "node --test scripts/lib/dogfood-args.test.mjs",
+    "test:dogfood:script-refs": "node --test scripts/lib/pnpm-script-refs.test.mjs scripts/lib/test-name-pattern.test.mjs scripts/run-focused-node-test.test.mjs && node scripts/run-focused-node-test.mjs --test-name-pattern \"pnpm command named in the docs\" scripts/check-package-contracts.test.mjs",
+    "checks:changed": "node scripts/suggest-focused-checks.mjs",
+    "test:checks:changed": "node --test scripts/lib/focused-check-suggestions.test.mjs scripts/suggest-focused-checks.test.mjs",
+    "test:i18n:messages": "node --test scripts/validate-messages.test.mjs",
+    "test:claude:hooks": "node --test scripts/claude-hooks.test.mjs",
+    "test:dogfood:compile-fix": "node --test scripts/dogfood-compile-fix.test.mjs",
+    "dogfood:health": "node cli/src/index.mjs health docs/ontology --json",
+    "dogfood:agent": "node cli/src/index.mjs agent-brief docs/ontology --json",
+    "dogfood:agent-graph-db-pack": "node cli/src/index.mjs agent-brief docs/ontology --graph-db-pack",
+    "dogfood:graph-db": "node scripts/dogfood-graph-db-pack.mjs",
+    "dogfood:agent-setup-gate": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+    "dogfood:agent-fallbacks": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks",
+    "dogfood:brief": "node cli/src/index.mjs workspace-brief docs/ontology --json",
+    "dogfood:growth": "node cli/src/index.mjs growth docs/ontology --json",
+    "dogfood:maintenance": "node cli/src/index.mjs maintenance docs/ontology --json",
+    "dogfood:status": "node scripts/dogfood-status.mjs",
+    "test:dogfood:status": "node --test scripts/dogfood-status.test.mjs",
+    "test:dogfood:graph-db": "node --test scripts/dogfood-graph-db-pack.test.mjs",
+    "dogfood:verify": "node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000",
+    "dogfood:help": "node scripts/dogfood-mcp-walk.mjs --help",
+    "dogfood:walk": "node scripts/dogfood-mcp-walk.mjs",
+    "dogfood:release-gate": "pnpm dogfood:verify && OATLAS_DOGFOOD_TIMEOUT_MS=15000 pnpm dogfood:walk && pnpm test:mcp:dogfood",
+    "dogfood:test": "node --test scripts/dogfood-mcp-walk.test.mjs",
+    "test:mcp:dogfood": "node scripts/run-focused-node-test.mjs --test-name-pattern \"structuredContent|compile_ontology|tools/list|row-label guidance|batch cap|vault warnings|validate_vault problem|unhealthy first-contact|failing health checks|warn/fail next actions|malformed workspace_brief|malformed maintenance_plan payloads|remaining maintenance buckets|current-page maintenance next actions|stderr warnings|dogfood help|dogfood arguments|dogfood timeout|timeout failures|dogfood response labels|destructive dogfood dry-run|strict relation filters|strict add_relation|strict graph kind filter|strict closest-value smoke|malformed initialize\" scripts/dogfood-mcp-walk.test.mjs",
+    "test:mcp:dogfood:timeout": "node scripts/run-focused-node-test.mjs --test-name-pattern \"dogfood timeout|timeout failures|dogfood response labels|dogfood help|dogfood arguments\" scripts/dogfood-mcp-walk.test.mjs",
+    "test:mcp:docs": "node scripts/run-focused-node-test.mjs --test-name-pattern \"pnpm command named in the docs|root README mcp-verify shortcut|MCP registration templates|MCP verify README quoting|MCP package description counts|relation and maintenance enum value documented|tools/list annotation census|CLAUDE.md a thin AGENTS wrapper|self-ontology README naming|docs-vault freshness check|generated docs surface check|dogfood CLI capability\" scripts/check-package-contracts.test.mjs",
+    "test:mcp:registration": "node scripts/run-focused-node-test.mjs --test-name-pattern \"MCP registration templates\" scripts/check-package-contracts.test.mjs",
+    "test:mcp:maintenance": "node scripts/run-focused-node-test.mjs --test-name-pattern \"maintenance filter|maintenance cursor|maintenance missing-cursor|maintenance ready-cursor|maintenance resume-cursor|malformed maintenance_plan payloads|remaining maintenance buckets|current-page maintenance next actions\" mcp/src/verify-script.test.mjs scripts/dogfood-mcp-walk.test.mjs",
+    "test:mcp:package": "node scripts/run-focused-node-test.mjs --test-name-pattern \"MCP npm test|CLI npm test|allows only the parser smoke fixture|CLI MCP dependency|CLI entrypoint\" scripts/check-package-contracts.test.mjs",
+    "test:mcp:suggestions": "node scripts/run-focused-node-test.mjs --test-name-pattern \"suggestions|suggests close enum values\" mcp/src/suggestions.test.mjs mcp/src/ontology-engine.test.mjs",
+    "test:mcp:verify": "node --test mcp/src/verify-script.test.mjs",
+    "test:mcp:verify:first-contact": "node scripts/run-focused-node-test.mjs --test-name-pattern \"initialize instructions|strict unknown-tool|node-dependent first-contact|first-contact response labels|bootstrap and import-analysis|first-contact verify|destructive writer dry-run|patch_concept conflict guard|list_concepts reports vault warnings|validate_vault reports problem files|malformed validate_vault|first-contact diagnosis|health summary|health check advisories|failing health checks|workspace_brief growth count drift|workspace_brief next action sample drift|fail next actions\" mcp/src/verify-script.test.mjs",
+    "test:mcp:verify:timeout": "node scripts/run-focused-node-test.mjs --test-name-pattern \"verify timeout|timeout failures|startup failures|direct verify usage|direct verify timeout|direct verify CLI args|empty verify vault\" mcp/src/verify-script.test.mjs",
+    "lint": "eslint --max-warnings 0",
+    "knip": "node scripts/quality/dead-code/check.mjs",
+    "check:tokens": "node scripts/check-no-raw-color.mjs",
+    "test:check:tokens": "node --test scripts/check-no-raw-color.test.mjs",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "e2e": "playwright test",
+    "design:toc": "node scripts/build-design-system-toc.mjs",
+    "design:toc:check": "node scripts/build-design-system-toc.mjs --check",
+    "gateway:specimen": "node scripts/generate-evidence-specimen.mjs",
+    "gateway:specimen:check": "node scripts/generate-evidence-specimen.mjs --check"
+  },
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "node -e 'const p=require(\"./package.json\"); console.log(Object.keys(p.scripts).map((k,i)=>"'`${i+1}. ${k}`).join("'"\\n\")); console.error("'`COUNT=${Object.keys(p.scripts).length}`)'"'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+1. prepare
+2. predev
+3. dev
+4. dev:route-smoke
+5. build
+6. desktop:check
+7. desktop:doctor
+8. desktop:smoke
+9. desktop:perf
+10. desktop:verify-app
+11. desktop:verify-ai-settings:ko
+12. desktop:verify-dmg
+13. desktop:verify-install
+14. desktop:verify-release-dmg
+15. desktop:verify-download
+16. download:release-facts
+17. desktop:release-rehearsal
+18. desktop:release-preflight
+19. desktop:goal-audit
+20. skills:audit
+21. test:skills:audit
+22. test:desktop:runtime
+23. test:desktop:bridge
+24. desktop:release-secrets
+25. desktop:release-source
+26. desktop:release-tag
+27. desktop:release-slot
+28. desktop:release-github
+29. desktop:release-run
+30. desktop:release-status
+31. desktop:release-artifact
+32. desktop:release-artifact:unsigned
+33. desktop:verify-hosted
+34. desktop:stage-hosted-updater
+35. design:ontology
+36. desktop:sign
+37. desktop:sign:adhoc
+38. desktop:repack-updater
+39. desktop:sign:dmg
+40. desktop:signing-setup
+41. desktop:notarize
+42. tauri
+43. desktop:dev
+44. notice:build
+45. notice:check
+46. mcp:build-binary
+47. acp:registry
+48. acp:registry:check
+49. mcp:verify-binary
+50. desktop:build:app
+51. desktop:build:app:local
+52. desktop:build:windows
+53. desktop:stage:windows
+54. desktop:deploy:app
+55. desktop:build
+56. test:desktop:check
+57. docs-vault:build
+58. docs-vault:check
+59. test:docs-vault
+60. docs:surface:build
+61. docs:surface:check
+62. docs:comment-refs
+63. docs:language
+64. source:language
+65. docs:links
+66. test:guide-examples
+67. docs:links:external
+68. docs:check
+69. test:docs:checks
+70. test:docs:language
+71. test:source:language
+72. vault:validate
+73. decisions:check
+74. agents:check
+75. test:vault:validate
+76. vault:migrate
+77. test:vault:migrate
+78. vault:audit
+79. test:vault:audit
+80. vault:freshness
+81. test:vault:freshness
+82. package:check
+83. test:cli:args
+84. test:cli:lib
+85. test:cli:commands
+86. test:cli:mcp-call
+87. test:e2e:static
+88. test:contracts
+89. integration:cli
+90. integration:cli:entry
+91. integration:cli:setup
+92. integration:cli:compile
+93. integration:cli:mcp-verify
+94. integration:cli:diagnosis
+95. integration:cli:graph-read
+96. integration:cli:graph-write
+97. integration:cli:repo-analysis
+98. integration:cli:local-vault
+99. integration:cli:growth
+100. integration:cli:maintenance
+101. cli:mcp-verify
+102. test:mcp:unit
+103. eval:meaning-extraction
+104. test:meaning-corpus
+105. integration:mcp
+106. integration:mcp:surface
+107. integration:mcp:repo-analysis
+108. integration:mcp:graph
+109. integration:mcp:vault-read
+110. integration:mcp:read
+111. integration:mcp:write
+112. integration:mcp:readme
+113. smoke:onboarding
+114. smoke:memory-loop
+115. smoke:packed-cli
+116. benchmark
+117. benchmark:scale
+118. perf:dome
+119. perf:graph
+120. perf:graph:check
+121. perf:graph:scale
+122. dogfood:compile
+123. dogfood:compile-fix
+124. test:dogfood:args
+125. test:dogfood:script-refs
+126. checks:changed
+127. test:checks:changed
+128. test:i18n:messages
+129. test:claude:hooks
+130. test:dogfood:compile-fix
+131. dogfood:health
+132. dogfood:agent
+133. dogfood:agent-graph-db-pack
+134. dogfood:graph-db
+135. dogfood:agent-setup-gate
+136. dogfood:agent-fallbacks
+137. dogfood:brief
+138. dogfood:growth
+139. dogfood:maintenance
+140. dogfood:status
+141. test:dogfood:status
+142. test:dogfood:graph-db
+143. dogfood:verify
+144. dogfood:help
+145. dogfood:walk
+146. dogfood:release-gate
+147. dogfood:test
+148. test:mcp:dogfood
+149. test:mcp:dogfood:timeout
+150. test:mcp:docs
+151. test:mcp:registration
+152. test:mcp:maintenance
+153. test:mcp:package
+154. test:mcp:suggestions
+155. test:mcp:verify
+156. test:mcp:verify:first-contact
+157. test:mcp:verify:timeout
+158. lint
+159. knip
+160. check:tokens
+161. test:check:tokens
+162. test
+163. test:run
+164. e2e
+165. design:toc
+166. design:toc:check
+167. gateway:specimen
+168. gateway:specimen:check
+COUNT=168
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+`package.json`의 `scripts` 객체에는 총 168개의 명령어가 정의되어 있습니다. 아래 이름으로 `pnpm <명령어>` 형태로 실행할 수 있습니다.
+
+### 기본
+
+```text
+prepare
+predev
+dev
+dev:route-smoke
+build
+```
+
+### Desktop 및 릴리스
+
+```text
+desktop:check
+desktop:doctor
+desktop:smoke
+desktop:perf
+desktop:verify-app
+desktop:verify-ai-settings:ko
+desktop:verify-dmg
+desktop:verify-install
+desktop:verify-release-dmg
+desktop:verify-download
+download:release-facts
+desktop:release-rehearsal
+desktop:release-preflight
+desktop:goal-audit
+skills:audit
+test:skills:audit
+test:desktop:runtime
+test:desktop:bridge
+desktop:release-secrets
+desktop:release-source
+desktop:release-tag
+desktop:release-slot
+desktop:release-github
+desktop:release-run
+desktop:release-status
+desktop:release-artifact
+desktop:release-artifact:unsigned
+desktop:verify-hosted
+desktop:stage-hosted-updater
+design:ontology
+desktop:sign
+desktop:sign:adhoc
+desktop:repack-updater
+desktop:sign:dmg
+desktop:signing-setup
+desktop:notarize
+tauri
+desktop:dev
+notice:build
+notice:check
+mcp:build-binary
+acp:registry
+acp:registry:check
+mcp:verify-binary
+desktop:build:app
+desktop:build:app:local
+desktop:build:windows
+desktop:stage:windows
+desktop:deploy:app
+desktop:build
+test:desktop:check
+```
+
+### 문서 및 Vault
+
+```text
+docs-vault:build
+docs-vault:check
+test:docs-vault
+docs:surface:build
+docs:surface:check
+docs:comment-refs
+docs:language
+source:language
+docs:links
+test:guide-examples
+docs:links:external
+docs:check
+test:docs:checks
+test:docs:language
+test:source:language
+vault:validate
+decisions:check
+agents:check
+test:vault:validate
+vault:migrate
+test:vault:migrate
+vault:audit
+test:vault:audit
+vault:freshness
+test:vault:freshness
+```
+
+### CLI 및 MCP
+
+```text
+package:check
+test:cli:args
+test:cli:lib
+test:cli:commands
+test:cli:mcp-call
+test:e2e:static
+test:contracts
+integration:cli
+integration:cli:entry
+integration:cli:setup
+integration:cli:compile
+integration:cli:mcp-verify
+integration:cli:diagnosis
+integration:cli:graph-read
+integration:cli:graph-write
+integration:cli:repo-analysis
+integration:cli:local-vault
+integration:cli:growth
+integration:cli:maintenance
+cli:mcp-verify
+test:mcp:unit
+eval:meaning-extraction
+test:meaning-corpus
+integration:mcp
+integration:mcp:surface
+integration:mcp:repo-analysis
+integration:mcp:graph
+integration:mcp:vault-read
+integration:mcp:read
+integration:mcp:write
+integration:mcp:readme
+```
+
+### Smoke, Benchmark 및 Dogfood
+
+```text
+smoke:onboarding
+smoke:memory-loop
+smoke:packed-cli
+benchmark
+benchmark:scale
+perf:dome
+perf:graph
+perf:graph:check
+perf:graph:scale
+dogfood:compile
+dogfood:compile-fix
+test:dogfood:args
+test:dogfood:script-refs
+checks:changed
+test:checks:changed
+test:i18n:messages
+test:claude:hooks
+test:dogfood:compile-fix
+dogfood:health
+dogfood:agent
+dogfood:agent-graph-db-pack
+dogfood:graph-db
+dogfood:agent-setup-gate
+dogfood:agent-fallbacks
+dogfood:brief
+dogfood:growth
+dogfood:maintenance
+dogfood:status
+test:dogfood:status
+test:dogfood:graph-db
+dogfood:verify
+dogfood:help
+dogfood:walk
+dogfood:release-gate
+dogfood:test
+test:mcp:dogfood
+test:mcp:dogfood:timeout
+test:mcp:docs
+test:mcp:registration
+test:mcp:maintenance
+test:mcp:package
+test:mcp:suggestions
+test:mcp:verify
+test:mcp:verify:first-contact
+test:mcp:verify:timeout
+```
+
+### 품질, 테스트 및 디자인
+
+```text
+lint
+knip
+check:tokens
+test:check:tokens
+test
+test:run
+e2e
+design:toc
+design:toc:check
+gateway:specimen
+gateway:specimen:check
+```
+hook: Stop
+hook: Stop Completed
+tokens used
+10,534

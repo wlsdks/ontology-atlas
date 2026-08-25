@@ -52,6 +52,39 @@ node cli/src/index.mjs overview        # from the repo root
   `rename_concept`, …) or the CLI (`node cli/src/index.mjs add …`); both stamp
   provenance and run the same construction gates.
 
+## What a section is for
+
+A node body holds two different things, and only one of them earns its context
+cost. **Decisions** (which capability sits in which domain, what is explicitly
+excluded, which limit must not be crossed, why one shape beat another) exist
+nowhere in the source. **Descriptions** of what the code does can be re-derived
+by any agent that reads the code.
+
+So the test for a sentence is: *if the source were deleted, would this be lost?*
+If no, it is a second copy that can drift out of date. Write it in the code, not
+here.
+
+The failure to avoid is not length. It is **a decision wearing a descriptive
+heading**. A rule filed under `Core Flow` or `Definition` is a rule nobody can
+find. Give it a heading that says what it is:
+
+| Heading | Holds |
+|---|---|
+| `Definition` | One paragraph. What this node *is*, not how it works. |
+| `Core Flow` | The ordered steps, and nothing that is not a step. |
+| `Constraints: <topic>` | Limits, fail-closed rules, and what must never happen. |
+| `<topic> Contract` | An enumerated obligation another surface relies on. |
+| `Inclusions / Exclusions`, `<topic> Boundary` | Where this node stops. |
+| `Evidence`, `Grounds` | The source paths that ground the claims above. |
+
+Those names are examples, not a fixed vocabulary: `Identity Boundaries` and
+`Active Tool Inventory Contract` were each invented for one node and are the
+best sections in this vault. Invent a name when the node needs one.
+
+`tests/contract/vault-section-shape.contract.test.ts` caps a single section at
+6,600 bytes. When it fails, the fix is to name the second idea, never to delete
+the text.
+
 ## Verify the agent loop
 
 After connecting an agent (the installed app's connect button, or

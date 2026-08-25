@@ -862,6 +862,22 @@ const RULES = [
       /^samples\/storefront\/.*\.md$/,
     ],
   },
+  {
+    /*
+     * **A vault section that outgrows its cap is holding more than one idea.**
+     *
+     * Measured 2026-08-25: `capabilities/mcp-server.md` carried a single
+     * `## Core Flow` of 12,865 bytes — five lines of flow followed by twenty-two
+     * paragraphs of hard limits and fail-closed rules. Nothing there was wrong;
+     * an agent simply had to read 12 KB named "Core Flow" to reach any rule.
+     *
+     * `vault:validate` checks frontmatter integrity and the em-dash ratchet
+     * checks copy, so neither can see body shape. This is a third measurement.
+     */
+    command: 'pnpm test:run tests/contract/vault-section-shape.contract.test.ts',
+    reason: 'vault node bodies changed — a section may now hold more than one idea',
+    matches: [/^docs\/ontology\/.*\.md$/],
+  },
 ];
 
 const ESCALATIONS = [

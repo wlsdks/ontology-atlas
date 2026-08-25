@@ -14,13 +14,19 @@ relation_notes: { capabilities/vault-ontology: "Source receipts derive project s
 
 ## Definition
 
+
 The ability to connect a single Git repository or local folder to one project node, and compare the implementation paths of capabilities/elements declared by the ontology against actual source lists, leaving versioned categorical receipts. Map datasheets, full details, CLI, and MCP
 `agent_brief` read the same state, recency, first gap, and next action.
+
+
+## Core Flow
 
 The connection itself is possible across all three surfaces: installed app, MCP, and CLI. `connect_project_source`
 (CLI `connect-source`) names the git repository wrapping the vault if `rootPath` is omitted, or the nearest ancestor manifest folder if absent, and assigns confidence based on how many of the `path:` values declared by nodes actually exist within that candidate. The reason for naming and scoring separately is that `path:` is a relative path to the repository, so it cannot point to an absolute root. Nothing is written before `confirm: true`, and `disconnect_project_source` (CLI `disconnect-source`) reverts it.
 
 The `Git repository` indicator denotes the selected source type and does not imply a GitHub account or remote repository connection. Absolute paths are stored only in the vault-local `.ontology-atlas/project-sources.json` sidecar, while copy handoffs and MCP pass only source-relative witnesses. A new MCP process re-executes only bounded probes like installed apps within that private root connected by the user. It is `current` only when kind, identity, revision, and fingerprint all match; if any differ, it is `source_changed`. It remains `unavailable` with the existing receipt preserved only when re-verification is impossible due to permissions, filesystem, or Git failures.
+
+## Constraints: Qualification contracts
 
 The internal `meaningAssessment:v1` derived contract ties structural readiness, a fixed evaluator, and typed witnesses of five competency question receipts bound to the graph hash. It verifies source ID, revision, fingerprint, measurement timestamp, and currentness together. Raw witnesses are not copied into results; only categorical judgments and inventory provenance remain. Even if structure is ready, meaning witness is empty, or the source cannot be re-verified as current, it does not elevate to `verified_current`. If the source receipt itself is stale, it becomes `source_changed → remeasure_source`; however, if the source is `verified_current/current` but only the stored competency receipt is bound to an old source fingerprint, it becomes `competency_source_changed → reevaluate_competency`. In this case, the source dimension remains current, and the overall meaning state closes with failure as `review_required`.
 

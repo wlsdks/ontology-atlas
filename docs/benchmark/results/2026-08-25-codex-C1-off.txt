@@ -1,0 +1,98 @@
+`src/shared/lib/validate-vault-document.ts`에서 export되는 함수는 총 3개입니다.
+
+- `validateVaultDocument` — 91행
+- `validateVaultDocFrontmatter` — 280행
+- `summarizeVaultValidation` — 372행
+
+[validate-vault-document.ts](/Users/stark/orca/workspaces/oh-my-ontology/main-2/src/shared/lib/validate-vault-document.ts)
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.147.0
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a0374a-bb9e-7071-8a75-70e4f073cd21
+--------
+user
+src/shared/lib/validate-vault-document.ts 에서 export 되는 함수들을 모두 나열해줘.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+`validate-vault-document.ts`의 export 심볼을 구조적으로 확인해 나열하겠습니다.
+hook: PreToolUse
+hook: PreToolUse Completed
+mcp: codegraph/codegraph_explore started
+mcp: codegraph/codegraph_explore (failed)
+codex
+CodeGraph 인덱스가 이 작업공간에 초기화되어 있지 않아, 해당 파일만 직접 확인해 export 선언을 세겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'rg -n "''^(export'"\\s+)?(async\\s+)?function\\s+|"'^export'"\\s+(const|let|var|class|type|interface)\\s+|"'^export'"\\s*\\{\" src/shared/lib/validate-vault-document.ts" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+15:export type VaultIssueSeverity = "error" | "warning";
+17:export type VaultIssueCode =
+38:export const KIND_EXPECTED_EXTRAS: Readonly<Record<string, readonly string[]>> = {
+46:export interface VaultDocumentIssue {
+52:export interface VaultDocumentReport {
+63:export const KNOWN_VAULT_KINDS = [
+91:export function validateVaultDocument(raw: string): VaultDocumentReport {
+165:function pushFrontmatterDiagnostics(
+179:function pushUidIssues(
+230:function pushMissingExpectedExtrasIssues(
+252:function issuesHaveNoErrors(issues: readonly VaultDocumentIssue[]): boolean {
+280:export function validateVaultDocFrontmatter(
+332:function pushNonCanonicalGraphArrayIssues(
+358:export interface VaultValidationSummary {
+372:export function summarizeVaultValidation(
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'rg -n "''^export" src/shared/lib/validate-vault-document.ts' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+15:export type VaultIssueSeverity = "error" | "warning";
+17:export type VaultIssueCode =
+38:export const KIND_EXPECTED_EXTRAS: Readonly<Record<string, readonly string[]>> = {
+46:export interface VaultDocumentIssue {
+52:export interface VaultDocumentReport {
+63:export const KNOWN_VAULT_KINDS = [
+91:export function validateVaultDocument(raw: string): VaultDocumentReport {
+280:export function validateVaultDocFrontmatter(
+358:export interface VaultValidationSummary {
+372:export function summarizeVaultValidation(
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+`src/shared/lib/validate-vault-document.ts`에서 export되는 함수는 총 3개입니다.
+
+- `validateVaultDocument` — 91행
+- `validateVaultDocFrontmatter` — 280행
+- `summarizeVaultValidation` — 372행
+
+[validate-vault-document.ts](/Users/stark/orca/workspaces/oh-my-ontology/main-2/src/shared/lib/validate-vault-document.ts)
+hook: Stop
+hook: Stop Completed
+tokens used
+33,935

@@ -1,0 +1,1084 @@
+- capabilities/acp-runtime
+- capabilities/agent-work-visibility
+- capabilities/app-update
+- capabilities/cli-developer-entry
+- capabilities/control-primitives
+- capabilities/data-source-mode
+- capabilities/design-build-handoff
+- capabilities/design-gate-ratchets
+- capabilities/design-token-ramps
+- capabilities/guided-tour
+- capabilities/locale-switch
+- capabilities/mcp-server
+- capabilities/project-quick-edit
+- capabilities/project-share
+- capabilities/summary-freshness
+- capabilities/vault-sample-source
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.147.0
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a03741-5bc3-7083-af9c-b068c9b5cb5b
+--------
+user
+이 repo 의 ontology 에서 kind: capability 인데 elements 배열이 비어 있는 노드들 (= 미완료 후보) 을 모두 찾아 slug 로 나열해줘. 답은 list 만.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+ontology vault에서 `kind: capability`이면서 `elements`가 빈 노드만 직접 조회하겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files docs/ontology | sed -n '1,160p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+docs/ontology/ontology-atlas.md
+docs/ontology/elements/acp-ontology-write-review.md
+docs/ontology/elements/download.md
+docs/ontology/elements/project-drawer.md
+docs/ontology/elements/ontology-redirect.md
+docs/ontology/elements/docs-vault-entity.md
+docs/ontology/elements/ontology-meaning-editor.md
+docs/ontology/elements/ontology-edit-redirect.md
+docs/ontology/elements/search-hint.md
+docs/ontology/elements/full-detail-a1.md
+docs/ontology/elements/local-fs-handle.md
+docs/ontology/elements/git.md
+docs/ontology/elements/public-quick-actions.md
+docs/ontology/elements/recent-node-row.md
+docs/ontology/elements/topology-index-panel.md
+docs/ontology/elements/vault-agent-panel.md
+docs/ontology/elements/root-entry.md
+docs/ontology/elements/ontology-class.md
+docs/ontology/elements/home.md
+docs/ontology/elements/ontology-insights.md
+docs/ontology/elements/knowledge-graph.md
+docs/ontology/elements/search-palette.md
+docs/ontology/elements/project-detail.md
+docs/ontology/elements/docs-quick-drawer.md
+docs/ontology/elements/project.md
+docs/ontology/elements/category.md
+docs/ontology/elements/status.md
+docs/ontology/elements/global-search.md
+docs/ontology/elements/atlas-git-panel.md
+docs/ontology/elements/gesture-hint.md
+docs/ontology/elements/docs-vault-widget.md
+docs/ontology/elements/topology-controls.md
+docs/ontology/elements/docs-vault-view.md
+docs/ontology/elements/native-vault-filesystem-bridge.md
+docs/ontology/elements/first-run.md
+docs/ontology/elements/app-nav-rail.md
+docs/ontology/elements/topology-map-v2.md
+docs/ontology/elements/ontology-change-review.md
+docs/ontology/elements/private-vault-sidecar-boundary.md
+docs/ontology/elements/bottom-tab-bar.md
+docs/ontology/elements/app-settings-menu.md
+docs/ontology/elements/gateway-doc.md
+docs/ontology/elements/domain-capacity-bar.md
+docs/ontology/elements/shortcut-sheet.md
+docs/ontology/elements/gateway-chrome.md
+docs/ontology/elements/project-selector.md
+docs/ontology/elements/agents-destination.md
+docs/ontology/elements/project-editor.md
+docs/ontology/README.md
+docs/ontology/capabilities/agent-work-visibility.md
+docs/ontology/capabilities/data-source-mode.md
+docs/ontology/capabilities/first-run-starter.md
+docs/ontology/capabilities/cli-developer-entry.md
+docs/ontology/capabilities/control-primitives.md
+docs/ontology/capabilities/design-gate-ratchets.md
+docs/ontology/capabilities/docs-vault-local.md
+docs/ontology/capabilities/construction-review.md
+docs/ontology/capabilities/guided-tour.md
+docs/ontology/capabilities/summary-freshness.md
+docs/ontology/capabilities/project-quick-edit.md
+docs/ontology/capabilities/design-build-handoff.md
+docs/ontology/capabilities/reviewed-ontology-writing.md
+docs/ontology/capabilities/acp-runtime.md
+docs/ontology/capabilities/vault-agent.md
+docs/ontology/capabilities/topology-browsing.md
+docs/ontology/capabilities/project-source-evidence.md
+docs/ontology/capabilities/mcp-server.md
+docs/ontology/capabilities/locale-switch.md
+docs/ontology/capabilities/vault-sample-source.md
+docs/ontology/capabilities/project-share.md
+docs/ontology/capabilities/design-token-ramps.md
+docs/ontology/capabilities/app-update.md
+docs/ontology/capabilities/desktop-download-decision.md
+docs/ontology/capabilities/vault-ontology.md
+docs/ontology/capabilities/taxonomy.md
+docs/ontology/capabilities/project-data-source.md
+docs/ontology/capabilities/project-edit.md
+docs/ontology/domains/onboarding-and-shell.md
+docs/ontology/domains/project-portfolio.md
+docs/ontology/domains/design-system.md
+docs/ontology/domains/topology-navigation.md
+docs/ontology/domains/agent-integration.md
+docs/ontology/domains/local-vault-management.md
+docs/ontology/domains/graph-modeling.md
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "for f in docs/ontology/capabilities/*.md; do printf '%s\\n' \"--- "'$f"; sed -n '"'1,35p' \""'$f"; done' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+--- docs/ontology/capabilities/acp-runtime.md
+---
+uid: a1c4bbe0-f3f3-4c8c-97ca-762bab54dd3c
+slug: capabilities/acp-runtime
+kind: capability
+title: In-App Coding Agent Runtime (ACP)
+display_ko: 앱 안 코딩 에이전트 실행기 (ACP)
+display_en: In-App Coding Agent Runtime (ACP)
+domain: domains/agent-integration
+elements: []
+path: src-tauri/src/acp.rs
+created_by: human
+dependencies: [capabilities/mcp-server]
+relation_notes: { capabilities/mcp-server: The ACP session receives this server as an mcpServer in session/new, obtaining the vault tool (src/features/acp-session/model/vault-mcp-server.ts). Thus, ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
+relates: [capabilities/reviewed-ontology-writing]
+---
+
+## Definition
+
+The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch only those with a verified app-owned permission gate (currently Claude Agent), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscription authentication already held by the launched tool.
+
+
+## Behaviour Contract
+
+Ten things this capability actually does:
+
+1. **Detection.** The executor status of this device is divided into five categories: `ready`, `cli-missing`, `node-missing`, `uvx-missing`, and `binary-missing`. The reason for not collapsing the status into just "installed/not installed" is that the user's required actions differ for each state.
+2. **The list comes from a committed snapshot.** The ACP registry is fetched once at build time and saved to `src-tauri/src/acp-registry.json`; icons are also bundled into `public/acp-icons/`. The committed registry and icons require no runtime network lookup. Starting a selected coding agent is a separate boundary: that agent may communicate with its own provider.
+3. **Configuration isolation.** Sessions launched by the app use its own configuration directory within the app data folder (`CLAUDE_CONFIG_DIR`). Inheriting the user's global settings would mean the app cannot block anything for users who have set "allow all" in their terminal. Credentials are not copied but pointed to via symbolic links.
+4. **Permission judgment.** Atlas read tools inside the selected vault proceed automatically. Atlas write tools pause on the shared typed change review and continue only after `allow_once`; `reject_once` cancels them. Other requests are judged by scope: inside-vault paths may proceed, while outside or unresolved paths ask the user. The basis for path judgment is not the title string but the `toolCall.rawInput.file_path` (absolute path) from the original permission request. The vault root is verified and normalized by `acp_start` and bound to the native session rather than trusted from each screen request. If the session is missing or the root is invalid, the app asks. If the root path changes to an external symbolic link after session start, normalized-path mismatch rejects it so the boundary cannot shift during the session.
+5. **Working directory hygiene.** The working directory of a session must pass the same vault root judgment as the folder picker. Filesystem roots, the home directory itself, and OS/app directories are rejected.
+6. **Workflow safety state.** Modes provided by the adapter are categorized as verified, risky, or unverified. Verified modes are hidden by removing permission checks, while unverified modes are preserved in `AcpSessionChoices.unverifiedModeIds` to display "unverified" along with its meaning in the existing selector.
+7. **Process tree termination.** Children have their own process group; termination sends SIGTERM and waits up to 1 second before sending SIGKILL to terminate the entire group. Completion is determined by the survival of the original PGID, not the leader PID, so grandchildren that ignore TERM are not missed even if the leader is reaped first. If grandchildren launched by the adapter are not terminated together, processes will remain after the app is closed.
+
+8. **Map synchronization.** Compares the typed input of actually called Atlas `get_concept` and `find_path` in the current user turn against the current vault's slug table, then moves to the same HomePage node focus or exact shortest path lens. Natural language answers or non-existent slugs are not used as map movement grounds. The actual order in which the Claude adapter completes streamed input with status-less `tool_call_update.rawInput` after a pending `tool_call` is merged into the same tool action before determining intent.
+9. **Inset conversation surface.** Maintains the outer flex dock that actually yields map width, but displays the ACP/API-key conversation surface visible to the user within the top/bottom/right spacing ramp. It shares INDEX/node inspector's existing panel radius, border, surface, and shadow so it doesn't look like a black wall covering the window height without boundaries. The map control rail on the left of the panel is also pulled to 12px on the opposite side of the seam, limiting the gap between them to 24px, and moves with the same clock/curve as dock reflow.
+--- docs/ontology/capabilities/agent-work-visibility.md
+---
+uid: 12dfb05e-c76a-4d1c-b24d-e4c80db2be04
+slug: capabilities/agent-work-visibility
+kind: capability
+title: Agent Work Visibility
+display_ko: 에이전트 작업 가시화
+display_en: Agent Work Visibility
+domain: domains/agent-integration
+elements: []
+path: src/features/agent-activity
+created_by: "agent:unknown"
+---
+
+## Definition
+The ability for humans to read in one flow the AI agent's product name, verified current stage, work goals and targets, and next actions from the map. Only when there is a fresh heartbeat does it speak of plan/edit/verify/approval waits in present tense; if only write logs are recent, it does not infer "in progress" but distinguishes by change detection or last work time.
+
+## Boundaries
+- The screen converts audit client/runtime IDs like `codex-mcp-client`·`codex-acp` to human product names like Codex·Claude Code, but preserves original logs and heartbeat values. Map status bars, global rails, and detailed activity surfaces all use the same display name boundary.
+- Current targets connect to map rings and focus only when heartbeats or tool inputs reveal actual vault slugs. Already on the map, it updates HomePage's selection state without remounting the vault; independent consumers use `/topology?mode=focus&p=…` fallback only. Unknown targets get no links or rings.
+- In-app ACP's `onTurnActivityChange` updates map focus and activity chips first in the same render cycle, with sidecar records following for external consumer/restart continuity. If there is no target for the current in-app turn, it does not revive the previous sidecar target.
+- When the right agent dock opens, INDEX does not change save preference but collapses for the session to yield map width. Closing the dock restores original preference; opening INDEX tab directly closes the dock.
+- Dock space first opens with existing `--agent-panel-reflow-duration` and camera follows new width with live spring of the same clock. ACP sessions start after a 240ms landing window post-transition so process startup doesn't break map layout/camera motion. While agents are open, automatic INDEX degradation realigns camera meaning but does not steal directly panned/zoomed points.
+- Thoughts and tool calls for one user turn are grouped as one collapsed `Work Process · N steps`. Agent answers remain in separate body text; expanding details shows original work order and actual target. Thought Markdown renders as bold/code/lists, not original markers.
+- Notifications are not poured out per tool call but aggregated by work start/end and structural change units. Current work reading opens from the status bar below the top-right toolbar; past notifications open from the far-right independent bell and wide inbox. Both surfaces share one feed but do not mix content. The status bar inherits neither the short width of the top-right toolbar nor natural content width (upper limit 520px) to preserve agent name and last work time.
+- In-app ontology writing allow/reject and terminal status remain as bounded snapshots in `.ontology-atlas/acp-work.jsonl` and are read as work receipts from notification popovers. Full conversations/thoughts/tool outputs/absolute paths/body values are not kept, nor mixed with `activity.jsonl` which records execution facts.
+- `created_by: human` is provenance only, not a review-needed state. The reserved reader kind `vault-readme` stays in Docs and is excluded from the map, relation editing, and concept census.
+
+## Evidence
+- src/features/agent-activity/model/agent-work-projection.ts: Honest priority of heartbeats/write sessions and live/recent-write/completed separation
+- src/features/agent-activity/model/use-agent-activity-feed.ts: In-app ACP observations beating next sidecar polling for current work projection via session overlay
+- src/features/agent-activity/ui/AgentActivityChip.tsx: Agent/stage/current/last target and work detail/aggregation surfaces
+- src/shared/lib/acp-work-receipt.ts: Bounded append-only receipt preserving only requests/typed changes/human decisions/final states, and latest snapshot read model
+- src/features/acp-session/model/use-acp-session.ts: Lifecycle emitting ontology write allow/reject and tool terminal status with same receipt id
+- src/features/acp-session/model/acp-turn-activity.ts: Deriving stages and actual targets from ACP user requests/tools/permission waits
+- src/views/home/lib/acp-agent-heartbeat.ts: Ordered vault heartbeat write/clear and map focus handoff
+--- docs/ontology/capabilities/app-update.md
+---
+uid: 74c21391-8605-46a0-b880-e19cd30c65e4
+slug: capabilities/app-update
+kind: capability
+title: App Auto-Update
+display_ko: 앱 자동 업데이트
+domain: domains/onboarding-and-shell
+elements: []
+path: src/features/app-update
+created_by: "agent:unknown"
+---
+
+## Definition
+The ability to automatically or manually check for new versions in the desktop shell, download and install signed archives, and relaunch the app. The installed app reads only one Pages manifest URL that remains constant across release types.
+
+## Inclusions / Exclusions
+- Inclusions: desktop-shell 24-hour automatic checks, manual checks in settings, per-version dismissal,
+  download progress, post-install relaunch, and separation of check failures from install failures.
+- Inclusions: The Pages build deployment contract that stages `latest.json` from the newest non-draft GitHub Release
+  to `/update/latest.json`. Release candidates are also included.
+- Exclusions: Web app self-updates, separate update servers/accounts, and bypassing signature verification.
+
+## Trust Boundary
+The Pages manifest is a pointer that stably distributes which release to target. Whether actual installation is allowed is determined by the Tauri updater verifying the bundle signature of each archive. Check failures are reported once in the settings row, while only install failures display recovery instructions in the bottom-right corner. Raw English error messages from the updater library are not exposed to the user interface.
+
+## Evidence
+- `src/features/app-update/model/use-app-update.ts`: automatic/manual checks, check/install failure stages, `downloadAndInstall`, progress status, and relaunch
+- `src/features/app-update/ui/UpdateToast.tsx` ·
+  `src/widgets/app-settings-menu/ui/AppUpdateSettings.tsx`: single failure surface per stage
+- `scripts/stage-hosted-updater-manifest.mjs`: selects the newest non-draft release,
+  validates manifest version, signature, and tag-pinned HTTPS URL
+- `.github/workflows/deploy-pages.yml` · `src-tauri/tauri.conf.json`: Pages staging and
+  the installed app's single stable endpoint
+- `scripts/check-hosted-download-surface.mjs`: hosted surface gate that verifies the deployed updater manifest together
+
+--- docs/ontology/capabilities/cli-developer-entry.md
+---
+uid: dce02204-0454-4a2d-8db3-68d669065489
+slug: capabilities/cli-developer-entry
+kind: capability
+title: CLI Developer Entry
+domain: domains/agent-integration
+elements: []
+path: cli/src
+created_by: "agent:unknown"
+dependencies: [capabilities/mcp-server]
+relation_notes: { capabilities/mcp-server: "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts so schema or runtime changes must be checked across both surfaces." }
+display: CLI Developer Entry
+display_ko: 터미널에서 쓰기
+display_en: Terminal Commands
+---
+
+# CLI Developer Entry
+
+An operational entry point that allows inspecting, querying, and writing local markdown vaults without an app or MCP client, and reproducing agent connections and graph operations in the terminal.
+
+## User Outcomes
+
+- Developers and agents perform new vault creation, verification, semantic queries, relationship analysis, and safe local checkpoints on a single command surface.
+- In environments where MCP is not connected, the same compiler/query results and recovery commands are received to continue work.
+- `--json` output allows automation to determine state, warnings, and next actions without parsing prose.
+
+## Identity Boundary
+
+- `init`, `add`, `import`, and `bootstrap` issue a lowercase UUIDv4 `uid` for new nodes once. list/find JSON returns `{uid, slug}` together.
+- Exact find supports both UID and slug, but relationship/path/URL arguments maintain readable slugs.
+- `validate` blocks missing/invalid/duplicate primary keys and merged UIDs as errors,
+  while interop export uses `urn:uuid:<uid>` as the external identity.
+
+## Core Flow
+
+--- docs/ontology/capabilities/construction-review.md
+---
+uid: 2a62e2be-ce8e-4923-8883-da0630e64152
+slug: capabilities/construction-review
+kind: capability
+title: Construction Qualification Review
+display_ko: 온톨로지 구축 검수
+display_en: Construction Qualification Review
+domain: domains/project-portfolio
+elements: [elements/project-detail]
+path: src/entities/construction-review
+created_by: "agent:unknown"
+relation_notes: { elements/project-detail: Construction qualification is opened and judged inside the existing project-detail workbench. }
+---
+
+Read conclusions first in project details for verified ontology construction artifacts, then unfold digest-bound evidence and exact plans when needed to make judgments. Malformed inputs, different projects, or digest/plan mismatches do not appear as normal judgments but close with failure; files are not saved outside the session or written to the vault.
+--- docs/ontology/capabilities/control-primitives.md
+---
+uid: f8f39986-79c1-4dc4-9e7a-ae40dc609f17
+slug: capabilities/control-primitives
+kind: capability
+title: Control & Form Primitives
+display_ko: 컨트롤·폼 프리미티브
+display_en: Control & Form Primitives
+domain: domains/design-system
+elements: []
+path: src/shared/ui/control-class.ts
+created_by: "agent:unknown"
+---
+
+# Control & Form Primitives
+
+A component layer that prevents screen creators from manually writing className. Values are
+provided by `controlClass()`/`fieldClass()` (cva), and behavior (default type · forced access names ·
+error wiring · keyboard contracts) is handled by the components.
+
+## User Outcomes
+- Controls with the same meaning do not appear in different sizes/colors across screens.
+- Nameless inputs, selections whose exclusivity is not reflected in the accessibility tree, and checkboxes without focus rings
+  are structurally prevented from being created.
+
+## Layer Structure
+- **Value layer** `control-class.ts`: 8 shapes (chip·icon·row·pill·card·link·tile·segment)
+  × size × tone 9 levels, `fieldClass`(frame 2 × size 4 × multiline) · `fieldLabel`
+- **Behavior layer**: `Button`·`Chip`·`IconButton`·`RowButton`·`Select`·`Input`/`Textarea`·
+  `Checkbox`·`SegmentedControl`·`Dialog`·`Surface`·`EmptyState`·`TabBar`·`Tooltip`·`Toast`
+
+## Extraction Boundary
+**Mixed.** This barrel (`src/shared/ui/index.ts`) contains both generic components and **Atlas domain components
+standing together.** Domain components (atlas-bound) must not be moved: they are visual vocabulary for typed ontology
+facts:
+
+--- docs/ontology/capabilities/data-source-mode.md
+---
+uid: 5cd03c77-f1ed-448f-bb17-c4c3c804418a
+slug: capabilities/data-source-mode
+kind: capability
+title: Data Source Mode Branching
+display_ko: 데이터 출처 모드 분기
+domain: domains/local-vault-management
+elements: []
+path: src/features/data-source-mode
+created_by: "agent:unknown"
+---
+
+## Definition
+The ability to branch app behavior between vault-picked mode and static/sample mode depending on whether a folder is selected.
+
+## Evidence
+- src/features/data-source-mode (implementation evidence)
+- docs/FEATURES.md: "Mode branching (data source)" section (Note: risky-citation warning: includes negated/deprecated-state descriptions; requires re-verification)
+
+## Confidence
+medium-high (0.85): However, the citation from docs/FEATURES.md needs freshness verification.
+--- docs/ontology/capabilities/design-build-handoff.md
+---
+uid: f0289ebb-4f66-4e62-8ed6-456524e4922a
+slug: capabilities/design-build-handoff
+kind: capability
+title: Design Build Handoff
+display_ko: 조립 순서 핸드오프
+display_en: Design Build Handoff
+domain: domains/design-system
+elements: []
+path: .claude/skills/design-build/SKILL.md
+created_by: "agent:unknown"
+---
+
+# Design Build Handoff
+
+The **first guide** an agent reads when starting to build a screen. "From command to screen, in the same order": it prescribes which component to pick, where to get values from, and what to measure after building everything, in sequence.
+
+## User Outcomes
+- The agent does not assemble things differently each time.
+- You can see **which gate catches** a spec violation in the same document.
+
+## Why this is core to this system
+Diagnosis from the 2026-08-03 census: *"What was blocking progress wasn't model preference, but the lack of reusable components and unrecorded task order."* Components were prepared in three rounds by 2026-08-15; what remains is this guide.
+
+## Known Defects (measured 2026-08-15, under repair)
+Negative results in assembly tests: five new components approved on the same day (`Input` · `Textarea` · `Checkbox` · `SegmentedControl` · `Select`) were **not listed** in this guide's routing table. Agents following instructions strictly either hit a "shape not found in those eight → stop and recount" error or use raw `<input>` elements when building forms.
+
+**When approving components, update the guide simultaneously**: Do not rely on humans to remember the pair; make it a gate (attach to `design-spec-census`, so if the spec file exports a new component but the guide doesn't know its name, it fails).
+
+## Extraction Boundary
+**extractable.** Line 211 contains only three app-specific terms, so they can be translated as-is. However, since the gate names referenced in this document follow the boundaries of `design-gate-ratchets` (atlas-bound), the extraction should read "enable after bootstrap" instead.
+
+## Copy Contract
+`.claude/skills/design-build/SKILL.md` ↔ `.agents/skills/design-build/SKILL.md`
+Both sets must be byte-identical (`skill-copy` in `pnpm agents:check`). Do not create a third copy.
+--- docs/ontology/capabilities/design-gate-ratchets.md
+---
+uid: 3090f5e0-65e3-4d66-810a-28f6d616bf02
+slug: capabilities/design-gate-ratchets
+kind: capability
+title: Design Gates & Ratchets
+display_ko: 디자인 게이트와 래칫
+display_en: Design Gates & Ratchets
+domain: domains/design-system
+elements: []
+path: eslint.config.mjs
+created_by: "agent:unknown"
+---
+
+# Design Gates & Ratchets
+
+The layer that **turns red if the spec is violated**. This is the most irreplaceable part of this design system (as of 2026-08-15 PO Council measurement: parts and token deployments are common, but no one deploys enforcement as a whole), and simultaneously **the hardest part to port**.
+
+## User Outcome
+- If the screen created by the agent deviates from the spec, CI turns red: no need for humans to spot it visually.
+- The probe also catches gates silently failing (idling over an empty set).
+
+## Three Branches
+1. **lint selector** (`no-restricted-syntax`): Specs where values remain as strings in the code:
+   type, radius, shadow, motion, letter-spacing, weight, palette, layering, cursor, inactive state, accent, inline size.
+2. **Contract tests**: Layers that lint cannot theoretically see: those requiring inspection of values in other files
+   (e.g., cva composition results, CSS token comparison) or where violations are **absence of classes**, making them uncatchable by selectors.
+3. **Ratchets**: Criteria based on the total count across the repository: adoption rate, debt ceiling.
+
+## Extraction Boundary
+**atlas-bound.** Ratchets are inherently tied to **this repository's census values**:
+"Currently N locations, blocking the (N+1)th." In a new consumer repository, those numbers are meaningless:
+starting at 0 blocks all adoption; carrying them over blocks nothing.
+
+Therefore, what the extraction deploys is not the ratchet **file** but the **bootstrap procedure**:
+Following `/gate-probe` discipline, "count violations in your repository before enabling this gate" must be
+--- docs/ontology/capabilities/design-token-ramps.md
+---
+uid: e098afc6-7170-4740-9161-c370a7cb2283
+slug: capabilities/design-token-ramps
+kind: capability
+title: Design Token Ramps
+display_ko: 디자인 토큰 램프
+display_en: Design Token Ramps
+domain: domains/design-system
+elements: []
+path: app/globals.css
+created_by: "agent:unknown"
+---
+
+# Design Token Ramps
+
+Ladders with predefined values available for use. Lint blocks any other values.
+
+## User Outcome
+- No varying font sizes, border radii, or shadows across screens.
+- Light comes from one direction, and elements above cast darker shadows.
+
+## Ramps
+Font size (8 steps) · Line height (10 steps, 1:1 ratio with size) · Letter-spacing · Weight (3 steps) · Radius (5 steps) ·
+Shadow (5 types: elevation 3 + docking 2) · Motion (3 steps: fast check · base move · settle confirm) ·
+Control height · Layering (z) ladder · Icon (3 steps) · Dialog width (2 steps)
+
+## Extraction Boundary
+**Mixed.** Of the **580** unique token names, **269 (46%) are `--topology-*`**, and others
+like `--git-*`, `--chrome-*`, `--app-nav-*`, `--gateway-*`, `--footprint-*`,
+`--docs-*` are tied to the app surface. Only core tokens (color, type, line-height, letter-spacing, weight, radius, shadow,
+motion, control height, z, icon, dialog width, overlay) are extractable.
+
+**Do not classify manually**: Use prefix rules to determine classification, and **reject** tokens that do not fit (do not allow new tokens to quietly slip past the boundary). The full two-layer separation was carried over in the 2026-08-15 Council slide (rabbit hole priority #1: classification debates take days). This time, only leave boundary markers.
+
+## Gate
+--- docs/ontology/capabilities/desktop-download-decision.md
+---
+uid: de739ff1-9bfd-49e3-ac86-54427a5f5840
+slug: capabilities/desktop-download-decision
+kind: capability
+title: Desktop Download Decision
+display_ko: 데스크톱 내려받기 안내
+domain: domains/onboarding-and-shell
+elements: [elements/download]
+path: src/views/download
+created_by: "agent:unknown"
+---
+
+## Definition
+The ability to compare platform-specific installers and trust status in one place, and continue via web if installation is blocked. macOS presents signed/notarized Apple Silicon/Intel DMGs; Windows presents unsigned x64 betas with SmartScreen risks disclosed first.
+
+## Evidence
+- src/views/download (platform group, release facts, warnings, CTA)
+- .github/workflows/release-macos.yml (`main` workflow_dispatch admits tags and SHA, passes through `release-signing` build and separate `release` publication approval, publishing only assets with the same SHA)
+- .github/workflows/windows-beta-check.yml (Windows PR native verification without secret keys)
+- scripts/check-macos-release-source.mjs (unwraps annotated/lightweight tags to commits, admits/pins at tag reassignment stage, fails closed on stale sources)
+- scripts/check-macos-release-github.mjs (pre-validates main-only/no-tag/admin-bypass policies for two protected environments, public approval, API 3 environment + certificate/updater 4 repository secret placement, and absence of legacy copies)
+- scripts/build-macos-release-artifact.mjs (applies step-by-step credential allowlists to 11 release children, materializes App Store Connect `.p8` only as a `0600` temporary file, then removes it)
+- scripts/notarize-macos-dmg.mjs (passes only keychain profile or API key path/ID/issuer to `notarytool`, prohibiting argv/child env inheritance of password/private-key bodies)
+- scripts/generate-download-release-facts.mjs (generates URL, size, SHA-256 from GitHub Release assets, compares asset version with tag, isolates external strings as JSON literals)
+- scripts/check-macos-release-status.mjs (combines PR, workflow, protected environment, secret, and public asset evidence, keeping download verification omission as a readiness blocker)
+- docs/FEATURES.md: "`/download`: the install decision"
+
+## Confidence
+high (0.95)
+--- docs/ontology/capabilities/docs-vault-local.md
+---
+uid: 2f1761bb-5498-4675-9c45-099709bb6c2b
+slug: capabilities/docs-vault-local
+kind: capability
+title: Local Folder Mounting
+display_ko: 내 폴더 열기
+domain: domains/local-vault-management
+elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
+path: src/features/docs-vault-local
+created_by: human
+relation_notes: { elements/native-vault-filesystem-bridge: The local folder mount of the installed app is evidence of native implementation performing actual file/directory mutation. }
+---
+
+## Definition
+The ability to select and mount a local markdown folder via the File System Access API, using it as a real-time data source.
+
+## Evidence
+- src/features/docs-vault-local (implementation evidence)
+
+## Confidence
+high (0.9): Consistent with local-first principle documentation
+--- docs/ontology/capabilities/first-run-starter.md
+---
+uid: 1560e52a-f6d8-4715-8404-9143efee388c
+slug: capabilities/first-run-starter
+kind: capability
+title: First-Run Starter Vault
+display_ko: 첫 실행 예시 볼트
+domain: domains/onboarding-and-shell
+elements: [elements/first-run]
+path: src/features/first-run-starter
+created_by: "agent:unknown"
+dependencies: [capabilities/vault-sample-source]
+relation_notes: { capabilities/vault-sample-source: The starter appears only in settled static mode and teaches through the bundled sample vault; without that sample source it cannot present the pre-folder map and sample choice. }
+---
+
+## Definition
+The first-run experience that brings a completely new user from scratch to a starter vault they can use.
+
+The first-run card at the top of the INDEX panel on the left side of the map (`/topology`) is the surface of this capability.
+It appears **only before** choosing a vault. Once the folder opens, the card disappears and the INDEX takes its place. Therefore, what this card must say is simply: "What you see now is someone else's sample; choose your own folder to light up the same map with your data."
+
+## Decision
+
+- **Instrumentation is not the point** (2026-08-02, PO Council). We used to draw concept/relation/domain counts in inset instrumentation blocks (19px mono semibold), which were the largest font and highest brightness within the card. Instrumentation belongs when the user's **own** vault unlocks. Having the boldest ink on a screen saying "Sample for now" four times be the sample size itself was self-contradictory. It was demoted to one line of caption below the tab. The source of the numbers remains unchanged (`topologyCanonicalCensus` derived data comes in via props).
+  The prohibition on fixed numbers (2026-08-01 Ledger) is still upheld.
+- **Status signals are two, not four** (2026-08-02). "This isn't your data yet" was being communicated via language 3 times + color 1 time ("First Run" eyebrow · amber dot · "Sample for now" · lead's "It's a practice read-only sample"). Moved the amber dot next to "Sample for now" to group them into one cluster, and removed the redundant clause in the lead. "First Run" remains as it conveys a different fact.
+- **Identity declaration reverted at first touchpoint** (2026-08-02). The strings "Agent", "MCP", and "AI" appeared 0 times on this card, while the app uses them in 179 places. Just the bold lead ("...a map at a glance") isn't enough to distinguish it from other markdown mapping tools. Without introducing new concepts, we appended a sentence after the gray background using vocabulary already used by the tour's agent stage.
+- **Sample selection is a select control, not a tab** (2026-08-02). Although `role="tab"`, clicking didn't switch tab panels but collapsed the card, and pressing an already selected tab also collapsed it. The collapsing behavior on transition (2026-07-24 handoff design) is maintained, but semantics were corrected to `aria-pressed`. Re-clicking the same selection results in no action.
+- **`⌘O` badge is only true on Mac** (2026-08-02). The folder open shortcut is bound only to the meta key, so there is no corresponding binding for Windows/Linux. To avoid advertising a key absent from the core audience of web gateways, we do not render the badge on non-Apple platforms.
+- **CLI bridge wording matches what the command actually does** (2026-08-02). The label was "To start automatically from the codebase" (= my repo), but the command uses a relative path and scans **the folder where it was executed**. The command itself (CLI public contract) is pending separate PO pass, so this time we only removed exaggeration.
+
+## Evidence
+- src/features/first-run-starter (implementation evidence)
+- src/features/first-run-starter/ui/FirstRunStarterModule.tsx (first run card surface)
+- messages/ko.json · messages/en.json `firstRunStarter` bundle (single source for card wording)
+
+--- docs/ontology/capabilities/guided-tour.md
+---
+uid: f9d7c89e-dff5-4ce7-b2b4-89f5ca52b6d0
+slug: capabilities/guided-tour
+kind: capability
+title: Guided Tour
+display_ko: 화면 안내 투어
+domain: domains/onboarding-and-shell
+elements: []
+path: src/features/guided-tour
+created_by: "agent:unknown"
+---
+
+## Definition
+A guided tour (including demo clips) introducing the map and core loop to new users.
+
+## Evidence
+- src/features/guided-tour (implementation evidence)
+- git log: "Load two demo clips into the gateway (#786)": code/commit evidence; since it's outside the analyze_repo_structure evidence packet, listed only as independent code evidence
+
+## Confidence
+medium (0.75)
+--- docs/ontology/capabilities/locale-switch.md
+---
+uid: 3585d1e9-a0c1-4e25-ad02-ba63d71156f2
+slug: capabilities/locale-switch
+kind: capability
+title: Locale Switching
+display_ko: 언어 전환
+domain: domains/onboarding-and-shell
+elements: []
+path: src/features/locale-switch
+created_by: "agent:unknown"
+---
+
+## Definition
+Ability to switch the UI locale via [locale] prefix routing based on next-intl.
+
+## Evidence
+- src/features/locale-switch (implementation evidence)
+- AGENTS.md: Routes ("The current routes are all [locale] prefixed by next-intl")
+
+## Confidence
+medium-high (0.8)
+--- docs/ontology/capabilities/mcp-server.md
+---
+uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51
+slug: capabilities/mcp-server
+kind: capability
+title: MCP Server
+domain: domains/agent-integration
+elements: []
+path: mcp/src
+created_by: "agent:unknown"
+dependencies: [capabilities/vault-ontology]
+relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract." }
+display_ko: AI 연결 서버
+display_en: AI Connection Server
+---
+
+# MCP Server
+
+It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop.
+
+## User Outcomes
+
+- The agent accurately finds meaning nodes in the project and reads relationships, evidence, and impact scope together.
+- Upon connection, it verifies actual vault/repository coordinates and tool inventory to detect incorrect folders or stale client states.
+- Before writing, it reads the current document and blocks concurrent edits, duplicates, broken relationships, and destructive changes with structured errors and dry-runs.
+
+## Active Tool Inventory Contract
+
+- The current set of tools is `TOOLS_FOR_LIST`, which applies annotations and a read-only filter to the registry in `mcp/src/index.js`. Both the `Tool inventory` section of `tools/list` and initialize derive from the same array, so no other document owns a numeric or full name list.
+- A read-only server advertises neither write tools nor exposes them in its initial announcement. In both full mode and read-only mode, the header count and the set of read/write names must exactly match those in `tools/list`.
+- `mcp-verify` independently compares the live `tools/list` with the counts, classifications, and name sets in the initialize announcement. Documents and configuration screens reference `tools/list` and `mcp-verify`, avoiding promises to users about mutable fixed counts.
+
+## Identity Boundaries
+
+- `uid` is the permanent machine identity that persists across renames, while `slug` is the human-readable and editable current address. All node responses return both.
+- Exact reads and external interop identities may use UIDs. Markdown relations, URLs, and graph operation inputs maintain slugs.
+--- docs/ontology/capabilities/project-data-source.md
+---
+uid: 0563e7ee-3818-4bbd-97fa-4035ad43a03d
+slug: capabilities/project-data-source
+kind: capability
+title: Project Data Access
+display_ko: 프로젝트 데이터 읽기
+domain: domains/local-vault-management
+elements: [elements/project]
+path: src/features/project-data-source
+created_by: "agent:unknown"
+---
+
+## Definition
+Data access boundary that reads project lists and bodies from a selected local vault or static sample, providing
+project create/update partial-update/delete permissions in local mode only.
+
+## Included / Excluded
+- Included: Manifest list derivation, slug-based body lazy read, local/static branching, local CRUD gate.
+- Excluded: Single active project selection state, ontology relationship determination, static sample writing.
+
+## Basis
+- `src/features/project-data-source/model/use-projects.ts`: Local/static list branching.
+- `src/features/project-data-source/model/use-project-body.ts`: Static asset or local
+  file handle body reading.
+- `src/features/project-data-source/model/use-project-mutations.ts`: CRUD and static write blocking.
+- `src/features/project-data-source/model/use-project-mutations.test.ts`: Path/key preservation,
+  rename, duplication, UUID, deletion verification.
+- `src/views/project-detail/ui/ProjectDetailPage.test.tsx`: Body fallback priority verification.
+
+## Confidence
+medium: Implementation/mutation tests and consumer tests exist, but direct integration verification of list/body hooks is limited.
+--- docs/ontology/capabilities/project-edit.md
+---
+uid: b8a4b1ad-616b-4230-b206-9efa6292d217
+slug: capabilities/project-edit
+kind: capability
+title: Project Form Editing
+display_ko: 프로젝트 양식 편집
+domain: domains/project-portfolio
+elements: [elements/project-editor]
+path: src/features/project-edit
+created_by: "agent:unknown"
+---
+
+## Definition
+Form editing capability that validates project main fields to create/update/duplicate/delete, and automatically places
+the position considering category boundaries and overlaps when creating a new project or changing categories.
+
+## Included / Excluded
+- Included: Form validation/serialization, schedule and taxonomy preservation, create/update/duplicate/delete, automatic placement.
+- Excluded: Manual position/containment editing, screenshot upload, MCP/agent write paths.
+
+## Basis
+- `src/features/project-edit/ui/ProjectForm.tsx`: Validation/serialization/submit flow.
+- `src/features/project-edit/model/schema.ts` and `schema.test.ts`: Field/schedule serialization and
+  missing taxonomy preservation.
+- `src/features/project-edit/model/placement.ts` and `placement.test.ts`: Category boundaries,
+  overlaps, repair placement.
+- `src/views/project-editor/ui/ProjectEditorPage.tsx`: Create/update/duplicate/delete connections.
+
+## Confidence
+medium: Form/schema/batch-level evidence exists, but actual hook→vault integration E2E is unverified.
+--- docs/ontology/capabilities/project-quick-edit.md
+---
+uid: 6b2e10a4-b30f-405a-a02f-90ccc4d471a0
+slug: capabilities/project-quick-edit
+kind: capability
+title: Project Quick Edit Dialog
+display_ko: 프로젝트 빠른 편집
+domain: domains/project-portfolio
+elements: []
+path: src/features/project-quick-edit
+created_by: "agent:unknown"
+---
+
+## Definition
+The ability to modify, apply, or revert name, description, owner,
+and tags in the right-side dialog of the project details without navigating to the full editor.
+
+## Inclusion / Exclusion
+- Included: Four fields in the editable detail view, required name validation, apply/revert actions, success/failure states.
+- Excluded: read-only/static modes, category/status/timeline/relationship editing, persistence integration guarantees.
+
+## Evidence
+- `src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx`: dialog, four fields,
+  patch payload and state handling
+- `src/views/project-detail/ui/ProjectDetailPage.tsx`: `canEdit` render gate
+- `src/views/project-detail/ui/ProjectDetailPage.test.tsx`: verification of editability and panel exposure
+
+## Confidence
+medium: Implementation and caller gate are verified, but dedicated integration tests including actual vault records are unconfirmed.
+--- docs/ontology/capabilities/project-share.md
+---
+uid: 034ea9b5-5381-46c3-ae91-b1dc6ad8b184
+slug: capabilities/project-share
+kind: capability
+title: Project Link Copy
+display_ko: 프로젝트 링크 복사
+domain: domains/project-portfolio
+elements: []
+path: src/features/project-share
+created_by: "agent:unknown"
+---
+
+## Definition
+The ability to generate a detail URL reflecting the current locale and basePath from the project details top bar or drawer,
+copy it to the clipboard, and provide success/failure feedback.
+
+## Inclusion / Exclusion
+- Included: Project detail URL generation, clipboard copy, state/toast/aria-live feedback,
+  project details top bar and project drawer entry points.
+- Excluded: permissions/invitations/expiry/server storage/collaborative sharing, E2E guarantees for destination accessibility.
+
+## Evidence
+- `src/features/project-share/ui/CopyProjectLinkButton.tsx`: URL generation/copy/feedback
+- `src/features/project-share/ui/CopyProjectLinkButton.test.tsx`: locale URL,
+  slug serialization and copy call verification
+- `src/views/project-detail/ui/ProjectDetailPage.tsx` and
+  `src/widgets/project-drawer/ui/ProjectDrawer.tsx`: two user entry points
+
+## Confidence
+medium: Core URL/copy unit flows are verified, but actual clipboard/destination E2E is unverified.
+--- docs/ontology/capabilities/project-source-evidence.md
+---
+uid: b4af8e2b-05f1-4931-9544-f8a6aae4aef7
+slug: capabilities/project-source-evidence
+kind: capability
+title: Project Source Evidence Receipt
+display_ko: 프로젝트 코드 근거 영수증
+display_en: Project Source Evidence Receipt
+domain: domains/project-portfolio
+path: src/shared/lib/project-source-receipt.ts
+created_by: "agent:codex"
+dependencies: [capabilities/vault-ontology]
+relation_notes: { capabilities/vault-ontology: "Source receipts derive project scope, capability and element path claims, and typed relations from the ontology schema; schema changes alter which witnesses and impacts the receipt can verify." }
+---
+
+## Definition
+
+
+The ability to connect a single Git repository or local folder to one project node, and compare the implementation paths of capabilities/elements declared by the ontology against actual source lists, leaving versioned categorical receipts. Map datasheets, full details, CLI, and MCP
+`agent_brief` read the same state, recency, first gap, and next action.
+
+
+## Core Flow
+
+The connection itself is possible across all three surfaces: installed app, MCP, and CLI. `connect_project_source`
+(CLI `connect-source`) names the git repository wrapping the vault if `rootPath` is omitted, or the nearest ancestor manifest folder if absent, and assigns confidence based on how many of the `path:` values declared by nodes actually exist within that candidate. The reason for naming and scoring separately is that `path:` is a relative path to the repository, so it cannot point to an absolute root. Nothing is written before `confirm: true`, and `disconnect_project_source` (CLI `disconnect-source`) reverts it.
+
+The `Git repository` indicator denotes the selected source type and does not imply a GitHub account or remote repository connection. Absolute paths are stored only in the vault-local `.ontology-atlas/project-sources.json` sidecar, while copy handoffs and MCP pass only source-relative witnesses. A new MCP process re-executes only bounded probes like installed apps within that private root connected by the user. It is `current` only when kind, identity, revision, and fingerprint all match; if any differ, it is `source_changed`. It remains `unavailable` with the existing receipt preserved only when re-verification is impossible due to permissions, filesystem, or Git failures.
+
+## Constraints: Qualification contracts
+
+The internal `meaningAssessment:v1` derived contract ties structural readiness, a fixed evaluator, and typed witnesses of five competency question receipts bound to the graph hash. It verifies source ID, revision, fingerprint, measurement timestamp, and currentness together. Raw witnesses are not copied into results; only categorical judgments and inventory provenance remain. Even if structure is ready, meaning witness is empty, or the source cannot be re-verified as current, it does not elevate to `verified_current`. If the source receipt itself is stale, it becomes `source_changed → remeasure_source`; however, if the source is `verified_current/current` but only the stored competency receipt is bound to an old source fingerprint, it becomes `competency_source_changed → reevaluate_competency`. In this case, the source dimension remains current, and the overall meaning state closes with failure as `review_required`.
+
+Qualifications containing `each` in questions like `abilities` and `evidence` do not pass merely because a witness type has appeared once. By deriving the target set from current project→domain→capability containment, `abilities` must cover typed capability relations for all domains, and `evidence` must cover concept/path grounds for all capabilities to be `answered`. Missing slugs remain unresolved targets, and `partial`/`visible-gap` remain valid intermediate states.
+
+The internal `constructionQualification:v1` extends these per-question judgments into a re-execution contract for the entire construction. It binds executive, employee, FDE, and agent scenarios along with user-approved CQ revisions to the graph/source digest, re-deriving coverage from current witnesses and supported claims per target. The semantic, structural, functional, evidence/provenance, pragmatic, maintainability, and interop axes are independent of each other and do not collapse into a single sum. Source-hidden evaluators and builders must differ, and the final acceptance is owned by the user. This contract is a pure qualification boundary that does not use vault or public MCP responses; actual lifecycle connections are handled by subsequent M1.5.
+--- docs/ontology/capabilities/reviewed-ontology-writing.md
+---
+uid: fa08540f-a6c0-4a13-8dd9-b43df420534f
+slug: capabilities/reviewed-ontology-writing
+kind: capability
+title: Reviewed Ontology Writing
+display_ko: 검토 뒤 온톨로지 쓰기
+domain: domains/graph-modeling
+elements: [elements/acp-ontology-write-review, elements/ontology-change-review, elements/ontology-meaning-editor]
+path: src/features/ontology-meaning-editor
+created_by: "agent:unknown"
+dependencies: [capabilities/docs-vault-local]
+relation_notes: { capabilities/docs-vault-local: "The reviewed write flow applies its exact frontmatter plan through the mounted vault's updateFrontmatter with an mtime guard; without local folder mounting it cannot persist the approved Markdown change." }
+---
+
+## Definition
+The capability to apply ontology writing requested by a user directly correcting the map or an ACP agent into markdown frontmatter only after reviewing accurate typed change proposals. It keeps the map selection context and the user's final meaning decision authority in the same flow.
+
+## Boundaries
+Change proposals are volatile pre-write states, not separate approval ledgers or second drafts. Markdown written after confirmation becomes the draft immediately. The map editor handles only one relation at a time; ACP read tools proceed automatically, but write tools wait for `allow_once` or `reject_once`. Meaning writing does not provide `allow_always`. ACP's single/bundled changes preserve all items in protocol order. Bundled cards show the entire row as an accordion, previewing only the chosen relation as a dashed line between two nodes. Allow/reject applies to the entire bundle, not using the first item as a proxy for hidden ones. If allowed, it confirms as a solid line in place during the existing `--motion-settle` 240ms before proceeding with the tool; if rejected or the `toolCallId` ends, it retracts from the map.
+
+## Grounds
+- src/features/ontology-meaning-editor (relation editor for the same anchor as the selection node inspector)
+- src/entities/knowledge-graph/lib/ontology-change-set.ts (preserving all review items in batch protocol order)\n- src/features/ontology-change-review (manual/ACP common typed change review and selected item accordion)
+- src/entities/knowledge-graph/lib/ontology-relation-edit.ts (frontmatter before/after plan)
+- src/widgets/topology-map-v2/render/preview-edge.ts (directional preview that does not alter the force graph)
+- src/features/acp-session/model/atlas-tool-policy.ts (read/write classification aligned with generated MCP surface)
+- src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx (ACP write pause, allow-once/reject-once)
+- src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx (draft/committing map handoff for single relation change set)
+- src/features/acp-session/model/use-acp-session.ts (`toolCallId`-based approval lifecycle and execution after reduced-motion-aware settle)
+- docs/DECISIONS.md 2026-08-21 (92)
+
+## Confidence
+high (0.95)
+--- docs/ontology/capabilities/summary-freshness.md
+---
+uid: 26202cf9-ffbd-48c0-be8b-86173638d678
+slug: capabilities/summary-freshness
+kind: capability
+title: Summary Freshness
+domain: domains/graph-modeling
+elements: []
+path: mcp/src/stale-parent.mjs
+created_by: "agent:unknown"
+---
+
+## Definition
+Reports a `domain` or `project` whose containment list changed after its body prose was last re-written, so its description may no longer cover what it holds. Advisory only: nothing is blocked, no model is called, and no rewrite is proposed, because a summary body is a human judgement that someone accepted.
+
+## Evidence
+- mcp/src/stale-parent.mjs: the shared rule, comparing the two clocks that live in one node file
+- mcp/src/git-tools.mjs `collectNodeRevisions`: bounded history read for summary nodes only
+- src/entities/docs-vault/lib/summary-freshness.ts: the app-side copy, pinned by `tests/contract/summary-freshness-parity.contract.test.ts`
+- src-tauri/src/git.rs `vault_node_revisions`: Git plumbing for the installed app, with no ontology knowledge
+
+## Inclusion / Exclusion
+- Included: `validate_vault.summaryFreshness`, the `rejudge_summary_membership` maintenance action, and the node-popover row in the installed app
+- Excluded: rewriting or regenerating a summary body, and any judgement about whether a child node's own content is current, which path drift already owns
+
+## Why the comparison is prose against membership
+Two earlier rules were built and measured against the dogfood vault before this one. Comparing a parent's file timestamp against its children's flagged 6 of 7 domains, and inspection showed every flag wrong: a domain description is written at a level of abstraction that survives its children being revised. Comparing against child creation can never fire at all, because containment is declared in the parent's own frontmatter, so adding a child always touches the parent in the same commit.
+
+## Falsifier
+If flagged summaries turn out, on inspection, to still describe their membership correctly, the containment array is the wrong proxy for meaning and this capability should be withdrawn rather than tuned.
+--- docs/ontology/capabilities/taxonomy.md
+---
+uid: 84789e29-bdf1-49ad-89d3-a25593009741
+slug: capabilities/taxonomy
+kind: capability
+title: Kind Taxonomy Management
+display_ko: 종류 분류 관리
+domain: domains/graph-modeling
+elements: [elements/category, elements/status]
+path: src/features/taxonomy
+created_by: "agent:unknown"
+---
+
+## Definition
+Dedicated to authoring `project`·`domain`·`capability`·`element`·`document` kinds and tools.
+A capability to consistently mark and manage the boundaries of `vault-readme`. The meaning of kind selection is owned by
+`docs/ONTOLOGY-ATLAS-SPEC.md` §2; classification is not based solely on folder, team, or workflow names.
+
+## Evidence
+- src/features/taxonomy (implementation evidence)
+- docs/ONTOLOGY-ATLAS-SPEC.md §2 (public contract for kind determination)
+
+## Confidence
+medium-high (0.85): Cross-verified implementation path and public kind contract
+--- docs/ontology/capabilities/topology-browsing.md
+---
+uid: c183b392-62bd-455f-a310-c541f49e7c38
+slug: capabilities/topology-browsing
+kind: capability
+title: "Topology Map Rendering & Search"
+display_ko: 지도 그리기와 검색
+domain: domains/topology-navigation
+elements: [elements/global-search, elements/search-palette, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
+path: src/widgets/topology-map-v2
+created_by: "agent:unknown"
+dependencies: [capabilities/design-token-ramps, capabilities/vault-ontology]
+relation_notes: { capabilities/vault-ontology: "The map renderer and search consume the compiled node kinds and typed relation vocabulary; changing the vault ontology schema changes what topology can render, filter, and explain.", capabilities/design-token-ramps: "The topology canvas and panels consume the shared topology, motion, radius, and color ramps from app/globals.css; changing those ramps changes map readability and interaction geometry." }
+---
+
+## Definition
+The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required).
+
+## Evidence
+- src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)
+- AGENTS.md: Tech stack ("The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)")
+
+## View Modes
+- **3D View (dome view, 2026-08-18)**: An opt-in mode that repositions the map as a dome of kind concentric rings (project vertex →
+  domain → capability → element ring). Enabled via the "3D" chip in the top toolbar. Auto-rotation (48s/rev; stops if the user drags
+  the view, disabling auto-rotation and re-enabling "auto-align"·3D re-entry for that session) · Orbit drag (pitch is ±83°
+  full angle before reaching the poles) · In-plane node drag · Wheel zoom · "Reset to Origin" · Selection
+  reframe (selecting a node aligns yaw and camera in one clock to frame that node on the front,
+  reframing based on visible area even when panels are open/closed). Default is 2D (cross-verified evidence,
+  `docs/DECISIONS.md` 2026-08-18). Implementation: `src/widgets/topology-map-v2/model/dome-view.ts`,
+  config key `atlas.appearance.view3d`.
+- **3D Representation Layers (2026-08-18 3rd iteration)**: Five rendering devices that make the dome read as a dome.
+  ① **Meridian relationship lines** riding on the convex hull (control points are on the hull, not the chord,
+  so the silhouette becomes a sphere rather than a tent), ② **Depth halo** (thickly drawing the same geometry in the background color just before ink to hide what's behind. Everts et al. 2009),
+  ③ **Edge painter alignment** (farthest first), ④ **Latitude rings** (three kind planes as 96 sample
+  polylines, each arc with its own depth ink. `render/dome-rings.ts`),
+--- docs/ontology/capabilities/vault-agent.md
+---
+uid: a81da7e2-8ff6-46c9-a0aa-27b2948bc7b3
+slug: capabilities/vault-agent
+kind: capability
+title: "Agent Connect & Vault Access"
+display_ko: 에이전트 연결과 볼트 접근
+domain: domains/agent-integration
+elements: [elements/agents-destination, elements/vault-agent-panel]
+path: src/features/vault-agent
+created_by: human
+---
+
+## Definition
+
+The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs in the vault point to a single source. Local runners apply limited read order and round-trip time limits. One correction is issued if any of mandatory reads, detailed payload remaining exact citations, or Korean responses to Korean questions are omitted; answers not followed on the second attempt are not loaded for the user. Structure audits verify from selecting `domain` candidates after census up to argument contracts reading details of all 8 max exact slugs. The model rejects responses if it synthesizes capabilities/elements as non-existent when only one project root is selected or census confirms existence. Final synthesis preserves incompleteness of the verified scope without using count, fan-out, recommended node counts, or bridge evidence as defects. If batch detail reading exceeds character limits, instead of keeping only the first line, all candidates are first compressed into the same shape of definition excerpt, relationship count, and resolved neighbors, recording only remaining slugs and body text characters in the actual payload as the read scope. Each `*Info` field preserves what was truncated and requires a single concept re-read before editing. This surface is for vault-only curators who cannot see source code, so it does not directly create or edit project's `## Competency answers`. System prompt, write-intent, and final apply boundaries all prevent this, passing source-backed credentials to the repository-reading Atlas MCP builder.
+
+
+## Constraints: Client config and native vault writes
+
+The agent config state in App Settings counts only two actual client configs, not disguising example templates as connections. Source-checkout and app-bundled launch shape, current vault coordinates
+must match to be ready, and live stdio connection and tool inventory are proven by separate `mcp-verify`.
+Native vault writes retain Unix's piece-by-piece no-follow directory FD traversal, private-new-inode
+checks, and atomic rename. Thus, a parent name changing to an external symbolic link after inspection
+does not redirect a current vault write outside its opened directory. Windows reparse-point races are still
+unproven and provide no guarantee beyond static link checks.
+
+## Identity Boundary
+
+The "interactive agent in the app" mentioned here is the single vault-agent panel owned by this capability:
+it's a provider-neutral loop attaching to keys entered by users or local runners, calling only vault tools. The app
+launching a coding agent with a verified permission gate (currently Claude Agent) directly over ACP is a separate capability owned by `capabilities/acp-runtime`.
+That side has different layers for config isolation and permission gates, and the surface the user opens today differs with just one "executor" section in settings.
+
+## Evidence
+- src/features/vault-agent: provider-neutral agent loop, tool execution, evidence citation
+--- docs/ontology/capabilities/vault-ontology.md
+---
+uid: 1ee91a34-14c2-4bdd-bda8-84910555939b
+slug: capabilities/vault-ontology
+kind: capability
+title: Vault Ontology Schema Authoring
+display_ko: 볼트 온톨로지 스키마 작성
+display_en: Vault Ontology Schema Authoring
+domain: domains/graph-modeling
+elements: [elements/knowledge-graph, elements/ontology-class]
+path: mcp/src/schema.mjs
+created_by: human
+---
+
+## Definition
+The capability to have people and agents author the same five kinds and typed relations in a single vault, while keeping the machine-enforced frontmatter shape, human-approved semantics, current query/write support scope, and non-inference boundaries under distinct authorities and verification paths.
+
+Only `project`, `domain`, `capability`, `element`, and `document` can be authored;
+`vault-readme` is a reader-only kind created by tools. `broader` points from narrower to direct
+broader, appearing as `is_a` in the UI but not present in the current public relation API enum.
+Atlas does not provide automatic inverse/transitive inference or RDF/OWL/SKOS/SHACL conformance.
+
+## Evidence
+- docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: kind discrimination, counterexamples, relation storage/display/write,
+  direct `is_a`, absence and inference boundary public canonical
+- mcp/src/schema.mjs: authorable kinds and frontmatter shape per kind
+- src/shared/lib/validate-vault-document.ts: validation including reserved reader kinds
+- docs/ONTOLOGY-QUALITY.md: quality rules authority map
+- mcp/src/construction-rules.mjs: compact meta-model and construction guidelines read by MCP and app agents
+- tests/contract/ontology-meta-model.contract.test.ts: canonical consumer and prompt parity contract
+
+## Confidence
+high (0.95): cross-validating public canonical, schema, validator, actual consumers, and negative fixtures.
+--- docs/ontology/capabilities/vault-sample-source.md
+---
+uid: 9d0c5be0-e2dc-4487-8b52-1db955939352
+slug: capabilities/vault-sample-source
+kind: capability
+title: Sample Vault Demo Source
+display_ko: 예시 볼트 출처
+domain: domains/local-vault-management
+elements: []
+path: src/features/vault-sample-source
+created_by: "agent:unknown"
+---
+
+## Definition
+Source for a bundled example vault (demo mode) enabling experience without installation.
+
+## Evidence
+- src/features/vault-sample-source (implementation evidence)
+- README.md: "The installed macOS app reading the example vault in files in a folder"
+
+## Confidence
+medium-high (0.8)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'for f in $(rg --files docs/ontology | sort); do awk '"'BEGIN{fm=0} /"'^---$/{fm++; next} fm==1 && (/''^slug:/ || /''^kind:/ || /''^elements:/){print FILENAME ":" $0}'"' \""'$f"; done' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 4ms:
+docs/ontology/elements/topology-map-v2.md:slug: elements/topology-map-v2
+docs/ontology/elements/topology-map-v2.md:kind: element
+docs/ontology/elements/vault-agent-panel.md:slug: elements/vault-agent-panel
+docs/ontology/elements/vault-agent-panel.md:kind: element
+docs/ontology/ontology-atlas.md:slug: ontology-atlas
+docs/ontology/ontology-atlas.md:kind: project
+docs/ontology/ontology-atlas.md:elements: []
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "for f in docs/ontology/capabilities/*.md; do if rg -q '"'^kind: capability$'"' \""'$f" && rg -q '"'"'^elements: '"\\[\\]"'$'"' \""'$f"; then rg '"'"'^slug:'"' \""'$f"; fi; done | sort' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 24ms:
+slug: capabilities/acp-runtime
+slug: capabilities/agent-work-visibility
+slug: capabilities/app-update
+slug: capabilities/cli-developer-entry
+slug: capabilities/control-primitives
+slug: capabilities/data-source-mode
+slug: capabilities/design-build-handoff
+slug: capabilities/design-gate-ratchets
+slug: capabilities/design-token-ramps
+slug: capabilities/guided-tour
+slug: capabilities/locale-switch
+slug: capabilities/mcp-server
+slug: capabilities/project-quick-edit
+slug: capabilities/project-share
+slug: capabilities/summary-freshness
+slug: capabilities/vault-sample-source
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+- capabilities/acp-runtime
+- capabilities/agent-work-visibility
+- capabilities/app-update
+- capabilities/cli-developer-entry
+- capabilities/control-primitives
+- capabilities/data-source-mode
+- capabilities/design-build-handoff
+- capabilities/design-gate-ratchets
+- capabilities/design-token-ramps
+- capabilities/guided-tour
+- capabilities/locale-switch
+- capabilities/mcp-server
+- capabilities/project-quick-edit
+- capabilities/project-share
+- capabilities/summary-freshness
+- capabilities/vault-sample-source
+hook: Stop
+hook: Stop Completed
+tokens used
+58,622

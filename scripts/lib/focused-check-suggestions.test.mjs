@@ -51,6 +51,7 @@ describe('focused check suggestions', () => {
       // vault edit can invalidate the committed copy of it.
       'pnpm gateway:specimen:check',
       'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
+      'pnpm test:run tests/contract/vault-section-shape.contract.test.ts',
     ]);
   });
 

@@ -1,0 +1,113 @@
+`local-vault-management` 도메인은 [로컬 볼트 및 데이터소스 관리 노드](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/domains/local-vault-management.md)에 정의되어 있습니다.
+
+한 줄 설명: 로컬 디스크의 Markdown 폴더를 데이터 소스로 선택·관리하고, Git을 source of truth로 사용하며, 예시 볼트를 제공하는 로컬 우선 데이터 소스 계층입니다.
+
+직접 연결된 capability는 4개입니다.
+
+- `data-source-mode` — 데이터 출처 모드 분기: 폴더 선택 여부에 따라 vault-picked 모드와 static/sample 모드로 앱 동작을 분기합니다.
+- `docs-vault-local` — 내 폴더 열기: File System Access API로 로컬 Markdown 폴더를 선택·마운트합니다.
+- `project-data-source` — 프로젝트 데이터 읽기: 로컬 볼트 또는 샘플에서 프로젝트 목록·본문을 읽고, 로컬 모드에서 CRUD를 제공합니다.
+- `vault-sample-source` — 예시 볼트 출처: 설치 없이 사용할 수 있는 번들 샘플 볼트를 제공합니다.
+
+직접 연결된 element는 8개입니다.
+
+- `atlas-git-panel` — 볼트의 Git 상태·스냅샷을 보여주는 패널
+- `docs-vault-entity` — 볼트 데이터 모델 엔티티
+- `docs-vault-view` — `/docs` 화면
+- `docs-vault-widget` — 볼트 트리/목록 UI 위젯
+- `git` — Git 상태·히스토리 화면
+- `local-fs-handle` — File System Access API 핸들 엔티티
+- `native-vault-filesystem-bridge` — Tauri WebView와 선택된 볼트 사이의 파일시스템 읽기·쓰기 브리지
+- `private-vault-sidecar-boundary` — MCP/CLI의 `.ontology-atlas` 내부 영수증·활동 로그를 다루는 파일 경계
+
+참고로 `project-data-source`는 `elements/project`도 연결하지만, 해당 element의 소속 도메인은 `project-portfolio`이므로 `local-vault-management`의 직접 element 목록에는 포함되지 않습니다.
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.147.0
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a0374b-e042-79d0-b7c5-637534bcf5c7
+--------
+user
+이 repo 의 ontology vault (docs/ontology/) 에서 local-vault-management 도메인 아래에 어떤 capability 와 element 들이 있는지 정리해줘. 도메인 자체의 한 줄 설명도 포함.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+`docs/ontology/`의 실제 vault 레코드를 기준으로 `local-vault-management` 도메인의 설명, capability, element를 확인해 정리하겠습니다. 먼저 Atlas 읽기 도구가 제공되는지 확인한 뒤 해당 도메인과 연결된 항목만 좁혀 읽겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+mcp: ontology-atlas/get_concept started
+hook: PreToolUse Completed
+mcp: ontology-atlas/list_concepts started
+mcp: ontology-atlas/list_concepts (completed)
+mcp: ontology-atlas/get_concept (completed)
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+mcp: ontology-atlas/get_concepts started
+mcp: ontology-atlas/get_concepts (completed)
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+도메인 노드에는 capability 4개와 element 8개가 직접 선언되어 있습니다. 다만 `project-data-source` capability가 별도로 `elements/project`를 가리키므로, “도메인 소속 전체”와 “도메인 노드에 직접 나열된 항목”을 혼동하지 않도록 한 번 더 교차 확인하겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+mcp: ontology-atlas/list_concepts started
+hook: PreToolUse Completed
+mcp: ontology-atlas/list_concepts started
+mcp: ontology-atlas/list_concepts (completed)
+mcp: ontology-atlas/list_concepts (completed)
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+mcp: ontology-atlas/get_concept started
+mcp: ontology-atlas/get_concept (completed)
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+`local-vault-management` 도메인은 [로컬 볼트 및 데이터소스 관리 노드](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/domains/local-vault-management.md)에 정의되어 있습니다.
+
+한 줄 설명: 로컬 디스크의 Markdown 폴더를 데이터 소스로 선택·관리하고, Git을 source of truth로 사용하며, 예시 볼트를 제공하는 로컬 우선 데이터 소스 계층입니다.
+
+직접 연결된 capability는 4개입니다.
+
+- `data-source-mode` — 데이터 출처 모드 분기: 폴더 선택 여부에 따라 vault-picked 모드와 static/sample 모드로 앱 동작을 분기합니다.
+- `docs-vault-local` — 내 폴더 열기: File System Access API로 로컬 Markdown 폴더를 선택·마운트합니다.
+- `project-data-source` — 프로젝트 데이터 읽기: 로컬 볼트 또는 샘플에서 프로젝트 목록·본문을 읽고, 로컬 모드에서 CRUD를 제공합니다.
+- `vault-sample-source` — 예시 볼트 출처: 설치 없이 사용할 수 있는 번들 샘플 볼트를 제공합니다.
+
+직접 연결된 element는 8개입니다.
+
+- `atlas-git-panel` — 볼트의 Git 상태·스냅샷을 보여주는 패널
+- `docs-vault-entity` — 볼트 데이터 모델 엔티티
+- `docs-vault-view` — `/docs` 화면
+- `docs-vault-widget` — 볼트 트리/목록 UI 위젯
+- `git` — Git 상태·히스토리 화면
+- `local-fs-handle` — File System Access API 핸들 엔티티
+- `native-vault-filesystem-bridge` — Tauri WebView와 선택된 볼트 사이의 파일시스템 읽기·쓰기 브리지
+- `private-vault-sidecar-boundary` — MCP/CLI의 `.ontology-atlas` 내부 영수증·활동 로그를 다루는 파일 경계
+
+참고로 `project-data-source`는 `elements/project`도 연결하지만, 해당 element의 소속 도메인은 `project-portfolio`이므로 `local-vault-management`의 직접 element 목록에는 포함되지 않습니다.
+hook: Stop
+hook: Stop Completed
+tokens used
+57,033

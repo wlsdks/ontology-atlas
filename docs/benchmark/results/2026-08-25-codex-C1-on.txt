@@ -1,0 +1,79 @@
+`src/shared/lib/validate-vault-document.ts`에서 export되는 함수는 다음 3개입니다.
+
+- `validateVaultDocument` — 91행
+- `validateVaultDocFrontmatter` — 280행
+- `summarizeVaultValidation` — 372행
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.147.0
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a03756-887c-77c1-a664-b7b9db21a36f
+--------
+user
+src/shared/lib/validate-vault-document.ts 에서 export 되는 함수들을 모두 나열해줘.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+`validate-vault-document.ts`의 내보내기 목록을 구조적으로 확인하겠습니다.
+hook: PreToolUse
+hook: PreToolUse Completed
+mcp: codegraph/codegraph_explore started
+mcp: codegraph/codegraph_explore (failed)
+hook: PreToolUse
+hook: PreToolUse Completed
+mcp: codegraph/codegraph_explore started
+mcp: codegraph/codegraph_explore (failed)
+codex
+CodeGraph 인덱스가 이 작업공간에 초기화되어 있지 않아, 지정된 파일만 직접 확인해 export 선언을 추출하겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n '"'^(export'"\\s+)?(async\\s+)?(function|const|let|var|class|interface|type|enum)\\b|"'^export'"\\s*\\{' src/shared/lib/validate-vault-document.ts" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+15:export type VaultIssueSeverity = "error" | "warning";
+17:export type VaultIssueCode =
+38:export const KIND_EXPECTED_EXTRAS: Readonly<Record<string, readonly string[]>> = {
+46:export interface VaultDocumentIssue {
+52:export interface VaultDocumentReport {
+63:export const KNOWN_VAULT_KINDS = [
+72:const NODE_UID_RE =
+75:const GRAPH_ARRAY_KEYS = [
+91:export function validateVaultDocument(raw: string): VaultDocumentReport {
+165:function pushFrontmatterDiagnostics(
+179:function pushUidIssues(
+230:function pushMissingExpectedExtrasIssues(
+252:function issuesHaveNoErrors(issues: readonly VaultDocumentIssue[]): boolean {
+271:const ONTOLOGY_SIGNAL_KEYS = [
+280:export function validateVaultDocFrontmatter(
+332:function pushNonCanonicalGraphArrayIssues(
+358:export interface VaultValidationSummary {
+372:export function summarizeVaultValidation(
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+`src/shared/lib/validate-vault-document.ts`에서 export되는 함수는 다음 3개입니다.
+
+- `validateVaultDocument` — 91행
+- `validateVaultDocFrontmatter` — 280행
+- `summarizeVaultValidation` — 372행
+hook: Stop
+hook: Stop Completed
+tokens used
+20,417
