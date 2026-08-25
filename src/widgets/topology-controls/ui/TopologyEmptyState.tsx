@@ -166,10 +166,21 @@ export function TopologyEmptyState({
               {t('ctaCreateNode')}
             </button>
           ) : null}
-          <Link href="/ontology/" className={SECONDARY}>
-            <Network size={ICON_SIZE.md} aria-hidden="true" />
-            {t('ctaTree')}
-          </Link>
+          {/*
+            ⚠️ Same rule as `crossViewHint` above, one step further along (owner instruction,
+            2026-08-25, after being told the affordance-count no-go stood in the way). The hint only
+            *named* a screen the person has nothing in; this offered to **take them there**, and
+            `/ontology/` is a pure redirect back to `/topology/` with INDEX expanded — the screen
+            this panel is drawn on. At zero concepts pressing it is a round trip that ends where it
+            started, showing an empty index. Where concepts exist, expanding that index is a real
+            action, so the row stays.
+          */}
+          {isNoProjects ? null : (
+            <Link href="/ontology/" className={SECONDARY}>
+              <Network size={ICON_SIZE.md} aria-hidden="true" />
+              {t('ctaTree')}
+            </Link>
+          )}
           <Link href="/topology/?workbench=create" className={SECONDARY}>
             <GitBranch size={ICON_SIZE.md} aria-hidden="true" />
             {t(isNoProjects ? 'ctaBuilder' : 'ctaBuilderNoDeps')}

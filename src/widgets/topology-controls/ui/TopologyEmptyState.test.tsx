@@ -43,15 +43,31 @@ describe("TopologyEmptyState", () => {
     expect(
       screen.getByRole("status", { name: new RegExp(EMPTY.titleNoProjects) }),
     ).toBeInTheDocument();
-    expect(screen.getByText("개념 둘러보기").closest("a")).toHaveAttribute(
-      "href",
-      expect.stringContaining("/ontology"),
-    );
     expect(screen.getByText("저장·편집 열기").closest("a")).toHaveAttribute(
       "href",
       expect.stringContaining("/topology/?workbench=create"),
     );
-    expect(screen.getAllByRole("link")).toHaveLength(3);
+    expect(screen.getAllByRole("link")).toHaveLength(2);
+  });
+
+  /*
+   * ⚠️ `/ontology/` is not a destination — it redirects to `/topology/` with INDEX expanded, which
+   * is the screen this panel is drawn on. With concepts that round trip is worth taking: it opens
+   * the list. With none it ends where it started, showing an empty index, so the offer is a dead
+   * end rather than a slow route. Asserting the *count* alone would pass with the row present and
+   * some other row gone, so the link itself is named.
+   */
+  it("개념이 하나도 없으면 같은 화면으로 되돌아오는 둘러보기를 권하지 않는다", () => {
+    renderEmpty(0);
+    expect(screen.queryByText(EMPTY.ctaTree)).not.toBeInTheDocument();
+  });
+
+  it("개념이 있으면 둘러보기로 목록을 펼칠 수 있다", () => {
+    renderEmpty(1, "no-relations");
+    expect(screen.getByText(EMPTY.ctaTree).closest("a")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/ontology"),
+    );
   });
 
   it("보조 힌트는 별도 안내 박스로 강조하지 않는다", () => {
