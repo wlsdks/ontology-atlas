@@ -113,6 +113,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `${COLORS.bold}install-shim${COLORS.reset} — put ${COLORS.bold}atlas${COLORS.reset} on your PATH\n\n` +
+      `${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas install-shim [--dir <path>] [--force] [--uninstall] [--json]\n\n` +
       `Writes a one-line launcher into ${COLORS.dim}~/.local/bin/atlas${COLORS.reset} pointing at this\n` +
       `checkout. No registry, no sudo, nothing outside your home directory.\n` +
