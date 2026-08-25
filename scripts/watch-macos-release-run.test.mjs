@@ -101,10 +101,14 @@ test("desktop release run dispatches the protected-main workflow and watches it"
     assert.match(result.stderr, /waiting for release-macos\.yml workflow_dispatch run/);
     assert.match(result.stdout, /watching release-macos\.yml run 12345/);
     assert.match(result.stdout, /completed successfully/);
-    assert.match(result.stdout, /ontology-atlas-release-facts-v0\.1\.0/);
-    assert.match(result.stdout, /gh run download 12345 --repo wlsdks\/ontology-atlas --name ontology-atlas-release-facts-v0\.1\.0/);
-    assert.match(result.stdout, /src\/views\/download\/model\/macos-release\.generated\.ts/);
-    assert.match(result.stdout, /normal protected-main PR/);
+    /*
+     * ⚠️ It used to print a list of commands and stop, on the reasoning that the bot token cannot
+     * push to protected main. True, and irrelevant: a person dispatches the release, so the
+     * credentials that pushed the tag can open this PR. Handing somebody a checklist at the end of
+     * a twenty-minute build is handing them a step to forget, and it was forgotten twice on
+     * 2026-08-25 -- the public page advertised rc.10 while rc.11 and rc.12 had both shipped.
+     */
+    assert.match(result.stdout, /refreshing \/download for v0\.1\.0/);
   });
 });
 
@@ -127,6 +131,6 @@ test("desktop release run help describes protected-main dispatch and watch", () 
   assert.match(stdout, /desktop:release-run/);
   assert.match(stdout, /workflow_dispatch/);
   assert.match(stdout, /protected ref/);
-  assert.match(stdout, /release-facts artifact/);
-  assert.match(stdout, /protected-main PR/);
+  assert.match(stdout, /refreshes what \/download says/);
+  assert.match(stdout, /Merging\s+that PR is what moves the public download page/);
 });
