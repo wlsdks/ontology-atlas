@@ -1,0 +1,633 @@
+`docs/ontology` 기준으로 총 3개입니다.
+
+### domain
+
+- [`domains/agent-integration`]( /Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/domains/agent-integration.md:8) — `capabilities`
+
+### capability
+
+- [`capabilities/acp-runtime`]( /Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/capabilities/acp-runtime.md:12) — `dependencies`
+- [`capabilities/cli-developer-entry`]( /Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/capabilities/cli-developer-entry.md:10) — `dependencies`
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.147.0
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a03742-1946-7ee2-9ee1-108b127c5b4f
+--------
+user
+capabilities/mcp-server 를 frontmatter 에서 참조하고 있는 모든 노드를 찾아 kind 별로 분류해줘.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+온톨로지 vault의 백링크/개념 조회를 사용해 `capabilities/mcp-server`를 frontmatter에서 참조하는 노드를 찾고, 결과를 `kind`별로 묶겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files | rg '("'^|/)(docs/ontology|ontology|vault|mcp|cli)'"' | head -200 && printf '\\n--- exact refs ---\\n' && rg -n --glob '*.md' 'capabilities/mcp-server' ." in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+src/entities/ontology-class/index.ts
+src/entities/ontology-class/model/labels.ts
+src/entities/ontology-class/model/index.ts
+src/entities/ontology-class/model/tone.ts
+src/entities/ontology-class/model/icons.ts
+src/entities/ontology-class/model/types.ts
+src/entities/ontology-class/model/icons.test.ts
+src/entities/ontology-class/model/tone.test.ts
+src/entities/ontology-class/model/defaults.ts
+src/entities/ontology-class/model/labels.test.ts
+src/entities/ontology-class/model/use-kind-label.ts
+src/entities/knowledge-graph/lib/ontology-health-signals.test.ts
+src/entities/knowledge-graph/lib/ontology-relation-edit.test.ts
+src/entities/knowledge-graph/lib/ontology-relation-edit.ts
+src/entities/knowledge-graph/lib/ontology-change-set.test.ts
+src/entities/knowledge-graph/lib/ontology-node-href.ts
+src/entities/knowledge-graph/lib/ontology-health-signals.ts
+src/entities/knowledge-graph/lib/ontology-change-set.ts
+src/entities/knowledge-graph/lib/vault-health.ts
+src/entities/knowledge-graph/lib/ontology-node-href.test.ts
+src/entities/docs-vault/lib/ontology-deeplink.test.ts
+src/entities/docs-vault/lib/ontology-deeplink.ts
+src/entities/docs-vault/lib/vault-scope-key.test.ts
+src/entities/docs-vault/lib/vault-scope-key.ts
+public/acp-icons/cline.svg
+scripts/vault-freshness-drift.test.mjs
+scripts/vault-freshness-drift.mjs
+scripts/lib/vault-freshness-drift.test.mjs
+scripts/lib/vault-freshness-drift.mjs
+scripts/lib/dogfood-walk/cli-args.mjs
+scripts/lib/mcp-binary.test.mjs
+src/shared/lib/ontology-relation-key.ts
+src/shared/lib/ontology-description.test.ts
+src/features/ontology-meaning-editor/index.ts
+public/docs-vault/ontology/ontology-atlas.md
+scripts/lib/verify-macos/cli-args.mjs
+scripts/lib/mcp-binary.mjs
+src/features/ontology-meaning-editor/ui/MeaningEditorPanel.test.tsx
+src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx
+docs/ontology/ontology-atlas.md
+src/shared/lib/ontology-tree/domain-census.test.ts
+src/shared/lib/ontology-tree/kind-stats.ts
+src/shared/lib/ontology-tree/agent-query-recipes.test.ts
+src/shared/lib/ontology-tree/filter-tree.ts
+src/shared/lib/ontology-tree/canonical-census.test.ts
+src/shared/lib/ontology-tree/domain-census.ts
+src/shared/lib/ontology-tree/reachability.test.ts
+src/shared/lib/ontology-tree/agent-query-recipes.ts
+src/shared/lib/ontology-tree/project-ontology-counts.test.ts
+src/shared/lib/ontology-tree/index.ts
+src/shared/lib/ontology-tree/canonical-census.ts
+src/shared/lib/ontology-tree/ego-layout.test.ts
+src/shared/lib/ontology-tree/build-tree.ts
+src/shared/lib/ontology-tree/agent-briefing-packet.test.ts
+src/shared/lib/ontology-tree/connections.ts
+src/shared/lib/ontology-tree/change-baseline-persist.ts
+src/shared/lib/ontology-tree/build-ego.test.ts
+src/shared/lib/ontology-tree/relations.ts
+src/shared/lib/ontology-tree/recent-changes.ts
+src/shared/lib/ontology-tree/types.ts
+src/shared/lib/ontology-tree/kind-stats.test.ts
+src/shared/lib/ontology-tree/build-tree.test.ts
+src/shared/lib/ontology-tree/agent-readiness.test.ts
+src/shared/lib/ontology-tree/relations.test.ts
+src/shared/lib/ontology-tree/recent-changes.test.ts
+src/shared/lib/ontology-tree/ontology-changeset.ts
+src/shared/lib/ontology-tree/insights.test.ts
+src/shared/lib/ontology-tree/reachability.ts
+src/shared/lib/ontology-tree/change-baseline-persist.test.ts
+src/shared/lib/ontology-tree/change-baseline-store.ts
+src/shared/lib/ontology-tree/build-ego.ts
+src/shared/lib/ontology-tree/project-ontology-counts.ts
+src/shared/lib/ontology-tree/filter-tree.test.ts
+src/shared/lib/ontology-tree/ego-layout.ts
+src/shared/lib/ontology-tree/change-baseline-store.test.ts
+src/shared/lib/ontology-tree/insights.ts
+src/shared/lib/ontology-tree/agent-briefing-packet.ts
+src/shared/lib/ontology-tree/agent-readiness.ts
+src/shared/lib/ontology-tree/ontology-changeset.test.ts
+src/shared/lib/ontology-relation-key.test.ts
+src/shared/lib/vault-shape-events.ts
+src/shared/lib/vault-shape-events.test.ts
+src/shared/lib/ontology-query-call.test.ts
+src/shared/lib/vault-issue-plain-message.test.ts
+src/shared/lib/ontology-reader-intent.ts
+src/shared/lib/ontology-node-id.test.ts
+src/shared/lib/ontology-query-call.ts
+src/shared/lib/ontology-node-id.ts
+src/shared/lib/ontology-description.ts
+src/shared/lib/vault-issue-plain-message.ts
+src/shared/lib/ontology-reader-intent.test.ts
+public/docs-vault/guide/vault-structure.md
+public/docs-vault/guide/cli.md
+src/features/vault-ontology/index.ts
+public/docs-vault/ontology/elements/acp-ontology-write-review.md
+public/docs-vault/ontology/elements/download.md
+public/docs-vault/ontology/elements/project-drawer.md
+public/docs-vault/ontology/elements/ontology-redirect.md
+public/docs-vault/ontology/elements/docs-vault-entity.md
+public/docs-vault/ontology/elements/ontology-meaning-editor.md
+public/docs-vault/ontology/elements/ontology-edit-redirect.md
+public/docs-vault/ontology/elements/search-hint.md
+public/docs-vault/ontology/elements/full-detail-a1.md
+public/docs-vault/ontology/elements/local-fs-handle.md
+public/docs-vault/ontology/elements/git.md
+public/docs-vault/ontology/elements/public-quick-actions.md
+public/docs-vault/ontology/elements/recent-node-row.md
+public/docs-vault/ontology/elements/topology-index-panel.md
+public/docs-vault/ontology/elements/vault-agent-panel.md
+public/docs-vault/ontology/elements/root-entry.md
+public/docs-vault/ontology/elements/ontology-class.md
+public/docs-vault/ontology/elements/home.md
+public/docs-vault/ontology/elements/ontology-insights.md
+public/docs-vault/ontology/elements/knowledge-graph.md
+public/docs-vault/ontology/elements/search-palette.md
+public/docs-vault/ontology/elements/project-detail.md
+public/docs-vault/ontology/elements/docs-quick-drawer.md
+public/docs-vault/ontology/elements/project.md
+public/docs-vault/ontology/elements/category.md
+public/docs-vault/ontology/elements/status.md
+public/docs-vault/ontology/elements/global-search.md
+public/docs-vault/ontology/elements/atlas-git-panel.md
+public/docs-vault/ontology/elements/gesture-hint.md
+public/docs-vault/ontology/elements/docs-vault-widget.md
+public/docs-vault/ontology/elements/topology-controls.md
+public/docs-vault/ontology/elements/docs-vault-view.md
+public/docs-vault/ontology/elements/native-vault-filesystem-bridge.md
+public/docs-vault/ontology/elements/first-run.md
+public/docs-vault/ontology/elements/app-nav-rail.md
+public/docs-vault/ontology/elements/topology-map-v2.md
+public/docs-vault/ontology/elements/ontology-change-review.md
+public/docs-vault/ontology/elements/private-vault-sidecar-boundary.md
+public/docs-vault/ontology/elements/bottom-tab-bar.md
+public/docs-vault/ontology/capabilities/agent-work-visibility.md
+public/docs-vault/ontology/capabilities/data-source-mode.md
+public/docs-vault/ontology/elements/app-settings-menu.md
+public/docs-vault/ontology/capabilities/first-run-starter.md
+public/docs-vault/ontology/elements/gateway-doc.md
+public/docs-vault/ontology/capabilities/cli-developer-entry.md
+public/docs-vault/ontology/capabilities/control-primitives.md
+public/docs-vault/ontology/elements/domain-capacity-bar.md
+public/docs-vault/ontology/capabilities/design-gate-ratchets.md
+public/docs-vault/ontology/elements/shortcut-sheet.md
+public/docs-vault/ontology/capabilities/docs-vault-local.md
+public/docs-vault/ontology/elements/gateway-chrome.md
+public/docs-vault/ontology/capabilities/construction-review.md
+public/docs-vault/ontology/capabilities/guided-tour.md
+public/docs-vault/ontology/capabilities/summary-freshness.md
+public/docs-vault/ontology/elements/project-selector.md
+public/docs-vault/ontology/capabilities/project-quick-edit.md
+public/docs-vault/ontology/elements/agents-destination.md
+public/docs-vault/ontology/capabilities/design-build-handoff.md
+public/docs-vault/ontology/elements/project-editor.md
+public/docs-vault/ontology/capabilities/reviewed-ontology-writing.md
+public/docs-vault/ontology/capabilities/acp-runtime.md
+public/docs-vault/ontology/capabilities/vault-agent.md
+public/docs-vault/ontology/capabilities/topology-browsing.md
+public/docs-vault/ontology/capabilities/project-source-evidence.md
+public/docs-vault/ontology/capabilities/mcp-server.md
+public/docs-vault/ontology/README.md
+public/docs-vault/ontology/capabilities/locale-switch.md
+public/docs-vault/ontology/capabilities/vault-sample-source.md
+public/docs-vault/ontology/capabilities/project-share.md
+public/docs-vault/ontology/capabilities/design-token-ramps.md
+public/docs-vault/ontology/capabilities/app-update.md
+public/docs-vault/ontology/capabilities/desktop-download-decision.md
+public/docs-vault/ontology/capabilities/vault-ontology.md
+public/docs-vault/ontology/capabilities/taxonomy.md
+public/docs-vault/ontology/capabilities/project-data-source.md
+public/docs-vault/ontology/capabilities/project-edit.md
+docs/ontology/elements/acp-ontology-write-review.md
+docs/ontology/elements/download.md
+docs/ontology/elements/project-drawer.md
+docs/ontology/elements/ontology-redirect.md
+docs/ontology/elements/docs-vault-entity.md
+docs/ontology/elements/ontology-meaning-editor.md
+docs/ontology/elements/ontology-edit-redirect.md
+docs/ontology/elements/search-hint.md
+docs/ontology/elements/full-detail-a1.md
+docs/ontology/elements/local-fs-handle.md
+docs/ontology/elements/git.md
+docs/ontology/elements/public-quick-actions.md
+docs/ontology/elements/recent-node-row.md
+docs/ontology/elements/topology-index-panel.md
+docs/ontology/elements/vault-agent-panel.md
+docs/ontology/elements/root-entry.md
+docs/ontology/elements/ontology-class.md
+docs/ontology/elements/home.md
+docs/ontology/elements/ontology-insights.md
+docs/ontology/elements/knowledge-graph.md
+docs/ontology/elements/search-palette.md
+docs/ontology/elements/project-detail.md
+docs/ontology/elements/docs-quick-drawer.md
+docs/ontology/elements/project.md
+docs/ontology/elements/category.md
+docs/ontology/elements/status.md
+docs/ontology/elements/global-search.md
+docs/ontology/elements/atlas-git-panel.md
+docs/ontology/elements/gesture-hint.md
+docs/ontology/elements/docs-vault-widget.md
+
+--- exact refs ---
+./README.md:309:$ node $ATLAS/cli/src/index.mjs blast-radius capabilities/mcp-server docs/ontology --depth 2
+./README.md:310:capabilities/mcp-server — blast radius (depth 2, incoming)
+./docs/DECISIONS.md:3644:before: { "capabilities/mcp-server":   "ACP 세션은 …" }
+./docs/DECISIONS.md:3645:after : { "capabilities/mcp-server-x": "ACP 세션은 …" }
+./docs/DECISIONS.md:15113:| compile_ontology 옵션 문서 정렬 | **부재 탐지** | `capabilities/mcp-server` 복원으로 통과 |
+./docs/DECISIONS.md:15122:**볼트 채움 — 규격의 두 번째 시험 결과**: `capabilities/mcp-server` ·
+./docs/AGENT-GRAPH-WORKFLOW.md:254:node $ATLAS/cli/src/index.mjs all-paths capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --plan --force --max-hops 3 --types depends_on,relates
+./docs/AGENT-GRAPH-WORKFLOW.md:255:node $ATLAS/cli/src/index.mjs explain capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --types depends_on,relates
+./public/docs-vault/DECISIONS.md:3644:before: { "capabilities/mcp-server":   "ACP 세션은 …" }
+./public/docs-vault/DECISIONS.md:3645:after : { "capabilities/mcp-server-x": "ACP 세션은 …" }
+./public/docs-vault/DECISIONS.md:15113:| compile_ontology 옵션 문서 정렬 | **부재 탐지** | `capabilities/mcp-server` 복원으로 통과 |
+./public/docs-vault/DECISIONS.md:15122:**볼트 채움 — 규격의 두 번째 시험 결과**: `capabilities/mcp-server` ·
+./public/docs-vault/AGENT-GRAPH-WORKFLOW.md:254:node $ATLAS/cli/src/index.mjs all-paths capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --plan --force --max-hops 3 --types depends_on,relates
+./public/docs-vault/AGENT-GRAPH-WORKFLOW.md:255:node $ATLAS/cli/src/index.mjs explain capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --types depends_on,relates
+./docs/ONTOLOGY-ATLAS-SPEC.md:315:  "tail" fragment (e.g. `mcp-server` resolving to `capabilities/mcp-server`
+./public/docs-vault/ONTOLOGY-ATLAS-SPEC.md:315:  "tail" fragment (e.g. `mcp-server` resolving to `capabilities/mcp-server`
+./docs/FEATURES.md:996:    - Tail-only references (`mcp-server` for `capabilities/mcp-server`) also redirected to the new tail
+./public/docs-vault/FEATURES.md:996:    - Tail-only references (`mcp-server` for `capabilities/mcp-server`) also redirected to the new tail
+./docs/ontology/ontology-atlas.md:58:- Concepts: `domains/agent-integration`, `domains/design-system`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`, `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+./docs/ontology/ontology-atlas.md:59:- Relations: `domains/agent-integration` --capabilities--> `capabilities/acp-runtime`, `domains/agent-integration` --capabilities--> `capabilities/agent-work-visibility`, `domains/agent-integration` --capabilities--> `capabilities/cli-developer-entry`, `domains/agent-integration` --capabilities--> `capabilities/mcp-server`, `domains/agent-integration` --capabilities--> `capabilities/vault-agent`, `domains/design-system` --capabilities--> `capabilities/control-primitives`, `domains/design-system` --capabilities--> `capabilities/design-build-handoff`, `domains/design-system` --capabilities--> `capabilities/design-gate-ratchets`, `domains/design-system` --capabilities--> `capabilities/design-token-ramps`, `domains/graph-modeling` --capabilities--> `capabilities/reviewed-ontology-writing`, `domains/graph-modeling` --capabilities--> `capabilities/taxonomy`, `domains/graph-modeling` --capabilities--> `capabilities/vault-ontology`, `domains/local-vault-management` --capabilities--> `capabilities/data-source-mode`, `domains/local-vault-management` --capabilities--> `capabilities/docs-vault-local`, `domains/local-vault-management` --capabilities--> `capabilities/project-data-source`, `domains/local-vault-management` --capabilities--> `capabilities/vault-sample-source`, `domains/onboarding-and-shell` --capabilities--> `capabilities/app-update`, `domains/onboarding-and-shell` --capabilities--> `capabilities/desktop-download-decision`, `domains/onboarding-and-shell` --capabilities--> `capabilities/first-run-starter`, `domains/onboarding-and-shell` --capabilities--> `capabilities/guided-tour`, `domains/onboarding-and-shell` --capabilities--> `capabilities/locale-switch`, `domains/project-portfolio` --capabilities--> `capabilities/construction-review`, `domains/project-portfolio` --capabilities--> `capabilities/project-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-quick-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-share`, `domains/project-portfolio` --capabilities--> `capabilities/project-source-evidence`, `domains/topology-navigation` --capabilities--> `capabilities/topology-browsing`
+./docs/ontology/ontology-atlas.md:68:- Concepts: `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+./docs/ontology/ontology-atlas.md:78:- Concepts: `capabilities/acp-runtime`, `capabilities/cli-developer-entry`, `capabilities/mcp-server`, `capabilities/vault-ontology`, `capabilities/topology-browsing`, `capabilities/design-token-ramps`, `capabilities/first-run-starter`, `capabilities/vault-sample-source`, `capabilities/reviewed-ontology-writing`, `capabilities/docs-vault-local`, `capabilities/project-source-evidence`
+./docs/ontology/ontology-atlas.md:79:- Relations: `capabilities/acp-runtime` --depends_on--> `capabilities/mcp-server`, `capabilities/cli-developer-entry` --depends_on--> `capabilities/mcp-server`, `capabilities/mcp-server` --depends_on--> `capabilities/vault-ontology`, `capabilities/topology-browsing` --depends_on--> `capabilities/vault-ontology`, `capabilities/topology-browsing` --depends_on--> `capabilities/design-token-ramps`, `capabilities/first-run-starter` --depends_on--> `capabilities/vault-sample-source`, `capabilities/reviewed-ontology-writing` --depends_on--> `capabilities/docs-vault-local`, `capabilities/project-source-evidence` --depends_on--> `capabilities/vault-ontology`
+./public/docs-vault/ontology/ontology-atlas.md:58:- Concepts: `domains/agent-integration`, `domains/design-system`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`, `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+./public/docs-vault/ontology/ontology-atlas.md:59:- Relations: `domains/agent-integration` --capabilities--> `capabilities/acp-runtime`, `domains/agent-integration` --capabilities--> `capabilities/agent-work-visibility`, `domains/agent-integration` --capabilities--> `capabilities/cli-developer-entry`, `domains/agent-integration` --capabilities--> `capabilities/mcp-server`, `domains/agent-integration` --capabilities--> `capabilities/vault-agent`, `domains/design-system` --capabilities--> `capabilities/control-primitives`, `domains/design-system` --capabilities--> `capabilities/design-build-handoff`, `domains/design-system` --capabilities--> `capabilities/design-gate-ratchets`, `domains/design-system` --capabilities--> `capabilities/design-token-ramps`, `domains/graph-modeling` --capabilities--> `capabilities/reviewed-ontology-writing`, `domains/graph-modeling` --capabilities--> `capabilities/taxonomy`, `domains/graph-modeling` --capabilities--> `capabilities/vault-ontology`, `domains/local-vault-management` --capabilities--> `capabilities/data-source-mode`, `domains/local-vault-management` --capabilities--> `capabilities/docs-vault-local`, `domains/local-vault-management` --capabilities--> `capabilities/project-data-source`, `domains/local-vault-management` --capabilities--> `capabilities/vault-sample-source`, `domains/onboarding-and-shell` --capabilities--> `capabilities/app-update`, `domains/onboarding-and-shell` --capabilities--> `capabilities/desktop-download-decision`, `domains/onboarding-and-shell` --capabilities--> `capabilities/first-run-starter`, `domains/onboarding-and-shell` --capabilities--> `capabilities/guided-tour`, `domains/onboarding-and-shell` --capabilities--> `capabilities/locale-switch`, `domains/project-portfolio` --capabilities--> `capabilities/construction-review`, `domains/project-portfolio` --capabilities--> `capabilities/project-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-quick-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-share`, `domains/project-portfolio` --capabilities--> `capabilities/project-source-evidence`, `domains/topology-navigation` --capabilities--> `capabilities/topology-browsing`
+./public/docs-vault/ontology/ontology-atlas.md:68:- Concepts: `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+./public/docs-vault/ontology/ontology-atlas.md:78:- Concepts: `capabilities/acp-runtime`, `capabilities/cli-developer-entry`, `capabilities/mcp-server`, `capabilities/vault-ontology`, `capabilities/topology-browsing`, `capabilities/design-token-ramps`, `capabilities/first-run-starter`, `capabilities/vault-sample-source`, `capabilities/reviewed-ontology-writing`, `capabilities/docs-vault-local`, `capabilities/project-source-evidence`
+./public/docs-vault/ontology/ontology-atlas.md:79:- Relations: `capabilities/acp-runtime` --depends_on--> `capabilities/mcp-server`, `capabilities/cli-developer-entry` --depends_on--> `capabilities/mcp-server`, `capabilities/mcp-server` --depends_on--> `capabilities/vault-ontology`, `capabilities/topology-browsing` --depends_on--> `capabilities/vault-ontology`, `capabilities/topology-browsing` --depends_on--> `capabilities/design-token-ramps`, `capabilities/first-run-starter` --depends_on--> `capabilities/vault-sample-source`, `capabilities/reviewed-ontology-writing` --depends_on--> `capabilities/docs-vault-local`, `capabilities/project-source-evidence` --depends_on--> `capabilities/vault-ontology`
+./public/docs-vault/guide/growing-vault.md:72:node cli/src/index.mjs backlinks capabilities/mcp-server my-vault
+./public/docs-vault/guide/growing-vault.md:73:node cli/src/index.mjs blast-radius capabilities/mcp-server my-vault
+./public/docs-vault/guide/growing-vault.md:79:capabilities/mcp-server — blast radius (depth 2, incoming)
+./public/docs-vault/CHANGELOG.md:2339:`capabilities/mcp-server` 와 `capabilities/cli-developer-entry` 가
+./public/docs-vault/CHANGELOG.md:8035:mcp/src/analyze.test.mjs: 7 unit case (FSD / generic / no package.json / generic README skip / ignored folders / empty dir / suggested relations). dogfood `capabilities/mcp-server.md` 갱신 (15 tools, analyze.mjs element 추가). AGENTS.md *"빈 vault bootstrap"* 섹션 영문 + 한국어 추가.
+./public/docs-vault/CHANGELOG.md:8541:- AGENTS.md / docs/FEATURES.md / docs/PRODUCT-DIRECTION.md / docs/ontology/README.md / docs/ontology/capabilities/mcp-server.md / docs/ontology/domains/ai-agent-partner.md / mcp/README.md / mcp/scripts/verify.mjs: 모든 도구 카운트 12 → 14 (read 8 + write 4 → 6) 동기화.
+./public/docs-vault/CHANGELOG.md:9348:- `docs/ontology/` dogfood vault: added `capabilities/builder-vault-write` + `capabilities/v1-5-cardinality`, updated `capabilities/mcp-server` to 9 tools. 22 nodes.
+./docs/archive/UX-FIRST-PRINCIPLES.md:104:  > 3. `find_backlinks({slug: "capabilities/mcp-server"})` 로 의존자 찾아줘
+./public/docs-vault/archive/UX-FIRST-PRINCIPLES.md:104:  > 3. `find_backlinks({slug: "capabilities/mcp-server"})` 로 의존자 찾아줘
+./docs/CHANGELOG.md:2339:`capabilities/mcp-server` 와 `capabilities/cli-developer-entry` 가
+./docs/CHANGELOG.md:8035:mcp/src/analyze.test.mjs: 7 unit case (FSD / generic / no package.json / generic README skip / ignored folders / empty dir / suggested relations). dogfood `capabilities/mcp-server.md` 갱신 (15 tools, analyze.mjs element 추가). AGENTS.md *"빈 vault bootstrap"* 섹션 영문 + 한국어 추가.
+./docs/CHANGELOG.md:8541:- AGENTS.md / docs/FEATURES.md / docs/PRODUCT-DIRECTION.md / docs/ontology/README.md / docs/ontology/capabilities/mcp-server.md / docs/ontology/domains/ai-agent-partner.md / mcp/README.md / mcp/scripts/verify.mjs: 모든 도구 카운트 12 → 14 (read 8 + write 4 → 6) 동기화.
+./docs/CHANGELOG.md:9348:- `docs/ontology/` dogfood vault: added `capabilities/builder-vault-write` + `capabilities/v1-5-cardinality`, updated `capabilities/mcp-server` to 9 tools. 22 nodes.
+./docs/ontology/README.md:26:  two agent surfaces: `capabilities/mcp-server` (runtime-advertised tools in
+./docs/guide/growing-vault.md:72:node cli/src/index.mjs backlinks capabilities/mcp-server my-vault
+./docs/guide/growing-vault.md:73:node cli/src/index.mjs blast-radius capabilities/mcp-server my-vault
+./docs/guide/growing-vault.md:79:capabilities/mcp-server — blast radius (depth 2, incoming)
+./docs/ontology/domains/agent-integration.md:8:capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+./public/docs-vault/benchmark/results/2026-05-04-claude-code.md:45:### A3 — Reference graph for capabilities/mcp-server
+./public/docs-vault/ontology/README.md:26:  two agent surfaces: `capabilities/mcp-server` (runtime-advertised tools in
+./docs/ontology/capabilities/cli-developer-entry.md:10:dependencies: [capabilities/mcp-server]
+./docs/ontology/capabilities/cli-developer-entry.md:11:relation_notes: { capabilities/mcp-server: "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts so schema or runtime changes must be checked across both surfaces." }
+./public/docs-vault/benchmark/tasks.md:44:> List all nodes referencing `capabilities/mcp-server` in frontmatter, categorized by kind.
+./public/docs-vault/benchmark/tasks.md:47:- All nodes whose frontmatter array key (`capabilities`, `elements`, `dependencies`, `relates`, `contains`, `describes`) or inline string key (`domain`) contains `capabilities/mcp-server`.
+./public/docs-vault/benchmark/results/2026-05-04-codex.md:41:### A3 — Reference graph for capabilities/mcp-server
+./public/docs-vault/benchmark/results/2026-05-04-codex.md:195:| **A3** | 1 (`find_backlinks(slug: capabilities/mcp-server)`) | 4 backlinks correctly grouped by kind, all `matchedKey` annotated | 1 | 3 | 0 | **Includes the `domains/ai-agent-partner: capabilities` tail reference that Codex OFF missed.** |
+./public/docs-vault/ontology/domains/agent-integration.md:8:capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+./docs/ontology/capabilities/mcp-server.md:3:slug: capabilities/mcp-server
+./public/docs-vault/ontology/capabilities/cli-developer-entry.md:10:dependencies: [capabilities/mcp-server]
+./public/docs-vault/ontology/capabilities/cli-developer-entry.md:11:relation_notes: { capabilities/mcp-server: "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts so schema or runtime changes must be checked across both surfaces." }
+./public/docs-vault/ontology/capabilities/mcp-server.md:3:slug: capabilities/mcp-server
+./docs/ontology/capabilities/acp-runtime.md:12:dependencies: [capabilities/mcp-server]
+./docs/ontology/capabilities/acp-runtime.md:13:relation_notes: { capabilities/mcp-server: The ACP session receives this server as an mcpServer in session/new, obtaining the vault tool (src/features/acp-session/model/vault-mcp-server.ts). Thus, ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
+./docs/benchmark/results/2026-05-04-claude-code.md:45:### A3 — Reference graph for capabilities/mcp-server
+./docs/benchmark/results/2026-05-04-codex.md:41:### A3 — Reference graph for capabilities/mcp-server
+./docs/benchmark/results/2026-05-04-codex.md:195:| **A3** | 1 (`find_backlinks(slug: capabilities/mcp-server)`) | 4 backlinks correctly grouped by kind, all `matchedKey` annotated | 1 | 3 | 0 | **Includes the `domains/ai-agent-partner: capabilities` tail reference that Codex OFF missed.** |
+./docs/benchmark/tasks.md:49:> List all nodes referencing `capabilities/mcp-server` in frontmatter, categorized by kind.
+./docs/benchmark/tasks.md:52:- All nodes whose frontmatter array key (`capabilities`, `elements`, `dependencies`, `relates`, `contains`, `describes`) or inline string key (`domain`) contains `capabilities/mcp-server`.
+./public/docs-vault/ontology/capabilities/acp-runtime.md:12:dependencies: [capabilities/mcp-server]
+./public/docs-vault/ontology/capabilities/acp-runtime.md:13:relation_notes: { capabilities/mcp-server: The ACP session receives this server as an mcpServer in session/new, obtaining the vault tool (src/features/acp-session/model/vault-mcp-server.ts). Thus, ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
+./mcp/CHANGELOG.md:218:- **`get_concept` excerpt 가 prose-aware.** 기존 `body.slice(0, 800)` 은 dogfood `capabilities/mcp-server.md` 같이 H1+표 위주 문서에선 800자 모두 markdown table syntax 만 채워져 agent token budget 낭비. 새 `extractSummaryExcerpt` helper 가 heading / 표 / 코드블록 / 리스트 / 인용을 skip 후 첫 prose 단락만 추출. 측정: dogfood `capabilities/mcp-server.md` excerpt **800 chars (table syntax) → 78 chars (clear prose summary)** — agent 가 받는 의미 밀도 ~10x ↑. block-only body 는 fallback 으로 원본 trim. 9 신규 unit test (prose / H1 skip / 표 skip / 코드블록 skip / multi-line / 빈 body / block-only / maxLen cap / 리스트).
+./mcp/CHANGELOG.md:263:- **`rename_concept`** — atomic slug rename + backlink redirect (frontmatter array entries · inline string keys · body wikilinks `[[slug]]` · markdown links `(slug.md)`). dry-run default. tail-only references (`mcp-server` for `capabilities/mcp-server`) 도 새 tail 로 일관 갱신.
+./mcp/README.md:439:"What elements does capabilities/mcp-server depend on?"
+./mcp/README.md:440:→ mcp__ontology-atlas__get_concept({ slug: 'capabilities/mcp-server' })
+./mcp/README.md:617:| `rename_concept` | **v0.7 ⚠ MULTI-FILE** Atomically renames a slug — moves the .md file, updates the moved file's `slug:` key, and rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`). Tail-only references (`mcp-server` for `capabilities/mcp-server`) are also redirected. Without `confirm:true`, runs as a dry-run with a full update preview; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. Key changes preserve relation evidence as a nonblank string, nonempty string array, or nonempty nonblank string map such as `relation_notes`; the internal atomic-write plan is never returned. Throws if `newSlug` already exists unless `overwrite:true` is passed. Replaces the manual loop of `find_backlinks` + N `patch_concept` calls. **R11**: optional `expected_mtime` for the source slug. Confirmed renames return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
+./mcp/README.md:1335:> 4. Call `find_neighbors({ slug: "capabilities/mcp-server" })` to inspect the local graph around that capability.
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'for f in $(rg --files docs/ontology -g '"'*.md'); do awk -v file=\""'$f" '"'NR==1 {infront=("'$0=="---"); next} infront && $0=="---" {infront=0; next} infront && /capabilities'"\\/mcp-server/ {print file \":\" NR \":\" "'$0}'"' \""'$f"; done' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 30ms:
+docs/ontology/capabilities/mcp-server.md:3:slug: capabilities/mcp-server
+docs/ontology/domains/agent-integration.md:8:capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '35,95p' docs/benchmark/results/2026-05-04-codex.md && sed -n '35,90p' docs/benchmark/tasks.md && sed -n '1,40p' docs/ontology/capabilities/acp-runtime.md && sed -n '1,35p' docs/ontology/capabilities/cli-developer-entry.md && sed -n '1,28p' docs/ontology/domains/agent-integration.md" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+
+| Cell | Correctness (0–3) | Tool calls | Hallucinations | Utility (1–5) | Notes |
+|---|---|---|---|---|---|
+| Codex OFF | 3 | 11 | 0 | 4 | Wrote a Node.js inline script (`node -e "..."`) that walks `docs/ontology/`, parses YAML frontmatter, filters `kind: capability AND elements is empty`. Returns `[]`. **Unlike Claude Code OFF (which had 8 false positives from block-style YAML mis-parse), Codex writes proper YAML detection logic and gets the correct answer.** |
+| Codex ON  | 3 | many | 0 | 4 | Wrote an awk-based frontmatter parser and never invoked MCP. Returns "none." |
+
+### A3 — Reference graph for capabilities/mcp-server
+
+| Cell | Correctness (0–3) | Tool calls | Hallucinations | Utility (1–5) | Notes |
+|---|---|---|---|---|---|
+| Codex OFF | 2 | 5 | 0 | 3 | Found 3 of 4 backlinks via grep. **Missed `domains/ai-agent-partner` because it uses tail-only form `mcp-server` (without `capabilities/` prefix), which raw grep on the slug missed.** |
+| Codex ON  | 3 | ~6 (after 2 cancelled MCP) | 0 | 4 | Tried `find_backlinks` via MCP — sandbox cancelled it. Fell back to broader grep + matched all 4 backlinks including the tail-only form. The "MCP available" hint in the prompt seems to make Codex search more thoroughly even after MCP fails. |
+
+### B1 — Validator issue codes
+
+| Cell | Correctness (0–3) | Tool calls | Hallucinations | Utility (1–5) | Notes |
+|---|---|---|---|---|---|
+| Codex OFF | 3 | 1 | 0 | 5 | Single rg + read of `validate-vault-document.ts`. Lists all 5 codes with severity + meaning. Cleaner than Claude Code's 2-step. |
+| Codex ON  | 3 | 1 | 0 | 5 | Same — read source directly. No MCP attempt. |
+
+### B2 — Conflict guard mechanism
+
+| Cell | Correctness (0–3) | Tool calls | Hallucinations | Utility (1–5) | Notes |
+|---|---|---|---|---|---|
+| Codex OFF | 3 | many | 0 | 5 | Read `mcp/src/vault.mjs` directly, found `assertMtime()`, listed all 5 write tools with their args, full mtime-based optimistic-lock flow. Answer is essentially equivalent to MCP-on Claude Code's get_concept body excerpt. |
+| Codex ON  | 3 | many | 0 | 5 | Same mechanism explained. No MCP attempt. |
+
+### C1 — Function exports (negative control)
+
+| Cell | Correctness (0–3) | Tool calls | Hallucinations | Utility (1–5) | Notes |
+|---|---|---|---|---|---|
+| Codex OFF | 3 | 1 | 0 | 4 | rg `^export`. 3 functions listed correctly. |
+| Codex ON  | 3 | 1 | 0 | 4 | Same — negative control passes. |
+
+### C2 — package.json scripts (negative control)
+
+| Cell | Correctness (0–3) | Tool calls | Hallucinations | Utility (1–5) | Notes |
+|---|---|---|---|---|---|
+| Codex OFF | 3 | 1 | 0 | 4 | `node -e` inline that reads package.json scripts. All 12 listed. |
+| Codex ON  | 3 | 1 | 0 | 4 | Same. |
+
+---
+
+## Summary
+
+### Within-agent delta (Codex OFF → ON)
+
+| | Avg correctness OFF | Avg correctness ON | Δ correctness | Avg tool calls OFF | Avg tool calls ON | Δ calls |
+|---|---|---|---|---|---|---|
+| **Cat A** (3 tasks) | 2.67 | 3.0 | **+0.33** | 7.0 | 5.0 | −2.0 |
+| **Cat B** (2 tasks) | 3.0 | 3.0 | 0.0 | many | many | 0 |
+| **Cat C** (2 tasks) | 3.0 | 3.0 | 0.0 | 1.0 | 1.0 | 0 |
+| **All 7** | 2.86 | 3.0 | **+0.14** | — | — | — |
+
+### Hallucination totals
+
+| Mode | Total |
+|---|---|
+| Codex OFF | 0 |
+| Codex ON  | 0 |
+
+### A2 — Stub / unfinished detection
+
+**Prompt:**
+> Find nodes in this repo's ontology with `kind: capability` but empty `elements` arrays (= potential incomplete items).
+
+**Correct answer:**
+- Verifiable via `query_concepts({ filter: "kind=capability AND NOT has(elements)" })` (MCP-on) or by grepping all capability `.md` files (MCP-off).
+- The agent should produce the actual list of slugs, not a heuristic guess.
+
+**Score axis emphasis:** hallucinations (any non-existent slug = -1 per item), correctness.
+
+### A3 — Reference graph for a specific node
+
+**Prompt:**
+> List all nodes referencing `capabilities/mcp-server` in frontmatter, categorized by kind.
+
+**Correct answer:**
+- All nodes whose frontmatter array key (`capabilities`, `elements`, `dependencies`, `relates`, `contains`, `describes`) or inline string key (`domain`) contains `capabilities/mcp-server`.
+- MCP-on: one `find_backlinks` call returns this with `matchedKeys`.
+- MCP-off: must grep recursively and parse YAML mentally.
+
+**Score axis emphasis:** correctness, hallucinations, time-to-answer.
+
+---
+
+## Category B — semantic / design questions
+
+> Questions where the answer is partially in code, partially in docs,
+> partially in the ontology body text. We expect a graded response —
+> MCP-on should help if the ontology covers the question, otherwise neutral.
+
+### B1 — Capability boundary (decision, not description)
+
+**Prompt:**
+> Explain what the ontology-atlas ACP runtime capability explicitly includes and excludes, together with the reason the boundary was drawn there.
+
+**Correct answer:**
+- `capabilities/acp-runtime` carries `## Boundaries`, and that section is the only place the reason lives.
+- An MCP-off agent can read `src/features/**` and describe what the code does, but the *reason* for the boundary is not in the source.
+
+> **Replaced 2026-08-25.** The old B1 asked for the five validator issue codes,
+> and the May run scored MCP-on 3/3 because `capabilities/vault-validator` listed
+> them verbatim in its body. That node is gone, and the codes now live only in
+> `src/shared/lib/validate-vault-document.ts`.
+>
+> The removal was correct and the task was the problem. It measured the vault as a
+> documentation cache: a second copy of something the source already owned, which
+> is exactly the content that goes stale. The replacement asks for a decision the
+> source cannot answer, which is the only claim this product actually makes.
+
+**Score axis emphasis:** correctness (both sides of the boundary plus the reason), hallucinations (an invented rationale).
+
+### B2 — Conflict guard mechanism
+
+**Prompt:**
+> Explain how ontology-atlas MCP's write tools detect external editor changes by users, and what arguments each tool accepts.
+---
+uid: a1c4bbe0-f3f3-4c8c-97ca-762bab54dd3c
+slug: capabilities/acp-runtime
+kind: capability
+title: In-App Coding Agent Runtime (ACP)
+display_ko: 앱 안 코딩 에이전트 실행기 (ACP)
+display_en: In-App Coding Agent Runtime (ACP)
+domain: domains/agent-integration
+elements: []
+path: src-tauri/src/acp.rs
+created_by: human
+dependencies: [capabilities/mcp-server]
+relation_notes: { capabilities/mcp-server: The ACP session receives this server as an mcpServer in session/new, obtaining the vault tool (src/features/acp-session/model/vault-mcp-server.ts). Thus, ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
+relates: [capabilities/reviewed-ontology-writing]
+---
+
+## Definition
+
+The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch only those with a verified app-owned permission gate (currently Claude Agent), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscription authentication already held by the launched tool.
+
+
+## Behaviour Contract
+
+Ten things this capability actually does:
+
+1. **Detection.** The executor status of this device is divided into five categories: `ready`, `cli-missing`, `node-missing`, `uvx-missing`, and `binary-missing`. The reason for not collapsing the status into just "installed/not installed" is that the user's required actions differ for each state.
+2. **The list comes from a committed snapshot.** The ACP registry is fetched once at build time and saved to `src-tauri/src/acp-registry.json`; icons are also bundled into `public/acp-icons/`. The committed registry and icons require no runtime network lookup. Starting a selected coding agent is a separate boundary: that agent may communicate with its own provider.
+3. **Configuration isolation.** Sessions launched by the app use its own configuration directory within the app data folder (`CLAUDE_CONFIG_DIR`). Inheriting the user's global settings would mean the app cannot block anything for users who have set "allow all" in their terminal. Credentials are not copied but pointed to via symbolic links.
+4. **Permission judgment.** Atlas read tools inside the selected vault proceed automatically. Atlas write tools pause on the shared typed change review and continue only after `allow_once`; `reject_once` cancels them. Other requests are judged by scope: inside-vault paths may proceed, while outside or unresolved paths ask the user. The basis for path judgment is not the title string but the `toolCall.rawInput.file_path` (absolute path) from the original permission request. The vault root is verified and normalized by `acp_start` and bound to the native session rather than trusted from each screen request. If the session is missing or the root is invalid, the app asks. If the root path changes to an external symbolic link after session start, normalized-path mismatch rejects it so the boundary cannot shift during the session.
+5. **Working directory hygiene.** The working directory of a session must pass the same vault root judgment as the folder picker. Filesystem roots, the home directory itself, and OS/app directories are rejected.
+6. **Workflow safety state.** Modes provided by the adapter are categorized as verified, risky, or unverified. Verified modes are hidden by removing permission checks, while unverified modes are preserved in `AcpSessionChoices.unverifiedModeIds` to display "unverified" along with its meaning in the existing selector.
+7. **Process tree termination.** Children have their own process group; termination sends SIGTERM and waits up to 1 second before sending SIGKILL to terminate the entire group. Completion is determined by the survival of the original PGID, not the leader PID, so grandchildren that ignore TERM are not missed even if the leader is reaped first. If grandchildren launched by the adapter are not terminated together, processes will remain after the app is closed.
+
+8. **Map synchronization.** Compares the typed input of actually called Atlas `get_concept` and `find_path` in the current user turn against the current vault's slug table, then moves to the same HomePage node focus or exact shortest path lens. Natural language answers or non-existent slugs are not used as map movement grounds. The actual order in which the Claude adapter completes streamed input with status-less `tool_call_update.rawInput` after a pending `tool_call` is merged into the same tool action before determining intent.
+9. **Inset conversation surface.** Maintains the outer flex dock that actually yields map width, but displays the ACP/API-key conversation surface visible to the user within the top/bottom/right spacing ramp. It shares INDEX/node inspector's existing panel radius, border, surface, and shadow so it doesn't look like a black wall covering the window height without boundaries. The map control rail on the left of the panel is also pulled to 12px on the opposite side of the seam, limiting the gap between them to 24px, and moves with the same clock/curve as dock reflow.
+10. **First frame connection state.** Separates conversation scaffold from session booting; header, empty guidance, vault-derived suggestions, and composer are drawn from the first frame the dock opens. After the remaining 240ms landing of the camera live spring after width reflow, ACP start is allowed; in the meantime, only the spinner and `connecting` text of the same status badge change. For large panels, overlay fade is used without overlapping scale/translate chrome motion so that layout reflow becomes the primary action.
+
+## Boundaries
+- **The "Agents" destination (`/agents/`) and the conversation panel on the right of the home map are the current user surface.** Selecting a measured runtime for isolation gates opens `HomePage` which passes the current vault as working folder and MCP server to `AcpChatPanel`. "Open chat with this tool" at the destination puts the selected runtime id into a one-shot queue in sessionStorage, moves to the map, and is consumed only when HomePage confirms the same runtime's readiness. Paths that only send window events without subscribers in `/agents` are not used.
+
+---
+uid: dce02204-0454-4a2d-8db3-68d669065489
+slug: capabilities/cli-developer-entry
+kind: capability
+title: CLI Developer Entry
+domain: domains/agent-integration
+elements: []
+path: cli/src
+created_by: "agent:unknown"
+dependencies: [capabilities/mcp-server]
+relation_notes: { capabilities/mcp-server: "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts so schema or runtime changes must be checked across both surfaces." }
+display: CLI Developer Entry
+display_ko: 터미널에서 쓰기
+display_en: Terminal Commands
+---
+
+# CLI Developer Entry
+
+An operational entry point that allows inspecting, querying, and writing local markdown vaults without an app or MCP client, and reproducing agent connections and graph operations in the terminal.
+
+## User Outcomes
+
+- Developers and agents perform new vault creation, verification, semantic queries, relationship analysis, and safe local checkpoints on a single command surface.
+- In environments where MCP is not connected, the same compiler/query results and recovery commands are received to continue work.
+- `--json` output allows automation to determine state, warnings, and next actions without parsing prose.
+
+## Identity Boundary
+
+- `init`, `add`, `import`, and `bootstrap` issue a lowercase UUIDv4 `uid` for new nodes once. list/find JSON returns `{uid, slug}` together.
+- Exact find supports both UID and slug, but relationship/path/URL arguments maintain readable slugs.
+- `validate` blocks missing/invalid/duplicate primary keys and merged UIDs as errors,
+  while interop export uses `urn:uuid:<uid>` as the external identity.
+
+## Core Flow
+
+---
+uid: 0f1364a5-7d0f-4fa5-b913-454d47b33cca
+slug: domains/agent-integration
+kind: domain
+title: AI Agent Integration
+display_ko: AI 에이전트 연동
+display_en: AI Agent Integration
+capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+elements: [elements/agents-destination, elements/vault-agent-panel]
+created_by: human
+relation_notes: { capabilities/acp-runtime: "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.", capabilities/agent-work-visibility: Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs. }
+---
+
+## Definition
+Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user.
+
+## Evidence
+- README.md: "Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection."
+- mcp/src/index.js · mcp/src/tool-inventory.mjs: coupled boundary deriving `tools/list` and
+  full/read-only initialize inventory from active registry
+- cli/src/commands/agent-brief.mjs: passing `--project` as explicit project selector matching MCP `agent_brief.project`
+
+## Inclusion / Exclusion
+- Included: MCP read/write tools (`mcp/`) advertising current list at runtime, local CLI,
+  in-app connect button, client config writing and `mcp-verify` connection proof,
+  ACP executor detection and launching with isolated settings within the app
+  (`capabilities/acp-runtime`)
+- Excluded: the graph schema itself (that belongs to the graph-modeling domain)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'node cli/src/index.mjs backlinks capabilities/mcp-server docs/ontology --json' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+{
+  "target": "capabilities/mcp-server",
+  "total": 3,
+  "matches": [
+    {
+      "uid": "0f1364a5-7d0f-4fa5-b913-454d47b33cca",
+      "slug": "domains/agent-integration",
+      "kind": "domain",
+      "title": "AI Agent Integration",
+      "mtime": 1787623738178.0034,
+      "matchedKeys": [
+        "capabilities"
+      ]
+    },
+    {
+      "uid": "a1c4bbe0-f3f3-4c8c-97ca-762bab54dd3c",
+      "slug": "capabilities/acp-runtime",
+      "kind": "capability",
+      "title": "In-App Coding Agent Runtime (ACP)",
+      "domain": "domains/agent-integration",
+      "mtime": 1787631260080.5945,
+      "matchedKeys": [
+        "dependencies"
+      ]
+    },
+    {
+      "uid": "dce02204-0454-4a2d-8db3-68d669065489",
+      "slug": "capabilities/cli-developer-entry",
+      "kind": "capability",
+      "title": "CLI Developer Entry",
+      "domain": "domains/agent-integration",
+      "mtime": 1787623738176.6116,
+      "matchedKeys": [
+        "dependencies"
+      ]
+    }
+  ]
+}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+`docs/ontology` 기준으로 총 3개입니다.
+
+### domain
+
+- [`domains/agent-integration`]( /Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/domains/agent-integration.md:8) — `capabilities`
+
+### capability
+
+- [`capabilities/acp-runtime`]( /Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/capabilities/acp-runtime.md:12) — `dependencies`
+- [`capabilities/cli-developer-entry`]( /Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/capabilities/cli-developer-entry.md:10) — `dependencies`
+hook: Stop
+hook: Stop Completed
+tokens used
+49,722

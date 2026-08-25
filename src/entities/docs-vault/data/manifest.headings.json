@@ -2150,6 +2150,48 @@
       "slug": "remaining-gates-next-round"
     }
   ],
+  "benchmark/FINDINGS-2026-08-25": [
+    {
+      "depth": 1,
+      "text": "Does the ontology help? — 2026-08-25",
+      "slug": "does-the-ontology-help-2026-08-25"
+    },
+    {
+      "depth": 2,
+      "text": "The conclusion, in three sentences",
+      "slug": "the-conclusion-in-three-sentences"
+    },
+    {
+      "depth": 2,
+      "text": "The rule",
+      "slug": "the-rule"
+    },
+    {
+      "depth": 2,
+      "text": "Claim 1: the vault added nothing here, and we know why",
+      "slug": "claim-1-the-vault-added-nothing-here-and-we-know-why"
+    },
+    {
+      "depth": 2,
+      "text": "Claim 2: half the vault was description, and the fix was renaming",
+      "slug": "claim-2-half-the-vault-was-description-and-the-fix-was-renaming"
+    },
+    {
+      "depth": 2,
+      "text": "Claim 3: the outside evidence agrees on the shape",
+      "slug": "claim-3-the-outside-evidence-agrees-on-the-shape"
+    },
+    {
+      "depth": 2,
+      "text": "What to do next",
+      "slug": "what-to-do-next"
+    },
+    {
+      "depth": 2,
+      "text": "Appendix: why the first three attempts measured nothing",
+      "slug": "appendix-why-the-first-three-attempts-measured-nothing"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
@@ -2533,11 +2575,43 @@
       "slug": "raw-transcripts"
     }
   ],
+  "benchmark/results/2026-08-25-codex-summary": [
+    {
+      "depth": 1,
+      "text": "Benchmark — 2026-08-25 — Codex automated",
+      "slug": "benchmark-2026-08-25-codex-automated"
+    },
+    {
+      "depth": 2,
+      "text": "Per-task tool calls",
+      "slug": "per-task-tool-calls"
+    },
+    {
+      "depth": 2,
+      "text": "Meaning cells (D) — graded against the pinned key",
+      "slug": "meaning-cells-d-graded-against-the-pinned-key"
+    },
+    {
+      "depth": 2,
+      "text": "Aggregates",
+      "slug": "aggregates"
+    },
+    {
+      "depth": 2,
+      "text": "Next: human grading",
+      "slug": "next-human-grading"
+    }
+  ],
   "benchmark/rubric": [
     {
       "depth": 1,
       "text": "Rubric — how to score each run",
       "slug": "rubric-how-to-score-each-run"
+    },
+    {
+      "depth": 2,
+      "text": "What this measures, and what it does not",
+      "slug": "what-this-measures-and-what-it-does-not"
     },
     {
       "depth": 2,
@@ -2551,13 +2625,33 @@
     },
     {
       "depth": 3,
-      "text": "2. Tool-call count",
-      "slug": "2-tool-call-count"
+      "text": "2. Tool-call count and tokens (diagnostic, never a score)",
+      "slug": "2-tool-call-count-and-tokens-diagnostic-never-a-score"
     },
     {
       "depth": 3,
       "text": "3. Hallucinations (count)",
       "slug": "3-hallucinations-count"
+    },
+    {
+      "depth": 3,
+      "text": "D-only axes — the ones that decide a meaning cell",
+      "slug": "d-only-axes-the-ones-that-decide-a-meaning-cell"
+    },
+    {
+      "depth": 4,
+      "text": "D-a. Boundary fidelity (0–3)",
+      "slug": "d-a-boundary-fidelity-03"
+    },
+    {
+      "depth": 4,
+      "text": "D-b. Provenance (0–2)",
+      "slug": "d-b-provenance-02"
+    },
+    {
+      "depth": 4,
+      "text": "D-c. Invented rationale (count)",
+      "slug": "d-c-invented-rationale-count"
     },
     {
       "depth": 3,
@@ -2623,8 +2717,8 @@
     },
     {
       "depth": 3,
-      "text": "B1 — Validator issue codes",
-      "slug": "b1-validator-issue-codes"
+      "text": "B1 — Capability boundary (decision, not description)",
+      "slug": "b1-capability-boundary-decision-not-description"
     },
     {
       "depth": 3,
@@ -2635,6 +2729,26 @@
       "depth": 2,
       "text": "Category C — negative control (raw grep / read sufficient)",
       "slug": "category-c-negative-control-raw-grep-read-sufficient"
+    },
+    {
+      "depth": 2,
+      "text": "Category D — meaning (the claim this product actually makes)",
+      "slug": "category-d-meaning-the-claim-this-product-actually-makes"
+    },
+    {
+      "depth": 3,
+      "text": "D1 — Documented exclusion",
+      "slug": "d1-documented-exclusion"
+    },
+    {
+      "depth": 3,
+      "text": "D2 — Impact boundary before a change",
+      "slug": "d2-impact-boundary-before-a-change"
+    },
+    {
+      "depth": 3,
+      "text": "D3 — Verification path and disclaimed scope",
+      "slug": "d3-verification-path-and-disclaimed-scope"
     },
     {
       "depth": 3,
@@ -5735,6 +5849,11 @@
       "depth": 2,
       "text": "2026-08-25 — Atlas narrows to a codebase ontology, without becoming a code index",
       "slug": "2026-08-25-atlas-narrows-to-a-codebase-ontology-without-becoming-a-code-index"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 (115) — MCP `instructions` names which question each tool answers, before it lists the tools",
+      "slug": "2026-08-25-115-mcp-instructions-names-which-question-each-tool-answers-before-it-lists-the-tools"
     },
     {
       "depth": 2,
@@ -12404,6 +12523,11 @@
     },
     {
       "depth": 2,
+      "text": "Behaviour Contract",
+      "slug": "behaviour-contract"
+    },
+    {
+      "depth": 2,
       "text": "Boundaries",
       "slug": "boundaries"
     },
@@ -12757,6 +12881,36 @@
     },
     {
       "depth": 2,
+      "text": "Constraints: Source binding and currentness",
+      "slug": "constraints-source-binding-and-currentness"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Competency qualification",
+      "slug": "constraints-competency-qualification"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Cold-start evidence reading",
+      "slug": "constraints-cold-start-evidence-reading"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Meaning repair review",
+      "slug": "constraints-meaning-repair-review"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Import inference by language",
+      "slug": "constraints-import-inference-by-language"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Impact and blast radius",
+      "slug": "constraints-impact-and-blast-radius"
+    },
+    {
+      "depth": 2,
       "text": "Inclusions / Exclusions",
       "slug": "inclusions-exclusions"
     },
@@ -12867,6 +13021,16 @@
     },
     {
       "depth": 2,
+      "text": "Core Flow",
+      "slug": "core-flow"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Qualification contracts",
+      "slug": "constraints-qualification-contracts"
+    },
+    {
+      "depth": 2,
       "text": "Grounds",
       "slug": "grounds"
     },
@@ -12974,6 +13138,16 @@
       "depth": 2,
       "text": "Definition",
       "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Client config and native vault writes",
+      "slug": "constraints-client-config-and-native-vault-writes"
+    },
+    {
+      "depth": 2,
+      "text": "Identity Boundary",
+      "slug": "identity-boundary"
     },
     {
       "depth": 2,
@@ -13293,6 +13467,11 @@
       "depth": 2,
       "text": "How this vault is written",
       "slug": "how-this-vault-is-written"
+    },
+    {
+      "depth": 2,
+      "text": "What a section is for",
+      "slug": "what-a-section-is-for"
     },
     {
       "depth": 2,

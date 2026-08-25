@@ -15,7 +15,11 @@ relates: [capabilities/reviewed-ontology-writing]
 ---
 
 ## Definition
+
 The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch only those with a verified app-owned permission gate (currently Claude Agent), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscription authentication already held by the launched tool.
+
+
+## Behaviour Contract
 
 Ten things this capability actually does:
 

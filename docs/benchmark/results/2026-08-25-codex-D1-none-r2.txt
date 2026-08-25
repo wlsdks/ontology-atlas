@@ -1,0 +1,1479 @@
+기록상 **코드 심볼 검색 기능 자체는 `mcp-server` capability 범위 밖**입니다.
+
+Git HEAD의 `docs/ontology/capabilities/mcp-server.md`가 경계를 명시합니다.
+
+- 포함: MCP 도구 등록·I/O 계약, Vault parser/writer, 온톨로지 compiler/graph query, 검증·dry-run·동시성 보호
+- 제외: **“AST/source search engine”**
+- MCP Server의 정의: AI 에이전트가 로컬 Markdown vault를 읽고 안전하게 갱신하는 stdio JSON-RPC 인터페이스
+
+프로젝트 문서도 같은 경계를 반복합니다.
+
+- Atlas는 code index가 아니며, 심볼 위치·caller 탐색은 grep/LSP/AST index/CodeGraph가 담당합니다. [README.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/README.md:479)
+- 정의·caller·import·로컬 코드 영향은 선택적인 구조 검색 계층이고, Atlas는 의미·capability·검증 경로를 제공합니다. [PRODUCT-DIRECTION.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/PRODUCT-DIRECTION.md:104)
+- exhaustive symbol graph는 deterministic code-intelligence tool에 남긴다고 기록되어 있습니다. [AGENT-MEMORY-POSITIONING.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/AGENT-MEMORY-POSITIONING.md:56)
+
+따라서 기록된 구분을 그대로 적용하면:
+
+- 심볼 검색 도구의 **MCP 등록과 I/O 계약**: `mcp-server` 안
+- 실제 **코드 심볼 색인·AST/source 검색 엔진**: `mcp-server` 밖
+
+현재 작업 트리의 `docs/ontology`는 삭제 상태여서, 온톨로지 노드는 변경하지 않고 Git HEAD 기록을 읽었습니다.
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.149.1
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: max
+reasoning summaries: none
+session id: 01a037d3-a542-7182-b08c-5dc3d0438c91
+--------
+user
+MCP 서버에 코드 심볼 검색을 넣으려고 해. 이 기능이 mcp-server capability 의 범위 안인지 밖인지, 이 프로젝트에 이미 기록된 경계가 뭐라고 말하는지 알려줘. 새로 판단하지 말고 기록된 것만.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+기록된 온톨로지의 `mcp-server` capability와 관련 경계·근거만 조회하겠습니다. 새 분류나 제안은 보태지 않고, 기존 노드와 관계를 그대로 요약하겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'list_kinds|list-concepts|get_concept|find_backlinks|find_path|mcp-server' package.json cli/README.md mcp/README.md .mcp.json docs/ontology -g '*.md' -g '*.json' -g '*.yaml' -g '*.yml'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ exited 2 in 0ms:
+rg: docs/ontology: No such file or directory (os error 2)
+cli/README.md:44:| `ontology-atlas mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, live inventory exactness (missing/extra/duplicate/invalid names and initialize parity), tools/list schema strictness and annotation coverage, strict runtime unknown-argument and invalid-enum checks with structured `errorCode` values, stale `patch_concept.expected_mtime` rejection with `vault_conflict`, relation filter / `relation_check` closest-value rejection, destructive dry-run smoke for `rename_concept` / `merge_concepts` / `delete_concept`, write-tool `postWriteMaintenance` `byPhase`/`bySeverity`/`byKind` buckets + `score`/`proposedAction`/next-action guidance, enum-validated `maintenance_plan` filters, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, maintenance bucket / current-page next-action summaries, `list_concepts`, project-node `list_concepts` probe, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`all_paths`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
+cli/README.md:69:| `ontology-atlas backlinks <slug>` | Lists every node referencing the target (`matches[]` from MCP `find_backlinks`, `--json` for raw). Malformed backlink-match payloads fail closed before JSON or human output. |
+cli/README.md:258:That help also names the direct read smoke set, including `get_concept`,
+cli/README.md:259:`get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited
+cli/README.md:261:`find_path`, and `find_orphans`, so single-node, batch, search/backlink,
+cli/README.md:275:`get_concepts`, `add_concepts`, and `add_relations`, including non-object row shape, unknown row field reporting,
+cli/README.md:311:Batch tool caps for `get_concepts`, `add_concepts`, and `add_relations` are
+cli/README.md:319:total matches `list_kinds.byKind.project`.
+cli/README.md:320:It also checks `get_concept` for one discovered node, `get_concepts` with discovered vault slugs plus one missing slug,
+cli/README.md:321:and `find_evidence` / `find_backlinks` / `query_concepts` / limited `query_concepts` / `analyze_repo_structure` / `infer_imports` / `find_neighbors` / `find_path` / `find_orphans` with live vault results,
+cli/README.md:323:Node census totals are cross-checked across `list_kinds`, `list_concepts`,
+cli/README.md:481:`connection_info` / `git_status` / `git_history` / `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` /
+cli/README.md:482:`find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` /
+package.json:122:    "integration:mcp:vault-read": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(list_concepts|find_evidence|find_backlinks|find_neighbors|find_path|find_orphans|get_concept|get_concepts|validate_vault)\" mcp/src/integration.test.mjs",
+mcp/README.md:439:"What elements does capabilities/mcp-server depend on?"
+mcp/README.md:440:→ mcp__ontology-atlas__get_concept({ slug: 'capabilities/mcp-server' })
+mcp/README.md:456:`get_concept` accepts exactly one of `{ slug }` or `{ uid }`; `get_concepts`
+mcp/README.md:483:| `list_concepts` | Lists every node in the vault (any `.md` with a `kind:` frontmatter). Options: enum-validated `kind` (project/domain/capability/element/document/vault-readme; typos fail with nearest-value hints instead of empty lists), `domain` (filter by frontmatter `domain:` slug — combine with `kind` for "all capabilities under auth" in one call), `since` (mtime-based incremental sync — only nodes with `mtime > since` ms; pair with the `mtime` returned in earlier responses for "what changed since I last looked"; strict `>` so re-passing the prior max does not double-fetch), `summary` (opt-in — when true, each row includes a prose `summary` (max 200 chars, heading/table/code/list/quote skip — same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`) so agents get list + previews in one call instead of N follow-up `get_concept` calls; default off to keep payload small; a row whose body holds more than the summary shows carries `summaryTruncated: true` and the response carries `summaryHint`), `offset` (zero-based deterministic slug order; resume with `pagination.nextOffset`), `limit` (default 100, max 500). The response always includes `returned`, `limited`, and `pagination: { offset, limit, total, returned, hasMore, nextOffset }`; follow every page until `hasMore` is false before calling the census complete. Every node row includes permanent `uid`, current `slug`, and `mtime` (ms), so callers can retain stable identity across renames and sort/filter "what changed recently" without a follow-up `get_concept` call. **R11+**: when the vault has frontmatter corruption or whole-vault graph-reference drift, response includes `vaultWarnings: { errorCount, warningCount }` so AI agents can flag it to the user. |
+mcp/README.md:484:| `get_concept` | Fetches one node by exactly one permanent `uid` or current `slug` (no extension), and returns both identity fields with frontmatter + body + graph neighbors. UID misses are exact and never fuzzy; slug misses retain near-slug and referenced-only recovery. **`body` (2026-08-01): `'excerpt'` (default) or `'full'`.** `excerpt` returns the first prose paragraph only (heading / table / code block / list / quote skip, max 800 chars); `full` returns the entire markdown body as `body` and omits `excerpt` so the same text is not billed twice. Every response carries `bodyInfo: { mode, totalChars, returnedChars, truncated, omittedChars?, hint? }` — **truncation is never silent**, and when it happens the `hint` is the exact follow-up call. Use `full` whenever the answer depends on what the node says (the construction rules put definition / evidence / confidence / scope in the body, and the excerpt cannot reach them) + graph `neighbors` (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) + `outgoingEdges[]` (`{to, via}`) + `mtime` (ms — pass to subsequent `patch_concept` / `delete_concept` as `expected_mtime` to detect concurrent external edits). **R11+**: response includes `warnings: [...]` when this doc has frontmatter issues, graph-array canonicality drift, or dangling outgoing graph references. **Ask-to-Grow**: when a slug doesn't resolve, the error's `structuredContent.growthHint` carries a did-you-mean near-slug or an `add_concept` scaffold. When the slug is a **referenced-only concept** (the vault names it in a relation key but no document defines it — this is most of what the map draws), the error instead carries `referencedBy: [{slug, via}]` and a growthHint that says which docs cite it and how to materialize it at exactly that slug. Copying a name off the map and getting a flat "not found" was the single most expensive mismatch between the screen and the agent. |
+mcp/README.md:485:| `get_concepts` | **R+** Batch reader — accepts exactly one of `slugs[]` or `uids[]` (max 50; max 20 with `body: 'full'`), returns `concepts[]` with both `uid` and current `slug` plus the same per-row shape as `get_concept` (frontmatter + `excerpt`\|`body` + `bodyInfo` + neighbors + mtime + warnings?). `body` takes the same `'excerpt'` / `'full'` values as `get_concept` and applies to every row. Output order matches the selected input array. Missing or invalid rows return `{ uid|slug, ok: false, error }` rather than aborting the batch, so later valid identities still resolve. Replaces N×`get_concept` round-trips when an agent already has K specific identities (e.g. from `list_concepts` / `find_path` / `find_orphans`) and needs full bodies for all of them. |
+mcp/README.md:486:| `find_evidence` | Partial-match search by `title` — scans frontmatter title/capabilities/elements as well as body content. Every match row includes `slug, isNode, title, domain, mtime, matchedIn, score, excerpt`; graph-node rows (`isNode: true`) additionally require their permanent `uid` and `kind`, while ordinary Markdown rows (`isNode: false`) omit both instead of inventing graph identity. The `excerpt` is a prose preview (max 200 chars, heading/table/code/list/quote skip — same `extractSummaryExcerpt` helper as `get_concept`) so agents see *what the matching doc says* without a follow-up get_concept call. When the body holds more than the excerpt shows, the row carries `excerptTruncated: true` + `bodyChars` and the response carries a `bodyHint` naming the `get_concepts({ body: 'full' })` call that returns the rest — the matched text can sit past the excerpt, so a silent cut here hides the very thing that matched. Matches are **ranked** by relevance `score` (title match > frontmatter ref > body, + a title token-overlap tiebreaker), then by **whether the doc is a graph node**, then slug; pass `limit` for the top-N. **A vault holds ordinary markdown too** — meeting notes, memos and drafts have no `kind:` and are not graph nodes, which is by design. Every row carries `isNode`, non-nodes rank below nodes *of equal relevance* (a note whose title matches exactly still outranks a node the query only brushed in body text), the response carries `nonNodeHint` when any slipped in, and `nodesOnly: true` filters them out. Before this, body matches all scored the same 0.3 and the remaining tiebreak was slug alphabetical — in a 3,000-note vault the top five hits were all memos and no node appeared at all (2026-08-08 measured). Inclusion is unchanged (a node matches iff a substring hit, exactly as before) — ranking only reorders. **Ask-to-Grow**: when `matches` is empty, the response includes `growthHint` — near-titled vault node(s) found by token overlap, or an `add_concept` scaffold when nothing close exists. |
+mcp/README.md:490:| `find_backlinks` | Finds every node that points to a given `slug`. Inspects all frontmatter array keys (capabilities / elements / dependencies / relates / …) plus body wikilinks/markdown links. Each match row includes `uid`, current `slug`, `kind`, `title`, `domain`, and `mtime` (same shape as `list_concepts`) — agents can retain stable referrer identity and sort/filter "which referrer is in domain X" or "which referrer was touched recently" without follow-up `get_concept` calls. |
+mcp/README.md:491:| `find_neighbors` | **R+** One-hop graph neighborhood around a node. Accepts `slug`, optional `direction` (`outgoing` / `incoming` / `both`, default both), optional enum-validated `types` relation filter (`depends_on` is normalized to stored `dependencies`; typos fail with nearest-value hints), `includeNodes`, and `limit`. Returns canonical `edges[]` (`{direction, from, to, via, ref, resolved}`) plus neighbor node summaries carrying `{uid, slug}` so agents can retain stable node identity while inspecting a local graph subview without combining `get_concept` + `find_backlinks` manually. |
+mcp/README.md:492:| `find_path` | Shortest path between two slugs (BFS, undirected). Returns `{ from, to, hops, nodes, edges, hopCount, found }` where `nodes[i] = { uid, slug, kind, title, domain? }`, `edges[i] = { from, to, via }`, and `via` is the frontmatter key (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) that linked the pair — so the agent sees stable identity, the current path, and why the nodes connect. Option: `maxHops` (default 5, max 20). **Ask-to-Grow**: when `found:false`, the response includes `growthHint` — an `add_concept` example when an endpoint doesn't resolve, or an `add_relation` example when both endpoints exist but no path connects them. |
+mcp/README.md:493:| `list_kinds` | Vault kind census: `{ total, byKind: { capability: N, ... }, referencedOnlyTotal, conceptsIncludingReferenced }`. `total`/`byKind` count **documented** nodes (a `.md` with `kind:`). `referencedOnlyTotal` counts concepts the vault names in a relation key but no document defines yet — the web map/insights draw those too, so `conceptsIncludingReferenced` (= `total + referencedOnlyTotal`) is the number the screen shows. Reporting both is how the two entrances stop disagreeing about the same vault (2026-07-26: screen said 296, this tool said 96, and nothing explained the gap). |
+mcp/README.md:494:| `find_orphans` | **v0.5** Finds isolated nodes — docs that no other node references through graph frontmatter (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`). Options: enum-validated `kind` (filter) and `excludeKinds` (skip, default `['project', 'vault-readme']`; pass `[]` to include every kind); typos fail with nearest-value hints. Each orphan row includes `uid`, current `slug`, `kind`, `title`, `domain`, and `mtime` (same shape as `list_concepts` / `find_backlinks`) — agents can retain stable identity and sort/filter "old orphans in domain X" without follow-up `get_concept` calls. Useful as a starting point for cleanup or auditing unused nodes. |
+mcp/README.md:495:| `query_concepts` | **v0.6** Typed filter DSL — `kind=X AND has(Y) AND NOT ...`. Saved-filter / smart-list use case. `kind` values and `has(...)` graph keys are enum-validated with nearest-value hints, and `has(depends_on)` is canonicalized to `dependencies`, so typos do not silently return empty match sets. `limit` defaults to 100 and is capped at 500. Each match row includes `uid, slug, kind, title, domain, capabilities, elements, mtime` (same shape as `list_concepts` / `find_backlinks` / `find_orphans`) so agents retain stable identity and sort/filter staleness without follow-up calls. **Ask-to-Grow**: when `total=0`, the response includes `growthHint` — flags a referenced `kind`/`domain` with 0 nodes in the real vault census, or a generic loosen-the-filter nudge otherwise. |
+mcp/README.md:563:`get_concepts({body:"full"})` calls → explicit human approval →
+mcp/README.md:576:prefix, a matching `get_concepts({slugs:[...],body:"full"})` call, and an opaque
+mcp/README.md:607:| `validate_vault` | **R+** Validate every doc in the vault, return `{ scanned, problems: [{slug, issues}], summary: { problemFiles, errorFiles, warningFiles, byCode }, pathDrift }`. The public `outputSchema` is the machine-owned canonical issue-code set and restricts both `issues[].code` and `summary.byCode`; identity errors include missing/invalid UID, invalid or non-canonical merge history, and duplicate UID claims. `pathDrift` = vault→code path drift: frontmatter `path:` / `elements:` source paths missing on disk, resolved against `repoRoot` (input param, default active resolved repository root from `connection_info`) → `{ repoRoot, checked, nodesScanned, pathsChecked, drifts: [{slug, kind, key, missingPath, suggestedPath?}], hint }`. **`checked: false` (2026-08-01) means nothing was measured** — the vault is not inside a git repository and no `repoRoot` was given, so the repository it describes is unknown and any number would be noise rather than drift; `drifts` is then empty because it was not looked at, not because it is clean; ontology-slug refs are never flagged; fix via `patch_concept` or remove the stale entry. `suggestedPath` (optional, Track A #3) appears when exactly one existing repo source file shares the missing file's basename — a likely reconcile target ("the source moved here"); ambiguous (>1) or absent matches yield no suggestion. One round-trip whole-vault health check — use for first-contact before writes, before / after a batch write, or to surface issues. Replaces the K-roundtrip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). |
+mcp/README.md:615:| `patch_concept` | Updates an existing node's frontmatter (per-key patch — `null` deletes optional keys) and/or body. Graph arrays patched through this tool must be clean string arrays and are canonicalized as sets (deduped, sorted); core scalar fields are strict too (`kind` must stay one of project/domain/capability/element/document, `domain`/frontmatter `slug` must be clean strings when present, and `body` must be a string). Use this when you need to *modify* a slug that `add_concept` would reject as duplicate. **R11**: optional `expected_mtime` for conflict detection — pass the `mtime` from `get_concept`; throws `VaultConflictError` if the file has been modified externally since you read it. Changed writes return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
+mcp/README.md:617:| `rename_concept` | **v0.7 ⚠ MULTI-FILE** Atomically renames a slug — moves the .md file, updates the moved file's `slug:` key, and rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`). Tail-only references (`mcp-server` for `capabilities/mcp-server`) are also redirected. Without `confirm:true`, runs as a dry-run with a full update preview; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. Key changes preserve relation evidence as a nonblank string, nonempty string array, or nonempty nonblank string map such as `relation_notes`; the internal atomic-write plan is never returned. Throws if `newSlug` already exists unless `overwrite:true` is passed. Replaces the manual loop of `find_backlinks` + N `patch_concept` calls. **R11**: optional `expected_mtime` for the source slug. Confirmed renames return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
+mcp/README.md:635:without issuing follow-up `get_concept` calls.
+mcp/README.md:639:`list_concepts.limit`, `find_neighbors.limit`, `find_path.maxHops`,
+mcp/README.md:670:**Ask-to-Grow (R+)**: `get_concept` and `query_ontology({operation:"node_profile"})`
+mcp/README.md:674:only from the real vault slug set, never invented. `find_path` (`found:false`),
+mcp/README.md:750:Batch arrays expose the same runtime cap as schema too: `get_concepts.slugs`,
+mcp/README.md:751:`get_concepts.uids`,
+mcp/README.md:886:Read it back with `get_concept` (full frontmatter), and select on it with
+mcp/README.md:959:the unique-tail slug lookup this server documents for `get_concept`, and deep
+mcp/README.md:1017:direct read smokes for `list_concepts` project probe / `get_concept` /
+mcp/README.md:1018:`get_concepts` / `find_evidence` / `find_backlinks` / `query_concepts` /
+mcp/README.md:1020:`index_project` / `find_neighbors` / `find_path` / `find_orphans`,
+mcp/README.md:1057:· step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=/path/to/docs/ontology, timeout=20000ms)
+mcp/README.md:1060:✓ tools/list 35/35 (35/35 titled; 19/19 read; 16/16 write; 9/9 destructive; 3/3 idempotent; 35/35 local-only) — absorb_document · add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · connect_project_source · connection_info · delete_concept · disconnect_project_source · finalize_project_meaning · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · git_history · git_snapshot · git_status · index_project · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · reclassify_concept · remove_relation · rename_concept · replace_relation · validate_vault
+mcp/README.md:1068:✓ batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments
+mcp/README.md:1087:✓ get_concept — <project slug> (<N> outgoing edges)
+mcp/README.md:1088:✓ get_concepts — 2 ok rows, 1 partial row
+mcp/README.md:1090:✓ find_backlinks — <project slug> (<N> backlinks)
+mcp/README.md:1097:✓ find_path — <smoke slug> → <project slug> (<N> hops, <N> edges)
+mcp/README.md:1099:✓ list_kinds — <N> nodes (capability:<N>, domain:<N>, element:<N>, project:<N>, vault-readme:<N>)
+mcp/README.md:1119:✓ read census consistency — <N> nodes across list_kinds/list_concepts/compile_ontology/overview, <N> kinds
+mcp/README.md:1130:`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,
+mcp/README.md:1132:`infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`,
+mcp/README.md:1133:`list_kinds`, `validate_vault`,
+mcp/README.md:1170:the graph engine's runtime allow-lists. It also checks the `list_kinds`
+mcp/README.md:1173:`outputSchema` and matching `structuredContent` node table payload, the `get_concept`
+mcp/README.md:1174:`outputSchema` for single-node detail payloads, the `get_concepts`
+mcp/README.md:1176:`outputSchema` and matching `structuredContent` evidence-match payload, the `find_backlinks`
+mcp/README.md:1178:`outputSchema` and matching `structuredContent` local-neighborhood payload, the `find_path`
+mcp/README.md:1190:input schemas for the same 50-row cap used by `get_concepts`, `add_concepts`,
+mcp/README.md:1264:`kind: project` and that its total matches `list_kinds.byKind.project`. Valid project-less vaults skip that one
+mcp/README.md:1271:`get_concepts` reuses up to two slugs from `list_concepts` plus one missing slug
+mcp/README.md:1273:`list_kinds` / `compile_ontology` / `overview`
+mcp/README.md:1332:> 1. Call `mcp__ontology-atlas__list_kinds` to confirm the kind census.
+mcp/README.md:1334:> 3. Call `get_concept({ slug: "project" })` to see the root node's frontmatter and neighbors.
+mcp/README.md:1335:> 4. Call `find_neighbors({ slug: "capabilities/mcp-server" })` to inspect the local graph around that capability.
+mcp/README.md:1364:- 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` with executable run/narrow advice / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `agent_brief` / `workspace_brief` / `health`); current split was 15 read + 8 write in that release.
+mcp/README.md:1373:- 0.3.0 — 9 tools. Added `find_path` (BFS) and `list_kinds` (census).
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,130p' cli/README.md
+sed -n '410,465p' mcp/README.md
+rg -n '\"bin\"|ontology-atlas' cli/package.json package.json" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+# ontology-atlas
+
+> **Repo-native memory layer CLI** — scaffold, validate, compile, query, and
+> maintain the markdown ontology vault your AI coding agent reads through MCP.
+
+```bash
+node cli/src/index.mjs init my-vault
+cd my-vault
+$EDITOR project.md
+```
+
+That's it. You now have a frontmatter-based memory vault that humans and AI
+agents (Claude Code, Cursor, Codex, etc.) can read and write together.
+
+Requires Node 24+ (Active LTS as of 2026-07). The CLI spawns the MCP server in
+`mcp/`, which uses the same Node floor.
+
+> **How this CLI ships:** from a source checkout, invoked as
+> `node cli/src/index.mjs`. npm publishing is retired
+> (`docs/DECISIONS.md`, 2026-07-27), so `npx ontology-atlas` is not a channel.
+> Users who only want the agent connection do not need this CLI at all — the
+> installed macOS app bundles the MCP server and writes the config itself.
+
+## Commands (R12)
+
+Every ontology node carries an immutable lowercase UUIDv4 `uid` and a mutable,
+human-readable `slug`. Writers mint the UID locally; callers do not choose it.
+Relations, file paths, URLs, and graph-command arguments remain slug-based.
+Exact identity, handoff/provenance, compiler indexes, and interop exports use UID.
+Rename/reclassify preserve it; merge retains the target UID and absorbs source
+identities into merge-owned `merged_uids`.
+
+Vaults created before this v2 identity contract migrate explicitly from the
+source checkout: `pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>`
+previews and the same command with `--write` applies. It preserves valid UIDs,
+validates all claims before writing, and inherits the dirty-Markdown guard.
+
+| Command | What it does |
+|---|---|
+| `ontology-atlas init [folder] [--locale=en\|ko]` | Scaffold a new vault and mint a different fresh UID for every starter node, including the vault README. Locale variants share graph shape and titles but never fixed identities. Also writes wired agent configs in both codebase and vault roots. A parseable existing config keeps unrelated servers/sections while only its `ontology-atlas` binding is atomically rebound to the requested vault; malformed or duplicate Atlas config is preserved, gets an adjacent example, and makes init report `scaffolded but client binding unresolved` with a nonzero exit. With `--quick-start`, a bootstrap failure preserves the written scaffold/config files but returns nonzero, labels them unverified, suppresses completion/connection claims, and prints executable `mcp-verify` plus bootstrap retry commands. |
+| `ontology-atlas agent-setup [vault]` | Check or repair agent config files for an existing vault without writing starter markdown. Dry-run reports ready/missing/review status for vault-local and codebase-root `.mcp.json` / `.codex/config.toml`; ready requires one of the two supported launch shapes (absolute bundled `ontology-atlas-mcp` with no args, or `node` with one absolute `mcp/src/index.js` arg), an existing executable/entry file, and the expected vault/repo coordinates. Retired `npx` launchers stay review-only. `--write` creates missing files or atomically merges/rebinds only the single Atlas JSON entry / TOML section pair, preserving unrelated client entries and comments. Invalid JSON, duplicate Atlas sections, and incomplete section pairs stay review-only and receive merge templates instead of being overwritten. JSON separates `written` from `repaired`. It also includes `operation:"agent_setup"`, per-file status, `docs.workflowGuide`, `docs.modeComparison` for CLI-only / MCP-connected / graph DB pack / setup gate choices, `docs.postChangeSync` after-edit sync rules, and follow-up `mcp-verify`, `agent-brief --verify-fallbacks --json`, and global `codex mcp add ...` commands. `--install-pre-commit-hook` installs (or appends to an existing) git pre-commit hook that runs `ontology-atlas preflight --staged`; idempotent, never overwrites an unrelated existing hook body, and the hook itself never blocks a commit (`git commit --no-verify` still skips it like any other hook). |
+| `ontology-atlas list [vault]` | List ontology nodes (color table; enum-validated `--kind X` filter with closest-value hints, `--json`) |
+| `ontology-atlas validate [vault]` | Frontmatter integrity, including required/valid/unique UID claims, merge identity history, expected fields, graph-array canonicality, and dangling references; `exit 1` on errors. If the same code appears in 2+ files, a *grouped by code* summary is appended. `--fail-on=code,...` accepts explicit policy codes. |
+| `ontology-atlas mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, live inventory exactness (missing/extra/duplicate/invalid names and initialize parity), tools/list schema strictness and annotation coverage, strict runtime unknown-argument and invalid-enum checks with structured `errorCode` values, stale `patch_concept.expected_mtime` rejection with `vault_conflict`, relation filter / `relation_check` closest-value rejection, destructive dry-run smoke for `rename_concept` / `merge_concepts` / `delete_concept`, write-tool `postWriteMaintenance` `byPhase`/`bySeverity`/`byKind` buckets + `score`/`proposedAction`/next-action guidance, enum-validated `maintenance_plan` filters, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, maintenance bucket / current-page next-action summaries, `list_concepts`, project-node `list_concepts` probe, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`all_paths`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
+| `ontology-atlas add <kind> <slug> --title="..."` | Scaffold a new node and mint a fresh immutable UID (`--domain X --body "..." --vault path`); throws on duplicate slug or UID. Bad scalar input fails before writing. Body defaults to a starter only when omitted. `--auto-prefix` is on by default; use `--raw-slug` to opt out. |
+| `ontology-atlas find <query> [vault]` | Search slug + title (case-insensitive, enum-validated `--kind X` filter with closest-value hints, `--json`) |
+| `ontology-atlas import <path...>` | Import external `.md` through the same schema as `add`. A valid source UID is preserved; a missing UID is minted; malformed or destination/batch-colliding identities fail instead of being replaced. `--rename` changes only the slug and never duplicates identity. Options: `--vault path`, `--kind K`, `--auto-prefix`, `--raw-slug`, `--rename`, `--dry-run`. |
+| `ontology-atlas bootstrap [rootPath]` | Analyze a repo and return a **review-only** plan for project/domain/capability/element candidates and containment. Cold-start CLI never writes semantic nodes: an exact `constructionQualification:v1` packet, human acceptance, and unchanged released `writePlan` are required through the MCP lifecycle. Inferred imports are returned only as exact-evidence `rationale_review_required` candidates. `--json` includes `writeEligible:false`, `reason:"approval_required"`, and `writes:0`. Use a connected agent with `/ontology-bootstrap` to continue review → independent qualification → human acceptance → exact writePlan. |
+| `ontology-atlas analyze [rootPath]` | Preview repo-derived candidates without writing. For root Python packages, up to 12 implementation boundaries that participate in observed imports become element/path candidates: direct modules are the base and up to two exact nested security/policy/risk endpoints may reserve slots. Unused files and ambiguous flat slugs stay out. The MCP proposal preflight may separately validate at most four other exact observed file endpoints selected for distinct change-navigation roles without adding them to this automatic list. Top-level `rootPath` / `framework` / `skipped` and candidate `evidence.source` payloads are validated before JSON or human output, so MCP outputSchema drift fails closed. `--apply` is retained only as a fail-closed compatibility wrapper: it returns `approval_required`, `writeEligible:false`, and `writes:0`; it never calls batch writers or prunes starters. An exact `constructionQualification:v1` packet, human acceptance, unchanged `writePlan`, then validate/compile/finalize remain an existing MCP lifecycle path. |
+| `ontology-atlas infer-imports [rootPath]` | Preview TS/JS and bounded static Python file imports plus root-module Go package imports without writing. Go evidence is a separate typed `goPackageImports:v1` receipt with exact importing file and repository-relative package directories; it never invents an imported target file. Lines are labelled `imports`, not `depends_on`: they are code-use facts, not approved ontology relations. Every collapsed edge includes counts and up to five exact evidence receipts. Reconciliation and Go package evidence remain review-only and never emit a write action. `--apply` is deliberately disabled: inspect both concepts, explain why the semantic dependency holds, ask the user, then write one explicit relation with `why`. `--threshold N` filters review candidates only; `--full` explicitly requests complete evidence when MCP would compact a large response. MCP agents should start the bounded approval flow with `infer_imports({reviewMode:"next"})`; a compact Go summary points to the explicit full-evidence call. |
+| `ontology-atlas preflight [vault]` | **Commit preflight** — matches staged files against vault source references, then runs dependency-only `blast-radius` on matched nodes. Declared impact is shown, but risk/completeness remain `unknown` without relation-level source receipts; structure belongs to `reachability`/`subgraph`. Purely informational and silent when nothing matches. (`--depth N --json`) |
+| `ontology-atlas snapshot [vault]` | **Atlas Git slice 1** — commits vault-scoped changes only, with a semantic commit message (kind-level add/update/remove counts + up to 3 representative slugs, e.g. `ontology snapshot: +2 concepts, ~3 updated (capabilities/foo, elements/bar, +1)`). Uses a pathspec-scoped `git commit -- <vaultRel>` (a git "partial commit") so files already staged outside the vault are left untouched — nothing outside the vault is ever `git add`ed or committed. Exits 0 with no commit when there's nothing to snapshot; exits 1 with a `git init` suggestion (never runs it for you) when the vault isn't inside a git repository. Trust-charter default is a local commit only — `--push` sends to the current branch's existing upstream and prints the remote URL, or exits 1 with `git push -u origin <branch>` guidance if no upstream is configured (never auto-configures one). `--message "..."` uses your text as the commit subject (the auto summary moves into the body); `--dry-run` previews without committing. (`--dry-run --push --message "..." --json`) |
+| `ontology-atlas connect-source <projectSlug> [vault]` | **Connect the code** — binds a project node to the local folder holding the code it describes, measures it, and writes the source receipt. Mirrors MCP `connect_project_source`. Without `--root` it infers the folder: the git repository enclosing the vault wins, otherwise the nearest ancestor carrying a project manifest (`package.json`, `Cargo.toml`, `go.mod`, …). **Dry-run by default** — it prints the proposed folder, the inference confidence, and how many of the ontology's declared `path:` claims actually exist inside it; `--confirm` writes. `--root path` binds (or re-binds) a folder you choose; `--repair` discards a malformed sidecar. The binding lives in the gitignored `.ontology-atlas/project-sources.json`, so the absolute path never reaches git or any handoff. (`--root path --confirm --repair --json`) |
+| `ontology-atlas disconnect-source <projectSlug> [vault]` | **Undo the connection** — removes that project's source binding and receipt; `agent-brief` returns to `source_unbound` / `connect_source`. Mirrors MCP `disconnect_project_source`. Dry-run by default, `--confirm` writes; other projects' bindings and all ontology markdown are untouched. (`--confirm --json`) |
+| `ontology-atlas compile [vault]` | Compile the vault through MCP `compile_ontology` and print deterministic graph counts/hash. Use `--summary` for cheap polling, `--json` for the raw artifact, and `--fix` to apply compiler relation-array canonicalization actions. Large `--json` output is safe to consume through stdout pipes. |
+| `ontology-atlas absorb <file...>` | Convert CLAUDE.md / AGENTS.md-style prose markdown into typed vault nodes. Dry-run by default — prints the conversion plan and touches nothing. `--write` lands policy/rule sections as `document` nodes and rewrites the source into a slim pointer that keeps an absorption summary plus the un-absorbed sections verbatim (the original is backed up as `.pre-absorb.bak`). Architecture/component sections are proposed only, never auto-written; injection-suspect (Tier 1) sections are excluded from absorption entirely. (`--vault path --write`) |
+| `ontology-atlas export [vault]` | Export JSON-LD, GraphML, or the raw compile artifact. Stable node identity is `urn:uuid:<uid>`; slug remains an explicit readable property and edge endpoints use UID URNs. Rename therefore does not change external identity. Missing/invalid/duplicate UID claims fail closed; external/dangling refs are omitted. |
+| `ontology-atlas index [rootPath]` | Long-running project indexing entrypoint that chains structure analysis, import evidence, and vault validation. It is review-only on every path; the legacy `--apply` flag is retained as a fail-closed compatibility wrapper and returns `approval_required` without writing. (`--vault path --apply --full --threshold N --skip-imports --max-depth N --max-files N --json`) |
+| `ontology-atlas agent-files [--root path]` | Read-only readout of which AI agent instruction files exist and which tool reads each one (`CLAUDE.md`, `AGENTS.md`, a one-level `<dir>/AGENTS.md` that Codex merges root-down while Cursor, Antigravity CLI and Copilot resolve it by nearest ancestor, `GEMINI.md`, `.claude/rules\|skills\|agents\|hooks`, `.claude/settings.json`, `.agents/skills`, `.cursor`, `.cursorrules`, the GitHub Copilot instructions file, `.codex`, `.mcp.json`), plus drift checks: the CLAUDE.md ↔ AGENTS.md import bridge, byte diff between duplicated skill and agent trees, `@reference` existence, agent-brief MCP grants measured against each tree's own config — `.claude/agents` against `.mcp.json`, `.agents/agents` against `.codex/config.toml` — because an undeclared grant is silent and the seat runs without the tool, and the Codex 32 KiB cap measured across the merged root + nested set rather than the root alone. `--english-only` adds an opt-in check that no agent file carries Hangul, kana or Han; it is off by default because a repository or vault may legitimately be written in another language. Exit `0` = no drift, `1` = drift, `2` = error; nothing is written. (`--json`) |
+| `ontology-atlas agent-activity [vault]` | Write (or read, or clear) `.ontology-atlas/agent-activity.json` — the explicit live activity heartbeat the app reads from the opened vault, so a human watching the map can see what their agent is doing right now. `--state` is one of `planning` / `editing` / `verifying` / `blocked` / `complete`; repeat `--file`, `--plan`, `--mcp`, `--source`, `--verify` for multiple entries. JSON reports `reviewMode` (`ontology-focus` with `--ontology-slug`, `business-extraction` with source files only, otherwise `none`). (`--agent X --state S --focus "..." --show --clear --json`) |
+| `ontology-atlas moment [vault]` | Print the north-star magic moment: elapsed time from `init` / `absorb --write` to the first `agent-brief` run afterwards, target ≤ 5 minutes. All data stays in `.ontology-atlas/telemetry.local.json` — local only, never transmitted. `--mark` stamps the moment manually for agents that call the read-only MCP tools directly instead of this CLI. (`--mark --json --vault path`) |
+
+### Graph-level commands (R15 follow-up)
+
+These wrap the MCP server (`ontology-atlas-mcp`) so the developer has the same authority as an AI agent — compile the graph, find backlinks, rename / merge / delete safely, run a typed filter DSL. Each spawn is ~50–100 ms one-shot; commands that mutate the graph are dry-run by default with an explicit `--confirm` flag, except `compile --fix`, which only applies compiler-produced canonicalization patches.
+
+| Command | What it does |
+|---|---|
+| `ontology-atlas backlinks <slug>` | Lists every node referencing the target (`matches[]` from MCP `find_backlinks`, `--json` for raw). Malformed backlink-match payloads fail closed before JSON or human output. |
+| `ontology-atlas overview [vault]` | First-contact graph dashboard from MCP `query_ontology(overview)`: graph counts, kind/domain/relation buckets, and hub rows. Malformed graph/count/hub payloads fail closed before JSON or human output. (`--limit N --json`) |
+| `ontology-atlas hubs [vault]` | Centrality rankings from MCP `query_ontology(centrality)`: PageRank, bridges, authorities, and hubs. `--plan` runs `query_plan(centrality)` first and skips expensive/warning plans unless `--force` is passed; `--types A,B` narrows relation types before PageRank. Shared query-plan output now shows `totalMatches` when a planned graph scan has filter-aware match counts, so future graph DB-style wrappers can expose how much a filter narrows before execution. Malformed plan/ranking payloads fail closed before JSON or human output. (`--limit N --types A,B --plan --force --json`) |
+| `ontology-atlas blast-radius <slug> [vault]` | Dependency-impact view from MCP `query_ontology(blast_radius)`. It follows only declared `depends_on`; structural relations are rejected and belong to `reachability`/`subgraph`. Output reports `risk: unknown`, declared/rationale/source-backed counts, and edge qualification until relation-level source receipts establish completeness. (`--depth N --direction incoming|outgoing|both --plan --force --json`) |
+| `ontology-atlas node <slug> [vault]` | Single-node deep dive from MCP `query_ontology(node_profile)`: node header, degree, lineage, and incoming/outgoing edge groups. `--types A,B` filters relation groups before `--limit N` tunes edge/lineage/containment rows for hotspot nodes; `--no-external` / `--no-unresolved` hide noisy file refs or dangling refs from edge lists. Malformed node/degree/edge/lineage payloads fail closed before JSON or human output. (`--limit N --types A,B --no-external --no-unresolved --json`) |
+| `ontology-atlas similar "<query>" [vault]` | Duplicate-avoidance search from MCP `query_ontology(similar_nodes)`: scored matches, signals, and shared neighbors. Malformed match/score/signal payloads fail closed before JSON or human output. (`--slug X --kind K --limit N --json`) |
+| `ontology-atlas domain-matrix [vault]` | Domain-to-domain coupling matrix from MCP `query_ontology(domain_matrix)`: domain in/out/self/external summaries, cross-domain connection rows, relation buckets, and example edges. `--types A,B` narrows the matrix to semantic relation families such as `depends_on,relates,describes`, matching the UI's reproducible coupling audit. Useful for running coupling audit playbooks without an MCP connector. Malformed summary/domain/connection/example payloads fail closed before JSON or human output. (`--project SLUG --types A,B --limit N --json`) |
+| `ontology-atlas facets [vault]` | Graph dashboard facets from MCP `query_ontology(facets)`: node kind/domain/degree buckets, edge relation/resolution buckets, top-degree nodes, and top schema patterns. Useful as the first connector-less graph scan before narrowing into `match-nodes`, `match-edges`, `node`, or `schema`. Malformed graph bucket / top node / pattern payloads fail closed before JSON or human output. (`--limit N --json`) |
+| `ontology-atlas schema [vault]` | Relation schema pattern scan from MCP `query_ontology(schema)`: from-kind, relation, to-kind, resolved/external/unresolved counts, and examples. Useful before traversal or `add_relation` because it shows which graph shapes already exist without needing an MCP connector. Malformed schema pattern payloads fail closed before JSON or human output. (`--limit N --json`) |
+| `ontology-atlas orphans [vault]` | Lists isolated nodes — docs no other node references in their frontmatter (MCP `find_orphans`). Options: enum-validated `--kind X` (filter), enum-validated `--exclude-kinds A,B` (skip; MCP default excludes `project,vault-readme`), `--json`. Malformed orphan-list payloads fail closed before JSON or human output. Quick "what should I clean up" surface for vault maintenance. |
+| `ontology-atlas path <from> <to> [vault]` | Shortest path (BFS, undirected) between two slugs. Each hop is annotated with the frontmatter key (`capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) that linked the pair, so you see *why* A and B are connected. Malformed hop/edge payloads fail closed before JSON output. (`--max-hops N --json`) |
+| `ontology-atlas explain <from> <to> [vault]` | Relationship explanation from MCP `query_ontology(explain_relation)`: direct edges, shortest path, domain comparison, and shared common-neighbor evidence in one terminal view. Human output adds a `next relation` evidence loop with bounded `path`, filtered `match-edges`, and `relation-check` preflight so a developer or connector-less agent can verify before changing graph structure. Malformed direct-edge/path/common-neighbor payloads fail closed before JSON or human output. (`--direction incoming\|outgoing\|both\|undirected --max-hops N --types A,B --limit N --json`) |
+| `ontology-atlas all-paths <from> <to> [vault]` | Bounded simple path enumeration from MCP `query_ontology(all_paths)`: returns alternative paths plus `limit`, `searchBudget`, `expandedStates`, `exhaustive`, `truncatedByBudget`, `totalPathsExact`, and `evidence.pathsComplete` so agents do not treat partial traversal as proof. `--plan` runs `query_plan(all_paths)` first and skips expensive/warning enumeration unless `--force` is passed. Malformed plan/completeness/path payloads fail closed before JSON or human output. (`--max-hops N --limit N --search-budget N --types A,B --plan --force --json`) |
+| `ontology-atlas relation-check <from> <to> <type> [vault]` | Schema-aware preflight before `add_relation`, backed by MCP `query_ontology(relation_check)`. Shows whether the exact edge already exists, whether a reverse-direction edge exists, whether the kind/relation pattern is familiar, nearby schema patterns, and a recommendation decision (`skip_existing`, `review_inverse`, `safe_to_add`, or `review_new_schema`). Non-dependency relations may expose ready `proposedAction` args. A new `depends_on` never does: it prints a non-writing semantic approval gate requiring an observable-ability explanation, rationale, explicit human approval, and `why`. Malformed relation-check payloads fail closed before JSON or human output. (`--json`) |
+| `ontology-atlas relate <from> <to> <type> [vault]` | **R+** Writer counterpart of `relation-check` — identical argument shape and preflight (rejects a nonexistent `from`/`to` slug or an invalid `type` before touching the vault, same verdict/schema/recommendation display), then lands the relation directly on `<from>`'s frontmatter unless the exact edge already exists (idempotent, matches `add_relation`'s `alreadyExists` semantics). A new `depends_on` write requires `--why "..."`; existing legacy edges remain idempotent. Closes the gap where `relation-check` could compute the exact `add_relation` payload but nothing in the CLI could execute it — every other read/propose CLI pair (`analyze`/`infer-imports`, `growth`/`maintenance`) already has an apply path; this is the CLI-only (no MCP connector) way to add the single most common ontology edit. Writes with the CLI's own fs primitives (sorted/deduped relation arrays, `domain` as a single scalar that refuses to silently overwrite an existing value) — same on-disk shape as MCP `add_relation`. `--dry-run` previews the preflight result without writing. (`--dry-run --json`) |
+| `ontology-atlas query "<filter>"` | Typed filter DSL — `kind=X AND has(Y) AND NOT domain=Z`, parens / OR / NOT supported. `kind` and `has(...)` graph keys fail closed with closest-value hints. MCP-style `--operation` misuse prints graph-level CLI command guidance instead of a bare unknown flag. Malformed typed-filter result payloads fail closed before JSON or human output. (`--limit N --json`) |
+| `ontology-atlas growth [vault]` | Inspect MCP `growth_plan` candidates without writing: relation recommendations, external element refs, dangling references, unassigned nodes, empty domains, and ignored external refs. Human output includes action totals, compiled graph counts, candidate reasons, and proposed tool calls, plus a `next growth` relation preflight loop before applying recommended edges. Malformed growth candidate payloads, including kind-specific `proposedAction` mismatches, fail closed before JSON or human output. (`--limit N --json`) |
+| `ontology-atlas maintenance [vault]` | Inspect MCP `maintenance_plan` cleanup/repair work queue without writing. Human output includes cursor state, active filters, compile/cycle/canonicalize/dangling/relation/external/ignored-external summary counts, phase/severity/kind bucket summaries, current-page next action pointers with `phase/kind · severity · exec|review` detail, and a `next maintenance` command to narrow the queue before acting. Supports `--limit`, `--after-action-id`, `--executable-only`, `--phases`, `--severities`, `--kinds`, and `--json` for cursor/filter dogfood. Malformed work-queue payloads, filter echo drift, pagination `limited` drift, or compiled-summary drift fail closed before JSON or human output. |
+| `ontology-atlas cycles [vault]` | Directed `depends_on` cycle detection from MCP `query_ontology(cycles)`. Any cycle exits 1 for shell/agent gates; human output prints node titles plus a `next cycle` evidence loop with bounded `path`, filtered `match-edges`, and the focused maintenance queue for `break_dependency_cycle` review. Malformed cycle rows fail closed before JSON or human output. (`--max-hops N --json`) |
+| `ontology-atlas components [vault]` | Connected graph island scan from MCP `query_ontology(components)`. Use it before trusting traversal maps, onboarding maps, or graph DB-style scan coverage; human output lists island sizes, kind buckets, and node samples without requiring users to dig through `health --json`. Malformed component payloads fail closed before JSON or human output. (`--limit N --node-limit N --types A,B --json`) |
+| `ontology-atlas topological-order [vault]` | Prerequisite-first dependency ordering from MCP `query_ontology(topological_order)`. Defaults to dependency edges and exits non-zero when cycles block a complete order, so connector-less agents can gate implementation sequencing without parsing `health --json`. Malformed order/blocker payloads fail closed before JSON or human output. (`--limit N --types A,B --include-isolated --json`) |
+| `ontology-atlas workspace-brief [vault]` | Cheap first-contact dashboard from MCP `query_ontology(workspace_brief)`: hotspots, per-project node counts (`project_scope`), health-check coverage as `id:status:count`, and growth counts before deciding where to read deeper. Same focused diagnosis tuning flags as `health` / `agent-brief`. (`--json`) |
+| `ontology-atlas health [vault]` | Graph health gate from MCP `query_ontology(health)`: compile issues, unresolved edges, dependency cycles, relation recommendations, and connected-component checks as `id:status:count`. Exits non-zero on blocking checks so shells / agents can gate on it. (`--json`) |
+| `ontology-atlas match-nodes [vault]` | Graph DB-style node scan from MCP `query_ontology(match_nodes)`: filter by `--kind` / `--domain` / `--slug-contains` / `--min-degree`, sort by degree. `--plan` previews scan cost before execution. (`--limit N --json`) |
+| `ontology-atlas match-edges [vault]` | Graph DB-style edge scan from MCP `query_ontology(match_edges)`: filter by `--from` / `--to` / `--from-kind` / `--to-kind` and relation `--types`. `--plan` previews scan cost. (`--limit N --json`) |
+| `ontology-atlas pattern-walk <slug> [vault]` | Explicit relation-sequence walk from MCP `query_ontology(pattern_walk)`: follow a typed relation `--pattern` (e.g. `domains,capabilities`) from a start node in a chosen `--direction`. (`--direction outgoing\|incoming\|both --limit N --json`) |
+| `ontology-atlas project-map <project> [vault]` | Domain-by-domain project map from MCP `query_ontology(project_map)`: per-project domain → capability → element breakdown. (`--limit N --item-limit N --json`) |
+| `ontology-atlas reachability <slug> [vault]` | Transitive reachable-node layers from MCP `query_ontology(reachability)`: BFS layers of what a node reaches (or what reaches it) by relation `--types` and `--direction`. `--plan` previews scan cost. (`--depth N --limit N --plan --force --json`) |
+| `ontology-atlas agent-brief [vault]` | Claude Code/Codex handoff from MCP `query_ontology(agent_brief)`: readiness score, categorical fail-closed `meaningAssessment`, copyable `handoffPrompt`, structured `cliFallbackCommands[]`, graph entrypoints, first MCP calls, investigation playbooks including `graph_traversal` (`schema` / `all_paths` / `pattern_walk` / `project_map`), `traversalStrategy` (`plan_before_enumeration` / `bounded_path_evidence` / `containment_cross_check`), playbook evidence + stop-condition checklists, write guardrails, `relation_check` decision guide, `all_paths` result contracts, health coverage, and read-first write policy. Use `--project SLUG` to select one containment tree in a multi-project vault; it forwards the exact project to MCP. The handoff prompt and human output include directly runnable CLI fallback commands such as `ontology-atlas hubs [vault] --plan ...` for connector-less Claude Code/Codex sessions; the default `all-paths --plan` fallback starts with a low-cost direct relation/containment bound before agents widen traversal. `--prompt` prints only the handoff prompt for direct paste into Claude Code/Codex, `--graph-db-pack` prints only a shell-pasteable Graph DB-style CLI scan script with the selected vault path already inserted for connector-less sessions, and `--verify-fallbacks` executes the generated fallback command list against the selected vault with a human setup-gate line (`ok`, `performanceOk`, wall time, slow count, failed count), per-command elapsed time, and the slowest fallback summary; combine it with `--json` for a compact machine-readable timing report that Claude Code/Codex can parse in automated setup checks, with command output samples included only for failing fallback rows. Each fallback command is bounded by a 15s default timeout; use `--fallback-timeout-ms N` or `OATLAS_AGENT_FALLBACK_TIMEOUT_MS=N` for larger vaults or slower disks, and timeout rows return `timedOut:true` plus `signal` in JSON. Passing-but-slow rows are marked with `slow:true` when they take at least the 5s default slow threshold; tune it with `--fallback-slow-ms N` or `OATLAS_AGENT_FALLBACK_SLOW_MS=N`, and JSON includes `performanceOk`, `slowThresholdMs`, plus total `slow`. Malformed readiness, meaning assessment, handoff prompt, CLI fallback, tool-call, playbook, traversal strategy, guardrail, result contract, relation decision guide, next-action, or health-check payloads fail closed before JSON or human output. **Exit code is an advisory readiness signal, not success/failure**: `0` = ready and healthy; `1` = the command ran and printed valid data, but graph readiness is `needs_attention`/`needs_shape`, a health check failed, or a fail-severity `nextAction` is present — this is advisory graph state, not a command failure; `2` = the MCP call itself failed. Naive `agent-brief && next-step` shell chaining misreads exit `1` as failure the first time a vault has any warning — pass `--exit-zero` to always exit `0` and read `status`/`readiness` from the JSON output instead (a genuine parse/MCP-call error still exits `1`/`2` even with `--exit-zero`; `--verify-fallbacks --exit-zero` also still exits `1` when a generated fallback command itself fails to run). (`--project SLUG`; `--json` plus the same focused diagnosis tuning flags as `health` / `workspace-brief`; `--exit-zero`) |
+| `ontology-atlas rename <oldSlug> <newSlug>` | Atomic rename — moves the `.md`, updates `slug:`, rewrites every backlink (frontmatter array entries, inline strings, body links). Default dry-run preview; `--confirm` to apply. Refuses an existing target slug unless `--overwrite` is passed. |
+| `ontology-atlas merge <fromSlug> <intoSlug>` | Atomic merge — redirects every backlink `from → into`, then deletes `from.md`. Default dry-run; `--confirm` to apply. The `into` node's frontmatter / body are **not** auto-combined — edit by hand if needed. |
+| `ontology-atlas delete <slug>` | Permanent delete. Default refuses if any backlinks remain — preview them with the bare command, then `--confirm` to apply (or `--force` to delete anyway). |
+
+These commands spawn the MCP server from the sibling `mcp/` package in the same checkout; `pnpm install` at the repo root wires it up.
+
+### Source-checkout verification
+
+When editing the CLI package from the monorepo, start with the focused root
+checks that match the touched surface:
+
+```bash
+pnpm test:cli:args
+pnpm test:cli:lib
+pnpm test:cli:mcp-call
+pnpm test:contracts
+pnpm test:mcp:unit
+pnpm integration:cli:entry
+pnpm integration:cli:mcp-verify
+pnpm integration:cli:diagnosis
+pnpm integration:cli:graph-read
+pnpm integration:cli:graph-write
+pnpm integration:cli:repo-analysis
+pnpm integration:cli:local-vault
+pnpm integration:cli:growth
+pnpm integration:cli:maintenance
+pnpm test:mcp:docs
+pnpm test:mcp:registration
+pnpm test:mcp:maintenance
+pnpm test:mcp:package
+pnpm test:mcp:verify
+pnpm test:mcp:verify:first-contact
+pnpm test:mcp:verify:timeout
+`pnpm dogfood:growth` is the shortest dogfood vault growth candidate snapshot.
+`pnpm dogfood:maintenance` is the shortest dogfood vault maintenance queue snapshot. Use
+`pnpm dogfood:status` for the cheap human-readable health + first-contact + agent handoff + maintenance queue;
+it still prints the brief, agent handoff, and maintenance after health fails, preserves the first failing exit,
+and prints failed-child focused follow-ups before the `pnpm dogfood:verify`
+follow-up hint on failure. Use
+`pnpm dogfood:compile-fix -- --help` / `pnpm dogfood:status -- --help`
+for shortcut usage without running those gates; unsupported shortcut arguments fail
+with exit 2 before starting the underlying checks, and close `--help` typos include
+a `Did you mean --help?` hint. Use
+`pnpm dogfood:verify` for the full installed-style dogfood vault gate, or
+`pnpm dogfood:test` only when the dogfood helper itself needs the full
+regression suite beyond the focused `test:mcp:dogfood` gate. Use
+`pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` when you need
+the explicit CLI wrapper arguments without changing into `mcp/`; use
+`pnpm cli:mcp-verify -- --help` only for the help flag.
+
+### 2. Restart the agent
+
+The server connects over stdio. The agent should now show the server's current
+tool inventory under the `ontology-atlas` namespace. Use `tools/list` for the
+exact names and `mcp-verify` for live parity proof.
+
+### 3. Call the tools
+
+```
+"List every capability node in this project."
+→ mcp__ontology-atlas__list_concepts({ kind: 'capability' })
+
+"What elements does capabilities/mcp-server depend on?"
+→ mcp__ontology-atlas__get_concept({ slug: 'capabilities/mcp-server' })
+```
+
+## Current tool contracts
+
+### Node identity contract
+
+Every `kind:` document has two identifiers:
+
+- `uid` is the immutable lowercase UUIDv4 identity. The writer mints it once;
+  callers do not supply it. Exact read selectors, handoff/provenance, compiler
+  indexes, and interop `urn:uuid:<uid>` use it.
+- `slug` is the mutable, human-readable current address. Markdown relations,
+  file paths, URLs, graph edge endpoints, and slug-oriented tools keep using it.
+
+`list_concepts` and all node summaries return both `{ uid, slug }`.
+`get_concept` accepts exactly one of `{ slug }` or `{ uid }`; `get_concepts`
+accepts exactly one of `slugs[]` or `uids[]`. UID misses never use fuzzy
+suggestions. Rename and reclassify preserve UID. Merge preserves the target UID
+and records the source UID plus prior absorbed identities in merge-owned
+`merged_uids`; old UIDs then resolve to the survivor. Generic patch cannot edit
+either identity field. Writers do not deliberately recycle a deleted UID, but
+this version has no tombstone ledger, so deletion removes exact lookup and a
+current-vault validator cannot prove manual historical non-reuse. Use merge
+when old-UID resolution must survive.
+
+package.json:2:  "name": "ontology-atlas",
+package.json:24:    "desktop:verify-ai-settings:ko": "pnpm desktop:verify-app -- \"/Applications/Ontology Atlas.app\" --kill-existing --webview-fixture-vault=docs/ontology --hold-ms=16000 --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1360x840 --min-webview-size=1400x860 --try-window-screenshot=.tmp/ontology-atlas-ai-settings-ko.png --require-webview-route=/ko/topology/ --webview-evidence=.tmp/ontology-atlas-ai-settings-ko.webview.json --verify-ai-settings --leave-running",
+cli/package.json:2:  "name": "ontology-atlas",
+cli/package.json:6:  "bin": {
+cli/package.json:7:    "ontology-atlas": "src/index.mjs"
+cli/package.json:34:    "url": "https://github.com/wlsdks/ontology-atlas.git",
+cli/package.json:43:    "ontology-atlas-mcp": "^0.13.0",
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "pwd
+rg --files -g '*.md' | rg '("'^|/)(capabilities|domains|elements|ontology)/|project'"\\.md"'$'"' | head -200
+find . -maxdepth 4 -type d -name ontology -print" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+/Users/stark/orca/workspaces/oh-my-ontology/main-2
+cli/templates/vault/project.md
+cli/templates/vault/capabilities/example-capability.md
+cli/templates/vault/elements/example-element.md
+cli/templates/vault/domains/example-domain.md
+cli/templates/vault-ko/project.md
+cli/templates/vault-ko/elements/example-element.md
+cli/templates/vault-ko/capabilities/example-capability.md
+cli/templates/vault-ko/domains/example-domain.md
+samples/storefront/domains/order.md
+samples/storefront/domains/fulfillment.md
+samples/storefront/domains/catalog.md
+samples/storefront/domains/support.md
+samples/storefront/domains/marketing.md
+samples/storefront/domains/customer.md
+samples/storefront/domains/inventory.md
+samples/storefront/domains/payment.md
+samples/storefront/domains/loyalty.md
+samples/storefront/elements/stock-hold.md
+samples/storefront/elements/checkout-draft.md
+samples/storefront/elements/korea-post.md
+samples/storefront/elements/payment-gateway.md
+samples/storefront/elements/coupon-policy.md
+samples/storefront/elements/bank-transfer.md
+samples/storefront/elements/campaign-page.md
+samples/storefront/elements/recommendation-rule.md
+samples/storefront/elements/restock-subscription.md
+samples/storefront/elements/hanjin-express.md
+samples/storefront/elements/customer-account.md
+samples/storefront/elements/order-number.md
+samples/storefront/elements/exchange-record.md
+samples/storefront/elements/shelf-location.md
+samples/storefront/elements/backorder-queue.md
+samples/storefront/elements/login-session.md
+samples/storefront/elements/stock-ledger.md
+samples/storefront/elements/order-status-log.md
+samples/storefront/elements/pickup-request.md
+samples/storefront/elements/sku.md
+samples/storefront/elements/product-image-store.md
+samples/storefront/elements/picking-list.md
+samples/storefront/elements/product-record.md
+samples/storefront/elements/wishlist-entry.md
+samples/storefront/elements/waybill.md
+samples/storefront/elements/referral-code.md
+samples/storefront/elements/stock-adjustment.md
+samples/storefront/elements/sms-gateway.md
+samples/storefront/elements/naver-pay.md
+samples/storefront/elements/cj-logistics.md
+samples/storefront/elements/category-tree.md
+samples/storefront/elements/address-record.md
+samples/storefront/elements/search-index.md
+samples/storefront/elements/review-record.md
+samples/storefront/elements/faq-article.md
+samples/storefront/elements/supplier-lead-time.md
+samples/storefront/elements/inquiry-ticket.md
+samples/storefront/elements/coupon-wallet.md
+samples/storefront/elements/refund-record.md
+samples/storefront/elements/virtual-account.md
+samples/storefront/elements/point-balance.md
+samples/storefront/elements/kakao-alimtalk.md
+samples/storefront/elements/email-sender.md
+samples/storefront/elements/stock-count-sheet.md
+samples/storefront/elements/cart-session.md
+samples/storefront/elements/purchase-order.md
+samples/storefront/elements/order-record.md
+samples/storefront/elements/delivery-status-log.md
+samples/storefront/elements/return-record.md
+samples/storefront/elements/stock-snapshot.md
+samples/storefront/elements/card-payment.md
+samples/storefront/elements/toss-pay.md
+samples/storefront/elements/sale-schedule.md
+samples/storefront/elements/push-sender.md
+samples/storefront/elements/order-line-item.md
+samples/storefront/elements/shipping-fee-rule.md
+samples/storefront/elements/payment-transaction.md
+samples/storefront/elements/price-history.md
+samples/storefront/elements/kakao-pay.md
+samples/storefront/elements/point-ledger.md
+samples/storefront/elements/tier-rule.md
+samples/storefront/capabilities/inquiry.md
+samples/storefront/capabilities/tier-evaluation.md
+samples/storefront/capabilities/membership-tier.md
+samples/storefront/capabilities/expiry-policy.md
+samples/storefront/capabilities/flash-sale.md
+samples/storefront/capabilities/order-lookup.md
+samples/storefront/capabilities/wishlist.md
+samples/storefront/capabilities/product-pricing.md
+samples/storefront/capabilities/tax-receipt.md
+samples/storefront/capabilities/order-address-change.md
+samples/storefront/capabilities/shipping-fee.md
+samples/storefront/capabilities/points-redemption.md
+samples/storefront/capabilities/order-placement.md
+samples/storefront/capabilities/coupon-issue.md
+samples/storefront/capabilities/coupon-redeem.md
+samples/storefront/capabilities/order-cancel.md
+samples/storefront/capabilities/cart.md
+samples/storefront/capabilities/order-notification.md
+samples/storefront/capabilities/refund-review.md
+samples/storefront/capabilities/installment.md
+samples/storefront/capabilities/product-search.md
+samples/storefront/capabilities/signup.md
+samples/storefront/capabilities/restock-alert.md
+samples/storefront/capabilities/product-detail.md
+samples/storefront/capabilities/shipment-tracking.md
+samples/storefront/capabilities/product-recommendation.md
+samples/storefront/capabilities/product-category.md
+samples/storefront/capabilities/exchange-request.md
+samples/storefront/capabilities/warehouse-picking.md
+samples/storefront/capabilities/return-pickup.md
+samples/storefront/capabilities/login.md
+samples/storefront/capabilities/faq.md
+samples/storefront/capabilities/wallet-payment.md
+samples/storefront/capabilities/referral.md
+samples/storefront/capabilities/reward-catalog.md
+samples/storefront/capabilities/product-review.md
+samples/storefront/capabilities/stock-reservation.md
+samples/storefront/capabilities/carrier-integration.md
+samples/storefront/capabilities/refund.md
+samples/storefront/capabilities/loyalty-point.md
+samples/storefront/capabilities/campaign-planning.md
+samples/storefront/capabilities/payment-authorize.md
+samples/storefront/capabilities/payment-cancel.md
+samples/storefront/capabilities/return-request.md
+samples/storefront/capabilities/account-closure.md
+samples/storefront/capabilities/stock-tracking.md
+samples/storefront/capabilities/product-registration.md
+samples/storefront/capabilities/product-option.md
+samples/storefront/capabilities/address-book.md
+samples/storefront/capabilities/checkout.md
+samples/storefront/capabilities/points-accrual.md
+samples/storefront/capabilities/stock-receiving.md
+samples/storefront/capabilities/customer-messaging.md
+samples/storefront/capabilities/order-partial-cancel.md
+./app/[locale]/ontology
+./out/docs-vault/ontology
+./out/ko/ontology
+./out/en/ontology
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,160p' .mcp.json
+sed -n '1,160p' .codex/config.toml
+find .. -path '*/docs/ontology/capabilities/mcp-server.md' -print 2>/dev/null | head -20
+git status --short --branch" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 2617ms:
+../main-3/docs/ontology/capabilities/mcp-server.md
+../main/docs/ontology/capabilities/mcp-server.md
+## chore/vault-decision-density
+ D .codex/config.toml
+ M docs/benchmark/results/2026-08-25-codex-summary.md
+ D docs/benchmark/rubric.md
+ D docs/benchmark/tasks.md
+ D docs/ontology/.gitignore
+ D docs/ontology/README.md
+ D docs/ontology/capabilities/acp-runtime.md
+ D docs/ontology/capabilities/agent-work-visibility.md
+ D docs/ontology/capabilities/app-update.md
+ D docs/ontology/capabilities/cli-developer-entry.md
+ D docs/ontology/capabilities/construction-review.md
+ D docs/ontology/capabilities/control-primitives.md
+ D docs/ontology/capabilities/data-source-mode.md
+ D docs/ontology/capabilities/design-build-handoff.md
+ D docs/ontology/capabilities/design-gate-ratchets.md
+ D docs/ontology/capabilities/design-token-ramps.md
+ D docs/ontology/capabilities/desktop-download-decision.md
+ D docs/ontology/capabilities/docs-vault-local.md
+ D docs/ontology/capabilities/first-run-starter.md
+ D docs/ontology/capabilities/guided-tour.md
+ D docs/ontology/capabilities/locale-switch.md
+ D docs/ontology/capabilities/mcp-server.md
+ D docs/ontology/capabilities/project-data-source.md
+ D docs/ontology/capabilities/project-edit.md
+ D docs/ontology/capabilities/project-quick-edit.md
+ D docs/ontology/capabilities/project-share.md
+ D docs/ontology/capabilities/project-source-evidence.md
+ D docs/ontology/capabilities/reviewed-ontology-writing.md
+ D docs/ontology/capabilities/summary-freshness.md
+ D docs/ontology/capabilities/taxonomy.md
+ D docs/ontology/capabilities/topology-browsing.md
+ D docs/ontology/capabilities/vault-agent.md
+ D docs/ontology/capabilities/vault-ontology.md
+ D docs/ontology/capabilities/vault-sample-source.md
+ D docs/ontology/domains/agent-integration.md
+ D docs/ontology/domains/design-system.md
+ D docs/ontology/domains/graph-modeling.md
+ D docs/ontology/domains/local-vault-management.md
+ D docs/ontology/domains/onboarding-and-shell.md
+ D docs/ontology/domains/project-portfolio.md
+ D docs/ontology/domains/topology-navigation.md
+ D docs/ontology/elements/acp-ontology-write-review.md
+ D docs/ontology/elements/agents-destination.md
+ D docs/ontology/elements/app-nav-rail.md
+ D docs/ontology/elements/app-settings-menu.md
+ D docs/ontology/elements/atlas-git-panel.md
+ D docs/ontology/elements/bottom-tab-bar.md
+ D docs/ontology/elements/category.md
+ D docs/ontology/elements/docs-quick-drawer.md
+ D docs/ontology/elements/docs-vault-entity.md
+ D docs/ontology/elements/docs-vault-view.md
+ D docs/ontology/elements/docs-vault-widget.md
+ D docs/ontology/elements/domain-capacity-bar.md
+ D docs/ontology/elements/download.md
+ D docs/ontology/elements/first-run.md
+ D docs/ontology/elements/full-detail-a1.md
+ D docs/ontology/elements/gateway-chrome.md
+ D docs/ontology/elements/gateway-doc.md
+ D docs/ontology/elements/gesture-hint.md
+ D docs/ontology/elements/git.md
+ D docs/ontology/elements/global-search.md
+ D docs/ontology/elements/home.md
+ D docs/ontology/elements/knowledge-graph.md
+ D docs/ontology/elements/local-fs-handle.md
+ D docs/ontology/elements/native-vault-filesystem-bridge.md
+ D docs/ontology/elements/ontology-change-review.md
+ D docs/ontology/elements/ontology-class.md
+ D docs/ontology/elements/ontology-edit-redirect.md
+ D docs/ontology/elements/ontology-insights.md
+ D docs/ontology/elements/ontology-meaning-editor.md
+ D docs/ontology/elements/ontology-redirect.md
+ D docs/ontology/elements/private-vault-sidecar-boundary.md
+ D docs/ontology/elements/project-detail.md
+ D docs/ontology/elements/project-drawer.md
+ D docs/ontology/elements/project-editor.md
+ D docs/ontology/elements/project-selector.md
+ D docs/ontology/elements/project.md
+ D docs/ontology/elements/public-quick-actions.md
+ D docs/ontology/elements/recent-node-row.md
+ D docs/ontology/elements/root-entry.md
+ D docs/ontology/elements/search-hint.md
+ D docs/ontology/elements/search-palette.md
+ D docs/ontology/elements/shortcut-sheet.md
+ D docs/ontology/elements/status.md
+ D docs/ontology/elements/topology-controls.md
+ D docs/ontology/elements/topology-index-panel.md
+ D docs/ontology/elements/topology-map-v2.md
+ D docs/ontology/elements/vault-agent-panel.md
+ D docs/ontology/ontology-atlas.md
+ D public/docs-vault/AGENT-GRAPH-WORKFLOW.md
+ D public/docs-vault/AGENT-MEMORY-POSITIONING.md
+ D public/docs-vault/ARCHITECTURE.md
+ D public/docs-vault/BACKLOG.md
+ D public/docs-vault/BRAND.md
+ D public/docs-vault/CHANGELOG.md
+ D public/docs-vault/CONTROL-ADOPTION-ROUNDS.md
+ D public/docs-vault/DECISIONS.md
+ D public/docs-vault/DEMO-SCENARIO.md
+ D public/docs-vault/DEPLOYMENT.md
+ D public/docs-vault/DESIGN-SYSTEM.md
+ D public/docs-vault/DESKTOP-MACOS.md
+ D public/docs-vault/DEVELOPMENT-CHECKS.md
+ D public/docs-vault/FEATURES.md
+ D public/docs-vault/FOUNDATIONS.md
+ D public/docs-vault/GLOSSARY.md
+ D public/docs-vault/INTERACTION-DESIGN.md
+ D public/docs-vault/MAP-TESTABILITY.md
+ D public/docs-vault/ONTOLOGY-ATLAS-SPEC.md
+ D public/docs-vault/ONTOLOGY-CONSTRUCTION-QUALIFICATION.md
+ D public/docs-vault/ONTOLOGY-QUALITY.md
+ D public/docs-vault/PRODUCT-DESIGN-OPERATING-SYSTEM.md
+ D public/docs-vault/PRODUCT-DIRECTION.md
+ D public/docs-vault/PRODUCT-OWNER-OPERATING-SYSTEM.md
+ D public/docs-vault/README.md
+ D public/docs-vault/TECH-STACK.md
+ D public/docs-vault/TOPOLOGY-FOCUS-AND-SCALE.md
+ D public/docs-vault/TOPOLOGY-V2-DESIGN.md
+ D public/docs-vault/TROUBLESHOOTING.md
+ D public/docs-vault/agents/domain.md
+ D public/docs-vault/agents/issue-tracker.md
+ D public/docs-vault/agents/triage-labels.md
+ D public/docs-vault/archive/ATOMIC-AUDIT-2026-05-01.md
+ D public/docs-vault/archive/PUBLISH-NPM.md
+ D public/docs-vault/archive/README.md
+ D public/docs-vault/archive/SIGMA-PLAYBOOK.md
+ D public/docs-vault/archive/TOPOLOGY-MAP-REBUILD.md
+ D public/docs-vault/archive/UX-FIRST-PRINCIPLES.md
+ D public/docs-vault/archive/dogfood-blank-folder-mcp-2026-07-23.md
+ D public/docs-vault/archive/dogfood-friction-2026-05-06.md
+ D public/docs-vault/archive/dogfood-mcp-builder-git-round-4-2026-07-23.md
+ D public/docs-vault/archive/dogfood-mcp-round-2-2026-07-23.md
+ D public/docs-vault/archive/dogfood-mcp-safety-round-3-2026-07-23.md
+ D public/docs-vault/archive/dogfood-paravel-2026-05-06.md
+ D public/docs-vault/audits/CASE-STUDY-AGENTS-MD-DRIFT.md
+ D public/docs-vault/audits/ONTOLOGY-RIGOR-AUDIT-2026-07.md
+ D public/docs-vault/audits/PRODUCT-UX-AUDIT.md
+ D public/docs-vault/audits/README.md
+ D public/docs-vault/audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md
+ D public/docs-vault/benchmark/README.md
+ D public/docs-vault/benchmark/results/2026-05-04-claude-code.md
+ D public/docs-vault/benchmark/results/2026-05-04-codex.md
+ D public/docs-vault/benchmark/results/2026-05-template.md
+ D public/docs-vault/benchmark/results/2026-08-25-codex-summary.md
+ D public/docs-vault/benchmark/rubric.md
+ D public/docs-vault/benchmark/tasks.md
+ D public/docs-vault/design-references/DESIGN-linear.md
+ D public/docs-vault/guide/cli.md
+ D public/docs-vault/guide/connect-agent.md
+ D public/docs-vault/guide/first-five-minutes.md
+ D public/docs-vault/guide/from-your-repo.md
+ D public/docs-vault/guide/growing-vault.md
+ D public/docs-vault/guide/insights.md
+ D public/docs-vault/guide/reading-the-map.md
+ D public/docs-vault/guide/relations.md
+ D public/docs-vault/guide/studio.md
+ D public/docs-vault/guide/trust.md
+ D public/docs-vault/guide/vault-structure.md
+ D public/docs-vault/guide/what-becomes-a-node.md
+ D public/docs-vault/guide/what-is-atlas.md
+ D public/docs-vault/launch/DEMO-GIF-STORYBOARD.md
+ D public/docs-vault/launch/HN-POST.md
+ D public/docs-vault/launch/README.md
+ D public/docs-vault/launch/REDDIT-POSTS.md
+ D public/docs-vault/launch/X-THREAD.md
+ D public/docs-vault/ontology/README.md
+ D public/docs-vault/ontology/capabilities/acp-runtime.md
+ D public/docs-vault/ontology/capabilities/agent-work-visibility.md
+ D public/docs-vault/ontology/capabilities/app-update.md
+ D public/docs-vault/ontology/capabilities/cli-developer-entry.md
+ D public/docs-vault/ontology/capabilities/construction-review.md
+ D public/docs-vault/ontology/capabilities/control-primitives.md
+ D public/docs-vault/ontology/capabilities/data-source-mode.md
+ D public/docs-vault/ontology/capabilities/design-build-handoff.md
+ D public/docs-vault/ontology/capabilities/design-gate-ratchets.md
+ D public/docs-vault/ontology/capabilities/design-token-ramps.md
+ D public/docs-vault/ontology/capabilities/desktop-download-decision.md
+ D public/docs-vault/ontology/capabilities/docs-vault-local.md
+ D public/docs-vault/ontology/capabilities/first-run-starter.md
+ D public/docs-vault/ontology/capabilities/guided-tour.md
+ D public/docs-vault/ontology/capabilities/locale-switch.md
+ D public/docs-vault/ontology/capabilities/mcp-server.md
+ D public/docs-vault/ontology/capabilities/project-data-source.md
+ D public/docs-vault/ontology/capabilities/project-edit.md
+ D public/docs-vault/ontology/capabilities/project-quick-edit.md
+ D public/docs-vault/ontology/capabilities/project-share.md
+ D public/docs-vault/ontology/capabilities/project-source-evidence.md
+ D public/docs-vault/ontology/capabilities/reviewed-ontology-writing.md
+ D public/docs-vault/ontology/capabilities/summary-freshness.md
+ D public/docs-vault/ontology/capabilities/taxonomy.md
+ D public/docs-vault/ontology/capabilities/topology-browsing.md
+ D public/docs-vault/ontology/capabilities/vault-agent.md
+ D public/docs-vault/ontology/capabilities/vault-ontology.md
+ D public/docs-vault/ontology/capabilities/vault-sample-source.md
+ D public/docs-vault/ontology/domains/agent-integration.md
+ D public/docs-vault/ontology/domains/design-system.md
+ D public/docs-vault/ontology/domains/graph-modeling.md
+ D public/docs-vault/ontology/domains/local-vault-management.md
+ D public/docs-vault/ontology/domains/onboarding-and-shell.md
+ D public/docs-vault/ontology/domains/project-portfolio.md
+ D public/docs-vault/ontology/domains/topology-navigation.md
+ D public/docs-vault/ontology/elements/acp-ontology-write-review.md
+ D public/docs-vault/ontology/elements/agents-destination.md
+ D public/docs-vault/ontology/elements/app-nav-rail.md
+ D public/docs-vault/ontology/elements/app-settings-menu.md
+ D public/docs-vault/ontology/elements/atlas-git-panel.md
+ D public/docs-vault/ontology/elements/bottom-tab-bar.md
+ D public/docs-vault/ontology/elements/category.md
+ D public/docs-vault/ontology/elements/docs-quick-drawer.md
+ D public/docs-vault/ontology/elements/docs-vault-entity.md
+ D public/docs-vault/ontology/elements/docs-vault-view.md
+ D public/docs-vault/ontology/elements/docs-vault-widget.md
+ D public/docs-vault/ontology/elements/domain-capacity-bar.md
+ D public/docs-vault/ontology/elements/download.md
+ D public/docs-vault/ontology/elements/first-run.md
+ D public/docs-vault/ontology/elements/full-detail-a1.md
+ D public/docs-vault/ontology/elements/gateway-chrome.md
+ D public/docs-vault/ontology/elements/gateway-doc.md
+ D public/docs-vault/ontology/elements/gesture-hint.md
+ D public/docs-vault/ontology/elements/git.md
+ D public/docs-vault/ontology/elements/global-search.md
+ D public/docs-vault/ontology/elements/home.md
+ D public/docs-vault/ontology/elements/knowledge-graph.md
+ D public/docs-vault/ontology/elements/local-fs-handle.md
+ D public/docs-vault/ontology/elements/native-vault-filesystem-bridge.md
+ D public/docs-vault/ontology/elements/ontology-change-review.md
+ D public/docs-vault/ontology/elements/ontology-class.md
+ D public/docs-vault/ontology/elements/ontology-edit-redirect.md
+ D public/docs-vault/ontology/elements/ontology-insights.md
+ D public/docs-vault/ontology/elements/ontology-meaning-editor.md
+ D public/docs-vault/ontology/elements/ontology-redirect.md
+ D public/docs-vault/ontology/elements/private-vault-sidecar-boundary.md
+ D public/docs-vault/ontology/elements/project-detail.md
+ D public/docs-vault/ontology/elements/project-drawer.md
+ D public/docs-vault/ontology/elements/project-editor.md
+ D public/docs-vault/ontology/elements/project-selector.md
+ D public/docs-vault/ontology/elements/project.md
+ D public/docs-vault/ontology/elements/public-quick-actions.md
+ D public/docs-vault/ontology/elements/recent-node-row.md
+ D public/docs-vault/ontology/elements/root-entry.md
+ D public/docs-vault/ontology/elements/search-hint.md
+ D public/docs-vault/ontology/elements/search-palette.md
+ D public/docs-vault/ontology/elements/shortcut-sheet.md
+ D public/docs-vault/ontology/elements/status.md
+ D public/docs-vault/ontology/elements/topology-controls.md
+ D public/docs-vault/ontology/elements/topology-index-panel.md
+ D public/docs-vault/ontology/elements/topology-map-v2.md
+ D public/docs-vault/ontology/elements/vault-agent-panel.md
+ D public/docs-vault/ontology/ontology-atlas.md
+ D public/docs-vault/plans/DESIGN-OVERHAUL-2026-07-25.md
+ D public/docs-vault/plans/PRODUCT-PLAN-2026-07.md
+ D public/docs-vault/plans/README.md
+ D public/docs-vault/plans/SOURCE-ORGANIZATION-AND-ENGLISH-MIGRATION-2026-08-22.md
+ D public/docs-vault/prototypes/RATIO-SYSTEM.md
+ D public/docs-vault/prototypes/visual-richness-review.md
+ M scripts/benchmark.mjs
+ D src/entities/docs-vault/data/content.json
+ D src/entities/docs-vault/data/gateway-changelog.json
+ D src/entities/docs-vault/data/gateway-content.json
+ D src/entities/docs-vault/data/manifest.headings.json
+ D src/entities/docs-vault/data/manifest.json
+ D src/entities/docs-vault/data/sample-storefront.content.json
+ D src/entities/docs-vault/data/sample-storefront.headings.json
+ D src/entities/docs-vault/data/sample-storefront.manifest.json
+?? .codex/config.toml.benchmark-parked
+?? docs/benchmark/results/2026-08-25-codex-D1-none-r1.txt
+?? docs/benchmark/results/2026-08-25-codex-D1-off-r1.txt
+?? docs/benchmark/results/2026-08-25-codex-D1-off-r2.txt
+?? docs/benchmark/results/2026-08-25-codex-D1-off-r3.txt
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+현재 작업 트리에서는 `docs/ontology`가 삭제 상태라 연결된 Atlas 서버로는 조회할 수 없습니다. 사용자 변경은 건드리지 않고, Git에 기록된 동일 파일의 HEAD 버전과 그 역참조만 읽어 “기록상 경계”를 복원하겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git show HEAD:docs/ontology/capabilities/mcp-server.md
+git show HEAD:docs/ontology/domains/agent-integration.md
+git show HEAD:docs/ontology/ontology-atlas.md' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+---
+uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51
+slug: capabilities/mcp-server
+kind: capability
+title: MCP Server
+domain: domains/agent-integration
+elements: []
+path: mcp/src
+created_by: "agent:unknown"
+dependencies: [capabilities/vault-ontology]
+relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract." }
+display_ko: AI 연결 서버
+display_en: AI Connection Server
+---
+
+# MCP Server
+
+It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop.
+
+## User Outcomes
+
+- The agent accurately finds meaning nodes in the project and reads relationships, evidence, and impact scope together.
+- Upon connection, it verifies actual vault/repository coordinates and tool inventory to detect incorrect folders or stale client states.
+- Before writing, it reads the current document and blocks concurrent edits, duplicates, broken relationships, and destructive changes with structured errors and dry-runs.
+
+## Active Tool Inventory Contract
+
+- The current set of tools is `TOOLS_FOR_LIST`, which applies annotations and a read-only filter to the registry in `mcp/src/index.js`. Both the `Tool inventory` section of `tools/list` and initialize derive from the same array, so no other document owns a numeric or full name list.
+- A read-only server advertises neither write tools nor exposes them in its initial announcement. In both full mode and read-only mode, the header count and the set of read/write names must exactly match those in `tools/list`.
+- `mcp-verify` independently compares the live `tools/list` with the counts, classifications, and name sets in the initialize announcement. Documents and configuration screens reference `tools/list` and `mcp-verify`, avoiding promises to users about mutable fixed counts.
+
+## Identity Boundaries
+
+- `uid` is the permanent machine identity that persists across renames, while `slug` is the human-readable and editable current address. All node responses return both.
+- Exact reads and external interop identities may use UIDs. Markdown relations, URLs, and graph operation inputs maintain slugs.
+- rename/reclassify preserves the UID. merge preserves the target UID and records the absorbed UID in `merged_uids`. Standard patches cannot alter `uid` or `merged_uids`.
+- `find_evidence` includes `isNode` in all search rows to distinguish graph nodes from standard Markdown. Only rows with `isNode:true` are required to have permanent `uid` and `kind`; standard documents do not fabricate these fields. `nodesOnly:true` is an explicit filter for handoffs requiring only nodes, while default searches do not hide local document evidence.
+
+## Ontology Construction Lifecycle
+
+The complete proposal from `analyze_repo_structure` is not immediate write permission. The first call returns only the exact `reviewPlan`, plan/source digest, eight-stage status, remaining gap IDs, and maintains `canWrite:false`. An evaluator separated from the maker executes human owner CQ, current claim/citation, seven quality axes, full source-hidden tasks, cold-start, or previous CQ regression. The user must then approve this exact plan and gaps. Only upon resubmitting the same proposal and digest-bound `constructionQualification:v1` packet will the identical `writePlan` be revealed for rows seen initially. Source/plan drift, maker-only status, `not_measured`, red mandatory axis, regression failure, or unapproved gaps result in a fail-closed state. The `admission` within the same response classifies shadow-only states as `self_qualified`, `partial_visible_gap`, `human_review_required`, and `hard_block`. `self_qualified` is merely a signal of an automatic reflection candidate where all independent evidence passed; actual writes do not bypass existing human approval or digest-bound `writePlan` gates. Measured feature gaps appear in partial state, while policy/ownership/domain boundaries/conflicts remain for human review, and stale/unsupported/non-independent evaluations/source-hidden/regression failures remain hard blocks. Each qualification claim must include `proposalRefs` pointing to the exact `concept:`, `relation:`, `competency:`, and `impact:` rows of the current `reviewPlan`, with lifecycle `proposalCoverage` classifying missing/external proposal/source-hidden unverified rows as fail-closed. This is a receipt ensuring target matching for evaluator handoff, not a score or semantic judgment automatically approving the business truth of the claim.
+
+Approval is declared provenance, not identity verification or a truth certificate. Project Markdown persists existing competency answers/witnesses/visible gaps; the finalizer receipt persists its body and current graph/source combination. Detailed CQ revision, axes, exact gap acceptance, and pre-write regression are execution evidence in MCP responses/agent transcripts and do not claim automatic restoration after restart. No new tools, kinds, sidecars, or writer tokens are created.
+
+## Source Connection
+
+`connect_project_source` / `disconnect_project_source` bind and unbind project nodes to/from the local code folder they describe. Previously, `agent_brief` would output `connect_source` as the next action without a tool to execute it; the only path was the macOS app's folder picker. Both tools write nothing before `confirm: true`, leaving the absolute root only in gitignored `.ontology-atlas/project-sources.json`.
+
+## Core Flow
+
+1. Connect `connection_info` → `list_kinds` / `list_concepts` → `validate_vault` to check connection and vault status first.
+2. Read only the necessary scope of meaning, evidence, paths, and impacts using `get_concept` / `get_concepts` and graph query tools.
+3. Review new meaning candidates for code evidence and duplication, writing only those approved by the user.
+4. Pass the previous `mtime` for existing node writes. Destructive operations like rename/merge/delete require explicit confirmation after preview.
+5. After changes, re-validate the graph via `validate_vault`, compile, and health/maintenance flows.
+
+## Constraints: Source binding and currentness
+
+After the installed app binds a human-selected source root to the sidecar, new MCP processes reproduce the same bounded fingerprint locally. Source currentness is read as `current` only when matching the storage receipt exactly; changes fail-closed as `source_changed`. Private absolute paths and raw source inventory are not included in MCP responses.
+
+## Constraints: Competency qualification
+
+When a repository proposal signs competency as `answered`, it only checks that the required witness array is not empty. It verifies that `abilities` cover all proposed domains via typed domain→capability witnesses, and that `evidence` cites every capability slug and canonical path together. If only some are covered, it returns a structured error with the missing target slugs and does not create a write plan. Honest `partial`/`visible-gap` proposals can still be reviewed and stored.
+
+If project purpose, proposed domain, or project→domain relation has confidence ≥0.8, or `scope`/`domains` are `answered`, two distinct current semantic sources must actually support the non-literal meaning of that claim. The purpose requires both sources to align with the purpose claim; domains require both sources to provide a domain name and an explicit responsibility sentence. Duplicated text across documents, unrelated trusted documents, roadmap/negated/deprecated evidence, package manifests, and implementation paths do not count as a second semantic authority. If only one source exists, it remains below confidence 0.8 with an explicit `partial` gap (reviewable), but inflating it to high-confidence/completed causes failure before review/write plan. The analyzer also prioritizes project identity sentences over later feature sentences, and marks domains as corroborated candidates only when separate product/architecture responsibility sentences exist. Implementation elements overlapping domain names or having only one candidate are not auto-assigned roles but remain as project-scoped evidence.
+
+## Constraints: Cold-start evidence reading
+
+Do not blindly truncate the first 1,200 characters of README. Preserve purpose, responsibility/architecture, and ability/capability prose within heading-scoped blocks, structurally excluding sponsor/backer/funding/donation/TOC and link/image-only decorations, then pass them in original order. Do not change the existing limits: 1,200 chars/doc, 8 headings/doc, 6 docs/packet, and 256 KiB pre-read cap. `Excludes` should contain only product/concept boundaries stated by the source. "Not yet proven" or "outside bounded scan" are `Uncertainty`/competency gaps; if a proposal includes these as exclusions, block them via `epistemic-exclusion-boundary` before write plan.
+
+Cold-start semantic evidence is carried by existing `semanticEvidence` packets from classified current Markdown under root `ARCHITECTURE.md`, `docs/`, `site/`, and `website/`. Explore up to 200 Markdown files and 1,000 directory entries across all three roots, stopping at 256 KiB pre-read for general semantic documents. Visit each actual path in the same directory only once; exclude archives and symlinks that are broken or outside the repository. Maintain the final packet limit of 6 docs and 1,200 chars/doc. For proposals arriving in the same call, recalculate existing read-only import receipts to verify TS/JS/Python file endpoints and Go importing-file/package-directory endpoints and directions. These documents and paths serve as evidence/provenance only; they do not auto-approve business meaning or `depends_on`. Without maker-independent qualification and human exact-plan approval, do not open `writePlan`. If relationship rationale directly names the exact repository `path:` of both endpoint concepts, that path must also appear in evidence for the same relationship. Fail closed with `relation-path-citation-mismatch` if only other documents are cited; do not block general semantic sentences by guessing filenames.
+
+## Constraints: Meaning repair review
+
+When a fresh `agent_brief` reads current source and incomplete competency together, set the first `nextActions` to `review_competency_repair`. The connected `meaningRepair:v2` compact manifest contains only disposition count, provenance, `reviewRevision`, and the first `meaning_repair_review` call; a separate `meaningRepairReviewPage:v1` carries current project Markdown declarations, structural review candidates from typed containment, canonical-path candidates directly supported by current source receipts, and all unresolved targets. Containment and path existence are not human semantic approval or action proof, so do not auto-convert candidates to `answered` or write them. If source/provenance/scope/validation/mtime is unstable, block repair while preserving existing source/health behavior. The first review read splits project, domain, and capability into deterministic, stateless cursors by their exact union. Each page has max 20 items, ≤5 KiB JSON, and provides literal `get_concepts(body:"full")` calls for the same target. `reviewRevision` binds graph/source/typed row/mtime; the verifier checks missing/duplicate/order/size/recency up to the last page, plus kind/mmtime/non-truncation of each full-body and source/bundle parity.
+
+## Constraints: Import inference by language
+
+In Python cold start, read `README.rst`, non-executed static `setup.py` package contract, and top-level `__init__.py` package as bounded evidence. `infer_imports` condenses static imports from that package into file/module edges. This result is implementation evidence; do not auto-promote to domain/capability/semantic `depends_on`. Each module edge carries up to 5 exact file-edge receipts and presence of other evidence. Edges not in the vault return `rationale_review_required` instead of executable `proposedAction`. If the implementation path is already known, use `focusPath` or `reviewMode:"focus"` first. This mode returns exact incoming/outgoing static import counts (up to 100 receipts) and a stateless cursor for that file without a loadable vault. Empty results do not imply no impact; they fix symbol/test/dynamic behavior and ontology meaning as still pending separate confirmation. If `reviewMode` is omitted, return the existing full graph only when expected MCP total response (text + structured content) is ≤128 KiB. For larger reconciled scans, return only one review candidate, exact evidence, preflight calls for both concepts/relations, stop conditions, stateless cursor, and a `delivery` receipt with auto-selection reason/expected bytes instead of the full array. `reviewMode:"next"` explicitly requests this compact packet. `reviewMode:"full"` preserves the full shape but requires a second confirmation `allowLargeResponse:true` if exceeding 128 KiB. Oversized omission calls without a loadable vault for reconciliation return structured errors with two recovery options instead of faking safe packets. Internal analysis of `index_project` fixes explicit full to ensure this delivery default does not change existing plan meaning. Separate product/test code and value/type-only usage per evidence; calculate `productValueCount` (intersection of two-dimensional counts across all imports, not bounded samples) for module edges. Explicit type imports in JS/TS and imports inside Python's explicit `TYPE_CHECKING` guard are type-only. `value` means other static imports, not claiming runtime execution. If product code value usage is 0, do not hide test/type evidence but do not ask that import alone to approve product `depends_on`; require separate product meaning evidence. Additionally, the agent must read both concepts and direction, explain semantic rationale, and ask the human; record only one approved item with a non-empty `why`.
+
+Go repositories with a root `go.mod` read module-local imports as bounded text without running compiler, `go list`, module cache, or network. Do not mix package directories into existing file edges or fabricate arbitrary target files; instead, preserve importing file and repository-relative source/target package directory, literal import spec, and production/test role in a separate `goPackageImports:v1` receipt. Full scans share existing file caps; each Go file stops at 256 KiB/256 imports; nested and external modules are explicitly out of scope. Exclude import-like text inside multi-line raw strings and `vendor`/`testdata`/underscore-prefixed fixture trees as evidence outside Go build boundaries. The analyzer passes package directories with high production/value import participation as up to 24 implementation element/path candidates only; do not promote folder names to domain/capability or auto-approve package edges as semantic `depends_on`. Compact/focus responses leave package evidence count and explicit full-evidence calls to prevent large graphs from silently disappearing.
+
+C/Autotools repositories also do not report empty import graph as "no dependencies." If bounded manifest/source discovery confirms actual `.c`/`.h` files, `infer_imports.coverage` marks `c` as unsupported language and returns `allDetectedLanguagesSupported:false`. Use static `AC_INIT` literals as project name evidence; in bounded README prose, prioritize sentences stating purpose over release status. Do not create domain/capability from this evidence alone; do not analyze C include/build dependency graphs or auto-promote to semantic relations.
+
+The same Autotools analysis reads literal declarations in root or one-level-down `Makefile.am` pointed to by static `AC_CONFIG_FILES` without execution. Distinguish install-target headers, existing `.h.in` templates, non-`EXTRA` core source, raw/API specialized source, and optional platform backends from `EXTRA_*_SOURCES`, preserving role-based representatives within 36 sources first. Internal `noinst_HEADERS`, variables/shell/wildcards/absolute/parent paths do not serve as role evidence. This build-role is observation evidence for implementation handoff; it does not auto-approve canonical capability or C impact.
+
+Rust repositories also do not report empty import graph as "no dependencies." `infer_imports.coverage` explicitly states that `use`/`mod`/macro dependency scan is unsupported when Cargo is detected, limiting the meaning of 0 edges to "no observed static imports" within supported languages. Instead, `analyze_repo_structure.configurationEvidence` and `index_project.configurationEvidence` preserve `[features]` declarations of root package or literal direct workspace members inside the repository, and literal `cfg`/`cfg_attr` feature predicates of conventional Cargo target sources as path/line/form/polarity/source role. This receipt does not evaluate predicates or execute build scripts/macros; it does not claim/write runtime impact, import dependency, or semantic `depends_on`. It does not hide workspace/package/feature/mapping/source limits or rejected members/predicates. Schema match in `relation_check` is also not semantic approval. New `depends_on` returns `approvalGate.writeAllowed:false` without executable `proposedAction`, written only after human explicit approval of observable capability, semantic rationale, and exact direction. The analyzer connects up to 12 element/path candidates for Python implementation boundaries participating in actual imports. Base on direct module/package boundaries, but allow security/policy/risk exact endpoints to reserve up to 2 slots to prevent risk ownership from being diluted in long import responses. Exclude unused files and conflicting flat slugs. `depends_on` proposed based on this path must match observed import direction to pass proposal validation. The model may select up to 4 exact import file endpoints outside auto-candidates for different exploration roles. The server does not auto-node these files; it fail-closes verifying only the proposal's exact path/limit/file-edge direction.
+
+## Constraints: Impact and blast radius
+
+`impact` and `blast_radius` follow only declared `depends_on`. Containment/domain/element relations are structural evidence for `reachability`/`subgraph`; do not promote to impact or risk. Return `review_required` if no `relation_notes` on declared dependency, `declared_with_rationale` if present. Both are currently not source-backed due to lack of current-source receipt per relation unit; keep completeness and risk as `unknown`. Therefore, 0 dependency declarations are not interpreted as low-risk or no impact.
+
+## Inclusions / Exclusions
+
+- Included: MCP tool registration and I/O contracts, Vault parser/writer, deterministic compiler and
+  graph query, concurrency/dry-run/validation safeguards, bundled server for installed apps.
+- Excluded: AST/source search engine, embedding store, model selection/agent loop, backend/accounts,
+  auto-saving creation proposals without human approval.
+
+## Implementation Basis
+
+- `mcp/src/index.js` · `mcp/src/tool-inventory.mjs`: Boundary that creates both
+  `tools/list` and mode-specific initialize inventory from the active tool registry.
+- `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
+  `mcp/src/infer-imports.mjs`: Bounded repository meaning ingress, Rust configuration provenance,
+  evidence for TS/JS/Python file-imports and Go package-imports without execution, Autotools C/Rust unsupported
+  scope and exact-path relationship evidence.
+- `mcp/src/vault.mjs` · `mcp/src/schema.mjs`: File read/write and UID/slug specifications.
+- `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: Compile/query.
+- `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: Quantified
+  competency coverage and source-backed proposal write gate.
+- `mcp/src/construction-qualification.mjs` · `mcp/src/construction-lifecycle.mjs`:
+  Maker-independent categorical qualification, exact plan/source/approval binding, step-by-step
+  write eligibility.
+- `mcp/src/project-source-inspection.mjs` · `mcp/src/project-source-receipt.mjs`:
+  Re-verification of bounded source currentness for installed apps and public receipt boundary.
+- `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs`: Current declarations,
+  separating structure/source candidates and unresolved targets into action-first human approval packets.
+- `mcp/scripts/verify.mjs` · `mcp/src/integration.test.mjs` ·
+  `scripts/dogfood-mcp-walk.mjs`: Initialize/tools-list exact parity and installation/live usage verification.
+- `mcp/README.md`: Detailed single source of truth for the current public tool contract.
+
+## Confidence
+
+high (0.95): Registry, parser/compiler contract, and source/packed binary dogfood are verified against the same
+Vault.
+---
+uid: 0f1364a5-7d0f-4fa5-b913-454d47b33cca
+slug: domains/agent-integration
+kind: domain
+title: AI Agent Integration
+display_ko: AI 에이전트 연동
+display_en: AI Agent Integration
+capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+elements: [elements/agents-destination, elements/vault-agent-panel]
+created_by: human
+relation_notes: { capabilities/acp-runtime: "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.", capabilities/agent-work-visibility: Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs. }
+---
+
+## Definition
+Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user.
+
+## Evidence
+- README.md: "Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection."
+- mcp/src/index.js · mcp/src/tool-inventory.mjs: coupled boundary deriving `tools/list` and
+  full/read-only initialize inventory from active registry
+- cli/src/commands/agent-brief.mjs: passing `--project` as explicit project selector matching MCP `agent_brief.project`
+
+## Inclusion / Exclusion
+- Included: MCP read/write tools (`mcp/`) advertising current list at runtime, local CLI,
+  in-app connect button, client config writing and `mcp-verify` connection proof,
+  ACP executor detection and launching with isolated settings within the app
+  (`capabilities/acp-runtime`)
+- Excluded: the graph schema itself (that belongs to the graph-modeling domain)
+
+## Project Meaning Handover
+
+`finalize_project_meaning` bundles the competency answer for human-readable project Markdown into body digest and graph/source provenance after graph write, vault validation, and project compile.
+the sidecar does not store raw answers, raw witnesses, or private source root/remote.
+Subsequently, the new MCP process's `agent_brief.meaningAssessment` re-validates against the current Markdown and inventory; if source currentness cannot be confirmed, it closes as `review_required` even if a stored receipt exists.
+
+The CLI `agent-brief --project <slug>` is not an option to merge results from multiple projects, but a selector that explicitly specifies one project containment tree to read the same MCP `agent_brief`.
+
+## Confidence
+high (0.9): MCP registry and CLI integration test directly verify the current contract
+---
+uid: 8c48b61f-1f75-448e-87a5-6ea2a7b02cf8
+slug: ontology-atlas
+kind: project
+title: Ontology Atlas
+display_ko: 온톨로지 아틀라스
+display_en: Ontology Atlas
+description: "An ontology workbench where humans and AI agents read and cultivate the product's meaning and implementation evidence together in a local Markdown graph."
+domains: []
+capabilities: []
+elements: []
+contains: [domains/agent-integration, domains/design-system, domains/graph-modeling, domains/local-vault-management, domains/onboarding-and-shell, domains/project-portfolio, domains/topology-navigation]
+created_by: human
+path: README.md
+---
+
+## Definition
+A local-first ontology workbench that transforms frontmatter from a local Markdown vault into a computable graph with types (domain, capabilities, implementation evidence, dependencies, impacts). Developers use CLI/web, and AI coding agents use MCP to read and write the same files.
+
+## Evidence
+- README.md: "Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product"
+- AGENTS.md: Project overview ("a local-first ontology workbench for understanding a product/system from business core to implementation evidence")
+
+## In Scope / Out of Scope
+- In scope: Graph schema, compilation, querying, MCP/CLI agent integration, local vault management, topology browsing, project portfolio, onboarding/deployment/app shell
+- Out of scope: Backend/authentication/cloud collaboration (permanently removed in R10, conditionally reintroduced only for Layer 2)
+
+## Confidence
+high (direct quote from README + AGENTS.md)
+
+## Competency answers
+
+### scope: answered
+
+What product/system outcome and user problem define the ontology scope?
+
+Ontology Atlas helps people and AI coding agents preserve and judge one shared, local-first meaning model of a product and the implementation evidence behind it.
+
+- Concepts: `ontology-atlas`
+- Evidence: `README.md`
+
+### domains: answered
+
+Which stable business responsibilities or decision boundaries form its domains?
+
+Seven stable responsibility boundaries cover agent integration, design-system stewardship, graph modeling, local vault management, onboarding and shell delivery, project portfolio work, and topology navigation.
+
+- Concepts: `ontology-atlas`, `domains/agent-integration`, `domains/design-system`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`
+- Relations: `ontology-atlas` --contains--> `domains/agent-integration`, `ontology-atlas` --contains--> `domains/design-system`, `ontology-atlas` --contains--> `domains/graph-modeling`, `ontology-atlas` --contains--> `domains/local-vault-management`, `ontology-atlas` --contains--> `domains/onboarding-and-shell`, `ontology-atlas` --contains--> `domains/project-portfolio`, `ontology-atlas` --contains--> `domains/topology-navigation`
+- Evidence: `README.md`
+
+### abilities: answered
+
+Which observable abilities realize those outcomes inside each domain?
+
+Across its seven domains, Atlas exposes 27 typed capabilities for agent and terminal integration, design-system enforcement, graph modeling, local-vault control, onboarding and distribution, project portfolio work, and topology navigation.
+
+- Concepts: `domains/agent-integration`, `domains/design-system`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`, `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+- Relations: `domains/agent-integration` --capabilities--> `capabilities/acp-runtime`, `domains/agent-integration` --capabilities--> `capabilities/agent-work-visibility`, `domains/agent-integration` --capabilities--> `capabilities/cli-developer-entry`, `domains/agent-integration` --capabilities--> `capabilities/mcp-server`, `domains/agent-integration` --capabilities--> `capabilities/vault-agent`, `domains/design-system` --capabilities--> `capabilities/control-primitives`, `domains/design-system` --capabilities--> `capabilities/design-build-handoff`, `domains/design-system` --capabilities--> `capabilities/design-gate-ratchets`, `domains/design-system` --capabilities--> `capabilities/design-token-ramps`, `domains/graph-modeling` --capabilities--> `capabilities/reviewed-ontology-writing`, `domains/graph-modeling` --capabilities--> `capabilities/taxonomy`, `domains/graph-modeling` --capabilities--> `capabilities/vault-ontology`, `domains/local-vault-management` --capabilities--> `capabilities/data-source-mode`, `domains/local-vault-management` --capabilities--> `capabilities/docs-vault-local`, `domains/local-vault-management` --capabilities--> `capabilities/project-data-source`, `domains/local-vault-management` --capabilities--> `capabilities/vault-sample-source`, `domains/onboarding-and-shell` --capabilities--> `capabilities/app-update`, `domains/onboarding-and-shell` --capabilities--> `capabilities/desktop-download-decision`, `domains/onboarding-and-shell` --capabilities--> `capabilities/first-run-starter`, `domains/onboarding-and-shell` --capabilities--> `capabilities/guided-tour`, `domains/onboarding-and-shell` --capabilities--> `capabilities/locale-switch`, `domains/project-portfolio` --capabilities--> `capabilities/construction-review`, `domains/project-portfolio` --capabilities--> `capabilities/project-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-quick-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-share`, `domains/project-portfolio` --capabilities--> `capabilities/project-source-evidence`, `domains/topology-navigation` --capabilities--> `capabilities/topology-browsing`
+- Evidence: `src-tauri/src/acp.rs`, `src/features/agent-activity`, `src/features/app-update`, `cli/src`, `src/entities/construction-review`, `src/shared/ui/control-class.ts`, `src/features/data-source-mode`, `.claude/skills/design-build/SKILL.md`, `eslint.config.mjs`, `app/globals.css`, `src/views/download`, `src/features/docs-vault-local`, `src/features/first-run-starter`, `src/features/guided-tour`, `src/features/locale-switch`, `mcp/src`, `src/features/project-data-source`, `src/features/project-edit`, `src/features/project-quick-edit`, `src/features/project-share`, `src/shared/lib/project-source-receipt.ts`, `src/features/ontology-meaning-editor`, `src/features/taxonomy`, `src/widgets/topology-map-v2`, `src/features/vault-agent`, `mcp/src/schema.mjs`, `src/features/vault-sample-source`
+
+### evidence: answered
+
+Which source artifacts provide implementation evidence for each ability?
+
+All 27 current capabilities have one canonical repository entrypoint in frontmatter, and the current source receipt verifies that every path exists. This proves current implementation entrypoints; it does not by itself claim exhaustive runtime behavior.
+
+- Concepts: `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+- Evidence: `src-tauri/src/acp.rs`, `src/features/agent-activity`, `src/features/app-update`, `cli/src`, `src/entities/construction-review`, `src/shared/ui/control-class.ts`, `src/features/data-source-mode`, `.claude/skills/design-build/SKILL.md`, `eslint.config.mjs`, `app/globals.css`, `src/views/download`, `src/features/docs-vault-local`, `src/features/first-run-starter`, `src/features/guided-tour`, `src/features/locale-switch`, `mcp/src`, `src/features/project-data-source`, `src/features/project-edit`, `src/features/project-quick-edit`, `src/features/project-share`, `src/shared/lib/project-source-receipt.ts`, `src/features/ontology-meaning-editor`, `src/features/taxonomy`, `src/widgets/topology-map-v2`, `src/features/vault-agent`, `mcp/src/schema.mjs`, `src/features/vault-sample-source`
+- Paths: `src-tauri/src/acp.rs`, `src/features/agent-activity`, `src/features/app-update`, `cli/src`, `src/entities/construction-review`, `src/shared/ui/control-class.ts`, `src/features/data-source-mode`, `.claude/skills/design-build/SKILL.md`, `eslint.config.mjs`, `app/globals.css`, `src/views/download`, `src/features/docs-vault-local`, `src/features/first-run-starter`, `src/features/guided-tour`, `src/features/locale-switch`, `mcp/src`, `src/features/project-data-source`, `src/features/project-edit`, `src/features/project-quick-edit`, `src/features/project-share`, `src/shared/lib/project-source-receipt.ts`, `src/features/ontology-meaning-editor`, `src/features/taxonomy`, `src/widgets/topology-map-v2`, `src/features/vault-agent`, `mcp/src/schema.mjs`, `src/features/vault-sample-source`
+
+### impact: answered
+
+Which typed dependencies explain change impact across the model?
+
+Eight reviewed dependencies form the current change-impact spine across agent integration, graph modeling, topology, design, onboarding, local-vault, and project-portfolio responsibilities. These are bounded declarations with written rationales, not a claim that every possible source dependency is modeled.
+
+- Concepts: `capabilities/acp-runtime`, `capabilities/cli-developer-entry`, `capabilities/mcp-server`, `capabilities/vault-ontology`, `capabilities/topology-browsing`, `capabilities/design-token-ramps`, `capabilities/first-run-starter`, `capabilities/vault-sample-source`, `capabilities/reviewed-ontology-writing`, `capabilities/docs-vault-local`, `capabilities/project-source-evidence`
+- Relations: `capabilities/acp-runtime` --depends_on--> `capabilities/mcp-server`, `capabilities/cli-developer-entry` --depends_on--> `capabilities/mcp-server`, `capabilities/mcp-server` --depends_on--> `capabilities/vault-ontology`, `capabilities/topology-browsing` --depends_on--> `capabilities/vault-ontology`, `capabilities/topology-browsing` --depends_on--> `capabilities/design-token-ramps`, `capabilities/first-run-starter` --depends_on--> `capabilities/vault-sample-source`, `capabilities/reviewed-ontology-writing` --depends_on--> `capabilities/docs-vault-local`, `capabilities/project-source-evidence` --depends_on--> `capabilities/vault-ontology`
+- Evidence: `src-tauri/src/acp.rs`, `cli/src`, `mcp/src`, `mcp/src/schema.mjs`, `src/widgets/topology-map-v2`, `app/globals.css`, `src/features/first-run-starter`, `src/features/vault-sample-source`, `src/features/ontology-meaning-editor`, `src/features/docs-vault-local`, `src/shared/lib/project-source-receipt.ts`, `mcp/src/project-meaning-inventory.mjs`
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "git grep -n -e 'capabilities/mcp-server' -e 'AST/source search engine' -e 'CodeGraph' HEAD -- docs/ontology AGENTS.md docs/ONTOLOGY-ATLAS-SPEC.md docs/PRODUCT-DIRECTION.md README.md ':"'!public/docs-vault/**'"'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+HEAD:AGENTS.md:14:Atlas complements CodeGraph, grep, AST indexes, language servers, and source
+HEAD:AGENTS.md:148:## Context, delegation, and CodeGraph
+HEAD:AGENTS.md:150:Use the smallest sufficient context. Prefer a focused vault query, CodeGraph,
+HEAD:AGENTS.md:160:modes; every code directory's `AGENTS.md` points at it. Without CodeGraph, use
+HEAD:README.md:309:$ node $ATLAS/cli/src/index.mjs blast-radius capabilities/mcp-server docs/ontology --depth 2
+HEAD:README.md:310:capabilities/mcp-server — blast radius (depth 2, incoming)
+HEAD:README.md:479:- **Not a code index.** Grep, language servers, AST indexes, and CodeGraph
+HEAD:docs/ONTOLOGY-ATLAS-SPEC.md:315:  "tail" fragment (e.g. `mcp-server` resolving to `capabilities/mcp-server`
+HEAD:docs/PRODUCT-DIRECTION.md:94:CodeGraph, and built-in search are reference points for the
+HEAD:docs/PRODUCT-DIRECTION.md:106:CodeGraph, and AST indexes should remain optional structural layers for
+HEAD:docs/ontology/README.md:26:  two agent surfaces: `capabilities/mcp-server` (runtime-advertised tools in
+HEAD:docs/ontology/capabilities/acp-runtime.md:12:dependencies: [capabilities/mcp-server]
+HEAD:docs/ontology/capabilities/acp-runtime.md:13:relation_notes: { capabilities/mcp-server: The ACP session receives this server as an mcpServer in session/new, obtaining the vault tool (src/features/acp-session/model/vault-mcp-server.ts). Thus, ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
+HEAD:docs/ontology/capabilities/cli-developer-entry.md:10:dependencies: [capabilities/mcp-server]
+HEAD:docs/ontology/capabilities/cli-developer-entry.md:11:relation_notes: { capabilities/mcp-server: "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts so schema or runtime changes must be checked across both surfaces." }
+HEAD:docs/ontology/capabilities/mcp-server.md:3:slug: capabilities/mcp-server
+HEAD:docs/ontology/capabilities/mcp-server.md:97:- Excluded: AST/source search engine, embedding store, model selection/agent loop, backend/accounts,
+HEAD:docs/ontology/domains/agent-integration.md:8:capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+HEAD:docs/ontology/ontology-atlas.md:58:- Concepts: `domains/agent-integration`, `domains/design-system`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`, `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+HEAD:docs/ontology/ontology-atlas.md:59:- Relations: `domains/agent-integration` --capabilities--> `capabilities/acp-runtime`, `domains/agent-integration` --capabilities--> `capabilities/agent-work-visibility`, `domains/agent-integration` --capabilities--> `capabilities/cli-developer-entry`, `domains/agent-integration` --capabilities--> `capabilities/mcp-server`, `domains/agent-integration` --capabilities--> `capabilities/vault-agent`, `domains/design-system` --capabilities--> `capabilities/control-primitives`, `domains/design-system` --capabilities--> `capabilities/design-build-handoff`, `domains/design-system` --capabilities--> `capabilities/design-gate-ratchets`, `domains/design-system` --capabilities--> `capabilities/design-token-ramps`, `domains/graph-modeling` --capabilities--> `capabilities/reviewed-ontology-writing`, `domains/graph-modeling` --capabilities--> `capabilities/taxonomy`, `domains/graph-modeling` --capabilities--> `capabilities/vault-ontology`, `domains/local-vault-management` --capabilities--> `capabilities/data-source-mode`, `domains/local-vault-management` --capabilities--> `capabilities/docs-vault-local`, `domains/local-vault-management` --capabilities--> `capabilities/project-data-source`, `domains/local-vault-management` --capabilities--> `capabilities/vault-sample-source`, `domains/onboarding-and-shell` --capabilities--> `capabilities/app-update`, `domains/onboarding-and-shell` --capabilities--> `capabilities/desktop-download-decision`, `domains/onboarding-and-shell` --capabilities--> `capabilities/first-run-starter`, `domains/onboarding-and-shell` --capabilities--> `capabilities/guided-tour`, `domains/onboarding-and-shell` --capabilities--> `capabilities/locale-switch`, `domains/project-portfolio` --capabilities--> `capabilities/construction-review`, `domains/project-portfolio` --capabilities--> `capabilities/project-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-quick-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-share`, `domains/project-portfolio` --capabilities--> `capabilities/project-source-evidence`, `domains/topology-navigation` --capabilities--> `capabilities/topology-browsing`
+HEAD:docs/ontology/ontology-atlas.md:68:- Concepts: `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+HEAD:docs/ontology/ontology-atlas.md:78:- Concepts: `capabilities/acp-runtime`, `capabilities/cli-developer-entry`, `capabilities/mcp-server`, `capabilities/vault-ontology`, `capabilities/topology-browsing`, `capabilities/design-token-ramps`, `capabilities/first-run-starter`, `capabilities/vault-sample-source`, `capabilities/reviewed-ontology-writing`, `capabilities/docs-vault-local`, `capabilities/project-source-evidence`
+HEAD:docs/ontology/ontology-atlas.md:79:- Relations: `capabilities/acp-runtime` --depends_on--> `capabilities/mcp-server`, `capabilities/cli-developer-entry` --depends_on--> `capabilities/mcp-server`, `capabilities/mcp-server` --depends_on--> `capabilities/vault-ontology`, `capabilities/topology-browsing` --depends_on--> `capabilities/vault-ontology`, `capabilities/topology-browsing` --depends_on--> `capabilities/design-token-ramps`, `capabilities/first-run-starter` --depends_on--> `capabilities/vault-sample-source`, `capabilities/reviewed-ontology-writing` --depends_on--> `capabilities/docs-vault-local`, `capabilities/project-source-evidence` --depends_on--> `capabilities/vault-ontology`
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "git show HEAD:README.md | sed -n '468,490p'
+git show HEAD:AGENTS.md | sed -n '8,20p'
+git show HEAD:docs/PRODUCT-DIRECTION.md | sed -n '82,114p'
+git show HEAD:docs/ontology/README.md | sed -n '18,34p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+- **The bundled MCP server is a file, not a service.** It sits inside the app
+  bundle and keeps working when the app is closed, because your agent launches
+  it itself.
+
+## What this is not
+
+- **Not a wiki, and not agent memory.** A wiki only people write rots the week
+  it is written; a store only agents write drifts with nobody left to judge it.
+  Atlas is one layer both audiences read and write, and the arbiter is a git
+  diff. The side-by-side comparison is
+  [above](#why-not-just-use-a-notes-tool).
+- **Not a code index.** Grep, language servers, AST indexes, and CodeGraph
+  answer where a symbol lives and what calls it, and Atlas replaces none of
+  them. It answers why that artifact matters, which capability it serves, and
+  what to verify before changing it — it tells the agent which structural
+  question is worth asking. Curated, not exhaustive.
+- **Not an RDF, OWL, SKOS, or SHACL implementation.** Atlas exports a bounded
+  graph shape, but its Markdown vault is not an RDF serialization, its validator
+  is not a SHACL processor, and its query engine is not a reasoner. A persisted
+  relation is a declared claim, never an entailment, and an absent one is a
+  visible gap, never a negative fact. The boundary is written down instead of
+  implied:
+  [specification §5.2](docs/ONTOLOGY-ATLAS-SPEC.md#52-standards-boundary).
+Ontology Atlas is a local-first workbench for understanding a product from
+business meaning to implementation evidence. Vault Markdown frontmatter is the
+graph, Git is the source of truth, and people judge meaning through plain files
+and diffs. Agents use the same vault through MCP/CLI. The macOS app carries the
+MCP server; source checkouts run it directly. There is no npm package.
+
+Atlas complements CodeGraph, grep, AST indexes, language servers, and source
+search. Those tools answer structural questions; Atlas provides the durable
+meaning layer: task starting point, domain/capability context, evidence, impact
+boundary, and verification path.
+
+The public meta-model belongs only in `docs/ONTOLOGY-ATLAS-SPEC.md` §2/§5.
+Do not create competing kind or relation glossaries. The product is
+specification; a folder, team, technology, or workflow name never promotes itself.
+
+The product should therefore optimize the loop:
+
+```text
+business question -> graph map of domains/capabilities -> implementation and
+evidence trace -> human/agent meaning decision -> git-backed ontology update
+-> next planning, marketing, leadership, development, or agent task starts with
+the same model
+```
+
+AST/code-index and source-intelligence tools such as language servers, Serena,
+CodeGraph, and built-in search are reference points for the
+implementation-evidence side of that loop: parse deterministically, index
+locally, answer structural questions without re-reading the repo. Atlas should
+learn from those properties without copying implementation: local-first
+indexing, stable node identifiers, incremental refresh, query-plan style
+narrowing, and impact traversal. Atlas' distinct value is the curated business
+and product meaning layer on top: what the organization is trying to do, which
+capabilities carry it, which implementation proves it, what changes affect it,
+and what a human or AI agent should verify before acting.
+
+The coding-agent promise is not that Atlas replaces source search or stores an
+exhaustive symbol graph. Built-in search, grep, language servers, Serena,
+CodeGraph, and AST indexes should remain optional structural layers for
+definitions, callers, imports, and local code impact. Atlas must work for plain
+Claude Code or Codex after only the Atlas MCP server or CLI is connected; no
+external code index, source-intelligence service, or extra agent plugin may be a
+precondition for first value. Source tools are accelerators after the Atlas
+meaning packet has narrowed the work. Atlas should tell the agent which
+structural question to ask, which capability or domain gives that code meaning,
+and which verification path makes the answer safe to use. The ontology should
+therefore store meaningful implementation evidence, not every code fact: files,
+
+## Where to start
+
+- `ontology-atlas.md`: the `kind: project` root. Everything hangs off it.
+- `domains/`: the six functional areas (agent integration, graph modeling,
+  local vault management, onboarding & shell, project portfolio, topology
+  navigation). Domain boundaries are human judgment: see `created_by:`.
+- `capabilities/`: user-visible features inside those domains, including the
+  two agent surfaces: `capabilities/mcp-server` (runtime-advertised tools in
+  `mcp/`) and `capabilities/cli-developer-entry` (local commands in `cli/`).
+- `elements/`: implementation evidence. Each element names a *role* (flat
+  slug); the file location lives in its `path:` frontmatter, never in the slug.
+
+**No document writes the census number**: it rots the moment anyone adds a
+node. Ask the vault itself:
+
+```bash
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "test -f README.md && echo README_PRESENT
+test -f docs/PRODUCT-DIRECTION.md && echo PRODUCT_DIRECTION_PRESENT
+nl -ba AGENTS.md | sed -n '10,20p'
+nl -ba README.md | sed -n '475,486p'
+nl -ba docs/PRODUCT-DIRECTION.md | sed -n '88,113p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+README_PRESENT
+PRODUCT_DIRECTION_PRESENT
+    10	graph, Git is the source of truth, and people judge meaning through plain files
+    11	and diffs. Agents use the same vault through MCP/CLI. The macOS app carries the
+    12	MCP server; source checkouts run it directly. There is no npm package.
+    13	
+    14	Atlas complements CodeGraph, grep, AST indexes, language servers, and source
+    15	search. Those tools answer structural questions; Atlas provides the durable
+    16	meaning layer: task starting point, domain/capability context, evidence, impact
+    17	boundary, and verification path.
+    18	
+    19	The public meta-model belongs only in `docs/ONTOLOGY-ATLAS-SPEC.md` §2/§5.
+    20	Do not create competing kind or relation glossaries. The product is
+   475	  it is written; a store only agents write drifts with nobody left to judge it.
+   476	  Atlas is one layer both audiences read and write, and the arbiter is a git
+   477	  diff. The side-by-side comparison is
+   478	  [above](#why-not-just-use-a-notes-tool).
+   479	- **Not a code index.** Grep, language servers, AST indexes, and CodeGraph
+   480	  answer where a symbol lives and what calls it, and Atlas replaces none of
+   481	  them. It answers why that artifact matters, which capability it serves, and
+   482	  what to verify before changing it — it tells the agent which structural
+   483	  question is worth asking. Curated, not exhaustive.
+   484	- **Not an RDF, OWL, SKOS, or SHACL implementation.** Atlas exports a bounded
+   485	  graph shape, but its Markdown vault is not an RDF serialization, its validator
+   486	  is not a SHACL processor, and its query engine is not a reasoner. A persisted
+    88	evidence trace -> human/agent meaning decision -> git-backed ontology update
+    89	-> next planning, marketing, leadership, development, or agent task starts with
+    90	the same model
+    91	```
+    92	
+    93	AST/code-index and source-intelligence tools such as language servers, Serena,
+    94	CodeGraph, and built-in search are reference points for the
+    95	implementation-evidence side of that loop: parse deterministically, index
+    96	locally, answer structural questions without re-reading the repo. Atlas should
+    97	learn from those properties without copying implementation: local-first
+    98	indexing, stable node identifiers, incremental refresh, query-plan style
+    99	narrowing, and impact traversal. Atlas' distinct value is the curated business
+   100	and product meaning layer on top: what the organization is trying to do, which
+   101	capabilities carry it, which implementation proves it, what changes affect it,
+   102	and what a human or AI agent should verify before acting.
+   103	
+   104	The coding-agent promise is not that Atlas replaces source search or stores an
+   105	exhaustive symbol graph. Built-in search, grep, language servers, Serena,
+   106	CodeGraph, and AST indexes should remain optional structural layers for
+   107	definitions, callers, imports, and local code impact. Atlas must work for plain
+   108	Claude Code or Codex after only the Atlas MCP server or CLI is connected; no
+   109	external code index, source-intelligence service, or extra agent plugin may be a
+   110	precondition for first value. Source tools are accelerators after the Atlas
+   111	meaning packet has narrowed the work. Atlas should tell the agent which
+   112	structural question to ask, which capability or domain gives that code meaning,
+   113	and which verification path makes the answer safe to use. The ontology should
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "git show HEAD:docs/ontology/capabilities/mcp-server.md | nl -ba | sed -n '1,22p;88,111p'
+git show HEAD:docs/ontology/domains/agent-integration.md | nl -ba | sed -n '1,30p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+     1	---
+     2	uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51
+     3	slug: capabilities/mcp-server
+     4	kind: capability
+     5	title: MCP Server
+     6	domain: domains/agent-integration
+     7	elements: []
+     8	path: mcp/src
+     9	created_by: "agent:unknown"
+    10	dependencies: [capabilities/vault-ontology]
+    11	relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract." }
+    12	display_ko: AI 연결 서버
+    13	display_en: AI Connection Server
+    14	---
+    15	
+    16	# MCP Server
+    17	
+    18	It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop.
+    19	
+    20	## User Outcomes
+    21	
+    22	- The agent accurately finds meaning nodes in the project and reads relationships, evidence, and impact scope together.
+    88	
+    89	## Constraints: Impact and blast radius
+    90	
+    91	`impact` and `blast_radius` follow only declared `depends_on`. Containment/domain/element relations are structural evidence for `reachability`/`subgraph`; do not promote to impact or risk. Return `review_required` if no `relation_notes` on declared dependency, `declared_with_rationale` if present. Both are currently not source-backed due to lack of current-source receipt per relation unit; keep completeness and risk as `unknown`. Therefore, 0 dependency declarations are not interpreted as low-risk or no impact.
+    92	
+    93	## Inclusions / Exclusions
+    94	
+    95	- Included: MCP tool registration and I/O contracts, Vault parser/writer, deterministic compiler and
+    96	  graph query, concurrency/dry-run/validation safeguards, bundled server for installed apps.
+    97	- Excluded: AST/source search engine, embedding store, model selection/agent loop, backend/accounts,
+    98	  auto-saving creation proposals without human approval.
+    99	
+   100	## Implementation Basis
+   101	
+   102	- `mcp/src/index.js` · `mcp/src/tool-inventory.mjs`: Boundary that creates both
+   103	  `tools/list` and mode-specific initialize inventory from the active tool registry.
+   104	- `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
+   105	  `mcp/src/infer-imports.mjs`: Bounded repository meaning ingress, Rust configuration provenance,
+   106	  evidence for TS/JS/Python file-imports and Go package-imports without execution, Autotools C/Rust unsupported
+   107	  scope and exact-path relationship evidence.
+   108	- `mcp/src/vault.mjs` · `mcp/src/schema.mjs`: File read/write and UID/slug specifications.
+   109	- `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: Compile/query.
+   110	- `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: Quantified
+   111	  competency coverage and source-backed proposal write gate.
+     1	---
+     2	uid: 0f1364a5-7d0f-4fa5-b913-454d47b33cca
+     3	slug: domains/agent-integration
+     4	kind: domain
+     5	title: AI Agent Integration
+     6	display_ko: AI 에이전트 연동
+     7	display_en: AI Agent Integration
+     8	capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+     9	elements: [elements/agents-destination, elements/vault-agent-panel]
+    10	created_by: human
+    11	relation_notes: { capabilities/acp-runtime: "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.", capabilities/agent-work-visibility: Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs. }
+    12	---
+    13	
+    14	## Definition
+    15	Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user.
+    16	
+    17	## Evidence
+    18	- README.md: "Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection."
+    19	- mcp/src/index.js · mcp/src/tool-inventory.mjs: coupled boundary deriving `tools/list` and
+    20	  full/read-only initialize inventory from active registry
+    21	- cli/src/commands/agent-brief.mjs: passing `--project` as explicit project selector matching MCP `agent_brief.project`
+    22	
+    23	## Inclusion / Exclusion
+    24	- Included: MCP read/write tools (`mcp/`) advertising current list at runtime, local CLI,
+    25	  in-app connect button, client config writing and `mcp-verify` connection proof,
+    26	  ACP executor detection and launching with isolated settings within the app
+    27	  (`capabilities/acp-runtime`)
+    28	- Excluded: the graph schema itself (that belongs to the graph-modeling domain)
+    29	
+    30	## Project Meaning Handover
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "git grep -n -i -E 'symbol search|code symbol|source search|source-search|code index|exhaustive symbol|definitions, callers' HEAD -- AGENTS.md README.md docs/ontology docs ':"'!docs/benchmark/**'"' ':"'!docs/archive/**'"' ':"'!docs/DECISIONS.md'"' | head -200" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+HEAD:README.md:479:- **Not a code index.** Grep, language servers, AST indexes, and CodeGraph
+HEAD:docs/AGENT-MEMORY-POSITIONING.md:34:Atlas should not promise to replace code-reading tools. Built-in source search,
+HEAD:docs/AGENT-MEMORY-POSITIONING.md:36:good at structural facts: definitions, callers, imports, routes, and local
+HEAD:docs/AGENT-MEMORY-POSITIONING.md:59:`element` nodes and relations; leave exhaustive symbol graphs to deterministic
+HEAD:docs/BACKLOG.md:42:source search, manual config inspection, session dialogue re-explanation. **Ontology value**: Writer and reader interpret concept, typed
+HEAD:docs/FOUNDATIONS.md:224:  S-expression query system; the substrate beneath most code indexers (and our own CodeGraph index).
+HEAD:docs/PRODUCT-DIRECTION.md:104:The coding-agent promise is not that Atlas replaces source search or stores an
+HEAD:docs/PRODUCT-DIRECTION.md:105:exhaustive symbol graph. Built-in search, grep, language servers, Serena,
+HEAD:docs/PRODUCT-DIRECTION.md:107:definitions, callers, imports, and local code impact. Atlas must work for plain
+HEAD:docs/PRODUCT-DIRECTION.md:109:external code index, source-intelligence service, or extra agent plugin may be a
+HEAD:docs/PRODUCT-OWNER-OPERATING-SYSTEM.md:139:   Notion, raw markdown, graph DB tools, source search, Claude/Codex context, or
+HEAD:docs/PRODUCT-OWNER-OPERATING-SYSTEM.md:414:   language servers, grep, and built-in source search are optional structural
+HEAD:docs/PRODUCT-OWNER-OPERATING-SYSTEM.md:517:  source tool a better next action without making any external code index a
+HEAD:docs/ontology/capabilities/mcp-server.md:97:- Excluded: AST/source search engine, embedding store, model selection/agent loop, backend/accounts,
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/AGENT-MEMORY-POSITIONING.md | sed -n '28,64p'
+nl -ba docs/PRODUCT-OWNER-OPERATING-SYSTEM.md | sed -n '402,422p;510,521p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+    28	Atlas CLI from Claude Code, Codex, Cursor, or another coding agent, and the agent
+    29	should already receive a useful workspace brief, graph health check, handoff
+    30	packet, and reviewable memory-diff workflow. No CodeGraph, Serena, language
+    31	server, grep wrapper, or external source-index service is required for the
+    32	product to be usable.
+    33	
+    34	Atlas should not promise to replace code-reading tools. Built-in source search,
+    35	grep, language servers, Serena, CodeGraph, AST indexes, and similar tools are
+    36	good at structural facts: definitions, callers, imports, routes, and local
+    37	impact paths. Atlas helps the coding agent one layer above that: it preserves
+    38	the task starting point, product meaning, capability boundary, implementation
+    39	evidence, and validation path that explain why those code facts matter.
+    40	
+    41	## Product Bet
+    42	
+    43	The product is not valuable because it is "an ontology editor." Developers do
+    44	not want another system they must manually maintain.
+    45	
+    46	The product is valuable if it reduces the maintenance cost of AI-agent memory:
+    47	
+    48	1. Open a repo and generate an ontology draft automatically.
+    49	2. Let the agent propose mental-model changes after real code work.
+    50	3. Let the developer review those changes like a git diff.
+    51	4. Make the next agent session visibly better because the memory is already in
+    52	   the repo.
+    53	
+    54	That loop is the product. The ontology graph is the implementation substrate.
+    55	
+    56	The coding-agent value is therefore not "Atlas reads all code for you." The
+    57	value is "Atlas tells the agent what to inspect, why it matters, and what must
+    58	be verified before acting." Store meaningful implementation evidence as
+    59	`element` nodes and relations; leave exhaustive symbol graphs to deterministic
+    60	code-intelligence tools.
+    61	
+    62	## Why This Can Matter
+    63	
+    64	The strongest positioning is:
+   402	design, graph, CLI, MCP, and workflow changes cannot.
+   403	
+   404	1. User and moment: Who is trying to understand or change a product/system, and
+   405	   in what moment?
+   406	2. Current alternative: What do they do today in Obsidian, raw docs, graph DB
+   407	   tools, source browsing, Claude Code/Codex context, or manual reasoning?
+   408	3. Problem: What decision, handoff, or understanding task is slow, ambiguous, or
+   409	   error-prone without this change?
+   410	4. Ontology value: Which concept, relation, evidence path, impact path, or
+   411	   project-to-code meaning layer becomes clearer?
+   412	5. Agent value: Which MCP, CLI, source-intelligence, or handoff workflow becomes
+   413	   easier for Claude Code, Codex, Cursor, or another agent? CodeGraph, Serena,
+   414	   language servers, grep, and built-in source search are optional structural
+   415	   tools; Atlas must still work without any one of them. The minimum acceptable
+   416	   agent path is plain Claude Code or Codex connected only to Atlas MCP/CLI.
+   417	6. Outcome: What behavior should change after release? Prefer "users can trace
+   418	   X without reading source" over "add a panel."
+   419	7. Evidence: What user report, screenshot, dogfood run, metric, or repeated
+   420	   failure supports this?
+   421	8. Riskiest assumption: if this fails, where does it fail first — nobody wants
+   422	   it (value), nobody can operate it (usability), we cannot build it
+   510	
+   511	- the phenomenon is observable;
+   512	- the target user and moment are concrete;
+   513	- the current substitute is named honestly;
+   514	- the ontology value is specific to concepts, relations, evidence, provenance,
+   515	  impact, ownership, or update paths;
+   516	- the agent value gives Claude Code, Codex, Cursor, MCP, CLI, or a structural
+   517	  source tool a better next action without making any external code index a
+   518	  product dependency;
+   519	- plain Claude Code or Codex can still use the slice when Atlas MCP/CLI is the
+   520	  only connected tool surface;
+   521	- when adding is not necessary, the slice removes something or makes it quieter;
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+기록상 **코드 심볼 검색 기능 자체는 `mcp-server` capability 범위 밖**입니다.
+
+Git HEAD의 `docs/ontology/capabilities/mcp-server.md`가 경계를 명시합니다.
+
+- 포함: MCP 도구 등록·I/O 계약, Vault parser/writer, 온톨로지 compiler/graph query, 검증·dry-run·동시성 보호
+- 제외: **“AST/source search engine”**
+- MCP Server의 정의: AI 에이전트가 로컬 Markdown vault를 읽고 안전하게 갱신하는 stdio JSON-RPC 인터페이스
+
+프로젝트 문서도 같은 경계를 반복합니다.
+
+- Atlas는 code index가 아니며, 심볼 위치·caller 탐색은 grep/LSP/AST index/CodeGraph가 담당합니다. [README.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/README.md:479)
+- 정의·caller·import·로컬 코드 영향은 선택적인 구조 검색 계층이고, Atlas는 의미·capability·검증 경로를 제공합니다. [PRODUCT-DIRECTION.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/PRODUCT-DIRECTION.md:104)
+- exhaustive symbol graph는 deterministic code-intelligence tool에 남긴다고 기록되어 있습니다. [AGENT-MEMORY-POSITIONING.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/AGENT-MEMORY-POSITIONING.md:56)
+
+따라서 기록된 구분을 그대로 적용하면:
+
+- 심볼 검색 도구의 **MCP 등록과 I/O 계약**: `mcp-server` 안
+- 실제 **코드 심볼 색인·AST/source 검색 엔진**: `mcp-server` 밖
+
+현재 작업 트리의 `docs/ontology`는 삭제 상태여서, 온톨로지 노드는 변경하지 않고 Git HEAD 기록을 읽었습니다.
+hook: Stop
+hook: Stop Completed
+tokens used
+72,070

@@ -118,6 +118,46 @@ and search ownership under identical copy.
 **Status**: valid
 
 ---
+## 2026-08-25 (115) — MCP `instructions` names which question each tool answers, before it lists the tools
+
+**Prior decisions**: none on this surface. (113), 2026-08-24, moved the write
+checkpoint into the server that performs the write; this record is about the read
+side of the same boundary and does not disturb it.
+
+**Observed phenomenon**: measured against a live server, the `instructions`
+carried in `initialize` are **32,787 characters**, and every session receives them
+at system-prompt level. They name more than forty operations and never say when to
+reach for one — item 15 alone is a single 3,140-character comma list. Asked for
+the ACP runtime's boundary and its reason, an agent called `get_concept` four
+times, gave up, and ran `rg` forty-seven times against the source. The answer was
+in the vault's `## Boundaries` the whole time.
+
+**Decision**: prepend a 1,098-character routing block. Nothing existing is
+removed. Its first sentence is the substance: *the vault answers why and the
+source answers what; a reason, a boundary, an exclusion, or a decision is not in
+the code, so grep cannot find it.*
+
+**Recorded dissent**: the instructions already cost roughly 9,400 tokens per
+session, and adding to them makes the measured problem worse rather than better.
+This is correct, and the intended payment was to collapse two enumerations
+(3,140 and 1,643 characters) that `query_ontology`'s own `tools/list` description
+already carries. That was attempted and **reverted**:
+`mcp/src/integration.test.mjs` pins `relationDecisionGuide`, `skip_existing`,
+`componentLimit` and others as required substrings of `instructions`. Overturning
+that pin is a separate decision, not a side effect of this one, so the shrink
+remains open and this record leaves the payload larger than it found it.
+
+**Falsifier**: if agents still prefer source search over the vault on boundary and
+reason questions, the block bought nothing. Measurement point:
+`pnpm benchmark --only=B1` — MCP call count and whether the answer cites
+`## Boundaries`. First re-measurement moved MCP calls from 2 to a median of 5, but
+that is n=1 against n=3 and is not claimed as significant.
+
+**Revisit**: after `ontology-field-trial` runs on a repository nobody here knows.
+`docs/benchmark/FINDINGS-2026-08-25.md` holds the full evidence, including why
+this repository cannot answer the question on its own.
+
+**Status**: standing
 
 ## 2026-08-25 (114) — A summary node reports when its description falls behind its membership, and never rewrites it
 

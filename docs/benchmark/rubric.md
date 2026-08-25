@@ -4,6 +4,27 @@
 > Be strict. If you find yourself wanting to round up because the agent
 > "almost" got it, write the gap in the **Notes** column instead of inflating.
 
+## What this measures, and what it does not
+
+> **Saving tokens is not a goal of this project** (owner, 2026-08-25):
+>
+> > *"I care about whether we build accurately and whether the meaning of the
+> > business gets clearer. This is not a memory-saving project, and optimising
+> > tokens is not something I intend to do."*
+>
+> So cost decides nothing here. Tool calls and tokens are printed by the harness
+> as diagnostics, the way a stack trace is a diagnostic, and a cell is never won
+> or lost on them. An answer that costs more and lands the change in the right
+> place has simply won.
+>
+> This was written down after a measured mistake on 2026-08-25: B1 was called a
+> failure because the agent used 47 shell calls and 2 MCP calls. Reading the
+> answer showed it had named the boundary and its reasons correctly. Counting
+> tools had produced a verdict opposite to the truth.
+>
+> The A and C tasks measure retrieval. The **D tasks measure meaning**, and only
+> the D axes below can tell whether this product does what it claims.
+
 ## The four axes
 
 ### 1. Correctness (0–3) — primary score
@@ -17,9 +38,15 @@
 
 **Verify against the actual repo state at measurement time** — don't grade from memory. Open the file / run `pnpm dogfood:walk` if needed.
 
-### 2. Tool-call count
+### 2. Tool-call count and tokens (diagnostic, never a score)
 
-Just count. Lower-with-correctness is better. A score-3 answer in 2 tool calls beats a score-3 answer in 15.
+Recorded, never scored. They are useful for one thing only: reading *how* an agent
+reached its answer, the same way you would read a stack trace. A cell is decided by
+the axes above and below this one.
+
+`scripts/benchmark.mjs` captures both. If you do look at them, read the median
+across runs and never a single cell: on 2026-08-25 a single-shot C2 read 10,534
+tokens in one mode and 49,196 in the other, for two identical shell commands.
 
 For Claude Code: visible in the conversation as tool-use blocks.
 For Codex: count the tool invocations shown in the CLI output.
@@ -36,6 +63,42 @@ Examples:
 - "The `findOrphans` function returns…" but it's actually `find_orphans`. **0** — name typo, not invented behavior.
 
 If unsure whether something's hallucinated, search for it. The cost of a wrong "+1" or "+0" is small; the cost of letting confident fabrication go uncounted is large.
+
+### D-only axes — the ones that decide a meaning cell
+
+Score these **only for D tasks**. They exist because a D answer can be fluent,
+plausible, and wrong in a way the correctness axis does not catch.
+
+#### D-a. Boundary fidelity (0–3)
+
+| Score | Meaning |
+|---|---|
+| **3** | Named the documented boundary, stated which side the request falls on, and stopped there. |
+| **2** | Found the boundary but hedged about whether it applies. |
+| **1** | Described the area correctly without noticing that a boundary governs it. |
+| **0** | Crossed a documented exclusion without noticing, or asserted the opposite of what the vault says. |
+
+A D1 answer that agrees symbol search belongs in `capabilities/mcp-server` scores
+**0** regardless of how well written it is: `## Inclusions / Exclusions` excludes
+an AST/source search engine in as many words.
+
+#### D-b. Provenance (0–2)
+
+| Score | Meaning |
+|---|---|
+| **2** | Cited the node slug **and** the section the claim came from, so a human can open it and disagree. |
+| **1** | Cited a node but not where inside it. |
+| **0** | Asserted the reason with no citation. Indistinguishable from a guess. |
+
+#### D-c. Invented rationale (count)
+
+Count reasons the answer gives that appear **neither in the vault nor in the
+source**. This is different from axis 3: the fact can be real while the *why* is
+fabricated, and a confident fabricated *why* is the most expensive failure this
+product can have, because it is the one a reader is least able to check.
+
+A D answer with any invented rationale cannot score above **1** on correctness,
+whatever else it got right.
 
 ### 4. Subjective utility (1–5) — last, optional
 

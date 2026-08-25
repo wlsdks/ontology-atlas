@@ -2358,6 +2358,21 @@ try {
 const TOOL_INVENTORY_PLACEHOLDER = '__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__';
 const SERVER_INSTRUCTIONS_TEMPLATE = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
+## Which tool answers which question
+
+The vault answers **why**; the source answers **what**. A reason, a boundary, an
+exclusion, or a decision is not in the code, so grep cannot find it. When the
+question is one of those, read the node body before searching the source.
+
+- *"What is X? Why is this boundary drawn here? What was decided, and why?"* \u2192 \`get_concept({slug})\`, then read the body sections \u2014 \`Constraints: \u2026\`, \`\u2026 Boundary\`, \`Inclusions / Exclusions\`, \`\u2026 Contract\`. That is where reasons live.
+- *"What does X contain / belong to?"* \u2192 \`get_concept\`, then \`find_neighbors(slug)\`.
+- *"Who references X?"* (always before a rename, merge, or delete) \u2192 \`find_backlinks(slug)\`.
+- *"How are A and B related?"* \u2192 \`find_path(A, B)\` \u2014 the \`via\` field names the frontmatter key that linked them.
+- *"What breaks if I change X?"* \u2192 \`query_ontology({operation:'impact'})\`, then \`blast_radius\` for the same answer grouped by kind and domain.
+- *"Which nodes match a condition?"* \u2192 \`query_concepts(filter)\`.
+- *"Where do I start? Is this vault trustworthy?"* \u2192 \`query_ontology({operation:'workspace_brief'})\`, then \`validate_vault({})\`.
+
+
 ## Node identity
 
 Every valid node has both identities: immutable \`uid\` is the permanent machine identity, while \`slug\` is the current human-readable address. \`list_concepts\`, \`get_concept\`, \`get_concepts\`, compiled/query node rows, and agent handoffs return both. Use \`get_concept({uid})\` or \`get_concepts({uids:[...]})\` for exact continuity across renames; use slug for frontmatter relations, URLs, and all graph-operation inputs. Never treat a slug change as a new UID.
