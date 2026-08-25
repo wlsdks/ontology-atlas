@@ -132,7 +132,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.138.0",
+        "package": "@tencent-ai/codebuddy-code@2.139.0",
         "args": [
           "--acp"
         ]
@@ -329,7 +329,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.56.0",
+        "package": "@google/gemini-cli@0.57.0",
         "args": [
           "--acp"
         ]
@@ -629,7 +629,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.22.0",
+        "package": "@qwen-code/qwen-code@0.22.1",
         "args": [
           "--acp",
           "--experimental-skills"
