@@ -37,7 +37,7 @@
  */
 export const MCP_TOOL_COUNT = 35;
 
-export const RELEASE_VERSION = "1.0.0-rc.10";
+export const RELEASE_VERSION = "1.0.0-rc.11";
 export const RELEASE_MIN_MACOS = "macOS 12";
 export const RELEASE_ARCHES = ["aarch64", "x64"] as const;
 export type ReleaseArch = (typeof RELEASE_ARCHES)[number];

@@ -7,6 +7,50 @@
 
 ---
 
+## 2026-08-25 · The map lives inside your project, and the door finds the people who need it
+
+- **A door for somebody who already has code.** The first-run card offered four actions and none of
+  them made an ontology from a repository that already exists: opening an empty folder gave an empty
+  map, creating one gave five example nodes. The card now leads with reading your codebase, hands
+  the work to the connected agent through MCP, and shows you the folder it will create before
+  anything is written.
+- **The map is created inside the project, in a folder named `atlas`.** It used to land beside the
+  project rather than in it. The confirm step names the exact path first, and nothing reaches the
+  disk until you accept it.
+- **The agent can see the code.** An app-started session was handed the vault path and nothing else,
+  so an agent asked to survey a repository was reading only the ontology folder. It now receives the
+  project root as well.
+- **The door appears for anyone who has not built a map yet**, not only for somebody who has never
+  opened a folder. Opening an empty folder used to hide the one action that would have filled it.
+- **Every permission request now says where the write lands** (an ontology write, a file inside the
+  project you picked, or somewhere else on your disk) in three distinguishable colours rather than
+  a path string you had to parse. The durable 「allow for this conversation」 choice is separated from
+  the one-off answers.
+- **The empty map stops offering a round trip to itself.** 「Browse concepts」 pointed at a route that
+  redirects back to the map, so on an empty ontology it left the screen and came back to the same
+  screen with an empty index.
+- **Three dead ends in the map-from-code flow are closed**, and `init` no longer rewires a project it
+  was not run inside.
+
+## 2026-08-25 · The `atlas` command works from anywhere, and one thing has one name
+
+- `atlas install-shim` puts `atlas` on your PATH, so the CLI is a word you type rather than a path
+  you remember. It writes one launcher into `~/.local/bin` (no registry, no sudo, nothing outside
+  your home directory) and prints the exact contents first.
+- Typing bare `atlas` used to print all 56 commands. It now reads your situation (in a codebase
+  with no ontology, in an empty one, in a full one) and names the few steps that make sense from
+  there. The full list stays one flag away.
+- `atlas remove-relation` takes a relation back off a node, the mirror of `relate`. It also removes
+  that relation's recorded rationale, so a reason for a relation that no longer exists cannot
+  survive it.
+- **One word per thing.** A measured inventory found the ontology folder called by four different
+  names across 41 strings, and the empty map saying 「no projects to draw」: a sentence built from a
+  schema kind, describing a number that was actually the node count. Proper ontology terms are used
+  as they are; what is gone is the synonyms.
+- The CLI now prints one language. 140 lines carried Korean in strings a command prints, sixteen of
+  them switching language inside a single sentence, because the gate that guards this reads comments
+  and cannot see a string literal.
+
 ## 2026-08-25 · The released app carries its third-party notices
 
 - The macOS app and Windows installer now ship `NOTICE.md` and `LICENSE` inside the bundle. The app
