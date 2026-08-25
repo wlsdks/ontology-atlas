@@ -95,13 +95,13 @@ export function runFind(args) {
 
   if (matches.length === 0) {
     console.log(
-      `${COLORS.dim}[ontology-atlas] "${query}" 매칭 0 ${kindFilter ? `(kind=${kindFilter})` : ''}${COLORS.reset}`,
+      `${COLORS.dim}[ontology-atlas] "${query}" matched nothing ${kindFilter ? `(kind=${kindFilter})` : ''}${COLORS.reset}`,
     );
     return 0;
   }
 
   console.log(
-    `${COLORS.bold}"${query}"${COLORS.reset} ${COLORS.dim}· ${matches.length} 매칭${kindFilter ? ` (kind=${kindFilter})` : ''}${COLORS.reset}\n`,
+    `${COLORS.bold}"${query}"${COLORS.reset} ${COLORS.dim}· ${matches.length} matches${kindFilter ? ` (kind=${kindFilter})` : ''}${COLORS.reset}\n`,
   );
   for (const m of matches) {
     const color = KIND_COLORS[m.kind] || '';

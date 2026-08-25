@@ -122,8 +122,8 @@ export async function runAgentBrief(args) {
    */
   if (exitCode === 1 && !exitZero) {
     process.stdout.write(
-      `\n${COLORS.dim}이 1은 실패가 아니라 그래프가 아직 덜 여물었다는 신호예요. ` +
-        `status/readiness 를 직접 읽으려면 --exit-zero 를 주세요.${COLORS.reset}\n`,
+      `\n${COLORS.dim}This 1 is not a failure; it means the graph is not ripe yet. ` +
+        `Pass --exit-zero to read status/readiness directly.${COLORS.reset}\n`,
     );
   }
   return exitCode;
@@ -646,7 +646,7 @@ function render(result) {
   process.stdout.write(
     `${COLORS.bold}agent brief${COLORS.reset} ${sc}${status}${COLORS.reset}` +
       ` ${COLORS.dim}· readiness ${rc}${readiness.status}${COLORS.reset}` +
-      ` ${COLORS.dim}${readiness.score}/100 · ${graph.nodes ?? 0} 노드 · ${graph.edges ?? 0} 관계` +
+      ` ${COLORS.dim}${readiness.score}/100 · ${graph.nodes ?? 0} nodes · ${graph.edges ?? 0} relations` +
       ` · ${readiness.healthChecks} health checks${COLORS.reset}\n\n`,
   );
 
@@ -688,7 +688,7 @@ function render(result) {
 
   const entrypoints = Array.isArray(result.entrypoints) ? result.entrypoints : [];
   if (entrypoints.length > 0) {
-    process.stdout.write(`${COLORS.dim}ENTRYPOINTS${COLORS.reset} ${COLORS.dim}(agent가 먼저 볼 고연결 노드)${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}ENTRYPOINTS${COLORS.reset} ${COLORS.dim}(highly connected nodes an agent should read first)${COLORS.reset}\n`);
     for (let i = 0; i < Math.min(entrypoints.length, 5); i += 1) {
       const node = entrypoints[i];
       const kc = KIND_COLORS[node.kind] || COLORS.dim;

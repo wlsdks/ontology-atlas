@@ -328,7 +328,7 @@ function parseArgs(args) {
     }
   }
   if (positional.length === 0) {
-    return { error: '필수 인자: import 할 .md 파일 또는 디렉토리 1 개 이상' };
+    return { error: 'required argument: at least one .md file or directory to import' };
   }
   if (flags.vault === false) return { error: '--vault requires a path' };
   for (const value of Object.values(flags)) {
@@ -354,15 +354,16 @@ function printImportUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas import <path...> [--vault path] [--kind K] [--raw-slug] [--rename] [--dry-run]\n` +
       `\n` +
-      `  외부 .md 파일을 vault 안으로 정착. frontmatter 의 kind/slug/title 을 우선 사용,\n` +
-      `  없는 부분만 --kind 또는 파일명/첫 H1 으로 보완. schema 가 kind 별 양식 (project 의\n` +
-      `  domains/capabilities/elements 빈 배열 등) 을 자동 채움.\n` +
+      `  Settle an outside .md file into the vault. Its frontmatter kind/slug/title wins;\n` +
+      `  only what is missing is filled from --kind, the filename, or the first H1. The\n` +
+      `  schema supplies each kind's shape (a project's empty domains/capabilities/elements\n` +
+      `  arrays, and so on) automatically.\n` +
       `\n${COLORS.bold}options:${COLORS.reset}\n` +
       `  --vault path    target vault (default: cwd)\n` +
       `  --kind K        fallback kind when input frontmatter has no kind\n` +
       `  --raw-slug      opt out of default kind folder prefix (capability → capabilities/)\n` +
-      `  --rename        slug 가 vault 에 이미 있으면 -2 / -3 ... 으로 자동 회피\n` +
-      `  --dry-run       디스크 변경 없이 import 계획만 출력\n` +
+      `  --rename        when the slug is already taken, fall back to -2 / -3 ...\n` +
+      `  --dry-run       print the import plan without touching the disk\n` +
       `\n${COLORS.bold}examples:${COLORS.reset}\n` +
       `  ontology-atlas import ~/notes/auth.md --vault . --kind capability\n` +
       `  ontology-atlas import ./incoming/ --vault . --rename --dry-run\n`,

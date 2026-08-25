@@ -90,10 +90,10 @@ export async function runHubs(args) {
 function render(result) {
   const r = result?.rankings ?? {};
   const sections = [
-    ['PageRank (영향력)', r.pageRank, 'pageRank'],
-    ['Bridges (도메인 사이 잇는 노드)', r.bridges, 'bridgeScore'],
-    ['Authorities (많이 referenced)', r.authorities, 'inDegree'],
-    ['Hubs (많이 reference)', r.hubs, 'outDegree'],
+    ['PageRank (influence)', r.pageRank, 'pageRank'],
+    ['Bridges (nodes joining domains)', r.bridges, 'bridgeScore'],
+    ['Authorities (referenced often)', r.authorities, 'inDegree'],
+    ['Hubs (referencing often)', r.hubs, 'outDegree'],
   ];
   for (const [title, rows, scoreKey] of sections) {
     if (!Array.isArray(rows) || rows.length === 0) continue;
@@ -169,6 +169,6 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas hubs [vault] [--limit N] [--types A,B] [--plan] [--force] [--json]\n\n` +
       `--limit range 1-${LIMIT_CAP}. --types narrows relation types before PageRank.\n` +
       `Use --plan to run query_plan(centrality) first; expensive or warning plans skip execution unless --force is passed.\n` +
-      `4 rankings: PageRank (영향력) · Bridges (도메인 잇는) · Authorities (referenced) · Hubs (referencing).\n`,
+      `4 rankings: PageRank (influence) · Bridges (joining domains) · Authorities (referenced) · Hubs (referencing).\n`,
   );
 }

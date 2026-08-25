@@ -25,80 +25,80 @@ export const KNOWN_CODES = [
   {
     code: 'unclosed-frontmatter',
     severity: 'error',
-    description: '`---` 가 닫히지 않음: 파일 머리에 frontmatter 가 끝나지 않았습니다.',
+    description: '`---` never closes: the frontmatter at the head of the file has no end.',
   },
   {
     code: 'parse-zero-keys',
     severity: 'warning',
-    description: 'frontmatter 가 0 keys 로 파싱됨: YAML syntax 깨짐 가능.',
+    description: 'frontmatter parsed to 0 keys: the YAML syntax is probably broken.',
   },
   {
     code: 'malformed-frontmatter-line',
     severity: 'error',
-    description: 'frontmatter 선언 또는 들여쓰기 목록이 key: value 문법을 어김.',
+    description: 'a frontmatter declaration or indented list breaks key: value syntax.',
   },
   {
     code: 'missing-kind',
     severity: 'warning',
-    description: '`kind:` 키 자체가 없음: 그래프에서 빠짐.',
+    description: 'no `kind:` key at all: the file is left out of the graph.',
   },
   {
     code: 'empty-kind',
     severity: 'error',
-    description: '`kind:` 값이 비어있음: 그래프에서 빠지고 invalid.',
+    description: '`kind:` is empty: the file is left out of the graph and invalid.',
   },
   {
     code: 'unknown-kind',
     severity: 'warning',
-    description: 'project / domain / capability / element / document 외 값.',
+    description: 'a value other than project / domain / capability / element / document.',
   },
   {
     code: 'missing-uid',
     severity: 'error',
-    description: '온톨로지 노드에 영구 `uid:`가 없음.',
+    description: 'the ontology node has no permanent `uid:`.',
   },
   {
     code: 'invalid-uid',
     severity: 'error',
-    description: '`uid:`가 lowercase UUIDv4 규격이 아님.',
+    description: '`uid:` is not a lowercase UUIDv4.',
   },
   {
     code: 'invalid-merged-uids',
     severity: 'error',
-    description: '`merged_uids:`가 흡수된 UUIDv4 identity alias 규격을 어김.',
+    description: '`merged_uids:` breaks the absorbed UUIDv4 identity-alias format.',
   },
   {
     code: 'non-canonical-merged-uids',
     severity: 'warning',
-    description: '`merged_uids:`가 중복 제거·오름차순 정렬된 canonical set이 아님.',
+    description: '`merged_uids:` is not a deduplicated, ascending canonical set.',
   },
   {
     code: 'missing-expected-field',
     severity: 'warning',
-    description: 'kind 별 강하게 기대되는 필드 누락 (예: capability/element 의 `domain:`).',
+    description: 'a field strongly expected for this kind is missing (for example `domain:` on capability/element).',
   },
   {
     code: 'non-canonical-graph-array',
     severity: 'warning',
-    description: 'graph 배열이 trim/dedup/sort 된 canonical set 이 아님.',
+    description: 'a graph array is not a trimmed, deduplicated, sorted canonical set.',
   },
   {
     code: 'dangling-graph-reference',
     severity: 'warning',
     scope: 'vault',
-    description: 'graph reference 가 vault 의 어떤 node 로도 resolve 되지 않음.',
+    description: 'a graph reference resolves to no node in the vault.',
   },
   {
     code: 'duplicate-slug',
     severity: 'error',
     scope: 'vault',
-    description: '두 문서가 같은 canonical slug 를 주장: 관계가 어느 쪽인지 정할 수 없음.',
+    description: 'two documents claim the same canonical slug, so a relation cannot say which one it means.',
   },
   {
     code: 'duplicate-uid',
     severity: 'error',
     scope: 'vault',
-    description: '두 노드가 같은 primary 또는 merged UID를 영구 정체성으로 주장함.',
+    description: 'two nodes claim the same primary or merged UID as their permanent identity.',
   },
 ];
 
@@ -142,8 +142,8 @@ export function runValidate(args) {
     const unknown = failOn.filter((c) => !known.has(c));
     if (unknown.length > 0) {
       process.stderr.write(
-        `${COLORS.yellow}warning${COLORS.reset}  --fail-on 에 알려지지 않은 code: ${unknown.join(', ')}. ` +
-          `사용 가능한 code 목록: ${COLORS.bold}ontology-atlas validate --list-codes${COLORS.reset}\n`,
+        `${COLORS.yellow}warning${COLORS.reset}  --fail-on names unknown codes: ${unknown.join(', ')}. ` +
+          `List the available ones: ${COLORS.bold}ontology-atlas validate --list-codes${COLORS.reset}\n`,
       );
     }
   }
@@ -441,7 +441,7 @@ function printKnownCodes(asJson) {
     return 0;
   }
   process.stdout.write(
-    `${COLORS.bold}validate issue codes${COLORS.reset} ${COLORS.dim}(--fail-on=<code> 로 특정 code 만 fail)${COLORS.reset}\n\n`,
+    `${COLORS.bold}validate issue codes${COLORS.reset} ${COLORS.dim}(--fail-on=<code> fails on chosen codes only)${COLORS.reset}\n\n`,
   );
   for (const c of KNOWN_CODES) {
     const severityColor = c.severity === 'error' ? COLORS.red : COLORS.yellow;
@@ -549,9 +549,9 @@ function findDuplicateSlugIssues(entries) {
           code: 'duplicate-slug',
           severity: 'error',
           message:
-            `\`slug: ${declared}\` 를 다른 문서도 주장합니다 (${rest.join(', ')}). ` +
-            `같은 이름을 가리키는 관계가 어느 쪽을 뜻하는지 정할 수 없습니다: ` +
-            `한쪽의 slug 를 바꾸거나 rename_concept 으로 합치세요.`,
+            `another document also claims \`slug: ${declared}\` (${rest.join(', ')}). ` +
+            `A relation naming it cannot say which one it means: ` +
+            `change one slug, or merge them with rename_concept.`,
         },
       });
     }
@@ -581,8 +581,8 @@ function findDuplicateUidIssues(entries) {
           code: 'duplicate-uid',
           severity: 'error',
           message:
-            `UID ${uid}를 다른 문서도 정체성으로 주장합니다 (${others.join(', ')}). ` +
-            '영구 identity 충돌이므로 새 노드에는 새 UID를 발급하고, 병합은 merge_concepts로 처리하세요.',
+            `another document also claims UID ${uid} as its identity (${others.join(', ')}). ` +
+            'That is a permanent identity collision: mint a new UID for the new node, and merge through merge_concepts.',
         },
       });
     }
@@ -660,10 +660,10 @@ function findDanglingGraphReferenceIssues(entries) {
           code: 'dangling-graph-reference',
           severity: 'warning',
           message: isNonNodeDoc
-            ? `\`${key}:\` graph reference "${ref}" 는 vault 에 파일로 있지만 **node 가 아닙니다** ` +
-              '(`kind:` 없음: 메모·회의록은 그래프 밖입니다). 노드로 올리려면 `kind:` 를 주고, ' +
-              '아니면 이 관계를 지우세요.'
-            : `\`${key}:\` graph reference "${ref}" 가 vault 의 어떤 node 로도 resolve 되지 않습니다.`,
+            ? `\`${key}:\` graph reference "${ref}" exists in the vault as a file but is **not a node** ` +
+              '(no `kind:` -- notes and minutes stay outside the graph). Give it a `kind:` to raise it ' +
+              'into one, or remove this relation.'
+            : `\`${key}:\` graph reference "${ref}" resolves to no node in the vault.`,
         },
       });
     }

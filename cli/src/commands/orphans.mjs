@@ -65,7 +65,7 @@ export async function runOrphans(args) {
   const kindFilter = kind ? ` (kind=${kind})` : '';
   process.stdout.write(
     `${COLORS.bold}${result?.total ?? orphans.length} orphan(s)${COLORS.reset}` +
-      `${COLORS.dim}${kindFilter}: 어디서도 frontmatter 로 reference 받지 않은 노드${COLORS.reset}\n\n`,
+      `${COLORS.dim}${kindFilter}: nodes no frontmatter anywhere references${COLORS.reset}\n\n`,
   );
   for (const o of orphans) {
     const color = KIND_COLORS[o.kind] || '';
