@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -248,5 +248,90 @@ describe('권한 카드 — 내 프로젝트 안과 전혀 다른 곳을 다르�
   it('정말 다른 곳은 예전 경고 그대로다 — 주의가 필요한 쪽', () => {
     render(card('read', '/Users/dana/.ssh/id_rsa', [], VAULT));
     expect(screen.getByText(koMessages.acpChat.permission.title)).toBeInTheDocument();
+  });
+});
+
+/**
+ * Owner, 2026-08-25: *"the colours are bad and the inside layout is poor."*
+ *
+ * Every non-write request was painted warning amber, including the one whose sentence says *this is
+ * your own project, nothing has happened yet*. A frame that shouts while the words reassure teaches
+ * people the amber means nothing — the cry-wolf failure the copy fix addressed, left standing in the
+ * paint.
+ */
+describe('권한 카드 색 — 경보는 벌어들인 자리에만 쓴다', () => {
+  const VAULT = '/Users/dana/my-product/atlas';
+  const panel = () => screen.getByTestId('acp-permission-card');
+
+  it('내 프로젝트 안이면 경고색을 쓰지 않는다', () => {
+    render(card('read', '/Users/dana/my-product/src/orders.ts', [], VAULT));
+    expect(
+      panel().className,
+      '괜찮다고 말하면서 경고색으로 감싸면 그 색을 아무도 안 믿게 된다',
+    ).not.toContain('amber');
+  });
+
+  it('정말 다른 곳이면 경고색을 쓴다 — 주의가 필요한 쪽', () => {
+    render(card('read', '/Users/dana/.ssh/id_rsa', [], VAULT));
+    expect(panel().className).toContain('amber');
+  });
+});
+
+/**
+ * ⚠️ Written because the app appeared not to respond to 「keep allowing」 while driving it by hand
+ * (2026-08-25). No test covered whether that button returns anything, so there was nothing to
+ * distinguish a broken control from clicks that never reached the window — and the two failures had
+ * landed one pixel apart. A claim of "reproduced" was made and then withdrawn.
+ *
+ * These hold the wiring so the next such report can be answered in a second: each control returns
+ * **its own option id**, and rejection returns null rather than a stale id.
+ */
+describe('권한 카드 — 세 버튼이 각자의 답을 돌려준다', () => {
+  const options = [
+    { optionId: 'reject', kind: 'reject_once', name: '거절' },
+    { optionId: 'allow', kind: 'allow_once', name: '허용' },
+    { optionId: 'always', kind: 'allow_always', name: '항상' },
+  ];
+
+  function withResolve() {
+    const resolve = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AcpPermissionCard
+          pending={{
+            request: {
+              title: '무언가',
+              toolCallId: 'tool-permission',
+              toolName: 'Read',
+              toolKind: 'read',
+              filePath: '/etc/hosts',
+              rawInput: {},
+              reviewKind: 'permission',
+              options,
+            },
+            resolve,
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+    return resolve;
+  }
+
+  it('「이번 대화 내내 허용」은 allow_always 의 id 를 돌려준다', () => {
+    const resolve = withResolve();
+    fireEvent.click(screen.getByTestId('acp-permission-allow-always'));
+    expect(resolve).toHaveBeenCalledWith('always');
+  });
+
+  it('「이번만 허용」은 allow_once 의 id 를 돌려준다', () => {
+    const resolve = withResolve();
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    expect(resolve).toHaveBeenCalledWith('allow');
+  });
+
+  it('「안 할래요」는 거절을 돌려준다 — 남의 id 를 흘리지 않는다', () => {
+    const resolve = withResolve();
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+    expect(resolve).toHaveBeenCalledWith('reject');
   });
 });
