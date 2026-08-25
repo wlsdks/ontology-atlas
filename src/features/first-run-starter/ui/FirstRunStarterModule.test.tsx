@@ -12,6 +12,7 @@ interface MockVault {
   /** "Has a vault ever been connected?" — the input deciding who the sample notice targets (2026-08-02). */
   recentVaults: unknown[];
   open: ReturnType<typeof vi.fn>;
+  openRecent: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
 }
 
@@ -83,6 +84,7 @@ function makeVault(): MockVault {
     restoreAttempted: true,
     recentVaults: [],
     open: vi.fn(async () => undefined),
+    openRecent: vi.fn(async () => undefined),
     scaffoldOntology: vi.fn(async () => ({ created: 8, skipped: 0 })),
   };
 }
@@ -654,6 +656,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     mocks.vault = makeVault();
     mocks.mode = 'static';
     mocks.desktop = true;
+    mocks.requestAgentChat.mockClear();
     mocks.ensureChildDir.mockClear();
     mocks.pickedProject = '/Users/dana/my-product';
     mocks.pickerThrows = false;
@@ -725,6 +728,14 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
       fireEvent.click(screen.getByTestId('build-from-code-go'));
     });
     expect(mocks.ensureChildDir).toHaveBeenCalledWith('/Users/dana/my-product', 'atlas');
+    // Finish the async open-and-handoff path before cleanup. Leaving the old
+    // undefined `openRecent` mock to reject after the assertion leaked a pending
+    // state update into the following cancellation test under suite load.
+    await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull(), {
+      timeout: 5_000,
+    });
+    expect(mocks.vault.openRecent).toHaveBeenCalledTimes(1);
+    expect(mocks.requestAgentChat).toHaveBeenCalledTimes(1);
   });
 
   it('취소하면 만들지 않고 경로도 치운다', async () => {
@@ -732,11 +743,11 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     await act(async () => {
       fireEvent.click(screen.getByTestId('first-run-build-from-code'));
     });
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('build-from-code-cancel'));
-    });
+    fireEvent.click(screen.getByTestId('build-from-code-cancel'));
     // The dialog closes, so the path it was showing is gone from the document.
-    await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull(), {
+      timeout: 5_000,
+    });
     expect(mocks.ensureChildDir).not.toHaveBeenCalled();
   });
 
