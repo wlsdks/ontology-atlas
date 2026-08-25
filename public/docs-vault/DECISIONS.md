@@ -20666,3 +20666,31 @@ looks for the door and cannot find it.
 **Status**: valid
 
 ---
+## 2026-08-25 — An empty vault is the strongest case for the door, and it was the one case that hid it
+
+**Observed on the installed app**, on the round that verified the repository-root
+fix: the vault was empty — zero concepts, INDEX saying 「no matching concepts」 —
+and the 「make a map from my code」 door was **not drawn**. That is the person the
+door exists for, sitting in front of nothing, with no way to start.
+
+**Cause**: the rule keyed on `unboundProjectNodeId`, and that value is null for
+two entirely different facts — every project already has code bound, and there is
+no project in the vault at all. Collapsing them meant "nothing to bind" read as
+"everything is bound".
+
+**Decision**: the caller passes `noProjectsYet` alongside it, from the readiness
+state that already distinguishes the two. Nothing to bind is the strongest
+evidence that no map has been built from code, not evidence that one has.
+
+**Why this was missed twice**: the concept ceiling added earlier the same day was
+tested on a large vault and a small one, never on an empty one, and the first-run
+card that would normally cover an empty vault is gated on "this computer has
+never opened a folder" — false on any machine that has been used. The gap sat
+exactly between two rules that each looked complete.
+
+**Falsifier**: the door appearing on a vault that is empty only because it is
+still loading, which would make it flicker on every open.
+
+**Status**: valid
+
+---

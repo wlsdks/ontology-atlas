@@ -149,6 +149,8 @@ export interface TopologyIndexPanelProps {
   dustyNodeCount?: number;
   /** The node id of a project with no code folder bound. null means the row does not exist. */
   unboundProjectNodeId?: string | null;
+  /** The vault holds no project node at all — distinct from "every project already has code bound". */
+  noProjectsYet?: boolean;
   /** Truthy when "open a folder" opened the map inside the folder that was picked. */
   openedInsidePickedFolder?: string | null;
   /** Whether any agent runtime exists to hand 「make a map from my code」 to. */
@@ -228,6 +230,7 @@ export function TopologyIndexPanel({
   uncatalogedDocCount,
   dustyNodeCount,
   unboundProjectNodeId = null,
+  noProjectsYet = false,
   openedInsidePickedFolder = null,
   agentAvailable = false,
   onDismissOpenedInside,
@@ -413,7 +416,20 @@ export function TopologyIndexPanel({
          * rule: somebody who opened a folder, saw an empty map and gave up has opened folders
          * **more** than a first-timer, and that rule hid the door from exactly that person.
          */
-        mapUnbuilt={vaultLoaded && unboundProjectNodeId !== null && totalConcepts <= UNBUILT_MAP_CONCEPT_CEILING}
+        mapUnbuilt={
+          /*
+           * ⚠️ **Two different facts, one null** (measured in the installed app, 2026-08-25).
+           * `unboundProjectNodeId` is null both when every project has code bound *and* when the
+           * vault holds no project at all. Keying only on it hid the door from an empty vault —
+           * the person it was built for, sitting in front of nothing.
+           *
+           * `noProjectsYet` separates them: nothing to bind is the strongest evidence that no map
+           * has been built from code, not evidence that one has.
+           */
+          vaultLoaded &&
+          (unboundProjectNodeId !== null || noProjectsYet) &&
+          totalConcepts <= UNBUILT_MAP_CONCEPT_CEILING
+        }
         agentAvailable={agentAvailable}
         relations={totalRelations}
         domains={domainCount}
