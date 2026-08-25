@@ -2814,6 +2814,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-25 · The released app carries its third-party notices",
+      "slug": "2026-08-25-the-released-app-carries-its-third-party-notices"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 · A domain says when its description has fallen behind what it holds",
+      "slug": "2026-08-25-a-domain-says-when-its-description-has-fallen-behind-what-it-holds"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-24 · Codex in-app chat pauses until Atlas MCP writes have an app-owned review gate",
       "slug": "2026-08-24-codex-in-app-chat-pauses-until-atlas-mcp-writes-have-an-app-owned-review-gate"
     },
@@ -5700,6 +5710,11 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-25 (114) — A summary node reports when its description falls behind its membership, and never rewrites it",
+      "slug": "2026-08-25-114-a-summary-node-reports-when-its-description-falls-behind-its-membership-and-never-rewrites-it"
     },
     {
       "depth": 2,
@@ -12836,6 +12851,33 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    }
+  ],
+  "ontology/capabilities/summary-freshness": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
+    },
+    {
+      "depth": 2,
+      "text": "Why the comparison is prose against membership",
+      "slug": "why-the-comparison-is-prose-against-membership"
+    },
+    {
+      "depth": 2,
+      "text": "Falsifier",
+      "slug": "falsifier"
     }
   ],
   "ontology/capabilities/taxonomy": [

@@ -41,7 +41,7 @@ import {
   type V2DatasheetConnection,
   type V2EvidenceRow,
 } from "./topology-v2-datasheet";
-import { Button, controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton, Surface } from "@/shared/ui";
+import { Button, controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton, Surface, SummaryFreshnessRow } from "@/shared/ui";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { transientSurface } from "@/shared/ui/transient-surface";
 
@@ -195,6 +195,12 @@ export interface TopologyV2DetailPanelLabels {
   editSubjectAgent: string;
   editSubjectHuman: string;
   editConflictMessage: string;
+  /** Summary-freshness row copy (`summaryFreshness` i18n namespace), preformatted by
+   *  the caller. Present only when the caller can derive a verdict — the browser has no
+   *  Git history, so these stay undefined there and the row never mounts. */
+  summaryFreshnessPrefix?: string;
+  summaryFreshnessLag?: string;
+  summaryFreshnessAction?: string;
   /** Project-only source receipt copy, preformatted by the caller. */
   sourceHeading?: string;
   sourceKind?: string;
@@ -241,6 +247,14 @@ export interface TopologyV2DetailPanelProps {
    * the same `onSelectConnection` callback the connection rows already use.
    */
   domain: { id: string; title: string } | null;
+  /**
+   * Set when this node is a `domain` or `project` whose containment list changed after
+   * its description was last written — the caller derives it from `summaryStalenessOf`
+   * over `vault_node_revisions`. Null for every other node, and null everywhere in the
+   * browser, where there is no Git history to read. Advisory: it mounts one plain row
+   * and offers no fix, because the body is a human judgement.
+   */
+  summaryStaleness?: { behindByDays: number } | null;
   /** "Power" (power) — powered (recently updated, fresh) versus unpowered (quiet). */
   powered: boolean;
   /**
@@ -879,6 +893,7 @@ export function TopologyV2DetailPanel({
   sourceTitle = null,
   kind,
   domain,
+  summaryStaleness = null,
   powered,
   groups,
   evidence,
@@ -1468,6 +1483,17 @@ export function TopologyV2DetailPanel({
             />
           ) : null}
           {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
+          {/* Direction B (2026-08-25 design-directions) — the map confirms staleness on
+              arrival; discovery stays with `maintenance_plan` and the insights Do-Next
+              tab. Sits beside the last-edit row because both answer "how current is
+              this", and renders only with a real verdict. */}
+          {summaryStaleness && labels.summaryFreshnessPrefix && labels.summaryFreshnessLag && labels.summaryFreshnessAction ? (
+            <SummaryFreshnessRow
+              prefixLabel={labels.summaryFreshnessPrefix}
+              lagLabel={labels.summaryFreshnessLag}
+              actionLabel={labels.summaryFreshnessAction}
+            />
+          ) : null}
 
           {/* A project replaces the same position with the receipt rail. Everything
               else keeps the existing plain stats (one aggregate line). */}

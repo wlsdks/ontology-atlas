@@ -410,9 +410,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Installed-a",
-      "wordCount": 77222,
-      "updatedAt": "2026-08-24",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. The macOS a",
+      "wordCount": 77453,
+      "updatedAt": "2026-08-25",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -439,7 +439,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 177641,
+      "wordCount": 178346,
       "updatedAt": "2026-08-25",
       "linksOut": [
         "slug"
@@ -1424,6 +1424,27 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/summary-freshness",
+      "path": "docs/ontology/capabilities/summary-freshness.md",
+      "title": "Summary Freshness",
+      "tags": [],
+      "frontmatter": {
+        "uid": "26202cf9-ffbd-48c0-be8b-86173638d678",
+        "slug": "capabilities/summary-freshness",
+        "kind": "capability",
+        "title": "Summary Freshness",
+        "domain": "domains/graph-modeling",
+        "elements": [],
+        "path": "mcp/src/stale-parent.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "Reports a domain or project whose containment list changed after its body prose was last re-written, so its description may no longer cover what it holds. Advisory only: nothing is blocked, no model is called, and no rewrite is proposed, because a summary body is a human judgement that someone accepted. mcp/src/stale-p",
+      "wordCount": 265,
+      "updatedAt": "2026-08-25",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/taxonomy",
       "path": "docs/ontology/capabilities/taxonomy.md",
       "title": "Kind Taxonomy Management",
@@ -1632,6 +1653,7 @@
         "display_en": "Graph Modeling & Ontology Schema",
         "capabilities": [
           "capabilities/reviewed-ontology-writing",
+          "capabilities/summary-freshness",
           "capabilities/taxonomy",
           "capabilities/vault-ontology"
         ],
@@ -1647,12 +1669,15 @@
           "elements/ontology-redirect",
           "elements/status"
         ],
-        "created_by": "human"
+        "created_by": "human",
+        "relation_notes": {
+          "capabilities/summary-freshness": "Graph modeling owns whether the compiled graph still tells the truth, so it also owns the advisory that a summary node's description has fallen behind the membership it declares."
+        }
       },
       "headings": [],
-      "excerpt": "Defines the five authorable kinds, reserved reader kind, actual storage/query/write relation vocabulary, and non-inference boundaries encoded in markdown frontmatter, compiling them into a deterministic graph for compilation and querying. docs/ONTOLOGY-ATLAS-SPEC.md §2·§5: Public authoritative definition of kind and re",
-      "wordCount": 134,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Defines the five authorable kinds, reserved reader kind, actual storage/query/write relation vocabulary, and non-inference boundaries encoded in markdown frontmatter, compiling them into a deterministic graph for compilation and querying. It also owns whether that graph still tells the truth: alongside writing and comp",
+      "wordCount": 171,
+      "updatedAt": "2026-08-25",
       "linksOut": []
     },
     {
@@ -3817,6 +3842,11 @@
         "linkText": "domains/graph-modeling"
       },
       {
+        "fromSlug": "ontology/capabilities/summary-freshness",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
         "fromSlug": "ontology/capabilities/taxonomy",
         "context": "frontmatter · **[domains/graph-modeling]**",
         "linkText": "domains/graph-modeling"
@@ -4128,6 +4158,13 @@
         "fromSlug": "ontology/domains/design-system",
         "context": "frontmatter · **[capabilities/design-gate-ratchets]**",
         "linkText": "capabilities/design-gate-ratchets"
+      }
+    ],
+    "ontology/capabilities/summary-freshness": [
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[capabilities/summary-freshness]**",
+        "linkText": "capabilities/summary-freshness"
       }
     ],
     "ontology/capabilities/taxonomy": [
@@ -4960,6 +4997,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/reviewed-ontology-writing",
                 "title": "Reviewed Ontology Writing"
+              },
+              {
+                "name": "summary-freshness",
+                "path": "ontology/capabilities/summary-freshness",
+                "type": "doc",
+                "slug": "ontology/capabilities/summary-freshness",
+                "title": "Summary Freshness"
               },
               {
                 "name": "taxonomy",

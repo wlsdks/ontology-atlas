@@ -701,7 +701,8 @@ is limited to `inspect_compile_issue` / `break_dependency_cycle` /
 `canonicalize_graph_arrays` / `resolve_dangling_reference` /
 `add_missing_relation` / `materialize_external_element` / `unassigned_node` /
 `empty_domain` / `separate_evidence_from_concept` / `fold_bulk_siblings` /
-`retire_unearned_node` / `capability_without_evidence` for the same reason.
+`retire_unearned_node` / `capability_without_evidence` / `rejudge_summary_membership`
+for the same reason.
 `separate_evidence_from_concept` and `fold_bulk_siblings` come from the write-path
 node-eligibility gate (2026-07-31 council) and only ever appear on a write response:
 a path sitting in a meaning slot, and siblings a single machine batch created under
@@ -712,6 +713,13 @@ nor an `elements:` relation to a real implementation-role node. A raw file path 
 **never blocks a write** (construction rule 5): it is raised once at creation by the
 write gate and then continuously by the vault-wide scan until the capability points
 at code or a real element concept.
+`rejudge_summary_membership` is a `domain` or `project` whose containment list changed
+after its body prose was last re-written — the description may no longer cover what the
+node now holds. It is `review` / `info` and **never blocks a write**: a summary body is
+a human judgement, so the action asks for a re-judgement and proposes no rewrite. The
+same signal is reported by `validate_vault` as `summaryFreshness`. Both read Git history
+for summary nodes only, and both report `checked: false` outside a repository rather than
+a clean bill, because not looking is not the same as finding nothing.
 `health` / `workspace_brief` / `agent_brief` relation filters expose the same enum schema for
 `dependencyTypes` and `componentTypes` (`domains` / `domain` / `capabilities` /
 `elements` / `dependencies` / `depends_on` / `relates` / `contains` /

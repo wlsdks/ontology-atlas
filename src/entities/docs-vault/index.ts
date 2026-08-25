@@ -48,6 +48,8 @@ export {
   vaultAgentCreatedBy,
 } from './lib/build-vault-markdown';
 export { deriveOntologyFromVault, slugifyName } from './lib/derive-ontology-from-vault';
+export { daysBehind, SUMMARY_KINDS, summaryStalenessBySlug } from './lib/summary-freshness';
+export type { NodeRevision, SummaryStaleness } from './lib/summary-freshness';
 export { deriveProjectsFromVault } from './lib/derive-projects-from-vault';
 export { deriveBundledProjects, bundledProjectSlugs } from './lib/bundled-projects';
 export {
