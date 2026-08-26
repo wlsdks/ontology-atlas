@@ -7,6 +7,32 @@
 
 ---
 
+## 2026-08-26 · The Architecture tab draws a shape, and its empty state does something
+
+- The role diagram was a list with decoration attached, through four rewrites: cards with an arrow
+  between every pair, boxes in a column, bands with arcs, bands with dots in a corner. The arrows
+  were also wrong, because a role that may depend on nothing had one leaving it. It is now a
+  numbered ladder beside a policy matrix: rows are the consumer, columns the provider, so a
+  correctly layered project draws a filled triangle and a rule pointing the wrong way lands in the
+  empty half. Hovering or focusing a layer raises it and everything it may reach, and recedes the
+  rest.
+- The empty state's button promised that an agent would read your folders and imports and draft
+  this, and then only changed the screen. It now hands the agent that task. Where no agent can be
+  started, and in a browser a process cannot be spawned at all, it offers the sentence for the
+  clipboard instead of a button that goes nowhere.
+- The drafting request refuses three things on purpose. It does not derive dependency rules from
+  the imports it observed, because that turns whatever the code does today into permission: this
+  repository has eighteen real layering violations, and rules derived from them would have reported
+  it as compliant. It does not name the architecture or the roles, which is yours to do. And it
+  never puts the edges it observed into the record's evidence.
+- `atlas architecture` no longer dies at a repository root. It was reading the project's own
+  generated copy of the vault and calling it a duplicate; a genuine clash now names both documents
+  instead of only the slug.
+- An architecture record is listed in the documents again, as its own decision always said, and is
+  simply never the document the reader is dropped into unasked.
+- A release no longer dies on a busy disk. Packaging the disk image retries when the failure says
+  the resource is busy, and only then, so a real error still stops on the first attempt.
+
 ## 2026-08-26 · Architecture becomes a reviewed, agent-executable contract
 
 - Added a separate `/architecture` Living Blueprint. It does not reuse the
