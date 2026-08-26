@@ -111,11 +111,38 @@ test('profile discovery ignores ontology docs and rejects duplicate profile slug
   assert.equal(profiles[0].slug, 'atlas-web');
   assert.equal(profiles[0].documentSlug, 'architecture/atlas-web');
 
+  /*
+   * ⚠️ **This expectation changed on 2026-08-26, and the reason is a measured crash.**
+   *
+   * `atlas architecture .` at the repository root died with `Duplicate architecture profile slug:
+   * atlas-web.` and nothing else. The cause was the repository's own generated mirror --
+   * `pnpm docs-vault:build` copies the vault into `public/docs-vault/`, so the one profile was read
+   * twice. Refusing to run was wrong: the two documents said exactly the same thing, so there was
+   * nothing for a person to resolve, and the message named neither path.
+   *
+   * Identical `profile_uid` with identical frontmatter is therefore one record reached by two
+   * paths, and the first one wins. A copy-paste mistake is not hidden by this: the moment somebody
+   * edits one of the two copies the contents disagree and the throw below fires, naming both.
+   */
+  const mirrored = findArchitectureProfiles([
+    { slug: 'architecture/atlas-web', frontmatter: FSD_PROFILE_FRONTMATTER },
+    { slug: 'public-mirror/atlas-web', frontmatter: { ...FSD_PROFILE_FRONTMATTER } },
+  ]);
+  assert.equal(mirrored.length, 1);
+  assert.equal(mirrored[0].documentSlug, 'architecture/atlas-web');
+
+  // A real disagreement still fails closed -- and now says which two documents to look at.
   assert.throws(
     () => findArchitectureProfiles([
       { slug: 'architecture/a', frontmatter: FSD_PROFILE_FRONTMATTER },
-      { slug: 'architecture/b', frontmatter: FSD_PROFILE_FRONTMATTER },
+      {
+        slug: 'architecture/b',
+        frontmatter: { ...FSD_PROFILE_FRONTMATTER, title: 'A different contract' },
+      },
     ]),
-    /duplicate architecture profile slug/i,
+    (error) =>
+      /duplicate architecture profile slug/i.test(error.message)
+      && error.message.includes('architecture/a')
+      && error.message.includes('architecture/b'),
   );
 });

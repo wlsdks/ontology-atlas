@@ -5877,6 +5877,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-26 — 아키텍처 첫 초안은 에이전트가 제안하고, 이름은 사람이 붙인다",
+      "slug": "2026-08-26-아키텍처-첫-초안은-에이전트가-제안하고-이름은-사람이-붙인다"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-26 — SegmentedControl hover contract: unselected lift and strong, selected silent",
       "slug": "2026-08-26-segmentedcontrol-hover-contract-unselected-lift-and-strong-selected-silent"
     },
