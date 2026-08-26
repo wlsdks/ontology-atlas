@@ -143,6 +143,18 @@ export function readinessExitCode(result, exitZero) {
   return exitZero ? 0 : agentBriefExitCode(result);
 }
 
+/**
+ * What `--verify-fallbacks --json` prints.
+ *
+ * Exported so the invariant can be checked without spawning anything. The first version of this
+ * test ran the real CLI against the real vault, which needs `mcp/node_modules` — and the fastest
+ * CI job deliberately does not install it, so the test died there while passing locally. A gate
+ * that only holds on a developer's machine is not a gate.
+ */
+export function fallbackReportPayload(report, result) {
+  return { ...report, status: result?.status ?? null, readiness: result?.readiness ?? null };
+}
+
 async function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS, concurrency = DEFAULT_FALLBACK_CONCURRENCY } = {}) {
   const report = await buildFallbackVerificationReport(result, vaultRoot, { timeoutMs, slowThresholdMs, concurrency });
   if (json) {
@@ -156,13 +168,7 @@ async function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs =
      * Measured 2026-08-26 on this repository's own dogfood vault, whose readiness is
      * `needs_attention` at 75 — the exit was correct and unattributable at the same time.
      */
-    process.stdout.write(
-      JSON.stringify(
-        { ...report, status: result?.status ?? null, readiness: result?.readiness ?? null },
-        null,
-        2,
-      ) + '\n',
-    );
+    process.stdout.write(JSON.stringify(fallbackReportPayload(report, result), null, 2) + '\n');
     return report;
   }
   renderFallbackVerificationReport(report);

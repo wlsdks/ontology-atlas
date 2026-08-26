@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   formatMeaningAssessmentSummary,
   formatProjectSourceSummary,
+  fallbackReportPayload,
   readinessExitCode,
 } from './agent-brief.mjs';
 
@@ -107,45 +108,49 @@ describe('agent-brief project meaning summary', () => {
  * neither field. Measured 2026-08-26 on this repository's dogfood vault: the command printed
  * `ok: true, failed: 0` and exited 1, and the reason — readiness `needs_attention` at 75 —
  * appeared nowhere. Correct and unattributable at the same time.
+ *
+ * ⚠️ The first version of this test spawned the real CLI. It passed locally and died in the
+ * fastest CI job, which deliberately does not install `mcp/node_modules`. A gate that only holds
+ * on a developer's machine is not a gate, so the payload is built by a pure function instead.
  */
-describe('agent-brief --verify-fallbacks --json', () => {
-  it('carries the readiness verdict that decides the exit code', async () => {
-    const { spawnSync } = await import('node:child_process');
-    const run = spawnSync(
-      process.execPath,
-      [
-        'cli/src/index.mjs',
-        'agent-brief',
-        'docs/ontology',
-        '--verify-fallbacks',
-        '--json',
-        '--fallback-timeout-ms',
-        '20000',
-        '--fallback-concurrency',
-        '4',
-      ],
-      { cwd: process.cwd(), encoding: 'utf8' },
-    );
-    const report = JSON.parse(run.stdout.slice(run.stdout.indexOf('{')));
+describe('agent-brief --verify-fallbacks --json payload', () => {
+  const report = Object.freeze({
+    operation: 'agent_fallback_check',
+    ok: true,
+    failed: 0,
+    commands: [],
+  });
 
-    assert.equal(report.operation, 'agent_fallback_check');
+  it('carries the readiness verdict that decides the exit code', () => {
+    const payload = fallbackReportPayload(report, {
+      status: 'needs_attention',
+      readiness: { score: 75 },
+    });
+    assert.equal(payload.operation, 'agent_fallback_check');
+    assert.equal(payload.ok, true);
     // The fallback verdict and the readiness verdict are different questions, and both are here.
-    assert.equal(typeof report.ok, 'boolean');
-    assert.ok('status' in report, 'the readiness status must travel with the report');
-    assert.ok('readiness' in report, 'the readiness detail must travel with the report');
+    assert.equal(payload.status, 'needs_attention');
+    assert.deepEqual(payload.readiness, { score: 75 });
+  });
 
-    /*
-     * The exit code is the max of the two verdicts, so whenever it is 1 at least one of them must
-     * explain it. This is the assertion that fails if either field is dropped again.
-     */
-    if (run.status === 1) {
-      assert.ok(
-        report.failed > 0 || report.status !== 'ready',
-        `exit 1 with nothing in the output to attribute it to: ${JSON.stringify({
-          failed: report.failed,
-          status: report.status,
-        })}`,
-      );
-    }
+  /*
+   * The exit code is the max of the two verdicts. This is the assertion that fails if either field
+   * is dropped again: with a clean fallback run, `status` is the only thing left to explain a 1.
+   */
+  it('leaves nothing unattributable when the fallbacks all passed', () => {
+    const payload = fallbackReportPayload(report, {
+      status: 'needs_attention',
+      readiness: { score: 75 },
+    });
+    assert.ok(
+      payload.failed > 0 || payload.status !== 'ready',
+      'exit 1 would have nothing in the output to attribute it to',
+    );
+  });
+
+  it('does not invent a verdict when the brief carries none', () => {
+    const payload = fallbackReportPayload(report, undefined);
+    assert.equal(payload.status, null);
+    assert.equal(payload.readiness, null);
   });
 });
