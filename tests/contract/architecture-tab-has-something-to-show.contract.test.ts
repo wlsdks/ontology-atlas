@@ -53,7 +53,8 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
   /*
    * ⚠️ **A profile is not a Map node, and the schema alone must not be what says so.**
    *
-   * `docs/ARCHITECTURE.md` and decision (120) settle it: a file carrying this schema has no
+   * `docs/ARCHITECTURE.md` and the 2026-08-26 decision "Architecture is a separate reviewed
+   * contract and primary workbench destination" settle it: a file carrying this schema has no
    * `kind:`, because it is "not an ontology kind and not an overloaded ontology `document`". I
    * broke that rule while adding the sample -- gave it `kind: document`, a `uid` and a `relates`
    * edge -- because the sample's own graph contract demanded every document be a connected node,
@@ -74,7 +75,7 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
 
   /*
    * ⚠️ **And it does not appear in Docs either.** Docs is the ontology folder's reading surface, so
-   * a profile listed there is the same overload decision (120) refuses, at a different door. It is
+   * a profile listed there is the same overload that decision refuses, at a different door. It is
    * measurable, not a matter of taste: with the profile listed it sorted first, Docs opened it, and
    * `<main>` fell to 26 elements against the floor of 40 in `a11y-vault-backed.spec.ts` -- the
    * reading surface's opening screen became a twenty-line frontmatter record. Removing it put that

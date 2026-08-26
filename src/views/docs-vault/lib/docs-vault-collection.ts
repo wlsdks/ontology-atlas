@@ -30,7 +30,8 @@ export function resolveDocsVaultCollection(
 /**
  * ⚠️ **An architecture profile is not a document in this list, including under 'all'.**
  *
- * `docs/ARCHITECTURE.md` and decision (120) settle what it is: a parallel, non-ontology record
+ * `docs/ARCHITECTURE.md` and the 2026-08-26 decision "Architecture is a separate reviewed
+ * contract and primary workbench destination" settle what it is: a parallel, non-ontology record
  * that carries no `kind:` and never becomes a Map node — "not an ontology kind and not an
  * overloaded ontology `document`". Docs is the ontology folder's reading surface, so a profile
  * showing up there is the same overload the decision refuses, just at a different door.
