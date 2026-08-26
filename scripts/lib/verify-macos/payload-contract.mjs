@@ -239,6 +239,14 @@ export function validateWebviewVerifyPayload(payload, {
     Boolean(topologyVerificationSelectedParam) &&
     (payload.markers.topologyV2SelectedRelationSource === topologyVerificationSelectedParam ||
       payload.markers.topologyV2SelectedRelationTarget === topologyVerificationSelectedParam);
+  /*
+ * One entry per question, and this file cannot import the TypeScript that owns
+ * the list. `insights-tab-count-parity.contract.test.ts` keeps the two in step,
+ * so a tab added without updating this number fails in a unit run rather than
+ * eight minutes into a packaged-app verification.
+ */
+const INSIGHTS_TAB_COUNT = 6;
+
   const rawRelationTypePattern =
     /^(contains|depends_on|depends-on|depends|relates|relates_to|related_to|describes|uses|belongs_to|belongs-to)$/i;
   const koreanTopologyRoute = webviewPath.startsWith("/ko/topology");
@@ -249,8 +257,8 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.insightsQuestionModel !== "one-tab-one-question") {
       return `WebView insights question model was ${payload.markers.insightsQuestionModel || "missing"}`;
     }
-    if (payload.markers.insightsTabCount !== 5) {
-      return `WebView insights tab count was ${payload.markers.insightsTabCount ?? "missing"}, expected 5`;
+    if (payload.markers.insightsTabCount !== INSIGHTS_TAB_COUNT) {
+      return `WebView insights tab count was ${payload.markers.insightsTabCount ?? "missing"}, expected ${INSIGHTS_TAB_COUNT}`;
     }
     if (payload.markers.insightsSelectedTabCount !== 1) {
       return `WebView insights selected tab count was ${payload.markers.insightsSelectedTabCount ?? "missing"}, expected 1`;

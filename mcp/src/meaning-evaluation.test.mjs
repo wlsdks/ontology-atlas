@@ -519,6 +519,42 @@ test('repository proposal rejects epistemic unknowns encoded as product exclusio
   );
 });
 
+/*
+ * The 2026-08-26 field trial handed a source-hidden reader a project exclusion
+ * that nothing in the subject supported, and the reader repeated it as fact. The
+ * proposal had already typed its scope answer as unfinished; that qualifier just
+ * never reached the exclusions it governs. This checks both directions, because
+ * a warning that fires on every proposal is noise rather than a gate.
+ */
+test('a project exclusion inherits an unfinished scope answer, and does not when the answer is complete', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+
+  const unfinished = completeTypedRepositoryProposal();
+  unfinished.project.excludes = ['general-purpose content management'];
+  unfinished.competencyAnswers.scope.status = 'partial';
+  unfinished.competencyAnswers.scope.gap = 'Organizational purpose is not independently witnessed.';
+  const flagged = validateMeaningProposalAgainstAnalysis(analysis, unfinished)
+    .findings.filter((row) => row.code === 'unqualified-project-exclusion');
+  assert.equal(flagged.length, 1, 'an exclusion under a partial scope answer is reported');
+  assert.equal(flagged[0].path, 'project.excludes');
+  assert.equal(flagged[0].severity, 'warning', 'the boundary may be right; a human decides');
+  assert.match(flagged[0].message, /"partial"/);
+
+  const complete = completeTypedRepositoryProposal();
+  complete.project.excludes = ['general-purpose content management'];
+  assert.equal(
+    complete.competencyAnswers.scope.status,
+    'answered',
+    'fixture guard: the quiet case must really have a complete scope answer',
+  );
+  assert.equal(
+    validateMeaningProposalAgainstAnalysis(analysis, complete)
+      .findings.filter((row) => row.code === 'unqualified-project-exclusion').length,
+    0,
+    'a settled scope answer leaves its exclusions alone',
+  );
+});
+
 test('repository proposal blocks unknown citations and unresolved capability domains', () => {
   const analysis = analyzeRepoStructure(fixtureRoot);
   const proposal = repositoryProposalFromGolden(expected);

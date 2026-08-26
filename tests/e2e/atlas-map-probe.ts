@@ -45,6 +45,12 @@ export interface AtlasMapNode {
 
 export interface AtlasMapProbe {
   camera: () => AtlasMapCamera | null;
+  /**
+   * Where the camera is heading, as opposed to where it is. Timing-free, so a
+   * test can ask "did this aim the camera at the right place" without sampling
+   * an interpolating position at an arbitrary wall-clock moment.
+   */
+  cameraTarget?: () => { x: number; y: number; scale: number } | null;
   /** Live DOM-derived horizontal obstruction, before static camera safety tokens. */
   obstacleInsets: () => { left: number; right: number } | null;
   selection: () => { nodeId: string | null; edge: unknown };

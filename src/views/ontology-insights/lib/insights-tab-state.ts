@@ -3,8 +3,10 @@
  * link must open the same tab, so parsing and serialization are pure functions rather than
  * component-local state.
  *
- * There are five tabs, **one per question**: to do (the default) · composition · connections ·
- * boundaries · freshness. When one tab holds several questions, a user has to scroll past two
+ * There are six tabs, **one per question**: to do (the default) · composition · connections ·
+ * boundaries · freshness · flow. Flow is the only one whose answer is written by an agent rather
+ * than computed from the graph: its question is "what is this product and how does it move", and
+ * that is prose a person reads once on first contact, not a measurement. When one tab holds several questions, a user has to scroll past two
  * screens of unrelated material to answer their own — the former `structure` tab really did stack
  * "what exists / what is central / is the boundary healthy" into one column and grew to 2.2× the
  * viewport. One question per tab also removes any room for the scroll to grow long again.
@@ -15,6 +17,7 @@ export const INSIGHTS_TABS = [
   "connections",
   "boundaries",
   "freshness",
+  "flow",
 ] as const;
 
 export type InsightsTab = (typeof INSIGHTS_TABS)[number];
