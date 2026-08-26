@@ -262,8 +262,12 @@ export function ArchitectureWorkbench({
                 roleLabel={roleLabel}
                 reachLabel={(role, targets) => t('reachAria', { role, targets })}
                 sinkLabel={t('reachNone')}
-                directionLabel={t('nestDirection')}
-                exceptionLabel={(from, to) => t('nestException', { from, to })}
+                directionLabel={t('ladderDirection')}
+                legend={{
+                  allowed: t('legendAllowed'),
+                  self: t('legendSelf'),
+                  columns: t('legendColumns'),
+                }}
               />
             </div>
           </div>

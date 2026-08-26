@@ -22,6 +22,8 @@ function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
   );
 }
 
+const order_all = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
+
 describe('ArchitectureWorkbench', () => {
   it('opens with a scoped living blueprint instead of an ontology graph', () => {
     renderWorkbench();
@@ -58,59 +60,66 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /*
-   * ⚠️ **The drawing must be a shape, not a list with decoration.** Four rounds died on the same
-   * mistake: cards with arrows between them, boxes in a column, bands with arcs, bands with a grid
-   * of dots. Each asked the reader to assemble the structure from rows, and the owner's verdict
-   * never changed -- "can you see a flow in this?".
+   * ⚠️ **The matrix is where the policy is checkable.** Five rounds of this screen were a list of
+   * roles with decoration attached, and the last one -- concentric rings -- failed for a measured
+   * reason: the nested-rectangle literature puts the legibility limit at 2-3 levels and
+   * Feature-Sliced Design has seven. Rings also cannot state an exception, only imply permission.
    *
-   * Nested layers are the shape every layered architecture is taught with, and containment *is* the
-   * rule: an outer ring may depend on everything it encloses, the core depends on nothing. There
-   * are no arrows left to point the wrong way, which is what broke the very first version.
+   * Rows are the consumer and columns the provider, so a legal layering draws a filled triangle and
+   * a hole is a gap in it. That shape is the assertion: it fails the moment a rule points upward,
+   * whatever the layer count, and it needs no separate mark for an exception because the position
+   * of an empty cell *is* the exception.
    */
-  it('nests the layers outer to inner, with the sink at the core', () => {
+  it('states the whole policy as a triangle', () => {
     renderWorkbench();
     const order = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
-    const rings = [...screen.getByTestId('architecture-flow-svg').querySelectorAll('g[data-testid^="architecture-layer-"]')];
+    const cellsOf = (id: string) =>
+      [...screen.getByTestId(`architecture-matrix-row-${id}`).children].map((cell) =>
+        cell.getAttribute('data-reach'),
+      );
 
-    expect(rings, 'one ring per layer').toHaveLength(order.length);
-    expect(
-      rings.map((ring) => ring.querySelector('text')?.getAttribute('data-testid')),
-      'rings run outer to inner in dependency order',
-    ).toEqual(order.map((id) => `architecture-role-${id}`));
-
-    /*
-     * Geometry, not just order: each ring must sit strictly inside the one that may depend on it.
-     * A regression that drew them stacked or overlapping would keep the order and lose the meaning.
-     */
-    const boxes = rings.map((ring) => {
-      const rect = ring.querySelector('rect')!;
-      return {
-        x: Number(rect.getAttribute('x')),
-        y: Number(rect.getAttribute('y')),
-        w: Number(rect.getAttribute('width')),
-        h: Number(rect.getAttribute('height')),
-      };
-    });
-    boxes.slice(1).forEach((inner, index) => {
-      const outer = boxes[index]!;
-      expect(inner.x, `ring ${index + 1} starts inside ring ${index}`).toBeGreaterThan(outer.x);
-      expect(inner.y, `ring ${index + 1} starts inside ring ${index}`).toBeGreaterThan(outer.y);
-      expect(inner.x + inner.w, 'and ends inside it').toBeLessThan(outer.x + outer.w);
-      expect(inner.y + inner.h, 'and ends inside it').toBeLessThan(outer.y + outer.h);
+    order.forEach((id, row) => {
+      const cells = cellsOf(id);
+      expect(cells, `${id} needs one cell per layer`).toHaveLength(order.length);
+      expect(cells[row], `${id} marks itself at column ${row + 1}`).toBe('self');
+      expect(
+        cells.slice(0, row),
+        `${id} must not be allowed to depend on a layer above it`,
+      ).not.toContain('on');
+      expect(
+        cells.slice(row + 1).every((cell) => cell === 'on'),
+        `${id} must reach every layer beneath it`,
+      ).toBe(true);
     });
 
-    // One stroke the eye follows: dependency runs inward, from outside the shell to the core.
+    // One stroke with one stated meaning, rather than an arrow per permitted pair.
     expect(screen.getByTestId('architecture-flow-inward')).toBeInTheDocument();
   });
 
   /*
-   * ⚠️ Containment claims every outer layer reaches every inner one. A `lower-only` profile says
-   * exactly that, so there is nothing to disclaim -- and if this list ever appeared for FSD, the
-   * rings would be granting permission the profile withheld.
+   * ⚠️ **The interaction is the part a static picture cannot do.** "Can you see a flow in this?"
+   * was asked of a drawing with no way to ask it a question. Focusing a layer raises it and
+   * everything it may reach and recedes the rest -- Shneiderman's focus-plus-context, and the same
+   * ego-focus the map already uses. Keyboard focus drives it too, so the reach is not pointer-only.
    */
-  it('claims no permission the profile withheld', () => {
+  it('raises a focused layer and its reach, and recedes the rest', () => {
     renderWorkbench();
-    expect(screen.queryByTestId('architecture-nest-exceptions')).toBeNull();
+    const stateOf = (id: string) =>
+      screen.getByTestId(`architecture-role-${id}`).getAttribute('data-focus-state');
+
+    expect(order_all.map(stateOf).every((state) => state === 'rest')).toBe(true);
+
+    fireEvent.focus(screen.getByTestId('architecture-role-features'));
+    expect(stateOf('features')).toBe('focused');
+    // Everything beneath it is reachable...
+    expect(stateOf('entities')).toBe('reached');
+    expect(stateOf('shared')).toBe('reached');
+    // ...and everything above it is not.
+    expect(stateOf('widgets')).toBe('dimmed');
+    expect(stateOf('routing')).toBe('dimmed');
+
+    fireEvent.blur(screen.getByTestId('architecture-role-features'));
+    expect(stateOf('features')).toBe('rest');
   });
 
   it('keeps the same blueprint while switching from understand to plan and verify', () => {
