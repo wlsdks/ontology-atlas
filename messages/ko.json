@@ -318,9 +318,8 @@
     },
     "reachAria": "{role}는 {targets}에 의존할 수 있습니다",
     "reachNone": "아무 역할에도 의존하지 않습니다",
-    "reachLegendAllowed": "의존 가능",
-    "reachLegendSelf": "자기 자신",
-    "reachLegendOrder": "칸 순서는 위 행 순서와 같습니다"
+    "nestDirection": "바깥 계층이 안쪽 계층에 의존합니다",
+    "nestException": "{from}는 {to}에 의존할 수 없습니다"
   },
   "ontologyRelations": {
     "relationShort": {

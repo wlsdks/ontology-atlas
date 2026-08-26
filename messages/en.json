@@ -318,9 +318,8 @@
     },
     "reachAria": "{role} may depend on {targets}",
     "reachNone": "depends on no other role",
-    "reachLegendAllowed": "may depend on",
-    "reachLegendSelf": "itself",
-    "reachLegendOrder": "cells follow the row order above"
+    "nestDirection": "outer layers depend on inner layers",
+    "nestException": "{from} may not depend on {to}"
   },
   "ontologyRelations": {
     "relationShort": {

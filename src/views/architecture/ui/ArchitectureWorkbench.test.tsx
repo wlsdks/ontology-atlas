@@ -58,46 +58,59 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /*
-   * ⚠️ **A `lower-only` profile must still draw its rules.** The drawing used to collapse this
-   * policy to one hairline spine, on the argument that 21 implied edges are noise. Refusing to draw
-   * them was right; drawing *nothing* in their place left seven rows and a decorative line, and the
-   * owner's verdict on the installed build was "this is poor too".
+   * ⚠️ **The drawing must be a shape, not a list with decoration.** Four rounds died on the same
+   * mistake: cards with arrows between them, boxes in a column, bands with arcs, bands with a grid
+   * of dots. Each asked the reader to assemble the structure from rows, and the owner's verdict
+   * never changed -- "can you see a flow in this?".
    *
-   * The reach grid carries them instead: one cell per role, in row order, filled where a dependency
-   * is allowed. Because the columns line up between rows, a strictly layered project draws a
-   * triangle -- and a dependency pointing back up would land on the empty side of the diagonal,
-   * which is what makes "did the agent respect the architecture" answerable by looking.
+   * Nested layers are the shape every layered architecture is taught with, and containment *is* the
+   * rule: an outer ring may depend on everything it encloses, the core depends on nothing. There
+   * are no arrows left to point the wrong way, which is what broke the very first version.
    */
-  it('draws every allowed dependency as a triangle, not one decorative line', () => {
+  it('nests the layers outer to inner, with the sink at the core', () => {
     renderWorkbench();
     const order = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
-    const cellsOf = (id: string) =>
-      [...screen.getByTestId(`architecture-reach-${id}`).children].map((cell) =>
-        cell.getAttribute('data-reach'),
-      );
+    const rings = [...screen.getByTestId('architecture-flow-svg').querySelectorAll('g[data-testid^="architecture-layer-"]')];
 
-    // The top layer may reach every layer beneath it, and none above -- there are none.
-    expect(cellsOf('routing')).toEqual(['self', 'on', 'on', 'on', 'on', 'on', 'on']);
-    // The sink reaches nothing, so its row is empty apart from itself.
-    expect(cellsOf('shared')).toEqual(['off', 'off', 'off', 'off', 'off', 'off', 'self']);
+    expect(rings, 'one ring per layer').toHaveLength(order.length);
+    expect(
+      rings.map((ring) => ring.querySelector('text')?.getAttribute('data-testid')),
+      'rings run outer to inner in dependency order',
+    ).toEqual(order.map((id) => `architecture-role-${id}`));
 
     /*
-     * The shape itself: every filled cell sits to the right of that row's own column. This is the
-     * assertion that fails the moment a rule points upward, whatever the row count.
+     * Geometry, not just order: each ring must sit strictly inside the one that may depend on it.
+     * A regression that drew them stacked or overlapping would keep the order and lose the meaning.
      */
-    order.forEach((id, row) => {
-      const cells = cellsOf(id);
-      expect(cells, `${id} must have one cell per role`).toHaveLength(order.length);
-      expect(cells[row], `${id} must mark itself at column ${row}`).toBe('self');
-      expect(
-        cells.slice(0, row),
-        `${id} must not be allowed to depend on a layer above it`,
-      ).not.toContain('on');
-      expect(
-        cells.slice(row + 1).every((cell) => cell === 'on'),
-        `${id} must reach every layer beneath it`,
-      ).toBe(true);
+    const boxes = rings.map((ring) => {
+      const rect = ring.querySelector('rect')!;
+      return {
+        x: Number(rect.getAttribute('x')),
+        y: Number(rect.getAttribute('y')),
+        w: Number(rect.getAttribute('width')),
+        h: Number(rect.getAttribute('height')),
+      };
     });
+    boxes.slice(1).forEach((inner, index) => {
+      const outer = boxes[index]!;
+      expect(inner.x, `ring ${index + 1} starts inside ring ${index}`).toBeGreaterThan(outer.x);
+      expect(inner.y, `ring ${index + 1} starts inside ring ${index}`).toBeGreaterThan(outer.y);
+      expect(inner.x + inner.w, 'and ends inside it').toBeLessThan(outer.x + outer.w);
+      expect(inner.y + inner.h, 'and ends inside it').toBeLessThan(outer.y + outer.h);
+    });
+
+    // One stroke the eye follows: dependency runs inward, from outside the shell to the core.
+    expect(screen.getByTestId('architecture-flow-inward')).toBeInTheDocument();
+  });
+
+  /*
+   * ⚠️ Containment claims every outer layer reaches every inner one. A `lower-only` profile says
+   * exactly that, so there is nothing to disclaim -- and if this list ever appeared for FSD, the
+   * rings would be granting permission the profile withheld.
+   */
+  it('claims no permission the profile withheld', () => {
+    renderWorkbench();
+    expect(screen.queryByTestId('architecture-nest-exceptions')).toBeNull();
   });
 
   it('keeps the same blueprint while switching from understand to plan and verify', () => {

@@ -8,81 +8,53 @@ import {
 } from '@/entities/architecture-profile';
 
 /**
- * The dependency rules, drawn as the flow they are.
+ * The dependency rules, drawn as nested layers.
  *
- * ⚠️ **Why this is hand-drawn and not a graph library.** `AGENTS.md` names the canvas-2D
- * `topology-map-v2` engine as *the* graph renderer and says another one needs a decision record;
- * that rule is about the map's thousands of force-laid nodes. This is a handful of roles in a
- * settled layered order, so a library would add a dependency, a bundle, and a second visual
- * language to answer a layout that is a few lines of arithmetic.
+ * ⚠️ **Four rounds of owner rejection got here, and each one was the same mistake.** The screen
+ * kept being a *list of roles with decoration attached* — first a stack of cards with an arrow
+ * between every consecutive pair, then a column of boxes, then bands with arcs in a gutter, then
+ * bands with a grid of dots in the corner. Every round asked the reader to assemble the shape from
+ * rows. The verdict never changed: *"can you see a flow in this? a flow.."*
  *
- * **Three defects the owner reported on the installed build, in order.**
+ * A flow is not a list. So the drawing is now the one every layered architecture is taught with:
+ * **layers nested inside each other, with dependency running inward.** The outermost ring may
+ * depend on everything it contains; the core depends on nothing. Containment *is* the rule, so the
+ * picture cannot disagree with the data the way the first version did — there are no arrows to
+ * point the wrong way, and the sink is at the centre because nothing is inside it.
  *
- * 1. *The picture disagreed with its data.* A stack of cards put a down-arrow between every
- *    consecutive pair whatever the rules said, so `domain` — which allows nothing — had an arrow
- *    leaving it and `port → domain` pointed the wrong way. `architecture-layout.ts` now derives the
- *    rows and edges from the rules.
- * 2. *The screen said everything twice.* A diagram of the roles sat above a list of the same roles,
- *    so neither half could use the width and the result was both repetitive and empty. One band per
- *    role now carries the name, the glob and the reach together.
- * 3. *A single spine threw the information away.* For a `lower-only` profile the drawing collapsed
- *    to seven rows and one hairline — *"this is poor too"*. Refusing to draw 21 implied edges was
- *    right; drawing **nothing** in their place was not.
- *
- * **What replaced the spine: the reach grid.** Every band carries one cell per role, in layer
- * order, filled where a dependency is allowed. Because the columns line up between bands, a
- * strictly layered project draws a triangle — and that shape *is* the answer to "did the agent
- * respect the architecture", because a dependency pointing back up appears on the wrong side of the
- * diagonal where nothing else sits. This is the dependency-structure matrix, folded into the rows
- * so a reader who does not know what a DSM is still sees a staircase.
- *
- * **The two policies stay two pictures.** `explicit` genuinely *is* a graph, so its declared edges
- * are drawn as arcs in a gutter. `lower-only` is a single sentence, so it has no gutter and the
- * grid carries it alone. Flattening them into one drawing is what produced defect 1.
+ * ⚠️ **Containment is only honest when the profile is fully nested.** It claims every outer layer
+ * may reach every inner one. `lower-only` says exactly that, and a well-formed hexagonal profile
+ * does too. A profile with a hole — an outer layer forbidden from some inner layer — would be
+ * over-stated by the rings, so the holes are computed and named beneath the drawing rather than
+ * silently drawn as permission.
  */
 
-/** One band's height. Fixed so the arc overlay's arithmetic matches the DOM without measuring it. */
-const BAND_H = 64;
-/** The lane the arcs run in, left of the bands. Only `explicit` profiles draw one. */
-const GUTTER = 88;
-/*
- * ⚠️ **Every arc starts and ends on a marked point.** A first pass ran the curves into the bare
- * edge of the bands and they crowded into a smear that read as decoration rather than as four
- * declared rules. One station dot per role is the device a transit map uses, and it is what makes
- * the dependencies countable rather than merely felt.
- */
-const STATION_X = GUTTER - 12;
-const DOT_R = 3.5;
-/** How far out each successive lane sits, so a skip cannot lie on top of a neighbouring edge. */
-const LANE_STEP = 24;
-const LANE_INSET = 18;
-
-function laneX(span: number) {
-  // A one-row hop hugs the bands; the further an edge skips, the further out it bows.
-  return Math.max(4, STATION_X - LANE_INSET - (span - 1) * LANE_STEP);
-}
-
-/** An arc between two station dots: leaves horizontally, arrives horizontally at the dot's edge. */
-function edgePath(y1: number, y2: number, span: number) {
-  const x = laneX(span);
-  return `M ${STATION_X} ${y1} C ${x} ${y1}, ${x} ${y2}, ${STATION_X - DOT_R - 1} ${y2}`;
-}
+/** The drawing's own coordinate space; the SVG scales to its container. */
+const W = 640;
+/** How far each layer sits inside the one that may depend on it. */
+const INSET_X = 36;
+const INSET_Y = 26;
+/** The core is a destination, not a hairline, so it keeps a real height of its own. */
+const CORE_H = 72;
 
 export function ArchitectureFlow({
   profile,
   roleLabel,
   reachLabel,
   sinkLabel,
-  legend,
+  directionLabel,
+  exceptionLabel,
 }: {
   profile: ArchitectureProfile;
   roleLabel: (id: string) => string;
-  /** Reads the reach grid aloud, because a grid of cells is not a sentence. */
+  /** Reads one layer's reach aloud, because a drawing is not a sentence. */
   reachLabel: (role: string, targets: string) => string;
   /** What "depends on nothing" is called. */
   sinkLabel: string;
-  /** Teaches the grid: what a filled cell, an open cell and the column order mean. */
-  legend: { allowed: string; self: string; order: string };
+  /** States which way the rings are read. */
+  directionLabel: string;
+  /** Names a pair the rings would otherwise claim is allowed. */
+  exceptionLabel: (from: string, to: string) => string;
 }) {
   const layout = useMemo(() => buildArchitectureLayout(profile), [profile]);
   const pathsOf = useMemo(
@@ -91,172 +63,154 @@ export function ArchitectureFlow({
   );
 
   /*
-   * The grid's columns are the rows of the drawing, in the same order, so a cell's position alone
-   * says which layer it means and an upward dependency lands on the wrong side of the diagonal.
+   * Outer to inner. A row can hold more than one role at the same depth; they share a ring, which
+   * is the truthful reading — same depth means neither may depend on the other.
    */
-  const columns = layout.rows.flat();
-  const depthOf = new Map(layout.nodes.map((node) => [node.id, node.depth]));
+  const rings = layout.rows;
   const allowedOf = (id: string) =>
     layout.edges.filter((edge) => edge.from === id).map((edge) => edge.to);
 
-  const centreOf = (depth: number) => depth * BAND_H + BAND_H / 2;
-  const height = layout.rows.length * BAND_H;
-  const drawsArcs = layout.policy === 'explicit';
+  /*
+   * ⚠️ The holes. Containment says "outer reaches every inner"; these are the pairs where it does
+   * not, and printing them is what keeps the picture from granting permission the profile withheld.
+   */
+  const exceptions = useMemo(() => {
+    const found: Array<{ from: string; to: string }> = [];
+    rings.forEach((ring, outer) => {
+      for (const from of ring) {
+        const allowed = new Set(allowedOf(from));
+        for (const inner of rings.slice(outer + 1)) {
+          for (const to of inner) {
+            if (!allowed.has(to)) found.push({ from, to });
+          }
+        }
+      }
+    });
+    return found;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rings and edges both come from layout
+  }, [layout]);
+
+  const depth = rings.length;
+  const height = CORE_H + 2 * (depth - 1) * INSET_Y;
+  const coreX = (depth - 1) * INSET_X;
 
   return (
     <div className="flex w-full max-w-2xl flex-col gap-3" data-testid="architecture-flow">
-      <div className="relative overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
-        {drawsArcs ? (
-          <svg
-            className="pointer-events-none absolute left-0 top-0"
-            width={GUTTER}
-            height={height}
-            viewBox={`0 0 ${GUTTER} ${height}`}
-            aria-hidden
+      <svg
+        viewBox={`0 0 ${W} ${height}`}
+        className="w-full"
+        aria-hidden
+        data-testid="architecture-flow-svg"
+      >
+        <defs>
+          <marker
+            id="architecture-flow-inward-head"
+            viewBox="0 0 8 8"
+            refX="7"
+            refY="4"
+            markerWidth="5"
+            markerHeight="5"
+            orient="auto"
           >
-            <defs>
-              <marker
-                id="architecture-flow-arrow"
-                viewBox="0 0 8 8"
-                refX="7"
-                refY="4"
-                markerWidth="5"
-                markerHeight="5"
-                orient="auto"
-              >
-                <path d="M0,0 L8,4 L0,8 z" fill="var(--color-indigo-a60)" />
-              </marker>
-            </defs>
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--color-indigo-a60)" />
+          </marker>
+        </defs>
 
-            {layout.edges.map((edge) => {
-              const from = depthOf.get(edge.from) ?? 0;
-              const to = depthOf.get(edge.to) ?? 0;
-              return (
-                <path
-                  key={`${edge.from}->${edge.to}`}
-                  d={edgePath(centreOf(from), centreOf(to), Math.abs(to - from))}
-                  fill="none"
-                  stroke={edge.skips ? 'var(--color-indigo-a30)' : 'var(--color-indigo-a60)'}
-                  strokeWidth={edge.skips ? 1 : 1.5}
-                  markerEnd="url(#architecture-flow-arrow)"
-                  data-testid={`architecture-flow-edge-${edge.from}-${edge.to}`}
-                />
-              );
-            })}
-
-            {/* Dots last, so an arrowhead cannot sit on top of one. */}
-            {layout.rows.map((row, depth) => (
-              <circle
-                key={row.join('+')}
-                cx={STATION_X}
-                cy={centreOf(depth)}
-                r={DOT_R}
-                fill="var(--color-panel)"
-                stroke={
-                  depth === layout.rows.length - 1
-                    ? 'var(--color-indigo-a60)'
-                    : 'var(--color-indigo-a30)'
-                }
-                strokeWidth="1.5"
+        {rings.map((ring, index) => {
+          const isCore = index === depth - 1;
+          const x = index * INSET_X;
+          const y = index * INSET_Y;
+          const w = W - 2 * x;
+          const h = height - 2 * y;
+          return (
+            <g key={ring.join('+')} data-testid={`architecture-layer-${index}`}>
+              <rect
+                x={x}
+                y={y}
+                width={w}
+                height={h}
+                rx="12"
+                fill={isCore ? 'var(--color-indigo-a08)' : 'var(--color-panel)'}
+                stroke={isCore ? 'var(--color-indigo-a46)' : 'var(--color-border-soft)'}
+                strokeWidth="1"
               />
-            ))}
-          </svg>
-        ) : null}
-
-        <ol className={drawsArcs ? 'm-0 list-none p-0 pl-22' : 'm-0 list-none p-0'}>
-          {layout.rows.map((row, depth) => (
-            <li
-              key={row.join('+')}
-              /*
-               * `h-16` with border-box keeps the row exactly BAND_H tall despite the divider, which
-               * is what lets the overlay compute centres instead of measuring them.
-               */
-              className="flex h-16 items-center gap-4 border-t border-[color:var(--color-divider)] pl-4 pr-4 first:border-t-0"
-              data-testid={`architecture-flow-band-${depth}`}
-            >
-              {row.map((id) => {
-                const allowed = allowedOf(id);
-                const isSink = allowed.length === 0;
-                return (
-                  <div
-                    key={id}
-                    className="flex min-w-0 flex-1 items-center gap-4"
-                    data-testid={`architecture-role-${id}`}
+              {ring.map((id, position) => (
+                <text
+                  key={id}
+                  /*
+                   * A ring's label lives in the strip it owns — the band above its child. The core
+                   * has no child, so its label sits in the middle of the space it encloses.
+                   */
+                  x={isCore ? W / 2 : x + 14 + position * 180}
+                  y={isCore ? y + h / 2 : y + INSET_Y / 2}
+                  textAnchor={isCore ? 'middle' : 'start'}
+                  dominantBaseline="middle"
+                  data-testid={`architecture-role-${id}`}
+                >
+                  <tspan
+                    className={
+                      isCore
+                        ? 'fill-[var(--color-indigo-text-soft)] text-body font-[var(--font-weight-emphasis)]'
+                        : 'fill-[var(--color-text-primary)] text-body font-[var(--font-weight-emphasis)]'
+                    }
                   >
-                    <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                      <h3
-                        className={
-                          isSink
-                            ? 'min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-indigo-text-soft)]'
-                            : 'min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]'
-                        }
-                      >
-                        {roleLabel(id)}
-                      </h3>
-                      <p className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                        {(pathsOf.get(id) ?? []).join('  ·  ')}
-                      </p>
-                    </div>
+                    {roleLabel(id)}
+                  </tspan>
+                  <tspan
+                    dx="10"
+                    className="fill-[var(--color-text-quaternary)] font-mono text-caption"
+                  >
+                    {(pathsOf.get(id) ?? []).join('  ·  ')}
+                  </tspan>
+                </text>
+              ))}
+            </g>
+          );
+        })}
 
-                    {/*
-                      ⚠️ The grid is the picture, so it must not also be the accessible text: a
-                      screen reader gets the sentence, and the cells are hidden from it.
-                    */}
-                    <p className="sr-only">
-                      {isSink
-                        ? sinkLabel
-                        : reachLabel(roleLabel(id), allowed.map(roleLabel).join(', '))}
-                    </p>
-                    <div
-                      className="flex shrink-0 gap-1"
-                      aria-hidden
-                      data-testid={`architecture-reach-${id}`}
-                    >
-                      {columns.map((column) => {
-                        const state =
-                          column === id ? 'self' : allowed.includes(column) ? 'on' : 'off';
-                        return (
-                          <span
-                            key={column}
-                            data-reach={state}
-                            className={
-                              state === 'on'
-                                ? 'size-2 rounded-full bg-[color:var(--color-indigo-a60)]'
-                                : state === 'self'
-                                  ? 'size-2 rounded-full border border-[color:var(--color-text-quaternary)]'
-                                  : 'size-2 rounded-full bg-[color:var(--color-overlay-2)]'
-                            }
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+        {/*
+          ⚠️ The arrow is the reason this reads as a flow rather than as a set of boxes. It runs
+          from outside the outermost ring to the edge of the core, piercing every boundary on the
+          way, so the direction of dependency is a single stroke the eye follows in one movement.
+        */}
+        <line
+          x1={10}
+          y1={height / 2}
+          x2={coreX - 8}
+          y2={height / 2}
+          stroke="var(--color-indigo-a60)"
+          strokeWidth="1.5"
+          markerEnd="url(#architecture-flow-inward-head)"
+          data-testid="architecture-flow-inward"
+        />
+      </svg>
+
+      {/* The drawing is hidden from assistive technology, so the same facts are stated here. */}
+      <ol className="sr-only">
+        {rings.flat().map((id) => {
+          const allowed = allowedOf(id);
+          return (
+            <li key={id}>
+              {allowed.length === 0
+                ? `${roleLabel(id)}: ${sinkLabel}`
+                : reachLabel(roleLabel(id), allowed.map(roleLabel).join(', '))}
             </li>
+          );
+        })}
+      </ol>
+
+      <p className="text-caption text-[color:var(--color-text-quaternary)]">{directionLabel}</p>
+
+      {exceptions.length > 0 ? (
+        <ul
+          className="flex flex-col gap-1 text-caption text-[color:var(--color-amber-source-a90)]"
+          data-testid="architecture-nest-exceptions"
+        >
+          {exceptions.map(({ from, to }) => (
+            <li key={`${from}->${to}`}>{exceptionLabel(roleLabel(from), roleLabel(to))}</li>
           ))}
-        </ol>
-      </div>
-      {/*
-        ⚠️ A grid of cells is not self-explanatory: nothing on screen says the columns are the rows
-        above in the same order, and that mapping is the whole reason an upward dependency would be
-        visible. The diagonal of open cells hints at it; this states it. Real cells rather than
-        typed glyphs, so the legend cannot drift from what is drawn.
-      */}
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-[color:var(--color-text-quaternary)]">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-[color:var(--color-indigo-a60)]" aria-hidden />
-          {legend.allowed}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="size-2 rounded-full border border-[color:var(--color-text-quaternary)]"
-            aria-hidden
-          />
-          {legend.self}
-        </span>
-        <span>{legend.order}</span>
-      </p>
+        </ul>
+      ) : null}
     </div>
   );
 }
