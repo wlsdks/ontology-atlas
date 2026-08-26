@@ -1,15 +1,9 @@
 ---
-uid: 5b2e0f4a-9d61-4c8e-a0f7-2c9d4e13a780
-slug: architecture/storefront-services
-kind: document
-title: Storefront Services
-display_ko: 스토어프론트 서비스 구조
-display_en: Storefront Services
-description: "How the nine areas are laid out in code: one service each, with the dependency direction running inward so a payment change cannot ripple into the catalogue."
 architecture_schema: architecture-profile/v1
 profile_uid: 5b2e0f4a-9d61-4c8e-a0f7-2c9d4e13a780
 profile_slug: storefront-services
 project_uid: 1beed293-711b-4b51-b8c0-65f51bc4d606
+title: Storefront Services
 created_by: human
 patterns: [dependency:hexagonal]
 scope_paths: [services/**]
@@ -23,7 +17,6 @@ allow_application: [domain, port]
 allow_port: [domain]
 allow_adapter: [application, port, domain]
 evidence: [storefront.md]
-relates: [storefront]
 ---
 
 # Storefront Services

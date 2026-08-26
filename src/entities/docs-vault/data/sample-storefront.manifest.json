@@ -6,20 +6,13 @@
       "slug": "architecture/storefront-services",
       "path": "samples/storefront/architecture/storefront-services.md",
       "title": "Storefront Services",
-      "description": "How the nine areas are laid out in code: one service each, with the dependency direction running inward so a payment change cannot ripple into the catalogue.",
       "tags": [],
       "frontmatter": {
-        "uid": "5b2e0f4a-9d61-4c8e-a0f7-2c9d4e13a780",
-        "slug": "architecture/storefront-services",
-        "kind": "document",
-        "title": "Storefront Services",
-        "display_ko": "스토어프론트 서비스 구조",
-        "display_en": "Storefront Services",
-        "description": "How the nine areas are laid out in code: one service each, with the dependency direction running inward so a payment change cannot ripple into the catalogue.",
         "architecture_schema": "architecture-profile/v1",
         "profile_uid": "5b2e0f4a-9d61-4c8e-a0f7-2c9d4e13a780",
         "profile_slug": "storefront-services",
         "project_uid": "1beed293-711b-4b51-b8c0-65f51bc4d606",
+        "title": "Storefront Services",
         "created_by": "human",
         "patterns": [
           "dependency:hexagonal"
@@ -57,9 +50,6 @@
         ],
         "evidence": [
           "storefront.md"
-        ],
-        "relates": [
-          "storefront"
         ]
       },
       "headings": [],
@@ -3313,10 +3303,7 @@
           "domains/support"
         ],
         "capabilities": [],
-        "elements": [],
-        "relates": [
-          "architecture/storefront-services"
-        ]
+        "elements": []
       },
       "headings": [],
       "excerpt": "Not a real company: an example built so that a first-time visitor can learn how to read the map. It draws a small online store that ships physical goods, clothes and household items, out of a single warehouse by parcel carrier: paid by card and one-tap wallets, shipped through three carriers, brought back with coupons ",
@@ -3326,13 +3313,6 @@
     }
   ],
   "backlinksDetail": {
-    "storefront": [
-      {
-        "fromSlug": "architecture/storefront-services",
-        "context": "frontmatter · **[storefront]**",
-        "linkText": "storefront"
-      }
-    ],
     "capabilities/order-lookup": [
       {
         "fromSlug": "capabilities/account-closure",
@@ -5444,13 +5424,6 @@
         "fromSlug": "domains/support",
         "context": "frontmatter · **[capabilities/return-request]**",
         "linkText": "capabilities/return-request"
-      }
-    ],
-    "architecture/storefront-services": [
-      {
-        "fromSlug": "storefront",
-        "context": "frontmatter · **[architecture/storefront-services]**",
-        "linkText": "architecture/storefront-services"
       }
     ]
   },

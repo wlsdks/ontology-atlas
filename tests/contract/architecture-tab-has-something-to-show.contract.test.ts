@@ -50,6 +50,28 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
   });
 
   /*
+   * ⚠️ **A profile is not a Map node, and the schema alone must not be what says so.**
+   *
+   * `docs/ARCHITECTURE.md` and decision (120) settle it: a file carrying this schema has no
+   * `kind:`, because it is "not an ontology kind and not an overloaded ontology `document`". I
+   * broke that rule while adding the sample -- gave it `kind: document`, a `uid` and a `relates`
+   * edge -- because the sample's own graph contract demanded every document be a connected node,
+   * and satisfying the nearer test was easier than reading the standing decision. The gate exists
+   * so the next person cannot make that trade quietly.
+   */
+  it('프로필은 지도 노드가 아니다 — kind 도 uid 도 갖지 않는다', () => {
+    const everyDoc = [...docsOf(dogfoodManifest), ...docsOf(storefrontManifest)];
+    const profiles = everyDoc.filter(
+      (doc) => doc.frontmatter?.architecture_schema === 'architecture-profile/v1',
+    );
+    expect(profiles.length, 'there must be profiles to check').toBeGreaterThan(0);
+    for (const profile of profiles) {
+      expect(profile.frontmatter.kind, `${profile.slug} must not carry a kind`).toBeUndefined();
+      expect(profile.frontmatter.uid, `${profile.slug} must not carry a graph uid`).toBeUndefined();
+    }
+  });
+
+  /*
    * ⚠️ The empty state still exists for a genuinely empty vault, and what it says then is the whole
    * point. It used to name the schema (`architecture-profile/v1`) and tell the reader to write the
    * document by hand — this repository's private vocabulary in the first sentence a stranger reads,
