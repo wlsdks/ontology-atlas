@@ -5,3 +5,6 @@ export {
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from './model/architecture-profile';
+export {
+  buildArchitectureLayout,
+} from './model/architecture-layout';

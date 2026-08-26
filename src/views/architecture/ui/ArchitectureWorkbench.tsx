@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, Bot, Boxes, CircleHelp, FileCode2, ShieldCheck } from 'lucide-react';
+import { Bot, Boxes, CircleHelp, FileCode2, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
@@ -15,17 +15,10 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { Button, EmptyState, RowButton, Surface, buttonVariants } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { ArchitectureFlow } from './ArchitectureFlow';
 
 type Mode = 'understand' | 'plan' | 'verify';
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
-
-function allowedRoles(profile: ArchitectureProfile, roleIndex: number): string[] | null {
-  const role = profile.roles[roleIndex]!;
-  if (profile.dependencyPolicy === 'lower-only') {
-    return profile.roles.slice(roleIndex + 1).map((candidate) => candidate.id);
-  }
-  return profile.allows[role.id] ?? null;
-}
 
 export function ArchitectureWorkbench({
   profiles,
@@ -251,44 +244,31 @@ export function ArchitectureWorkbench({
               ))}
             </div>
 
-            <div className="mt-6 flex flex-col items-center" data-architecture-mode={mode}>
-              {selected.roles.map((role, index) => {
-                const allowed = allowedRoles(selected, index);
-                return (
-                  <div key={role.id} className="contents">
-                    <article
-                      data-testid={`architecture-role-${role.id}`}
-                      className="w-full max-w-2xl rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-1)]"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                            {roleLabel(role.id)}
-                          </h3>
-                          <p className="mt-1 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                            {role.paths.join(' · ')}
-                          </p>
-                        </div>
-                        <span className="text-caption text-[color:var(--color-text-quaternary)]">
-                          {t('rolePaths', { count: role.paths.length })}
-                        </span>
-                      </div>
-                      {allowed ? (
-                        <p className="mt-3 text-caption text-[color:var(--color-text-tertiary)]">
-                          {allowed.length > 0
-                            ? `→ ${allowed.map(roleLabel).join(' · ')}`
-                            : '→ ∅'}
-                        </p>
-                      ) : null}
-                    </article>
-                    {index < selected.roles.length - 1 ? (
-                      <span className="my-2 inline-flex size-7 items-center justify-center rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)]">
-                        <ArrowDown size={ICON_SIZE.sm} aria-hidden />
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
+            {/*
+              ⚠️ **One artifact, not a picture and then a list of the same thing.** This was two
+              blocks -- a diagram of four boxes, then four cards repeating the same roles -- and the
+              owner's reaction to the installed build was that it neither looked good nor read as a
+              flow. Saying everything twice is why: neither half could use the width, so the screen
+              was simultaneously redundant and empty. One band per role carries the name, the globs
+              and the allowances, and the arrows run down the gutter beside them.
+
+              `data-architecture-mode` stays here because the scroll-reanchor test uses it to tell
+              which stage is mounted; it moved with the block it was attached to.
+            */}
+            <div className="mt-6" data-testid="architecture-flow-panel" data-architecture-mode={mode}>
+              {/* The policy sentence is the section description above; do not print it twice. */}
+              <ArchitectureFlow
+                profile={selected}
+                roleLabel={roleLabel}
+                reachLabel={(role, targets) => t('reachAria', { role, targets })}
+                sinkLabel={t('reachNone')}
+                directionLabel={t('ladderDirection')}
+                legend={{
+                  allowed: t('legendAllowed'),
+                  self: t('legendSelf'),
+                  columns: t('legendColumns'),
+                }}
+              />
             </div>
           </div>
         </section>
