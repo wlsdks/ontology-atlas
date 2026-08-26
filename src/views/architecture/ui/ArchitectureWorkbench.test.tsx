@@ -1,6 +1,18 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+/*
+ * The desktop bridge is a Tauri capability; jsdom has none. Both branches are driven from here so
+ * the zero-agent path and the ready-agent path are each measured, rather than only whichever one
+ * the test environment happens to produce.
+ */
+let bridgeAvailable = false;
+let detectedRuntimes: Array<{ id: string; state: string }> = [];
+vi.mock('@/shared/lib/tauri-acp', () => ({
+  isAcpBridgeAvailable: () => bridgeAvailable,
+  detectAcpRuntimes: async () => (bridgeAvailable ? detectedRuntimes : null),
+}));
 
 import en from '../../../../messages/en.json';
 import {
@@ -41,26 +53,69 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
     );
   }
 
-  it('hands the drafting task to the agent instead of only changing the address', () => {
+  beforeEach(() => {
     window.sessionStorage.clear();
+    bridgeAvailable = false;
+    detectedRuntimes = [];
+  });
+
+  /*
+   * ⚠️ **The agent door was silently a dead end without an agent, and that hole was shipped.**
+   *
+   * The button queues the sentence and moves to the map, but the map resolves the runner as
+   * `runtimeId ?? acpRuntime?.id` and with neither it returns early — the queued sentence is
+   * consumed and discarded. So the person pressed a button, changed screens, and nothing happened:
+   * the very defect the button was built to fix, one route to the right.
+   */
+  it('offers only the clipboard where a process cannot be spawned, and says why', async () => {
     renderEmpty();
-    fireEvent.click(screen.getByTestId('architecture-draft-from-code'));
+    await waitFor(() =>
+      expect(screen.getByTestId('architecture-copy-draft-handoff')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('architecture-draft-from-code')).toBeNull();
+    expect(screen.getByText(/No agent is connected/)).toBeInTheDocument();
+  });
+
+  it('hands the drafting task to the agent when one can actually be started', async () => {
+    bridgeAvailable = true;
+    detectedRuntimes = [{ id: 'claude-acp', state: 'ready' }];
+    renderEmpty();
+
+    const button = await screen.findByTestId('architecture-draft-from-code');
+    fireEvent.click(button);
 
     const queued = consumeQueuedAgentChatIntent();
     expect(queued, 'the click must leave a task behind, not just a destination').toBeDefined();
-    // Unnamed runner: this screen holds the task and has no runner list; the map falls back to
-    // whichever agent is connected.
-    expect(queued?.runtimeId).toBeNull();
+    /*
+     * ⚠️ The runner must be named. Queuing null navigated and opened nothing in the installed app:
+     * a runner that is startable on this machine is not one the map has selected, and on a fresh
+     * mount there is no selection to fall back to, so the sentence was consumed and discarded.
+     */
+    expect(queued?.runtimeId).toBe('claude-acp');
     expect(queued?.prompt).toContain('Draft a first architecture profile');
+  });
+
+  /*
+   * `login-needed` is present but will die with an authentication error once a conversation opens —
+   * the exact failure that state exists to stop. It must not read as a reachable agent.
+   */
+  it('does not offer the agent door to a runner that is only installed, not usable', async () => {
+    bridgeAvailable = true;
+    detectedRuntimes = [{ id: 'claude-acp', state: 'login-needed' }];
+    renderEmpty();
+    await waitFor(() =>
+      expect(screen.getByTestId('architecture-copy-draft-handoff')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('architecture-draft-from-code')).toBeNull();
   });
 
   /*
    * The copy stated as present fact something the product did not do. It may promise only what the
    * click can keep — a proposal the person reviews, from an agent that has to be connected.
    */
-  it('promises a proposal from a connected agent, not a finished file', () => {
+  it('promises a proposal from a connected agent, not a finished file', async () => {
     renderEmpty();
-    expect(screen.getByText(/A connected agent/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/A connected agent/)).toBeInTheDocument());
     expect(screen.getByText(/proposes a draft/)).toBeInTheDocument();
   });
 });
@@ -210,13 +265,13 @@ describe('ArchitectureWorkbench', () => {
       cliEntry: '/Users/dana/Atlas Source/cli/src/index.mjs',
     });
     fireEvent.click(screen.getByRole('radio', { name: 'Plan' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Copy agent handoff' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy the sentence for your agent' }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('architectureChangePlan:v1'));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("--profile 'atlas-web' --json"));
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("--vault '/Users/dana/Atlas Source/docs/ontology'"),
     );
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Agent handoff copied' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copied. Paste it into your agent' }))
       .toHaveAttribute('data-architecture-copy-state', 'copied'));
   });
 
@@ -224,7 +279,7 @@ describe('ArchitectureWorkbench', () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
     renderWorkbench();
     fireEvent.click(screen.getByRole('radio', { name: 'Plan' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Copy agent handoff' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy the sentence for your agent' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Could not copy. Try again' }))
       .toHaveAttribute('data-architecture-copy-state', 'error'));
   });

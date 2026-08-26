@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   formatMeaningAssessmentSummary,
   formatProjectSourceSummary,
+  fallbackReportPayload,
   readinessExitCode,
 } from './agent-brief.mjs';
 
@@ -95,5 +96,61 @@ describe('agent-brief project meaning summary', () => {
       'nextAction   verify_source_currentness',
     ]);
     assert.doesNotMatch(lines.join('\n'), /confidence|score|%|\/private/);
+  });
+});
+
+/*
+ * ⚠️ **A run that exits 1 has to say why in the stream a machine reads.**
+ *
+ * `readinessExitCode`'s own note says the human one-line explanation is deliberately kept out of
+ * JSON, "read by machines, which look at `status` and `readiness` directly". That holds for the
+ * plain `--json` output and did not hold for `--verify-fallbacks --json`, whose report carries
+ * neither field. Measured 2026-08-26 on this repository's dogfood vault: the command printed
+ * `ok: true, failed: 0` and exited 1, and the reason — readiness `needs_attention` at 75 —
+ * appeared nowhere. Correct and unattributable at the same time.
+ *
+ * ⚠️ The first version of this test spawned the real CLI. It passed locally and died in the
+ * fastest CI job, which deliberately does not install `mcp/node_modules`. A gate that only holds
+ * on a developer's machine is not a gate, so the payload is built by a pure function instead.
+ */
+describe('agent-brief --verify-fallbacks --json payload', () => {
+  const report = Object.freeze({
+    operation: 'agent_fallback_check',
+    ok: true,
+    failed: 0,
+    commands: [],
+  });
+
+  it('carries the readiness verdict that decides the exit code', () => {
+    const payload = fallbackReportPayload(report, {
+      status: 'needs_attention',
+      readiness: { score: 75 },
+    });
+    assert.equal(payload.operation, 'agent_fallback_check');
+    assert.equal(payload.ok, true);
+    // The fallback verdict and the readiness verdict are different questions, and both are here.
+    assert.equal(payload.status, 'needs_attention');
+    assert.deepEqual(payload.readiness, { score: 75 });
+  });
+
+  /*
+   * The exit code is the max of the two verdicts. This is the assertion that fails if either field
+   * is dropped again: with a clean fallback run, `status` is the only thing left to explain a 1.
+   */
+  it('leaves nothing unattributable when the fallbacks all passed', () => {
+    const payload = fallbackReportPayload(report, {
+      status: 'needs_attention',
+      readiness: { score: 75 },
+    });
+    assert.ok(
+      payload.failed > 0 || payload.status !== 'ready',
+      'exit 1 would have nothing in the output to attribute it to',
+    );
+  });
+
+  it('does not invent a verdict when the brief carries none', () => {
+    const payload = fallbackReportPayload(report, undefined);
+    assert.equal(payload.status, null);
+    assert.equal(payload.readiness, null);
   });
 });

@@ -283,10 +283,10 @@
     "evidenceTitle": "승인된 근거",
     "planTitle": "아키텍처부터 읽는 에이전트 계획",
     "planBody": "구현 전에 선택한 범위를 연결된 코딩 에이전트에 넘깁니다. 에이전트는 편집 전에 타입 있는 계획을 반환해야 합니다.",
-    "handoffPreview": "에이전트 인계문 미리보기",
-    "copyHandoff": "에이전트 인계문 복사",
-    "copyingHandoff": "에이전트 인계문 복사 중…",
-    "copiedHandoff": "에이전트 인계문을 복사했습니다",
+    "handoffPreview": "에이전트에 보낼 문장 미리보기",
+    "copyHandoff": "에이전트에 붙여넣을 문장 복사",
+    "copyingHandoff": "복사하는 중…",
+    "copiedHandoff": "복사했습니다. 쓰시는 에이전트에 붙여 넣으세요",
     "copyHandoffError": "복사하지 못했습니다. 다시 시도",
     "verifyTitle": "실제 변경 검증",
     "verifyBody": "편집 뒤 같은 소스 검사를 다시 실행하고 계획한 의존과 실제 import를 비교합니다.",
@@ -321,7 +321,8 @@
     "legendAllowed": "의존 가능",
     "legendSelf": "자기 자신",
     "legendColumns": "열 번호는 계층 번호와 같습니다",
-    "draftFromCode": "코드에서 초안 만들기"
+    "draftFromCode": "코드에서 초안 만들기",
+    "draftNoAgentBody": "지금은 연결된 에이전트가 없어 이 화면에서 바로 시작할 수 없습니다. 아래 문장을 복사해 쓰시는 코딩 에이전트에 붙여 넣으세요."
   },
   "ontologyRelations": {
     "relationShort": {
@@ -567,7 +568,7 @@
       },
       "architectureWhat": {
         "title": "코드가 어떻게 맞물려야 하는지 보는 곳이에요",
-        "body": "지도는 코드베이스가 무엇을 만드는지 설명해요. 아키텍처는 구현 역할, 허용된 의존 방향, 코딩 에이전트가 편집 전에 읽어야 할 정확한 인계문을 기록해요."
+        "body": "지도는 코드베이스가 무엇을 만드는지 설명해요. 아키텍처는 구현 역할, 허용된 의존 방향, 코딩 에이전트가 편집 전에 읽어야 할 정확한 지시 문장을 기록해요."
       },
       "architectureBlueprint": {
         "title": "작업이 움직여도 청사진의 자리는 유지해요",
