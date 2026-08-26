@@ -85,7 +85,7 @@ import {
   shouldDeferDocsVaultDefaultSelection,
   shouldShowSampleWelcomeNote,
   type DocsVaultCollection,
-} from '../lib/docs-vault-collection';
+  isArchitectureProfile,} from '../lib/docs-vault-collection';
 import {
   buildDocsVaultHref,
   buildNewNodeDoc,
@@ -1476,7 +1476,7 @@ function DocsVaultContent() {
         collection !== 'ontology' ? 'FEATURES' : null,
         collection !== 'ontology' ? 'PRODUCT-DIRECTION' : null,
         collection !== 'ontology' ? 'ARCHITECTURE' : null,
-        docs[0]?.slug,
+        firstReadableSlug(docs),
       ];
       return (
         candidates.find((slug): slug is string => typeof slug === 'string' && slugs.has(slug)) ??
@@ -1546,10 +1546,10 @@ function DocsVaultContent() {
       'FEATURES',
       'PRODUCT-DIRECTION',
       'ARCHITECTURE',
-      collectionDocs[0]?.slug,
+      firstReadableSlug(collectionDocs),
     ];
     const nextSlug = candidates.find(
-      (slug): slug is string => Boolean(slug) && collectionDocSlugs.has(slug),
+      (slug): slug is string => typeof slug === 'string' && collectionDocSlugs.has(slug),
     );
     if (!nextSlug) return;
 
@@ -1593,7 +1593,7 @@ function DocsVaultContent() {
       }
       const fallbackSlug = collectionDocSlugs.has('README')
         ? 'README'
-        : collectionDocs[0]?.slug;
+        : firstReadableSlug(collectionDocs);
       if (fallbackSlug) {
         handleSelect(fallbackSlug);
       } else {
@@ -2685,6 +2685,26 @@ function DocsVaultContent() {
       </div>
     </div>
   );
+}
+
+
+/**
+ * ⚠️ **What Docs opens by itself is not simply "the first document".**
+ *
+ * An architecture profile sorted first in its folder, Docs auto-opened it, and `<main>` fell to 26
+ * elements against a floor of 40 (`a11y-vault-backed.spec.ts`) — the reading surface's opening
+ * screen became a twenty-line frontmatter record with nothing to read. It stays in the list, where
+ * the standing 2026-08-26 architecture record puts it; it is only never the unattended choice.
+ */
+function firstReadableSlug<T extends { slug: string; frontmatter: Record<string, unknown> }>(
+  docs: readonly T[],
+): string | undefined {
+  /*
+   * No fallback to `docs[0]`. A collection whose only member is a profile — the storefront
+   * sample's guides collection is one — has nothing to read, and opening the profile anyway is
+   * the exact screen the element floor caught. Every caller already handles "no document".
+   */
+  return docs.find((doc) => !isArchitectureProfile(doc))?.slug;
 }
 
 export function DocsVaultPage() {
