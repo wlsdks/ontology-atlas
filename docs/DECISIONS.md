@@ -40,68 +40,73 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
-## 2026-08-26 — 아키텍처 첫 초안은 에이전트가 제안하고, 이름은 사람이 붙인다
+## 2026-08-26 — The first architecture draft is proposed by an agent and named by a person
 
-**소집 이유**: 설치된 rc.15에서 오너가 자기 폴더를 연결한 채 `/architecture` 를
-열자 빈 화면이 나왔고, 「내 코드에서 만들기」 버튼은 지도로 이동만 하고 아무것도
-만들지 않았다. 문구는 *"AI 에이전트가 폴더와 실제 import를 읽어 초안을 만들어
-줍니다"* 라고 현재형으로 단언하고 있었다. 처음 제안한 슬라이스가 새 공개 MCP 계약을
-포함해 5석을 소집했다.
+**Convened because**: on the installed rc.15, with the owner's own folder connected,
+`/architecture` showed its empty state and the button under it navigated to the map
+and produced nothing. The sentence above it stated as present fact that an agent
+reads the folders and the real imports and drafts this. The first proposed slice
+included a new public MCP contract, which convened five seats.
 
-**선행 결정**: 2026-08-26 「Architecture is a separate reviewed contract and primary
-workbench destination」이 서 있다. §4 *"패턴 이름은 폴더에서 추론하지 않는다"*, §3
-*"둘 다 side effect 0"*, §5 *"Understand → Plan → Verify"*. 그리고 2026-08-24 첫
-실행 문의 결정 — **앱은 MCP를 호출하지 않고 에이전트에게 문장을 넘긴다** — 도
-그대로 선다. 이 기록은 §5에 **초안 단계를 앞에 덧붙이며**, 나머지는 뒤집지 않는다.
+**Prior decisions**: the 2026-08-26 record "Architecture is a separate reviewed
+contract and primary workbench destination" stands — §4 "a pattern label is never
+inferred from folders", §3 "both have side effect 0", §5 Understand → Plan → Verify.
+The 2026-08-24 decision behind the first-run door also stands: **the app does not call
+MCP; it hands the agent a sentence.** This record appends a drafting step ahead of §5
+and overturns nothing else.
 
-**관측된 현상**: 프로필을 만드는 경로가 제품 안에 없다. 존재하는 프로필 두 개는
-모두 사람이 커밋한 것이고, `inspect_architecture` 는 없을 때
-`architecture_profile_missing` 을 던지지만 35개 도구 중 그것을 만들 수 있는 것이
-없다. UI 밖에서도 같은 막다른 길이다.
+**Observed phenomenon**: no path in the product produces a profile. The two that exist
+were both committed by hand, and `inspect_architecture` throws
+`architecture_profile_missing` while none of the 35 tools can satisfy it. The dead end
+is in the agent channel as well as the screen.
 
-**결정**:
+**Decision**:
 
-1. 빈 화면의 버튼은 **과제를 실어 나른다.** `queueAgentChatIntent` 로 초안 문장을
-   세션에 넣고 지도로 이동하며, 지도가 그 문장을 첫 턴으로 연다. 앱은 여전히 MCP를
-   호출하지 않는다.
-2. **새 MCP 도구를 만들지 않는다.** 에이전트는 이미 `infer_imports` 와
-   `analyze_repo_structure` 로 읽고 자기 파일 도구로 쓴다. 새 도구는 §4가 금지한
-   폴더 추론을 역할 이름 형태로 되살릴 위험만 더한다.
-3. **규칙은 관측에서 뽑지 않는다.** 초안은 `allow_*` 와 `dependency_policy` 를 쓰지
-   않는다. 이 저장소에서 실측: `atlas architecture` 는 진짜 FSD 위반 18건을
-   보고하는데(`shared → entities` 포함), 같은 import에서 규칙을 뽑으면
-   `allow_shared: [entities]` 가 되어 저장소가 `conforms` 로 초록이 된다. 비워 두면
-   모든 간선이 unruled → `unknown` 이고, unknown 은 결코 준수가 아니다.
-4. **패턴 이름과 역할 이름은 사람이 붙인다.** 역할 id를 폴더에서 지으면 §4의 금지를
-   식별자 단위로 우회하는 것이다. 에이전트는 경로에서 나온 문자 그대로의 id로
-   묶음만 제안한다. `patterns` 는 두 파서 모두 비어 있을 수 없으므로, **사람이
-   이름을 붙이기 전에는 기록이 존재할 수 없다** — 승인이 대화상자가 아니라 구조가
-   된다.
-5. 초안에는 `created_by: agent:<도구>` 를 찍는다. `evidence` 에는 사람이 이미 쓴
-   권위(린트 설정, 아키텍처 문서)만 넣고 **관측한 간선 목록을 넣지 않는다** — 선행
-   기록의 반증 조건 *"프로필이 관측 import의 두 번째 출처가 되면"* 에 정면으로
-   해당한다.
+1. The empty state's button **carries the task**. `queueAgentChatIntent` puts the
+   drafting sentence in session storage and the map opens it as the first turn. The app
+   still does not call MCP.
+2. **No new MCP tool.** The agent already reads with `infer_imports` and
+   `analyze_repo_structure` and writes with its own file tools. A new tool would mostly
+   add a place to revive §4's folder inference in the shape of role names.
+3. **Rules are not derived from observations.** The draft writes no `allow_*` and no
+   `dependency_policy`. Measured here: `atlas architecture` reports 18 real
+   Feature-Sliced Design violations, `shared → entities` among them, and a rule derived
+   from those same imports would emit `allow_shared: [entities]` and render this
+   repository `conforms` — reaching the prior record's own falsifier, "if an unsupported
+   scan ever renders green", by design. Omitting both keys leaves every edge unruled and
+   therefore `unknown`, and unknown is never compliant.
+4. **The person names the pattern and the roles.** Deriving a role id from a folder is
+   §4's ban routed around one identifier at a time, so the agent proposes path groups
+   with literal path-derived ids only. `patterns` cannot be empty in either parser, so
+   **the record cannot exist until a person has named it** — approval is structural
+   rather than a dialog to click through.
+5. The draft is stamped `created_by: agent:<tool>`. `evidence` carries the human
+   authorities that already govern the boundary — a lint config, an architecture
+   document — and never the edge list just observed, which is the prior record's other
+   falsifier ("if a profile becomes a second source of observed imports").
 
-**루브릭**: 문제 통찰 4 · 사용자 순간 4 · 차별성 3 · 온톨로지 가치 2 · 에이전트 가치 3
-· 검증 4 = **20/24**, 치명적 0 없음. 온톨로지 가치 2는 천장이지 결함이 아니다 —
-프로필은 설계상 그래프 노드가 아니며, 개선되는 것은 갱신 경로와 출처다.
+**Rubric**: Problem insight 4 · User moment 4 · Differentiation 3 · Ontology value 2 ·
+Agent value 3 · Verification 4 = **20/24**, no fatal zero. Ontology value 2 is a ceiling
+rather than a gap: a profile is deliberately not a graph node, and what improves is the
+update path and provenance.
 
-**결정적 이견**: 근거석은 *"먼저 조사"* 를 냈다. 이유는 대안이 잘못 매겨졌다는
-것 — 코딩 에이전트를 이미 붙인 사람은 그냥 에이전트에게 시키면 되고, 그게 되는지
-아무도 재지 않았다. 이 기록은 그 이견을 인정하되, **문구가 거짓말을 하고 있다**는
-사실이 조사를 기다릴 이유가 되지 않으므로 문장 인계까지만 지금 낸다.
+**Decisive disagreement**: the evidence seat returned *Investigate first*, on the
+grounds that the alternative was mispriced — somebody who has already attached a coding
+agent can simply ask it, and nobody has measured whether that works. This record accepts
+that dissent and ships only the sentence handoff, because a screen making a false
+statement is not a reason to wait for a trial.
 
-**반증**: 실제 첫 세션 5회에서 사람이 이 버튼 없이도 10분 안에 검토된 프로필에
-도달하면, 문제는 문구였고 이 다리는 불필요했다. 또는 5개 저장소 중 3개에서 사람이
-초안을 다시 쓰거나 버리면 *"우리가 분석해서 기록해 준다"* 가 실제 저장소에서
-틀린 것이다. 또는 초안이 만든 프로필의 간선이 대부분 `unknown` 이면 관측에 뽑을
-신호가 없는 것이다.
+**Falsifier**: in five real first sessions a person reaches a reviewed profile inside ten
+minutes without this button, which would mean the defect was the copy and the bridge was
+unnecessary. Or the human rewrites or discards the draft in three of five repositories,
+which would mean "we analyse it and record it" is wrong for real code. Or the drafted
+profiles come back mostly `unknown`, which would mean there was no signal to derive from.
 
-**게이트**: `architecture-profile.test.ts` — 초안 문장이 규칙 파생·패턴 명명·역할
-명명·관측 간선 증거를 각각 거부한다. `ArchitectureWorkbench.test.tsx` — 클릭이
-과제를 남긴다(예전 동작으로 되돌리면 1건 실패로 확인).
+**Gate**: `architecture-profile.test.ts` — the sentence refuses rule derivation, pattern
+naming, role naming, and observed edges as evidence. `ArchitectureWorkbench.test.tsx` —
+the click leaves a task behind; reverting the handler fails it.
 
-**상태**: 유효
+**Status**: valid
 
 ---
 
