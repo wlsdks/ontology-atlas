@@ -80,6 +80,14 @@ jobs:
       # noise rather than a rule (same discipline this repository has already set for lint rules).
       # Releases are manual work, so asking here exactly blocks "shipping outdated things."
       #
+      # **It blocks on the runtimes this app runs, and only those** (narrowed 2026-08-26). It used
+      # to fail on any of 39 listed agents moving, and it fired on all four releases of 2026-08-25/26
+      # without the mover ever being one we launch. Each cost a refresh, a PR, a CI round and a
+      # retag to ship a version number for a tool nobody here uses; on rc.14 it was green at tag
+      # time and stale twenty seconds later, which is a rule nobody can satisfy. The blocking set is
+      # read from Rust's `ISOLATION` table so it cannot drift from what the app actually knows;
+      # everything else is reported and does not stop the release.
+      #
       # **When blocked**: Run `pnpm acp:registry`, commit the diff, and push again.
       - name: Verify bundled ACP registry is current
         run: pnpm acp:registry:check

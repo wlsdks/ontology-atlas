@@ -242,6 +242,71 @@ async function fetchIcon(agent) {
   }
 }
 
+/**
+ * The runtimes this application **actually runs**, read from Rust rather than transcribed.
+ *
+ * ⚠️ **Why the gate is narrow now** (measured across rc.11 through rc.14, 2026-08-25/26). The
+ * release check blocked on any of 39 listed agents moving, and it fired on all four releases that
+ * day. Not once was the mover a runtime this app runs: cline, codebuddy-code, dimcode, droid,
+ * glm-acp-agent, grok, gemini-cli, qwen-code. Each cost a full round trip — refresh, PR, CI, retag —
+ * to ship a version number for a tool nobody here launches. On rc.14 the check was green when the
+ * tag was cut and stale twenty seconds later when the workflow ran, which is the shape of a rule
+ * that cannot be satisfied rather than one that is being broken.
+ *
+ * The danger it was written for is real and stays blocking: on 2026-08-20 the snapshot had fallen
+ * behind on `claude-agent-acp` and `codex-acp` themselves, so the app shipped launching adapter
+ * versions whose permission behaviour nobody had measured. That is a safety claim, not freshness.
+ *
+ * So: a stale entry for a runtime in Rust's `ISOLATION` table fails; every other entry is reported
+ * and does not block. `ISOLATION` is the honest source — it is exactly the set this app claims
+ * specific knowledge about, and `runtime-gate.test.ts` already reads it the same way.
+ */
+export function isolatedRuntimeIds() {
+  const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp.rs'), 'utf8');
+  const start = rust.indexOf('ISOLATION: &[IsolationSpec]');
+  if (start < 0) {
+    console.error('[acp-registry] could not find the ISOLATION table in src-tauri/src/acp.rs');
+    process.exit(1);
+  }
+  const block = rust.slice(start, rust.indexOf('];', start));
+  const ids = [...block.matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1]);
+  if (ids.length === 0) {
+    // ⚠️ An empty list would silently turn this into a gate that never blocks — the exact failure
+    // ("a gate that exists but does not run") the release workflow's own comment records.
+    console.error('[acp-registry] the ISOLATION table parsed to zero runtimes; refusing to pass');
+    process.exit(1);
+  }
+  return ids;
+}
+
+/** Which agents changed, and how — so the message names versions instead of saying "something". */
+export function driftedAgents(committed, current) {
+  const before = new Map(committed.map((a) => [a.id, a]));
+  const drifted = [];
+  for (const agent of current) {
+    const previous = before.get(agent.id);
+    const a = JSON.stringify(previous?.launch ?? null);
+    const b = JSON.stringify(agent.launch ?? null);
+    if (!previous) {
+      drifted.push({ id: agent.id, before: '(new)', after: launchLabel(agent) });
+    } else if (a !== b) {
+      drifted.push({ id: agent.id, before: launchLabel(previous), after: launchLabel(agent) });
+    }
+  }
+  for (const agent of committed) {
+    if (!current.some((a) => a.id === agent.id)) {
+      drifted.push({ id: agent.id, before: launchLabel(agent), after: '(removed)' });
+    }
+  }
+  return drifted;
+}
+
+export function launchLabel(agent) {
+  const launch = agent?.launch;
+  if (!launch) return '(none)';
+  return launch.package ?? launch.command ?? launch.kind ?? '(unknown)';
+}
+
 async function main() {
   const check = process.argv.includes('--check');
   const response = await fetch(SOURCE, { headers: { accept: 'application/json' } });
@@ -265,9 +330,27 @@ async function main() {
     }
     const serialized = `${JSON.stringify(normalized, null, 2)}\n`;
     if (readFileSync(OUT, 'utf8') !== serialized) {
-      console.error('[acp-registry] 커밋된 스냅샷이 최신과 다릅니다.');
-      console.error('  node scripts/build-acp-registry.mjs 를 돌리고 diff 를 확인하세요.');
-      process.exit(1);
+      const drifted = driftedAgents(committed.agents, normalized.agents);
+      const isolated = isolatedRuntimeIds();
+      const blocking = drifted.filter((entry) => isolated.includes(entry.id));
+      const rest = drifted.filter((entry) => !isolated.includes(entry.id));
+
+      const describe = (entry) => `    ${entry.id}: ${entry.before} → ${entry.after}`;
+      if (rest.length > 0) {
+        console.warn(`[acp-registry] ${rest.length} listed agent(s) moved upstream:`);
+        for (const entry of rest) console.warn(describe(entry));
+        console.warn('  Refresh when convenient: node scripts/build-acp-registry.mjs');
+      }
+      if (blocking.length > 0) {
+        console.error('[acp-registry] a runtime this app actually runs has gone stale:');
+        for (const entry of blocking) console.error(describe(entry));
+        console.error('  Run node scripts/build-acp-registry.mjs, review the diff, and commit.');
+        process.exit(1);
+      }
+      console.log(
+        `[acp-registry] snapshot differs, but no runtime this app isolates moved (${isolated.join(', ')}) · ${committed.agents.length} agents`,
+      );
+      return;
     }
     console.log(`[acp-registry] current · ${normalized.agents.length} agents`);
     return;
@@ -301,4 +384,11 @@ async function main() {
   );
 }
 
-await main();
+/*
+ * ⚠️ Only when run as a command. Without this guard, importing this module to test its pure
+ * helpers would fetch the upstream registry — a test that needs the network to check a string
+ * comparison is a test that fails on a plane.
+ */
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  await main();
+}
