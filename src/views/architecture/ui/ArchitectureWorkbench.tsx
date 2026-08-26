@@ -94,8 +94,20 @@ export function ArchitectureWorkbench({
            * page-owned h1 restores the existing display/strong/primary contract.
            */
           className="max-w-[640px] [&_h1]:break-keep [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-display [&_h1]:text-[color:var(--color-text-primary)]"
+          /*
+           * ⚠️ **Sends them where the work happens, not where the file lives.** This used to point
+           * at Docs and tell the reader to author an `architecture-profile/v1` document by hand.
+           * Owner, 2026-08-26: *"a user is never going to write the architecture down -- we should
+           * analyse it and record it"*. Nobody opens a documents list in order to hand-write twenty
+           * lines of frontmatter, and naming the schema in the first sentence a stranger reads is
+           * this repository's own vocabulary leaking onto the screen.
+           *
+           * The map is where an agent is already connected and already reads a codebase, so the
+           * button goes there. That is one hop rather than a task list, and it reuses the flow that
+           * is measured to work rather than inventing a second one.
+           */
           action={(
-            <Link href="/docs/" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }))}>
+            <Link href="/topology/" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }))}>
               {t('openDocs')}
             </Link>
           )}
