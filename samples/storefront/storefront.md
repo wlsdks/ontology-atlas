@@ -9,6 +9,7 @@ description: "Not a real company: an example built so that a first-time visitor 
 domains: [domains/catalog, domains/customer, domains/fulfillment, domains/inventory, domains/loyalty, domains/marketing, domains/order, domains/payment, domains/support]
 capabilities: []
 elements: []
+relates: [architecture/storefront-services]
 ---
 
 # Online Store

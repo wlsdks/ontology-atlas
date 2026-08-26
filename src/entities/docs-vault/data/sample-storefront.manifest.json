@@ -1,7 +1,73 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-23",
+  "generatedAt": "2026-08-26",
   "docs": [
+    {
+      "slug": "architecture/storefront-services",
+      "path": "samples/storefront/architecture/storefront-services.md",
+      "title": "Storefront Services",
+      "description": "How the nine areas are laid out in code: one service each, with the dependency direction running inward so a payment change cannot ripple into the catalogue.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "5b2e0f4a-9d61-4c8e-a0f7-2c9d4e13a780",
+        "slug": "architecture/storefront-services",
+        "kind": "document",
+        "title": "Storefront Services",
+        "display_ko": "스토어프론트 서비스 구조",
+        "display_en": "Storefront Services",
+        "description": "How the nine areas are laid out in code: one service each, with the dependency direction running inward so a payment change cannot ripple into the catalogue.",
+        "architecture_schema": "architecture-profile/v1",
+        "profile_uid": "5b2e0f4a-9d61-4c8e-a0f7-2c9d4e13a780",
+        "profile_slug": "storefront-services",
+        "project_uid": "1beed293-711b-4b51-b8c0-65f51bc4d606",
+        "created_by": "human",
+        "patterns": [
+          "dependency:hexagonal"
+        ],
+        "scope_paths": [
+          "services/**"
+        ],
+        "exclude_paths": [
+          "**/*.test.ts"
+        ],
+        "role_domain": [
+          "services/*/domain/**"
+        ],
+        "role_application": [
+          "services/*/application/**"
+        ],
+        "role_port": [
+          "services/*/ports/**"
+        ],
+        "role_adapter": [
+          "services/*/adapters/**"
+        ],
+        "allow_domain": [],
+        "allow_application": [
+          "domain",
+          "port"
+        ],
+        "allow_port": [
+          "domain"
+        ],
+        "allow_adapter": [
+          "application",
+          "port",
+          "domain"
+        ],
+        "evidence": [
+          "storefront.md"
+        ],
+        "relates": [
+          "storefront"
+        ]
+      },
+      "headings": [],
+      "excerpt": "Each of the nine areas is one service, and inside a service the dependency direction runs inward. Adapters may reach the application and the ports; the application may reach the domain; the domain reaches nothing at all. That is what keeps a payment change from rippling into the catalogue. The map says which areas exis",
+      "wordCount": 89,
+      "updatedAt": "2026-08-26",
+      "linksOut": []
+    },
     {
       "slug": "capabilities/account-closure",
       "path": "samples/storefront/capabilities/account-closure.md",
@@ -3247,16 +3313,26 @@
           "domains/support"
         ],
         "capabilities": [],
-        "elements": []
+        "elements": [],
+        "relates": [
+          "architecture/storefront-services"
+        ]
       },
       "headings": [],
       "excerpt": "Not a real company: an example built so that a first-time visitor can learn how to read the map. It draws a small online store that ships physical goods, clothes and household items, out of a single warehouse by parcel carrier: paid by card and one-tap wallets, shipped through three carriers, brought back with coupons ",
       "wordCount": 195,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-26",
       "linksOut": []
     }
   ],
   "backlinksDetail": {
+    "storefront": [
+      {
+        "fromSlug": "architecture/storefront-services",
+        "context": "frontmatter · **[storefront]**",
+        "linkText": "storefront"
+      }
+    ],
     "capabilities/order-lookup": [
       {
         "fromSlug": "capabilities/account-closure",
@@ -5369,6 +5445,13 @@
         "context": "frontmatter · **[capabilities/return-request]**",
         "linkText": "capabilities/return-request"
       }
+    ],
+    "architecture/storefront-services": [
+      {
+        "fromSlug": "storefront",
+        "context": "frontmatter · **[architecture/storefront-services]**",
+        "linkText": "architecture/storefront-services"
+      }
     ]
   },
   "tags": {},
@@ -5377,6 +5460,20 @@
     "path": "",
     "type": "dir",
     "children": [
+      {
+        "name": "architecture",
+        "path": "architecture",
+        "type": "dir",
+        "children": [
+          {
+            "name": "storefront-services",
+            "path": "architecture/storefront-services",
+            "type": "doc",
+            "slug": "architecture/storefront-services",
+            "title": "Storefront Services"
+          }
+        ]
+      },
       {
         "name": "capabilities",
         "path": "capabilities",
