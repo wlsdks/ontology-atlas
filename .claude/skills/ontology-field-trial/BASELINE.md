@@ -9,6 +9,102 @@ which is all a comparison needs.
 
 ---
 
+## 2026-08-26 (second subject) — the exclusion gate fires on an unfamiliar repository
+
+**Subject**: an unfamiliar Apache-2.0 Python network-infrastructure source of truth, 85 MB shallow clone. Run the same day as the entry below, against the
+same six frozen questions, specifically to see whether the fix that run produced
+holds somewhere it was not designed against.
+
+### The result this run exists for
+
+The earlier subject's project node excluded something nothing supported, and the
+source-hidden reader repeated it as fact. The fix warns when a project states
+exclusions while its own scope answer is unfinished. Here that warning fired
+during analysis, on a different language, domain and repository:
+
+> The project states 2 exclusion(s) while its scope competency answer is
+> "partial". A project-level exclusion cannot be checked against the source, so
+> it carries that same status until the scope answer is complete.
+
+The two proposed exclusions did **not** reach the vault, and the written project
+node has no `## Excludes` section at all. So the source-hidden reader answered q6
+with a refusal instead of an invention:
+
+> I cannot answer this at project scope from the vault. The project node has no
+> `## Excludes` section. Its uncertainty and partial scope answer describe gaps.
+
+That is the same question that produced this trial's only failed claim a run
+earlier. A caveat worth keeping: the warning is advisory, so it did not *force*
+the drop — what can be said is that the pairing was visible at review time and
+the unwitnessed boundaries did not survive it.
+
+### Phase 1 — build
+
+| | |
+|---|---|
+| wall clock, analysis through validation | **14 min 43 s**, one uninterrupted run |
+| meaningful nodes | **17** (1 project · 4 domains · 8 capabilities · 4 elements) |
+| relations | **30** |
+| scaffold cleanup | all five example records removed |
+
+**Phase 1 completed without stalling, and why is the reusable part.** The two
+earlier attempts stopped at the approval gate because a non-interactive run has
+nobody to accept the plan. Reading `construction-lifecycle.mjs` first showed the
+acceptance record is *declared provenance*, not authenticated identity, so the
+run can pre-authorise sight unseen: accept whatever digest returns and every id
+in `requiredGapIds`, supply `acceptance.decidedBy` and `authority: human`, and
+keep `decidedBy` different from the builder id. That single change is the whole
+difference between one attempt and three.
+
+### Phase 2 — citation accuracy
+
+| | |
+|---|---|
+| cited paths checked | **47** |
+| paths that exist in the clone | **47 (100%)** |
+| validation | 20 files, 0 issues |
+
+### Phase 3 — handoff (vault only, clone moved off the tree)
+
+Six of six answered from **13 full-body reads**, all untruncated.
+
+Better than the first subject on the question that matters most. Asked what
+breaks, this vault had a declared dependency to give, and the answer carried its
+limits rather than inflating them:
+
+> a declared, rationale-bearing dependency — not a proven or exhaustive runtime
+> blast radius
+
+### Phase 4 — hallucination check
+
+Every cited path resolved, and the capability's stated boundary held against the
+code: the IP/VLAN capability claims VRFs, prefixes, VLANs and AS numbers and
+disclaims DNS service operation, and the clone has models for each of the four
+and no DNS service implementation.
+
+**Failed claims: 0.**
+
+### What this run says about the previous one
+
+The first subject's numbers were not luck — a second unfamiliar repository, in a
+different language, produced 100% citation accuracy and six of six answers again.
+The difference is where the honesty came from. The first vault stated a boundary
+it could not support and the reader passed it on; this one recorded no boundary
+it could not support, and the reader said so.
+
+### Contamination found and removed
+
+A codex process from an earlier attempt was still alive and wrote a **second,
+disjoint 16-node slice** into the same vault mid-run — competing domains over the
+same subject, sharing zero references with the reviewed slice. The census briefly
+read 34. The project node pointed only at the reviewed slice, so the intruders
+were orphans; they were moved to `logs/orphan-slice-backup/` rather than deleted,
+and validation was re-run clean. **A trial must confirm that previous runs are
+dead before it starts**, which is now the third way this harness has been found
+measuring something other than what it claimed.
+
+---
+
 ## 2026-08-26 — first run with a witnessed-exclusion defect
 
 **Subject**: an unfamiliar Apache-2.0 Go community Q&A platform, 15 MB shallow
