@@ -426,7 +426,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. The public ",
-      "wordCount": 78668,
+      "wordCount": 78781,
       "updatedAt": "2026-08-26",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
