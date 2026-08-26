@@ -49,6 +49,16 @@
   shipping compatibility asset while its rejected visual direction is replaced
   in a separate design decision.
 
+## 2026-08-26 · A change you are asked to approve reads as one tidy list
+
+- The rows describing a relation, its two ends and the reason for it were four separate grids that
+  lined up only because one width was written four times. Measured in the browser: that width held
+  a two-character label and left 53 pixels empty beside it, four times over, which is what made the
+  block look crooked. The list shares one grid now and the column fits its labels, so the alignment
+  holds by itself.
+- The first label also sat flush against the highlighted row above it, because the panel had space
+  underneath and none on top.
+
 ## 2026-08-26 · The download page keeps up with the release on its own
 
 - The version was written by hand in a fourth file that only copied `package.json`, and nothing
