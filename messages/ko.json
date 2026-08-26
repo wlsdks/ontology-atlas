@@ -315,7 +315,12 @@
       "hexagonal": "헥사고날",
       "mvp": "MVP",
       "custom": "사용자 정의"
-    }
+    },
+    "reachAria": "{role}는 {targets}에 의존할 수 있습니다",
+    "reachNone": "아무 역할에도 의존하지 않습니다",
+    "reachLegendAllowed": "의존 가능",
+    "reachLegendSelf": "자기 자신",
+    "reachLegendOrder": "칸 순서는 위 행 순서와 같습니다"
   },
   "ontologyRelations": {
     "relationShort": {
