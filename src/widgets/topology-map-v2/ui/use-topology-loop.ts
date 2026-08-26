@@ -5421,6 +5421,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
       },
       /**
+       * **Where the map is heading**, as opposed to where it currently is.
+       *
+       * The destination is set in one step when something changes the available
+       * area; the position then interpolates toward it over several frames. A
+       * test that samples the position has to pick a wall-clock moment and
+       * therefore measures the machine as much as the product —
+       * `design-gates.md` says as much: gate by call count, not milliseconds.
+       * Reading the target instead makes "did the resize aim the camera at the
+       * new area" answerable without timing anything.
+       */
+      cameraTarget: () => {
+        const target = cameraTargetRef.current;
+        return { x: target.tx, y: target.ty, scale: target.tscale };
+      },
+      /**
        * Live horizontal obstruction measured by the same product function the
        * camera consumes. This distinguishes a desktop side inspector from a
        * mobile full-width sheet without copying the classification into E2E.
